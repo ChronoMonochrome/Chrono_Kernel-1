@@ -23,21 +23,21 @@ extern SshInterceptor ssh_interceptor_context;
 
 /* Use printk instead of SSH_DEBUG macros. */
 #ifdef DEBUG_LIGHT
-//#define SSH_LINUX_IPM_DEBUG(x...) if (net_ratelimit()) printk(KERN_INFO x)
-//#define SSH_LINUX_IPM_WARN(x...) panic(x)
-//#endif /* DEBUG_LIGHT */
-//
-//#ifndef SSH_LINUX_IPM_DEBUG
-//#define SSH_LINUX_IPM_DEBUG(x...)
-//#define SSH_LINUX_IPM_WARN(x...) printk(KERN_CRIT x)
-//#endif /* SSH_LINUX_IPM_DEBUG */
-//
-///************************* Ipm message alloc / free *************************/
-//
-//static void interceptor_ipm_message_free_internal(SshInterceptor interceptor,
-//						  SshInterceptorIpmMsg msg)
-//{
-;
+#define SSH_LINUX_IPM_DEBUG(x...) if (net_ratelimit()) printk(KERN_INFO x)
+#define SSH_LINUX_IPM_WARN(x...) panic(x)
+#endif /* DEBUG_LIGHT */
+
+#ifndef SSH_LINUX_IPM_DEBUG
+#define SSH_LINUX_IPM_DEBUG(x...)
+#define SSH_LINUX_IPM_WARN(x...) printk(KERN_CRIT x)
+#endif /* SSH_LINUX_IPM_DEBUG */
+
+/************************* Ipm message alloc / free *************************/
+
+static void interceptor_ipm_message_free_internal(SshInterceptor interceptor,
+						  SshInterceptorIpmMsg msg)
+{
+  SSH_ASSERT(interceptor != NULL);
   SSH_ASSERT(msg != NULL);
   
   if (msg->buf)

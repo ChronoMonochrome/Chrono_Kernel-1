@@ -385,9 +385,9 @@ static int __devinit sis_find_family(struct pci_dev *dev)
 		}
 		pci_dev_put(host);
 
-//		printk(KERN_INFO DRV_NAME " %s: %s %s controller\n",
-//			pci_name(dev), SiSHostChipInfo[i].name,
-;
+		printk(KERN_INFO DRV_NAME " %s: %s %s controller\n",
+			pci_name(dev), SiSHostChipInfo[i].name,
+			chipset_capability[chipset_family]);
 	}
 
 	if (!chipset_family) { /* Belongs to pci-quirks */
@@ -402,8 +402,8 @@ static int __devinit sis_find_family(struct pci_dev *dev)
 			pci_write_config_dword(dev, 0x54, idemisc);
 
 			if (trueid == 0x5518) {
-//				printk(KERN_INFO DRV_NAME " %s: SiS 962/963 MuTIOL IDE UDMA133 controller\n",
-;
+				printk(KERN_INFO DRV_NAME " %s: SiS 962/963 MuTIOL IDE UDMA133 controller\n",
+					pci_name(dev));
 				chipset_family = ATA_133;
 
 				/* Check for 5513 compatibility mapping
@@ -412,8 +412,8 @@ static int __devinit sis_find_family(struct pci_dev *dev)
 				 */
 				if ((idemisc & 0x40000000) == 0) {
 					pci_write_config_dword(dev, 0x54, idemisc | 0x40000000);
-//					printk(KERN_INFO DRV_NAME " %s: Switching to 5513 register mapping\n",
-;
+					printk(KERN_INFO DRV_NAME " %s: Switching to 5513 register mapping\n",
+						pci_name(dev));
 				}
 			}
 	}
@@ -437,12 +437,12 @@ static int __devinit sis_find_family(struct pci_dev *dev)
 				pci_dev_put(lpc_bridge);
 
 				if (lpc_bridge->revision == 0x10 && (prefctl & 0x80)) {
-//					printk(KERN_INFO DRV_NAME " %s: SiS 961B MuTIOL IDE UDMA133 controller\n",
-;
+					printk(KERN_INFO DRV_NAME " %s: SiS 961B MuTIOL IDE UDMA133 controller\n",
+						pci_name(dev));
 					chipset_family = ATA_133a;
 				} else {
-//					printk(KERN_INFO DRV_NAME " %s: SiS 961 MuTIOL IDE UDMA100 controller\n",
-;
+					printk(KERN_INFO DRV_NAME " %s: SiS 961 MuTIOL IDE UDMA100 controller\n",
+						pci_name(dev));
 					chipset_family = ATA_100;
 				}
 			}

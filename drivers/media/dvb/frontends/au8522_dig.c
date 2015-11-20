@@ -35,9 +35,9 @@ static int debug;
 static LIST_HEAD(hybrid_tuner_instance_list);
 static DEFINE_MUTEX(au8522_list_mutex);
 
-//#define dprintk(arg...)\
-//	do { if (debug)\
-;
+#define dprintk(arg...)\
+	do { if (debug)\
+		printk(arg);\
 	} while (0)
 
 /* 16 bit registers, 8 bit values */
@@ -52,8 +52,8 @@ int au8522_writereg(struct au8522_state *state, u16 reg, u8 data)
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
-//		printk("%s: writereg error (reg == 0x%02x, val == 0x%04x, "
-;
+		printk("%s: writereg error (reg == 0x%02x, val == 0x%04x, "
+		       "ret == %i)\n", __func__, reg, data, ret);
 
 	return (ret != 1) ? -1 : 0;
 }
@@ -73,8 +73,8 @@ u8 au8522_readreg(struct au8522_state *state, u16 reg)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2)
-//		printk(KERN_ERR "%s: readreg error (ret == %i)\n",
-;
+		printk(KERN_ERR "%s: readreg error (ret == %i)\n",
+		       __func__, ret);
 	return b1[0];
 }
 
@@ -82,7 +82,7 @@ static int au8522_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
 {
 	struct au8522_state *state = fe->demodulator_priv;
 
-;
+	dprintk("%s(%d)\n", __func__, enable);
 
 	if (state->operational_mode == AU8522_ANALOG_MODE) {
 		/* We're being asked to manage the gate even though we're
@@ -290,7 +290,7 @@ static int au8522_mse2snr_lookup(struct mse2snr_tab *tab, int sz, int mse,
 				 u16 *snr)
 {
 	int i, ret = -EINVAL;
-;
+	dprintk("%s()\n", __func__);
 
 	for (i = 0; i < sz; i++) {
 		if (mse < tab[i].val) {
@@ -329,10 +329,10 @@ static int au8522_set_if(struct dvb_frontend *fe, enum au8522_if_freq if_freq)
 		r0b7 = 0x39;
 		break;
 	default:
-;
+		dprintk("%s() IF Frequency not supported\n", __func__);
 		return -EINVAL;
 	}
-;
+	dprintk("%s() %s MHz\n", __func__, ifmhz);
 	au8522_writereg(state, 0x80b5, r0b5);
 	au8522_writereg(state, 0x80b6, r0b6);
 	au8522_writereg(state, 0x80b7, r0b7);
@@ -538,11 +538,11 @@ static int au8522_enable_modulation(struct dvb_frontend *fe,
 	struct au8522_state *state = fe->demodulator_priv;
 	int i;
 
-;
+	dprintk("%s(0x%08x)\n", __func__, m);
 
 	switch (m) {
 	case VSB_8:
-;
+		dprintk("%s() VSB_8\n", __func__);
 		for (i = 0; i < ARRAY_SIZE(VSB_mod_tab); i++)
 			au8522_writereg(state,
 				VSB_mod_tab[i].reg,
@@ -550,7 +550,7 @@ static int au8522_enable_modulation(struct dvb_frontend *fe,
 		au8522_set_if(fe, state->config->vsb_if);
 		break;
 	case QAM_64:
-;
+		dprintk("%s() QAM 64\n", __func__);
 		for (i = 0; i < ARRAY_SIZE(QAM64_mod_tab); i++)
 			au8522_writereg(state,
 				QAM64_mod_tab[i].reg,
@@ -558,7 +558,7 @@ static int au8522_enable_modulation(struct dvb_frontend *fe,
 		au8522_set_if(fe, state->config->qam_if);
 		break;
 	case QAM_256:
-;
+		dprintk("%s() QAM 256\n", __func__);
 		for (i = 0; i < ARRAY_SIZE(QAM256_mod_tab); i++)
 			au8522_writereg(state,
 				QAM256_mod_tab[i].reg,
@@ -566,7 +566,7 @@ static int au8522_enable_modulation(struct dvb_frontend *fe,
 		au8522_set_if(fe, state->config->qam_if);
 		break;
 	default:
-;
+		dprintk("%s() Invalid modulation\n", __func__);
 		return -EINVAL;
 	}
 
@@ -582,7 +582,7 @@ static int au8522_set_frontend(struct dvb_frontend *fe,
 	struct au8522_state *state = fe->demodulator_priv;
 	int ret = -EINVAL;
 
-;
+	dprintk("%s(frequency=%d)\n", __func__, p->frequency);
 
 	if ((state->current_frequency == p->frequency) &&
 	    (state->current_modulation == p->u.vsb.modulation))
@@ -614,7 +614,7 @@ static int au8522_set_frontend(struct dvb_frontend *fe,
 int au8522_init(struct dvb_frontend *fe)
 {
 	struct au8522_state *state = fe->demodulator_priv;
-;
+	dprintk("%s()\n", __func__);
 
 	state->operational_mode = AU8522_DIGITAL_MODE;
 
@@ -682,7 +682,7 @@ static int au8522_led_ctrl(struct au8522_state *state, int led)
 	if (state->led_state != led) {
 		u8 val;
 
-;
+		dprintk("%s: %d\n", __func__, led);
 
 		au8522_led_gpio_enable(state, 1);
 
@@ -717,7 +717,7 @@ static int au8522_led_ctrl(struct au8522_state *state, int led)
 int au8522_sleep(struct dvb_frontend *fe)
 {
 	struct au8522_state *state = fe->demodulator_priv;
-;
+	dprintk("%s()\n", __func__);
 
 	/* Only power down if the digital side is currently using the chip */
 	if (state->operational_mode == AU8522_ANALOG_MODE) {
@@ -748,12 +748,12 @@ static int au8522_read_status(struct dvb_frontend *fe, fe_status_t *status)
 	*status = 0;
 
 	if (state->current_modulation == VSB_8) {
-;
+		dprintk("%s() Checking VSB_8\n", __func__);
 		reg = au8522_readreg(state, 0x4088);
 		if ((reg & 0x03) == 0x03)
 			*status |= FE_HAS_LOCK | FE_HAS_SYNC | FE_HAS_VITERBI;
 	} else {
-;
+		dprintk("%s() Checking QAM\n", __func__);
 		reg = au8522_readreg(state, 0x4541);
 		if (reg & 0x80)
 			*status |= FE_HAS_VITERBI;
@@ -763,13 +763,13 @@ static int au8522_read_status(struct dvb_frontend *fe, fe_status_t *status)
 
 	switch (state->config->status_mode) {
 	case AU8522_DEMODLOCKING:
-;
+		dprintk("%s() DEMODLOCKING\n", __func__);
 		if (*status & FE_HAS_VITERBI)
 			*status |= FE_HAS_CARRIER | FE_HAS_SIGNAL;
 		break;
 	case AU8522_TUNERLOCKING:
 		/* Get the tuner status */
-;
+		dprintk("%s() TUNERLOCKING\n", __func__);
 		if (fe->ops.tuner_ops.get_status) {
 			if (fe->ops.i2c_gate_ctrl)
 				fe->ops.i2c_gate_ctrl(fe, 1);
@@ -835,7 +835,7 @@ static int au8522_read_snr(struct dvb_frontend *fe, u16 *snr)
 	struct au8522_state *state = fe->demodulator_priv;
 	int ret = -EINVAL;
 
-;
+	dprintk("%s()\n", __func__);
 
 	if (state->current_modulation == QAM_256)
 		ret = au8522_mse2snr_lookup(qam256_mse2snr_tab,
@@ -941,15 +941,15 @@ struct dvb_frontend *au8522_attach(const struct au8522_config *config,
 	instance = au8522_get_state(&state, i2c, config->demod_address);
 	switch (instance) {
 	case 0:
-;
+		dprintk("%s state allocation failed\n", __func__);
 		break;
 	case 1:
 		/* new demod instance */
-;
+		dprintk("%s using new instance\n", __func__);
 		break;
 	default:
 		/* existing demod instance */
-;
+		dprintk("%s using existing instance\n", __func__);
 		break;
 	}
 
@@ -964,8 +964,8 @@ struct dvb_frontend *au8522_attach(const struct au8522_config *config,
 	state->frontend.demodulator_priv = state;
 
 	if (au8522_init(&state->frontend) != 0) {
-//		printk(KERN_ERR "%s: Failed to initialize correctly\n",
-;
+		printk(KERN_ERR "%s: Failed to initialize correctly\n",
+			__func__);
 		goto error;
 	}
 

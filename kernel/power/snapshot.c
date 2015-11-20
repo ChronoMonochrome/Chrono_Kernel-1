@@ -642,8 +642,8 @@ __register_nosave_region(unsigned long start_pfn, unsigned long end_pfn,
 	region->end_pfn = end_pfn;
 	list_add_tail(&region->list, &nosave_regions);
  Report:
-//	printk(KERN_INFO "PM: Registered nosave memory: %016lx - %016lx\n",
-;
+	printk(KERN_INFO "PM: Registered nosave memory: %016lx - %016lx\n",
+		start_pfn << PAGE_SHIFT, end_pfn << PAGE_SHIFT);
 }
 
 /*
@@ -1302,7 +1302,7 @@ int hibernate_preallocate_memory(void)
 	struct timeval start, stop;
 	int error;
 
-;
+	printk(KERN_INFO "PM: Preallocating image memory... ");
 	do_gettimeofday(&start);
 
 	error = memory_bm_create(&orig_bm, GFP_IMAGE, PG_ANY);
@@ -1426,13 +1426,13 @@ int hibernate_preallocate_memory(void)
 
  out:
 	do_gettimeofday(&stop);
-;
+	printk(KERN_CONT "done (allocated %lu pages)\n", pages);
 	swsusp_show_speed(&start, &stop, pages, "Allocated");
 
 	return 0;
 
  err_out:
-;
+	printk(KERN_CONT "\n");
 	swsusp_free();
 	return -ENOMEM;
 }
@@ -1569,20 +1569,20 @@ asmlinkage int swsusp_save(void)
 {
 	unsigned int nr_pages, nr_highmem;
 
-;
+	printk(KERN_INFO "PM: Creating hibernation image:\n");
 
 	drain_local_pages(NULL);
 	nr_pages = count_data_pages();
 	nr_highmem = count_highmem_pages();
-;
+	printk(KERN_INFO "PM: Need to copy %u pages\n", nr_pages + nr_highmem);
 
 	if (!enough_free_mem(nr_pages, nr_highmem)) {
-;
+		printk(KERN_ERR "PM: Not enough free memory\n");
 		return -ENOMEM;
 	}
 
 	if (swsusp_alloc(&orig_bm, &copy_bm, nr_pages, nr_highmem)) {
-;
+		printk(KERN_ERR "PM: Memory allocation failed\n");
 		return -ENOMEM;
 	}
 
@@ -1602,8 +1602,8 @@ asmlinkage int swsusp_save(void)
 	nr_copy_pages = nr_pages;
 	nr_meta_pages = DIV_ROUND_UP(nr_pages * sizeof(long), PAGE_SIZE);
 
-//	printk(KERN_INFO "PM: Hibernation image created (%d pages copied)\n",
-;
+	printk(KERN_INFO "PM: Hibernation image created (%d pages copied)\n",
+		nr_pages);
 
 	return 0;
 }
@@ -1785,7 +1785,7 @@ static int check_header(struct swsusp_info *info)
 	if (!reason && info->num_physpages != num_physpages)
 		reason = "memory size";
 	if (reason) {
-;
+		printk(KERN_ERR "PM: Image mismatch: %s\n", reason);
 		return -EPERM;
 	}
 	return 0;

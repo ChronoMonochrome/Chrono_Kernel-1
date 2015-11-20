@@ -115,8 +115,8 @@ static struct onenand_info *info;
 
 #define DPRINTK(format, args...)					\
 do {									\
-//	printk(KERN_DEBUG "%s[%d]: " format "\n", __func__,		\
-;
+	printk(KERN_DEBUG "%s[%d]: " format "\n", __func__,		\
+			   __LINE__, ##args);				\
 } while (0)
 
 /**
@@ -321,7 +321,7 @@ static void onenand_data_handle(struct onenand_chip *this, int cmd,
 				continue;
 			if (memcmp(dest + off, ffchars, this->subpagesize) &&
 			    onenand_check_overwrite(dest + off, src + off, this->subpagesize))
-;
+				printk(KERN_ERR "over-write happened at 0x%08x\n", offset);
 			memcpy(dest + off, src + off, this->subpagesize);
 		}
 		/* Fall through */
@@ -335,8 +335,8 @@ static void onenand_data_handle(struct onenand_chip *this, int cmd,
 		dest = ONENAND_CORE_SPARE(flash, this, offset);
 		if (memcmp(dest, ffchars, mtd->oobsize) &&
 		    onenand_check_overwrite(dest, src, mtd->oobsize))
-//			printk(KERN_ERR "OOB: over-write happened at 0x%08x\n",
-;
+			printk(KERN_ERR "OOB: over-write happened at 0x%08x\n",
+			       offset);
 		memcpy(dest, src, mtd->oobsize);
 		break;
 
@@ -451,7 +451,7 @@ static int __init flash_init(struct onenand_flash *flash)
 
 	flash->base = kzalloc(131072, GFP_KERNEL);
 	if (!flash->base) {
-;
+		printk(KERN_ERR "Unable to allocate base address.\n");
 		return -ENOMEM;
 	}
 
@@ -461,7 +461,7 @@ static int __init flash_init(struct onenand_flash *flash)
 
 	ONENAND_CORE(flash) = vmalloc(size + (size >> 5));
 	if (!ONENAND_CORE(flash)) {
-;
+		printk(KERN_ERR "Unable to allocate nand core address.\n");
 		kfree(flash->base);
 		return -ENOMEM;
 	}
@@ -500,7 +500,7 @@ static int __init onenand_sim_init(void)
 	/* Allocate all 0xff chars pointer */
 	ffchars = kmalloc(MAX_ONENAND_PAGESIZE, GFP_KERNEL);
 	if (!ffchars) {
-;
+		printk(KERN_ERR "Unable to allocate ff chars.\n");
 		return -ENOMEM;
 	}
 	memset(ffchars, 0xff, MAX_ONENAND_PAGESIZE);
@@ -508,7 +508,7 @@ static int __init onenand_sim_init(void)
 	/* Allocate OneNAND simulator mtd pointer */
 	info = kzalloc(sizeof(struct onenand_info), GFP_KERNEL);
 	if (!info) {
-;
+		printk(KERN_ERR "Unable to allocate core structures.\n");
 		kfree(ffchars);
 		return -ENOMEM;
 	}
@@ -517,7 +517,7 @@ static int __init onenand_sim_init(void)
 	info->onenand.write_word = onenand_writew;
 
 	if (flash_init(&info->flash)) {
-;
+		printk(KERN_ERR "Unable to allocate flash.\n");
 		kfree(ffchars);
 		kfree(info);
 		return -ENOMEM;

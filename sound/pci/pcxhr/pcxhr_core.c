@@ -139,9 +139,9 @@ static int pcxhr_check_reg_bit(struct pcxhr_mgr *mgr, unsigned int reg,
 		}
 		i++;
 	} while (time_after_eq(end_time, jiffies));
-//	snd_printk(KERN_ERR
-//		   "pcxhr_check_reg_bit: timeout, reg=%x, mask=0x%x, val=%x\n",
-;
+	snd_printk(KERN_ERR
+		   "pcxhr_check_reg_bit: timeout, reg=%x, mask=0x%x, val=%x\n",
+		   reg, mask, *read);
 	return -EIO;
 }
 
@@ -216,7 +216,7 @@ static int pcxhr_send_it_dsp(struct pcxhr_mgr *mgr,
 	err = pcxhr_check_reg_bit(mgr, PCXHR_DSP_CVR,  PCXHR_CVR_HI08_HC, 0,
 				  PCXHR_TIMEOUT_DSP, &reg);
 	if (err) {
-;
+		snd_printk(KERN_ERR "pcxhr_send_it_dsp : TIMEOUT CVR\n");
 		return err;
 	}
 	if (itdsp & PCXHR_MASK_IT_MANAGE_HF5) {
@@ -227,8 +227,8 @@ static int pcxhr_send_it_dsp(struct pcxhr_mgr *mgr,
 					  PCXHR_TIMEOUT_DSP,
 					  &reg);
 		if (err) {
-//			snd_printk(KERN_ERR
-;
+			snd_printk(KERN_ERR
+				   "pcxhr_send_it_dsp : TIMEOUT HF5\n");
 			return err;
 		}
 	}
@@ -294,7 +294,7 @@ int pcxhr_load_xilinx_binary(struct pcxhr_mgr *mgr,
 	 */
 	if(second) {
 		if ((chipsc & PCXHR_CHIPSC_GPI_USERI) == 0) {
-;
+			snd_printk(KERN_ERR "error loading first xilinx\n");
 			return -EINVAL;
 		}
 		/* activate second xilinx */
@@ -360,8 +360,8 @@ static int pcxhr_download_dsp(struct pcxhr_mgr *mgr, const struct firmware *dsp)
 					  PCXHR_ISR_HI08_TRDY,
 					  PCXHR_TIMEOUT_DSP, &dummy);
 		if (err) {
-//			snd_printk(KERN_ERR
-;
+			snd_printk(KERN_ERR
+				   "dsp loading error at position %d\n", i);
 			return err;
 		}
 		/* send host data */
@@ -557,8 +557,8 @@ static int pcxhr_read_rmh_status(struct pcxhr_mgr *mgr, struct pcxhr_rmh *rmh)
 					  PCXHR_ISR_HI08_RXDF,
 					  PCXHR_TIMEOUT_DSP, &reg);
 		if (err) {
-//			snd_printk(KERN_ERR "ERROR RMH stat: "
-;
+			snd_printk(KERN_ERR "ERROR RMH stat: "
+				   "ISR:RXDF=1 (ISR = %x; i=%d )\n",
 				   reg, i);
 			return err;
 		}
@@ -611,7 +611,7 @@ static int pcxhr_send_msg_nolock(struct pcxhr_mgr *mgr, struct pcxhr_rmh *rmh)
 		return -EINVAL;
 	err = pcxhr_send_it_dsp(mgr, PCXHR_IT_MESSAGE, 1);
 	if (err) {
-;
+		snd_printk(KERN_ERR "pcxhr_send_message : ED_DSP_CRASHED\n");
 		return err;
 	}
 	/* wait for chk bit */
@@ -693,15 +693,15 @@ static int pcxhr_send_msg_nolock(struct pcxhr_mgr *mgr, struct pcxhr_rmh *rmh)
 					  PCXHR_ISR_HI08_RXDF,
 					  PCXHR_TIMEOUT_DSP, &reg);
 		if (err) {
-;
+			snd_printk(KERN_ERR "ERROR RMH: ISR:RXDF=1 (ISR = %x)\n", reg);
 			return err;
 		}
 		/* read error code */
 		data  = PCXHR_INPB(mgr, PCXHR_DSP_TXH) << 16;
 		data |= PCXHR_INPB(mgr, PCXHR_DSP_TXM) << 8;
 		data |= PCXHR_INPB(mgr, PCXHR_DSP_TXL);
-//		snd_printk(KERN_ERR "ERROR RMH(%d): 0x%x\n",
-;
+		snd_printk(KERN_ERR "ERROR RMH(%d): 0x%x\n",
+			   rmh->cmd_idx, data);
 		err = -EINVAL;
 	} else {
 		/* read the response data */
@@ -805,10 +805,10 @@ static int pcxhr_prepair_pipe_start(struct pcxhr_mgr *mgr,
 			}
 			err = pcxhr_send_msg(mgr, &rmh);
 			if (err) {
-//				snd_printk(KERN_ERR
-//					   "error pipe start "
-//					   "(CMD_CAN_START_PIPE) err=%x!\n",
-;
+				snd_printk(KERN_ERR
+					   "error pipe start "
+					   "(CMD_CAN_START_PIPE) err=%x!\n",
+					   err);
 				return err;
 			}
 			/* if the pipe couldn't be prepaired for start,
@@ -843,9 +843,9 @@ static int pcxhr_stop_pipes(struct pcxhr_mgr *mgr, int audio_mask)
 			}
 			err = pcxhr_send_msg(mgr, &rmh);
 			if (err) {
-//				snd_printk(KERN_ERR
-//					   "error pipe stop "
-;
+				snd_printk(KERN_ERR
+					   "error pipe stop "
+					   "(CMD_STOP_PIPE) err=%x!\n", err);
 				return err;
 			}
 		}
@@ -872,9 +872,9 @@ static int pcxhr_toggle_pipes(struct pcxhr_mgr *mgr, int audio_mask)
 							  1 << (audio - PCXHR_PIPE_STATE_CAPTURE_OFFSET));
 			err = pcxhr_send_msg(mgr, &rmh);
 			if (err) {
-//				snd_printk(KERN_ERR
-//					   "error pipe start "
-;
+				snd_printk(KERN_ERR
+					   "error pipe start "
+					   "(CMD_CONF_PIPE) err=%x!\n", err);
 				return err;
 			}
 		}
@@ -885,9 +885,9 @@ static int pcxhr_toggle_pipes(struct pcxhr_mgr *mgr, int audio_mask)
 	pcxhr_init_rmh(&rmh, CMD_SEND_IRQA);
 	err = pcxhr_send_msg(mgr, &rmh);
 	if (err) {
-//		snd_printk(KERN_ERR
-//			   "error pipe start (CMD_SEND_IRQA) err=%x!\n",
-;
+		snd_printk(KERN_ERR
+			   "error pipe start (CMD_SEND_IRQA) err=%x!\n",
+			   err);
 		return err;
 	}
 	return 0;
@@ -940,7 +940,7 @@ int pcxhr_set_pipe_state(struct pcxhr_mgr *mgr, int playback_mask,
 		if ((state & audio_mask) == (start ? audio_mask : 0))
 			break;
 		if (++i >= MAX_WAIT_FOR_DSP * 100) {
-;
+			snd_printk(KERN_ERR "error pipe start/stop\n");
 			return -EBUSY;
 		}
 		udelay(10);			/* wait 10 microseconds */
@@ -1063,7 +1063,7 @@ void pcxhr_msg_tasklet(unsigned long arg)
 		prmh->stat_len = PCXHR_SIZE_MAX_LONG_STATUS;
 		err = pcxhr_send_msg(mgr, prmh);
 		if (err)
-;
+			snd_printk(KERN_ERR "ERROR pcxhr_msg_tasklet=%x;\n",
 				   err);
 		i = 1;
 		while (i < prmh->stat_len) {
@@ -1200,9 +1200,9 @@ static void pcxhr_update_timer_pos(struct pcxhr_mgr *mgr,
 				(u_int32_t)(new_sample_count -
 					    stream->timer_abs_periods);
 		} else {
-//			snd_printk(KERN_ERR
-//				   "ERROR new_sample_count too small ??? %ld\n",
-;
+			snd_printk(KERN_ERR
+				   "ERROR new_sample_count too small ??? %ld\n",
+				   (long unsigned int)new_sample_count);
 		}
 
 		if (elapsed) {

@@ -266,8 +266,8 @@ void __jffs2_dbg_superblock_counts(struct jffs2_sb_info *c)
 
 #define check(sz) \
 	if (sz != c->sz##_size) {			\
-//		printk(KERN_WARNING #sz "_size mismatch counted 0x%x, c->" #sz "_size 0x%x\n", \
-;
+		printk(KERN_WARNING #sz "_size mismatch counted 0x%x, c->" #sz "_size 0x%x\n", \
+		       sz, c->sz##_size);		\
 		dump = 1;				\
 	}
 	check(free);
@@ -280,8 +280,8 @@ void __jffs2_dbg_superblock_counts(struct jffs2_sb_info *c)
 #undef check
 
 	if (nr_counted != c->nr_blocks) {
-//		printk(KERN_WARNING "%s counted only 0x%x blocks of 0x%x. Where are the others?\n",
-;
+		printk(KERN_WARNING "%s counted only 0x%x blocks of 0x%x. Where are the others?\n",
+		       __func__, nr_counted, c->nr_blocks);
 		dump = 1;
 	}
 
@@ -401,28 +401,28 @@ __jffs2_dbg_dump_node_refs_nolock(struct jffs2_sb_info *c,
 	struct jffs2_raw_node_ref *ref;
 	int i = 0;
 
-;
+	printk(JFFS2_DBG_MSG_PREFIX " Dump node_refs of the eraseblock %#08x\n", jeb->offset);
 	if (!jeb->first_node) {
-;
+		printk(JFFS2_DBG_MSG_PREFIX " no nodes in the eraseblock %#08x\n", jeb->offset);
 		return;
 	}
 
-;
+	printk(JFFS2_DBG);
 	for (ref = jeb->first_node; ; ref = ref_next(ref)) {
-;
+		printk("%#08x", ref_offset(ref));
 #ifdef TEST_TOTLEN
-;
+		printk("(%x)", ref->__totlen);
 #endif
 		if (ref_next(ref))
-;
+			printk("->");
 		else
 			break;
 		if (++i == 4) {
 			i = 0;
-;
+			printk("\n" JFFS2_DBG);
 		}
 	}
-;
+	printk("\n");
 }
 
 /*
@@ -442,14 +442,14 @@ __jffs2_dbg_dump_jeb_nolock(struct jffs2_eraseblock *jeb)
 	if (!jeb)
 		return;
 
-//	printk(JFFS2_DBG_MSG_PREFIX " dump space accounting for the eraseblock at %#08x:\n",
-;
+	printk(JFFS2_DBG_MSG_PREFIX " dump space accounting for the eraseblock at %#08x:\n",
+			jeb->offset);
 
-;
-;
-;
-;
-;
+	printk(JFFS2_DBG "used_size: %#08x\n",		jeb->used_size);
+	printk(JFFS2_DBG "dirty_size: %#08x\n",		jeb->dirty_size);
+	printk(JFFS2_DBG "wasted_size: %#08x\n",	jeb->wasted_size);
+	printk(JFFS2_DBG "unchecked_size: %#08x\n",	jeb->unchecked_size);
+	printk(JFFS2_DBG "free_size: %#08x\n",		jeb->free_size);
 }
 
 void
@@ -463,37 +463,37 @@ __jffs2_dbg_dump_block_lists(struct jffs2_sb_info *c)
 void
 __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 {
-;
+	printk(JFFS2_DBG_MSG_PREFIX " dump JFFS2 blocks lists:\n");
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
-//	printk(JFFS2_DBG "jffs2_reserved_blocks size: %#08x\n",
-;
+	printk(JFFS2_DBG "flash_size: %#08x\n",		c->flash_size);
+	printk(JFFS2_DBG "used_size: %#08x\n",		c->used_size);
+	printk(JFFS2_DBG "dirty_size: %#08x\n",		c->dirty_size);
+	printk(JFFS2_DBG "wasted_size: %#08x\n",	c->wasted_size);
+	printk(JFFS2_DBG "unchecked_size: %#08x\n",	c->unchecked_size);
+	printk(JFFS2_DBG "free_size: %#08x\n",		c->free_size);
+	printk(JFFS2_DBG "erasing_size: %#08x\n",	c->erasing_size);
+	printk(JFFS2_DBG "bad_size: %#08x\n",		c->bad_size);
+	printk(JFFS2_DBG "sector_size: %#08x\n",	c->sector_size);
+	printk(JFFS2_DBG "jffs2_reserved_blocks size: %#08x\n",
+				c->sector_size * c->resv_blocks_write);
 
 	if (c->nextblock)
-//		printk(JFFS2_DBG "nextblock: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//			c->nextblock->offset, c->nextblock->used_size,
-//			c->nextblock->dirty_size, c->nextblock->wasted_size,
-;
+		printk(JFFS2_DBG "nextblock: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+			c->nextblock->offset, c->nextblock->used_size,
+			c->nextblock->dirty_size, c->nextblock->wasted_size,
+			c->nextblock->unchecked_size, c->nextblock->free_size);
 	else
-;
+		printk(JFFS2_DBG "nextblock: NULL\n");
 
 	if (c->gcblock)
-//		printk(JFFS2_DBG "gcblock: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//			c->gcblock->offset, c->gcblock->used_size, c->gcblock->dirty_size,
-;
+		printk(JFFS2_DBG "gcblock: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+			c->gcblock->offset, c->gcblock->used_size, c->gcblock->dirty_size,
+			c->gcblock->wasted_size, c->gcblock->unchecked_size, c->gcblock->free_size);
 	else
-;
+		printk(JFFS2_DBG "gcblock: NULL\n");
 
 	if (list_empty(&c->clean_list)) {
-;
+		printk(JFFS2_DBG "clean_list: empty\n");
 	} else {
 		struct list_head *this;
 		int numblocks = 0;
@@ -504,9 +504,9 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			numblocks ++;
 			dirty += jeb->wasted_size;
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "clean_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "clean_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 
@@ -515,7 +515,7 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 	}
 
 	if (list_empty(&c->very_dirty_list)) {
-;
+		printk(JFFS2_DBG "very_dirty_list: empty\n");
 	} else {
 		struct list_head *this;
 		int numblocks = 0;
@@ -527,9 +527,9 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			numblocks ++;
 			dirty += jeb->dirty_size;
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "very_dirty_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "very_dirty_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 
@@ -538,7 +538,7 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 	}
 
 	if (list_empty(&c->dirty_list)) {
-;
+		printk(JFFS2_DBG "dirty_list: empty\n");
 	} else {
 		struct list_head *this;
 		int numblocks = 0;
@@ -550,9 +550,9 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			numblocks ++;
 			dirty += jeb->dirty_size;
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "dirty_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "dirty_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 
@@ -561,7 +561,7 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 	}
 
 	if (list_empty(&c->erasable_list)) {
-;
+		printk(JFFS2_DBG "erasable_list: empty\n");
 	} else {
 		struct list_head *this;
 
@@ -569,15 +569,15 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			struct jffs2_eraseblock *jeb = list_entry(this, struct jffs2_eraseblock, list);
 
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "erasable_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "erasable_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 	}
 
 	if (list_empty(&c->erasing_list)) {
-;
+		printk(JFFS2_DBG "erasing_list: empty\n");
 	} else {
 		struct list_head *this;
 
@@ -585,14 +585,14 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			struct jffs2_eraseblock *jeb = list_entry(this, struct jffs2_eraseblock, list);
 
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "erasing_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "erasing_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 	}
 	if (list_empty(&c->erase_checking_list)) {
-;
+		printk(JFFS2_DBG "erase_checking_list: empty\n");
 	} else {
 		struct list_head *this;
 
@@ -600,15 +600,15 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			struct jffs2_eraseblock *jeb = list_entry(this, struct jffs2_eraseblock, list);
 
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "erase_checking_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "erase_checking_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 	}
 
 	if (list_empty(&c->erase_pending_list)) {
-;
+		printk(JFFS2_DBG "erase_pending_list: empty\n");
 	} else {
 		struct list_head *this;
 
@@ -616,15 +616,15 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			struct jffs2_eraseblock *jeb = list_entry(this, struct jffs2_eraseblock, list);
 
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "erase_pending_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "erase_pending_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 	}
 
 	if (list_empty(&c->erasable_pending_wbuf_list)) {
-;
+		printk(JFFS2_DBG "erasable_pending_wbuf_list: empty\n");
 	} else {
 		struct list_head *this;
 
@@ -632,15 +632,15 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			struct jffs2_eraseblock *jeb = list_entry(this, struct jffs2_eraseblock, list);
 
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "erasable_pending_wbuf_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "erasable_pending_wbuf_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 	}
 
 	if (list_empty(&c->free_list)) {
-;
+		printk(JFFS2_DBG "free_list: empty\n");
 	} else {
 		struct list_head *this;
 
@@ -648,15 +648,15 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			struct jffs2_eraseblock *jeb = list_entry(this, struct jffs2_eraseblock, list);
 
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "free_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "free_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 	}
 
 	if (list_empty(&c->bad_list)) {
-;
+		printk(JFFS2_DBG "bad_list: empty\n");
 	} else {
 		struct list_head *this;
 
@@ -664,15 +664,15 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			struct jffs2_eraseblock *jeb = list_entry(this, struct jffs2_eraseblock, list);
 
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "bad_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "bad_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 	}
 
 	if (list_empty(&c->bad_used_list)) {
-;
+		printk(JFFS2_DBG "bad_used_list: empty\n");
 	} else {
 		struct list_head *this;
 
@@ -680,9 +680,9 @@ __jffs2_dbg_dump_block_lists_nolock(struct jffs2_sb_info *c)
 			struct jffs2_eraseblock *jeb = list_entry(this, struct jffs2_eraseblock, list);
 
 			if (!(jeb->used_size == 0 && jeb->dirty_size == 0 && jeb->wasted_size == 0)) {
-//				printk(JFFS2_DBG "bad_used_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
-//					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
-;
+				printk(JFFS2_DBG "bad_used_list: %#08x (used %#08x, dirty %#08x, wasted %#08x, unchecked %#08x, free %#08x)\n",
+					jeb->offset, jeb->used_size, jeb->dirty_size, jeb->wasted_size,
+					jeb->unchecked_size, jeb->free_size);
 			}
 		}
 	}
@@ -703,7 +703,7 @@ __jffs2_dbg_dump_fragtree_nolock(struct jffs2_inode_info *f)
 	uint32_t lastofs = 0;
 	int buggy = 0;
 
-;
+	printk(JFFS2_DBG_MSG_PREFIX " dump fragtree of ino #%u\n", f->inocache->ino);
 	while(this) {
 		if (this->node)
 			printk(JFFS2_DBG "frag %#04x-%#04x: %#08x(%d) on flash (*%p), left (%p), right (%p), parent (%p)\n",
@@ -721,7 +721,7 @@ __jffs2_dbg_dump_fragtree_nolock(struct jffs2_inode_info *f)
 	}
 
 	if (f->metadata)
-;
+		printk(JFFS2_DBG "metadata at 0x%08x\n", ref_offset(f->metadata->raw));
 
 	if (buggy) {
 		JFFS2_ERROR("frag tree got a hole in it.\n");
@@ -736,31 +736,31 @@ __jffs2_dbg_dump_buffer(unsigned char *buf, int len, uint32_t offs)
 	int skip;
 	int i;
 
-//	printk(JFFS2_DBG_MSG_PREFIX " dump from offset %#08x to offset %#08x (%x bytes).\n",
-;
+	printk(JFFS2_DBG_MSG_PREFIX " dump from offset %#08x to offset %#08x (%x bytes).\n",
+		offs, offs + len, len);
 	i = skip = offs % JFFS2_BUFDUMP_BYTES_PER_LINE;
 	offs = offs & ~(JFFS2_BUFDUMP_BYTES_PER_LINE - 1);
 
 	if (skip != 0)
-;
+		printk(JFFS2_DBG "%#08x: ", offs);
 
 	while (skip--)
-;
+		printk("   ");
 
 	while (i < len) {
 		if ((i % JFFS2_BUFDUMP_BYTES_PER_LINE) == 0 && i != len -1) {
 			if (i != 0)
-;
+				printk("\n");
 			offs += JFFS2_BUFDUMP_BYTES_PER_LINE;
-;
+			printk(JFFS2_DBG "%0#8x: ", offs);
 		}
 
-;
+		printk("%02x ", buf[i]);
 
 		i += 1;
 	}
 
-;
+	printk("\n");
 }
 
 /*
@@ -775,7 +775,7 @@ __jffs2_dbg_dump_node(struct jffs2_sb_info *c, uint32_t ofs)
 	uint32_t crc;
 	int ret;
 
-;
+	printk(JFFS2_DBG_MSG_PREFIX " dump node at offset %#08x.\n", ofs);
 
 	ret = jffs2_flash_read(c, ofs, len, &retlen, (unsigned char *)&node);
 	if (ret || (retlen != len)) {
@@ -784,10 +784,10 @@ __jffs2_dbg_dump_node(struct jffs2_sb_info *c, uint32_t ofs)
 		return;
 	}
 
-;
-;
-;
-;
+	printk(JFFS2_DBG "magic:\t%#04x\n", je16_to_cpu(node.u.magic));
+	printk(JFFS2_DBG "nodetype:\t%#04x\n", je16_to_cpu(node.u.nodetype));
+	printk(JFFS2_DBG "totlen:\t%#08x\n", je32_to_cpu(node.u.totlen));
+	printk(JFFS2_DBG "hdr_crc:\t%#08x\n", je32_to_cpu(node.u.hdr_crc));
 
 	crc = crc32(0, &node.u, sizeof(node.u) - 4);
 	if (crc != je32_to_cpu(node.u.hdr_crc)) {
@@ -807,24 +807,24 @@ __jffs2_dbg_dump_node(struct jffs2_sb_info *c, uint32_t ofs)
 
 	case JFFS2_NODETYPE_INODE:
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+		printk(JFFS2_DBG "the node is inode node\n");
+		printk(JFFS2_DBG "ino:\t%#08x\n", je32_to_cpu(node.i.ino));
+		printk(JFFS2_DBG "version:\t%#08x\n", je32_to_cpu(node.i.version));
+		printk(JFFS2_DBG "mode:\t%#08x\n", node.i.mode.m);
+		printk(JFFS2_DBG "uid:\t%#04x\n", je16_to_cpu(node.i.uid));
+		printk(JFFS2_DBG "gid:\t%#04x\n", je16_to_cpu(node.i.gid));
+		printk(JFFS2_DBG "isize:\t%#08x\n", je32_to_cpu(node.i.isize));
+		printk(JFFS2_DBG "atime:\t%#08x\n", je32_to_cpu(node.i.atime));
+		printk(JFFS2_DBG "mtime:\t%#08x\n", je32_to_cpu(node.i.mtime));
+		printk(JFFS2_DBG "ctime:\t%#08x\n", je32_to_cpu(node.i.ctime));
+		printk(JFFS2_DBG "offset:\t%#08x\n", je32_to_cpu(node.i.offset));
+		printk(JFFS2_DBG "csize:\t%#08x\n", je32_to_cpu(node.i.csize));
+		printk(JFFS2_DBG "dsize:\t%#08x\n", je32_to_cpu(node.i.dsize));
+		printk(JFFS2_DBG "compr:\t%#02x\n", node.i.compr);
+		printk(JFFS2_DBG "usercompr:\t%#02x\n", node.i.usercompr);
+		printk(JFFS2_DBG "flags:\t%#04x\n", je16_to_cpu(node.i.flags));
+		printk(JFFS2_DBG "data_crc:\t%#08x\n", je32_to_cpu(node.i.data_crc));
+		printk(JFFS2_DBG "node_crc:\t%#08x\n", je32_to_cpu(node.i.node_crc));
 
 		crc = crc32(0, &node.i, sizeof(node.i) - 8);
 		if (crc != je32_to_cpu(node.i.node_crc)) {
@@ -835,18 +835,18 @@ __jffs2_dbg_dump_node(struct jffs2_sb_info *c, uint32_t ofs)
 
 	case JFFS2_NODETYPE_DIRENT:
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
+		printk(JFFS2_DBG "the node is dirent node\n");
+		printk(JFFS2_DBG "pino:\t%#08x\n", je32_to_cpu(node.d.pino));
+		printk(JFFS2_DBG "version:\t%#08x\n", je32_to_cpu(node.d.version));
+		printk(JFFS2_DBG "ino:\t%#08x\n", je32_to_cpu(node.d.ino));
+		printk(JFFS2_DBG "mctime:\t%#08x\n", je32_to_cpu(node.d.mctime));
+		printk(JFFS2_DBG "nsize:\t%#02x\n", node.d.nsize);
+		printk(JFFS2_DBG "type:\t%#02x\n", node.d.type);
+		printk(JFFS2_DBG "node_crc:\t%#08x\n", je32_to_cpu(node.d.node_crc));
+		printk(JFFS2_DBG "name_crc:\t%#08x\n", je32_to_cpu(node.d.name_crc));
 
 		node.d.name[node.d.nsize] = '\0';
-;
+		printk(JFFS2_DBG "name:\t\"%s\"\n", node.d.name);
 
 		crc = crc32(0, &node.d, sizeof(node.d) - 8);
 		if (crc != je32_to_cpu(node.d.node_crc)) {
@@ -856,7 +856,7 @@ __jffs2_dbg_dump_node(struct jffs2_sb_info *c, uint32_t ofs)
 		break;
 
 	default:
-;
+		printk(JFFS2_DBG "node type is unknown\n");
 		break;
 	}
 }

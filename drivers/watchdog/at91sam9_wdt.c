@@ -90,7 +90,7 @@ static void at91_ping(unsigned long data)
 		at91_wdt_reset();
 		mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
 	} else
-;
+		printk(KERN_CRIT DRV_NAME": I will reset your machine !\n");
 }
 
 /*
@@ -134,7 +134,7 @@ static int at91_wdt_settimeout(unsigned int timeout)
 	/* Check if disabled */
 	mr = at91_sys_read(AT91_WDT_MR);
 	if (mr & AT91_WDT_WDDIS) {
-;
+		printk(KERN_ERR DRV_NAME": sorry, watchdog is disabled\n");
 		return -EIO;
 	}
 
@@ -267,8 +267,8 @@ static int __init at91wdt_probe(struct platform_device *pdev)
 	setup_timer(&at91wdt_private.timer, at91_ping, 0);
 	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
 
-//	printk(KERN_INFO DRV_NAME " enabled (heartbeat=%d sec, nowayout=%d)\n",
-;
+	printk(KERN_INFO DRV_NAME " enabled (heartbeat=%d sec, nowayout=%d)\n",
+		heartbeat, nowayout);
 
 	return 0;
 }

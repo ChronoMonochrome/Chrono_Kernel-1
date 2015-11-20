@@ -68,9 +68,9 @@
 
 static int debug;
 
-//#define dprintk(level, arg...) do {    \
-//	if (level <= debug)            \
-;
+#define dprintk(level, arg...) do {    \
+	if (level <= debug)            \
+		printk(arg);    \
 	} while (0)
 
 #define TUNER_REGS_NUM          104
@@ -345,7 +345,7 @@ static int mxl5005s_SetRfFreqHz(struct dvb_frontend *fe, unsigned long RfFreqHz)
 	u32 IfDivval = 0;
 	unsigned char MasterControlByte;
 
-;
+	dprintk(1, "%s() freq=%ld\n", __func__, RfFreqHz);
 
 	/* Set MxL5005S tuner RF frequency according to example code. */
 
@@ -3853,13 +3853,13 @@ static int mxl5005s_reset(struct dvb_frontend *fe)
 	struct i2c_msg msg = { .addr = state->config->i2c_address, .flags = 0,
 			       .buf = buf, .len = 2 };
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);
 
 	if (i2c_transfer(state->i2c, &msg, 1) != 1) {
-;
+		printk(KERN_WARNING "mxl5005s I2C reset failed\n");
 		ret = -EREMOTEIO;
 	}
 
@@ -3882,10 +3882,10 @@ static int mxl5005s_writereg(struct dvb_frontend *fe, u8 reg, u8 val, int latch)
 	if (latch == 0)
 		msg.len = 2;
 
-;
+	dprintk(2, "%s(0x%x, 0x%x, 0x%x)\n", __func__, reg, val, msg.addr);
 
 	if (i2c_transfer(state->i2c, &msg, 1) != 1) {
-;
+		printk(KERN_WARNING "mxl5005s I2C write failed\n");
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -3917,7 +3917,7 @@ static int mxl5005s_init(struct dvb_frontend *fe)
 {
 	struct mxl5005s_state *state = fe->tuner_priv;
 
-;
+	dprintk(1, "%s()\n", __func__);
 	state->current_mode = MXL_QAM;
 	return mxl5005s_reconfigure(fe, MXL_QAM, MXL5005S_BANDWIDTH_6MHZ);
 }
@@ -3931,7 +3931,7 @@ static int mxl5005s_reconfigure(struct dvb_frontend *fe, u32 mod_type,
 	u8 ByteTable[MXL5005S_REG_WRITING_TABLE_LEN_MAX];
 	int TableLen;
 
-;
+	dprintk(1, "%s(type=%d, bw=%d)\n", __func__, mod_type, bandwidth);
 
 	mxl5005s_reset(fe);
 
@@ -3988,7 +3988,7 @@ static int mxl5005s_set_params(struct dvb_frontend *fe,
 	u32 req_mode, req_bw = 0;
 	int ret;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	if (fe->ops.info.type == FE_ATSC) {
 		switch (params->u.vsb.modulation) {
@@ -4036,7 +4036,7 @@ static int mxl5005s_set_params(struct dvb_frontend *fe,
 		ret = 0;
 
 	if (ret == 0) {
-;
+		dprintk(1, "%s() freq=%d\n", __func__, params->frequency);
 		ret = mxl5005s_SetRfFreqHz(fe, params->frequency);
 	}
 
@@ -4046,7 +4046,7 @@ static int mxl5005s_set_params(struct dvb_frontend *fe,
 static int mxl5005s_get_frequency(struct dvb_frontend *fe, u32 *frequency)
 {
 	struct mxl5005s_state *state = fe->tuner_priv;
-;
+	dprintk(1, "%s()\n", __func__);
 
 	*frequency = state->RF_IN;
 
@@ -4056,7 +4056,7 @@ static int mxl5005s_get_frequency(struct dvb_frontend *fe, u32 *frequency)
 static int mxl5005s_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
 {
 	struct mxl5005s_state *state = fe->tuner_priv;
-;
+	dprintk(1, "%s()\n", __func__);
 
 	*bandwidth = state->Chan_Bandwidth;
 
@@ -4065,7 +4065,7 @@ static int mxl5005s_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
 
 static int mxl5005s_release(struct dvb_frontend *fe)
 {
-;
+	dprintk(1, "%s()\n", __func__);
 	kfree(fe->tuner_priv);
 	fe->tuner_priv = NULL;
 	return 0;
@@ -4092,7 +4092,7 @@ struct dvb_frontend *mxl5005s_attach(struct dvb_frontend *fe,
 				     struct mxl5005s_config *config)
 {
 	struct mxl5005s_state *state = NULL;
-;
+	dprintk(1, "%s()\n", __func__);
 
 	state = kzalloc(sizeof(struct mxl5005s_state), GFP_KERNEL);
 	if (state == NULL)
@@ -4102,8 +4102,8 @@ struct dvb_frontend *mxl5005s_attach(struct dvb_frontend *fe,
 	state->config = config;
 	state->i2c = i2c;
 
-//	printk(KERN_INFO "MXL5005S: Attached at address 0x%02x\n",
-;
+	printk(KERN_INFO "MXL5005S: Attached at address 0x%02x\n",
+		config->i2c_address);
 
 	memcpy(&fe->ops.tuner_ops, &mxl5005s_tuner_ops,
 		sizeof(struct dvb_tuner_ops));

@@ -457,19 +457,19 @@ void posix_timers_register_clock(const clockid_t clock_id,
 				 struct k_clock *new_clock)
 {
 	if ((unsigned) clock_id >= MAX_CLOCKS) {
-//		printk(KERN_WARNING "POSIX clock register failed for clock_id %d\n",
-;
+		printk(KERN_WARNING "POSIX clock register failed for clock_id %d\n",
+		       clock_id);
 		return;
 	}
 
 	if (!new_clock->clock_get) {
-//		printk(KERN_WARNING "POSIX clock id %d lacks clock_get()\n",
-;
+		printk(KERN_WARNING "POSIX clock id %d lacks clock_get()\n",
+		       clock_id);
 		return;
 	}
 	if (!new_clock->clock_getres) {
-//		printk(KERN_WARNING "POSIX clock id %d lacks clock_getres()\n",
-;
+		printk(KERN_WARNING "POSIX clock id %d lacks clock_getres()\n",
+		       clock_id);
 		return;
 	}
 

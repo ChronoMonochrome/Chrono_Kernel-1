@@ -45,11 +45,11 @@
 #include "irq.h"
 
 #if 0
-//#define ioapic_debug(fmt,arg...) printk(KERN_WARNING fmt,##arg)
-//#else
-//#define ioapic_debug(fmt, arg...)
-//#endif
-;
+#define ioapic_debug(fmt,arg...) printk(KERN_WARNING fmt,##arg)
+#else
+#define ioapic_debug(fmt, arg...)
+#endif
+static int ioapic_deliver(struct kvm_ioapic *vioapic, int irq);
 
 static unsigned long ioapic_read_indirect(struct kvm_ioapic *ioapic,
 					  unsigned long addr,
@@ -318,7 +318,7 @@ static int ioapic_mmio_read(struct kvm_io_device *this, gpa_t addr, int len,
 		memcpy(val, (char *)&result, len);
 		break;
 	default:
-;
+		printk(KERN_WARNING "ioapic: wrong length %d\n", len);
 	}
 	return 0;
 }
@@ -338,7 +338,7 @@ static int ioapic_mmio_write(struct kvm_io_device *this, gpa_t addr, int len,
 	if (len == 4 || len == 8)
 		data = *(u32 *) val;
 	else {
-;
+		printk(KERN_WARNING "ioapic: Unsupported size %d\n", len);
 		return 0;
 	}
 

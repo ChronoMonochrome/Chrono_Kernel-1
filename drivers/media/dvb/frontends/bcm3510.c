@@ -64,20 +64,20 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "set debugging level (1=info,2=i2c (|-able)).");
 
-//#define dprintk(level,x...) if (level & debug) printk(x)
-//#define dbufout(b,l,m) {\
-;
+#define dprintk(level,x...) if (level & debug) printk(x)
+#define dbufout(b,l,m) {\
+	    int i; \
 	    for (i = 0; i < l; i++) \
 		m("%02x ",b[i]); \
 }
-//#define deb_info(args...) dprintk(0x01,args)
-//#define deb_i2c(args...)  dprintk(0x02,args)
-//#define deb_hab(args...)  dprintk(0x04,args)
-//
-///* transfer functions */
-//static int bcm3510_writebytes (struct bcm3510_state *state, u8 reg, u8 *buf, u8 len)
-//{
-;
+#define deb_info(args...) dprintk(0x01,args)
+#define deb_i2c(args...)  dprintk(0x02,args)
+#define deb_hab(args...)  dprintk(0x04,args)
+
+/* transfer functions */
+static int bcm3510_writebytes (struct bcm3510_state *state, u8 reg, u8 *buf, u8 len)
+{
+	u8 b[256];
 	int err;
 	struct i2c_msg msg = { .addr = state->config->demod_address, .flags = 0, .buf = b, .len = len + 1 };
 

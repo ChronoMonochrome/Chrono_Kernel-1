@@ -219,15 +219,15 @@ static int snd_opl3_load_patch_seq_oss(struct snd_seq_oss_arg *arg, int format,
 		return -EINVAL;
 
 	if (count < (int)sizeof(sbi)) {
-;
+		snd_printk(KERN_ERR "FM Error: Patch record too short\n");
 		return -EINVAL;
 	}
 	if (copy_from_user(&sbi, buf, sizeof(sbi)))
 		return -EFAULT;
 
 	if (sbi.channel < 0 || sbi.channel >= SBFM_MAXINSTR) {
-//		snd_printk(KERN_ERR "FM Error: Invalid instrument number %d\n",
-;
+		snd_printk(KERN_ERR "FM Error: Invalid instrument number %d\n",
+			   sbi.channel);
 		return -EINVAL;
 	}
 
@@ -253,9 +253,9 @@ static int snd_opl3_ioctl_seq_oss(struct snd_seq_oss_arg *arg, unsigned int cmd,
 	opl3 = arg->private_data;
 	switch (cmd) {
 		case SNDCTL_FM_LOAD_INSTR:
-//			snd_printk(KERN_ERR "OPL3: "
-//				   "Obsolete ioctl(SNDCTL_FM_LOAD_INSTR) used. "
-;
+			snd_printk(KERN_ERR "OPL3: "
+				   "Obsolete ioctl(SNDCTL_FM_LOAD_INSTR) used. "
+				   "Fix the program.\n");
 			return -EINVAL;
 
 		case SNDCTL_SYNTH_MEMAVL:

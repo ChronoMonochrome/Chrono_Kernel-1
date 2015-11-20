@@ -213,8 +213,8 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 		} else {
 			res->start = l64;
 			res->end = l64 + sz64;
-//			dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n",
-;
+			dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n",
+				   pos, res);
 		}
 	} else {
 		sz = pci_size(l, sz, mask);
@@ -225,7 +225,7 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 		res->start = l;
 		res->end = l + sz;
 
-;
+		dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n", pos, res);
 	}
 
  out:
@@ -282,11 +282,11 @@ static void __devinit pci_read_bridge_io(struct pci_bus *child)
 			res->start = base;
 		if (!res->end)
 			res->end = limit + 0xfff;
-;
+		dev_printk(KERN_DEBUG, &dev->dev, "  bridge window %pR\n", res);
 	} else {
-//		dev_printk(KERN_DEBUG, &dev->dev,
-//			 "  bridge window [io  %#06lx-%#06lx] (disabled)\n",
-;
+		dev_printk(KERN_DEBUG, &dev->dev,
+			 "  bridge window [io  %#06lx-%#06lx] (disabled)\n",
+				 base, limit);
 	}
 }
 
@@ -306,11 +306,11 @@ static void __devinit pci_read_bridge_mmio(struct pci_bus *child)
 		res->flags = (mem_base_lo & PCI_MEMORY_RANGE_TYPE_MASK) | IORESOURCE_MEM;
 		res->start = base;
 		res->end = limit + 0xfffff;
-;
+		dev_printk(KERN_DEBUG, &dev->dev, "  bridge window %pR\n", res);
 	} else {
-//		dev_printk(KERN_DEBUG, &dev->dev,
-//			"  bridge window [mem %#010lx-%#010lx] (disabled)\n",
-;
+		dev_printk(KERN_DEBUG, &dev->dev,
+			"  bridge window [mem %#010lx-%#010lx] (disabled)\n",
+					 base, limit + 0xfffff);
 	}
 }
 
@@ -357,11 +357,11 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
 			res->flags |= IORESOURCE_MEM_64;
 		res->start = base;
 		res->end = limit + 0xfffff;
-;
+		dev_printk(KERN_DEBUG, &dev->dev, "  bridge window %pR\n", res);
 	} else {
-//		dev_printk(KERN_DEBUG, &dev->dev,
-//		     "  bridge window [mem %#010lx-%#010lx pref] (disabled)\n",
-;
+		dev_printk(KERN_DEBUG, &dev->dev,
+		     "  bridge window [mem %#010lx-%#010lx pref] (disabled)\n",
+					 base, limit + 0xfffff);
 	}
 }
 
@@ -391,9 +391,9 @@ void __devinit pci_read_bridge_bases(struct pci_bus *child)
 			if (res) {
 				pci_bus_add_resource(child, res,
 						     PCI_SUBTRACTIVE_DECODE);
-//				dev_printk(KERN_DEBUG, &dev->dev,
-//					   "  bridge window %pR (subtractive decode)\n",
-;
+				dev_printk(KERN_DEBUG, &dev->dev,
+					   "  bridge window %pR (subtractive decode)\n",
+					   res);
 			}
 		}
 	}
@@ -934,8 +934,8 @@ int pci_setup_device(struct pci_dev *dev)
 	dev->class = class;
 	class >>= 8;
 
-//	dev_printk(KERN_DEBUG, &dev->dev, "[%04x:%04x] type %d class %#08x\n",
-;
+	dev_printk(KERN_DEBUG, &dev->dev, "[%04x:%04x] type %d class %#08x\n",
+		   dev->vendor, dev->device, dev->hdr_type, class);
 
 	/* need to have dev->class ready */
 	dev->cfg_size = pci_cfg_space_size(dev);
@@ -1147,10 +1147,10 @@ static struct pci_dev *pci_scan_device(struct pci_bus *bus, int devfn)
 			return NULL;
 		/* Card hasn't responded in 60 seconds?  Must be stuck. */
 		if (delay > 60 * 1000) {
-//			printk(KERN_WARNING "pci %04x:%02x:%02x.%d: not "
-//					"responding\n", pci_domain_nr(bus),
-//					bus->number, PCI_SLOT(devfn),
-;
+			printk(KERN_WARNING "pci %04x:%02x:%02x.%d: not "
+					"responding\n", pci_domain_nr(bus),
+					bus->number, PCI_SLOT(devfn),
+					PCI_FUNC(devfn));
 			return NULL;
 		}
 	}

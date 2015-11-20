@@ -82,7 +82,7 @@ static void resume_one_vic(struct vic_device *vic)
 {
 	void __iomem *base = vic->base;
 
-;
+	printk(KERN_DEBUG "%s: resuming vic at %p\n", __func__, base);
 
 	/* re-initialise static settings */
 	vic_init2(base);
@@ -112,7 +112,7 @@ static void suspend_one_vic(struct vic_device *vic)
 {
 	void __iomem *base = vic->base;
 
-;
+	printk(KERN_DEBUG "%s: suspending vic at %p\n", __func__, base);
 
 	vic->int_select = readl(base + VIC_INT_SELECT);
 	vic->int_enable = readl(base + VIC_INT_ENABLE);
@@ -172,7 +172,7 @@ static void __init vic_pm_register(void __iomem *base, unsigned int irq, u32 res
 	struct vic_device *v;
 
 	if (vic_id >= ARRAY_SIZE(vic_devices))
-;
+		printk(KERN_ERR "%s: too few VICs, increase CONFIG_ARM_VIC_NR\n", __func__);
 	else {
 		v = &vic_devices[vic_id];
 		v->base = base;
@@ -351,15 +351,15 @@ void __init vic_init(void __iomem *base, unsigned int irq_start,
 		cellid |= (readl(addr) & 0xff) << (8 * i);
 	}
 	vendor = (cellid >> 12) & 0xff;
-//	printk(KERN_INFO "VIC @%p: id 0x%08x, vendor 0x%02x\n",
-;
+	printk(KERN_INFO "VIC @%p: id 0x%08x, vendor 0x%02x\n",
+	       base, cellid, vendor);
 
 	switch(vendor) {
 	case AMBA_VENDOR_ST:
 		vic_init_st(base, irq_start, vic_sources);
 		return;
 	default:
-;
+		printk(KERN_WARNING "VIC: unknown vendor, continuing anyways\n");
 		/* fall through */
 	case AMBA_VENDOR_ARM:
 		break;

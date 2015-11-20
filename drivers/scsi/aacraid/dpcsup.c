@@ -285,7 +285,7 @@ unsigned int aac_intr_normal(struct aac_dev *dev, u32 index,
 			int isAif, int isFastResponse, struct hw_fib *aif_fib)
 {
 	unsigned long mflags;
-;
+	dprintk((KERN_INFO "aac_intr_normal(%p,%x)\n", dev, index));
 	if (isAif == 1) {	/* AIF - common */
 		struct hw_fib * hw_fib;
 		struct fib * fib;
@@ -391,7 +391,7 @@ unsigned int aac_intr_normal(struct aac_dev *dev, u32 index,
 			fib->callback(fib->callback_data, fib);
 		} else {
 			unsigned long flagv;
-;
+	  		dprintk((KERN_INFO "event_wait up\n"));
 			spin_lock_irqsave(&fib->event_lock, flagv);
 			if (!fib->done) {
 				fib->done = 1;

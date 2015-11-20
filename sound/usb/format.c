@@ -81,9 +81,9 @@ static u64 parse_audio_format_i_type(struct snd_usb_audio *chip,
 		    sample_width == 24 && sample_bytes == 2)
 			sample_bytes = 3;
 		else if (sample_width > sample_bytes * 8) {
-//			snd_printk(KERN_INFO "%d:%u:%d : sample bitwidth %d in over sample bytes %d\n",
-//				   chip->dev->devnum, fp->iface, fp->altsetting,
-;
+			snd_printk(KERN_INFO "%d:%u:%d : sample bitwidth %d in over sample bytes %d\n",
+				   chip->dev->devnum, fp->iface, fp->altsetting,
+				   sample_width, sample_bytes);
 		}
 		/* check the format byte size */
 		switch (sample_bytes) {
@@ -106,9 +106,9 @@ static u64 parse_audio_format_i_type(struct snd_usb_audio *chip,
 			pcm_formats |= SNDRV_PCM_FMTBIT_S32_LE;
 			break;
 		default:
-//			snd_printk(KERN_INFO "%d:%u:%d : unsupported sample bitwidth %d in %d bytes\n",
-//				   chip->dev->devnum, fp->iface, fp->altsetting,
-;
+			snd_printk(KERN_INFO "%d:%u:%d : unsupported sample bitwidth %d in %d bytes\n",
+				   chip->dev->devnum, fp->iface, fp->altsetting,
+				   sample_width, sample_bytes);
 			break;
 		}
 	}
@@ -130,8 +130,8 @@ static u64 parse_audio_format_i_type(struct snd_usb_audio *chip,
 		pcm_formats |= SNDRV_PCM_FMTBIT_MU_LAW;
 	}
 	if (format & ~0x3f) {
-//		snd_printk(KERN_INFO "%d:%u:%d : unsupported format bits %#x\n",
-;
+		snd_printk(KERN_INFO "%d:%u:%d : unsupported format bits %#x\n",
+			   chip->dev->devnum, fp->iface, fp->altsetting, format);
 	}
 	return pcm_formats;
 }
@@ -153,8 +153,8 @@ static int parse_audio_format_rates_v1(struct snd_usb_audio *chip, struct audiof
 	int nr_rates = fmt[offset];
 
 	if (fmt[0] < offset + 1 + 3 * (nr_rates ? nr_rates : 2)) {
-//		snd_printk(KERN_ERR "%d:%u:%d : invalid UAC_FORMAT_TYPE desc\n",
-;
+		snd_printk(KERN_ERR "%d:%u:%d : invalid UAC_FORMAT_TYPE desc\n",
+				   chip->dev->devnum, fp->iface, fp->altsetting);
 		return -1;
 	}
 
@@ -166,7 +166,7 @@ static int parse_audio_format_rates_v1(struct snd_usb_audio *chip, struct audiof
 
 		fp->rate_table = kmalloc(sizeof(int) * nr_rates, GFP_KERNEL);
 		if (fp->rate_table == NULL) {
-;
+			snd_printk(KERN_ERR "cannot malloc\n");
 			return -1;
 		}
 
@@ -254,7 +254,7 @@ static int parse_uac2_sample_rate_range(struct audioformat *fp, int nr_triplets,
 
 			nr_rates++;
 			if (nr_rates >= MAX_NR_RATES) {
-;
+				snd_printk(KERN_ERR "invalid uac2 rates\n");
 				break;
 			}
 
@@ -280,8 +280,8 @@ static int parse_audio_format_rates_v2(struct snd_usb_audio *chip,
 	int clock = snd_usb_clock_find_source(chip, fp->clock);
 
 	if (clock < 0) {
-//		snd_printk(KERN_ERR "%s(): unable to find clock source (clock %d)\n",
-;
+		snd_printk(KERN_ERR "%s(): unable to find clock source (clock %d)\n",
+				__func__, clock);
 		goto err;
 	}
 
@@ -293,8 +293,8 @@ static int parse_audio_format_rates_v2(struct snd_usb_audio *chip,
 			      tmp, sizeof(tmp), 1000);
 
 	if (ret < 0) {
-//		snd_printk(KERN_ERR "%s(): unable to retrieve number of sample rates (clock %d)\n",
-;
+		snd_printk(KERN_ERR "%s(): unable to retrieve number of sample rates (clock %d)\n",
+				__func__, clock);
 		goto err;
 	}
 
@@ -314,8 +314,8 @@ static int parse_audio_format_rates_v2(struct snd_usb_audio *chip,
 			      data, data_size, 1000);
 
 	if (ret < 0) {
-//		snd_printk(KERN_ERR "%s(): unable to retrieve sample rate range (clock %d)\n",
-;
+		snd_printk(KERN_ERR "%s(): unable to retrieve sample rate range (clock %d)\n",
+				__func__, clock);
 		ret = -EINVAL;
 		goto err_free;
 	}
@@ -407,8 +407,8 @@ static int parse_audio_format_i(struct snd_usb_audio *chip,
 	}
 
 	if (fp->channels < 1) {
-//		snd_printk(KERN_ERR "%d:%u:%d : invalid channels %d\n",
-;
+		snd_printk(KERN_ERR "%d:%u:%d : invalid channels %d\n",
+			   chip->dev->devnum, fp->iface, fp->altsetting, fp->channels);
 		return -1;
 	}
 

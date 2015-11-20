@@ -189,8 +189,8 @@ static inline int superio_enter(int base)
 {
 	/* Don't step on other drivers' I/O space by accident */
 	if (!request_muxed_region(base, 2, DRVNAME)) {
-//		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
-;
+		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
+				(int)base);
 		return -EBUSY;
 	}
 
@@ -217,7 +217,7 @@ static int watchdog_set_timeout(int timeout)
 {
 	if (timeout <= 0
 	 || timeout >  max_timeout) {
-;
+		printk(KERN_ERR DRVNAME ": watchdog timeout out of range\n");
 		return -EINVAL;
 	}
 
@@ -252,7 +252,7 @@ static int watchdog_set_pulse_width(unsigned int pw)
 	} else if (pw <= 5000) {
 		watchdog.pulse_val = 3;
 	} else {
-;
+		printk(KERN_ERR DRVNAME ": pulse width out of range\n");
 		err = -EINVAL;
 		goto exit_unlock;
 	}
@@ -309,8 +309,8 @@ static int f71862fg_pin_configure(unsigned short ioaddr)
 		if (ioaddr)
 			superio_set_bit(ioaddr, SIO_REG_MFUNCT1, 1);
 	} else {
-//		printk(KERN_ERR DRVNAME ": Invalid argument f71862fg_pin=%d\n",
-;
+		printk(KERN_ERR DRVNAME ": Invalid argument f71862fg_pin=%d\n",
+				f71862fg_pin);
 		return -EINVAL;
 	}
 	return 0;
@@ -487,8 +487,8 @@ static int watchdog_release(struct inode *inode, struct file *file)
 
 	if (!watchdog.expect_close) {
 		watchdog_keepalive();
-//		printk(KERN_CRIT DRVNAME
-;
+		printk(KERN_CRIT DRVNAME
+			": Unexpected close, not stopping watchdog!\n");
 	} else if (!nowayout) {
 		watchdog_stop();
 	}
@@ -672,25 +672,25 @@ static int __init watchdog_init(int sioaddr)
 
 	err = misc_register(&watchdog_miscdev);
 	if (err) {
-//		printk(KERN_ERR DRVNAME
-//			": cannot register miscdev on minor=%d\n",
-;
+		printk(KERN_ERR DRVNAME
+			": cannot register miscdev on minor=%d\n",
+				watchdog_miscdev.minor);
 		goto exit_reboot;
 	}
 
 	if (start_withtimeout) {
 		if (start_withtimeout <= 0
 		 || start_withtimeout >  max_timeout) {
-//			printk(KERN_ERR DRVNAME
-;
+			printk(KERN_ERR DRVNAME
+				": starting timeout out of range\n");
 			err = -EINVAL;
 			goto exit_miscdev;
 		}
 
 		err = watchdog_start();
 		if (err) {
-//			printk(KERN_ERR DRVNAME
-;
+			printk(KERN_ERR DRVNAME
+				": cannot start watchdog timer\n");
 			goto exit_miscdev;
 		}
 
@@ -720,9 +720,9 @@ static int __init watchdog_init(int sioaddr)
 		if (nowayout)
 			__module_get(THIS_MODULE);
 
-//		printk(KERN_INFO DRVNAME
-//			": watchdog started with initial timeout of %u sec\n",
-;
+		printk(KERN_INFO DRVNAME
+			": watchdog started with initial timeout of %u sec\n",
+			start_withtimeout);
 	}
 
 	return 0;
@@ -774,15 +774,15 @@ static int __init f71808e_find(int sioaddr)
 		err = -ENODEV;
 		goto exit;
 	default:
-//		printk(KERN_INFO DRVNAME ": Unrecognized Fintek device: %04x\n",
-;
+		printk(KERN_INFO DRVNAME ": Unrecognized Fintek device: %04x\n",
+		       (unsigned int)devid);
 		err = -ENODEV;
 		goto exit;
 	}
 
-//	printk(KERN_INFO DRVNAME ": Found %s watchdog chip, revision %d\n",
-//		f71808e_names[watchdog.type],
-;
+	printk(KERN_INFO DRVNAME ": Found %s watchdog chip, revision %d\n",
+		f71808e_names[watchdog.type],
+		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
 exit:
 	superio_exit(sioaddr);
 	return err;
@@ -808,8 +808,8 @@ static int __init f71808e_init(void)
 static void __exit f71808e_exit(void)
 {
 	if (watchdog_is_running()) {
-//		printk(KERN_WARNING DRVNAME
-;
+		printk(KERN_WARNING DRVNAME
+			": Watchdog timer still running, stopping it\n");
 		watchdog_stop();
 	}
 	misc_deregister(&watchdog_miscdev);

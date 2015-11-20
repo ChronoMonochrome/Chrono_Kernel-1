@@ -4103,7 +4103,7 @@ static int __devinit hpsa_init_one(struct pci_dev *pdev,
 	unsigned long flags;
 
 	if (number_of_controllers == 0)
-;
+		printk(KERN_INFO DRIVER_NAME "\n");
 
 	rc = hpsa_init_reset_devices(pdev);
 	if (rc) {

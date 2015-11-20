@@ -48,64 +48,64 @@
 #define DRIVER_DESC	"A driver for the TEA5764 radio chip for EZX Phones."
 
 #define PINFO(format, ...)\
-//	printk(KERN_INFO KBUILD_MODNAME ": "\
-//		DRIVER_VERSION ": " format "\n", ## __VA_ARGS__)
-//#define PWARN(format, ...)\
-//	printk(KERN_WARNING KBUILD_MODNAME ": "\
-//		DRIVER_VERSION ": " format "\n", ## __VA_ARGS__)
-//# define PDEBUG(format, ...)\
-//	printk(KERN_DEBUG KBUILD_MODNAME ": "\
-//		DRIVER_VERSION ": " format "\n", ## __VA_ARGS__)
-//
-///* Frequency limits in MHz -- these are European values.  For Japanese
-//devices, that would be 76000 and 91000.  */
-//#define FREQ_MIN  87500
-//#define FREQ_MAX 108000
-//#define FREQ_MUL 16
-//
-///* TEA5764 registers */
-//#define TEA5764_MANID		0x002b
-//#define TEA5764_CHIPID		0x5764
-//
-//#define TEA5764_INTREG_BLMSK	0x0001
-//#define TEA5764_INTREG_FRRMSK	0x0002
-//#define TEA5764_INTREG_LEVMSK	0x0008
-//#define TEA5764_INTREG_IFMSK	0x0010
-//#define TEA5764_INTREG_BLMFLAG	0x0100
-//#define TEA5764_INTREG_FRRFLAG	0x0200
-//#define TEA5764_INTREG_LEVFLAG	0x0800
-//#define TEA5764_INTREG_IFFLAG	0x1000
-//
-//#define TEA5764_FRQSET_SUD	0x8000
-//#define TEA5764_FRQSET_SM	0x4000
-//
-//#define TEA5764_TNCTRL_PUPD1	0x8000
-//#define TEA5764_TNCTRL_PUPD0	0x4000
-//#define TEA5764_TNCTRL_BLIM	0x2000
-//#define TEA5764_TNCTRL_SWPM	0x1000
-//#define TEA5764_TNCTRL_IFCTC	0x0800
-//#define TEA5764_TNCTRL_AFM	0x0400
-//#define TEA5764_TNCTRL_SMUTE	0x0200
-//#define TEA5764_TNCTRL_SNC	0x0100
-//#define TEA5764_TNCTRL_MU	0x0080
-//#define TEA5764_TNCTRL_SSL1	0x0040
-//#define TEA5764_TNCTRL_SSL0	0x0020
-//#define TEA5764_TNCTRL_HLSI	0x0010
-//#define TEA5764_TNCTRL_MST	0x0008
-//#define TEA5764_TNCTRL_SWP	0x0004
-//#define TEA5764_TNCTRL_DTC	0x0002
-//#define TEA5764_TNCTRL_AHLSI	0x0001
-//
-//#define TEA5764_TUNCHK_LEVEL(x)	(((x) & 0x00F0) >> 4)
-//#define TEA5764_TUNCHK_IFCNT(x) (((x) & 0xFE00) >> 9)
-//#define TEA5764_TUNCHK_TUNTO	0x0100
-//#define TEA5764_TUNCHK_LD	0x0008
-//#define TEA5764_TUNCHK_STEREO	0x0004
-//
-//#define TEA5764_TESTREG_TRIGFR	0x0800
-//
-//struct tea5764_regs {
-;
+	printk(KERN_INFO KBUILD_MODNAME ": "\
+		DRIVER_VERSION ": " format "\n", ## __VA_ARGS__)
+#define PWARN(format, ...)\
+	printk(KERN_WARNING KBUILD_MODNAME ": "\
+		DRIVER_VERSION ": " format "\n", ## __VA_ARGS__)
+# define PDEBUG(format, ...)\
+	printk(KERN_DEBUG KBUILD_MODNAME ": "\
+		DRIVER_VERSION ": " format "\n", ## __VA_ARGS__)
+
+/* Frequency limits in MHz -- these are European values.  For Japanese
+devices, that would be 76000 and 91000.  */
+#define FREQ_MIN  87500
+#define FREQ_MAX 108000
+#define FREQ_MUL 16
+
+/* TEA5764 registers */
+#define TEA5764_MANID		0x002b
+#define TEA5764_CHIPID		0x5764
+
+#define TEA5764_INTREG_BLMSK	0x0001
+#define TEA5764_INTREG_FRRMSK	0x0002
+#define TEA5764_INTREG_LEVMSK	0x0008
+#define TEA5764_INTREG_IFMSK	0x0010
+#define TEA5764_INTREG_BLMFLAG	0x0100
+#define TEA5764_INTREG_FRRFLAG	0x0200
+#define TEA5764_INTREG_LEVFLAG	0x0800
+#define TEA5764_INTREG_IFFLAG	0x1000
+
+#define TEA5764_FRQSET_SUD	0x8000
+#define TEA5764_FRQSET_SM	0x4000
+
+#define TEA5764_TNCTRL_PUPD1	0x8000
+#define TEA5764_TNCTRL_PUPD0	0x4000
+#define TEA5764_TNCTRL_BLIM	0x2000
+#define TEA5764_TNCTRL_SWPM	0x1000
+#define TEA5764_TNCTRL_IFCTC	0x0800
+#define TEA5764_TNCTRL_AFM	0x0400
+#define TEA5764_TNCTRL_SMUTE	0x0200
+#define TEA5764_TNCTRL_SNC	0x0100
+#define TEA5764_TNCTRL_MU	0x0080
+#define TEA5764_TNCTRL_SSL1	0x0040
+#define TEA5764_TNCTRL_SSL0	0x0020
+#define TEA5764_TNCTRL_HLSI	0x0010
+#define TEA5764_TNCTRL_MST	0x0008
+#define TEA5764_TNCTRL_SWP	0x0004
+#define TEA5764_TNCTRL_DTC	0x0002
+#define TEA5764_TNCTRL_AHLSI	0x0001
+
+#define TEA5764_TUNCHK_LEVEL(x)	(((x) & 0x00F0) >> 4)
+#define TEA5764_TUNCHK_IFCNT(x) (((x) & 0xFE00) >> 9)
+#define TEA5764_TUNCHK_TUNTO	0x0100
+#define TEA5764_TUNCHK_LD	0x0008
+#define TEA5764_TUNCHK_STEREO	0x0004
+
+#define TEA5764_TESTREG_TRIGFR	0x0800
+
+struct tea5764_regs {
+	u16 intreg;				/* INTFLAG & INTMSK */
 	u16 frqset;				/* FRQSETMSB & FRQSETLSB */
 	u16 tnctrl;				/* TNCTRL1 & TNCTRL2 */
 	u16 frqchk;				/* FRQCHKMSB & FRQCHKLSB */
@@ -581,8 +581,8 @@ static int __init tea5764_init(void)
 {
 	int ret = i2c_add_driver(&tea5764_i2c_driver);
 
-//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ": "
-;
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ": "
+		DRIVER_DESC "\n");
 	return ret;
 }
 

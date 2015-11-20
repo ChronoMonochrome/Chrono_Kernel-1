@@ -159,8 +159,8 @@ static int asd_read_ocm_dir(struct asd_ha_struct *asd_ha,
 		return -ENOENT;
 	}
 	if (dir->major != 0) {
-//		asd_printk("unsupported major version of ocm dir:0x%x\n",
-;
+		asd_printk("unsupported major version of ocm dir:0x%x\n",
+			   dir->major);
 		return -ENOENT;
 	}
 	dir->num_de &= 0xf;
@@ -227,7 +227,7 @@ static int asd_get_bios_chim(struct asd_ha_struct *asd_ha,
 	err = -ENOMEM;
 	bc_struct = kmalloc(sizeof(*bc_struct), GFP_KERNEL);
 	if (!bc_struct) {
-;
+		asd_printk("no memory for bios_chim struct\n");
 		goto out;
 	}
 	err = asd_read_ocm_seg(asd_ha, (void *)bc_struct, offs,
@@ -245,8 +245,8 @@ static int asd_get_bios_chim(struct asd_ha_struct *asd_ha,
 		goto out2;
 	}
 	if (bc_struct->major != 1) {
-//		asd_printk("BIOS_CHIM unsupported major version:0x%x\n",
-;
+		asd_printk("BIOS_CHIM unsupported major version:0x%x\n",
+			   bc_struct->major);
 		err = -ENOENT;
 		goto out2;
 	}
@@ -322,21 +322,21 @@ asd_hwi_check_ocm_access (struct asd_ha_struct *asd_ha)
 	if (!(reg & OCMINITIALIZED)) {
 		err = pci_read_config_dword(pcidev, PCIC_INTRPT_STAT, &v);
 		if (err) {
-//			asd_printk("couldn't access PCIC_INTRPT_STAT of %s\n",
-;
+			asd_printk("couldn't access PCIC_INTRPT_STAT of %s\n",
+					pci_name(pcidev));
 			goto out;
 		}
 
-//		printk(KERN_INFO "OCM is not initialized by BIOS,"
-//		       "reinitialize it and ignore it, current IntrptStatus"
-;
+		printk(KERN_INFO "OCM is not initialized by BIOS,"
+		       "reinitialize it and ignore it, current IntrptStatus"
+		       "is 0x%x\n", v);
 
 		if (v)
 			err = pci_write_config_dword(pcidev,
 						     PCIC_INTRPT_STAT, v);
 		if (err) {
-//			asd_printk("couldn't write PCIC_INTRPT_STAT of %s\n",
-;
+			asd_printk("couldn't write PCIC_INTRPT_STAT of %s\n",
+					pci_name(pcidev));
 			goto out;
 		}
 
@@ -361,7 +361,7 @@ int asd_read_ocm(struct asd_ha_struct *asd_ha)
 
 	dir = kmalloc(sizeof(*dir), GFP_KERNEL);
 	if (!dir) {
-;
+		asd_printk("no memory for ocm dir\n");
 		return -ENOMEM;
 	}
 
@@ -634,8 +634,8 @@ static int asd_flash_getid(struct asd_ha_struct *asd_ha)
 
 	if (pci_read_config_dword(asd_ha->pcidev, PCI_CONF_FLSH_BAR,
 				  &asd_ha->hw_prof.flash.bar)) {
-//		asd_printk("couldn't read PCI_CONF_FLSH_BAR of %s\n",
-;
+		asd_printk("couldn't read PCI_CONF_FLSH_BAR of %s\n",
+			   pci_name(asd_ha->pcidev));
 		return -ENOENT;
 	}
 	asd_ha->hw_prof.flash.present = 1;
@@ -688,8 +688,8 @@ static int asd_validate_ms(struct asd_manuf_sec *ms)
 		return -ENOENT;
 	}
 	if (ms->maj != 0) {
-//		asd_printk("unsupported manuf. sector. major version:%x\n",
-;
+		asd_printk("unsupported manuf. sector. major version:%x\n",
+			   ms->maj);
 		return -ENOENT;
 	}
 	ms->offs_next = le16_to_cpu((__force __le16) ms->offs_next);
@@ -697,7 +697,7 @@ static int asd_validate_ms(struct asd_manuf_sec *ms)
 	ms->size = le16_to_cpu((__force __le16) ms->size);
 
 	if (asd_calc_flash_chksum((u16 *)ms, ms->size/2)) {
-;
+		asd_printk("failed manuf sector checksum\n");
 	}
 
 	return 0;
@@ -800,8 +800,8 @@ static int asd_ms_get_phy_params(struct asd_ha_struct *asd_ha,
 	}
 
 	if (phy_param->maj != 0) {
-//		asd_printk("unsupported manuf. phy param major version:0x%x\n",
-;
+		asd_printk("unsupported manuf. phy param major version:0x%x\n",
+			   phy_param->maj);
 		return -ENOENT;
 	}
 
@@ -1064,8 +1064,8 @@ int asd_read_flash(struct asd_ha_struct *asd_ha)
 	}
 
 	if (le32_to_cpu(flash_dir->rev) != 2) {
-//		asd_printk("unsupported flash dir version:0x%x\n",
-;
+		asd_printk("unsupported flash dir version:0x%x\n",
+			   le32_to_cpu(flash_dir->rev));
 		goto out;
 	}
 

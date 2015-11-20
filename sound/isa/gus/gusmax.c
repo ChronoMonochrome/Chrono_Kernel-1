@@ -226,7 +226,7 @@ static int __devinit snd_gusmax_probe(struct device *pdev, unsigned int dev)
 	xirq = irq[dev];
 	if (xirq == SNDRV_AUTO_IRQ) {
 		if ((xirq = snd_legacy_find_free_irq(possible_irqs)) < 0) {
-;
+			snd_printk(KERN_ERR PFX "unable to find a free IRQ\n");
 			err = -EBUSY;
 			goto _err;
 		}
@@ -234,7 +234,7 @@ static int __devinit snd_gusmax_probe(struct device *pdev, unsigned int dev)
 	xdma1 = dma1[dev];
 	if (xdma1 == SNDRV_AUTO_DMA) {
 		if ((xdma1 = snd_legacy_find_free_dma(possible_dmas)) < 0) {
-;
+			snd_printk(KERN_ERR PFX "unable to find a free DMA1\n");
 			err = -EBUSY;
 			goto _err;
 		}
@@ -242,7 +242,7 @@ static int __devinit snd_gusmax_probe(struct device *pdev, unsigned int dev)
 	xdma2 = dma2[dev];
 	if (xdma2 == SNDRV_AUTO_DMA) {
 		if ((xdma2 = snd_legacy_find_free_dma(possible_dmas)) < 0) {
-;
+			snd_printk(KERN_ERR PFX "unable to find a free DMA2\n");
 			err = -EBUSY;
 			goto _err;
 		}
@@ -286,13 +286,13 @@ static int __devinit snd_gusmax_probe(struct device *pdev, unsigned int dev)
 		goto _err;
 
 	if (!gus->max_flag) {
-;
+		snd_printk(KERN_ERR PFX "GUS MAX soundcard was not detected at 0x%lx\n", gus->gf1.port);
 		err = -ENODEV;
 		goto _err;
 	}
 
 	if (request_irq(xirq, snd_gusmax_interrupt, IRQF_DISABLED, "GUS MAX", (void *)maxcard)) {
-;
+		snd_printk(KERN_ERR PFX "unable to grab IRQ %d\n", xirq);
 		err = -EBUSY;
 		goto _err;
 	}

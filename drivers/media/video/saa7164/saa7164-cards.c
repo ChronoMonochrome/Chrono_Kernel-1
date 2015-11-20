@@ -560,28 +560,28 @@ void saa7164_card_list(struct saa7164_dev *dev)
 
 	if (0 == dev->pci->subsystem_vendor &&
 	    0 == dev->pci->subsystem_device) {
-//		printk(KERN_ERR
-//			"%s: Board has no valid PCIe Subsystem ID and can't\n"
-//			"%s: be autodetected. Pass card=<n> insmod option to\n"
-//			"%s: workaround that. Send complaints to the vendor\n"
-//			"%s: of the TV card. Best regards,\n"
-//			"%s:         -- tux\n",
-;
+		printk(KERN_ERR
+			"%s: Board has no valid PCIe Subsystem ID and can't\n"
+			"%s: be autodetected. Pass card=<n> insmod option to\n"
+			"%s: workaround that. Send complaints to the vendor\n"
+			"%s: of the TV card. Best regards,\n"
+			"%s:         -- tux\n",
+			dev->name, dev->name, dev->name, dev->name, dev->name);
 	} else {
-//		printk(KERN_ERR
-//			"%s: Your board isn't known (yet) to the driver.\n"
-//			"%s: Try to pick one of the existing card configs via\n"
-//			"%s: card=<n> insmod option.  Updating to the latest\n"
-//			"%s: version might help as well.\n",
-;
+		printk(KERN_ERR
+			"%s: Your board isn't known (yet) to the driver.\n"
+			"%s: Try to pick one of the existing card configs via\n"
+			"%s: card=<n> insmod option.  Updating to the latest\n"
+			"%s: version might help as well.\n",
+			dev->name, dev->name, dev->name, dev->name);
 	}
 
-//	printk(KERN_ERR "%s: Here are valid choices for the card=<n> insmod "
-;
+	printk(KERN_ERR "%s: Here are valid choices for the card=<n> insmod "
+		"option:\n", dev->name);
 
 	for (i = 0; i < saa7164_bcount; i++)
-//		printk(KERN_ERR "%s:    card=%d -> %s\n",
-;
+		printk(KERN_ERR "%s:    card=%d -> %s\n",
+		       dev->name, i, saa7164_boards[i].name);
 }
 
 /* TODO: clean this define up into the -cards.c structs */
@@ -651,13 +651,13 @@ static void hauppauge_eeprom(struct saa7164_dev *dev, u8 *eeprom_data)
 		 * DVB-T (TDA18271/TDA10048) and basic analog, no IR */
 		break;
 	default:
-//		printk(KERN_ERR "%s: Warning: Unknown Hauppauge model #%d\n",
-;
+		printk(KERN_ERR "%s: Warning: Unknown Hauppauge model #%d\n",
+			dev->name, tv.model);
 		break;
 	}
 
-//	printk(KERN_INFO "%s: Hauppauge eeprom: model=%d\n", dev->name,
-;
+	printk(KERN_INFO "%s: Hauppauge eeprom: model=%d\n", dev->name,
+		tv.model);
 }
 
 void saa7164_card_setup(struct saa7164_dev *dev)

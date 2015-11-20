@@ -125,7 +125,7 @@ int au0828_tuner_callback(void *priv, int component, int command, int arg)
 {
 	struct au0828_dev *dev = priv;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	switch (dev->boardnr) {
 	case AU0828_BOARD_HAUPPAUGE_HVR850:
@@ -141,8 +141,8 @@ int au0828_tuner_callback(void *priv, int component, int command, int arg)
 			mdelay(10);
 			return 0;
 		} else {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"%s(): Unknown command.\n", __func__);
 			return -EINVAL;
 		}
 		break;
@@ -171,13 +171,13 @@ static void hauppauge_eeprom(struct au0828_dev *dev, u8 *eeprom_data)
 	case 72500: /* WinTV-HVR950q (OEM, No IR, ATSC/QAM */
 		break;
 	default:
-//		printk(KERN_WARNING "%s: warning: "
-;
+		printk(KERN_WARNING "%s: warning: "
+		       "unknown hauppauge model #%d\n", __func__, tv.model);
 		break;
 	}
 
-//	printk(KERN_INFO "%s: hauppauge eeprom: model=%d\n",
-;
+	printk(KERN_INFO "%s: hauppauge eeprom: model=%d\n",
+	       __func__, tv.model);
 }
 
 void au0828_card_setup(struct au0828_dev *dev)
@@ -187,7 +187,7 @@ void au0828_card_setup(struct au0828_dev *dev)
 	struct v4l2_subdev *sd;
 	unsigned int mode_mask = T_ANALOG_TV;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	memcpy(&dev->board, &au0828_boards[dev->boardnr], sizeof(dev->board));
 
@@ -213,7 +213,7 @@ void au0828_card_setup(struct au0828_dev *dev)
 		sd = v4l2_i2c_new_subdev(&dev->v4l2_dev, &dev->i2c_adap,
 				"au8522", 0x8e >> 1, NULL);
 		if (sd == NULL)
-;
+			printk(KERN_ERR "analog subdev registration failed\n");
 	}
 
 	/* Setup tuners */
@@ -222,7 +222,7 @@ void au0828_card_setup(struct au0828_dev *dev)
 		sd = v4l2_i2c_new_subdev(&dev->v4l2_dev, &dev->i2c_adap,
 				"tuner", dev->board.tuner_addr, NULL);
 		if (sd == NULL)
-;
+			printk(KERN_ERR "tuner subdev registration fail\n");
 
 		tun_setup.mode_mask      = mode_mask;
 		tun_setup.type           = dev->board.tuner_type;
@@ -240,7 +240,7 @@ void au0828_card_setup(struct au0828_dev *dev)
  */
 void au0828_gpio_setup(struct au0828_dev *dev)
 {
-;
+	dprintk(1, "%s()\n", __func__);
 
 	switch (dev->boardnr) {
 	case AU0828_BOARD_HAUPPAUGE_HVR850:

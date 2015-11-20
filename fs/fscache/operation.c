@@ -53,8 +53,8 @@ void fscache_enqueue_operation(struct fscache_operation *op)
 		_debug("queue for caller's attention");
 		break;
 	default:
-//		printk(KERN_ERR "FS-Cache: Unexpected op type %lx",
-;
+		printk(KERN_ERR "FS-Cache: Unexpected op type %lx",
+		       op->flags);
 		BUG();
 		break;
 	}

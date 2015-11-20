@@ -48,10 +48,10 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "activates debug info");
 
-//#define dprintk(fmt, arg...) do {					\
-//	    if (debug)							\
-//		printk(KERN_INFO "em28xx-audio %s: " fmt,		\
-;
+#define dprintk(fmt, arg...) do {					\
+	    if (debug)							\
+		printk(KERN_INFO "em28xx-audio %s: " fmt,		\
+				  __func__, ##arg); 		\
 	} while (0)
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
@@ -60,7 +60,7 @@ static int em28xx_deinit_isoc_audio(struct em28xx *dev)
 {
 	int i;
 
-;
+	dprintk("Stopping isoc\n");
 	for (i = 0; i < EM28XX_AUDIO_BUFS; i++) {
 		if (!irqs_disabled())
 			usb_kill_urb(dev->adev.urb[i]);
@@ -98,7 +98,7 @@ static void em28xx_audio_isocirq(struct urb *urb)
 	case -ESHUTDOWN:
 		return;
 	default:            /* error */
-;
+		dprintk("urb completition error %d.\n", urb->status);
 		break;
 	}
 
@@ -169,7 +169,7 @@ static int em28xx_init_audio_isoc(struct em28xx *dev)
 	const int sb_size = EM28XX_NUM_AUDIO_PACKETS *
 			    EM28XX_AUDIO_MAX_PACKET_SIZE;
 
-;
+	dprintk("Starting isoc transfers\n");
 
 	for (i = 0; i < EM28XX_AUDIO_BUFS; i++) {
 		struct urb *urb;
@@ -225,7 +225,7 @@ static int snd_pcm_alloc_vmalloc_buffer(struct snd_pcm_substream *subs,
 {
 	struct snd_pcm_runtime *runtime = subs->runtime;
 
-;
+	dprintk("Allocating vbuffer\n");
 	if (runtime->dma_area) {
 		if (runtime->dma_bytes > size)
 			return 0;
@@ -268,7 +268,7 @@ static int snd_em28xx_capture_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-;
+	dprintk("opening device and trying to acquire exclusive lock\n");
 
 	if (!dev) {
 		em28xx_err("BUG: em28xx can't find device struct."
@@ -288,7 +288,7 @@ static int snd_em28xx_capture_open(struct snd_pcm_substream *substream)
 	if (dev->alt == 0 && dev->adev.users == 0) {
 		int errCode;
 		dev->alt = 7;
-;
+		dprintk("changing alternate number to 7\n");
 		errCode = usb_set_interface(dev->udev, 0, 7);
 	}
 
@@ -311,7 +311,7 @@ static int snd_em28xx_pcm_close(struct snd_pcm_substream *substream)
 {
 	struct em28xx *dev = snd_pcm_substream_chip(substream);
 
-;
+	dprintk("closing device\n");
 
 	dev->mute = 1;
 	mutex_lock(&dev->lock);
@@ -323,7 +323,7 @@ static int snd_em28xx_pcm_close(struct snd_pcm_substream *substream)
 
 	em28xx_audio_analog_set(dev);
 	if (substream->runtime->dma_area) {
-;
+		dprintk("freeing\n");
 		vfree(substream->runtime->dma_area);
 		substream->runtime->dma_area = NULL;
 	}
@@ -338,7 +338,7 @@ static int snd_em28xx_hw_capture_params(struct snd_pcm_substream *substream,
 	unsigned int channels, rate, format;
 	int ret;
 
-;
+	dprintk("Setting capture parameters\n");
 
 	ret = snd_pcm_alloc_vmalloc_buffer(substream,
 				params_buffer_bytes(hw_params));
@@ -356,7 +356,7 @@ static int snd_em28xx_hw_capture_free(struct snd_pcm_substream *substream)
 {
 	struct em28xx *dev = snd_pcm_substream_chip(substream);
 
-;
+	dprintk("Stop capture, if needed\n");
 
 	if (atomic_read(&dev->stream_started) > 0) {
 		atomic_set(&dev->stream_started, 0);
@@ -381,10 +381,10 @@ static void audio_trigger(struct work_struct *work)
 	struct em28xx *dev = container_of(work, struct em28xx, wq_trigger);
 
 	if (atomic_read(&dev->stream_started)) {
-;
+		dprintk("starting capture");
 		em28xx_init_audio_isoc(dev);
 	} else {
-;
+		dprintk("stopping capture");
 		em28xx_deinit_isoc_audio(dev);
 	}
 }
@@ -459,10 +459,10 @@ static int em28xx_audio_init(struct em28xx *dev)
 		return 0;
 	}
 
-//	printk(KERN_INFO "em28xx-audio.c: probing for em28x1 "
-;
-//	printk(KERN_INFO "em28xx-audio.c: Copyright (C) 2006 Markus "
-;
+	printk(KERN_INFO "em28xx-audio.c: probing for em28x1 "
+			 "non standard usbaudio\n");
+	printk(KERN_INFO "em28xx-audio.c: Copyright (C) 2006 Markus "
+			 "Rechberger\n");
 
 	err = snd_card_create(index[devnr], "Em28xx Audio", THIS_MODULE, 0,
 			      &card);

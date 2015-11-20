@@ -562,9 +562,9 @@ nvc0_graph_isr(struct drm_device *dev)
 	if (stat & 0x00100000) {
 		NV_INFO(dev, "PGRAPH: DATA_ERROR [");
 		nouveau_enum_print(nv50_data_error_names, code);
-//		printk("] ch %d [0x%010llx] subc %d class 0x%04x "
-//		       "mthd 0x%04x data 0x%08x\n",
-;
+		printk("] ch %d [0x%010llx] subc %d class 0x%04x "
+		       "mthd 0x%04x data 0x%08x\n",
+		       chid, inst, subc, class, mthd, data);
 		nv_wr32(dev, 0x400100, 0x00100000);
 		stat &= ~0x00100000;
 	}

@@ -175,7 +175,7 @@ static int __init amd756_s4882_init(void)
 		goto ERROR0;
 	}
 
-;
+	printk(KERN_INFO "Enabling SMBus multiplexing for Tyan S4882\n");
 	/* Define the 5 virtual adapters and algorithms structures */
 	if (!(s4882_adapter = kzalloc(5 * sizeof(struct i2c_adapter),
 				      GFP_KERNEL))) {
@@ -211,9 +211,9 @@ static int __init amd756_s4882_init(void)
 	for (i = 0; i < 5; i++) {
 		error = i2c_add_adapter(s4882_adapter+i);
 		if (error) {
-//			printk(KERN_ERR "i2c-amd756-s4882: "
-//			       "Virtual adapter %d registration "
-;
+			printk(KERN_ERR "i2c-amd756-s4882: "
+			       "Virtual adapter %d registration "
+			       "failed, module not inserted\n", i);
 			for (i--; i >= 0; i--)
 				i2c_del_adapter(s4882_adapter+i);
 			goto ERROR3;
@@ -250,8 +250,8 @@ static void __exit amd756_s4882_exit(void)
 
 	/* Restore physical bus */
 	if (i2c_add_adapter(&amd756_smbus))
-//		printk(KERN_ERR "i2c-amd756-s4882: "
-;
+		printk(KERN_ERR "i2c-amd756-s4882: "
+		       "Physical bus restoration failed\n");
 }
 
 MODULE_AUTHOR("Jean Delvare <khali@linux-fr.org>");

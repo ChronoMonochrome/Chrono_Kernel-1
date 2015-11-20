@@ -343,14 +343,14 @@ static int in2000_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
 	instance = cmd->device->host;
 	hostdata = (struct IN2000_hostdata *) instance->hostdata;
 
-//	DB(DB_QUEUE_COMMAND, scmd_printk(KERN_DEBUG, cmd, "Q-%02x(", cmd->cmnd[0]))
-//
-///* Set up a few fields in the Scsi_Cmnd structure for our own use:
-// *  - host_scribble is the pointer to the next cmd in the input queue
-// *  - scsi_done points to the routine we call when a cmd is finished
-// *  - result is what you'd expect
-// */
-;
+	DB(DB_QUEUE_COMMAND, scmd_printk(KERN_DEBUG, cmd, "Q-%02x(", cmd->cmnd[0]))
+
+/* Set up a few fields in the Scsi_Cmnd structure for our own use:
+ *  - host_scribble is the pointer to the next cmd in the input queue
+ *  - scsi_done points to the routine we call when a cmd is finished
+ *  - result is what you'd expect
+ */
+	    cmd->host_scribble = NULL;
 	cmd->scsi_done = done;
 	cmd->result = 0;
 
@@ -427,8 +427,8 @@ static int in2000_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
 
 	in2000_execute(cmd->device->host);
 
-//	DB(DB_QUEUE_COMMAND, printk(")Q "))
-;
+	DB(DB_QUEUE_COMMAND, printk(")Q "))
+	    return 0;
 }
 
 static DEF_SCSI_QCMD(in2000_queuecommand)
@@ -455,13 +455,13 @@ static void in2000_execute(struct Scsi_Host *instance)
 
 	hostdata = (struct IN2000_hostdata *) instance->hostdata;
 
-//	DB(DB_EXECUTE, printk("EX("))
-//
-//	    if (hostdata->selecting || hostdata->connected) {
-//
-//		DB(DB_EXECUTE, printk(")EX-0 "))
-//
-;
+	DB(DB_EXECUTE, printk("EX("))
+
+	    if (hostdata->selecting || hostdata->connected) {
+
+		DB(DB_EXECUTE, printk(")EX-0 "))
+
+		    return;
 	}
 
 	/*
@@ -482,9 +482,9 @@ static void in2000_execute(struct Scsi_Host *instance)
 
 	if (!cmd) {
 
-//		DB(DB_EXECUTE, printk(")EX-1 "))
-//
-;
+		DB(DB_EXECUTE, printk(")EX-1 "))
+
+		    return;
 	}
 
 	/*  remove command from queue */
@@ -705,19 +705,19 @@ static void in2000_execute(struct Scsi_Host *instance)
 	 * to search the input_Q again...
 	 */
 
-//	DB(DB_EXECUTE, printk("%s)EX-2 ", (cmd->SCp.phase) ? "d:" : ""))
-//
-//}
-//
-//
-//
-//static void transfer_pio(uchar * buf, int cnt, int data_in_dir, struct IN2000_hostdata *hostdata)
-//{
-;
+	DB(DB_EXECUTE, printk("%s)EX-2 ", (cmd->SCp.phase) ? "d:" : ""))
 
-//	DB(DB_TRANSFER, printk("(%p,%d,%s)", buf, cnt, data_in_dir ? "in" : "out"))
-//
-;
+}
+
+
+
+static void transfer_pio(uchar * buf, int cnt, int data_in_dir, struct IN2000_hostdata *hostdata)
+{
+	uchar asr;
+
+	DB(DB_TRANSFER, printk("(%p,%d,%s)", buf, cnt, data_in_dir ? "in" : "out"))
+
+	    write_3393(hostdata, WD_CONTROL, CTRL_IDI | CTRL_EDI | CTRL_POLLED);
 	write_3393_count(hostdata, cnt);
 	write_3393_cmd(hostdata, WD_CMD_TRANS_INFO);
 	if (data_in_dir) {
@@ -916,9 +916,9 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 
 		    if (hostdata->fifo == FI_FIFO_READING) {
 
-//			DB(DB_FIFO, printk("{R:%02x} ", read1_io(IO_FIFO_COUNT)))
-//
-;
+			DB(DB_FIFO, printk("{R:%02x} ", read1_io(IO_FIFO_COUNT)))
+
+			    sp = (unsigned short *) (cmd->SCp.ptr + cmd->SCp.have_data_in);
 			i = read1_io(IO_FIFO_COUNT) & 0xfe;
 			i <<= 2;	/* # of words waiting in the fifo */
 			f = hostdata->io_base + IO_FIFO;
@@ -939,20 +939,20 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 
 		else if (hostdata->fifo == FI_FIFO_WRITING) {
 
-//			DB(DB_FIFO, printk("{W:%02x} ", read1_io(IO_FIFO_COUNT)))
-//
-///* If all bytes have been written to the fifo, flush out the stragglers.
-// * Note that while writing 16 dummy words seems arbitrary, we don't
-// * have another choice that I can see. What we really want is to read
-// * the 3393 transfer count register (that would tell us how many bytes
-// * needed flushing), but the TRANSFER_INFO command hasn't completed
-// * yet (not enough bytes!) and that register won't be accessible. So,
-// * we use 16 words - a number obtained through trial and error.
-// *  UPDATE: Bill says this is exactly what Always does, so there.
-// *          More thanks due him for help in this section.
-// */
-//			    if (cmd->SCp.this_residual == cmd->SCp.have_data_in) {
-;
+			DB(DB_FIFO, printk("{W:%02x} ", read1_io(IO_FIFO_COUNT)))
+
+/* If all bytes have been written to the fifo, flush out the stragglers.
+ * Note that while writing 16 dummy words seems arbitrary, we don't
+ * have another choice that I can see. What we really want is to read
+ * the 3393 transfer count register (that would tell us how many bytes
+ * needed flushing), but the TRANSFER_INFO command hasn't completed
+ * yet (not enough bytes!) and that register won't be accessible. So,
+ * we use 16 words - a number obtained through trial and error.
+ *  UPDATE: Bill says this is exactly what Always does, so there.
+ *          More thanks due him for help in this section.
+ */
+			    if (cmd->SCp.this_residual == cmd->SCp.have_data_in) {
+				i = 16;
 				while (i--)	/* write 32 dummy bytes */
 					write2_io(0, IO_FIFO);
 			}
@@ -998,7 +998,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 	phs = read_3393(hostdata, WD_COMMAND_PHASE);
 
 	if (!cmd && (sr != CSR_RESEL_AM && sr != CSR_TIMEOUT && sr != CSR_SELECT)) {
-;
+		printk("\nNR:wd-intr-1\n");
 		write1_io(0, IO_LED_OFF);
 
 /* release the SMP spin_lock and restore irq state */
@@ -1006,25 +1006,25 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 		return IRQ_HANDLED;
 	}
 
-//	DB(DB_INTR, printk("{%02x:%02x-", asr, sr))
-//
-///* After starting a FIFO-based transfer, the next _WD3393_ interrupt is
-// * guaranteed to be in response to the completion of the transfer.
-// * If we were reading, there's probably data in the fifo that needs
-// * to be copied into RAM - do that here. Also, we have to update
-// * 'this_residual' and 'ptr' based on the contents of the
-// * TRANSFER_COUNT register, in case the device decided to do an
-// * intermediate disconnect (a device may do this if it has to
-// * do a seek,  or just to be nice and let other devices have
-// * some bus time during long transfers).
-// * After doing whatever is necessary with the fifo, we go on and
-// * service the WD3393 interrupt normally.
-// */
-//	    if (hostdata->fifo == FI_FIFO_READING) {
-//
-///* buffer index = start-of-buffer + #-of-bytes-already-read */
-//
-;
+	DB(DB_INTR, printk("{%02x:%02x-", asr, sr))
+
+/* After starting a FIFO-based transfer, the next _WD3393_ interrupt is
+ * guaranteed to be in response to the completion of the transfer.
+ * If we were reading, there's probably data in the fifo that needs
+ * to be copied into RAM - do that here. Also, we have to update
+ * 'this_residual' and 'ptr' based on the contents of the
+ * TRANSFER_COUNT register, in case the device decided to do an
+ * intermediate disconnect (a device may do this if it has to
+ * do a seek,  or just to be nice and let other devices have
+ * some bus time during long transfers).
+ * After doing whatever is necessary with the fifo, we go on and
+ * service the WD3393 interrupt normally.
+ */
+	    if (hostdata->fifo == FI_FIFO_READING) {
+
+/* buffer index = start-of-buffer + #-of-bytes-already-read */
+
+		sp = (unsigned short *) (cmd->SCp.ptr + cmd->SCp.have_data_in);
 
 /* bytes remaining in fifo = (total-wanted - #-not-got) - #-already-read */
 
@@ -1046,29 +1046,29 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 		cmd->SCp.this_residual = read_3393_count(hostdata);
 		cmd->SCp.ptr += (length - cmd->SCp.this_residual);
 
-//		DB(DB_TRANSFER, printk("(%p,%d)", cmd->SCp.ptr, cmd->SCp.this_residual))
-//
-//	}
-//
-//	else if (hostdata->fifo == FI_FIFO_WRITING) {
-;
+		DB(DB_TRANSFER, printk("(%p,%d)", cmd->SCp.ptr, cmd->SCp.this_residual))
+
+	}
+
+	else if (hostdata->fifo == FI_FIFO_WRITING) {
+		hostdata->fifo = FI_FIFO_UNUSED;
 		length = cmd->SCp.this_residual;
 		cmd->SCp.this_residual = read_3393_count(hostdata);
 		cmd->SCp.ptr += (length - cmd->SCp.this_residual);
 
-//		DB(DB_TRANSFER, printk("(%p,%d)", cmd->SCp.ptr, cmd->SCp.this_residual))
-//
-//	}
-//
-///* Respond to the specific WD3393 interrupt - there are quite a few! */
-//
-//	switch (sr) {
-//
-//	case CSR_TIMEOUT:
-//		DB(DB_INTR, printk("TIMEOUT"))
-//
-//		    if (hostdata->state == S_RUNNING_LEVEL2)
-;
+		DB(DB_TRANSFER, printk("(%p,%d)", cmd->SCp.ptr, cmd->SCp.this_residual))
+
+	}
+
+/* Respond to the specific WD3393 interrupt - there are quite a few! */
+
+	switch (sr) {
+
+	case CSR_TIMEOUT:
+		DB(DB_INTR, printk("TIMEOUT"))
+
+		    if (hostdata->state == S_RUNNING_LEVEL2)
+			hostdata->connected = NULL;
 		else {
 			cmd = (Scsi_Cmnd *) hostdata->selecting;	/* get a valid cmd */
 			CHECK_NULL(cmd, "csr_timeout")
@@ -1091,8 +1091,8 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 /* Note: this interrupt should not occur in a LEVEL2 command */
 
 	case CSR_SELECT:
-//		DB(DB_INTR, printk("SELECT"))
-;
+		DB(DB_INTR, printk("SELECT"))
+		    hostdata->connected = cmd = (Scsi_Cmnd *) hostdata->selecting;
 		CHECK_NULL(cmd, "csr_select")
 		    hostdata->selecting = NULL;
 
@@ -1104,7 +1104,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 
 		if (hostdata->sync_stat[cmd->device->id] == SS_FIRST) {
 #ifdef SYNC_DEBUG
-;
+			printk(" sending SDTR ");
 #endif
 
 			hostdata->sync_stat[cmd->device->id] = SS_WAITING;
@@ -1127,8 +1127,8 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 	case CSR_XFER_DONE | PHS_DATA_IN:
 	case CSR_UNEXP | PHS_DATA_IN:
 	case CSR_SRV_REQ | PHS_DATA_IN:
-//		DB(DB_INTR, printk("IN-%d.%d", cmd->SCp.this_residual, cmd->SCp.buffers_residual))
-;
+		DB(DB_INTR, printk("IN-%d.%d", cmd->SCp.this_residual, cmd->SCp.buffers_residual))
+		    transfer_bytes(cmd, DATA_IN_DIR);
 		if (hostdata->state != S_RUNNING_LEVEL2)
 			hostdata->state = S_CONNECTED;
 		break;
@@ -1137,8 +1137,8 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 	case CSR_XFER_DONE | PHS_DATA_OUT:
 	case CSR_UNEXP | PHS_DATA_OUT:
 	case CSR_SRV_REQ | PHS_DATA_OUT:
-//		DB(DB_INTR, printk("OUT-%d.%d", cmd->SCp.this_residual, cmd->SCp.buffers_residual))
-;
+		DB(DB_INTR, printk("OUT-%d.%d", cmd->SCp.this_residual, cmd->SCp.buffers_residual))
+		    transfer_bytes(cmd, DATA_OUT_DIR);
 		if (hostdata->state != S_RUNNING_LEVEL2)
 			hostdata->state = S_CONNECTED;
 		break;
@@ -1149,8 +1149,8 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 	case CSR_XFER_DONE | PHS_COMMAND:
 	case CSR_UNEXP | PHS_COMMAND:
 	case CSR_SRV_REQ | PHS_COMMAND:
-//		DB(DB_INTR, printk("CMND-%02x", cmd->cmnd[0]))
-;
+		DB(DB_INTR, printk("CMND-%02x", cmd->cmnd[0]))
+		    transfer_pio(cmd->cmnd, cmd->cmd_len, DATA_OUT_DIR, hostdata);
 		hostdata->state = S_CONNECTED;
 		break;
 
@@ -1158,12 +1158,12 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 	case CSR_XFER_DONE | PHS_STATUS:
 	case CSR_UNEXP | PHS_STATUS:
 	case CSR_SRV_REQ | PHS_STATUS:
-//		DB(DB_INTR, printk("STATUS="))
-//
-;
-//		DB(DB_INTR, printk("%02x", cmd->SCp.Status))
-//		    if (hostdata->level2 >= L2_BASIC) {
-;
+		DB(DB_INTR, printk("STATUS="))
+
+		    cmd->SCp.Status = read_1_byte(hostdata);
+		DB(DB_INTR, printk("%02x", cmd->SCp.Status))
+		    if (hostdata->level2 >= L2_BASIC) {
+			sr = read_3393(hostdata, WD_SCSI_STATUS);	/* clear interrupt */
 			hostdata->state = S_RUNNING_LEVEL2;
 			write_3393(hostdata, WD_COMMAND_PHASE, 0x50);
 			write_3393_cmd(hostdata, WD_CMD_SEL_ATN_XFER);
@@ -1176,9 +1176,9 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 	case CSR_XFER_DONE | PHS_MESS_IN:
 	case CSR_UNEXP | PHS_MESS_IN:
 	case CSR_SRV_REQ | PHS_MESS_IN:
-//		DB(DB_INTR, printk("MSG_IN="))
-//
-;
+		DB(DB_INTR, printk("MSG_IN="))
+
+		    msg = read_1_byte(hostdata);
 		sr = read_3393(hostdata, WD_SCSI_STATUS);	/* clear interrupt */
 
 		hostdata->incoming_msg[hostdata->incoming_ptr] = msg;
@@ -1191,21 +1191,21 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 		switch (msg) {
 
 		case COMMAND_COMPLETE:
-//			DB(DB_INTR, printk("CCMP"))
-;
+			DB(DB_INTR, printk("CCMP"))
+			    write_3393_cmd(hostdata, WD_CMD_NEGATE_ACK);
 			hostdata->state = S_PRE_CMP_DISC;
 			break;
 
 		case SAVE_POINTERS:
-//			DB(DB_INTR, printk("SDP"))
-;
+			DB(DB_INTR, printk("SDP"))
+			    write_3393_cmd(hostdata, WD_CMD_NEGATE_ACK);
 			hostdata->state = S_CONNECTED;
 			break;
 
 		case RESTORE_POINTERS:
-//			DB(DB_INTR, printk("RDP"))
-//			    if (hostdata->level2 >= L2_BASIC) {
-;
+			DB(DB_INTR, printk("RDP"))
+			    if (hostdata->level2 >= L2_BASIC) {
+				write_3393(hostdata, WD_COMMAND_PHASE, 0x45);
 				write_3393_cmd(hostdata, WD_CMD_SEL_ATN_XFER);
 				hostdata->state = S_RUNNING_LEVEL2;
 			} else {
@@ -1215,16 +1215,16 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 			break;
 
 		case DISCONNECT:
-//			DB(DB_INTR, printk("DIS"))
-;
+			DB(DB_INTR, printk("DIS"))
+			    cmd->device->disconnect = 1;
 			write_3393_cmd(hostdata, WD_CMD_NEGATE_ACK);
 			hostdata->state = S_PRE_TMP_DISC;
 			break;
 
 		case MESSAGE_REJECT:
-//			DB(DB_INTR, printk("REJ"))
-//#ifdef SYNC_DEBUG
-;
+			DB(DB_INTR, printk("REJ"))
+#ifdef SYNC_DEBUG
+			    printk("-REJ-");
 #endif
 			if (hostdata->sync_stat[cmd->device->id] == SS_WAITING)
 				hostdata->sync_stat[cmd->device->id] = SS_SET;
@@ -1233,12 +1233,12 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 			break;
 
 		case EXTENDED_MESSAGE:
-//			DB(DB_INTR, printk("EXT"))
-//
-;
+			DB(DB_INTR, printk("EXT"))
+
+			    ucp = hostdata->incoming_msg;
 
 #ifdef SYNC_DEBUG
-;
+			printk("%02x", ucp[hostdata->incoming_ptr]);
 #endif
 			/* Is this the last byte of the extended message? */
 
@@ -1270,7 +1270,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 						hostdata->sync_xfer[cmd->device->id] = id;
 					}
 #ifdef SYNC_DEBUG
-;
+					printk("sync_xfer=%02x", hostdata->sync_xfer[cmd->device->id]);
 #endif
 					hostdata->sync_stat[cmd->device->id] = SS_SET;
 					write_3393_cmd(hostdata, WD_CMD_NEGATE_ACK);
@@ -1278,7 +1278,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 					break;
 				case EXTENDED_WDTR:
 					write_3393_cmd(hostdata, WD_CMD_ASSERT_ATN);	/* want MESS_OUT */
-;
+					printk("sending WDTR ");
 					hostdata->outgoing_msg[0] = EXTENDED_MESSAGE;
 					hostdata->outgoing_msg[1] = 2;
 					hostdata->outgoing_msg[2] = EXTENDED_WDTR;
@@ -1289,7 +1289,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 					break;
 				default:
 					write_3393_cmd(hostdata, WD_CMD_ASSERT_ATN);	/* want MESS_OUT */
-;
+					printk("Rejecting Unknown Extended Message(%02x). ", ucp[2]);
 					hostdata->outgoing_msg[0] = MESSAGE_REJECT;
 					hostdata->outgoing_len = 1;
 					write_3393_cmd(hostdata, WD_CMD_NEGATE_ACK);
@@ -1309,7 +1309,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 			break;
 
 		default:
-;
+			printk("Rejecting Unknown Message(%02x) ", msg);
 			write_3393_cmd(hostdata, WD_CMD_ASSERT_ATN);	/* want MESS_OUT */
 			hostdata->outgoing_msg[0] = MESSAGE_REJECT;
 			hostdata->outgoing_len = 1;
@@ -1329,11 +1329,11 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 
 		write_3393(hostdata, WD_SOURCE_ID, SRCID_ER);
 		if (phs == 0x60) {
-//			DB(DB_INTR, printk("SX-DONE"))
-;
+			DB(DB_INTR, printk("SX-DONE"))
+			    cmd->SCp.Message = COMMAND_COMPLETE;
 			lun = read_3393(hostdata, WD_TARGET_LUN);
-//			DB(DB_INTR, printk(":%d.%d", cmd->SCp.Status, lun))
-;
+			DB(DB_INTR, printk(":%d.%d", cmd->SCp.Status, lun))
+			    hostdata->connected = NULL;
 			hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 			hostdata->state = S_UNCONNECTED;
 			if (cmd->SCp.Status == ILLEGAL_STATUS_BYTE)
@@ -1350,7 +1350,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 
 			in2000_execute(instance);
 		} else {
-;
+			printk("%02x:%02x:%02x: Unknown SEL_XFER_DONE phase!!---", asr, sr, phs);
 		}
 		break;
 
@@ -1358,8 +1358,8 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 /* Note: this interrupt will occur only after a LEVEL2 command */
 
 	case CSR_SDP:
-//		DB(DB_INTR, printk("SDP"))
-;
+		DB(DB_INTR, printk("SDP"))
+		    hostdata->state = S_RUNNING_LEVEL2;
 		write_3393(hostdata, WD_COMMAND_PHASE, 0x41);
 		write_3393_cmd(hostdata, WD_CMD_SEL_ATN_XFER);
 		break;
@@ -1368,27 +1368,27 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 	case CSR_XFER_DONE | PHS_MESS_OUT:
 	case CSR_UNEXP | PHS_MESS_OUT:
 	case CSR_SRV_REQ | PHS_MESS_OUT:
-//		DB(DB_INTR, printk("MSG_OUT="))
-//
-///* To get here, we've probably requested MESSAGE_OUT and have
-// * already put the correct bytes in outgoing_msg[] and filled
-// * in outgoing_len. We simply send them out to the SCSI bus.
-// * Sometimes we get MESSAGE_OUT phase when we're not expecting
-// * it - like when our SDTR message is rejected by a target. Some
-// * targets send the REJECT before receiving all of the extended
-// * message, and then seem to go back to MESSAGE_OUT for a byte
-// * or two. Not sure why, or if I'm doing something wrong to
-// * cause this to happen. Regardless, it seems that sending
-// * NOP messages in these situations results in no harm and
-// * makes everyone happy.
-// */
-//		    if (hostdata->outgoing_len == 0) {
-;
+		DB(DB_INTR, printk("MSG_OUT="))
+
+/* To get here, we've probably requested MESSAGE_OUT and have
+ * already put the correct bytes in outgoing_msg[] and filled
+ * in outgoing_len. We simply send them out to the SCSI bus.
+ * Sometimes we get MESSAGE_OUT phase when we're not expecting
+ * it - like when our SDTR message is rejected by a target. Some
+ * targets send the REJECT before receiving all of the extended
+ * message, and then seem to go back to MESSAGE_OUT for a byte
+ * or two. Not sure why, or if I'm doing something wrong to
+ * cause this to happen. Regardless, it seems that sending
+ * NOP messages in these situations results in no harm and
+ * makes everyone happy.
+ */
+		    if (hostdata->outgoing_len == 0) {
+			hostdata->outgoing_len = 1;
 			hostdata->outgoing_msg[0] = NOP;
 		}
 		transfer_pio(hostdata->outgoing_msg, hostdata->outgoing_len, DATA_OUT_DIR, hostdata);
-//		DB(DB_INTR, printk("%02x", hostdata->outgoing_msg[0]))
-;
+		DB(DB_INTR, printk("%02x", hostdata->outgoing_msg[0]))
+		    hostdata->outgoing_len = 0;
 		hostdata->state = S_CONNECTED;
 		break;
 
@@ -1410,15 +1410,15 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 
 		write_3393(hostdata, WD_SOURCE_ID, SRCID_ER);
 		if (cmd == NULL) {
-;
+			printk(" - Already disconnected! ");
 			hostdata->state = S_UNCONNECTED;
 
 /* release the SMP spin_lock and restore irq state */
 			spin_unlock_irqrestore(instance->host_lock, flags);
 			return IRQ_HANDLED;
 		}
-//		DB(DB_INTR, printk("UNEXP_DISC"))
-;
+		DB(DB_INTR, printk("UNEXP_DISC"))
+		    hostdata->connected = NULL;
 		hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 		hostdata->state = S_UNCONNECTED;
 		if (cmd->cmnd[0] == REQUEST_SENSE && cmd->SCp.Status != GOOD)
@@ -1442,9 +1442,9 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
  */
 
 		write_3393(hostdata, WD_SOURCE_ID, SRCID_ER);
-//		DB(DB_INTR, printk("DISC"))
-//		    if (cmd == NULL) {
-;
+		DB(DB_INTR, printk("DISC"))
+		    if (cmd == NULL) {
+			printk(" - Already disconnected! ");
 			hostdata->state = S_UNCONNECTED;
 		}
 		switch (hostdata->state) {
@@ -1452,9 +1452,9 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 			hostdata->connected = NULL;
 			hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 			hostdata->state = S_UNCONNECTED;
-//			DB(DB_INTR, printk(":%d", cmd->SCp.Status))
-//			    if (cmd->cmnd[0] == REQUEST_SENSE && cmd->SCp.Status != GOOD)
-;
+			DB(DB_INTR, printk(":%d", cmd->SCp.Status))
+			    if (cmd->cmnd[0] == REQUEST_SENSE && cmd->SCp.Status != GOOD)
+				cmd->result = (cmd->result & 0x00ffff) | (DID_ERROR << 16);
 			else
 				cmd->result = cmd->SCp.Status | (cmd->SCp.Message << 8);
 			cmd->scsi_done(cmd);
@@ -1485,15 +1485,15 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 
 
 	case CSR_RESEL_AM:
-//		DB(DB_INTR, printk("RESEL"))
-//
-//		    /* First we have to make sure this reselection didn't */
-//		    /* happen during Arbitration/Selection of some other device. */
-//		    /* If yes, put losing command back on top of input_Q. */
-//		    if (hostdata->level2 <= L2_NONE) {
-//
-//			if (hostdata->selecting) {
-;
+		DB(DB_INTR, printk("RESEL"))
+
+		    /* First we have to make sure this reselection didn't */
+		    /* happen during Arbitration/Selection of some other device. */
+		    /* If yes, put losing command back on top of input_Q. */
+		    if (hostdata->level2 <= L2_NONE) {
+
+			if (hostdata->selecting) {
+				cmd = (Scsi_Cmnd *) hostdata->selecting;
 				hostdata->selecting = NULL;
 				hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 				cmd->host_scribble = (uchar *) hostdata->input_Q;
@@ -1509,9 +1509,9 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 					cmd->host_scribble = (uchar *) hostdata->input_Q;
 					hostdata->input_Q = cmd;
 				} else {
-;
+					printk("---%02x:%02x:%02x-TROUBLE: Intrusive ReSelect!---", asr, sr, phs);
 					while (1)
-;
+						printk("\r");
 				}
 			}
 
@@ -1546,7 +1546,7 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 		/* Hmm. Couldn't find a valid command.... What to do? */
 
 		if (!cmd) {
-;
+			printk("---TROUBLE: target %d.%d not in disconnect queue---", id, lun);
 			break;
 		}
 
@@ -1578,15 +1578,15 @@ static irqreturn_t in2000_intr(int irqnum, void *dev_id)
 		    break;
 
 	default:
-;
+		printk("--UNKNOWN INTERRUPT:%02x:%02x:%02x--", asr, sr, phs);
 	}
 
 	write1_io(0, IO_LED_OFF);
 
-//	DB(DB_INTR, printk("} "))
-//
-///* release the SMP spin_lock and restore irq state */
-;
+	DB(DB_INTR, printk("} "))
+
+/* release the SMP spin_lock and restore irq state */
+	    spin_unlock_irqrestore(instance->host_lock, flags);
 	return IRQ_HANDLED;
 }
 
@@ -1650,7 +1650,7 @@ static int in2000_bus_reset(Scsi_Cmnd * cmd)
 	instance = cmd->device->host;
 	hostdata = (struct IN2000_hostdata *) instance->hostdata;
 
-;
+	printk(KERN_WARNING "scsi%d: Reset. ", instance->host_no);
 
 	spin_lock_irqsave(instance->host_lock, flags);
 
@@ -1687,8 +1687,8 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
 	instance = cmd->device->host;
 	hostdata = (struct IN2000_hostdata *) instance->hostdata;
 
-;
-;
+	printk(KERN_DEBUG "scsi%d: Abort-", instance->host_no);
+	printk("(asr=%02x,count=%ld,resid=%d,buf_resid=%d,have_data=%d,FC=%02x)- ", READ_AUX_STAT(), read_3393_count(hostdata), cmd->SCp.this_residual, cmd->SCp.buffers_residual, cmd->SCp.have_data_in, read1_io(IO_FIFO_COUNT));
 
 /*
  * Case 1 : If the command hasn't been issued yet, we simply remove it
@@ -1703,7 +1703,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
 				prev->host_scribble = cmd->host_scribble;
 			cmd->host_scribble = NULL;
 			cmd->result = DID_ABORT << 16;
-;
+			printk(KERN_WARNING "scsi%d: Abort - removing command from input_Q. ", instance->host_no);
 			cmd->scsi_done(cmd);
 			return SUCCESS;
 		}
@@ -1724,15 +1724,15 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
 
 	if (hostdata->connected == cmd) {
 
-;
+		printk(KERN_WARNING "scsi%d: Aborting connected command - ", instance->host_no);
 
-;
+		printk("sending wd33c93 ABORT command - ");
 		write_3393(hostdata, WD_CONTROL, CTRL_IDI | CTRL_EDI | CTRL_POLLED);
 		write_3393_cmd(hostdata, WD_CMD_ABORT);
 
 /* Now we have to attempt to flush out the FIFO... */
 
-;
+		printk("flushing fifo - ");
 		timeout = 1000000;
 		do {
 			asr = READ_AUX_STAT();
@@ -1740,7 +1740,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
 				read_3393(hostdata, WD_DATA);
 		} while (!(asr & ASR_INT) && timeout-- > 0);
 		sr = read_3393(hostdata, WD_SCSI_STATUS);
-;
+		printk("asr=%02x, sr=%02x, %ld bytes un-transferred (timeout=%ld) - ", asr, sr, read_3393_count(hostdata), timeout);
 
 		/*
 		 * Abort command processed.
@@ -1748,7 +1748,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
 		 * We must disconnect.
 		 */
 
-;
+		printk("sending wd33c93 DISCONNECT command - ");
 		write_3393_cmd(hostdata, WD_CMD_DISCONNECT);
 
 		timeout = 1000000;
@@ -1756,7 +1756,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
 		while ((asr & ASR_CIP) && timeout-- > 0)
 			asr = READ_AUX_STAT();
 		sr = read_3393(hostdata, WD_SCSI_STATUS);
-;
+		printk("asr=%02x, sr=%02x.", asr, sr);
 
 		hostdata->busy[cmd->device->id] &= ~(1 << cmd->device->lun);
 		hostdata->connected = NULL;
@@ -1777,7 +1777,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
 
 	for (tmp = (Scsi_Cmnd *) hostdata->disconnected_Q; tmp; tmp = (Scsi_Cmnd *) tmp->host_scribble)
 		if (cmd == tmp) {
-;
+			printk(KERN_DEBUG "scsi%d: unable to abort disconnected command.\n", instance->host_no);
 			return FAILED;
 		}
 
@@ -1793,7 +1793,7 @@ static int __in2000_abort(Scsi_Cmnd * cmd)
 
 	in2000_execute(instance);
 
-;
+	printk("scsi%d: warning : SCSI command probably completed successfully" "         before abortion. ", instance->host_no);
 	return SUCCESS;
 }
 
@@ -1950,7 +1950,7 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
 		if (check_setup_args("ioport", &val, buf)) {
 			base = val;
 			switches = ~inb(base + IO_SWITCHES) & 0xff;
-;
+			printk("Forcing IN2000 detection at IOport 0x%x ", base);
 			bios = 2;
 		}
 /*
@@ -1959,7 +1959,7 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
  * hope that they cover all the cases...
  */
 		else if (probe_bios(bios_tab[bios], &s1, &switches)) {
-;
+			printk("Found IN2000 BIOS at 0x%x ", (unsigned int) bios_tab[bios]);
 
 /* Find out where the IO space is */
 
@@ -1970,7 +1970,7 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
 
 			x = ~inb(base + IO_SWITCHES) & 0xff;
 			if (x != switches) {
-;
+				printk("Bad IO signature: %02x vs %02x.\n", x, switches);
 				continue;
 			}
 		} else
@@ -1979,7 +1979,7 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
 /* OK. We have a base address for the IO ports - run a few safety checks */
 
 		if (!(switches & SW_BIT7)) {	/* I _think_ all cards do this */
-;
+			printk("There is no IN-2000 SCSI card at IOport 0x%03x!\n", base);
 			continue;
 		}
 
@@ -1992,9 +1992,9 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
 
 		/* Bit 2 tells us if interrupts are disabled */
 		if (switches & SW_DISINT) {
-;
-;
-;
+			printk("The IN-2000 SCSI card at IOport 0x%03x ", base);
+			printk("is not configured for interrupt operation!\n");
+			printk("This driver requires an interrupt: cancelling detection.\n");
 			continue;
 		}
 
@@ -2017,7 +2017,7 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
 		write1_io(0, IO_INTR_MASK);	/* allow all ints */
 		x = int_tab[(switches & (SW_INT0 | SW_INT1)) >> SW_INT_SHIFT];
 		if (request_irq(x, in2000_intr, IRQF_DISABLED, "in2000", instance)) {
-;
+			printk("in2000_detect: Unable to allocate IRQ.\n");
 			detect_count--;
 			continue;
 		}
@@ -2105,17 +2105,17 @@ static int __init in2000_detect(struct scsi_host_template * tpnt)
 		} else
 			hostdata->chip = C_WD33C93;
 
-;
-;
+		printk("dip_switch=%02x irq=%d ioport=%02x floppy=%s sync/DOS5=%s ", (switches & 0x7f), instance->irq, hostdata->io_base, (switches & SW_FLOPPY) ? "Yes" : "No", (switches & SW_SYNC_DOS5) ? "Yes" : "No");
+		printk("hardware_ver=%02x chip=%s microcode=%02x\n", hrev, (hostdata->chip == C_WD33C93) ? "WD33c93" : (hostdata->chip == C_WD33C93A) ? "WD33c93A" : (hostdata->chip == C_WD33C93B) ? "WD33c93B" : "unknown", hostdata->microcode);
 #ifdef DEBUGGING_ON
-;
+		printk("setup_args = ");
 		for (x = 0; x < MAX_SETUP_ARGS; x++)
-;
-;
+			printk("%s,", setup_args[x]);
+		printk("\n");
 #endif
 		if (hostdata->sync_off == 0xff)
-;
-;
+			printk("Sync-transfer DISABLED on all devices: ENABLE from command-line\n");
+		printk("IN2000 driver version %s - %s\n", IN2000_VERSION, IN2000_DATE);
 	}
 
 	return detect_count;

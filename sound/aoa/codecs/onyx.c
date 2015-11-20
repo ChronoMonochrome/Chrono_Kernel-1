@@ -873,7 +873,7 @@ static int onyx_init_codec(struct aoa_codec *codec)
 	int err;
 
 	if (!onyx->codec.gpio || !onyx->codec.gpio->methods) {
-;
+		printk(KERN_ERR PFX "gpios not assigned!!\n");
 		return -EINVAL;
 	}
 
@@ -885,12 +885,12 @@ static int onyx_init_codec(struct aoa_codec *codec)
 	msleep(1);
 
 	if (onyx_register_init(onyx)) {
-;
+		printk(KERN_ERR PFX "failed to initialise onyx registers\n");
 		return -ENODEV;
 	}
 
 	if (aoa_snd_device_new(SNDRV_DEV_LOWLEVEL, onyx, &ops)) {
-;
+		printk(KERN_ERR PFX "failed to create onyx snd device!\n");
 		return -ENODEV;
 	}
 
@@ -925,7 +925,7 @@ static int onyx_init_codec(struct aoa_codec *codec)
 	if (onyx->codec.soundbus_dev->attach_codec(onyx->codec.soundbus_dev,
 						   aoa_get_card(),
 						   ci, onyx)) {
-;
+		printk(KERN_ERR PFX "error creating onyx pcm\n");
 		return -ENODEV;
 	}
 #define ADDCTL(n)							\
@@ -977,7 +977,7 @@ static int onyx_init_codec(struct aoa_codec *codec)
 		}
 	}
 #undef ADDCTL
-;
+	printk(KERN_INFO PFX "attached to onyx codec via i2c\n");
 
 	return 0;
  error:
@@ -991,7 +991,7 @@ static void onyx_exit_codec(struct aoa_codec *codec)
 	struct onyx *onyx = codec_to_onyx(codec);
 
 	if (!onyx->codec.soundbus_dev) {
-;
+		printk(KERN_ERR PFX "onyx_exit_codec called without soundbus_dev!\n");
 		return;
 	}
 	onyx->codec.soundbus_dev->detach_codec(onyx->codec.soundbus_dev, onyx);
@@ -1051,7 +1051,7 @@ static int onyx_i2c_probe(struct i2c_client *client,
 	/* we try to read from register ONYX_REG_CONTROL
 	 * to check if the codec is present */
 	if (onyx_read_register(onyx, ONYX_REG_CONTROL, &dummy) != 0) {
-;
+		printk(KERN_ERR PFX "failed to read control register\n");
 		goto fail;
 	}
 
@@ -1064,7 +1064,7 @@ static int onyx_i2c_probe(struct i2c_client *client,
 	if (aoa_codec_register(&onyx->codec)) {
 		goto fail;
 	}
-;
+	printk(KERN_DEBUG PFX "created and attached onyx instance\n");
 	return 0;
  fail:
 	i2c_set_clientdata(client, NULL);
@@ -1085,7 +1085,7 @@ static int onyx_i2c_attach(struct i2c_adapter *adapter)
 	while ((dev = of_get_next_child(busnode, dev)) != NULL) {
 		if (of_device_is_compatible(dev, "pcm3052")) {
 			const u32 *addr;
-;
+			printk(KERN_DEBUG PFX "found pcm3052\n");
 			addr = of_get_property(dev, "reg", NULL);
 			if (!addr)
 				return -ENODEV;
@@ -1099,7 +1099,7 @@ static int onyx_i2c_attach(struct i2c_adapter *adapter)
 	if (!of_device_is_compatible(busnode, "k2-i2c"))
 		return -ENODEV;
 
-;
+	printk(KERN_DEBUG PFX "found k2-i2c, checking if onyx chip is on it\n");
 	/* probe both possible addresses for the onyx chip */
 	if (onyx_create(adapter, NULL, 0x46) == 0)
 		return 0;

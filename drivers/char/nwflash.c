@@ -127,8 +127,8 @@ static ssize_t flash_read(struct file *file, char __user *buf, size_t size,
 	ssize_t ret;
 
 	if (flashdebug)
-//		printk(KERN_DEBUG "flash_read: flash_read: offset=0x%llx, "
-;
+		printk(KERN_DEBUG "flash_read: flash_read: offset=0x%llx, "
+		       "buffer=%p, count=0x%zx.\n", *ppos, buf, size);
 	/*
 	 * We now lock against reads and writes. --rmk
 	 */
@@ -151,8 +151,8 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 	int i, j;
 
 	if (flashdebug)
-//		printk("flash_write: offset=0x%lX, buffer=0x%p, count=0x%X.\n",
-;
+		printk("flash_write: offset=0x%lX, buffer=0x%p, count=0x%X.\n",
+		       p, buf, count);
 
 	if (!gbWriteEnable)
 		return -EINVAL;
@@ -197,12 +197,12 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 		temp -= 1;
 
 	if (flashdebug)
-//		printk(KERN_DEBUG "flash_write: writing %d block(s) "
-;
+		printk(KERN_DEBUG "flash_write: writing %d block(s) "
+			"starting at %d.\n", temp, nBlock);
 
 	for (; temp; temp--, nBlock++) {
 		if (flashdebug)
-;
+			printk(KERN_DEBUG "flash_write: erasing block %d.\n", nBlock);
 
 		/*
 		 * first we have to erase the block(s), where we will write...
@@ -216,13 +216,13 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 		} while (rc && i < 10);
 
 		if (rc) {
-;
+			printk(KERN_ERR "flash_write: erase error %x\n", rc);
 			break;
 		}
 		if (flashdebug)
-//			printk(KERN_DEBUG "flash_write: writing offset %lX, "
-//			       "from buf %p, bytes left %X.\n", p, buf,
-;
+			printk(KERN_DEBUG "flash_write: writing offset %lX, "
+			       "from buf %p, bytes left %X.\n", p, buf,
+			       count - written);
 
 		/*
 		 * write_block will limit write to space left in this block
@@ -247,7 +247,7 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 
 		}
 		if (rc < 0) {
-;
+			printk(KERN_ERR "flash_write: write error %X\n", rc);
 			break;
 		}
 		p += rc;
@@ -256,7 +256,7 @@ static ssize_t flash_write(struct file *file, const char __user *buf,
 		*ppos += rc;
 
 		if (flashdebug)
-;
+			printk(KERN_DEBUG "flash_write: written 0x%X bytes OK.\n", written);
 	}
 
 	/*
@@ -284,8 +284,8 @@ static loff_t flash_llseek(struct file *file, loff_t offset, int orig)
 
 	mutex_lock(&flash_mutex);
 	if (flashdebug)
-//		printk(KERN_DEBUG "flash_llseek: offset=0x%X, orig=0x%X.\n",
-;
+		printk(KERN_DEBUG "flash_llseek: offset=0x%X, orig=0x%X.\n",
+		       (unsigned int) offset, orig);
 
 	switch (orig) {
 	case 0:
@@ -392,7 +392,7 @@ static int erase_block(int nBlock)
 		 * read any address
 		 */
 		c1 = *(volatile unsigned char *) (pWritePtr);
-;
+		//              printk("Flash_erase: status=%X.\n",c1);
 	}
 
 	/*
@@ -406,7 +406,7 @@ static int erase_block(int nBlock)
 	 * check if erase errors were reported
 	 */
 	if (c1 & 0x20) {
-;
+		printk(KERN_ERR "flash_erase: err at %p\n", pWritePtr);
 
 		/*
 		 * reset error
@@ -424,8 +424,8 @@ static int erase_block(int nBlock)
 
 	for (temp = 0; temp < 16 * 1024; temp++, pWritePtr += 4) {
 		if ((temp1 = *(volatile unsigned int *) pWritePtr) != 0xFFFFFFFF) {
-//			printk(KERN_ERR "flash_erase: verify err at %p = %X\n",
-;
+			printk(KERN_ERR "flash_erase: verify err at %p = %X\n",
+			       pWritePtr, temp1);
 			return -1;
 		}
 	}
@@ -555,8 +555,8 @@ static int write_block(unsigned long p, const char __user *buf, int count)
 			 */
 			if (time_before(jiffies, timeout)) {
 				if (flashdebug)
-//					printk(KERN_DEBUG "write_block: Retrying write at 0x%X)n",
-;
+					printk(KERN_DEBUG "write_block: Retrying write at 0x%X)n",
+					       pWritePtr - FLASH_BASE);
 
 				/*
 				 * no LED == waiting
@@ -573,8 +573,8 @@ static int write_block(unsigned long p, const char __user *buf, int count)
 
 				goto WriteRetry;
 			} else {
-//				printk(KERN_ERR "write_block: timeout at 0x%X\n",
-;
+				printk(KERN_ERR "write_block: timeout at 0x%X\n",
+				       pWritePtr - FLASH_BASE);
 				/*
 				 * return error -2
 				 */
@@ -600,8 +600,8 @@ static int write_block(unsigned long p, const char __user *buf, int count)
 			return -EFAULT;
 		buf++;
 		if ((c1 = *pWritePtr++) != c) {
-//			printk(KERN_ERR "write_block: verify error at 0x%X (%02X!=%02X)\n",
-;
+			printk(KERN_ERR "write_block: verify error at 0x%X (%02X!=%02X)\n",
+			       pWritePtr - FLASH_BASE, c1, c);
 			return 0;
 		}
 	}
@@ -659,12 +659,12 @@ static int __init nwflash_init(void)
 		if ((id != KFLASH_ID) && (id != KFLASH_ID4)) {
 			ret = -ENXIO;
 			iounmap((void *)FLASH_BASE);
-;
+			printk("Flash: incorrect ID 0x%04X.\n", id);
 			goto out;
 		}
 
-//		printk("Flash ROM driver v.%s, flash device ID 0x%04X, size %d Mb.\n",
-;
+		printk("Flash ROM driver v.%s, flash device ID 0x%04X, size %d Mb.\n",
+		       NWFLASH_VERSION, id, gbFlashSize / (1024 * 1024));
 
 		ret = misc_register(&flash_miscdev);
 		if (ret < 0) {

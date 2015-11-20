@@ -24,7 +24,7 @@
 
 #define stamp(fmt, args...) pr_debug("%s:%i: " fmt "\n", __func__, __LINE__, ## args)
 #define stampit() stamp("here i am")
-;
+#define pr_init(fmt, args...) ({ static const __initconst char __fmt[] = fmt; printk(__fmt, ## args); })
 
 #define DRIVER_NAME "bfin-otp"
 #define PFX DRIVER_NAME ": "

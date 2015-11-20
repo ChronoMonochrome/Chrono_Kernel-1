@@ -127,8 +127,8 @@ int __init maxinefb_init(void)
 		return -EINVAL;
 	}
 
-;
-;
+	printk(KERN_INFO "Maxinefb: Personal DECstation detected\n");
+	printk(KERN_INFO "Maxinefb: initializing onboard framebuffer\n");
 
 	/* Framebuffer display memory base address */
 	fb_start = DS5000_xx_ONBOARD_FBMEM_START;

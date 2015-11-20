@@ -562,15 +562,15 @@ ext4_fsblk_t ext4_count_free_clusters(struct super_block *sb)
 
 		x = ext4_count_free(bitmap_bh->b_data,
 				    EXT4_BLOCKS_PER_GROUP(sb) / 8);
-//		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
-;
+		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
+			i, ext4_free_group_clusters(sb, gdp), x);
 		bitmap_count += x;
 	}
 	brelse(bitmap_bh);
-//	printk(KERN_DEBUG "ext4_count_free_clusters: stored = %llu"
-//	       ", computed = %llu, %llu\n",
-//	       EXT4_B2C(sbi, ext4_free_blocks_count(es)),
-;
+	printk(KERN_DEBUG "ext4_count_free_clusters: stored = %llu"
+	       ", computed = %llu, %llu\n",
+	       EXT4_B2C(sbi, ext4_free_blocks_count(es)),
+	       desc_count, bitmap_count);
 	return bitmap_count;
 #else
 	desc_count = 0;

@@ -95,27 +95,27 @@ static int sd_dif_type1_verify(struct blk_integrity_exchg *bix, csum_fn *fn)
 
 		/* Bad ref tag received from disk */
 		if (sdt->ref_tag == 0xffffffff) {
-//			printk(KERN_ERR
-//			       "%s: bad phys ref tag on sector %lu\n",
-;
+			printk(KERN_ERR
+			       "%s: bad phys ref tag on sector %lu\n",
+			       bix->disk_name, (unsigned long)sector);
 			return -EIO;
 		}
 
 		if (be32_to_cpu(sdt->ref_tag) != (sector & 0xffffffff)) {
-//			printk(KERN_ERR
-//			       "%s: ref tag error on sector %lu (rcvd %u)\n",
-//			       bix->disk_name, (unsigned long)sector,
-;
+			printk(KERN_ERR
+			       "%s: ref tag error on sector %lu (rcvd %u)\n",
+			       bix->disk_name, (unsigned long)sector,
+			       be32_to_cpu(sdt->ref_tag));
 			return -EIO;
 		}
 
 		csum = fn(buf, bix->sector_size);
 
 		if (sdt->guard_tag != csum) {
-//			printk(KERN_ERR "%s: guard tag error on sector %lu " \
-//			       "(rcvd %04x, data %04x)\n", bix->disk_name,
-//			       (unsigned long)sector,
-;
+			printk(KERN_ERR "%s: guard tag error on sector %lu " \
+			       "(rcvd %04x, data %04x)\n", bix->disk_name,
+			       (unsigned long)sector,
+			       be16_to_cpu(sdt->guard_tag), be16_to_cpu(csum));
 			return -EIO;
 		}
 
@@ -229,10 +229,10 @@ static int sd_dif_type3_verify(struct blk_integrity_exchg *bix, csum_fn *fn)
 		csum = fn(buf, bix->sector_size);
 
 		if (sdt->guard_tag != csum) {
-//			printk(KERN_ERR "%s: guard tag error on sector %lu " \
-//			       "(rcvd %04x, data %04x)\n", bix->disk_name,
-//			       (unsigned long)sector,
-;
+			printk(KERN_ERR "%s: guard tag error on sector %lu " \
+			       "(rcvd %04x, data %04x)\n", bix->disk_name,
+			       (unsigned long)sector,
+			       be16_to_cpu(sdt->guard_tag), be16_to_cpu(csum));
 			return -EIO;
 		}
 
@@ -335,8 +335,8 @@ void sd_dif_config_host(struct scsi_disk *sdkp)
 		else
 			blk_integrity_register(disk, &dif_type1_integrity_crc);
 
-//	sd_printk(KERN_NOTICE, sdkp,
-;
+	sd_printk(KERN_NOTICE, sdkp,
+		  "Enabling DIX %s protection\n", disk->integrity->name);
 
 	/* Signal to block layer that we support sector tagging */
 	if (dif && type && sdkp->ATO) {
@@ -345,8 +345,8 @@ void sd_dif_config_host(struct scsi_disk *sdkp)
 		else
 			disk->integrity->tag_size = sizeof(u16);
 
-//		sd_printk(KERN_NOTICE, sdkp, "DIF application tag size %u\n",
-;
+		sd_printk(KERN_NOTICE, sdkp, "DIF application tag size %u\n",
+			  disk->integrity->tag_size);
 	}
 }
 
@@ -415,9 +415,9 @@ int sd_dif_prepare(struct request *rq, sector_t hw_sector, unsigned int sector_s
 
 error:
 	kunmap_atomic(sdt, KM_USER0);
-//	sd_printk(KERN_ERR, sdkp, "%s: virt %u, phys %u, ref %u, app %4x\n",
-//		  __func__, virt, phys, be32_to_cpu(sdt->ref_tag),
-;
+	sd_printk(KERN_ERR, sdkp, "%s: virt %u, phys %u, ref %u, app %4x\n",
+		  __func__, virt, phys, be32_to_cpu(sdt->ref_tag),
+		  be16_to_cpu(sdt->app_tag));
 
 	return -EILSEQ;
 }

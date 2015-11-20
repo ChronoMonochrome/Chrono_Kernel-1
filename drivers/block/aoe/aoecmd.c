@@ -103,7 +103,7 @@ ifrotate(struct aoetgt *t)
 	if (t->ifp >= &t->ifs[NAOEIFS] || t->ifp->nd == NULL)
 		t->ifp = t->ifs;
 	if (t->ifp->nd == NULL) {
-;
+		printk(KERN_INFO "aoe: no interface to rotate to\n");
 		BUG();
 	}
 }
@@ -139,7 +139,7 @@ freeframe(struct aoedev *d)
 	struct sk_buff *skb;
 
 	if (d->targets[0] == NULL) {	/* shouldn't happen, but I'm paranoid */
-;
+		printk(KERN_ERR "aoe: NULL TARGETS!\n");
 		return NULL;
 	}
 	t = d->tgt;
@@ -177,9 +177,9 @@ gotone:				skb_shinfo(skb)->nr_frags = skb->data_len = 0;
 			   one from the pool. */
 			f = rf;
 			if (f == NULL) {	/* more paranoia */
-//				printk(KERN_ERR
-//					"aoe: freeframe: %s.\n",
-;
+				printk(KERN_ERR
+					"aoe: freeframe: %s.\n",
+					"unexpected null rf");
 				d->flags |= DEVFL_KICKME;
 				return NULL;
 			}
@@ -307,7 +307,7 @@ aoecmd_cfg_pkts(ushort aoemajor, unsigned char aoeminor, struct sk_buff_head *qu
 
 		skb = new_skb(sizeof *h + sizeof *ch);
 		if (skb == NULL) {
-;
+			printk(KERN_INFO "aoe: skb alloc failure\n");
 			goto cont;
 		}
 		skb_put(skb, sizeof *h + sizeof *ch);
@@ -536,14 +536,14 @@ rexmit_timer(ulong vp)
 			if (ata_scnt(skb_mac_header(f->skb)) > DEFAULTBCNT / 512
 			&& ifp && ++ifp->lostjumbo > (t->nframes << 1)
 			&& ifp->maxbcnt != DEFAULTBCNT) {
-//				printk(KERN_INFO
-//					"aoe: e%ld.%d: "
-//					"too many lost jumbo on "
-//					"%s:%pm - "
-//					"falling back to %d frames.\n",
-//					d->aoemajor, d->aoeminor,
-//					ifp->nd->name, t->addr,
-;
+				printk(KERN_INFO
+					"aoe: e%ld.%d: "
+					"too many lost jumbo on "
+					"%s:%pm - "
+					"falling back to %d frames.\n",
+					d->aoemajor, d->aoeminor,
+					ifp->nd->name, t->addr,
+					DEFAULTBCNT);
 				ifp->maxbcnt = 0;
 			}
 			resend(d, t, f);
@@ -666,11 +666,11 @@ ataid_complete(struct aoedev *d, struct aoetgt *t, unsigned char *id)
 	}
 
 	if (d->ssize != ssize)
-//		printk(KERN_INFO
-//			"aoe: %pm e%ld.%d v%04x has %llu sectors\n",
-//			t->addr,
-//			d->aoemajor, d->aoeminor,
-;
+		printk(KERN_INFO
+			"aoe: %pm e%ld.%d v%04x has %llu sectors\n",
+			t->addr,
+			d->aoemajor, d->aoeminor,
+			d->fw_ver, (long long)ssize);
 	d->ssize = ssize;
 	d->geo.start = 0;
 	if (d->flags & (DEVFL_GDALLOC|DEVFL_NEWSIZE))
@@ -770,8 +770,8 @@ aoecmd_ata_rsp(struct sk_buff *skb)
 	n = get_unaligned_be32(&hin->tag);
 	t = gettgt(d, hin->src);
 	if (t == NULL) {
-//		printk(KERN_INFO "aoe: can't find target e%ld.%d:%pm\n",
-;
+		printk(KERN_INFO "aoe: can't find target e%ld.%d:%pm\n",
+			d->aoemajor, d->aoeminor, hin->src);
 		spin_unlock_irqrestore(&d->lock, flags);
 		return;
 	}
@@ -798,10 +798,10 @@ aoecmd_ata_rsp(struct sk_buff *skb)
 	buf = f->buf;
 
 	if (ahin->cmdstat & 0xa9) {	/* these bits cleared on success */
-//		printk(KERN_ERR
-//			"aoe: ata error cmd=%2.2Xh stat=%2.2Xh from e%ld.%d\n",
-//			ahout->cmdstat, ahin->cmdstat,
-;
+		printk(KERN_ERR
+			"aoe: ata error cmd=%2.2Xh stat=%2.2Xh from e%ld.%d\n",
+			ahout->cmdstat, ahin->cmdstat,
+			d->aoemajor, d->aoeminor);
 		if (buf)
 			buf->flags |= BUFFL_FAIL;
 	} else {
@@ -812,9 +812,9 @@ aoecmd_ata_rsp(struct sk_buff *skb)
 		case ATA_CMD_PIO_READ:
 		case ATA_CMD_PIO_READ_EXT:
 			if (skb->len - sizeof *hin - sizeof *ahin < n) {
-//				printk(KERN_ERR
-//					"aoe: %s.  skb->len=%d need=%ld\n",
-;
+				printk(KERN_ERR
+					"aoe: %s.  skb->len=%d need=%ld\n",
+					"runt data size in read", skb->len, n);
 				/* fail frame f?  just returning will rexmit. */
 				spin_unlock_irqrestore(&d->lock, flags);
 				return;
@@ -837,20 +837,20 @@ aoecmd_ata_rsp(struct sk_buff *skb)
 			break;
 		case ATA_CMD_ID_ATA:
 			if (skb->len - sizeof *hin - sizeof *ahin < 512) {
-//				printk(KERN_INFO
-//					"aoe: runt data size in ataid.  skb->len=%d\n",
-;
+				printk(KERN_INFO
+					"aoe: runt data size in ataid.  skb->len=%d\n",
+					skb->len);
 				spin_unlock_irqrestore(&d->lock, flags);
 				return;
 			}
 			ataid_complete(d, t, (char *) (ahin+1));
 			break;
 		default:
-//			printk(KERN_INFO
-//				"aoe: unrecognized ata command %2.2Xh for %d.%d\n",
-//				ahout->cmdstat,
-//				get_unaligned_be16(&hin->major),
-;
+			printk(KERN_INFO
+				"aoe: unrecognized ata command %2.2Xh for %d.%d\n",
+				ahout->cmdstat,
+				get_unaligned_be16(&hin->major),
+				hin->minor);
 		}
 	}
 
@@ -938,8 +938,8 @@ addtgt(struct aoedev *d, char *addr, ulong nframes)
 		;
 
 	if (tt == te) {
-//		printk(KERN_INFO
-;
+		printk(KERN_INFO
+			"aoe: device addtgt failure; too many targets\n");
 		return NULL;
 	}
 	t = kcalloc(1, sizeof *t, GFP_ATOMIC);
@@ -947,7 +947,7 @@ addtgt(struct aoedev *d, char *addr, ulong nframes)
 	if (!t || !f) {
 		kfree(f);
 		kfree(t);
-;
+		printk(KERN_INFO "aoe: cannot allocate memory to add target\n");
 		return NULL;
 	}
 
@@ -983,15 +983,15 @@ aoecmd_cfg_rsp(struct sk_buff *skb)
 	 */
 	aoemajor = get_unaligned_be16(&h->major);
 	if (aoemajor == 0xfff) {
-//		printk(KERN_ERR "aoe: Warning: shelf address is all ones.  "
-;
+		printk(KERN_ERR "aoe: Warning: shelf address is all ones.  "
+			"Check shelf dip switches.\n");
 		return;
 	}
 
 	sysminor = SYSMINOR(aoemajor, h->minor);
 	if (sysminor * AOE_PARTITIONS + AOE_PARTITIONS > MINORMASK) {
-//		printk(KERN_INFO "aoe: e%ld.%d: minor number too large\n",
-;
+		printk(KERN_INFO "aoe: e%ld.%d: minor number too large\n",
+			aoemajor, (int) h->minor);
 		return;
 	}
 
@@ -1001,7 +1001,7 @@ aoecmd_cfg_rsp(struct sk_buff *skb)
 
 	d = aoedev_by_sysminor_m(sysminor);
 	if (d == NULL) {
-;
+		printk(KERN_INFO "aoe: device sysminor_m failure\n");
 		return;
 	}
 
@@ -1019,8 +1019,8 @@ aoecmd_cfg_rsp(struct sk_buff *skb)
 	if (!ifp) {
 		ifp = addif(t, skb->dev);
 		if (!ifp) {
-//			printk(KERN_INFO
-;
+			printk(KERN_INFO
+				"aoe: device addif failure; "
 				"too many interfaces?\n");
 			spin_unlock_irqrestore(&d->lock, flags);
 			return;
@@ -1034,11 +1034,11 @@ aoecmd_cfg_rsp(struct sk_buff *skb)
 			n = ch->scnt;
 		n = n ? n * 512 : DEFAULTBCNT;
 		if (n != ifp->maxbcnt) {
-//			printk(KERN_INFO
-//				"aoe: e%ld.%d: setting %d%s%s:%pm\n",
-//				d->aoemajor, d->aoeminor, n,
-//				" byte data frames on ", ifp->nd->name,
-;
+			printk(KERN_INFO
+				"aoe: e%ld.%d: setting %d%s%s:%pm\n",
+				d->aoemajor, d->aoeminor, n,
+				" byte data frames on ", ifp->nd->name,
+				t->addr);
 			ifp->maxbcnt = n;
 		}
 	}

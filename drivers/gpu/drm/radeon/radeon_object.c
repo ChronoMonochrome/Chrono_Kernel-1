@@ -112,8 +112,8 @@ int radeon_bo_create(struct radeon_device *rdev,
 	/* maximun bo size is the minimun btw visible vram and gtt size */
 	max_size = min(rdev->mc.visible_vram_size, rdev->mc.gtt_size);
 	if ((page_align << PAGE_SHIFT) >= max_size) {
-//		printk(KERN_WARNING "%s:%d alloc size %ldM bigger than %ldMb limit\n",
-;
+		printk(KERN_WARNING "%s:%d alloc size %ldM bigger than %ldMb limit\n",
+			__func__, __LINE__, page_align  >> (20 - PAGE_SHIFT), max_size >> 20);
 		return -ENOMEM;
 	}
 

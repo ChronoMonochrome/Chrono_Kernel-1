@@ -903,7 +903,7 @@ static int atmel_startup(struct uart_port *port)
 	retval = request_irq(port->irq, atmel_interrupt, IRQF_SHARED,
 			tty ? tty->name : "atmel_serial", port);
 	if (retval) {
-;
+		printk("atmel_serial: atmel_startup - Can't get irq\n");
 		return retval;
 	}
 
@@ -1097,7 +1097,7 @@ static void atmel_serial_pm(struct uart_port *port, unsigned int state,
 		clk_disable(atmel_port->clk);
 		break;
 	default:
-;
+		printk(KERN_ERR "atmel_serial: unknown pm %d\n", state);
 	}
 }
 

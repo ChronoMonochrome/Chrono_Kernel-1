@@ -80,8 +80,8 @@ afs_read_footer(struct mtd_info *mtd, u_int *img_start, u_int *iis_start,
 		ret = -EINVAL;
 
 	if (ret < 0) {
-//		printk(KERN_ERR "AFS: mtd read failed at 0x%x: %d\n",
-;
+		printk(KERN_ERR "AFS: mtd read failed at 0x%x: %d\n",
+			ptr, ret);
 		return ret;
 	}
 
@@ -156,8 +156,8 @@ afs_read_iis(struct mtd_info *mtd, struct image_info_struct *iis, u_int ptr)
 	return ret;
 
  failed:
-//	printk(KERN_ERR "AFS: mtd read failed at 0x%x: %d\n",
-;
+	printk(KERN_ERR "AFS: mtd read failed at 0x%x: %d\n",
+		ptr, ret);
 	return ret;
 }
 
@@ -239,9 +239,9 @@ static int parse_afs_partitions(struct mtd_info *mtd,
 		parts[idx].offset	= img_ptr;
 		parts[idx].mask_flags	= 0;
 
-//		printk("  mtd%d: at 0x%08x, %5lluKiB, %8u, %s\n",
-//			idx, img_ptr, parts[idx].size / 1024,
-;
+		printk("  mtd%d: at 0x%08x, %5lluKiB, %8u, %s\n",
+			idx, img_ptr, parts[idx].size / 1024,
+			iis.imageNumber, str);
 
 		idx += 1;
 		str = str + strlen(iis.name) + 1;

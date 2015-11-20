@@ -115,14 +115,14 @@ static int lx_hardware_open(struct lx6464es *chip,
 	snd_printd(LXP "allocating pipe for %d channels\n", channels);
 	err = lx_pipe_allocate(chip, 0, is_capture, channels);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR LXP "allocating pipe failed\n");
 		return err;
 	}
 
 	err = lx_set_granularity(chip, period_size);
 	if (err < 0) {
-//		snd_printk(KERN_ERR LXP "setting granularity to %ld failed\n",
-;
+		snd_printk(KERN_ERR LXP "setting granularity to %ld failed\n",
+			   period_size);
 		return err;
 	}
 
@@ -139,21 +139,21 @@ static int lx_hardware_start(struct lx6464es *chip,
 	snd_printd(LXP "setting stream format\n");
 	err = lx_stream_set_format(chip, runtime, 0, is_capture);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR LXP "setting stream format failed\n");
 		return err;
 	}
 
 	snd_printd(LXP "starting pipe\n");
 	err = lx_pipe_start(chip, 0, is_capture);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR LXP "starting pipe failed\n");
 		return err;
 	}
 
 	snd_printd(LXP "waiting for pipe to start\n");
 	err = lx_pipe_wait_for_start(chip, 0, is_capture);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR LXP "waiting for pipe failed\n");
 		return err;
 	}
 
@@ -170,21 +170,21 @@ static int lx_hardware_stop(struct lx6464es *chip,
 	snd_printd(LXP "pausing pipe\n");
 	err = lx_pipe_pause(chip, 0, is_capture);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR LXP "pausing pipe failed\n");
 		return err;
 	}
 
 	snd_printd(LXP "waiting for pipe to become idle\n");
 	err = lx_pipe_wait_for_idle(chip, 0, is_capture);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR LXP "waiting for pipe failed\n");
 		return err;
 	}
 
 	snd_printd(LXP "stopping pipe\n");
 	err = lx_pipe_stop(chip, 0, is_capture);
 	if (err < 0) {
-;
+		snd_printk(LXP "stopping pipe failed\n");
 		return err;
 	}
 
@@ -201,7 +201,7 @@ static int lx_hardware_close(struct lx6464es *chip,
 	snd_printd(LXP "releasing pipe\n");
 	err = lx_pipe_release(chip, 0, is_capture);
 	if (err < 0) {
-;
+		snd_printk(LXP "releasing pipe failed\n");
 		return err;
 	}
 
@@ -227,7 +227,7 @@ static int lx_pcm_open(struct snd_pcm_substream *substream)
 	err = snd_pcm_hw_constraint_integer(runtime,
 					    SNDRV_PCM_HW_PARAM_PERIODS);
 	if (err < 0) {
-;
+		snd_printk(KERN_WARNING LXP "could not constrain periods\n");
 		goto exit;
 	}
 #endif
@@ -238,7 +238,7 @@ static int lx_pcm_open(struct snd_pcm_substream *substream)
 					   board_rate, board_rate);
 
 	if (err < 0) {
-;
+		snd_printk(KERN_WARNING LXP "could not constrain periods\n");
 		goto exit;
 	}
 
@@ -248,8 +248,8 @@ static int lx_pcm_open(struct snd_pcm_substream *substream)
 					   MICROBLAZE_IBL_MIN,
 					   MICROBLAZE_IBL_MAX);
 	if (err < 0) {
-//		snd_printk(KERN_WARNING LXP
-;
+		snd_printk(KERN_WARNING LXP
+			   "could not constrain period size\n");
 		goto exit;
 	}
 
@@ -308,15 +308,15 @@ static int lx_pcm_prepare(struct snd_pcm_substream *substream)
 	if (chip->hardware_running[is_capture]) {
 		err = lx_hardware_stop(chip, substream);
 		if (err < 0) {
-//			snd_printk(KERN_ERR LXP "failed to stop hardware. "
-;
+			snd_printk(KERN_ERR LXP "failed to stop hardware. "
+				   "Error code %d\n", err);
 			goto exit;
 		}
 
 		err = lx_hardware_close(chip, substream);
 		if (err < 0) {
-//			snd_printk(KERN_ERR LXP "failed to close hardware. "
-;
+			snd_printk(KERN_ERR LXP "failed to close hardware. "
+				   "Error code %d\n", err);
 			goto exit;
 		}
 	}
@@ -324,15 +324,15 @@ static int lx_pcm_prepare(struct snd_pcm_substream *substream)
 	snd_printd(LXP "opening hardware\n");
 	err = lx_hardware_open(chip, substream);
 	if (err < 0) {
-//		snd_printk(KERN_ERR LXP "failed to open hardware. "
-;
+		snd_printk(KERN_ERR LXP "failed to open hardware. "
+			   "Error code %d\n", err);
 		goto exit;
 	}
 
 	err = lx_hardware_start(chip, substream);
 	if (err < 0) {
-//		snd_printk(KERN_ERR LXP "failed to start hardware. "
-;
+		snd_printk(KERN_ERR LXP "failed to start hardware. "
+			   "Error code %d\n", err);
 		goto exit;
 	}
 
@@ -395,15 +395,15 @@ static int lx_pcm_hw_free(struct snd_pcm_substream *substream)
 	if (chip->hardware_running[is_capture]) {
 		err = lx_hardware_stop(chip, substream);
 		if (err < 0) {
-//			snd_printk(KERN_ERR LXP "failed to stop hardware. "
-;
+			snd_printk(KERN_ERR LXP "failed to stop hardware. "
+				   "Error code %d\n", err);
 			goto exit;
 		}
 
 		err = lx_hardware_close(chip, substream);
 		if (err < 0) {
-//			snd_printk(KERN_ERR LXP "failed to close hardware. "
-;
+			snd_printk(KERN_ERR LXP "failed to close hardware. "
+				   "Error code %d\n", err);
 			goto exit;
 		}
 
@@ -464,7 +464,7 @@ static void lx_trigger_start(struct lx6464es *chip, struct lx_stream *lx_stream)
 	snd_printd(LXP "starting: starting stream\n");
 	err = lx_stream_start(chip, 0, is_capture);
 	if (err < 0)
-;
+		snd_printk(KERN_ERR LXP "couldn't start stream\n");
 	else
 		lx_stream->status = LX_STREAM_STATUS_RUNNING;
 
@@ -479,7 +479,7 @@ static void lx_trigger_stop(struct lx6464es *chip, struct lx_stream *lx_stream)
 	snd_printd(LXP "stopping: stopping stream\n");
 	err = lx_stream_stop(chip, 0, is_capture);
 	if (err < 0)
-;
+		snd_printk(KERN_ERR LXP "couldn't stop stream\n");
 	else
 		lx_stream->status = LX_STREAM_STATUS_FREE;
 
@@ -632,14 +632,14 @@ static int __devinit lx_init_xilinx_test(struct lx6464es *chip)
 	reg = lx_dsp_reg_read(chip, eReg_CSM);
 
 	if (reg) {
-;
+		snd_printk(KERN_ERR LXP "Problem: Reg_CSM %x.\n", reg);
 
 		/* PCI9056_SPACE0_REMAP */
 		lx_plx_reg_write(chip, ePLX_PCICR, 1);
 
 		reg = lx_dsp_reg_read(chip, eReg_CSM);
 		if (reg) {
-;
+			snd_printk(KERN_ERR LXP "Error: Reg_CSM %x.\n", reg);
 			return -EAGAIN; /* seems to be appropriate */
 		}
 	}
@@ -681,8 +681,8 @@ static int __devinit lx_init_ethersound_config(struct lx6464es *chip)
 		}
 		msleep(1);
 	}
-//	snd_printk(KERN_WARNING LXP
-;
+	snd_printk(KERN_WARNING LXP
+		   "ethersound could not be initialized after %dms\n", i);
 	return -ETIMEDOUT;
 
  ethersound_initialized:
@@ -703,9 +703,9 @@ static int __devinit lx_init_get_version_features(struct lx6464es *chip)
 	if (err == 0) {
 		u32 freq;
 
-//		snd_printk(LXP "DSP version: V%02d.%02d #%d\n",
-//			   (dsp_version>>16) & 0xff, (dsp_version>>8) & 0xff,
-;
+		snd_printk(LXP "DSP version: V%02d.%02d #%d\n",
+			   (dsp_version>>16) & 0xff, (dsp_version>>8) & 0xff,
+			   dsp_version & 0xff);
 
 		/* later: what firmware version do we expect? */
 
@@ -720,7 +720,7 @@ static int __devinit lx_init_get_version_features(struct lx6464es *chip)
 			chip->board_sample_rate = freq;
 		snd_printd(LXP "actual clock frequency %d\n", freq);
 	} else {
-;
+		snd_printk(KERN_ERR LXP "DSP corrupted \n");
 		err = -EAGAIN;
 	}
 
@@ -745,12 +745,12 @@ static int lx_set_granularity(struct lx6464es *chip, u32 gran)
 
 	err = lx_dsp_set_granularity(chip, snapped_gran);
 	if (err < 0) {
-;
+		snd_printk(KERN_WARNING LXP "could not set granularity\n");
 		err = -EAGAIN;
 	}
 
 	if (snapped_gran != gran)
-;
+		snd_printk(LXP "snapped blocksize to %d\n", snapped_gran);
 
 	snd_printd(LXP "set blocksize on board %d\n", snapped_gran);
 	chip->pcm_granularity = snapped_gran;
@@ -799,9 +799,9 @@ static int __devinit lx_init_dsp(struct lx6464es *chip)
 
 mac_ready:
 	snd_printd(LXP "mac address ready read after: %dms\n", i);
-//	snd_printk(LXP "mac address: %02X.%02X.%02X.%02X.%02X.%02X\n",
-//		   mac_address[0], mac_address[1], mac_address[2],
-;
+	snd_printk(LXP "mac address: %02X.%02X.%02X.%02X.%02X.%02X\n",
+		   mac_address[0], mac_address[1], mac_address[2],
+		   mac_address[3], mac_address[4], mac_address[5]);
 
 	err = lx_init_get_version_features(chip);
 	if (err)
@@ -990,8 +990,8 @@ static int __devinit snd_lx6464es_create(struct snd_card *card,
 	/* check if we can restrict PCI DMA transfers to 32 bits */
 	err = pci_set_dma_mask(pci, DMA_BIT_MASK(32));
 	if (err < 0) {
-//		snd_printk(KERN_ERR "architecture does not support "
-;
+		snd_printk(KERN_ERR "architecture does not support "
+			   "32bit PCI busmaster DMA\n");
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -1033,7 +1033,7 @@ static int __devinit snd_lx6464es_create(struct snd_card *card,
 	err = request_irq(pci->irq, lx_interrupt, IRQF_SHARED,
 			  card_name, chip);
 	if (err) {
-;
+		snd_printk(KERN_ERR LXP "unable to grab IRQ %d\n", pci->irq);
 		goto request_irq_failed;
 	}
 	chip->irq = pci->irq;
@@ -1044,7 +1044,7 @@ static int __devinit snd_lx6464es_create(struct snd_card *card,
 
 	err = lx_init_dsp(chip);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR LXP "error during DSP initialization\n");
 		return err;
 	}
 
@@ -1104,7 +1104,7 @@ static int __devinit snd_lx6464es_probe(struct pci_dev *pci,
 
 	err = snd_lx6464es_create(card, pci, &chip);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR LXP "error during snd_lx6464es_create\n");
 		goto out_free;
 	}
 

@@ -461,7 +461,7 @@ static int ov7670_read_i2c(struct v4l2_subdev *sd, unsigned char reg,
 	msg.buf = &data;
 	ret = i2c_transfer(client->adapter, &msg, 1);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "Error %d on register write\n", ret);
 		return ret;
 	}
 	/*

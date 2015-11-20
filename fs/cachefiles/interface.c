@@ -152,8 +152,8 @@ static int cachefiles_lookup_object(struct fscache_object *_object)
 
 	if (ret < 0 && ret != -ETIMEDOUT) {
 		if (ret != -ENOBUFS)
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			       "CacheFiles: Lookup failed error %d\n", ret);
 		fscache_object_lookup_error(&object->fscache);
 	}
 

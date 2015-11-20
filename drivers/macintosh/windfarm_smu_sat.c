@@ -25,16 +25,16 @@
 #define DEBUG
 
 #ifdef DEBUG
-//#define DBG(args...)	printk(args)
-//#else
-//#define DBG(args...)	do { } while(0)
-//#endif
-//
-///* If the cache is older than 800ms we'll refetch it */
-//#define MAX_AGE		msecs_to_jiffies(800)
-//
-//struct wf_sat {
-;
+#define DBG(args...)	printk(args)
+#else
+#define DBG(args...)	do { } while(0)
+#endif
+
+/* If the cache is older than 800ms we'll refetch it */
+#define MAX_AGE		msecs_to_jiffies(800)
+
+struct wf_sat {
+	int			nr;
 	atomic_t		refcnt;
 	struct mutex		mutex;
 	unsigned long		last_read; /* jiffies when cache last updated */
@@ -71,18 +71,18 @@ struct smu_sdbp_header *smu_sat_get_sdb_partition(unsigned int sat_id, int id,
 
 	err = i2c_smbus_write_word_data(sat->i2c, 8, id << 8);
 	if (err) {
-;
+		printk(KERN_ERR "smu_sat_get_sdb_part wr error %d\n", err);
 		return NULL;
 	}
 
 	err = i2c_smbus_read_word_data(sat->i2c, 9);
 	if (err < 0) {
-;
+		printk(KERN_ERR "smu_sat_get_sdb_part rd len error\n");
 		return NULL;
 	}
 	len = err;
 	if (len == 0) {
-;
+		printk(KERN_ERR "smu_sat_get_sdb_part no partition %x\n", id);
 		return NULL;
 	}
 
@@ -95,8 +95,8 @@ struct smu_sdbp_header *smu_sat_get_sdb_partition(unsigned int sat_id, int id,
 	for (i = 0; i < len; i += 4) {
 		err = i2c_smbus_read_i2c_block_data(sat->i2c, 0xa, 4, data);
 		if (err < 0) {
-//			printk(KERN_ERR "smu_sat_get_sdb_part rd err %d\n",
-;
+			printk(KERN_ERR "smu_sat_get_sdb_part rd err %d\n",
+			       err);
 			goto fail;
 		}
 		buf[i] = data[1];
@@ -216,7 +216,7 @@ static void wf_sat_create(struct i2c_adapter *adapter, struct device_node *dev)
 
 	client = i2c_new_device(adapter, &info);
 	if (client == NULL) {
-;
+		printk(KERN_ERR "windfarm: failed to attach smu-sat to i2c\n");
 		return;
 	}
 
@@ -272,16 +272,16 @@ static int wf_sat_probe(struct i2c_client *client,
 		chip = loc[4] - 'A';
 		core = loc[5] - '0';
 		if (chip > 1 || core > 1) {
-//			printk(KERN_ERR "wf_sat_create: don't understand "
-;
+			printk(KERN_ERR "wf_sat_create: don't understand "
+			       "location %s for %s\n", loc, child->full_name);
 			continue;
 		}
 		cpu = 2 * chip + core;
 		if (sat->nr < 0)
 			sat->nr = chip;
 		else if (sat->nr != chip) {
-//			printk(KERN_ERR "wf_sat_create: can't cope with "
-;
+			printk(KERN_ERR "wf_sat_create: can't cope with "
+			       "multiple CPU chips on one SAT (%s)\n", loc);
 			continue;
 		}
 
@@ -302,8 +302,8 @@ static int wf_sat_probe(struct i2c_client *client,
 		/* the +16 is enough for "cpu-voltage-n" */
 		sens = kzalloc(sizeof(struct wf_sat_sensor) + 16, GFP_KERNEL);
 		if (sens == NULL) {
-//			printk(KERN_ERR "wf_sat_create: couldn't create "
-;
+			printk(KERN_ERR "wf_sat_create: couldn't create "
+			       "%s sensor %d (no memory)\n", name, cpu);
 			continue;
 		}
 		sens->index = index;
@@ -328,8 +328,8 @@ static int wf_sat_probe(struct i2c_client *client,
 		cpu = 2 * sat->nr + core;
 		sens = kzalloc(sizeof(struct wf_sat_sensor) + 16, GFP_KERNEL);
 		if (sens == NULL) {
-//			printk(KERN_ERR "wf_sat_create: couldn't create power "
-;
+			printk(KERN_ERR "wf_sat_create: couldn't create power "
+			       "sensor %d (no memory)\n", cpu);
 			continue;
 		}
 		sens->index = vsens[core];

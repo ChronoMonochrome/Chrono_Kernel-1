@@ -211,43 +211,43 @@ static void dump_status(const char *msg, unsigned int stat)
 		name = hd_req->rq_disk->disk_name;
 
 #ifdef VERBOSE_ERRORS
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+	printk("%s: %s: status=0x%02x { ", name, msg, stat & 0xff);
+	if (stat & BUSY_STAT)	printk("Busy ");
+	if (stat & READY_STAT)	printk("DriveReady ");
+	if (stat & WRERR_STAT)	printk("WriteFault ");
+	if (stat & SEEK_STAT)	printk("SeekComplete ");
+	if (stat & DRQ_STAT)	printk("DataRequest ");
+	if (stat & ECC_STAT)	printk("CorrectedError ");
+	if (stat & INDEX_STAT)	printk("Index ");
+	if (stat & ERR_STAT)	printk("Error ");
+	printk("}\n");
 	if ((stat & ERR_STAT) == 0) {
 		hd_error = 0;
 	} else {
 		hd_error = inb(HD_ERROR);
-;
-;
-;
-;
-;
-;
-;
-;
+		printk("%s: %s: error=0x%02x { ", name, msg, hd_error & 0xff);
+		if (hd_error & BBD_ERR)		printk("BadSector ");
+		if (hd_error & ECC_ERR)		printk("UncorrectableError ");
+		if (hd_error & ID_ERR)		printk("SectorIdNotFound ");
+		if (hd_error & ABRT_ERR)	printk("DriveStatusError ");
+		if (hd_error & TRK0_ERR)	printk("TrackZeroNotFound ");
+		if (hd_error & MARK_ERR)	printk("AddrMarkNotFound ");
+		printk("}");
 		if (hd_error & (BBD_ERR|ECC_ERR|ID_ERR|MARK_ERR)) {
-//			printk(", CHS=%d/%d/%d", (inb(HD_HCYL)<<8) + inb(HD_LCYL),
-;
+			printk(", CHS=%d/%d/%d", (inb(HD_HCYL)<<8) + inb(HD_LCYL),
+				inb(HD_CURRENT) & 0xf, inb(HD_SECTOR));
 			if (hd_req)
-;
+				printk(", sector=%ld", blk_rq_pos(hd_req));
 		}
-;
+		printk("\n");
 	}
 #else
-;
+	printk("%s: %s: status=0x%02x.\n", name, msg, stat & 0xff);
 	if ((stat & ERR_STAT) == 0) {
 		hd_error = 0;
 	} else {
 		hd_error = inb(HD_ERROR);
-;
+		printk("%s: %s: error=0x%02x.\n", name, msg, hd_error & 0xff);
 	}
 #endif
 }
@@ -359,9 +359,9 @@ static void reset_controller(void)
 	outb_p(hd_info[0].ctl & 0x0f, HD_CMD);
 	for (i = 0; i < 1000; i++) barrier();
 	if (drive_busy())
-;
+		printk("hd: controller still busy\n");
 	else if ((hd_error = inb(HD_ERROR)) != 1)
-;
+		printk("hd: controller reset failed: %02x\n", hd_error);
 }
 
 static void reset_hd(void)
@@ -467,9 +467,9 @@ ok_to_read:
 	req = hd_req;
 	insw(HD_DATA, req->buffer, 256);
 #ifdef DEBUG
-//	printk("%s: read: sector %ld, remaining = %u, buffer=%p\n",
-//	       req->rq_disk->disk_name, blk_rq_pos(req) + 1,
-;
+	printk("%s: read: sector %ld, remaining = %u, buffer=%p\n",
+	       req->rq_disk->disk_name, blk_rq_pos(req) + 1,
+	       blk_rq_sectors(req) - 1, req->buffer+512);
 #endif
 	if (hd_end_request(0, 512)) {
 		SET_HANDLER(&read_intr);
@@ -541,10 +541,10 @@ static void hd_times_out(unsigned long dummy)
 	spin_lock_irq(hd_queue->queue_lock);
 	reset = 1;
 	name = hd_req->rq_disk->disk_name;
-;
+	printk("%s: timeout\n", name);
 	if (++hd_req->errors >= MAX_ERRORS) {
 #ifdef DEBUG
-;
+		printk("%s: too many errors\n", name);
 #endif
 		hd_end_request_cur(-EIO);
 	}
@@ -560,7 +560,7 @@ static int do_special_op(struct hd_i_struct *disk, struct request *req)
 		return reset;
 	}
 	if (disk->head > 16) {
-;
+		printk("%s: cannot handle device with more than 16 heads - giving up\n", req->rq_disk->disk_name);
 		hd_end_request_cur(-EIO);
 	}
 	disk->special_op = 0;
@@ -606,8 +606,8 @@ repeat:
 	nsect = blk_rq_sectors(req);
 	if (block >= get_capacity(req->rq_disk) ||
 	    ((block+nsect) > get_capacity(req->rq_disk))) {
-//		printk("%s: bad access: block=%d, count=%d\n",
-;
+		printk("%s: bad access: block=%d, count=%d\n",
+			req->rq_disk->disk_name, block, nsect);
 		hd_end_request_cur(-EIO);
 		goto repeat;
 	}
@@ -622,10 +622,10 @@ repeat:
 	head  = track % disk->head;
 	cyl   = track / disk->head;
 #ifdef DEBUG
-//	printk("%s: %sing: CHS=%d/%d/%d, sectors=%d, buffer=%p\n",
-//		req->rq_disk->disk_name,
-//		req_data_dir(req) == READ ? "read" : "writ",
-;
+	printk("%s: %sing: CHS=%d/%d/%d, sectors=%d, buffer=%p\n",
+		req->rq_disk->disk_name,
+		req_data_dir(req) == READ ? "read" : "writ",
+		cyl, head, sec, nsect, req->buffer);
 #endif
 	if (req->cmd_type == REQ_TYPE_FS) {
 		switch (rq_data_dir(req)) {
@@ -647,7 +647,7 @@ repeat:
 			outsw(HD_DATA, req->buffer, 256);
 			break;
 		default:
-;
+			printk("unknown hd-command\n");
 			hd_end_request_cur(-EIO);
 			break;
 		}
@@ -738,8 +738,8 @@ static int __init hd_init(void)
 		 * definitely safest to have the user explicitly specify
 		 * the information.
 		 */
-//		printk("hd: no drives specified - use hd=cyl,head,sectors"
-;
+		printk("hd: no drives specified - use hd=cyl,head,sectors"
+			" on kernel command line\n");
 		goto out;
 	}
 
@@ -757,22 +757,22 @@ static int __init hd_init(void)
 		disk->queue = hd_queue;
 		p->unit = drive;
 		hd_gendisk[drive] = disk;
-//		printk("%s: %luMB, CHS=%d/%d/%d\n",
-//			disk->disk_name, (unsigned long)get_capacity(disk)/2048,
-;
+		printk("%s: %luMB, CHS=%d/%d/%d\n",
+			disk->disk_name, (unsigned long)get_capacity(disk)/2048,
+			p->cyl, p->head, p->sect);
 	}
 
 	if (request_irq(HD_IRQ, hd_interrupt, IRQF_DISABLED, "hd", NULL)) {
-//		printk("hd: unable to get IRQ%d for the hard disk driver\n",
-;
+		printk("hd: unable to get IRQ%d for the hard disk driver\n",
+			HD_IRQ);
 		goto out1;
 	}
 	if (!request_region(HD_DATA, 8, "hd")) {
-;
+		printk(KERN_WARNING "hd: port 0x%x busy\n", HD_DATA);
 		goto out2;
 	}
 	if (!request_region(HD_CMD, 1, "hd(cmd)")) {
-;
+		printk(KERN_WARNING "hd: port 0x%x busy\n", HD_CMD);
 		goto out3;
 	}
 

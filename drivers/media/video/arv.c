@@ -41,25 +41,25 @@
 #include <asm/byteorder.h>
 
 #if 0
-//#define DEBUG(n, args...) printk(KERN_INFO args)
-//#define CHECK_LOST	1
-//#else
-//#define DEBUG(n, args...)
-//#define CHECK_LOST	0
-//#endif
-//
-///*
-// * USE_INT is always 0, interrupt mode is not available
-// * on linux due to lack of speed
-// */
-//#define USE_INT		0	/* Don't modify */
-//
-//#define VERSION	"0.04"
-//
-//#define ar_inl(addr) 		inl((unsigned long)(addr))
-//#define ar_outl(val, addr)	outl((unsigned long)(val), (unsigned long)(addr))
-//
-;
+#define DEBUG(n, args...) printk(KERN_INFO args)
+#define CHECK_LOST	1
+#else
+#define DEBUG(n, args...)
+#define CHECK_LOST	0
+#endif
+
+/*
+ * USE_INT is always 0, interrupt mode is not available
+ * on linux due to lack of speed
+ */
+#define USE_INT		0	/* Don't modify */
+
+#define VERSION	"0.04"
+
+#define ar_inl(addr) 		inl((unsigned long)(addr))
+#define ar_outl(val, addr)	outl((unsigned long)(val), (unsigned long)(addr))
+
+extern struct cpuinfo_m32r	boot_cpu_data;
 
 /*
  * CCD pixel size
@@ -313,7 +313,7 @@ static ssize_t ar_read(struct file *file, char *buf, size_t count, loff_t *ppos)
 	/* .... AR interrupts .... */
 	interruptible_sleep_on(&ar->wait);
 	if (signal_pending(current)) {
-;
+		printk(KERN_ERR "arv: interrupted while get frame data.\n");
 		ret = -EINTR;
 		goto out_up;
 	}
@@ -646,19 +646,19 @@ static int ar_initialize(struct ar *ar)
 	iic(3, 0x78, 0x12, 0x12, 0x30);
 	iic(3, 0x78, 0x12, 0x15, 0x58);
 	iic(3, 0x78, 0x12, 0x17, 0x30);
-;
+	printk(KERN_CONT ".");
 	iic(3, 0x78, 0x12, 0x1a, 0x97);
 	iic(3, 0x78, 0x12, 0x1b, 0xff);
 	iic(3, 0x78, 0x12, 0x1c, 0xff);
 	iic(3, 0x78, 0x12, 0x26, 0x10);
 	iic(3, 0x78, 0x12, 0x27, 0x00);
-;
+	printk(KERN_CONT ".");
 	iic(2, 0x78, 0x34, 0x02, 0x00);
 	iic(2, 0x78, 0x7a, 0x10, 0x00);
 	iic(2, 0x78, 0x80, 0x39, 0x00);
 	iic(2, 0x78, 0x81, 0xe6, 0x00);
 	iic(2, 0x78, 0x8d, 0x00, 0x00);
-;
+	printk(KERN_CONT ".");
 	iic(2, 0x78, 0x8e, 0x0c, 0x00);
 	iic(2, 0x78, 0x8f, 0x00, 0x00);
 #if 0
@@ -667,13 +667,13 @@ static int ar_initialize(struct ar *ar)
 	iic(2, 0x78, 0x93, 0x01, 0x00);
 	iic(2, 0x78, 0x94, 0xcd, 0x00);
 	iic(2, 0x78, 0x95, 0x00, 0x00);
-;
+	printk(KERN_CONT ".");
 	iic(2, 0x78, 0x96, 0xa0, 0x00);
 	iic(2, 0x78, 0x97, 0x00, 0x00);
 	iic(2, 0x78, 0x98, 0x60, 0x00);
 	iic(2, 0x78, 0x99, 0x01, 0x00);
 	iic(2, 0x78, 0x9a, 0x19, 0x00);
-;
+	printk(KERN_CONT ".");
 	iic(2, 0x78, 0x9b, 0x02, 0x00);
 	iic(2, 0x78, 0x9c, 0xe8, 0x00);
 	iic(2, 0x78, 0x9d, 0x02, 0x00);
@@ -683,7 +683,7 @@ static int ar_initialize(struct ar *ar)
 #if 0
 	iic(2, 0x78, 0x83, 0x8c, 0x00);	/* brightness */
 #endif
-;
+	printk(KERN_CONT ".");
 
 	/* color correction */
 	iic(3, 0x78, 0x49, 0x00, 0x95);	/* a		*/
@@ -696,9 +696,9 @@ static int ar_initialize(struct ar *ar)
 	iic(3, 0x78, 0x49, 0x07, 0x04);	/* e(Hi)	*/
 	iic(2, 0x78, 0x48, 0x01, 0x00);	/* on=1 off=0	*/
 
-;
+	printk(KERN_CONT ".");
 	iic(2, 0x78, 0x11, 0x00, 0x00);	/* end */
-;
+	printk(KERN_CONT " done\n");
 	return 0;
 }
 
@@ -849,7 +849,7 @@ out_end:
 static int __init ar_init_module(void)
 {
 	freq = (boot_cpu_data.bus_clock / 1000000);
-;
+	printk(KERN_INFO "arv: Bus clock %d\n", freq);
 	if (freq != 50 && freq != 75)
 		freq = DEFAULT_FREQ;
 	return ar_init();

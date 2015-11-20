@@ -61,12 +61,12 @@ static int synaptics_init_panel(struct synaptics_ts_data *ts)
 
 	ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x10); /* page select = 0x10 */
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_write_byte_data failed for page select\n");
 		goto err_page_select_failed;
 	}
 	ret = i2c_smbus_write_byte_data(ts->client, 0x41, 0x04); /* Set "No Clip Z" */
 	if (ret < 0)
-;
+		printk(KERN_ERR "i2c_smbus_write_byte_data failed for No Clip Z\n");
 
 	ret = i2c_smbus_write_byte_data(ts->client, 0x44,
 					ts->sensitivity_adjust);
@@ -76,10 +76,10 @@ static int synaptics_init_panel(struct synaptics_ts_data *ts)
 err_page_select_failed:
 	ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x04); /* page select = 0x04 */
 	if (ret < 0)
-;
+		printk(KERN_ERR "i2c_smbus_write_byte_data failed for page select\n");
 	ret = i2c_smbus_write_byte_data(ts->client, 0xf0, 0x81); /* normal operation, 80 reports per second */
 	if (ret < 0)
-;
+		printk(KERN_ERR "synaptics_ts_resume: i2c_smbus_write_byte_data failed\n");
 	return ret;
 }
 
@@ -108,7 +108,7 @@ static void synaptics_ts_work_func(struct work_struct *work)
 	for (i = 0; i < ((ts->use_irq && !bad_data) ? 1 : 10); i++) {
 		ret = i2c_transfer(ts->client->adapter, msg, 2);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "synaptics_ts_work_func: i2c_transfer failed\n");
 			bad_data = 1;
 		} else {
 			/* printk("synaptics_ts_work_func: %x %x %x %x %x %x" */
@@ -118,13 +118,13 @@ static void synaptics_ts_work_func(struct work_struct *work)
 			/*        buf[8], buf[9], buf[10], buf[11], */
 			/*        buf[12], buf[13], buf[14], ret); */
 			if ((buf[buf_len - 1] & 0xc0) != 0x40) {
-//				printk(KERN_WARNING "synaptics_ts_work_func:"
-//				       " bad read %x %x %x %x %x %x %x %x %x"
-//				       " %x %x %x %x %x %x, ret %d\n",
-//				       buf[0], buf[1], buf[2], buf[3],
-//				       buf[4], buf[5], buf[6], buf[7],
-//				       buf[8], buf[9], buf[10], buf[11],
-;
+				printk(KERN_WARNING "synaptics_ts_work_func:"
+				       " bad read %x %x %x %x %x %x %x %x %x"
+				       " %x %x %x %x %x %x, ret %d\n",
+				       buf[0], buf[1], buf[2], buf[3],
+				       buf[4], buf[5], buf[6], buf[7],
+				       buf[8], buf[9], buf[10], buf[11],
+				       buf[12], buf[13], buf[14], ret);
 				if (bad_data)
 					synaptics_init_panel(ts);
 				bad_data = 1;
@@ -282,7 +282,7 @@ static int synaptics_ts_probe(
 	uint32_t panel_version;
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
-;
+		printk(KERN_ERR "synaptics_ts_probe: need I2C_FUNC_I2C\n");
 		ret = -ENODEV;
 		goto err_check_functionality_failed;
 	}
@@ -301,14 +301,14 @@ static int synaptics_ts_probe(
 	if (ts->power) {
 		ret = ts->power(1);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "synaptics_ts_probe power on failed\n");
 			goto err_power_failed;
 		}
 	}
 
 	ret = i2c_smbus_write_byte_data(ts->client, 0xf4, 0x01); /* device command = reset */
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_write_byte_data failed\n");
 		/* fail? */
 	}
 	{
@@ -321,25 +321,25 @@ static int synaptics_ts_probe(
 		}
 	}
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_read_byte_data failed\n");
 		goto err_detect_failed;
 	}
-;
+	printk(KERN_INFO "synaptics_ts_probe: Product Major Version %x\n", ret);
 	panel_version = ret << 8;
 	ret = i2c_smbus_read_byte_data(ts->client, 0xe5);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_read_byte_data failed\n");
 		goto err_detect_failed;
 	}
-;
+	printk(KERN_INFO "synaptics_ts_probe: Product Minor Version %x\n", ret);
 	panel_version |= ret;
 
 	ret = i2c_smbus_read_byte_data(ts->client, 0xe3);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_read_byte_data failed\n");
 		goto err_detect_failed;
 	}
-;
+	printk(KERN_INFO "synaptics_ts_probe: product property %x\n", ret);
 
 	if (pdata) {
 		while (pdata->version > panel_version)
@@ -385,21 +385,21 @@ static int synaptics_ts_probe(
 
 	ret = i2c_smbus_read_byte_data(ts->client, 0xf0);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_read_byte_data failed\n");
 		goto err_detect_failed;
 	}
-;
+	printk(KERN_INFO "synaptics_ts_probe: device control %x\n", ret);
 
 	ret = i2c_smbus_read_byte_data(ts->client, 0xf1);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_read_byte_data failed\n");
 		goto err_detect_failed;
 	}
-;
+	printk(KERN_INFO "synaptics_ts_probe: interrupt enable %x\n", ret);
 
 	ret = i2c_smbus_write_byte_data(ts->client, 0xf1, 0); /* disable interrupt */
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_write_byte_data failed\n");
 		goto err_detect_failed;
 	}
 
@@ -414,34 +414,34 @@ static int synaptics_ts_probe(
 	msg[1].buf = buf1;
 	ret = i2c_transfer(ts->client->adapter, msg, 2);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_transfer failed\n");
 		goto err_detect_failed;
 	}
-//	printk(KERN_INFO "synaptics_ts_probe: 0xe0: %x %x %x %x %x %x %x %x\n",
-//	       buf1[0], buf1[1], buf1[2], buf1[3],
-;
+	printk(KERN_INFO "synaptics_ts_probe: 0xe0: %x %x %x %x %x %x %x %x\n",
+	       buf1[0], buf1[1], buf1[2], buf1[3],
+	       buf1[4], buf1[5], buf1[6], buf1[7]);
 
 	ret = i2c_smbus_write_byte_data(ts->client, 0xff, 0x10); /* page select = 0x10 */
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_write_byte_data failed for page select\n");
 		goto err_detect_failed;
 	}
 	ret = i2c_smbus_read_word_data(ts->client, 0x02);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_read_word_data failed\n");
 		goto err_detect_failed;
 	}
 	ts->has_relative_report = !(ret & 0x100);
-;
+	printk(KERN_INFO "synaptics_ts_probe: Sensor properties %x\n", ret);
 	ret = i2c_smbus_read_word_data(ts->client, 0x04);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_read_word_data failed\n");
 		goto err_detect_failed;
 	}
 	ts->max[0] = max_x = (ret >> 8 & 0xff) | ((ret & 0x1f) << 8);
 	ret = i2c_smbus_read_word_data(ts->client, 0x06);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "i2c_smbus_read_word_data failed\n");
 		goto err_detect_failed;
 	}
 	ts->max[1] = max_y = (ret >> 8 & 0xff) | ((ret & 0x1f) << 8);
@@ -450,14 +450,14 @@ static int synaptics_ts_probe(
 
 	ret = synaptics_init_panel(ts); /* will also switch back to page 0x04 */
 	if (ret < 0) {
-;
+		printk(KERN_ERR "synaptics_init_panel failed\n");
 		goto err_detect_failed;
 	}
 
 	ts->input_dev = input_allocate_device();
 	if (ts->input_dev == NULL) {
 		ret = -ENOMEM;
-;
+		printk(KERN_ERR "synaptics_ts_probe: Failed to allocate input device\n");
 		goto err_input_dev_alloc_failed;
 	}
 	ts->input_dev->name = "synaptics-rmi-touchscreen";
@@ -492,13 +492,13 @@ static int synaptics_ts_probe(
 	ts->snap_down_off[!(ts->flags & SYNAPTICS_SWAP_XY)] = snap_top_off;
 	ts->snap_up_on[!(ts->flags & SYNAPTICS_SWAP_XY)] = max_y - snap_bottom_on;
 	ts->snap_up_off[!(ts->flags & SYNAPTICS_SWAP_XY)] = max_y - snap_bottom_off;
-;
-//	printk(KERN_INFO "synaptics_ts_probe: inactive_x %d %d, inactive_y %d %d\n",
-//	       inactive_area_left, inactive_area_right,
-;
-//	printk(KERN_INFO "synaptics_ts_probe: snap_x %d-%d %d-%d, snap_y %d-%d %d-%d\n",
-//	       snap_left_on, snap_left_off, snap_right_on, snap_right_off,
-;
+	printk(KERN_INFO "synaptics_ts_probe: max_x %d, max_y %d\n", max_x, max_y);
+	printk(KERN_INFO "synaptics_ts_probe: inactive_x %d %d, inactive_y %d %d\n",
+	       inactive_area_left, inactive_area_right,
+	       inactive_area_top, inactive_area_bottom);
+	printk(KERN_INFO "synaptics_ts_probe: snap_x %d-%d %d-%d, snap_y %d-%d %d-%d\n",
+	       snap_left_on, snap_left_off, snap_right_on, snap_right_off,
+	       snap_top_on, snap_top_off, snap_bottom_on, snap_bottom_off);
 	input_set_abs_params(ts->input_dev, ABS_X, -inactive_area_left, max_x + inactive_area_right, fuzz_x, 0);
 	input_set_abs_params(ts->input_dev, ABS_Y, -inactive_area_top, max_y + inactive_area_bottom, fuzz_y, 0);
 	input_set_abs_params(ts->input_dev, ABS_PRESSURE, 0, 255, fuzz_p, 0);
@@ -512,7 +512,7 @@ static int synaptics_ts_probe(
 	/* ts->input_dev->name = ts->keypad_info->name; */
 	ret = input_register_device(ts->input_dev);
 	if (ret) {
-;
+		printk(KERN_ERR "synaptics_ts_probe: Unable to register %s input device\n", ts->input_dev->name);
 		goto err_input_register_device_failed;
 	}
 	if (client->irq) {
@@ -539,7 +539,7 @@ static int synaptics_ts_probe(
 	register_early_suspend(&ts->early_suspend);
 #endif
 
-;
+	printk(KERN_INFO "synaptics_ts_probe: Start touchscreen %s in %s mode\n", ts->input_dev->name, ts->use_irq ? "interrupt" : "polling");
 
 	return 0;
 
@@ -582,15 +582,15 @@ static int synaptics_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 		enable_irq(client->irq);
 	ret = i2c_smbus_write_byte_data(ts->client, 0xf1, 0); /* disable interrupt */
 	if (ret < 0)
-;
+		printk(KERN_ERR "synaptics_ts_suspend: i2c_smbus_write_byte_data failed\n");
 
 	ret = i2c_smbus_write_byte_data(client, 0xf0, 0x86); /* deep sleep */
 	if (ret < 0)
-;
+		printk(KERN_ERR "synaptics_ts_suspend: i2c_smbus_write_byte_data failed\n");
 	if (ts->power) {
 		ret = ts->power(0);
 		if (ret < 0)
-;
+			printk(KERN_ERR "synaptics_ts_resume power off failed\n");
 	}
 	return 0;
 }
@@ -603,7 +603,7 @@ static int synaptics_ts_resume(struct i2c_client *client)
 	if (ts->power) {
 		ret = ts->power(1);
 		if (ret < 0)
-;
+			printk(KERN_ERR "synaptics_ts_resume power on failed\n");
 	}
 
 	synaptics_init_panel(ts);

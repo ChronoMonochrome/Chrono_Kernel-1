@@ -60,7 +60,7 @@ void _ldm_printk(const char *level, const char *function, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-;
+	printk("%s%s(): %pV\n", level, function, &vaf);
 
 	va_end(args);
 }

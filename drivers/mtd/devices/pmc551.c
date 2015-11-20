@@ -111,8 +111,8 @@ static int pmc551_erase(struct mtd_info *mtd, struct erase_info *instr)
 	size_t retlen;
 
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//	printk(KERN_DEBUG "pmc551_erase(pos:%ld, len:%ld)\n", (long)instr->addr,
-;
+	printk(KERN_DEBUG "pmc551_erase(pos:%ld, len:%ld)\n", (long)instr->addr,
+		(long)instr->len);
 #endif
 
 	end = instr->addr + instr->len - 1;
@@ -120,8 +120,8 @@ static int pmc551_erase(struct mtd_info *mtd, struct erase_info *instr)
 	/* Is it past the end? */
 	if (end > mtd->size) {
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//		printk(KERN_DEBUG "pmc551_erase() out of bounds (%ld > %ld)\n",
-;
+		printk(KERN_DEBUG "pmc551_erase() out of bounds (%ld > %ld)\n",
+			(long)end, (long)mtd->size);
 #endif
 		return -EINVAL;
 	}
@@ -143,8 +143,8 @@ static int pmc551_erase(struct mtd_info *mtd, struct erase_info *instr)
 		   written. */
 		while (soff_hi != eoff_hi) {
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//			printk(KERN_DEBUG "pmc551_erase() soff_hi: %ld, "
-;
+			printk(KERN_DEBUG "pmc551_erase() soff_hi: %ld, "
+				"eoff_hi: %ld\n", (long)soff_hi, (long)eoff_hi);
 #endif
 			memset(ptr, 0xff, priv->asize);
 			if (soff_hi + priv->asize >= mtd->size) {
@@ -161,7 +161,7 @@ static int pmc551_erase(struct mtd_info *mtd, struct erase_info *instr)
       out:
 	instr->state = MTD_ERASE_DONE;
 #ifdef CONFIG_MTD_PMC551_DEBUG
-;
+	printk(KERN_DEBUG "pmc551_erase() done\n");
 #endif
 
 	mtd_erase_callback(instr);
@@ -176,13 +176,13 @@ static int pmc551_point(struct mtd_info *mtd, loff_t from, size_t len,
 	u32 soff_lo;
 
 #ifdef CONFIG_MTD_PMC551_DEBUG
-;
+	printk(KERN_DEBUG "pmc551_point(%ld, %ld)\n", (long)from, (long)len);
 #endif
 
 	if (from + len > mtd->size) {
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//		printk(KERN_DEBUG "pmc551_point() out of bounds (%ld > %ld)\n",
-;
+		printk(KERN_DEBUG "pmc551_point() out of bounds (%ld > %ld)\n",
+			(long)from + len, (long)mtd->size);
 #endif
 		return -EINVAL;
 	}
@@ -209,7 +209,7 @@ static int pmc551_point(struct mtd_info *mtd, loff_t from, size_t len,
 static void pmc551_unpoint(struct mtd_info *mtd, loff_t from, size_t len)
 {
 #ifdef CONFIG_MTD_PMC551_DEBUG
-;
+	printk(KERN_DEBUG "pmc551_unpoint()\n");
 #endif
 }
 
@@ -224,8 +224,8 @@ static int pmc551_read(struct mtd_info *mtd, loff_t from, size_t len,
 	u_char *copyto = buf;
 
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//	printk(KERN_DEBUG "pmc551_read(pos:%ld, len:%ld) asize: %ld\n",
-;
+	printk(KERN_DEBUG "pmc551_read(pos:%ld, len:%ld) asize: %ld\n",
+		(long)from, (long)len, (long)priv->asize);
 #endif
 
 	end = from + len - 1;
@@ -233,8 +233,8 @@ static int pmc551_read(struct mtd_info *mtd, loff_t from, size_t len,
 	/* Is it past the end? */
 	if (end > mtd->size) {
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//		printk(KERN_DEBUG "pmc551_read() out of bounds (%ld > %ld)\n",
-;
+		printk(KERN_DEBUG "pmc551_read() out of bounds (%ld > %ld)\n",
+			(long)end, (long)mtd->size);
 #endif
 		return -EINVAL;
 	}
@@ -256,8 +256,8 @@ static int pmc551_read(struct mtd_info *mtd, loff_t from, size_t len,
 		   written. */
 		while (soff_hi != eoff_hi) {
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//			printk(KERN_DEBUG "pmc551_read() soff_hi: %ld, "
-;
+			printk(KERN_DEBUG "pmc551_read() soff_hi: %ld, "
+				"eoff_hi: %ld\n", (long)soff_hi, (long)eoff_hi);
 #endif
 			memcpy(copyto, ptr, priv->asize);
 			copyto += priv->asize;
@@ -274,7 +274,7 @@ static int pmc551_read(struct mtd_info *mtd, loff_t from, size_t len,
 
       out:
 #ifdef CONFIG_MTD_PMC551_DEBUG
-;
+	printk(KERN_DEBUG "pmc551_read() done\n");
 #endif
 	*retlen = copyto - buf;
 	return 0;
@@ -291,17 +291,17 @@ static int pmc551_write(struct mtd_info *mtd, loff_t to, size_t len,
 	const u_char *copyfrom = buf;
 
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//	printk(KERN_DEBUG "pmc551_write(pos:%ld, len:%ld) asize:%ld\n",
-;
+	printk(KERN_DEBUG "pmc551_write(pos:%ld, len:%ld) asize:%ld\n",
+		(long)to, (long)len, (long)priv->asize);
 #endif
 
 	end = to + len - 1;
 	/* Is it past the end?  or did the u32 wrap? */
 	if (end > mtd->size) {
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//		printk(KERN_DEBUG "pmc551_write() out of bounds (end: %ld, "
-//			"size: %ld, to: %ld)\n", (long)end, (long)mtd->size,
-;
+		printk(KERN_DEBUG "pmc551_write() out of bounds (end: %ld, "
+			"size: %ld, to: %ld)\n", (long)end, (long)mtd->size,
+			(long)to);
 #endif
 		return -EINVAL;
 	}
@@ -323,8 +323,8 @@ static int pmc551_write(struct mtd_info *mtd, loff_t to, size_t len,
 		   written. */
 		while (soff_hi != eoff_hi) {
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//			printk(KERN_DEBUG "pmc551_write() soff_hi: %ld, "
-;
+			printk(KERN_DEBUG "pmc551_write() soff_hi: %ld, "
+				"eoff_hi: %ld\n", (long)soff_hi, (long)eoff_hi);
 #endif
 			memcpy(ptr, copyfrom, priv->asize);
 			copyfrom += priv->asize;
@@ -341,7 +341,7 @@ static int pmc551_write(struct mtd_info *mtd, loff_t to, size_t len,
 
       out:
 #ifdef CONFIG_MTD_PMC551_DEBUG
-;
+	printk(KERN_DEBUG "pmc551_write() done\n");
 #endif
 	*retlen = copyfrom - buf;
 	return 0;
@@ -566,77 +566,77 @@ static u32 fixup_pmc551(struct pci_dev *dev)
 	/*
 	 * Some screen fun
 	 */
-//	printk(KERN_DEBUG "pmc551: %d%sB (0x%x) of %sprefetchable memory at "
-//		"0x%llx\n", (size < 1024) ? size : (size < 1048576) ?
-//		size >> 10 : size >> 20,
-//		(size < 1024) ? "" : (size < 1048576) ? "Ki" : "Mi", size,
-//		((dcmd & (0x1 << 3)) == 0) ? "non-" : "",
-;
+	printk(KERN_DEBUG "pmc551: %d%sB (0x%x) of %sprefetchable memory at "
+		"0x%llx\n", (size < 1024) ? size : (size < 1048576) ?
+		size >> 10 : size >> 20,
+		(size < 1024) ? "" : (size < 1048576) ? "Ki" : "Mi", size,
+		((dcmd & (0x1 << 3)) == 0) ? "non-" : "",
+		(unsigned long long)pci_resource_start(dev, 0));
 
 	/*
 	 * Check to see the state of the memory
 	 */
 	pci_read_config_dword(dev, PMC551_DRAM_BLK0, &dcmd);
-//	printk(KERN_DEBUG "pmc551: DRAM_BLK0 Flags: %s,%s\n"
-//		"pmc551: DRAM_BLK0 Size: %d at %d\n"
-//		"pmc551: DRAM_BLK0 Row MUX: %d, Col MUX: %d\n",
-//		(((0x1 << 1) & dcmd) == 0) ? "RW" : "RO",
-//		(((0x1 << 0) & dcmd) == 0) ? "Off" : "On",
-//		PMC551_DRAM_BLK_GET_SIZE(dcmd),
-//		((dcmd >> 20) & 0x7FF), ((dcmd >> 13) & 0x7),
-;
+	printk(KERN_DEBUG "pmc551: DRAM_BLK0 Flags: %s,%s\n"
+		"pmc551: DRAM_BLK0 Size: %d at %d\n"
+		"pmc551: DRAM_BLK0 Row MUX: %d, Col MUX: %d\n",
+		(((0x1 << 1) & dcmd) == 0) ? "RW" : "RO",
+		(((0x1 << 0) & dcmd) == 0) ? "Off" : "On",
+		PMC551_DRAM_BLK_GET_SIZE(dcmd),
+		((dcmd >> 20) & 0x7FF), ((dcmd >> 13) & 0x7),
+		((dcmd >> 9) & 0xF));
 
 	pci_read_config_dword(dev, PMC551_DRAM_BLK1, &dcmd);
-//	printk(KERN_DEBUG "pmc551: DRAM_BLK1 Flags: %s,%s\n"
-//		"pmc551: DRAM_BLK1 Size: %d at %d\n"
-//		"pmc551: DRAM_BLK1 Row MUX: %d, Col MUX: %d\n",
-//		(((0x1 << 1) & dcmd) == 0) ? "RW" : "RO",
-//		(((0x1 << 0) & dcmd) == 0) ? "Off" : "On",
-//		PMC551_DRAM_BLK_GET_SIZE(dcmd),
-//		((dcmd >> 20) & 0x7FF), ((dcmd >> 13) & 0x7),
-;
+	printk(KERN_DEBUG "pmc551: DRAM_BLK1 Flags: %s,%s\n"
+		"pmc551: DRAM_BLK1 Size: %d at %d\n"
+		"pmc551: DRAM_BLK1 Row MUX: %d, Col MUX: %d\n",
+		(((0x1 << 1) & dcmd) == 0) ? "RW" : "RO",
+		(((0x1 << 0) & dcmd) == 0) ? "Off" : "On",
+		PMC551_DRAM_BLK_GET_SIZE(dcmd),
+		((dcmd >> 20) & 0x7FF), ((dcmd >> 13) & 0x7),
+		((dcmd >> 9) & 0xF));
 
 	pci_read_config_dword(dev, PMC551_DRAM_BLK2, &dcmd);
-//	printk(KERN_DEBUG "pmc551: DRAM_BLK2 Flags: %s,%s\n"
-//		"pmc551: DRAM_BLK2 Size: %d at %d\n"
-//		"pmc551: DRAM_BLK2 Row MUX: %d, Col MUX: %d\n",
-//		(((0x1 << 1) & dcmd) == 0) ? "RW" : "RO",
-//		(((0x1 << 0) & dcmd) == 0) ? "Off" : "On",
-//		PMC551_DRAM_BLK_GET_SIZE(dcmd),
-//		((dcmd >> 20) & 0x7FF), ((dcmd >> 13) & 0x7),
-;
+	printk(KERN_DEBUG "pmc551: DRAM_BLK2 Flags: %s,%s\n"
+		"pmc551: DRAM_BLK2 Size: %d at %d\n"
+		"pmc551: DRAM_BLK2 Row MUX: %d, Col MUX: %d\n",
+		(((0x1 << 1) & dcmd) == 0) ? "RW" : "RO",
+		(((0x1 << 0) & dcmd) == 0) ? "Off" : "On",
+		PMC551_DRAM_BLK_GET_SIZE(dcmd),
+		((dcmd >> 20) & 0x7FF), ((dcmd >> 13) & 0x7),
+		((dcmd >> 9) & 0xF));
 
 	pci_read_config_dword(dev, PMC551_DRAM_BLK3, &dcmd);
-//	printk(KERN_DEBUG "pmc551: DRAM_BLK3 Flags: %s,%s\n"
-//		"pmc551: DRAM_BLK3 Size: %d at %d\n"
-//		"pmc551: DRAM_BLK3 Row MUX: %d, Col MUX: %d\n",
-//		(((0x1 << 1) & dcmd) == 0) ? "RW" : "RO",
-//		(((0x1 << 0) & dcmd) == 0) ? "Off" : "On",
-//		PMC551_DRAM_BLK_GET_SIZE(dcmd),
-//		((dcmd >> 20) & 0x7FF), ((dcmd >> 13) & 0x7),
-;
+	printk(KERN_DEBUG "pmc551: DRAM_BLK3 Flags: %s,%s\n"
+		"pmc551: DRAM_BLK3 Size: %d at %d\n"
+		"pmc551: DRAM_BLK3 Row MUX: %d, Col MUX: %d\n",
+		(((0x1 << 1) & dcmd) == 0) ? "RW" : "RO",
+		(((0x1 << 0) & dcmd) == 0) ? "Off" : "On",
+		PMC551_DRAM_BLK_GET_SIZE(dcmd),
+		((dcmd >> 20) & 0x7FF), ((dcmd >> 13) & 0x7),
+		((dcmd >> 9) & 0xF));
 
 	pci_read_config_word(dev, PCI_COMMAND, &cmd);
-//	printk(KERN_DEBUG "pmc551: Memory Access %s\n",
-;
-//	printk(KERN_DEBUG "pmc551: I/O Access %s\n",
-;
+	printk(KERN_DEBUG "pmc551: Memory Access %s\n",
+		(((0x1 << 1) & cmd) == 0) ? "off" : "on");
+	printk(KERN_DEBUG "pmc551: I/O Access %s\n",
+		(((0x1 << 0) & cmd) == 0) ? "off" : "on");
 
 	pci_read_config_word(dev, PCI_STATUS, &cmd);
-//	printk(KERN_DEBUG "pmc551: Devsel %s\n",
-//		((PCI_STATUS_DEVSEL_MASK & cmd) == 0x000) ? "Fast" :
-//		((PCI_STATUS_DEVSEL_MASK & cmd) == 0x200) ? "Medium" :
-;
+	printk(KERN_DEBUG "pmc551: Devsel %s\n",
+		((PCI_STATUS_DEVSEL_MASK & cmd) == 0x000) ? "Fast" :
+		((PCI_STATUS_DEVSEL_MASK & cmd) == 0x200) ? "Medium" :
+		((PCI_STATUS_DEVSEL_MASK & cmd) == 0x400) ? "Slow" : "Invalid");
 
-//	printk(KERN_DEBUG "pmc551: %sFast Back-to-Back\n",
-;
+	printk(KERN_DEBUG "pmc551: %sFast Back-to-Back\n",
+		((PCI_COMMAND_FAST_BACK & cmd) == 0) ? "Not " : "");
 
 	pci_read_config_byte(dev, PMC551_SYS_CTRL_REG, &bcmd);
-//	printk(KERN_DEBUG "pmc551: EEPROM is under %s control\n"
-//		"pmc551: System Control Register is %slocked to PCI access\n"
-//		"pmc551: System Control Register is %slocked to EEPROM access\n",
-//		(bcmd & 0x1) ? "software" : "hardware",
-;
+	printk(KERN_DEBUG "pmc551: EEPROM is under %s control\n"
+		"pmc551: System Control Register is %slocked to PCI access\n"
+		"pmc551: System Control Register is %slocked to EEPROM access\n",
+		(bcmd & 0x1) ? "software" : "hardware",
+		(bcmd & 0x20) ? "" : "un", (bcmd & 0x40) ? "" : "un");
 #endif
 	return size;
 }
@@ -674,8 +674,8 @@ static int __init init_pmc551(void)
 	if (msize) {
 		msize = (1 << (ffs(msize) - 1)) << 20;
 		if (msize > (1 << 30)) {
-//			printk(KERN_NOTICE "pmc551: Invalid memory size [%d]\n",
-;
+			printk(KERN_NOTICE "pmc551: Invalid memory size [%d]\n",
+				msize);
 			return -EINVAL;
 		}
 	}
@@ -683,13 +683,13 @@ static int __init init_pmc551(void)
 	if (asize) {
 		asize = (1 << (ffs(asize) - 1)) << 20;
 		if (asize > (1 << 30)) {
-//			printk(KERN_NOTICE "pmc551: Invalid aperture size "
-;
+			printk(KERN_NOTICE "pmc551: Invalid aperture size "
+				"[%d]\n", asize);
 			return -EINVAL;
 		}
 	}
 
-;
+	printk(KERN_INFO PMC551_VERSION);
 
 	/*
 	 * PCU-bus chipset probe.
@@ -702,8 +702,8 @@ static int __init init_pmc551(void)
 			break;
 		}
 
-//		printk(KERN_NOTICE "pmc551: Found PCI V370PDC at 0x%llx\n",
-;
+		printk(KERN_NOTICE "pmc551: Found PCI V370PDC at 0x%llx\n",
+			(unsigned long long)pci_resource_start(PCI_Device, 0));
 
 		/*
 		 * The PMC551 device acts VERY weird if you don't init it
@@ -714,7 +714,7 @@ static int __init init_pmc551(void)
 		 * some kernels (2.2.*)
 		 */
 		if ((length = fixup_pmc551(PCI_Device)) <= 0) {
-;
+			printk(KERN_NOTICE "pmc551: Cannot init SDRAM\n");
 			break;
 		}
 
@@ -724,23 +724,23 @@ static int __init init_pmc551(void)
 		 */
 		if (msize) {
 			length = msize;
-//			printk(KERN_NOTICE "pmc551: Using specified memory "
-;
+			printk(KERN_NOTICE "pmc551: Using specified memory "
+				"size 0x%x\n", length);
 		} else {
 			msize = length;
 		}
 
 		mtd = kzalloc(sizeof(struct mtd_info), GFP_KERNEL);
 		if (!mtd) {
-//			printk(KERN_NOTICE "pmc551: Cannot allocate new MTD "
-;
+			printk(KERN_NOTICE "pmc551: Cannot allocate new MTD "
+				"device.\n");
 			break;
 		}
 
 		priv = kzalloc(sizeof(struct mypriv), GFP_KERNEL);
 		if (!priv) {
-//			printk(KERN_NOTICE "pmc551: Cannot allocate new MTD "
-;
+			printk(KERN_NOTICE "pmc551: Cannot allocate new MTD "
+				"device.\n");
 			kfree(mtd);
 			break;
 		}
@@ -748,29 +748,29 @@ static int __init init_pmc551(void)
 		priv->dev = PCI_Device;
 
 		if (asize > length) {
-//			printk(KERN_NOTICE "pmc551: reducing aperture size to "
-;
+			printk(KERN_NOTICE "pmc551: reducing aperture size to "
+				"fit %dM\n", length >> 20);
 			priv->asize = asize = length;
 		} else if (asize == 0 || asize == length) {
-//			printk(KERN_NOTICE "pmc551: Using existing aperture "
-;
+			printk(KERN_NOTICE "pmc551: Using existing aperture "
+				"size %dM\n", length >> 20);
 			priv->asize = asize = length;
 		} else {
-//			printk(KERN_NOTICE "pmc551: Using specified aperture "
-;
+			printk(KERN_NOTICE "pmc551: Using specified aperture "
+				"size %dM\n", asize >> 20);
 			priv->asize = asize;
 		}
 		priv->start = pci_iomap(PCI_Device, 0, priv->asize);
 
 		if (!priv->start) {
-;
+			printk(KERN_NOTICE "pmc551: Unable to map IO space\n");
 			kfree(mtd->priv);
 			kfree(mtd);
 			break;
 		}
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//		printk(KERN_DEBUG "pmc551: setting aperture to %d\n",
-;
+		printk(KERN_DEBUG "pmc551: setting aperture to %d\n",
+			ffs(priv->asize >> 20) - 1);
 #endif
 
 		priv->base_map0 = (PMC551_PCI_MEM_MAP_REG_EN
@@ -781,8 +781,8 @@ static int __init init_pmc551(void)
 					priv->curr_map0);
 
 #ifdef CONFIG_MTD_PMC551_DEBUG
-//		printk(KERN_DEBUG "pmc551: aperture set to %d\n",
-;
+		printk(KERN_DEBUG "pmc551: aperture set to %d\n",
+			(priv->base_map0 & 0xF0) >> 4);
 #endif
 
 		mtd->size = msize;
@@ -799,7 +799,7 @@ static int __init init_pmc551(void)
 		mtd->owner = THIS_MODULE;
 
 		if (mtd_device_register(mtd, NULL, 0)) {
-;
+			printk(KERN_NOTICE "pmc551: Failed to register new device\n");
 			pci_iounmap(PCI_Device, priv->start);
 			kfree(mtd->priv);
 			kfree(mtd);
@@ -809,14 +809,14 @@ static int __init init_pmc551(void)
 		/* Keep a reference as the mtd_device_register worked */
 		pci_dev_get(PCI_Device);
 
-;
-//		printk(KERN_NOTICE "Mapped %dMiB of memory from 0x%p to 0x%p\n",
-//			priv->asize >> 20,
-;
-//		printk(KERN_NOTICE "Total memory is %d%sB\n",
-//			(length < 1024) ? length :
-//			(length < 1048576) ? length >> 10 : length >> 20,
-;
+		printk(KERN_NOTICE "Registered pmc551 memory device.\n");
+		printk(KERN_NOTICE "Mapped %dMiB of memory from 0x%p to 0x%p\n",
+			priv->asize >> 20,
+			priv->start, priv->start + priv->asize);
+		printk(KERN_NOTICE "Total memory is %d%sB\n",
+			(length < 1024) ? length :
+			(length < 1048576) ? length >> 10 : length >> 20,
+			(length < 1024) ? "" : (length < 1048576) ? "Ki" : "Mi");
 		priv->nextpmc551 = pmc551list;
 		pmc551list = mtd;
 		found++;
@@ -827,10 +827,10 @@ static int __init init_pmc551(void)
 		pci_dev_put(PCI_Device);
 
 	if (!pmc551list) {
-;
+		printk(KERN_NOTICE "pmc551: not detected\n");
 		return -ENODEV;
 	} else {
-;
+		printk(KERN_NOTICE "pmc551: %d pmc551 devices loaded\n", found);
 		return 0;
 	}
 }
@@ -849,8 +849,8 @@ static void __exit cleanup_pmc551(void)
 		pmc551list = priv->nextpmc551;
 
 		if (priv->start) {
-//			printk(KERN_DEBUG "pmc551: unmapping %dMiB starting at "
-;
+			printk(KERN_DEBUG "pmc551: unmapping %dMiB starting at "
+				"0x%p\n", priv->asize >> 20, priv->start);
 			pci_iounmap(priv->dev, priv->start);
 		}
 		pci_dev_put(priv->dev);
@@ -861,7 +861,7 @@ static void __exit cleanup_pmc551(void)
 		found++;
 	}
 
-;
+	printk(KERN_NOTICE "pmc551: %d pmc551 devices unloaded\n", found);
 }
 
 module_init(init_pmc551);

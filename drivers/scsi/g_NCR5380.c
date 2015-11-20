@@ -158,25 +158,25 @@ static void __init internal_setup(int board, char *str, int *ints)
 	switch (board) {
 	case BOARD_NCR5380:
 		if (ints[0] != 2 && ints[0] != 3) {
-;
+			printk(KERN_ERR "generic_NCR5380_setup : usage ncr5380=" STRVAL(NCR5380_map_name) ",irq,dma\n");
 			return;
 		}
 		break;
 	case BOARD_NCR53C400:
 		if (ints[0] != 2) {
-;
+			printk(KERN_ERR "generic_NCR53C400_setup : usage ncr53c400=" STRVAL(NCR5380_map_name) ",irq\n");
 			return;
 		}
 		break;
 	case BOARD_NCR53C400A:
 		if (ints[0] != 2) {
-;
+			printk(KERN_ERR "generic_NCR53C400A_setup : usage ncr53c400a=" STRVAL(NCR5380_map_name) ",irq\n");
 			return;
 		}
 		break;
 	case BOARD_DTC3181E:
 		if (ints[0] != 2) {
-;
+			printk("generic_DTC3181E_setup : usage dtc3181e=" STRVAL(NCR5380_map_name) ",irq\n");
 			return;
 		}
 		break;
@@ -328,12 +328,12 @@ int __init generic_NCR5380_detect(struct scsi_host_template * tpnt)
 			if (pnp_device_attach(dev) < 0)
 				continue;
 			if (pnp_activate_dev(dev) < 0) {
-;
+				printk(KERN_ERR "dtc436e probe: activate failed\n");
 				pnp_device_detach(dev);
 				continue;
 			}
 			if (!pnp_port_valid(dev, 0)) {
-;
+				printk(KERN_ERR "dtc436e probe: no valid port\n");
 				pnp_device_detach(dev);
 				continue;
 			}
@@ -463,23 +463,23 @@ int __init generic_NCR5380_detect(struct scsi_host_template * tpnt)
 		if (instance->irq != SCSI_IRQ_NONE)
 			if (request_irq(instance->irq, generic_NCR5380_intr,
 					IRQF_DISABLED, "NCR5380", instance)) {
-;
+				printk(KERN_WARNING "scsi%d : IRQ%d not free, interrupts disabled\n", instance->host_no, instance->irq);
 				instance->irq = SCSI_IRQ_NONE;
 			}
 
 		if (instance->irq == SCSI_IRQ_NONE) {
-;
-;
+			printk(KERN_INFO "scsi%d : interrupts not enabled. for better interactive performance,\n", instance->host_no);
+			printk(KERN_INFO "scsi%d : please jumper the board for a free IRQ.\n", instance->host_no);
 		}
 
-;
+		printk(KERN_INFO "scsi%d : at " STRVAL(NCR5380_map_name) " 0x%x", instance->host_no, (unsigned int) instance->NCR5380_instance_name);
 		if (instance->irq == SCSI_IRQ_NONE)
-;
+			printk(" interrupts disabled");
 		else
-;
-;
+			printk(" irq %d", instance->irq);
+		printk(" options CAN_QUEUE=%d  CMD_PER_LUN=%d release=%d", CAN_QUEUE, CMD_PER_LUN, GENERIC_NCR5380_PUBLIC_RELEASE);
 		NCR5380_print_options(instance);
-;
+		printk("\n");
 
 		++current_override;
 		++count;
@@ -586,7 +586,7 @@ static inline int NCR5380_pread(struct Scsi_Host *instance, unsigned char *dst, 
 			break;
 		}
 		if (NCR5380_read(C400_CONTROL_STATUS_REG) & CSR_GATED_53C80_IRQ) {
-;
+			printk(KERN_ERR "53C400r: Got 53C80_IRQ start=%d, blocks=%d\n", start, blocks);
 			return -1;
 		}
 		while (NCR5380_read(C400_CONTROL_STATUS_REG) & CSR_HOST_BUF_NOT_RDY);
@@ -626,18 +626,18 @@ static inline int NCR5380_pread(struct Scsi_Host *instance, unsigned char *dst, 
 	}
 
 	if (!(NCR5380_read(C400_CONTROL_STATUS_REG) & CSR_GATED_53C80_IRQ))
-;
+		printk("53C400r: no 53C80 gated irq after transfer");
 
 #if 0
 	/*
 	 *	DON'T DO THIS - THEY NEVER ARRIVE!
 	 */
-;
+	printk("53C400r: Waiting for 53C80 registers\n");
 	while (NCR5380_read(C400_CONTROL_STATUS_REG) & CSR_53C80_REG)
 		;
 #endif
 	if (!(NCR5380_read(BUS_AND_STATUS_REG) & BASR_END_DMA_TRANSFER))
-;
+		printk(KERN_ERR "53C400r: no end dma signal\n");
 		
 	NCR5380_write(MODE_REG, MR_BASE);
 	NCR5380_read(RESET_PARITY_INTERRUPT_REG);
@@ -668,7 +668,7 @@ static inline int NCR5380_pwrite(struct Scsi_Host *instance, unsigned char *src,
 	NCR5380_write(C400_BLOCK_COUNTER_REG, blocks);
 	while (1) {
 		if (NCR5380_read(C400_CONTROL_STATUS_REG) & CSR_GATED_53C80_IRQ) {
-;
+			printk(KERN_ERR "53C400w: Got 53C80_IRQ start=%d, blocks=%d\n", start, blocks);
 			return -1;
 		}
 
@@ -707,9 +707,9 @@ static inline int NCR5380_pwrite(struct Scsi_Host *instance, unsigned char *src,
 	}
 
 #if 0
-;
+	printk("53C400w: waiting for registers to be available\n");
 	THEY NEVER DO ! while (NCR5380_read(C400_CONTROL_STATUS_REG) & CSR_53C80_REG);
-;
+	printk("53C400w: Got em\n");
 #endif
 
 	/* Let's wait for this instead - could be ugly */
@@ -725,13 +725,13 @@ static inline int NCR5380_pwrite(struct Scsi_Host *instance, unsigned char *src,
 	 */
 	if (i) {
 		if (!((i = NCR5380_read(BUS_AND_STATUS_REG)) & BASR_END_DMA_TRANSFER))
-;
+			printk(KERN_ERR "53C400w: No END OF DMA bit - WHOOPS! BASR=%0x\n", i);
 	} else
-;
+		printk(KERN_ERR "53C400w: no 53C80 gated irq after transfer (last block)\n");
 
 #if 0
 	if (!(NCR5380_read(BUS_AND_STATUS_REG) & BASR_END_DMA_TRANSFER)) {
-;
+		printk(KERN_ERR "53C400w: no end dma signal\n");
 	}
 #endif
 	while (!(NCR5380_read(TARGET_COMMAND_REG) & TCR_LAST_BYTE_SENT))

@@ -83,8 +83,8 @@ static irqreturn_t mpcore_wdt_fire(int irq, void *arg)
 
 	/* Check it really was our interrupt */
 	if (readl(wdt->base + TWD_WDOG_INTSTAT)) {
-//		dev_printk(KERN_CRIT, wdt->dev,
-;
+		dev_printk(KERN_CRIT, wdt->dev,
+					"Triggered - Reboot ignored.\n");
 		/* Clear the interrupt on the watchdog */
 		writel(1, wdt->base + TWD_WDOG_INTSTAT);
 		return IRQ_HANDLED;
@@ -175,7 +175,7 @@ static void mpcore_wdt_stop(struct mpcore_wdt *wdt)
 
 static void mpcore_wdt_start(struct mpcore_wdt *wdt)
 {
-;
+	dev_printk(KERN_INFO, wdt->dev, "enabling watchdog.\n");
 
 	/* This loads the count register but does NOT start the count yet */
 	mpcore_wdt_keepalive(wdt);
@@ -202,8 +202,8 @@ static int mpcore_wdt_stop_notifier(struct notifier_block *this,
 				unsigned long event, void *ptr)
 {
 	struct mpcore_wdt *wdt = platform_get_drvdata(mpcore_wdt_dev);
-//	printk(KERN_INFO "Stopping watchdog on non-crashing core %u\n",
-;
+	printk(KERN_INFO "Stopping watchdog on non-crashing core %u\n",
+	       smp_processor_id());
 	mpcore_wdt_stop(wdt);
 	return NOTIFY_STOP;
 }
@@ -249,8 +249,8 @@ static int mpcore_wdt_release(struct inode *inode, struct file *file)
 	if (wdt->expect_close == 42)
 		mpcore_wdt_stop(wdt);
 	else {
-//		dev_printk(KERN_CRIT, wdt->dev,
-;
+		dev_printk(KERN_CRIT, wdt->dev,
+				"unexpected close, not stopping watchdog!\n");
 		mpcore_wdt_keepalive(wdt);
 	}
 	cpumask_clear_cpu(smp_processor_id(), &wdt->timer_alive);
@@ -433,17 +433,17 @@ static int __devinit mpcore_wdt_probe(struct platform_device *dev)
 	mpcore_wdt_miscdev.parent = &dev->dev;
 	ret = misc_register(&mpcore_wdt_miscdev);
 	if (ret) {
-//		dev_printk(KERN_ERR, wdt->dev,
-//			"cannot register miscdev on minor=%d (err=%d)\n",
-;
+		dev_printk(KERN_ERR, wdt->dev,
+			"cannot register miscdev on minor=%d (err=%d)\n",
+							WATCHDOG_MINOR, ret);
 		goto err_misc;
 	}
 
 	ret = request_irq(wdt->irq, mpcore_wdt_fire, IRQF_DISABLED,
 							"mpcore_wdt", wdt);
 	if (ret) {
-//		dev_printk(KERN_ERR, wdt->dev,
-;
+		dev_printk(KERN_ERR, wdt->dev,
+			"cannot register IRQ%d for watchdog\n", wdt->irq);
 		goto err_irq;
 	}
 
@@ -505,8 +505,8 @@ static int __init mpcore_wdt_init(void)
 	 */
 	if (mpcore_wdt_set_heartbeat(mpcore_margin)) {
 		mpcore_wdt_set_heartbeat(TIMER_MARGIN);
-//		printk(KERN_INFO "mpcore_wdt: mpcore_margin value must be 0 < mpcore_margin < 65536, using %d\n",
-;
+		printk(KERN_INFO "mpcore_wdt: mpcore_margin value must be 0 < mpcore_margin < 65536, using %d\n",
+			TIMER_MARGIN);
 	}
 
 	cpufreq_register_notifier(&mpcore_wdt_cpufreq_notifier_block,
@@ -517,12 +517,12 @@ static int __init mpcore_wdt_init(void)
 		(cpufreq_get(i) * 1000) / MPCORE_WDT_PERIPHCLK_PRESCALER;
 
 	for_each_online_cpu(i)
-//		printk(KERN_INFO
-//		       "mpcore_wdt: rate for core %d is %lu.%02luMHz.\n", i,
-//		       per_cpu(mpcore_wdt_rate, i) / 1000000,
-;
+		printk(KERN_INFO
+		       "mpcore_wdt: rate for core %d is %lu.%02luMHz.\n", i,
+		       per_cpu(mpcore_wdt_rate, i) / 1000000,
+		       (per_cpu(mpcore_wdt_rate, i) / 10000) % 100);
 
-;
+	printk(banner, mpcore_noboot, mpcore_margin, nowayout);
 
 	return platform_driver_register(&mpcore_wdt_driver);
 }

@@ -74,12 +74,12 @@ static void pcm_debug_name(struct snd_pcm_substream *substream,
  * Must set snd module debug parameter to 3 to enable at runtime.
  */
 #define snd_printddd(format, args...) \
-//	__snd_printk(3, __FILE__, __LINE__, format, ##args)
-//#else
-//#define snd_printddd(format, args...) do { } while (0)
-//#endif
-//
-;
+	__snd_printk(3, __FILE__, __LINE__, format, ##args)
+#else
+#define snd_printddd(format, args...) do { } while (0)
+#endif
+
+static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
 static int enable_hpi_hwdep = 1;
@@ -291,9 +291,9 @@ static inline u16 hpi_stream_group_get_map(
 static u16 handle_error(u16 err, int line, char *filename)
 {
 	if (err)
-//		printk(KERN_WARNING
-//			"in file %s, line %d: HPI error %d\n",
-;
+		printk(KERN_WARNING
+			"in file %s, line %d: HPI error %d\n",
+			filename, line, err);
 	return err;
 }
 
@@ -391,8 +391,8 @@ static void snd_card_asihpi_pcm_samplerates(struct snd_card_asihpi *asihpi,
 					  HPI_SOURCENODE_CLOCK_SOURCE, 0, 0, 0,
 					  HPI_CONTROL_SAMPLECLOCK, &h_control);
 		if (err) {
-//			snd_printk(KERN_ERR
-;
+			snd_printk(KERN_ERR
+				"No local sampleclock, err %d\n", err);
 		}
 
 		for (idx = -1; idx < 100; idx++) {
@@ -1359,7 +1359,7 @@ static inline int ctl_add(struct snd_card *card, struct snd_kcontrol_new *ctl,
 	if (err < 0)
 		return err;
 	else if (mixer_dump)
-;
+		snd_printk(KERN_INFO "added %s(%d)\n", ctl->name, ctl->index);
 
 	return 0;
 }
@@ -2538,9 +2538,9 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 		if (err) {
 			if (err == HPI_ERROR_CONTROL_DISABLED) {
 				if (mixer_dump)
-//					snd_printk(KERN_INFO
-//						   "Disabled HPI Control(%d)\n",
-;
+					snd_printk(KERN_INFO
+						   "Disabled HPI Control(%d)\n",
+						   idx);
 				continue;
 			} else
 				break;
@@ -2603,15 +2603,15 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 		case HPI_CONTROL_COMPANDER:
 		default:
 			if (mixer_dump)
-//				snd_printk(KERN_INFO
-//					"Untranslated HPI Control"
-//					"(%d) %d %d %d %d %d\n",
-//					idx,
-//					hpi_ctl.control_type,
-//					hpi_ctl.src_node_type,
-//					hpi_ctl.src_node_index,
-//					hpi_ctl.dst_node_type,
-;
+				snd_printk(KERN_INFO
+					"Untranslated HPI Control"
+					"(%d) %d %d %d %d %d\n",
+					idx,
+					hpi_ctl.control_type,
+					hpi_ctl.src_node_type,
+					hpi_ctl.src_node_index,
+					hpi_ctl.dst_node_type,
+					hpi_ctl.dst_node_index);
 			continue;
 		};
 		if (err < 0)
@@ -2620,7 +2620,7 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 	if (HPI_ERROR_INVALID_OBJ_INDEX != err)
 		hpi_handle_error(err);
 
-;
+	snd_printk(KERN_INFO "%d mixer controls found\n", idx);
 
 	return 0;
 }
@@ -2782,9 +2782,9 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 				    &card);
 		if (err < 0)
 			return err;
-//		snd_printk(KERN_WARNING
-//			"**** WARNING **** Adapter index %d->ALSA index %d\n",
-;
+		snd_printk(KERN_WARNING
+			"**** WARNING **** Adapter index %d->ALSA index %d\n",
+			hpi_card->index, card->number);
 	}
 
 	snd_card_set_dev(card, &pci_dev->dev);
@@ -2801,15 +2801,15 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 				 &asihpi->serial_number, &asihpi->type));
 
 	version = asihpi->version;
-//	snd_printk(KERN_INFO "adapter ID=%4X index=%d num_outstreams=%d "
-//			"num_instreams=%d S/N=%d\n"
-//			"Hw Version %c%d DSP code version %03d\n",
-//			asihpi->type, asihpi->adapter_index,
-//			asihpi->num_outstreams,
-//			asihpi->num_instreams, asihpi->serial_number,
-//			((version >> 3) & 0xf) + 'A',
-//			version & 0x7,
-;
+	snd_printk(KERN_INFO "adapter ID=%4X index=%d num_outstreams=%d "
+			"num_instreams=%d S/N=%d\n"
+			"Hw Version %c%d DSP code version %03d\n",
+			asihpi->type, asihpi->adapter_index,
+			asihpi->num_outstreams,
+			asihpi->num_instreams, asihpi->serial_number,
+			((version >> 3) & 0xf) + 'A',
+			version & 0x7,
+			((version >> 13) * 100) + ((version >> 7) & 0x3f));
 
 	pcm_substreams = asihpi->num_outstreams;
 	if (pcm_substreams < asihpi->num_instreams)
@@ -2852,20 +2852,20 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 		asihpi->out_max_chans = 2;
 	}
 
-//	snd_printk(KERN_INFO "has dma:%d, grouping:%d, mrx:%d\n",
-//			asihpi->can_dma,
-//			asihpi->support_grouping,
-//			asihpi->support_mrx
-;
+	snd_printk(KERN_INFO "has dma:%d, grouping:%d, mrx:%d\n",
+			asihpi->can_dma,
+			asihpi->support_grouping,
+			asihpi->support_mrx
+	      );
 
 	err = snd_card_asihpi_pcm_new(asihpi, 0, pcm_substreams);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "pcm_new failed\n");
 		goto __nodev;
 	}
 	err = snd_card_asihpi_mixer_new(asihpi);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "mixer_new failed\n");
 		goto __nodev;
 	}
 
@@ -2897,7 +2897,7 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 	}
 __nodev:
 	snd_card_free(card);
-;
+	snd_printk(KERN_ERR "snd_asihpi_probe error %d\n", err);
 	return err;
 
 }

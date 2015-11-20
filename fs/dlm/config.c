@@ -871,7 +871,7 @@ int dlm_nodeid_list(char *lsname, int **ids_out, int *ids_count_out,
 	mutex_lock(&sp->members_lock);
 	if (!sp->members_count) {
 		rv = -EINVAL;
-;
+		printk(KERN_ERR "dlm: zero members_count\n");
 		goto out;
 	}
 
@@ -890,7 +890,7 @@ int dlm_nodeid_list(char *lsname, int **ids_out, int *ids_count_out,
 	}
 
 	if (ids_count != i)
-;
+		printk(KERN_ERR "dlm: bad nodeid count %d %d\n", ids_count, i);
 
 	if (!new_count)
 		goto out_ids;

@@ -143,7 +143,7 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
 
 	}
 	if (res > 0) {
-;
+		printk(KERN_INFO "%s", state->pp_buf);
 
 		free_page((unsigned long)state->pp_buf);
 		return state;
@@ -158,7 +158,7 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
 	else if (warn_no_part)
 		strlcat(state->pp_buf, " unable to read partition table\n", PAGE_SIZE);
 
-;
+	printk(KERN_INFO "%s", state->pp_buf);
 
 	free_page((unsigned long)state->pp_buf);
 	kfree(state);

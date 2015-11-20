@@ -226,7 +226,7 @@ static long pnx4008_wdt_ioctl(struct file *file, unsigned int cmd,
 static int pnx4008_wdt_release(struct inode *inode, struct file *file)
 {
 	if (!test_bit(WDT_OK_TO_CLOSE, &wdt_status))
-;
+		printk(KERN_WARNING "WATCHDOG: Device closed unexpectdly\n");
 
 	wdt_disable();
 	clk_disable(wdt_clk);
@@ -258,20 +258,20 @@ static int __devinit pnx4008_wdt_probe(struct platform_device *pdev)
 	if (heartbeat < 1 || heartbeat > MAX_HEARTBEAT)
 		heartbeat = DEFAULT_HEARTBEAT;
 
-//	printk(KERN_INFO MODULE_NAME
-;
+	printk(KERN_INFO MODULE_NAME
+		"PNX4008 Watchdog Timer: heartbeat %d sec\n", heartbeat);
 
 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (wdt_mem == NULL) {
-//		printk(KERN_INFO MODULE_NAME
-;
+		printk(KERN_INFO MODULE_NAME
+			"failed to get memory region resouce\n");
 		return -ENOENT;
 	}
 
 	size = resource_size(wdt_mem);
 
 	if (!request_mem_region(wdt_mem->start, size, pdev->name)) {
-;
+		printk(KERN_INFO MODULE_NAME "failed to get memory region\n");
 		return -ENOENT;
 	}
 	wdt_base = (void __iomem *)IO_ADDRESS(wdt_mem->start);
@@ -294,7 +294,7 @@ static int __devinit pnx4008_wdt_probe(struct platform_device *pdev)
 
 	ret = misc_register(&pnx4008_wdt_miscdev);
 	if (ret < 0) {
-;
+		printk(KERN_ERR MODULE_NAME "cannot register misc device\n");
 		release_mem_region(wdt_mem->start, size);
 		wdt_mem = NULL;
 		clk_disable(wdt_clk);

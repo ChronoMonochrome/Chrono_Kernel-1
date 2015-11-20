@@ -43,10 +43,10 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "activates debug info");
 
-//#define dprintk(fmt, arg...) do {					\
-//		if (debug)						\
-//			printk(KERN_INFO "cx231xx-audio %s: " fmt,	\
-;
+#define dprintk(fmt, arg...) do {					\
+		if (debug)						\
+			printk(KERN_INFO "cx231xx-audio %s: " fmt,	\
+				__func__, ##arg); 			\
 	} while (0)
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;
@@ -55,7 +55,7 @@ static int cx231xx_isoc_audio_deinit(struct cx231xx *dev)
 {
 	int i;
 
-;
+	dprintk("Stopping isoc\n");
 
 	for (i = 0; i < CX231XX_AUDIO_BUFS; i++) {
 		if (dev->adev.urb[i]) {
@@ -79,7 +79,7 @@ static int cx231xx_bulk_audio_deinit(struct cx231xx *dev)
 {
 	int i;
 
-;
+	dprintk("Stopping bulk\n");
 
 	for (i = 0; i < CX231XX_AUDIO_BUFS; i++) {
 		if (dev->adev.urb[i]) {
@@ -120,7 +120,7 @@ static void cx231xx_audio_isocirq(struct urb *urb)
 	case -ESHUTDOWN:
 		return;
 	default:		/* error */
-;
+		dprintk("urb completition error %d.\n", urb->status);
 		break;
 	}
 
@@ -205,7 +205,7 @@ static void cx231xx_audio_bulkirq(struct urb *urb)
 	case -ESHUTDOWN:
 		return;
 	default:		/* error */
-;
+		dprintk("urb completition error %d.\n", urb->status);
 		break;
 	}
 
@@ -381,7 +381,7 @@ static int snd_pcm_alloc_vmalloc_buffer(struct snd_pcm_substream *subs,
 {
 	struct snd_pcm_runtime *runtime = subs->runtime;
 
-;
+	dprintk("Allocating vbuffer\n");
 	if (runtime->dma_area) {
 		if (runtime->dma_bytes > size)
 			return 0;
@@ -424,7 +424,7 @@ static int snd_cx231xx_capture_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
-;
+	dprintk("opening device and trying to acquire exclusive lock\n");
 
 	if (!dev) {
 		cx231xx_errdev("BUG: cx231xx can't find device struct."
@@ -470,7 +470,7 @@ static int snd_cx231xx_pcm_close(struct snd_pcm_substream *substream)
 	int ret;
 	struct cx231xx *dev = snd_pcm_substream_chip(substream);
 
-;
+	dprintk("closing device\n");
 
 	/* inform hardware to stop streaming */
 	mutex_lock(&dev->lock);
@@ -491,10 +491,10 @@ static int snd_cx231xx_pcm_close(struct snd_pcm_substream *substream)
 	mutex_unlock(&dev->lock);
 
 	if (dev->adev.users == 0 && dev->adev.shutdown == 1) {
-;
-;
+		dprintk("audio users: %d\n", dev->adev.users);
+		dprintk("disabling audio stream!\n");
 		dev->adev.shutdown = 0;
-;
+		dprintk("released lock\n");
 		if (atomic_read(&dev->stream_started) > 0) {
 			atomic_set(&dev->stream_started, 0);
 			schedule_work(&dev->wq_trigger);
@@ -509,7 +509,7 @@ static int snd_cx231xx_hw_capture_params(struct snd_pcm_substream *substream,
 	unsigned int channels, rate, format;
 	int ret;
 
-;
+	dprintk("Setting capture parameters\n");
 
 	ret = snd_pcm_alloc_vmalloc_buffer(substream,
 					   params_buffer_bytes(hw_params));
@@ -527,7 +527,7 @@ static int snd_cx231xx_hw_capture_free(struct snd_pcm_substream *substream)
 {
 	struct cx231xx *dev = snd_pcm_substream_chip(substream);
 
-;
+	dprintk("Stop capture, if needed\n");
 
 	if (atomic_read(&dev->stream_started) > 0) {
 		atomic_set(&dev->stream_started, 0);
@@ -552,7 +552,7 @@ static void audio_trigger(struct work_struct *work)
 	struct cx231xx *dev = container_of(work, struct cx231xx, wq_trigger);
 
 	if (atomic_read(&dev->stream_started)) {
-;
+		dprintk("starting capture");
 		if (is_fw_load(dev) == 0)
 			cx25840_call(dev, core, load_fw);
 		if (dev->USE_ISO)
@@ -560,7 +560,7 @@ static void audio_trigger(struct work_struct *work)
 		else
 			cx231xx_init_audio_bulk(dev);
 	} else {
-;
+		dprintk("stopping capture");
 		cx231xx_isoc_audio_deinit(dev);
 	}
 }

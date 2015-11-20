@@ -66,7 +66,7 @@ nfs4_renew_state(struct work_struct *work)
 	unsigned renew_flags = 0;
 
 	ops = clp->cl_mvops->state_renewal_ops;
-;
+	dprintk("%s: start\n", __func__);
 
 	if (test_bit(NFS_CS_STOP_RENEW, &clp->cl_res_state))
 		goto out;
@@ -97,15 +97,15 @@ nfs4_renew_state(struct work_struct *work)
 			goto out_exp;
 		}
 	} else {
-//		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
-;
+		dprintk("%s: failed to call renewd. Reason: lease not expired \n",
+				__func__);
 		spin_unlock(&clp->cl_lock);
 	}
 	nfs4_schedule_state_renewal(clp);
 out_exp:
 	nfs_expire_unreferenced_delegations(clp);
 out:
-;
+	dprintk("%s: done\n", __func__);
 }
 
 void
@@ -118,8 +118,8 @@ nfs4_schedule_state_renewal(struct nfs_client *clp)
 		- (long)jiffies;
 	if (timeout < 5 * HZ)
 		timeout = 5 * HZ;
-//	dprintk("%s: requeueing work. Lease period = %ld\n",
-;
+	dprintk("%s: requeueing work. Lease period = %ld\n",
+			__func__, (timeout + HZ - 1) / HZ);
 	cancel_delayed_work(&clp->cl_renewd);
 	schedule_delayed_work(&clp->cl_renewd, timeout);
 	set_bit(NFS_CS_RENEWD, &clp->cl_res_state);

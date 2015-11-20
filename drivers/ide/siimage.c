@@ -372,9 +372,9 @@ static int siimage_mmio_dma_test_irq(ide_drive_t *drive)
 
 			writel(sata_error, sata_error_addr);
 			watchdog = (sata_error & 0x00680000) ? 1 : 0;
-//			printk(KERN_WARNING "%s: sata_error = 0x%08x, "
-//				"watchdog = %d, %s\n",
-;
+			printk(KERN_WARNING "%s: sata_error = 0x%08x, "
+				"watchdog = %d, %s\n",
+				drive->name, sata_error, watchdog, __func__);
 		} else
 			watchdog = (ext_stat & 0x8000) ? 1 : 0;
 
@@ -417,8 +417,8 @@ static int sil_sata_reset_poll(ide_drive_t *drive)
 		u32 sata_stat = readl(sata_status_addr);
 
 		if ((sata_stat & 0x03) != 0x03) {
-//			printk(KERN_WARNING "%s: reset phy dead, status=0x%08x\n",
-;
+			printk(KERN_WARNING "%s: reset phy dead, status=0x%08x\n",
+					    hwif->name, sata_stat);
 			return -ENXIO;
 		}
 	}
@@ -527,8 +527,8 @@ static int init_chipset_siimage(struct pci_dev *dev)
 			{ "== 100", "== 133", "== 2X PCI", "DISABLED!" };
 
 		tmp >>= 4;
-//		printk(KERN_INFO DRV_NAME " %s: BASE CLOCK %s\n",
-;
+		printk(KERN_INFO DRV_NAME " %s: BASE CLOCK %s\n",
+			pci_name(dev), clk_str[tmp & 3]);
 	}
 
 	return 0;
@@ -610,8 +610,8 @@ static int is_dev_seagate_sata(ide_drive_t *drive)
 	if ((len > 4) && (!memcmp(s, "ST", 2)))
 		if ((!memcmp(s + len - 2, "AS", 2)) ||
 		    (!memcmp(s + len - 3, "ASL", 3))) {
-//			printk(KERN_INFO "%s: applying pessimistic Seagate "
-;
+			printk(KERN_INFO "%s: applying pessimistic Seagate "
+					 "errata fix\n", drive->name);
 			return 1;
 		}
 
@@ -750,8 +750,8 @@ static int __devinit siimage_init_one(struct pci_dev *dev,
 		static int first = 1;
 
 		if (first) {
-//			printk(KERN_INFO DRV_NAME ": For full SATA support you "
-;
+			printk(KERN_INFO DRV_NAME ": For full SATA support you "
+				"should use the libata sata_sil module.\n");
 			first = 0;
 		}
 
@@ -769,8 +769,8 @@ static int __devinit siimage_init_one(struct pci_dev *dev,
 		* seem to get terminally confused in the PCI spaces.
 		*/
 		if (!request_mem_region(bar5, barsize, d.name)) {
-//			printk(KERN_WARNING DRV_NAME " %s: MMIO ports not "
-;
+			printk(KERN_WARNING DRV_NAME " %s: MMIO ports not "
+				"available\n", pci_name(dev));
 		} else {
 			ioaddr = pci_ioremap_bar(dev, 5);
 			if (ioaddr == NULL)

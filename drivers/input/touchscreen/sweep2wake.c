@@ -59,13 +59,13 @@ bool s2w_use_wakelock;
 static int __init read_s2w_cmdline(char *s2w)
 {
 	if (strcmp(s2w, "1") == 0) {
-;
+		printk(KERN_INFO "[cmdline_s2w]: Sweep2Wake enabled. | s2w='%s'", s2w);
 		s2w_switch = 1;
 	} else if (strcmp(s2w, "0") == 0) {
-;
+		printk(KERN_INFO "[cmdline_s2w]: Sweep2Wake disabled. | s2w='%s'", s2w);
 		s2w_switch = 0;
 	} else {
-;
+		printk(KERN_INFO "[cmdline_s2w]: No valid input found. Going with default: | s2w='%u'", s2w_switch);
 	}
 	return 1;
 }
@@ -147,7 +147,7 @@ void detect_sweep2wake(int x, int y, bool st)
 				    (y > 0)) {
 					if (x > (S2W_X_MAX - S2W_X_FINAL)) {
 						if (exec_count) {
-;
+							printk(KERN_INFO "[sweep2wake]: ON");
 							sweep2wake_pwrtrigger();
 							exec_count = false;
 						}
@@ -177,7 +177,7 @@ void detect_sweep2wake(int x, int y, bool st)
 				    (y > S2W_Y_LIMIT)) {
 					if (x < S2W_X_FINAL) {
 						if (exec_count) {
-;
+							printk(KERN_INFO "[sweep2wake]: OFF");
 							sweep2wake_pwrtrigger();
 							exec_count = false;
 						}
@@ -213,7 +213,7 @@ static int set_enable(const char *val, struct kernel_param *kp)
 		 * I'm waking the screen and then setting it.
 		 */
 		if(DEBUG)	
-;
+			printk("s2w: cant enable/disable while screen is off! Waking...\n");
 
 		sweep2wake_pwrtrigger();
 
@@ -228,20 +228,20 @@ static int set_enable(const char *val, struct kernel_param *kp)
 		should_break_suspend_check_init_work();
 #endif
 		if(DEBUG)
-;
+			printk("s2w: enabled\n");
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
 		if(s2w_use_wakelock && !wake_lock_active(&s2w_wake_lock)){
 			wake_lock(&s2w_wake_lock);
 			if(DEBUG)
-;
+				printk("s2w: wake lock enabled\n");
 		}
 #endif
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
 		s2w_switch = 0;
 		if(DEBUG)
-;
+			printk("s2w: disabled\n");
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
 		if(wake_lock_active(&s2w_wake_lock)){
 			wake_unlock(&s2w_wake_lock);
@@ -249,7 +249,7 @@ static int set_enable(const char *val, struct kernel_param *kp)
 #endif
 
 	}else {
-;
+		printk("s2w: invalid input '%s' for 'enable'; use 1 or 0\n", val);
 	}
 
 	return 0;
@@ -266,7 +266,7 @@ static int set_s2w_use_wakelock(const char *val, struct kernel_param *kp){
 		if(s2w_use_wakelock && !wake_lock_active(&s2w_wake_lock)){
 			wake_lock(&s2w_wake_lock);
 			if(DEBUG)
-;
+				printk("s2w: wake lock enabled\n");
 		}
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
@@ -276,7 +276,7 @@ static int set_s2w_use_wakelock(const char *val, struct kernel_param *kp){
 		}
 
 	}else {
-;
+		printk("s2w: invalid input '%s' for 's2w_use_wakelock'; use 1 or 0\n", val);
 	}
 	return 0;
 

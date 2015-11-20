@@ -833,8 +833,8 @@ static int nexio_init(struct usbtouch_usb *usbtouch)
 		}
 	}
 
-//	printk(KERN_INFO "Nexio device: %s, firmware version: %s\n",
-;
+	printk(KERN_INFO "Nexio device: %s, firmware version: %s\n",
+	       device_name, firmware_ver);
 
 	kfree(firmware_ver);
 	kfree(device_name);

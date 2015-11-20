@@ -130,7 +130,7 @@ int vga_switcheroo_register_client(struct pci_dev *pdev,
 
 	/* if we get two clients + handler */
 	if (vgasr_priv.registered_clients == 0x3 && vgasr_priv.handler) {
-;
+		printk(KERN_INFO "vga_switcheroo: enabled\n");
 		vga_switcheroo_enable();
 	}
 	mutex_unlock(&vgasr_mutex);
@@ -150,7 +150,7 @@ void vga_switcheroo_unregister_client(struct pci_dev *pdev)
 		}
 	}
 
-;
+	printk(KERN_INFO "vga_switcheroo: disabled\n");
 	vga_switcheroo_debugfs_fini(&vgasr_priv);
 	vgasr_priv.active = false;
 	mutex_unlock(&vgasr_mutex);
@@ -374,7 +374,7 @@ vga_switcheroo_debugfs_write(struct file *filp, const char __user *ubuf,
 	for (i = 0; i < VGA_SWITCHEROO_MAX_CLIENTS; i++) {
 		can_switch = vgasr_priv.clients[i].can_switch(vgasr_priv.clients[i].pdev);
 		if (can_switch == false) {
-;
+			printk(KERN_ERR "vga_switcheroo: client %d refused switch\n", i);
 			break;
 		}
 	}
@@ -386,20 +386,20 @@ vga_switcheroo_debugfs_write(struct file *filp, const char __user *ubuf,
 		pdev_name = pci_name(client->pdev);
 		ret = vga_switchto_stage1(client);
 		if (ret)
-;
+			printk(KERN_ERR "vga_switcheroo: switching failed stage 1 %d\n", ret);
 
 		ret = vga_switchto_stage2(client);
 		if (ret)
-;
+			printk(KERN_ERR "vga_switcheroo: switching failed stage 2 %d\n", ret);
 
 	} else {
-;
+		printk(KERN_INFO "vga_switcheroo: setting delayed switch to client %d\n", client->id);
 		vgasr_priv.delayed_switch_active = true;
 		vgasr_priv.delayed_client_id = client_id;
 
 		ret = vga_switchto_stage1(client);
 		if (ret)
-;
+			printk(KERN_ERR "vga_switcheroo: delayed switching stage 1 failed %d\n", ret);
 	}
 
 out:
@@ -436,14 +436,14 @@ static int vga_switcheroo_debugfs_init(struct vgasr_priv *priv)
 	priv->debugfs_root = debugfs_create_dir("vgaswitcheroo", NULL);
 
 	if (!priv->debugfs_root) {
-;
+		printk(KERN_ERR "vga_switcheroo: Cannot create /sys/kernel/debug/vgaswitcheroo\n");
 		goto fail;
 	}
 
 	priv->switch_file = debugfs_create_file("switch", 0644,
 						priv->debugfs_root, NULL, &vga_switcheroo_debugfs_fops);
 	if (!priv->switch_file) {
-;
+		printk(KERN_ERR "vga_switcheroo: cannot create /sys/kernel/debug/vgaswitcheroo/switch\n");
 		goto fail;
 	}
 	return 0;
@@ -465,14 +465,14 @@ int vga_switcheroo_process_delayed_switch(void)
 	if (!vgasr_priv.delayed_switch_active)
 		goto err;
 
-;
+	printk(KERN_INFO "vga_switcheroo: processing delayed switch to %d\n", vgasr_priv.delayed_client_id);
 
 	for (i = 0; i < VGA_SWITCHEROO_MAX_CLIENTS; i++) {
 		if (vgasr_priv.clients[i].id == vgasr_priv.delayed_client_id)
 			client = &vgasr_priv.clients[i];
 		can_switch = vgasr_priv.clients[i].can_switch(vgasr_priv.clients[i].pdev);
 		if (can_switch == false) {
-;
+			printk(KERN_ERR "vga_switcheroo: client %d refused switch\n", i);
 			break;
 		}
 	}
@@ -483,7 +483,7 @@ int vga_switcheroo_process_delayed_switch(void)
 	pdev_name = pci_name(client->pdev);
 	ret = vga_switchto_stage2(client);
 	if (ret)
-;
+		printk(KERN_ERR "vga_switcheroo: delayed switching failed stage 2 %d\n", ret);
 
 	vgasr_priv.delayed_switch_active = false;
 	err = 0;

@@ -90,7 +90,7 @@ da_debug(struct FsmInst *fi, char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &va;
 
-;
+	printk(KERN_DEBUG "mgr(%d): %pV\n", mgr->ch.st->dev->id, &vaf);
 
 	va_end(va);
 }
@@ -239,8 +239,8 @@ tei_debug(struct FsmInst *fi, char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &va;
 
-//	printk(KERN_DEBUG "sapi(%d) tei(%d): %pV\n",
-;
+	printk(KERN_DEBUG "sapi(%d) tei(%d): %pV\n",
+	       tm->l2->sapi, tm->l2->tei, &vaf);
 
 	va_end(va);
 }
@@ -256,9 +256,9 @@ get_free_id(struct manager *mgr)
 
 	list_for_each_entry(l2, &mgr->layer2, list) {
 		if (l2->ch.nr > 63) {
-//			printk(KERN_WARNING
-//			    "%s: more as 63 layer2 for one device\n",
-;
+			printk(KERN_WARNING
+			    "%s: more as 63 layer2 for one device\n",
+			    __func__);
 			return -EBUSY;
 		}
 		test_and_set_bit(l2->ch.nr, (u_long *)&ids);
@@ -266,8 +266,8 @@ get_free_id(struct manager *mgr)
 	for (i = 1; i < 64; i++)
 		if (!test_bit(i, (u_long *)&ids))
 			return i;
-//	printk(KERN_WARNING "%s: more as 63 layer2 for one device\n",
-;
+	printk(KERN_WARNING "%s: more as 63 layer2 for one device\n",
+	    __func__);
 	return -EBUSY;
 }
 
@@ -293,8 +293,8 @@ get_free_tei(struct manager *mgr)
 	for (i = 0; i < 64; i++)
 		if (!test_bit(i, (u_long *)&ids))
 			return i + 64;
-//	printk(KERN_WARNING "%s: more as 63 dynamic tei for one device\n",
-;
+	printk(KERN_WARNING "%s: more as 63 dynamic tei for one device\n",
+	    __func__);
 	return -1;
 }
 
@@ -315,7 +315,7 @@ teiup_create(struct manager *mgr, u_int prim, int len, void *arg)
 		memcpy(skb_put(skb, len), arg, len);
 	err = mgr->up->send(mgr->up, skb);
 	if (err) {
-;
+		printk(KERN_WARNING "%s: err=%d\n", __func__, err);
 		dev_kfree_skb(skb);
 	}
 }
@@ -455,7 +455,7 @@ put_tei_msg(struct manager *mgr, u_char m_id, unsigned int ri, int tei)
 	bp[7] = ((tei << 1) & 0xff) | 1;
 	skb = _alloc_mISDN_skb(PH_DATA_REQ, new_id(mgr), 8, bp, GFP_ATOMIC);
 	if (!skb) {
-;
+		printk(KERN_WARNING "%s: no skb for tei msg\n", __func__);
 		return;
 	}
 	mgr_send_down(mgr, skb);
@@ -804,13 +804,13 @@ create_new_tei(struct manager *mgr, int tei, int sapi)
 		test_and_set_bit(OPTION_L2_PMX, &opt);
 	l2 = create_l2(mgr->up, ISDN_P_LAPD_NT, opt, tei, sapi);
 	if (!l2) {
-;
+		printk(KERN_WARNING "%s:no memory for layer2\n", __func__);
 		return NULL;
 	}
 	l2->tm = kzalloc(sizeof(struct teimgr), GFP_KERNEL);
 	if (!l2->tm) {
 		kfree(l2);
-;
+		printk(KERN_WARNING "%s:no memory for teimgr\n", __func__);
 		return NULL;
 	}
 	l2->tm->mgr = mgr;
@@ -828,7 +828,7 @@ create_new_tei(struct manager *mgr, int tei, int sapi)
 	write_unlock_irqrestore(&mgr->lock, flags);
 	if (id < 0) {
 		l2->ch.ctrl(&l2->ch, CLOSE_CHANNEL, NULL);
-;
+		printk(KERN_WARNING "%s:no free id\n", __func__);
 		return NULL;
 	} else {
 		l2->ch.nr = id;
@@ -857,7 +857,7 @@ new_tei_req(struct manager *mgr, u_char *dp)
 	else
 		tei = get_free_tei(mgr);
 	if (tei < 0) {
-;
+		printk(KERN_WARNING "%s:No free tei\n", __func__);
 		goto denied;
 	}
 	l2 = create_new_tei(mgr, tei, CTRL_SAPI);
@@ -879,8 +879,8 @@ ph_data_ind(struct manager *mgr, struct sk_buff *skb)
 
 	if (skb->len < 8) {
 		if (*debug  & DEBUG_L2_TEI)
-//			printk(KERN_DEBUG "%s: short mgr frame %d/8\n",
-;
+			printk(KERN_DEBUG "%s: short mgr frame %d/8\n",
+			    __func__, skb->len);
 		goto done;
 	}
 
@@ -934,7 +934,7 @@ l2_tei(struct layer2 *l2, u_int cmd, u_long arg)
 	if (test_bit(FLG_FIXED_TEI, &l2->flag))
 		return 0;
 	if (*debug & DEBUG_L2_TEI)
-;
+		printk(KERN_DEBUG "%s: cmd(%x)\n", __func__, cmd);
 	switch (cmd) {
 	case MDL_ASSIGN_IND:
 		mISDN_FsmEvent(&tm->tei_m, EV_IDREQ, NULL);
@@ -984,10 +984,10 @@ create_teimgr(struct manager *mgr, struct channel_req *crq)
 	int		id;
 
 	if (*debug & DEBUG_L2_TEI)
-//		printk(KERN_DEBUG "%s: %s proto(%x) adr(%d %d %d %d)\n",
-//			__func__, dev_name(&mgr->ch.st->dev->dev),
-//			crq->protocol, crq->adr.dev, crq->adr.channel,
-;
+		printk(KERN_DEBUG "%s: %s proto(%x) adr(%d %d %d %d)\n",
+			__func__, dev_name(&mgr->ch.st->dev->dev),
+			crq->protocol, crq->adr.dev, crq->adr.channel,
+			crq->adr.sapi, crq->adr.tei);
 	if (crq->adr.tei > GROUP_TEI)
 		return -EINVAL;
 	if (crq->adr.tei < 64)
@@ -1000,9 +1000,9 @@ create_teimgr(struct manager *mgr, struct channel_req *crq)
 		if ((crq->adr.tei != 0) && (crq->adr.tei != 127))
 			return -EINVAL;
 		if (mgr->up) {
-//			printk(KERN_WARNING
-//			    "%s: only one network manager is allowed\n",
-;
+			printk(KERN_WARNING
+			    "%s: only one network manager is allowed\n",
+			    __func__);
 			return -EBUSY;
 		}
 	} else if (test_bit(MGR_OPT_USER, &mgr->options)) {
@@ -1041,7 +1041,7 @@ create_teimgr(struct manager *mgr, struct channel_req *crq)
 	l2->tm = kzalloc(sizeof(struct teimgr), GFP_KERNEL);
 	if (!l2->tm) {
 		kfree(l2);
-;
+		printk(KERN_ERR "kmalloc teimgr failed\n");
 		return -ENOMEM;
 	}
 	l2->tm->mgr = mgr;
@@ -1083,8 +1083,8 @@ mgr_send(struct mISDNchannel *ch, struct sk_buff *skb)
 
 	mgr = container_of(ch, struct manager, ch);
 	if (*debug & DEBUG_L2_RECV)
-//		printk(KERN_DEBUG "%s: prim(%x) id(%x)\n",
-;
+		printk(KERN_DEBUG "%s: prim(%x) id(%x)\n",
+		    __func__, hh->prim, hh->id);
 	switch (hh->prim) {
 	case PH_DATA_IND:
 		mISDN_FsmEvent(&mgr->deact, EV_UI, NULL);
@@ -1180,8 +1180,8 @@ check_data(struct manager *mgr, struct sk_buff *skb)
 	struct layer2		*l2;
 
 	if (*debug & DEBUG_L2_CTRL)
-//		printk(KERN_DEBUG "%s: prim(%x) id(%x)\n",
-;
+		printk(KERN_DEBUG "%s: prim(%x) id(%x)\n",
+		    __func__, hh->prim, hh->id);
 	if (test_bit(MGR_OPT_USER, &mgr->options))
 		return -ENOTCONN;
 	if (hh->prim != PH_DATA_IND)
@@ -1200,13 +1200,13 @@ check_data(struct manager *mgr, struct sk_buff *skb)
 		return -ENOTCONN;
 	/* We got a SABME for a fixed TEI */
 	if (*debug & DEBUG_L2_CTRL)
-//		printk(KERN_DEBUG "%s: SABME sapi(%d) tei(%d)\n",
-;
+		printk(KERN_DEBUG "%s: SABME sapi(%d) tei(%d)\n",
+		    __func__, sapi, tei);
 	l2 = create_new_tei(mgr, tei, sapi);
 	if (!l2) {
 		if (*debug & DEBUG_L2_CTRL)
-//			printk(KERN_DEBUG "%s: failed to create new tei\n",
-;
+			printk(KERN_DEBUG "%s: failed to create new tei\n",
+			    __func__);
 		return -ENOMEM;
 	}
 	ret = l2->ch.send(&l2->ch, skb);
@@ -1241,7 +1241,7 @@ mgr_ctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 
 	mgr = container_of(ch, struct manager, ch);
 	if (*debug & DEBUG_L2_CTRL)
-;
+		printk(KERN_DEBUG "%s(%x, %p)\n", __func__, cmd, arg);
 	switch (cmd) {
 	case OPEN_CHANNEL:
 		ret = create_teimgr(mgr, arg);
@@ -1284,16 +1284,16 @@ mgr_bcast(struct mISDNchannel *ch, struct sk_buff *skb)
 				ret = l2->ch.send(&l2->ch, cskb);
 				if (ret) {
 					if (*debug & DEBUG_SEND_ERR)
-//						printk(KERN_DEBUG
-//						    "%s ch%d prim(%x) addr(%x)"
-//						    " err %d\n",
-//						    __func__, l2->ch.nr,
-;
+						printk(KERN_DEBUG
+						    "%s ch%d prim(%x) addr(%x)"
+						    " err %d\n",
+						    __func__, l2->ch.nr,
+						    hh->prim, l2->ch.addr, ret);
 				} else
 					cskb = NULL;
 			} else {
-//				printk(KERN_WARNING "%s ch%d addr %x no mem\n",
-;
+				printk(KERN_WARNING "%s ch%d addr %x no mem\n",
+				    __func__, ch->nr, ch->addr);
 				goto out;
 			}
 		}

@@ -412,8 +412,8 @@ __svc_create(struct svc_program *prog, unsigned int bufsize, int npools,
 	for (i = 0; i < serv->sv_nrpools; i++) {
 		struct svc_pool *pool = &serv->sv_pools[i];
 
-//		dprintk("svc: initialising pool %u for %s\n",
-;
+		dprintk("svc: initialising pool %u for %s\n",
+				i, serv->sv_name);
 
 		pool->sp_id = i;
 		INIT_LIST_HEAD(&pool->sp_threads);
@@ -462,9 +462,9 @@ EXPORT_SYMBOL_GPL(svc_create_pooled);
 void
 svc_destroy(struct svc_serv *serv)
 {
-//	dprintk("svc: svc_destroy(%s, %d)\n",
-//				serv->sv_program->pg_name,
-;
+	dprintk("svc: svc_destroy(%s, %d)\n",
+				serv->sv_program->pg_name,
+				serv->sv_nrthreads);
 
 	if (serv->sv_nrthreads) {
 		if (--(serv->sv_nrthreads) != 0) {
@@ -472,7 +472,7 @@ svc_destroy(struct svc_serv *serv)
 			return;
 		}
 	} else
-;
+		printk("svc_destroy: no threads for serv=%p!\n", serv);
 
 	del_timer_sync(&serv->sv_temptimer);
 	/*
@@ -850,8 +850,8 @@ static int __svc_register(const char *progname,
 	}
 
 	if (error < 0)
-//		printk(KERN_WARNING "svc: failed to register %sv%u RPC "
-;
+		printk(KERN_WARNING "svc: failed to register %sv%u RPC "
+			"service (errno %d).\n", progname, version, -error);
 	return error;
 }
 
@@ -878,14 +878,14 @@ int svc_register(const struct svc_serv *serv, const int family,
 			if (progp->pg_vers[i] == NULL)
 				continue;
 
-//			dprintk("svc: svc_register(%sv%d, %s, %u, %u)%s\n",
-//					progp->pg_name,
-//					i,
-//					proto == IPPROTO_UDP?  "udp" : "tcp",
-//					port,
-//					family,
-//					progp->pg_vers[i]->vs_hidden?
-;
+			dprintk("svc: svc_register(%sv%d, %s, %u, %u)%s\n",
+					progp->pg_name,
+					i,
+					proto == IPPROTO_UDP?  "udp" : "tcp",
+					port,
+					family,
+					progp->pg_vers[i]->vs_hidden?
+						" (but not telling portmap)" : "");
 
 			if (progp->pg_vers[i]->vs_hidden)
 				continue;
@@ -921,8 +921,8 @@ static void __svc_unregister(const u32 program, const u32 version,
 	if (error == -EPROTONOSUPPORT)
 		error = rpcb_register(program, version, 0, 0);
 
-//	dprintk("svc: %s(%sv%u), error %d\n",
-;
+	dprintk("svc: %s(%sv%u), error %d\n",
+			__func__, progname, version, error);
 }
 
 /*
@@ -948,8 +948,8 @@ static void svc_unregister(const struct svc_serv *serv)
 			if (progp->pg_vers[i]->vs_hidden)
 				continue;
 
-//			dprintk("svc: attempting to unregister %sv%u\n",
-;
+			dprintk("svc: attempting to unregister %sv%u\n",
+				progp->pg_name, i);
 			__svc_unregister(progp->pg_prog, i, progp->pg_name);
 		}
 	}
@@ -973,11 +973,11 @@ svc_printk(struct svc_rqst *rqstp, const char *fmt, ...)
 	if (!net_ratelimit())
 		return 0;
 
-//	printk(KERN_WARNING "svc: %s: ",
-;
+	printk(KERN_WARNING "svc: %s: ",
+		svc_print_addr(rqstp, buf, sizeof(buf)));
 
 	va_start(args, fmt);
-;
+	r = vprintk(fmt, args);
 	va_end(args);
 
 	return r;
@@ -1119,12 +1119,12 @@ svc_process_common(struct svc_rqst *rqstp, struct kvec *argv, struct kvec *resv)
 		if (*statp == rpc_success &&
 		    (xdr = procp->pc_encode) &&
 		    !xdr(rqstp, resv->iov_base+resv->iov_len, rqstp->rq_resp)) {
-;
+			dprintk("svc: failed to encode reply\n");
 			/* serv->sv_stats->rpcsystemerr++; */
 			*statp = rpc_system_err;
 		}
 	} else {
-;
+		dprintk("svc: calling dispatcher\n");
 		if (!versp->vs_dispatch(rqstp, statp)) {
 			/* Release reply info */
 			if (procp->pc_release)
@@ -1151,12 +1151,12 @@ svc_process_common(struct svc_rqst *rqstp, struct kvec *argv, struct kvec *resv)
 
  dropit:
 	svc_authorise(rqstp);	/* doesn't hurt to call this twice */
-;
+	dprintk("svc: svc_process dropit\n");
 	return 0;
 
 err_short_len:
-//	svc_printk(rqstp, "short len %Zd, dropping request\n",
-;
+	svc_printk(rqstp, "short len %Zd, dropping request\n",
+			argv->iov_len);
 
 	goto dropit;			/* drop request */
 
@@ -1169,7 +1169,7 @@ err_bad_rpc:
 	goto sendit;
 
 err_bad_auth:
-;
+	dprintk("svc: authentication failed (%d)\n", ntohl(auth_stat));
 	serv->sv_stats->rpcbadauth++;
 	/* Restore write pointer to location of accept status: */
 	xdr_ressize_check(rqstp, reply_statp);
@@ -1179,14 +1179,14 @@ err_bad_auth:
 	goto sendit;
 
 err_bad_prog:
-;
+	dprintk("svc: unknown program %d\n", prog);
 	serv->sv_stats->rpcbadfmt++;
 	svc_putnl(resv, RPC_PROG_UNAVAIL);
 	goto sendit;
 
 err_bad_vers:
-//	svc_printk(rqstp, "unknown version (%d for prog %d, %s)\n",
-;
+	svc_printk(rqstp, "unknown version (%d for prog %d, %s)\n",
+		       vers, prog, progp->pg_name);
 
 	serv->sv_stats->rpcbadfmt++;
 	svc_putnl(resv, RPC_PROG_MISMATCH);
@@ -1195,14 +1195,14 @@ err_bad_vers:
 	goto sendit;
 
 err_bad_proc:
-;
+	svc_printk(rqstp, "unknown procedure (%d)\n", proc);
 
 	serv->sv_stats->rpcbadfmt++;
 	svc_putnl(resv, RPC_PROC_UNAVAIL);
 	goto sendit;
 
 err_garbage:
-;
+	svc_printk(rqstp, "failed to decode args\n");
 
 	rpc_stat = rpc_garbage_args;
 err_bad:
@@ -1243,7 +1243,7 @@ svc_process(struct svc_rqst *rqstp)
 	dir  = svc_getnl(argv);
 	if (dir != 0) {
 		/* direction != CALL */
-;
+		svc_printk(rqstp, "bad direction %d, dropping request\n", dir);
 		serv->sv_stats->rpcbadfmt++;
 		svc_drop(rqstp);
 		return 0;
@@ -1285,7 +1285,7 @@ bc_svc_process(struct svc_serv *serv, struct rpc_rqst *req,
 	resv->iov_len = 0;
 
 	if (rqstp->rq_prot != IPPROTO_TCP) {
-;
+		printk(KERN_ERR "No support for Non-TCP transports!\n");
 		BUG();
 	}
 

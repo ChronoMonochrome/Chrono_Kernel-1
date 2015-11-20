@@ -699,8 +699,8 @@ static void reuse_unused_kprobe(struct kprobe *ap)
 	 */
 	op = container_of(ap, struct optimized_kprobe, kp);
 	if (unlikely(list_empty(&op->list)))
-//		printk(KERN_WARNING "Warning: found a stray unused "
-;
+		printk(KERN_WARNING "Warning: found a stray unused "
+			"aggrprobe@%p\n", ap->addr);
 	/* Enable the probe again */
 	ap->flags &= ~KPROBE_FLAG_DISABLED;
 	/* Optimize it again (remove from op->list) */
@@ -795,7 +795,7 @@ static void __kprobes optimize_all_kprobes(void)
 			if (!kprobe_disabled(p))
 				optimize_kprobe(p);
 	}
-;
+	printk(KERN_INFO "Kprobes globally optimized\n");
 }
 
 /* This should be called with kprobe_mutex locked */
@@ -820,7 +820,7 @@ static void __kprobes unoptimize_all_kprobes(void)
 	}
 	/* Wait for unoptimizing completion */
 	wait_for_kprobe_optimizer();
-;
+	printk(KERN_INFO "Kprobes globally unoptimized\n");
 }
 
 int sysctl_kprobes_optimization;
@@ -891,7 +891,7 @@ static void __kprobes __disarm_kprobe(struct kprobe *p, bool reopt)
 /* There should be no unused kprobes can be reused without optimization */
 static void reuse_unused_kprobe(struct kprobe *ap)
 {
-;
+	printk(KERN_ERR "Error: There should be no unused kprobe here.\n");
 	BUG_ON(kprobe_unused(ap));
 }
 
@@ -1887,9 +1887,9 @@ EXPORT_SYMBOL_GPL(enable_kprobe);
 
 void __kprobes dump_kprobe(struct kprobe *kp)
 {
-;
-//	printk(KERN_WARNING "Name: %s\nAddress: %p\nOffset: %x\n",
-;
+	printk(KERN_WARNING "Dumping kprobe:\n");
+	printk(KERN_WARNING "Name: %s\nAddress: %p\nOffset: %x\n",
+	       kp->symbol_name, kp->addr, kp->offset);
 }
 
 /* Module notifier call back, checking kprobes on the module */
@@ -1981,8 +1981,8 @@ static int __init init_kprobes(void)
 			kprobe_lookup_name(kretprobe_blacklist[i].name,
 					   kretprobe_blacklist[i].addr);
 			if (!kretprobe_blacklist[i].addr)
-//				printk("kretprobe: lookup failed: %s\n",
-;
+				printk("kretprobe: lookup failed: %s\n",
+				       kretprobe_blacklist[i].name);
 		}
 	}
 
@@ -2126,7 +2126,7 @@ static void __kprobes arm_all_kprobes(void)
 	mutex_unlock(&text_mutex);
 
 	kprobes_all_disarmed = false;
-;
+	printk(KERN_INFO "Kprobes globally enabled\n");
 
 already_enabled:
 	mutex_unlock(&kprobe_mutex);
@@ -2149,7 +2149,7 @@ static void __kprobes disarm_all_kprobes(void)
 	}
 
 	kprobes_all_disarmed = true;
-;
+	printk(KERN_INFO "Kprobes globally disabled\n");
 
 	mutex_lock(&text_mutex);
 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {

@@ -499,7 +499,7 @@ static ssize_t debugfs_ab8500_dump_regs(struct file *file, char __user *buf,
 		AB8500_GPIO_NPUD5,       ab8500_rreg(dev, AB8500_GPIO_NPUD5)
 	);
 	if (data_size >= DEBUG_BUF_SIZE) {
-;
+		printk(KERN_EMERG "AB8500 DENC: Buffer overrun\n");
 		ret = -EINVAL;
 		goto out;
 	}

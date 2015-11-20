@@ -1146,8 +1146,8 @@ static int __init sierra_init(void)
 	if (retval)
 		goto failed_driver_register;
 
-//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-;
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
 
 	return 0;
 

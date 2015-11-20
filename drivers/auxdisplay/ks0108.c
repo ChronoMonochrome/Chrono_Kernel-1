@@ -132,23 +132,23 @@ static int __init ks0108_init(void)
 
 	ks0108_parport = parport_find_base(ks0108_port);
 	if (ks0108_parport == NULL) {
-//		printk(KERN_ERR KS0108_NAME ": ERROR: "
-;
+		printk(KERN_ERR KS0108_NAME ": ERROR: "
+			"parport didn't find %i port\n", ks0108_port);
 		goto none;
 	}
 
 	ks0108_pardevice = parport_register_device(ks0108_parport, KS0108_NAME,
 		NULL, NULL, NULL, PARPORT_DEV_EXCL, NULL);
 	if (ks0108_pardevice == NULL) {
-//		printk(KERN_ERR KS0108_NAME ": ERROR: "
-;
+		printk(KERN_ERR KS0108_NAME ": ERROR: "
+			"parport didn't register new device\n");
 		goto none;
 	}
 
 	result = parport_claim(ks0108_pardevice);
 	if (result != 0) {
-//		printk(KERN_ERR KS0108_NAME ": ERROR: "
-;
+		printk(KERN_ERR KS0108_NAME ": ERROR: "
+			"can't claim %i parport, maybe in use\n", ks0108_port);
 		ret = result;
 		goto registered;
 	}

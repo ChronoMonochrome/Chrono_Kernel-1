@@ -78,7 +78,7 @@ static struct net_device * __init ipddp_init(void)
 	strcpy(dev->name, "ipddp%d");
 
 	if (version_printed++ == 0)
-;
+                printk(version);
 
 	/* Initialize the device structure. */
 	dev->netdev_ops = &ipddp_netdev_ops;
@@ -102,11 +102,11 @@ static struct net_device * __init ipddp_init(void)
 
 	/* Let the user now what mode we are in */
 	if(ipddp_mode == IPDDP_ENCAP)
-//		printk("%s: Appletalk-IP Encap. mode by Bradford W. Johnson <johns393@maroon.tc.umn.edu>\n", 
-;
+		printk("%s: Appletalk-IP Encap. mode by Bradford W. Johnson <johns393@maroon.tc.umn.edu>\n", 
+			dev->name);
 	if(ipddp_mode == IPDDP_DECAP)
-//		printk("%s: Appletalk-IP Decap. mode by Jay Schulist <jschlst@samba.org>\n", 
-;
+		printk("%s: Appletalk-IP Decap. mode by Jay Schulist <jschlst@samba.org>\n", 
+			dev->name);
 
         return dev;
 }

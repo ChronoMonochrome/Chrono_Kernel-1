@@ -137,8 +137,8 @@ int rds_rdma_cm_event_handler(struct rdma_cm_id *cm_id,
 
 	default:
 		/* things like device disconnect? */
-//		printk(KERN_ERR "RDS: unknown event %u (%s)!\n",
-;
+		printk(KERN_ERR "RDS: unknown event %u (%s)!\n",
+		       event->event, rds_cm_event_str(event->event));
 		break;
 	}
 
@@ -162,8 +162,8 @@ static int rds_rdma_listen_init(void)
 			       IB_QPT_RC);
 	if (IS_ERR(cm_id)) {
 		ret = PTR_ERR(cm_id);
-//		printk(KERN_ERR "RDS/RDMA: failed to setup listener, "
-;
+		printk(KERN_ERR "RDS/RDMA: failed to setup listener, "
+		       "rdma_create_id() returned %d\n", ret);
 		return ret;
 	}
 
@@ -177,15 +177,15 @@ static int rds_rdma_listen_init(void)
 	 */
 	ret = rdma_bind_addr(cm_id, (struct sockaddr *)&sin);
 	if (ret) {
-//		printk(KERN_ERR "RDS/RDMA: failed to setup listener, "
-;
+		printk(KERN_ERR "RDS/RDMA: failed to setup listener, "
+		       "rdma_bind_addr() returned %d\n", ret);
 		goto out;
 	}
 
 	ret = rdma_listen(cm_id, 128);
 	if (ret) {
-//		printk(KERN_ERR "RDS/RDMA: failed to setup listener, "
-;
+		printk(KERN_ERR "RDS/RDMA: failed to setup listener, "
+		       "rdma_listen() returned %d\n", ret);
 		goto out;
 	}
 

@@ -395,17 +395,17 @@ static void b1dma_dispatch_tx(avmcard *card)
 		}
 		txlen = (u8 *)p - (u8 *)dma->sendbuf.dmabuf;
 #ifdef AVM_B1DMA_DEBUG
-;
+		printk(KERN_DEBUG "tx: put msg len=%d\n", txlen);
 #endif
 	} else {
 		txlen = skb->len-2;
 #ifdef AVM_B1DMA_POLLDEBUG
 		if (skb->data[2] == SEND_POLLACK)
-;
+			printk(KERN_INFO "%s: send ack\n", card->name);
 #endif
 #ifdef AVM_B1DMA_DEBUG
-//		printk(KERN_DEBUG "tx: put 0x%x len=%d\n", 
-;
+		printk(KERN_DEBUG "tx: put 0x%x len=%d\n", 
+		       skb->data[2], txlen);
 #endif
 		skb_copy_from_linear_data_offset(skb, 2, dma->sendbuf.dmabuf,
 						 skb->len - 2);
@@ -429,8 +429,8 @@ static void queue_pollack(avmcard *card)
 
 	skb = alloc_skb(3, GFP_ATOMIC);
 	if (!skb) {
-//		printk(KERN_CRIT "%s: no memory, lost poll ack\n",
-;
+		printk(KERN_CRIT "%s: no memory, lost poll ack\n",
+					card->name);
 		return;
 	}
 	p = skb->data;
@@ -455,7 +455,7 @@ static void b1dma_handle_rx(avmcard *card)
 	u8 b1cmd =  _get_byte(&p);
 
 #ifdef AVM_B1DMA_DEBUG
-;
+	printk(KERN_DEBUG "rx: 0x%x %lu\n", b1cmd, (unsigned long)dma->recvlen);
 #endif
 	
 	switch (b1cmd) {
@@ -471,8 +471,8 @@ static void b1dma_handle_rx(avmcard *card)
 			CAPIMSG_SETLEN(card->msgbuf, 30);
 		}
 		if (!(skb = alloc_skb(DataB3Len+MsgLen, GFP_ATOMIC))) {
-//			printk(KERN_ERR "%s: incoming packet dropped\n",
-;
+			printk(KERN_ERR "%s: incoming packet dropped\n",
+					card->name);
 		} else {
 			memcpy(skb_put(skb, MsgLen), card->msgbuf, MsgLen);
 			memcpy(skb_put(skb, DataB3Len), card->databuf, DataB3Len);
@@ -485,8 +485,8 @@ static void b1dma_handle_rx(avmcard *card)
 		ApplId = (unsigned) _get_word(&p);
 		MsgLen = _get_slice(&p, card->msgbuf);
 		if (!(skb = alloc_skb(MsgLen, GFP_ATOMIC))) {
-//			printk(KERN_ERR "%s: incoming packet dropped\n",
-;
+			printk(KERN_ERR "%s: incoming packet dropped\n",
+					card->name);
 		} else {
 			memcpy(skb_put(skb, MsgLen), card->msgbuf, MsgLen);
 			if (CAPIMSG_CMD(skb->data) == CAPI_DATA_B3_CONF) {
@@ -524,7 +524,7 @@ static void b1dma_handle_rx(avmcard *card)
 
 	case RECEIVE_START:
 #ifdef AVM_B1DMA_POLLDEBUG
-;
+		printk(KERN_INFO "%s: receive poll\n", card->name);
 #endif
 		if (!suppress_pollack)
 			queue_pollack(card);
@@ -539,10 +539,10 @@ static void b1dma_handle_rx(avmcard *card)
 
 		cinfo->versionlen = _get_slice(&p, cinfo->versionbuf);
 		b1_parse_version(cinfo);
-//		printk(KERN_INFO "%s: %s-card (%s) now active\n",
-//		       card->name,
-//		       cinfo->version[VER_CARDTYPE],
-;
+		printk(KERN_INFO "%s: %s-card (%s) now active\n",
+		       card->name,
+		       cinfo->version[VER_CARDTYPE],
+		       cinfo->version[VER_DRIVER]);
 		capi_ctr_ready(ctrl);
 		break;
 
@@ -556,8 +556,8 @@ static void b1dma_handle_rx(avmcard *card)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
-//		printk(KERN_INFO "%s: task %d \"%s\" ready.\n",
-;
+		printk(KERN_INFO "%s: task %d \"%s\" ready.\n",
+				card->name, ApplId, card->msgbuf);
 		break;
 
 	case RECEIVE_DEBUGMSG:
@@ -569,12 +569,12 @@ static void b1dma_handle_rx(avmcard *card)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
-;
+		printk(KERN_INFO "%s: DEBUG: %s\n", card->name, card->msgbuf);
 		break;
 
 	default:
-//		printk(KERN_ERR "%s: b1dma_interrupt: 0x%x ???\n",
-;
+		printk(KERN_ERR "%s: b1dma_interrupt: 0x%x ???\n",
+				card->name, b1cmd);
 		return;
 	}
 }
@@ -611,8 +611,8 @@ static void b1dma_handle_interrupt(avmcard *card)
 				b1dma_writel(card, rxlen, AMCC_RXLEN);
 #ifdef AVM_B1DMA_DEBUG
 			} else {
-//				printk(KERN_ERR "%s: rx not complete (%d).\n",
-;
+				printk(KERN_ERR "%s: rx not complete (%d).\n",
+					card->name, rxlen);
 #endif
 			}
 		} else {
@@ -658,8 +658,8 @@ static int b1dma_loaded(avmcard *card)
 			break;
 	}
 	if (!b1_tx_empty(base)) {
-//		printk(KERN_ERR "%s: b1dma_loaded: tx err, corrupted t4 file ?\n",
-;
+		printk(KERN_ERR "%s: b1dma_loaded: tx err, corrupted t4 file ?\n",
+				card->name);
 		return 0;
 	}
 	b1_put_byte(base, SEND_POLLACK);
@@ -668,11 +668,11 @@ static int b1dma_loaded(avmcard *card)
 			if ((ans = b1_get_byte(base)) == RECEIVE_POLLDWORD) {
 				return 1;
 			}
-;
+			printk(KERN_ERR "%s: b1dma_loaded: got 0x%x, firmware not running in dword mode\n", card->name, ans);
 			return 0;
 		}
 	}
-;
+	printk(KERN_ERR "%s: b1dma_loaded: firmware not running\n", card->name);
 	return 0;
 }
 
@@ -685,8 +685,8 @@ static void b1dma_send_init(avmcard *card)
 
 	skb = alloc_skb(15, GFP_ATOMIC);
 	if (!skb) {
-//		printk(KERN_CRIT "%s: no memory, lost register appl.\n",
-;
+		printk(KERN_CRIT "%s: no memory, lost register appl.\n",
+					card->name);
 		return;
 	}
 	p = skb->data;
@@ -711,23 +711,23 @@ int b1dma_load_firmware(struct capi_ctr *ctrl, capiloaddata *data)
 
 	if ((retval = b1_load_t4file(card, &data->firmware))) {
 		b1dma_reset(card);
-//		printk(KERN_ERR "%s: failed to load t4file!!\n",
-;
+		printk(KERN_ERR "%s: failed to load t4file!!\n",
+					card->name);
 		return retval;
 	}
 
 	if (data->configuration.len > 0 && data->configuration.data) {
 		if ((retval = b1_load_config(card, &data->configuration))) {
 			b1dma_reset(card);
-//			printk(KERN_ERR "%s: failed to load config!!\n",
-;
+			printk(KERN_ERR "%s: failed to load config!!\n",
+					card->name);
 			return retval;
 		}
 	}
 
 	if (!b1dma_loaded(card)) {
 		b1dma_reset(card);
-;
+		printk(KERN_ERR "%s: failed to load t4file.\n", card->name);
 		return -EIO;
 	}
 
@@ -784,8 +784,8 @@ void b1dma_register_appl(struct capi_ctr *ctrl,
 
 	skb = alloc_skb(23, GFP_ATOMIC);
 	if (!skb) {
-//		printk(KERN_CRIT "%s: no memory, lost register appl.\n",
-;
+		printk(KERN_CRIT "%s: no memory, lost register appl.\n",
+					card->name);
 		return;
 	}
 	p = skb->data;
@@ -818,8 +818,8 @@ void b1dma_release_appl(struct capi_ctr *ctrl, u16 appl)
 
 	skb = alloc_skb(7, GFP_ATOMIC);
 	if (!skb) {
-//		printk(KERN_CRIT "%s: no memory, lost release appl.\n",
-;
+		printk(KERN_CRIT "%s: no memory, lost release appl.\n",
+					card->name);
 		return;
 	}
 	p = skb->data;
@@ -981,7 +981,7 @@ static int __init b1dma_init(void)
 	} else
 		strcpy(rev, "1.0");
 
-;
+	printk(KERN_INFO "b1dma: revision %s\n", rev);
 
 	return 0;
 }

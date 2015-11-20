@@ -75,7 +75,7 @@ int pcbit_init_dev(int board, int mem_base, int irq)
 
 	if ((dev=kzalloc(sizeof(struct pcbit_dev), GFP_KERNEL)) == NULL)
 	{
-;
+		printk("pcbit_init: couldn't malloc pcbit_dev struct\n");
 		return -ENOMEM;
 	}
 
@@ -86,9 +86,9 @@ int pcbit_init_dev(int board, int mem_base, int irq)
 	if (mem_base >= 0xA0000 && mem_base <= 0xFFFFF ) {
 		dev->ph_mem = mem_base;
 		if (!request_mem_region(dev->ph_mem, 4096, "PCBIT mem")) {
-//			printk(KERN_WARNING
-//				"PCBIT: memory region %lx-%lx already in use\n",
-;
+			printk(KERN_WARNING
+				"PCBIT: memory region %lx-%lx already in use\n",
+				dev->ph_mem, dev->ph_mem + 4096);
 			kfree(dev);
 			dev_pcbit[board] = NULL;
 			return -EACCES;
@@ -97,7 +97,7 @@ int pcbit_init_dev(int board, int mem_base, int irq)
 	}
 	else 
 	{
-;
+		printk("memory address invalid");
 		kfree(dev);
 		dev_pcbit[board] = NULL;
 		return -EACCES;
@@ -105,7 +105,7 @@ int pcbit_init_dev(int board, int mem_base, int irq)
 
 	dev->b1 = kzalloc(sizeof(struct pcbit_chan), GFP_KERNEL);
 	if (!dev->b1) {
-;
+		printk("pcbit_init: couldn't malloc pcbit_chan struct\n");
 		iounmap(dev->sh_mem);
 		release_mem_region(dev->ph_mem, 4096);
 		kfree(dev);
@@ -114,7 +114,7 @@ int pcbit_init_dev(int board, int mem_base, int irq)
     
 	dev->b2 = kzalloc(sizeof(struct pcbit_chan), GFP_KERNEL);
 	if (!dev->b2) {
-;
+		printk("pcbit_init: couldn't malloc pcbit_chan struct\n");
 		kfree(dev->b1);
 		iounmap(dev->sh_mem);
 		release_mem_region(dev->ph_mem, 4096);
@@ -243,7 +243,7 @@ static int pcbit_command(isdn_ctrl* ctl)
 
 	if (!dev)
 	{
-;
+		printk("pcbit_command: unknown device\n");
 		return -1;
 	}
 
@@ -263,7 +263,7 @@ static int pcbit_command(isdn_ctrl* ctl)
 		pcbit_fsm_event(dev, chan, EV_USR_SETUP_RESP, NULL);
 		break;
 	case ISDN_CMD_ACCEPTB:
-;
+		printk("ISDN_CMD_ACCEPTB - not really needed\n");
 		break;
 	case ISDN_CMD_HANGUP:
 		pcbit_fsm_event(dev, chan, EV_USR_RELEASE_REQ, NULL);
@@ -279,10 +279,10 @@ static int pcbit_command(isdn_ctrl* ctl)
 		break;
 	case ISDN_CMD_SETL3:
 		if ((ctl->arg >> 8) != ISDN_PROTO_L3_TRANS)
-;
+			printk(KERN_DEBUG "L3 protocol unknown\n");
 		break;
 	default:
-;
+		printk(KERN_DEBUG "pcbit_command: unknown command\n");
 		break;
 	};
 
@@ -307,7 +307,7 @@ static void pcbit_block_timer(unsigned long data)
 	dev = chan2dev(chan);
 
 	if (dev == NULL) {
-;
+		printk(KERN_DEBUG "pcbit: chan2dev failed\n");
 		return;
 	}
 
@@ -315,7 +315,7 @@ static void pcbit_block_timer(unsigned long data)
 	chan->block_timer.function = NULL;
 
 #ifdef DEBUG
-;
+	printk(KERN_DEBUG "pcbit_block_timer\n");
 #endif	
 	chan->queued = 0;
 	ictl.driver = dev->id;
@@ -335,7 +335,7 @@ static int pcbit_xmit(int driver, int chnum, int ack, struct sk_buff *skb)
 	dev = finddev(driver);
 	if (dev == NULL)
 	{
-;
+		printk("finddev returned NULL");
 		return -1;
 	}
 
@@ -348,9 +348,9 @@ static int pcbit_xmit(int driver, int chnum, int ack, struct sk_buff *skb)
 	if (chan->queued >= MAX_QUEUED )
 	{
 #ifdef DEBUG_QUEUE
-//		printk(KERN_DEBUG 
-//		       "pcbit: %d packets already in queue - write fails\n",
-;
+		printk(KERN_DEBUG 
+		       "pcbit: %d packets already in queue - write fails\n",
+		       chan->queued);
 #endif
 		/*
 		 * packet stays on the head of the device queue
@@ -398,7 +398,7 @@ static int pcbit_writecmd(const u_char __user *buf, int len, int driver, int cha
 
 	if (!dev)
 	{
-;
+		printk("pcbit_writecmd: couldn't find device");
 		return -ENODEV;
 	}
 
@@ -407,7 +407,7 @@ static int pcbit_writecmd(const u_char __user *buf, int len, int driver, int cha
 		/* check (size <= rdp_size); write buf into board */
 		if (len < 0 || len > BANK4 + 1 || len > 1024)
 		{
-;
+			printk("pcbit_writecmd: invalid length %d\n", len);
 			return -EINVAL;
 		}
 
@@ -441,7 +441,7 @@ static int pcbit_writecmd(const u_char __user *buf, int len, int driver, int cha
 			if (j == LOAD_RETRY)
 			{
 				errstat = -ETIME;
-;
+				printk("TIMEOUT i=%d\n", i);
 				break;
 			}
 			writeb(loadbuf[i], dev->sh_mem + dev->loadptr + 1);
@@ -479,8 +479,8 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 
 	case MSG_TDATA_IND:
 		if (!(chan = capi_channel(dev, skb))) {
-//			printk(KERN_WARNING 
-;
+			printk(KERN_WARNING 
+			       "CAPI header: unknown channel id\n");
 			break;
 		}
 		chan->r_refnum = skb->data[7];
@@ -495,14 +495,14 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 		break;  
 	case MSG_TDATA_CONF:
 		if (!(chan = capi_channel(dev, skb))) {
-//			printk(KERN_WARNING 
-;
+			printk(KERN_WARNING 
+			       "CAPI header: unknown channel id\n");
 			break;
 		}
 
 #ifdef DEBUG
 		if ( (*((ushort *) (skb->data + 2) )) != 0) {
-;
+                        printk(KERN_DEBUG "TDATA_CONF error\n");
 		}
 #endif
 #ifdef BLOCK_TIMER
@@ -531,8 +531,8 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 		else if (!dev->b2->fsm_state)
 			chan = dev->b2;
 		else {
-//			printk(KERN_INFO 
-;
+			printk(KERN_INFO 
+			       "Incoming connection: no channels available");
 
 			if ((len = capi_disc_req(*(ushort*)(skb->data), &skb2, CAUSE_NOCHAN)) > 0)
 				pcbit_l2_write(dev, MSG_DISC_REQ, refnum, skb2, len);
@@ -563,9 +563,9 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 		 * doesn't sent the ref number correctly.
 		 */
 #ifdef DEBUG
-//		printk(KERN_DEBUG "refnum=%04x b1=%04x b2=%04x\n", refnum, 
-//		       dev->b1->s_refnum, 
-;
+		printk(KERN_DEBUG "refnum=%04x b1=%04x b2=%04x\n", refnum, 
+		       dev->b1->s_refnum, 
+		       dev->b2->s_refnum);
 #endif
 		/* We just try to find a channel in the right state */
 
@@ -576,12 +576,12 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 				chan = dev->b2;
 			else {			
 				chan = NULL;
-;
+				printk(KERN_WARNING "Connection Confirm - no channel in Call Init state\n");
 				break;
 			}
 		}
 		if (capi_decode_conn_conf(chan, skb, &complete)) {
-;
+			printk(KERN_DEBUG "conn_conf indicates error\n");
 			pcbit_fsm_event(dev, chan, EV_ERROR, NULL);
 		}
 		else
@@ -593,13 +593,13 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 	case MSG_CONN_ACTV_IND:
 
 		if (!(chan = capi_channel(dev, skb))) {
-//			printk(KERN_WARNING 
-;
+			printk(KERN_WARNING 
+			       "CAPI header: unknown channel id\n");
 			break;
 		}
 		
 		if (capi_decode_conn_actv_ind(chan, skb)) {
-;
+			printk("error in capi_decode_conn_actv_ind\n");
 		     /* pcbit_fsm_event(dev, chan, EV_ERROR, NULL); */
 			break;
 		}
@@ -609,8 +609,8 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 	case MSG_CONN_ACTV_CONF:
 
 		if (!(chan = capi_channel(dev, skb))) {
-//			printk(KERN_WARNING 
-;
+			printk(KERN_WARNING 
+			       "CAPI header: unknown channel id\n");
 			break;
 		}
 
@@ -618,14 +618,14 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 			pcbit_fsm_event(dev, chan, EV_NET_CONN_ACK, NULL);
 		
 		else
-;
+			printk(KERN_DEBUG "decode_conn_actv_conf failed\n");
 		break;
 
 	case  MSG_SELP_CONF:
 
 		if (!(chan = capi_channel(dev, skb))) {
-//			printk(KERN_WARNING 
-;
+			printk(KERN_WARNING 
+			       "CAPI header: unknown channel id\n");
 			break;
 		}
 
@@ -633,13 +633,13 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 			pcbit_fsm_event(dev, chan, EV_NET_SELP_RESP, NULL);
 		else {
 			/* Error */
-;
+			printk("error %d - capi_decode_sel_proto_conf\n", err);
 		}
 		break;
 	case MSG_ACT_TRANSP_CONF:
 		if (!(chan = capi_channel(dev, skb))) {
-//			printk(KERN_WARNING 
-;
+			printk(KERN_WARNING 
+			       "CAPI header: unknown channel id\n");
 			break;
 		}
 
@@ -650,31 +650,31 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 	case MSG_DISC_IND:
 
 		if (!(chan = capi_channel(dev, skb))) {
-//			printk(KERN_WARNING 
-;
+			printk(KERN_WARNING 
+			       "CAPI header: unknown channel id\n");
 			break;
 		}
 
 		if (!capi_decode_disc_ind(chan, skb))
 			pcbit_fsm_event(dev, chan, EV_NET_DISC, NULL);
 		else
-;
+			printk(KERN_WARNING "capi_decode_disc_ind - error\n");
 		break;
 	case MSG_DISC_CONF:
 		if (!(chan = capi_channel(dev, skb))) {
-//			printk(KERN_WARNING 
-;
+			printk(KERN_WARNING 
+			       "CAPI header: unknown channel id\n");
 			break;
 		}
 
 		if (!capi_decode_disc_ind(chan, skb))
 			pcbit_fsm_event(dev, chan, EV_NET_RELEASE, NULL);
 		else
-;
+			printk(KERN_WARNING "capi_decode_disc_conf - error\n");
 		break;
 	case MSG_INFO_IND:
 #ifdef DEBUG
-;
+		printk(KERN_DEBUG "received Info Indication - discarded\n");
 #endif
 		break;
 #ifdef DEBUG
@@ -683,8 +683,8 @@ void pcbit_l3_receive(struct pcbit_dev * dev, ulong msg,
 		break;
 
 	default:
-//		printk(KERN_DEBUG "pcbit_l3_receive: unknown message %08lx\n",
-;
+		printk(KERN_DEBUG "pcbit_l3_receive: unknown message %08lx\n",
+		       msg);
 		break;
 #endif
 	}
@@ -781,7 +781,7 @@ void pcbit_state_change(struct pcbit_dev * dev, struct pcbit_chan * chan,
 		);
 
 #ifdef DEBUG
-;
+	printk("%s", buf);
 #endif
 
 	pcbit_logstat(dev, buf);
@@ -792,7 +792,7 @@ static void set_running_timeout(unsigned long ptr)
 	struct pcbit_dev * dev;
 
 #ifdef DEBUG
-;
+	printk(KERN_DEBUG "set_running_timeout\n");
 #endif
 	dev = (struct pcbit_dev *) ptr;
 
@@ -824,7 +824,7 @@ static int set_protocol_running(struct pcbit_dev * dev)
 
 	if (dev->l2_state == L2_RUNNING)
 	{
-;
+		printk(KERN_DEBUG "pcbit: running\n");
 
 		dev->unack_seq = dev->send_seq;
 
@@ -839,14 +839,14 @@ static int set_protocol_running(struct pcbit_dev * dev)
 	}
 	else
 	{
-;
-;
+		printk(KERN_DEBUG "pcbit: initialization failed\n");
+		printk(KERN_DEBUG "pcbit: firmware not loaded\n");
 
 		dev->l2_state = L2_DOWN;
 
 #ifdef DEBUG
-//		printk(KERN_DEBUG "Bank3 = %02x\n", 
-;
+		printk(KERN_DEBUG "Bank3 = %02x\n", 
+		       readb(dev->sh_mem + BANK3));
 #endif
 		writeb(0x40, dev->sh_mem + BANK4);
 
@@ -871,7 +871,7 @@ static int pcbit_ioctl(isdn_ctrl* ctl)
   
 	if (!dev)
 	{
-;
+		printk(KERN_DEBUG "pcbit_ioctl: unknown device\n");
 		return -ENODEV;
 	}
 
@@ -932,7 +932,7 @@ static int pcbit_ioctl(isdn_ctrl* ctl)
 
 		if (cmd->info.rdp_byte.addr > BANK4)
 		{
-;
+			printk("getbyte: invalid addr %04x\n", cmd->info.rdp_byte.addr);
 			return -EFAULT;
 		}
 		
@@ -966,7 +966,7 @@ static int pcbit_ioctl(isdn_ctrl* ctl)
 		dev->unack_seq = 0;
 		break;
 	default:
-;
+		printk("error: unknown ioctl\n");
 		break;
 	};
 	return 0;
@@ -1003,7 +1003,7 @@ static void pcbit_set_msn(struct pcbit_dev *dev, char *list)
 	if (strlen(list) == 0) {
 		ptr = kmalloc(sizeof(struct msn_entry), GFP_ATOMIC);
 		if (!ptr) {
-;
+			printk(KERN_WARNING "kmalloc failed\n");
 			return;
 		}
 
@@ -1030,14 +1030,14 @@ static void pcbit_set_msn(struct pcbit_dev *dev, char *list)
 		ptr = kmalloc(sizeof(struct msn_entry), GFP_ATOMIC);
 
 		if (!ptr) {
-;
+			printk(KERN_WARNING "kmalloc failed\n");
 			return;
 		}
 		ptr->next = NULL;
 		
 		ptr->msn = kmalloc(len, GFP_ATOMIC);
 		if (!ptr->msn) {
-;
+			printk(KERN_WARNING "kmalloc failed\n");
 			kfree(ptr);
 			return;
 		}
@@ -1046,7 +1046,7 @@ static void pcbit_set_msn(struct pcbit_dev *dev, char *list)
 		ptr->msn[len] = 0;
 
 #ifdef DEBUG
-;
+		printk(KERN_DEBUG "msn: %s\n", ptr->msn);
 #endif
 		if (dev->msn_list == NULL)
 			dev->msn_list = ptr;

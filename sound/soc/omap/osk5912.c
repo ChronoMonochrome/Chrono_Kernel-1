@@ -64,7 +64,7 @@ static int osk_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (err < 0) {
-;
+		printk(KERN_ERR "can't set codec DAI configuration\n");
 		return err;
 	}
 
@@ -74,7 +74,7 @@ static int osk_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (err < 0) {
-;
+		printk(KERN_ERR "can't set cpu DAI configuration\n");
 		return err;
 	}
 
@@ -83,7 +83,7 @@ static int osk_hw_params(struct snd_pcm_substream *substream,
 	    snd_soc_dai_set_sysclk(codec_dai, 0, CODEC_CLOCK, SND_SOC_CLOCK_IN);
 
 	if (err < 0) {
-;
+		printk(KERN_ERR "can't set codec system clock\n");
 		return err;
 	}
 
@@ -176,7 +176,7 @@ static int __init osk_soc_init(void)
 
 	tlv320aic23_mclk = clk_get(dev, "mclk");
 	if (IS_ERR(tlv320aic23_mclk)) {
-;
+		printk(KERN_ERR "Could not get mclk clock\n");
 		err = PTR_ERR(tlv320aic23_mclk);
 		goto err2;
 	}
@@ -187,14 +187,14 @@ static int __init osk_soc_init(void)
 	curRate = (uint) clk_get_rate(tlv320aic23_mclk);
 	if (curRate != CODEC_CLOCK) {
 		if (clk_set_rate(tlv320aic23_mclk, CODEC_CLOCK)) {
-;
+			printk(KERN_ERR "Cannot set MCLK for AIC23 CODEC\n");
 			err = -ECANCELED;
 			goto err3;
 		}
 	}
 
-//	printk(KERN_INFO "MCLK = %d [%d]\n",
-;
+	printk(KERN_INFO "MCLK = %d [%d]\n",
+	       (uint) clk_get_rate(tlv320aic23_mclk), CODEC_CLOCK);
 
 	return 0;
 

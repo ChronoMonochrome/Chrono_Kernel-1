@@ -241,8 +241,8 @@
 #ifdef PL330_DEBUG_MCGEN
 static unsigned cmd_line;
 #define PL330_DBGCMD_DUMP(off, x...)	do { \
-;
-;
+						printk("%x:", cmd_line); \
+						printk(x); \
 						cmd_line += off; \
 					} while (0)
 #define PL330_DBGMC_START(addr)		(cmd_line = addr)

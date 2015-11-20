@@ -360,9 +360,9 @@ static int __init iga_init(struct fb_info *info, struct iga_par *par)
 	if (register_framebuffer(info) < 0)
 		return 0;
 
-//	printk("fb%d: %s frame buffer device at 0x%08lx [%dMB VRAM]\n",
-//	       info->node, info->fix.id, 
-;
+	printk("fb%d: %s frame buffer device at 0x%08lx [%dMB VRAM]\n",
+	       info->node, info->fix.id, 
+	       par->frame_buffer_phys, info->fix.smem_len >> 20);
 
 	iga_blank_border(par); 
 	return 1;
@@ -399,7 +399,7 @@ static int __init igafb_init(void)
 
 	info = framebuffer_alloc(size, &pdev->dev);
         if (!info) {
-;
+                printk("igafb_init: can't alloc fb_info\n");
 		 pci_dev_put(pdev);
                 return -ENOMEM;
         }
@@ -407,14 +407,14 @@ static int __init igafb_init(void)
 	par = info->par;
 
 	if ((addr = pdev->resource[0].start) == 0) {
-;
+                printk("igafb_init: no memory start\n");
 		kfree(info);
 		pci_dev_put(pdev);
 		return -ENXIO;
 	}
 
 	if ((info->screen_base = ioremap(addr, 1024*1024*2)) == 0) {
-;
+                printk("igafb_init: can't remap %lx[2M]\n", addr);
 		kfree(info);
 		pci_dev_put(pdev);
 		return -ENXIO;
@@ -448,7 +448,7 @@ static int __init igafb_init(void)
 		igafb_fix.mmio_start = 0x30000000;	/* XXX */
 	}
 	if ((par->io_base = (int) ioremap(igafb_fix.mmio_start, igafb_fix.smem_len)) == 0) {
-;
+                printk("igafb_init: can't remap %lx[4K]\n", igafb_fix.mmio_start);
 		iounmap((void *)info->screen_base);
 		kfree(info);
 		pci_dev_put(pdev);
@@ -465,7 +465,7 @@ static int __init igafb_init(void)
 
 	par->mmap_map = kzalloc(4 * sizeof(*par->mmap_map), GFP_ATOMIC);
 	if (!par->mmap_map) {
-;
+		printk("igafb_init: can't alloc mmap_map\n");
 		iounmap((void *)par->io_base);
 		iounmap(info->screen_base);
 		kfree(info);

@@ -37,11 +37,11 @@
 
 #define MBCS_DEBUG 0
 #if MBCS_DEBUG
-//#define DBG(fmt...)    printk(KERN_ALERT fmt)
-//#else
-//#define DBG(fmt...)
-//#endif
-;
+#define DBG(fmt...)    printk(KERN_ALERT fmt)
+#else
+#define DBG(fmt...)
+#endif
+static DEFINE_MUTEX(mbcs_mutex);
 static int mbcs_major;
 
 static LIST_HEAD(soft_list);

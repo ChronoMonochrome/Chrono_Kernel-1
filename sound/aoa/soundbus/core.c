@@ -172,7 +172,7 @@ int soundbus_add_one(struct soundbus_dev *dev)
 	    !dev->ofdev.dev.of_node ||
 	    dev->pcmname ||
 	    dev->pcmid != -1) {
-;
+		printk(KERN_ERR "soundbus: adding device failed sanity check!\n");
 		return -EINVAL;
 	}
 

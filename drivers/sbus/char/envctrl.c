@@ -196,7 +196,7 @@ static void envtrl_i2c_test_pin(void)
 	} 
 
 	if (limit <= 0)
-;
+		printk(KERN_INFO PFX "Pin status will not clear.\n");
 }
 
 /* Function Description: Test busy bit.
@@ -214,7 +214,7 @@ static void envctrl_i2c_test_bb(void)
 	} 
 
 	if (limit <= 0)
-;
+		printk(KERN_INFO PFX "Busy bit will not clear.\n");
 }
 
 /* Function Description: Send the address for a read access.
@@ -884,12 +884,12 @@ static void envctrl_init_i2c_child(struct device_node *dp,
 
                 pchild->tables = kmalloc(tbls_size, GFP_KERNEL);
 		if (pchild->tables == NULL){
-;
+			printk(KERN_ERR PFX "Failed to allocate table.\n");
 			return;
 		}
 		pval = of_get_property(dp, "tables", &len);
                 if (!pval || len <= 0) {
-;
+			printk(KERN_ERR PFX "Failed to get table.\n");
 			return;
 		}
 		memcpy(pchild->tables, pval, len);
@@ -977,10 +977,10 @@ static void envctrl_do_shutdown(void)
 		return;
 
 	inprog = 1;
-;
+	printk(KERN_CRIT "kenvctrld: WARNING: Shutting down the system now.\n");
 	ret = orderly_poweroff(true);
 	if (ret < 0) {
-;
+		printk(KERN_CRIT "kenvctrld: WARNING: system shutdown failed!\n"); 
 		inprog = 0;  /* unlikely to succeed, but we could try again */
 	}
 }
@@ -995,14 +995,14 @@ static int kenvctrld(void *__unused)
 	struct i2c_child_t *cputemp;
 
 	if (NULL == (cputemp = envctrl_get_i2c_child(ENVCTRL_CPUTEMP_MON))) {
-//		printk(KERN_ERR  PFX
-;
+		printk(KERN_ERR  PFX
+		       "kenvctrld unable to monitor CPU temp-- exiting\n");
 		return -ENODEV;
 	}
 
 	poll_interval = 5000; /* TODO env_mon_interval */
 
-;
+	printk(KERN_INFO PFX "%s starting...\n", current->comm);
 	for (;;) {
 		msleep_interruptible(poll_interval);
 
@@ -1014,17 +1014,17 @@ static int kenvctrld(void *__unused)
 						      ENVCTRL_CPUTEMP_MON,
 						      tempbuf)) {
 				if (tempbuf[0] >= shutdown_temperature) {
-//					printk(KERN_CRIT 
-//						"%s: WARNING: CPU%i temperature %i C meets or exceeds "\
-//						"shutdown threshold %i C\n", 
-//						current->comm, whichcpu, 
-;
+					printk(KERN_CRIT 
+						"%s: WARNING: CPU%i temperature %i C meets or exceeds "\
+						"shutdown threshold %i C\n", 
+						current->comm, whichcpu, 
+						tempbuf[0], shutdown_temperature);
 					envctrl_do_shutdown();
 				}
 			}
 		}
 	}
-;
+	printk(KERN_INFO PFX "%s exiting...\n", current->comm);
 	return 0;
 }
 
@@ -1069,8 +1069,8 @@ static int __devinit envctrl_probe(struct platform_device *op)
 	/* Register the device as a minor miscellaneous device. */
 	err = misc_register(&envctrl_dev);
 	if (err) {
-//		printk(KERN_ERR PFX "Unable to get misc minor %d\n",
-;
+		printk(KERN_ERR PFX "Unable to get misc minor %d\n",
+		       envctrl_dev.minor);
 		goto out_iounmap;
 	}
 
@@ -1078,12 +1078,12 @@ static int __devinit envctrl_probe(struct platform_device *op)
 	 * a next child device, so we decrement before reverse-traversal of
 	 * child devices.
 	 */
-;
+	printk(KERN_INFO PFX "Initialized ");
 	for (--index; index >= 0; --index) {
-//		printk("[%s 0x%lx]%s", 
-//			(I2C_ADC == i2c_childlist[index].i2ctype) ? "adc" : 
-//			((I2C_GPIO == i2c_childlist[index].i2ctype) ? "gpio" : "unknown"), 
-;
+		printk("[%s 0x%lx]%s", 
+			(I2C_ADC == i2c_childlist[index].i2ctype) ? "adc" : 
+			((I2C_GPIO == i2c_childlist[index].i2ctype) ? "gpio" : "unknown"), 
+			i2c_childlist[index].addr, (0 == index) ? "\n" : " ");
 	}
 
 	kenvctrld_task = kthread_run(kenvctrld, NULL, "kenvctrld");

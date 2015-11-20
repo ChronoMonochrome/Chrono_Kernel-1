@@ -1194,7 +1194,7 @@ static int pdc_ata_init_one(struct pci_dev *pdev,
 	int is_sataii_tx4;
 
 	if (!printed_version++)
-;
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	/* enable and acquire resources */
 	rc = pcim_enable_device(pdev);
@@ -1223,7 +1223,7 @@ static int pdc_ata_init_one(struct pci_dev *pdev,
 
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, n_ports);
 	if (!host) {
-;
+		dev_printk(KERN_ERR, &pdev->dev, "failed to allocate host\n");
 		return -ENOMEM;
 	}
 	hpriv = devm_kzalloc(&pdev->dev, sizeof *hpriv, GFP_KERNEL);

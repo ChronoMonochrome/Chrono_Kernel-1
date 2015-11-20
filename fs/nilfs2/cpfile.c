@@ -292,9 +292,9 @@ int nilfs_cpfile_delete_checkpoints(struct inode *cpfile,
 	int ret, ncps, nicps, count, i;
 
 	if (unlikely(start == 0 || start > end)) {
-//		printk(KERN_ERR "%s: invalid range of checkpoint numbers: "
-//		       "[%llu, %llu)\n", __func__,
-;
+		printk(KERN_ERR "%s: invalid range of checkpoint numbers: "
+		       "[%llu, %llu)\n", __func__,
+		       (unsigned long long)start, (unsigned long long)end);
 		return -EINVAL;
 	}
 
@@ -344,9 +344,9 @@ int nilfs_cpfile_delete_checkpoints(struct inode *cpfile,
 								   cpfile, cno);
 					if (ret == 0)
 						continue;
-//					printk(KERN_ERR
-//					       "%s: cannot delete block\n",
-;
+					printk(KERN_ERR
+					       "%s: cannot delete block\n",
+					       __func__);
 					break;
 				}
 			}

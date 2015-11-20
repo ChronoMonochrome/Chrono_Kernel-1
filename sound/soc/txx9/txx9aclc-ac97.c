@@ -60,14 +60,14 @@ static unsigned short txx9aclc_ac97_read(struct snd_ac97 *ac97,
 	__raw_writel(ACINT_REGACCRDY, base + ACINTEN);
 	if (!wait_event_timeout(ac97_waitq, txx9aclc_regready(txx9aclc_drvdata), HZ)) {
 		__raw_writel(ACINT_REGACCRDY, base + ACINTDIS);
-;
+		printk(KERN_ERR "ac97 read timeout (reg %#x)\n", reg);
 		dat = 0xffff;
 		goto done;
 	}
 	dat = __raw_readl(base + ACREGACC);
 	if (((dat >> ACREGACC_REG_SHIFT) & 0xff) != reg) {
-//		printk(KERN_ERR "reg mismatch %x with %x\n",
-;
+		printk(KERN_ERR "reg mismatch %x with %x\n",
+			dat, reg);
 		dat = 0xffff;
 		goto done;
 	}
@@ -89,8 +89,8 @@ static void txx9aclc_ac97_write(struct snd_ac97 *ac97, unsigned short reg,
 		     base + ACREGACC);
 	__raw_writel(ACINT_REGACCRDY, base + ACINTEN);
 	if (!wait_event_timeout(ac97_waitq, txx9aclc_regready(txx9aclc_drvdata), HZ)) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"ac97 write timeout (reg %#x)\n", reg);
 	}
 	__raw_writel(ACINT_REGACCRDY, base + ACINTDIS);
 }

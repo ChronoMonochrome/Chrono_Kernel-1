@@ -182,8 +182,8 @@ static irqreturn_t pd6729_interrupt(int irq, void *dev)
 	while (1) {
 		loopcount++;
 		if (loopcount > 20) {
-//			printk(KERN_ERR "pd6729: infinite eventloop "
-;
+			printk(KERN_ERR "pd6729: infinite eventloop "
+			       "in interrupt\n");
 			break;
 		}
 
@@ -596,8 +596,8 @@ static u_int __devinit pd6729_isa_scan(void)
 	int i;
 
 	if (irq_mode == 1) {
-//		printk(KERN_INFO "pd6729: PCI card interrupts, "
-;
+		printk(KERN_INFO "pd6729: PCI card interrupts, "
+		       "PCI status changes\n");
 		return 0;
 	}
 
@@ -608,15 +608,15 @@ static u_int __devinit pd6729_isa_scan(void)
 		if ((mask0 & (1 << i)) && (pd6729_check_irq(i) == 0))
 			mask |= (1 << i);
 
-;
+	printk(KERN_INFO "pd6729: ISA irqs = ");
 	for (i = 0; i < 16; i++)
 		if (mask & (1<<i))
-;
+			printk("%s%d", ((mask & ((1<<i)-1)) ? "," : ""), i);
 
 	if (mask == 0)
-;
+		printk("none!");
 	else
-;
+		printk("  polling status changes.\n");
 
 	return mask;
 }

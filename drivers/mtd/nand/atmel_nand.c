@@ -500,14 +500,14 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!mem) {
-;
+		printk(KERN_ERR "atmel_nand: can't get I/O resource mem\n");
 		return -ENXIO;
 	}
 
 	/* Allocate memory for the device structure (and zero it) */
 	host = kzalloc(sizeof(struct atmel_nand_host), GFP_KERNEL);
 	if (!host) {
-;
+		printk(KERN_ERR "atmel_nand: failed to allocate device structure.\n");
 		return -ENOMEM;
 	}
 
@@ -515,7 +515,7 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
 
 	host->io_base = ioremap(mem->start, mem->end - mem->start + 1);
 	if (host->io_base == NULL) {
-;
+		printk(KERN_ERR "atmel_nand: ioremap failed\n");
 		res = -EIO;
 		goto err_nand_ioremap;
 	}
@@ -539,8 +539,8 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
 
 	regs = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (!regs && hard_ecc) {
-//		printk(KERN_ERR "atmel_nand: can't get I/O resource "
-;
+		printk(KERN_ERR "atmel_nand: can't get I/O resource "
+				"regs\nFalling back on software ECC\n");
 	}
 
 	nand_chip->ecc.mode = NAND_ECC_SOFT;	/* enable ECC */
@@ -549,7 +549,7 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
 	if (hard_ecc && regs) {
 		host->ecc = ioremap(regs->start, regs->end - regs->start + 1);
 		if (host->ecc == NULL) {
-;
+			printk(KERN_ERR "atmel_nand: ioremap failed\n");
 			res = -EIO;
 			goto err_ecc_ioremap;
 		}
@@ -574,14 +574,14 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
 
 	if (host->board->det_pin) {
 		if (gpio_get_value(host->board->det_pin)) {
-;
+			printk(KERN_INFO "No SmartMedia card inserted.\n");
 			res = -ENXIO;
 			goto err_no_card;
 		}
 	}
 
 	if (on_flash_bbt) {
-;
+		printk(KERN_INFO "atmel_nand: Use On Flash BBT\n");
 		nand_chip->options |= NAND_USE_FLASH_BBT;
 	}
 
@@ -664,7 +664,7 @@ static int __init atmel_nand_probe(struct platform_device *pdev)
 							 &num_partitions);
 
 	if ((!partitions) || (num_partitions == 0)) {
-;
+		printk(KERN_ERR "atmel_nand: No partitions defined, or unsupported device.\n");
 		res = -ENXIO;
 		goto err_no_partitions;
 	}

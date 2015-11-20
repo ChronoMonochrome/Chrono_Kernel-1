@@ -338,8 +338,8 @@ static void opera1_bw(struct dvb_frontend *fe, u8 *buf,
 
 	result = i2c_transfer(priv->i2c, &msg, 1);
 	if (result != 1)
-//		printk(KERN_ERR "%s: i2c_transfer failed:%d",
-;
+		printk(KERN_ERR "%s: i2c_transfer failed:%d",
+			__func__, result);
 
 	if (b_w <= 10000)
 		lpf = 0xc;
@@ -409,8 +409,8 @@ static void samsung_dtos403ih102a_set(struct dvb_frontend *fe, u8 *buf,
 
 	result = i2c_transfer(priv->i2c, &msg, 1);
 	if (result != 1)
-//		printk(KERN_ERR "%s: i2c_transfer failed:%d",
-;
+		printk(KERN_ERR "%s: i2c_transfer failed:%d",
+			__func__, result);
 
 	buf[2] = 0x9e;
 	buf[3] = 0x90;
@@ -555,8 +555,8 @@ static int dvb_pll_configure(struct dvb_frontend *fe, u8 *buf,
 	}
 
 	if (debug)
-//		printk("pll: %s: freq=%d | i=%d/%d\n", desc->name,
-;
+		printk("pll: %s: freq=%d | i=%d/%d\n", desc->name,
+		       params->frequency, i, desc->count);
 	if (i == desc->count)
 		return -EINVAL;
 
@@ -571,8 +571,8 @@ static int dvb_pll_configure(struct dvb_frontend *fe, u8 *buf,
 		desc->set(fe, buf, params);
 
 	if (debug)
-//		printk("pll: %s: div=%d | buf=0x%02x,0x%02x,0x%02x,0x%02x\n",
-;
+		printk("pll: %s: div=%d | buf=0x%02x,0x%02x,0x%02x,0x%02x\n",
+		       desc->name, div, buf[0], buf[1], buf[2], buf[3]);
 
 	// calculate the frequency we set it to
 	return (div * desc->entries[i].stepsize) - desc->iffreq;
@@ -778,12 +778,12 @@ struct dvb_frontend *dvb_pll_attach(struct dvb_frontend *fe, int pll_addr,
 	fe->tuner_priv = priv;
 
 	if ((debug) || (id[priv->nr] == pll_desc_id)) {
-;
+		printk("dvb-pll[%d]", priv->nr);
 		if (i2c != NULL)
-;
-//		printk(": id# %d (%s) attached, %s\n", pll_desc_id, desc->name,
-//		       id[priv->nr] == pll_desc_id ?
-;
+			printk(" %d-%04x", i2c_adapter_id(i2c), pll_addr);
+		printk(": id# %d (%s) attached, %s\n", pll_desc_id, desc->name,
+		       id[priv->nr] == pll_desc_id ?
+				"insmod option" : "autodetected");
 	}
 
 	return fe;

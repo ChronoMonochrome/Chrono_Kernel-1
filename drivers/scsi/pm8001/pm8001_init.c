@@ -275,8 +275,8 @@ static int __devinit pm8001_alloc(struct pm8001_hba_info *pm8001_ha)
 			pm8001_ha->memoryMap.region[i].total_len,
 			pm8001_ha->memoryMap.region[i].alignment) != 0) {
 				PM8001_FAIL_DBG(pm8001_ha,
-//					pm8001_printk("Mem%d alloc failed\n",
-;
+					pm8001_printk("Mem%d alloc failed\n",
+					i));
 				goto err_out;
 		}
 	}
@@ -341,11 +341,11 @@ static int pm8001_ioremap(struct pm8001_hba_info *pm8001_ha)
 				ioremap(pm8001_ha->io_mem[logicalBar].membase,
 				pm8001_ha->io_mem[logicalBar].memsize);
 			PM8001_INIT_DBG(pm8001_ha,
-//				pm8001_printk("PCI: bar %d, logicalBar %d "
-//				"virt_addr=%lx,len=%d\n", bar, logicalBar,
-//				(unsigned long)
-//				pm8001_ha->io_mem[logicalBar].memvirtaddr,
-;
+				pm8001_printk("PCI: bar %d, logicalBar %d "
+				"virt_addr=%lx,len=%d\n", bar, logicalBar,
+				(unsigned long)
+				pm8001_ha->io_mem[logicalBar].memvirtaddr,
+				pm8001_ha->io_mem[logicalBar].memsize));
 		} else {
 			pm8001_ha->io_mem[logicalBar].membase	= 0;
 			pm8001_ha->io_mem[logicalBar].memsize	= 0;
@@ -408,22 +408,22 @@ static int pci_go_44(struct pci_dev *pdev)
 			rc = pci_set_consistent_dma_mask(pdev,
 				DMA_BIT_MASK(32));
 			if (rc) {
-//				dev_printk(KERN_ERR, &pdev->dev,
-;
+				dev_printk(KERN_ERR, &pdev->dev,
+					"44-bit DMA enable failed\n");
 				return rc;
 			}
 		}
 	} else {
 		rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+				"32-bit DMA enable failed\n");
 			return rc;
 		}
 		rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+				"32-bit consistent DMA enable failed\n");
 			return rc;
 		}
 	}
@@ -527,8 +527,8 @@ static void pm8001_init_sas_add(struct pm8001_hba_info *pm8001_ha)
 		memcpy(&pm8001_ha->phy[i].dev_sas_addr, pm8001_ha->sas_addr,
 			SAS_ADDR_SIZE);
 		PM8001_INIT_DBG(pm8001_ha,
-//			pm8001_printk("phy %d sas_addr = %016llx \n", i,
-;
+			pm8001_printk("phy %d sas_addr = %016llx \n", i,
+			pm8001_ha->phy[i].dev_sas_addr));
 	}
 #else
 	for (i = 0; i < pm8001_ha->chip->n_phy; i++) {
@@ -626,8 +626,8 @@ static int __devinit pm8001_pci_probe(struct pci_dev *pdev,
 	struct Scsi_Host *shost = NULL;
 	const struct pm8001_chip_info *chip;
 
-//	dev_printk(KERN_INFO, &pdev->dev,
-;
+	dev_printk(KERN_INFO, &pdev->dev,
+		"pm8001: driver version %s\n", DRV_VERSION);
 	rc = pci_enable_device(pdev);
 	if (rc)
 		goto err_out_enable;
@@ -761,7 +761,7 @@ static int pm8001_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	scsi_block_requests(pm8001_ha->shost);
 	pos = pci_find_capability(pdev, PCI_CAP_ID_PM);
 	if (pos == 0) {
-;
+		printk(KERN_ERR " PCI PM not supported\n");
 		return -ENODEV;
 	}
 	PM8001_CHIP_DISP->interrupt_disable(pm8001_ha);
@@ -779,9 +779,9 @@ static int pm8001_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	tasklet_kill(&pm8001_ha->tasklet);
 #endif
 	device_state = pci_choose_state(pdev, state);
-//	pm8001_printk("pdev=0x%p, slot=%s, entering "
-//		      "operating state [D%d]\n", pdev,
-;
+	pm8001_printk("pdev=0x%p, slot=%s, entering "
+		      "operating state [D%d]\n", pdev,
+		      pm8001_ha->name, device_state);
 	pci_save_state(pdev);
 	pci_disable_device(pdev);
 	pci_set_power_state(pdev, device_state);
@@ -803,16 +803,16 @@ static int pm8001_pci_resume(struct pci_dev *pdev)
 	pm8001_ha = sha->lldd_ha;
 	device_state = pdev->current_state;
 
-//	pm8001_printk("pdev=0x%p, slot=%s, resuming from previous "
-;
+	pm8001_printk("pdev=0x%p, slot=%s, resuming from previous "
+		"operating state [D%d]\n", pdev, pm8001_ha->name, device_state);
 
 	pci_set_power_state(pdev, PCI_D0);
 	pci_enable_wake(pdev, PCI_D0, 0);
 	pci_restore_state(pdev);
 	rc = pci_enable_device(pdev);
 	if (rc) {
-//		pm8001_printk("slot=%s Enable device failed during resume\n",
-;
+		pm8001_printk("slot=%s Enable device failed during resume\n",
+			      pm8001_ha->name);
 		goto err_out_enable;
 	}
 

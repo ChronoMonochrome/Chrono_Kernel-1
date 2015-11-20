@@ -44,18 +44,18 @@
 #undef DEBUG  /* define this for verbose EDID parsing output */
 
 #ifdef DEBUG
-//#define DPRINTK(fmt, args...) printk(fmt,## args)
-//#else
-//#define DPRINTK(fmt, args...)
-//#endif
-//
-//#define FBMON_FIX_HEADER  1
-//#define FBMON_FIX_INPUT   2
-//#define FBMON_FIX_TIMINGS 3
-//
-//#ifdef CONFIG_FB_MODE_HELPERS
-//struct broken_edid {
-;
+#define DPRINTK(fmt, args...) printk(fmt,## args)
+#else
+#define DPRINTK(fmt, args...)
+#endif
+
+#define FBMON_FIX_HEADER  1
+#define FBMON_FIX_INPUT   2
+#define FBMON_FIX_TIMINGS 3
+
+#ifdef CONFIG_FB_MODE_HELPERS
+struct broken_edid {
+	u8  manufacturer[4];
 	u32 model;
 	u32 fix;
 };
@@ -199,9 +199,9 @@ static int check_edid(unsigned char *edid)
 	}
 
 	if (ret)
-//		printk("fbmon: The EDID Block of "
-//		       "Manufacturer: %s Model: 0x%x is known to "
-;
+		printk("fbmon: The EDID Block of "
+		       "Manufacturer: %s Model: 0x%x is known to "
+		       "be broken,\n",  manufacturer, model);
 
 	return ret;
 }
@@ -213,17 +213,17 @@ static void fix_edid(unsigned char *edid, int fix)
 
 	switch (fix) {
 	case FBMON_FIX_HEADER:
-;
+		printk("fbmon: trying a header reconstruct\n");
 		memcpy(edid, edid_v1_header, 8);
 		break;
 	case FBMON_FIX_INPUT:
-;
+		printk("fbmon: trying to fix input type\n");
 		b = edid + EDID_STRUCT_DISPLAY;
 		b[0] &= ~0x80;
 		edid[127] += 0x80;
 		break;
 	case FBMON_FIX_TIMINGS:
-;
+		printk("fbmon: trying to fix monitor timings\n");
 		b = edid + DETAILED_TIMING_DESCRIPTIONS_START;
 		for (i = 0; i < 4; i++) {
 			if (!(edid_is_serial_block(b) ||
@@ -861,7 +861,7 @@ static void get_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 		specs->misc |= FB_MISC_1ST_DETAIL;
 	}
 	if (c & 0x01) {
-;
+		printk("      Display is GTF capable\n");
 		specs->gtf = 1;
 	}
 }

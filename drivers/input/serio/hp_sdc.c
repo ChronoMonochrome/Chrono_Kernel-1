@@ -259,7 +259,7 @@ static irqreturn_t hp_sdc_isr(int irq, void *dev_id)
 		if (hp_sdc.pup != NULL)
 			hp_sdc.pup(irq, dev_id, status, data);
 		else
-;
+			printk(KERN_INFO PREFIX "HP SDC reports successful PUP.\n");
 		read_unlock(&hp_sdc.hook_lock);
 		break;
 
@@ -280,7 +280,7 @@ static irqreturn_t hp_sdc_nmisr(int irq, void *dev_id)
 	int status;
 
 	status = hp_sdc_status_in8();
-;
+	printk(KERN_WARNING PREFIX "NMI !\n");
 
 #if 0
 	if (status & HP_SDC_NMISTATUS_FHS) {
@@ -290,7 +290,7 @@ static irqreturn_t hp_sdc_nmisr(int irq, void *dev_id)
 		read_unlock(&hp_sdc.hook_lock);
 	} else {
 		/* TODO: pass this on to the HIL handler, or do SAK here? */
-;
+		printk(KERN_WARNING PREFIX "HIL NMI\n");
 	}
 #endif
 
@@ -322,8 +322,8 @@ static void hp_sdc_tasklet(unsigned long foo)
 			 * we'll need to figure out a way to communicate
 			 * it back to the application. and be less verbose.
 			 */
-//			printk(KERN_WARNING PREFIX "read timeout (%ius)!\n",
-;
+			printk(KERN_WARNING PREFIX "read timeout (%ius)!\n",
+			       (int)(tv.tv_usec - hp_sdc.rtv.tv_usec));
 			curr->idx += hp_sdc.rqty;
 			hp_sdc.rqty = 0;
 			tmp = curr->seq[curr->actidx];
@@ -624,11 +624,11 @@ int __hp_sdc_enqueue_transaction(hp_sdc_transaction *this)
 			return 0;
 		}
 
-;
+	printk(KERN_WARNING PREFIX "No free slot to add transaction.\n");
 	return -EBUSY;
 
  fail:
-;
+	printk(KERN_WARNING PREFIX "Transaction add failed: transaction already queued?\n");
 	return -EINVAL;
 }
 
@@ -888,8 +888,8 @@ static int __init hp_sdc_init(void)
 			"HP SDC NMI", &hp_sdc))
 		goto err2;
 
-//	printk(KERN_INFO PREFIX "HP SDC at 0x%p, IRQ %d (NMI IRQ %d)\n",
-;
+	printk(KERN_INFO PREFIX "HP SDC at 0x%p, IRQ %d (NMI IRQ %d)\n",
+	       (void *)hp_sdc.base_io, hp_sdc.irq, hp_sdc.nmi);
 
 	hp_sdc_status_in8();
 	hp_sdc_data_in8();
@@ -922,8 +922,8 @@ static int __init hp_sdc_init(void)
  err1:
 	release_region(hp_sdc.data_io, 2);
  err0:
-//	printk(KERN_WARNING PREFIX ": %s SDC IO=0x%p IRQ=0x%x NMI=0x%x\n",
-;
+	printk(KERN_WARNING PREFIX ": %s SDC IO=0x%p IRQ=0x%x NMI=0x%x\n",
+		errstr, (void *)hp_sdc.base_io, hp_sdc.irq, hp_sdc.nmi);
 	hp_sdc.dev = NULL;
 
 	return hp_sdc.dev_err;
@@ -992,7 +992,7 @@ static void hp_sdc_exit(void)
 #if defined(__hppa__)
 	cancel_delayed_work_sync(&moduleloader_work);
 	if (unregister_parisc_driver(&hp_sdc_driver))
-;
+		printk(KERN_WARNING PREFIX "Error unregistering HP SDC");
 #endif
 }
 
@@ -1007,7 +1007,7 @@ static int __init hp_sdc_register(void)
 #endif
 
 	if (hp_sdc_disabled) {
-;
+		printk(KERN_WARNING PREFIX "HP SDC driver disabled by no_hpsdc=1.\n");
 		return -ENODEV;
 	}
 
@@ -1015,7 +1015,7 @@ static int __init hp_sdc_register(void)
 	hp_sdc.dev_err = 0;
 #if defined(__hppa__)
 	if (register_parisc_driver(&hp_sdc_driver)) {
-;
+		printk(KERN_WARNING PREFIX "Error registering SDC with system bus tree.\n");
 		return -ENODEV;
 	}
 #elif defined(__mc68000__)
@@ -1035,7 +1035,7 @@ static int __init hp_sdc_register(void)
 	hp_sdc.dev_err   = hp_sdc_init();
 #endif
 	if (hp_sdc.dev == NULL) {
-;
+		printk(KERN_WARNING PREFIX "No SDC found.\n");
 		return hp_sdc.dev_err;
 	}
 
@@ -1060,14 +1060,14 @@ static int __init hp_sdc_register(void)
 	up(&tq_init_sem);
 
 	if ((tq_init_seq[0] & HP_SDC_ACT_DEAD) == HP_SDC_ACT_DEAD) {
-;
+		printk(KERN_WARNING PREFIX "Error reading config byte.\n");
 		hp_sdc_exit();
 		return -ENODEV;
 	}
 	hp_sdc.r11 = tq_init_seq[4];
 	if (hp_sdc.r11 & HP_SDC_CFG_NEW) {
 		const char *str;
-;
+		printk(KERN_INFO PREFIX "New style SDC\n");
 		tq_init_seq[1] = HP_SDC_CMD_READ_XTD;
 		tq_init.actidx		= 0;
 		tq_init.idx		= 1;
@@ -1076,18 +1076,18 @@ static int __init hp_sdc_register(void)
 		down(&tq_init_sem);
 		up(&tq_init_sem);
 		if ((tq_init_seq[0] & HP_SDC_ACT_DEAD) == HP_SDC_ACT_DEAD) {
-;
+			printk(KERN_WARNING PREFIX "Error reading extended config byte.\n");
 			return -ENODEV;
 		}
 		hp_sdc.r7e = tq_init_seq[4];
 		HP_SDC_XTD_REV_STRINGS(hp_sdc.r7e & HP_SDC_XTD_REV, str)
-;
+		printk(KERN_INFO PREFIX "Revision: %s\n", str);
 		if (hp_sdc.r7e & HP_SDC_XTD_BEEPER)
-;
+			printk(KERN_INFO PREFIX "TI SN76494 beeper present\n");
 		if (hp_sdc.r7e & HP_SDC_XTD_BBRTC)
-;
-//		printk(KERN_INFO PREFIX "Spunking the self test register to force PUP "
-;
+			printk(KERN_INFO PREFIX "OKI MSM-58321 BBRTC present\n");
+		printk(KERN_INFO PREFIX "Spunking the self test register to force PUP "
+		       "on next firmware reset.\n");
 		tq_init_seq[0] = HP_SDC_ACT_PRECMD |
 			HP_SDC_ACT_DATAOUT | HP_SDC_ACT_SEMAPHORE;
 		tq_init_seq[1] = HP_SDC_CMD_SET_STR;
@@ -1101,8 +1101,8 @@ static int __init hp_sdc_register(void)
 		down(&tq_init_sem);
 		up(&tq_init_sem);
 	} else
-//		printk(KERN_INFO PREFIX "Old style SDC (1820-%s).\n",
-;
+		printk(KERN_INFO PREFIX "Old style SDC (1820-%s).\n",
+		       (hp_sdc.r11 & HP_SDC_CFG_REV) ? "3300" : "2564/3087");
 
         return 0;
 }

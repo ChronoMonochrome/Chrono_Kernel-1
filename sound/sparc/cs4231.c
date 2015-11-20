@@ -415,8 +415,8 @@ static void snd_cs4231_mce_down(struct snd_cs4231 *chip)
 	spin_unlock_irqrestore(&chip->lock, flags);
 
 	if (reg)
-//		snd_printk(KERN_ERR
-;
+		snd_printk(KERN_ERR
+			   "mce_down - auto calibration time out (2)\n");
 }
 
 static void snd_cs4231_advance_dma(struct cs4231_dma_control *dma_cont,

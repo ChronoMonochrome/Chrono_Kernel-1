@@ -83,7 +83,7 @@ static void mtouch_process_response(struct mtouch *mtouch)
 		/* FIXME - process response */
 		mtouch->idx = 0;
 	} else if (MTOUCH_MAX_LENGTH == mtouch->idx) {
-;
+		printk(KERN_ERR "mtouch.c: too many response bytes\n");
 		mtouch->idx = 0;
 	}
 }
@@ -100,7 +100,7 @@ static irqreturn_t mtouch_interrupt(struct serio *serio,
 	else if (MTOUCH_RESPONSE_BEGIN_BYTE == mtouch->data[0])
 		mtouch_process_response(mtouch);
 	else
-;
+		printk(KERN_DEBUG "mtouch.c: unknown/unsynchronized data from device, byte %x\n",mtouch->data[0]);
 
 	return IRQ_HANDLED;
 }

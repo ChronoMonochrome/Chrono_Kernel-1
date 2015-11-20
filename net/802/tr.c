@@ -167,7 +167,7 @@ static int tr_rebuild_header(struct sk_buff *skb)
 	 */
 
 	if(trllc->ethertype != htons(ETH_P_IP)) {
-;
+		printk("tr_rebuild_header: Don't know how to resolve type %04X addresses ?\n", ntohs(trllc->ethertype));
 		return 0;
 	}
 
@@ -286,7 +286,7 @@ void tr_source_route(struct sk_buff *skb,struct trh_hdr *trh,
 		if(entry)
 		{
 #if TR_SR_DEBUG
-;
+printk("source routing for %pM\n", trh->daddr);
 #endif
 			if(!entry->local_ring && (ntohs(entry->rcf) & TR_RCF_LEN_MASK) >> 8)
 			{
@@ -297,11 +297,11 @@ void tr_source_route(struct sk_buff *skb,struct trh_hdr *trh,
 
 				trh->saddr[0]|=TR_RII;
 #if TR_SR_DEBUG
-;
+				printk("entry found with rcf %04x\n", entry->rcf);
 			}
 			else
 			{
-;
+				printk("entry found but without rcf length, local=%02x\n", entry->local_ring);
 #endif
 			}
 			entry->last_used=jiffies;
@@ -317,7 +317,7 @@ void tr_source_route(struct sk_buff *skb,struct trh_hdr *trh,
 				       | TR_RCF_FRAME2K | TR_RCF_LIMITED_BROADCAST);
 			trh->saddr[0]|=TR_RII;
 #if TR_SR_DEBUG
-;
+			printk("no entry in rif table found - broadcasting frame\n");
 #endif
 		}
 	}
@@ -368,8 +368,8 @@ static void tr_add_rif_info(struct trh_hdr *trh, struct net_device *dev)
 	if(entry==NULL)
 	{
 #if TR_SR_DEBUG
-//		printk("adding rif_entry: addr:%pM rcf:%04X\n",
-;
+		printk("adding rif_entry: addr:%pM rcf:%04X\n",
+		       trh->saddr, ntohs(trh->rcf));
 #endif
 		/*
 		 *	Allocate our new entry. A failure to allocate loses
@@ -382,7 +382,7 @@ static void tr_add_rif_info(struct trh_hdr *trh, struct net_device *dev)
 
 		if(!entry)
 		{
-;
+			printk(KERN_DEBUG "tr.c: Couldn't malloc rif cache entry !\n");
 			spin_unlock_irqrestore(&rif_lock, flags);
 			return;
 		}
@@ -414,8 +414,8 @@ static void tr_add_rif_info(struct trh_hdr *trh, struct net_device *dev)
 			 !(trh->rcf & htons(TR_RCF_BROADCAST_MASK)))
 		    {
 #if TR_SR_DEBUG
-//printk("updating rif_entry: addr:%pM rcf:%04X\n",
-;
+printk("updating rif_entry: addr:%pM rcf:%04X\n",
+		trh->saddr, ntohs(trh->rcf));
 #endif
 			    entry->rcf = trh->rcf & htons((unsigned short)~TR_RCF_BROADCAST_MASK);
 			    memcpy(&(entry->rseg[0]),&(trh->rseg[0]),8*sizeof(unsigned short));

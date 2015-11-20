@@ -519,23 +519,23 @@ static int coda_venus_readdir(struct file *coda_file, void *buf,
 		ret = kernel_read(host_file, coda_file->f_pos - 2, (char *)vdir,
 				  sizeof(*vdir));
 		if (ret < 0) {
-//			printk(KERN_ERR "coda readdir: read dir %s failed %d\n",
-;
+			printk(KERN_ERR "coda readdir: read dir %s failed %d\n",
+			       coda_f2s(&cii->c_fid), ret);
 			break;
 		}
 		if (ret == 0) break; /* end of directory file reached */
 
 		/* catch truncated reads */
 		if (ret < vdir_size || ret < vdir_size + vdir->d_namlen) {
-//			printk(KERN_ERR "coda readdir: short read on %s\n",
-;
+			printk(KERN_ERR "coda readdir: short read on %s\n",
+			       coda_f2s(&cii->c_fid));
 			ret = -EBADF;
 			break;
 		}
 		/* validate whether the directory file actually makes sense */
 		if (vdir->d_reclen < vdir_size + vdir->d_namlen) {
-//			printk(KERN_ERR "coda readdir: invalid dir %s\n",
-;
+			printk(KERN_ERR "coda readdir: invalid dir %s\n",
+			       coda_f2s(&cii->c_fid));
 			ret = -EBADF;
 			break;
 		}
@@ -665,8 +665,8 @@ int coda_revalidate_inode(struct dentry *dentry)
 		coda_vattr_to_iattr(inode, &attr);
 
 		if ((old_mode & S_IFMT) != (inode->i_mode & S_IFMT)) {
-//			printk("Coda: inode %ld, fid %s changed type!\n",
-;
+			printk("Coda: inode %ld, fid %s changed type!\n",
+			       inode->i_ino, coda_f2s(&(cii->c_fid)));
 		}
 
 		/* the following can happen when a local fid is replaced 

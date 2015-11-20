@@ -634,8 +634,8 @@ wavefront_get_sample_status (snd_wavefront_t *dev, int assume_rom)
 		wbuf[1] = i >> 7;
 
 		if (snd_wavefront_cmd (dev, WFC_IDENTIFY_SAMPLE_TYPE, rbuf, wbuf)) {
-//			snd_printk(KERN_WARNING "cannot identify sample "
-;
+			snd_printk(KERN_WARNING "cannot identify sample "
+				   "type of slot %d\n", i);
 			dev->sample_status[i] = WF_ST_EMPTY;
 			continue;
 		}
@@ -1947,7 +1947,7 @@ wavefront_download_firmware (snd_wavefront_t *dev, char *path)
 
 	err = request_firmware(&firmware, path, dev->card->dev);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "firmware (%s) download failed!!!\n", path);
 		return 1;
 	}
 
@@ -1958,16 +1958,16 @@ wavefront_download_firmware (snd_wavefront_t *dev, char *path)
 		if (section_length == 0)
 			break;
 		if (section_length < 0 || section_length > WF_SECTION_MAX) {
-//			snd_printk(KERN_ERR
-//				   "invalid firmware section length %d\n",
-;
+			snd_printk(KERN_ERR
+				   "invalid firmware section length %d\n",
+				   section_length);
 			goto failure;
 		}
 		buf++;
 		len++;
 
 		if (firmware->size < len + section_length) {
-;
+			snd_printk(KERN_ERR "firmware section read error.\n");
 			goto failure;
 		}
 
@@ -1984,15 +1984,15 @@ wavefront_download_firmware (snd_wavefront_t *dev, char *path)
 	
 		/* get ACK */
 		if (!wavefront_wait(dev, STAT_CAN_READ)) {
-;
+			snd_printk(KERN_ERR "time out for firmware ACK.\n");
 			goto failure;
 		}
 		err = inb(dev->data_port);
 		if (err != WF_ACK) {
-//			snd_printk(KERN_ERR
-//				   "download of section #%d not "
-//				   "acknowledged, ack = 0x%x\n",
-;
+			snd_printk(KERN_ERR
+				   "download of section #%d not "
+				   "acknowledged, ack = 0x%x\n",
+				   section_cnt_downloaded + 1, err);
 			goto failure;
 		}
 
@@ -2004,7 +2004,7 @@ wavefront_download_firmware (snd_wavefront_t *dev, char *path)
 
  failure:
 	release_firmware(firmware);
-;
+	snd_printk(KERN_ERR "firmware download failed!!!\n");
 	return 1;
 }
 

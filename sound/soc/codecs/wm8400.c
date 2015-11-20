@@ -403,32 +403,32 @@ static int outmixer_event (struct snd_soc_dapm_widget *w,
 	case WM8400_SPEAKER_MIXER | (WM8400_LDSPK << 8) :
 		reg = wm8400_read(w->codec, WM8400_OUTPUT_MIXER1);
 		if (reg & WM8400_LDLO) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			"Cannot set as Output Mixer 1 LDLO Set\n");
 			ret = -1;
 		}
 		break;
 	case WM8400_SPEAKER_MIXER | (WM8400_RDSPK << 8):
 		reg = wm8400_read(w->codec, WM8400_OUTPUT_MIXER2);
 		if (reg & WM8400_RDRO) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			"Cannot set as Output Mixer 2 RDRO Set\n");
 			ret = -1;
 		}
 		break;
 	case WM8400_OUTPUT_MIXER1 | (WM8400_LDLO << 8):
 		reg = wm8400_read(w->codec, WM8400_SPEAKER_MIXER);
 		if (reg & WM8400_LDSPK) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			"Cannot set as Speaker Mixer LDSPK Set\n");
 			ret = -1;
 		}
 		break;
 	case WM8400_OUTPUT_MIXER2 | (WM8400_RDRO << 8):
 		reg = wm8400_read(w->codec, WM8400_SPEAKER_MIXER);
 		if (reg & WM8400_RDSPK) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			"Cannot set as Speaker Mixer RDSPK Set\n");
 			ret = -1;
 		}
 		break;

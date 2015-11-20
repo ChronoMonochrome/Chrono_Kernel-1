@@ -323,12 +323,12 @@ static const u8 bl_cmd[] = {
 };
 
 #define LOCK(m) do { \
-;
+	DBG(printk(KERN_INFO "%s: lock\n", __func__);) \
 	mutex_lock(&(m)); \
 } while (0);
 
 #define UNLOCK(m) do { \
-;
+	DBG(printk(KERN_INFO "%s: unlock\n", __func__);) \
 	mutex_unlock(&(m)); \
 } while (0);
 
@@ -347,7 +347,7 @@ static void print_data_block(const char *func, u8 command,
 	p += l;
 	for (i = 0; i < length && buf_len; i++, p += l, buf_len -= l)
 		l = snprintf(p, buf_len, "%02x ", *((char *)data + i));
-;
+	printk(KERN_DEBUG "%s: %s\n", func, buf);
 })
 
 static int cyttsp_soft_reset(struct cyttsp *ts);
@@ -405,11 +405,11 @@ static int ttsp_read_block_data(struct cyttsp *ts, u8 command,
 {
 	int rc;
 	int tries;
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	if (!buf || !length) {
-//		printk(KERN_ERR "%s: Error, buf:%s len:%u\n",
-;
+		printk(KERN_ERR "%s: Error, buf:%s len:%u\n",
+				__func__, !buf ? "NULL" : "OK", length);
 		return -EIO;
 	}
 
@@ -420,7 +420,7 @@ static int ttsp_read_block_data(struct cyttsp *ts, u8 command,
 	}
 
 	if (rc < 0)
-;
+		printk(KERN_ERR "%s: error %d\n", __func__, rc);
 	DBG(print_data_block(__func__, command, length, buf);)
 	return rc;
 }
@@ -430,11 +430,11 @@ static int ttsp_write_block_data(struct cyttsp *ts, u8 command,
 {
 	int rc;
 	int tries;
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	if (!buf || !length) {
-//		printk(KERN_ERR "%s: Error, buf:%s len:%u\n",
-;
+		printk(KERN_ERR "%s: Error, buf:%s len:%u\n",
+				__func__, !buf ? "NULL" : "OK", length);
 		return -EIO;
 	}
 
@@ -445,7 +445,7 @@ static int ttsp_write_block_data(struct cyttsp *ts, u8 command,
 	}
 
 	if (rc < 0)
-;
+		printk(KERN_ERR "%s: error %d\n", __func__, rc);
 	DBG(print_data_block(__func__, command, length, buf);)
 	return rc;
 }
@@ -453,16 +453,16 @@ static int ttsp_write_block_data(struct cyttsp *ts, u8 command,
 static int ttsp_tch_ext(struct cyttsp *ts, void *buf)
 {
 	int rc;
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	if (!buf) {
-//		printk(KERN_ERR "%s: Error, buf:%s\n",
-;
+		printk(KERN_ERR "%s: Error, buf:%s\n",
+				__func__, !buf ? "NULL" : "OK");
 		return -EIO;
 	}
 	rc = ts->bus_ops->ext(ts->bus_ops, buf);
 	if (rc < 0)
-;
+		printk(KERN_ERR "%s: error %d\n", __func__, rc);
 	return rc;
 }
 
@@ -475,21 +475,21 @@ static int cyttsp_inlist(u16 prev_track[], u8 cur_trk_id, u8 *prev_loc,
 {
 	u8 id = 0;
 
-//	DBG(printk(KERN_INFO"%s: IN p[%d]=%d c=%d n=%d loc=%d\n",
-//		__func__, id, prev_track[id], cur_trk_id,
-;
+	DBG(printk(KERN_INFO"%s: IN p[%d]=%d c=%d n=%d loc=%d\n",
+		__func__, id, prev_track[id], cur_trk_id,
+		num_touches, *prev_loc);)
 
 	for (*prev_loc = CY_IGNR_TCH; id < num_touches; id++) {
-//		DBG(printk(KERN_INFO"%s: p[%d]=%d c=%d n=%d loc=%d\n",
-//			__func__, id, prev_track[id], cur_trk_id,
-;
+		DBG(printk(KERN_INFO"%s: p[%d]=%d c=%d n=%d loc=%d\n",
+			__func__, id, prev_track[id], cur_trk_id,
+				num_touches, *prev_loc);)
 		if (prev_track[id] == cur_trk_id) {
 			*prev_loc = id;
 			break;
 		}
 	}
-//	DBG(printk(KERN_INFO"%s: OUT p[%d]=%d c=%d n=%d loc=%d\n", __func__,
-;
+	DBG(printk(KERN_INFO"%s: OUT p[%d]=%d c=%d n=%d loc=%d\n", __func__,
+		id, prev_track[id], cur_trk_id, num_touches, *prev_loc);)
 
 	return *prev_loc < CY_NUM_TRK_ID;
 }
@@ -498,7 +498,7 @@ static int cyttsp_next_avail_inlist(u16 cur_trk[], u8 *new_loc,
 	u8 num_touches)
 {
 	u8 id = 0;
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	for (*new_loc = CY_IGNR_TCH; id < num_touches; id++) {
 		if (cur_trk[id] > CY_NUM_TRK_ID) {
@@ -515,9 +515,9 @@ static void handle_single_touch(struct cyttsp_xydata *xy,
 	u8 id;
 	u8 use_trk_id = ts->platform_data->use_trk_id;
 
-//	DBG(printk(KERN_INFO"%s: ST STEP 0 - ST1 ID=%d  ST2 ID=%d\n",
-//		__func__, t->cur_st_tch[CY_ST_FNGR1_IDX],
-;
+	DBG(printk(KERN_INFO"%s: ST STEP 0 - ST1 ID=%d  ST2 ID=%d\n",
+		__func__, t->cur_st_tch[CY_ST_FNGR1_IDX],
+		t->cur_st_tch[CY_ST_FNGR2_IDX]);)
 
 	if (t->cur_st_tch[CY_ST_FNGR1_IDX] > CY_NUM_TRK_ID) {
 		/* reassign finger 1 and 2 positions to new tracks */
@@ -535,8 +535,8 @@ static void handle_single_touch(struct cyttsp_xydata *xy,
 			t->st_y1 = t->cur_mt_pos[id][CY_YPOS];
 			t->st_z1 = t->cur_mt_z[id];
 
-//			DBG(printk(KERN_INFO"%s: ST STEP 1 - ST1 ID=%3d\n",
-;
+			DBG(printk(KERN_INFO"%s: ST STEP 1 - ST1 ID=%3d\n",
+				__func__, t->cur_st_tch[CY_ST_FNGR1_IDX]);)
 
 			if ((t->cur_tch > 1) &&
 				(t->cur_st_tch[CY_ST_FNGR2_IDX] >
@@ -555,8 +555,8 @@ static void handle_single_touch(struct cyttsp_xydata *xy,
 				t->st_z2 = t->cur_mt_z[id];
 
 				DBG(
-//				printk(KERN_INFO"%s: ST STEP 2 - ST2 ID=%3d\n",
-;
+				printk(KERN_INFO"%s: ST STEP 2 - ST2 ID=%3d\n",
+				__func__, t->cur_st_tch[CY_ST_FNGR2_IDX]);)
 			}
 		}
 	} else if (t->cur_st_tch[CY_ST_FNGR2_IDX] > CY_NUM_TRK_ID) {
@@ -576,8 +576,8 @@ static void handle_single_touch(struct cyttsp_xydata *xy,
 			t->st_y2 = t->cur_mt_pos[id][CY_YPOS];
 			t->st_z2 = t->cur_mt_z[id];
 
-//			DBG(printk(KERN_INFO"%s: ST STEP 3 - ST2 ID=%3d\n",
-;
+			DBG(printk(KERN_INFO"%s: ST STEP 3 - ST2 ID=%3d\n",
+				   __func__, t->cur_st_tch[CY_ST_FNGR2_IDX]);)
 		}
 	}
 	/* if the 1st touch is missing and there is a 2nd touch,
@@ -604,19 +604,19 @@ static void handle_single_touch(struct cyttsp_xydata *xy,
 		input_report_key(ts->input, BTN_TOUCH, CY_TCH);
 		input_report_abs(ts->input, ABS_TOOL_WIDTH, t->tool_width);
 
-//		DBG2(printk(KERN_INFO"%s:ST->F1:%3d X:%3d Y:%3d Z:%3d\n",
-//			   __func__, t->cur_st_tch[CY_ST_FNGR1_IDX],
-;
+		DBG2(printk(KERN_INFO"%s:ST->F1:%3d X:%3d Y:%3d Z:%3d\n",
+			   __func__, t->cur_st_tch[CY_ST_FNGR1_IDX],
+			   t->st_x1, t->st_y1, t->st_z1);)
 
 		if (t->cur_st_tch[CY_ST_FNGR2_IDX] < CY_NUM_TRK_ID) {
 			input_report_key(ts->input, BTN_2, CY_TCH);
 			input_report_abs(ts->input, ABS_HAT0X, t->st_x2);
 			input_report_abs(ts->input, ABS_HAT0Y, t->st_y2);
 
-//			DBG2(printk(KERN_INFO
-//				"%s:ST->F2:%3d X:%3d Y:%3d Z:%3d\n",
-//				__func__, t->cur_st_tch[CY_ST_FNGR2_IDX],
-;
+			DBG2(printk(KERN_INFO
+				"%s:ST->F2:%3d X:%3d Y:%3d Z:%3d\n",
+				__func__, t->cur_st_tch[CY_ST_FNGR2_IDX],
+				t->st_x2, t->st_y2, t->st_z2);)
 		} else {
 			input_report_key(ts->input, BTN_2, CY_NTCH);
 		}
@@ -697,12 +697,12 @@ no_track_id:
 			i++;
 		}
 	}
-//	DBG(printk(KERN_INFO"%s: T1: t0=%d, t1=%d, t2=%d, t3=%d\n", __func__,
-//					t->tmp_trk[0], t->tmp_trk[1],
-;
-//	DBG(printk(KERN_INFO"%s: T1: p0=%d, p1=%d, p2=%d, p3=%d\n", __func__,
-//					ts->prv_mt_tch[0], ts->prv_mt_tch[1],
-;
+	DBG(printk(KERN_INFO"%s: T1: t0=%d, t1=%d, t2=%d, t3=%d\n", __func__,
+					t->tmp_trk[0], t->tmp_trk[1],
+					t->tmp_trk[2], t->tmp_trk[3]);)
+	DBG(printk(KERN_INFO"%s: T1: p0=%d, p1=%d, p2=%d, p3=%d\n", __func__,
+					ts->prv_mt_tch[0], ts->prv_mt_tch[1],
+					ts->prv_mt_tch[2], ts->prv_mt_tch[3]);)
 
 	/* pack in still active previous touches */
 	for (id = t->prv_tch = 0; id < CY_NUM_MT_TCH_ID; id++) {
@@ -714,23 +714,23 @@ no_track_id:
 			loc &= CY_NUM_MT_TCH_ID - 1;
 			t->snd_trk[loc] = t->tmp_trk[id];
 			t->prv_tch++;
-//			DBG(printk(KERN_INFO"%s: in list s[%d]=%d "
-//					"t[%d]=%d, loc=%d p=%d\n", __func__,
-//					loc, t->snd_trk[loc],
-//					id, t->tmp_trk[id],
-;
+			DBG(printk(KERN_INFO"%s: in list s[%d]=%d "
+					"t[%d]=%d, loc=%d p=%d\n", __func__,
+					loc, t->snd_trk[loc],
+					id, t->tmp_trk[id],
+					loc, t->prv_tch);)
 		} else {
-//			DBG(printk(KERN_INFO"%s: is not in list s[%d]=%d"
-//					" t[%d]=%d loc=%d\n", __func__,
-//					id, t->snd_trk[id],
-//					id, t->tmp_trk[id],
-;
+			DBG(printk(KERN_INFO"%s: is not in list s[%d]=%d"
+					" t[%d]=%d loc=%d\n", __func__,
+					id, t->snd_trk[id],
+					id, t->tmp_trk[id],
+					loc);)
 		}
 	}
-//	DBG(printk(KERN_INFO"%s: S1: s0=%d, s1=%d, s2=%d, s3=%d p=%d\n",
-//		   __func__,
-//		   t->snd_trk[0], t->snd_trk[1], t->snd_trk[2],
-;
+	DBG(printk(KERN_INFO"%s: S1: s0=%d, s1=%d, s2=%d, s3=%d p=%d\n",
+		   __func__,
+		   t->snd_trk[0], t->snd_trk[1], t->snd_trk[2],
+		   t->snd_trk[3], t->prv_tch);)
 
 	/* pack in new touches */
 	for (id = 0; id < CY_NUM_MT_TCH_ID; id++) {
@@ -741,39 +741,39 @@ no_track_id:
 							CY_NUM_MT_TCH_ID)) {
 
 			DBG(
-//			printk(KERN_INFO"%s: not in list t[%d]=%d, loc=%d\n",
-//				   __func__,
-;
+			printk(KERN_INFO"%s: not in list t[%d]=%d, loc=%d\n",
+				   __func__,
+				   id, t->tmp_trk[id], loc);)
 
 			if (cyttsp_next_avail_inlist(t->snd_trk, &loc,
 							CY_NUM_MT_TCH_ID)) {
 				loc &= CY_NUM_MT_TCH_ID - 1;
 				t->snd_trk[loc] = t->tmp_trk[id];
-//				DBG(printk(KERN_INFO "%s: put in list s[%d]=%d"
-//					" t[%d]=%d\n", __func__,
-//					loc,
-;
+				DBG(printk(KERN_INFO "%s: put in list s[%d]=%d"
+					" t[%d]=%d\n", __func__,
+					loc,
+					t->snd_trk[loc], id, t->tmp_trk[id]);
 				    )
 			}
 		} else {
-//			DBG(printk(KERN_INFO"%s: is in list s[%d]=%d "
-//				"t[%d]=%d loc=%d\n", __func__,
-;
+			DBG(printk(KERN_INFO"%s: is in list s[%d]=%d "
+				"t[%d]=%d loc=%d\n", __func__,
+				id, t->snd_trk[id], id, t->tmp_trk[id], loc);)
 		}
 	}
-//	DBG(printk(KERN_INFO"%s: S2: s0=%d, s1=%d, s2=%d, s3=%d\n", __func__,
-//			t->snd_trk[0], t->snd_trk[1],
-;
+	DBG(printk(KERN_INFO"%s: S2: s0=%d, s1=%d, s2=%d, s3=%d\n", __func__,
+			t->snd_trk[0], t->snd_trk[1],
+			t->snd_trk[2], t->snd_trk[3]);)
 
 	/* sync motion event signals for each current touch */
 	for (id = 0; id < CY_NUM_MT_TCH_ID; id++) {
 		/* z will either be 0 (NOTOUCH) or
 		 * some pressure (TOUCH)
 		 */
-//		DBG(printk(KERN_INFO "%s: MT0 prev[%d]=%d "
-//				"temp[%d]=%d send[%d]=%d\n",
-//				__func__, id, ts->prv_mt_tch[id],
-;
+		DBG(printk(KERN_INFO "%s: MT0 prev[%d]=%d "
+				"temp[%d]=%d send[%d]=%d\n",
+				__func__, id, ts->prv_mt_tch[id],
+				id, t->tmp_trk[id], id, t->snd_trk[id]);)
 
 			if (ts->platform_data->invert) {
 				t->cur_mt_pos[t->snd_trk[id]][CY_XPOS] =
@@ -796,12 +796,12 @@ no_track_id:
 			if (mt_sync_func)
 				mt_sync_func(ts->input);
 
-//			DBG2(printk(KERN_INFO"%s: MT1 -> TID:"
-//				"%3d X:%3d  Y:%3d  Z:%3d\n", __func__,
-//				t->snd_trk[id],
-//				t->cur_mt_pos[t->snd_trk[id]][CY_XPOS],
-//				t->cur_mt_pos[t->snd_trk[id]][CY_YPOS],
-;
+			DBG2(printk(KERN_INFO"%s: MT1 -> TID:"
+				"%3d X:%3d  Y:%3d  Z:%3d\n", __func__,
+				t->snd_trk[id],
+				t->cur_mt_pos[t->snd_trk[id]][CY_XPOS],
+				t->cur_mt_pos[t->snd_trk[id]][CY_YPOS],
+				t->cur_mt_z[t->snd_trk[id]]);)
 
 		} else if (ts->prv_mt_tch[id] < CY_NUM_TRK_ID) {
 			/* void out this touch */
@@ -818,19 +818,19 @@ no_track_id:
 			if (mt_sync_func)
 				mt_sync_func(ts->input);
 
-//			DBG2(printk(KERN_INFO"%s: "
-//				"MT2->TID:%2d X:%3d Y:%3d Z:%3d liftoff-sent\n",
-//				__func__, ts->prv_mt_tch[id],
-//				ts->prv_mt_pos[ts->prv_mt_tch[id]][CY_XPOS],
-//				ts->prv_mt_pos[ts->prv_mt_tch[id]][CY_YPOS],
-;
+			DBG2(printk(KERN_INFO"%s: "
+				"MT2->TID:%2d X:%3d Y:%3d Z:%3d liftoff-sent\n",
+				__func__, ts->prv_mt_tch[id],
+				ts->prv_mt_pos[ts->prv_mt_tch[id]][CY_XPOS],
+				ts->prv_mt_pos[ts->prv_mt_tch[id]][CY_YPOS],
+				CY_NTCH);)
 		} else {
 			/* do not stuff any signals for this
 			 * previously and currently void touches
 			 */
-//			DBG(printk(KERN_INFO"%s: "
-//				"MT3->send[%d]=%d - No touch - NOT sent\n",
-;
+			DBG(printk(KERN_INFO"%s: "
+				"MT3->send[%d]=%d - No touch - NOT sent\n",
+				__func__, id, t->snd_trk[id]);)
 		}
 	}
 
@@ -843,12 +843,12 @@ no_track_id:
 					t->cur_mt_pos[t->snd_trk[id]][CY_XPOS];
 			ts->prv_mt_pos[t->snd_trk[id]][CY_YPOS] =
 					t->cur_mt_pos[t->snd_trk[id]][CY_YPOS];
-//			DBG(printk(KERN_INFO"%s: "
-//				"MT4->TID:%2d X:%3d Y:%3d Z:%3d save for prv\n",
-//				__func__, t->snd_trk[id],
-//				ts->prv_mt_pos[t->snd_trk[id]][CY_XPOS],
-//				ts->prv_mt_pos[t->snd_trk[id]][CY_YPOS],
-;
+			DBG(printk(KERN_INFO"%s: "
+				"MT4->TID:%2d X:%3d Y:%3d Z:%3d save for prv\n",
+				__func__, t->snd_trk[id],
+				ts->prv_mt_pos[t->snd_trk[id]][CY_XPOS],
+				ts->prv_mt_pos[t->snd_trk[id]][CY_YPOS],
+				CY_NTCH);)
 		}
 	}
 	memset(ts->act_trk, CY_NTCH, sizeof(ts->act_trk));
@@ -864,12 +864,12 @@ static int cyttsp_reset_controller(struct cyttsp *ts)
 
 	ret = gpio_request(ts->platform_data->rst_gpio, "reset_pin");
 	if (ret) {
-;
+		printk(KERN_ERR "cyttsp_reset_controller: touch gpio fail\n");
 		return ret;
 	}
 	ret = gpio_direction_output(ts->platform_data->rst_gpio, 1);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "cyttsp_reset_controller: reset gpio direction fail\n");
 		goto out;
 	}
 	/*
@@ -896,32 +896,32 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 	struct cyttsp_track_data trc;
 	s32 retval;
 
-;
+	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
 	/* get event data from CYTTSP device */
 	retval = ttsp_read_block_data(ts, CY_REG_BASE,
 				      sizeof(xy_data), &xy_data);
 
 	if (retval < 0) {
-//		printk(KERN_ERR "%s: Error, fail to read device on host interface bus\n",
-;
+		printk(KERN_ERR "%s: Error, fail to read device on host interface bus\n",
+			__func__);
 		goto exit_xy_worker;
 	}
 
 	if (CY_MODE_ERROR(ts->platform_data->power_state,
 		xy_data.hst_mode, xy_data.tt_mode)) {
 		/* TTSP device has switched to non-operational mode */
-//		printk(KERN_ERR "%s: Error, bad mode ps=%d hm=%02X tm=%02X\n",
-//			__func__, ts->platform_data->power_state,
-;
+		printk(KERN_ERR "%s: Error, bad mode ps=%d hm=%02X tm=%02X\n",
+			__func__, ts->platform_data->power_state,
+			xy_data.hst_mode, xy_data.tt_mode);
 		retval = cyttsp_reset_controller(ts);
 		if (retval < 0) {
-//			printk(KERN_ERR "%s: Error, conroller reset fail\n",
-;
+			printk(KERN_ERR "%s: Error, conroller reset fail\n",
+					__func__);
 			goto exit_xy_worker;
 		}
 		retval = cyttsp_power_on(ts);
 		if (retval < 0)
-;
+			printk(KERN_ERR "%s: Error, power on fail\n", __func__);
 		goto exit_xy_worker;
 	}
 
@@ -929,12 +929,12 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 	retval = ttsp_tch_ext(ts, &xy_data);
 
 	if (retval < 0) {
-//		printk(KERN_ERR "%s: Error, touch extension handling\n",
-;
+		printk(KERN_ERR "%s: Error, touch extension handling\n",
+			__func__);
 		goto exit_xy_worker;
 	} else if (retval > 0) {
-//		DBG(printk(KERN_INFO "%s: Touch extension handled\n",
-;
+		DBG(printk(KERN_INFO "%s: Touch extension handled\n",
+			__func__);)
 		goto exit_xy_worker;
 	}
 
@@ -954,18 +954,18 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 	if (IS_LARGE_AREA(xy_data.tt_stat) == 1) {
 		/* terminate all active tracks */
 		trc.cur_tch = CY_NTCH;
-//		DBG(printk(KERN_INFO "%s: Large area detected\n",
-;
+		DBG(printk(KERN_INFO "%s: Large area detected\n",
+			__func__);)
 	} else if (trc.cur_tch > CY_MAX_TCH) {
 		/* terminate all active tracks */
 		trc.cur_tch = CY_NTCH;
-//		DBG(printk(KERN_INFO "%s: Num touch error detected\n",
-;
+		DBG(printk(KERN_INFO "%s: Num touch error detected\n",
+			__func__);)
 	} else if (IS_BAD_PKT(xy_data.tt_mode)) {
 		/* terminate all active tracks */
 		trc.cur_tch = CY_NTCH;
-//		DBG(printk(KERN_INFO "%s: Invalid buffer detected\n",
-;
+		DBG(printk(KERN_INFO "%s: Invalid buffer detected\n",
+			__func__);)
 	}
 
 	/* set tool size */
@@ -993,8 +993,8 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 	} else
 		ts->ntch_count = 0;
 
-//	DBG(printk(KERN_INFO "%s: prev=%d  curr=%d\n", __func__,
-;
+	DBG(printk(KERN_INFO "%s: prev=%d  curr=%d\n", __func__,
+		   trc.prv_tch, trc.cur_tch);)
 
 	/* clear current single-touch array */
 	memset(trc.cur_st_tch, CY_IGNR_TCH, sizeof(trc.cur_st_tch));
@@ -1013,10 +1013,10 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 		unsigned i;
 		u8 *pdata = (u8 *)&xy_data;
 
-;
+		printk(KERN_INFO "%s: TTSP data_pack: ", __func__);
 		for (i = 0; i < sizeof(struct cyttsp_xydata); i++)
-;
-;
+			printk(KERN_INFO "[%d]=0x%x ", i, pdata[i]);
+		printk(KERN_INFO "\n");
 	})
 
 	/* Determine if display is tilted */
@@ -1065,9 +1065,9 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 				trc.cur_st_tch[CY_ST_FNGR2_IDX] = id;
 			}
 		}
-//		DBG(printk(KERN_INFO"%s: 4th XYZ:% 3d,% 3d,% 3d  ID:% 2d\n\n",
-//				__func__, xy_data.x4, xy_data.y4, xy_data.z4,
-;
+		DBG(printk(KERN_INFO"%s: 4th XYZ:% 3d,% 3d,% 3d  ID:% 2d\n\n",
+				__func__, xy_data.x4, xy_data.y4, xy_data.z4,
+				(xy_data.touch34_id & 0x0F));)
 
 		/* do not break */
 	case 3:
@@ -1108,9 +1108,9 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 				trc.cur_st_tch[CY_ST_FNGR2_IDX] = id;
 			}
 		}
-//		DBG(printk(KERN_INFO"%s: 3rd XYZ:% 3d,% 3d,% 3d  ID:% 2d\n",
-//			__func__, xy_data.x3, xy_data.y3, xy_data.z3,
-;
+		DBG(printk(KERN_INFO"%s: 3rd XYZ:% 3d,% 3d,% 3d  ID:% 2d\n",
+			__func__, xy_data.x3, xy_data.y3, xy_data.z3,
+			((xy_data.touch34_id >> 4) & 0x0F));)
 
 		/* do not break */
 	case 2:
@@ -1150,9 +1150,9 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 				trc.cur_st_tch[CY_ST_FNGR2_IDX] = id;
 			}
 		}
-//		DBG(printk(KERN_INFO"%s: 2nd XYZ:% 3d,% 3d,% 3d  ID:% 2d\n",
-//				__func__, xy_data.x2, xy_data.y2, xy_data.z2,
-;
+		DBG(printk(KERN_INFO"%s: 2nd XYZ:% 3d,% 3d,% 3d  ID:% 2d\n",
+				__func__, xy_data.x2, xy_data.y2, xy_data.z2,
+				(xy_data.touch12_id & 0x0F));)
 
 		/* do not break */
 	case 1:
@@ -1193,9 +1193,9 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 				trc.cur_st_tch[CY_ST_FNGR2_IDX] = id;
 			}
 		}
-//		DBG(printk(KERN_INFO"%s: S1st XYZ:% 3d,% 3d,% 3d  ID:% 2d\n",
-//				__func__, xy_data.x1, xy_data.y1, xy_data.z1,
-;
+		DBG(printk(KERN_INFO"%s: S1st XYZ:% 3d,% 3d,% 3d  ID:% 2d\n",
+				__func__, xy_data.x1, xy_data.y1, xy_data.z1,
+				((xy_data.touch12_id >> 4) & 0x0F));)
 
 		break;
 	case 0:
@@ -1225,7 +1225,7 @@ static void cyttsp_xy_worker(struct cyttsp *ts)
 exit_xy_worker:
 	/* reset the watchdog */
 	mod_timer(&ts->timer, jiffies + CY_WDG_TIMEOUT);
-;
+	DBG(printk(KERN_INFO"%s: finished.\n", __func__);)
 	return;
 }
 
@@ -1233,7 +1233,7 @@ static irqreturn_t cyttsp_irq(int irq, void *handle)
 {
 	struct cyttsp *ts = (struct cyttsp *)handle;
 
-;
+	DBG(printk(KERN_INFO"%s: Got IRQ!\n", __func__);)
 	switch (ts->platform_data->power_state) {
 	case CY_BL_STATE:
 	case CY_SYSINFO_STATE:
@@ -1258,7 +1258,7 @@ static void cyttsp_timer(unsigned long handle)
 {
 	struct cyttsp *ts = (struct cyttsp *)handle;
 
-;
+	DBG(printk(KERN_INFO"%s: Watchdog timer event\n", __func__);)
 	if (!work_pending(&ts->work))
 		schedule_work(&ts->work);
 	return;
@@ -1272,7 +1272,7 @@ static int cyttsp_load_bl_regs(struct cyttsp *ts)
 {
 	int retval;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	memset(&ts->bl_data, 0, sizeof(ts->bl_data));
 
@@ -1280,8 +1280,8 @@ static int cyttsp_load_bl_regs(struct cyttsp *ts)
 				sizeof(ts->bl_data), &(ts->bl_data));
 
 	if (retval < 0) {
-//		DBG2(printk(KERN_INFO "%s: Failed reading block data, err:%d\n",
-;
+		DBG2(printk(KERN_INFO "%s: Failed reading block data, err:%d\n",
+			__func__, retval);)
 		goto fail;
 	}
 
@@ -1289,14 +1289,14 @@ static int cyttsp_load_bl_regs(struct cyttsp *ts)
 	      int i;
 	      u8 *bl_data = (u8 *)&(ts->bl_data);
 	      for (i = 0; i < sizeof(struct cyttsp_bootloader_data); i++)
-//			printk(KERN_INFO "%s bl_data[%d]=0x%x\n",
-;
+			printk(KERN_INFO "%s bl_data[%d]=0x%x\n",
+				__func__, i, bl_data[i]);
 	})
-//	DBG2(printk(KERN_INFO "%s: bl f=%02X s=%02X e=%02X\n",
-//		__func__,
-//		ts->bl_data.bl_file,
-//		ts->bl_data.bl_status,
-;
+	DBG2(printk(KERN_INFO "%s: bl f=%02X s=%02X e=%02X\n",
+		__func__,
+		ts->bl_data.bl_file,
+		ts->bl_data.bl_status,
+		ts->bl_data.bl_error);)
 
 	return 0;
 fail:
@@ -1315,10 +1315,10 @@ static bool cyttsp_bl_app_valid(struct cyttsp *ts)
 		return false;
 
 	if (ts->bl_data.bl_status == 0x11) {
-;
+		printk(KERN_INFO "%s: App found; normal boot\n", __func__);
 		return true;
 	} else if (ts->bl_data.bl_status == 0x10) {
-;
+		printk(KERN_INFO "%s: NO APP; load firmware!!\n", __func__);
 		return false;
 	} else {
 		if (ts->bl_data.bl_file == CY_OPERATE_MODE) {
@@ -1329,11 +1329,11 @@ static bool cyttsp_bl_app_valid(struct cyttsp *ts)
 			else {
 				if (ts->platform_data->power_state ==
 					CY_ACTIVE_STATE)
-//					printk(KERN_INFO "%s: Operational\n",
-;
+					printk(KERN_INFO "%s: Operational\n",
+						__func__);
 				else
-//					printk(KERN_INFO "%s: No bootloader\n",
-;
+					printk(KERN_INFO "%s: No bootloader\n",
+						__func__);
 			}
 		}
 		return true;
@@ -1345,7 +1345,7 @@ static int cyttsp_exit_bl_mode(struct cyttsp *ts)
 	int retval;
 	int tries = 0;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	/* check if in bootloader mode;
 	 * if in operational mode then just return without fail
@@ -1357,8 +1357,8 @@ static int cyttsp_exit_bl_mode(struct cyttsp *ts)
 	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(bl_cmd),
 				       (void *)bl_cmd);
 	if (retval < 0) {
-//		printk(KERN_ERR "%s: Failed writing block data, err:%d\n",
-;
+		printk(KERN_ERR "%s: Failed writing block data, err:%d\n",
+			__func__, retval);
 		goto fail;
 	}
 	do {
@@ -1366,13 +1366,13 @@ static int cyttsp_exit_bl_mode(struct cyttsp *ts)
 		cyttsp_load_bl_regs(ts);
 	} while (GET_BOOTLOADERMODE(ts->bl_data.bl_status) && tries++ < 1);
 
-;
+	DBG2(printk(KERN_INFO "%s: read tries=%d\n", __func__, tries);)
 
-//	DBG(printk(KERN_INFO"%s: Exit "
-//				"f=%02X s=%02X e=%02X\n",
-//				__func__,
-//				ts->bl_data.bl_file, ts->bl_data.bl_status,
-;
+	DBG(printk(KERN_INFO"%s: Exit "
+				"f=%02X s=%02X e=%02X\n",
+				__func__,
+				ts->bl_data.bl_file, ts->bl_data.bl_status,
+				ts->bl_data.bl_error);)
 
 	return 0;
 fail:
@@ -1384,14 +1384,14 @@ static int cyttsp_set_sysinfo_mode(struct cyttsp *ts)
 	int retval;
 	u8 cmd = CY_SYSINFO_MODE;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 	memset(&(ts->sysinfo_data), 0, sizeof(struct cyttsp_sysinfo_data));
 
 	/* switch to sysinfo mode */
 	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
 	if (retval < 0) {
-//		printk(KERN_ERR "%s: Failed writing block data, err:%d\n",
-;
+		printk(KERN_ERR "%s: Failed writing block data, err:%d\n",
+			__func__, retval);
 		goto exit_sysinfo_mode;
 	}
 
@@ -1407,8 +1407,8 @@ static int cyttsp_set_sysinfo_mode(struct cyttsp *ts)
 
 	if (retval < 0) {
 		ts->platform_data->power_state = CY_IDLE_STATE;
-//		printk(KERN_ERR "%s: reset timeout fail (ret=%d)\n",
-;
+		printk(KERN_ERR "%s: reset timeout fail (ret=%d)\n",
+			__func__, retval);
 	}
 
 exit_sysinfo_mode:
@@ -1416,33 +1416,33 @@ exit_sysinfo_mode:
 	retval = ttsp_read_block_data(ts, CY_REG_BASE,
 		sizeof(ts->sysinfo_data), &(ts->sysinfo_data));
 
-//	DBG(printk(KERN_INFO"%s:SI2: hst_mode=0x%02X mfg_cmd=0x%02X "
-//		"mfg_stat=0x%02X\n", __func__, ts->sysinfo_data.hst_mode,
-//		ts->sysinfo_data.mfg_cmd,
-;
+	DBG(printk(KERN_INFO"%s:SI2: hst_mode=0x%02X mfg_cmd=0x%02X "
+		"mfg_stat=0x%02X\n", __func__, ts->sysinfo_data.hst_mode,
+		ts->sysinfo_data.mfg_cmd,
+		ts->sysinfo_data.mfg_stat);)
 
-//	DBG(printk(KERN_INFO"%s:SI2: bl_ver=0x%02X%02X\n",
-;
+	DBG(printk(KERN_INFO"%s:SI2: bl_ver=0x%02X%02X\n",
+		__func__, ts->sysinfo_data.bl_verh, ts->sysinfo_data.bl_verl);)
 
-//	DBG(printk(KERN_INFO"%s:SI2: sysinfo act_intrvl=0x%02X "
-//		"tch_tmout=0x%02X lp_intrvl=0x%02X\n",
-//		__func__, ts->sysinfo_data.act_intrvl,
-//		ts->sysinfo_data.tch_tmout,
-;
+	DBG(printk(KERN_INFO"%s:SI2: sysinfo act_intrvl=0x%02X "
+		"tch_tmout=0x%02X lp_intrvl=0x%02X\n",
+		__func__, ts->sysinfo_data.act_intrvl,
+		ts->sysinfo_data.tch_tmout,
+		ts->sysinfo_data.lp_intrvl);)
 
-//	printk(KERN_INFO"%s:SI2:tts_ver=%02X%02X app_id=%02X%02X "
-//		"app_ver=%02X%02X c_id=%02X%02X%02X "
-//		"u_id=%02X%02X%02X%02X%02X%02X%02X%02X\n",
-//		__func__,
-//		ts->sysinfo_data.tts_verh, ts->sysinfo_data.tts_verl,
-//		ts->sysinfo_data.app_idh, ts->sysinfo_data.app_idl,
-//		ts->sysinfo_data.app_verh, ts->sysinfo_data.app_verl,
-//		ts->sysinfo_data.cid[0], ts->sysinfo_data.cid[1],
-//		ts->sysinfo_data.cid[2],
-//		ts->sysinfo_data.uid[0], ts->sysinfo_data.uid[1],
-//		ts->sysinfo_data.uid[2], ts->sysinfo_data.uid[3],
-//		ts->sysinfo_data.uid[4], ts->sysinfo_data.uid[5],
-;
+	printk(KERN_INFO"%s:SI2:tts_ver=%02X%02X app_id=%02X%02X "
+		"app_ver=%02X%02X c_id=%02X%02X%02X "
+		"u_id=%02X%02X%02X%02X%02X%02X%02X%02X\n",
+		__func__,
+		ts->sysinfo_data.tts_verh, ts->sysinfo_data.tts_verl,
+		ts->sysinfo_data.app_idh, ts->sysinfo_data.app_idl,
+		ts->sysinfo_data.app_verh, ts->sysinfo_data.app_verl,
+		ts->sysinfo_data.cid[0], ts->sysinfo_data.cid[1],
+		ts->sysinfo_data.cid[2],
+		ts->sysinfo_data.uid[0], ts->sysinfo_data.uid[1],
+		ts->sysinfo_data.uid[2], ts->sysinfo_data.uid[3],
+		ts->sysinfo_data.uid[4], ts->sysinfo_data.uid[5],
+		ts->sysinfo_data.uid[6], ts->sysinfo_data.uid[7]);
 
 	return retval;
 }
@@ -1491,12 +1491,12 @@ static int cyttsp_set_operational_mode(struct cyttsp *ts)
 	u8 gest_default;
 	struct cyttsp_xydata xy_data;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	retval = ttsp_write_block_data(ts, CY_REG_BASE, sizeof(cmd), &cmd);
 	if (retval < 0) {
-//		printk(KERN_ERR "%s: Failed writing block data, err:%d\n",
-;
+		printk(KERN_ERR "%s: Failed writing block data, err:%d\n",
+			__func__, retval);
 		goto write_block_data_fail;
 	}
 
@@ -1519,7 +1519,7 @@ static int cyttsp_set_operational_mode(struct cyttsp *ts)
 		(CY_ACT_DIST_DFLT & CY_ACT_DIST_BITS))) &&
 		(tries++ < CY_DELAY_MAX));
 
-;
+	DBG2(printk(KERN_INFO "%s: read tries=%d\n", __func__, tries);)
 
 	return 0;
 write_block_data_fail:
@@ -1531,7 +1531,7 @@ static int cyttsp_soft_reset(struct cyttsp *ts)
 	int retval;
 	u8 cmd = CY_SOFT_RESET_MODE;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	/* reset TTSP Device back to bootloader mode */
 	ts->platform_data->power_state = CY_BL_STATE;
@@ -1547,8 +1547,8 @@ static int cyttsp_soft_reset(struct cyttsp *ts)
 
 	if (retval < 0) {
 		ts->platform_data->power_state = CY_IDLE_STATE;
-//		printk(KERN_ERR "%s: reset timeout fail (ret=%d)\n",
-;
+		printk(KERN_ERR "%s: reset timeout fail (ret=%d)\n",
+			__func__, retval);
 	}
 
 	if (retval > 0)
@@ -1562,7 +1562,7 @@ static int cyttsp_gesture_setup(struct cyttsp *ts)
 	int retval;
 	u8 gesture_setup;
 
-;
+	DBG(printk(KERN_INFO"%s: Init gesture; active distance setup\n",
 		__func__);)
 
 	gesture_setup = ts->platform_data->gest_set;
@@ -1577,7 +1577,7 @@ static int cyttsp_gesture_setup(struct cyttsp *ts)
 #else
 static bool cyttsp_bl_status(struct cyttsp *ts)
 {
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 	return ((ts->bl_data.bl_status == 0x10) ||
 		(ts->bl_data.bl_status == 0x11));
 }
@@ -1587,8 +1587,8 @@ static int cyttsp_loader(struct cyttsp *ts)
 	void *fptr = cyttsp_bl_status;	/* kill warning */
 
 	if (ts) {
-;
-;
+		DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
+		DBG(printk(KERN_INFO"%s: Exit\n", __func__);)
 	}
 
 	if (!fptr)
@@ -1602,14 +1602,14 @@ static int cyttsp_power_on(struct cyttsp *ts)
 {
 	int retval = 0;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	/* (re-)start watchdog */
 	mod_timer(&ts->timer, jiffies + CY_WDG_TIMEOUT);
 
 	cyttsp_init_tch(ts);
 	retval = cyttsp_soft_reset(ts);
-;
+	DBG2(printk(KERN_INFO"%s: after softreset r=%d\n", __func__, retval);)
 	if (retval < 0)
 		goto bypass;
 
@@ -1622,7 +1622,7 @@ static int cyttsp_power_on(struct cyttsp *ts)
 	}
 
 	retval = cyttsp_exit_bl_mode(ts);
-;
+	DBG2(printk(KERN_INFO"%s: after exit bl r=%d\n", __func__, retval);)
 
 	if (retval < 0)
 		goto bypass;
@@ -1642,8 +1642,8 @@ static int cyttsp_power_on(struct cyttsp *ts)
 	cyttsp_gesture_setup(ts);
 
 	/* switch back to Operational mode */
-//	DBG2(printk(KERN_INFO"%s: switch back to operational mode\n",
-;
+	DBG2(printk(KERN_INFO"%s: switch back to operational mode\n",
+		__func__);)
 	retval = cyttsp_set_operational_mode(ts);
 	if (retval < 0)
 		goto bypass;
@@ -1654,9 +1654,9 @@ bypass:
 	else
 		ts->platform_data->power_state = CY_ACTIVE_STATE;
 
-//	printk(KERN_INFO"%s: Power state is %s\n",
-//		__func__, (ts->platform_data->power_state == CY_ACTIVE_STATE) ?
-;
+	printk(KERN_INFO"%s: Power state is %s\n",
+		__func__, (ts->platform_data->power_state == CY_ACTIVE_STATE) ?
+		"ACTIVE" : "IDLE");
 	return retval;
 }
 
@@ -1668,19 +1668,19 @@ static void cyttsp_check_bl(struct work_struct *work)
 
 	retval = ttsp_read_block_data(ts, CY_REG_BASE, 2, &xy_data);
 	if (retval < 0) {
-;
+		printk(KERN_ERR "%s: Error, fail to read device\n", __func__);
 		goto reserve_next;
 	}
 
 	if (CY_MODE_ERROR(ts->platform_data->power_state,
 		xy_data.hst_mode, xy_data.tt_mode)) {
-//		printk(KERN_ERR "%s: Error, mode error detected "
-//			"on watchdog timeout ps=%d mode=%02X bl_mode=%02X\n",
-//			__func__, ts->platform_data->power_state,
-;
+		printk(KERN_ERR "%s: Error, mode error detected "
+			"on watchdog timeout ps=%d mode=%02X bl_mode=%02X\n",
+			__func__, ts->platform_data->power_state,
+			xy_data.hst_mode, xy_data.tt_mode);
 		retval = cyttsp_power_on(ts);
 		if (retval < 0)
-;
+			printk(KERN_ERR "%s: Error, power on fail\n", __func__);
 	}
 
 reserve_next:
@@ -1695,17 +1695,17 @@ static int cyttsp_resume(struct cyttsp *ts)
 	if (!ts->device_in_use)
 		return 0;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 	if (ts->platform_data->use_sleep && (ts->platform_data->power_state !=
 		CY_ACTIVE_STATE)) {
 		if (ts->platform_data->wakeup) {
 			retval = ts->platform_data->wakeup();
 			if (retval < 0)
-//				printk(KERN_ERR "%s: Error, wakeup failed!\n",
-;
+				printk(KERN_ERR "%s: Error, wakeup failed!\n",
+					__func__);
 		} else {
-//			printk(KERN_ERR "%s: Error, wakeup not implemented "
-;
+			printk(KERN_ERR "%s: Error, wakeup not implemented "
+				"(check board file).\n", __func__);
 			retval = -ENOSYS;
 		}
 		if (!(retval < 0)) {
@@ -1716,8 +1716,8 @@ static int cyttsp_resume(struct cyttsp *ts)
 					CY_ACTIVE_STATE;
 		}
 	}
-//	DBG(printk(KERN_INFO"%s: Wake Up %s\n", __func__,
-;
+	DBG(printk(KERN_INFO"%s: Wake Up %s\n", __func__,
+		(retval < 0) ? "FAIL" : "PASS");)
 	return retval;
 }
 
@@ -1730,7 +1730,7 @@ static int cyttsp_suspend(struct cyttsp *ts)
 	if (!ts->device_in_use)
 		return 0;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 	if (ts->platform_data->use_sleep &&
 			(ts->platform_data->power_state == CY_ACTIVE_STATE)) {
 		sleep_mode = CY_DEEP_SLEEP_MODE;
@@ -1740,11 +1740,11 @@ static int cyttsp_suspend(struct cyttsp *ts)
 			ts->platform_data->power_state = CY_SLEEP_STATE;
 		msleep(CY_MODE_CHANGE_DELAY);
 	}
-//	DBG(printk(KERN_INFO"%s: Sleep Power state is %s\n", __func__,
-//		(ts->platform_data->power_state == CY_ACTIVE_STATE) ?
-//		"ACTIVE" :
-//		((ts->platform_data->power_state == CY_SLEEP_STATE) ?
-;
+	DBG(printk(KERN_INFO"%s: Sleep Power state is %s\n", __func__,
+		(ts->platform_data->power_state == CY_ACTIVE_STATE) ?
+		"ACTIVE" :
+		((ts->platform_data->power_state == CY_SLEEP_STATE) ?
+		"SLEEP" : "LOW POWER"));)
 	return retval;
 }
 
@@ -1755,7 +1755,7 @@ static void cyttsp_ts_early_suspend(struct early_suspend *h)
 	if (!ts->device_in_use)
 		return;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 	LOCK(ts->mutex);
 	if (!ts->fw_loader_mode) {
 		disable_irq_nosync(ts->irq);
@@ -1778,13 +1778,13 @@ static void cyttsp_ts_late_resume(struct early_suspend *h)
 
 	regulator_enable(ts->regulator);
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 	LOCK(ts->mutex);
 	if (!ts->fw_loader_mode && ts->suspended) {
 		ts->suspended = 0;
 		if (cyttsp_resume(ts) < 0)
-//			printk(KERN_ERR "%s: Error, cyttsp_resume.\n",
-;
+			printk(KERN_ERR "%s: Error, cyttsp_resume.\n",
+				__func__);
 		enable_irq(ts->irq);
 		/* resume watchdog */
 		mod_timer(&ts->timer, jiffies + CY_WDG_TIMEOUT);
@@ -1796,7 +1796,7 @@ static void cyttsp_ts_late_resume(struct early_suspend *h)
 static int cyttsp_wr_reg(struct cyttsp *ts, u8 reg_id, u8 reg_data)
 {
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	return ttsp_write_block_data(ts,
 		CY_REG_BASE + reg_id, sizeof(u8), &reg_data);
@@ -1804,7 +1804,7 @@ static int cyttsp_wr_reg(struct cyttsp *ts, u8 reg_id, u8 reg_data)
 
 static int cyttsp_rd_reg(struct cyttsp *ts, u8 reg_id, u8 *reg_data)
 {
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 	return ttsp_read_block_data(ts,
 		CY_REG_BASE + reg_id, sizeof(u8), reg_data);
 }
@@ -1830,10 +1830,10 @@ static ssize_t firmware_write(struct file *filp, struct kobject *kobj,
 						CY_ACTIVE_STATE;
 					enable_irq(ts->irq);
 					mod_timer(&ts->timer, CY_WDG_TIMEOUT);
-//					printk(KERN_INFO "%s: "
-//						"Switch to Operational Mode "
-//						"ps=%d\n", __func__,
-;
+					printk(KERN_INFO "%s: "
+						"Switch to Operational Mode "
+						"ps=%d\n", __func__,
+						ts->platform_data->power_state);
 					break;
 				case GET_HSTMODE(CY_SYSINFO_MODE):
 					ts->platform_data->power_state =
@@ -1843,10 +1843,10 @@ static ssize_t firmware_write(struct file *filp, struct kobject *kobj,
 					del_timer(&ts->timer);
 					cancel_work_sync(&ts->work);
 					cyttsp_wr_reg(ts, ts->reg_id, reg_data);
-//					printk(KERN_INFO "%s: "
-//						"Switch to SysInfo Mode "
-//						"ps=%d\n", __func__,
-;
+					printk(KERN_INFO "%s: "
+						"Switch to SysInfo Mode "
+						"ps=%d\n", __func__,
+						ts->platform_data->power_state);
 					break;
 				default:
 					cyttsp_wr_reg(ts, ts->reg_id, reg_data);
@@ -1854,15 +1854,15 @@ static ssize_t firmware_write(struct file *filp, struct kobject *kobj,
 				}
 			} else
 				cyttsp_wr_reg(ts, ts->reg_id, reg_data);
-//			printk(KERN_INFO "%s: "
-//				"write(reg=%02X(%d) dat=0x%02X(%d))\n",
-//				__func__,
-//				ts->reg_id & ~0x80, ts->reg_id & ~0x80,
-;
+			printk(KERN_INFO "%s: "
+				"write(reg=%02X(%d) dat=0x%02X(%d))\n",
+				__func__,
+				ts->reg_id & ~0x80, ts->reg_id & ~0x80,
+				reg_data,  reg_data);
 		} else {
 			/* save user specified operational read register */
-//			DBG2(printk(KERN_INFO "%s: read(r=0x%02X)\n",
-;
+			DBG2(printk(KERN_INFO "%s: read(r=0x%02X)\n",
+				__func__, ts->reg_id);)
 		}
 	} else {
 		int retval = 0;
@@ -1873,8 +1873,8 @@ static ssize_t firmware_write(struct file *filp, struct kobject *kobj,
 			int i;
 			for (i = 0; i < size; i++, p += 2)
 				sprintf(p, "%02x", (unsigned char)buf[i]);
-//			printk(KERN_DEBUG "%s: size %d, pos %ld payload %s\n",
-;
+			printk(KERN_DEBUG "%s: size %d, pos %ld payload %s\n",
+			       __func__, size, (long)pos, str);
 		})
 		do {
 			retval = ttsp_write_block_data(ts,
@@ -1896,8 +1896,8 @@ static ssize_t firmware_read(struct file *filp, struct kobject *kobj,
 	struct device *dev = container_of(kobj, struct device, kobj);
 	struct cyttsp *ts = dev_get_drvdata(dev);
 
-//	DBG2(printk(KERN_INFO"%s: Enter (mode=%d)\n",
-;
+	DBG2(printk(KERN_INFO"%s: Enter (mode=%d)\n",
+		__func__, ts->fw_loader_mode);)
 
 	LOCK(ts->mutex);
 	if (!ts->fw_loader_mode) {
@@ -1905,9 +1905,9 @@ static ssize_t firmware_read(struct file *filp, struct kobject *kobj,
 		cyttsp_rd_reg(ts, ts->reg_id & ~0x80, &reg_data);
 		*(unsigned short *)buf = reg_data << 8;
 		count = sizeof(unsigned short);
-//		printk(KERN_INFO "%s: read(reg=%02X(%d) dat=0x%02X(%d))\n",
-//			__func__, ts->reg_id & ~0x80, ts->reg_id & ~0x80,
-;
+		printk(KERN_INFO "%s: read(reg=%02X(%d) dat=0x%02X(%d))\n",
+			__func__, ts->reg_id & ~0x80, ts->reg_id & ~0x80,
+			reg_data,  reg_data);
 	} else {
 		int retval = 0;
 		int tries = 0;
@@ -1919,7 +1919,7 @@ static ssize_t firmware_read(struct file *filp, struct kobject *kobj,
 		} while ((retval < 0) && (tries++ < 10));
 
 		if (retval < 0) {
-;
+			printk(KERN_ERR "%s: error reading status\n", __func__);
 			count = 0;
 		} else {
 			*(unsigned short *)buf = ts->bl_data.bl_status << 8 |
@@ -1927,12 +1927,12 @@ static ssize_t firmware_read(struct file *filp, struct kobject *kobj,
 			count = sizeof(unsigned short);
 		}
 
-//		DBG2(printk(KERN_INFO
-//			"%s:bl_f=0x%02X bl_s=0x%02X bl_e=0x%02X\n",
-//			__func__,
-//			ts->bl_data.bl_file,
-//			ts->bl_data.bl_status,
-;
+		DBG2(printk(KERN_INFO
+			"%s:bl_f=0x%02X bl_s=0x%02X bl_e=0x%02X\n",
+			__func__,
+			ts->bl_data.bl_file,
+			ts->bl_data.bl_status,
+			ts->bl_data.bl_error);)
 	}
 	UNLOCK(ts->mutex);
 	return count;
@@ -1972,19 +1972,19 @@ static ssize_t attr_fwloader_store(struct device *dev,
 	ret = p - buf;
 	if (*p && isspace(*p))
 		ret++;
-;
+	DBG2(printk(KERN_DEBUG "%s: %u\n", __func__, val);)
 
 	LOCK(ts->mutex)
 	if (val == 3) {
 		sysfs_remove_bin_file(&dev->kobj, &cyttsp_firmware);
-//		DBG2(printk(KERN_INFO "%s: FW loader closed for reg r/w\n",
-;
+		DBG2(printk(KERN_INFO "%s: FW loader closed for reg r/w\n",
+			__func__);)
 	} else if (val == 2) {
 		if (sysfs_create_bin_file(&dev->kobj, &cyttsp_firmware))
-//			printk(KERN_ERR "%s: unable to create file\n",
-;
-//		DBG2(printk(KERN_INFO "%s: FW loader opened for reg r/w\n",
-;
+			printk(KERN_ERR "%s: unable to create file\n",
+				__func__);
+		DBG2(printk(KERN_INFO "%s: FW loader opened for reg r/w\n",
+			__func__);)
 		if (ts->suspended) {
 			cyttsp_resume(ts);
 			ts->suspended = 0;
@@ -2006,23 +2006,23 @@ static ssize_t attr_fwloader_store(struct device *dev,
 		del_timer(&ts->timer);
 		cancel_work_sync(&ts->work);
 		if (sysfs_create_bin_file(&dev->kobj, &cyttsp_firmware))
-//			printk(KERN_ERR "%s: unable to create file\n",
-;
-//		DBG2(printk(KERN_INFO
-//			"%s: FW loader opened for start load: ps=%d mode=%d\n",
-//			__func__,
-;
+			printk(KERN_ERR "%s: unable to create file\n",
+				__func__);
+		DBG2(printk(KERN_INFO
+			"%s: FW loader opened for start load: ps=%d mode=%d\n",
+			__func__,
+			ts->platform_data->power_state, ts->fw_loader_mode);)
 		cyttsp_soft_reset(ts);
-;
+		printk(KERN_INFO "%s: FW loader started.\n", __func__);
 		ts->platform_data->power_state = CY_LDR_STATE;
 	} else if (!val && ts->fw_loader_mode) {
 		sysfs_remove_bin_file(&dev->kobj, &cyttsp_firmware);
 		ts->fw_loader_mode = 0;
-;
+		printk(KERN_INFO "%s: FW loader finished.\n", __func__);
 		enable_irq(ts->irq);
 		ret = cyttsp_power_on(ts);
 		if (ret < 0)
-;
+			printk(KERN_ERR "%s: Error, power on fail\n", __func__);
 		/* resume watchdog */
 		mod_timer(&ts->timer, jiffies + CY_WDG_TIMEOUT);
 	}
@@ -2032,7 +2032,7 @@ static ssize_t attr_fwloader_store(struct device *dev,
 
 static void cyttsp_close(struct input_dev *dev)
 {
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	struct cyttsp *ts = dev_get_drvdata(&dev->dev);
 	cancel_work_sync(&ts->work);
@@ -2045,11 +2045,11 @@ static int cyttsp_open(struct input_dev *dev)
 {
 	struct cyttsp *ts = dev_get_drvdata(&dev->dev);
 	int ret = 0;
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	ret = regulator_enable(ts->regulator);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "%s: regulator enable failed\n", __func__);
 		goto error_regulator;
 	}
 	/* enable interrupts */
@@ -2058,21 +2058,21 @@ static int cyttsp_open(struct input_dev *dev)
 			IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
 			ts->input->name, ts);
 	if (ret < 0) {
-//		printk(KERN_ERR "%s: IRQ request failed r=%d\n",
-;
+		printk(KERN_ERR "%s: IRQ request failed r=%d\n",
+				__func__, ret);
 		ts->platform_data->power_state = CY_INVALID_STATE;
 		goto error_gpio_irq;
 	}
 	ret = cyttsp_reset_controller(ts);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "controller reset failed\n");
 		goto error_reset;
 	}
-;
+	DBG(printk(KERN_INFO "%s: call power_on\n", __func__);)
 
 	ret = cyttsp_power_on(ts);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "%s: Error, power on failed!\n", __func__);
 		goto error_power_on;
 	}
 	ts->device_in_use = true;
@@ -2098,11 +2098,11 @@ void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *pdev)
 	struct cyttsp *ts;
 	int retval = 0;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	ts = kzalloc(sizeof(*ts), GFP_KERNEL);
 	if (ts == NULL) {
-;
+		printk(KERN_ERR "%s: Error, kzalloc\n", __func__);
 		goto error_alloc_data_failed;
 	}
 	mutex_init(&ts->mutex);
@@ -2113,14 +2113,14 @@ void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *pdev)
 
 	ts->regulator = regulator_get(ts->pdev, "vcpin");
 	if (IS_ERR(ts->regulator)) {
-;
+		printk(KERN_ERR "%s: Error, regulator_get failed\n", __func__);
 		ts->regulator = NULL;
 		goto error_regulator_get;
 	}
 	if (ts->platform_data->init)
 		retval = ts->platform_data->init(1);
 	if (retval) {
-;
+		printk(KERN_ERR "%s: platform init failed!\n", __func__);
 		goto error_init;
 	}
 
@@ -2128,8 +2128,8 @@ void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *pdev)
 	input_device = input_allocate_device();
 	if (!input_device) {
 		retval = -ENOMEM;
-//		printk(KERN_ERR "%s: Error, failed to allocate input device\n",
-;
+		printk(KERN_ERR "%s: Error, failed to allocate input device\n",
+			__func__);
 		goto error_input_allocate_device;
 	}
 	ts->input = input_device;
@@ -2188,12 +2188,12 @@ void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *pdev)
 
 	retval = input_register_device(input_device);
 	if (retval) {
-//		printk(KERN_ERR "%s: Error, failed to register input device\n",
-;
+		printk(KERN_ERR "%s: Error, failed to register input device\n",
+			__func__);
 		goto error_input_register_device;
 	}
-//	DBG(printk(KERN_INFO "%s: Registered input device %s\n",
-;
+	DBG(printk(KERN_INFO "%s: Registered input device %s\n",
+		   __func__, input_device->name);)
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
@@ -2203,8 +2203,8 @@ void *cyttsp_core_init(struct cyttsp_bus_ops *bus_ops, struct device *pdev)
 #endif
 	retval = device_create_file(pdev, &fwloader);
 	if (retval) {
-//		printk(KERN_ERR "%s: Error, could not create attribute\n",
-;
+		printk(KERN_ERR "%s: Error, could not create attribute\n",
+			__func__);
 		goto device_create_error;
 	}
 
@@ -2234,7 +2234,7 @@ void cyttsp_core_release(void *handle)
 {
 	struct cyttsp *ts = handle;
 
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	unregister_early_suspend(&ts->early_suspend);
 #endif

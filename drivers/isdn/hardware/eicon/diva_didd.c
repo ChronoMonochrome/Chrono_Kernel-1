@@ -114,22 +114,22 @@ static int DIVA_INIT_FUNCTION divadidd_init(void)
 	char tmprev[32];
 	int ret = 0;
 
-;
-;
+	printk(KERN_INFO "%s\n", DRIVERNAME);
+	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_DIDD);
 	strcpy(tmprev, main_revision);
-//	printk("%s  Build:%s(%s)\n", getrev(tmprev),
-;
+	printk("%s  Build:%s(%s)\n", getrev(tmprev),
+	       diva_didd_common_code_build, DIVA_BUILD);
 
 	if (!create_proc()) {
-//		printk(KERN_ERR "%s: could not create proc entry\n",
-;
+		printk(KERN_ERR "%s: could not create proc entry\n",
+		       DRIVERLNAME);
 		ret = -EIO;
 		goto out;
 	}
 
 	if (!diddfunc_init()) {
-//		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
-;
+		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
+		       DRIVERLNAME);
 #ifdef MODULE
 		remove_proc();
 #endif
@@ -145,7 +145,7 @@ static void DIVA_EXIT_FUNCTION divadidd_exit(void)
 {
 	diddfunc_finit();
 	remove_proc();
-;
+	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
 }
 
 module_init(divadidd_init);

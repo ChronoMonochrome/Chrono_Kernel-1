@@ -467,7 +467,7 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
 	status = acpi_evaluate_integer(device->handle, METHOD_NAME__SEG, NULL,
 				       &segment);
 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
-;
+		printk(KERN_ERR PREFIX "can't evaluate _SEG\n");
 		result = -ENODEV;
 		goto end;
 	}
@@ -483,15 +483,15 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
 		 * can do is assume [_BBN-0xFF] or [0-0xFF].
 		 */
 		root->secondary.end = 0xFF;
-//		printk(KERN_WARNING FW_BUG PREFIX
-;
+		printk(KERN_WARNING FW_BUG PREFIX
+		       "no secondary bus range in _CRS\n");
 		status = acpi_evaluate_integer(device->handle, METHOD_NAME__BBN,					       NULL, &bus);
 		if (ACPI_SUCCESS(status))
 			root->secondary.start = bus;
 		else if (status == AE_NOT_FOUND)
 			root->secondary.start = 0;
 		else {
-;
+			printk(KERN_ERR PREFIX "can't evaluate _BBN\n");
 			result = -ENODEV;
 			goto end;
 		}
@@ -518,9 +518,9 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
 	/* TBD: Locking */
 	list_add_tail(&root->node, &acpi_pci_roots);
 
-//	printk(KERN_INFO PREFIX "%s [%s] (domain %04x %pR)\n",
-//	       acpi_device_name(device), acpi_device_bid(device),
-;
+	printk(KERN_INFO PREFIX "%s [%s] (domain %04x %pR)\n",
+	       acpi_device_name(device), acpi_device_bid(device),
+	       root->segment, &root->secondary);
 
 	/*
 	 * Scan the Root Bridge
@@ -531,9 +531,9 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
 	 */
 	root->bus = pci_acpi_scan_root(root);
 	if (!root->bus) {
-//		printk(KERN_ERR PREFIX
-//			    "Bus %04x:%02x not present in PCI namespace\n",
-;
+		printk(KERN_ERR PREFIX
+			    "Bus %04x:%02x not present in PCI namespace\n",
+			    root->segment, (unsigned int)root->secondary.start);
 		result = -ENODEV;
 		goto end;
 	}

@@ -228,7 +228,7 @@ static int ixp4xx_flash_probe(struct platform_device *dev)
 			resource_size(dev->resource),
 			"IXP4XXFlash");
 	if (!info->res) {
-;
+		printk(KERN_ERR "IXP4XXFlash: Could not reserve memory region\n");
 		err = -ENOMEM;
 		goto Error;
 	}
@@ -236,14 +236,14 @@ static int ixp4xx_flash_probe(struct platform_device *dev)
 	info->map.virt = ioremap(dev->resource->start,
 				 resource_size(dev->resource));
 	if (!info->map.virt) {
-;
+		printk(KERN_ERR "IXP4XXFlash: Failed to ioremap region\n");
 		err = -EIO;
 		goto Error;
 	}
 
 	info->mtd = do_map_probe(plat->map_name, &info->map);
 	if (!info->mtd) {
-;
+		printk(KERN_ERR "IXP4XXFlash: map_probe failed\n");
 		err = -ENXIO;
 		goto Error;
 	}
@@ -262,15 +262,15 @@ static int ixp4xx_flash_probe(struct platform_device *dev)
 		part_type = "static";
 	}
 	if (nr_parts == 0)
-//		printk(KERN_NOTICE "IXP4xx flash: no partition info "
-;
+		printk(KERN_NOTICE "IXP4xx flash: no partition info "
+			"available, registering whole flash\n");
 	else
-//		printk(KERN_NOTICE "IXP4xx flash: using %s partition "
-;
+		printk(KERN_NOTICE "IXP4xx flash: using %s partition "
+			"definition\n", part_type);
 
 	err = mtd_device_register(info->mtd, info->partitions, nr_parts);
 	if (err)
-;
+		printk(KERN_ERR "Could not parse partitions\n");
 
 	if (err)
 		goto Error;

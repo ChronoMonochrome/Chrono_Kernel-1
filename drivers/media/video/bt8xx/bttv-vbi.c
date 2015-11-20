@@ -65,19 +65,19 @@ MODULE_PARM_DESC(vbi_debug,"vbi code debug messages, default is 0 (no)");
 #ifdef dprintk
 # undef dprintk
 #endif
-//#define dprintk(fmt, arg...)	if (vbi_debug) \
-//	printk(KERN_DEBUG "bttv%d/vbi: " fmt, btv->c.nr , ## arg)
-//
-//#define IMAGE_SIZE(fmt) \
-//	(((fmt)->count[0] + (fmt)->count[1]) * (fmt)->samples_per_line)
-//
-///* ----------------------------------------------------------------------- */
-///* vbi risc code + mm                                                      */
-//
-//static int vbi_buffer_setup(struct videobuf_queue *q,
-//			    unsigned int *count, unsigned int *size)
-//{
-;
+#define dprintk(fmt, arg...)	if (vbi_debug) \
+	printk(KERN_DEBUG "bttv%d/vbi: " fmt, btv->c.nr , ## arg)
+
+#define IMAGE_SIZE(fmt) \
+	(((fmt)->count[0] + (fmt)->count[1]) * (fmt)->samples_per_line)
+
+/* ----------------------------------------------------------------------- */
+/* vbi risc code + mm                                                      */
+
+static int vbi_buffer_setup(struct videobuf_queue *q,
+			    unsigned int *count, unsigned int *size)
+{
+	struct bttv_fh *fh = q->priv_data;
 	struct bttv *btv = fh->btv;
 
 	if (0 == *count)
@@ -85,12 +85,12 @@ MODULE_PARM_DESC(vbi_debug,"vbi code debug messages, default is 0 (no)");
 
 	*size = IMAGE_SIZE(&fh->vbi_fmt.fmt);
 
-//	dprintk("setup: samples=%u start=%d,%d count=%u,%u\n",
-//		fh->vbi_fmt.fmt.samples_per_line,
-//		fh->vbi_fmt.fmt.start[0],
-//		fh->vbi_fmt.fmt.start[1],
-//		fh->vbi_fmt.fmt.count[0],
-;
+	dprintk("setup: samples=%u start=%d,%d count=%u,%u\n",
+		fh->vbi_fmt.fmt.samples_per_line,
+		fh->vbi_fmt.fmt.start[0],
+		fh->vbi_fmt.fmt.start[1],
+		fh->vbi_fmt.fmt.count[0],
+		fh->vbi_fmt.fmt.count[1]);
 
 	return 0;
 }
@@ -192,9 +192,9 @@ static int vbi_buffer_prepare(struct videobuf_queue *q,
 
 	buf->vb.state = VIDEOBUF_PREPARED;
 	buf->vb.field = field;
-//	dprintk("buf prepare %p: top=%p bottom=%p field=%s\n",
-//		vb, &buf->top, &buf->bottom,
-;
+	dprintk("buf prepare %p: top=%p bottom=%p field=%s\n",
+		vb, &buf->top, &buf->bottom,
+		v4l2_field_names[buf->vb.field]);
 	return 0;
 
  fail:
@@ -209,7 +209,7 @@ vbi_buffer_queue(struct videobuf_queue *q, struct videobuf_buffer *vb)
 	struct bttv *btv = fh->btv;
 	struct bttv_buffer *buf = container_of(vb,struct bttv_buffer,vb);
 
-;
+	dprintk("queue %p\n",vb);
 	buf->vb.state = VIDEOBUF_QUEUED;
 	list_add_tail(&buf->vb.queue,&btv->vcapture);
 	if (NULL == btv->cvbi) {
@@ -224,7 +224,7 @@ static void vbi_buffer_release(struct videobuf_queue *q, struct videobuf_buffer 
 	struct bttv *btv = fh->btv;
 	struct bttv_buffer *buf = container_of(vb,struct bttv_buffer,vb);
 
-;
+	dprintk("free %p\n",vb);
 	bttv_dma_free(q,fh->btv,buf);
 }
 

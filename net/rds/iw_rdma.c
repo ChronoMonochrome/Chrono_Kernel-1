@@ -271,7 +271,7 @@ static u64 *rds_iw_map_scatterlist(struct rds_iw_device *rds_iwdev,
 
 	sg->dma_len = ib_dma_map_sg(dev, sg->list, sg->len, DMA_BIDIRECTIONAL);
 	if (unlikely(!sg->dma_len)) {
-;
+		printk(KERN_WARNING "RDS/IW: dma_map_sg failed!\n");
 		return ERR_PTR(-EBUSY);
 	}
 
@@ -339,7 +339,7 @@ struct rds_iw_mr_pool *rds_iw_create_mr_pool(struct rds_iw_device *rds_iwdev)
 
 	pool = kzalloc(sizeof(*pool), GFP_KERNEL);
 	if (!pool) {
-;
+		printk(KERN_WARNING "RDS/IW: rds_iw_create_mr_pool alloc error\n");
 		return ERR_PTR(-ENOMEM);
 	}
 
@@ -631,7 +631,7 @@ void *rds_iw_get_mr(struct scatterlist *sg, unsigned long nents,
 	if (ret == 0)
 		*key_ret = ibmr->mr->rkey;
 	else
-;
+		printk(KERN_WARNING "RDS/IW: failed to map mr (errno=%d)\n", ret);
 
 out:
 	if (ret) {
@@ -676,7 +676,7 @@ static int rds_iw_init_fastreg(struct rds_iw_mr_pool *pool,
 	if (IS_ERR(mr)) {
 		err = PTR_ERR(mr);
 
-;
+		printk(KERN_WARNING "RDS/IW: ib_alloc_fast_reg_mr failed (err=%d)\n", err);
 		return err;
 	}
 
@@ -687,7 +687,7 @@ static int rds_iw_init_fastreg(struct rds_iw_mr_pool *pool,
 	if (IS_ERR(page_list)) {
 		err = PTR_ERR(page_list);
 
-;
+		printk(KERN_WARNING "RDS/IW: ib_alloc_fast_reg_page_list failed (err=%d)\n", err);
 		ib_dereg_mr(mr);
 		return err;
 	}
@@ -730,8 +730,8 @@ static int rds_iw_rdma_build_fastreg(struct rds_iw_mapping *mapping)
 	ret = ib_post_send(ibmr->cm_id->qp, &f_wr, &failed_wr);
 	BUG_ON(failed_wr != &f_wr);
 	if (ret && printk_ratelimit())
-//		printk(KERN_WARNING "RDS/IW: %s:%d ib_post_send returned %d\n",
-;
+		printk(KERN_WARNING "RDS/IW: %s:%d ib_post_send returned %d\n",
+			__func__, __LINE__, ret);
 	return ret;
 }
 
@@ -752,8 +752,8 @@ static int rds_iw_rdma_fastreg_inv(struct rds_iw_mr *ibmr)
 	failed_wr = &s_wr;
 	ret = ib_post_send(ibmr->cm_id->qp, &s_wr, &failed_wr);
 	if (ret && printk_ratelimit()) {
-//		printk(KERN_WARNING "RDS/IW: %s:%d ib_post_send returned %d\n",
-;
+		printk(KERN_WARNING "RDS/IW: %s:%d ib_post_send returned %d\n",
+			__func__, __LINE__, ret);
 		goto out;
 	}
 out:

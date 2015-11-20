@@ -302,7 +302,7 @@ void snd_opl3_interrupt(struct snd_hwdep * hw)
 	opl3 = hw->private_data;
 	status = inb(opl3->l_port);
 #if 0
-;
+	snd_printk(KERN_DEBUG "AdLib IRQ status = 0x%x\n", status);
 #endif
 	if (!(status & 0x80))
 		return;
@@ -355,7 +355,7 @@ int snd_opl3_new(struct snd_card *card,
 	*ropl3 = NULL;
 	opl3 = kzalloc(sizeof(*opl3), GFP_KERNEL);
 	if (opl3 == NULL) {
-;
+		snd_printk(KERN_ERR "opl3: cannot allocate\n");
 		return -ENOMEM;
 	}
 
@@ -378,7 +378,7 @@ EXPORT_SYMBOL(snd_opl3_new);
 int snd_opl3_init(struct snd_opl3 *opl3)
 {
 	if (! opl3->command) {
-;
+		printk(KERN_ERR "snd_opl3_init: command not defined!\n");
 		return -EINVAL;
 	}
 
@@ -416,13 +416,13 @@ int snd_opl3_create(struct snd_card *card,
 		return err;
 	if (! integrated) {
 		if ((opl3->res_l_port = request_region(l_port, 2, "OPL2/3 (left)")) == NULL) {
-;
+			snd_printk(KERN_ERR "opl3: can't grab left port 0x%lx\n", l_port);
 			snd_device_free(card, opl3);
 			return -EBUSY;
 		}
 		if (r_port != 0 &&
 		    (opl3->res_r_port = request_region(r_port, 2, "OPL2/3 (right)")) == NULL) {
-;
+			snd_printk(KERN_ERR "opl3: can't grab right port 0x%lx\n", r_port);
 			snd_device_free(card, opl3);
 			return -EBUSY;
 		}

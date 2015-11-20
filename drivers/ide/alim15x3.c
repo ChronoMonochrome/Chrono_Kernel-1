@@ -484,8 +484,8 @@ static int __devinit init_dma_ali15x3(ide_hwif_t *hwif,
 	if (!hwif->channel)
 		outb(inb(base + 2) & 0x60, base + 2);
 
-//	printk(KERN_INFO "    %s: BM-DMA at 0x%04lx-0x%04lx\n",
-;
+	printk(KERN_INFO "    %s: BM-DMA at 0x%04lx-0x%04lx\n",
+			 hwif->name, base, base + 7);
 
 	if (ide_allocate_dma_engine(hwif))
 		return -1;

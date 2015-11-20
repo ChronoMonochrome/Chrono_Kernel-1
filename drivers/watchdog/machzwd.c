@@ -141,16 +141,16 @@ static unsigned long next_heartbeat;
 #define ZF_CTIMEOUT 0xffff
 
 #ifndef ZF_DEBUG
-//#	define dprintk(format, args...)
-//#else
-//#	define dprintk(format, args...) printk(KERN_DEBUG PFX \
-//				":%s:%d: " format, __func__, __LINE__ , ## args)
-//#endif
-//
-//
-//static inline void zf_set_status(unsigned char new)
-//{
-;
+#	define dprintk(format, args...)
+#else
+#	define dprintk(format, args...) printk(KERN_DEBUG PFX \
+				":%s:%d: " format, __func__, __LINE__ , ## args)
+#endif
+
+
+static inline void zf_set_status(unsigned char new)
+{
+	zf_writeb(STATUS, new);
 }
 
 
@@ -203,7 +203,7 @@ static void zf_timer_off(void)
 	zf_set_control(ctrl_reg);
 	spin_unlock_irqrestore(&zf_port_lock, flags);
 
-;
+	printk(KERN_INFO PFX ": Watchdog timer is now disabled\n");
 }
 
 
@@ -233,7 +233,7 @@ static void zf_timer_on(void)
 	zf_set_control(ctrl_reg);
 	spin_unlock_irqrestore(&zf_port_lock, flags);
 
-;
+	printk(KERN_INFO PFX ": Watchdog timer is now enabled\n");
 }
 
 
@@ -245,7 +245,7 @@ static void zf_ping(unsigned long data)
 	zf_writeb(COUNTER_2, 0xff);
 
 	if (time_before(jiffies, next_heartbeat)) {
-;
+		dprintk("time_before: %ld\n", next_heartbeat - jiffies);
 		/*
 		 * reset event is activated by transition from 0 to 1 on
 		 * RESET_WD1 bit and we assume that it is already zero...
@@ -263,7 +263,7 @@ static void zf_ping(unsigned long data)
 
 		mod_timer(&zf_timer, jiffies + ZF_HW_TIMEO);
 	} else
-;
+		printk(KERN_CRIT PFX ": I will reset your machine\n");
 }
 
 static ssize_t zf_write(struct file *file, const char __user *buf, size_t count,
@@ -290,7 +290,7 @@ static ssize_t zf_write(struct file *file, const char __user *buf, size_t count,
 					return -EFAULT;
 				if (c == 'V') {
 					zf_expect_close = 42;
-;
+					dprintk("zf_expect_close = 42\n");
 				}
 			}
 		}
@@ -300,7 +300,7 @@ static ssize_t zf_write(struct file *file, const char __user *buf, size_t count,
 		 * we should return that favour
 		 */
 		next_heartbeat = jiffies + ZF_USER_TIMEO;
-;
+		dprintk("user ping at %ld\n", jiffies);
 	}
 	return count;
 }
@@ -342,8 +342,8 @@ static int zf_close(struct inode *inode, struct file *file)
 		zf_timer_off();
 	else {
 		del_timer(&zf_timer);
-//		printk(KERN_ERR PFX ": device file closed unexpectedly. "
-;
+		printk(KERN_ERR PFX ": device file closed unexpectedly. "
+						"Will not stop the WDT!\n");
 	}
 	clear_bit(0, &zf_is_open);
 	zf_expect_close = 0;
@@ -390,19 +390,19 @@ static void __init zf_show_action(int act)
 {
 	static const char * const str[] = { "RESET", "SMI", "NMI", "SCI" };
 
-;
+	printk(KERN_INFO PFX ": Watchdog using action = %s\n", str[act]);
 }
 
 static int __init zf_init(void)
 {
 	int ret;
 
-//	printk(KERN_INFO PFX
-;
+	printk(KERN_INFO PFX
+		": MachZ ZF-Logic Watchdog driver initializing.\n");
 
 	ret = zf_get_ZFL_version();
 	if (!ret || ret == 0xffff) {
-;
+		printk(KERN_WARNING PFX ": no ZF-Logic found\n");
 		return -ENODEV;
 	}
 
@@ -414,23 +414,23 @@ static int __init zf_init(void)
 	zf_show_action(action);
 
 	if (!request_region(ZF_IOBASE, 3, "MachZ ZFL WDT")) {
-//		printk(KERN_ERR "cannot reserve I/O ports at %d\n",
-;
+		printk(KERN_ERR "cannot reserve I/O ports at %d\n",
+							ZF_IOBASE);
 		ret = -EBUSY;
 		goto no_region;
 	}
 
 	ret = register_reboot_notifier(&zf_notifier);
 	if (ret) {
-//		printk(KERN_ERR "can't register reboot notifier (err=%d)\n",
-;
+		printk(KERN_ERR "can't register reboot notifier (err=%d)\n",
+									ret);
 		goto no_reboot;
 	}
 
 	ret = misc_register(&zf_miscdev);
 	if (ret) {
-//		printk(KERN_ERR "can't misc_register on minor=%d\n",
-;
+		printk(KERN_ERR "can't misc_register on minor=%d\n",
+							WATCHDOG_MINOR);
 		goto no_misc;
 	}
 

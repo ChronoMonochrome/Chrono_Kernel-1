@@ -49,7 +49,7 @@ static int decode_sector_number(__be32 **rp, sector_t *sp)
 
 	*rp = xdr_decode_hyper(*rp, &s);
 	if (s & 0x1ff) {
-;
+		printk(KERN_WARNING "%s: sector not aligned\n", __func__);
 		return -1;
 	}
 	*sp = s >> SECTOR_SHIFT;
@@ -61,14 +61,14 @@ struct block_device *nfs4_blkdev_get(dev_t dev)
 {
 	struct block_device *bd;
 
-;
+	dprintk("%s enter\n", __func__);
 	bd = blkdev_get_by_dev(dev, FMODE_READ, NULL);
 	if (IS_ERR(bd))
 		goto fail;
 	return bd;
 fail:
-//	dprintk("%s failed to open device : %ld\n",
-;
+	dprintk("%s failed to open device : %ld\n",
+			__func__, PTR_ERR(bd));
 	return NULL;
 }
 
@@ -77,8 +77,8 @@ fail:
  */
 int nfs4_blkdev_put(struct block_device *bdev)
 {
-//	dprintk("%s for device %d:%d\n", __func__, MAJOR(bdev->bd_dev),
-;
+	dprintk("%s for device %d:%d\n", __func__, MAJOR(bdev->bd_dev),
+			MINOR(bdev->bd_dev));
 	return blkdev_put(bdev, FMODE_READ);
 }
 
@@ -124,9 +124,9 @@ nfs4_blk_decode_device(struct nfs_server *server,
 	struct bl_dev_msg *reply = &bl_mount_reply;
 	int offset, len, i, rc;
 
-;
-//	dprintk("%s: deviceid: %s, mincount: %d\n", __func__, dev->dev_id.data,
-;
+	dprintk("%s CREATING PIPEFS MESSAGE\n", __func__);
+	dprintk("%s: deviceid: %s, mincount: %d\n", __func__, dev->dev_id.data,
+		dev->mincount);
 
 	memset(&msg, 0, sizeof(msg));
 	msg.data = kzalloc(sizeof(bl_msg) + dev->mincount, GFP_NOFS);
@@ -147,7 +147,7 @@ nfs4_blk_decode_device(struct nfs_server *server,
 	}
 	msg.len = sizeof(bl_msg) + dev->mincount;
 
-;
+	dprintk("%s CALLING USERSPACE DAEMON\n", __func__);
 	add_wait_queue(&bl_wq, &wq);
 	rc = rpc_queue_upcall(bl_device_pipe->d_inode, &msg);
 	if (rc < 0) {
@@ -162,8 +162,8 @@ nfs4_blk_decode_device(struct nfs_server *server,
 	remove_wait_queue(&bl_wq, &wq);
 
 	if (reply->status != BL_DEVICE_REQUEST_PROC) {
-//		dprintk("%s failed to open device: %d\n",
-;
+		dprintk("%s failed to open device: %d\n",
+			__func__, reply->status);
 		rv = ERR_PTR(-EINVAL);
 		goto out;
 	}
@@ -171,7 +171,7 @@ nfs4_blk_decode_device(struct nfs_server *server,
 	bd = nfs4_blkdev_get(MKDEV(reply->major, reply->minor));
 	if (IS_ERR(bd)) {
 		rc = PTR_ERR(bd);
-;
+		dprintk("%s failed to open device : %d\n", __func__, rc);
 		rv = ERR_PTR(rc);
 		goto out;
 	}
@@ -184,10 +184,10 @@ nfs4_blk_decode_device(struct nfs_server *server,
 
 	rv->bm_mdev = bd;
 	memcpy(&rv->bm_mdevid, &dev->dev_id, sizeof(struct nfs4_deviceid));
-//	dprintk("%s Created device %s with bd_block_size %u\n",
-//		__func__,
-//		bd->bd_disk->disk_name,
-;
+	dprintk("%s Created device %s with bd_block_size %u\n",
+		__func__,
+		bd->bd_disk->disk_name,
+		bd->bd_block_size);
 
 out:
 	kfree(msg.data);
@@ -202,7 +202,7 @@ static struct block_device *translate_devid(struct pnfs_layout_hdr *lo,
 	struct block_mount_id *mid;
 	struct pnfs_block_dev *dev;
 
-;
+	dprintk("%s enter, lo=%p, id=%p\n", __func__, lo, id);
 	mid = BLK_ID(lo);
 	spin_lock(&mid->bm_lock);
 	list_for_each_entry(dev, &mid->bm_devlist, bm_node) {
@@ -214,7 +214,7 @@ static struct block_device *translate_devid(struct pnfs_layout_hdr *lo,
 	}
  out:
 	spin_unlock(&mid->bm_lock);
-;
+	dprintk("%s returning %p\n", __func__, rv);
 	return rv;
 }
 
@@ -293,7 +293,7 @@ nfs4_blk_process_layoutget(struct pnfs_layout_hdr *lo,
 	};
 	LIST_HEAD(extents);
 
-;
+	dprintk("---> %s\n", __func__);
 
 	scratch = alloc_page(gfp_flags);
 	if (!scratch)
@@ -308,7 +308,7 @@ nfs4_blk_process_layoutget(struct pnfs_layout_hdr *lo,
 
 	count = be32_to_cpup(p++);
 
-;
+	dprintk("%s enter, number of extents %i\n", __func__, count);
 	p = xdr_inline_decode(&stream, (28 + NFS4_DEVICEID4_SIZE) * count);
 	if (unlikely(!p))
 		goto out_err;
@@ -342,19 +342,19 @@ nfs4_blk_process_layoutget(struct pnfs_layout_hdr *lo,
 		if (be->be_state == PNFS_BLOCK_INVALID_DATA)
 			be->be_inval = &bl->bl_inval;
 		if (verify_extent(be, &lv)) {
-;
+			dprintk("%s verify failed\n", __func__);
 			goto out_err;
 		}
 		list_add_tail(&be->be_node, &extents);
 	}
 	if (lgr->range.offset + lgr->range.length !=
 			lv.start << SECTOR_SHIFT) {
-;
+		dprintk("%s Final length mismatch\n", __func__);
 		be = NULL;
 		goto out_err;
 	}
 	if (lv.start < lv.cowread) {
-;
+		dprintk("%s Final uncovered COW extent\n", __func__);
 		be = NULL;
 		goto out_err;
 	}
@@ -379,7 +379,7 @@ nfs4_blk_process_layoutget(struct pnfs_layout_hdr *lo,
 	status = 0;
  out:
 	__free_page(scratch);
-;
+	dprintk("%s returns %i\n", __func__, status);
 	return status;
 
  out_err:

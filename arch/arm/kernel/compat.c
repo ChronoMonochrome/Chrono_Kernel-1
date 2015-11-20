@@ -97,20 +97,20 @@ static void __init build_tag_list(struct param_struct *params, void *taglist)
 	struct tag *tag = taglist;
 
 	if (params->u1.s.page_size != PAGE_SIZE) {
-////		printk(KERN_WARNING "Warning: bad configuration page, "
-;
+		printk(KERN_WARNING "Warning: bad configuration page, "
+		       "trying to continue\n");
 		return;
 	}
 
-;
+	printk(KERN_DEBUG "Converting old-style param struct to taglist\n");
 
 #ifdef CONFIG_ARCH_NETWINDER
 	if (params->u1.s.nr_pages != 0x02000 &&
 	    params->u1.s.nr_pages != 0x04000 &&
 	    params->u1.s.nr_pages != 0x08000 &&
 	    params->u1.s.nr_pages != 0x10000) {
-////		printk(KERN_WARNING "Warning: bad NeTTrom parameters "
-;
+		printk(KERN_WARNING "Warning: bad NeTTrom parameters "
+		       "detected, using defaults\n");
 
 		params->u1.s.nr_pages = 0x1000;	/* 16MB */
 		params->u1.s.ramdisk_size = 0;

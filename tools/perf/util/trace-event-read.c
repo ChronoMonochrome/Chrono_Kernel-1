@@ -177,9 +177,9 @@ static void read_proc_kallsyms(void)
 	free(buf);
 }
 
-//static void read_ftrace_printk(void)
-//{
-;
+static void read_ftrace_printk(void)
+{
+	unsigned int size;
 	char *buf;
 
 	size = read4();
@@ -189,7 +189,7 @@ static void read_proc_kallsyms(void)
 	buf = malloc_or_die(size);
 	read_or_die(buf, size);
 
-;
+	parse_ftrace_printk(buf, size);
 
 	free(buf);
 }
@@ -520,7 +520,7 @@ ssize_t trace_report(int fd, bool __repipe)
 	read_ftrace_files();
 	read_event_files();
 	read_proc_kallsyms();
-;
+	read_ftrace_printk();
 
 	size = calc_data_size - 1;
 	calc_data_size = 0;
@@ -531,7 +531,7 @@ ssize_t trace_report(int fd, bool __repipe)
 		return size;
 	}
 	if (show_printk) {
-;
+		print_printk();
 		return size;
 	}
 

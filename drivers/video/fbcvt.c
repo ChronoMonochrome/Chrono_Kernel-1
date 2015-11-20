@@ -202,8 +202,8 @@ static u32 fb_cvt_aspect_ratio(struct fb_cvt_data *cvt)
 	else if (xres == (yres * 15)/9 && !((yres * 15) % 9))
 		aspect = 4;
 	else {
-//		printk(KERN_INFO "fbcvt: Aspect ratio not CVT "
-;
+		printk(KERN_INFO "fbcvt: Aspect ratio not CVT "
+		       "standard\n");
 		aspect = 7;
 		cvt->status = 1;
 	}
@@ -263,7 +263,7 @@ static void fb_cvt_print_name(struct fb_cvt_data *cvt)
 		}
 	}
 
-;
+	printk(KERN_INFO "%s\n", buf);
 	kfree(buf);
 }
 
@@ -324,14 +324,14 @@ int fb_find_mode_cvt(struct fb_videomode *mode, int margins, int rb)
 	cvt.interlace = 1;
 
 	if (!cvt.xres || !cvt.yres || !cvt.refresh) {
-;
+		printk(KERN_INFO "fbcvt: Invalid input parameters\n");
 		return 1;
 	}
 
 	if (!(cvt.refresh == 50 || cvt.refresh == 60 || cvt.refresh == 70 ||
 	      cvt.refresh == 85)) {
-//		printk(KERN_INFO "fbcvt: Refresh rate not CVT "
-;
+		printk(KERN_INFO "fbcvt: Refresh rate not CVT "
+		       "standard\n");
 		cvt.status = 1;
 	}
 
@@ -344,8 +344,8 @@ int fb_find_mode_cvt(struct fb_videomode *mode, int margins, int rb)
 
 	if (cvt.flags & FB_CVT_FLAG_REDUCED_BLANK) {
 		if (cvt.refresh != 60) {
-//			printk(KERN_INFO "fbcvt: 60Hz refresh rate "
-;
+			printk(KERN_INFO "fbcvt: 60Hz refresh rate "
+			       "advised for reduced blanking\n");
 			cvt.status = 1;
 		}
 	}

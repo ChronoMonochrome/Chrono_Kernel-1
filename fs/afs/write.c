@@ -639,8 +639,8 @@ ssize_t afs_file_write(struct kiocb *iocb, const struct iovec *iov,
 	       vnode->fid.vid, vnode->fid.vnode, count, nr_segs);
 
 	if (IS_SWAPFILE(&vnode->vfs_inode)) {
-//		printk(KERN_INFO
-;
+		printk(KERN_INFO
+		       "AFS: Attempt to write to active swap file!\n");
 		return -EBUSY;
 	}
 

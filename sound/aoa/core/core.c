@@ -33,8 +33,8 @@ static int attach_codec_to_fabric(struct aoa_codec *c)
 		err = fabric->found_codec(c);
 	if (err) {
 		module_put(c->owner);
-//		printk(KERN_ERR "snd-aoa: fabric didn't like codec %s\n",
-;
+		printk(KERN_ERR "snd-aoa: fabric didn't like codec %s\n",
+				c->name);
 		return err;
 	}
 	c->fabric = fabric;
@@ -43,7 +43,7 @@ static int attach_codec_to_fabric(struct aoa_codec *c)
 	if (c->init)
 		err = c->init(c);
 	if (err) {
-;
+		printk(KERN_ERR "snd-aoa: codec %s didn't init\n", c->name);
 		c->fabric = NULL;
 		if (fabric->remove_codec)
 			fabric->remove_codec(c);
@@ -134,8 +134,8 @@ EXPORT_SYMBOL_GPL(aoa_fabric_unregister);
 void aoa_fabric_unlink_codec(struct aoa_codec *codec)
 {
 	if (!codec->fabric) {
-//		printk(KERN_ERR "snd-aoa: fabric unassigned "
-;
+		printk(KERN_ERR "snd-aoa: fabric unassigned "
+				"in aoa_fabric_unlink_codec\n");
 		dump_stack();
 		return;
 	}

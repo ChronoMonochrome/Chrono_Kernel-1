@@ -124,12 +124,12 @@ static void vt596_dump_regs(const char *msg, u8 size)
 
 		dev_dbg(&vt596_adapter.dev, "BLK=");
 		for (i = 0; i < I2C_SMBUS_BLOCK_MAX / 2; i++)
-;
-;
+			printk("%02x,", inb_p(SMBBLKDAT));
+		printk("\n");
 		dev_dbg(&vt596_adapter.dev, "    ");
 		for (; i < I2C_SMBUS_BLOCK_MAX - 1; i++)
-;
-;
+			printk("%02x,", inb_p(SMBBLKDAT));
+		printk("%02x\n", inb_p(SMBBLKDAT));
 	}
 }
 #else

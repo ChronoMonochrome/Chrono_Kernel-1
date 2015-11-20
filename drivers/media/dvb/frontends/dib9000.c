@@ -21,7 +21,7 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "turn on debugging (default: 0)");
 
-;
+#define dprintk(args...) do { if (debug) { printk(KERN_DEBUG "DiB9000: "); printk(args); printk("\n"); } } while (0)
 #define MAX_NUMBER_OF_FRONTENDS 6
 
 struct i2c_device {
@@ -33,7 +33,7 @@ struct i2c_device {
 
 /* lock */
 #define DIB_LOCK struct mutex
-;
+#define DibAcquireLock(lock) do { if (mutex_lock_interruptible(lock) < 0) dprintk("could not get the lock"); } while (0)
 #define DibReleaseLock(lock) mutex_unlock(lock)
 #define DibInitLock(lock) mutex_init(lock)
 #define DibFreeLock(lock)
@@ -265,7 +265,7 @@ static u16 dib9000_read16_attr(struct dib9000_state *state, u16 reg, u8 * b, u32
 		state->msg[1].buf = b;
 		ret = i2c_transfer(state->i2c.i2c_adap, state->msg, 2) != 2 ? -EREMOTEIO : 0;
 		if (ret != 0) {
-;
+			dprintk("i2c read error on %d", reg);
 			return -EREMOTEIO;
 		}
 
@@ -292,7 +292,7 @@ static u16 dib9000_i2c_read16(struct i2c_device *i2c, u16 reg)
 	i2c->i2c_write_buffer[1] = reg & 0xff;
 
 	if (i2c_transfer(i2c->i2c_adap, msg, 2) != 2) {
-;
+		dprintk("read register %x error", reg);
 		return 0;
 	}
 
@@ -480,13 +480,13 @@ static int dib9000_firmware_download(struct dib9000_state *state, u8 risc_id, u1
 	dib9000_write_word(state, 1025 + offs, 0);
 	dib9000_write_word(state, 1031 + offs, key);
 
-;
+	dprintk("going to download %dB of microcode", len);
 	if (dib9000_write16_noinc(state, 1026 + offs, (u8 *) code, (u16) len) != 0) {
-;
+		dprintk("error while downloading microcode for RISC %c", 'A' + risc_id);
 		return -EIO;
 	}
 
-;
+	dprintk("Microcode for RISC %c loaded", 'A' + risc_id);
 
 	return 0;
 }
@@ -512,10 +512,10 @@ static int dib9000_mbx_host_init(struct dib9000_state *state, u8 risc_id)
 	} while ((reset_reg & 0x8000) && --tries);
 
 	if (reset_reg & 0x8000) {
-;
+		dprintk("MBX: init ERROR, no response from RISC %c", 'A' + risc_id);
 		return -EIO;
 	}
-;
+	dprintk("MBX: initialized");
 	return 0;
 }
 
@@ -536,7 +536,7 @@ static int dib9000_mbx_send_attr(struct dib9000_state *state, u8 id, u16 * data,
 	do {
 		size = dib9000_read_word_attr(state, 1043, attr) & 0xff;
 		if ((size + len + 1) > MBX_MAX_WORDS && --tmp) {
-;
+			dprintk("MBX: RISC mbx full, retrying");
 			msleep(100);
 		} else
 			break;
@@ -549,10 +549,10 @@ static int dib9000_mbx_send_attr(struct dib9000_state *state, u8 id, u16 * data,
 		goto out;
 	}
 #ifdef DUMP_MSG
-;
+	dprintk("--> %02x %d ", id, len + 1);
 	for (i = 0; i < len; i++)
-;
-;
+		dprintk("%04x ", data[i]);
+	dprintk("\n");
 #endif
 
 	/* byte-order conversion - works on big (where it is not necessary) or little endian */
@@ -617,13 +617,13 @@ static u8 dib9000_mbx_read(struct dib9000_state *state, u16 * data, u8 risc_id, 
 		}
 
 #ifdef DUMP_MSG
-;
+		dprintk("<-- ");
 		for (i = 0; i < size + 1; i++)
-;
-;
+			dprintk("%04x ", d[i]);
+		dprintk("\n");
 #endif
 	} else {
-;
+		dprintk("MBX: message is too big for message cache (%d), flushing message", size);
 		size--;		/* Initial word already read */
 		while (size--)
 			dib9000_read16_noinc_attr(state, 1029 + mc_base, (u8 *) data, 2, attr);
@@ -644,7 +644,7 @@ static int dib9000_risc_debug_buf(struct dib9000_state *state, u16 * data, u8 si
 	b[2 * (size - 2) - 1] = '\0';	/* Bullet proof the buffer */
 	if (*b == '~') {
 		b++;
-;
+		dprintk(b);
 	} else
 		dprintk("RISC%d: %d.%04d %s", state->fe_id, ts / 10000, ts % 10000, *b ? b : "<emtpy>");
 	return 1;
@@ -681,7 +681,7 @@ static int dib9000_mbx_fetch_to_cache(struct dib9000_state *state, u16 attr)
 			return 1;
 		}
 	}
-;
+	dprintk("MBX: no free cache-slot found for new message...");
 	return -1;
 }
 
@@ -743,7 +743,7 @@ static int dib9000_mbx_get_message_attr(struct dib9000_state *state, u16 id, u16
 	} while (--timeout);
 
 	if (timeout == 0) {
-;
+		dprintk("waiting for message %d timed out", id);
 		return -1;
 	}
 
@@ -763,7 +763,7 @@ static int dib9000_risc_check_version(struct dib9000_state *state)
 		return -EIO;
 
 	fw_version = (r[0] << 8) | r[1];
-;
+	dprintk("RISC: ver: %d.%02d (IC: %d)", fw_version >> 10, fw_version & 0x3ff, (r[2] << 8) | r[3]);
 
 	if ((fw_version >> 10) != 7)
 		return -EINVAL;
@@ -777,11 +777,11 @@ static int dib9000_risc_check_version(struct dib9000_state *state)
 	case 17:
 		break;
 	default:
-;
+		dprintk("RISC: invalid firmware version");
 		return -EINVAL;
 	}
 
-;
+	dprintk("RISC: valid firmware version");
 	return 0;
 }
 
@@ -843,40 +843,40 @@ static u16 dib9000_identify(struct i2c_device *client)
 
 	value = dib9000_i2c_read16(client, 896);
 	if (value != 0x01b3) {
-;
+		dprintk("wrong Vendor ID (0x%x)", value);
 		return 0;
 	}
 
 	value = dib9000_i2c_read16(client, 897);
 	if (value != 0x4000 && value != 0x4001 && value != 0x4002 && value != 0x4003 && value != 0x4004 && value != 0x4005) {
-;
+		dprintk("wrong Device ID (0x%x)", value);
 		return 0;
 	}
 
 	/* protect this driver to be used with 7000PC */
 	if (value == 0x4000 && dib9000_i2c_read16(client, 769) == 0x4000) {
-;
+		dprintk("this driver does not work with DiB7000PC");
 		return 0;
 	}
 
 	switch (value) {
 	case 0x4000:
-;
+		dprintk("found DiB7000MA/PA/MB/PB");
 		break;
 	case 0x4001:
-;
+		dprintk("found DiB7000HC");
 		break;
 	case 0x4002:
-;
+		dprintk("found DiB7000MC");
 		break;
 	case 0x4003:
-;
+		dprintk("found DiB9000A");
 		break;
 	case 0x4004:
-;
+		dprintk("found DiB9000H");
 		break;
 	case 0x4005:
-;
+		dprintk("found DiB9000M");
 		break;
 	}
 
@@ -1123,8 +1123,8 @@ static int dib9000_fw_init(struct dib9000_state *state)
 		return -EIO;
 
 	if (size > ARRAY_SIZE(b)) {
-//		dprintk("error : firmware returned %dbytes needed but the used buffer has only %dbytes\n Firmware init ABORTED", size,
-;
+		dprintk("error : firmware returned %dbytes needed but the used buffer has only %dbytes\n Firmware init ABORTED", size,
+			(int)ARRAY_SIZE(b));
 		return -EINVAL;
 	}
 
@@ -1519,7 +1519,7 @@ static int dib9000_fw_set_output_mode(struct dvb_frontend *fe, int mode)
 	struct dib9000_state *state = fe->demodulator_priv;
 	u16 outreg, smo_mode;
 
-;
+	dprintk("setting output mode for demod %p to %d", fe, mode);
 
 	switch (mode) {
 	case OUTMODE_MPEG2_PAR_GATED_CLK:
@@ -1541,7 +1541,7 @@ static int dib9000_fw_set_output_mode(struct dvb_frontend *fe, int mode)
 		outreg = 0;
 		break;
 	default:
-;
+		dprintk("Unhandled output_mode passed to be set for demod %p", &state->fe[0]);
 		return -EINVAL;
 	}
 
@@ -1575,7 +1575,7 @@ static int dib9000_tuner_xfer(struct i2c_adapter *i2c_adap, struct i2c_msg msg[]
 				len = 16;
 
 			if (dib9000_read_word(state, 790) != 0)
-;
+				dprintk("TunerITF: read busy");
 
 			dib9000_write_word(state, 784, (u16) (msg[index_msg].addr));
 			dib9000_write_word(state, 787, (len / 2) - 1);
@@ -1586,7 +1586,7 @@ static int dib9000_tuner_xfer(struct i2c_adapter *i2c_adap, struct i2c_msg msg[]
 				i--;
 
 			if (i == 0)
-;
+				dprintk("TunerITF: read failed");
 
 			for (i = 0; i < len; i += 2) {
 				t = dib9000_read_word(state, 785);
@@ -1594,13 +1594,13 @@ static int dib9000_tuner_xfer(struct i2c_adapter *i2c_adap, struct i2c_msg msg[]
 				msg[index_msg].buf[i + 1] = (t) & 0xff;
 			}
 			if (dib9000_read_word(state, 790) != 0)
-;
+				dprintk("TunerITF: read more data than expected");
 		} else {
 			i = 1000;
 			while (dib9000_read_word(state, 789) && i)
 				i--;
 			if (i == 0)
-;
+				dprintk("TunerITF: write busy");
 
 			len = msg[index_msg].len;
 			if (len > 16)
@@ -1616,7 +1616,7 @@ static int dib9000_tuner_xfer(struct i2c_adapter *i2c_adap, struct i2c_msg msg[]
 			while (dib9000_read_word(state, 791) > 0 && i)
 				i--;
 			if (i == 0)
-;
+				dprintk("TunerITF: write failed");
 		}
 	}
 	return num;
@@ -1741,7 +1741,7 @@ static int dib9000_cfg_gpio(struct dib9000_state *st, u8 num, u8 dir, u8 val)
 	st->gpio_val |= (val & 0x01) << num;	/* set the new value */
 	dib9000_write_word(st, 774, st->gpio_val);
 
-;
+	dprintk("gpio dir: %04x: gpio val: %04x", st->gpio_dir, st->gpio_val);
 
 	return 0;
 }
@@ -1761,7 +1761,7 @@ int dib9000_fw_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff)
 
 	if ((state->pid_ctrl_index != -2) && (state->pid_ctrl_index < 9)) {
 		/* postpone the pid filtering cmd */
-;
+		dprintk("pid filter cmd postpone");
 		state->pid_ctrl_index++;
 		state->pid_ctrl[state->pid_ctrl_index].cmd = DIB9000_PID_FILTER_CTRL;
 		state->pid_ctrl[state->pid_ctrl_index].onoff = onoff;
@@ -1773,7 +1773,7 @@ int dib9000_fw_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff)
 	val = dib9000_read_word(state, 294 + 1) & 0xffef;
 	val |= (onoff & 0x1) << 4;
 
-;
+	dprintk("PID filter enabled %d", onoff);
 	ret = dib9000_write_word(state, 294 + 1, val);
 	DibReleaseLock(&state->demod_lock);
 	return ret;
@@ -1788,7 +1788,7 @@ int dib9000_fw_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid, u8 onoff)
 
 	if (state->pid_ctrl_index != -2) {
 		/* postpone the pid filtering cmd */
-;
+		dprintk("pid filter postpone");
 		if (state->pid_ctrl_index < 9) {
 			state->pid_ctrl_index++;
 			state->pid_ctrl[state->pid_ctrl_index].cmd = DIB9000_PID_FILTER;
@@ -1796,12 +1796,12 @@ int dib9000_fw_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid, u8 onoff)
 			state->pid_ctrl[state->pid_ctrl_index].pid = pid;
 			state->pid_ctrl[state->pid_ctrl_index].onoff = onoff;
 		} else
-;
+			dprintk("can not add any more pid ctrl cmd");
 		return 0;
 	}
 
 	DibAcquireLock(&state->demod_lock);
-;
+	dprintk("Index %x, PID %d, OnOff %d", id, pid, onoff);
 	ret = dib9000_write_word(state, 300 + 1 + id,
 			onoff ? (1 << 13) | pid : 0);
 	DibReleaseLock(&state->demod_lock);
@@ -1880,7 +1880,7 @@ static int dib9000_get_frontend(struct dvb_frontend *fe, struct dvb_frontend_par
 	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL); index_frontend++) {
 		state->fe[index_frontend]->ops.read_status(state->fe[index_frontend], &stat);
 		if (stat & FE_HAS_SYNC) {
-;
+			dprintk("TPS lock on the slave%i", index_frontend);
 
 			/* synchronize the cache with the other frontends */
 			state->fe[index_frontend]->ops.get_frontend(state->fe[index_frontend], fep);
@@ -1968,12 +1968,12 @@ static int dib9000_set_frontend(struct dvb_frontend *fe, struct dvb_frontend_par
 
 	/* check that the correct parameters are set */
 	if (state->fe[0]->dtv_property_cache.frequency == 0) {
-;
+		dprintk("dib9000: must specify frequency ");
 		return 0;
 	}
 
 	if (state->fe[0]->dtv_property_cache.bandwidth_hz == 0) {
-;
+		dprintk("dib9000: must specify bandwidth ");
 		return 0;
 	}
 
@@ -2041,14 +2041,14 @@ static int dib9000_set_frontend(struct dvb_frontend *fe, struct dvb_frontend_par
 
 	/* check the tune result */
 	if (exit_condition == 1) {	/* tune failed */
-;
+		dprintk("tune failed");
 		DibReleaseLock(&state->demod_lock);
 		/* tune failed; put all the pid filtering cmd to junk */
 		state->pid_ctrl_index = -1;
 		return 0;
 	}
 
-;
+	dprintk("tune success on frontend%i", index_frontend_success);
 
 	/* synchronize all the channel cache */
 	state->get_frontend_internal = 1;
@@ -2309,12 +2309,12 @@ int dib9000_i2c_enumeration(struct i2c_adapter *i2c, int no_of_demods, u8 defaul
 
 	client.i2c_write_buffer = kzalloc(4 * sizeof(u8), GFP_KERNEL);
 	if (!client.i2c_write_buffer) {
-;
+		dprintk("%s: not enough memory", __func__);
 		return -ENOMEM;
 	}
 	client.i2c_read_buffer = kzalloc(4 * sizeof(u8), GFP_KERNEL);
 	if (!client.i2c_read_buffer) {
-;
+		dprintk("%s: not enough memory", __func__);
 		ret = -ENOMEM;
 		goto error_memory;
 	}
@@ -2341,7 +2341,7 @@ int dib9000_i2c_enumeration(struct i2c_adapter *i2c, int no_of_demods, u8 defaul
 		if (dib9000_identify(&client) == 0) {
 			client.i2c_addr = default_addr;
 			if (dib9000_identify(&client) == 0) {
-;
+				dprintk("DiB9000 #%d: not identified", k);
 				ret = -EIO;
 				goto error;
 			}
@@ -2350,7 +2350,7 @@ int dib9000_i2c_enumeration(struct i2c_adapter *i2c, int no_of_demods, u8 defaul
 		dib9000_i2c_write16(&client, 1795, (1 << 10) | (4 << 6));
 		dib9000_i2c_write16(&client, 1794, (new_addr << 2) | 2);
 
-;
+		dprintk("IC %d initialized (to i2c_address 0x%x)", k, new_addr);
 	}
 
 	for (k = 0; k < no_of_demods; k++) {
@@ -2378,12 +2378,12 @@ int dib9000_set_slave_frontend(struct dvb_frontend *fe, struct dvb_frontend *fe_
 	while ((index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL))
 		index_frontend++;
 	if (index_frontend < MAX_NUMBER_OF_FRONTENDS) {
-;
+		dprintk("set slave fe %p to index %i", fe_slave, index_frontend);
 		state->fe[index_frontend] = fe_slave;
 		return 0;
 	}
 
-;
+	dprintk("too many slave frontend");
 	return -ENOMEM;
 }
 EXPORT_SYMBOL(dib9000_set_slave_frontend);
@@ -2396,12 +2396,12 @@ int dib9000_remove_slave_frontend(struct dvb_frontend *fe)
 	while ((index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL))
 		index_frontend++;
 	if (index_frontend != 1) {
-;
+		dprintk("remove slave fe %p (index %i)", state->fe[index_frontend - 1], index_frontend - 1);
 		state->fe[index_frontend] = NULL;
 		return 0;
 	}
 
-;
+	dprintk("no frontend to be removed");
 	return -ENODEV;
 }
 EXPORT_SYMBOL(dib9000_remove_slave_frontend);

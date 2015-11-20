@@ -91,14 +91,14 @@ static int __init h1910_init(void)
 
 	nandaddr = ioremap(0x08000000, 0x1000);
 	if (!nandaddr) {
-;
+		printk("Failed to ioremap nand flash.\n");
 		return -ENOMEM;
 	}
 
 	/* Allocate memory for MTD device structure and private data */
 	h1910_nand_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!h1910_nand_mtd) {
-;
+		printk("Unable to allocate h1910 NAND MTD device structure.\n");
 		iounmap((void *)nandaddr);
 		return -ENOMEM;
 	}
@@ -131,7 +131,7 @@ static int __init h1910_init(void)
 
 	/* Scan to find existence of the device */
 	if (nand_scan(h1910_nand_mtd, 1)) {
-;
+		printk(KERN_NOTICE "No NAND device - returning -ENXIO\n");
 		kfree(h1910_nand_mtd);
 		iounmap((void *)nandaddr);
 		return -ENXIO;
@@ -150,7 +150,7 @@ static int __init h1910_init(void)
 	}
 
 	/* Register the partitions */
-;
+	printk(KERN_NOTICE "Using %s partition definition\n", part_type);
 	mtd_device_register(h1910_nand_mtd, mtd_parts, mtd_parts_nb);
 
 	/* Return happy */

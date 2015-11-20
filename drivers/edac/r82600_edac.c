@@ -25,110 +25,110 @@
 #define R82600_REVISION	" Ver: 2.0.2"
 #define EDAC_MOD_STR	"r82600_edac"
 
-//#define r82600_printk(level, fmt, arg...) \
-//	edac_printk(level, "r82600", fmt, ##arg)
-//
-//#define r82600_mc_printk(mci, level, fmt, arg...) \
-//	edac_mc_chipset_printk(mci, level, "r82600", fmt, ##arg)
-//
-///* Radisys say "The 82600 integrates a main memory SDRAM controller that
-// * supports up to four banks of memory. The four banks can support a mix of
-// * sizes of 64 bit wide (72 bits with ECC) Synchronous DRAM (SDRAM) DIMMs,
-// * each of which can be any size from 16MB to 512MB. Both registered (control
-// * signals buffered) and unbuffered DIMM types are supported. Mixing of
-// * registered and unbuffered DIMMs as well as mixing of ECC and non-ECC DIMMs
-// * is not allowed. The 82600 SDRAM interface operates at the same frequency as
-// * the CPU bus, 66MHz, 100MHz or 133MHz."
-// */
-//
-//#define R82600_NR_CSROWS 4
-//#define R82600_NR_CHANS  1
-//#define R82600_NR_DIMMS  4
-//
-//#define R82600_BRIDGE_ID  0x8200
-//
-///* Radisys 82600 register addresses - device 0 function 0 - PCI bridge */
-//#define R82600_DRAMC	0x57	/* Various SDRAM related control bits
-//				 * all bits are R/W
-//				 *
-//				 * 7    SDRAM ISA Hole Enable
-//				 * 6    Flash Page Mode Enable
-//				 * 5    ECC Enable: 1=ECC 0=noECC
-//				 * 4    DRAM DIMM Type: 1=
-//				 * 3    BIOS Alias Disable
-//				 * 2    SDRAM BIOS Flash Write Enable
-//				 * 1:0  SDRAM Refresh Rate: 00=Disabled
-//				 *          01=7.8usec (256Mbit SDRAMs)
-//				 *          10=15.6us 11=125usec
-//				 */
-//
-//#define R82600_SDRAMC	0x76	/* "SDRAM Control Register"
-//				 * More SDRAM related control bits
-//				 * all bits are R/W
-//				 *
-//				 * 15:8 Reserved.
-//				 *
-//				 * 7:5  Special SDRAM Mode Select
-//				 *
-//				 * 4    Force ECC
-//				 *
-//				 *        1=Drive ECC bits to 0 during
-//				 *          write cycles (i.e. ECC test mode)
-//				 *
-//				 *        0=Normal ECC functioning
-//				 *
-//				 * 3    Enhanced Paging Enable
-//				 *
-//				 * 2    CAS# Latency 0=3clks 1=2clks
-//				 *
-//				 * 1    RAS# to CAS# Delay 0=3 1=2
-//				 *
-//				 * 0    RAS# Precharge     0=3 1=2
-//				 */
-//
-//#define R82600_EAP	0x80	/* ECC Error Address Pointer Register
-//				 *
-//				 * 31    Disable Hardware Scrubbing (RW)
-//				 *        0=Scrub on corrected read
-//				 *        1=Don't scrub on corrected read
-//				 *
-//				 * 30:12 Error Address Pointer (RO)
-//				 *        Upper 19 bits of error address
-//				 *
-//				 * 11:4  Syndrome Bits (RO)
-//				 *
-//				 * 3     BSERR# on multibit error (RW)
-//				 *        1=enable 0=disable
-//				 *
-//				 * 2     NMI on Single Bit Eror (RW)
-//				 *        1=NMI triggered by SBE n.b. other
-//				 *          prerequeists
-//				 *        0=NMI not triggered
-//				 *
-//				 * 1     MBE (R/WC)
-//				 *        read 1=MBE at EAP (see above)
-//				 *        read 0=no MBE, or SBE occurred first
-//				 *        write 1=Clear MBE status (must also
-//				 *          clear SBE)
-//				 *        write 0=NOP
-//				 *
-//				 * 1     SBE (R/WC)
-//				 *        read 1=SBE at EAP (see above)
-//				 *        read 0=no SBE, or MBE occurred first
-//				 *        write 1=Clear SBE status (must also
-//				 *          clear MBE)
-//				 *        write 0=NOP
-//				 */
-//
-//#define R82600_DRBA	0x60	/* + 0x60..0x63 SDRAM Row Boundary Address
-//				 *  Registers
-//				 *
-//				 * 7:0  Address lines 30:24 - upper limit of
-//				 * each row [p57]
-//				 */
-//
-//struct r82600_error_info {
-;
+#define r82600_printk(level, fmt, arg...) \
+	edac_printk(level, "r82600", fmt, ##arg)
+
+#define r82600_mc_printk(mci, level, fmt, arg...) \
+	edac_mc_chipset_printk(mci, level, "r82600", fmt, ##arg)
+
+/* Radisys say "The 82600 integrates a main memory SDRAM controller that
+ * supports up to four banks of memory. The four banks can support a mix of
+ * sizes of 64 bit wide (72 bits with ECC) Synchronous DRAM (SDRAM) DIMMs,
+ * each of which can be any size from 16MB to 512MB. Both registered (control
+ * signals buffered) and unbuffered DIMM types are supported. Mixing of
+ * registered and unbuffered DIMMs as well as mixing of ECC and non-ECC DIMMs
+ * is not allowed. The 82600 SDRAM interface operates at the same frequency as
+ * the CPU bus, 66MHz, 100MHz or 133MHz."
+ */
+
+#define R82600_NR_CSROWS 4
+#define R82600_NR_CHANS  1
+#define R82600_NR_DIMMS  4
+
+#define R82600_BRIDGE_ID  0x8200
+
+/* Radisys 82600 register addresses - device 0 function 0 - PCI bridge */
+#define R82600_DRAMC	0x57	/* Various SDRAM related control bits
+				 * all bits are R/W
+				 *
+				 * 7    SDRAM ISA Hole Enable
+				 * 6    Flash Page Mode Enable
+				 * 5    ECC Enable: 1=ECC 0=noECC
+				 * 4    DRAM DIMM Type: 1=
+				 * 3    BIOS Alias Disable
+				 * 2    SDRAM BIOS Flash Write Enable
+				 * 1:0  SDRAM Refresh Rate: 00=Disabled
+				 *          01=7.8usec (256Mbit SDRAMs)
+				 *          10=15.6us 11=125usec
+				 */
+
+#define R82600_SDRAMC	0x76	/* "SDRAM Control Register"
+				 * More SDRAM related control bits
+				 * all bits are R/W
+				 *
+				 * 15:8 Reserved.
+				 *
+				 * 7:5  Special SDRAM Mode Select
+				 *
+				 * 4    Force ECC
+				 *
+				 *        1=Drive ECC bits to 0 during
+				 *          write cycles (i.e. ECC test mode)
+				 *
+				 *        0=Normal ECC functioning
+				 *
+				 * 3    Enhanced Paging Enable
+				 *
+				 * 2    CAS# Latency 0=3clks 1=2clks
+				 *
+				 * 1    RAS# to CAS# Delay 0=3 1=2
+				 *
+				 * 0    RAS# Precharge     0=3 1=2
+				 */
+
+#define R82600_EAP	0x80	/* ECC Error Address Pointer Register
+				 *
+				 * 31    Disable Hardware Scrubbing (RW)
+				 *        0=Scrub on corrected read
+				 *        1=Don't scrub on corrected read
+				 *
+				 * 30:12 Error Address Pointer (RO)
+				 *        Upper 19 bits of error address
+				 *
+				 * 11:4  Syndrome Bits (RO)
+				 *
+				 * 3     BSERR# on multibit error (RW)
+				 *        1=enable 0=disable
+				 *
+				 * 2     NMI on Single Bit Eror (RW)
+				 *        1=NMI triggered by SBE n.b. other
+				 *          prerequeists
+				 *        0=NMI not triggered
+				 *
+				 * 1     MBE (R/WC)
+				 *        read 1=MBE at EAP (see above)
+				 *        read 0=no MBE, or SBE occurred first
+				 *        write 1=Clear MBE status (must also
+				 *          clear SBE)
+				 *        write 0=NOP
+				 *
+				 * 1     SBE (R/WC)
+				 *        read 1=SBE at EAP (see above)
+				 *        read 0=no SBE, or MBE occurred first
+				 *        write 1=Clear SBE status (must also
+				 *          clear MBE)
+				 *        write 0=NOP
+				 */
+
+#define R82600_DRBA	0x60	/* + 0x60..0x63 SDRAM Row Boundary Address
+				 *  Registers
+				 *
+				 * 7:0  Address lines 30:24 - upper limit of
+				 * each row [p57]
+				 */
+
+struct r82600_error_info {
+	u32 eapr;
 };
 
 static unsigned int disable_hardware_scrub;
@@ -332,12 +332,12 @@ static int r82600_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	r82600_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!r82600_pci) {
-//		printk(KERN_WARNING
-//			"%s(): Unable to create PCI control\n",
-;
-//		printk(KERN_WARNING
-//			"%s(): PCI error report via EDAC not setup\n",
-;
+		printk(KERN_WARNING
+			"%s(): Unable to create PCI control\n",
+			__func__);
+		printk(KERN_WARNING
+			"%s(): PCI error report via EDAC not setup\n",
+			__func__);
 	}
 
 	debugf3("%s(): success\n", __func__);

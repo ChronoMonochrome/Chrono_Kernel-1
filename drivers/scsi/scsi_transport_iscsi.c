@@ -57,17 +57,17 @@ MODULE_PARM_DESC(debug_conn,
 #define ISCSI_DBG_TRANS_SESSION(_session, dbg_fmt, arg...)		\
 	do {								\
 		if (dbg_session)					\
-//			iscsi_cls_session_printk(KERN_INFO, _session,	\
-//						 "%s: " dbg_fmt,	\
-;
+			iscsi_cls_session_printk(KERN_INFO, _session,	\
+						 "%s: " dbg_fmt,	\
+						 __func__, ##arg);	\
 	} while (0);
 
 #define ISCSI_DBG_TRANS_CONN(_conn, dbg_fmt, arg...)			\
 	do {								\
 		if (dbg_conn)						\
-//			iscsi_cls_conn_printk(KERN_INFO, _conn,		\
-//					      "%s: " dbg_fmt,		\
-;
+			iscsi_cls_conn_printk(KERN_INFO, _conn,		\
+					      "%s: " dbg_fmt,		\
+					      __func__, ##arg);	\
 	} while (0);
 
 struct iscsi_internal {
@@ -209,8 +209,8 @@ iscsi_create_endpoint(int dd_size)
 			break;
 	}
 	if (id == ISCSI_MAX_EPID) {
-//		printk(KERN_ERR "Too many connections. Max supported %u\n",
-;
+		printk(KERN_ERR "Too many connections. Max supported %u\n",
+		       ISCSI_MAX_EPID - 1);
 		return NULL;
 	}
 
@@ -573,9 +573,9 @@ static void session_recovery_timedout(struct work_struct *work)
 			     recovery_work.work);
 	unsigned long flags;
 
-//	iscsi_cls_session_printk(KERN_INFO, session,
-//				 "session recovery timed out after %d secs\n",
-;
+	iscsi_cls_session_printk(KERN_INFO, session,
+				 "session recovery timed out after %d secs\n",
+				 session->recovery_tmo);
 
 	spin_lock_irqsave(&session->lock, flags);
 	switch (session->state) {
@@ -772,10 +772,10 @@ int iscsi_add_session(struct iscsi_cls_session *session, unsigned int target_id)
 		}
 
 		if (id == ISCSI_MAX_TARGET) {
-//			iscsi_cls_session_printk(KERN_ERR, session,
-//						 "Too many iscsi targets. Max "
-//						 "number of targets is %d.\n",
-;
+			iscsi_cls_session_printk(KERN_ERR, session,
+						 "Too many iscsi targets. Max "
+						 "number of targets is %d.\n",
+						 ISCSI_MAX_TARGET - 1);
 			err = -EOVERFLOW;
 			goto release_host;
 		}
@@ -785,8 +785,8 @@ int iscsi_add_session(struct iscsi_cls_session *session, unsigned int target_id)
 	dev_set_name(&session->dev, "session%u", session->sid);
 	err = device_add(&session->dev);
 	if (err) {
-//		iscsi_cls_session_printk(KERN_ERR, session,
-;
+		iscsi_cls_session_printk(KERN_ERR, session,
+					 "could not register session's dev\n");
 		goto release_host;
 	}
 	transport_register_device(&session->dev);
@@ -890,9 +890,9 @@ void iscsi_remove_session(struct iscsi_cls_session *session)
 	err = device_for_each_child(&session->dev, NULL,
 				    iscsi_iter_destroy_conn_fn);
 	if (err)
-//		iscsi_cls_session_printk(KERN_ERR, session,
-//					 "Could not delete all connections "
-;
+		iscsi_cls_session_printk(KERN_ERR, session,
+					 "Could not delete all connections "
+					 "for session. Error %d.\n", err);
 
 	transport_unregister_device(&session->dev);
 
@@ -968,8 +968,8 @@ iscsi_create_conn(struct iscsi_cls_session *session, int dd_size, uint32_t cid)
 	conn->dev.release = iscsi_conn_release;
 	err = device_register(&conn->dev);
 	if (err) {
-//		iscsi_cls_session_printk(KERN_ERR, session, "could not "
-;
+		iscsi_cls_session_printk(KERN_ERR, session, "could not "
+					 "register connection's dev\n");
 		goto release_parent_ref;
 	}
 	transport_register_device(&conn->dev);
@@ -1055,8 +1055,8 @@ int iscsi_recv_pdu(struct iscsi_cls_conn *conn, struct iscsi_hdr *hdr,
 	skb = alloc_skb(len, GFP_ATOMIC);
 	if (!skb) {
 		iscsi_conn_error_event(conn, ISCSI_ERR_CONN_FAILED);
-//		iscsi_cls_conn_printk(KERN_ERR, conn, "can not deliver "
-;
+		iscsi_cls_conn_printk(KERN_ERR, conn, "can not deliver "
+				      "control PDU: OOM\n");
 		return -ENOMEM;
 	}
 
@@ -1086,7 +1086,7 @@ int iscsi_offload_mesg(struct Scsi_Host *shost,
 
 	skb = alloc_skb(len, GFP_ATOMIC);
 	if (!skb) {
-;
+		printk(KERN_ERR "can not deliver iscsi offload message:OOM\n");
 		return -ENOMEM;
 	}
 
@@ -1124,8 +1124,8 @@ void iscsi_conn_error_event(struct iscsi_cls_conn *conn, enum iscsi_err error)
 
 	skb = alloc_skb(len, GFP_ATOMIC);
 	if (!skb) {
-//		iscsi_cls_conn_printk(KERN_ERR, conn, "gracefully ignored "
-;
+		iscsi_cls_conn_printk(KERN_ERR, conn, "gracefully ignored "
+				      "conn error (%d)\n", error);
 		return;
 	}
 
@@ -1139,8 +1139,8 @@ void iscsi_conn_error_event(struct iscsi_cls_conn *conn, enum iscsi_err error)
 
 	iscsi_multicast_skb(skb, ISCSI_NL_GRP_ISCSID, GFP_ATOMIC);
 
-//	iscsi_cls_conn_printk(KERN_INFO, conn, "detected conn error (%d)\n",
-;
+	iscsi_cls_conn_printk(KERN_INFO, conn, "detected conn error (%d)\n",
+			      error);
 }
 EXPORT_SYMBOL_GPL(iscsi_conn_error_event);
 
@@ -1156,7 +1156,7 @@ iscsi_if_send_reply(uint32_t group, int seq, int type, int done, int multi,
 
 	skb = alloc_skb(len, GFP_ATOMIC);
 	if (!skb) {
-;
+		printk(KERN_ERR "Could not allocate skb to send reply.\n");
 		return -ENOMEM;
 	}
 
@@ -1195,8 +1195,8 @@ iscsi_if_get_stats(struct iscsi_transport *transport, struct nlmsghdr *nlh)
 
 		skbstat = alloc_skb(len, GFP_ATOMIC);
 		if (!skbstat) {
-//			iscsi_cls_conn_printk(KERN_ERR, conn, "can not "
-;
+			iscsi_cls_conn_printk(KERN_ERR, conn, "can not "
+					      "deliver stats: OOM\n");
 			return -ENOMEM;
 		}
 
@@ -1253,9 +1253,9 @@ int iscsi_session_event(struct iscsi_cls_session *session,
 
 	skb = alloc_skb(len, GFP_KERNEL);
 	if (!skb) {
-//		iscsi_cls_session_printk(KERN_ERR, session,
-//					 "Cannot notify userspace of session "
-;
+		iscsi_cls_session_printk(KERN_ERR, session,
+					 "Cannot notify userspace of session "
+					 "event %u\n", event);
 		return -ENOMEM;
 	}
 
@@ -1278,8 +1278,8 @@ int iscsi_session_event(struct iscsi_cls_session *session,
 		ev->r.unbind_session.sid = session->sid;
 		break;
 	default:
-//		iscsi_cls_session_printk(KERN_ERR, session, "Invalid event "
-;
+		iscsi_cls_session_printk(KERN_ERR, session, "Invalid event "
+					 "%u.\n", event);
 		kfree_skb(skb);
 		return -EINVAL;
 	}
@@ -1290,10 +1290,10 @@ int iscsi_session_event(struct iscsi_cls_session *session,
 	 */
 	rc = iscsi_multicast_skb(skb, ISCSI_NL_GRP_ISCSID, GFP_KERNEL);
 	if (rc == -ESRCH)
-//		iscsi_cls_session_printk(KERN_ERR, session,
-//					 "Cannot notify userspace of session "
-//					 "event %u. Check iscsi daemon\n",
-;
+		iscsi_cls_session_printk(KERN_ERR, session,
+					 "Cannot notify userspace of session "
+					 "event %u. Check iscsi daemon\n",
+					 event);
 
 	ISCSI_DBG_TRANS_SESSION(session, "Completed handling event %d rc %d\n",
 				event, rc);
@@ -1331,15 +1331,15 @@ iscsi_if_create_conn(struct iscsi_transport *transport, struct iscsi_uevent *ev)
 
 	session = iscsi_session_lookup(ev->u.c_conn.sid);
 	if (!session) {
-//		printk(KERN_ERR "iscsi: invalid session %d.\n",
-;
+		printk(KERN_ERR "iscsi: invalid session %d.\n",
+		       ev->u.c_conn.sid);
 		return -EINVAL;
 	}
 
 	conn = transport->create_conn(session, ev->u.c_conn.cid);
 	if (!conn) {
-//		iscsi_cls_session_printk(KERN_ERR, session,
-;
+		iscsi_cls_session_printk(KERN_ERR, session,
+					 "couldn't create a new connection.");
 		return -ENOMEM;
 	}
 
@@ -1406,9 +1406,9 @@ static int iscsi_if_ep_connect(struct iscsi_transport *transport,
 	if (msg_type == ISCSI_UEVENT_TRANSPORT_EP_CONNECT_THROUGH_HOST) {
 		shost = scsi_host_lookup(ev->u.ep_connect_through_host.host_no);
 		if (!shost) {
-//			printk(KERN_ERR "ep connect failed. Could not find "
-//			       "host no %u\n",
-;
+			printk(KERN_ERR "ep connect failed. Could not find "
+			       "host no %u\n",
+			       ev->u.ep_connect_through_host.host_no);
 			return -ENODEV;
 		}
 		non_blocking = ev->u.ep_connect_through_host.non_blocking;
@@ -1496,8 +1496,8 @@ iscsi_tgt_dscvr(struct iscsi_transport *transport,
 
 	shost = scsi_host_lookup(ev->u.tgt_dscvr.host_no);
 	if (!shost) {
-//		printk(KERN_ERR "target discovery could not find host no %u\n",
-;
+		printk(KERN_ERR "target discovery could not find host no %u\n",
+		       ev->u.tgt_dscvr.host_no);
 		return -ENODEV;
 	}
 
@@ -1522,8 +1522,8 @@ iscsi_set_host_param(struct iscsi_transport *transport,
 
 	shost = scsi_host_lookup(ev->u.set_host_param.host_no);
 	if (!shost) {
-//		printk(KERN_ERR "set_host_param could not find host no %u\n",
-;
+		printk(KERN_ERR "set_host_param could not find host no %u\n",
+		       ev->u.set_host_param.host_no);
 		return -ENODEV;
 	}
 
@@ -1545,8 +1545,8 @@ iscsi_set_path(struct iscsi_transport *transport, struct iscsi_uevent *ev)
 
 	shost = scsi_host_lookup(ev->u.set_path.host_no);
 	if (!shost) {
-//		printk(KERN_ERR "set path could not find host no %u\n",
-;
+		printk(KERN_ERR "set path could not find host no %u\n",
+		       ev->u.set_path.host_no);
 		return -ENODEV;
 	}
 
@@ -1647,9 +1647,9 @@ iscsi_if_recv_msg(struct sk_buff *skb, struct nlmsghdr *nlh, uint32_t *group)
 			conn->ep = ep;
 			mutex_unlock(&conn->ep_mutex);
 		} else
-//			iscsi_cls_conn_printk(KERN_ERR, conn,
-//					      "Could not set ep conn "
-;
+			iscsi_cls_conn_printk(KERN_ERR, conn,
+					      "Could not set ep conn "
+					      "binding\n");
 		break;
 	case ISCSI_UEVENT_SET_PARAM:
 		err = iscsi_set_param(transport, ev);
@@ -2153,7 +2153,7 @@ iscsi_register_transport(struct iscsi_transport *tt)
 	list_add(&priv->list, &iscsi_transports);
 	spin_unlock_irqrestore(&iscsi_transport_lock, flags);
 
-;
+	printk(KERN_NOTICE "iscsi: registered transport (%s)\n", tt->name);
 	return &priv->t;
 
 unregister_dev:
@@ -2197,8 +2197,8 @@ static __init int iscsi_transport_init(void)
 {
 	int err;
 
-//	printk(KERN_INFO "Loading iSCSI transport class v%s.\n",
-;
+	printk(KERN_INFO "Loading iSCSI transport class v%s.\n",
+		ISCSI_TRANSPORT_VERSION);
 
 	atomic_set(&iscsi_session_nr, 0);
 

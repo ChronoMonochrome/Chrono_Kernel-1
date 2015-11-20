@@ -1202,8 +1202,8 @@ int ipmi_set_gets_events(ipmi_user_t user, int val)
 			list_move_tail(&msg->link, &msgs);
 		intf->waiting_events_count = 0;
 		if (intf->event_msg_printed) {
-//			printk(KERN_WARNING PFX "Event queue no longer"
-;
+			printk(KERN_WARNING PFX "Event queue no longer"
+			       " full\n");
 			intf->event_msg_printed = 0;
 		}
 
@@ -1803,8 +1803,8 @@ static int i_ipmi_request(ipmi_user_t          user,
 	{
 		int m;
 		for (m = 0; m < smi_msg->data_size; m++)
-;
-;
+			printk(" %2.2x", smi_msg->data[m]);
+		printk("\n");
 	}
 #endif
 
@@ -2483,12 +2483,12 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 		kref_get(&bmc->refcount);
 		mutex_unlock(&ipmidriver_mutex);
 
-//		printk(KERN_INFO
-//		       "ipmi: interfacing existing BMC (man_id: 0x%6.6x,"
-//		       " prod_id: 0x%4.4x, dev_id: 0x%2.2x)\n",
-//		       bmc->id.manufacturer_id,
-//		       bmc->id.product_id,
-;
+		printk(KERN_INFO
+		       "ipmi: interfacing existing BMC (man_id: 0x%6.6x,"
+		       " prod_id: 0x%4.4x, dev_id: 0x%2.2x)\n",
+		       bmc->id.manufacturer_id,
+		       bmc->id.product_id,
+		       bmc->id.device_id);
 	} else {
 		char name[14];
 		unsigned char orig_dev_id = bmc->id.device_id;
@@ -2501,20 +2501,20 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 						 bmc->id.product_id,
 						 bmc->id.device_id)) {
 			if (!warn_printed) {
-//				printk(KERN_WARNING PFX
-//				       "This machine has two different BMCs"
-//				       " with the same product id and device"
-//				       " id.  This is an error in the"
-//				       " firmware, but incrementing the"
-//				       " device id to work around the problem."
-//				       " Prod ID = 0x%x, Dev ID = 0x%x\n",
-;
+				printk(KERN_WARNING PFX
+				       "This machine has two different BMCs"
+				       " with the same product id and device"
+				       " id.  This is an error in the"
+				       " firmware, but incrementing the"
+				       " device id to work around the problem."
+				       " Prod ID = 0x%x, Dev ID = 0x%x\n",
+				       bmc->id.product_id, bmc->id.device_id);
 				warn_printed = 1;
 			}
 			bmc->id.device_id++; /* Wraps at 255 */
 			if (bmc->id.device_id == orig_dev_id) {
-//				printk(KERN_ERR PFX
-;
+				printk(KERN_ERR PFX
+				       "Out of device ids!\n");
 				break;
 			}
 		}
@@ -2522,9 +2522,9 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 		bmc->dev = platform_device_alloc(name, bmc->id.device_id);
 		if (!bmc->dev) {
 			mutex_unlock(&ipmidriver_mutex);
-//			printk(KERN_ERR
-//			       "ipmi_msghandler:"
-;
+			printk(KERN_ERR
+			       "ipmi_msghandler:"
+			       " Unable to allocate platform device\n");
 			return -ENOMEM;
 		}
 		bmc->dev->dev.driver = &ipmidriver.driver;
@@ -2536,10 +2536,10 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 		if (rv) {
 			platform_device_put(bmc->dev);
 			bmc->dev = NULL;
-//			printk(KERN_ERR
-//			       "ipmi_msghandler:"
-//			       " Unable to register bmc device: %d\n",
-;
+			printk(KERN_ERR
+			       "ipmi_msghandler:"
+			       " Unable to register bmc device: %d\n",
+			       rv);
 			/*
 			 * Don't go to out_err, you can only do that if
 			 * the device is registered already.
@@ -2570,9 +2570,9 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 	intf->sysfs_name = kstrdup(sysfs_name, GFP_KERNEL);
 	if (!intf->sysfs_name) {
 		rv = -ENOMEM;
-//		printk(KERN_ERR
-//		       "ipmi_msghandler: allocate link to BMC: %d\n",
-;
+		printk(KERN_ERR
+		       "ipmi_msghandler: allocate link to BMC: %d\n",
+		       rv);
 		goto out_err;
 	}
 
@@ -2581,9 +2581,9 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 	if (rv) {
 		kfree(intf->sysfs_name);
 		intf->sysfs_name = NULL;
-//		printk(KERN_ERR
-//		       "ipmi_msghandler: Unable to create bmc symlink: %d\n",
-;
+		printk(KERN_ERR
+		       "ipmi_msghandler: Unable to create bmc symlink: %d\n",
+		       rv);
 		goto out_err;
 	}
 
@@ -2593,9 +2593,9 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 		kfree(intf->sysfs_name);
 		intf->sysfs_name = NULL;
 		rv = -ENOMEM;
-//		printk(KERN_ERR
-//		       "ipmi_msghandler: allocate link from BMC: %d\n",
-;
+		printk(KERN_ERR
+		       "ipmi_msghandler: allocate link from BMC: %d\n",
+		       rv);
 		goto out_err;
 	}
 	snprintf(intf->my_dev_name, size+1, "ipmi%d", ifnum);
@@ -2607,10 +2607,10 @@ static int ipmi_bmc_register(ipmi_smi_t intf, int ifnum,
 		intf->sysfs_name = NULL;
 		kfree(intf->my_dev_name);
 		intf->my_dev_name = NULL;
-//		printk(KERN_ERR
-//		       "ipmi_msghandler:"
-//		       " Unable to create symlink to bmc: %d\n",
-;
+		printk(KERN_ERR
+		       "ipmi_msghandler:"
+		       " Unable to create symlink to bmc: %d\n",
+		       rv);
 		goto out_err;
 	}
 
@@ -2666,11 +2666,11 @@ guid_handler(ipmi_smi_t intf, struct ipmi_recv_msg *msg)
 
 	if (msg->msg.data_len < 17) {
 		intf->bmc->guid_set = 0;
-//		printk(KERN_WARNING PFX
-//		       "guid_handler: The GUID response from the BMC was too"
-//		       " short, it was %d but should have been 17.  Assuming"
-//		       " GUID is not available.\n",
-;
+		printk(KERN_WARNING PFX
+		       "guid_handler: The GUID response from the BMC was too"
+		       " short, it was %d but should have been 17.  Assuming"
+		       " GUID is not available.\n",
+		       msg->msg.data_len);
 		goto out;
 	}
 
@@ -2777,9 +2777,9 @@ channel_handler(ipmi_smi_t intf, struct ipmi_recv_msg *msg)
 			intf->curr_channel = IPMI_MAX_CHANNELS;
 			wake_up(&intf->waitq);
 
-//			printk(KERN_WARNING PFX
-//			       "Error sending channel information: %d\n",
-;
+			printk(KERN_WARNING PFX
+			       "Error sending channel information: %d\n",
+			       rv);
 		}
 	}
  out:
@@ -3120,10 +3120,10 @@ static int handle_ipmb_get_msg_cmd(ipmi_smi_t          intf,
 #ifdef DEBUG_MSGING
 	{
 		int m;
-;
+		printk("Invalid command:");
 		for (m = 0; m < msg->data_size; m++)
-;
-;
+			printk(" %2.2x", msg->data[m]);
+		printk("\n");
 	}
 #endif
 		rcu_read_lock();
@@ -3564,8 +3564,8 @@ static int handle_read_event_rsp(ipmi_smi_t          intf,
 		 * There's too many things in the queue, discard this
 		 * message.
 		 */
-//		printk(KERN_WARNING PFX "Event queue full, discarding"
-;
+		printk(KERN_WARNING PFX "Event queue full, discarding"
+		       " incoming events\n");
 		intf->event_msg_printed = 1;
 	}
 
@@ -3583,11 +3583,11 @@ static int handle_bmc_rsp(ipmi_smi_t          intf,
 
 	recv_msg = (struct ipmi_recv_msg *) msg->user_data;
 	if (recv_msg == NULL) {
-//		printk(KERN_WARNING
-//		       "IPMI message received with no owner. This\n"
-//		       "could be because of a malformed message, or\n"
-//		       "because of a hardware error.  Contact your\n"
-;
+		printk(KERN_WARNING
+		       "IPMI message received with no owner. This\n"
+		       "could be because of a malformed message, or\n"
+		       "because of a hardware error.  Contact your\n"
+		       "hardware vender for assistance\n");
 		return 0;
 	}
 
@@ -3634,16 +3634,16 @@ static int handle_new_recv_msg(ipmi_smi_t          intf,
 
 #ifdef DEBUG_MSGING
 	int m;
-;
+	printk("Recv:");
 	for (m = 0; m < msg->rsp_size; m++)
-;
-;
+		printk(" %2.2x", msg->rsp[m]);
+	printk("\n");
 #endif
 	if (msg->rsp_size < 2) {
 		/* Message is too small to be correct. */
-//		printk(KERN_WARNING PFX "BMC returned to small a message"
-//		       " for netfn %x cmd %x, got %d bytes\n",
-;
+		printk(KERN_WARNING PFX "BMC returned to small a message"
+		       " for netfn %x cmd %x, got %d bytes\n",
+		       (msg->data[0] >> 2) | 1, msg->data[1], msg->rsp_size);
 
 		/* Generate an error response for the message. */
 		msg->rsp[0] = msg->data[0] | (1 << 2);
@@ -3656,10 +3656,10 @@ static int handle_new_recv_msg(ipmi_smi_t          intf,
 		 * The NetFN and Command in the response is not even
 		 * marginally correct.
 		 */
-//		printk(KERN_WARNING PFX "BMC returned incorrect response,"
-//		       " expected netfn %x cmd %x, got netfn %x cmd %x\n",
-//		       (msg->data[0] >> 2) | 1, msg->data[1],
-;
+		printk(KERN_WARNING PFX "BMC returned incorrect response,"
+		       " expected netfn %x cmd %x, got netfn %x cmd %x\n",
+		       (msg->data[0] >> 2) | 1, msg->data[1],
+		       msg->rsp[0] >> 2, msg->rsp[1]);
 
 		/* Generate an error response for the message. */
 		msg->rsp[0] = msg->data[0] | (1 << 2);
@@ -3907,10 +3907,10 @@ smi_from_recv_msg(ipmi_smi_t intf, struct ipmi_recv_msg *recv_msg,
 #ifdef DEBUG_MSGING
 	{
 		int m;
-;
+		printk("Resend: ");
 		for (m = 0; m < smi_msg->data_size; m++)
-;
-;
+			printk(" %2.2x", smi_msg->data[m]);
+		printk("\n");
 	}
 #endif
 	return smi_msg;
@@ -4467,17 +4467,17 @@ static int ipmi_init_msghandler(void)
 
 	rv = driver_register(&ipmidriver.driver);
 	if (rv) {
-;
+		printk(KERN_ERR PFX "Could not register IPMI driver\n");
 		return rv;
 	}
 
-//	printk(KERN_INFO "ipmi message handler version "
-;
+	printk(KERN_INFO "ipmi message handler version "
+	       IPMI_DRIVER_VERSION "\n");
 
 #ifdef CONFIG_PROC_FS
 	proc_ipmi_root = proc_mkdir("ipmi", NULL);
 	if (!proc_ipmi_root) {
-;
+	    printk(KERN_ERR PFX "Unable to create IPMI proc dir");
 	    return -ENOMEM;
 	}
 
@@ -4532,12 +4532,12 @@ static void __exit cleanup_ipmi(void)
 	/* Check for buffer leaks. */
 	count = atomic_read(&smi_msg_inuse_count);
 	if (count != 0)
-//		printk(KERN_WARNING PFX "SMI message count %d at exit\n",
-;
+		printk(KERN_WARNING PFX "SMI message count %d at exit\n",
+		       count);
 	count = atomic_read(&recv_msg_inuse_count);
 	if (count != 0)
-//		printk(KERN_WARNING PFX "recv message count %d at exit\n",
-;
+		printk(KERN_WARNING PFX "recv message count %d at exit\n",
+		       count);
 }
 module_exit(cleanup_ipmi);
 

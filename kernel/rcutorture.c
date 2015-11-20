@@ -74,9 +74,9 @@ MODULE_PARM_DESC(nreaders, "Number of RCU reader threads");
 module_param(nfakewriters, int, 0444);
 MODULE_PARM_DESC(nfakewriters, "Number of RCU fake writer threads");
 module_param(stat_interval, int, 0644);
-;
+MODULE_PARM_DESC(stat_interval, "Number of seconds between stats printk()s");
 module_param(verbose, bool, 0444);
-;
+MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
 module_param(test_no_idle_hz, bool, 0444);
 MODULE_PARM_DESC(test_no_idle_hz, "Test support for tickless idle CPUs");
 module_param(shuffle_interval, int, 0444);
@@ -102,11 +102,11 @@ MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, srcu)");
 
 #define TORTURE_FLAG "-torture:"
 #define PRINTK_STRING(s) \
-;
+	do { printk(KERN_ALERT "%s" TORTURE_FLAG s "\n", torture_type); } while (0)
 #define VERBOSE_PRINTK_STRING(s) \
-;
+	do { if (verbose) printk(KERN_ALERT "%s" TORTURE_FLAG s "\n", torture_type); } while (0)
 #define VERBOSE_PRINTK_ERRSTRING(s) \
-;
+	do { if (verbose) printk(KERN_ALERT "%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
 
 static char printk_buf[4096];
 
@@ -206,9 +206,9 @@ rcutorture_shutdown_notify(struct notifier_block *unused1,
 static void rcutorture_shutdown_absorb(char *title)
 {
 	if (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
-//		printk(KERN_NOTICE
-//		       "rcutorture thread %s parking due to system shutdown\n",
-;
+		printk(KERN_NOTICE
+		       "rcutorture thread %s parking due to system shutdown\n",
+		       title);
 		schedule_timeout_uninterruptible(MAX_SCHEDULE_TIMEOUT);
 	}
 }
@@ -1132,8 +1132,8 @@ rcu_torture_stats_print(void)
 {
 	int cnt;
 
-;
-;
+	cnt = rcu_torture_printk(printk_buf);
+	printk(KERN_ALERT "%s", printk_buf);
 }
 
 /*
@@ -1246,18 +1246,18 @@ rcu_torture_stutter(void *arg)
 static inline void
 rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
 {
-//	printk(KERN_ALERT "%s" TORTURE_FLAG
-//		"--- %s: nreaders=%d nfakewriters=%d "
-//		"stat_interval=%d verbose=%d test_no_idle_hz=%d "
-//		"shuffle_interval=%d stutter=%d irqreader=%d "
-//		"fqs_duration=%d fqs_holdoff=%d fqs_stutter=%d "
-//		"test_boost=%d/%d test_boost_interval=%d "
-//		"test_boost_duration=%d\n",
-//		torture_type, tag, nrealreaders, nfakewriters,
-//		stat_interval, verbose, test_no_idle_hz, shuffle_interval,
-//		stutter, irqreader, fqs_duration, fqs_holdoff, fqs_stutter,
-//		test_boost, cur_ops->can_boost,
-;
+	printk(KERN_ALERT "%s" TORTURE_FLAG
+		"--- %s: nreaders=%d nfakewriters=%d "
+		"stat_interval=%d verbose=%d test_no_idle_hz=%d "
+		"shuffle_interval=%d stutter=%d irqreader=%d "
+		"fqs_duration=%d fqs_holdoff=%d fqs_stutter=%d "
+		"test_boost=%d/%d test_boost_interval=%d "
+		"test_boost_duration=%d\n",
+		torture_type, tag, nrealreaders, nfakewriters,
+		stat_interval, verbose, test_no_idle_hz, shuffle_interval,
+		stutter, irqreader, fqs_duration, fqs_holdoff, fqs_stutter,
+		test_boost, cur_ops->can_boost,
+		test_boost_interval, test_boost_duration);
 }
 
 static struct notifier_block rcutorture_shutdown_nb = {
@@ -1448,18 +1448,18 @@ rcu_torture_init(void)
 			break;
 	}
 	if (i == ARRAY_SIZE(torture_ops)) {
-//		printk(KERN_ALERT "rcu-torture: invalid torture type: \"%s\"\n",
-;
-;
+		printk(KERN_ALERT "rcu-torture: invalid torture type: \"%s\"\n",
+		       torture_type);
+		printk(KERN_ALERT "rcu-torture types:");
 		for (i = 0; i < ARRAY_SIZE(torture_ops); i++)
-;
-;
+			printk(KERN_ALERT " %s", torture_ops[i]->name);
+		printk(KERN_ALERT "\n");
 		mutex_unlock(&fullstop_mutex);
 		return -EINVAL;
 	}
 	if (cur_ops->fqs == NULL && fqs_duration != 0) {
-//		printk(KERN_ALERT "rcu-torture: ->fqs NULL and non-zero "
-;
+		printk(KERN_ALERT "rcu-torture: ->fqs NULL and non-zero "
+				  "fqs_duration, fqs disabled.\n");
 		fqs_duration = 0;
 	}
 	if (cur_ops->init)

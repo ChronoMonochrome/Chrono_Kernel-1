@@ -153,7 +153,7 @@ static void dn_rehash_zone(struct dn_zone *dz)
 			new_hashmask = 0xFF;
 			break;
 		default:
-;
+			printk(KERN_DEBUG "DECnet: dn_rehash_zone: BUG! %d\n", old_divisor);
 		case 256:
 			new_divisor = 1024;
 			new_hashmask = 0x3FF;
@@ -836,7 +836,7 @@ struct dn_fib_table *dn_fib_get_table(u32 n, int create)
 		return NULL;
 
 	if (in_interrupt() && net_ratelimit()) {
-;
+		printk(KERN_DEBUG "DECnet: BUG! Attempt to create routing table from interrupt\n");
 		return NULL;
 	}
 

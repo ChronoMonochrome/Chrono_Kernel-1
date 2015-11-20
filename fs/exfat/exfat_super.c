@@ -1978,7 +1978,7 @@ static int exfat_statfs(struct dentry *dentry, struct kstatfs *buf)
 		info.FreeClusters = info.NumClusters - info.UsedClusters;
 
 		if (p_fs->dev_ejected)
-;
+			printk("[EXFAT] statfs on device is ejected\n");
 	}
 
 	buf->f_type = sb->s_magic;
@@ -2211,7 +2211,7 @@ static int parse_options(char *options, int silent, int *debug,
 			break;
 		default:
 			if (!silent)
-;
+				printk(KERN_ERR "[EXFAT] Unrecognized mount option %s or missing value\n", p);
 			return -EINVAL;
 		}
 	}
@@ -2327,7 +2327,7 @@ static int exfat_fill_super(struct super_block *sb, void *data, int silent)
 	ret = FsMountVol(sb);
 	if (ret) {
 		if (!silent)
-;
+			printk(KERN_ERR "[EXFAT] FsMountVol failed\n");
 
 		goto out_fail;
 	}
@@ -2349,7 +2349,7 @@ static int exfat_fill_super(struct super_block *sb, void *data, int silent)
 		sprintf(buf, "cp%d", sbi->options.codepage);
 		sbi->nls_disk = load_nls(buf);
 		if (!sbi->nls_disk) {
-;
+			printk(KERN_ERR "[EXFAT] Codepage %s not found\n", buf);
 			goto out_fail2;
 		}
 	}
@@ -2374,7 +2374,7 @@ static int exfat_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_root = d_alloc_root(root_inode);
 #endif
 	if (!sb->s_root) {
-;
+		printk(KERN_ERR "[EXFAT] Getting the root inode failed\n");
 		goto out_fail2;
 	}
 
@@ -2484,7 +2484,7 @@ static int __init init_exfat(void)
 			return -EIO;
 	}
 
-;
+	printk(KERN_INFO "exFAT: Version %s\n", EXFAT_VERSION);
 
 	err = exfat_init_inodecache();
 	if (err)

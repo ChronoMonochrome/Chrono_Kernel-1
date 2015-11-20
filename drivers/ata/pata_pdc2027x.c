@@ -39,28 +39,28 @@
 #undef PDC_DEBUG
 
 #ifdef PDC_DEBUG
-//#define PDPRINTK(fmt, args...) printk(KERN_ERR "%s: " fmt, __func__, ## args)
-//#else
-//#define PDPRINTK(fmt, args...)
-//#endif
-//
-//enum {
-//	PDC_MMIO_BAR		= 5,
-//
-//	PDC_UDMA_100		= 0,
-//	PDC_UDMA_133		= 1,
-//
-//	PDC_100_MHZ		= 100000000,
-//	PDC_133_MHZ		= 133333333,
-//
-//	PDC_SYS_CTL		= 0x1100,
-//	PDC_ATA_CTL		= 0x1104,
-//	PDC_GLOBAL_CTL		= 0x1108,
-//	PDC_CTCR0		= 0x110C,
-//	PDC_CTCR1		= 0x1110,
-//	PDC_BYTE_COUNT		= 0x1120,
-//	PDC_PLL_CTL		= 0x1202,
-;
+#define PDPRINTK(fmt, args...) printk(KERN_ERR "%s: " fmt, __func__, ## args)
+#else
+#define PDPRINTK(fmt, args...)
+#endif
+
+enum {
+	PDC_MMIO_BAR		= 5,
+
+	PDC_UDMA_100		= 0,
+	PDC_UDMA_133		= 1,
+
+	PDC_100_MHZ		= 100000000,
+	PDC_133_MHZ		= 133333333,
+
+	PDC_SYS_CTL		= 0x1100,
+	PDC_ATA_CTL		= 0x1104,
+	PDC_GLOBAL_CTL		= 0x1108,
+	PDC_CTCR0		= 0x110C,
+	PDC_CTCR1		= 0x1110,
+	PDC_BYTE_COUNT		= 0x1120,
+	PDC_PLL_CTL		= 0x1202,
+};
 
 static int pdc2027x_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
 static int pdc2027x_prereset(struct ata_link *link, unsigned long deadline);
@@ -217,7 +217,7 @@ static int pdc2027x_cable_detect(struct ata_port *ap)
 
 	return ATA_CBL_PATA80;
 cbl40:
-;
+	printk(KERN_INFO DRV_NAME ": 40-conductor cable detected on port %d\n", ap->port_no);
 	return ATA_CBL_PATA40;
 }
 
@@ -295,7 +295,7 @@ static void pdc2027x_set_piomode(struct ata_port *ap, struct ata_device *adev)
 
 	/* Sanity check */
 	if (pio > 4) {
-;
+		printk(KERN_ERR DRV_NAME ": Unknown pio mode [%d] ignored\n", pio);
 		return;
 
 	}
@@ -379,7 +379,7 @@ static void pdc2027x_set_dmamode(struct ata_port *ap, struct ata_device *adev)
 
 		PDPRINTK("Set to mdma mode[%u] \n", mdma_mode);
 	} else {
-;
+		printk(KERN_ERR DRV_NAME ": Unknown dma mode [%u] ignored\n", dma_mode);
 	}
 }
 
@@ -519,7 +519,7 @@ static void pdc_adjust_pll(struct ata_host *host, long pll_clock, unsigned int b
 
 	/* Sanity check */
 	if (unlikely(pll_clock_khz < 5000L || pll_clock_khz > 70000L)) {
-;
+		printk(KERN_ERR DRV_NAME ": Invalid PLL input clock %ldkHz, give up!\n", pll_clock_khz);
 		return;
 	}
 
@@ -551,7 +551,7 @@ static void pdc_adjust_pll(struct ata_host *host, long pll_clock, unsigned int b
 		R = 0x00;
 	} else {
 		/* Invalid ratio */
-;
+		printk(KERN_ERR DRV_NAME ": Invalid ratio %ld, give up!\n", ratio);
 		return;
 	}
 
@@ -559,7 +559,7 @@ static void pdc_adjust_pll(struct ata_host *host, long pll_clock, unsigned int b
 
 	if (unlikely(F < 0 || F > 127)) {
 		/* Invalid F */
-;
+		printk(KERN_ERR DRV_NAME ": F[%d] invalid!\n", F);
 		return;
 	}
 
@@ -655,7 +655,7 @@ static int pdc_hardware_init(struct ata_host *host, unsigned int board_idx)
 	 */
 	pll_clock = pdc_detect_pll_input_clock(host);
 
-;
+	dev_printk(KERN_INFO, host->dev, "PLL input clock %ld kHz\n", pll_clock/1000);
 
 	/* Adjust PLL control register */
 	pdc_adjust_pll(host, pll_clock, board_idx);
@@ -708,7 +708,7 @@ static int __devinit pdc2027x_init_one(struct pci_dev *pdev, const struct pci_de
 	int i, rc;
 
 	if (!printed_version++)
-;
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	/* alloc host */
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, 2);

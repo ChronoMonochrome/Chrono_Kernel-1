@@ -114,8 +114,8 @@ static int jive_wm8750_init(struct snd_soc_pcm_runtime *rtd)
 	err = snd_soc_dapm_new_controls(dapm, wm8750_dapm_widgets,
 					ARRAY_SIZE(wm8750_dapm_widgets));
 	if (err) {
-//		printk(KERN_ERR "%s: failed to add widgets (%d)\n",
-;
+		printk(KERN_ERR "%s: failed to add widgets (%d)\n",
+		       __func__, err);
 		return err;
 	}
 
@@ -152,7 +152,7 @@ static int __init jive_init(void)
 	if (!machine_is_jive())
 		return 0;
 
-;
+	printk("JIVE WM8750 Audio support\n");
 
 	jive_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!jive_snd_device)

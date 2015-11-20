@@ -37,16 +37,16 @@ MODULE_LICENSE("GPL");
 // #define SAA7191_DEBUG
 
 #ifdef SAA7191_DEBUG
-;
+#define dprintk(x...) printk("SAA7191: " x);
 #else
-//#define dprintk(x...)
-//#endif
-//
-//#define SAA7191_SYNC_COUNT	30
-//#define SAA7191_SYNC_DELAY	100	/* milliseconds */
-//
-//struct saa7191 {
-;
+#define dprintk(x...)
+#endif
+
+#define SAA7191_SYNC_COUNT	30
+#define SAA7191_SYNC_DELAY	100	/* milliseconds */
+
+struct saa7191 {
+	struct v4l2_subdev sd;
 
 	/* the register values are stored here as the actual
 	 * I2C-registers are write-only */
@@ -117,7 +117,7 @@ static int saa7191_read_status(struct v4l2_subdev *sd, u8 *value)
 
 	ret = i2c_master_recv(client, value, 1);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "SAA7191: saa7191_read_status(): read failed\n");
 		return ret;
 	}
 
@@ -148,8 +148,8 @@ static int saa7191_write_block(struct v4l2_subdev *sd,
 
 	ret = i2c_master_send(client, data, length);
 	if (ret < 0) {
-//		printk(KERN_ERR "SAA7191: saa7191_write_block(): "
-;
+		printk(KERN_ERR "SAA7191: saa7191_write_block(): "
+		       "write failed\n");
 		return ret;
 	}
 
@@ -231,9 +231,9 @@ static int saa7191_s_std(struct v4l2_subdev *sd, v4l2_std_id norm)
 
 	decoder->norm = norm;
 
-//	dprintk("ctl3: %02x stdc: %02x chcv: %02x\n", ctl3,
-;
-;
+	dprintk("ctl3: %02x stdc: %02x chcv: %02x\n", ctl3,
+		stdc, chcv);
+	dprintk("norm: %llx\n", norm);
 
 	return 0;
 }
@@ -242,21 +242,21 @@ static int saa7191_wait_for_signal(struct v4l2_subdev *sd, u8 *status)
 {
 	int i = 0;
 
-;
+	dprintk("Checking for signal...\n");
 
 	for (i = 0; i < SAA7191_SYNC_COUNT; i++) {
 		if (saa7191_read_status(sd, status))
 			return -EIO;
 
 		if (((*status) & SAA7191_STATUS_HLCK) == 0) {
-;
+			dprintk("Signal found\n");
 			return 0;
 		}
 
 		msleep(SAA7191_SYNC_DELAY);
 	}
 
-;
+	dprintk("No signal\n");
 
 	return -EBUSY;
 }
@@ -270,7 +270,7 @@ static int saa7191_querystd(struct v4l2_subdev *sd, v4l2_std_id *norm)
 	v4l2_std_id old_norm = decoder->norm;
 	int err = 0;
 
-;
+	dprintk("SAA7191 extended signal auto-detection...\n");
 
 	*norm = V4L2_STD_NTSC | V4L2_STD_PAL | V4L2_STD_SECAM;
 	stdc &= ~SAA7191_STDC_SECS;
@@ -302,13 +302,13 @@ static int saa7191_querystd(struct v4l2_subdev *sd, v4l2_std_id *norm)
 
 	if (status & SAA7191_STATUS_FIDT) {
 		/* 60Hz signal -> NTSC */
-;
+		dprintk("60Hz signal: NTSC\n");
 		*norm = V4L2_STD_NTSC;
 		return 0;
 	}
 
 	/* 50Hz signal */
-;
+	dprintk("50Hz signal: Trying PAL...\n");
 
 	/* try PAL first */
 	err = saa7191_s_std(sd, V4L2_STD_PAL);
@@ -323,18 +323,18 @@ static int saa7191_querystd(struct v4l2_subdev *sd, v4l2_std_id *norm)
 
 	/* not 50Hz ? */
 	if (status & SAA7191_STATUS_FIDT) {
-;
+		dprintk("No 50Hz signal\n");
 		saa7191_s_std(sd, old_norm);
 		return -EAGAIN;
 	}
 
 	if (status & SAA7191_STATUS_CODE) {
-;
+		dprintk("PAL\n");
 		*norm = V4L2_STD_PAL;
 		return saa7191_s_std(sd, old_norm);
 	}
 
-;
+	dprintk("No color detected with PAL - Trying SECAM...\n");
 
 	/* no color detected ? -> try SECAM */
 	err = saa7191_s_std(sd, V4L2_STD_SECAM);
@@ -349,19 +349,19 @@ static int saa7191_querystd(struct v4l2_subdev *sd, v4l2_std_id *norm)
 
 	/* not 50Hz ? */
 	if (status & SAA7191_STATUS_FIDT) {
-;
+		dprintk("No 50Hz signal\n");
 		err = -EAGAIN;
 		goto out;
 	}
 
 	if (status & SAA7191_STATUS_CODE) {
 		/* Color detected -> SECAM */
-;
+		dprintk("SECAM\n");
 		*norm = V4L2_STD_SECAM;
 		return saa7191_s_std(sd, old_norm);
 	}
 
-;
+	dprintk("No color detected with SECAM - Going back to PAL.\n");
 
 out:
 	return saa7191_s_std(sd, old_norm);
@@ -371,30 +371,30 @@ static int saa7191_autodetect_norm(struct v4l2_subdev *sd)
 {
 	u8 status;
 
-;
+	dprintk("SAA7191 signal auto-detection...\n");
 
-;
+	dprintk("Reading status...\n");
 
 	if (saa7191_read_status(sd, &status))
 		return -EIO;
 
-;
+	dprintk("Checking for signal...\n");
 
 	/* no signal ? */
 	if (status & SAA7191_STATUS_HLCK) {
-;
+		dprintk("No signal\n");
 		return -EBUSY;
 	}
 
-;
+	dprintk("Signal found\n");
 
 	if (status & SAA7191_STATUS_FIDT) {
 		/* 60hz signal -> NTSC */
-;
+		dprintk("NTSC\n");
 		return saa7191_s_std(sd, V4L2_STD_NTSC);
 	} else {
 		/* 50hz signal -> PAL */
-;
+		dprintk("PAL\n");
 		return saa7191_s_std(sd, V4L2_STD_PAL);
 	}
 }
@@ -614,19 +614,19 @@ static int saa7191_probe(struct i2c_client *client,
 
 	err = saa7191_write_block(sd, sizeof(initseq), initseq);
 	if (err) {
-;
+		printk(KERN_ERR "SAA7191 initialization failed\n");
 		kfree(decoder);
 		return err;
 	}
 
-;
+	printk(KERN_INFO "SAA7191 initialized\n");
 
 	decoder->input = SAA7191_INPUT_COMPOSITE;
 	decoder->norm = V4L2_STD_PAL;
 
 	err = saa7191_autodetect_norm(sd);
 	if (err && (err != -EBUSY))
-;
+		printk(KERN_ERR "SAA7191: Signal auto-detection failed\n");
 
 	return 0;
 }

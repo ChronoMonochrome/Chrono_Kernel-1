@@ -353,8 +353,8 @@ static void fnic_rq_cmpl_frame_recv(struct vnic_rq *rq, struct cq_desc
 
 	} else {
 		/* wrong CQ type*/
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "fnic rq_cmpl wrong cq type x%x\n", type);
 		goto drop;
 	}
 
@@ -410,9 +410,9 @@ int fnic_rq_cmpl_handler(struct fnic *fnic, int rq_work_to_do)
 		if (cur_work_done) {
 			err = vnic_rq_fill(&fnic->rq[i], fnic_alloc_rq_frame);
 			if (err)
-//				shost_printk(KERN_ERR, fnic->lport->host,
-//					     "fnic_alloc_rq_frame can't alloc"
-;
+				shost_printk(KERN_ERR, fnic->lport->host,
+					     "fnic_alloc_rq_frame can't alloc"
+					     " frame\n");
 		}
 		tot_rq_work_done += cur_work_done;
 	}

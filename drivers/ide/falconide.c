@@ -46,7 +46,7 @@ static int falconide_intr_lock;
 static void falconide_release_lock(void)
 {
 	if (falconide_intr_lock == 0) {
-;
+		printk(KERN_ERR "%s: bug\n", __func__);
 		return;
 	}
 	falconide_intr_lock = 0;
@@ -143,10 +143,10 @@ static int __init falconide_init(void)
 	if (!MACH_IS_ATARI || !ATARIHW_PRESENT(IDE))
 		return -ENODEV;
 
-;
+	printk(KERN_INFO "ide: Falcon IDE controller\n");
 
 	if (!request_mem_region(ATA_HD_BASE, 0x40, DRV_NAME)) {
-;
+		printk(KERN_ERR "%s: resources busy\n", DRV_NAME);
 		return -EBUSY;
 	}
 

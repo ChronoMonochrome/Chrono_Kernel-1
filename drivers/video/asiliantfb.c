@@ -234,7 +234,7 @@ static int asiliantfb_check_var(struct fb_var_screeninfo *var,
 	/* First check the constraint that the maximum post-VCO divisor is 32,
 	 * and the maximum Fvco is 220MHz */
 	if (Ftarget > 220000000 || Ftarget < 3125000) {
-;
+		printk(KERN_ERR "asiliantfb dotclock must be between 3.125 and 220MHz\n");
 		return -ENXIO;
 	}
 	var->xres_virtual = var->xres;
@@ -516,19 +516,19 @@ static int __devinit init_asiliant(struct fb_info *p, unsigned long addr)
 
 	err = fb_alloc_cmap(&p->cmap, 256, 0);
 	if (err) {
-;
+		printk(KERN_ERR "C&T 69000 fb failed to alloc cmap memory\n");
 		return err;
 	}
 
 	err = register_framebuffer(p);
 	if (err < 0) {
-;
+		printk(KERN_ERR "C&T 69000 framebuffer failed to register\n");
 		fb_dealloc_cmap(&p->cmap);
 		return err;
 	}
 
-//	printk(KERN_INFO "fb%d: Asiliant 69000 frame buffer (%dK RAM detected)\n",
-;
+	printk(KERN_INFO "fb%d: Asiliant 69000 frame buffer (%dK RAM detected)\n",
+		p->node, p->fix.smem_len / 1024);
 
 	writeb(0xff, mmio_base + 0x78c);
 	chips_hw_init(p);

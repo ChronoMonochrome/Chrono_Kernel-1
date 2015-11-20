@@ -191,8 +191,8 @@ int __weak kgdb_validate_break_address(unsigned long addr)
 		return err;
 	err = kgdb_arch_remove_breakpoint(&tmp);
 	if (err)
-//		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
-;
+		printk(KERN_ERR "KGDB: Critical breakpoint error, kernel "
+		   "memory destroyed at: %lx", addr);
 	return err;
 }
 
@@ -244,8 +244,8 @@ int dbg_activate_sw_breakpoints(void)
 		error = kgdb_arch_set_breakpoint(&kgdb_break[i]);
 		if (error) {
 			ret = error;
-//			printk(KERN_INFO "KGDB: BP install failed: %lx",
-;
+			printk(KERN_INFO "KGDB: BP install failed: %lx",
+			       kgdb_break[i].bpt_addr);
 			continue;
 		}
 
@@ -307,8 +307,8 @@ int dbg_deactivate_sw_breakpoints(void)
 			continue;
 		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
 		if (error) {
-//			printk(KERN_INFO "KGDB: BP remove failed: %lx\n",
-;
+			printk(KERN_INFO "KGDB: BP remove failed: %lx\n",
+			       kgdb_break[i].bpt_addr);
 			ret = error;
 		}
 
@@ -355,8 +355,8 @@ int dbg_remove_all_break(void)
 			goto setundefined;
 		error = kgdb_arch_remove_breakpoint(&kgdb_break[i]);
 		if (error)
-//			printk(KERN_ERR "KGDB: breakpoint remove failed: %lx\n",
-;
+			printk(KERN_ERR "KGDB: breakpoint remove failed: %lx\n",
+			       kgdb_break[i].bpt_addr);
 setundefined:
 		kgdb_break[i].state = BP_UNDEFINED;
 	}
@@ -388,9 +388,9 @@ static int kgdb_io_ready(int print_wait)
 	if (print_wait) {
 #ifdef CONFIG_KGDB_KDB
 		if (!dbg_kdb_mode)
-;
+			printk(KERN_CRIT "KGDB: waiting... or $3#33 for KDB\n");
 #else
-;
+		printk(KERN_CRIT "KGDB: Waiting for remote debugger\n");
 #endif
 	}
 	return 1;
@@ -418,8 +418,8 @@ static int kgdb_reenter_check(struct kgdb_state *ks)
 		exception_level = 0;
 		kgdb_skipexception(ks->ex_vector, ks->linux_regs);
 		dbg_activate_sw_breakpoints();
-//		printk(KERN_CRIT "KGDB: re-enter error: breakpoint removed %lx\n",
-;
+		printk(KERN_CRIT "KGDB: re-enter error: breakpoint removed %lx\n",
+			addr);
 		WARN_ON_ONCE(1);
 
 		return 1;
@@ -432,7 +432,7 @@ static int kgdb_reenter_check(struct kgdb_state *ks)
 		panic("Recursive entry to debugger");
 	}
 
-;
+	printk(KERN_CRIT "KGDB: re-enter exception: ALL breakpoints killed\n");
 #ifdef CONFIG_KGDB_KDB
 	/* Allow kdb to debug itself one level */
 	return 0;
@@ -730,15 +730,15 @@ static struct console kgdbcons = {
 static void sysrq_handle_dbg(int key)
 {
 	if (!dbg_io_ops) {
-;
+		printk(KERN_CRIT "ERROR: No KGDB I/O module available\n");
 		return;
 	}
 	if (!kgdb_connected) {
 #ifdef CONFIG_KGDB_KDB
 		if (!dbg_kdb_mode)
-;
+			printk(KERN_CRIT "KGDB or $3#33 for KDB\n");
 #else
-;
+		printk(KERN_CRIT "Entering KGDB\n");
 #endif
 	}
 
@@ -849,7 +849,7 @@ static void kgdb_initial_breakpoint(void)
 {
 	kgdb_break_asap = 0;
 
-;
+	printk(KERN_CRIT "kgdb: Waiting for connection from remote gdb...\n");
 	kgdb_breakpoint();
 }
 
@@ -868,8 +868,8 @@ int kgdb_register_io_module(struct kgdb_io *new_dbg_io_ops)
 	if (dbg_io_ops) {
 		spin_unlock(&kgdb_registration_lock);
 
-//		printk(KERN_ERR "kgdb: Another I/O driver is already "
-;
+		printk(KERN_ERR "kgdb: Another I/O driver is already "
+				"registered with KGDB.\n");
 		return -EBUSY;
 	}
 
@@ -885,8 +885,8 @@ int kgdb_register_io_module(struct kgdb_io *new_dbg_io_ops)
 
 	spin_unlock(&kgdb_registration_lock);
 
-//	printk(KERN_INFO "kgdb: Registered I/O driver %s.\n",
-;
+	printk(KERN_INFO "kgdb: Registered I/O driver %s.\n",
+	       new_dbg_io_ops->name);
 
 	/* Arm KGDB now. */
 	kgdb_register_callbacks();
@@ -921,9 +921,9 @@ void kgdb_unregister_io_module(struct kgdb_io *old_dbg_io_ops)
 
 	spin_unlock(&kgdb_registration_lock);
 
-//	printk(KERN_INFO
-//		"kgdb: Unregistered I/O driver %s, debugger disabled.\n",
-;
+	printk(KERN_INFO
+		"kgdb: Unregistered I/O driver %s, debugger disabled.\n",
+		old_dbg_io_ops->name);
 }
 EXPORT_SYMBOL_GPL(kgdb_unregister_io_module);
 

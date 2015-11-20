@@ -263,7 +263,7 @@ static struct srp_event_struct *get_event_struct(struct event_pool *pool)
 		}
 	}
 
-;
+	printk(KERN_ERR "ibmvscsi: found no event struct in pool!\n");
 	return NULL;
 }
 
@@ -417,9 +417,9 @@ static int map_sg_data(struct scsi_cmnd *cmd,
 					   &evt_struct->ext_list_token, 0);
 		if (!evt_struct->ext_list) {
 			if (!firmware_has_feature(FW_FEATURE_CMO))
-//				sdev_printk(KERN_ERR, cmd->device,
-//				            "Can't allocate memory "
-;
+				sdev_printk(KERN_ERR, cmd->device,
+				            "Can't allocate memory "
+				            "for indirect table\n");
 			scsi_dma_unmap(cmd);
 			return 0;
 		}
@@ -455,12 +455,12 @@ static int map_data_for_srp_cmd(struct scsi_cmnd *cmd,
 	case DMA_NONE:
 		return 1;
 	case DMA_BIDIRECTIONAL:
-//		sdev_printk(KERN_ERR, cmd->device,
-;
+		sdev_printk(KERN_ERR, cmd->device,
+			    "Can't map DMA_BIDIRECTIONAL to read/write\n");
 		return 0;
 	default:
-//		sdev_printk(KERN_ERR, cmd->device,
-;
+		sdev_printk(KERN_ERR, cmd->device,
+			    "Unknown data direction 0x%02x; can't map!\n",
 			    cmd->sc_data_direction);
 		return 0;
 	}
@@ -737,8 +737,8 @@ static int ibmvscsi_queuecommand_lck(struct scsi_cmnd *cmnd,
 
 	if (!map_data_for_srp_cmd(cmnd, evt_struct, srp_cmd, hostdata->dev)) {
 		if (!firmware_has_feature(FW_FEATURE_CMO))
-//			sdev_printk(KERN_ERR, cmnd->device,
-;
+			sdev_printk(KERN_ERR, cmnd->device,
+			            "couldn't convert cmd to srp_cmd\n");
 		free_event_struct(&hostdata->pool, evt_struct);
 		return SCSI_MLQUEUE_HOST_BUSY;
 	}
@@ -1182,8 +1182,8 @@ static int ibmvscsi_eh_abort_handler(struct scsi_cmnd *cmd)
 		evt = get_event_struct(&hostdata->pool);
 		if (evt == NULL) {
 			spin_unlock_irqrestore(hostdata->host->host_lock, flags);
-//			sdev_printk(KERN_ERR, cmd->device,
-;
+			sdev_printk(KERN_ERR, cmd->device,
+				"failed to allocate abort event\n");
 			return FAILED;
 		}
 	
@@ -1217,22 +1217,22 @@ static int ibmvscsi_eh_abort_handler(struct scsi_cmnd *cmd)
 	spin_unlock_irqrestore(hostdata->host->host_lock, flags);
 
 	if (rsp_rc != 0) {
-//		sdev_printk(KERN_ERR, cmd->device,
-;
+		sdev_printk(KERN_ERR, cmd->device,
+			    "failed to send abort() event. rc=%d\n", rsp_rc);
 		return FAILED;
 	}
 
-//	sdev_printk(KERN_INFO, cmd->device,
-//                    "aborting command. lun 0x%llx, tag 0x%llx\n",
-;
+	sdev_printk(KERN_INFO, cmd->device,
+                    "aborting command. lun 0x%llx, tag 0x%llx\n",
+		    (((u64) lun) << 48), (u64) found_evt);
 
 	wait_for_completion(&evt->comp);
 
 	/* make sure we got a good response */
 	if (unlikely(srp_rsp.srp.rsp.opcode != SRP_RSP)) {
 		if (printk_ratelimit())
-//			sdev_printk(KERN_WARNING, cmd->device, "abort bad SRP RSP type %d\n",
-;
+			sdev_printk(KERN_WARNING, cmd->device, "abort bad SRP RSP type %d\n",
+				    srp_rsp.srp.rsp.opcode);
 		return FAILED;
 	}
 
@@ -1243,9 +1243,9 @@ static int ibmvscsi_eh_abort_handler(struct scsi_cmnd *cmd)
 
 	if (rsp_rc) {
 		if (printk_ratelimit())
-//			sdev_printk(KERN_WARNING, cmd->device,
-//				    "abort code %d for task tag 0x%llx\n",
-;
+			sdev_printk(KERN_WARNING, cmd->device,
+				    "abort code %d for task tag 0x%llx\n",
+				    rsp_rc, tsk_mgmt->task_tag);
 		return FAILED;
 	}
 
@@ -1264,13 +1264,13 @@ static int ibmvscsi_eh_abort_handler(struct scsi_cmnd *cmd)
 
 	if (found_evt == NULL) {
 		spin_unlock_irqrestore(hostdata->host->host_lock, flags);
-//		sdev_printk(KERN_INFO, cmd->device, "aborted task tag 0x%llx completed\n",
-;
+		sdev_printk(KERN_INFO, cmd->device, "aborted task tag 0x%llx completed\n",
+			    tsk_mgmt->task_tag);
 		return SUCCESS;
 	}
 
-//	sdev_printk(KERN_INFO, cmd->device, "successfully aborted task tag 0x%llx\n",
-;
+	sdev_printk(KERN_INFO, cmd->device, "successfully aborted task tag 0x%llx\n",
+		    tsk_mgmt->task_tag);
 
 	cmd->result = (DID_ABORT << 16);
 	list_del(&found_evt->list);
@@ -1305,8 +1305,8 @@ static int ibmvscsi_eh_device_reset_handler(struct scsi_cmnd *cmd)
 		evt = get_event_struct(&hostdata->pool);
 		if (evt == NULL) {
 			spin_unlock_irqrestore(hostdata->host->host_lock, flags);
-//			sdev_printk(KERN_ERR, cmd->device,
-;
+			sdev_printk(KERN_ERR, cmd->device,
+				"failed to allocate reset event\n");
 			return FAILED;
 		}
 	
@@ -1339,21 +1339,21 @@ static int ibmvscsi_eh_device_reset_handler(struct scsi_cmnd *cmd)
 	spin_unlock_irqrestore(hostdata->host->host_lock, flags);
 
 	if (rsp_rc != 0) {
-//		sdev_printk(KERN_ERR, cmd->device,
-;
+		sdev_printk(KERN_ERR, cmd->device,
+			    "failed to send reset event. rc=%d\n", rsp_rc);
 		return FAILED;
 	}
 
-//	sdev_printk(KERN_INFO, cmd->device, "resetting device. lun 0x%llx\n",
-;
+	sdev_printk(KERN_INFO, cmd->device, "resetting device. lun 0x%llx\n",
+		    (((u64) lun) << 48));
 
 	wait_for_completion(&evt->comp);
 
 	/* make sure we got a good response */
 	if (unlikely(srp_rsp.srp.rsp.opcode != SRP_RSP)) {
 		if (printk_ratelimit())
-//			sdev_printk(KERN_WARNING, cmd->device, "reset bad SRP RSP type %d\n",
-;
+			sdev_printk(KERN_WARNING, cmd->device, "reset bad SRP RSP type %d\n",
+				    srp_rsp.srp.rsp.opcode);
 		return FAILED;
 	}
 
@@ -1364,9 +1364,9 @@ static int ibmvscsi_eh_device_reset_handler(struct scsi_cmnd *cmd)
 
 	if (rsp_rc) {
 		if (printk_ratelimit())
-//			sdev_printk(KERN_WARNING, cmd->device,
-//				    "reset code %d for task tag 0x%llx\n",
-;
+			sdev_printk(KERN_WARNING, cmd->device,
+				    "reset code %d for task tag 0x%llx\n",
+				    rsp_rc, tsk_mgmt->task_tag);
 		return FAILED;
 	}
 

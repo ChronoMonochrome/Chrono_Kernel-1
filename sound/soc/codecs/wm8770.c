@@ -728,8 +728,8 @@ static int __init wm8770_modinit(void)
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&wm8770_spi_driver);
 	if (ret) {
-//		printk(KERN_ERR "Failed to register wm8770 SPI driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8770 SPI driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

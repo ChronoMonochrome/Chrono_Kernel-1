@@ -893,7 +893,7 @@ static int __init mce_amd_init(void)
 		break;
 
 	default:
-;
+		printk(KERN_WARNING "Huh? What family is that: %d?!\n", c->x86);
 		kfree(fam_ops);
 		return -EINVAL;
 	}

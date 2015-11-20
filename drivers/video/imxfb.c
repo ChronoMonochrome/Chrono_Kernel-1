@@ -353,8 +353,8 @@ static int imxfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 
 	if (--pcr > 0x3F) {
 		pcr = 0x3F;
-//		printk(KERN_WARNING "Must limit pixel clock to %luHz\n",
-;
+		printk(KERN_WARNING "Must limit pixel clock to %luHz\n",
+				lcd_clk / pcr);
 	}
 
 	switch (var->bits_per_pixel) {
@@ -594,29 +594,29 @@ static int imxfb_activate_var(struct fb_var_screeninfo *var, struct fb_info *inf
 
 #if DEBUG_VAR
 	if (var->xres < 16        || var->xres > 1024)
-//		printk(KERN_ERR "%s: invalid xres %d\n",
-;
+		printk(KERN_ERR "%s: invalid xres %d\n",
+			info->fix.id, var->xres);
 	if (var->hsync_len < 1    || var->hsync_len > 64)
-//		printk(KERN_ERR "%s: invalid hsync_len %d\n",
-;
+		printk(KERN_ERR "%s: invalid hsync_len %d\n",
+			info->fix.id, var->hsync_len);
 	if (var->left_margin > 255)
-//		printk(KERN_ERR "%s: invalid left_margin %d\n",
-;
+		printk(KERN_ERR "%s: invalid left_margin %d\n",
+			info->fix.id, var->left_margin);
 	if (var->right_margin > 255)
-//		printk(KERN_ERR "%s: invalid right_margin %d\n",
-;
+		printk(KERN_ERR "%s: invalid right_margin %d\n",
+			info->fix.id, var->right_margin);
 	if (var->yres < 1 || var->yres > YMAX_MASK)
-//		printk(KERN_ERR "%s: invalid yres %d\n",
-;
+		printk(KERN_ERR "%s: invalid yres %d\n",
+			info->fix.id, var->yres);
 	if (var->vsync_len > 100)
-//		printk(KERN_ERR "%s: invalid vsync_len %d\n",
-;
+		printk(KERN_ERR "%s: invalid vsync_len %d\n",
+			info->fix.id, var->vsync_len);
 	if (var->upper_margin > 63)
-//		printk(KERN_ERR "%s: invalid upper_margin %d\n",
-;
+		printk(KERN_ERR "%s: invalid upper_margin %d\n",
+			info->fix.id, var->upper_margin);
 	if (var->lower_margin > 255)
-//		printk(KERN_ERR "%s: invalid lower_margin %d\n",
-;
+		printk(KERN_ERR "%s: invalid lower_margin %d\n",
+			info->fix.id, var->lower_margin);
 #endif
 
 	/* physical screen start address	    */

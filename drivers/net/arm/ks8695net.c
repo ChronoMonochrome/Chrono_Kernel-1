@@ -1630,8 +1630,8 @@ static struct platform_driver ks8695_driver = {
 static int __init
 ks8695_init(void)
 {
-//	printk(KERN_INFO "%s Ethernet driver, V%s\n",
-;
+	printk(KERN_INFO "%s Ethernet driver, V%s\n",
+	       MODULENAME, MODULEVERSION);
 
 	return platform_driver_register(&ks8695_driver);
 }

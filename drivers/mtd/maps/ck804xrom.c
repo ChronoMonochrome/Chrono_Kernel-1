@@ -177,9 +177,9 @@ static int __devinit ck804xrom_init_one (struct pci_dev *pdev,
 	window->rsrc.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
 	if (request_resource(&iomem_resource, &window->rsrc)) {
 		window->rsrc.parent = NULL;
-//		printk(KERN_ERR MOD_NAME
-//		       " %s(): Unable to register resource %pR - kernel bug?\n",
-;
+		printk(KERN_ERR MOD_NAME
+		       " %s(): Unable to register resource %pR - kernel bug?\n",
+			__func__, &window->rsrc);
 	}
 
 
@@ -192,8 +192,8 @@ static int __devinit ck804xrom_init_one (struct pci_dev *pdev,
 	/* For write accesses caches are useless */
 	window->virt = ioremap_nocache(window->phys, window->size);
 	if (!window->virt) {
-//		printk(KERN_ERR MOD_NAME ": ioremap(%08lx, %08lx) failed\n",
-;
+		printk(KERN_ERR MOD_NAME ": ioremap(%08lx, %08lx) failed\n",
+			window->phys, window->size);
 		goto out;
 	}
 
@@ -220,7 +220,7 @@ static int __devinit ck804xrom_init_one (struct pci_dev *pdev,
 			map = kmalloc(sizeof(*map), GFP_KERNEL);
 
 		if (!map) {
-;
+			printk(KERN_ERR MOD_NAME ": kmalloc failed");
 			goto out;
 		}
 		memset(map, 0, sizeof(*map));
@@ -260,9 +260,9 @@ static int __devinit ck804xrom_init_one (struct pci_dev *pdev,
 	found:
 		/* Trim the size if we are larger than the map */
 		if (map->mtd->size > map->map.size) {
-//			printk(KERN_WARNING MOD_NAME
-//				" rom(%llu) larger than window(%lu). fixing...\n",
-;
+			printk(KERN_WARNING MOD_NAME
+				" rom(%llu) larger than window(%lu). fixing...\n",
+				(unsigned long long)map->mtd->size, map->map.size);
 			map->mtd->size = map->map.size;
 		}
 		if (window->rsrc.parent) {
@@ -276,8 +276,8 @@ static int __devinit ck804xrom_init_one (struct pci_dev *pdev,
 			map->rsrc.end   = map->map.phys + map->mtd->size - 1;
 			map->rsrc.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
 			if (request_resource(&window->rsrc, &map->rsrc)) {
-//				printk(KERN_ERR MOD_NAME
-;
+				printk(KERN_ERR MOD_NAME
+					": cannot reserve MTD resource\n");
 				map->rsrc.parent = NULL;
 			}
 		}

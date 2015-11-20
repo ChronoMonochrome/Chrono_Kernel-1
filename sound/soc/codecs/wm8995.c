@@ -1878,15 +1878,15 @@ static int __init wm8995_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8995_i2c_driver);
 	if (ret) {
-//		printk(KERN_ERR "Failed to register wm8995 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8995 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&wm8995_spi_driver);
 	if (ret) {
-//		printk(KERN_ERR "Failed to register wm8995 SPI driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8995 SPI driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

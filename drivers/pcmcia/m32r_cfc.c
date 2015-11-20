@@ -115,7 +115,7 @@ void pcc_ioread_byte(int sock, unsigned long port, void *buf, size_t size,
 
 	addr = pcc_port2addr(port, 1);
 	if (!addr) {
-;
+		printk("m32r_cfc:ioread_byte null port :%#lx\n",port);
 		return;
 	}
 	pr_debug("m32r_cfc: pcc_ioread_byte: addr=%#lx\n", addr);
@@ -139,14 +139,14 @@ void pcc_ioread_word(int sock, unsigned long port, void *buf, size_t size,
 		 sock, port, buf, size, nmemb, flag);
 
 	if (size != 2)
-//		printk("m32r_cfc: ioread_word :illigal size %u : %#lx\n", size,
-;
+		printk("m32r_cfc: ioread_word :illigal size %u : %#lx\n", size,
+			port);
 	if (size == 9)
-;
+		printk("m32r_cfc: ioread_word :insw \n");
 
 	addr = pcc_port2addr(port, 2);
 	if (!addr) {
-;
+		printk("m32r_cfc:ioread_word null port :%#lx\n",port);
 		return;
 	}
 	pr_debug("m32r_cfc: pcc_ioread_word: addr=%#lx\n", addr);
@@ -172,7 +172,7 @@ void pcc_iowrite_byte(int sock, unsigned long port, void *buf, size_t size,
 	/* write Byte */
 	addr = pcc_port2addr(port, 1);
 	if (!addr) {
-;
+		printk("m32r_cfc:iowrite_byte null port:%#lx\n",port);
 		return;
 	}
 	pr_debug("m32r_cfc: pcc_iowrite_byte: addr=%#lx\n", addr);
@@ -195,20 +195,20 @@ void pcc_iowrite_word(int sock, unsigned long port, void *buf, size_t size,
 		 sock, port, buf, size, nmemb, flag);
 
 	if(size != 2)
-//		printk("m32r_cfc: iowrite_word :illigal size %u : %#lx\n",
-;
+		printk("m32r_cfc: iowrite_word :illigal size %u : %#lx\n",
+			size, port);
 	if(size == 9)
-;
+		printk("m32r_cfc: iowrite_word :outsw \n");
 
 	addr = pcc_port2addr(port, 2);
 	if (!addr) {
-;
+		printk("m32r_cfc:iowrite_word null addr :%#lx\n",port);
 		return;
 	}
 #if 1
 	if (addr & 1) {
-//		printk("m32r_cfc:iowrite_word port addr (%#lx):%#lx\n", port,
-;
+		printk("m32r_cfc:iowrite_word port addr (%#lx):%#lx\n", port,
+			addr);
 		return;
 	}
 #endif
@@ -274,11 +274,11 @@ static int __init is_alive(u_short sock)
 
 	pr_debug("m32r_cfc: is_alive:\n");
 
-;
+	printk("CF: ");
 	stat = pcc_get(sock, (unsigned int)PLD_CFSTS);
 	if (!stat)
-;
-;
+		printk("No ");
+	printk("Card is detected at socket %d : stat = 0x%08x\n", sock, stat);
 	pr_debug("m32r_cfc: is_alive: sock stat is 0x%04x\n", stat);
 
 	return 0;
@@ -323,8 +323,8 @@ static void add_pcc_socket(ulong base, int irq, ulong mapaddr,
 		request_region(reg_base, 0x20, "m32r_cfc");
 	}
 #endif	/* CONFIG_PLAT_USRV */
-;
-;
+	printk(KERN_INFO "  %s ", pcc[pcc_sockets].name);
+	printk("pcc at 0x%08lx\n", t->base);
 
 	/* Update socket interrupt information, capabilities */
 	t->socket.features |= (SS_CAP_PCCARD | SS_CAP_STATIC_MAP);
@@ -739,7 +739,7 @@ static int __init init_m32r_pcc(void)
 #endif	/* CONFIG_PLAT_USRV */
 
 	if (pcc_sockets == 0) {
-;
+		printk("socket is not found.\n");
 		platform_device_unregister(&pcc_device);
 		platform_driver_unregister(&pcc_driver);
 		return -ENODEV;

@@ -150,12 +150,12 @@ static int __init init_vmax301(void)
 	int i;
 	unsigned long iomapadr;
 	// Print out our little header..
-//	printk("Tempustech VMAX 301 MEM:0x%x-0x%x\n",WINDOW_START,
-;
+	printk("Tempustech VMAX 301 MEM:0x%x-0x%x\n",WINDOW_START,
+	       WINDOW_START+4*WINDOW_LENGTH);
 
 	iomapadr = (unsigned long)ioremap(WINDOW_START, WINDOW_LENGTH*4);
 	if (!iomapadr) {
-;
+		printk("Failed to ioremap memory region\n");
 		return -EIO;
 	}
 	/* Put the address in the map's private data area.

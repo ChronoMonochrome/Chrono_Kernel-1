@@ -65,8 +65,8 @@ static int ves1820_writereg(struct ves1820_state *state, u8 reg, u8 data)
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
-//		printk("ves1820: %s(): writereg error (reg == 0x%02x, "
-;
+		printk("ves1820: %s(): writereg error (reg == 0x%02x, "
+			"val == 0x%02x, ret == %i)\n", __func__, reg, data, ret);
 
 	return (ret != 1) ? -EREMOTEIO : 0;
 }
@@ -84,8 +84,8 @@ static u8 ves1820_readreg(struct ves1820_state *state, u8 reg)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2)
-//		printk("ves1820: %s(): readreg error (reg == 0x%02x, "
-;
+		printk("ves1820: %s(): readreg error (reg == 0x%02x, "
+		"ret == %i)\n", __func__, reg, ret);
 
 	return b1[0];
 }
@@ -319,8 +319,8 @@ static int ves1820_get_frontend(struct dvb_frontend* fe, struct dvb_frontend_par
 	afc = ves1820_readreg(state, 0x19);
 	if (verbose) {
 		/* AFC only valid when carrier has been recovered */
-//		printk(sync & 2 ? "ves1820: AFC (%d) %dHz\n" :
-;
+		printk(sync & 2 ? "ves1820: AFC (%d) %dHz\n" :
+			"ves1820: [AFC (%d) %dHz]\n", afc, -((s32) p->u.qam.symbol_rate * afc) >> 10);
 	}
 
 	if (!state->config->invert) {
@@ -389,7 +389,7 @@ struct dvb_frontend* ves1820_attach(const struct ves1820_config* config,
 		goto error;
 
 	if (verbose)
-;
+		printk("ves1820: pwm=0x%02x\n", state->pwm);
 
 	/* create dvb_frontend */
 	memcpy(&state->frontend.ops, &ves1820_ops, sizeof(struct dvb_frontend_ops));

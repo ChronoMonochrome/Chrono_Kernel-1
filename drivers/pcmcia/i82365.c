@@ -454,7 +454,7 @@ static u_int __init set_bridge_opts(u_short s, u_short ns)
 
     for (i = s; i < s+ns; i++) {
 	if (socket[i].flags & IS_ALIVE) {
-;
+	    printk(KERN_INFO "    host opts [%d]: already alive!\n", i);
 	    continue;
 	}
 	buf[0] = '\0';
@@ -464,8 +464,8 @@ static u_int __init set_bridge_opts(u_short s, u_short ns)
 	else if (socket[i].flags & IS_VADEM)
 	    m = vg46x_set_opts(i, buf);
 	set_bridge_state(i);
-//	printk(KERN_INFO "    host opts [%d]:%s\n", i,
-;
+	printk(KERN_INFO "    host opts [%d]:%s\n", i,
+	       (*buf) ? buf : " none");
     }
     return m;
 }
@@ -537,24 +537,24 @@ static u_int __init isa_scan(u_short sock, u_int mask0)
 		mask1 ^= (1 << i);
     }
     
-;
+    printk(KERN_INFO "    ISA irqs (");
     if (mask1) {
-;
+	printk("scanned");
     } else {
 	/* Fallback: just find interrupts that aren't in use */
 	for (i = 0; i < 16; i++)
 	    if ((mask0 & (1 << i)) && (_check_irq(i, IRQF_PROBE_SHARED) == 0))
 		mask1 |= (1 << i);
-;
+	printk("default");
 	/* If scan failed, default to polled status */
 	if (!cs_irq && (poll_interval == 0)) poll_interval = HZ;
     }
-;
+    printk(") = ");
     
     for (i = 0; i < 16; i++)
 	if (mask1 & (1<<i))
-;
-;
+	    printk("%s%d", ((mask1 & ((1<<i)-1)) ? "," : ""), i);
+    if (mask1 == 0) printk("none!");
     
     return mask1;
 }
@@ -678,11 +678,11 @@ static void __init add_pcic(int ns, int type)
     struct i82365_socket *t = &socket[sockets-ns];
 
     base = sockets-ns;
-;
-;
-//    printk(" ISA-to-PCMCIA at port %#x ofs 0x%02x",
-;
-;
+    if (base == 0) printk("\n");
+    printk(KERN_INFO "  %s", pcic[type].name);
+    printk(" ISA-to-PCMCIA at port %#x ofs 0x%02x",
+	       t->ioaddr, t->psock*0x40);
+    printk(", %d socket%s\n", ns, ((ns > 1) ? "s" : ""));
 
     /* Set host options, build basic interrupt mask */
     if (irq_list_count == 0)
@@ -712,15 +712,15 @@ static void __init add_pcic(int ns, int type)
 	if (cs_irq) {
 	    grab_irq = 1;
 	    isa_irq = cs_irq;
-;
+	    printk(" status change on irq %d\n", cs_irq);
 	}
     }
     
     if (!isa_irq) {
 	if (poll_interval == 0)
 	    poll_interval = HZ;
-//	printk(" polling interval = %d ms\n",
-;
+	printk(" polling interval = %d ms\n",
+	       poll_interval * 1000 / HZ);
 	
     }
     
@@ -766,13 +766,13 @@ static void __init isa_probe(void)
 	    	continue;
 
 	    if (pnp_activate_dev(dev) < 0) {
-;
+		printk("activate failed\n");
 		pnp_device_detach(dev);
 		break;
 	    }
 
 	    if (!pnp_port_valid(dev, 0)) {
-;
+		printk("invalid resources ?\n");
 		pnp_device_detach(dev);
 		break;
 	    }
@@ -785,7 +785,7 @@ static void __init isa_probe(void)
 
     if (!request_region(i365_base, 2, "i82365")) {
 	if (sockets == 0)
-;
+	    printk("port conflict at %#lx\n", i365_base);
 	return;
     }
 
@@ -870,7 +870,7 @@ static irqreturn_t pcic_interrupt(int irq, void *dev)
 	if (!active) break;
     }
     if (j == 20)
-;
+	printk(KERN_NOTICE "i82365: infinite loop in interrupt handler\n");
 
     pr_debug("pcic_interrupt done\n");
     return IRQ_RETVAL(handled);
@@ -1259,13 +1259,13 @@ static int __init init_i82365(void)
     if (ret)
 	goto err_driver_unregister;
 
-;
+    printk(KERN_INFO "Intel ISA PCIC probe: ");
     sockets = 0;
 
     isa_probe();
 
     if (sockets == 0) {
-;
+	printk("not found.\n");
 	ret = -ENODEV;
 	goto err_dev_unregister;
     }

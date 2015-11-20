@@ -743,8 +743,8 @@ static int dss_init(void)
 	dss_save_context();
 
 	rev = dss_read_reg(DSS_REVISION);
-//	printk(KERN_INFO "OMAP DSS rev %d.%d\n",
-;
+	printk(KERN_INFO "OMAP DSS rev %d.%d\n",
+			FLD_GET(rev, 7, 4), FLD_GET(rev, 3, 0));
 
 	return 0;
 

@@ -58,8 +58,8 @@ static int __devinit e3d_get_props(struct e3d_info *ep)
 	ep->depth = of_getintprop_default(ep->of_node, "depth", 8);
 
 	if (!ep->width || !ep->height) {
-//		printk(KERN_ERR "e3d: Critical properties missing for %s\n",
-;
+		printk(KERN_ERR "e3d: Critical properties missing for %s\n",
+		       pci_name(ep->pdev));
 		return -EINVAL;
 	}
 
@@ -231,7 +231,7 @@ static int __devinit e3d_set_fbinfo(struct e3d_info *ep)
 	var->transp.length = 0;
 
 	if (fb_alloc_cmap(&info->cmap, 256, 0)) {
-;
+		printk(KERN_ERR "e3d: Cannot allocate color map.\n");
 		return -ENOMEM;
 	}
 
@@ -250,28 +250,28 @@ static int __devinit e3d_pci_register(struct pci_dev *pdev,
 
 	of_node = pci_device_to_OF_node(pdev);
 	if (!of_node) {
-//		printk(KERN_ERR "e3d: Cannot find OF node of %s\n",
-;
+		printk(KERN_ERR "e3d: Cannot find OF node of %s\n",
+		       pci_name(pdev));
 		return -ENODEV;
 	}
 
 	device_type = of_get_property(of_node, "device_type", NULL);
 	if (!device_type) {
-//		printk(KERN_INFO "e3d: Ignoring secondary output device "
-;
+		printk(KERN_INFO "e3d: Ignoring secondary output device "
+		       "at %s\n", pci_name(pdev));
 		return -ENODEV;
 	}
 
 	err = pci_enable_device(pdev);
 	if (err < 0) {
-//		printk(KERN_ERR "e3d: Cannot enable PCI device %s\n",
-;
+		printk(KERN_ERR "e3d: Cannot enable PCI device %s\n",
+		       pci_name(pdev));
 		goto err_out;
 	}
 
 	info = framebuffer_alloc(sizeof(struct e3d_info), &pdev->dev);
 	if (!info) {
-;
+		printk(KERN_ERR "e3d: Cannot allocate fb_info\n");
 		err = -ENOMEM;
 		goto err_disable;
 	}
@@ -293,8 +293,8 @@ static int __devinit e3d_pci_register(struct pci_dev *pdev,
 	ep->regs_base_phys = pci_resource_start (pdev, 1);
 	err = pci_request_region(pdev, 1, "e3d regs");
 	if (err < 0) {
-//		printk("e3d: Cannot request region 1 for %s\n",
-;
+		printk("e3d: Cannot request region 1 for %s\n",
+		       pci_name(pdev));
 		goto err_release_fb;
 	}
 	ep->ramdac = ioremap(ep->regs_base_phys + 0x8000, 0x1000);
@@ -314,8 +314,8 @@ static int __devinit e3d_pci_register(struct pci_dev *pdev,
 
 	err = pci_request_region(pdev, 0, "e3d framebuffer");
 	if (err < 0) {
-//		printk("e3d: Cannot request region 0 for %s\n",
-;
+		printk("e3d: Cannot request region 0 for %s\n",
+		       pci_name(pdev));
 		goto err_unmap_ramdac;
 	}
 
@@ -352,12 +352,12 @@ static int __devinit e3d_pci_register(struct pci_dev *pdev,
 
 	pci_set_drvdata(pdev, info);
 
-;
+	printk("e3d: Found device at %s\n", pci_name(pdev));
 
 	err = register_framebuffer(info);
 	if (err < 0) {
-//		printk(KERN_ERR "e3d: Could not register framebuffer %s\n",
-;
+		printk(KERN_ERR "e3d: Could not register framebuffer %s\n",
+		       pci_name(pdev));
 		goto err_free_cmap;
 	}
 

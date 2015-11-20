@@ -152,15 +152,15 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
 
 	if (warning) {
 		/* this is a WARN_ON rather than BUG/BUG_ON */
-;
+		printk(KERN_WARNING "------------[ cut here ]------------\n");
 
 		if (file)
-//			printk(KERN_WARNING "WARNING: at %s:%u\n",
-;
+			printk(KERN_WARNING "WARNING: at %s:%u\n",
+			       file, line);
 		else
-//			printk(KERN_WARNING "WARNING: at %p "
-//			       "[verbose debug info unavailable]\n",
-;
+			printk(KERN_WARNING "WARNING: at %p "
+			       "[verbose debug info unavailable]\n",
+			       (void *)bugaddr);
 
 		print_modules();
 		show_regs(regs);
@@ -169,15 +169,15 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
 		return BUG_TRAP_TYPE_WARN;
 	}
 
-;
+	printk(KERN_EMERG "------------[ cut here ]------------\n");
 
 	if (file)
-//		printk(KERN_CRIT "kernel BUG at %s:%u!\n",
-;
+		printk(KERN_CRIT "kernel BUG at %s:%u!\n",
+		       file, line);
 	else
-//		printk(KERN_CRIT "Kernel BUG at %p "
-//		       "[verbose debug info unavailable]\n",
-;
+		printk(KERN_CRIT "Kernel BUG at %p "
+		       "[verbose debug info unavailable]\n",
+		       (void *)bugaddr);
 
 	return BUG_TRAP_TYPE_BUG;
 }

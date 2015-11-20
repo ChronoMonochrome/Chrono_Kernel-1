@@ -357,8 +357,8 @@ static void lkdtm_handler(void)
 
 	spin_lock_irqsave(&count_lock, flags);
 	count--;
-//	printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
-;
+	printk(KERN_INFO "lkdtm: Crash point %s of type %s hit, trigger in %d rounds\n",
+			cp_name_to_str(cpoint), cp_type_to_str(cptype), count);
 
 	if (count == 0) {
 		lkdtm_do_action(cptype);
@@ -412,18 +412,18 @@ static int lkdtm_register_cpoint(enum cname which)
 		lkdtm.kp.symbol_name = "generic_ide_ioctl";
 		lkdtm.entry = (kprobe_opcode_t*) jp_generic_ide_ioctl;
 #else
-;
+		printk(KERN_INFO "lkdtm: Crash point not available\n");
 		return -EINVAL;
 #endif
 		break;
 	default:
-;
+		printk(KERN_INFO "lkdtm: Invalid Crash Point\n");
 		return -EINVAL;
 	}
 
 	cpoint = which;
 	if ((ret = register_jprobe(&lkdtm)) < 0) {
-;
+		printk(KERN_INFO "lkdtm: Couldn't register jprobe\n");
 		cpoint = CN_INVALID;
 	}
 
@@ -568,8 +568,8 @@ static ssize_t direct_entry(struct file *f, const char __user *user_buf,
 	if (type == CT_NONE)
 		return -EINVAL;
 
-//	printk(KERN_INFO "lkdtm: Performing direct entry %s\n",
-;
+	printk(KERN_INFO "lkdtm: Performing direct entry %s\n",
+			cp_type_to_str(type));
 	lkdtm_do_action(type);
 	*off += count;
 
@@ -631,7 +631,7 @@ static int __init lkdtm_module_init(void)
 	/* Register debugfs interface */
 	lkdtm_debugfs_root = debugfs_create_dir("provoke-crash", NULL);
 	if (!lkdtm_debugfs_root) {
-;
+		printk(KERN_ERR "lkdtm: creating root dir failed\n");
 		return -ENODEV;
 	}
 
@@ -646,28 +646,28 @@ static int __init lkdtm_module_init(void)
 		de = debugfs_create_file(cur->name, 0644, lkdtm_debugfs_root,
 				NULL, &cur->fops);
 		if (de == NULL) {
-//			printk(KERN_ERR "lkdtm: could not create %s\n",
-;
+			printk(KERN_ERR "lkdtm: could not create %s\n",
+					cur->name);
 			goto out_err;
 		}
 	}
 
 	if (lkdtm_parse_commandline() == -EINVAL) {
-;
+		printk(KERN_INFO "lkdtm: Invalid command\n");
 		goto out_err;
 	}
 
 	if (cpoint != CN_INVALID && cptype != CT_NONE) {
 		ret = lkdtm_register_cpoint(cpoint);
 		if (ret < 0) {
-//			printk(KERN_INFO "lkdtm: Invalid crash point %d\n",
-;
+			printk(KERN_INFO "lkdtm: Invalid crash point %d\n",
+					cpoint);
 			goto out_err;
 		}
-//		printk(KERN_INFO "lkdtm: Crash point %s of type %s registered\n",
-;
+		printk(KERN_INFO "lkdtm: Crash point %s of type %s registered\n",
+				cpoint_name, cpoint_type);
 	} else {
-;
+		printk(KERN_INFO "lkdtm: No crash points registered, enable through debugfs\n");
 	}
 
 	return 0;
@@ -682,7 +682,7 @@ static void __exit lkdtm_module_exit(void)
 	debugfs_remove_recursive(lkdtm_debugfs_root);
 
 	unregister_jprobe(&lkdtm);
-;
+	printk(KERN_INFO "lkdtm: Crash point unregistered\n");
 }
 
 module_init(lkdtm_module_init);

@@ -651,7 +651,7 @@ static int ni_65xx_attach(struct comedi_device *dev,
 	unsigned i;
 	int ret;
 
-;
+	printk(KERN_INFO "comedi%d: ni_65xx:", dev->minor);
 
 	ret = alloc_private(dev, sizeof(struct ni_65xx_private));
 	if (ret < 0)
@@ -663,16 +663,16 @@ static int ni_65xx_attach(struct comedi_device *dev,
 
 	ret = mite_setup(private(dev)->mite);
 	if (ret < 0) {
-;
+		printk(KERN_WARNING "error setting up mite\n");
 		return ret;
 	}
 
 	dev->board_name = board(dev)->name;
 	dev->irq = mite_irq(private(dev)->mite);
-;
+	printk(KERN_INFO " %s", dev->board_name);
 
-//	printk(KERN_INFO " ID=0x%02x",
-;
+	printk(KERN_INFO " ID=0x%02x",
+	       readb(private(dev)->mite->daq_io_addr + ID_Register));
 
 	ret = alloc_subdevices(dev, 4);
 	if (ret < 0)
@@ -772,10 +772,10 @@ static int ni_65xx_attach(struct comedi_device *dev,
 			  "ni_65xx", dev);
 	if (ret < 0) {
 		dev->irq = 0;
-;
+		printk(KERN_WARNING " irq not available");
 	}
 
-;
+	printk("\n");
 
 	return 0;
 }
@@ -825,7 +825,7 @@ static int ni_65xx_find_device(struct comedi_device *dev, int bus, int slot)
 			}
 		}
 	}
-;
+	printk(KERN_WARNING "no device found\n");
 	mite_list_devices();
 	return -EIO;
 }

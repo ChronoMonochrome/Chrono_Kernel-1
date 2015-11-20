@@ -61,7 +61,7 @@ static void __init do_security_initcalls(void)
  */
 int __init security_init(void)
 {
-;
+	printk(KERN_INFO "Security Framework initialized\n");
 
 	security_fixup_ops(&default_security_ops);
 	security_ops = &default_security_ops;
@@ -117,8 +117,8 @@ int __init security_module_enable(struct security_operations *ops)
 int __init register_security(struct security_operations *ops)
 {
 	if (verify(ops)) {
-//		printk(KERN_DEBUG "%s could not verify "
-;
+		printk(KERN_DEBUG "%s could not verify "
+		       "security_operations structure.\n", __func__);
 		return -EINVAL;
 	}
 

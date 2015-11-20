@@ -116,7 +116,7 @@ static ssize_t w100fb_reg_read(struct device *dev, struct device_attribute *attr
 	unsigned long regs, param;
 	regs = simple_strtoul(buf, NULL, 16);
 	param = readl(remapped_regs + regs);
-;
+	printk("Read Register 0x%08lX: 0x%08lX\n", regs, param);
 	return count;
 }
 
@@ -128,7 +128,7 @@ static ssize_t w100fb_reg_write(struct device *dev, struct device_attribute *att
 	sscanf(buf, "%lx %lx", &regs, &param);
 
 	if (regs <= 0x2000) {
-;
+		printk("Write Register 0x%08lX: 0x%08lX\n", regs, param);
 		writel(param, remapped_regs + regs);
 	}
 
@@ -153,10 +153,10 @@ static ssize_t fastpllclk_store(struct device *dev, struct device_attribute *att
 
 	if (simple_strtoul(buf, NULL, 10) > 0) {
 		par->fastpll_mode=1;
-;
+		printk("w100fb: Using fast system clock (if possible)\n");
 	} else {
 		par->fastpll_mode=0;
-;
+		printk("w100fb: Using normal system clock\n");
 	}
 
 	w100_init_clocks(par);
@@ -265,7 +265,7 @@ static void w100_fifo_wait(int entries)
 			return;
 		udelay(1);
 	}
-;
+	printk(KERN_ERR "w100fb: FIFO Timeout!\n");
 }
 
 
@@ -280,7 +280,7 @@ static int w100fb_sync(struct fb_info *info)
 			return 0;
 		udelay(1);
 	}
-;
+	printk(KERN_ERR "w100fb: Graphic engine timeout!\n");
 	return -EBUSY;
 }
 
@@ -652,18 +652,18 @@ int __devinit w100fb_probe(struct platform_device *pdev)
 		goto out;
 
 	/* Identify the chip */
-;
+	printk("Found ");
 	chip_id = readl(remapped_regs + mmCHIP_ID);
 	switch(chip_id) {
-;
-;
-;
+		case CHIP_ID_W100:  printk("w100");  break;
+		case CHIP_ID_W3200: printk("w3200"); break;
+		case CHIP_ID_W3220: printk("w3220"); break;
 		default:
-;
+			printk("Unknown imageon chip ID\n");
 			err = -ENODEV;
 			goto out;
 	}
-;
+	printk(" at 0x%08lx.\n", (unsigned long) mem->start+W100_CFG_BASE);
 
 	/* Remap the framebuffer */
 	remapped_fbuf = ioremap_nocache(mem->start+MEM_WINDOW_BASE, MEM_WINDOW_SIZE);
@@ -687,7 +687,7 @@ int __devinit w100fb_probe(struct platform_device *pdev)
 
 	par->pll_table=w100_get_xtal_table(inf->xtal_freq);
 	if (!par->pll_table) {
-;
+		printk(KERN_ERR "No matching Xtal definition found\n");
 		err = -EINVAL;
 		goto out;
 	}
@@ -760,10 +760,10 @@ int __devinit w100fb_probe(struct platform_device *pdev)
 	err |= device_create_file(&pdev->dev, &dev_attr_flip);
 
 	if (err != 0)
-//		printk(KERN_WARNING "fb%d: failed to register attributes (%d)\n",
-;
+		printk(KERN_WARNING "fb%d: failed to register attributes (%d)\n",
+				info->node, err);
 
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 	return 0;
 out:
 	if (info) {

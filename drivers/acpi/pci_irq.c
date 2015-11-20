@@ -173,8 +173,8 @@ static void do_prt_fixups(struct acpi_prt_entry *entry,
 		    entry->pin == quirk->pin &&
 		    !strcmp(prt->source, quirk->source) &&
 		    strlen(prt->source) >= strlen(quirk->actual_source)) {
-//			printk(KERN_WARNING PREFIX "firmware reports "
-;
+			printk(KERN_WARNING PREFIX "firmware reports "
+				"%04x:%02x:%02x PCI INT %c connected to %s; "
 				"changing to %s\n",
 				entry->id.segment, entry->id.bus,
 				entry->id.device, pin_name(entry->pin),
@@ -255,8 +255,8 @@ int acpi_pci_irq_add_prt(acpi_handle handle, struct pci_bus *bus)
 	if (ACPI_FAILURE(status))
 		return -ENODEV;
 
-//	printk(KERN_DEBUG "ACPI: PCI Interrupt Routing Table [%s._PRT]\n",
-;
+	printk(KERN_DEBUG "ACPI: PCI Interrupt Routing Table [%s._PRT]\n",
+	       (char *) buffer.pointer);
 
 	kfree(buffer.pointer);
 
@@ -286,9 +286,9 @@ void acpi_pci_irq_del_prt(struct pci_bus *bus)
 {
 	struct acpi_prt_entry *entry, *tmp;
 
-//	printk(KERN_DEBUG
-//	       "ACPI: Delete PCI Interrupt Routing Table for %04x:%02x\n",
-;
+	printk(KERN_DEBUG
+	       "ACPI: Delete PCI Interrupt Routing Table for %04x:%02x\n",
+	       pci_domain_nr(bus), bus->number);
 	spin_lock(&acpi_prt_lock);
 	list_for_each_entry_safe(entry, tmp, &acpi_prt_list, list) {
 		if (pci_domain_nr(bus) == entry->id.segment
@@ -405,13 +405,13 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
 		/* Interrupt Line values above 0xF are forbidden */
 		if (dev->irq > 0 && (dev->irq <= 0xF) &&
 		    (acpi_isa_irq_to_gsi(dev->irq, &dev_gsi) == 0)) {
-;
+			printk(" - using ISA IRQ %d\n", dev->irq);
 			acpi_register_gsi(&dev->dev, dev_gsi,
 					  ACPI_LEVEL_SENSITIVE,
 					  ACPI_ACTIVE_LOW);
 			return 0;
 		} else {
-;
+			printk("\n");
 			return 0;
 		}
 	}

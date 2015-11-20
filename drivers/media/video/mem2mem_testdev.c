@@ -61,17 +61,17 @@ MODULE_LICENSE("GPL");
 #define MEM2MEM_COLOR_STEP	(0xff >> 4)
 #define MEM2MEM_NUM_TILES	8
 
-//#define dprintk(dev, fmt, arg...) \
-//	v4l2_dbg(1, 1, &dev->v4l2_dev, "%s: " fmt, __func__, ## arg)
-//
-//
-//void m2mtest_dev_release(struct device *dev)
-//{}
-//
-//static struct platform_device m2mtest_pdev = {
-//	.name		= MEM2MEM_NAME,
-//	.dev.release	= m2mtest_dev_release,
-;
+#define dprintk(dev, fmt, arg...) \
+	v4l2_dbg(1, 1, &dev->v4l2_dev, "%s: " fmt, __func__, ## arg)
+
+
+void m2mtest_dev_release(struct device *dev)
+{}
+
+static struct platform_device m2mtest_pdev = {
+	.name		= MEM2MEM_NAME,
+	.dev.release	= m2mtest_dev_release,
+};
 
 struct m2mtest_fmt {
 	char	*name;
@@ -268,7 +268,7 @@ static int device_process(struct m2mtest_ctx *ctx,
 
 static void schedule_irq(struct m2mtest_dev *dev, int msec_timeout)
 {
-;
+	dprintk(dev, "Scheduling a simulated irq\n");
 	mod_timer(&dev->timer, jiffies + msecs_to_jiffies(msec_timeout));
 }
 
@@ -285,7 +285,7 @@ static int job_ready(void *priv)
 
 	if (v4l2_m2m_num_src_bufs_ready(ctx->m2m_ctx) < ctx->translen
 	    || v4l2_m2m_num_dst_bufs_ready(ctx->m2m_ctx) < ctx->translen) {
-;
+		dprintk(ctx->dev, "Not enough buffers available\n");
 		return 0;
 	}
 
@@ -346,8 +346,8 @@ static void device_isr(unsigned long priv)
 	curr_ctx = v4l2_m2m_get_curr_priv(m2mtest_dev->m2m_dev);
 
 	if (NULL == curr_ctx) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"Instance released before the end of transaction\n");
 		return;
 	}
 
@@ -363,7 +363,7 @@ static void device_isr(unsigned long priv)
 
 	if (curr_ctx->num_processed == curr_ctx->translen
 	    || curr_ctx->aborting) {
-;
+		dprintk(curr_ctx->dev, "Finishing transaction\n");
 		curr_ctx->num_processed = 0;
 		v4l2_m2m_job_finish(m2mtest_dev->m2m_dev, curr_ctx->m2m_ctx);
 	} else {
@@ -552,9 +552,9 @@ static int vidioc_s_fmt(struct m2mtest_ctx *ctx, struct v4l2_format *f)
 	q_data->sizeimage	= q_data->width * q_data->height
 				* q_data->fmt->depth >> 3;
 
-//	dprintk(ctx->dev,
-//		"Setting format for type %d, wxh: %dx%d, fmt: %d\n",
-;
+	dprintk(ctx->dev,
+		"Setting format for type %d, wxh: %dx%d, fmt: %d\n",
+		f->type, q_data->width, q_data->height, q_data->fmt->fourcc);
 
 	return 0;
 }
@@ -764,7 +764,7 @@ static int m2mtest_queue_setup(struct vb2_queue *vq, unsigned int *nbuffers,
 	 * alloc_ctxs array.
 	 */
 
-;
+	dprintk(ctx->dev, "get %d buffer(s) of size %d each.\n", count, size);
 
 	return 0;
 }
@@ -774,13 +774,13 @@ static int m2mtest_buf_prepare(struct vb2_buffer *vb)
 	struct m2mtest_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
 	struct m2mtest_q_data *q_data;
 
-;
+	dprintk(ctx->dev, "type: %d\n", vb->vb2_queue->type);
 
 	q_data = get_q_data(vb->vb2_queue->type);
 
 	if (vb2_plane_size(vb, 0) < q_data->sizeimage) {
-//		dprintk(ctx->dev, "%s data will not fit into plane (%lu < %lu)\n",
-;
+		dprintk(ctx->dev, "%s data will not fit into plane (%lu < %lu)\n",
+				__func__, vb2_plane_size(vb, 0), (long)q_data->sizeimage);
 		return -EINVAL;
 	}
 
@@ -858,7 +858,7 @@ static int m2mtest_open(struct file *file)
 
 	atomic_inc(&dev->num_inst);
 
-;
+	dprintk(dev, "Created instance %p, m2m_ctx: %p\n", ctx, ctx->m2m_ctx);
 
 	return 0;
 }
@@ -868,7 +868,7 @@ static int m2mtest_release(struct file *file)
 	struct m2mtest_dev *dev = video_drvdata(file);
 	struct m2mtest_ctx *ctx = file->private_data;
 
-;
+	dprintk(dev, "Releasing instance %p\n", ctx);
 
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 	kfree(ctx);

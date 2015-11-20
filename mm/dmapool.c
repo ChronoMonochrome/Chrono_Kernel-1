@@ -274,9 +274,9 @@ void dma_pool_destroy(struct dma_pool *pool)
 					"dma_pool_destroy %s, %p busy\n",
 					pool->name, page->vaddr);
 			else
-//				printk(KERN_ERR
-//				       "dma_pool_destroy %s, %p busy\n",
-;
+				printk(KERN_ERR
+				       "dma_pool_destroy %s, %p busy\n",
+				       pool->name, page->vaddr);
 			/* leak the still-in-use consistent memory */
 			list_del(&page->page_list);
 			kfree(page);
@@ -375,8 +375,8 @@ void dma_pool_free(struct dma_pool *pool, void *vaddr, dma_addr_t dma)
 				"dma_pool_free %s, %p/%lx (bad dma)\n",
 				pool->name, vaddr, (unsigned long)dma);
 		else
-//			printk(KERN_ERR "dma_pool_free %s, %p/%lx (bad dma)\n",
-;
+			printk(KERN_ERR "dma_pool_free %s, %p/%lx (bad dma)\n",
+			       pool->name, vaddr, (unsigned long)dma);
 		return;
 	}
 
@@ -389,9 +389,9 @@ void dma_pool_free(struct dma_pool *pool, void *vaddr, dma_addr_t dma)
 				"dma_pool_free %s, %p (bad vaddr)/%Lx\n",
 				pool->name, vaddr, (unsigned long long)dma);
 		else
-//			printk(KERN_ERR
-//			       "dma_pool_free %s, %p (bad vaddr)/%Lx\n",
-;
+			printk(KERN_ERR
+			       "dma_pool_free %s, %p (bad vaddr)/%Lx\n",
+			       pool->name, vaddr, (unsigned long long)dma);
 		return;
 	}
 	{
@@ -407,9 +407,9 @@ void dma_pool_free(struct dma_pool *pool, void *vaddr, dma_addr_t dma)
 					"already free\n", pool->name,
 					(unsigned long long)dma);
 			else
-//				printk(KERN_ERR "dma_pool_free %s, dma %Lx "
-//					"already free\n", pool->name,
-;
+				printk(KERN_ERR "dma_pool_free %s, dma %Lx "
+					"already free\n", pool->name,
+					(unsigned long long)dma);
 			return;
 		}
 	}

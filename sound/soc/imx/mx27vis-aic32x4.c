@@ -104,7 +104,7 @@ static int __init mx27vis_aic32x4_init(void)
 	ret = platform_device_add(mx27vis_aic32x4_snd_device);
 
 	if (ret) {
-;
+		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
 		platform_device_put(mx27vis_aic32x4_snd_device);
 	}
 

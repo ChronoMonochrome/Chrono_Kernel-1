@@ -45,8 +45,8 @@ bvme6000_probe(struct platform_device *dev)
 
 	hostdata = kzalloc(sizeof(struct NCR_700_Host_Parameters), GFP_KERNEL);
 	if (!hostdata) {
-//		printk(KERN_ERR "bvme6000-scsi: "
-;
+		printk(KERN_ERR "bvme6000-scsi: "
+				"Failed to allocate host data\n");
 		goto out;
 	}
 
@@ -62,7 +62,7 @@ bvme6000_probe(struct platform_device *dev)
 	host = NCR_700_detect(&bvme6000_scsi_driver_template, hostdata,
 			      &dev->dev);
 	if (!host) {
-;
+		printk(KERN_ERR "bvme6000-scsi: No host detected; "
 				"board configuration problem?\n");
 		goto out_free;
 	}
@@ -71,7 +71,7 @@ bvme6000_probe(struct platform_device *dev)
 	host->irq = BVME_IRQ_SCSI;
 	if (request_irq(BVME_IRQ_SCSI, NCR_700_intr, 0, "bvme6000-scsi",
 			host)) {
-;
+		printk(KERN_ERR "bvme6000-scsi: request_irq failed\n");
 		goto out_put_host;
 	}
 

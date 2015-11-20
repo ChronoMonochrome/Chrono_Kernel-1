@@ -69,8 +69,8 @@ static int wf_max6690_probe(struct i2c_client *client,
 
 	max = kzalloc(sizeof(struct wf_6690_sensor), GFP_KERNEL);
 	if (max == NULL) {
-//		printk(KERN_ERR "windfarm: Couldn't create MAX6690 sensor: "
-;
+		printk(KERN_ERR "windfarm: Couldn't create MAX6690 sensor: "
+		       "no memory\n");
 		return -ENOMEM;
 	}
 
@@ -112,7 +112,7 @@ static struct i2c_client *wf_max6690_create(struct i2c_adapter *adapter,
 
 	client = i2c_new_device(adapter, &info);
 	if (client == NULL) {
-;
+		printk(KERN_ERR "windfarm: failed to attach MAX6690 sensor\n");
 		goto fail;
 	}
 
@@ -152,7 +152,7 @@ static int wf_max6690_attach(struct i2c_adapter *adapter)
 		loc = of_get_property(dev, "hwsensor-location", NULL);
 		if (loc == NULL || addr == 0)
 			continue;
-;
+		printk("found max6690, loc=%s addr=0x%02x\n", loc, addr);
 		wf_max6690_create(adapter, addr, loc);
 	}
 

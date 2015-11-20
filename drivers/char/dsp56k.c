@@ -134,20 +134,20 @@ static int dsp56k_upload(u_char __user *bin, int len)
 
 	pdev = platform_device_register_simple("dsp56k", 0, NULL, 0);
 	if (IS_ERR(pdev)) {
-//		printk(KERN_ERR "Failed to register device for \"%s\"\n",
-;
+		printk(KERN_ERR "Failed to register device for \"%s\"\n",
+		       fw_name);
 		return -EINVAL;
 	}
 	err = request_firmware(&fw, fw_name, &pdev->dev);
 	platform_device_unregister(pdev);
 	if (err) {
-//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-;
+		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+		       fw_name, err);
 		return err;
 	}
 	if (fw->size % 3) {
-//		printk(KERN_ERR "Bogus length %d in image \"%s\"\n",
-;
+		printk(KERN_ERR "Bogus length %d in image \"%s\"\n",
+		       fw->size, fw_name);
 		release_firmware(fw);
 		return -EINVAL;
 	}
@@ -236,7 +236,7 @@ static ssize_t dsp56k_read(struct file *file, char __user *buf, size_t count,
 	}
 
 	default:
-;
+		printk(KERN_ERR "DSP56k driver: Unknown minor device: %d\n", dev);
 		return -ENXIO;
 	}
 }
@@ -298,7 +298,7 @@ static ssize_t dsp56k_write(struct file *file, const char __user *buf, size_t co
 		return -EFAULT;
 	}
 	default:
-;
+		printk(KERN_ERR "DSP56k driver: Unknown minor device: %d\n", dev);
 		return -ENXIO;
 	}
 }
@@ -396,7 +396,7 @@ static long dsp56k_ioctl(struct file *file, unsigned int cmd,
 		return 0;
 
 	default:
-;
+		printk(KERN_ERR "DSP56k driver: Unknown minor device: %d\n", dev);
 		return -ENXIO;
 	}
 }
@@ -417,7 +417,7 @@ static unsigned int dsp56k_poll(struct file *file, poll_table *wait)
 		return POLLIN | POLLRDNORM | POLLOUT;
 
 	default:
-;
+		printk("DSP56k driver: Unknown minor device: %d\n", dev);
 		return 0;
 	}
 }
@@ -469,7 +469,7 @@ static int dsp56k_release(struct inode *inode, struct file *file)
 		clear_bit(0, &dsp56k.in_use);
 		break;
 	default:
-;
+		printk(KERN_ERR "DSP56k driver: Unknown minor device: %d\n", dev);
 		return -ENXIO;
 	}
 
@@ -496,12 +496,12 @@ static int __init dsp56k_init_driver(void)
 	int err = 0;
 
 	if(!MACH_IS_ATARI || !ATARIHW_PRESENT(DSP56K)) {
-;
+		printk("DSP56k driver: Hardware not present\n");
 		return -ENODEV;
 	}
 
 	if(register_chrdev(DSP56K_MAJOR, "dsp56k", &dsp56k_fops)) {
-;
+		printk("DSP56k driver: Unable to register driver\n");
 		return -ENODEV;
 	}
 	dsp56k_class = class_create(THIS_MODULE, "dsp56k");
@@ -512,7 +512,7 @@ static int __init dsp56k_init_driver(void)
 	device_create(dsp56k_class, NULL, MKDEV(DSP56K_MAJOR, 0), NULL,
 		      "dsp56k");
 
-;
+	printk(banner);
 	goto out;
 
 out_chrdev:

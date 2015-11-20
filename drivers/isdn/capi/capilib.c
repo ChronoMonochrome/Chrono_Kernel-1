@@ -5,7 +5,7 @@
 #include <linux/isdn/capilli.h>
 
 #define DBG(format, arg...) do { \
-;
+printk(KERN_DEBUG "%s: " format "\n" , __func__ , ## arg); \
 } while (0)
 
 struct capilib_msgidqueue {
@@ -83,12 +83,12 @@ void capilib_new_ncci(struct list_head *head, u16 applid, u32 ncci, u32 winsize)
 
 	np = kmalloc(sizeof(*np), GFP_ATOMIC);
 	if (!np) {
-;
+		printk(KERN_WARNING "capilib_new_ncci: no memory.\n");
 		return;
 	}
 	if (winsize > CAPI_MAXDATAWINDOW) {
-//		printk(KERN_ERR "capi_new_ncci: winsize %d too big\n",
-;
+		printk(KERN_ERR "capi_new_ncci: winsize %d too big\n",
+		       winsize);
 		winsize = CAPI_MAXDATAWINDOW;
 	}
 	np->applid = applid;
@@ -112,12 +112,12 @@ void capilib_free_ncci(struct list_head *head, u16 applid, u32 ncci)
 			continue;
 		if (np->ncci != ncci)
 			continue;
-;
+		printk(KERN_INFO "kcapi: appl %d ncci 0x%x down\n", applid, ncci);
 		list_del(&np->list);
 		kfree(np);
 		return;
 	}
-;
+	printk(KERN_ERR "capilib_free_ncci: ncci 0x%x not found\n", ncci);
 }
 
 EXPORT_SYMBOL(capilib_free_ncci);
@@ -131,7 +131,7 @@ void capilib_release_appl(struct list_head *head, u16 applid)
 		np = list_entry(l, struct capilib_ncci, list);
 		if (np->applid != applid)
 			continue;
-;
+		printk(KERN_INFO "kcapi: appl %d ncci 0x%x forced down\n", applid, np->ncci);
 		list_del(&np->list);
 		kfree(np);
 	}
@@ -146,7 +146,7 @@ void capilib_release(struct list_head *head)
 
 	list_for_each_safe(l, n, head) {
 		np = list_entry(l, struct capilib_ncci, list);
-;
+		printk(KERN_INFO "kcapi: appl %d ncci 0x%x forced down\n", np->applid, np->ncci);
 		list_del(&np->list);
 		kfree(np);
 	}
@@ -171,7 +171,7 @@ u16 capilib_data_b3_req(struct list_head *head, u16 applid, u32 ncci, u16 msgid)
 
 		return CAPI_NOERROR;
 	}
-;
+	printk(KERN_ERR "capilib_data_b3_req: ncci 0x%x not found\n", ncci);
 	return CAPI_NOERROR;
 }
 
@@ -190,12 +190,12 @@ void capilib_data_b3_conf(struct list_head *head, u16 applid, u32 ncci, u16 msgi
 			continue;
 		
 		if (mq_dequeue(np, msgid) == 0) {
-//			printk(KERN_ERR "kcapi: msgid %hu ncci 0x%x not on queue\n",
-;
+			printk(KERN_ERR "kcapi: msgid %hu ncci 0x%x not on queue\n",
+			       msgid, ncci);
 		}
 		return;
 	}
-;
+	printk(KERN_ERR "capilib_data_b3_conf: ncci 0x%x not found\n", ncci);
 }
 
 EXPORT_SYMBOL(capilib_data_b3_conf);

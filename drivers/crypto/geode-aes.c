@@ -262,7 +262,7 @@ static int fallback_init_cip(struct crypto_tfm *tfm)
 				CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK);
 
 	if (IS_ERR(op->fallback.cip)) {
-;
+		printk(KERN_ERR "Error allocating fallback algo %s\n", name);
 		return PTR_ERR(op->fallback.cip);
 	}
 
@@ -373,7 +373,7 @@ static int fallback_init_blk(struct crypto_tfm *tfm)
 			CRYPTO_ALG_ASYNC | CRYPTO_ALG_NEED_FALLBACK);
 
 	if (IS_ERR(op->fallback.blk)) {
-;
+		printk(KERN_ERR "Error allocating fallback algo %s\n", name);
 		return PTR_ERR(op->fallback.blk);
 	}
 
@@ -550,7 +550,7 @@ geode_aes_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	if (ret)
 		goto eecb;
 
-;
+	printk(KERN_NOTICE "geode-aes: GEODE AES engine enabled.\n");
 	return 0;
 
  eecb:
@@ -568,7 +568,7 @@ geode_aes_probe(struct pci_dev *dev, const struct pci_device_id *id)
  eenable:
 	pci_disable_device(dev);
 
-;
+	printk(KERN_ERR "geode-aes:  GEODE AES initialization failed.\n");
 	return ret;
 }
 

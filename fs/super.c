@@ -399,9 +399,9 @@ void generic_shutdown_super(struct super_block *sb)
 			sop->put_super(sb);
 
 		if (!list_empty(&sb->s_inodes)) {
-//			printk("VFS: Busy inodes after unmount of %s. "
-//			   "Self-destruct in 5 seconds.  Have a nice day...\n",
-;
+			printk("VFS: Busy inodes after unmount of %s. "
+			   "Self-destruct in 5 seconds.  Have a nice day...\n",
+			   sb->s_id);
 		}
 		put_fs_excl();
 	}
@@ -778,7 +778,7 @@ static void do_emergency_remount(struct work_struct *work)
 		__put_super(p);
 	spin_unlock(&sb_lock);
 	kfree(work);
-;
+	printk("Emergency Remount complete\n");
 }
 
 void emergency_remount(void)
@@ -1164,8 +1164,8 @@ int freeze_super(struct super_block *sb)
 	if (sb->s_op->freeze_fs) {
 		ret = sb->s_op->freeze_fs(sb);
 		if (ret) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"VFS:Filesystem freeze failed\n");
 			sb->s_frozen = SB_UNFROZEN;
 			smp_wmb();
 			wake_up(&sb->s_wait_unfrozen);
@@ -1200,8 +1200,8 @@ int thaw_super(struct super_block *sb)
 	if (sb->s_op->unfreeze_fs) {
 		error = sb->s_op->unfreeze_fs(sb);
 		if (error) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"VFS:Filesystem thaw failed\n");
 			sb->s_frozen = SB_FREEZE_TRANS;
 			up_write(&sb->s_umount);
 			return error;

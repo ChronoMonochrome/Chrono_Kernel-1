@@ -893,8 +893,8 @@ int rose_route_frame(struct sk_buff *skb, ax25_cb *ax25)
 	}
 
 	if (rose_neigh == NULL) {
-//		printk("rose_route : unknown neighbour or device %s\n",
-;
+		printk("rose_route : unknown neighbour or device %s\n",
+		       ax2asc(buf, &ax25->dest_addr));
 		goto out;
 	}
 

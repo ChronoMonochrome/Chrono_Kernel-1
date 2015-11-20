@@ -120,7 +120,7 @@
 
 #define LSC_DBG
 #ifdef LSC_DBG
-;
+#define LDBG(s,args...)	{printk("LDBG: func [%s], line [%d], ",__func__,__LINE__); printk(s,## args);}
 #else
 #define LDBG(s,args...) {}
 #endif
@@ -729,7 +729,7 @@ static ssize_t px3315_em_read(struct device *dev,
 		tmp = i2c_smbus_read_byte_data(data->client, px3315_reg[i]);
 		mutex_unlock(&data->lock);
 
-;
+		printk("Reg[0x%x] Val[0x%x]\n", px3315_reg[i], tmp);
 	}
 
 	return 0;
@@ -746,7 +746,7 @@ static ssize_t px3315_em_write(struct device *dev,
 
 	sscanf(buf, "%x%x", &addr, &val);
 
-;
+	printk("Write [%x] to Reg[%x]...\n",val,addr);
 	mutex_lock(&data->lock);
 
 	ret = i2c_smbus_write_byte_data(data->client, addr, val);

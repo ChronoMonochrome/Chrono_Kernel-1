@@ -916,7 +916,7 @@ void r600_pcie_gart_tlb_flush(struct radeon_device *rdev)
 		tmp = RREG32(VM_CONTEXT0_REQUEST_RESPONSE);
 		tmp = (tmp & RESPONSE_TYPE_MASK) >> RESPONSE_TYPE_SHIFT;
 		if (tmp == 2) {
-;
+			printk(KERN_WARNING "[drm] r600 flush TLB failed\n");
 			return;
 		}
 		if (tmp) {
@@ -1962,7 +1962,7 @@ int r600_init_microcode(struct radeon_device *rdev)
 	pdev = platform_device_register_simple("radeon_cp", 0, NULL, 0);
 	err = IS_ERR(pdev);
 	if (err) {
-;
+		printk(KERN_ERR "radeon_cp: Failed to register firmware\n");
 		return -EINVAL;
 	}
 
@@ -2062,9 +2062,9 @@ int r600_init_microcode(struct radeon_device *rdev)
 	if (err)
 		goto out;
 	if (rdev->pfp_fw->size != pfp_req_size) {
-//		printk(KERN_ERR
-//		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
-;
+		printk(KERN_ERR
+		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
+		       rdev->pfp_fw->size, fw_name);
 		err = -EINVAL;
 		goto out;
 	}
@@ -2074,9 +2074,9 @@ int r600_init_microcode(struct radeon_device *rdev)
 	if (err)
 		goto out;
 	if (rdev->me_fw->size != me_req_size) {
-//		printk(KERN_ERR
-//		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
-;
+		printk(KERN_ERR
+		       "r600_cp: Bogus length %zu in firmware \"%s\"\n",
+		       rdev->me_fw->size, fw_name);
 		err = -EINVAL;
 	}
 
@@ -2085,9 +2085,9 @@ int r600_init_microcode(struct radeon_device *rdev)
 	if (err)
 		goto out;
 	if (rdev->rlc_fw->size != rlc_req_size) {
-//		printk(KERN_ERR
-//		       "r600_rlc: Bogus length %zu in firmware \"%s\"\n",
-;
+		printk(KERN_ERR
+		       "r600_rlc: Bogus length %zu in firmware \"%s\"\n",
+		       rdev->rlc_fw->size, fw_name);
 		err = -EINVAL;
 	}
 
@@ -2096,9 +2096,9 @@ out:
 
 	if (err) {
 		if (err != -EINVAL)
-//			printk(KERN_ERR
-//			       "r600_cp: Failed to load firmware \"%s\"\n",
-;
+			printk(KERN_ERR
+			       "r600_cp: Failed to load firmware \"%s\"\n",
+			       fw_name);
 		release_firmware(rdev->pfp_fw);
 		rdev->pfp_fw = NULL;
 		release_firmware(rdev->me_fw);

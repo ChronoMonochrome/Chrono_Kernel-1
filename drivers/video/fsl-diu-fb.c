@@ -753,7 +753,7 @@ static int map_video_memory(struct fb_info *info)
 
 	info->screen_base = fsl_diu_alloc(smem_len, &phys);
 	if (info->screen_base == NULL) {
-;
+		printk(KERN_ERR "Unable to allocate fb memory\n");
 		return -ENOMEM;
 	}
 	mutex_lock(&info->mm_lock);
@@ -826,7 +826,7 @@ static int fsl_diu_set_par(struct fb_info *info)
 
 		/* Memory allocation for framebuffer */
 		if (map_video_memory(info)) {
-;
+			printk(KERN_ERR "Unable to allocate fb memory 1\n");
 			return -ENOMEM;
 		}
 	}
@@ -1080,7 +1080,7 @@ static int fsl_diu_ioctl(struct fb_info *info, unsigned int cmd,
 		break;
 
 	default:
-;
+		printk(KERN_ERR "Unknown ioctl command (0x%08X)\n", cmd);
 		return -ENOIOCTLCMD;
 	}
 
@@ -1268,21 +1268,21 @@ static int __devinit install_fb(struct fb_info *info)
 		mfbi->blank = FB_BLANK_UNBLANK;
 
 	if (fsl_diu_check_var(&info->var, info)) {
-;
+		printk(KERN_ERR "fb_check_var failed");
 		fb_dealloc_cmap(&info->cmap);
 		return -EINVAL;
 	}
 
 	if (register_framebuffer(info) < 0) {
-;
+		printk(KERN_ERR "register_framebuffer failed");
 		unmap_video_memory(info);
 		fb_dealloc_cmap(&info->cmap);
 		return -EINVAL;
 	}
 
 	mfbi->registered = 1;
-//	printk(KERN_INFO "fb%d: %s fb device registered successfully.\n",
-;
+	printk(KERN_INFO "fb%d: %s fb device registered successfully.\n",
+		 info->node, info->fix.id);
 
 	return 0;
 }
@@ -1747,12 +1747,12 @@ static int __init fsl_diu_init(void)
 		return -ENODEV;
 	fsl_diu_setup(option);
 #endif
-;
+	printk(KERN_INFO "Freescale DIU driver\n");
 
 #ifdef CONFIG_NOT_COHERENT_CACHE
 	np = of_find_node_by_type(NULL, "cpu");
 	if (!np) {
-;
+		printk(KERN_ERR "Err: can't find device node 'cpu'\n");
 		return -ENODEV;
 	}
 
@@ -1782,8 +1782,8 @@ static int __init fsl_diu_init(void)
 #endif
 	ret = platform_driver_register(&fsl_diu_driver);
 	if (ret) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"fsl-diu: failed to register platform driver\n");
 #if defined(CONFIG_NOT_COHERENT_CACHE)
 		vfree(coherence_data);
 #endif

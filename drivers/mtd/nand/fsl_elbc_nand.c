@@ -946,8 +946,8 @@ static int __devinit fsl_elbc_nand_probe(struct platform_device *pdev)
 
 	mtd_device_register(&priv->mtd, parts, ret);
 
-//	printk(KERN_INFO "eLBC NAND device at 0x%llx, bank %d\n",
-;
+	printk(KERN_INFO "eLBC NAND device at 0x%llx, bank %d\n",
+	       (unsigned long long)res.start, priv->bank);
 	return 0;
 
 err:

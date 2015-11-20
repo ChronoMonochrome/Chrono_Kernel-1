@@ -69,7 +69,7 @@
 static int ccio_dma_supported( struct pci_dev *dev, u64 mask)
 {
 	if (dev == NULL) {
-;
+		printk(KERN_ERR MODULE_NAME ": EISA/ISA/et al not supported\n");
 		BUG();
 		return(0);
 	}
@@ -166,9 +166,9 @@ static struct pci_dma_ops ccio_ops = {
 static int
 ccio_probe(struct parisc_device *dev)
 {
-//	printk(KERN_INFO "%s found %s at 0x%lx\n", MODULE_NAME,
-//			dev->id.hversion == U2_BC_GSC ? "U2" : "UTurn",
-;
+	printk(KERN_INFO "%s found %s at 0x%lx\n", MODULE_NAME,
+			dev->id.hversion == U2_BC_GSC ? "U2" : "UTurn",
+			dev->hpa.start);
 
 /*
 ** FIXME - should check U2 registers to verify it's really running

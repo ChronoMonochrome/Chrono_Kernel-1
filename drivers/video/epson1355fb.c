@@ -552,14 +552,14 @@ static void __init fetch_hw_state(struct fb_info *info, struct epson1355_par *pa
 	var->grayscale = !is_color;
 
 #ifdef DEBUG
-//	printk(KERN_INFO
-//	       "epson1355fb: xres=%d, yres=%d, "
-//	       "is_color=%d, is_dual=%d, is_tft=%d\n",
-;
-//	printk(KERN_INFO
-//	       "epson1355fb: bpp=%d, lcd_bpp=%d, "
-//	       "crt_enabled=%d, lcd_enabled=%d\n",
-;
+	printk(KERN_INFO
+	       "epson1355fb: xres=%d, yres=%d, "
+	       "is_color=%d, is_dual=%d, is_tft=%d\n",
+	       xres, yres, is_color, is_dual, is_tft);
+	printk(KERN_INFO
+	       "epson1355fb: bpp=%d, lcd_bpp=%d, "
+	       "crt_enabled=%d, lcd_enabled=%d\n",
+	       bpp, lcd_bpp, crt_enabled, lcd_enabled);
 #endif
 }
 
@@ -609,16 +609,16 @@ int __devinit epson1355fb_probe(struct platform_device *dev)
 	int rc = 0;
 
 	if (!request_mem_region(EPSON1355FB_REGS_PHYS, EPSON1355FB_REGS_LEN, "S1D13505 registers")) {
-//		printk(KERN_ERR "epson1355fb: unable to reserve "
-;
+		printk(KERN_ERR "epson1355fb: unable to reserve "
+		       "registers at 0x%0x\n", EPSON1355FB_REGS_PHYS);
 		rc = -EBUSY;
 		goto bail;
 	}
 
 	if (!request_mem_region(EPSON1355FB_FB_PHYS, EPSON1355FB_FB_LEN,
 				"S1D13505 framebuffer")) {
-//		printk(KERN_ERR "epson1355fb: unable to reserve "
-;
+		printk(KERN_ERR "epson1355fb: unable to reserve "
+		       "framebuffer at 0x%0x\n", EPSON1355FB_FB_PHYS);
 		rc = -EBUSY;
 		goto bail;
 	}
@@ -632,7 +632,7 @@ int __devinit epson1355fb_probe(struct platform_device *dev)
 	default_par = info->par;
 	default_par->reg_addr = (unsigned long) ioremap(EPSON1355FB_REGS_PHYS, EPSON1355FB_REGS_LEN);
 	if (!default_par->reg_addr) {
-;
+		printk(KERN_ERR "epson1355fb: unable to map registers\n");
 		rc = -ENOMEM;
 		goto bail;
 	}
@@ -640,14 +640,14 @@ int __devinit epson1355fb_probe(struct platform_device *dev)
 
 	info->screen_base = ioremap(EPSON1355FB_FB_PHYS, EPSON1355FB_FB_LEN);
 	if (!info->screen_base) {
-;
+		printk(KERN_ERR "epson1355fb: unable to map framebuffer\n");
 		rc = -ENOMEM;
 		goto bail;
 	}
 
 	revision = epson1355_read_reg(default_par, REG_REVISION_CODE);
 	if ((revision >> 2) != 3) {
-;
+		printk(KERN_INFO "epson1355fb: epson1355 not found\n");
 		rc = -ENODEV;
 		goto bail;
 	}
@@ -657,8 +657,8 @@ int __devinit epson1355fb_probe(struct platform_device *dev)
 	info->fix.smem_start = EPSON1355FB_FB_PHYS;
 	info->fix.smem_len = get_fb_size(info);
 
-//	printk(KERN_INFO "epson1355fb: regs mapped at 0x%lx, fb %d KiB mapped at 0x%p\n",
-;
+	printk(KERN_INFO "epson1355fb: regs mapped at 0x%lx, fb %d KiB mapped at 0x%p\n",
+	       default_par->reg_addr, info->fix.smem_len / 1024, info->screen_base);
 
 	strcpy(info->fix.id, "S1D13505");
 	info->par = default_par;
@@ -684,8 +684,8 @@ int __devinit epson1355fb_probe(struct platform_device *dev)
 	 */
 	platform_set_drvdata(dev, info);
 
-//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+	       info->node, info->fix.id);
 
 	return 0;
 

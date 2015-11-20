@@ -232,7 +232,7 @@ int __devinit setup_niccy(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, niccy_revision);
-;
+	printk(KERN_INFO "HiSax: Niccy driver Rev. %s\n", HiSax_getrev(tmp));
 	if (cs->typ != ISDN_CTYPE_NICCY)
 		return 0;
 #ifdef __ISAPNP__
@@ -247,15 +247,15 @@ int __devinit setup_niccy(struct IsdnCard *card)
 					ISAPNP_VENDOR('S', 'D', 'A'),
 					ISAPNP_FUNCTION(0x0150), pnp_d);
 			if (!pnp_d) {
-//				printk(KERN_ERR "NiccyPnP: PnP error card "
-;
+				printk(KERN_ERR "NiccyPnP: PnP error card "
+					"found, no device\n");
 				return 0;
 			}
 			pnp_disable_dev(pnp_d);
 			err = pnp_activate_dev(pnp_d);
 			if (err < 0) {
-//				printk(KERN_WARNING "%s: pnp_activate_dev "
-;
+				printk(KERN_WARNING "%s: pnp_activate_dev "
+					"ret(%d)\n", __func__, err);
 				return 0;
 			}
 			card->para[1] = pnp_port_start(pnp_d, 0);
@@ -263,15 +263,15 @@ int __devinit setup_niccy(struct IsdnCard *card)
 			card->para[0] = pnp_irq(pnp_d, 0);
 			if (!card->para[0] || !card->para[1] ||
 					!card->para[2]) {
-//				printk(KERN_ERR "NiccyPnP:some resources are "
-//					"missing %ld/%lx/%lx\n",
-//					card->para[0], card->para[1],
-;
+				printk(KERN_ERR "NiccyPnP:some resources are "
+					"missing %ld/%lx/%lx\n",
+					card->para[0], card->para[1],
+					card->para[2]);
 				pnp_disable_dev(pnp_d);
 				return 0;
 			}
 		} else
-;
+			printk(KERN_INFO "NiccyPnP: no ISAPnP card found\n");
 	}
 #endif
 	if (card->para[1]) {
@@ -283,16 +283,16 @@ int __devinit setup_niccy(struct IsdnCard *card)
 		cs->subtyp = NICCY_PNP;
 		cs->irq = card->para[0];
 		if (!request_region(cs->hw.niccy.isac, 2, "niccy data")) {
-//			printk(KERN_WARNING "HiSax: NICCY data port %x-%x "
-//				"already in use\n",
-;
+			printk(KERN_WARNING "HiSax: NICCY data port %x-%x "
+				"already in use\n",
+				cs->hw.niccy.isac, cs->hw.niccy.isac + 1);
 			return 0;
 		}
 		if (!request_region(cs->hw.niccy.isac_ale, 2, "niccy addr")) {
-//			printk(KERN_WARNING "HiSax: NICCY address port %x-%x "
-//				"already in use\n",
-//				cs->hw.niccy.isac_ale,
-;
+			printk(KERN_WARNING "HiSax: NICCY address port %x-%x "
+				"already in use\n",
+				cs->hw.niccy.isac_ale,
+				cs->hw.niccy.isac_ale + 1);
 			release_region(cs->hw.niccy.isac, 2);
 			return 0;
 		}
@@ -309,26 +309,26 @@ int __devinit setup_niccy(struct IsdnCard *card)
 				return 0;
 			/* get IRQ */
 			if (!niccy_dev->irq) {
-//				printk(KERN_WARNING
-;
+				printk(KERN_WARNING
+				       "Niccy: No IRQ for PCI card found\n");
 				return 0;
 			}
 			cs->irq = niccy_dev->irq;
 			cs->hw.niccy.cfg_reg = pci_resource_start(niccy_dev, 0);
 			if (!cs->hw.niccy.cfg_reg) {
-//				printk(KERN_WARNING
-;
+				printk(KERN_WARNING
+				       "Niccy: No IO-Adr for PCI cfg found\n");
 				return 0;
 			}
 			pci_ioaddr = pci_resource_start(niccy_dev, 1);
 			if (!pci_ioaddr) {
-//				printk(KERN_WARNING
-;
+				printk(KERN_WARNING
+				       "Niccy: No IO-Adr for PCI card found\n");
 				return 0;
 			}
 			cs->subtyp = NICCY_PCI;
 		} else {
-;
+			printk(KERN_WARNING "Niccy: No PCI card found\n");
 			return 0;
 		}
 		cs->irq_flags |= IRQF_SHARED;
@@ -337,28 +337,28 @@ int __devinit setup_niccy(struct IsdnCard *card)
 		cs->hw.niccy.hscx = pci_ioaddr + HSCX_PCI_DATA;
 		cs->hw.niccy.hscx_ale = pci_ioaddr + HSCX_PCI_ADDR;
 		if (!request_region(cs->hw.niccy.isac, 4, "niccy")) {
-//			printk(KERN_WARNING
-//			       "HiSax: NICCY data port %x-%x already in use\n",
-;
+			printk(KERN_WARNING
+			       "HiSax: NICCY data port %x-%x already in use\n",
+			       cs->hw.niccy.isac, cs->hw.niccy.isac + 4);
 			return 0;
 		}
 		if (!request_region(cs->hw.niccy.cfg_reg, 0x40, "niccy pci")) {
-//			printk(KERN_WARNING
-//			       "HiSax: NICCY pci port %x-%x already in use\n",
-//			       cs->hw.niccy.cfg_reg,
-;
+			printk(KERN_WARNING
+			       "HiSax: NICCY pci port %x-%x already in use\n",
+			       cs->hw.niccy.cfg_reg,
+			       cs->hw.niccy.cfg_reg + 0x40);
 			release_region(cs->hw.niccy.isac, 4);
 			return 0;
 		}
 #else
-;
-;
+		printk(KERN_WARNING "Niccy: io0 0 and NO_PCI_BIOS\n");
+		printk(KERN_WARNING "Niccy: unable to config NICCY PCI\n");
 		return 0;
 #endif				/* CONFIG_PCI */
 	}
-//	printk(KERN_INFO "HiSax: NICCY %s config irq:%d data:0x%X ale:0x%X\n",
-//		(cs->subtyp == 1) ? "PnP" : "PCI",
-;
+	printk(KERN_INFO "HiSax: NICCY %s config irq:%d data:0x%X ale:0x%X\n",
+		(cs->subtyp == 1) ? "PnP" : "PCI",
+		cs->irq, cs->hw.niccy.isac, cs->hw.niccy.isac_ale);
 	setup_isac(cs);
 	cs->readisac = &ReadISAC;
 	cs->writeisac = &WriteISAC;
@@ -371,8 +371,8 @@ int __devinit setup_niccy(struct IsdnCard *card)
 	cs->irq_func = &niccy_interrupt;
 	ISACVersion(cs, "Niccy:");
 	if (HscxVersion(cs, "Niccy:")) {
-//		printk(KERN_WARNING "Niccy: wrong HSCX versions check IO "
-;
+		printk(KERN_WARNING "Niccy: wrong HSCX versions check IO "
+			"address\n");
 		release_io_niccy(cs);
 		return 0;
 	}

@@ -85,7 +85,7 @@ hysdn_addlog(hysdn_card * card, char *fmt,...)
 	*cp = 0;
 
 	if (card->debug_flags & DEB_OUT_SYSLOG)
-;
+		printk(KERN_INFO "%s", pd->logtmp);
 	else
 		put_log_buffer(card, pd->logtmp);
 

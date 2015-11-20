@@ -466,7 +466,7 @@ static irqreturn_t uhci_irq(struct usb_hcd *hcd)
 					/* Print the schedule for debugging */
 					uhci_sprint_schedule(uhci,
 							errbuf, ERRBUF_LEN);
-;
+					lprintk(errbuf);
 				}
 				uhci_hc_died(uhci);
 				usb_hc_died(hcd);
@@ -856,8 +856,8 @@ static int __init uhci_hcd_init(void)
 	if (usb_disabled())
 		return -ENODEV;
 
-//	printk(KERN_INFO "uhci_hcd: " DRIVER_DESC "%s\n",
-;
+	printk(KERN_INFO "uhci_hcd: " DRIVER_DESC "%s\n",
+			ignore_oc ? ", overcurrent ignored" : "");
 	set_bit(USB_UHCI_LOADED, &usb_hcds_loaded);
 
 	if (DEBUG_CONFIGURED) {

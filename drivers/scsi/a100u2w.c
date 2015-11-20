@@ -620,7 +620,7 @@ static int orc_device_reset(struct orc_host * host, struct scsi_cmnd *cmd, unsig
 	}
 
 	if (i == ORC_MAXQUEUE) {
-;
+		printk(KERN_ERR "Unable to Reset - No SCB Found\n");
 		spin_unlock_irqrestore(&(host->allocation_lock), flags);
 		return FAILED;
 	}
@@ -888,7 +888,7 @@ static int inia100_build_scb(struct orc_host * host, struct orc_scb * scb, struc
 	scb->sense_len = SENSE_SIZE;
 	scb->cdb_len = cmd->cmd_len;
 	if (scb->cdb_len >= IMAX_CDB) {
-;
+		printk("max cdb length= %x\b", cmd->cmd_len);
 		scb->cdb_len = IMAX_CDB;
 	}
 	scb->ident = cmd->device->lun | DISC_ALLOW;
@@ -995,7 +995,7 @@ static void inia100_scb_handler(struct orc_host *host, struct orc_scb *scb)
 
 	escb = scb->escb;
 	if ((cmd = (struct scsi_cmnd *) escb->srb) == NULL) {
-;
+		printk(KERN_ERR "inia100_scb_handler: SRB pointer is empty\n");
 		orc_release_scb(host, scb);	/* Release SCB for current channel */
 		return;
 	}
@@ -1031,7 +1031,7 @@ static void inia100_scb_handler(struct orc_host *host, struct orc_scb *scb)
 	case 0x16:		/* Invalid CCB Operation Code-The first byte of the CCB was invalid. */
 
 	default:
-;
+		printk(KERN_DEBUG "inia100: %x %x\n", scb->hastat, scb->tastat);
 		scb->hastat = DID_ERROR;	/* Couldn't find any better */
 		break;
 	}
@@ -1096,8 +1096,8 @@ static int __devinit inia100_probe_one(struct pci_dev *pdev,
 	if (pci_enable_device(pdev))
 		goto out;
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-//		printk(KERN_WARNING "Unable to set 32bit DMA "
-;
+		printk(KERN_WARNING "Unable to set 32bit DMA "
+				    "on inia100 adapter, ignoring.\n");
 		goto out_disable_device;
 	}
 
@@ -1105,7 +1105,7 @@ static int __devinit inia100_probe_one(struct pci_dev *pdev,
 
 	port = pci_resource_start(pdev, 0);
 	if (!request_region(port, 256, "inia100")) {
-;
+		printk(KERN_WARNING "inia100: io port 0x%lx, is busy.\n", port);
 		goto out_disable_device;
 	}
 
@@ -1128,7 +1128,7 @@ static int __devinit inia100_probe_one(struct pci_dev *pdev,
 	host->scb_virt = pci_alloc_consistent(pdev, sz,
 			&host->scb_phys);
 	if (!host->scb_virt) {
-;
+		printk("inia100: SCB memory allocation error\n");
 		goto out_host_put;
 	}
 	memset(host->scb_virt, 0, sz);
@@ -1138,7 +1138,7 @@ static int __devinit inia100_probe_one(struct pci_dev *pdev,
 	host->escb_virt = pci_alloc_consistent(pdev, sz,
 			&host->escb_phys);
 	if (!host->escb_virt) {
-;
+		printk("inia100: ESCB memory allocation error\n");
 		goto out_free_scb_array;
 	}
 	memset(host->escb_virt, 0, sz);
@@ -1147,7 +1147,7 @@ static int __devinit inia100_probe_one(struct pci_dev *pdev,
 	biosaddr = (biosaddr << 4);
 	bios_phys = phys_to_virt(biosaddr);
 	if (init_orchid(host)) {	/* Initialize orchid chip */
-;
+		printk("inia100: initial orchid fail!!\n");
 		goto out_free_escb_array;
 	}
 
@@ -1165,8 +1165,8 @@ static int __devinit inia100_probe_one(struct pci_dev *pdev,
 	error = request_irq(pdev->irq, inia100_intr, IRQF_SHARED,
 			"inia100", shost);
 	if (error < 0) {
-//		printk(KERN_WARNING "inia100: unable to get irq %d\n",
-;
+		printk(KERN_WARNING "inia100: unable to get irq %d\n",
+				pdev->irq);
 		goto out_free_escb_array;
 	}
 

@@ -76,7 +76,7 @@ static __be32 *read_buf(struct xdr_stream *xdr, int nbytes)
 
 	p = xdr_inline_decode(xdr, nbytes);
 	if (unlikely(p == NULL))
-;
+		printk(KERN_WARNING "NFSv4 callback reply buffer overflowed!\n");
 	return p;
 }
 
@@ -158,8 +158,8 @@ static __be32 decode_compound_hdr_arg(struct xdr_stream *xdr, struct cb_compound
 		return status;
 	/* We do not like overly long tags! */
 	if (hdr->taglen > CB_OP_TAGLEN_MAXSZ - 12) {
-//		printk("NFSv4 CALLBACK %s: client sent tag of length %u\n",
-;
+		printk("NFSv4 CALLBACK %s: client sent tag of length %u\n",
+				__func__, hdr->taglen);
 		return htonl(NFS4ERR_RESOURCE);
 	}
 	p = read_buf(xdr, 12);
@@ -170,14 +170,14 @@ static __be32 decode_compound_hdr_arg(struct xdr_stream *xdr, struct cb_compound
 	if (hdr->minorversion <= 1) {
 		hdr->cb_ident = ntohl(*p++); /* ignored by v4.1 */
 	} else {
-//		printk(KERN_WARNING "%s: NFSv4 server callback with "
-//			"illegal minor version %u!\n",
-;
+		printk(KERN_WARNING "%s: NFSv4 server callback with "
+			"illegal minor version %u!\n",
+			__func__, hdr->minorversion);
 		return htonl(NFS4ERR_MINOR_VERS_MISMATCH);
 	}
 	hdr->nops = ntohl(*p);
-//	dprintk("%s: minorversion %d nops %d\n", __func__,
-;
+	dprintk("%s: minorversion %d nops %d\n", __func__,
+		hdr->minorversion, hdr->nops);
 	return 0;
 }
 
@@ -201,7 +201,7 @@ static __be32 decode_getattr_args(struct svc_rqst *rqstp, struct xdr_stream *xdr
 	args->addr = svc_addr(rqstp);
 	status = decode_bitmap(xdr, args->bitmap);
 out:
-;
+	dprintk("%s: exit with status = %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -222,7 +222,7 @@ static __be32 decode_recall_args(struct svc_rqst *rqstp, struct xdr_stream *xdr,
 	args->truncate = ntohl(*p);
 	status = decode_fh(xdr, &args->fh);
 out:
-;
+	dprintk("%s: exit with status = %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -279,12 +279,12 @@ static __be32 decode_layoutrecall_args(struct svc_rqst *rqstp,
 		status = htonl(NFS4ERR_BADXDR);
 		goto out;
 	}
-//	dprintk("%s: ltype 0x%x iomode %d changed %d recall_type %d\n",
-//		__func__,
-//		args->cbl_layout_type, iomode,
-;
+	dprintk("%s: ltype 0x%x iomode %d changed %d recall_type %d\n",
+		__func__,
+		args->cbl_layout_type, iomode,
+		args->cbl_layoutchanged, args->cbl_recall_type);
 out:
-;
+	dprintk("%s: exit with status = %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -362,13 +362,13 @@ __be32 decode_devicenotify_args(struct svc_rqst *rqstp,
 
 		args->ndevs++;
 
-//		dprintk("%s: type %d layout 0x%x immediate %d\n",
-//			__func__, dev->cbd_notify_type, dev->cbd_layout_type,
-;
+		dprintk("%s: type %d layout 0x%x immediate %d\n",
+			__func__, dev->cbd_notify_type, dev->cbd_layout_type,
+			dev->cbd_immediate);
 	}
 out:
-//	dprintk("%s: status %d ndevs %d\n",
-;
+	dprintk("%s: status %d ndevs %d\n",
+		__func__, ntohl(status), args->ndevs);
 	return status;
 err:
 	kfree(args->devs);
@@ -466,18 +466,18 @@ static __be32 decode_cb_sequence_args(struct svc_rqst *rqstp,
 	}
 	status = 0;
 
-//	dprintk("%s: sessionid %x:%x:%x:%x sequenceid %u slotid %u "
-//		"highestslotid %u cachethis %d nrclists %u\n",
-//		__func__,
-//		((u32 *)&args->csa_sessionid)[0],
-//		((u32 *)&args->csa_sessionid)[1],
-//		((u32 *)&args->csa_sessionid)[2],
-//		((u32 *)&args->csa_sessionid)[3],
-//		args->csa_sequenceid, args->csa_slotid,
-//		args->csa_highestslotid, args->csa_cachethis,
-;
+	dprintk("%s: sessionid %x:%x:%x:%x sequenceid %u slotid %u "
+		"highestslotid %u cachethis %d nrclists %u\n",
+		__func__,
+		((u32 *)&args->csa_sessionid)[0],
+		((u32 *)&args->csa_sessionid)[1],
+		((u32 *)&args->csa_sessionid)[2],
+		((u32 *)&args->csa_sessionid)[3],
+		args->csa_sequenceid, args->csa_slotid,
+		args->csa_highestslotid, args->csa_cachethis,
+		args->csa_nrclists);
 out:
-;
+	dprintk("%s: exit with status = %d\n", __func__, ntohl(status));
 	return status;
 
 out_free:
@@ -668,7 +668,7 @@ static __be32 encode_getattr_res(struct svc_rqst *rqstp, struct xdr_stream *xdr,
 	status = encode_attr_mtime(xdr, res->bitmap, &res->mtime);
 	*savep = htonl((unsigned int)((char *)xdr->p - (char *)(savep+1)));
 out:
-;
+	dprintk("%s: exit with status = %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -709,7 +709,7 @@ static __be32 encode_cb_sequence_res(struct svc_rqst *rqstp,
 	*p++ = htonl(res->csr_highestslotid);
 	*p++ = htonl(res->csr_target_highestslotid);
 out:
-;
+	dprintk("%s: exit with status = %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -809,13 +809,13 @@ static __be32 process_op(uint32_t minorversion, int nop,
 	long maxlen;
 	__be32 res;
 
-;
+	dprintk("%s: start\n", __func__);
 	status = decode_op_hdr(xdr_in, &op_nr);
 	if (unlikely(status))
 		return status;
 
-//	dprintk("%s: minorversion=%d nop=%d op_nr=%u\n",
-;
+	dprintk("%s: minorversion=%d nop=%d op_nr=%u\n",
+		__func__, minorversion, nop, op_nr);
 
 	status = minorversion ? preprocess_nfs41_op(nop, op_nr, &op) :
 				preprocess_nfs4_op(op_nr, &op);
@@ -843,7 +843,7 @@ encode_hdr:
 		return res;
 	if (op->encode_res != NULL && status == 0)
 		status = op->encode_res(rqstp, xdr_out, resp);
-;
+	dprintk("%s: done, status = %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -863,7 +863,7 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp, void *argp, void *r
 	};
 	unsigned int nops = 0;
 
-;
+	dprintk("%s: start\n", __func__);
 
 	xdr_init_decode(&xdr_in, &rqstp->rq_arg, rqstp->rq_arg.head[0].iov_base);
 
@@ -902,7 +902,7 @@ static __be32 nfs4_callback_compound(struct svc_rqst *rqstp, void *argp, void *r
 	*hdr_res.nops = htonl(nops);
 	nfs4_cb_free_slot(&cps);
 	nfs_put_client(cps.clp);
-;
+	dprintk("%s: done, status = %u\n", __func__, ntohl(status));
 	return rpc_success;
 }
 

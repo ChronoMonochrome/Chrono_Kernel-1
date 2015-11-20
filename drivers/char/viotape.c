@@ -335,9 +335,9 @@ int tape_rc_to_errno(int tape_rc, char *operation, int tapeno)
 		return 0;
 
 	err = vio_lookup_rc(viotape_err_table, tape_rc);
-//	printk(VIOTAPE_KERN_WARN "error(%s) 0x%04x on Device %d (%-10s): %s\n",
-//			operation, tape_rc, tapeno,
-;
+	printk(VIOTAPE_KERN_WARN "error(%s) 0x%04x on Device %d (%-10s): %s\n",
+			operation, tape_rc, tapeno,
+			viotape_unitinfo[tapeno].rsrcname, err->msg);
 	return -err->errno;
 }
 
@@ -377,16 +377,16 @@ static ssize_t viotap_write(struct file *file, const char *buf,
 			GFP_ATOMIC);
 
 	if (op->buffer == NULL) {
-//		printk(VIOTAPE_KERN_WARN
-//				"error allocating dma buffer for len %ld\n",
-;
+		printk(VIOTAPE_KERN_WARN
+				"error allocating dma buffer for len %ld\n",
+				count);
 		ret = -EFAULT;
 		goto up_sem;
 	}
 
 	/* Copy the data into the buffer */
 	if (copy_from_user(op->buffer, buf, count)) {
-;
+		printk(VIOTAPE_KERN_WARN "tape: error on copy from user\n");
 		ret = -EFAULT;
 		goto free_dma;
 	}
@@ -404,8 +404,8 @@ static ssize_t viotap_write(struct file *file, const char *buf,
 			(u64)(unsigned long)op, VIOVERSION << 16,
 			((u64)devi.devno << 48) | op->dmaaddr, count, 0, 0);
 	if (hvrc != HvLpEvent_Rc_Good) {
-//		printk(VIOTAPE_KERN_WARN "hv error on op %d\n",
-;
+		printk(VIOTAPE_KERN_WARN "hv error on op %d\n",
+				(int)hvrc);
 		ret = -EIO;
 		goto free_dma;
 	}
@@ -484,8 +484,8 @@ static ssize_t viotap_read(struct file *file, char *buf, size_t count,
 			(u64)(unsigned long)op, VIOVERSION << 16,
 			((u64)devi.devno << 48) | op->dmaaddr, count, 0, 0);
 	if (hvrc != HvLpEvent_Rc_Good) {
-//		printk(VIOTAPE_KERN_WARN "tape hv error on op %d\n",
-;
+		printk(VIOTAPE_KERN_WARN "tape hv error on op %d\n",
+				(int)hvrc);
 		ret = -EIO;
 		goto free_dma;
 	}
@@ -497,7 +497,7 @@ static ssize_t viotap_read(struct file *file, char *buf, size_t count,
 	else {
 		ret = op->count;
 		if (ret && copy_to_user(buf, op->buffer, ret)) {
-;
+			printk(VIOTAPE_KERN_WARN "error on copy_to_user\n");
 			ret = -EFAULT;
 		}
 	}
@@ -595,8 +595,8 @@ static int viotap_ioctl(struct inode *inode, struct file *file,
 			myOp = VIOTAPOP_UNLOAD;
 			break;
 		default:
-//			printk(VIOTAPE_KERN_WARN "MTIOCTOP called "
-;
+			printk(VIOTAPE_KERN_WARN "MTIOCTOP called "
+					"with invalid op 0x%x\n", mtc.mt_op);
 			goto free_op;
 		}
 
@@ -628,8 +628,8 @@ static int viotap_ioctl(struct inode *inode, struct file *file,
 				((u64)devi.devno << 48), 0,
 				(((u64)myOp) << 32) | mtc.mt_count, 0);
 		if (hvrc != HvLpEvent_Rc_Good) {
-//			printk(VIOTAPE_KERN_WARN "hv error on op %d\n",
-;
+			printk(VIOTAPE_KERN_WARN "hv error on op %d\n",
+					(int)hvrc);
 			goto free_op;
 		}
 		wait_for_completion(&op->com);
@@ -649,8 +649,8 @@ static int viotap_ioctl(struct inode *inode, struct file *file,
 				(u64)(unsigned long)op, VIOVERSION << 16,
 				((u64)devi.devno << 48), 0, 0, 0);
 		if (hvrc != HvLpEvent_Rc_Good) {
-//			printk(VIOTAPE_KERN_WARN "hv error on op %d\n",
-;
+			printk(VIOTAPE_KERN_WARN "hv error on op %d\n",
+					(int)hvrc);
 			goto free_op;
 		}
 		wait_for_completion(&op->com);
@@ -666,11 +666,11 @@ static int viotap_ioctl(struct inode *inode, struct file *file,
 			ret = -EFAULT;
 		return ret;
 	case MTIOCPOS:
-;
+		printk(VIOTAPE_KERN_WARN "Got an (unsupported) MTIOCPOS\n");
 		break;
 	default:
-//		printk(VIOTAPE_KERN_WARN "got an unsupported ioctl 0x%0x\n",
-;
+		printk(VIOTAPE_KERN_WARN "got an unsupported ioctl 0x%0x\n",
+				cmd);
 		break;
 	}
 
@@ -721,8 +721,8 @@ static int viotap_open(struct inode *inode, struct file *file)
 			(u64)(unsigned long)op, VIOVERSION << 16,
 			((u64)devi.devno << 48), 0, 0, 0);
 	if (hvrc != 0) {
-//		printk(VIOTAPE_KERN_WARN "bad rc on signalLpEvent %d\n",
-;
+		printk(VIOTAPE_KERN_WARN "bad rc on signalLpEvent %d\n",
+				(int) hvrc);
 		ret = -EIO;
 		goto free_op;
 	}
@@ -782,8 +782,8 @@ static int viotap_release(struct inode *inode, struct file *file)
 			(u64)(unsigned long)op, VIOVERSION << 16,
 			((u64)devi.devno << 48), 0, 0, 0);
 	if (hvrc != 0) {
-//		printk(VIOTAPE_KERN_WARN "bad rc on signalLpEvent %d\n",
-;
+		printk(VIOTAPE_KERN_WARN "bad rc on signalLpEvent %d\n",
+				(int) hvrc);
 		ret = -EIO;
 		goto free_op;
 	}
@@ -791,7 +791,7 @@ static int viotap_release(struct inode *inode, struct file *file)
 	wait_for_completion(&op->com);
 
 	if (op->rc)
-;
+		printk(VIOTAPE_KERN_WARN "close failed\n");
 
 free_op:
 	free_op_struct(op);
@@ -860,7 +860,7 @@ static void vioHandleTapeEvent(struct HvLpEvent *event)
 		}
 		break;
 	default:
-;
+		printk(VIOTAPE_KERN_WARN "weird ack\n");
 	}
 }
 
@@ -893,10 +893,10 @@ static int viotape_probe(struct vio_dev *vdev, const struct vio_device_id *id)
 		      "iseries!vt%d", i);
 	device_create(tape_class, NULL, MKDEV(VIOTAPE_MAJOR, i | 0x80), NULL,
 		      "iseries!nvt%d", i);
-//	printk(VIOTAPE_KERN_INFO "tape iseries/vt%d is iSeries "
-//			"resource %10.10s type %4.4s, model %3.3s\n",
-//			i, viotape_unitinfo[i].rsrcname,
-;
+	printk(VIOTAPE_KERN_INFO "tape iseries/vt%d is iSeries "
+			"resource %10.10s type %4.4s, model %3.3s\n",
+			i, viotape_unitinfo[i].rsrcname,
+			viotape_unitinfo[i].type, viotape_unitinfo[i].model);
 	return 0;
 }
 
@@ -939,7 +939,7 @@ int __init viotap_init(void)
 
 	op_struct_list = NULL;
 	if ((ret = add_op_structs(VIOTAPE_MAXREQ)) < 0) {
-;
+		printk(VIOTAPE_KERN_WARN "couldn't allocate op structs\n");
 		return ret;
 	}
 	spin_lock_init(&op_struct_list_lock);
@@ -957,26 +957,26 @@ int __init viotap_init(void)
 	ret = viopath_open(viopath_hostLp, viomajorsubtype_tape,
 			VIOTAPE_MAXREQ + 2);
 	if (ret) {
-//		printk(VIOTAPE_KERN_WARN
-;
+		printk(VIOTAPE_KERN_WARN
+				"error on viopath_open to hostlp %d\n", ret);
 		ret = -EIO;
 		goto clear_op;
 	}
 
-//	printk(VIOTAPE_KERN_INFO "vers " VIOTAPE_VERSION
-;
+	printk(VIOTAPE_KERN_INFO "vers " VIOTAPE_VERSION
+			", hosting partition %d\n", viopath_hostLp);
 
 	vio_setHandler(viomajorsubtype_tape, vioHandleTapeEvent);
 
 	ret = register_chrdev(VIOTAPE_MAJOR, "viotape", &viotap_fops);
 	if (ret < 0) {
-;
+		printk(VIOTAPE_KERN_WARN "Error registering viotape device\n");
 		goto clear_handler;
 	}
 
 	tape_class = class_create(THIS_MODULE, "tape");
 	if (IS_ERR(tape_class)) {
-;
+		printk(VIOTAPE_KERN_WARN "Unable to allocat class\n");
 		ret = PTR_ERR(tape_class);
 		goto unreg_chrdev;
 	}

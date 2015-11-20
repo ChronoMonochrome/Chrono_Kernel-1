@@ -68,25 +68,25 @@ acpi_extract_package(union acpi_object *package,
 
 	if (!package || (package->type != ACPI_TYPE_PACKAGE)
 	    || (package->package.count < 1)) {
-;
+		printk(KERN_WARNING PREFIX "Invalid package argument\n");
 		return AE_BAD_PARAMETER;
 	}
 
 	if (!format || !format->pointer || (format->length < 1)) {
-;
+		printk(KERN_WARNING PREFIX "Invalid format argument\n");
 		return AE_BAD_PARAMETER;
 	}
 
 	if (!buffer) {
-;
+		printk(KERN_WARNING PREFIX "Invalid buffer argument\n");
 		return AE_BAD_PARAMETER;
 	}
 
 	format_count = (format->length / sizeof(char)) - 1;
 	if (format_count > package->package.count) {
-//		printk(KERN_WARNING PREFIX "Format specifies more objects [%d]"
-//			      " than exist in package [%d].\n",
-;
+		printk(KERN_WARNING PREFIX "Format specifies more objects [%d]"
+			      " than exist in package [%d].\n",
+			      format_count, package->package.count);
 		return AE_BAD_DATA;
 	}
 
@@ -118,10 +118,10 @@ acpi_extract_package(union acpi_object *package,
 				tail_offset += sizeof(char *);
 				break;
 			default:
-//				printk(KERN_WARNING PREFIX "Invalid package element"
-//					      " [%d]: got number, expecing"
-//					      " [%c]\n",
-;
+				printk(KERN_WARNING PREFIX "Invalid package element"
+					      " [%d]: got number, expecing"
+					      " [%c]\n",
+					      i, format_string[i]);
 				return AE_BAD_DATA;
 				break;
 			}
@@ -144,10 +144,10 @@ acpi_extract_package(union acpi_object *package,
 				tail_offset += sizeof(u8 *);
 				break;
 			default:
-//				printk(KERN_WARNING PREFIX "Invalid package element"
-//					      " [%d] got string/buffer,"
-//					      " expecing [%c]\n",
-;
+				printk(KERN_WARNING PREFIX "Invalid package element"
+					      " [%d] got string/buffer,"
+					      " expecing [%c]\n",
+					      i, format_string[i]);
 				return AE_BAD_DATA;
 				break;
 			}
@@ -316,22 +316,22 @@ acpi_evaluate_reference(acpi_handle handle,
 	package = buffer.pointer;
 
 	if ((buffer.length == 0) || !package) {
-//		printk(KERN_ERR PREFIX "No return object (len %X ptr %p)\n",
-;
+		printk(KERN_ERR PREFIX "No return object (len %X ptr %p)\n",
+			    (unsigned)buffer.length, package);
 		status = AE_BAD_DATA;
 		acpi_util_eval_error(handle, pathname, status);
 		goto end;
 	}
 	if (package->type != ACPI_TYPE_PACKAGE) {
-//		printk(KERN_ERR PREFIX "Expecting a [Package], found type %X\n",
-;
+		printk(KERN_ERR PREFIX "Expecting a [Package], found type %X\n",
+			    package->type);
 		status = AE_BAD_DATA;
 		acpi_util_eval_error(handle, pathname, status);
 		goto end;
 	}
 	if (!package->package.count) {
-//		printk(KERN_ERR PREFIX "[Package] has zero elements (%p)\n",
-;
+		printk(KERN_ERR PREFIX "[Package] has zero elements (%p)\n",
+			    package);
 		status = AE_BAD_DATA;
 		acpi_util_eval_error(handle, pathname, status);
 		goto end;
@@ -350,16 +350,16 @@ acpi_evaluate_reference(acpi_handle handle,
 
 		if (element->type != ACPI_TYPE_LOCAL_REFERENCE) {
 			status = AE_BAD_DATA;
-//			printk(KERN_ERR PREFIX
-//				    "Expecting a [Reference] package element, found type %X\n",
-;
+			printk(KERN_ERR PREFIX
+				    "Expecting a [Reference] package element, found type %X\n",
+				    element->type);
 			acpi_util_eval_error(handle, pathname, status);
 			break;
 		}
 
 		if (!element->reference.handle) {
-//			printk(KERN_WARNING PREFIX "Invalid reference in"
-;
+			printk(KERN_WARNING PREFIX "Invalid reference in"
+			       " package %s\n", pathname);
 			status = AE_NULL_ENTRY;
 			break;
 		}

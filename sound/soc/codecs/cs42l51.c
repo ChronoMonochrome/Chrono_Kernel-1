@@ -635,7 +635,7 @@ static int __init cs42l51_init(void)
 
 	ret = i2c_add_driver(&cs42l51_i2c_driver);
 	if (ret != 0) {
-;
+		printk(KERN_ERR "%s: can't add i2c driver\n", __func__);
 		return ret;
 	}
 	return 0;

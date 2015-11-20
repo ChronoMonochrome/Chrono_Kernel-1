@@ -151,7 +151,7 @@ static inline int _read_sem(struct onedram *od)
 static inline int _send_cmd(struct onedram *od, u32 cmd)
 {
 	if (!od) {
-;
+		printk(KERN_ERR "[%s]onedram: Dev is NULL, but try to access\n",__func__);
 		return -EFAULT;
 	}
 
@@ -172,7 +172,7 @@ static inline int _recv_cmd(struct onedram *od, u32 *cmd)
 		return -EINVAL;
 
 	if (!od) {
-;
+		printk(KERN_ERR "[%s]onedram: Dev is NULL, but try to access\n",__func__);
 		return -EFAULT;
 	}
 
@@ -218,7 +218,7 @@ static int get_auth(struct onedram *od, u32 cmd)
 	int r;
 
 	if (!od) {
-;
+		printk(KERN_ERR "[%s]onedram: Dev is NULL, but try to access\n",__func__);
 		return -EFAULT;
 	}
 
@@ -246,7 +246,7 @@ static int get_auth(struct onedram *od, u32 cmd)
 static int put_auth(struct onedram *od, int release)
 {
 	if (!od) {
-;
+		printk(KERN_ERR "[%s]onedram: Dev is NULL, but try to access\n",__func__);
 		return -EFAULT;
 	}
 
@@ -271,7 +271,7 @@ static int put_auth(struct onedram *od, int release)
 static int rel_sem(struct onedram *od)
 {
 	if (!od) {
-;
+		printk(KERN_ERR "[%s]onedram: Dev is NULL, but try to access\n",__func__);
 		return -EFAULT;
 	}
 
@@ -803,7 +803,7 @@ static int __devinit onedram_probe(struct platform_device *pdev)
 	struct onedram_platform_data *pdata;
 	struct resource *res;
 
-;
+	printk("[%s]\n",__func__);
 	pdata = pdev->dev.platform_data;
 	if (!pdata || !pdata->cfg_gpio) {
 		dev_err(&pdev->dev, "No platform data\n");
@@ -925,7 +925,7 @@ static struct platform_driver onedram_driver = {
 
 static int __init onedram_init(void)
 {
-;
+	printk("[%s]\n",__func__);
 	return platform_driver_register(&onedram_driver);
 }
 

@@ -53,7 +53,7 @@ static int hippi_header(struct sk_buff *skb, struct net_device *dev,
 
 	if (!len){
 		len = skb->len - HIPPI_HLEN;
-;
+		printk("hippi_header(): length not supplied\n");
 	}
 
 	/*
@@ -106,7 +106,7 @@ static int hippi_rebuild_header(struct sk_buff *skb)
 
 	if(hip->snap.ethertype != htons(ETH_P_IP))
 	{
-;
+		printk(KERN_DEBUG "%s: unable to resolve type %X addresses.\n",skb->dev->name,ntohs(hip->snap.ethertype));
 		return 0;
 	}
 

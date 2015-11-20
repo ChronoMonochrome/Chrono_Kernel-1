@@ -241,12 +241,12 @@ static int request_ports(struct bfin_bf54xfb_info *fbi)
 	u16 disp = fbi->mach_info->disp;
 
 	if (gpio_request(disp, DRIVER_NAME)) {
-;
+		printk(KERN_ERR "Requesting GPIO %d failed\n", disp);
 		return -EFAULT;
 	}
 
 	if (peripheral_request_list(eppi_req_18, DRIVER_NAME)) {
-;
+		printk(KERN_ERR "Requesting Peripherals failed\n");
 		gpio_free(disp);
 		return -EFAULT;
 	}
@@ -256,7 +256,7 @@ static int request_ports(struct bfin_bf54xfb_info *fbi)
 		u16 eppi_req_24[] = EPPI0_24;
 
 		if (peripheral_request_list(eppi_req_24, DRIVER_NAME)) {
-;
+			printk(KERN_ERR "Requesting Peripherals failed\n");
 			peripheral_free_list(eppi_req_18);
 			gpio_free(disp);
 			return -EFAULT;
@@ -508,11 +508,11 @@ static int __devinit bfin_bf54x_probe(struct platform_device *pdev)
 	struct fb_info *fbinfo;
 	int ret;
 
-;
+	printk(KERN_INFO DRIVER_NAME ": FrameBuffer initializing...\n");
 
 	if (request_dma(CH_EPPI0, "CH_EPPI0") < 0) {
-//		printk(KERN_ERR DRIVER_NAME
-;
+		printk(KERN_ERR DRIVER_NAME
+		       ": couldn't request CH_EPPI0 DMA\n");
 		ret = -EFAULT;
 		goto out1;
 	}
@@ -592,8 +592,8 @@ static int __devinit bfin_bf54x_probe(struct platform_device *pdev)
 			       GFP_KERNEL);
 
 	if (NULL == info->fb_buffer) {
-//		printk(KERN_ERR DRIVER_NAME
-;
+		printk(KERN_ERR DRIVER_NAME
+		       ": couldn't allocate dma buffer.\n");
 		ret = -ENOMEM;
 		goto out3;
 	}
@@ -605,8 +605,8 @@ static int __devinit bfin_bf54x_probe(struct platform_device *pdev)
 
 	fbinfo->pseudo_palette = kzalloc(sizeof(u32) * 16, GFP_KERNEL);
 	if (!fbinfo->pseudo_palette) {
-//		printk(KERN_ERR DRIVER_NAME
-;
+		printk(KERN_ERR DRIVER_NAME
+		       "Fail to allocate pseudo_palette\n");
 
 		ret = -ENOMEM;
 		goto out4;
@@ -614,15 +614,15 @@ static int __devinit bfin_bf54x_probe(struct platform_device *pdev)
 
 	if (fb_alloc_cmap(&fbinfo->cmap, BFIN_LCD_NBR_PALETTE_ENTRIES, 0)
 	    < 0) {
-//		printk(KERN_ERR DRIVER_NAME
-//		       "Fail to allocate colormap (%d entries)\n",
-;
+		printk(KERN_ERR DRIVER_NAME
+		       "Fail to allocate colormap (%d entries)\n",
+		       BFIN_LCD_NBR_PALETTE_ENTRIES);
 		ret = -EFAULT;
 		goto out5;
 	}
 
 	if (request_ports(info)) {
-;
+		printk(KERN_ERR DRIVER_NAME ": couldn't request gpio port.\n");
 		ret = -EFAULT;
 		goto out6;
 	}
@@ -635,15 +635,15 @@ static int __devinit bfin_bf54x_probe(struct platform_device *pdev)
 
 	if (request_irq(info->irq, bfin_bf54x_irq_error, IRQF_DISABLED,
 			"PPI ERROR", info) < 0) {
-//		printk(KERN_ERR DRIVER_NAME
-;
+		printk(KERN_ERR DRIVER_NAME
+		       ": unable to request PPI ERROR IRQ\n");
 		ret = -EFAULT;
 		goto out7;
 	}
 
 	if (register_framebuffer(fbinfo) < 0) {
-//		printk(KERN_ERR DRIVER_NAME
-;
+		printk(KERN_ERR DRIVER_NAME
+		       ": unable to register framebuffer.\n");
 		ret = -EINVAL;
 		goto out8;
 	}
@@ -654,15 +654,15 @@ static int __devinit bfin_bf54x_probe(struct platform_device *pdev)
 	bl_dev = backlight_device_register("bf54x-bl", NULL, NULL,
 					   &bfin_lq043fb_bl_ops, &props);
 	if (IS_ERR(bl_dev)) {
-//		printk(KERN_ERR DRIVER_NAME
-;
+		printk(KERN_ERR DRIVER_NAME
+			": unable to register backlight.\n");
 		ret = -EINVAL;
 		unregister_framebuffer(fbinfo);
 		goto out8;
 	}
 
 	lcd_dev = lcd_device_register(DRIVER_NAME, &pdev->dev, NULL, &bfin_lcd_ops);
-;
+	lcd_dev->props.max_contrast = 255, printk(KERN_INFO "Done.\n");
 #endif
 
 	return 0;
@@ -713,7 +713,7 @@ static int __devexit bfin_bf54x_remove(struct platform_device *pdev)
 
 	free_ports(info);
 
-;
+	printk(KERN_INFO DRIVER_NAME ": Unregister LCD driver.\n");
 
 	return 0;
 }

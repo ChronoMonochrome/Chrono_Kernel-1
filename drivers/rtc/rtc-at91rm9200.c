@@ -270,8 +270,8 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
 				IRQF_SHARED,
 				"at91_rtc", pdev);
 	if (ret) {
-//		printk(KERN_ERR "at91_rtc: IRQ %d already in use.\n",
-;
+		printk(KERN_ERR "at91_rtc: IRQ %d already in use.\n",
+				AT91_ID_SYS);
 		return ret;
 	}
 
@@ -289,7 +289,7 @@ static int __init at91_rtc_probe(struct platform_device *pdev)
 	}
 	platform_set_drvdata(pdev, rtc);
 
-;
+	printk(KERN_INFO "AT91 Real Time Clock driver.\n");
 	return 0;
 }
 

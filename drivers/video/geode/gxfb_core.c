@@ -364,7 +364,7 @@ static int gxfb_resume(struct pci_dev *pdev)
 	console_lock();
 	ret = gx_powerup(info);
 	if (ret) {
-;
+		printk(KERN_ERR "gxfb:  power up failed!\n");
 		return ret;
 	}
 
@@ -427,7 +427,7 @@ static int __devinit gxfb_probe(struct pci_dev *pdev,
 		goto err;
 	}
 	pci_set_drvdata(pdev, info);
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node, info->fix.id);
 	return 0;
 
   err:

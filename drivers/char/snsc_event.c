@@ -207,18 +207,18 @@ scdrv_dispatch_event(char *event, int len)
 
 		/* give a message for each type of event */
 		if (class == EV_CLASS_PWRD_NOTIFY)
-//			printk(KERN_NOTICE "Power off indication received."
-;
+			printk(KERN_NOTICE "Power off indication received."
+			       " Sending SIGPWR to init...\n");
 		else if (code == ENV_PWRDN_PEND)
-//			printk(KERN_CRIT "WARNING: Shutting down the system"
-//			       " due to a critical environmental condition."
-;
+			printk(KERN_CRIT "WARNING: Shutting down the system"
+			       " due to a critical environmental condition."
+			       " Sending SIGPWR to init...\n");
 
 		/* give a SIGPWR signal to init proc */
 		kill_cad_pid(SIGPWR, 0);
 	} else {
 		/* print to system log */
-;
+		printk("%s|$(0x%x)%s\n", severity, esp_code, desc);
 	}
 }
 
@@ -271,8 +271,8 @@ scdrv_event_init(struct sysctl_data_s *scd)
 
 	event_sd = kzalloc(sizeof (struct subch_data_s), GFP_KERNEL);
 	if (event_sd == NULL) {
-//		printk(KERN_WARNING "%s: couldn't allocate subchannel info"
-;
+		printk(KERN_WARNING "%s: couldn't allocate subchannel info"
+		       " for event monitoring\n", __func__);
 		return;
 	}
 
@@ -285,8 +285,8 @@ scdrv_event_init(struct sysctl_data_s *scd)
 
 	if (event_sd->sd_subch < 0) {
 		kfree(event_sd);
-//		printk(KERN_WARNING "%s: couldn't open event subchannel\n",
-;
+		printk(KERN_WARNING "%s: couldn't open event subchannel\n",
+		       __func__);
 		return;
 	}
 
@@ -295,8 +295,8 @@ scdrv_event_init(struct sysctl_data_s *scd)
 			 IRQF_SHARED | IRQF_DISABLED,
 			 "system controller events", event_sd);
 	if (rv) {
-//		printk(KERN_WARNING "%s: irq request failed (%d)\n",
-;
+		printk(KERN_WARNING "%s: irq request failed (%d)\n",
+		       __func__, rv);
 		ia64_sn_irtr_close(event_sd->sd_nasid, event_sd->sd_subch);
 		kfree(event_sd);
 		return;

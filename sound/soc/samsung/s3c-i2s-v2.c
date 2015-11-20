@@ -56,23 +56,23 @@ static inline struct s3c_i2sv2_info *to_info(struct snd_soc_dai *cpu_dai)
 #if S3C2412_I2S_DEBUG_CON
 static void dbg_showcon(const char *fn, u32 con)
 {
-//	printk(KERN_DEBUG "%s: LRI=%d, TXFEMPT=%d, RXFEMPT=%d, TXFFULL=%d, RXFFULL=%d\n", fn,
-//	       bit_set(con, S3C2412_IISCON_LRINDEX),
-//	       bit_set(con, S3C2412_IISCON_TXFIFO_EMPTY),
-//	       bit_set(con, S3C2412_IISCON_RXFIFO_EMPTY),
-//	       bit_set(con, S3C2412_IISCON_TXFIFO_FULL),
-;
+	printk(KERN_DEBUG "%s: LRI=%d, TXFEMPT=%d, RXFEMPT=%d, TXFFULL=%d, RXFFULL=%d\n", fn,
+	       bit_set(con, S3C2412_IISCON_LRINDEX),
+	       bit_set(con, S3C2412_IISCON_TXFIFO_EMPTY),
+	       bit_set(con, S3C2412_IISCON_RXFIFO_EMPTY),
+	       bit_set(con, S3C2412_IISCON_TXFIFO_FULL),
+	       bit_set(con, S3C2412_IISCON_RXFIFO_FULL));
 
-//	printk(KERN_DEBUG "%s: PAUSE: TXDMA=%d, RXDMA=%d, TXCH=%d, RXCH=%d\n",
-//	       fn,
-//	       bit_set(con, S3C2412_IISCON_TXDMA_PAUSE),
-//	       bit_set(con, S3C2412_IISCON_RXDMA_PAUSE),
-//	       bit_set(con, S3C2412_IISCON_TXCH_PAUSE),
-;
-//	printk(KERN_DEBUG "%s: ACTIVE: TXDMA=%d, RXDMA=%d, IIS=%d\n", fn,
-//	       bit_set(con, S3C2412_IISCON_TXDMA_ACTIVE),
-//	       bit_set(con, S3C2412_IISCON_RXDMA_ACTIVE),
-;
+	printk(KERN_DEBUG "%s: PAUSE: TXDMA=%d, RXDMA=%d, TXCH=%d, RXCH=%d\n",
+	       fn,
+	       bit_set(con, S3C2412_IISCON_TXDMA_PAUSE),
+	       bit_set(con, S3C2412_IISCON_RXDMA_PAUSE),
+	       bit_set(con, S3C2412_IISCON_TXCH_PAUSE),
+	       bit_set(con, S3C2412_IISCON_RXCH_PAUSE));
+	printk(KERN_DEBUG "%s: ACTIVE: TXDMA=%d, RXDMA=%d, IIS=%d\n", fn,
+	       bit_set(con, S3C2412_IISCON_TXDMA_ACTIVE),
+	       bit_set(con, S3C2412_IISCON_RXDMA_ACTIVE),
+	       bit_set(con, S3C2412_IISCON_IIS_ACTIVE));
 }
 #else
 static inline void dbg_showcon(const char *fn, u32 con)
@@ -244,7 +244,7 @@ static int s3c2412_snd_lrsync(struct s3c_i2sv2_info *i2s)
 	}
 
 	if (!loops) {
-;
+		printk(KERN_ERR "%s: timeout\n", __func__);
 		return -ETIMEDOUT;
 	}
 
@@ -611,8 +611,8 @@ int s3c_i2sv2_iis_calc_rate(struct s3c_i2sv2_rate_calc *info,
 		actual = clkrate / (fsdiv * div);
 		deviation = actual - rate;
 
-//		printk(KERN_DEBUG "%ufs: div %u => result %u, deviation %d\n",
-;
+		printk(KERN_DEBUG "%ufs: div %u => result %u, deviation %d\n",
+		       fsdiv, div, actual, deviation);
 
 		deviation = abs(deviation);
 
@@ -627,8 +627,8 @@ int s3c_i2sv2_iis_calc_rate(struct s3c_i2sv2_rate_calc *info,
 			break;
 	}
 
-//	printk(KERN_DEBUG "best: fs=%u, div=%u, rate=%u\n",
-;
+	printk(KERN_DEBUG "best: fs=%u, div=%u, rate=%u\n",
+	       best_fs, best_div, best_rate);
 
 	info->fs_div = best_fs;
 	info->clk_div = best_div;

@@ -61,7 +61,7 @@ static int __init init_mbx(void)
 	mbx_map.virt = ioremap(WINDOW_ADDR, WINDOW_SIZE * 4);
 
 	if (!mbx_map.virt) {
-;
+		printk("Failed to ioremap\n");
 		return -EIO;
 	}
 	simple_map_init(&mbx_map);

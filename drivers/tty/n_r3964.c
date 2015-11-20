@@ -82,34 +82,34 @@
 /*#define DEBUG_MODUL*/
 
 /* Macro helpers for debug output: */
-//#define TRACE(format, args...) printk("r3964: " format "\n" , ## args)
-//
-//#ifdef DEBUG_MODUL
-//#define TRACE_M(format, args...) printk("r3964: " format "\n" , ## args)
-//#else
-//#define TRACE_M(fmt, arg...) do {} while (0)
-//#endif
-//#ifdef DEBUG_PROTO_S
-//#define TRACE_PS(format, args...) printk("r3964: " format "\n" , ## args)
-//#else
-//#define TRACE_PS(fmt, arg...) do {} while (0)
-//#endif
-//#ifdef DEBUG_PROTO_E
-//#define TRACE_PE(format, args...) printk("r3964: " format "\n" , ## args)
-//#else
-//#define TRACE_PE(fmt, arg...) do {} while (0)
-//#endif
-//#ifdef DEBUG_LDISC
-//#define TRACE_L(format, args...) printk("r3964: " format "\n" , ## args)
-//#else
-//#define TRACE_L(fmt, arg...) do {} while (0)
-//#endif
-//#ifdef DEBUG_QUEUE
-//#define TRACE_Q(format, args...) printk("r3964: " format "\n" , ## args)
-//#else
-//#define TRACE_Q(fmt, arg...) do {} while (0)
-//#endif
-;
+#define TRACE(format, args...) printk("r3964: " format "\n" , ## args)
+
+#ifdef DEBUG_MODUL
+#define TRACE_M(format, args...) printk("r3964: " format "\n" , ## args)
+#else
+#define TRACE_M(fmt, arg...) do {} while (0)
+#endif
+#ifdef DEBUG_PROTO_S
+#define TRACE_PS(format, args...) printk("r3964: " format "\n" , ## args)
+#else
+#define TRACE_PS(fmt, arg...) do {} while (0)
+#endif
+#ifdef DEBUG_PROTO_E
+#define TRACE_PE(format, args...) printk("r3964: " format "\n" , ## args)
+#else
+#define TRACE_PE(fmt, arg...) do {} while (0)
+#endif
+#ifdef DEBUG_LDISC
+#define TRACE_L(format, args...) printk("r3964: " format "\n" , ## args)
+#else
+#define TRACE_L(fmt, arg...) do {} while (0)
+#endif
+#ifdef DEBUG_QUEUE
+#define TRACE_Q(format, args...) printk("r3964: " format "\n" , ## args)
+#else
+#define TRACE_Q(fmt, arg...) do {} while (0)
+#endif
+static void add_tx_queue(struct r3964_info *, struct r3964_block_header *);
 static void remove_from_tx_queue(struct r3964_info *pInfo, int error_code);
 static void put_char(struct r3964_info *pInfo, unsigned char ch);
 static void trigger_transmit(struct r3964_info *pInfo);
@@ -187,8 +187,8 @@ static void __exit r3964_exit(void)
 	status = tty_unregister_ldisc(N_R3964);
 
 	if (status != 0) {
-//		printk(KERN_ERR "r3964: error unregistering linediscipline: "
-;
+		printk(KERN_ERR "r3964: error unregistering linediscipline: "
+				"%d\n", status);
 	} else {
 		TRACE_L("linediscipline successfully unregistered");
 	}
@@ -198,7 +198,7 @@ static int __init r3964_init(void)
 {
 	int status;
 
-;
+	printk("r3964: Philips r3964 Driver $Revision: 1.10 $\n");
 
 	/*
 	 * Register the tty line discipline
@@ -212,8 +212,8 @@ static int __init r3964_init(void)
 		TRACE_L("open=%p", tty_ldisc_N_R3964.open);
 		TRACE_L("tty_ldisc_N_R3964 = %p", &tty_ldisc_N_R3964);
 	} else {
-//		printk(KERN_ERR "r3964: error registering line discipline: "
-;
+		printk(KERN_ERR "r3964: error registering line discipline: "
+				"%d\n", status);
 	}
 	return status;
 }
@@ -261,11 +261,11 @@ static void remove_from_tx_queue(struct r3964_info *pInfo, int error_code)
 		return;
 
 #ifdef DEBUG_QUEUE
-//	printk("r3964: remove_from_tx_queue: %p, length %u - ",
-;
+	printk("r3964: remove_from_tx_queue: %p, length %u - ",
+		pHeader, pHeader->length);
 	for (pDump = pHeader; pDump; pDump = pDump->next)
-;
-;
+		printk("%p ", pDump);
+	printk("\n");
 #endif
 
 	if (pHeader->owner) {
@@ -951,7 +951,7 @@ static int r3964_open(struct tty_struct *tty)
 	TRACE_M("r3964_open - info kmalloc %p", pInfo);
 
 	if (!pInfo) {
-;
+		printk(KERN_ERR "r3964: failed to alloc info structure\n");
 		return -ENOMEM;
 	}
 
@@ -959,7 +959,7 @@ static int r3964_open(struct tty_struct *tty)
 	TRACE_M("r3964_open - rx_buf kmalloc %p", pInfo->rx_buf);
 
 	if (!pInfo->rx_buf) {
-;
+		printk(KERN_ERR "r3964: failed to alloc receive buffer\n");
 		kfree(pInfo);
 		TRACE_M("r3964_open - info kfree %p", pInfo);
 		return -ENOMEM;
@@ -969,7 +969,7 @@ static int r3964_open(struct tty_struct *tty)
 	TRACE_M("r3964_open - tx_buf kmalloc %p", pInfo->tx_buf);
 
 	if (!pInfo->tx_buf) {
-;
+		printk(KERN_ERR "r3964: failed to alloc transmit buffer\n");
 		kfree(pInfo->rx_buf);
 		TRACE_M("r3964_open - rx_buf kfree %p", pInfo->rx_buf);
 		kfree(pInfo);
@@ -1145,7 +1145,7 @@ static ssize_t r3964_write(struct tty_struct *tty, struct file *file,
 	TRACE_M("r3964_write - kmalloc %p", new_data);
 	if (new_data == NULL) {
 		if (pInfo->flags & R3964_DEBUG) {
-;
+			printk(KERN_ERR "r3964_write: no memory\n");
 		}
 		return -ENOSPC;
 	}

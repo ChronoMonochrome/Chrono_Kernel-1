@@ -661,7 +661,7 @@ static void gdrom_request(struct request_queue *rq)
 
 	while ((req = blk_fetch_request(rq)) != NULL) {
 		if (req->cmd_type != REQ_TYPE_FS) {
-;
+			printk(KERN_DEBUG "gdrom: Non-fs request ignored\n");
 			__blk_end_request_all(req, -EIO);
 			continue;
 		}

@@ -93,27 +93,27 @@ int sas_register_ha(struct sas_ha_struct *sas_ha)
 
 	error = sas_register_phys(sas_ha);
 	if (error) {
-;
+		printk(KERN_NOTICE "couldn't register sas phys:%d\n", error);
 		return error;
 	}
 
 	error = sas_register_ports(sas_ha);
 	if (error) {
-;
+		printk(KERN_NOTICE "couldn't register sas ports:%d\n", error);
 		goto Undo_phys;
 	}
 
 	error = sas_init_events(sas_ha);
 	if (error) {
-;
+		printk(KERN_NOTICE "couldn't start event thread:%d\n", error);
 		goto Undo_ports;
 	}
 
 	if (sas_ha->lldd_max_execute_num > 1) {
 		error = sas_init_queue(sas_ha);
 		if (error) {
-//			printk(KERN_NOTICE "couldn't start queue thread:%d, "
-;
+			printk(KERN_NOTICE "couldn't start queue thread:%d, "
+			       "running in direct mode\n", error);
 			sas_ha->lldd_max_execute_num = 1;
 		}
 	}

@@ -59,8 +59,8 @@ neponset_pcmcia_configure_socket(struct soc_pcmcia_socket *skt, const socket_sta
 		else if (state->Vpp == state->Vcc)
 			ncr_set = NCR_A0VPP;
 		else {
-//			printk(KERN_ERR "%s(): unrecognized VPP %u\n",
-;
+			printk(KERN_ERR "%s(): unrecognized VPP %u\n",
+			       __func__, state->Vpp);
 			return -1;
 		}
 		break;
@@ -71,8 +71,8 @@ neponset_pcmcia_configure_socket(struct soc_pcmcia_socket *skt, const socket_sta
 		ncr_set = 0;
 
 		if (state->Vpp != state->Vcc && state->Vpp != 0) {
-//			printk(KERN_ERR "%s(): CF slot cannot support VPP %u\n",
-;
+			printk(KERN_ERR "%s(): CF slot cannot support VPP %u\n",
+			       __func__, state->Vpp);
 			return -1;
 		}
 		break;

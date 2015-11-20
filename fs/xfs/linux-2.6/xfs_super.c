@@ -1652,8 +1652,8 @@ init_xfs_fs(void)
 {
 	int			error;
 
-//	printk(KERN_INFO XFS_VERSION_STRING " with "
-;
+	printk(KERN_INFO XFS_VERSION_STRING " with "
+			 XFS_BUILD_OPTIONS " enabled\n");
 
 	xfs_ioend_init();
 	xfs_dir_startup();

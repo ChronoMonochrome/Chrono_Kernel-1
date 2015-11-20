@@ -976,7 +976,7 @@ static int __init context_init(void)
 	    || !context_prcc[4].base
 	    || !context_gic_dist_common.base
 	    || !per_cpu(context_gic_cpu, 0).base) {
-;
+		printk("context: ioremap failed\n");
 		return -ENOMEM;
 	}
 

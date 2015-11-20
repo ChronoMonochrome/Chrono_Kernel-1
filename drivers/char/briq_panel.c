@@ -207,9 +207,9 @@ static int __init briq_panel_init(void)
 	}
 	of_node_put(root);
 
-//	printk(KERN_INFO
-//		"briq_panel: v%s Dr. Karsten Jeppesen (kj@totalimpact.com)\n",
-;
+	printk(KERN_INFO
+		"briq_panel: v%s Dr. Karsten Jeppesen (kj@totalimpact.com)\n",
+		BRIQ_PANEL_VER);
 
 	if (!request_region(BRIQ_PANEL_VFD_IOPORT, 4, "BRIQ Front Panel"))
 		return -EBUSY;

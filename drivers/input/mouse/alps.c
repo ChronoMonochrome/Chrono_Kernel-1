@@ -25,48 +25,48 @@
 
 #undef DEBUG
 #ifdef DEBUG
-//#define dbg(format, arg...) printk(KERN_INFO "alps.c: " format "\n", ## arg)
-//#else
-//#define dbg(format, arg...) do {} while (0)
-//#endif
-//
-//#define ALPS_OLDPROTO		0x01	/* old style input */
-//#define ALPS_DUALPOINT		0x02	/* touchpad has trackstick */
-//#define ALPS_PASS		0x04	/* device has a pass-through port */
-//
-//#define ALPS_WHEEL		0x08	/* hardware wheel present */
-//#define ALPS_FW_BK_1		0x10	/* front & back buttons present */
-//#define ALPS_FW_BK_2		0x20	/* front & back buttons present */
-//#define ALPS_FOUR_BUTTONS	0x40	/* 4 direction button present */
-//#define ALPS_PS2_INTERLEAVED	0x80	/* 3-byte PS/2 packet interleaved with
-//					   6-byte ALPS packet */
-//
-//static const struct alps_model_info alps_model_data[] = {
-//	{ { 0x32, 0x02, 0x14 },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* Toshiba Salellite Pro M10 */
-//	{ { 0x33, 0x02, 0x0a },	0x88, 0xf8, ALPS_OLDPROTO },		  /* UMAX-530T */
-//	{ { 0x53, 0x02, 0x0a },	0xf8, 0xf8, 0 },
-//	{ { 0x53, 0x02, 0x14 },	0xf8, 0xf8, 0 },
-//	{ { 0x60, 0x03, 0xc8 }, 0xf8, 0xf8, 0 },			  /* HP ze1115 */
-//	{ { 0x63, 0x02, 0x0a },	0xf8, 0xf8, 0 },
-//	{ { 0x63, 0x02, 0x14 },	0xf8, 0xf8, 0 },
-//	{ { 0x63, 0x02, 0x28 },	0xf8, 0xf8, ALPS_FW_BK_2 },		  /* Fujitsu Siemens S6010 */
-//	{ { 0x63, 0x02, 0x3c },	0x8f, 0x8f, ALPS_WHEEL },		  /* Toshiba Satellite S2400-103 */
-//	{ { 0x63, 0x02, 0x50 },	0xef, 0xef, ALPS_FW_BK_1 },		  /* NEC Versa L320 */
-//	{ { 0x63, 0x02, 0x64 },	0xf8, 0xf8, 0 },
-//	{ { 0x63, 0x03, 0xc8 }, 0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* Dell Latitude D800 */
-//	{ { 0x73, 0x00, 0x0a },	0xf8, 0xf8, ALPS_DUALPOINT },		  /* ThinkPad R61 8918-5QG */
-//	{ { 0x73, 0x02, 0x0a },	0xf8, 0xf8, 0 },
-//	{ { 0x73, 0x02, 0x14 },	0xf8, 0xf8, ALPS_FW_BK_2 },		  /* Ahtec Laptop */
-//	{ { 0x20, 0x02, 0x0e },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* XXX */
-//	{ { 0x22, 0x02, 0x0a },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT },
-//	{ { 0x22, 0x02, 0x14 }, 0xff, 0xff, ALPS_PASS | ALPS_DUALPOINT }, /* Dell Latitude D600 */
-//	/* Dell Latitude E5500, E6400, E6500, Precision M4400 */
-//	{ { 0x62, 0x02, 0x14 }, 0xcf, 0xcf,
-//		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },
-//	{ { 0x73, 0x02, 0x50 }, 0xcf, 0xcf, ALPS_FOUR_BUTTONS },	  /* Dell Vostro 1400 */
-//	{ { 0x52, 0x01, 0x14 }, 0xff, 0xff,
-//		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },	  /* Toshiba Tecra A11-11L */
-;
+#define dbg(format, arg...) printk(KERN_INFO "alps.c: " format "\n", ## arg)
+#else
+#define dbg(format, arg...) do {} while (0)
+#endif
+
+#define ALPS_OLDPROTO		0x01	/* old style input */
+#define ALPS_DUALPOINT		0x02	/* touchpad has trackstick */
+#define ALPS_PASS		0x04	/* device has a pass-through port */
+
+#define ALPS_WHEEL		0x08	/* hardware wheel present */
+#define ALPS_FW_BK_1		0x10	/* front & back buttons present */
+#define ALPS_FW_BK_2		0x20	/* front & back buttons present */
+#define ALPS_FOUR_BUTTONS	0x40	/* 4 direction button present */
+#define ALPS_PS2_INTERLEAVED	0x80	/* 3-byte PS/2 packet interleaved with
+					   6-byte ALPS packet */
+
+static const struct alps_model_info alps_model_data[] = {
+	{ { 0x32, 0x02, 0x14 },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* Toshiba Salellite Pro M10 */
+	{ { 0x33, 0x02, 0x0a },	0x88, 0xf8, ALPS_OLDPROTO },		  /* UMAX-530T */
+	{ { 0x53, 0x02, 0x0a },	0xf8, 0xf8, 0 },
+	{ { 0x53, 0x02, 0x14 },	0xf8, 0xf8, 0 },
+	{ { 0x60, 0x03, 0xc8 }, 0xf8, 0xf8, 0 },			  /* HP ze1115 */
+	{ { 0x63, 0x02, 0x0a },	0xf8, 0xf8, 0 },
+	{ { 0x63, 0x02, 0x14 },	0xf8, 0xf8, 0 },
+	{ { 0x63, 0x02, 0x28 },	0xf8, 0xf8, ALPS_FW_BK_2 },		  /* Fujitsu Siemens S6010 */
+	{ { 0x63, 0x02, 0x3c },	0x8f, 0x8f, ALPS_WHEEL },		  /* Toshiba Satellite S2400-103 */
+	{ { 0x63, 0x02, 0x50 },	0xef, 0xef, ALPS_FW_BK_1 },		  /* NEC Versa L320 */
+	{ { 0x63, 0x02, 0x64 },	0xf8, 0xf8, 0 },
+	{ { 0x63, 0x03, 0xc8 }, 0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* Dell Latitude D800 */
+	{ { 0x73, 0x00, 0x0a },	0xf8, 0xf8, ALPS_DUALPOINT },		  /* ThinkPad R61 8918-5QG */
+	{ { 0x73, 0x02, 0x0a },	0xf8, 0xf8, 0 },
+	{ { 0x73, 0x02, 0x14 },	0xf8, 0xf8, ALPS_FW_BK_2 },		  /* Ahtec Laptop */
+	{ { 0x20, 0x02, 0x0e },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT }, /* XXX */
+	{ { 0x22, 0x02, 0x0a },	0xf8, 0xf8, ALPS_PASS | ALPS_DUALPOINT },
+	{ { 0x22, 0x02, 0x14 }, 0xff, 0xff, ALPS_PASS | ALPS_DUALPOINT }, /* Dell Latitude D600 */
+	/* Dell Latitude E5500, E6400, E6500, Precision M4400 */
+	{ { 0x62, 0x02, 0x14 }, 0xcf, 0xcf,
+		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },
+	{ { 0x73, 0x02, 0x50 }, 0xcf, 0xcf, ALPS_FOUR_BUTTONS },	  /* Dell Vostro 1400 */
+	{ { 0x52, 0x01, 0x14 }, 0xff, 0xff,
+		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },	  /* Toshiba Tecra A11-11L */
+};
 
 /*
  * XXX - this entry is suspicious. First byte has zero lower nibble,
@@ -608,12 +608,12 @@ static int alps_hw_init(struct psmouse *psmouse)
 	}
 
 	if (alps_tap_mode(psmouse, true)) {
-;
+		printk(KERN_WARNING "alps.c: Failed to enable hardware tapping\n");
 		return -1;
 	}
 
 	if (alps_absolute_mode(psmouse)) {
-;
+		printk(KERN_ERR "alps.c: Failed to enable absolute mode\n");
 		return -1;
 	}
 
@@ -624,7 +624,7 @@ static int alps_hw_init(struct psmouse *psmouse)
 
 	/* ALPS needs stream mode, otherwise it won't report any data */
 	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_SETSTREAM)) {
-;
+		printk(KERN_ERR "alps.c: Failed to enable stream mode\n");
 		return -1;
 	}
 

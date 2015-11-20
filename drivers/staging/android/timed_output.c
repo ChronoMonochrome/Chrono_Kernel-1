@@ -90,8 +90,8 @@ int timed_output_dev_register(struct timed_output_dev *tdev)
 
 err_create_file:
 	device_destroy(timed_output_class, MKDEV(0, tdev->index));
-//	printk(KERN_ERR "timed_output: Failed to register driver %s\n",
-;
+	printk(KERN_ERR "timed_output: Failed to register driver %s\n",
+			tdev->name);
 
 	return ret;
 }

@@ -124,7 +124,7 @@ static int sas_get_port_device(struct asd_sas_port *port)
 					  SAS_FANOUT_EXPANDER_DEVICE);
 		break;
 	default:
-;
+		printk("ERROR: Unidentified device type %d\n", dev->dev_type);
 		rphy = NULL;
 		break;
 	}
@@ -168,10 +168,10 @@ int sas_notify_lldd_dev_found(struct domain_device *dev)
 	if (i->dft->lldd_dev_found) {
 		res = i->dft->lldd_dev_found(dev);
 		if (res) {
-//			printk("sas: driver on pcidev %s cannot handle "
-//			       "device %llx, error:%d\n",
-//			       dev_name(sas_ha->dev),
-;
+			printk("sas: driver on pcidev %s cannot handle "
+			       "device %llx, error:%d\n",
+			       dev_name(sas_ha->dev),
+			       SAS_ADDR(dev->sas_addr), res);
 		}
 	}
 	return res;

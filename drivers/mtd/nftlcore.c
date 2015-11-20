@@ -57,9 +57,9 @@ static void nftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		return;
 
 	if (!mtd->block_isbad) {
-//		printk(KERN_ERR
-//"NFTL no longer supports the old DiskOnChip drivers loaded via docprobe.\n"
-;
+		printk(KERN_ERR
+"NFTL no longer supports the old DiskOnChip drivers loaded via docprobe.\n"
+"Please use the new diskonchip driver under the NAND subsystem.\n");
 		return;
 	}
 
@@ -68,7 +68,7 @@ static void nftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	nftl = kzalloc(sizeof(struct NFTLrecord), GFP_KERNEL);
 
 	if (!nftl) {
-;
+		printk(KERN_WARNING "NFTL: out of memory for data structures\n");
 		return;
 	}
 
@@ -78,7 +78,7 @@ static void nftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	nftl->mbd.tr = tr;
 
         if (NFTL_mount(nftl) < 0) {
-;
+		printk(KERN_WARNING "NFTL: could not mount device\n");
 		kfree(nftl);
 		return;
         }
@@ -108,13 +108,13 @@ static void nftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		  Oh no we don't have
 		   mbd.size == heads * cylinders * sectors
 		*/
-//		printk(KERN_WARNING "NFTL: cannot calculate a geometry to "
-;
-//		printk(KERN_WARNING "NFTL: using C:%d H:%d S:%d "
-//			"(== 0x%lx sects)\n",
-//			nftl->cylinders, nftl->heads , nftl->sectors,
-//			(long)nftl->cylinders * (long)nftl->heads *
-;
+		printk(KERN_WARNING "NFTL: cannot calculate a geometry to "
+		       "match size of 0x%lx.\n", nftl->mbd.size);
+		printk(KERN_WARNING "NFTL: using C:%d H:%d S:%d "
+			"(== 0x%lx sects)\n",
+			nftl->cylinders, nftl->heads , nftl->sectors,
+			(long)nftl->cylinders * (long)nftl->heads *
+			(long)nftl->sectors );
 	}
 
 	if (add_mtd_blktrans_dev(&nftl->mbd)) {
@@ -124,7 +124,7 @@ static void nftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		return;
 	}
 #ifdef PSYCHO_DEBUG
-;
+	printk(KERN_INFO "NFTL: Found new nftl%c\n", nftl->mbd.devnum + 'a');
 #endif
 }
 
@@ -240,9 +240,9 @@ static u16 NFTL_findfreeblock(struct NFTLrecord *nftl, int desperate )
 			pot = le16_to_cpu(nftl->MediaHdr.FirstPhysicalEUN);
 
 		if (!silly--) {
-//			printk("Argh! No free blocks found! LastFreeEUN = %d, "
-//			       "FirstEUN = %d\n", nftl->LastFreeEUN,
-;
+			printk("Argh! No free blocks found! LastFreeEUN = %d, "
+			       "FirstEUN = %d\n", nftl->LastFreeEUN,
+			       le16_to_cpu(nftl->MediaHdr.FirstPhysicalEUN));
 			return BLOCK_NIL;
 		}
 	} while (pot != nftl->LastFreeEUN);
@@ -270,8 +270,8 @@ static u16 NFTL_foldchain (struct NFTLrecord *nftl, unsigned thisVUC, unsigned p
 	thisEUN = nftl->EUNtable[thisVUC];
 
 	if (thisEUN == BLOCK_NIL) {
-//		printk(KERN_WARNING "Trying to fold non-existent "
-;
+		printk(KERN_WARNING "Trying to fold non-existent "
+		       "Virtual Unit Chain %d!\n", thisVUC);
 		return BLOCK_NIL;
 	}
 
@@ -313,32 +313,32 @@ static u16 NFTL_foldchain (struct NFTLrecord *nftl, unsigned thisVUC, unsigned p
 				if (!BlockFreeFound[block])
 					BlockMap[block] = thisEUN;
 				else
-//					printk(KERN_WARNING
-//					       "SECTOR_USED found after SECTOR_FREE "
-//					       "in Virtual Unit Chain %d for block %d\n",
-;
+					printk(KERN_WARNING
+					       "SECTOR_USED found after SECTOR_FREE "
+					       "in Virtual Unit Chain %d for block %d\n",
+					       thisVUC, block);
 				break;
 			case SECTOR_DELETED:
 				if (!BlockFreeFound[block])
 					BlockMap[block] = BLOCK_NIL;
 				else
-//					printk(KERN_WARNING
-//					       "SECTOR_DELETED found after SECTOR_FREE "
-//					       "in Virtual Unit Chain %d for block %d\n",
-;
+					printk(KERN_WARNING
+					       "SECTOR_DELETED found after SECTOR_FREE "
+					       "in Virtual Unit Chain %d for block %d\n",
+					       thisVUC, block);
 				break;
 
 			case SECTOR_IGNORE:
 				break;
 			default:
-//				printk("Unknown status for block %d in EUN %d: %x\n",
-;
+				printk("Unknown status for block %d in EUN %d: %x\n",
+				       block, thisEUN, status);
 			}
 		}
 
 		if (!silly--) {
-//			printk(KERN_WARNING "Infinite loop in Virtual Unit Chain 0x%x\n",
-;
+			printk(KERN_WARNING "Infinite loop in Virtual Unit Chain 0x%x\n",
+			       thisVUC);
 			return BLOCK_NIL;
 		}
 
@@ -391,8 +391,8 @@ static u16 NFTL_foldchain (struct NFTLrecord *nftl, unsigned thisVUC, unsigned p
 			   which chain to fold, because makefreeblock will
 			   only ask us to fold the same one again.
 			*/
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			       "NFTL_findfreeblock(desperate) returns 0xffff.\n");
 			return BLOCK_NIL;
 		}
 	} else {
@@ -433,7 +433,7 @@ static u16 NFTL_foldchain (struct NFTLrecord *nftl, unsigned thisVUC, unsigned p
 					+ (block * 512), 512, &retlen,
 					movebuf);
 			if (ret != -EIO)
-;
+				printk("Error went away on retry.\n");
 		}
 		memset(&oob, 0xff, sizeof(struct nftl_oob));
 		oob.b.Status = oob.b.Status1 = SECTOR_USED;
@@ -504,11 +504,11 @@ static u16 NFTL_makefreeblock( struct NFTLrecord *nftl , unsigned pendingblock)
 
 		while (EUN <= nftl->lastEUN) {
 			thislen++;
-;
+			//printk("VUC %d reaches len %d with EUN %d\n", chain, thislen, EUN);
 			EUN = nftl->ReplUnitTable[EUN] & 0x7fff;
 			if (thislen > 0xff00) {
-//				printk("Endless loop in Virtual Chain %d: Unit %x\n",
-;
+				printk("Endless loop in Virtual Chain %d: Unit %x\n",
+				       chain, EUN);
 			}
 			if (thislen > 0xff10) {
 				/* Actually, don't return failure. Just ignore this chain and
@@ -519,15 +519,15 @@ static u16 NFTL_makefreeblock( struct NFTLrecord *nftl , unsigned pendingblock)
 		}
 
 		if (thislen > ChainLength) {
-;
+			//printk("New longest chain is %d with length %d\n", chain, thislen);
 			ChainLength = thislen;
 			LongestChain = chain;
 		}
 	}
 
 	if (ChainLength < 2) {
-//		printk(KERN_WARNING "No Virtual Unit Chains available for folding. "
-;
+		printk(KERN_WARNING "No Virtual Unit Chains available for folding. "
+		       "Failing request\n");
 		return BLOCK_NIL;
 	}
 
@@ -588,9 +588,9 @@ static inline u16 NFTL_findwriteunit(struct NFTLrecord *nftl, unsigned block)
 			}
 
 			if (!silly--) {
-//				printk(KERN_WARNING
-//				       "Infinite loop in Virtual Unit Chain 0x%x\n",
-;
+				printk(KERN_WARNING
+				       "Infinite loop in Virtual Unit Chain 0x%x\n",
+				       thisVUC);
 				return BLOCK_NIL;
 			}
 
@@ -613,7 +613,7 @@ static inline u16 NFTL_findwriteunit(struct NFTLrecord *nftl, unsigned block)
 			/* First remember the start of this chain */
 			//u16 startEUN = nftl->EUNtable[thisVUC];
 
-;
+			//printk("Write to VirtualUnitChain %d, calling makefreeblock()\n", thisVUC);
 			writeEUN = NFTL_makefreeblock(nftl, BLOCK_NIL);
 
 			if (writeEUN == BLOCK_NIL) {
@@ -633,10 +633,10 @@ static inline u16 NFTL_findwriteunit(struct NFTLrecord *nftl, unsigned block)
 				   space than actual media, or our makefreeblock
 				   routine is missing something.
 				*/
-;
+				printk(KERN_WARNING "Cannot make free space.\n");
 				return BLOCK_NIL;
 			}
-;
+			//printk("Restarting scan\n");
 			lastEUN = BLOCK_NIL;
 			continue;
 		}
@@ -684,8 +684,8 @@ static inline u16 NFTL_findwriteunit(struct NFTLrecord *nftl, unsigned block)
 
 	} while (silly2--);
 
-//	printk(KERN_WARNING "Error folding to make room for Virtual Unit Chain 0x%x\n",
-;
+	printk(KERN_WARNING "Error folding to make room for Virtual Unit Chain 0x%x\n",
+	       thisVUC);
 	return BLOCK_NIL;
 }
 
@@ -701,8 +701,8 @@ static int nftl_writeblock(struct mtd_blktrans_dev *mbd, unsigned long block,
 	writeEUN = NFTL_findwriteunit(nftl, block);
 
 	if (writeEUN == BLOCK_NIL) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "NFTL_writeblock(): Cannot find block to write to\n");
 		/* If we _still_ haven't got a block to use, we're screwed */
 		return 1;
 	}
@@ -753,14 +753,14 @@ static int nftl_readblock(struct mtd_blktrans_dev *mbd, unsigned long block,
 			case SECTOR_IGNORE:
 				break;
 			default:
-//				printk("Unknown status for block %ld in EUN %d: %x\n",
-;
+				printk("Unknown status for block %ld in EUN %d: %x\n",
+				       block, thisEUN, status);
 				break;
 			}
 
 			if (!silly--) {
-//				printk(KERN_WARNING "Infinite loop in Virtual Unit Chain 0x%lx\n",
-;
+				printk(KERN_WARNING "Infinite loop in Virtual Unit Chain 0x%lx\n",
+				       block / (nftl->EraseSize / 512));
 				return 1;
 			}
 			thisEUN = nftl->ReplUnitTable[thisEUN];

@@ -435,15 +435,15 @@ static int add_mc_to_global_list(struct mem_ctl_info *mci)
 	return 0;
 
 fail0:
-//	edac_printk(KERN_WARNING, EDAC_MC,
-//		"%s (%s) %s %s already assigned %d\n", dev_name(p->dev),
-;
+	edac_printk(KERN_WARNING, EDAC_MC,
+		"%s (%s) %s %s already assigned %d\n", dev_name(p->dev),
+		edac_dev_name(mci), p->mod_name, p->ctl_name, p->mc_idx);
 	return 1;
 
 fail1:
-//	edac_printk(KERN_WARNING, EDAC_MC,
-//		"bug in low-level driver: attempt to assign\n"
-;
+	edac_printk(KERN_WARNING, EDAC_MC,
+		"bug in low-level driver: attempt to assign\n"
+		"    duplicate mc_idx %d in %s()\n", p->mc_idx, __func__);
 	return 1;
 }
 
@@ -529,8 +529,8 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
 	mci->start_time = jiffies;
 
 	if (edac_create_sysfs_mci_device(mci)) {
-//		edac_mc_printk(mci, KERN_WARNING,
-;
+		edac_mc_printk(mci, KERN_WARNING,
+			"failed to create sysfs device\n");
 		goto fail1;
 	}
 
@@ -545,8 +545,8 @@ int edac_mc_add_mc(struct mem_ctl_info *mci)
 	}
 
 	/* Report action taken */
-//	edac_mc_printk(mci, KERN_INFO, "Giving out device to '%s' '%s':"
-;
+	edac_mc_printk(mci, KERN_INFO, "Giving out device to '%s' '%s':"
+		" DEV %s\n", mci->mod_name, mci->ctl_name, edac_dev_name(mci));
 
 	mutex_unlock(&mem_ctls_mutex);
 	return 0;
@@ -594,9 +594,9 @@ struct mem_ctl_info *edac_mc_del_mc(struct device *dev)
 	/* remove from sysfs */
 	edac_remove_sysfs_mci_device(mci);
 
-//	edac_printk(KERN_INFO, EDAC_MC,
-//		"Removed device %d for %s %s: DEV %s\n", mci->mc_idx,
-;
+	edac_printk(KERN_INFO, EDAC_MC,
+		"Removed device %d for %s %s: DEV %s\n", mci->mc_idx,
+		mci->mod_name, mci->ctl_name, edac_dev_name(mci));
 
 	return mci;
 }
@@ -663,9 +663,9 @@ int edac_mc_find_csrow_by_page(struct mem_ctl_info *mci, unsigned long page)
 	}
 
 	if (row == -1)
-//		edac_mc_printk(mci, KERN_ERR,
-//			"could not look up page error address %lx\n",
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"could not look up page error address %lx\n",
+			(unsigned long)page);
 
 	return row;
 }
@@ -685,31 +685,31 @@ void edac_mc_handle_ce(struct mem_ctl_info *mci,
 	/* FIXME - maybe make panic on INTERNAL ERROR an option */
 	if (row >= mci->nr_csrows || row < 0) {
 		/* something is wrong */
-//		edac_mc_printk(mci, KERN_ERR,
-//			"INTERNAL ERROR: row out of range "
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"INTERNAL ERROR: row out of range "
+			"(%d >= %d)\n", row, mci->nr_csrows);
 		edac_mc_handle_ce_no_info(mci, "INTERNAL ERROR");
 		return;
 	}
 
 	if (channel >= mci->csrows[row].nr_channels || channel < 0) {
 		/* something is wrong */
-//		edac_mc_printk(mci, KERN_ERR,
-//			"INTERNAL ERROR: channel out of range "
-//			"(%d >= %d)\n", channel,
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"INTERNAL ERROR: channel out of range "
+			"(%d >= %d)\n", channel,
+			mci->csrows[row].nr_channels);
 		edac_mc_handle_ce_no_info(mci, "INTERNAL ERROR");
 		return;
 	}
 
 	if (edac_mc_get_log_ce())
 		/* FIXME - put in DIMM location */
-//		edac_mc_printk(mci, KERN_WARNING,
-//			"CE page 0x%lx, offset 0x%lx, grain %d, syndrome "
-//			"0x%lx, row %d, channel %d, label \"%s\": %s\n",
-//			page_frame_number, offset_in_page,
-//			mci->csrows[row].grain, syndrome, row, channel,
-;
+		edac_mc_printk(mci, KERN_WARNING,
+			"CE page 0x%lx, offset 0x%lx, grain %d, syndrome "
+			"0x%lx, row %d, channel %d, label \"%s\": %s\n",
+			page_frame_number, offset_in_page,
+			mci->csrows[row].grain, syndrome, row, channel,
+			mci->csrows[row].channels[channel].label, msg);
 
 	mci->ce_count++;
 	mci->csrows[row].ce_count++;
@@ -738,8 +738,8 @@ EXPORT_SYMBOL_GPL(edac_mc_handle_ce);
 void edac_mc_handle_ce_no_info(struct mem_ctl_info *mci, const char *msg)
 {
 	if (edac_mc_get_log_ce())
-//		edac_mc_printk(mci, KERN_WARNING,
-;
+		edac_mc_printk(mci, KERN_WARNING,
+			"CE - no information available: %s\n", msg);
 
 	mci->ce_noinfo_count++;
 	mci->ce_count++;
@@ -761,9 +761,9 @@ void edac_mc_handle_ue(struct mem_ctl_info *mci,
 	/* FIXME - maybe make panic on INTERNAL ERROR an option */
 	if (row >= mci->nr_csrows || row < 0) {
 		/* something is wrong */
-//		edac_mc_printk(mci, KERN_ERR,
-//			"INTERNAL ERROR: row out of range "
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"INTERNAL ERROR: row out of range "
+			"(%d >= %d)\n", row, mci->nr_csrows);
 		edac_mc_handle_ue_no_info(mci, "INTERNAL ERROR");
 		return;
 	}
@@ -782,11 +782,11 @@ void edac_mc_handle_ue(struct mem_ctl_info *mci,
 	}
 
 	if (edac_mc_get_log_ue())
-//		edac_mc_printk(mci, KERN_EMERG,
-//			"UE page 0x%lx, offset 0x%lx, grain %d, row %d, "
-//			"labels \"%s\": %s\n", page_frame_number,
-//			offset_in_page, mci->csrows[row].grain, row,
-;
+		edac_mc_printk(mci, KERN_EMERG,
+			"UE page 0x%lx, offset 0x%lx, grain %d, row %d, "
+			"labels \"%s\": %s\n", page_frame_number,
+			offset_in_page, mci->csrows[row].grain, row,
+			labels, msg);
 
 	if (edac_mc_get_panic_on_ue())
 		panic("EDAC MC%d: UE page 0x%lx, offset 0x%lx, grain %d, "
@@ -805,8 +805,8 @@ void edac_mc_handle_ue_no_info(struct mem_ctl_info *mci, const char *msg)
 		panic("EDAC MC%d: Uncorrected Error", mci->mc_idx);
 
 	if (edac_mc_get_log_ue())
-//		edac_mc_printk(mci, KERN_WARNING,
-;
+		edac_mc_printk(mci, KERN_WARNING,
+			"UE - no information available: %s\n", msg);
 	mci->ue_noinfo_count++;
 	mci->ue_count++;
 }
@@ -828,29 +828,29 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
 
 	if (csrow >= mci->nr_csrows) {
 		/* something is wrong */
-//		edac_mc_printk(mci, KERN_ERR,
-//			"INTERNAL ERROR: row out of range (%d >= %d)\n",
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"INTERNAL ERROR: row out of range (%d >= %d)\n",
+			csrow, mci->nr_csrows);
 		edac_mc_handle_ue_no_info(mci, "INTERNAL ERROR");
 		return;
 	}
 
 	if (channela >= mci->csrows[csrow].nr_channels) {
 		/* something is wrong */
-//		edac_mc_printk(mci, KERN_ERR,
-//			"INTERNAL ERROR: channel-a out of range "
-//			"(%d >= %d)\n",
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"INTERNAL ERROR: channel-a out of range "
+			"(%d >= %d)\n",
+			channela, mci->csrows[csrow].nr_channels);
 		edac_mc_handle_ue_no_info(mci, "INTERNAL ERROR");
 		return;
 	}
 
 	if (channelb >= mci->csrows[csrow].nr_channels) {
 		/* something is wrong */
-//		edac_mc_printk(mci, KERN_ERR,
-//			"INTERNAL ERROR: channel-b out of range "
-//			"(%d >= %d)\n",
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"INTERNAL ERROR: channel-b out of range "
+			"(%d >= %d)\n",
+			channelb, mci->csrows[csrow].nr_channels);
 		edac_mc_handle_ue_no_info(mci, "INTERNAL ERROR");
 		return;
 	}
@@ -867,10 +867,10 @@ void edac_mc_handle_fbd_ue(struct mem_ctl_info *mci,
 			 mci->csrows[csrow].channels[channelb].label);
 
 	if (edac_mc_get_log_ue())
-//		edac_mc_printk(mci, KERN_EMERG,
-//			"UE row %d, channel-a= %d channel-b= %d "
-//			"labels \"%s\": %s\n", csrow, channela, channelb,
-;
+		edac_mc_printk(mci, KERN_EMERG,
+			"UE row %d, channel-a= %d channel-b= %d "
+			"labels \"%s\": %s\n", csrow, channela, channelb,
+			labels, msg);
 
 	if (edac_mc_get_panic_on_ue())
 		panic("UE row %d, channel-a= %d channel-b= %d "
@@ -890,27 +890,27 @@ void edac_mc_handle_fbd_ce(struct mem_ctl_info *mci,
 	/* Ensure boundary values */
 	if (csrow >= mci->nr_csrows) {
 		/* something is wrong */
-//		edac_mc_printk(mci, KERN_ERR,
-//			"INTERNAL ERROR: row out of range (%d >= %d)\n",
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"INTERNAL ERROR: row out of range (%d >= %d)\n",
+			csrow, mci->nr_csrows);
 		edac_mc_handle_ce_no_info(mci, "INTERNAL ERROR");
 		return;
 	}
 	if (channel >= mci->csrows[csrow].nr_channels) {
 		/* something is wrong */
-//		edac_mc_printk(mci, KERN_ERR,
-//			"INTERNAL ERROR: channel out of range (%d >= %d)\n",
-;
+		edac_mc_printk(mci, KERN_ERR,
+			"INTERNAL ERROR: channel out of range (%d >= %d)\n",
+			channel, mci->csrows[csrow].nr_channels);
 		edac_mc_handle_ce_no_info(mci, "INTERNAL ERROR");
 		return;
 	}
 
 	if (edac_mc_get_log_ce())
 		/* FIXME - put in DIMM location */
-//		edac_mc_printk(mci, KERN_WARNING,
-//			"CE row %d, channel %d, label \"%s\": %s\n",
-//			csrow, channel,
-;
+		edac_mc_printk(mci, KERN_WARNING,
+			"CE row %d, channel %d, label \"%s\": %s\n",
+			csrow, channel,
+			mci->csrows[csrow].channels[channel].label, msg);
 
 	mci->ce_count++;
 	mci->csrows[csrow].ce_count++;

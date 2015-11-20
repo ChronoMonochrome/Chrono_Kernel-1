@@ -228,16 +228,16 @@ static void sandisk_set_iobase(local_info_t *local)
 	res = pcmcia_write_config_byte(hw_priv->link, 0x10,
 				hw_priv->link->resource[0]->start & 0x00ff);
 	if (res != 0) {
-//		printk(KERN_DEBUG "Prism3 SanDisk - failed to set I/O base 0 -"
-;
+		printk(KERN_DEBUG "Prism3 SanDisk - failed to set I/O base 0 -"
+		       " res=%d\n", res);
 	}
 	udelay(10);
 
 	res = pcmcia_write_config_byte(hw_priv->link, 0x12,
 				(hw_priv->link->resource[0]->start >> 8) & 0x00ff);
 	if (res != 0) {
-//		printk(KERN_DEBUG "Prism3 SanDisk - failed to set I/O base 1 -"
-;
+		printk(KERN_DEBUG "Prism3 SanDisk - failed to set I/O base 1 -"
+		       " res=%d\n", res);
 	}
 }
 
@@ -282,15 +282,15 @@ static int sandisk_enable_wireless(struct net_device *dev)
 		goto done;
 	}
 
-//	printk(KERN_DEBUG "%s: Multi-function SanDisk ConnectPlus detected"
-;
+	printk(KERN_DEBUG "%s: Multi-function SanDisk ConnectPlus detected"
+	       " - using vendor-specific initialization\n", dev->name);
 	hw_priv->sandisk_connectplus = 1;
 
 	res = pcmcia_write_config_byte(hw_priv->link, CISREG_COR,
 				COR_SOFT_RESET);
 	if (res != 0) {
-//		printk(KERN_DEBUG "%s: SanDisk - COR sreset failed (%d)\n",
-;
+		printk(KERN_DEBUG "%s: SanDisk - COR sreset failed (%d)\n",
+		       dev->name, res);
 		goto done;
 	}
 	mdelay(5);
@@ -303,8 +303,8 @@ static int sandisk_enable_wireless(struct net_device *dev)
 				(COR_LEVEL_REQ | 0x8 | COR_ADDR_DECODE |
 					COR_FUNC_ENA));
 	if (res != 0) {
-//		printk(KERN_DEBUG "%s: SanDisk - COR sreset failed (%d)\n",
-;
+		printk(KERN_DEBUG "%s: SanDisk - COR sreset failed (%d)\n",
+		       dev->name, res);
 		goto done;
 	}
 	mdelay(5);
@@ -332,18 +332,18 @@ static void prism2_pccard_cor_sreset(local_info_t *local)
 
 	res = pcmcia_read_config_byte(hw_priv->link, CISREG_COR, &val);
 	if (res != 0) {
-//		printk(KERN_DEBUG "prism2_pccard_cor_sreset failed 1 (%d)\n",
-;
+		printk(KERN_DEBUG "prism2_pccard_cor_sreset failed 1 (%d)\n",
+		       res);
 		return;
 	}
-//	printk(KERN_DEBUG "prism2_pccard_cor_sreset: original COR %02x\n",
-;
+	printk(KERN_DEBUG "prism2_pccard_cor_sreset: original COR %02x\n",
+		val);
 
 	val |= COR_SOFT_RESET;
 	res = pcmcia_write_config_byte(hw_priv->link, CISREG_COR, val);
 	if (res != 0) {
-//		printk(KERN_DEBUG "prism2_pccard_cor_sreset failed 2 (%d)\n",
-;
+		printk(KERN_DEBUG "prism2_pccard_cor_sreset failed 2 (%d)\n",
+		       res);
 		return;
 	}
 
@@ -354,8 +354,8 @@ static void prism2_pccard_cor_sreset(local_info_t *local)
 		val |= COR_IREQ_ENA;
 	res = pcmcia_write_config_byte(hw_priv->link, CISREG_COR, val);
 	if (res != 0) {
-//		printk(KERN_DEBUG "prism2_pccard_cor_sreset failed 3 (%d)\n",
-;
+		printk(KERN_DEBUG "prism2_pccard_cor_sreset failed 3 (%d)\n",
+		       res);
 		return;
 	}
 
@@ -382,18 +382,18 @@ static void prism2_pccard_genesis_reset(local_info_t *local, int hcr)
 
 	res = pcmcia_read_config_byte(hw_priv->link, CISREG_COR, &old_cor);
 	if (res != 0) {
-//		printk(KERN_DEBUG "prism2_pccard_genesis_sreset failed 1 "
-;
+		printk(KERN_DEBUG "prism2_pccard_genesis_sreset failed 1 "
+		       "(%d)\n", res);
 		return;
 	}
-//	printk(KERN_DEBUG "prism2_pccard_genesis_sreset: original COR %02x\n",
-;
+	printk(KERN_DEBUG "prism2_pccard_genesis_sreset: original COR %02x\n",
+		old_cor);
 
 	res = pcmcia_write_config_byte(hw_priv->link, CISREG_COR,
 				old_cor | COR_SOFT_RESET);
 	if (res != 0) {
-//		printk(KERN_DEBUG "prism2_pccard_genesis_sreset failed 2 "
-;
+		printk(KERN_DEBUG "prism2_pccard_genesis_sreset failed 2 "
+		       "(%d)\n", res);
 		return;
 	}
 
@@ -402,8 +402,8 @@ static void prism2_pccard_genesis_reset(local_info_t *local, int hcr)
 	/* Setup Genesis mode */
 	res = pcmcia_write_config_byte(hw_priv->link, CISREG_CCSR, hcr);
 	if (res != 0) {
-//		printk(KERN_DEBUG "prism2_pccard_genesis_sreset failed 3 "
-;
+		printk(KERN_DEBUG "prism2_pccard_genesis_sreset failed 3 "
+		       "(%d)\n", res);
 		return;
 	}
 	mdelay(10);
@@ -411,8 +411,8 @@ static void prism2_pccard_genesis_reset(local_info_t *local, int hcr)
 	res = pcmcia_write_config_byte(hw_priv->link, CISREG_COR,
 				old_cor & ~COR_SOFT_RESET);
 	if (res != 0) {
-//		printk(KERN_DEBUG "prism2_pccard_genesis_sreset failed 4 "
-;
+		printk(KERN_DEBUG "prism2_pccard_genesis_sreset failed 4 "
+		       "(%d)\n", res);
 		return;
 	}
 
@@ -499,9 +499,9 @@ static int prism2_config(struct pcmcia_device *link)
 	ret = pcmcia_loop_config(link, prism2_config_check, NULL);
 	if (ret) {
 		if (!ignore_cis_vcc)
-//			printk(KERN_ERR "GetNextTuple(): No matching "
-//			       "CIS configuration.  Maybe you need the "
-;
+			printk(KERN_ERR "GetNextTuple(): No matching "
+			       "CIS configuration.  Maybe you need the "
+			       "ignore_cis_vcc=1 parameter.\n");
 		goto failed;
 	}
 

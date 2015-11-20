@@ -106,15 +106,15 @@ static struct request *get_alua_req(struct scsi_device *sdev,
 	rq = blk_get_request(q, rw, GFP_NOIO);
 
 	if (!rq) {
-//		sdev_printk(KERN_INFO, sdev,
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: blk_get_request failed\n", __func__);
 		return NULL;
 	}
 
 	if (buflen && blk_rq_map_kern(q, rq, buffer, buflen, GFP_NOIO)) {
 		blk_put_request(rq);
-//		sdev_printk(KERN_INFO, sdev,
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: blk_rq_map_kern failed\n", __func__);
 		return NULL;
 	}
 
@@ -153,9 +153,9 @@ static int submit_std_inquiry(struct scsi_device *sdev, struct alua_dh_data *h)
 
 	err = blk_execute_rq(rq->q, NULL, rq, 1);
 	if (err == -EIO) {
-//		sdev_printk(KERN_INFO, sdev,
-//			    "%s: std inquiry failed with %x\n",
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: std inquiry failed with %x\n",
+			    ALUA_DH_NAME, rq->errors);
 		h->senselen = rq->sense_len;
 		err = SCSI_DH_IO;
 	}
@@ -190,9 +190,9 @@ static int submit_vpd_inquiry(struct scsi_device *sdev, struct alua_dh_data *h)
 
 	err = blk_execute_rq(rq->q, NULL, rq, 1);
 	if (err == -EIO) {
-//		sdev_printk(KERN_INFO, sdev,
-//			    "%s: evpd inquiry failed with %x\n",
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: evpd inquiry failed with %x\n",
+			    ALUA_DH_NAME, rq->errors);
 		h->senselen = rq->sense_len;
 		err = SCSI_DH_IO;
 	}
@@ -229,9 +229,9 @@ static unsigned submit_rtpg(struct scsi_device *sdev, struct alua_dh_data *h)
 
 	err = blk_execute_rq(rq->q, NULL, rq, 1);
 	if (err == -EIO) {
-//		sdev_printk(KERN_INFO, sdev,
-//			    "%s: rtpg failed with %x\n",
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: rtpg failed with %x\n",
+			    ALUA_DH_NAME, rq->errors);
 		h->senselen = rq->sense_len;
 		err = SCSI_DH_IO;
 	}
@@ -273,18 +273,18 @@ static void stpg_endio(struct request *req, int error)
 			err = SCSI_DH_RETRY;
 			goto done;
 		}
-//		sdev_printk(KERN_INFO, h->sdev,
-//			    "%s: stpg sense code: %02x/%02x/%02x\n",
-//			    ALUA_DH_NAME, sense_hdr.sense_key,
-;
+		sdev_printk(KERN_INFO, h->sdev,
+			    "%s: stpg sense code: %02x/%02x/%02x\n",
+			    ALUA_DH_NAME, sense_hdr.sense_key,
+			    sense_hdr.asc, sense_hdr.ascq);
 		err = SCSI_DH_IO;
 	}
 	if (err == SCSI_DH_OK) {
 		h->state = TPGS_STATE_OPTIMIZED;
-//		sdev_printk(KERN_INFO, h->sdev,
-//			    "%s: port group %02x switched to state %c\n",
-//			    ALUA_DH_NAME, h->group_id,
-;
+		sdev_printk(KERN_INFO, h->sdev,
+			    "%s: port group %02x switched to state %c\n",
+			    ALUA_DH_NAME, h->group_id,
+			    print_alua_state(h->state));
 	}
 done:
 	req->end_io_data = NULL;
@@ -357,22 +357,22 @@ static int alua_std_inquiry(struct scsi_device *sdev, struct alua_dh_data *h)
 	h->tpgs = (h->inq[5] >> 4) & 0x3;
 	switch (h->tpgs) {
 	case TPGS_MODE_EXPLICIT|TPGS_MODE_IMPLICIT:
-//		sdev_printk(KERN_INFO, sdev,
-//			    "%s: supports implicit and explicit TPGS\n",
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: supports implicit and explicit TPGS\n",
+			    ALUA_DH_NAME);
 		break;
 	case TPGS_MODE_EXPLICIT:
-//		sdev_printk(KERN_INFO, sdev, "%s: supports explicit TPGS\n",
-;
+		sdev_printk(KERN_INFO, sdev, "%s: supports explicit TPGS\n",
+			    ALUA_DH_NAME);
 		break;
 	case TPGS_MODE_IMPLICIT:
-//		sdev_printk(KERN_INFO, sdev, "%s: supports implicit TPGS\n",
-;
+		sdev_printk(KERN_INFO, sdev, "%s: supports implicit TPGS\n",
+			    ALUA_DH_NAME);
 		break;
 	default:
 		h->tpgs = TPGS_MODE_NONE;
-//		sdev_printk(KERN_INFO, sdev, "%s: not supported\n",
-;
+		sdev_printk(KERN_INFO, sdev, "%s: not supported\n",
+			    ALUA_DH_NAME);
 		err = SCSI_DH_DEV_UNSUPP;
 		break;
 	}
@@ -404,9 +404,9 @@ static int alua_vpd_inquiry(struct scsi_device *sdev, struct alua_dh_data *h)
 	if (len > h->bufflen) {
 		/* Resubmit with the correct length */
 		if (realloc_buffer(h, len)) {
-//			sdev_printk(KERN_WARNING, sdev,
-//				    "%s: kmalloc buffer failed\n",
-;
+			sdev_printk(KERN_WARNING, sdev,
+				    "%s: kmalloc buffer failed\n",
+				    ALUA_DH_NAME);
 			/* Temporary failure, bypass */
 			return SCSI_DH_DEV_TEMP_BUSY;
 		}
@@ -439,16 +439,16 @@ static int alua_vpd_inquiry(struct scsi_device *sdev, struct alua_dh_data *h)
 		 * VPD identification descriptors not present.
 		 * Disable ALUA support
 		 */
-//		sdev_printk(KERN_INFO, sdev,
-//			    "%s: No target port descriptors found\n",
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: No target port descriptors found\n",
+			    ALUA_DH_NAME);
 		h->state = TPGS_STATE_OPTIMIZED;
 		h->tpgs = TPGS_MODE_NONE;
 		err = SCSI_DH_DEV_UNSUPP;
 	} else {
-//		sdev_printk(KERN_INFO, sdev,
-//			    "%s: port group %02x rel port %02x\n",
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: port group %02x rel port %02x\n",
+			    ALUA_DH_NAME, h->group_id, h->rel_port);
 	}
 
 	return err;
@@ -564,10 +564,10 @@ static int alua_rtpg(struct scsi_device *sdev, struct alua_dh_data *h)
 		err = alua_check_sense(sdev, &sense_hdr);
 		if (err == ADD_TO_MLQUEUE && time_before(jiffies, expiry))
 			goto retry;
-//		sdev_printk(KERN_INFO, sdev,
-//			    "%s: rtpg sense code %02x/%02x/%02x\n",
-//			    ALUA_DH_NAME, sense_hdr.sense_key,
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "%s: rtpg sense code %02x/%02x/%02x\n",
+			    ALUA_DH_NAME, sense_hdr.sense_key,
+			    sense_hdr.asc, sense_hdr.ascq);
 		err = SCSI_DH_IO;
 	}
 	if (err != SCSI_DH_OK)
@@ -579,8 +579,8 @@ static int alua_rtpg(struct scsi_device *sdev, struct alua_dh_data *h)
 	if (len > h->bufflen) {
 		/* Resubmit with the correct length */
 		if (realloc_buffer(h, len)) {
-//			sdev_printk(KERN_WARNING, sdev,
-;
+			sdev_printk(KERN_WARNING, sdev,
+				    "%s: kmalloc buffer failed\n",__func__);
 			/* Temporary failure, bypass */
 			return SCSI_DH_DEV_TEMP_BUSY;
 		}
@@ -595,16 +595,16 @@ static int alua_rtpg(struct scsi_device *sdev, struct alua_dh_data *h)
 		off = 8 + (ucp[7] * 4);
 	}
 
-//	sdev_printk(KERN_INFO, sdev,
-//		    "%s: port group %02x state %c supports %c%c%c%c%c%c%c\n",
-//		    ALUA_DH_NAME, h->group_id, print_alua_state(h->state),
-//		    valid_states&TPGS_SUPPORT_TRANSITION?'T':'t',
-//		    valid_states&TPGS_SUPPORT_OFFLINE?'O':'o',
-//		    valid_states&TPGS_SUPPORT_LBA_DEPENDENT?'L':'l',
-//		    valid_states&TPGS_SUPPORT_UNAVAILABLE?'U':'u',
-//		    valid_states&TPGS_SUPPORT_STANDBY?'S':'s',
-//		    valid_states&TPGS_SUPPORT_NONOPTIMIZED?'N':'n',
-;
+	sdev_printk(KERN_INFO, sdev,
+		    "%s: port group %02x state %c supports %c%c%c%c%c%c%c\n",
+		    ALUA_DH_NAME, h->group_id, print_alua_state(h->state),
+		    valid_states&TPGS_SUPPORT_TRANSITION?'T':'t',
+		    valid_states&TPGS_SUPPORT_OFFLINE?'O':'o',
+		    valid_states&TPGS_SUPPORT_LBA_DEPENDENT?'L':'l',
+		    valid_states&TPGS_SUPPORT_UNAVAILABLE?'U':'u',
+		    valid_states&TPGS_SUPPORT_STANDBY?'S':'s',
+		    valid_states&TPGS_SUPPORT_NONOPTIMIZED?'N':'n',
+		    valid_states&TPGS_SUPPORT_OPTIMIZED?'A':'a');
 
 	switch (h->state) {
 	case TPGS_STATE_TRANSITIONING:
@@ -765,8 +765,8 @@ static int alua_bus_attach(struct scsi_device *sdev)
 	scsi_dh_data = kzalloc(sizeof(*scsi_dh_data)
 			       + sizeof(*h) , GFP_KERNEL);
 	if (!scsi_dh_data) {
-//		sdev_printk(KERN_ERR, sdev, "%s: Attach failed\n",
-;
+		sdev_printk(KERN_ERR, sdev, "%s: Attach failed\n",
+			    ALUA_DH_NAME);
 		return -ENOMEM;
 	}
 
@@ -795,7 +795,7 @@ static int alua_bus_attach(struct scsi_device *sdev)
 
 failed:
 	kfree(scsi_dh_data);
-;
+	sdev_printk(KERN_ERR, sdev, "%s: not attached\n", ALUA_DH_NAME);
 	return -EINVAL;
 }
 
@@ -819,7 +819,7 @@ static void alua_bus_detach(struct scsi_device *sdev)
 		kfree(h->buff);
 	kfree(scsi_dh_data);
 	module_put(THIS_MODULE);
-;
+	sdev_printk(KERN_NOTICE, sdev, "%s: Detached\n", ALUA_DH_NAME);
 }
 
 static int __init alua_init(void)
@@ -828,8 +828,8 @@ static int __init alua_init(void)
 
 	r = scsi_register_device_handler(&alua_dh);
 	if (r != 0)
-//		printk(KERN_ERR "%s: Failed to register scsi device handler",
-;
+		printk(KERN_ERR "%s: Failed to register scsi device handler",
+			ALUA_DH_NAME);
 	return r;
 }
 

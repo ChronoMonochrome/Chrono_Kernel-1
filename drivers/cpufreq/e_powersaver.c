@@ -101,11 +101,11 @@ postchange:
 	/* Print voltage and multiplier */
 	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
 	current_voltage = lo & 0xff;
-//	printk(KERN_INFO "eps: Current voltage = %dmV\n",
-;
+	printk(KERN_INFO "eps: Current voltage = %dmV\n",
+		current_voltage * 16 + 700);
 	current_multiplier = (lo >> 8) & 0xff;
-//	printk(KERN_INFO "eps: Current multiplier = %d\n",
-;
+	printk(KERN_INFO "eps: Current multiplier = %d\n",
+		current_multiplier);
 	}
 #endif
 	cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
@@ -138,7 +138,7 @@ static int eps_target(struct cpufreq_policy *policy,
 	dest_state = centaur->freq_table[newstate].index & 0xffff;
 	ret = eps_set_state(centaur, cpu, dest_state);
 	if (ret)
-;
+		printk(KERN_ERR "eps: Timeout!\n");
 	return ret;
 }
 
@@ -169,36 +169,36 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
 		return -ENODEV;
 
 	/* Check brand */
-;
+	printk(KERN_INFO "eps: Detected VIA ");
 
 	switch (c->x86_model) {
 	case 10:
 		rdmsr(0x1153, lo, hi);
 		brand = (((lo >> 2) ^ lo) >> 18) & 3;
-;
+		printk(KERN_CONT "Model A ");
 		break;
 	case 13:
 		rdmsr(0x1154, lo, hi);
 		brand = (((lo >> 4) ^ (lo >> 2))) & 0x000000ff;
-;
+		printk(KERN_CONT "Model D ");
 		break;
 	}
 
 	switch (brand) {
 	case EPS_BRAND_C7M:
-;
+		printk(KERN_CONT "C7-M\n");
 		break;
 	case EPS_BRAND_C7:
-;
+		printk(KERN_CONT "C7\n");
 		break;
 	case EPS_BRAND_EDEN:
-;
+		printk(KERN_CONT "Eden\n");
 		break;
 	case EPS_BRAND_C7D:
-;
+		printk(KERN_CONT "C7-D\n");
 		break;
 	case EPS_BRAND_C3:
-;
+		printk(KERN_CONT "C3\n");
 		return -ENODEV;
 		break;
 	}
@@ -210,7 +210,7 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
 		/* Can be locked at 0 */
 		rdmsrl(MSR_IA32_MISC_ENABLE, val);
 		if (!(val & MSR_IA32_MISC_ENABLE_ENHANCED_SPEEDSTEP)) {
-;
+			printk(KERN_INFO "eps: Can't enable Enhanced PowerSaver\n");
 			return -ENODEV;
 		}
 	}
@@ -218,22 +218,22 @@ static int eps_cpu_init(struct cpufreq_policy *policy)
 	/* Print voltage and multiplier */
 	rdmsr(MSR_IA32_PERF_STATUS, lo, hi);
 	current_voltage = lo & 0xff;
-//	printk(KERN_INFO "eps: Current voltage = %dmV\n",
-;
+	printk(KERN_INFO "eps: Current voltage = %dmV\n",
+			current_voltage * 16 + 700);
 	current_multiplier = (lo >> 8) & 0xff;
-;
+	printk(KERN_INFO "eps: Current multiplier = %d\n", current_multiplier);
 
 	/* Print limits */
 	max_voltage = hi & 0xff;
-//	printk(KERN_INFO "eps: Highest voltage = %dmV\n",
-;
+	printk(KERN_INFO "eps: Highest voltage = %dmV\n",
+			max_voltage * 16 + 700);
 	max_multiplier = (hi >> 8) & 0xff;
-;
+	printk(KERN_INFO "eps: Highest multiplier = %d\n", max_multiplier);
 	min_voltage = (hi >> 16) & 0xff;
-//	printk(KERN_INFO "eps: Lowest voltage = %dmV\n",
-;
+	printk(KERN_INFO "eps: Lowest voltage = %dmV\n",
+			min_voltage * 16 + 700);
 	min_multiplier = (hi >> 24) & 0xff;
-;
+	printk(KERN_INFO "eps: Lowest multiplier = %d\n", min_multiplier);
 
 	/* Sanity checks */
 	if (current_multiplier == 0 || max_multiplier == 0

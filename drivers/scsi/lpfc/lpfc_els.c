@@ -5411,7 +5411,7 @@ lpfc_els_rcv_rps(struct lpfc_vport *vport, struct lpfc_iocbq *cmdiocb,
 	    ((flag == 2) && (memcmp(&rps->un.portName, &vport->fc_portname,
 				    sizeof(struct lpfc_name)) == 0))) {
 
-;
+		printk("Fix me....\n");
 		dump_stack();
 		mbox = mempool_alloc(phba->mbox_mem_pool, GFP_ATOMIC);
 		if (mbox) {

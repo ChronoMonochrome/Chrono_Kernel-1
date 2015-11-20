@@ -84,7 +84,7 @@ asm_do_IRQ(unsigned int irq, struct pt_regs *regs)
 	 */
 	if (unlikely(irq >= nr_irqs)) {
 		if (printk_ratelimit())
-;
+			printk(KERN_WARNING "Bad IRQ%u\n", irq);
 		ack_bad_irq(irq);
 	} else {
 		generic_handle_irq(irq);
@@ -102,7 +102,7 @@ void set_irq_flags(unsigned int irq, unsigned int iflags)
 	unsigned long clr = 0, set = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
 
 	if (irq >= nr_irqs) {
-;
+		printk(KERN_ERR "Trying to set irq flags for IRQ%d\n", irq);
 		return;
 	}
 

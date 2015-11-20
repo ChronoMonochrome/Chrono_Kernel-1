@@ -395,9 +395,9 @@ static inline void isp_isr_dbg(struct isp_device *isp, u32 irqstatus)
 
 	for (i = 0; i < ARRAY_SIZE(name); i++) {
 		if ((1 << i) & irqstatus)
-;
+			printk(KERN_CONT "%s ", name[i]);
 	}
-;
+	printk(KERN_CONT "\n");
 }
 
 static void isp_isr_sbl(struct isp_device *isp)
@@ -1666,18 +1666,18 @@ isp_register_subdev_group(struct isp_device *isp,
 
 		adapter = i2c_get_adapter(board_info->i2c_adapter_id);
 		if (adapter == NULL) {
-//			printk(KERN_ERR "%s: Unable to get I2C adapter %d for "
-//				"device %s\n", __func__,
-//				board_info->i2c_adapter_id,
-;
+			printk(KERN_ERR "%s: Unable to get I2C adapter %d for "
+				"device %s\n", __func__,
+				board_info->i2c_adapter_id,
+				board_info->board_info->type);
 			continue;
 		}
 
 		subdev = v4l2_i2c_new_subdev_board(&isp->v4l2_dev, adapter,
 				board_info->board_info, NULL);
 		if (subdev == NULL) {
-//			printk(KERN_ERR "%s: Unable to register subdev %s\n",
-;
+			printk(KERN_ERR "%s: Unable to register subdev %s\n",
+				__func__, board_info->board_info->type);
 			continue;
 		}
 
@@ -1700,16 +1700,16 @@ static int isp_register_entities(struct isp_device *isp)
 	isp->media_dev.link_notify = isp_pipeline_link_notify;
 	ret = media_device_register(&isp->media_dev);
 	if (ret < 0) {
-//		printk(KERN_ERR "%s: Media device registration failed (%d)\n",
-;
+		printk(KERN_ERR "%s: Media device registration failed (%d)\n",
+			__func__, ret);
 		return ret;
 	}
 
 	isp->v4l2_dev.mdev = &isp->media_dev;
 	ret = v4l2_device_register(isp->dev, &isp->v4l2_dev);
 	if (ret < 0) {
-//		printk(KERN_ERR "%s: V4L2 device registration failed (%d)\n",
-;
+		printk(KERN_ERR "%s: V4L2 device registration failed (%d)\n",
+			__func__, ret);
 		goto done;
 	}
 
@@ -1794,8 +1794,8 @@ static int isp_register_entities(struct isp_device *isp)
 			break;
 
 		default:
-//			printk(KERN_ERR "%s: invalid interface type %u\n",
-;
+			printk(KERN_ERR "%s: invalid interface type %u\n",
+			       __func__, subdevs->interface);
 			ret = -EINVAL;
 			goto done;
 		}

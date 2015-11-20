@@ -98,15 +98,15 @@ static inline void write_reg(struct omap2_onenand *c, unsigned short value,
 
 static void wait_err(char *msg, int state, unsigned int ctrl, unsigned int intr)
 {
-//	printk(KERN_ERR "onenand_wait: %s! state %d ctrl 0x%04x intr 0x%04x\n",
-;
+	printk(KERN_ERR "onenand_wait: %s! state %d ctrl 0x%04x intr 0x%04x\n",
+	       msg, state, ctrl, intr);
 }
 
 static void wait_warn(char *msg, int state, unsigned int ctrl,
 		      unsigned int intr)
 {
-//	printk(KERN_WARNING "onenand_wait: %s! state %d ctrl 0x%04x "
-;
+	printk(KERN_WARNING "onenand_wait: %s! state %d ctrl 0x%04x "
+	       "intr 0x%04x\n", msg, state, ctrl, intr);
 }
 
 static int omap2_onenand_wait(struct mtd_info *mtd, int state)
@@ -248,15 +248,15 @@ retry:
 			addr1 = read_reg(c, ONENAND_REG_START_ADDRESS1);
 			addr8 = read_reg(c, ONENAND_REG_START_ADDRESS8);
 			if (ecc & ONENAND_ECC_2BIT_ALL) {
-//				printk(KERN_ERR "onenand_wait: ECC error = "
-//				       "0x%04x, addr1 %#x, addr8 %#x\n",
-;
+				printk(KERN_ERR "onenand_wait: ECC error = "
+				       "0x%04x, addr1 %#x, addr8 %#x\n",
+				       ecc, addr1, addr8);
 				mtd->ecc_stats.failed++;
 				return -EBADMSG;
 			} else if (ecc & ONENAND_ECC_1BIT_ALL) {
-//				printk(KERN_NOTICE "onenand_wait: correctable "
-//				       "ECC error = 0x%04x, addr1 %#x, "
-;
+				printk(KERN_NOTICE "onenand_wait: correctable "
+				       "ECC error = 0x%04x, addr1 %#x, "
+				       "addr8 %#x\n", ecc, addr1, addr8);
 				mtd->ecc_stats.corrected++;
 			}
 		}
@@ -268,8 +268,8 @@ retry:
 	if (ctrl & ONENAND_CTRL_ERROR) {
 		wait_err("controller error", state, ctrl, intr);
 		if (ctrl & ONENAND_CTRL_LOCK)
-//			printk(KERN_ERR "onenand_wait: "
-;
+			printk(KERN_ERR "onenand_wait: "
+					"Device is write protected!!!\n");
 		return -EIO;
 	}
 
@@ -827,7 +827,7 @@ static struct platform_driver omap2_onenand_driver = {
 
 static int __init omap2_onenand_init(void)
 {
-;
+	printk(KERN_INFO "OneNAND driver initializing\n");
 	return platform_driver_register(&omap2_onenand_driver);
 }
 

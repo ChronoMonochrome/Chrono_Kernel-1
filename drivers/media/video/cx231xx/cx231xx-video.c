@@ -52,8 +52,8 @@
 
 #define cx231xx_videodbg(fmt, arg...) do {\
 	if (video_debug) \
-//		printk(KERN_INFO "%s %s :"fmt, \
-;
+		printk(KERN_INFO "%s %s :"fmt, \
+			 dev->name, __func__ , ##arg); } while (0)
 
 static unsigned int isoc_debug;
 module_param(isoc_debug, int, 0644);
@@ -62,8 +62,8 @@ MODULE_PARM_DESC(isoc_debug, "enable debug messages [isoc transfers]");
 #define cx231xx_isocdbg(fmt, arg...) \
 do {\
 	if (isoc_debug) { \
-//		printk(KERN_INFO "%s %s :"fmt, \
-;
+		printk(KERN_INFO "%s %s :"fmt, \
+			 dev->name, __func__ , ##arg); \
 	} \
   } while (0)
 

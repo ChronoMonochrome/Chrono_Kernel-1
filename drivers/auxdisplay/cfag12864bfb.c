@@ -102,8 +102,8 @@ static int __devinit cfag12864bfb_probe(struct platform_device *device)
 
 	platform_set_drvdata(device, info);
 
-//	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
+		info->fix.id);
 
 	return 0;
 
@@ -142,14 +142,14 @@ static int __init cfag12864bfb_init(void)
 
 	/* cfag12864b_init() must be called first */
 	if (!cfag12864b_isinited()) {
-//		printk(KERN_ERR CFAG12864BFB_NAME ": ERROR: "
-;
+		printk(KERN_ERR CFAG12864BFB_NAME ": ERROR: "
+			"cfag12864b is not initialized\n");
 		goto none;
 	}
 
 	if (cfag12864b_enable()) {
-//		printk(KERN_ERR CFAG12864BFB_NAME ": ERROR: "
-;
+		printk(KERN_ERR CFAG12864BFB_NAME ": ERROR: "
+			"can't enable cfag12864b refreshing (being used)\n");
 		return -ENODEV;
 	}
 

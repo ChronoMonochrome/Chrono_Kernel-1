@@ -325,8 +325,8 @@ static int __devinit cg3_do_default_mode(struct cg3_par *par)
 			else
 				type = CG3_AT_66HZ;
 		} else {
-//			printk(KERN_ERR "cgthree: can't handle SR %02x\n",
-;
+			printk(KERN_ERR "cgthree: can't handle SR %02x\n",
+			       status);
 			return -EINVAL;
 		}
 	}
@@ -411,8 +411,8 @@ static int __devinit cg3_probe(struct platform_device *op)
 
 	dev_set_drvdata(&op->dev, info);
 
-//	printk(KERN_INFO "%s: cg3 at %lx:%lx\n",
-;
+	printk(KERN_INFO "%s: cg3 at %lx:%lx\n",
+	       dp->full_name, par->which_io, info->fix.smem_start);
 
 	return 0;
 

@@ -568,8 +568,8 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
 		name_base = "v4l-subdev";
 		break;
 	default:
-//		printk(KERN_ERR "%s called with unknown type: %d\n",
-;
+		printk(KERN_ERR "%s called with unknown type: %d\n",
+		       __func__, type);
 		return -EINVAL;
 	}
 
@@ -619,7 +619,7 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
 	if (nr == minor_cnt)
 		nr = devnode_find(vdev, 0, minor_cnt);
 	if (nr == minor_cnt) {
-;
+		printk(KERN_ERR "could not get a free device node number\n");
 		mutex_unlock(&videodev_lock);
 		return -ENFILE;
 	}
@@ -634,7 +634,7 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
 			break;
 	if (i == VIDEO_NUM_DEVICES) {
 		mutex_unlock(&videodev_lock);
-;
+		printk(KERN_ERR "could not get a free minor\n");
 		return -ENFILE;
 	}
 #endif
@@ -657,7 +657,7 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
 	vdev->cdev->owner = owner;
 	ret = cdev_add(vdev->cdev, MKDEV(VIDEO_MAJOR, vdev->minor), 1);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "%s: cdev_add failed\n", __func__);
 		kfree(vdev->cdev);
 		vdev->cdev = NULL;
 		goto cleanup;
@@ -671,7 +671,7 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
 	dev_set_name(&vdev->dev, "%s%d", name_base, vdev->num);
 	ret = device_register(&vdev->dev);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "%s: device_register failed\n", __func__);
 		goto cleanup;
 	}
 	/* Register the release callback that will be called when the last
@@ -679,8 +679,8 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
 	vdev->dev.release = v4l2_device_release;
 
 	if (nr != -1 && nr != vdev->num && warn_if_nr_in_use)
-//		printk(KERN_WARNING "%s: requested %s%d, got %s\n", __func__,
-;
+		printk(KERN_WARNING "%s: requested %s%d, got %s\n", __func__,
+			name_base, nr, video_device_node_name(vdev));
 
 	/* Increase v4l2_device refcount */
 	if (vdev->v4l2_dev)
@@ -697,9 +697,9 @@ int __video_register_device(struct video_device *vdev, int type, int nr,
 		ret = media_device_register_entity(vdev->v4l2_dev->mdev,
 			&vdev->entity);
 		if (ret < 0)
-//			printk(KERN_WARNING
-//			       "%s: media_device_register_entity failed\n",
-;
+			printk(KERN_WARNING
+			       "%s: media_device_register_entity failed\n",
+			       __func__);
 	}
 #endif
 	/* Part 6: Activate this minor. The char device can now be used. */
@@ -753,18 +753,18 @@ static int __init videodev_init(void)
 	dev_t dev = MKDEV(VIDEO_MAJOR, 0);
 	int ret;
 
-;
+	printk(KERN_INFO "Linux video capture interface: v2.00\n");
 	ret = register_chrdev_region(dev, VIDEO_NUM_DEVICES, VIDEO_NAME);
 	if (ret < 0) {
-//		printk(KERN_WARNING "videodev: unable to get major %d\n",
-;
+		printk(KERN_WARNING "videodev: unable to get major %d\n",
+				VIDEO_MAJOR);
 		return ret;
 	}
 
 	ret = class_register(&video_class);
 	if (ret < 0) {
 		unregister_chrdev_region(dev, VIDEO_NUM_DEVICES);
-;
+		printk(KERN_WARNING "video_dev: class_register failed\n");
 		return -EIO;
 	}
 

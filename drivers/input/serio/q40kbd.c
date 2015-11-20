@@ -95,7 +95,7 @@ static int q40kbd_open(struct serio *port)
 	q40kbd_flush();
 
 	if (request_irq(Q40_IRQ_KEYBOARD, q40kbd_interrupt, 0, "q40kbd", NULL)) {
-;
+		printk(KERN_ERR "q40kbd.c: Can't get irq %d.\n", Q40_IRQ_KEYBOARD);
 		return -EBUSY;
 	}
 
@@ -129,7 +129,7 @@ static int __devinit q40kbd_probe(struct platform_device *dev)
 	strlcpy(q40kbd_port->phys, "Q40", sizeof(q40kbd_port->phys));
 
 	serio_register_port(q40kbd_port);
-;
+	printk(KERN_INFO "serio: Q40 kbd registered\n");
 
 	return 0;
 }

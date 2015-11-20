@@ -266,7 +266,7 @@ static int i2sbus_add_dev(struct macio_dev *macio,
 					   dev->resources[i].start + 1,
 					   dev->rnames[i]);
 		if (!dev->allocated_resource[i]) {
-;
+			printk(KERN_ERR "i2sbus: failed to claim resource %d!\n", i);
 			goto err;
 		}
 	}
@@ -300,12 +300,12 @@ static int i2sbus_add_dev(struct macio_dev *macio,
 		goto err;
 
 	if (i2sbus_control_add_dev(dev->control, dev)) {
-;
+		printk(KERN_ERR "i2sbus: control layer didn't like bus\n");
 		goto err;
 	}
 
 	if (soundbus_add_one(&dev->sound)) {
-;
+		printk(KERN_DEBUG "i2sbus: device registration error!\n");
 		goto err;
 	}
 
@@ -342,7 +342,7 @@ static int i2sbus_probe(struct macio_dev* dev, const struct of_device_id *match)
 	if (err)
 		return err;
 	if (!control) {
-;
+		printk(KERN_ERR "i2sbus_control_init API breakage\n");
 		return -ENODEV;
 	}
 

@@ -237,7 +237,7 @@ static struct sound_unit *__sound_remove_unit(struct sound_unit **list, int unit
 		}
 		list=&(p->next);
 	}
-;
+	printk(KERN_ERR "Sound device %d went missing!\n", unit);
 	return NULL;
 }
 
@@ -660,7 +660,7 @@ static int __init init_oss_soundcore(void)
 {
 	if (preclaim_oss &&
 	    register_chrdev(SOUND_MAJOR, "sound", &soundcore_fops) == -1) {
-;
+		printk(KERN_ERR "soundcore: sound device already in use.\n");
 		return -EBUSY;
 	}
 

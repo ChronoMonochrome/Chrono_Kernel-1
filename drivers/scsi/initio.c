@@ -664,12 +664,12 @@ static void initio_init(struct initio_host * host, u8 *bios_addr)
 		host->act_tags[i] = 0;
 		host->max_tags[i] = 0xFF;
 	}			/* for                          */
-//	printk("i91u: PCI Base=0x%04X, IRQ=%d, BIOS=0x%04X0, SCSI ID=%d\n",
-//	       host->addr, host->pci_dev->irq,
-;
+	printk("i91u: PCI Base=0x%04X, IRQ=%d, BIOS=0x%04X0, SCSI ID=%d\n",
+	       host->addr, host->pci_dev->irq,
+	       host->bios_addr, host->scsi_id);
 	/* Reset SCSI Bus */
 	if (host->config & HCC_SCSI_RESET) {
-;
+		printk(KERN_INFO "i91u: Reset SCSI Bus ... \n");
 		initio_reset_scsi(host, 10);
 	}
 	outb(0x17, host->addr + TUL_SCFG1);
@@ -691,7 +691,7 @@ static struct scsi_ctrl_blk *initio_alloc_scb(struct initio_host *host)
 	spin_lock_irqsave(&host->avail_lock, flags);
 	if ((scb = host->first_avail) != NULL) {
 #if DEBUG_QUEUE
-;
+		printk("find scb at %p\n", scb);
 #endif
 		if ((host->first_avail = scb->next) == NULL)
 			host->last_avail = NULL;
@@ -715,7 +715,7 @@ static void initio_release_scb(struct initio_host * host, struct scsi_ctrl_blk *
 	unsigned long flags;
 
 #if DEBUG_QUEUE
-;
+	printk("Release SCB %p; ", cmnd);
 #endif
 	spin_lock_irqsave(&(host->avail_lock), flags);
 	cmnd->srb = NULL;
@@ -736,7 +736,7 @@ static void initio_append_pend_scb(struct initio_host * host, struct scsi_ctrl_b
 {
 
 #if DEBUG_QUEUE
-;
+	printk("Append pend SCB %p; ", scbp);
 #endif
 	scbp->status = SCB_PEND;
 	scbp->next = NULL;
@@ -754,7 +754,7 @@ static void initio_push_pend_scb(struct initio_host * host, struct scsi_ctrl_blk
 {
 
 #if DEBUG_QUEUE
-;
+	printk("Push pend SCB %p; ", scbp);
 #endif
 	scbp->status = SCB_PEND;
 	if ((scbp->next = host->first_pending) != NULL) {
@@ -797,7 +797,7 @@ static void initio_unlink_pend_scb(struct initio_host * host, struct scsi_ctrl_b
 	struct scsi_ctrl_blk *tmp, *prev;
 
 #if DEBUG_QUEUE
-;
+	printk("unlink pend SCB %p; ", scb);
 #endif
 
 	prev = tmp = host->first_pending;
@@ -823,7 +823,7 @@ static void initio_append_busy_scb(struct initio_host * host, struct scsi_ctrl_b
 {
 
 #if DEBUG_QUEUE
-;
+	printk("append busy SCB %p; ", scbp);
 #endif
 	if (scbp->tagmsg)
 		host->act_tags[scbp->target]++;
@@ -856,7 +856,7 @@ static struct scsi_ctrl_blk *initio_pop_busy_scb(struct initio_host * host)
 			host->targets[tmp->target].flags &= ~TCF_BUSY;
 	}
 #if DEBUG_QUEUE
-;
+	printk("Pop busy SCB %p; ", tmp);
 #endif
 	return tmp;
 }
@@ -867,7 +867,7 @@ static void initio_unlink_busy_scb(struct initio_host * host, struct scsi_ctrl_b
 	struct scsi_ctrl_blk *tmp, *prev;
 
 #if DEBUG_QUEUE
-;
+	printk("unlink busy SCB %p; ", scb);
 #endif
 
 	prev = tmp = host->first_busy;
@@ -910,7 +910,7 @@ struct scsi_ctrl_blk *initio_find_busy_scb(struct initio_host * host, u16 tarlun
 		tmp = tmp->next;
 	}
 #if DEBUG_QUEUE
-;
+	printk("find busy SCB %p; ", tmp);
 #endif
 	return tmp;
 }
@@ -918,7 +918,7 @@ struct scsi_ctrl_blk *initio_find_busy_scb(struct initio_host * host, u16 tarlun
 static void initio_append_done_scb(struct initio_host * host, struct scsi_ctrl_blk * scbp)
 {
 #if DEBUG_QUEUE
-;
+	printk("append done SCB %p; ", scbp);
 #endif
 
 	scbp->status = SCB_DONE;
@@ -942,7 +942,7 @@ struct scsi_ctrl_blk *initio_find_done_scb(struct initio_host * host)
 		tmp->next = NULL;
 	}
 #if DEBUG_QUEUE
-;
+	printk("find done SCB %p; ",tmp);
 #endif
 	return tmp;
 }
@@ -1034,7 +1034,7 @@ static int initio_bad_seq(struct initio_host * host)
 {
 	struct scsi_ctrl_blk *scb;
 
-;
+	printk("initio_bad_seg c=%d\n", host->index);
 
 	if ((scb = host->active) != NULL) {
 		initio_unlink_busy_scb(host, scb);
@@ -1326,7 +1326,7 @@ static int initio_state_1(struct initio_host * host)
 	struct scsi_ctrl_blk *scb = host->active;
 	struct target_control *active_tc = host->active_tc;
 #if DEBUG_STATE
-;
+	printk("-s1-");
 #endif
 
 	/* Move the SCB from pending to busy */
@@ -1381,7 +1381,7 @@ static int initio_state_2(struct initio_host * host)
 	struct scsi_ctrl_blk *scb = host->active;
 	struct target_control *active_tc = host->active_tc;
 #if DEBUG_STATE
-;
+	printk("-s2-");
 #endif
 
 	initio_unlink_pend_scb(host, scb);
@@ -1412,7 +1412,7 @@ static int initio_state_3(struct initio_host * host)
 	int i;
 
 #if DEBUG_STATE
-;
+	printk("-s3-");
 #endif
 	for (;;) {
 		switch (host->phase) {
@@ -1477,7 +1477,7 @@ static int initio_state_4(struct initio_host * host)
 	struct scsi_ctrl_blk *scb = host->active;
 
 #if DEBUG_STATE
-;
+	printk("-s4-");
 #endif
 	if ((scb->flags & SCF_DIR) == SCF_NO_XF) {
 		return 6;	/* Go to state 6 (After data) */
@@ -1542,7 +1542,7 @@ static int initio_state_5(struct initio_host * host)
 	long cnt, xcnt;		/* cannot use unsigned !! code: if (xcnt < 0) */
 
 #if DEBUG_STATE
-;
+	printk("-s5-");
 #endif
 	/*------ get remaining count -------*/
 	cnt = inl(host->addr + TUL_SCnt0) & 0x0FFFFFF;
@@ -1630,7 +1630,7 @@ static int initio_state_6(struct initio_host * host)
 	struct scsi_ctrl_blk *scb = host->active;
 
 #if DEBUG_STATE
-;
+	printk("-s6-");
 #endif
 	for (;;) {
 		switch (host->phase) {
@@ -1675,7 +1675,7 @@ int initio_state_7(struct initio_host * host)
 	int cnt, i;
 
 #if DEBUG_STATE
-;
+	printk("-s7-");
 #endif
 	/* flush SCSI FIFO */
 	cnt = inb(host->addr + TUL_SFifoCnt) & 0x1F;
@@ -2718,9 +2718,9 @@ static int i91u_biosparam(struct scsi_device *sdev, struct block_device *dev,
 
 #if defined(DEBUG_BIOSPARAM)
 	if (i91u_debug & debug_biosparam) {
-//		printk("bios geometry: head=%d, sec=%d, cyl=%d\n",
-;
-;
+		printk("bios geometry: head=%d, sec=%d, cyl=%d\n",
+		       info_array[0], info_array[1], info_array[2]);
+		printk("WARNING: check, if the bios geometry is correct.\n");
 	}
 #endif
 
@@ -2774,7 +2774,7 @@ static void i91uSCBPost(u8 * host_mem, u8 * cblk_mem)
 	host = (struct initio_host *) host_mem;
 	cblk = (struct scsi_ctrl_blk *) cblk_mem;
 	if ((cmnd = cblk->srb) == NULL) {
-;
+		printk(KERN_ERR "i91uSCBPost: SRB pointer is empty\n");
 		WARN_ON(1);
 		initio_release_scb(host, cblk);	/* Release SCB for current channel */
 		return;
@@ -2813,7 +2813,7 @@ static void i91uSCBPost(u8 * host_mem, u8 * cblk_mem)
 	case 0x16:		/* Invalid SCB Operation Code. */
 
 	default:
-;
+		printk("ini9100u: %x %x\n", cblk->hastat, cblk->tastat);
 		cblk->hastat = DID_ERROR;	/* Couldn't find any better */
 		break;
 	}
@@ -2858,13 +2858,13 @@ static int initio_probe_one(struct pci_dev *pdev,
 	bios_seg = (bios_seg << 8) + ((u16) ((reg & 0xFF00) >> 8));
 
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-;
+		printk(KERN_WARNING  "i91u: Could not set 32 bit DMA mask\n");
 		error = -ENODEV;
 		goto out_disable_device;
 	}
 	shost = scsi_host_alloc(&initio_template, sizeof(struct initio_host));
 	if (!shost) {
-;
+		printk(KERN_WARNING "initio: Could not allocate host structure.\n");
 		error = -ENOMEM;
 		goto out_disable_device;
 	}
@@ -2874,7 +2874,7 @@ static int initio_probe_one(struct pci_dev *pdev,
 	host->bios_addr = bios_seg;
 
 	if (!request_region(host->addr, 256, "i91u")) {
-;
+		printk(KERN_WARNING "initio: I/O port range 0x%x is busy.\n", host->addr);
 		error = -ENODEV;
 		goto out_host_put;
 	}
@@ -2891,7 +2891,7 @@ static int initio_probe_one(struct pci_dev *pdev,
 	}
 
 	if (!scb) {
-;
+		printk(KERN_WARNING "initio: Cannot allocate SCB array.\n");
 		error = -ENOMEM;
 		goto out_release_region;
 	}
@@ -2933,7 +2933,7 @@ static int initio_probe_one(struct pci_dev *pdev,
 
 	error = request_irq(pdev->irq, i91u_intr, IRQF_DISABLED|IRQF_SHARED, "i91u", shost);
 	if (error < 0) {
-;
+		printk(KERN_WARNING "initio: Unable to request IRQ %d\n", pdev->irq);
 		goto out_free_scbs;
 	}
 

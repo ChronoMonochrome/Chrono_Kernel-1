@@ -105,7 +105,7 @@ static int snd_pdacf_probe(struct pcmcia_device *link)
 			break;
 	}
 	if (i >= SNDRV_CARDS) {
-;
+		snd_printk(KERN_ERR "pdacf: too many cards found\n");
 		return -EINVAL;
 	}
 	if (! enable[i])
@@ -114,7 +114,7 @@ static int snd_pdacf_probe(struct pcmcia_device *link)
 	/* ok, create a card instance */
 	err = snd_card_create(index[i], id[i], THIS_MODULE, 0, &card);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "pdacf: cannot create a card instance\n");
 		return err;
 	}
 

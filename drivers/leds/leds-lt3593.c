@@ -88,8 +88,8 @@ static int __devinit create_lt3593_led(const struct gpio_led *template,
 
 	/* skip leds on GPIOs that aren't available */
 	if (!gpio_is_valid(template->gpio)) {
-//		printk(KERN_INFO "%s: skipping unavailable LT3593 LED at gpio %d (%s)\n",
-;
+		printk(KERN_INFO "%s: skipping unavailable LT3593 LED at gpio %d (%s)\n",
+				KBUILD_MODNAME, template->gpio, template->name);
 		return 0;
 	}
 
@@ -119,8 +119,8 @@ static int __devinit create_lt3593_led(const struct gpio_led *template,
 	if (ret < 0)
 		goto err;
 
-//	printk(KERN_INFO "%s: registered LT3593 LED '%s' at GPIO %d\n",
-;
+	printk(KERN_INFO "%s: registered LT3593 LED '%s' at GPIO %d\n",
+		KBUILD_MODNAME, template->name, template->gpio);
 
 	return 0;
 

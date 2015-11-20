@@ -532,7 +532,7 @@ static int __devinit arcfb_probe(struct platform_device *dev)
 	par->info = info;
 
 	if (!dio_addr || !cio_addr || !c2io_addr) {
-;
+		printk(KERN_WARNING "no IO addresses supplied\n");
 		goto err1;
 	}
 	par->dio_addr = dio_addr;
@@ -550,14 +550,14 @@ static int __devinit arcfb_probe(struct platform_device *dev)
 		par->irq = irq;
 		if (request_irq(par->irq, &arcfb_interrupt, IRQF_SHARED,
 				"arcfb", info)) {
-//			printk(KERN_INFO
-;
+			printk(KERN_INFO
+				"arcfb: Failed req IRQ %d\n", par->irq);
 			goto err1;
 		}
 	}
-//	printk(KERN_INFO
-//	       "fb%d: Arc frame buffer device, using %dK of video memory\n",
-;
+	printk(KERN_INFO
+	       "fb%d: Arc frame buffer device, using %dK of video memory\n",
+	       info->node, videomemorysize >> 10);
 
 	/* this inits the lcd but doesn't clear dirty pixels */
 	for (i = 0; i < num_cols * num_rows; i++) {
@@ -571,8 +571,8 @@ static int __devinit arcfb_probe(struct platform_device *dev)
 	/* if we were told to splash the screen, we just clear it */
 	if (!nosplash) {
 		for (i = 0; i < num_cols * num_rows; i++) {
-//			printk(KERN_INFO "fb%d: splashing lcd %d\n",
-;
+			printk(KERN_INFO "fb%d: splashing lcd %d\n",
+				info->node, i);
 			ks108_set_start_line(par, i, 0);
 			ks108_clear_lcd(par, i);
 		}

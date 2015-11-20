@@ -100,7 +100,7 @@ int audio_open(int dev, struct file *file)
 			goto error_2;
 
 		if ((ret = coprocessor->open(coprocessor->devc, COPR_PCM)) < 0) {
-;
+			printk(KERN_WARNING "Sound: Can't access coprocessor device\n");
 			goto error_3;
 		}
 	}
@@ -166,7 +166,7 @@ static void sync_output(int dev)
 		p = (p + 1) % dmap->nbufs;
 		if (((dmap->raw_buf + p * dmap->fragment_size) + dmap->fragment_size) >
 			(dmap->raw_buf + dmap->buffsize))
-;
+				printk(KERN_ERR "audio: Buffer error 2\n");
 
 		memset(dmap->raw_buf + p * dmap->fragment_size,
 			dmap->neutral_byte,
@@ -268,12 +268,12 @@ int audio_write(int dev, struct file *file, const char __user *buf, int count)
 			if ((dma_buf + l) >
 				(audio_devs[dev]->dmap_out->raw_buf + audio_devs[dev]->dmap_out->buffsize))
 			{
-;
+				printk(KERN_ERR "audio: Buffer error 3 (%lx,%d), (%lx, %d)\n", (long) dma_buf, l, (long) audio_devs[dev]->dmap_out->raw_buf, (int) audio_devs[dev]->dmap_out->buffsize);
 				return -EDOM;
 			}
 			if (dma_buf < audio_devs[dev]->dmap_out->raw_buf)
 			{
-;
+				printk(KERN_ERR "audio: Buffer error 13 (%lx<%lx)\n", (long) dma_buf, (long) audio_devs[dev]->dmap_out->raw_buf);
 				return -EDOM;
 			}
 			if(copy_from_user(dma_buf, &(buf)[p], l))

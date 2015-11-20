@@ -259,7 +259,7 @@ static int __devinit pmagbbfb_probe(struct device *dev)
 
 	info = framebuffer_alloc(sizeof(struct pmagbbfb_par), dev);
 	if (!info) {
-;
+		printk(KERN_ERR "%s: Cannot allocate memory\n", dev_name(dev));
 		return -ENOMEM;
 	}
 
@@ -267,8 +267,8 @@ static int __devinit pmagbbfb_probe(struct device *dev)
 	dev_set_drvdata(dev, info);
 
 	if (fb_alloc_cmap(&info->cmap, 256, 0) < 0) {
-//		printk(KERN_ERR "%s: Cannot allocate color map\n",
-;
+		printk(KERN_ERR "%s: Cannot allocate color map\n",
+		       dev_name(dev));
 		err = -ENOMEM;
 		goto err_alloc;
 	}
@@ -282,8 +282,8 @@ static int __devinit pmagbbfb_probe(struct device *dev)
 	start = tdev->resource.start;
 	len = tdev->resource.end - start + 1;
 	if (!request_mem_region(start, len, dev_name(dev))) {
-//		printk(KERN_ERR "%s: Cannot reserve FB region\n",
-;
+		printk(KERN_ERR "%s: Cannot reserve FB region\n",
+		       dev_name(dev));
 		err = -EBUSY;
 		goto err_cmap;
 	}
@@ -292,7 +292,7 @@ static int __devinit pmagbbfb_probe(struct device *dev)
 	info->fix.mmio_start = start;
 	par->mmio = ioremap_nocache(info->fix.mmio_start, info->fix.mmio_len);
 	if (!par->mmio) {
-;
+		printk(KERN_ERR "%s: Cannot map MMIO\n", dev_name(dev));
 		err = -ENOMEM;
 		goto err_resource;
 	}
@@ -303,7 +303,7 @@ static int __devinit pmagbbfb_probe(struct device *dev)
 	info->fix.smem_start = start + PMAGB_B_FBMEM;
 	par->smem = ioremap_nocache(info->fix.smem_start, info->fix.smem_len);
 	if (!par->smem) {
-;
+		printk(KERN_ERR "%s: Cannot map FB\n", dev_name(dev));
 		err = -ENOMEM;
 		goto err_mmio_map;
 	}
@@ -317,8 +317,8 @@ static int __devinit pmagbbfb_probe(struct device *dev)
 
 	err = register_framebuffer(info);
 	if (err < 0) {
-//		printk(KERN_ERR "%s: Cannot register framebuffer\n",
-;
+		printk(KERN_ERR "%s: Cannot register framebuffer\n",
+		       dev_name(dev));
 		goto err_smem_map;
 	}
 

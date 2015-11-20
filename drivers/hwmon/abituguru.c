@@ -90,46 +90,46 @@
 #define ABIT_UGURU_NAME				"abituguru"
 #define ABIT_UGURU_DEBUG(level, format, arg...)				\
 	if (level <= verbose)						\
-//		printk(KERN_DEBUG ABIT_UGURU_NAME ": "	format , ## arg)
-///* Macros to help calculate the sysfs_names array length */
-///* sum of strlen of: in??_input\0, in??_{min,max}\0, in??_{min,max}_alarm\0,
-//   in??_{min,max}_alarm_enable\0, in??_beep\0, in??_shutdown\0 */
-//#define ABITUGURU_IN_NAMES_LENGTH	(11 + 2 * 9 + 2 * 15 + 2 * 22 + 10 + 14)
-///* sum of strlen of: temp??_input\0, temp??_max\0, temp??_crit\0,
-//   temp??_alarm\0, temp??_alarm_enable\0, temp??_beep\0, temp??_shutdown\0 */
-//#define ABITUGURU_TEMP_NAMES_LENGTH	(13 + 11 + 12 + 13 + 20 + 12 + 16)
-///* sum of strlen of: fan?_input\0, fan?_min\0, fan?_alarm\0,
-//   fan?_alarm_enable\0, fan?_beep\0, fan?_shutdown\0 */
-//#define ABITUGURU_FAN_NAMES_LENGTH	(11 + 9 + 11 + 18 + 10 + 14)
-///* sum of strlen of: pwm?_enable\0, pwm?_auto_channels_temp\0,
-//   pwm?_auto_point{1,2}_pwm\0, pwm?_auto_point{1,2}_temp\0 */
-//#define ABITUGURU_PWM_NAMES_LENGTH	(12 + 24 + 2 * 21 + 2 * 22)
-///* IN_NAMES_LENGTH > TEMP_NAMES_LENGTH so assume all bank1 sensors are in */
-//#define ABITUGURU_SYSFS_NAMES_LENGTH	( \
-//	ABIT_UGURU_MAX_BANK1_SENSORS * ABITUGURU_IN_NAMES_LENGTH + \
-//	ABIT_UGURU_MAX_BANK2_SENSORS * ABITUGURU_FAN_NAMES_LENGTH + \
-//	ABIT_UGURU_MAX_PWMS * ABITUGURU_PWM_NAMES_LENGTH)
-//
-///* All the macros below are named identical to the oguru and oguru2 programs
-//   reverse engineered by Olle Sandberg, hence the names might not be 100%
-//   logical. I could come up with better names, but I prefer keeping the names
-//   identical so that this driver can be compared with his work more easily. */
-///* Two i/o-ports are used by uGuru */
-//#define ABIT_UGURU_BASE				0x00E0
-///* Used to tell uGuru what to read and to read the actual data */
-//#define ABIT_UGURU_CMD				0x00
-///* Mostly used to check if uGuru is busy */
-//#define ABIT_UGURU_DATA				0x04
-//#define ABIT_UGURU_REGION_LENGTH		5
-///* uGuru status' */
-//#define ABIT_UGURU_STATUS_WRITE			0x00 /* Ready to be written */
-//#define ABIT_UGURU_STATUS_READ			0x01 /* Ready to be read */
-//#define ABIT_UGURU_STATUS_INPUT			0x08 /* More input */
-//#define ABIT_UGURU_STATUS_READY			0x09 /* Ready to be written */
-//
-///* Constants */
-///* in (Volt) sensors go up to 3494 mV, temp to 255000 millidegrees Celsius */
-;
+		printk(KERN_DEBUG ABIT_UGURU_NAME ": "	format , ## arg)
+/* Macros to help calculate the sysfs_names array length */
+/* sum of strlen of: in??_input\0, in??_{min,max}\0, in??_{min,max}_alarm\0,
+   in??_{min,max}_alarm_enable\0, in??_beep\0, in??_shutdown\0 */
+#define ABITUGURU_IN_NAMES_LENGTH	(11 + 2 * 9 + 2 * 15 + 2 * 22 + 10 + 14)
+/* sum of strlen of: temp??_input\0, temp??_max\0, temp??_crit\0,
+   temp??_alarm\0, temp??_alarm_enable\0, temp??_beep\0, temp??_shutdown\0 */
+#define ABITUGURU_TEMP_NAMES_LENGTH	(13 + 11 + 12 + 13 + 20 + 12 + 16)
+/* sum of strlen of: fan?_input\0, fan?_min\0, fan?_alarm\0,
+   fan?_alarm_enable\0, fan?_beep\0, fan?_shutdown\0 */
+#define ABITUGURU_FAN_NAMES_LENGTH	(11 + 9 + 11 + 18 + 10 + 14)
+/* sum of strlen of: pwm?_enable\0, pwm?_auto_channels_temp\0,
+   pwm?_auto_point{1,2}_pwm\0, pwm?_auto_point{1,2}_temp\0 */
+#define ABITUGURU_PWM_NAMES_LENGTH	(12 + 24 + 2 * 21 + 2 * 22)
+/* IN_NAMES_LENGTH > TEMP_NAMES_LENGTH so assume all bank1 sensors are in */
+#define ABITUGURU_SYSFS_NAMES_LENGTH	( \
+	ABIT_UGURU_MAX_BANK1_SENSORS * ABITUGURU_IN_NAMES_LENGTH + \
+	ABIT_UGURU_MAX_BANK2_SENSORS * ABITUGURU_FAN_NAMES_LENGTH + \
+	ABIT_UGURU_MAX_PWMS * ABITUGURU_PWM_NAMES_LENGTH)
+
+/* All the macros below are named identical to the oguru and oguru2 programs
+   reverse engineered by Olle Sandberg, hence the names might not be 100%
+   logical. I could come up with better names, but I prefer keeping the names
+   identical so that this driver can be compared with his work more easily. */
+/* Two i/o-ports are used by uGuru */
+#define ABIT_UGURU_BASE				0x00E0
+/* Used to tell uGuru what to read and to read the actual data */
+#define ABIT_UGURU_CMD				0x00
+/* Mostly used to check if uGuru is busy */
+#define ABIT_UGURU_DATA				0x04
+#define ABIT_UGURU_REGION_LENGTH		5
+/* uGuru status' */
+#define ABIT_UGURU_STATUS_WRITE			0x00 /* Ready to be written */
+#define ABIT_UGURU_STATUS_READ			0x01 /* Ready to be read */
+#define ABIT_UGURU_STATUS_INPUT			0x08 /* More input */
+#define ABIT_UGURU_STATUS_READY			0x09 /* Ready to be written */
+
+/* Constants */
+/* in (Volt) sensors go up to 3494 mV, temp to 255000 millidegrees Celsius */
+static const int abituguru_bank1_max_value[2] = { 3494, 255000 };
 /* Min / Max allowed values for sensor2 (fan) alarm threshold, these values
    correspond to 300-3000 RPM */
 static const u8 abituguru_bank2_min_threshold = 5;

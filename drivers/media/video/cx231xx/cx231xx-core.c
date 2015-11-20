@@ -40,8 +40,8 @@ MODULE_PARM_DESC(core_debug, "enable debug messages [core]");
 
 #define cx231xx_coredbg(fmt, arg...) do {\
 	if (core_debug) \
-//		printk(KERN_INFO "%s %s :"fmt, \
-;
+		printk(KERN_INFO "%s %s :"fmt, \
+			 dev->name, __func__ , ##arg); } while (0)
 
 static unsigned int reg_debug;
 module_param(reg_debug, int, 0644);
@@ -53,8 +53,8 @@ MODULE_PARM_DESC(alt, "alternate setting to use for video endpoint");
 
 #define cx231xx_isocdbg(fmt, arg...) do {\
 	if (core_debug) \
-//		printk(KERN_INFO "%s %s :"fmt, \
-;
+		printk(KERN_INFO "%s %s :"fmt, \
+			 dev->name, __func__ , ##arg); } while (0)
 
 /*****************************************************************
 *             Device control list functions     				 *
@@ -102,7 +102,7 @@ int cx231xx_register_extension(struct cx231xx_ops *ops)
 	list_for_each_entry(dev, &cx231xx_devlist, devlist)
 		ops->init(dev);
 
-;
+	printk(KERN_INFO DRIVER_NAME ": %s initialized\n", ops->name);
 	mutex_unlock(&cx231xx_devlist_mutex);
 	return 0;
 }
@@ -117,7 +117,7 @@ void cx231xx_unregister_extension(struct cx231xx_ops *ops)
 		ops->fini(dev);
 
 
-;
+	printk(KERN_INFO DRIVER_NAME ": %s removed\n", ops->name);
 	list_del(&ops->next);
 	mutex_unlock(&cx231xx_devlist_mutex);
 }
@@ -247,21 +247,21 @@ static int __usb_control_msg(struct cx231xx *dev, unsigned int pipe,
 	int rc, i;
 
 	if (reg_debug) {
-//		printk(KERN_DEBUG "%s: (pipe 0x%08x): "
-//				"%s:  %02x %02x %02x %02x %02x %02x %02x %02x ",
-//				dev->name,
-//				pipe,
-//				(requesttype & USB_DIR_IN) ? "IN" : "OUT",
-//				requesttype,
-//				request,
-//				value & 0xff, value >> 8,
-//				index & 0xff, index >> 8,
-;
+		printk(KERN_DEBUG "%s: (pipe 0x%08x): "
+				"%s:  %02x %02x %02x %02x %02x %02x %02x %02x ",
+				dev->name,
+				pipe,
+				(requesttype & USB_DIR_IN) ? "IN" : "OUT",
+				requesttype,
+				request,
+				value & 0xff, value >> 8,
+				index & 0xff, index >> 8,
+				size & 0xff, size >> 8);
 		if (!(requesttype & USB_DIR_IN)) {
-;
+			printk(KERN_CONT ">>>");
 			for (i = 0; i < size; i++)
-//				printk(KERN_CONT " %02x",
-;
+				printk(KERN_CONT " %02x",
+				       ((unsigned char *)data)[i]);
 		}
 	}
 
@@ -277,17 +277,17 @@ static int __usb_control_msg(struct cx231xx *dev, unsigned int pipe,
 
 	if (reg_debug) {
 		if (unlikely(rc < 0)) {
-;
+			printk(KERN_CONT "FAILED!\n");
 			return rc;
 		}
 
 		if ((requesttype & USB_DIR_IN)) {
-;
+			printk(KERN_CONT "<<<");
 			for (i = 0; i < size; i++)
-//				printk(KERN_CONT " %02x",
-;
+				printk(KERN_CONT " %02x",
+				       ((unsigned char *)data)[i]);
 		}
-;
+		printk(KERN_CONT "\n");
 	}
 
 	return rc;

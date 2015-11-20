@@ -261,12 +261,12 @@ static int cs5536_init_one(struct pci_dev *dev, const struct pci_device_id *id)
 	u32 cfg;
 
 	if (use_msr)
-;
+		printk(KERN_ERR DRV_NAME ": Using MSR regs instead of PCI\n");
 
 	cs5536_read(dev, CFG, &cfg);
 
 	if ((cfg & IDE_CFG_CHANEN) == 0) {
-;
+		printk(KERN_ERR DRV_NAME ": disabled by BIOS\n");
 		return -ENODEV;
 	}
 

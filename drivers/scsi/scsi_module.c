@@ -22,9 +22,9 @@ static int __init init_this_scsi_driver(void)
 	int error;
 
 	if (!sht->release) {
-//		printk(KERN_ERR
-//		    "scsi HBA driver %s didn't set a release method.\n",
-;
+		printk(KERN_ERR
+		    "scsi HBA driver %s didn't set a release method.\n",
+		    sht->name);
 		return -EINVAL;
 	}
 
@@ -62,7 +62,7 @@ static void __exit exit_this_scsi_driver(void)
 	if (list_empty(&sht->legacy_hosts))
 		return;
 
-;
+	printk(KERN_WARNING "%s did not call scsi_unregister\n", sht->name);
 	dump_stack();
 
 	list_for_each_entry_safe(shost, s, &sht->legacy_hosts, sht_legacy_list)

@@ -80,8 +80,8 @@ static int __devinit dmx3191d_probe_one(struct pci_dev *pdev,
 
 	io = pci_resource_start(pdev, 0);
 	if (!request_region(io, DMX3191D_REGION_LEN, DMX3191D_DRIVER_NAME)) {
-//		printk(KERN_ERR "dmx3191: region 0x%lx-0x%lx already reserved\n",
-;
+		printk(KERN_ERR "dmx3191: region 0x%lx-0x%lx already reserved\n",
+				io, io + DMX3191D_REGION_LEN);
 		goto out_disable_device;
 	}
 
@@ -99,8 +99,8 @@ static int __devinit dmx3191d_probe_one(struct pci_dev *pdev,
 		/*
 		 * Steam powered scsi controllers run without an IRQ anyway
 		 */
-//		printk(KERN_WARNING "dmx3191: IRQ %d not available - "
-;
+		printk(KERN_WARNING "dmx3191: IRQ %d not available - "
+				    "switching to polled mode.\n", pdev->irq);
 		shost->irq = SCSI_IRQ_NONE;
 	}
 

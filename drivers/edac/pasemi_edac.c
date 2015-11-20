@@ -167,9 +167,9 @@ static int pasemi_edac_init_csrows(struct mem_ctl_info *mci,
 			csrow->nr_pages = 2048 << (20 - PAGE_SHIFT);
 			break;
 		default:
-//			edac_mc_printk(mci, KERN_ERR,
-//				"Unrecognized Rank Config. rankcfg=%u\n",
-;
+			edac_mc_printk(mci, KERN_ERR,
+				"Unrecognized Rank Config. rankcfg=%u\n",
+				rankcfg);
 			return -EINVAL;
 		}
 

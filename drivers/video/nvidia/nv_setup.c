@@ -193,9 +193,9 @@ static int NVIsConnected(struct nvidia_par *par, int output)
 	present = (NV_RD32(PRAMDAC, 0x0608) & (1 << 28)) ? 1 : 0;
 
 	if (present)
-;
+		printk("nvidiafb: CRTC%i analog found\n", output);
 	else
-;
+		printk("nvidiafb: CRTC%i analog not found\n", output);
 
 	if (output)
 	    NV_WR32(par->PRAMDAC0, 0x0608, dac0_reg608);
@@ -425,7 +425,7 @@ int NVCommonSetup(struct fb_info *info)
 		if (nvidia_probe_i2c_connector(info, 1, &edidA))
 			nvidia_probe_of_connector(info, 1, &edidA);
 		if (edidA && !fb_parse_edid(edidA, var)) {
-;
+			printk("nvidiafb: EDID found from BUS1\n");
 			monA = monitorA;
 			fb_edid_to_monspecs(edidA, monA);
 			FlatPanel = (monA->input & FB_DISP_DDI) ? 1 : 0;
@@ -443,17 +443,17 @@ int NVCommonSetup(struct fb_info *info)
 			} else {
 				FlatPanel = 0;
 			}
-//			printk("nvidiafb: HW is currently programmed for %s\n",
-//			       FlatPanel ? (Television ? "TV" : "DFP") :
-;
+			printk("nvidiafb: HW is currently programmed for %s\n",
+			       FlatPanel ? (Television ? "TV" : "DFP") :
+			       "CRT");
 		}
 
 		if (par->FlatPanel == -1) {
 			par->FlatPanel = FlatPanel;
 			par->Television = Television;
 		} else {
-//			printk("nvidiafb: Forcing display type to %s as "
-;
+			printk("nvidiafb: Forcing display type to %s as "
+			       "specified\n", par->FlatPanel ? "DFP" : "CRT");
 		}
 	} else {
 		u8 outputAfromCRTC, outputBfromCRTC;
@@ -513,7 +513,7 @@ int NVCommonSetup(struct fb_info *info)
 		if (nvidia_probe_i2c_connector(info, 1, &edidA))
 			nvidia_probe_of_connector(info, 1, &edidA);
 		if (edidA && !fb_parse_edid(edidA, var)) {
-;
+			printk("nvidiafb: EDID found from BUS1\n");
 			monA = monitorA;
 			fb_edid_to_monspecs(edidA, monA);
 		}
@@ -521,7 +521,7 @@ int NVCommonSetup(struct fb_info *info)
 		if (nvidia_probe_i2c_connector(info, 2, &edidB))
 			nvidia_probe_of_connector(info, 2, &edidB);
 		if (edidB && !fb_parse_edid(edidB, var)) {
-;
+			printk("nvidiafb: EDID found from BUS2\n");
 			monB = monitorB;
 			fb_edid_to_monspecs(edidB, monB);
 		}
@@ -529,35 +529,35 @@ int NVCommonSetup(struct fb_info *info)
 		if (slaved_on_A && !tvA) {
 			CRTCnumber = 0;
 			FlatPanel = 1;
-//			printk("nvidiafb: CRTC 0 is currently programmed for "
-;
+			printk("nvidiafb: CRTC 0 is currently programmed for "
+			       "DFP\n");
 		} else if (slaved_on_B && !tvB) {
 			CRTCnumber = 1;
 			FlatPanel = 1;
-//			printk("nvidiafb: CRTC 1 is currently programmed "
-;
+			printk("nvidiafb: CRTC 1 is currently programmed "
+			       "for DFP\n");
 		} else if (analog_on_A) {
 			CRTCnumber = outputAfromCRTC;
 			FlatPanel = 0;
-//			printk("nvidiafb: CRTC %i appears to have a "
-;
+			printk("nvidiafb: CRTC %i appears to have a "
+			       "CRT attached\n", CRTCnumber);
 		} else if (analog_on_B) {
 			CRTCnumber = outputBfromCRTC;
 			FlatPanel = 0;
-//			printk("nvidiafb: CRTC %i appears to have a "
-;
+			printk("nvidiafb: CRTC %i appears to have a "
+			       "CRT attached\n", CRTCnumber);
 		} else if (slaved_on_A) {
 			CRTCnumber = 0;
 			FlatPanel = 1;
 			Television = 1;
-//			printk("nvidiafb: CRTC 0 is currently programmed "
-;
+			printk("nvidiafb: CRTC 0 is currently programmed "
+			       "for TV\n");
 		} else if (slaved_on_B) {
 			CRTCnumber = 1;
 			FlatPanel = 1;
 			Television = 1;
-//			printk("nvidiafb: CRTC 1 is currently programmed for "
-;
+			printk("nvidiafb: CRTC 1 is currently programmed for "
+			       "TV\n");
 		} else if (monA) {
 			FlatPanel = (monA->input & FB_DISP_DDI) ? 1 : 0;
 		} else if (monB) {
@@ -569,38 +569,38 @@ int NVCommonSetup(struct fb_info *info)
 				par->FlatPanel = FlatPanel;
 				par->Television = Television;
 			} else {
-//				printk("nvidiafb: Unable to detect display "
-;
+				printk("nvidiafb: Unable to detect display "
+				       "type...\n");
 				if (mobile) {
-//					printk("...On a laptop, assuming "
-;
+					printk("...On a laptop, assuming "
+					       "DFP\n");
 					par->FlatPanel = 1;
 				} else {
-;
+					printk("...Using default of CRT\n");
 					par->FlatPanel = 0;
 				}
 			}
 		} else {
-//			printk("nvidiafb: Forcing display type to %s as "
-;
+			printk("nvidiafb: Forcing display type to %s as "
+			       "specified\n", par->FlatPanel ? "DFP" : "CRT");
 		}
 
 		if (par->CRTCnumber == -1) {
 			if (CRTCnumber != -1)
 				par->CRTCnumber = CRTCnumber;
 			else {
-//				printk("nvidiafb: Unable to detect which "
-;
+				printk("nvidiafb: Unable to detect which "
+				       "CRTCNumber...\n");
 				if (par->FlatPanel)
 					par->CRTCnumber = 1;
 				else
 					par->CRTCnumber = 0;
-//				printk("...Defaulting to CRTCNumber %i\n",
-;
+				printk("...Defaulting to CRTCNumber %i\n",
+				       par->CRTCnumber);
 			}
 		} else {
-//			printk("nvidiafb: Forcing CRTCNumber %i as "
-;
+			printk("nvidiafb: Forcing CRTCNumber %i as "
+			       "specified\n", par->CRTCnumber);
 		}
 
 		if (monA) {
@@ -639,16 +639,16 @@ int NVCommonSetup(struct fb_info *info)
 		NVSelectHeadRegisters(par, par->CRTCnumber);
 	}
 
-//	printk("nvidiafb: Using %s on CRTC %i\n",
-//	       par->FlatPanel ? (par->Television ? "TV" : "DFP") : "CRT",
-;
+	printk("nvidiafb: Using %s on CRTC %i\n",
+	       par->FlatPanel ? (par->Television ? "TV" : "DFP") : "CRT",
+	       par->CRTCnumber);
 
 	if (par->FlatPanel && !par->Television) {
 		par->fpWidth = NV_RD32(par->PRAMDAC, 0x0820) + 1;
 		par->fpHeight = NV_RD32(par->PRAMDAC, 0x0800) + 1;
 		par->fpSyncs = NV_RD32(par->PRAMDAC, 0x0848) & 0x30000033;
 
-;
+		printk("nvidiafb: Panel size is %i x %i\n", par->fpWidth, par->fpHeight);
 	}
 
 	if (monA)
@@ -662,7 +662,7 @@ int NVCommonSetup(struct fb_info *info)
 		NV_WR32(par->PRAMDAC0, 0x08B0, 0x00010004);
 		if (NV_RD32(par->PRAMDAC0, 0x08b4) & 1)
 			par->LVDS = 1;
-;
+		printk("nvidiafb: Panel is %s\n", par->LVDS ? "LVDS" : "TMDS");
 	}
 
 	kfree(edidA);

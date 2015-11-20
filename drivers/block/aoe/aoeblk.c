@@ -170,25 +170,25 @@ aoeblk_make_request(struct request_queue *q, struct bio *bio)
 	blk_queue_bounce(q, &bio);
 
 	if (bio == NULL) {
-;
+		printk(KERN_ERR "aoe: bio is NULL\n");
 		BUG();
 		return 0;
 	}
 	d = bio->bi_bdev->bd_disk->private_data;
 	if (d == NULL) {
-;
+		printk(KERN_ERR "aoe: bd_disk->private_data is NULL\n");
 		BUG();
 		bio_endio(bio, -ENXIO);
 		return 0;
 	} else if (bio->bi_io_vec == NULL) {
-;
+		printk(KERN_ERR "aoe: bi_io_vec is NULL\n");
 		BUG();
 		bio_endio(bio, -ENXIO);
 		return 0;
 	}
 	buf = mempool_alloc(d->bufpool, GFP_NOIO);
 	if (buf == NULL) {
-;
+		printk(KERN_INFO "aoe: buf allocation failure\n");
 		bio_endio(bio, -ENOMEM);
 		return 0;
 	}
@@ -232,7 +232,7 @@ aoeblk_getgeo(struct block_device *bdev, struct hd_geometry *geo)
 	struct aoedev *d = bdev->bd_disk->private_data;
 
 	if ((d->flags & DEVFL_UP) == 0) {
-;
+		printk(KERN_ERR "aoe: disk not up\n");
 		return -ENODEV;
 	}
 
@@ -259,16 +259,16 @@ aoeblk_gdalloc(void *vp)
 
 	gd = alloc_disk(AOE_PARTITIONS);
 	if (gd == NULL) {
-//		printk(KERN_ERR
-//			"aoe: cannot allocate disk structure for %ld.%d\n",
-;
+		printk(KERN_ERR
+			"aoe: cannot allocate disk structure for %ld.%d\n",
+			d->aoemajor, d->aoeminor);
 		goto err;
 	}
 
 	d->bufpool = mempool_create_slab_pool(MIN_BUFS, buf_pool_cache);
 	if (d->bufpool == NULL) {
-//		printk(KERN_ERR "aoe: cannot allocate bufpool for %ld.%d\n",
-;
+		printk(KERN_ERR "aoe: cannot allocate bufpool for %ld.%d\n",
+			d->aoemajor, d->aoeminor);
 		goto err_disk;
 	}
 

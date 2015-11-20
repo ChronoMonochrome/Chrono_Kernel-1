@@ -145,22 +145,22 @@ static int __init cs5535_mfgpt_init(void)
 
 	timer = cs5535_mfgpt_alloc_timer(MFGPT_TIMER_ANY, MFGPT_DOMAIN_WORKING);
 	if (!timer) {
-;
+		printk(KERN_ERR DRV_NAME ": Could not allocate MFPGT timer\n");
 		return -ENODEV;
 	}
 	cs5535_event_clock = timer;
 
 	/* Set up the IRQ on the MFGPT side */
 	if (cs5535_mfgpt_setup_irq(timer, MFGPT_CMP2, &timer_irq)) {
-//		printk(KERN_ERR DRV_NAME ": Could not set up IRQ %d\n",
-;
+		printk(KERN_ERR DRV_NAME ": Could not set up IRQ %d\n",
+				timer_irq);
 		goto err_timer;
 	}
 
 	/* And register it with the kernel */
 	ret = setup_irq(timer_irq, &mfgptirq);
 	if (ret) {
-;
+		printk(KERN_ERR DRV_NAME ": Unable to set up the interrupt.\n");
 		goto err_irq;
 	}
 
@@ -177,9 +177,9 @@ static int __init cs5535_mfgpt_init(void)
 	cs5535_clockevent.max_delta_ns = clockevent_delta2ns(0xFFFE,
 			&cs5535_clockevent);
 
-//	printk(KERN_INFO DRV_NAME
-//		": Registering MFGPT timer as a clock event, using IRQ %d\n",
-;
+	printk(KERN_INFO DRV_NAME
+		": Registering MFGPT timer as a clock event, using IRQ %d\n",
+		timer_irq);
 	clockevents_register_device(&cs5535_clockevent);
 
 	return 0;
@@ -188,7 +188,7 @@ err_irq:
 	cs5535_mfgpt_release_irq(cs5535_event_clock, MFGPT_CMP2, &timer_irq);
 err_timer:
 	cs5535_mfgpt_free_timer(cs5535_event_clock);
-;
+	printk(KERN_ERR DRV_NAME ": Unable to set up the MFGPT clock source\n");
 	return -EIO;
 }
 

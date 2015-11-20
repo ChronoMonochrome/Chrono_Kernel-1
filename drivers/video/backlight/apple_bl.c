@@ -59,8 +59,8 @@ static int intel_chipset_send_intensity(struct backlight_device *bd)
 	int intensity = bd->props.brightness;
 
 	if (debug)
-//		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
-;
+		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
+		       intensity);
 
 	intel_chipset_set_brightness(intensity);
 	return 0;
@@ -75,8 +75,8 @@ static int intel_chipset_get_intensity(struct backlight_device *bd)
 	intensity = inb(0xb3) >> 4;
 
 	if (debug)
-//		printk(KERN_DEBUG DRIVER "read brightness of %d\n",
-;
+		printk(KERN_DEBUG DRIVER "read brightness of %d\n",
+		       intensity);
 
 	return intensity;
 }
@@ -106,8 +106,8 @@ static int nvidia_chipset_send_intensity(struct backlight_device *bd)
 	int intensity = bd->props.brightness;
 
 	if (debug)
-//		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
-;
+		printk(KERN_DEBUG DRIVER "setting brightness to %d\n",
+		       intensity);
 
 	nvidia_chipset_set_brightness(intensity);
 	return 0;
@@ -122,8 +122,8 @@ static int nvidia_chipset_get_intensity(struct backlight_device *bd)
 	intensity = inb(0x52f) >> 4;
 
 	if (debug)
-//		printk(KERN_DEBUG DRIVER "read brightness of %d\n",
-;
+		printk(KERN_DEBUG DRIVER "read brightness of %d\n",
+		       intensity);
 
 	return intensity;
 }
@@ -148,7 +148,7 @@ static int __devinit apple_bl_add(struct acpi_device *dev)
 	host = pci_get_bus_and_slot(0, 0);
 
 	if (!host) {
-;
+		printk(KERN_ERR DRIVER "unable to find PCI host\n");
 		return -ENODEV;
 	}
 
@@ -160,7 +160,7 @@ static int __devinit apple_bl_add(struct acpi_device *dev)
 	pci_dev_put(host);
 
 	if (!hw_data) {
-;
+		printk(KERN_ERR DRIVER "unknown hardware\n");
 		return -ENODEV;
 	}
 

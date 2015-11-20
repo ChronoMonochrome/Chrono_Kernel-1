@@ -126,9 +126,9 @@ static int __init snd_hrtimer_init(void)
 
 	hrtimer_get_res(CLOCK_MONOTONIC, &tp);
 	if (tp.tv_sec > 0 || !tp.tv_nsec) {
-//		snd_printk(KERN_ERR
-//			   "snd-hrtimer: Invalid resolution %u.%09u",
-;
+		snd_printk(KERN_ERR
+			   "snd-hrtimer: Invalid resolution %u.%09u",
+			   (unsigned)tp.tv_sec, (unsigned)tp.tv_nsec);
 		return -EINVAL;
 	}
 	resolution = tp.tv_nsec;

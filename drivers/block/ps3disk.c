@@ -558,8 +558,8 @@ static int __init ps3disk_init(void)
 
 	error = register_blkdev(0, DEVICE_NAME);
 	if (error <= 0) {
-//		printk(KERN_ERR "%s:%u: register_blkdev failed %d\n", __func__,
-;
+		printk(KERN_ERR "%s:%u: register_blkdev failed %d\n", __func__,
+		       __LINE__, error);
 		return error;
 	}
 	ps3disk_major = error;

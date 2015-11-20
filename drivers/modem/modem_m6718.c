@@ -75,7 +75,7 @@ static int __init modem_m6718_init(void)
 
 	ret = platform_driver_register(&modem_m6718_driver);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "modem_m6718: platform driver reg failed\n");
 		return ret;
 	}
 

@@ -26,18 +26,18 @@ MODULE_DESCRIPTION(DRIVER_DESC);
 MODULE_LICENSE("GPL");
 
 #ifdef GRIP_DEBUG
-//#define dbg(format, arg...) printk(KERN_ERR __FILE__ ": " format "\n" , ## arg)
-//#else
-//#define dbg(format, arg...) do {} while (0)
-//#endif
-//
-//#define GRIP_MAX_PORTS	4
-///*
-// * Grip multiport state
-// */
-//
-//struct grip_port {
-;
+#define dbg(format, arg...) printk(KERN_ERR __FILE__ ": " format "\n" , ## arg)
+#else
+#define dbg(format, arg...) do {} while (0)
+#endif
+
+#define GRIP_MAX_PORTS	4
+/*
+ * Grip multiport state
+ */
+
+struct grip_port {
+	struct input_dev *dev;
 	int mode;
 	int registered;
 
@@ -393,8 +393,8 @@ static int get_and_decode_packet(struct grip_mp *grip, int flags)
 	if (!joytype) {
 
 		if (port->registered) {
-//			printk(KERN_INFO "grip_mp: removing %s, slot %d\n",
-;
+			printk(KERN_INFO "grip_mp: removing %s, slot %d\n",
+			       grip_name[port->mode], slot);
 			input_unregister_device(port->dev);
 			port->registered = 0;
 		}
@@ -434,8 +434,8 @@ static int get_and_decode_packet(struct grip_mp *grip, int flags)
 	{
 		static int strange_code = 0;
 		if (strange_code != joytype) {
-;
-;
+			printk(KERN_INFO "Possible non-grip pad/joystick detected.\n");
+			printk(KERN_INFO "Got joy type 0x%x and packet 0x%x.\n", joytype, packet);
 			strange_code = joytype;
 		}
 	}

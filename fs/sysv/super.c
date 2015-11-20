@@ -220,9 +220,9 @@ static int detect_sysv(struct sysv_sb_info *sbi, struct buffer_head *bh)
  		sbi->s_type = FSTYPE_AFS;
 		sbi->s_forced_ro = 1;
  		if (!(sb->s_flags & MS_RDONLY)) {
-// 			printk("SysV FS: SCO EAFS on %s detected, " 
-// 				"forcing read-only mode.\n", 
-;
+ 			printk("SysV FS: SCO EAFS on %s detected, " 
+ 				"forcing read-only mode.\n", 
+ 				sb->s_id);
  		}
  		return type;
  	}
@@ -243,8 +243,8 @@ static int detect_sysv(struct sysv_sb_info *sbi, struct buffer_head *bh)
            feature read-only mode seems to be a reasonable approach... -KGB */
 
 	if (type >= 0x10) {
-//		printk("SysV FS: can't handle long file names on %s, "
-;
+		printk("SysV FS: can't handle long file names on %s, "
+		       "forcing read-only mode.\n", sb->s_id);
 		sbi->s_forced_ro = 1;
 	}
 
@@ -329,8 +329,8 @@ static int complete_read_super(struct super_block *sb, int silent, int size)
 		<< sbi->s_inodes_per_block_bits;
 
 	if (!silent)
-//		printk("VFS: Found a %s FS (block size = %ld) on device %s\n",
-;
+		printk("VFS: Found a %s FS (block size = %ld) on device %s\n",
+		       found, sb->s_blocksize, sb->s_id);
 
 	sb->s_magic = SYSV_MAGIC_BASE + sbi->s_type;
 	/* set up enough so that it can read an inode */
@@ -341,13 +341,13 @@ static int complete_read_super(struct super_block *sb, int silent, int size)
 		sb->s_d_op = &sysv_dentry_operations;
 	root_inode = sysv_iget(sb, SYSV_ROOT_INO);
 	if (IS_ERR(root_inode)) {
-;
+		printk("SysV FS: get root inode failed\n");
 		return 0;
 	}
 	sb->s_root = d_alloc_root(root_inode);
 	if (!sb->s_root) {
 		iput(root_inode);
-;
+		printk("SysV FS: get root dentry failed\n");
 		return 0;
 	}
 	return 1;
@@ -418,7 +418,7 @@ static int sysv_fill_super(struct super_block *sb, void *data, int silent)
 	brelse(bh1);
 	brelse(bh);
 	sb_set_blocksize(sb, BLOCK_SIZE);
-;
+	printk("oldfs: cannot read superblock\n");
 failed:
 	kfree(sbi);
 	return -EINVAL;
@@ -426,14 +426,14 @@ failed:
 Eunknown:
 	brelse(bh);
 	if (!silent)
-//		printk("VFS: unable to find oldfs superblock on device %s\n",
-;
+		printk("VFS: unable to find oldfs superblock on device %s\n",
+			sb->s_id);
 	goto failed;
 Ebadsize:
 	brelse(bh);
 	if (!silent)
-//		printk("VFS: oldfs: unsupported block size (%dKb)\n",
-;
+		printk("VFS: oldfs: unsupported block size (%dKb)\n",
+			1<<(size-2));
 	goto failed;
 }
 
@@ -496,8 +496,8 @@ static int v7_fill_super(struct super_block *sb, void *data, int silent)
 
 	if ((bh = sb_bread(sb, 1)) == NULL) {
 		if (!silent)
-//			printk("VFS: unable to read V7 FS superblock on "
-;
+			printk("VFS: unable to read V7 FS superblock on "
+			       "device %s.\n", sb->s_id);
 		goto failed;
 	}
 
@@ -520,8 +520,8 @@ detected:
 		return 0;
 
 failed:
-//	printk(KERN_ERR "VFS: could not find a valid V7 on %s.\n",
-;
+	printk(KERN_ERR "VFS: could not find a valid V7 on %s.\n",
+		sb->s_id);
 	brelse(bh);
 	kfree(sbi);
 	return -EINVAL;

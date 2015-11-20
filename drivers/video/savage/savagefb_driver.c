@@ -427,11 +427,11 @@ static void SavageCalcClock(long freq, int min_m, int min_n1, int max_n1,
 	unsigned char n1, n2, best_n1=16+2, best_n2=2, best_m=125+2;
 
 	if (freq < freq_min / (1 << max_n2)) {
-;
+		printk(KERN_ERR "invalid frequency %ld Khz\n", freq);
 		freq = freq_min / (1 << max_n2);
 	}
 	if (freq > freq_max / (1 << min_n2)) {
-;
+		printk(KERN_ERR "invalid frequency %ld Khz\n", freq);
 		freq = freq_max / (1 << min_n2);
 	}
 
@@ -516,27 +516,27 @@ static void SavagePrintRegs(struct savagefb_par *par)
 	int vgaCRIndex = 0x3d4;
 	int vgaCRReg = 0x3d5;
 
-//	printk(KERN_DEBUG "SR    x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xA xB xC xD xE "
-;
+	printk(KERN_DEBUG "SR    x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xA xB xC xD xE "
+	       "xF");
 
 	for (i = 0; i < 0x70; i++) {
 		if (!(i % 16))
-;
+			printk(KERN_DEBUG "\nSR%xx ", i >> 4);
 		vga_out8(0x3c4, i, par);
-;
+		printk(KERN_DEBUG " %02x", vga_in8(0x3c5, par));
 	}
 
-//	printk(KERN_DEBUG "\n\nCR    x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xA xB xC "
-;
+	printk(KERN_DEBUG "\n\nCR    x0 x1 x2 x3 x4 x5 x6 x7 x8 x9 xA xB xC "
+	       "xD xE xF");
 
 	for (i = 0; i < 0xB7; i++) {
 		if (!(i % 16))
-;
+			printk(KERN_DEBUG "\nCR%xx ", i >> 4);
 		vga_out8(vgaCRIndex, i, par);
-;
+		printk(KERN_DEBUG " %02x", vga_in8(vgaCRReg, par));
 	}
 
-;
+	printk(KERN_DEBUG "\n\n");
 }
 #endif
 
@@ -933,10 +933,10 @@ static int savagefb_check_var(struct fb_var_screeninfo   *var,
 	if (par->SavagePanelWidth &&
 	    (var->xres > par->SavagePanelWidth ||
 	     var->yres > par->SavagePanelHeight)) {
-//		printk(KERN_INFO "Mode (%dx%d) larger than the LCD panel "
-//		       "(%dx%d)\n", var->xres,  var->yres,
-//		       par->SavagePanelWidth,
-;
+		printk(KERN_INFO "Mode (%dx%d) larger than the LCD panel "
+		       "(%dx%d)\n", var->xres,  var->yres,
+		       par->SavagePanelWidth,
+		       par->SavagePanelHeight);
 		return -1;
 	}
 
@@ -1734,11 +1734,11 @@ static int __devinit savage_map_mmio(struct fb_info *info)
 
 	par->mmio.vbase = ioremap(par->mmio.pbase, par->mmio.len);
 	if (!par->mmio.vbase) {
-;
+		printk("savagefb: unable to map memory mapped IO\n");
 		return -ENOMEM;
 	} else
-//		printk(KERN_INFO "savagefb: mapped io at %p\n",
-;
+		printk(KERN_INFO "savagefb: mapped io at %p\n",
+			par->mmio.vbase);
 
 	info->fix.mmio_start = par->mmio.pbase;
 	info->fix.mmio_len   = par->mmio.len;
@@ -1782,11 +1782,11 @@ static int __devinit savage_map_video(struct fb_info *info,
 	par->video.vbase = ioremap(par->video.pbase, par->video.len);
 
 	if (!par->video.vbase) {
-;
+		printk("savagefb: unable to map screen memory\n");
 		return -ENOMEM;
 	} else
-//		printk(KERN_INFO "savagefb: mapped framebuffer at %p, "
-;
+		printk(KERN_INFO "savagefb: mapped framebuffer at %p, "
+		       "pbase == %x\n", par->video.vbase, par->video.pbase);
 
 	info->fix.smem_start = par->video.pbase;
 	info->fix.smem_len   = par->video.len - par->cob_size;
@@ -1901,7 +1901,7 @@ static int savage_init_hw(struct savagefb_par *par)
 
 	videoRambytes = videoRam * 1024;
 
-;
+	printk(KERN_INFO "savagefb: probed videoram:  %dk\n", videoRam);
 
 	/* reset graphics engine to avoid memory corruption */
 	vga_out8(0x3d4, 0x66, par);
@@ -1948,8 +1948,8 @@ static int savage_init_hw(struct savagefb_par *par)
 	n1 = n & 0x1f;
 	n2 = (n >> 5) & 0x03;
 	par->MCLK = ((1431818 * (m+2)) / (n1+2) / (1 << n2) + 50) / 100;
-//	printk(KERN_INFO "savagefb: Detected current MCLK value of %d kHz\n",
-;
+	printk(KERN_INFO "savagefb: Detected current MCLK value of %d kHz\n",
+		par->MCLK);
 
 	/* check for DVI/flat panel */
 	dvi = 0;
@@ -1963,7 +1963,7 @@ static int savage_init_hw(struct savagefb_par *par)
 		sr30 = vga_in8(0x3c5, par);
 		if (sr30 & 0x02 /*0x04 */) {
 			dvi = 1;
-;
+			printk("savagefb: Digital Flat Panel Detected\n");
 		}
 	}
 
@@ -2013,9 +2013,9 @@ static int savage_init_hw(struct savagefb_par *par)
 			sTechnology = "STN";
 		}
 
-//		printk(KERN_INFO "savagefb: %dx%d %s LCD panel detected %s\n",
-//		       panelX, panelY, sTechnology,
-;
+		printk(KERN_INFO "savagefb: %dx%d %s LCD panel detected %s\n",
+		       panelX, panelY, sTechnology,
+		       cr6b & ActiveLCD ? "and active" : "but not active");
 
 		if (cr6b & ActiveLCD) 	{
 			/*
@@ -2023,8 +2023,8 @@ static int savage_init_hw(struct savagefb_par *par)
 			 * we probably want to kill the HW cursor.
 			 */
 
-//			printk(KERN_INFO "savagefb: Limiting video mode to "
-;
+			printk(KERN_INFO "savagefb: Limiting video mode to "
+				"%dx%d\n", panelX, panelY);
 
 			par->SavagePanelWidth = panelX;
 			par->SavagePanelHeight = panelY;
@@ -2202,7 +2202,7 @@ static int __devinit savagefb_probe(struct pci_dev* dev,
 		goto failed_enable;
 
 	if ((err = pci_request_regions(dev, "savagefb"))) {
-;
+		printk(KERN_ERR "cannot request PCI regions\n");
 		goto failed_enable;
 	}
 
@@ -2248,7 +2248,7 @@ static int __devinit savagefb_probe(struct pci_dev* dev,
 		/* FIXME: if we know there is only the panel
 		 * we can enable reduced blanking as well */
 		if (fb_find_mode_cvt(&cvt_mode, 0, 0))
-;
+			printk(KERN_WARNING "No CVT mode found for panel\n");
 		else if (fb_find_mode(&info->var, info, NULL, NULL, 0,
 				      &cvt_mode, 0) != 3)
 			info->var = savagefb_var800x600x8;
@@ -2299,11 +2299,11 @@ static int __devinit savagefb_probe(struct pci_dev* dev,
 	v_sync = h_sync / (info->var.yres + info->var.upper_margin +
 			   info->var.lower_margin + info->var.vsync_len);
 
-//	printk(KERN_INFO "savagefb v" SAVAGEFB_VERSION ": "
-//	       "%dkB VRAM, using %dx%d, %d.%03dkHz, %dHz\n",
-//	       info->fix.smem_len >> 10,
-//	       info->var.xres, info->var.yres,
-;
+	printk(KERN_INFO "savagefb v" SAVAGEFB_VERSION ": "
+	       "%dkB VRAM, using %dx%d, %d.%03dkHz, %dHz\n",
+	       info->fix.smem_len >> 10,
+	       info->var.xres, info->var.yres,
+	       h_sync / 1000, h_sync % 1000, v_sync);
 
 
 	fb_destroy_modedb(info->monspecs.modedb);
@@ -2313,8 +2313,8 @@ static int __devinit savagefb_probe(struct pci_dev* dev,
 	if (err < 0)
 		goto failed;
 
-//	printk(KERN_INFO "fb: S3 %s frame buffer device\n",
-;
+	printk(KERN_INFO "fb: S3 %s frame buffer device\n",
+	       info->fix.id);
 
 	/*
 	 * Our driver data
@@ -2354,8 +2354,8 @@ static void __devexit savagefb_remove(struct pci_dev *dev)
 		 * oopsen laying around.
 		 */
 		if (unregister_framebuffer(info))
-//			printk(KERN_WARNING "savagefb: danger danger! "
-;
+			printk(KERN_WARNING "savagefb: danger danger! "
+			       "Oopsen imminent!\n");
 
 #ifdef CONFIG_FB_SAVAGE_I2C
 		savagefb_delete_i2c_busses(info);

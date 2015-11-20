@@ -162,8 +162,8 @@ int ide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 	}
 
 use_pio_instead:
-//	printk(KERN_ERR "%s: %s\n", drive->name,
-;
+	printk(KERN_ERR "%s: %s\n", drive->name,
+		count ? "DMA table too small" : "empty DMA table?");
 
 	return 0; /* revert to PIO for this request */
 }
@@ -238,8 +238,8 @@ int ide_dma_sff_timer_expiry(ide_drive_t *drive)
 	ide_hwif_t *hwif = drive->hwif;
 	u8 dma_stat = hwif->dma_ops->dma_sff_read_status(hwif);
 
-//	printk(KERN_WARNING "%s: %s: DMA status (0x%02x)\n",
-;
+	printk(KERN_WARNING "%s: %s: DMA status (0x%02x)\n",
+		drive->name, __func__, dma_stat);
 
 	if ((dma_stat & 0x18) == 0x18)	/* BUSY Stupid Early Timer !! */
 		return WAIT_CMD;

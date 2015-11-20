@@ -130,10 +130,10 @@ static inline int ppa_proc_write(ppa_struct *dev, char *buffer, int length)
 	if ((length > 10) && (strncmp(buffer, "recon_tmo=", 10) == 0)) {
 		x = simple_strtoul(buffer + 10, NULL, 0);
 		dev->recon_tmo = x;
-;
+		printk(KERN_INFO "ppa: recon_tmo set to %ld\n", x);
 		return length;
 	}
-;
+	printk(KERN_WARNING "ppa /proc: invalid variable\n");
 	return -EINVAL;
 }
 
@@ -171,8 +171,8 @@ static int ppa_proc_info(struct Scsi_Host *host, char *buffer, char **start, off
 static int device_check(ppa_struct *dev);
 
 #if PPA_DEBUG > 0
-//#define ppa_fail(x,y) printk("ppa: ppa_fail(%i) from %s at line %d\n",\
-;
+#define ppa_fail(x,y) printk("ppa: ppa_fail(%i) from %s at line %d\n",\
+	   y, __func__, __LINE__); ppa_fail_func(x,y);
 static inline void ppa_fail_func(ppa_struct *dev, int error_code)
 #else
 static inline void ppa_fail(ppa_struct *dev, int error_code)
@@ -217,7 +217,7 @@ static unsigned char ppa_wait(ppa_struct *dev)
 
 	/* Counter expired - Time out occurred */
 	ppa_fail(dev, DID_TIME_OUT);
-;
+	printk(KERN_WARNING "ppa timeout in ppa_wait\n");
 	return 0;		/* command timed out */
 }
 
@@ -249,7 +249,7 @@ static inline void ecp_sync(ppa_struct *dev)
 				return;
 			udelay(5);
 		}
-;
+		printk(KERN_WARNING "ppa: ECP sync failed as data still present in FIFO.\n");
 	}
 }
 
@@ -329,7 +329,7 @@ static int ppa_out(ppa_struct *dev, char *buffer, int len)
 		break;
 
 	default:
-;
+		printk(KERN_ERR "PPA: bug in ppa_out()\n");
 		r = 0;
 	}
 	return r;
@@ -382,7 +382,7 @@ static int ppa_in(ppa_struct *dev, char *buffer, int len)
 		break;
 
 	default:
-;
+		printk(KERN_ERR "PPA: bug in ppa_ins()\n");
 		r = 0;
 		break;
 	}
@@ -632,7 +632,7 @@ static void ppa_interrupt(struct work_struct *work)
 	struct scsi_cmnd *cmd = dev->cur_cmd;
 
 	if (!cmd) {
-;
+		printk(KERN_ERR "PPA: bug in ppa_interrupt\n");
 		return;
 	}
 	if (ppa_engine(dev, cmd)) {
@@ -645,32 +645,32 @@ static void ppa_interrupt(struct work_struct *work)
 	case DID_OK:
 		break;
 	case DID_NO_CONNECT:
-;
+		printk(KERN_DEBUG "ppa: no device at SCSI ID %i\n", cmd->device->target);
 		break;
 	case DID_BUS_BUSY:
-;
+		printk(KERN_DEBUG "ppa: BUS BUSY - EPP timeout detected\n");
 		break;
 	case DID_TIME_OUT:
-;
+		printk(KERN_DEBUG "ppa: unknown timeout\n");
 		break;
 	case DID_ABORT:
-;
+		printk(KERN_DEBUG "ppa: told to abort\n");
 		break;
 	case DID_PARITY:
-;
+		printk(KERN_DEBUG "ppa: parity error (???)\n");
 		break;
 	case DID_ERROR:
-;
+		printk(KERN_DEBUG "ppa: internal driver error\n");
 		break;
 	case DID_RESET:
-;
+		printk(KERN_DEBUG "ppa: told to reset device\n");
 		break;
 	case DID_BAD_INTR:
-;
+		printk(KERN_WARNING "ppa: bad interrupt (???)\n");
 		break;
 	default:
-//		printk(KERN_WARNING "ppa: bad return code (%02x)\n",
-;
+		printk(KERN_WARNING "ppa: bad return code (%02x)\n",
+		       (cmd->result >> 16) & 0xff);
 	}
 #endif
 
@@ -723,7 +723,7 @@ static int ppa_engine(ppa_struct *dev, struct scsi_cmnd *cmd)
 
 			if (retv) {
 				if (time_after(jiffies, dev->jstart + (1 * HZ))) {
-;
+					printk(KERN_ERR "ppa: Parallel port cable is unplugged.\n");
 					ppa_fail(dev, DID_BUS_BUSY);
 					return 0;
 				} else {
@@ -793,7 +793,7 @@ static int ppa_engine(ppa_struct *dev, struct scsi_cmnd *cmd)
 		break;
 
 	default:
-;
+		printk(KERN_ERR "ppa: Invalid scsi phase\n");
 	}
 	return 0;
 }
@@ -804,7 +804,7 @@ static int ppa_queuecommand_lck(struct scsi_cmnd *cmd,
 	ppa_struct *dev = ppa_dev(cmd->device->host);
 
 	if (dev->cur_cmd) {
-;
+		printk(KERN_ERR "PPA: bug in ppa_queuecommand\n");
 		return 0;
 	}
 	dev->failed = 0;
@@ -911,8 +911,8 @@ second_pass:
 			ppa_disconnect(dev);
 			continue;
 		}
-//		printk(KERN_INFO "ppa: Found device at ID %i, Attempting to use %s\n",
-;
+		printk(KERN_INFO "ppa: Found device at ID %i, Attempting to use %s\n",
+		       loop, PPA_MODE_STRING[dev->mode]);
 
 		/* Send SCSI command */
 		status = 1;
@@ -960,8 +960,8 @@ second_pass:
 			return -EIO;
 		}
 		ppa_disconnect(dev);
-//		printk(KERN_INFO "ppa: Communication established with ID %i using %s\n",
-;
+		printk(KERN_INFO "ppa: Communication established with ID %i using %s\n",
+		       loop, PPA_MODE_STRING[dev->mode]);
 		ppa_connect(dev, CONNECT_EPP_MAYBE);
 		ppa_reset_pulse(ppb);
 		udelay(1000);
@@ -1034,9 +1034,9 @@ static int __ppa_attach(struct parport *pb)
 	if (ppa_pb_claim(dev))
 		schedule_timeout(3 * HZ);
 	if (dev->wanted) {
-//		printk(KERN_ERR "ppa%d: failed to claim parport because "
-//				"a pardevice is owning the port for too long "
-;
+		printk(KERN_ERR "ppa%d: failed to claim parport because "
+				"a pardevice is owning the port for too long "
+				"time!\n", pb->number);
 		ppa_pb_dismiss(dev);
 		dev->waiting = NULL;
 		finish_wait(&waiting, &wait);
@@ -1134,7 +1134,7 @@ static struct parport_driver ppa_driver = {
 
 static int __init ppa_driver_init(void)
 {
-;
+	printk(KERN_INFO "ppa: Version %s\n", PPA_VERSION);
 	return parport_register_driver(&ppa_driver);
 }
 

@@ -381,7 +381,7 @@ static int __init sticonsole_init(void)
 	return -ENODEV;
 
     if (conswitchp == &dummy_con) {
-;
+	printk(KERN_INFO "sticon: Initializing STI text console.\n");
 	return take_over_console(&sti_con, 0, MAX_NR_CONSOLES - 1, 1);
     }
     return 0;

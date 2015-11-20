@@ -255,7 +255,7 @@ static int sas_ex_phy_discover_helper(struct domain_device *dev, u8 *disc_req,
 		dr = &((struct smp_resp *)disc_resp)->disc;
 		if (memcmp(dev->sas_addr, dr->attached_sas_addr,
 			  SAS_ADDR_SIZE) == 0) {
-;
+			sas_printk("Found loopback topology, just ignore it!\n");
 			return 0;
 		}
 		if (!(dr->attached_dev_type == 0 &&
@@ -1140,19 +1140,19 @@ static void sas_print_parent_topology_bug(struct domain_device *child,
 	};
 	struct domain_device *parent = child->parent;
 
-//	sas_printk("%s ex %016llx phy 0x%x <--> %s ex %016llx phy 0x%x "
-//		   "has %c:%c routing link!\n",
-//
-//		   ex_type[parent->dev_type],
-//		   SAS_ADDR(parent->sas_addr),
-//		   parent_phy->phy_id,
-//
-//		   ex_type[child->dev_type],
-//		   SAS_ADDR(child->sas_addr),
-//		   child_phy->phy_id,
-//
-//		   ra_char[parent_phy->routing_attr],
-;
+	sas_printk("%s ex %016llx phy 0x%x <--> %s ex %016llx phy 0x%x "
+		   "has %c:%c routing link!\n",
+
+		   ex_type[parent->dev_type],
+		   SAS_ADDR(parent->sas_addr),
+		   parent_phy->phy_id,
+
+		   ex_type[child->dev_type],
+		   SAS_ADDR(child->sas_addr),
+		   child_phy->phy_id,
+
+		   ra_char[parent_phy->routing_attr],
+		   ra_char[child_phy->routing_attr]);
 }
 
 static int sas_check_eeds(struct domain_device *child,
@@ -1984,8 +1984,8 @@ int sas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
 	struct request *rsp = req->next_rq;
 
 	if (!rsp) {
-//		printk("%s: space for a smp response is missing\n",
-;
+		printk("%s: space for a smp response is missing\n",
+		       __func__);
 		return -EINVAL;
 	}
 
@@ -1997,22 +1997,22 @@ int sas_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
 
 	if (type != SAS_EDGE_EXPANDER_DEVICE &&
 	    type != SAS_FANOUT_EXPANDER_DEVICE) {
-//		printk("%s: can we send a smp request to a device?\n",
-;
+		printk("%s: can we send a smp request to a device?\n",
+		       __func__);
 		return -EINVAL;
 	}
 
 	dev = sas_find_dev_by_rphy(rphy);
 	if (!dev) {
-;
+		printk("%s: fail to find a domain_device?\n", __func__);
 		return -EINVAL;
 	}
 
 	/* do we need to support multiple segments? */
 	if (req->bio->bi_vcnt > 1 || rsp->bio->bi_vcnt > 1) {
-//		printk("%s: multiple segments req %u %u, rsp %u %u\n",
-//		       __func__, req->bio->bi_vcnt, blk_rq_bytes(req),
-;
+		printk("%s: multiple segments req %u %u, rsp %u %u\n",
+		       __func__, req->bio->bi_vcnt, blk_rq_bytes(req),
+		       rsp->bio->bi_vcnt, blk_rq_bytes(rsp));
 		return -EINVAL;
 	}
 

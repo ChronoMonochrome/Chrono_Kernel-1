@@ -806,13 +806,13 @@ static int tas_init_codec(struct aoa_codec *codec)
 	int err;
 
 	if (!tas->codec.gpio || !tas->codec.gpio->methods) {
-;
+		printk(KERN_ERR PFX "gpios not assigned!!\n");
 		return -EINVAL;
 	}
 
 	mutex_lock(&tas->mtx);
 	if (tas_reset_init(tas)) {
-;
+		printk(KERN_ERR PFX "tas failed to initialise\n");
 		mutex_unlock(&tas->mtx);
 		return -ENXIO;
 	}
@@ -822,12 +822,12 @@ static int tas_init_codec(struct aoa_codec *codec)
 	if (tas->codec.soundbus_dev->attach_codec(tas->codec.soundbus_dev,
 						   aoa_get_card(),
 						   &tas_codec_info, tas)) {
-;
+		printk(KERN_ERR PFX "error attaching tas to soundbus\n");
 		return -ENODEV;
 	}
 
 	if (aoa_snd_device_new(SNDRV_DEV_LOWLEVEL, tas, &ops)) {
-;
+		printk(KERN_ERR PFX "failed to create tas snd device!\n");
 		return -ENODEV;
 	}
 	err = aoa_snd_ctl_add(snd_ctl_new1(&volume_control, tas));
@@ -943,9 +943,9 @@ static int tas_i2c_probe(struct i2c_client *client,
 	if (aoa_codec_register(&tas->codec)) {
 		goto fail;
 	}
-//	printk(KERN_DEBUG
-//	       "snd-aoa-codec-tas: tas found, addr 0x%02x on %s\n",
-;
+	printk(KERN_DEBUG
+	       "snd-aoa-codec-tas: tas found, addr 0x%02x on %s\n",
+	       (unsigned int)client->addr, node->full_name);
 	return 0;
  fail:
 	mutex_destroy(&tas->mtx);
@@ -966,7 +966,7 @@ static int tas_i2c_attach(struct i2c_adapter *adapter)
 	while ((dev = of_get_next_child(busnode, dev)) != NULL) {
 		if (of_device_is_compatible(dev, "tas3004")) {
 			const u32 *addr;
-;
+			printk(KERN_DEBUG PFX "found tas3004\n");
 			addr = of_get_property(dev, "reg", NULL);
 			if (!addr)
 				continue;
@@ -978,7 +978,7 @@ static int tas_i2c_attach(struct i2c_adapter *adapter)
 		if (strcmp(dev->name, "deq") == 0) {
 			const u32 *_addr;
 			u32 addr;
-;
+			printk(KERN_DEBUG PFX "found 'deq' node\n");
 			_addr = of_get_property(dev, "i2c-address", NULL);
 			if (!_addr)
 				continue;

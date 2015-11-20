@@ -566,9 +566,9 @@ static void pvscsi_complete_request(struct pvscsi_adapter *adapter,
 
 		default:
 			cmd->result = (DID_ERROR << 16);
-//			scmd_printk(KERN_DEBUG, cmd,
-//				    "Unknown completion status: 0x%x\n",
-;
+			scmd_printk(KERN_DEBUG, cmd,
+				    "Unknown completion status: 0x%x\n",
+				    btstat);
 	}
 
 	dev_dbg(&cmd->device->sdev_gendev,
@@ -637,9 +637,9 @@ static int pvscsi_queue_ring(struct pvscsi_adapter *adapter,
 	 * would be a serious bug.
 	 */
 	if (s->reqProdIdx - s->cmpConsIdx >= 1 << req_entries) {
-//		scmd_printk(KERN_ERR, cmd, "vmw_pvscsi: "
-//			    "ring full: reqProdIdx=%d cmpConsIdx=%d\n",
-;
+		scmd_printk(KERN_ERR, cmd, "vmw_pvscsi: "
+			    "ring full: reqProdIdx=%d cmpConsIdx=%d\n",
+			    s->reqProdIdx, s->cmpConsIdx);
 		return -1;
 	}
 
@@ -727,8 +727,8 @@ static int pvscsi_abort(struct scsi_cmnd *cmd)
 	struct pvscsi_ctx *ctx;
 	unsigned long flags;
 
-//	scmd_printk(KERN_DEBUG, cmd, "task abort on host %u, %p\n",
-;
+	scmd_printk(KERN_DEBUG, cmd, "task abort on host %u, %p\n",
+		    adapter->host->host_no, cmd);
 
 	spin_lock_irqsave(&adapter->hw_lock, flags);
 
@@ -744,7 +744,7 @@ static int pvscsi_abort(struct scsi_cmnd *cmd)
 	 */
 	ctx = pvscsi_find_context(adapter, cmd);
 	if (!ctx) {
-;
+		scmd_printk(KERN_DEBUG, cmd, "Failed to abort cmd %p\n", cmd);
 		goto out;
 	}
 
@@ -771,8 +771,8 @@ static void pvscsi_reset_all(struct pvscsi_adapter *adapter)
 		struct pvscsi_ctx *ctx = &adapter->cmd_map[i];
 		struct scsi_cmnd *cmd = ctx->cmd;
 		if (cmd) {
-//			scmd_printk(KERN_ERR, cmd,
-;
+			scmd_printk(KERN_ERR, cmd,
+				    "Forced reset on cmd %p\n", cmd);
 			pvscsi_unmap_buffers(adapter, ctx);
 			pvscsi_release_context(adapter, ctx);
 			cmd->result = (DID_RESET << 16);
@@ -788,7 +788,7 @@ static int pvscsi_host_reset(struct scsi_cmnd *cmd)
 	unsigned long flags;
 	bool use_msg;
 
-;
+	scmd_printk(KERN_INFO, cmd, "SCSI Host reset\n");
 
 	spin_lock_irqsave(&adapter->hw_lock, flags);
 
@@ -841,7 +841,7 @@ static int pvscsi_bus_reset(struct scsi_cmnd *cmd)
 	struct pvscsi_adapter *adapter = shost_priv(host);
 	unsigned long flags;
 
-;
+	scmd_printk(KERN_INFO, cmd, "SCSI Bus reset\n");
 
 	/*
 	 * We don't want to queue new requests for this bus after
@@ -866,8 +866,8 @@ static int pvscsi_device_reset(struct scsi_cmnd *cmd)
 	struct pvscsi_adapter *adapter = shost_priv(host);
 	unsigned long flags;
 
-//	scmd_printk(KERN_INFO, cmd, "SCSI device reset on scsi%u:%u\n",
-;
+	scmd_printk(KERN_INFO, cmd, "SCSI device reset on scsi%u:%u\n",
+		    host->host_no, cmd->device->id);
 
 	/*
 	 * We don't want to queue new requests for this device after flushing
@@ -924,8 +924,8 @@ static void pvscsi_process_msg(const struct pvscsi_adapter *adapter,
 	struct Scsi_Host *host = adapter->host;
 	struct scsi_device *sdev;
 
-//	printk(KERN_INFO "vmw_pvscsi: msg type: 0x%x - MSG RING: %u/%u (%u) \n",
-;
+	printk(KERN_INFO "vmw_pvscsi: msg type: 0x%x - MSG RING: %u/%u (%u) \n",
+	       e->type, s->msgProdIdx, s->msgConsIdx, s->msgNumEntriesLog2);
 
 	BUILD_BUG_ON(PVSCSI_MSG_LAST != 2);
 
@@ -933,9 +933,9 @@ static void pvscsi_process_msg(const struct pvscsi_adapter *adapter,
 		struct PVSCSIMsgDescDevStatusChanged *desc;
 		desc = (struct PVSCSIMsgDescDevStatusChanged *)e;
 
-//		printk(KERN_INFO
-//		       "vmw_pvscsi: msg: device added at scsi%u:%u:%u\n",
-;
+		printk(KERN_INFO
+		       "vmw_pvscsi: msg: device added at scsi%u:%u:%u\n",
+		       desc->bus, desc->target, desc->lun[1]);
 
 		if (!scsi_host_get(host))
 			return;
@@ -943,7 +943,7 @@ static void pvscsi_process_msg(const struct pvscsi_adapter *adapter,
 		sdev = scsi_device_lookup(host, desc->bus, desc->target,
 					  desc->lun[1]);
 		if (sdev) {
-;
+			printk(KERN_INFO "vmw_pvscsi: device already exists\n");
 			scsi_device_put(sdev);
 		} else
 			scsi_add_device(adapter->host, desc->bus,
@@ -954,9 +954,9 @@ static void pvscsi_process_msg(const struct pvscsi_adapter *adapter,
 		struct PVSCSIMsgDescDevStatusChanged *desc;
 		desc = (struct PVSCSIMsgDescDevStatusChanged *)e;
 
-//		printk(KERN_INFO
-//		       "vmw_pvscsi: msg: device removed at scsi%u:%u:%u\n",
-;
+		printk(KERN_INFO
+		       "vmw_pvscsi: msg: device removed at scsi%u:%u:%u\n",
+		       desc->bus, desc->target, desc->lun[1]);
 
 		if (!scsi_host_get(host))
 			return;
@@ -967,9 +967,9 @@ static void pvscsi_process_msg(const struct pvscsi_adapter *adapter,
 			scsi_remove_device(sdev);
 			scsi_device_put(sdev);
 		} else
-//			printk(KERN_INFO
-//			       "vmw_pvscsi: failed to lookup scsi%u:%u:%u\n",
-;
+			printk(KERN_INFO
+			       "vmw_pvscsi: failed to lookup scsi%u:%u:%u\n",
+			       desc->bus, desc->target, desc->lun[1]);
 
 		scsi_host_put(host);
 	}
@@ -1026,7 +1026,7 @@ static int pvscsi_setup_msg_workqueue(struct pvscsi_adapter *adapter)
 
 	adapter->workqueue = create_singlethread_workqueue(name);
 	if (!adapter->workqueue) {
-;
+		printk(KERN_ERR "vmw_pvscsi: failed to create work queue\n");
 		return 0;
 	}
 	INIT_WORK(&adapter->work, pvscsi_msg_workqueue_handler);
@@ -1194,12 +1194,12 @@ static int __devinit pvscsi_probe(struct pci_dev *pdev,
 
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) == 0 &&
 	    pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64)) == 0) {
-;
+		printk(KERN_INFO "vmw_pvscsi: using 64bit dma\n");
 	} else if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) == 0 &&
 		   pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32)) == 0) {
-;
+		printk(KERN_INFO "vmw_pvscsi: using 32bit dma\n");
 	} else {
-;
+		printk(KERN_ERR "vmw_pvscsi: failed to set DMA mask\n");
 		goto out_disable_device;
 	}
 
@@ -1210,7 +1210,7 @@ static int __devinit pvscsi_probe(struct pci_dev *pdev,
 		min(pvscsi_template.can_queue, pvscsi_cmd_per_lun);
 	host = scsi_host_alloc(&pvscsi_template, sizeof(struct pvscsi_adapter));
 	if (!host) {
-;
+		printk(KERN_ERR "vmw_pvscsi: failed to allocate host\n");
 		goto out_disable_device;
 	}
 
@@ -1229,7 +1229,7 @@ static int __devinit pvscsi_probe(struct pci_dev *pdev,
 	adapter->rev = pdev->revision;
 
 	if (pci_request_regions(pdev, "vmw_pvscsi")) {
-;
+		printk(KERN_ERR "vmw_pvscsi: pci memory selection failed\n");
 		goto out_free_host;
 	}
 
@@ -1244,17 +1244,17 @@ static int __devinit pvscsi_probe(struct pci_dev *pdev,
 	}
 
 	if (i == DEVICE_COUNT_RESOURCE) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "vmw_pvscsi: adapter has no suitable MMIO region\n");
 		goto out_release_resources;
 	}
 
 	adapter->mmioBase = pci_iomap(pdev, i, PVSCSI_MEM_SPACE_SIZE);
 
 	if (!adapter->mmioBase) {
-//		printk(KERN_ERR
-//		       "vmw_pvscsi: can't iomap for BAR %d memsize %lu\n",
-;
+		printk(KERN_ERR
+		       "vmw_pvscsi: can't iomap for BAR %d memsize %lu\n",
+		       i, PVSCSI_MEM_SPACE_SIZE);
 		goto out_release_resources;
 	}
 
@@ -1267,7 +1267,7 @@ static int __devinit pvscsi_probe(struct pci_dev *pdev,
 
 	error = pvscsi_allocate_rings(adapter);
 	if (error) {
-;
+		printk(KERN_ERR "vmw_pvscsi: unable to allocate ring memory\n");
 		goto out_release_resources;
 	}
 
@@ -1280,7 +1280,7 @@ static int __devinit pvscsi_probe(struct pci_dev *pdev,
 	adapter->cmd_map = kcalloc(adapter->req_depth,
 				   sizeof(struct pvscsi_ctx), GFP_KERNEL);
 	if (!adapter->cmd_map) {
-;
+		printk(KERN_ERR "vmw_pvscsi: failed to allocate memory.\n");
 		error = -ENOMEM;
 		goto out_reset_adapter;
 	}
@@ -1293,20 +1293,20 @@ static int __devinit pvscsi_probe(struct pci_dev *pdev,
 
 	error = pvscsi_allocate_sg(adapter);
 	if (error) {
-;
+		printk(KERN_ERR "vmw_pvscsi: unable to allocate s/g table\n");
 		goto out_reset_adapter;
 	}
 
 	if (!pvscsi_disable_msix &&
 	    pvscsi_setup_msix(adapter, &adapter->irq) == 0) {
-;
+		printk(KERN_INFO "vmw_pvscsi: using MSI-X\n");
 		adapter->use_msix = 1;
 	} else if (!pvscsi_disable_msi && pci_enable_msi(pdev) == 0) {
-;
+		printk(KERN_INFO "vmw_pvscsi: using MSI\n");
 		adapter->use_msi = 1;
 		adapter->irq = pdev->irq;
 	} else {
-;
+		printk(KERN_INFO "vmw_pvscsi: using INTx\n");
 		adapter->irq = pdev->irq;
 		flags = IRQF_SHARED;
 	}
@@ -1314,16 +1314,16 @@ static int __devinit pvscsi_probe(struct pci_dev *pdev,
 	error = request_irq(adapter->irq, pvscsi_isr, flags,
 			    "vmw_pvscsi", adapter);
 	if (error) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "vmw_pvscsi: unable to request IRQ: %d\n", error);
 		adapter->irq = 0;
 		goto out_reset_adapter;
 	}
 
 	error = scsi_add_host(host, &pdev->dev);
 	if (error) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "vmw_pvscsi: scsi_add_host failed: %d\n", error);
 		goto out_reset_adapter;
 	}
 

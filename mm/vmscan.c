@@ -275,9 +275,9 @@ unsigned long shrink_slab(struct shrink_control *shrink,
 		do_div(delta, lru_pages + 1);
 		total_scan += delta;
 		if (total_scan < 0) {
-//			printk(KERN_ERR "shrink_slab: %pF negative objects to "
-//			       "delete nr=%ld\n",
-;
+			printk(KERN_ERR "shrink_slab: %pF negative objects to "
+			       "delete nr=%ld\n",
+			       shrinker->shrink, total_scan);
 			total_scan = max_pass;
 		}
 
@@ -470,7 +470,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
 		if (page_has_private(page)) {
 			if (try_to_free_buffers(page)) {
 				ClearPageDirty(page);
-;
+				printk("%s: orphaned page\n", __func__);
 				return PAGE_CLEAN;
 			}
 		}
@@ -3265,7 +3265,7 @@ int kswapd_run(int nid)
 	if (IS_ERR(pgdat->kswapd)) {
 		/* failure at boot is fatal */
 		BUG_ON(system_state == SYSTEM_BOOTING);
-;
+		printk("Failed to start kswapd on node %d\n",nid);
 		ret = -1;
 	}
 	return ret;

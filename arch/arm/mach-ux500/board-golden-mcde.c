@@ -55,7 +55,7 @@ static void golden_lcd_pwr_setup(struct device *dev)
 
 	ret = gpio_request(LCD_PWR_EN_GOLDEN_BRINGUP, "LCD PWR EN");
 	if (ret < 0)
-;
+		printk(KERN_ERR "Failed to get LCD PWR EN gpio (%d)\n",ret);
 }
 
 static void golden_lcd_pwr_onoff(bool on)
@@ -270,7 +270,7 @@ static void update_mcde_opp(struct device *dev,
 {
 	static s32 requested_qos;
 	s32 req_ape = PRCMU_QOS_DEFAULT_VALUE;
-;
+//	printk("rot_channel=[%d],num_overlays=[%d]\n",reqs->num_rot_channels,reqs->num_overlays);
 	if (reqs->num_rot_channels && reqs->num_overlays > 1)
 		req_ape = PRCMU_QOS_MAX_VALUE;
 	
@@ -295,7 +295,7 @@ int __init init_golden_display_devices(void)
 
 	ret = mcde_dss_register_notifier(&display_nb);
 	if (ret)
-;
+		printk(KERN_ERR "Failed to register dss notifier\n");
 
 	if (display_initialized_during_boot)
 		generic_display0.power_mode = MCDE_DISPLAY_PM_STANDBY;
@@ -309,8 +309,8 @@ int __init init_golden_display_devices(void)
 	 */
 	clk_tv = clk_get(&ux500_mcde_device.dev, "tv");
 	if (TV_FREQ_HZ != clk_round_rate(clk_tv, TV_FREQ_HZ))
-//		printk(KERN_ERR "%s: TV_CLK freq differs %ld\n", __func__,
-;
+		printk(KERN_ERR "%s: TV_CLK freq differs %ld\n", __func__,
+				clk_round_rate(clk_tv, TV_FREQ_HZ));
 	clk_set_rate(clk_tv, TV_FREQ_HZ);
 	clk_put(clk_tv);
 
@@ -320,8 +320,8 @@ int __init init_golden_display_devices(void)
 	 */
 	clk_hdmi = clk_get(&ux500_mcde_device.dev, "hdmi");
 	if (HDMI_FREQ_HZ != clk_round_rate(clk_hdmi, HDMI_FREQ_HZ))
-//		printk(KERN_ERR "%s: HDMI freq differs %ld\n", __func__,
-;
+		printk(KERN_ERR "%s: HDMI freq differs %ld\n", __func__,
+				clk_round_rate(clk_hdmi, HDMI_FREQ_HZ));
 	clk_set_rate(clk_hdmi, HDMI_FREQ_HZ);
 	clk_put(clk_hdmi);
 
@@ -332,8 +332,8 @@ int __init init_golden_display_devices(void)
 	clk_dsi_pll = clk_get(&ux500_mcde_device.dev, "dsihs2");
 	if (DSI_PLL_FREQ_HZ != clk_round_rate(clk_dsi_pll,
 						DSI_PLL_FREQ_HZ))
-//		printk(KERN_ERR "%s: DSI_PLL freq differs %ld\n", __func__,
-;
+		printk(KERN_ERR "%s: DSI_PLL freq differs %ld\n", __func__,
+			clk_round_rate(clk_dsi_pll, DSI_PLL_FREQ_HZ));
 	clk_set_rate(clk_dsi_pll, DSI_PLL_FREQ_HZ);
 	clk_put(clk_dsi_pll);
 
@@ -356,7 +356,7 @@ int __init init_golden_display_devices(void)
 
 	ret = mcde_display_device_register(&generic_display0);
 	if (ret)
-;
+		printk(KERN_ERR "Failed to register display device\n");
 
 	return ret;
 }

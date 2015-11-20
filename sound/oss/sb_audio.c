@@ -38,7 +38,7 @@ int sb_audio_open(int dev, int mode)
 
 	if (devc == NULL)
 	{
-;
+		  printk(KERN_ERR "Sound Blaster: incomplete initialization.\n");
 		  return -ENXIO;
 	}
 	if (devc->caps & SB_NO_RECORDING && mode & OPEN_READ)
@@ -191,7 +191,7 @@ static void sb1_audio_output_block(int dev, unsigned long buf, int nr_bytes, int
 		sb_dsp_command(devc, (unsigned char) ((count >> 8) & 0xff));
 	}
 	else
-;
+		printk(KERN_WARNING "Sound Blaster:  unable to start DAC.\n");
 	spin_unlock_irqrestore(&devc->lock, flags);
 	devc->intr_active = 1;
 }
@@ -221,7 +221,7 @@ static void sb1_audio_start_input(int dev, unsigned long buf, int nr_bytes, int 
 		sb_dsp_command(devc, (unsigned char) ((count >> 8) & 0xff));
 	}
 	else
-;
+		printk(KERN_ERR "Sound Blaster:  unable to start ADC.\n");
 	spin_unlock_irqrestore(&devc->lock, flags);
 
 	devc->intr_active = 1;
@@ -362,10 +362,10 @@ static void sb20_audio_output_block(int dev, unsigned long buf, int nr_bytes,
 			cmd = 0x90;	/* 8 bit high speed PCM output (SB2.01/Pro) */
 
 		if (!sb_dsp_command(devc, cmd))
-;
+			printk(KERN_ERR "Sound Blaster:  unable to start DAC.\n");
 	}
 	else
-;
+		printk(KERN_ERR "Sound Blaster: unable to start DAC.\n");
 	spin_unlock_irqrestore(&devc->lock, flags);
 	devc->intr_active = 1;
 }
@@ -401,10 +401,10 @@ static void sb20_audio_start_input(int dev, unsigned long buf, int nr_bytes, int
 			cmd = 0x98;	/* 8 bit high speed PCM input (SB2.01/Pro) */
 
 		if (!sb_dsp_command(devc, cmd))
-;
+			printk(KERN_ERR "Sound Blaster:  unable to start ADC.\n");
 	}
 	else
-;
+		printk(KERN_ERR "Sound Blaster:  unable to start ADC.\n");
 	spin_unlock_irqrestore(&devc->lock, flags);
 	devc->intr_active = 1;
 }
@@ -1034,37 +1034,37 @@ void sb_audio_init(sb_devc * devc, char *name, struct module *owner)
 	switch (devc->model)
 	{
 		case MDL_SB1:	/* SB1.0 or SB 1.5 */
-;
+			DDB(printk("Will use standard SB1.x driver\n"));
 			audio_flags = DMA_HARDSTOP;
 			break;
 
 		case MDL_SB2:
-;
+			DDB(printk("Will use SB2.0 driver\n"));
 			audio_flags = DMA_AUTOMODE;
 			driver = &sb20_audio_driver;
 			break;
 
 		case MDL_SB201:
-;
+			DDB(printk("Will use SB2.01 (high speed) driver\n"));
 			audio_flags = DMA_AUTOMODE;
 			driver = &sb201_audio_driver;
 			break;
 
 		case MDL_JAZZ:
 		case MDL_SMW:
-;
+			DDB(printk("Will use Jazz16 driver\n"));
 			audio_flags = DMA_AUTOMODE;
 			format_mask |= AFMT_S16_LE;
 			driver = &jazz16_audio_driver;
 			break;
 
 		case MDL_ESS:
-;
+			DDB(printk("Will use ESS ES688/1688 driver\n"));
 			driver = ess_audio_init (devc, &audio_flags, &format_mask);
 			break;
 
 		case MDL_SB16:
-;
+			DDB(printk("Will use SB16 driver\n"));
 			audio_flags = DMA_AUTOMODE;
 			format_mask |= AFMT_S16_LE;
 			if (devc->dma8 != devc->dma16 && devc->dma16 != -1)
@@ -1076,7 +1076,7 @@ void sb_audio_init(sb_devc * devc, char *name, struct module *owner)
 			break;
 
 		default:
-;
+			DDB(printk("Will use SB Pro driver\n"));
 			audio_flags = DMA_AUTOMODE;
 			driver = &sbpro_audio_driver;
 	}
@@ -1090,7 +1090,7 @@ void sb_audio_init(sb_devc * devc, char *name, struct module *owner)
 				devc->dma8,
 				devc->duplex ? devc->dma16 : devc->dma8)) < 0)
 	{
-;
+		  printk(KERN_ERR "Sound Blaster:  unable to install audio.\n");
 		  return;
 	}
 	audio_devs[devc->dev]->mixer_dev = devc->my_mixerdev;

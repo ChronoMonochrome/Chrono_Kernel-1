@@ -170,14 +170,14 @@ void sb_dsp_midi_init(sb_devc * devc, struct module *owner)
 
 	if (dev == -1)
 	{
-;
+		printk(KERN_ERR "sb_midi: too many MIDI devices detected\n");
 		return;
 	}
 	std_midi_synth.midi_dev = devc->my_mididev = dev;
 	midi_devs[dev] = kmalloc(sizeof(struct midi_operations), GFP_KERNEL);
 	if (midi_devs[dev] == NULL)
 	{
-;
+		printk(KERN_WARNING "Sound Blaster:  failed to allocate MIDI memory.\n");
 		sound_unload_mididev(dev);
 		  return;
 	}
@@ -193,7 +193,7 @@ void sb_dsp_midi_init(sb_devc * devc, struct module *owner)
 	midi_devs[dev]->converter = kmalloc(sizeof(struct synth_operations), GFP_KERNEL);
 	if (midi_devs[dev]->converter == NULL)
 	{
-;
+		  printk(KERN_WARNING "Sound Blaster:  failed to allocate MIDI memory.\n");
 		  kfree(midi_devs[dev]);
 		  sound_unload_mididev(dev);
 		  return;

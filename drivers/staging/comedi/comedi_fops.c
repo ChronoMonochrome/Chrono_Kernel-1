@@ -782,12 +782,12 @@ static int check_insn_config_length(struct comedi_insn *insn,
 		/* by default we allow the insn since we don't have checks for
 		 * all possible cases yet */
 	default:
-//		printk(KERN_WARNING
-//		       "comedi: no check for data length of config insn id "
-//		       "%i is implemented.\n"
-//		       " Add a check to %s in %s.\n"
-//		       " Assuming n=%i is correct.\n", data[0], __func__,
-;
+		printk(KERN_WARNING
+		       "comedi: no check for data length of config insn id "
+		       "%i is implemented.\n"
+		       " Add a check to %s in %s.\n"
+		       " Assuming n=%i is correct.\n", data[0], __func__,
+		       __FILE__, insn->n);
 		return 0;
 		break;
 	}
@@ -1848,8 +1848,8 @@ void do_become_nonbusy(struct comedi_device *dev, struct comedi_subdevice *s)
 		kfree(async->cmd.chanlist);
 		async->cmd.chanlist = NULL;
 	} else {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "BUG: (?) do_become_nonbusy called with async=0\n");
 	}
 
 	s->busy = NULL;
@@ -2025,14 +2025,14 @@ static int __init comedi_init(void)
 	int i;
 	int retval;
 
-//	printk(KERN_INFO "comedi: version " COMEDI_RELEASE
-;
+	printk(KERN_INFO "comedi: version " COMEDI_RELEASE
+	       " - http://www.comedi.org\n");
 
 	if (comedi_num_legacy_minors < 0 ||
 	    comedi_num_legacy_minors > COMEDI_NUM_BOARD_MINORS) {
-//		printk(KERN_ERR "comedi: error: invalid value for module "
-//		       "parameter \"comedi_num_legacy_minors\".  Valid values "
-;
+		printk(KERN_ERR "comedi: error: invalid value for module "
+		       "parameter \"comedi_num_legacy_minors\".  Valid values "
+		       "are 0 through %i.\n", COMEDI_NUM_BOARD_MINORS);
 		return -EINVAL;
 	}
 
@@ -2061,7 +2061,7 @@ static int __init comedi_init(void)
 	}
 	comedi_class = class_create(THIS_MODULE, "comedi");
 	if (IS_ERR(comedi_class)) {
-;
+		printk(KERN_ERR "comedi: failed to create class");
 		cdev_del(&comedi_cdev);
 		unregister_chrdev_region(MKDEV(COMEDI_MAJOR, 0),
 					 COMEDI_NUM_MINORS);
@@ -2107,8 +2107,8 @@ module_exit(comedi_cleanup);
 
 void comedi_error(const struct comedi_device *dev, const char *s)
 {
-//	printk(KERN_ERR "comedi%d: %s: %s\n", dev->minor,
-;
+	printk(KERN_ERR "comedi%d: %s: %s\n", dev->minor,
+	       dev->driver->driver_name, s);
 }
 EXPORT_SYMBOL(comedi_error);
 
@@ -2234,9 +2234,9 @@ int comedi_alloc_board_minor(struct device *hardware_device)
 		comedi_device_cleanup(info->device);
 		kfree(info->device);
 		kfree(info);
-//		printk(KERN_ERR
-//		       "comedi: error: "
-;
+		printk(KERN_ERR
+		       "comedi: error: "
+		       "ran out of minor numbers for board device files.\n");
 		return -EBUSY;
 	}
 	info->device->minor = i;
@@ -2248,37 +2248,37 @@ int comedi_alloc_board_minor(struct device *hardware_device)
 	dev_set_drvdata(csdev, info);
 	retval = device_create_file(csdev, &dev_attr_max_read_buffer_kb);
 	if (retval) {
-//		printk(KERN_ERR
-//		       "comedi: "
-//		       "failed to create sysfs attribute file \"%s\".\n",
-;
+		printk(KERN_ERR
+		       "comedi: "
+		       "failed to create sysfs attribute file \"%s\".\n",
+		       dev_attr_max_read_buffer_kb.attr.name);
 		comedi_free_board_minor(i);
 		return retval;
 	}
 	retval = device_create_file(csdev, &dev_attr_read_buffer_kb);
 	if (retval) {
-//		printk(KERN_ERR
-//		       "comedi: "
-//		       "failed to create sysfs attribute file \"%s\".\n",
-;
+		printk(KERN_ERR
+		       "comedi: "
+		       "failed to create sysfs attribute file \"%s\".\n",
+		       dev_attr_read_buffer_kb.attr.name);
 		comedi_free_board_minor(i);
 		return retval;
 	}
 	retval = device_create_file(csdev, &dev_attr_max_write_buffer_kb);
 	if (retval) {
-//		printk(KERN_ERR
-//		       "comedi: "
-//		       "failed to create sysfs attribute file \"%s\".\n",
-;
+		printk(KERN_ERR
+		       "comedi: "
+		       "failed to create sysfs attribute file \"%s\".\n",
+		       dev_attr_max_write_buffer_kb.attr.name);
 		comedi_free_board_minor(i);
 		return retval;
 	}
 	retval = device_create_file(csdev, &dev_attr_write_buffer_kb);
 	if (retval) {
-//		printk(KERN_ERR
-//		       "comedi: "
-//		       "failed to create sysfs attribute file \"%s\".\n",
-;
+		printk(KERN_ERR
+		       "comedi: "
+		       "failed to create sysfs attribute file \"%s\".\n",
+		       dev_attr_write_buffer_kb.attr.name);
 		comedi_free_board_minor(i);
 		return retval;
 	}
@@ -2352,9 +2352,9 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
 	spin_unlock_irqrestore(&comedi_file_info_table_lock, flags);
 	if (i == COMEDI_NUM_MINORS) {
 		kfree(info);
-//		printk(KERN_ERR
-//		       "comedi: error: "
-;
+		printk(KERN_ERR
+		       "comedi: error: "
+		       "ran out of minor numbers for board device files.\n");
 		return -EBUSY;
 	}
 	s->minor = i;
@@ -2367,37 +2367,37 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
 	dev_set_drvdata(csdev, info);
 	retval = device_create_file(csdev, &dev_attr_max_read_buffer_kb);
 	if (retval) {
-//		printk(KERN_ERR
-//		       "comedi: "
-//		       "failed to create sysfs attribute file \"%s\".\n",
-;
+		printk(KERN_ERR
+		       "comedi: "
+		       "failed to create sysfs attribute file \"%s\".\n",
+		       dev_attr_max_read_buffer_kb.attr.name);
 		comedi_free_subdevice_minor(s);
 		return retval;
 	}
 	retval = device_create_file(csdev, &dev_attr_read_buffer_kb);
 	if (retval) {
-//		printk(KERN_ERR
-//		       "comedi: "
-//		       "failed to create sysfs attribute file \"%s\".\n",
-;
+		printk(KERN_ERR
+		       "comedi: "
+		       "failed to create sysfs attribute file \"%s\".\n",
+		       dev_attr_read_buffer_kb.attr.name);
 		comedi_free_subdevice_minor(s);
 		return retval;
 	}
 	retval = device_create_file(csdev, &dev_attr_max_write_buffer_kb);
 	if (retval) {
-//		printk(KERN_ERR
-//		       "comedi: "
-//		       "failed to create sysfs attribute file \"%s\".\n",
-;
+		printk(KERN_ERR
+		       "comedi: "
+		       "failed to create sysfs attribute file \"%s\".\n",
+		       dev_attr_max_write_buffer_kb.attr.name);
 		comedi_free_subdevice_minor(s);
 		return retval;
 	}
 	retval = device_create_file(csdev, &dev_attr_write_buffer_kb);
 	if (retval) {
-//		printk(KERN_ERR
-//		       "comedi: "
-//		       "failed to create sysfs attribute file \"%s\".\n",
-;
+		printk(KERN_ERR
+		       "comedi: "
+		       "failed to create sysfs attribute file \"%s\".\n",
+		       dev_attr_write_buffer_kb.attr.name);
 		comedi_free_subdevice_minor(s);
 		return retval;
 	}

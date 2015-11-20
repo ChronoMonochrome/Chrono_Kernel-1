@@ -106,8 +106,8 @@ l2m_debug(struct FsmInst *fi, char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &va;
 
-//	printk(KERN_DEBUG "l2 (sapi %d tei %d): %pV\n",
-;
+	printk(KERN_DEBUG "l2 (sapi %d tei %d): %pV\n",
+	       l2->sapi, l2->tei, &vaf);
 
 	va_end(va);
 }
@@ -150,7 +150,7 @@ l2up(struct layer2 *l2, u_int prim, struct sk_buff *skb)
 	mISDN_HEAD_ID(skb) = (l2->ch.nr << 16) | l2->ch.addr;
 	err = l2->up->send(l2->up, skb);
 	if (err) {
-;
+		printk(KERN_WARNING "%s: err=%d\n", __func__, err);
 		dev_kfree_skb(skb);
 	}
 }
@@ -174,7 +174,7 @@ l2up_create(struct layer2 *l2, u_int prim, int len, void *arg)
 		memcpy(skb_put(skb, len), arg, len);
 	err = l2->up->send(l2->up, skb);
 	if (err) {
-;
+		printk(KERN_WARNING "%s: err=%d\n", __func__, err);
 		dev_kfree_skb(skb);
 	}
 }
@@ -185,7 +185,7 @@ l2down_skb(struct layer2 *l2, struct sk_buff *skb) {
 
 	ret = l2->ch.recv(l2->ch.peer, skb);
 	if (ret && (*debug & DEBUG_L2_RECV))
-;
+		printk(KERN_DEBUG "l2down_skb: ret(%d)\n", ret);
 	return ret;
 }
 
@@ -280,8 +280,8 @@ static int
 l2mgr(struct layer2 *l2, u_int prim, void *arg) {
 	long c = (long)arg;
 
-//	printk(KERN_WARNING
-;
+	printk(KERN_WARNING
+	    "l2mgr: addr:%x prim %x %c\n", l2->id, prim, (char)c);
 	if (test_bit(FLG_LAPD, &l2->flag) &&
 		!test_bit(FLG_FIXED_TEI, &l2->flag)) {
 		switch (c) {
@@ -339,8 +339,8 @@ ReleaseWin(struct layer2 *l2)
 	int cnt = freewin(l2);
 
 	if (cnt)
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		    "isdnl2 freed %d skbuffs in release\n", cnt);
 }
 
 inline unsigned int
@@ -603,8 +603,8 @@ send_uframe(struct layer2 *l2, struct sk_buff *skb, u_char cmd, u_char cr)
 	else {
 		skb = mI_alloc_skb(i, GFP_ATOMIC);
 		if (!skb) {
-//			printk(KERN_WARNING "%s: can't alloc skbuff\n",
-;
+			printk(KERN_WARNING "%s: can't alloc skbuff\n",
+				__func__);
 			return;
 		}
 	}
@@ -1089,8 +1089,8 @@ enquiry_cr(struct layer2 *l2, u_char typ, u_char cr, u_char pf)
 		tmp[i++] = (l2->vr << 5) | typ | (pf ? 0x10 : 0);
 	skb = mI_alloc_skb(i, GFP_ATOMIC);
 	if (!skb) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		    "isdnl2 can't alloc sbbuff for enquiry_cr\n");
 		return;
 	}
 	memcpy(skb_put(skb, i), tmp, i);
@@ -1148,9 +1148,9 @@ invoke_retransmission(struct layer2 *l2, unsigned int nr)
 			if (l2->windowar[p1])
 				skb_queue_head(&l2->i_queue, l2->windowar[p1]);
 			else
-//				printk(KERN_WARNING
-//				    "%s: windowar[%d] is NULL\n",
-;
+				printk(KERN_WARNING
+				    "%s: windowar[%d] is NULL\n",
+				    __func__, p1);
 			l2->windowar[p1] = NULL;
 		}
 		mISDN_FsmEvent(&l2->l2m, EV_L2_ACK_PULL, NULL);
@@ -1461,8 +1461,8 @@ l2_pull_iqueue(struct FsmInst *fi, int event, void *arg)
 		p1 = (l2->vs - l2->va) % 8;
 	p1 = (p1 + l2->sow) % l2->window;
 	if (l2->windowar[p1]) {
-//		printk(KERN_WARNING "isdnl2 try overwrite ack queue entry %d\n",
-;
+		printk(KERN_WARNING "isdnl2 try overwrite ack queue entry %d\n",
+		    p1);
 		dev_kfree_skb(l2->windowar[p1]);
 	}
 	l2->windowar[p1] = skb;
@@ -1481,13 +1481,13 @@ l2_pull_iqueue(struct FsmInst *fi, int event, void *arg)
 	if (p1 >= i)
 		memcpy(skb_push(nskb, i), header, i);
 	else {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		    "isdnl2 pull_iqueue skb header(%d/%d) too short\n", i, p1);
 		oskb = nskb;
 		nskb = mI_alloc_skb(oskb->len + i, GFP_ATOMIC);
 		if (!nskb) {
 			dev_kfree_skb(oskb);
-;
+			printk(KERN_WARNING "%s: no skb mem\n", __func__);
 			return;
 		}
 		memcpy(skb_put(nskb, i), header, i);
@@ -1857,8 +1857,8 @@ ph_data_indication(struct layer2 *l2, struct mISDNhead *hh, struct sk_buff *skb)
 		psapi = *datap++;
 		ptei = *datap++;
 		if ((psapi & 1) || !(ptei & 1)) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			    "l2 D-channel frame wrong EA0/EA1\n");
 			return ret;
 		}
 		psapi >>= 2;
@@ -1866,16 +1866,16 @@ ph_data_indication(struct layer2 *l2, struct mISDNhead *hh, struct sk_buff *skb)
 		if (psapi != l2->sapi) {
 			/* not our business */
 			if (*debug & DEBUG_L2)
-//				printk(KERN_DEBUG "%s: sapi %d/%d mismatch\n",
-;
+				printk(KERN_DEBUG "%s: sapi %d/%d mismatch\n",
+					__func__, psapi, l2->sapi);
 			dev_kfree_skb(skb);
 			return 0;
 		}
 		if ((ptei != l2->tei) && (ptei != GROUP_TEI)) {
 			/* not our business */
 			if (*debug & DEBUG_L2)
-//				printk(KERN_DEBUG "%s: tei %d/%d mismatch\n",
-;
+				printk(KERN_DEBUG "%s: tei %d/%d mismatch\n",
+					__func__, ptei, l2->tei);
 			dev_kfree_skb(skb);
 			return 0;
 		}
@@ -1916,7 +1916,7 @@ ph_data_indication(struct layer2 *l2, struct mISDNhead *hh, struct sk_buff *skb)
 	} else
 		c = 'L';
 	if (c) {
-;
+		printk(KERN_WARNING "l2 D-channel frame error %c\n", c);
 		mISDN_FsmEvent(&l2->l2m, EV_L2_FRAME_ERROR, (void *)(long)c);
 	}
 	return ret;
@@ -1930,8 +1930,8 @@ l2_send(struct mISDNchannel *ch, struct sk_buff *skb)
 	int 			ret = -EINVAL;
 
 	if (*debug & DEBUG_L2_RECV)
-//		printk(KERN_DEBUG "%s: prim(%x) id(%x) sapi(%d) tei(%d)\n",
-;
+		printk(KERN_DEBUG "%s: prim(%x) id(%x) sapi(%d) tei(%d)\n",
+		    __func__, hh->prim, hh->id, l2->sapi, l2->tei);
 	switch (hh->prim) {
 	case PH_DATA_IND:
 		ret = ph_data_indication(l2, hh, skb);
@@ -2005,7 +2005,7 @@ tei_l2(struct layer2 *l2, u_int cmd, u_long arg)
 	int		ret = -EINVAL;
 
 	if (*debug & DEBUG_L2_TEI)
-;
+		printk(KERN_DEBUG "%s: cmd(%x)\n", __func__, cmd);
 	switch (cmd) {
 	case (MDL_ASSIGN_REQ):
 		ret = mISDN_FsmEvent(&l2->l2m, EV_L2_MDL_ASSIGN, (void *)arg);
@@ -2018,7 +2018,7 @@ tei_l2(struct layer2 *l2, u_int cmd, u_long arg)
 		break;
 	case (MDL_ERROR_RSP):
 		/* ETS 300-125 5.3.2.1 Test: TC13010 */
-;
+		printk(KERN_NOTICE "MDL_ERROR|REQ (tei_l2)\n");
 		ret = mISDN_FsmEvent(&l2->l2m, EV_L2_MDL_ERROR, NULL);
 		break;
 	}
@@ -2050,7 +2050,7 @@ l2_ctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 	u_int			info;
 
 	if (*debug & DEBUG_L2_CTRL)
-;
+		printk(KERN_DEBUG "%s:(%x)\n", __func__, cmd);
 
 	switch (cmd) {
 	case OPEN_CHANNEL:
@@ -2079,7 +2079,7 @@ create_l2(struct mISDNchannel *ch, u_int protocol, u_long options, int tei,
 
 	l2 = kzalloc(sizeof(struct layer2), GFP_KERNEL);
 	if (!l2) {
-;
+		printk(KERN_ERR "kzalloc layer2 failed\n");
 		return NULL;
 	}
 	l2->next_id = 1;
@@ -2150,8 +2150,8 @@ create_l2(struct mISDNchannel *ch, u_int protocol, u_long options, int tei,
 		l2->addr.B = 1;
 		break;
 	default:
-//		printk(KERN_ERR "layer2 create failed prt %x\n",
-;
+		printk(KERN_ERR "layer2 create failed prt %x\n",
+			protocol);
 		kfree(l2);
 		return NULL;
 	}

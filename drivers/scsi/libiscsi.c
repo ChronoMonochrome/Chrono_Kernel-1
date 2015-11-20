@@ -63,25 +63,25 @@ MODULE_PARM_DESC(debug_libiscsi_eh,
 #define ISCSI_DBG_CONN(_conn, dbg_fmt, arg...)			\
 	do {							\
 		if (iscsi_dbg_lib_conn)				\
-//			iscsi_conn_printk(KERN_INFO, _conn,	\
-//					     "%s " dbg_fmt,	\
-;
+			iscsi_conn_printk(KERN_INFO, _conn,	\
+					     "%s " dbg_fmt,	\
+					     __func__, ##arg);	\
 	} while (0);
 
 #define ISCSI_DBG_SESSION(_session, dbg_fmt, arg...)			\
 	do {								\
 		if (iscsi_dbg_lib_session)				\
-//			iscsi_session_printk(KERN_INFO, _session,	\
-//					     "%s " dbg_fmt,		\
-;
+			iscsi_session_printk(KERN_INFO, _session,	\
+					     "%s " dbg_fmt,		\
+					     __func__, ##arg);		\
 	} while (0);
 
 #define ISCSI_DBG_EH(_session, dbg_fmt, arg...)				\
 	do {								\
 		if (iscsi_dbg_lib_eh)					\
-//			iscsi_session_printk(KERN_INFO, _session,	\
-//					     "%s " dbg_fmt,		\
-;
+			iscsi_session_printk(KERN_INFO, _session,	\
+					     "%s " dbg_fmt,		\
+					     __func__, ##arg);		\
 	} while (0);
 
 /* Serial Number Arithmetic, 32 bits, less than, RFC1982 */
@@ -305,12 +305,12 @@ static int iscsi_check_tmf_restrictions(struct iscsi_task *task, int opcode)
 		 * Fail all SCSI cmd PDUs
 		 */
 		if (opcode != ISCSI_OP_SCSI_DATA_OUT) {
-//			iscsi_conn_printk(KERN_INFO, conn,
-//					  "task [op %x/%x itt "
-//					  "0x%x/0x%x] "
-//					  "rejected.\n",
-//					  task->hdr->opcode, opcode,
-;
+			iscsi_conn_printk(KERN_INFO, conn,
+					  "task [op %x/%x itt "
+					  "0x%x/0x%x] "
+					  "rejected.\n",
+					  task->hdr->opcode, opcode,
+					  task->itt, task->hdr_itt);
 			return -EACCES;
 		}
 		/*
@@ -318,11 +318,11 @@ static int iscsi_check_tmf_restrictions(struct iscsi_task *task, int opcode)
 		 * if fast_abort is set.
 		 */
 		if (conn->session->fast_abort) {
-//			iscsi_conn_printk(KERN_INFO, conn,
-//					  "task [op %x/%x itt "
-//					  "0x%x/0x%x] fast abort.\n",
-//					  task->hdr->opcode, opcode,
-;
+			iscsi_conn_printk(KERN_INFO, conn,
+					  "task [op %x/%x itt "
+					  "0x%x/0x%x] fast abort.\n",
+					  task->hdr->opcode, opcode,
+					  task->itt, task->hdr_itt);
 			return -EACCES;
 		}
 		break;
@@ -728,8 +728,8 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 		 * Note that login_task is preallocated at conn_create().
 		 */
 		if (conn->login_task->state != ISCSI_TASK_FREE) {
-//			iscsi_conn_printk(KERN_ERR, conn, "Login/Text in "
-;
+			iscsi_conn_printk(KERN_ERR, conn, "Login/Text in "
+					  "progress. Cannot start new task.\n");
 			return NULL;
 		}
 
@@ -764,8 +764,8 @@ __iscsi_conn_send_pdu(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 
 	if (conn->session->tt->alloc_pdu) {
 		if (conn->session->tt->alloc_pdu(task, hdr->opcode)) {
-//			iscsi_conn_printk(KERN_ERR, conn, "Could not allocate "
-;
+			iscsi_conn_printk(KERN_ERR, conn, "Could not allocate "
+					 "pdu for mgmt task.\n");
 			goto free_task;
 		}
 	}
@@ -849,9 +849,9 @@ static void iscsi_scsi_cmd_rsp(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 
 		if (datalen < 2) {
 invalid_datalen:
-//			iscsi_conn_printk(KERN_ERR,  conn,
-//					 "Got CHECK_CONDITION but invalid data "
-;
+			iscsi_conn_printk(KERN_ERR,  conn,
+					 "Got CHECK_CONDITION but invalid data "
+					 "buffer size of %d\n", datalen);
 			sc->result = DID_BAD_TARGET << 16;
 			goto out;
 		}
@@ -976,7 +976,7 @@ static void iscsi_send_nopout(struct iscsi_conn *conn, struct iscsi_nopin *rhdr)
 
 	task = __iscsi_conn_send_pdu(conn, (struct iscsi_hdr *)&hdr, NULL, 0);
 	if (!task)
-;
+		iscsi_conn_printk(KERN_ERR, conn, "Could not send nopout\n");
 	else if (!rhdr) {
 		/* only track our nops */
 		conn->ping_task = task;
@@ -1015,10 +1015,10 @@ static int iscsi_handle_reject(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 
 	if (ntoh24(reject->dlength) > datalen ||
 	    ntoh24(reject->dlength) < sizeof(struct iscsi_hdr)) {
-//		iscsi_conn_printk(KERN_ERR, conn, "Cannot handle rejected "
-//				  "pdu. Invalid data length (pdu dlength "
-//				  "%u, datalen %d\n", ntoh24(reject->dlength),
-;
+		iscsi_conn_printk(KERN_ERR, conn, "Cannot handle rejected "
+				  "pdu. Invalid data length (pdu dlength "
+				  "%u, datalen %d\n", ntoh24(reject->dlength),
+				  datalen);
 		return ISCSI_ERR_PROTO;
 	}
 	memcpy(&rejected_pdu, data, sizeof(struct iscsi_hdr));
@@ -1026,16 +1026,16 @@ static int iscsi_handle_reject(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 
 	switch (reject->reason) {
 	case ISCSI_REASON_DATA_DIGEST_ERROR:
-//		iscsi_conn_printk(KERN_ERR, conn,
-//				  "pdu (op 0x%x itt 0x%x) rejected "
-//				  "due to DataDigest error.\n",
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "pdu (op 0x%x itt 0x%x) rejected "
+				  "due to DataDigest error.\n",
+				  rejected_pdu.itt, opcode);
 		break;
 	case ISCSI_REASON_IMM_CMD_REJECT:
-//		iscsi_conn_printk(KERN_ERR, conn,
-//				  "pdu (op 0x%x itt 0x%x) rejected. Too many "
-//				  "immediate commands.\n",
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "pdu (op 0x%x itt 0x%x) rejected. Too many "
+				  "immediate commands.\n",
+				  rejected_pdu.itt, opcode);
 		/*
 		 * We only send one TMF at a time so if the target could not
 		 * handle it, then it should get fixed (RFC mandates that
@@ -1062,9 +1062,9 @@ static int iscsi_handle_reject(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 			 */
 			task = iscsi_itt_to_task(conn, rejected_pdu.itt);
 			if (!task) {
-//				iscsi_conn_printk(KERN_ERR, conn,
-//						 "Invalid pdu reject. Could "
-;
+				iscsi_conn_printk(KERN_ERR, conn,
+						 "Invalid pdu reject. Could "
+						 "not lookup rejected task.\n");
 				rc = ISCSI_ERR_BAD_ITT;
 			} else
 				rc = iscsi_nop_out_rsp(task,
@@ -1073,10 +1073,10 @@ static int iscsi_handle_reject(struct iscsi_conn *conn, struct iscsi_hdr *hdr,
 		}
 		break;
 	default:
-//		iscsi_conn_printk(KERN_ERR, conn,
-//				  "pdu (op 0x%x itt 0x%x) rejected. Reason "
-//				  "code 0x%x\n", rejected_pdu.itt,
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "pdu (op 0x%x itt 0x%x) rejected. Reason "
+				  "code 0x%x\n", rejected_pdu.itt,
+				  rejected_pdu.opcode, reject->reason);
 		break;
 	}
 	return rc;
@@ -1286,16 +1286,16 @@ int iscsi_verify_itt(struct iscsi_conn *conn, itt_t itt)
 	}
 
 	if (age != session->age) {
-//		iscsi_conn_printk(KERN_ERR, conn,
-//				  "received itt %x expected session age (%x)\n",
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "received itt %x expected session age (%x)\n",
+				  (__force u32)itt, session->age);
 		return ISCSI_ERR_BAD_ITT;
 	}
 
 	if (i >= session->cmds_max) {
-//		iscsi_conn_printk(KERN_ERR, conn,
-//				  "received invalid itt index %u (max cmds "
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "received invalid itt index %u (max cmds "
+				   "%u.\n", i, session->cmds_max);
 		return ISCSI_ERR_BAD_ITT;
 	}
 	return 0;
@@ -1323,9 +1323,9 @@ struct iscsi_task *iscsi_itt_to_ctask(struct iscsi_conn *conn, itt_t itt)
 		return NULL;
 
 	if (task->sc->SCp.phase != conn->session->age) {
-//		iscsi_session_printk(KERN_ERR, conn->session,
-//				  "task's session age %d, expected %d\n",
-;
+		iscsi_session_printk(KERN_ERR, conn->session,
+				  "task's session age %d, expected %d\n",
+				  task->sc->SCp.phase, conn->session->age);
 		return NULL;
 	}
 
@@ -1785,7 +1785,7 @@ static int iscsi_exec_task_mgmt_fn(struct iscsi_conn *conn,
 				      NULL, 0);
 	if (!task) {
 		spin_unlock_bh(&session->lock);
-;
+		iscsi_conn_printk(KERN_ERR, conn, "Could not send TMF.\n");
 		iscsi_conn_failure(conn, ISCSI_ERR_CONN_FAILED);
 		spin_lock_bh(&session->lock);
 		return -EPERM;
@@ -2061,11 +2061,11 @@ static void iscsi_check_transport_timeouts(unsigned long data)
 	last_recv = conn->last_recv;
 
 	if (iscsi_has_ping_timed_out(conn)) {
-//		iscsi_conn_printk(KERN_ERR, conn, "ping timeout of %d secs "
-//				  "expired, recv timeout %d, last rx %lu, "
-//				  "last ping %lu, now %lu\n",
-//				  conn->ping_timeout, conn->recv_timeout,
-;
+		iscsi_conn_printk(KERN_ERR, conn, "ping timeout of %d secs "
+				  "expired, recv timeout %d, last rx %lu, "
+				  "last ping %lu, now %lu\n",
+				  conn->ping_timeout, conn->recv_timeout,
+				  last_recv, conn->last_ping, jiffies);
 		spin_unlock(&session->lock);
 		iscsi_conn_failure(conn, ISCSI_ERR_CONN_FAILED);
 		return;
@@ -2661,9 +2661,9 @@ static void iscsi_host_dec_session_cnt(struct Scsi_Host *shost)
 
 	shost = scsi_host_get(shost);
 	if (!shost) {
-//		printk(KERN_ERR "Invalid state. Cannot notify host removal "
-//		      "of session teardown event because host already "
-;
+		printk(KERN_ERR "Invalid state. Cannot notify host removal "
+		      "of session teardown event because host already "
+		      "removed.\n");
 		return;
 	}
 
@@ -2717,27 +2717,27 @@ iscsi_session_setup(struct iscsi_transport *iscsit, struct Scsi_Host *shost,
 	 * + 1 command for scsi IO.
 	 */
 	if (total_cmds < ISCSI_TOTAL_CMDS_MIN) {
-//		printk(KERN_ERR "iscsi: invalid can_queue of %d. can_queue "
-//		       "must be a power of two that is at least %d.\n",
-;
+		printk(KERN_ERR "iscsi: invalid can_queue of %d. can_queue "
+		       "must be a power of two that is at least %d.\n",
+		       total_cmds, ISCSI_TOTAL_CMDS_MIN);
 		goto dec_session_count;
 	}
 
 	if (total_cmds > ISCSI_TOTAL_CMDS_MAX) {
-//		printk(KERN_ERR "iscsi: invalid can_queue of %d. can_queue "
-//		       "must be a power of 2 less than or equal to %d.\n",
-;
+		printk(KERN_ERR "iscsi: invalid can_queue of %d. can_queue "
+		       "must be a power of 2 less than or equal to %d.\n",
+		       cmds_max, ISCSI_TOTAL_CMDS_MAX);
 		total_cmds = ISCSI_TOTAL_CMDS_MAX;
 	}
 
 	if (!is_power_of_2(total_cmds)) {
-//		printk(KERN_ERR "iscsi: invalid can_queue of %d. can_queue "
-;
+		printk(KERN_ERR "iscsi: invalid can_queue of %d. can_queue "
+		       "must be a power of 2.\n", total_cmds);
 		total_cmds = rounddown_pow_of_two(total_cmds);
 		if (total_cmds < ISCSI_TOTAL_CMDS_MIN)
 			return NULL;
-//		printk(KERN_INFO "iscsi: Rounding can_queue to %d.\n",
-;
+		printk(KERN_INFO "iscsi: Rounding can_queue to %d.\n",
+		       total_cmds);
 	}
 	scsi_cmds = total_cmds - ISCSI_MGMT_CMDS_MAX;
 
@@ -2938,10 +2938,10 @@ void iscsi_conn_teardown(struct iscsi_cls_conn *cls_conn)
 		}
 		spin_unlock_irqrestore(session->host->host_lock, flags);
 		msleep_interruptible(500);
-//		iscsi_conn_printk(KERN_INFO, conn, "iscsi conn_destroy(): "
-//				  "host_busy %d host_failed %d\n",
-//				  session->host->host_busy,
-;
+		iscsi_conn_printk(KERN_INFO, conn, "iscsi conn_destroy(): "
+				  "host_busy %d host_failed %d\n",
+				  session->host->host_busy,
+				  session->host->host_failed);
 		/*
 		 * force eh_abort() to unblock
 		 */
@@ -2971,28 +2971,28 @@ int iscsi_conn_start(struct iscsi_cls_conn *cls_conn)
 	struct iscsi_session *session = conn->session;
 
 	if (!session) {
-//		iscsi_conn_printk(KERN_ERR, conn,
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "can't start unbound connection\n");
 		return -EPERM;
 	}
 
 	if ((session->imm_data_en || !session->initial_r2t_en) &&
 	     session->first_burst > session->max_burst) {
-//		iscsi_conn_printk(KERN_INFO, conn, "invalid burst lengths: "
-//				  "first_burst %d max_burst %d\n",
-;
+		iscsi_conn_printk(KERN_INFO, conn, "invalid burst lengths: "
+				  "first_burst %d max_burst %d\n",
+				  session->first_burst, session->max_burst);
 		return -EINVAL;
 	}
 
 	if (conn->ping_timeout && !conn->recv_timeout) {
-//		iscsi_conn_printk(KERN_ERR, conn, "invalid recv timeout of "
-;
+		iscsi_conn_printk(KERN_ERR, conn, "invalid recv timeout of "
+				  "zero. Using 5 seconds\n.");
 		conn->recv_timeout = 5;
 	}
 
 	if (conn->recv_timeout && !conn->ping_timeout) {
-//		iscsi_conn_printk(KERN_ERR, conn, "invalid ping timeout of "
-;
+		iscsi_conn_printk(KERN_ERR, conn, "invalid ping timeout of "
+				  "zero. Using 5 seconds.\n");
 		conn->ping_timeout = 5;
 	}
 
@@ -3130,8 +3130,8 @@ void iscsi_conn_stop(struct iscsi_cls_conn *cls_conn, int flag)
 		iscsi_start_session_recovery(session, conn, flag);
 		break;
 	default:
-//		iscsi_conn_printk(KERN_ERR, conn,
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "invalid stop flag %d\n", flag);
 	}
 }
 EXPORT_SYMBOL_GPL(iscsi_conn_stop);

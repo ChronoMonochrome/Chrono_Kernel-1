@@ -400,7 +400,7 @@ static int snd_atiixp_acquire_codec(struct atiixp_modem *chip)
 
 	while (atiixp_read(chip, PHYS_OUT_ADDR) & ATI_REG_PHYS_OUT_ADDR_EN) {
 		if (! timeout--) {
-;
+			snd_printk(KERN_WARNING "atiixp-modem: codec acquire timeout\n");
 			return -EBUSY;
 		}
 		udelay(1);
@@ -433,7 +433,7 @@ static unsigned short snd_atiixp_codec_read(struct atiixp_modem *chip,
 	} while (--timeout);
 	/* time out may happen during reset */
 	if (reg < 0x7c)
-;
+		snd_printk(KERN_WARNING "atiixp-modem: codec read timeout (reg %x)\n", reg);
 	return 0xffff;
 }
 
@@ -499,7 +499,7 @@ static int snd_atiixp_aclink_reset(struct atiixp_modem *chip)
 		msleep(1);
 		atiixp_update(chip, CMD, ATI_REG_CMD_AC_RESET, ATI_REG_CMD_AC_RESET);
 		if (!--timeout) {
-;
+			snd_printk(KERN_ERR "atiixp-modem: codec reset timeout\n");
 			break;
 		}
 	}
@@ -553,7 +553,7 @@ static int snd_atiixp_codec_detect(struct atiixp_modem *chip)
 	atiixp_write(chip, IER, 0); /* disable irqs */
 
 	if ((chip->codec_not_ready_bits & ALL_CODEC_NOT_READY) == ALL_CODEC_NOT_READY) {
-;
+		snd_printk(KERN_ERR "atiixp-modem: no codec detected!\n");
 		return -ENXIO;
 	}
 	return 0;
@@ -1103,7 +1103,7 @@ static int __devinit snd_atiixp_mixer_new(struct atiixp_modem *chip, int clock)
 	}
 
 	if (! codec_count) {
-;
+		snd_printk(KERN_ERR "atiixp-modem: no codec available\n");
 		return -ENODEV;
 	}
 
@@ -1146,8 +1146,8 @@ static int snd_atiixp_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "atiixp-modem: pci_enable_device failed, "
-;
+		printk(KERN_ERR "atiixp-modem: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -1254,14 +1254,14 @@ static int __devinit snd_atiixp_create(struct snd_card *card,
 	chip->addr = pci_resource_start(pci, 0);
 	chip->remap_addr = pci_ioremap_bar(pci, 0);
 	if (chip->remap_addr == NULL) {
-;
+		snd_printk(KERN_ERR "AC'97 space ioremap problem\n");
 		snd_atiixp_free(chip);
 		return -EIO;
 	}
 
 	if (request_irq(pci->irq, snd_atiixp_interrupt, IRQF_SHARED,
 			card->shortname, chip)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		snd_atiixp_free(chip);
 		return -EBUSY;
 	}

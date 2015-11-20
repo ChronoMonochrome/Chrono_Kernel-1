@@ -394,7 +394,7 @@ static int dum_init(struct platform_device *pdev)
 	/* enable DUM clock */
 	clk = clk_get(&pdev->dev, "dum_ck");
 	if (IS_ERR(clk)) {
-;
+		printk(KERN_ERR "pnx4008_dum: Unable to access DUM clock\n");
 		return PTR_ERR(clk);
 	}
 

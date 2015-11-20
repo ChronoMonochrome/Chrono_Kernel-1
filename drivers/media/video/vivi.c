@@ -73,15 +73,15 @@ MODULE_PARM_DESC(vid_limit, "capture memory limit in megabytes");
 /* Global font descriptor */
 static const u8 *font8x16;
 
-//#define dprintk(dev, level, fmt, arg...) \
-//	v4l2_dbg(level, debug, &dev->v4l2_dev, fmt, ## arg)
-//
-///* ------------------------------------------------------------------
-//	Basic structures
-//   ------------------------------------------------------------------*/
-//
-//struct vivi_fmt {
-;
+#define dprintk(dev, level, fmt, arg...) \
+	v4l2_dbg(level, debug, &dev->v4l2_dev, fmt, ## arg)
+
+/* ------------------------------------------------------------------
+	Basic structures
+   ------------------------------------------------------------------*/
+
+struct vivi_fmt {
+	char  *name;
 	u32   fourcc;          /* v4l2 format id */
 	int   depth;
 };
@@ -519,11 +519,11 @@ static void vivi_thread_tick(struct vivi_dev *dev)
 	struct vivi_buffer *buf;
 	unsigned long flags = 0;
 
-;
+	dprintk(dev, 1, "Thread tick\n");
 
 	spin_lock_irqsave(&dev->slock, flags);
 	if (list_empty(&dma_q->active)) {
-;
+		dprintk(dev, 1, "No active queue to serve\n");
 		goto unlock;
 	}
 
@@ -534,10 +534,10 @@ static void vivi_thread_tick(struct vivi_dev *dev)
 
 	/* Fill buffer */
 	vivi_fillbuff(dev, buf);
-;
+	dprintk(dev, 1, "filled buffer %p\n", buf);
 
 	vb2_buffer_done(&buf->vb, VB2_BUF_STATE_DONE);
-;
+	dprintk(dev, 2, "[%p/%d] done\n", buf, buf->vb.v4l2_buf.index);
 unlock:
 	spin_unlock_irqrestore(&dev->slock, flags);
 }
@@ -551,8 +551,8 @@ static void vivi_sleep(struct vivi_dev *dev)
 	int timeout;
 	DECLARE_WAITQUEUE(wait, current);
 
-//	dprintk(dev, 1, "%s dma_q=0x%08lx\n", __func__,
-;
+	dprintk(dev, 1, "%s dma_q=0x%08lx\n", __func__,
+		(unsigned long)dma_q);
 
 	add_wait_queue(&dma_q->wq, &wait);
 	if (kthread_should_stop())
@@ -574,7 +574,7 @@ static int vivi_thread(void *data)
 {
 	struct vivi_dev *dev = data;
 
-;
+	dprintk(dev, 1, "thread started\n");
 
 	set_freezable();
 
@@ -584,7 +584,7 @@ static int vivi_thread(void *data)
 		if (kthread_should_stop())
 			break;
 	}
-;
+	dprintk(dev, 1, "thread: exit\n");
 	return 0;
 }
 
@@ -592,7 +592,7 @@ static int vivi_start_generating(struct vivi_dev *dev)
 {
 	struct vivi_dmaqueue *dma_q = &dev->vidq;
 
-;
+	dprintk(dev, 1, "%s\n", __func__);
 
 	/* Resets frame counters */
 	dev->ms = 0;
@@ -610,7 +610,7 @@ static int vivi_start_generating(struct vivi_dev *dev)
 	/* Wakes thread */
 	wake_up_interruptible(&dma_q->wq);
 
-;
+	dprintk(dev, 1, "returning from %s\n", __func__);
 	return 0;
 }
 
@@ -618,7 +618,7 @@ static void vivi_stop_generating(struct vivi_dev *dev)
 {
 	struct vivi_dmaqueue *dma_q = &dev->vidq;
 
-;
+	dprintk(dev, 1, "%s\n", __func__);
 
 	/* shutdown control thread */
 	if (dma_q->kthread) {
@@ -637,7 +637,7 @@ static void vivi_stop_generating(struct vivi_dev *dev)
 		buf = list_entry(dma_q->active.next, struct vivi_buffer, list);
 		list_del(&buf->list);
 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
-;
+		dprintk(dev, 2, "[%p/%d] done\n", buf, buf->vb.v4l2_buf.index);
 	}
 }
 /* ------------------------------------------------------------------
@@ -667,8 +667,8 @@ static int queue_setup(struct vb2_queue *vq, unsigned int *nbuffers,
 	 * alloc_ctxs array.
 	 */
 
-//	dprintk(dev, 1, "%s, count=%d, size=%ld\n", __func__,
-;
+	dprintk(dev, 1, "%s, count=%d, size=%ld\n", __func__,
+		*nbuffers, size);
 
 	return 0;
 }
@@ -700,7 +700,7 @@ static int buffer_prepare(struct vb2_buffer *vb)
 	struct vivi_buffer *buf = container_of(vb, struct vivi_buffer, vb);
 	unsigned long size;
 
-;
+	dprintk(dev, 1, "%s, field=%d\n", __func__, vb->v4l2_buf.field);
 
 	BUG_ON(NULL == dev->fmt);
 
@@ -716,8 +716,8 @@ static int buffer_prepare(struct vb2_buffer *vb)
 
 	size = dev->width * dev->height * 2;
 	if (vb2_plane_size(vb, 0) < size) {
-//		dprintk(dev, 1, "%s data will not fit into plane (%lu < %lu)\n",
-;
+		dprintk(dev, 1, "%s data will not fit into plane (%lu < %lu)\n",
+				__func__, vb2_plane_size(vb, 0), size);
 		return -EINVAL;
 	}
 
@@ -734,14 +734,14 @@ static int buffer_prepare(struct vb2_buffer *vb)
 static int buffer_finish(struct vb2_buffer *vb)
 {
 	struct vivi_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-;
+	dprintk(dev, 1, "%s\n", __func__);
 	return 0;
 }
 
 static void buffer_cleanup(struct vb2_buffer *vb)
 {
 	struct vivi_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
-;
+	dprintk(dev, 1, "%s\n", __func__);
 
 }
 
@@ -752,7 +752,7 @@ static void buffer_queue(struct vb2_buffer *vb)
 	struct vivi_dmaqueue *vidq = &dev->vidq;
 	unsigned long flags = 0;
 
-;
+	dprintk(dev, 1, "%s\n", __func__);
 
 	spin_lock_irqsave(&dev->slock, flags);
 	list_add_tail(&buf->list, &vidq->active);
@@ -762,7 +762,7 @@ static void buffer_queue(struct vb2_buffer *vb)
 static int start_streaming(struct vb2_queue *vq)
 {
 	struct vivi_dev *dev = vb2_get_drv_priv(vq);
-;
+	dprintk(dev, 1, "%s\n", __func__);
 	return vivi_start_generating(dev);
 }
 
@@ -770,7 +770,7 @@ static int start_streaming(struct vb2_queue *vq)
 static int stop_streaming(struct vb2_queue *vq)
 {
 	struct vivi_dev *dev = vb2_get_drv_priv(vq);
-;
+	dprintk(dev, 1, "%s\n", __func__);
 	vivi_stop_generating(dev);
 	return 0;
 }
@@ -858,8 +858,8 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 
 	fmt = get_format(f);
 	if (!fmt) {
-//		dprintk(dev, 1, "Fourcc format (0x%08x) invalid.\n",
-;
+		dprintk(dev, 1, "Fourcc format (0x%08x) invalid.\n",
+			f->fmt.pix.pixelformat);
 		return -EINVAL;
 	}
 
@@ -868,7 +868,7 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	if (field == V4L2_FIELD_ANY) {
 		field = V4L2_FIELD_INTERLACED;
 	} else if (V4L2_FIELD_INTERLACED != field) {
-;
+		dprintk(dev, 1, "Field type invalid.\n");
 		return -EINVAL;
 	}
 
@@ -893,7 +893,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 		return ret;
 
 	if (vb2_is_streaming(q)) {
-;
+		dprintk(dev, 1, "%s device busy\n", __func__);
 		return -EBUSY;
 	}
 
@@ -1001,7 +1001,7 @@ vivi_read(struct file *file, char __user *data, size_t count, loff_t *ppos)
 {
 	struct vivi_dev *dev = video_drvdata(file);
 
-;
+	dprintk(dev, 1, "read called\n");
 	return vb2_read(&dev->vb_vidq, data, count, ppos,
 		       file->f_flags & O_NONBLOCK);
 }
@@ -1012,7 +1012,7 @@ vivi_poll(struct file *file, struct poll_table_struct *wait)
 	struct vivi_dev *dev = video_drvdata(file);
 	struct vb2_queue *q = &dev->vb_vidq;
 
-;
+	dprintk(dev, 1, "%s\n", __func__);
 	return vb2_poll(q, file, wait);
 }
 
@@ -1021,8 +1021,8 @@ static int vivi_close(struct file *file)
 	struct video_device  *vdev = video_devdata(file);
 	struct vivi_dev *dev = video_drvdata(file);
 
-//	dprintk(dev, 1, "close called (dev=%s), file %p\n",
-;
+	dprintk(dev, 1, "close called (dev=%s), file %p\n",
+		video_device_node_name(vdev), file);
 
 	if (v4l2_fh_is_singular_file(file))
 		vb2_queue_release(&dev->vb_vidq);
@@ -1034,13 +1034,13 @@ static int vivi_mmap(struct file *file, struct vm_area_struct *vma)
 	struct vivi_dev *dev = video_drvdata(file);
 	int ret;
 
-;
+	dprintk(dev, 1, "mmap called, vma=0x%08lx\n", (unsigned long)vma);
 
 	ret = vb2_mmap(&dev->vb_vidq, vma);
-//	dprintk(dev, 1, "vma start=0x%08lx, size=%ld, ret=%d\n",
-//		(unsigned long)vma->vm_start,
-//		(unsigned long)vma->vm_end - (unsigned long)vma->vm_start,
-;
+	dprintk(dev, 1, "vma start=0x%08lx, size=%ld, ret=%d\n",
+		(unsigned long)vma->vm_start,
+		(unsigned long)vma->vm_end - (unsigned long)vma->vm_start,
+		ret);
 	return ret;
 }
 
@@ -1301,7 +1301,7 @@ static int __init vivi_init(void)
 	int ret = 0, i;
 
 	if (font == NULL) {
-;
+		printk(KERN_ERR "vivi: could not find font\n");
 		return -ENODEV;
 	}
 	font8x16 = font->data;
@@ -1320,14 +1320,14 @@ static int __init vivi_init(void)
 	}
 
 	if (ret < 0) {
-;
+		printk(KERN_ERR "vivi: error %d while loading driver\n", ret);
 		return ret;
 	}
 
-//	printk(KERN_INFO "Video Technology Magazine Virtual Video "
-//			"Capture Board ver %u.%u.%u successfully loaded.\n",
-//			(VIVI_VERSION >> 16) & 0xFF, (VIVI_VERSION >> 8) & 0xFF,
-;
+	printk(KERN_INFO "Video Technology Magazine Virtual Video "
+			"Capture Board ver %u.%u.%u successfully loaded.\n",
+			(VIVI_VERSION >> 16) & 0xFF, (VIVI_VERSION >> 8) & 0xFF,
+			VIVI_VERSION & 0xFF);
 
 	/* n_devs will reflect the actual number of allocated devices */
 	n_devs = i;

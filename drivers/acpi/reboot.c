@@ -39,7 +39,7 @@ void acpi_reboot(void)
 		/* Form PCI device/function pair. */
 		devfn = PCI_DEVFN((rr->address >> 32) & 0xffff,
 				  (rr->address >> 16) & 0xffff);
-;
+		printk(KERN_DEBUG "Resetting with ACPI PCI RESET_REG.");
 		/* Write the value that resets us. */
 		pci_bus_write_config_byte(bus0, devfn,
 				(rr->address & 0xffff), reset_value);
@@ -47,7 +47,7 @@ void acpi_reboot(void)
 
 	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
 	case ACPI_ADR_SPACE_SYSTEM_IO:
-;
+		printk(KERN_DEBUG "ACPI MEMORY or I/O RESET_REG.\n");
 		acpi_reset();
 		break;
 	}

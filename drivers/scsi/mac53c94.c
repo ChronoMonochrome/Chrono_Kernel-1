@@ -73,12 +73,12 @@ static int mac53c94_queue_lck(struct scsi_cmnd *cmd, void (*done)(struct scsi_cm
 #if 0
 	if (cmd->sc_data_direction == DMA_TO_DEVICE) {
 		int i;
-;
+		printk(KERN_DEBUG "mac53c94_queue %p: command is", cmd);
 		for (i = 0; i < cmd->cmd_len; ++i)
-;
-;
-//		printk(KERN_DEBUG "use_sg=%d request_bufflen=%d request_buffer=%p\n",
-;
+			printk(KERN_CONT " %.2x", cmd->cmnd[i]);
+		printk(KERN_CONT "\n");
+		printk(KERN_DEBUG "use_sg=%d request_bufflen=%d request_buffer=%p\n",
+		       scsi_sg_count(cmd), scsi_bufflen(cmd), scsi_sglist(cmd));
 	}
 #endif
 
@@ -208,39 +208,39 @@ static void mac53c94_interrupt(int irq, void *dev_id)
 	intr = readb(&regs->interrupt);
 
 #if 0
-//	printk(KERN_DEBUG "mac53c94_intr, intr=%x stat=%x seq=%x phase=%d\n",
-;
+	printk(KERN_DEBUG "mac53c94_intr, intr=%x stat=%x seq=%x phase=%d\n",
+	       intr, stat, seq, state->phase);
 #endif
 
 	if (intr & INTR_RESET) {
 		/* SCSI bus was reset */
-;
+		printk(KERN_INFO "external SCSI bus reset detected\n");
 		writeb(CMD_NOP, &regs->command);
 		writel(RUN << 16, &dma->control);	/* stop dma */
 		cmd_done(state, DID_RESET << 16);
 		return;
 	}
 	if (intr & INTR_ILL_CMD) {
-//		printk(KERN_ERR "53c94: invalid cmd, intr=%x stat=%x seq=%x phase=%d\n",
-;
+		printk(KERN_ERR "53c94: invalid cmd, intr=%x stat=%x seq=%x phase=%d\n",
+		       intr, stat, seq, state->phase);
 		cmd_done(state, DID_ERROR << 16);
 		return;
 	}
 	if (stat & STAT_ERROR) {
 #if 0
 		/* XXX these seem to be harmless? */
-//		printk("53c94: bad error, intr=%x stat=%x seq=%x phase=%d\n",
-;
+		printk("53c94: bad error, intr=%x stat=%x seq=%x phase=%d\n",
+		       intr, stat, seq, state->phase);
 #endif
 		++mac53c94_errors;
 		writeb(CMD_NOP + CMD_DMA_MODE, &regs->command);
 	}
 	if (cmd == 0) {
-;
+		printk(KERN_DEBUG "53c94: interrupt with no command active?\n");
 		return;
 	}
 	if (stat & STAT_PARITY) {
-;
+		printk(KERN_ERR "mac53c94: parity error\n");
 		cmd_done(state, DID_PARITY << 16);
 		return;
 	}
@@ -252,12 +252,12 @@ static void mac53c94_interrupt(int irq, void *dev_id)
 			return;
 		}
 		if (intr != INTR_BUS_SERV + INTR_DONE) {
-;
+			printk(KERN_DEBUG "got intr %x during selection\n", intr);
 			cmd_done(state, DID_ERROR << 16);
 			return;
 		}
 		if ((seq & SS_MASK) != SS_DONE) {
-;
+			printk(KERN_DEBUG "seq step %x after command\n", seq);
 			cmd_done(state, DID_ERROR << 16);
 			return;
 		}
@@ -282,8 +282,8 @@ static void mac53c94_interrupt(int irq, void *dev_id)
 			writeb(CMD_I_COMPLETE, &regs->command);
 			state->phase = completing;
 		} else {
-//			printk(KERN_DEBUG "in unexpected phase %x after cmd\n",
-;
+			printk(KERN_DEBUG "in unexpected phase %x after cmd\n",
+			       stat & STAT_PHASE);
 			cmd_done(state, DID_ERROR << 16);
 			return;
 		}
@@ -291,7 +291,7 @@ static void mac53c94_interrupt(int irq, void *dev_id)
 
 	case dataing:
 		if (intr != INTR_BUS_SERV) {
-;
+			printk(KERN_DEBUG "got intr %x before status\n", intr);
 			cmd_done(state, DID_ERROR << 16);
 			return;
 		}
@@ -309,7 +309,7 @@ static void mac53c94_interrupt(int irq, void *dev_id)
 			break;
 		}
 		if ((stat & STAT_PHASE) != STAT_CD + STAT_IO) {
-;
+			printk(KERN_DEBUG "intr %x before data xfer complete\n", intr);
 		}
 		writel(RUN << 16, &dma->control);	/* stop dma */
 		scsi_dma_unmap(cmd);
@@ -319,7 +319,7 @@ static void mac53c94_interrupt(int irq, void *dev_id)
 		break;
 	case completing:
 		if (intr != INTR_DONE) {
-;
+			printk(KERN_DEBUG "got intr %x on completion\n", intr);
 			cmd_done(state, DID_ERROR << 16);
 			return;
 		}
@@ -331,13 +331,13 @@ static void mac53c94_interrupt(int irq, void *dev_id)
 		break;
 	case busfreeing:
 		if (intr != INTR_DISCONNECT) {
-;
+			printk(KERN_DEBUG "got intr %x when expected disconnect\n", intr);
 		}
 		cmd_done(state, (DID_OK << 16) + (cmd->SCp.Message << 8)
 			 + cmd->SCp.Status);
 		break;
 	default:
-;
+		printk(KERN_DEBUG "don't know about phase %d\n", state->phase);
 	}
 }
 
@@ -418,20 +418,20 @@ static int mac53c94_probe(struct macio_dev *mdev, const struct of_device_id *mat
 	int proplen, rc = -ENODEV;
 
 	if (macio_resource_count(mdev) != 2 || macio_irq_count(mdev) != 2) {
-//		printk(KERN_ERR "mac53c94: expected 2 addrs and intrs"
-//		       " (got %d/%d)\n",
-;
+		printk(KERN_ERR "mac53c94: expected 2 addrs and intrs"
+		       " (got %d/%d)\n",
+		       macio_resource_count(mdev), macio_irq_count(mdev));
 		return -ENODEV;
 	}
 
 	if (macio_request_resources(mdev, "mac53c94") != 0) {
-;
+       		printk(KERN_ERR "mac53c94: unable to request memory resources");
 		return -EBUSY;
 	}
 
        	host = scsi_host_alloc(&mac53c94_template, sizeof(struct fsc_state));
 	if (host == NULL) {
-;
+		printk(KERN_ERR "mac53c94: couldn't register host");
 		rc = -ENOMEM;
 		goto out_release;
 	}
@@ -449,15 +449,15 @@ static int mac53c94_probe(struct macio_dev *mdev, const struct of_device_id *mat
 		ioremap(macio_resource_start(mdev, 1), 0x1000);
 	state->dmaintr = macio_irq(mdev, 1);
 	if (state->regs == NULL || state->dma == NULL) {
-//		printk(KERN_ERR "mac53c94: ioremap failed for %s\n",
-;
+		printk(KERN_ERR "mac53c94: ioremap failed for %s\n",
+		       node->full_name);
 		goto out_free;
 	}
 
 	clkprop = of_get_property(node, "clock-frequency", &proplen);
        	if (clkprop == NULL || proplen != sizeof(int)) {
-//       		printk(KERN_ERR "%s: can't get clock frequency, "
-;
+       		printk(KERN_ERR "%s: can't get clock frequency, "
+       		       "assuming 25MHz\n", node->full_name);
        		state->clk_freq = 25000000;
        	} else
        		state->clk_freq = *(int *)clkprop;
@@ -469,8 +469,8 @@ static int mac53c94_probe(struct macio_dev *mdev, const struct of_device_id *mat
        	dma_cmd_space = kmalloc((host->sg_tablesize + 2) *
        				sizeof(struct dbdma_cmd), GFP_KERNEL);
        	if (dma_cmd_space == 0) {
-//       		printk(KERN_ERR "mac53c94: couldn't allocate dma "
-;
+       		printk(KERN_ERR "mac53c94: couldn't allocate dma "
+       		       "command space for %s\n", node->full_name);
 		rc = -ENOMEM;
        		goto out_free;
        	}
@@ -482,8 +482,8 @@ static int mac53c94_probe(struct macio_dev *mdev, const struct of_device_id *mat
 	mac53c94_init(state);
 
 	if (request_irq(state->intr, do_mac53c94_interrupt, 0, "53C94",state)) {
-//		printk(KERN_ERR "mac53C94: can't get irq %d for %s\n",
-;
+		printk(KERN_ERR "mac53C94: can't get irq %d for %s\n",
+		       state->intr, node->full_name);
 		goto out_free_dma;
 	}
 

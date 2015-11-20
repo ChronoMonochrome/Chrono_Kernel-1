@@ -1994,7 +1994,7 @@ static int __devinit sci_probe(struct platform_device *dev)
 	 * to make it beyond this yet.
 	 */
 	if (is_early_platform_device(dev))
-;
+		return sci_probe_earlyprintk(dev);
 
 	platform_set_drvdata(dev, sp);
 
@@ -2059,7 +2059,7 @@ static int __init sci_init(void)
 {
 	int ret;
 
-;
+	printk(banner);
 
 	ret = uart_register_driver(&sci_uart_driver);
 	if (likely(ret == 0)) {

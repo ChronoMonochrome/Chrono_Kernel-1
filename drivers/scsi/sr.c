@@ -276,8 +276,8 @@ do_tur:
 	if (!cd->tur_changed) {
 		if (cd->get_event_changed) {
 			if (cd->tur_mismatch++ > 8) {
-//				sdev_printk(KERN_WARNING, cd->device,
-;
+				sdev_printk(KERN_WARNING, cd->device,
+					    "GET_EVENT and TUR disagree continuously, suppress GET_EVENT events\n");
 				cd->ignore_get_event = true;
 			}
 		} else {
@@ -306,7 +306,7 @@ static int sr_done(struct scsi_cmnd *SCpnt)
 	struct scsi_cd *cd = scsi_cd(SCpnt->request->rq_disk);
 
 #ifdef DEBUG
-;
+	printk("sr.c done: %x\n", result);
 #endif
 
 	/*
@@ -389,13 +389,13 @@ static int sr_prep_fn(struct request_queue *q, struct request *rq)
 	 * is used for a killable error condition */
 	ret = BLKPREP_KILL;
 
-//	SCSI_LOG_HLQUEUE(1, printk("Doing sr request, dev = %s, block = %d\n",
-;
+	SCSI_LOG_HLQUEUE(1, printk("Doing sr request, dev = %s, block = %d\n",
+				cd->disk->disk_name, block));
 
 	if (!cd->device || !scsi_device_online(cd->device)) {
-//		SCSI_LOG_HLQUEUE(2, printk("Finishing %u sectors\n",
-;
-;
+		SCSI_LOG_HLQUEUE(2, printk("Finishing %u sectors\n",
+					   blk_rq_sectors(rq)));
+		SCSI_LOG_HLQUEUE(2, printk("Retry with 0x%p\n", SCpnt));
 		goto out;
 	}
 
@@ -416,11 +416,11 @@ static int sr_prep_fn(struct request_queue *q, struct request *rq)
 		if (!in_interrupt())
 			sr_set_blocklength(cd, 2048);
 		else
-;
+			printk("sr: can't switch blocksize: in interrupt\n");
 	}
 
 	if (s_size != 512 && s_size != 1024 && s_size != 2048) {
-;
+		scmd_printk(KERN_ERR, SCpnt, "bad sector size %d\n", s_size);
 		goto out;
 	}
 
@@ -446,9 +446,9 @@ static int sr_prep_fn(struct request_queue *q, struct request *rq)
 			size += sg->length;
 
 		if (size != scsi_bufflen(SCpnt)) {
-//			scmd_printk(KERN_ERR, SCpnt,
-//				"mismatch count %d, bytes %d\n",
-;
+			scmd_printk(KERN_ERR, SCpnt,
+				"mismatch count %d, bytes %d\n",
+				size, scsi_bufflen(SCpnt));
 			if (scsi_bufflen(SCpnt) > size)
 				SCpnt->sdb.length = size;
 		}
@@ -459,18 +459,18 @@ static int sr_prep_fn(struct request_queue *q, struct request *rq)
 	 */
 	if (((unsigned int)blk_rq_pos(rq) % (s_size >> 9)) ||
 	    (scsi_bufflen(SCpnt) % s_size)) {
-;
+		scmd_printk(KERN_NOTICE, SCpnt, "unaligned transfer\n");
 		goto out;
 	}
 
 	this_count = (scsi_bufflen(SCpnt) >> 9) / (s_size >> 9);
 
 
-//	SCSI_LOG_HLQUEUE(2, printk("%s : %s %d/%u 512 byte blocks.\n",
-//				cd->cdi.name,
-//				(rq_data_dir(rq) == WRITE) ?
-//					"writing" : "reading",
-;
+	SCSI_LOG_HLQUEUE(2, printk("%s : %s %d/%u 512 byte blocks.\n",
+				cd->cdi.name,
+				(rq_data_dir(rq) == WRITE) ?
+					"writing" : "reading",
+				this_count, blk_rq_sectors(rq)));
 
 	SCpnt->cmnd[1] = 0;
 	block = (unsigned int)blk_rq_pos(rq) / (s_size >> 9);
@@ -716,8 +716,8 @@ static int sr_probe(struct device *dev)
 	disk->flags |= GENHD_FL_REMOVABLE;
 	add_disk(disk);
 
-//	sdev_printk(KERN_DEBUG, sdev,
-;
+	sdev_printk(KERN_DEBUG, sdev,
+		    "Attached scsi CD-ROM %s\n", cd->cdi.name);
 	return 0;
 
 fail_put:
@@ -790,8 +790,8 @@ static void get_sectorsize(struct scsi_cd *cd)
 		case 512:
 			break;
 		default:
-//			printk("%s: unsupported sector size %d.\n",
-;
+			printk("%s: unsupported sector size %d.\n",
+			       cd->cdi.name, sector_size);
 			cd->capacity = 0;
 		}
 
@@ -833,7 +833,7 @@ static void get_capabilities(struct scsi_cd *cd)
 	/* allocate transfer buffer */
 	buffer = kmalloc(512, GFP_KERNEL | GFP_DMA);
 	if (!buffer) {
-;
+		printk(KERN_ERR "sr: out of memory.\n");
 		return;
 	}
 
@@ -852,7 +852,7 @@ static void get_capabilities(struct scsi_cd *cd)
 				 CDC_SELECT_DISC | CDC_SELECT_SPEED |
 				 CDC_MRW | CDC_MRW_W | CDC_RAM);
 		kfree(buffer);
-;
+		printk("%s: scsi-1 drive\n", cd->cdi.name);
 		return;
 	}
 
@@ -861,15 +861,15 @@ static void get_capabilities(struct scsi_cd *cd)
 	cd->readcd_known = 1;
 	cd->readcd_cdda = buffer[n + 5] & 0x01;
 	/* print some capability bits */
-//	printk("%s: scsi3-mmc drive: %dx/%dx %s%s%s%s%s%s\n", cd->cdi.name,
-//	       ((buffer[n + 14] << 8) + buffer[n + 15]) / 176,
-//	       cd->cdi.speed,
-//	       buffer[n + 3] & 0x01 ? "writer " : "", /* CD Writer */
-//	       buffer[n + 3] & 0x20 ? "dvd-ram " : "",
-//	       buffer[n + 2] & 0x02 ? "cd/rw " : "", /* can read rewriteable */
-//	       buffer[n + 4] & 0x20 ? "xa/form2 " : "",	/* can read xa/from2 */
-//	       buffer[n + 5] & 0x01 ? "cdda " : "", /* can read audio data */
-;
+	printk("%s: scsi3-mmc drive: %dx/%dx %s%s%s%s%s%s\n", cd->cdi.name,
+	       ((buffer[n + 14] << 8) + buffer[n + 15]) / 176,
+	       cd->cdi.speed,
+	       buffer[n + 3] & 0x01 ? "writer " : "", /* CD Writer */
+	       buffer[n + 3] & 0x20 ? "dvd-ram " : "",
+	       buffer[n + 2] & 0x02 ? "cd/rw " : "", /* can read rewriteable */
+	       buffer[n + 4] & 0x20 ? "xa/form2 " : "",	/* can read xa/from2 */
+	       buffer[n + 5] & 0x01 ? "cdda " : "", /* can read audio data */
+	       loadmech[buffer[n + 6] >> 5]);
 	if ((buffer[n + 6] >> 5) == 0)
 		/* caddy drives can't close tray... */
 		cd->cdi.mask |= CDC_CLOSE_TRAY;

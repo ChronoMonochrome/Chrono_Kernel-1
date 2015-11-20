@@ -45,20 +45,20 @@ void mminit_verify_zonelist(void)
 				continue;
 
 			/* Print information about the zonelist */
-//			printk(KERN_DEBUG "mminit::zonelist %s %d:%s = ",
-//				listid > 0 ? "thisnode" : "general", nid,
-;
+			printk(KERN_DEBUG "mminit::zonelist %s %d:%s = ",
+				listid > 0 ? "thisnode" : "general", nid,
+				zone->name);
 
 			/* Iterate the zonelist */
 			for_each_zone_zonelist(zone, z, zonelist, zoneid) {
 #ifdef CONFIG_NUMA
-//				printk(KERN_CONT "%d:%s ",
-;
+				printk(KERN_CONT "%d:%s ",
+					zone->node, zone->name);
 #else
-;
+				printk(KERN_CONT "0:%s ", zone->name);
 #endif /* CONFIG_NUMA */
 			}
-;
+			printk(KERN_CONT "\n");
 		}
 	}
 }
@@ -70,32 +70,32 @@ void __init mminit_verify_pageflags_layout(void)
 
 	shift = 8 * sizeof(unsigned long);
 	width = shift - SECTIONS_WIDTH - NODES_WIDTH - ZONES_WIDTH;
-//	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_widths",
-//		"Section %d Node %d Zone %d Flags %d\n",
-//		SECTIONS_WIDTH,
-//		NODES_WIDTH,
-//		ZONES_WIDTH,
-;
-//	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_shifts",
-//		"Section %d Node %d Zone %d\n",
-//		SECTIONS_SHIFT,
-//		NODES_SHIFT,
-;
-//	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_offsets",
-//		"Section %lu Node %lu Zone %lu\n",
-//		(unsigned long)SECTIONS_PGSHIFT,
-//		(unsigned long)NODES_PGSHIFT,
-;
-//	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_zoneid",
-//		"Zone ID: %lu -> %lu\n",
-//		(unsigned long)ZONEID_PGOFF,
-;
-//	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_usage",
-//		"location: %d -> %d unused %d -> %d flags %d -> %d\n",
-;
+	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_widths",
+		"Section %d Node %d Zone %d Flags %d\n",
+		SECTIONS_WIDTH,
+		NODES_WIDTH,
+		ZONES_WIDTH,
+		NR_PAGEFLAGS);
+	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_shifts",
+		"Section %d Node %d Zone %d\n",
+		SECTIONS_SHIFT,
+		NODES_SHIFT,
+		ZONES_SHIFT);
+	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_offsets",
+		"Section %lu Node %lu Zone %lu\n",
+		(unsigned long)SECTIONS_PGSHIFT,
+		(unsigned long)NODES_PGSHIFT,
+		(unsigned long)ZONES_PGSHIFT);
+	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_zoneid",
+		"Zone ID: %lu -> %lu\n",
+		(unsigned long)ZONEID_PGOFF,
+		(unsigned long)(ZONEID_PGOFF + ZONEID_SHIFT));
+	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_usage",
+		"location: %d -> %d unused %d -> %d flags %d -> %d\n",
+		shift, width, width, NR_PAGEFLAGS, NR_PAGEFLAGS, 0);
 #ifdef NODE_NOT_IN_PAGE_FLAGS
-//	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_nodeflags",
-;
+	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_nodeflags",
+		"Node not in page flags");
 #endif
 
 	if (SECTIONS_WIDTH) {

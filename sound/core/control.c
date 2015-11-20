@@ -169,7 +169,7 @@ void snd_ctl_notify(struct snd_card *card, unsigned int mask,
 			ev->mask = mask;
 			list_add_tail(&ev->list, &ctl->events);
 		} else {
-;
+			snd_printk(KERN_ERR "No memory available to allocate event\n");
 		}
 	_found:
 		wake_up(&ctl->change_sleep);
@@ -205,7 +205,7 @@ static struct snd_kcontrol *snd_ctl_new(struct snd_kcontrol *control,
 
 	kctl = kzalloc(sizeof(*kctl) + sizeof(struct snd_kcontrol_volatile) * control->count, GFP_KERNEL);
 	if (kctl == NULL) {
-;
+		snd_printk(KERN_ERR "Cannot allocate control instance\n");
 		return NULL;
 	}
 	*kctl = *control;
@@ -240,9 +240,9 @@ struct snd_kcontrol *snd_ctl_new1(const struct snd_kcontrol_new *ncontrol,
 	if (ncontrol->name) {
 		strlcpy(kctl.id.name, ncontrol->name, sizeof(kctl.id.name));
 		if (strcmp(ncontrol->name, kctl.id.name) != 0)
-//			snd_printk(KERN_WARNING
-//				   "Control name '%s' truncated to '%s'\n",
-;
+			snd_printk(KERN_WARNING
+				   "Control name '%s' truncated to '%s'\n",
+				   ncontrol->name, kctl.id.name);
 	}
 	kctl.id.index = ncontrol->index;
 	kctl.count = ncontrol->count ? ncontrol->count : 1;
@@ -304,7 +304,7 @@ static int snd_ctl_find_hole(struct snd_card *card, unsigned int count)
 	while (snd_ctl_remove_numid_conflict(card, count)) {
 		if (--iter == 0) {
 			/* this situation is very unlikely */
-;
+			snd_printk(KERN_ERR "unable to allocate new control numid\n");
 			return -ENOMEM;
 		}
 	}

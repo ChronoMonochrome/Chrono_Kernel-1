@@ -44,7 +44,7 @@ static ssize_t edac_inject_##reg##_store(struct kobject *kobj,		\
 									\
 	ret = strict_strtoul(data, 16, &value);				\
 	if (ret < 0)							\
-;
+		printk(KERN_ERR "Error writing MCE " #reg " field.\n");	\
 									\
 	i_mce.reg = value;						\
 									\
@@ -84,13 +84,13 @@ static ssize_t edac_inject_bank_store(struct kobject *kobj,
 
 	ret = strict_strtoul(data, 10, &value);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "Invalid bank value!\n");
 		return -EINVAL;
 	}
 
 	if (value > 5)
 		if (boot_cpu_data.x86 != 0x15 || value > 6) {
-;
+			printk(KERN_ERR "Non-existent MCE bank: %lu\n", value);
 			return -EINVAL;
 		}
 
@@ -124,7 +124,7 @@ static int __init edac_init_mce_inject(void)
 
 	mce_kobj = kobject_create_and_add("mce", &edac_class->kset.kobj);
 	if (!mce_kobj) {
-;
+		printk(KERN_ERR "Error creating a mce kset.\n");
 		err = -ENOMEM;
 		goto err_mce_kobj;
 	}
@@ -132,8 +132,8 @@ static int __init edac_init_mce_inject(void)
 	for (i = 0; i < ARRAY_SIZE(sysfs_attrs); i++) {
 		err = sysfs_create_file(mce_kobj, &sysfs_attrs[i]->attr);
 		if (err) {
-//			printk(KERN_ERR "Error creating %s in sysfs.\n",
-;
+			printk(KERN_ERR "Error creating %s in sysfs.\n",
+					sysfs_attrs[i]->attr.name);
 			goto err_sysfs_create;
 		}
 	}

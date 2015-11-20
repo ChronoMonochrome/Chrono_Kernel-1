@@ -74,7 +74,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 	if (!mm)
 		mm = &init_mm;
 
-;
+	printk(KERN_ALERT "pgd = %p\n", mm->pgd);
 	pgd = pgd_offset(mm, addr);
 	printk(KERN_ALERT "[%08lx] *pgd=%08llx",
 			addr, (long long)pgd_val(*pgd));
@@ -88,7 +88,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 			break;
 
 		if (pgd_bad(*pgd)) {
-;
+			printk("(bad)");
 			break;
 		}
 
@@ -100,7 +100,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 			break;
 
 		if (pud_bad(*pud)) {
-;
+			printk("(bad)");
 			break;
 		}
 
@@ -112,7 +112,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 			break;
 
 		if (pmd_bad(*pmd)) {
-;
+			printk("(bad)");
 			break;
 		}
 
@@ -127,7 +127,7 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 		pte_unmap(pte);
 	} while(0);
 
-;
+	printk("\n");
 }
 #else					/* CONFIG_MMU */
 void show_pte(struct mm_struct *mm, unsigned long addr)
@@ -151,10 +151,10 @@ __do_kernel_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
 	 * No handler, we'll have to terminate things with extreme prejudice.
 	 */
 	bust_spinlocks(1);
-//	printk(KERN_ALERT
-//		"Unable to handle kernel %s at virtual address %08lx\n",
-//		(addr < PAGE_SIZE) ? "NULL pointer dereference" :
-;
+	printk(KERN_ALERT
+		"Unable to handle kernel %s at virtual address %08lx\n",
+		(addr < PAGE_SIZE) ? "NULL pointer dereference" :
+		"paging request", addr);
 
 	show_pte(mm, addr);
 	die("Oops", regs, fsr);
@@ -175,8 +175,8 @@ __do_user_fault(struct task_struct *tsk, unsigned long addr,
 
 #ifdef CONFIG_DEBUG_USER
 	if (user_debug & UDBG_SEGV) {
-//		printk(KERN_DEBUG "%s: unhandled page fault (%d) at 0x%08lx, code 0x%03x\n",
-;
+		printk(KERN_DEBUG "%s: unhandled page fault (%d) at 0x%08lx, code 0x%03x\n",
+		       tsk->comm, sig, addr, fsr);
 		show_pte(tsk->mm, addr);
 		show_regs(regs);
 	}
@@ -560,8 +560,8 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 	if (!inf->fn(addr, fsr & ~FSR_LNX_PF, regs))
 		return;
 
-//	printk(KERN_ALERT "Unhandled fault: %s (0x%03x) at 0x%08lx\n",
-;
+	printk(KERN_ALERT "Unhandled fault: %s (0x%03x) at 0x%08lx\n",
+		inf->name, fsr, addr);
 
 	info.si_signo = inf->sig;
 	info.si_errno = 0;
@@ -628,8 +628,8 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
 	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs))
 		return;
 
-//	printk(KERN_ALERT "Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
-;
+	printk(KERN_ALERT "Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
+		inf->name, ifsr, addr);
 
 	info.si_signo = inf->sig;
 	info.si_errno = 0;

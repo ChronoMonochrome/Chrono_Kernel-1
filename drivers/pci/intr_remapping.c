@@ -95,10 +95,10 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
 	}
 
 	if (mask > ecap_max_handle_mask(iommu->ecap)) {
-//		printk(KERN_ERR
-//		       "Requested mask %x exceeds the max invalidation handle"
-//		       " mask value %Lx\n", mask,
-;
+		printk(KERN_ERR
+		       "Requested mask %x exceeds the max invalidation handle"
+		       " mask value %Lx\n", mask,
+		       ecap_max_handle_mask(iommu->ecap));
 		return -1;
 	}
 
@@ -115,7 +115,7 @@ int alloc_irte(struct intel_iommu *iommu, int irq, u16 count)
 
 		if (index == start_index) {
 			spin_unlock_irqrestore(&irq_2_ir_lock, flags);
-;
+			printk(KERN_ERR "can't allocate an IRTE\n");
 			return -1;
 		}
 	} while (1);
@@ -457,8 +457,8 @@ static int setup_intr_remapping(struct intel_iommu *iommu, int mode)
 				 INTR_REMAP_PAGE_ORDER);
 
 	if (!pages) {
-//		printk(KERN_ERR "failed to allocate pages of order %d\n",
-;
+		printk(KERN_ERR "failed to allocate pages of order %d\n",
+		       INTR_REMAP_PAGE_ORDER);
 		kfree(iommu->ir_table);
 		return -ENOMEM;
 	}
@@ -528,7 +528,7 @@ int __init enable_intr_remapping(int eim)
 	int setup = 0;
 
 	if (parse_ioapics_under_ir() != 1) {
-;
+		printk(KERN_INFO "Not enable interrupt remapping\n");
 		return -1;
 	}
 
@@ -566,8 +566,8 @@ int __init enable_intr_remapping(int eim)
 			continue;
 
 		if (eim && !ecap_eim_support(iommu->ecap)) {
-//			printk(KERN_INFO "DRHD %Lx: EIM not supported by DRHD, "
-;
+			printk(KERN_INFO "DRHD %Lx: EIM not supported by DRHD, "
+			       " ecap %Lx\n", drhd->reg_base_addr, iommu->ecap);
 			return -1;
 		}
 	}
@@ -581,9 +581,9 @@ int __init enable_intr_remapping(int eim)
 		ret = dmar_enable_qi(iommu);
 
 		if (ret) {
-//			printk(KERN_ERR "DRHD %Lx: failed to enable queued, "
-//			       " invalidation, ecap %Lx, ret %d\n",
-;
+			printk(KERN_ERR "DRHD %Lx: failed to enable queued, "
+			       " invalidation, ecap %Lx, ret %d\n",
+			       drhd->reg_base_addr, iommu->ecap, ret);
 			return -1;
 		}
 	}
@@ -690,24 +690,24 @@ static int ir_parse_ioapic_hpet_scope(struct acpi_dmar_header *header,
 		scope = start;
 		if (scope->entry_type == ACPI_DMAR_SCOPE_TYPE_IOAPIC) {
 			if (ir_ioapic_num == MAX_IO_APICS) {
-;
+				printk(KERN_WARNING "Exceeded Max IO APICS\n");
 				return -1;
 			}
 
-//			printk(KERN_INFO "IOAPIC id %d under DRHD base "
-//			       " 0x%Lx IOMMU %d\n", scope->enumeration_id,
-;
+			printk(KERN_INFO "IOAPIC id %d under DRHD base "
+			       " 0x%Lx IOMMU %d\n", scope->enumeration_id,
+			       drhd->address, iommu->seq_id);
 
 			ir_parse_one_ioapic_scope(scope, iommu);
 		} else if (scope->entry_type == ACPI_DMAR_SCOPE_TYPE_HPET) {
 			if (ir_hpet_num == MAX_HPET_TBS) {
-;
+				printk(KERN_WARNING "Exceeded Max HPET blocks\n");
 				return -1;
 			}
 
-//			printk(KERN_INFO "HPET id %d under DRHD base"
-//			       " 0x%Lx\n", scope->enumeration_id,
-;
+			printk(KERN_INFO "HPET id %d under DRHD base"
+			       " 0x%Lx\n", scope->enumeration_id,
+			       drhd->address);
 
 			ir_parse_one_hpet_scope(scope, iommu);
 		}
@@ -738,8 +738,8 @@ int __init parse_ioapics_under_ir(void)
 	}
 
 	if (ir_supported && ir_ioapic_num != nr_ioapics) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "Not all IO-APIC's listed under remapping hardware\n");
 		return -1;
 	}
 

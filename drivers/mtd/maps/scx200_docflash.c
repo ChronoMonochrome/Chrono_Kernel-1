@@ -80,7 +80,7 @@ static int __init init_scx200_docflash(void)
 	unsigned pmr;
 	struct pci_dev *bridge;
 
-;
+	printk(KERN_DEBUG NAME ": NatSemi SCx200 DOCCS Flash Driver\n");
 
 	if ((bridge = pci_get_device(PCI_VENDOR_ID_NS,
 				      PCI_DEVICE_ID_NS_SCx200_BRIDGE,
@@ -122,7 +122,7 @@ static int __init init_scx200_docflash(void)
 		docmem.end = base + size;
 
 		if (request_resource(&iomem_resource, &docmem)) {
-;
+			printk(KERN_ERR NAME ": unable to allocate memory for flash mapping\n");
 			return -ENOMEM;
 		}
 	} else {
@@ -130,12 +130,12 @@ static int __init init_scx200_docflash(void)
 		for (u = size; u > 1; u >>= 1)
 			;
 		if (u != 1) {
-;
+			printk(KERN_ERR NAME ": invalid size for flash mapping\n");
 			return -EINVAL;
 		}
 
 		if (width != 8 && width != 16) {
-;
+			printk(KERN_ERR NAME ": invalid bus width for flash mapping\n");
 			return -EINVAL;
 		}
 
@@ -143,13 +143,13 @@ static int __init init_scx200_docflash(void)
 				      size,
 				      0xc0000000, 0xffffffff,
 				      size, NULL, NULL)) {
-;
+			printk(KERN_ERR NAME ": unable to allocate memory for flash mapping\n");
 			return -ENOMEM;
 		}
 
 		ctrl = 0x07000000 | ((size-1) >> 13);
 
-;
+		printk(KERN_INFO "DOCCS BASE=0x%08lx, CTRL=0x%08lx\n", (long)docmem.start, (long)ctrl);
 
 		pci_write_config_dword(bridge, SCx200_DOCCS_BASE, docmem.start);
 		pci_write_config_dword(bridge, SCx200_DOCCS_CTRL, ctrl);
@@ -163,8 +163,8 @@ static int __init init_scx200_docflash(void)
 		outl(pmr, scx200_cb_base + SCx200_PMR);
 	}
 
-//	printk(KERN_INFO NAME ": DOCCS mapped at %pR, width %d\n",
-;
+	printk(KERN_INFO NAME ": DOCCS mapped at %pR, width %d\n",
+	       &docmem, width);
 
 	scx200_docflash_map.size = size;
 	if (width == 8)
@@ -177,21 +177,21 @@ static int __init init_scx200_docflash(void)
 	scx200_docflash_map.phys = docmem.start;
 	scx200_docflash_map.virt = ioremap(docmem.start, scx200_docflash_map.size);
 	if (!scx200_docflash_map.virt) {
-;
+		printk(KERN_ERR NAME ": failed to ioremap the flash\n");
 		release_resource(&docmem);
 		return -EIO;
 	}
 
 	mymtd = do_map_probe(flashtype, &scx200_docflash_map);
 	if (!mymtd) {
-;
+		printk(KERN_ERR NAME ": unable to detect flash\n");
 		iounmap(scx200_docflash_map.virt);
 		release_resource(&docmem);
 		return -ENXIO;
 	}
 
 	if (size < mymtd->size)
-;
+		printk(KERN_WARNING NAME ": warning, flash mapping is smaller than flash size\n");
 
 	mymtd->owner = THIS_MODULE;
 

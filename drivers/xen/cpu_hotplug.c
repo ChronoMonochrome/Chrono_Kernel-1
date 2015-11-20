@@ -30,7 +30,7 @@ static int vcpu_online(unsigned int cpu)
 	sprintf(dir, "cpu/%u", cpu);
 	err = xenbus_scanf(XBT_NIL, dir, "availability", "%s", state);
 	if (err != 1) {
-;
+		printk(KERN_ERR "XENBUS: Unable to read cpu state\n");
 		return err;
 	}
 
@@ -39,7 +39,7 @@ static int vcpu_online(unsigned int cpu)
 	else if (strcmp(state, "offline") == 0)
 		return 0;
 
-;
+	printk(KERN_ERR "XENBUS: unknown state(%s) on CPU%d\n", state, cpu);
 	return -EINVAL;
 }
 static void vcpu_hotplug(unsigned int cpu)

@@ -244,10 +244,10 @@ static int set_system(const struct dmi_system_id *id)
 		return 0;
 	}
 
-//	printk(KERN_INFO "efifb: dmi detected %s - framebuffer at 0x%08x "
-//			 "(%dx%d, stride %d)\n", id->ident,
-//			 screen_info.lfb_base, screen_info.lfb_width,
-;
+	printk(KERN_INFO "efifb: dmi detected %s - framebuffer at 0x%08x "
+			 "(%dx%d, stride %d)\n", id->ident,
+			 screen_info.lfb_base, screen_info.lfb_width,
+			 screen_info.lfb_height, screen_info.lfb_linelength);
 
 
 	return 1;
@@ -343,10 +343,10 @@ static int __init efifb_probe(struct platform_device *dev)
 	if (!screen_info.pages)
 		screen_info.pages = 1;
 	if (!screen_info.lfb_base) {
-;
+		printk(KERN_DEBUG "efifb: invalid framebuffer address\n");
 		return -ENODEV;
 	}
-;
+	printk(KERN_INFO "efifb: probing for efifb\n");
 
 	/* just assume they're all unset if any are */
 	if (!screen_info.blue_size) {
@@ -394,14 +394,14 @@ static int __init efifb_probe(struct platform_device *dev)
 	} else {
 		/* We cannot make this fatal. Sometimes this comes from magic
 		   spaces our resource handlers simply don't know about */
-//		printk(KERN_WARNING
-//		       "efifb: cannot reserve video memory at 0x%lx\n",
-;
+		printk(KERN_WARNING
+		       "efifb: cannot reserve video memory at 0x%lx\n",
+			efifb_fix.smem_start);
 	}
 
 	info = framebuffer_alloc(sizeof(u32) * 16, &dev->dev);
 	if (!info) {
-;
+		printk(KERN_ERR "efifb: cannot allocate framebuffer\n");
 		err = -ENOMEM;
 		goto err_release_mem;
 	}
@@ -418,26 +418,26 @@ static int __init efifb_probe(struct platform_device *dev)
 
 	info->screen_base = ioremap_wc(efifb_fix.smem_start, efifb_fix.smem_len);
 	if (!info->screen_base) {
-//		printk(KERN_ERR "efifb: abort, cannot ioremap video memory "
-//				"0x%x @ 0x%lx\n",
-;
+		printk(KERN_ERR "efifb: abort, cannot ioremap video memory "
+				"0x%x @ 0x%lx\n",
+			efifb_fix.smem_len, efifb_fix.smem_start);
 		err = -EIO;
 		goto err_release_fb;
 	}
 
-//	printk(KERN_INFO "efifb: framebuffer at 0x%lx, mapped to 0x%p, "
-//	       "using %dk, total %dk\n",
-//	       efifb_fix.smem_start, info->screen_base,
-;
-//	printk(KERN_INFO "efifb: mode is %dx%dx%d, linelength=%d, pages=%d\n",
-//	       efifb_defined.xres, efifb_defined.yres,
-//	       efifb_defined.bits_per_pixel, efifb_fix.line_length,
-;
+	printk(KERN_INFO "efifb: framebuffer at 0x%lx, mapped to 0x%p, "
+	       "using %dk, total %dk\n",
+	       efifb_fix.smem_start, info->screen_base,
+	       size_remap/1024, size_total/1024);
+	printk(KERN_INFO "efifb: mode is %dx%dx%d, linelength=%d, pages=%d\n",
+	       efifb_defined.xres, efifb_defined.yres,
+	       efifb_defined.bits_per_pixel, efifb_fix.line_length,
+	       screen_info.pages);
 
 	efifb_defined.xres_virtual = efifb_defined.xres;
 	efifb_defined.yres_virtual = efifb_fix.smem_len /
 					efifb_fix.line_length;
-;
+	printk(KERN_INFO "efifb: scrolling: redraw\n");
 	efifb_defined.yres_virtual = efifb_defined.yres;
 
 	/* some dummy values for timing to make fbset happy */
@@ -455,17 +455,17 @@ static int __init efifb_probe(struct platform_device *dev)
 	efifb_defined.transp.offset = screen_info.rsvd_pos;
 	efifb_defined.transp.length = screen_info.rsvd_size;
 
-//	printk(KERN_INFO "efifb: %s: "
-//	       "size=%d:%d:%d:%d, shift=%d:%d:%d:%d\n",
-//	       "Truecolor",
-//	       screen_info.rsvd_size,
-//	       screen_info.red_size,
-//	       screen_info.green_size,
-//	       screen_info.blue_size,
-//	       screen_info.rsvd_pos,
-//	       screen_info.red_pos,
-//	       screen_info.green_pos,
-;
+	printk(KERN_INFO "efifb: %s: "
+	       "size=%d:%d:%d:%d, shift=%d:%d:%d:%d\n",
+	       "Truecolor",
+	       screen_info.rsvd_size,
+	       screen_info.red_size,
+	       screen_info.green_size,
+	       screen_info.blue_size,
+	       screen_info.rsvd_pos,
+	       screen_info.red_pos,
+	       screen_info.green_pos,
+	       screen_info.blue_pos);
 
 	efifb_fix.ypanstep  = 0;
 	efifb_fix.ywrapstep = 0;
@@ -476,15 +476,15 @@ static int __init efifb_probe(struct platform_device *dev)
 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_MISC_FIRMWARE;
 
 	if ((err = fb_alloc_cmap(&info->cmap, 256, 0)) < 0) {
-;
+		printk(KERN_ERR "efifb: cannot allocate colormap\n");
 		goto err_unmap;
 	}
 	if ((err = register_framebuffer(info)) < 0) {
-;
+		printk(KERN_ERR "efifb: cannot register framebuffer\n");
 		goto err_fb_dealoc;
 	}
-//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+		info->node, info->fix.id);
 	return 0;
 
 err_fb_dealoc:

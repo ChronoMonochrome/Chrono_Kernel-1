@@ -220,7 +220,7 @@ static void debug_objects_oom(void)
 	unsigned long flags;
 	int i;
 
-;
+	printk(KERN_WARNING "ODEBUG: Out of memory. ODEBUG disabled\n");
 
 	for (i = 0; i < ODEBUG_HASH_SIZE; i++, db++) {
 		raw_spin_lock_irqsave(&db->lock, flags);
@@ -290,11 +290,11 @@ static void debug_object_is_on_stack(void *addr, int onstack)
 
 	limit++;
 	if (is_on_stack)
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "ODEBUG: object is on stack, but not annotated\n");
 	else
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "ODEBUG: object is not on stack, but annotated\n");
 	WARN_ON(1);
 }
 
@@ -941,7 +941,7 @@ static void __init debug_objects_selftest(void)
 	if (check_results(&obj, ODEBUG_STATE_NONE, ++fixups, ++warnings))
 		goto out;
 #endif
-;
+	printk(KERN_INFO "ODEBUG: selftest passed\n");
 
 out:
 	debug_objects_fixups = oldfixups;
@@ -1015,8 +1015,8 @@ static int __init debug_objects_replace_static_objects(void)
 		}
 	}
 
-//	printk(KERN_DEBUG "ODEBUG: %d of %d active objects replaced\n", cnt,
-;
+	printk(KERN_DEBUG "ODEBUG: %d of %d active objects replaced\n", cnt,
+	       obj_pool_used);
 	local_irq_enable();
 	return 0;
 free:
@@ -1046,7 +1046,7 @@ void __init debug_objects_mem_init(void)
 		debug_objects_enabled = 0;
 		if (obj_cache)
 			kmem_cache_destroy(obj_cache);
-;
+		printk(KERN_WARNING "ODEBUG: out of memory.\n");
 	} else
 		debug_objects_selftest();
 }

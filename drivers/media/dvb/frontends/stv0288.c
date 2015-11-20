@@ -53,10 +53,10 @@ struct stv0288_state {
 
 static int debug;
 static int debug_legacy_dish_switch;
-//#define dprintk(args...) \
-//	do { \
-//		if (debug) \
-;
+#define dprintk(args...) \
+	do { \
+		if (debug) \
+			printk(KERN_DEBUG "stv0288: " args); \
 	} while (0)
 
 
@@ -74,8 +74,8 @@ static int stv0288_writeregI(struct stv0288_state *state, u8 reg, u8 data)
 	ret = i2c_transfer(state->i2c, &msg, 1);
 
 	if (ret != 1)
-//		dprintk("%s: writereg error (reg == 0x%02x, val == 0x%02x, "
-;
+		dprintk("%s: writereg error (reg == 0x%02x, val == 0x%02x, "
+			"ret == %i)\n", __func__, reg, data, ret);
 
 	return (ret != 1) ? -EREMOTEIO : 0;
 }
@@ -112,8 +112,8 @@ static u8 stv0288_readreg(struct stv0288_state *state, u8 reg)
 	ret = i2c_transfer(state->i2c, msg, 2);
 
 	if (ret != 2)
-//		dprintk("%s: readreg error (reg == 0x%02x, ret == %i)\n",
-;
+		dprintk("%s: readreg error (reg == 0x%02x, ret == %i)\n",
+				__func__, reg, ret);
 
 	return b1[0];
 }
@@ -142,7 +142,7 @@ static int stv0288_set_symbolrate(struct dvb_frontend *fe, u32 srate)
 		stv0288_writeregI(state, 0x28, b[0]);
 		stv0288_writeregI(state, 0x29, b[1]);
 		stv0288_writeregI(state, 0x2a, b[2]);
-;
+		dprintk("stv0288: stv0288_set_symbolrate\n");
 
 	return 0;
 }
@@ -154,7 +154,7 @@ static int stv0288_send_diseqc_msg(struct dvb_frontend *fe,
 
 	int i;
 
-;
+	dprintk("%s\n", __func__);
 
 	stv0288_writeregI(state, 0x09, 0);
 	msleep(30);
@@ -173,7 +173,7 @@ static int stv0288_send_diseqc_burst(struct dvb_frontend *fe,
 {
 	struct stv0288_state *state = fe->demodulator_priv;
 
-;
+	dprintk("%s\n", __func__);
 
 	if (stv0288_writeregI(state, 0x05, 0x03))/* burst mode, single shot */
 		return -EREMOTEIO;
@@ -320,9 +320,9 @@ static u8 stv0288_inittab[] = {
 
 static int stv0288_set_voltage(struct dvb_frontend *fe, fe_sec_voltage_t volt)
 {
-//	dprintk("%s: %s\n", __func__,
-//		volt == SEC_VOLTAGE_13 ? "SEC_VOLTAGE_13" :
-;
+	dprintk("%s: %s\n", __func__,
+		volt == SEC_VOLTAGE_13 ? "SEC_VOLTAGE_13" :
+		volt == SEC_VOLTAGE_18 ? "SEC_VOLTAGE_18" : "??");
 
 	return 0;
 }
@@ -334,7 +334,7 @@ static int stv0288_init(struct dvb_frontend *fe)
 	u8 reg;
 	u8 val;
 
-;
+	dprintk("stv0288: init chip\n");
 	stv0288_writeregI(state, 0x41, 0x04);
 	msleep(50);
 
@@ -364,7 +364,7 @@ static int stv0288_read_status(struct dvb_frontend *fe, fe_status_t *status)
 	if (sync == 255)
 		sync = 0;
 
-;
+	dprintk("%s : FE_READ_STATUS : VSTATUS: 0x%02x\n", __func__, sync);
 
 	*status = 0;
 	if (sync & 0x80)
@@ -373,7 +373,7 @@ static int stv0288_read_status(struct dvb_frontend *fe, fe_status_t *status)
 		*status |= FE_HAS_VITERBI;
 	if (sync & 0x08) {
 		*status |= FE_HAS_LOCK;
-;
+		dprintk("stv0288 has locked\n");
 	}
 
 	return 0;
@@ -443,13 +443,13 @@ static int stv0288_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 
 static int stv0288_set_property(struct dvb_frontend *fe, struct dtv_property *p)
 {
-;
+	dprintk("%s(..)\n", __func__);
 	return 0;
 }
 
 static int stv0288_get_property(struct dvb_frontend *fe, struct dtv_property *p)
 {
-;
+	dprintk("%s(..)\n", __func__);
 	return 0;
 }
 
@@ -462,12 +462,12 @@ static int stv0288_set_frontend(struct dvb_frontend *fe,
 	char tm;
 	unsigned char tda[3];
 
-;
+	dprintk("%s : FE_SET_FRONTEND\n", __func__);
 
 	if (c->delivery_system != SYS_DVBS) {
-//			dprintk("%s: unsupported delivery "
-//				"system selected (%d)\n",
-;
+			dprintk("%s: unsupported delivery "
+				"system selected (%d)\n",
+				__func__, c->delivery_system);
 			return -EOPNOTSUPP;
 	}
 
@@ -592,7 +592,7 @@ struct dvb_frontend *stv0288_attach(const struct stv0288_config *config,
 	stv0288_writeregI(state, 0x41, 0x04);
 	msleep(200);
 	id = stv0288_readreg(state, 0x00);
-;
+	dprintk("stv0288 id %x\n", id);
 
 	/* register 0x00 contains 0x11 for STV0288  */
 	if (id != 0x11)

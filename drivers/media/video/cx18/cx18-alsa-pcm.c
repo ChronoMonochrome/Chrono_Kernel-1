@@ -42,10 +42,10 @@ static unsigned int pcm_debug;
 module_param(pcm_debug, int, 0644);
 MODULE_PARM_DESC(pcm_debug, "enable debug messages for pcm");
 
-//#define dprintk(fmt, arg...) do {					\
-//	    if (pcm_debug)						\
-//		printk(KERN_INFO "cx18-alsa-pcm %s: " fmt,		\
-;
+#define dprintk(fmt, arg...) do {					\
+	    if (pcm_debug)						\
+		printk(KERN_INFO "cx18-alsa-pcm %s: " fmt,		\
+				  __func__, ##arg); 			\
 	} while (0)
 
 static struct snd_pcm_hardware snd_cx18_hw_capture = {
@@ -79,35 +79,35 @@ void cx18_alsa_announce_pcm_data(struct snd_cx18_card *cxsc, u8 *pcm_data,
 	int period_elapsed = 0;
 	int length;
 
-//	dprintk("cx18 alsa announce ptr=%p data=%p num_bytes=%zd\n", cxsc,
-;
+	dprintk("cx18 alsa announce ptr=%p data=%p num_bytes=%zd\n", cxsc,
+		pcm_data, num_bytes);
 
 	substream = cxsc->capture_pcm_substream;
 	if (substream == NULL) {
-;
+		dprintk("substream was NULL\n");
 		return;
 	}
 
 	runtime = substream->runtime;
 	if (runtime == NULL) {
-;
+		dprintk("runtime was NULL\n");
 		return;
 	}
 
 	stride = runtime->frame_bits >> 3;
 	if (stride == 0) {
-;
+		dprintk("stride is zero\n");
 		return;
 	}
 
 	length = num_bytes / stride;
 	if (length == 0) {
-;
+		dprintk("%s: length was zero\n", __func__);
 		return;
 	}
 
 	if (runtime->dma_area == NULL) {
-;
+		dprintk("dma area was NULL - ignoring\n");
 		return;
 	}
 
@@ -233,7 +233,7 @@ static int snd_pcm_alloc_vmalloc_buffer(struct snd_pcm_substream *subs,
 {
 	struct snd_pcm_runtime *runtime = subs->runtime;
 
-;
+	dprintk("Allocating vbuffer\n");
 	if (runtime->dma_area) {
 		if (runtime->dma_bytes > size)
 			return 0;
@@ -254,7 +254,7 @@ static int snd_cx18_pcm_hw_params(struct snd_pcm_substream *substream,
 {
 	int ret;
 
-;
+	dprintk("%s called\n", __func__);
 
 	ret = snd_pcm_alloc_vmalloc_buffer(substream,
 					   params_buffer_bytes(params));
@@ -268,7 +268,7 @@ static int snd_cx18_pcm_hw_free(struct snd_pcm_substream *substream)
 
 	spin_lock_irqsave(&cxsc->slock, flags);
 	if (substream->runtime->dma_area) {
-;
+		dprintk("freeing pcm capture region\n");
 		vfree(substream->runtime->dma_area);
 		substream->runtime->dma_area = NULL;
 	}

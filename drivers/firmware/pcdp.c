@@ -71,12 +71,12 @@ setup_vga_console(struct pcdp_device *dev)
 	}
 
 	if (efi_mem_type(vga_console_membase + 0xA0000) == EFI_CONVENTIONAL_MEMORY) {
-;
+		printk(KERN_ERR "PCDP: VGA selected, but frame buffer is not MMIO!\n");
 		return -ENODEV;
 	}
 
 	conswitchp = &vga_con;
-;
+	printk(KERN_INFO "PCDP: VGA console\n");
 	return 0;
 #else
 	return -ENODEV;
@@ -96,13 +96,13 @@ efi_setup_pcdp_console(char *cmdline)
 		return -ENODEV;
 
 	pcdp = early_ioremap(efi.hcdp, 4096);
-;
+	printk(KERN_INFO "PCDP: v%d at 0x%lx\n", pcdp->rev, efi.hcdp);
 
 	if (strstr(cmdline, "console=hcdp")) {
 		if (pcdp->rev < 3)
 			serial = 1;
 	} else if (strstr(cmdline, "console=")) {
-;
+		printk(KERN_INFO "Explicit \"console=\"; ignoring PCDP\n");
 		goto out;
 	}
 

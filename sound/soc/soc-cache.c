@@ -398,9 +398,9 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
 		    io_types[i].data_bits == data_bits)
 			break;
 	if (i == ARRAY_SIZE(io_types)) {
-//		printk(KERN_ERR
-//		       "No I/O functions for %d bit address %d bit data\n",
-;
+		printk(KERN_ERR
+		       "No I/O functions for %d bit address %d bit data\n",
+		       addr_bits, data_bits);
 		return -EINVAL;
 	}
 

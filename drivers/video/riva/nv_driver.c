@@ -85,13 +85,13 @@ riva_is_connected(struct riva_par *par, Bool second)
 static void
 riva_override_CRTC(struct riva_par *par)
 {
-//	printk(KERN_INFO PFX
-//		"Detected CRTC controller %i being used\n",
-;
+	printk(KERN_INFO PFX
+		"Detected CRTC controller %i being used\n",
+		par->SecondCRTC ? 1 : 0);
 
 	if(par->forceCRTC != -1) {
-//		printk(KERN_INFO PFX
-;
+		printk(KERN_INFO PFX
+			"Forcing usage of CRTC %i\n", par->forceCRTC);
 		par->SecondCRTC = par->forceCRTC;
 	}
 }
@@ -364,8 +364,8 @@ riva_common_setup(struct riva_par *par)
 		case 0x0329:
 		case 0x032C:
 		case 0x032D:
-//			printk(KERN_INFO PFX 
-;
+			printk(KERN_INFO PFX 
+				"On a laptop.  Assuming Digital Flat Panel\n");
 			par->FlatPanel = 1;
 			break;
 		default:

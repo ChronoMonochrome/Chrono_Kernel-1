@@ -47,7 +47,7 @@ static void pcibios_bus_report_status(struct pci_bus *bus, u_int status_mask, in
 		pci_write_config_word(dev, PCI_STATUS, status & status_mask);
 
 		if (warn)
-;
+			printk("(%s: %04X) ", pci_name(dev), status);
 	}
 
 	list_for_each_entry(dev, &bus->devices, bus_list)
@@ -276,7 +276,7 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ITE, PCI_DEVICE_ID_ITE_8152, pci_fixup_it
 void __devinit pcibios_update_irq(struct pci_dev *dev, int irq)
 {
 	if (debug_pci)
-;
+		printk("PCI: Assigning IRQ %02d to %s\n", irq, pci_name(dev));
 	pci_write_config_byte(dev, PCI_INTERRUPT_LINE, irq);
 }
 
@@ -409,8 +409,8 @@ void pcibios_fixup_bus(struct pci_bus *bus)
 	/*
 	 * Report what we did for this bus
 	 */
-////	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
-;
+	printk(KERN_INFO "PCI: bus%d: Fast back to back transfers %sabled\n",
+		bus->number, (features & PCI_COMMAND_FAST_BACK) ? "en" : "dis");
 }
 
 /*
@@ -467,8 +467,8 @@ static u8 __devinit pcibios_swizzle(struct pci_dev *dev, u8 *pin)
 		slot = sys->swizzle(dev, pin);
 
 	if (debug_pci)
-////		printk("PCI: %s swizzling pin %d => pin %d slot %d\n",
-;
+		printk("PCI: %s swizzling pin %d => pin %d slot %d\n",
+			pci_name(dev), oldpin, *pin, slot);
 
 	return slot;
 }
@@ -485,8 +485,8 @@ static int pcibios_map_irq(struct pci_dev *dev, u8 slot, u8 pin)
 		irq = sys->map_irq(dev, slot, pin);
 
 	if (debug_pci)
-////		printk("PCI: %s mapping slot %d pin %d => irq %d\n",
-;
+		printk("PCI: %s mapping slot %d pin %d => irq %d\n",
+			pci_name(dev), slot, pin, irq);
 
 	return irq;
 }
@@ -631,8 +631,8 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
 
 		r = dev->resource + idx;
 		if (!r->start && r->end) {
-////			printk(KERN_ERR "PCI: Device %s not available because"
-;
+			printk(KERN_ERR "PCI: Device %s not available because"
+			       " of resource collisions\n", pci_name(dev));
 			return -EINVAL;
 		}
 		if (r->flags & IORESOURCE_IO)
@@ -648,8 +648,8 @@ int pcibios_enable_device(struct pci_dev *dev, int mask)
 		cmd |= PCI_COMMAND_IO | PCI_COMMAND_MEMORY;
 
 	if (cmd != old_cmd) {
-////		printk("PCI: enabling device %s (%04x -> %04x)\n",
-;
+		printk("PCI: enabling device %s (%04x -> %04x)\n",
+		       pci_name(dev), old_cmd, cmd);
 		pci_write_config_word(dev, PCI_COMMAND, cmd);
 	}
 	return 0;

@@ -698,7 +698,7 @@ static void msm_power(struct uart_port *port, unsigned int state,
 			clk_disable(msm_port->pclk);
 		break;
 	default:
-;
+		printk(KERN_ERR "msm_serial: Unknown PM state %d\n", state);
 	}
 }
 
@@ -828,7 +828,7 @@ static int __init msm_console_setup(struct console *co, char *options)
 		msm_write(port, UART_CR_TX_ENABLE, UART_CR);
 	}
 
-;
+	printk(KERN_INFO "msm_serial: console setup on port #%d\n", port->line);
 
 	return uart_set_options(port, co, baud, parity, bits, flow);
 }
@@ -869,7 +869,7 @@ static int __init msm_serial_probe(struct platform_device *pdev)
 	if (unlikely(pdev->id < 0 || pdev->id >= UART_NR))
 		return -ENXIO;
 
-;
+	printk(KERN_INFO "msm_serial: detected port #%d\n", pdev->id);
 
 	port = get_port_from_line(pdev->id);
 	port->dev = &pdev->dev;
@@ -896,7 +896,7 @@ static int __init msm_serial_probe(struct platform_device *pdev)
 		clk_set_rate(msm_port->clk, 7372800);
 
 	port->uartclk = clk_get_rate(msm_port->clk);
-;
+	printk(KERN_INFO "uartclk = %d\n", port->uartclk);
 
 
 	resource = platform_get_resource_byname(pdev, IORESOURCE_MEM,
@@ -944,7 +944,7 @@ static int __init msm_serial_init(void)
 	if (unlikely(ret))
 		uart_unregister_driver(&msm_uart_driver);
 
-;
+	printk(KERN_INFO "msm_serial: driver initialized\n");
 
 	return ret;
 }

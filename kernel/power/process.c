@@ -114,16 +114,16 @@ static int try_to_freeze_tasks(bool sig_only)
 		 * but it cleans up leftover PF_FREEZE requests.
 		 */
 		if(wakeup) {
-;
-//			printk(KERN_ERR "Freezing of %s aborted\n",
-;
+			printk("\n");
+			printk(KERN_ERR "Freezing of %s aborted\n",
+					sig_only ? "user space " : "tasks ");
 		}
 		else {
-;
-//			printk(KERN_ERR "Freezing of tasks failed after %d.%02d seconds "
-//			       "(%d tasks refusing to freeze, wq_busy=%d):\n",
-//			       elapsed_csecs / 100, elapsed_csecs % 100,
-;
+			printk("\n");
+			printk(KERN_ERR "Freezing of tasks failed after %d.%02d seconds "
+			       "(%d tasks refusing to freeze, wq_busy=%d):\n",
+			       elapsed_csecs / 100, elapsed_csecs % 100,
+			       todo - wq_busy, wq_busy);
 		}
 		thaw_workqueues();
 
@@ -138,8 +138,8 @@ static int try_to_freeze_tasks(bool sig_only)
 		} while_each_thread(g, p);
 		read_unlock(&tasklist_lock);
 	} else {
-//		printk("(elapsed %d.%02d seconds) ", elapsed_csecs / 100,
-;
+		printk("(elapsed %d.%02d seconds) ", elapsed_csecs / 100,
+			elapsed_csecs % 100);
 	}
 
 	return todo ? -EBUSY : 0;
@@ -168,22 +168,22 @@ int freeze_processes(void)
 		pr_err("%s: power key unmapped\n", __func__);
 	}
 
-;
+	printk("Freezing user space processes ... ");
 	error = try_to_freeze_tasks(true);
 	if (error)
 		goto Exit;
-;
+	printk("done.\n");
 
-;
+	printk("Freezing remaining freezable tasks ... ");
 	error = try_to_freeze_tasks(false);
 	if (error)
 		goto Exit;
-;
+	printk("done.");
 
 	oom_killer_disable();
  Exit:
 	BUG_ON(in_atomic());
-;
+	printk("\n");
 
 	return error;
 }
@@ -212,11 +212,11 @@ void thaw_processes(void)
 {
 	oom_killer_enable();
 
-;
+	printk("Restarting tasks ... ");
 	thaw_workqueues();
 	thaw_tasks(true);
 	thaw_tasks(false);
 	schedule();
-;
+	printk("done.\n");
 }
 

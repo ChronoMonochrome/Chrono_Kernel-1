@@ -182,8 +182,8 @@ static void scsi_tgt_cmd_destroy(struct work_struct *work)
 		container_of(work, struct scsi_tgt_cmd, work);
 	struct scsi_cmnd *cmd = tcmd->rq->special;
 
-//	dprintk("cmd %p %d %u\n", cmd, cmd->sc_data_direction,
-;
+	dprintk("cmd %p %d %u\n", cmd, cmd->sc_data_direction,
+		rq_data_dir(cmd->request));
 	scsi_unmap_user_pages(tcmd);
 	tcmd->rq->bio = NULL;
 	scsi_host_put_command(scsi_tgt_cmd_to_host(cmd), cmd);
@@ -328,7 +328,7 @@ static void scsi_tgt_cmd_done(struct scsi_cmnd *cmd)
 {
 	struct scsi_tgt_cmd *tcmd = cmd->request->end_io_data;
 
-;
+	dprintk("cmd %p %u\n", cmd, rq_data_dir(cmd->request));
 
 	scsi_tgt_uspace_send_status(cmd, tcmd->itn_id, tcmd->tag);
 
@@ -342,7 +342,7 @@ static int scsi_tgt_transfer_response(struct scsi_cmnd *cmd)
 	struct Scsi_Host *shost = scsi_tgt_cmd_to_host(cmd);
 	int err;
 
-;
+	dprintk("cmd %p %u\n", cmd, rq_data_dir(cmd->request));
 
 	err = shost->hostt->transfer_response(cmd, scsi_tgt_cmd_done);
 	switch (err) {
@@ -361,7 +361,7 @@ static int scsi_map_user_pages(struct scsi_tgt_cmd *tcmd, struct scsi_cmnd *cmd,
 	struct request *rq = cmd->request;
 	int err;
 
-;
+	dprintk("%lx %u\n", uaddr, len);
 	err = blk_rq_map_user(q, rq, NULL, (void *)uaddr, len, GFP_KERNEL);
 	if (err) {
 		/*
@@ -373,7 +373,7 @@ static int scsi_map_user_pages(struct scsi_tgt_cmd *tcmd, struct scsi_cmnd *cmd,
 		 * we can handle and do the slow copy path for really large
 		 * IO.
 		 */
-;
+		eprintk("Could not handle request of size %u.\n", len);
 		return err;
 	}
 
@@ -403,7 +403,7 @@ static int scsi_tgt_copy_sense(struct scsi_cmnd *cmd, unsigned long uaddr,
 
 	if (copy_from_user(cmd->sense_buffer, p,
 			   min_t(unsigned, SCSI_SENSE_BUFFERSIZE, len))) {
-;
+		printk(KERN_ERR "Could not copy the sense buffer\n");
 		return -EIO;
 	}
 	return 0;
@@ -416,7 +416,7 @@ static int scsi_tgt_abort_cmd(struct Scsi_Host *shost, struct scsi_cmnd *cmd)
 
 	err = shost->hostt->eh_abort_handler(cmd);
 	if (err)
-;
+		eprintk("fail to abort %p\n", cmd);
 
 	tcmd = cmd->request->end_io_data;
 	scsi_tgt_cmd_destroy(&tcmd->work);
@@ -455,33 +455,33 @@ int scsi_tgt_kspace_exec(int host_no, u64 itn_id, int result, u64 tag,
 	struct scsi_tgt_cmd *tcmd;
 	int err = 0;
 
-//	dprintk("%d %llu %d %u %lx %u\n", host_no, (unsigned long long) tag,
-;
+	dprintk("%d %llu %d %u %lx %u\n", host_no, (unsigned long long) tag,
+		result, len, uaddr, rw);
 
 	/* TODO: replace with a O(1) alg */
 	shost = scsi_host_lookup(host_no);
 	if (!shost) {
-;
+		printk(KERN_ERR "Could not find host no %d\n", host_no);
 		return -EINVAL;
 	}
 
 	if (!shost->uspace_req_q) {
-;
+		printk(KERN_ERR "Not target scsi host %d\n", host_no);
 		goto done;
 	}
 
 	rq = tgt_cmd_hash_lookup(shost->uspace_req_q, tag);
 	if (!rq) {
-//		printk(KERN_ERR "Could not find tag %llu\n",
-;
+		printk(KERN_ERR "Could not find tag %llu\n",
+		       (unsigned long long) tag);
 		err = -EINVAL;
 		goto done;
 	}
 	cmd = rq->special;
 
-//	dprintk("cmd %p scb %x result %d len %d bufflen %u %u %x\n",
-//		cmd, cmd->cmnd[0], result, len, scsi_bufflen(cmd),
-;
+	dprintk("cmd %p scb %x result %d len %d bufflen %u %u %x\n",
+		cmd, cmd->cmnd[0], result, len, scsi_bufflen(cmd),
+		rq_data_dir(rq), cmd->cmnd[0]);
 
 	if (result == TASK_ABORTED) {
 		scsi_tgt_abort_cmd(shost, cmd);
@@ -508,8 +508,8 @@ int scsi_tgt_kspace_exec(int host_no, u64 itn_id, int result, u64 tag,
 			struct list_head *head;
 			unsigned long flags;
 
-//			eprintk("cmd %p ret %d uaddr %lx len %d rw %d\n",
-;
+			eprintk("cmd %p ret %d uaddr %lx len %d rw %d\n",
+				cmd, err, uaddr, len, rw);
 
 			qdata = shost->uspace_req_q->queuedata;
 			head = &qdata->cmd_hash[cmd_hashfn(tcmd->tag)];
@@ -537,7 +537,7 @@ int scsi_tgt_tsk_mgmt_request(struct Scsi_Host *shost, u64 itn_id,
 	err = scsi_tgt_uspace_send_tsk_mgmt(shost->host_no, itn_id,
 					    function, tag, scsilun, data);
 	if (err < 0)
-;
+		eprintk("The task management request lost!\n");
 	return err;
 }
 EXPORT_SYMBOL_GPL(scsi_tgt_tsk_mgmt_request);
@@ -547,16 +547,16 @@ int scsi_tgt_kspace_tsk_mgmt(int host_no, u64 itn_id, u64 mid, int result)
 	struct Scsi_Host *shost;
 	int err = -EINVAL;
 
-;
+	dprintk("%d %d %llx\n", host_no, result, (unsigned long long) mid);
 
 	shost = scsi_host_lookup(host_no);
 	if (!shost) {
-;
+		printk(KERN_ERR "Could not find host no %d\n", host_no);
 		return err;
 	}
 
 	if (!shost->uspace_req_q) {
-;
+		printk(KERN_ERR "Not target scsi host %d\n", host_no);
 		goto done;
 	}
 
@@ -575,8 +575,8 @@ int scsi_tgt_it_nexus_create(struct Scsi_Host *shost, u64 itn_id,
 	err = scsi_tgt_uspace_send_it_nexus_request(shost->host_no, itn_id, 0,
 						    initiator);
 	if (err < 0)
-//		eprintk("The i_t_neuxs request lost, %d %llx!\n",
-;
+		eprintk("The i_t_neuxs request lost, %d %llx!\n",
+			shost->host_no, (unsigned long long)itn_id);
 	return err;
 }
 EXPORT_SYMBOL_GPL(scsi_tgt_it_nexus_create);
@@ -589,8 +589,8 @@ int scsi_tgt_it_nexus_destroy(struct Scsi_Host *shost, u64 itn_id)
 	err = scsi_tgt_uspace_send_it_nexus_request(shost->host_no,
 						    itn_id, 1, NULL);
 	if (err < 0)
-//		eprintk("The i_t_neuxs request lost, %d %llx!\n",
-;
+		eprintk("The i_t_neuxs request lost, %d %llx!\n",
+			shost->host_no, (unsigned long long)itn_id);
 	return err;
 }
 EXPORT_SYMBOL_GPL(scsi_tgt_it_nexus_destroy);
@@ -600,16 +600,16 @@ int scsi_tgt_kspace_it_nexus_rsp(int host_no, u64 itn_id, int result)
 	struct Scsi_Host *shost;
 	int err = -EINVAL;
 
-;
+	dprintk("%d %d%llx\n", host_no, result, (unsigned long long)itn_id);
 
 	shost = scsi_host_lookup(host_no);
 	if (!shost) {
-;
+		printk(KERN_ERR "Could not find host no %d\n", host_no);
 		return err;
 	}
 
 	if (!shost->uspace_req_q) {
-;
+		printk(KERN_ERR "Not target scsi host %d\n", host_no);
 		goto done;
 	}
 

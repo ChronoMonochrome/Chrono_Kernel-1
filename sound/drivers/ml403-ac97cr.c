@@ -840,9 +840,9 @@ snd_ml403_ac97cr_codec_read(struct snd_ac97 *ac97, unsigned short reg)
 	u16 value = 0;
 
 	if (!LM4550_RF_OK(reg)) {
-//		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
-//			   "access to unknown/unused codec register 0x%x "
-;
+		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
+			   "access to unknown/unused codec register 0x%x "
+			   "ignored!\n", reg);
 		return 0;
 	}
 	/* check if we can fake/answer this access from our shadow register */
@@ -928,17 +928,17 @@ snd_ml403_ac97cr_codec_read(struct snd_ac97 *ac97, unsigned short reg)
 	    CR_CODEC_DATAREAD(in_be32(CR_REG(ml403_ac97cr, CODEC_DATAREAD)));
 	spin_unlock(&ml403_ac97cr->reg_lock);
 #ifdef CODEC_STAT
-//	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
-//		   "timeout while codec read! "
-//		   "(reg=0x%x, last STATUS=0x%x, DATAREAD=0x%x / %d, %d) "
-//		   "(cw=%d, cr=%d)\n",
-//		   reg, stat, value, value, rafaccess,
-;
+	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
+		   "timeout while codec read! "
+		   "(reg=0x%x, last STATUS=0x%x, DATAREAD=0x%x / %d, %d) "
+		   "(cw=%d, cr=%d)\n",
+		   reg, stat, value, value, rafaccess,
+		   ml403_ac97cr->ac97_write, ml403_ac97cr->ac97_read);
 #else
-//	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
-//		   "timeout while codec read! "
-//		   "(reg=0x%x, DATAREAD=0x%x / %d)\n",
-;
+	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
+		   "timeout while codec read! "
+		   "(reg=0x%x, DATAREAD=0x%x / %d)\n",
+		   reg, value, value);
 #endif
 	/* BUG: This is PURE speculation! But after _most_ read timeouts the
 	 * value in the register is ok!
@@ -964,22 +964,22 @@ snd_ml403_ac97cr_codec_write(struct snd_ac97 *ac97, unsigned short reg,
 #endif
 
 	if (!LM4550_RF_OK(reg)) {
-//		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
-//			   "access to unknown/unused codec register 0x%x "
-;
+		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
+			   "access to unknown/unused codec register 0x%x "
+			   "ignored!\n", reg);
 		return;
 	}
 	if (lm4550_regfile[reg / 2].flag & LM4550_REG_READONLY) {
-//		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
-//			   "write access to read only codec register 0x%x "
-;
+		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
+			   "write access to read only codec register 0x%x "
+			   "ignored!\n", reg);
 		return;
 	}
 	if ((val & lm4550_regfile[reg / 2].wmask) != val) {
-//		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
-//			   "write access to codec register 0x%x "
-//			   "with bad value 0x%x / %d!\n",
-;
+		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
+			   "write access to codec register 0x%x "
+			   "with bad value 0x%x / %d!\n",
+			   reg, val, val);
 		val = val & lm4550_regfile[reg / 2].wmask;
 	}
 	if (((lm4550_regfile[reg / 2].flag & LM4550_REG_FAKEPROBE) &&
@@ -1034,16 +1034,16 @@ snd_ml403_ac97cr_codec_write(struct snd_ac97 *ac97, unsigned short reg,
 		schedule_timeout_uninterruptible(1);
 	} while (time_after(end_time, jiffies));
 #ifdef CODEC_STAT
-//	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
-//		   "timeout while codec write "
-//		   "(reg=0x%x, val=0x%x / %d, last STATUS=0x%x, %d) "
-//		   "(cw=%d, cr=%d)\n",
-//		   reg, val, val, stat, rafaccess, ml403_ac97cr->ac97_write,
-;
+	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
+		   "timeout while codec write "
+		   "(reg=0x%x, val=0x%x / %d, last STATUS=0x%x, %d) "
+		   "(cw=%d, cr=%d)\n",
+		   reg, val, val, stat, rafaccess, ml403_ac97cr->ac97_write,
+		   ml403_ac97cr->ac97_read);
 #else
-//	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
-//		   "timeout while codec write (reg=0x%x, val=0x%x / %d)\n",
-;
+	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
+		   "timeout while codec write (reg=0x%x, val=0x%x / %d)\n",
+		   reg, val, val);
 #endif
 #else /* CODEC_WRITE_CHECK_RAF */
 #if CODEC_WAIT_AFTER_WRITE > 0
@@ -1079,9 +1079,9 @@ snd_ml403_ac97cr_chip_init(struct snd_ml403_ac97cr *ml403_ac97cr)
 		}
 		schedule_timeout_uninterruptible(1);
 	} while (time_after(end_time, jiffies));
-//	snd_printk(KERN_ERR SND_ML403_AC97CR_DRIVER ": "
-//		   "timeout while waiting for codec, "
-;
+	snd_printk(KERN_ERR SND_ML403_AC97CR_DRIVER ": "
+		   "timeout while waiting for codec, "
+		   "not ready!\n");
 	return -EBUSY;
 }
 
@@ -1142,42 +1142,42 @@ snd_ml403_ac97cr_create(struct snd_card *card, struct platform_device *pfdev,
 					     (resource->end) -
 					     (resource->start) + 1);
 	if (ml403_ac97cr->port == NULL) {
-//		snd_printk(KERN_ERR SND_ML403_AC97CR_DRIVER ": "
-//			   "unable to remap memory region (%pR)\n",
-;
+		snd_printk(KERN_ERR SND_ML403_AC97CR_DRIVER ": "
+			   "unable to remap memory region (%pR)\n",
+			   resource);
 		snd_ml403_ac97cr_free(ml403_ac97cr);
 		return -EBUSY;
 	}
-//	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
-//		   "remap controller memory region to "
-;
+	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
+		   "remap controller memory region to "
+		   "0x%x done\n", (unsigned int)ml403_ac97cr->port);
 	/* get irq */
 	irq = platform_get_irq(pfdev, 0);
 	if (request_irq(irq, snd_ml403_ac97cr_irq, IRQF_DISABLED,
 			dev_name(&pfdev->dev), (void *)ml403_ac97cr)) {
-//		snd_printk(KERN_ERR SND_ML403_AC97CR_DRIVER ": "
-//			   "unable to grab IRQ %d\n",
-;
+		snd_printk(KERN_ERR SND_ML403_AC97CR_DRIVER ": "
+			   "unable to grab IRQ %d\n",
+			   irq);
 		snd_ml403_ac97cr_free(ml403_ac97cr);
 		return -EBUSY;
 	}
 	ml403_ac97cr->irq = irq;
-//	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
-//		   "request (playback) irq %d done\n",
-;
+	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
+		   "request (playback) irq %d done\n",
+		   ml403_ac97cr->irq);
 	irq = platform_get_irq(pfdev, 1);
 	if (request_irq(irq, snd_ml403_ac97cr_irq, IRQF_DISABLED,
 			dev_name(&pfdev->dev), (void *)ml403_ac97cr)) {
-//		snd_printk(KERN_ERR SND_ML403_AC97CR_DRIVER ": "
-//			   "unable to grab IRQ %d\n",
-;
+		snd_printk(KERN_ERR SND_ML403_AC97CR_DRIVER ": "
+			   "unable to grab IRQ %d\n",
+			   irq);
 		snd_ml403_ac97cr_free(ml403_ac97cr);
 		return -EBUSY;
 	}
 	ml403_ac97cr->capture_irq = irq;
-//	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
-//		   "request (capture) irq %d done\n",
-;
+	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
+		   "request (capture) irq %d done\n",
+		   ml403_ac97cr->capture_irq);
 
 	err = snd_ml403_ac97cr_chip_init(ml403_ac97cr);
 	if (err < 0) {

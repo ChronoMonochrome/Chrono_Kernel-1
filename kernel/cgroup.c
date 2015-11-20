@@ -4087,7 +4087,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
 {
 	struct cgroup_subsys_state *css;
 
-;
+	printk(KERN_INFO "Initializing cgroup subsys %s\n", ss->name);
 
 	/* Create the top cgroup state for this subsystem */
 	list_add(&ss->sibling, &rootnode.subsys_list);
@@ -4341,8 +4341,8 @@ int __init cgroup_init_early(void)
 		BUG_ON(!ss->create);
 		BUG_ON(!ss->destroy);
 		if (ss->subsys_id != i) {
-//			printk(KERN_ERR "cgroup: Subsys %s id == %d\n",
-;
+			printk(KERN_ERR "cgroup: Subsys %s id == %d\n",
+			       ss->name, ss->subsys_id);
 			BUG();
 		}
 
@@ -4830,8 +4830,8 @@ static int __init cgroup_disable(char *str)
 
 			if (!strcmp(token, ss->name)) {
 				ss->disabled = 1;
-//				printk(KERN_INFO "Disabling %s control group"
-;
+				printk(KERN_INFO "Disabling %s control group"
+					" subsystem\n", ss->name);
 				break;
 			}
 		}

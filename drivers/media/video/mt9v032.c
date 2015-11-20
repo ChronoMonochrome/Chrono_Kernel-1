@@ -701,8 +701,8 @@ static int mt9v032_probe(struct i2c_client *client,
 	mt9v032->subdev.ctrl_handler = &mt9v032->ctrls;
 
 	if (mt9v032->ctrls.error)
-//		printk(KERN_INFO "%s: control initialization error %d\n",
-;
+		printk(KERN_INFO "%s: control initialization error %d\n",
+		       __func__, mt9v032->ctrls.error);
 
 	mt9v032->crop.left = MT9V032_COLUMN_START_DEF;
 	mt9v032->crop.top = MT9V032_ROW_START_DEF;

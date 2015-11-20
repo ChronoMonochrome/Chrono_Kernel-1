@@ -117,9 +117,9 @@ static int beiscsi_eh_abort(struct scsi_cmnd *sc)
 	tag = mgmt_invalidate_icds(phba, inv_tbl, num_invalidate,
 				   cid, &nonemb_cmd);
 	if (!tag) {
-//		shost_printk(KERN_WARNING, phba->shost,
-//			     "mgmt_invalidate_icds could not be"
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			     "mgmt_invalidate_icds could not be"
+			     " submitted\n");
 		pci_free_consistent(phba->ctrl.pdev, nonemb_cmd.size,
 				    nonemb_cmd.va, nonemb_cmd.dma);
 
@@ -193,9 +193,9 @@ static int beiscsi_eh_device_reset(struct scsi_cmnd *sc)
 	tag = mgmt_invalidate_icds(phba, inv_tbl, num_invalidate,
 				   cid, &nonemb_cmd);
 	if (!tag) {
-//		shost_printk(KERN_WARNING, phba->shost,
-//			     "mgmt_invalidate_icds could not be"
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			     "mgmt_invalidate_icds could not be"
+			     " submitted\n");
 		pci_free_consistent(phba->ctrl.pdev, nonemb_cmd.size,
 				    nonemb_cmd.va, nonemb_cmd.dma);
 		return FAILED;
@@ -488,8 +488,8 @@ static struct beiscsi_hba *beiscsi_hba_alloc(struct pci_dev *pcidev)
 		 * log error but continue, because we may not be using
 		 * iscsi boot.
 		 */
-//		shost_printk(KERN_ERR, phba->shost, "Could not set up "
-;
+		shost_printk(KERN_ERR, phba->shost, "Could not set up "
+		"iSCSI boot info.");
 
 	return phba;
 
@@ -887,9 +887,9 @@ static int beiscsi_init_irqs(struct beiscsi_hba *phba)
 			ret = request_irq(msix_vec, be_isr_msix, 0, desc,
 					  &phwi_context->be_eq[i]);
 			if (ret) {
-//				shost_printk(KERN_ERR, phba->shost,
-//					     "beiscsi_init_irqs-Failed to"
-;
+				shost_printk(KERN_ERR, phba->shost,
+					     "beiscsi_init_irqs-Failed to"
+					     "register msix for i = %d\n", i);
 				if (!i)
 					return ret;
 				goto free_msix_irqs;
@@ -899,8 +899,8 @@ static int beiscsi_init_irqs(struct beiscsi_hba *phba)
 		ret = request_irq(msix_vec, be_isr_mcc, 0, "beiscsi_msix_mcc",
 				  &phwi_context->be_eq[i]);
 		if (ret) {
-//			shost_printk(KERN_ERR, phba->shost, "beiscsi_init_irqs-"
-;
+			shost_printk(KERN_ERR, phba->shost, "beiscsi_init_irqs-"
+				     "Failed to register beiscsi_msix_mcc\n");
 			i++;
 			goto free_msix_irqs;
 		}
@@ -909,8 +909,8 @@ static int beiscsi_init_irqs(struct beiscsi_hba *phba)
 		ret = request_irq(pcidev->irq, be_isr, IRQF_SHARED,
 				  "beiscsi", phba);
 		if (ret) {
-//			shost_printk(KERN_ERR, phba->shost, "beiscsi_init_irqs-"
-;
+			shost_printk(KERN_ERR, phba->shost, "beiscsi_init_irqs-"
+				     "Failed to register irq\\n");
 			return ret;
 		}
 	}
@@ -968,11 +968,11 @@ beiscsi_process_async_pdu(struct beiscsi_conn *beiscsi_conn,
 		login_hdr->itt = io_task->libiscsi_itt;
 		break;
 	default:
-//		shost_printk(KERN_WARNING, phba->shost,
-//			     "Unrecognized opcode 0x%x in async msg\n",
-//			     (ppdu->
-//			     dw[offsetof(struct amap_pdu_base, opcode) / 32]
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			     "Unrecognized opcode 0x%x in async msg\n",
+			     (ppdu->
+			     dw[offsetof(struct amap_pdu_base, opcode) / 32]
+						& PDUBASE_OPCODE_MASK));
 		return 1;
 	}
 
@@ -1366,13 +1366,13 @@ static void hwi_complete_cmd(struct beiscsi_conn *beiscsi_conn,
 		break;
 
 	default:
-//		shost_printk(KERN_WARNING, phba->shost,
-//				"In hwi_complete_cmd, unknown type = %d"
-//				"wrb_index 0x%x CID 0x%x\n", type,
-//				((psol->dw[offsetof(struct amap_iscsi_wrb,
-//				type) / 32] & SOL_WRB_INDEX_MASK) >> 16),
-//				((psol->dw[offsetof(struct amap_sol_cqe,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+				"In hwi_complete_cmd, unknown type = %d"
+				"wrb_index 0x%x CID 0x%x\n", type,
+				((psol->dw[offsetof(struct amap_iscsi_wrb,
+				type) / 32] & SOL_WRB_INDEX_MASK) >> 16),
+				((psol->dw[offsetof(struct amap_sol_cqe,
+				cid) / 32] & SOL_CID_MASK) >> 6));
 		break;
 	}
 
@@ -1440,10 +1440,10 @@ hwi_get_async_handle(struct beiscsi_hba *phba,
 		break;
 	default:
 		pbusy_list = NULL;
-//		shost_printk(KERN_WARNING, phba->shost,
-//			"Unexpected code=%d\n",
-//			 pdpdu_cqe->dw[offsetof(struct amap_i_t_dpdu_cqe,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			"Unexpected code=%d\n",
+			 pdpdu_cqe->dw[offsetof(struct amap_i_t_dpdu_cqe,
+					code) / 32] & PDUCQE_CODE_MASK);
 		return NULL;
 	}
 
@@ -2503,8 +2503,8 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
 			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_BUF"
 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
 	} else
-//		shost_printk(KERN_WARNING, phba->shost,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			     "No Virtual address\n");
 
 	pasync_ctx->async_header.va_base =
 			mem_descr->mem_array[0].virtual_address;
@@ -2519,8 +2519,8 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
 			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_RING"
 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
 	} else
-//		shost_printk(KERN_WARNING, phba->shost,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			    "No Virtual address\n");
 	pasync_ctx->async_header.ring_base =
 			mem_descr->mem_array[0].virtual_address;
 
@@ -2531,8 +2531,8 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
 			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_HEADER_HANDLE"
 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
 	} else
-//		shost_printk(KERN_WARNING, phba->shost,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			    "No Virtual address\n");
 
 	pasync_ctx->async_header.handle_base =
 			mem_descr->mem_array[0].virtual_address;
@@ -2546,8 +2546,8 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
 			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_DATA_BUF"
 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
 	} else
-//		shost_printk(KERN_WARNING, phba->shost,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			    "No Virtual address\n");
 	pasync_ctx->async_data.va_base =
 			mem_descr->mem_array[0].virtual_address;
 	pasync_ctx->async_data.pa_base.u.a64.address =
@@ -2560,8 +2560,8 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
 			 "hwi_init_async_pdu_ctx HWI_MEM_ASYNC_DATA_RING"
 			 "va=%p\n", mem_descr->mem_array[0].virtual_address);
 	} else
-//		shost_printk(KERN_WARNING, phba->shost,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			     "No Virtual address\n");
 
 	pasync_ctx->async_data.ring_base =
 			mem_descr->mem_array[0].virtual_address;
@@ -2569,8 +2569,8 @@ static void hwi_init_async_pdu_ctx(struct beiscsi_hba *phba)
 	mem_descr = (struct be_mem_descriptor *)phba->init_mem;
 	mem_descr += HWI_MEM_ASYNC_DATA_HANDLE;
 	if (!mem_descr->mem_array[0].virtual_address)
-//		shost_printk(KERN_WARNING, phba->shost,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			    "No Virtual address\n");
 
 	pasync_ctx->async_data.handle_base =
 			mem_descr->mem_array[0].virtual_address;
@@ -2724,8 +2724,8 @@ static int beiscsi_create_eqs(struct beiscsi_hba *phba,
 		ret = be_fill_queue(eq, phba->params.num_eq_entries,
 				    sizeof(struct be_eq_entry), eq_vaddress);
 		if (ret) {
-//			shost_printk(KERN_ERR, phba->shost,
-;
+			shost_printk(KERN_ERR, phba->shost,
+				     "be_fill_queue Failed for EQ\n");
 			goto create_eq_error;
 		}
 
@@ -2733,9 +2733,9 @@ static int beiscsi_create_eqs(struct beiscsi_hba *phba,
 		ret = beiscsi_cmd_eq_create(&phba->ctrl, eq,
 					    phwi_context->cur_eqd);
 		if (ret) {
-//			shost_printk(KERN_ERR, phba->shost,
-//				     "beiscsi_cmd_eq_create"
-;
+			shost_printk(KERN_ERR, phba->shost,
+				     "beiscsi_cmd_eq_create"
+				     "Failedfor EQ\n");
 			goto create_eq_error;
 		}
 		SE_DEBUG(DBG_LVL_8, "eqid = %d\n", phwi_context->be_eq[i].q.id);
@@ -2782,8 +2782,8 @@ static int beiscsi_create_cqs(struct beiscsi_hba *phba,
 		ret = be_fill_queue(cq, phba->params.num_cq_entries,
 				    sizeof(struct sol_cqe), cq_vaddress);
 		if (ret) {
-//			shost_printk(KERN_ERR, phba->shost,
-;
+			shost_printk(KERN_ERR, phba->shost,
+				     "be_fill_queue Failed for ISCSI CQ\n");
 			goto create_cq_error;
 		}
 
@@ -2791,9 +2791,9 @@ static int beiscsi_create_cqs(struct beiscsi_hba *phba,
 		ret = beiscsi_cmd_cq_create(&phba->ctrl, cq, eq, false,
 					    false, 0);
 		if (ret) {
-//			shost_printk(KERN_ERR, phba->shost,
-//				     "beiscsi_cmd_eq_create"
-;
+			shost_printk(KERN_ERR, phba->shost,
+				     "beiscsi_cmd_eq_create"
+				     "Failed for ISCSI CQ\n");
 			goto create_cq_error;
 		}
 		SE_DEBUG(DBG_LVL_8, "iscsi cq_id is %d for eq_id %d\n",
@@ -2839,8 +2839,8 @@ beiscsi_create_def_hdr(struct beiscsi_hba *phba,
 			    sizeof(struct phys_addr),
 			    sizeof(struct phys_addr), dq_vaddress);
 	if (ret) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "be_fill_queue Failed for DEF PDU HDR\n");
 		return ret;
 	}
 	mem->dma = (unsigned long)mem_descr->mem_array[idx].
@@ -2849,8 +2849,8 @@ beiscsi_create_def_hdr(struct beiscsi_hba *phba,
 					      def_pdu_ring_sz,
 					      phba->params.defpdu_hdr_sz);
 	if (ret) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "be_cmd_create_default_pdu_queue Failed DEFHDR\n");
 		return ret;
 	}
 	phwi_ctrlr->default_pdu_hdr.id = phwi_context->be_def_hdrq.id;
@@ -2884,8 +2884,8 @@ beiscsi_create_def_data(struct beiscsi_hba *phba,
 			    sizeof(struct phys_addr),
 			    sizeof(struct phys_addr), dq_vaddress);
 	if (ret) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "be_fill_queue Failed for DEF PDU DATA\n");
 		return ret;
 	}
 	mem->dma = (unsigned long)mem_descr->mem_array[idx].
@@ -2894,9 +2894,9 @@ beiscsi_create_def_data(struct beiscsi_hba *phba,
 					      def_pdu_ring_sz,
 					      phba->params.defpdu_data_sz);
 	if (ret) {
-//		shost_printk(KERN_ERR, phba->shost,
-//			     "be_cmd_create_default_pdu_queue Failed"
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "be_cmd_create_default_pdu_queue Failed"
+			     " for DEF PDU DATA\n");
 		return ret;
 	}
 	phwi_ctrlr->default_pdu_data.id = phwi_context->be_def_dataq.id;
@@ -2929,8 +2929,8 @@ beiscsi_post_pages(struct beiscsi_hba *phba)
 						(pm_arr->size / PAGE_SIZE));
 		page_offset += pm_arr->size / PAGE_SIZE;
 		if (status != 0) {
-//			shost_printk(KERN_ERR, phba->shost,
-;
+			shost_printk(KERN_ERR, phba->shost,
+				     "post sgl failed.\n");
 			return status;
 		}
 		pm_arr++;
@@ -2983,8 +2983,8 @@ beiscsi_create_wrb_rings(struct beiscsi_hba *phba,
 	pwrb_arr = kmalloc(sizeof(*pwrb_arr) * phba->params.cxns_per_ctrl,
 			   GFP_KERNEL);
 	if (!pwrb_arr) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "Memory alloc failed in create wrb ring.\n");
 		return -ENOMEM;
 	}
 	wrb_vaddr = mem_descr->mem_array[idx].virtual_address;
@@ -3028,8 +3028,8 @@ beiscsi_create_wrb_rings(struct beiscsi_hba *phba,
 		status = be_cmd_wrbq_create(&phba->ctrl, &sgl,
 					    &phwi_context->be_wrbq[i]);
 		if (status != 0) {
-//			shost_printk(KERN_ERR, phba->shost,
-;
+			shost_printk(KERN_ERR, phba->shost,
+				     "wrbq create failed.");
 			kfree(pwrb_arr);
 			return status;
 		}
@@ -3188,7 +3188,7 @@ static int hwi_init_port(struct beiscsi_hba *phba)
 
 	status = beiscsi_create_eqs(phba, phwi_context);
 	if (status != 0) {
-;
+		shost_printk(KERN_ERR, phba->shost, "EQ not created\n");
 		goto error;
 	}
 
@@ -3198,43 +3198,43 @@ static int hwi_init_port(struct beiscsi_hba *phba)
 
 	status = mgmt_check_supported_fw(ctrl, phba);
 	if (status != 0) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "Unsupported fw version\n");
 		goto error;
 	}
 
 	status = beiscsi_create_cqs(phba, phwi_context);
 	if (status != 0) {
-;
+		shost_printk(KERN_ERR, phba->shost, "CQ not created\n");
 		goto error;
 	}
 
 	status = beiscsi_create_def_hdr(phba, phwi_context, phwi_ctrlr,
 					def_pdu_ring_sz);
 	if (status != 0) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "Default Header not created\n");
 		goto error;
 	}
 
 	status = beiscsi_create_def_data(phba, phwi_context,
 					 phwi_ctrlr, def_pdu_ring_sz);
 	if (status != 0) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "Default Data not created\n");
 		goto error;
 	}
 
 	status = beiscsi_post_pages(phba);
 	if (status != 0) {
-;
+		shost_printk(KERN_ERR, phba->shost, "Post SGL Pages Failed\n");
 		goto error;
 	}
 
 	status = beiscsi_create_wrb_rings(phba,	phwi_context, phwi_ctrlr);
 	if (status != 0) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "WRB Rings not created\n");
 		goto error;
 	}
 
@@ -3242,7 +3242,7 @@ static int hwi_init_port(struct beiscsi_hba *phba)
 	return 0;
 
 error:
-;
+	shost_printk(KERN_ERR, phba->shost, "hwi_init_port failed");
 	hwi_cleanup(phba);
 	return -ENOMEM;
 }
@@ -3258,9 +3258,9 @@ static int hwi_init_controller(struct beiscsi_hba *phba)
 		SE_DEBUG(DBG_LVL_8, " phwi_ctrlr->phwi_ctxt=%p\n",
 			 phwi_ctrlr->phwi_ctxt);
 	} else {
-//		shost_printk(KERN_ERR, phba->shost,
-//			     "HWI_MEM_ADDN_CONTEXT is more than one element."
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "HWI_MEM_ADDN_CONTEXT is more than one element."
+			     "Failing to load\n");
 		return -ENOMEM;
 	}
 
@@ -3268,8 +3268,8 @@ static int hwi_init_controller(struct beiscsi_hba *phba)
 	beiscsi_init_wrb_handle(phba);
 	hwi_init_async_pdu_ctx(phba);
 	if (hwi_init_port(phba) != 0) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "hwi_init_controller failed\n");
 		return -ENOMEM;
 	}
 	return 0;
@@ -3304,8 +3304,8 @@ static int beiscsi_init_controller(struct beiscsi_hba *phba)
 
 	ret = beiscsi_get_memory(phba);
 	if (ret < 0) {
-//		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe -"
-;
+		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe -"
+			     "Failed in beiscsi_alloc_memory\n");
 		return ret;
 	}
 
@@ -3337,8 +3337,8 @@ static int beiscsi_init_sgl_handle(struct beiscsi_hba *phba)
 						 phba->params.ios_per_ctrl,
 						 GFP_KERNEL);
 		if (!phba->io_sgl_hndl_base) {
-//			shost_printk(KERN_ERR, phba->shost,
-;
+			shost_printk(KERN_ERR, phba->shost,
+				     "Mem Alloc Failed. Failing to load\n");
 			return -ENOMEM;
 		}
 		phba->eh_sgl_hndl_base = kzalloc(sizeof(struct sgl_handle *) *
@@ -3347,14 +3347,14 @@ static int beiscsi_init_sgl_handle(struct beiscsi_hba *phba)
 						 GFP_KERNEL);
 		if (!phba->eh_sgl_hndl_base) {
 			kfree(phba->io_sgl_hndl_base);
-//			shost_printk(KERN_ERR, phba->shost,
-;
+			shost_printk(KERN_ERR, phba->shost,
+				     "Mem Alloc Failed. Failing to load\n");
 			return -ENOMEM;
 		}
 	} else {
-//		shost_printk(KERN_ERR, phba->shost,
-//			     "HWI_MEM_SGLH is more than one element."
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "HWI_MEM_SGLH is more than one element."
+			     "Failing to load\n");
 		return -ENOMEM;
 	}
 
@@ -3426,17 +3426,17 @@ static int hba_setup_cid_tbls(struct beiscsi_hba *phba)
 	phba->cid_array = kzalloc(sizeof(void *) * phba->params.cxns_per_ctrl,
 				  GFP_KERNEL);
 	if (!phba->cid_array) {
-//		shost_printk(KERN_ERR, phba->shost,
-//			     "Failed to allocate memory in "
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "Failed to allocate memory in "
+			     "hba_setup_cid_tbls\n");
 		return -ENOMEM;
 	}
 	phba->ep_array = kzalloc(sizeof(struct iscsi_endpoint *) *
 				 phba->params.cxns_per_ctrl * 2, GFP_KERNEL);
 	if (!phba->ep_array) {
-//		shost_printk(KERN_ERR, phba->shost,
-//			     "Failed to allocate memory in "
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "Failed to allocate memory in "
+			     "hba_setup_cid_tbls\n");
 		kfree(phba->cid_array);
 		return -ENOMEM;
 	}
@@ -3498,8 +3498,8 @@ static void hwi_disable_intr(struct beiscsi_hba *phba)
 		reg &= ~MEMBAR_CTRL_INT_CTRL_HOSTINTR_MASK;
 		iowrite32(reg, addr);
 	} else
-//		shost_printk(KERN_WARNING, phba->shost,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			     "In hwi_disable_intr, Already Disabled\n");
 }
 
 static int beiscsi_get_boot_info(struct beiscsi_hba *phba)
@@ -3535,8 +3535,8 @@ static int beiscsi_get_boot_info(struct beiscsi_hba *phba)
 	boot_resp = embedded_payload(wrb);
 
 	if (boot_resp->boot_session_handle < 0) {
-//		printk(KERN_ERR "No Boot Session for this pci_func,"
-;
+		printk(KERN_ERR "No Boot Session for this pci_func,"
+			"session Hndl = %d\n", boot_resp->boot_session_handle);
 		return -ENXIO;
 	}
 
@@ -3591,22 +3591,22 @@ static int beiscsi_init_port(struct beiscsi_hba *phba)
 
 	ret = beiscsi_init_controller(phba);
 	if (ret < 0) {
-//		shost_printk(KERN_ERR, phba->shost,
-//			     "beiscsi_dev_probe - Failed in"
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "beiscsi_dev_probe - Failed in"
+			     "beiscsi_init_controller\n");
 		return ret;
 	}
 	ret = beiscsi_init_sgl_handle(phba);
 	if (ret < 0) {
-//		shost_printk(KERN_ERR, phba->shost,
-//			     "beiscsi_dev_probe - Failed in"
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "beiscsi_dev_probe - Failed in"
+			     "beiscsi_init_sgl_handle\n");
 		goto do_cleanup_ctrlr;
 	}
 
 	if (hba_setup_cid_tbls(phba)) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "Failed in hba_setup_cid_tbls\n");
 		kfree(phba->io_sgl_hndl_base);
 		kfree(phba->eh_sgl_hndl_base);
 		goto do_cleanup_ctrlr;
@@ -3658,8 +3658,8 @@ static void beiscsi_clean_port(struct beiscsi_hba *phba)
 
 	mgmt_status = mgmt_epfw_cleanup(phba, CMD_CONNECTION_CHUTE_0);
 	if (mgmt_status)
-//		shost_printk(KERN_WARNING, phba->shost,
-;
+		shost_printk(KERN_WARNING, phba->shost,
+			     "mgmt_epfw_cleanup FAILED\n");
 
 	hwi_purge_eq(phba);
 	hwi_cleanup(phba);
@@ -4222,8 +4222,8 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
 		beiscsi_msix_enable(phba);
 	ret = be_ctrl_init(phba, pcidev);
 	if (ret) {
-//		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
-;
+		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
+				"Failed in be_ctrl_init\n");
 		goto hba_free;
 	}
 
@@ -4232,19 +4232,19 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
 		value = readl((void *)real_offset);
 		if (value & 0x00010000) {
 			gcrashmode++;
-//			shost_printk(KERN_ERR, phba->shost,
-;
+			shost_printk(KERN_ERR, phba->shost,
+				"Loading Driver in crashdump mode\n");
 			ret = beiscsi_pci_soft_reset(phba);
 			if (ret) {
-//				shost_printk(KERN_ERR, phba->shost,
-;
+				shost_printk(KERN_ERR, phba->shost,
+					"Reset Failed. Aborting Crashdump\n");
 				goto hba_free;
 			}
 			ret = be_chk_reset_complete(phba);
 			if (ret) {
-//				shost_printk(KERN_ERR, phba->shost,
-//					"Failed to get out of reset."
-;
+				shost_printk(KERN_ERR, phba->shost,
+					"Failed to get out of reset."
+					"Aborting Crashdump\n");
 				goto hba_free;
 			}
 		} else {
@@ -4259,8 +4259,8 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
 	spin_lock_init(&phba->isr_lock);
 	ret = mgmt_get_fw_config(&phba->ctrl, phba);
 	if (ret != 0) {
-//		shost_printk(KERN_ERR, phba->shost,
-;
+		shost_printk(KERN_ERR, phba->shost,
+			     "Error getting fw config\n");
 		goto free_port;
 	}
 	phba->shost->max_id = phba->fw_config.iscsi_cid_count;
@@ -4268,8 +4268,8 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
 	phba->shost->can_queue = phba->params.ios_per_ctrl;
 	ret = beiscsi_init_port(phba);
 	if (ret < 0) {
-//		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
-;
+		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
+			     "Failed in beiscsi_init_port\n");
 		goto free_port;
 	}
 
@@ -4286,8 +4286,8 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
 		 phba->shost->host_no);
 	phba->wq = alloc_workqueue(phba->wq_name, WQ_MEM_RECLAIM, 1);
 	if (!phba->wq) {
-//		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
-;
+		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
+				"Failed to allocate work queue\n");
 		goto free_twq;
 	}
 
@@ -4305,15 +4305,15 @@ static int __devinit beiscsi_dev_probe(struct pci_dev *pcidev,
 	}
 	ret = beiscsi_init_irqs(phba);
 	if (ret < 0) {
-//		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
-;
+		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
+			     "Failed to beiscsi_init_irqs\n");
 		goto free_blkenbld;
 	}
 	hwi_enable_intr(phba);
 	ret = beiscsi_get_boot_info(phba);
 	if (ret < 0) {
-//		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
-;
+		shost_printk(KERN_ERR, phba->shost, "beiscsi_dev_probe-"
+			     "No Boot Devices !!!!!\n");
 	}
 	SE_DEBUG(DBG_LVL_8, "\n\n\n SUCCESS - DRIVER LOADED\n\n\n");
 	return 0;

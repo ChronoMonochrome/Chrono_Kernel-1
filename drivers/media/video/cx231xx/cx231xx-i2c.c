@@ -42,15 +42,15 @@ MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
 #define dprintk1(lvl, fmt, args...)			\
 do {							\
 	if (i2c_debug >= lvl) {				\
-;
+		printk(fmt, ##args);			\
 		}					\
 } while (0)
 
 #define dprintk2(lvl, fmt, args...)			\
 do {							\
 	if (i2c_debug >= lvl) {				\
-//		printk(KERN_DEBUG "%s at %s: " fmt,	\
-;
+		printk(KERN_DEBUG "%s at %s: " fmt,	\
+		       dev->name, __func__ , ##args);	\
       } 						\
 } while (0)
 
@@ -390,7 +390,7 @@ static int cx231xx_i2c_xfer(struct i2c_adapter *i2c_adap,
 			rc = cx231xx_i2c_recv_bytes(i2c_adap, &msgs[i]);
 			if (i2c_debug >= 2) {
 				for (byte = 0; byte < msgs[i].len; byte++)
-;
+					printk(" %02x", msgs[i].buf[byte]);
 			}
 		} else if (i + 1 < num && (msgs[i + 1].flags & I2C_M_RD) &&
 			   msgs[i].addr == msgs[i + 1].addr
@@ -401,21 +401,21 @@ static int cx231xx_i2c_xfer(struct i2c_adapter *i2c_adap,
 							       &msgs[i + 1]);
 			if (i2c_debug >= 2) {
 				for (byte = 0; byte < msgs[i].len; byte++)
-;
+					printk(" %02x", msgs[i].buf[byte]);
 			}
 			i++;
 		} else {
 			/* write bytes */
 			if (i2c_debug >= 2) {
 				for (byte = 0; byte < msgs[i].len; byte++)
-;
+					printk(" %02x", msgs[i].buf[byte]);
 			}
 			rc = cx231xx_i2c_send_bytes(i2c_adap, &msgs[i]);
 		}
 		if (rc < 0)
 			goto err;
 		if (i2c_debug >= 2)
-;
+			printk("\n");
 	}
 	mutex_unlock(&dev->i2c_lock);
 	return num;

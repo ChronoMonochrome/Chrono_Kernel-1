@@ -406,10 +406,10 @@ static struct page *read_page(struct file *file, unsigned long index,
 	}
 out:
 	if (IS_ERR(page))
-//		printk(KERN_ALERT "md: bitmap read error: (%dB @ %llu): %ld\n",
-//			(int)PAGE_SIZE,
-//			(unsigned long long)index << PAGE_SHIFT,
-;
+		printk(KERN_ALERT "md: bitmap read error: (%dB @ %llu): %ld\n",
+			(int)PAGE_SIZE,
+			(unsigned long long)index << PAGE_SHIFT,
+			PTR_ERR(page));
 	return page;
 }
 
@@ -450,24 +450,24 @@ void bitmap_print_sb(struct bitmap *bitmap)
 	if (!bitmap || !bitmap->sb_page)
 		return;
 	sb = kmap_atomic(bitmap->sb_page);
-;
-;
-;
-//	printk(KERN_DEBUG "          uuid: %08x.%08x.%08x.%08x\n",
-//					*(__u32 *)(sb->uuid+0),
-//					*(__u32 *)(sb->uuid+4),
-//					*(__u32 *)(sb->uuid+8),
-;
-//	printk(KERN_DEBUG "        events: %llu\n",
-;
-//	printk(KERN_DEBUG "events cleared: %llu\n",
-;
-;
-;
-;
-//	printk(KERN_DEBUG "     sync size: %llu KB\n",
-;
-;
+	printk(KERN_DEBUG "%s: bitmap file superblock:\n", bmname(bitmap));
+	printk(KERN_DEBUG "         magic: %08x\n", le32_to_cpu(sb->magic));
+	printk(KERN_DEBUG "       version: %d\n", le32_to_cpu(sb->version));
+	printk(KERN_DEBUG "          uuid: %08x.%08x.%08x.%08x\n",
+					*(__u32 *)(sb->uuid+0),
+					*(__u32 *)(sb->uuid+4),
+					*(__u32 *)(sb->uuid+8),
+					*(__u32 *)(sb->uuid+12));
+	printk(KERN_DEBUG "        events: %llu\n",
+			(unsigned long long) le64_to_cpu(sb->events));
+	printk(KERN_DEBUG "events cleared: %llu\n",
+			(unsigned long long) le64_to_cpu(sb->events_cleared));
+	printk(KERN_DEBUG "         state: %08x\n", le32_to_cpu(sb->state));
+	printk(KERN_DEBUG "     chunksize: %d B\n", le32_to_cpu(sb->chunksize));
+	printk(KERN_DEBUG "  daemon sleep: %ds\n", le32_to_cpu(sb->daemon_sleep));
+	printk(KERN_DEBUG "     sync size: %llu KB\n",
+			(unsigned long long)le64_to_cpu(sb->sync_size)/2);
+	printk(KERN_DEBUG "max write behind: %d\n", le32_to_cpu(sb->write_behind));
 	kunmap_atomic(sb);
 }
 
@@ -505,7 +505,7 @@ static int bitmap_new_disk_sb(struct bitmap *bitmap)
 	BUG_ON(!chunksize);
 	if (!is_power_of_2(chunksize)) {
 		kunmap_atomic(sb);
-;
+		printk(KERN_ERR "bitmap chunksize not a power of 2\n");
 		return -EINVAL;
 	}
 	sb->chunksize = cpu_to_le32(chunksize);
@@ -513,7 +513,7 @@ static int bitmap_new_disk_sb(struct bitmap *bitmap)
 	daemon_sleep = bitmap->mddev->bitmap_info.daemon_sleep;
 	if (!daemon_sleep ||
 	    (daemon_sleep < 1) || (daemon_sleep > MAX_SCHEDULE_TIMEOUT)) {
-;
+		printk(KERN_INFO "Choosing daemon_sleep default (5 sec)\n");
 		daemon_sleep = 5 * HZ;
 	}
 	sb->daemon_sleep = cpu_to_le32(daemon_sleep);
@@ -592,8 +592,8 @@ static int bitmap_read_sb(struct bitmap *bitmap)
 	else if (write_behind > COUNTER_MAX)
 		reason = "write-behind limit out of range (0 - 16383)";
 	if (reason) {
-//		printk(KERN_INFO "%s: invalid bitmap file superblock: %s\n",
-;
+		printk(KERN_INFO "%s: invalid bitmap file superblock: %s\n",
+			bmname(bitmap), reason);
 		goto out;
 	}
 
@@ -606,18 +606,18 @@ static int bitmap_read_sb(struct bitmap *bitmap)
 		 * bitmap's UUID and event counter to the mddev's
 		 */
 		if (memcmp(sb->uuid, bitmap->mddev->uuid, 16)) {
-//			printk(KERN_INFO
-//			       "%s: bitmap superblock UUID mismatch\n",
-;
+			printk(KERN_INFO
+			       "%s: bitmap superblock UUID mismatch\n",
+			       bmname(bitmap));
 			goto out;
 		}
 		events = le64_to_cpu(sb->events);
 		if (events < bitmap->mddev->events) {
-//			printk(KERN_INFO
-//			       "%s: bitmap file is out of date (%llu < %llu) "
-//			       "-- forcing full recovery\n",
-//			       bmname(bitmap), events,
-;
+			printk(KERN_INFO
+			       "%s: bitmap file is out of date (%llu < %llu) "
+			       "-- forcing full recovery\n",
+			       bmname(bitmap), events,
+			       (unsigned long long) bitmap->mddev->events);
 			sb->state |= cpu_to_le32(BITMAP_STALE);
 		}
 	}
@@ -782,15 +782,15 @@ static void bitmap_file_kick(struct bitmap *bitmap)
 				ptr = d_path(&bitmap->file->f_path, path,
 					     PAGE_SIZE);
 
-//			printk(KERN_ALERT
-//			      "%s: kicking failed bitmap file %s from array!\n",
-;
+			printk(KERN_ALERT
+			      "%s: kicking failed bitmap file %s from array!\n",
+			      bmname(bitmap), IS_ERR(ptr) ? "" : ptr);
 
 			kfree(path);
 		} else
-//			printk(KERN_ALERT
-//			       "%s: disabling internal bitmap due to errors\n",
-;
+			printk(KERN_ALERT
+			       "%s: disabling internal bitmap due to errors\n",
+			       bmname(bitmap));
 	}
 
 	bitmap_file_put(bitmap);
@@ -932,8 +932,8 @@ static int bitmap_init_from_disk(struct bitmap *bitmap, sector_t start)
 
 	outofdate = bitmap->flags & BITMAP_STALE;
 	if (outofdate)
-//		printk(KERN_INFO "%s: bitmap file is out of date, doing full "
-;
+		printk(KERN_INFO "%s: bitmap file is out of date, doing full "
+			"recovery\n", bmname(bitmap));
 
 	bytes = DIV_ROUND_UP(bitmap->chunks, 8);
 	if (!bitmap->mddev->bitmap_info.external)
@@ -942,10 +942,10 @@ static int bitmap_init_from_disk(struct bitmap *bitmap, sector_t start)
 	num_pages = DIV_ROUND_UP(bytes, PAGE_SIZE);
 
 	if (file && i_size_read(file->f_mapping->host) < bytes) {
-//		printk(KERN_INFO "%s: bitmap file too short %lu < %lu\n",
-//			bmname(bitmap),
-//			(unsigned long) i_size_read(file->f_mapping->host),
-;
+		printk(KERN_INFO "%s: bitmap file too short %lu < %lu\n",
+			bmname(bitmap),
+			(unsigned long) i_size_read(file->f_mapping->host),
+			bytes);
 		goto err;
 	}
 
@@ -1052,15 +1052,15 @@ static int bitmap_init_from_disk(struct bitmap *bitmap, sector_t start)
 		md_wakeup_thread(bitmap->mddev->thread);
 	}
 
-//	printk(KERN_INFO "%s: bitmap initialized from disk: "
-//	       "read %lu/%lu pages, set %lu of %lu bits\n",
-;
+	printk(KERN_INFO "%s: bitmap initialized from disk: "
+	       "read %lu/%lu pages, set %lu of %lu bits\n",
+	       bmname(bitmap), bitmap->file_pages, num_pages, bit_cnt, chunks);
 
 	return 0;
 
  err:
-//	printk(KERN_INFO "%s: bitmap initialisation failed: %d\n",
-;
+	printk(KERN_INFO "%s: bitmap initialisation failed: %d\n",
+	       bmname(bitmap), ret);
 	return ret;
 }
 
@@ -1743,8 +1743,8 @@ int bitmap_create(struct mddev *mddev)
 	if (!bitmap->bp)
 		goto error;
 
-//	printk(KERN_INFO "created bitmap (%lu pages) for device %s\n",
-;
+	printk(KERN_INFO "created bitmap (%lu pages) for device %s\n",
+		pages, bmname(bitmap));
 
 	mddev->bitmap = bitmap;
 

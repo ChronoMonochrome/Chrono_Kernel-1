@@ -220,16 +220,16 @@ static int usb6fire_fw_ezusb_upload(
 	ret = request_firmware(&fw, fwname, &device->dev);
 	if (ret < 0) {
 		kfree(rec);
-//		snd_printk(KERN_ERR PREFIX "error requesting ezusb "
-;
+		snd_printk(KERN_ERR PREFIX "error requesting ezusb "
+				"firmware %s.\n", fwname);
 		return ret;
 	}
 	ret = usb6fire_fw_ihex_init(fw, rec);
 	if (ret < 0) {
 		kfree(rec);
 		release_firmware(fw);
-//		snd_printk(KERN_ERR PREFIX "error validating ezusb "
-;
+		snd_printk(KERN_ERR PREFIX "error validating ezusb "
+				"firmware %s.\n", fwname);
 		return ret;
 	}
 	/* upload firmware image */
@@ -238,8 +238,8 @@ static int usb6fire_fw_ezusb_upload(
 	if (ret < 0) {
 		kfree(rec);
 		release_firmware(fw);
-//		snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
-;
+		snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
+				"firmware %s: begin message.\n", fwname);
 		return ret;
 	}
 
@@ -249,8 +249,8 @@ static int usb6fire_fw_ezusb_upload(
 		if (ret < 0) {
 			kfree(rec);
 			release_firmware(fw);
-//			snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
-;
+			snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
+					"firmware %s: data urb.\n", fwname);
 			return ret;
 		}
 	}
@@ -261,8 +261,8 @@ static int usb6fire_fw_ezusb_upload(
 		ret = usb6fire_fw_ezusb_write(device, 0xa0, postaddr,
 				postdata, postlen);
 		if (ret < 0) {
-//			snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
-;
+			snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
+					"firmware %s: post urb.\n", fwname);
 			return ret;
 		}
 	}
@@ -270,8 +270,8 @@ static int usb6fire_fw_ezusb_upload(
 	data = 0x00; /* resume ezusb cpu */
 	ret = usb6fire_fw_ezusb_write(device, 0xa0, 0xe600, &data, 1);
 	if (ret < 0) {
-//		snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
-;
+		snd_printk(KERN_ERR PREFIX "unable to upload ezusb "
+				"firmware %s: end message.\n", fwname);
 		return ret;
 	}
 	return 0;
@@ -293,8 +293,8 @@ static int usb6fire_fw_fpga_upload(
 
 	ret = request_firmware(&fw, fwname, &device->dev);
 	if (ret < 0) {
-//		snd_printk(KERN_ERR PREFIX "unable to get fpga firmware %s.\n",
-;
+		snd_printk(KERN_ERR PREFIX "unable to get fpga firmware %s.\n",
+				fwname);
 		kfree(buffer);
 		return -EIO;
 	}
@@ -306,8 +306,8 @@ static int usb6fire_fw_fpga_upload(
 	if (ret < 0) {
 		kfree(buffer);
 		release_firmware(fw);
-//		snd_printk(KERN_ERR PREFIX "unable to upload fpga firmware: "
-;
+		snd_printk(KERN_ERR PREFIX "unable to upload fpga firmware: "
+				"begin urb.\n");
 		return ret;
 	}
 
@@ -319,8 +319,8 @@ static int usb6fire_fw_fpga_upload(
 		if (ret < 0) {
 			release_firmware(fw);
 			kfree(buffer);
-//			snd_printk(KERN_ERR PREFIX "unable to upload fpga "
-;
+			snd_printk(KERN_ERR PREFIX "unable to upload fpga "
+					"firmware: fw urb.\n");
 			return ret;
 		}
 	}
@@ -329,8 +329,8 @@ static int usb6fire_fw_fpga_upload(
 
 	ret = usb6fire_fw_ezusb_write(device, 9, 0, NULL, 0);
 	if (ret < 0) {
-//		snd_printk(KERN_ERR PREFIX "unable to upload fpga firmware: "
-;
+		snd_printk(KERN_ERR PREFIX "unable to upload fpga firmware: "
+				"end urb.\n");
 		return ret;
 	}
 	return 0;
@@ -347,11 +347,11 @@ static int usb6fire_fw_check(u8 *version)
 		if (!memcmp(version, known_fw_versions + i, 4))
 			return 0;
 
-//	snd_printk(KERN_ERR PREFIX "invalid fimware version in device: "
-//			"%02x %02x %02x %02x. "
-//			"please reconnect to power. if this failure "
-//			"still happens, check your firmware installation.",
-;
+	snd_printk(KERN_ERR PREFIX "invalid fimware version in device: "
+			"%02x %02x %02x %02x. "
+			"please reconnect to power. if this failure "
+			"still happens, check your firmware installation.",
+			version[0], version[1], version[2], version[3]);
 	return -EINVAL;
 }
 
@@ -366,16 +366,16 @@ int usb6fire_fw_init(struct usb_interface *intf)
 
 	ret = usb6fire_fw_ezusb_read(device, 1, 0, buffer, 8);
 	if (ret < 0) {
-//		snd_printk(KERN_ERR PREFIX "unable to receive device "
-;
+		snd_printk(KERN_ERR PREFIX "unable to receive device "
+				"firmware state.\n");
 		return ret;
 	}
 	if (buffer[0] != 0xeb || buffer[1] != 0xaa || buffer[2] != 0x55) {
-//		snd_printk(KERN_ERR PREFIX "unknown device firmware state "
-;
+		snd_printk(KERN_ERR PREFIX "unknown device firmware state "
+				"received from device: ");
 		for (i = 0; i < 8; i++)
-;
-;
+			snd_printk("%02x ", buffer[i]);
+		snd_printk("\n");
 		return -EIO;
 	}
 	/* do we need fpga loader ezusb firmware? */
@@ -407,11 +407,11 @@ int usb6fire_fw_init(struct usb_interface *intf)
 		return usb6fire_fw_check(buffer + 4);
 	/* unknown data? */
 	else {
-//		snd_printk(KERN_ERR PREFIX "unknown device firmware state "
-;
+		snd_printk(KERN_ERR PREFIX "unknown device firmware state "
+				"received from device: ");
 		for (i = 0; i < 8; i++)
-;
-;
+			snd_printk("%02x ", buffer[i]);
+		snd_printk("\n");
 		return -EIO;
 	}
 	return 0;

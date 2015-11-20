@@ -231,8 +231,8 @@ static int w1_process_command_root(struct cn_msg *msg, struct w1_netlink_msg *mc
 	u32 *id;
 
 	if (mcmd->type != W1_LIST_MASTERS) {
-//		printk(KERN_NOTICE "%s: msg: %x.%x, wrong type: %u, len: %u.\n",
-;
+		printk(KERN_NOTICE "%s: msg: %x.%x, wrong type: %u, len: %u.\n",
+			__func__, msg->id.idx, msg->id.val, mcmd->type, mcmd->len);
 		return -EPROTO;
 	}
 
@@ -329,8 +329,8 @@ static void w1_cn_callback(struct cn_msg *msg, struct netlink_skb_parms *nsp)
 
 		memcpy(&id, m->id.id, sizeof(id));
 #if 0
-//		printk("%s: %02x.%012llx.%02x: type=%02x, len=%u.\n",
-;
+		printk("%s: %02x.%012llx.%02x: type=%02x, len=%u.\n",
+				__func__, id.family, (unsigned long long)id.id, id.crc, m->type, m->len);
 #endif
 		if (m->len + sizeof(struct w1_netlink_msg) > msg->len) {
 			err = -E2BIG;

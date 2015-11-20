@@ -4309,7 +4309,7 @@ static int db8500_prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask,
 		trace_printk("(%02X&%02X)@%04Xh\n", *value, *mask, (slave << 8 | reg));
 	} else {
 		log_this(240, "reg", slave << 8 | reg, "error", mb5_transfer.ack.status);
-;
+		trace_printk("error(%02X)@%04Xh\n", mb5_transfer.ack.status, (slave << 8 | reg));
 	}
 
 	mutex_unlock(&mb5_transfer.lock);
@@ -4902,7 +4902,7 @@ static bool read_mailbox_3(void)
 	unsigned long flags;
 
 	msg = readb(tcdm_base + PRCM_ACK_MB3_TRACE_MSG);
-;
+	printk(KERN_INFO"PRCMU Firmware: msg = 0x%02x\n", msg);
 
 	log_req = readb(tcdm_base + PRCM_ACK_MB3_LOG_REQ);
 

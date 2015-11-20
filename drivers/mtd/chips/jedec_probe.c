@@ -1946,13 +1946,13 @@ static int cfi_jedec_setup(struct map_info *map, struct cfi_private *cfi, int in
 		return 0;
 	}
 
-;
+	printk(KERN_INFO "Found: %s\n",jedec_table[index].name);
 
 	num_erase_regions = jedec_table[index].nr_regions;
 
 	cfi->cfiq = kmalloc(sizeof(struct cfi_ident) + num_erase_regions * 4, GFP_KERNEL);
 	if (!cfi->cfiq) {
-;
+		//xx printk(KERN_WARNING "%s: kmalloc failed for CFI ident structure\n", map->name);
 		return 0;
 	}
 
@@ -2035,9 +2035,9 @@ static inline int jedec_match( uint32_t base,
 		id = (uint32_t)finfo->dev_id;
 		break;
 	default:
-//		printk(KERN_WARNING
-//		       "MTD %s(): Unsupported device type %d\n",
-;
+		printk(KERN_WARNING
+		       "MTD %s(): Unsupported device type %d\n",
+		       __func__, cfi->device_type);
 		goto match_done;
 	}
 	if ( cfi->mfr != mfr || cfi->id != id ) {
@@ -2137,9 +2137,9 @@ static int jedec_probe_chip(struct map_info *map, __u32 base,
 
 	/* Make certain we aren't probing past the end of map */
 	if (base >= map->size) {
-//		printk(KERN_NOTICE
-//			"Probe at base(0x%08x) past the end of the map(0x%08lx)\n",
-;
+		printk(KERN_NOTICE
+			"Probe at base(0x%08x) past the end of the map(0x%08lx)\n",
+			base, map->size -1);
 		return 0;
 
 	}
@@ -2191,8 +2191,8 @@ static int jedec_probe_chip(struct map_info *map, __u32 base,
 		id = jedec_read_id(map, base, cfi);
 
 		if ((mfr != cfi->mfr) || (id != cfi->id)) {
-//			printk(KERN_DEBUG "%s: Found different chip or no chip at all (mfr 0x%x, id 0x%x) at 0x%x\n",
-;
+			printk(KERN_DEBUG "%s: Found different chip or no chip at all (mfr 0x%x, id 0x%x) at 0x%x\n",
+			       map->name, mfr, id, base);
 			jedec_reset(base, map, cfi);
 			return 0;
 		}
@@ -2214,8 +2214,8 @@ static int jedec_probe_chip(struct map_info *map, __u32 base,
 			/* If the device IDs go away, it's an alias */
 			if (jedec_read_mfr(map, base, cfi) != cfi->mfr ||
 			    jedec_read_id(map, base, cfi) != cfi->id) {
-//				printk(KERN_DEBUG "%s: Found an alias at 0x%x for the chip at 0x%lx\n",
-;
+				printk(KERN_DEBUG "%s: Found an alias at 0x%x for the chip at 0x%lx\n",
+				       map->name, base, start);
 				return 0;
 			}
 
@@ -2226,8 +2226,8 @@ static int jedec_probe_chip(struct map_info *map, __u32 base,
 			jedec_reset(base, map, cfi);
 			if (jedec_read_mfr(map, base, cfi) == cfi->mfr &&
 			    jedec_read_id(map, base, cfi) == cfi->id) {
-//				printk(KERN_DEBUG "%s: Found an alias at 0x%x for the chip at 0x%lx\n",
-;
+				printk(KERN_DEBUG "%s: Found an alias at 0x%x for the chip at 0x%lx\n",
+				       map->name, base, start);
 				return 0;
 			}
 		}
@@ -2242,9 +2242,9 @@ ok_out:
 	/* Put it back into Read Mode */
 	jedec_reset(base, map, cfi);
 
-//	printk(KERN_INFO "%s: Found %d x%d devices at 0x%x in %d-bit bank\n",
-//	       map->name, cfi_interleave(cfi), cfi->device_type*8, base,
-;
+	printk(KERN_INFO "%s: Found %d x%d devices at 0x%x in %d-bit bank\n",
+	       map->name, cfi_interleave(cfi), cfi->device_type*8, base,
+	       map->bankwidth*8);
 
 	return 1;
 }

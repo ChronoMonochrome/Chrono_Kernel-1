@@ -72,8 +72,8 @@ static int xen_suspend(void *data)
 
 	err = syscore_suspend();
 	if (err) {
-//		printk(KERN_ERR "xen_suspend: system core suspend failed: %d\n",
-;
+		printk(KERN_ERR "xen_suspend: system core suspend failed: %d\n",
+			err);
 		return err;
 	}
 
@@ -114,23 +114,23 @@ static void do_suspend(void)
 	   during suspend. */
 	err = freeze_processes();
 	if (err) {
-;
+		printk(KERN_ERR "xen suspend: freeze failed %d\n", err);
 		goto out;
 	}
 #endif
 
 	err = dpm_suspend_start(PMSG_FREEZE);
 	if (err) {
-;
+		printk(KERN_ERR "xen suspend: dpm_suspend_start %d\n", err);
 		goto out_thaw;
 	}
 
-;
+	printk(KERN_DEBUG "suspending xenstore...\n");
 	xs_suspend();
 
 	err = dpm_suspend_noirq(PMSG_FREEZE);
 	if (err) {
-;
+		printk(KERN_ERR "dpm_suspend_noirq failed: %d\n", err);
 		goto out_resume;
 	}
 
@@ -151,7 +151,7 @@ static void do_suspend(void)
 	dpm_resume_noirq(si.cancelled ? PMSG_THAW : PMSG_RESTORE);
 
 	if (err) {
-;
+		printk(KERN_ERR "failed to start xen_suspend: %d\n", err);
 		si.cancelled = 1;
 	}
 
@@ -243,7 +243,7 @@ static void shutdown_handler(struct xenbus_watch *watch,
 	if (handler->cb) {
 		handler->cb();
 	} else {
-;
+		printk(KERN_INFO "Ignoring shutdown request: %s\n", str);
 		shutting_down = SHUTDOWN_INVALID;
 	}
 
@@ -263,8 +263,8 @@ static void sysrq_handler(struct xenbus_watch *watch, const char **vec,
 	if (err)
 		return;
 	if (!xenbus_scanf(xbt, "control", "sysrq", "%c", &sysrq_key)) {
-//		printk(KERN_ERR "Unable to read sysrq code in "
-;
+		printk(KERN_ERR "Unable to read sysrq code in "
+		       "control/sysrq\n");
 		xenbus_transaction_end(xbt, 1);
 		return;
 	}
@@ -297,14 +297,14 @@ static int setup_shutdown_watcher(void)
 
 	err = register_xenbus_watch(&shutdown_watch);
 	if (err) {
-;
+		printk(KERN_ERR "Failed to set shutdown watcher\n");
 		return err;
 	}
 
 #ifdef CONFIG_MAGIC_SYSRQ
 	err = register_xenbus_watch(&sysrq_watch);
 	if (err) {
-;
+		printk(KERN_ERR "Failed to set sysrq watcher\n");
 		return err;
 	}
 #endif

@@ -190,8 +190,8 @@ write_sram(struct idt77252_dev *card, unsigned long addr, u32 value)
 	      (addr < card->tst[0] + card->tst_size)) ||
 	     ((addr > card->tst[1] + card->tst_size - 2) &&
 	      (addr < card->tst[1] + card->tst_size)))) {
-//		printk("%s: ERROR: TST JMP section at %08lx written: %08x\n",
-;
+		printk("%s: ERROR: TST JMP section at %08lx written: %08x\n",
+		       card->name, addr, value);
 	}
 
 	spin_lock_irqsave(&card->cmd_lock, flags);
@@ -209,7 +209,7 @@ read_utility(void *dev, unsigned long ubus_addr)
 	u8 value;
 
 	if (!card) {
-;
+		printk("Error: No such device.\n");
 		return -1;
 	}
 
@@ -228,7 +228,7 @@ write_utility(void *dev, unsigned long ubus_addr, u8 value)
 	unsigned long flags;
 
 	if (!card) {
-;
+		printk("Error: No such device.\n");
 		return;
 	}
 
@@ -352,7 +352,7 @@ idt77252_read_gp(struct idt77252_dev *card)
 
 	gp = readl(SAR_REG_GP);
 #if 0
-;
+	printk("RD: %s\n", gp & SAR_GP_EEDI ? "1" : "0");
 #endif
 	return gp;
 }
@@ -363,9 +363,9 @@ idt77252_write_gp(struct idt77252_dev *card, u32 value)
 	unsigned long flags;
 
 #if 0
-//	printk("WR: %s %s %s\n", value & SAR_GP_EECS ? "   " : "/CS",
-//	       value & SAR_GP_EESCLK ? "HIGH" : "LOW ",
-;
+	printk("WR: %s %s %s\n", value & SAR_GP_EECS ? "   " : "/CS",
+	       value & SAR_GP_EESCLK ? "HIGH" : "LOW ",
+	       value & SAR_GP_EEDO   ? "1" : "0");
 #endif
 
 	spin_lock_irqsave(&card->cmd_lock, flags);
@@ -535,11 +535,11 @@ dump_tct(struct idt77252_dev *card, int index)
 
 	tct = (unsigned long) (card->tct_base + index * SAR_SRAM_TCT_SIZE);
 
-;
+	printk("%s: TCT %x:", card->name, index);
 	for (i = 0; i < 8; i++) {
-;
+		printk(" %08x", read_sram(card, tct + i));
 	}
-;
+	printk("\n");
 }
 
 static void
@@ -549,7 +549,7 @@ idt77252_tx_dump(struct idt77252_dev *card)
 	struct vc_map *vc;
 	int i;
 
-;
+	printk("%s\n", __func__);
 	for (i = 0; i < card->tct_size; i++) {
 		vc = card->vcs[i];
 		if (!vc)
@@ -564,7 +564,7 @@ idt77252_tx_dump(struct idt77252_dev *card)
 		if (!vcc)
 			continue;
 
-;
+		printk("%s: Connection %d:\n", card->name, vc->index);
 		dump_tct(card, vc->index);
 	}
 }
@@ -775,8 +775,8 @@ push_on_scq(struct idt77252_dev *card, struct vc_map *vc, struct sk_buff *skb)
 
 out:
 	if (time_after(jiffies, scq->trans_start + HZ)) {
-//		printk("%s: Error pushing TBD for %d.%d\n",
-;
+		printk("%s: Error pushing TBD for %d.%d\n",
+		       card->name, vc->tx_vcc->vpi, vc->tx_vcc->vci);
 #ifdef CONFIG_ATM_IDT77252_DEBUG
 		idt77252_tx_dump(card);
 #endif
@@ -837,7 +837,7 @@ queue_skb(struct idt77252_dev *card, struct vc_map *vc,
 	int aal;
 
 	if (skb->len == 0) {
-;
+		printk("%s: invalid skb->len (%d)\n", card->name, skb->len);
 		return -EINVAL;
 	}
 
@@ -869,7 +869,7 @@ queue_skb(struct idt77252_dev *card, struct vc_map *vc,
 	}
 
 	if (test_bit(VCF_RSV, &vc->flags)) {
-;
+		printk("%s: Trying to transmit on reserved VC\n", card->name);
 		goto errout;
 	}
 
@@ -905,7 +905,7 @@ queue_skb(struct idt77252_dev *card, struct vc_map *vc,
 	case ATM_AAL1:
 	case ATM_AAL2:
 	default:
-;
+		printk("%s: Traffic type not supported.\n", card->name);
 		error = -EPROTONOSUPPORT;
 		goto errout;
 	}
@@ -974,7 +974,7 @@ init_rsq(struct idt77252_dev *card)
 	card->rsq.base = pci_alloc_consistent(card->pcidev, RSQSIZE,
 					      &card->rsq.paddr);
 	if (card->rsq.base == NULL) {
-;
+		printk("%s: can't allocate RSQ.\n", card->name);
 		return -1;
 	}
 	memset(card->rsq.base, 0, RSQSIZE);
@@ -1028,10 +1028,10 @@ dequeue_rx(struct idt77252_dev *card, struct rsq_entry *rsqe)
 
 	skb = sb_pool_skb(card, le32_to_cpu(rsqe->word_2));
 	if (skb == NULL) {
-//		printk("%s: NULL skb in %s, rsqe: %08x %08x %08x %08x\n",
-//		       card->name, __func__,
-//		       le32_to_cpu(rsqe->word_1), le32_to_cpu(rsqe->word_2),
-;
+		printk("%s: NULL skb in %s, rsqe: %08x %08x %08x %08x\n",
+		       card->name, __func__,
+		       le32_to_cpu(rsqe->word_1), le32_to_cpu(rsqe->word_2),
+		       le32_to_cpu(rsqe->word_3), le32_to_cpu(rsqe->word_4));
 		return;
 	}
 
@@ -1043,16 +1043,16 @@ dequeue_rx(struct idt77252_dev *card, struct rsq_entry *rsqe)
 		 card->name, vpi, vci, skb, skb->data);
 
 	if ((vpi >= (1 << card->vpibits)) || (vci != (vci & card->vcimask))) {
-//		printk("%s: SDU received for out-of-range vc %u.%u\n",
-;
+		printk("%s: SDU received for out-of-range vc %u.%u\n",
+		       card->name, vpi, vci);
 		recycle_rx_skb(card, skb);
 		return;
 	}
 
 	vc = card->vcs[VPCI2VC(card, vpi, vci)];
 	if (!vc || !test_bit(VCF_RX, &vc->flags)) {
-//		printk("%s: SDU received on non RX vc %u.%u\n",
-;
+		printk("%s: SDU received on non RX vc %u.%u\n",
+		       card->name, vpi, vci);
 		recycle_rx_skb(card, skb);
 		return;
 	}
@@ -1072,8 +1072,8 @@ dequeue_rx(struct idt77252_dev *card, struct rsq_entry *rsqe)
 		cell = skb->data;
 		for (i = (stat & SAR_RSQE_CELLCNT); i; i--) {
 			if ((sb = dev_alloc_skb(64)) == NULL) {
-//				printk("%s: Can't allocate buffers for aal0.\n",
-;
+				printk("%s: Can't allocate buffers for aal0.\n",
+				       card->name);
 				atomic_add(i, &vcc->stats->rx_drop);
 				break;
 			}
@@ -1106,8 +1106,8 @@ dequeue_rx(struct idt77252_dev *card, struct rsq_entry *rsqe)
 		return;
 	}
 	if (vcc->qos.aal != ATM_AAL5) {
-//		printk("%s: Unexpected AAL type in dequeue_rx(): %d.\n",
-;
+		printk("%s: Unexpected AAL type in dequeue_rx(): %d.\n",
+		       card->name, vcc->qos.aal);
 		recycle_rx_skb(card, skb);
 		return;
 	}
@@ -1273,15 +1273,15 @@ idt77252_rx_raw(struct idt77252_dev *card)
 		if (debug & DBG_RAW_CELL) {
 			int i;
 
-//			printk("%s: raw cell %x.%02x.%04x.%x.%x\n",
-//			       card->name, (header >> 28) & 0x000f,
-//			       (header >> 20) & 0x00ff,
-//			       (header >>  4) & 0xffff,
-//			       (header >>  1) & 0x0007,
-;
+			printk("%s: raw cell %x.%02x.%04x.%x.%x\n",
+			       card->name, (header >> 28) & 0x000f,
+			       (header >> 20) & 0x00ff,
+			       (header >>  4) & 0xffff,
+			       (header >>  1) & 0x0007,
+			       (header >>  0) & 0x0001);
 			for (i = 16; i < 64; i++)
-;
-;
+				printk(" %02x", queue->data[i]);
+			printk("\n");
 		}
 #endif
 
@@ -1308,8 +1308,8 @@ idt77252_rx_raw(struct idt77252_dev *card)
 		}
 	
 		if ((sb = dev_alloc_skb(64)) == NULL) {
-//			printk("%s: Can't allocate buffers for AAL0.\n",
-;
+			printk("%s: Can't allocate buffers for AAL0.\n",
+			       card->name);
 			atomic_inc(&vcc->stats->rx_err);
 			goto drop;
 		}
@@ -1357,8 +1357,8 @@ drop:
 							    PCI_DMA_FROMDEVICE);
 			} else {
 				card->raw_cell_head = NULL;
-//				printk("%s: raw cell queue overrun\n",
-;
+				printk("%s: raw cell queue overrun\n",
+				       card->name);
 				break;
 			}
 		}
@@ -1380,7 +1380,7 @@ init_tsq(struct idt77252_dev *card)
 	card->tsq.base = pci_alloc_consistent(card->pcidev, RSQSIZE,
 					      &card->tsq.paddr);
 	if (card->tsq.base == NULL) {
-;
+		printk("%s: can't allocate TSQ.\n", card->name);
 		return -1;
 	}
 	memset(card->tsq.base, 0, TSQSIZE);
@@ -1445,22 +1445,22 @@ idt77252_tx(struct idt77252_dev *card)
 
 			if (SAR_TSQE_TAG(stat) == 0x10) {
 #ifdef	NOTDEF
-//				printk("%s: Connection %d halted.\n",
-//				       card->name,
-;
+				printk("%s: Connection %d halted.\n",
+				       card->name,
+				       le32_to_cpu(tsqe->word_1) & 0x1fff);
 #endif
 				break;
 			}
 
 			vc = card->vcs[conn & 0x1fff];
 			if (!vc) {
-//				printk("%s: could not find VC from conn %d\n",
-;
+				printk("%s: could not find VC from conn %d\n",
+				       card->name, conn & 0x1fff);
 				break;
 			}
 
-//			printk("%s: Connection %d IDLE.\n",
-;
+			printk("%s: Connection %d IDLE.\n",
+			       card->name, vc->index);
 
 			set_bit(VCF_IDLE, &vc->flags);
 			break;
@@ -1471,9 +1471,9 @@ idt77252_tx(struct idt77252_dev *card)
 
 			vc = card->vcs[conn & 0x1fff];
 			if (!vc) {
-//				printk("%s: no VC at index %d\n",
-//				       card->name,
-;
+				printk("%s: no VC at index %d\n",
+				       card->name,
+				       le32_to_cpu(tsqe->word_1) & 0x1fff);
 				break;
 			}
 
@@ -1489,17 +1489,17 @@ idt77252_tx(struct idt77252_dev *card)
 
 			if (vpi >= (1 << card->vpibits) ||
 			    vci >= (1 << card->vcibits)) {
-//				printk("%s: TBD complete: "
-//				       "out of range VPI.VCI %u.%u\n",
-;
+				printk("%s: TBD complete: "
+				       "out of range VPI.VCI %u.%u\n",
+				       card->name, vpi, vci);
 				break;
 			}
 
 			vc = card->vcs[VPCI2VC(card, vpi, vci)];
 			if (!vc) {
-//				printk("%s: TBD complete: "
-//				       "no VC at VPI.VCI %u.%u\n",
-;
+				printk("%s: TBD complete: "
+				       "no VC at VPI.VCI %u.%u\n",
+				       card->name, vpi, vci);
 				break;
 			}
 
@@ -1609,7 +1609,7 @@ __fill_tst(struct idt77252_dev *card, struct vc_map *vc,
 			break;
 	}
 	if (e >= avail) {
-;
+		printk("%s: No free TST entries found\n", card->name);
 		return -1;
 	}
 
@@ -1859,7 +1859,7 @@ add_rx_skb(struct idt77252_dev *card, int queue,
 			return;
 
 		if (sb_pool_add(card, skb, queue)) {
-;
+			printk("%s: SB POOL full\n", __func__);
 			goto outfree;
 		}
 
@@ -1869,7 +1869,7 @@ add_rx_skb(struct idt77252_dev *card, int queue,
 		IDT77252_PRV_PADDR(skb) = paddr;
 
 		if (push_rx_skb(card, skb, queue)) {
-;
+			printk("%s: FB QUEUE full\n", __func__);
 			goto outunmap;
 		}
 	}
@@ -1953,13 +1953,13 @@ idt77252_send_skb(struct atm_vcc *vcc, struct sk_buff *skb, int oam)
 	int err;
 
 	if (vc == NULL) {
-;
+		printk("%s: NULL connection in send().\n", card->name);
 		atomic_inc(&vcc->stats->tx_err);
 		dev_kfree_skb(skb);
 		return -EINVAL;
 	}
 	if (!test_bit(VCF_TX, &vc->flags)) {
-;
+		printk("%s: Trying to transmit on a non-tx VC.\n", card->name);
 		atomic_inc(&vcc->stats->tx_err);
 		dev_kfree_skb(skb);
 		return -EINVAL;
@@ -1971,14 +1971,14 @@ idt77252_send_skb(struct atm_vcc *vcc, struct sk_buff *skb, int oam)
 	case ATM_AAL5:
 		break;
 	default:
-;
+		printk("%s: Unsupported AAL: %d\n", card->name, vcc->qos.aal);
 		atomic_inc(&vcc->stats->tx_err);
 		dev_kfree_skb(skb);
 		return -EINVAL;
 	}
 
 	if (skb_shinfo(skb)->nr_frags != 0) {
-;
+		printk("%s: No scatter-gather yet.\n", card->name);
 		atomic_inc(&vcc->stats->tx_err);
 		dev_kfree_skb(skb);
 		return -EINVAL;
@@ -2009,7 +2009,7 @@ idt77252_send_oam(struct atm_vcc *vcc, void *cell, int flags)
 
 	skb = dev_alloc_skb(64);
 	if (!skb) {
-;
+		printk("%s: Out of memory in send_oam().\n", card->name);
 		atomic_inc(&vcc->stats->tx_err);
 		return -ENOMEM;
 	}
@@ -2153,8 +2153,8 @@ idt77252_init_cbr(struct idt77252_dev *card, struct vc_map *vc,
 
 	if ((qos->txtp.max_pcr == 0) &&
 	    (qos->txtp.pcr == 0) && (qos->txtp.min_pcr == 0)) {
-//		printk("%s: trying to open a CBR VC with cell rate = 0\n",
-;
+		printk("%s: trying to open a CBR VC with cell rate = 0\n",
+		       card->name);
 		return -EINVAL;
 	}
 
@@ -2179,19 +2179,19 @@ idt77252_init_cbr(struct idt77252_dev *card, struct vc_map *vc,
 	} else if (tcr == 0) {
 		tst_entries = tst_free - SAR_TST_RESERVED;
 		if (tst_entries <= 0) {
-;
+			printk("%s: no CBR bandwidth free.\n", card->name);
 			return -ENOSR;
 		}
 	}
 
 	if (tst_entries == 0) {
-//		printk("%s: selected CBR bandwidth < granularity.\n",
-;
+		printk("%s: selected CBR bandwidth < granularity.\n",
+		       card->name);
 		return -EINVAL;
 	}
 
 	if (tst_entries > (tst_free - SAR_TST_RESERVED)) {
-;
+		printk("%s: not enough CBR bandwidth free.\n", card->name);
 		return -ENOSR;
 	}
 
@@ -2271,13 +2271,13 @@ idt77252_init_tx(struct idt77252_dev *card, struct vc_map *vc,
 
 	vc->scq = alloc_scq(card, vc->class);
 	if (!vc->scq) {
-;
+		printk("%s: can't get SCQ.\n", card->name);
 		return -ENOMEM;
 	}
 
 	vc->scq->scd = get_free_scd(card, vc);
 	if (vc->scq->scd == 0) {
-;
+		printk("%s: no SCD available.\n", card->name);
 		free_scq(card, vc->scq);
 		return -ENOMEM;
 	}
@@ -2285,8 +2285,8 @@ idt77252_init_tx(struct idt77252_dev *card, struct vc_map *vc,
 	fill_scd(card, vc->scq, vc->class);
 
 	if (set_tct(card, vc)) {
-//		printk("%s: class %d not supported.\n",
-;
+		printk("%s: class %d not supported.\n",
+		       card->name, qos->txtp.traffic_class);
 
 		card->scd2vc[vc->scd_index] = NULL;
 		free_scq(card, vc->scq);
@@ -2403,12 +2403,12 @@ idt77252_open(struct atm_vcc *vcc)
 		return 0;
 
 	if (vpi >= (1 << card->vpibits)) {
-;
+		printk("%s: unsupported VPI: %d\n", card->name, vpi);
 		return -EINVAL;
 	}
 
 	if (vci >= (1 << card->vcibits)) {
-;
+		printk("%s: unsupported VCI: %d\n", card->name, vci);
 		return -EINVAL;
 	}
 
@@ -2424,7 +2424,7 @@ idt77252_open(struct atm_vcc *vcc)
 	case ATM_AAL5:
 		break;
 	default:
-;
+		printk("%s: Unsupported AAL: %d\n", card->name, vcc->qos.aal);
 		mutex_unlock(&card->mutex);
 		return -EPROTONOSUPPORT;
 	}
@@ -2433,7 +2433,7 @@ idt77252_open(struct atm_vcc *vcc)
 	if (!card->vcs[index]) {
 		card->vcs[index] = kzalloc(sizeof(struct vc_map), GFP_KERNEL);
 		if (!card->vcs[index]) {
-;
+			printk("%s: can't alloc vc in open()\n", card->name);
 			mutex_unlock(&card->mutex);
 			return -ENOMEM;
 		}
@@ -2461,8 +2461,8 @@ idt77252_open(struct atm_vcc *vcc)
 		inuse += 2;
 
 	if (inuse) {
-//		printk("%s: %s vci already in use.\n", card->name,
-;
+		printk("%s: %s vci already in use.\n", card->name,
+		       inuse == 1 ? "tx" : inuse == 2 ? "rx" : "tx and rx");
 		mutex_unlock(&card->mutex);
 		return -EADDRINUSE;
 	}
@@ -2554,8 +2554,8 @@ done:
 				break;
 		}
 		if (!timeout)
-//			printk("%s: SCQ drain timeout: %u used\n",
-;
+			printk("%s: SCQ drain timeout: %u used\n",
+			       card->name, atomic_read(&vc->scq->used));
 
 		writel(TCMDQ_HALT | vc->index, SAR_REG_TCMDQ);
 		clear_scd(card, vc->scq, vc->class);
@@ -2725,7 +2725,7 @@ idt77252_interrupt(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	if (test_and_set_bit(IDT77252_BIT_INTERRUPT, &card->flags)) {
-;
+		printk("%s: Re-entering irq_handler()\n", card->name);
 		goto out;
 	}
 
@@ -2864,7 +2864,7 @@ open_card_oam(struct idt77252_dev *card)
 
 			vc = kzalloc(sizeof(struct vc_map), GFP_KERNEL);
 			if (!vc) {
-;
+				printk("%s: can't alloc vc\n", card->name);
 				return -ENOMEM;
 			}
 			vc->index = index;
@@ -2931,7 +2931,7 @@ open_card_ubr0(struct idt77252_dev *card)
 
 	vc = kzalloc(sizeof(struct vc_map), GFP_KERNEL);
 	if (!vc) {
-;
+		printk("%s: can't alloc vc\n", card->name);
 		return -ENOMEM;
 	}
 	card->vcs[0] = vc;
@@ -2939,7 +2939,7 @@ open_card_ubr0(struct idt77252_dev *card)
 
 	vc->scq = alloc_scq(card, vc->class);
 	if (!vc->scq) {
-;
+		printk("%s: can't get SCQ.\n", card->name);
 		return -ENOMEM;
 	}
 
@@ -2969,7 +2969,7 @@ idt77252_dev_open(struct idt77252_dev *card)
 	u32 conf;
 
 	if (!test_bit(IDT77252_BIT_INIT, &card->flags)) {
-;
+		printk("%s: SAR not yet initialized.\n", card->name);
 		return -1;
 	}
 
@@ -2994,12 +2994,12 @@ idt77252_dev_open(struct idt77252_dev *card)
 	writel(readl(SAR_REG_CFG) | conf, SAR_REG_CFG);
 
 	if (open_card_oam(card)) {
-;
+		printk("%s: Error initializing OAM.\n", card->name);
 		return -1;
 	}
 
 	if (open_card_ubr0(card)) {
-;
+		printk("%s: Error initializing UBR0.\n", card->name);
 		return -1;
 	}
 
@@ -3046,7 +3046,7 @@ deinit_card(struct idt77252_dev *card)
 	int i, j;
 
 	if (!test_bit(IDT77252_BIT_INIT, &card->flags)) {
-;
+		printk("%s: SAR not yet initialized.\n", card->name);
 		return;
 	}
 	DIPRINTK("idt77252: deinitialize card %u\n", card->index);
@@ -3273,7 +3273,7 @@ init_card(struct atm_dev *dev)
 	int i, k;
 
 	if (test_bit(IDT77252_BIT_INIT, &card->flags)) {
-;
+		printk("Error: SAR already initialized.\n");
 		return -1;
 	}
 
@@ -3284,7 +3284,7 @@ init_card(struct atm_dev *dev)
 	/* Set PCI Retry-Timeout and TRDY timeout */
 	IPRINTK("%s: Checking PCI retries.\n", card->name);
 	if (pci_read_config_byte(pcidev, 0x40, &pci_byte) != 0) {
-;
+		printk("%s: can't read PCI retry timeout.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3292,15 +3292,15 @@ init_card(struct atm_dev *dev)
 		IPRINTK("%s: PCI retry timeout: %d, set to 0.\n",
 			card->name, pci_byte);
 		if (pci_write_config_byte(pcidev, 0x40, 0) != 0) {
-//			printk("%s: can't set PCI retry timeout.\n",
-;
+			printk("%s: can't set PCI retry timeout.\n",
+			       card->name);
 			deinit_card(card);
 			return -1;
 		}
 	}
 	IPRINTK("%s: Checking PCI TRDY.\n", card->name);
 	if (pci_read_config_byte(pcidev, 0x41, &pci_byte) != 0) {
-;
+		printk("%s: can't read PCI TRDY timeout.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3308,20 +3308,20 @@ init_card(struct atm_dev *dev)
 		IPRINTK("%s: PCI TRDY timeout: %d, set to 0.\n",
 		        card->name, pci_byte);
 		if (pci_write_config_byte(pcidev, 0x41, 0) != 0) {
-;
+			printk("%s: can't set PCI TRDY timeout.\n", card->name);
 			deinit_card(card);
 			return -1;
 		}
 	}
 	/* Reset Timer register */
 	if (readl(SAR_REG_STAT) & SAR_STAT_TMROF) {
-;
+		printk("%s: resetting timer overflow.\n", card->name);
 		writel(SAR_STAT_TMROF, SAR_REG_STAT);
 	}
 	IPRINTK("%s: Request IRQ ... ", card->name);
 	if (request_irq(pcidev->irq, idt77252_interrupt, IRQF_SHARED,
 			card->name, card) != 0) {
-;
+		printk("%s: can't allocate IRQ.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3404,7 +3404,7 @@ init_card(struct atm_dev *dev)
 	card->raw_cell_hnd = pci_alloc_consistent(card->pcidev, 2 * sizeof(u32),
 						  &card->raw_cell_paddr);
 	if (!card->raw_cell_hnd) {
-;
+		printk("%s: memory allocation failure.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3416,7 +3416,7 @@ init_card(struct atm_dev *dev)
 	size = sizeof(struct vc_map *) * card->tct_size;
 	IPRINTK("%s: allocate %d byte for VC map.\n", card->name, size);
 	if (NULL == (card->vcs = vmalloc(size))) {
-;
+		printk("%s: memory allocation failure.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3426,7 +3426,7 @@ init_card(struct atm_dev *dev)
 	IPRINTK("%s: allocate %d byte for SCD to VC mapping.\n",
 	        card->name, size);
 	if (NULL == (card->scd2vc = vmalloc(size))) {
-;
+		printk("%s: memory allocation failure.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3436,7 +3436,7 @@ init_card(struct atm_dev *dev)
 	IPRINTK("%s: allocate %d byte for TST to VC mapping.\n",
 		card->name, size);
 	if (NULL == (card->soft_tst = vmalloc(size))) {
-;
+		printk("%s: memory allocation failure.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3446,12 +3446,12 @@ init_card(struct atm_dev *dev)
 	}
 
 	if (dev->phy == NULL) {
-;
+		printk("%s: No LT device defined.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
 	if (dev->phy->ioctl == NULL) {
-;
+		printk("%s: LT had no IOCTL function defined.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3470,8 +3470,8 @@ init_card(struct atm_dev *dev)
 #endif
 
 	card->link_pcr = (linkrate / 8 / 53);
-//	printk("%s: Linkrate on ATM line : %u bit/s, %u cell/s.\n",
-;
+	printk("%s: Linkrate on ATM line : %u bit/s, %u cell/s.\n",
+	       card->name, linkrate, card->link_pcr);
 
 #ifdef ATM_IDT77252_SEND_IDLE
 	card->utopia_pcr = card->link_pcr;
@@ -3493,15 +3493,15 @@ init_card(struct atm_dev *dev)
 
 #ifdef HAVE_EEPROM
 	idt77252_eeprom_init(card);
-//	printk("%s: EEPROM: %02x:", card->name,
-;
+	printk("%s: EEPROM: %02x:", card->name,
+		idt77252_eeprom_read_status(card));
 
 	for (i = 0; i < 0x80; i++) {
-//		printk(" %02x", 
-//		idt77252_eeprom_read_byte(card, i)
-;
+		printk(" %02x", 
+		idt77252_eeprom_read_byte(card, i)
+		);
 	}
-;
+	printk("\n");
 #endif /* HAVE_EEPROM */
 
 	/*
@@ -3512,7 +3512,7 @@ init_card(struct atm_dev *dev)
 	if (tmp) {
 		memcpy(card->atmdev->esi, tmp->dev_addr, 6);
 
-;
+		printk("%s: ESI %pM\n", card->name, card->atmdev->esi);
 	}
 	/*
 	 * XXX: </hack>
@@ -3547,19 +3547,19 @@ idt77252_preset(struct idt77252_dev *card)
 	XPRINTK("%s: Enable PCI master and memory access for SAR.\n",
 		card->name);
 	if (pci_read_config_word(card->pcidev, PCI_COMMAND, &pci_command)) {
-;
+		printk("%s: can't read PCI_COMMAND.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
 	if (!(pci_command & PCI_COMMAND_IO)) {
-//		printk("%s: PCI_COMMAND: %04x (???)\n",
-;
+		printk("%s: PCI_COMMAND: %04x (???)\n",
+		       card->name, pci_command);
 		deinit_card(card);
 		return (-1);
 	}
 	pci_command |= (PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER);
 	if (pci_write_config_word(card->pcidev, PCI_COMMAND, pci_command)) {
-;
+		printk("%s: can't write PCI_COMMAND.\n", card->name);
 		deinit_card(card);
 		return -1;
 	}
@@ -3612,13 +3612,13 @@ idt77252_init_one(struct pci_dev *pcidev, const struct pci_device_id *id)
 
 
 	if ((err = pci_enable_device(pcidev))) {
-;
+		printk("idt77252: can't enable PCI device at %s\n", pci_name(pcidev));
 		return err;
 	}
 
 	card = kzalloc(sizeof(struct idt77252_dev), GFP_KERNEL);
 	if (!card) {
-;
+		printk("idt77252-%d: can't allocate private data\n", index);
 		err = -ENOMEM;
 		goto err_out_disable_pdev;
 	}
@@ -3643,13 +3643,13 @@ idt77252_init_one(struct pci_dev *pcidev, const struct pci_device_id *id)
 	/* Do the I/O remapping... */
 	card->membase = ioremap(membase, 1024);
 	if (!card->membase) {
-;
+		printk("%s: can't ioremap() membase\n", card->name);
 		err = -EIO;
 		goto err_out_free_card;
 	}
 
 	if (idt77252_preset(card)) {
-;
+		printk("%s: preset failed\n", card->name);
 		err = -EIO;
 		goto err_out_iounmap;
 	}
@@ -3657,7 +3657,7 @@ idt77252_init_one(struct pci_dev *pcidev, const struct pci_device_id *id)
 	dev = atm_dev_register("idt77252", &pcidev->dev, &idt77252_ops, -1,
 			       NULL);
 	if (!dev) {
-;
+		printk("%s: can't register atm device\n", card->name);
 		err = -EIO;
 		goto err_out_iounmap;
 	}
@@ -3667,7 +3667,7 @@ idt77252_init_one(struct pci_dev *pcidev, const struct pci_device_id *id)
 #ifdef	CONFIG_ATM_IDT77252_USE_SUNI
 	suni_init(dev);
 	if (!dev->phy) {
-;
+		printk("%s: can't init SUNI\n", card->name);
 		err = -EIO;
 		goto err_out_deinit_card;
 	}
@@ -3678,19 +3678,19 @@ idt77252_init_one(struct pci_dev *pcidev, const struct pci_device_id *id)
 	for (i = 0; i < 4; i++) {
 		card->fbq[i] = ioremap(srambase | 0x200000 | (i << 18), 4);
 		if (!card->fbq[i]) {
-;
+			printk("%s: can't ioremap() FBQ%d\n", card->name, i);
 			err = -EIO;
 			goto err_out_deinit_card;
 		}
 	}
 
-//	printk("%s: ABR SAR (Rev %c): MEM %08lx SRAM %08lx [%u KB]\n",
-//	       card->name, ((card->revision > 1) && (card->revision < 25)) ?
-//	       'A' + card->revision - 1 : '?', membase, srambase,
-;
+	printk("%s: ABR SAR (Rev %c): MEM %08lx SRAM %08lx [%u KB]\n",
+	       card->name, ((card->revision > 1) && (card->revision < 25)) ?
+	       'A' + card->revision - 1 : '?', membase, srambase,
+	       card->sramsize / 1024);
 
 	if (init_card(dev)) {
-;
+		printk("%s: init_card failed\n", card->name);
 		err = -EIO;
 		goto err_out_deinit_card;
 	}
@@ -3703,7 +3703,7 @@ idt77252_init_one(struct pci_dev *pcidev, const struct pci_device_id *id)
 		dev->phy->start(dev);
 
 	if (idt77252_dev_open(card)) {
-;
+		printk("%s: dev_open failed\n", card->name);
 		err = -EIO;
 		goto err_out_stop;
 	}
@@ -3750,14 +3750,14 @@ static int __init idt77252_init(void)
 {
 	struct sk_buff *skb;
 
-;
+	printk("%s: at %p\n", __func__, idt77252_init);
 
 	if (sizeof(skb->cb) < sizeof(struct atm_skb_data) +
 			      sizeof(struct idt77252_skb_prv)) {
-//		printk(KERN_ERR "%s: skb->cb is too small (%lu < %lu)\n",
-//		       __func__, (unsigned long) sizeof(skb->cb),
-//		       (unsigned long) sizeof(struct atm_skb_data) +
-;
+		printk(KERN_ERR "%s: skb->cb is too small (%lu < %lu)\n",
+		       __func__, (unsigned long) sizeof(skb->cb),
+		       (unsigned long) sizeof(struct atm_skb_data) +
+				       sizeof(struct idt77252_skb_prv));
 		return -EIO;
 	}
 

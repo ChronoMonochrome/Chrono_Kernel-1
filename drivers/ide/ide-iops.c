@@ -235,8 +235,8 @@ u8 eighty_ninty_three(ide_drive_t *drive)
 		return 1;
 
 	if (ivb)
-//		printk(KERN_DEBUG "%s: skipping word 93 validity check\n",
-;
+		printk(KERN_DEBUG "%s: skipping word 93 validity check\n",
+				  drive->name);
 
 	if (ata_id_is_sata(id) && !ivb)
 		return 1;
@@ -273,10 +273,10 @@ no_80w:
 	if (drive->dev_flags & IDE_DFLAG_UDMA33_WARNED)
 		return 0;
 
-//	printk(KERN_WARNING "%s: %s side 80-wire cable detection failed, "
-//			    "limiting max speed to UDMA33\n",
-//			    drive->name,
-;
+	printk(KERN_WARNING "%s: %s side 80-wire cable detection failed, "
+			    "limiting max speed to UDMA33\n",
+			    drive->name,
+			    hwif->cbl == ATA_CBL_PATA80 ? "drive" : "host");
 
 	drive->dev_flags |= IDE_DFLAG_UDMA33_WARNED;
 
@@ -334,7 +334,7 @@ int ide_driveid_update(ide_drive_t *drive)
 	return 1;
 out_err:
 	if (rc == 2)
-;
+		printk(KERN_ERR "%s: %s: bad status\n", drive->name, __func__);
 	kfree(id);
 	return 0;
 }

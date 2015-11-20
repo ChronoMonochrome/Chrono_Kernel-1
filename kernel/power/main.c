@@ -342,8 +342,8 @@ static ssize_t cpufreq_table_show(struct kobject *kobj,
 
 	table = cpufreq_frequency_get_table(0);
 	if (!table) {
-//		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
-;
+		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
+			__func__);
 		return sprintf(buf, "Failed to get the cpufreq table\n");
 	}
 
@@ -377,7 +377,7 @@ static ssize_t cpufreq_table_store(struct kobject *kobj,
 				struct kobj_attribute *attr,
 				const char *buf, size_t n)
 {
-;
+	printk(KERN_ERR "%s: cpufreq_table is read-only\n", __func__);
 	return -EINVAL;
 }
 
@@ -399,8 +399,8 @@ static int dvfs_cpufreq_notifier(struct notifier_block *nb,
 
 	table = cpufreq_frequency_get_table(0);
 	if (!table) {
-//		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
-;
+		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
+			__func__);
 		return -EINVAL;
 	}
 
@@ -429,8 +429,8 @@ static int get_cpufreq_level(unsigned int freq, unsigned int *level, int req_typ
 
 	table = cpufreq_frequency_get_table(0);
 	if (!table) {
-//		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
-;
+		printk(KERN_ERR "%s: Failed to get the cpufreq table\n",
+			__func__);
 		return -EINVAL;
 	}
 
@@ -481,7 +481,7 @@ static ssize_t cpufreq_max_limit_store(struct kobject *kobj,
 	int cpu;
 
 	if (sscanf(buf, "%d", &val) != 1) {
-;
+		printk(KERN_ERR "%s: Invalid cpufreq format\n", __func__);
 		goto out;
 	}
 
@@ -502,8 +502,8 @@ static ssize_t cpufreq_max_limit_store(struct kobject *kobj,
 				min_replacement = 0;
 			}
 		} else /* Already unlocked */
-//			printk(KERN_ERR "%s: Unlock request is ignored\n",
-;
+			printk(KERN_ERR "%s: Unlock request is ignored\n",
+				__func__);
 	} else { /* Lock request */
 		if (get_cpufreq_level((unsigned int)val, &cpufreq_level, DVFS_MAX_LOCK_REQ)
 		    == VALID_LEVEL) {
@@ -512,9 +512,9 @@ static ssize_t cpufreq_max_limit_store(struct kobject *kobj,
 			/* Max lock has higher priority than Min lock */
 			if (cpufreq_min_limit_val != -1 &&
 			    cpufreq_min_limit_val > cpufreq_max_limit_val) {
-//				printk(KERN_ERR "%s: Min lock forced to %d"
-//					" because of Max lock\n",
-;
+				printk(KERN_ERR "%s: Min lock forced to %d"
+					" because of Max lock\n",
+					__func__, cpufreq_max_limit_val);
 				/* Update PRCMU QOS value to max value */
 				prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
 						"power", cpufreq_max_limit_val);
@@ -526,8 +526,8 @@ static ssize_t cpufreq_max_limit_store(struct kobject *kobj,
 			for_each_online_cpu(cpu)
 				cpufreq_update_policy(cpu);
 		} else /* Invalid lock request --> No action */
-//			printk(KERN_ERR "%s: Lock request is invalid\n",
-;
+			printk(KERN_ERR "%s: Lock request is invalid\n",
+				__func__);
 	}
 
 	ret = n;
@@ -552,7 +552,7 @@ static ssize_t cpufreq_min_limit_store(struct kobject *kobj,
 	int cpu;
 
 	if (sscanf(buf, "%d", &val) != 1) {
-;
+		printk(KERN_ERR "%s: Invalid cpufreq format\n", __func__);
 		goto out;
 	}
 
@@ -568,8 +568,8 @@ static ssize_t cpufreq_min_limit_store(struct kobject *kobj,
 			/* Clear replacement flag */
 			min_replacement = 0;
 		} else /* Already unlocked */
-//			printk(KERN_ERR "%s: Unlock request is ignored\n",
-;
+			printk(KERN_ERR "%s: Unlock request is ignored\n",
+				__func__);
 	} else { /* Lock request */
 		if (get_cpufreq_level((unsigned int)val, &cpufreq_level, DVFS_MIN_LOCK_REQ)
 			== VALID_LEVEL) {
@@ -578,9 +578,9 @@ static ssize_t cpufreq_min_limit_store(struct kobject *kobj,
 			/* Max lock has higher priority than Min lock */
 			if (cpufreq_max_limit_val != -1 &&
 			    cpufreq_min_limit_val > cpufreq_max_limit_val) {
-//				printk(KERN_ERR "%s: Min lock forced to %d"
-//					" because of Max lock\n",
-;
+				printk(KERN_ERR "%s: Min lock forced to %d"
+					" because of Max lock\n",
+					__func__, cpufreq_max_limit_val);
 				/* Update PRCMU QOS value to max value */
 				prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
 						"power", cpufreq_max_limit_val);
@@ -592,8 +592,8 @@ static ssize_t cpufreq_min_limit_store(struct kobject *kobj,
 						"power", cpufreq_min_limit_val);
 			}
 		} else /* Invalid lock request --> No action */
-//			printk(KERN_ERR "%s: Lock request is invalid\n",
-;
+			printk(KERN_ERR "%s: Lock request is invalid\n",
+				__func__);
 	}
 
 	ret = n;

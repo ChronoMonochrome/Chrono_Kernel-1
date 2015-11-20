@@ -244,11 +244,11 @@ static void neoCalcVCLK(const struct fb_info *info,
 	par->VCLK3Denominator = d_best;
 
 #ifdef NEOFB_DEBUG
-//	printk(KERN_DEBUG "neoVCLK: f:%ld NumLow=%d NumHi=%d Den=%d Df=%ld\n",
-//	       freq,
-//	       par->VCLK3NumeratorLow,
-//	       par->VCLK3NumeratorHigh,
-;
+	printk(KERN_DEBUG "neoVCLK: f:%ld NumLow=%d NumHi=%d Den=%d Df=%ld\n",
+	       freq,
+	       par->VCLK3NumeratorLow,
+	       par->VCLK3NumeratorHigh,
+	       par->VCLK3Denominator, f_best_diff);
 #endif
 }
 
@@ -541,8 +541,8 @@ static inline void neo2200_accel_init(struct fb_info *info,
 		pitch = var->xres_virtual * 3;
 		break;
 	default:
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "neofb: neo2200_accel_init: unexpected bits per pixel!\n");
 		return;
 	}
 
@@ -599,10 +599,10 @@ neofb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 	if (par->internal_display &&
             ((var->xres > par->NeoPanelWidth) ||
 	     (var->yres > par->NeoPanelHeight))) {
-//		printk(KERN_INFO
-//		       "Mode (%dx%d) larger than the LCD panel (%dx%d)\n",
-//		       var->xres, var->yres, par->NeoPanelWidth,
-;
+		printk(KERN_INFO
+		       "Mode (%dx%d) larger than the LCD panel (%dx%d)\n",
+		       var->xres, var->yres, par->NeoPanelWidth,
+		       par->NeoPanelHeight);
 		return -EINVAL;
 	}
 
@@ -631,9 +631,9 @@ neofb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 	}
 
 	if (!mode_ok) {
-//		printk(KERN_INFO
-//		       "Mode (%dx%d) won't display properly on LCD\n",
-;
+		printk(KERN_INFO
+		       "Mode (%dx%d) won't display properly on LCD\n",
+		       var->xres, var->yres);
 		return -EINVAL;
 	}
 
@@ -685,8 +685,8 @@ neofb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 		break;
 #endif
 	default:
-//		printk(KERN_WARNING "neofb: no support for %dbpp\n",
-;
+		printk(KERN_WARNING "neofb: no support for %dbpp\n",
+		       var->bits_per_pixel);
 		return -EINVAL;
 	}
 
@@ -1679,19 +1679,19 @@ static int __devinit neo_map_mmio(struct fb_info *info,
 
 	if (!request_mem_region
 	    (info->fix.mmio_start, MMIO_SIZE, "memory mapped I/O")) {
-;
+		printk("neofb: memory mapped IO in use\n");
 		return -EBUSY;
 	}
 
 	par->mmio_vbase = ioremap(info->fix.mmio_start, MMIO_SIZE);
 	if (!par->mmio_vbase) {
-;
+		printk("neofb: unable to map memory mapped IO\n");
 		release_mem_region(info->fix.mmio_start,
 				   info->fix.mmio_len);
 		return -ENOMEM;
 	} else
-//		printk(KERN_INFO "neofb: mapped io at %p\n",
-;
+		printk(KERN_INFO "neofb: mapped io at %p\n",
+		       par->mmio_vbase);
 	return 0;
 }
 
@@ -1720,20 +1720,20 @@ static int __devinit neo_map_video(struct fb_info *info,
 
 	if (!request_mem_region(info->fix.smem_start, info->fix.smem_len,
 				"frame buffer")) {
-;
+		printk("neofb: frame buffer in use\n");
 		return -EBUSY;
 	}
 
 	info->screen_base =
 	    ioremap(info->fix.smem_start, info->fix.smem_len);
 	if (!info->screen_base) {
-;
+		printk("neofb: unable to map screen memory\n");
 		release_mem_region(info->fix.smem_start,
 				   info->fix.smem_len);
 		return -ENOMEM;
 	} else
-//		printk(KERN_INFO "neofb: mapped framebuffer at %p\n",
-;
+		printk(KERN_INFO "neofb: mapped framebuffer at %p\n",
+		       info->screen_base);
 
 #ifdef CONFIG_MTRR
 	((struct neofb_par *)(info->par))->mtrr =
@@ -1832,8 +1832,8 @@ static int __devinit neo_scan_monitor(struct fb_info *info)
 		memcpy(info->monspecs.modedb, &vesa_modes[20], sizeof(struct fb_videomode));
 		break;
 #else
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "neofb: Only 640x480, 800x600/480 and 1024x768 panels are currently supported\n");
 		return -1;
 #endif
 	default:
@@ -1844,11 +1844,11 @@ static int __devinit neo_scan_monitor(struct fb_info *info)
 		break;
 	}
 
-//	printk(KERN_INFO "Panel is a %dx%d %s %s display\n",
-//	       par->NeoPanelWidth,
-//	       par->NeoPanelHeight,
-//	       (type & 0x02) ? "color" : "monochrome",
-;
+	printk(KERN_INFO "Panel is a %dx%d %s %s display\n",
+	       par->NeoPanelWidth,
+	       par->NeoPanelHeight,
+	       (type & 0x02) ? "color" : "monochrome",
+	       (type & 0x10) ? "TFT" : "dual scan");
 	return 0;
 }
 
@@ -1865,7 +1865,7 @@ static int __devinit neo_init_hw(struct fb_info *info)
 	neoUnlock();
 
 #if 0
-;
+	printk(KERN_DEBUG "--- Neo extended register dump ---\n");
 	for (int w = 0; w < 0x85; w++)
 		printk(KERN_DEBUG "CR %p: %p\n", (void *) w,
 		       (void *) vga_rcrt(NULL, w));
@@ -2077,7 +2077,7 @@ static int __devinit neofb_probe(struct pci_dev *dev,
 
 	if (!fb_find_mode(&info->var, info, mode_option, NULL, 0,
 			info->monspecs.modedb, 16)) {
-;
+		printk(KERN_ERR "neofb: Unable to find usable video mode.\n");
 		goto err_map_video;
 	}
 
@@ -2095,10 +2095,10 @@ static int __devinit neofb_probe(struct pci_dev *dev,
 	    h_sync / (info->var.yres + info->var.upper_margin +
 		      info->var.lower_margin + info->var.vsync_len);
 
-//	printk(KERN_INFO "neofb v" NEOFB_VERSION
-//	       ": %dkB VRAM, using %dx%d, %d.%03dkHz, %dHz\n",
-//	       info->fix.smem_len >> 10, info->var.xres,
-;
+	printk(KERN_INFO "neofb v" NEOFB_VERSION
+	       ": %dkB VRAM, using %dx%d, %d.%03dkHz, %dHz\n",
+	       info->fix.smem_len >> 10, info->var.xres,
+	       info->var.yres, h_sync / 1000, h_sync % 1000, v_sync);
 
 	if (fb_alloc_cmap(&info->cmap, 256, 0) < 0)
 		goto err_map_video;
@@ -2107,8 +2107,8 @@ static int __devinit neofb_probe(struct pci_dev *dev,
 	if (err < 0)
 		goto err_reg_fb;
 
-//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+	       info->node, info->fix.id);
 
 	/*
 	 * Our driver data
@@ -2142,8 +2142,8 @@ static void __devexit neofb_remove(struct pci_dev *dev)
 		 * oopsen laying around.
 		 */
 		if (unregister_framebuffer(info))
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			       "neofb: danger danger!  Oopsen imminent!\n");
 
 		neo_unmap_video(info);
 		fb_destroy_modedb(info->monspecs.modedb);

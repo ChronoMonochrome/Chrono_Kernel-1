@@ -943,10 +943,10 @@ void fscache_mark_pages_cached(struct fscache_retrieval *op,
 			static bool once_only;
 			if (!once_only) {
 				once_only = true;
-//				printk(KERN_WARNING "FS-Cache:"
-//				       " Cookie type %s marked page %lx"
-//				       " multiple times\n",
-;
+				printk(KERN_WARNING "FS-Cache:"
+				       " Cookie type %s marked page %lx"
+				       " multiple times\n",
+				       cookie->def->name, page->index);
 			}
 		}
 	}

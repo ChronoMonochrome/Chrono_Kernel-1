@@ -138,9 +138,9 @@ param_setup(char *string)
 			siop = val;
 		else if(!strncmp(pos, "id:", 3)) {
 			if(slot == -1) {
-;
+				printk(KERN_WARNING "NCR D700: Must specify slot for id parameter\n");
 			} else if(slot > MCA_MAX_SLOT_NR) {
-;
+				printk(KERN_WARNING "NCR D700: Illegal slot %d for id %d\n", slot, val);
 			} else {
 				if(siop != 0 && siop != 1) {
 					id_array[slot*2] = val;
@@ -183,14 +183,14 @@ NCR_D700_probe_one(struct NCR_D700_private *p, int siop, int irq,
 
 	hostdata = kzalloc(sizeof(*hostdata), GFP_KERNEL);
 	if (!hostdata) {
-//		printk(KERN_ERR "NCR D700: SIOP%d: Failed to allocate host"
-;
+		printk(KERN_ERR "NCR D700: SIOP%d: Failed to allocate host"
+		       "data, detatching\n", siop);
 		return -ENOMEM;
 	}
 
 	if (!request_region(region, 64, "NCR_D700")) {
-//		printk(KERN_ERR "NCR D700: Failed to reserve IO region 0x%x\n",
-;
+		printk(KERN_ERR "NCR D700: Failed to reserve IO region 0x%x\n",
+				region);
 		ret = -ENODEV;
 		goto region_failed;
 	}
@@ -277,9 +277,9 @@ NCR_D700_probe(struct device *dev)
 	if(irq >= 13)
 		irq++;
 	if(banner) {
-//		printk(KERN_NOTICE "NCR D700: Driver Version " NCR_D700_VERSION "\n"
-//		       "NCR D700:  Copyright (c) 2001 by James.Bottomley@HansenPartnership.com\n"
-;
+		printk(KERN_NOTICE "NCR D700: Driver Version " NCR_D700_VERSION "\n"
+		       "NCR D700:  Copyright (c) 2001 by James.Bottomley@HansenPartnership.com\n"
+		       "NCR D700:\n");
 		banner = 0;
 	}
 	/* now do the bus related transforms */
@@ -287,7 +287,7 @@ NCR_D700_probe(struct device *dev)
 	base_addr = mca_device_transform_ioport(mca_dev, base_addr);
 	offset_addr = mca_device_transform_ioport(mca_dev, offset_addr);
 
-;
+	printk(KERN_NOTICE "NCR D700: found in slot %d  irq = %d  I/O base = 0x%x\n", slot, irq, offset_addr);
 
 	/*outb(BOARD_RESET, base_addr);*/
 
@@ -308,8 +308,8 @@ NCR_D700_probe(struct device *dev)
 		differential = 0x00;
 		break;
 	default:
-//		printk(KERN_ERR "D700: UNEXPECTED DIFFERENTIAL RESULT 0x%02x\n",
-;
+		printk(KERN_ERR "D700: UNEXPECTED DIFFERENTIAL RESULT 0x%02x\n",
+		       differential);
 		differential = 0x00;
 		break;
 	}
@@ -321,7 +321,7 @@ NCR_D700_probe(struct device *dev)
 	p->dev = dev;
 	snprintf(p->name, sizeof(p->name), "D700(%s)", dev_name(dev));
 	if (request_irq(irq, NCR_D700_intr, IRQF_SHARED, p->name, p)) {
-;
+		printk(KERN_ERR "D700: request_irq failed\n");
 		kfree(p);
 		return -EBUSY;
 	}
@@ -332,8 +332,8 @@ NCR_D700_probe(struct device *dev)
 		if ((err = NCR_D700_probe_one(p, i, irq, slot,
 					      offset_addr + (0x80 * i),
 					      differential)) != 0)
-//			printk("D700: SIOP%d: probe failed, error = %d\n",
-;
+			printk("D700: SIOP%d: probe failed, error = %d\n",
+			       i, err);
 		else
 			found++;
 	}

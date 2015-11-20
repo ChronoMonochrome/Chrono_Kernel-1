@@ -390,8 +390,8 @@ static void free_plci(capidrv_contr * card, capidrv_plci * plcip)
 			return;
 		}
 	}
-//	printk(KERN_ERR "capidrv-%d: free_plci %p (0x%x) not found, Huh?\n",
-;
+	printk(KERN_ERR "capidrv-%d: free_plci %p (0x%x) not found, Huh?\n",
+	       card->contrnr, plcip, plcip->plci);
 }
 
 /* -------- ncci management ------------------------------------------ */
@@ -472,7 +472,7 @@ static int capidrv_add_ack(struct capidrv_ncci *nccip,
 	n = (struct ncci_datahandle_queue *)
 		kmalloc(sizeof(struct ncci_datahandle_queue), GFP_ATOMIC);
 	if (!n) {
-;
+	   printk(KERN_ERR "capidrv: kmalloc ncci_datahandle failed\n");
 	   return -1;
 	}
 	n->next = NULL;
@@ -511,7 +511,7 @@ static void send_message(capidrv_contr * card, _cmsg * cmsg)
 	len = CAPIMSG_LEN(cmsg->buf);
 	skb = alloc_skb(len, GFP_ATOMIC);
 	if (!skb) {
-;
+		printk(KERN_ERR "capidrv::send_message: can't allocate mem\n");
 		return;
 	}
 	memcpy(skb_put(skb, len), cmsg->buf, len);
@@ -546,15 +546,15 @@ static void listen_change_state(capidrv_contr * card, int event)
 	while (p->event) {
 		if (card->state == p->actstate && p->event == event) {
 			if (debugmode)
-//				printk(KERN_DEBUG "capidrv-%d: listen_change_state %d -> %d\n",
-;
+				printk(KERN_DEBUG "capidrv-%d: listen_change_state %d -> %d\n",
+				       card->contrnr, card->state, p->nextstate);
 			card->state = p->nextstate;
 			return;
 		}
 		p++;
 	}
-//	printk(KERN_ERR "capidrv-%d: listen_change_state state=%d event=%d ????\n",
-;
+	printk(KERN_ERR "capidrv-%d: listen_change_state state=%d event=%d ????\n",
+	       card->contrnr, card->state, event);
 
 }
 
@@ -641,8 +641,8 @@ static void plci_change_state(capidrv_contr * card, capidrv_plci * plci, int eve
 	while (p->event) {
 		if (plci->state == p->actstate && p->event == event) {
 			if (debugmode)
-//				printk(KERN_DEBUG "capidrv-%d: plci_change_state:0x%x %d -> %d\n",
-;
+				printk(KERN_DEBUG "capidrv-%d: plci_change_state:0x%x %d -> %d\n",
+				  card->contrnr, plci->plci, plci->state, p->nextstate);
 			plci->state = p->nextstate;
 			if (p->changefunc)
 				p->changefunc(card, plci);
@@ -650,8 +650,8 @@ static void plci_change_state(capidrv_contr * card, capidrv_plci * plci, int eve
 		}
 		p++;
 	}
-//	printk(KERN_ERR "capidrv-%d: plci_change_state:0x%x state=%d event=%d ????\n",
-;
+	printk(KERN_ERR "capidrv-%d: plci_change_state:0x%x state=%d event=%d ????\n",
+	       card->contrnr, plci->plci, plci->state, event);
 }
 
 /* ------------------------------------------------------------------ */
@@ -730,8 +730,8 @@ static void ncci_change_state(capidrv_contr * card, capidrv_ncci * ncci, int eve
 	while (p->event) {
 		if (ncci->state == p->actstate && p->event == event) {
 			if (debugmode)
-//				printk(KERN_DEBUG "capidrv-%d: ncci_change_state:0x%x %d -> %d\n",
-;
+				printk(KERN_DEBUG "capidrv-%d: ncci_change_state:0x%x %d -> %d\n",
+				  card->contrnr, ncci->ncci, ncci->state, p->nextstate);
 			if (p->nextstate == ST_NCCI_PREVIOUS) {
 				ncci->state = ncci->oldstate;
 				ncci->oldstate = p->actstate;
@@ -745,8 +745,8 @@ static void ncci_change_state(capidrv_contr * card, capidrv_ncci * ncci, int eve
 		}
 		p++;
 	}
-//	printk(KERN_ERR "capidrv-%d: ncci_change_state:0x%x state=%d event=%d ????\n",
-;
+	printk(KERN_ERR "capidrv-%d: ncci_change_state:0x%x state=%d event=%d ????\n",
+	       card->contrnr, ncci->ncci, ncci->state, event);
 }
 
 /* ------------------------------------------------------------------- */
@@ -770,17 +770,17 @@ static void handle_controller(_cmsg * cmsg)
 	capidrv_contr *card = findcontrbynumber(cmsg->adr.adrController & 0x7f);
 
 	if (!card) {
-//		printk(KERN_ERR "capidrv: %s from unknown controller 0x%x\n",
-//		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+		printk(KERN_ERR "capidrv: %s from unknown controller 0x%x\n",
+		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+		       cmsg->adr.adrController & 0x7f);
 		return;
 	}
 	switch (CAPICMD(cmsg->Command, cmsg->Subcommand)) {
 
 	case CAPI_LISTEN_CONF:	/* Controller */
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: listenconf Info=0x%4x (%s) cipmask=0x%x\n",
-;
+			printk(KERN_DEBUG "capidrv-%d: listenconf Info=0x%4x (%s) cipmask=0x%x\n",
+			       card->contrnr, cmsg->Info, capi_info2str(cmsg->Info), card->cipmask);
 		if (cmsg->Info) {
 			listen_change_state(card, EV_LISTEN_CONF_ERROR);
 		} else if (card->cipmask == 0) {
@@ -816,10 +816,10 @@ static void handle_controller(_cmsg * cmsg)
 		      handle_dtrace_data(card, direction, 0, data, len);
 		      break;
 		   }
-//	           printk(KERN_INFO "capidrv-%d: %s from controller 0x%x layer 0x%x, ignored\n",
-//                        card->contrnr, 
-//			capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+	           printk(KERN_INFO "capidrv-%d: %s from controller 0x%x layer 0x%x, ignored\n",
+                        card->contrnr, 
+			capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			cmsg->adr.adrController, layer);
                    break;
 		}
 		goto ignored;
@@ -833,11 +833,11 @@ static void handle_controller(_cmsg * cmsg)
 		      default: s = "unknown error"; break;
 		   }
 		   if (s)
-//	           printk(KERN_INFO "capidrv-%d: %s from controller 0x%x function %d: %s\n",
-//			card->contrnr,
-//			capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-//			cmsg->adr.adrController,
-;
+	           printk(KERN_INFO "capidrv-%d: %s from controller 0x%x function %d: %s\n",
+			card->contrnr,
+			capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			cmsg->adr.adrController,
+			cmsg->Function, s);
 		   break;
 		}
 		goto ignored;
@@ -851,18 +851,18 @@ static void handle_controller(_cmsg * cmsg)
 		goto ignored;
 
 	default:
-//		printk(KERN_ERR "capidrv-%d: got %s from controller 0x%x ???",
-//		       card->contrnr,
-//		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+		printk(KERN_ERR "capidrv-%d: got %s from controller 0x%x ???",
+		       card->contrnr,
+		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+		       cmsg->adr.adrController);
 	}
 	return;
 
       ignored:
-//	printk(KERN_INFO "capidrv-%d: %s from controller 0x%x ignored\n",
-//	       card->contrnr,
-//	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+	printk(KERN_INFO "capidrv-%d: %s from controller 0x%x ignored\n",
+	       card->contrnr,
+	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+	       cmsg->adr.adrController);
 }
 
 static void handle_incoming_call(capidrv_contr * card, _cmsg * cmsg)
@@ -873,12 +873,12 @@ static void handle_incoming_call(capidrv_contr * card, _cmsg * cmsg)
 	int chan;
 
 	if ((chan = new_bchan(card)) == -1) {
-;
+		printk(KERN_ERR "capidrv-%d: incoming call on not existing bchan ?\n", card->contrnr);
 		return;
 	}
 	bchan = &card->bchans[chan];
 	if ((plcip = new_plci(card, chan)) == NULL) {
-;
+		printk(KERN_ERR "capidrv-%d: incoming call: no memory, sorry.\n", card->contrnr);
 		return;
 	}
 	bchan->incoming = 1;
@@ -900,17 +900,17 @@ static void handle_incoming_call(capidrv_contr * card, _cmsg * cmsg)
 	cmd.parm.setup.plan = cmsg->CallingPartyNumber[1];
 	cmd.parm.setup.screen = cmsg->CallingPartyNumber[2];
 
-//	printk(KERN_INFO "capidrv-%d: incoming call %s,%d,%d,%s\n", 
-//			card->contrnr,
-//			cmd.parm.setup.phone,
-//			cmd.parm.setup.si1,
-//			cmd.parm.setup.si2,
-;
+	printk(KERN_INFO "capidrv-%d: incoming call %s,%d,%d,%s\n", 
+			card->contrnr,
+			cmd.parm.setup.phone,
+			cmd.parm.setup.si1,
+			cmd.parm.setup.si2,
+			cmd.parm.setup.eazmsn);
 
 	if (cmd.parm.setup.si1 == 1 && cmd.parm.setup.si2 != 0) {
-//		printk(KERN_INFO "capidrv-%d: patching si2=%d to 0 for VBOX\n", 
-//			card->contrnr,
-;
+		printk(KERN_INFO "capidrv-%d: patching si2=%d to 0 for VBOX\n", 
+			card->contrnr,
+			cmd.parm.setup.si2);
 		cmd.parm.setup.si2 = 0;
 	}
 
@@ -926,12 +926,12 @@ static void handle_incoming_call(capidrv_contr * card, _cmsg * cmsg)
 		cmsg->Reject = 1;	/* ignore */
 		plci_change_state(card, plcip, EV_PLCI_CONNECT_REJECT);
 		send_message(card, cmsg);
-//		printk(KERN_INFO "capidrv-%d: incoming call %s,%d,%d,%s ignored\n",
-//			card->contrnr,
-//			cmd.parm.setup.phone,
-//			cmd.parm.setup.si1,
-//			cmd.parm.setup.si2,
-;
+		printk(KERN_INFO "capidrv-%d: incoming call %s,%d,%d,%s ignored\n",
+			card->contrnr,
+			cmd.parm.setup.phone,
+			cmd.parm.setup.si1,
+			cmd.parm.setup.si2,
+			cmd.parm.setup.eazmsn);
 		break;
 	case 1:
 		/* At least one device matching this call (RING on ttyI)
@@ -944,12 +944,12 @@ static void handle_incoming_call(capidrv_contr * card, _cmsg * cmsg)
 		 * and CONNECT_RESP already sent.
 		 */
 		if (plcip->state == ST_PLCI_INCOMING) {
-//			printk(KERN_INFO "capidrv-%d: incoming call %s,%d,%d,%s tty alerting\n",
-//				card->contrnr,
-//				cmd.parm.setup.phone,
-//				cmd.parm.setup.si1,
-//				cmd.parm.setup.si2,
-;
+			printk(KERN_INFO "capidrv-%d: incoming call %s,%d,%d,%s tty alerting\n",
+				card->contrnr,
+				cmd.parm.setup.phone,
+				cmd.parm.setup.si1,
+				cmd.parm.setup.si2,
+				cmd.parm.setup.eazmsn);
 			capi_fill_ALERT_REQ(cmsg,
 					    global.ap.applid,
 					    card->msgid++,
@@ -962,12 +962,12 @@ static void handle_incoming_call(capidrv_contr * card, _cmsg * cmsg)
 			plcip->msgid = cmsg->Messagenumber;
 			send_message(card, cmsg);
 		} else {
-//			printk(KERN_INFO "capidrv-%d: incoming call %s,%d,%d,%s on netdev\n",
-//				card->contrnr,
-//				cmd.parm.setup.phone,
-//				cmd.parm.setup.si1,
-//				cmd.parm.setup.si2,
-;
+			printk(KERN_INFO "capidrv-%d: incoming call %s,%d,%d,%s on netdev\n",
+				card->contrnr,
+				cmd.parm.setup.phone,
+				cmd.parm.setup.si1,
+				cmd.parm.setup.si2,
+				cmd.parm.setup.eazmsn);
 		}
 		break;
 
@@ -998,19 +998,19 @@ static void handle_plci(_cmsg * cmsg)
 	_cdebbuf *cdb;
 
 	if (!card) {
-//		printk(KERN_ERR "capidrv: %s from unknown controller 0x%x\n",
-//		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+		printk(KERN_ERR "capidrv: %s from unknown controller 0x%x\n",
+		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+		       cmsg->adr.adrController & 0x7f);
 		return;
 	}
 	switch (CAPICMD(cmsg->Command, cmsg->Subcommand)) {
 
 	case CAPI_DISCONNECT_IND:	/* plci */
 		if (cmsg->Reason) {
-//			printk(KERN_INFO "capidrv-%d: %s reason 0x%x (%s) for plci 0x%x\n",
-//			   card->contrnr,
-//			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+			printk(KERN_INFO "capidrv-%d: %s reason 0x%x (%s) for plci 0x%x\n",
+			   card->contrnr,
+			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			       cmsg->Reason, capi_info2str(cmsg->Reason), cmsg->adr.adrPLCI);
 		}
 		if (!(plcip = find_plci_by_plci(card, cmsg->adr.adrPLCI))) {
 			capi_cmsg_answer(cmsg);
@@ -1026,11 +1026,11 @@ static void handle_plci(_cmsg * cmsg)
 
 	case CAPI_DISCONNECT_CONF:	/* plci */
 		if (cmsg->Info) {
-//			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for plci 0x%x\n",
-//			   card->contrnr,
-//			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-//			       cmsg->Info, capi_info2str(cmsg->Info), 
-;
+			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for plci 0x%x\n",
+			   card->contrnr,
+			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			       cmsg->Info, capi_info2str(cmsg->Info), 
+			       cmsg->adr.adrPLCI);
 		}
 		if (!(plcip = find_plci_by_plci(card, cmsg->adr.adrPLCI)))
 			goto notfound;
@@ -1040,11 +1040,11 @@ static void handle_plci(_cmsg * cmsg)
 
 	case CAPI_ALERT_CONF:	/* plci */
 		if (cmsg->Info) {
-//			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for plci 0x%x\n",
-//			   card->contrnr,
-//			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-//			       cmsg->Info, capi_info2str(cmsg->Info), 
-;
+			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for plci 0x%x\n",
+			   card->contrnr,
+			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			       cmsg->Info, capi_info2str(cmsg->Info), 
+			       cmsg->adr.adrPLCI);
 		}
 		break;
 
@@ -1054,11 +1054,11 @@ static void handle_plci(_cmsg * cmsg)
 
 	case CAPI_CONNECT_CONF:	/* plci */
 		if (cmsg->Info) {
-//			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for plci 0x%x\n",
-//			   card->contrnr,
-//			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-//			       cmsg->Info, capi_info2str(cmsg->Info), 
-;
+			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for plci 0x%x\n",
+			   card->contrnr,
+			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			       cmsg->Info, capi_info2str(cmsg->Info), 
+			       cmsg->adr.adrPLCI);
 		}
 		if (!(plcip = find_plci_by_msgid(card, cmsg->Messagenumber)))
 			goto notfound;
@@ -1088,7 +1088,7 @@ static void handle_plci(_cmsg * cmsg)
 			nccip = new_ncci(card, plcip, cmsg->adr.adrPLCI);
 
 			if (!nccip) {
-;
+				printk(KERN_ERR "capidrv-%d: no mem for ncci, sorry\n", card->contrnr);
 				break;	/* $$$$ */
 			}
 			capi_fill_CONNECT_B3_REQ(cmsg,
@@ -1131,12 +1131,12 @@ static void handle_plci(_cmsg * cmsg)
 		}
 		cdb = capi_cmsg2str(cmsg);
 		if (cdb) {
-//			printk(KERN_WARNING "capidrv-%d: %s\n",
-;
+			printk(KERN_WARNING "capidrv-%d: %s\n",
+				card->contrnr, cdb->buf);
 			cdebbuf_free(cdb);
 		} else
-//			printk(KERN_WARNING "capidrv-%d: CAPI_INFO_IND InfoNumber %x not handled\n",
-;
+			printk(KERN_WARNING "capidrv-%d: CAPI_INFO_IND InfoNumber %x not handled\n",
+				card->contrnr, cmsg->InfoNumber);
 
 		break;
 
@@ -1153,23 +1153,23 @@ static void handle_plci(_cmsg * cmsg)
 		goto ignored;
 
 	default:
-//		printk(KERN_ERR "capidrv-%d: got %s for plci 0x%x ???",
-//		       card->contrnr,
-//		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+		printk(KERN_ERR "capidrv-%d: got %s for plci 0x%x ???",
+		       card->contrnr,
+		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+		       cmsg->adr.adrPLCI);
 	}
 	return;
       ignored:
-//	printk(KERN_INFO "capidrv-%d: %s for plci 0x%x ignored\n",
-//	       card->contrnr,
-//	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+	printk(KERN_INFO "capidrv-%d: %s for plci 0x%x ignored\n",
+	       card->contrnr,
+	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+	       cmsg->adr.adrPLCI);
 	return;
       notfound:
-//	printk(KERN_ERR "capidrv-%d: %s: plci 0x%x not found\n",
-//	       card->contrnr,
-//	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+	printk(KERN_ERR "capidrv-%d: %s: plci 0x%x not found\n",
+	       card->contrnr,
+	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+	       cmsg->adr.adrPLCI);
 	return;
 }
 
@@ -1182,9 +1182,9 @@ static void handle_ncci(_cmsg * cmsg)
 	int len;
 
 	if (!card) {
-//		printk(KERN_ERR "capidrv: %s from unknown controller 0x%x\n",
-//		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+		printk(KERN_ERR "capidrv: %s from unknown controller 0x%x\n",
+		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+		       cmsg->adr.adrController & 0x7f);
 		return;
 	}
 	switch (CAPICMD(cmsg->Command, cmsg->Subcommand)) {
@@ -1202,8 +1202,8 @@ static void handle_ncci(_cmsg * cmsg)
 		cmd.arg = nccip->chan;
 		card->interface.statcallb(&cmd);
 
-//		printk(KERN_INFO "capidrv-%d: chan %d up with ncci 0x%x\n",
-;
+		printk(KERN_INFO "capidrv-%d: chan %d up with ncci 0x%x\n",
+		       card->contrnr, nccip->chan, nccip->ncci);
 		break;
 
 	case CAPI_CONNECT_B3_ACTIVE_CONF:	/* ncci */
@@ -1227,12 +1227,12 @@ static void handle_ncci(_cmsg * cmsg)
 				send_message(card, cmsg);
 				break;
 			}
-;
+			printk(KERN_ERR "capidrv-%d: no mem for ncci, sorry\n",							card->contrnr);
 		} else {
-//			printk(KERN_ERR "capidrv-%d: %s: plci for ncci 0x%x not found\n",
-//			   card->contrnr,
-//			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+			printk(KERN_ERR "capidrv-%d: %s: plci for ncci 0x%x not found\n",
+			   card->contrnr,
+			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			       cmsg->adr.adrNCCI);
 		}
 		capi_fill_CONNECT_B3_RESP(cmsg,
 					  global.ap.applid,
@@ -1253,11 +1253,11 @@ static void handle_ncci(_cmsg * cmsg)
 
 		nccip->ncci = cmsg->adr.adrNCCI;
 		if (cmsg->Info) {
-//			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for ncci 0x%x\n",
-//			   card->contrnr,
-//			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-//			       cmsg->Info, capi_info2str(cmsg->Info), 
-;
+			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for ncci 0x%x\n",
+			   card->contrnr,
+			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			       cmsg->Info, capi_info2str(cmsg->Info), 
+			       cmsg->adr.adrNCCI);
 		}
 
 		if (cmsg->Info)
@@ -1277,8 +1277,8 @@ static void handle_ncci(_cmsg * cmsg)
 
 	case CAPI_DATA_B3_CONF:	/* ncci */
 		if (cmsg->Info) {
-//			printk(KERN_WARNING "CAPI_DATA_B3_CONF: Info %x - %s\n",
-;
+			printk(KERN_WARNING "CAPI_DATA_B3_CONF: Info %x - %s\n",
+				cmsg->Info, capi_info2str(cmsg->Info));
 		}
 		if (!(nccip = find_ncci(card, cmsg->adr.adrNCCI)))
 			goto notfound;
@@ -1308,11 +1308,11 @@ static void handle_ncci(_cmsg * cmsg)
 		if (!(nccip = find_ncci(card, cmsg->adr.adrNCCI)))
 			goto notfound;
 		if (cmsg->Info) {
-//			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for ncci 0x%x\n",
-//			   card->contrnr,
-//			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-//			       cmsg->Info, capi_info2str(cmsg->Info), 
-;
+			printk(KERN_INFO "capidrv-%d: %s info 0x%x (%s) for ncci 0x%x\n",
+			   card->contrnr,
+			   capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+			       cmsg->Info, capi_info2str(cmsg->Info), 
+			       cmsg->adr.adrNCCI);
 			ncci_change_state(card, nccip, EV_NCCI_DISCONNECT_B3_CONF_ERROR);
 		}
 		break;
@@ -1334,23 +1334,23 @@ static void handle_ncci(_cmsg * cmsg)
 		goto ignored;
 
 	default:
-//		printk(KERN_ERR "capidrv-%d: got %s for ncci 0x%x ???",
-//		       card->contrnr,
-//		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+		printk(KERN_ERR "capidrv-%d: got %s for ncci 0x%x ???",
+		       card->contrnr,
+		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+		       cmsg->adr.adrNCCI);
 	}
 	return;
       ignored:
-//	printk(KERN_INFO "capidrv-%d: %s for ncci 0x%x ignored\n",
-//	       card->contrnr,
-//	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+	printk(KERN_INFO "capidrv-%d: %s for ncci 0x%x ignored\n",
+	       card->contrnr,
+	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+	       cmsg->adr.adrNCCI);
 	return;
       notfound:
-//	printk(KERN_ERR "capidrv-%d: %s: ncci 0x%x not found\n",
-//	       card->contrnr,
-//	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+	printk(KERN_ERR "capidrv-%d: %s: ncci 0x%x not found\n",
+	       card->contrnr,
+	       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+	       cmsg->adr.adrNCCI);
 }
 
 
@@ -1360,17 +1360,17 @@ static void handle_data(_cmsg * cmsg, struct sk_buff *skb)
 	capidrv_ncci *nccip;
 
 	if (!card) {
-//		printk(KERN_ERR "capidrv: %s from unknown controller 0x%x\n",
-//		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+		printk(KERN_ERR "capidrv: %s from unknown controller 0x%x\n",
+		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+		       cmsg->adr.adrController & 0x7f);
 		kfree_skb(skb);
 		return;
 	}
 	if (!(nccip = find_ncci(card, cmsg->adr.adrNCCI))) {
-//		printk(KERN_ERR "capidrv-%d: %s: ncci 0x%x not found\n",
-//		       card->contrnr,
-//		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
-;
+		printk(KERN_ERR "capidrv-%d: %s: ncci 0x%x not found\n",
+		       card->contrnr,
+		       capi_cmd2str(cmsg->Command, cmsg->Subcommand),
+		       cmsg->adr.adrNCCI);
 		kfree_skb(skb);
 		return;
 	}
@@ -1389,13 +1389,13 @@ static void capidrv_recv_message(struct capi20_appl *ap, struct sk_buff *skb)
 		_cdebbuf *cdb = capi_cmsg2str(&s_cmsg);
 
 		if (cdb) {
-//			printk(KERN_DEBUG "%s: applid=%d %s\n", __func__,
-;
+			printk(KERN_DEBUG "%s: applid=%d %s\n", __func__,
+				ap->applid, cdb->buf);
 			cdebbuf_free(cdb);
 		} else
-//			printk(KERN_DEBUG "%s: applid=%d %s not traced\n",
-//				__func__, ap->applid,
-;
+			printk(KERN_DEBUG "%s: applid=%d %s not traced\n",
+				__func__, ap->applid,
+				capi_cmd2str(s_cmsg.Command, s_cmsg.Subcommand));
 	}
 	if (s_cmsg.Command == CAPI_DATA_B3
 	    && s_cmsg.Subcommand == CAPI_IND) {
@@ -1432,8 +1432,8 @@ static void handle_dtrace_data(capidrv_contr *card,
     	isdn_ctrl cmd;
 
     	if (!len) {
-//		printk(KERN_DEBUG "capidrv-%d: avmb1_q931_data: len == %d\n",
-;
+		printk(KERN_DEBUG "capidrv-%d: avmb1_q931_data: len == %d\n",
+				card->contrnr, len);
 		return;
 	}
 
@@ -1471,12 +1471,12 @@ static int capidrv_ioctl(isdn_ctrl * c, capidrv_contr * card)
 	switch (c->arg) {
 	case 1:
 		debugmode = (int)(*((unsigned int *)c->parm.num));
-//		printk(KERN_DEBUG "capidrv-%d: debugmode=%d\n",
-;
+		printk(KERN_DEBUG "capidrv-%d: debugmode=%d\n",
+				card->contrnr, debugmode);
 		return 0;
 	default:
-//		printk(KERN_DEBUG "capidrv-%d: capidrv_ioctl(%ld) called ??\n",
-;
+		printk(KERN_DEBUG "capidrv-%d: capidrv_ioctl(%ld) called ??\n",
+				card->contrnr, c->arg);
 		return -EINVAL;
 	}
 	return -EINVAL;
@@ -1598,25 +1598,25 @@ static int capidrv_command(isdn_ctrl * c, capidrv_contr * card)
 			u8 called[ISDN_MSNLEN + 2];
 
 			if (debugmode)
-//				printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_DIAL(ch=%ld,\"%s,%d,%d,%s\")\n",
-//					card->contrnr,
-//					c->arg,
-//				        c->parm.setup.phone,
-//				        c->parm.setup.si1,
-//				        c->parm.setup.si2,
-;
+				printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_DIAL(ch=%ld,\"%s,%d,%d,%s\")\n",
+					card->contrnr,
+					c->arg,
+				        c->parm.setup.phone,
+				        c->parm.setup.si1,
+				        c->parm.setup.si2,
+				        c->parm.setup.eazmsn);
 
 			bchan = &card->bchans[c->arg % card->nbchan];
 
 			if (bchan->plcip) {
-//				printk(KERN_ERR "capidrv-%d: dail ch=%ld,\"%s,%d,%d,%s\" in use (plci=0x%x)\n",
-//					card->contrnr,
-//			        	c->arg, 
-//				        c->parm.setup.phone,
-//				        c->parm.setup.si1,
-//				        c->parm.setup.si2,
-//				        c->parm.setup.eazmsn,
-;
+				printk(KERN_ERR "capidrv-%d: dail ch=%ld,\"%s,%d,%d,%s\" in use (plci=0x%x)\n",
+					card->contrnr,
+			        	c->arg, 
+				        c->parm.setup.phone,
+				        c->parm.setup.si1,
+				        c->parm.setup.si2,
+				        c->parm.setup.eazmsn,
+				        bchan->plcip->plci);
 				return 0;
 			}
 			bchan->si1 = c->parm.setup.si1;
@@ -1627,13 +1627,13 @@ static int capidrv_command(isdn_ctrl * c, capidrv_contr * card)
                         rc = FVteln2capi20(bchan->num, AdditionalInfo);
 			isleasedline = (rc == 0);
 			if (rc < 0)
-;
+				printk(KERN_ERR "capidrv-%d: WARNING: invalid leased linedefinition \"%s\"\n", card->contrnr, bchan->num);
 
 			if (isleasedline) {
 				calling[0] = 0;
 				called[0] = 0;
 			        if (debugmode)
-;
+					printk(KERN_DEBUG "capidrv-%d: connecting leased line\n", card->contrnr);
 			} else {
 		        	calling[0] = strlen(bchan->mynum) + 2;
 		        	calling[1] = 0;
@@ -1686,9 +1686,9 @@ static int capidrv_command(isdn_ctrl * c, capidrv_contr * card)
 
 		bchan = &card->bchans[c->arg % card->nbchan];
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_ACCEPTD(ch=%ld) l2=%d l3=%d\n",
-//			       card->contrnr,
-;
+			printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_ACCEPTD(ch=%ld) l2=%d l3=%d\n",
+			       card->contrnr,
+			       c->arg, bchan->l2, bchan->l3);
 
 		capi_fill_CONNECT_RESP(&cmdcmsg,
 				       global.ap.applid,
@@ -1716,23 +1716,23 @@ static int capidrv_command(isdn_ctrl * c, capidrv_contr * card)
 
 	case ISDN_CMD_ACCEPTB:
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_ACCEPTB(ch=%ld)\n",
-//			       card->contrnr,
-;
+			printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_ACCEPTB(ch=%ld)\n",
+			       card->contrnr,
+			       c->arg);
 		return -ENOSYS;
 
 	case ISDN_CMD_HANGUP:
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_HANGUP(ch=%ld)\n",
-//			       card->contrnr,
-;
+			printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_HANGUP(ch=%ld)\n",
+			       card->contrnr,
+			       c->arg);
 		bchan = &card->bchans[c->arg % card->nbchan];
 
 		if (bchan->disconnecting) {
 			if (debugmode)
-//				printk(KERN_DEBUG "capidrv-%d: chan %ld already disconnecting ...\n",
-//				       card->contrnr,
-;
+				printk(KERN_DEBUG "capidrv-%d: chan %ld already disconnecting ...\n",
+				       card->contrnr,
+				       c->arg);
 			return 0;
 		}
 		if (bchan->nccip) {
@@ -1771,56 +1771,56 @@ static int capidrv_command(isdn_ctrl * c, capidrv_contr * card)
 				send_message(card, &cmdcmsg);
 				return 0;
 			} else {
-//				printk(KERN_ERR "capidrv-%d: chan %ld disconnect request while waiting for CONNECT_CONF\n",
-//				       card->contrnr,
-;
+				printk(KERN_ERR "capidrv-%d: chan %ld disconnect request while waiting for CONNECT_CONF\n",
+				       card->contrnr,
+				       c->arg);
 				return -EINVAL;
 			}
 		}
-//		printk(KERN_ERR "capidrv-%d: chan %ld disconnect request on free channel\n",
-//				       card->contrnr,
-;
+		printk(KERN_ERR "capidrv-%d: chan %ld disconnect request on free channel\n",
+				       card->contrnr,
+				       c->arg);
 		return -EINVAL;
 /* ready */
 
 	case ISDN_CMD_SETL2:
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: set L2 on chan %ld to %ld\n",
-//			       card->contrnr,
-;
+			printk(KERN_DEBUG "capidrv-%d: set L2 on chan %ld to %ld\n",
+			       card->contrnr,
+			       (c->arg & 0xff), (c->arg >> 8));
 		bchan = &card->bchans[(c->arg & 0xff) % card->nbchan];
 		bchan->l2 = (c->arg >> 8);
 		return 0;
 
 	case ISDN_CMD_SETL3:
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: set L3 on chan %ld to %ld\n",
-//			       card->contrnr,
-;
+			printk(KERN_DEBUG "capidrv-%d: set L3 on chan %ld to %ld\n",
+			       card->contrnr,
+			       (c->arg & 0xff), (c->arg >> 8));
 		bchan = &card->bchans[(c->arg & 0xff) % card->nbchan];
 		bchan->l3 = (c->arg >> 8);
 		return 0;
 
 	case ISDN_CMD_SETEAZ:
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: set EAZ \"%s\" on chan %ld\n",
-//			       card->contrnr,
-;
+			printk(KERN_DEBUG "capidrv-%d: set EAZ \"%s\" on chan %ld\n",
+			       card->contrnr,
+			       c->parm.num, c->arg);
 		bchan = &card->bchans[c->arg % card->nbchan];
 		strncpy(bchan->msn, c->parm.num, ISDN_MSNLEN);
 		return 0;
 
 	case ISDN_CMD_CLREAZ:
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: clearing EAZ on chan %ld\n",
-;
+			printk(KERN_DEBUG "capidrv-%d: clearing EAZ on chan %ld\n",
+					card->contrnr, c->arg);
 		bchan = &card->bchans[c->arg % card->nbchan];
 		bchan->msn[0] = 0;
 		return 0;
 
 	default:
-//		printk(KERN_ERR "capidrv-%d: ISDN_CMD_%d, Huh?\n",
-;
+		printk(KERN_ERR "capidrv-%d: ISDN_CMD_%d, Huh?\n",
+					card->contrnr, c->command);
 		return -EINVAL;
 	}
 	return 0;
@@ -1833,9 +1833,9 @@ static int if_command(isdn_ctrl * c)
 	if (card)
 		return capidrv_command(c, card);
 
-//	printk(KERN_ERR
-//	     "capidrv: if_command %d called with invalid driverId %d!\n",
-;
+	printk(KERN_ERR
+	     "capidrv: if_command %d called with invalid driverId %d!\n",
+						c->command, c->driver);
 	return -ENODEV;
 }
 
@@ -1853,18 +1853,18 @@ static int if_sendbuf(int id, int channel, int doack, struct sk_buff *skb)
 	u32 data;
 
 	if (!card) {
-//		printk(KERN_ERR "capidrv: if_sendbuf called with invalid driverId %d!\n",
-;
+		printk(KERN_ERR "capidrv: if_sendbuf called with invalid driverId %d!\n",
+		       id);
 		return 0;
 	}
 	if (debugmode > 4)
-//		printk(KERN_DEBUG "capidrv-%d: sendbuf len=%d skb=%p doack=%d\n",
-;
+		printk(KERN_DEBUG "capidrv-%d: sendbuf len=%d skb=%p doack=%d\n",
+					card->contrnr, len, skb, doack);
 	bchan = &card->bchans[channel % card->nbchan];
 	nccip = bchan->nccip;
 	if (!nccip || nccip->state != ST_NCCI_ACTIVE) {
-//		printk(KERN_ERR "capidrv-%d: if_sendbuf: %s:%d: chan not up!\n",
-;
+		printk(KERN_ERR "capidrv-%d: if_sendbuf: %s:%d: chan not up!\n",
+		       card->contrnr, card->name, channel);
 		return 0;
 	}
 	datahandle = nccip->datahandle;
@@ -1901,13 +1901,13 @@ static int if_sendbuf(int id, int channel, int doack, struct sk_buff *skb)
 	if (skb_headroom(skb) < msglen) {
 		struct sk_buff *nskb = skb_realloc_headroom(skb, msglen);
 		if (!nskb) {
-//			printk(KERN_ERR "capidrv-%d: if_sendbuf: no memory\n",
-;
+			printk(KERN_ERR "capidrv-%d: if_sendbuf: no memory\n",
+				card->contrnr);
 		        (void)capidrv_del_ack(nccip, datahandle);
 			return 0;
 		}
-//		printk(KERN_DEBUG "capidrv-%d: only %d bytes headroom, need %d\n",
-;
+		printk(KERN_DEBUG "capidrv-%d: only %d bytes headroom, need %d\n",
+		       card->contrnr, skb_headroom(skb), msglen);
 		memcpy(skb_push(nskb, msglen), sendcmsg.buf, msglen);
 		errcode = capi20_put_message(&global.ap, nskb);
 		if (errcode == CAPI_NOERROR) {
@@ -1916,8 +1916,8 @@ static int if_sendbuf(int id, int channel, int doack, struct sk_buff *skb)
 			return len;
 		}
 		if (debugmode > 3)
-//			printk(KERN_DEBUG "capidrv-%d: sendbuf putmsg ret(%x) - %s\n",
-;
+			printk(KERN_DEBUG "capidrv-%d: sendbuf putmsg ret(%x) - %s\n",
+				card->contrnr, errcode, capi_info2str(errcode));
 	        (void)capidrv_del_ack(nccip, datahandle);
 	        dev_kfree_skb(nskb);
 		return errcode == CAPI_SENDQUEUEFULL ? 0 : -1;
@@ -1929,8 +1929,8 @@ static int if_sendbuf(int id, int channel, int doack, struct sk_buff *skb)
 			return len;
 		}
 		if (debugmode > 3)
-//			printk(KERN_DEBUG "capidrv-%d: sendbuf putmsg ret(%x) - %s\n",
-;
+			printk(KERN_DEBUG "capidrv-%d: sendbuf putmsg ret(%x) - %s\n",
+				card->contrnr, errcode, capi_info2str(errcode));
 		skb_pull(skb, msglen);
 	        (void)capidrv_del_ack(nccip, datahandle);
 		return errcode == CAPI_SENDQUEUEFULL ? 0 : -1;
@@ -1944,8 +1944,8 @@ static int if_readstat(u8 __user *buf, int len, int id, int channel)
 	u8 __user *p;
 
 	if (!card) {
-//		printk(KERN_ERR "capidrv: if_readstat called with invalid driverId %d!\n",
-;
+		printk(KERN_ERR "capidrv: if_readstat called with invalid driverId %d!\n",
+		       id);
 		return -ENODEV;
 	}
 
@@ -1969,19 +1969,19 @@ static void enable_dchannel_trace(capidrv_contr *card)
 
         errcode = capi20_get_manufacturer(contr, manufacturer);
         if (errcode != CAPI_NOERROR) {
-//	   printk(KERN_ERR "%s: can't get manufacturer (0x%x)\n",
-;
+	   printk(KERN_ERR "%s: can't get manufacturer (0x%x)\n",
+			card->name, errcode);
 	   return;
 	}
 	if (strstr(manufacturer, "AVM") == NULL) {
-//	   printk(KERN_ERR "%s: not from AVM, no d-channel trace possible (%s)\n",
-;
+	   printk(KERN_ERR "%s: not from AVM, no d-channel trace possible (%s)\n",
+			card->name, manufacturer);
 	   return;
 	}
         errcode = capi20_get_version(contr, &version);
         if (errcode != CAPI_NOERROR) {
-//	   printk(KERN_ERR "%s: can't get version (0x%x)\n",
-;
+	   printk(KERN_ERR "%s: can't get version (0x%x)\n",
+			card->name, errcode);
 	   return;
 	}
 	avmversion[0] = (version.majormanuversion >> 4) & 0x0f;
@@ -1990,7 +1990,7 @@ static void enable_dchannel_trace(capidrv_contr *card)
 	avmversion[2] |= version.minormanuversion & 0x0f;
 
         if (avmversion[0] > 3 || (avmversion[0] == 3 && avmversion[1] > 5)) {
-;
+		printk(KERN_INFO "%s: D2 trace enabled\n", card->name);
 		capi_fill_MANUFACTURER_REQ(&cmdcmsg, global.ap.applid,
 					   card->msgid++,
 					   contr,
@@ -1999,7 +1999,7 @@ static void enable_dchannel_trace(capidrv_contr *card)
 					   1,           /* Function */
 					   (_cstruct)"\004\200\014\000\000");
 	} else {
-;
+		printk(KERN_INFO "%s: D3 trace enabled\n", card->name);
 		capi_fill_MANUFACTURER_REQ(&cmdcmsg, global.ap.applid,
 					   card->msgid++,
 					   contr,
@@ -2029,7 +2029,7 @@ static void listentimerfunc(unsigned long x)
 {
 	capidrv_contr *card = (capidrv_contr *)x;
 	if (card->state != ST_LISTEN_NONE && card->state != ST_LISTEN_ACTIVE)
-;
+		printk(KERN_ERR "%s: controller dead ??\n", card->name);
         send_listen(card);
 	mod_timer(&card->listentimer, jiffies + 60*HZ);
 }
@@ -2045,12 +2045,12 @@ static int capidrv_addcontr(u16 contr, struct capi_profile *profp)
 
 	sprintf(id, "capidrv-%d", contr);
 	if (!try_module_get(THIS_MODULE)) {
-;
+		printk(KERN_WARNING "capidrv: (%s) Could not reserve module\n", id);
 		return -1;
 	}
 	if (!(card = kzalloc(sizeof(capidrv_contr), GFP_ATOMIC))) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		 "capidrv: (%s) Could not allocate contr-struct.\n", id);
 		return -1;
 	}
 	card->owner = THIS_MODULE;
@@ -2060,8 +2060,8 @@ static int capidrv_addcontr(u16 contr, struct capi_profile *profp)
 	card->nbchan = profp->nbchannel;
 	card->bchans = kmalloc(sizeof(capidrv_bchan) * card->nbchan, GFP_ATOMIC);
 	if (!card->bchans) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		"capidrv: (%s) Could not allocate bchan-structs.\n", id);
 		module_put(card->owner);
 		kfree(card);
 		return -1;
@@ -2094,7 +2094,7 @@ static int capidrv_addcontr(u16 contr, struct capi_profile *profp)
 	card->q931_end = card->q931_buf + sizeof(card->q931_buf) - 1;
 
 	if (!register_isdn(&card->interface)) {
-;
+		printk(KERN_ERR "capidrv: Unable to register contr %s\n", id);
 		kfree(card->bchans);
 		module_put(card->owner);
 		kfree(card);
@@ -2124,8 +2124,8 @@ static int capidrv_addcontr(u16 contr, struct capi_profile *profp)
 	send_listen(card);
 	mod_timer(&card->listentimer, jiffies + 60*HZ);
 
-//	printk(KERN_INFO "%s: now up (%d B channels)\n",
-;
+	printk(KERN_INFO "%s: now up (%d B channels)\n",
+		card->name, card->nbchan);
 
 	enable_dchannel_trace(card);
 
@@ -2145,7 +2145,7 @@ static int capidrv_delcontr(u16 contr)
 	}
 	if (!card) {
 		spin_unlock_irqrestore(&global_lock, flags);
-;
+		printk(KERN_ERR "capidrv: delcontr: no contr %u\n", contr);
 		return -1;
 	}
 
@@ -2157,8 +2157,8 @@ static int capidrv_delcontr(u16 contr)
 	del_timer(&card->listentimer);
 
 	if (debugmode)
-//		printk(KERN_DEBUG "capidrv-%d: id=%d unloading\n",
-;
+		printk(KERN_DEBUG "capidrv-%d: id=%d unloading\n",
+					card->contrnr, card->myid);
 
 	cmd.command = ISDN_STAT_STOP;
 	cmd.driver = card->myid;
@@ -2171,8 +2171,8 @@ static int capidrv_delcontr(u16 contr)
 		cmd.arg = card->nbchan-1;
 	        cmd.parm.num[0] = 0;
 		if (debugmode)
-//			printk(KERN_DEBUG "capidrv-%d: id=%d disable chan=%ld\n",
-;
+			printk(KERN_DEBUG "capidrv-%d: id=%d disable chan=%ld\n",
+					card->contrnr, card->myid, cmd.arg);
 		card->interface.statcallb(&cmd);
 
 		if (card->bchans[card->nbchan-1].nccip)
@@ -2180,23 +2180,23 @@ static int capidrv_delcontr(u16 contr)
 		if (card->bchans[card->nbchan-1].plcip)
 			free_plci(card, card->bchans[card->nbchan-1].plcip);
 		if (card->plci_list)
-;
+			printk(KERN_ERR "capidrv: bug in free_plci()\n");
 		card->nbchan--;
 	}
 	kfree(card->bchans);
 	card->bchans = NULL;
 
 	if (debugmode)
-//		printk(KERN_DEBUG "capidrv-%d: id=%d isdn unload\n",
-;
+		printk(KERN_DEBUG "capidrv-%d: id=%d isdn unload\n",
+					card->contrnr, card->myid);
 
 	cmd.command = ISDN_STAT_UNLOAD;
 	cmd.driver = card->myid;
 	card->interface.statcallb(&cmd);
 
 	if (debugmode)
-//		printk(KERN_DEBUG "capidrv-%d: id=%d remove contr from list\n",
-;
+		printk(KERN_DEBUG "capidrv-%d: id=%d remove contr from list\n",
+					card->contrnr, card->myid);
 
 	spin_lock_irqsave(&global_lock, flags);
 	for (pp = &global.contr_list; *pp; pp = &(*pp)->next) {
@@ -2210,7 +2210,7 @@ static int capidrv_delcontr(u16 contr)
 	spin_unlock_irqrestore(&global_lock, flags);
 
 	module_put(card->owner);
-;
+	printk(KERN_INFO "%s: now down.\n", card->name);
 	kfree(card);
 	return 0;
 }
@@ -2224,12 +2224,12 @@ lower_callback(struct notifier_block *nb, unsigned long val, void *v)
 
 	switch (val) {
 	case CAPICTR_UP:
-;
+		printk(KERN_INFO "capidrv: controller %hu up\n", contr);
 		if (capi20_get_profile(contr, &profile) == CAPI_NOERROR)
 			(void) capidrv_addcontr(contr, &profile);
 		break;
 	case CAPICTR_DOWN:
-;
+		printk(KERN_INFO "capidrv: controller %hu down\n", contr);
 		(void) capidrv_delcontr(contr);
 		break;
 	}

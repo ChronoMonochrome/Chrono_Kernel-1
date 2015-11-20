@@ -56,17 +56,17 @@
 #undef PM2FB_MASTER_DEBUG
 #ifdef PM2FB_MASTER_DEBUG
 #define DPRINTK(a, b...)	\
-//	printk(KERN_DEBUG "pm2fb: %s: " a, __func__ , ## b)
-//#else
-//#define DPRINTK(a, b...)
-//#endif
-//
-//#define PM2_PIXMAP_SIZE	(1600 * 4)
-//
-///*
-// * Driver data
-// */
-;
+	printk(KERN_DEBUG "pm2fb: %s: " a, __func__ , ## b)
+#else
+#define DPRINTK(a, b...)
+#endif
+
+#define PM2_PIXMAP_SIZE	(1600 * 4)
+
+/*
+ * Driver data
+ */
+static int hwcursor = 1;
 static char *mode_option __devinitdata;
 
 /*
@@ -1525,7 +1525,7 @@ static int __devinit pm2fb_probe(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err) {
-;
+		printk(KERN_WARNING "pm2fb: Can't enable pdev: %d\n", err);
 		return err;
 	}
 
@@ -1565,14 +1565,14 @@ static int __devinit pm2fb_probe(struct pci_dev *pdev,
 	/* Registers - request region and map it. */
 	if (!request_mem_region(pm2fb_fix.mmio_start, pm2fb_fix.mmio_len,
 				"pm2fb regbase")) {
-;
+		printk(KERN_WARNING "pm2fb: Can't reserve regbase.\n");
 		goto err_exit_neither;
 	}
 	default_par->v_regs =
 		ioremap_nocache(pm2fb_fix.mmio_start, pm2fb_fix.mmio_len);
 	if (!default_par->v_regs) {
-//		printk(KERN_WARNING "pm2fb: Can't remap %s register area.\n",
-;
+		printk(KERN_WARNING "pm2fb: Can't remap %s register area.\n",
+		       pm2fb_fix.id);
 		release_mem_region(pm2fb_fix.mmio_start, pm2fb_fix.mmio_len);
 		goto err_exit_neither;
 	}
@@ -1634,13 +1634,13 @@ static int __devinit pm2fb_probe(struct pci_dev *pdev,
 	/* Linear frame buffer - request region and map it. */
 	if (!request_mem_region(pm2fb_fix.smem_start, pm2fb_fix.smem_len,
 				"pm2fb smem")) {
-;
+		printk(KERN_WARNING "pm2fb: Can't reserve smem.\n");
 		goto err_exit_mmio;
 	}
 	info->screen_base =
 		ioremap_nocache(pm2fb_fix.smem_start, pm2fb_fix.smem_len);
 	if (!info->screen_base) {
-;
+		printk(KERN_WARNING "pm2fb: Can't ioremap smem area.\n");
 		release_mem_region(pm2fb_fix.smem_start, pm2fb_fix.smem_len);
 		goto err_exit_mmio;
 	}
@@ -1675,7 +1675,7 @@ static int __devinit pm2fb_probe(struct pci_dev *pdev,
 	info->pixmap.flags = FB_PIXMAP_SYSTEM;
 
 	if (noaccel) {
-;
+		printk(KERN_DEBUG "disabling acceleration\n");
 		info->flags |= FBINFO_HWACCEL_DISABLED;
 		info->pixmap.scan_align = 1;
 	}
@@ -1695,8 +1695,8 @@ static int __devinit pm2fb_probe(struct pci_dev *pdev,
 	if (retval < 0)
 		goto err_exit_all;
 
-//	printk(KERN_INFO "fb%d: %s frame buffer device, memory = %dK.\n",
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device, memory = %dK.\n",
+	       info->node, info->fix.id, pm2fb_fix.smem_len / 1024);
 
 	/*
 	 * Our driver data

@@ -141,16 +141,16 @@ MODULE_PARM_DESC(repeat_delay, "Delay before sending repeats, default = 500 msec
 
 #define dbginfo(dev, format, arg...) do { if (debug) dev_info(dev , format , ## arg); } while (0)
 #undef err
-//#define err(format, arg...) printk(KERN_ERR format , ## arg)
-//
-//static struct usb_device_id ati_remote_table[] = {
-//	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, LOLA_REMOTE_PRODUCT_ID) },
-//	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, LOLA2_REMOTE_PRODUCT_ID) },
-//	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, ATI_REMOTE_PRODUCT_ID) },
-//	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, NVIDIA_REMOTE_PRODUCT_ID) },
-//	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, MEDION_REMOTE_PRODUCT_ID) },
-//	{}	/* Terminating entry */
-;
+#define err(format, arg...) printk(KERN_ERR format , ## arg)
+
+static struct usb_device_id ati_remote_table[] = {
+	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, LOLA_REMOTE_PRODUCT_ID) },
+	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, LOLA2_REMOTE_PRODUCT_ID) },
+	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, ATI_REMOTE_PRODUCT_ID) },
+	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, NVIDIA_REMOTE_PRODUCT_ID) },
+	{ USB_DEVICE(ATI_REMOTE_VENDOR_ID, MEDION_REMOTE_PRODUCT_ID) },
+	{}	/* Terminating entry */
+};
 
 MODULE_DEVICE_TABLE(usb, ati_remote_table);
 
@@ -838,11 +838,11 @@ static int __init ati_remote_init(void)
 
 	result = usb_register(&ati_remote_driver);
 	if (result)
-//		printk(KERN_ERR KBUILD_MODNAME
-;
+		printk(KERN_ERR KBUILD_MODNAME
+		       ": usb_register error #%d\n", result);
 	else
-//		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-;
+		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+		       DRIVER_DESC "\n");
 
 	return result;
 }

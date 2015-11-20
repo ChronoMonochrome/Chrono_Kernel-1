@@ -235,8 +235,8 @@ int bsg_setup_queue(struct device *dev, struct request_queue *q,
 
 	ret = bsg_register_queue(q, dev, name, NULL);
 	if (ret) {
-//		printk(KERN_ERR "%s: bsg interface failed to "
-;
+		printk(KERN_ERR "%s: bsg interface failed to "
+		       "initialize - register queue\n", dev->kobj.name);
 		return ret;
 	}
 

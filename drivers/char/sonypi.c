@@ -508,7 +508,7 @@ static struct sonypi_device {
 	while (--n && (command)) \
 		udelay(1); \
 	if (!n && (verbose || !quiet)) \
-;
+		printk(KERN_WARNING "sonypi command failed at %s : %s (line %d)\n", __FILE__, __func__, __LINE__); \
 }
 
 #ifdef CONFIG_ACPI
@@ -591,11 +591,11 @@ static void sonypi_type1_srs(void)
 static void sonypi_type2_srs(void)
 {
 	if (sonypi_ec_write(SONYPI_SHIB, (sonypi_device.ioport1 & 0xFF00) >> 8))
-;
+		printk(KERN_WARNING "ec_write failed\n");
 	if (sonypi_ec_write(SONYPI_SLOB, sonypi_device.ioport1 & 0x00FF))
-;
+		printk(KERN_WARNING "ec_write failed\n");
 	if (sonypi_ec_write(SONYPI_SIRQ, sonypi_device.bits))
-;
+		printk(KERN_WARNING "ec_write failed\n");
 	udelay(10);
 }
 
@@ -633,11 +633,11 @@ static void sonypi_type1_dis(void)
 static void sonypi_type2_dis(void)
 {
 	if (sonypi_ec_write(SONYPI_SHIB, 0))
-;
+		printk(KERN_WARNING "ec_write failed\n");
 	if (sonypi_ec_write(SONYPI_SLOB, 0))
-;
+		printk(KERN_WARNING "ec_write failed\n");
 	if (sonypi_ec_write(SONYPI_SIRQ, 0))
-;
+		printk(KERN_WARNING "ec_write failed\n");
 }
 
 static void sonypi_type3_dis(void)
@@ -752,7 +752,7 @@ static void sonypi_camera_on(void)
 	}
 
 	if (j == 0) {
-;
+		printk(KERN_WARNING "sonypi: failed to power on camera\n");
 		return;
 	}
 
@@ -861,9 +861,9 @@ static irqreturn_t sonypi_irq(int irq, void *dev_id)
 	}
 
 	if (verbose)
-//		printk(KERN_WARNING
-//		       "sonypi: unknown event port1=0x%02x,port2=0x%02x\n",
-;
+		printk(KERN_WARNING
+		       "sonypi: unknown event port1=0x%02x,port2=0x%02x\n",
+		       v1, v2);
 	/* We need to return IRQ_HANDLED here because there *are*
 	 * events belonging to the sonypi device we don't know about,
 	 * but we still don't want those to pollute the logs... */
@@ -871,8 +871,8 @@ static irqreturn_t sonypi_irq(int irq, void *dev_id)
 
 found:
 	if (verbose > 1)
-//		printk(KERN_INFO
-;
+		printk(KERN_INFO
+		       "sonypi: event port1=0x%02x,port2=0x%02x\n", v1, v2);
 
 	if (useinput)
 		sonypi_report_input_event(event);
@@ -1242,9 +1242,9 @@ static int __devinit sonypi_setup_ioports(struct sonypi_device *dev,
 		if (!request_region(check->port1,
 				   sonypi_device.region_size,
 				   "Sony Programmable I/O Device Check")) {
-//			printk(KERN_ERR "sonypi: ioport 0x%.4x busy, using sony-laptop? "
-//					"if not use check_ioport=0\n",
-;
+			printk(KERN_ERR "sonypi: ioport 0x%.4x busy, using sony-laptop? "
+					"if not use check_ioport=0\n",
+					check->port1);
 			return -EBUSY;
 		}
 		release_region(check->port1, sonypi_device.region_size);
@@ -1285,24 +1285,24 @@ static int __devinit sonypi_setup_irq(struct sonypi_device *dev,
 
 static void __devinit sonypi_display_info(void)
 {
-//	printk(KERN_INFO "sonypi: detected type%d model, "
-//	       "verbose = %d, fnkeyinit = %s, camera = %s, "
-//	       "compat = %s, mask = 0x%08lx, useinput = %s, acpi = %s\n",
-//	       sonypi_device.model,
-//	       verbose,
-//	       fnkeyinit ? "on" : "off",
-//	       camera ? "on" : "off",
-//	       compat ? "on" : "off",
-//	       mask,
-//	       useinput ? "on" : "off",
-;
-//	printk(KERN_INFO "sonypi: enabled at irq=%d, port1=0x%x, port2=0x%x\n",
-//	       sonypi_device.irq,
-;
+	printk(KERN_INFO "sonypi: detected type%d model, "
+	       "verbose = %d, fnkeyinit = %s, camera = %s, "
+	       "compat = %s, mask = 0x%08lx, useinput = %s, acpi = %s\n",
+	       sonypi_device.model,
+	       verbose,
+	       fnkeyinit ? "on" : "off",
+	       camera ? "on" : "off",
+	       compat ? "on" : "off",
+	       mask,
+	       useinput ? "on" : "off",
+	       SONYPI_ACPI_ACTIVE ? "on" : "off");
+	printk(KERN_INFO "sonypi: enabled at irq=%d, port1=0x%x, port2=0x%x\n",
+	       sonypi_device.irq,
+	       sonypi_device.ioport1, sonypi_device.ioport2);
 
 	if (minor == -1)
-//		printk(KERN_INFO "sonypi: device allocated minor is %d\n",
-;
+		printk(KERN_INFO "sonypi: device allocated minor is %d\n",
+		       sonypi_misc_device.minor);
 }
 
 static int __devinit sonypi_probe(struct platform_device *dev)
@@ -1312,14 +1312,14 @@ static int __devinit sonypi_probe(struct platform_device *dev)
 	struct pci_dev *pcidev;
 	int error;
 
-//	printk(KERN_WARNING "sonypi: please try the sony-laptop module instead "
-//			"and report failures, see also "
-;
+	printk(KERN_WARNING "sonypi: please try the sony-laptop module instead "
+			"and report failures, see also "
+			"http://www.linux.it/~malattia/wiki/index.php/Sony_drivers\n");
 
 	spin_lock_init(&sonypi_device.fifo_lock);
 	error = kfifo_alloc(&sonypi_device.fifo, SONYPI_BUF_SIZE, GFP_KERNEL);
 	if (error) {
-;
+		printk(KERN_ERR "sonypi: kfifo_alloc failed\n");
 		return error;
 	}
 
@@ -1340,7 +1340,7 @@ static int __devinit sonypi_probe(struct platform_device *dev)
 		sonypi_device.model = SONYPI_DEVICE_MODEL_TYPE2;
 
 	if (pcidev && pci_enable_device(pcidev)) {
-;
+		printk(KERN_ERR "sonypi: pci_enable_device failed\n");
 		error = -EIO;
 		goto err_put_pcidev;
 	}
@@ -1366,13 +1366,13 @@ static int __devinit sonypi_probe(struct platform_device *dev)
 
 	error = sonypi_setup_ioports(&sonypi_device, ioport_list);
 	if (error) {
-;
+		printk(KERN_ERR "sonypi: failed to request ioports\n");
 		goto err_disable_pcidev;
 	}
 
 	error = sonypi_setup_irq(&sonypi_device, irq_list);
 	if (error) {
-;
+		printk(KERN_ERR "sonypi: request_irq failed\n");
 		goto err_free_ioports;
 	}
 
@@ -1380,7 +1380,7 @@ static int __devinit sonypi_probe(struct platform_device *dev)
 		sonypi_misc_device.minor = minor;
 	error = misc_register(&sonypi_misc_device);
 	if (error) {
-;
+		printk(KERN_ERR "sonypi: misc_register failed\n");
 		goto err_free_irq;
 	}
 
@@ -1390,8 +1390,8 @@ static int __devinit sonypi_probe(struct platform_device *dev)
 
 		error = sonypi_create_input_devices(dev);
 		if (error) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"sonypi: failed to create input devices\n");
 			goto err_miscdev_unregister;
 		}
 
@@ -1399,7 +1399,7 @@ static int __devinit sonypi_probe(struct platform_device *dev)
 		error = kfifo_alloc(&sonypi_device.input_fifo, SONYPI_BUF_SIZE,
 				GFP_KERNEL);
 		if (error) {
-;
+			printk(KERN_ERR "sonypi: kfifo_alloc failed\n");
 			goto err_inpdev_unregister;
 		}
 
@@ -1519,9 +1519,9 @@ static int __init sonypi_init(void)
 {
 	int error;
 
-//	printk(KERN_INFO
-//		"sonypi: Sony Programmable I/O Controller Driver v%s.\n",
-;
+	printk(KERN_INFO
+		"sonypi: Sony Programmable I/O Controller Driver v%s.\n",
+		SONYPI_DRIVER_VERSION);
 
 	if (!dmi_check_system(sonypi_dmi_table))
 		return -ENODEV;
@@ -1562,7 +1562,7 @@ static void __exit sonypi_exit(void)
 #endif
 	platform_device_unregister(sonypi_platform_device);
 	platform_driver_unregister(&sonypi_driver);
-;
+	printk(KERN_INFO "sonypi: removed.\n");
 }
 
 module_init(sonypi_init);

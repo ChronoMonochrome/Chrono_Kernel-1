@@ -60,28 +60,28 @@ MODULE_LICENSE("GPL");
 #define SW_LENGTH	512	/* Max number of bits in a packet */
 
 #ifdef SW_DEBUG
-//#define dbg(format, arg...) printk(KERN_DEBUG __FILE__ ": " format "\n" , ## arg)
-//#else
-//#define dbg(format, arg...) do {} while (0)
-//#endif
-//
-///*
-// * SideWinder joystick types ...
-// */
-//
-//#define SW_ID_3DP	0
-//#define SW_ID_GP	1
-//#define SW_ID_PP	2
-//#define SW_ID_FFP	3
-//#define SW_ID_FSP	4
-//#define SW_ID_FFW	5
-//
-///*
-// * Names, buttons, axes ...
-// */
-//
-//static char *sw_name[] = {	"3D Pro", "GamePad", "Precision Pro", "Force Feedback Pro", "FreeStyle Pro",
-;
+#define dbg(format, arg...) printk(KERN_DEBUG __FILE__ ": " format "\n" , ## arg)
+#else
+#define dbg(format, arg...) do {} while (0)
+#endif
+
+/*
+ * SideWinder joystick types ...
+ */
+
+#define SW_ID_3DP	0
+#define SW_ID_GP	1
+#define SW_ID_PP	2
+#define SW_ID_FFP	3
+#define SW_ID_FSP	4
+#define SW_ID_FFW	5
+
+/*
+ * Names, buttons, axes ...
+ */
+
+static char *sw_name[] = {	"3D Pro", "GamePad", "Precision Pro", "Force Feedback Pro", "FreeStyle Pro",
+				"Force Feedback Wheel" };
 
 static char sw_abs[][7] = {
 	{ ABS_X, ABS_Y, ABS_RZ, ABS_THROTTLE, ABS_HAT0X, ABS_HAT0Y },
@@ -197,9 +197,9 @@ static int sw_read_packet(struct gameport *gameport, unsigned char *buf, int len
 #ifdef SW_DEBUG_DATA
 	{
 		int j;
-;
-;
-;
+		printk(KERN_DEBUG "sidewinder.c: Read %d triplets. [", i);
+		for (j = 0; j < i; j++) printk("%d", buf[j]);
+		printk("]\n");
 	}
 #endif
 
@@ -433,8 +433,8 @@ static int sw_read(struct sw *sw)
 	if (sw->type == SW_ID_3DP && sw->length == 66 && i != 66) {		/* Broken packet, try to fix */
 
 		if (i == 64 && !sw_check(sw_get_bits(buf,0,64,1))) {		/* Last init failed, 1 bit mode */
-//			printk(KERN_WARNING "sidewinder.c: Joystick in wrong mode on %s"
-;
+			printk(KERN_WARNING "sidewinder.c: Joystick in wrong mode on %s"
+				" - going to reinitialize.\n", sw->gameport->phys);
 			sw->fail = SW_FAIL;					/* Reinitialize */
 			i = 128;						/* Bogus value */
 		}
@@ -459,8 +459,8 @@ static int sw_read(struct sw *sw)
 		if (sw->type == SW_ID_3DP && sw->length == 66			/* Many packets OK */
 			&& sw->ok > SW_OK) {
 
-//			printk(KERN_INFO "sidewinder.c: No more trouble on %s"
-;
+			printk(KERN_INFO "sidewinder.c: No more trouble on %s"
+				" - enabling optimization again.\n", sw->gameport->phys);
 			sw->length = 22;
 		}
 
@@ -472,16 +472,16 @@ static int sw_read(struct sw *sw)
 
 	if (sw->type == SW_ID_3DP && sw->length == 22 && sw->fail > SW_BAD) {	/* Consecutive bad packets */
 
-//		printk(KERN_INFO "sidewinder.c: Many bit errors on %s"
-;
+		printk(KERN_INFO "sidewinder.c: Many bit errors on %s"
+			" - disabling optimization.\n", sw->gameport->phys);
 		sw->length = 66;
 	}
 
 	if (sw->fail < SW_FAIL)
 		return -1;							/* Not enough, don't reinitialize yet */
 
-//	printk(KERN_WARNING "sidewinder.c: Too many bit errors on %s"
-;
+	printk(KERN_WARNING "sidewinder.c: Too many bit errors on %s"
+		" - reinitializing joystick.\n", sw->gameport->phys);
 
 	if (!i && sw->type == SW_ID_3DP) {					/* 3D Pro can be in analog mode */
 		mdelay(3 * SW_TIMEOUT);
@@ -530,10 +530,10 @@ static void sw_print_packet(char *name, int length, unsigned char *buf, char bit
 {
 	int i;
 
-;
+	printk(KERN_INFO "sidewinder.c: %s packet, %d bits. [", name, length);
 	for (i = (((length + 3) >> 2) - 1); i >= 0; i--)
-;
-;
+		printk("%x", (int)sw_get_bits(buf, i << 2, 4, bits));
+	printk("]\n");
 }
 
 /*
@@ -712,8 +712,8 @@ static int sw_connect(struct gameport *gameport, struct gameport_driver *drv)
 	} while (k && sw->type == -1);
 
 	if (sw->type == -1) {
-//		printk(KERN_WARNING "sidewinder.c: unknown joystick device detected "
-;
+		printk(KERN_WARNING "sidewinder.c: unknown joystick device detected "
+			"on %s, contact <vojtech@ucw.cz>\n", gameport->phys);
 		sw_print_packet("ID", j * 3, idbuf, 3);
 		sw_print_packet("Data", i * m, buf, m);
 		err = -ENODEV;

@@ -243,7 +243,7 @@ agp_ioc_init(void __iomem *ioc_regs)
         u64 iova_base, *io_pdir, io_tlb_ps;
         int io_tlb_shift;
 
-;
+        printk(KERN_INFO DRVPFX "IO PDIR shared with sba_iommu\n");
 
         info->ioc_regs = ioc_regs;
 
@@ -254,8 +254,8 @@ agp_ioc_init(void __iomem *ioc_regs)
         case 2: io_tlb_shift = 14; break;
         case 3: io_tlb_shift = 16; break;
         default:
-//                printk(KERN_ERR DRVPFX "Invalid IOTLB page size "
-;
+                printk(KERN_ERR DRVPFX "Invalid IOTLB page size "
+                       "configuration 0x%llx\n", io_tlb_ps);
                 info->gatt = NULL;
                 info->gatt_entries = 0;
                 return -ENODEV;
@@ -275,7 +275,7 @@ agp_ioc_init(void __iomem *ioc_regs)
         if (info->gatt[0] != SBA_AGPGART_COOKIE) {
                 info->gatt = NULL;
                 info->gatt_entries = 0;
-;
+                printk(KERN_ERR DRVPFX "No reserved IO PDIR entry found; "
                        "GART disabled\n");
                 return -ENODEV;
         }
@@ -318,8 +318,8 @@ agp_lba_init(void __iomem *lba_hpa)
 
         cap = readl(lba_hpa + info->lba_cap_offset) & 0xff;
         if (cap != PCI_CAP_ID_AGP) {
-//                printk(KERN_ERR DRVPFX "Invalid capability ID 0x%02x at 0x%x\n",
-;
+                printk(KERN_ERR DRVPFX "Invalid capability ID 0x%02x at 0x%x\n",
+                       cap, info->lba_cap_offset);
                 return -ENODEV;
         }
 
@@ -395,7 +395,7 @@ parisc_agp_init(void)
 	/* Find our parent Pluto */
 	sba = sba_list->dev;
 	if (!IS_PLUTO(sba)) {
-;
+		printk(KERN_INFO DRVPFX "No Pluto found, so no AGPGART for you.\n");
 		goto out;
 	}
 
@@ -403,7 +403,7 @@ parisc_agp_init(void)
 	device_for_each_child(&sba->dev, &lba, find_quicksilver);
 
 	if (!lba) {
-;
+		printk(KERN_INFO DRVPFX "No AGP devices found.\n");
 		goto out;
 	}
 

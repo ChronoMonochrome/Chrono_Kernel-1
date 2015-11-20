@@ -83,12 +83,12 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
 	 */
 	drv = dsa_switch_probe(bus, pd->sw_addr, &name);
 	if (drv == NULL) {
-//		printk(KERN_ERR "%s[%d]: could not detect attached switch\n",
-;
+		printk(KERN_ERR "%s[%d]: could not detect attached switch\n",
+		       dst->master_netdev->name, index);
 		return ERR_PTR(-EINVAL);
 	}
-//	printk(KERN_INFO "%s[%d]: detected a %s switch\n",
-;
+	printk(KERN_INFO "%s[%d]: detected a %s switch\n",
+		dst->master_netdev->name, index, name);
 
 
 	/*
@@ -117,7 +117,7 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
 
 		if (!strcmp(name, "cpu")) {
 			if (dst->cpu_switch != -1) {
-;
+				printk(KERN_ERR "multiple cpu ports?!\n");
 				ret = -EINVAL;
 				goto out;
 			}
@@ -174,10 +174,10 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
 
 		slave_dev = dsa_slave_create(ds, parent, i, pd->port_names[i]);
 		if (slave_dev == NULL) {
-//			printk(KERN_ERR "%s[%d]: can't create dsa "
-//			       "slave device for port %d(%s)\n",
-//			       dst->master_netdev->name,
-;
+			printk(KERN_ERR "%s[%d]: can't create dsa "
+			       "slave device for port %d(%s)\n",
+			       dst->master_netdev->name,
+			       index, i, pd->port_names[i]);
 			continue;
 		}
 
@@ -310,8 +310,8 @@ static int dsa_probe(struct platform_device *pdev)
 	int i;
 
 	if (!dsa_version_printed++)
-//		printk(KERN_NOTICE "Distributed Switch Architecture "
-;
+		printk(KERN_NOTICE "Distributed Switch Architecture "
+			"driver version %s\n", dsa_driver_version);
 
 	if (pd == NULL || pd->netdev == NULL)
 		return -EINVAL;
@@ -344,16 +344,16 @@ static int dsa_probe(struct platform_device *pdev)
 
 		bus = dev_to_mii_bus(pd->chip[i].mii_bus);
 		if (bus == NULL) {
-//			printk(KERN_ERR "%s[%d]: no mii bus found for "
-;
+			printk(KERN_ERR "%s[%d]: no mii bus found for "
+				"dsa switch\n", dev->name, i);
 			continue;
 		}
 
 		ds = dsa_switch_setup(dst, i, &pdev->dev, bus);
 		if (IS_ERR(ds)) {
-//			printk(KERN_ERR "%s[%d]: couldn't create dsa switch "
-//				"instance (error %ld)\n", dev->name, i,
-;
+			printk(KERN_ERR "%s[%d]: couldn't create dsa switch "
+				"instance (error %ld)\n", dev->name, i,
+				PTR_ERR(ds));
 			continue;
 		}
 

@@ -890,9 +890,9 @@ static void check_stack_usage(void)
 
 	spin_lock(&low_water_lock);
 	if (free < lowest_to_date) {
-//		printk(KERN_WARNING "%s used greatest stack depth: %lu bytes "
-//				"left\n",
-;
+		printk(KERN_WARNING "%s used greatest stack depth: %lu bytes "
+				"left\n",
+				current->comm, free);
 		lowest_to_date = free;
 	}
 	spin_unlock(&low_water_lock);
@@ -934,8 +934,8 @@ NORET_TYPE void do_exit(long code)
 	 * leave this task alone and wait for reboot.
 	 */
 	if (unlikely(tsk->flags & PF_EXITING)) {
-//		printk(KERN_ALERT
-;
+		printk(KERN_ALERT
+			"Fixing recursive fault but reboot is needed!\n");
 		/*
 		 * We can do this unlocked here. The futex code uses
 		 * this flag just to verify whether the pi state
@@ -961,9 +961,9 @@ NORET_TYPE void do_exit(long code)
 	raw_spin_unlock_wait(&tsk->pi_lock);
 
 	if (unlikely(in_atomic()))
-//		printk(KERN_INFO "note: %s[%d] exited with preempt_count %d\n",
-//				current->comm, task_pid_nr(current),
-;
+		printk(KERN_INFO "note: %s[%d] exited with preempt_count %d\n",
+				current->comm, task_pid_nr(current),
+				preempt_count());
 
 	acct_update_integrals(tsk);
 	/* sync mm's RSS info before statistics gathering */

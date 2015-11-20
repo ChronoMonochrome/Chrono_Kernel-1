@@ -178,9 +178,9 @@ int nilfs_sufile_updatev(struct inode *sufile, __u64 *segnumv, size_t nsegs,
 	down_write(&NILFS_MDT(sufile)->mi_sem);
 	for (seg = segnumv; seg < segnumv + nsegs; seg++) {
 		if (unlikely(*seg >= nilfs_sufile_get_nsegments(sufile))) {
-//			printk(KERN_WARNING
-//			       "%s: invalid segment number: %llu\n", __func__,
-;
+			printk(KERN_WARNING
+			       "%s: invalid segment number: %llu\n", __func__,
+			       (unsigned long long)*seg);
 			nerr++;
 		}
 	}
@@ -237,8 +237,8 @@ int nilfs_sufile_update(struct inode *sufile, __u64 segnum, int create,
 	int ret;
 
 	if (unlikely(segnum >= nilfs_sufile_get_nsegments(sufile))) {
-//		printk(KERN_WARNING "%s: invalid segment number: %llu\n",
-;
+		printk(KERN_WARNING "%s: invalid segment number: %llu\n",
+		       __func__, (unsigned long long)segnum);
 		return -EINVAL;
 	}
 	down_write(&NILFS_MDT(sufile)->mi_sem);
@@ -413,8 +413,8 @@ void nilfs_sufile_do_cancel_free(struct inode *sufile, __u64 segnum,
 	kaddr = kmap_atomic(su_bh->b_page, KM_USER0);
 	su = nilfs_sufile_block_get_segment_usage(sufile, segnum, su_bh, kaddr);
 	if (unlikely(!nilfs_segment_usage_clean(su))) {
-//		printk(KERN_WARNING "%s: segment %llu must be clean\n",
-;
+		printk(KERN_WARNING "%s: segment %llu must be clean\n",
+		       __func__, (unsigned long long)segnum);
 		kunmap_atomic(kaddr, KM_USER0);
 		return;
 	}
@@ -470,8 +470,8 @@ void nilfs_sufile_do_free(struct inode *sufile, __u64 segnum,
 	kaddr = kmap_atomic(su_bh->b_page, KM_USER0);
 	su = nilfs_sufile_block_get_segment_usage(sufile, segnum, su_bh, kaddr);
 	if (nilfs_segment_usage_clean(su)) {
-//		printk(KERN_WARNING "%s: segment %llu is already clean\n",
-;
+		printk(KERN_WARNING "%s: segment %llu is already clean\n",
+		       __func__, (unsigned long long)segnum);
 		kunmap_atomic(kaddr, KM_USER0);
 		return;
 	}

@@ -161,7 +161,7 @@ tune_fan( int fan_setting )
 	print_temp("CPU-temp: ", x.temp );
 	if( x.casetemp )
 		print_temp(", Case: ", x.casetemp );
-;
+	printk(",  Fan: %d (tuned %+d)\n", 11-fan_setting, x.fan_level-fan_setting );
 
 	x.fan_level = fan_setting;
 }
@@ -183,7 +183,7 @@ poll_temp( void )
 	if( LOG_TEMP && x.temp != temp ) {
 		print_temp("CPU-temp: ", temp );
 		print_temp(", Case: ", casetemp );
-;
+		printk(",  Fan: %d\n", 11-x.fan_level );
 	}
 	x.temp = temp;
 	x.casetemp = casetemp;
@@ -223,7 +223,7 @@ setup_hardware( void )
 	if( (val=read_reg(x.thermostat, 1, 1)) >= 0 ) {
 		val |= 0x60;
 		if( write_reg( x.thermostat, 1, val, 1 ) )
-;
+			printk("Failed writing config register\n");
 	}
 	/* disable interrupts and TAC input */
 	write_reg( x.fan, 0x01, 0x01, 1 );
@@ -245,7 +245,7 @@ setup_hardware( void )
 
 		print_temp("Reducing overheating limit to ", x.overheat_temp );
 		print_temp(" (Hyst: ", x.overheat_hyst );
-;
+		printk(")\n");
 	}
 
 	/* set an initial fan setting */
@@ -256,8 +256,8 @@ setup_hardware( void )
 	err = device_create_file( &x.of_dev->dev, &dev_attr_cpu_temperature );
 	err |= device_create_file( &x.of_dev->dev, &dev_attr_case_temperature );
 	if (err)
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+			"Failed to create temperature attribute file(s).\n");
 }
 
 static void
@@ -348,7 +348,7 @@ do_remove(struct i2c_client *client)
 	else if (client == x.fan)
 		x.fan = NULL;
 	else
-;
+		printk(KERN_ERR "g4fan: bad client\n");
 
 	return 0;
 }
@@ -362,7 +362,7 @@ attach_fan( struct i2c_client *cl )
 	/* check that this is an ADM1030 */
 	if( read_reg(cl, 0x3d, 1) != 0x30 || read_reg(cl, 0x3e, 1) != 0x41 )
 		goto out;
-;
+	printk("ADM1030 fan controller [@%02x]\n", cl->addr );
 
 	x.fan = cl;
  out:
@@ -388,11 +388,11 @@ attach_thermostat( struct i2c_client *cl )
 	if( hyst_temp < 0 || os_temp < 0 )
 		goto out;
 
-;
+	printk("DS1775 digital thermometer [@%02x]\n", cl->addr );
 	print_temp("Temp: ", temp );
 	print_temp("  Hyst: ", hyst_temp );
 	print_temp("  OS: ", os_temp );
-;
+	printk("\n");
 
 	x.temp = temp;
 	x.overheat_temp = os_temp;
@@ -495,7 +495,7 @@ g4fan_init( void )
 		return -ENODEV;
 
 	if( info->id != 3 ) {
-;
+		printk(KERN_ERR "therm_windtunnel: unsupported thermal design %d\n", info->id );
 		return -ENODEV;
 	}
 	if( !(np=of_find_node_by_name(NULL, "fan")) )
@@ -504,7 +504,7 @@ g4fan_init( void )
 	of_node_put( np );
 
 	if( !x.of_dev ) {
-;
+		printk(KERN_ERR "Can't register fan controller!\n");
 		return -ENODEV;
 	}
 

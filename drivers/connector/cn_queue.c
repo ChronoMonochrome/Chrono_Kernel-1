@@ -40,7 +40,7 @@ cn_queue_alloc_callback_entry(struct cn_queue_dev *dev, const char *name,
 
 	cbq = kzalloc(sizeof(*cbq), GFP_KERNEL);
 	if (!cbq) {
-;
+		printk(KERN_ERR "Failed to create new callback queue.\n");
 		return NULL;
 	}
 
@@ -149,8 +149,8 @@ void cn_queue_free_dev(struct cn_queue_dev *dev)
 	spin_unlock_bh(&dev->queue_lock);
 
 	while (atomic_read(&dev->refcnt)) {
-//		printk(KERN_INFO "Waiting for %s to become free: refcnt=%d.\n",
-;
+		printk(KERN_INFO "Waiting for %s to become free: refcnt=%d.\n",
+		       dev->name, atomic_read(&dev->refcnt));
 		msleep(1000);
 	}
 

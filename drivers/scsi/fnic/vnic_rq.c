@@ -36,7 +36,7 @@ static int vnic_rq_alloc_bufs(struct vnic_rq *rq)
 	for (i = 0; i < blks; i++) {
 		rq->bufs[i] = kzalloc(VNIC_RQ_BUF_BLK_SZ, GFP_ATOMIC);
 		if (!rq->bufs[i]) {
-;
+			printk(KERN_ERR "Failed to alloc rq_bufs\n");
 			return -ENOMEM;
 		}
 	}
@@ -92,7 +92,7 @@ int vnic_rq_alloc(struct vnic_dev *vdev, struct vnic_rq *rq, unsigned int index,
 
 	rq->ctrl = vnic_dev_get_res(vdev, RES_TYPE_RQ, index);
 	if (!rq->ctrl) {
-;
+		printk(KERN_ERR "Failed to hook RQ[%d] resource\n", index);
 		return -EINVAL;
 	}
 
@@ -160,7 +160,7 @@ int vnic_rq_disable(struct vnic_rq *rq)
 		udelay(1);
 	}
 
-;
+	printk(KERN_ERR "Failed to disable RQ[%d]\n", rq->index);
 
 	return -ETIMEDOUT;
 }

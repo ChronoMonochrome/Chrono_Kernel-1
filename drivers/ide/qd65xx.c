@@ -163,7 +163,7 @@ static int qd_find_disk_type (ide_drive_t *drive,
 
 	for (p = qd65xx_timing ; p->offset != -1 ; p++) {
 		if (!strncmp(p->model, model+p->offset, 4)) {
-;
+			printk(KERN_DEBUG "%s: listed !\n", drive->name);
 			*active_time = p->active;
 			*recovery_time = p->recovery;
 			return 1;
@@ -186,7 +186,7 @@ static void qd_set_timing (ide_drive_t *drive, u8 timing)
 	data |= timing;
 	ide_set_drivedata(drive, (void *)data);
 
-;
+	printk(KERN_DEBUG "%s: %#x\n", drive->name, timing);
 }
 
 static void qd6500_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
@@ -199,8 +199,8 @@ static void qd6500_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 	if (!qd_find_disk_type(drive, &active_time, &recovery_time) &&
 	    (id[ATA_ID_OLD_PIO_MODES] & 0xff) && (id[ATA_ID_FIELD_VALID] & 2) &&
 	    id[ATA_ID_EIDE_PIO] >= 240) {
-//		printk(KERN_INFO "%s: PIO mode%d\n", drive->name,
-;
+		printk(KERN_INFO "%s: PIO mode%d\n", drive->name,
+			id[ATA_ID_OLD_PIO_MODES] & 0xff);
 		active_time = 110;
 		recovery_time = drive->id[ATA_ID_EIDE_PIO] - 120;
 	}
@@ -228,14 +228,14 @@ static void qd6580_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 					active_time = 86;
 					recovery_time = cycle_time - 102;
 				} else
-;
+					printk(KERN_WARNING "%s: Strange recovery time !\n",drive->name);
 				break;
 			case 4:
 				if (cycle_time >= 69) {
 					active_time = 70;
 					recovery_time = cycle_time - 61;
 				} else
-;
+					printk(KERN_WARNING "%s: Strange recovery time !\n",drive->name);
 				break;
 			default:
 				if (cycle_time >= 180) {
@@ -246,14 +246,14 @@ static void qd6580_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 					recovery_time = cycle_time - active_time;
 				}
 		}
-;
+		printk(KERN_INFO "%s: PIO mode%d\n", drive->name,pio);
 	}
 
 	if (!hwif->channel && drive->media != ide_disk) {
 		outb(0x5f, QD_CONTROL_PORT);
-//		printk(KERN_WARNING "%s: ATAPI: disabled read-ahead FIFO "
-//			"and post-write buffer on %s.\n",
-;
+		printk(KERN_WARNING "%s: ATAPI: disabled read-ahead FIFO "
+			"and post-write buffer on %s.\n",
+			drive->name, hwif->name);
 	}
 
 	qd_set_timing(drive, qd6580_compute_timing(active_time, recovery_time));
@@ -278,9 +278,9 @@ static int __init qd_testreg(int port)
 	local_irq_restore(flags);
 
 	if (savereg == QD_TESTVAL) {
-;
-;
-;
+		printk(KERN_ERR "Outch ! the probe for qd65xx isn't reliable !\n");
+		printk(KERN_ERR "Please contact maintainers to tell about your hardware\n");
+		printk(KERN_ERR "Assuming qd65xx is not present.\n");
 		return 1;
 	}
 
@@ -374,13 +374,13 @@ static int __init qd_probe(int base)
 			 return -ENODEV;	/* bad register */
 
 		if (config & QD_CONFIG_DISABLED) {
-;
+			printk(KERN_WARNING "qd6500 is disabled !\n");
 			return -ENODEV;
 		}
 
-;
-//		printk(KERN_DEBUG "qd6500: config=%#x, ID3=%u\n",
-;
+		printk(KERN_NOTICE "qd6500 at %#x\n", base);
+		printk(KERN_DEBUG "qd6500: config=%#x, ID3=%u\n",
+			config, QD_ID3);
 
 		d.port_ops = &qd6500_port_ops;
 		d.host_flags |= IDE_HFLAG_SINGLE;
@@ -392,9 +392,9 @@ static int __init qd_probe(int base)
 
 		control = inb(QD_CONTROL_PORT);
 
-;
-//		printk(KERN_DEBUG "qd6580: config=%#x, control=%#x, ID3=%u\n",
-;
+		printk(KERN_NOTICE "qd6580 at %#x\n", base);
+		printk(KERN_DEBUG "qd6580: config=%#x, control=%#x, ID3=%u\n",
+			config, control, QD_ID3);
 
 		outb(QD_DEF_CONTR, QD_CONTROL_PORT);
 
@@ -402,8 +402,8 @@ static int __init qd_probe(int base)
 		if (control & QD_CONTR_SEC_DISABLED)
 			d.host_flags |= IDE_HFLAG_SINGLE;
 
-//		printk(KERN_INFO "qd6580: %s IDE board\n",
-;
+		printk(KERN_INFO "qd6580: %s IDE board\n",
+			(control & QD_CONTR_SEC_DISABLED) ? "single" : "dual");
 		break;
 	default:
 		return -ENODEV;

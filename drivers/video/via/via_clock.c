@@ -272,22 +272,22 @@ static void set_secondary_clock_source(enum via_clksrc source, bool use_pll)
 
 static void dummy_set_clock_state(u8 state)
 {
-;
+	printk(KERN_INFO "Using undocumented set clock state.\n%s", via_slap);
 }
 
 static void dummy_set_clock_source(enum via_clksrc source, bool use_pll)
 {
-;
+	printk(KERN_INFO "Using undocumented set clock source.\n%s", via_slap);
 }
 
 static void dummy_set_pll_state(u8 state)
 {
-;
+	printk(KERN_INFO "Using undocumented set PLL state.\n%s", via_slap);
 }
 
 static void dummy_set_pll(struct via_pll_config config)
 {
-;
+	printk(KERN_INFO "Using undocumented set PLL.\n%s", via_slap);
 }
 
 static void noop_set_clock_state(u8 state)

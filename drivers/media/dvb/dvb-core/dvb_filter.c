@@ -46,7 +46,7 @@ static void ts_to_pes(ipack *p, u8 *buf) // don't need count (=188)
 	u8 off = 0;
 
 	if (!buf || !p ){
-;
+		printk("NULL POINTER IDIOT\n");
 		return;
 	}
 	if (buf[1]&PAY_START) {
@@ -71,23 +71,23 @@ static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, in
 {
 	u8 pct;
 
-;
+	if (pr) printk( "Pic header: ");
 	pic->temporal_reference[field] = (( headr[0] << 2 ) |
 					  (headr[1] & 0x03) )& 0x03ff;
-;
+	if (pr) printk( " temp ref: 0x%04x", pic->temporal_reference[field]);
 
 	pct = ( headr[1] >> 2 ) & 0x07;
 	pic->picture_coding_type[field] = pct;
 	if (pr) {
 		switch(pct){
 			case I_FRAME:
-;
+				printk( "  I-FRAME");
 				break;
 			case B_FRAME:
-;
+				printk( "  B-FRAME");
 				break;
 			case P_FRAME:
-;
+				printk( "  P-FRAME");
 				break;
 		}
 	}
@@ -96,7 +96,7 @@ static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, in
 	pic->vinfo.vbv_delay  = (( headr[1] >> 5 ) | ( headr[2] << 3) |
 				 ( (headr[3] & 0x1F) << 11) ) & 0xffff;
 
-;
+	if (pr) printk( " vbv delay: 0x%04x", pic->vinfo.vbv_delay);
 
 	pic->picture_header_parameter = ( headr[3] & 0xe0 ) |
 		((headr[4] & 0x80) >> 3);
@@ -104,8 +104,8 @@ static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, in
 	if ( pct == B_FRAME ){
 		pic->picture_header_parameter |= ( headr[4] >> 3 ) & 0x0f;
 	}
-//	if (pr) printk( " pic head param: 0x%x",
-;
+	if (pr) printk( " pic head param: 0x%x",
+			pic->picture_header_parameter);
 
 	return pct;
 }
@@ -115,28 +115,28 @@ static int read_picture_header(u8 *headr, struct mpg_picture *pic, int field, in
 /* needs 4 byte input */
 static int read_gop_header(u8 *headr, struct mpg_picture *pic, int pr)
 {
-;
+	if (pr) printk("GOP header: ");
 
 	pic->time_code  = (( headr[0] << 17 ) | ( headr[1] << 9) |
 			   ( headr[2] << 1 ) | (headr[3] &0x01)) & 0x1ffffff;
 
-//	if (pr) printk(" time: %d:%d.%d ", (headr[0]>>2)& 0x1F,
-//		       ((headr[0]<<4)& 0x30)| ((headr[1]>>4)& 0x0F),
-;
+	if (pr) printk(" time: %d:%d.%d ", (headr[0]>>2)& 0x1F,
+		       ((headr[0]<<4)& 0x30)| ((headr[1]>>4)& 0x0F),
+		       ((headr[1]<<3)& 0x38)| ((headr[2]>>5)& 0x0F));
 
 	if ( ( headr[3] & 0x40 ) != 0 ){
 		pic->closed_gop = 1;
 	} else {
 		pic->closed_gop = 0;
 	}
-;
+	if (pr) printk("closed: %d", pic->closed_gop);
 
 	if ( ( headr[3] & 0x20 ) != 0 ){
 		pic->broken_link = 1;
 	} else {
 		pic->broken_link = 0;
 	}
-;
+	if (pr) printk(" broken: %d\n", pic->broken_link);
 
 	return 0;
 }
@@ -149,7 +149,7 @@ static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
 	int sw;
 	int form = -1;
 
-;
+	if (pr) printk("Reading sequence header\n");
 
 	vi->horizontal_size	= ((headr[1] &0xF0) >> 4) | (headr[0] << 4);
 	vi->vertical_size	= ((headr[1] &0x0F) << 8) | (headr[2]);
@@ -159,28 +159,28 @@ static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
 	switch( sw ){
 	case 1:
 		if (pr)
-;
+			printk("Videostream: ASPECT: 1:1");
 		vi->aspect_ratio = 100;
 		break;
 	case 2:
 		if (pr)
-;
+			printk("Videostream: ASPECT: 4:3");
 		vi->aspect_ratio = 133;
 		break;
 	case 3:
 		if (pr)
-;
+			printk("Videostream: ASPECT: 16:9");
 		vi->aspect_ratio = 177;
 		break;
 	case 4:
 		if (pr)
-;
+			printk("Videostream: ASPECT: 2.21:1");
 		vi->aspect_ratio = 221;
 		break;
 
 	case 5 ... 15:
 		if (pr)
-;
+			printk("Videostream: ASPECT: reserved");
 		vi->aspect_ratio = 0;
 		break;
 
@@ -190,50 +190,50 @@ static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
 	}
 
 	if (pr)
-;
+		printk("  Size = %dx%d",vi->horizontal_size,vi->vertical_size);
 
 	sw = (int)(headr[3]&0x0F);
 
 	switch ( sw ) {
 	case 1:
 		if (pr)
-;
+			printk("  FRate: 23.976 fps");
 		vi->framerate = 23976;
 		form = -1;
 		break;
 	case 2:
 		if (pr)
-;
+			printk("  FRate: 24 fps");
 		vi->framerate = 24000;
 		form = -1;
 		break;
 	case 3:
 		if (pr)
-;
+			printk("  FRate: 25 fps");
 		vi->framerate = 25000;
 		form = VIDEO_MODE_PAL;
 		break;
 	case 4:
 		if (pr)
-;
+			printk("  FRate: 29.97 fps");
 		vi->framerate = 29970;
 		form = VIDEO_MODE_NTSC;
 		break;
 	case 5:
 		if (pr)
-;
+			printk("  FRate: 30 fps");
 		vi->framerate = 30000;
 		form = VIDEO_MODE_NTSC;
 		break;
 	case 6:
 		if (pr)
-;
+			printk("  FRate: 50 fps");
 		vi->framerate = 50000;
 		form = VIDEO_MODE_PAL;
 		break;
 	case 7:
 		if (pr)
-;
+			printk("  FRate: 60 fps");
 		vi->framerate = 60000;
 		form = VIDEO_MODE_NTSC;
 		break;
@@ -247,7 +247,7 @@ static int read_sequence_header(u8 *headr, struct dvb_video_info *vi, int pr)
 	if (pr){
 		printk("  BRate: %d Mbit/s",4*(vi->bit_rate)/10000);
 		printk("  vbvbuffer %d",16*1024*(vi->vbv_buffer_size));
-;
+		printk("\n");
 	}
 
 	vi->video_format = form;
@@ -313,27 +313,27 @@ static int get_ainfo(u8 *mbuf, int count, struct dvb_audio_info *ai, int pr)
 	ai->layer = (headr[1] & 0x06) >> 1;
 
 	if (pr)
-;
+		printk("Audiostream: Layer: %d", 4-ai->layer);
 
 
 	ai->bit_rate = bitrates[(3-ai->layer)][(headr[2] >> 4 )]*1000;
 
 	if (pr){
 		if (ai->bit_rate == 0)
-;
+			printk("  Bit rate: free");
 		else if (ai->bit_rate == 0xf)
-;
+			printk("  BRate: reserved");
 		else
-;
+			printk("  BRate: %d kb/s", ai->bit_rate/1000);
 	}
 
 	fr = (headr[2] & 0x0c ) >> 2;
 	ai->frequency = freq[fr]*100;
 	if (pr){
 		if (ai->frequency == 3)
-;
+			printk("  Freq: reserved\n");
 		else
-;
+			printk("  Freq: %d kHz\n",ai->frequency);
 
 	}
 	ai->off = c;
@@ -362,7 +362,7 @@ int dvb_filter_get_ac3info(u8 *mbuf, int count, struct dvb_audio_info *ai, int p
 
 	if (!found) return -1;
 	if (pr)
-;
+		printk("Audiostream: AC3");
 
 	ai->off = c;
 	if (c+5 >= count) return -1;
@@ -374,7 +374,7 @@ int dvb_filter_get_ac3info(u8 *mbuf, int count, struct dvb_audio_info *ai, int p
 	ai->bit_rate = ac3_bitrates[frame >> 1]*1000;
 
 	if (pr)
-;
+		printk("  BRate: %d kb/s", (int) ai->bit_rate/1000);
 
 	ai->frequency = (headr[2] & 0xc0 ) >> 6;
 	fr = (headr[2] & 0xc0 ) >> 6;

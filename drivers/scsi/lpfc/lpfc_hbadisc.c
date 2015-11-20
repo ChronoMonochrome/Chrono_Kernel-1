@@ -78,9 +78,9 @@ lpfc_terminate_rport_io(struct fc_rport *rport)
 
 	if (!ndlp || !NLP_CHK_NODE_ACT(ndlp)) {
 		if (rport->roles & FC_RPORT_ROLE_FCP_TARGET)
-//			printk(KERN_ERR "Cannot find remote node"
-//			" to terminate I/O Data x%x\n",
-;
+			printk(KERN_ERR "Cannot find remote node"
+			" to terminate I/O Data x%x\n",
+			rport->port_id);
 		return;
 	}
 
@@ -3568,8 +3568,8 @@ lpfc_register_remote_port(struct lpfc_vport *vport, struct lpfc_nodelist *ndlp)
 
 	ndlp->rport = rport = fc_remote_port_add(shost, 0, &rport_ids);
 	if (!rport || !get_device(&rport->dev)) {
-//		dev_printk(KERN_WARNING, &phba->pcidev->dev,
-;
+		dev_printk(KERN_WARNING, &phba->pcidev->dev,
+			   "Warning: fc_remote_port_add failed\n");
 		return;
 	}
 

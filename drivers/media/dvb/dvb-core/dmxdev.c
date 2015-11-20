@@ -51,7 +51,7 @@ static int dvb_dmxdev_buffer_write(struct dvb_ringbuffer *buf,
 
 	free = dvb_ringbuffer_free(buf);
 	if (len > free) {
-;
+		dprintk("dmxdev: buffer overflow\n");
 		return -EOVERFLOW;
 	}
 
@@ -127,7 +127,7 @@ static int dvb_dvr_open(struct inode *inode, struct file *file)
 	struct dmxdev *dmxdev = dvbdev->priv;
 	struct dmx_frontend *front;
 
-;
+	dprintk("function : %s\n", __func__);
 
 	if (mutex_lock_interruptible(&dmxdev->mutex))
 		return -ERESTARTSYS;
@@ -261,7 +261,7 @@ static int dvb_dvr_set_buffer_size(struct dmxdev *dmxdev,
 	void *newmem;
 	void *oldmem;
 
-;
+	dprintk("function : %s\n", __func__);
 
 	if (buf->size == size)
 		return 0;
@@ -371,9 +371,9 @@ static int dvb_dmxdev_section_callback(const u8 *buffer1, size_t buffer1_len,
 		return 0;
 	}
 	del_timer(&dmxdevfilter->timer);
-//	dprintk("dmxdev: section callback %02x %02x %02x %02x %02x %02x\n",
-//		buffer1[0], buffer1[1],
-;
+	dprintk("dmxdev: section callback %02x %02x %02x %02x %02x %02x\n",
+		buffer1[0], buffer1[1],
+		buffer1[2], buffer1[3], buffer1[4], buffer1[5]);
 	ret = dvb_dmxdev_buffer_write(&dmxdevfilter->buffer, buffer1,
 				      buffer1_len);
 	if (ret == buffer1_len) {
@@ -666,16 +666,16 @@ static int dvb_dmxdev_filter_start(struct dmxdev_filter *filter)
 								   secfeed,
 								   dvb_dmxdev_section_callback);
 			if (ret < 0) {
-//				printk("DVB (%s): could not alloc feed\n",
-;
+				printk("DVB (%s): could not alloc feed\n",
+				       __func__);
 				return ret;
 			}
 
 			ret = (*secfeed)->set(*secfeed, para->pid, 32768,
 					      (para->flags & DMX_CHECK_CRC) ? 1 : 0);
 			if (ret < 0) {
-//				printk("DVB (%s): could not set feed\n",
-;
+				printk("DVB (%s): could not set feed\n",
+				       __func__);
 				dvb_dmxdev_feed_restart(filter);
 				return ret;
 			}
@@ -687,7 +687,7 @@ static int dvb_dmxdev_filter_start(struct dmxdev_filter *filter)
 		if (ret < 0) {
 			dvb_dmxdev_feed_restart(filter);
 			filter->feed.sec->start_filtering(*secfeed);
-;
+			dprintk("could not get filter\n");
 			return ret;
 		}
 
@@ -855,7 +855,7 @@ static int dvb_dmxdev_filter_set(struct dmxdev *dmxdev,
 				 struct dmxdev_filter *dmxdevfilter,
 				 struct dmx_sct_filter_params *params)
 {
-;
+	dprintk("function : %s\n", __func__);
 
 	dvb_dmxdev_filter_stop(dmxdevfilter);
 
@@ -1189,7 +1189,7 @@ static unsigned int dvb_dvr_poll(struct file *file, poll_table *wait)
 	struct dmxdev *dmxdev = dvbdev->priv;
 	unsigned int mask = 0;
 
-;
+	dprintk("function : %s\n", __func__);
 
 	poll_wait(file, &dmxdev->dvr_buffer.queue, wait);
 

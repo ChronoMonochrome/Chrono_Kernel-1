@@ -266,8 +266,8 @@ snd_wavefront_fx_start (snd_wavefront_t *dev)
 				goto out;
 			}
 		} else {
-//			snd_printk(KERN_ERR "invalid address"
-;
+			snd_printk(KERN_ERR "invalid address"
+				   " in register data\n");
 			err = -1;
 			goto out;
 		}

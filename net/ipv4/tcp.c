@@ -1648,8 +1648,8 @@ do_prequeue:
 		if ((flags & MSG_PEEK) &&
 		    (peek_seq - copied - urg_hole != tp->copied_seq)) {
 			if (net_ratelimit())
-//				printk(KERN_DEBUG "TCP(%s:%d): Application bug, race in MSG_PEEK.\n",
-;
+				printk(KERN_DEBUG "TCP(%s:%d): Application bug, race in MSG_PEEK.\n",
+				       current->comm, task_pid_nr(current));
 			peek_seq = tp->copied_seq;
 		}
 		continue;
@@ -1691,7 +1691,7 @@ do_prequeue:
 
 				if (tp->ucopy.dma_cookie < 0) {
 
-;
+					printk(KERN_ALERT "dma_cookie < 0\n");
 
 					/* Exception. Bailout! */
 					if (!copied)
@@ -2038,8 +2038,8 @@ adjudge_to_death:
 		sk_mem_reclaim(sk);
 		if (tcp_too_many_orphans(sk, 0)) {
 			if (net_ratelimit())
-//				printk(KERN_INFO "TCP: too many of orphaned "
-;
+				printk(KERN_INFO "TCP: too many of orphaned "
+				       "sockets\n");
 			tcp_set_state(sk, TCP_CLOSE);
 			tcp_send_active_reset(sk, GFP_ATOMIC);
 			NET_INC_STATS_BH(sock_net(sk),
@@ -3326,9 +3326,9 @@ void __init tcp_init(void)
 	sysctl_tcp_rmem[1] = 87380;
 	sysctl_tcp_rmem[2] = max(87380, max_rshare);
 
-//	printk(KERN_INFO "TCP: Hash tables configured "
-//	       "(established %u bind %u)\n",
-;
+	printk(KERN_INFO "TCP: Hash tables configured "
+	       "(established %u bind %u)\n",
+	       tcp_hashinfo.ehash_mask + 1, tcp_hashinfo.bhash_size);
 
 	tcp_register_congestion_control(&tcp_reno);
 

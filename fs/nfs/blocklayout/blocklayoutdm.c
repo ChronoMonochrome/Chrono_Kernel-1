@@ -52,7 +52,7 @@ static void dev_remove(dev_t dev)
 	uint8_t *dataptr;
 	DECLARE_WAITQUEUE(wq, current);
 
-;
+	dprintk("Entering %s\n", __func__);
 
 	memset(&msg, 0, sizeof(msg));
 	msg.data = kzalloc(1 + sizeof(bl_umount_request), GFP_NOFS);
@@ -90,11 +90,11 @@ static void nfs4_blk_metadev_release(struct pnfs_block_dev *bdev)
 {
 	int rv;
 
-;
+	dprintk("%s Releasing\n", __func__);
 	rv = nfs4_blkdev_put(bdev->bm_mdev);
 	if (rv)
-//		printk(KERN_ERR "%s nfs4_blkdev_put returns %d\n",
-;
+		printk(KERN_ERR "%s nfs4_blkdev_put returns %d\n",
+				__func__, rv);
 
 	dev_remove(bdev->bm_mdev->bd_dev);
 }
@@ -103,10 +103,10 @@ void bl_free_block_dev(struct pnfs_block_dev *bdev)
 {
 	if (bdev) {
 		if (bdev->bm_mdev) {
-//			dprintk("%s Removing DM device: %d:%d\n",
-//				__func__,
-//				MAJOR(bdev->bm_mdev->bd_dev),
-;
+			dprintk("%s Removing DM device: %d:%d\n",
+				__func__,
+				MAJOR(bdev->bm_mdev->bd_dev),
+				MINOR(bdev->bm_mdev->bd_dev));
 			nfs4_blk_metadev_release(bdev);
 		}
 		kfree(bdev);

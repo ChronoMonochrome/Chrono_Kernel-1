@@ -302,7 +302,7 @@ static int __init isapnp_fmi_probe(void)
 	if (pnp_device_attach(dev) < 0)
 		return -EAGAIN;
 	if (pnp_activate_dev(dev) < 0) {
-;
+		printk(KERN_ERR "radio-sf16fmi: PnP configure failed (out of resources?)\n");
 		pnp_device_detach(dev);
 		return -ENOMEM;
 	}
@@ -312,7 +312,7 @@ static int __init isapnp_fmi_probe(void)
 	}
 
 	i = pnp_port_start(dev, 0);
-;
+	printk(KERN_INFO "radio-sf16fmi: PnP reports card at %#x\n", i);
 
 	return i;
 }
@@ -347,17 +347,17 @@ static int __init fmi_init(void)
 		}
 	} else {
 		if (!request_region(io, 2, "radio-sf16fmi")) {
-;
+			printk(KERN_ERR "radio-sf16fmi: port %#x already in use\n", io);
 			return -EBUSY;
 		}
 		if (inb(io) == 0xff) {
-;
+			printk(KERN_ERR "radio-sf16fmi: card not present at %#x\n", io);
 			release_region(io, 2);
 			return -ENODEV;
 		}
 	}
 	if (io < 0) {
-;
+		printk(KERN_ERR "radio-sf16fmi: no cards found\n");
 		return -ENODEV;
 	}
 

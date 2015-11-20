@@ -2293,7 +2293,7 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
 		+ sizeof(short int);
 
 	if (!try_module_get(THIS_MODULE)) {
-;
+		printk(KERN_ERR "drbd: try_module_get() failed!\n");
 		return;
 	}
 
@@ -2349,7 +2349,7 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
 
 	rr = cn_netlink_send(cn_reply, CN_IDX_DRBD, GFP_KERNEL);
 	if (rr && rr != -ESRCH)
-;
+		printk(KERN_INFO "drbd: cn_netlink_send()=%d\n", rr);
 
 	kfree(cn_reply);
 	module_put(THIS_MODULE);
@@ -2607,7 +2607,7 @@ int __init drbd_nl_init(void)
 	} while (try--);
 
 	if (err) {
-;
+		printk(KERN_ERR "drbd: cn_drbd failed to register\n");
 		return err;
 	}
 
@@ -2646,6 +2646,6 @@ void drbd_nl_send_reply(struct cn_msg *req, int ret_code)
 
 	rr = cn_netlink_send(cn_reply, CN_IDX_DRBD, GFP_NOIO);
 	if (rr && rr != -ESRCH)
-;
+		printk(KERN_INFO "drbd: cn_netlink_send()=%d\n", rr);
 }
 

@@ -115,7 +115,7 @@ static void cmd64x_set_timing(struct ata_port *ap, struct ata_device *adev, u8 m
 	/* ata_timing_compute is smart and will produce timings for MWDMA
 	   that don't violate the drives PIO capabilities. */
 	if (ata_timing_compute(adev, mode, &t, T, 0) < 0) {
-;
+		printk(KERN_ERR DRV_NAME ": mode computation failed.\n");
 		return;
 	}
 	if (ap->port_no) {
@@ -129,8 +129,8 @@ static void cmd64x_set_timing(struct ata_port *ap, struct ata_device *adev, u8 m
 		}
 	}
 
-//	printk(KERN_DEBUG DRV_NAME ": active %d recovery %d setup %d.\n",
-;
+	printk(KERN_DEBUG DRV_NAME ": active %d recovery %d setup %d.\n",
+		t.active, t.recover, t.setup);
 	if (t.recover > 16) {
 		t.active += t.recover - 16;
 		t.recover = 16;
@@ -377,14 +377,14 @@ static int cmd64x_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
 	/* check for enabled ports */
 	pci_read_config_byte(pdev, CNTRL, &reg);
 	if (!port_ok)
-;
+		dev_printk(KERN_NOTICE, &pdev->dev, "Mobility Bridge detected, ignoring CNTRL port enable/disable\n");
 	if (port_ok && cntrl_ch0_ok && !(reg & CNTRL_CH0)) {
-;
+		dev_printk(KERN_NOTICE, &pdev->dev, "Primary port is disabled\n");
 		ppi[0] = &ata_dummy_port_info;
 		
 	}
 	if (port_ok && !(reg & CNTRL_CH1)) {
-;
+		dev_printk(KERN_NOTICE, &pdev->dev, "Secondary port is disabled\n");
 		ppi[1] = &ata_dummy_port_info;
 	}
 

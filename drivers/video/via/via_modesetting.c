@@ -90,8 +90,8 @@ void via_set_primary_color_depth(u8 depth)
 		value = 0x08;
 		break;
 	default:
-//		printk(KERN_WARNING "via_set_primary_color_depth: "
-;
+		printk(KERN_WARNING "via_set_primary_color_depth: "
+			"Unsupported depth: %d\n", depth);
 		return;
 	}
 
@@ -117,8 +117,8 @@ void via_set_secondary_color_depth(u8 depth)
 		value = 0x80;
 		break;
 	default:
-//		printk(KERN_WARNING "via_set_secondary_color_depth: "
-;
+		printk(KERN_WARNING "via_set_secondary_color_depth: "
+			"Unsupported depth: %d\n", depth);
 		return;
 	}
 

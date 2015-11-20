@@ -296,7 +296,7 @@ static void logfs_lock_write_page(struct page *page)
 	while (unlikely(!trylock_page(page))) {
 		if (loop++ > 0x1000) {
 			/* Has been observed once so far... */
-;
+			printk(KERN_ERR "stack at %p\n", &loop);
 			BUG();
 		}
 		if (PagePreLocked(page)) {
@@ -1798,7 +1798,7 @@ static int __logfs_truncate_rec(struct inode *inode, struct page *ipage,
 	}
 
 	if (!truncate_happened) {
-;
+		printk("ineffectual truncate (%lx, %lx, %llx)\n", inode->i_ino, ipage->index, size);
 		return 0;
 	}
 

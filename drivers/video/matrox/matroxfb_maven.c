@@ -143,7 +143,7 @@ static int maven_get_reg(struct i2c_client* c, char reg) {
 
 	err = i2c_transfer(c->adapter, msgs, 2);
 	if (err < 0)
-;
+		printk(KERN_INFO "ReadReg(%d) failed\n", reg);
 	return dst & 0xFF;
 }
 
@@ -152,7 +152,7 @@ static int maven_set_reg(struct i2c_client* c, int reg, int val) {
 
 	err = i2c_smbus_write_byte_data(c, reg, val);
 	if (err)
-;
+		printk(KERN_INFO "WriteReg(%d) failed\n", reg);
 	return err;
 }
 
@@ -161,7 +161,7 @@ static int maven_set_reg_pair(struct i2c_client* c, int reg, int val) {
 
 	err = i2c_smbus_write_word_data(c, reg, val);
 	if (err)
-;
+		printk(KERN_INFO "WriteRegPair(%d) failed\n", reg);
 	return err;
 }
 
@@ -225,8 +225,8 @@ static int matroxfb_PLL_mavenclock(const struct matrox_pll_features2* pll,
 	fwant = htotal * vtotal;
 	fmax = pll->vco_freq_max / ctl->den;
 
-//	dprintk(KERN_DEBUG "want: %u, xtal: %u, h: %u, v: %u, fmax: %u\n",
-;
+	dprintk(KERN_DEBUG "want: %u, xtal: %u, h: %u, v: %u, fmax: %u\n",
+		fwant, fxtal, htotal, vtotal, fmax);
 	for (p = 1; p <= pll->post_shift_max; p++) {
 		if (fwant * 2 > fmax)
 			break;
@@ -261,9 +261,9 @@ static int matroxfb_PLL_mavenclock(const struct matrox_pll_features2* pll,
 			ln = ln - scrlen;
 			if (ln > htotal)
 				continue;
-;
+			dprintk(KERN_DEBUG "Match: %u / %u / %u / %u\n", n, m, p, ln);
 			if (ln > besth2) {
-;
+				dprintk(KERN_DEBUG "Better...\n");
 				*h2 = besth2 = ln;
 				*post = p;
 				*in = m;

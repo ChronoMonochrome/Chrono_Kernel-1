@@ -137,7 +137,7 @@ isdn_v110_close(isdn_v110_stream * v)
 	if (v == NULL)
 		return;
 #ifdef ISDN_V110_DEBUG
-;
+	printk(KERN_DEBUG "v110 close\n");
 #endif
 	kfree(v->encodebuf);
 	kfree(v);
@@ -176,7 +176,7 @@ SyncHeader(isdn_v110_stream * v)
 
 	v->decodelen = len;
 #ifdef ISDN_V110_DEBUG
-;
+	printk(KERN_DEBUG "isdn_v110: Header resync\n");
 #endif
 }
 
@@ -200,7 +200,7 @@ DecodeMatrix(isdn_v110_stream * v, unsigned char *m, int len, unsigned char *buf
 		if ((line % 10) == 0) {	/* the 0. line of the matrix is always 0 ! */
 			if (m[line] != 0x00) {	/* not 0 ? -> error! */
 #ifdef ISDN_V110_DEBUG
-;
+				printk(KERN_DEBUG "isdn_v110: DecodeMatrix, V110 Bad Header\n");
 				/* returning now is not the right thing, though :-( */
 #endif
 			} 
@@ -209,7 +209,7 @@ DecodeMatrix(isdn_v110_stream * v, unsigned char *m, int len, unsigned char *buf
 		} else if ((line % 10) == 5) {	/* in line 5 there's only e-bits ! */
 			if ((m[line] & 0x70) != 0x30) {	/* 011 has to be at the beginning! */
 #ifdef ISDN_V110_DEBUG
-;
+				printk(KERN_DEBUG "isdn_v110: DecodeMatrix, V110 Bad 5th line\n");
 				/* returning now is not the right thing, though :-( */
 #endif
 			}
@@ -261,14 +261,14 @@ isdn_v110_decode(isdn_v110_stream * v, struct sk_buff *skb)
 	unsigned char *rbuf;
 
 	if (!skb) {
-;
+		printk(KERN_WARNING "isdn_v110_decode called with NULL skb!\n");
 		return NULL;
 	}
 	rbuf = skb->data;
 	len = skb->len;
 	if (v == NULL) {
 		/* invalid handle, no chance to proceed */
-;
+		printk(KERN_WARNING "isdn_v110_decode called with NULL stream!\n");
 		dev_kfree_skb(skb);
 		return NULL;
 	}
@@ -294,7 +294,7 @@ isdn_v110_decode(isdn_v110_stream * v, struct sk_buff *skb)
 	}
 	len = (v->decodelen - (v->decodelen % (10 * v->nbytes))) / v->nbytes;
 	if ((v110_buf = kmalloc(len, GFP_ATOMIC)) == NULL) {
-;
+		printk(KERN_WARNING "isdn_v110_decode: Couldn't allocate v110_buf\n");
 		dev_kfree_skb(skb);
 		return NULL;
 	}
@@ -343,7 +343,7 @@ EncodeMatrix(unsigned char *buf, int len, unsigned char *m, int mlen)
 				break;
 		}
 		if (line >= mlen) {
-;
+			printk(KERN_WARNING "isdn_v110 (EncodeMatrix): buffer full!\n");
 			return line;
 		}
 	next_bit:
@@ -351,7 +351,7 @@ EncodeMatrix(unsigned char *buf, int len, unsigned char *m, int mlen)
 			case 1:
 				line++;	/* rightmost -> go to next line */
 				if (line >= mlen) {
-;
+					printk(KERN_WARNING "isdn_v110 (EncodeMatrix): buffer full!\n");
 					return line;
 				}
 			case 128:
@@ -416,7 +416,7 @@ isdn_v110_sync(isdn_v110_stream *v)
 
 	if (v == NULL) {
 		/* invalid handle, no chance to proceed */
-;
+		printk(KERN_WARNING "isdn_v110_sync called with NULL stream!\n");
 		return NULL;
 	}
 	if ((skb = dev_alloc_skb(v->framelen + v->skbres))) {
@@ -436,7 +436,7 @@ isdn_v110_idle(isdn_v110_stream *v)
 
 	if (v == NULL) {
 		/* invalid handle, no chance to proceed */
-;
+		printk(KERN_WARNING "isdn_v110_sync called with NULL stream!\n");
 		return NULL;
 	}
 	if ((skb = dev_alloc_skb(v->framelen + v->skbres))) {
@@ -464,12 +464,12 @@ isdn_v110_encode(isdn_v110_stream * v, struct sk_buff *skb)
 
 	if (v == NULL) {
 		/* invalid handle, no chance to proceed */
-;
+		printk(KERN_WARNING "isdn_v110_encode called with NULL stream!\n");
 		return NULL;
 	}
 	if (!skb) {
 		/* invalid skb, no chance to proceed */
-;
+		printk(KERN_WARNING "isdn_v110_encode called with NULL skb!\n");
 		return NULL;
 	}
 	rlen = skb->len;
@@ -481,7 +481,7 @@ isdn_v110_encode(isdn_v110_stream * v, struct sk_buff *skb)
 	} else
 		size = nframes * 40;
 	if (!(nskb = dev_alloc_skb(size + v->skbres + sizeof(int)))) {
-;
+		printk(KERN_WARNING "isdn_v110_encode: Couldn't alloc skb\n");
 		return NULL;
 	}
 	skb_reserve(nskb, v->skbres + sizeof(int));
@@ -502,7 +502,7 @@ isdn_v110_encode(isdn_v110_stream * v, struct sk_buff *skb)
 			if (size--)
 				*rbuf++ = ~v->key | (((v110buf[i] << (j * v->nbits)) & sval2) >> sval1);
 			else {
-;
+				printk(KERN_WARNING "isdn_v110_encode: buffers full!\n");
 				goto buffer_full;
 			}
 			olen++;
@@ -605,7 +605,7 @@ isdn_v110_stat_callback(int idx, isdn_ctrl *c)
 						v->skbidle++;
 					}
 				} else
-;
+					printk(KERN_WARNING "isdn_v110: Couldn't open stream for chan %d\n", idx);
 				atomic_dec(&dev->v110use[idx]);
 			}
 			break;

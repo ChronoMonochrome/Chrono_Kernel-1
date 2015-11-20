@@ -478,12 +478,12 @@ int __init mc68x328fb_init(void)
 		return -EINVAL;
 	}
 
-//	printk(KERN_INFO
-;
-//	printk(KERN_INFO
-//		"fb%d: %dx%dx%d at 0x%08lx\n", fb_info.node,
-//		mc68x328fb_default.xres_virtual, mc68x328fb_default.yres_virtual,
-;
+	printk(KERN_INFO
+		"fb%d: %s frame buffer device\n", fb_info.node,	fb_info.fix.id);
+	printk(KERN_INFO
+		"fb%d: %dx%dx%d at 0x%08lx\n", fb_info.node,
+		mc68x328fb_default.xres_virtual, mc68x328fb_default.yres_virtual,
+		1 << mc68x328fb_default.bits_per_pixel, videomemory);
 
 	return 0;
 }

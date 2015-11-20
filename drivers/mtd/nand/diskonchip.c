@@ -245,12 +245,12 @@ static int _DoC_WaitReady(struct doc_priv *doc)
 	unsigned long timeo = jiffies + (HZ * 10);
 
 	if (debug)
-;
+		printk("_DoC_WaitReady...\n");
 	/* Out-of-line routine to wait for chip response */
 	if (DoC_is_MillenniumPlus(doc)) {
 		while ((ReadDOC(docptr, Mplus_FlashControl) & CDSN_CTRL_FR_B_MASK) != CDSN_CTRL_FR_B_MASK) {
 			if (time_after(jiffies, timeo)) {
-;
+				printk("_DoC_WaitReady timed out.\n");
 				return -EIO;
 			}
 			udelay(1);
@@ -259,7 +259,7 @@ static int _DoC_WaitReady(struct doc_priv *doc)
 	} else {
 		while (!(ReadDOC(docptr, CDSNControl) & CDSN_CTRL_FR_B)) {
 			if (time_after(jiffies, timeo)) {
-;
+				printk("_DoC_WaitReady timed out.\n");
 				return -EIO;
 			}
 			udelay(1);
@@ -291,7 +291,7 @@ static inline int DoC_WaitReady(struct doc_priv *doc)
 	}
 
 	if (debug)
-;
+		printk("DoC_WaitReady OK\n");
 	return ret;
 }
 
@@ -302,7 +302,7 @@ static void doc2000_write_byte(struct mtd_info *mtd, u_char datum)
 	void __iomem *docptr = doc->virtadr;
 
 	if (debug)
-;
+		printk("write_byte %02x\n", datum);
 	WriteDOC(datum, docptr, CDSNSlowIO);
 	WriteDOC(datum, docptr, 2k_CDSN_IO);
 }
@@ -318,7 +318,7 @@ static u_char doc2000_read_byte(struct mtd_info *mtd)
 	DoC_Delay(doc, 2);
 	ret = ReadDOC(docptr, 2k_CDSN_IO);
 	if (debug)
-;
+		printk("read_byte returns %02x\n", ret);
 	return ret;
 }
 
@@ -329,14 +329,14 @@ static void doc2000_writebuf(struct mtd_info *mtd, const u_char *buf, int len)
 	void __iomem *docptr = doc->virtadr;
 	int i;
 	if (debug)
-;
+		printk("writebuf of %d bytes: ", len);
 	for (i = 0; i < len; i++) {
 		WriteDOC_(buf[i], docptr, DoC_2k_CDSN_IO + i);
 		if (debug && i < 16)
-;
+			printk("%02x ", buf[i]);
 	}
 	if (debug)
-;
+		printk("\n");
 }
 
 static void doc2000_readbuf(struct mtd_info *mtd, u_char *buf, int len)
@@ -347,7 +347,7 @@ static void doc2000_readbuf(struct mtd_info *mtd, u_char *buf, int len)
 	int i;
 
 	if (debug)
-;
+		printk("readbuf of %d bytes: ", len);
 
 	for (i = 0; i < len; i++) {
 		buf[i] = ReadDOC(docptr, 2k_CDSN_IO + i);
@@ -362,7 +362,7 @@ static void doc2000_readbuf_dword(struct mtd_info *mtd, u_char *buf, int len)
 	int i;
 
 	if (debug)
-;
+		printk("readbuf_dword of %d bytes: ", len);
 
 	if (unlikely((((unsigned long)buf) | len) & 3)) {
 		for (i = 0; i < len; i++) {
@@ -426,7 +426,7 @@ static uint16_t __init doc200x_ident_chip(struct mtd_info *mtd, int nr)
 
 		ident.dword = readl(docptr + DoC_2k_CDSN_IO);
 		if (((ident.byte[0] << 8) | ident.byte[1]) == ret) {
-;
+			printk(KERN_INFO "DiskOnChip 2000 responds to DWORD access\n");
 			this->read_buf = &doc2000_readbuf_dword;
 		}
 	}
@@ -453,7 +453,7 @@ static void __init doc2000_count_chips(struct mtd_info *mtd)
 			break;
 	}
 	doc->chips_per_floor = i;
-;
+	printk(KERN_DEBUG "Detected %d chips per floor.\n", i);
 }
 
 static int doc200x_wait(struct mtd_info *mtd, struct nand_chip *this)
@@ -556,7 +556,7 @@ static u_char doc2001plus_read_byte(struct mtd_info *mtd)
 	ReadDOC(docptr, Mplus_ReadPipeInit);
 	ret = ReadDOC(docptr, Mplus_LastDataRead);
 	if (debug)
-;
+		printk("read_byte returns %02x\n", ret);
 	return ret;
 }
 
@@ -568,14 +568,14 @@ static void doc2001plus_writebuf(struct mtd_info *mtd, const u_char *buf, int le
 	int i;
 
 	if (debug)
-;
+		printk("writebuf of %d bytes: ", len);
 	for (i = 0; i < len; i++) {
 		WriteDOC_(buf[i], docptr, DoC_Mil_CDSN_IO + i);
 		if (debug && i < 16)
-;
+			printk("%02x ", buf[i]);
 	}
 	if (debug)
-;
+		printk("\n");
 }
 
 static void doc2001plus_readbuf(struct mtd_info *mtd, u_char *buf, int len)
@@ -586,7 +586,7 @@ static void doc2001plus_readbuf(struct mtd_info *mtd, u_char *buf, int len)
 	int i;
 
 	if (debug)
-;
+		printk("readbuf of %d bytes: ", len);
 
 	/* Start read pipeline */
 	ReadDOC(docptr, Mplus_ReadPipeInit);
@@ -595,18 +595,18 @@ static void doc2001plus_readbuf(struct mtd_info *mtd, u_char *buf, int len)
 	for (i = 0; i < len - 2; i++) {
 		buf[i] = ReadDOC(docptr, Mil_CDSN_IO);
 		if (debug && i < 16)
-;
+			printk("%02x ", buf[i]);
 	}
 
 	/* Terminate read pipeline */
 	buf[len - 2] = ReadDOC(docptr, Mplus_LastDataRead);
 	if (debug && i < 16)
-;
+		printk("%02x ", buf[len - 2]);
 	buf[len - 1] = ReadDOC(docptr, Mplus_LastDataRead);
 	if (debug && i < 16)
-;
+		printk("%02x ", buf[len - 1]);
 	if (debug)
-;
+		printk("\n");
 }
 
 static int doc2001plus_verifybuf(struct mtd_info *mtd, const u_char *buf, int len)
@@ -617,7 +617,7 @@ static int doc2001plus_verifybuf(struct mtd_info *mtd, const u_char *buf, int le
 	int i;
 
 	if (debug)
-;
+		printk("verifybuf of %d bytes: ", len);
 
 	/* Start read pipeline */
 	ReadDOC(docptr, Mplus_ReadPipeInit);
@@ -644,7 +644,7 @@ static void doc2001plus_select_chip(struct mtd_info *mtd, int chip)
 	int floor = 0;
 
 	if (debug)
-;
+		printk("select chip (%d)\n", chip);
 
 	if (chip == -1) {
 		/* Disable flash internally */
@@ -671,7 +671,7 @@ static void doc200x_select_chip(struct mtd_info *mtd, int chip)
 	int floor = 0;
 
 	if (debug)
-;
+		printk("select chip (%d)\n", chip);
 
 	if (chip == -1)
 		return;
@@ -704,7 +704,7 @@ static void doc200x_hwcontrol(struct mtd_info *mtd, int cmd,
 		doc->CDSNControl &= ~CDSN_CTRL_MSK;
 		doc->CDSNControl |= ctrl & CDSN_CTRL_MSK;
 		if (debug)
-;
+			printk("hwcontrol(%d): %02x\n", cmd, doc->CDSNControl);
 		WriteDOC(doc->CDSNControl, docptr, CDSNControl);
 		/* 11.4.3 -- 4 NOPs after CSDNControl write */
 		DoC_Delay(doc, 4);
@@ -769,7 +769,7 @@ static void doc2001plus_command(struct mtd_info *mtd, unsigned command, int colu
 			/* One more address cycle for higher density devices */
 			if (this->chipsize & 0x0c000000) {
 				WriteDOC((unsigned char)((page_addr >> 16) & 0x0f), docptr, Mplus_FlashAddress);
-;
+				printk("high density\n");
 			}
 		}
 		WriteDOC(0, docptr, Mplus_WritePipeTerm);
@@ -833,24 +833,24 @@ static int doc200x_dev_ready(struct mtd_info *mtd)
 		DoC_Delay(doc, 4);
 		if ((ReadDOC(docptr, Mplus_FlashControl) & CDSN_CTRL_FR_B_MASK) != CDSN_CTRL_FR_B_MASK) {
 			if (debug)
-;
+				printk("not ready\n");
 			return 0;
 		}
 		if (debug)
-;
+			printk("was ready\n");
 		return 1;
 	} else {
 		/* 11.4.2 -- must NOP four times before checking FR/B# */
 		DoC_Delay(doc, 4);
 		if (!(ReadDOC(docptr, CDSNControl) & CDSN_CTRL_FR_B)) {
 			if (debug)
-;
+				printk("not ready\n");
 			return 0;
 		}
 		/* 11.4.2 -- Must NOP twice if it's ready */
 		DoC_Delay(doc, 2);
 		if (debug)
-;
+			printk("was ready\n");
 		return 1;
 	}
 }
@@ -1025,14 +1025,14 @@ static int doc200x_correct_data(struct mtd_info *mtd, u_char *dat,
 		if (!emptymatch)
 			ret = doc_ecc_decode(rs_decoder, dat, calc_ecc);
 		if (ret > 0)
-;
+			printk(KERN_ERR "doc200x_correct_data corrected %d errors\n", ret);
 	}
 	if (DoC_is_MillenniumPlus(doc))
 		WriteDOC(DOC_ECC_DIS, docptr, Mplus_ECCConf);
 	else
 		WriteDOC(DOC_ECC_DIS, docptr, ECCConf);
 	if (no_ecc_failures && (ret == -EBADMSG)) {
-;
+		printk(KERN_ERR "suppressing ECC failure\n");
 		ret = 0;
 	}
 	return ret;
@@ -1075,11 +1075,11 @@ static int __init find_media_headers(struct mtd_info *mtd, u_char *buf, const ch
 		if (retlen != mtd->writesize)
 			continue;
 		if (ret) {
-;
+			printk(KERN_WARNING "ECC error scanning DOC at 0x%x\n", offs);
 		}
 		if (memcmp(buf, id, 6))
 			continue;
-;
+		printk(KERN_INFO "Found DiskOnChip %s Media Header at 0x%x\n", id, offs);
 		if (doc->mh0_page == -1) {
 			doc->mh0_page = offs >> this->page_shift;
 			if (!findmirror)
@@ -1090,7 +1090,7 @@ static int __init find_media_headers(struct mtd_info *mtd, u_char *buf, const ch
 		return 2;
 	}
 	if (doc->mh0_page == -1) {
-;
+		printk(KERN_WARNING "DiskOnChip %s Media Header not found.\n", id);
 		return 0;
 	}
 	/* Only one mediaheader was found.  We want buf to contain a
@@ -1099,7 +1099,7 @@ static int __init find_media_headers(struct mtd_info *mtd, u_char *buf, const ch
 	ret = mtd->read(mtd, offs, mtd->writesize, &retlen, buf);
 	if (retlen != mtd->writesize) {
 		/* Insanity.  Give up. */
-;
+		printk(KERN_ERR "Read DiskOnChip Media Header once, but can't reread it???\n");
 		return 0;
 	}
 	return 1;
@@ -1119,7 +1119,7 @@ static inline int __init nftl_partscan(struct mtd_info *mtd, struct mtd_partitio
 
 	buf = kmalloc(mtd->writesize, GFP_KERNEL);
 	if (!buf) {
-;
+		printk(KERN_ERR "DiskOnChip mediaheader kmalloc failed!\n");
 		return 0;
 	}
 	if (!(numheaders = find_media_headers(mtd, buf, "ANAND", 1)))
@@ -1130,14 +1130,14 @@ static inline int __init nftl_partscan(struct mtd_info *mtd, struct mtd_partitio
 	le16_to_cpus(&mh->FirstPhysicalEUN);
 	le32_to_cpus(&mh->FormattedSize);
 
-//	printk(KERN_INFO "    DataOrgID        = %s\n"
-//			 "    NumEraseUnits    = %d\n"
-//			 "    FirstPhysicalEUN = %d\n"
-//			 "    FormattedSize    = %d\n"
-//			 "    UnitSizeFactor   = %d\n",
-//		mh->DataOrgID, mh->NumEraseUnits,
-//		mh->FirstPhysicalEUN, mh->FormattedSize,
-;
+	printk(KERN_INFO "    DataOrgID        = %s\n"
+			 "    NumEraseUnits    = %d\n"
+			 "    FirstPhysicalEUN = %d\n"
+			 "    FormattedSize    = %d\n"
+			 "    UnitSizeFactor   = %d\n",
+		mh->DataOrgID, mh->NumEraseUnits,
+		mh->FirstPhysicalEUN, mh->FormattedSize,
+		mh->UnitSizeFactor);
 
 	blocks = mtd->size >> this->phys_erase_shift;
 	maxblocks = min(32768U, mtd->erasesize - psize);
@@ -1154,7 +1154,7 @@ static inline int __init nftl_partscan(struct mtd_info *mtd, struct mtd_partitio
 			maxblocks = min(32768U, (maxblocks << 1) + psize);
 			mh->UnitSizeFactor--;
 		}
-;
+		printk(KERN_WARNING "UnitSizeFactor=0x00 detected.  Correct value is assumed to be 0x%02x.\n", mh->UnitSizeFactor);
 	}
 
 	/* NOTE: The lines below modify internal variables of the NAND and MTD
@@ -1165,13 +1165,13 @@ static inline int __init nftl_partscan(struct mtd_info *mtd, struct mtd_partitio
 	if (mh->UnitSizeFactor != 0xff) {
 		this->bbt_erase_shift += (0xff - mh->UnitSizeFactor);
 		mtd->erasesize <<= (0xff - mh->UnitSizeFactor);
-;
+		printk(KERN_INFO "Setting virtual erase size to %d\n", mtd->erasesize);
 		blocks = mtd->size >> this->bbt_erase_shift;
 		maxblocks = min(32768U, mtd->erasesize - psize);
 	}
 
 	if (blocks > maxblocks) {
-;
+		printk(KERN_ERR "UnitSizeFactor of 0x%02x is inconsistent with device size.  Aborting.\n", mh->UnitSizeFactor);
 		goto out;
 	}
 
@@ -1227,7 +1227,7 @@ static inline int __init inftl_partscan(struct mtd_info *mtd, struct mtd_partiti
 
 	buf = kmalloc(mtd->writesize, GFP_KERNEL);
 	if (!buf) {
-;
+		printk(KERN_ERR "DiskOnChip mediaheader kmalloc failed!\n");
 		return 0;
 	}
 
@@ -1243,35 +1243,35 @@ static inline int __init inftl_partscan(struct mtd_info *mtd, struct mtd_partiti
 	le32_to_cpus(&mh->FormatFlags);
 	le32_to_cpus(&mh->PercentUsed);
 
-//	printk(KERN_INFO "    bootRecordID          = %s\n"
-//			 "    NoOfBootImageBlocks   = %d\n"
-//			 "    NoOfBinaryPartitions  = %d\n"
-//			 "    NoOfBDTLPartitions    = %d\n"
-//			 "    BlockMultiplerBits    = %d\n"
-//			 "    FormatFlgs            = %d\n"
-//			 "    OsakVersion           = %d.%d.%d.%d\n"
-//			 "    PercentUsed           = %d\n",
-//		mh->bootRecordID, mh->NoOfBootImageBlocks,
-//		mh->NoOfBinaryPartitions,
-//		mh->NoOfBDTLPartitions,
-//		mh->BlockMultiplierBits, mh->FormatFlags,
-//		((unsigned char *) &mh->OsakVersion)[0] & 0xf,
-//		((unsigned char *) &mh->OsakVersion)[1] & 0xf,
-//		((unsigned char *) &mh->OsakVersion)[2] & 0xf,
-//		((unsigned char *) &mh->OsakVersion)[3] & 0xf,
-;
+	printk(KERN_INFO "    bootRecordID          = %s\n"
+			 "    NoOfBootImageBlocks   = %d\n"
+			 "    NoOfBinaryPartitions  = %d\n"
+			 "    NoOfBDTLPartitions    = %d\n"
+			 "    BlockMultiplerBits    = %d\n"
+			 "    FormatFlgs            = %d\n"
+			 "    OsakVersion           = %d.%d.%d.%d\n"
+			 "    PercentUsed           = %d\n",
+		mh->bootRecordID, mh->NoOfBootImageBlocks,
+		mh->NoOfBinaryPartitions,
+		mh->NoOfBDTLPartitions,
+		mh->BlockMultiplierBits, mh->FormatFlags,
+		((unsigned char *) &mh->OsakVersion)[0] & 0xf,
+		((unsigned char *) &mh->OsakVersion)[1] & 0xf,
+		((unsigned char *) &mh->OsakVersion)[2] & 0xf,
+		((unsigned char *) &mh->OsakVersion)[3] & 0xf,
+		mh->PercentUsed);
 
 	vshift = this->phys_erase_shift + mh->BlockMultiplierBits;
 
 	blocks = mtd->size >> vshift;
 	if (blocks > 32768) {
-;
+		printk(KERN_ERR "BlockMultiplierBits=%d is inconsistent with device size.  Aborting.\n", mh->BlockMultiplierBits);
 		goto out;
 	}
 
 	blocks = doc->chips_per_floor << (this->chip_shift - this->phys_erase_shift);
 	if (inftl_bbt_write && (blocks > mtd->erasesize)) {
-;
+		printk(KERN_ERR "Writeable BBTs spanning more than one erase block are not yet supported.  FIX ME!\n");
 		goto out;
 	}
 
@@ -1285,15 +1285,15 @@ static inline int __init inftl_partscan(struct mtd_info *mtd, struct mtd_partiti
 		le32_to_cpus(&ip->spareUnits);
 		le32_to_cpus(&ip->Reserved0);
 
-//		printk(KERN_INFO	"    PARTITION[%d] ->\n"
-//			"        virtualUnits    = %d\n"
-//			"        firstUnit       = %d\n"
-//			"        lastUnit        = %d\n"
-//			"        flags           = 0x%x\n"
-//			"        spareUnits      = %d\n",
-//			i, ip->virtualUnits, ip->firstUnit,
-//			ip->lastUnit, ip->flags,
-;
+		printk(KERN_INFO	"    PARTITION[%d] ->\n"
+			"        virtualUnits    = %d\n"
+			"        firstUnit       = %d\n"
+			"        lastUnit        = %d\n"
+			"        flags           = 0x%x\n"
+			"        spareUnits      = %d\n",
+			i, ip->virtualUnits, ip->firstUnit,
+			ip->lastUnit, ip->flags,
+			ip->spareUnits);
 
 		if ((show_firmware_partition == 1) &&
 		    (i == 0) && (ip->firstUnit > 0)) {
@@ -1374,7 +1374,7 @@ static int __init inftl_scan_bbt(struct mtd_info *mtd)
 	struct mtd_partition parts[5];
 
 	if (this->numchips > doc->chips_per_floor) {
-;
+		printk(KERN_ERR "Multi-floor INFTL devices not yet supported.\n");
 		return -EIO;
 	}
 
@@ -1506,7 +1506,7 @@ static int __init doc_probe(unsigned long physadr)
 
 	virtadr = ioremap(physadr, DOC_IOREMAP_LEN);
 	if (!virtadr) {
-;
+		printk(KERN_ERR "Diskonchip ioremap failed: 0x%x bytes at 0x%lx\n", DOC_IOREMAP_LEN, physadr);
 		return -EIO;
 	}
 
@@ -1564,7 +1564,7 @@ static int __init doc_probe(unsigned long physadr)
 			reg = DoC_Mplus_Toggle;
 			break;
 		case DOC_ChipID_DocMilPlus32:
-;
+			printk(KERN_ERR "DiskOnChip Millennium Plus 32MB is not supported, ignoring.\n");
 		default:
 			ret = -ENODEV;
 			goto notfound;
@@ -1580,7 +1580,7 @@ static int __init doc_probe(unsigned long physadr)
 	tmpb = ReadDOC_(virtadr, reg) & DOC_TOGGLE_BIT;
 	tmpc = ReadDOC_(virtadr, reg) & DOC_TOGGLE_BIT;
 	if ((tmp == tmpb) || (tmp != tmpc)) {
-;
+		printk(KERN_WARNING "Possible DiskOnChip at 0x%lx failed TOGGLE test, dropping.\n", physadr);
 		ret = -ENODEV;
 		goto notfound;
 	}
@@ -1614,18 +1614,18 @@ static int __init doc_probe(unsigned long physadr)
 		}
 		newval = ~newval;
 		if (oldval == newval) {
-;
+			printk(KERN_DEBUG "Found alias of DOC at 0x%lx to 0x%lx\n", doc->physadr, physadr);
 			goto notfound;
 		}
 	}
 
-;
+	printk(KERN_NOTICE "DiskOnChip found at 0x%lx\n", physadr);
 
 	len = sizeof(struct mtd_info) +
 	    sizeof(struct nand_chip) + sizeof(struct doc_priv) + (2 * sizeof(struct nand_bbt_descr));
 	mtd = kzalloc(len, GFP_KERNEL);
 	if (!mtd) {
-;
+		printk(KERN_ERR "DiskOnChip kmalloc (%d bytes) failed!\n", len);
 		ret = -ENOMEM;
 		goto fail;
 	}
@@ -1727,12 +1727,12 @@ static int __init init_nanddoc(void)
 	 */
 	rs_decoder = init_rs(10, 0x409, FCR, 1, NROOTS);
 	if (!rs_decoder) {
-;
+		printk(KERN_ERR "DiskOnChip: Could not create a RS decoder\n");
 		return -ENOMEM;
 	}
 
 	if (doc_config_location) {
-;
+		printk(KERN_INFO "Using configured DiskOnChip probe address 0x%lx\n", doc_config_location);
 		ret = doc_probe(doc_config_location);
 		if (ret < 0)
 			goto outerr;
@@ -1744,7 +1744,7 @@ static int __init init_nanddoc(void)
 	/* No banner message any more. Print a message if no DiskOnChip
 	   found, so the user knows we at least tried. */
 	if (!doclist) {
-;
+		printk(KERN_INFO "No valid DiskOnChip devices found\n");
 		ret = -ENODEV;
 		goto outerr;
 	}

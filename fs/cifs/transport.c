@@ -101,12 +101,12 @@ DeleteMidQEntry(struct mid_q_entry *midEntry)
 	if ((now - midEntry->when_alloc) > HZ) {
 		if ((cifsFYI & CIFS_TIMER) &&
 		   (midEntry->command != SMB_COM_LOCKING_ANDX)) {
-//			printk(KERN_DEBUG " CIFS slow rsp: cmd %d mid %d",
-;
-//			printk(" A: 0x%lx S: 0x%lx R: 0x%lx\n",
-//			       now - midEntry->when_alloc,
-//			       now - midEntry->when_sent,
-;
+			printk(KERN_DEBUG " CIFS slow rsp: cmd %d mid %d",
+			       midEntry->command, midEntry->mid);
+			printk(" A: 0x%lx S: 0x%lx R: 0x%lx\n",
+			       now - midEntry->when_alloc,
+			       now - midEntry->when_sent,
+			       now - midEntry->when_received);
 		}
 	}
 #endif

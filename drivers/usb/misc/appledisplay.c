@@ -98,9 +98,9 @@ static void appledisplay_complete(struct urb *urb)
 		/* success */
 		break;
 	case -EOVERFLOW:
-//		printk(KERN_ERR "appletouch: OVERFLOW with data "
-//			"length %d, actual length is %d\n",
-;
+		printk(KERN_ERR "appletouch: OVERFLOW with data "
+			"length %d, actual length is %d\n",
+			ACD_URB_BUFFER_LEN, pdata->urb->actual_length);
 	case -ECONNRESET:
 	case -ENOENT:
 	case -ESHUTDOWN:
@@ -309,7 +309,7 @@ static int appledisplay_probe(struct usb_interface *iface,
 	/* save our data pointer in the interface device */
 	usb_set_intfdata(iface, pdata);
 
-;
+	printk(KERN_INFO "appledisplay: Apple Cinema Display connected\n");
 
 	return 0;
 
@@ -346,7 +346,7 @@ static void appledisplay_disconnect(struct usb_interface *iface)
 		kfree(pdata);
 	}
 
-;
+	printk(KERN_INFO "appledisplay: Apple Cinema Display disconnected\n");
 }
 
 static struct usb_driver appledisplay_driver = {
@@ -360,7 +360,7 @@ static int __init appledisplay_init(void)
 {
 	wq = create_singlethread_workqueue("appledisplay");
 	if (!wq) {
-;
+		printk(KERN_ERR "appledisplay: Could not create work queue\n");
 		return -ENOMEM;
 	}
 

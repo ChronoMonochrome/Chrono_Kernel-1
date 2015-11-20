@@ -386,8 +386,8 @@ char *iscsi_parse_pr_out_transport_id(
 	 *            Reserved
 	 */
 	if ((format_code != 0x00) && (format_code != 0x40)) {
-//		printk(KERN_ERR "Illegal format code: 0x%02x for iSCSI"
-;
+		printk(KERN_ERR "Illegal format code: 0x%02x for iSCSI"
+			" Initiator Transport ID\n", format_code);
 		return NULL;
 	}
 	/*
@@ -406,9 +406,9 @@ char *iscsi_parse_pr_out_transport_id(
 			tid_len += padding;
 
 		if ((add_len + 4) != tid_len) {
-//			printk(KERN_INFO "LIO-Target Extracted add_len: %hu "
-//				"does not match calculated tid_len: %u,"
-;
+			printk(KERN_INFO "LIO-Target Extracted add_len: %hu "
+				"does not match calculated tid_len: %u,"
+				" using tid_len instead\n", add_len+4, tid_len);
 			*out_tid_len = tid_len;
 		} else
 			*out_tid_len = (add_len + 4);
@@ -421,9 +421,9 @@ char *iscsi_parse_pr_out_transport_id(
 	if (format_code == 0x40) {
 		p = strstr((char *)&buf[4], ",i,0x");
 		if (!(p)) {
-//			printk(KERN_ERR "Unable to locate \",i,0x\" seperator"
-//				" for Initiator port identifier: %s\n",
-;
+			printk(KERN_ERR "Unable to locate \",i,0x\" seperator"
+				" for Initiator port identifier: %s\n",
+				(char *)&buf[4]);
 			return NULL;
 		}
 		*p = '\0'; /* Terminate iSCSI Name */

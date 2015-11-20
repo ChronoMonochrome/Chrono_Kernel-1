@@ -170,7 +170,7 @@ static int __init nforce2_s4985_init(void)
 		goto ERROR0;
 	}
 
-;
+	printk(KERN_INFO "Enabling SMBus multiplexing for Tyan S4985\n");
 	/* Define the 5 virtual adapters and algorithms structures */
 	s4985_adapter = kzalloc(5 * sizeof(struct i2c_adapter), GFP_KERNEL);
 	if (!s4985_adapter) {
@@ -206,9 +206,9 @@ static int __init nforce2_s4985_init(void)
 	for (i = 0; i < 5; i++) {
 		error = i2c_add_adapter(s4985_adapter + i);
 		if (error) {
-//			printk(KERN_ERR "i2c-nforce2-s4985: "
-//			       "Virtual adapter %d registration "
-;
+			printk(KERN_ERR "i2c-nforce2-s4985: "
+			       "Virtual adapter %d registration "
+			       "failed, module not inserted\n", i);
 			for (i--; i >= 0; i--)
 				i2c_del_adapter(s4985_adapter + i);
 			goto ERROR3;
@@ -245,8 +245,8 @@ static void __exit nforce2_s4985_exit(void)
 
 	/* Restore physical bus */
 	if (i2c_add_adapter(nforce2_smbus))
-//		printk(KERN_ERR "i2c-nforce2-s4985: "
-;
+		printk(KERN_ERR "i2c-nforce2-s4985: "
+		       "Physical bus restoration failed\n");
 }
 
 MODULE_AUTHOR("Jean Delvare <khali@linux-fr.org>");

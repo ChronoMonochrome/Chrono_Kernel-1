@@ -2117,7 +2117,7 @@ static int em28xx_hint_sensor(struct em28xx *dev)
 
 		break;
 	default:
-;
+		printk("Unknown Micron Sensor 0x%04x\n", version);
 		return -EINVAL;
 	}
 
@@ -3045,14 +3045,14 @@ static int em28xx_usb_probe(struct usb_interface *interface,
 	if (*descr)
 		strlcat(descr, " ", sizeof(descr));
 
-//	printk(DRIVER_NAME ": New device %s@ %s Mbps "
-//		"(%04x:%04x, interface %d, class %d)\n",
-//		descr,
-//		speed,
-//		le16_to_cpu(udev->descriptor.idVendor),
-//		le16_to_cpu(udev->descriptor.idProduct),
-//		ifnum,
-;
+	printk(DRIVER_NAME ": New device %s@ %s Mbps "
+		"(%04x:%04x, interface %d, class %d)\n",
+		descr,
+		speed,
+		le16_to_cpu(udev->descriptor.idVendor),
+		le16_to_cpu(udev->descriptor.idProduct),
+		ifnum,
+		interface->altsetting->desc.bInterfaceNumber);
 
 	/*
 	 * Make sure we have 480 Mbps of bandwidth, otherwise things like
@@ -3060,17 +3060,17 @@ static int em28xx_usb_probe(struct usb_interface *interface,
 	 * not enough even for most Digital TV streams.
 	 */
 	if (udev->speed != USB_SPEED_HIGH && disable_usb_speed_check == 0) {
-;
-//		printk(DRIVER_NAME ": Device must be connected to a high-speed"
-;
+		printk(DRIVER_NAME ": Device initialization failed.\n");
+		printk(DRIVER_NAME ": Device must be connected to a high-speed"
+		       " USB 2.0 port.\n");
 		em28xx_devused &= ~(1<<nr);
 		retval = -ENODEV;
 		goto err;
 	}
 
 	if (nr >= EM28XX_MAXBOARDS) {
-//		printk(DRIVER_NAME ": Supports only %i em28xx boards.\n",
-;
+		printk(DRIVER_NAME ": Supports only %i em28xx boards.\n",
+				EM28XX_MAXBOARDS);
 		em28xx_devused &= ~(1<<nr);
 		retval = -ENOMEM;
 		goto err;
@@ -3219,7 +3219,7 @@ static int __init em28xx_module_init(void)
 		em28xx_err(DRIVER_NAME
 			   " usb_register failed. Error number %d.\n", result);
 
-;
+	printk(KERN_INFO DRIVER_NAME " driver loaded\n");
 
 	return result;
 }

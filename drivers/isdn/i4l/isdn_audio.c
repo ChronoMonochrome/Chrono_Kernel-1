@@ -457,9 +457,9 @@ isdn_audio_goertzel(int *sample, modem_info * info)
 
 	skb = dev_alloc_skb(sizeof(int) * NCOEFF);
 	if (!skb) {
-//		printk(KERN_WARNING
-//		  "isdn_audio: Could not alloc DTMF result for ttyI%d\n",
-;
+		printk(KERN_WARNING
+		  "isdn_audio: Could not alloc DTMF result for ttyI%d\n",
+		       info->line);
 		return;
 	}
 	result = (int *) skb_put(skb, sizeof(int) * NCOEFF);
@@ -477,11 +477,11 @@ isdn_audio_goertzel(int *sample, modem_info * info)
 		/* report overflows. This should not happen. */
 		/* Comment this out if desired */
 		if (sk < -32768 || sk > 32767)
-//			printk(KERN_DEBUG
-;
+			printk(KERN_DEBUG
+			       "isdn_audio: dtmf goertzel overflow, sk=%d\n", sk);
 		if (sk2 < -32768 || sk2 > 32767)
-//			printk(KERN_DEBUG
-;
+			printk(KERN_DEBUG
+			       "isdn_audio: dtmf goertzel overflow, sk2=%d\n", sk2);
 		result[k] =
 		    ((sk * sk) >> AMP_BITS) -
 		    ((((cos2pik[k] * sk) >> 15) * sk2) >> AMP_BITS) +
@@ -559,7 +559,7 @@ isdn_audio_eval_dtmf(modem_info * info)
 				what = '.';
 		}
 		if ((what != s->last) && (what != ' ') && (what != '.')) {
-;
+			printk(KERN_DEBUG "dtmf: tt='%c'\n", what);
 			p = skb->data;
 			*p++ = 0x10;
 			*p = what;
@@ -667,9 +667,9 @@ isdn_audio_put_dle_code(modem_info * info, u_char code)
 
 	skb = dev_alloc_skb(2);
 	if (!skb) {
-//		printk(KERN_WARNING
-//		  "isdn_audio: Could not alloc skb for ttyI%d\n",
-;
+		printk(KERN_WARNING
+		  "isdn_audio: Could not alloc skb for ttyI%d\n",
+		       info->line);
 		return;
 	}
 	p = (char *) skb_put(skb, 2);
@@ -704,8 +704,8 @@ isdn_audio_eval_silence(modem_info * info)
 		}
 	}
 		if ((what == 's') || (what == 'q')) {
-//			printk(KERN_DEBUG "ttyI%d: %s\n", info->line,
-;
+			printk(KERN_DEBUG "ttyI%d: %s\n", info->line,
+				(what=='s') ? "silence":"quiet");
 			isdn_audio_put_dle_code(info, what);
 		} 
 }

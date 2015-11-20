@@ -88,12 +88,12 @@ int en_print(const char *level, const struct mlx4_en_priv *priv,
 	vaf.fmt = format;
 	vaf.va = &args;
 	if (priv->registered)
-//		i = printk("%s%s: %s: %pV",
-;
+		i = printk("%s%s: %s: %pV",
+			   level, DRV_NAME, priv->dev->name, &vaf);
 	else
-//		i = printk("%s%s: %s: Port %d: %pV",
-//			   level, DRV_NAME, dev_name(&priv->mdev->pdev->dev),
-;
+		i = printk("%s%s: %s: Port %d: %pV",
+			   level, DRV_NAME, dev_name(&priv->mdev->pdev->dev),
+			   priv->port, &vaf);
 	va_end(args);
 
 	return i;

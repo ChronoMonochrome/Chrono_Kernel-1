@@ -201,14 +201,14 @@ static int __init i2c_parport_device_add(u16 address)
 	pdev = platform_device_alloc(DRVNAME, -1);
 	if (!pdev) {
 		err = -ENOMEM;
-;
+		printk(KERN_ERR DRVNAME ": Device allocation failed\n");
 		goto exit;
 	}
 
 	err = platform_device_add(pdev);
 	if (err) {
-//		printk(KERN_ERR DRVNAME ": Device addition failed (%d)\n",
-;
+		printk(KERN_ERR DRVNAME ": Device addition failed (%d)\n",
+		       err);
 		goto exit_device_put;
 	}
 
@@ -225,12 +225,12 @@ static int __init i2c_parport_init(void)
 	int err;
 
 	if (type < 0) {
-;
+		printk(KERN_ERR DRVNAME ": adapter type unspecified\n");
 		return -ENODEV;
 	}
 
 	if (type >= ARRAY_SIZE(adapter_parm)) {
-;
+		printk(KERN_ERR DRVNAME ": invalid type (%d)\n", type);
 		return -ENODEV;
 	}
 

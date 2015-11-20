@@ -286,8 +286,8 @@ static void soc_init_codec_debugfs(struct snd_soc_codec *codec)
 	codec->debugfs_codec_root = debugfs_create_dir(codec->name,
 						       debugfs_card_root);
 	if (!codec->debugfs_codec_root) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "ASoC: Failed to create codec debugfs directory\n");
 		return;
 	}
 
@@ -300,8 +300,8 @@ static void soc_init_codec_debugfs(struct snd_soc_codec *codec)
 						 codec->debugfs_codec_root,
 						 codec, &codec_reg_fops);
 	if (!codec->debugfs_reg)
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "ASoC: Failed to create codec register debugfs file\n");
 
 	snd_soc_dapm_debugfs_init(&codec->dapm, codec->debugfs_codec_root);
 }
@@ -478,7 +478,7 @@ static int soc_ac97_dev_register(struct snd_soc_codec *codec)
 		     codec->card->snd_card->number, 0, codec->name);
 	err = device_register(&codec->ac97->dev);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "Can't register ac97 bus\n");
 		codec->ac97->dev.bus = NULL;
 		return err;
 	}
@@ -544,8 +544,8 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	if (cpu_dai->driver->ops->startup) {
 		ret = cpu_dai->driver->ops->startup(substream, cpu_dai);
 		if (ret < 0) {
-//			printk(KERN_ERR "asoc: can't open interface %s\n",
-;
+			printk(KERN_ERR "asoc: can't open interface %s\n",
+				cpu_dai->name);
 			goto out;
 		}
 	}
@@ -553,7 +553,7 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	if (platform->driver->ops && platform->driver->ops->open) {
 		ret = platform->driver->ops->open(substream);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: can't open platform %s\n", platform->name);
 			goto platform_err;
 		}
 	}
@@ -561,8 +561,8 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	if (codec_dai->driver->ops->startup) {
 		ret = codec_dai->driver->ops->startup(substream, codec_dai);
 		if (ret < 0) {
-//			printk(KERN_ERR "asoc: can't open codec %s\n",
-;
+			printk(KERN_ERR "asoc: can't open codec %s\n",
+				codec_dai->name);
 			goto codec_dai_err;
 		}
 	}
@@ -570,7 +570,7 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	if (rtd->dai_link->ops && rtd->dai_link->ops->startup) {
 		ret = rtd->dai_link->ops->startup(substream);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: %s startup failed\n", rtd->dai_link->name);
 			goto machine_err;
 		}
 	}
@@ -627,19 +627,19 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	ret = -EINVAL;
 	snd_pcm_limit_hw_rates(runtime);
 	if (!runtime->hw.rates) {
-//		printk(KERN_ERR "asoc: %s <-> %s No matching rates\n",
-;
+		printk(KERN_ERR "asoc: %s <-> %s No matching rates\n",
+			codec_dai->name, cpu_dai->name);
 		goto config_err;
 	}
 	if (!runtime->hw.formats) {
-//		printk(KERN_ERR "asoc: %s <-> %s No matching formats\n",
-;
+		printk(KERN_ERR "asoc: %s <-> %s No matching formats\n",
+			codec_dai->name, cpu_dai->name);
 		goto config_err;
 	}
 	if (!runtime->hw.channels_min || !runtime->hw.channels_max ||
 	    runtime->hw.channels_min > runtime->hw.channels_max) {
-//		printk(KERN_ERR "asoc: %s <-> %s No matching channels\n",
-;
+		printk(KERN_ERR "asoc: %s <-> %s No matching channels\n",
+				codec_dai->name, cpu_dai->name);
 		goto config_err;
 	}
 
@@ -800,7 +800,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 	if (rtd->dai_link->ops && rtd->dai_link->ops->prepare) {
 		ret = rtd->dai_link->ops->prepare(substream);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: machine prepare error\n");
 			goto out;
 		}
 	}
@@ -808,7 +808,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 	if (platform->driver->ops && platform->driver->ops->prepare) {
 		ret = platform->driver->ops->prepare(substream);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: platform prepare error\n");
 			goto out;
 		}
 	}
@@ -816,7 +816,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 	if (codec_dai->driver->ops->prepare) {
 		ret = codec_dai->driver->ops->prepare(substream, codec_dai);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: codec DAI prepare error\n");
 			goto out;
 		}
 	}
@@ -824,7 +824,7 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 	if (cpu_dai->driver->ops->prepare) {
 		ret = cpu_dai->driver->ops->prepare(substream, cpu_dai);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: cpu DAI prepare error\n");
 			goto out;
 		}
 	}
@@ -871,7 +871,7 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 	if (rtd->dai_link->ops && rtd->dai_link->ops->hw_params) {
 		ret = rtd->dai_link->ops->hw_params(substream, params);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: machine hw_params failed\n");
 			goto out;
 		}
 	}
@@ -879,8 +879,8 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 	if (codec_dai->driver->ops->hw_params) {
 		ret = codec_dai->driver->ops->hw_params(substream, params, codec_dai);
 		if (ret < 0) {
-//			printk(KERN_ERR "asoc: can't set codec %s hw params\n",
-;
+			printk(KERN_ERR "asoc: can't set codec %s hw params\n",
+				codec_dai->name);
 			goto codec_err;
 		}
 	}
@@ -888,8 +888,8 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 	if (cpu_dai->driver->ops->hw_params) {
 		ret = cpu_dai->driver->ops->hw_params(substream, params, cpu_dai);
 		if (ret < 0) {
-//			printk(KERN_ERR "asoc: interface %s hw params failed\n",
-;
+			printk(KERN_ERR "asoc: interface %s hw params failed\n",
+				cpu_dai->name);
 			goto interface_err;
 		}
 	}
@@ -897,8 +897,8 @@ static int soc_pcm_hw_params(struct snd_pcm_substream *substream,
 	if (platform->driver->ops && platform->driver->ops->hw_params) {
 		ret = platform->driver->ops->hw_params(substream, params);
 		if (ret < 0) {
-//			printk(KERN_ERR "asoc: platform %s hw params failed\n",
-;
+			printk(KERN_ERR "asoc: platform %s hw params failed\n",
+				platform->name);
 			goto platform_err;
 		}
 	}
@@ -1417,7 +1417,7 @@ static void soc_remove_dai_link(struct snd_soc_card *card, int num)
 		if (codec_dai->driver->remove) {
 			err = codec_dai->driver->remove(codec_dai);
 			if (err < 0)
-;
+				printk(KERN_ERR "asoc: failed to remove %s\n", codec_dai->name);
 		}
 		codec_dai->probed = 0;
 		list_del(&codec_dai->card_list);
@@ -1428,7 +1428,7 @@ static void soc_remove_dai_link(struct snd_soc_card *card, int num)
 		if (platform->driver->remove) {
 			err = platform->driver->remove(platform);
 			if (err < 0)
-;
+				printk(KERN_ERR "asoc: failed to remove %s\n", platform->name);
 		}
 		platform->probed = 0;
 		list_del(&platform->card_list);
@@ -1444,7 +1444,7 @@ static void soc_remove_dai_link(struct snd_soc_card *card, int num)
 		if (cpu_dai->driver->remove) {
 			err = cpu_dai->driver->remove(cpu_dai);
 			if (err < 0)
-;
+				printk(KERN_ERR "asoc: failed to remove %s\n", cpu_dai->name);
 		}
 		cpu_dai->probed = 0;
 		list_del(&cpu_dai->card_list);
@@ -1627,8 +1627,8 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num)
 		if (cpu_dai->driver->probe) {
 			ret = cpu_dai->driver->probe(cpu_dai);
 			if (ret < 0) {
-//				printk(KERN_ERR "asoc: failed to probe CPU DAI %s\n",
-;
+				printk(KERN_ERR "asoc: failed to probe CPU DAI %s\n",
+						cpu_dai->name);
 				module_put(cpu_dai->dev->driver->owner);
 				return ret;
 			}
@@ -1653,8 +1653,8 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num)
 		if (platform->driver->probe) {
 			ret = platform->driver->probe(platform);
 			if (ret < 0) {
-//				printk(KERN_ERR "asoc: failed to probe platform %s\n",
-;
+				printk(KERN_ERR "asoc: failed to probe platform %s\n",
+						platform->name);
 				module_put(platform->dev->driver->owner);
 				return ret;
 			}
@@ -1669,8 +1669,8 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num)
 		if (codec_dai->driver->probe) {
 			ret = codec_dai->driver->probe(codec_dai);
 			if (ret < 0) {
-//				printk(KERN_ERR "asoc: failed to probe CODEC DAI %s\n",
-;
+				printk(KERN_ERR "asoc: failed to probe CODEC DAI %s\n",
+						codec_dai->name);
 				return ret;
 			}
 		}
@@ -1689,12 +1689,12 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num)
 
 	ret = device_create_file(&rtd->dev, &dev_attr_pmdown_time);
 	if (ret < 0)
-;
+		printk(KERN_WARNING "asoc: failed to add pmdown_time sysfs\n");
 
 	/* create the pcm */
 	ret = soc_new_pcm(rtd, num);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "asoc: can't create pcm %s\n", dai_link->stream_name);
 		return ret;
 	}
 
@@ -1727,7 +1727,7 @@ static int soc_register_ac97_dai_link(struct snd_soc_pcm_runtime *rtd)
 
 		ret = soc_ac97_dev_register(rtd->codec);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: AC97 device register failed\n");
 			return ret;
 		}
 
@@ -1866,8 +1866,8 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	ret = snd_card_create(SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1,
 			card->owner, 0, &card->snd_card);
 	if (ret < 0) {
-//		printk(KERN_ERR "asoc: can't create sound card for card %s\n",
-;
+		printk(KERN_ERR "asoc: can't create sound card for card %s\n",
+			card->name);
 		mutex_unlock(&card->mutex);
 		return;
 	}
@@ -1958,7 +1958,7 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 
 	ret = snd_card_register(card->snd_card);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "asoc: failed to register soundcard for %s\n", card->name);
 		goto probe_aux_dev_err;
 	}
 
@@ -1967,7 +1967,7 @@ static void snd_soc_instantiate_card(struct snd_soc_card *card)
 	for (i = 0; i < card->num_rtd; i++) {
 		ret = soc_register_ac97_dai_link(&card->rtd[i]);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "asoc: failed to register AC97 %s\n", card->name);
 			while (--i >= 0)
 				soc_unregister_ac97_dai_link(card->rtd[i].codec);
 			goto probe_aux_dev_err;
@@ -2134,7 +2134,7 @@ static int soc_new_pcm(struct snd_soc_pcm_runtime *rtd, int num)
 	ret = snd_pcm_new(rtd->card->snd_card, new_name,
 			num, playback, capture, &pcm);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "asoc: can't create pcm for codec %s\n", codec->name);
 		return ret;
 	}
 
@@ -2166,8 +2166,8 @@ static int soc_new_pcm(struct snd_soc_pcm_runtime *rtd, int num)
 	}
 
 	pcm->private_free = platform->driver->pcm_free;
-//	printk(KERN_INFO "asoc: %s <-> %s mapping ok\n", codec_dai->name,
-;
+	printk(KERN_INFO "asoc: %s <-> %s mapping ok\n", codec_dai->name,
+		cpu_dai->name);
 	return ret;
 }
 
@@ -3475,8 +3475,8 @@ static inline char *fmt_multiple_name(struct device *dev,
 		struct snd_soc_dai_driver *dai_drv)
 {
 	if (dai_drv->name == NULL) {
-//		printk(KERN_ERR "asoc: error - multiple DAI %s registered with no name\n",
-;
+		printk(KERN_ERR "asoc: error - multiple DAI %s registered with no name\n",
+				dev_name(dev));
 		return NULL;
 	}
 
@@ -3861,8 +3861,8 @@ static int __init snd_soc_init(void)
 #ifdef CONFIG_DEBUG_FS
 	snd_soc_debugfs_root = debugfs_create_dir("asoc", NULL);
 	if (IS_ERR(snd_soc_debugfs_root) || !snd_soc_debugfs_root) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "ASoC: Failed to create debugfs directory\n");
 		snd_soc_debugfs_root = NULL;
 	}
 

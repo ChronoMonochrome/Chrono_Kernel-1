@@ -217,7 +217,7 @@ static int qc_detect(struct qcam *qcam)
 	    && qcam->pport->probe_info[0].model
 	    && !strcmp(qcam->pdev->port->probe_info[0].model,
 		       "Color QuickCam 2.0")) {
-;
+		printk(KERN_DEBUG "QuickCam: Found by IEEE1284 probe.\n");
 		return 1;
 	}
 
@@ -868,7 +868,7 @@ static struct parport_driver cqcam_driver = {
 
 static int __init cqcam_init(void)
 {
-;
+	printk(KERN_INFO BANNER "\n");
 
 	return parport_register_driver(&cqcam_driver);
 }

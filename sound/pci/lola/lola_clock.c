@@ -128,7 +128,7 @@ int __devinit lola_init_clock_widget(struct lola *chip, int nid)
 
 	err = lola_read_param(chip, nid, LOLA_PAR_AUDIO_WIDGET_CAP, &val);
 	if (err < 0) {
-;
+		printk(KERN_ERR SFX "Can't read wcaps for 0x%x\n", nid);
 		return err;
 	}
 
@@ -142,8 +142,8 @@ int __devinit lola_init_clock_widget(struct lola *chip, int nid)
 	snd_printdd("clock_list nid=%x, entries=%d\n", nid,
 		    chip->clock.items);
 	if (chip->clock.items > MAX_SAMPLE_CLOCK_COUNT) {
-//		printk(KERN_ERR SFX "CLOCK_LIST too big: %d\n",
-;
+		printk(KERN_ERR SFX "CLOCK_LIST too big: %d\n",
+		       chip->clock.items);
 		return -EINVAL;
 	}
 
@@ -158,7 +158,7 @@ int __devinit lola_init_clock_widget(struct lola *chip, int nid)
 		err = lola_codec_read(chip, nid, LOLA_VERB_GET_CLOCK_LIST,
 				      idx, 0, &val, &res_ex);
 		if (err < 0) {
-;
+			printk(KERN_ERR SFX "Can't read CLOCK_LIST\n");
 			return -EINVAL;
 		}
 
@@ -223,8 +223,8 @@ int lola_enable_clock_events(struct lola *chip)
 	if (err < 0)
 		return err;
 	if (res) {
-//		printk(KERN_WARNING SFX "error in enable_clock_events %d\n",
-;
+		printk(KERN_WARNING SFX "error in enable_clock_events %d\n",
+		       res);
 		return -EINVAL;
 	}
 	return 0;
@@ -242,7 +242,7 @@ int lola_set_clock_index(struct lola *chip, unsigned int idx)
 	if (err < 0)
 		return err;
 	if (res) {
-;
+		printk(KERN_WARNING SFX "error in set_clock %d\n", res);
 		return -EINVAL;
 	}
 	return 0;

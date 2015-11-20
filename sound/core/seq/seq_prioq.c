@@ -197,7 +197,7 @@ int snd_seq_prioq_cell_in(struct snd_seq_prioq * f,
 		cur = cur->next;
 		if (! --count) {
 			spin_unlock_irqrestore(&f->lock, flags);
-;
+			snd_printk(KERN_ERR "cannot find a pointer.. infinite loop?\n");
 			return -EINVAL;
 		}
 	}
@@ -321,12 +321,12 @@ void snd_seq_prioq_leave(struct snd_seq_prioq * f, int client, int timestamp)
 			freeprev = cell;
 		} else {
 #if 0
-//			printk(KERN_DEBUG "type = %i, source = %i, dest = %i, "
-//			       "client = %i\n",
-//				cell->event.type,
-//				cell->event.source.client,
-//				cell->event.dest.client,
-;
+			printk(KERN_DEBUG "type = %i, source = %i, dest = %i, "
+			       "client = %i\n",
+				cell->event.type,
+				cell->event.source.client,
+				cell->event.dest.client,
+				client);
 #endif
 			prev = cell;
 		}

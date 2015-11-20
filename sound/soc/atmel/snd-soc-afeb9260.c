@@ -55,7 +55,7 @@ static int afeb9260_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_IF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (err < 0) {
-;
+		printk(KERN_ERR "can't set codec DAI configuration\n");
 		return err;
 	}
 
@@ -65,7 +65,7 @@ static int afeb9260_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_IF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (err < 0) {
-;
+		printk(KERN_ERR "can't set cpu DAI configuration\n");
 		return err;
 	}
 
@@ -74,7 +74,7 @@ static int afeb9260_hw_params(struct snd_pcm_substream *substream,
 	    snd_soc_dai_set_sysclk(codec_dai, 0, CODEC_CLOCK, SND_SOC_CLOCK_IN);
 
 	if (err < 0) {
-;
+		printk(KERN_ERR "can't set codec system clock\n");
 		return err;
 	}
 
@@ -154,7 +154,7 @@ static int __init afeb9260_soc_init(void)
 
 	afeb9260_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!afeb9260_snd_device) {
-;
+		printk(KERN_ERR "ASoC: Platform device allocation failed\n");
 		return -ENOMEM;
 	}
 

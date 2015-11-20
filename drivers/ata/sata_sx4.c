@@ -628,10 +628,10 @@ static void pdc20621_dump_hdma(struct ata_queued_cmd *qc)
 	dimm_mmio += (port_no * PDC_DIMM_WINDOW_STEP);
 	dimm_mmio += PDC_DIMM_HOST_PKT;
 
-;
-;
-;
-;
+	printk(KERN_ERR "HDMA[0] == 0x%08X\n", readl(dimm_mmio));
+	printk(KERN_ERR "HDMA[1] == 0x%08X\n", readl(dimm_mmio + 4));
+	printk(KERN_ERR "HDMA[2] == 0x%08X\n", readl(dimm_mmio + 8));
+	printk(KERN_ERR "HDMA[3] == 0x%08X\n", readl(dimm_mmio + 12));
 }
 #else
 static inline void pdc20621_dump_hdma(struct ata_queued_cmd *qc) { }
@@ -1250,7 +1250,7 @@ static unsigned int pdc20621_prog_dimm_global(struct ata_host *host)
 		data |= (0x01 << 16);
 		writel(data, mmio + PDC_SDRAM_CONTROL);
 		readl(mmio + PDC_SDRAM_CONTROL);
-;
+		printk(KERN_ERR "Local DIMM ECC Enabled\n");
 	}
 
 	/* DIMM Initialization Select/Enable (bit 18/19) */
@@ -1340,7 +1340,7 @@ static unsigned int pdc20621_dimm_init(struct ata_host *host)
 	   and program the DIMM Module Controller.
 	*/
 	if (!(speed = pdc20621_detect_dimm(host))) {
-;
+		printk(KERN_ERR "Detect Local DIMM Fail\n");
 		return 1;	/* DIMM error */
 	}
 	VPRINTK("Local DIMM Speed = %d\n", speed);
@@ -1351,7 +1351,7 @@ static unsigned int pdc20621_dimm_init(struct ata_host *host)
 
 	/* Programming DIMM Module Global Control Register (index_CID0:88h) */
 	if (pdc20621_prog_dimm_global(host)) {
-;
+		printk(KERN_ERR "Programming DIMM Module Global Control Register Fail\n");
 		return 1;
 	}
 
@@ -1370,17 +1370,17 @@ static unsigned int pdc20621_dimm_init(struct ata_host *host)
 
 		pdc20621_put_to_dimm(host, test_parttern1, 0x10040, 40);
 		pdc20621_get_from_dimm(host, test_parttern2, 0x40, 40);
-//		printk(KERN_ERR "%x, %x, %s\n", test_parttern2[0],
-;
+		printk(KERN_ERR "%x, %x, %s\n", test_parttern2[0],
+		       test_parttern2[1], &(test_parttern2[2]));
 		pdc20621_get_from_dimm(host, test_parttern2, 0x10040,
 				       40);
-//		printk(KERN_ERR "%x, %x, %s\n", test_parttern2[0],
-;
+		printk(KERN_ERR "%x, %x, %s\n", test_parttern2[0],
+		       test_parttern2[1], &(test_parttern2[2]));
 
 		pdc20621_put_to_dimm(host, test_parttern1, 0x40, 40);
 		pdc20621_get_from_dimm(host, test_parttern2, 0x40, 40);
-//		printk(KERN_ERR "%x, %x, %s\n", test_parttern2[0],
-;
+		printk(KERN_ERR "%x, %x, %s\n", test_parttern2[0],
+		       test_parttern2[1], &(test_parttern2[2]));
 	}
 #endif
 
@@ -1448,7 +1448,7 @@ static int pdc_sata_init_one(struct pci_dev *pdev,
 	int i, rc;
 
 	if (!printed_version++)
-;
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	/* allocate host */
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, 4);

@@ -88,8 +88,8 @@ nfs4_callback_svc(void *vrqstp)
 		}
 		if (err < 0) {
 			if (err != preverr) {
-//				printk(KERN_WARNING "%s: unexpected error "
-;
+				printk(KERN_WARNING "%s: unexpected error "
+					"from svc_recv (%d)\n", __func__, err);
 				preverr = err;
 			}
 			schedule_timeout_uninterruptible(HZ);
@@ -114,15 +114,15 @@ nfs4_callback_up(struct svc_serv *serv)
 	if (ret <= 0)
 		goto out_err;
 	nfs_callback_tcpport = ret;
-//	dprintk("NFS: Callback listener port = %u (af %u)\n",
-;
+	dprintk("NFS: Callback listener port = %u (af %u)\n",
+			nfs_callback_tcpport, PF_INET);
 
 	ret = svc_create_xprt(serv, "tcp", &init_net, PF_INET6,
 				nfs_callback_set_tcpport, SVC_SOCK_ANONYMOUS);
 	if (ret > 0) {
 		nfs_callback_tcpport6 = ret;
-//		dprintk("NFS: Callback listener port = %u (af %u)\n",
-;
+		dprintk("NFS: Callback listener port = %u (af %u)\n",
+				nfs_callback_tcpport6, PF_INET6);
 	} else if (ret == -EAFNOSUPPORT)
 		ret = 0;
 	else
@@ -159,10 +159,10 @@ nfs41_callback_svc(void *vrqstp)
 					struct rpc_rqst, rq_bc_list);
 			list_del(&req->rq_bc_list);
 			spin_unlock_bh(&serv->sv_cb_lock);
-;
+			dprintk("Invoking bc_svc_process()\n");
 			error = bc_svc_process(serv, req, rqstp);
-//			dprintk("bc_svc_process() returned w/ error code= %d\n",
-;
+			dprintk("bc_svc_process() returned w/ error code= %d\n",
+				error);
 		} else {
 			spin_unlock_bh(&serv->sv_cb_lock);
 			schedule();
@@ -208,8 +208,8 @@ nfs41_callback_up(struct svc_serv *serv, struct rpc_xprt *xprt)
 		serv->sv_bc_xprt = NULL;
 	}
 out:
-//	dprintk("--> %s return %ld\n", __func__,
-;
+	dprintk("--> %s return %ld\n", __func__,
+		IS_ERR(rqstp) ? PTR_ERR(rqstp) : 0);
 	return rqstp;
 }
 
@@ -306,7 +306,7 @@ out:
 	mutex_unlock(&nfs_callback_mutex);
 	return ret;
 out_err:
-;
+	dprintk("NFS: Couldn't create callback socket or server thread; "
 		"err = %d\n", ret);
 	cb_info->users--;
 	goto out;

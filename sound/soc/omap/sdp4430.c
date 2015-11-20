@@ -56,7 +56,7 @@ static int sdp4430_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_set_sysclk(codec_dai, clk_id, freq,
 				SND_SOC_CLOCK_IN);
 	if (ret) {
-;
+		printk(KERN_ERR "can't set codec system clock\n");
 		return ret;
 	}
 	return ret;
@@ -223,11 +223,11 @@ static int __init sdp4430_soc_init(void)
 
 	if (!machine_is_omap_4430sdp())
 		return -ENODEV;
-;
+	printk(KERN_INFO "SDP4430 SoC init\n");
 
 	sdp4430_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!sdp4430_snd_device) {
-;
+		printk(KERN_ERR "Platform device allocation failed\n");
 		return -ENOMEM;
 	}
 
@@ -243,7 +243,7 @@ static int __init sdp4430_soc_init(void)
 	return 0;
 
 err:
-;
+	printk(KERN_ERR "Unable to add platform device\n");
 	platform_device_put(sdp4430_snd_device);
 	return ret;
 }

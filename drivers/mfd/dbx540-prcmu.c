@@ -945,7 +945,7 @@ static void dbx540_prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
 static void dbx540_prcmu_debug_dump(const char *func,
 				bool dump_prcmu, bool dump_abb)
 {
-;
+	printk(KERN_DEBUG"%s: timeout\n", func);
 
 	/* Dump AB8500 registers */
 	if (dump_abb)

@@ -107,8 +107,8 @@ static int __devinit jsm_probe_one(struct pci_dev *pdev, const struct pci_device
 
 	brd->irq = pdev->irq;
 
-//	jsm_printk(INIT, INFO, &brd->pci_dev,
-;
+	jsm_printk(INIT, INFO, &brd->pci_dev,
+		"jsm_found_board - NEO adapter\n");
 
 	/* get the PCI Base Address Registers */
 	brd->membase	= pci_resource_start(pdev, 0);
@@ -137,7 +137,7 @@ static int __devinit jsm_probe_one(struct pci_dev *pdev, const struct pci_device
 	rc = request_irq(brd->irq, brd->bd_ops->intr,
 			IRQF_SHARED, "JSM", brd);
 	if (rc) {
-;
+		printk(KERN_WARNING "Failed to hook IRQ %d\n",brd->irq);
 		goto out_iounmap;
 	}
 

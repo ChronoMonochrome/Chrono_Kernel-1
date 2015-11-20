@@ -167,8 +167,8 @@ static int pn_recvmsg(struct kiocb *iocb, struct sock *sk,
 #ifdef CONFIG_SAMSUNG_PHONE_SVNET
 	/* svent RX debugging */
 	if (sk->sk_receive_queue.qlen > 30)
-//		printk(KERN_DEBUG "svn %s, sk = %p, qlen = %d\n", __func__, sk,
-;
+		printk(KERN_DEBUG "svn %s, sk = %p, qlen = %d\n", __func__, sk,
+			sk->sk_receive_queue.qlen);
 #endif
 
 out:
@@ -185,8 +185,8 @@ static int pn_backlog_rcv(struct sock *sk, struct sk_buff *skb)
 #ifdef CONFIG_SAMSUNG_PHONE_SVNET
 	/* svent RX debugging */
 	if (sk->sk_receive_queue.qlen > 30)
-//		printk(KERN_DEBUG "svn %s, sk = %p, qlen = %d\n", __func__, sk,
-;
+		printk(KERN_DEBUG "svn %s, sk = %p, qlen = %d\n", __func__, sk,
+			sk->sk_receive_queue.qlen);
 #endif
 	if (err < 0)
 		kfree_skb(skb);

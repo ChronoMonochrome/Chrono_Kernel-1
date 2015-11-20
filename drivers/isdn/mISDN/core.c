@@ -236,8 +236,8 @@ mISDN_register_device(struct mISDNdevice *dev,
 	else
 		dev_set_name(&dev->dev, "mISDN%d", dev->id);
 	if (debug & DEBUG_CORE)
-//		printk(KERN_DEBUG "mISDN_register %s %d\n",
-;
+		printk(KERN_DEBUG "mISDN_register %s %d\n",
+			dev_name(&dev->dev), dev->id);
 	err = create_stack(dev);
 	if (err)
 		goto error1;
@@ -264,8 +264,8 @@ EXPORT_SYMBOL(mISDN_register_device);
 void
 mISDN_unregister_device(struct mISDNdevice *dev) {
 	if (debug & DEBUG_CORE)
-//		printk(KERN_DEBUG "mISDN_unregister %s %d\n",
-;
+		printk(KERN_DEBUG "mISDN_unregister %s %d\n",
+			dev_name(&dev->dev), dev->id);
 	/* sysfs_remove_link(&dev->dev.kobj, "device"); */
 	device_del(&dev->dev);
 	dev_set_drvdata(&dev->dev, NULL);
@@ -310,8 +310,8 @@ get_Bprotocol4id(u_int id)
 	u_int	m;
 
 	if (id < ISDN_P_B_START || id > 63) {
-//		printk(KERN_WARNING "%s id not in range  %d\n",
-;
+		printk(KERN_WARNING "%s id not in range  %d\n",
+		    __func__, id);
 		return NULL;
 	}
 	m = 1 << (id & ISDN_P_B_MASK);
@@ -325,13 +325,13 @@ mISDN_register_Bprotocol(struct Bprotocol *bp)
 	struct Bprotocol	*old;
 
 	if (debug & DEBUG_CORE)
-//		printk(KERN_DEBUG "%s: %s/%x\n", __func__,
-;
+		printk(KERN_DEBUG "%s: %s/%x\n", __func__,
+		    bp->name, bp->Bprotocols);
 	old = get_Bprotocol4mask(bp->Bprotocols);
 	if (old) {
-//		printk(KERN_WARNING
-//		    "register duplicate protocol old %s/%x new %s/%x\n",
-;
+		printk(KERN_WARNING
+		    "register duplicate protocol old %s/%x new %s/%x\n",
+		    old->name, old->Bprotocols, bp->name, bp->Bprotocols);
 		return -EBUSY;
 	}
 	write_lock_irqsave(&bp_lock, flags);
@@ -347,8 +347,8 @@ mISDN_unregister_Bprotocol(struct Bprotocol *bp)
 	u_long	flags;
 
 	if (debug & DEBUG_CORE)
-//		printk(KERN_DEBUG "%s: %s/%x\n", __func__, bp->name,
-;
+		printk(KERN_DEBUG "%s: %s/%x\n", __func__, bp->name,
+			bp->Bprotocols);
 	write_lock_irqsave(&bp_lock, flags);
 	list_del(&bp->list);
 	write_unlock_irqrestore(&bp_lock, flags);
@@ -360,8 +360,8 @@ mISDNInit(void)
 {
 	int	err;
 
-//	printk(KERN_INFO "Modular ISDN core version %d.%d.%d\n",
-;
+	printk(KERN_INFO "Modular ISDN core version %d.%d.%d\n",
+		MISDN_MAJOR_VERSION, MISDN_MINOR_VERSION, MISDN_RELEASE);
 	mISDN_init_clock(&debug);
 	mISDN_initstack(&debug);
 	err = class_register(&mISDN_class);
@@ -401,7 +401,7 @@ static void mISDN_cleanup(void)
 	mISDN_timer_cleanup();
 	class_unregister(&mISDN_class);
 
-;
+	printk(KERN_DEBUG "mISDNcore unloaded\n");
 }
 
 module_init(mISDNInit);

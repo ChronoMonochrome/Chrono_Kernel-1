@@ -184,7 +184,7 @@ void diva_log_info(unsigned char *format, ...)
 	vsnprintf(line, sizeof(line), format, args);
 	va_end(args);
 
-;
+	printk(KERN_INFO "%s: %s\n", DRIVERLNAME, line);
 }
 
 void divas_get_version(char *p)
@@ -677,8 +677,8 @@ static int DIVA_INIT_FUNCTION divas_register_chrdev(void)
 {
 	if ((major = register_chrdev(0, DEVNAME, &divas_fops)) < 0)
 	{
-//		printk(KERN_ERR "%s: failed to create /dev entry.\n",
-;
+		printk(KERN_ERR "%s: failed to create /dev entry.\n",
+		       DRIVERLNAME);
 		return (0);
 	}
 
@@ -698,9 +698,9 @@ static int __devinit divas_init_one(struct pci_dev *pdev,
 	DBG_TRC(("%s bus: %08x fn: %08x insertion.\n",
 		 CardProperties[ent->driver_data].Name,
 		 pdev->bus->number, pdev->devfn))
-//	printk(KERN_INFO "%s: %s bus: %08x fn: %08x insertion.\n",
-//		DRIVERLNAME, CardProperties[ent->driver_data].Name,
-;
+	printk(KERN_INFO "%s: %s bus: %08x fn: %08x insertion.\n",
+		DRIVERLNAME, CardProperties[ent->driver_data].Name,
+		pdev->bus->number, pdev->devfn);
 
 	if (pci_enable_device(pdev)) {
 		DBG_TRC(("%s: %s bus: %08x fn: %08x device init failed.\n",
@@ -708,12 +708,12 @@ static int __devinit divas_init_one(struct pci_dev *pdev,
 			 CardProperties[ent->driver_data].Name,
 			 pdev->bus->number,
 			 pdev->devfn))
-//		printk(KERN_ERR
-//			"%s: %s bus: %08x fn: %08x device init failed.\n",
-//			DRIVERLNAME,
-//			CardProperties[ent->driver_data].
-//			Name, pdev->bus->number,
-;
+		printk(KERN_ERR
+			"%s: %s bus: %08x fn: %08x device init failed.\n",
+			DRIVERLNAME,
+			CardProperties[ent->driver_data].
+			Name, pdev->bus->number,
+			pdev->devfn);
 		return (-EIO);
 	}
 
@@ -723,9 +723,9 @@ static int __devinit divas_init_one(struct pci_dev *pdev,
 	if (!pci_latency) {
 		DBG_TRC(("%s: bus: %08x fn: %08x fix latency.\n",
 			 DRIVERLNAME, pdev->bus->number, pdev->devfn))
-//		printk(KERN_INFO
-//			"%s: bus: %08x fn: %08x fix latency.\n",
-;
+		printk(KERN_INFO
+			"%s: bus: %08x fn: %08x fix latency.\n",
+			 DRIVERLNAME, pdev->bus->number, pdev->devfn);
 		pci_write_config_byte(pdev, PCI_LATENCY_TIMER, new_latency);
 	}
 
@@ -735,12 +735,12 @@ static int __devinit divas_init_one(struct pci_dev *pdev,
 			 CardProperties[ent->driver_data].Name,
 			 pdev->bus->number,
 			 pdev->devfn))
-//		printk(KERN_ERR
-//			"%s: %s bus: %08x fn: %08x card init failed.\n",
-//			DRIVERLNAME,
-//			CardProperties[ent->driver_data].
-//			Name, pdev->bus->number,
-;
+		printk(KERN_ERR
+			"%s: %s bus: %08x fn: %08x card init failed.\n",
+			DRIVERLNAME,
+			CardProperties[ent->driver_data].
+			Name, pdev->bus->number,
+			pdev->devfn);
 		return (-EIO);
 	}
 
@@ -755,8 +755,8 @@ static void __devexit divas_remove_one(struct pci_dev *pdev)
 
 	DBG_TRC(("bus: %08x fn: %08x removal.\n",
 		 pdev->bus->number, pdev->devfn))
-//	printk(KERN_INFO "%s: bus: %08x fn: %08x removal.\n",
-;
+	printk(KERN_INFO "%s: bus: %08x fn: %08x removal.\n",
+		DRIVERLNAME, pdev->bus->number, pdev->devfn);
 
 	if (pdiva) {
 		diva_driver_remove_card(pdiva);
@@ -772,23 +772,23 @@ static int DIVA_INIT_FUNCTION divas_init(void)
 	char tmprev[50];
 	int ret = 0;
 
-;
-;
+	printk(KERN_INFO "%s\n", DRIVERNAME);
+	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_DIVAS);
 	strcpy(tmprev, main_revision);
-//	printk("%s  Build: %s(%s)\n", getrev(tmprev),
-;
-;
+	printk("%s  Build: %s(%s)\n", getrev(tmprev),
+	       diva_xdi_common_code_build, DIVA_BUILD);
+	printk(KERN_INFO "%s: support for: ", DRIVERLNAME);
 #ifdef CONFIG_ISDN_DIVAS_BRIPCI
-;
+	printk("BRI/PCI ");
 #endif
 #ifdef CONFIG_ISDN_DIVAS_PRIPCI
-;
+	printk("PRI/PCI ");
 #endif
-;
+	printk("adapters\n");
 
 	if (!divasfunc_init(dbgmask)) {
-//		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
-;
+		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
+		       DRIVERLNAME);
 		ret = -EIO;
 		goto out;
 	}
@@ -806,8 +806,8 @@ static int DIVA_INIT_FUNCTION divas_init(void)
 		divas_unregister_chrdev();
 		divasfunc_exit();
 #endif
-//		printk(KERN_ERR "%s: failed to create proc entry.\n",
-;
+		printk(KERN_ERR "%s: failed to create proc entry.\n",
+		       DRIVERLNAME);
 		ret = -EIO;
 		goto out;
 	}
@@ -818,11 +818,11 @@ static int DIVA_INIT_FUNCTION divas_init(void)
 		divas_unregister_chrdev();
 		divasfunc_exit();
 #endif
-//		printk(KERN_ERR "%s: failed to init pci driver.\n",
-;
+		printk(KERN_ERR "%s: failed to init pci driver.\n",
+		       DRIVERLNAME);
 		goto out;
 	}
-;
+	printk(KERN_INFO "%s: started with major %d\n", DRIVERLNAME, major);
 
       out:
 	return (ret);
@@ -838,7 +838,7 @@ static void DIVA_EXIT_FUNCTION divas_exit(void)
 	divas_unregister_chrdev();
 	divasfunc_exit();
 
-;
+	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
 }
 
 module_init(divas_init);

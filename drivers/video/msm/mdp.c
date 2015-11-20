@@ -59,8 +59,8 @@ static int enable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 	/* if the mask bits are already set return an error, this interrupt
 	 * is already enabled */
 	if (mdp_irq_mask & mask) {
-//		printk(KERN_ERR "mdp irq already on already on %x %x\n",
-;
+		printk(KERN_ERR "mdp irq already on already on %x %x\n",
+		       mdp_irq_mask, mask);
 		ret = -1;
 	}
 	/* if the mdp irq is not already enabled enable it */
@@ -81,8 +81,8 @@ static int locked_disable_mdp_irq(struct mdp_info *mdp, uint32_t mask)
 {
 	/* this interrupt is already disabled! */
 	if (!(mdp_irq_mask & mask)) {
-//		printk(KERN_ERR "mdp irq already off %x %x\n",
-;
+		printk(KERN_ERR "mdp irq already off %x %x\n",
+		       mdp_irq_mask, mask);
 		return -1;
 	}
 	/* update the irq mask to reflect the fact that the interrupt is
@@ -159,8 +159,8 @@ static int mdp_wait(struct mdp_info *mdp, uint32_t mask, wait_queue_head_t *wq)
 	spin_lock_irqsave(&mdp_lock, irq_flags);
 	if (mdp_irq_mask & mask) {
 		locked_disable_mdp_irq(mdp, mask);
-//		printk(KERN_WARNING "timeout waiting for mdp to complete %x\n",
-;
+		printk(KERN_WARNING "timeout waiting for mdp to complete %x\n",
+		       mask);
 		ret = -ETIMEDOUT;
 	}
 	spin_unlock_irqrestore(&mdp_lock, irq_flags);
@@ -180,8 +180,8 @@ void mdp_dma_wait(struct mdp_device *mdp_dev)
 		timeout_count = 0;
 
 	if (timeout_count > MDP_MAX_TIMEOUTS) {
-//		printk(KERN_ERR "mdp: dma failed %d times, somethings wrong!\n",
-;
+		printk(KERN_ERR "mdp: dma failed %d times, somethings wrong!\n",
+		       MDP_MAX_TIMEOUTS);
 		BUG();
 	}
 }
@@ -199,7 +199,7 @@ void mdp_dma_to_mddi(struct mdp_info *mdp, uint32_t addr, uint32_t stride,
 	uint16_t ld_param = 0; /* 0=PRIM, 1=SECD, 2=EXT */
 
 	if (enable_mdp_irq(mdp, DL0_DMA2_TERM_DONE)) {
-;
+		printk(KERN_ERR "mdp_dma_to_mddi: busy\n");
 		return;
 	}
 
@@ -288,7 +288,7 @@ int mdp_blit(struct mdp_device *mdp_dev, struct fb_info *fb,
 	/* WORKAROUND FOR HARDWARE BUG IN BG TILE FETCH */
 	if (unlikely(req->src_rect.h == 0 ||
 		     req->src_rect.w == 0)) {
-;
+		printk(KERN_ERR "mpd_ppp: src img of zero size!\n");
 		return -EINVAL;
 	}
 	if (unlikely(req->dst_rect.h == 0 ||
@@ -298,14 +298,14 @@ int mdp_blit(struct mdp_device *mdp_dev, struct fb_info *fb,
 	/* do this first so that if this fails, the caller can always
 	 * safely call put_img */
 	if (unlikely(get_img(&req->src, fb, &src_start, &src_len, &src_file))) {
-//		printk(KERN_ERR "mpd_ppp: could not retrieve src image from "
-;
+		printk(KERN_ERR "mpd_ppp: could not retrieve src image from "
+				"memory\n");
 		return -EINVAL;
 	}
 
 	if (unlikely(get_img(&req->dst, fb, &dst_start, &dst_len, &dst_file))) {
-//		printk(KERN_ERR "mpd_ppp: could not retrieve dst image from "
-;
+		printk(KERN_ERR "mpd_ppp: could not retrieve dst image from "
+				"memory\n");
 		return -EINVAL;
 	}
 	mutex_lock(&mdp_mutex);
@@ -409,7 +409,7 @@ int mdp_probe(struct platform_device *pdev)
 	mdp->base = ioremap(resource->start,
 			    resource->end - resource->start);
 	if (mdp->base == 0) {
-;
+		printk(KERN_ERR "msmfb: cannot allocate mdp regs!\n");
 		ret = -ENOMEM;
 		goto error_ioremap;
 	}
@@ -421,7 +421,7 @@ int mdp_probe(struct platform_device *pdev)
 
 	clk = clk_get(&pdev->dev, "mdp_clk");
 	if (IS_ERR(clk)) {
-;
+		printk(KERN_INFO "mdp: failed to get mdp clk");
 		return PTR_ERR(clk);
 	}
 
@@ -512,7 +512,7 @@ static int __init mdp_init(void)
 {
 	mdp_class = class_create(THIS_MODULE, "msm_mdp");
 	if (IS_ERR(mdp_class)) {
-;
+		printk(KERN_ERR "Error creating mdp class\n");
 		return PTR_ERR(mdp_class);
 	}
 	return platform_driver_register(&msm_mdp_driver);

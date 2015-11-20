@@ -90,8 +90,8 @@ scsi_nl_rcv_msg(struct sk_buff *skb)
 		nlh = nlmsg_hdr(skb);
 		if ((nlh->nlmsg_len < (sizeof(*nlh) + sizeof(*hdr))) ||
 		    (skb->len < nlh->nlmsg_len)) {
-//			printk(KERN_WARNING "%s: discarding partial skb\n",
-;
+			printk(KERN_WARNING "%s: discarding partial skb\n",
+				 __func__);
 			return;
 		}
 
@@ -117,8 +117,8 @@ scsi_nl_rcv_msg(struct sk_buff *skb)
 		}
 
 		if (nlh->nlmsg_len < (sizeof(*nlh) + hdr->msglen)) {
-//			printk(KERN_WARNING "%s: discarding partial message\n",
-;
+			printk(KERN_WARNING "%s: discarding partial message\n",
+				 __func__);
 			goto next_msg;
 		}
 
@@ -293,8 +293,8 @@ driver_exit:
 
 rcv_exit:
 	if (err)
-//		printk(KERN_WARNING "%s: Msgtype %d failed - err %d\n",
-;
+		printk(KERN_WARNING "%s: Msgtype %d failed - err %d\n",
+			 __func__, snlh->msgtype, err);
 	return err;
 }
 
@@ -410,7 +410,7 @@ scsi_nl_add_driver(u64 vendor_id, struct scsi_host_template *hostt,
 
 	driver = kzalloc(sizeof(*driver), GFP_KERNEL);
 	if (unlikely(!driver)) {
-;
+		printk(KERN_ERR "%s: allocation failure\n", __func__);
 		return -ENOMEM;
 	}
 
@@ -469,8 +469,8 @@ scsi_nl_remove_driver(u64 vendor_id)
 
 	spin_unlock_irqrestore(&scsi_nl_lock, flags);
 
-//	printk(KERN_ERR "%s: removal of driver failed - vendor_id 0x%llx\n",
-;
+	printk(KERN_ERR "%s: removal of driver failed - vendor_id 0x%llx\n",
+	       __func__, (unsigned long long)vendor_id);
 	return;
 }
 EXPORT_SYMBOL_GPL(scsi_nl_remove_driver);
@@ -490,8 +490,8 @@ scsi_netlink_init(void)
 
 	error = netlink_register_notifier(&scsi_netlink_notifier);
 	if (error) {
-//		printk(KERN_ERR "%s: register of event handler failed - %d\n",
-;
+		printk(KERN_ERR "%s: register of event handler failed - %d\n",
+				__func__, error);
 		return;
 	}
 
@@ -499,8 +499,8 @@ scsi_netlink_init(void)
 				SCSI_NL_GRP_CNT, scsi_nl_rcv_msg, NULL,
 				THIS_MODULE);
 	if (!scsi_nl_sock) {
-//		printk(KERN_ERR "%s: register of receive handler failed\n",
-;
+		printk(KERN_ERR "%s: register of receive handler failed\n",
+				__func__);
 		netlink_unregister_notifier(&scsi_netlink_notifier);
 		return;
 	}
@@ -509,8 +509,8 @@ scsi_netlink_init(void)
 	error = scsi_nl_add_transport(SCSI_NL_TRANSPORT,
 				scsi_generic_msg_handler, NULL);
 	if (error)
-//		printk(KERN_ERR "%s: register of GENERIC transport handler"
-;
+		printk(KERN_ERR "%s: register of GENERIC transport handler"
+				"  failed - %d\n", __func__, error);
 	return;
 }
 
@@ -593,11 +593,11 @@ scsi_nl_send_transport_msg(u32 pid, struct scsi_nl_hdr *hdr)
 msg_fail_skb:
 	kfree_skb(skb);
 msg_fail:
-//	printk(KERN_WARNING
-//		"%s: Dropped Message : pid %d Transport %d, msgtype x%x, "
-//		"msglen %d: %s : err %d\n",
-//		__func__, pid, hdr->transport, hdr->msgtype, hdr->msglen,
-;
+	printk(KERN_WARNING
+		"%s: Dropped Message : pid %d Transport %d, msgtype x%x, "
+		"msglen %d: %s : err %d\n",
+		__func__, pid, hdr->transport, hdr->msgtype, hdr->msglen,
+		fn, err);
 	return;
 }
 EXPORT_SYMBOL_GPL(scsi_nl_send_transport_msg);
@@ -669,9 +669,9 @@ scsi_nl_send_vendor_msg(u32 pid, unsigned short host_no, u64 vendor_id,
 send_vendor_fail_skb:
 	kfree_skb(skb);
 send_vendor_fail:
-//	printk(KERN_WARNING
-//		"%s: Dropped SCSI Msg : host %d vendor_unique - err %d\n",
-;
+	printk(KERN_WARNING
+		"%s: Dropped SCSI Msg : host %d vendor_unique - err %d\n",
+		__func__, host_no, err);
 	return err;
 }
 EXPORT_SYMBOL(scsi_nl_send_vendor_msg);

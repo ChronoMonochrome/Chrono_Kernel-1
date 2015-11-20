@@ -306,7 +306,7 @@ void __init mop500_u8500uib_r3_init(void)
 
 	ret = mop500_get_acc_id();
 	if (ret < 0)
-;
+		printk(KERN_ERR " Failed to get Accelerometr chip ID\n");
 	else
 		lsm303dlh_pdata_u8500_r3.chip_id = ret;
 	mop500_uib_i2c_add(2, mop500_i2c2_devices_u8500_r3,

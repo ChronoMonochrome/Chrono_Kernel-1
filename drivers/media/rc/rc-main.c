@@ -57,7 +57,7 @@ struct rc_map *rc_map_get(const char *name)
 	if (!map) {
 		int rc = request_module(name);
 		if (rc < 0) {
-;
+			printk(KERN_ERR "Couldn't load IR keymap %s\n", name);
 			return NULL;
 		}
 		msleep(20);	/* Give some time for IR to register */
@@ -66,11 +66,11 @@ struct rc_map *rc_map_get(const char *name)
 	}
 #endif
 	if (!map) {
-;
+		printk(KERN_ERR "IR keymap %s not found\n", name);
 		return NULL;
 	}
 
-;
+	printk(KERN_INFO "Registered IR keymap %s\n", map->map.name);
 
 	return &map->map;
 }
@@ -129,8 +129,8 @@ static int ir_create_table(struct rc_map *rc_map,
 	if (!rc_map->scan)
 		return -ENOMEM;
 
-//	IR_dprintk(1, "Allocated space for %u keycode entries (%u bytes)\n",
-;
+	IR_dprintk(1, "Allocated space for %u keycode entries (%u bytes)\n",
+		   rc_map->size, rc_map->alloc);
 	return 0;
 }
 
@@ -170,13 +170,13 @@ static int ir_resize_table(struct rc_map *rc_map, gfp_t gfp_flags)
 			return -ENOMEM;
 
 		newalloc *= 2;
-;
+		IR_dprintk(1, "Growing table to %u bytes\n", newalloc);
 	}
 
 	if ((rc_map->len * 3 < rc_map->size) && (oldalloc > IR_TAB_MIN_SIZE)) {
 		/* Less than 1/3 of entries in use -> shrink keytable */
 		newalloc /= 2;
-;
+		IR_dprintk(1, "Shrinking table to %u bytes\n", newalloc);
 	}
 
 	if (newalloc == oldalloc)
@@ -184,7 +184,7 @@ static int ir_resize_table(struct rc_map *rc_map, gfp_t gfp_flags)
 
 	newscan = kmalloc(newalloc, gfp_flags);
 	if (!newscan) {
-;
+		IR_dprintk(1, "Failed to kmalloc %u bytes\n", newalloc);
 		return -ENOMEM;
 	}
 
@@ -217,16 +217,16 @@ static unsigned int ir_update_mapping(struct rc_dev *dev,
 
 	/* Did the user wish to remove the mapping? */
 	if (new_keycode == KEY_RESERVED || new_keycode == KEY_UNKNOWN) {
-//		IR_dprintk(1, "#%d: Deleting scan 0x%04x\n",
-;
+		IR_dprintk(1, "#%d: Deleting scan 0x%04x\n",
+			   index, rc_map->scan[index].scancode);
 		rc_map->len--;
 		memmove(&rc_map->scan[index], &rc_map->scan[index+ 1],
 			(rc_map->len - index) * sizeof(struct rc_map_table));
 	} else {
-//		IR_dprintk(1, "#%d: %s scan 0x%04x with key 0x%04x\n",
-//			   index,
-//			   old_keycode == KEY_RESERVED ? "New" : "Replacing",
-;
+		IR_dprintk(1, "#%d: %s scan 0x%04x with key 0x%04x\n",
+			   index,
+			   old_keycode == KEY_RESERVED ? "New" : "Replacing",
+			   rc_map->scan[index].scancode, new_keycode);
 		rc_map->scan[index].keycode = new_keycode;
 		__set_bit(new_keycode, dev->input_dev->keybit);
 	}
@@ -376,8 +376,8 @@ static int ir_setkeytable(struct rc_dev *dev,
 	if (rc)
 		return rc;
 
-//	IR_dprintk(1, "Allocated space for %u keycode entries (%u bytes)\n",
-;
+	IR_dprintk(1, "Allocated space for %u keycode entries (%u bytes)\n",
+		   rc_map->size, rc_map->alloc);
 
 	for (i = 0; i < from->size; i++) {
 		index = ir_establish_scancode(dev, rc_map,
@@ -512,8 +512,8 @@ u32 rc_g_keycode_from_table(struct rc_dev *dev, u32 scancode)
 	spin_unlock_irqrestore(&rc_map->lock, flags);
 
 	if (keycode != KEY_RESERVED)
-//		IR_dprintk(1, "%s: scancode 0x%04x keycode 0x%02x\n",
-;
+		IR_dprintk(1, "%s: scancode 0x%04x keycode 0x%02x\n",
+			   dev->input_name, scancode, keycode);
 
 	return keycode;
 }
@@ -532,7 +532,7 @@ static void ir_do_keyup(struct rc_dev *dev, bool sync)
 	if (!dev->keypressed)
 		return;
 
-;
+	IR_dprintk(1, "keyup key 0x%04x\n", dev->last_keycode);
 	input_report_key(dev->input_dev, dev->last_keycode, 0);
 	if (sync)
 		input_sync(dev->input_dev);
@@ -641,9 +641,9 @@ static void ir_do_keydown(struct rc_dev *dev, int scancode,
 		dev->last_toggle = toggle;
 		dev->last_keycode = keycode;
 
-//		IR_dprintk(1, "%s: key down event, "
-//			   "key 0x%04x, scancode 0x%04x\n",
-;
+		IR_dprintk(1, "%s: key down event, "
+			   "key 0x%04x, scancode 0x%04x\n",
+			   dev->input_name, keycode, scancode);
 		input_report_key(dev->input_dev, keycode, 1);
 	}
 
@@ -780,9 +780,9 @@ static ssize_t show_protocols(struct device *device,
 		return -ENODEV;
 	}
 
-//	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
-//		   (long long)allowed,
-;
+	IR_dprintk(1, "allowed - 0x%llx, enabled - 0x%llx\n",
+		   (long long)allowed,
+		   (long long)enabled);
 
 	for (i = 0; i < ARRAY_SIZE(proto_names); i++) {
 		if (allowed & enabled & proto_names[i].type)
@@ -844,7 +844,7 @@ static ssize_t store_protocols(struct device *device,
 	else if (dev->raw)
 		type = dev->raw->enabled_protocols;
 	else {
-;
+		IR_dprintk(1, "Protocol switching not supported\n");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -879,7 +879,7 @@ static ssize_t store_protocols(struct device *device,
 				}
 			}
 			if (i == ARRAY_SIZE(proto_names)) {
-;
+				IR_dprintk(1, "Unknown protocol: '%s'\n", tmp);
 				ret = -EINVAL;
 				goto out;
 			}
@@ -895,7 +895,7 @@ static ssize_t store_protocols(struct device *device,
 	}
 
 	if (!count) {
-;
+		IR_dprintk(1, "Protocol not specified\n");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -903,8 +903,8 @@ static ssize_t store_protocols(struct device *device,
 	if (dev->change_protocol) {
 		rc = dev->change_protocol(dev, type);
 		if (rc < 0) {
-//			IR_dprintk(1, "Error setting protocols to 0x%llx\n",
-;
+			IR_dprintk(1, "Error setting protocols to 0x%llx\n",
+				   (long long)type);
 			ret = -EINVAL;
 			goto out;
 		}
@@ -918,8 +918,8 @@ static ssize_t store_protocols(struct device *device,
 		dev->raw->enabled_protocols = type;
 	}
 
-//	IR_dprintk(1, "Current protocol(s): 0x%llx\n",
-;
+	IR_dprintk(1, "Current protocol(s): 0x%llx\n",
+		   (long long)type);
 
 	ret = len;
 
@@ -1091,10 +1091,10 @@ int rc_register_device(struct rc_dev *dev)
 	dev->input_dev->rep[REP_PERIOD] = 125;
 
 	path = kobject_get_path(&dev->dev.kobj, GFP_KERNEL);
-//	printk(KERN_INFO "%s: %s as %s\n",
-//		dev_name(&dev->dev),
-//		dev->input_name ? dev->input_name : "Unspecified device",
-;
+	printk(KERN_INFO "%s: %s as %s\n",
+		dev_name(&dev->dev),
+		dev->input_name ? dev->input_name : "Unspecified device",
+		path ? path : "N/A");
 	kfree(path);
 
 	if (dev->driver_type == RC_DRIVER_IR_RAW) {
@@ -1110,11 +1110,11 @@ int rc_register_device(struct rc_dev *dev)
 			goto out_raw;
 	}
 
-//	IR_dprintk(1, "Registered rc%ld (driver: %s, remote: %s, mode %s)\n",
-//		   dev->devno,
-//		   dev->driver_name ? dev->driver_name : "unknown",
-//		   rc_map->name ? rc_map->name : "unknown",
-;
+	IR_dprintk(1, "Registered rc%ld (driver: %s, remote: %s, mode %s)\n",
+		   dev->devno,
+		   dev->driver_name ? dev->driver_name : "unknown",
+		   rc_map->name ? rc_map->name : "unknown",
+		   dev->driver_type == RC_DRIVER_IR_RAW ? "raw" : "cooked");
 
 	return 0;
 
@@ -1148,7 +1148,7 @@ void rc_unregister_device(struct rc_dev *dev)
 	dev->input_dev = NULL;
 
 	ir_free_table(&dev->rc_map);
-;
+	IR_dprintk(1, "Freed keycode table\n");
 
 	device_unregister(&dev->dev);
 }
@@ -1162,7 +1162,7 @@ static int __init rc_core_init(void)
 {
 	int rc = class_register(&ir_input_class);
 	if (rc) {
-;
+		printk(KERN_ERR "rc_core: unable to register rc class\n");
 		return rc;
 	}
 

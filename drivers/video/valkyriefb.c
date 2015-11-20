@@ -280,7 +280,7 @@ static void set_valkyrie_clock(unsigned char *params)
 static void __init valkyrie_choose_mode(struct fb_info_valkyrie *p)
 {
 	p->sense = read_valkyrie_sense(p);
-;
+	printk(KERN_INFO "Monitor sense value = 0x%x\n", p->sense);
 
 	/* Try to pick a video mode out of NVRAM if we have one. */
 #if !defined(CONFIG_MAC) && defined(CONFIG_NVRAM)
@@ -309,8 +309,8 @@ static void __init valkyrie_choose_mode(struct fb_info_valkyrie *p)
 	    || valkyrie_vram_reqd(default_vmode, default_cmode) > p->total_vram)
 		default_cmode = CMODE_8;
 
-//	printk(KERN_INFO "using video mode %d and color mode %d.\n",
-;
+	printk(KERN_INFO "using video mode %d and color mode %d.\n",
+	       default_vmode, default_cmode);
 }
 
 int __init valkyriefb_init(void)
@@ -346,7 +346,7 @@ int __init valkyriefb_init(void)
 			return 0;
 
 		if (of_address_to_resource(dp, 0, &r)) {
-;
+			printk(KERN_ERR "can't find address for valkyrie\n");
 			return 0;
 		}
 
@@ -375,7 +375,7 @@ int __init valkyriefb_init(void)
 	err = -ENOMEM;
 	if (p->frame_buffer == NULL || p->cmap_regs == NULL
 	    || p->valkyrie_regs == NULL) {
-;
+		printk(KERN_ERR "valkyriefb: couldn't map resources\n");
 		goto out_free;
 	}
 
@@ -387,12 +387,12 @@ int __init valkyriefb_init(void)
 	valkyrie_init_fix(&p->info.fix, p);
 	if (valkyriefb_set_par(&p->info))
 		/* "can't happen" */
-;
+		printk(KERN_ERR "valkyriefb: can't set default video mode\n");
 
 	if ((err = register_framebuffer(&p->info)) != 0)
 		goto out_cmap_free;
 
-;
+	printk(KERN_INFO "fb%d: valkyrie frame buffer device\n", p->info.node);
 	return 0;
 
  out_cmap_free:
@@ -469,19 +469,19 @@ static int valkyrie_var_to_par(struct fb_var_screeninfo *var,
 	struct fb_info_valkyrie *p = (struct fb_info_valkyrie *) fb_info;
 
 	if (mac_var_to_vmode(var, &vmode, &cmode) != 0) {
-//		printk(KERN_ERR "valkyriefb: can't do %dx%dx%d.\n",
-;
+		printk(KERN_ERR "valkyriefb: can't do %dx%dx%d.\n",
+		       var->xres, var->yres, var->bits_per_pixel);
 		return -EINVAL;
 	}
 
 	/* Check if we know about the wanted video mode */
 	if (vmode < 1 || vmode > VMODE_MAX || !valkyrie_reg_init[vmode-1]) {
-;
+		printk(KERN_ERR "valkyriefb: vmode %d not valid.\n", vmode);
 		return -EINVAL;
 	}
 	
 	if (cmode != CMODE_8 && cmode != CMODE_16) {
-;
+		printk(KERN_ERR "valkyriefb: cmode %d not valid.\n", cmode);
 		return -EINVAL;
 	}
 
@@ -492,14 +492,14 @@ static int valkyrie_var_to_par(struct fb_var_screeninfo *var,
 
 	init = valkyrie_reg_init[vmode-1];
 	if (init->pitch[cmode] == 0) {
-//		printk(KERN_ERR "valkyriefb: vmode %d does not support "
-;
+		printk(KERN_ERR "valkyriefb: vmode %d does not support "
+		       "cmode %d.\n", vmode, cmode);
 		return -EINVAL;
 	}
 
 	if (valkyrie_vram_reqd(vmode, cmode) > p->total_vram) {
-//		printk(KERN_ERR "valkyriefb: not enough ram for vmode %d, "
-;
+		printk(KERN_ERR "valkyriefb: not enough ram for vmode %d, "
+		       "cmode %d.\n", vmode, cmode);
 		return -EINVAL;
 	}
 

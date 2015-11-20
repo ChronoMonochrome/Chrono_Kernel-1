@@ -428,7 +428,7 @@ static int __init immvibe_setup( void )
 		goto ldo_en_gpio_failed;
 	}
 
-;
+	printk(KERN_ERR "%s(), Vibrator gpio's are configured.\n", __func__);
 	return ret;
 
 ldo_en_gpio_failed:
@@ -487,7 +487,7 @@ static void mxt224_power_con(bool on)
 		gpio_direction_output(TSP_LDO_ON1_JANICE_R0_0, 0);
 	}
 
-;
+	printk(KERN_INFO "[TSP] GPIO output (%s)\n", (on) ? "on" : "off");
 }
 
 #ifdef CONFIG_USB_SWITCHER
@@ -510,7 +510,7 @@ static int mxt224_usb_switcher_notify(struct notifier_block *self, unsigned long
 static void mxt224_register_callback(void *function)
 {
 /*
-;
+	printk(KERN_INFO "mxt224_register_callback\n");
 
 	charging_cbs.tsp_set_charging_cable = function;
 */
@@ -1799,7 +1799,7 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
-;
+	printk("@@@@ BT WAKE_PEER\n");
 	return;
 }
 
@@ -1985,7 +1985,7 @@ static void __init janice_i2c_init (void)
 	}
 	else if(system_rev == JANICE_R0_2) {
 
-;
+		printk(KERN_INFO "%s\n", __func__);
 		i2c_register_board_info(0, ARRAY_AND_SIZE(janice_r0_0_i2c0_devices));
 		i2c_register_board_info(1, ARRAY_AND_SIZE(janice_r0_0_i2c1_devices));
 		i2c_register_board_info(2, ARRAY_AND_SIZE(janice_r0_2_i2c2_devices));
@@ -2004,7 +2004,7 @@ static void __init janice_i2c_init (void)
 	}
 	else if(system_rev >= JANICE_R0_3) {
 
-;
+		printk(KERN_INFO "%s\n", __func__);
 		i2c_register_board_info(0, ARRAY_AND_SIZE(janice_r0_0_i2c0_devices));
 		i2c_register_board_info(1, ARRAY_AND_SIZE(janice_r0_0_i2c1_devices));
 		i2c_register_board_info(2, ARRAY_AND_SIZE(janice_r0_2_i2c2_devices));
@@ -2050,7 +2050,7 @@ static void fetch_usb_serial_no(int len)
 					buf[0], buf[1], buf[2], buf[3], buf[4]);
 		iounmap(backup_ram);
 	} else {
-;
+		printk(KERN_ERR "$$ ioremap failed\n");
 	}
 }
 #endif
@@ -2175,31 +2175,31 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 7:
-;
+		printk(KERN_INFO "JANICE Board Rev 0.0\n");
 		system_rev = JANICE_R0_0;
 		break;
 	case 8:
-;
+		printk(KERN_INFO "JANICE Board Rev 0.1\n");
 		system_rev = JANICE_R0_1;
 		break;
 	case 9:
-;
+		printk(KERN_INFO "JANICE Board Rev 0.2\n");
 		system_rev = JANICE_R0_2;
 		break;
 	case 10:
-;
+		printk(KERN_INFO "JANICE Board Rev 0.3\n");
 		system_rev = JANICE_R0_3;
 		break;
 	case 11:
-;
+		printk(KERN_INFO "JANICE Board Rev 0.4\n");
 		system_rev = JANICE_R0_4;
 		break;
 	case 12:
-;
+		printk(KERN_INFO "JANICE Board Rev 0.5\n");
 		system_rev = JANICE_R0_5;
 		break;
 	case 13:
-;
+		printk(KERN_INFO "JANICE Board Rev 0.6\n");
 		system_rev = JANICE_R0_6;
 		break;
 	default:

@@ -344,7 +344,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 	/* First, we handle error conditions */
 	if(int_reg & SCI)         /* SCSI Reset */
 	{
-;
+		printk(KERN_DEBUG "sym53c416: Reset received\n");
 		current_command->SCp.phase = idle;
 		current_command->result = DID_RESET << 16;
 		spin_lock_irqsave(dev->host_lock, flags);
@@ -354,7 +354,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 	}
 	if(int_reg & ILCMD)       /* Illegal Command */
 	{
-;
+		printk(KERN_WARNING "sym53c416: Illegal Command: 0x%02x.\n", inb(base + COMMAND_REG));
 		current_command->SCp.phase = idle;
 		current_command->result = DID_ERROR << 16;
 		spin_lock_irqsave(dev->host_lock, flags);
@@ -364,7 +364,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 	}
 	if(status_reg & GE)         /* Gross Error */
 	{
-;
+		printk(KERN_WARNING "sym53c416: Controller reports gross error.\n");
 		current_command->SCp.phase = idle;
 		current_command->result = DID_ERROR << 16;
 		spin_lock_irqsave(dev->host_lock, flags);
@@ -374,7 +374,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 	}
 	if(status_reg & PE)         /* Parity Error */
 	{
-;
+		printk(KERN_WARNING "sym53c416:SCSI parity error.\n");
 		current_command->SCp.phase = idle;
 		current_command->result = DID_PARITY << 16;
 		spin_lock_irqsave(dev->host_lock, flags);
@@ -384,7 +384,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 	}
 	if(pio_int_reg & (CE | OUE))
 	{
-;
+		printk(KERN_WARNING "sym53c416: PIO interrupt error.\n");
 		current_command->SCp.phase = idle;
 		current_command->result = DID_ERROR << 16;
 		spin_lock_irqsave(dev->host_lock, flags);
@@ -425,7 +425,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 								     sg->length);
 				}
 				if(tot_trans < current_command->underflow)
-;
+					printk(KERN_WARNING "sym53c416: Underflow, wrote %d bytes, request for %d bytes.\n", tot_trans, current_command->underflow);
 			}
 			break;
 		}
@@ -448,7 +448,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 								    sg->length);
 				}
 				if(tot_trans < current_command->underflow)
-;
+					printk(KERN_WARNING "sym53c416: Underflow, read %d bytes, request for %d bytes.\n", tot_trans, current_command->underflow);
 			}
 			break;
 		}
@@ -456,7 +456,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 		case PHASE_COMMAND:
 		{
 			current_command->SCp.phase = command_ph;
-;
+			printk(KERN_ERR "sym53c416: Unknown interrupt in command phase.\n");
 			break;
 		}
 
@@ -471,7 +471,7 @@ static irqreturn_t sym53c416_intr_handle(int irq, void *dev_id)
 		case PHASE_RESERVED_1:
 		case PHASE_RESERVED_2:
 		{
-;
+			printk(KERN_ERR "sym53c416: Reserved phase occurred.\n");
 			break;
 		}
 
@@ -548,13 +548,13 @@ void sym53c416_setup(char *str, int *ints)
 
 	if(host_index >= MAXHOSTS)
 	{
-;
+		printk(KERN_WARNING "sym53c416: Too many hosts defined\n");
 		return;
 	}
 	if(ints[0] < 1 || ints[0] > 2)
 	{
-;
-;
+		printk(KERN_ERR "sym53c416: Wrong number of parameters:\n");
+		printk(KERN_ERR "sym53c416: usage: sym53c416=<base>[,<irq>]\n");
 		return;
 	}
 	for(i = 0; i < host_index && i >= 0; i++)
@@ -646,7 +646,7 @@ int __init sym53c416_detect(struct scsi_host_template *tpnt)
 		sym53c416_setup(NULL, ints);
 	}
 #endif
-;
+	printk(KERN_INFO "sym53c416.c: %s\n", VERSION_STRING);
 
 	for (i=0; id_table[i].vendor != 0; i++) {
 		while((idev=pnp_find_dev(NULL, id_table[i].vendor,
@@ -656,12 +656,12 @@ int __init sym53c416_detect(struct scsi_host_template *tpnt)
 
 			if(pnp_device_attach(idev)<0)
 			{
-;
+				printk(KERN_WARNING "sym53c416: unable to attach PnP device.\n");
 				continue;
 			}
 			if(pnp_activate_dev(idev) < 0)
 			{
-;
+				printk(KERN_WARNING "sym53c416: unable to activate PnP device.\n");
 				pnp_device_detach(idev);
 				continue;
 			
@@ -671,8 +671,8 @@ int __init sym53c416_detect(struct scsi_host_template *tpnt)
 			i[1] = pnp_port_start(idev, 0);
  			i[2] = pnp_irq(idev, 0);
 
-//			printk(KERN_INFO "sym53c416: ISAPnP card found and configured at 0x%X, IRQ %d.\n",
-;
+			printk(KERN_INFO "sym53c416: ISAPnP card found and configured at 0x%X, IRQ %d.\n",
+				i[1], i[2]);
  			sym53c416_setup(NULL, i);
  		}
 	}
@@ -683,7 +683,7 @@ int __init sym53c416_detect(struct scsi_host_template *tpnt)
 		if (!request_region(hosts[i].base, IO_RANGE, ID))
 			continue;
 		if (!sym53c416_test(hosts[i].base)) {
-;
+			printk(KERN_WARNING "No sym53c416 found at address 0x%03x\n", hosts[i].base);
 			goto fail_release_region;
 		}
 

@@ -86,9 +86,9 @@ static inline void pc87413_select_wdt_out(void)
 	outb_p(cr_data, WDT_DATA_IO_PORT);
 
 #ifdef DEBUG
-//	printk(KERN_INFO DPFX
-//		"Select multiple pin,pin55,as WDT output: Bit7 to 1: %d\n",
-;
+	printk(KERN_INFO DPFX
+		"Select multiple pin,pin55,as WDT output: Bit7 to 1: %d\n",
+								cr_data);
 #endif
 }
 
@@ -110,7 +110,7 @@ static inline void pc87413_enable_swc(void)
 	outb_p(cr_data, WDT_DATA_IO_PORT);	/* Index0x30_bit0P1 */
 
 #ifdef DEBUG
-;
+	printk(KERN_INFO DPFX "pc87413 - Enable SWC functions\n");
 #endif
 }
 
@@ -132,9 +132,9 @@ static inline unsigned int pc87413_get_swc_base(void)
 
 	swc_base_addr = (addr_h << 8) + addr_l;
 #ifdef DEBUG
-//	printk(KERN_INFO DPFX
-//		"Read SWC I/O Base Address: low %d, high %d, res %d\n",
-;
+	printk(KERN_INFO DPFX
+		"Read SWC I/O Base Address: low %d, high %d, res %d\n",
+						addr_l, addr_h, swc_base_addr);
 #endif
 	return swc_base_addr;
 }
@@ -146,7 +146,7 @@ static inline void pc87413_swc_bank3(unsigned int swc_base_addr)
 	/* Step 4: Select Bank3 of SWC */
 	outb_p(inb(swc_base_addr + 0x0f) | 0x03, swc_base_addr + 0x0f);
 #ifdef DEBUG
-;
+	printk(KERN_INFO DPFX "Select Bank3 of SWC\n");
 #endif
 }
 
@@ -158,7 +158,7 @@ static inline void pc87413_programm_wdto(unsigned int swc_base_addr,
 	/* Step 5: Programm WDTO, Twd. */
 	outb_p(pc87413_time, swc_base_addr + WDTO);
 #ifdef DEBUG
-;
+	printk(KERN_INFO DPFX "Set WDTO to %d minutes\n", pc87413_time);
 #endif
 }
 
@@ -169,7 +169,7 @@ static inline void pc87413_enable_wden(unsigned int swc_base_addr)
 	/* Step 6: Enable WDEN */
 	outb_p(inb(swc_base_addr + WDCTL) | 0x01, swc_base_addr + WDCTL);
 #ifdef DEBUG
-;
+	printk(KERN_INFO DPFX "Enable WDEN\n");
 #endif
 }
 
@@ -179,7 +179,7 @@ static inline void pc87413_enable_sw_wd_tren(unsigned int swc_base_addr)
 	/* Enable SW_WD_TREN */
 	outb_p(inb(swc_base_addr + WDCFG) | 0x80, swc_base_addr + WDCFG);
 #ifdef DEBUG
-;
+	printk(KERN_INFO DPFX "Enable SW_WD_TREN\n");
 #endif
 }
 
@@ -190,7 +190,7 @@ static inline void pc87413_disable_sw_wd_tren(unsigned int swc_base_addr)
 	/* Disable SW_WD_TREN */
 	outb_p(inb(swc_base_addr + WDCFG) & 0x7f, swc_base_addr + WDCFG);
 #ifdef DEBUG
-;
+	printk(KERN_INFO DPFX "pc87413 - Disable SW_WD_TREN\n");
 #endif
 }
 
@@ -201,7 +201,7 @@ static inline void pc87413_enable_sw_wd_trg(unsigned int swc_base_addr)
 	/* Enable SW_WD_TRG */
 	outb_p(inb(swc_base_addr + WDCTL) | 0x80, swc_base_addr + WDCTL);
 #ifdef DEBUG
-;
+	printk(KERN_INFO DPFX "pc87413 - Enable SW_WD_TRG\n");
 #endif
 }
 
@@ -212,7 +212,7 @@ static inline void pc87413_disable_sw_wd_trg(unsigned int swc_base_addr)
 	/* Disable SW_WD_TRG */
 	outb_p(inb(swc_base_addr + WDCTL) & 0x7f, swc_base_addr + WDCTL);
 #ifdef DEBUG
-;
+	printk(KERN_INFO DPFX "Disable SW_WD_TRG\n");
 #endif
 }
 
@@ -301,8 +301,8 @@ static int pc87413_open(struct inode *inode, struct file *file)
 	/* Reload and activate timer */
 	pc87413_refresh();
 
-//	printk(KERN_INFO MODNAME
-;
+	printk(KERN_INFO MODNAME
+		"Watchdog enabled. Timeout set to %d minute(s).\n", timeout);
 
 	return nonseekable_open(inode, file);
 }
@@ -325,11 +325,11 @@ static int pc87413_release(struct inode *inode, struct file *file)
 
 	if (expect_close == 42) {
 		pc87413_disable();
-//		printk(KERN_INFO MODNAME
-;
+		printk(KERN_INFO MODNAME
+				"Watchdog disabled, sleeping again...\n");
 	} else {
-//		printk(KERN_CRIT MODNAME
-;
+		printk(KERN_CRIT MODNAME
+				"Unexpected close, not stopping watchdog!\n");
 		pc87413_refresh();
 	}
 	clear_bit(0, &timer_enabled);
@@ -445,7 +445,7 @@ static long pc87413_ioctl(struct file *file, unsigned int cmd,
 	case WDIOC_KEEPALIVE:
 		pc87413_refresh();
 #ifdef DEBUG
-;
+		printk(KERN_INFO DPFX "keepalive\n");
 #endif
 		return 0;
 	case WDIOC_SETTIMEOUT:
@@ -525,26 +525,26 @@ static int __init pc87413_init(void)
 {
 	int ret;
 
-//	printk(KERN_INFO PFX "Version " VERSION " at io 0x%X\n",
-;
+	printk(KERN_INFO PFX "Version " VERSION " at io 0x%X\n",
+							WDT_INDEX_IO_PORT);
 
 	/* request_region(io, 2, "pc87413"); */
 
 	ret = register_reboot_notifier(&pc87413_notifier);
 	if (ret != 0) {
-//		printk(KERN_ERR PFX
-;
+		printk(KERN_ERR PFX
+			"cannot register reboot notifier (err=%d)\n", ret);
 	}
 
 	ret = misc_register(&pc87413_miscdev);
 	if (ret != 0) {
-//		printk(KERN_ERR PFX
-//			"cannot register miscdev on minor=%d (err=%d)\n",
-;
+		printk(KERN_ERR PFX
+			"cannot register miscdev on minor=%d (err=%d)\n",
+			WATCHDOG_MINOR, ret);
 		unregister_reboot_notifier(&pc87413_notifier);
 		return ret;
 	}
-;
+	printk(KERN_INFO PFX "initialized. timeout=%d min \n", timeout);
 	pc87413_enable();
 	return 0;
 }
@@ -564,14 +564,14 @@ static void __exit pc87413_exit(void)
 	/* Stop the timer before we leave */
 	if (!nowayout) {
 		pc87413_disable();
-;
+		printk(KERN_INFO MODNAME "Watchdog disabled.\n");
 	}
 
 	misc_deregister(&pc87413_miscdev);
 	unregister_reboot_notifier(&pc87413_notifier);
 	/* release_region(io, 2); */
 
-;
+	printk(KERN_INFO MODNAME " watchdog component driver removed.\n");
 }
 
 module_init(pc87413_init);

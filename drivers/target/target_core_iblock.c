@@ -48,12 +48,12 @@
 #include "target_core_iblock.h"
 
 #if 0
-//#define DEBUG_IBLOCK(x...) printk(x)
-//#else
-//#define DEBUG_IBLOCK(x...)
-//#endif
-//
-;
+#define DEBUG_IBLOCK(x...) printk(x)
+#else
+#define DEBUG_IBLOCK(x...)
+#endif
+
+static struct se_subsystem_api iblock_template;
 
 static void iblock_bio_done(struct bio *, int);
 
@@ -67,8 +67,8 @@ static int iblock_attach_hba(struct se_hba *hba, u32 host_id)
 
 	ib_host = kzalloc(sizeof(struct iblock_hba), GFP_KERNEL);
 	if (!(ib_host)) {
-//		printk(KERN_ERR "Unable to allocate memory for"
-;
+		printk(KERN_ERR "Unable to allocate memory for"
+				" struct iblock_hba\n");
 		return -ENOMEM;
 	}
 
@@ -78,13 +78,13 @@ static int iblock_attach_hba(struct se_hba *hba, u32 host_id)
 	atomic_set(&hba->max_queue_depth, IBLOCK_HBA_QUEUE_DEPTH);
 	hba->hba_ptr = (void *) ib_host;
 
-//	printk(KERN_INFO "CORE_HBA[%d] - TCM iBlock HBA Driver %s on"
-//		" Generic Target Core Stack %s\n", hba->hba_id,
-;
+	printk(KERN_INFO "CORE_HBA[%d] - TCM iBlock HBA Driver %s on"
+		" Generic Target Core Stack %s\n", hba->hba_id,
+		IBLOCK_VERSION, TARGET_CORE_MOD_VERSION);
 
-//	printk(KERN_INFO "CORE_HBA[%d] - Attached iBlock HBA: %u to Generic"
-//		" Target Core TCQ Depth: %d\n", hba->hba_id,
-;
+	printk(KERN_INFO "CORE_HBA[%d] - Attached iBlock HBA: %u to Generic"
+		" Target Core TCQ Depth: %d\n", hba->hba_id,
+		ib_host->iblock_host_id, atomic_read(&hba->max_queue_depth));
 
 	return 0;
 }
@@ -93,8 +93,8 @@ static void iblock_detach_hba(struct se_hba *hba)
 {
 	struct iblock_hba *ib_host = hba->hba_ptr;
 
-//	printk(KERN_INFO "CORE_HBA[%d] - Detached iBlock HBA: %u from Generic"
-;
+	printk(KERN_INFO "CORE_HBA[%d] - Detached iBlock HBA: %u from Generic"
+		" Target Core\n", hba->hba_id, ib_host->iblock_host_id);
 
 	kfree(ib_host);
 	hba->hba_ptr = NULL;
@@ -107,12 +107,12 @@ static void *iblock_allocate_virtdevice(struct se_hba *hba, const char *name)
 
 	ib_dev = kzalloc(sizeof(struct iblock_dev), GFP_KERNEL);
 	if (!(ib_dev)) {
-;
+		printk(KERN_ERR "Unable to allocate struct iblock_dev\n");
 		return NULL;
 	}
 	ib_dev->ibd_host = ib_host;
 
-;
+	printk(KERN_INFO  "IBLOCK: Allocated ib_dev for %s\n", name);
 
 	return ib_dev;
 }
@@ -132,7 +132,7 @@ static struct se_device *iblock_create_virtdevice(
 	int ret = -EINVAL;
 
 	if (!(ib_dev)) {
-;
+		printk(KERN_ERR "Unable to locate struct iblock_dev parameter\n");
 		return ERR_PTR(ret);
 	}
 	memset(&dev_limits, 0, sizeof(struct se_dev_limits));
@@ -141,16 +141,16 @@ static struct se_device *iblock_create_virtdevice(
 	 */
 	ib_dev->ibd_bio_set = bioset_create(32, 64);
 	if (!(ib_dev->ibd_bio_set)) {
-;
+		printk(KERN_ERR "IBLOCK: Unable to create bioset()\n");
 		return ERR_PTR(-ENOMEM);
 	}
-;
+	printk(KERN_INFO "IBLOCK: Created bio_set()\n");
 	/*
 	 * iblock_check_configfs_dev_params() ensures that ib_dev->ibd_udev_path
 	 * must already have been set in order for echo 1 > $HBA/$DEV/enable to run.
 	 */
-//	printk(KERN_INFO  "IBLOCK: Claiming struct block_device: %s\n",
-;
+	printk(KERN_INFO  "IBLOCK: Claiming struct block_device: %s\n",
+			ib_dev->ibd_udev_path);
 
 	bd = blkdev_get_by_path(ib_dev->ibd_udev_path,
 				FMODE_WRITE|FMODE_READ|FMODE_EXCL, ib_dev);
@@ -199,8 +199,8 @@ static struct se_device *iblock_create_virtdevice(
 		DEV_ATTRIB(dev)->unmap_granularity_alignment =
 				q->limits.discard_alignment;
 
-//		printk(KERN_INFO "IBLOCK: BLOCK Discard support available,"
-;
+		printk(KERN_INFO "IBLOCK: BLOCK Discard support available,"
+				" disabled by default\n");
 	}
 
 	return dev;
@@ -239,7 +239,7 @@ iblock_alloc_task(struct se_cmd *cmd)
 
 	ib_req = kzalloc(sizeof(struct iblock_req), GFP_KERNEL);
 	if (!(ib_req)) {
-;
+		printk(KERN_ERR "Unable to allocate memory for struct iblock_req\n");
 		return NULL;
 	}
 
@@ -351,9 +351,9 @@ static void iblock_emulate_sync_cache(struct se_task *task)
 	 */
 	ret = blkdev_issue_flush(ib_dev->ibd_bd, GFP_KERNEL, &error_sector);
 	if (ret != 0) {
-//		printk(KERN_ERR "IBLOCK: block_issue_flush() failed: %d "
-//			" error_sector: %llu\n", ret,
-;
+		printk(KERN_ERR "IBLOCK: block_issue_flush() failed: %d "
+			" error_sector: %llu\n", ret,
+			(unsigned long long)error_sector);
 	}
 
 	if (!immed)
@@ -486,8 +486,8 @@ static ssize_t iblock_set_configfs_dev_params(struct se_hba *hba,
 		switch (token) {
 		case Opt_udev_path:
 			if (ib_dev->ibd_bd) {
-//				printk(KERN_ERR "Unable to set udev_path= while"
-;
+				printk(KERN_ERR "Unable to set udev_path= while"
+					" ib_dev->ibd_bd exists\n");
 				ret = -EEXIST;
 				goto out;
 			}
@@ -499,15 +499,15 @@ static ssize_t iblock_set_configfs_dev_params(struct se_hba *hba,
 			snprintf(ib_dev->ibd_udev_path, SE_UDEV_PATH_LEN,
 					"%s", arg_p);
 			kfree(arg_p);
-//			printk(KERN_INFO "IBLOCK: Referencing UDEV path: %s\n",
-;
+			printk(KERN_INFO "IBLOCK: Referencing UDEV path: %s\n",
+					ib_dev->ibd_udev_path);
 			ib_dev->ibd_flags |= IBDF_HAS_UDEV_PATH;
 			break;
 		case Opt_force:
 			match_int(args, &arg);
 			ib_dev->ibd_force = arg;
-//			printk(KERN_INFO "IBLOCK: Set force=%d\n",
-;
+			printk(KERN_INFO "IBLOCK: Set force=%d\n",
+				ib_dev->ibd_force);
 			break;
 		default:
 			break;
@@ -526,7 +526,7 @@ static ssize_t iblock_check_configfs_dev_params(
 	struct iblock_dev *ibd = se_dev->se_dev_su_ptr;
 
 	if (!(ibd->ibd_flags & IBDF_HAS_UDEV_PATH)) {
-;
+		printk(KERN_ERR "Missing udev_path= parameters for IBLOCK\n");
 		return -1;
 	}
 
@@ -586,7 +586,7 @@ static struct bio *iblock_get_bio(
 
 	bio = bio_alloc_bioset(GFP_NOIO, sg_num, ib_dev->ibd_bio_set);
 	if (!(bio)) {
-;
+		printk(KERN_ERR "Unable to allocate memory for bio\n");
 		*ret = PYX_TRANSPORT_OUT_OF_MEMORY_RESOURCES;
 		return NULL;
 	}
@@ -632,8 +632,8 @@ static int iblock_map_task_SG(struct se_task *task)
 	else if (DEV_ATTRIB(dev)->block_size == 512)
 		block_lba = task->task_lba;
 	else {
-//		printk(KERN_ERR "Unsupported SCSI -> BLOCK LBA conversion:"
-;
+		printk(KERN_ERR "Unsupported SCSI -> BLOCK LBA conversion:"
+				" %u\n", DEV_ATTRIB(dev)->block_size);
 		return PYX_TRANSPORT_LU_COMM_FAILURE;
 	}
 
@@ -731,8 +731,8 @@ static void iblock_bio_done(struct bio *bio, int err)
 		err = -EIO;
 
 	if (err != 0) {
-//		printk(KERN_ERR "test_bit(BIO_UPTODATE) failed for bio: %p,"
-;
+		printk(KERN_ERR "test_bit(BIO_UPTODATE) failed for bio: %p,"
+			" err: %d\n", bio, err);
 		/*
 		 * Bump the ib_bio_err_cnt and release bio.
 		 */

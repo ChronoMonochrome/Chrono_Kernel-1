@@ -1397,7 +1397,7 @@ extern unsigned int j4fs_PORCount;
 
 ssize_t lfs_read(struct file *file, const char __user * buffer, size_t count, loff_t *ppos)
 {
-;
+	printk("%s %d: (j4fs_PORMask,j4fs_PORCount)=(%x,%d)\n",__FUNCTION__,__LINE__,j4fs_PORMask, j4fs_PORCount);
 	return 0;
 }
 
@@ -1411,7 +1411,7 @@ ssize_t lfs_write(struct file *file, const char __user * buffer, size_t count, l
 	if (sscanf(kbuf, "%x %d", &j4fs_PORMask, &j4fs_PORCount) != 2)
 		return -EINVAL;
 
-;
+	printk("%s %d: (j4fs_PORMask,j4fs_PORCount)=(%x,%d)\n",__FUNCTION__,__LINE__,j4fs_PORMask, j4fs_PORCount);
 	return -EINVAL;
 }
 

@@ -24,7 +24,7 @@ int drm_get_usb_dev(struct usb_interface *interface,
 
 	ret = drm_fill_in_dev(dev, NULL, driver);
 	if (ret) {
-;
+		printk(KERN_ERR "DRM: Fill_in_dev failed.\n");
 		goto err_g1;
 	}
 

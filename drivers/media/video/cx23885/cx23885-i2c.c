@@ -37,9 +37,9 @@ static unsigned int i2c_scan;
 module_param(i2c_scan, int, 0444);
 MODULE_PARM_DESC(i2c_scan, "scan i2c bus at insmod time");
 
-//#define dprintk(level, fmt, arg...)\
-//	do { if (i2c_debug >= level)\
-;
+#define dprintk(level, fmt, arg...)\
+	do { if (i2c_debug >= level)\
+		printk(KERN_DEBUG "%s/0: " fmt, dev->name, ## arg);\
 	} while (0)
 
 #define I2C_WAIT_DELAY 32
@@ -87,10 +87,10 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 	int retval, cnt;
 
 	if (joined_rlen)
-//		dprintk(1, "%s(msg->wlen=%d, nextmsg->rlen=%d)\n", __func__,
-;
+		dprintk(1, "%s(msg->wlen=%d, nextmsg->rlen=%d)\n", __func__,
+			msg->len, joined_rlen);
 	else
-;
+		dprintk(1, "%s(msg->len=%d)\n", __func__, msg->len);
 
 	/* Deal with i2c probe functions with zero payload */
 	if (msg->len == 0) {
@@ -101,7 +101,7 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 		if (!i2c_slave_did_ack(i2c_adap))
 			return -ENXIO;
 
-;
+		dprintk(1, "%s() returns 0\n", __func__);
 		return 0;
 	}
 
@@ -123,9 +123,9 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 	if (!i2c_wait_done(i2c_adap))
 		goto eio;
 	if (i2c_debug) {
-;
+		printk(" <W %02x %02x", msg->addr << 1, msg->buf[0]);
 		if (!(ctrl & I2C_NOSTOP))
-;
+			printk(" >\n");
 	}
 
 	for (cnt = 1; cnt < msg->len; cnt++) {
@@ -145,9 +145,9 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 		if (!i2c_wait_done(i2c_adap))
 			goto eio;
 		if (i2c_debug) {
-;
+			dprintk(1, " %02x", msg->buf[cnt]);
 			if (!(ctrl & I2C_NOSTOP))
-;
+				dprintk(1, " >\n");
 		}
 	}
 	return msg->len;
@@ -155,7 +155,7 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
  eio:
 	retval = -EIO;
 	if (i2c_debug)
-;
+		printk(KERN_ERR " ERR: %d\n", retval);
 	return retval;
 }
 
@@ -169,7 +169,7 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 
 
 	if (i2c_debug && !joined)
-;
+		dprintk(1, "%s(msg->len=%d)\n", __func__, msg->len);
 
 	/* Deal with i2c probe functions with zero payload */
 	if (msg->len == 0) {
@@ -181,15 +181,15 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 			return -ENXIO;
 
 
-;
+		dprintk(1, "%s() returns 0\n", __func__);
 		return 0;
 	}
 
 	if (i2c_debug) {
 		if (joined)
-;
+			dprintk(1, " R");
 		else
-;
+			dprintk(1, " <R %02x", (msg->addr << 1) + 1);
 	}
 
 	for (cnt = 0; cnt < msg->len; cnt++) {
@@ -206,9 +206,9 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 			goto eio;
 		msg->buf[cnt] = cx_read(bus->reg_rdata) & 0xff;
 		if (i2c_debug) {
-;
+			dprintk(1, " %02x", msg->buf[cnt]);
 			if (!(ctrl & I2C_NOSTOP))
-;
+				dprintk(1, " >\n");
 		}
 	}
 	return msg->len;
@@ -216,7 +216,7 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
  eio:
 	retval = -EIO;
 	if (i2c_debug)
-;
+		printk(KERN_ERR " ERR: %d\n", retval);
 	return retval;
 }
 
@@ -227,11 +227,11 @@ static int i2c_xfer(struct i2c_adapter *i2c_adap,
 	struct cx23885_dev *dev = bus->dev;
 	int i, retval = 0;
 
-;
+	dprintk(1, "%s(num = %d)\n", __func__, num);
 
 	for (i = 0 ; i < num; i++) {
-//		dprintk(1, "%s(num = %d) addr = 0x%02x  len = 0x%x\n",
-;
+		dprintk(1, "%s(num = %d) addr = 0x%02x  len = 0x%x\n",
+			__func__, num, msgs[i].addr, msgs[i].len);
 		if (msgs[i].flags & I2C_M_RD) {
 			/* read */
 			retval = i2c_readbytes(i2c_adap, &msgs[i], 0);
@@ -303,8 +303,8 @@ static void do_i2c_scan(char *name, struct i2c_client *c)
 		rc = i2c_master_recv(c, &buf, 0);
 		if (rc < 0)
 			continue;
-//		printk(KERN_INFO "%s: i2c scan: found device @ 0x%x  [%s]\n",
-;
+		printk(KERN_INFO "%s: i2c scan: found device @ 0x%x  [%s]\n",
+		       name, i << 1, i2c_devs[i] ? i2c_devs[i] : "???");
 	}
 }
 
@@ -313,7 +313,7 @@ int cx23885_i2c_register(struct cx23885_i2c *bus)
 {
 	struct cx23885_dev *dev = bus->dev;
 
-;
+	dprintk(1, "%s(bus = %d)\n", __func__, bus->nr);
 
 	memcpy(&bus->i2c_adap, &cx23885_i2c_adap_template,
 	       sizeof(bus->i2c_adap));
@@ -335,15 +335,15 @@ int cx23885_i2c_register(struct cx23885_i2c *bus)
 	bus->i2c_client.adapter = &bus->i2c_adap;
 
 	if (0 == bus->i2c_rc) {
-;
+		dprintk(1, "%s: i2c bus %d registered\n", dev->name, bus->nr);
 		if (i2c_scan) {
-//			printk(KERN_INFO "%s: scan bus %d:\n",
-;
+			printk(KERN_INFO "%s: scan bus %d:\n",
+					dev->name, bus->nr);
 			do_i2c_scan(dev->name, &bus->i2c_client);
 		}
 	} else
-//		printk(KERN_WARNING "%s: i2c bus %d register FAILED\n",
-;
+		printk(KERN_WARNING "%s: i2c bus %d register FAILED\n",
+			dev->name, bus->nr);
 
 	/* Instantiate the IR receiver device, if present */
 	if (0 == bus->i2c_rc) {
@@ -374,7 +374,7 @@ void cx23885_av_clk(struct cx23885_dev *dev, int enable)
 	/* write 0 to bus 2 addr 0x144 via i2x_xfer() */
 	char buffer[3];
 	struct i2c_msg msg;
-;
+	dprintk(1, "%s(enabled = %d)\n", __func__, enable);
 
 	/* Register 0x144 */
 	buffer[0] = 0x01;

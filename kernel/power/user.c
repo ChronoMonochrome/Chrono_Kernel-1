@@ -218,10 +218,10 @@ unlock:
 static void snapshot_deprecated_ioctl(unsigned int cmd)
 {
 	if (printk_ratelimit())
-//		printk(KERN_NOTICE "%pf: ioctl '%.8x' is deprecated and will "
-//				"be removed soon, update your suspend-to-disk "
-//				"utilities\n",
-;
+		printk(KERN_NOTICE "%pf: ioctl '%.8x' is deprecated and will "
+				"be removed soon, update your suspend-to-disk "
+				"utilities\n",
+				__builtin_return_address(0), cmd);
 }
 
 static long snapshot_ioctl(struct file *filp, unsigned int cmd,
@@ -423,7 +423,7 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
 			break;
 
 		default:
-;
+			printk(KERN_ERR "SNAPSHOT_PMOPS: invalid argument %ld\n", arg);
 
 		}
 		break;

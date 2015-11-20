@@ -74,15 +74,15 @@ static int __xipram cfi_probe_chip(struct map_info *map, __u32 base,
 	int i;
 
 	if ((base + 0) >= map->size) {
-//		printk(KERN_NOTICE
-//			"Probe at base[0x00](0x%08lx) past the end of the map(0x%08lx)\n",
-;
+		printk(KERN_NOTICE
+			"Probe at base[0x00](0x%08lx) past the end of the map(0x%08lx)\n",
+			(unsigned long)base, map->size -1);
 		return 0;
 	}
 	if ((base + 0xff) >= map->size) {
-//		printk(KERN_NOTICE
-//			"Probe at base[0x55](0x%08lx) past the end of the map(0x%08lx)\n",
-;
+		printk(KERN_NOTICE
+			"Probe at base[0x55](0x%08lx) past the end of the map(0x%08lx)\n",
+			(unsigned long)base + 0x55, map->size -1);
 		return 0;
 	}
 
@@ -116,8 +116,8 @@ static int __xipram cfi_probe_chip(struct map_info *map, __u32 base,
 			/* If the QRY marker goes away, it's an alias */
 			if (!cfi_qry_present(map, start, cfi)) {
 				xip_allowed(base, map);
-//				printk(KERN_DEBUG "%s: Found an alias at 0x%x for the chip at 0x%lx\n",
-;
+				printk(KERN_DEBUG "%s: Found an alias at 0x%x for the chip at 0x%lx\n",
+				       map->name, base, start);
 				return 0;
 			}
 			/* Yes, it's actually got QRY for data. Most
@@ -128,8 +128,8 @@ static int __xipram cfi_probe_chip(struct map_info *map, __u32 base,
 
 			if (cfi_qry_present(map, base, cfi)) {
 				xip_allowed(base, map);
-//				printk(KERN_DEBUG "%s: Found an alias at 0x%x for the chip at 0x%lx\n",
-;
+				printk(KERN_DEBUG "%s: Found an alias at 0x%x for the chip at 0x%lx\n",
+				       map->name, base, start);
 				return 0;
 			}
 		}
@@ -144,9 +144,9 @@ static int __xipram cfi_probe_chip(struct map_info *map, __u32 base,
 	cfi_qry_mode_off(base, map, cfi);
 	xip_allowed(base, map);
 
-//	printk(KERN_INFO "%s: Found %d x%d devices at 0x%x in %d-bit bank\n",
-//	       map->name, cfi->interleave, cfi->device_type*8, base,
-;
+	printk(KERN_INFO "%s: Found %d x%d devices at 0x%x in %d-bit bank\n",
+	       map->name, cfi->interleave, cfi->device_type*8, base,
+	       map->bankwidth*8);
 
 	return 1;
 }
@@ -162,14 +162,14 @@ static int __xipram cfi_chip_setup(struct map_info *map,
 
 	xip_enable(base, map, cfi);
 #ifdef DEBUG_CFI
-;
+	printk("Number of erase regions: %d\n", num_erase_regions);
 #endif
 	if (!num_erase_regions)
 		return 0;
 
 	cfi->cfiq = kmalloc(sizeof(struct cfi_ident) + num_erase_regions * 4, GFP_KERNEL);
 	if (!cfi->cfiq) {
-;
+		printk(KERN_WARNING "%s: kmalloc failed for CFI ident structure\n", map->name);
 		return 0;
 	}
 
@@ -202,9 +202,9 @@ static int __xipram cfi_chip_setup(struct map_info *map,
 		cfi->cfiq->EraseRegionInfo[i] = le32_to_cpu(cfi->cfiq->EraseRegionInfo[i]);
 
 #ifdef DEBUG_CFI
-//		printk("  Erase Region #%d: BlockSize 0x%4.4X bytes, %d blocks\n",
-//		       i, (cfi->cfiq->EraseRegionInfo[i] >> 8) & ~0xff,
-;
+		printk("  Erase Region #%d: BlockSize 0x%4.4X bytes, %d blocks\n",
+		       i, (cfi->cfiq->EraseRegionInfo[i] >> 8) & ~0xff,
+		       (cfi->cfiq->EraseRegionInfo[i] & 0xffff) + 1);
 #endif
 	}
 
@@ -237,9 +237,9 @@ static int __xipram cfi_chip_setup(struct map_info *map,
 	cfi_qry_mode_off(base, map, cfi);
 	xip_allowed(base, map);
 
-//	printk(KERN_INFO "%s: Found %d x%d devices at 0x%x in %d-bit bank. Manufacturer ID %#08x Chip ID %#08x\n",
-//	       map->name, cfi->interleave, cfi->device_type*8, base,
-;
+	printk(KERN_INFO "%s: Found %d x%d devices at 0x%x in %d-bit bank. Manufacturer ID %#08x Chip ID %#08x\n",
+	       map->name, cfi->interleave, cfi->device_type*8, base,
+	       map->bankwidth*8, cfi->mfr, cfi->id);
 
 	return 1;
 }
@@ -300,85 +300,85 @@ static void print_cfi_ident(struct cfi_ident *cfip)
 {
 #if 0
 	if (cfip->qry[0] != 'Q' || cfip->qry[1] != 'R' || cfip->qry[2] != 'Y') {
-;
+		printk("Invalid CFI ident structure.\n");
 		return;
 	}
 #endif
-;
+	printk("Primary Vendor Command Set: %4.4X (%s)\n", cfip->P_ID, vendorname(cfip->P_ID));
 	if (cfip->P_ADR)
-;
+		printk("Primary Algorithm Table at %4.4X\n", cfip->P_ADR);
 	else
-;
+		printk("No Primary Algorithm Table\n");
 
-;
+	printk("Alternative Vendor Command Set: %4.4X (%s)\n", cfip->A_ID, vendorname(cfip->A_ID));
 	if (cfip->A_ADR)
-;
+		printk("Alternate Algorithm Table at %4.4X\n", cfip->A_ADR);
 	else
-;
+		printk("No Alternate Algorithm Table\n");
 
 
-;
-;
+	printk("Vcc Minimum: %2d.%d V\n", cfip->VccMin >> 4, cfip->VccMin & 0xf);
+	printk("Vcc Maximum: %2d.%d V\n", cfip->VccMax >> 4, cfip->VccMax & 0xf);
 	if (cfip->VppMin) {
-;
-;
+		printk("Vpp Minimum: %2d.%d V\n", cfip->VppMin >> 4, cfip->VppMin & 0xf);
+		printk("Vpp Maximum: %2d.%d V\n", cfip->VppMax >> 4, cfip->VppMax & 0xf);
 	}
 	else
-;
+		printk("No Vpp line\n");
 
-;
+	printk("Typical byte/word write timeout: %d µs\n", 1<<cfip->WordWriteTimeoutTyp);
 	printk("Maximum byte/word write timeout: %d µs\n", (1<<cfip->WordWriteTimeoutMax) * (1<<cfip->WordWriteTimeoutTyp));
 
 	if (cfip->BufWriteTimeoutTyp || cfip->BufWriteTimeoutMax) {
-;
+		printk("Typical full buffer write timeout: %d µs\n", 1<<cfip->BufWriteTimeoutTyp);
 		printk("Maximum full buffer write timeout: %d µs\n", (1<<cfip->BufWriteTimeoutMax) * (1<<cfip->BufWriteTimeoutTyp));
 	}
 	else
-;
+		printk("Full buffer write not supported\n");
 
-;
+	printk("Typical block erase timeout: %d ms\n", 1<<cfip->BlockEraseTimeoutTyp);
 	printk("Maximum block erase timeout: %d ms\n", (1<<cfip->BlockEraseTimeoutMax) * (1<<cfip->BlockEraseTimeoutTyp));
 	if (cfip->ChipEraseTimeoutTyp || cfip->ChipEraseTimeoutMax) {
-;
+		printk("Typical chip erase timeout: %d ms\n", 1<<cfip->ChipEraseTimeoutTyp);
 		printk("Maximum chip erase timeout: %d ms\n", (1<<cfip->ChipEraseTimeoutMax) * (1<<cfip->ChipEraseTimeoutTyp));
 	}
 	else
-;
+		printk("Chip erase not supported\n");
 
-;
-;
+	printk("Device size: 0x%X bytes (%d MiB)\n", 1 << cfip->DevSize, 1<< (cfip->DevSize - 20));
+	printk("Flash Device Interface description: 0x%4.4X\n", cfip->InterfaceDesc);
 	switch(cfip->InterfaceDesc) {
 	case CFI_INTERFACE_X8_ASYNC:
-;
+		printk("  - x8-only asynchronous interface\n");
 		break;
 
 	case CFI_INTERFACE_X16_ASYNC:
-;
+		printk("  - x16-only asynchronous interface\n");
 		break;
 
 	case CFI_INTERFACE_X8_BY_X16_ASYNC:
-;
+		printk("  - supports x8 and x16 via BYTE# with asynchronous interface\n");
 		break;
 
 	case CFI_INTERFACE_X32_ASYNC:
-;
+		printk("  - x32-only asynchronous interface\n");
 		break;
 
 	case CFI_INTERFACE_X16_BY_X32_ASYNC:
-;
+		printk("  - supports x16 and x32 via Word# with asynchronous interface\n");
 		break;
 
 	case CFI_INTERFACE_NOT_ALLOWED:
-;
+		printk("  - Not Allowed / Reserved\n");
 		break;
 
 	default:
-;
+		printk("  - Unknown\n");
 		break;
 	}
 
-;
-;
+	printk("Max. bytes in buffer write: 0x%x\n", 1<< cfip->MaxBufWriteSize);
+	printk("Number of Erase Block Regions: %d\n", cfip->NumEraseRegions);
 
 }
 #endif /* DEBUG_CFI */

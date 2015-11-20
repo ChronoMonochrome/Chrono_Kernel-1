@@ -315,9 +315,9 @@ static void cx18_eeprom_dump(struct cx18 *cx, unsigned char *eedata, int len)
 	for (i = 0; i < len; i++) {
 		if (0 == (i % 16))
 			CX18_INFO("eeprom %02x:", i);
-;
+		printk(KERN_CONT " %02x", eedata[i]);
 		if (15 == (i % 16))
-;
+			printk(KERN_CONT "\n");
 	}
 }
 
@@ -903,15 +903,15 @@ static int __devinit cx18_probe(struct pci_dev *pci_dev,
 	/* FIXME - module parameter arrays constrain max instances */
 	i = atomic_inc_return(&cx18_instance) - 1;
 	if (i >= CX18_MAX_CARDS) {
-//		printk(KERN_ERR "cx18: cannot manage card %d, driver has a "
-;
+		printk(KERN_ERR "cx18: cannot manage card %d, driver has a "
+		       "limit of 0 - %d\n", i, CX18_MAX_CARDS - 1);
 		return -ENOMEM;
 	}
 
 	cx = kzalloc(sizeof(struct cx18), GFP_ATOMIC);
 	if (cx == NULL) {
-//		printk(KERN_ERR "cx18: cannot manage card %d, out of memory\n",
-;
+		printk(KERN_ERR "cx18: cannot manage card %d, out of memory\n",
+		       i);
 		return -ENOMEM;
 	}
 	cx->pci_dev = pci_dev;
@@ -919,8 +919,8 @@ static int __devinit cx18_probe(struct pci_dev *pci_dev,
 
 	retval = v4l2_device_register(&pci_dev->dev, &cx->v4l2_dev);
 	if (retval) {
-//		printk(KERN_ERR "cx18: v4l2_device_register of card %d failed"
-;
+		printk(KERN_ERR "cx18: v4l2_device_register of card %d failed"
+		       "\n", cx->instance);
 		kfree(cx);
 		return retval;
 	}
@@ -1325,26 +1325,26 @@ static struct pci_driver cx18_pci_driver = {
 
 static int __init module_start(void)
 {
-//	printk(KERN_INFO "cx18:  Start initialization, version %s\n",
-;
+	printk(KERN_INFO "cx18:  Start initialization, version %s\n",
+	       CX18_VERSION);
 
 	/* Validate parameters */
 	if (cx18_first_minor < 0 || cx18_first_minor >= CX18_MAX_CARDS) {
-//		printk(KERN_ERR "cx18:  Exiting, cx18_first_minor must be between 0 and %d\n",
-;
+		printk(KERN_ERR "cx18:  Exiting, cx18_first_minor must be between 0 and %d\n",
+		     CX18_MAX_CARDS - 1);
 		return -1;
 	}
 
 	if (cx18_debug < 0 || cx18_debug > 511) {
 		cx18_debug = 0;
-;
+		printk(KERN_INFO "cx18:   Debug value must be >= 0 and <= 511!\n");
 	}
 
 	if (pci_register_driver(&cx18_pci_driver)) {
-;
+		printk(KERN_ERR "cx18:   Error detecting PCI card\n");
 		return -ENODEV;
 	}
-;
+	printk(KERN_INFO "cx18:  End initialization\n");
 	return 0;
 }
 

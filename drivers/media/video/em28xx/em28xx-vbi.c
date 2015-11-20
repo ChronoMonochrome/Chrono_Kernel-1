@@ -36,15 +36,15 @@ static unsigned int vbi_debug;
 module_param(vbi_debug, int, 0644);
 MODULE_PARM_DESC(vbi_debug, "enable debug messages [vbi]");
 
-//#define dprintk(level, fmt, arg...)	if (vbi_debug >= level) \
-//	printk(KERN_DEBUG "%s: " fmt, dev->core->name , ## arg)
-//
-///* ------------------------------------------------------------------ */
-//
-//static void
-//free_buffer(struct videobuf_queue *vq, struct em28xx_buffer *buf)
-//{
-;
+#define dprintk(level, fmt, arg...)	if (vbi_debug >= level) \
+	printk(KERN_DEBUG "%s: " fmt, dev->core->name , ## arg)
+
+/* ------------------------------------------------------------------ */
+
+static void
+free_buffer(struct videobuf_queue *vq, struct em28xx_buffer *buf)
+{
+	struct em28xx_fh     *fh  = vq->priv_data;
 	struct em28xx        *dev = fh->dev;
 	unsigned long flags = 0;
 	if (in_interrupt())

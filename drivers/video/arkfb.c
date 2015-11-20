@@ -137,9 +137,9 @@ static void arkfb_settile(struct fb_info *info, struct fb_tilemap *map)
 
 	if ((map->width != 8) || (map->height != 16) ||
 	    (map->depth != 1) || (map->length != 256)) {
-//	    	printk(KERN_ERR "fb%d: unsupported font parameters: width %d, "
-//		       "height %d, depth %d, length %d\n", info->node,
-;
+	    	printk(KERN_ERR "fb%d: unsupported font parameters: width %d, "
+		       "height %d, depth %d, length %d\n", info->node,
+		       map->width, map->height, map->depth, map->length);
 		return;
 	}
 
@@ -517,7 +517,7 @@ static void ark_set_pixclock(struct fb_info *info, u32 pixclock)
 
 	int rv = dac_set_freq(par->dac, 0, 1000000000 / pixclock);
 	if (rv < 0) {
-;
+		printk(KERN_ERR "fb%d: cannot set requested pixclock, keeping old value\n", info->node);
 		return;
 	}
 
@@ -584,7 +584,7 @@ static int arkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 	rv = svga_match_format (arkfb_formats, var, NULL);
 	if (rv < 0)
 	{
-;
+		printk(KERN_ERR "fb%d: unsupported mode requested\n", info->node);
 		return rv;
 	}
 
@@ -604,14 +604,14 @@ static int arkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 	mem = ((var->bits_per_pixel * var->xres_virtual) >> 3) * var->yres_virtual;
 	if (mem > info->screen_size)
 	{
-;
+		printk(KERN_ERR "fb%d: not enough framebuffer memory (%d kB requested , %d kB available)\n", info->node, mem >> 10, (unsigned int) (info->screen_size >> 10));
 		return -EINVAL;
 	}
 
 	rv = svga_check_timings (&ark_timing_regs, var, info->node);
 	if (rv < 0)
 	{
-;
+		printk(KERN_ERR "fb%d: invalid timings requested\n", info->node);
 		return rv;
 	}
 
@@ -787,7 +787,7 @@ static int arkfb_set_par(struct fb_info *info)
 		hmul = 2;
 		break;
 	default:
-;
+		printk(KERN_ERR "fb%d: unsupported mode - bug\n", info->node);
 		return -EINVAL;
 	}
 
@@ -1051,8 +1051,8 @@ static int __devinit ark_pci_probe(struct pci_dev *dev, const struct pci_device_
 		goto err_reg_fb;
 	}
 
-//	printk(KERN_INFO "fb%d: %s on %s, %d MB RAM\n", info->node, info->fix.id,
-;
+	printk(KERN_INFO "fb%d: %s on %s, %d MB RAM\n", info->node, info->fix.id,
+		 pci_name(dev), info->fix.smem_len >> 20);
 
 	/* Record a reference to the driver data */
 	pci_set_drvdata(dev, info);

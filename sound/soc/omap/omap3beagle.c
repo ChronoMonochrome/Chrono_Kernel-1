@@ -60,14 +60,14 @@ static int omap3beagle_hw_params(struct snd_pcm_substream *substream,
 	/* Set codec DAI configuration */
 	ret = snd_soc_dai_set_fmt(codec_dai, fmt);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "can't set codec DAI configuration\n");
 		return ret;
 	}
 
 	/* Set cpu DAI configuration */
 	ret = snd_soc_dai_set_fmt(cpu_dai, fmt);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "can't set cpu DAI configuration\n");
 		return ret;
 	}
 
@@ -75,7 +75,7 @@ static int omap3beagle_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_set_sysclk(codec_dai, 0, 26000000,
 				     SND_SOC_CLOCK_IN);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "can't set codec system clock\n");
 		return ret;
 	}
 
@@ -117,7 +117,7 @@ static int __init omap3beagle_soc_init(void)
 
 	omap3beagle_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!omap3beagle_snd_device) {
-;
+		printk(KERN_ERR "Platform device allocation failed\n");
 		return -ENOMEM;
 	}
 
@@ -130,7 +130,7 @@ static int __init omap3beagle_soc_init(void)
 	return 0;
 
 err1:
-;
+	printk(KERN_ERR "Unable to add platform device\n");
 	platform_device_put(omap3beagle_snd_device);
 
 	return ret;

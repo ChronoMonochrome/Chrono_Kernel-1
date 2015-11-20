@@ -37,7 +37,7 @@ static int __devinit lola_init_pin(struct lola *chip, struct lola_pin *pin,
 	pin->nid = nid;
 	err = lola_read_param(chip, nid, LOLA_PAR_AUDIO_WIDGET_CAP, &val);
 	if (err < 0) {
-;
+		printk(KERN_ERR SFX "Can't read wcaps for 0x%x\n", nid);
 		return err;
 	}
 	val &= 0x00f00fff; /* test TYPE and bits 0..11 */
@@ -48,7 +48,7 @@ static int __devinit lola_init_pin(struct lola *chip, struct lola_pin *pin,
 	else if (val == 0x0040000c && dir == PLAY) /* Dig=0, OutAmp/ovrd */
 		pin->is_analog = true;
 	else {
-;
+		printk(KERN_ERR SFX "Invalid wcaps 0x%x for 0x%x\n", val, nid);
 		return -EINVAL;
 	}
 
@@ -62,7 +62,7 @@ static int __devinit lola_init_pin(struct lola *chip, struct lola_pin *pin,
 	else
 		err = lola_read_param(chip, nid, LOLA_PAR_AMP_IN_CAP, &val);
 	if (err < 0) {
-;
+		printk(KERN_ERR SFX "Can't read AMP-caps for 0x%x\n", nid);
 		return err;
 	}
 
@@ -79,7 +79,7 @@ static int __devinit lola_init_pin(struct lola *chip, struct lola_pin *pin,
 	err = lola_codec_read(chip, nid, LOLA_VERB_GET_MAX_LEVEL, 0, 0, &val,
 			      NULL);
 	if (err < 0) {
-;
+		printk(KERN_ERR SFX "Can't get MAX_LEVEL 0x%x\n", nid);
 		return err;
 	}
 	pin->max_level = val & 0x3ff;   /* 10 bits */
@@ -119,7 +119,7 @@ int __devinit lola_init_mixer_widget(struct lola *chip, int nid)
 
 	err = lola_read_param(chip, nid, LOLA_PAR_AUDIO_WIDGET_CAP, &val);
 	if (err < 0) {
-;
+		printk(KERN_ERR SFX "Can't read wcaps for 0x%x\n", nid);
 		return err;
 	}
 
@@ -181,7 +181,7 @@ int __devinit lola_init_mixer_widget(struct lola *chip, int nid)
 	 */
 	if (chip->mixer.src_stream_out_ofs > MAX_AUDIO_INOUT_COUNT ||
 	    chip->mixer.dest_phys_out_ofs > MAX_STREAM_IN_COUNT) {
-;
+		printk(KERN_ERR SFX "Invalid mixer widget size\n");
 		return -EINVAL;
 	}
 

@@ -117,7 +117,7 @@ void nvidia_bl_init(struct nvidia_par *par)
 				       &props);
 	if (IS_ERR(bd)) {
 		info->bl_dev = NULL;
-;
+		printk(KERN_WARNING "nvidia: Backlight registration failed\n");
 		goto error;
 	}
 
@@ -130,7 +130,7 @@ void nvidia_bl_init(struct nvidia_par *par)
 	bd->props.power = FB_BLANK_UNBLANK;
 	backlight_update_status(bd);
 
-;
+	printk("nvidia: Backlight initialized (%s)\n", name);
 
 	return;
 
@@ -144,5 +144,5 @@ void nvidia_bl_exit(struct nvidia_par *par)
 	struct backlight_device *bd = info->bl_dev;
 
 	backlight_device_unregister(bd);
-;
+	printk("nvidia: Backlight unloaded\n");
 }

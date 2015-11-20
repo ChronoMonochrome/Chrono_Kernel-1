@@ -52,9 +52,9 @@ struct sp8870_state {
 };
 
 static int debug;
-//#define dprintk(args...) \
-//	do { \
-;
+#define dprintk(args...) \
+	do { \
+		if (debug) printk(KERN_DEBUG "sp8870: " args); \
 	} while (0)
 
 /* firmware size for sp8870 */
@@ -88,7 +88,7 @@ static int sp8870_readreg (struct sp8870_state* state, u16 reg)
 	ret = i2c_transfer (state->i2c, msg, 2);
 
 	if (ret != 2) {
-;
+		dprintk("%s: readreg error (ret == %i)\n", __func__, ret);
 		return -1;
 	}
 
@@ -131,7 +131,7 @@ static int sp8870_firmware_upload (struct sp8870_state* state, const struct firm
 		msg.buf = tx_buf;
 		msg.len = tx_len + 2;
 		if ((err = i2c_transfer (state->i2c, &msg, 1)) != 1) {
-;
+			printk("%s: firmware upload failed!\n", __func__);
 			printk ("%s: i2c error (err == %i)\n", __func__, err);
 			return err;
 		}
@@ -314,19 +314,19 @@ static int sp8870_init (struct dvb_frontend* fe)
 
 
 	/* request the firmware, this will block until someone uploads it */
-;
+	printk("sp8870: waiting for firmware upload (%s)...\n", SP8870_DEFAULT_FIRMWARE);
 	if (state->config->request_firmware(fe, &fw, SP8870_DEFAULT_FIRMWARE)) {
-;
+		printk("sp8870: no firmware upload (timeout or file not found?)\n");
 		return -EIO;
 	}
 
 	if (sp8870_firmware_upload(state, fw)) {
-;
+		printk("sp8870: writing firmware to device failed\n");
 		release_firmware(fw);
 		return -EIO;
 	}
 	release_firmware(fw);
-;
+	printk("sp8870: firmware upload complete\n");
 
 	/* enable TS output and interface pins */
 	sp8870_writereg(state, 0xc18, 0x00d);
@@ -475,7 +475,7 @@ static int sp8870_set_frontend (struct dvb_frontend* fe, struct dvb_frontend_par
 	int trials = 0;
 	int check_count = 0;
 
-;
+	dprintk("%s: frequency = %i\n", __func__, p->frequency);
 
 	for (trials = 1; trials <= MAXTRIALS; trials++) {
 
@@ -486,8 +486,8 @@ static int sp8870_set_frontend (struct dvb_frontend* fe, struct dvb_frontend_par
 //			valid = ((sp8870_readreg(i2c, 0x0200) & 4) == 0);
 			valid = sp8870_read_data_valid_signal(state);
 			if (valid) {
-//				dprintk("%s: delay = %i usec\n",
-;
+				dprintk("%s: delay = %i usec\n",
+					__func__, check_count * 10);
 				break;
 			}
 			udelay(10);
@@ -497,20 +497,20 @@ static int sp8870_set_frontend (struct dvb_frontend* fe, struct dvb_frontend_par
 	}
 
 	if (!valid) {
-;
+		printk("%s: firmware crash!!!!!!\n", __func__);
 		return -EIO;
 	}
 
 	if (debug) {
 		if (valid) {
 			if (trials > 1) {
-;
-;
+				printk("%s: firmware lockup!!!\n", __func__);
+				printk("%s: recovered after %i trial(s))\n",  __func__, trials - 1);
 				lockups++;
 			}
 		}
 		switches++;
-;
+		printk("%s: switches = %i lockups = %i\n", __func__, switches, lockups);
 	}
 
 	return 0;

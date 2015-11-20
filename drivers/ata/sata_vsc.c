@@ -273,9 +273,9 @@ static irqreturn_t vsc_sata_interrupt(int irq, void *dev_instance)
 
 	if (unlikely(status == 0xffffffff || status == 0)) {
 		if (status)
-//			dev_printk(KERN_ERR, host->dev,
-//				": IRQ status == 0xffffffff, "
-;
+			dev_printk(KERN_ERR, host->dev,
+				": IRQ status == 0xffffffff, "
+				"PCI fault or device removal?\n");
 		goto out;
 	}
 
@@ -354,7 +354,7 @@ static int __devinit vsc_sata_init_one(struct pci_dev *pdev,
 	u8 cls;
 
 	if (!printed_version++)
-;
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	/* allocate host */
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, 4);

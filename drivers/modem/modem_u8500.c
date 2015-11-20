@@ -79,7 +79,7 @@ static int __init u8500_modem_init(void)
 
 	ret = platform_driver_register(&u8500_modem_driver);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "u8500_modem: platform driver reg failed\n");
 		return -ENODEV;
 	}
 

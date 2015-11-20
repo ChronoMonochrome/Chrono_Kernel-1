@@ -66,41 +66,41 @@ static struct mtd_chip_driver cfi_staa_chipdrv = {
 static void cfi_tell_features(struct cfi_pri_intelext *extp)
 {
         int i;
-;
-;
-;
-;
-;
-;
-;
-;
-;
-;
+        printk("  Feature/Command Support: %4.4X\n", extp->FeatureSupport);
+	printk("     - Chip Erase:         %s\n", extp->FeatureSupport&1?"supported":"unsupported");
+	printk("     - Suspend Erase:      %s\n", extp->FeatureSupport&2?"supported":"unsupported");
+	printk("     - Suspend Program:    %s\n", extp->FeatureSupport&4?"supported":"unsupported");
+	printk("     - Legacy Lock/Unlock: %s\n", extp->FeatureSupport&8?"supported":"unsupported");
+	printk("     - Queued Erase:       %s\n", extp->FeatureSupport&16?"supported":"unsupported");
+	printk("     - Instant block lock: %s\n", extp->FeatureSupport&32?"supported":"unsupported");
+	printk("     - Protection Bits:    %s\n", extp->FeatureSupport&64?"supported":"unsupported");
+	printk("     - Page-mode read:     %s\n", extp->FeatureSupport&128?"supported":"unsupported");
+	printk("     - Synchronous read:   %s\n", extp->FeatureSupport&256?"supported":"unsupported");
 	for (i=9; i<32; i++) {
 		if (extp->FeatureSupport & (1<<i))
-;
+			printk("     - Unknown Bit %X:      supported\n", i);
 	}
 
-;
-;
+	printk("  Supported functions after Suspend: %2.2X\n", extp->SuspendCmdSupport);
+	printk("     - Program after Erase Suspend: %s\n", extp->SuspendCmdSupport&1?"supported":"unsupported");
 	for (i=1; i<8; i++) {
 		if (extp->SuspendCmdSupport & (1<<i))
-;
+			printk("     - Unknown Bit %X:               supported\n", i);
 	}
 
-;
-;
-;
+	printk("  Block Status Register Mask: %4.4X\n", extp->BlkStatusRegMask);
+	printk("     - Lock Bit Active:      %s\n", extp->BlkStatusRegMask&1?"yes":"no");
+	printk("     - Valid Bit Active:     %s\n", extp->BlkStatusRegMask&2?"yes":"no");
 	for (i=2; i<16; i++) {
 		if (extp->BlkStatusRegMask & (1<<i))
-;
+			printk("     - Unknown Bit %X Active: yes\n",i);
 	}
 
-//	printk("  Vcc Logic Supply Optimum Program/Erase Voltage: %d.%d V\n",
-;
+	printk("  Vcc Logic Supply Optimum Program/Erase Voltage: %d.%d V\n",
+	       extp->VccOptimal >> 8, extp->VccOptimal & 0xf);
 	if (extp->VppOptimal)
-//		printk("  Vpp Programming Supply Optimum Program/Erase Voltage: %d.%d V\n",
-;
+		printk("  Vpp Programming Supply Optimum Program/Erase Voltage: %d.%d V\n",
+		       extp->VppOptimal >> 8, extp->VppOptimal & 0xf);
 }
 #endif
 
@@ -131,9 +131,9 @@ struct mtd_info *cfi_cmdset_0020(struct map_info *map, int primary)
 
 		if (extp->MajorVersion != '1' ||
 		    (extp->MinorVersion < '0' || extp->MinorVersion > '3')) {
-//			printk(KERN_ERR "  Unknown ST Microelectronics"
-//			       " Extended Query version %c.%c.\n",
-;
+			printk(KERN_ERR "  Unknown ST Microelectronics"
+			       " Extended Query version %c.%c.\n",
+			       extp->MajorVersion, extp->MinorVersion);
 			kfree(extp);
 			return NULL;
 		}
@@ -172,10 +172,10 @@ static struct mtd_info *cfi_staa_setup(struct map_info *map)
 	unsigned long devsize = (1<<cfi->cfiq->DevSize) * cfi->interleave;
 
 	mtd = kzalloc(sizeof(*mtd), GFP_KERNEL);
-;
+	//printk(KERN_DEBUG "number of CFI chips: %d\n", cfi->numchips);
 
 	if (!mtd) {
-;
+		printk(KERN_ERR "Failed to allocate memory for MTD device\n");
 		kfree(cfi->cmdset_priv);
 		return NULL;
 	}
@@ -188,7 +188,7 @@ static struct mtd_info *cfi_staa_setup(struct map_info *map)
 	mtd->eraseregions = kmalloc(sizeof(struct mtd_erase_region_info)
 			* mtd->numeraseregions, GFP_KERNEL);
 	if (!mtd->eraseregions) {
-;
+		printk(KERN_ERR "Failed to allocate memory for MTD erase region info\n");
 		kfree(cfi->cmdset_priv);
 		kfree(mtd);
 		return NULL;
@@ -212,7 +212,7 @@ static struct mtd_info *cfi_staa_setup(struct map_info *map)
 
 		if (offset != devsize) {
 			/* Argh */
-;
+			printk(KERN_WARNING "Sum of regions (%lx) != total size of set of interleaved chips (%lx)\n", offset, devsize);
 			kfree(mtd->eraseregions);
 			kfree(cfi->cmdset_priv);
 			kfree(mtd);
@@ -220,10 +220,10 @@ static struct mtd_info *cfi_staa_setup(struct map_info *map)
 		}
 
 		for (i=0; i<mtd->numeraseregions;i++){
-//			printk(KERN_DEBUG "%d: offset=0x%llx,size=0x%x,blocks=%d\n",
-//			       i, (unsigned long long)mtd->eraseregions[i].offset,
-//			       mtd->eraseregions[i].erasesize,
-;
+			printk(KERN_DEBUG "%d: offset=0x%llx,size=0x%x,blocks=%d\n",
+			       i, (unsigned long long)mtd->eraseregions[i].offset,
+			       mtd->eraseregions[i].erasesize,
+			       mtd->eraseregions[i].numblocks);
 		}
 
 	/* Also select the correct geometry setup too */
@@ -284,7 +284,7 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
 		map_write(map, CMD(0x70), cmd_addr);
 		chip->oldstate = FL_ERASING;
 		chip->state = FL_ERASE_SUSPENDING;
-;
+		//		printk("Erase suspending at 0x%lx\n", cmd_addr);
 		for (;;) {
 			status = map_read(map, cmd_addr);
 			if (map_word_andequal(map, status, status_OK, status_OK))
@@ -298,8 +298,8 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
 				chip->state = FL_ERASING;
 				wake_up(&chip->wq);
 				mutex_unlock(&chip->mutex);
-//				printk(KERN_ERR "Chip not ready after erase "
-;
+				printk(KERN_ERR "Chip not ready after erase "
+				       "suspended: status = 0x%lx\n", status.x[0]);
 				return -EIO;
 			}
 
@@ -337,7 +337,7 @@ static inline int do_read_onechip(struct map_info *map, struct flchip *chip, lof
 		/* Urgh. Chip not yet ready to talk to us. */
 		if (time_after(jiffies, timeo)) {
 			mutex_unlock(&chip->mutex);
-;
+			printk(KERN_ERR "waiting for chip to be ready timed out in read. WSM status = %lx\n", status.x[0]);
 			return -EIO;
 		}
 
@@ -444,7 +444,7 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
  retry:
 
 #ifdef DEBUG_CFI_FEATURES
-;
+       printk("%s: chip->state[%d]\n", __func__, chip->state);
 #endif
 	mutex_lock(&chip->mutex);
 
@@ -462,7 +462,7 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
 		map_write(map, CMD(0x70), cmd_adr);
                 chip->state = FL_STATUS;
 #ifdef DEBUG_CFI_FEATURES
-;
+	printk("%s: 1 status[%x]\n", __func__, map_read(map, cmd_adr));
 #endif
 
 	case FL_STATUS:
@@ -472,8 +472,8 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
 		/* Urgh. Chip not yet ready to talk to us. */
 		if (time_after(jiffies, timeo)) {
 			mutex_unlock(&chip->mutex);
-//                        printk(KERN_ERR "waiting for chip to be ready timed out in buffer write Xstatus = %lx, status = %lx\n",
-;
+                        printk(KERN_ERR "waiting for chip to be ready timed out in buffer write Xstatus = %lx, status = %lx\n",
+                               status.x[0], map_read(map, cmd_adr).x[0]);
 			return -EIO;
 		}
 
@@ -514,7 +514,7 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
                         map_write(map, CMD(0x70), cmd_adr);
 			chip->state = FL_STATUS;
 			mutex_unlock(&chip->mutex);
-;
+			printk(KERN_ERR "Chip not ready for buffer write. Xstatus = %lx\n", status.x[0]);
 			return -EIO;
 		}
 	}
@@ -565,7 +565,7 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
 			chip->state = FL_STATUS;
 			DISABLE_VPP(map);
 			mutex_unlock(&chip->mutex);
-;
+			printk(KERN_ERR "waiting for chip to be ready timed out in bufwrite\n");
 			return -EIO;
 		}
 
@@ -590,7 +590,7 @@ static inline int do_write_buffer(struct map_info *map, struct flchip *chip,
         /* check for errors: 'lock bit', 'VPP', 'dead cell'/'unerased cell' or 'incorrect cmd' -- saw */
         if (map_word_bitsset(map, status, CMD(0x3a))) {
 #ifdef DEBUG_CFI_FEATURES
-;
+		printk("%s: 2 status[%lx]\n", __func__, status.x[0]);
 #endif
 		/* clear status */
 		map_write(map, CMD(0x50), cmd_adr);
@@ -624,9 +624,9 @@ static int cfi_staa_write_buffers (struct mtd_info *mtd, loff_t to,
 	ofs = to  - (chipnum << cfi->chipshift);
 
 #ifdef DEBUG_CFI_FEATURES
-;
-;
-;
+	printk("%s: map_bankwidth(map)[%x]\n", __func__, map_bankwidth(map));
+	printk("%s: chipnum[%x] wbufsize[%x]\n", __func__, chipnum, wbufsize);
+	printk("%s: ofs[%x] len[%x]\n", __func__, ofs, len);
 #endif
 
         /* Write buffer is worth it only if more than one word to write... */
@@ -768,7 +768,7 @@ retry:
 		/* Urgh. Chip not yet ready to talk to us. */
 		if (time_after(jiffies, timeo)) {
 			mutex_unlock(&chip->mutex);
-;
+			printk(KERN_ERR "waiting for chip to be ready timed out in erase\n");
 			return -EIO;
 		}
 
@@ -827,7 +827,7 @@ retry:
 		if (time_after(jiffies, timeo)) {
 			map_write(map, CMD(0x70), adr);
 			chip->state = FL_STATUS;
-;
+			printk(KERN_ERR "waiting for erase to complete timed out. Xstatus = %lx, status = %lx.\n", status.x[0], map_read(map, adr).x[0]);
 			DISABLE_VPP(map);
 			mutex_unlock(&chip->mutex);
 			return -EIO;
@@ -857,32 +857,32 @@ retry:
 					chipstatus |= status.x[w] >> (cfi->device_type * 8);
 				}
 			}
-//			printk(KERN_WARNING "Status is not identical for all chips: 0x%lx. Merging to give 0x%02x\n",
-;
+			printk(KERN_WARNING "Status is not identical for all chips: 0x%lx. Merging to give 0x%02x\n",
+			       status.x[0], chipstatus);
 		}
 		/* Reset the error bits */
 		map_write(map, CMD(0x50), adr);
 		map_write(map, CMD(0x70), adr);
 
 		if ((chipstatus & 0x30) == 0x30) {
-;
+			printk(KERN_NOTICE "Chip reports improper command sequence: status 0x%x\n", chipstatus);
 			ret = -EIO;
 		} else if (chipstatus & 0x02) {
 			/* Protection bit set */
 			ret = -EROFS;
 		} else if (chipstatus & 0x8) {
 			/* Voltage */
-;
+			printk(KERN_WARNING "Chip reports voltage low on erase: status 0x%x\n", chipstatus);
 			ret = -EIO;
 		} else if (chipstatus & 0x20) {
 			if (retries--) {
-;
+				printk(KERN_DEBUG "Chip erase failed at 0x%08lx: status 0x%x. Retrying...\n", adr, chipstatus);
 				timeo = jiffies + HZ;
 				chip->state = FL_STATUS;
 				mutex_unlock(&chip->mutex);
 				goto retry;
 			}
-;
+			printk(KERN_DEBUG "Chip erase failed at 0x%08lx: status 0x%x\n", adr, chipstatus);
 			ret = -EIO;
 		}
 	}
@@ -1073,7 +1073,7 @@ retry:
 		/* Urgh. Chip not yet ready to talk to us. */
 		if (time_after(jiffies, timeo)) {
 			mutex_unlock(&chip->mutex);
-;
+			printk(KERN_ERR "waiting for chip to be ready timed out in lock\n");
 			return -EIO;
 		}
 
@@ -1117,7 +1117,7 @@ retry:
 		if (time_after(jiffies, timeo)) {
 			map_write(map, CMD(0x70), adr);
 			chip->state = FL_STATUS;
-;
+			printk(KERN_ERR "waiting for lock to complete timed out. Xstatus = %lx, status = %lx.\n", status.x[0], map_read(map, adr).x[0]);
 			DISABLE_VPP(map);
 			mutex_unlock(&chip->mutex);
 			return -EIO;
@@ -1222,7 +1222,7 @@ retry:
 		/* Urgh. Chip not yet ready to talk to us. */
 		if (time_after(jiffies, timeo)) {
 			mutex_unlock(&chip->mutex);
-;
+			printk(KERN_ERR "waiting for chip to be ready timed out in unlock\n");
 			return -EIO;
 		}
 
@@ -1266,7 +1266,7 @@ retry:
 		if (time_after(jiffies, timeo)) {
 			map_write(map, CMD(0x70), adr);
 			chip->state = FL_STATUS;
-;
+			printk(KERN_ERR "waiting for unlock to complete timed out. Xstatus = %lx, status = %lx.\n", status.x[0], map_read(map, adr).x[0]);
 			DISABLE_VPP(map);
 			mutex_unlock(&chip->mutex);
 			return -EIO;

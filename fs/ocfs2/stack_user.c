@@ -217,8 +217,8 @@ static int ocfs2_live_connection_new(struct ocfs2_cluster_connection *conn,
 	if (atomic_read(&ocfs2_control_opened))
 		list_add(&c->oc_list, &ocfs2_live_connection_list);
 	else {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "ocfs2: Userspace control daemon is not present\n");
 		rc = -ESRCH;
 	}
 
@@ -579,10 +579,10 @@ static int ocfs2_control_release(struct inode *inode, struct file *file)
 	if (atomic_dec_and_test(&ocfs2_control_opened)) {
 		if (!list_empty(&ocfs2_live_connection_list)) {
 			/* XXX: Do bad things! */
-//			printk(KERN_ERR
-//			       "ocfs2: Unexpected release of ocfs2_control!\n"
-//			       "       Loss of cluster connection requires "
-;
+			printk(KERN_ERR
+			       "ocfs2: Unexpected release of ocfs2_control!\n"
+			       "       Loss of cluster connection requires "
+			       "an emergency restart!\n");
 			emergency_restart();
 		}
 		/*
@@ -645,10 +645,10 @@ static int ocfs2_control_init(void)
 
 	rc = misc_register(&ocfs2_control_device);
 	if (rc)
-//		printk(KERN_ERR
-//		       "ocfs2: Unable to register ocfs2_control device "
-//		       "(errno %d)\n",
-;
+		printk(KERN_ERR
+		       "ocfs2: Unable to register ocfs2_control device "
+		       "(errno %d)\n",
+		       -rc);
 
 	return rc;
 }
@@ -659,10 +659,10 @@ static void ocfs2_control_exit(void)
 
 	rc = misc_deregister(&ocfs2_control_device);
 	if (rc)
-//		printk(KERN_ERR
-//		       "ocfs2: Unable to deregister ocfs2_control device "
-//		       "(errno %d)\n",
-;
+		printk(KERN_ERR
+		       "ocfs2: Unable to deregister ocfs2_control device "
+		       "(errno %d)\n",
+		       -rc);
 }
 
 static void fsdlm_lock_ast_wrapper(void *astarg)
@@ -819,12 +819,12 @@ static int user_cluster_connect(struct ocfs2_cluster_connection *conn)
 	 * to proceed.
 	 */
 	if (fs_protocol_compare(&running_proto, &conn->cc_version)) {
-//		printk(KERN_ERR
-//		       "Unable to mount with fs locking protocol version "
-//		       "%u.%u because the userspace control daemon has "
-//		       "negotiated %u.%u\n",
-//		       conn->cc_version.pv_major, conn->cc_version.pv_minor,
-;
+		printk(KERN_ERR
+		       "Unable to mount with fs locking protocol version "
+		       "%u.%u because the userspace control daemon has "
+		       "negotiated %u.%u\n",
+		       conn->cc_version.pv_major, conn->cc_version.pv_minor,
+		       running_proto.pv_major, running_proto.pv_minor);
 		rc = -EPROTO;
 		ocfs2_live_connection_drop(control);
 		goto out;

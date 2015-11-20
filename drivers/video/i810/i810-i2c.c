@@ -34,14 +34,14 @@
 #define DEBUG  /* define this for verbose EDID parsing output */
 
 #ifdef DEBUG
-//#define DPRINTK(fmt, args...) printk(fmt,## args)
-//#else
-//#define DPRINTK(fmt, args...)
-//#endif
-//
-//static void i810i2c_setscl(void *data, int state)
-//{
-;
+#define DPRINTK(fmt, args...) printk(fmt,## args)
+#else
+#define DPRINTK(fmt, args...)
+#endif
+
+static void i810i2c_setscl(void *data, int state)
+{
+        struct i810fb_i2c_chan    *chan = data;
         struct i810fb_par         *par = chan->par;
 	u8                        __iomem *mmio = par->mmio_start_virtual;
 

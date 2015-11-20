@@ -201,11 +201,11 @@ void zs_dump(void)
 			continue;
 
 		for (j = 0; j < 16; j++)
-;
-;
+			printk("W%-2d = 0x%02x\t", j, zport->regs[j]);
+		printk("\n");
 		for (j = 0; j < 16; j++)
-;
-;
+			printk("R%-2d = 0x%02x\t", j, read_zsreg(zport, j));
+		printk("\n\n");
 	}
 }
 #endif
@@ -765,8 +765,8 @@ static int zs_startup(struct uart_port *uport)
 				  IRQF_SHARED, "scc", scc);
 		if (ret) {
 			atomic_add(-1, &scc->irq_guard);
-//			printk(KERN_ERR "zs: can't get irq %d\n",
-;
+			printk(KERN_ERR "zs: can't get irq %d\n",
+			       zport->port.irq);
 			return ret;
 		}
 	}
@@ -993,7 +993,7 @@ static int zs_map_port(struct uart_port *uport)
 		uport->membase = ioremap_nocache(uport->mapbase,
 						 ZS_CHAN_IO_SIZE);
 	if (!uport->membase) {
-;
+		printk(KERN_ERR "zs: Cannot map MMIO\n");
 		return -ENOMEM;
 	}
 	return 0;
@@ -1004,7 +1004,7 @@ static int zs_request_port(struct uart_port *uport)
 	int ret;
 
 	if (!request_mem_region(uport->mapbase, ZS_CHAN_IO_SIZE, "scc")) {
-;
+		printk(KERN_ERR "zs: Unable to reserve MMIO resource\n");
 		return -EBUSY;
 	}
 	ret = zs_map_port(uport);

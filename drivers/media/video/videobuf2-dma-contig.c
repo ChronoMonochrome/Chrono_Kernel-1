@@ -102,7 +102,7 @@ static int vb2_dma_contig_mmap(void *buf_priv, struct vm_area_struct *vma)
 	struct vb2_dc_buf *buf = buf_priv;
 
 	if (!buf) {
-;
+		printk(KERN_ERR "No buffer to map\n");
 		return -EINVAL;
 	}
 
@@ -124,8 +124,8 @@ static void *vb2_dma_contig_get_userptr(void *alloc_ctx, unsigned long vaddr,
 
 	ret = vb2_get_contig_userptr(vaddr, size, &vma, &paddr);
 	if (ret) {
-//		printk(KERN_ERR "Failed acquiring VMA for vaddr 0x%08lx\n",
-;
+		printk(KERN_ERR "Failed acquiring VMA for vaddr 0x%08lx\n",
+				vaddr);
 		kfree(buf);
 		return ERR_PTR(ret);
 	}

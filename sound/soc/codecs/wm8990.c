@@ -412,32 +412,32 @@ static int outmixer_event(struct snd_soc_dapm_widget *w,
 	case WM8990_SPEAKER_MIXER | (WM8990_LDSPK_BIT << 8) :
 		reg = snd_soc_read(w->codec, WM8990_OUTPUT_MIXER1);
 		if (reg & WM8990_LDLO) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			"Cannot set as Output Mixer 1 LDLO Set\n");
 			ret = -1;
 		}
 		break;
 	case WM8990_SPEAKER_MIXER | (WM8990_RDSPK_BIT << 8):
 		reg = snd_soc_read(w->codec, WM8990_OUTPUT_MIXER2);
 		if (reg & WM8990_RDRO) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			"Cannot set as Output Mixer 2 RDRO Set\n");
 			ret = -1;
 		}
 		break;
 	case WM8990_OUTPUT_MIXER1 | (WM8990_LDLO_BIT << 8):
 		reg = snd_soc_read(w->codec, WM8990_SPEAKER_MIXER);
 		if (reg & WM8990_LDSPK) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			"Cannot set as Speaker Mixer LDSPK Set\n");
 			ret = -1;
 		}
 		break;
 	case WM8990_OUTPUT_MIXER2 | (WM8990_RDRO_BIT << 8):
 		reg = snd_soc_read(w->codec, WM8990_SPEAKER_MIXER);
 		if (reg & WM8990_RDSPK) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			"Cannot set as Speaker Mixer RDSPK Set\n");
 			ret = -1;
 		}
 		break;
@@ -950,8 +950,8 @@ static void pll_factors(struct _pll_div *pll_div, unsigned int target,
 		pll_div->div2 = 0;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		"WM8990 N value outwith recommended range! N = %u\n", Ndiv);
 
 	pll_div->n = Ndiv;
 	Nmod = target % source;
@@ -1347,7 +1347,7 @@ static int wm8990_probe(struct snd_soc_codec *codec)
 
 	ret = snd_soc_codec_set_cache_io(codec, 8, 16, SND_SOC_I2C);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "wm8990: failed to set cache I/O: %d\n", ret);
 		return ret;
 	}
 
@@ -1444,8 +1444,8 @@ static int __init wm8990_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8990_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register wm8990 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8990 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

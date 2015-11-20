@@ -287,18 +287,18 @@ static void scsi_dma_buserr(int irq, void *dummy)
 	if (atari_irq_pending(IRQ_TT_MFP_SCSI))
 		return;
 
-//	printk("Bad SCSI DMA interrupt! dma_addr=0x%08lx dma_stat=%02x dma_cnt=%08lx\n",
-;
+	printk("Bad SCSI DMA interrupt! dma_addr=0x%08lx dma_stat=%02x dma_cnt=%08lx\n",
+	       SCSI_DMA_READ_P(dma_addr), dma_stat, SCSI_DMA_READ_P(dma_cnt));
 	if (dma_stat & 0x80) {
 		if (!scsi_dma_is_ignored_buserr(dma_stat))
-;
+			printk("SCSI DMA bus error -- bad DMA programming!\n");
 	} else {
 		/* Under normal circumstances we never should get to this point,
 		 * since both interrupts are triggered simultaneously and the 5380
 		 * int has higher priority. When this irq is handled, that DMA
 		 * interrupt is cleared. So a warning message is printed here.
 		 */
-;
+		printk("SCSI DMA intr ?? -- this shouldn't happen!\n");
 	}
 }
 #endif
@@ -321,9 +321,9 @@ static irqreturn_t scsi_tt_intr(int irq, void *dummy)
 	 */
 	if (dma_stat & 0x80) {
 		if (!scsi_dma_is_ignored_buserr(dma_stat)) {
-//			printk(KERN_ERR "SCSI DMA caused bus error near 0x%08lx\n",
-;
-;
+			printk(KERN_ERR "SCSI DMA caused bus error near 0x%08lx\n",
+			       SCSI_DMA_READ_P(dma_addr));
+			printk(KERN_CRIT "SCSI DMA bus error -- bad DMA programming!");
 		}
 	}
 
@@ -415,7 +415,7 @@ static irqreturn_t scsi_falcon_intr(int irq, void *dummy)
 	 */
 	if (!(dma_stat & 0x01)) {
 		/* DMA error */
-;
+		printk(KERN_CRIT "SCSI DMA error near 0x%08lx!\n", SCSI_DMA_GETADR());
 	}
 
 	/* If the DMA was active, but now bit 1 is not clear, it is some
@@ -433,8 +433,8 @@ static irqreturn_t scsi_falcon_intr(int irq, void *dummy)
 		 * lost somewhere in outer space.
 		 */
 		if (transferred & 15)
-//			printk(KERN_ERR "SCSI DMA error: %ld bytes lost in "
-;
+			printk(KERN_ERR "SCSI DMA error: %ld bytes lost in "
+			       "ST-DMA fifo\n", transferred & 15);
 
 		atari_dma_residual = HOSTDATA_DMALEN - transferred;
 		DMA_PRINTK("SCSI DMA: There are %ld residual bytes.\n",
@@ -512,7 +512,7 @@ static void falcon_release_lock_if_possible(struct NCR5380_hostdata *hostdata)
 
 		if (falcon_dont_release) {
 #if 0
-;
+			printk("WARNING: Lock release not allowed. Ignored\n");
 #endif
 			local_irq_restore(flags);
 			return;
@@ -629,8 +629,8 @@ int __init atari_scsi_detect(struct scsi_host_template *host)
 	    !ATARIHW_PRESENT(EXTD_DMA) && m68k_num_memory > 1) {
 		atari_dma_buffer = atari_stram_alloc(STRAM_BUFFER_SIZE, "SCSI");
 		if (!atari_dma_buffer) {
-//			printk(KERN_ERR "atari_scsi_detect: can't allocate ST-RAM "
-;
+			printk(KERN_ERR "atari_scsi_detect: can't allocate ST-RAM "
+					"double buffer\n");
 			return 0;
 		}
 		atari_dma_phys_buffer = virt_to_phys(atari_dma_buffer);
@@ -664,7 +664,7 @@ int __init atari_scsi_detect(struct scsi_host_template *host)
 		 * interrupt. */
 		if (request_irq(IRQ_TT_MFP_SCSI, scsi_tt_intr, IRQ_TYPE_SLOW,
 				 "SCSI NCR5380", instance)) {
-;
+			printk(KERN_ERR "atari_scsi_detect: cannot allocate irq %d, aborting",IRQ_TT_MFP_SCSI);
 			scsi_unregister(atari_scsi_host);
 			atari_stram_free(atari_dma_buffer);
 			atari_dma_buffer = 0;
@@ -705,20 +705,20 @@ int __init atari_scsi_detect(struct scsi_host_template *host)
 #endif
 	}
 
-//	printk(KERN_INFO "scsi%d: options CAN_QUEUE=%d CMD_PER_LUN=%d SCAT-GAT=%d "
-//#ifdef SUPPORT_TAGS
-//			"TAGGED-QUEUING=%s "
-//#endif
-//			"HOSTID=%d",
-//			instance->host_no, instance->hostt->can_queue,
-//			instance->hostt->cmd_per_lun,
-//			instance->hostt->sg_tablesize,
-//#ifdef SUPPORT_TAGS
-//			setup_use_tagged_queuing ? "yes" : "no",
-//#endif
-;
+	printk(KERN_INFO "scsi%d: options CAN_QUEUE=%d CMD_PER_LUN=%d SCAT-GAT=%d "
+#ifdef SUPPORT_TAGS
+			"TAGGED-QUEUING=%s "
+#endif
+			"HOSTID=%d",
+			instance->host_no, instance->hostt->can_queue,
+			instance->hostt->cmd_per_lun,
+			instance->hostt->sg_tablesize,
+#ifdef SUPPORT_TAGS
+			setup_use_tagged_queuing ? "yes" : "no",
+#endif
+			instance->hostt->this_id );
 	NCR5380_print_options(instance);
-;
+	printk("\n");
 
 	called = 1;
 	return 1;
@@ -742,7 +742,7 @@ void __init atari_scsi_setup(char *str, int *ints)
 	 */
 
 	if (ints[0] < 1) {
-;
+		printk("atari_scsi_setup: no arguments!\n");
 		return;
 	}
 
@@ -768,7 +768,7 @@ void __init atari_scsi_setup(char *str, int *ints)
 		if (ints[4] >= 0 && ints[4] <= 7)
 			setup_hostid = ints[4];
 		else if (ints[4] > 7)
-;
+			printk("atari_scsi_setup: invalid host ID %d !\n", ints[4]);
 	}
 #ifdef SUPPORT_TAGS
 	if (ints[0] >= 5) {
@@ -828,7 +828,7 @@ static void __init atari_scsi_reset_boot(void)
 	 * with the queues, interrupts, or locks necessary here.
 	 */
 
-;
+	printk("Atari SCSI: resetting the SCSI bus...");
 
 	/* get in phase */
 	NCR5380_write(TARGET_COMMAND_REG,
@@ -846,7 +846,7 @@ static void __init atari_scsi_reset_boot(void)
 	while (time_before(jiffies, end))
 		barrier();
 
-;
+	printk(" done\n");
 }
 #endif
 
@@ -896,7 +896,7 @@ unsigned long atari_scsi_dma_setup(struct Scsi_Host *instance, void *data,
 	dma_cache_maintenance(addr, count, dir);
 
 	if (count == 0)
-;
+		printk(KERN_NOTICE "SCSI warning: DMA programmed for 0 bytes !\n");
 
 	if (IS_A_TT()) {
 		tt_scsi_dma.dma_ctrl = dir;

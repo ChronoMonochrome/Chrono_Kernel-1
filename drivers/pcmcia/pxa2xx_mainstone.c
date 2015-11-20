@@ -98,8 +98,8 @@ static int mst_pcmcia_configure_socket(struct soc_pcmcia_socket *skt,
 	case 33: power |= MST_PCMCIA_PWR_VCC_33; break;
 	case 50: power |= MST_PCMCIA_PWR_VCC_50; break;
 	default:
-//		 printk(KERN_ERR "%s(): bad Vcc %u\n",
-;
+		 printk(KERN_ERR "%s(): bad Vcc %u\n",
+				 __func__, state->Vcc);
 		 ret = -1;
 	}
 
@@ -110,8 +110,8 @@ static int mst_pcmcia_configure_socket(struct soc_pcmcia_socket *skt,
 		  if(state->Vpp == state->Vcc) {
 			  power |= MST_PCMCIA_PWR_VPP_VCC;
 		  } else {
-//			  printk(KERN_ERR "%s(): bad Vpp %u\n",
-;
+			  printk(KERN_ERR "%s(): bad Vpp %u\n",
+					  __func__, state->Vpp);
 			  ret = -1;
 		  }
 	}

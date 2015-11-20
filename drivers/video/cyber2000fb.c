@@ -1116,7 +1116,7 @@ void cyber2000fb_disable_extregs(struct cfb_info *cfb)
 	}
 
 	if (cfb->func_use_count == 0)
-;
+		printk(KERN_ERR "disable_extregs: count = 0\n");
 	else
 		cfb->func_use_count -= 1;
 }
@@ -1511,7 +1511,7 @@ static int cyber2000fb_setup(char *options)
 			continue;
 		}
 
-;
+		printk(KERN_ERR "CyberPro20x0: unknown parameter: %s\n", opt);
 	}
 	return 0;
 }
@@ -1571,7 +1571,7 @@ static int __devinit cyberpro_common_probe(struct cfb_info *cfb)
 	err = -EINVAL;
 	if (!fb_find_mode(&cfb->fb.var, &cfb->fb, NULL, NULL, 0,
 			  &cyber2000fb_default_mode, 8)) {
-;
+		printk(KERN_ERR "%s: no valid mode found\n", cfb->fb.fix.id);
 		goto failed;
 	}
 
@@ -1595,10 +1595,10 @@ static int __devinit cyberpro_common_probe(struct cfb_info *cfb)
 	v_sync = h_sync / (cfb->fb.var.yres + cfb->fb.var.upper_margin +
 		 cfb->fb.var.lower_margin + cfb->fb.var.vsync_len);
 
-//	printk(KERN_INFO "%s: %dKiB VRAM, using %dx%d, %d.%03dkHz, %dHz\n",
-//		cfb->fb.fix.id, cfb->fb.fix.smem_len >> 10,
-//		cfb->fb.var.xres, cfb->fb.var.yres,
-;
+	printk(KERN_INFO "%s: %dKiB VRAM, using %dx%d, %d.%03dkHz, %dHz\n",
+		cfb->fb.fix.id, cfb->fb.fix.smem_len >> 10,
+		cfb->fb.var.xres, cfb->fb.var.yres,
+		h_sync / 1000, h_sync % 1000, v_sync);
 
 	err = cyber2000fb_i2c_register(cfb);
 	if (err)
@@ -1734,7 +1734,7 @@ static int cyberpro_pci_enable_mmio(struct cfb_info *cfb)
 
 	iop = ioremap(0x3000000, 0x5000);
 	if (iop == NULL) {
-;
+		printk(KERN_ERR "iga5000: cannot map I/O\n");
 		return -ENOMEM;
 	}
 
@@ -1761,13 +1761,13 @@ static int cyberpro_pci_enable_mmio(struct cfb_info *cfb)
 	 * Allow the CyberPro to accept PCI burst accesses
 	 */
 	if (cfb->id == ID_CYBERPRO_2010) {
-//		printk(KERN_INFO "%s: NOT enabling PCI bursts\n",
-;
+		printk(KERN_INFO "%s: NOT enabling PCI bursts\n",
+		       cfb->fb.fix.id);
 	} else {
 		val = cyber2000_grphr(EXT_BUS_CTL, cfb);
 		if (!(val & EXT_BUS_CTL_PCIBURST_WRITE)) {
-//			printk(KERN_INFO "%s: enabling PCI bursts\n",
-;
+			printk(KERN_INFO "%s: enabling PCI bursts\n",
+				cfb->fb.fix.id);
 
 			val |= EXT_BUS_CTL_PCIBURST_WRITE;
 

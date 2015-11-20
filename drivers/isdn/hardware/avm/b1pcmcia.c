@@ -67,7 +67,7 @@ static int b1pcmcia_add_card(unsigned int port, unsigned irq,
 
 	card = b1_alloc_card(1);
 	if (!card) {
-;
+		printk(KERN_WARNING "b1pcmcia: no memory.\n");
 		retval = -ENOMEM;
 		goto err;
 	}
@@ -84,15 +84,15 @@ static int b1pcmcia_add_card(unsigned int port, unsigned irq,
 
 	retval = request_irq(card->irq, b1_interrupt, IRQF_SHARED, card->name, card);
 	if (retval) {
-//		printk(KERN_ERR "b1pcmcia: unable to get IRQ %d.\n",
-;
+		printk(KERN_ERR "b1pcmcia: unable to get IRQ %d.\n",
+		       card->irq);
 		retval = -EBUSY;
 		goto err_free;
 	}
 	b1_reset(card->port);
 	if ((retval = b1_detect(card->port, card->cardtype)) != 0) {
-//		printk(KERN_NOTICE "b1pcmcia: NO card at 0x%x (%d)\n",
-;
+		printk(KERN_NOTICE "b1pcmcia: NO card at 0x%x (%d)\n",
+		       card->port, retval);
 		retval = -ENODEV;
 		goto err_free_irq;
 	}
@@ -113,7 +113,7 @@ static int b1pcmcia_add_card(unsigned int port, unsigned irq,
 
 	retval = attach_capi_ctr(&cinfo->capi_ctrl);
 	if (retval) {
-;
+		printk(KERN_ERR "b1pcmcia: attach controller failed.\n");
 		goto err_free_irq;
 	}
 	switch (cardtype) {
@@ -122,8 +122,8 @@ static int b1pcmcia_add_card(unsigned int port, unsigned irq,
 		default    : cardname = "B1 PCMCIA"; break;
 	}
 
-//	printk(KERN_INFO "b1pcmcia: AVM %s at i/o %#x, irq %d, revision %d\n",
-;
+	printk(KERN_INFO "b1pcmcia: AVM %s at i/o %#x, irq %d, revision %d\n",
+	       cardname, card->port, card->irq, card->revision);
 
 	list_add(&card->list, &cards);
 	return cinfo->capi_ctrl.cnr;
@@ -210,7 +210,7 @@ static int __init b1pcmcia_init(void)
 
 	strlcpy(capi_driver_b1pcmcia.revision, rev, 32);
 	register_capi_driver(&capi_driver_b1pcmcia);
-;
+	printk(KERN_INFO "b1pci: revision %s\n", rev);
 
 	return 0;
 }

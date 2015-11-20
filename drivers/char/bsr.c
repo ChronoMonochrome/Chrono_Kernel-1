@@ -185,7 +185,7 @@ static int bsr_add_node(struct device_node *bn)
 
 	if (!bsr_stride || !bsr_bytes ||
 	    (bsr_stride_len != bsr_bytes_len)) {
-;
+		printk(KERN_ERR "bsr of-node has missing/incorrect property\n");
 		return ret;
 	}
 
@@ -198,14 +198,14 @@ static int bsr_add_node(struct device_node *bn)
 		int result;
 
 		if (!cur) {
-;
+			printk(KERN_ERR "Unable to alloc bsr dev\n");
 			ret = -ENOMEM;
 			goto out_err;
 		}
 
 		result = of_address_to_resource(bn, i, &res);
 		if (result < 0) {
-;
+			printk(KERN_ERR "bsr of-node has invalid reg property, skipping\n");
 			kfree(cur);
 			continue;
 		}
@@ -256,8 +256,8 @@ static int bsr_add_node(struct device_node *bn)
 		cur->bsr_device = device_create(bsr_class, NULL, cur->bsr_dev,
 						cur, cur->bsr_name);
 		if (IS_ERR(cur->bsr_device)) {
-//			printk(KERN_ERR "device_create failed for %s\n",
-;
+			printk(KERN_ERR "device_create failed for %s\n",
+			       cur->bsr_name);
 			cdev_del(&cur->bsr_cdev);
 			kfree(cur);
 			goto out_err;
@@ -305,7 +305,7 @@ static int __init bsr_init(void)
 
 	bsr_class = class_create(THIS_MODULE, "bsr");
 	if (IS_ERR(bsr_class)) {
-;
+		printk(KERN_ERR "class_create() failed for bsr_class\n");
 		goto out_err_1;
 	}
 	bsr_class->dev_attrs = bsr_dev_attrs;
@@ -313,7 +313,7 @@ static int __init bsr_init(void)
 	result = alloc_chrdev_region(&bsr_dev, 0, BSR_MAX_DEVS, "bsr");
 	bsr_major = MAJOR(bsr_dev);
 	if (result < 0) {
-;
+		printk(KERN_ERR "alloc_chrdev_region() failed for bsr\n");
 		goto out_err_2;
 	}
 

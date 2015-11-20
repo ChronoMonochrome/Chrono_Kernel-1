@@ -173,11 +173,11 @@ __found_pages:
 static int is_valid_page(unsigned long ptr)
 {
 	if (ptr & ~0x3fffffffUL) {
-;
+		snd_printk(KERN_ERR "max memory size is 1GB!!\n");
 		return 0;
 	}
 	if (ptr & (SNDRV_TRIDENT_PAGE_SIZE-1)) {
-;
+		snd_printk(KERN_ERR "page is not aligned\n");
 		return 0;
 	}
 	return 1;

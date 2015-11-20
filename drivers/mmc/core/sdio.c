@@ -1228,7 +1228,7 @@ int sdio_reset_comm(struct mmc_card *card)
 	u32 ocr;
 	int err;
 
-;
+	printk("%s():\n", __func__);
 	mmc_claim_host(host);
 
 	mmc_go_idle(host);
@@ -1290,8 +1290,8 @@ int sdio_reset_comm(struct mmc_card *card)
 	mmc_release_host(host);
 	return 0;
 err:
-//	printk("%s: Error resetting SDIO communications (%d)\n",
-;
+	printk("%s: Error resetting SDIO communications (%d)\n",
+	       mmc_hostname(host), err);
 	mmc_release_host(host);
 	return err;
 }

@@ -270,8 +270,8 @@ static int it8213_init_one (struct pci_dev *pdev, const struct pci_device_id *en
 	const struct ata_port_info *ppi[] = { &info, &ata_dummy_port_info };
 
 	if (!printed_version++)
-//		dev_printk(KERN_DEBUG, &pdev->dev,
-;
+		dev_printk(KERN_DEBUG, &pdev->dev,
+			   "version " DRV_VERSION "\n");
 
 	return ata_pci_bmdma_init_one(pdev, ppi, &it8213_sht, NULL, 0);
 }

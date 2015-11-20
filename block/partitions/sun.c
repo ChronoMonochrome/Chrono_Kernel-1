@@ -77,8 +77,8 @@ int sun_partition(struct parsed_partitions *state)
 	for (csum = 0; ush >= ((__be16 *) label);)
 		csum ^= *ush--;
 	if (csum) {
-//		printk("Dev %s Sun disklabel: Csum bad, label corrupted\n",
-;
+		printk("Dev %s Sun disklabel: Csum bad, label corrupted\n",
+		       bdevname(state->bdev, b));
 		put_dev_sector(sect);
 		return 0;
 	}

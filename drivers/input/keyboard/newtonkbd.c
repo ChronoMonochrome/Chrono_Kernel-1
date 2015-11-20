@@ -76,7 +76,7 @@ static irqreturn_t nkbd_interrupt(struct serio *serio,
 	}
 
 	else if (data == 0xe7) /* end of init sequence */
-;
+		printk(KERN_INFO "input: %s on %s\n", nkbd->dev->name, serio->phys);
 	return IRQ_HANDLED;
 
 }

@@ -107,8 +107,8 @@ int uvc_mc_register_entities(struct uvc_video_chain *chain)
 	list_for_each_entry(entity, &chain->entities, chain) {
 		ret = uvc_mc_init_entity(entity);
 		if (ret < 0) {
-//			uvc_printk(KERN_INFO, "Failed to initialize entity for "
-;
+			uvc_printk(KERN_INFO, "Failed to initialize entity for "
+				   "entity %u\n", entity->id);
 			return ret;
 		}
 	}
@@ -116,8 +116,8 @@ int uvc_mc_register_entities(struct uvc_video_chain *chain)
 	list_for_each_entry(entity, &chain->entities, chain) {
 		ret = uvc_mc_register_entity(chain, entity);
 		if (ret < 0) {
-//			uvc_printk(KERN_INFO, "Failed to register entity for "
-;
+			uvc_printk(KERN_INFO, "Failed to register entity for "
+				   "entity %u\n", entity->id);
 			return ret;
 		}
 	}

@@ -168,7 +168,7 @@ struct megasas_cmd_fusion *megasas_get_cmd_fusion(struct megasas_instance
 				 struct megasas_cmd_fusion, list);
 		list_del_init(&cmd->list);
 	} else {
-;
+		printk(KERN_ERR "megasas: Command pool (fusion) empty!\n");
 	}
 
 	spin_unlock_irqrestore(&fusion->cmd_pool_lock, flags);
@@ -212,9 +212,9 @@ static void megasas_teardown_frame_pool_fusion(
 	struct megasas_cmd_fusion *cmd;
 
 	if (!fusion->sg_dma_pool || !fusion->sense_dma_pool) {
-//		printk(KERN_ERR "megasas: dma pool is null. SG Pool %p, "
-//		       "sense pool : %p\n", fusion->sg_dma_pool,
-;
+		printk(KERN_ERR "megasas: dma pool is null. SG Pool %p, "
+		       "sense pool : %p\n", fusion->sg_dma_pool,
+		       fusion->sense_dma_pool);
 		return;
 	}
 
@@ -324,8 +324,8 @@ static int megasas_create_frame_pool_fusion(struct megasas_instance *instance)
 					      total_sz_chain_frame, 4,
 					      0);
 	if (!fusion->sg_dma_pool) {
-//		printk(KERN_DEBUG "megasas: failed to setup request pool "
-;
+		printk(KERN_DEBUG "megasas: failed to setup request pool "
+		       "fusion\n");
 		return -ENOMEM;
 	}
 	fusion->sense_dma_pool = pci_pool_create("megasas sense pool fusion",
@@ -333,8 +333,8 @@ static int megasas_create_frame_pool_fusion(struct megasas_instance *instance)
 						 SCSI_SENSE_BUFFERSIZE, 64, 0);
 
 	if (!fusion->sense_dma_pool) {
-//		printk(KERN_DEBUG "megasas: failed to setup sense pool "
-;
+		printk(KERN_DEBUG "megasas: failed to setup sense pool "
+		       "fusion\n");
 		pci_pool_destroy(fusion->sg_dma_pool);
 		fusion->sg_dma_pool = NULL;
 		return -ENOMEM;
@@ -358,7 +358,7 @@ static int megasas_create_frame_pool_fusion(struct megasas_instance *instance)
 		 * whatever has been allocated
 		 */
 		if (!cmd->sg_frame || !cmd->sense) {
-;
+			printk(KERN_DEBUG "megasas: pci_pool_alloc failed\n");
 			megasas_teardown_frame_pool_fusion(instance);
 			return -ENOMEM;
 		}
@@ -404,7 +404,7 @@ megasas_alloc_cmds_fusion(struct megasas_instance *instance)
 				   &fusion->req_frames_desc_phys, GFP_KERNEL);
 
 	if (!fusion->req_frames_desc) {
-;
+		printk(KERN_ERR "megasas; Could not allocate memory for "
 		       "request_frames\n");
 		goto fail_req_desc;
 	}
@@ -414,7 +414,7 @@ megasas_alloc_cmds_fusion(struct megasas_instance *instance)
 				fusion->reply_alloc_sz, 16, 0);
 
 	if (!fusion->reply_frames_desc_pool) {
-;
+		printk(KERN_ERR "megasas; Could not allocate memory for "
 		       "reply_frame pool\n");
 		goto fail_reply_desc;
 	}
@@ -423,7 +423,7 @@ megasas_alloc_cmds_fusion(struct megasas_instance *instance)
 		pci_pool_alloc(fusion->reply_frames_desc_pool, GFP_KERNEL,
 			       &fusion->reply_frames_desc_phys);
 	if (!fusion->reply_frames_desc) {
-;
+		printk(KERN_ERR "megasas; Could not allocate memory for "
 		       "reply_frame pool\n");
 		pci_pool_destroy(fusion->reply_frames_desc_pool);
 		goto fail_reply_desc;
@@ -440,8 +440,8 @@ megasas_alloc_cmds_fusion(struct megasas_instance *instance)
 				fusion->io_frames_alloc_sz, 16, 0);
 
 	if (!fusion->io_request_frames_pool) {
-//		printk(KERN_ERR "megasas: Could not allocate memory for "
-;
+		printk(KERN_ERR "megasas: Could not allocate memory for "
+		       "io_request_frame pool\n");
 		goto fail_io_frames;
 	}
 
@@ -449,8 +449,8 @@ megasas_alloc_cmds_fusion(struct megasas_instance *instance)
 		pci_pool_alloc(fusion->io_request_frames_pool, GFP_KERNEL,
 			       &fusion->io_request_frames_phys);
 	if (!fusion->io_request_frames) {
-//		printk(KERN_ERR "megasas: Could not allocate memory for "
-;
+		printk(KERN_ERR "megasas: Could not allocate memory for "
+		       "io_request_frames frames\n");
 		pci_pool_destroy(fusion->io_request_frames_pool);
 		goto fail_io_frames;
 	}
@@ -464,8 +464,8 @@ megasas_alloc_cmds_fusion(struct megasas_instance *instance)
 				   *max_cmd, GFP_KERNEL);
 
 	if (!fusion->cmd_list) {
-//		printk(KERN_DEBUG "megasas: out of memory. Could not alloc "
-;
+		printk(KERN_DEBUG "megasas: out of memory. Could not alloc "
+		       "memory for cmd_list_fusion\n");
 		goto fail_cmd_list;
 	}
 
@@ -477,7 +477,7 @@ megasas_alloc_cmds_fusion(struct megasas_instance *instance)
 		fusion->cmd_list[i] = kmalloc(sizeof(struct megasas_cmd_fusion),
 					      GFP_KERNEL);
 		if (!fusion->cmd_list[i]) {
-;
+			printk(KERN_ERR "Could not alloc cmd list fusion\n");
 
 			for (j = 0; j < i; j++)
 				kfree(fusion->cmd_list[j]);
@@ -521,7 +521,7 @@ megasas_alloc_cmds_fusion(struct megasas_instance *instance)
 	 * Create a frame pool and assign one frame to each cmd
 	 */
 	if (megasas_create_frame_pool_fusion(instance)) {
-;
+		printk(KERN_DEBUG "megasas: Error creating frame DMA pool\n");
 		megasas_free_cmds_fusion(instance);
 		goto fail_req_desc;
 	}
@@ -603,7 +603,7 @@ megasas_ioc_init_fusion(struct megasas_instance *instance)
 	cmd = megasas_get_cmd(instance);
 
 	if (!cmd) {
-;
+		printk(KERN_ERR "Could not allocate cmd for INIT Frame\n");
 		ret = 1;
 		goto fail_get_cmd;
 	}
@@ -614,8 +614,8 @@ megasas_ioc_init_fusion(struct megasas_instance *instance)
 			     &ioc_init_handle, GFP_KERNEL);
 
 	if (!IOCInitMessage) {
-//		printk(KERN_ERR "Could not allocate memory for "
-;
+		printk(KERN_ERR "Could not allocate memory for "
+		       "IOCInitMessage\n");
 		ret = 1;
 		goto fail_fw_init;
 	}
@@ -681,7 +681,7 @@ megasas_ioc_init_fusion(struct megasas_instance *instance)
 		ret = 1;
 		goto fail_fw_init;
 	}
-;
+	printk(KERN_ERR "megasas:IOC Init cmd success\n");
 
 	ret = 0;
 
@@ -717,7 +717,7 @@ megasas_get_ld_map_info(struct megasas_instance *instance)
 	cmd = megasas_get_cmd(instance);
 
 	if (!cmd) {
-;
+		printk(KERN_DEBUG "megasas: Failed to get cmd for map info.\n");
 		return -ENOMEM;
 	}
 
@@ -737,7 +737,7 @@ megasas_get_ld_map_info(struct megasas_instance *instance)
 	ci_h = fusion->ld_map_phys[(instance->map_id & 1)];
 
 	if (!ci) {
-;
+		printk(KERN_DEBUG "Failed to alloc mem for ld_map_info\n");
 		megasas_return_cmd(instance, cmd);
 		return -ENOMEM;
 	}
@@ -759,7 +759,7 @@ megasas_get_ld_map_info(struct megasas_instance *instance)
 	if (!megasas_issue_polled(instance, cmd))
 		ret = 0;
 	else {
-;
+		printk(KERN_ERR "megasas: Get LD Map Info Failed\n");
 		ret = -1;
 	}
 
@@ -810,8 +810,8 @@ megasas_sync_map_info(struct megasas_instance *instance)
 	cmd = megasas_get_cmd(instance);
 
 	if (!cmd) {
-//		printk(KERN_DEBUG "megasas: Failed to get cmd for sync"
-;
+		printk(KERN_DEBUG "megasas: Failed to get cmd for sync"
+		       "info.\n");
 		return -ENOMEM;
 	}
 
@@ -960,8 +960,8 @@ megasas_init_adapter_fusion(struct megasas_instance *instance)
 						       &fusion->ld_map_phys[i],
 						       GFP_KERNEL);
 		if (!fusion->ld_map[i]) {
-//			printk(KERN_ERR "megasas: Could not allocate memory "
-;
+			printk(KERN_ERR "megasas: Could not allocate memory "
+			       "for map info\n");
 			goto fail_map_info;
 		}
 	}
@@ -1045,7 +1045,7 @@ map_cmd_status(struct megasas_cmd_fusion *cmd, u8 status, u8 ext_status)
 		break;
 
 	default:
-;
+		printk(KERN_DEBUG "megasas: FW status %#x\n", status);
 		cmd->scmd->result = DID_ERROR << 16;
 		break;
 	}
@@ -1538,9 +1538,9 @@ megasas_build_io_fusion(struct megasas_instance *instance,
 					&io_request->SGL, cmd);
 
 	if (sge_count > instance->max_num_sge) {
-//		printk(KERN_ERR "megasas: Error. sge_count (0x%x) exceeds "
-//		       "max (0x%x) allowed\n", sge_count,
-;
+		printk(KERN_ERR "megasas: Error. sge_count (0x%x) exceeds "
+		       "max (0x%x) allowed\n", sge_count,
+		       instance->max_num_sge);
 		return 1;
 	}
 
@@ -1572,8 +1572,8 @@ megasas_get_request_descriptor(struct megasas_instance *instance, u16 index)
 	struct fusion_context *fusion;
 
 	if (index >= instance->max_fw_cmds) {
-//		printk(KERN_ERR "megasas: Invalid SMID (0x%x)request for "
-;
+		printk(KERN_ERR "megasas: Invalid SMID (0x%x)request for "
+		       "descriptor\n", index);
 		return NULL;
 	}
 	fusion = instance->ctrl_context;
@@ -1616,7 +1616,7 @@ megasas_build_and_issue_cmd_fusion(struct megasas_instance *instance,
 
 	if (megasas_build_io_fusion(instance, scmd, cmd)) {
 		megasas_return_cmd_fusion(instance, cmd);
-;
+		printk(KERN_ERR "megasas: Error building command.\n");
 		cmd->request_desc = NULL;
 		return 1;
 	}
@@ -1626,8 +1626,8 @@ megasas_build_and_issue_cmd_fusion(struct megasas_instance *instance,
 
 	if (cmd->io_request->ChainOffset != 0 &&
 	    cmd->io_request->ChainOffset != 0xF)
-//		printk(KERN_ERR "megasas: The chain offset value is not "
-;
+		printk(KERN_ERR "megasas: The chain offset value is not "
+		       "correct : %x\n", cmd->io_request->ChainOffset);
 
 	/*
 	 * Issue the command to the FW
@@ -1716,8 +1716,8 @@ complete_cmd_fusion(struct megasas_instance *instance)
 			if (reply_descript_type ==
 			    MPI2_RPY_DESCRIPT_FLAGS_SCSI_IO_SUCCESS) {
 				if (megasas_dbg_lvl == 5)
-//					printk(KERN_ERR "\nmegasas: FAST Path "
-;
+					printk(KERN_ERR "\nmegasas: FAST Path "
+					       "IO Success\n");
 			}
 			/* Fall thru and complete IO */
 		case MEGASAS_MPI2_FUNCTION_LD_IO_REQUEST: /* LD-IO Path */
@@ -1897,7 +1897,7 @@ build_mpt_cmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
 	u16 index;
 
 	if (build_mpt_mfi_pass_thru(instance, cmd)) {
-;
+		printk(KERN_ERR "Couldn't build MFI pass thru cmd\n");
 		return NULL;
 	}
 
@@ -1932,7 +1932,7 @@ megasas_issue_dcmd_fusion(struct megasas_instance *instance,
 
 	req_desc = build_mpt_cmd(instance, cmd);
 	if (!req_desc) {
-;
+		printk(KERN_ERR "Couldn't issue MFI pass thru cmd\n");
 		return;
 	}
 	d_val.word = req_desc->Words;
@@ -1999,8 +1999,8 @@ int megasas_wait_for_outstanding_fusion(struct megasas_instance *instance)
 		fw_state = instance->instancet->read_fw_status_reg(
 			instance->reg_set) & MFI_STATE_MASK;
 		if (fw_state == MFI_STATE_FAULT) {
-//			printk(KERN_WARNING "megasas: Found FW in FAULT state,"
-;
+			printk(KERN_WARNING "megasas: Found FW in FAULT state,"
+			       " will reset adapter.\n");
 			retval = 1;
 			goto out;
 		}
@@ -2010,8 +2010,8 @@ int megasas_wait_for_outstanding_fusion(struct megasas_instance *instance)
 			goto out;
 
 		if (!(i % MEGASAS_RESET_NOTICE_INTERVAL)) {
-//			printk(KERN_NOTICE "megasas: [%2d]waiting for %d "
-;
+			printk(KERN_NOTICE "megasas: [%2d]waiting for %d "
+			       "commands to complete\n", i, outstanding);
 			megasas_complete_cmd_dpc_fusion(
 				(unsigned long)instance);
 		}
@@ -2019,8 +2019,8 @@ int megasas_wait_for_outstanding_fusion(struct megasas_instance *instance)
 	}
 
 	if (atomic_read(&instance->fw_outstanding)) {
-//		printk("megaraid_sas: pending commands remain after waiting, "
-;
+		printk("megaraid_sas: pending commands remain after waiting, "
+		       "will reset adapter.\n");
 		retval = 1;
 	}
 out:
@@ -2055,8 +2055,8 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
 	fusion = instance->ctrl_context;
 
 	if (instance->adprecovery == MEGASAS_HW_CRITICAL_ERROR) {
-//		printk(KERN_WARNING "megaraid_sas: Hardware critical error, "
-;
+		printk(KERN_WARNING "megaraid_sas: Hardware critical error, "
+		       "returning FAILED.\n");
 		retval = FAILED;
 		goto out;
 	}
@@ -2069,8 +2069,8 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
 
 	/* First try waiting for commands to complete */
 	if (megasas_wait_for_outstanding_fusion(instance)) {
-//		printk(KERN_WARNING "megaraid_sas: resetting fusion "
-;
+		printk(KERN_WARNING "megaraid_sas: resetting fusion "
+		       "adapter.\n");
 		/* Now return commands back to the OS */
 		for (i = 0 ; i < instance->max_fw_cmds; i++) {
 			cmd_fusion = fusion->cmd_list[i];
@@ -2090,8 +2090,8 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
 		if (instance->disableOnlineCtrlReset ||
 		    (abs_state == MFI_STATE_FAULT && !reset_adapter)) {
 			/* Reset not supported, kill adapter */
-//			printk(KERN_WARNING "megaraid_sas: Reset not supported"
-;
+			printk(KERN_WARNING "megaraid_sas: Reset not supported"
+			       ", killing adapter.\n");
 			megaraid_sas_kill_hba(instance);
 			instance->adprecovery = MEGASAS_HW_CRITICAL_ERROR;
 			retval = FAILED;
@@ -2123,8 +2123,8 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
 				host_diag =
 				readl(&instance->reg_set->fusion_host_diag);
 				if (retry++ == 100) {
-//					printk(KERN_WARNING "megaraid_sas: "
-;
+					printk(KERN_WARNING "megaraid_sas: "
+					       "Host diag unlock failed!\n");
 					break;
 				}
 			}
@@ -2144,9 +2144,9 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
 				host_diag =
 				readl(&instance->reg_set->fusion_host_diag);
 				if (retry++ == 1000) {
-//					printk(KERN_WARNING "megaraid_sas: "
-//					       "Diag reset adapter never "
-;
+					printk(KERN_WARNING "megaraid_sas: "
+					       "Diag reset adapter never "
+					       "cleared!\n");
 					break;
 				}
 			}
@@ -2166,23 +2166,23 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
 					instance->reg_set) & MFI_STATE_MASK;
 			}
 			if (abs_state <= MFI_STATE_FW_INIT) {
-//				printk(KERN_WARNING "megaraid_sas: firmware "
-//				       "state < MFI_STATE_FW_INIT, state = "
-;
+				printk(KERN_WARNING "megaraid_sas: firmware "
+				       "state < MFI_STATE_FW_INIT, state = "
+				       "0x%x\n", abs_state);
 				continue;
 			}
 
 			/* Wait for FW to become ready */
 			if (megasas_transition_to_ready(instance)) {
-//				printk(KERN_WARNING "megaraid_sas: Failed to "
-;
+				printk(KERN_WARNING "megaraid_sas: Failed to "
+				       "transition controller to ready.\n");
 				continue;
 			}
 
 			megasas_reset_reply_desc(instance);
 			if (megasas_ioc_init_fusion(instance)) {
-//				printk(KERN_WARNING "megaraid_sas: "
-;
+				printk(KERN_WARNING "megaraid_sas: "
+				       "megasas_ioc_init_fusion() failed!\n");
 				continue;
 			}
 
@@ -2210,9 +2210,9 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
 							cmd_mfi->context.smid
 							-1);
 						if (!req_desc)
-//							printk(KERN_WARNING
-//							       "req_desc NULL"
-;
+							printk(KERN_WARNING
+							       "req_desc NULL"
+							       "\n");
 						else {
 							instance->instancet->
 							fire_cmd(instance,
@@ -2236,14 +2236,14 @@ int megasas_reset_fusion(struct Scsi_Host *shost)
 				megasas_sync_map_info(instance);
 
 			/* Adapter reset completed successfully */
-//			printk(KERN_WARNING "megaraid_sas: Reset "
-;
+			printk(KERN_WARNING "megaraid_sas: Reset "
+			       "successful.\n");
 			retval = SUCCESS;
 			goto out;
 		}
 		/* Reset failed, kill the adapter */
-//		printk(KERN_WARNING "megaraid_sas: Reset failed, killing "
-;
+		printk(KERN_WARNING "megaraid_sas: Reset failed, killing "
+		       "adapter.\n");
 		megaraid_sas_kill_hba(instance);
 		retval = FAILED;
 	} else {

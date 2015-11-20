@@ -123,9 +123,9 @@ static int __devinit avma1cs_config(struct pcmcia_device *link)
     
     i = hisax_init_pcmcia(link, &busy, &icard);
     if (i < 0) {
-//	printk(KERN_ERR "avma1_cs: failed to initialize AVM A1 "
-//			"PCMCIA %d at i/o %#x\n", i,
-;
+	printk(KERN_ERR "avma1_cs: failed to initialize AVM A1 "
+			"PCMCIA %d at i/o %#x\n", i,
+			(unsigned int) link->resource[0]->start);
 	avma1cs_release(link);
 	return -ENODEV;
     }

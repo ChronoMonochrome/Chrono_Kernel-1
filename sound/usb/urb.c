@@ -135,7 +135,7 @@ static int wait_clear_urbs(struct snd_usb_substream *subs)
 		schedule_timeout_uninterruptible(1);
 	} while (time_before(jiffies, end_time));
 	if (alive)
-;
+		snd_printk(KERN_ERR "timeout: still %d active urbs..\n", alive);
 	return 0;
 }
 
@@ -789,7 +789,7 @@ static int start_urbs(struct snd_usb_substream *subs, struct snd_pcm_runtime *ru
 		if (snd_BUG_ON(!subs->dataurb[i].urb))
 			return -EINVAL;
 		if (subs->ops.prepare(subs, runtime, subs->dataurb[i].urb) < 0) {
-;
+			snd_printk(KERN_ERR "cannot prepare datapipe for urb %d\n", i);
 			goto __error;
 		}
 	}
@@ -798,7 +798,7 @@ static int start_urbs(struct snd_usb_substream *subs, struct snd_pcm_runtime *ru
 			if (snd_BUG_ON(!subs->syncurb[i].urb))
 				return -EINVAL;
 			if (subs->ops.prepare_sync(subs, runtime, subs->syncurb[i].urb) < 0) {
-;
+				snd_printk(KERN_ERR "cannot prepare syncpipe for urb %d\n", i);
 				goto __error;
 			}
 		}
@@ -810,9 +810,9 @@ static int start_urbs(struct snd_usb_substream *subs, struct snd_pcm_runtime *ru
 	for (i = 0; i < subs->nurbs; i++) {
 		err = usb_submit_urb(subs->dataurb[i].urb, GFP_ATOMIC);
 		if (err < 0) {
-//			snd_printk(KERN_ERR "cannot submit datapipe "
-//				   "for urb %d, error %d: %s\n",
-;
+			snd_printk(KERN_ERR "cannot submit datapipe "
+				   "for urb %d, error %d: %s\n",
+				   i, err, usb_error_string(err));
 			goto __error;
 		}
 		set_bit(i, &subs->active_mask);
@@ -821,9 +821,9 @@ static int start_urbs(struct snd_usb_substream *subs, struct snd_pcm_runtime *ru
 		for (i = 0; i < SYNC_URBS; i++) {
 			err = usb_submit_urb(subs->syncurb[i].urb, GFP_ATOMIC);
 			if (err < 0) {
-//				snd_printk(KERN_ERR "cannot submit syncpipe "
-//					   "for urb %d, error %d: %s\n",
-;
+				snd_printk(KERN_ERR "cannot submit syncpipe "
+					   "for urb %d, error %d: %s\n",
+					   i, err, usb_error_string(err));
 				goto __error;
 			}
 			set_bit(i + 16, &subs->active_mask);

@@ -807,12 +807,12 @@ static int __devinit intelfb_pci_register(struct pci_dev *pdev,
 			if (dvo & 1) {
 				s = intelfbhw_dvo_to_string(1 << i);
 				if (s)
-;
+					printk("%s ", s);
 			}
 			dvo >>= 1;
 			++i;
 		}
-;
+		printk(").  Disabling mode switching.\n");
 	}
 
 	if (bailearly == 1)
@@ -1063,17 +1063,17 @@ static int __devinit intelfb_init_var(struct intelfb_info *dinfo)
 		}
 
 		if (mode) {
-//			printk("intelfb: Looking for mode in private "
-;
+			printk("intelfb: Looking for mode in private "
+			       "database\n");
 			msrc = fb_find_mode(var, dinfo->info, mode,
 					    dinfo->info->monspecs.modedb,
 					    dinfo->info->monspecs.modedb_len,
 					    NULL, 0);
 
 			if (msrc && msrc > 1) {
-//				printk("intelfb: No mode in private database, "
-//				       "intelfb: looking for mode in global "
-;
+				printk("intelfb: No mode in private database, "
+				       "intelfb: looking for mode in global "
+				       "database ");
 				msrc = fb_find_mode(var, dinfo->info, mode,
 						    NULL, 0, NULL, 0);
 

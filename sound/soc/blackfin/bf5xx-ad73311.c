@@ -122,7 +122,7 @@ static int snd_ad73311_configure(void)
 	local_irq_enable();
 
 	if (count >= 10000) {
-;
+		printk(KERN_ERR "ad73311: failed to configure codec\n");
 		return -1;
 	}
 	return 0;
@@ -132,7 +132,7 @@ static int bf5xx_probe(struct platform_device *pdev)
 {
 	int err;
 	if (gpio_request(GPIO_SE, "AD73311_SE")) {
-;
+		printk(KERN_ERR "%s: Failed ro request GPIO_%d\n", __func__, GPIO_SE);
 		return -EBUSY;
 	}
 

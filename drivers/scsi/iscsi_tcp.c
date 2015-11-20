@@ -66,9 +66,9 @@ MODULE_PARM_DESC(debug_iscsi_tcp, "Turn on debugging for iscsi_tcp module "
 #define ISCSI_SW_TCP_DBG(_conn, dbg_fmt, arg...)		\
 	do {							\
 		if (iscsi_sw_tcp_dbg)				\
-//			iscsi_conn_printk(KERN_INFO, _conn,	\
-//					     "%s " dbg_fmt,	\
-;
+			iscsi_conn_printk(KERN_INFO, _conn,	\
+					     "%s " dbg_fmt,	\
+					     __func__, ##arg);	\
 	} while (0);
 
 
@@ -561,11 +561,11 @@ iscsi_sw_tcp_conn_create(struct iscsi_cls_session *cls_session,
 free_tx_tfm:
 	crypto_free_hash(tcp_sw_conn->tx_hash.tfm);
 free_conn:
-//	iscsi_conn_printk(KERN_ERR, conn,
-//			  "Could not create connection due to crc32c "
-//			  "loading error. Make sure the crc32c "
-//			  "module is built as a module or into the "
-;
+	iscsi_conn_printk(KERN_ERR, conn,
+			  "Could not create connection due to crc32c "
+			  "loading error. Make sure the crc32c "
+			  "module is built as a module or into the "
+			  "kernel\n");
 	iscsi_tcp_conn_teardown(cls_conn);
 	return NULL;
 }
@@ -645,8 +645,8 @@ iscsi_sw_tcp_conn_bind(struct iscsi_cls_session *cls_session,
 	/* lookup for existing socket */
 	sock = sockfd_lookup((int)transport_eph, &err);
 	if (!sock) {
-//		iscsi_conn_printk(KERN_ERR, conn,
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "sockfd_lookup failed %d\n", err);
 		return -EEXIST;
 	}
 
@@ -818,7 +818,7 @@ iscsi_sw_tcp_session_create(struct iscsi_endpoint *ep, uint16_t cmds_max,
 	struct Scsi_Host *shost;
 
 	if (ep) {
-;
+		printk(KERN_ERR "iscsi_tcp: invalid ep %p.\n", ep);
 		return NULL;
 	}
 
@@ -970,8 +970,8 @@ static struct iscsi_transport iscsi_sw_tcp_transport = {
 static int __init iscsi_sw_tcp_init(void)
 {
 	if (iscsi_max_lun < 1) {
-//		printk(KERN_ERR "iscsi_tcp: Invalid max_lun value of %u\n",
-;
+		printk(KERN_ERR "iscsi_tcp: Invalid max_lun value of %u\n",
+		       iscsi_max_lun);
 		return -EINVAL;
 	}
 

@@ -87,25 +87,25 @@ static int rt_trace_on = 1;
 static void printk_task(struct task_struct *p)
 {
 	if (p)
-;
+		printk("%16s:%5d [%p, %3d]", p->comm, task_pid_nr(p), p, p->prio);
 	else
-;
+		printk("<none>");
 }
 
 static void printk_lock(struct rt_mutex *lock, int print_owner)
 {
 	if (lock->name)
-//		printk(" [%p] {%s}\n",
-;
+		printk(" [%p] {%s}\n",
+			lock, lock->name);
 	else
-//		printk(" [%p] {%s:%d}\n",
-;
+		printk(" [%p] {%s:%d}\n",
+			lock, lock->file, lock->line);
 
 	if (print_owner && rt_mutex_owner(lock)) {
-;
-;
+		printk(".. ->owner: %p\n", lock->owner);
+		printk(".. held by:  ");
 		printk_task(rt_mutex_owner(lock));
-;
+		printk("\n");
 	}
 }
 
@@ -151,35 +151,35 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
 
 	TRACE_OFF_NOLOCK();
 
-;
-;
-;
-//	printk("%s/%d is deadlocking current task %s/%d\n\n",
-//	       task->comm, task_pid_nr(task),
-;
+	printk("\n============================================\n");
+	printk(  "[ BUG: circular locking deadlock detected! ]\n");
+	printk(  "--------------------------------------------\n");
+	printk("%s/%d is deadlocking current task %s/%d\n\n",
+	       task->comm, task_pid_nr(task),
+	       current->comm, task_pid_nr(current));
 
-//	printk("\n1) %s/%d is trying to acquire this lock:\n",
-;
+	printk("\n1) %s/%d is trying to acquire this lock:\n",
+	       current->comm, task_pid_nr(current));
 	printk_lock(waiter->lock, 1);
 
-//	printk("\n2) %s/%d is blocked on this lock:\n",
-;
+	printk("\n2) %s/%d is blocked on this lock:\n",
+		task->comm, task_pid_nr(task));
 	printk_lock(waiter->deadlock_lock, 1);
 
 	debug_show_held_locks(current);
 	debug_show_held_locks(task);
 
-//	printk("\n%s/%d's [blocked] stackdump:\n\n",
-;
+	printk("\n%s/%d's [blocked] stackdump:\n\n",
+		task->comm, task_pid_nr(task));
 	show_stack(task, NULL);
-//	printk("\n%s/%d's [current] stackdump:\n\n",
-;
+	printk("\n%s/%d's [current] stackdump:\n\n",
+		current->comm, task_pid_nr(current));
 	dump_stack();
 	debug_show_all_locks();
 	rcu_read_unlock();
 
-//	printk("[ turning off deadlock detection."
-;
+	printk("[ turning off deadlock detection."
+	       "Please report this trace. ]\n\n");
 	local_irq_disable();
 }
 

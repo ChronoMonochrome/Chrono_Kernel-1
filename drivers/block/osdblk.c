@@ -75,10 +75,10 @@
 /* #define _OSDBLK_DEBUG */
 #ifdef _OSDBLK_DEBUG
 #define OSDBLK_DEBUG(fmt, a...) \
-//	printk(KERN_NOTICE "osdblk @%s:%d: " fmt, __func__, __LINE__, ##a)
-//#else
-//#define OSDBLK_DEBUG(fmt, a...) \
-;
+	printk(KERN_NOTICE "osdblk @%s:%d: " fmt, __func__, __LINE__, ##a)
+#else
+#define OSDBLK_DEBUG(fmt, a...) \
+	do { if (0) printk(fmt, ##a); } while (0)
 #endif
 
 MODULE_AUTHOR("Jeff Garzik <jeff@garzik.org>");
@@ -451,8 +451,8 @@ static int osdblk_init_disk(struct osdblk_device *osdev)
 	set_capacity(disk, obj_size / 512ULL);
 	add_disk(disk);
 
-//	printk(KERN_INFO "%s: Added of size 0x%llx\n",
-;
+	printk(KERN_INFO "%s: Added of size 0x%llx\n",
+		disk->disk_name, (unsigned long long)obj_size);
 
 	return 0;
 }
@@ -665,7 +665,7 @@ static int osdblk_sysfs_init(void)
 	if (ret) {
 		kfree(class_osdblk);
 		class_osdblk = NULL;
-;
+		printk(PFX "failed to create class osdblk\n");
 		return ret;
 	}
 

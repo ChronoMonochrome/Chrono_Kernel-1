@@ -1402,7 +1402,7 @@ static int __init cxgb3i_init_module(void)
 {
 	int rc;
 
-;
+	printk(KERN_INFO "%s", version);
 
 	rc = cxgbi_iscsi_init(&cxgb3i_iscsi_transport, &cxgb3i_stt);
 	if (rc < 0)

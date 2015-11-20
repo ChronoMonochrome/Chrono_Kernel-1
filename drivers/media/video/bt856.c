@@ -87,8 +87,8 @@ static void bt856_dump(struct bt856 *encoder)
 
 	v4l2_info(&encoder->sd, "register dump:\n");
 	for (i = 0; i < BT856_NR_REG; i += 2)
-;
-;
+		printk(KERN_CONT " %02x", encoder->reg[i]);
+	printk(KERN_CONT "\n");
 }
 
 /* ----------------------------------------------------------------------- */

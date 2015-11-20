@@ -35,19 +35,19 @@
 #define DST_CA_INFO		2
 #define DST_CA_DEBUG		3
 
-//#define dprintk(x, y, z, format, arg...) do {						\
-//	if (z) {									\
-//		if	((x > DST_CA_ERROR) && (x > y))					\
-;
+#define dprintk(x, y, z, format, arg...) do {						\
+	if (z) {									\
+		if	((x > DST_CA_ERROR) && (x > y))					\
+			printk(KERN_ERR "%s: " format "\n", __func__ , ##arg);	\
 		else if	((x > DST_CA_NOTICE) && (x > y))				\
-;
+			printk(KERN_NOTICE "%s: " format "\n", __func__ , ##arg);	\
 		else if ((x > DST_CA_INFO) && (x > y))					\
-;
+			printk(KERN_INFO "%s: " format "\n", __func__ , ##arg);	\
 		else if ((x > DST_CA_DEBUG) && (x > y))					\
-;
+			printk(KERN_DEBUG "%s: " format "\n", __func__ , ##arg);	\
 	} else {									\
 		if (x > y)								\
-;
+			printk(format, ## arg);						\
 	}										\
 } while(0)
 
@@ -81,10 +81,10 @@ static void put_command_and_length(u8 *data, int command, int length)
 
 static void put_checksum(u8 *check_string, int length)
 {
-;
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, " Computing string checksum.");
+	dprintk(verbose, DST_CA_DEBUG, 1, "  -> string length : 0x%02x", length);
 	check_string[length] = dst_check_sum (check_string, length);
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, "  -> checksum      : 0x%02x", check_string[length]);
 }
 
 static int dst_ci_command(struct dst_state* state, u8 * data, u8 *ca_string, u8 len, int read)
@@ -96,26 +96,26 @@ static int dst_ci_command(struct dst_state* state, u8 * data, u8 *ca_string, u8 
 	msleep(65);
 
 	if (write_dst(state, data, len)) {
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Write not successful, trying to recover");
 		dst_error_recovery(state);
 		goto error;
 	}
 	if ((dst_pio_disable(state)) < 0) {
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " DST PIO disable failed.");
 		goto error;
 	}
 	if (read_dst(state, &reply, GET_ACK) < 0) {
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Read not successful, trying to recover");
 		dst_error_recovery(state);
 		goto error;
 	}
 	if (read) {
 		if (! dst_wait_dst_ready(state, LONG_DELAY)) {
-;
+			dprintk(verbose, DST_CA_NOTICE, 1, " 8820 not ready");
 			goto error;
 		}
 		if (read_dst(state, ca_string, 128) < 0) {	/*	Try to make this dynamic	*/
-;
+			dprintk(verbose, DST_CA_INFO, 1, " Read not successful, trying to recover");
 			dst_error_recovery(state);
 			goto error;
 		}
@@ -134,7 +134,7 @@ static int dst_put_ci(struct dst_state *state, u8 *data, int len, u8 *ca_string,
 	u8 dst_ca_comm_err = 0;
 
 	while (dst_ca_comm_err < RETRIES) {
-;
+		dprintk(verbose, DST_CA_NOTICE, 1, " Put Command");
 		if (dst_ci_command(state, data, ca_string, len, read)) {	// If error
 			dst_error_recovery(state);
 			dst_ca_comm_err++; // work required here.
@@ -158,22 +158,22 @@ static int ca_get_app_info(struct dst_state *state)
 
 	put_checksum(&command[0], command[0]);
 	if ((dst_put_ci(state, command, sizeof(command), state->messages, GET_REPLY)) < 0) {
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " -->dst_put_ci FAILED !");
 		return -1;
 	}
-;
-;
-//	dprintk(verbose, DST_CA_INFO, 1, " Application Type=[%d], Application Vendor=[%d], Vendor Code=[%d]\n%s: Application info=[%s]",
-//		state->messages[7], (state->messages[8] << 8) | state->messages[9],
-;
-;
+	dprintk(verbose, DST_CA_INFO, 1, " -->dst_put_ci SUCCESS !");
+	dprintk(verbose, DST_CA_INFO, 1, " ================================ CI Module Application Info ======================================");
+	dprintk(verbose, DST_CA_INFO, 1, " Application Type=[%d], Application Vendor=[%d], Vendor Code=[%d]\n%s: Application info=[%s]",
+		state->messages[7], (state->messages[8] << 8) | state->messages[9],
+		(state->messages[10] << 8) | state->messages[11], __func__, (char *)(&state->messages[12]));
+	dprintk(verbose, DST_CA_INFO, 1, " ==================================================================================================");
 
 	// Transform dst message to correct application_info message
 	length = state->messages[5];
 	str_length = length - 6;
 	if (str_length < 0) {
 		str_length = 0;
-;
+		dprintk(verbose, DST_CA_ERROR, 1, "Invalid string length returned in ca_get_app_info(). Recovering.");
 	}
 
 	// First, the command and length fields
@@ -197,38 +197,38 @@ static int ca_get_ca_info(struct dst_state *state)
 
 	put_checksum(&slot_command[0], slot_command[0]);
 	if ((dst_put_ci(state, slot_command, sizeof (slot_command), state->messages, GET_REPLY)) < 0) {
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " -->dst_put_ci FAILED !");
 		return -1;
 	}
-;
+	dprintk(verbose, DST_CA_INFO, 1, " -->dst_put_ci SUCCESS !");
 
 	// Print raw data
-;
+	dprintk(verbose, DST_CA_INFO, 0, " DST data = [");
 	for (i = 0; i < state->messages[0] + 1; i++) {
-;
+		dprintk(verbose, DST_CA_INFO, 0, " 0x%02x", state->messages[i]);
 	}
-;
+	dprintk(verbose, DST_CA_INFO, 0, "]\n");
 
 	// Set the command and length of the output
 	num_ids = state->messages[in_num_ids_pos];
 	if (num_ids >= 100) {
 		num_ids = 100;
-;
+		dprintk(verbose, DST_CA_ERROR, 1, "Invalid number of ids (>100). Recovering.");
 	}
 	put_command_and_length(&state->messages[0], CA_INFO, num_ids * 2);
 
-;
+	dprintk(verbose, DST_CA_INFO, 0, " CA_INFO = [");
 	srcPtr = in_system_id_pos;
 	dstPtr = out_system_id_pos;
 	for(i = 0; i < num_ids; i++) {
-;
+		dprintk(verbose, DST_CA_INFO, 0, " 0x%02x%02x", state->messages[srcPtr + 0], state->messages[srcPtr + 1]);
 		// Append to output
 		state->messages[dstPtr + 0] = state->messages[srcPtr + 0];
 		state->messages[dstPtr + 1] = state->messages[srcPtr + 1];
 		srcPtr += 2;
 		dstPtr += 2;
 	}
-;
+	dprintk(verbose, DST_CA_INFO, 0, "]\n");
 
 	return 0;
 }
@@ -241,18 +241,18 @@ static int ca_get_slot_caps(struct dst_state *state, struct ca_caps *p_ca_caps, 
 
 	put_checksum(&slot_command[0], slot_command[0]);
 	if ((dst_put_ci(state, slot_command, sizeof (slot_command), slot_cap, GET_REPLY)) < 0) {
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " -->dst_put_ci FAILED !");
 		return -1;
 	}
-;
+	dprintk(verbose, DST_CA_NOTICE, 1, " -->dst_put_ci SUCCESS !");
 
 	/*	Will implement the rest soon		*/
 
-;
-;
+	dprintk(verbose, DST_CA_INFO, 1, " Slot cap = [%d]", slot_cap[7]);
+	dprintk(verbose, DST_CA_INFO, 0, "===================================\n");
 	for (i = 0; i < slot_cap[0] + 1; i++)
-;
-;
+		dprintk(verbose, DST_CA_INFO, 0, " %d", slot_cap[i]);
+	dprintk(verbose, DST_CA_INFO, 0, "\n");
 
 	p_ca_caps->slot_num = 1;
 	p_ca_caps->slot_type = 1;
@@ -281,18 +281,18 @@ static int ca_get_slot_info(struct dst_state *state, struct ca_slot_info *p_ca_s
 
 	put_checksum(&slot_command[0], 7);
 	if ((dst_put_ci(state, slot_command, sizeof (slot_command), slot_info, GET_REPLY)) < 0) {
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " -->dst_put_ci FAILED !");
 		return -1;
 	}
-;
+	dprintk(verbose, DST_CA_INFO, 1, " -->dst_put_ci SUCCESS !");
 
 	/*	Will implement the rest soon		*/
 
-;
-;
+	dprintk(verbose, DST_CA_INFO, 1, " Slot info = [%d]", slot_info[3]);
+	dprintk(verbose, DST_CA_INFO, 0, "===================================\n");
 	for (i = 0; i < 8; i++)
-;
-;
+		dprintk(verbose, DST_CA_INFO, 0, " %d", slot_info[i]);
+	dprintk(verbose, DST_CA_INFO, 0, "\n");
 
 	if (slot_info[4] & 0x80) {
 		p_ca_slot_info->flags = CA_CI_MODULE_PRESENT;
@@ -321,14 +321,14 @@ static int ca_get_message(struct dst_state *state, struct ca_msg *p_ca_message, 
 		return -EFAULT;
 
 	if (p_ca_message->msg) {
-;
+		dprintk(verbose, DST_CA_NOTICE, 1, " Message = [%02x %02x %02x]", p_ca_message->msg[0], p_ca_message->msg[1], p_ca_message->msg[2]);
 
 		for (i = 0; i < 3; i++) {
 			command = command | p_ca_message->msg[i];
 			if (i < 2)
 				command = command << 8;
 		}
-;
+		dprintk(verbose, DST_CA_NOTICE, 1, " Command=[0x%x]", command);
 
 		switch (command) {
 		case CA_APP_INFO:
@@ -378,12 +378,12 @@ static int handle_dst_tag(struct dst_state *state, struct ca_msg *p_ca_message, 
 static int write_to_8820(struct dst_state *state, struct ca_msg *hw_buffer, u8 length, u8 reply)
 {
 	if ((dst_put_ci(state, hw_buffer->msg, length, hw_buffer->msg, reply)) < 0) {
-;
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " DST-CI Command failed.");
+		dprintk(verbose, DST_CA_NOTICE, 1, " Resetting DST.");
 		rdc_reset_state(state);
 		return -1;
 	}
-;
+	dprintk(verbose, DST_CA_NOTICE, 1, " DST-CI Command success.");
 
 	return 0;
 }
@@ -394,16 +394,16 @@ static u32 asn_1_decode(u8 *asn_1_array)
 	u32 length = 0;
 
 	length_field = asn_1_array[0];
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, " Length field=[%02x]", length_field);
 	if (length_field < 0x80) {
 		length = length_field & 0x7f;
-;
+		dprintk(verbose, DST_CA_DEBUG, 1, " Length=[%02x]\n", length);
 	} else {
 		word_count = length_field & 0x7f;
 		for (count = 0; count < word_count; count++) {
 			length = length  << 8;
 			length += asn_1_array[count + 1];
-;
+			dprintk(verbose, DST_CA_DEBUG, 1, " Length=[%04x]", length);
 		}
 	}
 	return length;
@@ -413,10 +413,10 @@ static int debug_string(u8 *msg, u32 length, u32 offset)
 {
 	u32 i;
 
-;
+	dprintk(verbose, DST_CA_DEBUG, 0, " String=[ ");
 	for (i = offset; i < length; i++)
-;
-;
+		dprintk(verbose, DST_CA_DEBUG, 0, "%02x ", msg[i]);
+	dprintk(verbose, DST_CA_DEBUG, 0, "]\n");
 
 	return 0;
 }
@@ -428,7 +428,7 @@ static int ca_set_pmt(struct dst_state *state, struct ca_msg *p_ca_message, stru
 	u8 tag_length = 8;
 
 	length = asn_1_decode(&p_ca_message->msg[3]);
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, " CA Message length=[%d]", length);
 	debug_string(&p_ca_message->msg[4], length, 0); /*	length is excluding tag & length	*/
 
 	memset(hw_buffer->msg, '\0', length);
@@ -453,21 +453,21 @@ static int dst_check_ca_pmt(struct dst_state *state, struct ca_msg *p_ca_message
 	/*	CA PMT Reply capable		*/
 	if (ca_pmt_reply_test) {
 		if ((ca_set_pmt(state, p_ca_message, hw_buffer, 1, GET_REPLY)) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " ca_set_pmt.. failed !");
 			return -1;
 		}
 
 	/*	Process CA PMT Reply		*/
 	/*	will implement soon		*/
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " Not there yet");
 	}
 	/*	CA PMT Reply not capable	*/
 	if (!ca_pmt_reply_test) {
 		if ((ca_set_pmt(state, p_ca_message, hw_buffer, 0, NO_REPLY)) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " ca_set_pmt.. failed !");
 			return -1;
 		}
-;
+		dprintk(verbose, DST_CA_NOTICE, 1, " ca_set_pmt.. success !");
 	/*	put a dummy message		*/
 
 	}
@@ -484,10 +484,10 @@ static int ca_send_message(struct dst_state *state, struct ca_msg *p_ca_message,
 	int result = 0;
 
 	if ((hw_buffer = kmalloc(sizeof (struct ca_msg), GFP_KERNEL)) == NULL) {
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " Memory allocation failure");
 		return -ENOMEM;
 	}
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, " ");
 
 	if (copy_from_user(p_ca_message, arg, sizeof (struct ca_msg))) {
 		result = -EFAULT;
@@ -505,47 +505,47 @@ static int ca_send_message(struct dst_state *state, struct ca_msg *p_ca_message,
 			if (i < 2)
 				command = command << 8;
 		}
-;
+		dprintk(verbose, DST_CA_DEBUG, 1, " Command=[0x%x]\n", command);
 
 		switch (command) {
 		case CA_PMT:
-;
+			dprintk(verbose, DST_CA_DEBUG, 1, "Command = SEND_CA_PMT");
 			if ((ca_set_pmt(state, p_ca_message, hw_buffer, 0, 0)) < 0) {	// code simplification started
-;
+				dprintk(verbose, DST_CA_ERROR, 1, " -->CA_PMT Failed !");
 				result = -1;
 				goto free_mem_and_exit;
 			}
-;
+			dprintk(verbose, DST_CA_INFO, 1, " -->CA_PMT Success !");
 			break;
 		case CA_PMT_REPLY:
-;
+			dprintk(verbose, DST_CA_INFO, 1, "Command = CA_PMT_REPLY");
 			/*      Have to handle the 2 basic types of cards here  */
 			if ((dst_check_ca_pmt(state, p_ca_message, hw_buffer)) < 0) {
-;
+				dprintk(verbose, DST_CA_ERROR, 1, " -->CA_PMT_REPLY Failed !");
 				result = -1;
 				goto free_mem_and_exit;
 			}
-;
+			dprintk(verbose, DST_CA_INFO, 1, " -->CA_PMT_REPLY Success !");
 			break;
 		case CA_APP_INFO_ENQUIRY:		// only for debugging
-;
+			dprintk(verbose, DST_CA_INFO, 1, " Getting Cam Application information");
 
 			if ((ca_get_app_info(state)) < 0) {
-;
+				dprintk(verbose, DST_CA_ERROR, 1, " -->CA_APP_INFO_ENQUIRY Failed !");
 				result = -1;
 				goto free_mem_and_exit;
 			}
-;
+			dprintk(verbose, DST_CA_INFO, 1, " -->CA_APP_INFO_ENQUIRY Success !");
 			break;
 		case CA_INFO_ENQUIRY:
-;
+			dprintk(verbose, DST_CA_INFO, 1, " Getting CA Information");
 
 			if ((ca_get_ca_info(state)) < 0) {
-;
+				dprintk(verbose, DST_CA_ERROR, 1, " -->CA_INFO_ENQUIRY Failed !");
 				result = -1;
 				goto free_mem_and_exit;
 			}
-;
+			dprintk(verbose, DST_CA_INFO, 1, " -->CA_INFO_ENQUIRY Success !");
 			break;
 		}
 	}
@@ -572,7 +572,7 @@ static long dst_ca_ioctl(struct file *file, unsigned int cmd, unsigned long ioct
 	p_ca_slot_info = kmalloc(sizeof (struct ca_slot_info), GFP_KERNEL);
 	p_ca_caps = kmalloc(sizeof (struct ca_caps), GFP_KERNEL);
 	if (!p_ca_message || !p_ca_slot_info || !p_ca_caps) {
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " Memory allocation failure");
 		result = -ENOMEM;
 		goto free_mem_and_exit;
 	}
@@ -580,71 +580,71 @@ static long dst_ca_ioctl(struct file *file, unsigned int cmd, unsigned long ioct
 	/*	We have now only the standard ioctl's, the driver is upposed to handle internals.	*/
 	switch (cmd) {
 	case CA_SEND_MSG:
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Sending message");
 		if ((ca_send_message(state, p_ca_message, arg)) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " -->CA_SEND_MSG Failed !");
 			result = -1;
 			goto free_mem_and_exit;
 		}
 		break;
 	case CA_GET_MSG:
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Getting message");
 		if ((ca_get_message(state, p_ca_message, arg)) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " -->CA_GET_MSG Failed !");
 			result = -1;
 			goto free_mem_and_exit;
 		}
-;
+		dprintk(verbose, DST_CA_INFO, 1, " -->CA_GET_MSG Success !");
 		break;
 	case CA_RESET:
-;
+		dprintk(verbose, DST_CA_ERROR, 1, " Resetting DST");
 		dst_error_bailout(state);
 		msleep(4000);
 		break;
 	case CA_GET_SLOT_INFO:
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Getting Slot info");
 		if ((ca_get_slot_info(state, p_ca_slot_info, arg)) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " -->CA_GET_SLOT_INFO Failed !");
 			result = -1;
 			goto free_mem_and_exit;
 		}
-;
+		dprintk(verbose, DST_CA_INFO, 1, " -->CA_GET_SLOT_INFO Success !");
 		break;
 	case CA_GET_CAP:
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Getting Slot capabilities");
 		if ((ca_get_slot_caps(state, p_ca_caps, arg)) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " -->CA_GET_CAP Failed !");
 			result = -1;
 			goto free_mem_and_exit;
 		}
-;
+		dprintk(verbose, DST_CA_INFO, 1, " -->CA_GET_CAP Success !");
 		break;
 	case CA_GET_DESCR_INFO:
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Getting descrambler description");
 		if ((ca_get_slot_descr(state, p_ca_message, arg)) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " -->CA_GET_DESCR_INFO Failed !");
 			result = -1;
 			goto free_mem_and_exit;
 		}
-;
+		dprintk(verbose, DST_CA_INFO, 1, " -->CA_GET_DESCR_INFO Success !");
 		break;
 	case CA_SET_DESCR:
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Setting descrambler");
 		if ((ca_set_slot_descr()) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " -->CA_SET_DESCR Failed !");
 			result = -1;
 			goto free_mem_and_exit;
 		}
-;
+		dprintk(verbose, DST_CA_INFO, 1, " -->CA_SET_DESCR Success !");
 		break;
 	case CA_SET_PID:
-;
+		dprintk(verbose, DST_CA_INFO, 1, " Setting PID");
 		if ((ca_set_pid()) < 0) {
-;
+			dprintk(verbose, DST_CA_ERROR, 1, " -->CA_SET_PID Failed !");
 			result = -1;
 			goto free_mem_and_exit;
 		}
-;
+		dprintk(verbose, DST_CA_INFO, 1, " -->CA_SET_PID Success !");
 	default:
 		result = -EOPNOTSUPP;
 	};
@@ -659,7 +659,7 @@ static long dst_ca_ioctl(struct file *file, unsigned int cmd, unsigned long ioct
 
 static int dst_ca_open(struct inode *inode, struct file *file)
 {
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, " Device opened [%p] ", file);
 	try_module_get(THIS_MODULE);
 
 	return 0;
@@ -667,7 +667,7 @@ static int dst_ca_open(struct inode *inode, struct file *file)
 
 static int dst_ca_release(struct inode *inode, struct file *file)
 {
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, " Device closed.");
 	module_put(THIS_MODULE);
 
 	return 0;
@@ -677,14 +677,14 @@ static ssize_t dst_ca_read(struct file *file, char __user *buffer, size_t length
 {
 	ssize_t bytes_read = 0;
 
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, " Device read.");
 
 	return bytes_read;
 }
 
 static ssize_t dst_ca_write(struct file *file, const char __user *buffer, size_t length, loff_t *offset)
 {
-;
+	dprintk(verbose, DST_CA_DEBUG, 1, " Device write.");
 
 	return 0;
 }
@@ -711,7 +711,7 @@ struct dvb_device *dst_ca_attach(struct dst_state *dst, struct dvb_adapter *dvb_
 {
 	struct dvb_device *dvbdev;
 
-;
+	dprintk(verbose, DST_CA_ERROR, 1, "registering DST-CA device");
 	if (dvb_register_device(dvb_adapter, &dvbdev, &dvbdev_ca, dst, DVB_DEVICE_CA) == 0) {
 		dst->dst_ca = dvbdev;
 		return dst->dst_ca;

@@ -259,16 +259,16 @@ void __iomem *x38_map_mchbar(struct pci_dev *pdev)
 	u.mchbar &= X38_MCHBAR_MASK;
 
 	if (u.mchbar != (resource_size_t)u.mchbar) {
-//		printk(KERN_ERR
-//			"x38: mmio space beyond accessible range (0x%llx)\n",
-;
+		printk(KERN_ERR
+			"x38: mmio space beyond accessible range (0x%llx)\n",
+			(unsigned long long)u.mchbar);
 		return NULL;
 	}
 
 	window = ioremap_nocache(u.mchbar, X38_MMR_WINDOW_SIZE);
 	if (!window)
-//		printk(KERN_ERR "x38: cannot map mmio space at 0x%llx\n",
-;
+		printk(KERN_ERR "x38: cannot map mmio space at 0x%llx\n",
+			(unsigned long long)u.mchbar);
 
 	return window;
 }

@@ -144,9 +144,9 @@ static const struct file_operations phone_fops =
 
 static int __init telephony_init(void)
 {
-;
+	printk(KERN_INFO "Linux telephony interface: v1.00\n");
 	if (register_chrdev(PHONE_MAJOR, "telephony", &phone_fops)) {
-;
+		printk("phonedev: unable to get major %d\n", PHONE_MAJOR);
 		return -EIO;
 	}
 

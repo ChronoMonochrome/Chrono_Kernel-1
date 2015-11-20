@@ -21,8 +21,8 @@ ACPI_MODULE_NAME("processor_core");
 
 static int __init set_no_mwait(const struct dmi_system_id *id)
 {
-//	printk(KERN_NOTICE PREFIX "%s detected - "
-;
+	printk(KERN_NOTICE PREFIX "%s detected - "
+		"disabling mwait for CPU C-states\n", id->ident);
 	boot_option_idle_override = IDLE_NOMWAIT;
 	return 0;
 }
@@ -274,20 +274,20 @@ static struct acpi_object_list *__cpuinit acpi_processor_alloc_pdc(void)
 	/* allocate and initialize pdc. It will be used later. */
 	obj_list = kmalloc(sizeof(struct acpi_object_list), GFP_KERNEL);
 	if (!obj_list) {
-;
+		printk(KERN_ERR "Memory allocation error\n");
 		return NULL;
 	}
 
 	obj = kmalloc(sizeof(union acpi_object), GFP_KERNEL);
 	if (!obj) {
-;
+		printk(KERN_ERR "Memory allocation error\n");
 		kfree(obj_list);
 		return NULL;
 	}
 
 	buf = kmalloc(12, GFP_KERNEL);
 	if (!buf) {
-;
+		printk(KERN_ERR "Memory allocation error\n");
 		kfree(obj);
 		kfree(obj_list);
 		return NULL;

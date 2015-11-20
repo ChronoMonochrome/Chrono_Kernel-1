@@ -167,8 +167,8 @@ int b1_load_t4file(avmcard *card, capiloaddatapart * t4file)
 		}
 		for (i = 0; i < FWBUF_SIZE; i++)
 			if (b1_save_put_byte(base, buf[i]) < 0) {
-//				printk(KERN_ERR "%s: corrupted firmware file ?\n",
-;
+				printk(KERN_ERR "%s: corrupted firmware file ?\n",
+						card->name);
 				return -EIO;
 			}
 		left -= FWBUF_SIZE;
@@ -183,8 +183,8 @@ int b1_load_t4file(avmcard *card, capiloaddatapart * t4file)
 		}
 		for (i = 0; i < left; i++)
 			if (b1_save_put_byte(base, buf[i]) < 0) {
-//				printk(KERN_ERR "%s: corrupted firmware file ?\n",
-;
+				printk(KERN_ERR "%s: corrupted firmware file ?\n",
+						card->name);
 				return -EIO;
 			}
 	}
@@ -254,8 +254,8 @@ int b1_loaded(avmcard *card)
 			break;
 	}
 	if (!b1_tx_empty(base)) {
-//		printk(KERN_ERR "%s: b1_loaded: tx err, corrupted t4 file ?\n",
-;
+		printk(KERN_ERR "%s: b1_loaded: tx err, corrupted t4 file ?\n",
+				card->name);
 		return 0;
 	}
 	b1_put_byte(base, SEND_POLL);
@@ -264,12 +264,12 @@ int b1_loaded(avmcard *card)
 			if ((ans = b1_get_byte(base)) == RECEIVE_POLL) {
 				return 1;
 			}
-//			printk(KERN_ERR "%s: b1_loaded: got 0x%x, firmware not running\n",
-;
+			printk(KERN_ERR "%s: b1_loaded: got 0x%x, firmware not running\n",
+					card->name, ans);
 			return 0;
 		}
 	}
-;
+	printk(KERN_ERR "%s: b1_loaded: firmware not running\n", card->name);
 	return 0;
 }
 
@@ -287,8 +287,8 @@ int b1_load_firmware(struct capi_ctr *ctrl, capiloaddata *data)
 
 	if ((retval = b1_load_t4file(card, &data->firmware))) {
 		b1_reset(port);
-//		printk(KERN_ERR "%s: failed to load t4file!!\n",
-;
+		printk(KERN_ERR "%s: failed to load t4file!!\n",
+					card->name);
 		return retval;
 	}
 
@@ -297,14 +297,14 @@ int b1_load_firmware(struct capi_ctr *ctrl, capiloaddata *data)
 	if (data->configuration.len > 0 && data->configuration.data) {
 		if ((retval = b1_load_config(card, &data->configuration))) {
 			b1_reset(port);
-//			printk(KERN_ERR "%s: failed to load config!!\n",
-;
+			printk(KERN_ERR "%s: failed to load config!!\n",
+					card->name);
 			return retval;
 		}
 	}
 
 	if (!b1_loaded(card)) {
-;
+		printk(KERN_ERR "%s: failed to load t4file.\n", card->name);
 		return -EIO;
 	}
 
@@ -456,33 +456,33 @@ void b1_parse_version(avmctrl_info *cinfo)
 	case 7: strcpy(cinfo->cardname,"B1 PCI"); break;
 	default: sprintf(cinfo->cardname, "AVM?%u", (unsigned int)flag); break;
         }
-//        printk(KERN_NOTICE "%s: card %d \"%s\" ready.\n",
-;
+        printk(KERN_NOTICE "%s: card %d \"%s\" ready.\n",
+				card->name, ctrl->cnr, cinfo->cardname);
 
         flag = ((u8 *)(profp->manu))[3];
         if (flag)
-//		printk(KERN_NOTICE "%s: card %d Protocol:%s%s%s%s%s%s%s\n",
-//			card->name,
-//			ctrl->cnr,
-//			(flag & 0x01) ? " DSS1" : "",
-//			(flag & 0x02) ? " CT1" : "",
-//			(flag & 0x04) ? " VN3" : "",
-//			(flag & 0x08) ? " NI1" : "",
-//			(flag & 0x10) ? " AUSTEL" : "",
-//			(flag & 0x20) ? " ESS" : "",
-//			(flag & 0x40) ? " 1TR6" : ""
-;
+		printk(KERN_NOTICE "%s: card %d Protocol:%s%s%s%s%s%s%s\n",
+			card->name,
+			ctrl->cnr,
+			(flag & 0x01) ? " DSS1" : "",
+			(flag & 0x02) ? " CT1" : "",
+			(flag & 0x04) ? " VN3" : "",
+			(flag & 0x08) ? " NI1" : "",
+			(flag & 0x10) ? " AUSTEL" : "",
+			(flag & 0x20) ? " ESS" : "",
+			(flag & 0x40) ? " 1TR6" : ""
+			);
 
         flag = ((u8 *)(profp->manu))[5];
 	if (flag)
-//		printk(KERN_NOTICE "%s: card %d Linetype:%s%s%s%s\n",
-//			card->name,
-//			ctrl->cnr,
-//			(flag & 0x01) ? " point to point" : "",
-//			(flag & 0x02) ? " point to multipoint" : "",
-//			(flag & 0x08) ? " leased line without D-channel" : "",
-//			(flag & 0x04) ? " leased line with D-channel" : ""
-;
+		printk(KERN_NOTICE "%s: card %d Linetype:%s%s%s%s\n",
+			card->name,
+			ctrl->cnr,
+			(flag & 0x01) ? " point to point" : "",
+			(flag & 0x02) ? " point to multipoint" : "",
+			(flag & 0x08) ? " leased line without D-channel" : "",
+			(flag & 0x04) ? " leased line with D-channel" : ""
+			);
 }
 
 /* ------------------------------------------------------------- */
@@ -526,8 +526,8 @@ irqreturn_t b1_interrupt(int interrupt, void *devptr)
 			CAPIMSG_SETLEN(card->msgbuf, 30);
 		}
 		if (!(skb = alloc_skb(DataB3Len + MsgLen, GFP_ATOMIC))) {
-//			printk(KERN_ERR "%s: incoming packet dropped\n",
-;
+			printk(KERN_ERR "%s: incoming packet dropped\n",
+					card->name);
 		} else {
 			memcpy(skb_put(skb, MsgLen), card->msgbuf, MsgLen);
 			memcpy(skb_put(skb, DataB3Len), card->databuf, DataB3Len);
@@ -540,8 +540,8 @@ irqreturn_t b1_interrupt(int interrupt, void *devptr)
 		ApplId = (unsigned) b1_get_word(card->port);
 		MsgLen = b1_get_slice(card->port, card->msgbuf);
 		if (!(skb = alloc_skb(MsgLen, GFP_ATOMIC))) {
-//			printk(KERN_ERR "%s: incoming packet dropped\n",
-;
+			printk(KERN_ERR "%s: incoming packet dropped\n",
+					card->name);
 			spin_unlock_irqrestore(&card->lock, flags);
 		} else {
 			memcpy(skb_put(skb, MsgLen), card->msgbuf, MsgLen);
@@ -588,10 +588,10 @@ irqreturn_t b1_interrupt(int interrupt, void *devptr)
 		cinfo->versionlen = b1_get_slice(card->port, cinfo->versionbuf);
 		spin_unlock_irqrestore(&card->lock, flags);
 		b1_parse_version(cinfo);
-//		printk(KERN_INFO "%s: %s-card (%s) now active\n",
-//		       card->name,
-//		       cinfo->version[VER_CARDTYPE],
-;
+		printk(KERN_INFO "%s: %s-card (%s) now active\n",
+		       card->name,
+		       cinfo->version[VER_CARDTYPE],
+		       cinfo->version[VER_DRIVER]);
 		capi_ctr_ready(ctrl);
 		break;
 
@@ -606,8 +606,8 @@ irqreturn_t b1_interrupt(int interrupt, void *devptr)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
-//		printk(KERN_INFO "%s: task %d \"%s\" ready.\n",
-;
+		printk(KERN_INFO "%s: task %d \"%s\" ready.\n",
+				card->name, ApplId, card->msgbuf);
 		break;
 
 	case RECEIVE_DEBUGMSG:
@@ -620,17 +620,17 @@ irqreturn_t b1_interrupt(int interrupt, void *devptr)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
-;
+		printk(KERN_INFO "%s: DEBUG: %s\n", card->name, card->msgbuf);
 		break;
 
 	case 0xff:
 		spin_unlock_irqrestore(&card->lock, flags);
-;
+		printk(KERN_ERR "%s: card removed ?\n", card->name);
 		return IRQ_NONE;
 	default:
 		spin_unlock_irqrestore(&card->lock, flags);
-//		printk(KERN_ERR "%s: b1_interrupt: 0x%x ???\n",
-;
+		printk(KERN_ERR "%s: b1_interrupt: 0x%x ???\n",
+				card->name, b1cmd);
 		return IRQ_HANDLED;
 	}
 	return IRQ_HANDLED;
@@ -726,14 +726,14 @@ avmcard_dma_alloc(char *name, struct pci_dev *pdev, long rsize, long ssize)
 
 	p = kzalloc(sizeof(avmcard_dmainfo), GFP_KERNEL);
 	if (!p) {
-;
+		printk(KERN_WARNING "%s: no memory.\n", name);
 		goto err;
 	}
 
 	p->recvbuf.size = rsize;
 	buf = pci_alloc_consistent(pdev, rsize, &p->recvbuf.dmaaddr);
 	if (!buf) {
-;
+		printk(KERN_WARNING "%s: allocation of receive dma buffer failed.\n", name);
 		goto err_kfree;
 	}
 	p->recvbuf.dmabuf = buf;
@@ -741,7 +741,7 @@ avmcard_dma_alloc(char *name, struct pci_dev *pdev, long rsize, long ssize)
 	p->sendbuf.size = ssize;
 	buf = pci_alloc_consistent(pdev, ssize, &p->sendbuf.dmaaddr);
 	if (!buf) {
-;
+		printk(KERN_WARNING "%s: allocation of send dma buffer failed.\n", name);
 		goto err_free_consistent;
 	}
 
@@ -804,7 +804,7 @@ static int __init b1_init(void)
 	} else
 		strcpy(rev, "1.0");
 
-;
+	printk(KERN_INFO "b1: revision %s\n", rev);
 
 	return 0;
 }

@@ -37,138 +37,138 @@
 
 #define EDAC_MOD_STR      "i5400_edac"
 
-//#define i5400_printk(level, fmt, arg...) \
-//	edac_printk(level, "i5400", fmt, ##arg)
-//
-//#define i5400_mc_printk(mci, level, fmt, arg...) \
-//	edac_mc_chipset_printk(mci, level, "i5400", fmt, ##arg)
-//
-///* Limits for i5400 */
-//#define NUM_MTRS_PER_BRANCH	4
-//#define CHANNELS_PER_BRANCH	2
-//#define MAX_DIMMS_PER_CHANNEL	NUM_MTRS_PER_BRANCH
-//#define	MAX_CHANNELS		4
-///* max possible csrows per channel */
-//#define MAX_CSROWS		(MAX_DIMMS_PER_CHANNEL)
-//
-///* Device 16,
-// * Function 0: System Address
-// * Function 1: Memory Branch Map, Control, Errors Register
-// * Function 2: FSB Error Registers
-// *
-// * All 3 functions of Device 16 (0,1,2) share the SAME DID and
-// * uses PCI_DEVICE_ID_INTEL_5400_ERR for device 16 (0,1,2),
-// * PCI_DEVICE_ID_INTEL_5400_FBD0 and PCI_DEVICE_ID_INTEL_5400_FBD1
-// * for device 21 (0,1).
-// */
-//
-//	/* OFFSETS for Function 0 */
-//#define		AMBASE			0x48 /* AMB Mem Mapped Reg Region Base */
-//#define		MAXCH			0x56 /* Max Channel Number */
-//#define		MAXDIMMPERCH		0x57 /* Max DIMM PER Channel Number */
-//
-//	/* OFFSETS for Function 1 */
-//#define		TOLM			0x6C
-//#define		REDMEMB			0x7C
-//#define			REC_ECC_LOCATOR_ODD(x)	((x) & 0x3fe00) /* bits [17:9] indicate ODD, [8:0]  indicate EVEN */
-//#define		MIR0			0x80
-//#define		MIR1			0x84
-//#define		AMIR0			0x8c
-//#define		AMIR1			0x90
-//
-//	/* Fatal error registers */
-//#define		FERR_FAT_FBD		0x98	/* also called as FERR_FAT_FB_DIMM at datasheet */
-//#define			FERR_FAT_FBDCHAN (3<<28)	/* channel index where the highest-order error occurred */
-//
-//#define		NERR_FAT_FBD		0x9c
-//#define		FERR_NF_FBD		0xa0	/* also called as FERR_NFAT_FB_DIMM at datasheet */
-//
-//	/* Non-fatal error register */
-//#define		NERR_NF_FBD		0xa4
-//
-//	/* Enable error mask */
-//#define		EMASK_FBD		0xa8
-//
-//#define		ERR0_FBD		0xac
-//#define		ERR1_FBD		0xb0
-//#define		ERR2_FBD		0xb4
-//#define		MCERR_FBD		0xb8
-//
-//	/* No OFFSETS for Device 16 Function 2 */
-//
-///*
-// * Device 21,
-// * Function 0: Memory Map Branch 0
-// *
-// * Device 22,
-// * Function 0: Memory Map Branch 1
-// */
-//
-//	/* OFFSETS for Function 0 */
-//#define AMBPRESENT_0	0x64
-//#define AMBPRESENT_1	0x66
-//#define MTR0		0x80
-//#define MTR1		0x82
-//#define MTR2		0x84
-//#define MTR3		0x86
-//
-//	/* OFFSETS for Function 1 */
-//#define NRECFGLOG		0x74
-//#define RECFGLOG		0x78
-//#define NRECMEMA		0xbe
-//#define NRECMEMB		0xc0
-//#define NRECFB_DIMMA		0xc4
-//#define NRECFB_DIMMB		0xc8
-//#define NRECFB_DIMMC		0xcc
-//#define NRECFB_DIMMD		0xd0
-//#define NRECFB_DIMME		0xd4
-//#define NRECFB_DIMMF		0xd8
-//#define REDMEMA			0xdC
-//#define RECMEMA			0xf0
-//#define RECMEMB			0xf4
-//#define RECFB_DIMMA		0xf8
-//#define RECFB_DIMMB		0xec
-//#define RECFB_DIMMC		0xf0
-//#define RECFB_DIMMD		0xf4
-//#define RECFB_DIMME		0xf8
-//#define RECFB_DIMMF		0xfC
-//
-///*
-// * Error indicator bits and masks
-// * Error masks are according with Table 5-17 of i5400 datasheet
-// */
-//
-//enum error_mask {
-//	EMASK_M1  = 1<<0,  /* Memory Write error on non-redundant retry */
-//	EMASK_M2  = 1<<1,  /* Memory or FB-DIMM configuration CRC read error */
-//	EMASK_M3  = 1<<2,  /* Reserved */
-//	EMASK_M4  = 1<<3,  /* Uncorrectable Data ECC on Replay */
-//	EMASK_M5  = 1<<4,  /* Aliased Uncorrectable Non-Mirrored Demand Data ECC */
-//	EMASK_M6  = 1<<5,  /* Unsupported on i5400 */
-//	EMASK_M7  = 1<<6,  /* Aliased Uncorrectable Resilver- or Spare-Copy Data ECC */
-//	EMASK_M8  = 1<<7,  /* Aliased Uncorrectable Patrol Data ECC */
-//	EMASK_M9  = 1<<8,  /* Non-Aliased Uncorrectable Non-Mirrored Demand Data ECC */
-//	EMASK_M10 = 1<<9,  /* Unsupported on i5400 */
-//	EMASK_M11 = 1<<10, /* Non-Aliased Uncorrectable Resilver- or Spare-Copy Data ECC  */
-//	EMASK_M12 = 1<<11, /* Non-Aliased Uncorrectable Patrol Data ECC */
-//	EMASK_M13 = 1<<12, /* Memory Write error on first attempt */
-//	EMASK_M14 = 1<<13, /* FB-DIMM Configuration Write error on first attempt */
-//	EMASK_M15 = 1<<14, /* Memory or FB-DIMM configuration CRC read error */
-//	EMASK_M16 = 1<<15, /* Channel Failed-Over Occurred */
-//	EMASK_M17 = 1<<16, /* Correctable Non-Mirrored Demand Data ECC */
-//	EMASK_M18 = 1<<17, /* Unsupported on i5400 */
-//	EMASK_M19 = 1<<18, /* Correctable Resilver- or Spare-Copy Data ECC */
-//	EMASK_M20 = 1<<19, /* Correctable Patrol Data ECC */
-//	EMASK_M21 = 1<<20, /* FB-DIMM Northbound parity error on FB-DIMM Sync Status */
-//	EMASK_M22 = 1<<21, /* SPD protocol Error */
-//	EMASK_M23 = 1<<22, /* Non-Redundant Fast Reset Timeout */
-//	EMASK_M24 = 1<<23, /* Refresh error */
-//	EMASK_M25 = 1<<24, /* Memory Write error on redundant retry */
-//	EMASK_M26 = 1<<25, /* Redundant Fast Reset Timeout */
-//	EMASK_M27 = 1<<26, /* Correctable Counter Threshold Exceeded */
-//	EMASK_M28 = 1<<27, /* DIMM-Spare Copy Completed */
-//	EMASK_M29 = 1<<28, /* DIMM-Isolation Completed */
-;
+#define i5400_printk(level, fmt, arg...) \
+	edac_printk(level, "i5400", fmt, ##arg)
+
+#define i5400_mc_printk(mci, level, fmt, arg...) \
+	edac_mc_chipset_printk(mci, level, "i5400", fmt, ##arg)
+
+/* Limits for i5400 */
+#define NUM_MTRS_PER_BRANCH	4
+#define CHANNELS_PER_BRANCH	2
+#define MAX_DIMMS_PER_CHANNEL	NUM_MTRS_PER_BRANCH
+#define	MAX_CHANNELS		4
+/* max possible csrows per channel */
+#define MAX_CSROWS		(MAX_DIMMS_PER_CHANNEL)
+
+/* Device 16,
+ * Function 0: System Address
+ * Function 1: Memory Branch Map, Control, Errors Register
+ * Function 2: FSB Error Registers
+ *
+ * All 3 functions of Device 16 (0,1,2) share the SAME DID and
+ * uses PCI_DEVICE_ID_INTEL_5400_ERR for device 16 (0,1,2),
+ * PCI_DEVICE_ID_INTEL_5400_FBD0 and PCI_DEVICE_ID_INTEL_5400_FBD1
+ * for device 21 (0,1).
+ */
+
+	/* OFFSETS for Function 0 */
+#define		AMBASE			0x48 /* AMB Mem Mapped Reg Region Base */
+#define		MAXCH			0x56 /* Max Channel Number */
+#define		MAXDIMMPERCH		0x57 /* Max DIMM PER Channel Number */
+
+	/* OFFSETS for Function 1 */
+#define		TOLM			0x6C
+#define		REDMEMB			0x7C
+#define			REC_ECC_LOCATOR_ODD(x)	((x) & 0x3fe00) /* bits [17:9] indicate ODD, [8:0]  indicate EVEN */
+#define		MIR0			0x80
+#define		MIR1			0x84
+#define		AMIR0			0x8c
+#define		AMIR1			0x90
+
+	/* Fatal error registers */
+#define		FERR_FAT_FBD		0x98	/* also called as FERR_FAT_FB_DIMM at datasheet */
+#define			FERR_FAT_FBDCHAN (3<<28)	/* channel index where the highest-order error occurred */
+
+#define		NERR_FAT_FBD		0x9c
+#define		FERR_NF_FBD		0xa0	/* also called as FERR_NFAT_FB_DIMM at datasheet */
+
+	/* Non-fatal error register */
+#define		NERR_NF_FBD		0xa4
+
+	/* Enable error mask */
+#define		EMASK_FBD		0xa8
+
+#define		ERR0_FBD		0xac
+#define		ERR1_FBD		0xb0
+#define		ERR2_FBD		0xb4
+#define		MCERR_FBD		0xb8
+
+	/* No OFFSETS for Device 16 Function 2 */
+
+/*
+ * Device 21,
+ * Function 0: Memory Map Branch 0
+ *
+ * Device 22,
+ * Function 0: Memory Map Branch 1
+ */
+
+	/* OFFSETS for Function 0 */
+#define AMBPRESENT_0	0x64
+#define AMBPRESENT_1	0x66
+#define MTR0		0x80
+#define MTR1		0x82
+#define MTR2		0x84
+#define MTR3		0x86
+
+	/* OFFSETS for Function 1 */
+#define NRECFGLOG		0x74
+#define RECFGLOG		0x78
+#define NRECMEMA		0xbe
+#define NRECMEMB		0xc0
+#define NRECFB_DIMMA		0xc4
+#define NRECFB_DIMMB		0xc8
+#define NRECFB_DIMMC		0xcc
+#define NRECFB_DIMMD		0xd0
+#define NRECFB_DIMME		0xd4
+#define NRECFB_DIMMF		0xd8
+#define REDMEMA			0xdC
+#define RECMEMA			0xf0
+#define RECMEMB			0xf4
+#define RECFB_DIMMA		0xf8
+#define RECFB_DIMMB		0xec
+#define RECFB_DIMMC		0xf0
+#define RECFB_DIMMD		0xf4
+#define RECFB_DIMME		0xf8
+#define RECFB_DIMMF		0xfC
+
+/*
+ * Error indicator bits and masks
+ * Error masks are according with Table 5-17 of i5400 datasheet
+ */
+
+enum error_mask {
+	EMASK_M1  = 1<<0,  /* Memory Write error on non-redundant retry */
+	EMASK_M2  = 1<<1,  /* Memory or FB-DIMM configuration CRC read error */
+	EMASK_M3  = 1<<2,  /* Reserved */
+	EMASK_M4  = 1<<3,  /* Uncorrectable Data ECC on Replay */
+	EMASK_M5  = 1<<4,  /* Aliased Uncorrectable Non-Mirrored Demand Data ECC */
+	EMASK_M6  = 1<<5,  /* Unsupported on i5400 */
+	EMASK_M7  = 1<<6,  /* Aliased Uncorrectable Resilver- or Spare-Copy Data ECC */
+	EMASK_M8  = 1<<7,  /* Aliased Uncorrectable Patrol Data ECC */
+	EMASK_M9  = 1<<8,  /* Non-Aliased Uncorrectable Non-Mirrored Demand Data ECC */
+	EMASK_M10 = 1<<9,  /* Unsupported on i5400 */
+	EMASK_M11 = 1<<10, /* Non-Aliased Uncorrectable Resilver- or Spare-Copy Data ECC  */
+	EMASK_M12 = 1<<11, /* Non-Aliased Uncorrectable Patrol Data ECC */
+	EMASK_M13 = 1<<12, /* Memory Write error on first attempt */
+	EMASK_M14 = 1<<13, /* FB-DIMM Configuration Write error on first attempt */
+	EMASK_M15 = 1<<14, /* Memory or FB-DIMM configuration CRC read error */
+	EMASK_M16 = 1<<15, /* Channel Failed-Over Occurred */
+	EMASK_M17 = 1<<16, /* Correctable Non-Mirrored Demand Data ECC */
+	EMASK_M18 = 1<<17, /* Unsupported on i5400 */
+	EMASK_M19 = 1<<18, /* Correctable Resilver- or Spare-Copy Data ECC */
+	EMASK_M20 = 1<<19, /* Correctable Patrol Data ECC */
+	EMASK_M21 = 1<<20, /* FB-DIMM Northbound parity error on FB-DIMM Sync Status */
+	EMASK_M22 = 1<<21, /* SPD protocol Error */
+	EMASK_M23 = 1<<22, /* Non-Redundant Fast Reset Timeout */
+	EMASK_M24 = 1<<23, /* Refresh error */
+	EMASK_M25 = 1<<24, /* Memory Write error on redundant retry */
+	EMASK_M26 = 1<<25, /* Redundant Fast Reset Timeout */
+	EMASK_M27 = 1<<26, /* Correctable Counter Threshold Exceeded */
+	EMASK_M28 = 1<<27, /* DIMM-Spare Copy Completed */
+	EMASK_M29 = 1<<28, /* DIMM-Isolation Completed */
+};
 
 /*
  * Names to translate bit error into something useful
@@ -653,9 +653,9 @@ static void i5400_process_nonfatal_error_info(struct mem_ctl_info *mci,
 
 	branch = extract_fbdchan_indx(info->ferr_nf_fbd);
 
-//	i5400_mc_printk(mci, KERN_EMERG,
-//			"Non-Fatal misc error (Branch=%d Err=%#lx (%s))",
-;
+	i5400_mc_printk(mci, KERN_EMERG,
+			"Non-Fatal misc error (Branch=%d Err=%#lx (%s))",
+			branch >> 1, allErrors, error_name[errnum]);
 }
 
 /*
@@ -740,13 +740,13 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
 				      PCI_DEVICE_ID_INTEL_5400_ERR, pdev);
 		if (!pdev) {
 			/* End of list, leave */
-//			i5400_printk(KERN_ERR,
-//				"'system address,Process Bus' "
-//				"device not found:"
-//				"vendor 0x%x device 0x%x ERR funcs "
-//				"(broken BIOS?)\n",
-//				PCI_VENDOR_ID_INTEL,
-;
+			i5400_printk(KERN_ERR,
+				"'system address,Process Bus' "
+				"device not found:"
+				"vendor 0x%x device 0x%x ERR funcs "
+				"(broken BIOS?)\n",
+				PCI_VENDOR_ID_INTEL,
+				PCI_DEVICE_ID_INTEL_5400_ERR);
 			goto error;
 		}
 
@@ -774,10 +774,10 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
 	pvt->branch_0 = pci_get_device(PCI_VENDOR_ID_INTEL,
 				       PCI_DEVICE_ID_INTEL_5400_FBD0, NULL);
 	if (!pvt->branch_0) {
-//		i5400_printk(KERN_ERR,
-//			"MC: 'BRANCH 0' device not found:"
-//			"vendor 0x%x device 0x%x Func 0 (broken BIOS?)\n",
-;
+		i5400_printk(KERN_ERR,
+			"MC: 'BRANCH 0' device not found:"
+			"vendor 0x%x device 0x%x Func 0 (broken BIOS?)\n",
+			PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5400_FBD0);
 		goto error;
 	}
 
@@ -790,12 +790,12 @@ static int i5400_get_devices(struct mem_ctl_info *mci, int dev_idx)
 	pvt->branch_1 = pci_get_device(PCI_VENDOR_ID_INTEL,
 				       PCI_DEVICE_ID_INTEL_5400_FBD1, NULL);
 	if (!pvt->branch_1) {
-//		i5400_printk(KERN_ERR,
-//			"MC: 'BRANCH 1' device not found:"
-//			"vendor 0x%x device 0x%x Func 0 "
-//			"(broken BIOS?)\n",
-//			PCI_VENDOR_ID_INTEL,
-;
+		i5400_printk(KERN_ERR,
+			"MC: 'BRANCH 1' device not found:"
+			"vendor 0x%x device 0x%x Func 0 "
+			"(broken BIOS?)\n",
+			PCI_VENDOR_ID_INTEL,
+			PCI_DEVICE_ID_INTEL_5400_FBD1);
 		goto error;
 	}
 
@@ -941,8 +941,8 @@ static void calculate_dimm_size(struct i5400_pvt *pvt)
 	space = PAGE_SIZE;
 	mem_buffer = p = kmalloc(space, GFP_KERNEL);
 	if (p == NULL) {
-//		i5400_printk(KERN_ERR, "MC: %s:%s() kmalloc() failed\n",
-;
+		i5400_printk(KERN_ERR, "MC: %s:%s() kmalloc() failed\n",
+			__FILE__, __func__);
 		return;
 	}
 
@@ -1312,12 +1312,12 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	i5400_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i5400_pci) {
-//		printk(KERN_WARNING
-//			"%s(): Unable to create PCI control\n",
-;
-//		printk(KERN_WARNING
-//			"%s(): PCI error report via EDAC not setup\n",
-;
+		printk(KERN_WARNING
+			"%s(): Unable to create PCI control\n",
+			__func__);
+		printk(KERN_WARNING
+			"%s(): PCI error report via EDAC not setup\n",
+			__func__);
 	}
 
 	return 0;

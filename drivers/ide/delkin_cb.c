@@ -81,12 +81,12 @@ delkin_cb_probe (struct pci_dev *dev, const struct pci_device_id *id)
 
 	rc = pci_enable_device(dev);
 	if (rc) {
-;
+		printk(KERN_ERR "delkin_cb: pci_enable_device failed (%d)\n", rc);
 		return rc;
 	}
 	rc = pci_request_regions(dev, "delkin_cb");
 	if (rc) {
-;
+		printk(KERN_ERR "delkin_cb: pci_request_regions failed (%d)\n", rc);
 		pci_disable_device(dev);
 		return rc;
 	}

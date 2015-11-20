@@ -98,7 +98,7 @@ static int __init apm_emu_init(void)
 {
 	apm_get_power_status = pmu_apm_get_power_status;
 
-;
+	printk(KERN_INFO "apm_emu: PMU APM Emulation initialized.\n");
 
 	return 0;
 }
@@ -108,7 +108,7 @@ static void __exit apm_emu_exit(void)
 	if (apm_get_power_status == pmu_apm_get_power_status)
 		apm_get_power_status = NULL;
 
-;
+	printk(KERN_INFO "apm_emu: PMU APM Emulation removed.\n");
 }
 
 module_init(apm_emu_init);

@@ -53,8 +53,8 @@ static int edac_pci_read_dword(struct pci_dev *dev, int reg, u32 *val32)
 
 	ret = pci_read_config_dword(dev, reg, val32);
 	if (ret != 0)
-//		printk(KERN_ERR AMD8111_EDAC_MOD_STR
-;
+		printk(KERN_ERR AMD8111_EDAC_MOD_STR
+			" PCI Access Read Error at 0x%x\n", reg);
 
 	return ret;
 }
@@ -65,8 +65,8 @@ static void edac_pci_read_byte(struct pci_dev *dev, int reg, u8 *val8)
 
 	ret = pci_read_config_byte(dev, reg, val8);
 	if (ret != 0)
-//		printk(KERN_ERR AMD8111_EDAC_MOD_STR
-;
+		printk(KERN_ERR AMD8111_EDAC_MOD_STR
+			" PCI Access Read Error at 0x%x\n", reg);
 }
 
 static void edac_pci_write_dword(struct pci_dev *dev, int reg, u32 val32)
@@ -75,8 +75,8 @@ static void edac_pci_write_dword(struct pci_dev *dev, int reg, u32 val32)
 
 	ret = pci_write_config_dword(dev, reg, val32);
 	if (ret != 0)
-//		printk(KERN_ERR AMD8111_EDAC_MOD_STR
-;
+		printk(KERN_ERR AMD8111_EDAC_MOD_STR
+			" PCI Access Write Error at 0x%x\n", reg);
 }
 
 static void edac_pci_write_byte(struct pci_dev *dev, int reg, u8 val8)
@@ -85,8 +85,8 @@ static void edac_pci_write_byte(struct pci_dev *dev, int reg, u8 val8)
 
 	ret = pci_write_config_byte(dev, reg, val8);
 	if (ret != 0)
-//		printk(KERN_ERR AMD8111_EDAC_MOD_STR
-;
+		printk(KERN_ERR AMD8111_EDAC_MOD_STR
+			" PCI Access Write Error at 0x%x\n", reg);
 }
 
 /*
@@ -175,12 +175,12 @@ static void amd8111_pci_bridge_check(struct edac_pci_ctl_info *edac_dev)
 	/* Check out PCI Bridge Status and Command Register */
 	edac_pci_read_dword(dev, REG_PCI_STSCMD, &val32);
 	if (val32 & PCI_STSCMD_CLEAR_MASK) {
-//		printk(KERN_INFO "Error(s) in PCI bridge status and command"
-;
-//		printk(KERN_INFO "SSE: %d, RMA: %d, RTA: %d\n",
-//			(val32 & PCI_STSCMD_SSE) != 0,
-//			(val32 & PCI_STSCMD_RMA) != 0,
-;
+		printk(KERN_INFO "Error(s) in PCI bridge status and command"
+			"register on device %s\n", pci_info->ctl_name);
+		printk(KERN_INFO "SSE: %d, RMA: %d, RTA: %d\n",
+			(val32 & PCI_STSCMD_SSE) != 0,
+			(val32 & PCI_STSCMD_RMA) != 0,
+			(val32 & PCI_STSCMD_RTA) != 0);
 
 		val32 |= PCI_STSCMD_CLEAR_MASK;
 		edac_pci_write_dword(dev, REG_PCI_STSCMD, val32);
@@ -191,10 +191,10 @@ static void amd8111_pci_bridge_check(struct edac_pci_ctl_info *edac_dev)
 	/* Check out HyperTransport Link Control Register */
 	edac_pci_read_dword(dev, REG_HT_LINK, &val32);
 	if (val32 & HT_LINK_LKFAIL) {
-//		printk(KERN_INFO "Error(s) in hypertransport link control"
-;
-//		printk(KERN_INFO "LKFAIL: %d\n",
-;
+		printk(KERN_INFO "Error(s) in hypertransport link control"
+			"register on device %s\n", pci_info->ctl_name);
+		printk(KERN_INFO "LKFAIL: %d\n",
+			(val32 & HT_LINK_LKFAIL) != 0);
 
 		val32 |= HT_LINK_LKFAIL;
 		edac_pci_write_dword(dev, REG_HT_LINK, val32);
@@ -205,10 +205,10 @@ static void amd8111_pci_bridge_check(struct edac_pci_ctl_info *edac_dev)
 	/* Check out PCI Interrupt and Bridge Control Register */
 	edac_pci_read_dword(dev, REG_PCI_INTBRG_CTRL, &val32);
 	if (val32 & PCI_INTBRG_CTRL_DTSTAT) {
-//		printk(KERN_INFO "Error(s) in PCI interrupt and bridge control"
-;
-//		printk(KERN_INFO "DTSTAT: %d\n",
-;
+		printk(KERN_INFO "Error(s) in PCI interrupt and bridge control"
+			"register on device %s\n", pci_info->ctl_name);
+		printk(KERN_INFO "DTSTAT: %d\n",
+			(val32 & PCI_INTBRG_CTRL_DTSTAT) != 0);
 
 		val32 |= PCI_INTBRG_CTRL_DTSTAT;
 		edac_pci_write_dword(dev, REG_PCI_INTBRG_CTRL, val32);
@@ -219,17 +219,17 @@ static void amd8111_pci_bridge_check(struct edac_pci_ctl_info *edac_dev)
 	/* Check out PCI Bridge Memory Base-Limit Register */
 	edac_pci_read_dword(dev, REG_MEM_LIM, &val32);
 	if (val32 & MEM_LIMIT_CLEAR_MASK) {
-//		printk(KERN_INFO
-//			"Error(s) in mem limit register on %s device\n",
-;
-//		printk(KERN_INFO "DPE: %d, RSE: %d, RMA: %d\n"
-//			"RTA: %d, STA: %d, MDPE: %d\n",
-//			(val32 & MEM_LIMIT_DPE)  != 0,
-//			(val32 & MEM_LIMIT_RSE)  != 0,
-//			(val32 & MEM_LIMIT_RMA)  != 0,
-//			(val32 & MEM_LIMIT_RTA)  != 0,
-//			(val32 & MEM_LIMIT_STA)  != 0,
-;
+		printk(KERN_INFO
+			"Error(s) in mem limit register on %s device\n",
+			pci_info->ctl_name);
+		printk(KERN_INFO "DPE: %d, RSE: %d, RMA: %d\n"
+			"RTA: %d, STA: %d, MDPE: %d\n",
+			(val32 & MEM_LIMIT_DPE)  != 0,
+			(val32 & MEM_LIMIT_RSE)  != 0,
+			(val32 & MEM_LIMIT_RMA)  != 0,
+			(val32 & MEM_LIMIT_RTA)  != 0,
+			(val32 & MEM_LIMIT_STA)  != 0,
+			(val32 & MEM_LIMIT_MDPE) != 0);
 
 		val32 |= MEM_LIMIT_CLEAR_MASK;
 		edac_pci_write_dword(dev, REG_MEM_LIM, val32);
@@ -252,14 +252,14 @@ static void amd8111_lpc_bridge_init(struct amd8111_dev_info *dev_info)
 	legacy_io_res = request_region(REG_AT_COMPAT, LEGACY_NR_PORTS,
 					AMD8111_EDAC_MOD_STR);
 	if (!legacy_io_res)
-//		printk(KERN_INFO "%s: failed to request legacy I/O region "
-//			"start %d, len %d\n", __func__,
-;
+		printk(KERN_INFO "%s: failed to request legacy I/O region "
+			"start %d, len %d\n", __func__,
+			REG_AT_COMPAT, LEGACY_NR_PORTS);
 	else {
 		val8 = __do_inb(REG_AT_COMPAT);
 		if (val8 == 0xff) { /* buggy port */
-//			printk(KERN_INFO "%s: port %d is buggy, not supported"
-;
+			printk(KERN_INFO "%s: port %d is buggy, not supported"
+				" by hardware?\n", __func__, REG_AT_COMPAT);
 			at_compat_reg_broken = 1;
 			release_region(REG_AT_COMPAT, LEGACY_NR_PORTS);
 			legacy_io_res = NULL;
@@ -294,12 +294,12 @@ static void amd8111_lpc_bridge_check(struct edac_device_ctl_info *edac_dev)
 
 	edac_pci_read_byte(dev, REG_IO_CTRL_1, &val8);
 	if (val8 & IO_CTRL_1_CLEAR_MASK) {
-//		printk(KERN_INFO
-//			"Error(s) in IO control register on %s device\n",
-;
-//		printk(KERN_INFO "LPC ERR: %d, PW2LPC: %d\n",
-//			(val8 & IO_CTRL_1_LPC_ERR) != 0,
-;
+		printk(KERN_INFO
+			"Error(s) in IO control register on %s device\n",
+			dev_info->ctl_name);
+		printk(KERN_INFO "LPC ERR: %d, PW2LPC: %d\n",
+			(val8 & IO_CTRL_1_LPC_ERR) != 0,
+			(val8 & IO_CTRL_1_PW2LPC) != 0);
 
 		val8 |= IO_CTRL_1_CLEAR_MASK;
 		edac_pci_write_byte(dev, REG_IO_CTRL_1, val8);
@@ -355,19 +355,19 @@ static int amd8111_dev_probe(struct pci_dev *dev,
 					dev_info->err_dev, NULL);
 
 	if (!dev_info->dev) {
-//		printk(KERN_ERR "EDAC device not found:"
-//			"vendor %x, device %x, name %s\n",
-//			PCI_VENDOR_ID_AMD, dev_info->err_dev,
-;
+		printk(KERN_ERR "EDAC device not found:"
+			"vendor %x, device %x, name %s\n",
+			PCI_VENDOR_ID_AMD, dev_info->err_dev,
+			dev_info->ctl_name);
 		return -ENODEV;
 	}
 
 	if (pci_enable_device(dev_info->dev)) {
 		pci_dev_put(dev_info->dev);
-//		printk(KERN_ERR "failed to enable:"
-//			"vendor %x, device %x, name %s\n",
-//			PCI_VENDOR_ID_AMD, dev_info->err_dev,
-;
+		printk(KERN_ERR "failed to enable:"
+			"vendor %x, device %x, name %s\n",
+			PCI_VENDOR_ID_AMD, dev_info->err_dev,
+			dev_info->ctl_name);
 		return -ENODEV;
 	}
 
@@ -397,16 +397,16 @@ static int amd8111_dev_probe(struct pci_dev *dev,
 		dev_info->init(dev_info);
 
 	if (edac_device_add_device(dev_info->edac_dev) > 0) {
-//		printk(KERN_ERR "failed to add edac_dev for %s\n",
-;
+		printk(KERN_ERR "failed to add edac_dev for %s\n",
+			dev_info->ctl_name);
 		edac_device_free_ctl_info(dev_info->edac_dev);
 		return -ENODEV;
 	}
 
-//	printk(KERN_INFO "added one edac_dev on AMD8111 "
-//		"vendor %x, device %x, name %s\n",
-//		PCI_VENDOR_ID_AMD, dev_info->err_dev,
-;
+	printk(KERN_INFO "added one edac_dev on AMD8111 "
+		"vendor %x, device %x, name %s\n",
+		PCI_VENDOR_ID_AMD, dev_info->err_dev,
+		dev_info->ctl_name);
 
 	return 0;
 }
@@ -442,19 +442,19 @@ static int amd8111_pci_probe(struct pci_dev *dev,
 					pci_info->err_dev, NULL);
 
 	if (!pci_info->dev) {
-//		printk(KERN_ERR "EDAC device not found:"
-//			"vendor %x, device %x, name %s\n",
-//			PCI_VENDOR_ID_AMD, pci_info->err_dev,
-;
+		printk(KERN_ERR "EDAC device not found:"
+			"vendor %x, device %x, name %s\n",
+			PCI_VENDOR_ID_AMD, pci_info->err_dev,
+			pci_info->ctl_name);
 		return -ENODEV;
 	}
 
 	if (pci_enable_device(pci_info->dev)) {
 		pci_dev_put(pci_info->dev);
-//		printk(KERN_ERR "failed to enable:"
-//			"vendor %x, device %x, name %s\n",
-//			PCI_VENDOR_ID_AMD, pci_info->err_dev,
-;
+		printk(KERN_ERR "failed to enable:"
+			"vendor %x, device %x, name %s\n",
+			PCI_VENDOR_ID_AMD, pci_info->err_dev,
+			pci_info->ctl_name);
 		return -ENODEV;
 	}
 
@@ -481,16 +481,16 @@ static int amd8111_pci_probe(struct pci_dev *dev,
 		pci_info->init(pci_info);
 
 	if (edac_pci_add_device(pci_info->edac_dev, pci_info->edac_idx) > 0) {
-//		printk(KERN_ERR "failed to add edac_pci for %s\n",
-;
+		printk(KERN_ERR "failed to add edac_pci for %s\n",
+			pci_info->ctl_name);
 		edac_pci_free_ctl_info(pci_info->edac_dev);
 		return -ENODEV;
 	}
 
-//	printk(KERN_INFO "added one edac_pci on AMD8111 "
-//		"vendor %x, device %x, name %s\n",
-//		PCI_VENDOR_ID_AMD, pci_info->err_dev,
-;
+	printk(KERN_INFO "added one edac_pci on AMD8111 "
+		"vendor %x, device %x, name %s\n",
+		PCI_VENDOR_ID_AMD, pci_info->err_dev,
+		pci_info->ctl_name);
 
 	return 0;
 }
@@ -567,8 +567,8 @@ static int __init amd8111_edac_init(void)
 {
 	int val;
 
-;
-;
+	printk(KERN_INFO "AMD8111 EDAC driver "	AMD8111_EDAC_REVISION "\n");
+	printk(KERN_INFO "\t(c) 2008 Wind River Systems, Inc.\n");
 
 	/* Only POLL mode supported so far */
 	edac_op_state = EDAC_OPSTATE_POLL;

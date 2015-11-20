@@ -1349,7 +1349,7 @@ void ssh_engine_packet_from_ipm(SshEngine engine,
       break;
 
     default:
-;
+      printk(KERN_EMERG "Unknown packet type %u", (unsigned int)type);
       SSH_DEBUG(2, ("ssh_engine_packet_from_ipm: unexpected packet %u in "
 		    "kernel; probably wrong policy manager",
 		    (unsigned int) type));

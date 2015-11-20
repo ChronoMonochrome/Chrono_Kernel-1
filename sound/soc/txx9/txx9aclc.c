@@ -364,10 +364,10 @@ static int txx9aclc_dma_init(struct txx9aclc_soc_device *dev,
 	dma_cap_set(DMA_SLAVE, mask);
 	dmadata->dma_chan = dma_request_channel(mask, filter, dmadata);
 	if (!dmadata->dma_chan) {
-//		printk(KERN_ERR
-//			"DMA channel for %s is not available\n",
-//			dmadata->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-;
+		printk(KERN_ERR
+			"DMA channel for %s is not available\n",
+			dmadata->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+			"playback" : "capture");
 		return -EBUSY;
 	}
 	tasklet_init(&dmadata->tasklet, txx9aclc_dma_tasklet,

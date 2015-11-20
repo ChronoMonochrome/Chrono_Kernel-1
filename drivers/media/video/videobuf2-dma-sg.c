@@ -75,8 +75,8 @@ static void *vb2_dma_sg_alloc(void *alloc_ctx, unsigned long size)
 
 	atomic_inc(&buf->refcount);
 
-//	printk(KERN_DEBUG "%s: Allocated buffer of %d pages\n",
-;
+	printk(KERN_DEBUG "%s: Allocated buffer of %d pages\n",
+		__func__, buf->sg_desc.num_pages);
 
 	if (!buf->vaddr)
 		buf->vaddr = vm_map_ram(buf->pages,
@@ -104,8 +104,8 @@ static void vb2_dma_sg_put(void *buf_priv)
 	int i = buf->sg_desc.num_pages;
 
 	if (atomic_dec_and_test(&buf->refcount)) {
-//		printk(KERN_DEBUG "%s: Freeing buffer of %d pages\n", __func__,
-;
+		printk(KERN_DEBUG "%s: Freeing buffer of %d pages\n", __func__,
+			buf->sg_desc.num_pages);
 		if (buf->vaddr)
 			vm_unmap_ram(buf->vaddr, buf->sg_desc.num_pages);
 		vfree(buf->sg_desc.sglist);
@@ -173,8 +173,8 @@ static void *vb2_dma_sg_get_userptr(void *alloc_ctx, unsigned long vaddr,
 	return buf;
 
 userptr_fail_get_user_pages:
-//	printk(KERN_DEBUG "get_user_pages requested/got: %d/%d]\n",
-;
+	printk(KERN_DEBUG "get_user_pages requested/got: %d/%d]\n",
+	       num_pages_from_user, buf->sg_desc.num_pages);
 	while (--num_pages_from_user >= 0)
 		put_page(buf->pages[num_pages_from_user]);
 	kfree(buf->pages);
@@ -196,8 +196,8 @@ static void vb2_dma_sg_put_userptr(void *buf_priv)
 	struct vb2_dma_sg_buf *buf = buf_priv;
 	int i = buf->sg_desc.num_pages;
 
-//	printk(KERN_DEBUG "%s: Releasing userspace buffer of %d pages\n",
-;
+	printk(KERN_DEBUG "%s: Releasing userspace buffer of %d pages\n",
+	       __func__, buf->sg_desc.num_pages);
 	if (buf->vaddr)
 		vm_unmap_ram(buf->vaddr, buf->sg_desc.num_pages);
 	while (--i >= 0) {
@@ -241,7 +241,7 @@ static int vb2_dma_sg_mmap(void *buf_priv, struct vm_area_struct *vma)
 	int i = 0;
 
 	if (!buf) {
-;
+		printk(KERN_ERR "No memory to map\n");
 		return -EINVAL;
 	}
 
@@ -250,7 +250,7 @@ static int vb2_dma_sg_mmap(void *buf_priv, struct vm_area_struct *vma)
 
 		ret = vm_insert_page(vma, uaddr, buf->pages[i++]);
 		if (ret) {
-;
+			printk(KERN_ERR "Remapping memory, error: %d\n", ret);
 			return ret;
 		}
 

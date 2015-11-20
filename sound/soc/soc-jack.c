@@ -175,12 +175,12 @@ int snd_soc_jack_add_pins(struct snd_soc_jack *jack, int count,
 
 	for (i = 0; i < count; i++) {
 		if (!pins[i].pin) {
-;
+			printk(KERN_ERR "No name for pin %d\n", i);
 			return -EINVAL;
 		}
 		if (!pins[i].mask) {
-//			printk(KERN_ERR "No mask for pin %d (%s)\n", i,
-;
+			printk(KERN_ERR "No mask for pin %d (%s)\n", i,
+			       pins[i].pin);
 			return -EINVAL;
 		}
 
@@ -298,14 +298,14 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
 
 	for (i = 0; i < count; i++) {
 		if (!gpio_is_valid(gpios[i].gpio)) {
-//			printk(KERN_ERR "Invalid gpio %d\n",
-;
+			printk(KERN_ERR "Invalid gpio %d\n",
+				gpios[i].gpio);
 			ret = -EINVAL;
 			goto undo;
 		}
 		if (!gpios[i].name) {
-//			printk(KERN_ERR "No name for gpio %d\n",
-;
+			printk(KERN_ERR "No name for gpio %d\n",
+				gpios[i].gpio);
 			ret = -EINVAL;
 			goto undo;
 		}
@@ -333,9 +333,9 @@ int snd_soc_jack_add_gpios(struct snd_soc_jack *jack, int count,
 		if (gpios[i].wake) {
 			ret = irq_set_irq_wake(gpio_to_irq(gpios[i].gpio), 1);
 			if (ret != 0)
-//				printk(KERN_ERR
-//				  "Failed to mark GPIO %d as wake source: %d\n",
-;
+				printk(KERN_ERR
+				  "Failed to mark GPIO %d as wake source: %d\n",
+					gpios[i].gpio, ret);
 		}
 
 #ifdef CONFIG_GPIO_SYSFS

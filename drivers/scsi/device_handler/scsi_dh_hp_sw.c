@@ -69,9 +69,9 @@ static int tur_done(struct scsi_device *sdev, unsigned char *sense)
 
 	ret = scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, &sshdr);
 	if (!ret) {
-//		sdev_printk(KERN_WARNING, sdev,
-//			    "%s: sending tur failed, no sense available\n",
-;
+		sdev_printk(KERN_WARNING, sdev,
+			    "%s: sending tur failed, no sense available\n",
+			    HP_SW_NAME);
 		ret = SCSI_DH_IO;
 		goto done;
 	}
@@ -91,10 +91,10 @@ static int tur_done(struct scsi_device *sdev, unsigned char *sense)
 		}
 		/* Fallthrough */
 	default:
-//		sdev_printk(KERN_WARNING, sdev,
-//			   "%s: sending tur failed, sense %x/%x/%x\n",
-//			   HP_SW_NAME, sshdr.sense_key, sshdr.asc,
-;
+		sdev_printk(KERN_WARNING, sdev,
+			   "%s: sending tur failed, sense %x/%x/%x\n",
+			   HP_SW_NAME, sshdr.sense_key, sshdr.asc,
+			   sshdr.ascq);
 		break;
 	}
 
@@ -134,9 +134,9 @@ retry:
 		if (req->sense_len > 0) {
 			ret = tur_done(sdev, h->sense);
 		} else {
-//			sdev_printk(KERN_WARNING, sdev,
-//				    "%s: sending tur failed with %x\n",
-;
+			sdev_printk(KERN_WARNING, sdev,
+				    "%s: sending tur failed with %x\n",
+				    HP_SW_NAME, req->errors);
 			ret = SCSI_DH_IO;
 		}
 	} else {
@@ -169,10 +169,10 @@ static int start_done(struct scsi_device *sdev, unsigned char *sense)
 
 	rc = scsi_normalize_sense(sense, SCSI_SENSE_BUFFERSIZE, &sshdr);
 	if (!rc) {
-//		sdev_printk(KERN_WARNING, sdev,
-//			    "%s: sending start_stop_unit failed, "
-//			    "no sense available\n",
-;
+		sdev_printk(KERN_WARNING, sdev,
+			    "%s: sending start_stop_unit failed, "
+			    "no sense available\n",
+			    HP_SW_NAME);
 		return SCSI_DH_IO;
 	}
 	switch (sshdr.sense_key) {
@@ -188,10 +188,10 @@ static int start_done(struct scsi_device *sdev, unsigned char *sense)
 		}
 		/* fall through */
 	default:
-//		sdev_printk(KERN_WARNING, sdev,
-//			   "%s: sending start_stop_unit failed, sense %x/%x/%x\n",
-//			   HP_SW_NAME, sshdr.sense_key, sshdr.asc,
-;
+		sdev_printk(KERN_WARNING, sdev,
+			   "%s: sending start_stop_unit failed, sense %x/%x/%x\n",
+			   HP_SW_NAME, sshdr.sense_key, sshdr.asc,
+			   sshdr.ascq);
 		rc = SCSI_DH_IO;
 	}
 
@@ -205,9 +205,9 @@ static void start_stop_endio(struct request *req, int error)
 
 	if (error || host_byte(req->errors) != DID_OK ||
 			msg_byte(req->errors) != COMMAND_COMPLETE) {
-//		sdev_printk(KERN_WARNING, h->sdev,
-//			    "%s: sending start_stop_unit failed with %x\n",
-;
+		sdev_printk(KERN_WARNING, h->sdev,
+			    "%s: sending start_stop_unit failed with %x\n",
+			    HP_SW_NAME, req->errors);
 		err = SCSI_DH_IO;
 		goto done;
 	}
@@ -342,8 +342,8 @@ static int hp_sw_bus_attach(struct scsi_device *sdev)
 	scsi_dh_data = kzalloc(sizeof(*scsi_dh_data)
 			       + sizeof(*h) , GFP_KERNEL);
 	if (!scsi_dh_data) {
-//		sdev_printk(KERN_ERR, sdev, "%s: Attach Failed\n",
-;
+		sdev_printk(KERN_ERR, sdev, "%s: Attach Failed\n",
+			    HP_SW_NAME);
 		return 0;
 	}
 
@@ -364,16 +364,16 @@ static int hp_sw_bus_attach(struct scsi_device *sdev)
 	sdev->scsi_dh_data = scsi_dh_data;
 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
 
-//	sdev_printk(KERN_INFO, sdev, "%s: attached to %s path\n",
-//		    HP_SW_NAME, h->path_state == HP_SW_PATH_ACTIVE?
-;
+	sdev_printk(KERN_INFO, sdev, "%s: attached to %s path\n",
+		    HP_SW_NAME, h->path_state == HP_SW_PATH_ACTIVE?
+		    "active":"passive");
 
 	return 0;
 
 failed:
 	kfree(scsi_dh_data);
-//	sdev_printk(KERN_ERR, sdev, "%s: not attached\n",
-;
+	sdev_printk(KERN_ERR, sdev, "%s: not attached\n",
+		    HP_SW_NAME);
 	return -EINVAL;
 }
 
@@ -388,7 +388,7 @@ static void hp_sw_bus_detach( struct scsi_device *sdev )
 	spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags);
 	module_put(THIS_MODULE);
 
-;
+	sdev_printk(KERN_NOTICE, sdev, "%s: Detached\n", HP_SW_NAME);
 
 	kfree(scsi_dh_data);
 }

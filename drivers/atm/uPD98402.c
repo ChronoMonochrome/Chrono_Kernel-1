@@ -17,14 +17,14 @@
 
 
 #if 0
-//#define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
-//#else
-//#define DPRINTK(format,args...)
-//#endif
-//
-//
-//struct uPD98402_priv {
-;
+#define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
+#else
+#define DPRINTK(format,args...)
+#endif
+
+
+struct uPD98402_priv {
+	struct k_sonet_stats sonet_stats;/* link diagnostics */
 	unsigned char framing;		/* SONET/SDH framing */
 	int loop_mode;			/* loopback mode */
 	spinlock_t lock;
@@ -189,8 +189,8 @@ static void uPD98402_int(struct atm_dev *dev)
 
 	while ((reason = GET(PICR))) {
 		if (reason & uPD98402_INT_LOS)
-//			printk(KERN_NOTICE "%s(itf %d): signal lost\n",
-;
+			printk(KERN_NOTICE "%s(itf %d): signal lost\n",
+			    dev->type,dev->number);
 		if (reason & uPD98402_INT_PFM) stat_event(dev);
 		if (reason & uPD98402_INT_PCO) {
 			(void) GET(PCOCR); /* clear interrupt cause */
@@ -199,8 +199,8 @@ static void uPD98402_int(struct atm_dev *dev)
 		}
 		if ((reason & uPD98402_INT_RFO) && 
 		    (time_after(jiffies, silence) || silence == 0)) {
-//			printk(KERN_WARNING "%s(itf %d): uPD98402 receive "
-;
+			printk(KERN_WARNING "%s(itf %d): uPD98402 receive "
+			    "FIFO overflow\n",dev->type,dev->number);
 			silence = (jiffies+HZ/2)|1;
 		}
 	}

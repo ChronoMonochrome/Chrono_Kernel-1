@@ -82,8 +82,8 @@ bfad_debugfs_open_fwtrc(struct inode *inode, struct file *file)
 	fw_debug->debug_buffer = vmalloc(fw_debug->buffer_len);
 	if (!fw_debug->debug_buffer) {
 		kfree(fw_debug);
-//		printk(KERN_INFO "bfad[%d]: Failed to allocate fwtrc buffer\n",
-;
+		printk(KERN_INFO "bfad[%d]: Failed to allocate fwtrc buffer\n",
+				bfad->inst_no);
 		return -ENOMEM;
 	}
 
@@ -98,8 +98,8 @@ bfad_debugfs_open_fwtrc(struct inode *inode, struct file *file)
 		vfree(fw_debug->debug_buffer);
 		fw_debug->debug_buffer = NULL;
 		kfree(fw_debug);
-//		printk(KERN_INFO "bfad[%d]: Failed to collect fwtrc\n",
-;
+		printk(KERN_INFO "bfad[%d]: Failed to collect fwtrc\n",
+				bfad->inst_no);
 		return -ENOMEM;
 	}
 
@@ -126,8 +126,8 @@ bfad_debugfs_open_fwsave(struct inode *inode, struct file *file)
 	fw_debug->debug_buffer = vmalloc(fw_debug->buffer_len);
 	if (!fw_debug->debug_buffer) {
 		kfree(fw_debug);
-//		printk(KERN_INFO "bfad[%d]: Failed to allocate fwsave buffer\n",
-;
+		printk(KERN_INFO "bfad[%d]: Failed to allocate fwsave buffer\n",
+				bfad->inst_no);
 		return -ENOMEM;
 	}
 
@@ -142,8 +142,8 @@ bfad_debugfs_open_fwsave(struct inode *inode, struct file *file)
 		vfree(fw_debug->debug_buffer);
 		fw_debug->debug_buffer = NULL;
 		kfree(fw_debug);
-//		printk(KERN_INFO "bfad[%d]: Failed to collect fwsave\n",
-;
+		printk(KERN_INFO "bfad[%d]: Failed to collect fwsave\n",
+				bfad->inst_no);
 		return -ENOMEM;
 	}
 
@@ -284,8 +284,8 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
 	kern_buf = kzalloc(nbytes, GFP_KERNEL);
 
 	if (!kern_buf) {
-//		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
-;
+		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+				bfad->inst_no);
 		return -ENOMEM;
 	}
 
@@ -296,9 +296,9 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
 
 	rc = sscanf(kern_buf, "%x:%x", &addr, &len);
 	if (rc < 2) {
-//		printk(KERN_INFO
-//			"bfad[%d]: %s failed to read user buf\n",
-;
+		printk(KERN_INFO
+			"bfad[%d]: %s failed to read user buf\n",
+			bfad->inst_no, __func__);
 		kfree(kern_buf);
 		return -EINVAL;
 	}
@@ -310,8 +310,8 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
 
 	bfad->regdata = kzalloc(len << 2, GFP_KERNEL);
 	if (!bfad->regdata) {
-//		printk(KERN_INFO "bfad[%d]: Failed to allocate regrd buffer\n",
-;
+		printk(KERN_INFO "bfad[%d]: Failed to allocate regrd buffer\n",
+				bfad->inst_no);
 		return -ENOMEM;
 	}
 
@@ -322,8 +322,8 @@ bfad_debugfs_write_regrd(struct file *file, const char __user *buf,
 	/* offset and len sanity check */
 	rc = bfad_reg_offset_check(bfa, addr, len);
 	if (rc) {
-//		printk(KERN_INFO "bfad[%d]: Failed reg offset check\n",
-;
+		printk(KERN_INFO "bfad[%d]: Failed reg offset check\n",
+				bfad->inst_no);
 		kfree(bfad->regdata);
 		bfad->regdata = NULL;
 		bfad->reglen = 0;
@@ -360,8 +360,8 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
 	kern_buf = kzalloc(nbytes, GFP_KERNEL);
 
 	if (!kern_buf) {
-//		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
-;
+		printk(KERN_INFO "bfad[%d]: Failed to allocate buffer\n",
+				bfad->inst_no);
 		return -ENOMEM;
 	}
 
@@ -372,9 +372,9 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
 
 	rc = sscanf(kern_buf, "%x:%x", &addr, &val);
 	if (rc < 2) {
-//		printk(KERN_INFO
-//			"bfad[%d]: %s failed to read user buf\n",
-;
+		printk(KERN_INFO
+			"bfad[%d]: %s failed to read user buf\n",
+			bfad->inst_no, __func__);
 		kfree(kern_buf);
 		return -EINVAL;
 	}
@@ -385,9 +385,9 @@ bfad_debugfs_write_regwr(struct file *file, const char __user *buf,
 	/* offset and len sanity check */
 	rc = bfad_reg_offset_check(bfa, addr, 1);
 	if (rc) {
-//		printk(KERN_INFO
-//			"bfad[%d]: Failed reg offset check\n",
-;
+		printk(KERN_INFO
+			"bfad[%d]: Failed reg offset check\n",
+			bfad->inst_no);
 		return -EINVAL;
 	}
 
@@ -502,8 +502,8 @@ bfad_debugfs_init(struct bfad_port_s *port)
 		bfa_debugfs_root = debugfs_create_dir("bfa", NULL);
 		atomic_set(&bfa_debugfs_port_count, 0);
 		if (!bfa_debugfs_root) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+				"BFA debugfs root dir creation failed\n");
 			goto err;
 		}
 	}
@@ -514,9 +514,9 @@ bfad_debugfs_init(struct bfad_port_s *port)
 		port->port_debugfs_root =
 			debugfs_create_dir(name, bfa_debugfs_root);
 		if (!port->port_debugfs_root) {
-//			printk(KERN_WARNING
-//				"bfa %s: debugfs root creation failed\n",
-;
+			printk(KERN_WARNING
+				"bfa %s: debugfs root creation failed\n",
+				bfad->pci_name);
 			goto err;
 		}
 
@@ -531,9 +531,9 @@ bfad_debugfs_init(struct bfad_port_s *port)
 							port,
 							file->fops);
 			if (!bfad->bfad_dentry_files[i]) {
-//				printk(KERN_WARNING
-//					"bfa %s: debugfs %s creation failed\n",
-;
+				printk(KERN_WARNING
+					"bfa %s: debugfs %s creation failed\n",
+					bfad->pci_name, file->name);
 				goto err;
 			}
 		}

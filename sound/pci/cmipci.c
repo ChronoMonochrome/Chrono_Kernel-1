@@ -952,7 +952,7 @@ static snd_pcm_uframes_t snd_cmipci_pcm_pointer(struct cmipci *cm, struct cmipci
 		if (rem < rec->dma_size)
 			goto ok;
 	} 
-;
+	printk(KERN_ERR "cmipci: invalid PCM pointer: %#x\n", rem);
 	return SNDRV_PCM_POS_XRUN;
 ok:
 	ptr = (rec->dma_size - (rem + 1)) >> rec->shift;
@@ -2883,13 +2883,13 @@ static int __devinit snd_cmipci_create_gameport(struct cmipci *cm, int dev)
 	}
 
 	if (!r) {
-;
+		printk(KERN_WARNING "cmipci: cannot reserve joystick ports\n");
 		return -EBUSY;
 	}
 
 	cm->gameport = gp = gameport_allocate_port();
 	if (!gp) {
-;
+		printk(KERN_ERR "cmipci: cannot allocate memory for gameport\n");
 		release_and_free_resource(r);
 		return -ENOMEM;
 	}
@@ -2989,13 +2989,13 @@ static int __devinit snd_cmipci_create_fm(struct cmipci *cm, long fm_port)
 
 		if (snd_opl3_create(cm->card, iosynth, iosynth + 2,
 				    OPL3_HW_OPL3, 0, &opl3) < 0) {
-//			printk(KERN_ERR "cmipci: no OPL device at %#lx, "
-;
+			printk(KERN_ERR "cmipci: no OPL device at %#lx, "
+			       "skipping...\n", iosynth);
 			goto disable_fm;
 		}
 	}
 	if ((err = snd_opl3_hwdep_new(opl3, 0, 1, NULL)) < 0) {
-;
+		printk(KERN_ERR "cmipci: cannot create OPL3 hwdep\n");
 		return err;
 	}
 	return 0;
@@ -3054,7 +3054,7 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 
 	if (request_irq(pci->irq, snd_cmipci_interrupt,
 			IRQF_SHARED, card->driver, cm)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		snd_cmipci_free(cm);
 		return -EBUSY;
 	}
@@ -3186,8 +3186,8 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 			/* enable UART */
 			snd_cmipci_set_bit(cm, CM_REG_FUNCTRL1, CM_UART_EN);
 			if (inb(iomidi + 1) == 0xff) {
-//				snd_printk(KERN_ERR "cannot enable MPU-401 port"
-;
+				snd_printk(KERN_ERR "cannot enable MPU-401 port"
+					   " at %#lx\n", iomidi);
 				snd_cmipci_clear_bit(cm, CM_REG_FUNCTRL1,
 						     CM_UART_EN);
 				iomidi = 0;
@@ -3230,7 +3230,7 @@ static int __devinit snd_cmipci_create(struct snd_card *card, struct pci_dev *pc
 					       (integrated_midi ?
 						MPU401_INFO_INTEGRATED : 0),
 					       cm->irq, 0, &cm->rmidi)) < 0) {
-;
+			printk(KERN_ERR "cmipci: no UART401 device at 0x%lx\n", iomidi);
 		}
 	}
 
@@ -3373,8 +3373,8 @@ static int snd_cmipci_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "cmipci: pci_enable_device failed, "
-;
+		printk(KERN_ERR "cmipci: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}

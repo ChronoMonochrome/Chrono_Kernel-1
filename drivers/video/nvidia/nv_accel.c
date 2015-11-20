@@ -86,7 +86,7 @@ static inline void NVFlush(struct fb_info *info)
 	while (--count && READ_GET(par) != par->dmaPut) ;
 
 	if (!count) {
-;
+		printk("nvidiafb: DMA Flush lockup\n");
 		nvidiafb_safe_mode(info);
 	}
 }
@@ -99,7 +99,7 @@ static inline void NVSync(struct fb_info *info)
 	while (--count && NV_RD32(par->PGRAPH, 0x0700)) ;
 
 	if (!count) {
-;
+		printk("nvidiafb: DMA Sync lockup\n");
 		nvidiafb_safe_mode(info);
 	}
 }
@@ -134,7 +134,7 @@ static void NVDmaWait(struct fb_info *info, int size)
 						dmaGet = READ_GET(par);
 					} while (--cnt && dmaGet <= SKIPS);
 					if (!cnt) {
-;
+						printk("DMA Get lockup\n");
 						par->lockup = 1;
 					}
 				}
@@ -147,7 +147,7 @@ static void NVDmaWait(struct fb_info *info, int size)
 	}
 
 	if (!count) {
-;
+		printk("nvidiafb: DMA Wait Lockup\n");
 		nvidiafb_safe_mode(info);
 	}
 }

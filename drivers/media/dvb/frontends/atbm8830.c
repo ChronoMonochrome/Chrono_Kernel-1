@@ -25,10 +25,10 @@
 #include "atbm8830.h"
 #include "atbm8830_priv.h"
 
-//#define dprintk(args...) \
-//	do { \
-//		if (debug) \
-;
+#define dprintk(args...) \
+	do { \
+		if (debug) \
+			printk(KERN_DEBUG "atbm8830: " args); \
 	} while (0)
 
 static int debug;
@@ -50,7 +50,7 @@ static int atbm8830_write_reg(struct atbm_state *priv, u16 reg, u8 data)
 	msg2.addr = dev_addr;
 
 	if (debug >= 2)
-;
+		dprintk("%s: reg=0x%04X, data=0x%02X\n", __func__, reg, data);
 
 	ret = i2c_transfer(priv->i2c, &msg1, 1);
 	if (ret != 1)
@@ -76,7 +76,7 @@ static int atbm8830_read_reg(struct atbm_state *priv, u16 reg, u8 *p_data)
 
 	ret = i2c_transfer(priv->i2c, &msg1, 1);
 	if (ret != 1) {
-;
+		dprintk("%s: error reg=0x%04x, ret=%i\n", __func__, reg, ret);
 		return -EIO;
 	}
 
@@ -86,8 +86,8 @@ static int atbm8830_read_reg(struct atbm_state *priv, u16 reg, u8 *p_data)
 
 	*p_data = buf2[0];
 	if (debug >= 2)
-//		dprintk("%s: reg=0x%04X, data=0x%02X\n",
-;
+		dprintk("%s: reg=0x%04X, data=0x%02X\n",
+			__func__, reg, buf2[0]);
 
 	return 0;
 }
@@ -262,7 +262,7 @@ static int atbm8830_init(struct dvb_frontend *fe)
 static void atbm8830_release(struct dvb_frontend *fe)
 {
 	struct atbm_state *state = fe->demodulator_priv;
-;
+	dprintk("%s\n", __func__);
 
 	kfree(state);
 }
@@ -273,7 +273,7 @@ static int atbm8830_set_fe(struct dvb_frontend *fe,
 	struct atbm_state *priv = fe->demodulator_priv;
 	int i;
 	u8 locked = 0;
-;
+	dprintk("%s\n", __func__);
 
 	/* set frequency */
 	if (fe->ops.tuner_ops.set_params) {
@@ -287,10 +287,10 @@ static int atbm8830_set_fe(struct dvb_frontend *fe,
 	/* start auto lock */
 	for (i = 0; i < 10; i++) {
 		mdelay(100);
-;
+		dprintk("Try %d\n", i);
 		is_locked(priv, &locked);
 		if (locked != 0) {
-;
+			dprintk("ATBM8830 locked!\n");
 			break;
 		}
 	}
@@ -301,7 +301,7 @@ static int atbm8830_set_fe(struct dvb_frontend *fe,
 static int atbm8830_get_fe(struct dvb_frontend *fe,
 			  struct dvb_frontend_parameters *fe_params)
 {
-;
+	dprintk("%s\n", __func__);
 
 	/* TODO: get real readings from device */
 	/* inversion status */
@@ -342,7 +342,7 @@ static int atbm8830_read_status(struct dvb_frontend *fe, fe_status_t *fe_status)
 	u8 locked = 0;
 	u8 agc_locked = 0;
 
-;
+	dprintk("%s\n", __func__);
 	*fe_status = 0;
 
 	is_locked(priv, &locked);
@@ -353,7 +353,7 @@ static int atbm8830_read_status(struct dvb_frontend *fe, fe_status_t *fe_status)
 	dprintk("%s: fe_status=0x%x\n", __func__, *fe_status);
 
 	atbm8830_read_reg(priv, REG_AGC_LOCK, &agc_locked);
-;
+	dprintk("AGC Lock: %d\n", agc_locked);
 
 	return 0;
 }
@@ -364,7 +364,7 @@ static int atbm8830_read_ber(struct dvb_frontend *fe, u32 *ber)
 	u32 frame_err;
 	u8 t;
 
-;
+	dprintk("%s\n", __func__);
 
 	atbm8830_reglatch_lock(priv, 1);
 
@@ -388,7 +388,7 @@ static int atbm8830_read_signal_strength(struct dvb_frontend *fe, u16 *signal)
 	u32 pwm;
 	u8 t;
 
-;
+	dprintk("%s\n", __func__);
 	atbm8830_reglatch_lock(priv, 1);
 
 	atbm8830_read_reg(priv, REG_AGC_PWM_VAL + 1, &t);
@@ -399,7 +399,7 @@ static int atbm8830_read_signal_strength(struct dvb_frontend *fe, u16 *signal)
 
 	atbm8830_reglatch_lock(priv, 0);
 
-;
+	dprintk("AGC PWM = 0x%02X\n", pwm);
 	pwm = 0x400 - pwm;
 
 	*signal = pwm * 0x10000 / 0x400;
@@ -409,14 +409,14 @@ static int atbm8830_read_signal_strength(struct dvb_frontend *fe, u16 *signal)
 
 static int atbm8830_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
-;
+	dprintk("%s\n", __func__);
 	*snr = 0;
 	return 0;
 }
 
 static int atbm8830_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 {
-;
+	dprintk("%s\n", __func__);
 	*ucblocks = 0;
 	return 0;
 }
@@ -466,7 +466,7 @@ struct dvb_frontend *atbm8830_attach(const struct atbm8830_config *config,
 	struct atbm_state *priv = NULL;
 	u8 data = 0;
 
-;
+	dprintk("%s()\n", __func__);
 
 	if (config == NULL || i2c == NULL)
 		return NULL;
@@ -480,11 +480,11 @@ struct dvb_frontend *atbm8830_attach(const struct atbm8830_config *config,
 
 	/* check if the demod is there */
 	if (atbm8830_read_reg(priv, REG_CHIP_ID, &data) != 0) {
-//		dprintk("%s atbm8830/8831 not found at i2c addr 0x%02X\n",
-;
+		dprintk("%s atbm8830/8831 not found at i2c addr 0x%02X\n",
+			__func__, priv->config->demod_address);
 		goto error_out;
 	}
-;
+	dprintk("atbm8830 chip id: 0x%02X\n", data);
 
 	memcpy(&priv->frontend.ops, &atbm8830_ops,
 	       sizeof(struct dvb_frontend_ops));
@@ -497,7 +497,7 @@ struct dvb_frontend *atbm8830_attach(const struct atbm8830_config *config,
 	return &priv->frontend;
 
 error_out:
-;
+	dprintk("%s() error_out\n", __func__);
 	kfree(priv);
 	return NULL;
 

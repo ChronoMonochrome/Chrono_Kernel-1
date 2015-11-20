@@ -145,7 +145,7 @@ static int __init ms02nv_init_one(ulong addr)
 		goto err_out_mod_res_rel;
 
 	if (!version_printed) {
-;
+		printk(KERN_INFO "%s", version);
 		version_printed = 1;
 	}
 
@@ -221,13 +221,13 @@ static int __init ms02nv_init_one(ulong addr)
 
 	ret = -EIO;
 	if (mtd_device_register(mtd, NULL, 0)) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"ms02-nv: Unable to register MTD device, aborting!\n");
 		goto err_out_csr_res;
 	}
 
-//	printk(KERN_INFO "mtd%d: %s at 0x%08lx, size %zuMiB.\n",
-;
+	printk(KERN_INFO "mtd%d: %s at 0x%08lx, size %zuMiB.\n",
+		mtd->index, ms02nv_name, addr, size >> 20);
 
 	mp->next = root_ms02nv_mtd;
 	root_ms02nv_mtd = mtd;

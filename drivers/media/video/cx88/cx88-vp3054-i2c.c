@@ -134,7 +134,7 @@ int vp3054_i2c_probe(struct cx8802_dev *dev)
 
 	rc = i2c_bit_add_bus(&vp3054_i2c->adap);
 	if (0 != rc) {
-;
+		printk("%s: vp3054_i2c register FAILED\n", core->name);
 
 		kfree(dev->vp3054);
 		dev->vp3054 = NULL;

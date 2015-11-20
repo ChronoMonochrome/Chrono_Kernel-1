@@ -146,7 +146,7 @@ static int capiminor_add_ack(struct capiminor *mp, u16 datahandle)
 
 	n = kmalloc(sizeof(*n), GFP_ATOMIC);
 	if (unlikely(!n)) {
-;
+		printk(KERN_ERR "capi: alloc datahandle failed\n");
 		return -1;
 	}
 	n->datahandle = datahandle;
@@ -200,7 +200,7 @@ static struct capiminor *capiminor_alloc(struct capi20_appl *ap, u32 ncci)
 
 	mp = kzalloc(sizeof(*mp), GFP_KERNEL);
   	if (!mp) {
-;
+  		printk(KERN_ERR "capi: can't alloc capiminor\n");
 		return NULL;
 	}
 
@@ -228,7 +228,7 @@ static struct capiminor *capiminor_alloc(struct capi20_appl *ap, u32 ncci)
 	spin_unlock(&capiminors_lock);
 
 	if (minor == capi_ttyminors) {
-;
+		printk(KERN_NOTICE "capi: out of minors\n");
 		goto err_out1;
 	}
 
@@ -444,7 +444,7 @@ static int handle_recv_skb(struct capiminor *mp, struct sk_buff *skb)
 
 	nskb = gen_data_b3_resp_for(mp, skb);
 	if (!nskb) {
-;
+		printk(KERN_ERR "capi: gen_data_b3_resp failed\n");
 		goto deref_ldisc;
 	}
 
@@ -458,8 +458,8 @@ static int handle_recv_skb(struct capiminor *mp, struct sk_buff *skb)
 			 datahandle, skb->len);
 		ld->ops->receive_buf(tty, skb->data, NULL, skb->len);
 	} else {
-//		printk(KERN_ERR "capi: send DATA_B3_RESP failed=%x\n",
-;
+		printk(KERN_ERR "capi: send DATA_B3_RESP failed=%x\n",
+				errcode);
 		kfree_skb(nskb);
 
 		if (errcode == CAPI_SENDQUEUEFULL)
@@ -562,7 +562,7 @@ static void handle_minor_send(struct capiminor *mp)
 		}
 
 		/* ups, drop packet */
-;
+		printk(KERN_ERR "capi: put_message = %x\n", errcode);
 		kfree_skb(skb);
 	}
 	tty_kref_put(tty);
@@ -599,7 +599,7 @@ static void capi_recv_message(struct capi20_appl *ap, struct sk_buff *skb)
 
 	np = capincci_find(cdev, CAPIMSG_CONTROL(skb->data));
 	if (!np) {
-;
+		printk(KERN_ERR "BUG: capi_signal: ncci not found\n");
 		skb_queue_tail(&cdev->recvqueue, skb);
 		wake_up_interruptible(&cdev->recvwait);
 		goto unlock_out;
@@ -1072,7 +1072,7 @@ static int capinc_tty_write(struct tty_struct *tty,
 
 	skb = alloc_skb(CAPI_DATA_B3_REQ_LEN+count, GFP_ATOMIC);
 	if (!skb) {
-;
+		printk(KERN_ERR "capinc_tty_write: alloc_skb failed\n");
 		spin_unlock_bh(&mp->outlock);
 		return -ENOMEM;
 	}
@@ -1117,7 +1117,7 @@ static int capinc_tty_put_char(struct tty_struct *tty, unsigned char ch)
 		*(skb_put(skb, 1)) = ch;
 		mp->outskb = skb;
 	} else {
-;
+		printk(KERN_ERR "capinc_put_char: char %u lost\n", ch);
 		ret = 0;
 	}
 
@@ -1311,7 +1311,7 @@ static int __init capinc_tty_init(void)
 	if (err) {
 		put_tty_driver(drv);
 		kfree(capiminors);
-;
+		printk(KERN_ERR "Couldn't register capi_nc driver\n");
 		return err;
 	}
 	capinc_tty_driver = drv;
@@ -1429,7 +1429,7 @@ static int __init capi_init(void)
 
 	major_ret = register_chrdev(capi_major, "capi20", &capi_fops);
 	if (major_ret < 0) {
-;
+		printk(KERN_ERR "capi20: unable to get major %d\n", capi_major);
 		return major_ret;
 	}
 	capi_class = class_create(THIS_MODULE, "capi");
@@ -1454,8 +1454,8 @@ static int __init capi_init(void)
 #else
         compileinfo = " (no middleware)";
 #endif
-//	printk(KERN_NOTICE "CAPI 2.0 started up with major %d%s\n",
-;
+	printk(KERN_NOTICE "CAPI 2.0 started up with major %d%s\n",
+	       capi_major, compileinfo);
 
 	return 0;
 }

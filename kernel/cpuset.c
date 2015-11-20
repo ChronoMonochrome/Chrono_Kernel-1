@@ -672,11 +672,11 @@ restart:
 		if (nslot == ndoms) {
 			static int warnings = 10;
 			if (warnings) {
-//				printk(KERN_WARNING
-//				 "rebuild_sched_domains confused:"
-//				  " nslot %d, ndoms %d, csn %d, i %d,"
-//				  " apn %d\n",
-;
+				printk(KERN_WARNING
+				 "rebuild_sched_domains confused:"
+				  " nslot %d, ndoms %d, csn %d, i %d,"
+				  " apn %d\n",
+				  nslot, ndoms, csn, i, apn);
 				warnings--;
 			}
 			continue;
@@ -1977,8 +1977,8 @@ static void move_member_tasks_to_cpuset(struct cpuset *from, struct cpuset *to)
 	scan.data = to->css.cgroup;
 
 	if (cgroup_scan_tasks(&scan))
-//		printk(KERN_ERR "move_member_tasks_to_cpuset: "
-;
+		printk(KERN_ERR "move_member_tasks_to_cpuset: "
+				"cgroup_scan_tasks failed\n");
 }
 
 /*
@@ -2511,8 +2511,8 @@ void cpuset_print_task_mems_allowed(struct task_struct *tsk)
 
 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
 			   tsk->mems_allowed);
-//	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
-;
+	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
+	       tsk->comm, cpuset_name, cpuset_nodelist);
 	spin_unlock(&cpuset_buffer_lock);
 }
 

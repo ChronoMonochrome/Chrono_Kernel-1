@@ -421,7 +421,7 @@ out_no_root_dentry:
 	iput(root_inode);
 	ret = -ENOMEM;
 out_no_root:
-;
+	printk("openprom_fill_super: get root inode failed\n");
 	return ret;
 }
 

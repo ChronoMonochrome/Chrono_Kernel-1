@@ -335,7 +335,7 @@ static int __devinit pmcmsptwi_probe(struct platform_device *pldev)
 	pmcmsptwi_set_clock_config(&pmcmsptwi_defclockcfg, &pmcmsptwi_data);
 	pmcmsptwi_set_twi_config(&pmcmsptwi_defcfg, &pmcmsptwi_data);
 
-;
+	printk(KERN_INFO DRV_NAME ": Registering MSP71xx I2C adapter\n");
 
 	pmcmsptwi_adapter.dev.parent = &pldev->dev;
 	platform_set_drvdata(pldev, &pmcmsptwi_adapter);

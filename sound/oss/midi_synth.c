@@ -108,7 +108,7 @@ midi_outc(int midi_dev, int data)
 	/*
 	 * Sorry! No space on buffers.
 	 */
-;
+	printk("Midi send timed out\n");
 }
 
 static int
@@ -226,7 +226,7 @@ midi_synth_input(int orig_dev, unsigned char data)
 		  break;	/* MST_SYSEX */
 
 	  default:
-;
+		  printk("MIDI%d: Unexpected state %d (%02x)\n", orig_dev, inc->m_state, (int) data);
 		  inc->m_state = MST_INIT;
 	  }
 }
@@ -532,7 +532,7 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
 		{
 			if (data != 0xf0)
 			{
-;
+				printk(KERN_WARNING "midi_synth: Sysex start missing\n");
 				return -EINVAL;
 			}
 		}

@@ -178,13 +178,13 @@ static unsigned char __snd_opl3sa2_read(struct snd_opl3sa2 *chip, unsigned char 
 	unsigned char result;
 #if 0
 	outb(0x1d, port);	/* password */
-;
+	printk(KERN_DEBUG "read [0x%lx] = 0x%x\n", port, inb(port));
 #endif
 	outb(reg, chip->port);	/* register */
 	result = inb(chip->port + 1);
 #if 0
-//	printk(KERN_DEBUG "read [0x%lx] = 0x%x [0x%x]\n",
-;
+	printk(KERN_DEBUG "read [0x%lx] = 0x%x [0x%x]\n",
+	       port, result, inb(port));
 #endif
 	return result;
 }
@@ -230,12 +230,12 @@ static int __devinit snd_opl3sa2_detect(struct snd_card *card)
 
 	port = chip->port;
 	if ((chip->res_port = request_region(port, 2, "OPL3-SA control")) == NULL) {
-;
+		snd_printk(KERN_ERR PFX "can't grab port 0x%lx\n", port);
 		return -EBUSY;
 	}
 	/*
-//	snd_printk(KERN_DEBUG "REG 0A = 0x%x\n",
-;
+	snd_printk(KERN_DEBUG "REG 0A = 0x%x\n",
+		   snd_opl3sa2_read(chip, 0x0a));
 	*/
 	chip->version = 0;
 	tmp = snd_opl3sa2_read(chip, OPL3SA2_MISC);
@@ -511,26 +511,26 @@ static int __devinit snd_opl3sa2_mixer(struct snd_card *card)
         strcpy(id1.name, "Aux Playback Switch");
         strcpy(id2.name, "CD Playback Switch");
         if ((err = snd_ctl_rename_id(card, &id1, &id2)) < 0) {
-;
+		snd_printk(KERN_ERR "Cannot rename opl3sa2 control\n");
                 return err;
 	}
         strcpy(id1.name, "Aux Playback Volume");
         strcpy(id2.name, "CD Playback Volume");
         if ((err = snd_ctl_rename_id(card, &id1, &id2)) < 0) {
-;
+		snd_printk(KERN_ERR "Cannot rename opl3sa2 control\n");
                 return err;
 	}
 	/* reassign AUX1 to FM */
         strcpy(id1.name, "Aux Playback Switch"); id1.index = 1;
         strcpy(id2.name, "FM Playback Switch");
         if ((err = snd_ctl_rename_id(card, &id1, &id2)) < 0) {
-;
+		snd_printk(KERN_ERR "Cannot rename opl3sa2 control\n");
                 return err;
 	}
         strcpy(id1.name, "Aux Playback Volume");
         strcpy(id2.name, "FM Playback Volume");
         if ((err = snd_ctl_rename_id(card, &id1, &id2)) < 0) {
-;
+		snd_printk(KERN_ERR "Cannot rename opl3sa2 control\n");
                 return err;
 	}
 	/* add OPL3SA2 controls */
@@ -600,7 +600,7 @@ static int __devinit snd_opl3sa2_pnp(int dev, struct snd_opl3sa2 *chip,
 				     struct pnp_dev *pdev)
 {
 	if (pnp_activate_dev(pdev) < 0) {
-;
+		snd_printk(KERN_ERR "PnP configure failure (out of resources?)\n");
 		return -EBUSY;
 	}
 	sb_port[dev] = pnp_port_start(pdev, 0);
@@ -670,7 +670,7 @@ static int __devinit snd_opl3sa2_probe(struct snd_card *card, int dev)
 	err = request_irq(xirq, snd_opl3sa2_interrupt, IRQF_DISABLED,
 			  "OPL3-SA2", card);
 	if (err) {
-;
+		snd_printk(KERN_ERR PFX "can't grab IRQ %d\n", xirq);
 		return -ENODEV;
 	}
 	chip->irq = xirq;
@@ -791,8 +791,8 @@ static int __devinit snd_opl3sa2_pnp_cdetect(struct pnp_card_link *pcard,
 
 	pdev = pnp_request_card_device(pcard, id->devs[0].id, NULL);
 	if (pdev == NULL) {
-//		snd_printk(KERN_ERR PFX "can't get pnp device from id '%s'\n",
-;
+		snd_printk(KERN_ERR PFX "can't get pnp device from id '%s'\n",
+			   id->devs[0].id);
 		return -EBUSY;
 	}
 	for (; dev < SNDRV_CARDS; dev++) {
@@ -859,19 +859,19 @@ static int __devinit snd_opl3sa2_isa_match(struct device *pdev,
 		return 0;
 #endif
 	if (port[dev] == SNDRV_AUTO_PORT) {
-;
+		snd_printk(KERN_ERR PFX "specify port\n");
 		return 0;
 	}
 	if (wss_port[dev] == SNDRV_AUTO_PORT) {
-;
+		snd_printk(KERN_ERR PFX "specify wss_port\n");
 		return 0;
 	}
 	if (fm_port[dev] == SNDRV_AUTO_PORT) {
-;
+		snd_printk(KERN_ERR PFX "specify fm_port\n");
 		return 0;
 	}
 	if (midi_port[dev] == SNDRV_AUTO_PORT) {
-;
+		snd_printk(KERN_ERR PFX "specify midi_port\n");
 		return 0;
 	}
 	return 1;

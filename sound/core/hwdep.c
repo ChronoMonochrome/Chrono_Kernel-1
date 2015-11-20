@@ -367,7 +367,7 @@ int snd_hwdep_new(struct snd_card *card, char *id, int device,
 		*rhwdep = NULL;
 	hwdep = kzalloc(sizeof(*hwdep), GFP_KERNEL);
 	if (hwdep == NULL) {
-;
+		snd_printk(KERN_ERR "hwdep: cannot allocate\n");
 		return -ENOMEM;
 	}
 	hwdep->card = card;
@@ -420,8 +420,8 @@ static int snd_hwdep_dev_register(struct snd_device *device)
 	if ((err = snd_register_device(SNDRV_DEVICE_TYPE_HWDEP,
 				       hwdep->card, hwdep->device,
 				       &snd_hwdep_f_ops, hwdep, name)) < 0) {
-//		snd_printk(KERN_ERR "unable to register hardware dependent device %i:%i\n",
-;
+		snd_printk(KERN_ERR "unable to register hardware dependent device %i:%i\n",
+			   hwdep->card->number, hwdep->device);
 		list_del(&hwdep->list);
 		mutex_unlock(&register_mutex);
 		return err;
@@ -436,8 +436,8 @@ static int snd_hwdep_dev_register(struct snd_device *device)
 						    hwdep->card, hwdep->device,
 						    &snd_hwdep_f_ops, hwdep,
 						    hwdep->oss_dev) < 0) {
-//				snd_printk(KERN_ERR "unable to register OSS compatibility device %i:%i\n",
-;
+				snd_printk(KERN_ERR "unable to register OSS compatibility device %i:%i\n",
+					   hwdep->card->number, hwdep->device);
 			} else
 				hwdep->ossreg = 1;
 		}

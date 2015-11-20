@@ -2912,8 +2912,8 @@ static int __init wm8915_modinit(void)
 
 	ret = i2c_add_driver(&wm8915_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register WM8915 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register WM8915 I2C driver: %d\n",
+		       ret);
 	}
 
 	return ret;

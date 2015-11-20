@@ -188,8 +188,8 @@ static int DIVA_INIT_FUNCTION divas_maint_register_chrdev(void)
 {
 	if ((major = register_chrdev(0, DEVNAME, &divas_maint_fops)) < 0)
 	{
-//		printk(KERN_ERR "%s: failed to create /dev entry.\n",
-;
+		printk(KERN_ERR "%s: failed to create /dev entry.\n",
+		       DRIVERLNAME);
 		return (0);
 	}
 
@@ -216,10 +216,10 @@ static int DIVA_INIT_FUNCTION maint_init(void)
 	do_gettimeofday(&start_time);
 	init_waitqueue_head(&msgwaitq);
 
-;
-;
+	printk(KERN_INFO "%s\n", DRIVERNAME);
+	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_MNT);
 	strcpy(tmprev, main_revision);
-;
+	printk("%s  Build: %s \n", getrev(tmprev), DIVA_BUILD);
 
 	if (!divas_maint_register_chrdev()) {
 		ret = -EIO;
@@ -227,16 +227,16 @@ static int DIVA_INIT_FUNCTION maint_init(void)
 	}
 
 	if (!(mntfunc_init(&buffer_length, &buffer, diva_dbg_mem))) {
-//		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
-;
+		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
+		       DRIVERLNAME);
 		divas_maint_unregister_chrdev();
 		ret = -EIO;
 		goto out;
 	}
 
-//	printk(KERN_INFO "%s: trace buffer = %p - %d kBytes, %s (Major: %d)\n",
-//	       DRIVERLNAME, buffer, (buffer_length / 1024),
-;
+	printk(KERN_INFO "%s: trace buffer = %p - %d kBytes, %s (Major: %d)\n",
+	       DRIVERLNAME, buffer, (buffer_length / 1024),
+	       (diva_dbg_mem == 0) ? "internal" : "external", major);
 
       out:
 	return (ret);
@@ -250,7 +250,7 @@ static void DIVA_EXIT_FUNCTION maint_exit(void)
 	divas_maint_unregister_chrdev();
 	mntfunc_finit();
 
-;
+	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
 }
 
 module_init(maint_init);

@@ -473,8 +473,8 @@ static inline int get_coeff(int mclk, int rate)
 			return i;
 	}
 
-//	printk(KERN_ERR "wm8750: could not get coeff for mclk %d @ rate %d\n",
-;
+	printk(KERN_ERR "wm8750: could not get coeff for mclk %d @ rate %d\n",
+		mclk, rate);
 	return -EINVAL;
 }
 
@@ -697,13 +697,13 @@ static int wm8750_probe(struct snd_soc_codec *codec)
 
 	ret = snd_soc_codec_set_cache_io(codec, 7, 9, wm8750->control_type);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "wm8750: failed to set cache I/O: %d\n", ret);
 		return ret;
 	}
 
 	ret = wm8750_reset(codec);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "wm8750: failed to reset: %d\n", ret);
 		return ret;
 	}
 
@@ -840,15 +840,15 @@ static int __init wm8750_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8750_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register wm8750 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8750 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&wm8750_spi_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register wm8750 SPI driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8750 SPI driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

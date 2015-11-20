@@ -114,7 +114,7 @@ static int __init uwb_subsys_init(void)
 
 	result = uwb_est_create();
 	if (result < 0) {
-;
+		printk(KERN_ERR "uwb: Can't initialize EST subsystem\n");
 		goto error_est_init;
 	}
 

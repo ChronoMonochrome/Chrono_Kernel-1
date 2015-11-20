@@ -22,57 +22,57 @@
 #define AMD76X_REVISION	" Ver: 2.0.2"
 #define EDAC_MOD_STR	"amd76x_edac"
 
-//#define amd76x_printk(level, fmt, arg...) \
-//	edac_printk(level, "amd76x", fmt, ##arg)
-//
-//#define amd76x_mc_printk(mci, level, fmt, arg...) \
-//	edac_mc_chipset_printk(mci, level, "amd76x", fmt, ##arg)
-//
-//#define AMD76X_NR_CSROWS 8
-//#define AMD76X_NR_CHANS  1
-//#define AMD76X_NR_DIMMS  4
-//
-///* AMD 76x register addresses - device 0 function 0 - PCI bridge */
-//
-//#define AMD76X_ECC_MODE_STATUS	0x48	/* Mode and status of ECC (32b)
-//					 *
-//					 * 31:16 reserved
-//					 * 15:14 SERR enabled: x1=ue 1x=ce
-//					 * 13    reserved
-//					 * 12    diag: disabled, enabled
-//					 * 11:10 mode: dis, EC, ECC, ECC+scrub
-//					 *  9:8  status: x1=ue 1x=ce
-//					 *  7:4  UE cs row
-//					 *  3:0  CE cs row
-//					 */
-//
-//#define AMD76X_DRAM_MODE_STATUS	0x58	/* DRAM Mode and status (32b)
-//					 *
-//					 * 31:26 clock disable 5 - 0
-//					 * 25    SDRAM init
-//					 * 24    reserved
-//					 * 23    mode register service
-//					 * 22:21 suspend to RAM
-//					 * 20    burst refresh enable
-//					 * 19    refresh disable
-//					 * 18    reserved
-//					 * 17:16 cycles-per-refresh
-//					 * 15:8  reserved
-//					 *  7:0  x4 mode enable 7 - 0
-//					 */
-//
-//#define AMD76X_MEM_BASE_ADDR	0xC0	/* Memory base address (8 x 32b)
-//					 *
-//					 * 31:23 chip-select base
-//					 * 22:16 reserved
-//					 * 15:7  chip-select mask
-//					 *  6:3  reserved
-//					 *  2:1  address mode
-//					 *  0    chip-select enable
-//					 */
-//
-//struct amd76x_error_info {
-;
+#define amd76x_printk(level, fmt, arg...) \
+	edac_printk(level, "amd76x", fmt, ##arg)
+
+#define amd76x_mc_printk(mci, level, fmt, arg...) \
+	edac_mc_chipset_printk(mci, level, "amd76x", fmt, ##arg)
+
+#define AMD76X_NR_CSROWS 8
+#define AMD76X_NR_CHANS  1
+#define AMD76X_NR_DIMMS  4
+
+/* AMD 76x register addresses - device 0 function 0 - PCI bridge */
+
+#define AMD76X_ECC_MODE_STATUS	0x48	/* Mode and status of ECC (32b)
+					 *
+					 * 31:16 reserved
+					 * 15:14 SERR enabled: x1=ue 1x=ce
+					 * 13    reserved
+					 * 12    diag: disabled, enabled
+					 * 11:10 mode: dis, EC, ECC, ECC+scrub
+					 *  9:8  status: x1=ue 1x=ce
+					 *  7:4  UE cs row
+					 *  3:0  CE cs row
+					 */
+
+#define AMD76X_DRAM_MODE_STATUS	0x58	/* DRAM Mode and status (32b)
+					 *
+					 * 31:26 clock disable 5 - 0
+					 * 25    SDRAM init
+					 * 24    reserved
+					 * 23    mode register service
+					 * 22:21 suspend to RAM
+					 * 20    burst refresh enable
+					 * 19    refresh disable
+					 * 18    reserved
+					 * 17:16 cycles-per-refresh
+					 * 15:8  reserved
+					 *  7:0  x4 mode enable 7 - 0
+					 */
+
+#define AMD76X_MEM_BASE_ADDR	0xC0	/* Memory base address (8 x 32b)
+					 *
+					 * 31:23 chip-select base
+					 * 22:16 reserved
+					 * 15:7  chip-select mask
+					 *  6:3  reserved
+					 *  2:1  address mode
+					 *  0    chip-select enable
+					 */
+
+struct amd76x_error_info {
+	u32 ecc_mode_status;
 };
 
 enum amd76x_chips {
@@ -271,12 +271,12 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	amd76x_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!amd76x_pci) {
-//		printk(KERN_WARNING
-//			"%s(): Unable to create PCI control\n",
-;
-//		printk(KERN_WARNING
-//			"%s(): PCI error report via EDAC not setup\n",
-;
+		printk(KERN_WARNING
+			"%s(): Unable to create PCI control\n",
+			__func__);
+		printk(KERN_WARNING
+			"%s(): PCI error report via EDAC not setup\n",
+			__func__);
 	}
 
 	/* get this far and it's successful */

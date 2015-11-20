@@ -191,7 +191,7 @@ static void queue_add_event(struct apm_queue *q, apm_event_t event)
 		static int notified;
 
 		if (notified++ == 0)
-;
+		    printk(KERN_ERR "apm: an event queue overflowed\n");
 		q->event_tail = (q->event_tail + 1) % APM_MAX_EVENTS;
 	}
 	q->events[q->event_head] = event;
@@ -652,7 +652,7 @@ static int __init apm_init(void)
 	int ret;
 
 	if (apm_disabled) {
-;
+		printk(KERN_NOTICE "apm: disabled on user request.\n");
 		return -ENODEV;
 	}
 

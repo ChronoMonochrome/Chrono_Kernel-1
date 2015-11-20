@@ -63,32 +63,32 @@ static int nilfs_warn_segment_error(int err)
 {
 	switch (err) {
 	case NILFS_SEG_FAIL_IO:
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "NILFS warning: I/O error on loading last segment\n");
 		return -EIO;
 	case NILFS_SEG_FAIL_MAGIC:
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "NILFS warning: Segment magic number invalid\n");
 		break;
 	case NILFS_SEG_FAIL_SEQ:
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "NILFS warning: Sequence number mismatch\n");
 		break;
 	case NILFS_SEG_FAIL_CHECKSUM_SUPER_ROOT:
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "NILFS warning: Checksum error in super root\n");
 		break;
 	case NILFS_SEG_FAIL_CHECKSUM_FULL:
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "NILFS warning: Checksum error in segment payload\n");
 		break;
 	case NILFS_SEG_FAIL_CONSISTENCY:
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "NILFS warning: Inconsistent segment\n");
 		break;
 	case NILFS_SEG_NO_SUPER_ROOT:
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "NILFS warning: No super root in the last segment\n");
 		break;
 	}
 	return -EINVAL;
@@ -556,11 +556,11 @@ static int nilfs_recover_dsync_blocks(struct the_nilfs *nilfs,
 		page_cache_release(page);
 
  failed_inode:
-//		printk(KERN_WARNING
-//		       "NILFS warning: error recovering data block "
-//		       "(err=%d, ino=%lu, block-offset=%llu)\n",
-//		       err, (unsigned long)rb->ino,
-;
+		printk(KERN_WARNING
+		       "NILFS warning: error recovering data block "
+		       "(err=%d, ino=%lu, block-offset=%llu)\n",
+		       err, (unsigned long)rb->ino,
+		       (unsigned long long)rb->blkoff);
 		if (!err2)
 			err2 = err;
  next:
@@ -683,8 +683,8 @@ static int nilfs_do_roll_forward(struct the_nilfs *nilfs,
 	}
 
 	if (nsalvaged_blocks) {
-//		printk(KERN_INFO "NILFS (device %s): salvaged %lu blocks\n",
-;
+		printk(KERN_INFO "NILFS (device %s): salvaged %lu blocks\n",
+		       sb->s_id, nsalvaged_blocks);
 		ri->ri_need_recovery = NILFS_RECOVERY_ROLLFORWARD_DONE;
 	}
  out:
@@ -695,10 +695,10 @@ static int nilfs_do_roll_forward(struct the_nilfs *nilfs,
  confused:
 	err = -EINVAL;
  failed:
-//	printk(KERN_ERR
-//	       "NILFS (device %s): Error roll-forwarding "
-//	       "(err=%d, pseg block=%llu). ",
-;
+	printk(KERN_ERR
+	       "NILFS (device %s): Error roll-forwarding "
+	       "(err=%d, pseg block=%llu). ",
+	       sb->s_id, err, (unsigned long long)pseg_start);
 	goto out;
 }
 
@@ -718,9 +718,9 @@ static void nilfs_finish_roll_forward(struct the_nilfs *nilfs,
 	set_buffer_dirty(bh);
 	err = sync_dirty_buffer(bh);
 	if (unlikely(err))
-//		printk(KERN_WARNING
-//		       "NILFS warning: buffer sync write failed during "
-;
+		printk(KERN_WARNING
+		       "NILFS warning: buffer sync write failed during "
+		       "post-cleaning of recovery.\n");
 	brelse(bh);
 }
 
@@ -755,8 +755,8 @@ int nilfs_salvage_orphan_logs(struct the_nilfs *nilfs,
 
 	err = nilfs_attach_checkpoint(sb, ri->ri_cno, true, &root);
 	if (unlikely(err)) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "NILFS: error loading the latest checkpoint.\n");
 		return err;
 	}
 
@@ -767,8 +767,8 @@ int nilfs_salvage_orphan_logs(struct the_nilfs *nilfs,
 	if (ri->ri_need_recovery == NILFS_RECOVERY_ROLLFORWARD_DONE) {
 		err = nilfs_prepare_segment_for_recovery(nilfs, sb, ri);
 		if (unlikely(err)) {
-//			printk(KERN_ERR "NILFS: Error preparing segments for "
-;
+			printk(KERN_ERR "NILFS: Error preparing segments for "
+			       "recovery.\n");
 			goto failed;
 		}
 
@@ -781,8 +781,8 @@ int nilfs_salvage_orphan_logs(struct the_nilfs *nilfs,
 		nilfs_detach_log_writer(sb);
 
 		if (unlikely(err)) {
-//			printk(KERN_ERR "NILFS: Oops! recovery failed. "
-;
+			printk(KERN_ERR "NILFS: Oops! recovery failed. "
+			       "(err=%d)\n", err);
 			goto failed;
 		}
 

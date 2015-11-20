@@ -71,18 +71,18 @@ int mantis_uart_read(struct mantis_pci *mantis, u8 *data)
 		stat = mmread(MANTIS_UART_STAT);
 
 		if (stat & MANTIS_UART_RXFIFO_FULL) {
-;
+			dprintk(MANTIS_ERROR, 1, "RX Fifo FULL");
 		}
 		data[i] = mmread(MANTIS_UART_RXD) & 0x3f;
 
-;
+		dprintk(MANTIS_DEBUG, 1, "Reading ... <%02x>", data[i] & 0x3f);
 
 		if (data[i] & (1 << 7)) {
-;
+			dprintk(MANTIS_ERROR, 1, "UART framing error");
 			return -EINVAL;
 		}
 		if (data[i] & (1 << 6)) {
-;
+			dprintk(MANTIS_ERROR, 1, "UART parity error");
 			return -EINVAL;
 		}
 	}
@@ -100,9 +100,9 @@ static void mantis_uart_work(struct work_struct *work)
 	mantis_uart_read(mantis, buf);
 
 	for (i = 0; i < (config->bytes + 1); i++)
-;
+		dprintk(MANTIS_INFO, 1, "UART BUF:%d <%02x> ", i, buf[i]);
 
-;
+	dprintk(MANTIS_DEBUG, 0, "\n");
 }
 
 static int mantis_uart_setup(struct mantis_pci *mantis,
@@ -147,9 +147,9 @@ int mantis_uart_init(struct mantis_pci *mantis)
 	/* default parity: */
 	params.baud_rate = config->baud_rate;
 	params.parity = config->parity;
-//	dprintk(MANTIS_INFO, 1, "Initializing UART @ %sbps parity:%s",
-//		rates[params.baud_rate].string,
-;
+	dprintk(MANTIS_INFO, 1, "Initializing UART @ %sbps parity:%s",
+		rates[params.baud_rate].string,
+		parity[params.parity].string);
 
 	init_waitqueue_head(&mantis->uart_wq);
 	spin_lock_init(&mantis->uart_lock);
@@ -172,7 +172,7 @@ int mantis_uart_init(struct mantis_pci *mantis)
 	mmwrite(mmread(MANTIS_UART_CTL) | MANTIS_UART_RXINT, MANTIS_UART_CTL);
 
 	schedule_work(&mantis->uart_work);
-;
+	dprintk(MANTIS_DEBUG, 1, "UART successfully initialized");
 
 	return 0;
 }

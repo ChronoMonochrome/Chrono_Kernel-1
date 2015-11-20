@@ -54,7 +54,7 @@ void u8500_handle_sysclk3_work(struct work_struct *work)
 		resp->param = SUCCESS;
 		ret = clk_enable(cli_info->sysclk3);
 		if (ret) {
-;
+			printk(KERN_ERR "failed to enable sysclk3\n");
 			resp->param = FAILURE;
 		}
 		shm_write_msg(cli_info->shrm, cli_info->l2_header, resp,
@@ -73,8 +73,8 @@ void u8500_handle_sysclk3_work(struct work_struct *work)
 	case CLK_ENABLE_RESP:
 	case CLK_DISABLE_RESP:
 	default:
-//		printk(KERN_ERR "unknown messgae type %d in sysclk3 message\n",
-;
+		printk(KERN_ERR "unknown messgae type %d in sysclk3 message\n",
+				cli_info->clk_msg.msg_type);
 		break;
 	};
 }
@@ -89,7 +89,7 @@ int u8500_kernel_client(u8 l2_header, void *data)
 				&cli_info->u8500_handle_sysclk3_req);
 		break;
 	default:
-;
+		printk(KERN_ERR "unknown l2header %d\n", l2_header);
 		break;
 	}
 	return 0;
@@ -101,22 +101,22 @@ int u8500_kernel_client_init(struct shrm_dev *shrm)
 
 	info = kzalloc(sizeof(struct u8500_kernel_client_info), GFP_KERNEL);
 	if (info == NULL) {
-;
+		printk(KERN_ERR "unable to allocate kernel client struct\n");
 		return -ENOMEM;
 	}
 	/* create single threaded work queue */
 	info->u8500_kernel_client_wq = create_singlethread_workqueue(
 			"u8500_kernel_client");
 	if (!info->u8500_kernel_client_wq) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"unable to create single threaded work queue\n");
 		return -ENOMEM;
 	}
 	INIT_WORK(&info->u8500_handle_sysclk3_req, u8500_handle_sysclk3_work);
 
 	info->sysclk3 = clk_get(NULL, "sysclk3");
 	if (IS_ERR(info->sysclk3)) {
-;
+		printk(KERN_ERR "request for sysclk3 failed\n");
 		return PTR_ERR(info->sysclk3);
 	}
 

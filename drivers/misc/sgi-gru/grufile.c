@@ -375,15 +375,15 @@ static int gru_chiplet_setup_tlb_irq(int chiplet, char *irq_name,
 		gru_chip[chiplet].name = irq_name;
 		ret = irq_set_chip(irq, &gru_chip[chiplet]);
 		if (ret) {
-//			printk(KERN_ERR "%s: set_irq_chip failed, errno=%d\n",
-;
+			printk(KERN_ERR "%s: set_irq_chip failed, errno=%d\n",
+			       GRU_DRIVER_ID_STR, -ret);
 			return ret;
 		}
 
 		ret = request_irq(irq, irq_handler, 0, irq_name, NULL);
 		if (ret) {
-//			printk(KERN_ERR "%s: request_irq failed, errno=%d\n",
-;
+			printk(KERN_ERR "%s: request_irq failed, errno=%d\n",
+			       GRU_DRIVER_ID_STR, -ret);
 			return ret;
 		}
 	}
@@ -423,16 +423,16 @@ static int gru_chiplet_setup_tlb_irq(int chiplet, char *irq_name,
 
 	irq = uv_setup_irq(irq_name, cpu, blade, mmr, UV_AFFINITY_CPU);
 	if (irq < 0) {
-//		printk(KERN_ERR "%s: uv_setup_irq failed, errno=%d\n",
-;
+		printk(KERN_ERR "%s: uv_setup_irq failed, errno=%d\n",
+		       GRU_DRIVER_ID_STR, -irq);
 		return irq;
 	}
 
 	ret = request_irq(irq, irq_handler, 0, irq_name, NULL);
 	if (ret) {
 		uv_teardown_irq(irq);
-//		printk(KERN_ERR "%s: request_irq failed, errno=%d\n",
-;
+		printk(KERN_ERR "%s: request_irq failed, errno=%d\n",
+		       GRU_DRIVER_ID_STR, -ret);
 		return ret;
 	}
 	gru_base[blade]->bs_grus[chiplet].gs_irq[core] = irq;
@@ -529,24 +529,24 @@ static int __init gru_init(void)
 #endif
 	gru_start_vaddr = __va(gru_start_paddr);
 	gru_end_paddr = gru_start_paddr + GRU_MAX_BLADES * GRU_SIZE;
-//	printk(KERN_INFO "GRU space: 0x%lx - 0x%lx\n",
-;
+	printk(KERN_INFO "GRU space: 0x%lx - 0x%lx\n",
+	       gru_start_paddr, gru_end_paddr);
 	ret = misc_register(&gru_miscdev);
 	if (ret) {
-//		printk(KERN_ERR "%s: misc_register failed\n",
-;
+		printk(KERN_ERR "%s: misc_register failed\n",
+		       GRU_DRIVER_ID_STR);
 		goto exit0;
 	}
 
 	ret = gru_proc_init();
 	if (ret) {
-;
+		printk(KERN_ERR "%s: proc init failed\n", GRU_DRIVER_ID_STR);
 		goto exit1;
 	}
 
 	ret = gru_init_tables(gru_start_paddr, gru_start_vaddr);
 	if (ret) {
-;
+		printk(KERN_ERR "%s: init tables failed\n", GRU_DRIVER_ID_STR);
 		goto exit2;
 	}
 
@@ -556,8 +556,8 @@ static int __init gru_init(void)
 
 	gru_kservices_init();
 
-//	printk(KERN_INFO "%s: v%s\n", GRU_DRIVER_ID_STR,
-;
+	printk(KERN_INFO "%s: v%s\n", GRU_DRIVER_ID_STR,
+	       GRU_DRIVER_VERSION_STR);
 	return 0;
 
 exit3:

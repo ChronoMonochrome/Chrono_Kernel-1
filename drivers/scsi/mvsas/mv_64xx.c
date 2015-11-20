@@ -152,14 +152,14 @@ void mvs_64xx_clear_srs_irq(struct mvs_info *mvi, u8 reg_set, u8 clear_all)
 	if (clear_all) {
 		tmp = mr32(MVS_INT_STAT_SRS_0);
 		if (tmp) {
-;
+			printk(KERN_DEBUG "check SRS 0 %08X.\n", tmp);
 			mw32(MVS_INT_STAT_SRS_0, tmp);
 		}
 	} else {
 		tmp = mr32(MVS_INT_STAT_SRS_0);
 		if (tmp &  (1 << (reg_set % 32))) {
-//			printk(KERN_DEBUG "register set 0x%x was stopped.\n",
-;
+			printk(KERN_DEBUG "register set 0x%x was stopped.\n",
+			       reg_set);
 			mw32(MVS_INT_STAT_SRS_0, 1 << (reg_set % 32));
 		}
 	}
@@ -209,7 +209,7 @@ static int __devinit mvs_64xx_chip_reset(struct mvs_info *mvi)
 			break;
 	}
 	if (mr32(MVS_GBL_CTL) & HBA_RST) {
-;
+		dev_printk(KERN_ERR, mvi->dev, "HBA reset failed\n");
 		return -EBUSY;
 	}
 	return 0;

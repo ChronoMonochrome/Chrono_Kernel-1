@@ -251,11 +251,11 @@ static int psmouse_handle_byte(struct psmouse *psmouse)
 	switch (rc) {
 	case PSMOUSE_BAD_DATA:
 		if (psmouse->state == PSMOUSE_ACTIVATED) {
-//			printk(KERN_WARNING "psmouse.c: %s at %s lost sync at byte %d\n",
-;
+			printk(KERN_WARNING "psmouse.c: %s at %s lost sync at byte %d\n",
+				psmouse->name, psmouse->phys, psmouse->pktcnt);
 			if (++psmouse->out_of_sync_cnt == psmouse->resetafter) {
 				__psmouse_set_state(psmouse, PSMOUSE_IGNORE);
-;
+				printk(KERN_NOTICE "psmouse.c: issuing reconnect request\n");
 				serio_reconnect(psmouse->ps2dev.serio);
 				return -1;
 			}
@@ -267,8 +267,8 @@ static int psmouse_handle_byte(struct psmouse *psmouse)
 		psmouse->pktcnt = 0;
 		if (psmouse->out_of_sync_cnt) {
 			psmouse->out_of_sync_cnt = 0;
-//			printk(KERN_NOTICE "psmouse.c: %s at %s - driver resynched.\n",
-;
+			printk(KERN_NOTICE "psmouse.c: %s at %s - driver resynched.\n",
+				psmouse->name, psmouse->phys);
 		}
 		break;
 
@@ -295,9 +295,9 @@ static irqreturn_t psmouse_interrupt(struct serio *serio,
 		     ((flags & SERIO_PARITY) && !psmouse->ignore_parity))) {
 
 		if (psmouse->state == PSMOUSE_ACTIVATED)
-//			printk(KERN_WARNING "psmouse.c: bad data from KBC -%s%s\n",
-//				flags & SERIO_TIMEOUT ? " timeout" : "",
-;
+			printk(KERN_WARNING "psmouse.c: bad data from KBC -%s%s\n",
+				flags & SERIO_TIMEOUT ? " timeout" : "",
+				flags & SERIO_PARITY ? " bad parity" : "");
 		ps2_cmd_aborted(&psmouse->ps2dev);
 		goto out;
 	}
@@ -315,8 +315,8 @@ static irqreturn_t psmouse_interrupt(struct serio *serio,
 
 	if (psmouse->state == PSMOUSE_ACTIVATED &&
 	    psmouse->pktcnt && time_after(jiffies, psmouse->last + HZ/2)) {
-//		printk(KERN_INFO "psmouse.c: %s at %s lost synchronization, throwing %d bytes away.\n",
-;
+		printk(KERN_INFO "psmouse.c: %s at %s lost synchronization, throwing %d bytes away.\n",
+		       psmouse->name, psmouse->phys, psmouse->pktcnt);
 		psmouse->badbyte = psmouse->packet[0];
 		__psmouse_set_state(psmouse, PSMOUSE_RESYNCING);
 		psmouse_queue_work(psmouse, &psmouse->resync_work, 0);
@@ -943,7 +943,7 @@ static int psmouse_probe(struct psmouse *psmouse)
  */
 
 	if (ps2_command(ps2dev, NULL, PSMOUSE_CMD_RESET_DIS))
-;
+		printk(KERN_WARNING "psmouse.c: Failed to reset mouse on %s\n", ps2dev->serio->phys);
 
 	return 0;
 }
@@ -1005,8 +1005,8 @@ static void psmouse_initialize(struct psmouse *psmouse)
 static void psmouse_activate(struct psmouse *psmouse)
 {
 	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_ENABLE))
-//		printk(KERN_WARNING "psmouse.c: Failed to enable mouse on %s\n",
-;
+		printk(KERN_WARNING "psmouse.c: Failed to enable mouse on %s\n",
+			psmouse->ps2dev.serio->phys);
 
 	psmouse_set_state(psmouse, PSMOUSE_ACTIVATED);
 }
@@ -1020,8 +1020,8 @@ static void psmouse_activate(struct psmouse *psmouse)
 static void psmouse_deactivate(struct psmouse *psmouse)
 {
 	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_DISABLE))
-//		printk(KERN_WARNING "psmouse.c: Failed to deactivate mouse on %s\n",
-;
+		printk(KERN_WARNING "psmouse.c: Failed to deactivate mouse on %s\n",
+			psmouse->ps2dev.serio->phys);
 
 	psmouse_set_state(psmouse, PSMOUSE_CMD_MODE);
 }
@@ -1115,14 +1115,14 @@ static void psmouse_resync(struct work_struct *work)
 	}
 
 	if (!enabled) {
-//		printk(KERN_WARNING "psmouse.c: failed to re-enable mouse on %s\n",
-;
+		printk(KERN_WARNING "psmouse.c: failed to re-enable mouse on %s\n",
+			psmouse->ps2dev.serio->phys);
 		failed = true;
 	}
 
 	if (failed) {
 		psmouse_set_state(psmouse, PSMOUSE_IGNORE);
-;
+		printk(KERN_INFO "psmouse.c: resync failed, issuing reconnect request\n");
 		serio_reconnect(serio);
 	} else
 		psmouse_set_state(psmouse, PSMOUSE_ACTIVATED);
@@ -1155,8 +1155,8 @@ static void psmouse_cleanup(struct serio *serio)
 	 * Disable stream mode so cleanup routine can proceed undisturbed.
 	 */
 	if (ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_DISABLE))
-//		printk(KERN_WARNING "psmouse.c: Failed to disable mouse on %s\n",
-;
+		printk(KERN_WARNING "psmouse.c: Failed to disable mouse on %s\n",
+			psmouse->ps2dev.serio->phys);
 
 	if (psmouse->cleanup)
 		psmouse->cleanup(psmouse);
@@ -1400,7 +1400,7 @@ static int psmouse_reconnect(struct serio *serio)
 	int rc = -1;
 
 	if (!drv || !psmouse) {
-;
+		printk(KERN_DEBUG "psmouse: reconnect request, but serio is disconnected, ignoring...\n");
 		return -1;
 	}
 
@@ -1586,9 +1586,9 @@ static ssize_t psmouse_attr_set_protocol(struct psmouse *psmouse, void *data, co
 
 	while (!list_empty(&serio->children)) {
 		if (++retry > 3) {
-//			printk(KERN_WARNING
-//				"psmouse: failed to destroy children ports, "
-;
+			printk(KERN_WARNING
+				"psmouse: failed to destroy children ports, "
+				"protocol change aborted.\n");
 			input_free_device(new_dev);
 			return -EIO;
 		}
@@ -1715,7 +1715,7 @@ static int __init psmouse_init(void)
 
 	kpsmoused_wq = create_singlethread_workqueue("kpsmoused");
 	if (!kpsmoused_wq) {
-;
+		printk(KERN_ERR "psmouse: failed to create kpsmoused workqueue\n");
 		return -ENOMEM;
 	}
 

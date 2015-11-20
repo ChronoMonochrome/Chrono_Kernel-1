@@ -86,26 +86,26 @@ unsigned long pwm_val = 10;
 
 #ifdef IMMVIBE_DEBUG
 #define	vibdbg(_fmt, ...)	\
-//	printk(KERN_INFO "IMMVIBE DEBUG: " _fmt "\n", ## __VA_ARGS__)
-//#else
-//#define	vibdbg(_fmt, ...)
-//#endif
-//
-//#define	vibinfo(_fmt, ...)	\
-//	printk(KERN_NOTICE "IMMVIBE INFO: " _fmt "\n", ## __VA_ARGS__)
-//
-//#define	vibwarn(_fmt, ...)	\
-//	printk(KERN_WARNING "IMMVIBE WARN: " _fmt "\n", ## __VA_ARGS__)
-//
-//#define	viberr(_fmt, ...)	\
-//	printk(KERN_ERR "IMMVIBE ERROR: " _fmt "\n", ## __VA_ARGS__)
-//
-//
-///* Device name and version information */
-//#define VERSION_STR " v3.4.55.5\n"                  /* DO NOT CHANGE - this is auto-generated */
-//#define VERSION_STR_LEN 16                          /* account extra space for future extra digits in version number */
-//static char g_szDeviceName[(VIBE_MAX_DEVICE_NAME_LENGTH
-;
+	printk(KERN_INFO "IMMVIBE DEBUG: " _fmt "\n", ## __VA_ARGS__)
+#else
+#define	vibdbg(_fmt, ...)
+#endif
+
+#define	vibinfo(_fmt, ...)	\
+	printk(KERN_NOTICE "IMMVIBE INFO: " _fmt "\n", ## __VA_ARGS__)
+
+#define	vibwarn(_fmt, ...)	\
+	printk(KERN_WARNING "IMMVIBE WARN: " _fmt "\n", ## __VA_ARGS__)
+
+#define	viberr(_fmt, ...)	\
+	printk(KERN_ERR "IMMVIBE ERROR: " _fmt "\n", ## __VA_ARGS__)
+
+
+/* Device name and version information */
+#define VERSION_STR " v3.4.55.5\n"                  /* DO NOT CHANGE - this is auto-generated */
+#define VERSION_STR_LEN 16                          /* account extra space for future extra digits in version number */
+static char g_szDeviceName[(VIBE_MAX_DEVICE_NAME_LENGTH
+				+ VERSION_STR_LEN) * NUM_ACTUATORS];       /* initialized in init_module */
 static size_t g_cchDeviceName;                      /* initialized in init_module */
 
 /* Flag indicating whether the driver is in use */
@@ -490,7 +490,7 @@ static ssize_t write(struct file *file, const char *buf, size_t count, loff_t *p
 	g_nForceLog[g_nForceLogIndex++] = g_cSPIBuffer[0];
 	if (g_nForceLogIndex >= FORCE_LOG_BUFFER_SIZE) {
 		for (i = 0; i < FORCE_LOG_BUFFER_SIZE; i++) {
-;
+			printk(KERN_INFO "%d\t%d\n", g_nTime, g_nForceLog[i]);
 			g_nTime += TIME_INCREMENT;
 		}
 		g_nForceLogIndex = 0;
@@ -527,7 +527,7 @@ static long ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #ifdef QA_TEST
 		if (g_nForceLogIndex) {
 			for (i = 0; i < g_nForceLogIndex; i++) {
-;
+				printk(KERN_INFO "%d\t%d\n", g_nTime, g_nForceLog[i]);
 				g_nTime += TIME_INCREMENT;
 			}
 		}
@@ -775,7 +775,7 @@ static struct i2c_driver immvibe_i2c_driver = {
 static int __init immvibe_init(void)
 {
 	int ret = 0;
-;
+	printk(KERN_ERR "%s\n", __func__);
 	ret = i2c_add_driver(&immvibe_i2c_driver);
 
 	if (ret < 0)
@@ -804,7 +804,7 @@ err_to_dev_reg:
 
 static void __exit immvibe_exit(void)
 {
-;
+	printk(KERN_DEBUG "%s\n", __func__);
 	i2c_del_driver(&immvibe_i2c_driver);
 	timed_output_dev_unregister(&to_dev);
 	cleanup_tspdrv_module();

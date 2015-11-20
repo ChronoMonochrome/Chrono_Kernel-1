@@ -126,15 +126,15 @@ static int DIVA_INIT_FUNCTION divacapi_init(void)
 	sprintf(DRIVERRELEASE_CAPI, "%d.%d%s", DRRELMAJOR, DRRELMINOR,
 		DRRELEXTRA);
 
-;
-;
+	printk(KERN_INFO "%s\n", DRIVERNAME);
+	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_CAPI);
 	strcpy(tmprev, main_revision);
-//	printk("%s  Build: %s(%s)\n", getrev(tmprev),
-;
+	printk("%s  Build: %s(%s)\n", getrev(tmprev),
+	       diva_capi_common_code_build, DIVA_BUILD);
 
 	if (!(init_capifunc())) {
-//		printk(KERN_ERR "%s: failed init capi_driver.\n",
-;
+		printk(KERN_ERR "%s: failed init capi_driver.\n",
+		       DRIVERLNAME);
 		ret = -EIO;
 	}
 
@@ -147,7 +147,7 @@ static int DIVA_INIT_FUNCTION divacapi_init(void)
 static void DIVA_EXIT_FUNCTION divacapi_exit(void)
 {
 	finit_capifunc();
-;
+	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
 }
 
 module_init(divacapi_init);

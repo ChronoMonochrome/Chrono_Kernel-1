@@ -44,15 +44,15 @@ mvme16x_probe(struct platform_device *dev)
 		goto out;
 
 	if (mvme16x_config & MVME16x_CONFIG_NO_SCSICHIP) {
-//		printk(KERN_INFO "mvme16x-scsi: detection disabled, "
-;
+		printk(KERN_INFO "mvme16x-scsi: detection disabled, "
+				 "SCSI chip not present\n");
 		goto out;
 	}
 
 	hostdata = kzalloc(sizeof(struct NCR_700_Host_Parameters), GFP_KERNEL);
 	if (hostdata == NULL) {
-//		printk(KERN_ERR "mvme16x-scsi: "
-;
+		printk(KERN_ERR "mvme16x-scsi: "
+				"Failed to allocate host data\n");
 		goto out;
 	}
 
@@ -68,7 +68,7 @@ mvme16x_probe(struct platform_device *dev)
 	host = NCR_700_detect(&mvme16x_scsi_driver_template, hostdata,
 			      &dev->dev);
 	if (!host) {
-;
+		printk(KERN_ERR "mvme16x-scsi: No host detected; "
 				"board configuration problem?\n");
 		goto out_free;
 	}
@@ -76,7 +76,7 @@ mvme16x_probe(struct platform_device *dev)
 	host->base = 0xfff47000UL;
 	host->irq = MVME16x_IRQ_SCSI;
 	if (request_irq(host->irq, NCR_700_intr, 0, "mvme16x-scsi", host)) {
-;
+		printk(KERN_ERR "mvme16x-scsi: request_irq failed\n");
 		goto out_put_host;
 	}
 

@@ -88,8 +88,8 @@ static int uda134x_write(struct snd_soc_codec *codec, unsigned int reg,
 	pr_debug("%s reg: %02X, value:%02X\n", __func__, reg, value);
 
 	if (reg >= UDA134X_REGS_NUM) {
-//		printk(KERN_ERR "%s unknown register: reg: %u",
-;
+		printk(KERN_ERR "%s unknown register: reg: %u",
+		       __func__, reg);
 		return -EINVAL;
 	}
 
@@ -234,7 +234,7 @@ static int uda134x_hw_params(struct snd_pcm_substream *substream,
 		hw_params |= (1<<5);
 		break;
 	default:
-;
+		printk(KERN_ERR "%s unsupported fs\n", __func__);
 		return -EINVAL;
 	}
 
@@ -257,8 +257,8 @@ static int uda134x_hw_params(struct snd_pcm_substream *substream,
 			hw_params |= ((1<<2) | (1<<1));
 			break;
 		default:
-//			printk(KERN_ERR "%s unsupported format (right)\n",
-;
+			printk(KERN_ERR "%s unsupported format (right)\n",
+			       __func__);
 			return -EINVAL;
 		}
 		break;
@@ -266,7 +266,7 @@ static int uda134x_hw_params(struct snd_pcm_substream *substream,
 		hw_params |= (1<<3);
 		break;
 	default:
-;
+		printk(KERN_ERR "%s unsupported format\n", __func__);
 		return -EINVAL;
 	}
 
@@ -293,7 +293,7 @@ static int uda134x_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 		return 0;
 	}
 
-;
+	printk(KERN_ERR "%s unsupported sysclk\n", __func__);
 	return -EINVAL;
 }
 
@@ -307,13 +307,13 @@ static int uda134x_set_dai_fmt(struct snd_soc_dai *codec_dai,
 
 	/* codec supports only full slave mode */
 	if ((fmt & SND_SOC_DAIFMT_MASTER_MASK) != SND_SOC_DAIFMT_CBS_CFS) {
-;
+		printk(KERN_ERR "%s unsupported slave mode\n", __func__);
 		return -EINVAL;
 	}
 
 	/* no support for clock inversion */
 	if ((fmt & SND_SOC_DAIFMT_INV_MASK) != SND_SOC_DAIFMT_NB_NF) {
-;
+		printk(KERN_ERR "%s unsupported clock inversion\n", __func__);
 		return -EINVAL;
 	}
 
@@ -349,8 +349,8 @@ static int uda134x_set_bias_level(struct snd_soc_codec *codec,
 			uda134x_write(codec, UDA134X_STATUS1, reg | 0x03);
 			break;
 		default:
-//			printk(KERN_ERR "UDA134X SoC codec: "
-;
+			printk(KERN_ERR "UDA134X SoC codec: "
+			       "unsupported model %d\n", pd->model);
 			return -EINVAL;
 		}
 		break;
@@ -377,8 +377,8 @@ static int uda134x_set_bias_level(struct snd_soc_codec *codec,
 			uda134x_write(codec, UDA134X_STATUS1, reg & ~(0x03));
 			break;
 		default:
-//			printk(KERN_ERR "UDA134X SoC codec: "
-;
+			printk(KERN_ERR "UDA134X SoC codec: "
+			       "unsupported model %d\n", pd->model);
 			return -EINVAL;
 		}
 		break;
@@ -490,11 +490,11 @@ static int uda134x_soc_probe(struct snd_soc_codec *codec)
 
 	int ret;
 
-;
+	printk(KERN_INFO "UDA134X SoC Audio Codec\n");
 
 	if (!pd) {
-//		printk(KERN_ERR "UDA134X SoC codec: "
-;
+		printk(KERN_ERR "UDA134X SoC codec: "
+		       "missing L3 bitbang function\n");
 		return -ENODEV;
 	}
 
@@ -505,9 +505,9 @@ static int uda134x_soc_probe(struct snd_soc_codec *codec)
 	case UDA134X_UDA1345:
 		break;
 	default:
-//		printk(KERN_ERR "UDA134X SoC codec: "
-//		       "unsupported model %d\n",
-;
+		printk(KERN_ERR "UDA134X SoC codec: "
+		       "unsupported model %d\n",
+			pd->model);
 		return -EINVAL;
 	}
 
@@ -543,14 +543,14 @@ static int uda134x_soc_probe(struct snd_soc_codec *codec)
 					ARRAY_SIZE(uda1345_snd_controls));
 	break;
 	default:
-//		printk(KERN_ERR "%s unknown codec type: %d",
-;
+		printk(KERN_ERR "%s unknown codec type: %d",
+			__func__, pd->model);
 		kfree(uda134x);
 		return -EINVAL;
 	}
 
 	if (ret < 0) {
-;
+		printk(KERN_ERR "UDA134X: failed to register controls\n");
 		kfree(uda134x);
 		return ret;
 	}

@@ -107,8 +107,8 @@ int kvm_iommu_map_pages(struct kvm *kvm, struct kvm_memory_slot *slot)
 		r = iommu_map(domain, gfn_to_gpa(gfn), pfn_to_hpa(pfn),
 			      get_order(page_size), flags);
 		if (r) {
-//			printk(KERN_ERR "kvm_iommu_map_address:"
-;
+			printk(KERN_ERR "kvm_iommu_map_address:"
+			       "iommu failed to map pfn=%llx\n", pfn);
 			goto unmap_pages;
 		}
 
@@ -159,11 +159,11 @@ int kvm_assign_device(struct kvm *kvm,
 
 	r = iommu_attach_device(domain, &pdev->dev);
 	if (r) {
-//		printk(KERN_ERR "assign device %x:%x:%x.%x failed",
-//			pci_domain_nr(pdev->bus),
-//			pdev->bus->number,
-//			PCI_SLOT(pdev->devfn),
-;
+		printk(KERN_ERR "assign device %x:%x:%x.%x failed",
+			pci_domain_nr(pdev->bus),
+			pdev->bus->number,
+			PCI_SLOT(pdev->devfn),
+			PCI_FUNC(pdev->devfn));
 		return r;
 	}
 
@@ -181,11 +181,11 @@ int kvm_assign_device(struct kvm *kvm,
 			goto out_unmap;
 	}
 
-//	printk(KERN_DEBUG "assign device %x:%x:%x.%x\n",
-//		assigned_dev->host_segnr,
-//		assigned_dev->host_busnr,
-//		PCI_SLOT(assigned_dev->host_devfn),
-;
+	printk(KERN_DEBUG "assign device %x:%x:%x.%x\n",
+		assigned_dev->host_segnr,
+		assigned_dev->host_busnr,
+		PCI_SLOT(assigned_dev->host_devfn),
+		PCI_FUNC(assigned_dev->host_devfn));
 
 	return 0;
 out_unmap:
@@ -209,11 +209,11 @@ int kvm_deassign_device(struct kvm *kvm,
 
 	iommu_detach_device(domain, &pdev->dev);
 
-//	printk(KERN_DEBUG "deassign device %x:%x:%x.%x\n",
-//		assigned_dev->host_segnr,
-//		assigned_dev->host_busnr,
-//		PCI_SLOT(assigned_dev->host_devfn),
-;
+	printk(KERN_DEBUG "deassign device %x:%x:%x.%x\n",
+		assigned_dev->host_segnr,
+		assigned_dev->host_busnr,
+		PCI_SLOT(assigned_dev->host_devfn),
+		PCI_FUNC(assigned_dev->host_devfn));
 
 	return 0;
 }
@@ -223,7 +223,7 @@ int kvm_iommu_map_guest(struct kvm *kvm)
 	int r;
 
 	if (!iommu_found()) {
-;
+		printk(KERN_ERR "%s: iommu not found\n", __func__);
 		return -ENODEV;
 	}
 

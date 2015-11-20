@@ -175,7 +175,7 @@ err:
 	while (retry_cnt++ < 10)
 		goto retry;
 
-;
+	printk(KERN_ERR "AD1980 AC97 reset failed\n");
 	return -EIO;
 }
 
@@ -185,17 +185,17 @@ static int ad1980_soc_probe(struct snd_soc_codec *codec)
 	u16 vendor_id2;
 	u16 ext_status;
 
-;
+	printk(KERN_INFO "AD1980 SoC Audio Codec\n");
 
 	ret = snd_soc_new_ac97_codec(codec, &soc_ac97_ops, 0);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "ad1980: failed to register AC97 codec\n");
 		return ret;
 	}
 
 	ret = ad1980_reset(codec, 0);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "Failed to reset AD1980: AC97 link error\n");
 		goto reset_err;
 	}
 
@@ -209,9 +209,9 @@ static int ad1980_soc_probe(struct snd_soc_codec *codec)
 		if (vendor_id2 != 0x5374)
 			goto reset_err;
 		else
-//			printk(KERN_WARNING "ad1980: "
-//				"Found AD1981 - only 2/2 IN/OUT Channels "
-;
+			printk(KERN_WARNING "ad1980: "
+				"Found AD1981 - only 2/2 IN/OUT Channels "
+				"supported\n");
 	}
 
 	/* unmute captures and playbacks volume */

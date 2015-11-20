@@ -345,8 +345,8 @@ static int ide_tape_callback(ide_drive_t *drive, int dsc)
 		if (uptodate)
 			idetape_analyze_error(drive);
 		else
-//			printk(KERN_ERR "ide-tape: Error in REQUEST SENSE "
-;
+			printk(KERN_ERR "ide-tape: Error in REQUEST SENSE "
+					"itself - Aborting request!\n");
 	} else if (pc->c[0] == READ_6 || pc->c[0] == WRITE_6) {
 		unsigned int blocks =
 			(blk_rq_bytes(rq) - rq->resid_len) / tape->blk_size;
@@ -462,12 +462,12 @@ static ide_startstop_t ide_tape_issue_pc(ide_drive_t *drive,
 			if (!(pc->c[0] == TEST_UNIT_READY &&
 			      tape->sense_key == 2 && tape->asc == 4 &&
 			     (tape->ascq == 1 || tape->ascq == 8))) {
-//				printk(KERN_ERR "ide-tape: %s: I/O error, "
-//						"pc = %2x, key = %2x, "
-//						"asc = %2x, ascq = %2x\n",
-//						tape->name, pc->c[0],
-//						tape->sense_key, tape->asc,
-;
+				printk(KERN_ERR "ide-tape: %s: I/O error, "
+						"pc = %2x, key = %2x, "
+						"asc = %2x, ascq = %2x\n",
+						tape->name, pc->c[0],
+						tape->sense_key, tape->asc,
+						tape->ascq);
 			}
 			/* Giving up */
 			pc->error = IDE_DRV_ERROR_GENERAL;
@@ -526,8 +526,8 @@ static ide_startstop_t idetape_media_access_finished(ide_drive_t *drive)
 		if (stat & ATA_ERR) {
 			/* Error detected */
 			if (pc->c[0] != TEST_UNIT_READY)
-//				printk(KERN_ERR "ide-tape: %s: I/O error, ",
-;
+				printk(KERN_ERR "ide-tape: %s: I/O error, ",
+						tape->name);
 			/* Retry operation */
 			ide_retry_pc(drive);
 			return ide_stopped;
@@ -608,8 +608,8 @@ static ide_startstop_t idetape_do_request(ide_drive_t *drive,
 			tape->dsc_poll_freq = tape->best_dsc_rw_freq;
 			tape->dsc_timeout = jiffies + IDETAPE_DSC_RW_TIMEOUT;
 		} else if (time_after(jiffies, tape->dsc_timeout)) {
-//			printk(KERN_ERR "ide-tape: %s: DSC timeout\n",
-;
+			printk(KERN_ERR "ide-tape: %s: DSC timeout\n",
+				tape->name);
 			if (rq->cmd[13] & REQ_IDETAPE_PC2) {
 				idetape_media_access_finished(drive);
 				return ide_stopped;
@@ -744,8 +744,8 @@ static int ide_tape_read_position(ide_drive_t *drive)
 				(buf[0] & 0x40) ? "Yes" : "No");
 
 		if (buf[0] & 0x4) {
-//			printk(KERN_INFO "ide-tape: Block location is unknown"
-;
+			printk(KERN_INFO "ide-tape: Block location is unknown"
+					 "to the tape\n");
 			clear_bit(ilog2(IDE_AFLAG_ADDRESS_VALID),
 				  &drive->atapi_flags);
 			return -1;
@@ -831,8 +831,8 @@ static void ide_tape_discard_merge_buffer(ide_drive_t *drive,
 		position = ide_tape_read_position(drive);
 		seek = position > 0 ? position : 0;
 		if (idetape_position_tape(drive, seek, 0, 0)) {
-//			printk(KERN_INFO "ide-tape: %s: position_tape failed in"
-;
+			printk(KERN_INFO "ide-tape: %s: position_tape failed in"
+					 " %s\n", tape->name, __func__);
 			return;
 		}
 	}
@@ -922,8 +922,8 @@ static void ide_tape_flush_merge_buffer(ide_drive_t *drive)
 	idetape_tape_t *tape = drive->driver_data;
 
 	if (tape->chrdev_dir != IDETAPE_DIR_WRITE) {
-//		printk(KERN_ERR "ide-tape: bug: Trying to empty merge buffer"
-;
+		printk(KERN_ERR "ide-tape: bug: Trying to empty merge buffer"
+				" but we are not writing.\n");
 		return;
 	}
 	if (tape->buf) {
@@ -955,7 +955,7 @@ static int idetape_init_rw(ide_drive_t *drive, int dir)
 	}
 
 	if (tape->buf || tape->valid) {
-;
+		printk(KERN_ERR "ide-tape: valid should be 0 now\n");
 		tape->valid = 0;
 	}
 
@@ -1104,8 +1104,8 @@ static int idetape_space_over_filemarks(ide_drive_t *drive, short mt_op,
 		count = (MTBSFM == mt_op ? 1 : -1);
 		return idetape_space_over_filemarks(drive, MTFSF, count);
 	default:
-//		printk(KERN_ERR "ide-tape: MTIO operation %d not supported\n",
-;
+		printk(KERN_ERR "ide-tape: MTIO operation %d not supported\n",
+				mt_op);
 		return -EIO;
 	}
 }
@@ -1231,7 +1231,7 @@ static int idetape_write_filemark(ide_drive_t *drive)
 	/* Write a filemark */
 	idetape_create_write_filemark_cmd(drive, &pc, 1);
 	if (ide_queue_pc_tail(drive, tape->disk, &pc, NULL, 0)) {
-;
+		printk(KERN_ERR "ide-tape: Couldn't write a filemark\n");
 		return -EIO;
 	}
 	return 0;
@@ -1355,8 +1355,8 @@ static int idetape_mtioctop(ide_drive_t *drive, short mt_op, int mt_count)
 		tape->door_locked = DOOR_UNLOCKED;
 		return 0;
 	default:
-//		printk(KERN_ERR "ide-tape: MTIO operation %d not supported\n",
-;
+		printk(KERN_ERR "ide-tape: MTIO operation %d not supported\n",
+				mt_op);
 		return -EIO;
 	}
 }
@@ -1443,10 +1443,10 @@ static void ide_tape_get_bsize_from_bdesc(ide_drive_t *drive)
 
 	idetape_create_mode_sense_cmd(&pc, IDETAPE_BLOCK_DESCRIPTOR);
 	if (ide_queue_pc_tail(drive, tape->disk, &pc, buf, pc.req_xfer)) {
-;
+		printk(KERN_ERR "ide-tape: Can't get block descriptor\n");
 		if (tape->blk_size == 0) {
-//			printk(KERN_WARNING "ide-tape: Cannot deal with zero "
-;
+			printk(KERN_WARNING "ide-tape: Cannot deal with zero "
+					    "block size, assuming 32k\n");
 			tape->blk_size = 32768;
 		}
 		return;
@@ -1499,7 +1499,7 @@ static int idetape_chrdev_open(struct inode *inode, struct file *filp)
 	retval = idetape_wait_ready(drive, 60 * HZ);
 	if (retval) {
 		clear_bit(ilog2(IDE_AFLAG_BUSY), &drive->atapi_flags);
-;
+		printk(KERN_ERR "ide-tape: %s: drive not ready\n", tape->name);
 		goto out_put_tape;
 	}
 
@@ -1608,8 +1608,8 @@ static void idetape_get_inquiry_results(ide_drive_t *drive)
 
 	idetape_create_inquiry_cmd(&pc);
 	if (ide_queue_pc_tail(drive, tape->disk, &pc, pc_buf, pc.req_xfer)) {
-//		printk(KERN_ERR "ide-tape: %s: can't get INQUIRY results\n",
-;
+		printk(KERN_ERR "ide-tape: %s: can't get INQUIRY results\n",
+				tape->name);
 		return;
 	}
 	memcpy(vendor_id, &pc_buf[8], 8);
@@ -1620,8 +1620,8 @@ static void idetape_get_inquiry_results(ide_drive_t *drive)
 	ide_fixstring(product_id, 16, 0);
 	ide_fixstring(fw_rev, 4, 0);
 
-//	printk(KERN_INFO "ide-tape: %s <-> %s: %.8s %.16s rev %.4s\n",
-;
+	printk(KERN_INFO "ide-tape: %s <-> %s: %.8s %.16s rev %.4s\n",
+			drive->name, tape->name, vendor_id, product_id, fw_rev);
 }
 
 /*
@@ -1637,8 +1637,8 @@ static void idetape_get_mode_sense_results(ide_drive_t *drive)
 
 	idetape_create_mode_sense_cmd(&pc, IDETAPE_CAPABILITIES_PAGE);
 	if (ide_queue_pc_tail(drive, tape->disk, &pc, buf, pc.req_xfer)) {
-//		printk(KERN_ERR "ide-tape: Can't get tape parameters - assuming"
-;
+		printk(KERN_ERR "ide-tape: Can't get tape parameters - assuming"
+				" some default values\n");
 		tape->blk_size = 512;
 		put_unaligned(52,   (u16 *)&tape->caps[12]);
 		put_unaligned(540,  (u16 *)&tape->caps[14]);
@@ -1657,13 +1657,13 @@ static void idetape_get_mode_sense_results(ide_drive_t *drive)
 	*(u16 *)&caps[16] = be16_to_cpup((__be16 *)&caps[16]);
 
 	if (!speed) {
-//		printk(KERN_INFO "ide-tape: %s: invalid tape speed "
-;
+		printk(KERN_INFO "ide-tape: %s: invalid tape speed "
+				"(assuming 650KB/sec)\n", drive->name);
 		*(u16 *)&caps[14] = 650;
 	}
 	if (!max_speed) {
-//		printk(KERN_INFO "ide-tape: %s: invalid max_speed "
-;
+		printk(KERN_INFO "ide-tape: %s: invalid max_speed "
+				"(assuming 650KB/sec)\n", drive->name);
 		*(u16 *)&caps[8] = 650;
 	}
 
@@ -1755,8 +1755,8 @@ static void idetape_setup(ide_drive_t *drive, idetape_tape_t *tape, int minor)
 	drive->dev_flags |= IDE_DFLAG_DSC_OVERLAP;
 
 	if (drive->hwif->host_flags & IDE_HFLAG_NO_DSC) {
-//		printk(KERN_INFO "ide-tape: %s: disabling DSC overlap\n",
-;
+		printk(KERN_INFO "ide-tape: %s: disabling DSC overlap\n",
+				 tape->name);
 		drive->dev_flags &= ~IDE_DFLAG_DSC_OVERLAP;
 	}
 
@@ -1776,7 +1776,7 @@ static void idetape_setup(ide_drive_t *drive, idetape_tape_t *tape, int minor)
 	tape->user_bs_factor = 1;
 	tape->buffer_size = *ctl * tape->blk_size;
 	while (tape->buffer_size > 0xffff) {
-;
+		printk(KERN_NOTICE "ide-tape: decreasing stage size\n");
 		*ctl /= 2;
 		tape->buffer_size = *ctl * tape->blk_size;
 	}
@@ -1969,14 +1969,14 @@ static int ide_tape_probe(ide_drive_t *drive)
 
 	if ((drive->dev_flags & IDE_DFLAG_ID_READ) &&
 	    ide_check_atapi_device(drive, DRV_NAME) == 0) {
-//		printk(KERN_ERR "ide-tape: %s: not supported by this version of"
-;
+		printk(KERN_ERR "ide-tape: %s: not supported by this version of"
+				" the driver\n", drive->name);
 		goto failed;
 	}
 	tape = kzalloc(sizeof(idetape_tape_t), GFP_KERNEL);
 	if (tape == NULL) {
-//		printk(KERN_ERR "ide-tape: %s: Can't allocate a tape struct\n",
-;
+		printk(KERN_ERR "ide-tape: %s: Can't allocate a tape struct\n",
+				drive->name);
 		goto failed;
 	}
 
@@ -2041,14 +2041,14 @@ static int __init idetape_init(void)
 	idetape_sysfs_class = class_create(THIS_MODULE, "ide_tape");
 	if (IS_ERR(idetape_sysfs_class)) {
 		idetape_sysfs_class = NULL;
-;
+		printk(KERN_ERR "Unable to create sysfs class for ide tapes\n");
 		error = -EBUSY;
 		goto out;
 	}
 
 	if (register_chrdev(IDETAPE_MAJOR, "ht", &idetape_fops)) {
-//		printk(KERN_ERR "ide-tape: Failed to register chrdev"
-;
+		printk(KERN_ERR "ide-tape: Failed to register chrdev"
+				" interface\n");
 		error = -EBUSY;
 		goto out_free_class;
 	}

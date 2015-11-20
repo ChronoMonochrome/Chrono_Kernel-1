@@ -179,8 +179,8 @@ static int __init lasi_init_chip(struct parisc_device *dev)
 
 	/* Check the 4-bit (yes, only 4) version register */
 	lasi->version = gsc_readl(lasi->hpa + LASI_VER) & 0xf;
-//	printk(KERN_INFO "%s version %d at 0x%lx found.\n",
-;
+	printk(KERN_INFO "%s version %d at 0x%lx found.\n",
+		lasi->name, lasi->version, lasi->hpa);
 
 	/* initialize the chassis LEDs really early */ 
 	lasi_led_init(lasi->hpa);
@@ -191,8 +191,8 @@ static int __init lasi_init_chip(struct parisc_device *dev)
 	/* the IRQ lasi should use */
 	dev->irq = gsc_alloc_irq(&gsc_irq);
 	if (dev->irq < 0) {
-//		printk(KERN_ERR "%s(): cannot get GSC irq\n",
-;
+		printk(KERN_ERR "%s(): cannot get GSC irq\n",
+				__func__);
 		kfree(lasi);
 		return -EBUSY;
 	}

@@ -63,8 +63,8 @@ static struct resource *register_memory_resource(u64 start, u64 size)
 	res->end = start + size - 1;
 	res->flags = IORESOURCE_MEM | IORESOURCE_BUSY;
 	if (request_resource(&iomem_resource, res) < 0) {
-//		printk("System RAM resource %llx - %llx cannot be added\n",
-;
+		printk("System RAM resource %llx - %llx cannot be added\n",
+		(unsigned long long)res->start, (unsigned long long)res->end);
 		kfree(res);
 		res = NULL;
 	}
@@ -444,8 +444,8 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
 		online_pages_range);
 	if (ret) {
 		mutex_unlock(&zonelists_mutex);
-//		printk(KERN_DEBUG "online_pages %lx at %lx failed\n",
-;
+		printk(KERN_DEBUG "online_pages %lx at %lx failed\n",
+			nr_pages, pfn);
 		memory_notify(MEM_CANCEL_ONLINE, &arg);
 		unlock_memory_hotplug();
 		return ret;
@@ -731,8 +731,8 @@ do_migrate_range(unsigned long start_pfn, unsigned long end_pfn)
 
 		} else {
 #ifdef CONFIG_DEBUG_VM
-//			printk(KERN_ALERT "removing pfn %lx from LRU failed\n",
-;
+			printk(KERN_ALERT "removing pfn %lx from LRU failed\n",
+			       pfn);
 			dump_page(page);
 #endif
 			put_page(page);
@@ -894,7 +894,7 @@ repeat:
 		ret = -EBUSY;
 		goto failed_removal;
 	}
-;
+	printk(KERN_INFO "Offlined Pages %ld\n", offlined_pages);
 	/* Ok, all of our target is islaoted.
 	   We cannot do rollback at this point. */
 	offline_isolated_pages(start_pfn, end_pfn);
@@ -920,8 +920,8 @@ repeat:
 	return 0;
 
 failed_removal:
-//	printk(KERN_INFO "memory offlining %lx to %lx failed\n",
-;
+	printk(KERN_INFO "memory offlining %lx to %lx failed\n",
+		start_pfn, end_pfn);
 	memory_notify(MEM_CANCEL_OFFLINE, &arg);
 	/* pushback to free area */
 	undo_isolate_page_range(start_pfn, end_pfn);

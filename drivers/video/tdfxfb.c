@@ -1399,7 +1399,7 @@ static int __devinit tdfxfb_probe(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err) {
-;
+		printk(KERN_ERR "tdfxfb: Can't enable pdev: %d\n", err);
 		return err;
 	}
 
@@ -1431,36 +1431,36 @@ static int __devinit tdfxfb_probe(struct pci_dev *pdev,
 	info->fix.mmio_len = pci_resource_len(pdev, 0);
 	if (!request_mem_region(info->fix.mmio_start, info->fix.mmio_len,
 				"tdfx regbase")) {
-;
+		printk(KERN_ERR "tdfxfb: Can't reserve regbase\n");
 		goto out_err;
 	}
 
 	default_par->regbase_virt =
 		ioremap_nocache(info->fix.mmio_start, info->fix.mmio_len);
 	if (!default_par->regbase_virt) {
-//		printk(KERN_ERR "fb: Can't remap %s register area.\n",
-;
+		printk(KERN_ERR "fb: Can't remap %s register area.\n",
+				info->fix.id);
 		goto out_err_regbase;
 	}
 
 	info->fix.smem_start = pci_resource_start(pdev, 1);
 	info->fix.smem_len = do_lfb_size(default_par, pdev->device);
 	if (!info->fix.smem_len) {
-;
+		printk(KERN_ERR "fb: Can't count %s memory.\n", info->fix.id);
 		goto out_err_regbase;
 	}
 
 	if (!request_mem_region(info->fix.smem_start,
 				pci_resource_len(pdev, 1), "tdfx smem")) {
-;
+		printk(KERN_ERR "tdfxfb: Can't reserve smem\n");
 		goto out_err_regbase;
 	}
 
 	info->screen_base = ioremap_nocache(info->fix.smem_start,
 					    info->fix.smem_len);
 	if (!info->screen_base) {
-//		printk(KERN_ERR "fb: Can't remap %s framebuffer.\n",
-;
+		printk(KERN_ERR "fb: Can't remap %s framebuffer.\n",
+				info->fix.id);
 		goto out_err_screenbase;
 	}
 
@@ -1468,12 +1468,12 @@ static int __devinit tdfxfb_probe(struct pci_dev *pdev,
 
 	if (!request_region(pci_resource_start(pdev, 2),
 			    pci_resource_len(pdev, 2), "tdfx iobase")) {
-;
+		printk(KERN_ERR "tdfxfb: Can't reserve iobase\n");
 		goto out_err_screenbase;
 	}
 
-//	printk(KERN_INFO "fb: %s memory = %dK\n", info->fix.id,
-;
+	printk(KERN_INFO "fb: %s memory = %dK\n", info->fix.id,
+			info->fix.smem_len >> 10);
 
 	default_par->mtrr_handle = -1;
 	if (!nomtrr)
@@ -1549,12 +1549,12 @@ static int __devinit tdfxfb_probe(struct pci_dev *pdev,
 		goto out_err_iobase;
 
 	if (fb_alloc_cmap(&info->cmap, 256, 0) < 0) {
-;
+		printk(KERN_ERR "tdfxfb: Can't allocate color map\n");
 		goto out_err_iobase;
 	}
 
 	if (register_framebuffer(info) < 0) {
-;
+		printk(KERN_ERR "tdfxfb: can't register framebuffer\n");
 		fb_dealloc_cmap(&info->cmap);
 		goto out_err_iobase;
 	}

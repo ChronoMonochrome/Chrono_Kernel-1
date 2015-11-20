@@ -274,15 +274,15 @@ int tty_paranoia_check(struct tty_struct *tty, struct inode *inode,
 {
 #ifdef TTY_PARANOIA_CHECK
 	if (!tty) {
-//		printk(KERN_WARNING
-//			"null TTY for (%d:%d) in %s\n",
-;
+		printk(KERN_WARNING
+			"null TTY for (%d:%d) in %s\n",
+			imajor(inode), iminor(inode), routine);
 		return 1;
 	}
 	if (tty->magic != TTY_MAGIC) {
-//		printk(KERN_WARNING
-//			"bad magic number for tty struct (%d:%d) in %s\n",
-;
+		printk(KERN_WARNING
+			"bad magic number for tty struct (%d:%d) in %s\n",
+			imajor(inode), iminor(inode), routine);
 		return 1;
 	}
 #endif
@@ -305,9 +305,9 @@ static int check_tty_count(struct tty_struct *tty, const char *routine)
 	    tty->link && tty->link->count)
 		count++;
 	if (tty->count != count) {
-//		printk(KERN_WARNING "Warning: dev (%s) tty->count(%d) "
-//				    "!= #fd's(%d) in %s\n",
-;
+		printk(KERN_WARNING "Warning: dev (%s) tty->count(%d) "
+				    "!= #fd's(%d) in %s\n",
+		       tty->name, tty->count, count, routine);
 		return count;
 	}
 #endif
@@ -413,7 +413,7 @@ int tty_check_change(struct tty_struct *tty)
 	spin_lock_irqsave(&tty->ctrl_lock, flags);
 
 	if (!tty->pgrp) {
-;
+		printk(KERN_WARNING "tty_check_change: tty->pgrp == NULL!\n");
 		goto out_unlock;
 	}
 	if (task_pgrp(current) == tty->pgrp)
@@ -692,7 +692,7 @@ void tty_hangup(struct tty_struct *tty)
 {
 #ifdef TTY_DEBUG_HANGUP
 	char	buf[64];
-;
+	printk(KERN_DEBUG "%s hangup...\n", tty_name(tty, buf));
 #endif
 	schedule_work(&tty->hangup_work);
 }
@@ -713,7 +713,7 @@ void tty_vhangup(struct tty_struct *tty)
 #ifdef TTY_DEBUG_HANGUP
 	char	buf[64];
 
-;
+	printk(KERN_DEBUG "%s vhangup...\n", tty_name(tty, buf));
 #endif
 	__tty_hangup(tty);
 }
@@ -839,8 +839,8 @@ void disassociate_ctty(int on_exit)
 		tty_kref_put(tty);
 	} else {
 #ifdef TTY_DEBUG_HANGUP
-//		printk(KERN_DEBUG "error attempted to write to tty [0x%p]"
-;
+		printk(KERN_DEBUG "error attempted to write to tty [0x%p]"
+		       " = NULL", tty);
 #endif
 	}
 
@@ -1156,8 +1156,8 @@ static ssize_t tty_write(struct file *file, const char __user *buf,
 			return -EIO;
 	/* Short term debug to catch buggy drivers */
 	if (tty->ops->write_room == NULL)
-//		printk(KERN_ERR "tty driver %s lacks a write_room method.\n",
-;
+		printk(KERN_ERR "tty driver %s lacks a write_room method.\n",
+			tty->driver->name);
 	ld = tty_ldisc_ref_wait(tty);
 	if (!ld->ops->write)
 		ret = -EIO;
@@ -1462,8 +1462,8 @@ err_module_put:
 	/* call the tty release_tty routine to clean out this slot */
 err_release_tty:
 	if (printk_ratelimit())
-//		printk(KERN_INFO "tty_init_dev: ldisc open failed, "
-;
+		printk(KERN_INFO "tty_init_dev: ldisc open failed, "
+				 "clearing slot %d\n", idx);
 	release_tty(tty, idx);
 	return ERR_PTR(retval);
 }
@@ -1625,31 +1625,31 @@ int tty_release(struct inode *inode, struct file *filp)
 
 #ifdef TTY_PARANOIA_CHECK
 	if (idx < 0 || idx >= tty->driver->num) {
-//		printk(KERN_DEBUG "tty_release_dev: bad idx when trying to "
-;
+		printk(KERN_DEBUG "tty_release_dev: bad idx when trying to "
+				  "free (%s)\n", tty->name);
 		tty_unlock();
 		return 0;
 	}
 	if (!devpts) {
 		if (tty != tty->driver->ttys[idx]) {
 			tty_unlock();
-//			printk(KERN_DEBUG "tty_release_dev: driver.table[%d] not tty "
-;
+			printk(KERN_DEBUG "tty_release_dev: driver.table[%d] not tty "
+			       "for (%s)\n", idx, tty->name);
 			return 0;
 		}
 		if (tty->termios != tty->driver->termios[idx]) {
 			tty_unlock();
-//			printk(KERN_DEBUG "tty_release_dev: driver.termios[%d] not termios "
-//			       "for (%s)\n",
-;
+			printk(KERN_DEBUG "tty_release_dev: driver.termios[%d] not termios "
+			       "for (%s)\n",
+			       idx, tty->name);
 			return 0;
 		}
 	}
 #endif
 
 #ifdef TTY_DEBUG_HANGUP
-//	printk(KERN_DEBUG "tty_release_dev of %s (tty count=%d)...",
-;
+	printk(KERN_DEBUG "tty_release_dev of %s (tty count=%d)...",
+	       tty_name(tty, buf), tty->count);
 #endif
 
 #ifdef TTY_PARANOIA_CHECK
@@ -1657,21 +1657,21 @@ int tty_release(struct inode *inode, struct file *filp)
 	     !(tty->driver->flags & TTY_DRIVER_DEVPTS_MEM)) {
 		if (o_tty != tty->driver->other->ttys[idx]) {
 			tty_unlock();
-//			printk(KERN_DEBUG "tty_release_dev: other->table[%d] "
-//					  "not o_tty for (%s)\n",
-;
+			printk(KERN_DEBUG "tty_release_dev: other->table[%d] "
+					  "not o_tty for (%s)\n",
+			       idx, tty->name);
 			return 0 ;
 		}
 		if (o_tty->termios != tty->driver->other->termios[idx]) {
 			tty_unlock();
-//			printk(KERN_DEBUG "tty_release_dev: other->termios[%d] "
-//					  "not o_termios for (%s)\n",
-;
+			printk(KERN_DEBUG "tty_release_dev: other->termios[%d] "
+					  "not o_termios for (%s)\n",
+			       idx, tty->name);
 			return 0;
 		}
 		if (o_tty->link != tty) {
 			tty_unlock();
-;
+			printk(KERN_DEBUG "tty_release_dev: bad pty pointers\n");
 			return 0;
 		}
 	}
@@ -1731,8 +1731,8 @@ int tty_release(struct inode *inode, struct file *filp)
 		if (!do_sleep)
 			break;
 
-//		printk(KERN_WARNING "tty_release_dev: %s: read/write wait queue "
-;
+		printk(KERN_WARNING "tty_release_dev: %s: read/write wait queue "
+				    "active!\n", tty_name(tty, buf));
 		tty_unlock();
 		mutex_unlock(&tty_mutex);
 		schedule_timeout_killable(timeout);
@@ -1749,15 +1749,15 @@ int tty_release(struct inode *inode, struct file *filp)
 	 */
 	if (pty_master) {
 		if (--o_tty->count < 0) {
-//			printk(KERN_WARNING "tty_release_dev: bad pty slave count "
-//					    "(%d) for %s\n",
-;
+			printk(KERN_WARNING "tty_release_dev: bad pty slave count "
+					    "(%d) for %s\n",
+			       o_tty->count, tty_name(o_tty, buf));
 			o_tty->count = 0;
 		}
 	}
 	if (--tty->count < 0) {
-//		printk(KERN_WARNING "tty_release_dev: bad tty->count (%d) for %s\n",
-;
+		printk(KERN_WARNING "tty_release_dev: bad tty->count (%d) for %s\n",
+		       tty->count, tty_name(tty, buf));
 		tty->count = 0;
 	}
 
@@ -1806,7 +1806,7 @@ int tty_release(struct inode *inode, struct file *filp)
 	}
 
 #ifdef TTY_DEBUG_HANGUP
-;
+	printk(KERN_DEBUG "freeing tty structure...");
 #endif
 	/*
 	 * Ask the line discipline code to release its structures
@@ -1954,7 +1954,7 @@ got_driver:
 	    tty->driver->subtype == PTY_TYPE_MASTER)
 		noctty = 1;
 #ifdef TTY_DEBUG_HANGUP
-;
+	printk(KERN_DEBUG "opening %s...", tty->name);
 #endif
 	if (tty->ops->open)
 		retval = tty->ops->open(tty, filp);
@@ -1968,8 +1968,8 @@ got_driver:
 
 	if (retval) {
 #ifdef TTY_DEBUG_HANGUP
-//		printk(KERN_DEBUG "error %d in opening %s...", retval,
-;
+		printk(KERN_DEBUG "error %d in opening %s...", retval,
+		       tty->name);
 #endif
 		tty_unlock(); /* need to call tty_release without BTM */
 		tty_release(inode, filp);
@@ -2815,9 +2815,9 @@ void __do_SAK(struct tty_struct *tty)
 	read_lock(&tasklist_lock);
 	/* Kill the entire session */
 	do_each_pid_task(session, PIDTYPE_SID, p) {
-//		printk(KERN_NOTICE "SAK: killed process %d"
-//			" (%s): task_session(p)==tty->session\n",
-;
+		printk(KERN_NOTICE "SAK: killed process %d"
+			" (%s): task_session(p)==tty->session\n",
+			task_pid_nr(p), p->comm);
 		send_sig(SIGKILL, p, 1);
 	} while_each_pid_task(session, PIDTYPE_SID, p);
 	/* Now kill any processes that happen to have the
@@ -2825,9 +2825,9 @@ void __do_SAK(struct tty_struct *tty)
 	 */
 	do_each_thread(g, p) {
 		if (p->signal->tty == tty) {
-//			printk(KERN_NOTICE "SAK: killed process %d"
-//			    " (%s): task_session(p)==tty->session\n",
-;
+			printk(KERN_NOTICE "SAK: killed process %d"
+			    " (%s): task_session(p)==tty->session\n",
+			    task_pid_nr(p), p->comm);
 			send_sig(SIGKILL, p, 1);
 			continue;
 		}
@@ -2845,9 +2845,9 @@ void __do_SAK(struct tty_struct *tty)
 					continue;
 				if (filp->f_op->read == tty_read &&
 				    file_tty(filp) == tty) {
-//					printk(KERN_NOTICE "SAK: killed process %d"
-//					    " (%s): fd#%d opened to the tty\n",
-;
+					printk(KERN_NOTICE "SAK: killed process %d"
+					    " (%s): fd#%d opened to the tty\n",
+					    task_pid_nr(p), p->comm, i);
 					force_sig(SIGKILL, p);
 					break;
 				}
@@ -3001,8 +3001,8 @@ struct device *tty_register_device(struct tty_driver *driver, unsigned index,
 	dev_t dev = MKDEV(driver->major, driver->minor_start) + index;
 
 	if (index >= driver->num) {
-//		printk(KERN_ERR "Attempt to register invalid tty line number "
-;
+		printk(KERN_ERR "Attempt to register invalid tty line number "
+		       " (%d).\n", index);
 		return ERR_PTR(-EINVAL);
 	}
 
@@ -3236,7 +3236,7 @@ static void __proc_set_tty(struct task_struct *tsk, struct tty_struct *tty)
 		spin_unlock_irqrestore(&tty->ctrl_lock, flags);
 		tty->session = get_pid(task_session(tsk));
 		if (tsk->signal->tty) {
-;
+			printk(KERN_DEBUG "tty not NULL!!\n");
 			tty_kref_put(tsk->signal->tty);
 		}
 	}

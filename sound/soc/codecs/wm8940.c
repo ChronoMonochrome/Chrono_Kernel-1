@@ -514,9 +514,9 @@ static void pll_factors(unsigned int target, unsigned int source)
 		pll_div.pre_scale = 1;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
-//		printk(KERN_WARNING
-//			"WM8940 N value %d outwith recommended range!d\n",
-;
+		printk(KERN_WARNING
+			"WM8940 N value %d outwith recommended range!d\n",
+			Ndiv);
 
 	pll_div.n = Ndiv;
 	Nmod = target % source;
@@ -807,8 +807,8 @@ static int __init wm8940_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8940_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register wm8940 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8940 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

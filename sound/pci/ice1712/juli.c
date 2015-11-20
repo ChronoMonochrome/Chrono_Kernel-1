@@ -628,7 +628,7 @@ static int __devinit juli_init(struct snd_ice1712 *ice)
 #endif
 
 	if (spec->analog) {
-;
+		printk(KERN_INFO "juli@: analog I/O detected\n");
 		ice->num_total_dacs = 2;
 		ice->num_total_adcs = 2;
 

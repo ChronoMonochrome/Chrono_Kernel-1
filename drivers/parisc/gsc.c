@@ -38,7 +38,7 @@ int gsc_alloc_irq(struct gsc_irq *i)
 {
 	int irq = txn_alloc_irq(GSC_EIM_WIDTH);
 	if (irq < 0) {
-;
+		printk("cannot get irq\n");
 		return irq;
 	}
 
@@ -57,7 +57,7 @@ int gsc_claim_irq(struct gsc_irq *i, int irq)
 
 	irq = txn_claim_irq(irq);
 	if (irq < 0) {
-;
+		printk("cannot claim irq %d\n", c);
 		return irq;
 	}
 
@@ -221,12 +221,12 @@ int gsc_common_setup(struct parisc_device *parent, struct gsc_asic *gsc_asic)
 	}
 
 #if 0
-//	printk(KERN_WARNING "%s IRQ %d EIM 0x%x", gsc_asic->name,
-;
+	printk(KERN_WARNING "%s IRQ %d EIM 0x%x", gsc_asic->name,
+			parent->irq, gsc_asic->eim);
 	if (gsc_readl(gsc_asic->hpa + OFFSET_IMR))
-//		printk("  IMR is non-zero! (0x%x)",
-;
-;
+		printk("  IMR is non-zero! (0x%x)",
+				gsc_readl(gsc_asic->hpa + OFFSET_IMR));
+	printk("\n");
 #endif
 
 	return 0;

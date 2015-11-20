@@ -35,15 +35,15 @@
 #include "zl10036.h"
 
 static int zl10036_debug;
-//#define dprintk(level, args...) \
-;
+#define dprintk(level, args...) \
+	do { if (zl10036_debug & level) printk(KERN_DEBUG "zl10036: " args); \
 	} while (0)
 
-//#define deb_info(args...)  dprintk(0x01, args)
-//#define deb_i2c(args...)  dprintk(0x02, args)
-//
-//struct zl10036_state {
-;
+#define deb_info(args...)  dprintk(0x01, args)
+#define deb_i2c(args...)  dprintk(0x02, args)
+
+struct zl10036_state {
+	struct i2c_adapter *i2c;
 	const struct zl10036_config *config;
 	u32 frequency;
 	u8 br, bf;
@@ -77,8 +77,8 @@ static int zl10036_read_status_reg(struct zl10036_state *state)
 	};
 
 	if (i2c_transfer(state->i2c, msg, 1) != 1) {
-//		printk(KERN_ERR "%s: i2c read failed at addr=%02x\n",
-;
+		printk(KERN_ERR "%s: i2c read failed at addr=%02x\n",
+			__func__, state->config->tuner_address);
 		return -EIO;
 	}
 
@@ -120,14 +120,14 @@ static int zl10036_write(struct zl10036_state *state, u8 buf[], u8 count)
 		{
 			int i;
 			for (i = 0; i < count; i++)
-;
-;
+				printk(KERN_CONT " %02x", buf[i]);
+			printk(KERN_CONT "\n");
 		}
 	}
 
 	ret = i2c_transfer(state->i2c, msg, 1);
 	if (ret != 1) {
-;
+		printk(KERN_ERR "%s: i2c error, ret=%d\n", __func__, ret);
 		return -EIO;
 	}
 
@@ -467,7 +467,7 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend *fe,
 	int ret;
 
 	if (!config) {
-;
+		printk(KERN_ERR "%s: no config specified", __func__);
 		return NULL;
 	}
 
@@ -483,14 +483,14 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend *fe,
 
 	ret = zl10036_read_status_reg(state);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "%s: No zl10036 found\n", __func__);
 		goto error;
 	}
 
 	ret = zl10036_init_regs(state);
 	if (ret < 0) {
-//		printk(KERN_ERR "%s: tuner initialization failed\n",
-;
+		printk(KERN_ERR "%s: tuner initialization failed\n",
+			__func__);
 		goto error;
 	}
 
@@ -501,8 +501,8 @@ struct dvb_frontend *zl10036_attach(struct dvb_frontend *fe,
 
 	memcpy(&fe->ops.tuner_ops, &zl10036_tuner_ops,
 		sizeof(struct dvb_tuner_ops));
-//	printk(KERN_INFO "%s: tuner initialization (%s addr=0x%02x) ok\n",
-;
+	printk(KERN_INFO "%s: tuner initialization (%s addr=0x%02x) ok\n",
+		__func__, fe->ops.tuner_ops.info.name, config->tuner_address);
 
 	return fe;
 

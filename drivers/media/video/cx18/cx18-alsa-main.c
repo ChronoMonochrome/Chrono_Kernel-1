@@ -45,7 +45,7 @@ int cx18_alsa_debug;
 #define CX18_DEBUG_ALSA_INFO(fmt, arg...) \
 	do { \
 		if (cx18_alsa_debug & 2) \
-;
+			printk(KERN_INFO "%s: " fmt, "cx18-alsa", ## arg); \
 	} while (0);
 
 module_param_named(debug, cx18_alsa_debug, int, 0644);
@@ -209,7 +209,7 @@ int cx18_alsa_load(struct cx18 *cx)
 
 	cx = to_cx18(v4l2_dev);
 	if (cx == NULL) {
-;
+		printk(KERN_ERR "cx18-alsa cx is NULL\n");
 		return 0;
 	}
 
@@ -238,7 +238,7 @@ int cx18_alsa_load(struct cx18 *cx)
 
 static int __init cx18_alsa_init(void)
 {
-;
+	printk(KERN_INFO "cx18-alsa: module loading...\n");
 	cx18_ext_init = &cx18_alsa_load;
 	return 0;
 }
@@ -280,14 +280,14 @@ static void __exit cx18_alsa_exit(void)
 	struct device_driver *drv;
 	int ret;
 
-;
+	printk(KERN_INFO "cx18-alsa: module unloading...\n");
 
 	drv = driver_find("cx18", &pci_bus_type);
 	ret = driver_for_each_device(drv, NULL, NULL, cx18_alsa_exit_callback);
 	put_driver(drv);
 
 	cx18_ext_init = NULL;
-;
+	printk(KERN_INFO "cx18-alsa: module unload complete\n");
 }
 
 module_init(cx18_alsa_init);

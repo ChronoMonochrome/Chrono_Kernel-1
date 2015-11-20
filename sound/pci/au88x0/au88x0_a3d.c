@@ -463,8 +463,8 @@ static void a3dsrc_ZeroSliceIO(a3dsrc_t * a)
 static void a3dsrc_ZeroState(a3dsrc_t * a)
 {
 	/*
-//	printk(KERN_DEBUG "vortex: ZeroState slice: %d, source %d\n",
-;
+	printk(KERN_DEBUG "vortex: ZeroState slice: %d, source %d\n",
+	       a->slice, a->source);
 	*/
 	a3dsrc_SetAtmosState(a, 0, 0, 0, 0);
 	a3dsrc_SetHrtfState(a, A3dHrirZeros, A3dHrirZeros);
@@ -489,7 +489,7 @@ static void a3dsrc_ZeroStateA3D(a3dsrc_t * a)
 	int i, var, var2;
 
 	if ((a->vortex) == NULL) {
-;
+		printk(KERN_ERR "vortex: ZeroStateA3D: ERROR: a->vortex is NULL\n");
 		return;
 	}
 

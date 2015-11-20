@@ -1456,13 +1456,13 @@ snd_es1968_init_dmabuf(struct es1968 *chip)
 						   snd_dma_pci_data(chip->pci),
 						   chip->total_bufsize, &chip->dma);
 		if (err < 0 || ! chip->dma.area) {
-//			snd_printk(KERN_ERR "es1968: can't allocate dma pages for size %d\n",
-;
+			snd_printk(KERN_ERR "es1968: can't allocate dma pages for size %d\n",
+				   chip->total_bufsize);
 			return -ENOMEM;
 		}
 		if ((chip->dma.addr + chip->dma.bytes - 1) & ~((1 << 28) - 1)) {
 			snd_dma_free_pages(&chip->dma);
-;
+			snd_printk(KERN_ERR "es1968: DMA buffer beyond 256MB.\n");
 			return -ENOMEM;
 		}
 	}
@@ -1730,11 +1730,11 @@ static void __devinit es1968_measure_clock(struct es1968 *chip)
 
 	/* search 2 APUs (although one apu is enough) */
 	if ((apu = snd_es1968_alloc_apu_pair(chip, ESM_APU_PCM_PLAY)) < 0) {
-;
+		snd_printk(KERN_ERR "Hmm, cannot find empty APU pair!?\n");
 		return;
 	}
 	if ((memory = snd_es1968_new_memory(chip, CLOCK_MEASURE_BUFSIZE)) == NULL) {
-;
+		snd_printk(KERN_ERR "cannot allocate dma buffer - using default clock %d\n", chip->clock);
 		snd_es1968_free_apu_pair(chip, apu);
 		return;
 	}
@@ -1795,7 +1795,7 @@ static void __devinit es1968_measure_clock(struct es1968 *chip)
 	else
 		t += stop_time.tv_usec - start_time.tv_usec;
 	if (t == 0) {
-;
+		snd_printk(KERN_ERR "?? calculation error..\n");
 	} else {
 		offset *= 1000;
 		offset = (offset / t) * 1000 + ((offset % t) * 1000) / t;
@@ -1803,7 +1803,7 @@ static void __devinit es1968_measure_clock(struct es1968 *chip)
 			if (offset >= 40000 && offset <= 50000)
 				chip->clock = (chip->clock * offset) / 48000;
 		}
-;
+		printk(KERN_INFO "es1968: clocking to %d\n", chip->clock);
 	}
 	snd_es1968_free_memory(chip, memory);
 	snd_es1968_free_apu_pair(chip, apu);
@@ -2145,7 +2145,7 @@ static void snd_es1968_ac97_reset(struct es1968 *chip)
 	outw(inw(ioaddr + 0x3c) & 0xfffc, ioaddr + 0x3c);
 
 #if 0				/* the loop here needs to be much better if we want it.. */
-;
+	snd_printk(KERN_INFO "trying software reset\n");
 	/* try and do a software reset */
 	outb(0x80 | 0x7c, ioaddr + 0x30);
 	for (w = 0;; w++) {
@@ -2450,8 +2450,8 @@ static int es1968_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "es1968: pci_enable_device failed, "
-;
+		printk(KERN_ERR "es1968: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -2508,7 +2508,7 @@ static int __devinit snd_es1968_create_gameport(struct es1968 *chip, int dev)
 
 	chip->gameport = gp = gameport_allocate_port();
 	if (!gp) {
-;
+		printk(KERN_ERR "es1968: cannot allocate memory for gameport\n");
 		release_and_free_resource(r);
 		return -ENOMEM;
 	}
@@ -2710,7 +2710,7 @@ static int __devinit snd_es1968_create(struct snd_card *card,
 	/* check, if we can restrict PCI DMA transfers to 28 bits */
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(28)) < 0 ||
 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(28)) < 0) {
-;
+		snd_printk(KERN_ERR "architecture does not support 28bit PCI busmaster DMA\n");
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -2747,7 +2747,7 @@ static int __devinit snd_es1968_create(struct snd_card *card,
 	chip->io_port = pci_resource_start(pci, 0);
 	if (request_irq(pci->irq, snd_es1968_interrupt, IRQF_SHARED,
 			"ESS Maestro", chip)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		snd_es1968_free(chip);
 		return -EBUSY;
 	}
@@ -2777,7 +2777,7 @@ static int __devinit snd_es1968_create(struct snd_card *card,
 		}
 		if (do_pm > 1) {
 			/* not matched; disabling pm */
-;
+			printk(KERN_INFO "es1968: not attempting power management.\n");
 			do_pm = 0;
 		}
 	}
@@ -2798,7 +2798,7 @@ static int __devinit snd_es1968_create(struct snd_card *card,
 	strlcpy(chip->tea.card, "SF64-PCE2", sizeof(chip->tea.card));
 	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
 	if (!snd_tea575x_init(&chip->tea))
-;
+		printk(KERN_INFO "es1968: detected TEA575x radio\n");
 #endif
 
 	*chip_ret = chip;
@@ -2887,7 +2887,7 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 					       chip->io_port + ESM_MPU401_PORT,
 					       MPU401_INFO_INTEGRATED,
 					       chip->irq, 0, &chip->rmidi)) < 0) {
-;
+			printk(KERN_WARNING "es1968: skipping MPU-401 MIDI support..\n");
 		}
 	}
 
@@ -2896,8 +2896,8 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 #ifdef CONFIG_SND_ES1968_INPUT
 	err = snd_es1968_input_register(chip);
 	if (err)
-//		snd_printk(KERN_WARNING "Input device registration "
-;
+		snd_printk(KERN_WARNING "Input device registration "
+			"failed with error %i", err);
 #endif
 
 	snd_es1968_start_irq(chip);

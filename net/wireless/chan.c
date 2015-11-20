@@ -111,9 +111,9 @@ int cfg80211_set_freq(struct cfg80211_registered_device *rdev,
 		case NL80211_CHAN_HT40MINUS:
 			if (!can_beacon_sec_chan(&rdev->wiphy, chan,
 						 channel_type)) {
-//				printk(KERN_DEBUG
-//				       "cfg80211: Secondary channel not "
-;
+				printk(KERN_DEBUG
+				       "cfg80211: Secondary channel not "
+				       "allowed to initiate communication\n");
 				return -EINVAL;
 			}
 			break;

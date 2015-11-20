@@ -160,7 +160,7 @@ static int mpiix_init_one(struct pci_dev *dev, const struct pci_device_id *id)
 	int cmd, ctl, irq;
 
 	if (!printed_version++)
-;
+		dev_printk(KERN_DEBUG, &dev->dev, "version " DRV_VERSION "\n");
 
 	host = ata_host_alloc(&dev->dev, 1);
 	if (!host)

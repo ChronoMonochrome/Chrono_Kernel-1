@@ -312,7 +312,7 @@ static int build_via_table(struct viadev *dev, struct snd_pcm_substream *substre
 			unsigned int addr;
 
 			if (idx >= VIA_TABLE_SIZE) {
-;
+				snd_printk(KERN_ERR "via82xx: too much table size!\n");
 				return -EINVAL;
 			}
 			addr = snd_pcm_sgbuf_get_addr(substream, ofs);
@@ -329,8 +329,8 @@ static int build_via_table(struct viadev *dev, struct snd_pcm_substream *substre
 			} else
 				flag = 0; /* period continues to the next */
 			/*
-//			printk(KERN_DEBUG "via: tbl %d: at %d  size %d "
-;
+			printk(KERN_DEBUG "via: tbl %d: at %d  size %d "
+			       "(rest %d)\n", idx, ofs, r, rest);
 			*/
 			((u32 *)dev->table.area)[(idx<<1) + 1] = cpu_to_le32(r | flag);
 			dev->idx_table[idx].offset = ofs;
@@ -382,8 +382,8 @@ static int snd_via82xx_codec_ready(struct via82xx_modem *chip, int secondary)
 		if (!((val = snd_via82xx_codec_xread(chip)) & VIA_REG_AC97_BUSY))
 			return val & 0xffff;
 	}
-//	snd_printk(KERN_ERR "codec_ready: codec %i is not ready [0x%x]\n",
-;
+	snd_printk(KERN_ERR "codec_ready: codec %i is not ready [0x%x]\n",
+		   secondary, snd_via82xx_codec_xread(chip));
 	return -EIO;
 }
  
@@ -443,8 +443,8 @@ static unsigned short snd_via82xx_codec_read(struct snd_ac97 *ac97, unsigned sho
 	xval |= (reg & 0x7f) << VIA_REG_AC97_CMD_SHIFT;
       	while (1) {
       		if (again++ > 3) {
-//			snd_printk(KERN_ERR "codec_read: codec %i is not valid [0x%x]\n",
-;
+			snd_printk(KERN_ERR "codec_read: codec %i is not valid [0x%x]\n",
+				   ac97->num, snd_via82xx_codec_xread(chip));
 		      	return 0xffff;
 		}
 		snd_via82xx_codec_xwrite(chip, xval);
@@ -575,11 +575,11 @@ static inline unsigned int calc_linear_pos(struct viadev *viadev, unsigned int i
 		res = viadev->lastpos;
 	} else if (check_invalid_pos(viadev, res)) {
 #ifdef POINTER_DEBUG
-//		printk(KERN_DEBUG "fail: idx = %i/%i, lastpos = 0x%x, "
-//		       "bufsize2 = 0x%x, offsize = 0x%x, size = 0x%x, "
-//		       "count = 0x%x\n", idx, viadev->tbl_entries, viadev->lastpos,
-//		       viadev->bufsize2, viadev->idx_table[idx].offset,
-;
+		printk(KERN_DEBUG "fail: idx = %i/%i, lastpos = 0x%x, "
+		       "bufsize2 = 0x%x, offsize = 0x%x, size = 0x%x, "
+		       "count = 0x%x\n", idx, viadev->tbl_entries, viadev->lastpos,
+		       viadev->bufsize2, viadev->idx_table[idx].offset,
+		       viadev->idx_table[idx].size, count);
 #endif
 		if (count && size < count) {
 			snd_printd(KERN_ERR "invalid via82xx_cur_ptr, "
@@ -991,7 +991,7 @@ static int snd_via82xx_chip_init(struct via82xx_modem *chip)
 	} while (time_before(jiffies, end_time));
 
 	if ((val = snd_via82xx_codec_xread(chip)) & VIA_REG_AC97_BUSY)
-;
+		snd_printk(KERN_ERR "AC'97 codec is not ready [0x%x]\n", val);
 
 	snd_via82xx_codec_xwrite(chip, VIA_REG_AC97_READ |
 				 VIA_REG_AC97_SECONDARY_VALID |
@@ -1052,8 +1052,8 @@ static int snd_via82xx_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "via82xx-modem: pci_enable_device failed, "
-;
+		printk(KERN_ERR "via82xx-modem: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -1130,7 +1130,7 @@ static int __devinit snd_via82xx_create(struct snd_card *card,
 	chip->port = pci_resource_start(pci, 0);
 	if (request_irq(pci->irq, snd_via82xx_interrupt, IRQF_SHARED,
 			card->driver, chip)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		snd_via82xx_free(chip);
 		return -EBUSY;
 	}
@@ -1181,7 +1181,7 @@ static int __devinit snd_via82xx_probe(struct pci_dev *pci,
 		sprintf(card->shortname, "VIA 82XX modem");
 		break;
 	default:
-;
+		snd_printk(KERN_ERR "invalid card type %d\n", card_type);
 		err = -EINVAL;
 		goto __error;
 	}

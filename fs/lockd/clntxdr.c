@@ -79,9 +79,9 @@ static void nlm_compute_offsets(const struct nlm_lock *lock,
  */
 static void print_overflow_msg(const char *func, const struct xdr_stream *xdr)
 {
-//	dprintk("lockd: %s prematurely hit the end of our receive buffer. "
-//		"Remaining buffer length is %tu words.\n",
-;
+	dprintk("lockd: %s prematurely hit the end of our receive buffer. "
+		"Remaining buffer length is %tu words.\n",
+		func, xdr->end - xdr->p);
 }
 
 
@@ -143,7 +143,7 @@ static int decode_netobj(struct xdr_stream *xdr,
 	obj->data = (u8 *)p;
 	return 0;
 out_size:
-;
+	dprintk("NFS: returned netobj was too long: %u\n", length);
 	return -EIO;
 out_overflow:
 	print_overflow_msg(__func__, xdr);
@@ -186,7 +186,7 @@ out_hpux:
 	memset(cookie->data, 0, 4);
 	return 0;
 out_size:
-;
+	dprintk("NFS: returned cookie was too long: %u\n", length);
 	return -EIO;
 out_overflow:
 	print_overflow_msg(__func__, xdr);
@@ -244,8 +244,8 @@ static int decode_nlm_stat(struct xdr_stream *xdr,
 	*stat = *p;
 	return 0;
 out_enum:
-//	dprintk("%s: server returned invalid nlm_stats value: %u\n",
-;
+	dprintk("%s: server returned invalid nlm_stats value: %u\n",
+		__func__, be32_to_cpup(p));
 	return -EIO;
 out_overflow:
 	print_overflow_msg(__func__, xdr);

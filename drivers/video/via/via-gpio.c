@@ -239,7 +239,7 @@ static __devinit int viafb_gpio_probe(struct platform_device *platdev)
 	viafb_gpio_config.gpio_chip.names = viafb_gpio_config.gpio_names;
 	viafb_gpio_config.vdev = vdev;
 	if (ngpio == 0) {
-;
+		printk(KERN_INFO "viafb: no GPIOs configured\n");
 		return 0;
 	}
 	/*
@@ -256,7 +256,7 @@ static __devinit int viafb_gpio_probe(struct platform_device *platdev)
 	viafb_gpio_config.gpio_chip.base = -1;  /* Dynamic */
 	ret = gpiochip_add(&viafb_gpio_config.gpio_chip);
 	if (ret) {
-;
+		printk(KERN_ERR "viafb: failed to add gpios (%d)\n", ret);
 		viafb_gpio_config.gpio_chip.ngpio = 0;
 	}
 #ifdef CONFIG_PM
@@ -281,7 +281,7 @@ static int viafb_gpio_remove(struct platform_device *platdev)
 	if (viafb_gpio_config.gpio_chip.ngpio > 0) {
 		ret = gpiochip_remove(&viafb_gpio_config.gpio_chip);
 		if (ret) { /* Somebody still using it? */
-;
+			printk(KERN_ERR "Viafb: GPIO remove failed\n");
 			return ret;
 		}
 	}

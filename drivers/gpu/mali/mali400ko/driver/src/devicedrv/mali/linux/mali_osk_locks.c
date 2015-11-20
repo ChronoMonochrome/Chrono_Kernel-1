@@ -232,7 +232,7 @@ _mali_osk_errcode_t _mali_osk_lock_wait( _mali_osk_lock_t *lock, _mali_osk_lock_
 			/*MALI_DEBUG_ASSERT(0 == lock->owner);*/
 			if (0 != lock->owner)
 			{
-;
+				printk(KERN_ERR "%d: ERROR: Lock %p already has owner %d\n", _mali_osk_get_tid(), lock, lock->owner);
 				dump_stack();
 			}
 			lock->owner = _mali_osk_get_tid();
@@ -272,7 +272,7 @@ void _mali_osk_lock_signal( _mali_osk_lock_t *lock, _mali_osk_lock_mode_t mode )
 		/*MALI_DEBUG_ASSERT(_mali_osk_get_tid() == lock->owner);*/
 		if (_mali_osk_get_tid() != lock->owner)
 		{
-;
+			printk(KERN_ERR "%d: ERROR: Lock %p owner was %d\n", _mali_osk_get_tid(), lock, lock->owner);
 			dump_stack();
 		}
 		/* This lock now has no owner */
@@ -283,7 +283,7 @@ void _mali_osk_lock_signal( _mali_osk_lock_t *lock, _mali_osk_lock_mode_t mode )
 	{
 		if ((_mali_osk_get_tid() & lock->owner) != _mali_osk_get_tid())
 		{
-;
+			printk(KERN_ERR "%d: ERROR: Not an owner of %p lock.\n", _mali_osk_get_tid(), lock);
 			dump_stack();
 		}
 

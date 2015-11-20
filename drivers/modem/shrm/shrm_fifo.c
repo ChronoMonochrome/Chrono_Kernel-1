@@ -690,7 +690,7 @@ void update_ac_common_local_rptr(struct shrm_dev *shrm)
 	fifo->availablesize += free_space;
 	fifo->writer_local_rptr = fifo->shared_rptr;
 	log_this(82, "rptr", fifo->shared_rptr, NULL, 0);
-;
+	trace_printk("rptr : 0x%04x\n", fifo->shared_rptr);
 	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
@@ -721,7 +721,7 @@ void update_ac_audio_local_rptr(struct shrm_dev *shrm)
 	fifo->availablesize += free_space;
 	fifo->writer_local_rptr = fifo->shared_rptr;
 	log_this(80, "rptr", fifo->shared_rptr, NULL, 0);
-;
+	trace_printk("rptr : 0x%04x\n", fifo->shared_rptr);
 	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
@@ -742,7 +742,7 @@ void update_ac_common_shared_wptr(struct shrm_dev *shrm)
 
 	fifo->shared_wptr = fifo->writer_local_wptr;
 	log_this(83, "wptr", fifo->shared_wptr, NULL, 0);
-;
+	trace_printk("wptr : 0x%04x\n", fifo->shared_wptr);
 	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
@@ -761,7 +761,7 @@ void update_ac_audio_shared_wptr(struct shrm_dev *shrm)
 						fifo->writer_local_wptr;
 	fifo->shared_wptr = fifo->writer_local_wptr;
 	log_this(81, "wptr", fifo->shared_wptr, NULL, 0);
-;
+	trace_printk("wptr : 0x%04x\n", fifo->shared_wptr);
 	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 

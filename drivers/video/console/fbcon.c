@@ -82,16 +82,16 @@
 #include "fbcon.h"
 
 #ifdef FBCONDEBUG
-//#  define DPRINTK(fmt, args...) printk(KERN_DEBUG "%s: " fmt, __func__ , ## args)
-//#else
-//#  define DPRINTK(fmt, args...)
-//#endif
-//
-//enum {
-//	FBCON_LOGO_CANSHOW	= -1,	/* the logo can be shown */
-//	FBCON_LOGO_DRAW		= -2,	/* draw the logo to a console */
-//	FBCON_LOGO_DONTSHOW	= -3	/* do not show the logo */
-;
+#  define DPRINTK(fmt, args...) printk(KERN_DEBUG "%s: " fmt, __func__ , ## args)
+#else
+#  define DPRINTK(fmt, args...)
+#endif
+
+enum {
+	FBCON_LOGO_CANSHOW	= -1,	/* the logo can be shown */
+	FBCON_LOGO_DRAW		= -2,	/* draw the logo to a console */
+	FBCON_LOGO_DONTSHOW	= -3	/* do not show the logo */
+};
 
 static struct display fb_display[MAX_NR_CONSOLES];
 
@@ -669,8 +669,8 @@ static void fbcon_prepare_logo(struct vc_data *vc, struct fb_info *info,
 
 	if (logo_lines > vc->vc_bottom) {
 		logo_shown = FBCON_LOGO_CANSHOW;
-//		printk(KERN_INFO
-;
+		printk(KERN_INFO
+		       "fbcon_init: disable boot-logo (boot-logo bigger than screen).\n");
 	} else if (logo_shown != FBCON_LOGO_DONTSHOW) {
 		logo_shown = FBCON_LOGO_DRAW;
 		vc->vc_top = logo_lines;
@@ -792,9 +792,9 @@ static int con2fb_release_oldinfo(struct vc_data *vc, struct fb_info *oldinfo,
 			ret = newinfo->fbops->fb_set_par(newinfo);
 
 			if (ret)
-//				printk(KERN_ERR "con2fb_release_oldinfo: "
-//					"detected unhandled fb_set_par error, "
-;
+				printk(KERN_ERR "con2fb_release_oldinfo: "
+					"detected unhandled fb_set_par error, "
+					"error code %d\n", ret);
 		}
 	}
 
@@ -813,9 +813,9 @@ static void con2fb_init_display(struct vc_data *vc, struct fb_info *info,
 		ret = info->fbops->fb_set_par(info);
 
 		if (ret)
-//			printk(KERN_ERR "con2fb_init_display: detected "
-//				"unhandled fb_set_par error, "
-;
+			printk(KERN_ERR "con2fb_init_display: detected "
+				"unhandled fb_set_par error, "
+				"error code %d\n", ret);
 	}
 
 	ops->flags |= FBCON_FLAGS_INIT;
@@ -1148,9 +1148,9 @@ static void fbcon_init(struct vc_data *vc, int init)
 			ret = info->fbops->fb_set_par(info);
 
 			if (ret)
-//				printk(KERN_ERR "fbcon_init: detected "
-//					"unhandled fb_set_par error, "
-;
+				printk(KERN_ERR "fbcon_init: detected "
+					"unhandled fb_set_par error, "
+					"error code %d\n", ret);
 		}
 
 		ops->flags |= FBCON_FLAGS_INIT;
@@ -2243,9 +2243,9 @@ static int fbcon_switch(struct vc_data *vc)
 			ret = info->fbops->fb_set_par(info);
 
 			if (ret)
-//				printk(KERN_ERR "fbcon_switch: detected "
-//					"unhandled fb_set_par error, "
-;
+				printk(KERN_ERR "fbcon_switch: detected "
+					"unhandled fb_set_par error, "
+					"error code %d\n", ret);
 		}
 
 		if (old_info != info)
@@ -3101,9 +3101,9 @@ static void fbcon_remap_all(int idx)
 		set_con2fb_map(i, idx, 0);
 
 	if (con_is_bound(&fb_con)) {
-//		printk(KERN_INFO "fbcon: Remapping primary device, "
-//		       "fb%i, to tty %i-%i\n", idx,
-;
+		printk(KERN_INFO "fbcon: Remapping primary device, "
+		       "fb%i, to tty %i-%i\n", idx,
+		       first_fb_vc + 1, last_fb_vc + 1);
 		info_idx = idx;
 	}
 }
@@ -3115,17 +3115,17 @@ static void fbcon_select_primary(struct fb_info *info)
 	    fb_is_primary_device(info)) {
 		int i;
 
-//		printk(KERN_INFO "fbcon: %s (fb%i) is primary device\n",
-;
+		printk(KERN_INFO "fbcon: %s (fb%i) is primary device\n",
+		       info->fix.id, info->node);
 		primary_device = info->node;
 
 		for (i = first_fb_vc; i <= last_fb_vc; i++)
 			con2fb_map_boot[i] = primary_device;
 
 		if (con_is_bound(&fb_con)) {
-//			printk(KERN_INFO "fbcon: Remapping primary device, "
-//			       "fb%i, to tty %i-%i\n", info->node,
-;
+			printk(KERN_INFO "fbcon: Remapping primary device, "
+			       "fb%i, to tty %i-%i\n", info->node,
+			       first_fb_vc + 1, last_fb_vc + 1);
 			info_idx = primary_device;
 		}
 	}
@@ -3603,8 +3603,8 @@ static int __init fb_console_init(void)
 				     "fbcon");
 
 	if (IS_ERR(fbcon_device)) {
-//		printk(KERN_WARNING "Unable to create device "
-;
+		printk(KERN_WARNING "Unable to create device "
+		       "for fbcon; errno = %ld\n",
 		       PTR_ERR(fbcon_device));
 		fbcon_device = NULL;
 	} else

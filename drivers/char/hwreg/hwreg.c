@@ -84,11 +84,11 @@ static void hwreg_printk_map(void)
 {
     int i;
 
-;
+    printk(KERN_INFO "---------- HWREG TABLE -------------\n");
     for (i = 0; hwreg_io_map[i].base; ++i) {
-;
+        printk(KERN_INFO "%d: 0x%08X => 0x%08X\n", i, hwreg_io_map[i].base, hwreg_io_map[i].base + hwreg_io_map[i].size );
     }
-;
+    printk(KERN_INFO "------------------------------------\n");
 }
 
 static void hwreg_io_init(void)
@@ -103,9 +103,9 @@ static void hwreg_io_init(void)
 		hwreg_io_map[i].addr = ioremap(hwreg_io_map[i].base,
 						 hwreg_io_map[i].size);
 		if (!hwreg_io_map[i].addr)
-//			printk(KERN_WARNING 
-//				"%s: ioremap for %d (%08x) failed\n",
-;
+			printk(KERN_WARNING 
+				"%s: ioremap for %d (%08x) failed\n",
+				__func__, i, hwreg_io_map[i].base);
 	}
 }
 
@@ -233,7 +233,7 @@ static int hwreg_ioctl(struct inode *inode, struct file *filp,
     /* -- PR_CAP_87_001 -- */
 
 	default:
-;
+		printk(KERN_WARNING "HWREG bad ioctl cmd:%x\n", cmd);
 		retval = -EINVAL;
 	}
 
@@ -260,8 +260,8 @@ static int __init hwreg_initialize(void)
 		retval = register_chrdev_region(dev, 1, MY_NAME);
 
 		if (retval < 0) {
-//			printk(KERN_WARNING PREFIX "can't get major %d\n",
-;
+			printk(KERN_WARNING PREFIX "can't get major %d\n",
+			       hwreg_major);
 			hwreg_major = 0;
 			goto bail_out;
 		}
@@ -269,7 +269,7 @@ static int __init hwreg_initialize(void)
 		retval = alloc_chrdev_region(&dev, hwreg_minor, 1, MY_NAME);
 
 		if (retval < 0) {
-;
+			printk(KERN_WARNING PREFIX "can't get major\n");
 			goto bail_out;
 		}
 		hwreg_major = MAJOR(dev);
@@ -284,7 +284,7 @@ static int __init hwreg_initialize(void)
 	cdev->ops = &hwreg_fops;
 	retval = cdev_add(cdev, dev, 1);
 	if (retval)
-;
+		printk(KERN_WARNING PREFIX "Error %d adding device.\n", retval);
 
 	hwreg_io_init();
 

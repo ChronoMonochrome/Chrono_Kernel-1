@@ -295,7 +295,7 @@ static void asd_link_reset_err_tasklet(struct asd_ascb *ascb,
 		struct asd_ascb *cp = asd_ascb_alloc_list(ascb->ha, &num,
 							  GFP_ATOMIC);
 		if (!cp) {
-;
+			asd_printk("%s: out of memory\n", __func__);
 			goto out;
 		}
 		ASD_DPRINTK("phy%d: retries:0 performing link reset seq\n",
@@ -408,7 +408,7 @@ void asd_invalidate_edb(struct asd_ascb *ascb, int edb_id)
 			list_del_init(&ascb->list);
 		i = asd_post_escb_list(ascb->ha, ascb, 1);
 		if (i)
-;
+			asd_printk("couldn't post escb, err:%d\n", i);
 	}
 }
 
@@ -830,8 +830,8 @@ static void link_adm_tasklet_complete(struct asd_ascb *ascb,
 	u8 phy_id = link_adm->phy_id;
 
 	if (opcode != TC_NO_ERROR) {
-//		asd_printk("phy%d: link adm task 0x%x completed with error "
-;
+		asd_printk("phy%d: link adm task 0x%x completed with error "
+			   "0x%x\n", phy_id, link_adm->sub_func, opcode);
 	}
 	ASD_DPRINTK("phy%d: link adm task 0x%x: 0x%x\n",
 		    phy_id, link_adm->sub_func, opcode);

@@ -224,8 +224,8 @@ static int dm355_enable_clock(enum vpss_clock_sel clock_sel, int en)
 		shift = 6;
 		break;
 	default:
-//		printk(KERN_ERR "dm355_enable_clock:"
-;
+		printk(KERN_ERR "dm355_enable_clock:"
+				" Invalid selector: %d\n", clock_sel);
 		return -EINVAL;
 	}
 
@@ -308,8 +308,8 @@ static int dm365_enable_clock(enum vpss_clock_sel clock_sel, int en)
 		offset = DM365_VPBE_CLK_CTRL;
 		break;
 	default:
-//		printk(KERN_ERR "dm365_enable_clock: Invalid selector: %d\n",
-;
+		printk(KERN_ERR "dm365_enable_clock: Invalid selector: %d\n",
+		       clock_sel);
 		return -1;
 	}
 

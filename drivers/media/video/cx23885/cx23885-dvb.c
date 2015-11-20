@@ -63,9 +63,9 @@
 
 static unsigned int debug;
 
-//#define dprintk(level, fmt, arg...)\
-//	do { if (debug >= level)\
-;
+#define dprintk(level, fmt, arg...)\
+	do { if (debug >= level)\
+		printk(KERN_DEBUG "%s/0: " fmt, dev->name, ## arg);\
 	} while (0)
 
 /* ------------------------------------------------------------------ */
@@ -966,8 +966,8 @@ static int dvb_register(struct cx23885_tsport *port)
 							&i2c_bus->i2c_adap,
 							LNBH24_PCL | LNBH24_TTX,
 							LNBH24_TEN, 0x09))
-//						printk(KERN_ERR
-;
+						printk(KERN_ERR
+							"No LNBH24 found!\n");
 
 				}
 			}
@@ -987,8 +987,8 @@ static int dvb_register(struct cx23885_tsport *port)
 							&i2c_bus->i2c_adap,
 							LNBH24_PCL | LNBH24_TTX,
 							LNBH24_TEN, 0x0a))
-//						printk(KERN_ERR
-;
+						printk(KERN_ERR
+							"No LNBH24 found!\n");
 
 				}
 			}
@@ -1098,15 +1098,15 @@ static int dvb_register(struct cx23885_tsport *port)
 		}
 		break;
 	default:
-//		printk(KERN_INFO "%s: The frontend of your DVB/ATSC card "
-//			" isn't supported yet\n",
-;
+		printk(KERN_INFO "%s: The frontend of your DVB/ATSC card "
+			" isn't supported yet\n",
+		       dev->name);
 		break;
 	}
 
 	if ((NULL == fe0->dvb.frontend) || (fe1 && NULL == fe1->dvb.frontend)) {
-//		printk(KERN_ERR "%s: frontend initialization failed\n",
-;
+		printk(KERN_ERR "%s: frontend initialization failed\n",
+		       dev->name);
 		goto frontend_detach;
 	}
 
@@ -1142,8 +1142,8 @@ static int dvb_register(struct cx23885_tsport *port)
 		netup_get_card_info(&dev->i2c_bus[0].i2c_adap, &cinfo);
 		memcpy(port->frontends.adapter.proposed_mac,
 				cinfo.port[port->nr - 1].mac, 6);
-//		printk(KERN_INFO "NetUP Dual DVB-S2 CI card port%d MAC=%pM\n",
-;
+		printk(KERN_INFO "NetUP Dual DVB-S2 CI card port%d MAC=%pM\n",
+			port->nr, port->frontends.adapter.proposed_mac);
 
 		netup_ci_init(port);
 		break;
@@ -1168,7 +1168,7 @@ static int dvb_register(struct cx23885_tsport *port)
 		/* Read entire EEPROM */
 		dev->i2c_bus[0].i2c_client.addr = 0xa0 >> 1;
 		tveeprom_read(&dev->i2c_bus[0].i2c_client, eeprom, sizeof(eeprom));
-;
+		printk(KERN_INFO "TeVii S470 MAC= %pM\n", eeprom + 0xa0);
 		memcpy(port->frontends.adapter.proposed_mac, eeprom + 0xa0, 6);
 		break;
 		}
@@ -1198,13 +1198,13 @@ int cx23885_dvb_register(struct cx23885_tsport *port)
 	 * are for safety, and should provide a good foundation for the
 	 * future addition of any multi-frontend cx23885 based boards.
 	 */
-//	printk(KERN_INFO "%s() allocating %d frontend(s)\n", __func__,
-;
+	printk(KERN_INFO "%s() allocating %d frontend(s)\n", __func__,
+		port->num_frontends);
 
 	for (i = 1; i <= port->num_frontends; i++) {
 		if (videobuf_dvb_alloc_frontend(
 			&port->frontends, i) == NULL) {
-;
+			printk(KERN_ERR "%s() failed to alloc\n", __func__);
 			return -ENOMEM;
 		}
 
@@ -1212,18 +1212,18 @@ int cx23885_dvb_register(struct cx23885_tsport *port)
 		if (!fe0)
 			err = -EINVAL;
 
-;
-//		dprintk(1, " ->probed by Card=%d Name=%s, PCI %02x:%02x\n",
-//			dev->board,
-//			dev->name,
-//			dev->pci_bus,
-;
+		dprintk(1, "%s\n", __func__);
+		dprintk(1, " ->probed by Card=%d Name=%s, PCI %02x:%02x\n",
+			dev->board,
+			dev->name,
+			dev->pci_bus,
+			dev->pci_slot);
 
 		err = -ENODEV;
 
 		/* dvb stuff */
 		/* We have to init the queue for each frontend on a port. */
-;
+		printk(KERN_INFO "%s: cx23885 based dvb card\n", dev->name);
 		videobuf_queue_sg_init(&fe0->dvb.dvbq, &dvb_qops,
 			    &dev->pci->dev, &port->slock,
 			    V4L2_BUF_TYPE_VIDEO_CAPTURE, V4L2_FIELD_TOP,
@@ -1231,8 +1231,8 @@ int cx23885_dvb_register(struct cx23885_tsport *port)
 	}
 	err = dvb_register(port);
 	if (err != 0)
-//		printk(KERN_ERR "%s() dvb_register failed err = %d\n",
-;
+		printk(KERN_ERR "%s() dvb_register failed err = %d\n",
+			__func__, err);
 
 	return err;
 }

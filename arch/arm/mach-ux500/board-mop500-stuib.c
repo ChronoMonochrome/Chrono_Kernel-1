@@ -197,13 +197,13 @@ static int bu21013_gpio_board_init(int reset_pin)
 	if (bu21013_devices == 1) {
 		retval = gpio_request(reset_pin, "touchp_reset");
 		if (retval) {
-;
+			printk(KERN_ERR "Unable to request gpio reset_pin");
 			return retval;
 		}
 		retval = gpio_direction_output(reset_pin, 1);
 		if (retval < 0) {
-//			printk(KERN_ERR "%s: gpio direction failed\n",
-;
+			printk(KERN_ERR "%s: gpio direction failed\n",
+					__func__);
 			return retval;
 		}
 		gpio_set_value_cansleep(reset_pin, 1);
@@ -225,8 +225,8 @@ static int bu21013_gpio_board_exit(int reset_pin)
 	if (bu21013_devices == 1) {
 		retval = gpio_direction_output(reset_pin, 0);
 		if (retval < 0) {
-//			printk(KERN_ERR "%s: gpio direction failed\n",
-;
+			printk(KERN_ERR "%s: gpio direction failed\n",
+					__func__);
 			return retval;
 		}
 		gpio_set_value_cansleep(reset_pin, 0);
@@ -327,7 +327,7 @@ void __init mop500_stuib_init(void)
 	}
 	ret = mop500_get_acc_id();
 	if (ret < 0)
-;
+		printk(KERN_ERR " Failed to get Accelerometr chip ID\n");
 	else
 		lsm303dlh_pdata.chip_id = ret;
 	mop500_uib_i2c_add(2, mop500_i2c2_devices,

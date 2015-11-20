@@ -725,8 +725,8 @@ static bool tomoyo_manager(void)
 		static pid_t last_pid;
 		const pid_t pid = current->pid;
 		if (last_pid != pid) {
-//			printk(KERN_WARNING "%s ( %s ) is not permitted to "
-;
+			printk(KERN_WARNING "%s ( %s ) is not permitted to "
+			       "update policies.\n", domainname->name, exe);
 			last_pid = pid;
 		}
 	}
@@ -2087,22 +2087,22 @@ void tomoyo_check_profile(void)
 		const u8 profile = domain->profile;
 		if (tomoyo_profile_ptr[profile])
 			continue;
-//		printk(KERN_ERR "You need to define profile %u before using it.\n",
-;
-//		printk(KERN_ERR "Please see http://tomoyo.sourceforge.jp/2.3/ "
-;
+		printk(KERN_ERR "You need to define profile %u before using it.\n",
+		       profile);
+		printk(KERN_ERR "Please see http://tomoyo.sourceforge.jp/2.3/ "
+		       "for more information.\n");
 		panic("Profile %u (used by '%s') not defined.\n",
 		      profile, domain->domainname->name);
 	}
 	tomoyo_read_unlock(idx);
 	if (tomoyo_profile_version != 20090903) {
-//		printk(KERN_ERR "You need to install userland programs for "
-;
-//		printk(KERN_ERR "Please see http://tomoyo.sourceforge.jp/2.3/ "
-;
+		printk(KERN_ERR "You need to install userland programs for "
+		       "TOMOYO 2.3 and initialize policy configuration.\n");
+		printk(KERN_ERR "Please see http://tomoyo.sourceforge.jp/2.3/ "
+		       "for more information.\n");
 		panic("Profile version %u is not supported.\n",
 		      tomoyo_profile_version);
 	}
-;
-;
+	printk(KERN_INFO "TOMOYO: 2.3.0\n");
+	printk(KERN_INFO "Mandatory Access Control activated.\n");
 }

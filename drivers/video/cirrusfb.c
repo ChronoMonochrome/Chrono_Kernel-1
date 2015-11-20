@@ -76,8 +76,8 @@
 #ifndef CIRRUSFB_NDEBUG
 #define assert(expr) \
 	if (!(expr)) { \
-//		printk("Assertion failed! %s,%s,%s,line=%d\n", \
-;
+		printk("Assertion failed! %s,%s,%s,line=%d\n", \
+		#expr, __FILE__, __func__, __LINE__); \
 	}
 #else
 #define assert(expr)
@@ -2101,13 +2101,13 @@ static int __devinit cirrusfb_pci_register(struct pci_dev *pdev,
 
 	ret = pci_enable_device(pdev);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "cirrusfb: Cannot enable PCI device\n");
 		goto err_out;
 	}
 
 	info = framebuffer_alloc(sizeof(struct cirrusfb_info), &pdev->dev);
 	if (!info) {
-;
+		printk(KERN_ERR "cirrusfb: could not allocate memory\n");
 		ret = -ENOMEM;
 		goto err_out;
 	}
@@ -2236,7 +2236,7 @@ static int __devinit cirrusfb_zorro_register(struct zorro_dev *z,
 
 	info = framebuffer_alloc(sizeof(struct cirrusfb_info), &z->dev);
 	if (!info) {
-;
+		printk(KERN_ERR "cirrusfb: could not allocate memory\n");
 		ret = -ENOMEM;
 		goto err_out;
 	}

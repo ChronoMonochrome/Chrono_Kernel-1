@@ -525,10 +525,10 @@ static int __init pcc_cpufreq_probe(void)
 		goto pcch_free;
 	}
 
-//	printk(KERN_DEBUG "pcc-cpufreq: (v%s) driver loaded with frequency"
-//	       " limits: %d MHz, %d MHz\n", PCC_VERSION,
-//	       ioread32(&pcch_hdr->minimum_frequency),
-;
+	printk(KERN_DEBUG "pcc-cpufreq: (v%s) driver loaded with frequency"
+	       " limits: %d MHz, %d MHz\n", PCC_VERSION,
+	       ioread32(&pcch_hdr->minimum_frequency),
+	       ioread32(&pcch_hdr->nominal));
 	kfree(output.pointer);
 	return ret;
 pcch_free:

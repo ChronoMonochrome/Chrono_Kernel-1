@@ -90,7 +90,7 @@
 #undef DEBUG
 
 #ifdef DEBUG
-;
+#define DBG(fmt, args...)		printk(KERN_DEBUG "aty128fb: %s " fmt, __func__, ##args);
 #else
 #define DBG(fmt, args...)
 #endif
@@ -565,7 +565,7 @@ static void aty_pll_wait_readupdate(const struct aty128fb_par *par)
 		}
 
 	if (reset)	/* reset engine?? */
-;
+		printk(KERN_DEBUG "aty128fb: PLL write timeout!\n");
 }
 
 
@@ -797,14 +797,14 @@ static void __iomem * __devinit aty128_map_ROM(const struct aty128fb_par *par, s
 	bios = pci_map_rom(dev, &rom_size);
 
 	if (!bios) {
-;
+		printk(KERN_ERR "aty128fb: ROM failed to map\n");
 		return NULL;
 	}
 
 	/* Very simple test to make sure it appeared */
 	if (BIOS_IN16(0) != 0xaa55) {
-//		printk(KERN_DEBUG "aty128fb: Invalid ROM signature %x should "
-;
+		printk(KERN_DEBUG "aty128fb: Invalid ROM signature %x should "
+			" be 0xaa55\n", BIOS_IN16(0));
 		goto failed;
 	}
 
@@ -836,23 +836,23 @@ static void __iomem * __devinit aty128_map_ROM(const struct aty128fb_par *par, s
 	 * } pci_data_t;
 	 */
 	if (BIOS_IN32(dptr) !=  (('R' << 24) | ('I' << 16) | ('C' << 8) | 'P')) {
-//		printk(KERN_WARNING "aty128fb: PCI DATA signature in ROM incorrect: %08x\n",
-;
+		printk(KERN_WARNING "aty128fb: PCI DATA signature in ROM incorrect: %08x\n",
+		       BIOS_IN32(dptr));
 		goto anyway;
 	}
 	rom_type = BIOS_IN8(dptr + 0x14);
 	switch(rom_type) {
 	case 0:
-;
+		printk(KERN_INFO "aty128fb: Found Intel x86 BIOS ROM Image\n");
 		break;
 	case 1:
-;
+		printk(KERN_INFO "aty128fb: Found Open Firmware ROM Image\n");
 		goto failed;
 	case 2:
-;
+		printk(KERN_INFO "aty128fb: Found HP PA-RISC ROM Image\n");
 		goto failed;
 	default:
-;
+		printk(KERN_INFO "aty128fb: Found unknown type %d ROM Image\n", rom_type);
 		goto failed;
 	}
  anyway:
@@ -1049,7 +1049,7 @@ static int aty128_var_to_crtc(const struct fb_var_screeninfo *var,
 	dst = depth_to_dst(depth);
 
 	if (dst == -EINVAL) {
-;
+		printk(KERN_ERR "aty128fb: Invalid depth or RGBA\n");
 		return -EINVAL;
 	}
 
@@ -1058,7 +1058,7 @@ static int aty128_var_to_crtc(const struct fb_var_screeninfo *var,
 
 	/* make sure there is enough video ram for the mode */
 	if ((u32)(vxres * vyres * bytpp) > par->vram_size) {
-;
+		printk(KERN_ERR "aty128fb: Not enough memory for mode\n");
 		return -EINVAL;
 	}
 
@@ -1070,7 +1070,7 @@ static int aty128_var_to_crtc(const struct fb_var_screeninfo *var,
 
 	/* check to make sure h_total and v_total are in range */
 	if (((h_total >> 3) - 1) > 0x1ff || (v_total - 1) > 0x7FF) {
-;
+		printk(KERN_ERR "aty128fb: invalid width ranges\n");
 		return -EINVAL;
 	}
 
@@ -1180,7 +1180,7 @@ static int aty128_pix_width_to_var(int pix_width, struct fb_var_screeninfo *var)
 		var->transp.length = 8;
 		break;
 	default:
-;
+		printk(KERN_ERR "aty128fb: Invalid pixel width\n");
 		return -EINVAL;
 	}
 
@@ -1425,7 +1425,7 @@ static int aty128_ddafifo(struct aty128_ddafifo *dsp,
 	roff = x * (fifo_depth - 4);
 
 	if ((ron + m->Rloop) >= roff) {
-;
+		printk(KERN_ERR "aty128fb: Mode out of range!\n");
 		return -EINVAL;
 	}
 
@@ -1824,7 +1824,7 @@ static void aty128_bl_init(struct aty128fb_par *par)
 				       &props);
 	if (IS_ERR(bd)) {
 		info->bl_dev = NULL;
-;
+		printk(KERN_WARNING "aty128: Backlight registration failed\n");
 		goto error;
 	}
 
@@ -1837,7 +1837,7 @@ static void aty128_bl_init(struct aty128fb_par *par)
 	bd->props.power = FB_BLANK_UNBLANK;
 	backlight_update_status(bd);
 
-;
+	printk("aty128: Backlight initialized (%s)\n", name);
 
 	return;
 
@@ -1848,7 +1848,7 @@ error:
 static void aty128_bl_exit(struct backlight_device *bd)
 {
 	backlight_device_unregister(bd);
-;
+	printk("aty128: Backlight unloaded\n");
 }
 #endif /* CONFIG_FB_ATY128_BACKLIGHT */
 
@@ -1889,12 +1889,12 @@ static int __devinit aty128_init(struct pci_dev *pdev, const struct pci_device_i
 	if (ent->driver_data < ARRAY_SIZE(r128_family))
 	    strlcat(video_card, r128_family[ent->driver_data], sizeof(video_card));
 
-;
+	printk(KERN_INFO "aty128fb: %s [chip rev 0x%x] ", video_card, chip_rev);
 
 	if (par->vram_size % (1024 * 1024) == 0)
 		printk("%dM %s\n", par->vram_size / (1024*1024), par->mem->name);
 	else
-;
+		printk("%dk %s\n", par->vram_size / 1024, par->mem->name);
 
 	par->chip_gen = ent->driver_data;
 
@@ -1975,7 +1975,7 @@ static int __devinit aty128_init(struct pci_dev *pdev, const struct pci_device_i
 //	var.accel_flags |= FB_ACCELF_TEXT;/* FIXME Will add accel later */
 
 	if (aty128fb_check_var(&var, info)) {
-;
+		printk(KERN_ERR "aty128fb: Cannot set default mode.\n");
 		return 0;
 	}
 
@@ -2010,8 +2010,8 @@ static int __devinit aty128_init(struct pci_dev *pdev, const struct pci_device_i
 	if (register_framebuffer(info) < 0)
 		return 0;
 
-//	printk(KERN_INFO "fb%d: %s frame buffer device on %s\n",
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device on %s\n",
+	       info->node, info->fix.id, video_card);
 
 	return 1;	/* success! */
 }
@@ -2030,30 +2030,30 @@ static int __devinit aty128_probe(struct pci_dev *pdev, const struct pci_device_
 
 	/* Enable device in PCI config */
 	if ((err = pci_enable_device(pdev))) {
-//		printk(KERN_ERR "aty128fb: Cannot enable PCI device: %d\n",
-;
+		printk(KERN_ERR "aty128fb: Cannot enable PCI device: %d\n",
+				err);
 		return -ENODEV;
 	}
 
 	fb_addr = pci_resource_start(pdev, 0);
 	if (!request_mem_region(fb_addr, pci_resource_len(pdev, 0),
 				"aty128fb FB")) {
-//		printk(KERN_ERR "aty128fb: cannot reserve frame "
-;
+		printk(KERN_ERR "aty128fb: cannot reserve frame "
+				"buffer memory\n");
 		return -ENODEV;
 	}
 
 	reg_addr = pci_resource_start(pdev, 2);
 	if (!request_mem_region(reg_addr, pci_resource_len(pdev, 2),
 				"aty128fb MMIO")) {
-;
+		printk(KERN_ERR "aty128fb: cannot reserve MMIO region\n");
 		goto err_free_fb;
 	}
 
 	/* We have the resources. Now virtualize them */
 	info = framebuffer_alloc(sizeof(struct aty128fb_par), &pdev->dev);
 	if (info == NULL) {
-;
+		printk(KERN_ERR "aty128fb: can't alloc fb_info_aty128\n");
 		goto err_free_mmio;
 	}
 	par = info->par;
@@ -2083,7 +2083,7 @@ static int __devinit aty128_probe(struct pci_dev *pdev, const struct pci_device_
 
 	/* If we can't test scratch registers, something is seriously wrong */
 	if (!register_test(par)) {
-;
+		printk(KERN_ERR "aty128fb: Can't write to video register!\n");
 		goto err_out;
 	}
 
@@ -2094,9 +2094,9 @@ static int __devinit aty128_probe(struct pci_dev *pdev, const struct pci_device_
 		bios = aty128_find_mem_vbios(par);
 #endif
 	if (bios == NULL)
-;
+		printk(KERN_INFO "aty128fb: BIOS not located, guessing timings.\n");
 	else {
-;
+		printk(KERN_INFO "aty128fb: Rage128 BIOS located\n");
 		aty128_get_pllinfo(par, bios);
 		pci_unmap_rom(pdev, bios);
 	}
@@ -2114,7 +2114,7 @@ static int __devinit aty128_probe(struct pci_dev *pdev, const struct pci_device_
 				par->vram_size, MTRR_TYPE_WRCOMB, 1);
 		par->mtrr.vram_valid = 1;
 		/* let there be speed */
-;
+		printk(KERN_INFO "aty128fb: Rage128 MTRR set to ON\n");
 	}
 #endif /* CONFIG_MTRR */
 	return 0;
@@ -2329,7 +2329,7 @@ static inline void aty128_rectcopy(int srcx, int srcy, int dstx, int dsty,
         dstx *= 3;
         width *= 3;
     } else if (dstval == -EINVAL) {
-;
+        printk("aty128fb: invalid depth or RGBA\n");
         return;
     }
 
@@ -2437,7 +2437,7 @@ static int aty128_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	if (state.event == pdev->dev.power.power_state.event)
 		return 0;
 
-;
+	printk(KERN_DEBUG "aty128fb: suspending...\n");
 	
 	console_lock();
 
@@ -2519,7 +2519,7 @@ static int aty128_do_resume(struct pci_dev *pdev)
 
 	pdev->dev.power.power_state = PMSG_ON;
 
-;
+	printk(KERN_DEBUG "aty128fb: resumed !\n");
 
 	return 0;
 }

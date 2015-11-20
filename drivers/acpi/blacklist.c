@@ -84,20 +84,20 @@ static int __init blacklist_by_year(void)
 
 	/* Doesn't exist? Likely an old system */
 	if (!dmi_get_date(DMI_BIOS_DATE, &year, NULL, NULL)) {
-//		printk(KERN_ERR PREFIX "no DMI BIOS year, "
-;
+		printk(KERN_ERR PREFIX "no DMI BIOS year, "
+			"acpi=force is required to enable ACPI\n" );
 		return 1;
 	}
 	/* 0? Likely a buggy new BIOS */
 	if (year == 0) {
-//		printk(KERN_ERR PREFIX "DMI BIOS year==0, "
-;
+		printk(KERN_ERR PREFIX "DMI BIOS year==0, "
+			"assuming ACPI-capable machine\n" );
 		return 0;
 	}
 	if (year < CONFIG_ACPI_BLACKLIST_YEAR) {
-//		printk(KERN_ERR PREFIX "BIOS age (%d) fails cutoff (%d), "
-//		       "acpi=force is required to enable ACPI\n",
-;
+		printk(KERN_ERR PREFIX "BIOS age (%d) fails cutoff (%d), "
+		       "acpi=force is required to enable ACPI\n",
+		       year, CONFIG_ACPI_BLACKLIST_YEAR);
 		return 1;
 	}
 	return 0;
@@ -146,19 +146,19 @@ int __init acpi_blacklisted(void)
 			&& table_header.oem_revision ==
 			acpi_blacklist[i].oem_revision)) {
 
-//			printk(KERN_ERR PREFIX
-//			       "Vendor \"%6.6s\" System \"%8.8s\" "
-//			       "Revision 0x%x has a known ACPI BIOS problem.\n",
-//			       acpi_blacklist[i].oem_id,
-//			       acpi_blacklist[i].oem_table_id,
-;
+			printk(KERN_ERR PREFIX
+			       "Vendor \"%6.6s\" System \"%8.8s\" "
+			       "Revision 0x%x has a known ACPI BIOS problem.\n",
+			       acpi_blacklist[i].oem_id,
+			       acpi_blacklist[i].oem_table_id,
+			       acpi_blacklist[i].oem_revision);
 
-//			printk(KERN_ERR PREFIX
-//			       "Reason: %s. This is a %s error\n",
-//			       acpi_blacklist[i].reason,
-//			       (acpi_blacklist[i].
-//				is_critical_error ? "non-recoverable" :
-;
+			printk(KERN_ERR PREFIX
+			       "Reason: %s. This is a %s error\n",
+			       acpi_blacklist[i].reason,
+			       (acpi_blacklist[i].
+				is_critical_error ? "non-recoverable" :
+				"recoverable"));
 
 			blacklisted = acpi_blacklist[i].is_critical_error;
 			break;
@@ -181,7 +181,7 @@ static int __init dmi_enable_osi_linux(const struct dmi_system_id *d)
 }
 static int __init dmi_disable_osi_vista(const struct dmi_system_id *d)
 {
-;
+	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
 	acpi_osi_setup("!Windows 2006");
 	acpi_osi_setup("!Windows 2006 SP1");
 	acpi_osi_setup("!Windows 2006 SP2");
@@ -189,7 +189,7 @@ static int __init dmi_disable_osi_vista(const struct dmi_system_id *d)
 }
 static int __init dmi_disable_osi_win7(const struct dmi_system_id *d)
 {
-;
+	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
 	acpi_osi_setup("!Windows 2009");
 	return 0;
 }

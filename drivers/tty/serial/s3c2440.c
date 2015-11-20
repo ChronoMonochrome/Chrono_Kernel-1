@@ -42,7 +42,7 @@ static int s3c2440_serial_setsource(struct uart_port *port,
 	else if (strcmp(clk->name, "fclk") == 0)
 		ucon |= S3C2440_UCON_FCLK;
 	else {
-;
+		printk(KERN_ERR "unknown clock source %s\n", clk->name);
 		return -EINVAL;
 	}
 
@@ -77,7 +77,7 @@ static int s3c2440_serial_getsource(struct uart_port *port,
 		ucon1 = __raw_readl(S3C24XX_VA_UART1 + S3C2410_UCON);
 		ucon2 = __raw_readl(S3C24XX_VA_UART2 + S3C2410_UCON);
 
-;
+		printk("ucons: %08lx, %08lx, %08lx\n", ucon0, ucon1, ucon2);
 
 		ucon0 &= S3C2440_UCON0_DIVMASK;
 		ucon1 &= S3C2440_UCON1_DIVMASK;

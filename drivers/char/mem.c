@@ -66,9 +66,9 @@ static inline int range_is_allowed(unsigned long pfn, unsigned long size)
 
 	while (cursor < to) {
 		if (!devmem_is_allowed(pfn)) {
-//			printk(KERN_INFO
-//		"Program %s tried to access /dev/mem between %Lx->%Lx.\n",
-;
+			printk(KERN_INFO
+		"Program %s tried to access /dev/mem between %Lx->%Lx.\n",
+				current->comm, from, to);
 			return 0;
 		}
 		cursor += PAGE_SIZE;
@@ -845,7 +845,7 @@ static ssize_t kmsg_writev(struct kiocb *iocb, const struct iovec *iv,
 	}
 	p[0] = '\0';
 
-;
+	ret = printk("%s", line);
 	/* printk can add a prefix */
 	if (ret > len)
 		ret = len;
@@ -936,7 +936,7 @@ static int __init chr_dev_init(void)
 		return err;
 
 	if (register_chrdev(MEM_MAJOR, "mem", &memory_fops))
-;
+		printk("unable to get major %d for memory devs\n", MEM_MAJOR);
 
 	mem_class = class_create(THIS_MODULE, "mem");
 	if (IS_ERR(mem_class))

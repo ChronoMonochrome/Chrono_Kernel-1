@@ -660,7 +660,7 @@ static int sunsu_startup(struct uart_port *port)
 	 */
 	if (!(up->port.flags & UPF_BUGGY_UART) &&
 	    (serial_inp(up, UART_LSR) == 0xff)) {
-;
+		printk("ttyS%d: LSR safety check engaged!\n", up->port.line);
 		return -ENODEV;
 	}
 
@@ -672,7 +672,7 @@ static int sunsu_startup(struct uart_port *port)
 				     IRQF_SHARED, su_typev[up->su_type], up);
 	}
 	if (retval) {
-;
+		printk("su: Cannot register IRQ %d\n", up->port.irq);
 		return retval;
 	}
 
@@ -1200,11 +1200,11 @@ static int __devinit sunsu_kbd_ms_init(struct uart_sunsu_port *up)
 	if (up->port.type == PORT_UNKNOWN)
 		return -ENODEV;
 
-//	printk("%s: %s port at %llx, irq %u\n",
-//	       up->port.dev->of_node->full_name,
-//	       (up->su_type == SU_PORT_KBD) ? "Keyboard" : "Mouse",
-//	       (unsigned long long) up->port.mapbase,
-;
+	printk("%s: %s port at %llx, irq %u\n",
+	       up->port.dev->of_node->full_name,
+	       (up->su_type == SU_PORT_KBD) ? "Keyboard" : "Mouse",
+	       (unsigned long long) up->port.mapbase,
+	       up->port.irq);
 
 #ifdef CONFIG_SERIO
 	serio = &up->serio;
@@ -1335,8 +1335,8 @@ static int __init sunsu_console_setup(struct console *co, char *options)
 	struct ktermios termios;
 	struct uart_port *port;
 
-//	printk("Console: ttyS%d (SU)\n",
-;
+	printk("Console: ttyS%d (SU)\n",
+	       (sunsu_reg.minor - 64) + co->index);
 
 	if (co->index > nr_inst)
 		return -ENODEV;

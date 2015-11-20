@@ -292,7 +292,7 @@ int snd_seq_timer_open(struct snd_seq_queue *q)
 		}
 	}
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "seq fatal error: cannot create timer (%i)\n", err);
 		return err;
 	}
 	t->callback = snd_seq_timer_interrupt;

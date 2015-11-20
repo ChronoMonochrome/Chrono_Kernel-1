@@ -88,7 +88,7 @@ static int xfer_write(struct i2c_adapter *adap, unsigned char *buf, int length)
 
 	/* Do nothing but storing the reg_num to a static variable */
 	if (i2c_reg == -1) {
-;
+		printk(KERN_WARNING "Error i2c reg\n");
 		return -ETIMEDOUT;
 	}
 

@@ -473,7 +473,7 @@ static int __init mux_probe(struct parisc_device *dev)
 	int i, status;
 
 	int port_count = get_mux_port_count(dev);
-;
+	printk(KERN_INFO "Serial mux driver (%d ports) Revision: 0.6\n", port_count);
 
 	dev_set_drvdata(&dev->dev, (void *)(long)port_count);
 	request_mem_region(dev->hpa.start + MUX_OFFSET,
@@ -484,7 +484,7 @@ static int __init mux_probe(struct parisc_device *dev)
 
 		status = uart_register_driver(&mux_driver);
 		if(status) {
-;
+			printk(KERN_ERR "Serial mux: Unable to register driver.\n");
 			return 1;
 		}
 	}

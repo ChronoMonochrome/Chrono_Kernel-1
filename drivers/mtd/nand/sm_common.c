@@ -56,9 +56,9 @@ static int sm_block_markbad(struct mtd_info *mtd, loff_t ofs)
 
 	ret = mtd->write_oob(mtd, ofs, &ops);
 	if (ret < 0 || ops.oobretlen != SM_OOB_SIZE) {
-//		printk(KERN_NOTICE
-//			"sm_common: can't mark sector at %i as bad\n",
-;
+		printk(KERN_NOTICE
+			"sm_common: can't mark sector at %i as bad\n",
+								(int)ofs);
 		error = -EIO;
 	} else
 		mtd->ecc_stats.badblocks++;

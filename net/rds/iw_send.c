@@ -154,14 +154,14 @@ void rds_iw_send_init_ring(struct rds_iw_connection *ic)
 
 		send->s_mr = ib_alloc_fast_reg_mr(ic->i_pd, fastreg_message_size);
 		if (IS_ERR(send->s_mr)) {
-;
+			printk(KERN_WARNING "RDS/IW: ib_alloc_fast_reg_mr failed\n");
 			break;
 		}
 
 		send->s_page_list = ib_alloc_fast_reg_page_list(
 			ic->i_cm_id->device, fastreg_message_size);
 		if (IS_ERR(send->s_page_list)) {
-;
+			printk(KERN_WARNING "RDS/IW: ib_alloc_fast_reg_page_list failed\n");
 			break;
 		}
 	}
@@ -216,7 +216,7 @@ void rds_iw_send_cq_comp_handler(struct ib_cq *cq, void *context)
 		rds_iw_stats_inc(s_iw_tx_cq_event);
 
 		if (wc.status != IB_WC_SUCCESS) {
-;
+			printk(KERN_ERR "WC Error:  status = %d opcode = %d\n", wc.status, wc.opcode);
 			break;
 		}
 
@@ -259,9 +259,9 @@ void rds_iw_send_cq_comp_handler(struct ib_cq *cq, void *context)
 				break;
 			default:
 				if (printk_ratelimit())
-//					printk(KERN_NOTICE
-//						"RDS/IW: %s: unexpected opcode 0x%x in WR!\n",
-;
+					printk(KERN_NOTICE
+						"RDS/IW: %s: unexpected opcode 0x%x in WR!\n",
+						__func__, send->s_wr.opcode);
 				break;
 			}
 
@@ -557,10 +557,10 @@ int rds_iw_xmit(struct rds_connection *conn, struct rds_message *rm,
 	/* map the message the first time we see it */
 	if (!ic->i_rm) {
 		/*
-//		printk(KERN_NOTICE "rds_iw_xmit prep msg dport=%u flags=0x%x len=%d\n",
-//				be16_to_cpu(rm->m_inc.i_hdr.h_dport),
-//				rm->m_inc.i_hdr.h_flags,
-;
+		printk(KERN_NOTICE "rds_iw_xmit prep msg dport=%u flags=0x%x len=%d\n",
+				be16_to_cpu(rm->m_inc.i_hdr.h_dport),
+				rm->m_inc.i_hdr.h_flags,
+				be32_to_cpu(rm->m_inc.i_hdr.h_len));
 		   */
 		if (rm->data.op_nents) {
 			rm->data.op_count = ib_dma_map_sg(dev,
@@ -701,10 +701,10 @@ add_header:
 		if (0) {
 			struct rds_header *hdr = &ic->i_send_hdrs[pos];
 
-//			printk(KERN_NOTICE "send WR dport=%u flags=0x%x len=%d\n",
-//				be16_to_cpu(hdr->h_dport),
-//				hdr->h_flags,
-;
+			printk(KERN_NOTICE "send WR dport=%u flags=0x%x len=%d\n",
+				be16_to_cpu(hdr->h_dport),
+				hdr->h_flags,
+				be32_to_cpu(hdr->h_len));
 		}
 		if (adv_credits) {
 			struct rds_header *hdr = &ic->i_send_hdrs[pos];
@@ -749,8 +749,8 @@ add_header:
 		 first, &first->s_wr, ret, failed_wr);
 	BUG_ON(failed_wr != &first->s_wr);
 	if (ret) {
-//		printk(KERN_WARNING "RDS/IW: ib_post_send to %pI4 "
-;
+		printk(KERN_WARNING "RDS/IW: ib_post_send to %pI4 "
+		       "returned %d\n", &conn->c_faddr, ret);
 		rds_iw_ring_unalloc(&ic->i_send_ring, work_alloc);
 		if (prev->s_rm) {
 			ic->i_rm = prev->s_rm;
@@ -954,8 +954,8 @@ int rds_iw_xmit_rdma(struct rds_connection *conn, struct rm_rdma_op *op)
 		 first, &first->s_wr, ret, failed_wr);
 	BUG_ON(failed_wr != &first->s_wr);
 	if (ret) {
-//		printk(KERN_WARNING "RDS/IW: rdma ib_post_send to %pI4 "
-;
+		printk(KERN_WARNING "RDS/IW: rdma ib_post_send to %pI4 "
+		       "returned %d\n", &conn->c_faddr, ret);
 		rds_iw_ring_unalloc(&ic->i_send_ring, work_alloc);
 		goto out;
 	}

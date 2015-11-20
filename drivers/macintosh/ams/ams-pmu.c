@@ -143,7 +143,7 @@ static void ams_pmu_exit(void)
 
 	ams_info.has_device = 0;
 
-;
+	printk(KERN_INFO "ams: Unloading\n");
 }
 
 int __init ams_pmu_init(struct device_node *np)
@@ -195,7 +195,7 @@ int __init ams_pmu_init(struct device_node *np)
 	/* Enable interrupts */
 	ams_pmu_set_irq(AMS_IRQ_ALL, 1);
 
-;
+	printk(KERN_INFO "ams: Found PMU based motion sensor\n");
 
 	return 0;
 }

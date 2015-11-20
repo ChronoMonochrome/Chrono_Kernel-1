@@ -307,7 +307,7 @@ static int qc_detect(struct qcam *q)
 	   won't be flashing these bits. Possibly unloading the module
 	   in the middle of a grab? Or some timeout condition?
 	   I've seen this parameter as low as 19 on my 450Mhz box - mpc */
-;
+	printk(KERN_DEBUG "Debugging: QCam detection counter <30-200 counts as detected>: %d\n", count);
 	return 1;
 #endif
 
@@ -316,9 +316,9 @@ static int qc_detect(struct qcam *q)
 	if (count > 20 && count < 400) {
 		return 1;	/* found */
 	} else {
-//		printk(KERN_ERR "No Quickcam found on port %s\n",
-;
-;
+		printk(KERN_ERR "No Quickcam found on port %s\n",
+				q->pport->name);
+		printk(KERN_DEBUG "Quickcam detection counter: %u\n", count);
 		return 0;	/* not found */
 	}
 }
@@ -966,7 +966,7 @@ static int init_bwqcam(struct parport *port)
 	struct qcam *qcam;
 
 	if (num_cams == MAX_CAMS) {
-;
+		printk(KERN_ERR "Too many Quickcams (max %d)\n", MAX_CAMS);
 		return -ENOSPC;
 	}
 
@@ -1028,9 +1028,9 @@ static int accept_bwqcam(struct parport *port)
 			unsigned long r;
 			r = simple_strtoul(parport[n], &ep, 0);
 			if (ep == parport[n]) {
-//				printk(KERN_ERR
-//					"bw-qcam: bad port specifier \"%s\"\n",
-;
+				printk(KERN_ERR
+					"bw-qcam: bad port specifier \"%s\"\n",
+					parport[n]);
 				continue;
 			}
 			if (r == port->number)
@@ -1076,12 +1076,12 @@ static int __init init_bw_qcams(void)
 #ifdef MODULE
 	/* Do some sanity checks on the module parameters. */
 	if (maxpoll > 5000) {
-;
+		printk(KERN_INFO "Connectix Quickcam max-poll was above 5000. Using 5000.\n");
 		maxpoll = 5000;
 	}
 
 	if (yieldlines < 1) {
-;
+		printk(KERN_INFO "Connectix Quickcam yieldlines was less than 1. Using 1.\n");
 		yieldlines = 1;
 	}
 #endif

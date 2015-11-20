@@ -82,18 +82,18 @@ int drm_err(const char *func, const char *format, ...)
 }
 EXPORT_SYMBOL(drm_err);
 
-//void drm_ut_debug_printk(unsigned int request_level,
-//			 const char *prefix,
-//			 const char *function_name,
-//			 const char *format, ...)
-//{
-;
+void drm_ut_debug_printk(unsigned int request_level,
+			 const char *prefix,
+			 const char *function_name,
+			 const char *format, ...)
+{
+	va_list args;
 
 	if (drm_debug & request_level) {
 		if (function_name)
-;
+			printk(KERN_DEBUG "[%s:%s], ", prefix, function_name);
 		va_start(args, format);
-;
+		vprintk(format, args);
 		va_end(args);
 	}
 }
@@ -377,8 +377,8 @@ int drm_get_minor(struct drm_device *dev, struct drm_minor **minor, int type)
 
 	ret = drm_sysfs_device_add(new_minor);
 	if (ret) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "DRM: Error sysfs_device_add.\n");
 		goto err_g2;
 	}
 	*minor = new_minor;

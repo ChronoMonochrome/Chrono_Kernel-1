@@ -1190,10 +1190,10 @@ static void __init report_hugepages(void)
 
 	for_each_hstate(h) {
 		char buf[32];
-//		printk(KERN_INFO "HugeTLB registered %s page size, "
-//				 "pre-allocated %ld pages\n",
-//			memfmt(buf, huge_page_size(h)),
-;
+		printk(KERN_INFO "HugeTLB registered %s page size, "
+				 "pre-allocated %ld pages\n",
+			memfmt(buf, huge_page_size(h)),
+			h->free_huge_pages);
 	}
 }
 
@@ -1599,8 +1599,8 @@ static void __init hugetlb_sysfs_init(void)
 		err = hugetlb_sysfs_add_hstate(h, hugepages_kobj,
 					 hstate_kobjs, &hstate_attr_group);
 		if (err)
-//			printk(KERN_ERR "Hugetlb: Unable to add hstate %s",
-;
+			printk(KERN_ERR "Hugetlb: Unable to add hstate %s",
+								h->name);
 	}
 }
 
@@ -1721,9 +1721,9 @@ void hugetlb_register_node(struct node *node)
 						nhs->hstate_kobjs,
 						&per_node_hstate_attr_group);
 		if (err) {
-//			printk(KERN_ERR "Hugetlb: Unable to add hstate %s"
-//					" for node %d\n",
-;
+			printk(KERN_ERR "Hugetlb: Unable to add hstate %s"
+					" for node %d\n",
+						h->name, node->sysdev.id);
 			hugetlb_unregister_node(node);
 			break;
 		}
@@ -1821,7 +1821,7 @@ void __init hugetlb_add_hstate(unsigned order)
 	unsigned long i;
 
 	if (size_to_hstate(PAGE_SIZE << order)) {
-;
+		printk(KERN_WARNING "hugepagesz= specified twice, ignoring\n");
 		return;
 	}
 	BUG_ON(max_hstate >= HUGE_MAX_HSTATE);
@@ -1856,8 +1856,8 @@ static int __init hugetlb_nrpages_setup(char *s)
 		mhp = &parsed_hstate->max_huge_pages;
 
 	if (mhp == last_mhp) {
-//		printk(KERN_WARNING "hugepages= specified twice without "
-;
+		printk(KERN_WARNING "hugepages= specified twice without "
+			"interleaving hugepagesz=, ignoring\n");
 		return 1;
 	}
 
@@ -2556,9 +2556,9 @@ static int hugetlb_no_page(struct mm_struct *mm, struct vm_area_struct *vma,
 	 * COW. Warn that such a situation has occurred as it may not be obvious
 	 */
 	if (is_vma_resv_set(vma, HPAGE_RESV_UNMAPPED)) {
-//		printk(KERN_WARNING
-//			"PID %d killed due to inadequate hugepage pool\n",
-;
+		printk(KERN_WARNING
+			"PID %d killed due to inadequate hugepage pool\n",
+			current->pid);
 		return ret;
 	}
 

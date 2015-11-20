@@ -532,9 +532,9 @@ static int __cpuinit relay_hotcpu_callback(struct notifier_block *nb,
 				continue;
 			chan->buf[hotcpu] = relay_open_buf(chan, hotcpu);
 			if(!chan->buf[hotcpu]) {
-//				printk(KERN_ERR
-//					"relay_hotcpu_callback: cpu %d buffer "
-;
+				printk(KERN_ERR
+					"relay_hotcpu_callback: cpu %d buffer "
+					"creation failed\n", hotcpu);
 				mutex_unlock(&relay_channels_mutex);
 				return notifier_from_errno(-ENOMEM);
 			}
@@ -828,9 +828,9 @@ void relay_close(struct rchan *chan)
 				relay_close_buf(chan->buf[i]);
 
 	if (chan->last_toobig)
-//		printk(KERN_WARNING "relay: one or more items not logged "
-//		       "[item size (%Zd) > sub-buffer size (%Zd)]\n",
-;
+		printk(KERN_WARNING "relay: one or more items not logged "
+		       "[item size (%Zd) > sub-buffer size (%Zd)]\n",
+		       chan->last_toobig, chan->subbuf_size);
 
 	list_del(&chan->list);
 	kref_put(&chan->kref, relay_destroy_channel);

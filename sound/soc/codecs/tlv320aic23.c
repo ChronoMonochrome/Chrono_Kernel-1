@@ -86,7 +86,7 @@ static int tlv320aic23_write(struct snd_soc_codec *codec, unsigned int reg,
 	 */
 
 	if (reg > 9 && reg != 15) {
-;
+		printk(KERN_WARNING "%s Invalid register R%u\n", __func__, reg);
 		return -1;
 	}
 
@@ -98,8 +98,8 @@ static int tlv320aic23_write(struct snd_soc_codec *codec, unsigned int reg,
 	if (codec->hw_write(codec->control_data, data, 2) == 2)
 		return 0;
 
-//	printk(KERN_ERR "%s cannot write %03x to register R%u\n", __func__,
-;
+	printk(KERN_ERR "%s cannot write %03x to register R%u\n", __func__,
+	       value, reg);
 
 	return -EIO;
 }
@@ -372,8 +372,8 @@ static int set_sample_rate_control(struct snd_soc_codec *codec, int mclk,
 	/* Search for the right sample rate */
 	int data = find_rate(mclk, sample_rate_adc, sample_rate_dac);
 	if (data < 0) {
-//		printk(KERN_ERR "%s:Invalid rate %u,%u requested\n",
-;
+		printk(KERN_ERR "%s:Invalid rate %u,%u requested\n",
+				__func__, sample_rate_adc, sample_rate_dac);
 		return -EINVAL;
 	}
 	tlv320aic23_write(codec, TLV320AIC23_SRATE, data);
@@ -381,8 +381,8 @@ static int set_sample_rate_control(struct snd_soc_codec *codec, int mclk,
 	{
 		u32 adc, dac;
 		get_current_sample_rates(codec, mclk, &adc, &dac);
-//		printk(KERN_DEBUG "actual samplerate = %u,%u reg=%x\n",
-;
+		printk(KERN_DEBUG "actual samplerate = %u,%u reg=%x\n",
+			adc, dac, data);
 	}
 #endif
 	return 0;
@@ -623,7 +623,7 @@ static int tlv320aic23_probe(struct snd_soc_codec *codec)
 	struct aic23 *aic23 = snd_soc_codec_get_drvdata(codec);
 	int reg;
 
-;
+	printk(KERN_INFO "AIC23 Audio Codec %s\n", AIC23_VERSION);
 	codec->control_data = aic23->control_data;
 	codec->hw_write = (hw_write_t)i2c_master_send;
 	codec->hw_read = NULL;
@@ -750,8 +750,8 @@ static int __init tlv320aic23_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&tlv320aic23_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register TLV320AIC23 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register TLV320AIC23 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

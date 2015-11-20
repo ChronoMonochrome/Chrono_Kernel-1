@@ -197,9 +197,9 @@ int fnic_request_intr(struct fnic *fnic)
 					  fnic->msix[i].devname,
 					  fnic->msix[i].devid);
 			if (err) {
-//				shost_printk(KERN_ERR, fnic->lport->host,
-//					     "MSIX: request_irq"
-;
+				shost_printk(KERN_ERR, fnic->lport->host,
+					     "MSIX: request_irq"
+					     " failed %d\n", err);
 				fnic_free_intr(fnic);
 				break;
 			}

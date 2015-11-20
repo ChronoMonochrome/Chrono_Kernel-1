@@ -445,7 +445,7 @@ static int __init dbx500_hw_obs_debug_init(void)
 		goto fail;
 	hwobs.enable = 0;
 
-;
+	printk(KERN_INFO "hw observer intialized\n");
 	return 0;
 
 fail:
@@ -457,7 +457,7 @@ fail:
 
 	mutex_destroy(&hwobs.mutex);
 	
-;
+	printk(KERN_ERR "hw observer debug: debugfs entry failed\n");
 	return -ENOMEM;
 }
 module_init(dbx500_hw_obs_debug_init);

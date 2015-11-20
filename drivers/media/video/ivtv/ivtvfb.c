@@ -124,30 +124,30 @@ MODULE_LICENSE("GPL");
 #define IVTVFB_DEBUG(x, type, fmt, args...) \
 	do { \
 		if ((x) & ivtvfb_debug) \
-;
+			printk(KERN_INFO "ivtvfb%d " type ": " fmt, itv->instance , ## args); \
 	} while (0)
 #define IVTVFB_DEBUG_WARN(fmt, args...)  IVTVFB_DEBUG(IVTVFB_DBGFLG_WARN, "warning", fmt , ## args)
 #define IVTVFB_DEBUG_INFO(fmt, args...)  IVTVFB_DEBUG(IVTVFB_DBGFLG_INFO, "info", fmt , ## args)
 
 /* Standard kernel messages */
-//#define IVTVFB_ERR(fmt, args...)   printk(KERN_ERR  "ivtvfb%d: " fmt, itv->instance , ## args)
-//#define IVTVFB_WARN(fmt, args...)  printk(KERN_WARNING  "ivtvfb%d: " fmt, itv->instance , ## args)
-//#define IVTVFB_INFO(fmt, args...)  printk(KERN_INFO "ivtvfb%d: " fmt, itv->instance , ## args)
-//
-///* --------------------------------------------------------------------- */
-//
-//#define IVTV_OSD_MAX_WIDTH  720
-//#define IVTV_OSD_MAX_HEIGHT 576
-//
-//#define IVTV_OSD_BPP_8      0x00
-//#define IVTV_OSD_BPP_16_444 0x03
-//#define IVTV_OSD_BPP_16_555 0x02
-//#define IVTV_OSD_BPP_16_565 0x01
-//#define IVTV_OSD_BPP_32     0x04
-//
-//struct osd_info {
-//	/* Physical base address */
-;
+#define IVTVFB_ERR(fmt, args...)   printk(KERN_ERR  "ivtvfb%d: " fmt, itv->instance , ## args)
+#define IVTVFB_WARN(fmt, args...)  printk(KERN_WARNING  "ivtvfb%d: " fmt, itv->instance , ## args)
+#define IVTVFB_INFO(fmt, args...)  printk(KERN_INFO "ivtvfb%d: " fmt, itv->instance , ## args)
+
+/* --------------------------------------------------------------------- */
+
+#define IVTV_OSD_MAX_WIDTH  720
+#define IVTV_OSD_MAX_HEIGHT 576
+
+#define IVTV_OSD_BPP_8      0x00
+#define IVTV_OSD_BPP_16_444 0x03
+#define IVTV_OSD_BPP_16_555 0x02
+#define IVTV_OSD_BPP_16_565 0x01
+#define IVTV_OSD_BPP_32     0x04
+
+struct osd_info {
+	/* Physical base address */
+	unsigned long video_pbase;
 	/* Relative base address (relative to start of decoder memory) */
 	u32 video_rbase;
 	/* Mapped base address */
@@ -1286,8 +1286,8 @@ static int __init ivtvfb_init(void)
 	int err;
 
 	if (ivtvfb_card_id < -1 || ivtvfb_card_id >= IVTV_MAX_CARDS) {
-//		printk(KERN_ERR "ivtvfb:  ivtvfb_card_id parameter is out of range (valid range: -1 - %d)\n",
-;
+		printk(KERN_ERR "ivtvfb:  ivtvfb_card_id parameter is out of range (valid range: -1 - %d)\n",
+		     IVTV_MAX_CARDS - 1);
 		return -EINVAL;
 	}
 
@@ -1295,7 +1295,7 @@ static int __init ivtvfb_init(void)
 	err = driver_for_each_device(drv, NULL, &registered, ivtvfb_callback_init);
 	put_driver(drv);
 	if (!registered) {
-;
+		printk(KERN_ERR "ivtvfb:  no cards found\n");
 		return -ENODEV;
 	}
 	return 0;
@@ -1306,7 +1306,7 @@ static void ivtvfb_cleanup(void)
 	struct device_driver *drv;
 	int err;
 
-;
+	printk(KERN_INFO "ivtvfb:  Unloading framebuffer module\n");
 
 	drv = driver_find("ivtv", &pci_bus_type);
 	err = driver_for_each_device(drv, NULL, NULL, ivtvfb_callback_cleanup);

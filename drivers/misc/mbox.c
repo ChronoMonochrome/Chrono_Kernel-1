@@ -105,7 +105,7 @@ static void mbox_modem_req(void)
 		/* TODO: optimize this timeout */
 		if (!wait_for_completion_timeout(&mb->mod_req_ack_work,
 					msecs_to_jiffies(2000)))
-;
+			printk(KERN_ERR "mbox:modem_req_ack timedout(2sec)\n");
 	}
 	atomic_set(&mb->mod_req, 1);
 	mutex_unlock(&modem_state_mutex);
@@ -809,15 +809,15 @@ static int __init mbox_init(void)
 
 	mb_di = kzalloc(sizeof(struct mbox_device_info), GFP_KERNEL);
 	if (mb_di == NULL) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"mbox:Could not allocate memory for struct mbox_device_info\n");
 		return -ENOMEM;
 	}
 
 	mb_di->mbox_modem_rel_wq = create_singlethread_workqueue(
 			"mbox_modem_rel");
 	if (!mb_di->mbox_modem_rel_wq) {
-;
+		printk(KERN_ERR "mbox:failed to create work queue\n");
 		err = -ENOMEM;
 		goto free_mem;
 	}
@@ -837,7 +837,7 @@ static int __init mbox_init(void)
 			mbox_prcmu_mod_req_ack_handler,
 			IRQF_NO_SUSPEND, "mod_req_ack", NULL);
 	if (err < 0) {
-;
+		printk(KERN_ERR "mbox:Failed alloc IRQ_PRCMU_CA_SLEEP.\n");
 		goto free_irq;
 	}
 

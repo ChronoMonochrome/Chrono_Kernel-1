@@ -77,9 +77,9 @@ int uvc_query_ctrl(struct uvc_device *dev, __u8 query, __u8 unit,
 	ret = __uvc_query_ctrl(dev, query, unit, intfnum, cs, data, size,
 				UVC_CTRL_CONTROL_TIMEOUT);
 	if (ret != size) {
-//		uvc_printk(KERN_ERR, "Failed to query (%s) UVC control %u on "
-//			"unit %u: %d (exp. %u).\n", uvc_query_name(query), cs,
-;
+		uvc_printk(KERN_ERR, "Failed to query (%s) UVC control %u on "
+			"unit %u: %d (exp. %u).\n", uvc_query_name(query), cs,
+			unit, ret, size);
 		return -EIO;
 	}
 
@@ -198,9 +198,9 @@ static int uvc_get_video_ctrl(struct uvc_streaming *stream,
 		ret = -EIO;
 		goto out;
 	} else if (ret != size) {
-//		uvc_printk(KERN_ERR, "Failed to query (%u) UVC %s control : "
-//			"%d (exp. %u).\n", query, probe ? "probe" : "commit",
-;
+		uvc_printk(KERN_ERR, "Failed to query (%u) UVC %s control : "
+			"%d (exp. %u).\n", query, probe ? "probe" : "commit",
+			ret, size);
 		ret = -EIO;
 		goto out;
 	}
@@ -279,9 +279,9 @@ static int uvc_set_video_ctrl(struct uvc_streaming *stream,
 		probe ? UVC_VS_PROBE_CONTROL : UVC_VS_COMMIT_CONTROL, data,
 		size, uvc_timeout_param);
 	if (ret != size) {
-//		uvc_printk(KERN_ERR, "Failed to set UVC %s control : "
-//			"%d (exp. %u).\n", probe ? "probe" : "commit",
-;
+		uvc_printk(KERN_ERR, "Failed to set UVC %s control : "
+			"%d (exp. %u).\n", probe ? "probe" : "commit",
+			ret, size);
 		ret = -EIO;
 	}
 
@@ -754,8 +754,8 @@ static void uvc_video_complete(struct urb *urb)
 		break;
 
 	default:
-//		uvc_printk(KERN_WARNING, "Non-zero status (%d) in video "
-;
+		uvc_printk(KERN_WARNING, "Non-zero status (%d) in video "
+			"completion handler.\n", urb->status);
 
 	case -ENOENT:		/* usb_kill_urb() called. */
 		if (stream->frozen)
@@ -776,8 +776,8 @@ static void uvc_video_complete(struct urb *urb)
 	stream->decode(urb, stream, buf);
 
 	if ((ret = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
-//		uvc_printk(KERN_ERR, "Failed to resubmit video URB (%d).\n",
-;
+		uvc_printk(KERN_ERR, "Failed to resubmit video URB (%d).\n",
+			ret);
 	}
 }
 
@@ -1064,8 +1064,8 @@ static int uvc_init_video(struct uvc_streaming *stream, gfp_t gfp_flags)
 	for (i = 0; i < UVC_URBS; ++i) {
 		ret = usb_submit_urb(stream->urb[i], gfp_flags);
 		if (ret < 0) {
-//			uvc_printk(KERN_ERR, "Failed to submit URB %u "
-;
+			uvc_printk(KERN_ERR, "Failed to submit URB %u "
+					"(%d).\n", i, ret);
 			uvc_uninit_video(stream, 1);
 			return ret;
 		}
@@ -1157,7 +1157,7 @@ int uvc_video_init(struct uvc_streaming *stream)
 	int ret;
 
 	if (stream->nformats == 0) {
-;
+		uvc_printk(KERN_INFO, "No supported video formats found.\n");
 		return -EINVAL;
 	}
 
@@ -1200,8 +1200,8 @@ int uvc_video_init(struct uvc_streaming *stream)
 	}
 
 	if (format->nframes == 0) {
-//		uvc_printk(KERN_INFO, "No frame descriptor found for the "
-;
+		uvc_printk(KERN_INFO, "No frame descriptor found for the "
+			"default format.\n");
 		return -EINVAL;
 	}
 
@@ -1234,8 +1234,8 @@ int uvc_video_init(struct uvc_streaming *stream)
 		if (stream->intf->num_altsetting == 1)
 			stream->decode = uvc_video_encode_bulk;
 		else {
-//			uvc_printk(KERN_INFO, "Isochronous endpoints are not "
-;
+			uvc_printk(KERN_INFO, "Isochronous endpoints are not "
+				"supported for video output devices.\n");
 			return -EINVAL;
 		}
 	}

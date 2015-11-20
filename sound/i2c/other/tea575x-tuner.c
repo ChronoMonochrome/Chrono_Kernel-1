@@ -387,7 +387,7 @@ int snd_tea575x_init(struct snd_tea575x *tea)
 
 	tea575x_radio_inst = video_device_alloc();
 	if (tea575x_radio_inst == NULL) {
-;
+		printk(KERN_ERR "tea575x-tuner: not enough memory\n");
 		return -ENOMEM;
 	}
 
@@ -401,7 +401,7 @@ int snd_tea575x_init(struct snd_tea575x *tea)
 	retval = video_register_device(tea575x_radio_inst,
 				       VFL_TYPE_RADIO, radio_nr);
 	if (retval) {
-;
+		printk(KERN_ERR "tea575x-tuner: can't register video device!\n");
 		kfree(tea575x_radio_inst);
 		return retval;
 	}

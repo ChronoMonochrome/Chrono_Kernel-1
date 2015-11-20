@@ -122,7 +122,7 @@ static int __init t5325_init(void)
 
 	ret = platform_device_add(t5325_snd_device);
 	if (ret) {
-;
+		printk(KERN_ERR "%s: platform_device_add failed\n", __func__);
 		platform_device_put(t5325_snd_device);
 	}
 

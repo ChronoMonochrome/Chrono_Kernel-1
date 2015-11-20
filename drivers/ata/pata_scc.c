@@ -261,7 +261,7 @@ unsigned long scc_mode_filter(struct ata_device *adev, unsigned long mask)
 	/* errata A308 workaround: limit ATAPI UDMA mode to UDMA4 */
 	if (adev->class == ATA_DEV_ATAPI &&
 	    (mask & (0xE0 << ATA_SHIFT_UDMA))) {
-;
+		printk(KERN_INFO "%s: limit ATAPI UDMA to UDMA4\n", DRV_NAME);
 		mask &= ~(0xE0 << ATA_SHIFT_UDMA);
 	}
 	return mask;
@@ -637,8 +637,8 @@ static int scc_softreset(struct ata_link *link, unsigned int *classes,
 	DPRINTK("about to softreset, devmask=%x\n", devmask);
 	err_mask = scc_bus_softreset(ap, devmask, deadline);
 	if (err_mask) {
-//		ata_port_printk(ap, KERN_ERR, "SRST failed (err_mask=0x%x)\n",
-;
+		ata_port_printk(ap, KERN_ERR, "SRST failed (err_mask=0x%x)\n",
+				err_mask);
 		return -EIO;
 	}
 
@@ -669,7 +669,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 		reg = in_be32(bmid_base + SCC_DMA_INTST);
 
 		if (reg & INTSTS_SERROR) {
-;
+			printk(KERN_WARNING "%s: SERROR\n", DRV_NAME);
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_SERROR|INTSTS_BMSINT);
 			out_be32(bmid_base + SCC_DMA_CMD,
 				 in_be32(bmid_base + SCC_DMA_CMD) & ~ATA_DMA_START);
@@ -680,7 +680,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 			u32 maea0, maec0;
 			maea0 = in_be32(ctrl_base + SCC_CTL_MAEA0);
 			maec0 = in_be32(ctrl_base + SCC_CTL_MAEC0);
-;
+			printk(KERN_WARNING "%s: PRERR [addr:%x cmd:%x]\n", DRV_NAME, maea0, maec0);
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_PRERR|INTSTS_BMSINT);
 			out_be32(bmid_base + SCC_DMA_CMD,
 				 in_be32(bmid_base + SCC_DMA_CMD) & ~ATA_DMA_START);
@@ -688,7 +688,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 		}
 
 		if (reg & INTSTS_RERR) {
-;
+			printk(KERN_WARNING "%s: Response Error\n", DRV_NAME);
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_RERR|INTSTS_BMSINT);
 			out_be32(bmid_base + SCC_DMA_CMD,
 				 in_be32(bmid_base + SCC_DMA_CMD) & ~ATA_DMA_START);
@@ -698,7 +698,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 		if (reg & INTSTS_ICERR) {
 			out_be32(bmid_base + SCC_DMA_CMD,
 				 in_be32(bmid_base + SCC_DMA_CMD) & ~ATA_DMA_START);
-;
+			printk(KERN_WARNING "%s: Illegal Configuration\n", DRV_NAME);
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_ICERR|INTSTS_BMSINT);
 			continue;
 		}
@@ -706,7 +706,7 @@ static void scc_bmdma_stop (struct ata_queued_cmd *qc)
 		if (reg & INTSTS_BMSINT) {
 			unsigned int classes;
 			unsigned long deadline = ata_deadline(jiffies, ATA_TMOUT_BOOT);
-;
+			printk(KERN_WARNING "%s: Internal Bus Error\n", DRV_NAME);
 			out_be32(bmid_base + SCC_DMA_INTST, INTSTS_BMSINT);
 			/* TBD: SW reset */
 			scc_softreset(&ap->link, &classes, deadline);
@@ -768,8 +768,8 @@ static u8 scc_bmdma_status (struct ata_port *ap)
 		if ((qc->tf.protocol == ATA_PROT_DMA &&
 		     qc->dev->xfer_mode > XFER_UDMA_4)) {
 			if (!(int_status & INTSTS_ACTEINT)) {
-//				printk(KERN_WARNING "ata%u: operation failed (transfer data loss)\n",
-;
+				printk(KERN_WARNING "ata%u: operation failed (transfer data loss)\n",
+				       ap->print_id);
 				host_stat |= ATA_DMA_ERR;
 				if (retry++)
 					ap->udma_mask &= ~(1 << qc->dev->xfer_mode);
@@ -1004,7 +1004,7 @@ static int scc_reset_controller(struct ata_host *host)
 	out_be32(intmask_port, INTMASK_MSK);
 
 	if (in_be32(dmastatus_port) & QCHSD_STPDIAG) {
-;
+		printk(KERN_WARNING "%s: failed to detect 80c cable. (PDIAG# is high)\n", DRV_NAME);
 		return -EIO;
 	}
 
@@ -1079,8 +1079,8 @@ static int scc_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 	int rc;
 
 	if (!printed_version++)
-//		dev_printk(KERN_DEBUG, &pdev->dev,
-;
+		dev_printk(KERN_DEBUG, &pdev->dev,
+			   "version " DRV_VERSION "\n");
 
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, 1);
 	if (!host)

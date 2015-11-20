@@ -1737,7 +1737,7 @@ static int __devinit ab5500_platform_probe(struct platform_device *pdev)
 	mask_set_reg(INTERFACE0, I2Sx_TRISTATE_MASK, 1 << I2Sx_TRISTATE_SHIFT);
 	mask_set_reg(INTERFACE1, I2Sx_TRISTATE_MASK, 1 << I2Sx_TRISTATE_SHIFT);
 
-;
+	printk(KERN_ERR "Clock Setting ab5500\n");
 	init_playback_route();
 	init_capture_route();
 	memset(&pm_stack, 0, sizeof(pm_stack));

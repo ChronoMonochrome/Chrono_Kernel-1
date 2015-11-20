@@ -129,8 +129,8 @@ static void uvc_status_complete(struct urb *urb)
 		return;
 
 	default:
-//		uvc_printk(KERN_WARNING, "Non-zero status (%d) in status "
-;
+		uvc_printk(KERN_WARNING, "Non-zero status (%d) in status "
+			"completion handler.\n", urb->status);
 		return;
 	}
 
@@ -155,8 +155,8 @@ static void uvc_status_complete(struct urb *urb)
 	/* Resubmit the URB. */
 	urb->interval = dev->int_ep->desc.bInterval;
 	if ((ret = usb_submit_urb(urb, GFP_ATOMIC)) < 0) {
-//		uvc_printk(KERN_ERR, "Failed to resubmit status URB (%d).\n",
-;
+		uvc_printk(KERN_ERR, "Failed to resubmit status URB (%d).\n",
+			ret);
 	}
 }
 

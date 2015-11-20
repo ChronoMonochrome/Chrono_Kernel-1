@@ -94,7 +94,7 @@ int __init afs_fs_init(void)
 					     SLAB_HWCACHE_ALIGN,
 					     afs_i_init_once);
 	if (!afs_inode_cachep) {
-;
+		printk(KERN_NOTICE "kAFS: Failed to allocate inode cache\n");
 		return ret;
 	}
 
@@ -121,8 +121,8 @@ void __exit afs_fs_exit(void)
 	unregister_filesystem(&afs_fs_type);
 
 	if (atomic_read(&afs_count_active_inodes) != 0) {
-//		printk("kAFS: %d active inode objects still present\n",
-;
+		printk("kAFS: %d active inode objects still present\n",
+		       atomic_read(&afs_count_active_inodes));
 		BUG();
 	}
 
@@ -176,8 +176,8 @@ static int afs_parse_options(struct afs_mount_params *params,
 			break;
 
 		default:
-//			printk(KERN_ERR "kAFS:"
-;
+			printk(KERN_ERR "kAFS:"
+			       " Unknown or invalid mount option: '%s'\n", p);
 			return -EINVAL;
 		}
 	}
@@ -208,12 +208,12 @@ static int afs_parse_device_name(struct afs_mount_params *params,
 	_enter(",%s", name);
 
 	if (!name) {
-;
+		printk(KERN_ERR "kAFS: no volume name specified\n");
 		return -EINVAL;
 	}
 
 	if ((name[0] != '%' && name[0] != '#') || !name[1]) {
-;
+		printk(KERN_ERR "kAFS: unparsable volume name\n");
 		return -EINVAL;
 	}
 

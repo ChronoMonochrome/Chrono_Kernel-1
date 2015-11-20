@@ -876,11 +876,11 @@ static int cx231xx_init_dev(struct cx231xx **devhandle, struct usb_device *udev,
 	cx231xx_add_into_devlist(dev);
 
 	if (dev->board.has_417) {
-;
+		printk(KERN_INFO "attach 417 %d\n", dev->model);
 		if (cx231xx_417_register(dev) < 0) {
-//			printk(KERN_ERR
-//				"%s() Failed to register 417 on VID_B\n",
-;
+			printk(KERN_ERR
+				"%s() Failed to register 417 on VID_B\n",
+			       __func__);
 		}
 	}
 
@@ -1311,7 +1311,7 @@ static int __init cx231xx_module_init(void)
 {
 	int result;
 
-;
+	printk(KERN_INFO DRIVER_NAME " v4l2 driver loaded.\n");
 
 	/* register this driver with the USB subsystem */
 	result = usb_register(&cx231xx_usb_driver);

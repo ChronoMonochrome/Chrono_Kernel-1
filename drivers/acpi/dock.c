@@ -464,8 +464,8 @@ static void handle_dock(struct dock_station *ds, int dock)
 
 	acpi_get_name(ds->handle, ACPI_FULL_PATHNAME, &name_buffer);
 
-//	printk(KERN_INFO PREFIX "%s - %s\n",
-;
+	printk(KERN_INFO PREFIX "%s - %s\n",
+		(char *)name_buffer.pointer, dock ? "docking" : "undocking");
 
 	/* _DCK method has one argument */
 	arg_list.count = 1;
@@ -525,9 +525,9 @@ static void dock_lock(struct dock_station *ds, int lock)
 	status = acpi_evaluate_object(ds->handle, "_LCK", &arg_list, NULL);
 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
 		if (lock)
-;
+			printk(KERN_WARNING PREFIX "Locking device failed\n");
 		else
-;
+			printk(KERN_WARNING PREFIX "Unlocking device failed\n");
 	}
 }
 
@@ -667,7 +667,7 @@ static int handle_eject_request(struct dock_station *ds, u32 event)
 	dock_lock(ds, 0);
 	eject_dock(ds);
 	if (dock_present(ds)) {
-;
+		printk(KERN_ERR PREFIX "Unable to undock!\n");
 		return -EBUSY;
 	}
 	complete_undock(ds);
@@ -715,7 +715,7 @@ static void dock_notify(acpi_handle handle, u32 event, void *data)
 			begin_dock(ds);
 			dock(ds);
 			if (!dock_present(ds)) {
-;
+				printk(KERN_ERR PREFIX "Unable to dock!\n");
 				complete_dock(ds);
 				break;
 			}
@@ -743,7 +743,7 @@ static void dock_notify(acpi_handle handle, u32 event, void *data)
 			dock_event(ds, event, UNDOCK_EVENT);
 		break;
 	default:
-;
+		printk(KERN_ERR PREFIX "Unknown dock event %d\n", event);
 	}
 }
 
@@ -987,7 +987,7 @@ err_rmgroup:
 	sysfs_remove_group(&dd->dev.kobj, &dock_attribute_group);
 err_unregister:
 	platform_device_unregister(dd);
-;
+	printk(KERN_ERR "%s encountered error %d\n", __func__, ret);
 	return ret;
 }
 
@@ -1055,13 +1055,13 @@ static int __init dock_init(void)
 	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
 			ACPI_UINT32_MAX, find_bay, NULL, NULL, NULL);
 	if (!dock_station_count) {
-;
+		printk(KERN_INFO PREFIX "No dock devices found.\n");
 		return 0;
 	}
 
 	register_acpi_bus_notifier(&dock_acpi_notifier);
-//	printk(KERN_INFO PREFIX "%s: %d docks/bays found\n",
-;
+	printk(KERN_INFO PREFIX "%s: %d docks/bays found\n",
+		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
 	return 0;
 }
 

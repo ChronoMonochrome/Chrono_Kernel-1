@@ -222,7 +222,7 @@ static int set_enable(const char *val, struct kernel_param *kp)
 #endif
 
 	}else {
-;
+		printk("dt2w: invalid input '%s' for 'enable'; use 1 or 0\n", val);
 	}
 
 	return 0;
@@ -239,7 +239,7 @@ static int set_dt2w_use_wakelock(const char *val, struct kernel_param *kp){
 		if(dt2w_use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
 			wake_lock(&dt2w_wake_lock);
 			if(dt2w_debug)
-;
+				printk("dt2w: wake lock enabled\n");
 		}
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){

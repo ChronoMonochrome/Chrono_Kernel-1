@@ -866,10 +866,10 @@ static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
 			 */
 			if (uport->flags & UPF_SPD_MASK) {
 				char buf[64];
-//				printk(KERN_NOTICE
-//				       "%s sets custom speed on %s. This "
-//				       "is deprecated.\n", current->comm,
-;
+				printk(KERN_NOTICE
+				       "%s sets custom speed on %s. This "
+				       "is deprecated.\n", current->comm,
+				       tty_name(port->tty, buf));
 			}
 			uart_change_speed(tty, state, NULL);
 		}
@@ -1285,11 +1285,13 @@ static void uart_close(struct tty_struct *tty, struct file *filp)
 		 * one, we've got real problems, since it means the
 		 * serial port won't be shutdown.
 		 */
+		printk(KERN_ERR "uart_close: bad serial port count; tty->count is 1, "
+		       "port->count is %d\n", port->count);
 		port->count = 1;
 	}
 	if (--port->count < 0) {
-//		printk(KERN_ERR "uart_close: bad serial port count for %s: %d\n",
-;
+		printk(KERN_ERR "uart_close: bad serial port count for %s: %d\n",
+		       tty->name, port->count);
 		port->count = 0;
 	}
 	if (port->count) {
@@ -1944,12 +1946,12 @@ int uart_suspend_port(struct uart_driver *drv, struct uart_port *uport)
 		for (tries = 3; !ops->tx_empty(uport) && tries; tries--)
 			msleep(10);
 		if (!tries)
-//			printk(KERN_ERR "%s%s%s%d: Unable to drain "
-//					"transmitter\n",
-//			       uport->dev ? dev_name(uport->dev) : "",
-//			       uport->dev ? ": " : "",
-//			       drv->dev_name,
-;
+			printk(KERN_ERR "%s%s%s%d: Unable to drain "
+					"transmitter\n",
+			       uport->dev ? dev_name(uport->dev) : "",
+			       uport->dev ? ": " : "",
+			       drv->dev_name,
+			       drv->tty_driver->name_base + uport->line);
 
 		if (console_suspend_enabled || !uart_console(uport))
 			ops->shutdown(uport);
@@ -2080,12 +2082,12 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
 		break;
 	}
 
-//	printk(KERN_INFO "%s%s%s%d at %s (irq = %d) is a %s\n",
-//	       port->dev ? dev_name(port->dev) : "",
-//	       port->dev ? ": " : "",
-//	       drv->dev_name,
-//	       drv->tty_driver->name_base + port->line,
-;
+	printk(KERN_INFO "%s%s%s%d at %s (irq = %d) is a %s\n",
+	       port->dev ? dev_name(port->dev) : "",
+	       port->dev ? ": " : "",
+	       drv->dev_name,
+	       drv->tty_driver->name_base + port->line,
+	       address, port->irq, uart_type(port));
 }
 
 static void
@@ -2399,8 +2401,8 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
 		device_init_wakeup(tty_dev, 1);
 		device_set_wakeup_enable(tty_dev, 0);
 	} else
-//		printk(KERN_ERR "Cannot register tty device on line %d\n",
-;
+		printk(KERN_ERR "Cannot register tty device on line %d\n",
+		       uport->line);
 
 	/*
 	 * Ensure UPF_DEAD is not set.
@@ -2431,8 +2433,8 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
 	BUG_ON(in_interrupt());
 
 	if (state->uart_port != uport)
-//		printk(KERN_ALERT "Removing wrong port: %p != %p\n",
-;
+		printk(KERN_ALERT "Removing wrong port: %p != %p\n",
+			state->uart_port, uport);
 
 	mutex_lock(&port_mutex);
 

@@ -673,9 +673,9 @@ static int __devinit tc6393xb_probe(struct platform_device *dev)
 	iowrite8(0,				tc6393xb->scr + SCR_IRR);
 	iowrite8(0xbf,				tc6393xb->scr + SCR_IMR);
 
-//	printk(KERN_INFO "Toshiba tc6393xb revision %d at 0x%08lx, irq %d\n",
-//			tmio_ioread8(tc6393xb->scr + SCR_REVID),
-;
+	printk(KERN_INFO "Toshiba tc6393xb revision %d at 0x%08lx, irq %d\n",
+			tmio_ioread8(tc6393xb->scr + SCR_REVID),
+			(unsigned long) iomem->start, tc6393xb->irq);
 
 	tc6393xb->gpio.base = -1;
 

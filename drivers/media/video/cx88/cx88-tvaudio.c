@@ -65,36 +65,36 @@ module_param(radio_deemphasis,int,0644);
 MODULE_PARM_DESC(radio_deemphasis, "Radio deemphasis time constant, "
 		 "0=None, 1=50us (elsewhere), 2=75us (USA)");
 
-//#define dprintk(fmt, arg...)	if (audio_debug) \
-//	printk(KERN_DEBUG "%s/0: " fmt, core->name , ## arg)
-//
-///* ----------------------------------------------------------- */
-//
-//static const char * const aud_ctl_names[64] = {
-//	[EN_BTSC_FORCE_MONO] = "BTSC_FORCE_MONO",
-//	[EN_BTSC_FORCE_STEREO] = "BTSC_FORCE_STEREO",
-//	[EN_BTSC_FORCE_SAP] = "BTSC_FORCE_SAP",
-//	[EN_BTSC_AUTO_STEREO] = "BTSC_AUTO_STEREO",
-//	[EN_BTSC_AUTO_SAP] = "BTSC_AUTO_SAP",
-//	[EN_A2_FORCE_MONO1] = "A2_FORCE_MONO1",
-//	[EN_A2_FORCE_MONO2] = "A2_FORCE_MONO2",
-//	[EN_A2_FORCE_STEREO] = "A2_FORCE_STEREO",
-//	[EN_A2_AUTO_MONO2] = "A2_AUTO_MONO2",
-//	[EN_A2_AUTO_STEREO] = "A2_AUTO_STEREO",
-//	[EN_EIAJ_FORCE_MONO1] = "EIAJ_FORCE_MONO1",
-//	[EN_EIAJ_FORCE_MONO2] = "EIAJ_FORCE_MONO2",
-//	[EN_EIAJ_FORCE_STEREO] = "EIAJ_FORCE_STEREO",
-//	[EN_EIAJ_AUTO_MONO2] = "EIAJ_AUTO_MONO2",
-//	[EN_EIAJ_AUTO_STEREO] = "EIAJ_AUTO_STEREO",
-//	[EN_NICAM_FORCE_MONO1] = "NICAM_FORCE_MONO1",
-//	[EN_NICAM_FORCE_MONO2] = "NICAM_FORCE_MONO2",
-//	[EN_NICAM_FORCE_STEREO] = "NICAM_FORCE_STEREO",
-//	[EN_NICAM_AUTO_MONO2] = "NICAM_AUTO_MONO2",
-//	[EN_NICAM_AUTO_STEREO] = "NICAM_AUTO_STEREO",
-//	[EN_FMRADIO_FORCE_MONO] = "FMRADIO_FORCE_MONO",
-//	[EN_FMRADIO_FORCE_STEREO] = "FMRADIO_FORCE_STEREO",
-//	[EN_FMRADIO_AUTO_STEREO] = "FMRADIO_AUTO_STEREO",
-;
+#define dprintk(fmt, arg...)	if (audio_debug) \
+	printk(KERN_DEBUG "%s/0: " fmt, core->name , ## arg)
+
+/* ----------------------------------------------------------- */
+
+static const char * const aud_ctl_names[64] = {
+	[EN_BTSC_FORCE_MONO] = "BTSC_FORCE_MONO",
+	[EN_BTSC_FORCE_STEREO] = "BTSC_FORCE_STEREO",
+	[EN_BTSC_FORCE_SAP] = "BTSC_FORCE_SAP",
+	[EN_BTSC_AUTO_STEREO] = "BTSC_AUTO_STEREO",
+	[EN_BTSC_AUTO_SAP] = "BTSC_AUTO_SAP",
+	[EN_A2_FORCE_MONO1] = "A2_FORCE_MONO1",
+	[EN_A2_FORCE_MONO2] = "A2_FORCE_MONO2",
+	[EN_A2_FORCE_STEREO] = "A2_FORCE_STEREO",
+	[EN_A2_AUTO_MONO2] = "A2_AUTO_MONO2",
+	[EN_A2_AUTO_STEREO] = "A2_AUTO_STEREO",
+	[EN_EIAJ_FORCE_MONO1] = "EIAJ_FORCE_MONO1",
+	[EN_EIAJ_FORCE_MONO2] = "EIAJ_FORCE_MONO2",
+	[EN_EIAJ_FORCE_STEREO] = "EIAJ_FORCE_STEREO",
+	[EN_EIAJ_AUTO_MONO2] = "EIAJ_AUTO_MONO2",
+	[EN_EIAJ_AUTO_STEREO] = "EIAJ_AUTO_STEREO",
+	[EN_NICAM_FORCE_MONO1] = "NICAM_FORCE_MONO1",
+	[EN_NICAM_FORCE_MONO2] = "NICAM_FORCE_MONO2",
+	[EN_NICAM_FORCE_STEREO] = "NICAM_FORCE_STEREO",
+	[EN_NICAM_AUTO_MONO2] = "NICAM_AUTO_MONO2",
+	[EN_NICAM_AUTO_STEREO] = "NICAM_AUTO_STEREO",
+	[EN_FMRADIO_FORCE_MONO] = "FMRADIO_FORCE_MONO",
+	[EN_FMRADIO_FORCE_STEREO] = "FMRADIO_FORCE_STEREO",
+	[EN_FMRADIO_AUTO_STEREO] = "FMRADIO_AUTO_STEREO",
+};
 
 struct rlist {
 	u32 reg;
@@ -266,12 +266,12 @@ static void set_audio_standard_BTSC(struct cx88_core *core, unsigned int sap,
 	mode |= EN_FMRADIO_EN_RDS;
 
 	if (sap) {
-;
+		dprintk("%s SAP (status: unknown)\n", __func__);
 		set_audio_start(core, SEL_SAP);
 		set_audio_registers(core, btsc_sap);
 		set_audio_finish(core, mode);
 	} else {
-;
+		dprintk("%s (status: known-good)\n", __func__);
 		set_audio_start(core, SEL_BTSC);
 		set_audio_registers(core, btsc);
 		set_audio_finish(core, mode);
@@ -352,11 +352,11 @@ static void set_audio_standard_NICAM(struct cx88_core *core, u32 mode)
 	set_audio_start(core,SEL_NICAM);
 	switch (core->tvaudio) {
 	case WW_L:
-;
+		dprintk("%s SECAM-L NICAM (status: devel)\n", __func__);
 		set_audio_registers(core, nicam_l);
 		break;
 	case WW_I:
-;
+		dprintk("%s PAL-I NICAM (status: known-good)\n", __func__);
 		set_audio_registers(core, nicam_bgdki_common);
 		set_audio_registers(core, nicam_i);
 		break;
@@ -369,7 +369,7 @@ static void set_audio_standard_NICAM(struct cx88_core *core, u32 mode)
 	case WW_FM:
 	case WW_I2SADC:
 	case WW_M:
-;
+		dprintk("%s PAL-BGDK NICAM (status: known-good)\n", __func__);
 		set_audio_registers(core, nicam_bgdki_common);
 		set_audio_registers(core, nicam_default);
 		break;
@@ -609,24 +609,24 @@ static void set_audio_standard_A2(struct cx88_core *core, u32 mode)
 	set_audio_start(core, SEL_A2);
 	switch (core->tvaudio) {
 	case WW_BG:
-;
+		dprintk("%s PAL-BG A1/2 (status: known-good)\n", __func__);
 		set_audio_registers(core, a2_bgdk_common);
 		set_audio_registers(core, a2_bg);
 		set_audio_registers(core, a2_deemph50);
 		break;
 	case WW_DK:
-;
+		dprintk("%s PAL-DK A1/2 (status: known-good)\n", __func__);
 		set_audio_registers(core, a2_bgdk_common);
 		set_audio_registers(core, a2_dk);
 		set_audio_registers(core, a2_deemph50);
 		break;
 	case WW_I:
-;
+		dprintk("%s PAL-I A1 (status: known-good)\n", __func__);
 		set_audio_registers(core, a1_i);
 		set_audio_registers(core, a2_deemph50);
 		break;
 	case WW_L:
-;
+		dprintk("%s AM-L (status: devel)\n", __func__);
 		set_audio_registers(core, am_l);
 		break;
 	case WW_NONE:
@@ -636,7 +636,7 @@ static void set_audio_standard_A2(struct cx88_core *core, u32 mode)
 	case WW_FM:
 	case WW_I2SADC:
 	case WW_M:
-;
+		dprintk("%s Warning: wrong value\n", __func__);
 		return;
 		break;
 	};
@@ -652,7 +652,7 @@ static void set_audio_standard_EIAJ(struct cx88_core *core)
 
 		{ /* end of list */ },
 	};
-;
+	dprintk("%s (status: unknown)\n", __func__);
 
 	set_audio_start(core, SEL_EIAJ);
 	set_audio_registers(core, eiaj);
@@ -706,7 +706,7 @@ static void set_audio_standard_FM(struct cx88_core *core,
 		{ /* end of list */ },
 	};
 
-;
+	dprintk("%s (status: unknown)\n", __func__);
 	set_audio_start(core, SEL_FMRADIO);
 
 	switch (deemph) {
@@ -733,14 +733,14 @@ static int cx88_detect_nicam(struct cx88_core *core)
 {
 	int i, j = 0;
 
-;
+	dprintk("start nicam autodetect.\n");
 
 	for (i = 0; i < 6; i++) {
 		/* if bit1=1 then nicam is detected */
 		j += ((cx_read(AUD_NICAM_STATUS2) & 0x02) >> 1);
 
 		if (j == 1) {
-;
+			dprintk("nicam is detected.\n");
 			return 1;
 		}
 
@@ -748,7 +748,7 @@ static int cx88_detect_nicam(struct cx88_core *core)
 		msleep(10);
 	}
 
-;
+	dprintk("nicam is not detected.\n");
 	return 0;
 }
 
@@ -798,8 +798,8 @@ void cx88_set_tvaudio(struct cx88_core *core)
 		break;
 	case WW_NONE:
 	case WW_I2SPT:
-//		printk("%s/0: unknown tv audio mode [%d]\n",
-;
+		printk("%s/0: unknown tv audio mode [%d]\n",
+		       core->name, core->tvaudio);
 		break;
 	}
 	return;
@@ -822,9 +822,9 @@ void cx88_get_stereo(struct cx88_core *core, struct v4l2_tuner *t)
 	pilot = (reg >> 2) & 0x03;
 
 	if (core->astat != reg)
-//		dprintk("AUD_STATUS: 0x%x [%s/%s] ctl=%s\n",
-//			reg, m[mode], p[pilot],
-;
+		dprintk("AUD_STATUS: 0x%x [%s/%s] ctl=%s\n",
+			reg, m[mode], p[pilot],
+			aud_ctl_names[cx_read(AUD_CTL) & 63]);
 	core->astat = reg;
 
 	t->capability = V4L2_TUNER_CAP_STEREO | V4L2_TUNER_CAP_SAP |
@@ -976,10 +976,10 @@ void cx88_set_stereo(struct cx88_core *core, u32 mode, int manual)
 	}
 
 	if (UNSET != ctl) {
-//		dprintk("cx88_set_stereo: mask 0x%x, ctl 0x%x "
-//			"[status=0x%x,ctl=0x%x,vol=0x%x]\n",
-//			mask, ctl, cx_read(AUD_STATUS),
-;
+		dprintk("cx88_set_stereo: mask 0x%x, ctl 0x%x "
+			"[status=0x%x,ctl=0x%x,vol=0x%x]\n",
+			mask, ctl, cx_read(AUD_STATUS),
+			cx_read(AUD_CTL), cx_sread(SHADOW_AUD_VOL_CTL));
 		cx_andor(AUD_CTL, mask, ctl);
 	}
 	return;
@@ -991,7 +991,7 @@ int cx88_audio_thread(void *data)
 	struct v4l2_tuner t;
 	u32 mode = 0;
 
-;
+	dprintk("cx88: tvaudio thread started\n");
 	set_freezable();
 	for (;;) {
 		msleep_interruptible(1000);
@@ -1039,7 +1039,7 @@ hw_autodetect:
 		}
 	}
 
-;
+	dprintk("cx88: tvaudio thread exiting\n");
 	return 0;
 }
 

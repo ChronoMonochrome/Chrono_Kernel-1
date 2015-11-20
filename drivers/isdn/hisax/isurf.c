@@ -110,7 +110,7 @@ isurf_interrupt(int intno, void *dev_id)
 		goto Start_ISAC;
 	}
 	if (!cnt)
-;
+		printk(KERN_WARNING "ISurf IRQ LOOP\n");
 
 	writeb(0, cs->hw.isurf.isar + ISAR_IRQBIT); mb();
 	writeb(0xFF, cs->hw.isurf.isac + ISAC_MASK);mb();
@@ -131,7 +131,7 @@ release_io_isurf(struct IsdnCardState *cs)
 static void
 reset_isurf(struct IsdnCardState *cs, u_char chips)
 {
-;
+	printk(KERN_INFO "ISurf: resetting card\n");
 
 	byteout(cs->hw.isurf.reset, chips); /* Reset On */
 	mdelay(10);
@@ -205,7 +205,7 @@ setup_isurf(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, ISurf_revision);
-;
+	printk(KERN_INFO "HiSax: ISurf driver Rev. %s\n", HiSax_getrev(tmp));
 	
  	if (cs->typ != ISDN_CTYPE_ISURF)
  		return(0);
@@ -226,7 +226,7 @@ setup_isurf(struct IsdnCard *card)
 				if (!(pnp_d = pnp_find_dev(pnp_c,
 					ISAPNP_VENDOR('S', 'I', 'E'),
 					ISAPNP_FUNCTION(0x0010), pnp_d))) {
-;
+					printk(KERN_ERR "ISurfPnP: PnP error card found, no device\n");
 					return (0);
 				}
 				pnp_disable_dev(pnp_d);
@@ -235,45 +235,45 @@ setup_isurf(struct IsdnCard *card)
 				cs->hw.isurf.phymem = pnp_mem_start(pnp_d, 1);
 				cs->irq = pnp_irq(pnp_d, 0);
 				if (!cs->irq || !cs->hw.isurf.reset || !cs->hw.isurf.phymem) {
-//					printk(KERN_ERR "ISurfPnP:some resources are missing %d/%x/%lx\n",
-;
+					printk(KERN_ERR "ISurfPnP:some resources are missing %d/%x/%lx\n",
+						cs->irq, cs->hw.isurf.reset, cs->hw.isurf.phymem);
 					pnp_disable_dev(pnp_d);
 					return(0);
 				}
 			} else {
-;
+				printk(KERN_INFO "ISurfPnP: no ISAPnP card found\n");
 				return(0);
 			}
 		} else {
-;
+			printk(KERN_INFO "ISurfPnP: no ISAPnP bus found\n");
 			return(0);
 		}
 #else
-;
+		printk(KERN_WARNING "HiSax: Siemens I-Surf port/mem not set\n");
 		return (0);
 #endif
 	}
 	if (!request_region(cs->hw.isurf.reset, 1, "isurf isdn")) {
-//		printk(KERN_WARNING
-//			"HiSax: Siemens I-Surf config port %x already in use\n",
-;
+		printk(KERN_WARNING
+			"HiSax: Siemens I-Surf config port %x already in use\n",
+			cs->hw.isurf.reset);
 			return (0);
 	}
 	if (!request_region(cs->hw.isurf.phymem, ISURF_IOMEM_SIZE, "isurf iomem")) {
-//		printk(KERN_WARNING "HiSax: Siemens I-Surf memory region "
-//			"%lx-%lx already in use\n",
-//			cs->hw.isurf.phymem,
-;
+		printk(KERN_WARNING "HiSax: Siemens I-Surf memory region "
+			"%lx-%lx already in use\n",
+			cs->hw.isurf.phymem,
+			cs->hw.isurf.phymem + ISURF_IOMEM_SIZE);
 		release_region(cs->hw.isurf.reset, 1);
 		return (0);
 	}
 	cs->hw.isurf.isar = ioremap(cs->hw.isurf.phymem, ISURF_IOMEM_SIZE);
 	cs->hw.isurf.isac = cs->hw.isurf.isar + ISURF_ISAC_OFFSET;
-//	printk(KERN_INFO
-//	       "ISurf: defined at 0x%x 0x%lx IRQ %d\n",
-//	       cs->hw.isurf.reset,
-//	       cs->hw.isurf.phymem,
-;
+	printk(KERN_INFO
+	       "ISurf: defined at 0x%x 0x%lx IRQ %d\n",
+	       cs->hw.isurf.reset,
+	       cs->hw.isurf.phymem,
+	       cs->irq);
 
 	setup_isac(cs);
 	cs->cardmsg = &ISurf_card_msg;
@@ -292,8 +292,8 @@ setup_isurf(struct IsdnCard *card)
 	cs->BC_Send_Data = &isar_fill_fifo;
 	ver = ISARVersion(cs, "ISurf:");
 	if (ver < 0) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+			"ISurf: wrong ISAR version (ret = %d)\n", ver);
 		release_io_isurf(cs);
 		return (0);
 	}

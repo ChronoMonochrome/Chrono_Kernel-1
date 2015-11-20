@@ -82,16 +82,16 @@
 
 /* debug */
 static int dvb_usb_lme2510_debug;
-//#define l_dprintk(var, level, args...) do { \
-//	if ((var >= level)) \
-;
+#define l_dprintk(var, level, args...) do { \
+	if ((var >= level)) \
+		printk(KERN_DEBUG DVB_USB_LOG_PREFIX ": " args); \
 } while (0)
 
-//#define deb_info(level, args...) l_dprintk(dvb_usb_lme2510_debug, level, args)
-//#define debug_data_snipet(level, name, p) \
-//	 deb_info(level, name" (%02x%02x%02x%02x%02x%02x%02x%02x)", \
-//		*p, *(p+1), *(p+2), *(p+3), *(p+4), \
-;
+#define deb_info(level, args...) l_dprintk(dvb_usb_lme2510_debug, level, args)
+#define debug_data_snipet(level, name, p) \
+	 deb_info(level, name" (%02x%02x%02x%02x%02x%02x%02x%02x)", \
+		*p, *(p+1), *(p+2), *(p+3), *(p+4), \
+			*(p+5), *(p+6), *(p+7));
 
 
 module_param_named(debug, dvb_usb_lme2510_debug, int, 0644);

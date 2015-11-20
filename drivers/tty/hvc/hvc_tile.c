@@ -51,10 +51,10 @@ static const struct hv_ops hvc_tile_get_put_ops = {
 
 static int __init hvc_tile_console_init(void)
 {
-;
+	extern void disable_early_printk(void);
 	hvc_instantiate(0, 0, &hvc_tile_get_put_ops);
 	add_preferred_console("hvc", 0, NULL);
-;
+	disable_early_printk();
 	return 0;
 }
 console_initcall(hvc_tile_console_init);

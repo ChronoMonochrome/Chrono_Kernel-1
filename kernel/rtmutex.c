@@ -176,9 +176,9 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
 		 */
 		if (prev_max != max_lock_depth) {
 			prev_max = max_lock_depth;
-//			printk(KERN_WARNING "Maximum lock depth %d reached "
-//			       "task: %s (%d)\n", max_lock_depth,
-;
+			printk(KERN_WARNING "Maximum lock depth %d reached "
+			       "task: %s (%d)\n", max_lock_depth,
+			       top_task->comm, task_pid_nr(top_task));
 		}
 		put_task_struct(task);
 

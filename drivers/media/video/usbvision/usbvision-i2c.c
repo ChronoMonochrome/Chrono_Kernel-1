@@ -44,8 +44,8 @@ MODULE_PARM_DESC(i2c_debug, "enable debug messages [i2c]");
 
 #define PDEBUG(level, fmt, args...) { \
 		if (i2c_debug & (level)) \
-//			printk(KERN_INFO KBUILD_MODNAME ":[%s:%d] " fmt, \
-;
+			printk(KERN_INFO KBUILD_MODNAME ":[%s:%d] " fmt, \
+				__func__, __LINE__ , ## args); \
 	}
 
 static int usbvision_i2c_write(struct usb_usbvision *usbvision, unsigned char addr, char *buf,
@@ -222,7 +222,7 @@ int usbvision_i2c_register(struct usb_usbvision *usbvision)
 	i2c_set_adapdata(&usbvision->i2c_adap, &usbvision->v4l2_dev);
 
 	if (usbvision_write_reg(usbvision, USBVISION_SER_MODE, USBVISION_IIC_LRNACK) < 0) {
-;
+		printk(KERN_ERR "usbvision_i2c_register: can't write reg\n");
 		return -EBUSY;
 	}
 
@@ -346,8 +346,8 @@ usbvision_i2c_read_max4(struct usb_usbvision *usbvision, unsigned char addr,
 		buf[0] = usbvision_read_reg(usbvision, USBVISION_SER_DAT1);
 		break;
 	default:
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "usbvision_i2c_read_max4: buffer length > 4\n");
 	}
 
 	if (i2c_debug & DBG_I2C) {

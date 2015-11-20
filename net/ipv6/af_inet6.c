@@ -650,14 +650,14 @@ out:
 	return ret;
 
 out_permanent:
-//	printk(KERN_ERR "Attempt to override permanent protocol %d.\n",
-;
+	printk(KERN_ERR "Attempt to override permanent protocol %d.\n",
+	       protocol);
 	goto out;
 
 out_illegal:
-//	printk(KERN_ERR
-//	       "Ignoring attempt to register invalid socket type %d.\n",
-;
+	printk(KERN_ERR
+	       "Ignoring attempt to register invalid socket type %d.\n",
+	       p->type);
 	goto out;
 }
 
@@ -667,9 +667,9 @@ void
 inet6_unregister_protosw(struct inet_protosw *p)
 {
 	if (INET_PROTOSW_PERMANENT & p->flags) {
-//		printk(KERN_ERR
-//		       "Attempt to unregister permanent protocol %d.\n",
-;
+		printk(KERN_ERR
+		       "Attempt to unregister permanent protocol %d.\n",
+		       p->protocol);
 	} else {
 		spin_lock_bh(&inetsw6_lock);
 		list_del_rcu(&p->list);
@@ -1108,9 +1108,9 @@ static int __init inet6_init(void)
 		INIT_LIST_HEAD(r);
 
 	if (disable_ipv6_mod) {
-//		printk(KERN_INFO
-//		       "IPv6: Loaded, but administratively disabled, "
-;
+		printk(KERN_INFO
+		       "IPv6: Loaded, but administratively disabled, "
+		       "reboot required to enable\n");
 		goto out;
 	}
 

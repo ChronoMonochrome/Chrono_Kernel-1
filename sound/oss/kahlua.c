@@ -85,19 +85,19 @@ static int __devinit probe_one(struct pci_dev *pdev, const struct pci_device_id 
 	io = 0x220 + 0x20 * (map & 3);	   
 	
 	if(map & (1<<2))
-;
+		printk(KERN_INFO "kahlua: XpressAudio at 0x%lx\n", io);
 	else
 		return 1;
 		
 	if(map & (1<<5))
-;
+		printk(KERN_INFO "kahlua: MPU at 0x300\n");
 	else if(map & (1<<6))
-;
+		printk(KERN_INFO "kahlua: MPU at 0x330\n");
 	
 	irq = mixer_read(io, 0x80) & 0x0F;
 	dma8 = mixer_read(io, 0x81);
 
-;
+	// printk("IRQ=%x MAP=%x DMA=%x\n", irq, map, dma8);
 	
 	if(dma8 & 0x20)
 		dma16 = 5;
@@ -107,7 +107,7 @@ static int __devinit probe_one(struct pci_dev *pdev, const struct pci_device_id 
 		dma16 = 7;
 	else
 	{
-;
+		printk(KERN_ERR "kahlua: No 16bit DMA enabled.\n");
 		return 1;
 	}
 		
@@ -119,7 +119,7 @@ static int __devinit probe_one(struct pci_dev *pdev, const struct pci_device_id 
 		dma8 = 3;
 	else
 	{
-;
+		printk(KERN_ERR "kahlua: No 8bit DMA enabled.\n");
 		return 1;
 	}
 	
@@ -133,17 +133,17 @@ static int __devinit probe_one(struct pci_dev *pdev, const struct pci_device_id 
 		irq = 10;
 	else
 	{
-;
+		printk(KERN_ERR "kahlua: SB IRQ not set.\n");
 		return 1;
 	}
 	
-//	printk(KERN_INFO "kahlua: XpressAudio on IRQ %d, DMA %d, %d\n",
-;
+	printk(KERN_INFO "kahlua: XpressAudio on IRQ %d, DMA %d, %d\n",
+		irq, dma8, dma16);
 	
 	hw_config = kzalloc(sizeof(struct address_info), GFP_KERNEL);
 	if(hw_config == NULL)
 	{
-;
+		printk(KERN_ERR "kahlua: out of memory.\n");
 		return 1;
 	}
 	
@@ -161,7 +161,7 @@ static int __devinit probe_one(struct pci_dev *pdev, const struct pci_device_id 
 	
 	if(sb_dsp_detect(hw_config, 0, 0, NULL)==0)
 	{
-;
+		printk(KERN_ERR "kahlua: audio not responding.\n");
 		release_region(io, 16);
 		goto err_out_free;
 	}
@@ -216,7 +216,7 @@ static struct pci_driver kahlua_driver = {
 
 static int __init kahlua_init_module(void)
 {
-;
+	printk(KERN_INFO "Cyrix Kahlua VSA1 XpressAudio support (c) Copyright 2003 Red Hat Inc\n");
 	return pci_register_driver(&kahlua_driver);
 }
 

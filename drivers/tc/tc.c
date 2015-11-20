@@ -83,8 +83,8 @@ static void __init tc_bus_add_devices(struct tc_bus *tbus)
 		/* Found a board, allocate it an entry in the list */
 		tdev = kzalloc(sizeof(*tdev), GFP_KERNEL);
 		if (!tdev) {
-//			printk(KERN_ERR "tc%x: unable to allocate tc_dev\n",
-;
+			printk(KERN_ERR "tc%x: unable to allocate tc_dev\n",
+			       slot);
 			goto out_err;
 		}
 		dev_set_name(&tdev->dev, "tc%x", slot);
@@ -117,10 +117,10 @@ static void __init tc_bus_add_devices(struct tc_bus *tbus)
 			tdev->resource.start = extslotaddr;
 			tdev->resource.end = extslotaddr + devsize - 1;
 		} else {
-//			printk(KERN_ERR "%s: Cannot provide slot space "
-//			       "(%dMiB required, up to %dMiB supported)\n",
-//			       dev_name(&tdev->dev), devsize >> 20,
-;
+			printk(KERN_ERR "%s: Cannot provide slot space "
+			       "(%dMiB required, up to %dMiB supported)\n",
+			       dev_name(&tdev->dev), devsize >> 20,
+			       max(slotsize, extslotsize) >> 20);
 			kfree(tdev);
 			goto out_err;
 		}
@@ -166,7 +166,7 @@ static int __init tc_init(void)
 		tc_bus.resource[0].flags = IORESOURCE_MEM;
 		if (request_resource(&iomem_resource,
 				     &tc_bus.resource[0]) < 0) {
-;
+			printk(KERN_ERR "tc: Cannot reserve resource\n");
 			return 0;
 		}
 		if (tc_bus.ext_slot_size) {
@@ -178,8 +178,8 @@ static int __init tc_init(void)
 			tc_bus.resource[1].flags = IORESOURCE_MEM;
 			if (request_resource(&iomem_resource,
 					     &tc_bus.resource[1]) < 0) {
-//				printk(KERN_ERR
-;
+				printk(KERN_ERR
+				       "tc: Cannot reserve resource\n");
 				release_resource(&tc_bus.resource[0]);
 				return 0;
 			}

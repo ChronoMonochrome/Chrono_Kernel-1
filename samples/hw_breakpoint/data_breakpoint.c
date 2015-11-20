@@ -45,9 +45,9 @@ static void sample_hbp_handler(struct perf_event *bp, int nmi,
 			       struct perf_sample_data *data,
 			       struct pt_regs *regs)
 {
-;
+	printk(KERN_INFO "%s value is changed\n", ksym_name);
 	dump_stack();
-;
+	printk(KERN_INFO "Dump stack from sample_hbp_handler\n");
 }
 
 static int __init hw_break_module_init(void)
@@ -66,12 +66,12 @@ static int __init hw_break_module_init(void)
 		goto fail;
 	}
 
-;
+	printk(KERN_INFO "HW Breakpoint for %s write installed\n", ksym_name);
 
 	return 0;
 
 fail:
-;
+	printk(KERN_INFO "Breakpoint registration failed\n");
 
 	return ret;
 }
@@ -79,7 +79,7 @@ fail:
 static void __exit hw_break_module_exit(void)
 {
 	unregister_wide_hw_breakpoint(sample_hbp);
-;
+	printk(KERN_INFO "HW Breakpoint for %s write uninstalled\n", ksym_name);
 }
 
 module_init(hw_break_module_init);

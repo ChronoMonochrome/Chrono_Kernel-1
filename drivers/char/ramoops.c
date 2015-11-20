@@ -112,14 +112,14 @@ static int __init ramoops_probe(struct platform_device *pdev)
 	}
 
 	if (!mem_size) {
-;
+		printk(KERN_ERR "ramoops: invalid size specification");
 		goto fail3;
 	}
 
 	rounddown_pow_of_two(mem_size);
 
 	if (mem_size < RECORD_SIZE) {
-;
+		printk(KERN_ERR "ramoops: size too small");
 		goto fail3;
 	}
 
@@ -129,21 +129,21 @@ static int __init ramoops_probe(struct platform_device *pdev)
 	cxt->phys_addr = mem_address;
 
 	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
-;
+		printk(KERN_ERR "ramoops: request mem region failed");
 		err = -EINVAL;
 		goto fail3;
 	}
 
 	cxt->virt_addr = ioremap(cxt->phys_addr,  cxt->size);
 	if (!cxt->virt_addr) {
-;
+		printk(KERN_ERR "ramoops: ioremap failed");
 		goto fail2;
 	}
 
 	cxt->dump.dump = ramoops_do_dump;
 	err = kmsg_dump_register(&cxt->dump);
 	if (err) {
-;
+		printk(KERN_ERR "ramoops: registering kmsg dumper failed");
 		goto fail1;
 	}
 
@@ -162,7 +162,7 @@ static int __exit ramoops_remove(struct platform_device *pdev)
 	struct ramoops_context *cxt = &oops_cxt;
 
 	if (kmsg_dump_unregister(&cxt->dump) < 0)
-;
+		printk(KERN_WARNING "ramoops: could not unregister kmsg_dumper");
 
 	iounmap(cxt->virt_addr);
 	release_mem_region(cxt->phys_addr, cxt->size);

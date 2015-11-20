@@ -193,7 +193,7 @@ int __trace_bprintk(unsigned long ip, const char *fmt, ...)
 		return 0;
 
 	va_start(ap, fmt);
-;
+	ret = trace_vbprintk(ip, fmt, ap);
 	va_end(ap);
 	return ret;
 }
@@ -207,7 +207,7 @@ int __ftrace_vbprintk(unsigned long ip, const char *fmt, va_list ap)
 	if (!(trace_flags & TRACE_ITER_PRINTK))
 		return 0;
 
-;
+	return trace_vbprintk(ip, fmt, ap);
 }
 EXPORT_SYMBOL_GPL(__ftrace_vbprintk);
 
@@ -220,7 +220,7 @@ int __trace_printk(unsigned long ip, const char *fmt, ...)
 		return 0;
 
 	va_start(ap, fmt);
-;
+	ret = trace_vprintk(ip, fmt, ap);
 	va_end(ap);
 	return ret;
 }
@@ -231,7 +231,7 @@ int __ftrace_vprintk(unsigned long ip, const char *fmt, va_list ap)
 	if (!(trace_flags & TRACE_ITER_PRINTK))
 		return 0;
 
-;
+	return trace_vprintk(ip, fmt, ap);
 }
 EXPORT_SYMBOL_GPL(__ftrace_vprintk);
 
@@ -336,9 +336,9 @@ static __init int init_trace_printk_function_export(void)
 
 fs_initcall(init_trace_printk_function_export);
 
-//static __init int init_trace_printk(void)
-//{
-;
+static __init int init_trace_printk(void)
+{
+	return register_module_notifier(&module_trace_bprintk_format_nb);
 }
 
 early_initcall(init_trace_printk);

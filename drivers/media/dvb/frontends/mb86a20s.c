@@ -27,14 +27,14 @@ module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Activates frontend debugging (default:0)");
 
 #define rc(args...)  do {						\
-;
+	printk(KERN_ERR  "mb86a20s: " args);				\
 } while (0)
 
-//#define dprintk(args...)						\
-//	do {								\
-//		if (debug) {						\
-;
-;
+#define dprintk(args...)						\
+	do {								\
+		if (debug) {						\
+			printk(KERN_DEBUG "mb86a20s: %s: ", __func__);	\
+			printk(args);					\
 		}							\
 	} while (0)
 
@@ -320,8 +320,8 @@ static int mb86a20s_i2c_writereg(struct mb86a20s_state *state,
 
 	rc = i2c_transfer(state->i2c, &msg, 1);
 	if (rc != 1) {
-//		printk("%s: writereg error (rc == %i, reg == 0x%02x,"
-;
+		printk("%s: writereg error (rc == %i, reg == 0x%02x,"
+			 " data == 0x%02x)\n", __func__, rc, reg, data);
 		return rc;
 	}
 
@@ -376,7 +376,7 @@ static int mb86a20s_initfe(struct dvb_frontend *fe)
 	int rc;
 	u8  regD5 = 1;
 
-;
+	dprintk("\n");
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 0);
@@ -403,10 +403,10 @@ static int mb86a20s_initfe(struct dvb_frontend *fe)
 err:
 	if (rc < 0) {
 		state->need_init = true;
-;
+		printk(KERN_INFO "mb86a20s: Init failed. Will try again later\n");
 	} else {
 		state->need_init = false;
-;
+		dprintk("Initialization succeeded.\n");
 	}
 	return rc;
 }
@@ -417,7 +417,7 @@ static int mb86a20s_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 	unsigned rf_max, rf_min, rf;
 	u8	 val;
 
-;
+	dprintk("\n");
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 0);
@@ -456,7 +456,7 @@ static int mb86a20s_read_status(struct dvb_frontend *fe, fe_status_t *status)
 	struct mb86a20s_state *state = fe->demodulator_priv;
 	u8 val;
 
-;
+	dprintk("\n");
 	*status = 0;
 
 	if (fe->ops.i2c_gate_ctrl)
@@ -491,11 +491,11 @@ static int mb86a20s_set_frontend(struct dvb_frontend *fe,
 	struct mb86a20s_state *state = fe->demodulator_priv;
 	int rc;
 
-;
+	dprintk("\n");
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);
-;
+	dprintk("Calling tuner set parameters\n");
 	fe->ops.tuner_ops.set_params(fe, p);
 
 	/*
@@ -542,7 +542,7 @@ static int mb86a20s_tune(struct dvb_frontend *fe,
 {
 	int rc = 0;
 
-;
+	dprintk("\n");
 
 	if (params != NULL)
 		rc = mb86a20s_set_frontend(fe, params);
@@ -557,7 +557,7 @@ static void mb86a20s_release(struct dvb_frontend *fe)
 {
 	struct mb86a20s_state *state = fe->demodulator_priv;
 
-;
+	dprintk("\n");
 
 	kfree(state);
 }
@@ -573,7 +573,7 @@ struct dvb_frontend *mb86a20s_attach(const struct mb86a20s_config *config,
 	struct mb86a20s_state *state =
 		kzalloc(sizeof(struct mb86a20s_state), GFP_KERNEL);
 
-;
+	dprintk("\n");
 	if (state == NULL) {
 		rc("Unable to kzalloc\n");
 		goto error;
@@ -592,10 +592,10 @@ struct dvb_frontend *mb86a20s_attach(const struct mb86a20s_config *config,
 	rev = mb86a20s_readreg(state, 0);
 
 	if (rev == 0x13) {
-;
+		printk(KERN_INFO "Detected a Fujitsu mb86a20s frontend\n");
 	} else {
-//		printk(KERN_ERR "Frontend revision %d is unknown - aborting.\n",
-;
+		printk(KERN_ERR "Frontend revision %d is unknown - aborting.\n",
+		       rev);
 		goto error;
 	}
 

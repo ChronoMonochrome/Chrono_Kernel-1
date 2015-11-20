@@ -116,8 +116,8 @@ static void ide_classify_ata_dev(ide_drive_t *drive)
 	if (!ata_id_has_unload(drive->id))
 		drive->dev_flags |= IDE_DFLAG_NO_UNLOAD;
 
-//	printk(KERN_INFO "%s: %s, %s DISK drive\n", drive->name, m,
-;
+	printk(KERN_INFO "%s: %s, %s DISK drive\n", drive->name, m,
+		is_cfa ? "CFA" : "ATA");
 }
 
 static void ide_classify_atapi_dev(ide_drive_t *drive)
@@ -126,16 +126,16 @@ static void ide_classify_atapi_dev(ide_drive_t *drive)
 	char *m = (char *)&id[ATA_ID_PROD];
 	u8 type = (id[ATA_ID_CONFIG] >> 8) & 0x1f;
 
-;
+	printk(KERN_INFO "%s: %s, ATAPI ", drive->name, m);
 	switch (type) {
 	case ide_floppy:
 		if (!strstr(m, "CD-ROM")) {
 			if (!strstr(m, "oppy") &&
 			    !strstr(m, "poyp") &&
 			    !strstr(m, "ZIP"))
-;
+				printk(KERN_CONT "cdrom or floppy?, assuming ");
 			if (drive->media != ide_cdrom) {
-;
+				printk(KERN_CONT "FLOPPY");
 				drive->dev_flags |= IDE_DFLAG_REMOVABLE;
 				break;
 			}
@@ -147,26 +147,26 @@ static void ide_classify_atapi_dev(ide_drive_t *drive)
 #ifdef CONFIG_PPC
 		/* kludge for Apple PowerBook internal zip */
 		if (!strstr(m, "CD-ROM") && strstr(m, "ZIP")) {
-;
+			printk(KERN_CONT "FLOPPY");
 			type = ide_floppy;
 			break;
 		}
 #endif
-;
+		printk(KERN_CONT "CD/DVD-ROM");
 		break;
 	case ide_tape:
-;
+		printk(KERN_CONT "TAPE");
 		break;
 	case ide_optical:
-;
+		printk(KERN_CONT "OPTICAL");
 		drive->dev_flags |= IDE_DFLAG_REMOVABLE;
 		break;
 	default:
-;
+		printk(KERN_CONT "UNKNOWN (type %d)", type);
 		break;
 	}
 
-;
+	printk(KERN_CONT " drive\n");
 	drive->media = type;
 	/* an ATAPI device ignores DRDY */
 	drive->ready_stat = 0;
@@ -203,7 +203,7 @@ static void do_identify(ide_drive_t *drive, u8 cmd, u16 *id)
 
 	drive->dev_flags |= IDE_DFLAG_ID_READ;
 #ifdef DEBUG
-;
+	printk(KERN_INFO "%s: dumping identify data\n", drive->name);
 	ide_dump_identify((u8 *)id);
 #endif
 	ide_fix_driveid(id);
@@ -275,9 +275,9 @@ int ide_dev_read_id(ide_drive_t *drive, u8 cmd, u16 *id, int irq_ctx)
 		s = tp_ops->read_status(hwif);
 		if ((a ^ s) & ~ATA_IDX)
 			/* ancient Seagate drives, broken interfaces */
-//			printk(KERN_INFO "%s: probing with STATUS(0x%02x) "
-//					 "instead of ALTSTATUS(0x%02x)\n",
-;
+			printk(KERN_INFO "%s: probing with STATUS(0x%02x) "
+					 "instead of ALTSTATUS(0x%02x)\n",
+					 drive->name, s, a);
 		else
 			/* use non-intrusive polling */
 			use_altstatus = 1;
@@ -342,7 +342,7 @@ int ide_busy_sleep(ide_drive_t *drive, unsigned long timeout, int altstatus)
 			return 0;
 	} while (time_before(jiffies, timeout));
 
-;
+	printk(KERN_ERR "%s: timeout in %s\n", drive->name, __func__);
 
 	return 1;	/* drive timed-out */
 }
@@ -390,9 +390,9 @@ static int do_probe (ide_drive_t *drive, u8 cmd)
 		return 4;
 
 #ifdef DEBUG
-//	printk(KERN_INFO "probing for %s: present=%d, media=%d, probetype=%s\n",
-//		drive->name, present, drive->media,
-;
+	printk(KERN_INFO "probing for %s: present=%d, media=%d, probetype=%s\n",
+		drive->name, present, drive->media,
+		(cmd == ATA_CMD_ID_ATA) ? "ATA" : "ATAPI");
 #endif
 
 	/* needed for some systems
@@ -428,8 +428,8 @@ static int do_probe (ide_drive_t *drive, u8 cmd)
 			return 4;
 
 		if (rc == 1 && cmd == ATA_CMD_ID_ATAPI) {
-//			printk(KERN_ERR "%s: no response (status = 0x%02x), "
-;
+			printk(KERN_ERR "%s: no response (status = 0x%02x), "
+					"resetting drive\n", drive->name, stat);
 			msleep(50);
 			tp_ops->dev_select(drive);
 			msleep(50);
@@ -442,8 +442,8 @@ static int do_probe (ide_drive_t *drive, u8 cmd)
 		stat = tp_ops->read_status(hwif);
 
 		if (rc == 1)
-//			printk(KERN_ERR "%s: no response (status = 0x%02x)\n",
-;
+			printk(KERN_ERR "%s: no response (status = 0x%02x)\n",
+					drive->name, stat);
 	} else {
 		/* not present or maybe ATAPI */
 		rc = 3;
@@ -498,14 +498,14 @@ static u8 probe_for_drive(ide_drive_t *drive)
 		/* identification failed? */
 		if ((drive->dev_flags & IDE_DFLAG_ID_READ) == 0) {
 			if (drive->media == ide_disk) {
-//				printk(KERN_INFO "%s: non-IDE drive, CHS=%d/%d/%d\n",
-//					drive->name, drive->cyl,
-;
+				printk(KERN_INFO "%s: non-IDE drive, CHS=%d/%d/%d\n",
+					drive->name, drive->cyl,
+					drive->head, drive->sect);
 			} else if (drive->media == ide_cdrom) {
-;
+				printk(KERN_INFO "%s: ATAPI cdrom (?)\n", drive->name);
 			} else {
 				/* nuke it */
-;
+				printk(KERN_WARNING "%s: Unknown device on bus refused identification. Ignoring.\n", drive->name);
 				drive->dev_flags &= ~IDE_DFLAG_PRESENT;
 			}
 		} else {
@@ -553,8 +553,8 @@ static int ide_register_port(ide_hwif_t *hwif)
 
 	ret = device_register(&hwif->gendev);
 	if (ret < 0) {
-//		printk(KERN_WARNING "IDE: %s: device_register error: %d\n",
-;
+		printk(KERN_WARNING "IDE: %s: device_register error: %d\n",
+			__func__, ret);
 		goto out;
 	}
 
@@ -600,7 +600,7 @@ static int ide_port_wait_ready(ide_hwif_t *hwif)
 	ide_drive_t *drive;
 	int i, rc;
 
-;
+	printk(KERN_DEBUG "Probing IDE interface %s...\n", hwif->name);
 
 	/* Let HW settle down a bit from whatever init state we
 	 * come from */
@@ -626,8 +626,8 @@ static int ide_port_wait_ready(ide_hwif_t *hwif)
 			if (rc)
 				goto out;
 		} else
-//			printk(KERN_DEBUG "%s: ide_wait_not_busy() skipped\n",
-;
+			printk(KERN_DEBUG "%s: ide_wait_not_busy() skipped\n",
+					  drive->name);
 	}
 out:
 	/* Exit function with master reselected (let's be sane) */
@@ -668,7 +668,7 @@ void ide_undecoded_slave(ide_drive_t *dev1)
 		return;
 
 	/* Appears to be an IDE flash adapter with decode bugs */
-;
+	printk(KERN_WARNING "ide-probe: ignoring undecoded slave\n");
 
 	dev1->dev_flags &= ~IDE_DFLAG_PRESENT;
 }
@@ -696,7 +696,7 @@ static int ide_probe_port(ide_hwif_t *hwif)
 		disable_irq(hwif->irq);
 
 	if (ide_port_wait_ready(hwif) == -EBUSY)
-;
+		printk(KERN_DEBUG "%s: Wait for ready failed before probe !\n", hwif->name);
 
 	/*
 	 * Second drive should only exist if first drive was found,
@@ -809,8 +809,8 @@ static int ide_port_setup_devices(ide_hwif_t *hwif)
 	mutex_lock(&ide_cfg_mtx);
 	ide_port_for_each_present_dev(i, drive, hwif) {
 		if (ide_init_queue(drive)) {
-//			printk(KERN_ERR "ide: failed to init %s\n",
-;
+			printk(KERN_ERR "ide: failed to init %s\n",
+					drive->name);
 			drive->dev_flags &= ~IDE_DFLAG_PRESENT;
 			continue;
 		}
@@ -857,16 +857,16 @@ static int init_irq (ide_hwif_t *hwif)
 		goto out_up;
 
 #if !defined(__mc68000__)
-//	printk(KERN_INFO "%s at 0x%03lx-0x%03lx,0x%03lx on irq %d", hwif->name,
-//		io_ports->data_addr, io_ports->status_addr,
-;
+	printk(KERN_INFO "%s at 0x%03lx-0x%03lx,0x%03lx on irq %d", hwif->name,
+		io_ports->data_addr, io_ports->status_addr,
+		io_ports->ctl_addr, hwif->irq);
 #else
-//	printk(KERN_INFO "%s at 0x%08lx on irq %d", hwif->name,
-;
+	printk(KERN_INFO "%s at 0x%08lx on irq %d", hwif->name,
+		io_ports->data_addr, hwif->irq);
 #endif /* __mc68000__ */
 	if (hwif->host->host_flags & IDE_HFLAG_SERIALIZE)
-;
-;
+		printk(KERN_CONT " (serialized)");
+	printk(KERN_CONT "\n");
 
 	return 0;
 out_up:
@@ -962,7 +962,7 @@ static void drive_release_dev (struct device *dev)
 static int hwif_init(ide_hwif_t *hwif)
 {
 	if (!hwif->irq) {
-;
+		printk(KERN_ERR "%s: disabled, no IRQ\n", hwif->name);
 		return 0;
 	}
 
@@ -975,15 +975,15 @@ static int hwif_init(ide_hwif_t *hwif)
 	hwif->sg_table = kmalloc(sizeof(struct scatterlist)*hwif->sg_max_nents,
 				 GFP_KERNEL);
 	if (!hwif->sg_table) {
-;
+		printk(KERN_ERR "%s: unable to allocate SG table.\n", hwif->name);
 		goto out;
 	}
 
 	sg_init_table(hwif->sg_table, hwif->sg_max_nents);
 	
 	if (init_irq(hwif)) {
-//		printk(KERN_ERR "%s: disabled, unable to get IRQ %d\n",
-;
+		printk(KERN_ERR "%s: disabled, unable to get IRQ %d\n",
+			hwif->name, hwif->irq);
 		goto out;
 	}
 
@@ -1013,8 +1013,8 @@ static void hwif_register_devices(ide_hwif_t *hwif)
 
 		ret = device_register(dev);
 		if (ret < 0)
-//			printk(KERN_WARNING "IDE: %s: device_register error: "
-;
+			printk(KERN_WARNING "IDE: %s: device_register error: "
+					    "%d\n", __func__, ret);
 	}
 }
 
@@ -1079,7 +1079,7 @@ static void ide_init_port(ide_hwif_t *hwif, unsigned int port,
 			rc = ide_hwif_setup_dma(hwif, d);
 
 		if (rc < 0) {
-;
+			printk(KERN_INFO "%s: DMA disabled\n", hwif->name);
 
 			hwif->dma_ops = NULL;
 			hwif->dma_base = 0;
@@ -1307,8 +1307,8 @@ struct ide_host *ide_host_alloc(const struct ide_port_info *d,
 
 		idx = ide_find_port_slot(d);
 		if (idx < 0) {
-//			printk(KERN_ERR "%s: no free slot for interface\n",
-;
+			printk(KERN_ERR "%s: no free slot for interface\n",
+					d ? d->name : "ide");
 			ide_port_free_devices(hwif);
 			kfree(hwif);
 			continue;
@@ -1353,7 +1353,7 @@ static void ide_disable_port(ide_hwif_t *hwif)
 	struct ide_host *host = hwif->host;
 	int i;
 
-;
+	printk(KERN_INFO "%s: disabling port\n", hwif->name);
 
 	for (i = 0; i < MAX_HOST_PORTS; i++) {
 		if (host->ports[i] == hwif) {
@@ -1423,8 +1423,8 @@ int ide_host_register(struct ide_host *host, const struct ide_port_info *d,
 			continue;
 
 		if (hwif_init(hwif) == 0) {
-//			printk(KERN_INFO "%s: failed to initialize IDE "
-;
+			printk(KERN_INFO "%s: failed to initialize IDE "
+					 "interface\n", hwif->name);
 			device_unregister(&hwif->gendev);
 			ide_disable_port(hwif);
 			continue;

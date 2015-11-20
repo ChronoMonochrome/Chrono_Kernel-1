@@ -162,8 +162,8 @@ int ide_cd_lockdoor(ide_drive_t *drive, int lockflag,
 	if (stat != 0 &&
 	    sense->sense_key == ILLEGAL_REQUEST &&
 	    (sense->asc == 0x24 || sense->asc == 0x20)) {
-//		printk(KERN_ERR "%s: door locking not supported\n",
-;
+		printk(KERN_ERR "%s: door locking not supported\n",
+			drive->name);
 		drive->dev_flags &= ~IDE_DFLAG_DOORLOCKING;
 		stat = 0;
 	}

@@ -359,9 +359,9 @@ static void hss_npe_send(struct port *port, struct msg *msg, const char* what)
 {
 	u32 *val = (u32*)msg;
 	if (npe_send_message(port->npe, msg, what)) {
-//		printk(KERN_CRIT "HSS-%i: unable to send command [%08X:%08X]"
-//		       " to %s\n", port->id, val[0], val[1],
-;
+		printk(KERN_CRIT "HSS-%i: unable to send command [%08X:%08X]"
+		       " to %s\n", port->id, val[0], val[1],
+		       npe_name(port->npe));
 		BUG();
 	}
 }
@@ -448,8 +448,8 @@ static void hss_config(struct port *port)
 	if (npe_recv_message(port->npe, &msg, "HSS_LOAD_CONFIG") ||
 	    /* HSS_LOAD_CONFIG for port #1 returns port_id = #4 */
 	    msg.cmd != PORT_CONFIG_LOAD || msg.data32) {
-//		printk(KERN_CRIT "HSS-%i: HSS_LOAD_CONFIG failed\n",
-;
+		printk(KERN_CRIT "HSS-%i: HSS_LOAD_CONFIG failed\n",
+		       port->id);
 		BUG();
 	}
 
@@ -478,8 +478,8 @@ static u32 hss_get_status(struct port *port)
 	msg.hss_port = port->id;
 	hss_npe_send(port, &msg, "PORT_ERROR_READ");
 	if (npe_recv_message(port->npe, &msg, "PORT_ERROR_READ")) {
-//		printk(KERN_CRIT "HSS-%i: unable to read HSS status\n",
-;
+		printk(KERN_CRIT "HSS-%i: unable to read HSS status\n",
+		       port->id);
 		BUG();
 	}
 
@@ -560,13 +560,13 @@ static inline void debug_pkt(struct net_device *dev, const char *func,
 #if DEBUG_PKT_BYTES
 	int i;
 
-;
+	printk(KERN_DEBUG "%s: %s(%i)", dev->name, func, len);
 	for (i = 0; i < len; i++) {
 		if (i >= DEBUG_PKT_BYTES)
 			break;
-;
+		printk("%s%02X", !(i % 4) ? " " : "", data[i]);
 	}
-;
+	printk("\n");
 #endif
 }
 
@@ -574,9 +574,9 @@ static inline void debug_pkt(struct net_device *dev, const char *func,
 static inline void debug_desc(u32 phys, struct desc *desc)
 {
 #if DEBUG_DESC
-//	printk(KERN_DEBUG "%X: %X %3X %3X %08X %X %X\n",
-//	       phys, desc->next, desc->buf_len, desc->pkt_len,
-;
+	printk(KERN_DEBUG "%X: %X %3X %3X %08X %X %X\n",
+	       phys, desc->next, desc->buf_len, desc->pkt_len,
+	       desc->data, desc->status, desc->error_count);
 #endif
 }
 
@@ -646,7 +646,7 @@ static void hss_hdlc_rx_irq(void *pdev)
 	struct port *port = dev_to_port(dev);
 
 #if DEBUG_RX
-;
+	printk(KERN_DEBUG "%s: hss_hdlc_rx_irq\n", dev->name);
 #endif
 	qmgr_disable_irq(queue_ids[port->id].rx);
 	napi_schedule(&port->napi);
@@ -661,7 +661,7 @@ static int hss_hdlc_poll(struct napi_struct *napi, int budget)
 	int received = 0;
 
 #if DEBUG_RX
-;
+	printk(KERN_DEBUG "%s: hss_hdlc_poll\n", dev->name);
 #endif
 
 	while (received < budget) {
@@ -675,24 +675,24 @@ static int hss_hdlc_poll(struct napi_struct *napi, int budget)
 
 		if ((n = queue_get_desc(rxq, port, 0)) < 0) {
 #if DEBUG_RX
-//			printk(KERN_DEBUG "%s: hss_hdlc_poll"
-;
+			printk(KERN_DEBUG "%s: hss_hdlc_poll"
+			       " napi_complete\n", dev->name);
 #endif
 			napi_complete(napi);
 			qmgr_enable_irq(rxq);
 			if (!qmgr_stat_empty(rxq) &&
 			    napi_reschedule(napi)) {
 #if DEBUG_RX
-//				printk(KERN_DEBUG "%s: hss_hdlc_poll"
-//				       " napi_reschedule succeeded\n",
-;
+				printk(KERN_DEBUG "%s: hss_hdlc_poll"
+				       " napi_reschedule succeeded\n",
+				       dev->name);
 #endif
 				qmgr_disable_irq(rxq);
 				continue;
 			}
 #if DEBUG_RX
-//			printk(KERN_DEBUG "%s: hss_hdlc_poll all done\n",
-;
+			printk(KERN_DEBUG "%s: hss_hdlc_poll all done\n",
+			       dev->name);
 #endif
 			return received; /* all work done */
 		}
@@ -700,9 +700,9 @@ static int hss_hdlc_poll(struct napi_struct *napi, int budget)
 		desc = rx_desc_ptr(port, n);
 #if 0 /* FIXME - error_count counts modulo 256, perhaps we should use it */
 		if (desc->error_count)
-//			printk(KERN_DEBUG "%s: hss_hdlc_poll status 0x%02X"
-//			       " errors %u\n", dev->name, desc->status,
-;
+			printk(KERN_DEBUG "%s: hss_hdlc_poll status 0x%02X"
+			       " errors %u\n", dev->name, desc->status,
+			       desc->error_count);
 #endif
 		skb = NULL;
 		switch (desc->status) {
@@ -737,9 +737,9 @@ static int hss_hdlc_poll(struct napi_struct *napi, int budget)
 			dev->stats.rx_errors++;
 			break;
 		default:	/* FIXME - remove printk */
-//			printk(KERN_ERR "%s: hss_hdlc_poll: status 0x%02X"
-//			       " errors %u\n", dev->name, desc->status,
-;
+			printk(KERN_ERR "%s: hss_hdlc_poll: status 0x%02X"
+			       " errors %u\n", dev->name, desc->status,
+			       desc->error_count);
 			dev->stats.rx_errors++;
 		}
 
@@ -783,7 +783,7 @@ static int hss_hdlc_poll(struct napi_struct *napi, int budget)
 		received++;
 	}
 #if DEBUG_RX
-;
+	printk(KERN_DEBUG "hss_hdlc_poll: end, not all work done\n");
 #endif
 	return received;	/* not all work done */
 }
@@ -796,7 +796,7 @@ static void hss_hdlc_txdone_irq(void *pdev)
 	int n_desc;
 
 #if DEBUG_TX
-;
+	printk(KERN_DEBUG DRV_NAME ": hss_hdlc_txdone_irq\n");
 #endif
 	while ((n_desc = queue_get_desc(queue_ids[port->id].txdone,
 					port, 1)) >= 0) {
@@ -810,8 +810,8 @@ static void hss_hdlc_txdone_irq(void *pdev)
 
 		dma_unmap_tx(port, desc);
 #if DEBUG_TX
-//		printk(KERN_DEBUG "%s: hss_hdlc_txdone_irq free %p\n",
-;
+		printk(KERN_DEBUG "%s: hss_hdlc_txdone_irq free %p\n",
+		       dev->name, port->tx_buff_tab[n_desc]);
 #endif
 		free_buffer_irq(port->tx_buff_tab[n_desc]);
 		port->tx_buff_tab[n_desc] = NULL;
@@ -821,8 +821,8 @@ static void hss_hdlc_txdone_irq(void *pdev)
 			       tx_desc_phys(port, n_desc), desc);
 		if (start) { /* TX-ready queue was empty */
 #if DEBUG_TX
-//			printk(KERN_DEBUG "%s: hss_hdlc_txdone_irq xmit"
-;
+			printk(KERN_DEBUG "%s: hss_hdlc_txdone_irq xmit"
+			       " ready\n", dev->name);
 #endif
 			netif_wake_queue(dev);
 		}
@@ -839,7 +839,7 @@ static int hss_hdlc_xmit(struct sk_buff *skb, struct net_device *dev)
 	struct desc *desc;
 
 #if DEBUG_TX
-;
+	printk(KERN_DEBUG "%s: hss_hdlc_xmit\n", dev->name);
 #endif
 
 	if (unlikely(skb->len > HDLC_MAX_MRU)) {
@@ -895,21 +895,21 @@ static int hss_hdlc_xmit(struct sk_buff *skb, struct net_device *dev)
 
 	if (qmgr_stat_below_low_watermark(txreadyq)) { /* empty */
 #if DEBUG_TX
-;
+		printk(KERN_DEBUG "%s: hss_hdlc_xmit queue full\n", dev->name);
 #endif
 		netif_stop_queue(dev);
 		/* we could miss TX ready interrupt */
 		if (!qmgr_stat_below_low_watermark(txreadyq)) {
 #if DEBUG_TX
-//			printk(KERN_DEBUG "%s: hss_hdlc_xmit ready again\n",
-;
+			printk(KERN_DEBUG "%s: hss_hdlc_xmit ready again\n",
+			       dev->name);
 #endif
 			netif_wake_queue(dev);
 		}
 	}
 
 #if DEBUG_TX
-;
+	printk(KERN_DEBUG "%s: hss_hdlc_xmit end\n", dev->name);
 #endif
 	return NETDEV_TX_OK;
 }
@@ -953,8 +953,8 @@ rel_rx:
 	qmgr_release_queue(queue_ids[port->id].rx);
 rel_rxfree:
 	qmgr_release_queue(queue_ids[port->id].rxfree);
-//	printk(KERN_DEBUG "%s: unable to request hardware queues\n",
-;
+	printk(KERN_DEBUG "%s: unable to request hardware queues\n",
+	       port->netdev->name);
 	return err;
 }
 
@@ -1128,8 +1128,8 @@ static int hss_hdlc_close(struct net_device *dev)
 		buffs--;
 
 	if (buffs)
-//		printk(KERN_CRIT "%s: unable to drain RX queue, %i buffer(s)"
-;
+		printk(KERN_CRIT "%s: unable to drain RX queue, %i buffer(s)"
+		       " left in NPE\n", dev->name, buffs);
 
 	buffs = TX_DESCS;
 	while (queue_get_desc(queue_ids[port->id].tx, port, 1) >= 0)
@@ -1144,11 +1144,11 @@ static int hss_hdlc_close(struct net_device *dev)
 	} while (++i < MAX_CLOSE_WAIT);
 
 	if (buffs)
-//		printk(KERN_CRIT "%s: unable to drain TX queue, %i buffer(s) "
-;
+		printk(KERN_CRIT "%s: unable to drain TX queue, %i buffer(s) "
+		       "left in NPE\n", dev->name, buffs);
 #if DEBUG_CLOSE
 	if (!buffs)
-;
+		printk(KERN_DEBUG "Draining TX queues took %i cycles\n", i);
 #endif
 	qmgr_disable_irq(queue_ids[port->id].txdone);
 
@@ -1365,7 +1365,7 @@ static int __devinit hss_init_one(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, port);
 
-;
+	printk(KERN_INFO "%s: HSS-%i\n", dev->name, port->id);
 	return 0;
 
 err_free_netdev:

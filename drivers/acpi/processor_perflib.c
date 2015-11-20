@@ -227,8 +227,8 @@ void acpi_processor_ppc_init(void)
 	    (&acpi_ppc_notifier_block, CPUFREQ_POLICY_NOTIFIER))
 		acpi_processor_ppc_status |= PPC_REGISTERED;
 	else
-//		printk(KERN_DEBUG
-;
+		printk(KERN_DEBUG
+		       "Warning: Processor Platform Limit not supported.\n");
 }
 
 void acpi_processor_ppc_exit(void)
@@ -258,7 +258,7 @@ static int acpi_processor_get_performance_control(struct acpi_processor *pr)
 	pct = (union acpi_object *)buffer.pointer;
 	if (!pct || (pct->type != ACPI_TYPE_PACKAGE)
 	    || (pct->package.count != 2)) {
-;
+		printk(KERN_ERR PREFIX "Invalid _PCT data\n");
 		result = -EFAULT;
 		goto end;
 	}
@@ -272,7 +272,7 @@ static int acpi_processor_get_performance_control(struct acpi_processor *pr)
 	if ((obj.type != ACPI_TYPE_BUFFER)
 	    || (obj.buffer.length < sizeof(struct acpi_pct_register))
 	    || (obj.buffer.pointer == NULL)) {
-;
+		printk(KERN_ERR PREFIX "Invalid _PCT data (control_register)\n");
 		result = -EFAULT;
 		goto end;
 	}
@@ -288,7 +288,7 @@ static int acpi_processor_get_performance_control(struct acpi_processor *pr)
 	if ((obj.type != ACPI_TYPE_BUFFER)
 	    || (obj.buffer.length < sizeof(struct acpi_pct_register))
 	    || (obj.buffer.pointer == NULL)) {
-;
+		printk(KERN_ERR PREFIX "Invalid _PCT data (status_register)\n");
 		result = -EFAULT;
 		goto end;
 	}
@@ -321,7 +321,7 @@ static int acpi_processor_get_performance_states(struct acpi_processor *pr)
 
 	pss = buffer.pointer;
 	if (!pss || (pss->type != ACPI_TYPE_PACKAGE)) {
-;
+		printk(KERN_ERR PREFIX "Invalid _PSS data\n");
 		result = -EFAULT;
 		goto end;
 	}
@@ -371,9 +371,9 @@ static int acpi_processor_get_performance_states(struct acpi_processor *pr)
 		if (!px->core_frequency ||
 		    ((u32)(px->core_frequency * 1000) !=
 		     (px->core_frequency * 1000))) {
-//			printk(KERN_ERR FW_BUG PREFIX
-//			       "Invalid BIOS _PSS frequency: 0x%llx MHz\n",
-;
+			printk(KERN_ERR FW_BUG PREFIX
+			       "Invalid BIOS _PSS frequency: 0x%llx MHz\n",
+			       px->core_frequency);
 			result = -EFAULT;
 			kfree(pr->performance->states);
 			goto end;
@@ -424,8 +424,8 @@ static int acpi_processor_get_performance_info(struct acpi_processor *pr)
 #ifdef CONFIG_X86
 	if (ACPI_SUCCESS(acpi_get_handle(pr->handle, "_PPC", &handle))){
 		if(boot_cpu_has(X86_FEATURE_EST))
-//			printk(KERN_WARNING FW_BUG "BIOS needs update for CPU "
-;
+			printk(KERN_WARNING FW_BUG "BIOS needs update for CPU "
+			       "frequency support\n");
 	}
 #endif
 	return result;
@@ -509,13 +509,13 @@ static int acpi_processor_get_psd(struct acpi_processor	*pr)
 
 	psd = buffer.pointer;
 	if (!psd || (psd->type != ACPI_TYPE_PACKAGE)) {
-;
+		printk(KERN_ERR PREFIX "Invalid _PSD data\n");
 		result = -EFAULT;
 		goto end;
 	}
 
 	if (psd->package.count != 1) {
-;
+		printk(KERN_ERR PREFIX "Invalid _PSD data\n");
 		result = -EFAULT;
 		goto end;
 	}
@@ -528,19 +528,19 @@ static int acpi_processor_get_psd(struct acpi_processor	*pr)
 	status = acpi_extract_package(&(psd->package.elements[0]),
 		&format, &state);
 	if (ACPI_FAILURE(status)) {
-;
+		printk(KERN_ERR PREFIX "Invalid _PSD data\n");
 		result = -EFAULT;
 		goto end;
 	}
 
 	if (pdomain->num_entries != ACPI_PSD_REV0_ENTRIES) {
-;
+		printk(KERN_ERR PREFIX "Unknown _PSD:num_entries\n");
 		result = -EFAULT;
 		goto end;
 	}
 
 	if (pdomain->revision != ACPI_PSD_REV0_REVISION) {
-;
+		printk(KERN_ERR PREFIX "Unknown _PSD:revision\n");
 		result = -EFAULT;
 		goto end;
 	}
@@ -548,7 +548,7 @@ static int acpi_processor_get_psd(struct acpi_processor	*pr)
 	if (pdomain->coord_type != DOMAIN_COORD_TYPE_SW_ALL &&
 	    pdomain->coord_type != DOMAIN_COORD_TYPE_SW_ANY &&
 	    pdomain->coord_type != DOMAIN_COORD_TYPE_HW_ALL) {
-;
+		printk(KERN_ERR PREFIX "Invalid _PSD:coord_type\n");
 		result = -EFAULT;
 		goto end;
 	}

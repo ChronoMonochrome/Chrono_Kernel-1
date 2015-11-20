@@ -365,7 +365,7 @@ static int __init pcie_portdrv_init(void)
 
 	retval = pcie_port_bus_register();
 	if (retval) {
-;
+		printk(KERN_WARNING "PCIE: bus_register error: %d\n", retval);
 		goto out;
 	}
 	retval = pci_register_driver(&pcie_portdriver);

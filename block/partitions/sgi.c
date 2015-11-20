@@ -56,8 +56,8 @@ int sgi_partition(struct parsed_partitions *state)
 		csum += be32_to_cpu(cs);
 	}
 	if(csum) {
-//		printk(KERN_WARNING "Dev %s SGI disklabel: csum bad, label corrupted\n",
-;
+		printk(KERN_WARNING "Dev %s SGI disklabel: csum bad, label corrupted\n",
+		       bdevname(state->bdev, b));
 		put_dev_sector(sect);
 		return 0;
 	}

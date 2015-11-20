@@ -379,8 +379,8 @@ static int evergreen_packet0_check(struct radeon_cs_parser *p,
 		}
 		break;
 	default:
-//		printk(KERN_ERR "Forbidden register 0x%04X in cs at %d\n",
-;
+		printk(KERN_ERR "Forbidden register 0x%04X in cs at %d\n",
+		       reg, idx);
 		return -EINVAL;
 	}
 	return 0;
@@ -1431,7 +1431,7 @@ int evergreen_cs_parse(struct radeon_cs_parser *p)
 	} while (p->idx < p->chunks[p->chunk_ib_idx].length_dw);
 #if 0
 	for (r = 0; r < p->ib->length_dw; r++) {
-;
+		printk(KERN_INFO "%05d  0x%08X\n", r, p->ib->ptr[r]);
 		mdelay(1);
 	}
 #endif

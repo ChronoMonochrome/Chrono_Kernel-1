@@ -1310,7 +1310,7 @@ static int __devinit vga16fb_probe(struct platform_device *dev)
 	int i;
 	int ret = 0;
 
-;
+	printk(KERN_DEBUG "vga16fb: initializing\n");
 	info = framebuffer_alloc(sizeof(struct vga16fb_par), &dev->dev);
 
 	if (!info) {
@@ -1327,12 +1327,12 @@ static int __devinit vga16fb_probe(struct platform_device *dev)
 	info->screen_base = (void __iomem *)VGA_MAP_MEM(VGA_FB_PHYS, 0);
 
 	if (!info->screen_base) {
-;
+		printk(KERN_ERR "vga16fb: unable to map device\n");
 		ret = -ENOMEM;
 		goto err_ioremap;
 	}
 
-;
+	printk(KERN_INFO "vga16fb: mapped to 0x%p\n", info->screen_base);
 	par = info->par;
 
 	par->isVGA = screen_info.orig_video_isVGA;
@@ -1357,13 +1357,13 @@ static int __devinit vga16fb_probe(struct platform_device *dev)
 	i = (info->var.bits_per_pixel == 8) ? 256 : 16;
 	ret = fb_alloc_cmap(&info->cmap, i, 0);
 	if (ret) {
-;
+		printk(KERN_ERR "vga16fb: unable to allocate colormap\n");
 		ret = -ENOMEM;
 		goto err_alloc_cmap;
 	}
 
 	if (vga16fb_check_var(&info->var, info)) {
-;
+		printk(KERN_ERR "vga16fb: unable to validate variable\n");
 		ret = -EINVAL;
 		goto err_check_var;
 	}
@@ -1374,13 +1374,13 @@ static int __devinit vga16fb_probe(struct platform_device *dev)
 	info->apertures->ranges[0].size = VGA_FB_PHYS_LEN;
 
 	if (register_framebuffer(info) < 0) {
-;
+		printk(KERN_ERR "vga16fb: unable to register framebuffer\n");
 		ret = -EINVAL;
 		goto err_check_var;
 	}
 
-//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+	       info->node, info->fix.id);
 	platform_set_drvdata(dev, info);
 
 	return 0;

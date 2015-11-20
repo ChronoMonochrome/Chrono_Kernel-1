@@ -99,9 +99,9 @@ static int filelayout_async_handle_error(struct rpc_task *task,
 	case -NFS4ERR_CONN_NOT_BOUND_TO_SESSION:
 	case -NFS4ERR_SEQ_FALSE_RETRY:
 	case -NFS4ERR_SEQ_MISORDERED:
-//		dprintk("%s ERROR %d, Reset session. Exchangeid "
-//			"flags 0x%x\n", __func__, task->tk_status,
-;
+		dprintk("%s ERROR %d, Reset session. Exchangeid "
+			"flags 0x%x\n", __func__, task->tk_status,
+			clp->cl_exchange_flags);
 		nfs4_schedule_session_recovery(clp->cl_session);
 		break;
 	case -NFS4ERR_DELAY:
@@ -112,8 +112,8 @@ static int filelayout_async_handle_error(struct rpc_task *task,
 	case -NFS4ERR_RETRY_UNCACHED_REP:
 		break;
 	default:
-//		dprintk("%s DS error. Retry through MDS %d\n", __func__,
-;
+		dprintk("%s DS error. Retry through MDS %d\n", __func__,
+			task->tk_status);
 		*reset = 1;
 		break;
 	}
@@ -128,12 +128,12 @@ static int filelayout_read_done_cb(struct rpc_task *task,
 {
 	int reset = 0;
 
-;
+	dprintk("%s DS read\n", __func__);
 
 	if (filelayout_async_handle_error(task, data->args.context->state,
 					  data->ds_clp, &reset) == -EAGAIN) {
-//		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
-;
+		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
+			__func__, data->ds_clp, data->ds_clp->cl_session);
 		if (reset) {
 			pnfs_set_lo_fail(data->lseg);
 			nfs4_reset_read(task, data);
@@ -158,8 +158,8 @@ filelayout_set_layoutcommit(struct nfs_write_data *wdata)
 		return;
 
 	pnfs_set_layoutcommit(wdata);
-//	dprintk("%s ionde %lu pls_end_pos %lu\n", __func__, wdata->inode->i_ino,
-;
+	dprintk("%s ionde %lu pls_end_pos %lu\n", __func__, wdata->inode->i_ino,
+		(unsigned long) NFS_I(wdata->inode)->layout->plh_lwb);
 }
 
 /*
@@ -185,7 +185,7 @@ static void filelayout_read_call_done(struct rpc_task *task, void *data)
 {
 	struct nfs_read_data *rdata = (struct nfs_read_data *)data;
 
-;
+	dprintk("--> %s task->tk_status %d\n", __func__, task->tk_status);
 
 	/* Note this may cause RPC to be resent */
 	rdata->mds_ops->rpc_call_done(task, data);
@@ -205,8 +205,8 @@ static int filelayout_write_done_cb(struct rpc_task *task,
 
 	if (filelayout_async_handle_error(task, data->args.context->state,
 					  data->ds_clp, &reset) == -EAGAIN) {
-//		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
-;
+		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
+			__func__, data->ds_clp, data->ds_clp->cl_session);
 		if (reset) {
 			pnfs_set_lo_fail(data->lseg);
 			nfs4_reset_write(task, data);
@@ -237,8 +237,8 @@ static int filelayout_commit_done_cb(struct rpc_task *task,
 
 	if (filelayout_async_handle_error(task, data->args.context->state,
 					  data->ds_clp, &reset) == -EAGAIN) {
-//		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
-;
+		dprintk("%s calling restart ds_clp %p ds_clp->cl_session %p\n",
+			__func__, data->ds_clp, data->ds_clp->cl_session);
 		if (reset) {
 			prepare_to_resend_writes(data);
 			pnfs_set_lo_fail(data->lseg);
@@ -315,9 +315,9 @@ filelayout_read_pagelist(struct nfs_read_data *data)
 	struct nfs_fh *fh;
 	int status;
 
-//	dprintk("--> %s ino %lu pgbase %u req %Zu@%llu\n",
-//		__func__, data->inode->i_ino,
-;
+	dprintk("--> %s ino %lu pgbase %u req %Zu@%llu\n",
+		__func__, data->inode->i_ino,
+		data->args.pgbase, (size_t)data->args.count, offset);
 
 	if (test_bit(NFS_DEVICEID_INVALID, &FILELAYOUT_DEVID_NODE(lseg)->flags))
 		return PNFS_NOT_ATTEMPTED;
@@ -332,7 +332,7 @@ filelayout_read_pagelist(struct nfs_read_data *data)
 		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
 		return PNFS_NOT_ATTEMPTED;
 	}
-;
+	dprintk("%s USE DS: %s\n", __func__, ds->ds_remotestr);
 
 	/* No multipath support. Use first DS */
 	data->ds_clp = ds->ds_clp;
@@ -369,14 +369,14 @@ filelayout_write_pagelist(struct nfs_write_data *data, int sync)
 	idx = nfs4_fl_calc_ds_index(lseg, j);
 	ds = nfs4_fl_prepare_ds(lseg, idx);
 	if (!ds) {
-;
+		printk(KERN_ERR "%s: prepare_ds failed, use MDS\n", __func__);
 		set_bit(lo_fail_bit(IOMODE_RW), &lseg->pls_layout->plh_flags);
 		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
 		return PNFS_NOT_ATTEMPTED;
 	}
-//	dprintk("%s ino %lu sync %d req %Zu@%llu DS: %s\n", __func__,
-//		data->inode->i_ino, sync, (size_t) data->args.count, offset,
-;
+	dprintk("%s ino %lu sync %d req %Zu@%llu DS: %s\n", __func__,
+		data->inode->i_ino, sync, (size_t) data->args.count, offset,
+		ds->ds_remotestr);
 
 	data->write_done_cb = filelayout_write_done_cb;
 	data->ds_clp = ds->ds_clp;
@@ -416,25 +416,25 @@ filelayout_check_layout(struct pnfs_layout_hdr *lo,
 	int status = -EINVAL;
 	struct nfs_server *nfss = NFS_SERVER(lo->plh_inode);
 
-;
+	dprintk("--> %s\n", __func__);
 
 	/* FIXME: remove this check when layout segment support is added */
 	if (lgr->range.offset != 0 ||
 	    lgr->range.length != NFS4_MAX_UINT64) {
-//		dprintk("%s Only whole file layouts supported. Use MDS i/o\n",
-;
+		dprintk("%s Only whole file layouts supported. Use MDS i/o\n",
+			__func__);
 		goto out;
 	}
 
 	if (fl->pattern_offset > lgr->range.offset) {
-//		dprintk("%s pattern_offset %lld too large\n",
-;
+		dprintk("%s pattern_offset %lld too large\n",
+				__func__, fl->pattern_offset);
 		goto out;
 	}
 
 	if (!fl->stripe_unit || fl->stripe_unit % PAGE_SIZE) {
-//		dprintk("%s Invalid stripe unit (%u)\n",
-;
+		dprintk("%s Invalid stripe unit (%u)\n",
+			__func__, fl->stripe_unit);
 		goto out;
 	}
 
@@ -454,8 +454,8 @@ filelayout_check_layout(struct pnfs_layout_hdr *lo,
 	fl->dsaddr = dsaddr;
 
 	if (fl->first_stripe_index >= dsaddr->stripe_count) {
-//		dprintk("%s Bad first_stripe_index %u\n",
-;
+		dprintk("%s Bad first_stripe_index %u\n",
+				__func__, fl->first_stripe_index);
 		goto out_put;
 	}
 
@@ -463,20 +463,20 @@ filelayout_check_layout(struct pnfs_layout_hdr *lo,
 	    fl->num_fh > 1 && fl->num_fh != dsaddr->ds_num) ||
 	    (fl->stripe_type == STRIPE_DENSE &&
 	    fl->num_fh != dsaddr->stripe_count)) {
-//		dprintk("%s num_fh %u not valid for given packing\n",
-;
+		dprintk("%s num_fh %u not valid for given packing\n",
+			__func__, fl->num_fh);
 		goto out_put;
 	}
 
 	if (fl->stripe_unit % nfss->rsize || fl->stripe_unit % nfss->wsize) {
-//		dprintk("%s Stripe unit (%u) not aligned with rsize %u "
-//			"wsize %u\n", __func__, fl->stripe_unit, nfss->rsize,
-;
+		dprintk("%s Stripe unit (%u) not aligned with rsize %u "
+			"wsize %u\n", __func__, fl->stripe_unit, nfss->rsize,
+			nfss->wsize);
 	}
 
 	status = 0;
 out:
-;
+	dprintk("--> %s returns %d\n", __func__, status);
 	return status;
 out_put:
 	nfs4_fl_put_deviceid(dsaddr);
@@ -517,7 +517,7 @@ filelayout_decode_layout(struct pnfs_layout_hdr *flo,
 	uint32_t nfl_util;
 	int i;
 
-;
+	dprintk("%s: set_layout_map Begin\n", __func__);
 
 	scratch = alloc_page(gfp_flags);
 	if (!scratch)
@@ -549,9 +549,9 @@ filelayout_decode_layout(struct pnfs_layout_hdr *flo,
 	p = xdr_decode_hyper(p, &fl->pattern_offset);
 	fl->num_fh = be32_to_cpup(p++);
 
-//	dprintk("%s: nfl_util 0x%X num_fh %u fsi %u po %llu\n",
-//		__func__, nfl_util, fl->num_fh, fl->first_stripe_index,
-;
+	dprintk("%s: nfl_util 0x%X num_fh %u fsi %u po %llu\n",
+		__func__, nfl_util, fl->num_fh, fl->first_stripe_index,
+		fl->pattern_offset);
 
 	/* Note that a zero value for num_fh is legal for STRIPE_SPARSE.
 	 * Futher checking is done in filelayout_check_layout */
@@ -577,8 +577,8 @@ filelayout_decode_layout(struct pnfs_layout_hdr *flo,
 			goto out_err_free;
 		fl->fh_array[i]->size = be32_to_cpup(p++);
 		if (sizeof(struct nfs_fh) < fl->fh_array[i]->size) {
-//			printk(KERN_ERR "Too big fh %d received %d\n",
-;
+			printk(KERN_ERR "Too big fh %d received %d\n",
+			       i, fl->fh_array[i]->size);
 			goto out_err_free;
 		}
 
@@ -586,8 +586,8 @@ filelayout_decode_layout(struct pnfs_layout_hdr *flo,
 		if (unlikely(!p))
 			goto out_err_free;
 		memcpy(fl->fh_array[i]->data, p, fl->fh_array[i]->size);
-//		dprintk("DEBUG: %s: fh len %d\n", __func__,
-;
+		dprintk("DEBUG: %s: fh len %d\n", __func__,
+			fl->fh_array[i]->size);
 	}
 
 	__free_page(scratch);
@@ -605,7 +605,7 @@ filelayout_free_lseg(struct pnfs_layout_segment *lseg)
 {
 	struct nfs4_filelayout_segment *fl = FILELAYOUT_LSEG(lseg);
 
-;
+	dprintk("--> %s\n", __func__);
 	nfs4_fl_put_deviceid(fl->dsaddr);
 	kfree(fl->commit_buckets);
 	_filelayout_free_lseg(fl);
@@ -620,7 +620,7 @@ filelayout_alloc_lseg(struct pnfs_layout_hdr *layoutid,
 	int rc;
 	struct nfs4_deviceid id;
 
-;
+	dprintk("--> %s\n", __func__);
 	fl = kzalloc(sizeof(*fl), gfp_flags);
 	if (!fl)
 		return NULL;
@@ -799,14 +799,14 @@ static int filelayout_initiate_commit(struct nfs_write_data *data, int how)
 	idx = calc_ds_index_from_commit(lseg, data->ds_commit_index);
 	ds = nfs4_fl_prepare_ds(lseg, idx);
 	if (!ds) {
-;
+		printk(KERN_ERR "%s: prepare_ds failed, use MDS\n", __func__);
 		set_bit(lo_fail_bit(IOMODE_RW), &lseg->pls_layout->plh_flags);
 		set_bit(lo_fail_bit(IOMODE_READ), &lseg->pls_layout->plh_flags);
 		prepare_to_resend_writes(data);
 		data->mds_ops->rpc_release(data);
 		return -EAGAIN;
 	}
-;
+	dprintk("%s ino %lu, how %d\n", __func__, data->inode->i_ino, how);
 	data->write_done_cb = filelayout_commit_done_cb;
 	data->ds_clp = ds->ds_clp;
 	fh = select_ds_fh_from_commit(lseg, data->ds_commit_index);
@@ -936,15 +936,15 @@ static struct pnfs_layoutdriver_type filelayout_type = {
 
 static int __init nfs4filelayout_init(void)
 {
-//	printk(KERN_INFO "%s: NFSv4 File Layout Driver Registering...\n",
-;
+	printk(KERN_INFO "%s: NFSv4 File Layout Driver Registering...\n",
+	       __func__);
 	return pnfs_register_layoutdriver(&filelayout_type);
 }
 
 static void __exit nfs4filelayout_exit(void)
 {
-//	printk(KERN_INFO "%s: NFSv4 File Layout Driver Unregistering...\n",
-;
+	printk(KERN_INFO "%s: NFSv4 File Layout Driver Unregistering...\n",
+	       __func__);
 	pnfs_unregister_layoutdriver(&filelayout_type);
 }
 

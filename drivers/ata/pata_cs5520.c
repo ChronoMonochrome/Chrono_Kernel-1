@@ -149,8 +149,8 @@ static int __devinit cs5520_init_one(struct pci_dev *pdev, const struct pci_devi
 		ppi[1] = &pi;
 
 	if ((pcicfg & 0x40) == 0) {
-//		dev_printk(KERN_WARNING, &pdev->dev,
-;
+		dev_printk(KERN_WARNING, &pdev->dev,
+			   "DMA mode disabled. Enabling.\n");
 		pci_write_config_byte(pdev, 0x60, pcicfg | 0x40);
 	}
 
@@ -162,16 +162,16 @@ static int __devinit cs5520_init_one(struct pci_dev *pdev, const struct pci_devi
 
 	/* Perform set up for DMA */
 	if (pci_enable_device_io(pdev)) {
-;
+		printk(KERN_ERR DRV_NAME ": unable to configure BAR2.\n");
 		return -ENODEV;
 	}
 
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-;
+		printk(KERN_ERR DRV_NAME ": unable to configure DMA mask.\n");
 		return -ENODEV;
 	}
 	if (pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32))) {
-;
+		printk(KERN_ERR DRV_NAME ": unable to configure consistent DMA mask.\n");
 		return -ENODEV;
 	}
 

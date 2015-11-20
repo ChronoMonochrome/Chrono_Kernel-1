@@ -756,13 +756,13 @@ static int mpsc_alloc_ring_mem(struct mpsc_port_info *pi)
 
 	if (!pi->dma_region) {
 		if (!dma_supported(pi->port.dev, 0xffffffff)) {
-;
+			printk(KERN_ERR "MPSC: Inadequate DMA support\n");
 			rc = -ENXIO;
 		} else if ((pi->dma_region = dma_alloc_noncoherent(pi->port.dev,
 						MPSC_DMA_ALLOC_SIZE,
 						&pi->dma_region_p, GFP_KERNEL))
 				== NULL) {
-;
+			printk(KERN_ERR "MPSC: Can't alloc Desc region\n");
 			rc = -ENOMEM;
 		}
 	}
@@ -1370,8 +1370,8 @@ static int mpsc_startup(struct uart_port *port)
 
 		if (request_irq(pi->port.irq, mpsc_sdma_intr, flag,
 					"mpsc-sdma", pi))
-//			printk(KERN_ERR "MPSC: Can't get SDMA IRQ %d\n",
-;
+			printk(KERN_ERR "MPSC: Can't get SDMA IRQ %d\n",
+					pi->port.irq);
 
 		mpsc_sdma_intr_unmask(pi, 0xf);
 		mpsc_sdma_set_rx_ring(pi, (struct mpsc_rx_desc *)(pi->rxr_p
@@ -1818,7 +1818,7 @@ late_initcall(mpsc_late_console_init);
  */
 static void mpsc_resource_err(char *s)
 {
-;
+	printk(KERN_WARNING "MPSC: Platform device resource error in %s\n", s);
 }
 
 static int mpsc_shared_map_regs(struct platform_device *pd)
@@ -2120,7 +2120,7 @@ static int __init mpsc_drv_init(void)
 {
 	int	rc;
 
-;
+	printk(KERN_INFO "Serial: MPSC driver\n");
 
 	memset(mpsc_ports, 0, sizeof(mpsc_ports));
 	memset(&mpsc_shared_regs, 0, sizeof(mpsc_shared_regs));

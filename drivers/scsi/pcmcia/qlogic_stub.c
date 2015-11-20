@@ -221,7 +221,7 @@ static int qlogic_config(struct pcmcia_device * link)
 			link->resource[0]->start, link->irq);
 	
 	if (!host) {
-;
+		printk(KERN_INFO "%s: no SCSI devices found\n", qlogic_name);
 		goto failed;
 	}
 

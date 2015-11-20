@@ -458,8 +458,8 @@ static int __init init_one(int slot)
 	if (register_framebuffer(&ip->info) < 0)
 		return -EINVAL;
 
-//	printk(KERN_INFO "fb%d: %s frame buffer in TC slot %d\n",
-;
+	printk(KERN_INFO "fb%d: %s frame buffer in TC slot %d\n",
+	       GET_FB_IDX(ip->info.node), ip->info.modename, slot);
 
 	return 0;
 }

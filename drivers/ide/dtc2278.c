@@ -141,7 +141,7 @@ static int __init dtc2278_init(void)
 		return -ENODEV;
 
 	if (dtc2278_probe()) {
-;
+		printk(KERN_ERR "dtc2278: ide interfaces already in use!\n");
 		return -EBUSY;
 	}
 	return 0;

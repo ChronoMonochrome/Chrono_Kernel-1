@@ -79,7 +79,7 @@ static int __init edac_init(void)
 {
 	int err = 0;
 
-;
+	edac_printk(KERN_INFO, EDAC_MC, EDAC_VERSION "\n");
 
 	/*
 	 * Harvest and clear any boot/initialization PCI parity errors
@@ -100,7 +100,7 @@ static int __init edac_init(void)
 	/* Setup/Initialize the workq for this core */
 	err = edac_workqueue_setup();
 	if (err) {
-;
+		edac_printk(KERN_ERR, EDAC_MC, "init WorkQueue failure\n");
 		goto workq_fail;
 	}
 

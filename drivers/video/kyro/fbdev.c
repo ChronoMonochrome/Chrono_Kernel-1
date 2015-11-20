@@ -400,7 +400,7 @@ static int kyrofb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
 	struct kyrofb_info *par = info->par;
 
 	if (var->bits_per_pixel != 16 && var->bits_per_pixel != 32) {
-;
+		printk(KERN_WARNING "kyrofb: depth not supported: %u\n", var->bits_per_pixel);
 		return -EINVAL;
 	}
 
@@ -597,7 +597,7 @@ static int kyrofb_ioctl(struct fb_info *info,
 
 		if (kyro_dev_overlay_create(ol_create.ulWidth,
 					    ol_create.ulHeight, 0) < 0) {
-;
+			printk(KERN_ERR "Kyro FB: failed to create overlay surface.\n");
 
 			return -EINVAL;
 		}
@@ -612,15 +612,15 @@ static int kyrofb_ioctl(struct fb_info *info,
 						  ol_viewport_set.xSize,
 						  ol_viewport_set.ySize) != 0)
 		{
-;
+			printk(KERN_ERR "Kyro FB: failed to create overlay viewport.\n");
 			return -EINVAL;
 		}
 		break;
 	case KYRO_IOCTL_SET_VIDEO_MODE:
 		{
-//			printk(KERN_ERR "Kyro FB: KYRO_IOCTL_SET_VIDEO_MODE is"
-//				"obsolete, use the appropriate fb_ioctl()"
-;
+			printk(KERN_ERR "Kyro FB: KYRO_IOCTL_SET_VIDEO_MODE is"
+				"obsolete, use the appropriate fb_ioctl()"
+				"command instead.\n");
 			return -EINVAL;
 		}
 		break;
@@ -676,7 +676,7 @@ static int __devinit kyrofb_probe(struct pci_dev *pdev,
 	int err;
 
 	if ((err = pci_enable_device(pdev))) {
-;
+		printk(KERN_WARNING "kyrofb: Can't enable pdev: %d\n", err);
 		return err;
 	}
 
@@ -737,10 +737,10 @@ static int __devinit kyrofb_probe(struct pci_dev *pdev,
 	if (register_framebuffer(info) < 0)
 		goto out_unmap;
 
-//	printk("fb%d: %s frame buffer device, at %dx%d@%d using %ldk/%ldk of VRAM\n",
-//	       info->node, info->fix.id, info->var.xres,
-//	       info->var.yres, info->var.bits_per_pixel, size >> 10,
-;
+	printk("fb%d: %s frame buffer device, at %dx%d@%d using %ldk/%ldk of VRAM\n",
+	       info->node, info->fix.id, info->var.xres,
+	       info->var.yres, info->var.bits_per_pixel, size >> 10,
+	       (unsigned long)info->fix.smem_len >> 10);
 
 	pci_set_drvdata(pdev, info);
 

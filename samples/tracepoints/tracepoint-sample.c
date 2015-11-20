@@ -35,7 +35,7 @@ static const struct file_operations mark_ops = {
 
 static int __init sample_init(void)
 {
-;
+	printk(KERN_ALERT "sample init\n");
 	pentry_sample = proc_create("tracepoint-sample", 0444, NULL,
 		&mark_ops);
 	if (!pentry_sample)
@@ -45,7 +45,7 @@ static int __init sample_init(void)
 
 static void __exit sample_exit(void)
 {
-;
+	printk(KERN_ALERT "sample exit\n");
 	remove_proc_entry("tracepoint-sample", NULL);
 }
 

@@ -1896,8 +1896,8 @@ static void dump_lpt_leb(const struct ubifs_info *c, int lnum)
 	int err, len = c->leb_size, node_type, node_num, node_len, offs;
 	void *buf, *p;
 
-//	printk(KERN_DEBUG "(pid %d) start dumping LEB %d\n",
-;
+	printk(KERN_DEBUG "(pid %d) start dumping LEB %d\n",
+	       current->pid, lnum);
 	buf = p = __vmalloc(c->leb_size, GFP_NOFS, PAGE_KERNEL);
 	if (!buf) {
 		ubifs_err("cannot allocate memory to dump LPT");
@@ -1916,15 +1916,15 @@ static void dump_lpt_leb(const struct ubifs_info *c, int lnum)
 
 			pad_len = get_pad_len(c, p, len);
 			if (pad_len) {
-//				printk(KERN_DEBUG "LEB %d:%d, pad %d bytes\n",
-;
+				printk(KERN_DEBUG "LEB %d:%d, pad %d bytes\n",
+				       lnum, offs, pad_len);
 				p += pad_len;
 				len -= pad_len;
 				continue;
 			}
 			if (len)
-//				printk(KERN_DEBUG "LEB %d:%d, free %d bytes\n",
-;
+				printk(KERN_DEBUG "LEB %d:%d, free %d bytes\n",
+				       lnum, offs, len);
 			break;
 		}
 
@@ -1934,11 +1934,11 @@ static void dump_lpt_leb(const struct ubifs_info *c, int lnum)
 		{
 			node_len = c->pnode_sz;
 			if (c->big_lpt)
-//				printk(KERN_DEBUG "LEB %d:%d, pnode num %d\n",
-;
+				printk(KERN_DEBUG "LEB %d:%d, pnode num %d\n",
+				       lnum, offs, node_num);
 			else
-//				printk(KERN_DEBUG "LEB %d:%d, pnode\n",
-;
+				printk(KERN_DEBUG "LEB %d:%d, pnode\n",
+				       lnum, offs);
 			break;
 		}
 		case UBIFS_LPT_NNODE:
@@ -1948,29 +1948,29 @@ static void dump_lpt_leb(const struct ubifs_info *c, int lnum)
 
 			node_len = c->nnode_sz;
 			if (c->big_lpt)
-//				printk(KERN_DEBUG "LEB %d:%d, nnode num %d, ",
-;
+				printk(KERN_DEBUG "LEB %d:%d, nnode num %d, ",
+				       lnum, offs, node_num);
 			else
-//				printk(KERN_DEBUG "LEB %d:%d, nnode, ",
-;
+				printk(KERN_DEBUG "LEB %d:%d, nnode, ",
+				       lnum, offs);
 			err = ubifs_unpack_nnode(c, p, &nnode);
 			for (i = 0; i < UBIFS_LPT_FANOUT; i++) {
-//				printk(KERN_CONT "%d:%d", nnode.nbranch[i].lnum,
-;
+				printk(KERN_CONT "%d:%d", nnode.nbranch[i].lnum,
+				       nnode.nbranch[i].offs);
 				if (i != UBIFS_LPT_FANOUT - 1)
-;
+					printk(KERN_CONT ", ");
 			}
-;
+			printk(KERN_CONT "\n");
 			break;
 		}
 		case UBIFS_LPT_LTAB:
 			node_len = c->ltab_sz;
-//			printk(KERN_DEBUG "LEB %d:%d, ltab\n",
-;
+			printk(KERN_DEBUG "LEB %d:%d, ltab\n",
+			       lnum, offs);
 			break;
 		case UBIFS_LPT_LSAVE:
 			node_len = c->lsave_sz;
-;
+			printk(KERN_DEBUG "LEB %d:%d, lsave len\n", lnum, offs);
 			break;
 		default:
 			ubifs_err("LPT node type %d not recognized", node_type);
@@ -1981,8 +1981,8 @@ static void dump_lpt_leb(const struct ubifs_info *c, int lnum)
 		len -= node_len;
 	}
 
-//	printk(KERN_DEBUG "(pid %d) finish dumping LEB %d\n",
-;
+	printk(KERN_DEBUG "(pid %d) finish dumping LEB %d\n",
+	       current->pid, lnum);
 out:
 	vfree(buf);
 	return;
@@ -1999,12 +1999,12 @@ void dbg_dump_lpt_lebs(const struct ubifs_info *c)
 {
 	int i;
 
-//	printk(KERN_DEBUG "(pid %d) start dumping all LPT LEBs\n",
-;
+	printk(KERN_DEBUG "(pid %d) start dumping all LPT LEBs\n",
+	       current->pid);
 	for (i = 0; i < c->lpt_lebs; i++)
 		dump_lpt_leb(c, i + c->lpt_first);
-//	printk(KERN_DEBUG "(pid %d) finish dumping all LPT LEBs\n",
-;
+	printk(KERN_DEBUG "(pid %d) finish dumping all LPT LEBs\n",
+	       current->pid);
 }
 
 /**

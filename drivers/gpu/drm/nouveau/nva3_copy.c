@@ -177,8 +177,8 @@ nva3_copy_isr(struct drm_device *dev)
 	if (stat & 0x00000040) {
 		NV_INFO(dev, "PCOPY: DISPATCH_ERROR [");
 		nouveau_enum_print(nva3_copy_isr_error_name, ssta);
-//		printk("] ch %d [0x%08x] subc %d mthd 0x%04x data 0x%08x\n",
-;
+		printk("] ch %d [0x%08x] subc %d mthd 0x%04x data 0x%08x\n",
+			chid, inst, subc, mthd, data);
 		nv_wr32(dev, 0x104004, 0x00000040);
 		stat &= ~0x00000040;
 	}

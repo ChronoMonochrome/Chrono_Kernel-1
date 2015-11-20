@@ -230,7 +230,7 @@ Start_IPAC:
 		goto Start_IPAC;
 	}
 	if (!icnt)
-;
+		printk(KERN_WARNING "ASUS IRQ LOOP\n");
 	writereg(cs->hw.asus.adr, cs->hw.asus.isac, IPAC_MASK, 0xFF);
 	writereg(cs->hw.asus.adr, cs->hw.asus.isac, IPAC_MASK, 0xC0);
 	spin_unlock_irqrestore(&cs->lock, flags);
@@ -324,7 +324,7 @@ setup_asuscom(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, Asuscom_revision);
-;
+	printk(KERN_INFO "HiSax: Asuscom ISDNLink driver Rev. %s\n", HiSax_getrev(tmp));
 	if (cs->typ != ISDN_CTYPE_ASUSCOM)
 		return (0);
 #ifdef __ISAPNP__
@@ -338,33 +338,33 @@ setup_asuscom(struct IsdnCard *card)
 					ipid->vendor, ipid->function, pnp_d))) {
 					int err;
 
-//					printk(KERN_INFO "HiSax: %s detected\n",
-;
+					printk(KERN_INFO "HiSax: %s detected\n",
+						(char *)ipid->driver_data);
 					pnp_disable_dev(pnp_d);
 					err = pnp_activate_dev(pnp_d);
 					if (err<0) {
-//						printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
-;
+						printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
+							__func__, err);
 						return(0);
 					}
 					card->para[1] = pnp_port_start(pnp_d, 0);
 					card->para[0] = pnp_irq(pnp_d, 0);
 					if (!card->para[0] || !card->para[1]) {
-//						printk(KERN_ERR "AsusPnP:some resources are missing %ld/%lx\n",
-;
+						printk(KERN_ERR "AsusPnP:some resources are missing %ld/%lx\n",
+							card->para[0], card->para[1]);
 						pnp_disable_dev(pnp_d);
 						return(0);
 					}
 					break;
 				} else {
-;
+					printk(KERN_ERR "AsusPnP: PnP error card found, no device\n");
 				}
 			}
 			ipid++;
 			pnp_c = NULL;
 		} 
 		if (!ipid->card_vendor) {
-;
+			printk(KERN_INFO "AsusPnP: no ISAPnP card found\n");
 			return(0);
 		}
 	}
@@ -373,14 +373,14 @@ setup_asuscom(struct IsdnCard *card)
 	cs->hw.asus.cfg_reg = card->para[1];
 	cs->irq = card->para[0];
 	if (!request_region(cs->hw.asus.cfg_reg, bytecnt, "asuscom isdn")) {
-//		printk(KERN_WARNING
-//		       "HiSax: ISDNLink config port %x-%x already in use\n",
-//		       cs->hw.asus.cfg_reg,
-;
+		printk(KERN_WARNING
+		       "HiSax: ISDNLink config port %x-%x already in use\n",
+		       cs->hw.asus.cfg_reg,
+		       cs->hw.asus.cfg_reg + bytecnt);
 		return (0);
 	}
-//	printk(KERN_INFO "ISDNLink: defined at 0x%x IRQ %d\n",
-;
+	printk(KERN_INFO "ISDNLink: defined at 0x%x IRQ %d\n",
+		cs->hw.asus.cfg_reg, cs->irq);
 	setup_isac(cs);
 	cs->BC_Read_Reg = &ReadHSCX;
 	cs->BC_Write_Reg = &WriteHSCX;
@@ -399,7 +399,7 @@ setup_asuscom(struct IsdnCard *card)
 		cs->readisacfifo = &ReadISACfifo_IPAC;
 		cs->writeisacfifo = &WriteISACfifo_IPAC;
 		cs->irq_func = &asuscom_interrupt_ipac;
-;
+		printk(KERN_INFO "Asus: IPAC version %x\n", val);
 	} else {
 		cs->subtyp = ASUS_ISACHSCX;
 		cs->hw.asus.adr = cs->hw.asus.cfg_reg + ASUS_ADR;
@@ -414,8 +414,8 @@ setup_asuscom(struct IsdnCard *card)
 		cs->irq_func = &asuscom_interrupt;
 		ISACVersion(cs, "ISDNLink:");
 		if (HscxVersion(cs, "ISDNLink:")) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+		     	"ISDNLink: wrong HSCX versions check IO address\n");
 			release_io_asuscom(cs);
 			return (0);
 		}

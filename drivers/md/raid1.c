@@ -1282,34 +1282,34 @@ static void error(struct mddev *mddev, struct md_rdev *rdev)
 	} else
 		set_bit(Faulty, &rdev->flags);
 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
-//	printk(KERN_ALERT
-//	       "md/raid1:%s: Disk failure on %s, disabling device.\n"
-//	       "md/raid1:%s: Operation continuing on %d devices.\n",
-//	       mdname(mddev), bdevname(rdev->bdev, b),
-;
+	printk(KERN_ALERT
+	       "md/raid1:%s: Disk failure on %s, disabling device.\n"
+	       "md/raid1:%s: Operation continuing on %d devices.\n",
+	       mdname(mddev), bdevname(rdev->bdev, b),
+	       mdname(mddev), conf->raid_disks - mddev->degraded);
 }
 
 static void print_conf(struct r1conf *conf)
 {
 	int i;
 
-;
+	printk(KERN_DEBUG "RAID1 conf printout:\n");
 	if (!conf) {
-;
+		printk(KERN_DEBUG "(!conf)\n");
 		return;
 	}
-//	printk(KERN_DEBUG " --- wd:%d rd:%d\n", conf->raid_disks - conf->mddev->degraded,
-;
+	printk(KERN_DEBUG " --- wd:%d rd:%d\n", conf->raid_disks - conf->mddev->degraded,
+		conf->raid_disks);
 
 	rcu_read_lock();
 	for (i = 0; i < conf->raid_disks; i++) {
 		char b[BDEVNAME_SIZE];
 		struct md_rdev *rdev = rcu_dereference(conf->mirrors[i].rdev);
 		if (rdev)
-//			printk(KERN_DEBUG " disk %d, wo:%d, o:%d, dev:%s\n",
-//			       i, !test_bit(In_sync, &rdev->flags),
-//			       !test_bit(Faulty, &rdev->flags),
-;
+			printk(KERN_DEBUG " disk %d, wo:%d, o:%d, dev:%s\n",
+			       i, !test_bit(In_sync, &rdev->flags),
+			       !test_bit(Faulty, &rdev->flags),
+			       bdevname(rdev->bdev,b));
 	}
 	rcu_read_unlock();
 }
@@ -1644,11 +1644,11 @@ static int fix_sync_read_error(struct r1bio *r1_bio)
 			 * work just disable and interrupt the recovery.
 			 * Don't fail devices as that won't really help.
 			 */
-//			printk(KERN_ALERT "md/raid1:%s: %s: unrecoverable I/O read error"
-//			       " for block %llu\n",
-//			       mdname(mddev),
-//			       bdevname(bio->bi_bdev, b),
-;
+			printk(KERN_ALERT "md/raid1:%s: %s: unrecoverable I/O read error"
+			       " for block %llu\n",
+			       mdname(mddev),
+			       bdevname(bio->bi_bdev, b),
+			       (unsigned long long)r1_bio->sector);
 			for (d = 0; d < conf->raid_disks * 2; d++) {
 				rdev = conf->mirrors[d].rdev;
 				if (!rdev || test_bit(Faulty, &rdev->flags))
@@ -1919,13 +1919,13 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
 				if (r1_sync_page_io(rdev, sect, s,
 						    conf->tmppage, READ)) {
 					atomic_add(s, &rdev->corrected_errors);
-//					printk(KERN_INFO
-//					       "md/raid1:%s: read error corrected "
-//					       "(%d sectors at %llu on %s)\n",
-//					       mdname(mddev), s,
-//					       (unsigned long long)(sect +
-//					           rdev->data_offset),
-;
+					printk(KERN_INFO
+					       "md/raid1:%s: read error corrected "
+					       "(%d sectors at %llu on %s)\n",
+					       mdname(mddev), s,
+					       (unsigned long long)(sect +
+					           rdev->data_offset),
+					       bdevname(rdev->bdev, b));
 				}
 			}
 		}
@@ -2112,9 +2112,9 @@ static void handle_read_error(struct r1conf *conf, struct r1bio *r1_bio)
 read_more:
 	disk = read_balance(conf, r1_bio, &max_sectors);
 	if (disk == -1) {
-//		printk(KERN_ALERT "md/raid1:%s: %s: unrecoverable I/O"
-//		       " read error for block %llu\n",
-;
+		printk(KERN_ALERT "md/raid1:%s: %s: unrecoverable I/O"
+		       " read error for block %llu\n",
+		       mdname(mddev), b, (unsigned long long)r1_bio->sector);
 		raid_end_bio_io(r1_bio);
 	} else {
 		const unsigned long do_sync
@@ -2633,16 +2633,16 @@ static struct r1conf *setup_conf(struct mddev *mddev)
 	}
 
 	if (conf->last_used < 0) {
-//		printk(KERN_ERR "md/raid1:%s: no operational mirrors\n",
-;
+		printk(KERN_ERR "md/raid1:%s: no operational mirrors\n",
+		       mdname(mddev));
 		goto abort;
 	}
 	err = -ENOMEM;
 	conf->thread = md_register_thread(raid1d, mddev, NULL);
 	if (!conf->thread) {
-//		printk(KERN_ERR
-//		       "md/raid1:%s: couldn't allocate thread\n",
-;
+		printk(KERN_ERR
+		       "md/raid1:%s: couldn't allocate thread\n",
+		       mdname(mddev));
 		goto abort;
 	}
 
@@ -2669,13 +2669,13 @@ static int run(struct mddev *mddev)
 	int ret;
 
 	if (mddev->level != 1) {
-//		printk(KERN_ERR "md/raid1:%s: raid level not set to mirroring (%d)\n",
-;
+		printk(KERN_ERR "md/raid1:%s: raid level not set to mirroring (%d)\n",
+		       mdname(mddev), mddev->level);
 		return -EIO;
 	}
 	if (mddev->reshape_position != MaxSector) {
-//		printk(KERN_ERR "md/raid1:%s: reshape_position set but not supported\n",
-;
+		printk(KERN_ERR "md/raid1:%s: reshape_position set but not supported\n",
+		       mdname(mddev));
 		return -EIO;
 	}
 	/*
@@ -2709,13 +2709,13 @@ static int run(struct mddev *mddev)
 		mddev->recovery_cp = MaxSector;
 
 	if (mddev->recovery_cp != MaxSector)
-//		printk(KERN_NOTICE "md/raid1:%s: not clean"
-//		       " -- starting background reconstruction\n",
-;
-//	printk(KERN_INFO 
-//		"md/raid1:%s: active with %d out of %d mirrors\n",
-//		mdname(mddev), mddev->raid_disks - mddev->degraded, 
-;
+		printk(KERN_NOTICE "md/raid1:%s: not clean"
+		       " -- starting background reconstruction\n",
+		       mdname(mddev));
+	printk(KERN_INFO 
+		"md/raid1:%s: active with %d out of %d mirrors\n",
+		mdname(mddev), mddev->raid_disks - mddev->degraded, 
+		mddev->raid_disks);
 
 	/*
 	 * Ok, everything is just fine now
@@ -2745,8 +2745,8 @@ static int stop(struct mddev *mddev)
 
 	/* wait for behind writes to complete */
 	if (bitmap && atomic_read(&bitmap->behind_writes) > 0) {
-//		printk(KERN_INFO "md/raid1:%s: behind writes in progress - waiting to stop.\n",
-;
+		printk(KERN_INFO "md/raid1:%s: behind writes in progress - waiting to stop.\n",
+		       mdname(mddev));
 		/* need to kick something here to make sure I/O goes? */
 		wait_event(bitmap->behind_wait,
 			   atomic_read(&bitmap->behind_writes) == 0);
@@ -2868,9 +2868,9 @@ static int raid1_reshape(struct mddev *mddev)
 			rdev->raid_disk = d2;
 			sysfs_unlink_rdev(mddev, rdev);
 			if (sysfs_link_rdev(mddev, rdev))
-//				printk(KERN_WARNING
-//				       "md/raid1:%s: cannot register rd%d\n",
-;
+				printk(KERN_WARNING
+				       "md/raid1:%s: cannot register rd%d\n",
+				       mdname(mddev), rdev->raid_disk);
 		}
 		if (rdev)
 			newmirrors[d2++].rdev = rdev;

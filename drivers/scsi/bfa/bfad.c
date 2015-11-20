@@ -174,8 +174,8 @@ bfad_sm_uninit(struct bfad_s *bfad, enum bfad_sm_event event)
 		bfad->bfad_tsk = kthread_create(bfad_worker, (void *) bfad,
 						"%s", "bfad_worker");
 		if (IS_ERR(bfad->bfad_tsk)) {
-//			printk(KERN_INFO "bfad[%d]: Kernel thread "
-;
+			printk(KERN_INFO "bfad[%d]: Kernel thread "
+				"creation failed!\n", bfad->inst_no);
 			bfa_sm_send_event(bfad, BFAD_E_KTHREAD_CREATE_FAILED);
 		}
 		bfa_sm_send_event(bfad, BFAD_E_INIT);
@@ -208,8 +208,8 @@ bfad_sm_created(struct bfad_s *bfad, enum bfad_sm_event event)
 
 		/* Enable Interrupt and wait bfa_init completion */
 		if (bfad_setup_intr(bfad)) {
-//			printk(KERN_WARNING "bfad%d: bfad_setup_intr failed\n",
-;
+			printk(KERN_WARNING "bfad%d: bfad_setup_intr failed\n",
+					bfad->inst_no);
 			bfa_sm_send_event(bfad, BFAD_E_INTR_INIT_FAILED);
 			break;
 		}
@@ -221,8 +221,8 @@ bfad_sm_created(struct bfad_s *bfad, enum bfad_sm_event event)
 		/* Set up interrupt handler for each vectors */
 		if ((bfad->bfad_flags & BFAD_MSIX_ON) &&
 			bfad_install_msix_handler(bfad)) {
-//			printk(KERN_WARNING "%s: install_msix failed, bfad%d\n",
-;
+			printk(KERN_WARNING "%s: install_msix failed, bfad%d\n",
+				__func__, bfad->inst_no);
 		}
 
 		bfad_init_timer(bfad);
@@ -232,9 +232,9 @@ bfad_sm_created(struct bfad_s *bfad, enum bfad_sm_event event)
 		if ((bfad->bfad_flags & BFAD_HAL_INIT_DONE)) {
 			bfa_sm_send_event(bfad, BFAD_E_INIT_SUCCESS);
 		} else {
-//			printk(KERN_WARNING
-//				"bfa %s: bfa init failed\n",
-;
+			printk(KERN_WARNING
+				"bfa %s: bfa init failed\n",
+				bfad->pci_name);
 			bfad->bfad_flags |= BFAD_HAL_INIT_FAIL;
 			bfa_sm_send_event(bfad, BFAD_E_INIT_FAILED);
 		}
@@ -631,15 +631,15 @@ retry:
 				 * num_sgpages try with half the value.
 				 */
 				if (num_sgpgs > min_num_sgpgs) {
-//					printk(KERN_INFO
-//					"bfad[%d]: memory allocation failed"
-//					" with num_sgpgs: %d\n",
-;
+					printk(KERN_INFO
+					"bfad[%d]: memory allocation failed"
+					" with num_sgpgs: %d\n",
+						bfad->inst_no, num_sgpgs);
 					nextLowerInt(&num_sgpgs);
-//					printk(KERN_INFO
-//					"bfad[%d]: trying to allocate memory"
-//					" with num_sgpgs: %d\n",
-;
+					printk(KERN_INFO
+					"bfad[%d]: trying to allocate memory"
+					" with num_sgpgs: %d\n",
+						bfad->inst_no, num_sgpgs);
 					retry_count++;
 					goto retry;
 				} else {
@@ -770,7 +770,7 @@ bfad_pci_init(struct pci_dev *pdev, struct bfad_s *bfad)
 	int		rc = -ENODEV;
 
 	if (pci_enable_device(pdev)) {
-;
+		printk(KERN_ERR "pci_enable_device fail %p\n", pdev);
 		goto out;
 	}
 
@@ -782,14 +782,14 @@ bfad_pci_init(struct pci_dev *pdev, struct bfad_s *bfad)
 
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(64)) != 0)
 		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) != 0) {
-;
+			printk(KERN_ERR "pci_set_dma_mask fail %p\n", pdev);
 			goto out_release_region;
 		}
 
 	bfad->pci_bar0_kva = pci_iomap(pdev, 0, pci_resource_len(pdev, 0));
 
 	if (bfad->pci_bar0_kva == NULL) {
-;
+		printk(KERN_ERR "Fail to map bar0\n");
 		goto out_release_region;
 	}
 
@@ -841,11 +841,11 @@ bfad_pci_init(struct pci_dev *pdev, struct bfad_s *bfad)
 			pcie_cap_reg += 0x08;
 			pci_read_config_word(pdev, pcie_cap_reg, &pcie_dev_ctl);
 			if ((pcie_dev_ctl & 0x7000) != mask) {
-//				printk(KERN_WARNING "BFA[%s]: "
-//				"pcie_max_read_request_size is %d, "
-//				"reset to %d\n", bfad->pci_name,
-//				(1 << ((pcie_dev_ctl & 0x7000) >> 12)) << 7,
-;
+				printk(KERN_WARNING "BFA[%s]: "
+				"pcie_max_read_request_size is %d, "
+				"reset to %d\n", bfad->pci_name,
+				(1 << ((pcie_dev_ctl & 0x7000) >> 12)) << 7,
+				pcie_max_read_reqsz);
 
 				pcie_dev_ctl &= ~0x7000;
 				pci_write_config_word(pdev, pcie_cap_reg,
@@ -886,11 +886,11 @@ bfad_drv_init(struct bfad_s *bfad)
 
 	rc = bfad_hal_mem_alloc(bfad);
 	if (rc != BFA_STATUS_OK) {
-//		printk(KERN_WARNING "bfad%d bfad_hal_mem_alloc failure\n",
-;
-//		printk(KERN_WARNING
-//			"Not enough memory to attach all Brocade HBA ports, %s",
-;
+		printk(KERN_WARNING "bfad%d bfad_hal_mem_alloc failure\n",
+		       bfad->inst_no);
+		printk(KERN_WARNING
+			"Not enough memory to attach all Brocade HBA ports, %s",
+			"System may need more memory.\n");
 		goto out_hal_mem_alloc_failure;
 	}
 
@@ -1066,7 +1066,7 @@ bfad_start_ops(struct bfad_s *bfad) {
 	/* BFAD level FC4 IM specific resource allocation */
 	retval = bfad_im_probe(bfad);
 	if (retval != BFA_STATUS_OK) {
-;
+		printk(KERN_WARNING "bfad_im_probe failed\n");
 		if (bfa_sm_cmp_state(bfad, bfad_sm_initializing))
 			bfa_sm_set_state(bfad, bfad_sm_failed);
 		bfad_im_probe_undo(bfad);
@@ -1097,8 +1097,8 @@ bfad_start_ops(struct bfad_s *bfad) {
 		fc_vport = fc_vport_create(bfad->pport.im_port->shost, 0, &vid);
 		if (!fc_vport) {
 			wwn2str(pwwn_buf, vid.port_name);
-//			printk(KERN_WARNING "bfad%d: failed to create pbc vport"
-;
+			printk(KERN_WARNING "bfad%d: failed to create pbc vport"
+				" %s\n", bfad->inst_no, pwwn_buf);
 		}
 		list_del(&vport->list_entry);
 		kfree(vport);
@@ -1287,9 +1287,9 @@ bfad_setup_intr(struct bfad_s *bfad)
 			 * in the MSIX table for this case.
 			 */
 
-//			printk(KERN_WARNING "bfad%d: "
-//				"pci_enable_msix failed (%d),"
-;
+			printk(KERN_WARNING "bfad%d: "
+				"pci_enable_msix failed (%d),"
+				" use line based.\n", bfad->inst_no, error);
 
 			goto line_based;
 		}
@@ -1358,7 +1358,7 @@ bfad_pci_probe(struct pci_dev *pdev, const struct pci_device_id *pid)
 
 	bfad->trcmod = kzalloc(sizeof(struct bfa_trc_mod_s), GFP_KERNEL);
 	if (!bfad->trcmod) {
-;
+		printk(KERN_WARNING "Error alloc trace buffer!\n");
 		error = -ENOMEM;
 		goto out_alloc_trace_failure;
 	}
@@ -1374,7 +1374,7 @@ bfad_pci_probe(struct pci_dev *pdev, const struct pci_device_id *pid)
 
 	retval = bfad_pci_init(pdev, bfad);
 	if (retval) {
-;
+		printk(KERN_WARNING "bfad_pci_init failure!\n");
 		error = retval;
 		goto out_pci_init_failure;
 	}
@@ -1522,8 +1522,8 @@ bfad_init(void)
 {
 	int		error = 0;
 
-//	printk(KERN_INFO "Brocade BFA FC/FCOE SCSI driver - version: %s\n",
-;
+	printk(KERN_INFO "Brocade BFA FC/FCOE SCSI driver - version: %s\n",
+			BFAD_DRIVER_VERSION);
 
 	if (num_sgpgs > 0)
 		num_sgpgs_parm = num_sgpgs;
@@ -1531,7 +1531,7 @@ bfad_init(void)
 	error = bfad_im_module_init();
 	if (error) {
 		error = -ENOMEM;
-;
+		printk(KERN_WARNING "bfad_im_module_init failure\n");
 		goto ext;
 	}
 
@@ -1543,7 +1543,7 @@ bfad_init(void)
 
 	error = pci_register_driver(&bfad_pci_driver);
 	if (error) {
-;
+		printk(KERN_WARNING "pci_register_driver failure\n");
 		goto ext;
 	}
 
@@ -1573,15 +1573,15 @@ bfad_read_firmware(struct pci_dev *pdev, u32 **bfi_image,
 	const struct firmware *fw;
 
 	if (request_firmware(&fw, fw_name, &pdev->dev)) {
-;
+		printk(KERN_ALERT "Can't locate firmware %s\n", fw_name);
 		*bfi_image = NULL;
 		goto out;
 	}
 
 	*bfi_image = vmalloc(fw->size);
 	if (NULL == *bfi_image) {
-//		printk(KERN_ALERT "Fail to allocate buffer for fw image "
-;
+		printk(KERN_ALERT "Fail to allocate buffer for fw image "
+			"size=%x!\n", (u32) fw->size);
 		goto out;
 	}
 

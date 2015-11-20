@@ -483,8 +483,8 @@ err_add_port:
 err_register:
 	kfree(uart);
 err_mem:
-//	printk(KERN_ERR "timberdale: Failed to register Timberdale UART: %d\n",
-;
+	printk(KERN_ERR "timberdale: Failed to register Timberdale UART: %d\n",
+		err);
 
 	return err;
 }

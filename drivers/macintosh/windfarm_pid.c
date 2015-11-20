@@ -18,14 +18,14 @@
 #undef DEBUG
 
 #ifdef DEBUG
-//#define DBG(args...)	printk(args)
-//#else
-//#define DBG(args...)	do { } while(0)
-//#endif
-//
-//void wf_pid_init(struct wf_pid_state *st, struct wf_pid_param *param)
-//{
-;
+#define DBG(args...)	printk(args)
+#else
+#define DBG(args...)	do { } while(0)
+#endif
+
+void wf_pid_init(struct wf_pid_state *st, struct wf_pid_param *param)
+{
+	memset(st, 0, sizeof(struct wf_pid_state));
 	st->param = *param;
 	st->first = 1;
 }

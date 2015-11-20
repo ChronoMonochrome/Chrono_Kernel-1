@@ -89,14 +89,14 @@ static int __devinit zorro7xx_init_one(struct zorro_dev *z,
 	}
 
 	if (!zorro_request_device(z, zdd->name)) {
-//		printk(KERN_ERR "zorro7xx: cannot reserve region 0x%lx, abort\n",
-;
+		printk(KERN_ERR "zorro7xx: cannot reserve region 0x%lx, abort\n",
+		       board);
 		return -EBUSY;
 	}
 
 	hostdata = kzalloc(sizeof(struct NCR_700_Host_Parameters), GFP_KERNEL);
 	if (!hostdata) {
-;
+		printk(KERN_ERR "zorro7xx: Failed to allocate host data\n");
 		goto out_release;
 	}
 
@@ -118,7 +118,7 @@ static int __devinit zorro7xx_init_one(struct zorro_dev *z,
 	host = NCR_700_detect(&zorro7xx_scsi_driver_template, hostdata,
 			      &z->dev);
 	if (!host) {
-;
+		printk(KERN_ERR "zorro7xx: No host detected; "
 				"board configuration problem?\n");
 		goto out_free;
 	}
@@ -129,7 +129,7 @@ static int __devinit zorro7xx_init_one(struct zorro_dev *z,
 
 	if (request_irq(host->irq, NCR_700_intr, IRQF_SHARED, "zorro7xx-scsi",
 			host)) {
-;
+		printk(KERN_ERR "zorro7xx: request_irq failed\n");
 		goto out_put_host;
 	}
 

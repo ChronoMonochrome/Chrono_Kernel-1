@@ -184,11 +184,11 @@ static void dtl1_control(dtl1_info_t *info, struct sk_buff *skb)
 	u8 flowmask = *(u8 *)skb->data;
 	int i;
 
-;
+	printk(KERN_INFO "Bluetooth: Nokia control data =");
 	for (i = 0; i < skb->len; i++) {
-;
+		printk(" %02x", skb->data[i]);
 	}
-;
+	printk("\n");
 
 	/* transition to active state */
 	if (((info->flowmask & 0x07) == 0) && ((flowmask & 0x07) != 0)) {

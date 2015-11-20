@@ -107,10 +107,10 @@ static inline void walkera0701_parse_frame(struct walkera_dev *w)
 		int magic, magic_bit;
 		magic = (w->buf[21] << 4) | w->buf[22];
 		magic_bit = (w->buf[24] & 8) >> 3;
-//		printk(KERN_DEBUG
-//		       "walkera0701: %4d %4d %4d %4d  %4d %4d %4d %4d (magic %2x %d)\n",
-//		       val1, val2, val3, val4, val5, val6, val7, val8, magic,
-;
+		printk(KERN_DEBUG
+		       "walkera0701: %4d %4d %4d %4d  %4d %4d %4d %4d (magic %2x %d)\n",
+		       val1, val2, val3, val4, val5, val6, val7, val8, magic,
+		       magic_bit);
 	}
 #endif
 	input_report_abs(w->input_dev, ABS_X, val2);
@@ -208,7 +208,7 @@ static int walkera0701_connect(struct walkera_dev *w, int parport)
 		return -ENODEV;
 
 	if (w->parport->irq == -1) {
-;
+		printk(KERN_ERR "walkera0701: parport without interrupt\n");
 		goto init_err;
 	}
 

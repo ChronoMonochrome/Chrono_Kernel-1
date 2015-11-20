@@ -147,7 +147,7 @@ static int platinumfb_set_par (struct fb_info *info)
 		FB_VISUAL_PSEUDOCOLOR : FB_VISUAL_DIRECTCOLOR;
  	info->fix.line_length = vmode_attrs[pinfo->vmode-1].hres * (1<<pinfo->cmode)
 		+ offset;
-;
+	printk("line_length: %x\n", info->fix.line_length);
 	return 0;
 }
 
@@ -345,7 +345,7 @@ static int __devinit platinum_init_fb(struct fb_info *info)
 	int sense, rc;
 
 	sense = read_platinum_sense(pinfo);
-;
+	printk(KERN_INFO "platinumfb: Monitor sense value = 0x%x, ", sense);
 	if (default_vmode == VMODE_NVRAM) {
 #ifdef CONFIG_NVRAM
 		default_vmode = nvram_read_byte(NV_VMODE);
@@ -372,17 +372,17 @@ static int __devinit platinum_init_fb(struct fb_info *info)
 	      platinum_vram_reqd(default_vmode, default_cmode) > pinfo->total_vram)
 		default_cmode--;
 
-;
+	printk("platinumfb:  Using video mode %d and color mode %d.\n", default_vmode, default_cmode);
 
 	/* Setup default var */
 	if (mac_vmode_to_var(default_vmode, default_cmode, &var) < 0) {
 		/* This shouldn't happen! */
-;
+		printk("mac_vmode_to_var(%d, %d,) failed\n", default_vmode, default_cmode);
 try_again:
 		default_vmode = VMODE_640_480_60;
 		default_cmode = CMODE_8;
 		if (mac_vmode_to_var(default_vmode, default_cmode, &var) < 0) {
-;
+			printk(KERN_ERR "platinumfb: mac_vmode_to_var() failed\n");
 			return -ENXIO;
 		}
 	}
@@ -402,7 +402,7 @@ try_again:
 	if (rc < 0)
 		return rc;
 
-;
+	printk(KERN_INFO "fb%d: Apple Platinum frame buffer device\n", info->node);
 
 	return 0;
 }
@@ -449,24 +449,24 @@ static int platinum_var_to_par(struct fb_var_screeninfo *var,
 	int vmode, cmode;
 
 	if (mac_var_to_vmode(var, &vmode, &cmode) != 0) {
-;
-;
-;
-;
-;
-;
-;
-;
+		printk(KERN_ERR "platinum_var_to_par: mac_var_to_vmode unsuccessful.\n");
+		printk(KERN_ERR "platinum_var_to_par: var->xres = %d\n", var->xres);
+		printk(KERN_ERR "platinum_var_to_par: var->yres = %d\n", var->yres);
+		printk(KERN_ERR "platinum_var_to_par: var->xres_virtual = %d\n", var->xres_virtual);
+		printk(KERN_ERR "platinum_var_to_par: var->yres_virtual = %d\n", var->yres_virtual);
+		printk(KERN_ERR "platinum_var_to_par: var->bits_per_pixel = %d\n", var->bits_per_pixel);
+		printk(KERN_ERR "platinum_var_to_par: var->pixclock = %d\n", var->pixclock);
+		printk(KERN_ERR "platinum_var_to_par: var->vmode = %d\n", var->vmode);
 		return -EINVAL;
 	}
 
 	if (!platinum_reg_init[vmode-1]) {
-;
+		printk(KERN_ERR "platinum_var_to_par, vmode %d not valid.\n", vmode);
 		return -EINVAL;
 	}
 
 	if (platinum_vram_reqd(vmode, cmode) > pinfo->total_vram) {
-;
+		printk(KERN_ERR "platinum_var_to_par, not enough ram for vmode %d, cmode %d.\n", vmode, cmode);
 		return -EINVAL;
 	}
 
@@ -569,7 +569,7 @@ static int __devinit platinumfb_probe(struct platform_device* odev)
 	if (!request_mem_region(pinfo->rsrc_fb.start,
 				pinfo->rsrc_fb.end - pinfo->rsrc_fb.start + 1,
 				"platinumfb framebuffer")) {
-;
+		printk(KERN_ERR "platinumfb: Can't request framebuffer !\n");
 		framebuffer_release(info);
 		return -ENXIO;
 	}
@@ -608,9 +608,9 @@ static int __devinit platinumfb_probe(struct platform_device* odev)
 	bank2 = fbuffer[0x200000] == 0x56;
 	bank3 = fbuffer[0x300000] == 0x78;
 	pinfo->total_vram = (bank0 + bank1 + bank2 + bank3) * 0x100000;
-//	printk(KERN_INFO "platinumfb: Total VRAM = %dMB (%d%d%d%d)\n",
-//	       (unsigned int) (pinfo->total_vram / 1024 / 1024),
-;
+	printk(KERN_INFO "platinumfb: Total VRAM = %dMB (%d%d%d%d)\n",
+	       (unsigned int) (pinfo->total_vram / 1024 / 1024),
+	       bank3, bank2, bank1, bank0);
 
 	/*
 	 * Try to determine whether we have an old or a new DACula.
@@ -620,15 +620,15 @@ static int __devinit platinumfb_probe(struct platform_device* odev)
 	switch (pinfo->dactype) {
 	case 0x3c:
 		pinfo->clktype = 1;
-;
+		printk(KERN_INFO "platinumfb: DACula type 0x3c\n");
 		break;
 	case 0x84:
 		pinfo->clktype = 0;
-;
+		printk(KERN_INFO "platinumfb: DACula type 0x84\n");
 		break;
 	default:
 		pinfo->clktype = 0;
-;
+		printk(KERN_INFO "platinumfb: Unknown DACula type: %x\n", pinfo->dactype);
 		break;
 	}
 	dev_set_drvdata(&odev->dev, info);

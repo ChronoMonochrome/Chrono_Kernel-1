@@ -95,8 +95,8 @@ void ide_complete_cmd(ide_drive_t *drive, struct ide_cmd *cmd, u8 stat, u8 err)
 	if ((cmd->tf_flags & IDE_TFLAG_CUSTOM_HANDLER) &&
 	    tf_cmd == ATA_CMD_IDLEIMMEDIATE) {
 		if (tf->lbal != 0xc4) {
-//			printk(KERN_ERR "%s: head unload failed!\n",
-;
+			printk(KERN_ERR "%s: head unload failed!\n",
+			       drive->name);
 			ide_tf_dump(drive->name, cmd);
 		} else
 			drive->dev_flags |= IDE_DFLAG_PARKED;
@@ -187,8 +187,8 @@ static ide_startstop_t do_special(ide_drive_t *drive)
 	struct ide_cmd cmd;
 
 #ifdef DEBUG
-//	printk(KERN_DEBUG "%s: %s: 0x%02x\n", drive->name, __func__,
-;
+	printk(KERN_DEBUG "%s: %s: 0x%02x\n", drive->name, __func__,
+		drive->special_flags);
 #endif
 	if (drive->media != ide_disk) {
 		drive->special_flags = 0;
@@ -269,7 +269,7 @@ static ide_startstop_t execute_drive_cmd (ide_drive_t *drive,
  	 * all current requests to be flushed from the queue.
  	 */
 #ifdef DEBUG
-;
+ 	printk("%s: DRIVE_CMD (null)\n", drive->name);
 #endif
 	rq->errors = 0;
 	ide_complete_rq(drive, 0, blk_rq_bytes(rq));
@@ -310,8 +310,8 @@ static ide_startstop_t start_request (ide_drive_t *drive, struct request *rq)
 	BUG_ON(!(rq->cmd_flags & REQ_STARTED));
 
 #ifdef DEBUG
-//	printk("%s: start_request: current=0x%08lx\n",
-;
+	printk("%s: start_request: current=0x%08lx\n",
+		drive->hwif->name, (unsigned long) rq);
 #endif
 
 	/* bail early if we've exceeded max_failures */
@@ -326,7 +326,7 @@ static ide_startstop_t start_request (ide_drive_t *drive, struct request *rq)
 	drive->hwif->tp_ops->dev_select(drive);
 	if (ide_wait_stat(&startstop, drive, drive->ready_stat,
 			  ATA_BUSY | ATA_DRQ, WAIT_READY)) {
-;
+		printk(KERN_ERR "%s: drive not ready for command\n", drive->name);
 		return startstop;
 	}
 
@@ -345,8 +345,8 @@ static ide_startstop_t start_request (ide_drive_t *drive, struct request *rq)
 		else if (blk_pm_request(rq)) {
 			struct request_pm_state *pm = rq->special;
 #ifdef DEBUG_PM
-//			printk("%s: start_power_step(step: %d)\n",
-;
+			printk("%s: start_power_step(step: %d)\n",
+				drive->name, pm->pm_step);
 #endif
 			startstop = ide_start_power_step(drive, rq);
 			if (startstop == ide_stopped &&
@@ -668,8 +668,8 @@ void ide_timer_expiry (unsigned long data)
 			if (hwif->port_ops && hwif->port_ops->clear_irq)
 				hwif->port_ops->clear_irq(drive);
 
-//			printk(KERN_WARNING "%s: lost interrupt\n",
-;
+			printk(KERN_WARNING "%s: lost interrupt\n",
+				drive->name);
 			startstop = handler(drive);
 		} else {
 			if (drive->waiting_for_dma)
@@ -735,9 +735,9 @@ static void unexpected_intr(int irq, ide_hwif_t *hwif)
 
 		if (time_after(jiffies, last_msgtime + HZ)) {
 			last_msgtime = jiffies;
-//			printk(KERN_ERR "%s: unexpected interrupt, "
-//				"status=0x%02x, count=%ld\n",
-;
+			printk(KERN_ERR "%s: unexpected interrupt, "
+				"status=0x%02x, count=%ld\n",
+				hwif->name, stat, count);
 		}
 	}
 }

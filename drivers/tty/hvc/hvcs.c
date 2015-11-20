@@ -389,7 +389,7 @@ static ssize_t hvcs_current_vty_store(struct device *dev, struct device_attribut
 	 * Don't need this feature at the present time because firmware doesn't
 	 * yet support multiple partners.
 	 */
-;
+	printk(KERN_INFO "HVCS: Denied current_vty change: -EPERM.\n");
 	return -EPERM;
 }
 
@@ -424,24 +424,24 @@ static ssize_t hvcs_vterm_state_store(struct device *dev, struct device_attribut
 
 	if (hvcsd->open_count > 0) {
 		spin_unlock_irqrestore(&hvcsd->lock, flags);
-//		printk(KERN_INFO "HVCS: vterm state unchanged.  "
-;
+		printk(KERN_INFO "HVCS: vterm state unchanged.  "
+				"The hvcs device node is still in use.\n");
 		return -EPERM;
 	}
 
 	if (hvcsd->connected == 0) {
 		spin_unlock_irqrestore(&hvcsd->lock, flags);
-//		printk(KERN_INFO "HVCS: vterm state unchanged. The"
-;
+		printk(KERN_INFO "HVCS: vterm state unchanged. The"
+				" vty-server is not connected to a vty.\n");
 		return -EPERM;
 	}
 
 	hvcs_partner_free(hvcsd);
-//	printk(KERN_INFO "HVCS: Closed vty-server@%X and"
-//			" partner vty@%X:%d connection.\n",
-//			hvcsd->vdev->unit_address,
-//			hvcsd->p_unit_address,
-;
+	printk(KERN_INFO "HVCS: Closed vty-server@%X and"
+			" partner vty@%X:%d connection.\n",
+			hvcsd->vdev->unit_address,
+			hvcsd->p_unit_address,
+			(uint32_t)hvcsd->p_partition_ID);
 
 	spin_unlock_irqrestore(&hvcsd->lock, flags);
 	return count;
@@ -504,8 +504,8 @@ static ssize_t hvcs_rescan_store(struct device_driver *ddp, const char * buf,
 		return -EINVAL;
 
 	hvcs_rescan_status = 1;
-//	printk(KERN_INFO "HVCS: rescanning partner info for all"
-;
+	printk(KERN_INFO "HVCS: rescanning partner info for all"
+		" vty-servers.\n");
 	hvcs_rescan_devices_list();
 	hvcs_rescan_status = 0;
 	return count;
@@ -716,14 +716,14 @@ static void destroy_hvcs_struct(struct kref *kref)
 
 	if (hvcsd->connected == 1) {
 		hvcs_partner_free(hvcsd);
-//		printk(KERN_INFO "HVCS: Closed vty-server@%X and"
-//				" partner vty@%X:%d connection.\n",
-//				hvcsd->vdev->unit_address,
-//				hvcsd->p_unit_address,
-;
+		printk(KERN_INFO "HVCS: Closed vty-server@%X and"
+				" partner vty@%X:%d connection.\n",
+				hvcsd->vdev->unit_address,
+				hvcsd->p_unit_address,
+				(uint32_t)hvcsd->p_partition_ID);
 	}
-//	printk(KERN_INFO "HVCS: Destroyed hvcs_struct for vty-server@%X.\n",
-;
+	printk(KERN_INFO "HVCS: Destroyed hvcs_struct for vty-server@%X.\n",
+			hvcsd->vdev->unit_address);
 
 	vdev = hvcsd->vdev;
 	hvcsd->vdev = NULL;
@@ -746,7 +746,7 @@ static int hvcs_get_index(void)
 	int i;
 	/* Paranoia check */
 	if (!hvcs_index_list) {
-;
+		printk(KERN_ERR "HVCS: hvcs_index_list NOT valid!.\n");
 		return -EFAULT;
 	}
 	/* Find the numerically lowest first free index. */
@@ -768,7 +768,7 @@ static int __devinit hvcs_probe(
 	int retval;
 
 	if (!dev || !id) {
-;
+		printk(KERN_ERR "HVCS: probed with invalid parameter.\n");
 		return -EPERM;
 	}
 
@@ -809,9 +809,9 @@ static int __devinit hvcs_probe(
 	 * first time.
 	 */
 	if (hvcs_get_pi(hvcsd)) {
-//		printk(KERN_ERR "HVCS: Failed to fetch partner"
-//			" info for vty-server@%X on device probe.\n",
-;
+		printk(KERN_ERR "HVCS: Failed to fetch partner"
+			" info for vty-server@%X on device probe.\n",
+			hvcsd->vdev->unit_address);
 	}
 
 	/*
@@ -825,12 +825,12 @@ static int __devinit hvcs_probe(
 
 	retval = sysfs_create_group(&dev->dev.kobj, &hvcs_attr_group);
 	if (retval) {
-//		printk(KERN_ERR "HVCS: Can't create sysfs attrs for vty-server@%X\n",
-;
+		printk(KERN_ERR "HVCS: Can't create sysfs attrs for vty-server@%X\n",
+		       hvcsd->vdev->unit_address);
 		return retval;
 	}
 
-;
+	printk(KERN_INFO "HVCS: vty-server@%X added to the vio bus.\n", dev->unit_address);
 
 	/*
 	 * DON'T enable interrupts here because there is no user to receive the
@@ -870,8 +870,8 @@ static int __devexit hvcs_remove(struct vio_dev *dev)
 	if (tty)
 		tty_hangup(tty);
 
-//	printk(KERN_INFO "HVCS: vty-server@%X removed from the"
-;
+	printk(KERN_INFO "HVCS: vty-server@%X removed from the"
+			" vio bus.\n", dev->unit_address);
 	return 0;
 };
 
@@ -929,8 +929,8 @@ static int hvcs_get_pi(struct hvcs_struct *hvcsd)
 	retval = hvcs_get_partner_info(unit_address, &head, hvcs_pi_buff);
 	spin_unlock(&hvcs_pi_lock);
 	if (retval) {
-//		printk(KERN_ERR "HVCS: Failed to fetch partner"
-;
+		printk(KERN_ERR "HVCS: Failed to fetch partner"
+			" info for vty-server@%x.\n", unit_address);
 		return retval;
 	}
 
@@ -1030,8 +1030,8 @@ static int hvcs_partner_connect(struct hvcs_struct *hvcsd)
 	 * data but thanks to ambiguous firmware return codes we can't really
 	 * tell.
 	 */
-//	printk(KERN_INFO "HVCS: vty-server or partner"
-;
+	printk(KERN_INFO "HVCS: vty-server or partner"
+			" vty is busy.  Try again later.\n");
 	return -EBUSY;
 }
 
@@ -1065,13 +1065,13 @@ static int hvcs_enable_device(struct hvcs_struct *hvcsd, uint32_t unit_address,
 		if (vio_enable_interrupts(vdev) == H_SUCCESS)
 			return 0;
 		else {
-//			printk(KERN_ERR "HVCS: int enable failed for"
-;
+			printk(KERN_ERR "HVCS: int enable failed for"
+					" vty-server@%X.\n", unit_address);
 			free_irq(irq, hvcsd);
 		}
 	} else
-//		printk(KERN_ERR "HVCS: irq req failed for"
-;
+		printk(KERN_ERR "HVCS: irq req failed for"
+				" vty-server@%X.\n", unit_address);
 
 	spin_lock_irqsave(&hvcsd->lock, flags);
 	hvcs_partner_free(hvcsd);
@@ -1134,8 +1134,8 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
 	 * This function increments the kref index.
 	 */
 	if (!(hvcsd = hvcs_get_by_index(tty->index))) {
-//		printk(KERN_WARNING "HVCS: open failed, no device associated"
-;
+		printk(KERN_WARNING "HVCS: open failed, no device associated"
+				" with tty->index %d.\n", tty->index);
 		return -ENODEV;
 	}
 
@@ -1168,7 +1168,7 @@ static int hvcs_open(struct tty_struct *tty, struct file *filp)
 	 */
 	if (((rc = hvcs_enable_device(hvcsd, unit_address, irq, vdev)))) {
 		kref_put(&hvcsd->kref, destroy_hvcs_struct);
-;
+		printk(KERN_WARNING "HVCS: enable device failed.\n");
 		return rc;
 	}
 
@@ -1186,8 +1186,8 @@ fast_open:
 open_success:
 	hvcs_kick();
 
-//	printk(KERN_INFO "HVCS: vty-server@%X connection opened.\n",
-;
+	printk(KERN_INFO "HVCS: vty-server@%X connection opened.\n",
+		hvcsd->vdev->unit_address );
 
 	return 0;
 
@@ -1195,7 +1195,7 @@ error_release:
 	spin_unlock_irqrestore(&hvcsd->lock, flags);
 	kref_put(&hvcsd->kref, destroy_hvcs_struct);
 
-;
+	printk(KERN_WARNING "HVCS: partner connect failed.\n");
 	return retval;
 }
 
@@ -1250,9 +1250,9 @@ static void hvcs_close(struct tty_struct *tty, struct file *filp)
 		kref_put(&hvcsd->kref, destroy_hvcs_struct);
 		return;
 	} else if (hvcsd->open_count < 0) {
-//		printk(KERN_ERR "HVCS: vty-server@%X open_count: %d"
-//				" is missmanaged.\n",
-;
+		printk(KERN_ERR "HVCS: vty-server@%X open_count: %d"
+				" is missmanaged.\n",
+		hvcsd->vdev->unit_address, hvcsd->open_count);
 	}
 
 	spin_unlock_irqrestore(&hvcsd->lock, flags);
@@ -1339,8 +1339,8 @@ static int hvcs_write(struct tty_struct *tty,
 
 	/* Reasonable size to prevent user level flooding */
 	if (count > HVCS_MAX_FROM_USER) {
-//		printk(KERN_WARNING "HVCS write: count being truncated to"
-;
+		printk(KERN_WARNING "HVCS write: count being truncated to"
+				" HVCS_MAX_FROM_USER.\n");
 		count = HVCS_MAX_FROM_USER;
 	}
 
@@ -1527,7 +1527,7 @@ static int __devinit hvcs_initialize(void)
 	 * dynamically assigned major and minor numbers for our devices.
 	 */
 	if (tty_register_driver(hvcs_tty_driver)) {
-;
+		printk(KERN_ERR "HVCS: registration as a tty driver failed.\n");
 		rc = -EIO;
 		goto register_fail;
 	}
@@ -1540,7 +1540,7 @@ static int __devinit hvcs_initialize(void)
 
 	hvcs_task = kthread_run(khvcsd, NULL, "khvcsd");
 	if (IS_ERR(hvcs_task)) {
-;
+		printk(KERN_ERR "HVCS: khvcsd creation failed.\n");
 		rc = -EIO;
 		goto kthread_fail;
 	}
@@ -1564,7 +1564,7 @@ static int __init hvcs_module_init(void)
 {
 	int rc = vio_register_driver(&hvcs_vio_driver);
 	if (rc) {
-;
+		printk(KERN_ERR "HVCS: can't register vio driver\n");
 		return rc;
 	}
 
@@ -1609,7 +1609,7 @@ static void __exit hvcs_module_exit(void)
 
 	put_tty_driver(hvcs_tty_driver);
 
-;
+	printk(KERN_INFO "HVCS: driver module removed.\n");
 }
 
 module_init(hvcs_module_init);

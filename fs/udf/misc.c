@@ -231,7 +231,7 @@ struct buffer_head *udf_read_tagged(struct super_block *sb, uint32_t block,
 
 	/* Verify the tag checksum */
 	if (udf_tag_checksum(tag_p) != tag_p->tagChecksum) {
-;
+		printk(KERN_ERR "udf: tag checksum failed block %d\n", block);
 		goto error_out;
 	}
 

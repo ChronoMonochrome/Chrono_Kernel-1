@@ -41,20 +41,20 @@
 #include "ubi-media.h"
 
 #define err_msg(fmt, ...)                                   \
-//	printk(KERN_DEBUG "gluebi (pid %d): %s: " fmt "\n", \
-//	       current->pid, __func__, ##__VA_ARGS__)
-//
-///**
-// * struct gluebi_device - a gluebi device description data structure.
-// * @mtd: emulated MTD device description object
-// * @refcnt: gluebi device reference count
-// * @desc: UBI volume descriptor
-// * @ubi_num: UBI device number this gluebi device works on
-// * @vol_id: ID of UBI volume this gluebi device works on
-// * @list: link in a list of gluebi devices
-// */
-//struct gluebi_device {
-;
+	printk(KERN_DEBUG "gluebi (pid %d): %s: " fmt "\n", \
+	       current->pid, __func__, ##__VA_ARGS__)
+
+/**
+ * struct gluebi_device - a gluebi device description data structure.
+ * @mtd: emulated MTD device description object
+ * @refcnt: gluebi device reference count
+ * @desc: UBI volume descriptor
+ * @ubi_num: UBI device number this gluebi device works on
+ * @vol_id: ID of UBI volume this gluebi device works on
+ * @list: link in a list of gluebi devices
+ */
+struct gluebi_device {
+	struct mtd_info mtd;
 	int refcnt;
 	struct ubi_volume_desc *desc;
 	int ubi_num;

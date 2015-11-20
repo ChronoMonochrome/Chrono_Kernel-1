@@ -34,27 +34,27 @@ module_param(ssh_procfs_gid, uint, 0444);
 
 /* Use printk instead of SSH_DEBUG macros. */
 #ifdef DEBUG_LIGHT
-//#define SSH_LINUX_PROCFS_DEBUG(x...) if (net_ratelimit()) printk(KERN_INFO x)
-//#define SSH_LINUX_PROCFS_WARN(x...) printk(KERN_EMERG x)
-//#endif /* DEBUG_LIGHT */
-//
-//#ifndef SSH_LINUX_PROCFS_DEBUG
-//#define SSH_LINUX_PROCFS_DEBUG(x...)
-//#define SSH_LINUX_PROCFS_WARN(x...)
-//#endif /* SSH_LINUX_PROCFS_DEBUG */
-//
-///* Maximum number of bytes that can be written to the ipm proc entry
-//   in one call. This limits the time spent softirqs disabled by forcing
-//   the application to perform another write operation. */
-//#define SSH_LINUX_PROCFS_IPM_WRITE_MAX_LENGTH   \
-//  (4 * SSH_LINUX_IPM_RECV_BUFFER_SIZE)
-//
-//static int
-//interceptor_proc_entry_fop_open(SshInterceptorProcEntry entry,
-//				struct file *file)
-//{
-//  /* Allow only one userspace application at a time. */
-;
+#define SSH_LINUX_PROCFS_DEBUG(x...) if (net_ratelimit()) printk(KERN_INFO x)
+#define SSH_LINUX_PROCFS_WARN(x...) printk(KERN_EMERG x)
+#endif /* DEBUG_LIGHT */
+
+#ifndef SSH_LINUX_PROCFS_DEBUG
+#define SSH_LINUX_PROCFS_DEBUG(x...)
+#define SSH_LINUX_PROCFS_WARN(x...)
+#endif /* SSH_LINUX_PROCFS_DEBUG */
+
+/* Maximum number of bytes that can be written to the ipm proc entry
+   in one call. This limits the time spent softirqs disabled by forcing
+   the application to perform another write operation. */
+#define SSH_LINUX_PROCFS_IPM_WRITE_MAX_LENGTH   \
+  (4 * SSH_LINUX_IPM_RECV_BUFFER_SIZE)
+
+static int
+interceptor_proc_entry_fop_open(SshInterceptorProcEntry entry,
+				struct file *file)
+{
+  /* Allow only one userspace application at a time. */
+  write_lock(&entry->lock);
   if (entry->open == TRUE)
     {
       write_unlock(&entry->lock);

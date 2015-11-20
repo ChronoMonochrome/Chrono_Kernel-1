@@ -145,8 +145,8 @@ static int __init tv_init(void)
 		return retval;
 	}
 
-//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-;
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
 	return 0;
 }
 

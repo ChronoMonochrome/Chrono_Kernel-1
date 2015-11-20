@@ -67,7 +67,7 @@ static int __devinit hysdn_pci_init_one(struct pci_dev *akt_pcidev,
 		return rc;
 
 	if (!(card = kzalloc(sizeof(hysdn_card), GFP_KERNEL))) {
-;
+		printk(KERN_ERR "HYSDN: unable to alloc device mem \n");
 		rc = -ENOMEM;
 		goto err_out;
 	}
@@ -86,7 +86,7 @@ static int __devinit hysdn_pci_init_one(struct pci_dev *akt_pcidev,
 	card->brdtype = ent->driver_data;
 
 	if (ergo_inithardware(card)) {
-;
+		printk(KERN_WARNING "HYSDN: card at io 0x%04x already in use\n", card->iobase);
 		rc = -EBUSY;
 		goto err_out_card;
 	}
@@ -157,13 +157,13 @@ hysdn_init(void)
 {
 	int rc;
 
-;
+	printk(KERN_NOTICE "HYSDN: module loaded\n");
 
 	rc = pci_register_driver(&hysdn_pci_driver);
 	if (rc)
 		return rc;
 
-;
+	printk(KERN_INFO "HYSDN: %d card(s) found.\n", cardmax);
 
 	if (!hysdn_procconf_init())
 		hysdn_have_procfs = 1;
@@ -171,7 +171,7 @@ hysdn_init(void)
 #ifdef CONFIG_HYSDN_CAPI
 	if(cardmax > 0) {
 		if(hycapi_init()) {
-;
+			printk(KERN_ERR "HYCAPI: init failed\n");
 
 			if (hysdn_have_procfs)
 				hysdn_procconf_release();
@@ -206,7 +206,7 @@ hysdn_exit(void)
 	hycapi_cleanup();
 #endif /* CONFIG_HYSDN_CAPI */
 
-;
+	printk(KERN_NOTICE "HYSDN: module unloaded\n");
 }				/* cleanup_module */
 
 module_init(hysdn_init);

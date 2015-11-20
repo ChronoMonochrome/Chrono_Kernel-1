@@ -4397,8 +4397,8 @@ static int patch_conexant_auto(struct hda_codec *codec)
 	struct conexant_spec *spec;
 	int err;
 
-//	printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
-;
+	printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
+	       codec->chip_name);
 
 	spec = kzalloc(sizeof(*spec), GFP_KERNEL);
 	if (!spec)

@@ -49,11 +49,11 @@ static int __devinit snd_pcsp_create(struct snd_card *card)
 	if (!nopcm) {
 		hrtimer_get_res(CLOCK_MONOTONIC, &tp);
 		if (tp.tv_sec || tp.tv_nsec > PCSP_MAX_PERIOD_NS) {
-//			printk(KERN_ERR "PCSP: Timer resolution is not sufficient "
-;
-//			printk(KERN_ERR "PCSP: Make sure you have HPET and ACPI "
-;
-;
+			printk(KERN_ERR "PCSP: Timer resolution is not sufficient "
+				"(%linS)\n", tp.tv_nsec);
+			printk(KERN_ERR "PCSP: Make sure you have HPET and ACPI "
+				"enabled.\n");
+			printk(KERN_ERR "PCSP: Turned into nopcm mode.\n");
 			nopcm = 1;
 		}
 	}
@@ -63,8 +63,8 @@ static int __devinit snd_pcsp_create(struct snd_card *card)
 	else
 		min_div = MAX_DIV;
 #if PCSP_DEBUG
-//	printk(KERN_DEBUG "PCSP: lpj=%li, min_div=%i, res=%li\n",
-;
+	printk(KERN_DEBUG "PCSP: lpj=%li, min_div=%i, res=%li\n",
+	       loops_per_jiffy, min_div, tp.tv_nsec);
 #endif
 
 	div = MAX_DIV / min_div;
@@ -148,14 +148,14 @@ static int __devinit alsa_card_pcsp_init(struct device *dev)
 
 	err = snd_card_pcsp_probe(0, dev);
 	if (err) {
-;
+		printk(KERN_ERR "PC-Speaker initialization failed.\n");
 		return err;
 	}
 
 #ifdef CONFIG_DEBUG_PAGEALLOC
 	/* Well, CONFIG_DEBUG_PAGEALLOC makes the sound horrible. Lets alert */
-//	printk(KERN_WARNING "PCSP: CONFIG_DEBUG_PAGEALLOC is enabled, "
-;
+	printk(KERN_WARNING "PCSP: CONFIG_DEBUG_PAGEALLOC is enabled, "
+	       "which may make the sound noisy.\n");
 #endif
 
 	return 0;

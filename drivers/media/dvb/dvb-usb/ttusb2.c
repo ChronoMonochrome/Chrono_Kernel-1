@@ -35,8 +35,8 @@
 
 /* debug */
 static int dvb_usb_ttusb2_debug;
-//#define deb_info(args...)   dprintk(dvb_usb_ttusb2_debug,0x01,args)
-;
+#define deb_info(args...)   dprintk(dvb_usb_ttusb2_debug,0x01,args)
+module_param_named(debug,dvb_usb_ttusb2_debug, int, 0644);
 MODULE_PARM_DESC(debug, "set debugging level (1=info (or-able))." DVB_USB_DEBUG_STATUS);
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
@@ -217,7 +217,7 @@ static int ttusb2_frontend_tda10023_attach(struct dvb_usb_adapter *adap)
 static int ttusb2_tuner_tda827x_attach(struct dvb_usb_adapter *adap)
 {
 	if (dvb_attach(tda827x_attach, adap->fe, 0x61, &adap->dev->i2c_adap, NULL) == NULL) {
-;
+		printk(KERN_ERR "%s: No tda827x found!\n", __func__);
 		return -ENODEV;
 	}
 	return 0;

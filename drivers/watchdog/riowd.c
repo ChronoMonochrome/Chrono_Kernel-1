@@ -189,7 +189,7 @@ static int __devinit riowd_probe(struct platform_device *op)
 
 	p->regs = of_ioremap(&op->resource[0], 0, 2, DRIVER_NAME);
 	if (!p->regs) {
-;
+		printk(KERN_ERR PFX "Cannot map registers.\n");
 		goto out_free;
 	}
 	/* Make miscdev useable right away */
@@ -197,12 +197,12 @@ static int __devinit riowd_probe(struct platform_device *op)
 
 	err = misc_register(&riowd_miscdev);
 	if (err) {
-;
+		printk(KERN_ERR PFX "Cannot register watchdog misc device.\n");
 		goto out_iounmap;
 	}
 
-//	printk(KERN_INFO PFX "Hardware watchdog [%i minutes], "
-;
+	printk(KERN_INFO PFX "Hardware watchdog [%i minutes], "
+	       "regs at %p\n", riowd_timeout, p->regs);
 
 	dev_set_drvdata(&op->dev, p);
 	return 0;

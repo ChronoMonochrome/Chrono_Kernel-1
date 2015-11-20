@@ -929,8 +929,8 @@ static int __init cp210x_init(void)
 	}
 
 	/* Success */
-//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-;
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
 	return 0;
 }
 

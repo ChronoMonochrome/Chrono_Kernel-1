@@ -188,14 +188,14 @@ static int __devinit d7s_probe(struct platform_device *op)
 
 	p->regs = of_ioremap(&op->resource[0], 0, sizeof(u8), "d7s");
 	if (!p->regs) {
-;
+		printk(KERN_ERR PFX "Cannot map chip registers\n");
 		goto out_free;
 	}
 
 	err = misc_register(&d7s_miscdev);
 	if (err) {
-//		printk(KERN_ERR PFX "Unable to acquire miscdevice minor %i\n",
-;
+		printk(KERN_ERR PFX "Unable to acquire miscdevice minor %i\n",
+		       D7S_MINOR);
 		goto out_iounmap;
 	}
 
@@ -215,11 +215,11 @@ static int __devinit d7s_probe(struct platform_device *op)
 
 	writeb(regs,  p->regs);
 
-//	printk(KERN_INFO PFX "7-Segment Display%s at [%s:0x%llx] %s\n",
-//	       op->dev.of_node->full_name,
-//	       (regs & D7S_FLIP) ? " (FLIPPED)" : "",
-//	       op->resource[0].start,
-;
+	printk(KERN_INFO PFX "7-Segment Display%s at [%s:0x%llx] %s\n",
+	       op->dev.of_node->full_name,
+	       (regs & D7S_FLIP) ? " (FLIPPED)" : "",
+	       op->resource[0].start,
+	       sol_compat ? "in sol_compat mode" : "");
 
 	dev_set_drvdata(&op->dev, p);
 	d7s_device = p;

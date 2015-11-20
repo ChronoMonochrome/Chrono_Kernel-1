@@ -1051,9 +1051,9 @@ static inline void n_tty_receive_overrun(struct tty_struct *tty)
 	tty->num_overrun++;
 	if (time_before(tty->overrun_time, jiffies - HZ) ||
 			time_after(tty->overrun_time, jiffies)) {
-//		printk(KERN_WARNING "%s: %d input overrun(s)\n",
-//			tty_name(tty, buf),
-;
+		printk(KERN_WARNING "%s: %d input overrun(s)\n",
+			tty_name(tty, buf),
+			tty->num_overrun);
 		tty->overrun_time = jiffies;
 		tty->num_overrun = 0;
 	}
@@ -1409,8 +1409,8 @@ static void n_tty_receive_buf(struct tty_struct *tty, const unsigned char *cp,
 				n_tty_receive_overrun(tty);
 				break;
 			default:
-//				printk(KERN_ERR "%s: unknown flag %d\n",
-;
+				printk(KERN_ERR "%s: unknown flag %d\n",
+				       tty_name(tty, buf), flags);
 				break;
 			}
 		}
@@ -1692,7 +1692,7 @@ static int job_control(struct tty_struct *tty, struct file *file)
 	if (file->f_op->write != redirected_tty_write &&
 	    current->signal->tty == tty) {
 		if (!tty->pgrp)
-;
+			printk(KERN_ERR "n_tty_read: no tty->pgrp!\n");
 		else if (task_pgrp(current) != tty->pgrp) {
 			if (is_ignored(SIGTTIN) ||
 			    is_current_pgrp_orphaned())

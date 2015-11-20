@@ -78,8 +78,8 @@ void platform_cpu_die(unsigned int cpu)
 	unsigned int this_cpu = hard_smp_processor_id();
 
 	if (cpu != this_cpu) {
-//		printk(KERN_CRIT "Eek! platform_cpu_die running on %u, should be %u\n",
-;
+		printk(KERN_CRIT "Eek! platform_cpu_die running on %u, should be %u\n",
+			   this_cpu, cpu);
 		BUG();
 	}
 #endif

@@ -231,7 +231,7 @@ setup_ix1micro(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, ix1_revision);
-;
+	printk(KERN_INFO "HiSax: ITK IX1 driver Rev. %s\n", HiSax_getrev(tmp));
 	if (cs->typ != ISDN_CTYPE_IX1MICROR2)
 		return (0);
 
@@ -246,33 +246,33 @@ setup_ix1micro(struct IsdnCard *card)
 					ipid->vendor, ipid->function, pnp_d))) {
 					int err;
 
-//					printk(KERN_INFO "HiSax: %s detected\n",
-;
+					printk(KERN_INFO "HiSax: %s detected\n",
+						(char *)ipid->driver_data);
 					pnp_disable_dev(pnp_d);
 					err = pnp_activate_dev(pnp_d);
 					if (err<0) {
-//						printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
-;
+						printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
+							__func__, err);
 						return(0);
 					}
 					card->para[1] = pnp_port_start(pnp_d, 0);
 					card->para[0] = pnp_irq(pnp_d, 0);
 					if (!card->para[0] || !card->para[1]) {
-//						printk(KERN_ERR "ITK PnP:some resources are missing %ld/%lx\n",
-;
+						printk(KERN_ERR "ITK PnP:some resources are missing %ld/%lx\n",
+							card->para[0], card->para[1]);
 						pnp_disable_dev(pnp_d);
 						return(0);
 					}
 					break;
 				} else {
-;
+					printk(KERN_ERR "ITK PnP: PnP error card found, no device\n");
 				}
 			}
 			ipid++;
 			pnp_c = NULL;
 		} 
 		if (!ipid->card_vendor) {
-;
+			printk(KERN_INFO "ITK PnP: no ISAPnP card found\n");
 			return(0);
 		}
 	}
@@ -286,16 +286,16 @@ setup_ix1micro(struct IsdnCard *card)
 	cs->irq = card->para[0];
 	if (cs->hw.ix1.cfg_reg) {
 		if (!request_region(cs->hw.ix1.cfg_reg, 4, "ix1micro cfg")) {
-//			printk(KERN_WARNING
-//			  "HiSax: ITK ix1-micro Rev.2 config port "
-//			  "%x-%x already in use\n",
-//			       cs->hw.ix1.cfg_reg,
-;
+			printk(KERN_WARNING
+			  "HiSax: ITK ix1-micro Rev.2 config port "
+			  "%x-%x already in use\n",
+			       cs->hw.ix1.cfg_reg,
+			       cs->hw.ix1.cfg_reg + 4);
 			return (0);
 		}
 	}
-//	printk(KERN_INFO "HiSax: ITK ix1-micro Rev.2 config irq:%d io:0x%X\n",
-;
+	printk(KERN_INFO "HiSax: ITK ix1-micro Rev.2 config irq:%d io:0x%X\n",
+		cs->irq, cs->hw.ix1.cfg_reg);
 	setup_isac(cs);
 	cs->readisac = &ReadISAC;
 	cs->writeisac = &WriteISAC;
@@ -308,8 +308,8 @@ setup_ix1micro(struct IsdnCard *card)
 	cs->irq_func = &ix1micro_interrupt;
 	ISACVersion(cs, "ix1-Micro:");
 	if (HscxVersion(cs, "ix1-Micro:")) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		    "ix1-Micro: wrong HSCX versions check IO address\n");
 		release_io_ix1micro(cs);
 		return (0);
 	}

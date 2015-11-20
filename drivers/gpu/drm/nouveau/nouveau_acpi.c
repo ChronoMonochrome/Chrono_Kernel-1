@@ -77,7 +77,7 @@ static int nouveau_optimus_dsm(acpi_handle handle, int func, int arg, uint32_t *
 
 	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
 	if (err) {
-;
+		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
 		return err;
 	}
 
@@ -124,7 +124,7 @@ static int nouveau_dsm(acpi_handle handle, int func, int arg, uint32_t *result)
 
 	err = acpi_evaluate_object(handle, "_DSM", &input, &output);
 	if (err) {
-;
+		printk(KERN_INFO "failed to evaluate _DSM: %d\n", err);
 		return err;
 	}
 
@@ -255,7 +255,7 @@ static bool nouveau_dsm_detect(void)
 	guid_valid = mxm_wmi_supported();
 
 	if (guid_valid)
-;
+		printk("MXM: GUID detected in BIOS\n");
 
 	/* now do DSM detection */
 	while ((pdev = pci_get_class(PCI_CLASS_DISPLAY_VGA << 8, pdev)) != NULL) {
@@ -270,8 +270,8 @@ static bool nouveau_dsm_detect(void)
 
 	if (vga_count == 2 && has_dsm && guid_valid) {
 		acpi_get_name(nouveau_dsm_priv.dhandle, ACPI_FULL_PATHNAME, &buffer);
-//		printk(KERN_INFO "VGA switcheroo: detected DSM switching method %s handle\n",
-;
+		printk(KERN_INFO "VGA switcheroo: detected DSM switching method %s handle\n",
+		       acpi_method_name);
 		nouveau_dsm_priv.dsm_detected = true;
 		ret = true;
 	}
@@ -318,7 +318,7 @@ static int nouveau_rom_call(acpi_handle rom_handle, uint8_t *bios,
 
 	status = acpi_evaluate_object(rom_handle, NULL, &rom_arg, &buffer);
 	if (ACPI_FAILURE(status)) {
-;
+		printk(KERN_INFO "failed to evaluate ROM got %s\n", acpi_format_exception(status));
 		return -ENODEV;
 	}
 	obj = (union acpi_object *)buffer.pointer;

@@ -38,17 +38,17 @@
 #define DEBUG
 
 #ifdef DEBUG
-//#define DPRINTK(fmt, args...) printk(KERN_DEBUG "%s: " fmt,__func__,## args)
-//#else
-//#define DPRINTK(fmt, args...)
-//#endif
-//
-//static const u32 cfb_tab8_be[] = {
-//    0x00000000,0x000000ff,0x0000ff00,0x0000ffff,
-//    0x00ff0000,0x00ff00ff,0x00ffff00,0x00ffffff,
-//    0xff000000,0xff0000ff,0xff00ff00,0xff00ffff,
-//    0xffff0000,0xffff00ff,0xffffff00,0xffffffff
-;
+#define DPRINTK(fmt, args...) printk(KERN_DEBUG "%s: " fmt,__func__,## args)
+#else
+#define DPRINTK(fmt, args...)
+#endif
+
+static const u32 cfb_tab8_be[] = {
+    0x00000000,0x000000ff,0x0000ff00,0x0000ffff,
+    0x00ff0000,0x00ff00ff,0x00ffff00,0x00ffffff,
+    0xff000000,0xff0000ff,0xff00ff00,0xff00ffff,
+    0xffff0000,0xffff00ff,0xffffff00,0xffffffff
+};
 
 static const u32 cfb_tab8_le[] = {
     0x00000000,0xff000000,0x00ff0000,0xffff0000,

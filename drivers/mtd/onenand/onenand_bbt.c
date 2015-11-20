@@ -64,7 +64,7 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf, struct nand_bbt_descr 
 	struct mtd_oob_ops ops;
 	int rgn;
 
-;
+	printk(KERN_INFO "Scanning device for bad blocks\n");
 
 	len = 2;
 
@@ -101,8 +101,8 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf, struct nand_bbt_descr 
 			if (ret || check_short_pattern(&buf[j * scanlen],
 					       scanlen, this->writesize, bd)) {
 				bbm->bbt[i >> 3] |= 0x03 << (i & 0x6);
-//				printk(KERN_INFO "OneNAND eraseblock %d is an "
-;
+				printk(KERN_INFO "OneNAND eraseblock %d is an "
+					"initial bad block\n", i >> 1);
 				mtd->ecc_stats.badblocks++;
 				break;
 			}
@@ -189,7 +189,7 @@ int onenand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd)
 	/* Allocate memory (2bit per block) and clear the memory bad block table */
 	bbm->bbt = kzalloc(len, GFP_KERNEL);
 	if (!bbm->bbt) {
-;
+		printk(KERN_ERR "onenand_scan_bbt: Out of memory\n");
 		return -ENOMEM;
 	}
 
@@ -204,7 +204,7 @@ int onenand_scan_bbt(struct mtd_info *mtd, struct nand_bbt_descr *bd)
 
 	/* Scan the device to build a memory based bad block table */
 	if ((ret = onenand_memory_bbt(mtd, bd))) {
-;
+		printk(KERN_ERR "onenand_scan_bbt: Can't scan flash and build the RAM-based BBT\n");
 		kfree(bbm->bbt);
 		bbm->bbt = NULL;
 	}

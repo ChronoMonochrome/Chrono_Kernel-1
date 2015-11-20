@@ -131,9 +131,9 @@ static void amd7411_cable_detect(struct pci_dev *dev)
 	amd_80w = ((t & 0x3) ? 1 : 0) | ((t & 0xc) ? 2 : 0);
 	for (i = 24; i >= 0; i -= 8)
 		if (((u >> i) & 4) && !(amd_80w & (1 << (1 - (i >> 4))))) {
-//			printk(KERN_WARNING DRV_NAME " %s: BIOS didn't set "
-//				"cable bits correctly. Enabling workaround.\n",
-;
+			printk(KERN_WARNING DRV_NAME " %s: BIOS didn't set "
+				"cable bits correctly. Enabling workaround.\n",
+				pci_name(dev));
 			amd_80w |= (1 << (1 - (i >> 4)));
 		}
 }
@@ -264,8 +264,8 @@ static int __devinit amd74xx_probe(struct pci_dev *dev, const struct pci_device_
 	    ide_pci_is_in_compatibility_mode(dev))
 		d.host_flags |= IDE_HFLAG_BROKEN_ALTSTATUS;
 
-//	printk(KERN_INFO "%s %s: UDMA%s controller\n",
-;
+	printk(KERN_INFO "%s %s: UDMA%s controller\n",
+		d.name, pci_name(dev), amd_dma[fls(d.udma_mask) - 1]);
 
 	/*
 	* Determine the system bus clock.
@@ -279,9 +279,9 @@ static int __devinit amd74xx_probe(struct pci_dev *dev, const struct pci_device_
 	}
 
 	if (amd_clock < 20000 || amd_clock > 50000) {
-//		printk(KERN_WARNING "%s: User given PCI clock speed impossible"
-//				    " (%d), using 33 MHz instead.\n",
-;
+		printk(KERN_WARNING "%s: User given PCI clock speed impossible"
+				    " (%d), using 33 MHz instead.\n",
+				    d.name, amd_clock);
 		amd_clock = 33333;
 	}
 

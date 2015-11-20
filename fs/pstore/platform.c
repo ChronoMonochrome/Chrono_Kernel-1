@@ -179,8 +179,8 @@ out:
 	mutex_unlock(&psinfo->buf_mutex);
 
 	if (failed)
-//		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
-;
+		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
+		       failed, psi->name);
 }
 
 /*

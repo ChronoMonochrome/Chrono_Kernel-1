@@ -75,17 +75,17 @@ repeat:
 		if (unlikely(chain > 1)) {
 			struct crw tmp_crw;
 
-//			printk(KERN_WARNING"%s: Code does not support more "
-;
+			printk(KERN_WARNING"%s: Code does not support more "
+			       "than two chained crws; please report to "
 			       "linux390@de.ibm.com!\n", __func__);
 			ccode = stcrw(&tmp_crw);
-//			printk(KERN_WARNING"%s: crw reports slct=%d, oflw=%d, "
-//			       "chn=%d, rsc=%X, anc=%d, erc=%X, rsid=%X\n",
-//			       __func__, tmp_crw.slct, tmp_crw.oflw,
-//			       tmp_crw.chn, tmp_crw.rsc, tmp_crw.anc,
-;
-//			printk(KERN_WARNING"%s: This was crw number %x in the "
-;
+			printk(KERN_WARNING"%s: crw reports slct=%d, oflw=%d, "
+			       "chn=%d, rsc=%X, anc=%d, erc=%X, rsid=%X\n",
+			       __func__, tmp_crw.slct, tmp_crw.oflw,
+			       tmp_crw.chn, tmp_crw.rsc, tmp_crw.anc,
+			       tmp_crw.erc, tmp_crw.rsid);
+			printk(KERN_WARNING"%s: This was crw number %x in the "
+			       "chain\n", __func__, chain);
 			if (ccode != 0)
 				break;
 			chain = tmp_crw.chn ? chain + 1 : 0;
@@ -94,11 +94,11 @@ repeat:
 		ccode = stcrw(&crw[chain]);
 		if (ccode != 0)
 			break;
-//		printk(KERN_DEBUG "crw_info : CRW reports slct=%d, oflw=%d, "
-//		       "chn=%d, rsc=%X, anc=%d, erc=%X, rsid=%X\n",
-//		       crw[chain].slct, crw[chain].oflw, crw[chain].chn,
-//		       crw[chain].rsc, crw[chain].anc, crw[chain].erc,
-;
+		printk(KERN_DEBUG "crw_info : CRW reports slct=%d, oflw=%d, "
+		       "chn=%d, rsc=%X, anc=%d, erc=%X, rsid=%X\n",
+		       crw[chain].slct, crw[chain].oflw, crw[chain].chn,
+		       crw[chain].rsc, crw[chain].anc, crw[chain].erc,
+		       crw[chain].rsid);
 		/* Check for overflows. */
 		if (crw[chain].oflw) {
 			int i;

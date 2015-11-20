@@ -262,8 +262,8 @@ static void __init
 	if( (( tmp & 0x0f ) == pas_irq_code) && pas_irq_code > 0 
 	    && !force_irq )
 	{
-//	    printk( "pas16: WARNING: Can't use same irq as sound "
-;
+	    printk( "pas16: WARNING: Can't use same irq as sound "
+		    "driver -- interrupts disabled\n" );
 	    /* Set up the drive parameters, disable 5380 interrupts */
 	    outb( 0x4d, io_port + SYS_CONFIG_4 );
 	}
@@ -353,7 +353,7 @@ void __init pas16_setup(char *str, int *ints)
     static int commandline_current = 0;
     int i;
     if (ints[0] != 2) 
-;
+	printk("pas16_setup : usage pas16=io_port,irq\n");
     else 
 	if (commandline_current < NO_OVERRIDES) {
 	    overrides[commandline_current].io_port = (unsigned short) ints[1];
@@ -419,21 +419,21 @@ int __init pas16_detect(struct scsi_host_template * tpnt)
 	else
 	    for (; !io_port && (current_base < NO_BASES); ++current_base) {
 #if (PDEBUG & PDEBUG_INIT)
-;
+    printk("scsi-pas16 : probing io_port %04x\n", (unsigned int) bases[current_base].io_port);
 #endif
 		if ( !bases[current_base].noauto &&
 		     pas16_hw_detect( current_base ) ){
 			io_port = bases[current_base].io_port;
 			init_board( io_port, default_irqs[ current_base ], 0 ); 
 #if (PDEBUG & PDEBUG_INIT)
-;
+			printk("scsi-pas16 : detected board.\n");
 #endif
 		}
     }
 
 
 #if defined(PDEBUG) && (PDEBUG & PDEBUG_INIT)
-;
+	printk("scsi-pas16 : io_port = %04x\n", (unsigned int) io_port);
 #endif
 
 	if (!io_port)
@@ -455,33 +455,33 @@ int __init pas16_detect(struct scsi_host_template * tpnt)
 	if (instance->irq != SCSI_IRQ_NONE) 
 	    if (request_irq(instance->irq, pas16_intr, IRQF_DISABLED,
 			    "pas16", instance)) {
-//		printk("scsi%d : IRQ%d not free, interrupts disabled\n", 
-;
+		printk("scsi%d : IRQ%d not free, interrupts disabled\n", 
+		    instance->host_no, instance->irq);
 		instance->irq = SCSI_IRQ_NONE;
 	    } 
 
 	if (instance->irq == SCSI_IRQ_NONE) {
-;
-;
+	    printk("scsi%d : interrupts not enabled. for better interactive performance,\n", instance->host_no);
+	    printk("scsi%d : please jumper the board for a free IRQ.\n", instance->host_no);
 	    /* Disable 5380 interrupts, leave drive params the same */
 	    outb( 0x4d, io_port + SYS_CONFIG_4 );
 	    outb( (inb(io_port + IO_CONFIG_3) & 0x0f), io_port + IO_CONFIG_3 );
 	}
 
 #if defined(PDEBUG) && (PDEBUG & PDEBUG_INIT)
-;
+	printk("scsi%d : irq = %d\n", instance->host_no, instance->irq);
 #endif
 
-//	printk("scsi%d : at 0x%04x", instance->host_no, (int) 
-;
+	printk("scsi%d : at 0x%04x", instance->host_no, (int) 
+	    instance->io_port);
 	if (instance->irq == SCSI_IRQ_NONE)
 	    printk (" interrupts disabled");
 	else 
 	    printk (" irq %d", instance->irq);
-//	printk(" options CAN_QUEUE=%d  CMD_PER_LUN=%d release=%d",
-;
+	printk(" options CAN_QUEUE=%d  CMD_PER_LUN=%d release=%d",
+	    CAN_QUEUE, CMD_PER_LUN, PAS16_PUBLIC_RELEASE);
 	NCR5380_print_options(instance);
-;
+	printk("\n");
 
 	++current_override;
 	++count;
@@ -555,8 +555,8 @@ static inline int NCR5380_pread (struct Scsi_Host *instance, unsigned char *dst,
 
     if ( inb(instance->io_port + P_TIMEOUT_STATUS_REG_OFFSET) & P_TS_TIM) {
 	outb( P_TS_CT, instance->io_port + P_TIMEOUT_STATUS_REG_OFFSET);
-//	printk("scsi%d : watchdog timer fired in NCR5380_pread()\n",
-;
+	printk("scsi%d : watchdog timer fired in NCR5380_pread()\n",
+	    instance->host_no);
 	return -1;
     }
    if (ii > pas_maxi)
@@ -591,8 +591,8 @@ static inline int NCR5380_pwrite (struct Scsi_Host *instance, unsigned char *src
 
     if (inb(instance->io_port + P_TIMEOUT_STATUS_REG_OFFSET) & P_TS_TIM) {
 	outb( P_TS_CT, instance->io_port + P_TIMEOUT_STATUS_REG_OFFSET);
-//	printk("scsi%d : watchdog timer fired in NCR5380_pwrite()\n",
-;
+	printk("scsi%d : watchdog timer fired in NCR5380_pwrite()\n",
+	    instance->host_no);
 	return -1;
     }
     if (ii > pas_maxi)

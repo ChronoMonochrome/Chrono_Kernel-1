@@ -154,11 +154,11 @@ static int init_chipset_cs5530(struct pci_dev *dev)
 		}
 	}
 	if (!master_0) {
-;
+		printk(KERN_ERR DRV_NAME ": unable to locate PCI MASTER function\n");
 		goto out;
 	}
 	if (!cs5530_0) {
-;
+		printk(KERN_ERR DRV_NAME ": unable to locate CS5530 LEGACY function\n");
 		goto out;
 	}
 

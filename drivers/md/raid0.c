@@ -56,26 +56,26 @@ static void dump_zones(struct mddev *mddev)
 	char b[BDEVNAME_SIZE];
 	struct r0conf *conf = mddev->private;
 	int raid_disks = conf->strip_zone[0].nb_dev;
-//	printk(KERN_INFO "md: RAID0 configuration for %s - %d zone%s\n",
-//	       mdname(mddev),
-;
+	printk(KERN_INFO "md: RAID0 configuration for %s - %d zone%s\n",
+	       mdname(mddev),
+	       conf->nr_strip_zones, conf->nr_strip_zones==1?"":"s");
 	for (j = 0; j < conf->nr_strip_zones; j++) {
-;
+		printk(KERN_INFO "md: zone%d=[", j);
 		for (k = 0; k < conf->strip_zone[j].nb_dev; k++)
-//			printk(KERN_CONT "%s%s", k?"/":"",
-//			bdevname(conf->devlist[j*raid_disks
-;
-;
+			printk(KERN_CONT "%s%s", k?"/":"",
+			bdevname(conf->devlist[j*raid_disks
+						+ k]->bdev, b));
+		printk(KERN_CONT "]\n");
 
 		zone_size  = conf->strip_zone[j].zone_end - zone_start;
-//		printk(KERN_INFO "      zone-offset=%10lluKB, "
-//				"device-offset=%10lluKB, size=%10lluKB\n",
-//			(unsigned long long)zone_start>>1,
-//			(unsigned long long)conf->strip_zone[j].dev_start>>1,
-;
+		printk(KERN_INFO "      zone-offset=%10lluKB, "
+				"device-offset=%10lluKB, size=%10lluKB\n",
+			(unsigned long long)zone_start>>1,
+			(unsigned long long)conf->strip_zone[j].dev_start>>1,
+			(unsigned long long)zone_size>>1);
 		zone_start = conf->strip_zone[j].zone_end;
 	}
-;
+	printk(KERN_INFO "\n");
 }
 
 static int create_strip_zones(struct mddev *mddev, struct r0conf **private_conf)
@@ -175,13 +175,13 @@ static int create_strip_zones(struct mddev *mddev, struct r0conf **private_conf)
 		}
 
 		if (j < 0 || j >= mddev->raid_disks) {
-//			printk(KERN_ERR "md/raid0:%s: bad disk number %d - "
-;
+			printk(KERN_ERR "md/raid0:%s: bad disk number %d - "
+			       "aborting!\n", mdname(mddev), j);
 			goto abort;
 		}
 		if (dev[j]) {
-//			printk(KERN_ERR "md/raid0:%s: multiple devices for %d - "
-;
+			printk(KERN_ERR "md/raid0:%s: multiple devices for %d - "
+			       "aborting!\n", mdname(mddev), j);
 			goto abort;
 		}
 		dev[j] = rdev1;
@@ -197,8 +197,8 @@ static int create_strip_zones(struct mddev *mddev, struct r0conf **private_conf)
 		cnt++;
 	}
 	if (cnt != mddev->raid_disks) {
-//		printk(KERN_ERR "md/raid0:%s: too few disks (%d of %d) - "
-;
+		printk(KERN_ERR "md/raid0:%s: too few disks (%d of %d) - "
+		       "aborting!\n", mdname(mddev), cnt, mddev->raid_disks);
 		goto abort;
 	}
 	zone->nb_dev = cnt;
@@ -262,9 +262,9 @@ static int create_strip_zones(struct mddev *mddev, struct r0conf **private_conf)
 	 * chunk size is a multiple of that sector size
 	 */
 	if ((mddev->chunk_sectors << 9) % queue_logical_block_size(mddev->queue)) {
-//		printk(KERN_ERR "md/raid0:%s: chunk_size of %d not valid\n",
-//		       mdname(mddev),
-;
+		printk(KERN_ERR "md/raid0:%s: chunk_size of %d not valid\n",
+		       mdname(mddev),
+		       mddev->chunk_sectors << 9);
 		goto abort;
 	}
 
@@ -416,8 +416,8 @@ static int raid0_run(struct mddev *mddev)
 	int ret;
 
 	if (mddev->chunk_sectors == 0) {
-//		printk(KERN_ERR "md/raid0:%s: chunk size must be set.\n",
-;
+		printk(KERN_ERR "md/raid0:%s: chunk size must be set.\n",
+		       mdname(mddev));
 		return -EINVAL;
 	}
 	if (md_check_no_bitmap(mddev))
@@ -436,9 +436,9 @@ static int raid0_run(struct mddev *mddev)
 	/* calculate array device size */
 	md_set_array_sectors(mddev, raid0_size(mddev, 0, 0));
 
-//	printk(KERN_INFO "md/raid0:%s: md_size is %llu sectors.\n",
-//	       mdname(mddev),
-;
+	printk(KERN_INFO "md/raid0:%s: md_size is %llu sectors.\n",
+	       mdname(mddev),
+	       (unsigned long long)mddev->array_sectors);
 	/* calculate the max read-ahead size.
 	 * For read-ahead of large files to be effective, we need to
 	 * readahead at least twice a whole stripe. i.e. number of devices
@@ -540,10 +540,10 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
 	return;
 
 bad_map:
-//	printk("md/raid0:%s: make_request bug: can't convert block across chunks"
-//	       " or bigger than %dk %llu %d\n",
-//	       mdname(mddev), chunk_sects / 2,
-;
+	printk("md/raid0:%s: make_request bug: can't convert block across chunks"
+	       " or bigger than %dk %llu %d\n",
+	       mdname(mddev), chunk_sects / 2,
+	       (unsigned long long)bio->bi_sector, bio->bi_size >> 10);
 
 	bio_io_error(bio);
 	return;
@@ -561,17 +561,17 @@ static void *raid0_takeover_raid45(struct mddev *mddev)
 	struct r0conf *priv_conf;
 
 	if (mddev->degraded != 1) {
-//		printk(KERN_ERR "md/raid0:%s: raid5 must be degraded! Degraded disks: %d\n",
-//		       mdname(mddev),
-;
+		printk(KERN_ERR "md/raid0:%s: raid5 must be degraded! Degraded disks: %d\n",
+		       mdname(mddev),
+		       mddev->degraded);
 		return ERR_PTR(-EINVAL);
 	}
 
 	rdev_for_each(rdev, mddev) {
 		/* check slot number for a disk */
 		if (rdev->raid_disk == mddev->raid_disks-1) {
-//			printk(KERN_ERR "md/raid0:%s: raid5 must have missing parity disk!\n",
-;
+			printk(KERN_ERR "md/raid0:%s: raid5 must have missing parity disk!\n",
+			       mdname(mddev));
 			return ERR_PTR(-EINVAL);
 		}
 	}
@@ -600,19 +600,19 @@ static void *raid0_takeover_raid10(struct mddev *mddev)
 	 *  - all mirrors must be already degraded
 	 */
 	if (mddev->layout != ((1 << 8) + 2)) {
-//		printk(KERN_ERR "md/raid0:%s:: Raid0 cannot takover layout: 0x%x\n",
-//		       mdname(mddev),
-;
+		printk(KERN_ERR "md/raid0:%s:: Raid0 cannot takover layout: 0x%x\n",
+		       mdname(mddev),
+		       mddev->layout);
 		return ERR_PTR(-EINVAL);
 	}
 	if (mddev->raid_disks & 1) {
-//		printk(KERN_ERR "md/raid0:%s: Raid0 cannot takover Raid10 with odd disk number.\n",
-;
+		printk(KERN_ERR "md/raid0:%s: Raid0 cannot takover Raid10 with odd disk number.\n",
+		       mdname(mddev));
 		return ERR_PTR(-EINVAL);
 	}
 	if (mddev->degraded != (mddev->raid_disks>>1)) {
-//		printk(KERN_ERR "md/raid0:%s: All mirrors must be already degraded!\n",
-;
+		printk(KERN_ERR "md/raid0:%s: All mirrors must be already degraded!\n",
+		       mdname(mddev));
 		return ERR_PTR(-EINVAL);
 	}
 
@@ -639,8 +639,8 @@ static void *raid0_takeover_raid1(struct mddev *mddev)
 	 *  - (N - 1) mirror drives must be already faulty
 	 */
 	if ((mddev->raid_disks - 1) != mddev->degraded) {
-//		printk(KERN_ERR "md/raid0:%s: (N - 1) mirrors drives must be already faulty!\n",
-;
+		printk(KERN_ERR "md/raid0:%s: (N - 1) mirrors drives must be already faulty!\n",
+		       mdname(mddev));
 		return ERR_PTR(-EINVAL);
 	}
 
@@ -687,8 +687,8 @@ static void *raid0_takeover(struct mddev *mddev)
 		if (mddev->layout == ALGORITHM_PARITY_N)
 			return raid0_takeover_raid45(mddev);
 
-//		printk(KERN_ERR "md/raid0:%s: Raid can only takeover Raid5 with layout: %d\n",
-;
+		printk(KERN_ERR "md/raid0:%s: Raid can only takeover Raid5 with layout: %d\n",
+		       mdname(mddev), ALGORITHM_PARITY_N);
 	}
 
 	if (mddev->level == 10)
@@ -697,8 +697,8 @@ static void *raid0_takeover(struct mddev *mddev)
 	if (mddev->level == 1)
 		return raid0_takeover_raid1(mddev);
 
-//	printk(KERN_ERR "Takeover from raid%i to raid0 not supported\n",
-;
+	printk(KERN_ERR "Takeover from raid%i to raid0 not supported\n",
+		mddev->level);
 
 	return ERR_PTR(-EINVAL);
 }

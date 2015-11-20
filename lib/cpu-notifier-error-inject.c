@@ -34,7 +34,7 @@ static int err_inject_cpu_callback(struct notifier_block *nfb,
 		break;
 	}
 	if (err)
-;
+		printk(KERN_INFO "Injecting error (%d) at cpu notifier\n", err);
 
 	return notifier_from_errno(err);
 }

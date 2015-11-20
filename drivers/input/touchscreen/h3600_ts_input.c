@@ -331,7 +331,7 @@ static irqreturn_t h3600ts_interrupt(struct serio *serio, unsigned char data,
 				h3600ts_process_packet(ts);
 			break;
 		default:
-;
+			printk("Error3\n");
 			break;
 	}
 
@@ -397,14 +397,14 @@ static int h3600ts_connect(struct serio *serio, struct serio_driver *drv)
 
 	if (request_irq(IRQ_GPIO_BITSY_ACTION_BUTTON, action_button_handler,
 			IRQF_SHARED | IRQF_DISABLED, "h3600_action", ts->dev)) {
-;
+		printk(KERN_ERR "h3600ts.c: Could not allocate Action Button IRQ!\n");
 		err = -EBUSY;
 		goto fail1;
 	}
 
 	if (request_irq(IRQ_GPIO_BITSY_NPOWER_BUTTON, npower_button_handler,
 			IRQF_SHARED | IRQF_DISABLED, "h3600_suspend", ts->dev)) {
-;
+		printk(KERN_ERR "h3600ts.c: Could not allocate Power Button IRQ!\n");
 		err = -EBUSY;
 		goto fail2;
 	}

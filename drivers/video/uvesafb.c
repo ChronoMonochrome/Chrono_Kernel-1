@@ -152,8 +152,8 @@ static int uvesafb_exec(struct uvesafb_ktask *task)
 	 * allowed by connector.
 	 */
 	if (sizeof(*m) + len > CONNECTOR_MAX_MSG_SIZE) {
-//		printk(KERN_WARNING "uvesafb: message too long (%d), "
-;
+		printk(KERN_WARNING "uvesafb: message too long (%d), "
+			"can't execute task\n", (int)(sizeof(*m) + len));
 		return -E2BIG;
 	}
 
@@ -201,10 +201,10 @@ static int uvesafb_exec(struct uvesafb_ktask *task)
 		 */
 		err = uvesafb_helper_start();
 		if (err) {
-//			printk(KERN_ERR "uvesafb: failed to execute %s\n",
-;
-//			printk(KERN_ERR "uvesafb: make sure that the v86d "
-;
+			printk(KERN_ERR "uvesafb: failed to execute %s\n",
+					v86d_path);
+			printk(KERN_ERR "uvesafb: make sure that the v86d "
+					"helper is installed and executable\n");
 		} else {
 			v86d_started = 1;
 			err = cn_netlink_send(m, 0, gfp_any());
@@ -379,9 +379,9 @@ static u8 *uvesafb_vbe_state_save(struct uvesafb_par *par)
 	err = uvesafb_exec(task);
 
 	if (err || (task->t.regs.eax & 0xffff) != 0x004f) {
-//		printk(KERN_WARNING "uvesafb: VBE get state call "
-//				"failed (eax=0x%x, err=%d)\n",
-;
+		printk(KERN_WARNING "uvesafb: VBE get state call "
+				"failed (eax=0x%x, err=%d)\n",
+				task->t.regs.eax, err);
 		kfree(state);
 		state = NULL;
 	}
@@ -411,9 +411,9 @@ static void uvesafb_vbe_state_restore(struct uvesafb_par *par, u8 *state_buf)
 
 	err = uvesafb_exec(task);
 	if (err || (task->t.regs.eax & 0xffff) != 0x004f)
-//		printk(KERN_WARNING "uvesafb: VBE state restore call "
-//				"failed (eax=0x%x, err=%d)\n",
-;
+		printk(KERN_WARNING "uvesafb: VBE state restore call "
+				"failed (eax=0x%x, err=%d)\n",
+				task->t.regs.eax, err);
 
 	uvesafb_free(task);
 }
@@ -431,24 +431,24 @@ static int __devinit uvesafb_vbe_getinfo(struct uvesafb_ktask *task,
 
 	err = uvesafb_exec(task);
 	if (err || (task->t.regs.eax & 0xffff) != 0x004f) {
-//		printk(KERN_ERR "uvesafb: Getting VBE info block failed "
-//				"(eax=0x%x, err=%d)\n", (u32)task->t.regs.eax,
-;
+		printk(KERN_ERR "uvesafb: Getting VBE info block failed "
+				"(eax=0x%x, err=%d)\n", (u32)task->t.regs.eax,
+				err);
 		return -EINVAL;
 	}
 
 	if (par->vbe_ib.vbe_version < 0x0200) {
-//		printk(KERN_ERR "uvesafb: Sorry, pre-VBE 2.0 cards are "
-;
+		printk(KERN_ERR "uvesafb: Sorry, pre-VBE 2.0 cards are "
+				"not supported.\n");
 		return -EINVAL;
 	}
 
 	if (!par->vbe_ib.mode_list_ptr) {
-;
+		printk(KERN_ERR "uvesafb: Missing mode list!\n");
 		return -EINVAL;
 	}
 
-;
+	printk(KERN_INFO "uvesafb: ");
 
 	/*
 	 * Convert string pointers and the mode list pointer into
@@ -456,23 +456,23 @@ static int __devinit uvesafb_vbe_getinfo(struct uvesafb_ktask *task,
 	 * video adapter and its vendor.
 	 */
 	if (par->vbe_ib.oem_vendor_name_ptr)
-//		printk("%s, ",
-;
+		printk("%s, ",
+			((char *)task->buf) + par->vbe_ib.oem_vendor_name_ptr);
 
 	if (par->vbe_ib.oem_product_name_ptr)
-//		printk("%s, ",
-;
+		printk("%s, ",
+			((char *)task->buf) + par->vbe_ib.oem_product_name_ptr);
 
 	if (par->vbe_ib.oem_product_rev_ptr)
-//		printk("%s, ",
-;
+		printk("%s, ",
+			((char *)task->buf) + par->vbe_ib.oem_product_rev_ptr);
 
 	if (par->vbe_ib.oem_string_ptr)
-//		printk("OEM: %s, ",
-;
+		printk("OEM: %s, ",
+			((char *)task->buf) + par->vbe_ib.oem_string_ptr);
 
-//	printk("VBE v%d.%d\n", ((par->vbe_ib.vbe_version & 0xff00) >> 8),
-;
+	printk("VBE v%d.%d\n", ((par->vbe_ib.vbe_version & 0xff00) >> 8),
+			par->vbe_ib.vbe_version & 0xff);
 
 	return 0;
 }
@@ -511,9 +511,9 @@ static int __devinit uvesafb_vbe_getmodes(struct uvesafb_ktask *task,
 
 		err = uvesafb_exec(task);
 		if (err || (task->t.regs.eax & 0xffff) != 0x004f) {
-//			printk(KERN_WARNING "uvesafb: Getting mode info block "
-//				"for mode 0x%x failed (eax=0x%x, err=%d)\n",
-;
+			printk(KERN_WARNING "uvesafb: Getting mode info block "
+				"for mode 0x%x failed (eax=0x%x, err=%d)\n",
+				*mode, (u32)task->t.regs.eax, err);
 			mode++;
 			par->vbe_modes_cnt--;
 			continue;
@@ -573,23 +573,23 @@ static int __devinit uvesafb_vbe_getpmi(struct uvesafb_ktask *task,
 						+ task->t.regs.edi);
 		par->pmi_start = (u8 *)par->pmi_base + par->pmi_base[1];
 		par->pmi_pal = (u8 *)par->pmi_base + par->pmi_base[2];
-//		printk(KERN_INFO "uvesafb: protected mode interface info at "
-//				 "%04x:%04x\n",
-;
-//		printk(KERN_INFO "uvesafb: pmi: set display start = %p, "
-//				 "set palette = %p\n", par->pmi_start,
-;
+		printk(KERN_INFO "uvesafb: protected mode interface info at "
+				 "%04x:%04x\n",
+				 (u16)task->t.regs.es, (u16)task->t.regs.edi);
+		printk(KERN_INFO "uvesafb: pmi: set display start = %p, "
+				 "set palette = %p\n", par->pmi_start,
+				 par->pmi_pal);
 
 		if (par->pmi_base[3]) {
-;
+			printk(KERN_INFO "uvesafb: pmi: ports = ");
 			for (i = par->pmi_base[3]/2;
 					par->pmi_base[i] != 0xffff; i++)
-;
-;
+				printk("%x ", par->pmi_base[i]);
+			printk("\n");
 
 			if (par->pmi_base[i] != 0xffff) {
-//				printk(KERN_INFO "uvesafb: can't handle memory"
-;
+				printk(KERN_INFO "uvesafb: can't handle memory"
+						 " requests, pmi disabled\n");
 				par->ypan = par->pmi_setpal = 0;
 			}
 		}
@@ -639,17 +639,17 @@ static int __devinit uvesafb_vbe_getedid(struct uvesafb_ktask *task,
 		return -EINVAL;
 
 	if ((task->t.regs.ebx & 0x3) == 3) {
-//		printk(KERN_INFO "uvesafb: VBIOS/hardware supports both "
-;
+		printk(KERN_INFO "uvesafb: VBIOS/hardware supports both "
+				 "DDC1 and DDC2 transfers\n");
 	} else if ((task->t.regs.ebx & 0x3) == 2) {
-//		printk(KERN_INFO "uvesafb: VBIOS/hardware supports DDC2 "
-;
+		printk(KERN_INFO "uvesafb: VBIOS/hardware supports DDC2 "
+				 "transfers\n");
 	} else if ((task->t.regs.ebx & 0x3) == 1) {
-//		printk(KERN_INFO "uvesafb: VBIOS/hardware supports DDC1 "
-;
+		printk(KERN_INFO "uvesafb: VBIOS/hardware supports DDC1 "
+				 "transfers\n");
 	} else {
-//		printk(KERN_INFO "uvesafb: VBIOS/hardware doesn't support "
-;
+		printk(KERN_INFO "uvesafb: VBIOS/hardware doesn't support "
+				 "DDC transfers\n");
 		return -EINVAL;
 	}
 
@@ -721,14 +721,14 @@ static void __devinit uvesafb_vbe_getmonspecs(struct uvesafb_ktask *task,
 	}
 
 	if (info->monspecs.gtf)
-//		printk(KERN_INFO
-//			"uvesafb: monitor limits: vf = %d Hz, hf = %d kHz, "
-//			"clk = %d MHz\n", info->monspecs.vfmax,
-//			(int)(info->monspecs.hfmax / 1000),
-;
+		printk(KERN_INFO
+			"uvesafb: monitor limits: vf = %d Hz, hf = %d kHz, "
+			"clk = %d MHz\n", info->monspecs.vfmax,
+			(int)(info->monspecs.hfmax / 1000),
+			(int)(info->monspecs.dclkmax / 1000000));
 	else
-//		printk(KERN_INFO "uvesafb: no monitor limits have been set, "
-;
+		printk(KERN_INFO "uvesafb: no monitor limits have been set, "
+				 "default refresh rate will be used\n");
 
 	/* Add VBE modes to the modelist. */
 	for (i = 0; i < par->vbe_modes_cnt; i++) {
@@ -782,9 +782,9 @@ static void __devinit uvesafb_vbe_getstatesize(struct uvesafb_ktask *task,
 	err = uvesafb_exec(task);
 
 	if (err || (task->t.regs.eax & 0xffff) != 0x004f) {
-//		printk(KERN_WARNING "uvesafb: VBE state buffer size "
-//			"cannot be determined (eax=0x%x, err=%d)\n",
-;
+		printk(KERN_WARNING "uvesafb: VBE state buffer size "
+			"cannot be determined (eax=0x%x, err=%d)\n",
+			task->t.regs.eax, err);
 		par->vbe_state_size = 0;
 		return;
 	}
@@ -818,8 +818,8 @@ static int __devinit uvesafb_vbe_init(struct fb_info *info)
 	if (par->pmi_setpal || par->ypan) {
 		if (__supported_pte_mask & _PAGE_NX) {
 			par->pmi_setpal = par->ypan = 0;
-//			printk(KERN_WARNING "uvesafb: NX protection is actively."
-;
+			printk(KERN_WARNING "uvesafb: NX protection is actively."
+				"We have better not to use the PMI.\n");
 		} else {
 			uvesafb_vbe_getpmi(task, par);
 		}
@@ -862,8 +862,8 @@ static int __devinit uvesafb_vbe_init_mode(struct fb_info *info)
 				goto gotmode;
 			}
 		}
-//		printk(KERN_INFO "uvesafb: requested VBE mode 0x%x is "
-;
+		printk(KERN_INFO "uvesafb: requested VBE mode 0x%x is "
+				 "unavailable\n", vbemode);
 		vbemode = 0;
 	}
 
@@ -1289,17 +1289,17 @@ setmode:
 		 * use our own timings.  Try again with the default timings.
 		 */
 		if (crtc != NULL) {
-//			printk(KERN_WARNING "uvesafb: mode switch failed "
-//				"(eax=0x%x, err=%d). Trying again with "
-;
+			printk(KERN_WARNING "uvesafb: mode switch failed "
+				"(eax=0x%x, err=%d). Trying again with "
+				"default timings.\n", task->t.regs.eax, err);
 			uvesafb_reset(task);
 			kfree(crtc);
 			crtc = NULL;
 			info->var.pixclock = 0;
 			goto setmode;
 		} else {
-//			printk(KERN_ERR "uvesafb: mode switch failed (eax="
-;
+			printk(KERN_ERR "uvesafb: mode switch failed (eax="
+				"0x%x, err=%d)\n", task->t.regs.eax, err);
 			err = -EINVAL;
 			goto out;
 		}
@@ -1512,13 +1512,13 @@ static void __devinit uvesafb_init_info(struct fb_info *info,
 				 mode->bytes_per_scan_line;
 
 	if (par->ypan && info->var.yres_virtual > info->var.yres) {
-//		printk(KERN_INFO "uvesafb: scrolling: %s "
-//			"using protected mode interface, "
-//			"yres_virtual=%d\n",
-//			(par->ypan > 1) ? "ywrap" : "ypan",
-;
+		printk(KERN_INFO "uvesafb: scrolling: %s "
+			"using protected mode interface, "
+			"yres_virtual=%d\n",
+			(par->ypan > 1) ? "ywrap" : "ypan",
+			info->var.yres_virtual);
 	} else {
-;
+		printk(KERN_INFO "uvesafb: scrolling: redraw\n");
 		info->var.yres_virtual = info->var.yres;
 		par->ypan = 0;
 	}
@@ -1743,7 +1743,7 @@ static int __devinit uvesafb_probe(struct platform_device *dev)
 
 	err = uvesafb_vbe_init(info);
 	if (err) {
-;
+		printk(KERN_ERR "uvesafb: vbe_init() failed with %d\n", err);
 		goto out;
 	}
 
@@ -1765,15 +1765,15 @@ static int __devinit uvesafb_probe(struct platform_device *dev)
 	uvesafb_init_info(info, mode);
 
 	if (!request_region(0x3c0, 32, "uvesafb")) {
-;
+		printk(KERN_ERR "uvesafb: request region 0x3c0-0x3e0 failed\n");
 		err = -EIO;
 		goto out_mode;
 	}
 
 	if (!request_mem_region(info->fix.smem_start, info->fix.smem_len,
 				"uvesafb")) {
-//		printk(KERN_ERR "uvesafb: cannot reserve video memory at "
-;
+		printk(KERN_ERR "uvesafb: cannot reserve video memory at "
+				"0x%lx\n", info->fix.smem_start);
 		err = -EIO;
 		goto out_reg;
 	}
@@ -1782,10 +1782,10 @@ static int __devinit uvesafb_probe(struct platform_device *dev)
 	uvesafb_ioremap(info);
 
 	if (!info->screen_base) {
-//		printk(KERN_ERR
-//			"uvesafb: abort, cannot ioremap 0x%x bytes of video "
-//			"memory at 0x%lx\n",
-;
+		printk(KERN_ERR
+			"uvesafb: abort, cannot ioremap 0x%x bytes of video "
+			"memory at 0x%lx\n",
+			info->fix.smem_len, info->fix.smem_start);
 		err = -EIO;
 		goto out_mem;
 	}
@@ -1793,23 +1793,23 @@ static int __devinit uvesafb_probe(struct platform_device *dev)
 	platform_set_drvdata(dev, info);
 
 	if (register_framebuffer(info) < 0) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"uvesafb: failed to register framebuffer device\n");
 		err = -EINVAL;
 		goto out_unmap;
 	}
 
-//	printk(KERN_INFO "uvesafb: framebuffer at 0x%lx, mapped to 0x%p, "
-//			"using %dk, total %dk\n", info->fix.smem_start,
-//			info->screen_base, info->fix.smem_len/1024,
-;
-//	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
-;
+	printk(KERN_INFO "uvesafb: framebuffer at 0x%lx, mapped to 0x%p, "
+			"using %dk, total %dk\n", info->fix.smem_start,
+			info->screen_base, info->fix.smem_len/1024,
+			par->vbe_ib.total_memory * 64);
+	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
+			info->fix.id);
 
 	err = sysfs_create_group(&dev->dev.kobj, &uvesafb_dev_attgrp);
 	if (err != 0)
-//		printk(KERN_WARNING "fb%d: failed to register attributes\n",
-;
+		printk(KERN_WARNING "fb%d: failed to register attributes\n",
+			info->node);
 
 	return 0;
 
@@ -1917,8 +1917,8 @@ static int __devinit uvesafb_setup(char *options)
 		else if (this_opt[0] >= '0' && this_opt[0] <= '9') {
 			mode_option = this_opt;
 		} else {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+				"uvesafb: unrecognized option %s\n", this_opt);
 		}
 	}
 
@@ -1974,8 +1974,8 @@ static int __devinit uvesafb_init(void)
 		err = driver_create_file(&uvesafb_driver.driver,
 				&driver_attr_v86d);
 		if (err) {
-//			printk(KERN_WARNING "uvesafb: failed to register "
-;
+			printk(KERN_WARNING "uvesafb: failed to register "
+					"attributes\n");
 			err = 0;
 		}
 	}

@@ -124,7 +124,7 @@ int i2sbus_control_cell(struct i2sbus_control *c,
 			return pmf_call_one(i2sdev->cell_enable, &args);
 		break;
 	default:
-;
+		printk(KERN_ERR "i2sbus: INVALID CELL ENABLE VALUE\n");
 		return -ENODEV;
 	}
 
@@ -167,7 +167,7 @@ int i2sbus_control_clock(struct i2sbus_control *c,
 			return pmf_call_one(i2sdev->clock_enable, &args);
 		break;
 	default:
-;
+		printk(KERN_ERR "i2sbus: INVALID CLOCK ENABLE VALUE\n");
 		return -ENODEV;
 	}
 

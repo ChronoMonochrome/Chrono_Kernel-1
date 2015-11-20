@@ -182,8 +182,8 @@ static long phantom_ioctl(struct file *file, unsigned int cmd,
 	} case PHN_NOT_OH:
 		spin_lock_irqsave(&dev->regs_lock, flags);
 		if (dev->status & PHB_RUNNING) {
-//			printk(KERN_ERR "phantom: you need to set NOT_OH "
-;
+			printk(KERN_ERR "phantom: you need to set NOT_OH "
+					"before you start the device!\n");
 			spin_unlock_irqrestore(&dev->regs_lock, flags);
 			return -EINVAL;
 		}
@@ -514,30 +514,30 @@ static int __init phantom_init(void)
 	phantom_class = class_create(THIS_MODULE, "phantom");
 	if (IS_ERR(phantom_class)) {
 		retval = PTR_ERR(phantom_class);
-;
+		printk(KERN_ERR "phantom: can't register phantom class\n");
 		goto err;
 	}
 	retval = class_create_file(phantom_class, &class_attr_version.attr);
 	if (retval) {
-;
+		printk(KERN_ERR "phantom: can't create sysfs version file\n");
 		goto err_class;
 	}
 
 	retval = alloc_chrdev_region(&dev, 0, PHANTOM_MAX_MINORS, "phantom");
 	if (retval) {
-;
+		printk(KERN_ERR "phantom: can't register character device\n");
 		goto err_attr;
 	}
 	phantom_major = MAJOR(dev);
 
 	retval = pci_register_driver(&phantom_pci_driver);
 	if (retval) {
-;
+		printk(KERN_ERR "phantom: can't register pci driver\n");
 		goto err_unchr;
 	}
 
-//	printk(KERN_INFO "Phantom Linux Driver, version " PHANTOM_VERSION ", "
-;
+	printk(KERN_INFO "Phantom Linux Driver, version " PHANTOM_VERSION ", "
+			"init OK\n");
 
 	return 0;
 err_unchr:

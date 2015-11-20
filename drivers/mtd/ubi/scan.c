@@ -1093,10 +1093,10 @@ static int check_what_we_have(struct ubi_device *ubi, struct ubi_scan_info *si)
 	if (si->corr_peb_count) {
 		ubi_err("%d PEBs are corrupted and preserved",
 			si->corr_peb_count);
-;
+		printk(KERN_ERR "Corrupted PEBs are:");
 		list_for_each_entry(seb, &si->corr, u.list)
-;
-;
+			printk(KERN_CONT " %d", seb->pnum);
+		printk(KERN_CONT "\n");
 
 		/*
 		 * If too many PEBs are corrupted, we refuse attaching,

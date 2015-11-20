@@ -805,10 +805,10 @@ static int __init mvsd_probe(struct platform_device *pdev)
 	pr_notice("%s: %s driver initialized, ",
 			   mmc_hostname(mmc), DRIVER_NAME);
 	if (host->gpio_card_detect)
-//		printk("using GPIO %d for card detection\n",
-;
+		printk("using GPIO %d for card detection\n",
+		       host->gpio_card_detect);
 	else
-;
+		printk("lacking card detect (fall back to polling)\n");
 	return 0;
 
 out:

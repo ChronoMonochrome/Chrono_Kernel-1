@@ -189,8 +189,8 @@ void __check_new_state(enum wimax_st old_state, enum wimax_st new_state,
 		       unsigned allowed_states_bm)
 {
 	if (WARN_ON(((1 << new_state) & allowed_states_bm) == 0)) {
-//		printk(KERN_ERR "SW BUG! Forbidden state change %u -> %u\n",
-;
+		printk(KERN_ERR "SW BUG! Forbidden state change %u -> %u\n",
+			old_state, new_state);
 	}
 }
 
@@ -575,8 +575,8 @@ int __init wimax_subsys_init(void)
 		 "WiMAX");
 	result = genl_register_family(&wimax_gnl_family);
 	if (unlikely(result < 0)) {
-//		printk(KERN_ERR "cannot register generic netlink family: %d\n",
-;
+		printk(KERN_ERR "cannot register generic netlink family: %d\n",
+		       result);
 		goto error_register_family;
 	}
 
@@ -586,9 +586,9 @@ int __init wimax_subsys_init(void)
 		d_printf(4, NULL, "registering generic netlink op code "
 			 "%u: %d\n", wimax_gnl_ops[cnt]->cmd, result);
 		if (unlikely(result < 0)) {
-//			printk(KERN_ERR "cannot register generic netlink op "
-//			       "code %u: %d\n",
-;
+			printk(KERN_ERR "cannot register generic netlink op "
+			       "code %u: %d\n",
+			       wimax_gnl_ops[cnt]->cmd, result);
 			goto error_register_ops;
 		}
 	}

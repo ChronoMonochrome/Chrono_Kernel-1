@@ -14,8 +14,8 @@
 
 /* debug */
 #ifdef CONFIG_DVB_B2C2_FLEXCOP_DEBUG
-//#define dprintk(level,args...) \
-;
+#define dprintk(level,args...) \
+	do { if ((debug & level)) printk(args); } while (0)
 
 #define debug_dump(b, l, method) do {\
 	int i; \
@@ -26,49 +26,49 @@
 
 #define DEBSTATUS ""
 #else
-//#define dprintk(level, args...)
-//#define debug_dump(b, l, method)
-//#define DEBSTATUS " (debugging is not enabled)"
-//#endif
-//
-;
+#define dprintk(level, args...)
+#define debug_dump(b, l, method)
+#define DEBSTATUS " (debugging is not enabled)"
+#endif
+
+static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "set debugging level (1=info,ts=2,"
 		"ctrl=4,i2c=8,v8mem=16 (or-able))." DEBSTATUS);
 #undef DEBSTATUS
 
-//#define deb_info(args...) dprintk(0x01, args)
-//#define deb_ts(args...) dprintk(0x02, args)
-//#define deb_ctrl(args...) dprintk(0x04, args)
-//#define deb_i2c(args...) dprintk(0x08, args)
-//#define deb_v8(args...) dprintk(0x10, args)
-//
-///* JLP 111700: we will include the 1 bit gap between the upper and lower 3 bits
-// * in the IBI address, to make the V8 code simpler.
-// * PCI ADDRESS FORMAT: 0x71C -> 0000 0111 0001 1100 (the six bits used)
-// *                  in general: 0000 0HHH 000L LL00
-// * IBI ADDRESS FORMAT:                    RHHH BLLL
-// *
-// * where R is the read(1)/write(0) bit, B is the busy bit
-// * and HHH and LLL are the two sets of three bits from the PCI address.
-// */
-//#define B2C2_FLEX_PCIOFFSET_TO_INTERNALADDR(usPCI) (u8) \
-//	(((usPCI >> 2) & 0x07) + ((usPCI >> 4) & 0x70))
-//#define B2C2_FLEX_INTERNALADDR_TO_PCIOFFSET(ucAddr) (u16) \
-//	(((ucAddr & 0x07) << 2) + ((ucAddr & 0x70) << 4))
-//
-///*
-// * DKT 020228
-// * - forget about this VENDOR_BUFFER_SIZE, read and write register
-// *   deal with DWORD or 4 bytes, that should be should from now on
-// * - from now on, we don't support anything older than firm 1.00
-// *   I eliminated the write register as a 2 trip of writing hi word and lo word
-// *   and force this to write only 4 bytes at a time.
-// *   NOTE: this should work with all the firmware from 1.00 and newer
-// */
-//static int flexcop_usb_readwrite_dw(struct flexcop_device *fc, u16 wRegOffsPCI, u32 *val, u8 read)
-//{
-;
+#define deb_info(args...) dprintk(0x01, args)
+#define deb_ts(args...) dprintk(0x02, args)
+#define deb_ctrl(args...) dprintk(0x04, args)
+#define deb_i2c(args...) dprintk(0x08, args)
+#define deb_v8(args...) dprintk(0x10, args)
+
+/* JLP 111700: we will include the 1 bit gap between the upper and lower 3 bits
+ * in the IBI address, to make the V8 code simpler.
+ * PCI ADDRESS FORMAT: 0x71C -> 0000 0111 0001 1100 (the six bits used)
+ *                  in general: 0000 0HHH 000L LL00
+ * IBI ADDRESS FORMAT:                    RHHH BLLL
+ *
+ * where R is the read(1)/write(0) bit, B is the busy bit
+ * and HHH and LLL are the two sets of three bits from the PCI address.
+ */
+#define B2C2_FLEX_PCIOFFSET_TO_INTERNALADDR(usPCI) (u8) \
+	(((usPCI >> 2) & 0x07) + ((usPCI >> 4) & 0x70))
+#define B2C2_FLEX_INTERNALADDR_TO_PCIOFFSET(ucAddr) (u16) \
+	(((ucAddr & 0x07) << 2) + ((ucAddr & 0x70) << 4))
+
+/*
+ * DKT 020228
+ * - forget about this VENDOR_BUFFER_SIZE, read and write register
+ *   deal with DWORD or 4 bytes, that should be should from now on
+ * - from now on, we don't support anything older than firm 1.00
+ *   I eliminated the write register as a 2 trip of writing hi word and lo word
+ *   and force this to write only 4 bytes at a time.
+ *   NOTE: this should work with all the firmware from 1.00 and newer
+ */
+static int flexcop_usb_readwrite_dw(struct flexcop_device *fc, u16 wRegOffsPCI, u32 *val, u8 read)
+{
+	struct flexcop_usb *fc_usb = fc->bus_specific;
 	u8 request = read ? B2C2_USB_READ_REG : B2C2_USB_WRITE_REG;
 	u8 request_type = (read ? USB_DIR_IN : USB_DIR_OUT) | USB_TYPE_VENDOR;
 	u8 wAddress = B2C2_FLEX_PCIOFFSET_TO_INTERNALADDR(wRegOffsPCI) |

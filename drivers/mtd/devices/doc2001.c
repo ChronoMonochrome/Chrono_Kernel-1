@@ -213,9 +213,9 @@ static int DoC_IdentChip(struct DiskOnChip *doc, int floor, int chip)
 				if (nand_manuf_ids[j].id == mfr)
 					break;
 			}
-//			printk(KERN_INFO "Flash chip found: Manufacturer ID: %2.2X, "
-//			       "Chip ID: %2.2X (%s:%s)\n",
-;
+			printk(KERN_INFO "Flash chip found: Manufacturer ID: %2.2X, "
+			       "Chip ID: %2.2X (%s:%s)\n",
+			       mfr, id, nand_manuf_ids[j].name, nand_flash_ids[i].name);
 			doc->mfr = mfr;
 			doc->id = id;
 			doc->chipshift = ffs((nand_flash_ids[i].chipsize << 20)) - 1;
@@ -253,14 +253,14 @@ static void DoC_ScanChips(struct DiskOnChip *this)
 	}
 	/* If there are none at all that we recognise, bail */
 	if (!this->numchips) {
-;
+		printk("No flash chips recognised.\n");
 		return;
 	}
 
 	/* Allocate an array to hold the information for each chip */
 	this->chips = kmalloc(sizeof(struct Nand) * this->numchips, GFP_KERNEL);
 	if (!this->chips){
-;
+		printk("No memory for allocating chip info structures\n");
 		return;
 	}
 
@@ -278,8 +278,8 @@ static void DoC_ScanChips(struct DiskOnChip *this)
 
 	/* Calculate and print the total size of the device */
 	this->totlen = this->numchips * (1 << this->chipshift);
-//	printk(KERN_INFO "%d flash chips found. Total DiskOnChip size: %ld MiB\n",
-;
+	printk(KERN_INFO "%d flash chips found. Total DiskOnChip size: %ld MiB\n",
+	       this->numchips ,this->totlen >> 20);
 }
 
 static int DoCMil_is_alias(struct DiskOnChip *doc1, struct DiskOnChip *doc2)
@@ -326,8 +326,8 @@ void DoCMil_init(struct mtd_info *mtd)
 
 	while (old) {
 		if (DoCMil_is_alias(this, old)) {
-//			printk(KERN_NOTICE "Ignoring DiskOnChip Millennium at "
-;
+			printk(KERN_NOTICE "Ignoring DiskOnChip Millennium at "
+			       "0x%lX - already configured\n", this->physadr);
 			iounmap(this->virtadr);
 			kfree(mtd);
 			return;
@@ -339,8 +339,8 @@ void DoCMil_init(struct mtd_info *mtd)
 	}
 
 	mtd->name = "DiskOnChip Millennium";
-//	printk(KERN_NOTICE "DiskOnChip Millennium found at address 0x%lX\n",
-;
+	printk(KERN_NOTICE "DiskOnChip Millennium found at address 0x%lX\n",
+	       this->physadr);
 
 	mtd->type = MTD_NANDFLASH;
 	mtd->flags = MTD_CAP_NANDFLASH;
@@ -462,7 +462,7 @@ static int doc_read (struct mtd_info *mtd, loff_t from, size_t len,
 		int nb_errors;
 		/* There was an ECC error */
 #ifdef ECC_DEBUG
-;
+		printk("DiskOnChip ECC Error: Read at %lx\n", (long)from);
 #endif
 		/* Read the ECC syndrom through the DiskOnChip ECC logic.
 		   These syndrome will be all ZERO when there is no error */
@@ -471,7 +471,7 @@ static int doc_read (struct mtd_info *mtd, loff_t from, size_t len,
 		}
 		nb_errors = doc_decode_ecc(buf, syndrome);
 #ifdef ECC_DEBUG
-;
+		printk("ECC Errors corrected: %x\n", nb_errors);
 #endif
 		if (nb_errors < 0) {
 			/* We return error, but have actually done the read. Not that
@@ -482,9 +482,9 @@ static int doc_read (struct mtd_info *mtd, loff_t from, size_t len,
 	}
 
 #ifdef PSYCHO_DEBUG
-//	printk("ECC DATA at %lx: %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X\n",
-//	       (long)from, eccbuf[0], eccbuf[1], eccbuf[2], eccbuf[3],
-;
+	printk("ECC DATA at %lx: %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X\n",
+	       (long)from, eccbuf[0], eccbuf[1], eccbuf[2], eccbuf[3],
+	       eccbuf[4], eccbuf[5]);
 #endif
 
 	/* disable the ECC engine */
@@ -589,9 +589,9 @@ static int doc_write (struct mtd_info *mtd, loff_t to, size_t len,
 	WriteDOC(0x00, docptr, WritePipeTerm);
 
 #ifdef PSYCHO_DEBUG
-//	printk("OOB data at %lx is %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X\n",
-//	       (long) to, eccbuf[0], eccbuf[1], eccbuf[2], eccbuf[3],
-;
+	printk("OOB data at %lx is %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X\n",
+	       (long) to, eccbuf[0], eccbuf[1], eccbuf[2], eccbuf[3],
+	       eccbuf[4], eccbuf[5]);
 #endif
 
 	/* Commit the Page Program command and wait for ready
@@ -605,7 +605,7 @@ static int doc_write (struct mtd_info *mtd, loff_t to, size_t len,
 	dummy = ReadDOC(docptr, ReadPipeInit);
 	DoC_Delay(docptr, 2);
 	if (ReadDOC(docptr, Mil_CDSN_IO) & 1) {
-;
+		printk("Error programming flash\n");
 		/* Error in programming
 		   FIXME: implement Bad Block Replacement (in nftl.c ??) */
 		*retlen = 0;
@@ -742,7 +742,7 @@ static int doc_write_oob(struct mtd_info *mtd, loff_t ofs,
 	dummy = ReadDOC(docptr, ReadPipeInit);
 	DoC_Delay(docptr, 2);
 	if (ReadDOC(docptr, Mil_CDSN_IO) & 1) {
-;
+		printk("Error programming oob data\n");
 		/* FIXME: implement Bad Block Replacement (in nftl.c ??) */
 		ops->retlen = 0;
 		ret = -EIO;
@@ -764,8 +764,8 @@ int doc_erase (struct mtd_info *mtd, struct erase_info *instr)
 	struct Nand *mychip = &this->chips[ofs >> this->chipshift];
 
 	if (len != mtd->erasesize)
-//		printk(KERN_WARNING "Erase not right size (%x != %x)n",
-;
+		printk(KERN_WARNING "Erase not right size (%x != %x)n",
+		       len, mtd->erasesize);
 
 	/* Find the chip which is to be used and select it */
 	if (this->curfloor != mychip->floor) {
@@ -798,7 +798,7 @@ int doc_erase (struct mtd_info *mtd, struct erase_info *instr)
 	dummy = ReadDOC(docptr, ReadPipeInit);
 	DoC_Delay(docptr, 2);
 	if (ReadDOC(docptr, Mil_CDSN_IO) & 1) {
-;
+		printk("Error Erasing at 0x%x\n", ofs);
 		/* There was an error
 		   FIXME: implement Bad Block Replacement (in nftl.c ??) */
 		instr->state = MTD_ERASE_FAILED;

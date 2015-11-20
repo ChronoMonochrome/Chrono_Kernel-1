@@ -190,25 +190,25 @@ int parse_args(const char *name,
 		irq_was_disabled = irqs_disabled();
 		ret = parse_one(param, val, params, num, unknown);
 		if (irq_was_disabled && !irqs_disabled()) {
-//			printk(KERN_WARNING "parse_args(): option '%s' enabled "
-;
+			printk(KERN_WARNING "parse_args(): option '%s' enabled "
+					"irq's!\n", param);
 		}
 		switch (ret) {
 		case -ENOENT:
-//			printk(KERN_ERR "%s: Unknown parameter `%s'\n",
-;
+			printk(KERN_ERR "%s: Unknown parameter `%s'\n",
+			       name, param);
 			return ret;
 		case -ENOSPC:
-//			printk(KERN_ERR
-//			       "%s: `%s' too large for parameter `%s'\n",
-;
+			printk(KERN_ERR
+			       "%s: `%s' too large for parameter `%s'\n",
+			       name, val ?: "", param);
 			return ret;
 		case 0:
 			break;
 		default:
-//			printk(KERN_ERR
-//			       "%s: `%s' invalid for parameter `%s'\n",
-;
+			printk(KERN_ERR
+			       "%s: `%s' invalid for parameter `%s'\n",
+			       name, val ?: "", param);
 			return ret;
 		}
 	}
@@ -254,8 +254,8 @@ STANDARD_PARAM_DEF(ulong, unsigned long, "%lu", unsigned long, strict_strtoul);
 int param_set_charp(const char *val, const struct kernel_param *kp)
 {
 	if (strlen(val) > 1024) {
-//		printk(KERN_ERR "%s: string parameter too long\n",
-;
+		printk(KERN_ERR "%s: string parameter too long\n",
+		       kp->name);
 		return -ENOSPC;
 	}
 
@@ -386,8 +386,8 @@ static int param_array(const char *name,
 		int len;
 
 		if (*num == max) {
-//			printk(KERN_ERR "%s: can only take %i arguments\n",
-;
+			printk(KERN_ERR "%s: can only take %i arguments\n",
+			       name, max);
 			return -EINVAL;
 		}
 		len = strcspn(val, ",");
@@ -406,8 +406,8 @@ static int param_array(const char *name,
 	} while (save == ',');
 
 	if (*num < min) {
-//		printk(KERN_ERR "%s: needs at least %i arguments\n",
-;
+		printk(KERN_ERR "%s: needs at least %i arguments\n",
+		       name, min);
 		return -EINVAL;
 	}
 	return 0;
@@ -466,8 +466,8 @@ int param_set_copystring(const char *val, const struct kernel_param *kp)
 	const struct kparam_string *kps = kp->str;
 
 	if (strlen(val)+1 > kps->maxlen) {
-//		printk(KERN_ERR "%s: string doesn't fit in %u chars.\n",
-;
+		printk(KERN_ERR "%s: string doesn't fit in %u chars.\n",
+		       kp->name, kps->maxlen-1);
 		return -ENOSPC;
 	}
 	strcpy(kps->string, val);
@@ -736,11 +736,11 @@ static struct module_kobject * __init locate_module_kobject(const char *name)
 #endif
 		if (err) {
 			kobject_put(&mk->kobj);
-//			printk(KERN_ERR
-//				"Module '%s' failed add to sysfs, error number %d\n",
-;
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"Module '%s' failed add to sysfs, error number %d\n",
+				name, err);
+			printk(KERN_ERR
+				"The system will be unstable now.\n");
 			return NULL;
 		}
 
@@ -912,8 +912,8 @@ static int __init param_sysfs_init(void)
 {
 	module_kset = kset_create_and_add("module", &module_uevent_ops, NULL);
 	if (!module_kset) {
-//		printk(KERN_WARNING "%s (%d): error creating kset\n",
-;
+		printk(KERN_WARNING "%s (%d): error creating kset\n",
+			__FILE__, __LINE__);
 		return -ENOMEM;
 	}
 	module_sysfs_initialized = 1;

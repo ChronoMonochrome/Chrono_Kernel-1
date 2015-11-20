@@ -157,8 +157,8 @@ static void req_bio_endio(struct request *rq, struct bio *bio,
 		error = -EIO;
 
 	if (unlikely(nbytes > bio->bi_size)) {
-//		printk(KERN_ERR "%s: want %u bytes done, %u left\n",
-;
+		printk(KERN_ERR "%s: want %u bytes done, %u left\n",
+		       __func__, nbytes, bio->bi_size);
 		nbytes = bio->bi_size;
 	}
 
@@ -180,21 +180,21 @@ void blk_dump_rq_flags(struct request *rq, char *msg)
 {
 	int bit;
 
-//	printk(KERN_INFO "%s: dev %s: type=%x, flags=%x\n", msg,
-//		rq->rq_disk ? rq->rq_disk->disk_name : "?", rq->cmd_type,
-;
+	printk(KERN_INFO "%s: dev %s: type=%x, flags=%x\n", msg,
+		rq->rq_disk ? rq->rq_disk->disk_name : "?", rq->cmd_type,
+		rq->cmd_flags);
 
-//	printk(KERN_INFO "  sector %llu, nr/cnr %u/%u\n",
-//	       (unsigned long long)blk_rq_pos(rq),
-;
-//	printk(KERN_INFO "  bio %p, biotail %p, buffer %p, len %u\n",
-;
+	printk(KERN_INFO "  sector %llu, nr/cnr %u/%u\n",
+	       (unsigned long long)blk_rq_pos(rq),
+	       blk_rq_sectors(rq), blk_rq_cur_sectors(rq));
+	printk(KERN_INFO "  bio %p, biotail %p, buffer %p, len %u\n",
+	       rq->bio, rq->biotail, rq->buffer, blk_rq_bytes(rq));
 
 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
-;
+		printk(KERN_INFO "  cdb: ");
 		for (bit = 0; bit < BLK_MAX_CDB; bit++)
-;
-;
+			printk("%02x ", rq->cmd[bit]);
+		printk("\n");
 	}
 }
 EXPORT_SYMBOL(blk_dump_rq_flags);
@@ -1448,12 +1448,12 @@ static void handle_bad_sector(struct bio *bio)
 {
 	char b[BDEVNAME_SIZE];
 
-;
-//	printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
-//			bdevname(bio->bi_bdev, b),
-//			bio->bi_rw,
-//			(unsigned long long)bio->bi_sector + bio_sectors(bio),
-;
+	printk(KERN_INFO "attempt to access beyond end of device\n");
+	printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
+			bdevname(bio->bi_bdev, b),
+			bio->bi_rw,
+			(unsigned long long)bio->bi_sector + bio_sectors(bio),
+			(long long)(i_size_read(bio->bi_bdev->bd_inode) >> 9));
 
 	set_bit(BIO_EOF, &bio->bi_flags);
 }
@@ -1538,20 +1538,20 @@ generic_make_request_checks(struct bio *bio)
 
 	q = bdev_get_queue(bio->bi_bdev);
 	if (unlikely(!q)) {
-//		printk(KERN_ERR
-//		       "generic_make_request: Trying to access "
-//			"nonexistent block-device %s (%Lu)\n",
-//			bdevname(bio->bi_bdev, b),
-;
+		printk(KERN_ERR
+		       "generic_make_request: Trying to access "
+			"nonexistent block-device %s (%Lu)\n",
+			bdevname(bio->bi_bdev, b),
+			(long long) bio->bi_sector);
 		goto end_io;
 	}
 
 	if (unlikely(!(bio->bi_rw & REQ_DISCARD) &&
 		     nr_sectors > queue_max_hw_sectors(q))) {
-//		printk(KERN_ERR "bio too big device %s (%u > %u)\n",
-//		       bdevname(bio->bi_bdev, b),
-//		       bio_sectors(bio),
-;
+		printk(KERN_ERR "bio too big device %s (%u > %u)\n",
+		       bdevname(bio->bi_bdev, b),
+		       bio_sectors(bio),
+		       queue_max_hw_sectors(q));
 		goto end_io;
 	}
 
@@ -1709,12 +1709,12 @@ void submit_bio(int rw, struct bio *bio)
 
 		if (unlikely(block_dump)) {
 			char b[BDEVNAME_SIZE];
-//			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
-//			current->comm, task_pid_nr(current),
-//				(rw & WRITE) ? "WRITE" : "READ",
-//				(unsigned long long)bio->bi_sector,
-//				bdevname(bio->bi_bdev, b),
-;
+			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
+			current->comm, task_pid_nr(current),
+				(rw & WRITE) ? "WRITE" : "READ",
+				(unsigned long long)bio->bi_sector,
+				bdevname(bio->bi_bdev, b),
+				count);
 		}
 	}
 
@@ -1750,7 +1750,7 @@ int blk_rq_check_limits(struct request_queue *q, struct request *rq)
 
 	if (blk_rq_sectors(rq) > queue_max_sectors(q) ||
 	    blk_rq_bytes(rq) > queue_max_hw_sectors(q) << 9) {
-;
+		printk(KERN_ERR "%s: over max size limit.\n", __func__);
 		return -EIO;
 	}
 
@@ -1762,7 +1762,7 @@ int blk_rq_check_limits(struct request_queue *q, struct request *rq)
 	 */
 	blk_recalc_rq_segments(rq);
 	if (rq->nr_phys_segments > queue_max_segments(q)) {
-;
+		printk(KERN_ERR "%s: over max segments limit.\n", __func__);
 		return -EIO;
 	}
 
@@ -1986,7 +1986,7 @@ struct request *blk_peek_request(struct request_queue *q)
 			blk_start_request(rq);
 			__blk_end_request_all(rq, -EIO);
 		} else {
-;
+			printk(KERN_ERR "%s: bad return=%d\n", __func__, ret);
 			break;
 		}
 	}
@@ -2133,9 +2133,9 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
 			error_type = "I/O";
 			break;
 		}
-//		printk(KERN_ERR "end_request: %s error, dev %s, sector %llu\n",
-//		       error_type, req->rq_disk ? req->rq_disk->disk_name : "?",
-;
+		printk(KERN_ERR "end_request: %s error, dev %s, sector %llu\n",
+		       error_type, req->rq_disk ? req->rq_disk->disk_name : "?",
+		       (unsigned long long)blk_rq_pos(req));
 	}
 
 	blk_account_io_completion(req, nr_bytes);
@@ -2155,8 +2155,8 @@ bool blk_update_request(struct request *req, int error, unsigned int nr_bytes)
 
 			if (unlikely(idx >= bio->bi_vcnt)) {
 				blk_dump_rq_flags(req, "__end_that");
-//				printk(KERN_ERR "%s: bio idx %d >= vcnt %d\n",
-;
+				printk(KERN_ERR "%s: bio idx %d >= vcnt %d\n",
+				       __func__, idx, bio->bi_vcnt);
 				break;
 			}
 

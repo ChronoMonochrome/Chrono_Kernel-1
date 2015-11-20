@@ -42,7 +42,7 @@ static int viafb_set_bpp(void __iomem *engine, u8 bpp)
 		gemode |= VIA_GEM_32bpp;
 		break;
 	default:
-;
+		printk(KERN_WARNING "viafb_set_bpp: Unsupported bpp %d\n", bpp);
 		return -EINVAL;
 	}
 	writel(gemode, engine + VIA_REG_GEMODE);
@@ -59,7 +59,7 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
 	int ret;
 
 	if (!op || op > 3) {
-;
+		printk(KERN_WARNING "hw_bitblt_1: Invalid operation: %d\n", op);
 		return -EINVAL;
 	}
 
@@ -84,8 +84,8 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
 		case 0xFF: /* whiteness */
 			break;
 		default:
-//			printk(KERN_WARNING "hw_bitblt_1: Invalid fill rop: "
-;
+			printk(KERN_WARNING "hw_bitblt_1: Invalid fill rop: "
+				"%u\n", fill_rop);
 			return -EINVAL;
 		}
 	}
@@ -97,8 +97,8 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
 	if (op != VIA_BITBLT_FILL) {
 		if (src_x & (op == VIA_BITBLT_MONO ? 0xFFFF8000 : 0xFFFFF000)
 			|| src_y & 0xFFFFF000) {
-//			printk(KERN_WARNING "hw_bitblt_1: Unsupported source "
-;
+			printk(KERN_WARNING "hw_bitblt_1: Unsupported source "
+				"x/y %d %d\n", src_x, src_y);
 			return -EINVAL;
 		}
 		tmp = src_x | (src_y << 16);
@@ -106,16 +106,16 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
 	}
 
 	if (dst_x & 0xFFFFF000 || dst_y & 0xFFFFF000) {
-//		printk(KERN_WARNING "hw_bitblt_1: Unsupported destination x/y "
-;
+		printk(KERN_WARNING "hw_bitblt_1: Unsupported destination x/y "
+			"%d %d\n", dst_x, dst_y);
 		return -EINVAL;
 	}
 	tmp = dst_x | (dst_y << 16);
 	writel(tmp, engine + 0x0C);
 
 	if ((width - 1) & 0xFFFFF000 || (height - 1) & 0xFFFFF000) {
-//		printk(KERN_WARNING "hw_bitblt_1: Unsupported width/height "
-;
+		printk(KERN_WARNING "hw_bitblt_1: Unsupported width/height "
+			"%d %d\n", width, height);
 		return -EINVAL;
 	}
 	tmp = (width - 1) | ((height - 1) << 16);
@@ -130,8 +130,8 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
 	if (op != VIA_BITBLT_FILL) {
 		tmp = src_mem ? 0 : src_addr;
 		if (dst_addr & 0xE0000007) {
-//			printk(KERN_WARNING "hw_bitblt_1: Unsupported source "
-;
+			printk(KERN_WARNING "hw_bitblt_1: Unsupported source "
+				"address %X\n", tmp);
 			return -EINVAL;
 		}
 		tmp >>= 3;
@@ -139,8 +139,8 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
 	}
 
 	if (dst_addr & 0xE0000007) {
-//		printk(KERN_WARNING "hw_bitblt_1: Unsupported destination "
-;
+		printk(KERN_WARNING "hw_bitblt_1: Unsupported destination "
+			"address %X\n", dst_addr);
 		return -EINVAL;
 	}
 	tmp = dst_addr >> 3;
@@ -151,8 +151,8 @@ static int hw_bitblt_1(void __iomem *engine, u8 op, u32 width, u32 height,
 	else
 		tmp = src_pitch;
 	if (tmp & 0xFFFFC007 || dst_pitch & 0xFFFFC007) {
-//		printk(KERN_WARNING "hw_bitblt_1: Unsupported pitch %X %X\n",
-;
+		printk(KERN_WARNING "hw_bitblt_1: Unsupported pitch %X %X\n",
+			tmp, dst_pitch);
 		return -EINVAL;
 	}
 	tmp = VIA_PITCH_ENABLE | (tmp >> 3) | (dst_pitch << (16 - 3));
@@ -192,7 +192,7 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
 	int ret;
 
 	if (!op || op > 3) {
-;
+		printk(KERN_WARNING "hw_bitblt_2: Invalid operation: %d\n", op);
 		return -EINVAL;
 	}
 
@@ -217,8 +217,8 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
 		case 0xFF: /* whiteness */
 			break;
 		default:
-//			printk(KERN_WARNING "hw_bitblt_2: Invalid fill rop: "
-;
+			printk(KERN_WARNING "hw_bitblt_2: Invalid fill rop: "
+				"%u\n", fill_rop);
 			return -EINVAL;
 		}
 	}
@@ -232,32 +232,32 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
 	else
 		tmp = src_pitch;
 	if (tmp & 0xFFFFC007 || dst_pitch & 0xFFFFC007) {
-//		printk(KERN_WARNING "hw_bitblt_2: Unsupported pitch %X %X\n",
-;
+		printk(KERN_WARNING "hw_bitblt_2: Unsupported pitch %X %X\n",
+			tmp, dst_pitch);
 		return -EINVAL;
 	}
 	tmp = (tmp >> 3) | (dst_pitch << (16 - 3));
 	writel(tmp, engine + 0x08);
 
 	if ((width - 1) & 0xFFFFF000 || (height - 1) & 0xFFFFF000) {
-//		printk(KERN_WARNING "hw_bitblt_2: Unsupported width/height "
-;
+		printk(KERN_WARNING "hw_bitblt_2: Unsupported width/height "
+			"%d %d\n", width, height);
 		return -EINVAL;
 	}
 	tmp = (width - 1) | ((height - 1) << 16);
 	writel(tmp, engine + 0x0C);
 
 	if (dst_x & 0xFFFFF000 || dst_y & 0xFFFFF000) {
-//		printk(KERN_WARNING "hw_bitblt_2: Unsupported destination x/y "
-;
+		printk(KERN_WARNING "hw_bitblt_2: Unsupported destination x/y "
+			"%d %d\n", dst_x, dst_y);
 		return -EINVAL;
 	}
 	tmp = dst_x | (dst_y << 16);
 	writel(tmp, engine + 0x10);
 
 	if (dst_addr & 0xE0000007) {
-//		printk(KERN_WARNING "hw_bitblt_2: Unsupported destination "
-;
+		printk(KERN_WARNING "hw_bitblt_2: Unsupported destination "
+			"address %X\n", dst_addr);
 		return -EINVAL;
 	}
 	tmp = dst_addr >> 3;
@@ -266,8 +266,8 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
 	if (op != VIA_BITBLT_FILL) {
 		if (src_x & (op == VIA_BITBLT_MONO ? 0xFFFF8000 : 0xFFFFF000)
 			|| src_y & 0xFFFFF000) {
-//			printk(KERN_WARNING "hw_bitblt_2: Unsupported source "
-;
+			printk(KERN_WARNING "hw_bitblt_2: Unsupported source "
+				"x/y %d %d\n", src_x, src_y);
 			return -EINVAL;
 		}
 		tmp = src_x | (src_y << 16);
@@ -275,8 +275,8 @@ static int hw_bitblt_2(void __iomem *engine, u8 op, u32 width, u32 height,
 
 		tmp = src_mem ? 0 : src_addr;
 		if (dst_addr & 0xE0000007) {
-//			printk(KERN_WARNING "hw_bitblt_2: Unsupported source "
-;
+			printk(KERN_WARNING "hw_bitblt_2: Unsupported source "
+				"address %X\n", tmp);
 			return -EINVAL;
 		}
 		tmp >>= 3;
@@ -323,8 +323,8 @@ int viafb_setup_engine(struct fb_info *info)
 
 	engine = viapar->shared->vdev->engine_mmio;
 	if (!engine) {
-//		printk(KERN_WARNING "viafb_init_accel: ioremap failed, "
-;
+		printk(KERN_WARNING "viafb_init_accel: ioremap failed, "
+			"hardware acceleration disabled\n");
 		return -ENOMEM;
 	}
 
@@ -543,5 +543,5 @@ void viafb_wait_engine_idle(struct fb_info *info)
 	}
 
 	if (loop >= MAXLOOP)
-;
+		printk(KERN_ERR "viafb_wait_engine_idle: not syncing\n");
 }

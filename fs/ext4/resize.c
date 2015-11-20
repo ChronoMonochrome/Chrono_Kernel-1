@@ -88,11 +88,11 @@ static int verify_group_input(struct super_block *sb,
 		input->blocks_count - 2 - overhead - sbi->s_itb_per_group;
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT4-fs: adding %s group %u: %u blocks "
-//		       "(%d free, %u reserved)\n",
-//		       ext4_bg_has_super(sb, input->group) ? "normal" :
-//		       "no-super", input->group, input->blocks_count,
-;
+		printk(KERN_DEBUG "EXT4-fs: adding %s group %u: %u blocks "
+		       "(%d free, %u reserved)\n",
+		       ext4_bg_has_super(sb, input->group) ? "normal" :
+		       "no-super", input->group, input->blocks_count,
+		       free_blocks_count, input->reserved_blocks);
 
 	ext4_get_group_no_and_offset(sb, start, NULL, &offset);
 	if (group != sbi->s_groups_count)
@@ -428,9 +428,9 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
 	int err;
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG
-//		       "EXT4-fs: ext4_add_new_gdb: adding group block %lu\n",
-;
+		printk(KERN_DEBUG
+		       "EXT4-fs: ext4_add_new_gdb: adding group block %lu\n",
+		       gdb_num);
 
 	/*
 	 * If we are not using the primary superblock/GDT copy don't resize,
@@ -1035,16 +1035,16 @@ int ext4_group_extend(struct super_block *sb, struct ext4_super_block *es,
 	o_blocks_count = ext4_blocks_count(es);
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT4-fs: extending last group from %llu to %llu blocks\n",
-;
+		printk(KERN_DEBUG "EXT4-fs: extending last group from %llu to %llu blocks\n",
+		       o_blocks_count, n_blocks_count);
 
 	if (n_blocks_count == 0 || n_blocks_count == o_blocks_count)
 		return 0;
 
 	if (n_blocks_count > (sector_t)(~0ULL) >> (sb->s_blocksize_bits - 9)) {
-//		printk(KERN_ERR "EXT4-fs: filesystem on %s:"
-//			" too large to resize to %llu blocks safely\n",
-;
+		printk(KERN_ERR "EXT4-fs: filesystem on %s:"
+			" too large to resize to %llu blocks safely\n",
+			sb->s_id, n_blocks_count);
 		if (sizeof(sector_t) < 8)
 			ext4_warning(sb, "CONFIG_LBDAF not enabled");
 		return -EINVAL;
@@ -1125,8 +1125,8 @@ return -EPERM;
 		goto exit_put;
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT4-fs: extended group to %llu blocks\n",
-;
+		printk(KERN_DEBUG "EXT4-fs: extended group to %llu blocks\n",
+		       ext4_blocks_count(es));
 	update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr, (char *)es,
 		       sizeof(struct ext4_super_block));
 exit_put:

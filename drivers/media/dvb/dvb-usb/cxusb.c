@@ -50,13 +50,13 @@ MODULE_PARM_DESC(debug, "set debugging level (1=rc (or-able))." DVB_USB_DEBUG_ST
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
-//#define deb_info(args...)   dprintk(dvb_usb_cxusb_debug, 0x03, args)
-//#define deb_i2c(args...)    dprintk(dvb_usb_cxusb_debug, 0x02, args)
-//
-//static int cxusb_ctrl_msg(struct dvb_usb_device *d,
-//			  u8 cmd, u8 *wbuf, int wlen, u8 *rbuf, int rlen)
-//{
-;
+#define deb_info(args...)   dprintk(dvb_usb_cxusb_debug, 0x03, args)
+#define deb_i2c(args...)    dprintk(dvb_usb_cxusb_debug, 0x02, args)
+
+static int cxusb_ctrl_msg(struct dvb_usb_device *d,
+			  u8 cmd, u8 *wbuf, int wlen, u8 *rbuf, int rlen)
+{
+	int wo = (rbuf == NULL || rlen == 0); /* write-only */
 	u8 sndbuf[1+wlen];
 	memset(sndbuf, 0, 1+wlen);
 
@@ -1027,7 +1027,7 @@ static int cxusb_dualdig4_rev2_frontend_attach(struct dvb_usb_adapter *adap)
 
 	if (dib7000p_i2c_enumeration(&adap->dev->i2c_adap, 1, 18,
 				     &cxusb_dualdig4_rev2_config) < 0) {
-;
+		printk(KERN_WARNING "Unable to enumerate dib7000p\n");
 		return -ENODEV;
 	}
 

@@ -96,8 +96,8 @@ static uint16_t nfs_server_get_key(const void *cookie_netfs_data,
 		break;
 
 	default:
-//		printk(KERN_WARNING "NFS: Unknown network family '%d'\n",
-;
+		printk(KERN_WARNING "NFS: Unknown network family '%d'\n",
+		       clp->cl_addr.ss_family);
 		len = 0;
 		break;
 	}
@@ -272,7 +272,7 @@ static void nfs_fscache_inode_now_uncached(void *cookie_netfs_data)
 	pagevec_init(&pvec, 0);
 	first = 0;
 
-;
+	dprintk("NFS: nfs_inode_now_uncached: nfs_inode 0x%p\n", nfsi);
 
 	for (;;) {
 		/* grab a bunch of pages to unmark */

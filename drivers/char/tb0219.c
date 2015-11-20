@@ -312,7 +312,7 @@ static int __devinit tb0219_probe(struct platform_device *dev)
 
 	if (major == 0) {
 		major = retval;
-;
+		printk(KERN_INFO "TB0219: major number %d\n", major);
 	}
 
 	return 0;

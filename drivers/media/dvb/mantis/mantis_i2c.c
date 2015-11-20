@@ -39,8 +39,8 @@ static int mantis_i2c_read(struct mantis_pci *mantis, const struct i2c_msg *msg)
 {
 	u32 rxd, i, stat, trials;
 
-//	dprintk(MANTIS_INFO, 0, "        %s:  Address=[0x%02x] <R>[ ",
-;
+	dprintk(MANTIS_INFO, 0, "        %s:  Address=[0x%02x] <R>[ ",
+		__func__, msg->addr);
 
 	for (i = 0; i < msg->len; i++) {
 		rxd = (msg->addr << 25) | (1 << 24)
@@ -61,7 +61,7 @@ static int mantis_i2c_read(struct mantis_pci *mantis, const struct i2c_msg *msg)
 				break;
 		}
 
-;
+		dprintk(MANTIS_TMG, 0, "I2CDONE: trials=%d\n", trials);
 
 		/* wait for xfer completion */
 		for (trials = 0; trials < TRIALS; trials++) {
@@ -70,13 +70,13 @@ static int mantis_i2c_read(struct mantis_pci *mantis, const struct i2c_msg *msg)
 				break;
 		}
 
-;
+		dprintk(MANTIS_TMG, 0, "I2CRACK: trials=%d\n", trials);
 
 		rxd = mmread(MANTIS_I2CDATA_CTL);
 		msg->buf[i] = (u8)((rxd >> 8) & 0xFF);
-;
+		dprintk(MANTIS_INFO, 0, "%02x ", msg->buf[i]);
 	}
-;
+	dprintk(MANTIS_INFO, 0, "]\n");
 
 	return 0;
 }
@@ -86,11 +86,11 @@ static int mantis_i2c_write(struct mantis_pci *mantis, const struct i2c_msg *msg
 	int i;
 	u32 txd = 0, stat, trials;
 
-//	dprintk(MANTIS_INFO, 0, "        %s: Address=[0x%02x] <W>[ ",
-;
+	dprintk(MANTIS_INFO, 0, "        %s: Address=[0x%02x] <W>[ ",
+		__func__, msg->addr);
 
 	for (i = 0; i < msg->len; i++) {
-;
+		dprintk(MANTIS_INFO, 0, "%02x ", msg->buf[i]);
 		txd = (msg->addr << 25) | (msg->buf[i] << 8)
 					| MANTIS_I2C_RATE_3
 					| MANTIS_I2C_STOP
@@ -109,7 +109,7 @@ static int mantis_i2c_write(struct mantis_pci *mantis, const struct i2c_msg *msg
 				break;
 		}
 
-;
+		dprintk(MANTIS_TMG, 0, "I2CDONE: trials=%d\n", trials);
 
 		/* wait for xfer completion */
 		for (trials = 0; trials < TRIALS; trials++) {
@@ -118,9 +118,9 @@ static int mantis_i2c_write(struct mantis_pci *mantis, const struct i2c_msg *msg
 				break;
 		}
 
-;
+		dprintk(MANTIS_TMG, 0, "I2CRACK: trials=%d\n", trials);
 	}
-;
+	dprintk(MANTIS_INFO, 0, "]\n");
 
 	return 0;
 }
@@ -137,7 +137,7 @@ static int mantis_i2c_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, in
 	config = mantis->hwconfig;
 	BUG_ON(!config);
 
-;
+	dprintk(MANTIS_DEBUG, 1, "Messages:%d", num);
 	mutex_lock(&mantis->i2c_lock);
 
 	while (i < num) {
@@ -148,7 +148,7 @@ static int mantis_i2c_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, in
 		    (msgs[i + 1].len < 2)		&&
 		    (msgs[i + 1].flags & I2C_M_RD)) {
 
-;
+			dprintk(MANTIS_DEBUG, 0, "        Byte MODE:\n");
 
 			/* Read operation */
 			txd = msgs[i].addr << 25 | (0x1 << 24)
@@ -169,16 +169,16 @@ static int mantis_i2c_xfer(struct i2c_adapter *adapter, struct i2c_msg *msgs, in
 				if (stat & MANTIS_INT_I2CRACK) {
 					data = mmread(MANTIS_I2CDATA_CTL);
 					msgs[i + 1].buf[0] = (data >> 8) & 0xff;
-;
+					dprintk(MANTIS_DEBUG, 0, "        Byte <%d> RXD=0x%02x  [%02x]\n", 0x0, data, msgs[i + 1].buf[0]);
 				} else {
 					/* I/O error */
-;
+					dprintk(MANTIS_ERROR, 1, "        I/O error, LINE:%d", __LINE__);
 					ret = -EIO;
 					break;
 				}
 			} else {
 				/* I/O error */
-;
+				dprintk(MANTIS_ERROR, 1, "        I/O error, LINE:%d", __LINE__);
 				ret = -EIO;
 				break;
 			}
@@ -239,12 +239,12 @@ int __devinit mantis_i2c_init(struct mantis_pci *mantis)
 	if (mantis->i2c_rc < 0)
 		return mantis->i2c_rc;
 
-;
+	dprintk(MANTIS_DEBUG, 1, "Initializing I2C ..");
 
 	intstat = mmread(MANTIS_INT_STAT);
 	intmask = mmread(MANTIS_INT_MASK);
 	mmwrite(intstat, MANTIS_INT_STAT);
-;
+	dprintk(MANTIS_DEBUG, 1, "Disabling I2C interrupt");
 	intmask = mmread(MANTIS_INT_MASK);
 	mmwrite((intmask & ~MANTIS_INT_I2CDONE), MANTIS_INT_MASK);
 
@@ -256,11 +256,11 @@ int mantis_i2c_exit(struct mantis_pci *mantis)
 {
 	u32 intmask;
 
-;
+	dprintk(MANTIS_DEBUG, 1, "Disabling I2C interrupt");
 	intmask = mmread(MANTIS_INT_MASK);
 	mmwrite((intmask & ~MANTIS_INT_I2CDONE), MANTIS_INT_MASK);
 
-;
+	dprintk(MANTIS_DEBUG, 1, "Removing I2C adapter");
 	return i2c_del_adapter(&mantis->adapter);
 }
 EXPORT_SYMBOL_GPL(mantis_i2c_exit);

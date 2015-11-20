@@ -119,7 +119,7 @@ static int wdt977_start(void)
 	outb_p(LOCK_DATA, IO_INDEX_PORT);
 
 	spin_unlock_irqrestore(&spinlock, flags);
-;
+	printk(KERN_INFO PFX "activated.\n");
 
 	return 0;
 }
@@ -164,7 +164,7 @@ static int wdt977_stop(void)
 	outb_p(LOCK_DATA, IO_INDEX_PORT);
 
 	spin_unlock_irqrestore(&spinlock, flags);
-;
+	printk(KERN_INFO PFX "shutdown.\n");
 
 	return 0;
 }
@@ -288,8 +288,8 @@ static int wdt977_release(struct inode *inode, struct file *file)
 		clear_bit(0, &timer_alive);
 	} else {
 		wdt977_keepalive();
-//		printk(KERN_CRIT PFX
-;
+		printk(KERN_CRIT PFX
+			"Unexpected close, not stopping watchdog!\n");
 	}
 	expect_close = 0;
 	return 0;
@@ -446,15 +446,15 @@ static int __init wd977_init(void)
 {
 	int rc;
 
-;
+	printk(KERN_INFO PFX DRIVER_VERSION);
 
 	/* Check that the timeout value is within its range;
 	   if not reset to the default */
 	if (wdt977_set_timeout(timeout)) {
 		wdt977_set_timeout(DEFAULT_TIMEOUT);
-//		printk(KERN_INFO PFX
-//		      "timeout value must be 60 < timeout < 15300, using %d\n",
-;
+		printk(KERN_INFO PFX
+		      "timeout value must be 60 < timeout < 15300, using %d\n",
+							DEFAULT_TIMEOUT);
 	}
 
 	/* on Netwinder the IOports are already reserved by
@@ -462,9 +462,9 @@ static int __init wd977_init(void)
 	 */
 	if (!machine_is_netwinder()) {
 		if (!request_region(IO_INDEX_PORT, 2, WATCHDOG_NAME)) {
-//			printk(KERN_ERR PFX
-//				"I/O address 0x%04x already in use\n",
-;
+			printk(KERN_ERR PFX
+				"I/O address 0x%04x already in use\n",
+								IO_INDEX_PORT);
 			rc = -EIO;
 			goto err_out;
 		}
@@ -472,22 +472,22 @@ static int __init wd977_init(void)
 
 	rc = register_reboot_notifier(&wdt977_notifier);
 	if (rc) {
-//		printk(KERN_ERR PFX
-;
+		printk(KERN_ERR PFX
+			"cannot register reboot notifier (err=%d)\n", rc);
 		goto err_out_region;
 	}
 
 	rc = misc_register(&wdt977_miscdev);
 	if (rc) {
-//		printk(KERN_ERR PFX
-//			"cannot register miscdev on minor=%d (err=%d)\n",
-;
+		printk(KERN_ERR PFX
+			"cannot register miscdev on minor=%d (err=%d)\n",
+						wdt977_miscdev.minor, rc);
 		goto err_out_reboot;
 	}
 
-//	printk(KERN_INFO PFX
-//		"initialized. timeout=%d sec (nowayout=%d, testmode=%i)\n",
-;
+	printk(KERN_INFO PFX
+		"initialized. timeout=%d sec (nowayout=%d, testmode=%i)\n",
+						timeout, nowayout, testmode);
 
 	return 0;
 

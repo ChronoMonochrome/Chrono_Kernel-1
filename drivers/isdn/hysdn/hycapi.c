@@ -51,7 +51,7 @@ static inline int _hycapi_appCheck(int app_id, int ctrl_no)
 	if((ctrl_no <= 0) || (ctrl_no > CAPI_MAXCONTR) || (app_id <= 0) ||
 	   (app_id > CAPI_MAXAPPL))
 	{
-;
+		printk(KERN_ERR "HYCAPI: Invalid request app_id %d for controller %d", app_id, ctrl_no);
 		return -1;
 	}
 	return ((hycapi_applications[app_id-1].ctrl_mask & (1 << (ctrl_no-1))) != 0);
@@ -67,7 +67,7 @@ hycapi_reset_ctr(struct capi_ctr *ctrl)
 	hycapictrl_info *cinfo = ctrl->driverdata;
 
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "HYCAPI hycapi_reset_ctr\n");
 #endif
 	capilib_release(&cinfo->ncci_head);
 	capi_ctr_down(ctrl);
@@ -84,11 +84,11 @@ hycapi_remove_ctr(struct capi_ctr *ctrl)
 	hycapictrl_info *cinfo = NULL;
 	hysdn_card *card = NULL;
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "HYCAPI hycapi_remove_ctr\n");
 #endif 
 	cinfo = (hycapictrl_info *)(ctrl->driverdata);
 	if(!cinfo) {
-;
+		printk(KERN_ERR "No hycapictrl_info set!");
 		return;
 	}    
 	card = cinfo->card;
@@ -121,7 +121,7 @@ hycapi_sendmsg_internal(struct capi_ctr *ctrl, struct sk_buff *skb)
 
 	spin_lock_irq(&cinfo->lock);
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_send_message\n");    
 #endif
 	cinfo->skbs[cinfo->in_idx++] = skb;	/* add to buffer list */
 	if (cinfo->in_idx >= HYSDN_MAX_CAPI_SKB)
@@ -129,8 +129,8 @@ hycapi_sendmsg_internal(struct capi_ctr *ctrl, struct sk_buff *skb)
 	cinfo->sk_count++;		/* adjust counter */
 	if (cinfo->sk_count >= HYSDN_MAX_CAPI_SKB) {
 		/* inform upper layers we're full */
-//		printk(KERN_ERR "HYSDN Card%d: CAPI-buffer overrun!\n",
-;
+		printk(KERN_ERR "HYSDN Card%d: CAPI-buffer overrun!\n",
+		       card->myid);	
 		capi_ctr_suspend_output(ctrl);
 	}
 	cinfo->tx_skb = skb;
@@ -161,14 +161,14 @@ hycapi_register_internal(struct capi_ctr *ctrl, __u16 appl,
 	__u16 MessageBufferSize = 0;
 	int slen = strlen(ExtFeatureDefaults);
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_register_appl\n"); 
 #endif
 	MessageBufferSize = rp->level3cnt * rp->datablkcnt * rp->datablklen; 
 
 	len = CAPI_MSG_BASELEN + 8 + slen + 1;
 	if (!(skb = alloc_skb(len, GFP_ATOMIC))) {
-//		printk(KERN_ERR "HYSDN card%d: memory squeeze in hycapi_register_appl\n",
-;
+		printk(KERN_ERR "HYSDN card%d: memory squeeze in hycapi_register_appl\n",
+		       card->myid);
 		return;
 	}
 	memcpy(skb_put(skb,sizeof(__u16)), &len, sizeof(__u16));
@@ -198,7 +198,7 @@ static void hycapi_restart_internal(struct capi_ctr *ctrl)
 	int i;
 	struct sk_buff *skb;
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_WARNING "HYSDN: hycapi_restart_internal");
 #endif
 	for(i=0; i<CAPI_MAXAPPL; i++) {
 		if(_hycapi_appCheck(i+1, ctrl->cnr) == 1) {
@@ -231,7 +231,7 @@ hycapi_register_appl(struct capi_ctr *ctrl, __u16 appl,
 		return;
 	}
 	if(chk == 1) {
-;
+		printk(KERN_INFO "HYSDN: apl %d already registered\n", appl);
 		return;
 	}
 	MaxBDataBlocks = rp->datablkcnt > CAPI_MAXDATAWINDOW ? CAPI_MAXDATAWINDOW : rp->datablkcnt;
@@ -271,12 +271,12 @@ static void hycapi_release_internal(struct capi_ctr *ctrl, __u16 appl)
 	capilib_release_appl(&cinfo->ncci_head, appl);
 
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_release_appl\n");
 #endif
 	len = CAPI_MSG_BASELEN;
 	if (!(skb = alloc_skb(len, GFP_ATOMIC))) {
-//		printk(KERN_ERR "HYSDN card%d: memory squeeze in hycapi_register_appl\n",
-;
+		printk(KERN_ERR "HYSDN card%d: memory squeeze in hycapi_register_appl\n",
+		       card->myid);
 		return;
 	}
 	memcpy(skb_put(skb,sizeof(__u16)), &len, sizeof(__u16));
@@ -302,7 +302,7 @@ hycapi_release_appl(struct capi_ctr *ctrl, __u16 appl)
 
 	chk = _hycapi_appCheck(appl, ctrl->cnr);
 	if(chk<0) {
-;
+		printk(KERN_ERR "HYCAPI: Releasing invalid appl %d on controller %d\n", appl, ctrl->cnr);
 		return;
 	}
 	if(hycapi_applications[appl-1].listen_req[ctrl->cnr-1]) {
@@ -325,7 +325,7 @@ int hycapi_capi_release(hysdn_card *card)
 	hycapictrl_info *cinfo = card->hyctrlinfo;
 	struct capi_ctr *ctrl;
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_capi_release\n");
 #endif
 	if(cinfo) {
 		ctrl = &cinfo->capi_ctrl;
@@ -345,7 +345,7 @@ int hycapi_capi_stop(hysdn_card *card)
 	hycapictrl_info *cinfo = card->hyctrlinfo;
 	struct capi_ctr *ctrl;
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_capi_stop\n");
 #endif
 	if(cinfo) {
 		ctrl = &cinfo->capi_ctrl;
@@ -388,7 +388,7 @@ static u16 hycapi_send_message(struct capi_ctr *ctrl, struct sk_buff *skb)
 		case 1:
 			break;
 		default:
-;
+			printk(KERN_ERR "HYCAPI: Controller mixup!\n");
 			retval = CAPI_ILLAPPNR;
 			goto out;
 	}
@@ -420,7 +420,7 @@ static u16 hycapi_send_message(struct capi_ctr *ctrl, struct sk_buff *skb)
 			}
 			if (!(hycapi_applications[appl_id-1].listen_req[ctrl->cnr-1] = skb_copy(skb, GFP_ATOMIC))) 
 			{
-;
+				printk(KERN_ERR "HYSDN: memory squeeze in private_listen\n");
 			} 
 			break;
 		default:
@@ -491,7 +491,7 @@ on capi-interface registration.
 static int hycapi_load_firmware(struct capi_ctr *ctrl, capiloaddata *data)
 {
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_load_firmware\n");    
 #endif
 	return 0;
 }
@@ -501,7 +501,7 @@ static char *hycapi_procinfo(struct capi_ctr *ctrl)
 {
 	hycapictrl_info *cinfo = (hycapictrl_info *)(ctrl->driverdata);
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_proc_info\n");    
 #endif
 	if (!cinfo)
 		return "";
@@ -535,15 +535,15 @@ hycapi_rx_capipkt(hysdn_card * card, unsigned char *buf, unsigned short len)
 	__u16 len2, CapiCmd;
 	__u32 CP64[2] = {0,0};
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_rx_capipkt\n");    
 #endif
 	if(!cinfo) {
 		return;
 	}
 	ctrl = &cinfo->capi_ctrl;
 	if(len < CAPI_MSG_BASELEN) {
-//		printk(KERN_ERR "HYSDN Card%d: invalid CAPI-message, length %d!\n",
-;
+		printk(KERN_ERR "HYSDN Card%d: invalid CAPI-message, length %d!\n",
+		       card->myid, len);
 		return;
 	}	
 	MsgLen = CAPIMSG_LEN(buf);
@@ -553,8 +553,8 @@ hycapi_rx_capipkt(hysdn_card * card, unsigned char *buf, unsigned short len)
 	if((CapiCmd == CAPI_DATA_B3_IND) && (MsgLen < 30)) {
 		len2 = len + (30 - MsgLen);
 		if (!(skb = alloc_skb(len2, GFP_ATOMIC))) {
-//			printk(KERN_ERR "HYSDN Card%d: incoming packet dropped\n",
-;
+			printk(KERN_ERR "HYSDN Card%d: incoming packet dropped\n",
+			       card->myid);
 			return;
 		}
 		memcpy(skb_put(skb, MsgLen), buf, MsgLen);
@@ -564,8 +564,8 @@ hycapi_rx_capipkt(hysdn_card * card, unsigned char *buf, unsigned short len)
 		CAPIMSG_SETLEN(skb->data, 30);
 	} else {
 		if (!(skb = alloc_skb(len, GFP_ATOMIC))) {
-//			printk(KERN_ERR "HYSDN Card%d: incoming packet dropped\n",
-;
+			printk(KERN_ERR "HYSDN Card%d: incoming packet dropped\n",
+			       card->myid);
 			return;
 		}
 		memcpy(skb_put(skb, len), buf, len);
@@ -583,26 +583,26 @@ hycapi_rx_capipkt(hysdn_card * card, unsigned char *buf, unsigned short len)
 					
 					break;
 				case 0x0001:
-//					printk(KERN_ERR "HYSDN Card%d: NCPI not supported by current "
-;
+					printk(KERN_ERR "HYSDN Card%d: NCPI not supported by current "
+					       "protocol. NCPI ignored.\n", card->myid);
 					break;
 				case 0x2001:
-//					printk(KERN_ERR "HYSDN Card%d: Message not supported in"
-;
+					printk(KERN_ERR "HYSDN Card%d: Message not supported in"
+					       " current state\n", card->myid);
 					break;
 				case 0x2002:
-;
+					printk(KERN_ERR "HYSDN Card%d: invalid PLCI\n", card->myid);
 					break;		
 				case 0x2004:
-;
+					printk(KERN_ERR "HYSDN Card%d: out of NCCI\n", card->myid);
 					break;				
 				case 0x3008:
-//					printk(KERN_ERR "HYSDN Card%d: NCPI not supported\n", 
-;
+					printk(KERN_ERR "HYSDN Card%d: NCPI not supported\n", 
+					       card->myid);
 					break;	
 				default:
-//					printk(KERN_ERR "HYSDN Card%d: Info in CONNECT_B3_CONF: %d\n", 
-;
+					printk(KERN_ERR "HYSDN Card%d: Info in CONNECT_B3_CONF: %d\n", 
+					       card->myid, info);
 					break;			
 			}
 			break;
@@ -634,7 +634,7 @@ void hycapi_tx_capiack(hysdn_card * card)
 {
 	hycapictrl_info *cinfo = card->hyctrlinfo;
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_tx_capiack\n");    
 #endif
 	if(!cinfo) {
 		return;
@@ -741,7 +741,7 @@ hycapi_capi_create(hysdn_card *card)
 	struct capi_ctr *ctrl = NULL;
 	int retval;
 #ifdef HYCAPI_PRINTFNAMES
-;
+	printk(KERN_NOTICE "hycapi_capi_create\n");        
 #endif
 	if((hycapi_enable & (1 << card->myid)) == 0) {
 		return 1;
@@ -749,7 +749,7 @@ hycapi_capi_create(hysdn_card *card)
 	if (!card->hyctrlinfo) {
 		cinfo = kzalloc(sizeof(hycapictrl_info), GFP_ATOMIC);
 		if (!cinfo) {
-;
+			printk(KERN_WARNING "HYSDN: no memory for capi-ctrl.\n");
 			return -ENOMEM;
 		}
 		card->hyctrlinfo = cinfo;
@@ -781,7 +781,7 @@ hycapi_capi_create(hysdn_card *card)
 
 		retval = attach_capi_ctr(ctrl);
 		if (retval) {
-;
+			printk(KERN_ERR "hycapi: attach controller failed.\n");
 			return -EBUSY;
 		}
 		/* fill in the blanks: */

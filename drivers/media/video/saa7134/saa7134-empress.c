@@ -44,15 +44,15 @@ static unsigned int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug,"enable debug messages");
 
-//#define dprintk(fmt, arg...)	if (debug)			\
-//	printk(KERN_DEBUG "%s/empress: " fmt, dev->name , ## arg)
-//
-///* ------------------------------------------------------------------ */
-//
-//static void ts_reset_encoder(struct saa7134_dev* dev)
-//{
-//	if (!dev->empress_started)
-;
+#define dprintk(fmt, arg...)	if (debug)			\
+	printk(KERN_DEBUG "%s/empress: " fmt, dev->name , ## arg)
+
+/* ------------------------------------------------------------------ */
+
+static void ts_reset_encoder(struct saa7134_dev* dev)
+{
+	if (!dev->empress_started)
+		return;
 
 	saa_writeb(SAA7134_SPECIAL_MODE, 0x00);
 	msleep(10);
@@ -88,7 +88,7 @@ static int ts_open(struct file *file)
 	struct saa7134_dev *dev = video_drvdata(file);
 	int err;
 
-;
+	dprintk("open dev=%s\n", video_device_node_name(vdev));
 	err = -EBUSY;
 	if (!mutex_trylock(&dev->empress_tsq.vb_lock))
 		return err;
@@ -498,9 +498,9 @@ static void empress_signal_update(struct work_struct *work)
 		container_of(work, struct saa7134_dev, empress_workqueue);
 
 	if (dev->nosignal) {
-;
+		dprintk("no video signal\n");
 	} else {
-;
+		dprintk("video signal acquired\n");
 	}
 }
 
@@ -514,7 +514,7 @@ static int empress_init(struct saa7134_dev *dev)
 {
 	int err;
 
-;
+	dprintk("%s: %s\n",dev->name,__func__);
 	dev->empress_dev = video_device_alloc();
 	if (NULL == dev->empress_dev)
 		return -ENOMEM;
@@ -531,14 +531,14 @@ static int empress_init(struct saa7134_dev *dev)
 	err = video_register_device(dev->empress_dev,VFL_TYPE_GRABBER,
 				    empress_nr[dev->nr]);
 	if (err < 0) {
-//		printk(KERN_INFO "%s: can't register video device\n",
-;
+		printk(KERN_INFO "%s: can't register video device\n",
+		       dev->name);
 		video_device_release(dev->empress_dev);
 		dev->empress_dev = NULL;
 		return err;
 	}
-//	printk(KERN_INFO "%s: registered device %s [mpeg]\n",
-;
+	printk(KERN_INFO "%s: registered device %s [mpeg]\n",
+	       dev->name, video_device_node_name(dev->empress_dev));
 
 	videobuf_queue_sg_init(&dev->empress_tsq, &saa7134_ts_qops,
 			    &dev->pci->dev, &dev->slock,
@@ -553,7 +553,7 @@ static int empress_init(struct saa7134_dev *dev)
 
 static int empress_fini(struct saa7134_dev *dev)
 {
-;
+	dprintk("%s: %s\n",dev->name,__func__);
 
 	if (NULL == dev->empress_dev)
 		return 0;

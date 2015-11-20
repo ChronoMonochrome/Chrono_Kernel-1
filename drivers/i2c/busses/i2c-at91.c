@@ -61,7 +61,7 @@ static void __devinit at91_twi_hwinit(void)
 
 	if (cpu_is_at91rm9200()) {			/* AT91RM9200 Errata #22 */
 		if (ckdiv > 5) {
-;
+			printk(KERN_ERR "AT91 I2C: Invalid TWI_CLOCK value!\n");
 			ckdiv = 5;
 		}
 	}

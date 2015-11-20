@@ -1556,13 +1556,13 @@ snd_rme96_create(struct rme96 *rme96)
 
 	rme96->iobase = ioremap_nocache(rme96->port, RME96_IO_SIZE);
 	if (!rme96->iobase) {
-;
+		snd_printk(KERN_ERR "unable to remap memory region 0x%lx-0x%lx\n", rme96->port, rme96->port + RME96_IO_SIZE - 1);
 		return -ENOMEM;
 	}
 
 	if (request_irq(pci->irq, snd_rme96_interrupt, IRQF_SHARED,
 			"RME96", rme96)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		return -EBUSY;
 	}
 	rme96->irq = pci->irq;

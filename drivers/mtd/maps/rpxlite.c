@@ -29,7 +29,7 @@ static int __init init_rpxlite(void)
 	rpxlite_map.virt = ioremap(WINDOW_ADDR, WINDOW_SIZE * 4);
 
 	if (!rpxlite_map.virt) {
-;
+		printk("Failed to ioremap\n");
 		return -EIO;
 	}
 	simple_map_init(&rpxlite_map);

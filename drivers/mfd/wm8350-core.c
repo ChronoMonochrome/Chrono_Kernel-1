@@ -43,10 +43,10 @@
 #define dump(regs, src) do { \
 	int i_; \
 	u16 *src_ = src; \
-;
+	printk(KERN_DEBUG); \
 	for (i_ = 0; i_ < regs; i_++) \
 		printk(" 0x%4.4x", *src_++); \
-;
+	printk("\n"); \
 } while (0);
 #else
 #define dump(bytes, src)
@@ -54,15 +54,15 @@
 
 #define WM8350_LOCK_DEBUG 0
 #if WM8350_LOCK_DEBUG
-//#define ldbg(format, arg...) printk(format, ## arg)
-//#else
-//#define ldbg(format, arg...)
-//#endif
-//
-///*
-// * WM8350 Device IO
-// */
-;
+#define ldbg(format, arg...) printk(format, ## arg)
+#else
+#define ldbg(format, arg...)
+#endif
+
+/*
+ * WM8350 Device IO
+ */
+static DEFINE_MUTEX(io_mutex);
 static DEFINE_MUTEX(reg_lock_mutex);
 
 /* Perform a physical read from the device.

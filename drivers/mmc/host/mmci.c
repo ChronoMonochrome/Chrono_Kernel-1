@@ -1018,28 +1018,28 @@ mmci_data_irq(struct mmci_host *host, struct mmc_data *data,
 			/* Last block was not successful */
 			success -= 1;
 			data->error = -EILSEQ;
-//			printk(KERN_ERR"%s: [MMC] DATA CRC STATUS: %x, CMD: %d\n",
-;
+			printk(KERN_ERR"%s: [MMC] DATA CRC STATUS: %x, CMD: %d\n",
+				mmc_hostname(host->mmc), status, cmd_print & 0x3F);
 		} else if (status & MCI_DATATIMEOUT) {
 			data->error = -ETIMEDOUT;
-//			printk(KERN_ERR"%s: [MMC] DATA TIMEOUT STATUS: %x, CMD: %d\n",
-;
+			printk(KERN_ERR"%s: [MMC] DATA TIMEOUT STATUS: %x, CMD: %d\n",
+				mmc_hostname(host->mmc), status, cmd_print & 0x3F);
 		} else if (status & MCI_STARTBITERR) {
 			data->error = -ECOMM;
-//			printk(KERN_ERR"%s: [MMC] DATA STARTBIT STATUS: %x, CMD: %d\n",
-;
+			printk(KERN_ERR"%s: [MMC] DATA STARTBIT STATUS: %x, CMD: %d\n",
+				mmc_hostname(host->mmc), status, cmd_print & 0x3F);
 		} else if (status & MCI_TXUNDERRUN) {
 			data->error = -EIO;
-//			printk(KERN_ERR"%s: [MMC] DATA TX STATUS: %x, CMD: %d\n",
-;
+			printk(KERN_ERR"%s: [MMC] DATA TX STATUS: %x, CMD: %d\n",
+				mmc_hostname(host->mmc), status, cmd_print & 0x3F);
 		} else if (status & MCI_RXOVERRUN) {
 			if (success > host->variant->fifosize)
 				success -= host->variant->fifosize;
 			else
 				success = 0;
 			data->error = -EIO;
-//			printk(KERN_ERR"%s: [MMC] DATA RX STATUS: %x, CMD: %d\n",
-;
+			printk(KERN_ERR"%s: [MMC] DATA RX STATUS: %x, CMD: %d\n",
+				mmc_hostname(host->mmc), status, cmd_print & 0x3F);
 		}
 		data->bytes_xfered = round_down(success, data->blksz);
 	}
@@ -1078,12 +1078,12 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
 
 	if (status & MCI_CMDTIMEOUT) {
 		cmd->error = -ETIMEDOUT;
-//		printk(KERN_ERR"%s: [MMC] CMD TIMEOUT STATUS: %x, CMD: %d\n",
-;
+		printk(KERN_ERR"%s: [MMC] CMD TIMEOUT STATUS: %x, CMD: %d\n",
+			mmc_hostname(host->mmc), status, cmd_print & 0x3F);		
 	} else if (status & MCI_CMDCRCFAIL && cmd->flags & MMC_RSP_CRC) {
 		cmd->error = -EILSEQ;
-//		printk(KERN_ERR"%s: [MMC] CMD Command CRC STATUS: %x, CMD: %d\n",
-;
+		printk(KERN_ERR"%s: [MMC] CMD Command CRC STATUS: %x, CMD: %d\n",
+			mmc_hostname(host->mmc), status, cmd_print & 0x3F);		
 	} else {
 		cmd->resp[0] = readl(base + MMCIRESPONSE0);
 		cmd->resp[1] = readl(base + MMCIRESPONSE1);
@@ -1550,17 +1550,17 @@ static irqreturn_t mmci_cd_irq(int irq, void *dev_id)
 #ifdef _MMC_SAFE_ACCESS_
 			mmc_is_available = 1;
 #endif
-;
+			printk(KERN_ERR"[MMC]card inserted\n");
 			mmc_detect_change(host->mmc, msecs_to_jiffies(200));
 		} else {
 #ifdef _MMC_SAFE_ACCESS_
 			mmc_is_available = 0;
 #endif
-;
+			printk(KERN_ERR"[MMC]card removed\n");
 			mmc_detect_change(host->mmc, msecs_to_jiffies(50));
 		}
       } else
-;
+		printk(KERN_ERR"gpio_cd is not defined\n");
 
 	return IRQ_HANDLED;
 }
@@ -1649,10 +1649,10 @@ static ssize_t mmci_sd_detection_cmd_show(struct device *dev,
 	
 #ifdef SD_HW_NODETECTION
 	 if (host->mmc->card) {
-;
+                printk(KERN_DEBUG "sdcc3: card inserted.\n");
                 return sprintf(buf, "Insert\n");
         } else {
-;
+                printk(KERN_DEBUG "sdcc3: card removed.\n");
                 return sprintf(buf, "Remove\n");
         }
 #else
@@ -1913,7 +1913,7 @@ static int __devinit mmci_probe(struct amba_device *dev,
 		&& !(mmc->caps & MMC_CAP_NONREMOVABLE)){
 
 		if(mmc->index == 2)
-;
+			printk("WLAN is not setting MMC_CAP_NEEDS_POLL\n");
 		else
 		mmc->caps |= MMC_CAP_NEEDS_POLL;
 	}

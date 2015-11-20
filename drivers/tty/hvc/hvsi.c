@@ -264,26 +264,26 @@ static void dump_hex(const uint8_t *data, int len)
 {
 	int i;
 
-;
+	printk("    ");
 	for (i=0; i < len; i++)
-;
+		printk("%.2x", data[i]);
 
-;
+	printk("\n    ");
 	for (i=0; i < len; i++) {
 		if (isprint(data[i]))
-;
+			printk("%c", data[i]);
 		else
-;
+			printk(".");
 	}
-;
+	printk("\n");
 }
 
 static void dump_packet(uint8_t *packet)
 {
 	struct hvsi_header *header = (struct hvsi_header *)packet;
 
-//	printk("type 0x%x, len %i, seqno %i:\n", header->type, header->len,
-;
+	printk("type 0x%x, len %i, seqno %i:\n", header->type, header->len,
+			header->seqno);
 
 	dump_hex(packet, header->len);
 }
@@ -320,8 +320,8 @@ static void hvsi_recv_control(struct hvsi_struct *hp, uint8_t *packet,
 			}
 			break;
 		default:
-//			printk(KERN_WARNING "hvsi%i: unknown HVSI control packet: ",
-;
+			printk(KERN_WARNING "hvsi%i: unknown HVSI control packet: ",
+				hp->index);
 			dump_packet(packet);
 			break;
 	}
@@ -344,7 +344,7 @@ static void hvsi_recv_response(struct hvsi_struct *hp, uint8_t *packet)
 			__set_state(hp, HVSI_OPEN);
 			break;
 		default:
-;
+			printk(KERN_ERR "hvsi%i: unexpected query response: ", hp->index);
 			dump_packet(packet);
 			break;
 	}
@@ -368,8 +368,8 @@ static int hvsi_version_respond(struct hvsi_struct *hp, uint16_t query_seqno)
 
 	wrote = hvc_put_chars(hp->vtermno, (char *)&packet, packet.len);
 	if (wrote != packet.len) {
-//		printk(KERN_ERR "hvsi%i: couldn't send query response!\n",
-;
+		printk(KERN_ERR "hvsi%i: couldn't send query response!\n",
+			hp->index);
 		return -EIO;
 	}
 
@@ -386,7 +386,7 @@ static void hvsi_recv_query(struct hvsi_struct *hp, uint8_t *packet)
 			__set_state(hp, HVSI_OPEN);
 			break;
 		default:
-;
+			printk(KERN_ERR "hvsi%i: unexpected query: ", hp->index);
 			dump_packet(packet);
 			break;
 	}
@@ -486,7 +486,7 @@ static int hvsi_load_chunk(struct hvsi_struct *hp, struct tty_struct **flip,
 		struct hvsi_header *header = (struct hvsi_header *)packet;
 
 		if (!is_header(packet)) {
-;
+			printk(KERN_ERR "hvsi%i: got malformed packet\n", hp->index);
 			/* skip bytes until we find a header or run out of data */
 			while ((packet < hp->inbuf_end) && (!is_header(packet)))
 				packet++;
@@ -515,8 +515,8 @@ static int hvsi_load_chunk(struct hvsi_struct *hp, struct tty_struct **flip,
 				hvsi_recv_query(hp, packet);
 				break;
 			default:
-//				printk(KERN_ERR "hvsi%i: unknown HVSI packet type 0x%x\n",
-;
+				printk(KERN_ERR "hvsi%i: unknown HVSI packet type 0x%x\n",
+						hp->index, header->type);
 				dump_packet(packet);
 				break;
 		}
@@ -650,8 +650,8 @@ static int hvsi_query(struct hvsi_struct *hp, uint16_t verb)
 
 	wrote = hvc_put_chars(hp->vtermno, (char *)&packet, packet.len);
 	if (wrote != packet.len) {
-//		printk(KERN_ERR "hvsi%i: couldn't send query (%i)!\n", hp->index,
-;
+		printk(KERN_ERR "hvsi%i: couldn't send query (%i)!\n", hp->index,
+			wrote);
 		return -EIO;
 	}
 
@@ -667,7 +667,7 @@ static int hvsi_get_mctrl(struct hvsi_struct *hp)
 
 	ret = hvsi_wait(hp, HVSI_OPEN);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "hvsi%i: didn't get modem flags\n", hp->index);
 		set_state(hp, HVSI_OPEN);
 		return ret;
 	}
@@ -697,7 +697,7 @@ static int hvsi_set_mctrl(struct hvsi_struct *hp, uint16_t mctrl)
 
 	wrote = hvc_put_chars(hp->vtermno, (char *)&packet, packet.len);
 	if (wrote != packet.len) {
-;
+		printk(KERN_ERR "hvsi%i: couldn't set DTR!\n", hp->index);
 		return -EIO;
 	}
 
@@ -730,7 +730,7 @@ static int hvsi_handshake(struct hvsi_struct *hp)
 	set_state(hp, HVSI_WAIT_FOR_VER_RESPONSE);
 	ret = hvsi_query(hp, VSV_SEND_VERSION_NUMBER);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "hvsi%i: couldn't send version query\n", hp->index);
 		return ret;
 	}
 
@@ -749,13 +749,13 @@ static void hvsi_handshaker(struct work_struct *work)
 	if (hvsi_handshake(hp) >= 0)
 		return;
 
-;
+	printk(KERN_ERR "hvsi%i: re-handshaking failed\n", hp->index);
 	if (is_console(hp)) {
 		/*
 		 * ttys will re-attempt the handshake via hvsi_open, but
 		 * the console will not.
 		 */
-;
+		printk(KERN_ERR "hvsi%i: lost console!\n", hp->index);
 	}
 }
 
@@ -825,19 +825,19 @@ static int hvsi_open(struct tty_struct *tty, struct file *filp)
 
 	ret = hvsi_handshake(hp);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "%s: HVSI handshaking failed\n", tty->name);
 		return ret;
 	}
 
 	ret = hvsi_get_mctrl(hp);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "%s: couldn't get initial modem flags\n", tty->name);
 		return ret;
 	}
 
 	ret = hvsi_set_mctrl(hp, hp->mctrl | TIOCM_DTR);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "%s: couldn't set DTR\n", tty->name);
 		return ret;
 	}
 
@@ -906,8 +906,8 @@ static void hvsi_close(struct tty_struct *tty, struct file *filp)
 			spin_lock_irqsave(&hp->lock, flags);
 		}
 	} else if (hp->count < 0)
-//		printk(KERN_ERR "hvsi_close %lu: oops, count is %d\n",
-;
+		printk(KERN_ERR "hvsi_close %lu: oops, count is %d\n",
+		       hp - hvsi_ports, hp->count);
 
 	spin_unlock_irqrestore(&hp->lock, flags);
 }
@@ -943,7 +943,7 @@ static void hvsi_push(struct hvsi_struct *hp)
 		hp->n_outbuf = 0;
 	} else if (n == -EIO) {
 		__set_state(hp, HVSI_FSP_DIED);
-;
+		printk(KERN_ERR "hvsi%i: service processor died\n", hp->index);
 	}
 }
 
@@ -1168,15 +1168,15 @@ static int __init hvsi_init(void)
 
 		ret = request_irq(hp->virq, hvsi_interrupt, IRQF_DISABLED, "hvsi", hp);
 		if (ret)
-//			printk(KERN_ERR "HVSI: couldn't reserve irq 0x%x (error %i)\n",
-;
+			printk(KERN_ERR "HVSI: couldn't reserve irq 0x%x (error %i)\n",
+				hp->virq, ret);
 	}
 	hvsi_wait = wait_for_state; /* irqs active now */
 
 	if (tty_register_driver(hvsi_driver))
 		panic("Couldn't register hvsi console driver\n");
 
-;
+	printk(KERN_DEBUG "HVSI: registered %i devices\n", hvsi_count);
 
 	return 0;
 }
@@ -1299,8 +1299,8 @@ static int __init hvsi_console_init(void)
 		hp->vtermno = *vtermno;
 		hp->virq = irq_create_mapping(NULL, irq[0]);
 		if (hp->virq == NO_IRQ) {
-//			printk(KERN_ERR "%s: couldn't create irq mapping for 0x%x\n",
-;
+			printk(KERN_ERR "%s: couldn't create irq mapping for 0x%x\n",
+				__func__, irq[0]);
 			continue;
 		}
 

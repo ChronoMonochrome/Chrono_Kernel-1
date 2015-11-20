@@ -181,7 +181,7 @@ static int hexium_init_done(struct saa7146_dev *dev)
 	for (i = 0; i < sizeof(hexium_ks0127b); i++) {
 		data.byte = hexium_ks0127b[i];
 		if (0 != i2c_smbus_xfer(&hexium->i2c_adapter, 0x6c, 0, I2C_SMBUS_WRITE, i, I2C_SMBUS_BYTE_DATA, &data)) {
-;
+			printk("hexium_gemini: hexium_init_done() failed for address 0x%02x\n", i);
 		}
 	}
 
@@ -212,7 +212,7 @@ static int hexium_set_standard(struct hexium *hexium, struct hexium_data *vdec)
 	while (vdec[i].adr != -1) {
 		data.byte = vdec[i].byte;
 		if (0 != i2c_smbus_xfer(&hexium->i2c_adapter, 0x6c, 0, I2C_SMBUS_WRITE, vdec[i].adr, I2C_SMBUS_BYTE_DATA, &data)) {
-;
+			printk("hexium_init_done: hexium_set_standard() failed for address 0x%02x\n", i);
 			return -1;
 		}
 		i++;
@@ -358,7 +358,7 @@ static int hexium_attach(struct saa7146_dev *dev, struct saa7146_pci_extension_d
 
 	hexium = kzalloc(sizeof(struct hexium), GFP_KERNEL);
 	if (NULL == hexium) {
-;
+		printk("hexium_gemini: not enough kernel memory in hexium_attach().\n");
 		return -ENOMEM;
 	}
 	dev->ext_priv = hexium;
@@ -402,11 +402,11 @@ static int hexium_attach(struct saa7146_dev *dev, struct saa7146_pci_extension_d
 	vv_data.ops.vidioc_s_input = vidioc_s_input;
 	ret = saa7146_register_device(&hexium->video_dev, dev, "hexium gemini", VFL_TYPE_GRABBER);
 	if (ret < 0) {
-;
+		printk("hexium_gemini: cannot register capture v4l2 device. skipping.\n");
 		return ret;
 	}
 
-;
+	printk("hexium_gemini: found 'hexium gemini' frame grabber-%d.\n", hexium_num);
 	hexium_num++;
 
 	return 0;

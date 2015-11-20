@@ -520,11 +520,11 @@ static int __init evtchn_init(void)
 	/* Create '/dev/misc/evtchn'. */
 	err = misc_register(&evtchn_miscdev);
 	if (err != 0) {
-;
+		printk(KERN_ALERT "Could not register /dev/misc/evtchn\n");
 		return err;
 	}
 
-;
+	printk(KERN_INFO "Event-channel device installed.\n");
 
 	return 0;
 }

@@ -885,7 +885,7 @@ cleanup_device:
 	device_unregister(&maple_bus);
 
 cleanup:
-;
+	printk(KERN_ERR "Maple bus registration failed\n");
 	return retval;
 }
 /* Push init to later to ensure hardware gets detected */

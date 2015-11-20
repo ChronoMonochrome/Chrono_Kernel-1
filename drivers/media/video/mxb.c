@@ -200,7 +200,7 @@ static int mxb_probe(struct saa7146_dev *dev)
 	/* check if all devices are present */
 	if (!mxb->tea6420_1 || !mxb->tea6420_2 || !mxb->tea6415c ||
 	    !mxb->tda9840 || !mxb->saa7111a || !mxb->tuner) {
-;
+		printk("mxb: did not find all i2c devices. aborting\n");
 		i2c_del_adapter(&mxb->i2c_adapter);
 		kfree(mxb);
 		return -ENODEV;
@@ -514,7 +514,7 @@ static int vidioc_s_input(struct file *file, void *fh, unsigned int input)
 
 	/* switch video in saa7111a */
 	if (saa7111a_call(mxb, video, s_routing, i, SAA7111_FMT_CCIR, 0))
-;
+		printk(KERN_ERR "VIDIOC_S_INPUT: could not address saa7111a.\n");
 
 	/* switch the audio-source only if necessary */
 	if (0 == mxb->cur_mute)
@@ -679,7 +679,7 @@ static long vidioc_default(struct file *file, void *fh, bool valid_prio,
 	}
 	default:
 /*
-;
+		DEB2(printk("does not handle this ioctl.\n"));
 */
 		return -ENOIOCTLCMD;
 	}
@@ -732,7 +732,7 @@ static int mxb_attach(struct saa7146_dev *dev, struct saa7146_pci_extension_data
 		}
 	}
 
-;
+	printk("mxb: found Multimedia eXtension Board #%d.\n", mxb_num);
 
 	mxb_num++;
 	mxb_init_done(dev);

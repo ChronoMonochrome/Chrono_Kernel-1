@@ -127,9 +127,9 @@ static int start_this_handle(journal_t *journal, handle_t *handle,
 	unsigned long ts = jiffies;
 
 	if (nblocks > journal->j_max_transaction_buffers) {
-//		printk(KERN_ERR "JBD: %s wants too many credits (%d > %d)\n",
-//		       current->comm, nblocks,
-;
+		printk(KERN_ERR "JBD: %s wants too many credits (%d > %d)\n",
+		       current->comm, nblocks,
+		       journal->j_max_transaction_buffers);
 		return -ENOSPC;
 	}
 
@@ -576,11 +576,11 @@ static void warn_dirty_buffer(struct buffer_head *bh)
 {
 	char b[BDEVNAME_SIZE];
 
-//	printk(KERN_WARNING
-//	       "JBD: Spotted dirty metadata buffer (dev = %s, blocknr = %llu). "
-//	       "There's a risk of filesystem corruption in case of system "
-//	       "crash.\n",
-;
+	printk(KERN_WARNING
+	       "JBD: Spotted dirty metadata buffer (dev = %s, blocknr = %llu). "
+	       "There's a risk of filesystem corruption in case of system "
+	       "crash.\n",
+	       bdevname(bh->b_bdev, b), (unsigned long long)bh->b_blocknr);
 }
 
 /*
@@ -753,9 +753,9 @@ repeat:
 					jbd2_alloc(jh2bh(jh)->b_size,
 							 GFP_NOFS);
 				if (!frozen_buffer) {
-//					printk(KERN_EMERG
-//					       "%s: OOM for frozen_buffer\n",
-;
+					printk(KERN_EMERG
+					       "%s: OOM for frozen_buffer\n",
+					       __func__);
 					JBUFFER_TRACE(jh, "oom!");
 					error = -ENOMEM;
 					jbd_lock_bh_state(bh);
@@ -985,8 +985,8 @@ repeat:
 	if (!jh->b_committed_data) {
 		committed_data = jbd2_alloc(jh2bh(jh)->b_size, GFP_NOFS);
 		if (!committed_data) {
-//			printk(KERN_EMERG "%s: No memory for committed data\n",
-;
+			printk(KERN_EMERG "%s: No memory for committed data\n",
+				__func__);
 			err = -ENOMEM;
 			goto out;
 		}

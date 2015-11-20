@@ -523,8 +523,8 @@ static unsigned int snd_es1371_wait_src_ready(struct ensoniq * ensoniq)
 			return r;
 		cond_resched();
 	}
-//	snd_printk(KERN_ERR "wait src ready timeout 0x%lx [0x%x]\n",
-;
+	snd_printk(KERN_ERR "wait src ready timeout 0x%lx [0x%x]\n",
+		   ES_REG(ensoniq, 1371_SMPRATE), r);
 	return 0;
 }
 
@@ -585,9 +585,9 @@ static void snd_es1370_codec_write(struct snd_ak4531 *ak4531,
 	unsigned long end_time = jiffies + HZ / 10;
 
 #if 0
-//	printk(KERN_DEBUG
-//	       "CODEC WRITE: reg = 0x%x, val = 0x%x (0x%x), creg = 0x%x\n",
-;
+	printk(KERN_DEBUG
+	       "CODEC WRITE: reg = 0x%x, val = 0x%x (0x%x), creg = 0x%x\n",
+	       reg, val, ES_1370_CODEC_WRITE(reg, val), ES_REG(ensoniq, 1370_CODEC));
 #endif
 	do {
 		if (!(inl(ES_REG(ensoniq, STATUS)) & ES_1370_CSTAT)) {
@@ -596,8 +596,8 @@ static void snd_es1370_codec_write(struct snd_ak4531 *ak4531,
 		}
 		schedule_timeout_uninterruptible(1);
 	} while (time_after(end_time, jiffies));
-//	snd_printk(KERN_ERR "codec write timeout, status = 0x%x\n",
-;
+	snd_printk(KERN_ERR "codec write timeout, status = 0x%x\n",
+		   inl(ES_REG(ensoniq, STATUS)));
 }
 
 #endif /* CHIP1370 */
@@ -647,8 +647,8 @@ static void snd_es1371_codec_write(struct snd_ac97 *ac97,
 		}
 	}
 	mutex_unlock(&ensoniq->src_mutex);
-//	snd_printk(KERN_ERR "codec write timeout at 0x%lx [0x%x]\n",
-;
+	snd_printk(KERN_ERR "codec write timeout at 0x%lx [0x%x]\n",
+		   ES_REG(ensoniq, 1371_CODEC), inl(ES_REG(ensoniq, 1371_CODEC)));
 }
 
 static unsigned short snd_es1371_codec_read(struct snd_ac97 *ac97,
@@ -704,18 +704,18 @@ static unsigned short snd_es1371_codec_read(struct snd_ac97 *ac97,
 			}
 			mutex_unlock(&ensoniq->src_mutex);
 			if (++fail > 10) {
-//				snd_printk(KERN_ERR "codec read timeout (final) "
-//					   "at 0x%lx, reg = 0x%x [0x%x]\n",
-//					   ES_REG(ensoniq, 1371_CODEC), reg,
-;
+				snd_printk(KERN_ERR "codec read timeout (final) "
+					   "at 0x%lx, reg = 0x%x [0x%x]\n",
+					   ES_REG(ensoniq, 1371_CODEC), reg,
+					   inl(ES_REG(ensoniq, 1371_CODEC)));
 				return 0;
 			}
 			goto __again;
 		}
 	}
 	mutex_unlock(&ensoniq->src_mutex);
-//	snd_printk(KERN_ERR "es1371: codec read timeout at 0x%lx [0x%x]\n",
-;
+	snd_printk(KERN_ERR "es1371: codec read timeout at 0x%lx [0x%x]\n",
+		   ES_REG(ensoniq, 1371_CODEC), inl(ES_REG(ensoniq, 1371_CODEC)));
 	return 0;
 }
 
@@ -1794,7 +1794,7 @@ static int __devinit snd_ensoniq_get_joystick_port(int dev)
 		return joystick_port[dev];
 
 	default:
-;
+		printk(KERN_ERR "ens1371: invalid joystick port %#x", joystick_port[dev]);
 		return 0;
 	}
 }
@@ -1821,15 +1821,15 @@ static int __devinit snd_ensoniq_create_gameport(struct ensoniq *ensoniq, int de
 			if (request_region(io_port, 8, "ens137x: gameport"))
 				break;
 		if (io_port > 0x218) {
-;
+			printk(KERN_WARNING "ens137x: no gameport ports available\n");
 			return -EBUSY;
 		}
 		break;
 
 	default:
 		if (!request_region(io_port, 8, "ens137x: gameport")) {
-//			printk(KERN_WARNING "ens137x: gameport io port 0x%#x in use\n",
-;
+			printk(KERN_WARNING "ens137x: gameport io port 0x%#x in use\n",
+			       io_port);
 			return -EBUSY;
 		}
 		break;
@@ -1837,7 +1837,7 @@ static int __devinit snd_ensoniq_create_gameport(struct ensoniq *ensoniq, int de
 
 	ensoniq->gameport = gp = gameport_allocate_port();
 	if (!gp) {
-;
+		printk(KERN_ERR "ens137x: cannot allocate memory for gameport\n");
 		release_region(io_port, 8);
 		return -ENOMEM;
 	}
@@ -2070,8 +2070,8 @@ static int snd_ensoniq_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR DRIVER_NAME ": pci_enable_device failed, "
-;
+		printk(KERN_ERR DRIVER_NAME ": pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -2121,7 +2121,7 @@ static int __devinit snd_ensoniq_create(struct snd_card *card,
 	ensoniq->port = pci_resource_start(pci, 0);
 	if (request_irq(pci->irq, snd_audiopci_interrupt, IRQF_SHARED,
 			"Ensoniq AudioPCI", ensoniq)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		snd_ensoniq_free(ensoniq);
 		return -EBUSY;
 	}
@@ -2129,7 +2129,7 @@ static int __devinit snd_ensoniq_create(struct snd_card *card,
 #ifdef CHIP1370
 	if (snd_dma_alloc_pages(SNDRV_DMA_TYPE_DEV, snd_dma_pci_data(pci),
 				16, &ensoniq->dma_bug) < 0) {
-;
+		snd_printk(KERN_ERR "unable to allocate space for phantom area - dma_bug\n");
 		snd_ensoniq_free(ensoniq);
 		return -EBUSY;
 	}

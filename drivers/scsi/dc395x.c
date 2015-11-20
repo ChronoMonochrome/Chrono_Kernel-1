@@ -110,20 +110,20 @@
  * driver name and a ": " to the start of the message
  */
 #define dprintkl(level, format, arg...)  \
-//    printk(level DC395X_NAME ": " format , ## arg)
-//
-//
-//#ifdef DEBUG_MASK
-///*
-// * print a debug message - this is formated with KERN_DEBUG, then the
-// * driver name followed by a ": " and then the message is output. 
-// * This also checks that the specified debug level is enabled before
-// * outputing the message
-// */
-//#define dprintkdbg(type, format, arg...) \
-//	do { \
-//		if ((type) & (DEBUG_MASK)) \
-;
+    printk(level DC395X_NAME ": " format , ## arg)
+
+
+#ifdef DEBUG_MASK
+/*
+ * print a debug message - this is formated with KERN_DEBUG, then the
+ * driver name followed by a ": " and then the message is output. 
+ * This also checks that the specified debug level is enabled before
+ * outputing the message
+ */
+#define dprintkdbg(type, format, arg...) \
+	do { \
+		if ((type) & (DEBUG_MASK)) \
+			dprintkl(KERN_DEBUG , format , ## arg); \
 	} while (0)
 
 /*
@@ -1208,12 +1208,12 @@ static void dump_register_info(struct AdapterCtlBlk *acb,
 				srb, srb->cmd,
 				srb->cmd->cmnd[0], srb->cmd->device->id,
 			       	srb->cmd->device->lun);
-//		printk("  sglist=%p cnt=%i idx=%i len=%zu\n",
-//		       srb->segment_x, srb->sg_count, srb->sg_index,
-;
-//		printk("  state=0x%04x status=0x%02x phase=0x%02x (%sconn.)\n",
-//		       srb->state, srb->status, srb->scsi_phase,
-;
+		printk("  sglist=%p cnt=%i idx=%i len=%zu\n",
+		       srb->segment_x, srb->sg_count, srb->sg_index,
+		       srb->total_xfer_length);
+		printk("  state=0x%04x status=0x%02x phase=0x%02x (%sconn.)\n",
+		       srb->state, srb->status, srb->scsi_phase,
+		       (acb->active_dcb) ? "" : "not");
 	}
 	dprintkl(KERN_INFO, "dump: SCSI{status=0x%04x fifocnt=0x%02x "
 		"signals=0x%02x irqstat=0x%02x sync=0x%02x target=0x%02x "
@@ -2292,7 +2292,7 @@ static void data_in_phase0(struct AdapterCtlBlk *acb, struct ScsiReqBlk *srb,
 					*virt++ = byte;
 
 					if (debug_enabled(DBG_PIO))
-;
+						printk(" %02x", byte);
 
 					d_left_counter--;
 					sg_subtract_one(srb);
@@ -2317,7 +2317,7 @@ static void data_in_phase0(struct AdapterCtlBlk *acb, struct ScsiReqBlk *srb,
 						*virt++ = byte;
 						srb->total_xfer_length--;
 						if (debug_enabled(DBG_PIO))
-;
+							printk(" %02x", byte);
 					}
 
 					DC395x_write8(acb, TRM_S1040_SCSI_CONFIG2, 0);
@@ -2329,7 +2329,7 @@ static void data_in_phase0(struct AdapterCtlBlk *acb, struct ScsiReqBlk *srb,
 			/*printk(" %08x", *(u32*)(bus_to_virt (addr))); */
 			/*srb->total_xfer_length = 0; */
 			if (debug_enabled(DBG_PIO))
-;
+				printk("\n");
 		}
 #endif				/* DC395x_LASTPIO */
 
@@ -2519,13 +2519,13 @@ static void data_io_transfer(struct AdapterCtlBlk *acb,
 				if (ln % 2) {
 					DC395x_write8(acb, TRM_S1040_SCSI_FIFO, 0);
 					if (debug_enabled(DBG_PIO))
-;
+						printk(" |00");
 				}
 				DC395x_write8(acb, TRM_S1040_SCSI_CONFIG2, 0);
 			}
 			/*DC395x_write32(acb, TRM_S1040_SCSI_COUNTER, ln); */
 			if (debug_enabled(DBG_PIO))
-;
+				printk("\n");
 			DC395x_write8(acb, TRM_S1040_SCSI_COMMAND,
 					  SCMD_FIFO_OUT);
 		}
@@ -3366,16 +3366,16 @@ static void srb_done(struct AdapterCtlBlk *acb, struct DeviceCtlBlk *dcb,
 				break;
 			}
 			if (cmd->sense_buffer[7] >= 6)
-//				printk("sense=0x%02x ASC=0x%02x ASCQ=0x%02x "
-//					"(0x%08x 0x%08x)\n",
-//					cmd->sense_buffer[2], cmd->sense_buffer[12],
-//					cmd->sense_buffer[13],
-//					*((unsigned int *)(cmd->sense_buffer + 3)),
-;
+				printk("sense=0x%02x ASC=0x%02x ASCQ=0x%02x "
+					"(0x%08x 0x%08x)\n",
+					cmd->sense_buffer[2], cmd->sense_buffer[12],
+					cmd->sense_buffer[13],
+					*((unsigned int *)(cmd->sense_buffer + 3)),
+					*((unsigned int *)(cmd->sense_buffer + 8)));
 			else
-//				printk("sense=0x%02x No ASC/ASCQ (0x%08x)\n",
-//					cmd->sense_buffer[2],
-;
+				printk("sense=0x%02x No ASC/ASCQ (0x%08x)\n",
+					cmd->sense_buffer[2],
+					*((unsigned int *)(cmd->sense_buffer + 3)));
 		}
 
 		if (status == (CHECK_CONDITION << 1)) {
@@ -3537,8 +3537,8 @@ static void doing_srb_done(struct AdapterCtlBlk *acb, u8 did_flag,
 			p = srb->cmd;
 			dir = p->sc_data_direction;
 			result = MK_RES(0, did_flag, 0, 0);
-//			printk("G:%p(%02i-%i) ", p,
-;
+			printk("G:%p(%02i-%i) ", p,
+			       p->device->id, p->device->lun);
 			srb_going_remove(dcb, srb);
 			free_tag(dcb, srb);
 			srb_free_insert(acb, srb);
@@ -3567,8 +3567,8 @@ static void doing_srb_done(struct AdapterCtlBlk *acb, u8 did_flag,
 			p = srb->cmd;
 
 			result = MK_RES(0, did_flag, 0, 0);
-//			printk("W:%p<%02i-%i>", p, p->device->id,
-;
+			printk("W:%p<%02i-%i>", p, p->device->id,
+			       p->device->lun);
 			srb_waiting_remove(dcb, srb);
 			srb_free_insert(acb, srb);
 			p->result = result;
@@ -3586,7 +3586,7 @@ static void doing_srb_done(struct AdapterCtlBlk *acb, u8 did_flag,
 			     dcb->target_lun);
 		dcb->flag &= ~ABORT_DEV_;
 	}
-;
+	printk("\n");
 }
 
 
@@ -4314,26 +4314,26 @@ static void __devinit adapter_print_config(struct AdapterCtlBlk *acb)
 	dprintkl(KERN_INFO, "%sConnectors: ",
 		((bval & WIDESCSI) ? "(Wide) " : ""));
 	if (!(bval & CON5068))
-;
+		printk("ext%s ", !(bval & EXT68HIGH) ? "68" : "50");
 	if (!(bval & CON68))
-;
+		printk("int68%s ", !(bval & INT68HIGH) ? "" : "(50)");
 	if (!(bval & CON50))
-;
+		printk("int50 ");
 	if ((bval & (CON5068 | CON50 | CON68)) ==
 	    0 /*(CON5068 | CON50 | CON68) */ )
-;
+		printk(" Oops! (All 3?) ");
 	bval = DC395x_read8(acb, TRM_S1040_GEN_CONTROL);
-;
+	printk(" Termination: ");
 	if (bval & DIS_TERM)
-;
+		printk("Disabled\n");
 	else {
 		if (bval & AUTOTERM)
-;
+			printk("Auto ");
 		if (bval & LOW8TERM)
-;
+			printk("Low ");
 		if (bval & UP8TERM)
-;
-;
+			printk("High ");
+		printk("\n");
 	}
 }
 

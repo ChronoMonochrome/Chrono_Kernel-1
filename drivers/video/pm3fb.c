@@ -45,17 +45,17 @@
 #undef PM3FB_MASTER_DEBUG
 #ifdef PM3FB_MASTER_DEBUG
 #define DPRINTK(a, b...)	\
-//	printk(KERN_DEBUG "pm3fb: %s: " a, __func__ , ## b)
-//#else
-//#define DPRINTK(a, b...)
-//#endif
-//
-//#define PM3_PIXMAP_SIZE	(2048 * 4)
-//
-///*
-// * Driver data
-// */
-;
+	printk(KERN_DEBUG "pm3fb: %s: " a, __func__ , ## b)
+#else
+#define DPRINTK(a, b...)
+#endif
+
+#define PM3_PIXMAP_SIZE	(2048 * 4)
+
+/*
+ * Driver data
+ */
+static int hwcursor = 1;
 static char *mode_option __devinitdata;
 static int noaccel __devinitdata;
 
@@ -1239,13 +1239,13 @@ static unsigned long __devinit pm3fb_size_memory(struct pm3_par *par)
 	/* Linear frame buffer - request region and map it. */
 	if (!request_mem_region(pm3fb_fix.smem_start, pm3fb_fix.smem_len,
 				 "pm3fb smem")) {
-;
+		printk(KERN_WARNING "pm3fb: Can't reserve smem.\n");
 		return 0;
 	}
 	screen_mem =
 		ioremap_nocache(pm3fb_fix.smem_start, pm3fb_fix.smem_len);
 	if (!screen_mem) {
-;
+		printk(KERN_WARNING "pm3fb: Can't ioremap smem area.\n");
 		release_mem_region(pm3fb_fix.smem_start, pm3fb_fix.smem_len);
 		return 0;
 	}
@@ -1325,7 +1325,7 @@ static int __devinit pm3fb_probe(struct pci_dev *dev,
 
 	err = pci_enable_device(dev);
 	if (err) {
-;
+		printk(KERN_WARNING "pm3fb: Can't enable PCI dev: %d\n", err);
 		return err;
 	}
 	/*
@@ -1351,14 +1351,14 @@ static int __devinit pm3fb_probe(struct pci_dev *dev,
 	/* Registers - request region and map it. */
 	if (!request_mem_region(pm3fb_fix.mmio_start, pm3fb_fix.mmio_len,
 				 "pm3fb regbase")) {
-;
+		printk(KERN_WARNING "pm3fb: Can't reserve regbase.\n");
 		goto err_exit_neither;
 	}
 	par->v_regs =
 		ioremap_nocache(pm3fb_fix.mmio_start, pm3fb_fix.mmio_len);
 	if (!par->v_regs) {
-//		printk(KERN_WARNING "pm3fb: Can't remap %s register area.\n",
-;
+		printk(KERN_WARNING "pm3fb: Can't remap %s register area.\n",
+			pm3fb_fix.id);
 		release_mem_region(pm3fb_fix.mmio_start, pm3fb_fix.mmio_len);
 		goto err_exit_neither;
 	}
@@ -1367,18 +1367,18 @@ static int __devinit pm3fb_probe(struct pci_dev *dev,
 	pm3fb_fix.smem_start = pci_resource_start(dev, 1);
 	pm3fb_fix.smem_len = pm3fb_size_memory(par);
 	if (!pm3fb_fix.smem_len) {
-;
+		printk(KERN_WARNING "pm3fb: Can't find memory on board.\n");
 		goto err_exit_mmio;
 	}
 	if (!request_mem_region(pm3fb_fix.smem_start, pm3fb_fix.smem_len,
 				 "pm3fb smem")) {
-;
+		printk(KERN_WARNING "pm3fb: Can't reserve smem.\n");
 		goto err_exit_mmio;
 	}
 	info->screen_base =
 		ioremap_nocache(pm3fb_fix.smem_start, pm3fb_fix.smem_len);
 	if (!info->screen_base) {
-;
+		printk(KERN_WARNING "pm3fb: Can't ioremap smem area.\n");
 		release_mem_region(pm3fb_fix.smem_start, pm3fb_fix.smem_len);
 		goto err_exit_mmio;
 	}
@@ -1404,7 +1404,7 @@ static int __devinit pm3fb_probe(struct pci_dev *dev,
 			FBINFO_HWACCEL_FILLRECT;
 
 	if (noaccel) {
-;
+		printk(KERN_DEBUG "disabling acceleration\n");
 		info->flags |= FBINFO_HWACCEL_DISABLED;
 	}
 	info->pixmap.addr = kmalloc(PM3_PIXMAP_SIZE, GFP_KERNEL);
@@ -1446,8 +1446,8 @@ static int __devinit pm3fb_probe(struct pci_dev *dev,
 		retval = -EINVAL;
 		goto err_exit_all;
 	}
-//	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
+	   info->fix.id);
 	pci_set_drvdata(dev, info);
 	return 0;
 

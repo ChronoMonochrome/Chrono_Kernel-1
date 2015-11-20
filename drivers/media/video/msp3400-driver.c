@@ -789,29 +789,29 @@ static int msp_probe(struct i2c_client *client, const struct i2c_device_id *id)
 			client->addr << 1, client->adapter->name);
 	v4l_info(client, "%s ", client->name);
 	if (state->has_nicam && state->has_radio)
-;
+		printk(KERN_CONT "supports nicam and radio, ");
 	else if (state->has_nicam)
-;
+		printk(KERN_CONT "supports nicam, ");
 	else if (state->has_radio)
-;
-;
+		printk(KERN_CONT "supports radio, ");
+	printk(KERN_CONT "mode is ");
 
 	/* version-specific initialization */
 	switch (state->opmode) {
 	case OPMODE_MANUAL:
-;
+		printk(KERN_CONT "manual");
 		thread_func = msp3400c_thread;
 		break;
 	case OPMODE_AUTODETECT:
-;
+		printk(KERN_CONT "autodetect");
 		thread_func = msp3410d_thread;
 		break;
 	case OPMODE_AUTOSELECT:
-;
+		printk(KERN_CONT "autodetect and autoselect");
 		thread_func = msp34xxg_thread;
 		break;
 	}
-;
+	printk(KERN_CONT "\n");
 
 	/* startup control thread if needed */
 	if (thread_func) {

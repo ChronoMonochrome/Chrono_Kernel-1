@@ -571,8 +571,8 @@ static int __devinit apbuart_probe(struct platform_device *op)
 
 	apbuart_flush_fifo((struct uart_port *) port);
 
-//	printk(KERN_INFO "grlib-apbuart at 0x%llx, irq %d\n",
-;
+	printk(KERN_INFO "grlib-apbuart at 0x%llx, irq %d\n",
+	       (unsigned long long) port->mapbase, port->irq);
 	return 0;
 }
 
@@ -653,21 +653,21 @@ static int __init grlib_apbuart_init(void)
 	if (ret)
 		return ret;
 
-;
+	printk(KERN_INFO "Serial: GRLIB APBUART driver\n");
 
 	ret = uart_register_driver(&grlib_apbuart_driver);
 
 	if (ret) {
-//		printk(KERN_ERR "%s: uart_register_driver failed (%i)\n",
-;
+		printk(KERN_ERR "%s: uart_register_driver failed (%i)\n",
+		       __FILE__, ret);
 		return ret;
 	}
 
 	ret = platform_driver_register(&grlib_apbuart_of_driver);
 	if (ret) {
-//		printk(KERN_ERR
-//		       "%s: platform_driver_register failed (%i)\n",
-;
+		printk(KERN_ERR
+		       "%s: platform_driver_register failed (%i)\n",
+		       __FILE__, ret);
 		uart_unregister_driver(&grlib_apbuart_driver);
 		return ret;
 	}

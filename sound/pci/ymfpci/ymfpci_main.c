@@ -86,7 +86,7 @@ static int snd_ymfpci_codec_ready(struct snd_ymfpci *chip, int secondary)
 			return 0;
 		schedule_timeout_uninterruptible(1);
 	} while (time_before(jiffies, end_time));
-;
+	snd_printk(KERN_ERR "codec_ready: codec %i is not ready [0x%x]\n", secondary, snd_ymfpci_readw(chip, reg));
 	return -EBUSY;
 }
 
@@ -319,10 +319,10 @@ static void snd_ymfpci_pcm_interrupt(struct snd_ymfpci *chip, struct snd_ymfpci_
 		ypcm->last_pos = pos;
 		if (ypcm->period_pos >= ypcm->period_size) {
 			/*
-//			printk(KERN_DEBUG
-//			       "done - active_bank = 0x%x, start = 0x%x\n",
-//			       chip->active_bank,
-;
+			printk(KERN_DEBUG
+			       "done - active_bank = 0x%x, start = 0x%x\n",
+			       chip->active_bank,
+			       voice->bank[chip->active_bank].start);
 			*/
 			ypcm->period_pos %= ypcm->period_size;
 			spin_unlock(&chip->reg_lock);
@@ -372,10 +372,10 @@ static void snd_ymfpci_pcm_capture_interrupt(struct snd_pcm_substream *substream
 		if (ypcm->period_pos >= ypcm->period_size) {
 			ypcm->period_pos %= ypcm->period_size;
 			/*
-//			printk(KERN_DEBUG
-//			       "done - active_bank = 0x%x, start = 0x%x\n",
-//			       chip->active_bank,
-;
+			printk(KERN_DEBUG
+			       "done - active_bank = 0x%x, start = 0x%x\n",
+			       chip->active_bank,
+			       voice->bank[chip->active_bank].start);
 			*/
 			spin_unlock(&chip->reg_lock);
 			snd_pcm_period_elapsed(substream);
@@ -2022,7 +2022,7 @@ static int snd_ymfpci_request_firmware(struct snd_ymfpci *chip)
 			       &chip->pci->dev);
 	if (err >= 0) {
 		if (chip->dsp_microcode->size != YDSXG_DSPLENGTH) {
-;
+			snd_printk(KERN_ERR "DSP microcode has wrong size\n");
 			err = -EINVAL;
 		}
 	}
@@ -2037,8 +2037,8 @@ static int snd_ymfpci_request_firmware(struct snd_ymfpci *chip)
 			       &chip->pci->dev);
 	if (err >= 0) {
 		if (chip->controller_microcode->size != YDSXG_CTRLLENGTH) {
-//			snd_printk(KERN_ERR "controller microcode"
-;
+			snd_printk(KERN_ERR "controller microcode"
+				   " has wrong size\n");
 			err = -EINVAL;
 		}
 	}
@@ -2309,8 +2309,8 @@ int snd_ymfpci_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "ymfpci: pci_enable_device failed, "
-;
+		printk(KERN_ERR "ymfpci: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -2375,13 +2375,13 @@ int __devinit snd_ymfpci_create(struct snd_card *card,
 	chip->src441_used = -1;
 
 	if ((chip->res_reg_area = request_mem_region(chip->reg_area_phys, 0x8000, "YMFPCI")) == NULL) {
-;
+		snd_printk(KERN_ERR "unable to grab memory region 0x%lx-0x%lx\n", chip->reg_area_phys, chip->reg_area_phys + 0x8000 - 1);
 		snd_ymfpci_free(chip);
 		return -EBUSY;
 	}
 	if (request_irq(pci->irq, snd_ymfpci_interrupt, IRQF_SHARED,
 			"YMFPCI", chip)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		snd_ymfpci_free(chip);
 		return -EBUSY;
 	}
@@ -2395,7 +2395,7 @@ int __devinit snd_ymfpci_create(struct snd_card *card,
 
 	err = snd_ymfpci_request_firmware(chip);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "firmware request failed: %d\n", err);
 		snd_ymfpci_free(chip);
 		return err;
 	}

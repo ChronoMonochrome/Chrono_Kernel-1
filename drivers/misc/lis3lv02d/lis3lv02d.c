@@ -920,7 +920,7 @@ int lis3lv02d_init_device(struct lis3lv02d *dev)
 				     sizeof(lis3_wai12_regs)), GFP_KERNEL);
 
 	if (dev->reg_cache == NULL) {
-;
+		printk(KERN_ERR DRIVER_NAME "out of memory\n");
 		return -ENOMEM;
 	}
 

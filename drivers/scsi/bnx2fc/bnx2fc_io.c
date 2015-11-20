@@ -192,8 +192,8 @@ static void bnx2fc_cmd_timeout(struct work_struct *work)
 		}
 		break;
 	default:
-//		printk(KERN_ERR PFX "cmd_timeout: invalid cmd_type %d\n",
-;
+		printk(KERN_ERR PFX "cmd_timeout: invalid cmd_type %d\n",
+			cmd_type);
 		break;
 	}
 
@@ -220,9 +220,9 @@ static void bnx2fc_scsi_done(struct bnx2fc_cmd *io_req, int err_code)
 	bnx2fc_unmap_sg_list(io_req);
 	io_req->sc_cmd = NULL;
 	if (!sc_cmd) {
-//		printk(KERN_ERR PFX "scsi_done - sc_cmd NULL. "
-//				    "IO(0x%x) already cleaned up\n",
-;
+		printk(KERN_ERR PFX "scsi_done - sc_cmd NULL. "
+				    "IO(0x%x) already cleaned up\n",
+		       io_req->xid);
 		return;
 	}
 	sc_cmd->result = err_code << 16;
@@ -250,8 +250,8 @@ struct bnx2fc_cmd_mgr *bnx2fc_cmd_mgr_alloc(struct bnx2fc_hba *hba,
 	int arr_sz = num_possible_cpus() + 1;
 
 	if (max_xid <= min_xid || max_xid == FC_XID_UNKNOWN) {
-//		printk(KERN_ERR PFX "cmd_mgr_alloc: Invalid min_xid 0x%x \
-;
+		printk(KERN_ERR PFX "cmd_mgr_alloc: Invalid min_xid 0x%x \
+					and max_xid 0x%x\n", min_xid, max_xid);
 		return NULL;
 	}
 	BNX2FC_MISC_DBG("min xid 0x%x, max xid 0x%x\n", min_xid, max_xid);
@@ -262,21 +262,21 @@ struct bnx2fc_cmd_mgr *bnx2fc_cmd_mgr_alloc(struct bnx2fc_hba *hba,
 
 	cmgr = kzalloc(len, GFP_KERNEL);
 	if (!cmgr) {
-;
+		printk(KERN_ERR PFX "failed to alloc cmgr\n");
 		return NULL;
 	}
 
 	cmgr->free_list = kzalloc(sizeof(*cmgr->free_list) *
 				  arr_sz, GFP_KERNEL);
 	if (!cmgr->free_list) {
-;
+		printk(KERN_ERR PFX "failed to alloc free_list\n");
 		goto mem_err;
 	}
 
 	cmgr->free_list_lock = kzalloc(sizeof(*cmgr->free_list_lock) *
 				       arr_sz, GFP_KERNEL);
 	if (!cmgr->free_list_lock) {
-;
+		printk(KERN_ERR PFX "failed to alloc free_list_lock\n");
 		goto mem_err;
 	}
 
@@ -299,7 +299,7 @@ struct bnx2fc_cmd_mgr *bnx2fc_cmd_mgr_alloc(struct bnx2fc_hba *hba,
 		io_req = kzalloc(sizeof(*io_req), GFP_KERNEL);
 
 		if (!io_req) {
-;
+			printk(KERN_ERR PFX "failed to alloc io_req\n");
 			goto mem_err;
 		}
 
@@ -321,7 +321,7 @@ struct bnx2fc_cmd_mgr *bnx2fc_cmd_mgr_alloc(struct bnx2fc_hba *hba,
 	mem_size = num_ios * sizeof(struct io_bdt *);
 	cmgr->io_bdt_pool = kmalloc(mem_size, GFP_KERNEL);
 	if (!cmgr->io_bdt_pool) {
-;
+		printk(KERN_ERR PFX "failed to alloc io_bdt_pool\n");
 		goto mem_err;
 	}
 
@@ -329,8 +329,8 @@ struct bnx2fc_cmd_mgr *bnx2fc_cmd_mgr_alloc(struct bnx2fc_hba *hba,
 	for (i = 0; i < num_ios; i++) {
 		cmgr->io_bdt_pool[i] = kmalloc(mem_size, GFP_KERNEL);
 		if (!cmgr->io_bdt_pool[i]) {
-//			printk(KERN_ERR PFX "failed to alloc "
-;
+			printk(KERN_ERR PFX "failed to alloc "
+				"io_bdt_pool[%d]\n", i);
 			goto mem_err;
 		}
 	}
@@ -344,8 +344,8 @@ struct bnx2fc_cmd_mgr *bnx2fc_cmd_mgr_alloc(struct bnx2fc_hba *hba,
 						      &bdt_info->bd_tbl_dma,
 						      GFP_KERNEL);
 		if (!bdt_info->bd_tbl) {
-//			printk(KERN_ERR PFX "failed to alloc "
-;
+			printk(KERN_ERR PFX "failed to alloc "
+				"bdt_tbl[%d]\n", i);
 			goto mem_err;
 		}
 	}
@@ -451,7 +451,7 @@ struct bnx2fc_cmd *bnx2fc_elstm_alloc(struct bnx2fc_rport *tgt, int type)
 			"ios(%d):sqes(%d)\n",
 			tgt->num_active_ios.counter, tgt->max_sqes);
 		if (list_empty(&(cmd_mgr->free_list[index])))
-;
+			printk(KERN_ERR PFX "elstm_alloc: list_empty\n");
 		spin_unlock_bh(&cmd_mgr->free_list_lock[index]);
 		return NULL;
 	}
@@ -611,7 +611,7 @@ int bnx2fc_init_mp_req(struct bnx2fc_cmd *io_req)
 					     &mp_req->req_buf_dma,
 					     GFP_ATOMIC);
 	if (!mp_req->req_buf) {
-;
+		printk(KERN_ERR PFX "unable to alloc MP req buffer\n");
 		bnx2fc_free_mp_resc(io_req);
 		return FAILED;
 	}
@@ -620,7 +620,7 @@ int bnx2fc_init_mp_req(struct bnx2fc_cmd *io_req)
 					      &mp_req->resp_buf_dma,
 					      GFP_ATOMIC);
 	if (!mp_req->resp_buf) {
-;
+		printk(KERN_ERR PFX "unable to alloc TM resp buffer\n");
 		bnx2fc_free_mp_resc(io_req);
 		return FAILED;
 	}
@@ -633,7 +633,7 @@ int bnx2fc_init_mp_req(struct bnx2fc_cmd *io_req)
 						 &mp_req->mp_req_bd_dma,
 						 GFP_ATOMIC);
 	if (!mp_req->mp_req_bd) {
-;
+		printk(KERN_ERR PFX "unable to alloc MP req bd\n");
 		bnx2fc_free_mp_resc(io_req);
 		return FAILED;
 	}
@@ -641,7 +641,7 @@ int bnx2fc_init_mp_req(struct bnx2fc_cmd *io_req)
 						 &mp_req->mp_resp_bd_dma,
 						 GFP_ATOMIC);
 	if (!mp_req->mp_req_bd) {
-;
+		printk(KERN_ERR PFX "unable to alloc MP resp bd\n");
 		bnx2fc_free_mp_resc(io_req);
 		return FAILED;
 	}
@@ -694,7 +694,7 @@ static int bnx2fc_initiate_tmf(struct scsi_cmnd *sc_cmd, u8 tm_flags)
 	hba = port->priv;
 
 	if (rport == NULL) {
-;
+		printk(KERN_ALERT PFX "device_reset: rport is NULL\n");
 		rc = FAILED;
 		goto tmf_err;
 	}
@@ -704,7 +704,7 @@ static int bnx2fc_initiate_tmf(struct scsi_cmnd *sc_cmd, u8 tm_flags)
 		return rc;
 
 	if (lport->state != LPORT_ST_READY || !(lport->link_up)) {
-;
+		printk(KERN_ERR PFX "device_reset: link is not ready\n");
 		rc = FAILED;
 		goto tmf_err;
 	}
@@ -712,7 +712,7 @@ static int bnx2fc_initiate_tmf(struct scsi_cmnd *sc_cmd, u8 tm_flags)
 	tgt = (struct bnx2fc_rport *)&rp[1];
 
 	if (!(test_bit(BNX2FC_FLAG_SESSION_READY, &tgt->flags))) {
-;
+		printk(KERN_ERR PFX "device_reset: tgt not offloaded\n");
 		rc = FAILED;
 		goto tmf_err;
 	}
@@ -720,7 +720,7 @@ retry_tmf:
 	io_req = bnx2fc_elstm_alloc(tgt, BNX2FC_TASK_MGMT_CMD);
 	if (!io_req) {
 		if (time_after(jiffies, start + HZ)) {
-;
+			printk(KERN_ERR PFX "tmf: Failed TMF");
 			rc = FAILED;
 			goto tmf_err;
 		}
@@ -736,7 +736,7 @@ retry_tmf:
 
 	rc = bnx2fc_init_mp_req(io_req);
 	if (rc == FAILED) {
-;
+		printk(KERN_ERR PFX "Task mgmt MP request init failed\n");
 		kref_put(&io_req->refcount, bnx2fc_cmd_release);
 		goto tmf_err;
 	}
@@ -798,10 +798,10 @@ retry_tmf:
 	spin_unlock_bh(&tgt->tgt_lock);
 
 	if (!rc) {
-;
+		printk(KERN_ERR PFX "task mgmt command failed...\n");
 		rc = FAILED;
 	} else {
-;
+		printk(KERN_ERR PFX "task mgmt command success...\n");
 		rc = SUCCESS;
 	}
 tmf_err:
@@ -835,26 +835,26 @@ int bnx2fc_initiate_abts(struct bnx2fc_cmd *io_req)
 	lport = port->lport;
 
 	if (!test_bit(BNX2FC_FLAG_SESSION_READY, &tgt->flags)) {
-;
+		printk(KERN_ERR PFX "initiate_abts: tgt not offloaded\n");
 		rc = FAILED;
 		goto abts_err;
 	}
 
 	if (rport == NULL) {
-;
+		printk(KERN_ALERT PFX "initiate_abts: rport is NULL\n");
 		rc = FAILED;
 		goto abts_err;
 	}
 
 	if (lport->state != LPORT_ST_READY || !(lport->link_up)) {
-;
+		printk(KERN_ERR PFX "initiate_abts: link is not ready\n");
 		rc = FAILED;
 		goto abts_err;
 	}
 
 	abts_io_req = bnx2fc_elstm_alloc(tgt, BNX2FC_ABTS);
 	if (!abts_io_req) {
-;
+		printk(KERN_ERR PFX "abts: couldnt allocate cmd\n");
 		rc = FAILED;
 		goto abts_err;
 	}
@@ -938,7 +938,7 @@ int bnx2fc_initiate_cleanup(struct bnx2fc_cmd *io_req)
 
 	cleanup_io_req = bnx2fc_elstm_alloc(tgt, BNX2FC_CLEANUP);
 	if (!cleanup_io_req) {
-;
+		printk(KERN_ERR PFX "cleanup: couldnt allocate cmd\n");
 		rc = -1;
 		goto cleanup_err;
 	}
@@ -1023,7 +1023,7 @@ int bnx2fc_eh_abort(struct scsi_cmnd *sc_cmd)
 
 	lport = shost_priv(sc_cmd->device->host);
 	if ((lport->state != LPORT_ST_READY) || !(lport->link_up)) {
-;
+		printk(KERN_ALERT PFX "eh_abort: link not ready\n");
 		return rc;
 	}
 
@@ -1035,7 +1035,7 @@ int bnx2fc_eh_abort(struct scsi_cmnd *sc_cmd)
 	io_req = (struct bnx2fc_cmd *)sc_cmd->SCp.ptr;
 	if (!io_req) {
 		/* Command might have just completed */
-;
+		printk(KERN_ERR PFX "eh_abort: io_req is NULL\n");
 		spin_unlock_bh(&tgt->tgt_lock);
 		return SUCCESS;
 	}
@@ -1054,16 +1054,16 @@ int bnx2fc_eh_abort(struct scsi_cmnd *sc_cmd)
 	 * io_req is no longer in the active_q.
 	 */
 	if (tgt->flush_in_prog) {
-//		printk(KERN_ALERT PFX "eh_abort: io_req (xid = 0x%x) "
-;
+		printk(KERN_ALERT PFX "eh_abort: io_req (xid = 0x%x) "
+			"flush in progress\n", io_req->xid);
 		kref_put(&io_req->refcount, bnx2fc_cmd_release);
 		spin_unlock_bh(&tgt->tgt_lock);
 		return SUCCESS;
 	}
 
 	if (io_req->on_active_queue == 0) {
-//		printk(KERN_ALERT PFX "eh_abort: io_req (xid = 0x%x) "
-;
+		printk(KERN_ALERT PFX "eh_abort: io_req (xid = 0x%x) "
+				"not on active_q\n", io_req->xid);
 		/*
 		 * This condition can happen only due to the FW bug,
 		 * where we do not receive cleanup response from
@@ -1100,8 +1100,8 @@ int bnx2fc_eh_abort(struct scsi_cmnd *sc_cmd)
 		set_bit(BNX2FC_FLAG_EH_ABORT, &io_req->req_flags);
 		rc = bnx2fc_initiate_abts(io_req);
 	} else {
-//		printk(KERN_ALERT PFX "eh_abort: io_req (xid = 0x%x) "
-;
+		printk(KERN_ALERT PFX "eh_abort: io_req (xid = 0x%x) "
+				"already in abts processing\n", io_req->xid);
 		kref_put(&io_req->refcount, bnx2fc_cmd_release);
 		spin_unlock_bh(&tgt->tgt_lock);
 		return SUCCESS;
@@ -1120,8 +1120,8 @@ int bnx2fc_eh_abort(struct scsi_cmnd *sc_cmd)
 	if (!(test_and_set_bit(BNX2FC_FLAG_ABTS_DONE,
 				    &io_req->req_flags))) {
 		/* Let the scsi-ml try to recover this command */
-//		printk(KERN_ERR PFX "abort failed, xid = 0x%x\n",
-;
+		printk(KERN_ERR PFX "abort failed, xid = 0x%x\n",
+		       io_req->xid);
 		rc = FAILED;
 	} else {
 		/*
@@ -1205,7 +1205,7 @@ void bnx2fc_process_abts_compl(struct bnx2fc_cmd *io_req,
 		BNX2FC_IO_DBG(io_req, "ABTS response - RJT\n");
 		break;
 	default:
-;
+		printk(KERN_ERR PFX "Unknown ABTS response\n");
 		break;
 	}
 
@@ -1276,9 +1276,9 @@ static void bnx2fc_lun_reset_cmpl(struct bnx2fc_cmd *io_req)
 				/* abts shouldn't fail in this context */
 				WARN_ON(rc != SUCCESS);
 			} else
-//				printk(KERN_ERR PFX "lun_rst: abts already in"
-//					" progress for this IO 0x%x\n",
-;
+				printk(KERN_ERR PFX "lun_rst: abts already in"
+					" progress for this IO 0x%x\n",
+					cmd->xid);
 		}
 	}
 }
@@ -1312,8 +1312,8 @@ static void bnx2fc_tgt_reset_cmpl(struct bnx2fc_cmd *io_req)
 			WARN_ON(rc != SUCCESS);
 
 		} else
-//			printk(KERN_ERR PFX "tgt_rst: abts already in progress"
-;
+			printk(KERN_ERR PFX "tgt_rst: abts already in progress"
+				" for this IO 0x%x\n", cmd->xid);
 	}
 }
 
@@ -1365,11 +1365,11 @@ void bnx2fc_process_tm_compl(struct bnx2fc_cmd *io_req,
 				bnx2fc_tgt_reset_cmpl(io_req);
 		}
 	} else {
-//		printk(KERN_ERR PFX "tmf's fc_hdr r_ctl = 0x%x\n",
-;
+		printk(KERN_ERR PFX "tmf's fc_hdr r_ctl = 0x%x\n",
+			fc_hdr->fh_r_ctl);
 	}
 	if (!sc_cmd->SCp.ptr) {
-;
+		printk(KERN_ALERT PFX "tm_compl: SCp.ptr is NULL\n");
 		return;
 	}
 	switch (io_req->fcp_status) {
@@ -1401,7 +1401,7 @@ void bnx2fc_process_tm_compl(struct bnx2fc_cmd *io_req,
 		io_req->on_tmf_queue = 0;
 	} else {
 
-;
+		printk(KERN_ALERT PFX "Command not on active_cmd_queue!\n");
 		return;
 	}
 
@@ -1472,9 +1472,9 @@ static int bnx2fc_map_sg(struct bnx2fc_cmd *io_req)
 		byte_count += sg_len;
 	}
 	if (byte_count != scsi_bufflen(sc))
-//		printk(KERN_ERR PFX "byte_count = %d != scsi_bufflen = %d, "
-//			"task_id = 0x%x\n", byte_count, scsi_bufflen(sc),
-;
+		printk(KERN_ERR PFX "byte_count = %d != scsi_bufflen = %d, "
+			"task_id = 0x%x\n", byte_count, scsi_bufflen(sc),
+			io_req->xid);
 	return bd_count;
 }
 
@@ -1588,8 +1588,8 @@ static void bnx2fc_parse_fcp_rsp(struct bnx2fc_cmd *io_req,
 
 		if (rq_buff_len > num_rq * BNX2FC_RQ_BUF_SZ) {
 			/* Invalid sense sense length. */
-//			printk(KERN_ALERT PFX "invalid sns length %d\n",
-;
+			printk(KERN_ALERT PFX "invalid sns length %d\n",
+				rq_buff_len);
 			/* reset rq_buff_len */
 			rq_buff_len =  num_rq * BNX2FC_RQ_BUF_SZ;
 		}
@@ -1606,15 +1606,15 @@ static void bnx2fc_parse_fcp_rsp(struct bnx2fc_cmd *io_req,
 		if ((fcp_rsp_len == 4) || (fcp_rsp_len == 8)) {
 			/* Only for task management function */
 			io_req->fcp_rsp_code = rq_data[3];
-//			printk(KERN_ERR PFX "fcp_rsp_code = %d\n",
-;
+			printk(KERN_ERR PFX "fcp_rsp_code = %d\n",
+				io_req->fcp_rsp_code);
 		}
 
 		/* fetch sense data */
 		rq_data += fcp_rsp_len;
 
 		if (fcp_sns_len > SCSI_SENSE_BUFFERSIZE) {
-;
+			printk(KERN_ERR PFX "Truncating sense buffer\n");
 			fcp_sns_len = SCSI_SENSE_BUFFERSIZE;
 		}
 
@@ -1685,7 +1685,7 @@ int bnx2fc_queuecommand(struct Scsi_Host *host,
 	io_req->sc_cmd = sc_cmd;
 
 	if (bnx2fc_post_io_req(tgt, io_req)) {
-;
+		printk(KERN_ERR PFX "Unable to post io_req\n");
 		rc = SCSI_MLQUEUE_HOST_BUSY;
 		goto exit_qcmd;
 	}
@@ -1718,7 +1718,7 @@ void bnx2fc_process_scsi_cmd_compl(struct bnx2fc_cmd *io_req,
 
 	sc_cmd = io_req->sc_cmd;
 	if (sc_cmd == NULL) {
-;
+		printk(KERN_ERR PFX "scsi_cmd_compl - sc_cmd is NULL\n");
 		return;
 	}
 
@@ -1731,7 +1731,7 @@ void bnx2fc_process_scsi_cmd_compl(struct bnx2fc_cmd *io_req,
 
 	host = sc_cmd->device->host;
 	if (!sc_cmd->SCp.ptr) {
-;
+		printk(KERN_ERR PFX "SCp.ptr is NULL\n");
 		return;
 	}
 
@@ -1771,8 +1771,8 @@ void bnx2fc_process_scsi_cmd_compl(struct bnx2fc_cmd *io_req,
 			scsi_set_resid(sc_cmd, io_req->fcp_resid);
 		break;
 	default:
-//		printk(KERN_ALERT PFX "scsi_cmd_compl: fcp_status = %d\n",
-;
+		printk(KERN_ALERT PFX "scsi_cmd_compl: fcp_status = %d\n",
+			io_req->fcp_status);
 		break;
 	}
 	sc_cmd->SCp.ptr = NULL;
@@ -1831,14 +1831,14 @@ static int bnx2fc_post_io_req(struct bnx2fc_rport *tgt,
 	spin_lock_bh(&tgt->tgt_lock);
 
 	if (tgt->flush_in_prog) {
-;
+		printk(KERN_ERR PFX "Flush in progress..Host Busy\n");
 		kref_put(&io_req->refcount, bnx2fc_cmd_release);
 		spin_unlock_bh(&tgt->tgt_lock);
 		return -EAGAIN;
 	}
 
 	if (!test_bit(BNX2FC_FLAG_SESSION_READY, &tgt->flags)) {
-;
+		printk(KERN_ERR PFX "Session not ready...post_io\n");
 		kref_put(&io_req->refcount, bnx2fc_cmd_release);
 		spin_unlock_bh(&tgt->tgt_lock);
 		return -EAGAIN;

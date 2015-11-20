@@ -76,7 +76,7 @@ static void __init test_wakealarm(struct rtc_device *rtc, suspend_state_t state)
 	/* this may fail if the RTC hasn't been initialized */
 	status = rtc_read_time(rtc, &alm.time);
 	if (status < 0) {
-;
+		printk(err_readtime, dev_name(&rtc->dev), status);
 		return;
 	}
 	rtc_tm_to_time(&alm.time, &now);
@@ -87,22 +87,22 @@ static void __init test_wakealarm(struct rtc_device *rtc, suspend_state_t state)
 
 	status = rtc_set_alarm(rtc, &alm);
 	if (status < 0) {
-;
+		printk(err_wakealarm, dev_name(&rtc->dev), status);
 		return;
 	}
 
 	if (state == PM_SUSPEND_MEM) {
-;
+		printk(info_test, pm_states[state]);
 		status = pm_suspend(state);
 		if (status == -ENODEV)
 			state = PM_SUSPEND_STANDBY;
 	}
 	if (state == PM_SUSPEND_STANDBY) {
-;
+		printk(info_test, pm_states[state]);
 		status = pm_suspend(state);
 	}
 	if (status < 0)
-;
+		printk(err_suspend, status);
 
 	/* Some platforms can't detect that the alarm triggered the
 	 * wakeup, or (accordingly) disable it after it afterwards.
@@ -149,7 +149,7 @@ static int __init setup_test_suspend(char *value)
 		test_state = (__force suspend_state_t) i;
 		return 0;
 	}
-;
+	printk(warn_bad_state, value);
 	return 0;
 }
 __setup("test_suspend", setup_test_suspend);
@@ -166,7 +166,7 @@ static int __init test_suspend(void)
 	if (test_state == PM_SUSPEND_ON)
 		goto done;
 	if (!valid_state(test_state)) {
-;
+		printk(warn_bad_state, pm_states[test_state]);
 		goto done;
 	}
 
@@ -175,7 +175,7 @@ static int __init test_suspend(void)
 	if (pony)
 		rtc = rtc_class_open(pony);
 	if (!rtc) {
-;
+		printk(warn_no_rtc);
 		goto done;
 	}
 

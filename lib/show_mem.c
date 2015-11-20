@@ -15,7 +15,7 @@ void show_mem(unsigned int filter)
 	unsigned long total = 0, reserved = 0, shared = 0,
 		nonshared = 0, highmem = 0;
 
-;
+	printk("Mem-Info:\n");
 	show_free_areas(filter);
 
 	for_each_online_pgdat(pgdat) {
@@ -49,15 +49,15 @@ void show_mem(unsigned int filter)
 		pgdat_resize_unlock(pgdat, &flags);
 	}
 
-;
+	printk("%lu pages RAM\n", total);
 #ifdef CONFIG_HIGHMEM
-;
+	printk("%lu pages HighMem\n", highmem);
 #endif
-;
-;
-;
+	printk("%lu pages reserved\n", reserved);
+	printk("%lu pages shared\n", shared);
+	printk("%lu pages non-shared\n", nonshared);
 #ifdef CONFIG_QUICKLIST
-//	printk("%lu pages in pagetable cache\n",
-;
+	printk("%lu pages in pagetable cache\n",
+		quicklist_total_size());
 #endif
 }

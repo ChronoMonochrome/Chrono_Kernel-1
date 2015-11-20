@@ -55,7 +55,7 @@ struct mtd_info *lpddr_cmdset(struct map_info *map)
 
 	mtd = kzalloc(sizeof(*mtd), GFP_KERNEL);
 	if (!mtd) {
-;
+		printk(KERN_ERR "Failed to allocate memory for MTD device\n");
 		return NULL;
 	}
 	mtd->priv = map;
@@ -136,8 +136,8 @@ static int wait_for_ready(struct map_info *map, struct flchip *chip,
 		if (dsr & DSR_READY_STATUS)
 			break;
 		if (!timeo) {
-//			printk(KERN_ERR "%s: Flash timeout error state %d \n",
-;
+			printk(KERN_ERR "%s: Flash timeout error state %d \n",
+							map->name, chip_state);
 			ret = -ETIME;
 			break;
 		}
@@ -180,8 +180,8 @@ static int wait_for_ready(struct map_info *map, struct flchip *chip,
 	if (dsr & DSR_ERR) {
 		/* Clear DSR*/
 		map_write(map, CMD(~(DSR_ERR)), map->pfow_base + PFOW_DSR);
-//		printk(KERN_WARNING"%s: Bad status on wait: 0x%x \n",
-;
+		printk(KERN_WARNING"%s: Bad status on wait: 0x%x \n",
+				map->name, dsr);
 		print_drs_error(dsr);
 		ret = -EIO;
 	}
@@ -314,8 +314,8 @@ static int chip_ready(struct map_info *map, struct flchip *chip, int mode)
 			/* Oops. something got wrong. */
 			/* Resume and pretend we weren't here.  */
 			put_chip(map, chip);
-//			printk(KERN_ERR "%s: suspend operation failed."
-;
+			printk(KERN_ERR "%s: suspend operation failed."
+					"State may be wrong \n", map->name);
 			return -EIO;
 		}
 		chip->erase_suspended = 1;
@@ -388,8 +388,8 @@ static void put_chip(struct map_info *map, struct flchip *chip)
 	case FL_READY:
 		break;
 	default:
-//		printk(KERN_ERR "%s: put_chip() called with oldstate %d!\n",
-;
+		printk(KERN_ERR "%s: put_chip() called with oldstate %d!\n",
+				map->name, chip->oldstate);
 	}
 	wake_up(&chip->wq);
 }
@@ -465,7 +465,7 @@ int do_write_buffer(struct map_info *map, struct flchip *chip,
 	chip->state = FL_WRITING;
 	ret = wait_for_ready(map, chip, (1<<lpddr->qinfo->ProgBufferTime));
 	if (ret)	{
-;
+		printk(KERN_WARNING"%s Buffer program error: %d at %lx; \n",
 			map->name, ret, adr);
 		goto out;
 	}
@@ -493,8 +493,8 @@ int do_erase_oneblock(struct mtd_info *mtd, loff_t adr)
 	chip->state = FL_ERASING;
 	ret = wait_for_ready(map, chip, (1<<lpddr->qinfo->BlockEraseTime)*1000);
 	if (ret) {
-//		printk(KERN_WARNING"%s Erase block error %d at : %llx\n",
-;
+		printk(KERN_WARNING"%s Erase block error %d at : %llx\n",
+			map->name, ret, adr);
 		goto out;
 	}
  out:	put_chip(map, chip);
@@ -610,8 +610,8 @@ static void lpddr_unpoint (struct mtd_info *mtd, loff_t adr, size_t len)
 			if (chip->ref_point_counter == 0)
 				chip->state = FL_READY;
 		} else
-//			printk(KERN_WARNING "%s: Warning: unpoint called on non"
-;
+			printk(KERN_WARNING "%s: Warning: unpoint called on non"
+					"pointed region\n", map->name);
 
 		put_chip(map, chip);
 		mutex_unlock(&chip->mutex);
@@ -738,8 +738,8 @@ int do_xxlock(struct mtd_info *mtd, loff_t adr, uint32_t len, int thunk)
 
 	ret = wait_for_ready(map, chip, 1);
 	if (ret)	{
-//		printk(KERN_ERR "%s: block unlock error status %d \n",
-;
+		printk(KERN_ERR "%s: block unlock error status %d \n",
+				map->name, ret);
 		goto out;
 	}
 out:	put_chip(map, chip);
@@ -775,7 +775,7 @@ int word_program(struct map_info *map, loff_t adr, uint32_t curval)
 
 	ret = wait_for_ready(map, chip, (1<<lpddr->qinfo->SingleWordProgTime));
 	if (ret)	{
-;
+		printk(KERN_WARNING"%s word_program error at: %llx; val: %x\n",
 			map->name, adr, curval);
 		goto out;
 	}

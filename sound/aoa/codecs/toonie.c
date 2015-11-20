@@ -93,14 +93,14 @@ static int toonie_init_codec(struct aoa_codec *codec)
 		return -ENOTCONN;
 
 	if (aoa_snd_device_new(SNDRV_DEV_LOWLEVEL, toonie, &ops)) {
-;
+		printk(KERN_ERR PFX "failed to create toonie snd device!\n");
 		return -ENODEV;
 	}
 
 	if (toonie->codec.soundbus_dev->attach_codec(toonie->codec.soundbus_dev,
 						     aoa_get_card(),
 						     &toonie_codec_info, toonie)) {
-;
+		printk(KERN_ERR PFX "error creating toonie pcm\n");
 		snd_device_free(aoa_get_card(), toonie);
 		return -ENODEV;
 	}
@@ -113,7 +113,7 @@ static void toonie_exit_codec(struct aoa_codec *codec)
 	struct toonie *toonie = codec_to_toonie(codec);
 
 	if (!toonie->codec.soundbus_dev) {
-;
+		printk(KERN_ERR PFX "toonie_exit_codec called without soundbus_dev!\n");
 		return;
 	}
 	toonie->codec.soundbus_dev->detach_codec(toonie->codec.soundbus_dev, toonie);

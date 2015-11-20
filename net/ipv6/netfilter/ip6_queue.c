@@ -219,7 +219,7 @@ ipq_build_packet_message(struct nf_queue_entry *entry, int *errp)
 
 nlmsg_failure:
 	*errp = -EINVAL;
-;
+	printk(KERN_ERR "ip6_queue: error creating packet message\n");
 	return NULL;
 }
 
@@ -291,8 +291,8 @@ ipq_mangle_ipv6(ipq_verdict_msg_t *v, struct nf_queue_entry *e)
 			nskb = skb_copy_expand(e->skb, skb_headroom(e->skb),
 					       diff, GFP_ATOMIC);
 			if (!nskb) {
-//				printk(KERN_WARNING "ip6_queue: OOM "
-;
+				printk(KERN_WARNING "ip6_queue: OOM "
+				      "in mangle, dropping packet\n");
 				return -ENOMEM;
 			}
 			kfree_skb(e->skb);
@@ -573,7 +573,7 @@ static int __init ip6_queue_init(void)
 	ipqnl = netlink_kernel_create(&init_net, NETLINK_IP6_FW, 0,
 			              ipq_rcv_skb, NULL, THIS_MODULE);
 	if (ipqnl == NULL) {
-;
+		printk(KERN_ERR "ip6_queue: failed to create netlink socket\n");
 		goto cleanup_netlink_notifier;
 	}
 
@@ -581,7 +581,7 @@ static int __init ip6_queue_init(void)
 	proc = proc_create(IPQ_PROC_FS_NAME, 0, init_net.proc_net,
 			   &ip6_queue_proc_fops);
 	if (!proc) {
-;
+		printk(KERN_ERR "ip6_queue: failed to create proc entry\n");
 		goto cleanup_ipqnl;
 	}
 #endif
@@ -591,7 +591,7 @@ static int __init ip6_queue_init(void)
 #endif
 	status = nf_register_queue_handler(NFPROTO_IPV6, &nfqh);
 	if (status < 0) {
-;
+		printk(KERN_ERR "ip6_queue: failed to register queue handler\n");
 		goto cleanup_sysctl;
 	}
 	return status;

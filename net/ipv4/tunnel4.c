@@ -164,12 +164,12 @@ static const struct net_protocol tunnel64_protocol = {
 static int __init tunnel4_init(void)
 {
 	if (inet_add_protocol(&tunnel4_protocol, IPPROTO_IPIP)) {
-;
+		printk(KERN_ERR "tunnel4 init: can't add protocol\n");
 		return -EAGAIN;
 	}
 #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 	if (inet_add_protocol(&tunnel64_protocol, IPPROTO_IPV6)) {
-;
+		printk(KERN_ERR "tunnel64 init: can't add protocol\n");
 		inet_del_protocol(&tunnel4_protocol, IPPROTO_IPIP);
 		return -EAGAIN;
 	}
@@ -181,10 +181,10 @@ static void __exit tunnel4_fini(void)
 {
 #if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 	if (inet_del_protocol(&tunnel64_protocol, IPPROTO_IPV6))
-;
+		printk(KERN_ERR "tunnel64 close: can't remove protocol\n");
 #endif
 	if (inet_del_protocol(&tunnel4_protocol, IPPROTO_IPIP))
-;
+		printk(KERN_ERR "tunnel4 close: can't remove protocol\n");
 }
 
 module_init(tunnel4_init);

@@ -250,13 +250,13 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
 	image->control_code_page = kimage_alloc_control_pages(image,
 					   get_order(KEXEC_CONTROL_PAGE_SIZE));
 	if (!image->control_code_page) {
-;
+		printk(KERN_ERR "Could not allocate control_code_buffer\n");
 		goto out;
 	}
 
 	image->swap_page = kimage_alloc_control_pages(image, 0);
 	if (!image->swap_page) {
-;
+		printk(KERN_ERR "Could not allocate swap buffer\n");
 		goto out;
 	}
 
@@ -325,7 +325,7 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
 	image->control_code_page = kimage_alloc_control_pages(image,
 					   get_order(KEXEC_CONTROL_PAGE_SIZE));
 	if (!image->control_code_page) {
-;
+		printk(KERN_ERR "Could not allocate control_code_buffer\n");
 		goto out;
 	}
 
@@ -1207,8 +1207,8 @@ static int __init crash_notes_memory_init(void)
 	/* Allocate memory for saving cpu registers. */
 	crash_notes = alloc_percpu(note_buf_t);
 	if (!crash_notes) {
-//		printk("Kexec: Memory allocation for saving cpu register"
-;
+		printk("Kexec: Memory allocation for saving cpu register"
+		" states failed\n");
 		return -ENOMEM;
 	}
 	return 0;
@@ -1538,7 +1538,7 @@ int kernel_kexec(void)
 #endif
 	{
 		kernel_restart_prepare(NULL);
-;
+		printk(KERN_EMERG "Starting new kernel\n");
 		machine_shutdown();
 	}
 

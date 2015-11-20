@@ -176,8 +176,8 @@ static int __devinit sch_init_one(struct pci_dev *pdev,
 	const struct ata_port_info *ppi[] = { &sch_port_info, NULL };
 
 	if (!printed_version++)
-//		dev_printk(KERN_DEBUG, &pdev->dev,
-;
+		dev_printk(KERN_DEBUG, &pdev->dev,
+			   "version " DRV_VERSION "\n");
 
 	return ata_pci_bmdma_init_one(pdev, ppi, &sch_sht, NULL, 0);
 }

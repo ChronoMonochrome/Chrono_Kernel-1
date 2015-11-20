@@ -112,8 +112,8 @@ static void umc_bus_rescan(struct device *parent)
 	 */
 	err = device_for_each_child(parent, NULL, umc_bus_rescan_helper);
 	if (err < 0)
-//		printk(KERN_WARNING "%s: rescan of bus failed: %d\n",
-;
+		printk(KERN_WARNING "%s: rescan of bus failed: %d\n",
+		       KBUILD_MODNAME, err);
 }
 
 static int umc_bus_match(struct device *dev, struct device_driver *drv)

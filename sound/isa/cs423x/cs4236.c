@@ -254,7 +254,7 @@ MODULE_DEVICE_TABLE(pnp_card, snd_cs423x_pnpids);
 static int __devinit snd_cs423x_pnp_init_wss(int dev, struct pnp_dev *pdev)
 {
 	if (pnp_activate_dev(pdev) < 0) {
-;
+		printk(KERN_ERR IDENT " WSS PnP configure failed for WSS (out of resources?)\n");
 		return -EBUSY;
 	}
 	port[dev] = pnp_port_start(pdev, 0);
@@ -275,7 +275,7 @@ static int __devinit snd_cs423x_pnp_init_wss(int dev, struct pnp_dev *pdev)
 static int __devinit snd_cs423x_pnp_init_ctrl(int dev, struct pnp_dev *pdev)
 {
 	if (pnp_activate_dev(pdev) < 0) {
-;
+		printk(KERN_ERR IDENT " CTRL PnP configure failed for WSS (out of resources?)\n");
 		return -EBUSY;
 	}
 	cport[dev] = pnp_port_start(pdev, 0);
@@ -287,7 +287,7 @@ static int __devinit snd_cs423x_pnp_init_ctrl(int dev, struct pnp_dev *pdev)
 static int __devinit snd_cs423x_pnp_init_mpu(int dev, struct pnp_dev *pdev)
 {
 	if (pnp_activate_dev(pdev) < 0) {
-;
+		printk(KERN_ERR IDENT " MPU401 PnP configure failed for WSS (out of resources?)\n");
 		mpu_port[dev] = SNDRV_AUTO_PORT;
 		mpu_irq[dev] = SNDRV_AUTO_IRQ;
 	} else {
@@ -389,7 +389,7 @@ static int __devinit snd_cs423x_probe(struct snd_card *card, int dev)
 	acard = card->private_data;
 	if (sb_port[dev] > 0 && sb_port[dev] != SNDRV_AUTO_PORT)
 		if ((acard->res_sb_port = request_region(sb_port[dev], 16, IDENT " SB")) == NULL) {
-;
+			printk(KERN_ERR IDENT ": unable to register SB port at 0x%lx\n", sb_port[dev]);
 			return -EBUSY;
 		}
 
@@ -437,7 +437,7 @@ static int __devinit snd_cs423x_probe(struct snd_card *card, int dev)
 		if (snd_opl3_create(card,
 				    fm_port[dev], fm_port[dev] + 2,
 				    OPL3_HW_OPL3_CS, 0, &opl3) < 0) {
-;
+			printk(KERN_WARNING IDENT ": OPL3 not detected\n");
 		} else {
 			if ((err = snd_opl3_hwdep_new(opl3, 0, 1, NULL)) < 0)
 				return err;
@@ -451,7 +451,7 @@ static int __devinit snd_cs423x_probe(struct snd_card *card, int dev)
 					mpu_port[dev], 0,
 					mpu_irq[dev],
 					mpu_irq[dev] >= 0 ? IRQF_DISABLED : 0, NULL) < 0)
-;
+			printk(KERN_WARNING IDENT ": MPU401 not detected\n");
 	}
 
 	return snd_card_register(card);
@@ -584,7 +584,7 @@ static int __devinit snd_cs423x_pnpbios_detect(struct pnp_dev *pdev,
 		return err;
 	err = snd_card_cs423x_pnp(dev, card->private_data, pdev, cdev);
 	if (err < 0) {
-;
+		printk(KERN_ERR "PnP BIOS detection failed for " IDENT "\n");
 		snd_card_free(card);
 		return err;
 	}
@@ -645,8 +645,8 @@ static int __devinit snd_cs423x_pnpc_detect(struct pnp_card_link *pcard,
 	if (res < 0)
 		return res;
 	if ((res = snd_card_cs423x_pnpc(dev, card->private_data, pcard, pid)) < 0) {
-//		printk(KERN_ERR "isapnp detection failed and probing for " IDENT
-;
+		printk(KERN_ERR "isapnp detection failed and probing for " IDENT
+		       " is not supported\n");
 		snd_card_free(card);
 		return res;
 	}

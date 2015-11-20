@@ -162,9 +162,9 @@ static void tifm_7xx1_switch_media(struct work_struct *work)
 			continue;
 		sock = fm->sockets[cnt];
 		if (sock) {
-//			printk(KERN_INFO
-//			       "%s : demand removing card from socket %u:%u\n",
-;
+			printk(KERN_INFO
+			       "%s : demand removing card from socket %u:%u\n",
+			       dev_name(&fm->dev), fm->id, cnt);
 			fm->sockets[cnt] = NULL;
 			sock_addr = sock->addr;
 			spin_unlock_irqrestore(&fm->lock, flags);

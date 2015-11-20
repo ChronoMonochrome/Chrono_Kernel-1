@@ -130,30 +130,30 @@ static int wis_tw2804_command(struct i2c_client *client,
 		int *input = arg;
 
 		if (*input < 0 || *input > 3) {
-//			printk(KERN_ERR "wis-tw2804: channel %d is not "
-;
+			printk(KERN_ERR "wis-tw2804: channel %d is not "
+					"between 0 and 3!\n", *input);
 			return 0;
 		}
 		dec->channel = *input;
-//		printk(KERN_DEBUG "wis-tw2804: initializing TW2804 "
-;
+		printk(KERN_DEBUG "wis-tw2804: initializing TW2804 "
+				"channel %d\n", dec->channel);
 		if (dec->channel == 0 &&
 				write_regs(client, global_registers, 0) < 0) {
-//			printk(KERN_ERR "wis-tw2804: error initializing "
-;
+			printk(KERN_ERR "wis-tw2804: error initializing "
+					"TW2804 global registers\n");
 			return 0;
 		}
 		if (write_regs(client, channel_registers, dec->channel) < 0) {
-//			printk(KERN_ERR "wis-tw2804: error initializing "
-;
+			printk(KERN_ERR "wis-tw2804: error initializing "
+					"TW2804 channel %d\n", dec->channel);
 			return 0;
 		}
 		return 0;
 	}
 
 	if (dec->channel < 0) {
-//		printk(KERN_DEBUG "wis-tw2804: ignoring command %08x until "
-;
+		printk(KERN_DEBUG "wis-tw2804: ignoring command %08x until "
+				"channel number is set\n", cmd);
 		return 0;
 	}
 
@@ -313,8 +313,8 @@ static int wis_tw2804_probe(struct i2c_client *client,
 	dec->hue = 128;
 	i2c_set_clientdata(client, dec);
 
-//	printk(KERN_DEBUG "wis-tw2804: creating TW2804 at address %d on %s\n",
-;
+	printk(KERN_DEBUG "wis-tw2804: creating TW2804 at address %d on %s\n",
+		client->addr, adapter->name);
 
 	return 0;
 }

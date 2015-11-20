@@ -446,9 +446,9 @@ static void read_proc_kallsyms(void)
 
 }
 
-//static void read_ftrace_printk(void)
-//{
-;
+static void read_ftrace_printk(void)
+{
+	unsigned int size, check_size;
 	char *path;
 	struct stat st;
 	int ret;
@@ -543,7 +543,7 @@ int read_tracing_data(int fd, struct list_head *pattrs)
 	read_ftrace_files(tps);
 	read_event_files(tps);
 	read_proc_kallsyms();
-;
+	read_ftrace_printk();
 
 	return 0;
 }

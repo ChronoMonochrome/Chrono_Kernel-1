@@ -287,9 +287,9 @@ int qla4xxx_send_command_to_isp(struct scsi_qla_host *ha, struct srb * srb)
 	 * garbage for pointers.
 	 */
 	if (!test_bit(AF_ONLINE, &ha->flags)) {
-//		DEBUG2(printk("scsi%ld: %s: Adapter OFFLINE! "
-//			      "Do not issue command.\n",
-;
+		DEBUG2(printk("scsi%ld: %s: Adapter OFFLINE! "
+			      "Do not issue command.\n",
+			      ha->host_no, __func__));
 		goto queuing_error;
 	}
 

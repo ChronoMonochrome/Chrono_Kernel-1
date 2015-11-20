@@ -42,10 +42,10 @@ struct stv6110_priv {
 	u8 regs[8];
 };
 
-//#define dprintk(args...) \
-//	do { \
-//		if (debug) \
-;
+#define dprintk(args...) \
+	do { \
+		if (debug) \
+			printk(KERN_DEBUG args); \
 	} while (0)
 
 static s32 abssub(s32 a, s32 b)
@@ -76,7 +76,7 @@ static int stv6110_write_regs(struct dvb_frontend *fe, u8 buf[],
 		.len	= len + 1
 	};
 
-;
+	dprintk("%s\n", __func__);
 
 	if (start + len > 8)
 		return -EINVAL;
@@ -89,7 +89,7 @@ static int stv6110_write_regs(struct dvb_frontend *fe, u8 buf[],
 
 	rc = i2c_transfer(priv->i2c, &msg, 1);
 	if (rc != 1)
-;
+		dprintk("%s: i2c error\n", __func__);
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 0);
@@ -122,7 +122,7 @@ static int stv6110_read_regs(struct dvb_frontend *fe, u8 regs[],
 
 	rc = i2c_transfer(priv->i2c, msg, 2);
 	if (rc != 2)
-;
+		dprintk("%s: i2c error\n", __func__);
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 0);
@@ -259,8 +259,8 @@ static int stv6110_set_frequency(struct dvb_frontend *fe, u32 frequency)
 	s32 p_calc, p_calc_opt = 1000, r_div, r_div_opt = 0, p_val;
 	s32 srate;
 
-//	dprintk("%s, freq=%d kHz, mclk=%d Hz\n", __func__,
-;
+	dprintk("%s, freq=%d kHz, mclk=%d Hz\n", __func__,
+						frequency, priv->mclk);
 
 	/* K = (Reference / 1000000) - 16 */
 	priv->regs[RSTV6110_CTRL1] &= ~(0x1f << 3);
@@ -270,8 +270,8 @@ static int stv6110_set_frequency(struct dvb_frontend *fe, u32 frequency)
 	/* BB_GAIN = db/2 */
 	if (fe->ops.set_property && fe->ops.get_property) {
 		srate = c->symbol_rate;
-//		dprintk("%s: Get Frontend parameters: srate=%d\n",
-;
+		dprintk("%s: Get Frontend parameters: srate=%d\n",
+							__func__, srate);
 	} else
 		srate = 15000000;
 
@@ -341,8 +341,8 @@ static int stv6110_set_frequency(struct dvb_frontend *fe, u32 frequency)
 	stv6110_get_frequency(fe, &result_freq);
 
 	vco_freq = divider * ((priv->mclk / 1000) / ((1 << (r_div_opt + 1))));
-//	dprintk("%s, stat1=%x, lo_freq=%d kHz, vco_frec=%d kHz\n", __func__,
-;
+	dprintk("%s, stat1=%x, lo_freq=%d kHz, vco_frec=%d kHz\n", __func__,
+						ret, result_freq, vco_freq);
 
 	return 0;
 }
@@ -438,7 +438,7 @@ struct dvb_frontend *stv6110_attach(struct dvb_frontend *fe,
 	memcpy(&fe->ops.tuner_ops, &stv6110_tuner_ops,
 				sizeof(struct dvb_tuner_ops));
 	fe->tuner_priv = priv;
-;
+	printk(KERN_INFO "STV6110 attached on addr=%x!\n", priv->i2c_address);
 
 	return fe;
 }

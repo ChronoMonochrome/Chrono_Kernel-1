@@ -318,8 +318,8 @@ snd_nm256_write_buffer(struct nm256 *chip, void *src, int offset, int size)
 	offset -= chip->buffer_start;
 #ifdef CONFIG_SND_DEBUG
 	if (offset < 0 || offset >= chip->buffer_size) {
-//		snd_printk(KERN_ERR "write_buffer invalid offset = %d size = %d\n",
-;
+		snd_printk(KERN_ERR "write_buffer invalid offset = %d size = %d\n",
+			   offset, size);
 		return;
 	}
 #endif
@@ -466,7 +466,7 @@ static int snd_nm256_acquire_irq(struct nm256 *chip)
 	if (chip->irq < 0) {
 		if (request_irq(chip->pci->irq, chip->interrupt, IRQF_SHARED,
 				chip->card->driver, chip)) {
-;
+			snd_printk(KERN_ERR "unable to grab IRQ %d\n", chip->pci->irq);
 			mutex_unlock(&chip->irq_mutex);
 			return -EBUSY;
 		}
@@ -1347,7 +1347,7 @@ snd_nm256_peek_for_sig(struct nm256 *chip)
 
 	temp = ioremap_nocache(chip->buffer_addr + chip->buffer_end - 0x400, 16);
 	if (temp == NULL) {
-;
+		snd_printk(KERN_ERR "Unable to scan for card signature in video RAM\n");
 		return -EBUSY;
 	}
 
@@ -1361,13 +1361,13 @@ snd_nm256_peek_for_sig(struct nm256 *chip)
 		if (pointer == 0xffffffff ||
 		    pointer < chip->buffer_size ||
 		    pointer > chip->buffer_end) {
-;
+			snd_printk(KERN_ERR "invalid signature found: 0x%x\n", pointer);
 			iounmap(temp);
 			return -ENODEV;
 		} else {
 			pointer_found = pointer;
-//			printk(KERN_INFO "nm256: found card signature in video RAM: 0x%x\n",
-;
+			printk(KERN_INFO "nm256: found card signature in video RAM: 0x%x\n",
+			       pointer);
 		}
 	}
 
@@ -1409,8 +1409,8 @@ static int nm256_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "nm256: pci_enable_device failed, "
-;
+		printk(KERN_ERR "nm256: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -1513,14 +1513,14 @@ snd_nm256_create(struct snd_card *card, struct pci_dev *pci,
 	chip->res_cport = request_mem_region(chip->cport_addr, NM_PORT2_SIZE,
 					     card->driver);
 	if (chip->res_cport == NULL) {
-//		snd_printk(KERN_ERR "memory region 0x%lx (size 0x%x) busy\n",
-;
+		snd_printk(KERN_ERR "memory region 0x%lx (size 0x%x) busy\n",
+			   chip->cport_addr, NM_PORT2_SIZE);
 		err = -EBUSY;
 		goto __error;
 	}
 	chip->cport = ioremap_nocache(chip->cport_addr, NM_PORT2_SIZE);
 	if (chip->cport == NULL) {
-;
+		snd_printk(KERN_ERR "unable to map control port %lx\n", chip->cport_addr);
 		err = -ENOMEM;
 		goto __error;
 	}
@@ -1530,12 +1530,12 @@ snd_nm256_create(struct snd_card *card, struct pci_dev *pci,
 		pval = snd_nm256_readw(chip, NM_MIXER_PRESENCE);
 		if ((pval & NM_PRESENCE_MASK) != NM_PRESENCE_VALUE) {
 			if (! force_ac97) {
-;
-//				printk(KERN_ERR "  force the driver to load by "
-;
-;
-//				printk(KERN_ERR "  or try sb16, opl3sa2, or "
-;
+				printk(KERN_ERR "nm256: no ac97 is found!\n");
+				printk(KERN_ERR "  force the driver to load by "
+				       "passing in the module parameter\n");
+				printk(KERN_ERR "    force_ac97=1\n");
+				printk(KERN_ERR "  or try sb16, opl3sa2, or "
+				       "cs423x drivers instead.\n");
 				err = -ENXIO;
 				goto __error;
 			}
@@ -1574,22 +1574,22 @@ snd_nm256_create(struct snd_card *card, struct pci_dev *pci,
 	chip->buffer_start = chip->buffer_end - chip->buffer_size;
 	chip->buffer_addr += chip->buffer_start;
 
-//	printk(KERN_INFO "nm256: Mapping port 1 from 0x%x - 0x%x\n",
-;
+	printk(KERN_INFO "nm256: Mapping port 1 from 0x%x - 0x%x\n",
+	       chip->buffer_start, chip->buffer_end);
 
 	chip->res_buffer = request_mem_region(chip->buffer_addr,
 					      chip->buffer_size,
 					      card->driver);
 	if (chip->res_buffer == NULL) {
-//		snd_printk(KERN_ERR "nm256: buffer 0x%lx (size 0x%x) busy\n",
-;
+		snd_printk(KERN_ERR "nm256: buffer 0x%lx (size 0x%x) busy\n",
+			   chip->buffer_addr, chip->buffer_size);
 		err = -EBUSY;
 		goto __error;
 	}
 	chip->buffer = ioremap_nocache(chip->buffer_addr, chip->buffer_size);
 	if (chip->buffer == NULL) {
 		err = -ENOMEM;
-;
+		snd_printk(KERN_ERR "unable to map ring buffer at %lx\n", chip->buffer_addr);
 		goto __error;
 	}
 
@@ -1656,8 +1656,8 @@ static int __devinit snd_nm256_probe(struct pci_dev *pci,
 		snd_printdd(KERN_INFO "nm256: Enabled quirk for %s.\n", q->name);
 		switch (q->value) {
 		case NM_BLACKLISTED:
-//			printk(KERN_INFO "nm256: The device is blacklisted. "
-;
+			printk(KERN_INFO "nm256: The device is blacklisted. "
+			       "Loading stopped\n");
 			return -ENODEV;
 		case NM_RESET_WORKAROUND_2:
 			reset_workaround_2 = 1;
@@ -1683,7 +1683,7 @@ static int __devinit snd_nm256_probe(struct pci_dev *pci,
 		strcpy(card->driver, "NM256XL+");
 		break;
 	default:
-;
+		snd_printk(KERN_ERR "invalid device id 0x%x\n", pci->device);
 		snd_card_free(card);
 		return -EINVAL;
 	}

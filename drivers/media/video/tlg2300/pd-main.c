@@ -315,7 +315,7 @@ static int poseidon_suspend(struct usb_interface *intf, pm_message_t msg)
 		if (get_pm_count(pd) <= 0 && !in_hibernation(pd)) {
 			pd->msg.event = PM_EVENT_AUTO_SUSPEND;
 			pd->pm_resume = NULL; /*  a good guard */
-;
+			printk(KERN_DEBUG "\n\t+ TLG2300 auto suspend +\n\n");
 		}
 		return 0;
 	}
@@ -330,7 +330,7 @@ static int poseidon_resume(struct usb_interface *intf)
 
 	if (!pd)
 		return 0;
-;
+	printk(KERN_DEBUG "\n\t ++ TLG2300 resume ++\n\n");
 
 	if (!is_working(pd)) {
 		if (PM_EVENT_AUTO_SUSPEND == pd->msg.event)

@@ -220,9 +220,9 @@ static int __devinit cru_detect(unsigned long map_entry,
 	asminline_call(&cmn_regs, bios32_entrypoint);
 
 	if (cmn_regs.u1.ral != 0) {
-//		printk(KERN_WARNING
-//			"hpwdt: Call succeeded but with an error: 0x%x\n",
-;
+		printk(KERN_WARNING
+			"hpwdt: Call succeeded but with an error: 0x%x\n",
+			cmn_regs.u1.ral);
 	} else {
 		physical_bios_base = cmn_regs.u2.rebx;
 		physical_bios_offset = cmn_regs.u4.redx;
@@ -240,14 +240,14 @@ static int __devinit cru_detect(unsigned long map_entry,
 			}
 		}
 
-//		printk(KERN_DEBUG "hpwdt: CRU Base Address:   0x%lx\n",
-;
-//		printk(KERN_DEBUG "hpwdt: CRU Offset Address: 0x%lx\n",
-;
-//		printk(KERN_DEBUG "hpwdt: CRU Length:         0x%lx\n",
-;
-//		printk(KERN_DEBUG "hpwdt: CRU Mapped Address: %p\n",
-;
+		printk(KERN_DEBUG "hpwdt: CRU Base Address:   0x%lx\n",
+			physical_bios_base);
+		printk(KERN_DEBUG "hpwdt: CRU Offset Address: 0x%lx\n",
+			physical_bios_offset);
+		printk(KERN_DEBUG "hpwdt: CRU Length:         0x%lx\n",
+			cru_length);
+		printk(KERN_DEBUG "hpwdt: CRU Mapped Address: %p\n",
+			&cru_rom_addr);
 	}
 	iounmap(bios32_map);
 	return retval;
@@ -442,16 +442,16 @@ static void hpwdt_ping(void)
 static int hpwdt_change_timer(int new_margin)
 {
 	if (new_margin < 1 || new_margin > HPWDT_MAX_TIMER) {
-//		printk(KERN_WARNING
-//			"hpwdt: New value passed in is invalid: %d seconds.\n",
-;
+		printk(KERN_WARNING
+			"hpwdt: New value passed in is invalid: %d seconds.\n",
+			new_margin);
 		return -EINVAL;
 	}
 
 	soft_margin = new_margin;
-//	printk(KERN_DEBUG
-//		"hpwdt: New timer passed in is %d seconds.\n",
-;
+	printk(KERN_DEBUG
+		"hpwdt: New timer passed in is %d seconds.\n",
+		new_margin);
 	reload = SECS_TO_TICKS(soft_margin);
 
 	return 0;
@@ -484,8 +484,8 @@ static int hpwdt_pretimeout(struct notifier_block *nb, unsigned long ulReason,
 	die_nmi_called = 1;
 	spin_unlock_irqrestore(&rom_lock, rom_pl);
 	if (cmn_regs.u1.ral == 0) {
-//		printk(KERN_WARNING "hpwdt: An NMI occurred, "
-;
+		printk(KERN_WARNING "hpwdt: An NMI occurred, "
+			"but unable to determine source.\n");
 	} else {
 		if (allow_kdump)
 			hpwdt_stop();
@@ -519,8 +519,8 @@ static int hpwdt_release(struct inode *inode, struct file *file)
 	if (expect_release == 42) {
 		hpwdt_stop();
 	} else {
-//		printk(KERN_CRIT
-;
+		printk(KERN_CRIT
+			"hpwdt: Unexpected close, not stopping watchdog!\n");
 		hpwdt_ping();
 	}
 

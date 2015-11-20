@@ -1472,7 +1472,7 @@ static int snd_m3_pcm_hw_params(struct snd_pcm_substream *substream,
 	/* set buffer address */
 	s->buffer_addr = substream->runtime->dma_addr;
 	if (s->buffer_addr & 0x3) {
-;
+		snd_printk(KERN_ERR "oh my, not aligned\n");
 		s->buffer_addr = s->buffer_addr & ~0x3;
 	}
 	return 0;
@@ -1992,7 +1992,7 @@ static int snd_m3_ac97_wait(struct snd_m3 *chip)
 		cpu_relax();
 	} while (i-- > 0);
 
-;
+	snd_printk(KERN_ERR "ac97 serial bus busy\n");
 	return 1;
 }
 
@@ -2305,8 +2305,8 @@ static int __devinit snd_m3_assp_client_init(struct snd_m3 *chip, struct m3_dma 
 	address = 0x1100 + ((data_bytes/2) * index);
 
 	if ((address + (data_bytes/2)) >= 0x1c00) {
-//		snd_printk(KERN_ERR "no memory for %d bytes at ind %d (addr 0x%x)\n",
-;
+		snd_printk(KERN_ERR "no memory for %d bytes at ind %d (addr 0x%x)\n",
+			   data_bytes, index, address);
 		return -ENOMEM;
 	}
 
@@ -2546,8 +2546,8 @@ static int m3_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "maestor3: pci_enable_device failed, "
-;
+		printk(KERN_ERR "maestor3: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -2655,7 +2655,7 @@ snd_m3_create(struct snd_card *card, struct pci_dev *pci,
 	/* check, if we can restrict PCI DMA transfers to 28 bits */
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(28)) < 0 ||
 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(28)) < 0) {
-;
+		snd_printk(KERN_ERR "architecture does not support 28bit PCI busmaster DMA\n");
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -2758,7 +2758,7 @@ snd_m3_create(struct snd_card *card, struct pci_dev *pci,
 
 	if (request_irq(pci->irq, snd_m3_interrupt, IRQF_SHARED,
 			card->driver, chip)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		snd_m3_free(chip);
 		return -ENOMEM;
 	}
@@ -2767,7 +2767,7 @@ snd_m3_create(struct snd_card *card, struct pci_dev *pci,
 #ifdef CONFIG_PM
 	chip->suspend_mem = vmalloc(sizeof(u16) * (REV_B_CODE_MEMORY_LENGTH + REV_B_DATA_MEMORY_LENGTH));
 	if (chip->suspend_mem == NULL)
-;
+		snd_printk(KERN_WARNING "can't allocate apm buffer\n");
 #endif
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
@@ -2791,8 +2791,8 @@ snd_m3_create(struct snd_card *card, struct pci_dev *pci,
 	if (chip->hv_config & HV_CTRL_ENABLE) {
 		err = snd_m3_input_register(chip);
 		if (err)
-//			snd_printk(KERN_WARNING "Input device registration "
-;
+			snd_printk(KERN_WARNING "Input device registration "
+				"failed with error %i", err);
 	}
 #endif
 
@@ -2870,7 +2870,7 @@ snd_m3_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 				  MPU401_INFO_INTEGRATED,
 				  chip->irq, 0, &chip->rmidi);
 	if (err < 0)
-;
+		printk(KERN_WARNING "maestro3: no MIDI support.\n");
 #endif
 
 	pci_set_drvdata(pci, card);

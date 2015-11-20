@@ -158,36 +158,36 @@
 
 
 #ifdef DEBUG_IOSAPIC
-//#define DBG(x...) printk(x)
-//#else /* DEBUG_IOSAPIC */
-//#define DBG(x...)
-//#endif /* DEBUG_IOSAPIC */
-//
-//#ifdef DEBUG_IOSAPIC_IRT
-//#define DBG_IRT(x...) printk(x)
-//#else
-//#define DBG_IRT(x...)
-//#endif
-//
-//#ifdef CONFIG_64BIT
-//#define COMPARE_IRTE_ADDR(irte, hpa)	((irte)->dest_iosapic_addr == (hpa))
-//#else
-//#define COMPARE_IRTE_ADDR(irte, hpa)	\
-//		((irte)->dest_iosapic_addr == ((hpa) | 0xffffffff00000000ULL))
-//#endif
-//
-//#define IOSAPIC_REG_SELECT              0x00
-//#define IOSAPIC_REG_WINDOW              0x10
-//#define IOSAPIC_REG_EOI                 0x40
-//
-//#define IOSAPIC_REG_VERSION		0x1
-//
-//#define IOSAPIC_IRDT_ENTRY(idx)		(0x10+(idx)*2)
-//#define IOSAPIC_IRDT_ENTRY_HI(idx)	(0x11+(idx)*2)
-//
-//static inline unsigned int iosapic_read(void __iomem *iosapic, unsigned int reg)
-//{
-;
+#define DBG(x...) printk(x)
+#else /* DEBUG_IOSAPIC */
+#define DBG(x...)
+#endif /* DEBUG_IOSAPIC */
+
+#ifdef DEBUG_IOSAPIC_IRT
+#define DBG_IRT(x...) printk(x)
+#else
+#define DBG_IRT(x...)
+#endif
+
+#ifdef CONFIG_64BIT
+#define COMPARE_IRTE_ADDR(irte, hpa)	((irte)->dest_iosapic_addr == (hpa))
+#else
+#define COMPARE_IRTE_ADDR(irte, hpa)	\
+		((irte)->dest_iosapic_addr == ((hpa) | 0xffffffff00000000ULL))
+#endif
+
+#define IOSAPIC_REG_SELECT              0x00
+#define IOSAPIC_REG_WINDOW              0x10
+#define IOSAPIC_REG_EOI                 0x40
+
+#define IOSAPIC_REG_VERSION		0x1
+
+#define IOSAPIC_IRDT_ENTRY(idx)		(0x10+(idx)*2)
+#define IOSAPIC_IRDT_ENTRY_HI(idx)	(0x11+(idx)*2)
+
+static inline unsigned int iosapic_read(void __iomem *iosapic, unsigned int reg)
+{
+	writel(reg, iosapic + IOSAPIC_REG_SELECT);
 	return readl(iosapic + IOSAPIC_REG_WINDOW);
 }
 
@@ -301,8 +301,8 @@ iosapic_load_irt(unsigned long cell_num, struct irt_entry **irt)
 		*/
 		table = iosapic_alloc_irt(num_entries);
 		if (table == NULL) {
-//			printk(KERN_WARNING MODULE_NAME ": read_irt : can "
-;
+			printk(KERN_WARNING MODULE_NAME ": read_irt : can "
+					"not alloc mem for IRT\n");
 			return 0;
 		}
 
@@ -332,8 +332,8 @@ iosapic_load_irt(unsigned long cell_num, struct irt_entry **irt)
 
 		table = iosapic_alloc_irt(num_entries);
 		if (!table) {
-//			printk(KERN_WARNING MODULE_NAME ": read_irt : can "
-;
+			printk(KERN_WARNING MODULE_NAME ": read_irt : can "
+					"not alloc mem for IRT\n");
 			return 0;
 		}
 
@@ -350,20 +350,20 @@ iosapic_load_irt(unsigned long cell_num, struct irt_entry **irt)
 	struct irt_entry *p = table;
 	int i;
 
-;
-//	printk(MODULE_NAME " start = 0x%p num_entries %ld entry_size %d\n",
-//		table,
-//		num_entries,
-;
+	printk(MODULE_NAME " Interrupt Routing Table (cell %ld)\n", cell_num);
+	printk(MODULE_NAME " start = 0x%p num_entries %ld entry_size %d\n",
+		table,
+		num_entries,
+		(int) sizeof(struct irt_entry));
 
 	for (i = 0 ; i < num_entries ; i++, p++) {
-//		printk(MODULE_NAME " %02x %02x %02x %02x %02x %02x %02x %02x %08x%08x\n",
-//		p->entry_type, p->entry_length, p->interrupt_type,
-//		p->polarity_trigger, p->src_bus_irq_devno, p->src_bus_id,
-//		p->src_seg_id, p->dest_iosapic_intin,
-//		((u32 *) p)[2],
-//		((u32 *) p)[3]
-;
+		printk(MODULE_NAME " %02x %02x %02x %02x %02x %02x %02x %02x %08x%08x\n",
+		p->entry_type, p->entry_length, p->interrupt_type,
+		p->polarity_trigger, p->src_bus_irq_devno, p->src_bus_id,
+		p->src_seg_id, p->dest_iosapic_intin,
+		((u32 *) p)[2],
+		((u32 *) p)[3]
+		);
 	}
 }
 #endif /* DEBUG_IOSAPIC_IRT */
@@ -451,8 +451,8 @@ irt_find_irqline(struct iosapic_info *isi, u8 slot, u8 intr_pin)
 		return i;
 	}
 
-//	printk(KERN_WARNING MODULE_NAME ": 0x%lx : no IRT entry for slot %d, pin %d\n",
-;
+	printk(KERN_WARNING MODULE_NAME ": 0x%lx : no IRT entry for slot %d, pin %d\n",
+			isi->isi_hpa, slot, intr_pin);
 	return NULL;
 }
 
@@ -642,22 +642,22 @@ static void iosapic_unmask_irq(struct irq_data *d)
 #ifdef DEBUG_IOSAPIC_IRT
 {
 	u32 *t = (u32 *) ((ulong) vi->eoi_addr & ~0xffUL);
-;
+	printk("iosapic_enable_irq(): regs %p", vi->eoi_addr);
 	for ( ; t < vi->eoi_addr; t++)
-;
-;
+		printk(" %x", readl(t));
+	printk("\n");
 }
 
-;
+printk("iosapic_enable_irq(): sel ");
 {
 	struct iosapic_info *isp = vi->iosapic;
 
 	for (d0=0x10; d0<0x1e; d0++) {
 		d1 = iosapic_read(isp->addr, d0);
-;
+		printk(" %x", d1);
 	}
 }
-;
+printk("\n");
 #endif
 
 	/*
@@ -726,8 +726,8 @@ int iosapic_fixup_irq(void *isi_obj, struct pci_dev *pcidev)
 	int isi_line;	/* line used by device */
 
 	if (!isi) {
-//		printk(KERN_WARNING MODULE_NAME ": hpa not registered for %s\n",
-;
+		printk(KERN_WARNING MODULE_NAME ": hpa not registered for %s\n",
+			pci_name(pcidev));
 		return -1;
 	}
 
@@ -753,8 +753,8 @@ int iosapic_fixup_irq(void *isi_obj, struct pci_dev *pcidev)
 	/* lookup IRT entry for isi/slot/pin set */
 	irte = iosapic_xlate_pin(isi, pcidev);
 	if (!irte) {
-//		printk("iosapic: no IRTE for %s (IRQ not connected?)\n",
-;
+		printk("iosapic: no IRTE for %s (IRQ not connected?)\n",
+				pci_name(pcidev));
 		return -1;
 	}
 	DBG_IRT("iosapic_fixup_irq(): irte %p %x %x %x %x %x %x %x %x\n",
@@ -890,11 +890,11 @@ iosapic_prt_irt(void *irt, long num_entry)
 	unsigned int i, *irp = (unsigned int *) irt;
 
 
-;
+	printk(KERN_DEBUG MODULE_NAME ": Interrupt Routing Table (%lx entries)\n", num_entry);
 
 	for (i=0; i<num_entry; i++, irp += 4) {
-//		printk(KERN_DEBUG "%p : %2d %.8x %.8x %.8x %.8x\n",
-;
+		printk(KERN_DEBUG "%p : %2d %.8x %.8x %.8x %.8x\n",
+					irp, i, irp[0], irp[1], irp[2], irp[3]);
 	}
 }
 
@@ -902,23 +902,23 @@ iosapic_prt_irt(void *irt, long num_entry)
 static void
 iosapic_prt_vi(struct vector_info *vi)
 {
-;
-;
-;
-;
-;
-;
-;
+	printk(KERN_DEBUG MODULE_NAME ": vector_info[%d] is at %p\n", vi->irqline, vi);
+	printk(KERN_DEBUG "\t\tstatus:	 %.4x\n", vi->status);
+	printk(KERN_DEBUG "\t\ttxn_irq:  %d\n",  vi->txn_irq);
+	printk(KERN_DEBUG "\t\ttxn_addr: %lx\n", vi->txn_addr);
+	printk(KERN_DEBUG "\t\ttxn_data: %lx\n", vi->txn_data);
+	printk(KERN_DEBUG "\t\teoi_addr: %p\n",  vi->eoi_addr);
+	printk(KERN_DEBUG "\t\teoi_data: %x\n",  vi->eoi_data);
 }
 
 
 static void
 iosapic_prt_isi(struct iosapic_info *isi)
 {
-;
-;
-;
-;
-;
+	printk(KERN_DEBUG MODULE_NAME ": io_sapic_info at %p\n", isi);
+	printk(KERN_DEBUG "\t\tisi_hpa:       %lx\n", isi->isi_hpa);
+	printk(KERN_DEBUG "\t\tisi_status:    %x\n", isi->isi_status);
+	printk(KERN_DEBUG "\t\tisi_version:   %x\n", isi->isi_version);
+	printk(KERN_DEBUG "\t\tisi_vector:    %p\n", isi->isi_vector);
 }
 #endif /* DEBUG_IOSAPIC */

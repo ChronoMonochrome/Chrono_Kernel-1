@@ -192,13 +192,13 @@ static int kobject_add_internal(struct kobject *kobj)
 
 		/* be noisy on error issues */
 		if (error == -EEXIST)
-//			printk(KERN_ERR "%s failed for %s with "
-//			       "-EEXIST, don't try to register things with "
-//			       "the same name in the same directory.\n",
-;
+			printk(KERN_ERR "%s failed for %s with "
+			       "-EEXIST, don't try to register things with "
+			       "the same name in the same directory.\n",
+			       __func__, kobject_name(kobj));
 		else
-//			printk(KERN_ERR "%s failed for %s (%d)\n",
-;
+			printk(KERN_ERR "%s failed for %s (%d)\n",
+			       __func__, kobject_name(kobj), error);
 		dump_stack();
 	} else
 		kobj->state_in_sysfs = 1;
@@ -281,8 +281,8 @@ void kobject_init(struct kobject *kobj, struct kobj_type *ktype)
 	}
 	if (kobj->state_initialized) {
 		/* do not error out as sometimes we can recover */
-//		printk(KERN_ERR "kobject (%p): tried to init an initialized "
-;
+		printk(KERN_ERR "kobject (%p): tried to init an initialized "
+		       "object, something is seriously wrong.\n", kobj);
 		dump_stack();
 	}
 
@@ -291,7 +291,7 @@ void kobject_init(struct kobject *kobj, struct kobj_type *ktype)
 	return;
 
 error:
-;
+	printk(KERN_ERR "kobject (%p): %s\n", kobj, err_str);
 	dump_stack();
 }
 EXPORT_SYMBOL(kobject_init);
@@ -303,7 +303,7 @@ static int kobject_add_varg(struct kobject *kobj, struct kobject *parent,
 
 	retval = kobject_set_name_vargs(kobj, fmt, vargs);
 	if (retval) {
-;
+		printk(KERN_ERR "kobject: can not set name properly!\n");
 		return retval;
 	}
 	kobj->parent = parent;
@@ -345,9 +345,9 @@ int kobject_add(struct kobject *kobj, struct kobject *parent,
 		return -EINVAL;
 
 	if (!kobj->state_initialized) {
-//		printk(KERN_ERR "kobject '%s' (%p): tried to add an "
-//		       "uninitialized object, something is seriously wrong.\n",
-;
+		printk(KERN_ERR "kobject '%s' (%p): tried to add an "
+		       "uninitialized object, something is seriously wrong.\n",
+		       kobject_name(kobj), kobj);
 		dump_stack();
 		return -EINVAL;
 	}
@@ -655,8 +655,8 @@ struct kobject *kobject_create_and_add(const char *name, struct kobject *parent)
 
 	retval = kobject_add(kobj, parent, "%s", name);
 	if (retval) {
-//		printk(KERN_WARNING "%s: kobject_add error: %d\n",
-;
+		printk(KERN_WARNING "%s: kobject_add error: %d\n",
+		       __func__, retval);
 		kobject_put(kobj);
 		kobj = NULL;
 	}

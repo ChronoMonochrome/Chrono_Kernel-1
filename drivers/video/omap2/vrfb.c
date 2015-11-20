@@ -222,7 +222,7 @@ int omap_vrfb_map_angle(struct vrfb *vrfb, u16 height, u8 rot)
 	vrfb->vaddr[rot] = ioremap_wc(vrfb->paddr[rot], size);
 
 	if (!vrfb->vaddr[rot]) {
-;
+		printk(KERN_ERR "vrfb: ioremap failed\n");
 		return -ENOMEM;
 	}
 

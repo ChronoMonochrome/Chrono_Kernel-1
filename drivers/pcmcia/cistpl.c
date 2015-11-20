@@ -94,8 +94,8 @@ static void __iomem *set_cis_map(struct pcmcia_socket *s,
 		mem->res = pcmcia_find_mem_region(0, s->map_size,
 						s->map_size, 0, s);
 		if (mem->res == NULL) {
-//			dev_printk(KERN_NOTICE, &s->dev,
-;
+			dev_printk(KERN_NOTICE, &s->dev,
+				   "cs: unable to map card memory!\n");
 			return NULL;
 		}
 		s->cis_virt = NULL;
@@ -378,8 +378,8 @@ int verify_cis_cache(struct pcmcia_socket *s)
 
 	buf = kmalloc(256, GFP_KERNEL);
 	if (buf == NULL) {
-//		dev_printk(KERN_WARNING, &s->dev,
-;
+		dev_printk(KERN_WARNING, &s->dev,
+			   "no memory for verifying CIS\n");
 		return -ENOMEM;
 	}
 	mutex_lock(&s->ops_mutex);
@@ -411,14 +411,14 @@ int pcmcia_replace_cis(struct pcmcia_socket *s,
 		       const u8 *data, const size_t len)
 {
 	if (len > CISTPL_MAX_CIS_SIZE) {
-;
+		dev_printk(KERN_WARNING, &s->dev, "replacement CIS too big\n");
 		return -EINVAL;
 	}
 	mutex_lock(&s->ops_mutex);
 	kfree(s->fake_cis);
 	s->fake_cis = kmalloc(len, GFP_KERNEL);
 	if (s->fake_cis == NULL) {
-;
+		dev_printk(KERN_WARNING, &s->dev, "no memory to replace CIS\n");
 		mutex_unlock(&s->ops_mutex);
 		return -ENOMEM;
 	}

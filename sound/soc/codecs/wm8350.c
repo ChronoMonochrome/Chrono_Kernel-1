@@ -1073,7 +1073,7 @@ static inline int fll_factors(struct _fll_div *fll_div, unsigned int input,
 	else if (output >= 22500000 && output <= 25000000)
 		fll_div->div = 0x1;
 	else {
-;
+		printk(KERN_ERR "wm8350: fll freq %d out of range\n", output);
 		return -EINVAL;
 	}
 

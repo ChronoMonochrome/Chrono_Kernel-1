@@ -89,7 +89,7 @@ EXPORT_SYMBOL(system_entering_hibernation);
 #ifdef CONFIG_PM_DEBUG
 static void hibernation_debug_sleep(void)
 {
-;
+	printk(KERN_INFO "hibernation debug: Waiting for 5 seconds.\n");
 	mdelay(5000);
 }
 
@@ -244,10 +244,10 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
 		centisecs = 1;	/* avoid div-by-zero */
 	k = nr_pages * (PAGE_SIZE / 1024);
 	kps = (k * 100) / centisecs;
-//	printk(KERN_INFO "PM: %s %d kbytes in %d.%02d seconds (%d.%02d MB/s)\n",
-//			msg, k,
-//			centisecs / 100, centisecs % 100,
-;
+	printk(KERN_INFO "PM: %s %d kbytes in %d.%02d seconds (%d.%02d MB/s)\n",
+			msg, k,
+			centisecs / 100, centisecs % 100,
+			kps / 1000, (kps % 1000) / 10);
 }
 
 /**
@@ -265,8 +265,8 @@ static int create_image(int platform_mode)
 
 	error = dpm_suspend_noirq(PMSG_FREEZE);
 	if (error) {
-//		printk(KERN_ERR "PM: Some devices failed to power down, "
-;
+		printk(KERN_ERR "PM: Some devices failed to power down, "
+			"aborting hibernation\n");
 		return error;
 	}
 
@@ -283,8 +283,8 @@ static int create_image(int platform_mode)
 
 	error = syscore_suspend();
 	if (error) {
-//		printk(KERN_ERR "PM: Some system devices failed to power down, "
-;
+		printk(KERN_ERR "PM: Some system devices failed to power down, "
+			"aborting hibernation\n");
 		goto Enable_irqs;
 	}
 
@@ -295,8 +295,8 @@ static int create_image(int platform_mode)
 	save_processor_state();
 	error = swsusp_arch_suspend();
 	if (error)
-//		printk(KERN_ERR "PM: Error %d creating hibernation image\n",
-;
+		printk(KERN_ERR "PM: Error %d creating hibernation image\n",
+			error);
 	/* Restore control flow magically appears here */
 	restore_processor_state();
 	if (!in_suspend) {
@@ -403,8 +403,8 @@ static int resume_target_kernel(bool platform_mode)
 
 	error = dpm_suspend_noirq(PMSG_QUIESCE);
 	if (error) {
-//		printk(KERN_ERR "PM: Some devices failed to power down, "
-;
+		printk(KERN_ERR "PM: Some devices failed to power down, "
+			"aborting resume\n");
 		return error;
 	}
 
@@ -591,7 +591,7 @@ static void power_down(void)
 	 * Valid image is on the disk, if we continue we risk serious data
 	 * corruption after resume.
 	 */
-;
+	printk(KERN_CRIT "PM: Please power down manually\n");
 	while(1);
 }
 
@@ -802,7 +802,7 @@ static int software_resume(void)
 	if (!error)
 		hibernation_restore(flags & SF_PLATFORM_MODE);
 
-;
+	printk(KERN_ERR "PM: Failed to load hibernation image, recovering.\n");
 	swsusp_free();
 	thaw_processes();
  Done:
@@ -961,7 +961,7 @@ static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
 	mutex_lock(&pm_mutex);
 	swsusp_resume_device = res;
 	mutex_unlock(&pm_mutex);
-;
+	printk(KERN_INFO "PM: Starting manual resume from disk\n");
 	noresume = 0;
 	software_resume();
 	ret = n;

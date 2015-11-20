@@ -74,8 +74,8 @@ MODULE_PARM_DESC(adjust_y_offset, "adjust Y offset display [core]");
 #ifdef USBVISION_DEBUG
 	#define PDEBUG(level, fmt, args...) { \
 		if (core_debug & (level)) \
-//			printk(KERN_INFO KBUILD_MODNAME ":[%s:%d] " fmt, \
-;
+			printk(KERN_INFO KBUILD_MODNAME ":[%s:%d] " fmt, \
+				__func__, __LINE__ , ## args); \
 	}
 #else
 	#define PDEBUG(level, fmt, args...) do {} while (0)
@@ -166,13 +166,13 @@ static void usbvision_hexdump(const unsigned char *data, int len)
 
 	for (i = k = 0; len > 0; i++, len--) {
 		if (i > 0 && (i % 16 == 0)) {
-;
+			printk("%s\n", tmp);
 			k = 0;
 		}
 		k += sprintf(&tmp[k], "%02x ", data[i]);
 	}
 	if (k > 0)
-;
+		printk(KERN_CONT "%s\n", tmp);
 }
 #endif
 
@@ -1268,7 +1268,7 @@ static int usbvision_compress_isochronous(struct usb_usbvision *usbvision,
 		static int foo;
 
 		if (foo < 1) {
-;
+			printk(KERN_DEBUG "+%d.\n", usbvision->scratchlen);
 			usbvision_hexdump(data0, (totlen > 64) ? 64 : totlen);
 			++foo;
 		}
@@ -1654,8 +1654,8 @@ static int usbvision_set_video_format(struct usb_usbvision *usbvision, int forma
 	if ((format != ISOC_MODE_YUV422)
 	    && (format != ISOC_MODE_YUV420)
 	    && (format != ISOC_MODE_COMPRESS)) {
-//		printk(KERN_ERR "usbvision: unknown video format %02x, using default YUV420",
-;
+		printk(KERN_ERR "usbvision: unknown video format %02x, using default YUV420",
+		       format);
 		format = ISOC_MODE_YUV420;
 	}
 	value[0] = 0x0A;  /* TODO: See the effect of the filter */
@@ -1667,8 +1667,8 @@ static int usbvision_set_video_format(struct usb_usbvision *usbvision, int forma
 			     (__u16) USBVISION_FILT_CONT, value, 2, HZ);
 
 	if (rc < 0) {
-//		printk(KERN_ERR "%s: ERROR=%d. USBVISION stopped - "
-;
+		printk(KERN_ERR "%s: ERROR=%d. USBVISION stopped - "
+		       "reconnect or reload driver.\n", proc, rc);
 	}
 	usbvision->isoc_mode = format;
 	return rc;
@@ -1905,8 +1905,8 @@ static int usbvision_set_compress_params(struct usb_usbvision *usbvision)
 			     (__u16) USBVISION_INTRA_CYC, value, 5, HZ);
 
 	if (rc < 0) {
-//		printk(KERN_ERR "%sERROR=%d. USBVISION stopped - "
-;
+		printk(KERN_ERR "%sERROR=%d. USBVISION stopped - "
+		       "reconnect or reload driver.\n", proc, rc);
 		return rc;
 	}
 
@@ -1936,8 +1936,8 @@ static int usbvision_set_compress_params(struct usb_usbvision *usbvision)
 			     (__u16) USBVISION_PCM_THR1, value, 6, HZ);
 
 	if (rc < 0) {
-//		printk(KERN_ERR "%sERROR=%d. USBVISION stopped - "
-;
+		printk(KERN_ERR "%sERROR=%d. USBVISION stopped - "
+		       "reconnect or reload driver.\n", proc, rc);
 	}
 	return rc;
 }
@@ -1975,8 +1975,8 @@ int usbvision_set_input(struct usb_usbvision *usbvision)
 
 	rc = usbvision_write_reg(usbvision, USBVISION_VIN_REG1, value[0]);
 	if (rc < 0) {
-//		printk(KERN_ERR "%sERROR=%d. USBVISION stopped - "
-;
+		printk(KERN_ERR "%sERROR=%d. USBVISION stopped - "
+		       "reconnect or reload driver.\n", proc, rc);
 		return rc;
 	}
 
@@ -2041,8 +2041,8 @@ int usbvision_set_input(struct usb_usbvision *usbvision)
 			     USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_ENDPOINT, 0,
 			     (__u16) USBVISION_LXSIZE_I, value, 8, HZ);
 	if (rc < 0) {
-//		printk(KERN_ERR "%sERROR=%d. USBVISION stopped - "
-;
+		printk(KERN_ERR "%sERROR=%d. USBVISION stopped - "
+		       "reconnect or reload driver.\n", proc, rc);
 		return rc;
 	}
 
@@ -2265,7 +2265,7 @@ int usbvision_restart_isoc(struct usb_usbvision *usbvision)
 int usbvision_audio_off(struct usb_usbvision *usbvision)
 {
 	if (usbvision_write_reg(usbvision, USBVISION_IOPIN_REG, USBVISION_AUDIO_MUTE) < 0) {
-;
+		printk(KERN_ERR "usbvision_audio_off: can't write reg\n");
 		return -1;
 	}
 	usbvision->audio_mute = 0;
@@ -2277,7 +2277,7 @@ int usbvision_set_audio(struct usb_usbvision *usbvision, int audio_channel)
 {
 	if (!usbvision->audio_mute) {
 		if (usbvision_write_reg(usbvision, USBVISION_IOPIN_REG, audio_channel) < 0) {
-;
+			printk(KERN_ERR "usbvision_set_audio: can't write iopin register for audio switching\n");
 			return -1;
 		}
 	}

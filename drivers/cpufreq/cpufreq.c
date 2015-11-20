@@ -1301,8 +1301,8 @@ static int cpufreq_bp_suspend(void)
 	if (cpufreq_driver->suspend) {
 		ret = cpufreq_driver->suspend(cpu_policy);
 		if (ret)
-//			printk(KERN_ERR "cpufreq: suspend failed in ->suspend "
-;
+			printk(KERN_ERR "cpufreq: suspend failed in ->suspend "
+					"step on CPU %u\n", cpu_policy->cpu);
 	}
 
 	cpufreq_cpu_put(cpu_policy);
@@ -1339,8 +1339,8 @@ static void cpufreq_bp_resume(void)
 	if (cpufreq_driver->resume) {
 		ret = cpufreq_driver->resume(cpu_policy);
 		if (ret) {
-//			printk(KERN_ERR "cpufreq: resume failed in ->resume "
-;
+			printk(KERN_ERR "cpufreq: resume failed in ->resume "
+					"step on CPU %u\n", cpu_policy->cpu);
 			goto fail;
 		}
 	}
@@ -1515,11 +1515,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
 		if (!gov)
 			return -EINVAL;
 		else {
-//			printk(KERN_WARNING "%s governor failed, too long"
-//			       " transition latency of HW, fallback"
-//			       " to %s governor\n",
-//			       policy->governor->name,
-;
+			printk(KERN_WARNING "%s governor failed, too long"
+			       " transition latency of HW, fallback"
+			       " to %s governor\n",
+			       policy->governor->name,
+			       gov->name);
 			policy->governor = gov;
 		}
 	}

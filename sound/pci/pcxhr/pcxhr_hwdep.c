@@ -200,8 +200,8 @@ static int pcxhr_dsp_allocate_pipe(struct pcxhr_mgr *mgr,
 	}
 	err = pcxhr_send_msg(mgr, &rmh);
 	if (err < 0) {
-//		snd_printk(KERN_ERR "error pipe allocation "
-;
+		snd_printk(KERN_ERR "error pipe allocation "
+			   "(CMD_RES_PIPE) err=%x!\n", err);
 		return err;
 	}
 	pipe->status = PCXHR_PIPE_DEFINED;
@@ -228,15 +228,15 @@ static int pcxhr_dsp_free_pipe( struct pcxhr_mgr *mgr, struct pcxhr_pipe *pipe)
 	/* stop one pipe */
 	err = pcxhr_set_pipe_state(mgr, playback_mask, capture_mask, 0);
 	if (err < 0)
-;
+		snd_printk(KERN_ERR "error stopping pipe!\n");
 	/* release the pipe */
 	pcxhr_init_rmh(&rmh, CMD_FREE_PIPE);
 	pcxhr_set_pipe_cmd_params(&rmh, pipe->is_capture, pipe->first_audio,
 				  0, 0);
 	err = pcxhr_send_msg(mgr, &rmh);
 	if (err < 0)
-//		snd_printk(KERN_ERR "error pipe release "
-;
+		snd_printk(KERN_ERR "error pipe release "
+			   "(CMD_FREE_PIPE) err(%x)\n", err);
 	pipe->status = PCXHR_PIPE_UNDEFINED;
 	return err;
 }
@@ -319,19 +319,19 @@ static int pcxhr_dsp_load(struct pcxhr_mgr *mgr, int index,
 			return err;
 		break;	/* continue with first init */
 	default:
-;
+		snd_printk(KERN_ERR "wrong file index\n");
 		return -EFAULT;
 	} /* end of switch file index*/
 
 	/* first communication with embedded */
 	err = pcxhr_init_board(mgr);
         if (err < 0) {
-;
+		snd_printk(KERN_ERR "pcxhr could not be set up\n");
 		return err;
 	}
 	err = pcxhr_config_pipes(mgr);
         if (err < 0) {
-;
+		snd_printk(KERN_ERR "pcxhr pipes could not be set up\n");
 		return err;
 	}
        	/* create devices and mixer in accordance with HW options*/
@@ -350,7 +350,7 @@ static int pcxhr_dsp_load(struct pcxhr_mgr *mgr, int index,
 	}
 	err = pcxhr_start_pipes(mgr);
         if (err < 0) {
-;
+		snd_printk(KERN_ERR "pcxhr pipes could not be started\n");
 		return err;
 	}
 	snd_printdd("pcxhr firmware downloaded and successfully set up\n");
@@ -390,8 +390,8 @@ int pcxhr_setup_firmware(struct pcxhr_mgr *mgr)
 			continue;
 		sprintf(path, "pcxhr/%s", fw_files[fw_set][i]);
 		if (request_firmware(&fw_entry, path, &mgr->pci->dev)) {
-//			snd_printk(KERN_ERR "pcxhr: can't load firmware %s\n",
-;
+			snd_printk(KERN_ERR "pcxhr: can't load firmware %s\n",
+				   path);
 			return -ENOENT;
 		}
 		/* fake hwdep dsp record */
@@ -455,8 +455,8 @@ static int pcxhr_hwdep_dsp_load(struct snd_hwdep *hw,
 	fw.size = dsp->length;
 	fw.data = vmalloc(fw.size);
 	if (! fw.data) {
-//		snd_printk(KERN_ERR "pcxhr: cannot allocate dsp image "
-;
+		snd_printk(KERN_ERR "pcxhr: cannot allocate dsp image "
+			   "(%lu bytes)\n", (unsigned long)fw.size);
 		return -ENOMEM;
 	}
 	if (copy_from_user((void *)fw.data, dsp->image, dsp->length)) {

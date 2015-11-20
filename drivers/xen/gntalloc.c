@@ -467,7 +467,7 @@ static int gntalloc_mmap(struct file *filp, struct vm_area_struct *vma)
 		       priv, vma->vm_pgoff, count);
 
 	if (!(vma->vm_flags & VM_SHARED)) {
-;
+		printk(KERN_ERR "%s: Mapping must be shared.\n", __func__);
 		return -EINVAL;
 	}
 
@@ -531,7 +531,7 @@ static int __init gntalloc_init(void)
 
 	err = misc_register(&gntalloc_miscdev);
 	if (err != 0) {
-;
+		printk(KERN_ERR "Could not register misc gntalloc device\n");
 		return err;
 	}
 

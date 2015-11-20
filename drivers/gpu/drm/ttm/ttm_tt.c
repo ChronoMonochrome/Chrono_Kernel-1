@@ -295,9 +295,9 @@ static void ttm_tt_free_alloced_pages(struct ttm_tt *ttm)
 		ttm->pages[i] = NULL;
 		if (cur_page) {
 			if (page_count(cur_page) != 1)
-//				printk(KERN_ERR TTM_PFX
-//				       "Erroneous page count. "
-;
+				printk(KERN_ERR TTM_PFX
+				       "Erroneous page count. "
+				       "Leaking pages.\n");
 			ttm_mem_global_free_page(ttm->glob->mem_glob,
 						 cur_page);
 			list_add(&cur_page->lru, &h);
@@ -404,13 +404,13 @@ struct ttm_tt *ttm_tt_create(struct ttm_bo_device *bdev, unsigned long size,
 	ttm_tt_alloc_page_directory(ttm);
 	if (!ttm->pages) {
 		ttm_tt_destroy(ttm);
-;
+		printk(KERN_ERR TTM_PFX "Failed allocating page table\n");
 		return NULL;
 	}
 	ttm->be = bo_driver->create_ttm_backend_entry(bdev);
 	if (!ttm->be) {
 		ttm_tt_destroy(ttm);
-;
+		printk(KERN_ERR TTM_PFX "Failed creating ttm backend entry\n");
 		return NULL;
 	}
 	ttm->state = tt_unpopulated;
@@ -546,7 +546,7 @@ int ttm_tt_swapout(struct ttm_tt *ttm, struct file *persistent_swap_storage)
 						ttm->num_pages << PAGE_SHIFT,
 						0);
 		if (unlikely(IS_ERR(swap_storage))) {
-;
+			printk(KERN_ERR "Failed allocating swap storage.\n");
 			return PTR_ERR(swap_storage);
 		}
 	} else

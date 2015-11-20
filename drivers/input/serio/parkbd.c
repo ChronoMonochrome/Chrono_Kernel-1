@@ -148,7 +148,7 @@ static int parkbd_getport(void)
 	pp = parport_find_number(parkbd_pp_no);
 
 	if (pp == NULL) {
-;
+		printk(KERN_ERR "parkbd: no such parport\n");
 		return -ENODEV;
 	}
 
@@ -201,8 +201,8 @@ static int __init parkbd_init(void)
 
 	serio_register_port(parkbd_port);
 
-//	printk(KERN_INFO "serio: PARKBD %s adapter on %s\n",
-;
+	printk(KERN_INFO "serio: PARKBD %s adapter on %s\n",
+                        parkbd_mode ? "AT" : "XT", parkbd_dev->port->name);
 
 	return 0;
 }

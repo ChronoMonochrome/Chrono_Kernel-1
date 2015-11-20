@@ -64,8 +64,8 @@ static int ir_rc5_decode(struct rc_dev *dev, struct ir_raw_event ev)
 		goto out;
 
 again:
-//	IR_dprintk(2, "RC5(x) decode started at state %i (%uus %s)\n",
-;
+	IR_dprintk(2, "RC5(x) decode started at state %i (%uus %s)\n",
+		   data->state, TO_US(ev.duration), TO_STR(ev.pulse));
 
 	if (!geq_margin(ev.duration, RC5_UNIT, RC5_UNIT / 2))
 		return 0;
@@ -134,8 +134,8 @@ again:
 			command += (data->bits & 0x01000) ? 0 : 0x40;
 			scancode = system << 16 | command << 8 | xdata;
 
-//			IR_dprintk(1, "RC5X scancode 0x%06x (toggle: %u)\n",
-;
+			IR_dprintk(1, "RC5X scancode 0x%06x (toggle: %u)\n",
+				   scancode, toggle);
 
 		} else {
 			/* RC5 */
@@ -146,8 +146,8 @@ again:
 			command += (data->bits & 0x01000) ? 0 : 0x40;
 			scancode = system << 8 | command;
 
-//			IR_dprintk(1, "RC5 scancode 0x%04x (toggle: %u)\n",
-;
+			IR_dprintk(1, "RC5 scancode 0x%04x (toggle: %u)\n",
+				   scancode, toggle);
 		}
 
 		rc_keydown(dev, scancode, toggle);
@@ -156,8 +156,8 @@ again:
 	}
 
 out:
-//	IR_dprintk(1, "RC5(x) decode failed at state %i (%uus %s)\n",
-;
+	IR_dprintk(1, "RC5(x) decode failed at state %i (%uus %s)\n",
+		   data->state, TO_US(ev.duration), TO_STR(ev.pulse));
 	data->state = STATE_INACTIVE;
 	return -EINVAL;
 }
@@ -171,7 +171,7 @@ static int __init ir_rc5_decode_init(void)
 {
 	ir_raw_handler_register(&rc5_handler);
 
-;
+	printk(KERN_INFO "IR RC5(x) protocol handler initialized\n");
 	return 0;
 }
 

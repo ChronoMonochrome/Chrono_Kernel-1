@@ -719,7 +719,7 @@ signed char fDetectHiLoTransition(void)
     // This is really a processor/compiler dependency and it not needed.
     unsigned long int iTimer=0;
 
-;
+	/// printk("[TSP] %s, %d\n", __func__, __LINE__);
 
     // NOTE:
     // These loops look unconventional, but it is necessary to check SDATA_PIN
@@ -740,7 +740,7 @@ signed char fDetectHiLoTransition(void)
         SCLKHigh();
         // If the wait is too long then timeout
         if (iTimer-- == 0) {
-;
+			printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
             return (ERROR);
         }
     }
@@ -756,7 +756,7 @@ signed char fDetectHiLoTransition(void)
         //SCLKHigh();
         // If the wait is too long then timeout
         if (iTimer-- == 0) {
-;
+			printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
             return (ERROR);
         }
     }
@@ -770,7 +770,7 @@ signed char fDetectHiLoTransition_2(void)
     // This is really a processor/compiler dependency and it not needed.
     unsigned long int iTimer=0;
 
-;
+	///	printk("[TSP] %s, %d\n", __func__, __LINE__);
 
     // NOTE:
     // These loops look unconventional, but it is necessary to check SDATA_PIN
@@ -787,7 +787,7 @@ signed char fDetectHiLoTransition_2(void)
         //SCLKHigh();
         // If the wait is too long then timeout
         if (iTimer-- == 0) {
-;
+			printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
             return (ERROR);
         }
     }
@@ -802,7 +802,7 @@ signed char fDetectHiLoTransition_2(void)
         //SCLKHigh();
         // If the wait is too long then timeout
         if (iTimer-- == 0) {
-;
+			printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
             return (ERROR);
         }
     }
@@ -872,7 +872,7 @@ signed char fPowerCycleInitializeTargetForISSP(void)
 {
     //unsigned char n;
 
-;
+	/// printk("[TSP] %s, %d\n", __func__, __LINE__);
 
     // Set all pins to highZ to avoid back powering the PSoC through the GPIO
     // protection diodes.
@@ -899,7 +899,7 @@ signed char fPowerCycleInitializeTargetForISSP(void)
 
 /*	
     if (fIsError = fDetectHiLoTransition_2()) {
-;
+		printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);		
         return(INIT_ERROR);
     }
 */
@@ -910,7 +910,7 @@ signed char fPowerCycleInitializeTargetForISSP(void)
 	if(fSDATACheck())
 	{
 		if (fIsError = fDetectHiLoTransition()) {
-;
+                        printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
 						return(INIT_ERROR);
 		}
 	}
@@ -936,7 +936,7 @@ signed char fPowerCycleInitializeTargetForISSP(void)
 
     SendVector(id_setup_1, num_bits_id_setup_1);
     if (fIsError = fDetectHiLoTransition()) {
-;
+		printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);		
         return(INIT_ERROR);
     }
     SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
@@ -956,7 +956,7 @@ signed char fPowerCycleInitializeTargetForISSP(void)
 // ============================================================================
 signed char fVerifySiliconID(void)
 {
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     SendVector(id_setup_2, num_bits_id_setup_2);
     if (fIsError = fDetectHiLoTransition())
@@ -965,7 +965,7 @@ signed char fVerifySiliconID(void)
             UART_PutCRLF(0);
             UART_PutString("fDetectHiLoTransition Error");
         #endif
-;
+		printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
         return(SiID_ERROR);
     }
     SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
@@ -1023,7 +1023,7 @@ signed char fVerifySiliconID(void)
 
     if (bTargetID[0] != target_id_v[0] /*|| bTargetID[1] != target_id_v[1]*/)
     {
-;
+    	printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
         return(SiID_ERROR);
     }
     else
@@ -1040,7 +1040,7 @@ signed char fVerifySiliconID(void)
 // ============================================================================
 signed char fReadStatus(void)
 {
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     SendVector(tsync_enable, num_bits_tsync_enable);
 
@@ -1059,7 +1059,7 @@ signed char fReadStatus(void)
     }
     else
     {
-;
+    	printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
         return BLOCK_ERROR;
     }
 
@@ -1075,7 +1075,7 @@ signed char fReadStatus(void)
 // ============================================================================
 signed char fReadWriteSetup(void)
 {
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
 	SendVector(read_write_setup, num_bits_read_write_setup);
 	return(PASS);					//PTJ: is there anything else that should be done?
@@ -1090,11 +1090,11 @@ signed char fReadWriteSetup(void)
 // ============================================================================
 signed char fEraseTarget(void)
 {
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     SendVector(erase, num_bits_erase);
     if (fIsError = fDetectHiLoTransition()) {
-;
+		printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
         return(ERASE_ERROR);
     }
     SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
@@ -1112,7 +1112,7 @@ unsigned int iLoadTarget(void)
 unsigned char bTemp;
 unsigned int  iChecksumData = 0;
 
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     // Set SDATA to Strong Drive here because SendByte() does not
     SetSDATAStrong();
@@ -1162,7 +1162,7 @@ unsigned int  iChecksumData = 0;
 // ============================================================================
 signed char fProgramTargetBlock(unsigned char bBankNumber, unsigned char bBlockNumber)
 {
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     SendVector(tsync_enable, num_bits_tsync_enable);
 
@@ -1180,7 +1180,7 @@ signed char fProgramTargetBlock(unsigned char bBankNumber, unsigned char bBlockN
     // wait for acknowledge from target.
     if (fIsError = fDetectHiLoTransition())
     {
-;
+    	printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
         return(BLOCK_ERROR);
     }
     // Send the Wait-For-Poll-End vector
@@ -1201,7 +1201,7 @@ signed char fProgramTargetBlock(unsigned char bBankNumber, unsigned char bBlockN
 // ============================================================================
 signed char fAccTargetBankChecksum(unsigned int* pAcc)
 {
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     unsigned int wCheckSumData=0;
 
@@ -1244,7 +1244,7 @@ signed char fAccTargetBankChecksum(unsigned int* pAcc)
 // ============================================================================
 void ReStartTarget(void)
 {
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
 #ifdef RESET_MODE
     // Assert XRES, then release, then disable XRES-Enable
@@ -1274,7 +1274,7 @@ void ReStartTarget(void)
 // ============================================================================
 signed char fVerifySetup(unsigned char bBankNumber, unsigned char bBlockNumber)
 {
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     SendVector(tsync_enable, num_bits_tsync_enable);
 
@@ -1290,7 +1290,7 @@ signed char fVerifySetup(unsigned char bBankNumber, unsigned char bBlockNumber)
     SendVector(verify_setup, num_bits_my_verify_setup);
     if (fIsError = fDetectHiLoTransition())
     {
-;
+    	printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
         return(VERIFY_ERROR);
     }
     SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
@@ -1312,7 +1312,7 @@ signed char fReadByteLoop(void)
 	bTargetAddress = 0;
     bTargetDataPtr = 0;
 
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     while(bTargetDataPtr < TARGET_DATABUFF_LEN)
     {
@@ -1342,7 +1342,7 @@ signed char fReadByteLoop(void)
                 UART_PutString(" abTargetDataOUT : ");
                 UART_PutHexByte(abTargetDataOUT[bTargetDataPtr]);
             #endif
-;
+			printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
             return(BLOCK_ERROR);
         }
 
@@ -1371,7 +1371,7 @@ signed char fSecureTargetFlash(void)
 {
     unsigned char bTemp;
 
-;
+	/// printk( "[TSP] %s, %d\n", __func__, __LINE__);
 
     // Transfer the temporary RAM array into the target
     bTargetAddress = 0x00;
@@ -1396,7 +1396,7 @@ signed char fSecureTargetFlash(void)
     SendVector(secure, num_bits_secure);	//PTJ:
     if (fIsError = fDetectHiLoTransition())
     {
-;
+    	printk( "[TSP] %s, %d : Error\n", __func__, __LINE__);
         return(SECURITY_ERROR);
     }
     SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
@@ -1453,7 +1453,7 @@ void UART_PutHexWord(unsigned int ch)
 /* ========================================================================= */
 void ErrorTrap(unsigned char bErrorNumber)
 {
-;
+	printk( "[TSP] %s, %d : ErrorNumber = %d\n", __func__, __LINE__, bErrorNumber);
 
     #ifndef RESET_MODE
         // Set all pins to highZ to avoid back powering the PSoC through the GPIO
@@ -1540,7 +1540,7 @@ unsigned int load_tma140_firmware_data(int HW_ver)
 	
 	if(tsp_special_update == 0)//force firmware update from phone-binary
 	{
-;
+		printk("[TSP] firmware_down_in_bin\n");
 
 		for(i=0; i<512; i++)
 			for(j=0; j<64; j++)
@@ -1550,7 +1550,7 @@ unsigned int load_tma140_firmware_data(int HW_ver)
 	}
 	else if(tsp_special_update == 1)//special firmware update from t-flash
 	{
-;
+		printk("[TSP] %s, %d\n", __func__, __LINE__ );
 
 		oldfs = get_fs();
 		set_fs (KERNEL_DS);   /* set KERNEL address space */
@@ -1560,7 +1560,7 @@ unsigned int load_tma140_firmware_data(int HW_ver)
 
 		if(buffer == NULL) 
 		{
-;
+			printk("[TSP] firmware_down_using_sdcard : alllocate mem fail\n");
 			result = FILE_ACCESS_ERROR;
 			goto error;
 		}
@@ -1570,24 +1570,24 @@ unsigned int load_tma140_firmware_data(int HW_ver)
 			if(sys_read(fd, buffer, 72192) > 0) 
 			{
 				sys_close(fd);
-;
+				printk("[TSP] firmware_down_using_sdcard : read file success\n");	
 			}
 			else
 			{
 				sys_close(fd);
 				result = FILE_ACCESS_ERROR;
-;
+				printk("[TSP] firmware_down_using_sdcard : file read fail\n");				
 				goto error; 			
 			}
 		}
 		else
 		{
 			result = FILE_ACCESS_ERROR;
-;
+			printk("[TSP] firmware_down_using_sdcard : file open fail\n");
 			goto error;
 		}
 		
-;
+		printk("\n[TSP] firmware_down_using_sdcard : firmware_data : START \n");
 		
 		for(firmwareline=0; firmwareline<512; firmwareline++)
 		{
@@ -1601,7 +1601,7 @@ unsigned int load_tma140_firmware_data(int HW_ver)
 			}
 		}
 
-;
+		printk("\n[TSP] firmware_down_using_sdcard : firmware_data : END \n");
 		
 	
 		result = PASS;

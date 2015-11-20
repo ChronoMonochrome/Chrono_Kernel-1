@@ -746,8 +746,8 @@ static int sm501_register_device(struct sm501_devdata *sm,
 	int ret;
 
 	for (ptr = 0; ptr < pdev->num_resources; ptr++) {
-//		printk(KERN_DEBUG "%s[%d] %pR\n",
-;
+		printk(KERN_DEBUG "%s[%d] %pR\n",
+		       pdev->name, ptr, &pdev->resource[ptr]);
 	}
 
 	ret = platform_device_register(pdev);

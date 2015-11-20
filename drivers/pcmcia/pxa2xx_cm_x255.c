@@ -137,7 +137,7 @@ int __init cmx255_pcmcia_init(void)
 				       sizeof(cmx255_pcmcia_ops));
 
 	if (ret == 0) {
-;
+		printk(KERN_INFO "Registering cm-x255 PCMCIA interface.\n");
 		ret = platform_device_add(cmx255_pcmcia_device);
 	}
 

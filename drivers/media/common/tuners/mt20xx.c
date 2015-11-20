@@ -492,8 +492,8 @@ static void mt2050_set_if_freq(struct dvb_frontend *fe,unsigned int freq, unsign
 		int i;
 		tuner_dbg("bufs is: ");
 		for(i=0;i<6;i++)
-;
-;
+			printk("%x ",buf[i]);
+		printk("\n");
 	}
 
 	ret=tuner_i2c_xfer_send(&priv->i2c_props,buf,6);
@@ -625,10 +625,10 @@ struct dvb_frontend *microtune_attach(struct dvb_frontend *fe,
 		int i;
 		tuner_dbg("MT20xx hexdump:");
 		for(i=0;i<21;i++) {
-;
-;
+			printk(" %02x",buf[i]);
+			if(((i+1)%8)==0) printk(" ");
 		}
-;
+		printk("\n");
 	}
 	company_code = buf[0x11] << 8 | buf[0x12];
 	tuner_info("microtune: companycode=%04x part=%02x rev=%02x\n",

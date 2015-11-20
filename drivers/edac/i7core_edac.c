@@ -65,131 +65,131 @@ MODULE_PARM_DESC(use_pci_fixup, "Enable PCI fixup to seek for hidden devices");
 /*
  * Debug macros
  */
-//#define i7core_printk(level, fmt, arg...)			\
-//	edac_printk(level, "i7core", fmt, ##arg)
-//
-//#define i7core_mc_printk(mci, level, fmt, arg...)		\
-//	edac_mc_chipset_printk(mci, level, "i7core", fmt, ##arg)
-//
-///*
-// * i7core Memory Controller Registers
-// */
-//
-//	/* OFFSETS for Device 0 Function 0 */
-//
-//#define MC_CFG_CONTROL	0x90
-//
-//	/* OFFSETS for Device 3 Function 0 */
-//
-//#define MC_CONTROL	0x48
-//#define MC_STATUS	0x4c
-//#define MC_MAX_DOD	0x64
-//
-///*
-// * OFFSETS for Device 3 Function 4, as inicated on Xeon 5500 datasheet:
-// * http://www.arrownac.com/manufacturers/intel/s/nehalem/5500-datasheet-v2.pdf
-// */
-//
-//#define MC_TEST_ERR_RCV1	0x60
-//  #define DIMM2_COR_ERR(r)			((r) & 0x7fff)
-//
-//#define MC_TEST_ERR_RCV0	0x64
-//  #define DIMM1_COR_ERR(r)			(((r) >> 16) & 0x7fff)
-//  #define DIMM0_COR_ERR(r)			((r) & 0x7fff)
-//
-///* OFFSETS for Device 3 Function 2, as inicated on Xeon 5500 datasheet */
-//#define MC_COR_ECC_CNT_0	0x80
-//#define MC_COR_ECC_CNT_1	0x84
-//#define MC_COR_ECC_CNT_2	0x88
-//#define MC_COR_ECC_CNT_3	0x8c
-//#define MC_COR_ECC_CNT_4	0x90
-//#define MC_COR_ECC_CNT_5	0x94
-//
-//#define DIMM_TOP_COR_ERR(r)			(((r) >> 16) & 0x7fff)
-//#define DIMM_BOT_COR_ERR(r)			((r) & 0x7fff)
-//
-//
-//	/* OFFSETS for Devices 4,5 and 6 Function 0 */
-//
-//#define MC_CHANNEL_DIMM_INIT_PARAMS 0x58
-//  #define THREE_DIMMS_PRESENT		(1 << 24)
-//  #define SINGLE_QUAD_RANK_PRESENT	(1 << 23)
-//  #define QUAD_RANK_PRESENT		(1 << 22)
-//  #define REGISTERED_DIMM		(1 << 15)
-//
-//#define MC_CHANNEL_MAPPER	0x60
-//  #define RDLCH(r, ch)		((((r) >> (3 + (ch * 6))) & 0x07) - 1)
-//  #define WRLCH(r, ch)		((((r) >> (ch * 6)) & 0x07) - 1)
-//
-//#define MC_CHANNEL_RANK_PRESENT 0x7c
-//  #define RANK_PRESENT_MASK		0xffff
-//
-//#define MC_CHANNEL_ADDR_MATCH	0xf0
-//#define MC_CHANNEL_ERROR_MASK	0xf8
-//#define MC_CHANNEL_ERROR_INJECT	0xfc
-//  #define INJECT_ADDR_PARITY	0x10
-//  #define INJECT_ECC		0x08
-//  #define MASK_CACHELINE	0x06
-//  #define MASK_FULL_CACHELINE	0x06
-//  #define MASK_MSB32_CACHELINE	0x04
-//  #define MASK_LSB32_CACHELINE	0x02
-//  #define NO_MASK_CACHELINE	0x00
-//  #define REPEAT_EN		0x01
-//
-//	/* OFFSETS for Devices 4,5 and 6 Function 1 */
-//
-//#define MC_DOD_CH_DIMM0		0x48
-//#define MC_DOD_CH_DIMM1		0x4c
-//#define MC_DOD_CH_DIMM2		0x50
-//  #define RANKOFFSET_MASK	((1 << 12) | (1 << 11) | (1 << 10))
-//  #define RANKOFFSET(x)		((x & RANKOFFSET_MASK) >> 10)
-//  #define DIMM_PRESENT_MASK	(1 << 9)
-//  #define DIMM_PRESENT(x)	(((x) & DIMM_PRESENT_MASK) >> 9)
-//  #define MC_DOD_NUMBANK_MASK		((1 << 8) | (1 << 7))
-//  #define MC_DOD_NUMBANK(x)		(((x) & MC_DOD_NUMBANK_MASK) >> 7)
-//  #define MC_DOD_NUMRANK_MASK		((1 << 6) | (1 << 5))
-//  #define MC_DOD_NUMRANK(x)		(((x) & MC_DOD_NUMRANK_MASK) >> 5)
-//  #define MC_DOD_NUMROW_MASK		((1 << 4) | (1 << 3) | (1 << 2))
-//  #define MC_DOD_NUMROW(x)		(((x) & MC_DOD_NUMROW_MASK) >> 2)
-//  #define MC_DOD_NUMCOL_MASK		3
-//  #define MC_DOD_NUMCOL(x)		((x) & MC_DOD_NUMCOL_MASK)
-//
-//#define MC_RANK_PRESENT		0x7c
-//
-//#define MC_SAG_CH_0	0x80
-//#define MC_SAG_CH_1	0x84
-//#define MC_SAG_CH_2	0x88
-//#define MC_SAG_CH_3	0x8c
-//#define MC_SAG_CH_4	0x90
-//#define MC_SAG_CH_5	0x94
-//#define MC_SAG_CH_6	0x98
-//#define MC_SAG_CH_7	0x9c
-//
-//#define MC_RIR_LIMIT_CH_0	0x40
-//#define MC_RIR_LIMIT_CH_1	0x44
-//#define MC_RIR_LIMIT_CH_2	0x48
-//#define MC_RIR_LIMIT_CH_3	0x4C
-//#define MC_RIR_LIMIT_CH_4	0x50
-//#define MC_RIR_LIMIT_CH_5	0x54
-//#define MC_RIR_LIMIT_CH_6	0x58
-//#define MC_RIR_LIMIT_CH_7	0x5C
-//#define MC_RIR_LIMIT_MASK	((1 << 10) - 1)
-//
-//#define MC_RIR_WAY_CH		0x80
-//  #define MC_RIR_WAY_OFFSET_MASK	(((1 << 14) - 1) & ~0x7)
-//  #define MC_RIR_WAY_RANK_MASK		0x7
-//
-///*
-// * i7core structs
-// */
-//
-//#define NUM_CHANS 3
-//#define MAX_DIMMS 3		/* Max DIMMS per channel */
-//#define MAX_MCR_FUNC  4
-//#define MAX_CHAN_FUNC 3
-//
-//struct i7core_info {
-;
+#define i7core_printk(level, fmt, arg...)			\
+	edac_printk(level, "i7core", fmt, ##arg)
+
+#define i7core_mc_printk(mci, level, fmt, arg...)		\
+	edac_mc_chipset_printk(mci, level, "i7core", fmt, ##arg)
+
+/*
+ * i7core Memory Controller Registers
+ */
+
+	/* OFFSETS for Device 0 Function 0 */
+
+#define MC_CFG_CONTROL	0x90
+
+	/* OFFSETS for Device 3 Function 0 */
+
+#define MC_CONTROL	0x48
+#define MC_STATUS	0x4c
+#define MC_MAX_DOD	0x64
+
+/*
+ * OFFSETS for Device 3 Function 4, as inicated on Xeon 5500 datasheet:
+ * http://www.arrownac.com/manufacturers/intel/s/nehalem/5500-datasheet-v2.pdf
+ */
+
+#define MC_TEST_ERR_RCV1	0x60
+  #define DIMM2_COR_ERR(r)			((r) & 0x7fff)
+
+#define MC_TEST_ERR_RCV0	0x64
+  #define DIMM1_COR_ERR(r)			(((r) >> 16) & 0x7fff)
+  #define DIMM0_COR_ERR(r)			((r) & 0x7fff)
+
+/* OFFSETS for Device 3 Function 2, as inicated on Xeon 5500 datasheet */
+#define MC_COR_ECC_CNT_0	0x80
+#define MC_COR_ECC_CNT_1	0x84
+#define MC_COR_ECC_CNT_2	0x88
+#define MC_COR_ECC_CNT_3	0x8c
+#define MC_COR_ECC_CNT_4	0x90
+#define MC_COR_ECC_CNT_5	0x94
+
+#define DIMM_TOP_COR_ERR(r)			(((r) >> 16) & 0x7fff)
+#define DIMM_BOT_COR_ERR(r)			((r) & 0x7fff)
+
+
+	/* OFFSETS for Devices 4,5 and 6 Function 0 */
+
+#define MC_CHANNEL_DIMM_INIT_PARAMS 0x58
+  #define THREE_DIMMS_PRESENT		(1 << 24)
+  #define SINGLE_QUAD_RANK_PRESENT	(1 << 23)
+  #define QUAD_RANK_PRESENT		(1 << 22)
+  #define REGISTERED_DIMM		(1 << 15)
+
+#define MC_CHANNEL_MAPPER	0x60
+  #define RDLCH(r, ch)		((((r) >> (3 + (ch * 6))) & 0x07) - 1)
+  #define WRLCH(r, ch)		((((r) >> (ch * 6)) & 0x07) - 1)
+
+#define MC_CHANNEL_RANK_PRESENT 0x7c
+  #define RANK_PRESENT_MASK		0xffff
+
+#define MC_CHANNEL_ADDR_MATCH	0xf0
+#define MC_CHANNEL_ERROR_MASK	0xf8
+#define MC_CHANNEL_ERROR_INJECT	0xfc
+  #define INJECT_ADDR_PARITY	0x10
+  #define INJECT_ECC		0x08
+  #define MASK_CACHELINE	0x06
+  #define MASK_FULL_CACHELINE	0x06
+  #define MASK_MSB32_CACHELINE	0x04
+  #define MASK_LSB32_CACHELINE	0x02
+  #define NO_MASK_CACHELINE	0x00
+  #define REPEAT_EN		0x01
+
+	/* OFFSETS for Devices 4,5 and 6 Function 1 */
+
+#define MC_DOD_CH_DIMM0		0x48
+#define MC_DOD_CH_DIMM1		0x4c
+#define MC_DOD_CH_DIMM2		0x50
+  #define RANKOFFSET_MASK	((1 << 12) | (1 << 11) | (1 << 10))
+  #define RANKOFFSET(x)		((x & RANKOFFSET_MASK) >> 10)
+  #define DIMM_PRESENT_MASK	(1 << 9)
+  #define DIMM_PRESENT(x)	(((x) & DIMM_PRESENT_MASK) >> 9)
+  #define MC_DOD_NUMBANK_MASK		((1 << 8) | (1 << 7))
+  #define MC_DOD_NUMBANK(x)		(((x) & MC_DOD_NUMBANK_MASK) >> 7)
+  #define MC_DOD_NUMRANK_MASK		((1 << 6) | (1 << 5))
+  #define MC_DOD_NUMRANK(x)		(((x) & MC_DOD_NUMRANK_MASK) >> 5)
+  #define MC_DOD_NUMROW_MASK		((1 << 4) | (1 << 3) | (1 << 2))
+  #define MC_DOD_NUMROW(x)		(((x) & MC_DOD_NUMROW_MASK) >> 2)
+  #define MC_DOD_NUMCOL_MASK		3
+  #define MC_DOD_NUMCOL(x)		((x) & MC_DOD_NUMCOL_MASK)
+
+#define MC_RANK_PRESENT		0x7c
+
+#define MC_SAG_CH_0	0x80
+#define MC_SAG_CH_1	0x84
+#define MC_SAG_CH_2	0x88
+#define MC_SAG_CH_3	0x8c
+#define MC_SAG_CH_4	0x90
+#define MC_SAG_CH_5	0x94
+#define MC_SAG_CH_6	0x98
+#define MC_SAG_CH_7	0x9c
+
+#define MC_RIR_LIMIT_CH_0	0x40
+#define MC_RIR_LIMIT_CH_1	0x44
+#define MC_RIR_LIMIT_CH_2	0x48
+#define MC_RIR_LIMIT_CH_3	0x4C
+#define MC_RIR_LIMIT_CH_4	0x50
+#define MC_RIR_LIMIT_CH_5	0x54
+#define MC_RIR_LIMIT_CH_6	0x58
+#define MC_RIR_LIMIT_CH_7	0x5C
+#define MC_RIR_LIMIT_MASK	((1 << 10) - 1)
+
+#define MC_RIR_WAY_CH		0x80
+  #define MC_RIR_WAY_OFFSET_MASK	(((1 << 14) - 1) & ~0x7)
+  #define MC_RIR_WAY_RANK_MASK		0x7
+
+/*
+ * i7core structs
+ */
+
+#define NUM_CHANS 3
+#define MAX_DIMMS 3		/* Max DIMMS per channel */
+#define MAX_MCR_FUNC  4
+#define MAX_CHAN_FUNC 3
+
+struct i7core_info {
+	u32	mc_control;
 	u32	mc_status;
 	u32	max_dod;
 	u32	ch_map;
@@ -511,8 +511,8 @@ static int i7core_get_active_channels(const u8 socket, unsigned *channels,
 
 	pdev = get_pdev_slot_func(socket, 3, 0);
 	if (!pdev) {
-//		i7core_printk(KERN_ERR, "Couldn't find socket %d fn 3.0!!!\n",
-;
+		i7core_printk(KERN_ERR, "Couldn't find socket %d fn 3.0!!!\n",
+			      socket);
 		return -ENODEV;
 	}
 
@@ -532,9 +532,9 @@ static int i7core_get_active_channels(const u8 socket, unsigned *channels,
 
 		pdev = get_pdev_slot_func(socket, i + 4, 1);
 		if (!pdev) {
-//			i7core_printk(KERN_ERR, "Couldn't find socket %d "
-//						"fn %d.%d!!!\n",
-;
+			i7core_printk(KERN_ERR, "Couldn't find socket %d "
+						"fn %d.%d!!!\n",
+						socket, i + 4, 1);
 			return -ENODEV;
 		}
 		/* Devices 4-6 function 1 */
@@ -952,10 +952,10 @@ static int write_and_test(struct pci_dev *dev, const int where, const u32 val)
 			return 0;
 	}
 
-//	i7core_printk(KERN_ERR, "Error during set pci %02x:%02x.%x reg=%02x "
-//		"write=%08x. Read=%08x\n",
-//		dev->bus->number, PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn),
-;
+	i7core_printk(KERN_ERR, "Error during set pci %02x:%02x.%x reg=%02x "
+		"write=%08x. Read=%08x\n",
+		dev->bus->number, PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn),
+		where, val, read);
 
 	return -EINVAL;
 }
@@ -1336,10 +1336,10 @@ static int i7core_get_onedevice(struct pci_dev **prev,
 		if (devno == 0)
 			return -ENODEV;
 
-//		i7core_printk(KERN_INFO,
-//			"Device not found: dev %02x.%d PCI ID %04x:%04x\n",
-//			dev_descr->dev, dev_descr->func,
-;
+		i7core_printk(KERN_INFO,
+			"Device not found: dev %02x.%d PCI ID %04x:%04x\n",
+			dev_descr->dev, dev_descr->func,
+			PCI_VENDOR_ID_INTEL, dev_descr->dev_id);
 
 		/* End of list, leave */
 		return -ENODEV;
@@ -1358,11 +1358,11 @@ static int i7core_get_onedevice(struct pci_dev **prev,
 	}
 
 	if (i7core_dev->pdev[devno]) {
-//		i7core_printk(KERN_ERR,
-//			"Duplicated device for "
-//			"dev %02x:%02x.%d PCI ID %04x:%04x\n",
-//			bus, dev_descr->dev, dev_descr->func,
-;
+		i7core_printk(KERN_ERR,
+			"Duplicated device for "
+			"dev %02x:%02x.%d PCI ID %04x:%04x\n",
+			bus, dev_descr->dev, dev_descr->func,
+			PCI_VENDOR_ID_INTEL, dev_descr->dev_id);
 		pci_dev_put(pdev);
 		return -ENODEV;
 	}
@@ -1372,22 +1372,22 @@ static int i7core_get_onedevice(struct pci_dev **prev,
 	/* Sanity check */
 	if (unlikely(PCI_SLOT(pdev->devfn) != dev_descr->dev ||
 			PCI_FUNC(pdev->devfn) != dev_descr->func)) {
-//		i7core_printk(KERN_ERR,
-//			"Device PCI ID %04x:%04x "
-//			"has dev %02x:%02x.%d instead of dev %02x:%02x.%d\n",
-//			PCI_VENDOR_ID_INTEL, dev_descr->dev_id,
-//			bus, PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn),
-;
+		i7core_printk(KERN_ERR,
+			"Device PCI ID %04x:%04x "
+			"has dev %02x:%02x.%d instead of dev %02x:%02x.%d\n",
+			PCI_VENDOR_ID_INTEL, dev_descr->dev_id,
+			bus, PCI_SLOT(pdev->devfn), PCI_FUNC(pdev->devfn),
+			bus, dev_descr->dev, dev_descr->func);
 		return -ENODEV;
 	}
 
 	/* Be sure that the device is enabled */
 	if (unlikely(pci_enable_device(pdev) < 0)) {
-//		i7core_printk(KERN_ERR,
-//			"Couldn't enable "
-//			"dev %02x:%02x.%d PCI ID %04x:%04x\n",
-//			bus, dev_descr->dev, dev_descr->func,
-;
+		i7core_printk(KERN_ERR,
+			"Couldn't enable "
+			"dev %02x:%02x.%d PCI ID %04x:%04x\n",
+			bus, dev_descr->dev, dev_descr->func,
+			PCI_VENDOR_ID_INTEL, dev_descr->dev_id);
 		return -ENODEV;
 	}
 
@@ -1478,9 +1478,9 @@ static int mci_bind_devs(struct mem_ctl_info *mci,
 	return 0;
 
 error:
-//	i7core_printk(KERN_ERR, "Device %d, function %d "
-//		      "is out of the expected range\n",
-;
+	i7core_printk(KERN_ERR, "Device %d, function %d "
+		      "is out of the expected range\n",
+		      slot, func);
 	return -EINVAL;
 }
 
@@ -1638,9 +1638,9 @@ static void i7core_udimm_check_mc_ecc_err(struct mem_ctl_info *mci)
 		pvt->udimm_ce_count[0] += add0;
 
 		if (add0 | add1 | add2)
-//			i7core_printk(KERN_ERR, "New Corrected error(s): "
-//				      "dimm0: +%d, dimm1: +%d, dimm2 +%d\n",
-;
+			i7core_printk(KERN_ERR, "New Corrected error(s): "
+				      "dimm0: +%d, dimm1: +%d, dimm2 +%d\n",
+				      add0, add1, add2);
 	} else
 		pvt->ce_count_available = 1;
 
@@ -1796,8 +1796,8 @@ static void i7core_check_error(struct mem_ctl_info *mci)
 
 	smp_rmb();
 	if (pvt->mce_overrun) {
-//		i7core_printk(KERN_ERR, "Lost %d memory errors\n",
-;
+		i7core_printk(KERN_ERR, "Lost %d memory errors\n",
+			      pvt->mce_overrun);
 		smp_wmb();
 		pvt->mce_overrun = 0;
 	}
@@ -1880,9 +1880,9 @@ static void i7core_pci_ctl_release(struct i7core_pvt *pvt)
 	if (likely(pvt->i7core_pci))
 		edac_pci_release_generic_ctl(pvt->i7core_pci);
 	else
-//		i7core_printk(KERN_ERR,
-//				"Couldn't find mem_ctl_info for socket %d\n",
-;
+		i7core_printk(KERN_ERR,
+				"Couldn't find mem_ctl_info for socket %d\n",
+				pvt->i7core_dev->socket);
 	pvt->i7core_pci = NULL;
 }
 
@@ -1895,7 +1895,7 @@ static void i7core_unregister_mci(struct i7core_dev *i7core_dev)
 		debugf0("MC: " __FILE__ ": %s(): dev = %p\n",
 			__func__, &i7core_dev->pdev[0]->dev);
 
-;
+		i7core_printk(KERN_ERR, "Couldn't find mci handler\n");
 		return;
 	}
 
@@ -2058,7 +2058,7 @@ static int __devinit i7core_probe(struct pci_dev *pdev,
 			goto fail1;
 	}
 
-;
+	i7core_printk(KERN_INFO, "Driver loaded.\n");
 
 	mutex_unlock(&i7core_edac_lock);
 	return 0;
@@ -2143,8 +2143,8 @@ static int __init i7core_init(void)
 	if (pci_rc >= 0)
 		return 0;
 
-//	i7core_printk(KERN_ERR, "Failed to register device with error %d.\n",
-;
+	i7core_printk(KERN_ERR, "Failed to register device with error %d.\n",
+		      pci_rc);
 
 	return pci_rc;
 }

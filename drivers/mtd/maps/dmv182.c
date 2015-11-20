@@ -103,7 +103,7 @@ static int __init init_svme182(void)
 	svme182_map.virt = ioremap(FLASH_BASE_ADDR, svme182_map.size);
 
 	if (svme182_map.virt == 0) {
-;
+		printk("Failed to ioremap FLASH memory area.\n");
 		return -EIO;
 	}
 
@@ -116,8 +116,8 @@ static int __init init_svme182(void)
 		return -ENXIO;
 	}
 
-//	printk(KERN_NOTICE "SVME182 flash device: %dMiB at 0x%08x\n",
-;
+	printk(KERN_NOTICE "SVME182 flash device: %dMiB at 0x%08x\n",
+		   this_mtd->size >> 20, FLASH_BASE_ADDR);
 
 	this_mtd->owner = THIS_MODULE;
 	mtd_device_register(this_mtd, partitions, num_parts);

@@ -57,13 +57,13 @@ static int recv_control_msg(struct au0828_dev *dev, u16 request, u32 value,
 u32 au0828_readreg(struct au0828_dev *dev, u16 reg)
 {
 	recv_control_msg(dev, CMD_REQUEST_IN, 0, reg, dev->ctrlmsg, 1);
-;
+	dprintk(8, "%s(0x%04x) = 0x%02x\n", __func__, reg, dev->ctrlmsg[0]);
 	return dev->ctrlmsg[0];
 }
 
 u32 au0828_writereg(struct au0828_dev *dev, u16 reg, u32 val)
 {
-;
+	dprintk(8, "%s(0x%04x, 0x%02x)\n", __func__, reg, val);
 	return send_control_msg(dev, CMD_REQUEST_OUT, val, reg,
 				dev->ctrlmsg, 0);
 }
@@ -73,17 +73,17 @@ static void cmd_msg_dump(struct au0828_dev *dev)
 	int i;
 
 	for (i = 0; i < sizeof(dev->ctrlmsg); i += 16)
-//		dprintk(2, "%s() %02x %02x %02x %02x %02x %02x %02x %02x "
-//				"%02x %02x %02x %02x %02x %02x %02x %02x\n",
-//			__func__,
-//			dev->ctrlmsg[i+0], dev->ctrlmsg[i+1],
-//			dev->ctrlmsg[i+2], dev->ctrlmsg[i+3],
-//			dev->ctrlmsg[i+4], dev->ctrlmsg[i+5],
-//			dev->ctrlmsg[i+6], dev->ctrlmsg[i+7],
-//			dev->ctrlmsg[i+8], dev->ctrlmsg[i+9],
-//			dev->ctrlmsg[i+10], dev->ctrlmsg[i+11],
-//			dev->ctrlmsg[i+12], dev->ctrlmsg[i+13],
-;
+		dprintk(2, "%s() %02x %02x %02x %02x %02x %02x %02x %02x "
+				"%02x %02x %02x %02x %02x %02x %02x %02x\n",
+			__func__,
+			dev->ctrlmsg[i+0], dev->ctrlmsg[i+1],
+			dev->ctrlmsg[i+2], dev->ctrlmsg[i+3],
+			dev->ctrlmsg[i+4], dev->ctrlmsg[i+5],
+			dev->ctrlmsg[i+6], dev->ctrlmsg[i+7],
+			dev->ctrlmsg[i+8], dev->ctrlmsg[i+9],
+			dev->ctrlmsg[i+10], dev->ctrlmsg[i+11],
+			dev->ctrlmsg[i+12], dev->ctrlmsg[i+13],
+			dev->ctrlmsg[i+14], dev->ctrlmsg[i+15]);
 }
 
 static int send_control_msg(struct au0828_dev *dev, u16 request, u32 value,
@@ -105,8 +105,8 @@ static int send_control_msg(struct au0828_dev *dev, u16 request, u32 value,
 		status = min(status, 0);
 
 		if (status < 0) {
-//			printk(KERN_ERR "%s() Failed sending control message, error %d.\n",
-;
+			printk(KERN_ERR "%s() Failed sending control message, error %d.\n",
+				__func__, status);
 		}
 
 	}
@@ -134,8 +134,8 @@ static int recv_control_msg(struct au0828_dev *dev, u16 request, u32 value,
 		status = min(status, 0);
 
 		if (status < 0) {
-//			printk(KERN_ERR "%s() Failed receiving control message, error %d.\n",
-;
+			printk(KERN_ERR "%s() Failed receiving control message, error %d.\n",
+				__func__, status);
 		} else
 			cmd_msg_dump(dev);
 	}
@@ -147,7 +147,7 @@ static void au0828_usb_disconnect(struct usb_interface *interface)
 {
 	struct au0828_dev *dev = usb_get_intfdata(interface);
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	/* Digital TV */
 	au0828_dvb_unregister(dev);
@@ -182,10 +182,10 @@ static int au0828_usb_probe(struct usb_interface *interface,
 	if (ifnum != 0)
 		return -ENODEV;
 
-//	dprintk(1, "%s() vendor id 0x%x device id 0x%x ifnum:%d\n", __func__,
-//		le16_to_cpu(usbdev->descriptor.idVendor),
-//		le16_to_cpu(usbdev->descriptor.idProduct),
-;
+	dprintk(1, "%s() vendor id 0x%x device id 0x%x ifnum:%d\n", __func__,
+		le16_to_cpu(usbdev->descriptor.idVendor),
+		le16_to_cpu(usbdev->descriptor.idProduct),
+		ifnum);
 
 	/*
 	 * Make sure we have 480 Mbps of bandwidth, otherwise things like
@@ -193,15 +193,15 @@ static int au0828_usb_probe(struct usb_interface *interface,
 	 * not enough even for most Digital TV streams.
 	 */
 	if (usbdev->speed != USB_SPEED_HIGH && disable_usb_speed_check == 0) {
-;
-//		printk(KERN_ERR "au0828: Device must be connected to a "
-;
+		printk(KERN_ERR "au0828: Device initialization failed.\n");
+		printk(KERN_ERR "au0828: Device must be connected to a "
+		       "high-speed USB 2.0 port.\n");
 		return -ENODEV;
 	}
 
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (dev == NULL) {
-;
+		printk(KERN_ERR "%s() Unable to allocate memory\n", __func__);
 		return -ENOMEM;
 	}
 
@@ -213,8 +213,8 @@ static int au0828_usb_probe(struct usb_interface *interface,
 	/* Create the v4l2_device */
 	retval = v4l2_device_register(&interface->dev, &dev->v4l2_dev);
 	if (retval) {
-//		printk(KERN_ERR "%s() v4l2_device_register failed\n",
-;
+		printk(KERN_ERR "%s() v4l2_device_register failed\n",
+		       __func__);
 		kfree(dev);
 		return -EIO;
 	}
@@ -242,8 +242,8 @@ static int au0828_usb_probe(struct usb_interface *interface,
 	   au0828_usb_disconnect */
 	usb_set_intfdata(interface, dev);
 
-//	printk(KERN_INFO "Registered device AU0828 [%s]\n",
-;
+	printk(KERN_INFO "Registered device AU0828 [%s]\n",
+		dev->board.name == NULL ? "Unset" : dev->board.name);
 
 	return 0;
 }
@@ -260,23 +260,23 @@ static int __init au0828_init(void)
 	int ret;
 
 	if (au0828_debug & 1)
-;
+		printk(KERN_INFO "%s() Debugging is enabled\n", __func__);
 
 	if (au0828_debug & 2)
-;
+		printk(KERN_INFO "%s() USB Debugging is enabled\n", __func__);
 
 	if (au0828_debug & 4)
-;
+		printk(KERN_INFO "%s() I2C Debugging is enabled\n", __func__);
 
 	if (au0828_debug & 8)
-//		printk(KERN_INFO "%s() Bridge Debugging is enabled\n",
-;
+		printk(KERN_INFO "%s() Bridge Debugging is enabled\n",
+		       __func__);
 
-;
+	printk(KERN_INFO "au0828 driver loaded\n");
 
 	ret = usb_register(&au0828_usb_driver);
 	if (ret)
-;
+		printk(KERN_ERR "usb_register failed, error = %d\n", ret);
 
 	return ret;
 }

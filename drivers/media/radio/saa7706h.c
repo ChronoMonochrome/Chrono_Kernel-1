@@ -402,7 +402,7 @@ err:
 	v4l2_device_unregister_subdev(sd);
 	kfree(to_state(sd));
 
-;
+	printk(KERN_ERR DRIVER_NAME ": Failed to probe: %d\n", err);
 
 	return err;
 }

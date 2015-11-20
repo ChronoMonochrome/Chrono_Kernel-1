@@ -33,7 +33,7 @@ JadeVersion(struct IsdnCardState *cs, char *s)
 	if (ver)
     	    break;
 	if (!to) {
-;
+	    printk(KERN_INFO "%s JADE version not obtainable\n", s);
     	    return (0);
         }
     }
@@ -41,7 +41,7 @@ JadeVersion(struct IsdnCardState *cs, char *s)
     udelay(10);
     /* Read version */
     ver = cs->BC_Read_Reg(cs, -1, 0x60);
-;
+    printk(KERN_INFO "%s JADE version: %d\n", s, ver);
     return (1);
 }
 
@@ -66,7 +66,7 @@ jade_write_indirect(struct IsdnCardState *cs, u_char reg, u_char value)
 	    /* Got acknowledge */
 	    break;
 	if (!to) {
-;
+    	    printk(KERN_INFO "Can not see ready bit from JADE DSP (reg=0x%X, value=0x%X)\n", reg, value);
 	    return;
 	}
     }
@@ -153,7 +153,7 @@ jade_l2l1(struct PStack *st, int pr, void *arg)
 	case (PH_PULL | INDICATION):
 		spin_lock_irqsave(&bcs->cs->lock, flags);
 		if (bcs->tx_skb) {
-;
+			printk(KERN_WARNING "jade_l2l1: this shouldn't happen\n");
 		} else {
 			test_and_set_bit(BC_FLG_BUSY, &bcs->Flag);
 			bcs->tx_skb = skb;
@@ -214,14 +214,14 @@ open_jadestate(struct IsdnCardState *cs, struct BCState *bcs)
 {
 	if (!test_and_set_bit(BC_FLG_INIT, &bcs->Flag)) {
 		if (!(bcs->hw.hscx.rcvbuf = kmalloc(HSCX_BUFMAX, GFP_ATOMIC))) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			       "HiSax: No memory for hscx.rcvbuf\n");
 			test_and_clear_bit(BC_FLG_INIT, &bcs->Flag);
 			return (1);
 		}
 		if (!(bcs->blog = kmalloc(MAX_BLOG_SPACE, GFP_ATOMIC))) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+				"HiSax: No memory for bcs->blog\n");
 			test_and_clear_bit(BC_FLG_INIT, &bcs->Flag);
 			kfree(bcs->hw.hscx.rcvbuf);
 			bcs->hw.hscx.rcvbuf = NULL;

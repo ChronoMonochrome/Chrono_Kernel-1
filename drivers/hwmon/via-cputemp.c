@@ -279,7 +279,7 @@ static int __init via_cputemp_init(void)
 	int i, err;
 
 	if (cpu_data(0).x86_vendor != X86_VENDOR_CENTAUR) {
-;
+		printk(KERN_DEBUG DRVNAME ": Not a VIA CPU\n");
 		err = -ENODEV;
 		goto exit;
 	}

@@ -119,17 +119,17 @@ static int build_block_map(struct partition *part, int block_no)
 			entry = 0;
 
 		if (entry >= part->sector_count) {
-//			printk(KERN_WARNING PREFIX
-//				"'%s': unit #%d: entry %d corrupt, "
-//				"sector %d out of range\n",
-;
+			printk(KERN_WARNING PREFIX
+				"'%s': unit #%d: entry %d corrupt, "
+				"sector %d out of range\n",
+				part->mbd.mtd->name, block_no, i, entry);
 			continue;
 		}
 
 		if (part->sector_map[entry] != -1) {
-//			printk(KERN_WARNING PREFIX
-//				"'%s': more than one entry for sector %d\n",
-;
+			printk(KERN_WARNING PREFIX
+				"'%s': more than one entry for sector %d\n",
+				part->mbd.mtd->name, entry);
 			part->errors = 1;
 			continue;
 		}
@@ -190,8 +190,8 @@ static int scan_header(struct partition *part)
 
 	part->sector_map = vmalloc(part->sector_count * sizeof(u_long));
 	if (!part->sector_map) {
-//		printk(KERN_ERR PREFIX "'%s': unable to allocate memory for "
-;
+		printk(KERN_ERR PREFIX "'%s': unable to allocate memory for "
+			"sector map", part->mbd.mtd->name);
 		goto err;
 	}
 
@@ -214,15 +214,15 @@ static int scan_header(struct partition *part)
 	}
 
 	if (blocks_found == 0) {
-//		printk(KERN_NOTICE PREFIX "no RFD magic found in '%s'\n",
-;
+		printk(KERN_NOTICE PREFIX "no RFD magic found in '%s'\n",
+				part->mbd.mtd->name);
 		rc = -ENOENT;
 		goto err;
 	}
 
 	if (part->reserved_block == -1) {
-//		printk(KERN_WARNING PREFIX "'%s': no empty erase unit found\n",
-;
+		printk(KERN_WARNING PREFIX "'%s': no empty erase unit found\n",
+				part->mbd.mtd->name);
 
 		part->errors = 1;
 	}
@@ -255,8 +255,8 @@ static int rfd_ftl_readsect(struct mtd_blktrans_dev *dev, u_long sector, char *b
 			rc = -EIO;
 
 		if (rc) {
-//			printk(KERN_WARNING PREFIX "error reading '%s' at "
-;
+			printk(KERN_WARNING PREFIX "error reading '%s' at "
+				"0x%lx\n", part->mbd.mtd->name, addr);
 			return rc;
 		}
 	} else
@@ -277,15 +277,15 @@ static void erase_callback(struct erase_info *erase)
 	i = (u32)erase->addr / part->block_size;
 	if (i >= part->total_blocks || part->blocks[i].offset != erase->addr ||
 	    erase->addr > UINT_MAX) {
-//		printk(KERN_ERR PREFIX "erase callback for unknown offset %llx "
-;
+		printk(KERN_ERR PREFIX "erase callback for unknown offset %llx "
+				"on '%s'\n", (unsigned long long)erase->addr, part->mbd.mtd->name);
 		return;
 	}
 
 	if (erase->state != MTD_ERASE_DONE) {
-//		printk(KERN_WARNING PREFIX "erase failed at 0x%llx on '%s', "
-//				"state %d\n", (unsigned long long)erase->addr,
-;
+		printk(KERN_WARNING PREFIX "erase failed at 0x%llx on '%s', "
+				"state %d\n", (unsigned long long)erase->addr,
+				part->mbd.mtd->name, erase->state);
 
 		part->blocks[i].state = BLOCK_FAILED;
 		part->blocks[i].free_sectors = 0;
@@ -311,10 +311,10 @@ static void erase_callback(struct erase_info *erase)
 		rc = -EIO;
 
 	if (rc) {
-//		printk(KERN_ERR PREFIX "'%s': unable to write RFD "
-//				"header at 0x%lx\n",
-//				part->mbd.mtd->name,
-;
+		printk(KERN_ERR PREFIX "'%s': unable to write RFD "
+				"header at 0x%lx\n",
+				part->mbd.mtd->name,
+				part->blocks[i].offset);
 		part->blocks[i].state = BLOCK_FAILED;
 	}
 	else
@@ -344,9 +344,9 @@ static int erase_block(struct partition *part, int block)
 	rc = part->mbd.mtd->erase(part->mbd.mtd, erase);
 
 	if (rc) {
-//		printk(KERN_ERR PREFIX "erase of region %llx,%llx on '%s' "
-//				"failed\n", (unsigned long long)erase->addr,
-;
+		printk(KERN_ERR PREFIX "erase of region %llx,%llx on '%s' "
+				"failed\n", (unsigned long long)erase->addr,
+				(unsigned long long)erase->len, part->mbd.mtd->name);
 		kfree(erase);
 	}
 
@@ -379,9 +379,9 @@ static int move_block_contents(struct partition *part, int block_no, u_long *old
 		rc = -EIO;
 
 	if (rc) {
-//		printk(KERN_ERR PREFIX "error reading '%s' at "
-//			"0x%lx\n", part->mbd.mtd->name,
-;
+		printk(KERN_ERR PREFIX "error reading '%s' at "
+			"0x%lx\n", part->mbd.mtd->name,
+			part->blocks[block_no].offset);
 
 		goto err;
 	}
@@ -419,9 +419,9 @@ static int move_block_contents(struct partition *part, int block_no, u_long *old
 			rc = -EIO;
 
 		if (rc) {
-//			printk(KERN_ERR PREFIX "'%s': Unable to "
-//				"read sector for relocation\n",
-;
+			printk(KERN_ERR PREFIX "'%s': Unable to "
+				"read sector for relocation\n",
+				part->mbd.mtd->name);
 
 			goto err;
 		}
@@ -569,9 +569,9 @@ static int find_writable_block(struct partition *part, u_long *old_sector)
 		rc = -EIO;
 
 	if (rc) {
-//		printk(KERN_ERR PREFIX "'%s': unable to read header at "
-//				"0x%lx\n", part->mbd.mtd->name,
-;
+		printk(KERN_ERR PREFIX "'%s': unable to read header at "
+				"0x%lx\n", part->mbd.mtd->name,
+				part->blocks[block].offset);
 		goto err;
 	}
 
@@ -601,8 +601,8 @@ static int mark_sector_deleted(struct partition *part, u_long old_addr)
 		rc = -EIO;
 
 	if (rc) {
-//		printk(KERN_ERR PREFIX "error writing '%s' at "
-;
+		printk(KERN_ERR PREFIX "error writing '%s' at "
+			"0x%lx\n", part->mbd.mtd->name, addr);
 		if (rc)
 			goto err;
 	}
@@ -674,8 +674,8 @@ static int do_writesect(struct mtd_blktrans_dev *dev, u_long sector, char *buf, 
 		rc = -EIO;
 
 	if (rc) {
-//		printk(KERN_ERR PREFIX "error writing '%s' at 0x%lx\n",
-;
+		printk(KERN_ERR PREFIX "error writing '%s' at 0x%lx\n",
+				part->mbd.mtd->name, addr);
 		if (rc)
 			goto err;
 	}
@@ -694,8 +694,8 @@ static int do_writesect(struct mtd_blktrans_dev *dev, u_long sector, char *buf, 
 		rc = -EIO;
 
 	if (rc) {
-//		printk(KERN_ERR PREFIX "error writing '%s' at 0x%lx\n",
-;
+		printk(KERN_ERR PREFIX "error writing '%s' at 0x%lx\n",
+				part->mbd.mtd->name, addr);
 		if (rc)
 			goto err;
 	}
@@ -775,7 +775,7 @@ static void rfd_ftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		part->block_size = block_size;
 	else {
 		if (!mtd->erasesize) {
-;
+			printk(KERN_WARNING PREFIX "please provide block_size");
 			goto out;
 		} else
 			part->block_size = mtd->erasesize;
@@ -788,13 +788,13 @@ static void rfd_ftl_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		if (!(mtd->flags & MTD_WRITEABLE))
 			part->mbd.readonly = 1;
 		else if (part->errors) {
-//			printk(KERN_WARNING PREFIX "'%s': errors found, "
-;
+			printk(KERN_WARNING PREFIX "'%s': errors found, "
+					"setting read-only\n", mtd->name);
 			part->mbd.readonly = 1;
 		}
 
-//		printk(KERN_INFO PREFIX "name: '%s' type: %d flags %x\n",
-;
+		printk(KERN_INFO PREFIX "name: '%s' type: %d flags %x\n",
+				mtd->name, mtd->type, mtd->flags);
 
 		if (!add_mtd_blktrans_dev((void*)part))
 			return;

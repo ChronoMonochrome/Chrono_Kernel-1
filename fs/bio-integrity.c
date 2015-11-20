@@ -103,7 +103,7 @@ struct bio_integrity_payload *bio_integrity_alloc_bioset(struct bio *bio,
 		bip = mempool_alloc(bs->bio_integrity_pool, gfp_mask);
 
 		if (unlikely(bip == NULL)) {
-;
+			printk(KERN_ERR "%s: could not alloc bip\n", __func__);
 			return NULL;
 		}
 	}
@@ -180,7 +180,7 @@ int bio_integrity_add_page(struct bio *bio, struct page *page,
 	struct bio_vec *iv;
 
 	if (bip->bip_vcnt >= bvec_nr_vecs(bip->bip_slab)) {
-;
+		printk(KERN_ERR "%s: bip_vec full\n", __func__);
 		return 0;
 	}
 
@@ -286,8 +286,8 @@ int bio_integrity_tag(struct bio *bio, void *tag_buf, unsigned int len, int set)
 					DIV_ROUND_UP(len, bi->tag_size));
 
 	if (nr_sectors * bi->tuple_size > bip->bip_size) {
-//		printk(KERN_ERR "%s: tag too big for bio: %u > %u\n",
-;
+		printk(KERN_ERR "%s: tag too big for bio: %u > %u\n",
+		       __func__, nr_sectors * bi->tuple_size, bip->bip_size);
 		return -1;
 	}
 
@@ -418,7 +418,7 @@ int bio_integrity_prep(struct bio *bio)
 	len = sectors * blk_integrity_tuple_size(bi);
 	buf = kmalloc(len, GFP_NOIO | q->bounce_gfp);
 	if (unlikely(buf == NULL)) {
-;
+		printk(KERN_ERR "could not allocate integrity buffer\n");
 		return -ENOMEM;
 	}
 
@@ -429,7 +429,7 @@ int bio_integrity_prep(struct bio *bio)
 	/* Allocate bio integrity payload and integrity vectors */
 	bip = bio_integrity_alloc(bio, GFP_NOIO, nr_pages);
 	if (unlikely(bip == NULL)) {
-;
+		printk(KERN_ERR "could not allocate data integrity bioset\n");
 		kfree(buf);
 		return -EIO;
 	}

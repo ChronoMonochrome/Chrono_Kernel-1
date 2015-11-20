@@ -277,8 +277,8 @@ out:
 void tick_broadcast_on_off(unsigned long reason, int *oncpu)
 {
 	if (!cpumask_test_cpu(*oncpu, cpu_online_mask))
-//		printk(KERN_ERR "tick-broadcast: ignoring broadcast for "
-;
+		printk(KERN_ERR "tick-broadcast: ignoring broadcast for "
+		       "offline CPU #%d\n", *oncpu);
 	else
 		tick_do_broadcast_on_off(&reason);
 }

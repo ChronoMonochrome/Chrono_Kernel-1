@@ -60,8 +60,8 @@ static int ir_rc5_sz_decode(struct rc_dev *dev, struct ir_raw_event ev)
 		goto out;
 
 again:
-//	IR_dprintk(2, "RC5-sz decode started at state %i (%uus %s)\n",
-;
+	IR_dprintk(2, "RC5-sz decode started at state %i (%uus %s)\n",
+		   data->state, TO_US(ev.duration), TO_STR(ev.pulse));
 
 	if (!geq_margin(ev.duration, RC5_UNIT, RC5_UNIT / 2))
 		return 0;
@@ -111,8 +111,8 @@ again:
 		toggle   = (data->bits & 0x01000) ? 1 : 0;
 		scancode = system << 6 | command;
 
-//		IR_dprintk(1, "RC5-sz scancode 0x%04x (toggle: %u)\n",
-;
+		IR_dprintk(1, "RC5-sz scancode 0x%04x (toggle: %u)\n",
+			   scancode, toggle);
 
 		rc_keydown(dev, scancode, toggle);
 		data->state = STATE_INACTIVE;
@@ -120,8 +120,8 @@ again:
 	}
 
 out:
-//	IR_dprintk(1, "RC5-sz decode failed at state %i (%uus %s)\n",
-;
+	IR_dprintk(1, "RC5-sz decode failed at state %i (%uus %s)\n",
+		   data->state, TO_US(ev.duration), TO_STR(ev.pulse));
 	data->state = STATE_INACTIVE;
 	return -EINVAL;
 }
@@ -135,7 +135,7 @@ static int __init ir_rc5_sz_decode_init(void)
 {
 	ir_raw_handler_register(&rc5_sz_handler);
 
-;
+	printk(KERN_INFO "IR RC5 (streamzap) protocol handler initialized\n");
 	return 0;
 }
 

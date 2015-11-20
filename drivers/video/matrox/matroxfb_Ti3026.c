@@ -475,7 +475,7 @@ static void ti3026_setMCLK(struct matrox_fb_info *minfo, int fout)
 		udelay(10);
 	};
 	if (!tmout)
-;
+		printk(KERN_ERR "matroxfb: Temporary pixel PLL not locked after 5 secs\n");
 
 	/* output pclk on mclk pin */
 	mclk_ctl = inTi3026(minfo, TVP3026_XMEMPLLCTRL);
@@ -499,7 +499,7 @@ static void ti3026_setMCLK(struct matrox_fb_info *minfo, int fout)
 		udelay(10);
 	}
 	if (!tmout)
-;
+		printk(KERN_ERR "matroxfb: Memory PLL not locked after 5 secs\n");
 
 	f_pll = f_pll * 333 / (10000 << mclk_p);
 	if (isMilleniumII(minfo)) {
@@ -535,7 +535,7 @@ static void ti3026_setMCLK(struct matrox_fb_info *minfo, int fout)
 		udelay(10);
 	}
 	if (!tmout)
-;
+		printk(KERN_ERR "matroxfb: Pixel PLL not locked after 5 secs\n");
 }
 
 static void ti3026_ramdac_init(struct matrox_fb_info *minfo)
@@ -564,10 +564,10 @@ static void Ti3026_restore(struct matrox_fb_info *minfo)
 	DBG(__func__)
 
 #ifdef DEBUG
-;
+	dprintk(KERN_INFO "EXTVGA regs: ");
 	for (i = 0; i < 6; i++)
-;
-;
+		dprintk("%02X:", hw->CRTCEXT[i]);
+	dprintk("\n");
 #endif
 
 	CRITBEGIN
@@ -626,9 +626,9 @@ static void Ti3026_restore(struct matrox_fb_info *minfo)
 			CRITEND
 
 			if (!tmout)
-;
+				printk(KERN_ERR "matroxfb: Pixel PLL not locked after 5 secs\n");
 			else
-;
+				dprintk(KERN_INFO "PixelPLL: %d\n", 500000-tmout);
 			CRITBEGIN
 		}
 		outTi3026(minfo, TVP3026_XMEMPLLCTRL, hw->DACreg[POS3026_XMEMPLLCTRL]);
@@ -648,22 +648,22 @@ static void Ti3026_restore(struct matrox_fb_info *minfo)
 			}
 			CRITEND
 			if (!tmout)
-;
+				printk(KERN_ERR "matroxfb: Loop PLL not locked after 5 secs\n");
 			else
-;
+				dprintk(KERN_INFO "LoopPLL: %d\n", 500000-tmout);
 		}
 	}
 
 #ifdef DEBUG
-;
+	dprintk(KERN_DEBUG "3026DACregs ");
 	for (i = 0; i < 21; i++) {
-;
-;
+		dprintk("R%02X=%02X ", DACseq[i], hw->DACreg[i]);
+		if ((i & 0x7) == 0x7) dprintk(KERN_DEBUG "continuing... ");
 	}
-;
+	dprintk(KERN_DEBUG "DACclk ");
 	for (i = 0; i < 6; i++)
-;
-;
+		dprintk("C%02X=%02X ", i, hw->DACclk[i]);
+	dprintk("\n");
 #endif
 }
 

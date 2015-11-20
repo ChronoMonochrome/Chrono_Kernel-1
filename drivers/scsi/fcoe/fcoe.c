@@ -820,9 +820,9 @@ static inline int fcoe_em_config(struct fc_lport *lport)
 
 	if (fcoe->oem) {
 		if (!fc_exch_mgr_add(lport, fcoe->oem, fcoe_oem_match)) {
-//			printk(KERN_ERR "fcoe_em_config: failed to add "
-//			       "offload em:%p on interface:%s\n",
-;
+			printk(KERN_ERR "fcoe_em_config: failed to add "
+			       "offload em:%p on interface:%s\n",
+			       fcoe->oem, fcoe->netdev->name);
 			return -ENOMEM;
 		}
 	} else {
@@ -830,9 +830,9 @@ static inline int fcoe_em_config(struct fc_lport *lport)
 					      FCOE_MIN_XID, lport->lro_xid,
 					      fcoe_oem_match);
 		if (!fcoe->oem) {
-//			printk(KERN_ERR "fcoe_em_config: failed to allocate "
-//			       "em for offload exches on interface:%s\n",
-;
+			printk(KERN_ERR "fcoe_em_config: failed to allocate "
+			       "em for offload exches on interface:%s\n",
+			       fcoe->netdev->name);
 			return -ENOMEM;
 		}
 	}
@@ -844,8 +844,8 @@ static inline int fcoe_em_config(struct fc_lport *lport)
 
 skip_oem:
 	if (!fc_exch_mgr_alloc(lport, FC_CLASS_3, min_xid, max_xid, NULL)) {
-//		printk(KERN_ERR "fcoe_em_config: failed to "
-;
+		printk(KERN_ERR "fcoe_em_config: failed to "
+		       "allocate em on interface %s\n", fcoe->netdev->name);
 		return -ENOMEM;
 	}
 
@@ -1050,7 +1050,7 @@ static int __init fcoe_if_init(void)
 		fc_attach_transport(&fcoe_vport_fc_functions);
 
 	if (!fcoe_nport_scsi_transport) {
-;
+		printk(KERN_ERR "fcoe: Failed to attach to the FC transport\n");
 		return -ENODEV;
 	}
 
@@ -1560,7 +1560,7 @@ static inline int fcoe_filter_frames(struct fc_lport *lport,
 	stats = per_cpu_ptr(lport->dev_stats, get_cpu());
 	stats->InvalidCRCCount++;
 	if (stats->InvalidCRCCount < 5)
-;
+		printk(KERN_WARNING "fcoe: dropping frame with CRC error\n");
 	put_cpu();
 	return -EINVAL;
 }
@@ -1609,12 +1609,12 @@ static void fcoe_recv_frame(struct sk_buff *skb)
 	stats = per_cpu_ptr(lport->dev_stats, get_cpu());
 	if (unlikely(FC_FCOE_DECAPS_VER(hp) != FC_FCOE_VER)) {
 		if (stats->ErrorFrames < 5)
-//			printk(KERN_WARNING "fcoe: FCoE version "
-//			       "mismatch: The frame has "
-//			       "version %x, but the "
-//			       "initiator supports version "
-//			       "%x\n", FC_FCOE_DECAPS_VER(hp),
-;
+			printk(KERN_WARNING "fcoe: FCoE version "
+			       "mismatch: The frame has "
+			       "version %x, but the "
+			       "initiator supports version "
+			       "%x\n", FC_FCOE_DECAPS_VER(hp),
+			       FC_FCOE_VER);
 		goto drop;
 	}
 
@@ -1923,8 +1923,8 @@ static int fcoe_create(struct net_device *netdev, enum fip_state fip_mode)
 
 	lport = fcoe_if_create(fcoe, &netdev->dev, 0);
 	if (IS_ERR(lport)) {
-//		printk(KERN_ERR "fcoe: Failed to create interface (%s)\n",
-;
+		printk(KERN_ERR "fcoe: Failed to create interface (%s)\n",
+		       netdev->name);
 		rc = -EIO;
 		fcoe_interface_cleanup(fcoe);
 		goto out_free;
@@ -2174,8 +2174,8 @@ static int __init fcoe_init(void)
 	/* register as a fcoe transport */
 	rc = fcoe_transport_attach(&fcoe_sw_transport);
 	if (rc) {
-//		printk(KERN_ERR "failed to register an fcoe transport, check "
-;
+		printk(KERN_ERR "failed to register an fcoe transport, check "
+			"if libfcoe is loaded\n");
 		return rc;
 	}
 
@@ -2374,9 +2374,9 @@ static int fcoe_vport_create(struct fc_vport *vport, bool disabled)
 	rc = fcoe_validate_vport_create(vport);
 	if (rc) {
 		wwn_to_str(vport->port_name, buf, sizeof(buf));
-//		printk(KERN_ERR "fcoe: Failed to create vport, "
-//			"WWPN (0x%s) already exists\n",
-;
+		printk(KERN_ERR "fcoe: Failed to create vport, "
+			"WWPN (0x%s) already exists\n",
+			buf);
 		return rc;
 	}
 
@@ -2385,8 +2385,8 @@ static int fcoe_vport_create(struct fc_vport *vport, bool disabled)
 	mutex_unlock(&fcoe_config_mutex);
 
 	if (IS_ERR(vn_port)) {
-//		printk(KERN_ERR "fcoe: fcoe_vport_create(%s) failed\n",
-;
+		printk(KERN_ERR "fcoe: fcoe_vport_create(%s) failed\n",
+		       netdev->name);
 		return -EIO;
 	}
 

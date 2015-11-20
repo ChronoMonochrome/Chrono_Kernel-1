@@ -385,8 +385,8 @@ static int cpwd_open(struct inode *inode, struct file *f)
 	if (!p->initialized) {
 		if (request_irq(p->irq, &cpwd_interrupt,
 				IRQF_SHARED, DRIVER_NAME, p)) {
-//			printk(KERN_ERR PFX "Cannot register IRQ %d\n",
-;
+			printk(KERN_ERR PFX "Cannot register IRQ %d\n",
+				p->irq);
 			mutex_unlock(&cpwd_mutex);
 			return -EBUSY;
 		}
@@ -542,7 +542,7 @@ static int __devinit cpwd_probe(struct platform_device *op)
 	p = kzalloc(sizeof(*p), GFP_KERNEL);
 	err = -ENOMEM;
 	if (!p) {
-;
+		printk(KERN_ERR PFX "Unable to allocate struct cpwd.\n");
 		goto out;
 	}
 
@@ -553,14 +553,14 @@ static int __devinit cpwd_probe(struct platform_device *op)
 	p->regs = of_ioremap(&op->resource[0], 0,
 			     4 * WD_TIMER_REGSZ, DRIVER_NAME);
 	if (!p->regs) {
-;
+		printk(KERN_ERR PFX "Unable to map registers.\n");
 		goto out_free;
 	}
 
 	options = of_find_node_by_path("/options");
 	err = -ENODEV;
 	if (!options) {
-;
+		printk(KERN_ERR PFX "Unable to find /options node.\n");
 		goto out_iounmap;
 	}
 
@@ -605,8 +605,8 @@ static int __devinit cpwd_probe(struct platform_device *op)
 
 		err = misc_register(&p->devs[i].misc);
 		if (err) {
-//			printk(KERN_ERR "Could not register misc device for "
-;
+			printk(KERN_ERR "Could not register misc device for "
+			       "dev %d\n", i);
 			goto out_unregister;
 		}
 	}
@@ -617,8 +617,8 @@ static int __devinit cpwd_probe(struct platform_device *op)
 		cpwd_timer.data		= (unsigned long) p;
 		cpwd_timer.expires	= WD_BTIMEOUT;
 
-//		printk(KERN_INFO PFX "PLD defect workaround enabled for "
-;
+		printk(KERN_INFO PFX "PLD defect workaround enabled for "
+		       "model " WD_BADMODEL ".\n");
 	}
 
 	dev_set_drvdata(&op->dev, p);

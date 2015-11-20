@@ -232,27 +232,27 @@ static int sun3scsi_detect(struct scsi_host_template * tpnt)
 	if (request_irq(instance->irq, scsi_sun3_intr,
 			0, "Sun3SCSI-5380VME", instance)) {
 #ifndef REAL_DMA
-//		printk("scsi%d: IRQ%d not free, interrupts disabled\n",
-;
+		printk("scsi%d: IRQ%d not free, interrupts disabled\n",
+		       instance->host_no, instance->irq);
 		instance->irq = SCSI_IRQ_NONE;
 #else
-//		printk("scsi%d: IRQ%d not free, bailing out\n",
-;
+		printk("scsi%d: IRQ%d not free, bailing out\n",
+		       instance->host_no, instance->irq);
 		return 0;
 #endif
 	}
 
-;
+	printk("scsi%d: Sun3 5380 VME at port %lX irq", instance->host_no, instance->io_port);
 	if (instance->irq == SCSI_IRQ_NONE)
 		printk ("s disabled");
 	else
 		printk (" %d", instance->irq);
-//	printk(" options CAN_QUEUE=%d CMD_PER_LUN=%d release=%d",
-//	       instance->can_queue, instance->cmd_per_lun,
-;
-;
+	printk(" options CAN_QUEUE=%d CMD_PER_LUN=%d release=%d",
+	       instance->can_queue, instance->cmd_per_lun,
+	       SUN3SCSI_PUBLIC_RELEASE);
+	printk("\nscsi%d:", instance->host_no);
 	NCR5380_print_options(instance);
-;
+	printk("\n");
 
 	dregs->csr = 0;
 	udelay(SUN3_DMA_DELAY);
@@ -303,7 +303,7 @@ static void sun3_scsi_reset_boot(struct Scsi_Host *instance)
 	 * messing with the queues, interrupts, or locks necessary here.
 	 */
 
-;
+	printk( "Sun3 SCSI: resetting the SCSI bus..." );
 
 	/* switch off SCSI IRQ - catch an interrupt without IRQ bit set else */
 //       	sun3_disable_irq( IRQ_SUN3_SCSI );
@@ -328,7 +328,7 @@ static void sun3_scsi_reset_boot(struct Scsi_Host *instance)
 	/* switch on SCSI IRQ again */
 //       	sun3_enable_irq( IRQ_SUN3_SCSI );
 
-;
+	printk( " done\n" );
 }
 #endif
 
@@ -348,23 +348,23 @@ static irqreturn_t scsi_sun3_intr(int irq, void *dummy)
 
 
 #ifdef SUN3_SCSI_DEBUG
-;
+	printk("scsi_intr csr %x\n", csr);
 #endif
 
 	if(csr & ~CSR_GOOD) {
 		if(csr & CSR_DMA_BUSERR) {
-;
+			printk("scsi%d: bus error in dma\n", default_instance->host_no);
 #ifdef SUN3_SCSI_DEBUG
-//			printk("scsi: residual %x count %x addr %p dmaaddr %x\n", 
-//			       dregs->fifo_count,
-//			       dregs->dma_count_lo | (dregs->dma_count_hi << 16),
-//			       sun3_dma_orig_addr,
-;
+			printk("scsi: residual %x count %x addr %p dmaaddr %x\n", 
+			       dregs->fifo_count,
+			       dregs->dma_count_lo | (dregs->dma_count_hi << 16),
+			       sun3_dma_orig_addr,
+			       dregs->dma_addr_lo | (dregs->dma_addr_hi << 16));
 #endif
 		}
 
 		if(csr & CSR_DMA_CONFLICT) {
-;
+			printk("scsi%d: dma conflict\n", default_instance->host_no);
 		}
 		handled = 1;
 	}
@@ -413,7 +413,7 @@ static unsigned long sun3scsi_dma_setup(void *data, unsigned long count, int wri
 	sun3_dma_orig_count = count;
 	
 #ifdef SUN3_SCSI_DEBUG
-;
+	printk("scsi: dma_setup addr %p count %x\n", addr, count);
 #endif
 
 //	dregs->fifo_count = 0;
@@ -443,7 +443,7 @@ static unsigned long sun3scsi_dma_setup(void *data, unsigned long count, int wri
 	dregs->fifo_count = 0;
 		
 #ifdef SUN3_SCSI_DEBUG
-;
+	printk("scsi: dma_setup done csr %x\n", dregs->csr);
 #endif
        	return count;
 
@@ -471,7 +471,7 @@ static int sun3scsi_dma_start(unsigned long count, char *data)
 
 	csr = dregs->csr;
 #ifdef SUN3_SCSI_DEBUG
-;
+	printk("scsi: dma_start data %p count %x csr %x fifo %x\n", data, count, csr, dregs->fifo_count);
 #endif
 	
 	dregs->dma_count_hi = (sun3_dma_orig_count >> 16);
@@ -504,14 +504,14 @@ static int sun3scsi_dma_finish(int write_flag)
 
 	last_residual = fifo;
 #ifdef SUN3_SCSI_DEBUG
-;
+	printk("scsi: residual %x total %x\n", fifo, sun3_dma_orig_count);
 #endif
 	/* empty bytes from the fifo which didn't make it */
 	if((!write_flag) && (dregs->csr & CSR_LEFT)) {
 		unsigned char *vaddr;
 
 #ifdef SUN3_SCSI_DEBUG
-;
+		printk("scsi: got left over bytes\n");
 #endif
 
 		vaddr = (unsigned char *)dvma_vmetov(sun3_dma_orig_addr);

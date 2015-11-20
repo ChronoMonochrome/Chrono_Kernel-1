@@ -399,7 +399,7 @@ static int __devinit snd_sh_dac_probe(struct platform_device *devptr)
 
 	err = snd_card_create(index, id, THIS_MODULE, 0, &card);
 	if (err < 0) {
-;
+			snd_printk(KERN_ERR "cannot allocate the card\n");
 			return err;
 	}
 
@@ -413,13 +413,13 @@ static int __devinit snd_sh_dac_probe(struct platform_device *devptr)
 
 	strcpy(card->driver, "snd_sh_dac");
 	strcpy(card->shortname, "SuperH DAC audio driver");
-;
+	printk(KERN_INFO "%s %s", card->longname, card->shortname);
 
 	err = snd_card_register(card);
 	if (err < 0)
 		goto probe_error;
 
-;
+	snd_printk("ALSA driver for SuperH DAC audio");
 
 	platform_set_drvdata(devptr, card);
 	return 0;

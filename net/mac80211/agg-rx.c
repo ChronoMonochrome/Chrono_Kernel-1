@@ -74,14 +74,14 @@ void ___ieee80211_stop_rx_ba_session(struct sta_info *sta, u16 tid,
 	rcu_assign_pointer(sta->ampdu_mlme.tid_rx[tid], NULL);
 
 #ifdef CONFIG_MAC80211_HT_DEBUG
-//	printk(KERN_DEBUG "Rx BA session stop requested for %pM tid %u\n",
-;
+	printk(KERN_DEBUG "Rx BA session stop requested for %pM tid %u\n",
+	       sta->sta.addr, tid);
 #endif /* CONFIG_MAC80211_HT_DEBUG */
 
 	if (drv_ampdu_action(local, sta->sdata, IEEE80211_AMPDU_RX_STOP,
 			     &sta->sta, tid, NULL, 0))
-//		printk(KERN_DEBUG "HW problem - can not stop rx "
-;
+		printk(KERN_DEBUG "HW problem - can not stop rx "
+				"aggregation for tid %d\n", tid);
 
 	/* check if this is a self generated aggregation halt */
 	if (initiator == WLAN_BACK_RECIPIENT && tx)
@@ -147,8 +147,8 @@ static void ieee80211_send_addba_resp(struct ieee80211_sub_if_data *sdata, u8 *d
 	skb = dev_alloc_skb(sizeof(*mgmt) + local->hw.extra_tx_headroom);
 
 	if (!skb) {
-//		printk(KERN_DEBUG "%s: failed to allocate buffer "
-;
+		printk(KERN_DEBUG "%s: failed to allocate buffer "
+		       "for addba resp frame\n", sdata->name);
 		return;
 	}
 
@@ -207,8 +207,8 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
 
 	if (test_sta_flags(sta, WLAN_STA_BLOCK_BA)) {
 #ifdef CONFIG_MAC80211_HT_DEBUG
-//		printk(KERN_DEBUG "Suspend in progress. "
-;
+		printk(KERN_DEBUG "Suspend in progress. "
+		       "Denying ADDBA request\n");
 #endif
 		goto end_no_lock;
 	}
@@ -223,10 +223,10 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
 		status = WLAN_STATUS_INVALID_QOS_PARAM;
 #ifdef CONFIG_MAC80211_HT_DEBUG
 		if (net_ratelimit())
-//			printk(KERN_DEBUG "AddBA Req with bad params from "
-//				"%pM on tid %u. policy %d, buffer size %d\n",
-//				mgmt->sa, tid, ba_policy,
-;
+			printk(KERN_DEBUG "AddBA Req with bad params from "
+				"%pM on tid %u. policy %d, buffer size %d\n",
+				mgmt->sa, tid, ba_policy,
+				buf_size);
 #endif /* CONFIG_MAC80211_HT_DEBUG */
 		goto end_no_lock;
 	}
@@ -244,9 +244,9 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
 	if (sta->ampdu_mlme.tid_rx[tid]) {
 #ifdef CONFIG_MAC80211_HT_DEBUG
 		if (net_ratelimit())
-//			printk(KERN_DEBUG "unexpected AddBA Req from "
-//				"%pM on tid %u\n",
-;
+			printk(KERN_DEBUG "unexpected AddBA Req from "
+				"%pM on tid %u\n",
+				mgmt->sa, tid);
 #endif /* CONFIG_MAC80211_HT_DEBUG */
 		goto end;
 	}
@@ -256,8 +256,8 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
 	if (!tid_agg_rx) {
 #ifdef CONFIG_MAC80211_HT_DEBUG
 		if (net_ratelimit())
-//			printk(KERN_ERR "allocate rx mlme to tid %d failed\n",
-;
+			printk(KERN_ERR "allocate rx mlme to tid %d failed\n",
+					tid);
 #endif
 		goto end;
 	}
@@ -282,8 +282,8 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
 	if (!tid_agg_rx->reorder_buf || !tid_agg_rx->reorder_time) {
 #ifdef CONFIG_MAC80211_HT_DEBUG
 		if (net_ratelimit())
-//			printk(KERN_ERR "can not allocate reordering buffer "
-;
+			printk(KERN_ERR "can not allocate reordering buffer "
+			       "to tid %d\n", tid);
 #endif
 		kfree(tid_agg_rx->reorder_buf);
 		kfree(tid_agg_rx->reorder_time);
@@ -294,7 +294,7 @@ void ieee80211_process_addba_request(struct ieee80211_local *local,
 	ret = drv_ampdu_action(local, sta->sdata, IEEE80211_AMPDU_RX_START,
 			       &sta->sta, tid, &start_seq_num, 0);
 #ifdef CONFIG_MAC80211_HT_DEBUG
-;
+	printk(KERN_DEBUG "Rx A-MPDU request on tid %d result %d\n", tid, ret);
 #endif /* CONFIG_MAC80211_HT_DEBUG */
 
 	if (ret) {

@@ -155,11 +155,11 @@ static u32 acpi_osi_handler(acpi_string interface, u32 supported)
 {
 	if (!strcmp("Linux", interface)) {
 
-//		printk(KERN_NOTICE FW_BUG PREFIX
-//			"BIOS _OSI(Linux) query %s%s\n",
-//			osi_linux.enable ? "honored" : "ignored",
-//			osi_linux.cmdline ? " via cmdline" :
-;
+		printk(KERN_NOTICE FW_BUG PREFIX
+			"BIOS _OSI(Linux) query %s%s\n",
+			osi_linux.enable ? "honored" : "ignored",
+			osi_linux.cmdline ? " via cmdline" :
+			osi_linux.dmi ? " via DMI" : "");
 	}
 
 	return supported;
@@ -230,10 +230,10 @@ void acpi_os_vprintf(const char *fmt, va_list args)
 	if (acpi_in_debugger) {
 		kdb_printf("%s", buffer);
 	} else {
-;
+		printk(KERN_CONT "%s", buffer);
 	}
 #else
-;
+	printk(KERN_CONT "%s", buffer);
 #endif
 }
 
@@ -245,8 +245,8 @@ acpi_physical_address __init acpi_os_get_root_pointer(void)
 		else if (efi.acpi != EFI_INVALID_TABLE_ADDR)
 			return efi.acpi;
 		else {
-//			printk(KERN_ERR PREFIX
-;
+			printk(KERN_ERR PREFIX
+			       "System description tables not found\n");
 			return 0;
 		}
 	} else {
@@ -323,7 +323,7 @@ acpi_os_map_memory(acpi_physical_address phys, acpi_size size)
 	acpi_size pg_sz;
 
 	if (phys > ULONG_MAX) {
-;
+		printk(KERN_ERR PREFIX "Cannot map memory that high\n");
 		return NULL;
 	}
 
@@ -476,8 +476,8 @@ acpi_os_predefined_override(const struct acpi_predefined_names *init_val,
 
 	*new_val = NULL;
 	if (!memcmp(init_val->name, "_OS_", 4) && strlen(acpi_os_name)) {
-//		printk(KERN_INFO PREFIX "Overriding _OS definition to '%s'\n",
-;
+		printk(KERN_INFO PREFIX "Overriding _OS definition to '%s'\n",
+		       acpi_os_name);
 		*new_val = acpi_os_name;
 	}
 
@@ -498,10 +498,10 @@ acpi_os_table_override(struct acpi_table_header * existing_table,
 		*new_table = (struct acpi_table_header *)AmlCode;
 #endif
 	if (*new_table != NULL) {
-//		printk(KERN_WARNING PREFIX "Override [%4.4s-%8.8s], "
-//			   "this is unsafe: tainting kernel\n",
-//		       existing_table->signature,
-;
+		printk(KERN_WARNING PREFIX "Override [%4.4s-%8.8s], "
+			   "this is unsafe: tainting kernel\n",
+		       existing_table->signature,
+		       existing_table->oem_table_id);
 		add_taint(TAINT_OVERRIDDEN_ACPI_TABLE);
 	}
 	return AE_OK;
@@ -541,15 +541,15 @@ acpi_os_install_interrupt_handler(u32 gsi, acpi_osd_handler handler,
 		return AE_ALREADY_ACQUIRED;
 
 	if (acpi_gsi_to_irq(gsi, &irq) < 0) {
-//		printk(KERN_ERR PREFIX "SCI (ACPI GSI %d) not registered\n",
-;
+		printk(KERN_ERR PREFIX "SCI (ACPI GSI %d) not registered\n",
+		       gsi);
 		return AE_OK;
 	}
 
 	acpi_irq_handler = handler;
 	acpi_irq_context = context;
 	if (request_irq(irq, acpi_irq, IRQF_SHARED, "acpi", acpi_irq)) {
-;
+		printk(KERN_ERR PREFIX "SCI (IRQ%d) allocation failed\n", irq);
 		acpi_irq_handler = NULL;
 		return AE_NOT_ACQUIRED;
 	}
@@ -607,7 +607,7 @@ u64 acpi_os_get_timer(void)
 	/* TBD: default to PM timer if HPET was not available */
 #endif
 	if (!t)
-;
+		printk(KERN_ERR PREFIX "acpi_os_get_timer() TBD\n");
 
 	return ++t;
 }
@@ -873,8 +873,8 @@ static acpi_status __acpi_os_execute(acpi_execute_type type,
 	ret = queue_work_on(0, queue, &dpc->work);
 
 	if (!ret) {
-//		printk(KERN_ERR PREFIX
-;
+		printk(KERN_ERR PREFIX
+			  "Call to queue_work() failed.\n");
 		status = AE_ERROR;
 		kfree(dpc);
 	}
@@ -1032,7 +1032,7 @@ acpi_status acpi_os_signal(u32 function, void *info)
 {
 	switch (function) {
 	case ACPI_SIGNAL_FATAL:
-;
+		printk(KERN_ERR PREFIX "Fatal opcode executed\n");
 		break;
 	case ACPI_SIGNAL_BREAKPOINT:
 		/*
@@ -1095,7 +1095,7 @@ void __init acpi_osi_setup(char *str)
 		return;
 
 	if (str == NULL || *str == '\0') {
-;
+		printk(KERN_INFO PREFIX "_OSI method disabled\n");
 		acpi_gbl_create_osi_method = FALSE;
 		return;
 	}
@@ -1142,7 +1142,7 @@ static void __init acpi_cmdline_osi_linux(unsigned int enable)
 
 void __init acpi_dmi_osi_linux(int enable, const struct dmi_system_id *d)
 {
-;
+	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
 
 	if (enable == -1)
 		return;
@@ -1177,12 +1177,12 @@ static void __init acpi_osi_setup_late(void)
 			status = acpi_install_interface(str);
 
 			if (ACPI_SUCCESS(status))
-;
+				printk(KERN_INFO PREFIX "Added _OSI(%s)\n", str);
 		} else {
 			status = acpi_remove_interface(str);
 
 			if (ACPI_SUCCESS(status))
-;
+				printk(KERN_INFO PREFIX "Deleted _OSI(%s)\n", str);
 		}
 	}
 }
@@ -1204,7 +1204,7 @@ __setup("acpi_osi=", osi_setup);
 /* enable serialization to combat AE_ALREADY_EXISTS errors */
 static int __init acpi_serialize_setup(char *str)
 {
-;
+	printk(KERN_INFO PREFIX "serialize enabled\n");
 
 	acpi_gbl_all_methods_serialized = TRUE;
 
@@ -1286,21 +1286,21 @@ int acpi_check_resource_conflict(const struct resource *res)
 
 	if (clash) {
 		if (acpi_enforce_resources != ENFORCE_RESOURCES_NO) {
-//			printk(KERN_WARNING "ACPI: resource %s %pR"
-//			       " conflicts with ACPI region %s "
-//			       "[%s 0x%zx-0x%zx]\n",
-//			       res->name, res, res_list_elem->name,
-//			       (res_list_elem->resource_type ==
-//				ACPI_ADR_SPACE_SYSTEM_IO) ? "io" : "mem",
-//			       (size_t) res_list_elem->start,
-;
+			printk(KERN_WARNING "ACPI: resource %s %pR"
+			       " conflicts with ACPI region %s "
+			       "[%s 0x%zx-0x%zx]\n",
+			       res->name, res, res_list_elem->name,
+			       (res_list_elem->resource_type ==
+				ACPI_ADR_SPACE_SYSTEM_IO) ? "io" : "mem",
+			       (size_t) res_list_elem->start,
+			       (size_t) res_list_elem->end);
 			if (acpi_enforce_resources == ENFORCE_RESOURCES_LAX)
-//				printk(KERN_NOTICE "ACPI: This conflict may"
-//				       " cause random problems and system"
-;
-//			printk(KERN_INFO "ACPI: If an ACPI driver is available"
-//			       " for this device, you should use it instead of"
-;
+				printk(KERN_NOTICE "ACPI: This conflict may"
+				       " cause random problems and system"
+				       " instability\n");
+			printk(KERN_INFO "ACPI: If an ACPI driver is available"
+			       " for this device, you should use it instead of"
+			       " the native driver\n");
 		}
 		if (acpi_enforce_resources == ENFORCE_RESOURCES_STRICT)
 			return -EBUSY;

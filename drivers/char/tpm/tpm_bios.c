@@ -321,8 +321,8 @@ static int tpm_ascii_bios_measurements_show(struct seq_file *m, void *v)
 
 	eventname = kmalloc(MAX_TEXT_EVENT, GFP_KERNEL);
 	if (!eventname) {
-//		printk(KERN_ERR "%s: ERROR - No Memory for event name\n ",
-;
+		printk(KERN_ERR "%s: ERROR - No Memory for event name\n ",
+		       __func__);
 		return -EFAULT;
 	}
 
@@ -367,9 +367,9 @@ static int read_log(struct tpm_bios_log *log)
 	u64 len, start;
 
 	if (log->bios_event_log != NULL) {
-//		printk(KERN_ERR
-//		       "%s: ERROR - Eventlog already initialized\n",
-;
+		printk(KERN_ERR
+		       "%s: ERROR - Eventlog already initialized\n",
+		       __func__);
 		return -EFAULT;
 	}
 
@@ -378,8 +378,8 @@ static int read_log(struct tpm_bios_log *log)
 				(struct acpi_table_header **)&buff);
 
 	if (ACPI_FAILURE(status)) {
-//		printk(KERN_ERR "%s: ERROR - Could not get TCPA table\n",
-;
+		printk(KERN_ERR "%s: ERROR - Could not get TCPA table\n",
+		       __func__);
 		return -EIO;
 	}
 
@@ -395,15 +395,15 @@ static int read_log(struct tpm_bios_log *log)
 		break;
 	}
 	if (!len) {
-;
+		printk(KERN_ERR "%s: ERROR - TCPA log area empty\n", __func__);
 		return -EIO;
 	}
 
 	/* malloc EventLog space */
 	log->bios_event_log = kmalloc(len, GFP_KERNEL);
 	if (!log->bios_event_log) {
-//		printk("%s: ERROR - Not enough  Memory for BIOS measurements\n",
-;
+		printk("%s: ERROR - Not enough  Memory for BIOS measurements\n",
+			__func__);
 		return -ENOMEM;
 	}
 

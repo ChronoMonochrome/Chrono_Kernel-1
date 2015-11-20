@@ -45,13 +45,13 @@
 #include <asm/vga.h>
 
 #if 0
-//#define DPRINTK(args...) printk(KERN_DEBUG __FILE__": " ##args)
-//#else
-//#define DPRINTK(args...)
-//#endif
-//
-//#if 0
-;
+#define DPRINTK(args...) printk(KERN_DEBUG __FILE__": " ##args)
+#else
+#define DPRINTK(args...)
+#endif
+
+#if 0
+#define CHKINFO(ret) if (info != &fb_info) { printk(KERN_DEBUG __FILE__": This should never happen, line:%d \n", __LINE__); return ret; }
 #else
 #define CHKINFO(ret)
 #endif
@@ -551,14 +551,14 @@ static int __devinit hgafb_probe(struct platform_device *pdev)
 	struct fb_info *info;
 
 	if (! hga_card_detect()) {
-;
+		printk(KERN_INFO "hgafb: HGA card not detected.\n");
 		if (hga_vram)
 			iounmap(hga_vram);
 		return -EINVAL;
 	}
 
-//	printk(KERN_INFO "hgafb: %s with %ldK of memory detected.\n",
-;
+	printk(KERN_INFO "hgafb: %s with %ldK of memory detected.\n",
+		hga_type_name, hga_vram_len/1024);
 
 	info = framebuffer_alloc(0, &pdev->dev);
 	if (!info) {
@@ -586,8 +586,8 @@ static int __devinit hgafb_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-//        printk(KERN_INFO "fb%d: %s frame buffer device\n",
-;
+        printk(KERN_INFO "fb%d: %s frame buffer device\n",
+               info->node, info->fix.id);
 	platform_set_drvdata(pdev, info);
 	return 0;
 }

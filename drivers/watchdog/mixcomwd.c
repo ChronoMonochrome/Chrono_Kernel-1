@@ -156,15 +156,15 @@ static int mixcomwd_release(struct inode *inode, struct file *file)
 {
 	if (expect_close == 42) {
 		if (mixcomwd_timer_alive) {
-//			printk(KERN_ERR PFX
-;
+			printk(KERN_ERR PFX
+				"release called while internal timer alive");
 			return -EBUSY;
 		}
 		mixcomwd_timer_alive = 1;
 		mod_timer(&mixcomwd_timer, jiffies + 5 * HZ);
 	} else
-//		printk(KERN_CRIT PFX
-;
+		printk(KERN_CRIT PFX
+		    "WDT device closed unexpectedly.  WDT will not stop!\n");
 
 	clear_bit(0, &mixcomwd_opened);
 	expect_close = 0;
@@ -274,22 +274,22 @@ static int __init mixcomwd_init(void)
 	}
 
 	if (!found) {
-//		printk(KERN_ERR PFX
-;
+		printk(KERN_ERR PFX
+			"No card detected, or port not available.\n");
 		return -ENODEV;
 	}
 
 	ret = misc_register(&mixcomwd_miscdev);
 	if (ret) {
-//		printk(KERN_ERR PFX
-//			"cannot register miscdev on minor=%d (err=%d)\n",
-;
+		printk(KERN_ERR PFX
+			"cannot register miscdev on minor=%d (err=%d)\n",
+					WATCHDOG_MINOR, ret);
 		goto error_misc_register_watchdog;
 	}
 
-//	printk(KERN_INFO
-//		"MixCOM watchdog driver v%s, watchdog port at 0x%3x\n",
-;
+	printk(KERN_INFO
+		"MixCOM watchdog driver v%s, watchdog port at 0x%3x\n",
+					VERSION, watchdog_port);
 
 	return 0;
 
@@ -303,8 +303,8 @@ static void __exit mixcomwd_exit(void)
 {
 	if (!nowayout) {
 		if (mixcomwd_timer_alive) {
-//			printk(KERN_WARNING PFX "I quit now, hardware will"
-;
+			printk(KERN_WARNING PFX "I quit now, hardware will"
+			       " probably reboot!\n");
 			del_timer_sync(&mixcomwd_timer);
 			mixcomwd_timer_alive = 0;
 		}

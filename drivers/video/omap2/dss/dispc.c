@@ -3110,11 +3110,11 @@ static void print_irq_status(u32 status)
 	if ((status & dispc.irq_error_mask) == 0)
 		return;
 
-;
+	printk(KERN_DEBUG "DISPC IRQ: 0x%x: ", status);
 
 #define PIS(x) \
 	if (status & DISPC_IRQ_##x) \
-;
+		printk(#x " ");
 	PIS(GFX_FIFO_UNDERFLOW);
 	PIS(OCP_ERR);
 	PIS(VID1_FIFO_UNDERFLOW);
@@ -3125,7 +3125,7 @@ static void print_irq_status(u32 status)
 		PIS(SYNC_LOST2);
 #undef PIS
 
-;
+	printk("\n");
 }
 #endif
 

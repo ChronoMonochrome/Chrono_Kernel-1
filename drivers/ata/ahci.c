@@ -552,9 +552,9 @@ static int ahci_sb600_softreset(struct ata_link *link, unsigned int *class,
 	if (rc == -EIO) {
 		irq_sts = readl(port_mmio + PORT_IRQ_STAT);
 		if (irq_sts & PORT_IRQ_BAD_PMP) {
-//			ata_link_printk(link, KERN_WARNING,
-//					"applying SB600 PMP SRST workaround "
-;
+			ata_link_printk(link, KERN_WARNING,
+					"applying SB600 PMP SRST workaround "
+					"and retrying\n");
 			rc = ahci_do_softreset(link, class, 0, deadline,
 					       ahci_check_ready);
 		}
@@ -641,8 +641,8 @@ static int ahci_pci_device_suspend(struct pci_dev *pdev, pm_message_t mesg)
 
 	if (mesg.event & PM_EVENT_SUSPEND &&
 	    hpriv->flags & AHCI_HFLAG_NO_SUSPEND) {
-//		dev_printk(KERN_ERR, &pdev->dev,
-;
+		dev_printk(KERN_ERR, &pdev->dev,
+			   "BIOS update required for suspend/resume\n");
 		return -EIO;
 	}
 
@@ -693,22 +693,22 @@ static int ahci_configure_dma_masks(struct pci_dev *pdev, int using_dac)
 		if (rc) {
 			rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 			if (rc) {
-//				dev_printk(KERN_ERR, &pdev->dev,
-;
+				dev_printk(KERN_ERR, &pdev->dev,
+					   "64-bit DMA enable failed\n");
 				return rc;
 			}
 		}
 	} else {
 		rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+				   "32-bit DMA enable failed\n");
 			return rc;
 		}
 		rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+				   "32-bit consistent DMA enable failed\n");
 			return rc;
 		}
 	}
@@ -771,8 +771,8 @@ static void ahci_p5wdh_workaround(struct ata_host *host)
 	    dmi_check_system(sysids)) {
 		struct ata_port *ap = host->ports[1];
 
-//		dev_printk(KERN_INFO, &pdev->dev, "enabling ASUS P5W DH "
-;
+		dev_printk(KERN_INFO, &pdev->dev, "enabling ASUS P5W DH "
+			   "Deluxe on-board SIMG4726 workaround\n");
 
 		ap->ops = &ahci_p5wdh_ops;
 		ap->link.flags |= ATA_LFLAG_NO_SRST | ATA_LFLAG_ASSUME_ATA;
@@ -855,14 +855,14 @@ static bool ahci_sb600_enable_64bit(struct pci_dev *pdev)
 	if (strcmp(buf, match->driver_data) >= 0)
 		goto enable_64bit;
 	else {
-//		dev_printk(KERN_WARNING, &pdev->dev, "%s: BIOS too old, "
-;
+		dev_printk(KERN_WARNING, &pdev->dev, "%s: BIOS too old, "
+			   "forcing 32bit DMA, update BIOS\n", match->ident);
 		return false;
 	}
 
 enable_64bit:
-//	dev_printk(KERN_WARNING, &pdev->dev, "%s: enabling 64bit DMA\n",
-;
+	dev_printk(KERN_WARNING, &pdev->dev, "%s: enabling 64bit DMA\n",
+		   match->ident);
 	return true;
 }
 
@@ -1065,9 +1065,9 @@ static void ahci_gtf_filter_workaround(struct ata_host *host)
 		return;
 
 	filter = (unsigned long)dmi->driver_data;
-//	dev_printk(KERN_INFO, host->dev,
-//		   "applying extra ACPI _GTF filter 0x%x for %s\n",
-;
+	dev_printk(KERN_INFO, host->dev,
+		   "applying extra ACPI _GTF filter 0x%x for %s\n",
+		   filter, dmi->ident);
 
 	for (i = 0; i < host->n_ports; i++) {
 		struct ata_port *ap = host->ports[i];
@@ -1100,7 +1100,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	WARN_ON((int)ATA_MAX_QUEUE > AHCI_MAX_CMDS);
 
 	if (!printed_version++)
-;
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	/* The AHCI driver can only drive the SATA ports, the PATA driver
 	   can drive them all so if both drivers are selected make sure
@@ -1123,8 +1123,8 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	 * that for SAS drives they're out of luck.
 	 */
 	if (pdev->vendor == PCI_VENDOR_ID_PROMISE)
-//		dev_printk(KERN_INFO, &pdev->dev, "PDC42819 "
-;
+		dev_printk(KERN_INFO, &pdev->dev, "PDC42819 "
+			   "can only drive SATA devices with this driver\n");
 
 	/* acquire resources */
 	rc = pcim_enable_device(pdev);
@@ -1150,8 +1150,8 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 		 */
 		pci_read_config_byte(pdev, ICH_MAP, &map);
 		if (map & 0x3) {
-//			dev_printk(KERN_INFO, &pdev->dev, "controller is in "
-;
+			dev_printk(KERN_INFO, &pdev->dev, "controller is in "
+				   "combined mode, can't enable AHCI mode\n");
 			return -ENODEV;
 		}
 	}
@@ -1208,8 +1208,8 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	if (ahci_broken_suspend(pdev)) {
 		hpriv->flags |= AHCI_HFLAG_NO_SUSPEND;
-//		dev_printk(KERN_WARNING, &pdev->dev,
-;
+		dev_printk(KERN_WARNING, &pdev->dev,
+			   "BIOS update required for suspend/resume\n");
 	}
 
 	if (ahci_broken_online(pdev)) {
@@ -1233,7 +1233,7 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	if (!(hpriv->cap & HOST_CAP_SSS) || ahci_ignore_sss)
 		host->flags |= ATA_HOST_PARALLEL_SCAN;
 	else
-;
+		printk(KERN_INFO "ahci: SSS flag set, parallel bus scan disabled\n");
 
 	if (pi.flags & ATA_FLAG_EM)
 		ahci_reset_em(host);

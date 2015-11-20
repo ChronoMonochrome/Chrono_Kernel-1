@@ -55,7 +55,7 @@
 #undef DEBUG_SMU
 
 #ifdef DEBUG_SMU
-;
+#define DPRINTK(fmt, args...) do { printk(KERN_DEBUG fmt , ##args); } while (0)
 #else
 #define DPRINTK(fmt, args...) do { } while (0)
 #endif
@@ -210,9 +210,9 @@ static irqreturn_t smu_db_intr(int irq, void *arg)
 		reply_len = rc == 0 ? smu->cmd_buf->length : 0;
 		DPRINTK("SMU: reply len: %d\n", reply_len);
 		if (reply_len > cmd->reply_len) {
-//			printk(KERN_WARNING "SMU: reply buffer too small,"
-//			       "got %d bytes for a %d bytes buffer\n",
-;
+			printk(KERN_WARNING "SMU: reply buffer too small,"
+			       "got %d bytes for a %d bytes buffer\n",
+			       reply_len, cmd->reply_len);
 			reply_len = cmd->reply_len;
 		}
 		cmd->reply_len = reply_len;
@@ -252,7 +252,7 @@ static irqreturn_t smu_msg_intr(int irq, void *arg)
 	 * to start getting events that way.
 	 */
 
-;
+	printk(KERN_INFO "SMU: message interrupt !\n");
 
 	/* It's an edge interrupt, nothing to do */
 	return IRQ_HANDLED;
@@ -482,10 +482,10 @@ int __init smu_init (void)
         if (np == NULL)
 		return -ENODEV;
 
-;
+	printk(KERN_INFO "SMU: Driver %s %s\n", VERSION, AUTHOR);
 
 	if (smu_cmdbuf_abs == 0) {
-;
+		printk(KERN_ERR "SMU: Command buffer not allocated !\n");
 		ret = -EINVAL;
 		goto fail_np;
 	}
@@ -507,13 +507,13 @@ int __init smu_init (void)
 
 	smu->db_node = of_find_node_by_name(NULL, "smu-doorbell");
 	if (smu->db_node == NULL) {
-;
+		printk(KERN_ERR "SMU: Can't find doorbell GPIO !\n");
 		ret = -ENXIO;
 		goto fail_bootmem;
 	}
 	data = of_get_property(smu->db_node, "reg", NULL);
 	if (data == NULL) {
-;
+		printk(KERN_ERR "SMU: Can't find doorbell GPIO address !\n");
 		ret = -ENXIO;
 		goto fail_db_node;
 	}
@@ -548,7 +548,7 @@ int __init smu_init (void)
 	 */
 	smu->db_buf = ioremap(0x8000860c, 0x1000);
 	if (smu->db_buf == NULL) {
-;
+		printk(KERN_ERR "SMU: Can't map doorbell buffer pointer !\n");
 		ret = -ENXIO;
 		goto fail_msg_node;
 	}
@@ -556,7 +556,7 @@ int __init smu_init (void)
 	/* U3 has an issue with NAP mode when issuing SMU commands */
 	smu->broken_nap = pmac_get_uninorth_variant() < 4;
 	if (smu->broken_nap)
-;
+		printk(KERN_INFO "SMU: using NAP mode workaround\n");
 
 	sys_ctrler = SYS_CTRLER_SMU;
 	return 0;
@@ -587,14 +587,14 @@ static int smu_late_init(void)
 	if (smu->db_node) {
 		smu->db_irq = irq_of_parse_and_map(smu->db_node, 0);
 		if (smu->db_irq == NO_IRQ)
-//			printk(KERN_ERR "smu: failed to map irq for node %s\n",
-;
+			printk(KERN_ERR "smu: failed to map irq for node %s\n",
+			       smu->db_node->full_name);
 	}
 	if (smu->msg_node) {
 		smu->msg_irq = irq_of_parse_and_map(smu->msg_node, 0);
 		if (smu->msg_irq == NO_IRQ)
-//			printk(KERN_ERR "smu: failed to map irq for node %s\n",
-;
+			printk(KERN_ERR "smu: failed to map irq for node %s\n",
+			       smu->msg_node->full_name);
 	}
 
 	/*
@@ -604,9 +604,9 @@ static int smu_late_init(void)
 	if (smu->db_irq != NO_IRQ) {
 		if (request_irq(smu->db_irq, smu_db_intr,
 				IRQF_SHARED, "SMU doorbell", smu) < 0) {
-//			printk(KERN_WARNING "SMU: can't "
-//			       "request interrupt %d\n",
-;
+			printk(KERN_WARNING "SMU: can't "
+			       "request interrupt %d\n",
+			       smu->db_irq);
 			smu->db_irq = NO_IRQ;
 		}
 	}
@@ -614,9 +614,9 @@ static int smu_late_init(void)
 	if (smu->msg_irq != NO_IRQ) {
 		if (request_irq(smu->msg_irq, smu_msg_intr,
 				IRQF_SHARED, "SMU message", smu) < 0) {
-//			printk(KERN_WARNING "SMU: can't "
-//			       "request interrupt %d\n",
-;
+			printk(KERN_WARNING "SMU: can't "
+			       "request interrupt %d\n",
+			       smu->msg_irq);
 			smu->msg_irq = NO_IRQ;
 		}
 	}
@@ -938,9 +938,9 @@ static int smu_read_datablock(u8 *dest, unsigned int addr, unsigned int len)
 		if (cmd.status != 0)
 			return rc;
 		if (cmd.reply_len != clen) {
-//			printk(KERN_DEBUG "SMU: short read in "
-//			       "smu_read_datablock, got: %d, want: %d\n",
-;
+			printk(KERN_DEBUG "SMU: short read in "
+			       "smu_read_datablock, got: %d, want: %d\n",
+			       cmd.reply_len, clen);
 			return -EIO;
 		}
 		len -= clen;
@@ -991,20 +991,20 @@ static struct smu_sdbp_header *smu_create_sdb_partition(int id)
 
 	/* Read the datablock */
 	if (smu_read_datablock((u8 *)hdr, addr, len)) {
-//		printk(KERN_DEBUG "SMU: datablock read failed while reading "
-;
+		printk(KERN_DEBUG "SMU: datablock read failed while reading "
+		       "partition %02x !\n", id);
 		goto failure;
 	}
 
 	/* Got it, check a few things and create the property */
 	if (hdr->id != id) {
-//		printk(KERN_DEBUG "SMU: Reading partition %02x and got "
-;
+		printk(KERN_DEBUG "SMU: Reading partition %02x and got "
+		       "%02x !\n", id, hdr->id);
 		goto failure;
 	}
 	if (prom_add_property(smu->of_node, prop)) {
-//		printk(KERN_DEBUG "SMU: Failed creating sdb-partition-%02x "
-;
+		printk(KERN_DEBUG "SMU: Failed creating sdb-partition-%02x "
+		       "property !\n", id);
 		goto failure;
 	}
 
@@ -1332,7 +1332,7 @@ static int smu_device_init(void)
 	if (!smu)
 		return -ENODEV;
 	if (misc_register(&pmu_device) < 0)
-;
+		printk(KERN_ERR "via-pmu: cannot register misc device.\n");
 	return 0;
 }
 device_initcall(smu_device_init);

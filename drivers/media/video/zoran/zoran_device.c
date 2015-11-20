@@ -118,8 +118,8 @@ post_office_wait (struct zoran *zr)
 	}
 	if ((por & ZR36057_POR_POTime) && !zr->card.gws_not_connected) {
 		/* In LML33/BUZ \GWS line is not connected, so it has always timeout set */
-//		dprintk(1, KERN_INFO "%s: pop timeout %08x\n", ZR_DEVNAME(zr),
-;
+		dprintk(1, KERN_INFO "%s: pop timeout %08x\n", ZR_DEVNAME(zr),
+			por);
 		return -1;
 	}
 
@@ -172,12 +172,12 @@ dump_guests (struct zoran *zr)
 			guest[i] = post_office_read(zr, i, 0);
 		}
 
-;
+		printk(KERN_INFO "%s: Guests:", ZR_DEVNAME(zr));
 
 		for (i = 1; i < 8; i++) {
-;
+			printk(" 0x%02x", guest[i]);
 		}
-;
+		printk("\n");
 	}
 }
 
@@ -197,8 +197,8 @@ detect_guest_activity (struct zoran *zr)
 	unsigned long t0, t1;
 
 	dump_guests(zr);
-//	printk(KERN_INFO "%s: Detecting guests activity, please wait...\n",
-;
+	printk(KERN_INFO "%s: Detecting guests activity, please wait...\n",
+	       ZR_DEVNAME(zr));
 	for (i = 1; i < 8; i++) {	// Don't read jpeg codec here
 		guest0[i] = guest[i] = post_office_read(zr, i, 0);
 	}
@@ -224,19 +224,19 @@ detect_guest_activity (struct zoran *zr)
 		if (j >= 8)
 			break;
 	}
-;
+	printk(KERN_INFO "%s: Guests:", ZR_DEVNAME(zr));
 
 	for (i = 1; i < 8; i++) {
-;
+		printk(" 0x%02x", guest0[i]);
 	}
-;
+	printk("\n");
 	if (j == 0) {
-;
+		printk(KERN_INFO "%s: No activity detected.\n", ZR_DEVNAME(zr));
 		return;
 	}
 	for (i = 0; i < j; i++) {
-//		printk(KERN_INFO "%s: %6d: %d => 0x%02x\n", ZR_DEVNAME(zr),
-;
+		printk(KERN_INFO "%s: %6d: %d => 0x%02x\n", ZR_DEVNAME(zr),
+		       change[i][0], change[i][1], change[i][2]);
 	}
 }
 
@@ -250,16 +250,16 @@ jpeg_codec_sleep (struct zoran *zr,
 {
 	GPIO(zr, zr->card.gpio[ZR_GPIO_JPEG_SLEEP], !sleep);
 	if (!sleep) {
-//		dprintk(3,
-//			KERN_DEBUG
-//			"%s: jpeg_codec_sleep() - wake GPIO=0x%08x\n",
-;
+		dprintk(3,
+			KERN_DEBUG
+			"%s: jpeg_codec_sleep() - wake GPIO=0x%08x\n",
+			ZR_DEVNAME(zr), btread(ZR36057_GPPGCR1));
 		udelay(500);
 	} else {
-//		dprintk(3,
-//			KERN_DEBUG
-//			"%s: jpeg_codec_sleep() - sleep GPIO=0x%08x\n",
-;
+		dprintk(3,
+			KERN_DEBUG
+			"%s: jpeg_codec_sleep() - sleep GPIO=0x%08x\n",
+			ZR_DEVNAME(zr), btread(ZR36057_GPPGCR1));
 		udelay(2);
 	}
 }
@@ -351,14 +351,14 @@ zr36057_set_vfe (struct zoran              *zr,
 	Wa = tvn->Wa;
 	Ha = tvn->Ha;
 
-//	dprintk(2, KERN_INFO "%s: set_vfe() - width = %d, height = %d\n",
-;
+	dprintk(2, KERN_INFO "%s: set_vfe() - width = %d, height = %d\n",
+		ZR_DEVNAME(zr), video_width, video_height);
 
 	if (video_width < BUZ_MIN_WIDTH ||
 	    video_height < BUZ_MIN_HEIGHT ||
 	    video_width > Wa || video_height > Ha) {
-//		dprintk(1, KERN_ERR "%s: set_vfe: w=%d h=%d not valid\n",
-;
+		dprintk(1, KERN_ERR "%s: set_vfe: w=%d h=%d not valid\n",
+			ZR_DEVNAME(zr), video_width, video_height);
 		return;
 	}
 
@@ -495,10 +495,10 @@ zr36057_overlay (struct zoran *zr,
 		    zr->vbuf_bytesperline;
 		btwrite(reg, ZR36057_VDTR);
 		if (reg & 3)
-//			dprintk(1,
-//				KERN_ERR
-//				"%s: zr36057_overlay() - video_address not aligned\n",
-;
+			dprintk(1,
+				KERN_ERR
+				"%s: zr36057_overlay() - video_address not aligned\n",
+				ZR_DEVNAME(zr));
 		if (zr->overlay_settings.height > BUZ_MAX_HEIGHT / 2)
 			reg += zr->vbuf_bytesperline;
 		btwrite(reg, ZR36057_VDBR);
@@ -510,10 +510,10 @@ zr36057_overlay (struct zoran *zr,
 		if (zr->overlay_settings.height > BUZ_MAX_HEIGHT / 2)
 			reg += zr->vbuf_bytesperline;
 		if (reg & 3)
-//			dprintk(1,
-//				KERN_ERR
-//				"%s: zr36057_overlay() - video_stride not aligned\n",
-;
+			dprintk(1,
+				KERN_ERR
+				"%s: zr36057_overlay() - video_stride not aligned\n",
+				ZR_DEVNAME(zr));
 		reg = (reg << ZR36057_VSSFGR_DispStride);
 		reg |= ZR36057_VSSFGR_VidOvf;	/* clear overflow status */
 		btwrite(reg, ZR36057_VSSFGR);
@@ -607,10 +607,10 @@ zr36057_set_memgrab (struct zoran *zr,
 		 * will be stuck at 1 until capturing is turned back on.
 		 */
 		if (btread(ZR36057_VSSFGR) & ZR36057_VSSFGR_SnapShot)
-//			dprintk(1,
-//				KERN_WARNING
-//				"%s: zr36057_set_memgrab(1) with SnapShot on!?\n",
-;
+			dprintk(1,
+				KERN_WARNING
+				"%s: zr36057_set_memgrab(1) with SnapShot on!?\n",
+				ZR_DEVNAME(zr));
 
 		/* switch on VSync interrupts */
 		btwrite(IRQ_MASK, ZR36057_ISR);	// Clear Interrupts
@@ -830,41 +830,41 @@ print_interrupts (struct zoran *zr)
 {
 	int res, noerr = 0;
 
-;
+	printk(KERN_INFO "%s: interrupts received:", ZR_DEVNAME(zr));
 	if ((res = zr->field_counter) < -1 || res > 1) {
-;
+		printk(" FD:%d", res);
 	}
 	if ((res = zr->intr_counter_GIRQ1) != 0) {
-;
+		printk(" GIRQ1:%d", res);
 		noerr++;
 	}
 	if ((res = zr->intr_counter_GIRQ0) != 0) {
-;
+		printk(" GIRQ0:%d", res);
 		noerr++;
 	}
 	if ((res = zr->intr_counter_CodRepIRQ) != 0) {
-;
+		printk(" CodRepIRQ:%d", res);
 		noerr++;
 	}
 	if ((res = zr->intr_counter_JPEGRepIRQ) != 0) {
-;
+		printk(" JPEGRepIRQ:%d", res);
 		noerr++;
 	}
 	if (zr->JPEG_max_missed) {
-//		printk(" JPEG delays: max=%d min=%d", zr->JPEG_max_missed,
-;
+		printk(" JPEG delays: max=%d min=%d", zr->JPEG_max_missed,
+		       zr->JPEG_min_missed);
 	}
 	if (zr->END_event_missed) {
-;
+		printk(" ENDs missed: %d", zr->END_event_missed);
 	}
 	//if (zr->jpg_queued_num) {
-//	printk(" queue_state=%ld/%ld/%ld/%ld", zr->jpg_que_tail,
-;
+	printk(" queue_state=%ld/%ld/%ld/%ld", zr->jpg_que_tail,
+	       zr->jpg_dma_tail, zr->jpg_dma_head, zr->jpg_que_head);
 	//}
 	if (!noerr) {
-;
+		printk(": no interrupts detected.");
 	}
-;
+	printk("\n");
 }
 
 void
@@ -961,7 +961,7 @@ jpeg_start (struct zoran *zr)
 
 	set_frame(zr, 1);	// /FRAME
 
-;
+	dprintk(3, KERN_DEBUG "%s: jpeg_start\n", ZR_DEVNAME(zr));
 }
 
 void
@@ -1030,8 +1030,8 @@ zr36057_enable_jpg (struct zoran          *zr,
 		zr36057_set_jpg(zr, mode);	// \P_Reset, ... Video param, FIFO
 
 		clear_interrupt_counters(zr);
-//		dprintk(2, KERN_INFO "%s: enable_jpg(MOTION_COMPRESS)\n",
-;
+		dprintk(2, KERN_INFO "%s: enable_jpg(MOTION_COMPRESS)\n",
+			ZR_DEVNAME(zr));
 		break;
 	}
 
@@ -1060,8 +1060,8 @@ zr36057_enable_jpg (struct zoran          *zr,
 		zr36057_set_jpg(zr, mode);	// \P_Reset, ... Video param, FIFO
 
 		clear_interrupt_counters(zr);
-//		dprintk(2, KERN_INFO "%s: enable_jpg(MOTION_DECOMPRESS)\n",
-;
+		dprintk(2, KERN_INFO "%s: enable_jpg(MOTION_DECOMPRESS)\n",
+			ZR_DEVNAME(zr));
 		break;
 
 	case BUZ_MODE_IDLE:
@@ -1088,7 +1088,7 @@ zr36057_enable_jpg (struct zoran          *zr,
 		decoder_call(zr, video, s_stream, 1);
 		encoder_call(zr, video, s_routing, 0, 0, 0);
 
-;
+		dprintk(2, KERN_INFO "%s: enable_jpg(IDLE)\n", ZR_DEVNAME(zr));
 		break;
 
 	}
@@ -1215,8 +1215,8 @@ static void zoran_restart(struct zoran *zr)
 		jpeg_start(zr);
 
 		if (zr->num_errors <= 8)
-//			dprintk(2, KERN_INFO "%s: Restart\n",
-;
+			dprintk(2, KERN_INFO "%s: Restart\n",
+				ZR_DEVNAME(zr));
 
 		zr->JPEG_missed = 0;
 		zr->JPEG_error = 2;
@@ -1283,20 +1283,20 @@ error_handler (struct zoran *zr,
 		int j;
 
 		frame = zr->jpg_pend[zr->jpg_dma_tail & BUZ_MASK_FRAME];
-//		printk(KERN_ERR
-//		       "%s: JPEG error stat=0x%08x(0x%08x) queue_state=%ld/%ld/%ld/%ld seq=%ld frame=%ld. Codec stopped. ",
-//		       ZR_DEVNAME(zr), stat, zr->last_isr,
-//		       zr->jpg_que_tail, zr->jpg_dma_tail,
-//		       zr->jpg_dma_head, zr->jpg_que_head,
-;
-;
+		printk(KERN_ERR
+		       "%s: JPEG error stat=0x%08x(0x%08x) queue_state=%ld/%ld/%ld/%ld seq=%ld frame=%ld. Codec stopped. ",
+		       ZR_DEVNAME(zr), stat, zr->last_isr,
+		       zr->jpg_que_tail, zr->jpg_dma_tail,
+		       zr->jpg_dma_head, zr->jpg_que_head,
+		       zr->jpg_seq_num, frame);
+		printk(KERN_INFO "stat_com frames:");
 		for (j = 0; j < BUZ_NUM_STAT_COM; j++) {
 			for (i = 0; i < zr->jpg_buffers.num_buffers; i++) {
 				if (le32_to_cpu(zr->stat_com[j]) == zr->jpg_buffers.buffer[i].jpg.frag_tab_bus)
-;
+					printk(KERN_CONT "% d->%d", j, i);
 			}
 		}
-;
+		printk(KERN_CONT "\n");
 	}
 	/* Find an entry in stat_com and rotate contents */
 	if (zr->jpg_settings.TmpDcm == 1)
@@ -1358,10 +1358,10 @@ zoran_irq (int             irq,
 		while ((stat = count_reset_interrupt(zr))) {
 			if (count++ > 100) {
 				btand(~ZR36057_ICR_IntPinEn, ZR36057_ICR);
-//				dprintk(1,
-//					KERN_ERR
-//					"%s: IRQ lockup while testing, isr=0x%08x, cleared int mask\n",
-;
+				dprintk(1,
+					KERN_ERR
+					"%s: IRQ lockup while testing, isr=0x%08x, cleared int mask\n",
+					ZR_DEVNAME(zr), stat);
 				wake_up_interruptible(&zr->test_q);
 			}
 		}
@@ -1378,10 +1378,10 @@ zoran_irq (int             irq,
 		if (!astat) {
 			break;
 		}
-//		dprintk(4,
-//			KERN_DEBUG
-//			"zoran_irq: astat: 0x%08x, mask: 0x%08x\n",
-;
+		dprintk(4,
+			KERN_DEBUG
+			"zoran_irq: astat: 0x%08x, mask: 0x%08x\n",
+			astat, btread(ZR36057_ICR));
 		if (astat & zr->card.vsync_int) {	// SW
 
 			if (zr->codec_mode == BUZ_MODE_MOTION_DECOMPRESS ||
@@ -1397,10 +1397,10 @@ zoran_irq (int             irq,
 			if (zr->v4l_memgrab_active) {
 				/* A lot more checks should be here ... */
 				if ((btread(ZR36057_VSSFGR) & ZR36057_VSSFGR_SnapShot) == 0)
-//					dprintk(1,
-//						KERN_WARNING
-//						"%s: BuzIRQ with SnapShot off ???\n",
-;
+					dprintk(1,
+						KERN_WARNING
+						"%s: BuzIRQ with SnapShot off ???\n",
+						ZR_DEVNAME(zr));
 
 				if (zr->v4l_grab_frame != NO_GRAB_ACTIVE) {
 					/* There is a grab on a frame going on, check if it has finished */
@@ -1459,8 +1459,8 @@ zoran_irq (int             irq,
 #if (IRQ_MASK & ZR36057_ISR_CodRepIRQ)
 		if (astat & ZR36057_ISR_CodRepIRQ) {
 			zr->intr_counter_CodRepIRQ++;
-//			IDEBUG(printk(KERN_DEBUG "%s: ZR36057_ISR_CodRepIRQ\n",
-;
+			IDEBUG(printk(KERN_DEBUG "%s: ZR36057_ISR_CodRepIRQ\n",
+				ZR_DEVNAME(zr)));
 			btand(~ZR36057_ICR_CodRepIRQ, ZR36057_ICR);
 		}
 #endif				/* (IRQ_MASK & ZR36057_ISR_CodRepIRQ) */
@@ -1473,23 +1473,23 @@ zoran_irq (int             irq,
 				char sv[BUZ_NUM_STAT_COM + 1];
 				int i;
 
-//				printk(KERN_INFO
-//				       "%s: first frame ready: state=0x%08x odd_even=%d field_per_buff=%d delay=%d\n",
-//				       ZR_DEVNAME(zr), stat,
-//				       zr->jpg_settings.odd_even,
-//				       zr->jpg_settings.field_per_buff,
-;
+				printk(KERN_INFO
+				       "%s: first frame ready: state=0x%08x odd_even=%d field_per_buff=%d delay=%d\n",
+				       ZR_DEVNAME(zr), stat,
+				       zr->jpg_settings.odd_even,
+				       zr->jpg_settings.field_per_buff,
+				       zr->JPEG_missed);
 
 				for (i = 0; i < BUZ_NUM_STAT_COM; i++)
 					sv[i] = le32_to_cpu(zr->stat_com[i]) & 1 ? '1' : '0';
 				sv[BUZ_NUM_STAT_COM] = 0;
-//				printk(KERN_INFO
-//				       "%s: stat_com=%s queue_state=%ld/%ld/%ld/%ld\n",
-//				       ZR_DEVNAME(zr), sv,
-//				       zr->jpg_que_tail,
-//				       zr->jpg_dma_tail,
-//				       zr->jpg_dma_head,
-;
+				printk(KERN_INFO
+				       "%s: stat_com=%s queue_state=%ld/%ld/%ld/%ld\n",
+				       ZR_DEVNAME(zr), sv,
+				       zr->jpg_que_tail,
+				       zr->jpg_dma_tail,
+				       zr->jpg_dma_head,
+				       zr->jpg_que_head);
 			} else {
 				/* Get statistics */
 				if (zr->JPEG_missed > zr->JPEG_max_missed)
@@ -1501,13 +1501,13 @@ zoran_irq (int             irq,
 			if (zr36067_debug > 2 && zr->frame_num < 6) {
 				int i;
 
-//				printk(KERN_INFO "%s: seq=%ld stat_com:",
-;
+				printk(KERN_INFO "%s: seq=%ld stat_com:",
+				       ZR_DEVNAME(zr), zr->jpg_seq_num);
 				for (i = 0; i < 4; i++) {
-//					printk(KERN_CONT " %08x",
-;
+					printk(KERN_CONT " %08x",
+					       le32_to_cpu(zr->stat_com[i]));
 				}
-;
+				printk(KERN_CONT "\n");
 			}
 			zr->frame_num++;
 			zr->JPEG_missed = 0;
@@ -1529,14 +1529,14 @@ zoran_irq (int             irq,
 
 		count++;
 		if (count > 10) {
-//			dprintk(2, KERN_WARNING "%s: irq loop %d\n",
-;
+			dprintk(2, KERN_WARNING "%s: irq loop %d\n",
+				ZR_DEVNAME(zr), count);
 			if (count > 20) {
 				btand(~ZR36057_ICR_IntPinEn, ZR36057_ICR);
-//				dprintk(2,
-//					KERN_ERR
-//					"%s: IRQ lockup, cleared int mask\n",
-;
+				dprintk(2,
+					KERN_ERR
+					"%s: IRQ lockup, cleared int mask\n",
+					ZR_DEVNAME(zr));
 				break;
 			}
 		}

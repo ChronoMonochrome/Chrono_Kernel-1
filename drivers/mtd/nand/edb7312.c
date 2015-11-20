@@ -114,14 +114,14 @@ static int __init ep7312_init(void)
 	/* Allocate memory for MTD device structure and private data */
 	ep7312_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!ep7312_mtd) {
-;
+		printk("Unable to allocate EDB7312 NAND MTD device structure.\n");
 		return -ENOMEM;
 	}
 
 	/* map physical address */
 	ep7312_fio_base = ioremap(ep7312_fio_pbase, SZ_1K);
 	if (!ep7312_fio_base) {
-;
+		printk("ioremap EDB7312 NAND flash failed\n");
 		kfree(ep7312_mtd);
 		return -EIO;
 	}
@@ -170,7 +170,7 @@ static int __init ep7312_init(void)
 	}
 
 	/* Register the partitions */
-;
+	printk(KERN_NOTICE "Using %s partition definition\n", part_type);
 	mtd_device_register(ep7312_mtd, mtd_parts, mtd_parts_nb);
 
 	/* Return happy */

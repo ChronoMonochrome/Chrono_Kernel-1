@@ -164,10 +164,10 @@ void __init smp_init_cpus(void)
 
 	/* sanity check */
 	if (ncores > NR_CPUS) {
-//		printk(KERN_WARNING
-//		       "U8500: no. of cores (%d) greater than configured "
-//		       "maximum of %d - clipping\n",
-;
+		printk(KERN_WARNING
+		       "U8500: no. of cores (%d) greater than configured "
+		       "maximum of %d - clipping\n",
+		       ncores, NR_CPUS);
 		ncores = NR_CPUS;
 	}
 

@@ -259,8 +259,8 @@ static void nfsd_last_thread(struct svc_serv *serv)
 	nfsd_serv = NULL;
 	nfsd_shutdown();
 
-//	printk(KERN_WARNING "nfsd: last server has exited, flushing export "
-;
+	printk(KERN_WARNING "nfsd: last server has exited, flushing export "
+			    "cache\n");
 	nfsd_export_flush();
 }
 
@@ -304,7 +304,7 @@ static void set_max_drc(void)
 					>> NFSD_DRC_SIZE_SHIFT) * PAGE_SIZE;
 	nfsd_drc_mem_used = 0;
 	spin_lock_init(&nfsd_drc_lock);
-;
+	dprintk("%s nfsd_drc_max_mem %u \n", __func__, nfsd_drc_max_mem);
 }
 
 int nfsd_create_serv(void)
@@ -430,7 +430,7 @@ nfsd_svc(unsigned short port, int nrservs)
 	bool	nfsd_up_before;
 
 	mutex_lock(&nfsd_mutex);
-;
+	dprintk("nfsd: creating service\n");
 	if (nrservs <= 0)
 		nrservs = 0;
 	if (nrservs > NFSD_MAXSERVS)
@@ -483,7 +483,7 @@ nfsd(void *vrqstp)
 	 * with the init process. We need to create files with a
 	 * umask of 0 instead of init's umask. */
 	if (unshare_fs_struct() < 0) {
-;
+		printk("Unable to start nfsd thread: out of memory\n");
 		goto out;
 	}
 
@@ -523,8 +523,8 @@ nfsd(void *vrqstp)
 			break;
 		else if (err < 0) {
 			if (err != preverr) {
-//				printk(KERN_WARNING "%s: unexpected error "
-;
+				printk(KERN_WARNING "%s: unexpected error "
+					"from svc_recv (%d)\n", __func__, -err);
 				preverr = err;
 			}
 			schedule_timeout_uninterruptible(HZ);
@@ -569,8 +569,8 @@ nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 	__be32			nfserr;
 	__be32			*nfserrp;
 
-//	dprintk("nfsd_dispatch: vers %d proc %d\n",
-;
+	dprintk("nfsd_dispatch: vers %d proc %d\n",
+				rqstp->rq_vers, rqstp->rq_proc);
 	proc = rqstp->rq_procinfo;
 
 	/* Check whether we have this call in the cache. */
@@ -588,7 +588,7 @@ nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 	xdr = proc->pc_decode;
 	if (xdr && !xdr(rqstp, (__be32*)rqstp->rq_arg.head[0].iov_base,
 			rqstp->rq_argp)) {
-;
+		dprintk("nfsd: failed to decode arguments!\n");
 		nfsd_cache_update(rqstp, RC_NOCACHE, NULL);
 		*statp = rpc_garbage_args;
 		return 1;
@@ -605,7 +605,7 @@ nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 	nfserr = proc->pc_func(rqstp, rqstp->rq_argp, rqstp->rq_resp);
 	nfserr = map_new_errors(rqstp->rq_vers, nfserr);
 	if (nfserr == nfserr_dropit || rqstp->rq_dropme) {
-;
+		dprintk("nfsd: Dropping request; may be revisited later\n");
 		nfsd_cache_update(rqstp, RC_NOCACHE, NULL);
 		return 0;
 	}
@@ -621,7 +621,7 @@ nfsd_dispatch(struct svc_rqst *rqstp, __be32 *statp)
 		if (xdr && !xdr(rqstp, nfserrp,
 				rqstp->rq_resp)) {
 			/* Failed to encode result. Release cache entry */
-;
+			dprintk("nfsd: failed to encode result!\n");
 			nfsd_cache_update(rqstp, RC_NOCACHE, NULL);
 			*statp = rpc_system_err;
 			return 1;

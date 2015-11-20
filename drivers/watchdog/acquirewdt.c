@@ -208,8 +208,8 @@ static int acq_close(struct inode *inode, struct file *file)
 	if (expect_close == 42) {
 		acq_stop();
 	} else {
-//		printk(KERN_CRIT PFX
-;
+		printk(KERN_CRIT PFX
+			"Unexpected close, not stopping watchdog!\n");
 		acq_keepalive();
 	}
 	clear_bit(0, &acq_is_open);
@@ -246,27 +246,27 @@ static int __devinit acq_probe(struct platform_device *dev)
 
 	if (wdt_stop != wdt_start) {
 		if (!request_region(wdt_stop, 1, WATCHDOG_NAME)) {
-//			printk(KERN_ERR PFX
-;
+			printk(KERN_ERR PFX
+			    "I/O address 0x%04x already in use\n", wdt_stop);
 			ret = -EIO;
 			goto out;
 		}
 	}
 
 	if (!request_region(wdt_start, 1, WATCHDOG_NAME)) {
-//		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
-;
+		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
+			wdt_start);
 		ret = -EIO;
 		goto unreg_stop;
 	}
 	ret = misc_register(&acq_miscdev);
 	if (ret != 0) {
-//		printk(KERN_ERR PFX
-//			"cannot register miscdev on minor=%d (err=%d)\n",
-;
+		printk(KERN_ERR PFX
+			"cannot register miscdev on minor=%d (err=%d)\n",
+							WATCHDOG_MINOR, ret);
 		goto unreg_regions;
 	}
-;
+	printk(KERN_INFO PFX "initialized. (nowayout=%d)\n", nowayout);
 
 	return 0;
 unreg_regions:
@@ -308,8 +308,8 @@ static int __init acq_init(void)
 {
 	int err;
 
-//	printk(KERN_INFO
-;
+	printk(KERN_INFO
+	      "WDT driver for Acquire single board computer initialising.\n");
 
 	err = platform_driver_register(&acquirewdt_driver);
 	if (err)
@@ -332,7 +332,7 @@ static void __exit acq_exit(void)
 {
 	platform_device_unregister(acq_platform_device);
 	platform_driver_unregister(&acquirewdt_driver);
-;
+	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
 }
 
 module_init(acq_init);

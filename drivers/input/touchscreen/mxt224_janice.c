@@ -332,14 +332,14 @@ static void set_autocal(u8 val)
 		GEN_ACQUISITIONCONFIG_T8, &size, &obj_address);
 	error = write_mem(data, obj_address+4, 1, &val);
 	if (error < 0)
-;
+		printk(KERN_ERR "[TSP] %s, %d Error!!\n", __func__, __LINE__);
 
 	if (val > 0) {
 		auto_cal_flag = 1;
-;
+		printk(KERN_DEBUG"[TSP] auto calibration enabled : %d\n", val);
 	} else {
 		auto_cal_flag = 0;
-;
+		printk(KERN_DEBUG"[TSP] auto calibration disabled\n");
 	}
 }
 
@@ -402,7 +402,7 @@ uint8_t calibrate_chip(void)
 				if calibration was good or bad */
 			cal_check_flag = 1u;
 			Doing_calibration_falg = 1;
-;
+			printk(KERN_ERR "[TSP] calibration success!!!\n");
 		}
 	}
 	return ret;
@@ -443,12 +443,12 @@ static void mxt224_ta_probe(int __vbus_state)
 	u8 charge_time;
 
 	if (!data) {
-;
+		printk(KERN_ERR "mxt224e: %s: no platform data\n", __func__);
 		return;
 	}
 
 	if (!data->enabled) {
-;
+		printk(KERN_ERR "[TSP] mxt224_enabled is 0\n");
 		return;
 	}
 
@@ -534,9 +534,9 @@ static void mxt224_ta_probe(int __vbus_state)
 		value = calcfg_en;
 		write_mem(copy_data, obj_address+2, 1, &value);
 		read_mem(copy_data, obj_address+2, 1, &val);
-//		printk(KERN_ERR
-//			"[TSP]TA_probe MXT224E T%d Byte%d is %d\n",
-;
+		printk(KERN_ERR
+			"[TSP]TA_probe MXT224E T%d Byte%d is %d\n",
+			48, register_address, val);
 		} else if (copy_data->family_id == 0x80) { /*	: MXT-224 */
 		get_object_info(copy_data,
 			TOUCH_MULTITOUCHSCREEN_T9, &size, &obj_address);
@@ -549,11 +549,11 @@ static void mxt224_ta_probe(int __vbus_state)
 		write_mem(copy_data,
 			obj_address+8, 1, &noise_threshold);
 	}
-;
+	printk(KERN_INFO "[TSP] threshold : %d\n", threshold);
 }
 
 void mxt224e_ts_change_vbus_state(bool vbus_status) {
-;
+	printk(KERN_INFO "mxt224e : vbus state is changed. (%d)\n", vbus_status);
 	mxt224_ta_probe((int)vbus_status);
 }
 EXPORT_SYMBOL(mxt224e_ts_change_vbus_state);

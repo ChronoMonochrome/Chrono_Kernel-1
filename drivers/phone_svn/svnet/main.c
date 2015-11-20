@@ -814,7 +814,7 @@ static int __init svnet_init(void)
 	struct svnet *sn = NULL;
 	struct net_device *ndev;
 
-;
+	printk("[%s]\n",__func__);
 	ndev = alloc_netdev(sizeof(struct svnet), "svnet%d", svnet_setup);
 	if (!ndev) {
 		r = -ENOMEM;

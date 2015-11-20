@@ -980,12 +980,12 @@ EXPORT_SYMBOL(c2port_device_unregister);
 
 static int __init c2port_init(void)
 {
-//	printk(KERN_INFO "Silicon Labs C2 port support v. " DRIVER_VERSION
-;
+	printk(KERN_INFO "Silicon Labs C2 port support v. " DRIVER_VERSION
+		" - (C) 2007 Rodolfo Giometti\n");
 
 	c2port_class = class_create(THIS_MODULE, "c2port");
 	if (!c2port_class) {
-;
+		printk(KERN_ERR "c2port: failed to allocate class\n");
 		return -ENOMEM;
 	}
 	c2port_class->dev_attrs = c2port_attrs;

@@ -745,10 +745,10 @@ int nfs_updatepage(struct file *file, struct page *page,
 
 	nfs_inc_stats(inode, NFSIOS_VFSUPDATEPAGE);
 
-//	dprintk("NFS:       nfs_updatepage(%s/%s %d@%lld)\n",
-//		file->f_path.dentry->d_parent->d_name.name,
-//		file->f_path.dentry->d_name.name, count,
-;
+	dprintk("NFS:       nfs_updatepage(%s/%s %d@%lld)\n",
+		file->f_path.dentry->d_parent->d_name.name,
+		file->f_path.dentry->d_name.name, count,
+		(long long)(page_offset(page) + offset));
 
 	/* If we're not using byte range locks, and we know the page
 	 * is up to date, it may be more efficient to extend the write
@@ -768,8 +768,8 @@ int nfs_updatepage(struct file *file, struct page *page,
 	else
 		__set_page_dirty_nobuffers(page);
 
-//	dprintk("NFS:       nfs_updatepage returns %d (isize %lld)\n",
-;
+	dprintk("NFS:       nfs_updatepage returns %d (isize %lld)\n",
+			status, (long long)i_size_read(inode));
 	return status;
 }
 
@@ -823,13 +823,13 @@ int nfs_initiate_write(struct nfs_write_data *data,
 	/* Set up the initial task struct.  */
 	NFS_PROTO(inode)->write_setup(data, &msg);
 
-//	dprintk("NFS: %5u initiated write call "
-//		"(req %s/%lld, %u bytes @ offset %llu)\n",
-//		data->task.tk_pid,
-//		inode->i_sb->s_id,
-//		(long long)NFS_FILEID(inode),
-//		data->args.count,
-;
+	dprintk("NFS: %5u initiated write call "
+		"(req %s/%lld, %u bytes @ offset %llu)\n",
+		data->task.tk_pid,
+		inode->i_sb->s_id,
+		(long long)NFS_FILEID(inode),
+		data->args.count,
+		(unsigned long long)data->args.offset);
 
 	task = rpc_run_task(&task_setup_data);
 	if (IS_ERR(task)) {
@@ -1083,12 +1083,12 @@ static void nfs_writeback_done_partial(struct rpc_task *task, void *calldata)
 {
 	struct nfs_write_data	*data = calldata;
 
-//	dprintk("NFS: %5u write(%s/%lld %d@%lld)",
-//		task->tk_pid,
-//		data->req->wb_context->dentry->d_inode->i_sb->s_id,
-//		(long long)
-//		  NFS_FILEID(data->req->wb_context->dentry->d_inode),
-;
+	dprintk("NFS: %5u write(%s/%lld %d@%lld)",
+		task->tk_pid,
+		data->req->wb_context->dentry->d_inode->i_sb->s_id,
+		(long long)
+		  NFS_FILEID(data->req->wb_context->dentry->d_inode),
+		data->req->wb_bytes, (long long)req_offset(data->req));
 
 	nfs_writeback_done(task, data);
 }
@@ -1103,7 +1103,7 @@ static void nfs_writeback_release_partial(void *calldata)
 	if (status < 0) {
 		nfs_set_pageerror(page);
 		nfs_context_set_write_error(req->wb_context, status);
-;
+		dprintk(", error = %d\n", status);
 		goto out;
 	}
 
@@ -1115,15 +1115,15 @@ static void nfs_writeback_release_partial(void *calldata)
 			/* Do nothing we need to resend the writes */
 		} else if (!test_and_set_bit(PG_NEED_COMMIT, &req->wb_flags)) {
 			memcpy(&req->wb_verf, &data->verf, sizeof(req->wb_verf));
-;
+			dprintk(" defer commit\n");
 		} else if (memcmp(&req->wb_verf, &data->verf, sizeof(req->wb_verf))) {
 			set_bit(PG_NEED_RESCHED, &req->wb_flags);
 			clear_bit(PG_NEED_COMMIT, &req->wb_flags);
-;
+			dprintk(" server reboot detected\n");
 		}
 		spin_unlock(&inode->i_lock);
 	} else
-;
+		dprintk(" OK\n");
 
 out:
 	if (atomic_dec_and_test(&req->wb_complete))
@@ -1184,32 +1184,32 @@ static void nfs_writeback_release_full(void *calldata)
 
 		nfs_list_remove_request(req);
 
-//		dprintk("NFS: %5u write (%s/%lld %d@%lld)",
-//			data->task.tk_pid,
-//			req->wb_context->dentry->d_inode->i_sb->s_id,
-//			(long long)NFS_FILEID(req->wb_context->dentry->d_inode),
-//			req->wb_bytes,
-;
+		dprintk("NFS: %5u write (%s/%lld %d@%lld)",
+			data->task.tk_pid,
+			req->wb_context->dentry->d_inode->i_sb->s_id,
+			(long long)NFS_FILEID(req->wb_context->dentry->d_inode),
+			req->wb_bytes,
+			(long long)req_offset(req));
 
 		if (data->pnfs_error) {
-;
+			dprintk(", pnfs error = %d\n", data->pnfs_error);
 			goto next;
 		}
 
 		if (status < 0) {
 			nfs_set_pageerror(page);
 			nfs_context_set_write_error(req->wb_context, status);
-;
+			dprintk(", error = %d\n", status);
 			goto remove_request;
 		}
 
 		if (nfs_write_need_commit(data)) {
 			memcpy(&req->wb_verf, &data->verf, sizeof(req->wb_verf));
 			nfs_mark_request_commit(req, data->lseg);
-;
+			dprintk(" marked for commit\n");
 			goto next;
 		}
-;
+		dprintk(" OK\n");
 remove_request:
 		nfs_inode_remove_request(req);
 	next:
@@ -1221,7 +1221,7 @@ remove_request:
 			ret = nfs_page_async_flush(&pgio, page, 0);
 			if (ret) {
 				nfs_set_pageerror(page);
-;
+				dprintk("rewrite to MDS error = %d\n", ret);
 			}
 			unlock_page(page);
 		}
@@ -1249,8 +1249,8 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
 	struct nfs_writeres	*resp = &data->res;
 	int status;
 
-//	dprintk("NFS: %5u nfs_writeback_done (status %d)\n",
-;
+	dprintk("NFS: %5u nfs_writeback_done (status %d)\n",
+		task->tk_pid, task->tk_status);
 
 	/*
 	 * ->write_done will attempt to use post-op attributes to detect
@@ -1278,10 +1278,10 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
 
 		/* Note this will print the MDS for a DS write */
 		if (time_before(complain, jiffies)) {
-//			dprintk("NFS:       faulty NFS server %s:"
-//				" (committed = %d) != (stable = %d)\n",
-//				NFS_SERVER(data->inode)->nfs_client->cl_hostname,
-;
+			dprintk("NFS:       faulty NFS server %s:"
+				" (committed = %d) != (stable = %d)\n",
+				NFS_SERVER(data->inode)->nfs_client->cl_hostname,
+				resp->verf->committed, argp->stable);
 			complain = jiffies + 300 * HZ;
 		}
 	}
@@ -1311,9 +1311,9 @@ void nfs_writeback_done(struct rpc_task *task, struct nfs_write_data *data)
 			return;
 		}
 		if (time_before(complain, jiffies)) {
-//			printk(KERN_WARNING
-//			       "NFS: Server wrote zero bytes, expected %u.\n",
-;
+			printk(KERN_WARNING
+			       "NFS: Server wrote zero bytes, expected %u.\n",
+					argp->count);
 			complain = jiffies + 300 * HZ;
 		}
 		/* Can't do anything about it except throw an error. */
@@ -1381,7 +1381,7 @@ int nfs_initiate_commit(struct nfs_write_data *data, struct rpc_clnt *clnt,
 	/* Set up the initial task struct.  */
 	NFS_PROTO(data->inode)->commit_setup(data, &msg);
 
-;
+	dprintk("NFS: %5u initiated commit call\n", data->task.tk_pid);
 
 	task = rpc_run_task(&task_setup_data);
 	if (IS_ERR(task))
@@ -1471,8 +1471,8 @@ static void nfs_commit_done(struct rpc_task *task, void *calldata)
 {
 	struct nfs_write_data	*data = calldata;
 
-//        dprintk("NFS: %5u nfs_commit_done (status %d)\n",
-;
+        dprintk("NFS: %5u nfs_commit_done (status %d)\n",
+                                task->tk_pid, task->tk_status);
 
 	/* Call the NFS version-specific code */
 	NFS_PROTO(data->inode)->commit_done(task, data);
@@ -1488,15 +1488,15 @@ void nfs_commit_release_pages(struct nfs_write_data *data)
 		nfs_list_remove_request(req);
 		nfs_clear_request_commit(req);
 
-//		dprintk("NFS:       commit (%s/%lld %d@%lld)",
-//			req->wb_context->dentry->d_sb->s_id,
-//			(long long)NFS_FILEID(req->wb_context->dentry->d_inode),
-//			req->wb_bytes,
-;
+		dprintk("NFS:       commit (%s/%lld %d@%lld)",
+			req->wb_context->dentry->d_sb->s_id,
+			(long long)NFS_FILEID(req->wb_context->dentry->d_inode),
+			req->wb_bytes,
+			(long long)req_offset(req));
 		if (status < 0) {
 			nfs_context_set_write_error(req->wb_context, status);
 			nfs_inode_remove_request(req);
-;
+			dprintk(", error = %d\n", status);
 			goto next;
 		}
 
@@ -1505,11 +1505,11 @@ void nfs_commit_release_pages(struct nfs_write_data *data)
 		if (!memcmp(req->wb_verf.verifier, data->verf.verifier, sizeof(data->verf.verifier))) {
 			/* We have a match */
 			nfs_inode_remove_request(req);
-;
+			dprintk(" OK\n");
 			goto next;
 		}
 		/* We have a mismatch. Write the page again */
-;
+		dprintk(" mismatch\n");
 		nfs_mark_request_dirty(req);
 	next:
 		nfs_clear_page_tag_locked(req);

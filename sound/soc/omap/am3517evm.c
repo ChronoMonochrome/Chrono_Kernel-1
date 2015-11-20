@@ -49,7 +49,7 @@ static int am3517evm_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "can't set codec DAI configuration\n");
 		return ret;
 	}
 
@@ -59,7 +59,7 @@ static int am3517evm_hw_params(struct snd_pcm_substream *substream,
 				  SND_SOC_DAIFMT_NB_NF |
 				  SND_SOC_DAIFMT_CBM_CFM);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "can't set cpu DAI configuration\n");
 		return ret;
 	}
 
@@ -67,21 +67,21 @@ static int am3517evm_hw_params(struct snd_pcm_substream *substream,
 	ret = snd_soc_dai_set_sysclk(codec_dai, 0,
 			CODEC_CLOCK, SND_SOC_CLOCK_IN);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "can't set codec system clock\n");
 		return ret;
 	}
 
 	ret = snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_CLKR_SRC_CLKX, 0,
 				SND_SOC_CLOCK_IN);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "can't set CPU system clock OMAP_MCBSP_CLKR_SRC_CLKX\n");
 		return ret;
 	}
 
 	snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_FSR_SRC_FSX, 0,
 				SND_SOC_CLOCK_IN);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "can't set CPU system clock OMAP_MCBSP_FSR_SRC_FSX\n");
 		return ret;
 	}
 
@@ -163,7 +163,7 @@ static int __init am3517evm_soc_init(void)
 
 	am3517evm_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!am3517evm_snd_device) {
-;
+		printk(KERN_ERR "Platform device allocation failed\n");
 		return -ENOMEM;
 	}
 
@@ -176,7 +176,7 @@ static int __init am3517evm_soc_init(void)
 	return 0;
 
 err1:
-;
+	printk(KERN_ERR "Unable to add platform device\n");
 	platform_device_put(am3517evm_snd_device);
 
 	return ret;

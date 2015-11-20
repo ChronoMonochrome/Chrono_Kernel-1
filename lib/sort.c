@@ -99,7 +99,7 @@ static int sort_test(void)
 	a = kmalloc(1000 * sizeof(int), GFP_KERNEL);
 	BUG_ON(!a);
 
-;
+	printk("testing sort()\n");
 
 	for (i = 0; i < 1000; i++) {
 		r = (r * 725861) % 6599;
@@ -110,7 +110,7 @@ static int sort_test(void)
 
 	for (i = 0; i < 999; i++)
 		if (a[i] > a[i+1]) {
-;
+			printk("sort() failed!\n");
 			break;
 		}
 

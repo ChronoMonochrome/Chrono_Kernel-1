@@ -873,8 +873,8 @@ static int build_i2c_fw_hdr(__u8 *header, struct device *dev)
 
 	err = request_firmware(&fw, fw_name, dev);
 	if (err) {
-//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-;
+		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+		       fw_name, err);
 		kfree(buffer);
 		return err;
 	}
@@ -1439,8 +1439,8 @@ static int download_fw(struct edgeport_serial *serial)
 
 		err = request_firmware(&fw, fw_name, dev);
 		if (err) {
-//			printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-;
+			printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+			       fw_name, err);
 			kfree(buffer);
 			return err;
 		}
@@ -2819,8 +2819,8 @@ static int __init edgeport_init(void)
 	retval = usb_register(&io_driver);
 	if (retval)
 		goto failed_usb_register;
-//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-;
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&edgeport_2port_device);

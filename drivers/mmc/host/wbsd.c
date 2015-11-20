@@ -1722,15 +1722,15 @@ static int __devinit wbsd_init(struct device *dev, int base, int irq, int dma,
 
 	pr_info("%s: W83L51xD", mmc_hostname(mmc));
 	if (host->chip_id != 0)
-;
-;
+		printk(" id %x", (int)host->chip_id);
+	printk(" at 0x%x irq %d", (int)host->base, (int)host->irq);
 	if (host->dma >= 0)
-;
+		printk(" dma %d", (int)host->dma);
 	else
-;
+		printk(" FIFO");
 	if (pnp)
-;
-;
+		printk(" PnP");
+	printk("\n");
 
 	return 0;
 }

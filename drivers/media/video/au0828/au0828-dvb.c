@@ -99,7 +99,7 @@ static void urb_completion(struct urb *purb)
 	struct au0828_dev *dev = purb->context;
 	int ptype = usb_pipetype(purb->pipe);
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	if (!dev)
 		return;
@@ -108,8 +108,8 @@ static void urb_completion(struct urb *purb)
 		return;
 
 	if (ptype != PIPE_BULK) {
-//		printk(KERN_ERR "%s() Unsupported URB type %d\n",
-;
+		printk(KERN_ERR "%s() Unsupported URB type %d\n",
+		       __func__, ptype);
 		return;
 	}
 
@@ -128,7 +128,7 @@ static int stop_urb_transfer(struct au0828_dev *dev)
 {
 	int i;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	for (i = 0; i < URB_COUNT; i++) {
 		usb_kill_urb(dev->urbs[i]);
@@ -146,10 +146,10 @@ static int start_urb_transfer(struct au0828_dev *dev)
 	struct urb *purb;
 	int i, ret = -ENOMEM;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	if (dev->urb_streaming) {
-;
+		dprintk(2, "%s: bulk xfer already running!\n", __func__);
 		return 0;
 	}
 
@@ -184,8 +184,8 @@ static int start_urb_transfer(struct au0828_dev *dev)
 		ret = usb_submit_urb(dev->urbs[i], GFP_ATOMIC);
 		if (ret != 0) {
 			stop_urb_transfer(dev);
-//			printk(KERN_ERR "%s: failed urb submission, "
-;
+			printk(KERN_ERR "%s: failed urb submission, "
+			       "err = %d\n", __func__, ret);
 			return ret;
 		}
 	}
@@ -204,7 +204,7 @@ static int au0828_dvb_start_feed(struct dvb_demux_feed *feed)
 	struct au0828_dvb *dvb = &dev->dvb;
 	int ret = 0;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	if (!demux->dmx.frontend)
 		return -EINVAL;
@@ -232,7 +232,7 @@ static int au0828_dvb_stop_feed(struct dvb_demux_feed *feed)
 	struct au0828_dvb *dvb = &dev->dvb;
 	int ret = 0;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	if (dvb) {
 		mutex_lock(&dvb->lock);
@@ -255,14 +255,14 @@ static int dvb_register(struct au0828_dev *dev)
 	struct au0828_dvb *dvb = &dev->dvb;
 	int result;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	/* register adapter */
 	result = dvb_register_adapter(&dvb->adapter, DRIVER_NAME, THIS_MODULE,
 				      &dev->usbdev->dev, adapter_nr);
 	if (result < 0) {
-//		printk(KERN_ERR "%s: dvb_register_adapter failed "
-;
+		printk(KERN_ERR "%s: dvb_register_adapter failed "
+		       "(errno = %d)\n", DRIVER_NAME, result);
 		goto fail_adapter;
 	}
 	dvb->adapter.priv = dev;
@@ -270,8 +270,8 @@ static int dvb_register(struct au0828_dev *dev)
 	/* register frontend */
 	result = dvb_register_frontend(&dvb->adapter, dvb->frontend);
 	if (result < 0) {
-//		printk(KERN_ERR "%s: dvb_register_frontend failed "
-;
+		printk(KERN_ERR "%s: dvb_register_frontend failed "
+		       "(errno = %d)\n", DRIVER_NAME, result);
 		goto fail_frontend;
 	}
 
@@ -286,8 +286,8 @@ static int dvb_register(struct au0828_dev *dev)
 	dvb->demux.stop_feed  = au0828_dvb_stop_feed;
 	result = dvb_dmx_init(&dvb->demux);
 	if (result < 0) {
-//		printk(KERN_ERR "%s: dvb_dmx_init failed (errno = %d)\n",
-;
+		printk(KERN_ERR "%s: dvb_dmx_init failed (errno = %d)\n",
+		       DRIVER_NAME, result);
 		goto fail_dmx;
 	}
 
@@ -296,31 +296,31 @@ static int dvb_register(struct au0828_dev *dev)
 	dvb->dmxdev.capabilities = 0;
 	result = dvb_dmxdev_init(&dvb->dmxdev, &dvb->adapter);
 	if (result < 0) {
-//		printk(KERN_ERR "%s: dvb_dmxdev_init failed (errno = %d)\n",
-;
+		printk(KERN_ERR "%s: dvb_dmxdev_init failed (errno = %d)\n",
+		       DRIVER_NAME, result);
 		goto fail_dmxdev;
 	}
 
 	dvb->fe_hw.source = DMX_FRONTEND_0;
 	result = dvb->demux.dmx.add_frontend(&dvb->demux.dmx, &dvb->fe_hw);
 	if (result < 0) {
-//		printk(KERN_ERR "%s: add_frontend failed "
-;
+		printk(KERN_ERR "%s: add_frontend failed "
+		       "(DMX_FRONTEND_0, errno = %d)\n", DRIVER_NAME, result);
 		goto fail_fe_hw;
 	}
 
 	dvb->fe_mem.source = DMX_MEMORY_FE;
 	result = dvb->demux.dmx.add_frontend(&dvb->demux.dmx, &dvb->fe_mem);
 	if (result < 0) {
-//		printk(KERN_ERR "%s: add_frontend failed "
-;
+		printk(KERN_ERR "%s: add_frontend failed "
+		       "(DMX_MEMORY_FE, errno = %d)\n", DRIVER_NAME, result);
 		goto fail_fe_mem;
 	}
 
 	result = dvb->demux.dmx.connect_frontend(&dvb->demux.dmx, &dvb->fe_hw);
 	if (result < 0) {
-//		printk(KERN_ERR "%s: connect_frontend failed (errno = %d)\n",
-;
+		printk(KERN_ERR "%s: connect_frontend failed (errno = %d)\n",
+		       DRIVER_NAME, result);
 		goto fail_fe_conn;
 	}
 
@@ -349,7 +349,7 @@ void au0828_dvb_unregister(struct au0828_dev *dev)
 {
 	struct au0828_dvb *dvb = &dev->dvb;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	if (dvb->frontend == NULL)
 		return;
@@ -373,7 +373,7 @@ int au0828_dvb_register(struct au0828_dev *dev)
 	struct au0828_dvb *dvb = &dev->dvb;
 	int ret;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	/* init frontend */
 	switch (dev->boardnr) {
@@ -415,13 +415,13 @@ int au0828_dvb_register(struct au0828_dev *dev)
 		}
 		break;
 	default:
-//		printk(KERN_WARNING "The frontend of your DVB/ATSC card "
-;
+		printk(KERN_WARNING "The frontend of your DVB/ATSC card "
+		       "isn't supported yet\n");
 		break;
 	}
 	if (NULL == dvb->frontend) {
-//		printk(KERN_ERR "%s() Frontend initialization failed\n",
-;
+		printk(KERN_ERR "%s() Frontend initialization failed\n",
+		       __func__);
 		return -1;
 	}
 	/* define general-purpose callback pointer */

@@ -186,8 +186,8 @@ static void sermouse_process_ms(struct sermouse *sermouse, signed char data)
 
 				default: /* We don't decode anything else yet. */
 
-//					printk(KERN_WARNING
-;
+					printk(KERN_WARNING
+						"sermouse.c: Received MZ++ packet %x, don't know how to handle.\n", buf[1]);
 					break;
 			}
 

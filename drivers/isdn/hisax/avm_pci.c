@@ -376,7 +376,7 @@ HDLC_irq(struct BCState *bcs, u_int stat) {
 				if (((stat & HDLC_STAT_CRCVFRRAB)==HDLC_STAT_CRCVFR) ||
 					(bcs->mode == L1_MODE_TRANS)) {
 					if (!(skb = dev_alloc_skb(bcs->hw.hdlc.rcvidx)))
-;
+						printk(KERN_WARNING "HDLC: receive out of memory\n");
 					else {
 						memcpy(skb_put(skb, bcs->hw.hdlc.rcvidx),
 							bcs->hw.hdlc.rcvbuf, bcs->hw.hdlc.rcvidx);
@@ -501,7 +501,7 @@ hdlc_l2l1(struct PStack *st, int pr, void *arg)
 		case (PH_PULL | INDICATION):
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
-;
+				printk(KERN_WARNING "hdlc_l2l1: this shouldn't happen\n");
 			} else {
 				test_and_set_bit(BC_FLG_BUSY, &bcs->Flag);
 				bcs->tx_skb = skb;
@@ -562,13 +562,13 @@ open_hdlcstate(struct IsdnCardState *cs, struct BCState *bcs)
 {
 	if (!test_and_set_bit(BC_FLG_INIT, &bcs->Flag)) {
 		if (!(bcs->hw.hdlc.rcvbuf = kmalloc(HSCX_BUFMAX, GFP_ATOMIC))) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			       "HiSax: No memory for hdlc.rcvbuf\n");
 			return (1);
 		}
 		if (!(bcs->blog = kmalloc(MAX_BLOG_SPACE, GFP_ATOMIC))) {
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+				"HiSax: No memory for bcs->blog\n");
 			test_and_clear_bit(BC_FLG_INIT, &bcs->Flag);
 			kfree(bcs->hw.hdlc.rcvbuf);
 			bcs->hw.hdlc.rcvbuf = NULL;
@@ -673,13 +673,13 @@ avm_pcipnp_interrupt(int intno, void *dev_id)
 static void
 reset_avmpcipnp(struct IsdnCardState *cs)
 {
-;
+	printk(KERN_INFO "AVM PCI/PnP: reset\n");
 	outb(AVM_STATUS0_RESET | AVM_STATUS0_DIS_TIMER, cs->hw.avm.cfg_reg + 2);
 	mdelay(10);
 	outb(AVM_STATUS0_DIS_TIMER | AVM_STATUS0_RES_TIMER | AVM_STATUS0_ENA_IRQ, cs->hw.avm.cfg_reg + 2);
 	outb(AVM_STATUS1_ENA_IOM | cs->irq, cs->hw.avm.cfg_reg + 3);
 	mdelay(10);
-;
+	printk(KERN_INFO "AVM PCI/PnP: S1 %x\n", inb(cs->hw.avm.cfg_reg + 3));
 }
 
 static int
@@ -725,35 +725,35 @@ static int __devinit avm_setup_rest(struct IsdnCardState *cs)
 	cs->hw.avm.isac = cs->hw.avm.cfg_reg + 0x10;
 	if (!request_region(cs->hw.avm.cfg_reg, 32,
 		(cs->subtyp == AVM_FRITZ_PCI) ? "avm PCI" : "avm PnP")) {
-//		printk(KERN_WARNING
-//		       "HiSax: Fritz!PCI/PNP config port %x-%x already in use\n",
-//		       cs->hw.avm.cfg_reg,
-;
+		printk(KERN_WARNING
+		       "HiSax: Fritz!PCI/PNP config port %x-%x already in use\n",
+		       cs->hw.avm.cfg_reg,
+		       cs->hw.avm.cfg_reg + 31);
 		return (0);
 	}
 	switch (cs->subtyp) {
 	  case AVM_FRITZ_PCI:
 		val = inl(cs->hw.avm.cfg_reg);
-;
-//		printk(KERN_INFO "AVM PCI: Class %X Rev %d\n",
-;
+		printk(KERN_INFO "AVM PCI: stat %#x\n", val);
+		printk(KERN_INFO "AVM PCI: Class %X Rev %d\n",
+			val & 0xff, (val>>8) & 0xff);
 		cs->BC_Read_Reg = &ReadHDLC_s;
 		cs->BC_Write_Reg = &WriteHDLC_s;
 		break;
 	  case AVM_FRITZ_PNP:
 		val = inb(cs->hw.avm.cfg_reg);
 		ver = inb(cs->hw.avm.cfg_reg + 1);
-;
+		printk(KERN_INFO "AVM PnP: Class %X Rev %d\n", val, ver);
 		cs->BC_Read_Reg = &ReadHDLCPnP;
 		cs->BC_Write_Reg = &WriteHDLCPnP;
 		break;
 	  default:
-;
+	  	printk(KERN_WARNING "AVM unknown subtype %d\n", cs->subtyp);
 	  	return(0);
 	}
-//	printk(KERN_INFO "HiSax: %s config irq:%d base:0x%X\n",
-//		(cs->subtyp == AVM_FRITZ_PCI) ? "AVM Fritz!PCI" : "AVM Fritz!PnP",
-;
+	printk(KERN_INFO "HiSax: %s config irq:%d base:0x%X\n",
+		(cs->subtyp == AVM_FRITZ_PCI) ? "AVM Fritz!PCI" : "AVM Fritz!PnP",
+		cs->irq, cs->hw.avm.cfg_reg);
 
 	setup_isac(cs);
 	cs->readisac = &ReadISAC;
@@ -797,19 +797,19 @@ static int __devinit avm_pnp_setup(struct IsdnCardState *cs)
 			pnp_disable_dev(pnp_avm_d);
 			err = pnp_activate_dev(pnp_avm_d);
 			if (err<0) {
-//				printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
-;
+				printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
+					__func__, err);
 				return(0);
 			}
 			cs->hw.avm.cfg_reg =
 				pnp_port_start(pnp_avm_d, 0);
 			cs->irq = pnp_irq(pnp_avm_d, 0);
 			if (!cs->irq) {
-;
+				printk(KERN_ERR "FritzPnP:No IRQ\n");
 				return(0);
 			}
 			if (!cs->hw.avm.cfg_reg) {
-;
+				printk(KERN_ERR "FritzPnP:No IO address\n");
 				return(0);
 			}
 			cs->subtyp = AVM_FRITZ_PNP;
@@ -844,19 +844,19 @@ static int __devinit avm_pci_setup(struct IsdnCardState *cs)
 
 		cs->irq = dev_avm->irq;
 		if (!cs->irq) {
-;
+			printk(KERN_ERR "FritzPCI: No IRQ for PCI card found\n");
 			return(0);
 		}
 
 		cs->hw.avm.cfg_reg = pci_resource_start(dev_avm, 1);
 		if (!cs->hw.avm.cfg_reg) {
-;
+			printk(KERN_ERR "FritzPCI: No IO-Adr for PCI card found\n");
 			return(0);
 		}
 
 		cs->subtyp = AVM_FRITZ_PCI;
 	} else {
-;
+		printk(KERN_WARNING "FritzPCI: No PCI card found\n");
 		return(0);
 	}
 
@@ -875,7 +875,7 @@ setup_avm_pcipnp(struct IsdnCard *card)
 	int rc;
 
 	strcpy(tmp, avm_pci_rev);
-;
+	printk(KERN_INFO "HiSax: AVM PCI driver Rev. %s\n", HiSax_getrev(tmp));
 
 	if (cs->typ != ISDN_CTYPE_FRITZPCI)
 		return (0);

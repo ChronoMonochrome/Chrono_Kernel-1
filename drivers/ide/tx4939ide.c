@@ -276,8 +276,8 @@ static int tx4939ide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 	}
 
 use_pio_instead:
-//	printk(KERN_ERR "%s: %s\n", drive->name,
-;
+	printk(KERN_ERR "%s: %s\n", drive->name,
+		count ? "DMA table too small" : "empty DMA table?");
 
 	return 0; /* revert to PIO for this request */
 }

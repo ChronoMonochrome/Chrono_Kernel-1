@@ -499,7 +499,7 @@ static int __init immvibe_setup( void )
 		goto ldo_en_gpio_failed;
 	}
 
-;
+	printk(KERN_ERR "%s(), Vibrator gpio's are configured.\n", __func__);
 	return ret;
 
 ldo_en_gpio_failed:
@@ -558,8 +558,8 @@ static void mxt224_power_con(bool on)
 		gpio_direction_output(TSP_LDO_ON1_GAVINI_R0_0, 0);
 	}
 
-//	printk(KERN_INFO "%s is finished.(%s)\n",
-;
+	printk(KERN_INFO "%s is finished.(%s)\n",
+						__func__, (on) ? "on" : "off");
 }
 
 #ifdef CONFIG_USB_SWITCHER
@@ -582,7 +582,7 @@ static int mxt224_usb_switcher_notify(struct notifier_block *self, unsigned long
 static void mxt224_register_callback(void *function)
 {
 /*
-;
+	printk(KERN_INFO "mxt224_register_callback\n");
 
 	charging_cbs.tsp_set_charging_cable = function;
 */
@@ -853,8 +853,8 @@ static void mms_ts_pin_set_pull(int pin, bool to_up)
 
 	ret = nmk_gpio_set_pull(pin, pull);
 	if (ret < 0)
-//		printk(KERN_ERR "%s: fail to set %3d pull %d\n",
-;
+		printk(KERN_ERR "%s: fail to set %3d pull %d\n",
+							__func__, pin, to_up);
 }
 
 static int mms_ts_pin_configure(bool to_gpios)
@@ -1998,7 +1998,7 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
-;
+	printk("@@@@ BT WAKE_PEER\n");
 	return;
 }
 
@@ -2269,7 +2269,7 @@ static void fetch_usb_serial_no(int len)
 					buf[0], buf[1], buf[2], buf[3], buf[4]);
 		iounmap(backup_ram);
 	} else {
-;
+		printk(KERN_ERR "$$ ioremap failed\n");
 	}
 }
 #endif
@@ -2414,35 +2414,35 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 7:
-;
+		printk(KERN_INFO "GAVINI Board Rev 0.0\n");
 		system_rev = GAVINI_R0_0;
 		break;
 	case 8:
-;
+		printk(KERN_INFO "GAVINI Board Rev 0.0A\n");
 		system_rev = GAVINI_R0_0_A;
 		break;
 	case 9:
-;
+		printk(KERN_INFO "GAVINI Board Rev 0.0B\n");
 		system_rev = GAVINI_R0_0_B;
 		break;
 	case 10:
-;
+		printk(KERN_INFO "GAVINI Board Rev 0.0A_EMUL\n");
 		system_rev = GAVINI_R0_0_A_EMUL;
 		break;
 	case 11:
-;
+		printk(KERN_INFO "GAVINI Board Rev 0.0C\n");
 		system_rev = GAVINI_R0_0_C;
 		break;
 	case 12:
-;
+		printk(KERN_INFO "GAVINI Board Rev 0.0D\n");
 		system_rev = GAVINI_R0_0_D;
 		break;
 	case 13:
-;
+		printk(KERN_INFO "GAVINI Board Rev 0.1\n");
 		system_rev = GAVINI_R0_1;
 		break;
 	case 14:
-;
+		printk(KERN_INFO "GAVINI Board Rev 0.1\n");
 		system_rev = GAVINI_R0_3;
 		break;
 	default:

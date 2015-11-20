@@ -180,10 +180,10 @@ static void comm_log_adapter( PIA *pi, char * scratch, int verbose )
 
 {       char    *mode_string[5] = {"4-bit","8-bit","EPP-8","EPP-16","EPP-32"};
 
-//        printk("%s: comm %s, DataStor Commuter at 0x%x, ",
-;
-//        printk("mode %d (%s), delay %d\n",pi->mode,
-;
+        printk("%s: comm %s, DataStor Commuter at 0x%x, ",
+                pi->device,COMM_VERSION,pi->port);
+        printk("mode %d (%s), delay %d\n",pi->mode,
+		mode_string[pi->mode],pi->delay);
 
 }
 

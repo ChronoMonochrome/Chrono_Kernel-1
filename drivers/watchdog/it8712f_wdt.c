@@ -153,10 +153,10 @@ static void it8712f_wdt_update_margin(void)
 	 */
 	if (units <= max_units) {
 		config |= WDT_UNIT_SEC; /* else UNIT is MINUTES */
-;
+		printk(KERN_INFO NAME ": timer margin %d seconds\n", units);
 	} else {
 		units /= 60;
-;
+		printk(KERN_INFO NAME ": timer margin %d minutes\n", units);
 	}
 	superio_outb(config, WDT_CONFIG);
 
@@ -175,7 +175,7 @@ static int it8712f_wdt_get_status(void)
 
 static void it8712f_wdt_enable(void)
 {
-;
+	printk(KERN_DEBUG NAME ": enabling watchdog timer\n");
 	superio_enter();
 	superio_select(LDN_GPIO);
 
@@ -190,7 +190,7 @@ static void it8712f_wdt_enable(void)
 
 static void it8712f_wdt_disable(void)
 {
-;
+	printk(KERN_DEBUG NAME ": disabling watchdog timer\n");
 
 	superio_enter();
 	superio_select(LDN_GPIO);
@@ -309,9 +309,9 @@ static int it8712f_wdt_open(struct inode *inode, struct file *file)
 static int it8712f_wdt_release(struct inode *inode, struct file *file)
 {
 	if (expect_close != 42) {
-//		printk(KERN_WARNING NAME
-//			": watchdog device closed unexpectedly, will not"
-;
+		printk(KERN_WARNING NAME
+			": watchdog device closed unexpectedly, will not"
+			" disable the watchdog timer\n");
 	} else if (!nowayout) {
 		it8712f_wdt_disable();
 	}
@@ -349,13 +349,13 @@ static int __init it8712f_wdt_find(unsigned short *address)
 	superio_select(LDN_GAME);
 	superio_outb(1, ACT_REG);
 	if (!(superio_inb(ACT_REG) & 0x01)) {
-;
+		printk(KERN_ERR NAME ": Device not activated, skipping\n");
 		goto exit;
 	}
 
 	*address = superio_inw(BASE_REG);
 	if (*address == 0) {
-;
+		printk(KERN_ERR NAME ": Base address not set, skipping\n");
 		goto exit;
 	}
 
@@ -369,9 +369,9 @@ static int __init it8712f_wdt_find(unsigned short *address)
 	if (margin > (max_units * 60))
 		margin = (max_units * 60);
 
-//	printk(KERN_INFO NAME ": Found IT%04xF chip revision %d - "
-//		"using DogFood address 0x%x\n",
-;
+	printk(KERN_INFO NAME ": Found IT%04xF chip revision %d - "
+		"using DogFood address 0x%x\n",
+		chip_type, revision, *address);
 
 exit:
 	superio_exit();
@@ -388,7 +388,7 @@ static int __init it8712f_wdt_init(void)
 		return -ENODEV;
 
 	if (!request_region(address, 1, "IT8712F Watchdog")) {
-;
+		printk(KERN_WARNING NAME ": watchdog I/O region busy\n");
 		return -EBUSY;
 	}
 
@@ -396,15 +396,15 @@ static int __init it8712f_wdt_init(void)
 
 	err = register_reboot_notifier(&it8712f_wdt_notifier);
 	if (err) {
-;
+		printk(KERN_ERR NAME ": unable to register reboot notifier\n");
 		goto out;
 	}
 
 	err = misc_register(&it8712f_wdt_miscdev);
 	if (err) {
-//		printk(KERN_ERR NAME
-//			": cannot register miscdev on minor=%d (err=%d)\n",
-;
+		printk(KERN_ERR NAME
+			": cannot register miscdev on minor=%d (err=%d)\n",
+			WATCHDOG_MINOR, err);
 		goto reboot_out;
 	}
 

@@ -68,7 +68,7 @@ static void bcm47xx_timer_tick(unsigned long unused)
 		bcm47xx_wdt_hw_start();
 		mod_timer(&wdt_timer, jiffies + HZ);
 	} else {
-;
+		printk(KERN_CRIT DRV_NAME "Watchdog will fire soon!!!\n");
 	}
 }
 
@@ -117,8 +117,8 @@ static int bcm47xx_wdt_release(struct inode *inode, struct file *file)
 	if (expect_release == 42) {
 		bcm47xx_wdt_stop();
 	} else {
-//		printk(KERN_CRIT DRV_NAME
-;
+		printk(KERN_CRIT DRV_NAME
+			": Unexpected close, not stopping watchdog!\n");
 		bcm47xx_wdt_start();
 	}
 
@@ -247,9 +247,9 @@ static int __init bcm47xx_wdt_init(void)
 
 	if (bcm47xx_wdt_settimeout(wdt_time)) {
 		bcm47xx_wdt_settimeout(WDT_DEFAULT_TIME);
-//		printk(KERN_INFO DRV_NAME ": "
-//			"wdt_time value must be 0 < wdt_time < %d, using %d\n",
-;
+		printk(KERN_INFO DRV_NAME ": "
+			"wdt_time value must be 0 < wdt_time < %d, using %d\n",
+			(WDT_MAX_TIME + 1), wdt_time);
 	}
 
 	ret = register_reboot_notifier(&bcm47xx_wdt_notifier);
@@ -262,8 +262,8 @@ static int __init bcm47xx_wdt_init(void)
 		return ret;
 	}
 
-//	printk(KERN_INFO "BCM47xx Watchdog Timer enabled (%d seconds%s)\n",
-;
+	printk(KERN_INFO "BCM47xx Watchdog Timer enabled (%d seconds%s)\n",
+				wdt_time, nowayout ? ", nowayout" : "");
 	return 0;
 }
 

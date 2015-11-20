@@ -38,19 +38,19 @@ static unsigned int vbibufs = 4;
 module_param(vbibufs, int, 0444);
 MODULE_PARM_DESC(vbibufs,"number of vbi buffers, range 2-32");
 
-//#define dprintk(fmt, arg...)	if (vbi_debug) \
-//	printk(KERN_DEBUG "%s/vbi: " fmt, dev->name , ## arg)
-//
-///* ------------------------------------------------------------------ */
-//
-//#define VBI_LINE_COUNT     16
-//#define VBI_LINE_LENGTH  2048
-//#define VBI_SCALE       0x200
-//
-//static void task_init(struct saa7134_dev *dev, struct saa7134_buf *buf,
-//		      int task)
-//{
-;
+#define dprintk(fmt, arg...)	if (vbi_debug) \
+	printk(KERN_DEBUG "%s/vbi: " fmt, dev->name , ## arg)
+
+/* ------------------------------------------------------------------ */
+
+#define VBI_LINE_COUNT     16
+#define VBI_LINE_LENGTH  2048
+#define VBI_SCALE       0x200
+
+static void task_init(struct saa7134_dev *dev, struct saa7134_buf *buf,
+		      int task)
+{
+	struct saa7134_tvnorm *norm = dev->tvnorm;
 
 	/* setup video scaler */
 	saa_writeb(SAA7134_VBI_H_START1(task), norm->h_start     &  0xff);
@@ -83,7 +83,7 @@ static int buffer_activate(struct saa7134_dev *dev,
 {
 	unsigned long control,base;
 
-;
+	dprintk("buffer_activate [%p]\n",buf);
 	buf->vb.state = VIDEOBUF_ACTIVE;
 	buf->top_seen = 0;
 

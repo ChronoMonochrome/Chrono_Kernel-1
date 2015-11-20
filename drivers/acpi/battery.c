@@ -968,8 +968,8 @@ static int acpi_battery_add_fs(struct acpi_device *device)
 	struct proc_dir_entry *entry = NULL;
 	int i;
 
-//	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for battery is loaded,"
-;
+	printk(KERN_WARNING PREFIX "Deprecated procfs I/F for battery is loaded,"
+			" please retry with CONFIG_ACPI_PROCFS_POWER cleared\n");
 	if (!acpi_device_dir(device)) {
 		acpi_device_dir(device) = proc_mkdir(acpi_device_bid(device),
 						     acpi_battery_dir);
@@ -1067,9 +1067,9 @@ static int acpi_battery_add(struct acpi_device *device)
 	result = acpi_battery_add_fs(device);
 #endif
 	if (!result) {
-//		printk(KERN_INFO PREFIX "%s Slot [%s] (battery %s)\n",
-//			ACPI_BATTERY_DEVICE_NAME, acpi_device_bid(device),
-;
+		printk(KERN_INFO PREFIX "%s Slot [%s] (battery %s)\n",
+			ACPI_BATTERY_DEVICE_NAME, acpi_device_bid(device),
+			device->status.battery_present ? "present" : "absent");
 	} else {
 #ifdef CONFIG_ACPI_PROCFS_POWER
 		acpi_battery_remove_fs(device);

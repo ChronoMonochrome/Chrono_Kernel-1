@@ -458,7 +458,7 @@ static void fiops_init_prio_data(struct fiops_ioc *cic)
 	ioprio_class = IOPRIO_PRIO_CLASS(ioc->ioprio);
 	switch (ioprio_class) {
 	default:
-;
+		printk(KERN_ERR "fiops: bad prio %x\n", ioprio_class);
 	case IOPRIO_CLASS_NONE:
 		/*
 		 * no prio set, inherit CPU scheduling settings

@@ -132,7 +132,7 @@ static void kgdboc_unregister_kbd(void)
 static int kgdboc_option_setup(char *opt)
 {
 	if (strlen(opt) >= MAX_CONFIG_LEN) {
-;
+		printk(KERN_ERR "kgdboc: config string too long\n");
 		return -ENOSPC;
 	}
 	strcpy(config, opt);
@@ -239,7 +239,7 @@ static int param_set_kgdboc_var(const char *kmessage, struct kernel_param *kp)
 	int len = strlen(kmessage);
 
 	if (len >= MAX_CONFIG_LEN) {
-;
+		printk(KERN_ERR "kgdboc: config string too long\n");
 		return -ENOSPC;
 	}
 
@@ -250,8 +250,8 @@ static int param_set_kgdboc_var(const char *kmessage, struct kernel_param *kp)
 	}
 
 	if (kgdb_connected) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "kgdboc: Cannot reconfigure while KGDB is connected.\n");
 
 		return -EBUSY;
 	}

@@ -101,8 +101,8 @@ out_free:
 	kfree(ag);
 out_fail:
 	if (printk_ratelimit()) {
-//		printk(KERN_WARNING "autogroup_create: %s failure.\n",
-;
+		printk(KERN_WARNING "autogroup_create: %s failure.\n",
+			ag ? "sched_create_group()" : "kmalloc()");
 	}
 
 	return autogroup_kref_get(&autogroup_default);

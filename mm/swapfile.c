@@ -497,16 +497,16 @@ static struct swap_info_struct *swap_info_get(swp_entry_t entry)
 	return p;
 
 bad_free:
-;
+	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_offset, entry.val);
 	goto out;
 bad_offset:
-;
+	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_offset, entry.val);
 	goto out;
 bad_device:
-;
+	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_file, entry.val);
 	goto out;
 bad_nofile:
-;
+	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_file, entry.val);
 out:
 	return NULL;
 }
@@ -1524,7 +1524,7 @@ reprobe:
 out:
 	return ret;
 bad_bmap:
-;
+	printk(KERN_ERR "swapon: swapfile has holes\n");
 	ret = -EINVAL;
 	goto out;
 }
@@ -1926,7 +1926,7 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
 	unsigned long swapfilepages;
 
 	if (memcmp("SWAPSPACE2", swap_header->magic.magic, 10)) {
-;
+		printk(KERN_ERR "Unable to find swap-space signature\n");
 		return 0;
 	}
 
@@ -1940,9 +1940,9 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
 	}
 	/* Check the swap header's sub-version */
 	if (swap_header->info.version != 1) {
-//		printk(KERN_WARNING
-//		       "Unable to handle swap header version %d\n",
-;
+		printk(KERN_WARNING
+		       "Unable to handle swap header version %d\n",
+		       swap_header->info.version);
 		return 0;
 	}
 
@@ -1978,8 +1978,8 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
 		return 0;
 	swapfilepages = i_size_read(inode) >> PAGE_SHIFT;
 	if (swapfilepages && maxpages > swapfilepages) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "Swap area shorter than signature indicates\n");
 		return 0;
 	}
 	if (swap_header->info.nr_badpages && S_ISREG(inode->i_mode))
@@ -2022,7 +2022,7 @@ static int setup_swap_map_and_extents(struct swap_info_struct *p,
 		nr_good_pages = p->pages;
 	}
 	if (!nr_good_pages) {
-;
+		printk(KERN_WARNING "Empty swap-file\n");
 		return -EINVAL;
 	}
 
@@ -2056,11 +2056,11 @@ int swapon(char *name, int swap_flags)
 	if (IS_ERR(swap_file)) {
 		error = PTR_ERR(swap_file);
 		swap_file = NULL;
-;
+        printk("zfqin, filp_open failed\n");
 		goto bad_swap;
 	}
 
-;
+    printk("zfqin, filp_open succeeded\n");
 	p->swap_file = swap_file;
 	mapping = swap_file->f_mapping;
 
@@ -2135,12 +2135,12 @@ int swapon(char *name, int swap_flags)
 		  (swap_flags & SWAP_FLAG_PRIO_MASK) >> SWAP_FLAG_PRIO_SHIFT;
 	enable_swap_info(p, prio, swap_map);
 
-//	printk(KERN_INFO "Adding %uk swap on %s.  "
-//			"Priority:%d extents:%d across:%lluk %s%s\n",
-//		p->pages<<(PAGE_SHIFT-10), name, p->prio,
-//		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
-//		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
-;
+	printk(KERN_INFO "Adding %uk swap on %s.  "
+			"Priority:%d extents:%d across:%lluk %s%s\n",
+		p->pages<<(PAGE_SHIFT-10), name, p->prio,
+		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
+		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
+		(p->flags & SWP_DISCARDABLE) ? "D" : "");
 
 	mutex_unlock(&swapon_mutex);
 	atomic_inc(&proc_poll_event);
@@ -2298,6 +2298,7 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 	if (swap_flags & SWAP_FLAG_PREFER)
 		prio =
 		  (swap_flags & SWAP_FLAG_PRIO_MASK) >> SWAP_FLAG_PRIO_SHIFT;
+<<<<<<< HEAD
 	enable_swap_info(p, prio, swap_map, frontswap_map);
 
 	printk(KERN_INFO "Adding %uk swap on %s.  "
@@ -2306,6 +2307,16 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
 		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
 		(p->flags & SWP_DISCARDABLE) ? "D" : "", (frontswap_map) ? "FS" : "");
+=======
+	enable_swap_info(p, prio, swap_map);
+
+	printk(KERN_INFO "Adding %uk swap on %s.  "
+			"Priority:%d extents:%d across:%lluk %s%s\n",
+		p->pages<<(PAGE_SHIFT-10), name, p->prio,
+		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
+		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
+		(p->flags & SWP_DISCARDABLE) ? "D" : "");
+>>>>>>> parent of 24a7603... general: disable debug
 
 	mutex_unlock(&swapon_mutex);
 	atomic_inc(&proc_poll_event);
@@ -2432,7 +2443,7 @@ out:
 	return err;
 
 bad_file:
-;
+	printk(KERN_ERR "swap_dup: %s%08lx\n", Bad_file, entry.val);
 	goto out;
 }
 

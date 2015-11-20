@@ -117,7 +117,7 @@ actcapi_chkhdr(act2000_card * card, actcapi_msghdr *hdr)
 }
 
 #define ACTCAPI_CHKSKB if (!skb) { \
-;
+	printk(KERN_WARNING "actcapi: alloc_skb failed\n"); \
 	return; \
 }
 
@@ -139,7 +139,7 @@ actcapi_listen_req(act2000_card *card)
 		eazmask |= card->bch[i].eazmask;
 	ACTCAPI_MKHDR(9, 0x05, 0x00);
         if (!skb) {
-;
+                printk(KERN_WARNING "actcapi: alloc_skb failed\n");
                 return -ENOMEM;
         }
 	m->msg.listen_req.controller = 0;
@@ -159,7 +159,7 @@ actcapi_connect_req(act2000_card *card, act2000_chan *chan, char *phone,
 
 	ACTCAPI_MKHDR((11 + strlen(phone)), 0x02, 0x00);
 	if (!skb) {
-;
+                printk(KERN_WARNING "actcapi: alloc_skb failed\n");
 		chan->fsm_state = ACT2000_STATE_NULL;
 		return -ENOMEM;
 	}
@@ -204,15 +204,15 @@ actcapi_manufacturer_req_net(act2000_card *card)
 
 	ACTCAPI_MKHDR(5, 0xff, 0x00);
         if (!skb) {
-;
+                printk(KERN_WARNING "actcapi: alloc_skb failed\n");
                 return -ENOMEM;
         }
 	m->msg.manufacturer_req_net.manuf_msg = 0x11;
 	m->msg.manufacturer_req_net.controller = 1;
 	m->msg.manufacturer_req_net.nettype = (card->ptype == ISDN_PTYPE_EURO)?1:0;
 	ACTCAPI_QUEUE_TX;
-//	printk(KERN_INFO "act2000 %s: D-channel protocol now %s\n",
-;
+	printk(KERN_INFO "act2000 %s: D-channel protocol now %s\n",
+	       card->interface.id, (card->ptype == ISDN_PTYPE_EURO)?"euro":"1tr6");
 	card->interface.features &=
 		~(ISDN_FEATURE_P_UNKNOWN | ISDN_FEATURE_P_EURO | ISDN_FEATURE_P_1TR6);
 	card->interface.features |=
@@ -233,7 +233,7 @@ actcapi_manufacturer_req_v42(act2000_card *card, ulong arg)
 	ACTCAPI_MKHDR(8, 0xff, 0x00);
         if (!skb) {
 
-;
+                printk(KERN_WARNING "actcapi: alloc_skb failed\n");
                 return -ENOMEM;
         }
 	m->msg.manufacturer_req_v42.manuf_msg = 0x10;
@@ -256,7 +256,7 @@ actcapi_manufacturer_req_errh(act2000_card *card)
 	ACTCAPI_MKHDR(4, 0xff, 0x00);
         if (!skb) {
 
-;
+                printk(KERN_WARNING "actcapi: alloc_skb failed\n");
                 return -ENOMEM;
         }
 	m->msg.manufacturer_req_err.manuf_msg = 0x03;
@@ -283,7 +283,7 @@ actcapi_manufacturer_req_msn(act2000_card *card)
 		for (i = 0; i < 2; i++) {
 			ACTCAPI_MKHDR(6 + len, 0xff, 0x00);
 			if (!skb) {
-;
+				printk(KERN_WARNING "actcapi: alloc_skb failed\n");
 				return -ENOMEM;
 			}
 			m->msg.manufacturer_req_msn.manuf_msg = 0x13 + i;
@@ -564,7 +564,7 @@ actcapi_data_b3_ind(act2000_card *card, struct sk_buff *skb) {
 	skb_pull(skb, 19);
 	card->interface.rcvcallb_skb(card->myid, chan, skb);
         if (!(skb = alloc_skb(11, GFP_ATOMIC))) {
-;
+                printk(KERN_WARNING "actcapi: alloc_skb failed\n");
                 return 1;
         }
 	msg = (actcapi_msg *)skb_put(skb, 11);
@@ -596,7 +596,7 @@ handle_ack(act2000_card *card, act2000_chan *chan, __u8 blocknr) {
 	skb = skb_peek(&card->ackq);
 	spin_unlock_irqrestore(&card->lock, flags);
         if (!skb) {
-;
+		printk(KERN_WARNING "act2000: handle_ack nothing found!\n");
 		return 0;
 	}
         tmp = skb;
@@ -619,7 +619,7 @@ handle_ack(act2000_card *card, act2000_chan *chan, __u8 blocknr) {
                 spin_unlock_irqrestore(&card->lock, flags);
                 if ((tmp == skb) || (tmp == NULL)) {
 			/* reached end of queue */
-;
+			printk(KERN_WARNING "act2000: handle_ack nothing found!\n");
                         return 0;
 		}
         }
@@ -654,8 +654,8 @@ actcapi_dispatch(struct work_struct *work)
 				chan = find_ncci(card, msg->msg.data_b3_conf.ncci);
 				if ((chan >= 0) && (card->bch[chan].fsm_state == ACT2000_STATE_ACTIVE)) {
 					if (msg->msg.data_b3_conf.info != 0)
-//						printk(KERN_WARNING "act2000: DATA_B3_CONF: %04x\n",
-;
+						printk(KERN_WARNING "act2000: DATA_B3_CONF: %04x\n",
+						       msg->msg.data_b3_conf.info);
 					len = handle_ack(card, &card->bch[chan],
 							 msg->msg.data_b3_conf.blocknr);
 					if (len) {
@@ -912,9 +912,9 @@ actcapi_dispatch(struct work_struct *work)
 						&msg->msg.manufacturer_ind_err.errstring,
 						msg->hdr.len - 16);
 					if (msg->msg.manufacturer_ind_err.errcode)
-;
+						printk(KERN_WARNING "act2000: %s\n", tmp);
 					else {
-;
+						printk(KERN_DEBUG "act2000: %s\n", tmp);
 						if ((!strncmp(tmp, "INFO: Trace buffer con", 22)) ||
 						    (!strncmp(tmp, "INFO: Compile Date/Tim", 22))) {
 							card->flags |= ACT2000_FLAGS_RUNNING;
@@ -930,7 +930,7 @@ actcapi_dispatch(struct work_struct *work)
 				}
 				break;
 			default:
-;
+				printk(KERN_WARNING "act2000: UNHANDLED Message %04x\n", ccmd);
 				break;
 		}
 		dev_kfree_skb(skb);
@@ -943,50 +943,50 @@ actcapi_debug_caddr(actcapi_addr *addr)
 {
 	char tmp[30];
 
-;
+	printk(KERN_DEBUG " Alen  = %d\n", addr->len);
 	if (addr->len > 0)
-;
+		printk(KERN_DEBUG " Atnp  = 0x%02x\n", addr->tnp);
 	if (addr->len > 1) {
 		memset(tmp, 0, 30);
 		memcpy(tmp, addr->num, addr->len - 1);
-;
+		printk(KERN_DEBUG " Anum  = '%s'\n", tmp);
 	}
 }
 
 static void
 actcapi_debug_ncpi(actcapi_ncpi *ncpi)
 {
-;
+	printk(KERN_DEBUG " ncpi.len = %d\n", ncpi->len);
 	if (ncpi->len >= 2)
-;
+		printk(KERN_DEBUG " ncpi.lic = 0x%04x\n", ncpi->lic);
 	if (ncpi->len >= 4)
-;
+		printk(KERN_DEBUG " ncpi.hic = 0x%04x\n", ncpi->hic);
 	if (ncpi->len >= 6)
-;
+		printk(KERN_DEBUG " ncpi.ltc = 0x%04x\n", ncpi->ltc);
 	if (ncpi->len >= 8)
-;
+		printk(KERN_DEBUG " ncpi.htc = 0x%04x\n", ncpi->htc);
 	if (ncpi->len >= 10)
-;
+		printk(KERN_DEBUG " ncpi.loc = 0x%04x\n", ncpi->loc);
 	if (ncpi->len >= 12)
-;
+		printk(KERN_DEBUG " ncpi.hoc = 0x%04x\n", ncpi->hoc);
 	if (ncpi->len >= 13)
-;
+		printk(KERN_DEBUG " ncpi.mod = %d\n", ncpi->modulo);
 }
 
 static void
 actcapi_debug_dlpd(actcapi_dlpd *dlpd)
 {
-;
+	printk(KERN_DEBUG " dlpd.len = %d\n", dlpd->len);
 	if (dlpd->len >= 2)
-;
+		printk(KERN_DEBUG " dlpd.dlen   = 0x%04x\n", dlpd->dlen);
 	if (dlpd->len >= 3)
-;
+		printk(KERN_DEBUG " dlpd.laa    = 0x%02x\n", dlpd->laa);
 	if (dlpd->len >= 4)
-;
+		printk(KERN_DEBUG " dlpd.lab    = 0x%02x\n", dlpd->lab);
 	if (dlpd->len >= 5)
-;
+		printk(KERN_DEBUG " dlpd.modulo = %d\n", dlpd->modulo);
 	if (dlpd->len >= 6)
-;
+		printk(KERN_DEBUG " dlpd.win    = %d\n", dlpd->win);
 }
 
 #ifdef DEBUG_DUMP_SKB
@@ -999,12 +999,12 @@ static void dump_skb(struct sk_buff *skb) {
 	for (i = 0; i < skb->len; i++) {
 		t += sprintf(t, "%02x ", *p++ & 0xff);
 		if ((i & 0x0f) == 8) {
-;
+			printk(KERN_DEBUG "dump: %s\n", tmp);
 			t = tmp;
 		}
 	}
 	if (i & 0x07)
-;
+		printk(KERN_DEBUG "dump: %s\n", tmp);
 }
 #endif
 
@@ -1030,150 +1030,150 @@ actcapi_debug_msg(struct sk_buff *skb, int direction)
 			descr = valid_msg[i].description;
 			break;
 		}
-;
-;
-;
-;
-;
-;
+	printk(KERN_DEBUG "%s %s msg\n", direction?"Outgoing":"Incoming", descr);
+	printk(KERN_DEBUG " ApplID = %d\n", msg->hdr.applicationID);
+	printk(KERN_DEBUG " Len    = %d\n", msg->hdr.len);
+	printk(KERN_DEBUG " MsgNum = 0x%04x\n", msg->hdr.msgnum);
+	printk(KERN_DEBUG " Cmd    = 0x%02x\n", msg->hdr.cmd.cmd);
+	printk(KERN_DEBUG " SubCmd = 0x%02x\n", msg->hdr.cmd.subcmd);
 	switch (i) {
 		case 0:
 			/* DATA B3 IND */
-//			printk(KERN_DEBUG " BLOCK = 0x%02x\n",
-;
+			printk(KERN_DEBUG " BLOCK = 0x%02x\n",
+			       msg->msg.data_b3_ind.blocknr);
 			break;
 		case 2:
 			/* CONNECT CONF */
-//			printk(KERN_DEBUG " PLCI = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " Info = 0x%04x\n",
-;
+			printk(KERN_DEBUG " PLCI = 0x%04x\n",
+			       msg->msg.connect_conf.plci);
+			printk(KERN_DEBUG " Info = 0x%04x\n",
+			       msg->msg.connect_conf.info);
 			break;
 		case 3:
 			/* CONNECT IND */
-//			printk(KERN_DEBUG " PLCI = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " Contr = %d\n",
-;
-//			printk(KERN_DEBUG " SI1   = %d\n",
-;
-//			printk(KERN_DEBUG " SI2   = %d\n",
-;
-//			printk(KERN_DEBUG " EAZ   = '%c'\n",
-;
+			printk(KERN_DEBUG " PLCI = 0x%04x\n",
+			       msg->msg.connect_ind.plci);
+			printk(KERN_DEBUG " Contr = %d\n",
+			       msg->msg.connect_ind.controller);
+			printk(KERN_DEBUG " SI1   = %d\n",
+			       msg->msg.connect_ind.si1);
+			printk(KERN_DEBUG " SI2   = %d\n",
+			       msg->msg.connect_ind.si2);
+			printk(KERN_DEBUG " EAZ   = '%c'\n",
+			       msg->msg.connect_ind.eaz);
 			actcapi_debug_caddr(&msg->msg.connect_ind.addr);
 			break;
 		case 5:
 			/* CONNECT ACTIVE IND */
-//			printk(KERN_DEBUG " PLCI = 0x%04x\n",
-;
+			printk(KERN_DEBUG " PLCI = 0x%04x\n",
+			       msg->msg.connect_active_ind.plci);
 			actcapi_debug_caddr(&msg->msg.connect_active_ind.addr);
 			break;
 		case 8:
 			/* LISTEN CONF */
-//			printk(KERN_DEBUG " Contr = %d\n",
-;
-//			printk(KERN_DEBUG " Info = 0x%04x\n",
-;
+			printk(KERN_DEBUG " Contr = %d\n",
+			       msg->msg.listen_conf.controller);
+			printk(KERN_DEBUG " Info = 0x%04x\n",
+			       msg->msg.listen_conf.info);
 			break;
 		case 11:
 			/* INFO IND */
-//			printk(KERN_DEBUG " PLCI = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " Imsk = 0x%04x\n",
-;
+			printk(KERN_DEBUG " PLCI = 0x%04x\n",
+			       msg->msg.info_ind.plci);
+			printk(KERN_DEBUG " Imsk = 0x%04x\n",
+			       msg->msg.info_ind.nr.mask);
 			if (msg->hdr.len > 12) {
 				int l = msg->hdr.len - 12;
 				int j;
 				char *p = tmp;
 				for (j = 0; j < l ; j++)
 					p += sprintf(p, "%02x ", msg->msg.info_ind.el.display[j]);
-;
+				printk(KERN_DEBUG " D = '%s'\n", tmp);
 			}
 			break;
 		case 14:
 			/* SELECT B2 PROTOCOL CONF */
-//			printk(KERN_DEBUG " PLCI = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " Info = 0x%04x\n",
-;
+			printk(KERN_DEBUG " PLCI = 0x%04x\n",
+			       msg->msg.select_b2_protocol_conf.plci);
+			printk(KERN_DEBUG " Info = 0x%04x\n",
+			       msg->msg.select_b2_protocol_conf.info);
 			break;
 		case 15:
 			/* SELECT B3 PROTOCOL CONF */
-//			printk(KERN_DEBUG " PLCI = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " Info = 0x%04x\n",
-;
+			printk(KERN_DEBUG " PLCI = 0x%04x\n",
+			       msg->msg.select_b3_protocol_conf.plci);
+			printk(KERN_DEBUG " Info = 0x%04x\n",
+			       msg->msg.select_b3_protocol_conf.info);
 			break;
 		case 16:
 			/* LISTEN B3 CONF */
-//			printk(KERN_DEBUG " PLCI = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " Info = 0x%04x\n",
-;
+			printk(KERN_DEBUG " PLCI = 0x%04x\n",
+			       msg->msg.listen_b3_conf.plci);
+			printk(KERN_DEBUG " Info = 0x%04x\n",
+			       msg->msg.listen_b3_conf.info);
 			break;
 		case 18:
 			/* CONNECT B3 IND */
-//			printk(KERN_DEBUG " NCCI = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " PLCI = 0x%04x\n",
-;
+			printk(KERN_DEBUG " NCCI = 0x%04x\n",
+			       msg->msg.connect_b3_ind.ncci);
+			printk(KERN_DEBUG " PLCI = 0x%04x\n",
+			       msg->msg.connect_b3_ind.plci);
 			actcapi_debug_ncpi(&msg->msg.connect_b3_ind.ncpi);
 			break;
 		case 19:
 			/* CONNECT B3 ACTIVE IND */
-//			printk(KERN_DEBUG " NCCI = 0x%04x\n",
-;
+			printk(KERN_DEBUG " NCCI = 0x%04x\n",
+			       msg->msg.connect_b3_active_ind.ncci);
 			actcapi_debug_ncpi(&msg->msg.connect_b3_active_ind.ncpi);
 			break;
 		case 26:
 			/* MANUFACTURER IND */
-//			printk(KERN_DEBUG " Mmsg = 0x%02x\n",
-;
+			printk(KERN_DEBUG " Mmsg = 0x%02x\n",
+			       msg->msg.manufacturer_ind_err.manuf_msg);
 			switch (msg->msg.manufacturer_ind_err.manuf_msg) {
 				case 3:
-//					printk(KERN_DEBUG " Contr = %d\n",
-;
-//					printk(KERN_DEBUG " Code = 0x%08x\n",
-;
+					printk(KERN_DEBUG " Contr = %d\n",
+					       msg->msg.manufacturer_ind_err.controller);
+					printk(KERN_DEBUG " Code = 0x%08x\n",
+					       msg->msg.manufacturer_ind_err.errcode);
 					memset(tmp, 0, sizeof(tmp));
 					strncpy(tmp, &msg->msg.manufacturer_ind_err.errstring,
 						msg->hdr.len - 16);
-;
+					printk(KERN_DEBUG " Emsg = '%s'\n", tmp);
 					break;
 			}
 			break;
 		case 30:
 			/* LISTEN REQ */
-//			printk(KERN_DEBUG " Imsk = 0x%08x\n",
-;
-//			printk(KERN_DEBUG " Emsk = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " Smsk = 0x%04x\n",
-;
+			printk(KERN_DEBUG " Imsk = 0x%08x\n",
+			       msg->msg.listen_req.infomask);
+			printk(KERN_DEBUG " Emsk = 0x%04x\n",
+			       msg->msg.listen_req.eazmask);
+			printk(KERN_DEBUG " Smsk = 0x%04x\n",
+			       msg->msg.listen_req.simask);
 			break;
 		case 35:
 			/* SELECT_B2_PROTOCOL_REQ */
-//			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " prot  = 0x%02x\n",
-;
+			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
+			       msg->msg.select_b2_protocol_req.plci);
+			printk(KERN_DEBUG " prot  = 0x%02x\n",
+			       msg->msg.select_b2_protocol_req.protocol);
 			if (msg->hdr.len >= 11)
-;
+				printk(KERN_DEBUG "No dlpd\n");
 			else
 				actcapi_debug_dlpd(&msg->msg.select_b2_protocol_req.dlpd);
 			break;
 		case 44:
 			/* CONNECT RESP */
-//			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
-;
-//			printk(KERN_DEBUG " CAUSE = 0x%02x\n",
-;
+			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
+			       msg->msg.connect_resp.plci);
+			printk(KERN_DEBUG " CAUSE = 0x%02x\n",
+			       msg->msg.connect_resp.rejectcause);
 			break;
 		case 45:
 			/* CONNECT ACTIVE RESP */
-//			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
-;
+			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
+			       msg->msg.connect_active_resp.plci);
 			break;
 	}
 }

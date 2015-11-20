@@ -47,7 +47,7 @@ compute_wday(efi_time_t *eft)
 	int ndays = 0;
 
 	if (eft->year < 1998) {
-;
+		printk(KERN_ERR "efirtc: EFI year < 1998, invalid date\n");
 		return -1;
 	}
 
@@ -142,7 +142,7 @@ static int efi_set_alarm(struct device *dev, struct rtc_wkalrm *wkalrm)
 	 */
 	status = efi.set_wakeup_time((efi_bool_t)wkalrm->enabled, &eft);
 
-;
+	printk(KERN_WARNING "write status is %d\n", (int)status);
 
 	return status == EFI_SUCCESS ? 0 : -EINVAL;
 }
@@ -157,7 +157,7 @@ static int efi_read_time(struct device *dev, struct rtc_time *tm)
 
 	if (status != EFI_SUCCESS) {
 		/* should never happen */
-;
+		printk(KERN_ERR "efitime: can't read time\n");
 		return -EINVAL;
 	}
 

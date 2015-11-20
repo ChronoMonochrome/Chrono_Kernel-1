@@ -408,9 +408,9 @@ static void inic_host_intr(struct ata_port *ap)
 	}
 
  spurious:
-//	ata_port_printk(ap, KERN_WARNING, "unhandled interrupt: "
-//			"cmd=0x%x irq_stat=0x%x idma_stat=0x%x\n",
-;
+	ata_port_printk(ap, KERN_WARNING, "unhandled interrupt: "
+			"cmd=0x%x irq_stat=0x%x idma_stat=0x%x\n",
+			qc ? qc->tf.command : 0xff, irq_stat, idma_stat);
 }
 
 static irqreturn_t inic_interrupt(int irq, void *dev_instance)
@@ -631,8 +631,8 @@ static int inic_hardreset(struct ata_link *link, unsigned int *class,
 
 	rc = sata_link_resume(link, timing, deadline);
 	if (rc) {
-//		ata_link_printk(link, KERN_WARNING, "failed to resume "
-;
+		ata_link_printk(link, KERN_WARNING, "failed to resume "
+				"link after reset (errno=%d)\n", rc);
 		return rc;
 	}
 
@@ -644,8 +644,8 @@ static int inic_hardreset(struct ata_link *link, unsigned int *class,
 		rc = ata_wait_after_reset(link, deadline, inic_check_ready);
 		/* link occupied, -ENODEV too is an error */
 		if (rc) {
-//			ata_link_printk(link, KERN_WARNING, "device not ready "
-;
+			ata_link_printk(link, KERN_WARNING, "device not ready "
+					"after hardreset (errno=%d)\n", rc);
 			return rc;
 		}
 
@@ -820,7 +820,7 @@ static int inic_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	int i, rc;
 
 	if (!printed_version++)
-;
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	dev_alert(&pdev->dev, "inic162x support is broken with common data corruption issues and will be disabled by default, contact linux-ide@vger.kernel.org if in production use\n");
 
@@ -861,15 +861,15 @@ static int inic_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	/* Set dma_mask.  This devices doesn't support 64bit addressing. */
 	rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (rc) {
-//		dev_printk(KERN_ERR, &pdev->dev,
-;
+		dev_printk(KERN_ERR, &pdev->dev,
+			   "32-bit DMA enable failed\n");
 		return rc;
 	}
 
 	rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (rc) {
-//		dev_printk(KERN_ERR, &pdev->dev,
-;
+		dev_printk(KERN_ERR, &pdev->dev,
+			   "32-bit consistent DMA enable failed\n");
 		return rc;
 	}
 
@@ -880,15 +880,15 @@ static int inic_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	 */
 	rc = pci_set_dma_max_seg_size(pdev, 65536 - 512);
 	if (rc) {
-//		dev_printk(KERN_ERR, &pdev->dev,
-;
+		dev_printk(KERN_ERR, &pdev->dev,
+			   "failed to set the maximum segment size.\n");
 		return rc;
 	}
 
 	rc = init_controller(hpriv->mmio_base, hpriv->cached_hctl);
 	if (rc) {
-//		dev_printk(KERN_ERR, &pdev->dev,
-;
+		dev_printk(KERN_ERR, &pdev->dev,
+			   "failed to initialize controller\n");
 		return rc;
 	}
 

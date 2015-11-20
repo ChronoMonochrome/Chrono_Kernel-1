@@ -93,9 +93,9 @@ static void cy82c693_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 	if (hwif->index > 0) {  /* drive is on the secondary channel */
 		dev = pci_get_slot(dev->bus, dev->devfn+1);
 		if (!dev) {
-//			printk(KERN_ERR "%s: tune_drive: "
-//				"Cannot find secondary interface!\n",
-;
+			printk(KERN_ERR "%s: tune_drive: "
+				"Cannot find secondary interface!\n",
+				drive->name);
 			return;
 		}
 	}

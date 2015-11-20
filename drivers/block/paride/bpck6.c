@@ -93,7 +93,7 @@ static void bpck6_connect ( PIA *pi  )
 {
 	if(verbose)
 	{
-;
+		printk(KERN_DEBUG "connect\n");
 	}
 
 	if(pi->mode >=2)
@@ -117,7 +117,7 @@ static void bpck6_disconnect ( PIA *pi )
 {
 	if(verbose)
 	{
-;
+		printk("disconnect\n");
 	}
 	ppc6_wr_extout(PPCSTRUCT(pi),0x0);
 	ppc6_close(PPCSTRUCT(pi));
@@ -127,9 +127,9 @@ static int bpck6_test_port ( PIA *pi )   /* check for 8-bit port */
 {
 	if(verbose)
 	{
-//		printk(KERN_DEBUG "PARPORT indicates modes=%x for lp=0x%lx\n",
-//               		((struct pardevice*)(pi->pardev))->port->modes,
-;
+		printk(KERN_DEBUG "PARPORT indicates modes=%x for lp=0x%lx\n",
+               		((struct pardevice*)(pi->pardev))->port->modes,
+			((struct pardevice *)(pi->pardev))->port->base); 
 	}
 
 	/*copy over duplicate stuff.. initialize state info*/
@@ -161,7 +161,7 @@ static int bpck6_probe_unit ( PIA *pi )
 
 	if(verbose)
 	{
-;
+		printk(KERN_DEBUG "PROBE UNIT %x on port:%x\n",pi->unit,pi->port);
 	}
 
 	/*SET PPC UNIT NUMBER*/
@@ -174,7 +174,7 @@ static int bpck6_probe_unit ( PIA *pi )
 
 	if(verbose)
 	{
-;
+		printk(KERN_DEBUG "ppc_open returned %2x\n",out);
 	}
 
   	if(out)
@@ -182,7 +182,7 @@ static int bpck6_probe_unit ( PIA *pi )
 		ppc6_close(PPCSTRUCT(pi));
 		if(verbose)
 		{
-;
+			printk(KERN_DEBUG "leaving probe\n");
 		}
                return(1);
 	}
@@ -190,7 +190,7 @@ static int bpck6_probe_unit ( PIA *pi )
   	{
 		if(verbose)
 		{
-;
+			printk(KERN_DEBUG "Failed open\n");
 		}
     		return(0);
   	}
@@ -201,12 +201,12 @@ static void bpck6_log_adapter( PIA *pi, char * scratch, int verbose )
 	char *mode_string[5]=
 		{"4-bit","8-bit","EPP-8","EPP-16","EPP-32"};
 
-;
-;
-//	printk("%s: BACKPACK %s, Micro Solutions BACKPACK Drive at 0x%x\n",
-;
-//	printk("%s: Unit: %d Mode:%d (%s) Delay %d\n",pi->device,
-;
+	printk("%s: BACKPACK Protocol Driver V"BACKPACK_VERSION"\n",pi->device);
+	printk("%s: Copyright 2001 by Micro Solutions, Inc., DeKalb IL.\n",pi->device);
+	printk("%s: BACKPACK %s, Micro Solutions BACKPACK Drive at 0x%x\n",
+		pi->device,BACKPACK_VERSION,pi->port);
+	printk("%s: Unit: %d Mode:%d (%s) Delay %d\n",pi->device,
+		pi->unit,pi->mode,mode_string[pi->mode],pi->delay);
 }
 
 static int bpck6_init_proto(PIA *pi)
@@ -218,7 +218,7 @@ static int bpck6_init_proto(PIA *pi)
 		return 0;
 	}
 
-;
+	printk(KERN_ERR "%s: ERROR COULDN'T ALLOCATE MEMORY\n", pi->device); 
 	return -1;
 }
 
@@ -248,10 +248,10 @@ static struct pi_protocol bpck6 = {
 
 static int __init bpck6_init(void)
 {
-;
-;
+	printk(KERN_INFO "bpck6: BACKPACK Protocol Driver V"BACKPACK_VERSION"\n");
+	printk(KERN_INFO "bpck6: Copyright 2001 by Micro Solutions, Inc., DeKalb IL. USA\n");
 	if(verbose)
-;
+		printk(KERN_DEBUG "bpck6: verbose debug enabled.\n");
 	return paride_register(&bpck6);
 }
 

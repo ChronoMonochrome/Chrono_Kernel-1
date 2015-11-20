@@ -116,9 +116,9 @@ static int mtdoops_erase_block(struct mtdoops_context *cxt, int offset)
 	if (ret) {
 		set_current_state(TASK_RUNNING);
 		remove_wait_queue(&wait_q, &wait);
-//		printk(KERN_WARNING "mtdoops: erase of region [0x%llx, 0x%llx] on \"%s\" failed\n",
-//		       (unsigned long long)erase.addr,
-;
+		printk(KERN_WARNING "mtdoops: erase of region [0x%llx, 0x%llx] on \"%s\" failed\n",
+		       (unsigned long long)erase.addr,
+		       (unsigned long long)erase.len, mtddev);
 		return ret;
 	}
 
@@ -146,8 +146,8 @@ static void mtdoops_inc_counter(struct mtdoops_context *cxt)
 		return;
 	}
 
-//	printk(KERN_DEBUG "mtdoops: ready %d, %d (no erase)\n",
-;
+	printk(KERN_DEBUG "mtdoops: ready %d, %d (no erase)\n",
+	       cxt->nextpage, cxt->nextcount);
 }
 
 /* Scheduled work - when we can't proceed without erasing a block */
@@ -174,18 +174,18 @@ static void mtdoops_workfunc_erase(struct work_struct *work)
 		if (!ret)
 			break;
 		if (ret < 0) {
-;
+			printk(KERN_ERR "mtdoops: block_isbad failed, aborting\n");
 			return;
 		}
 badblock:
-//		printk(KERN_WARNING "mtdoops: bad block at %08lx\n",
-;
+		printk(KERN_WARNING "mtdoops: bad block at %08lx\n",
+		       cxt->nextpage * record_size);
 		i++;
 		cxt->nextpage = cxt->nextpage + (mtd->erasesize / record_size);
 		if (cxt->nextpage >= cxt->oops_pages)
 			cxt->nextpage = 0;
 		if (i == cxt->oops_pages / (mtd->erasesize / record_size)) {
-;
+			printk(KERN_ERR "mtdoops: all blocks bad!\n");
 			return;
 		}
 	}
@@ -194,15 +194,15 @@ badblock:
 		ret = mtdoops_erase_block(cxt, cxt->nextpage * record_size);
 
 	if (ret >= 0) {
-//		printk(KERN_DEBUG "mtdoops: ready %d, %d\n",
-;
+		printk(KERN_DEBUG "mtdoops: ready %d, %d\n",
+		       cxt->nextpage, cxt->nextcount);
 		return;
 	}
 
 	if (mtd->block_markbad && ret == -EIO) {
 		ret = mtd->block_markbad(mtd, cxt->nextpage * record_size);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "mtdoops: block_markbad failed, aborting\n");
 			return;
 		}
 	}
@@ -229,8 +229,8 @@ static void mtdoops_write(struct mtdoops_context *cxt, int panic)
 					record_size, &retlen, cxt->oops_buf);
 
 	if (retlen != record_size || ret < 0)
-//		printk(KERN_ERR "mtdoops: write failure at %ld (%td of %ld written), error %d\n",
-;
+		printk(KERN_ERR "mtdoops: write failure at %ld (%td of %ld written), error %d\n",
+		       cxt->nextpage * record_size, retlen, record_size, ret);
 	mark_page_used(cxt, cxt->nextpage);
 	memset(cxt->oops_buf, 0xff, record_size);
 
@@ -262,9 +262,9 @@ static void find_next_position(struct mtdoops_context *cxt)
 				&retlen, (u_char *) &count[0]);
 		if (retlen != MTDOOPS_HEADER_SIZE ||
 				(ret < 0 && ret != -EUCLEAN)) {
-//			printk(KERN_ERR "mtdoops: read failure at %ld (%td of %d read), err %d\n",
-//			       page * record_size, retlen,
-;
+			printk(KERN_ERR "mtdoops: read failure at %ld (%td of %d read), err %d\n",
+			       page * record_size, retlen,
+			       MTDOOPS_HEADER_SIZE, ret);
 			continue;
 		}
 
@@ -332,7 +332,7 @@ static void mtdoops_do_dump(struct kmsg_dumper *dumper,
 	/* Panics must be written immediately */
 	if (reason != KMSG_DUMP_OOPS) {
 		if (!cxt->mtd->panic_write)
-;
+			printk(KERN_ERR "mtdoops: Cannot write from panic without panic_write\n");
 		else
 			mtdoops_write(cxt, 1);
 		return;
@@ -355,18 +355,18 @@ static void mtdoops_notify_add(struct mtd_info *mtd)
 		return;
 
 	if (mtd->size < mtd->erasesize * 2) {
-//		printk(KERN_ERR "mtdoops: MTD partition %d not big enough for mtdoops\n",
-;
+		printk(KERN_ERR "mtdoops: MTD partition %d not big enough for mtdoops\n",
+		       mtd->index);
 		return;
 	}
 	if (mtd->erasesize < record_size) {
-//		printk(KERN_ERR "mtdoops: eraseblock size of MTD partition %d too small\n",
-;
+		printk(KERN_ERR "mtdoops: eraseblock size of MTD partition %d too small\n",
+		       mtd->index);
 		return;
 	}
 	if (mtd->size > MTDOOPS_MAX_MTD_SIZE) {
-//		printk(KERN_ERR "mtdoops: mtd%d is too large (limit is %d MiB)\n",
-;
+		printk(KERN_ERR "mtdoops: mtd%d is too large (limit is %d MiB)\n",
+		       mtd->index, MTDOOPS_MAX_MTD_SIZE / 1024 / 1024);
 		return;
 	}
 
@@ -374,14 +374,14 @@ static void mtdoops_notify_add(struct mtd_info *mtd)
 	cxt->oops_page_used = vmalloc(DIV_ROUND_UP(mtdoops_pages,
 			BITS_PER_LONG) * sizeof(unsigned long));
 	if (!cxt->oops_page_used) {
-;
+		printk(KERN_ERR "mtdoops: could not allocate page array\n");
 		return;
 	}
 
 	cxt->dump.dump = mtdoops_do_dump;
 	err = kmsg_dump_register(&cxt->dump);
 	if (err) {
-;
+		printk(KERN_ERR "mtdoops: registering kmsg dumper failed, error %d\n", err);
 		vfree(cxt->oops_page_used);
 		cxt->oops_page_used = NULL;
 		return;
@@ -390,7 +390,7 @@ static void mtdoops_notify_add(struct mtd_info *mtd)
 	cxt->mtd = mtd;
 	cxt->oops_pages = (int)mtd->size / record_size;
 	find_next_position(cxt);
-;
+	printk(KERN_INFO "mtdoops: Attached to MTD device %d\n", mtd->index);
 }
 
 static void mtdoops_notify_remove(struct mtd_info *mtd)
@@ -401,7 +401,7 @@ static void mtdoops_notify_remove(struct mtd_info *mtd)
 		return;
 
 	if (kmsg_dump_unregister(&cxt->dump) < 0)
-;
+		printk(KERN_WARNING "mtdoops: could not unregister kmsg_dumper\n");
 
 	cxt->mtd = NULL;
 	flush_work_sync(&cxt->work_erase);
@@ -421,15 +421,15 @@ static int __init mtdoops_init(void)
 	char *endp;
 
 	if (strlen(mtddev) == 0) {
-;
+		printk(KERN_ERR "mtdoops: mtd device (mtddev=name/number) must be supplied\n");
 		return -EINVAL;
 	}
 	if ((record_size & 4095) != 0) {
-;
+		printk(KERN_ERR "mtdoops: record_size must be a multiple of 4096\n");
 		return -EINVAL;
 	}
 	if (record_size < 4096) {
-;
+		printk(KERN_ERR "mtdoops: record_size must be over 4096 bytes\n");
 		return -EINVAL;
 	}
 
@@ -441,7 +441,7 @@ static int __init mtdoops_init(void)
 
 	cxt->oops_buf = vmalloc(record_size);
 	if (!cxt->oops_buf) {
-;
+		printk(KERN_ERR "mtdoops: failed to allocate buffer workspace\n");
 		return -ENOMEM;
 	}
 	memset(cxt->oops_buf, 0xff, record_size);

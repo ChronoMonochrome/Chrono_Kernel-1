@@ -244,8 +244,8 @@ static int vidc_audio_set_speed(int dev, int rate)
 		if (new2size - newsize > newsize - (new2size >> 1))
 			new2size >>= 1;
 		if (new2size > 4096) {
-//			printk(KERN_ERR "VIDC: error: dma buffer (%d) %d > 4K\n",
-;
+			printk(KERN_ERR "VIDC: error: dma buffer (%d) %d > 4K\n",
+				newsize, new2size);
 			new2size = 4096;
 		}
 		/*printk("VIDC: dma size %d\n", new2size);*/
@@ -471,21 +471,21 @@ static void __init attach_vidc(struct address_info *hw_config)
 	for (i = 0; i < 2; i++) {
 		dma_buf[i] = get_zeroed_page(GFP_KERNEL);
 		if (!dma_buf[i]) {
-//			printk(KERN_ERR "%s: can't allocate required buffers\n",
-;
+			printk(KERN_ERR "%s: can't allocate required buffers\n",
+				name);
 			goto mem_failed;
 		}
 		dma_pbuf[i] = virt_to_phys((void *)dma_buf[i]);
 	}
 
 	if (sound_alloc_dma(hw_config->dma, hw_config->name)) {
-;
+		printk(KERN_ERR "%s: DMA %d is in  use\n", name, hw_config->dma);
 		goto dma_failed;
 	}
 
 	if (request_irq(hw_config->irq, vidc_sound_dma_irq, 0,
 			hw_config->name, &dma_start)) {
-;
+		printk(KERN_ERR "%s: IRQ %d is in use\n", name, hw_config->irq);
 		goto irq_failed;
 	}
 	vidc_adev = adev;

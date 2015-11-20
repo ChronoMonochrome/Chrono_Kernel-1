@@ -417,7 +417,7 @@ int ucb1x00_free_irq(struct ucb1x00 *ucb, unsigned int idx, void *devid)
 	return ret;
 
 bad:
-;
+	printk(KERN_ERR "Freeing bad UCB1x00 irq %d\n", idx);
 	return -EINVAL;
 }
 
@@ -537,7 +537,7 @@ static int ucb1x00_probe(struct mcp *mcp)
 	id = mcp_reg_read(mcp, UCB_ID);
 
 	if (id != UCB_ID_1200 && id != UCB_ID_1300 && id != UCB_ID_TC35143) {
-;
+		printk(KERN_WARNING "UCB1x00 ID not found: %04x\n", id);
 		goto err_disable;
 	}
 
@@ -559,7 +559,7 @@ static int ucb1x00_probe(struct mcp *mcp)
 	ucb->mcp = mcp;
 	ucb->irq = ucb1x00_detect_irq(ucb);
 	if (ucb->irq == NO_IRQ) {
-;
+		printk(KERN_ERR "UCB1x00: IRQ probe failed\n");
 		ret = -ENODEV;
 		goto err_free;
 	}
@@ -582,8 +582,8 @@ static int ucb1x00_probe(struct mcp *mcp)
 	ret = request_irq(ucb->irq, ucb1x00_irq, IRQF_TRIGGER_RISING,
 			  "UCB1x00", ucb);
 	if (ret) {
-//		printk(KERN_ERR "ucb1x00: unable to grab irq%d: %d\n",
-;
+		printk(KERN_ERR "ucb1x00: unable to grab irq%d: %d\n",
+			ucb->irq, ret);
 		goto err_gpio;
 	}
 

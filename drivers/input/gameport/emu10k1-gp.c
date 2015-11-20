@@ -66,7 +66,7 @@ static int __devinit emu_probe(struct pci_dev *pdev, const struct pci_device_id 
 	emu = kzalloc(sizeof(struct emu), GFP_KERNEL);
 	port = gameport_allocate_port();
 	if (!emu || !port) {
-;
+		printk(KERN_ERR "emu10k1-gp: Memory allocation failed\n");
 		error = -ENOMEM;
 		goto err_out_free;
 	}
@@ -87,8 +87,8 @@ static int __devinit emu_probe(struct pci_dev *pdev, const struct pci_device_id 
 	port->io = emu->io;
 
 	if (!request_region(emu->io, emu->size, "emu10k1-gp")) {
-//		printk(KERN_ERR "emu10k1-gp: unable to grab region 0x%x-0x%x\n",
-;
+		printk(KERN_ERR "emu10k1-gp: unable to grab region 0x%x-0x%x\n",
+			emu->io, emu->io + emu->size - 1);
 		error = -EBUSY;
 		goto err_out_disable_dev;
 	}

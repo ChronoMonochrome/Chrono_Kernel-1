@@ -121,7 +121,7 @@ int suspend_nvs_save(void)
 {
 	struct nvs_page *entry;
 
-;
+	printk(KERN_INFO "PM: Saving platform NVS memory\n");
 
 	list_for_each_entry(entry, &nvs_list, node)
 		if (entry->data) {
@@ -153,7 +153,7 @@ void suspend_nvs_restore(void)
 {
 	struct nvs_page *entry;
 
-;
+	printk(KERN_INFO "PM: Restoring platform NVS memory\n");
 
 	list_for_each_entry(entry, &nvs_list, node)
 		if (entry->data)

@@ -114,14 +114,14 @@ static int __devinit q40fb_probe(struct platform_device *dev)
 	master_outb(3, DISPLAY_CONTROL_REG);
 
 	if (register_framebuffer(info) < 0) {
-;
+		printk(KERN_ERR "Unable to register Q40 frame buffer\n");
 		fb_dealloc_cmap(&info->cmap);
 		framebuffer_release(info);
 		return -EINVAL;
 	}
 
-//        printk(KERN_INFO "fb%d: Q40 frame buffer alive and kicking !\n",
-;
+        printk(KERN_INFO "fb%d: Q40 frame buffer alive and kicking !\n",
+	       info->node);
 	return 0;
 }
 

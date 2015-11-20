@@ -625,7 +625,7 @@ static char __initdata banner[] = "S3C24XX RTC, (c) 2004,2006 Simtec Electronics
 
 static int __init s3c_rtc_init(void)
 {
-;
+	printk(banner);
 	return platform_driver_register(&s3c_rtc_driver);
 }
 

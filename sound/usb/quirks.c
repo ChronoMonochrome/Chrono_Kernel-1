@@ -108,8 +108,8 @@ static int create_standard_audio_quirk(struct snd_usb_audio *chip,
 	altsd = get_iface_desc(alts);
 	err = snd_usb_parse_audio_endpoints(chip, altsd->bInterfaceNumber);
 	if (err < 0) {
-//		snd_printk(KERN_ERR "cannot setup if %d: error %d\n",
-;
+		snd_printk(KERN_ERR "cannot setup if %d: error %d\n",
+			   altsd->bInterfaceNumber, err);
 		return err;
 	}
 	/* reset the current interface */
@@ -132,7 +132,7 @@ static int create_fixed_stream_quirk(struct snd_usb_audio *chip,
 
 	fp = kmemdup(quirk->data, sizeof(*fp), GFP_KERNEL);
 	if (!fp) {
-;
+		snd_printk(KERN_ERR "cannot memdup\n");
 		return -ENOMEM;
 	}
 	if (fp->nr_rates > MAX_NR_RATES) {
@@ -251,7 +251,7 @@ static int create_uaxx_quirk(struct snd_usb_audio *chip,
 		fp->rate_max = fp->rate_min = 96000;
 		break;
 	default:
-;
+		snd_printk(KERN_ERR "unknown sample rate\n");
 		kfree(fp);
 		return -ENXIO;
 	}

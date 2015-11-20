@@ -1028,7 +1028,7 @@ static int __init lp5523_init(void)
 	ret = i2c_add_driver(&lp5523_driver);
 
 	if (ret < 0)
-;
+		printk(KERN_ALERT "Adding lp5523 driver failed\n");
 
 	return ret;
 }

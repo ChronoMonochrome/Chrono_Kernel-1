@@ -318,25 +318,25 @@ ssh_interceptor_init_kernel_services(void)
   /* Init packet data structure */
   if (!ssh_interceptor_packet_freelist_init(ssh_interceptor_context))
     {
-//      printk(KERN_ERR
-//             "VPNClient packet processing engine failed to start "
-;
+      printk(KERN_ERR
+             "VPNClient packet processing engine failed to start "
+             "(out of memory).\n");
       goto error;
     }
 
   if (ssh_interceptor_dst_entry_cache_init(ssh_interceptor_context) == FALSE)
     {
-//      printk(KERN_ERR "VPNClient packet processing engine "
-;
+      printk(KERN_ERR "VPNClient packet processing engine "
+	     "failed to start, dst cache initialization failed.");
       goto error;
     }
 
   /* Initialize ipm channel */
   if (!ssh_interceptor_ipm_init(ssh_interceptor_context))
     {
-//      printk(KERN_ERR 
-//	     "VPNClient packet processing engine failed to start "
-;
+      printk(KERN_ERR 
+	     "VPNClient packet processing engine failed to start "
+	     "(proc filesystem initialization error)\n");
       goto error1;
     }
 
@@ -366,18 +366,18 @@ ssh_interceptor_init_external_interfaces(SshInterceptor interceptor)
   /* Register interface notifiers. */
   if (!ssh_interceptor_iface_init(interceptor))
     {
-//      printk(KERN_ERR
-//             "VPNClient packet processing engine failed to start "
-;
+      printk(KERN_ERR
+             "VPNClient packet processing engine failed to start "
+             "(interface notifier installation error).\n");
       goto error0;
     }
 
   /* Register the firewall hooks. */
   if (!ssh_interceptor_ip_glue_init(interceptor))
     {
-//      printk(KERN_ERR
-//             "VPNClient packet processing engine failed to start "
-;
+      printk(KERN_ERR
+             "VPNClient packet processing engine failed to start "
+             "(firewall glue installation error).\n");
       goto error1;
     }
 
@@ -423,9 +423,9 @@ ssh_interceptor_init_engine(SshInterceptor interceptor)
 
   if (interceptor->engine == NULL)
     {
-//      printk(KERN_ERR
-//	     "VPNClient packet processing engine failed to start "
-;
+      printk(KERN_ERR
+	     "VPNClient packet processing engine failed to start "
+	     "(engine start error).\n");
       goto error;
     }
 
@@ -455,7 +455,7 @@ int ssh_interceptor_init(void)
   int ret;
 
   /* Print version info for log files */
-;
+  printk(KERN_INFO "VPNClient built on " __DATE__ " " __TIME__ "\n");
 
   ret = ssh_interceptor_init_kernel_services();
   if (ret != 0)
@@ -512,7 +512,7 @@ void __exit ssh_cleanup_module(void)
 {
   if (ssh_interceptor_uninit() != 0)
     {
-;
+      printk("ssh_interceptor: module can't be removed.");
       return;
     }
 }

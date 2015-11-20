@@ -146,7 +146,7 @@ void oxygen_write_ac97(struct oxygen *chip, unsigned int codec,
 			return;
 		}
 	}
-;
+	snd_printk(KERN_ERR "AC'97 write timeout\n");
 }
 EXPORT_SYMBOL(oxygen_write_ac97);
 
@@ -178,7 +178,7 @@ u16 oxygen_read_ac97(struct oxygen *chip, unsigned int codec,
 			reg ^= 0xffff;
 		}
 	}
-;
+	snd_printk(KERN_ERR "AC'97 read timeout on codec %u\n", codec);
 	return 0;
 }
 EXPORT_SYMBOL(oxygen_read_ac97);
@@ -274,5 +274,5 @@ void oxygen_write_eeprom(struct oxygen *chip, unsigned int index, u16 value)
 		      & OXYGEN_EEPROM_BUSY))
 			return;
 	}
-;
+	snd_printk(KERN_ERR "EEPROM write timeout\n");
 }

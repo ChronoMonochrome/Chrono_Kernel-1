@@ -267,18 +267,18 @@ cumanascsi1_probe(struct expansion_card *ec, const struct ecard_id *id)
 	ret = request_irq(host->irq, cumanascsi_intr, IRQF_DISABLED,
 			  "CumanaSCSI-1", host);
 	if (ret) {
-//		printk("scsi%d: IRQ%d not free: %d\n",
-;
+		printk("scsi%d: IRQ%d not free: %d\n",
+		    host->host_no, host->irq, ret);
 		goto out_unmap;
 	}
 
-//	printk("scsi%d: at port 0x%08lx irq %d",
-;
-//	printk(" options CAN_QUEUE=%d CMD_PER_LUN=%d release=%d",
-;
-;
+	printk("scsi%d: at port 0x%08lx irq %d",
+		host->host_no, host->io_port, host->irq);
+	printk(" options CAN_QUEUE=%d CMD_PER_LUN=%d release=%d",
+		host->can_queue, host->cmd_per_lun, CUMANASCSI_PUBLIC_RELEASE);
+	printk("\nscsi%d:", host->host_no);
 	NCR5380_print_options(host);
-;
+	printk("\n");
 
 	ret = scsi_add_host(host, &ec->dev);
 	if (ret)

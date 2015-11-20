@@ -144,12 +144,12 @@ void saa7146_buffer_next(struct saa7146_dev *dev,
 			saa7146_write(dev, MC1, (MASK_12 | MASK_28));
 
 /*
-;
-;
-;
-;
-;
-;
+			printk("vdma%d.base_even:     0x%08x\n", 1,saa7146_read(dev,BASE_EVEN1));
+			printk("vdma%d.base_odd:      0x%08x\n", 1,saa7146_read(dev,BASE_ODD1));
+			printk("vdma%d.prot_addr:     0x%08x\n", 1,saa7146_read(dev,PROT_ADDR1));
+			printk("vdma%d.base_page:     0x%08x\n", 1,saa7146_read(dev,BASE_PAGE1));
+			printk("vdma%d.pitch:         0x%08x\n", 1,saa7146_read(dev,PITCH1));
+			printk("vdma%d.num_line_byte: 0x%08x\n", 1,saa7146_read(dev,NUM_LINE_BYTE1));
 */
 		}
 		del_timer(&q->timeout);

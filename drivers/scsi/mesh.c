@@ -249,13 +249,13 @@ static void dumplog(struct mesh_state *ms, int t)
 	tp->n_log = 0;
 	do {
 		lp = &tp->log[i];
-//		printk(KERN_DEBUG "mesh log %d: bs=%.2x%.2x ph=%.2x ",
-;
+		printk(KERN_DEBUG "mesh log %d: bs=%.2x%.2x ph=%.2x ",
+		       t, lp->bs1, lp->bs0, lp->phase);
 #ifdef DBG_USE_TB
-;
+		printk("tb=%10u ", lp->tb);
 #endif
-;
-;
+		printk(lp->fmt, lp->d);
+		printk("\n");
 		if (++i >= N_DBG_LOG)
 			i = 0;
 	} while (i != tp->log_ix);
@@ -274,13 +274,13 @@ static void dumpslog(struct mesh_state *ms)
 	ms->n_log = 0;
 	do {
 		lp = &ms->log[i];
-//		printk(KERN_DEBUG "mesh log: bs=%.2x%.2x ph=%.2x t%d ",
-;
+		printk(KERN_DEBUG "mesh log: bs=%.2x%.2x ph=%.2x t%d ",
+		       lp->bs1, lp->bs0, lp->phase, lp->tgt);
 #ifdef DBG_USE_TB
-;
+		printk("tb=%10u ", lp->tb);
 #endif
-;
-;
+		printk(lp->fmt, lp->d);
+		printk("\n");
 		if (++i >= N_DBG_SLOG)
 			i = 0;
 	} while (i != ms->log_ix);
@@ -307,28 +307,28 @@ mesh_dump_regs(struct mesh_state *ms)
 	int t;
 	struct mesh_target *tp;
 
-//	printk(KERN_DEBUG "mesh: state at %p, regs at %p, dma at %p\n",
-;
-//	printk(KERN_DEBUG "    ct=%4x seq=%2x bs=%4x fc=%2x "
-//	       "exc=%2x err=%2x im=%2x int=%2x sp=%2x\n",
-//	       (mr->count_hi << 8) + mr->count_lo, mr->sequence,
-//	       (mr->bus_status1 << 8) + mr->bus_status0, mr->fifo_count,
-//	       mr->exception, mr->error, mr->intr_mask, mr->interrupt,
-;
+	printk(KERN_DEBUG "mesh: state at %p, regs at %p, dma at %p\n",
+	       ms, mr, md);
+	printk(KERN_DEBUG "    ct=%4x seq=%2x bs=%4x fc=%2x "
+	       "exc=%2x err=%2x im=%2x int=%2x sp=%2x\n",
+	       (mr->count_hi << 8) + mr->count_lo, mr->sequence,
+	       (mr->bus_status1 << 8) + mr->bus_status0, mr->fifo_count,
+	       mr->exception, mr->error, mr->intr_mask, mr->interrupt,
+	       mr->sync_params);
 	while(in_8(&mr->fifo_count))
-;
-//	printk(KERN_DEBUG "    dma stat=%x cmdptr=%x\n",
-;
-//	printk(KERN_DEBUG "    phase=%d msgphase=%d conn_tgt=%d data_ptr=%d\n",
-;
-//	printk(KERN_DEBUG "    dma_st=%d dma_ct=%d n_msgout=%d\n",
-;
+		printk(KERN_DEBUG " fifo data=%.2x\n",in_8(&mr->fifo));
+	printk(KERN_DEBUG "    dma stat=%x cmdptr=%x\n",
+	       in_le32(&md->status), in_le32(&md->cmdptr));
+	printk(KERN_DEBUG "    phase=%d msgphase=%d conn_tgt=%d data_ptr=%d\n",
+	       ms->phase, ms->msgphase, ms->conn_tgt, ms->data_ptr);
+	printk(KERN_DEBUG "    dma_st=%d dma_ct=%d n_msgout=%d\n",
+	       ms->dma_started, ms->dma_count, ms->n_msgout);
 	for (t = 0; t < 8; ++t) {
 		tp = &ms->tgts[t];
 		if (tp->current_req == NULL)
 			continue;
-//		printk(KERN_DEBUG "    target %d: req=%p goes_out=%d saved_ptr=%d\n",
-;
+		printk(KERN_DEBUG "    target %d: req=%p goes_out=%d saved_ptr=%d\n",
+		       t, tp->current_req, tp->data_goes_out, tp->saved_ptr);
 	}
 }
 
@@ -376,7 +376,7 @@ static void mesh_init(struct mesh_state *ms)
 	out_8(&mr->sync_params, ASYNC_PARAMS);
 
 	if (init_reset_delay) {
-;
+		printk(KERN_INFO "mesh: performing initial bus reset...\n");
 		
 		/* Reset bus */
 		out_8(&mr->bus_status1, BS1_RST);	/* assert RST */
@@ -415,11 +415,11 @@ static void mesh_start_cmd(struct mesh_state *ms, struct scsi_cmnd *cmd)
 #if 1
 	if (DEBUG_TARGET(cmd)) {
 		int i;
-;
+		printk(KERN_DEBUG "mesh_start: %p tgt=%d cmd=", cmd, id);
 		for (i = 0; i < cmd->cmd_len; ++i)
-;
-//		printk(" use_sg=%d buffer=%p bufflen=%u\n",
-;
+			printk(" %x", cmd->cmnd[i]);
+		printk(" use_sg=%d buffer=%p bufflen=%u\n",
+		       scsi_sg_count(cmd), scsi_sglist(cmd), scsi_bufflen(cmd));
 	}
 #endif
 	if (ms->dma_started)
@@ -538,8 +538,8 @@ static void mesh_start_cmd(struct mesh_state *ms, struct scsi_cmnd *cmd)
 #ifndef MESH_MULTIPLE_HOSTS
 		if (in_8(&mr->interrupt) == 0 && (in_8(&mr->bus_status1) & BS1_SEL)
 		    && (in_8(&mr->bus_status0) & BS0_IO)) {
-//			printk(KERN_ERR "mesh: controller not responding"
-;
+			printk(KERN_ERR "mesh: controller not responding"
+			       " to reselection!\n");
 			/*
 			 * If this is a target reselecting us, and the
 			 * mesh isn't responding, the higher levels of
@@ -560,8 +560,8 @@ static void mesh_start(struct mesh_state *ms)
 	struct scsi_cmnd *cmd, *prev, *next;
 
 	if (ms->phase != idle || ms->current_req != NULL) {
-//		printk(KERN_ERR "inappropriate mesh_start (phase=%d, ms=%p)",
-;
+		printk(KERN_ERR "inappropriate mesh_start (phase=%d, ms=%p)",
+		       ms->phase, ms);
 		return;
 	}
 
@@ -599,15 +599,15 @@ static void mesh_done(struct mesh_state *ms, int start_next)
 		if (ms->stat == DID_OK)
 			cmd->result += (cmd->SCp.Message << 8);
 		if (DEBUG_TARGET(cmd)) {
-//			printk(KERN_DEBUG "mesh_done: result = %x, data_ptr=%d, buflen=%d\n",
-;
+			printk(KERN_DEBUG "mesh_done: result = %x, data_ptr=%d, buflen=%d\n",
+			       cmd->result, ms->data_ptr, scsi_bufflen(cmd));
 #if 0
 			/* needs to use sg? */
 			if ((cmd->cmnd[0] == 0 || cmd->cmnd[0] == 0x12 || cmd->cmnd[0] == 3)
 			    && cmd->request_buffer != 0) {
 				unsigned char *b = cmd->request_buffer;
-//				printk(KERN_DEBUG "buffer = %x %x %x %x %x %x %x %x\n",
-;
+				printk(KERN_DEBUG "buffer = %x %x %x %x %x %x %x %x\n",
+				       b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
 			}
 #endif
 		}
@@ -645,8 +645,8 @@ static void set_sdtr(struct mesh_state *ms, int period, int offset)
 	if (offset == 0) {
 		/* asynchronous */
 		if (SYNC_OFF(tp->sync_params))
-//			printk(KERN_INFO "mesh: target %d now asynchronous\n",
-;
+			printk(KERN_INFO "mesh: target %d now asynchronous\n",
+			       ms->conn_tgt);
 		tp->sync_params = ASYNC_PARAMS;
 		out_8(&mr->sync_params, ASYNC_PARAMS);
 		return;
@@ -672,8 +672,8 @@ static void set_sdtr(struct mesh_state *ms, int period, int offset)
 		offset = 15;	/* can't happen */
 	tp->sync_params = SYNC_PARAMS(offset, v);
 	out_8(&mr->sync_params, tp->sync_params);
-//	printk(KERN_INFO "mesh: target %d synchronous at %d.%d MB/s\n",
-;
+	printk(KERN_INFO "mesh: target %d synchronous at %d.%d MB/s\n",
+	       ms->conn_tgt, tr/10, tr%10);
 }
 
 static void start_phase(struct mesh_state *ms)
@@ -706,18 +706,18 @@ static void start_phase(struct mesh_state *ms)
 		 * last byte specially.
 		 */
 		if (ms->n_msgout <= 0) {
-//			printk(KERN_ERR "mesh: msg_out but n_msgout=%d\n",
-;
+			printk(KERN_ERR "mesh: msg_out but n_msgout=%d\n",
+			       ms->n_msgout);
 			mesh_dump_regs(ms);
 			ms->msgphase = msg_none;
 			break;
 		}
 		if (ALLOW_DEBUG(ms->conn_tgt)) {
-//			printk(KERN_DEBUG "mesh: sending %d msg bytes:",
-;
+			printk(KERN_DEBUG "mesh: sending %d msg bytes:",
+			       ms->n_msgout);
 			for (i = 0; i < ms->n_msgout; ++i)
-;
-;
+				printk(" %x", ms->msgout[i]);
+			printk("\n");
 		}
 		dlog(ms, "msgout msg=%.8x", MKWORD(ms->n_msgout, ms->msgout[0],
 						ms->msgout[1], ms->msgout[2]));
@@ -756,8 +756,8 @@ static void start_phase(struct mesh_state *ms)
 		return;
 
 	default:
-//		printk(KERN_ERR "mesh bug: start_phase msgphase=%d\n",
-;
+		printk(KERN_ERR "mesh bug: start_phase msgphase=%d\n",
+		       ms->msgphase);
 	}
 
 	switch (ms->phase) {
@@ -814,8 +814,8 @@ static void start_phase(struct mesh_state *ms)
 		out_8(&mr->sequence, SEQ_BUSFREE);
 		break;
 	default:
-//		printk(KERN_ERR "mesh: start_phase called with phase=%d\n",
-;
+		printk(KERN_ERR "mesh: start_phase called with phase=%d\n",
+		       ms->phase);
 		dumpslog(ms);
 	}
 
@@ -881,14 +881,14 @@ static void reselected(struct mesh_state *ms)
 	case disconnecting:
 		break;
 	default:
-//		printk(KERN_ERR "mesh: reselected in phase %d/%d tgt %d\n",
-;
+		printk(KERN_ERR "mesh: reselected in phase %d/%d tgt %d\n",
+		       ms->msgphase, ms->phase, ms->conn_tgt);
 		dumplog(ms, ms->conn_tgt);
 		dumpslog(ms);
 	}
 
 	if (ms->dma_started) {
-;
+		printk(KERN_ERR "mesh: reselected with DMA started !\n");
 		halt_dma(ms);
 	}
 	ms->current_req = NULL;
@@ -925,7 +925,7 @@ static void reselected(struct mesh_state *ms)
 	 * Find out who reselected us.
 	 */
 	if (in_8(&mr->fifo_count) == 0) {
-;
+		printk(KERN_ERR "mesh: reselection but nothing in fifo?\n");
 		ms->conn_tgt = ms->host->this_id;
 		goto bogus;
 	}
@@ -938,7 +938,7 @@ static void reselected(struct mesh_state *ms)
 		if ((b & (1 << t)) != 0 && t != ms->host->this_id)
 			break;
 	if (b != (1 << t) + (1 << ms->host->this_id)) {
-;
+		printk(KERN_ERR "mesh: bad reselection data %x\n", b);
 		ms->conn_tgt = ms->host->this_id;
 		goto bogus;
 	}
@@ -951,13 +951,13 @@ static void reselected(struct mesh_state *ms)
 	tp = &ms->tgts[t];
 	out_8(&mr->sync_params, tp->sync_params);
 	if (ALLOW_DEBUG(t)) {
-;
-//		printk(KERN_DEBUG "mesh: saved_ptr=%x goes_out=%d cmd=%p\n",
-;
+		printk(KERN_DEBUG "mesh: reselected by target %d\n", t);
+		printk(KERN_DEBUG "mesh: saved_ptr=%x goes_out=%d cmd=%p\n",
+		       tp->saved_ptr, tp->data_goes_out, tp->current_req);
 	}
 	ms->current_req = tp->current_req;
 	if (tp->current_req == NULL) {
-;
+		printk(KERN_ERR "mesh: reselected by tgt %d but no cmd!\n", t);
 		goto bogus;
 	}
 	ms->data_ptr = tp->saved_ptr;
@@ -1040,11 +1040,11 @@ static void handle_error(struct mesh_state *ms)
 	     MKWORD(err, exc, mr->fifo_count, mr->count_lo));
 	if (err & ERR_SCSIRESET) {
 		/* SCSI bus was reset */
-//		printk(KERN_INFO "mesh: SCSI bus reset detected: "
-;
+		printk(KERN_INFO "mesh: SCSI bus reset detected: "
+		       "waiting for end...");
 		while ((in_8(&mr->bus_status1) & BS1_RST) != 0)
 			udelay(1);
-;
+		printk("done\n");
 		handle_reset(ms);
 		/* request_q is empty, no point in mesh_start() */
 		return;
@@ -1056,8 +1056,8 @@ static void handle_error(struct mesh_state *ms)
 			return;
 		}
 		if (!ms->aborting) {
-//			printk(KERN_WARNING "mesh: target %d aborted\n",
-;
+			printk(KERN_WARNING "mesh: target %d aborted\n",
+			       ms->conn_tgt);
 			dumplog(ms, ms->conn_tgt);
 			dumpslog(ms);
 		}
@@ -1068,8 +1068,8 @@ static void handle_error(struct mesh_state *ms)
 	}
 	if (err & ERR_PARITY) {
 		if (ms->msgphase == msg_in) {
-//			printk(KERN_ERR "mesh: msg parity error, target %d\n",
-;
+			printk(KERN_ERR "mesh: msg parity error, target %d\n",
+			       ms->conn_tgt);
 			ms->msgout[0] = MSG_PARITY_ERROR;
 			ms->n_msgout = 1;
 			ms->msgphase = msg_in_bad;
@@ -1077,8 +1077,8 @@ static void handle_error(struct mesh_state *ms)
 			return;
 		}
 		if (ms->stat == DID_OK) {
-//			printk(KERN_ERR "mesh: parity error, target %d\n",
-;
+			printk(KERN_ERR "mesh: parity error, target %d\n",
+			       ms->conn_tgt);
 			ms->stat = DID_PARITY;
 		}
 		count = (mr->count_hi << 8) + mr->count_lo;
@@ -1105,10 +1105,10 @@ static void handle_error(struct mesh_state *ms)
 			phase_mismatch(ms);
 			return;
 		}
-//		printk(KERN_ERR "mesh: sequence error (err=%x exc=%x)\n",
-;
+		printk(KERN_ERR "mesh: sequence error (err=%x exc=%x)\n",
+		       err, exc);
 	} else {
-;
+		printk(KERN_ERR "mesh: unknown error %x (exc=%x)\n", err, exc);
 	}
 	mesh_dump_regs(ms);
 	dumplog(ms, ms->conn_tgt);
@@ -1134,7 +1134,7 @@ static void handle_exception(struct mesh_state *ms)
 		mesh_resel_exc++;
 		reselected(ms);
 	} else if (exc == EXC_ARBLOST) {
-;
+		printk(KERN_DEBUG "mesh: lost arbitration\n");
 		ms->stat = DID_BUS_BUSY;
 		mesh_done(ms, 1);
 	} else if (exc == EXC_SELTO) {
@@ -1146,7 +1146,7 @@ static void handle_exception(struct mesh_state *ms)
 		   find out what it wants and do it. */
 		phase_mismatch(ms);
 	} else {
-;
+		printk(KERN_ERR "mesh: can't cope with exception %x\n", exc);
 		mesh_dump_regs(ms);
 		dumplog(ms, ms->conn_tgt);
 		do_abort(ms);
@@ -1164,10 +1164,10 @@ static void handle_msgin(struct mesh_state *ms)
 		return;
 	code = ms->msgin[0];
 	if (ALLOW_DEBUG(ms->conn_tgt)) {
-;
+		printk(KERN_DEBUG "got %d message bytes:", ms->n_msgin);
 		for (i = 0; i < ms->n_msgin; ++i)
-;
-;
+			printk(" %x", ms->msgin[i]);
+		printk("\n");
 	}
 	dlog(ms, "msgin msg=%.8x",
 	     MKWORD(ms->n_msgin, code, ms->msgin[1], ms->msgin[2]));
@@ -1230,10 +1230,10 @@ static void handle_msgin(struct mesh_state *ms)
 				do_abort(ms);
 				ms->msgphase = msg_out;
 			} else if (code != cmd->device->lun + IDENTIFY_BASE) {
-//				printk(KERN_WARNING "mesh: lun mismatch "
-//				       "(%d != %d) on reselection from "
-//				       "target %d\n", code - IDENTIFY_BASE,
-;
+				printk(KERN_WARNING "mesh: lun mismatch "
+				       "(%d != %d) on reselection from "
+				       "target %d\n", code - IDENTIFY_BASE,
+				       cmd->device->lun, ms->conn_tgt);
 			}
 			break;
 		}
@@ -1242,11 +1242,11 @@ static void handle_msgin(struct mesh_state *ms)
 	return;
 
  reject:
-//	printk(KERN_WARNING "mesh: rejecting message from target %d:",
-;
+	printk(KERN_WARNING "mesh: rejecting message from target %d:",
+	       ms->conn_tgt);
 	for (i = 0; i < ms->n_msgin; ++i)
-;
-;
+		printk(" %x", ms->msgin[i]);
+	printk("\n");
 	ms->msgout[0] = MESSAGE_REJECT;
 	ms->n_msgout = 1;
 	ms->msgphase = msg_out;
@@ -1343,8 +1343,8 @@ static void halt_dma(struct mesh_state *ms)
 	ms->data_ptr -= nb;
 	dlog(ms, "data_ptr %x", ms->data_ptr);
 	if (ms->data_ptr < 0) {
-//		printk(KERN_ERR "mesh: halt_dma: data_ptr=%d (nb=%d, ms=%p)\n",
-;
+		printk(KERN_ERR "mesh: halt_dma: data_ptr=%d (nb=%d, ms=%p)\n",
+		       ms->data_ptr, nb, ms);
 		ms->data_ptr = 0;
 #ifdef MESH_DBG
 		dumplog(ms, ms->conn_tgt);
@@ -1352,10 +1352,10 @@ static void halt_dma(struct mesh_state *ms)
 #endif /* MESH_DBG */
 	} else if (cmd && scsi_bufflen(cmd) &&
 		   ms->data_ptr > scsi_bufflen(cmd)) {
-//		printk(KERN_DEBUG "mesh: target %d overrun, "
-//		       "data_ptr=%x total=%x goes_out=%d\n",
-//		       ms->conn_tgt, ms->data_ptr, scsi_bufflen(cmd),
-;
+		printk(KERN_DEBUG "mesh: target %d overrun, "
+		       "data_ptr=%x total=%x goes_out=%d\n",
+		       ms->conn_tgt, ms->data_ptr, scsi_bufflen(cmd),
+		       ms->tgts[ms->conn_tgt].data_goes_out);
 	}
 	scsi_dma_unmap(cmd);
 	ms->dma_started = 0;
@@ -1421,8 +1421,8 @@ static void phase_mismatch(struct mesh_state *ms)
 				do_abort(ms);
 			} else {
 				if (ms->last_n_msgout == 0) {
-//					printk(KERN_DEBUG
-;
+					printk(KERN_DEBUG
+					       "mesh: no msg to repeat\n");
 					ms->msgout[0] = NOP;
 					ms->last_n_msgout = 1;
 				}
@@ -1431,7 +1431,7 @@ static void phase_mismatch(struct mesh_state *ms)
 		}
 		break;
 	default:
-;
+		printk(KERN_DEBUG "mesh: unknown scsi phase %x\n", phase);
 		ms->stat = DID_ERROR;
 		mesh_done(ms, 1);
 		return;
@@ -1503,17 +1503,17 @@ static void cmd_complete(struct mesh_state *ms)
 			ms->last_n_msgout = ms->n_msgout;
 			ms->n_msgout = 0;
 			if (in_8(&mr->interrupt) & INT_ERROR) {
-//				printk(KERN_ERR "mesh: error %x in msg_out\n",
-;
+				printk(KERN_ERR "mesh: error %x in msg_out\n",
+				       in_8(&mr->error));
 				handle_error(ms);
 				return;
 			}
 			if (in_8(&mr->exception) != EXC_PHASEMM)
-//				printk(KERN_ERR "mesh: exc %x in msg_out\n",
-;
+				printk(KERN_ERR "mesh: exc %x in msg_out\n",
+				       in_8(&mr->exception));
 			else
-//				printk(KERN_DEBUG "mesh: bs0=%x in msg_out\n",
-;
+				printk(KERN_DEBUG "mesh: bs0=%x in msg_out\n",
+				       in_8(&mr->bus_status0));
 			handle_exception(ms);
 			return;
 		}
@@ -1539,7 +1539,7 @@ static void cmd_complete(struct mesh_state *ms)
 	case msg_none:
 		switch (ms->phase) {
 		case idle:
-;
+			printk(KERN_ERR "mesh: interrupt in idle phase?\n");
 			dumpslog(ms);
 			return;
 		case selecting:
@@ -1599,8 +1599,8 @@ static void cmd_complete(struct mesh_state *ms)
 			if (cmd) {
 				cmd->SCp.Status = mr->fifo;
 				if (DEBUG_TARGET(cmd))
-//					printk(KERN_DEBUG "mesh: status is %x\n",
-;
+					printk(KERN_DEBUG "mesh: status is %x\n",
+					       cmd->SCp.Status);
 			}
 			ms->msgphase = msg_in;
 			break;
@@ -1661,10 +1661,10 @@ static void mesh_interrupt(struct mesh_state *ms)
 
 #if 0
 	if (ALLOW_DEBUG(ms->conn_tgt))
-//		printk(KERN_DEBUG "mesh_intr, bs0=%x int=%x exc=%x err=%x "
-//		       "phase=%d msgphase=%d\n", mr->bus_status0,
-//		       mr->interrupt, mr->exception, mr->error,
-;
+		printk(KERN_DEBUG "mesh_intr, bs0=%x int=%x exc=%x err=%x "
+		       "phase=%d msgphase=%d\n", mr->bus_status0,
+		       mr->interrupt, mr->exception, mr->error,
+		       ms->phase, ms->msgphase);
 #endif
 	while ((intr = in_8(&mr->interrupt)) != 0) {
 		dlog(ms, "interrupt intr/err/exc/seq=%.8x", 
@@ -1688,7 +1688,7 @@ static int mesh_abort(struct scsi_cmnd *cmd)
 {
 	struct mesh_state *ms = (struct mesh_state *) cmd->device->host->hostdata;
 
-;
+	printk(KERN_DEBUG "mesh_abort(%p)\n", cmd);
 	mesh_dump_regs(ms);
 	dumplog(ms, cmd->device->id);
 	dumpslog(ms);
@@ -1708,7 +1708,7 @@ static int mesh_host_reset(struct scsi_cmnd *cmd)
 	volatile struct dbdma_regs __iomem *md = ms->dma;
 	unsigned long flags;
 
-;
+	printk(KERN_DEBUG "mesh_host_reset\n");
 
 	spin_lock_irqsave(ms->host->host_lock, flags);
 
@@ -1815,7 +1815,7 @@ static int mesh_shutdown(struct macio_dev *mdev)
 	volatile struct mesh_regs __iomem *mr;
 	unsigned long flags;
 
-;
+       	printk(KERN_INFO "resetting MESH scsi bus(es)\n");
 	spin_lock_irqsave(ms->host->host_lock, flags);
        	mr = ms->mesh;
 	out_8(&mr->intr_mask, 0);
@@ -1864,19 +1864,19 @@ static int mesh_probe(struct macio_dev *mdev, const struct of_device_id *match)
 	}
 
 	if (macio_resource_count(mdev) != 2 || macio_irq_count(mdev) != 2) {
-//       		printk(KERN_ERR "mesh: expected 2 addrs and 2 intrs"
-//	       	       " (got %d,%d)\n", macio_resource_count(mdev),
-;
+       		printk(KERN_ERR "mesh: expected 2 addrs and 2 intrs"
+	       	       " (got %d,%d)\n", macio_resource_count(mdev),
+		       macio_irq_count(mdev));
 		return -ENODEV;
 	}
 
 	if (macio_request_resources(mdev, "mesh") != 0) {
-;
+       		printk(KERN_ERR "mesh: unable to request memory resources");
 		return -EBUSY;
 	}
        	mesh_host = scsi_host_alloc(&mesh_template, sizeof(struct mesh_state));
 	if (mesh_host == NULL) {
-;
+		printk(KERN_ERR "mesh: couldn't register host");
 		goto out_release;
 	}
 	
@@ -1895,12 +1895,12 @@ static int mesh_probe(struct macio_dev *mdev, const struct of_device_id *match)
 	
 	ms->mesh = ioremap(macio_resource_start(mdev, 0), 0x1000);
 	if (ms->mesh == NULL) {
-;
+		printk(KERN_ERR "mesh: can't map registers\n");
 		goto out_free;
 	}		
 	ms->dma = ioremap(macio_resource_start(mdev, 1), 0x1000);
 	if (ms->dma == NULL) {
-;
+		printk(KERN_ERR "mesh: can't map registers\n");
 		iounmap(ms->mesh);
 		goto out_free;
 	}
@@ -1920,7 +1920,7 @@ static int mesh_probe(struct macio_dev *mdev, const struct of_device_id *match)
 					     ms->dma_cmd_size,
 					     &dma_cmd_bus);
 	if (dma_cmd_space == NULL) {
-;
+		printk(KERN_ERR "mesh: can't allocate DMA table\n");
 		goto out_unmap;
 	}
 	memset(dma_cmd_space, 0, ms->dma_cmd_size);
@@ -1939,7 +1939,7 @@ static int mesh_probe(struct macio_dev *mdev, const struct of_device_id *match)
 	if ((cfp = of_get_property(mesh, "clock-frequency", NULL)))
        		ms->clk_freq = *cfp;
 	else {
-;
+       		printk(KERN_INFO "mesh: assuming 50MHz clock frequency\n");
 	       	ms->clk_freq = 50000000;
        	}
 
@@ -1958,7 +1958,7 @@ static int mesh_probe(struct macio_dev *mdev, const struct of_device_id *match)
 
 	/* Request interrupt */
        	if (request_irq(ms->meshintr, do_mesh_interrupt, 0, "MESH", ms)) {
-;
+	       	printk(KERN_ERR "MESH: can't get irq %d\n", ms->meshintr);
 		goto out_shutdown;
 	}
 
@@ -2059,11 +2059,11 @@ static int __init init_mesh(void)
 	if (sync_rate > 10)
 		sync_rate = 10;
 	if (sync_rate > 0) {
-;
+		printk(KERN_INFO "mesh: configured for synchronous %d MB/s\n", sync_rate);
 		mesh_sync_period = 1000 / sync_rate;	/* ns */
 		mesh_sync_offset = 15;
 	} else
-;
+		printk(KERN_INFO "mesh: configured for asynchronous\n");
 
 	return macio_register_driver(&mesh_driver);
 }

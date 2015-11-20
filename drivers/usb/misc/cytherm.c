@@ -424,13 +424,13 @@ static int __init usb_cytherm_init(void)
 
 	result = usb_register(&cytherm_driver);
 	if (result) {
-//		printk(KERN_ERR KBUILD_MODNAME ": usb_register failed! "
-;
+		printk(KERN_ERR KBUILD_MODNAME ": usb_register failed! "
+		       "Error number: %d\n", result);
 		return result;
 	}
 
-//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-;
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
 	return 0;
 }
 

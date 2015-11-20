@@ -486,8 +486,8 @@ static int __rpc_create_common(struct inode *dir, struct dentry *dentry,
 	d_add(dentry, inode);
 	return 0;
 out_err:
-//	printk(KERN_WARNING "%s: %s failed to allocate inode for dentry %s\n",
-;
+	printk(KERN_WARNING "%s: %s failed to allocate inode for dentry %s\n",
+			__FILE__, __func__, dentry->d_name.name);
 	dput(dentry);
 	return -ENOMEM;
 }
@@ -700,8 +700,8 @@ static int rpc_populate(struct dentry *parent,
 out_bad:
 	__rpc_depopulate(parent, files, start, eof);
 	mutex_unlock(&dir->i_mutex);
-//	printk(KERN_WARNING "%s: %s failed to populate directory %s\n",
-;
+	printk(KERN_WARNING "%s: %s failed to populate directory %s\n",
+			__FILE__, __func__, parent->d_name.name);
 	return err;
 }
 
@@ -818,9 +818,9 @@ out:
 	return dentry;
 out_err:
 	dentry = ERR_PTR(err);
-//	printk(KERN_WARNING "%s: %s() failed to create pipe %s/%s (errno = %d)\n",
-//			__FILE__, __func__, parent->d_name.name, name,
-;
+	printk(KERN_WARNING "%s: %s() failed to create pipe %s/%s (errno = %d)\n",
+			__FILE__, __func__, parent->d_name.name, name,
+			err);
 	goto out;
 }
 EXPORT_SYMBOL_GPL(rpc_mkpipe);

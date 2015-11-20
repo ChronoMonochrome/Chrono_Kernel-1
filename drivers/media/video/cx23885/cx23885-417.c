@@ -57,10 +57,10 @@ static unsigned int v4l_debug;
 module_param(v4l_debug, int, 0644);
 MODULE_PARM_DESC(v4l_debug, "enable V4L debug messages");
 
-//#define dprintk(level, fmt, arg...)\
-//	do { if (v4l_debug >= level) \
-//		printk(KERN_DEBUG "%s: " fmt, \
-;
+#define dprintk(level, fmt, arg...)\
+	do { if (v4l_debug >= level) \
+		printk(KERN_DEBUG "%s: " fmt, \
+		(dev) ? dev->name : "cx23885[?]", ## arg); \
 	} while (0)
 
 static struct cx23885_tvnorm cx23885_tvnorms[] = {
@@ -287,7 +287,7 @@ void cx23885_mc417_init(struct cx23885_dev *dev)
 {
 	u32 regval;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	/* Configure MC417_CTL register to defaults. */
 	regval = MC417_SPD_CTL(MC417_SPD_CTL_FAST)	|
@@ -766,17 +766,17 @@ static int cx23885_mbox_func(void *priv,
 	u32 value, flag, retval = 0;
 	int i;
 
-//	dprintk(3, "%s: command(0x%X) = %s\n", __func__, command,
-;
+	dprintk(3, "%s: command(0x%X) = %s\n", __func__, command,
+		cmd_to_str(command));
 
 	/* this may not be 100% safe if we can't read any memory location
 	   without side effects */
 	mc417_memory_read(dev, dev->cx23417_mailbox - 4, &value);
 	if (value != 0x12345678) {
-//		printk(KERN_ERR
-//			"Firmware and/or mailbox pointer not initialized "
-//			"or corrupted, signature = 0x%x, cmd = %s\n", value,
-;
+		printk(KERN_ERR
+			"Firmware and/or mailbox pointer not initialized "
+			"or corrupted, signature = 0x%x, cmd = %s\n", value,
+			cmd_to_str(command));
 		return -1;
 	}
 
@@ -785,8 +785,8 @@ static int cx23885_mbox_func(void *priv,
 	 */
 	mc417_memory_read(dev, dev->cx23417_mailbox, &flag);
 	if (flag) {
-//		printk(KERN_ERR "ERROR: Mailbox appears to be in use "
-;
+		printk(KERN_ERR "ERROR: Mailbox appears to be in use "
+			"(%x), cmd = %s\n", flag, cmd_to_str(command));
 		return -1;
 	}
 
@@ -800,7 +800,7 @@ static int cx23885_mbox_func(void *priv,
 		IVTV_API_STD_TIMEOUT); /* timeout */
 	for (i = 0; i < in; i++) {
 		mc417_memory_write(dev, dev->cx23417_mailbox + 4 + i, data[i]);
-;
+		dprintk(3, "API Input %d = %d\n", i, data[i]);
 	}
 	for (; i < CX2341X_MBOX_MAX_DATA; i++)
 		mc417_memory_write(dev, dev->cx23417_mailbox + 4 + i, 0);
@@ -815,7 +815,7 @@ static int cx23885_mbox_func(void *priv,
 		if (0 != (flag & 4))
 			break;
 		if (time_after(jiffies, timeout)) {
-;
+			printk(KERN_ERR "ERROR: API Mailbox timeout\n");
 			return -1;
 		}
 		udelay(10);
@@ -824,11 +824,11 @@ static int cx23885_mbox_func(void *priv,
 	/* read output values */
 	for (i = 0; i < out; i++) {
 		mc417_memory_read(dev, dev->cx23417_mailbox + 4 + i, data + i);
-;
+		dprintk(3, "API Output %d = %d\n", i, data[i]);
 	}
 
 	mc417_memory_read(dev, dev->cx23417_mailbox + 2, &retval);
-;
+	dprintk(3, "API result = %d\n", retval);
 
 	flag = 0;
 	mc417_memory_write(dev, dev->cx23417_mailbox, flag);
@@ -849,7 +849,7 @@ static int cx23885_api_cmd(struct cx23885_dev *dev,
 	va_list vargs;
 	int i, err;
 
-;
+	dprintk(3, "%s() cmds = 0x%08x\n", __func__, command);
 
 	va_start(vargs, outputcnt);
 	for (i = 0; i < inputcnt; i++)
@@ -874,7 +874,7 @@ static int cx23885_find_mailbox(struct cx23885_dev *dev)
 	u32 value;
 	int i;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	for (i = 0; i < CX23885_FIRM_IMAGE_SIZE; i++) {
 		mc417_memory_read(dev, i, &value);
@@ -883,11 +883,11 @@ static int cx23885_find_mailbox(struct cx23885_dev *dev)
 		else
 			signaturecnt = 0;
 		if (4 == signaturecnt) {
-;
+			dprintk(1, "Mailbox signature found at 0x%x\n", i+1);
 			return i+1;
 		}
 	}
-;
+	printk(KERN_ERR "Mailbox signature values not found!\n");
 	return -1;
 }
 
@@ -903,7 +903,7 @@ static int cx23885_load_firmware(struct cx23885_dev *dev)
 	u32 checksum = 0;
 	u32 *dataptr;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	/* Save GPIO settings before reset of APU */
 	retval |= mc417_memory_read(dev, 0x9020, &gpio_output);
@@ -921,8 +921,8 @@ static int cx23885_load_firmware(struct cx23885_dev *dev)
 		IVTV_REG_APU, 0);
 
 	if (retval != 0) {
-//		printk(KERN_ERR "%s: Error with mc417_register_write\n",
-;
+		printk(KERN_ERR "%s: Error with mc417_register_write\n",
+			__func__);
 		return -1;
 	}
 
@@ -930,37 +930,37 @@ static int cx23885_load_firmware(struct cx23885_dev *dev)
 				  &dev->pci->dev);
 
 	if (retval != 0) {
-//		printk(KERN_ERR
-//			"ERROR: Hotplug firmware request failed (%s).\n",
-;
-//		printk(KERN_ERR "Please fix your hotplug setup, the board will "
-;
+		printk(KERN_ERR
+			"ERROR: Hotplug firmware request failed (%s).\n",
+			CX23885_FIRM_IMAGE_NAME);
+		printk(KERN_ERR "Please fix your hotplug setup, the board will "
+			"not work without firmware loaded!\n");
 		return -1;
 	}
 
 	if (firmware->size != CX23885_FIRM_IMAGE_SIZE) {
-//		printk(KERN_ERR "ERROR: Firmware size mismatch "
-//			"(have %zd, expected %d)\n",
-;
+		printk(KERN_ERR "ERROR: Firmware size mismatch "
+			"(have %zd, expected %d)\n",
+			firmware->size, CX23885_FIRM_IMAGE_SIZE);
 		release_firmware(firmware);
 		return -1;
 	}
 
 	if (0 != memcmp(firmware->data, magic, 8)) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"ERROR: Firmware magic mismatch, wrong file?\n");
 		release_firmware(firmware);
 		return -1;
 	}
 
 	/* transfer to the chip */
-;
+	dprintk(2, "Loading firmware ...\n");
 	dataptr = (u32 *)firmware->data;
 	for (i = 0; i < (firmware->size >> 2); i++) {
 		value = *dataptr;
 		checksum += ~value;
 		if (mc417_memory_write(dev, i, value) != 0) {
-;
+			printk(KERN_ERR "ERROR: Loading firmware failed!\n");
 			release_firmware(firmware);
 			return -1;
 		}
@@ -968,23 +968,23 @@ static int cx23885_load_firmware(struct cx23885_dev *dev)
 	}
 
 	/* read back to verify with the checksum */
-;
+	dprintk(1, "Verifying firmware ...\n");
 	for (i--; i >= 0; i--) {
 		if (mc417_memory_read(dev, i, &value) != 0) {
-;
+			printk(KERN_ERR "ERROR: Reading firmware failed!\n");
 			release_firmware(firmware);
 			return -1;
 		}
 		checksum -= ~value;
 	}
 	if (checksum) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"ERROR: Firmware load failed (checksum mismatch).\n");
 		release_firmware(firmware);
 		return -1;
 	}
 	release_firmware(firmware);
-;
+	dprintk(1, "Firmware upload successful.\n");
 
 	retval |= mc417_register_write(dev, IVTV_REG_HW_BLOCKS,
 		IVTV_CMD_HW_BLOCKS_RST);
@@ -997,8 +997,8 @@ static int cx23885_load_firmware(struct cx23885_dev *dev)
 	retval |= mc417_register_write(dev, IVTV_REG_VPU, value & 0xFFFFFFE8);
 
 	if (retval < 0)
-//		printk(KERN_ERR "%s: Error with mc417_register_write\n",
-;
+		printk(KERN_ERR "%s: Error with mc417_register_write\n",
+			__func__);
 	return 0;
 }
 
@@ -1008,12 +1008,12 @@ void cx23885_417_check_encoder(struct cx23885_dev *dev)
 
 	status = seq = 0;
 	cx23885_api_cmd(dev, CX2341X_ENC_GET_SEQ_END, 0, 2, &status, &seq);
-;
+	dprintk(1, "%s() status = %d, seq = %d\n", __func__, status, seq);
 }
 
 static void cx23885_codec_settings(struct cx23885_dev *dev)
 {
-;
+	dprintk(1, "%s()\n", __func__);
 
 	/* assign frame size */
 	cx23885_api_cmd(dev, CX2341X_ENC_SET_FRAME_SIZE, 2, 0,
@@ -1036,37 +1036,37 @@ static int cx23885_initialize_codec(struct cx23885_dev *dev)
 	int retval;
 	u32 i, data[7];
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	retval = cx23885_api_cmd(dev, CX2341X_ENC_PING_FW, 0, 0); /* ping */
 	if (retval < 0) {
-;
+		dprintk(2, "%s() PING OK\n", __func__);
 		retval = cx23885_load_firmware(dev);
 		if (retval < 0) {
-;
+			printk(KERN_ERR "%s() f/w load failed\n", __func__);
 			return retval;
 		}
 		retval = cx23885_find_mailbox(dev);
 		if (retval < 0) {
-//			printk(KERN_ERR "%s() mailbox < 0, error\n",
-;
+			printk(KERN_ERR "%s() mailbox < 0, error\n",
+				__func__);
 			return -1;
 		}
 		dev->cx23417_mailbox = retval;
 		retval = cx23885_api_cmd(dev, CX2341X_ENC_PING_FW, 0, 0);
 		if (retval < 0) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"ERROR: cx23417 firmware ping failed!\n");
 			return -1;
 		}
 		retval = cx23885_api_cmd(dev, CX2341X_ENC_GET_VERSION, 0, 1,
 			&version);
 		if (retval < 0) {
-//			printk(KERN_ERR "ERROR: cx23417 firmware get encoder :"
-;
+			printk(KERN_ERR "ERROR: cx23417 firmware get encoder :"
+				"version failed!\n");
 			return -1;
 		}
-;
+		dprintk(1, "cx23417 firmware version is 0x%08x\n", version);
 		msleep(200);
 	}
 
@@ -1272,7 +1272,7 @@ static int vidioc_g_tuner(struct file *file, void *priv,
 	strcpy(t->name, "Television");
 	call_all(dev, tuner, g_tuner, t);
 
-;
+	dprintk(1, "VIDIOC_G_TUNER: tuner type %d\n", t->type);
 
 	return 0;
 }
@@ -1318,10 +1318,10 @@ static int vidioc_s_frequency(struct file *file, void *priv,
 		CX23885_END_NOW, CX23885_MPEG_CAPTURE,
 		CX23885_RAW_BITS_NONE);
 
-//	dprintk(1, "VIDIOC_S_FREQUENCY: dev type %d, f\n",
-;
-//	dprintk(1, "VIDIOC_S_FREQUENCY: f tuner %d, f type %d\n",
-;
+	dprintk(1, "VIDIOC_S_FREQUENCY: dev type %d, f\n",
+		dev->tuner_type);
+	dprintk(1, "VIDIOC_S_FREQUENCY: f tuner %d, f type %d\n",
+		f->tuner, f->type);
 	if (UNSET == dev->tuner_type)
 		return -EINVAL;
 	if (f->tuner != 0)
@@ -1397,8 +1397,8 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.width        = dev->ts1.width;
 	f->fmt.pix.height       = dev->ts1.height;
 	f->fmt.pix.field        = fh->mpegq.field;
-//	dprintk(1, "VIDIOC_G_FMT: w: %d, h: %d, f: %d\n",
-;
+	dprintk(1, "VIDIOC_G_FMT: w: %d, h: %d, f: %d\n",
+		dev->ts1.width, dev->ts1.height, fh->mpegq.field);
 	return 0;
 }
 
@@ -1413,8 +1413,8 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.sizeimage    =
 		dev->ts1.ts_packet_size * dev->ts1.ts_packet_count;
 	f->fmt.pix.colorspace   = 0;
-//	dprintk(1, "VIDIOC_TRY_FMT: w: %d, h: %d, f: %d\n",
-;
+	dprintk(1, "VIDIOC_TRY_FMT: w: %d, h: %d, f: %d\n",
+		dev->ts1.width, dev->ts1.height, fh->mpegq.field);
 	return 0;
 }
 
@@ -1429,8 +1429,8 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 	f->fmt.pix.sizeimage    =
 		dev->ts1.ts_packet_size * dev->ts1.ts_packet_count;
 	f->fmt.pix.colorspace   = 0;
-//	dprintk(1, "VIDIOC_S_FMT: w: %d, h: %d, f: %d\n",
-;
+	dprintk(1, "VIDIOC_S_FMT: w: %d, h: %d, f: %d\n",
+		f->fmt.pix.width, f->fmt.pix.height, f->fmt.pix.field);
 	return 0;
 }
 
@@ -1537,14 +1537,14 @@ static int vidioc_log_status(struct file *file, void *priv)
 	char name[32 + 2];
 
 	snprintf(name, sizeof(name), "%s/2", dev->name);
-//	printk(KERN_INFO
-//		"%s/2: ============  START LOG STATUS  ============\n",
-;
+	printk(KERN_INFO
+		"%s/2: ============  START LOG STATUS  ============\n",
+	       dev->name);
 	call_all(dev, core, log_status);
 	cx2341x_log_status(&dev->mpeg_params, name);
-//	printk(KERN_INFO
-//		"%s/2: =============  END LOG STATUS  =============\n",
-;
+	printk(KERN_INFO
+		"%s/2: =============  END LOG STATUS  =============\n",
+	       dev->name);
 	return 0;
 }
 
@@ -1571,7 +1571,7 @@ static int mpeg_open(struct file *file)
 	struct cx23885_dev *dev = video_drvdata(file);
 	struct cx23885_fh *fh;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	/* allocate + initialize per filehandle data */
 	fh = kzalloc(sizeof(*fh), GFP_KERNEL);
@@ -1595,7 +1595,7 @@ static int mpeg_release(struct file *file)
 	struct cx23885_fh  *fh  = file->private_data;
 	struct cx23885_dev *dev = fh->dev;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	/* FIXME: Review this crap */
 	/* Shut device down on last close */
@@ -1631,7 +1631,7 @@ static ssize_t mpeg_read(struct file *file, char __user *data,
 	struct cx23885_fh *fh = file->private_data;
 	struct cx23885_dev *dev = fh->dev;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	/* Deal w/ A/V decoder * and mpeg encoder sync issues. */
 	/* Start mpeg encoder on first read. */
@@ -1652,7 +1652,7 @@ static unsigned int mpeg_poll(struct file *file,
 	struct cx23885_fh *fh = file->private_data;
 	struct cx23885_dev *dev = fh->dev;
 
-;
+	dprintk(2, "%s\n", __func__);
 
 	return videobuf_poll_stream(file, &fh->mpegq, wait);
 }
@@ -1662,7 +1662,7 @@ static int mpeg_mmap(struct file *file, struct vm_area_struct *vma)
 	struct cx23885_fh *fh = file->private_data;
 	struct cx23885_dev *dev = fh->dev;
 
-;
+	dprintk(2, "%s()\n", __func__);
 
 	return videobuf_mmap_mapper(&fh->mpegq, vma);
 }
@@ -1721,7 +1721,7 @@ static struct video_device cx23885_mpeg_template = {
 
 void cx23885_417_unregister(struct cx23885_dev *dev)
 {
-;
+	dprintk(1, "%s()\n", __func__);
 
 	if (dev->v4l_device) {
 		if (video_is_registered(dev->v4l_device))
@@ -1741,7 +1741,7 @@ static struct video_device *cx23885_video_dev_alloc(
 	struct video_device *vfd;
 	struct cx23885_dev *dev = tsport->dev;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	vfd = video_device_alloc();
 	if (NULL == vfd)
@@ -1760,7 +1760,7 @@ int cx23885_417_register(struct cx23885_dev *dev)
 	int err = -ENODEV;
 	struct cx23885_tsport *tsport = &dev->ts1;
 
-;
+	dprintk(1, "%s()\n", __func__);
 
 	if (cx23885_boards[dev->board].portb != CX23885_MPEG_ENCODER)
 		return err;
@@ -1785,12 +1785,12 @@ int cx23885_417_register(struct cx23885_dev *dev)
 	err = video_register_device(dev->v4l_device,
 		VFL_TYPE_GRABBER, -1);
 	if (err < 0) {
-;
+		printk(KERN_INFO "%s: can't register mpeg device\n", dev->name);
 		return err;
 	}
 
-//	printk(KERN_INFO "%s: registered device %s [mpeg]\n",
-;
+	printk(KERN_INFO "%s: registered device %s [mpeg]\n",
+	       dev->name, video_device_node_name(dev->v4l_device));
 
 	return 0;
 }

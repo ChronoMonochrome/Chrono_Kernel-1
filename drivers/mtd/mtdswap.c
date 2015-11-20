@@ -1406,7 +1406,7 @@ eb_data_fail:
 revmap_fail:
 	vfree(d->page_data);
 page_data_fail:
-;
+	printk(KERN_ERR "%s: init failed (%d)\n", MTDSWAP_PREFIX, ret);
 	return ret;
 }
 
@@ -1438,28 +1438,28 @@ static void mtdswap_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 		return;
 
 	if (mtd->erasesize < PAGE_SIZE || mtd->erasesize % PAGE_SIZE) {
-//		printk(KERN_ERR "%s: Erase size %u not multiple of PAGE_SIZE "
-;
+		printk(KERN_ERR "%s: Erase size %u not multiple of PAGE_SIZE "
+			"%lu\n", MTDSWAP_PREFIX, mtd->erasesize, PAGE_SIZE);
 		return;
 	}
 
 	if (PAGE_SIZE % mtd->writesize || mtd->writesize > PAGE_SIZE) {
-//		printk(KERN_ERR "%s: PAGE_SIZE %lu not multiple of write size"
-;
+		printk(KERN_ERR "%s: PAGE_SIZE %lu not multiple of write size"
+			" %u\n", MTDSWAP_PREFIX, PAGE_SIZE, mtd->writesize);
 		return;
 	}
 
 	oinfo = mtd->ecclayout;
 	if (!oinfo) {
-//		printk(KERN_ERR "%s: mtd%d does not have OOB\n",
-;
+		printk(KERN_ERR "%s: mtd%d does not have OOB\n",
+			MTDSWAP_PREFIX, mtd->index);
 		return;
 	}
 
 	if (!mtd->oobsize || oinfo->oobavail < MTDSWAP_OOBSIZE) {
-//		printk(KERN_ERR "%s: Not enough free bytes in OOB, "
-//			"%d available, %zu needed.\n",
-;
+		printk(KERN_ERR "%s: Not enough free bytes in OOB, "
+			"%d available, %zu needed.\n",
+			MTDSWAP_PREFIX, oinfo->oobavail, MTDSWAP_OOBSIZE);
 		return;
 	}
 
@@ -1470,8 +1470,8 @@ static void mtdswap_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	size_limit = (uint64_t) BLOCK_MAX * PAGE_SIZE;
 
 	if (mtd->size > size_limit) {
-//		printk(KERN_WARNING "%s: Device too large. Limiting size to "
-;
+		printk(KERN_WARNING "%s: Device too large. Limiting size to "
+			"%llu bytes\n", MTDSWAP_PREFIX, size_limit);
 		use_size = size_limit;
 	}
 
@@ -1481,9 +1481,9 @@ static void mtdswap_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	eavailable = eblocks - bad_blocks;
 
 	if (eavailable < MIN_ERASE_BLOCKS) {
-//		printk(KERN_ERR "%s: Not enough erase blocks. %u available, "
-//			"%d needed\n", MTDSWAP_PREFIX, eavailable,
-;
+		printk(KERN_ERR "%s: Not enough erase blocks. %u available, "
+			"%d needed\n", MTDSWAP_PREFIX, eavailable,
+			MIN_ERASE_BLOCKS);
 		return;
 	}
 
@@ -1498,9 +1498,9 @@ static void mtdswap_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	swap_size = (uint64_t)(eavailable - spare_cnt) * mtd->erasesize +
 		(header ? PAGE_SIZE : 0);
 
-//	printk(KERN_INFO "%s: Enabling MTD swap on device %lu, size %llu KB, "
-//		"%u spare, %u bad blocks\n",
-;
+	printk(KERN_INFO "%s: Enabling MTD swap on device %lu, size %llu KB, "
+		"%u spare, %u bad blocks\n",
+		MTDSWAP_PREFIX, part, swap_size / 1024, spare_cnt, bad_blocks);
 
 	d = kzalloc(sizeof(struct mtdswap_dev), GFP_KERNEL);
 	if (!d)

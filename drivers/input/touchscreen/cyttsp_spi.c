@@ -61,14 +61,14 @@ static int cyttsp_spi_xfer_(u8 op, struct cyttsp_spi *ts_spi,
 	u8 *wr_buf = ts_spi->wr_buf;
 	u8 *rd_buf = ts_spi->rd_buf;
 	int retval;
-;
+	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
 	if (length > CY_SPI_DATA_SIZE) {
-//		printk(KERN_ERR "%s: length %d is too big.\n",
-;
+		printk(KERN_ERR "%s: length %d is too big.\n",
+			__func__, length);
 		return -EINVAL;
 	}
-//	DBG(printk(KERN_INFO "%s: OP=%s length=%d\n", __func__,
-;
+	DBG(printk(KERN_INFO "%s: OP=%s length=%d\n", __func__,
+		   op == CY_SPI_RD_OP ? "Read" : "Write", length);)
 
 	memset(wr_buf, 0, CY_SPI_DATA_BUF_SIZE);
 	memset(rd_buf, 0, CY_SPI_DATA_BUF_SIZE);
@@ -85,11 +85,11 @@ static int cyttsp_spi_xfer_(u8 op, struct cyttsp_spi *ts_spi,
 	DBG(
 	for (i = 0; i < (length + CY_SPI_CMD_BYTES); i++) {
 		if ((op == CY_SPI_RD_OP) && (i < CY_SPI_CMD_BYTES))
-//			printk(KERN_INFO "%s: read op. wr[%d]:0x%02x\n",
-;
+			printk(KERN_INFO "%s: read op. wr[%d]:0x%02x\n",
+				__func__, i, wr_buf[i]);
 		if (op == CY_SPI_WR_OP)
-//			printk(KERN_INFO "%s: write op. wr[%d]:0x%02x\n",
-;
+			printk(KERN_INFO "%s: write op. wr[%d]:0x%02x\n",
+				__func__, i, wr_buf[i]);
 	})
 
 	memset((void *)xfer, 0, sizeof(xfer));
@@ -110,8 +110,8 @@ static int cyttsp_spi_xfer_(u8 op, struct cyttsp_spi *ts_spi,
 
 	retval = spi_sync(ts_spi->spi_client, &msg);
 	if (retval < 0) {
-//		printk(KERN_ERR "%s: spi sync error %d, len=%d, op=%d\n",
-;
+		printk(KERN_ERR "%s: spi sync error %d, len=%d, op=%d\n",
+			__func__, retval, xfer[1].len, op);
 		retval = 0;
 	}
 
@@ -121,11 +121,11 @@ static int cyttsp_spi_xfer_(u8 op, struct cyttsp_spi *ts_spi,
 	else {
 		DBG(
 		for (i = 0; i < (CY_SPI_CMD_BYTES); i++)
-//			printk(KERN_INFO "%s: test rd_buf[%d]:0x%02x\n",
-;
+			printk(KERN_INFO "%s: test rd_buf[%d]:0x%02x\n",
+				__func__, i, rd_buf[i]);
 		for (i = 0; i < (length); i++)
-//			printk(KERN_INFO "%s: test buf[%d]:0x%02x\n",
-;
+			printk(KERN_INFO "%s: test buf[%d]:0x%02x\n",
+				__func__, i, buf[i]);)
 		retval = 1;
 	}
 	return retval;
@@ -136,7 +136,7 @@ static int cyttsp_spi_xfer(u8 op, struct cyttsp_spi *ts,
 {
 	int tries;
 	int retval;
-;
+	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
 
 	if (op == CY_SPI_RD_OP) {
 		for (tries = CY_NUM_RETRY; tries; tries--) {
@@ -158,12 +158,12 @@ static s32 ttsp_spi_read_block_data(void *handle, u8 addr,
 	int retval;
 	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi, ops);
 
-;
+	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
 
 	retval = cyttsp_spi_xfer(CY_SPI_RD_OP, ts, addr, data, length);
 	if (retval < 0)
-//		printk(KERN_ERR "%s: ttsp_spi_read_block_data failed\n",
-;
+		printk(KERN_ERR "%s: ttsp_spi_read_block_data failed\n",
+			__func__);
 
 	/* Do not print the above error if the data sync bytes were not found.
 	   This is a normal condition for the bootloader loader startup and need
@@ -180,12 +180,12 @@ static s32 ttsp_spi_write_block_data(void *handle, u8 addr,
 	int retval;
 	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi, ops);
 
-;
+	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
 
 	retval = cyttsp_spi_xfer(CY_SPI_WR_OP, ts, addr, (void *)data, length);
 	if (retval < 0)
-//		printk(KERN_ERR "%s: ttsp_spi_write_block_data failed\n",
-;
+		printk(KERN_ERR "%s: ttsp_spi_write_block_data failed\n",
+			__func__);
 
 	/* Do not print the above error if the data sync bytes were not found.
 	   This is a normal condition for the bootloader loader startup and need
@@ -201,7 +201,7 @@ static s32 ttsp_spi_tch_ext(void *handle, void *values)
 	int retval = 0;
 	struct cyttsp_spi *ts = container_of(handle, struct cyttsp_spi, ops);
 
-;
+	DBG(printk(KERN_INFO "%s: Enter\n", __func__);)
 
 	/* Add custom touch extension handling code here */
 	/* set: retval < 0 for any returned system errors,
@@ -217,19 +217,19 @@ static int __devinit cyttsp_spi_probe(struct spi_device *spi)
 {
 	struct cyttsp_spi *ts_spi;
 	int retval;
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 
 	/* Set up SPI*/
 	spi->bits_per_word = CY_SPI_BITS_PER_WORD;
 	spi->mode = SPI_MODE_0;
 	retval = spi_setup(spi);
 	if (retval < 0) {
-;
+		printk(KERN_ERR "%s: SPI setup error %d\n", __func__, retval);
 		return retval;
 	}
 	ts_spi = kzalloc(sizeof(*ts_spi), GFP_KERNEL);
 	if (ts_spi == NULL) {
-;
+		printk(KERN_ERR "%s: Error, kzalloc\n", __func__);
 		retval = -ENOMEM;
 		goto error_alloc_data_failed;
 	}
@@ -244,8 +244,8 @@ static int __devinit cyttsp_spi_probe(struct spi_device *spi)
 		retval = -ENODEV;
 		goto ttsp_core_err;
 	}
-//	printk(KERN_INFO "%s: Successful registration %s\n",
-;
+	printk(KERN_INFO "%s: Successful registration %s\n",
+	       __func__, CY_SPI_NAME);
 
 	return 0;
 
@@ -259,7 +259,7 @@ error_alloc_data_failed:
 static int __devexit cyttsp_spi_remove(struct spi_device *spi)
 {
 	struct cyttsp_spi *ts_spi = dev_get_drvdata(&spi->dev);
-;
+	DBG(printk(KERN_INFO"%s: Enter\n", __func__);)
 	cyttsp_core_release(ts_spi->ttsp_client);
 	kfree(ts_spi);
 	return 0;
@@ -281,9 +281,9 @@ static int __init cyttsp_spi_init(void)
 	int err;
 
 	err = spi_register_driver(&cyttsp_spi_driver);
-//	printk(KERN_INFO "%s: Cypress TrueTouch(R) Standard Product SPI "
-//		"Touchscreen Driver (Built %s @ %s) returned %d\n",
-;
+	printk(KERN_INFO "%s: Cypress TrueTouch(R) Standard Product SPI "
+		"Touchscreen Driver (Built %s @ %s) returned %d\n",
+		 __func__, __DATE__, __TIME__, err);
 
 	return err;
 }
@@ -292,7 +292,7 @@ module_init(cyttsp_spi_init);
 static void __exit cyttsp_spi_exit(void)
 {
 	spi_unregister_driver(&cyttsp_spi_driver);
-;
+	printk(KERN_INFO "%s: module exit\n", __func__);
 }
 module_exit(cyttsp_spi_exit);
 

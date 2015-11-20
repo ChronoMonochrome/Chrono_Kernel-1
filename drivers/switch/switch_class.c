@@ -91,7 +91,7 @@ void switch_set_state(struct switch_dev *sdev, int state)
 			kobject_uevent_env(&sdev->dev->kobj, KOBJ_CHANGE, envp);
 			free_page((unsigned long)prop_buf);
 		} else {
-;
+			printk(KERN_ERR "out of memory in switch_set_state\n");
 			kobject_uevent(&sdev->dev->kobj, KOBJ_CHANGE);
 		}
 	}
@@ -141,7 +141,7 @@ err_create_file_2:
 	device_remove_file(sdev->dev, &dev_attr_state);
 err_create_file_1:
 	device_destroy(switch_class, MKDEV(0, sdev->index));
-;
+	printk(KERN_ERR "switch: Failed to register driver %s\n", sdev->name);
 
 	return ret;
 }

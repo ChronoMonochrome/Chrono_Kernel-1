@@ -454,8 +454,8 @@ static void ecard_irq_unmask(struct irq_data *d)
 		if (ec->claimed && ec->ops->irqenable)
 			ec->ops->irqenable(ec, d->irq);
 		else
-////			printk(KERN_ERR "ecard: rejecting request to "
-;
+			printk(KERN_ERR "ecard: rejecting request to "
+				"enable IRQs for %d\n", d->irq);
 	}
 }
 
@@ -490,8 +490,8 @@ void ecard_enablefiq(unsigned int fiqnr)
 		if (ec->claimed && ec->ops->fiqenable)
 			ec->ops->fiqenable(ec, fiqnr);
 		else
-////			printk(KERN_ERR "ecard: rejecting request to "
-;
+			printk(KERN_ERR "ecard: rejecting request to "
+				"enable FIQs for %d\n", fiqnr);
 	}
 }
 
@@ -512,22 +512,22 @@ static void ecard_dump_irq_state(void)
 {
 	ecard_t *ec;
 
-;
+	printk("Expansion card IRQ state:\n");
 
 	for (ec = cards; ec; ec = ec->next) {
 		if (ec->slot_no == 8)
 			continue;
 
-////		printk("  %d: %sclaimed, ",
-;
+		printk("  %d: %sclaimed, ",
+		       ec->slot_no, ec->claimed ? "" : "not ");
 
 		if (ec->ops && ec->ops->irqpending &&
 		    ec->ops != &ecard_default_ops)
-////			printk("irq %spending\n",
-;
+			printk("irq %spending\n",
+			       ec->ops->irqpending(ec) ? "" : "not ");
 		else
-////			printk("irqaddr %p, mask = %02X, status = %02X\n",
-;
+			printk("irqaddr %p, mask = %02X, status = %02X\n",
+			       ec->irqaddr, ec->irqmask, readb(ec->irqaddr));
 	}
 }
 
@@ -548,8 +548,8 @@ static void ecard_check_lockup(struct irq_desc *desc)
 	if (last == jiffies) {
 		lockup += 1;
 		if (lockup > 1000000) {
-////			printk(KERN_ERR "\nInterrupt lockup detected - "
-;
+			printk(KERN_ERR "\nInterrupt lockup detected - "
+			       "disabling all expansion card interrupts\n");
 
 			desc->irq_data.chip->irq_mask(&desc->irq_data);
 			ecard_dump_irq_state();
@@ -563,7 +563,7 @@ static void ecard_check_lockup(struct irq_desc *desc)
 	 */
 	if (!last || time_after(jiffies, last + 5*HZ)) {
 		last = jiffies;
-;
+		printk(KERN_WARNING "Unrecognised interrupt from backplane\n");
 		ecard_dump_irq_state();
 	}
 }
@@ -635,13 +635,13 @@ ecard_irqexp_handler(unsigned int irq, struct irq_desc *desc)
 			 */
 			generic_handle_irq(ec->irq);
 		} else {
-////			printk(KERN_WARNING "card%d: interrupt from unclaimed "
-;
+			printk(KERN_WARNING "card%d: interrupt from unclaimed "
+			       "card???\n", slot);
 			have_expmask &= ~(1 << slot);
 			__raw_writeb(have_expmask, EXPMASK_ENABLE);
 		}
 	} else
-;
+		printk(KERN_WARNING "Wild interrupt from backplane (masks)\n");
 }
 
 static int __init ecard_probeirqhw(void)
@@ -655,8 +655,8 @@ static int __init ecard_probeirqhw(void)
 	__raw_writeb(0xff, EXPMASK_ENABLE);
 
 	if (found) {
-////		printk(KERN_DEBUG "Expansion card interrupt "
-;
+		printk(KERN_DEBUG "Expansion card interrupt "
+		       "management hardware found\n");
 
 		/* for each card present, set a bit to '1' */
 		have_expmask = 0x80000000;
@@ -1085,12 +1085,12 @@ static int __init ecard_init(void)
 
 	task = kthread_run(ecard_task, NULL, "kecardd");
 	if (IS_ERR(task)) {
-////		printk(KERN_ERR "Ecard: unable to create kernel thread: %ld\n",
-;
+		printk(KERN_ERR "Ecard: unable to create kernel thread: %ld\n",
+		       PTR_ERR(task));
 		return PTR_ERR(task);
 	}
 
-;
+	printk("Probing expansion cards\n");
 
 	for (slot = 0; slot < 8; slot ++) {
 		if (ecard_probe(slot, ECARD_EASI) == -ENODEV)

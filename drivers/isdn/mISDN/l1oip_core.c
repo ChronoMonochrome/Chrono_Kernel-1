@@ -282,8 +282,8 @@ l1oip_socket_send(struct l1oip *hc, u8 localcodec, u8 channel, u32 chanmask,
 	struct socket *socket = NULL;
 
 	if (debug & DEBUG_L1OIP_MSG)
-//		printk(KERN_DEBUG "%s: sending data to socket (len = %d)\n",
-;
+		printk(KERN_DEBUG "%s: sending data to socket (len = %d)\n",
+			__func__, len);
 
 	p = frame;
 
@@ -296,13 +296,13 @@ l1oip_socket_send(struct l1oip *hc, u8 localcodec, u8 channel, u32 chanmask,
 		hc->keep_tl.expires = jiffies + L1OIP_KEEPALIVE*HZ;
 
 	if (debug & DEBUG_L1OIP_MSG)
-;
+		printk(KERN_DEBUG "%s: resetting timer\n", __func__);
 
 	/* drop if we have no remote ip or port */
 	if (!hc->sin_remote.sin_addr.s_addr || !hc->sin_remote.sin_port) {
 		if (debug & DEBUG_L1OIP_MSG)
-//			printk(KERN_DEBUG "%s: dropping frame, because remote "
-;
+			printk(KERN_DEBUG "%s: dropping frame, because remote "
+				"IP is not set.\n", __func__);
 		return len;
 	}
 
@@ -348,8 +348,8 @@ l1oip_socket_send(struct l1oip *hc, u8 localcodec, u8 channel, u32 chanmask,
 	spin_unlock(&hc->socket_lock);
 	/* send packet */
 	if (debug & DEBUG_L1OIP_MSG)
-//		printk(KERN_DEBUG "%s: sending packet to socket (len "
-;
+		printk(KERN_DEBUG "%s: sending packet to socket (len "
+			"= %d)\n", __func__, len);
 	hc->sendiov.iov_base = frame;
 	hc->sendiov.iov_len  = len;
 	len = kernel_sendmsg(socket, &hc->sendmsg, &hc->sendiov, 1, len);
@@ -375,32 +375,32 @@ l1oip_socket_recv(struct l1oip *hc, u8 remotecodec, u8 channel, u16 timebase,
 
 	if (len == 0) {
 		if (debug & DEBUG_L1OIP_MSG)
-//			printk(KERN_DEBUG "%s: received empty keepalive data, "
-;
+			printk(KERN_DEBUG "%s: received empty keepalive data, "
+				"ignoring\n", __func__);
 		return;
 	}
 
 	if (debug & DEBUG_L1OIP_MSG)
-//		printk(KERN_DEBUG "%s: received data, sending to mISDN (%d)\n",
-;
+		printk(KERN_DEBUG "%s: received data, sending to mISDN (%d)\n",
+			__func__, len);
 
 	if (channel < 1 || channel > 127) {
-//		printk(KERN_WARNING "%s: packet error - channel %d out of "
-;
+		printk(KERN_WARNING "%s: packet error - channel %d out of "
+			"range\n", __func__, channel);
 		return;
 	}
 	dch = hc->chan[channel].dch;
 	bch = hc->chan[channel].bch;
 	if (!dch && !bch) {
-//		printk(KERN_WARNING "%s: packet error - channel %d not in "
-;
+		printk(KERN_WARNING "%s: packet error - channel %d not in "
+			"stack\n", __func__, channel);
 		return;
 	}
 
 	/* prepare message */
 	nskb = mI_alloc_skb((remotecodec == 3) ? (len<<1) : len, GFP_ATOMIC);
 	if (!nskb) {
-;
+		printk(KERN_ERR "%s: No mem for skb.\n", __func__);
 		return;
 	}
 	p = skb_put(nskb, (remotecodec == 3) ? (len<<1) : len);
@@ -475,32 +475,32 @@ l1oip_socket_parse(struct l1oip *hc, struct sockaddr_in *sin, u8 *buf, int len)
 	struct dchannel		*dch = hc->chan[hc->d_idx].dch;
 
 	if (debug & DEBUG_L1OIP_MSG)
-//		printk(KERN_DEBUG "%s: received frame, parsing... (%d)\n",
-;
+		printk(KERN_DEBUG "%s: received frame, parsing... (%d)\n",
+			__func__, len);
 
 	/* check length */
 	if (len < 1+1+2) {
-//		printk(KERN_WARNING "%s: packet error - length %d below "
-;
+		printk(KERN_WARNING "%s: packet error - length %d below "
+			"4 bytes\n", __func__, len);
 		return;
 	}
 
 	/* check version */
 	if (((*buf)>>6) != L1OIP_VERSION) {
-//		printk(KERN_WARNING "%s: packet error - unknown version %d\n",
-;
+		printk(KERN_WARNING "%s: packet error - unknown version %d\n",
+			__func__, buf[0]>>6);
 		return;
 	}
 
 	/* check type */
 	if (((*buf)&0x20) && !hc->pri) {
-//		printk(KERN_WARNING "%s: packet error - received E1 packet "
-;
+		printk(KERN_WARNING "%s: packet error - received E1 packet "
+			"on S0 interface\n", __func__);
 		return;
 	}
 	if (!((*buf)&0x20) && hc->pri) {
-//		printk(KERN_WARNING "%s: packet error - received S0 packet "
-;
+		printk(KERN_WARNING "%s: packet error - received S0 packet "
+			"on E1 interface\n", __func__);
 		return;
 	}
 
@@ -510,8 +510,8 @@ l1oip_socket_parse(struct l1oip *hc, struct sockaddr_in *sin, u8 *buf, int len)
 	/* check coding */
 	remotecodec = (*buf) & 0x0f;
 	if (remotecodec > 3) {
-//		printk(KERN_WARNING "%s: packet error - remotecodec %d "
-;
+		printk(KERN_WARNING "%s: packet error - remotecodec %d "
+			"unsupported\n", __func__, remotecodec);
 		return;
 	}
 	buf++;
@@ -520,13 +520,13 @@ l1oip_socket_parse(struct l1oip *hc, struct sockaddr_in *sin, u8 *buf, int len)
 	/* check packet_id */
 	if (packet_id) {
 		if (!hc->id) {
-//			printk(KERN_WARNING "%s: packet error - packet has id "
-;
+			printk(KERN_WARNING "%s: packet error - packet has id "
+				"0x%x, but we have not\n", __func__, packet_id);
 			return;
 		}
 		if (len < 4) {
-//			printk(KERN_WARNING "%s: packet error - packet too "
-;
+			printk(KERN_WARNING "%s: packet error - packet too "
+				"short for ID value\n", __func__);
 			return;
 		}
 		packet_id = (*buf++) << 24;
@@ -536,24 +536,24 @@ l1oip_socket_parse(struct l1oip *hc, struct sockaddr_in *sin, u8 *buf, int len)
 		len -= 4;
 
 		if (packet_id != hc->id) {
-//			printk(KERN_WARNING "%s: packet error - ID mismatch, "
-//				"got 0x%x, we 0x%x\n",
-;
+			printk(KERN_WARNING "%s: packet error - ID mismatch, "
+				"got 0x%x, we 0x%x\n",
+				__func__, packet_id, hc->id);
 			return;
 		}
 	} else {
 		if (hc->id) {
-//			printk(KERN_WARNING "%s: packet error - packet has no "
-;
+			printk(KERN_WARNING "%s: packet error - packet has no "
+				"ID, but we have\n", __func__);
 			return;
 		}
 	}
 
 multiframe:
 	if (len < 1) {
-//		printk(KERN_WARNING "%s: packet error - packet too short, "
-//			"channel expected at position %d.\n",
-;
+		printk(KERN_WARNING "%s: packet error - packet too short, "
+			"channel expected at position %d.\n",
+			__func__, len-len_start+1);
 		return;
 	}
 
@@ -566,9 +566,9 @@ multiframe:
 	/* check length on multiframe */
 	if (m) {
 		if (len < 1) {
-//			printk(KERN_WARNING "%s: packet error - packet too "
-//				"short, length expected at position %d.\n",
-;
+			printk(KERN_WARNING "%s: packet error - packet too "
+				"short, length expected at position %d.\n",
+				__func__, len_start-len-1);
 			return;
 		}
 
@@ -577,25 +577,25 @@ multiframe:
 		if (mlen == 0)
 			mlen = 256;
 		if (len < mlen+3) {
-//			printk(KERN_WARNING "%s: packet error - length %d at "
-//				"position %d exceeds total length %d.\n",
-;
+			printk(KERN_WARNING "%s: packet error - length %d at "
+				"position %d exceeds total length %d.\n",
+				__func__, mlen, len_start-len-1, len_start);
 			return;
 		}
 		if (len == mlen+3) {
-//			printk(KERN_WARNING "%s: packet error - length %d at "
-//				"position %d will not allow additional "
-//				"packet.\n",
-;
+			printk(KERN_WARNING "%s: packet error - length %d at "
+				"position %d will not allow additional "
+				"packet.\n",
+				__func__, mlen, len_start-len+1);
 			return;
 		}
 	} else
 		mlen = len-2; /* single frame, subtract timebase */
 
 	if (len < 2) {
-//		printk(KERN_WARNING "%s: packet error - packet too short, time "
-//			"base expected at position %d.\n",
-;
+		printk(KERN_WARNING "%s: packet error - packet too short, time "
+			"base expected at position %d.\n",
+			__func__, len-len_start+1);
 		return;
 	}
 
@@ -607,8 +607,8 @@ multiframe:
 	/* if inactive, we send up a PH_ACTIVATE and activate */
 	if (!test_bit(FLG_ACTIVE, &dch->Flags)) {
 		if (debug & (DEBUG_L1OIP_MSG|DEBUG_L1OIP_SOCKET))
-//			printk(KERN_DEBUG "%s: interface become active due to "
-;
+			printk(KERN_DEBUG "%s: interface become active due to "
+				"received packet\n", __func__);
 		test_and_set_bit(FLG_ACTIVE, &dch->Flags);
 		_queue_data(&dch->dev.D, PH_ACTIVATE_IND, MISDN_ID_ANY, 0,
 			NULL, GFP_ATOMIC);
@@ -636,12 +636,12 @@ multiframe:
 	if ((hc->sin_remote.sin_addr.s_addr != sin->sin_addr.s_addr)
 	 || (hc->sin_remote.sin_port != sin->sin_port)) {
 		if (debug & DEBUG_L1OIP_SOCKET)
-//			printk(KERN_DEBUG "%s: remote address changes from "
-//				"0x%08x to 0x%08x (port %d to %d)\n", __func__,
-//				ntohl(hc->sin_remote.sin_addr.s_addr),
-//				ntohl(sin->sin_addr.s_addr),
-//				ntohs(hc->sin_remote.sin_port),
-;
+			printk(KERN_DEBUG "%s: remote address changes from "
+				"0x%08x to 0x%08x (port %d to %d)\n", __func__,
+				ntohl(hc->sin_remote.sin_addr.s_addr),
+				ntohl(sin->sin_addr.s_addr),
+				ntohs(hc->sin_remote.sin_port),
+				ntohs(sin->sin_port));
 		hc->sin_remote.sin_addr.s_addr = sin->sin_addr.s_addr;
 		hc->sin_remote.sin_port = sin->sin_port;
 	}
@@ -667,7 +667,7 @@ l1oip_socket_thread(void *data)
 	/* allocate buffer memory */
 	recvbuf = kmalloc(recvbuf_size, GFP_KERNEL);
 	if (!recvbuf) {
-;
+		printk(KERN_ERR "%s: Failed to alloc recvbuf.\n", __func__);
 		ret = -ENOMEM;
 		goto fail;
 	}
@@ -677,7 +677,7 @@ l1oip_socket_thread(void *data)
 
 	/* create socket */
 	if (sock_create(PF_INET, SOCK_DGRAM, IPPROTO_UDP, &socket)) {
-;
+		printk(KERN_ERR "%s: Failed to create socket.\n", __func__);
 		ret = -EIO;
 		goto fail;
 	}
@@ -695,15 +695,15 @@ l1oip_socket_thread(void *data)
 	/* bind to incomming port */
 	if (socket->ops->bind(socket, (struct sockaddr *)&hc->sin_local,
 	    sizeof(hc->sin_local))) {
-//		printk(KERN_ERR "%s: Failed to bind socket to port %d.\n",
-;
+		printk(KERN_ERR "%s: Failed to bind socket to port %d.\n",
+			__func__, hc->localport);
 		ret = -EINVAL;
 		goto fail;
 	}
 
 	/* check sk */
 	if (socket->sk == NULL) {
-;
+		printk(KERN_ERR "%s: socket->sk == NULL\n", __func__);
 		ret = -EIO;
 		goto fail;
 	}
@@ -727,8 +727,8 @@ l1oip_socket_thread(void *data)
 
 	/* read loop */
 	if (debug & DEBUG_L1OIP_SOCKET)
-//		printk(KERN_DEBUG "%s: socket created and open\n",
-;
+		printk(KERN_DEBUG "%s: socket created and open\n",
+			__func__);
 	while (!signal_pending(current)) {
 		struct kvec iov = {
 			.iov_base = recvbuf,
@@ -740,8 +740,8 @@ l1oip_socket_thread(void *data)
 			l1oip_socket_parse(hc, &sin_rx, recvbuf, recvlen);
 		} else {
 			if (debug & DEBUG_L1OIP_SOCKET)
-//				printk(KERN_WARNING
-;
+				printk(KERN_WARNING
+				    "%s: broken pipe on socket\n", __func__);
 		}
 	}
 
@@ -757,8 +757,8 @@ l1oip_socket_thread(void *data)
 	spin_unlock(&hc->socket_lock);
 
 	if (debug & DEBUG_L1OIP_SOCKET)
-//		printk(KERN_DEBUG "%s: socket thread terminating\n",
-;
+		printk(KERN_DEBUG "%s: socket thread terminating\n",
+			__func__);
 
 fail:
 	/* free recvbuf */
@@ -773,8 +773,8 @@ fail:
 	hc->socket_thread = NULL; /* show termination of thread */
 
 	if (debug & DEBUG_L1OIP_SOCKET)
-//		printk(KERN_DEBUG "%s: socket thread terminated\n",
-;
+		printk(KERN_DEBUG "%s: socket thread terminated\n",
+			__func__);
 	return ret;
 }
 
@@ -786,8 +786,8 @@ l1oip_socket_close(struct l1oip *hc)
 	/* kill thread */
 	if (hc->socket_thread) {
 		if (debug & DEBUG_L1OIP_SOCKET)
-//			printk(KERN_DEBUG "%s: socket thread exists, "
-;
+			printk(KERN_DEBUG "%s: socket thread exists, "
+				"killing...\n", __func__);
 		send_sig(SIGTERM, hc->socket_thread, 0);
 		wait_for_completion(&hc->socket_complete);
 	}
@@ -795,8 +795,8 @@ l1oip_socket_close(struct l1oip *hc)
 	/* if active, we send up a PH_DEACTIVATE and deactivate */
 	if (test_bit(FLG_ACTIVE, &dch->Flags)) {
 		if (debug & (DEBUG_L1OIP_MSG|DEBUG_L1OIP_SOCKET))
-//			printk(KERN_DEBUG "%s: interface become deactivated "
-;
+			printk(KERN_DEBUG "%s: interface become deactivated "
+				"due to timeout\n", __func__);
 		test_and_clear_bit(FLG_ACTIVE, &dch->Flags);
 		_queue_data(&dch->dev.D, PH_DEACTIVATE_IND, MISDN_ID_ANY, 0,
 			NULL, GFP_ATOMIC);
@@ -816,14 +816,14 @@ l1oip_socket_open(struct l1oip *hc)
 		hc->name);
 	if (IS_ERR(hc->socket_thread)) {
 		int err = PTR_ERR(hc->socket_thread);
-//		printk(KERN_ERR "%s: Failed (%d) to create socket process.\n",
-;
+		printk(KERN_ERR "%s: Failed (%d) to create socket process.\n",
+			__func__, err);
 		hc->socket_thread = NULL;
 		sock_release(hc->socket);
 		return err;
 	}
 	if (debug & DEBUG_L1OIP_SOCKET)
-;
+		printk(KERN_DEBUG "%s: socket thread created\n", __func__);
 
 	return 0;
 }
@@ -835,8 +835,8 @@ l1oip_send_bh(struct work_struct *work)
 	struct l1oip *hc = container_of(work, struct l1oip, workq);
 
 	if (debug & (DEBUG_L1OIP_MSG|DEBUG_L1OIP_SOCKET))
-//		printk(KERN_DEBUG "%s: keepalive timer expired, sending empty "
-;
+		printk(KERN_DEBUG "%s: keepalive timer expired, sending empty "
+			"frame on dchannel\n", __func__);
 
 	/* send an empty l1oip frame at D-channel */
 	l1oip_socket_send(hc, 0, hc->d_idx, 0, 0, NULL, 0);
@@ -861,16 +861,16 @@ l1oip_timeout(void *data)
 	struct dchannel		*dch = hc->chan[hc->d_idx].dch;
 
 	if (debug & DEBUG_L1OIP_MSG)
-//		printk(KERN_DEBUG "%s: timeout timer expired, turn layer one "
-;
+		printk(KERN_DEBUG "%s: timeout timer expired, turn layer one "
+			"down.\n", __func__);
 
 	hc->timeout_on = 0; /* state that timer must be initialized next time */
 
 	/* if timeout, we send up a PH_DEACTIVATE and deactivate */
 	if (test_bit(FLG_ACTIVE, &dch->Flags)) {
 		if (debug & (DEBUG_L1OIP_MSG|DEBUG_L1OIP_SOCKET))
-//			printk(KERN_DEBUG "%s: interface become deactivated "
-;
+			printk(KERN_DEBUG "%s: interface become deactivated "
+				"due to timeout\n", __func__);
 		test_and_clear_bit(FLG_ACTIVE, &dch->Flags);
 		_queue_data(&dch->dev.D, PH_DEACTIVATE_IND, MISDN_ID_ANY, 0,
 			NULL, GFP_ATOMIC);
@@ -879,8 +879,8 @@ l1oip_timeout(void *data)
 	/* if we have ondemand set, we remove ip address */
 	if (hc->ondemand) {
 		if (debug & DEBUG_L1OIP_MSG)
-//			printk(KERN_DEBUG "%s: on demand causes ip address to "
-;
+			printk(KERN_DEBUG "%s: on demand causes ip address to "
+				"be removed\n", __func__);
 		hc->sin_remote.sin_addr.s_addr = 0;
 	}
 }
@@ -903,13 +903,13 @@ handle_dmsg(struct mISDNchannel *ch, struct sk_buff *skb)
 	switch (hh->prim) {
 	case PH_DATA_REQ:
 		if (skb->len < 1) {
-//			printk(KERN_WARNING "%s: skb too small\n",
-;
+			printk(KERN_WARNING "%s: skb too small\n",
+				__func__);
 			break;
 		}
 		if (skb->len > MAX_DFRAME_LEN_L1 || skb->len > L1OIP_MAX_LEN) {
-//			printk(KERN_WARNING "%s: skb too large\n",
-;
+			printk(KERN_WARNING "%s: skb too large\n",
+				__func__);
 			break;
 		}
 		/* send frame */
@@ -927,8 +927,8 @@ handle_dmsg(struct mISDNchannel *ch, struct sk_buff *skb)
 		return 0;
 	case PH_ACTIVATE_REQ:
 		if (debug & (DEBUG_L1OIP_MSG|DEBUG_L1OIP_SOCKET))
-//			printk(KERN_DEBUG "%s: PH_ACTIVATE channel %d (1..%d)\n"
-;
+			printk(KERN_DEBUG "%s: PH_ACTIVATE channel %d (1..%d)\n"
+				, __func__, dch->slot, hc->b_num+1);
 		skb_trim(skb, 0);
 		if (test_bit(FLG_ACTIVE, &dch->Flags))
 			queue_ch_frame(ch, PH_ACTIVATE_IND, hh->id, skb);
@@ -937,9 +937,9 @@ handle_dmsg(struct mISDNchannel *ch, struct sk_buff *skb)
 		return 0;
 	case PH_DEACTIVATE_REQ:
 		if (debug & (DEBUG_L1OIP_MSG|DEBUG_L1OIP_SOCKET))
-//			printk(KERN_DEBUG "%s: PH_DEACTIVATE channel %d "
-//				"(1..%d)\n", __func__, dch->slot,
-;
+			printk(KERN_DEBUG "%s: PH_DEACTIVATE channel %d "
+				"(1..%d)\n", __func__, dch->slot,
+				hc->b_num+1);
 		skb_trim(skb, 0);
 		if (test_bit(FLG_ACTIVE, &dch->Flags))
 			queue_ch_frame(ch, PH_ACTIVATE_IND, hh->id, skb);
@@ -970,27 +970,27 @@ channel_dctrl(struct dchannel *dch, struct mISDN_ctrl_req *cq)
 		if (!hc->remoteport)
 			hc->remoteport = hc->localport;
 		if (debug & DEBUG_L1OIP_SOCKET)
-//			printk(KERN_DEBUG "%s: got new ip address from user "
-;
+			printk(KERN_DEBUG "%s: got new ip address from user "
+				"space.\n", __func__);
 		l1oip_socket_open(hc);
 		break;
 	case MISDN_CTRL_UNSETPEER:
 		if (debug & DEBUG_L1OIP_SOCKET)
-//			printk(KERN_DEBUG "%s: removing ip address.\n",
-;
+			printk(KERN_DEBUG "%s: removing ip address.\n",
+				__func__);
 		hc->remoteip = 0;
 		l1oip_socket_open(hc);
 		break;
 	case MISDN_CTRL_GETPEER:
 		if (debug & DEBUG_L1OIP_SOCKET)
-//			printk(KERN_DEBUG "%s: getting ip address.\n",
-;
+			printk(KERN_DEBUG "%s: getting ip address.\n",
+				__func__);
 		cq->p1 = hc->remoteip;
 		cq->p2 = hc->remoteport | (hc->localport << 16);
 		break;
 	default:
-//		printk(KERN_WARNING "%s: unknown Op %x\n",
-;
+		printk(KERN_WARNING "%s: unknown Op %x\n",
+		    __func__, cq->op);
 		ret = -EINVAL;
 		break;
 	}
@@ -1001,15 +1001,15 @@ static int
 open_dchannel(struct l1oip *hc, struct dchannel *dch, struct channel_req *rq)
 {
 	if (debug & DEBUG_HW_OPEN)
-//		printk(KERN_DEBUG "%s: dev(%d) open from %p\n", __func__,
-;
+		printk(KERN_DEBUG "%s: dev(%d) open from %p\n", __func__,
+		    dch->dev.id, __builtin_return_address(0));
 	if (rq->protocol == ISDN_P_NONE)
 		return -EINVAL;
 	if ((dch->dev.D.protocol != ISDN_P_NONE) &&
 	    (dch->dev.D.protocol != rq->protocol)) {
 		if (debug & DEBUG_HW_OPEN)
-//			printk(KERN_WARNING "%s: change protocol %x to %x\n",
-;
+			printk(KERN_WARNING "%s: change protocol %x to %x\n",
+			__func__, dch->dev.D.protocol, rq->protocol);
 	}
 	if (dch->dev.D.protocol != rq->protocol)
 		dch->dev.D.protocol = rq->protocol;
@@ -1020,7 +1020,7 @@ open_dchannel(struct l1oip *hc, struct dchannel *dch, struct channel_req *rq)
 	}
 	rq->ch = &dch->dev.D;
 	if (!try_module_get(THIS_MODULE))
-;
+		printk(KERN_WARNING "%s:cannot get module\n", __func__);
 	return 0;
 }
 
@@ -1037,8 +1037,8 @@ open_bchannel(struct l1oip *hc, struct dchannel *dch, struct channel_req *rq)
 	ch = rq->adr.channel; /* BRI: 1=B1 2=B2  PRI: 1..15,17.. */
 	bch = hc->chan[ch].bch;
 	if (!bch) {
-//		printk(KERN_ERR "%s:internal error ch %d has no bch\n",
-;
+		printk(KERN_ERR "%s:internal error ch %d has no bch\n",
+		    __func__, ch);
 		return -EINVAL;
 	}
 	if (test_and_set_bit(FLG_OPEN, &bch->Flags))
@@ -1046,7 +1046,7 @@ open_bchannel(struct l1oip *hc, struct dchannel *dch, struct channel_req *rq)
 	bch->ch.protocol = rq->protocol;
 	rq->ch = &bch->ch;
 	if (!try_module_get(THIS_MODULE))
-;
+		printk(KERN_WARNING "%s:cannot get module\n", __func__);
 	return 0;
 }
 
@@ -1060,8 +1060,8 @@ l1oip_dctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 	int			err = 0;
 
 	if (dch->debug & DEBUG_HW)
-//		printk(KERN_DEBUG "%s: cmd:%x %p\n",
-;
+		printk(KERN_DEBUG "%s: cmd:%x %p\n",
+		    __func__, cmd, arg);
 	switch (cmd) {
 	case OPEN_CHANNEL:
 		rq = arg;
@@ -1088,9 +1088,9 @@ l1oip_dctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 		break;
 	case CLOSE_CHANNEL:
 		if (debug & DEBUG_HW_OPEN)
-//			printk(KERN_DEBUG "%s: dev(%d) close from %p\n",
-//			    __func__, dch->dev.id,
-;
+			printk(KERN_DEBUG "%s: dev(%d) close from %p\n",
+			    __func__, dch->dev.id,
+			    __builtin_return_address(0));
 		module_put(THIS_MODULE);
 		break;
 	case CONTROL_CHANNEL:
@@ -1098,8 +1098,8 @@ l1oip_dctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 		break;
 	default:
 		if (dch->debug & DEBUG_HW)
-//			printk(KERN_DEBUG "%s: unknown command %x\n",
-;
+			printk(KERN_DEBUG "%s: unknown command %x\n",
+			    __func__, cmd);
 		err = -EINVAL;
 	}
 	return err;
@@ -1118,13 +1118,13 @@ handle_bmsg(struct mISDNchannel *ch, struct sk_buff *skb)
 	switch (hh->prim) {
 	case PH_DATA_REQ:
 		if (skb->len <= 0) {
-//			printk(KERN_WARNING "%s: skb too small\n",
-;
+			printk(KERN_WARNING "%s: skb too small\n",
+				__func__);
 			break;
 		}
 		if (skb->len > MAX_DFRAME_LEN_L1 || skb->len > L1OIP_MAX_LEN) {
-//			printk(KERN_WARNING "%s: skb too large\n",
-;
+			printk(KERN_WARNING "%s: skb too large\n",
+				__func__);
 			break;
 		}
 		/* check for AIS / ulaw-silence */
@@ -1136,8 +1136,8 @@ handle_bmsg(struct mISDNchannel *ch, struct sk_buff *skb)
 		}
 		if (i == l) {
 			if (debug & DEBUG_L1OIP_MSG)
-//				printk(KERN_DEBUG "%s: got AIS, not sending, "
-;
+				printk(KERN_DEBUG "%s: got AIS, not sending, "
+					"but counting\n", __func__);
 			hc->chan[bch->slot].tx_counter += l;
 			skb_trim(skb, 0);
 			queue_ch_frame(ch, PH_DATA_CNF, hh->id, skb);
@@ -1152,8 +1152,8 @@ handle_bmsg(struct mISDNchannel *ch, struct sk_buff *skb)
 		}
 		if (i == l) {
 			if (debug & DEBUG_L1OIP_MSG)
-//				printk(KERN_DEBUG "%s: got silence, not sending"
-;
+				printk(KERN_DEBUG "%s: got silence, not sending"
+					", but counting\n", __func__);
 			hc->chan[bch->slot].tx_counter += l;
 			skb_trim(skb, 0);
 			queue_ch_frame(ch, PH_DATA_CNF, hh->id, skb);
@@ -1176,8 +1176,8 @@ handle_bmsg(struct mISDNchannel *ch, struct sk_buff *skb)
 		return 0;
 	case PH_ACTIVATE_REQ:
 		if (debug & (DEBUG_L1OIP_MSG|DEBUG_L1OIP_SOCKET))
-//			printk(KERN_DEBUG "%s: PH_ACTIVATE channel %d (1..%d)\n"
-;
+			printk(KERN_DEBUG "%s: PH_ACTIVATE channel %d (1..%d)\n"
+				, __func__, bch->slot, hc->b_num+1);
 		hc->chan[bch->slot].codecstate = 0;
 		test_and_set_bit(FLG_ACTIVE, &bch->Flags);
 		skb_trim(skb, 0);
@@ -1185,9 +1185,9 @@ handle_bmsg(struct mISDNchannel *ch, struct sk_buff *skb)
 		return 0;
 	case PH_DEACTIVATE_REQ:
 		if (debug & (DEBUG_L1OIP_MSG|DEBUG_L1OIP_SOCKET))
-//			printk(KERN_DEBUG "%s: PH_DEACTIVATE channel %d "
-//				"(1..%d)\n", __func__, bch->slot,
-;
+			printk(KERN_DEBUG "%s: PH_DEACTIVATE channel %d "
+				"(1..%d)\n", __func__, bch->slot,
+				hc->b_num+1);
 		test_and_clear_bit(FLG_ACTIVE, &bch->Flags);
 		skb_trim(skb, 0);
 		queue_ch_frame(ch, PH_DEACTIVATE_IND, hh->id, skb);
@@ -1211,15 +1211,15 @@ channel_bctrl(struct bchannel *bch, struct mISDN_ctrl_req *cq)
 		break;
 	case MISDN_CTRL_HW_FEATURES: /* fill features structure */
 		if (debug & DEBUG_L1OIP_MSG)
-//			printk(KERN_DEBUG "%s: HW_FEATURE request\n",
-;
+			printk(KERN_DEBUG "%s: HW_FEATURE request\n",
+			    __func__);
 		/* create confirm */
 		features->unclocked = 1;
 		features->unordered = 1;
 		break;
 	default:
-//		printk(KERN_WARNING "%s: unknown Op %x\n",
-;
+		printk(KERN_WARNING "%s: unknown Op %x\n",
+		    __func__, cq->op);
 		ret = -EINVAL;
 		break;
 	}
@@ -1233,8 +1233,8 @@ l1oip_bctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 	int		err = -EINVAL;
 
 	if (bch->debug & DEBUG_HW)
-//		printk(KERN_DEBUG "%s: cmd:%x %p\n",
-;
+		printk(KERN_DEBUG "%s: cmd:%x %p\n",
+		    __func__, cmd, arg);
 	switch (cmd) {
 	case CLOSE_CHANNEL:
 		test_and_clear_bit(FLG_OPEN, &bch->Flags);
@@ -1248,8 +1248,8 @@ l1oip_bctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 		err = channel_bctrl(bch, arg);
 		break;
 	default:
-//		printk(KERN_WARNING "%s: unknown prim(%x)\n",
-;
+		printk(KERN_WARNING "%s: unknown prim(%x)\n",
+			__func__, cmd);
 	}
 	return err;
 }
@@ -1339,48 +1339,48 @@ init_card(struct l1oip *hc, int pri, int bundle)
 	case 3: /* 4bit */
 		break;
 	default:
-//		printk(KERN_ERR "Codec(%d) not supported.\n",
-;
+		printk(KERN_ERR "Codec(%d) not supported.\n",
+			codec[l1oip_cnt]);
 		return -EINVAL;
 	}
 	hc->codec = codec[l1oip_cnt];
 	if (debug & DEBUG_L1OIP_INIT)
-//		printk(KERN_DEBUG "%s: using codec %d\n",
-;
+		printk(KERN_DEBUG "%s: using codec %d\n",
+			__func__, hc->codec);
 
 	if (id[l1oip_cnt] == 0) {
-//		printk(KERN_WARNING "Warning: No 'id' value given or "
-//			"0, this is highly unsecure. Please use 32 "
-;
+		printk(KERN_WARNING "Warning: No 'id' value given or "
+			"0, this is highly unsecure. Please use 32 "
+			"bit randmom number 0x...\n");
 	}
 	hc->id = id[l1oip_cnt];
 	if (debug & DEBUG_L1OIP_INIT)
-;
+		printk(KERN_DEBUG "%s: using id 0x%x\n", __func__, hc->id);
 
 	hc->ondemand = ondemand[l1oip_cnt];
 	if (hc->ondemand && !hc->id) {
-//		printk(KERN_ERR "%s: ondemand option only allowed in "
-;
+		printk(KERN_ERR "%s: ondemand option only allowed in "
+			"conjunction with non 0 ID\n", __func__);
 		return -EINVAL;
 	}
 
 	if (limit[l1oip_cnt])
 		hc->b_num = limit[l1oip_cnt];
 	if (!pri && hc->b_num > 2) {
-//		printk(KERN_ERR "Maximum limit for BRI interface is 2 "
-;
+		printk(KERN_ERR "Maximum limit for BRI interface is 2 "
+			"channels.\n");
 		return -EINVAL;
 	}
 	if (pri && hc->b_num > 126) {
-//		printk(KERN_ERR "Maximum limit for PRI interface is 126 "
-;
+		printk(KERN_ERR "Maximum limit for PRI interface is 126 "
+			"channels.\n");
 		return -EINVAL;
 	}
 	if (pri && hc->b_num > 30) {
-//		printk(KERN_WARNING "Maximum limit for BRI interface is 30 "
-;
-//		printk(KERN_WARNING "Your selection of %d channels must be "
-;
+		printk(KERN_WARNING "Maximum limit for BRI interface is 30 "
+			"channels.\n");
+		printk(KERN_WARNING "Your selection of %d channels must be "
+			"supported by application.\n", hc->limit);
 	}
 
 	hc->remoteip = ip[l1oip_cnt<<2] << 24
@@ -1393,12 +1393,12 @@ init_card(struct l1oip *hc, int pri, int bundle)
 	else
 		hc->remoteport = hc->localport;
 	if (debug & DEBUG_L1OIP_INIT)
-//		printk(KERN_DEBUG "%s: using local port %d remote ip "
-//			"%d.%d.%d.%d port %d ondemand %d\n", __func__,
-//			hc->localport, hc->remoteip >> 24,
-//			(hc->remoteip >> 16) & 0xff,
-//			(hc->remoteip >> 8) & 0xff, hc->remoteip & 0xff,
-;
+		printk(KERN_DEBUG "%s: using local port %d remote ip "
+			"%d.%d.%d.%d port %d ondemand %d\n", __func__,
+			hc->localport, hc->remoteip >> 24,
+			(hc->remoteip >> 16) & 0xff,
+			(hc->remoteip >> 8) & 0xff, hc->remoteip & 0xff,
+			hc->remoteport, hc->ondemand);
 
 	dch = kzalloc(sizeof(struct dchannel), GFP_KERNEL);
 	if (!dch)
@@ -1423,8 +1423,8 @@ init_card(struct l1oip *hc, int pri, int bundle)
 			i++;
 		bch = kzalloc(sizeof(struct bchannel), GFP_KERNEL);
 		if (!bch) {
-//			printk(KERN_ERR "%s: no memory for bchannel\n",
-;
+			printk(KERN_ERR "%s: no memory for bchannel\n",
+			    __func__);
 			return -ENOMEM;
 		}
 		bch->nr = i + ch;
@@ -1446,8 +1446,8 @@ init_card(struct l1oip *hc, int pri, int bundle)
 	hc->registered = 1;
 
 	if (debug & DEBUG_L1OIP_INIT)
-//		printk(KERN_DEBUG "%s: Setting up network card(%d)\n",
-;
+		printk(KERN_DEBUG "%s: Setting up network card(%d)\n",
+			__func__, l1oip_cnt + 1);
 	ret = l1oip_socket_open(hc);
 	if (ret)
 		return ret;
@@ -1473,8 +1473,8 @@ l1oip_init(void)
 	struct l1oip		*hc;
 	int		ret;
 
-//	printk(KERN_INFO "mISDN: Layer-1-over-IP driver Rev. %s\n",
-;
+	printk(KERN_INFO "mISDN: Layer-1-over-IP driver Rev. %s\n",
+		l1oip_revision);
 
 	INIT_LIST_HEAD(&l1oip_ilist);
 	spin_lock_init(&l1oip_lock);
@@ -1502,21 +1502,21 @@ l1oip_init(void)
 			bundle = 1;
 			break;
 		default:
-//			printk(KERN_ERR "Card type(%d) not supported.\n",
-;
+			printk(KERN_ERR "Card type(%d) not supported.\n",
+				type[l1oip_cnt] & 0xff);
 			l1oip_cleanup();
 			return -EINVAL;
 		}
 
 		if (debug & DEBUG_L1OIP_INIT)
-//			printk(KERN_DEBUG "%s: interface %d is %s with %s.\n",
-//			    __func__, l1oip_cnt, pri ? "PRI" : "BRI",
-//			    bundle ? "bundled IP packet for all B-channels" :
-;
+			printk(KERN_DEBUG "%s: interface %d is %s with %s.\n",
+			    __func__, l1oip_cnt, pri ? "PRI" : "BRI",
+			    bundle ? "bundled IP packet for all B-channels" :
+			    "separate IP packets for every B-channel");
 
 		hc = kzalloc(sizeof(struct l1oip), GFP_ATOMIC);
 		if (!hc) {
-;
+			printk(KERN_ERR "No kmem for L1-over-IP driver.\n");
 			l1oip_cleanup();
 			return -ENOMEM;
 		}
@@ -1534,7 +1534,7 @@ l1oip_init(void)
 
 		l1oip_cnt++;
 	}
-;
+	printk(KERN_INFO "%d virtual devices registered\n", l1oip_cnt);
 	return 0;
 }
 

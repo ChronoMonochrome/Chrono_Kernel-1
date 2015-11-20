@@ -312,7 +312,7 @@ static int write_chunk(struct drxd_state *state,
 	for (i = 0; i < len; i++)
 		mm[4 + i] = data[i];
 	if (i2c_write(state->i2c, adr, mm, 4 + len) < 0) {
-;
+		printk(KERN_ERR "error in write_chunk\n");
 		return -1;
 	}
 	return 0;
@@ -549,7 +549,7 @@ static int DRX_GetLockStatus(struct drxd_state *state, u32 * pLockStatus)
 
 	status = Read16(state, SC_RA_RAM_LOCK__A, &ScRaRamLock, 0x0000);
 	if (status < 0) {
-;
+		printk(KERN_ERR "Can't read SC_RA_RAM_LOCK__A status = %08x\n", status);
 		return status;
 	}
 
@@ -906,13 +906,13 @@ static int load_firmware(struct drxd_state *state, const char *fw_name)
 	const struct firmware *fw;
 
 	if (request_firmware(&fw, fw_name, state->dev) < 0) {
-;
+		printk(KERN_ERR "drxd: firmware load failure [%s]\n", fw_name);
 		return -EIO;
 	}
 
 	state->microcode = kzalloc(fw->size, GFP_KERNEL);
 	if (state->microcode == NULL) {
-;
+		printk(KERN_ERR "drxd: firmware load failure: nomemory\n");
 		return -ENOMEM;
 	}
 
@@ -1149,7 +1149,7 @@ static int InitCC(struct drxd_state *state)
 	if (state->osc_clock_freq == 0 ||
 	    state->osc_clock_freq > 20000 ||
 	    (state->osc_clock_freq % 4000) != 0) {
-;
+		printk(KERN_ERR "invalid osc frequency %d\n", state->osc_clock_freq);
 		return -1;
 	}
 
@@ -1321,7 +1321,7 @@ static int SC_SendCommand(struct drxd_state *state, u16 cmd)
 	Read16(state, SC_RA_RAM_CMD_ADDR__A, &errCode, 0);
 
 	if (errCode == 0xFFFF) {
-;
+		printk(KERN_ERR "Command Error\n");
 		status = -1;
 	}
 
@@ -1505,17 +1505,17 @@ static int SetDeviceTypeId(struct drxd_state *state)
 		status = Read16(state, CC_REG_JTAGID_L__A, &deviceId, 0);
 		if (status < 0)
 			break;
-;
+		printk(KERN_INFO "drxd: deviceId = %04x\n", deviceId);
 
 		state->type_A = 0;
 		state->PGA = 0;
 		state->diversity = 0;
 		if (deviceId == 0) {	/* on A2 only 3975 available */
 			state->type_A = 1;
-;
+			printk(KERN_INFO "DRX3975D-A2\n");
 		} else {
 			deviceId >>= 12;
-;
+			printk(KERN_INFO "DRX397%dD-B1\n", deviceId);
 			switch (deviceId) {
 			case 4:
 				state->diversity = 1;
@@ -2911,7 +2911,7 @@ static int drxd_set_frontend(struct dvb_frontend *fe,
 	    state->config.pll_set(state->priv, param,
 				  state->config.pll_address,
 				  state->config.demoda_address, &off) < 0) {
-;
+		printk(KERN_ERR "Error in pll_set\n");
 		return -1;
 	}
 
@@ -2990,7 +2990,7 @@ struct dvb_frontend *drxd_attach(const struct drxd_config *config,
 	return &state->frontend;
 
 error:
-;
+	printk(KERN_ERR "drxd: not found\n");
 	kfree(state);
 	return NULL;
 }

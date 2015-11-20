@@ -260,8 +260,8 @@ static void ppc440spe_desc_init_interrupt(struct ppc440spe_adma_desc_slot *desc,
 		set_bit(PPC440SPE_DESC_INT, &desc->flags);
 		break;
 	default:
-//		printk(KERN_ERR "Unsupported id %d in %s\n", chan->device->id,
-;
+		printk(KERN_ERR "Unsupported id %d in %s\n", chan->device->id,
+				__func__);
 		break;
 	}
 }
@@ -740,7 +740,7 @@ static void ppc440spe_xor_set_link(struct ppc440spe_adma_desc_slot *prev_desc,
 	struct xor_cb *xor_hw_desc = prev_desc->hw_desc;
 
 	if (unlikely(!next_desc || !(next_desc->phys))) {
-;
+		printk(KERN_ERR "%s: next_desc=0x%p; next_desc->phys=0x%llx\n",
 			__func__, next_desc,
 			next_desc ? next_desc->phys : 0);
 		BUG();
@@ -769,7 +769,7 @@ static void ppc440spe_desc_set_link(struct ppc440spe_adma_chan *chan,
 		 * though we may refetch from append to initiate list
 		 * processing; in this case - it's ok.
 		 */
-;
+		printk(KERN_ERR "%s: prev_desc=0x%p; next_desc=0x%p; "
 			"prev->hw_next=0x%p\n", __func__, prev_desc,
 			next_desc, prev_desc ? prev_desc->hw_next : 0);
 		BUG();
@@ -820,16 +820,16 @@ static u32 ppc440spe_desc_get_src_addr(struct ppc440spe_adma_desc_slot *desc,
 			return 0;
 		case DMA_CDB_OPC_DCHECK128:
 			if (unlikely(src_idx)) {
-//				printk(KERN_ERR "%s: try to get %d source for"
-;
+				printk(KERN_ERR "%s: try to get %d source for"
+				    " DCHECK128\n", __func__, src_idx);
 				BUG();
 			}
 			return le32_to_cpu(dma_hw_desc->sg1l);
 		case DMA_CDB_OPC_MULTICAST:
 		case DMA_CDB_OPC_MV_SG1_SG2:
 			if (unlikely(src_idx > 2)) {
-//				printk(KERN_ERR "%s: try to get %d source from"
-;
+				printk(KERN_ERR "%s: try to get %d source from"
+				    " DMA descr\n", __func__, src_idx);
 				BUG();
 			}
 			if (src_idx) {
@@ -861,25 +861,25 @@ static u32 ppc440spe_desc_get_src_addr(struct ppc440spe_adma_desc_slot *desc,
 						    dma_hw_desc->sg1l) +
 							(desc->unmap_len << 2);
 					default:
-//						printk(KERN_ERR
-//						    "%s: try to"
-//						    " get src3 for region %02x"
-//						    "PPC440SPE_DESC_RXOR12?\n",
-;
+						printk(KERN_ERR
+						    "%s: try to"
+						    " get src3 for region %02x"
+						    "PPC440SPE_DESC_RXOR12?\n",
+						    __func__, region);
 						BUG();
 					}
 				} else {
-//					printk(KERN_ERR
-//						"%s: try to get %d"
-//						" source for non-cued descr\n",
-;
+					printk(KERN_ERR
+						"%s: try to get %d"
+						" source for non-cued descr\n",
+						__func__, src_idx);
 					BUG();
 				}
 			}
 			return le32_to_cpu(dma_hw_desc->sg1l);
 		default:
-//			printk(KERN_ERR "%s: unknown OPC 0x%02x\n",
-;
+			printk(KERN_ERR "%s: unknown OPC 0x%02x\n",
+				__func__, dma_hw_desc->opc);
 			BUG();
 		}
 		return le32_to_cpu(dma_hw_desc->sg1l);
@@ -958,8 +958,8 @@ static u32 ppc440spe_desc_get_src_num(struct ppc440spe_adma_desc_slot *desc,
 			}
 			return 1;
 		default:
-//			printk(KERN_ERR "%s: unknown OPC 0x%02x\n",
-;
+			printk(KERN_ERR "%s: unknown OPC 0x%02x\n",
+				__func__, dma_hw_desc->opc);
 			BUG();
 		}
 	case PPC440SPE_XOR_ID:
@@ -999,8 +999,8 @@ static u32 ppc440spe_desc_get_dst_num(struct ppc440spe_adma_desc_slot *desc,
 			else
 				return 1;
 		default:
-//			printk(KERN_ERR "%s: unknown OPC 0x%02x\n",
-;
+			printk(KERN_ERR "%s: unknown OPC 0x%02x\n",
+				__func__, dma_hw_desc->opc);
 			BUG();
 		}
 	case PPC440SPE_XOR_ID:
@@ -1049,8 +1049,8 @@ static int ppc440spe_chan_xor_slot_count(size_t len, int src_cnt,
 	if (likely(len <= PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT))
 		return slot_cnt;
 
-//	printk(KERN_ERR "%s: len %d > max %d !!\n",
-;
+	printk(KERN_ERR "%s: len %d > max %d !!\n",
+		__func__, len, PPC440SPE_ADMA_XOR_MAX_BYTE_COUNT);
 	BUG();
 	return slot_cnt;
 }
@@ -1301,9 +1301,9 @@ static void ppc440spe_chan_set_first_xor_descriptor(
 	struct xor_regs *xor_reg = chan->device->xor_reg;
 
 	if (ioread32be(&xor_reg->sr) & XOR_SR_XCP_BIT)
-//		printk(KERN_INFO "%s: Warn: XORcore is running "
-//			"when try to set the first CDB!\n",
-;
+		printk(KERN_INFO "%s: Warn: XORcore is running "
+			"when try to set the first CDB!\n",
+			__func__);
 
 	xor_last_submit = xor_last_linked = next_desc;
 
@@ -1674,8 +1674,8 @@ ppc440spe_get_group_entry(struct ppc440spe_adma_desc_slot *tdesc, u32 entry_idx)
 	int i = 0;
 
 	if (entry_idx < 0 || entry_idx >= (tdesc->src_cnt + tdesc->dst_cnt)) {
-//		printk("%s: entry_idx %d, src_cnt %d, dst_cnt %d\n",
-;
+		printk("%s: entry_idx %d, src_cnt %d, dst_cnt %d\n",
+			__func__, entry_idx, tdesc->src_cnt, tdesc->dst_cnt);
 		BUG();
 	}
 
@@ -2095,8 +2095,8 @@ static int ppc440spe_adma_alloc_chan_resources(struct dma_chan *chan)
 		slot = kzalloc(sizeof(struct ppc440spe_adma_desc_slot),
 			       GFP_KERNEL);
 		if (!slot) {
-//			printk(KERN_INFO "SPE ADMA Channel only initialized"
-;
+			printk(KERN_INFO "SPE ADMA Channel only initialized"
+				" %d descriptor slots", i--);
 			break;
 		}
 
@@ -3646,8 +3646,8 @@ static int ppc440spe_adma_dma2rxor_prep_src(
 					desc, cursor, index, src_cnt);
 			}
 		} else {
-//			printk(KERN_ERR "Cannot build "
-;
+			printk(KERN_ERR "Cannot build "
+				"DMA2 RXOR command block.\n");
 			BUG();
 		}
 		break;
@@ -3930,8 +3930,8 @@ static void ppc440spe_adma_free_chan_resources(struct dma_chan *chan)
 
 	/* one is ok since we left it on there on purpose */
 	if (in_use_descs > 1)
-//		printk(KERN_ERR "SPE: Freeing %d in use descriptors!\n",
-;
+		printk(KERN_ERR "SPE: Freeing %d in use descriptors!\n",
+			in_use_descs - 1);
 }
 
 /**
@@ -4070,9 +4070,9 @@ static void ppc440spe_chan_start_null_xor(struct ppc440spe_adma_chan *chan)
 		/* run the descriptor */
 		ppc440spe_chan_run(chan);
 	} else
-//		printk(KERN_ERR "ppc440spe adma%d"
-//			" failed to allocate null descriptor\n",
-;
+		printk(KERN_ERR "ppc440spe adma%d"
+			" failed to allocate null descriptor\n",
+			chan->device->id);
 	spin_unlock_bh(&chan->lock);
 }
 

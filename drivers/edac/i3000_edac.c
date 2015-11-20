@@ -320,8 +320,8 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
 	mchbar &= I3000_MCHBAR_MASK;
 	window = ioremap_nocache(mchbar, I3000_MMR_WINDOW_SIZE);
 	if (!window) {
-//		printk(KERN_ERR "i3000: cannot map mmio space at 0x%lx\n",
-;
+		printk(KERN_ERR "i3000: cannot map mmio space at 0x%lx\n",
+			mchbar);
 		return -ENODEV;
 	}
 
@@ -417,12 +417,12 @@ static int i3000_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	i3000_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i3000_pci) {
-//		printk(KERN_WARNING
-//			"%s(): Unable to create PCI control\n",
-;
-//		printk(KERN_WARNING
-//			"%s(): PCI error report via EDAC not setup\n",
-;
+		printk(KERN_WARNING
+			"%s(): Unable to create PCI control\n",
+			__func__);
+		printk(KERN_WARNING
+			"%s(): PCI error report via EDAC not setup\n",
+			__func__);
 	}
 
 	/* get this far and it's successful */

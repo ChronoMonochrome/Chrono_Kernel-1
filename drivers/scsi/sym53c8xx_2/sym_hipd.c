@@ -1522,8 +1522,8 @@ void sym_put_start_queue(struct sym_hcb *np, struct sym_ccb *cp)
 	np->squeueput = qidx;
 
 	if (DEBUG_FLAGS & DEBUG_QUEUE)
-//		scmd_printk(KERN_DEBUG, cp->cmd, "queuepos=%d\n",
-;
+		scmd_printk(KERN_DEBUG, cp->cmd, "queuepos=%d\n",
+							np->squeueput);
 
 	/*
 	 *  Script processor may be waiting for reselect.
@@ -3585,8 +3585,8 @@ static void sym_sir_task_recovery(struct sym_hcb *np, int num)
 		 *  If we sent a BDR, make upper layer aware of that.
  		 */
 		if (np->abrt_msg[0] == M_RESET)
-//			starget_printk(KERN_NOTICE, starget,
-;
+			starget_printk(KERN_NOTICE, starget,
+							"has been reset\n");
 		break;
 	}
 
@@ -4412,24 +4412,24 @@ static void sym_int_sir(struct sym_hcb *np)
 	 *  been selected with ATN.  We do not want to handle that.
 	 */
 	case SIR_SEL_ATN_NO_MSG_OUT:
-//		scmd_printk(KERN_WARNING, cp->cmd,
-;
+		scmd_printk(KERN_WARNING, cp->cmd,
+				"No MSG OUT phase after selection with ATN\n");
 		goto out_stuck;
 	/*
 	 *  The device didn't switch to MSG IN phase after 
 	 *  having reselected the initiator.
 	 */
 	case SIR_RESEL_NO_MSG_IN:
-//		scmd_printk(KERN_WARNING, cp->cmd,
-;
+		scmd_printk(KERN_WARNING, cp->cmd,
+				"No MSG IN phase after reselection\n");
 		goto out_stuck;
 	/*
 	 *  After reselection, the device sent a message that wasn't 
 	 *  an IDENTIFY.
 	 */
 	case SIR_RESEL_NO_IDENTIFY:
-//		scmd_printk(KERN_WARNING, cp->cmd,
-;
+		scmd_printk(KERN_WARNING, cp->cmd,
+				"No IDENTIFY after reselection\n");
 		goto out_stuck;
 	/*
 	 *  The device reselected a LUN we do not know about.
@@ -4457,8 +4457,8 @@ static void sym_int_sir(struct sym_hcb *np)
 	case SIR_RESEL_ABORTED:
 		np->lastmsg = np->msgout[0];
 		np->msgout[0] = M_NOOP;
-//		scmd_printk(KERN_WARNING, cp->cmd,
-;
+		scmd_printk(KERN_WARNING, cp->cmd,
+			"message %x sent on bad reselection\n", np->lastmsg);
 		goto out;
 	/*
 	 *  The SCRIPTS let us know that a message has been 

@@ -208,14 +208,14 @@ static int __init ppchameleonevb_init(void)
 	/* Allocate memory for MTD device structure and private data */
 	ppchameleon_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!ppchameleon_mtd) {
-;
+		printk("Unable to allocate PPChameleon NAND MTD device structure.\n");
 		return -ENOMEM;
 	}
 
 	/* map physical address */
 	ppchameleon_fio_base = ioremap(ppchameleon_fio_pbase, SZ_4M);
 	if (!ppchameleon_fio_base) {
-;
+		printk("ioremap PPChameleon NAND flash failed\n");
 		kfree(ppchameleon_mtd);
 		return -EIO;
 	}
@@ -297,7 +297,7 @@ static int __init ppchameleonevb_init(void)
 	}
 
 	/* Register the partitions */
-;
+	printk(KERN_NOTICE "Using %s partition definition\n", part_type);
 	mtd_device_register(ppchameleon_mtd, mtd_parts, mtd_parts_nb);
 
  nand_evb_init:
@@ -307,7 +307,7 @@ static int __init ppchameleonevb_init(void)
 	/* Allocate memory for MTD device structure and private data */
 	ppchameleonevb_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!ppchameleonevb_mtd) {
-;
+		printk("Unable to allocate PPChameleonEVB NAND MTD device structure.\n");
 		if (ppchameleon_fio_base)
 			iounmap(ppchameleon_fio_base);
 		return -ENOMEM;
@@ -316,7 +316,7 @@ static int __init ppchameleonevb_init(void)
 	/* map physical address */
 	ppchameleonevb_fio_base = ioremap(ppchameleonevb_fio_pbase, SZ_4M);
 	if (!ppchameleonevb_fio_base) {
-;
+		printk("ioremap PPChameleonEVB NAND flash failed\n");
 		kfree(ppchameleonevb_mtd);
 		if (ppchameleon_fio_base)
 			iounmap(ppchameleon_fio_base);
@@ -395,7 +395,7 @@ static int __init ppchameleonevb_init(void)
 	}
 
 	/* Register the partitions */
-;
+	printk(KERN_NOTICE "Using %s partition definition\n", part_type);
 	mtd_device_register(ppchameleonevb_mtd, mtd_parts, mtd_parts_nb);
 
 	/* Return happy */

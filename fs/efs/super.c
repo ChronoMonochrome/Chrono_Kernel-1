@@ -131,7 +131,7 @@ static const struct export_operations efs_export_ops = {
 
 static int __init init_efs_fs(void) {
 	int err;
-;
+	printk("EFS: "EFS_VERSION" - http://aeschi.ch.eu.org/efs/\n");
 	err = init_inodecache();
 	if (err)
 		goto out1;
@@ -176,12 +176,12 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
 		csum += be32_to_cpu(cs);
 	}
 	if (csum) {
-;
+		printk(KERN_INFO "EFS: SGI disklabel: checksum bad, label corrupted\n");
 		return 0;
 	}
 
 #ifdef DEBUG
-;
+	printk(KERN_DEBUG "EFS: bf: \"%16s\"\n", vh->vh_bootfile);
 
 	for(i = 0; i < NVDIR; i++) {
 		int	j;
@@ -193,10 +193,10 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
 		name[j] = (char) 0;
 
 		if (name[0]) {
-//			printk(KERN_DEBUG "EFS: vh: %8s block: 0x%08x size: 0x%08x\n",
-//				name,
-//				(int) be32_to_cpu(vh->vh_vd[i].vd_lbn),
-;
+			printk(KERN_DEBUG "EFS: vh: %8s block: 0x%08x size: 0x%08x\n",
+				name,
+				(int) be32_to_cpu(vh->vh_vd[i].vd_lbn),
+				(int) be32_to_cpu(vh->vh_vd[i].vd_nbytes));
 		}
 	}
 #endif
@@ -208,12 +208,12 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
 		}
 #ifdef DEBUG
 		if (be32_to_cpu(vh->vh_pt[i].pt_nblks)) {
-//			printk(KERN_DEBUG "EFS: pt %2d: start: %08d size: %08d type: 0x%02x (%s)\n",
-//				i,
-//				(int) be32_to_cpu(vh->vh_pt[i].pt_firstlbn),
-//				(int) be32_to_cpu(vh->vh_pt[i].pt_nblks),
-//				pt_type,
-;
+			printk(KERN_DEBUG "EFS: pt %2d: start: %08d size: %08d type: 0x%02x (%s)\n",
+				i,
+				(int) be32_to_cpu(vh->vh_pt[i].pt_firstlbn),
+				(int) be32_to_cpu(vh->vh_pt[i].pt_nblks),
+				pt_type,
+				(pt_entry->pt_name) ? pt_entry->pt_name : "unknown");
 		}
 #endif
 		if (IS_EFS(pt_type)) {
@@ -223,13 +223,13 @@ static efs_block_t efs_validate_vh(struct volume_header *vh) {
 	}
 
 	if (slice == -1) {
-;
+		printk(KERN_NOTICE "EFS: partition table contained no EFS partitions\n");
 #ifdef DEBUG
 	} else {
-//		printk(KERN_INFO "EFS: using slice %d (type %s, offset 0x%x)\n",
-//			slice,
-//			(pt_entry->pt_name) ? pt_entry->pt_name : "unknown",
-;
+		printk(KERN_INFO "EFS: using slice %d (type %s, offset 0x%x)\n",
+			slice,
+			(pt_entry->pt_name) ? pt_entry->pt_name : "unknown",
+			sblock);
 #endif
 	}
 	return sblock;
@@ -266,8 +266,8 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
  
 	s->s_magic		= EFS_SUPER_MAGIC;
 	if (!sb_set_blocksize(s, EFS_BLOCKSIZE)) {
-//		printk(KERN_ERR "EFS: device does not support %d byte blocks\n",
-;
+		printk(KERN_ERR "EFS: device does not support %d byte blocks\n",
+			EFS_BLOCKSIZE);
 		goto out_no_fs_ul;
 	}
   
@@ -275,7 +275,7 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
 	bh = sb_bread(s, 0);
 
 	if (!bh) {
-;
+		printk(KERN_ERR "EFS: cannot read volume header\n");
 		goto out_no_fs_ul;
 	}
 
@@ -293,13 +293,13 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
 
 	bh = sb_bread(s, sb->fs_start + EFS_SUPER);
 	if (!bh) {
-;
+		printk(KERN_ERR "EFS: cannot read superblock\n");
 		goto out_no_fs_ul;
 	}
 		
 	if (efs_validate_super(sb, (struct efs_super *) bh->b_data)) {
 #ifdef DEBUG
-;
+		printk(KERN_WARNING "EFS: invalid superblock at block %u\n", sb->fs_start + EFS_SUPER);
 #endif
 		brelse(bh);
 		goto out_no_fs_ul;
@@ -308,7 +308,7 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
 
 	if (!(s->s_flags & MS_RDONLY)) {
 #ifdef DEBUG
-;
+		printk(KERN_INFO "EFS: forcing read-only mode\n");
 #endif
 		s->s_flags |= MS_RDONLY;
 	}
@@ -316,14 +316,14 @@ static int efs_fill_super(struct super_block *s, void *d, int silent)
 	s->s_export_op = &efs_export_ops;
 	root = efs_iget(s, EFS_ROOTINODE);
 	if (IS_ERR(root)) {
-;
+		printk(KERN_ERR "EFS: get root inode failed\n");
 		ret = PTR_ERR(root);
 		goto out_no_fs;
 	}
 
 	s->s_root = d_alloc_root(root);
 	if (!(s->s_root)) {
-;
+		printk(KERN_ERR "EFS: get root dentry failed\n");
 		iput(root);
 		ret = -ENOMEM;
 		goto out_no_fs;

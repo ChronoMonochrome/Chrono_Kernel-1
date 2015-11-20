@@ -67,14 +67,14 @@ static int s3c24xx_uda134x_startup(struct snd_pcm_substream *substream)
 	if (clk_users == 0) {
 		xtal = clk_get(&s3c24xx_uda134x_snd_device->dev, "xtal");
 		if (!xtal) {
-;
+			printk(KERN_ERR "%s cannot get xtal\n", __func__);
 			ret = -EBUSY;
 		} else {
 			pclk = clk_get(&s3c24xx_uda134x_snd_device->dev,
 				       "pclk");
 			if (!pclk) {
-//				printk(KERN_ERR "%s cannot get pclk\n",
-;
+				printk(KERN_ERR "%s cannot get pclk\n",
+				       __func__);
 				clk_put(xtal);
 				ret = -EBUSY;
 			}
@@ -100,8 +100,8 @@ static int s3c24xx_uda134x_startup(struct snd_pcm_substream *substream)
 						 SNDRV_PCM_HW_PARAM_RATE,
 						 &hw_constraints_rates);
 		if (ret < 0)
-//			printk(KERN_ERR "%s cannot set constraints\n",
-;
+			printk(KERN_ERR "%s cannot set constraints\n",
+			       __func__);
 #endif
 	}
 	return ret;
@@ -166,9 +166,9 @@ static int s3c24xx_uda134x_hw_params(struct snd_pcm_substream *substream,
 		 div, clk, err);
 
 	if ((err * 100 / rate) > 5) {
-//		printk(KERN_ERR "S3C24XX_UDA134X: effective frequency "
-//		       "too different from desired (%ld%%)\n",
-;
+		printk(KERN_ERR "S3C24XX_UDA134X: effective frequency "
+		       "too different from desired (%ld%%)\n",
+		       err * 100 / rate);
 		return -EINVAL;
 	}
 
@@ -267,8 +267,8 @@ static struct uda134x_platform_data s3c24xx_uda134x = {
 static int s3c24xx_uda134x_setup_pin(int pin, char *fun)
 {
 	if (gpio_request(pin, "s3c24xx_uda134x") < 0) {
-//		printk(KERN_ERR "S3C24XX_UDA134X SoC Audio: "
-;
+		printk(KERN_ERR "S3C24XX_UDA134X SoC Audio: "
+		       "l3 %s pin already in use", fun);
 		return -EBUSY;
 	}
 	gpio_direction_output(pin, 0);
@@ -279,12 +279,12 @@ static int s3c24xx_uda134x_probe(struct platform_device *pdev)
 {
 	int ret;
 
-;
+	printk(KERN_INFO "S3C24XX_UDA134X SoC Audio driver\n");
 
 	s3c24xx_uda134x_l3_pins = pdev->dev.platform_data;
 	if (s3c24xx_uda134x_l3_pins == NULL) {
-//		printk(KERN_ERR "S3C24XX_UDA134X SoC Audio: "
-;
+		printk(KERN_ERR "S3C24XX_UDA134X SoC Audio: "
+		       "unable to find platform data\n");
 		return -ENODEV;
 	}
 	s3c24xx_uda134x.power = s3c24xx_uda134x_l3_pins->power;
@@ -307,8 +307,8 @@ static int s3c24xx_uda134x_probe(struct platform_device *pdev)
 
 	s3c24xx_uda134x_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!s3c24xx_uda134x_snd_device) {
-//		printk(KERN_ERR "S3C24XX_UDA134X SoC Audio: "
-;
+		printk(KERN_ERR "S3C24XX_UDA134X SoC Audio: "
+		       "Unable to register\n");
 		return -ENOMEM;
 	}
 
@@ -317,7 +317,7 @@ static int s3c24xx_uda134x_probe(struct platform_device *pdev)
 	platform_device_add_data(s3c24xx_uda134x_snd_device, &s3c24xx_uda134x, sizeof(s3c24xx_uda134x));
 	ret = platform_device_add(s3c24xx_uda134x_snd_device);
 	if (ret) {
-;
+		printk(KERN_ERR "S3C24XX_UDA134X SoC Audio: Unable to add\n");
 		platform_device_put(s3c24xx_uda134x_snd_device);
 	}
 

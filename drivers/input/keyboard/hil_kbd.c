@@ -131,7 +131,7 @@ static void hil_dev_handle_command_response(struct hil_dev *dev)
 		/* These occur when device isn't present */
 		if (p != (HIL_ERR_INT | HIL_PKT_CMD)) {
 			/* Anything else we'd like to know about. */
-;
+			printk(KERN_WARNING PREFIX "Device sent unknown record %x\n", p);
 		}
 		goto out;
 	}
@@ -212,8 +212,8 @@ static void hil_dev_handle_ptr_events(struct hil_dev *ptr)
 	bool absdev, ax16;
 
 	if ((p & HIL_CMDCT_POL) != idx - 1) {
-//		printk(KERN_WARNING PREFIX
-;
+		printk(KERN_WARNING PREFIX
+			"Malformed poll packet %x (idx = %i)\n", p, idx);
 		return;
 	}
 
@@ -267,7 +267,7 @@ static void hil_dev_handle_ptr_events(struct hil_dev *ptr)
 
 static void hil_dev_process_err(struct hil_dev *dev)
 {
-;
+	printk(KERN_WARNING PREFIX "errored HIL packet\n");
 	dev->idx4 = 0;
 	complete(&dev->cmd_done); /* just in case somebody is waiting */
 }
@@ -347,8 +347,8 @@ static void hil_dev_keyboard_setup(struct hil_dev *kbd)
 	input_dev->name	= strlen(kbd->rnm) ? kbd->rnm : "HIL keyboard";
 	input_dev->phys	= "hpkbd/input0";
 
-//	printk(KERN_INFO PREFIX "HIL keyboard found (did = 0x%02x, lang = %s)\n",
-;
+	printk(KERN_INFO PREFIX "HIL keyboard found (did = 0x%02x, lang = %s)\n",
+		did, hil_language[did & HIL_IDD_DID_TYPE_KB_LANG_MASK]);
 }
 
 static void hil_dev_pointer_setup(struct hil_dev *ptr)
@@ -433,12 +433,12 @@ static void hil_dev_pointer_setup(struct hil_dev *ptr)
 
 	input_dev->name = strlen(ptr->rnm) ? ptr->rnm : "HIL pointer device";
 
-//	printk(KERN_INFO PREFIX
-//		"HIL pointer device found (did: 0x%02x, axis: %s)\n",
-;
-//	printk(KERN_INFO PREFIX
-//		"HIL pointer has %i buttons and %i sets of %i axes\n",
-;
+	printk(KERN_INFO PREFIX
+		"HIL pointer device found (did: 0x%02x, axis: %s)\n",
+		did, txt);
+	printk(KERN_INFO PREFIX
+		"HIL pointer has %i buttons and %i sets of %i axes\n",
+		ptr->nbtn, naxsets, ptr->naxes);
 }
 
 static int hil_dev_connect(struct serio *serio, struct serio_driver *drv)
@@ -511,8 +511,8 @@ static int hil_dev_connect(struct serio *serio, struct serio_driver *drv)
 	case HIL_IDD_DID_TYPE_CHAR:
 		if (HIL_IDD_NUM_BUTTONS(idd) ||
 		    HIL_IDD_NUM_AXES_PER_SET(*idd)) {
-//			printk(KERN_INFO PREFIX
-;
+			printk(KERN_INFO PREFIX
+				"combo devices are not supported.\n");
 			goto bail1;
 		}
 

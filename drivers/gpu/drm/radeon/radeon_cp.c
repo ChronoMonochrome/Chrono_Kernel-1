@@ -309,23 +309,23 @@ static u32 RADEON_READ_PCIE(drm_radeon_private_t *dev_priv, int addr)
 #if RADEON_FIFO_DEBUG
 static void radeon_status(drm_radeon_private_t * dev_priv)
 {
-;
-//	printk("RBBM_STATUS = 0x%08x\n",
-;
-//	printk("CP_RB_RTPR = 0x%08x\n",
-;
-//	printk("CP_RB_WTPR = 0x%08x\n",
-;
-//	printk("AIC_CNTL = 0x%08x\n",
-;
-//	printk("AIC_STAT = 0x%08x\n",
-;
-//	printk("AIC_PT_BASE = 0x%08x\n",
-;
-//	printk("TLB_ADDR = 0x%08x\n",
-;
-//	printk("TLB_DATA = 0x%08x\n",
-;
+	printk("%s:\n", __func__);
+	printk("RBBM_STATUS = 0x%08x\n",
+	       (unsigned int)RADEON_READ(RADEON_RBBM_STATUS));
+	printk("CP_RB_RTPR = 0x%08x\n",
+	       (unsigned int)RADEON_READ(RADEON_CP_RB_RPTR));
+	printk("CP_RB_WTPR = 0x%08x\n",
+	       (unsigned int)RADEON_READ(RADEON_CP_RB_WPTR));
+	printk("AIC_CNTL = 0x%08x\n",
+	       (unsigned int)RADEON_READ(RADEON_AIC_CNTL));
+	printk("AIC_STAT = 0x%08x\n",
+	       (unsigned int)RADEON_READ(RADEON_AIC_STAT));
+	printk("AIC_PT_BASE = 0x%08x\n",
+	       (unsigned int)RADEON_READ(RADEON_AIC_PT_BASE));
+	printk("TLB_ADDR = 0x%08x\n",
+	       (unsigned int)RADEON_READ(RADEON_AIC_TLB_ADDR));
+	printk("TLB_DATA = 0x%08x\n",
+	       (unsigned int)RADEON_READ(RADEON_AIC_TLB_DATA));
 }
 #endif
 
@@ -493,7 +493,7 @@ static int radeon_cp_init_microcode(drm_radeon_private_t *dev_priv)
 	pdev = platform_device_register_simple("radeon_cp", 0, NULL, 0);
 	err = IS_ERR(pdev);
 	if (err) {
-;
+		printk(KERN_ERR "radeon_cp: Failed to register firmware\n");
 		return -EINVAL;
 	}
 
@@ -543,12 +543,12 @@ static int radeon_cp_init_microcode(drm_radeon_private_t *dev_priv)
 	err = request_firmware(&dev_priv->me_fw, fw_name, &pdev->dev);
 	platform_device_unregister(pdev);
 	if (err) {
-//		printk(KERN_ERR "radeon_cp: Failed to load firmware \"%s\"\n",
-;
+		printk(KERN_ERR "radeon_cp: Failed to load firmware \"%s\"\n",
+		       fw_name);
 	} else if (dev_priv->me_fw->size % 8) {
-//		printk(KERN_ERR
-//		       "radeon_cp: Bogus length %zu in firmware \"%s\"\n",
-;
+		printk(KERN_ERR
+		       "radeon_cp: Bogus length %zu in firmware \"%s\"\n",
+		       dev_priv->me_fw->size, fw_name);
 		err = -EINVAL;
 		release_firmware(dev_priv->me_fw);
 		dev_priv->me_fw = NULL;

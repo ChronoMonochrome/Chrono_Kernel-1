@@ -134,8 +134,8 @@ static int xen_wdt_release(struct inode *inode, struct file *file)
 	if (expect_release)
 		xen_wdt_stop();
 	else {
-//		printk(KERN_CRIT PFX
-;
+		printk(KERN_CRIT PFX
+		       "unexpected close, not stopping watchdog!\n");
 		xen_wdt_kick();
 	}
 	is_active = false;
@@ -251,30 +251,30 @@ static int __devinit xen_wdt_probe(struct platform_device *dev)
 	case -EINVAL:
 		if (!timeout) {
 			timeout = WATCHDOG_TIMEOUT;
-//			printk(KERN_INFO PFX
-;
+			printk(KERN_INFO PFX
+			       "timeout value invalid, using %d\n", timeout);
 		}
 
 		ret = misc_register(&xen_wdt_miscdev);
 		if (ret) {
-//			printk(KERN_ERR PFX
-//			       "cannot register miscdev on minor=%d (%d)\n",
-;
+			printk(KERN_ERR PFX
+			       "cannot register miscdev on minor=%d (%d)\n",
+			       WATCHDOG_MINOR, ret);
 			break;
 		}
 
-//		printk(KERN_INFO PFX
-//		       "initialized (timeout=%ds, nowayout=%d)\n",
-;
+		printk(KERN_INFO PFX
+		       "initialized (timeout=%ds, nowayout=%d)\n",
+		       timeout, nowayout);
 		break;
 
 	case -ENOSYS:
-;
+		printk(KERN_INFO PFX "not supported\n");
 		ret = -ENODEV;
 		break;
 
 	default:
-;
+		printk(KERN_INFO PFX "bogus return value %d\n", ret);
 		break;
 	}
 
@@ -326,7 +326,7 @@ static int __init xen_wdt_init_module(void)
 	if (!xen_domain())
 		return -ENODEV;
 
-;
+	printk(KERN_INFO PFX "Xen WatchDog Timer Driver v%s\n", DRV_VERSION);
 
 	err = platform_driver_register(&xen_wdt_driver);
 	if (err)
@@ -346,7 +346,7 @@ static void __exit xen_wdt_cleanup_module(void)
 {
 	platform_device_unregister(platform_device);
 	platform_driver_unregister(&xen_wdt_driver);
-;
+	printk(KERN_INFO PFX "module unloaded\n");
 }
 
 module_init(xen_wdt_init_module);

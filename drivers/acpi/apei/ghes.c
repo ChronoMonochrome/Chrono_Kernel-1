@@ -373,9 +373,9 @@ static void ghes_print_estatus(const char *pfx, struct ghes *ghes)
 			pfx = KERN_ERR HW_ERR;
 	}
 	if (__ratelimit(&ratelimit)) {
-//		printk(
-//	"%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
-;
+		printk(
+	"%s""Hardware error from APEI Generic Hardware Error Source: %d\n",
+	pfx, ghes->generic->header.source_id);
 		apei_estatus_print(pfx, ghes->estatus);
 	}
 }

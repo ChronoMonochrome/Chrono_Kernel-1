@@ -285,7 +285,7 @@ static u8 palm_bk3710_cable_detect(ide_hwif_t *hwif)
 static int __devinit palm_bk3710_init_dma(ide_hwif_t *hwif,
 					  const struct ide_port_info *d)
 {
-;
+	printk(KERN_INFO "    %s: MMIO-DMA\n", hwif->name);
 
 	if (ide_allocate_dma_engine(hwif))
 		return -1;
@@ -332,25 +332,25 @@ static int __init palm_bk3710_probe(struct platform_device *pdev)
 
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (mem == NULL) {
-;
+		printk(KERN_ERR "failed to get memory region resource\n");
 		return -ENODEV;
 	}
 
 	irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (irq == NULL) {
-;
+		printk(KERN_ERR "failed to get IRQ resource\n");
 		return -ENODEV;
 	}
 
 	mem_size = mem->end - mem->start + 1;
 	if (request_mem_region(mem->start, mem_size, "palm_bk3710") == NULL) {
-;
+		printk(KERN_ERR "failed to request memory region\n");
 		return -EBUSY;
 	}
 
 	base = ioremap(mem->start, mem_size);
 	if (!base) {
-;
+		printk(KERN_ERR "failed to map IO memory\n");
 		release_mem_region(mem->start, mem_size);
 		return -ENOMEM;
 	}
@@ -377,7 +377,7 @@ static int __init palm_bk3710_probe(struct platform_device *pdev)
 
 	return 0;
 out:
-;
+	printk(KERN_WARNING "Palm Chip BK3710 IDE Register Fail\n");
 	return rc;
 }
 

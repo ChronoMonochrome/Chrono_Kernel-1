@@ -159,19 +159,19 @@ _config_display_some_debug(struct MPT2SAS_ADAPTER *ioc, u16 smid,
 	if (!desc)
 		return;
 
-//	printk(MPT2SAS_INFO_FMT "%s: %s(%d), action(%d), form(0x%08x), "
-//	    "smid(%d)\n", ioc->name, calling_function_name, desc,
-//	    mpi_request->Header.PageNumber, mpi_request->Action,
-;
+	printk(MPT2SAS_INFO_FMT "%s: %s(%d), action(%d), form(0x%08x), "
+	    "smid(%d)\n", ioc->name, calling_function_name, desc,
+	    mpi_request->Header.PageNumber, mpi_request->Action,
+	    le32_to_cpu(mpi_request->PageAddress), smid);
 
 	if (!mpi_reply)
 		return;
 
 	if (mpi_reply->IOCStatus || mpi_reply->IOCLogInfo)
-//		printk(MPT2SAS_INFO_FMT
-//		    "\tiocstatus(0x%04x), loginfo(0x%08x)\n",
-//		    ioc->name, le16_to_cpu(mpi_reply->IOCStatus),
-;
+		printk(MPT2SAS_INFO_FMT
+		    "\tiocstatus(0x%04x), loginfo(0x%08x)\n",
+		    ioc->name, le16_to_cpu(mpi_reply->IOCStatus),
+		    le32_to_cpu(mpi_reply->IOCLogInfo));
 }
 #endif
 
@@ -194,9 +194,9 @@ _config_alloc_config_dma_memory(struct MPT2SAS_ADAPTER *ioc,
 		mem->page = dma_alloc_coherent(&ioc->pdev->dev, mem->sz,
 		    &mem->page_dma, GFP_KERNEL);
 		if (!mem->page) {
-//			printk(MPT2SAS_ERR_FMT "%s: dma_alloc_coherent"
-//			    " failed asking for (%d) bytes!!\n",
-;
+			printk(MPT2SAS_ERR_FMT "%s: dma_alloc_coherent"
+			    " failed asking for (%d) bytes!!\n",
+			    ioc->name, __func__, mem->sz);
 			r = -ENOMEM;
 		}
 	} else { /* use tmp buffer if less than 512 bytes */
@@ -298,8 +298,8 @@ _config_request(struct MPT2SAS_ADAPTER *ioc, Mpi2ConfigRequest_t
 
 	mutex_lock(&ioc->config_cmds.mutex);
 	if (ioc->config_cmds.status != MPT2_CMD_NOT_USED) {
-//		printk(MPT2SAS_ERR_FMT "%s: config_cmd in use\n",
-;
+		printk(MPT2SAS_ERR_FMT "%s: config_cmd in use\n",
+		    ioc->name, __func__);
 		mutex_unlock(&ioc->config_cmds.mutex);
 		return -EAGAIN;
 	}
@@ -346,34 +346,34 @@ _config_request(struct MPT2SAS_ADAPTER *ioc, Mpi2ConfigRequest_t
 			r = -EFAULT;
 			goto free_mem;
 		}
-//		printk(MPT2SAS_INFO_FMT "%s: attempting retry (%d)\n",
-;
+		printk(MPT2SAS_INFO_FMT "%s: attempting retry (%d)\n",
+		    ioc->name, __func__, retry_count);
 	}
 	wait_state_count = 0;
 	ioc_state = mpt2sas_base_get_iocstate(ioc, 1);
 	while (ioc_state != MPI2_IOC_STATE_OPERATIONAL) {
 		if (wait_state_count++ == MPT2_CONFIG_PAGE_DEFAULT_TIMEOUT) {
-//			printk(MPT2SAS_ERR_FMT
-//			    "%s: failed due to ioc not operational\n",
-;
+			printk(MPT2SAS_ERR_FMT
+			    "%s: failed due to ioc not operational\n",
+			    ioc->name, __func__);
 			ioc->config_cmds.status = MPT2_CMD_NOT_USED;
 			r = -EFAULT;
 			goto free_mem;
 		}
 		ssleep(1);
 		ioc_state = mpt2sas_base_get_iocstate(ioc, 1);
-//		printk(MPT2SAS_INFO_FMT "%s: waiting for "
-//		    "operational state(count=%d)\n", ioc->name,
-;
+		printk(MPT2SAS_INFO_FMT "%s: waiting for "
+		    "operational state(count=%d)\n", ioc->name,
+		    __func__, wait_state_count);
 	}
 	if (wait_state_count)
-//		printk(MPT2SAS_INFO_FMT "%s: ioc is operational\n",
-;
+		printk(MPT2SAS_INFO_FMT "%s: ioc is operational\n",
+		    ioc->name, __func__);
 
 	smid = mpt2sas_base_get_smid(ioc, ioc->config_cb_idx);
 	if (!smid) {
-//		printk(MPT2SAS_ERR_FMT "%s: failed obtaining a smid\n",
-;
+		printk(MPT2SAS_ERR_FMT "%s: failed obtaining a smid\n",
+		    ioc->name, __func__);
 		ioc->config_cmds.status = MPT2_CMD_NOT_USED;
 		r = -EAGAIN;
 		goto free_mem;
@@ -393,8 +393,8 @@ _config_request(struct MPT2SAS_ADAPTER *ioc, Mpi2ConfigRequest_t
 	timeleft = wait_for_completion_timeout(&ioc->config_cmds.done,
 	    timeout*HZ);
 	if (!(ioc->config_cmds.status & MPT2_CMD_COMPLETE)) {
-//		printk(MPT2SAS_ERR_FMT "%s: timeout\n",
-;
+		printk(MPT2SAS_ERR_FMT "%s: timeout\n",
+		    ioc->name, __func__);
 		_debug_dump_mf(mpi_request,
 		    sizeof(Mpi2ConfigRequest_t)/4);
 		retry_count++;
@@ -412,8 +412,8 @@ _config_request(struct MPT2SAS_ADAPTER *ioc, Mpi2ConfigRequest_t
 		memcpy(mpi_reply, ioc->config_cmds.reply,
 		    sizeof(Mpi2ConfigReply_t));
 	if (retry_count)
-//		printk(MPT2SAS_INFO_FMT "%s: retry (%d) completed!!\n",
-;
+		printk(MPT2SAS_INFO_FMT "%s: retry (%d) completed!!\n",
+		    ioc->name, __func__, retry_count);
 	if (config_page && mpi_request->Action ==
 	    MPI2_CONFIG_ACTION_PAGE_READ_CURRENT)
 		memcpy(config_page, mem.page, min_t(u16, mem.sz,

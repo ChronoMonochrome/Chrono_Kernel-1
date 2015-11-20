@@ -179,7 +179,7 @@ static int ves1x93_set_symbolrate (struct ves1x93_state* state, u32 srate)
 	u32 tmp;
 	u32 FIN;
 
-;
+	dprintk("%s: srate == %d\n", __func__, (unsigned int) srate);
 
 	if (srate > state->config->xin/2)
 		srate = state->config->xin/2;
@@ -226,10 +226,10 @@ static int ves1x93_set_symbolrate (struct ves1x93_state* state, u32 srate)
 	BDR = (( (ratio << (FNR >> 1)) >> 4) + 1) >> 1;
 	BDRI = ( ((FIN << 8) / ((srate << (FNR >> 1)) >> 2)) + 1) >> 1;
 
-;
-;
-;
-;
+	dprintk("FNR= %d\n", FNR);
+	dprintk("ratio= %08x\n", (unsigned int) ratio);
+	dprintk("BDR= %08x\n", (unsigned int) BDR);
+	dprintk("BDRI= %02x\n", (unsigned int) BDRI);
 
 	if (BDRI > 0xff)
 		BDRI = 0xff;
@@ -266,7 +266,7 @@ static int ves1x93_init (struct dvb_frontend* fe)
 	int i;
 	int val;
 
-;
+	dprintk("%s: init chip\n", __func__);
 
 	for (i = 0; i < state->tab_size; i++) {
 		if (state->init_1x93_wtab[i]) {
@@ -468,7 +468,7 @@ struct dvb_frontend* ves1x93_attach(const struct ves1x93_config* config,
 	identity = ves1x93_readreg(state, 0x1e);
 	switch (identity) {
 	case 0xdc: /* VES1893A rev1 */
-;
+		printk("ves1x93: Detected ves1893a rev1\n");
 		state->demod_type = DEMOD_VES1893;
 		state->init_1x93_tab = init_1893_tab;
 		state->init_1x93_wtab = init_1893_wtab;
@@ -476,7 +476,7 @@ struct dvb_frontend* ves1x93_attach(const struct ves1x93_config* config,
 		break;
 
 	case 0xdd: /* VES1893A rev2 */
-;
+		printk("ves1x93: Detected ves1893a rev2\n");
 		state->demod_type = DEMOD_VES1893;
 		state->init_1x93_tab = init_1893_tab;
 		state->init_1x93_wtab = init_1893_wtab;
@@ -484,7 +484,7 @@ struct dvb_frontend* ves1x93_attach(const struct ves1x93_config* config,
 		break;
 
 	case 0xde: /* VES1993 */
-;
+		printk("ves1x93: Detected ves1993\n");
 		state->demod_type = DEMOD_VES1993;
 		state->init_1x93_tab = init_1993_tab;
 		state->init_1x93_wtab = init_1993_wtab;

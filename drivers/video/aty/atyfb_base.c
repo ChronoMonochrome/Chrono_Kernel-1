@@ -115,38 +115,38 @@
 /* FIXME: remove the FAIL definition */
 #define FAIL(msg) do { \
 	if (!(var->activate & FB_ACTIVATE_TEST)) \
-;
+		printk(KERN_CRIT "atyfb: " msg "\n"); \
 	return -EINVAL; \
 } while (0)
 #define FAIL_MAX(msg, x, _max_) do { \
 	if (x > _max_) { \
 		if (!(var->activate & FB_ACTIVATE_TEST)) \
-;
+			printk(KERN_CRIT "atyfb: " msg " %x(%x)\n", x, _max_); \
 		return -EINVAL; \
 	} \
 } while (0)
 #ifdef DEBUG
-//#define DPRINTK(fmt, args...)	printk(KERN_DEBUG "atyfb: " fmt, ## args)
-//#else
-//#define DPRINTK(fmt, args...)
-//#endif
-//
-//#define PRINTKI(fmt, args...)	printk(KERN_INFO "atyfb: " fmt, ## args)
-//#define PRINTKE(fmt, args...)	printk(KERN_ERR "atyfb: " fmt, ## args)
-//
-//#if defined(CONFIG_PM) || defined(CONFIG_PMAC_BACKLIGHT) || \
-//defined (CONFIG_FB_ATY_GENERIC_LCD) || defined(CONFIG_FB_ATY_BACKLIGHT)
-//static const u32 lt_lcd_regs[] = {
-//	CNFG_PANEL_LG,
-//	LCD_GEN_CNTL_LG,
-//	DSTN_CONTROL_LG,
-//	HFB_PITCH_ADDR_LG,
-//	HORZ_STRETCHING_LG,
-//	VERT_STRETCHING_LG,
-//	0, /* EXT_VERT_STRETCH */
-//	LT_GIO_LG,
-//	POWER_MANAGEMENT_LG
-;
+#define DPRINTK(fmt, args...)	printk(KERN_DEBUG "atyfb: " fmt, ## args)
+#else
+#define DPRINTK(fmt, args...)
+#endif
+
+#define PRINTKI(fmt, args...)	printk(KERN_INFO "atyfb: " fmt, ## args)
+#define PRINTKE(fmt, args...)	printk(KERN_ERR "atyfb: " fmt, ## args)
+
+#if defined(CONFIG_PM) || defined(CONFIG_PMAC_BACKLIGHT) || \
+defined (CONFIG_FB_ATY_GENERIC_LCD) || defined(CONFIG_FB_ATY_BACKLIGHT)
+static const u32 lt_lcd_regs[] = {
+	CNFG_PANEL_LG,
+	LCD_GEN_CNTL_LG,
+	DSTN_CONTROL_LG,
+	HFB_PITCH_ADDR_LG,
+	HORZ_STRETCHING_LG,
+	VERT_STRETCHING_LG,
+	0, /* EXT_VERT_STRETCH */
+	LT_GIO_LG,
+	POWER_MANAGEMENT_LG
+};
 
 void aty_st_lcd(int index, u32 val, const struct atyfb_par *par)
 {
@@ -1474,50 +1474,50 @@ static int atyfb_set_par(struct fb_info *info)
 
 	/* CRTC registers */
 	base = 0x2000;
-;
+	printk("debug atyfb: Mach64 non-shadow register values:");
 	for (i = 0; i < 256; i = i+4) {
 		if (i % 16 == 0)
-;
-;
+			printk("\ndebug atyfb: 0x%04X: ", base + i);
+		printk(" %08X", aty_ld_le32(i, par));
 	}
-;
+	printk("\n\n");
 
 #ifdef CONFIG_FB_ATY_CT
 	/* PLL registers */
 	base = 0x00;
-;
+	printk("debug atyfb: Mach64 PLL register values:");
 	for (i = 0; i < 64; i++) {
 		if (i % 16 == 0)
-;
+			printk("\ndebug atyfb: 0x%02X: ", base + i);
 		if (i % 4 == 0)
-;
-;
+			printk(" ");
+		printk("%02X", aty_ld_pll_ct(i, par));
 	}
-;
+	printk("\n\n");
 #endif	/* CONFIG_FB_ATY_CT */
 
 #ifdef CONFIG_FB_ATY_GENERIC_LCD
 	if (par->lcd_table != 0) {
 		/* LCD registers */
 		base = 0x00;
-;
+		printk("debug atyfb: LCD register values:");
 		if (M64_HAS(LT_LCD_REGS)) {
 			for (i = 0; i <= POWER_MANAGEMENT; i++) {
 				if (i == EXT_VERT_STRETCH)
 					continue;
-//				printk("\ndebug atyfb: 0x%04X: ",
-;
-;
+				printk("\ndebug atyfb: 0x%04X: ",
+				       lt_lcd_regs[i]);
+				printk(" %08X", aty_ld_lcd(i, par));
 			}
 		} else {
 			for (i = 0; i < 64; i++) {
 				if (i % 4 == 0)
-//					printk("\ndebug atyfb: 0x%02X: ",
-;
-;
+					printk("\ndebug atyfb: 0x%02X: ",
+					       base + i);
+				printk(" %08X", aty_ld_lcd(i, par));
 			}
 		}
-;
+		printk("\n\n");
 	}
 #endif /* CONFIG_FB_ATY_GENERIC_LCD */
 }
@@ -1640,8 +1640,8 @@ static int aty_enable_irq(struct atyfb_par *par, int reenable)
 		spin_lock_irq(&par->int_lock);
 		int_cntl = aty_ld_le32(CRTC_INT_CNTL, par) & CRTC_INT_EN_MASK;
 		if (!(int_cntl & CRTC_VBLANK_INT_EN)) {
-//			printk("atyfb: someone disabled IRQ [%08x]\n",
-;
+			printk("atyfb: someone disabled IRQ [%08x]\n",
+			       int_cntl);
 			/* re-enable interrupt */
 			aty_st_le32(CRTC_INT_CNTL, int_cntl |
 				    CRTC_VBLANK_INT_EN, par);
@@ -2243,7 +2243,7 @@ static void aty_bl_init(struct atyfb_par *par)
 				       &props);
 	if (IS_ERR(bd)) {
 		info->bl_dev = NULL;
-;
+		printk(KERN_WARNING "aty: Backlight registration failed\n");
 		goto error;
 	}
 
@@ -2256,7 +2256,7 @@ static void aty_bl_init(struct atyfb_par *par)
 	bd->props.power = FB_BLANK_UNBLANK;
 	backlight_update_status(bd);
 
-;
+	printk("aty: Backlight initialized (%s)\n", name);
 
 	return;
 
@@ -2268,7 +2268,7 @@ error:
 static void aty_bl_exit(struct backlight_device *bd)
 {
 	backlight_device_unregister(bd);
-;
+	printk("aty: Backlight unloaded\n");
 }
 #endif /* CONFIG_PCI */
 
@@ -2585,24 +2585,24 @@ static int __devinit aty_init(struct fb_info *info)
 #if defined(DEBUG) && defined(CONFIG_FB_ATY_CT)
 	if (M64_HAS(INTEGRATED)) {
 		int i;
-//		printk("debug atyfb: BUS_CNTL DAC_CNTL MEM_CNTL "
-//		       "EXT_MEM_CNTL CRTC_GEN_CNTL DSP_CONFIG "
-//		       "DSP_ON_OFF CLOCK_CNTL\n"
-//		       "debug atyfb: %08x %08x %08x "
-//		       "%08x     %08x      %08x   "
-//		       "%08x   %08x\n"
-//		       "debug atyfb: PLL",
-//		       aty_ld_le32(BUS_CNTL, par),
-//		       aty_ld_le32(DAC_CNTL, par),
-//		       aty_ld_le32(MEM_CNTL, par),
-//		       aty_ld_le32(EXT_MEM_CNTL, par),
-//		       aty_ld_le32(CRTC_GEN_CNTL, par),
-//		       aty_ld_le32(DSP_CONFIG, par),
-//		       aty_ld_le32(DSP_ON_OFF, par),
-;
+		printk("debug atyfb: BUS_CNTL DAC_CNTL MEM_CNTL "
+		       "EXT_MEM_CNTL CRTC_GEN_CNTL DSP_CONFIG "
+		       "DSP_ON_OFF CLOCK_CNTL\n"
+		       "debug atyfb: %08x %08x %08x "
+		       "%08x     %08x      %08x   "
+		       "%08x   %08x\n"
+		       "debug atyfb: PLL",
+		       aty_ld_le32(BUS_CNTL, par),
+		       aty_ld_le32(DAC_CNTL, par),
+		       aty_ld_le32(MEM_CNTL, par),
+		       aty_ld_le32(EXT_MEM_CNTL, par),
+		       aty_ld_le32(CRTC_GEN_CNTL, par),
+		       aty_ld_le32(DSP_CONFIG, par),
+		       aty_ld_le32(DSP_ON_OFF, par),
+		       aty_ld_le32(CLOCK_CNTL, par));
 		for (i = 0; i < 40; i++)
-;
-;
+			printk(" %02x", aty_ld_pll_ct(i, par));
+		printk("\n");
 	}
 #endif
 	if (par->pll_ops->init_pll)

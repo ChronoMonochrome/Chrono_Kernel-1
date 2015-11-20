@@ -404,12 +404,12 @@ static int debug;
 module_param(debug, bool, 0644);
 #define DEBUG_ENT(fmt, arg...) do { \
 	if (debug) \
-//		printk(KERN_DEBUG "random %04d %04d %04d: " \
-//		fmt,\
-//		input_pool.entropy_count,\
-//		blocking_pool.entropy_count,\
-//		nonblocking_pool.entropy_count,\
-;
+		printk(KERN_DEBUG "random %04d %04d %04d: " \
+		fmt,\
+		input_pool.entropy_count,\
+		blocking_pool.entropy_count,\
+		nonblocking_pool.entropy_count,\
+		## arg); } while (0)
 #else
 #define DEBUG_ENT(fmt, arg...) do {} while (0)
 #endif

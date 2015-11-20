@@ -63,35 +63,35 @@
 #undef DEBUG_DMB_TRAP
 
 #ifdef DEBUG_SBA_INIT
-//#define DBG_INIT(x...)	printk(x)
-//#else
-//#define DBG_INIT(x...)
-//#endif
-//
-//#ifdef DEBUG_SBA_RUN
-//#define DBG_RUN(x...)	printk(x)
-//#else
-//#define DBG_RUN(x...)
-//#endif
-//
-//#ifdef DEBUG_SBA_RUN_SG
-//#define DBG_RUN_SG(x...)	printk(x)
-//#else
-//#define DBG_RUN_SG(x...)
-//#endif
-//
-//
-//#ifdef DEBUG_SBA_RESOURCE
-//#define DBG_RES(x...)	printk(x)
-//#else
-//#define DBG_RES(x...)
-//#endif
-//
-//#define SBA_INLINE	__inline__
-//
-//#define DEFAULT_DMA_HINT_REG	0
-//
-;
+#define DBG_INIT(x...)	printk(x)
+#else
+#define DBG_INIT(x...)
+#endif
+
+#ifdef DEBUG_SBA_RUN
+#define DBG_RUN(x...)	printk(x)
+#else
+#define DBG_RUN(x...)
+#endif
+
+#ifdef DEBUG_SBA_RUN_SG
+#define DBG_RUN_SG(x...)	printk(x)
+#else
+#define DBG_RUN_SG(x...)
+#endif
+
+
+#ifdef DEBUG_SBA_RESOURCE
+#define DBG_RES(x...)	printk(x)
+#else
+#define DBG_RES(x...)
+#endif
+
+#define SBA_INLINE	__inline__
+
+#define DEFAULT_DMA_HINT_REG	0
+
+struct sba_device *sba_list;
 EXPORT_SYMBOL_GPL(sba_list);
 
 static unsigned long ioc_needs_fdc = 0;
@@ -200,20 +200,20 @@ sba_dump_pdir_entry(struct ioc *ioc, char *msg, uint pide)
 	unsigned long *rptr = (unsigned long *) &(ioc->res_map[(pide >>3) & ~(sizeof(unsigned long) - 1)]);
 	uint rcnt;
 
-//	printk(KERN_DEBUG "SBA: %s rp %p bit %d rval 0x%lx\n",
-//		 msg,
-;
+	printk(KERN_DEBUG "SBA: %s rp %p bit %d rval 0x%lx\n",
+		 msg,
+		 rptr, pide & (BITS_PER_LONG - 1), *rptr);
 
 	rcnt = 0;
 	while (rcnt < BITS_PER_LONG) {
-//		printk(KERN_DEBUG "%s %2d %p %016Lx\n",
-//			(rcnt == (pide & (BITS_PER_LONG - 1)))
-//				? "    -->" : "       ",
-;
+		printk(KERN_DEBUG "%s %2d %p %016Lx\n",
+			(rcnt == (pide & (BITS_PER_LONG - 1)))
+				? "    -->" : "       ",
+			rcnt, ptr, *ptr );
 		rcnt++;
 		ptr++;
 	}
-;
+	printk(KERN_DEBUG "%s", msg);
 }
 
 
@@ -272,11 +272,11 @@ static void
 sba_dump_sg( struct ioc *ioc, struct scatterlist *startsg, int nents)
 {
 	while (nents-- > 0) {
-//		printk(KERN_DEBUG " %d : %08lx/%05x %p/%05x\n",
-//				nents,
-//				(unsigned long) sg_dma_address(startsg),
-//				sg_dma_len(startsg),
-;
+		printk(KERN_DEBUG " %d : %08lx/%05x %p/%05x\n",
+				nents,
+				(unsigned long) sg_dma_address(startsg),
+				sg_dma_len(startsg),
+				sg_virt_addr(startsg), startsg->length);
 		startsg++;
 	}
 }
@@ -675,7 +675,7 @@ static int sba_dma_supported( struct device *dev, u64 mask)
 	struct ioc *ioc;
 
 	if (dev == NULL) {
-;
+		printk(KERN_ERR MODULE_NAME ": EISA/ISA/et al not supported\n");
 		BUG();
 		return(0);
 	}
@@ -1267,7 +1267,7 @@ sba_ioc_init_pluto(struct parisc_device *sba, struct ioc *ioc, int ioc_num)
 	iova_space_size = ~(READ_REG(ioc->ioc_hpa + IOC_IMASK) & 0xFFFFFFFFUL) + 1;
 
 	if ((ioc->ibase < 0xfed00000UL) && ((ioc->ibase + iova_space_size) > 0xfee00000UL)) {
-;
+		printk("WARNING: IOV space overlaps local config and interrupt message, truncating\n");
 		iova_space_size /= 2;
 	}
 
@@ -1362,8 +1362,8 @@ sba_ioc_init_pluto(struct parisc_device *sba, struct ioc *ioc, int ioc_num)
 	device_for_each_child(&sba->dev, &agp_found, sba_ioc_find_quicksilver);
 
 	if (agp_found && sba_reserve_agpgart) {
-//		printk(KERN_INFO "%s: reserving %dMb of IOVA space for agpgart\n",
-;
+		printk(KERN_INFO "%s: reserving %dMb of IOVA space for agpgart\n",
+		       __func__, (iova_space_size/2) >> 20);
 		ioc->pdir_size /= 2;
 		ioc->pdir_base[PDIR_INDEX(iova_space_size/2)] = SBA_AGPGART_COOKIE;
 	}
@@ -1530,8 +1530,8 @@ static void sba_hw_init(struct sba_device *sba_dev)
 
 
 #if 0
-//printk("sba_hw_init(): mem_boot 0x%x 0x%x 0x%x 0x%x\n", PAGE0->mem_boot.hpa,
-;
+printk("sba_hw_init(): mem_boot 0x%x 0x%x 0x%x 0x%x\n", PAGE0->mem_boot.hpa,
+	PAGE0->mem_boot.spa, PAGE0->mem_boot.pad, PAGE0->mem_boot.cl_class);
 
 	/*
 	** Need to deal with DMA from LAN.
@@ -1745,9 +1745,9 @@ sba_common_init(struct sba_device *sba_dev)
 	 * IO-PDIR is changed in Ike/Astro.
 	 */
 	if (ioc_needs_fdc) {
-;
+		printk(KERN_INFO MODULE_NAME " FDC/SYNC required.\n");
 	} else {
-;
+		printk(KERN_INFO MODULE_NAME " IOC has cache coherent PDIR.\n");
 	}
 #endif
 }
@@ -1944,12 +1944,12 @@ static int sba_driver_callback(struct parisc_device *dev)
 			global_ioc_cnt *= 2;
 	}
 
-//	printk(KERN_INFO "%s found %s at 0x%llx\n",
-;
+	printk(KERN_INFO "%s found %s at 0x%llx\n",
+		MODULE_NAME, version, (unsigned long long)dev->hpa.start);
 
 	sba_dev = kzalloc(sizeof(struct sba_device), GFP_KERNEL);
 	if (!sba_dev) {
-;
+		printk(KERN_ERR MODULE_NAME " - couldn't alloc sba_device\n");
 		return -ENOMEM;
 	}
 

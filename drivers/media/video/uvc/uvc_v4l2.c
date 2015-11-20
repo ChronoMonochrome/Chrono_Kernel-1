@@ -531,8 +531,8 @@ static int uvc_v4l2_release(struct file *file)
 		uvc_video_enable(stream, 0);
 
 		if (uvc_free_buffers(&stream->queue) < 0)
-//			uvc_printk(KERN_ERR, "uvc_v4l2_release: Unable to "
-;
+			uvc_printk(KERN_ERR, "uvc_v4l2_release: Unable to "
+					"free buffers.\n");
 	}
 
 	/* Release the file handle. */
@@ -554,10 +554,10 @@ static void uvc_v4l2_ioctl_warn(void)
 	if (warned)
 		return;
 
-//	uvc_printk(KERN_INFO, "Deprecated UVCIOC_CTRL_{ADD,MAP_OLD,GET,SET} "
-;
-//	uvc_printk(KERN_INFO, "See http://www.ideasonboard.org/uvc/upgrade/ "
-;
+	uvc_printk(KERN_INFO, "Deprecated UVCIOC_CTRL_{ADD,MAP_OLD,GET,SET} "
+		   "ioctls will be removed in 2.6.42.\n");
+	uvc_printk(KERN_INFO, "See http://www.ideasonboard.org/uvc/upgrade/ "
+		   "for upgrade instructions.\n");
 	warned = 1;
 }
 
@@ -1088,9 +1088,9 @@ static long uvc_v4l2_ioctl(struct file *file,
 		     unsigned int cmd, unsigned long arg)
 {
 	if (uvc_trace_param & UVC_TRACE_IOCTL) {
-;
+		uvc_printk(KERN_DEBUG, "uvc_v4l2_ioctl(");
 		v4l_printk_ioctl(cmd);
-;
+		printk(")\n");
 	}
 
 	return video_usercopy(file, cmd, arg, uvc_v4l2_do_ioctl);

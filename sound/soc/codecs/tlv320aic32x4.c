@@ -334,7 +334,7 @@ static inline int aic32x4_get_divs(int mclk, int rate)
 			return i;
 		}
 	}
-;
+	printk(KERN_ERR "aic32x4: master clock and sample rate is not supported\n");
 	return -EINVAL;
 }
 
@@ -363,7 +363,7 @@ static int aic32x4_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 		aic32x4->sysclk = freq;
 		return 0;
 	}
-;
+	printk(KERN_ERR "aic32x4: invalid frequency to set DAI system clock\n");
 	return -EINVAL;
 }
 
@@ -392,7 +392,7 @@ static int aic32x4_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 		aic32x4->master = 0;
 		break;
 	default:
-;
+		printk(KERN_ERR "aic32x4: invalid DAI master/slave interface\n");
 		return -EINVAL;
 	}
 
@@ -417,7 +417,7 @@ static int aic32x4_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt)
 			(AIC32X4_LEFT_JUSTIFIED_MODE << AIC32X4_PLLJ_SHIFT);
 		break;
 	default:
-;
+		printk(KERN_ERR "aic32x4: invalid DAI interface format\n");
 		return -EINVAL;
 	}
 
@@ -438,7 +438,7 @@ static int aic32x4_hw_params(struct snd_pcm_substream *substream,
 
 	i = aic32x4_get_divs(aic32x4->sysclk, params_rate(params));
 	if (i < 0) {
-;
+		printk(KERN_ERR "aic32x4: sampling rate not supported\n");
 		return i;
 	}
 
@@ -776,8 +776,8 @@ static int __init aic32x4_modinit(void)
 
 	ret = i2c_add_driver(&aic32x4_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register aic32x4 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register aic32x4 I2C driver: %d\n",
+		       ret);
 	}
 	return ret;
 }

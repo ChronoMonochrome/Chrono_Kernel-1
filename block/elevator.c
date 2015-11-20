@@ -208,16 +208,16 @@ int elevator_init(struct request_queue *q, char *name)
 	if (!e && *chosen_elevator) {
 		e = elevator_get(chosen_elevator);
 		if (!e)
-//			printk(KERN_ERR "I/O scheduler %s not found\n",
-;
+			printk(KERN_ERR "I/O scheduler %s not found\n",
+							chosen_elevator);
 	}
 
 	if (!e) {
 		e = elevator_get(CONFIG_DEFAULT_IOSCHED);
 		if (!e) {
-//			printk(KERN_ERR
-//				"Default I/O scheduler not found. " \
-;
+			printk(KERN_ERR
+				"Default I/O scheduler not found. " \
+				"Using noop.\n");
 			e = elevator_get("noop");
 		}
 	}
@@ -558,9 +558,9 @@ void elv_drain_elevator(struct request_queue *q)
 	while (q->elevator->type->ops.elevator_dispatch_fn(q, 1))
 		;
 	if (q->nr_sorted && printed++ < 10) {
-//		printk(KERN_ERR "%s: forced dispatching is broken "
-//		       "(nr_sorted=%u), please report this\n",
-;
+		printk(KERN_ERR "%s: forced dispatching is broken "
+		       "(nr_sorted=%u), please report this\n",
+		       q->elevator->type->elevator_name, q->nr_sorted);
 	}
 }
 
@@ -657,8 +657,8 @@ void __elv_add_request(struct request_queue *q, struct request *rq, int where)
 		blk_insert_flush(rq);
 		break;
 	default:
-//		printk(KERN_ERR "%s: bad insertion point %d\n",
-;
+		printk(KERN_ERR "%s: bad insertion point %d\n",
+		       __func__, where);
 		BUG();
 	}
 }
@@ -874,8 +874,8 @@ int elv_register(struct elevator_type *e)
 			 !strcmp(e->elevator_name, CONFIG_DEFAULT_IOSCHED)))
 				def = " (default)";
 
-//	printk(KERN_INFO "io scheduler %s registered%s\n", e->elevator_name,
-;
+	printk(KERN_INFO "io scheduler %s registered%s\n", e->elevator_name,
+								def);
 	return 0;
 }
 EXPORT_SYMBOL_GPL(elv_register);
@@ -972,7 +972,7 @@ int elevator_change(struct request_queue *q, const char *name)
 	strlcpy(elevator_name, name, sizeof(elevator_name));
 	e = elevator_get(strstrip(elevator_name));
 	if (!e) {
-;
+		printk(KERN_ERR "elevator: type %s not found\n", elevator_name);
 		return -EINVAL;
 	}
 
@@ -997,7 +997,7 @@ ssize_t elv_iosched_store(struct request_queue *q, const char *name,
 	if (!ret)
 		return count;
 
-;
+	printk(KERN_ERR "elevator: switch to %s failed\n", name);
 	return ret;
 }
 

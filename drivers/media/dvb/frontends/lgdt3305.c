@@ -34,20 +34,20 @@ MODULE_PARM_DESC(debug, "set debug level (info=1, reg=2 (or-able))");
 #define DBG_INFO 1
 #define DBG_REG  2
 
-//#define lg_printk(kern, fmt, arg...)					\
-//	printk(kern "%s: " fmt, __func__, ##arg)
-//
-//#define lg_info(fmt, arg...)	printk(KERN_INFO "lgdt3305: " fmt, ##arg)
-//#define lg_warn(fmt, arg...)	lg_printk(KERN_WARNING,       fmt, ##arg)
-//#define lg_err(fmt, arg...)	lg_printk(KERN_ERR,           fmt, ##arg)
-//#define lg_dbg(fmt, arg...) if (debug & DBG_INFO)			\
-//				lg_printk(KERN_DEBUG,         fmt, ##arg)
-//#define lg_reg(fmt, arg...) if (debug & DBG_REG)			\
-//				lg_printk(KERN_DEBUG,         fmt, ##arg)
-//
-//#define lg_fail(ret)							\
-//({									\
-;
+#define lg_printk(kern, fmt, arg...)					\
+	printk(kern "%s: " fmt, __func__, ##arg)
+
+#define lg_info(fmt, arg...)	printk(KERN_INFO "lgdt3305: " fmt, ##arg)
+#define lg_warn(fmt, arg...)	lg_printk(KERN_WARNING,       fmt, ##arg)
+#define lg_err(fmt, arg...)	lg_printk(KERN_ERR,           fmt, ##arg)
+#define lg_dbg(fmt, arg...) if (debug & DBG_INFO)			\
+				lg_printk(KERN_DEBUG,         fmt, ##arg)
+#define lg_reg(fmt, arg...) if (debug & DBG_REG)			\
+				lg_printk(KERN_DEBUG,         fmt, ##arg)
+
+#define lg_fail(ret)							\
+({									\
+	int __ret;							\
 	__ret = (ret < 0);						\
 	if (__ret)							\
 		lg_err("error %d on line %d\n",	ret, __LINE__);		\

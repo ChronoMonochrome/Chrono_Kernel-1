@@ -266,7 +266,7 @@ static void vt8623_set_pixclock(struct fb_info *info, u32 pixclock)
 
 	rv = svga_compute_pll(&vt8623_pll, 1000000000 / pixclock, &m, &n, &r, info->node);
 	if (rv < 0) {
-;
+		printk(KERN_ERR "fb%d: cannot set requested pixclock, keeping old value\n", info->node);
 		return;
 	}
 
@@ -335,7 +335,7 @@ static int vt8623fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	rv = svga_match_format (vt8623fb_formats, var, NULL);
 	if (rv < 0)
 	{
-;
+		printk(KERN_ERR "fb%d: unsupported mode requested\n", info->node);
 		return rv;
 	}
 
@@ -354,21 +354,21 @@ static int vt8623fb_check_var(struct fb_var_screeninfo *var, struct fb_info *inf
 	mem = ((var->bits_per_pixel * var->xres_virtual) >> 3) * var->yres_virtual;
 	if (mem > info->screen_size)
 	{
-;
+		printk(KERN_ERR "fb%d: not enough framebuffer memory (%d kB requested , %d kB available)\n", info->node, mem >> 10, (unsigned int) (info->screen_size >> 10));
 		return -EINVAL;
 	}
 
 	/* Text mode is limited to 256 kB of memory */
 	if ((var->bits_per_pixel == 0) && (mem > (256*1024)))
 	{
-;
+		printk(KERN_ERR "fb%d: text framebuffer size too large (%d kB requested, 256 kB possible)\n", info->node, mem >> 10);
 		return -EINVAL;
 	}
 
 	rv = svga_check_timings (&vt8623_timing_regs, var, info->node);
 	if (rv < 0)
 	{
-;
+		printk(KERN_ERR "fb%d: invalid timings requested\n", info->node);
 		return rv;
 	}
 
@@ -503,7 +503,7 @@ static int vt8623fb_set_par(struct fb_info *info)
 		svga_wseq_mask(par->state.vgabase, 0x15, 0xAE, 0xFE);
 		break;
 	default:
-;
+		printk(KERN_ERR "vt8623fb: unsupported mode - bug\n");
 		return (-EINVAL);
 	}
 
@@ -772,8 +772,8 @@ static int __devinit vt8623_pci_probe(struct pci_dev *dev, const struct pci_devi
 		goto err_reg_fb;
 	}
 
-//	printk(KERN_INFO "fb%d: %s on %s, %d MB RAM\n", info->node, info->fix.id,
-;
+	printk(KERN_INFO "fb%d: %s on %s, %d MB RAM\n", info->node, info->fix.id,
+		 pci_name(dev), info->fix.smem_len >> 20);
 
 	/* Record a reference to the driver data */
 	pci_set_drvdata(dev, info);

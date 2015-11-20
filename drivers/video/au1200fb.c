@@ -59,34 +59,34 @@
 
 #define DEBUG 1
 
-//#define print_err(f, arg...) printk(KERN_ERR DRIVER_NAME ": " f "\n", ## arg)
-//#define print_warn(f, arg...) printk(KERN_WARNING DRIVER_NAME ": " f "\n", ## arg)
-//#define print_info(f, arg...) printk(KERN_INFO DRIVER_NAME ": " f "\n", ## arg)
-//
-//#if DEBUG
-//#define print_dbg(f, arg...) printk(KERN_DEBUG __FILE__ ": " f "\n", ## arg)
-//#else
-//#define print_dbg(f, arg...) do {} while (0)
-//#endif
-//
-//
-//#define AU1200_LCD_FB_IOCTL 0x46FF
-//
-//#define AU1200_LCD_SET_SCREEN 1
-//#define AU1200_LCD_GET_SCREEN 2
-//#define AU1200_LCD_SET_WINDOW 3
-//#define AU1200_LCD_GET_WINDOW 4
-//#define AU1200_LCD_SET_PANEL  5
-//#define AU1200_LCD_GET_PANEL  6
-//
-//#define SCREEN_SIZE		    (1<< 1)
-//#define SCREEN_BACKCOLOR    (1<< 2)
-//#define SCREEN_BRIGHTNESS   (1<< 3)
-//#define SCREEN_COLORKEY     (1<< 4)
-//#define SCREEN_MASK         (1<< 5)
-//
-//struct au1200_lcd_global_regs_t {
-;
+#define print_err(f, arg...) printk(KERN_ERR DRIVER_NAME ": " f "\n", ## arg)
+#define print_warn(f, arg...) printk(KERN_WARNING DRIVER_NAME ": " f "\n", ## arg)
+#define print_info(f, arg...) printk(KERN_INFO DRIVER_NAME ": " f "\n", ## arg)
+
+#if DEBUG
+#define print_dbg(f, arg...) printk(KERN_DEBUG __FILE__ ": " f "\n", ## arg)
+#else
+#define print_dbg(f, arg...) do {} while (0)
+#endif
+
+
+#define AU1200_LCD_FB_IOCTL 0x46FF
+
+#define AU1200_LCD_SET_SCREEN 1
+#define AU1200_LCD_GET_SCREEN 2
+#define AU1200_LCD_SET_WINDOW 3
+#define AU1200_LCD_GET_WINDOW 4
+#define AU1200_LCD_SET_PANEL  5
+#define AU1200_LCD_GET_PANEL  6
+
+#define SCREEN_SIZE		    (1<< 1)
+#define SCREEN_BACKCOLOR    (1<< 2)
+#define SCREEN_BRIGHTNESS   (1<< 3)
+#define SCREEN_COLORKEY     (1<< 4)
+#define SCREEN_MASK         (1<< 5)
+
+struct au1200_lcd_global_regs_t {
+	unsigned int flags;
 	unsigned int xsize;
 	unsigned int ysize;
 	unsigned int backcolor;
@@ -716,7 +716,7 @@ static int fbinfo2index (struct fb_info *fb_info)
 		if (fb_info == (struct fb_info *)(&_au1200fb_devices[i].fb_info))
 			return i;
 	}
-;
+	printk("au1200fb: ERROR: fbinfo2index failed!\n");
 	return -1;
 }
 
@@ -834,7 +834,7 @@ static void au1200_setpanel (struct panel_settings *newpanel)
 
 	panel = newpanel;
 
-;
+	printk("Panel(%s), %dx%d\n", panel->name, panel->Xres, panel->Yres);
 
 	/*
 	 * Setup clocking if internal LCD clock source (assumes sys_auxpll valid)
@@ -899,8 +899,8 @@ static void au1200_setpanel (struct panel_settings *newpanel)
 
 
 #if 0
-//#define D(X) printk("%25s: %08X\n", #X, X)
-;
+#define D(X) printk("%25s: %08X\n", #X, X)
+	D(lcd->screen);
 	D(lcd->horztiming);
 	D(lcd->verttiming);
 	D(lcd->clkcontrol);
@@ -1896,8 +1896,8 @@ static int __init au1200fb_init(void)
 	panel = &known_lcd_panels[panel_index];
 	win = &windows[window_index];
 
-;
-;
+	printk(DRIVER_NAME ": Panel %d %s\n", panel_index, panel->name);
+	printk(DRIVER_NAME ": Win %d %s\n", window_index, win->name);
 
 	/* Kickstart the panel, the framebuffers/windows come soon enough */
 	au1200_setpanel(panel);
@@ -1905,9 +1905,9 @@ static int __init au1200fb_init(void)
 	#ifdef CONFIG_PM
 	LCD_pm_dev = new_au1xxx_power_device("LCD", &au1200fb_pm_callback, NULL);
 	if ( LCD_pm_dev == NULL)
-;
+		printk(KERN_INFO "Unable to create a power management device entry for the au1200fb.\n");
 	else
-;
+		printk(KERN_INFO "Power management device entry for the au1200fb loaded.\n");
 	#endif
 
 	return platform_driver_register(&au1200fb_driver);

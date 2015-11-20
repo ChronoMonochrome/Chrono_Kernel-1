@@ -133,7 +133,7 @@ static void __init disable_l2_prefetch(void)
 	 */
 	u = read_extra_features();
 	if (!(u & 0x01000000)) {
-;
+		printk(KERN_INFO "Tauros2: Disabling L2 prefetch.\n");
 		write_extra_features(u | 0x01000000);
 	}
 }
@@ -185,7 +185,7 @@ void __init tauros2_init(void)
 		 */
 		feat = read_extra_features();
 		if (!(feat & 0x00400000)) {
-;
+			printk(KERN_INFO "Tauros2: Enabling L2 cache.\n");
 			write_extra_features(feat | 0x00400000);
 		}
 
@@ -210,7 +210,7 @@ void __init tauros2_init(void)
 		 * (bit [26] of the System Control Register).
 		 */
 		if (!(get_cr() & 0x04000000)) {
-;
+			printk(KERN_INFO "Tauros2: Enabling L2 cache.\n");
 			adjust_cr(0x04000000, 0x04000000);
 		}
 
@@ -245,7 +245,7 @@ void __init tauros2_init(void)
 		 */
 		actlr = read_actlr();
 		if (!(actlr & 0x00000002)) {
-;
+			printk(KERN_INFO "Tauros2: Enabling L2 cache.\n");
 			write_actlr(actlr | 0x00000002);
 		}
 
@@ -254,10 +254,10 @@ void __init tauros2_init(void)
 #endif
 
 	if (mode == NULL) {
-;
+		printk(KERN_CRIT "Tauros2: Unable to detect CPU mode.\n");
 		return;
 	}
 
-//	printk(KERN_INFO "Tauros2: L2 cache support initialised "
-;
+	printk(KERN_INFO "Tauros2: L2 cache support initialised "
+			 "in %s mode.\n", mode);
 }

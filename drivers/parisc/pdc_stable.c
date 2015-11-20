@@ -49,42 +49,42 @@
 
 #undef PDCS_DEBUG
 #ifdef PDCS_DEBUG
-//#define DPRINTK(fmt, args...)	printk(KERN_DEBUG fmt, ## args)
-//#else
-//#define DPRINTK(fmt, args...)
-//#endif
-//
-//#include <linux/module.h>
-//#include <linux/init.h>
-//#include <linux/kernel.h>
-//#include <linux/string.h>
-//#include <linux/capability.h>
-//#include <linux/ctype.h>
-//#include <linux/sysfs.h>
-//#include <linux/kobject.h>
-//#include <linux/device.h>
-//#include <linux/errno.h>
-//#include <linux/spinlock.h>
-//
-//#include <asm/pdc.h>
-//#include <asm/page.h>
-//#include <asm/uaccess.h>
-//#include <asm/hardware.h>
-//
-//#define PDCS_VERSION	"0.30"
-//#define PDCS_PREFIX	"PDC Stable Storage"
-//
-//#define PDCS_ADDR_PPRI	0x00
-//#define PDCS_ADDR_OSID	0x40
-//#define PDCS_ADDR_OSD1	0x48
-//#define PDCS_ADDR_DIAG	0x58
-//#define PDCS_ADDR_FSIZ	0x5C
-//#define PDCS_ADDR_PCON	0x60
-//#define PDCS_ADDR_PALT	0x80
-//#define PDCS_ADDR_PKBD	0xA0
-//#define PDCS_ADDR_OSD2	0xE0
-//
-;
+#define DPRINTK(fmt, args...)	printk(KERN_DEBUG fmt, ## args)
+#else
+#define DPRINTK(fmt, args...)
+#endif
+
+#include <linux/module.h>
+#include <linux/init.h>
+#include <linux/kernel.h>
+#include <linux/string.h>
+#include <linux/capability.h>
+#include <linux/ctype.h>
+#include <linux/sysfs.h>
+#include <linux/kobject.h>
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <linux/spinlock.h>
+
+#include <asm/pdc.h>
+#include <asm/page.h>
+#include <asm/uaccess.h>
+#include <asm/hardware.h>
+
+#define PDCS_VERSION	"0.30"
+#define PDCS_PREFIX	"PDC Stable Storage"
+
+#define PDCS_ADDR_PPRI	0x00
+#define PDCS_ADDR_OSID	0x40
+#define PDCS_ADDR_OSD1	0x48
+#define PDCS_ADDR_DIAG	0x58
+#define PDCS_ADDR_FSIZ	0x5C
+#define PDCS_ADDR_PCON	0x60
+#define PDCS_ADDR_PALT	0x80
+#define PDCS_ADDR_PKBD	0xA0
+#define PDCS_ADDR_OSD2	0xE0
+
+MODULE_AUTHOR("Thibaut VARENE <varenet@parisc-linux.org>");
 MODULE_DESCRIPTION("sysfs interface to HP PDC Stable Storage data");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(PDCS_VERSION);
@@ -213,9 +213,9 @@ pdcspath_store(struct pdcspath_entry *entry)
 
 	/* addr, devpath and count must be word aligned */
 	if (pdc_stable_write(entry->addr, devpath, sizeof(*devpath)) != PDC_OK) {
-//		printk(KERN_ERR "%s: an error occurred when writing to PDC.\n"
-//				"It is likely that the Stable Storage data has been corrupted.\n"
-;
+		printk(KERN_ERR "%s: an error occurred when writing to PDC.\n"
+				"It is likely that the Stable Storage data has been corrupted.\n"
+				"Please check it carefully upon next reboot.\n", __func__);
 		WARN_ON(1);
 	}
 		
@@ -319,8 +319,8 @@ pdcspath_hwpath_write(struct pdcspath_entry *entry, const char *buf, size_t coun
 	
 	/* Now we check that the user isn't trying to lure us */
 	if (!(dev = hwpath_to_device((struct hardware_path *)&hwpath))) {
-//		printk(KERN_WARNING "%s: attempt to set invalid \"%s\" "
-;
+		printk(KERN_WARNING "%s: attempt to set invalid \"%s\" "
+			"hardware path: %s\n", __func__, entry->name, buf);
 		return -EINVAL;
 	}
 	
@@ -339,8 +339,8 @@ pdcspath_hwpath_write(struct pdcspath_entry *entry, const char *buf, size_t coun
 
 	write_unlock(&entry->rw_lock);
 	
-//	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" path to \"%s\"\n",
-;
+	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" path to \"%s\"\n",
+		entry->name, buf);
 	
 	return count;
 }
@@ -432,8 +432,8 @@ pdcspath_layer_write(struct pdcspath_entry *entry, const char *buf, size_t count
 	pdcspath_store(entry);
 	write_unlock(&entry->rw_lock);
 	
-//	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" layers to \"%s\"\n",
-;
+	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" layers to \"%s\"\n",
+		entry->name, buf);
 	
 	return count;
 }
@@ -802,14 +802,14 @@ static ssize_t pdcs_auto_write(struct kobject *kobj,
 	pdcspath_store(pathentry);
 	write_unlock(&pathentry->rw_lock);
 	
-//	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" to \"%s\"\n",
-//		(knob & PF_AUTOBOOT) ? "autoboot" : "autosearch",
-;
+	printk(KERN_INFO PDCS_PREFIX ": changed \"%s\" to \"%s\"\n",
+		(knob & PF_AUTOBOOT) ? "autoboot" : "autosearch",
+		(flags & knob) ? "On" : "Off");
 	
 	return count;
 
 parse_error:
-;
+	printk(KERN_WARNING "%s: Parse error: expect \"n\" (n == 0 or 1)\n", __func__);
 	return -EINVAL;
 }
 
@@ -1046,7 +1046,7 @@ pdc_stable_init(void)
 	if (pdcs_size < 96)
 		return -ENODATA;
 
-;
+	printk(KERN_INFO PDCS_PREFIX " facility v%s\n", PDCS_VERSION);
 
 	/* get OSID */
 	if (pdc_stable_read(PDCS_ADDR_OSID, &result, sizeof(result)) != PDC_OK)
@@ -1086,7 +1086,7 @@ fail_ksetreg:
 	kobject_put(stable_kobj);
 	
 fail_firmreg:
-;
+	printk(KERN_INFO PDCS_PREFIX " bailing out\n");
 	return rc;
 }
 

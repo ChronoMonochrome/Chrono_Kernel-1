@@ -209,7 +209,7 @@ static void mshutdown(struct IsdnCardState *cs)
 {
 
 #ifdef SERIAL_DEBUG_OPEN
-;
+	printk(KERN_DEBUG"Shutting down serial ....");
 #endif
 	
 	/*
@@ -232,7 +232,7 @@ static void mshutdown(struct IsdnCardState *cs)
 	serial_inp(cs, UART_RX);    /* read data port to reset things */
 	
 #ifdef SERIAL_DEBUG_OPEN
-;
+	printk(" done\n");
 #endif
 }
 
@@ -324,14 +324,14 @@ static inline void receive_chars(struct IsdnCardState *cs,
 			       UART_LSR_FE | UART_LSR_OE)) {
 					
 #ifdef SERIAL_DEBUG_INTR
-;
+			printk("handling exept....");
 #endif
 		}
 		*status = serial_inp(cs, UART_LSR);
 	} while (*status & UART_LSR_DR);
 	if (cs->hw.elsa.MFlag == 2) {
 		if (!(skb = dev_alloc_skb(cs->hw.elsa.rcvcnt)))
-;
+			printk(KERN_WARNING "ElsaSER: receive out of memory\n");
 		else {
 			memcpy(skb_put(skb, cs->hw.elsa.rcvcnt), cs->hw.elsa.rcvbuf, 
 				cs->hw.elsa.rcvcnt);
@@ -373,7 +373,7 @@ static inline void transmit_chars(struct IsdnCardState *cs, int *intr_done)
 		modem_fill(cs->hw.elsa.bcs);
 
 #ifdef SERIAL_DEBUG_INTR
-;
+	printk("THRE...");
 #endif
 	if (intr_done)
 		*intr_done = 0;
@@ -390,21 +390,21 @@ static void rs_interrupt_elsa(struct IsdnCardState *cs)
 	int pass_counter = 0;
 	
 #ifdef SERIAL_DEBUG_INTR
-;
+	printk(KERN_DEBUG "rs_interrupt_single(%d)...", cs->irq);
 #endif
 
 	do {
 		status = serial_inp(cs, UART_LSR);
 		debugl1(cs,"rs LSR %02x", status);
 #ifdef SERIAL_DEBUG_INTR
-;
+		printk("status = %x...", status);
 #endif
 		if (status & UART_LSR_DR)
 			receive_chars(cs, &status);
 		if (status & UART_LSR_THRE)
 			transmit_chars(cs, NULL);
 		if (pass_counter++ > RS_ISR_PASS_LIMIT) {
-;
+			printk("rs_single loop break.\n");
 			break;
 		}
 		iir = serial_inp(cs, UART_IIR);
@@ -415,7 +415,7 @@ static void rs_interrupt_elsa(struct IsdnCardState *cs)
 		}
 	} while (!(iir & UART_IIR_NO_INT));
 #ifdef SERIAL_DEBUG_INTR
-;
+	printk("end.\n");
 #endif
 }
 
@@ -576,7 +576,7 @@ modem_l2l1(struct PStack *st, int pr, void *arg)
 		interruptible_sleep_on(&bcs->cs->dc.isac.arcofi_wait);
 		bcs->cs->hw.elsa.MFlag=1;
 	} else {
-;
+		printk(KERN_WARNING"ElsaSer: unknown pr %x\n", pr);
 	}
 }
 
@@ -624,20 +624,20 @@ init_modem(struct IsdnCardState *cs) {
 	cs->bcs[1].BC_Close = close_elsastate;
 	if (!(cs->hw.elsa.rcvbuf = kmalloc(MAX_MODEM_BUF,
 		GFP_ATOMIC))) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+			"Elsa: No modem mem hw.elsa.rcvbuf\n");
 		return;
 	}
 	if (!(cs->hw.elsa.transbuf = kmalloc(MAX_MODEM_BUF,
 		GFP_ATOMIC))) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+			"Elsa: No modem mem hw.elsa.transbuf\n");
 		kfree(cs->hw.elsa.rcvbuf);
 		cs->hw.elsa.rcvbuf = NULL;
 		return;
 	}
 	if (mstartup(cs)) {
-;
+		printk(KERN_WARNING "Elsa: problem startup modem\n");
 	}
 	modem_set_init(cs);
 }

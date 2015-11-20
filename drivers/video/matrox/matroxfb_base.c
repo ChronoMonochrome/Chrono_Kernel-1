@@ -246,7 +246,7 @@ int matroxfb_enable_irq(struct matrox_fb_info *minfo, int reenable)
 
 		ien = mga_inl(M_IEN);
 		if ((ien & bm) != bm) {
-;
+			printk(KERN_DEBUG "matroxfb: someone disabled IRQ [%08X]\n", ien);
 			mga_outl(M_IEN, ien | bm);
 		}
 	}
@@ -636,10 +636,10 @@ static int matroxfb_decode_var(const struct matrox_fb_info *minfo,
 	*visual = rgbt->visual;
 
 	if (bpp > 8)
-//		dprintk("matroxfb: truecolor: "
-//			"size=%d:%d:%d:%d, shift=%d:%d:%d:%d\n",
-//			var->transp.length, var->red.length, var->green.length, var->blue.length,
-;
+		dprintk("matroxfb: truecolor: "
+			"size=%d:%d:%d:%d, shift=%d:%d:%d:%d\n",
+			var->transp.length, var->red.length, var->green.length, var->blue.length,
+			var->transp.offset, var->red.offset, var->green.offset, var->blue.offset);
 
 	*video_cmap_len = matroxfb_get_cmap_len(var);
 	dprintk(KERN_INFO "requested %d*%d/%dbpp (%d*%d)\n", var->xres, var->yres, var->bits_per_pixel,
@@ -1580,7 +1580,7 @@ static void setDefaultOutputs(struct matrox_fb_info *minfo)
 		} else if (c == '2' && minfo->devflags.crtc2) {
 			minfo->outputs[i].default_src = MATROXFB_SRC_CRTC2;
 		} else {
-;
+			printk(KERN_ERR "matroxfb: Unknown outputs setting\n");
 			break;
 		}
 	}
@@ -1609,7 +1609,7 @@ static int initMatrox2(struct matrox_fb_info *minfo, struct board *b)
 	minfo->devflags.accelerator = b->base->accelID;
 	minfo->max_pixel_clock = b->maxclk;
 
-;
+	printk(KERN_INFO "matroxfb: Matrox %s detected\n", b->name);
 	minfo->capable.plnwt = 1;
 	minfo->chip = b->chip;
 	minfo->capable.srcorg = b->flags & DEVF_SRCORG;
@@ -1658,11 +1658,11 @@ static int initMatrox2(struct matrox_fb_info *minfo, struct board *b)
 	}
 	err = -EINVAL;
 	if (!ctrlptr_phys) {
-;
+		printk(KERN_ERR "matroxfb: control registers are not available, matroxfb disabled\n");
 		goto fail;
 	}
 	if (!video_base_phys) {
-;
+		printk(KERN_ERR "matroxfb: video RAM is not available in PCI address space, matroxfb disabled\n");
 		goto fail;
 	}
 	memsize = b->base->maxvram;
@@ -1681,15 +1681,15 @@ static int initMatrox2(struct matrox_fb_info *minfo, struct board *b)
 		memsize = mem;
 	err = -ENOMEM;
 	if (mga_ioremap(ctrlptr_phys, 16384, MGA_IOREMAP_MMIO, &minfo->mmio.vbase)) {
-;
+		printk(KERN_ERR "matroxfb: cannot ioremap(%lX, 16384), matroxfb disabled\n", ctrlptr_phys);
 		goto failVideoMR;
 	}
 	minfo->mmio.base = ctrlptr_phys;
 	minfo->mmio.len = 16384;
 	minfo->video.base = video_base_phys;
 	if (mga_ioremap(video_base_phys, memsize, MGA_IOREMAP_FB, &minfo->video.vbase)) {
-//		printk(KERN_ERR "matroxfb: cannot ioremap(%lX, %d), matroxfb disabled\n",
-;
+		printk(KERN_ERR "matroxfb: cannot ioremap(%lX, %d), matroxfb disabled\n",
+			video_base_phys, memsize);
 		goto failCtrlIO;
 	}
 	{
@@ -1704,7 +1704,7 @@ static int initMatrox2(struct matrox_fb_info *minfo, struct board *b)
 		cmd &= ~PCI_COMMAND_VGA_PALETTE;
 		if (pci_dev_present(intel_82437)) {
 			if (!(mga_option & 0x20000000) && !minfo->devflags.nopciretry) {
-;
+				printk(KERN_WARNING "matroxfb: Disabling PCI retries due to i82437 present\n");
 			}
 			mga_option |= 0x20000000;
 			minfo->devflags.nopciretry = 1;
@@ -1726,7 +1726,7 @@ static int initMatrox2(struct matrox_fb_info *minfo, struct board *b)
 
 	err = -ENOMEM;
 	if (!matroxfb_getmemory(minfo, memsize, &minfo->video.len) || !minfo->video.len) {
-;
+		printk(KERN_ERR "matroxfb: cannot determine memory size\n");
 		goto failVideoIO;
 	}
 	minfo->devflags.ydstorg = 0;
@@ -1739,7 +1739,7 @@ static int initMatrox2(struct matrox_fb_info *minfo, struct board *b)
 	if (mtrr) {
 		minfo->mtrr.vram = mtrr_add(video_base_phys, minfo->video.len, MTRR_TYPE_WRCOMB, 1);
 		minfo->mtrr.vram_valid = 1;
-;
+		printk(KERN_INFO "matroxfb: MTRR's turned on\n");
 	}
 #endif	/* CONFIG_MTRR */
 
@@ -1881,11 +1881,11 @@ static int initMatrox2(struct matrox_fb_info *minfo, struct board *b)
 	minfo->fbcon.var = vesafb_defined;
 	err = -EINVAL;
 
-//	printk(KERN_INFO "matroxfb: %dx%dx%dbpp (virtual: %dx%d)\n",
-//		vesafb_defined.xres, vesafb_defined.yres, vesafb_defined.bits_per_pixel,
-;
-//	printk(KERN_INFO "matroxfb: framebuffer at 0x%lX, mapped to 0x%p, size %d\n",
-;
+	printk(KERN_INFO "matroxfb: %dx%dx%dbpp (virtual: %dx%d)\n",
+		vesafb_defined.xres, vesafb_defined.yres, vesafb_defined.bits_per_pixel,
+		vesafb_defined.xres_virtual, vesafb_defined.yres_virtual);
+	printk(KERN_INFO "matroxfb: framebuffer at 0x%lX, mapped to 0x%p, size %d\n",
+		minfo->video.base, vaddr_va(minfo->video.vbase), minfo->video.len);
 
 /* We do not have to set currcon to 0... register_framebuffer do it for us on first console
  * and we do not want currcon == 0 for subsequent framebuffers */
@@ -1894,14 +1894,14 @@ static int initMatrox2(struct matrox_fb_info *minfo, struct board *b)
 	if (register_framebuffer(&minfo->fbcon) < 0) {
 		goto failVideoIO;
 	}
-//	printk("fb%d: %s frame buffer device\n",
-;
+	printk("fb%d: %s frame buffer device\n",
+	       minfo->fbcon.node, minfo->fbcon.fix.id);
 
 	/* there is no console on this fb... but we have to initialize hardware
 	 * until someone tells me what is proper thing to do */
 	if (!minfo->initialized) {
-//		printk(KERN_INFO "fb%d: initializing hardware\n",
-;
+		printk(KERN_INFO "fb%d: initializing hardware\n",
+		       minfo->fbcon.node);
 		/* We have to use FB_ACTIVATE_FORCE, as we had to put vesafb_defined to the fbcon.var
 		 * already before, so register_framebuffer works correctly. */
 		vesafb_defined.activate |= FB_ACTIVATE_FORCE;
@@ -2242,7 +2242,7 @@ static void __init matroxfb_init_params(void) {
 		if (RSptr->vesa == vesa) break;
 	}
 	if (!RSptr->vesa) {
-;
+		printk(KERN_ERR "Invalid vesa mode 0x%04X\n", vesa);
 		RSptr = vesamap;
 	}
 	{
@@ -2300,7 +2300,7 @@ static int __init matroxfb_setup(char *options) {
 	while ((this_opt = strsep(&options, ",")) != NULL) {
 		if (!*this_opt) continue;
 
-;
+		dprintk("matroxfb_setup: option %s\n", this_opt);
 
 		if (!strncmp(this_opt, "dev:", 4))
 			dev = simple_strtoul(this_opt+4, NULL, 0);
@@ -2314,7 +2314,7 @@ static int __init matroxfb_setup(char *options) {
 				case 24:depth = RS24bpp; break;
 				case 32:depth = RS32bpp; break;
 				default:
-;
+					printk(KERN_ERR "matroxfb: unsupported color depth\n");
 			}
 		} else if (!strncmp(this_opt, "xres:", 5))
 			xres = simple_strtoul(this_opt+5, NULL, 0);
@@ -2562,7 +2562,7 @@ int __init init_module(void){
 	else if (depth == 32)
 		depth = RS32bpp;
 	else if (depth != -1) {
-;
+		printk(KERN_ERR "matroxfb: depth %d is not supported, using default\n", depth);
 		depth = -1;
 	}
 	matrox_init();

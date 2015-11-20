@@ -84,7 +84,7 @@ static int lis3_i2c_init(struct lis3lv02d *lis3)
 
 	lis3->read(lis3, WHO_AM_I, &reg);
 	if (reg != lis3->whoami)
-;
+		printk(KERN_ERR "lis3: power on failure\n");
 
 	/* power up the device */
 	ret = lis3->read(lis3, CTRL_REG1, &reg);

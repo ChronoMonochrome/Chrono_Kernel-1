@@ -347,13 +347,13 @@ static int __devinit wm8505fb_probe(struct platform_device *pdev)
 
 	ret = device_create_file(&pdev->dev, &dev_attr_contrast);
 	if (ret < 0) {
-//		printk(KERN_WARNING "fb%d: failed to register attributes (%d)\n",
-;
+		printk(KERN_WARNING "fb%d: failed to register attributes (%d)\n",
+			fbi->fb.node, ret);
 	}
 
-//	printk(KERN_INFO "fb%d: %s frame buffer at 0x%lx-0x%lx\n",
-//	       fbi->fb.node, fbi->fb.fix.id, fbi->fb.fix.smem_start,
-;
+	printk(KERN_INFO "fb%d: %s frame buffer at 0x%lx-0x%lx\n",
+	       fbi->fb.node, fbi->fb.fix.id, fbi->fb.fix.smem_start,
+	       fbi->fb.fix.smem_start + fbi->fb.fix.smem_len - 1);
 
 	return 0;
 

@@ -756,8 +756,8 @@ static int pll_factors(struct pll_div *pll_div, unsigned int target,
 	}
 
 	if (Ndiv < 6 || Ndiv > 12) {
-//		printk(KERN_ERR "%s: WM8985 N value is not within"
-;
+		printk(KERN_ERR "%s: WM8985 N value is not within"
+		       " the recommended range: %lu\n", __func__, Ndiv);
 		return -EINVAL;
 	}
 	pll_div->n = Ndiv;
@@ -1161,15 +1161,15 @@ static int __init wm8985_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8985_i2c_driver);
 	if (ret) {
-//		printk(KERN_ERR "Failed to register wm8985 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8985 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&wm8985_spi_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register wm8985 SPI driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8985 SPI driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

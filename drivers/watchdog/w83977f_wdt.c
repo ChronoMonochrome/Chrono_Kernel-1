@@ -131,7 +131,7 @@ static int wdt_start(void)
 
 	spin_unlock_irqrestore(&spinlock, flags);
 
-;
+	printk(KERN_INFO PFX "activated.\n");
 
 	return 0;
 }
@@ -185,7 +185,7 @@ static int wdt_stop(void)
 
 	spin_unlock_irqrestore(&spinlock, flags);
 
-;
+	printk(KERN_INFO PFX "shutdown.\n");
 
 	return 0;
 }
@@ -313,8 +313,8 @@ static int wdt_release(struct inode *inode, struct file *file)
 		clear_bit(0, &timer_alive);
 	} else {
 		wdt_keepalive();
-//		printk(KERN_CRIT PFX
-;
+		printk(KERN_CRIT PFX
+			"unexpected close, not stopping watchdog!\n");
 	}
 	expect_close = 0;
 	return 0;
@@ -471,7 +471,7 @@ static int __init w83977f_wdt_init(void)
 {
 	int rc;
 
-;
+	printk(KERN_INFO PFX DRIVER_VERSION);
 
 	/*
 	 * Check that the timeout value is within it's range;
@@ -479,36 +479,36 @@ static int __init w83977f_wdt_init(void)
 	 */
 	if (wdt_set_timeout(timeout)) {
 		wdt_set_timeout(DEFAULT_TIMEOUT);
-//		printk(KERN_INFO PFX
-//		    "timeout value must be 15 <= timeout <= 7635, using %d\n",
-;
+		printk(KERN_INFO PFX
+		    "timeout value must be 15 <= timeout <= 7635, using %d\n",
+							DEFAULT_TIMEOUT);
 	}
 
 	if (!request_region(IO_INDEX_PORT, 2, WATCHDOG_NAME)) {
-//		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
-;
+		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
+			IO_INDEX_PORT);
 		rc = -EIO;
 		goto err_out;
 	}
 
 	rc = register_reboot_notifier(&wdt_notifier);
 	if (rc) {
-//		printk(KERN_ERR PFX
-;
+		printk(KERN_ERR PFX
+			"cannot register reboot notifier (err=%d)\n", rc);
 		goto err_out_region;
 	}
 
 	rc = misc_register(&wdt_miscdev);
 	if (rc) {
-//		printk(KERN_ERR PFX
-//			"cannot register miscdev on minor=%d (err=%d)\n",
-;
+		printk(KERN_ERR PFX
+			"cannot register miscdev on minor=%d (err=%d)\n",
+						wdt_miscdev.minor, rc);
 		goto err_out_reboot;
 	}
 
-//	printk(KERN_INFO PFX
-//		"initialized. timeout=%d sec (nowayout=%d testmode=%d)\n",
-;
+	printk(KERN_INFO PFX
+		"initialized. timeout=%d sec (nowayout=%d testmode=%d)\n",
+					timeout, nowayout, testmode);
 
 	return 0;
 

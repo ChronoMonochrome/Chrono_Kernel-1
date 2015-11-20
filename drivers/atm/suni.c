@@ -31,20 +31,20 @@
 
 
 #if 0
-//#define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
-//#else
-//#define DPRINTK(format,args...)
-//#endif
-//
-//#define PRIV(dev) ((struct suni_priv *) dev->phy_data)
-//
-//#define PUT(val,reg) dev->ops->phy_put(dev,val,SUNI_##reg)
-//#define GET(reg) dev->ops->phy_get(dev,SUNI_##reg)
-//#define REG_CHANGE(mask,shift,value,reg) \
-//  PUT((GET(reg) & ~(mask)) | ((value) << (shift)),reg)
-//
-//
-;
+#define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
+#else
+#define DPRINTK(format,args...)
+#endif
+
+#define PRIV(dev) ((struct suni_priv *) dev->phy_data)
+
+#define PUT(val,reg) dev->ops->phy_put(dev,val,SUNI_##reg)
+#define GET(reg) dev->ops->phy_get(dev,SUNI_##reg)
+#define REG_CHANGE(mask,shift,value,reg) \
+  PUT((GET(reg) & ~(mask)) | ((value) << (shift)),reg)
+
+
+static struct timer_list poll_timer;
 static struct suni_priv *sunis = NULL;
 static DEFINE_SPINLOCK(sunis_lock);
 
@@ -300,8 +300,8 @@ static void poll_los(struct atm_dev *dev)
 static void suni_int(struct atm_dev *dev)
 {
 	poll_los(dev);
-//	printk(KERN_NOTICE "%s(itf %d): signal %s\n",dev->type,dev->number,
-;
+	printk(KERN_NOTICE "%s(itf %d): signal %s\n",dev->type,dev->number,
+	    dev->signal == ATM_PHY_SIG_LOST ?  "lost" : "detected again");
 }
 
 
@@ -320,8 +320,8 @@ static int suni_start(struct atm_dev *dev)
 		/* interrupt on loss of signal */
 	poll_los(dev); /* ... and clear SUNI interrupts */
 	if (dev->signal == ATM_PHY_SIG_LOST)
-//		printk(KERN_WARNING "%s(itf %d): no signal\n",dev->type,
-;
+		printk(KERN_WARNING "%s(itf %d): no signal\n",dev->type,
+		    dev->number);
 	PRIV(dev)->loop_mode = ATM_LM_NONE;
 	suni_hz(0); /* clear SUNI counters */
 	(void) fetch_stats(dev,NULL,1); /* clear kernel counters */
@@ -331,8 +331,8 @@ static int suni_start(struct atm_dev *dev)
 		poll_timer.function = suni_hz;
 		poll_timer.data = 1;
 #if 0
-//printk(KERN_DEBUG "[u] p=0x%lx,n=0x%lx\n",(unsigned long) poll_timer.list.prev,
-;
+printk(KERN_DEBUG "[u] p=0x%lx,n=0x%lx\n",(unsigned long) poll_timer.list.prev,
+    (unsigned long) poll_timer.list.next);
 #endif
 		add_timer(&poll_timer);
 	}

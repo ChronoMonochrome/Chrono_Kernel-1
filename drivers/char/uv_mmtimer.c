@@ -165,7 +165,7 @@ static int uv_mmtimer_mmap(struct file *file, struct vm_area_struct *vma)
 
 	if (remap_pfn_range(vma, vma->vm_start, uv_mmtimer_addr >> PAGE_SHIFT,
 					PAGE_SIZE, vma->vm_page_prot)) {
-;
+		printk(KERN_ERR "remap_pfn_range failed in uv_mmtimer_mmap\n");
 		return -EAGAIN;
 	}
 
@@ -187,7 +187,7 @@ static struct miscdevice uv_mmtimer_miscdev = {
 static int __init uv_mmtimer_init(void)
 {
 	if (!is_uv_system()) {
-;
+		printk(KERN_ERR "%s: Hardware unsupported\n", UV_MMTIMER_NAME);
 		return -1;
 	}
 
@@ -195,8 +195,8 @@ static int __init uv_mmtimer_init(void)
 	 * Sanity check the cycles/sec variable
 	 */
 	if (sn_rtc_cycles_per_second < 100000) {
-//		printk(KERN_ERR "%s: unable to determine clock frequency\n",
-;
+		printk(KERN_ERR "%s: unable to determine clock frequency\n",
+		       UV_MMTIMER_NAME);
 		return -1;
 	}
 
@@ -205,14 +205,14 @@ static int __init uv_mmtimer_init(void)
 				sn_rtc_cycles_per_second;
 
 	if (misc_register(&uv_mmtimer_miscdev)) {
-//		printk(KERN_ERR "%s: failed to register device\n",
-;
+		printk(KERN_ERR "%s: failed to register device\n",
+		       UV_MMTIMER_NAME);
 		return -1;
 	}
 
-//	printk(KERN_INFO "%s: v%s, %ld MHz\n", UV_MMTIMER_DESC,
-//		UV_MMTIMER_VERSION,
-;
+	printk(KERN_INFO "%s: v%s, %ld MHz\n", UV_MMTIMER_DESC,
+		UV_MMTIMER_VERSION,
+		sn_rtc_cycles_per_second/(unsigned long)1E6);
 
 	return 0;
 }

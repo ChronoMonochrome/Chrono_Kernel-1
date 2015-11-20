@@ -147,8 +147,8 @@ static int snd_usb_create_stream(struct snd_usb_audio *chip, int ctrlif, int int
 	struct usb_interface *iface = usb_ifnum_to_if(dev, interface);
 
 	if (!iface) {
-//		snd_printk(KERN_ERR "%d:%u:%d : does not exist\n",
-;
+		snd_printk(KERN_ERR "%d:%u:%d : does not exist\n",
+			   dev->devnum, ctrlif, interface);
 		return -EINVAL;
 	}
 
@@ -184,8 +184,8 @@ static int snd_usb_create_stream(struct snd_usb_audio *chip, int ctrlif, int int
 		int err = snd_usbmidi_create(chip->card, iface,
 					     &chip->midi_list, NULL);
 		if (err < 0) {
-//			snd_printk(KERN_ERR "%d:%u:%d: cannot create sequencer device\n",
-;
+			snd_printk(KERN_ERR "%d:%u:%d: cannot create sequencer device\n",
+						dev->devnum, ctrlif, interface);
 			return -EINVAL;
 		}
 		usb_driver_claim_interface(&usb_audio_driver, iface, (void *)-1L);
@@ -203,7 +203,7 @@ static int snd_usb_create_stream(struct snd_usb_audio *chip, int ctrlif, int int
 	}
 
 	if (snd_usb_get_speed(dev) == USB_SPEED_LOW) {
-;
+		snd_printk(KERN_ERR "low speed audio streaming not supported\n");
 		return -EINVAL;
 	}
 
@@ -236,7 +236,7 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
 	protocol = altsd->bInterfaceProtocol;
 
 	if (!control_header) {
-;
+		snd_printk(KERN_ERR "cannot find UAC_HEADER\n");
 		return -EINVAL;
 	}
 
@@ -250,12 +250,12 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
 		struct uac1_ac_header_descriptor *h1 = control_header;
 
 		if (!h1->bInCollection) {
-;
+			snd_printk(KERN_INFO "skipping empty audio interface (v1)\n");
 			return -EINVAL;
 		}
 
 		if (h1->bLength < sizeof(*h1) + h1->bInCollection) {
-;
+			snd_printk(KERN_ERR "invalid UAC_HEADER (v1)\n");
 			return -EINVAL;
 		}
 
@@ -270,7 +270,7 @@ static int snd_usb_create_streams(struct snd_usb_audio *chip, int ctrlif)
 			usb_ifnum_to_if(dev, ctrlif)->intf_assoc;
 
 		if (!assoc) {
-;
+			snd_printk(KERN_ERR "Audio class v2 interfaces need an interface association\n");
 			return -EINVAL;
 		}
 
@@ -341,13 +341,13 @@ static int snd_usb_audio_create(struct usb_device *dev, int idx,
 	case USB_SPEED_SUPER:
 		break;
 	default:
-;
+		snd_printk(KERN_ERR "unknown device speed %d\n", snd_usb_get_speed(dev));
 		return -ENXIO;
 	}
 
 	err = snd_card_create(index[idx], id[idx], THIS_MODULE, 0, &card);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "cannot create card instance %d\n", idx);
 		return err;
 	}
 
@@ -487,7 +487,7 @@ static void *snd_usb_audio_probe(struct usb_device *dev,
 	for (i = 0; i < SNDRV_CARDS; i++) {
 		if (usb_chip[i] && usb_chip[i]->dev == dev) {
 			if (usb_chip[i]->shutdown) {
-;
+				snd_printk(KERN_ERR "USB device is in the shutdown state, cannot create a card instance\n");
 				goto __error;
 			}
 			chip = usb_chip[i];
@@ -511,7 +511,7 @@ static void *snd_usb_audio_probe(struct usb_device *dev,
 				break;
 			}
 		if (!chip) {
-;
+			printk(KERN_ERR "no available usb audio device\n");
 			goto __error;
 		}
 	}
@@ -747,7 +747,7 @@ static struct usb_driver usb_audio_driver = {
 static int __init snd_usb_audio_init(void)
 {
 	if (nrpacks < 1 || nrpacks > MAX_PACKS) {
-;
+		printk(KERN_WARNING "invalid nrpacks value.\n");
 		return -EINVAL;
 	}
 

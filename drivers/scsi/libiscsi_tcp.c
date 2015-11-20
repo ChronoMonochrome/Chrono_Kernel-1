@@ -61,9 +61,9 @@ MODULE_PARM_DESC(debug_libiscsi_tcp, "Turn on debugging for libiscsi_tcp "
 #define ISCSI_DBG_TCP(_conn, dbg_fmt, arg...)			\
 	do {							\
 		if (iscsi_dbg_libtcp)				\
-//			iscsi_conn_printk(KERN_INFO, _conn,	\
-//					     "%s " dbg_fmt,	\
-;
+			iscsi_conn_printk(KERN_INFO, _conn,	\
+					     "%s " dbg_fmt,	\
+					     __func__, ##arg);	\
 	} while (0);
 
 static int iscsi_tcp_hdr_recv_done(struct iscsi_tcp_conn *tcp_conn,
@@ -531,9 +531,9 @@ static int iscsi_tcp_r2t_rsp(struct iscsi_conn *conn, struct iscsi_task *task)
 	int rc;
 
 	if (tcp_conn->in.datalen) {
-//		iscsi_conn_printk(KERN_ERR, conn,
-//				  "invalid R2t with datalen %d\n",
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "invalid R2t with datalen %d\n",
+				  tcp_conn->in.datalen);
 		return ISCSI_ERR_DATALEN;
 	}
 
@@ -547,25 +547,25 @@ static int iscsi_tcp_r2t_rsp(struct iscsi_conn *conn, struct iscsi_task *task)
 	iscsi_update_cmdsn(session, (struct iscsi_nopin*)rhdr);
 
 	if (!task->sc || session->state != ISCSI_STATE_LOGGED_IN) {
-//		iscsi_conn_printk(KERN_INFO, conn,
-//				  "dropping R2T itt %d in recovery.\n",
-;
+		iscsi_conn_printk(KERN_INFO, conn,
+				  "dropping R2T itt %d in recovery.\n",
+				  task->itt);
 		return 0;
 	}
 
 	rc = kfifo_out(&tcp_task->r2tpool.queue, (void*)&r2t, sizeof(void*));
 	if (!rc) {
-//		iscsi_conn_printk(KERN_ERR, conn, "Could not allocate R2T. "
-//				  "Target has sent more R2Ts than it "
-;
+		iscsi_conn_printk(KERN_ERR, conn, "Could not allocate R2T. "
+				  "Target has sent more R2Ts than it "
+				  "negotiated for or driver has has leaked.\n");
 		return ISCSI_ERR_PROTO;
 	}
 
 	r2t->exp_statsn = rhdr->statsn;
 	r2t->data_length = be32_to_cpu(rhdr->data_length);
 	if (r2t->data_length == 0) {
-//		iscsi_conn_printk(KERN_ERR, conn,
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "invalid R2T with zero data len\n");
 		kfifo_in(&tcp_task->r2tpool.queue, (void*)&r2t,
 			    sizeof(void*));
 		return ISCSI_ERR_DATALEN;
@@ -578,10 +578,10 @@ static int iscsi_tcp_r2t_rsp(struct iscsi_conn *conn, struct iscsi_task *task)
 
 	r2t->data_offset = be32_to_cpu(rhdr->data_offset);
 	if (r2t->data_offset + r2t->data_length > scsi_out(task->sc)->length) {
-//		iscsi_conn_printk(KERN_ERR, conn,
-//				  "invalid R2T with data len %u at offset %u "
-//				  "and total length %d\n", r2t->data_length,
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "invalid R2T with data len %u at offset %u "
+				  "and total length %d\n", r2t->data_length,
+				  r2t->data_offset, scsi_out(task->sc)->length);
 		kfifo_in(&tcp_task->r2tpool.queue, (void*)&r2t,
 			    sizeof(void*));
 		return ISCSI_ERR_DATALEN;
@@ -644,9 +644,9 @@ iscsi_tcp_hdr_dissect(struct iscsi_conn *conn, struct iscsi_hdr *hdr)
 	/* verify PDU length */
 	tcp_conn->in.datalen = ntoh24(hdr->dlength);
 	if (tcp_conn->in.datalen > conn->max_recv_dlength) {
-//		iscsi_conn_printk(KERN_ERR, conn,
-//				  "iscsi_tcp: datalen %d > %d\n",
-;
+		iscsi_conn_printk(KERN_ERR, conn,
+				  "iscsi_tcp: datalen %d > %d\n",
+				  tcp_conn->in.datalen, conn->max_recv_dlength);
 		return ISCSI_ERR_DATALEN;
 	}
 
@@ -743,12 +743,12 @@ iscsi_tcp_hdr_dissect(struct iscsi_conn *conn, struct iscsi_hdr *hdr)
 		 * For now we fail until we find a vendor that needs it
 		 */
 		if (ISCSI_DEF_MAX_RECV_SEG_LEN < tcp_conn->in.datalen) {
-//			iscsi_conn_printk(KERN_ERR, conn,
-//					  "iscsi_tcp: received buffer of "
-//					  "len %u but conn buffer is only %u "
-//					  "(opcode %0x)\n",
-//					  tcp_conn->in.datalen,
-;
+			iscsi_conn_printk(KERN_ERR, conn,
+					  "iscsi_tcp: received buffer of "
+					  "len %u but conn buffer is only %u "
+					  "(opcode %0x)\n",
+					  tcp_conn->in.datalen,
+					  ISCSI_DEF_MAX_RECV_SEG_LEN, opcode);
 			rc = ISCSI_ERR_PROTO;
 			break;
 		}

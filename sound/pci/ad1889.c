@@ -263,8 +263,8 @@ snd_ad1889_ac97_ready(struct snd_ad1889 *chip)
 			&& --retry)
 		mdelay(1);
 	if (!retry) {
-//		snd_printk(KERN_ERR PFX "[%s] Link is not ready.\n",
-;
+		snd_printk(KERN_ERR PFX "[%s] Link is not ready.\n",
+		       __func__);
 		return -EIO;
 	}
 	ad1889_debug("[%s] ready after %d ms\n", __func__, 400 - retry);
@@ -655,7 +655,7 @@ snd_ad1889_pcm_init(struct snd_ad1889 *chip, int device, struct snd_pcm **rpcm)
 						BUFFER_BYTES_MAX);
 
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR PFX "buffer allocation error: %d\n", err);
 		return err;
 	}
 	
@@ -911,7 +911,7 @@ snd_ad1889_create(struct snd_card *card,
 	/* check PCI availability (32bit DMA) */
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(32)) < 0 ||
 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32)) < 0) {
-;
+		printk(KERN_ERR PFX "error setting 32-bit DMA mask.\n");
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -934,7 +934,7 @@ snd_ad1889_create(struct snd_card *card,
 	chip->bar = pci_resource_start(pci, 0);
 	chip->iobase = pci_ioremap_bar(pci, 0);
 	if (chip->iobase == NULL) {
-;
+		printk(KERN_ERR PFX "unable to reserve region.\n");
 		err = -EBUSY;
 		goto free_and_ret;
 	}
@@ -945,7 +945,7 @@ snd_ad1889_create(struct snd_card *card,
 
 	if (request_irq(pci->irq, snd_ad1889_interrupt,
 			IRQF_SHARED, card->driver, chip)) {
-;
+		printk(KERN_ERR PFX "cannot obtain IRQ %d\n", pci->irq);
 		snd_ad1889_free(chip);
 		return -EBUSY;
 	}

@@ -219,7 +219,7 @@ static int __devinit hil_keyb_init(void)
 
 	err = request_irq(HIL_IRQ, hil_interrupt, 0, "hil", hil_dev.dev_id);
 	if (err) {
-;
+		printk(KERN_ERR "HIL: Can't get IRQ\n");
 		goto err1;
 	}
 
@@ -232,16 +232,16 @@ static int __devinit hil_keyb_init(void)
 
 	wait_event_interruptible_timeout(hil_wait, hil_dev.valid, 3 * HZ);
 	if (!hil_dev.valid)
-;
+		printk(KERN_WARNING "HIL: timed out, assuming no keyboard present\n");
 
 	c = hil_dev.c;
 	hil_dev.valid = 0;
 	if (c == 0) {
 		kbid = -1;
-;
+		printk(KERN_WARNING "HIL: no keyboard present\n");
 	} else {
 		kbid = ffz(~c);
-;
+		printk(KERN_INFO "HIL: keyboard found at id %d\n", kbid);
 	}
 
 	/* set it to raw mode */
@@ -268,12 +268,12 @@ static int __devinit hil_keyb_init(void)
 
 	err = input_register_device(hil_dev.dev);
 	if (err) {
-;
+		printk(KERN_ERR "HIL: Can't register device\n");
 		goto err2;
 	}
 
-//	printk(KERN_INFO "input: %s, ID %d at 0x%08lx (irq %d) found and attached\n",
-;
+	printk(KERN_INFO "input: %s, ID %d at 0x%08lx (irq %d) found and attached\n",
+	       hil_dev.dev->name, kbid, HILBASE, HIL_IRQ);
 
 	return 0;
 
@@ -306,8 +306,8 @@ static int __devinit hil_probe_chip(struct parisc_device *dev)
 		return -ENODEV;
 
 	if (!dev->irq) {
-//		printk(KERN_WARNING "HIL: IRQ not found for HIL bus at 0x%p\n",
-;
+		printk(KERN_WARNING "HIL: IRQ not found for HIL bus at 0x%p\n",
+			(void *)dev->hpa.start);
 		return -ENODEV;
 	}
 
@@ -315,7 +315,7 @@ static int __devinit hil_probe_chip(struct parisc_device *dev)
 	hil_irq  = dev->irq;
 	hil_dev.dev_id = dev;
 
-;
+	printk(KERN_INFO "Found HIL bus at 0x%08lx, IRQ %d\n", hil_base, hil_irq);
 
 	return hil_keyb_init();
 }
@@ -368,12 +368,12 @@ static int __init hil_init(void)
 		return -ENODEV;
 
 	if (!hwreg_present((void *)(HILBASE + HIL_DATA))) {
-;
+		printk(KERN_ERR "HIL: hardware register was not found\n");
 		return -ENODEV;
 	}
 
 	if (!request_region(HILBASE + HIL_DATA, 2, "hil")) {
-;
+		printk(KERN_ERR "HIL: IOPORT region already used\n");
 		return -EIO;
 	}
 

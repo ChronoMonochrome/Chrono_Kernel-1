@@ -465,9 +465,9 @@ start_isoc_chain(usb_fifo * fifo, int num_packets_per_urb,
 			fifo->iso[i].purb =
 			    usb_alloc_urb(num_packets_per_urb, GFP_KERNEL);
 			if (!(fifo->iso[i].purb)) {
-//				printk(KERN_INFO
-//				       "alloc urb for fifo %i failed!!!",
-;
+				printk(KERN_INFO
+				       "alloc urb for fifo %i failed!!!",
+				       fifo->fifonum);
 			}
 			fifo->iso[i].owner_fifo = (struct usb_fifo *) fifo;
 
@@ -494,8 +494,8 @@ start_isoc_chain(usb_fifo * fifo, int num_packets_per_urb,
 					    packet_size;
 				}
 			} else {
-//				printk(KERN_INFO
-;
+				printk(KERN_INFO
+				       "HFC-S USB: ISO Buffer size to small!\n");
 			}
 		}
 		fifo->bit_line = BITLINE_INF;
@@ -503,8 +503,8 @@ start_isoc_chain(usb_fifo * fifo, int num_packets_per_urb,
 		errcode = usb_submit_urb(fifo->iso[i].purb, GFP_KERNEL);
 		fifo->active = (errcode >= 0) ? 1 : 0;
 		if (errcode < 0)
-//			printk(KERN_INFO "HFC-S USB: usb_submit_urb URB nr:%d, error(%i): '%s'\n",
-;
+			printk(KERN_INFO "HFC-S USB: usb_submit_urb URB nr:%d, error(%i): '%s'\n",
+			       i, errcode, symbolic(urb_errlist, errcode));
 	}
 	return (fifo->active);
 }
@@ -663,15 +663,15 @@ tx_iso_complete(struct urb *urb)
 		}
 		errcode = usb_submit_urb(urb, GFP_ATOMIC);
 		if (errcode < 0) {
-//			printk(KERN_INFO
-//			       "HFC-S USB: error submitting ISO URB: %d\n",
-;
+			printk(KERN_INFO
+			       "HFC-S USB: error submitting ISO URB: %d\n",
+			       errcode);
 		}
 	} else {
 		if (status && !hfc->disc_flag) {
-//			printk(KERN_INFO
-//			       "HFC-S USB: tx_iso_complete: error(%i): '%s', fifonum=%d\n",
-;
+			printk(KERN_INFO
+			       "HFC-S USB: tx_iso_complete: error(%i): '%s', fifonum=%d\n",
+			       status, symbolic(urb_errlist, status), fifon);
 		}
 	}
 }
@@ -762,16 +762,16 @@ rx_iso_complete(struct urb *urb)
 			      rx_iso_complete, urb->context);
 		errcode = usb_submit_urb(urb, GFP_ATOMIC);
 		if (errcode < 0) {
-//			printk(KERN_ERR
-//			       "HFC-S USB: error submitting ISO URB: %d\n",
-;
+			printk(KERN_ERR
+			       "HFC-S USB: error submitting ISO URB: %d\n",
+			       errcode);
 		}
 	} else {
 		if (status && !hfc->disc_flag) {
-//			printk(KERN_ERR
-//			       "HFC-S USB: rx_iso_complete : "
-//			       "urb->status %d, fifonum %d\n",
-;
+			printk(KERN_ERR
+			       "HFC-S USB: rx_iso_complete : "
+			       "urb->status %d, fifonum %d\n",
+			       status, fifon);
 		}
 	}
 }
@@ -791,9 +791,9 @@ collect_rx_frame(usb_fifo * fifo, __u8 * data, int len, int finish)
 	if (!fifo->skbuff) {
 		fifo->skbuff = dev_alloc_skb(fifo->max_size + 3);
 		if (!fifo->skbuff) {
-//			printk(KERN_ERR
-//			       "HFC-S USB: cannot allocate buffer for fifo(%d)\n",
-;
+			printk(KERN_ERR
+			       "HFC-S USB: cannot allocate buffer for fifo(%d)\n",
+			       fifon);
 			return;
 		}
 	}
@@ -901,9 +901,9 @@ rx_int_complete(struct urb *urb)
 	fifo->last_urblen = urb->actual_length;
 	status = usb_submit_urb(urb, GFP_ATOMIC);
 	if (status) {
-//		printk(KERN_INFO
-//		       "HFC-S USB: %s error resubmitting URB fifo(%d)\n",
-;
+		printk(KERN_INFO
+		       "HFC-S USB: %s error resubmitting URB fifo(%d)\n",
+		       __func__, fifon);
 	}
 }
 
@@ -927,9 +927,9 @@ start_int_fifo(usb_fifo * fifo)
 	fifo->active = 1;	/* must be marked active */
 	errcode = usb_submit_urb(fifo->urb, GFP_KERNEL);
 	if (errcode) {
-//		printk(KERN_ERR
-//		       "HFC-S USB: submit URB error(start_int_info): status:%i\n",
-;
+		printk(KERN_ERR
+		       "HFC-S USB: submit URB error(start_int_info): status:%i\n",
+		       errcode);
 		fifo->active = 0;
 		fifo->skbuff = NULL;
 	}
@@ -1101,11 +1101,11 @@ hfc_usb_init(hfcusb_data * hfc)
 
 	/* check the chip id */
 	if (read_usb(hfc, HFCUSB_CHIP_ID, &b) != 1) {
-;
+		printk(KERN_INFO "HFC-USB: cannot read chip id\n");
 		return (1);
 	}
 	if (b != HFCUSB_CHIPID) {
-;
+		printk(KERN_INFO "HFC-S USB: Invalid chip id 0x%02x\n", b);
 		return (1);
 	}
 
@@ -1206,7 +1206,7 @@ hfc_usb_init(hfcusb_data * hfc)
 	hfc->protocol = 2;
 	i = hisax_register(&hfc->d_if, p_b_if, "hfc_usb", hfc->protocol);
 	if (i) {
-;
+		printk(KERN_INFO "HFC-S USB: hisax_register -> %d\n", i);
 		return i;
 	}
 
@@ -1278,9 +1278,9 @@ hfc_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
 		}
 	}
 
-//	printk(KERN_INFO
-//	       "HFC-S USB: probing interface(%d) actalt(%d) minor(%d)\n",
-;
+	printk(KERN_INFO
+	       "HFC-S USB: probing interface(%d) actalt(%d) minor(%d)\n",
+	       ifnum, iface->desc.bAlternateSetting, intf->minor);
 
 	if (vend_idx != 0xffff) {
 		/* if vendor and product ID is OK, start probing alternate settings */
@@ -1488,8 +1488,8 @@ hfc_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
 			driver_info =
 			    (hfcsusb_vdata *) hfcusb_idtab[vend_idx].
 			    driver_info;
-//			printk(KERN_INFO "HFC-S USB: detected \"%s\"\n",
-;
+			printk(KERN_INFO "HFC-S USB: detected \"%s\"\n",
+			       driver_info->vend_name);
 
 			DBG(HFCUSB_DBG_INIT,
 			    "HFC-S USB: Endpoint-Config: %s (if=%d alt=%d), E-Channel(%d)",
@@ -1509,8 +1509,8 @@ hfc_usb_probe(struct usb_interface *intf, const struct usb_device_id *id)
 			return (0);
 		}
 	} else {
-//		printk(KERN_INFO
-;
+		printk(KERN_INFO
+		       "HFC-S USB: no valid vendor found in USB descriptor\n");
 	}
 	return (-EIO);
 }
@@ -1525,7 +1525,7 @@ hfc_usb_disconnect(struct usb_interface *intf)
 	handle_led(context, LED_POWER_OFF);
 	schedule_timeout(HZ / 100);
 
-;
+	printk(KERN_INFO "HFC-S USB: device disconnect\n");
 	context->disc_flag = 1;
 	usb_set_intfdata(intf, NULL);
 
@@ -1574,7 +1574,7 @@ static void __exit
 hfc_usb_mod_exit(void)
 {
 	usb_deregister(&hfc_drv); /* release our driver */
-;
+	printk(KERN_INFO "HFC-S USB: module removed\n");
 }
 
 static int __init
@@ -1587,12 +1587,12 @@ hfc_usb_mod_init(void)
 	sscanf(hfcusb_revision,
 	       "%s %s $ %s %s %s $ ", dummy, revstr,
 	       dummy, datestr, dummy);
-//	printk(KERN_INFO
-//	       "HFC-S USB: driver module revision %s date %s loaded, (debug=%i)\n",
-;
+	printk(KERN_INFO
+	       "HFC-S USB: driver module revision %s date %s loaded, (debug=%i)\n",
+	       revstr, datestr, debug);
 	if (usb_register(&hfc_drv)) {
-//		printk(KERN_INFO
-;
+		printk(KERN_INFO
+		       "HFC-S USB: Unable to register HFC-S USB module at usb stack\n");
 		return (-1);	/* unable to register */
 	}
 	return (0);

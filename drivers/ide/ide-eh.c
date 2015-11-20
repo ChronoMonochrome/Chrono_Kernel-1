@@ -174,7 +174,7 @@ static ide_startstop_t atapi_reset_pollfunc(ide_drive_t *drive)
 	stat = tp_ops->read_status(hwif);
 
 	if (OK_STAT(stat, 0, ATA_BUSY))
-;
+		printk(KERN_INFO "%s: ATAPI reset complete\n", drive->name);
 	else {
 		if (time_before(jiffies, hwif->poll_timeout)) {
 			ide_set_handler(drive, &atapi_reset_pollfunc, HZ/20);
@@ -183,8 +183,8 @@ static ide_startstop_t atapi_reset_pollfunc(ide_drive_t *drive)
 		}
 		/* end of polling */
 		hwif->polling = 0;
-//		printk(KERN_ERR "%s: ATAPI reset timed-out, status=0x%02x\n",
-;
+		printk(KERN_ERR "%s: ATAPI reset timed-out, status=0x%02x\n",
+			drive->name, stat);
 		/* do it the old fashioned way */
 		return do_reset1(drive, 1);
 	}
@@ -203,14 +203,14 @@ static void ide_reset_report_error(ide_hwif_t *hwif, u8 err)
 
 	u8 err_master = err & 0x7f;
 
-;
+	printk(KERN_ERR "%s: reset: master: ", hwif->name);
 	if (err_master && err_master < 6)
-;
+		printk(KERN_CONT "%s", err_master_vals[err_master]);
 	else
-;
+		printk(KERN_CONT "error (0x%02x?)", err);
 	if (err & 0x80)
-;
-;
+		printk(KERN_CONT "; slave: failed");
+	printk(KERN_CONT "\n");
 }
 
 /*
@@ -229,8 +229,8 @@ static ide_startstop_t reset_pollfunc(ide_drive_t *drive)
 	if (port_ops && port_ops->reset_poll) {
 		err = port_ops->reset_poll(drive);
 		if (err) {
-//			printk(KERN_ERR "%s: host reset_poll failure for %s.\n",
-;
+			printk(KERN_ERR "%s: host reset_poll failure for %s.\n",
+				hwif->name, drive->name);
 			goto out;
 		}
 	}
@@ -243,15 +243,15 @@ static ide_startstop_t reset_pollfunc(ide_drive_t *drive)
 			/* continue polling */
 			return ide_started;
 		}
-//		printk(KERN_ERR "%s: reset timed-out, status=0x%02x\n",
-;
+		printk(KERN_ERR "%s: reset timed-out, status=0x%02x\n",
+			hwif->name, tmp);
 		drive->failures++;
 		err = -EIO;
 	} else  {
 		tmp = ide_read_error(drive);
 
 		if (tmp == 1) {
-;
+			printk(KERN_INFO "%s: reset: success\n", hwif->name);
 			drive->failures = 0;
 		} else {
 			ide_reset_report_error(hwif, tmp);

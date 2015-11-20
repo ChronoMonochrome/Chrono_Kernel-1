@@ -47,12 +47,12 @@ struct ide_acpi_hwif_link {
 /* note: adds function name and KERN_DEBUG */
 #ifdef DEBUGGING
 #define DEBPRINT(fmt, args...)	\
-//		printk(KERN_DEBUG "%s: " fmt, __func__, ## args)
-//#else
-//#define DEBPRINT(fmt, args...)	do {} while (0)
-//#endif	/* DEBUGGING */
-//
-;
+		printk(KERN_DEBUG "%s: " fmt, __func__, ## args)
+#else
+#define DEBPRINT(fmt, args...)	do {} while (0)
+#endif	/* DEBUGGING */
+
+static int ide_noacpi;
 module_param_named(noacpi, ide_noacpi, bool, 0);
 MODULE_PARM_DESC(noacpi, "disable IDE ACPI support");
 
@@ -68,7 +68,7 @@ static bool ide_noacpi_psx;
 static int no_acpi_psx(const struct dmi_system_id *id)
 {
 	ide_noacpi_psx = true;
-;
+	printk(KERN_NOTICE"%s detected - disable ACPI _PSx.\n", id->ident);
 	return 0;
 }
 
@@ -239,9 +239,9 @@ static int do_drive_get_GTF(ide_drive_t *drive,
 	status = acpi_evaluate_object(drive->acpidata->obj_handle, "_GTF",
 				      NULL, &output);
 	if (ACPI_FAILURE(status)) {
-//		printk(KERN_DEBUG
-//		       "%s: Run _GTF error: status = 0x%x\n",
-;
+		printk(KERN_DEBUG
+		       "%s: Run _GTF error: status = 0x%x\n",
+		       __func__, status);
 		goto out;
 	}
 
@@ -265,10 +265,10 @@ static int do_drive_get_GTF(ide_drive_t *drive,
 
 	if (!out_obj->buffer.length || !out_obj->buffer.pointer ||
 	    out_obj->buffer.length % REGS_PER_GTF) {
-//		printk(KERN_ERR
-//		       "%s: unexpected GTF length (%d) or addr (0x%p)\n",
-//		       __func__, out_obj->buffer.length,
-;
+		printk(KERN_ERR
+		       "%s: unexpected GTF length (%d) or addr (0x%p)\n",
+		       __func__, out_obj->buffer.length,
+		       out_obj->buffer.pointer);
 		err = -ENOENT;
 		kfree(output.pointer);
 		goto out;
@@ -327,8 +327,8 @@ static int do_drive_set_taskfiles(ide_drive_t *drive,
 
 		err = ide_no_data_taskfile(drive, &cmd);
 		if (err) {
-//			printk(KERN_ERR "%s: ide_no_data_taskfile failed: %u\n",
-;
+			printk(KERN_ERR "%s: ide_no_data_taskfile failed: %u\n",
+					__func__, err);
 			rc = err;
 		}
 	}
@@ -425,11 +425,11 @@ void ide_acpi_get_timing(ide_hwif_t *hwif)
 
 	if (!out_obj->buffer.length || !out_obj->buffer.pointer ||
 	    out_obj->buffer.length != sizeof(struct GTM_buffer)) {
-//		printk(KERN_ERR
-//			"%s: unexpected _GTM length (0x%x)[should be 0x%zx] or "
-//			"addr (0x%p)\n",
-//			__func__, out_obj->buffer.length,
-;
+		printk(KERN_ERR
+			"%s: unexpected _GTM length (0x%x)[should be 0x%zx] or "
+			"addr (0x%p)\n",
+			__func__, out_obj->buffer.length,
+			sizeof(struct GTM_buffer), out_obj->buffer.pointer);
 		kfree(output.pointer);
 		return;
 	}

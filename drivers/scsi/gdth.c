@@ -678,7 +678,7 @@ static int __init gdth_init_eisa(u16 eisa_adr,gdth_ha_str *ha)
     gdth_delay(20);
     while (inb(eisa_adr+EDOORREG) != 0xff) {
         if (--retries == 0) {
-;
+            printk("GDT-EISA: Initialization error (DEINIT failed)\n");
             return 0;
         }
         gdth_delay(1);
@@ -687,7 +687,7 @@ static int __init gdth_init_eisa(u16 eisa_adr,gdth_ha_str *ha)
     prot_ver = inb(eisa_adr+MAILBOXREG);
     outb(0xff,eisa_adr+EDOORREG);
     if (prot_ver != PROTOCOL_VERSION) {
-;
+        printk("GDT-EISA: Illegal protocol version\n");
         return 0;
     }
     ha->bmic = eisa_adr;
@@ -709,7 +709,7 @@ static int __init gdth_init_eisa(u16 eisa_adr,gdth_ha_str *ha)
         gdth_delay(20);
         while (inb(eisa_adr+EDOORREG) != 0xfe) {
             if (--retries == 0) {
-;
+                printk("GDT-EISA: Initialization error (get IRQ failed)\n");
                 return 0;
             }
             gdth_delay(1);
@@ -730,12 +730,12 @@ static int __init gdth_init_eisa(u16 eisa_adr,gdth_ha_str *ha)
             if (irq_found) {
                 ha->irq = irq[i];
                 irq[i] = 0;
-;
-//                printk("Use IRQ setting from command line (IRQ = %d)\n",
-;
+                printk("GDT-EISA: Can not detect controller IRQ,\n");
+                printk("Use IRQ setting from command line (IRQ = %d)\n",
+                       ha->irq);
             } else {
-;
-;
+                printk("GDT-EISA: Initialization error (unknown IRQ), Enable\n");
+                printk("the controller BIOS or use command line parameters\n");
                 return 0;
             }
         }
@@ -766,7 +766,7 @@ static int __init gdth_init_isa(u32 bios_adr,gdth_ha_str *ha)
 
     ha->brd = ioremap(bios_adr, sizeof(gdt2_dpram_str));
     if (ha->brd == NULL) {
-;
+        printk("GDT-ISA: Initialization error (DPMEM remap error)\n");
         return 0;
     }
     dp2_ptr = ha->brd;
@@ -774,7 +774,7 @@ static int __init gdth_init_isa(u32 bios_adr,gdth_ha_str *ha)
     /* reset interface area */
     memset_io(&dp2_ptr->u, 0, sizeof(dp2_ptr->u));
     if (readl(&dp2_ptr->u) != 0) {
-;
+        printk("GDT-ISA: Initialization error (DPMEM write error)\n");
         iounmap(ha->brd);
         return 0;
     }
@@ -809,7 +809,7 @@ static int __init gdth_init_isa(u32 bios_adr,gdth_ha_str *ha)
     gdth_delay(20);
     while (readb(&dp2_ptr->u.ic.S_Status) != 0xff) {
         if (--retries == 0) {
-;
+            printk("GDT-ISA: Initialization error (DEINIT failed)\n");
             iounmap(ha->brd);
             return 0;
         }
@@ -819,7 +819,7 @@ static int __init gdth_init_isa(u32 bios_adr,gdth_ha_str *ha)
     writeb(0, &dp2_ptr->u.ic.Status);
     writeb(0xff, &dp2_ptr->io.irqdel);
     if (prot_ver != PROTOCOL_VERSION) {
-;
+        printk("GDT-ISA: Illegal protocol version\n");
         iounmap(ha->brd);
         return 0;
     }
@@ -841,7 +841,7 @@ static int __init gdth_init_isa(u32 bios_adr,gdth_ha_str *ha)
     gdth_delay(20);
     while (readb(&dp2_ptr->u.ic.S_Status) != 0xfe) {
         if (--retries == 0) {
-;
+            printk("GDT-ISA: Initialization error\n");
             iounmap(ha->brd);
             return 0;
         }
@@ -882,21 +882,21 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         TRACE2(("init_pci() dpmem %lx irq %d\n",pcistr->dpmem,ha->irq));
         ha->brd = ioremap(pcistr->dpmem, sizeof(gdt6_dpram_str));
         if (ha->brd == NULL) {
-;
+            printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
             return 0;
         }
         /* check and reset interface area */
         dp6_ptr = ha->brd;
         writel(DPMEM_MAGIC, &dp6_ptr->u);
         if (readl(&dp6_ptr->u) != DPMEM_MAGIC) {
-//            printk("GDT-PCI: Cannot access DPMEM at 0x%lx (shadowed?)\n", 
-;
+            printk("GDT-PCI: Cannot access DPMEM at 0x%lx (shadowed?)\n", 
+                   pcistr->dpmem);
             found = FALSE;
             for (i = 0xC8000; i < 0xE8000; i += 0x4000) {
                 iounmap(ha->brd);
                 ha->brd = ioremap(i, sizeof(u16)); 
                 if (ha->brd == NULL) {
-;
+                    printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
                     return 0;
                 }
                 if (readw(ha->brd) != 0xffff) {
@@ -907,26 +907,26 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
 		pci_write_config_dword(pdev, PCI_BASE_ADDRESS_0, i);
                 ha->brd = ioremap(i, sizeof(gdt6_dpram_str)); 
                 if (ha->brd == NULL) {
-;
+                    printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
                     return 0;
                 }
                 dp6_ptr = ha->brd;
                 writel(DPMEM_MAGIC, &dp6_ptr->u);
                 if (readl(&dp6_ptr->u) == DPMEM_MAGIC) {
-;
+                    printk("GDT-PCI: Use free address at 0x%x\n", i);
                     found = TRUE;
                     break;
                 }
             }   
             if (!found) {
-;
+                printk("GDT-PCI: No free address found!\n");
                 iounmap(ha->brd);
                 return 0;
             }
         }
         memset_io(&dp6_ptr->u, 0, sizeof(dp6_ptr->u));
         if (readl(&dp6_ptr->u) != 0) {
-;
+            printk("GDT-PCI: Initialization error (DPMEM write error)\n");
             iounmap(ha->brd);
             return 0;
         }
@@ -944,7 +944,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         gdth_delay(20);
         while (readb(&dp6_ptr->u.ic.S_Status) != 0xff) {
             if (--retries == 0) {
-;
+                printk("GDT-PCI: Initialization error (DEINIT failed)\n");
                 iounmap(ha->brd);
                 return 0;
             }
@@ -954,7 +954,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         writeb(0, &dp6_ptr->u.ic.S_Status);
         writeb(0xff, &dp6_ptr->io.irqdel);
         if (prot_ver != PROTOCOL_VERSION) {
-;
+            printk("GDT-PCI: Illegal protocol version\n");
             iounmap(ha->brd);
             return 0;
         }
@@ -973,7 +973,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         gdth_delay(20);
         while (readb(&dp6_ptr->u.ic.S_Status) != 0xfe) {
             if (--retries == 0) {
-;
+                printk("GDT-PCI: Initialization error\n");
                 iounmap(ha->brd);
                 return 0;
             }
@@ -990,7 +990,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
             pcistr->dpmem,ha->irq));
         ha->brd = ioremap(pcistr->dpmem, sizeof(gdt6c_dpram_str));
         if (ha->brd == NULL) {
-;
+            printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
             iounmap(ha->brd);
             return 0;
         }
@@ -998,14 +998,14 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         dp6c_ptr = ha->brd;
         writel(DPMEM_MAGIC, &dp6c_ptr->u);
         if (readl(&dp6c_ptr->u) != DPMEM_MAGIC) {
-//            printk("GDT-PCI: Cannot access DPMEM at 0x%lx (shadowed?)\n", 
-;
+            printk("GDT-PCI: Cannot access DPMEM at 0x%lx (shadowed?)\n", 
+                   pcistr->dpmem);
             found = FALSE;
             for (i = 0xC8000; i < 0xE8000; i += 0x4000) {
                 iounmap(ha->brd);
                 ha->brd = ioremap(i, sizeof(u16)); 
                 if (ha->brd == NULL) {
-;
+                    printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
                     return 0;
                 }
                 if (readw(ha->brd) != 0xffff) {
@@ -1016,26 +1016,26 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
 		pci_write_config_dword(pdev, PCI_BASE_ADDRESS_2, i);
                 ha->brd = ioremap(i, sizeof(gdt6c_dpram_str)); 
                 if (ha->brd == NULL) {
-;
+                    printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
                     return 0;
                 }
                 dp6c_ptr = ha->brd;
                 writel(DPMEM_MAGIC, &dp6c_ptr->u);
                 if (readl(&dp6c_ptr->u) == DPMEM_MAGIC) {
-;
+                    printk("GDT-PCI: Use free address at 0x%x\n", i);
                     found = TRUE;
                     break;
                 }
             }   
             if (!found) {
-;
+                printk("GDT-PCI: No free address found!\n");
                 iounmap(ha->brd);
                 return 0;
             }
         }
         memset_io(&dp6c_ptr->u, 0, sizeof(dp6c_ptr->u));
         if (readl(&dp6c_ptr->u) != 0) {
-;
+            printk("GDT-PCI: Initialization error (DPMEM write error)\n");
             iounmap(ha->brd);
             return 0;
         }
@@ -1056,7 +1056,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         gdth_delay(20);
         while (readb(&dp6c_ptr->u.ic.S_Status) != 0xff) {
             if (--retries == 0) {
-;
+                printk("GDT-PCI: Initialization error (DEINIT failed)\n");
                 iounmap(ha->brd);
                 return 0;
             }
@@ -1065,7 +1065,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         prot_ver = (u8)readl(&dp6c_ptr->u.ic.S_Info[0]);
         writeb(0, &dp6c_ptr->u.ic.Status);
         if (prot_ver != PROTOCOL_VERSION) {
-;
+            printk("GDT-PCI: Illegal protocol version\n");
             iounmap(ha->brd);
             return 0;
         }
@@ -1086,7 +1086,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         gdth_delay(20);
         while (readb(&dp6c_ptr->u.ic.S_Status) != 0xfe) {
             if (--retries == 0) {
-;
+                printk("GDT-PCI: Initialization error\n");
                 iounmap(ha->brd);
                 return 0;
             }
@@ -1100,7 +1100,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         TRACE2(("init_pci_mpr() dpmem %lx irq %d\n",pcistr->dpmem,ha->irq));
         ha->brd = ioremap(pcistr->dpmem, sizeof(gdt6m_dpram_str));
         if (ha->brd == NULL) {
-;
+            printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
             return 0;
         }
 
@@ -1126,14 +1126,14 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         /* check and reset interface area */
         writel(DPMEM_MAGIC, &dp6m_ptr->u);
         if (readl(&dp6m_ptr->u) != DPMEM_MAGIC) {
-//            printk("GDT-PCI: Cannot access DPMEM at 0x%lx (shadowed?)\n", 
-;
+            printk("GDT-PCI: Cannot access DPMEM at 0x%lx (shadowed?)\n", 
+                   pcistr->dpmem);
             found = FALSE;
             for (i = 0xC8000; i < 0xE8000; i += 0x4000) {
                 iounmap(ha->brd);
                 ha->brd = ioremap(i, sizeof(u16)); 
                 if (ha->brd == NULL) {
-;
+                    printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
                     return 0;
                 }
                 if (readw(ha->brd) != 0xffff) {
@@ -1144,19 +1144,19 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
 		pci_write_config_dword(pdev, PCI_BASE_ADDRESS_0, i);
                 ha->brd = ioremap(i, sizeof(gdt6m_dpram_str)); 
                 if (ha->brd == NULL) {
-;
+                    printk("GDT-PCI: Initialization error (DPMEM remap error)\n");
                     return 0;
                 }
                 dp6m_ptr = ha->brd;
                 writel(DPMEM_MAGIC, &dp6m_ptr->u);
                 if (readl(&dp6m_ptr->u) == DPMEM_MAGIC) {
-;
+                    printk("GDT-PCI: Use free address at 0x%x\n", i);
                     found = TRUE;
                     break;
                 }
             }   
             if (!found) {
-;
+                printk("GDT-PCI: No free address found!\n");
                 iounmap(ha->brd);
                 return 0;
             }
@@ -1177,7 +1177,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         gdth_delay(20);
         while (readb(&dp6m_ptr->u.ic.S_Status) != 0xff) {
             if (--retries == 0) {
-;
+                printk("GDT-PCI: Initialization error (DEINIT failed)\n");
                 iounmap(ha->brd);
                 return 0;
             }
@@ -1186,7 +1186,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         prot_ver = (u8)readl(&dp6m_ptr->u.ic.S_Info[0]);
         writeb(0, &dp6m_ptr->u.ic.S_Status);
         if (prot_ver != PROTOCOL_VERSION) {
-;
+            printk("GDT-PCI: Illegal protocol version\n");
             iounmap(ha->brd);
             return 0;
         }
@@ -1205,7 +1205,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         gdth_delay(20);
         while (readb(&dp6m_ptr->u.ic.S_Status) != 0xfe) {
             if (--retries == 0) {
-;
+                printk("GDT-PCI: Initialization error\n");
                 iounmap(ha->brd);
                 return 0;
             }
@@ -1220,7 +1220,7 @@ static int __devinit gdth_init_pci(struct pci_dev *pdev, gdth_pci_str *pcistr,
         gdth_delay(20);
         while (readb(&dp6m_ptr->u.ic.S_Status) != 0xfd) {
             if (--retries == 0) {
-;
+                printk("GDT-PCI: Initialization error (DEINIT failed)\n");
                 iounmap(ha->brd);
                 return 0;
             }
@@ -1542,7 +1542,7 @@ static int gdth_internal_cmd(gdth_ha_str *ha, u8 service, u16 opcode,
         gdth_release_event(ha);
         gdth_delay(20);
         if (!gdth_wait(ha, index, INIT_TIMEOUT)) {
-;
+            printk("GDT: Initialization error (timeout service %d)\n",service);
             return 0;
         }
         if (ha->status != S_BSY || --retries == 0)
@@ -1590,8 +1590,8 @@ static int __devinit gdth_search_drives(gdth_ha_str *ha)
     if (force_dma32 || (!ok && ha->status == (u16)S_NOFUNC))
         ok = gdth_internal_cmd(ha, SCREENSERVICE, GDT_INIT, 0, 0, 0);
     if (!ok) {
-//        printk("GDT-HA %d: Initialization error screen service (code %d)\n",
-;
+        printk("GDT-HA %d: Initialization error screen service (code %d)\n",
+               ha->hanum, ha->status);
         return 0;
     }
     TRACE2(("gdth_search_drives(): SCREENSERVICE initialized\n"));
@@ -1633,8 +1633,8 @@ static int __devinit gdth_search_drives(gdth_ha_str *ha)
     if (force_dma32 || (!ok && ha->status == (u16)S_NOFUNC))
         ok = gdth_internal_cmd(ha, CACHESERVICE, GDT_INIT, LINUX_OS, 0, 0);
     if (!ok) {
-//        printk("GDT-HA %d: Initialization error cache service (code %d)\n",
-;
+        printk("GDT-HA %d: Initialization error cache service (code %d)\n",
+               ha->hanum, ha->status);
         return 0;
     }
     TRACE2(("gdth_search_drives(): CACHESERVICE initialized\n"));
@@ -1665,7 +1665,7 @@ static int __devinit gdth_search_drives(gdth_ha_str *ha)
         pmod->reserved2        = 0;            
         if (gdth_internal_cmd(ha, CACHESERVICE, GDT_IOCTL, SET_PERF_MODES,
                               INVALID_CHANNEL,sizeof(gdth_perf_modes))) {
-;
+            printk("GDT-HA %d: Interrupt coalescing activated\n", ha->hanum);
         }
     }
 #endif
@@ -1697,8 +1697,8 @@ static int __devinit gdth_search_drives(gdth_ha_str *ha)
                                    IO_CHANNEL | INVALID_CHANNEL,
                                    sizeof(gdth_getch_str))) {
                 if (bus_no == 0) {
-//                    printk("GDT-HA %d: Error detecting channel count (0x%x)\n",
-;
+                    printk("GDT-HA %d: Error detecting channel count (0x%x)\n",
+                           ha->hanum, ha->status);
                     return 0;
                 }
                 break;
@@ -1715,8 +1715,8 @@ static int __devinit gdth_search_drives(gdth_ha_str *ha)
     /* read cache configuration */
     if (!gdth_internal_cmd(ha, CACHESERVICE, GDT_IOCTL, CACHE_INFO,
                            INVALID_CHANNEL,sizeof(gdth_cinfo_str))) {
-//        printk("GDT-HA %d: Initialization error cache service (code %d)\n",
-;
+        printk("GDT-HA %d: Initialization error cache service (code %d)\n",
+               ha->hanum, ha->status);
         return 0;
     }
     ha->cpar = ((gdth_cinfo_str *)ha->pscratch)->cpar;
@@ -1844,8 +1844,8 @@ static int __devinit gdth_search_drives(gdth_ha_str *ha)
     if (force_dma32 || (!ok && ha->status == (u16)S_NOFUNC))
         ok = gdth_internal_cmd(ha, SCSIRAWSERVICE, GDT_INIT, 0, 0, 0);
     if (!ok) {
-//        printk("GDT-HA %d: Initialization error raw service (code %d)\n",
-;
+        printk("GDT-HA %d: Initialization error raw service (code %d)\n",
+               ha->hanum, ha->status);
         return 0;
     }
     TRACE2(("gdth_search_drives(): RAWSERVICE initialized\n"));
@@ -1888,8 +1888,8 @@ static int __devinit gdth_search_drives(gdth_ha_str *ha)
             if (!gdth_internal_cmd(ha, SCSIRAWSERVICE, GDT_RESERVE, 0,
                                    reserve_list[i+1], reserve_list[i+2] | 
                                    (reserve_list[i+3] << 8))) {
-//                printk("GDT-HA %d: Error raw service (RESERVE, code %d)\n",
-;
+                printk("GDT-HA %d: Error raw service (RESERVE, code %d)\n",
+                       ha->hanum, ha->status);
              }
         }
     }
@@ -1902,16 +1902,16 @@ static int __devinit gdth_search_drives(gdth_ha_str *ha)
                           CACHE_READ_OEM_STRING_RECORD,INVALID_CHANNEL,
                           sizeof(gdth_oem_str_ioctl))) {
         TRACE2(("gdth_search_drives(): CACHE_READ_OEM_STRING_RECORD OK\n"));
-//        printk("GDT-HA %d: Vendor: %s Name: %s\n",
-;
+        printk("GDT-HA %d: Vendor: %s Name: %s\n",
+               ha->hanum, oemstr->text.oem_company_name, ha->binfo.type_string);
         /* Save the Host Drive inquiry data */
         strlcpy(ha->oem_name,oemstr->text.scsi_host_drive_inquiry_vendor_id,
                 sizeof(ha->oem_name));
     } else {
         /* Old method, based on PCI ID */
         TRACE2(("gdth_search_drives(): CACHE_READ_OEM_STRING_RECORD failed\n"));
-//        printk("GDT-HA %d: Name: %s\n",
-;
+        printk("GDT-HA %d: Name: %s\n",
+               ha->hanum, ha->binfo.type_string);
         if (ha->oem_id == OEM_ID_INTEL)
             strlcpy(ha->oem_name,"Intel  ", sizeof(ha->oem_name));
         else
@@ -2245,8 +2245,8 @@ static void gdth_next(gdth_ha_str *ha)
                 TRACE2(("cache cmd %x/%x/%x/%x/%x/%x unknown\n",nscp->cmnd[0],
                         nscp->cmnd[1],nscp->cmnd[2],nscp->cmnd[3],
                         nscp->cmnd[4],nscp->cmnd[5]));
-//                printk("GDT-HA %d: Unknown SCSI command 0x%x to cache service !\n",
-;
+                printk("GDT-HA %d: Unknown SCSI command 0x%x to cache service !\n",
+                       ha->hanum, nscp->cmnd[0]);
                 nscp->result = DID_ABORT << 16;
                 if (!nscp_cmndinfo->wait_for_completion)
                     nscp_cmndinfo->wait_for_completion++;
@@ -2275,8 +2275,8 @@ static void gdth_next(gdth_ha_str *ha)
 
     if (gdth_polling && ha->cmd_cnt > 0) {
         if (!gdth_wait(ha, cmd_index, POLL_TIMEOUT))
-//            printk("GDT-HA %d: Command %d timed out !\n",
-;
+            printk("GDT-HA %d: Command %d timed out !\n",
+                   ha->hanum, cmd_index);
     }
 }
 
@@ -2305,8 +2305,8 @@ static void gdth_copy_internal_data(gdth_ha_str *ha, Scsi_Cmnd *scp,
                 cpnow = cpcount - cpsum;
             cpsum += cpnow;
             if (!sg_page(sl)) {
-//                printk("GDT-HA %d: invalid sc/gt element in gdth_copy_internal_data()\n",
-;
+                printk("GDT-HA %d: invalid sc/gt element in gdth_copy_internal_data()\n",
+                       ha->hanum);
                 return;
             }
             local_irq_save(flags);
@@ -2320,8 +2320,8 @@ static void gdth_copy_internal_data(gdth_ha_str *ha, Scsi_Cmnd *scp,
             buffer += cpnow;
         }
     } else if (count) {
-//        printk("GDT-HA %d: SCSI command with no buffers but data transfer expected!\n",
-;
+        printk("GDT-HA %d: SCSI command with no buffers but data transfer expected!\n",
+               ha->hanum);
         WARN_ON(1);
     }
 }
@@ -3200,7 +3200,7 @@ static irqreturn_t __gdth_interrupt(gdth_ha_str *ha,
             ++act_int_coal;
             if (act_int_coal > max_int_coal) {
                 max_int_coal = act_int_coal;
-;
+                printk("GDT: max_int_coal = %d\n",(u16)max_int_coal);
             }
 #endif      
             /* see if there is another status */
@@ -3249,7 +3249,7 @@ static int gdth_sync_event(gdth_ha_str *ha, int service, u8 index,
         if (msg->msg_len)
             if (!(msg->msg_answer && msg->msg_ext)) {
                 msg->msg_text[msg->msg_len] = '\0';
-;
+                printk("%s",msg->msg_text);
             }
 
         if (msg->msg_ext && !msg->msg_answer) {
@@ -3306,7 +3306,7 @@ static int gdth_sync_event(gdth_ha_str *ha, int service, u8 index,
             gdth_release_event(ha);
             return 0;
         }
-;
+        printk("\n");
 
     } else {
         b = scp->device->channel;
@@ -3621,12 +3621,12 @@ static int gdth_async_event(gdth_ha_str *ha)
             ha->cmd_cnt = 0;
             gdth_copy_command(ha);
             if (ha->type == GDT_EISA)
-;
+                printk("[EISA slot %d] ",(u16)ha->brd_phys);
             else if (ha->type == GDT_ISA)
-;
+                printk("[DPMEM 0x%4X] ",(u16)ha->brd_phys);
             else 
-//                printk("[PCI %d/%d] ",(u16)(ha->brd_phys>>8),
-;
+                printk("[PCI %d/%d] ",(u16)(ha->brd_phys>>8),
+                       (u16)((ha->brd_phys>>3)&0x1f));
             gdth_release_event(ha);
         }
 
@@ -3667,7 +3667,7 @@ static void gdth_log_event(gdth_evt_data *dvr, char *buffer)
     TRACE2(("gdth_log_event()\n"));
     if (dvr->size == 0) {
         if (buffer == NULL) {
-;
+            printk("Adapter %d: %s\n",dvr->eu.async.ionode,dvr->event_string); 
         } else {
             sprintf(buffer,"Adapter %d: %s\n",
                 dvr->eu.async.ionode,dvr->event_string); 
@@ -3697,16 +3697,16 @@ static void gdth_log_event(gdth_evt_data *dvr, char *buffer)
         }
         
         if (buffer == NULL) {
-;
-;
+            printk(&f[(int)f[0]],stack); 
+            printk("\n");
         } else {
             sprintf(buffer,&f[(int)f[0]],stack); 
         }
 
     } else {
         if (buffer == NULL) {
-//            printk("GDT HA %u, Unknown async. event service %d event no. %d\n",
-;
+            printk("GDT HA %u, Unknown async. event service %d event no. %d\n",
+                   dvr->eu.async.ionode,dvr->eu.async.service,dvr->eu.async.status);
         } else {
             sprintf(buffer,"GDT HA %u, Unknown async. event service %d event no. %d",
                     dvr->eu.async.ionode,dvr->eu.async.service,dvr->eu.async.status);
@@ -4715,18 +4715,18 @@ static int __init gdth_isa_probe_one(u32 isa_bios)
 		goto out_host_put;
 
 	/* controller found and initialized */
-//	printk("Configuring GDT-ISA HA at BIOS 0x%05X IRQ %u DRQ %u\n",
-;
+	printk("Configuring GDT-ISA HA at BIOS 0x%05X IRQ %u DRQ %u\n",
+		isa_bios, ha->irq, ha->drq);
 
 	error = request_irq(ha->irq, gdth_interrupt, IRQF_DISABLED, "gdth", ha);
 	if (error) {
-;
+		printk("GDT-ISA: Unable to allocate IRQ\n");
 		goto out_host_put;
 	}
 
 	error = request_dma(ha->drq, "gdth");
 	if (error) {
-;
+		printk("GDT-ISA: Unable to allocate DMA channel\n");
 		goto out_free_irq;
 	}
 
@@ -4777,7 +4777,7 @@ static int __init gdth_isa_probe_one(u32 isa_bios)
 
 	error = -ENODEV;
 	if (!gdth_search_drives(ha)) {
-;
+		printk("GDT-ISA: Error during device scan\n");
 		goto out_free_coal_stat;
 	}
 
@@ -4847,12 +4847,12 @@ static int __init gdth_eisa_probe_one(u16 eisa_slot)
 		goto out_host_put;
 
 	/* controller found and initialized */
-//	printk("Configuring GDT-EISA HA at Slot %d IRQ %u\n",
-;
+	printk("Configuring GDT-EISA HA at Slot %d IRQ %u\n",
+		eisa_slot >> 12, ha->irq);
 
 	error = request_irq(ha->irq, gdth_interrupt, IRQF_DISABLED, "gdth", ha);
 	if (error) {
-;
+		printk("GDT-EISA: Unable to allocate IRQ\n");
 		goto out_host_put;
 	}
 
@@ -4907,7 +4907,7 @@ static int __init gdth_eisa_probe_one(u16 eisa_slot)
 	ha->scan_mode = rescan ? 0x10 : 0;
 
 	if (!gdth_search_drives(ha)) {
-;
+		printk("GDT-EISA: Error during device scan\n");
 		error = -ENODEV;
 		goto out_free_ccb_phys;
 	}
@@ -4981,15 +4981,15 @@ static int __devinit gdth_pci_probe_one(gdth_pci_str *pcistr,
 		goto out_host_put;
 
 	/* controller found and initialized */
-//	printk("Configuring GDT-PCI HA at %d/%d IRQ %u\n",
-//		pdev->bus->number,
-//		PCI_SLOT(pdev->devfn),
-;
+	printk("Configuring GDT-PCI HA at %d/%d IRQ %u\n",
+		pdev->bus->number,
+		PCI_SLOT(pdev->devfn),
+		ha->irq);
 
 	error = request_irq(ha->irq, gdth_interrupt,
 				IRQF_DISABLED|IRQF_SHARED, "gdth", ha);
 	if (error) {
-;
+		printk("GDT-PCI: Unable to allocate IRQ\n");
 		goto out_host_put;
 	}
 
@@ -5037,7 +5037,7 @@ static int __devinit gdth_pci_probe_one(gdth_pci_str *pcistr,
 
 	error = -ENODEV;
 	if (!gdth_search_drives(ha)) {
-;
+		printk("GDT-PCI %d: Error during device scan\n", ha->hanum);
 		goto out_free_coal_stat;
 	}
 
@@ -5049,17 +5049,17 @@ static int __devinit gdth_pci_probe_one(gdth_pci_str *pcistr,
 	if (!(ha->cache_feat & ha->raw_feat & ha->screen_feat & GDT_64BIT) ||
 	    !ha->dma64_support) {
 		if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-//			printk(KERN_WARNING "GDT-PCI %d: "
-;
+			printk(KERN_WARNING "GDT-PCI %d: "
+				"Unable to set 32-bit DMA\n", ha->hanum);
 				goto out_free_coal_stat;
 		}
 	} else {
 		shp->max_cmd_len = 16;
 		if (!pci_set_dma_mask(pdev, DMA_BIT_MASK(64))) {
-;
+			printk("GDT-PCI %d: 64-bit DMA enabled\n", ha->hanum);
 		} else if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) {
-//			printk(KERN_WARNING "GDT-PCI %d: "
-;
+			printk(KERN_WARNING "GDT-PCI %d: "
+				"Unable to set 64/32-bit DMA\n", ha->hanum);
 			goto out_free_coal_stat;
 		}
 	}
@@ -5166,13 +5166,13 @@ static struct notifier_block gdth_notifier = {
 static int __init gdth_init(void)
 {
 	if (disable) {
-//		printk("GDT-HA: Controller driver disabled from"
-;
+		printk("GDT-HA: Controller driver disabled from"
+                       " command line !\n");
 		return 0;
 	}
 
-//	printk("GDT-HA: Storage RAID Controller Driver. Version: %s\n",
-;
+	printk("GDT-HA: Storage RAID Controller Driver. Version: %s\n",
+	       GDTH_VERSION_STR);
 
 	/* initializations */
 	gdth_polling = TRUE;

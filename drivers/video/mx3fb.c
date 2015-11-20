@@ -462,7 +462,7 @@ static int sdc_init_panel(struct mx3fb_data *mx3fb, enum ipu_panel panel,
 	mx3fb_write_reg(mx3fb, reg, SDC_HOR_CONF);
 
 #ifdef DEBUG
-;
+	printk(KERN_CONT " hor_conf %x,", reg);
 #endif
 
 	reg = ((uint32_t) (v_sync_width - 1) << 26) | SDC_V_SYNC_WIDTH_L |
@@ -470,7 +470,7 @@ static int sdc_init_panel(struct mx3fb_data *mx3fb, enum ipu_panel panel,
 	mx3fb_write_reg(mx3fb, reg, SDC_VER_CONF);
 
 #ifdef DEBUG
-;
+	printk(KERN_CONT " ver_conf %x\n", reg);
 #endif
 
 	mx3fb->h_start_width = h_start_width;

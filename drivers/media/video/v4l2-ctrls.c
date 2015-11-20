@@ -1205,36 +1205,36 @@ static void log_ctrl(const struct v4l2_ctrl *ctrl,
 	if (ctrl->type == V4L2_CTRL_TYPE_CTRL_CLASS)
 		return;
 
-;
+	printk(KERN_INFO "%s%s%s: ", prefix, colon, ctrl->name);
 
 	switch (ctrl->type) {
 	case V4L2_CTRL_TYPE_INTEGER:
-;
+		printk(KERN_CONT "%d", ctrl->cur.val);
 		break;
 	case V4L2_CTRL_TYPE_BOOLEAN:
-;
+		printk(KERN_CONT "%s", ctrl->cur.val ? "true" : "false");
 		break;
 	case V4L2_CTRL_TYPE_MENU:
-;
+		printk(KERN_CONT "%s", ctrl->qmenu[ctrl->cur.val]);
 		break;
 	case V4L2_CTRL_TYPE_INTEGER64:
-;
+		printk(KERN_CONT "%lld", ctrl->cur.val64);
 		break;
 	case V4L2_CTRL_TYPE_STRING:
-;
+		printk(KERN_CONT "%s", ctrl->cur.string);
 		break;
 	default:
-;
+		printk(KERN_CONT "unknown type %d", ctrl->type);
 		break;
 	}
 	if (fl_inact && fl_grabbed)
-;
+		printk(KERN_CONT " (inactive, grabbed)\n");
 	else if (fl_inact)
-;
+		printk(KERN_CONT " (inactive)\n");
 	else if (fl_grabbed)
-;
+		printk(KERN_CONT " (grabbed)\n");
 	else
-;
+		printk(KERN_CONT "\n");
 }
 
 /* Log all controls owned by the handler */

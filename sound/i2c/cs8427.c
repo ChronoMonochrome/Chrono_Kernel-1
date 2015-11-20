@@ -65,8 +65,8 @@ int snd_cs8427_reg_write(struct snd_i2c_device *device, unsigned char reg,
 	buf[0] = reg & 0x7f;
 	buf[1] = val;
 	if ((err = snd_i2c_sendbytes(device, buf, 2)) != 2) {
-//		snd_printk(KERN_ERR "unable to send bytes 0x%02x:0x%02x "
-;
+		snd_printk(KERN_ERR "unable to send bytes 0x%02x:0x%02x "
+			   "to CS8427 (%i)\n", buf[0], buf[1], err);
 		return err < 0 ? err : -EIO;
 	}
 	return 0;
@@ -80,13 +80,13 @@ static int snd_cs8427_reg_read(struct snd_i2c_device *device, unsigned char reg)
 	unsigned char buf;
 
 	if ((err = snd_i2c_sendbytes(device, &reg, 1)) != 1) {
-//		snd_printk(KERN_ERR "unable to send register 0x%x byte "
-;
+		snd_printk(KERN_ERR "unable to send register 0x%x byte "
+			   "to CS8427\n", reg);
 		return err < 0 ? err : -EIO;
 	}
 	if ((err = snd_i2c_readbytes(device, &buf, 1)) != 1) {
-//		snd_printk(KERN_ERR "unable to read register 0x%x byte "
-;
+		snd_printk(KERN_ERR "unable to read register 0x%x byte "
+			   "from CS8427\n", reg);
 		return err < 0 ? err : -EIO;
 	}
 	return buf;
@@ -219,16 +219,16 @@ int snd_cs8427_create(struct snd_i2c_bus *bus,
 	err = snd_cs8427_reg_read(device, CS8427_REG_ID_AND_VER);
 	if (err != CS8427_VER8427A) {
 		/* give second chance */
-//		snd_printk(KERN_WARNING "invalid CS8427 signature 0x%x: "
-;
+		snd_printk(KERN_WARNING "invalid CS8427 signature 0x%x: "
+			   "let me try again...\n", err);
 		err = snd_cs8427_reg_read(device, CS8427_REG_ID_AND_VER);
 	}
 	if (err != CS8427_VER8427A) {
 		snd_i2c_unlock(bus);
-//		snd_printk(KERN_ERR "unable to find CS8427 signature "
-//			   "(expected 0x%x, read 0x%x),\n",
-;
-;
+		snd_printk(KERN_ERR "unable to find CS8427 signature "
+			   "(expected 0x%x, read 0x%x),\n",
+			   CS8427_VER8427A, err);
+		snd_printk(KERN_ERR "   initialization is not completed\n");
 		return -EFAULT;
 	}
 	/* turn off run bit while making changes to configuration */
@@ -276,7 +276,7 @@ int snd_cs8427_create(struct snd_i2c_bus *bus,
 	snd_i2c_sendbytes(device, buf, 1);
 	snd_i2c_readbytes(device, buf, 127);
 	for (xx = 0; xx < 127; xx++)
-;
+		printk(KERN_DEBUG "reg[0x%x] = 0x%x\n", xx+1, buf[xx]);
 	}
 #endif
 	
@@ -379,15 +379,15 @@ static int snd_cs8427_qsubcode_get(struct snd_kcontrol *kcontrol,
 
 	snd_i2c_lock(device->bus);
 	if ((err = snd_i2c_sendbytes(device, &reg, 1)) != 1) {
-//		snd_printk(KERN_ERR "unable to send register 0x%x byte "
-;
+		snd_printk(KERN_ERR "unable to send register 0x%x byte "
+			   "to CS8427\n", reg);
 		snd_i2c_unlock(device->bus);
 		return err < 0 ? err : -EIO;
 	}
 	err = snd_i2c_readbytes(device, ucontrol->value.bytes.data, 10);
 	if (err != 10) {
-//		snd_printk(KERN_ERR "unable to read Q-subcode bytes "
-;
+		snd_printk(KERN_ERR "unable to read Q-subcode bytes "
+			   "from CS8427\n");
 		snd_i2c_unlock(device->bus);
 		return err < 0 ? err : -EIO;
 	}

@@ -437,7 +437,7 @@ static int ak4535_probe(struct snd_soc_codec *codec)
 {
 	struct ak4535_priv *ak4535 = snd_soc_codec_get_drvdata(codec);
 
-;
+	printk(KERN_INFO "AK4535 Audio Codec %s", AK4535_VERSION);
 
 	codec->control_data = ak4535->control_data;
 
@@ -525,8 +525,8 @@ static int __init ak4535_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&ak4535_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register AK4535 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register AK4535 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

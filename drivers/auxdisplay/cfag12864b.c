@@ -333,16 +333,16 @@ static int __init cfag12864b_init(void)
 
 	/* ks0108_init() must be called first */
 	if (!ks0108_isinited()) {
-//		printk(KERN_ERR CFAG12864B_NAME ": ERROR: "
-;
+		printk(KERN_ERR CFAG12864B_NAME ": ERROR: "
+			"ks0108 is not initialized\n");
 		goto none;
 	}
 	BUILD_BUG_ON(PAGE_SIZE < CFAG12864B_SIZE);
 
 	cfag12864b_buffer = (unsigned char *) get_zeroed_page(GFP_KERNEL);
 	if (cfag12864b_buffer == NULL) {
-//		printk(KERN_ERR CFAG12864B_NAME ": ERROR: "
-;
+		printk(KERN_ERR CFAG12864B_NAME ": ERROR: "
+			"can't get a free page\n");
 		ret = -ENOMEM;
 		goto none;
 	}
@@ -350,9 +350,9 @@ static int __init cfag12864b_init(void)
 	cfag12864b_cache = kmalloc(sizeof(unsigned char) *
 		CFAG12864B_SIZE, GFP_KERNEL);
 	if (cfag12864b_cache == NULL) {
-//		printk(KERN_ERR CFAG12864B_NAME ": ERROR: "
-//			"can't alloc cache buffer (%i bytes)\n",
-;
+		printk(KERN_ERR CFAG12864B_NAME ": ERROR: "
+			"can't alloc cache buffer (%i bytes)\n",
+			CFAG12864B_SIZE);
 		ret = -ENOMEM;
 		goto bufferalloced;
 	}

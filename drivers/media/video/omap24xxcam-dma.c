@@ -406,8 +406,8 @@ static void omap24xxcam_sgdma_callback(struct omap24xxcam_dma *dma, u32 csr,
 	sg_state = sgdma->sg_state + sgslot;
 	if (!sg_state->queued_sglist) {
 		spin_unlock(&sgdma->lock);
-//		printk(KERN_ERR "%s: sgdma completed when none queued!\n",
-;
+		printk(KERN_ERR "%s: sgdma completed when none queued!\n",
+		       __func__);
 		return;
 	}
 

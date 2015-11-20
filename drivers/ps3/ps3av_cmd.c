@@ -169,7 +169,7 @@ int ps3av_cmd_init(void)
 
 	res = get_status(&video_init);
 	if (res) {
-;
+		printk(KERN_ERR "PS3AV_CID_VIDEO_INIT: failed %x\n", res);
 		return res;
 	}
 
@@ -183,7 +183,7 @@ int ps3av_cmd_init(void)
 
 	res = get_status(&audio_init);
 	if (res) {
-;
+		printk(KERN_ERR "PS3AV_CID_AUDIO_INIT: failed %x\n", res);
 		return res;
 	}
 
@@ -198,7 +198,7 @@ int ps3av_cmd_init(void)
 
 	res = get_status(&av_init);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_AV_INIT: failed %x\n", res);
 
 	return res;
 }
@@ -217,7 +217,7 @@ int ps3av_cmd_fin(void)
 
 	res = get_status(&av_fin);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_AV_FIN: failed %x\n", res);
 
 	return res;
 }
@@ -245,7 +245,7 @@ int ps3av_cmd_av_video_mute(int num_of_port, u32 *port, u32 mute)
 
 	res = get_status(&av_video_mute);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_AV_VIDEO_MUTE: failed %x\n", res);
 
 	return res;
 }
@@ -266,9 +266,9 @@ int ps3av_cmd_av_video_disable_sig(u32 port)
 
 	res = get_status(&av_video_sig);
 	if (res)
-//		printk(KERN_ERR
-//		       "PS3AV_CID_AV_VIDEO_DISABLE_SIG: failed %x port:%x\n",
-;
+		printk(KERN_ERR
+		       "PS3AV_CID_AV_VIDEO_DISABLE_SIG: failed %x port:%x\n",
+		       res, port);
 
 	return res;
 }
@@ -289,8 +289,8 @@ int ps3av_cmd_av_tv_mute(u32 avport, u32 mute)
 
 	res = get_status(&tv_mute);
 	if (res)
-//		printk(KERN_ERR "PS3AV_CID_AV_TV_MUTE: failed %x port:%x\n",
-;
+		printk(KERN_ERR "PS3AV_CID_AV_TV_MUTE: failed %x port:%x\n",
+		       res, avport);
 
 	return res;
 }
@@ -311,7 +311,7 @@ int ps3av_cmd_enable_event(void)
 
 	res = get_status(&av_event);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_AV_ENABLE_EVENT: failed %x\n", res);
 
 	return res;
 }
@@ -331,7 +331,7 @@ int ps3av_cmd_av_hdmi_mode(u8 mode)
 
 	res = get_status(&hdmi_mode);
 	if (res && res != PS3AV_STATUS_UNSUPPORTED_HDMI_MODE)
-;
+		printk(KERN_ERR "PS3AV_CID_AV_HDMI_MODE: failed %x\n", res);
 
 	return res;
 }
@@ -439,7 +439,7 @@ int ps3av_cmd_video_format_black(u32 head, u32 video_fmt, u32 mute)
 
 	res = get_status(&video_format);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_VIDEO_FORMAT: failed %x\n", res);
 
 	return res;
 }
@@ -469,7 +469,7 @@ int ps3av_cmd_av_audio_mute(int num_of_port, u32 *port, u32 mute)
 
 	res = get_status(&av_audio_mute);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_AV_AUDIO_MUTE: failed %x\n", res);
 
 	return res;
 }
@@ -494,7 +494,7 @@ static u8 ps3av_cnv_mclk(u32 fs)
 		if (ps3av_cnv_mclk_table[i].fs == fs)
 			return ps3av_cnv_mclk_table[i].mclk;
 
-;
+	printk(KERN_ERR "%s failed, fs:%x\n", __func__, fs);
 	return 0;
 }
 
@@ -542,12 +542,12 @@ static void ps3av_cnv_ns(u8 *ns, u32 fs, u32 video_vid)
 		d = 4;
 		break;
 	default:
-;
+		printk(KERN_ERR "%s failed, vid:%x\n", __func__, video_vid);
 		break;
 	}
 
 	if (fs < PS3AV_CMD_AUDIO_FS_44K || fs > PS3AV_CMD_AUDIO_FS_192K)
-;
+		printk(KERN_ERR "%s failed, fs:%x\n", __func__, fs);
 	else
 		ns_val = ps3av_ns_table[PS3AV_CMD_AUDIO_FS_44K-BASE][d];
 
@@ -568,7 +568,7 @@ static u8 ps3av_cnv_enable(u32 source, const u8 *enable)
 		ret = ((enable[0] << 4) + (enable[1] << 5) + (enable[2] << 6) +
 		       (enable[3] << 7)) | 0x01;
 	} else
-;
+		printk(KERN_ERR "%s failed, source:%x\n", __func__, source);
 	return ret;
 }
 
@@ -595,8 +595,8 @@ static u8 ps3av_cnv_inputlen(u32 word_bits)
 		ret = PS3AV_CMD_AV_INPUTLEN_24;
 		break;
 	default:
-//		printk(KERN_ERR "%s failed, word_bits:%x\n", __func__,
-;
+		printk(KERN_ERR "%s failed, word_bits:%x\n", __func__,
+		       word_bits);
 		break;
 	}
 	return ret;
@@ -605,8 +605,8 @@ static u8 ps3av_cnv_inputlen(u32 word_bits)
 static u8 ps3av_cnv_layout(u32 num_of_ch)
 {
 	if (num_of_ch > PS3AV_CMD_AUDIO_NUM_OF_CH_8) {
-//		printk(KERN_ERR "%s failed, num_of_ch:%x\n", __func__,
-;
+		printk(KERN_ERR "%s failed, num_of_ch:%x\n", __func__,
+		       num_of_ch);
 		return 0;
 	}
 
@@ -803,7 +803,7 @@ int ps3av_cmd_audio_mode(struct ps3av_pkt_audio_mode *audio_mode)
 
 	res = get_status(audio_mode);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_AUDIO_MODE: failed %x\n", res);
 
 	return res;
 }
@@ -832,7 +832,7 @@ int ps3av_cmd_audio_mute(int num_of_port, u32 *port, u32 mute)
 
 	res = get_status(&audio_mute);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_AUDIO_MUTE: failed %x\n", res);
 
 	return res;
 }
@@ -855,8 +855,8 @@ int ps3av_cmd_audio_active(int active, u32 port)
 
 	res = get_status(&audio_active);
 	if (res)
-//		printk(KERN_ERR "PS3AV_CID_AUDIO_ACTIVE:%x failed %x\n", cid,
-;
+		printk(KERN_ERR "PS3AV_CID_AUDIO_ACTIVE:%x failed %x\n", cid,
+		       res);
 
 	return res;
 }
@@ -896,7 +896,7 @@ int ps3av_cmd_av_get_hw_conf(struct ps3av_pkt_av_get_hw_conf *hw_conf)
 
 	res = get_status(hw_conf);
 	if (res)
-;
+		printk(KERN_ERR "PS3AV_CID_AV_GET_HW_CONF: failed %x\n", res);
 
 	return res;
 }
@@ -918,8 +918,8 @@ int ps3av_cmd_video_get_monitor_info(struct ps3av_pkt_av_get_monitor_info *info,
 
 	res = get_status(info);
 	if (res)
-//		printk(KERN_ERR "PS3AV_CID_AV_GET_MONITOR_INFO: failed %x\n",
-;
+		printk(KERN_ERR "PS3AV_CID_AV_GET_MONITOR_INFO: failed %x\n",
+		       res);
 
 	return res;
 }

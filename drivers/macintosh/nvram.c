@@ -111,8 +111,8 @@ static struct miscdevice nvram_dev = {
 
 int __init nvram_init(void)
 {
-//	printk(KERN_INFO "Macintosh non-volatile memory driver v%s\n",
-;
+	printk(KERN_INFO "Macintosh non-volatile memory driver v%s\n",
+		NVRAM_VERSION);
 	return misc_register(&nvram_dev);
 }
 

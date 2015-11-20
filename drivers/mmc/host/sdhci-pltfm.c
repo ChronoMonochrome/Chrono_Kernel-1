@@ -156,7 +156,7 @@ err_remap:
 err_request:
 	sdhci_free_host(host);
 err:
-;
+	printk(KERN_ERR"Probing of sdhci-pltfm failed: %d\n", ret);
 	return ret;
 }
 

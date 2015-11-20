@@ -1020,9 +1020,9 @@ int ath9k_htc_resume(struct htc_target *htc_handle)
 static int __init ath9k_htc_init(void)
 {
 	if (ath9k_hif_usb_init() < 0) {
-//		printk(KERN_ERR
-//			"ath9k_htc: No USB devices found,"
-;
+		printk(KERN_ERR
+			"ath9k_htc: No USB devices found,"
+			" driver not installed.\n");
 		return -ENODEV;
 	}
 
@@ -1033,6 +1033,6 @@ module_init(ath9k_htc_init);
 static void __exit ath9k_htc_exit(void)
 {
 	ath9k_hif_usb_exit();
-;
+	printk(KERN_INFO "ath9k_htc: Driver unloaded\n");
 }
 module_exit(ath9k_htc_exit);

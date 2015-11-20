@@ -387,12 +387,12 @@ static void __init offb_init_fb(const char *name, const char *full_name,
 	if (!request_mem_region(res_start, res_size, "offb"))
 		return;
 
-//	printk(KERN_INFO
-//	       "Using unsupported %dx%d %s at %lx, depth=%d, pitch=%d\n",
-;
+	printk(KERN_INFO
+	       "Using unsupported %dx%d %s at %lx, depth=%d, pitch=%d\n",
+	       width, height, name, address, depth, pitch);
 	if (depth != 8 && depth != 15 && depth != 16 && depth != 32) {
-//		printk(KERN_ERR "%s: can't use depth = %d\n", full_name,
-;
+		printk(KERN_ERR "%s: can't use depth = %d\n", full_name,
+		       depth);
 		release_mem_region(res_start, res_size);
 		return;
 	}
@@ -504,8 +504,8 @@ static void __init offb_init_fb(const char *name, const char *full_name,
 	if (register_framebuffer(info) < 0)
 		goto out_err;
 
-//	printk(KERN_INFO "fb%d: Open Firmware frame buffer device on %s\n",
-;
+	printk(KERN_INFO "fb%d: Open Firmware frame buffer device on %s\n",
+	       info->node, full_name);
 	return;
 
 out_err:

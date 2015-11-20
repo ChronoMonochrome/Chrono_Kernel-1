@@ -1763,9 +1763,9 @@ ssh_interceptor_hook_init(struct SshLinuxHooksRec *hook)
     {
       if (hook->is_mandatory)
         {
-//          printk(KERN_ERR
-//                 "VPNClient netfilter %s hook failed to install.\n",
-;
+          printk(KERN_ERR
+                 "VPNClient netfilter %s hook failed to install.\n",
+                 hook->name);
           return FALSE;
         }
       return TRUE;

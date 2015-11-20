@@ -196,9 +196,9 @@ drm_edid_block_valid(u8 *raw_edid)
 
 bad:
 	if (raw_edid) {
-;
+		printk(KERN_ERR "Raw EDID:\n");
 		print_hex_dump_bytes(KERN_ERR, DUMP_PREFIX_NONE, raw_edid, EDID_LENGTH);
-;
+		printk(KERN_ERR "\n");
 	}
 	return 0;
 }
@@ -849,11 +849,11 @@ static struct drm_display_mode *drm_mode_detailed(struct drm_device *dev,
 		return NULL;
 
 	if (pt->misc & DRM_EDID_PT_STEREO) {
-;
+		printk(KERN_WARNING "stereo mode not supported\n");
 		return NULL;
 	}
 	if (!(pt->misc & DRM_EDID_PT_SEPARATE_SYNC)) {
-;
+		printk(KERN_WARNING "composite sync not supported\n");
 	}
 
 	/* it is incorrect if hsync/vsync width is zero */

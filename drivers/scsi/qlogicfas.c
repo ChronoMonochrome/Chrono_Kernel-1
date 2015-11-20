@@ -69,20 +69,20 @@ static struct Scsi_Host *__qlogicfas_detect(struct scsi_host_template *host,
 		goto err;
 
 	if (!request_region(qbase, 0x10, qlogicfas_name)) {
-//		printk(KERN_INFO "%s: address %#x is busy\n", qlogicfas_name,
-;
+		printk(KERN_INFO "%s: address %#x is busy\n", qlogicfas_name,
+							      qbase);
 		goto err;
 	}
 
 	if (!qlogicfas408_detect(qbase, INT_TYPE)) {
-//		printk(KERN_WARNING "%s: probe failed for %#x\n",
-//								qlogicfas_name,
-;
+		printk(KERN_WARNING "%s: probe failed for %#x\n",
+								qlogicfas_name,
+								qbase);
 		goto err_release_mem;
 	}
 
-//	printk(KERN_INFO "%s: Using preset base address of %03x,"
-;
+	printk(KERN_INFO "%s: Using preset base address of %03x,"
+			 " IRQ %d\n", qlogicfas_name, qbase, qlirq);
 
 	qltyp = qlogicfas408_get_chip_type(qbase, INT_TYPE);
 	qinitid = host->this_id;
@@ -203,9 +203,9 @@ static __init int qlogicfas_init(void)
 {
 	if (!qlogicfas_detect(&qlogicfas_driver_template)) {
 		/* no cards found */
-//		printk(KERN_INFO "%s: no cards were found, please specify "
-//				 "I/O address and IRQ using iobase= and irq= "
-;
+		printk(KERN_INFO "%s: no cards were found, please specify "
+				 "I/O address and IRQ using iobase= and irq= "
+				 "options", qlogicfas_name);
 		return -ENODEV;
 	}
 

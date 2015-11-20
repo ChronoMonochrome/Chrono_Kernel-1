@@ -108,7 +108,7 @@ static void vx2_outb(struct vx_core *chip, int offset, unsigned char val)
 {
 	outb(val, vx2_reg_addr(chip, offset));
 	/*
-;
+	printk(KERN_DEBUG "outb: %x -> %x\n", val, vx2_reg_addr(chip, offset));
 	*/
 }
 
@@ -129,7 +129,7 @@ static unsigned int vx2_inl(struct vx_core *chip, int offset)
 static void vx2_outl(struct vx_core *chip, int offset, unsigned int val)
 {
 	/*
-;
+	printk(KERN_DEBUG "outl: %x -> %x\n", val, vx2_reg_addr(chip, offset));
 	*/
 	outl(val, vx2_reg_addr(chip, offset));
 }
@@ -397,7 +397,7 @@ static int vx2_load_xilinx_binary(struct vx_core *chip, const struct firmware *x
 		i = vx_inl(chip, GPIOC);
 		if (i & 0x0100)
 			return 0;
-;
+		snd_printk(KERN_ERR "vx222: xilinx test failed after load, GPIOC=0x%x\n", i);
 		return -EINVAL;
 	}
 

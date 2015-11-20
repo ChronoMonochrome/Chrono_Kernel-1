@@ -545,41 +545,41 @@ static irqreturn_t interrupt_handler(int irq, void *dev_id)
 		case IM_ADAPTER_HW_FAILURE:
 		case IM_SOFTWARE_SEQUENCING_ERROR:
 		case IM_CMD_ERROR:
-;
-;
+			printk(KERN_ERR "IBM MCA SCSI: Fatal Subsystem ERROR!\n");
+			printk(KERN_ERR "              Last cmd=0x%x, ena=%x, len=", lastSCSI, ld(shpnt)[ldn].scb.enable);
 			if (ld(shpnt)[ldn].cmd)
-;
+				printk("%ld/%ld,", (long) (scsi_bufflen(ld(shpnt)[ldn].cmd)), (long) (ld(shpnt)[ldn].scb.sys_buf_length));
 			else
-;
+				printk("none,");
 			if (ld(shpnt)[ldn].cmd)
-;
+				printk("Blocksize=%d", ld(shpnt)[ldn].scb.u2.blk.length);
 			else
-;
-;
+				printk("Blocksize=none");
+			printk(", host=%p, ldn=0x%x\n", shpnt, ldn);
 			if (ld(shpnt)[ldn].cmd) {
-;
-;
+				printk(KERN_ERR "Blockcount=%d/%d\n", last_scsi_blockcount(shpnt)[ldn], ld(shpnt)[ldn].scb.u2.blk.count);
+				printk(KERN_ERR "Logical block=%lx/%lx\n", last_scsi_logical_block(shpnt)[ldn], ld(shpnt)[ldn].scb.u1.log_blk_adr);
 			}
-;
+			printk(KERN_ERR "Reason given: %s\n", (cmd_result == IM_ADAPTER_HW_FAILURE) ? "HARDWARE FAILURE" : (cmd_result == IM_SOFTWARE_SEQUENCING_ERROR) ? "SOFTWARE SEQUENCING ERROR" : (cmd_result == IM_CMD_ERROR) ? "COMMAND ERROR" : "UNKNOWN");
 			/* if errors appear, enter this section to give detailed info */
-;
-;
-;
-;
-;
-;
+			printk(KERN_ERR "IBM MCA SCSI: Subsystem Error-Status follows:\n");
+			printk(KERN_ERR "              Command Type................: %x\n", last_scsi_type(shpnt)[ldn]);
+			printk(KERN_ERR "              Attention Register..........: %x\n", inb(IM_ATTN_REG(shpnt)));
+			printk(KERN_ERR "              Basic Control Register......: %x\n", inb(IM_CTR_REG(shpnt)));
+			printk(KERN_ERR "              Interrupt Status Register...: %x\n", intr_reg);
+			printk(KERN_ERR "              Basic Status Register.......: %x\n", inb(IM_STAT_REG(shpnt)));
 			if ((last_scsi_type(shpnt)[ldn] == IM_SCB) || (last_scsi_type(shpnt)[ldn] == IM_LONG_SCB)) {
-;
-;
-;
-;
-;
-;
-;
-;
-;
+				printk(KERN_ERR "              SCB-Command.................: %x\n", ld(shpnt)[ldn].scb.command);
+				printk(KERN_ERR "              SCB-Enable..................: %x\n", ld(shpnt)[ldn].scb.enable);
+				printk(KERN_ERR "              SCB-logical block address...: %lx\n", ld(shpnt)[ldn].scb.u1.log_blk_adr);
+				printk(KERN_ERR "              SCB-system buffer address...: %lx\n", ld(shpnt)[ldn].scb.sys_buf_adr);
+				printk(KERN_ERR "              SCB-system buffer length....: %lx\n", ld(shpnt)[ldn].scb.sys_buf_length);
+				printk(KERN_ERR "              SCB-tsb address.............: %lx\n", ld(shpnt)[ldn].scb.tsb_adr);
+				printk(KERN_ERR "              SCB-Chain address...........: %lx\n", ld(shpnt)[ldn].scb.scb_chain_adr);
+				printk(KERN_ERR "              SCB-block count.............: %x\n", ld(shpnt)[ldn].scb.u2.blk.count);
+				printk(KERN_ERR "              SCB-block length............: %x\n", ld(shpnt)[ldn].scb.u2.blk.length);
 			}
-;
+			printk(KERN_ERR "              Send this report to the maintainer.\n");
 			panic("IBM MCA SCSI: Fatal error message from the subsystem (0x%X,0x%X)!\n", lastSCSI, cmd_result);
 			break;
 		}
@@ -631,7 +631,7 @@ static irqreturn_t interrupt_handler(int irq, void *dev_id)
 		} else if (last_scsi_command(shpnt)[ldn] == IM_ABORT_IMM_CMD) {
 			/* react on SCSI abort command */
 #ifdef IM_DEBUG_PROBE
-;
+			printk("IBM MCA SCSI: Interrupt from SCSI-abort.\n");
 #endif
 			disk_rw_in_progress = 0;
 			PS2_DISK_LED_OFF();
@@ -666,7 +666,7 @@ static irqreturn_t interrupt_handler(int irq, void *dev_id)
 	if (cmd) {
 		if ((cmd->target == TIMEOUT_PUN) && (cmd->device->lun == TIMEOUT_LUN)) {
 			spin_unlock_irqsave(shpnt->host_lock, flags);
-;
+			printk("IBM MCA SCSI: Ignoring interrupt from pun=%x, lun=%x.\n", cmd->target, cmd->device->lun);
 			return IRQ_HANDLED;
 		}
 	}
@@ -679,7 +679,7 @@ static irqreturn_t interrupt_handler(int irq, void *dev_id)
 	}
 
 #ifdef IM_DEBUG_INT
-;
+	printk("cmd=%02x ireg=%02x ds=%02x cs=%02x de=%02x ce=%02x\n", cmd->cmnd[0], intr_reg, ld(shpnt)[ldn].tsb.dev_status, ld(shpnt)[ldn].tsb.cmd_status, ld(shpnt)[ldn].tsb.dev_error, ld(shpnt)[ldn].tsb.cmd_error);
 #endif
 	/*if this is end of media read/write, may turn off PS/2 disk led */
 	if ((ld(shpnt)[ldn].device_type != TYPE_NO_LUN) && (ld(shpnt)[ldn].device_type != TYPE_NO_DEVICE)) {
@@ -700,7 +700,7 @@ static irqreturn_t interrupt_handler(int irq, void *dev_id)
 	/* write device status into cmd->result, and call done function */
 	if (lastSCSI == NO_SCSI) {	/* unexpected interrupt :-( */
 		cmd->result |= DID_BAD_INTR << 16;
-;
+		printk("IBM MCA SCSI: WARNING - Interrupt from non-pending SCSI-command!\n");
 	} else			/* things went right :-) */
 		cmd->result |= DID_OK << 16;
 	if (cmd->scsi_done)
@@ -955,7 +955,7 @@ static int immediate_reset(struct Scsi_Host *shpnt, unsigned int ldn)
 		}
 		/* if reset did not complete, just complain */
 		if (!ticks) {
-;
+			printk(KERN_ERR "IBM MCA SCSI: reset did not complete within %d seconds.\n", IM_RESET_DELAY);
 			reset_status(shpnt) = IM_RESET_FINISHED_OK;
 			/* did not work, finish */
 			return 1;
@@ -1085,15 +1085,15 @@ static int probe_bus_mode(struct Scsi_Host *shpnt)
 				ld(shpnt)[ldn].retry_flag = 0;
 		}
 #ifdef IM_DEBUG_PROBE
-;
+		printk("IBM MCA SCSI: SCSI-Cache bits: ");
 		for (ldn = 0; ldn <= MAX_LOG_DEV; ldn++) {
-;
+			printk("%d", ld(shpnt)[ldn].cache_flag);
 		}
-;
+		printk("\nIBM MCA SCSI: SCSI-Retry bits: ");
 		for (ldn = 0; ldn <= MAX_LOG_DEV; ldn++) {
-;
+			printk("%d", ld(shpnt)[ldn].retry_flag);
 		}
-;
+		printk("\n");
 #endif
 	}
 	return num_bus;
@@ -1156,39 +1156,39 @@ static void check_devices(struct Scsi_Host *shpnt, int adaptertype)
 	if (adaptertype == IBM_SCSI2_FW) {	/* F/W SCSI adapter: */
 		/* F/W adapter PUN-space extension evaluation: */
 		if (num_bus) {
-;
+			printk(KERN_INFO "IBM MCA SCSI: Separate bus mode (wide-addressing enabled)\n");
 			subsystem_maxid(shpnt) = 16;
 		} else {
-;
+			printk(KERN_INFO "IBM MCA SCSI: Combined bus mode (wide-addressing disabled)\n");
 			subsystem_maxid(shpnt) = 8;
 		}
-;
+		printk(KERN_INFO "IBM MCA SCSI: Sync.-Rate (F/W: 20, Int.: 10, Ext.: %s) MBytes/s\n", ibmrate(speedrun, adaptertype));
 	} else			/* all other IBM SCSI adapters: */
-;
+		printk(KERN_INFO "IBM MCA SCSI: Synchronous-SCSI-Transfer-Rate: %s MBytes/s\n", ibmrate(speedrun, adaptertype));
 
 	/* assign correct PUN device space */
 	max_pun = subsystem_maxid(shpnt);
 
 #ifdef IM_DEBUG_PROBE
-;
-;
+	printk("IBM MCA SCSI: Current SCSI-host index: %d\n", shpnt);
+	printk("IBM MCA SCSI: Removing default logical SCSI-device mapping.");
 #else
-;
+	printk(KERN_INFO "IBM MCA SCSI: Dev. Order: %s, Mapping (takes <2min): ", (ibm_ansi_order) ? "ANSI" : "New");
 #endif
 	for (ldn = 0; ldn < MAX_LOG_DEV; ldn++) {
 		probe_display(1);
 #ifdef IM_DEBUG_PROBE
-;
+		printk(".");
 #endif
 		immediate_assign(shpnt, 0, 0, ldn, REMOVE_LDN);	/* remove ldn (wherever) */
 	}
 	lun = 0;		/* default lun is 0 */
 #ifndef IM_DEBUG_PROBE
-;
+	printk("cleared,");
 #endif
 	/* STEP 2: */
 #ifdef IM_DEBUG_PROBE
-;
+	printk("\nIBM MCA SCSI: Scanning SCSI-devices.");
 #endif
 	for (id = 0; id < max_pun; id++)
 #ifdef CONFIG_SCSI_MULTI_LUN
@@ -1197,7 +1197,7 @@ static void check_devices(struct Scsi_Host *shpnt, int adaptertype)
 		{
 			probe_display(1);
 #ifdef IM_DEBUG_PROBE
-;
+			printk(".");
 #endif
 			if (id != subsystem_pun(shpnt)) {
 				/* if pun is not the adapter: */
@@ -1214,11 +1214,11 @@ static void check_devices(struct Scsi_Host *shpnt, int adaptertype)
 			}
 		}
 #ifndef IM_DEBUG_PROBE
-;
+	printk("scanned,");
 #endif
 	/* STEP 3: */
 #ifdef IM_DEBUG_PROBE
-;
+	printk("\nIBM MCA SCSI: Mapping SCSI-devices.");
 #endif
 	ldn = 0;
 	lun = 0;
@@ -1228,7 +1228,7 @@ static void check_devices(struct Scsi_Host *shpnt, int adaptertype)
 		for (id = 0; id < max_pun && ldn < MAX_LOG_DEV; id++) {
 			probe_display(1);
 #ifdef IM_DEBUG_PROBE
-;
+			printk(".");
 #endif
 			if (id != subsystem_pun(shpnt)) {
 				if (get_scsi(shpnt)[id][lun] != TYPE_NO_LUN && get_scsi(shpnt)[id][lun] != TYPE_NO_DEVICE) {
@@ -1238,7 +1238,7 @@ static void check_devices(struct Scsi_Host *shpnt, int adaptertype)
 					get_ldn(shpnt)[id][lun] = ldn;	/* map ldn */
 					if (device_exists(shpnt, ldn, &ld(shpnt)[ldn].block_length, &ld(shpnt)[ldn].device_type)) {
 #ifdef CONFIG_IBMMCA_SCSI_DEV_RESET
-;
+						printk("resetting device at ldn=%x ... ", ldn);
 						immediate_reset(shpnt, ldn);
 #endif
 						ldn++;
@@ -1277,29 +1277,29 @@ static void check_devices(struct Scsi_Host *shpnt, int adaptertype)
 			}
 		}
 #ifndef IM_DEBUG_PROBE
-;
+	printk("mapped.");
 #endif
-;
+	printk("\n");
 #ifdef IM_DEBUG_PROBE
 	if (ibm_ansi_order)
-;
+		printk("IBM MCA SCSI: Device order: IBM/ANSI (pun=7 is first).\n");
 	else
-;
+		printk("IBM MCA SCSI: Device order: New Industry Standard (pun=0 is first).\n");
 #endif
 
 #ifdef IM_DEBUG_PROBE
 	/* Show the physical and logical mapping during boot. */
-;
-;
-;
+	printk("IBM MCA SCSI: Determined SCSI-device-mapping:\n");
+	printk("    Physical SCSI-Device Map               Logical SCSI-Device Map\n");
+	printk("ID\\LUN  0  1  2  3  4  5  6  7       ID\\LUN  0  1  2  3  4  5  6  7\n");
 	for (id = 0; id < max_pun; id++) {
-;
+		printk("%2d     ", id);
 		for (lun = 0; lun < 8; lun++)
-;
-;
+			printk("%2s ", ti_p(get_scsi(shpnt)[id][lun]));
+		printk("      %2d     ", id);
 		for (lun = 0; lun < 8; lun++)
-;
-;
+			printk("%2s ", ti_l(get_ldn(shpnt)[id][lun]));
+		printk("\n");
 	}
 #endif
 
@@ -1315,7 +1315,7 @@ static void check_devices(struct Scsi_Host *shpnt, int adaptertype)
 
 	/* If no SCSI-devices are assigned, return 1 in order to cause message. */
 	if (ldn == 0)
-;
+		printk("IBM MCA SCSI: Warning: No SCSI-devices found/assigned!\n");
 
 	/* reset the counters for statistics on the current adapter */
 	IBM_DS(shpnt).scbs = 0;
@@ -1513,7 +1513,7 @@ static int ibmmca_probe(struct device *dev)
 	/* First of all, print the version number of the driver. This is
 	 * important to allow better user bugreports in case of already
 	 * having problems with the MCA_bus probing. */
-;
+	printk(KERN_INFO "IBM MCA SCSI: Version %s\n", IBMMCA_SCSI_DRIVER_VERSION);
 	/* The POS2-register of all PS/2 model SCSI-subsystems has the following
 	 * interpretation of bits:
 	 *                             Bit 7 - 4 : Chip Revision ID (Release)
@@ -1544,8 +1544,8 @@ static int ibmmca_probe(struct device *dev)
 	id = (pos[3] & 0xe0) >> 5; /* this is correct and represents the PUN */
 	enabled = (pos[2] &0x01);
 	if (!enabled) {
-;
-;
+		printk(KERN_WARNING "IBM MCA SCSI: WARNING - Your SCSI-subsystem is disabled!\n");
+		printk(KERN_WARNING "              SCSI-operations may not work.\n");
 	}
 
 	/* pos2 = pos3 = 0xff if there is no integrated SCSI-subsystem present, but
@@ -1569,9 +1569,9 @@ static int ibmmca_probe(struct device *dev)
 		irq = IM_IRQ;
 		port = IM_IO_PORT + ((pos[2] &0x0e) << 2);
 		if ((mca_dev->index == IBM_SCSI2_FW) && (pos[6] != 0)) {
-;
-;
-;
+			printk(KERN_ERR "IBM MCA SCSI: ERROR - Wrong POS(6)-register setting!\n");
+			printk(KERN_ERR "              Impossible to determine adapter PUN!\n");
+			printk(KERN_ERR "              Guessing adapter PUN = 7.\n");
 			id = 7;
 		} else {
 			id = (pos[3] & 0xe0) >> 5;	/* get subsystem PUN */
@@ -1583,7 +1583,7 @@ static int ibmmca_probe(struct device *dev)
 		if ((mca_dev->index == IBM_SCSI2_FW) &&
 		    (pos[4] & 0x01) && (pos[6] == 0)) {
 			/* IRQ11 is used by SCSI-2 F/W Adapter/A */
-;
+			printk(KERN_DEBUG "IBM MCA SCSI: SCSI-2 F/W adapter needs IRQ 11.\n");
 			irq = IM_IRQ_FW;
 		}
 	}
@@ -1592,22 +1592,22 @@ static int ibmmca_probe(struct device *dev)
 
 	/* give detailed information on the subsystem. This helps me
 	 * additionally during debugging and analyzing bug-reports. */
-//	printk(KERN_INFO "IBM MCA SCSI: %s found, io=0x%x, scsi id=%d,\n",
-;
+	printk(KERN_INFO "IBM MCA SCSI: %s found, io=0x%x, scsi id=%d,\n",
+	       description, port, id);
 	if (mca_dev->slot == MCA_INTEGSCSI)
-;
+		printk(KERN_INFO "              chip rev.=%d, 8K NVRAM=%s, subsystem=%s\n", ((pos[2] & 0xf0) >> 4), (pos[2] & 2) ? "locked" : "accessible", (pos[2] & 1) ? "enabled." : "disabled.");
 	else {
 		if ((pos[2] & 0xf0) == 0xf0)
-;
+			printk(KERN_DEBUG "              ROM Addr.=off,");
 		else
-;
+			printk(KERN_DEBUG "              ROM Addr.=0x%x,", ((pos[2] & 0xf0) << 13) + 0xc0000);
 
-;
+		printk(KERN_DEBUG " port-offset=0x%x, subsystem=%s\n", ((pos[2] & 0x0e) << 2), (pos[2] & 1) ? "enabled." : "disabled.");
 	}
 
 	/* check I/O region */
 	if (!request_region(port, IM_N_IO_PORT, description)) {
-;
+		printk(KERN_ERR "IBM MCA SCSI: Unable to get I/O region 0x%x-0x%x (%d ports).\n", port, port + IM_N_IO_PORT - 1, IM_N_IO_PORT);
 		goto out_fail;
 	}
 
@@ -1615,13 +1615,13 @@ static int ibmmca_probe(struct device *dev)
 	shpnt = scsi_host_alloc(&ibmmca_driver_template,
 				sizeof(struct ibmmca_hostdata));
 	if (!shpnt) {
-;
+		printk(KERN_ERR "IBM MCA SCSI: Unable to register host.\n");
 		goto out_release;
 	}
 
 	dev_set_drvdata(dev, shpnt);
 	if(request_irq(irq, interrupt_handler, IRQF_SHARED, description, dev)) {
-;
+		printk(KERN_ERR "IBM MCA SCSI: failed to request interrupt %d\n", irq);
 		goto out_free_host;
 	}
 
@@ -1637,11 +1637,11 @@ static int ibmmca_probe(struct device *dev)
 
 #ifdef IM_DEBUG_PROBE
 	ctrl = (unsigned int) (inb(IM_CTR_REG(found)));	/* get control-register status */
-;
-;
+	printk("IBM MCA SCSI: Control Register contents: %x, status: %x\n", ctrl, inb(IM_STAT_REG(found)));
+	printk("IBM MCA SCSI: This adapters' POS-registers: ");
 	for (i = 0; i < 8; i++)
-;
-;
+		printk("%x ", pos[i]);
+	printk("\n");
 #endif
 	reset_status(shpnt) = IM_RESET_NOT_IN_PROGRESS;
 
@@ -1666,7 +1666,7 @@ static int ibmmca_probe(struct device *dev)
 	*/
 	mca_device_set_claim(mca_dev, 1);
 	if (scsi_add_host(shpnt, dev)) {
-;
+		dev_printk(KERN_ERR, dev, "IBM MCA SCSI: scsi_add_host failed\n");
 		goto out_free_host;
 	}
 	scsi_scan_host(shpnt);
@@ -1736,10 +1736,10 @@ static int ibmmca_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
 					next_ldn(shpnt) = 7;
 				if (current_ldn == next_ldn(shpnt)) {	/* One circle done ? */
 					/* no non-processing ldn found */
-//					scmd_printk(KERN_WARNING, cmd,
-//	"IBM MCA SCSI: Cannot assign SCSI-device dynamically!\n"
-//	"              On ldn 7-14 SCSI-commands everywhere in progress.\n"
-;
+					scmd_printk(KERN_WARNING, cmd,
+	"IBM MCA SCSI: Cannot assign SCSI-device dynamically!\n"
+	"              On ldn 7-14 SCSI-commands everywhere in progress.\n"
+	"              Reporting DID_NO_CONNECT for device.\n");
 					cmd->result = DID_NO_CONNECT << 16;	/* return no connect */
 					if (done)
 						done(cmd);
@@ -1794,7 +1794,7 @@ static int ibmmca_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
 			local_checking_phase_flag(shpnt) = 0;
 #ifdef IM_DEBUG_PROBE
 			/* Information on syslog terminal */
-;
+			printk("IBM MCA SCSI: ldn=0x%x dynamically reassigned to (%d,%d).\n", ldn, target, cmd->device->lun);
 #endif
 			/* increase next_ldn for next dynamical assignment */
 			next_ldn(shpnt)++;
@@ -1861,13 +1861,13 @@ static int ibmmca_queuecommand_lck(Scsi_Cmnd * cmd, void (*done) (Scsi_Cmnd *))
 	/*fill scb information dependent on scsi command */
 
 #ifdef IM_DEBUG_CMD
-;
+	printk("issue scsi cmd=%02x to ldn=%d\n", scsi_cmd, ldn);
 #endif
 
 	/* for specific device-type debugging: */
 #ifdef IM_DEBUG_CMD_SPEC_DEV
 	if (ld(shpnt)[ldn].device_type == IM_DEBUG_CMD_DEVICE)
-;
+		printk("(SCSI-device-type=0x%x) issue scsi cmd=%02x to ldn=%d\n", ld(shpnt)[ldn].device_type, scsi_cmd, ldn);
 #endif
 
 	/* for possible panics store current command */
@@ -2012,7 +2012,7 @@ static int __ibmmca_abort(Scsi_Cmnd * cmd)
 	unsigned long imm_command;
 
 #ifdef IM_DEBUG_PROBE
-;
+	printk("IBM MCA SCSI: Abort subroutine called...\n");
 #endif
 
 	shpnt = cmd->device->host;
@@ -2028,7 +2028,7 @@ static int __ibmmca_abort(Scsi_Cmnd * cmd)
 		target = cmd->device->id;
 
 	/* get logical device number, and disable system interrupts */
-;
+	printk(KERN_WARNING "IBM MCA SCSI: Sending abort to device pun=%d, lun=%d.\n", target, cmd->device->lun);
 	ldn = get_ldn(shpnt)[target][cmd->device->lun];
 
 	/*if cmd for this ldn has already finished, no need to abort */
@@ -2058,7 +2058,7 @@ static int __ibmmca_abort(Scsi_Cmnd * cmd)
 	outl(imm_command, IM_CMD_REG(shpnt));
 	outb(IM_IMM_CMD | ldn, IM_ATTN_REG(shpnt));
 #ifdef IM_DEBUG_PROBE
-;
+	printk("IBM MCA SCSI: Abort queued to adapter...\n");
 #endif
 	spin_unlock_irq(shpnt->host_lock);
 	while (!cmd->SCp.Status)
@@ -2066,7 +2066,7 @@ static int __ibmmca_abort(Scsi_Cmnd * cmd)
 	spin_lock_irq(shpnt->host_lock);
 	cmd->scsi_done = saved_done;
 #ifdef IM_DEBUG_PROBE
-;
+	printk("IBM MCA SCSI: Abort returned with adapter response...\n");
 #endif
 
 	/*if abort went well, call saved done, then return success or error */
@@ -2077,7 +2077,7 @@ static int __ibmmca_abort(Scsi_Cmnd * cmd)
 			(cmd->scsi_done) (cmd);
 		ld(shpnt)[ldn].cmd = NULL;
 #ifdef IM_DEBUG_PROBE
-;
+		printk("IBM MCA SCSI: Abort finished with success.\n");
 #endif
 		return SUCCESS;
 	} else {
@@ -2086,7 +2086,7 @@ static int __ibmmca_abort(Scsi_Cmnd * cmd)
 			(cmd->scsi_done) (cmd);
 		ld(shpnt)[ldn].cmd = NULL;
 #ifdef IM_DEBUG_PROBE
-;
+		printk("IBM MCA SCSI: Abort failed.\n");
 #endif
 		return FAILED;
 	}
@@ -2117,12 +2117,12 @@ static int __ibmmca_host_reset(Scsi_Cmnd * cmd)
 	shpnt = cmd->device->host;
 
 	if (local_checking_phase_flag(shpnt)) {
-;
+		printk(KERN_WARNING "IBM MCA SCSI: unable to reset while checking devices.\n");
 		return FAILED;
 	}
 
 	/* issue reset immediate command to subsystem, and wait for interrupt */
-;
+	printk("IBM MCA SCSI: resetting all devices.\n");
 	reset_status(shpnt) = IM_RESET_IN_PROGRESS;
 	last_scsi_command(shpnt)[0xf] = IM_RESET_IMM_CMD;
 	last_scsi_type(shpnt)[0xf] = IM_IMM_CMD;
@@ -2150,7 +2150,7 @@ static int __ibmmca_host_reset(Scsi_Cmnd * cmd)
 	}
 	/* if reset did not complete, just return an error */
 	if (!ticks) {
-;
+		printk(KERN_ERR "IBM MCA SCSI: reset did not complete within %d seconds.\n", IM_RESET_DELAY);
 		reset_status(shpnt) = IM_RESET_FINISHED_FAIL;
 		return FAILED;
 	}
@@ -2168,12 +2168,12 @@ static int __ibmmca_host_reset(Scsi_Cmnd * cmd)
 
 	/* if reset failed, just return an error */
 	if (reset_status(shpnt) == IM_RESET_FINISHED_FAIL) {
-;
+		printk(KERN_ERR "IBM MCA SCSI: reset failed.\n");
 		return FAILED;
 	}
 
 	/* so reset finished ok - call outstanding done's, and return success */
-;
+	printk(KERN_INFO "IBM MCA SCSI: Reset successfully completed.\n");
 	for (i = 0; i < MAX_LOG_DEV; i++) {
 		cmd_aid = ld(shpnt)[i].cmd;
 		if (cmd_aid && cmd_aid->scsi_done) {

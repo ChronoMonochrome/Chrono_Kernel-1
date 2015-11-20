@@ -56,70 +56,70 @@
 
 #ifdef GP2A_DEBUG
 #define gp2a_dbg(_fmt, ...)	\
-//	printk(KERN_INFO "GP2A_DEBUG: " _fmt "\n", ## __VA_ARGS__)
-//#else
-//#define gp2a_dbg(_fmt, ...)
-//#endif
-//
-//#define gp2a_err(_fmt, ...)	\
-//	printk(KERN_ERR "GP2A_ERROR: " _fmt "\n", ## __VA_ARGS__)
-//
-//#define ADC_BUFFER_NUM		6
-//#define LIGHT_BUFFER_NUM	18
-//
-///* input device for proximity sensor */
-//#define USE_INPUT_DEVICE	0	/* 0 : No Use  ,  1: Use  */
-//#define INT_CLEAR		1	/* 0 = polling, 1 = interrupt */
-//
-///* Register map */
-//#define GP2A_REG_PROX		0x00
-//#define GP2A_REG_GAIN		0x01
-//#define GP2A_REG_HYS		0x02
-//#define GP2A_REG_CYCLE		0x03
-//#define GP2A_REG_OPMOD		0x04
-//#define GP2A_REG_CON		0x06
-//
-///* Useful bit values and masks */
-//#define GP2A_MSK_PROX_VO		0x01
-//#define GP2A_BIT_PROX_VO_NO_DETECTION	0x00
-//#define GP2A_BIT_PROX_VO_DETECTION	0x01
-//
-//#define GP2A_BIT_GAIN_HIGHER_MODE	0x0
-//#define GP2A_BIT_GAIN_NORMAL_MODE	0x08
-//
-//#define GP2A_BIT_CYCLE_8MS	0x04
-//#define GP2A_BIT_CYCLE_16MS	0x0C
-//#define GP2A_BIT_CYCLE_32MS	0x14
-//#define GP2A_BIT_CYCLE_64MS	0x1C
-//#define GP2A_BIT_CYCLE_128MS	0x24
-//#define GP2A_BIT_CYCLE_256MS	0x2C
-//#define GP2A_BIT_CYCLE_512MS	0x34
-//#define GP2A_BIT_CYCLE_1024MS	0x3C
-//
-//#define GP2A_BIT_OPMOD_SSD_SHUTDOWN_MODE	0x00
-//#define GP2A_BIT_OPMOD_SSD_OPERATING_MODE	0x01
-//#define GP2A_BIT_OPMOD_VCON_NORMAL_MODE		0x00
-//#define GP2A_BIT_OPMOD_VCON_INTERRUPT_MODE	0x02
-//#define GP2A_BIT_OPMOD_ASD_INEFFECTIVE		0x00
-//#define GP2A_BIT_OPMOD_ASD_EFFECTIVE		0x10
-//
-//#define GP2A_BIT_CON_OCON_ENABLE_VOUT		0x00
-//#define GP2A_BIT_CON_OCON_FORCE_VOUT_HIGH	0x18
-//#define GP2A_BIT_CON_OCON_FORCE_VOUT_LOW	0x10
-//
-///* GPADC constants from AB8500 spec */
-//#define AB8500_ADC_RESOLUTION			1023
-//#define AB8500_ADC_AUX2_VBUS_MAX		1350
-//
-//#define GP2A_LIGHT_SENSOR_TIMER_PERIOD_MS	200
-//
-//#define GP2A_PROXIMITY_POWER_ON			0x01
-//#define GP2A_LIGHT_SENSOR_POWER_ON		0x02
-//
-//#define GP2A_POWER_OFF		0
-//#define GP2A_POWER_ON		1
-//
-;
+	printk(KERN_INFO "GP2A_DEBUG: " _fmt "\n", ## __VA_ARGS__)
+#else
+#define gp2a_dbg(_fmt, ...)
+#endif
+
+#define gp2a_err(_fmt, ...)	\
+	printk(KERN_ERR "GP2A_ERROR: " _fmt "\n", ## __VA_ARGS__)
+
+#define ADC_BUFFER_NUM		6
+#define LIGHT_BUFFER_NUM	18
+
+/* input device for proximity sensor */
+#define USE_INPUT_DEVICE	0	/* 0 : No Use  ,  1: Use  */
+#define INT_CLEAR		1	/* 0 = polling, 1 = interrupt */
+
+/* Register map */
+#define GP2A_REG_PROX		0x00
+#define GP2A_REG_GAIN		0x01
+#define GP2A_REG_HYS		0x02
+#define GP2A_REG_CYCLE		0x03
+#define GP2A_REG_OPMOD		0x04
+#define GP2A_REG_CON		0x06
+
+/* Useful bit values and masks */
+#define GP2A_MSK_PROX_VO		0x01
+#define GP2A_BIT_PROX_VO_NO_DETECTION	0x00
+#define GP2A_BIT_PROX_VO_DETECTION	0x01
+
+#define GP2A_BIT_GAIN_HIGHER_MODE	0x0
+#define GP2A_BIT_GAIN_NORMAL_MODE	0x08
+
+#define GP2A_BIT_CYCLE_8MS	0x04
+#define GP2A_BIT_CYCLE_16MS	0x0C
+#define GP2A_BIT_CYCLE_32MS	0x14
+#define GP2A_BIT_CYCLE_64MS	0x1C
+#define GP2A_BIT_CYCLE_128MS	0x24
+#define GP2A_BIT_CYCLE_256MS	0x2C
+#define GP2A_BIT_CYCLE_512MS	0x34
+#define GP2A_BIT_CYCLE_1024MS	0x3C
+
+#define GP2A_BIT_OPMOD_SSD_SHUTDOWN_MODE	0x00
+#define GP2A_BIT_OPMOD_SSD_OPERATING_MODE	0x01
+#define GP2A_BIT_OPMOD_VCON_NORMAL_MODE		0x00
+#define GP2A_BIT_OPMOD_VCON_INTERRUPT_MODE	0x02
+#define GP2A_BIT_OPMOD_ASD_INEFFECTIVE		0x00
+#define GP2A_BIT_OPMOD_ASD_EFFECTIVE		0x10
+
+#define GP2A_BIT_CON_OCON_ENABLE_VOUT		0x00
+#define GP2A_BIT_CON_OCON_FORCE_VOUT_HIGH	0x18
+#define GP2A_BIT_CON_OCON_FORCE_VOUT_LOW	0x10
+
+/* GPADC constants from AB8500 spec */
+#define AB8500_ADC_RESOLUTION			1023
+#define AB8500_ADC_AUX2_VBUS_MAX		1350
+
+#define GP2A_LIGHT_SENSOR_TIMER_PERIOD_MS	200
+
+#define GP2A_PROXIMITY_POWER_ON			0x01
+#define GP2A_LIGHT_SENSOR_POWER_ON		0x02
+
+#define GP2A_POWER_OFF		0
+#define GP2A_POWER_ON		1
+
+static bool proximity_enable;
 
 #if defined(CONFIG_AB5500_GPADC)
 static const int adc_table[9] = {

@@ -79,7 +79,7 @@ static int __devinit snirm710_probe(struct platform_device *dev)
 	base = res->start;
 	hostdata = kzalloc(sizeof(*hostdata), GFP_KERNEL);
 	if (!hostdata) {
-;
+		dev_printk(KERN_ERR, dev, "Failed to allocate host data\n");
 		return -ENOMEM;
 	}
 
@@ -100,7 +100,7 @@ static int __devinit snirm710_probe(struct platform_device *dev)
 	host->base = base;
 	host->irq = platform_get_irq(dev, 0);
 	if(request_irq(host->irq, NCR_700_intr, IRQF_SHARED, "snirm710", host)) {
-;
+		printk(KERN_ERR "snirm710: request_irq failed!\n");
 		goto out_put_host;
 	}
 

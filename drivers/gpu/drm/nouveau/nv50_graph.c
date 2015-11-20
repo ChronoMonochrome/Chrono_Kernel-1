@@ -615,9 +615,9 @@ nv50_pgraph_mp_trap(struct drm_device *dev, int tpid, int display)
 			NV_INFO(dev, "PGRAPH_TRAP_MP_EXEC - "
 					"TP %d MP %d: ", tpid, i);
 			nouveau_enum_print(nv50_mp_exec_error_names, status);
-//			printk(" at %06x warp %d, opcode %08x %08x\n",
-//					pc&0xffffff, pc >> 24,
-;
+			printk(" at %06x warp %d, opcode %08x %08x\n",
+					pc&0xffffff, pc >> 24,
+					oplow, ophigh);
 		}
 		nv_wr32(dev, addr + 0x10, mp10);
 		nv_wr32(dev, addr + 0x14, 0);
@@ -820,7 +820,7 @@ nv50_pgraph_trap_handler(struct drm_device *dev, u32 display, u64 inst, u32 chid
 		if (display) {
 			NV_INFO(dev, "PGRAPH - TRAP_M2MF");
 			nouveau_bitfield_print(nv50_graph_trap_m2mf, ustatus);
-;
+			printk("\n");
 			NV_INFO(dev, "PGRAPH - TRAP_M2MF %08x %08x %08x %08x\n",
 				nv_rd32(dev, 0x406804), nv_rd32(dev, 0x406808),
 				nv_rd32(dev, 0x40680c), nv_rd32(dev, 0x406810));
@@ -841,7 +841,7 @@ nv50_pgraph_trap_handler(struct drm_device *dev, u32 display, u64 inst, u32 chid
 		if (display) {
 			NV_INFO(dev, "PGRAPH - TRAP_VFETCH");
 			nouveau_bitfield_print(nv50_graph_trap_vfetch, ustatus);
-;
+			printk("\n");
 			NV_INFO(dev, "PGRAPH - TRAP_VFETCH %08x %08x %08x %08x\n",
 				nv_rd32(dev, 0x400c00), nv_rd32(dev, 0x400c08),
 				nv_rd32(dev, 0x400c0c), nv_rd32(dev, 0x400c10));
@@ -858,7 +858,7 @@ nv50_pgraph_trap_handler(struct drm_device *dev, u32 display, u64 inst, u32 chid
 		if (display) {
 			NV_INFO(dev, "PGRAPH - TRAP_STRMOUT");
 			nouveau_bitfield_print(nv50_graph_trap_strmout, ustatus);
-;
+			printk("\n");
 			NV_INFO(dev, "PGRAPH - TRAP_STRMOUT %08x %08x %08x %08x\n",
 				nv_rd32(dev, 0x401804), nv_rd32(dev, 0x401808),
 				nv_rd32(dev, 0x40180c), nv_rd32(dev, 0x401810));
@@ -879,7 +879,7 @@ nv50_pgraph_trap_handler(struct drm_device *dev, u32 display, u64 inst, u32 chid
 		if (display) {
 			NV_INFO(dev, "PGRAPH - TRAP_CCACHE");
 			nouveau_bitfield_print(nv50_graph_trap_ccache, ustatus);
-;
+			printk("\n");
 			NV_INFO(dev, "PGRAPH - TRAP_CCACHE %08x %08x %08x %08x"
 				     " %08x %08x %08x\n",
 				nv_rd32(dev, 0x405000), nv_rd32(dev, 0x405004),
@@ -996,7 +996,7 @@ nv50_graph_isr(struct drm_device *dev)
 			u32 ecode = nv_rd32(dev, 0x400110);
 			NV_INFO(dev, "PGRAPH - DATA_ERROR ");
 			nouveau_enum_print(nv50_data_error_names, ecode);
-;
+			printk("\n");
 		}
 
 		if (stat & 0x00200000) {
@@ -1010,7 +1010,7 @@ nv50_graph_isr(struct drm_device *dev)
 		if (show) {
 			NV_INFO(dev, "PGRAPH -");
 			nouveau_bitfield_print(nv50_graph_intr, show);
-;
+			printk("\n");
 			NV_INFO(dev, "PGRAPH - ch %d (0x%010llx) subc %d "
 				     "class 0x%04x mthd 0x%04x data 0x%08x\n",
 				chid, inst, subc, class, mthd, data);

@@ -32,8 +32,8 @@
 static void driver_bound(struct device *dev)
 {
 	if (klist_node_attached(&dev->p->knode_driver)) {
-//		printk(KERN_WARNING "%s: device %s already bound\n",
-;
+		printk(KERN_WARNING "%s: device %s already bound\n",
+			__func__, kobject_name(&dev->kobj));
 		return;
 	}
 
@@ -116,8 +116,8 @@ static int really_probe(struct device *dev, struct device_driver *drv)
 
 	dev->driver = drv;
 	if (driver_sysfs_add(dev)) {
-//		printk(KERN_ERR "%s: driver_sysfs_add(%s) failed\n",
-;
+		printk(KERN_ERR "%s: driver_sysfs_add(%s) failed\n",
+			__func__, dev_name(dev));
 		goto probe_failed;
 	}
 
@@ -144,9 +144,9 @@ probe_failed:
 
 	if (ret != -ENODEV && ret != -ENXIO) {
 		/* driver matched but the probe failed */
-//		printk(KERN_WARNING
-//		       "%s: probe of %s failed with error %d\n",
-;
+		printk(KERN_WARNING
+		       "%s: probe of %s failed with error %d\n",
+		       drv->name, dev_name(dev), ret);
 	}
 	/*
 	 * Ignore errors returned by ->probe so that the next driver can try

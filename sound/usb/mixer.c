@@ -351,8 +351,8 @@ static int get_ctl_value_v2(struct usb_mixer_elem_info *cval, int request, int v
 
 	if (ret < 0) {
 error:
-//		snd_printk(KERN_ERR "cannot get ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d\n",
-;
+		snd_printk(KERN_ERR "cannot get ctl value: req = %#x, wValue = %#x, wIndex = %#x, type = %d\n",
+			   request, validx, idx, cval->val_type);
 		return ret;
 	}
 
@@ -803,16 +803,16 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
 	 */
 		if (!strcmp(kctl->id.name, "PCM Playback Volume") &&
 		    cval->min == -15616) {
-//			snd_printk(KERN_INFO
-;
+			snd_printk(KERN_INFO
+				 "set volume quirk for UDA1321/N101 chip\n");
 			cval->max = -256;
 		}
 		break;
 
 	case USB_ID(0x046d, 0x09a4):
 		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
-//			snd_printk(KERN_INFO
-;
+			snd_printk(KERN_INFO
+				"set volume quirk for QuickCam E3500\n");
 			cval->min = 6080;
 			cval->max = 8768;
 			cval->res = 192;
@@ -827,8 +827,8 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
 	 * Proboly there is some logitech magic behind this number --fishor
 	 */
 		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
-//			snd_printk(KERN_INFO
-;
+			snd_printk(KERN_INFO
+				"set resolution quirk: cval->res = 384\n");
 			cval->res = 384;
 		}
 		break;
@@ -1101,7 +1101,7 @@ static void build_feature_ctl(struct mixer_build *state, void *raw_desc,
 
 	cval = kzalloc(sizeof(*cval), GFP_KERNEL);
 	if (! cval) {
-;
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		return;
 	}
 	cval->mixer = state->mixer;
@@ -1130,7 +1130,7 @@ static void build_feature_ctl(struct mixer_build *state, void *raw_desc,
 		kctl = snd_ctl_new1(&usb_feature_unit_ctl, cval);
 
 	if (! kctl) {
-;
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		kfree(cval);
 		return;
 	}
@@ -1200,13 +1200,13 @@ static void build_feature_ctl(struct mixer_build *state, void *raw_desc,
 	 * devices. It will definitively catch all buggy Logitech devices.
 	 */
 	if (range > 384) {
-//		snd_printk(KERN_WARNING "usb_audio: Warning! Unlikely big "
-//			   "volume range (=%u), cval->res is probably wrong.",
-;
-//		snd_printk(KERN_WARNING "usb_audio: [%d] FU [%s] ch = %d, "
-//			   "val = %d/%d/%d", cval->id,
-//			   kctl->id.name, cval->channels,
-;
+		snd_printk(KERN_WARNING "usb_audio: Warning! Unlikely big "
+			   "volume range (=%u), cval->res is probably wrong.",
+			   range);
+		snd_printk(KERN_WARNING "usb_audio: [%d] FU [%s] ch = %d, "
+			   "val = %d/%d/%d", cval->id,
+			   kctl->id.name, cval->channels,
+			   cval->min, cval->max, cval->res);
 	}
 
 	snd_printdd(KERN_INFO "[%d] FU [%s] ch = %d, val = %d/%d/%d\n",
@@ -1240,9 +1240,9 @@ static int parse_audio_feature_unit(struct mixer_build *state, int unitid, void 
 		channels = (hdr->bLength - 7) / csize - 1;
 		bmaControls = hdr->bmaControls;
 		if (hdr->bLength < 7 + csize) {
-//			snd_printk(KERN_ERR "usbaudio: unit %u: "
-//				   "invalid UAC_FEATURE_UNIT descriptor\n",
-;
+			snd_printk(KERN_ERR "usbaudio: unit %u: "
+				   "invalid UAC_FEATURE_UNIT descriptor\n",
+				   unitid);
 			return -EINVAL;
 		}
 	} else {
@@ -1251,9 +1251,9 @@ static int parse_audio_feature_unit(struct mixer_build *state, int unitid, void 
 		channels = (hdr->bLength - 6) / 4 - 1;
 		bmaControls = ftr->bmaControls;
 		if (hdr->bLength < 6 + csize) {
-//			snd_printk(KERN_ERR "usbaudio: unit %u: "
-//				   "invalid UAC_FEATURE_UNIT descriptor\n",
-;
+			snd_printk(KERN_ERR "usbaudio: unit %u: "
+				   "invalid UAC_FEATURE_UNIT descriptor\n",
+				   unitid);
 			return -EINVAL;
 		}
 	}
@@ -1271,14 +1271,14 @@ static int parse_audio_feature_unit(struct mixer_build *state, int unitid, void 
 	/* master configuration quirks */
 	switch (state->chip->usb_id) {
 	case USB_ID(0x08bb, 0x2702):
-//		snd_printk(KERN_INFO
-;
+		snd_printk(KERN_INFO
+			   "usbmixer: master volume quirk for PCM2702 chip\n");
 		/* disable non-functional volume control */
 		master_bits &= ~UAC_CONTROL_BIT(UAC_FU_VOLUME);
 		break;
 	case USB_ID(0x1130, 0xf211):
-//		snd_printk(KERN_INFO
-;
+		snd_printk(KERN_INFO
+			   "usbmixer: volume control quirk for Tenx TP6911 Audio Headset\n");
 		/* disable non-functional volume control */
 		channels = 0;
 		break;
@@ -1380,7 +1380,7 @@ static void build_mixer_unit_ctl(struct mixer_build *state,
 
 	kctl = snd_ctl_new1(&usb_feature_unit_ctl, cval);
 	if (! kctl) {
-;
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		kfree(cval);
 		return;
 	}
@@ -1410,7 +1410,7 @@ static int parse_audio_mixer_unit(struct mixer_build *state, int unitid, void *r
 	int pin, ich, err;
 
 	if (desc->bLength < 11 || ! (input_pins = desc->bNrInPins) || ! (num_outs = uac_mixer_unit_bNrChannels(desc))) {
-;
+		snd_printk(KERN_ERR "invalid MIXER UNIT descriptor %d\n", unitid);
 		return -EINVAL;
 	}
 	/* no bmControls field (e.g. Maya44) -> ignore */
@@ -1614,7 +1614,7 @@ static int build_audio_procunit(struct mixer_build *state, int unitid, void *raw
 
 	if (desc->bLength < 13 || desc->bLength < 13 + num_ins ||
 	    desc->bLength < num_ins + uac_processing_unit_bControlSize(desc, state->mixer->protocol)) {
-;
+		snd_printk(KERN_ERR "invalid %s descriptor (id %d)\n", name, unitid);
 		return -EINVAL;
 	}
 
@@ -1640,7 +1640,7 @@ static int build_audio_procunit(struct mixer_build *state, int unitid, void *raw
 			continue;
 		cval = kzalloc(sizeof(*cval), GFP_KERNEL);
 		if (! cval) {
-;
+			snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 			return -ENOMEM;
 		}
 		cval->mixer = state->mixer;
@@ -1672,7 +1672,7 @@ static int build_audio_procunit(struct mixer_build *state, int unitid, void *raw
 
 		kctl = snd_ctl_new1(&mixer_procunit_ctl, cval);
 		if (! kctl) {
-;
+			snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 			kfree(cval);
 			return -ENOMEM;
 		}
@@ -1819,7 +1819,7 @@ static int parse_audio_selector_unit(struct mixer_build *state, int unitid, void
 	char **namelist;
 
 	if (!desc->bNrInPins || desc->bLength < 5 + desc->bNrInPins) {
-;
+		snd_printk(KERN_ERR "invalid SELECTOR UNIT descriptor %d\n", unitid);
 		return -EINVAL;
 	}
 
@@ -1837,7 +1837,7 @@ static int parse_audio_selector_unit(struct mixer_build *state, int unitid, void
 
 	cval = kzalloc(sizeof(*cval), GFP_KERNEL);
 	if (! cval) {
-;
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		return -ENOMEM;
 	}
 	cval->mixer = state->mixer;
@@ -1856,7 +1856,7 @@ static int parse_audio_selector_unit(struct mixer_build *state, int unitid, void
 
 	namelist = kmalloc(sizeof(char *) * desc->bNrInPins, GFP_KERNEL);
 	if (! namelist) {
-;
+		snd_printk(KERN_ERR "cannot malloc\n");
 		kfree(cval);
 		return -ENOMEM;
 	}
@@ -1866,7 +1866,7 @@ static int parse_audio_selector_unit(struct mixer_build *state, int unitid, void
 		len = 0;
 		namelist[i] = kmalloc(MAX_ITEM_NAME_LEN, GFP_KERNEL);
 		if (! namelist[i]) {
-;
+			snd_printk(KERN_ERR "cannot malloc\n");
 			while (i--)
 				kfree(namelist[i]);
 			kfree(namelist);
@@ -1883,7 +1883,7 @@ static int parse_audio_selector_unit(struct mixer_build *state, int unitid, void
 
 	kctl = snd_ctl_new1(&mixer_selectunit_ctl, cval);
 	if (! kctl) {
-;
+		snd_printk(KERN_ERR "cannot malloc kcontrol\n");
 		kfree(namelist);
 		kfree(cval);
 		return -ENOMEM;
@@ -1933,7 +1933,7 @@ static int parse_audio_unit(struct mixer_build *state, int unitid)
 
 	p1 = find_audio_control_unit(state, unitid);
 	if (!p1) {
-;
+		snd_printk(KERN_ERR "usbaudio: unit %d not found!\n", unitid);
 		return -EINVAL;
 	}
 
@@ -1961,7 +1961,7 @@ static int parse_audio_unit(struct mixer_build *state, int unitid)
 		else /* UAC_VERSION_2 */
 			return parse_audio_processing_unit(state, unitid, p1);
 	default:
-;
+		snd_printk(KERN_ERR "usbaudio: unit %u: unexpected type 0x%02x\n", unitid, p1[2]);
 		return -EINVAL;
 	}
 }
@@ -2109,8 +2109,8 @@ static void snd_usb_mixer_interrupt_v2(struct usb_mixer_interface *mixer,
 	__u8 channel = value & 0xff;
 
 	if (channel >= MAX_CHANNELS) {
-//		snd_printk(KERN_DEBUG "%s(): bogus channel number %d\n",
-;
+		snd_printk(KERN_DEBUG "%s(): bogus channel number %d\n",
+				__func__, channel);
 		return;
 	}
 
@@ -2139,8 +2139,8 @@ static void snd_usb_mixer_interrupt_v2(struct usb_mixer_interface *mixer,
 			break;
 
 		default:
-//			snd_printk(KERN_DEBUG "unknown attribute %d in interrupt\n",
-;
+			snd_printk(KERN_DEBUG "unknown attribute %d in interrupt\n",
+						attribute);
 			break;
 		} /* switch */
 	}

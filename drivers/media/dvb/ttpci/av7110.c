@@ -142,27 +142,27 @@ static void init_av7110_av(struct av7110 *av7110)
 	av7110->adac_type = DVB_ADAC_TI;
 	ret = av7110_set_volume(av7110, av7110->mixer.volume_left, av7110->mixer.volume_right);
 	if (ret < 0)
-;
+		printk("dvb-ttpci:cannot set internal volume to maximum:%d\n",ret);
 
 	ret = av7110_fw_cmd(av7110, COMTYPE_ENCODER, SetMonitorType,
 			    1, (u16) av7110->display_ar);
 	if (ret < 0)
-;
+		printk("dvb-ttpci: unable to set aspect ratio\n");
 	ret = av7110_fw_cmd(av7110, COMTYPE_ENCODER, SetPanScanType,
 			    1, av7110->display_panscan);
 	if (ret < 0)
-;
+		printk("dvb-ttpci: unable to set pan scan\n");
 
 	ret = av7110_fw_cmd(av7110, COMTYPE_ENCODER, SetWSSConfig, 2, 2, wss_cfg_4_3);
 	if (ret < 0)
-;
+		printk("dvb-ttpci: unable to configure 4:3 wss\n");
 	ret = av7110_fw_cmd(av7110, COMTYPE_ENCODER, SetWSSConfig, 2, 3, wss_cfg_16_9);
 	if (ret < 0)
-;
+		printk("dvb-ttpci: unable to configure 16:9 wss\n");
 
 	ret = av7710_set_video_mode(av7110, vidmode);
 	if (ret < 0)
-;
+		printk("dvb-ttpci:cannot set video mode:%d\n",ret);
 
 	/* handle different card types */
 	/* remaining inits according to card and frontend type */
@@ -186,24 +186,24 @@ static void init_av7110_av(struct av7110 *av7110)
 		/* done. */
 	}
 	else if (dev->pci->subsystem_vendor == 0x110a) {
-//		printk("dvb-ttpci: DVB-C w/o analog module @ card %d detected\n",
-;
+		printk("dvb-ttpci: DVB-C w/o analog module @ card %d detected\n",
+			av7110->dvb_adapter.num);
 		av7110->adac_type = DVB_ADAC_NONE;
 	}
 	else {
 		av7110->adac_type = adac;
-//		printk("dvb-ttpci: adac type set to %d @ card %d\n",
-;
+		printk("dvb-ttpci: adac type set to %d @ card %d\n",
+			av7110->adac_type, av7110->dvb_adapter.num);
 	}
 
 	if (av7110->adac_type == DVB_ADAC_NONE || av7110->adac_type == DVB_ADAC_MSP34x0) {
 		// switch DVB SCART on
 		ret = av7110_fw_cmd(av7110, COMTYPE_AUDIODAC, MainSwitch, 1, 0);
 		if (ret < 0)
-;
+			printk("dvb-ttpci:cannot switch on SCART(Main):%d\n",ret);
 		ret = av7110_fw_cmd(av7110, COMTYPE_AUDIODAC, ADSwitch, 1, 1);
 		if (ret < 0)
-;
+			printk("dvb-ttpci:cannot switch on SCART(AD):%d\n",ret);
 		if (rgb_on &&
 		    ((av7110->dev->pci->subsystem_vendor == 0x110a) ||
 		     (av7110->dev->pci->subsystem_vendor == 0x13c2)) &&
@@ -218,12 +218,12 @@ static void init_av7110_av(struct av7110 *av7110)
 
 	ret = av7110_set_volume(av7110, av7110->mixer.volume_left, av7110->mixer.volume_right);
 	if (ret < 0)
-;
+		printk("dvb-ttpci:cannot set volume :%d\n",ret);
 }
 
 static void recover_arm(struct av7110 *av7110)
 {
-;
+	dprintk(4, "%p\n",av7110);
 
 	av7110_bootarm(av7110);
 	msleep(100);
@@ -255,7 +255,7 @@ static int arm_thread(void *data)
 	u16 newloops = 0;
 	int timeout;
 
-;
+	dprintk(4, "%p\n",av7110);
 
 	for (;;) {
 		timeout = wait_event_interruptible_timeout(av7110->arm_wait,
@@ -279,8 +279,8 @@ static int arm_thread(void *data)
 		mutex_unlock(&av7110->dcomlock);
 
 		if (newloops == av7110->arm_loops || av7110->arm_errors > 3) {
-//			printk(KERN_ERR "dvb-ttpci: ARM crashed @ card %d\n",
-;
+			printk(KERN_ERR "dvb-ttpci: ARM crashed @ card %d\n",
+			       av7110->dvb_adapter.num);
 
 			recover_arm(av7110);
 
@@ -356,7 +356,7 @@ static inline void print_time(char *s)
 #ifdef DEBUG_TIMING
 	struct timeval tv;
 	do_gettimeofday(&tv);
-;
+	printk("%s: %d.%d\n", s, (int)tv.tv_sec, (int)tv.tv_usec);
 #endif
 }
 
@@ -365,9 +365,9 @@ static inline void print_time(char *s)
 static inline void start_debi_dma(struct av7110 *av7110, int dir,
 				  unsigned long addr, unsigned int len)
 {
-;
+	dprintk(8, "%c %08lx %u\n", dir == DEBI_READ ? 'R' : 'W', addr, len);
 	if (saa7146_wait_for_debi_done(av7110->dev, 0)) {
-;
+		printk(KERN_ERR "%s: saa7146_wait_for_debi_done timed out\n", __func__);
 		return;
 	}
 
@@ -389,12 +389,12 @@ static void debiirq(unsigned long cookie)
 	unsigned int xfer = 0;
 
 	print_time("debi");
-;
+	dprintk(4, "type 0x%04x\n", type);
 
 	if (type == -1) {
-//		printk("DEBI irq oops @ %ld, psr:0x%08x, ssr:0x%08x\n",
-//		       jiffies, saa7146_read(av7110->dev, PSR),
-;
+		printk("DEBI irq oops @ %ld, psr:0x%08x, ssr:0x%08x\n",
+		       jiffies, saa7146_read(av7110->dev, PSR),
+		       saa7146_read(av7110->dev, SSR));
 		goto debi_done;
 	}
 	av7110->debitype = -1;
@@ -452,7 +452,7 @@ static void debiirq(unsigned long cookie)
 	{
 		int i;
 
-;
+		printk("av7110%d: ", av7110->num);
 		printk("%02x ", *(u8 *)av7110->debi_virt);
 		printk("%02x ", *(1+(u8 *)av7110->debi_virt));
 		for (i = 2; i < av7110->debilen; i++)
@@ -460,7 +460,7 @@ static void debiirq(unsigned long cookie)
 		for (i = 2; i < av7110->debilen; i++)
 			printk("%c", chtrans(*(i+(unsigned char *)av7110->debi_virt)));
 
-;
+		printk("\n");
 	}
 #endif
 		xfer = RX_BUFF;
@@ -473,11 +473,11 @@ static void debiirq(unsigned long cookie)
 		break;
 
 	case DATA_CI_PUT:
-;
+		dprintk(4, "debi DATA_CI_PUT\n");
 	case DATA_MPEG_PLAY:
-;
+		dprintk(4, "debi DATA_MPEG_PLAY\n");
 	case DATA_BMP_LOAD:
-;
+		dprintk(4, "debi DATA_BMP_LOAD\n");
 		xfer = TX_BUFF;
 		break;
 	default:
@@ -500,12 +500,12 @@ static void gpioirq(unsigned long cookie)
 
 	if (av7110->debitype != -1)
 		/* we shouldn't get any irq while a debi xfer is running */
-//		printk("dvb-ttpci: GPIO0 irq oops @ %ld, psr:0x%08x, ssr:0x%08x\n",
-//		       jiffies, saa7146_read(av7110->dev, PSR),
-;
+		printk("dvb-ttpci: GPIO0 irq oops @ %ld, psr:0x%08x, ssr:0x%08x\n",
+		       jiffies, saa7146_read(av7110->dev, PSR),
+		       saa7146_read(av7110->dev, SSR));
 
 	if (saa7146_wait_for_debi_done(av7110->dev, 0)) {
-;
+		printk(KERN_ERR "%s: saa7146_wait_for_debi_done timed out\n", __func__);
 		BUG(); /* maybe we should try resetting the debi? */
 	}
 
@@ -520,7 +520,7 @@ static void gpioirq(unsigned long cookie)
 	len = (av7110->debilen + 3) & ~3;
 
 	print_time("gpio");
-;
+	dprintk(8, "GPIO0 irq 0x%04x %d\n", av7110->debitype, av7110->debilen);
 
 	switch (av7110->debitype & 0xff) {
 
@@ -562,9 +562,9 @@ static void gpioirq(unsigned long cookie)
 			av7110->videostate.video_format = VIDEO_FORMAT_4_3;
 		}
 
-//		dprintk(8, "GPIO0 irq: DATA_MPEG_VIDEO_EVENT: w/h/ar = %u/%u/%u\n",
-//			av7110->video_size.w, av7110->video_size.h,
-;
+		dprintk(8, "GPIO0 irq: DATA_MPEG_VIDEO_EVENT: w/h/ar = %u/%u/%u\n",
+			av7110->video_size.w, av7110->video_size.h,
+			av7110->video_size.aspect_ratio);
 
 		dvb_video_add_event(av7110, &event);
 		break;
@@ -596,7 +596,7 @@ static void gpioirq(unsigned long cookie)
 
 		iwdebi(av7110, DEBINOSWAP, TX_LEN, len, 2);
 		iwdebi(av7110, DEBINOSWAP, IRQ_STATE_EXT, len, 2);
-;
+		dprintk(8, "DMA: CI\n");
 		start_debi_dma(av7110, DEBI_WRITE, DPRAM_BASE + txbuf, len);
 		spin_unlock(&av7110->debilock);
 		wake_up(&cibuf->queue);
@@ -628,24 +628,24 @@ static void gpioirq(unsigned long cookie)
 			iwdebi(av7110, DEBINOSWAP, TX_BUFF, 0, 2);
 			break;
 		}
-;
+		dprintk(8, "GPIO0 PES_PLAY len=%04x\n", len);
 		iwdebi(av7110, DEBINOSWAP, TX_LEN, len, 2);
 		iwdebi(av7110, DEBINOSWAP, IRQ_STATE_EXT, len, 2);
-;
+		dprintk(8, "DMA: MPEG_PLAY\n");
 		start_debi_dma(av7110, DEBI_WRITE, DPRAM_BASE + txbuf, len);
 		spin_unlock(&av7110->debilock);
 		return;
 
 	case DATA_BMP_LOAD:
 		len = av7110->debilen;
-;
+		dprintk(8, "gpio DATA_BMP_LOAD len %d\n", len);
 		if (!len) {
 			av7110->bmp_state = BMP_LOADED;
 			iwdebi(av7110, DEBINOSWAP, IRQ_STATE_EXT, 0, 2);
 			iwdebi(av7110, DEBINOSWAP, TX_LEN, 0, 2);
 			iwdebi(av7110, DEBINOSWAP, TX_BUFF, 0, 2);
 			wake_up(&av7110->bmpq);
-;
+			dprintk(8, "gpio DATA_BMP_LOAD done\n");
 			break;
 		}
 		if (len > av7110->bmplen)
@@ -657,7 +657,7 @@ static void gpioirq(unsigned long cookie)
 		memcpy(av7110->debi_virt, av7110->bmpbuf+av7110->bmpp, len);
 		av7110->bmpp += len;
 		av7110->bmplen -= len;
-;
+		dprintk(8, "gpio DATA_BMP_LOAD DMA len %d\n", len);
 		start_debi_dma(av7110, DEBI_WRITE, DPRAM_BASE+txbuf, len);
 		spin_unlock(&av7110->debilock);
 		return;
@@ -675,7 +675,7 @@ static void gpioirq(unsigned long cookie)
 
 	case DATA_TS_RECORD:
 	case DATA_PES_RECORD:
-;
+		dprintk(8, "DMA: TS_REC etc.\n");
 		start_debi_dma(av7110, DEBI_READ, DPRAM_BASE+rxbuf, len);
 		spin_unlock(&av7110->debilock);
 		return;
@@ -697,8 +697,8 @@ static void gpioirq(unsigned long cookie)
 		break;
 
 	default:
-//		printk("dvb-ttpci: gpioirq unknown type=%d len=%d\n",
-;
+		printk("dvb-ttpci: gpioirq unknown type=%d len=%d\n",
+		       av7110->debitype, av7110->debilen);
 		break;
 	}
 	av7110->debitype = -1;
@@ -714,7 +714,7 @@ static int dvb_osd_ioctl(struct file *file,
 	struct dvb_device *dvbdev = file->private_data;
 	struct av7110 *av7110 = dvbdev->priv;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (cmd == OSD_SEND_CMD)
 		return av7110_osd_cmd(av7110, (osd_cmd_t *) parg);
@@ -748,7 +748,7 @@ static inline int SetPIDs(struct av7110 *av7110, u16 vpid, u16 apid, u16 ttpid,
 {
 	u16 aflags = 0;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (vpid == 0x1fff || apid == 0x1fff ||
 	    ttpid == 0x1fff || subpid == 0x1fff || pcrpid == 0x1fff) {
@@ -770,7 +770,7 @@ int ChangePIDs(struct av7110 *av7110, u16 vpid, u16 apid, u16 ttpid,
 		u16 subpid, u16 pcrpid)
 {
 	int ret = 0;
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (mutex_lock_interruptible(&av7110->pid_mutex))
 		return -ERESTARTSYS;
@@ -810,7 +810,7 @@ static int StartHWFilter(struct dvb_demux_filter *dvbdmxfilter)
 //	u16 mode = 0x0320;
 	u16 mode = 0xb96a;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (av7110->full_ts)
 		return 0;
@@ -837,10 +837,10 @@ static int StartHWFilter(struct dvb_demux_filter *dvbdmxfilter)
 
 	ret = av7110_fw_request(av7110, buf, 20, &handle, 1);
 	if (ret != 0 || handle >= 32) {
-//		printk("dvb-ttpci: %s error  buf %04x %04x %04x %04x  "
-//				"ret %d  handle %04x\n",
-//				__func__, buf[0], buf[1], buf[2], buf[3],
-;
+		printk("dvb-ttpci: %s error  buf %04x %04x %04x %04x  "
+				"ret %d  handle %04x\n",
+				__func__, buf[0], buf[1], buf[2], buf[3],
+				ret, handle);
 		dvbdmxfilter->hw_handle = 0xffff;
 		if (!ret)
 			ret = -1;
@@ -861,15 +861,15 @@ static int StopHWFilter(struct dvb_demux_filter *dvbdmxfilter)
 	int ret;
 	u16 handle;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (av7110->full_ts)
 		return 0;
 
 	handle = dvbdmxfilter->hw_handle;
 	if (handle >= 32) {
-//		printk("%s tried to stop invalid filter %04x, filter type = %x\n",
-;
+		printk("%s tried to stop invalid filter %04x, filter type = %x\n",
+				__func__, handle, dvbdmxfilter->type);
 		return -EINVAL;
 	}
 
@@ -880,10 +880,10 @@ static int StopHWFilter(struct dvb_demux_filter *dvbdmxfilter)
 	buf[2] = handle;
 	ret = av7110_fw_request(av7110, buf, 3, answ, 2);
 	if (ret != 0 || answ[1] != handle) {
-//		printk("dvb-ttpci: %s error  cmd %04x %04x %04x  ret %x  "
-//				"resp %04x %04x  pid %d\n",
-//				__func__, buf[0], buf[1], buf[2], ret,
-;
+		printk("dvb-ttpci: %s error  cmd %04x %04x %04x  ret %x  "
+				"resp %04x %04x  pid %d\n",
+				__func__, buf[0], buf[1], buf[2], ret,
+				answ[0], answ[1], dvbdmxfilter->feed->pid);
 		if (!ret)
 			ret = -1;
 	}
@@ -899,7 +899,7 @@ static int dvb_feed_start_pid(struct dvb_demux_feed *dvbdmxfeed)
 	int i;
 	int ret = 0;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	npids[0] = npids[1] = npids[2] = npids[3] = npids[4] = 0xffff;
 	i = dvbdmxfeed->pes_type;
@@ -943,7 +943,7 @@ static int dvb_feed_stop_pid(struct dvb_demux_feed *dvbdmxfeed)
 
 	int ret = 0;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (dvbdmxfeed->pes_type <= 1) {
 		ret = av7110_av_stop(av7110, dvbdmxfeed->pes_type ?  RP_VIDEO : RP_AUDIO);
@@ -981,7 +981,7 @@ static int av7110_start_feed(struct dvb_demux_feed *feed)
 	struct av7110 *av7110 = demux->priv;
 	int ret = 0;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (!demux->dmx.frontend)
 		return -EINVAL;
@@ -1048,7 +1048,7 @@ static int av7110_stop_feed(struct dvb_demux_feed *feed)
 	struct dvb_demux *demux = feed->demux;
 	struct av7110 *av7110 = demux->priv;
 	int i, rc, ret = 0;
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (feed->type == DMX_TYPE_TS) {
 		if (feed->ts_type & TS_DECODER) {
@@ -1099,7 +1099,7 @@ static void restart_feeds(struct av7110 *av7110)
 	int feeding;
 	int i, j;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	mode = av7110->playing;
 	av7110->playing = 0;
@@ -1145,18 +1145,18 @@ static int dvb_get_stc(struct dmx_demux *demux, unsigned int num,
 	BUG_ON(!dvbdemux);
 	av7110 = dvbdemux->priv;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (num != 0)
 		return -EINVAL;
 
 	ret = av7110_fw_request(av7110, &tag, 0, fwstc, 4);
 	if (ret) {
-;
+		printk(KERN_ERR "%s: av7110_fw_request error\n", __func__);
 		return ret;
 	}
-//	dprintk(2, "fwstc = %04hx %04hx %04hx %04hx\n",
-;
+	dprintk(2, "fwstc = %04hx %04hx %04hx %04hx\n",
+		fwstc[0], fwstc[1], fwstc[2], fwstc[3]);
 
 	*stc =	(((uint64_t) ((fwstc[3] & 0x8000) >> 15)) << 32) |
 		(((uint64_t)  fwstc[1]) << 16) | ((uint64_t) fwstc[0]);
@@ -1208,7 +1208,7 @@ static int av7110_diseqc_send_burst(struct dvb_frontend* fe,
 /* simplified code from budget-core.c */
 static int stop_ts_capture(struct av7110 *budget)
 {
-;
+	dprintk(2, "budget: %p\n", budget);
 
 	if (--budget->feeding1)
 		return budget->feeding1;
@@ -1220,7 +1220,7 @@ static int stop_ts_capture(struct av7110 *budget)
 
 static int start_ts_capture(struct av7110 *budget)
 {
-;
+	dprintk(2, "budget: %p\n", budget);
 
 	if (budget->feeding1)
 		return ++budget->feeding1;
@@ -1238,7 +1238,7 @@ static int budget_start_feed(struct dvb_demux_feed *feed)
 	struct av7110 *budget = demux->priv;
 	int status;
 
-;
+	dprintk(2, "av7110: %p\n", budget);
 
 	spin_lock(&budget->feedlock1);
 	feed->pusi_seen = 0; /* have a clean section start */
@@ -1253,7 +1253,7 @@ static int budget_stop_feed(struct dvb_demux_feed *feed)
 	struct av7110 *budget = demux->priv;
 	int status;
 
-;
+	dprintk(2, "budget: %p\n", budget);
 
 	spin_lock(&budget->feedlock1);
 	status = stop_ts_capture(budget);
@@ -1285,9 +1285,9 @@ static void vpeirq(unsigned long cookie)
 
 #if 0
 	/* track rps1 activity */
-//	printk("vpeirq: %02x Event Counter 1 0x%04x\n",
-//	       mem[olddma],
-;
+	printk("vpeirq: %02x Event Counter 1 0x%04x\n",
+	       mem[olddma],
+	       saa7146_read(budget->dev, EC1R) & 0x3fff);
 #endif
 
 	if (newdma > olddma)
@@ -1306,7 +1306,7 @@ static int av7110_register(struct av7110 *av7110)
 	struct dvb_demux *dvbdemux = &av7110->demux;
 	struct dvb_demux *dvbdemux1 = &av7110->demux1;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (av7110->registered)
 		return -1;
@@ -1388,7 +1388,7 @@ static int av7110_register(struct av7110 *av7110)
 		dvb_dmxdev_init(&av7110->dmxdev1, &av7110->dvb_adapter);
 
 		dvb_net_init(&av7110->dvb_adapter, &av7110->dvb_net1, &dvbdemux1->dmx);
-;
+		printk("dvb-ttpci: additional demux1 for budget-patch registered\n");
 	}
 	return 0;
 }
@@ -1399,7 +1399,7 @@ static void dvb_unregister(struct av7110 *av7110)
 	struct dvb_demux *dvbdemux = &av7110->demux;
 	struct dvb_demux *dvbdemux1 = &av7110->demux1;
 
-;
+	dprintk(4, "%p\n", av7110);
 
 	if (!av7110->registered)
 		return;
@@ -1477,7 +1477,7 @@ static int check_firmware(struct av7110* av7110)
 	ptr = av7110->bin_fw;
 	if (ptr[0] != 'A' || ptr[1] != 'V' ||
 	    ptr[2] != 'F' || ptr[3] != 'W') {
-;
+		printk("dvb-ttpci: this is not an av7110 firmware\n");
 		return -EINVAL;
 	}
 	ptr += 4;
@@ -1488,11 +1488,11 @@ static int check_firmware(struct av7110* av7110)
 	len = get_unaligned_be32(ptr);
 	ptr += 4;
 	if (len >= 512) {
-;
+		printk("dvb-ttpci: dpram file is way too big.\n");
 		return -EINVAL;
 	}
 	if (crc != crc32_le(0, ptr, len)) {
-;
+		printk("dvb-ttpci: crc32 of dpram file does not match.\n");
 		return -EINVAL;
 	}
 	av7110->bin_dpram = ptr;
@@ -1507,11 +1507,11 @@ static int check_firmware(struct av7110* av7110)
 
 	if (len <= 200000 || len >= 300000 ||
 	    len > ((av7110->bin_fw + av7110->size_fw) - ptr)) {
-;
+		printk("dvb-ttpci: root file has strange size (%d). aborting.\n", len);
 		return -EINVAL;
 	}
 	if( crc != crc32_le(0, ptr, len)) {
-;
+		printk("dvb-ttpci: crc32 of root file does not match.\n");
 		return -EINVAL;
 	}
 	av7110->bin_root = ptr;
@@ -1533,20 +1533,20 @@ static int get_firmware(struct av7110* av7110)
 	ret = request_firmware(&fw, "dvb-ttpci-01.fw", &av7110->dev->pci->dev);
 	if (ret) {
 		if (ret == -ENOENT) {
-//			printk(KERN_ERR "dvb-ttpci: could not load firmware,"
-;
-//			printk(KERN_ERR "dvb-ttpci: usually this should be in "
-;
-//			printk(KERN_ERR "dvb-ttpci: and can be downloaded from"
-;
+			printk(KERN_ERR "dvb-ttpci: could not load firmware,"
+			       " file not found: dvb-ttpci-01.fw\n");
+			printk(KERN_ERR "dvb-ttpci: usually this should be in "
+			       "/usr/lib/hotplug/firmware or /lib/firmware\n");
+			printk(KERN_ERR "dvb-ttpci: and can be downloaded from"
+			       " http://www.linuxtv.org/download/dvb/firmware/\n");
 		} else
-//			printk(KERN_ERR "dvb-ttpci: cannot request firmware"
-;
+			printk(KERN_ERR "dvb-ttpci: cannot request firmware"
+			       " (error %i)\n", ret);
 		return -EINVAL;
 	}
 
 	if (fw->size <= 200000) {
-;
+		printk("dvb-ttpci: this firmware is way too small.\n");
 		release_firmware(fw);
 		return -EINVAL;
 	}
@@ -1554,7 +1554,7 @@ static int get_firmware(struct av7110* av7110)
 	/* check if the firmware is available */
 	av7110->bin_fw = vmalloc(fw->size);
 	if (NULL == av7110->bin_fw) {
-;
+		dprintk(1, "out of memory\n");
 		release_firmware(fw);
 		return -ENOMEM;
 	}
@@ -1858,7 +1858,7 @@ static int nexusca_stv0297_tuner_set_params(struct dvb_frontend* fe, struct dvb_
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);
 	if (i2c_transfer(&av7110->i2c_adap, &msg, 1) != 1) {
-;
+		printk("nexusca: pll transfer failed!\n");
 		return -EIO;
 	}
 
@@ -2246,7 +2246,7 @@ static int frontend_init(struct av7110 *av7110)
 				av7110->fe->tuner_priv = &av7110->i2c_adap;
 
 				if (dvb_attach(lnbp21_attach, av7110->fe, &av7110->i2c_adap, 0, 0) == NULL) {
-;
+					printk("dvb-ttpci: LNBP21 not found!\n");
 					if (av7110->fe->ops.release)
 						av7110->fe->ops.release(av7110->fe);
 					av7110->fe = NULL;
@@ -2262,11 +2262,11 @@ static int frontend_init(struct av7110 *av7110)
 	if (!av7110->fe) {
 		/* FIXME: propagate the failure code from the lower layers */
 		ret = -ENOMEM;
-//		printk("dvb-ttpci: A frontend driver was not found for device [%04x:%04x] subsystem [%04x:%04x]\n",
-//		       av7110->dev->pci->vendor,
-//		       av7110->dev->pci->device,
-//		       av7110->dev->pci->subsystem_vendor,
-;
+		printk("dvb-ttpci: A frontend driver was not found for device [%04x:%04x] subsystem [%04x:%04x]\n",
+		       av7110->dev->pci->vendor,
+		       av7110->dev->pci->device,
+		       av7110->dev->pci->subsystem_vendor,
+		       av7110->dev->pci->subsystem_device);
 	} else {
 		FE_FUNC_OVERRIDE(av7110->fe->ops.init, av7110->fe_init, av7110_fe_init);
 		FE_FUNC_OVERRIDE(av7110->fe->ops.read_status, av7110->fe_read_status, av7110_fe_read_status);
@@ -2280,7 +2280,7 @@ static int frontend_init(struct av7110 *av7110)
 
 		ret = dvb_register_frontend(&av7110->dvb_adapter, av7110->fe);
 		if (ret < 0) {
-;
+			printk("av7110: Frontend registration failed!\n");
 			dvb_frontend_detach(av7110->fe);
 			av7110->fe = NULL;
 		}
@@ -2357,7 +2357,7 @@ static int __devinit av7110_attach(struct saa7146_dev* dev,
 	struct task_struct *thread;
 	int ret, count = 0;
 
-;
+	dprintk(4, "dev: %p\n", dev);
 
 	/* Set RPS_IRQ to 1 to track rps1 activity.
 	 * Enabling this won't send any interrupt to PC CPU.
@@ -2439,19 +2439,19 @@ static int __devinit av7110_attach(struct saa7146_dev* dev,
 		 */
 		if ((saa7146_read(dev, GPIO_CTRL) & 0x10000000) == 0) {
 			budgetpatch = 1;
-;
+			printk("dvb-ttpci: BUDGET-PATCH DETECTED.\n");
 		}
 		/* Disable RPS1 */
 		saa7146_write(dev, MC1, ( MASK_29 ));
 #if RPS_IRQ
-;
+		printk("dvb-ttpci: Event Counter 1 0x%04x\n", saa7146_read(dev, EC1R) & 0x3fff );
 #endif
 	}
 
 	/* prepare the av7110 device struct */
 	av7110 = kzalloc(sizeof(struct av7110), GFP_KERNEL);
 	if (!av7110) {
-;
+		dprintk(1, "out of memory\n");
 		return -ENOMEM;
 	}
 
@@ -2496,7 +2496,7 @@ static int __devinit av7110_attach(struct saa7146_dev* dev,
 	}
 
 	if (av7110->full_ts) {
-;
+		printk(KERN_INFO "dvb-ttpci: full-ts mode enabled for saa7146 port B\n");
 		spin_lock_init(&av7110->feedlock1);
 		av7110->grabbing = saa7146_vmalloc_build_pgtable(pdev, length,
 								 &av7110->pt);
@@ -2707,7 +2707,7 @@ static int __devinit av7110_attach(struct saa7146_dev* dev,
 #if defined(CONFIG_INPUT_EVDEV) || defined(CONFIG_INPUT_EVDEV_MODULE)
 	av7110_ir_init(av7110);
 #endif
-;
+	printk(KERN_INFO "dvb-ttpci: found av7110-%d.\n", av7110_num);
 	av7110_num++;
 out:
 	return ret;
@@ -2745,7 +2745,7 @@ err_kfree_0:
 static int __devexit av7110_detach(struct saa7146_dev* saa)
 {
 	struct av7110 *av7110 = saa->ext_priv;
-;
+	dprintk(4, "%p\n", av7110);
 
 #if defined(CONFIG_INPUT_EVDEV) || defined(CONFIG_INPUT_EVDEV_MODULE)
 	av7110_ir_exit(av7110);
@@ -2810,7 +2810,7 @@ static void av7110_irq(struct saa7146_dev* dev, u32 *isr)
 	 */
 
 	if (*isr & MASK_19) {
-;
+		//printk("av7110_irq: DEBI\n");
 		/* Note 1: The DEBI irq is level triggered: We must enable it
 		 * only after we started a DMA xfer, and disable it here
 		 * immediately, or it will be signalled all the time while
@@ -2832,7 +2832,7 @@ static void av7110_irq(struct saa7146_dev* dev, u32 *isr)
 	}
 
 	if (*isr & MASK_03) {
-;
+		//printk("av7110_irq: GPIO\n");
 		tasklet_schedule(&av7110->gpio_tasklet);
 	}
 

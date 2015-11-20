@@ -337,7 +337,7 @@ restart:
 			exp = t->it.mmtimer.expires;
 		}
 		if (i > 20) {
-;
+			printk(KERN_ALERT "mmtimer: cannot reschedule timer\n");
 			t->it.mmtimer.clock = TIMER_OFF;
 			n->next = rb_next(&x->list);
 			rb_erase(&x->list, &n->timer_head);
@@ -455,7 +455,7 @@ static int mmtimer_mmap(struct file *file, struct vm_area_struct *vma)
 
 	if (remap_pfn_range(vma, vma->vm_start, mmtimer_addr >> PAGE_SHIFT,
 					PAGE_SIZE, vma->vm_page_prot)) {
-;
+		printk(KERN_ERR "remap_pfn_range failed in mmtimer.c\n");
 		return -EAGAIN;
 	}
 
@@ -798,8 +798,8 @@ static int __init mmtimer_init(void)
 	 * Sanity check the cycles/sec variable
 	 */
 	if (sn_rtc_cycles_per_second < 100000) {
-//		printk(KERN_ERR "%s: unable to determine clock frequency\n",
-;
+		printk(KERN_ERR "%s: unable to determine clock frequency\n",
+		       MMTIMER_NAME);
 		goto out1;
 	}
 
@@ -807,14 +807,14 @@ static int __init mmtimer_init(void)
 			       2) / sn_rtc_cycles_per_second;
 
 	if (request_irq(SGI_MMTIMER_VECTOR, mmtimer_interrupt, IRQF_PERCPU, MMTIMER_NAME, NULL)) {
-//		printk(KERN_WARNING "%s: unable to allocate interrupt.",
-;
+		printk(KERN_WARNING "%s: unable to allocate interrupt.",
+			MMTIMER_NAME);
 		goto out1;
 	}
 
 	if (misc_register(&mmtimer_miscdev)) {
-//		printk(KERN_ERR "%s: failed to register device\n",
-;
+		printk(KERN_ERR "%s: failed to register device\n",
+		       MMTIMER_NAME);
 		goto out2;
 	}
 
@@ -827,8 +827,8 @@ static int __init mmtimer_init(void)
 	/* Allocate list of node ptrs to mmtimer_t's */
 	timers = kzalloc(sizeof(struct mmtimer_node)*maxn, GFP_KERNEL);
 	if (timers == NULL) {
-//		printk(KERN_ERR "%s: failed to allocate memory for device\n",
-;
+		printk(KERN_ERR "%s: failed to allocate memory for device\n",
+				MMTIMER_NAME);
 		goto out3;
 	}
 
@@ -842,8 +842,8 @@ static int __init mmtimer_init(void)
 	sgi_clock_period = NSEC_PER_SEC / sn_rtc_cycles_per_second;
 	posix_timers_register_clock(CLOCK_SGI_CYCLE, &sgi_clock);
 
-//	printk(KERN_INFO "%s: v%s, %ld MHz\n", MMTIMER_DESC, MMTIMER_VERSION,
-;
+	printk(KERN_INFO "%s: v%s, %ld MHz\n", MMTIMER_DESC, MMTIMER_VERSION,
+	       sn_rtc_cycles_per_second/(unsigned long)1E6);
 
 	return 0;
 

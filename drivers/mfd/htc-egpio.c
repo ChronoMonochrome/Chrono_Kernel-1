@@ -360,7 +360,7 @@ static int __init egpio_probe(struct platform_device *pdev)
 	return 0;
 
 fail:
-;
+	printk(KERN_ERR "EGPIO failed to setup\n");
 	kfree(ei);
 	return ret;
 }

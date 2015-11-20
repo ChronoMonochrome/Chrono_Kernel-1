@@ -117,14 +117,14 @@ int radeon_gem_set_domain(struct drm_gem_object *gobj,
 	}
 	if (!domain) {
 		/* Do nothings */
-;
+		printk(KERN_WARNING "Set domain withou domain !\n");
 		return 0;
 	}
 	if (domain == RADEON_GEM_DOMAIN_CPU) {
 		/* Asking for cpu access wait for object idle */
 		r = radeon_bo_wait(robj, NULL, false);
 		if (r) {
-;
+			printk(KERN_ERR "Failed to wait for object !\n");
 			return r;
 		}
 	}

@@ -104,9 +104,9 @@ static int __init setup_hwmem(void)
 
 	if (hwmem_paddr != PAGE_ALIGN(hwmem_paddr) ||
 		hwmem_size != PAGE_ALIGN(hwmem_size) || hwmem_size == 0) {
-//		printk(KERN_WARNING "HWMEM: hwmem_paddr !="
-//		" PAGE_ALIGN(hwmem_paddr) || hwmem_size !="
-;
+		printk(KERN_WARNING "HWMEM: hwmem_paddr !="
+		" PAGE_ALIGN(hwmem_paddr) || hwmem_size !="
+		" PAGE_ALIGN(hwmem_size) || hwmem_size == 0\n");
 		return -ENOMSG;
 	}
 

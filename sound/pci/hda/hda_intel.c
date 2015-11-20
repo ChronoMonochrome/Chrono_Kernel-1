@@ -558,7 +558,7 @@ static int azx_alloc_cmd_io(struct azx *chip)
 				  snd_dma_pci_data(chip->pci),
 				  PAGE_SIZE, &chip->rb);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR SFX "cannot allocate CORB/RIRB\n");
 		return err;
 	}
 	return 0;
@@ -689,10 +689,10 @@ static void azx_update_rirb(struct azx *chip)
 			smp_wmb();
 			chip->rirb.cmds[addr]--;
 		} else
-//			snd_printk(KERN_ERR SFX "spurious response %#x:%#x, "
-//				   "last cmd=%#08x\n",
-//				   res, res_ex,
-;
+			snd_printk(KERN_ERR SFX "spurious response %#x:%#x, "
+				   "last cmd=%#08x\n",
+				   res, res_ex,
+				   chip->last_cmd[addr]);
 	}
 }
 
@@ -743,17 +743,17 @@ static unsigned int azx_rirb_get_response(struct hda_bus *bus,
 
 
 	if (!chip->polling_mode) {
-//		snd_printk(KERN_WARNING SFX "azx_get_response timeout, "
-//			   "switching to polling mode: last cmd=0x%08x\n",
-;
+		snd_printk(KERN_WARNING SFX "azx_get_response timeout, "
+			   "switching to polling mode: last cmd=0x%08x\n",
+			   chip->last_cmd[addr]);
 		chip->polling_mode = 1;
 		goto again;
 	}
 
 	if (chip->msi) {
-//		snd_printk(KERN_WARNING SFX "No response from codec, "
-//			   "disabling MSI: last cmd=0x%08x\n",
-;
+		snd_printk(KERN_WARNING SFX "No response from codec, "
+			   "disabling MSI: last cmd=0x%08x\n",
+			   chip->last_cmd[addr]);
 		free_irq(chip->irq, chip);
 		chip->irq = -1;
 		pci_disable_msi(chip->pci);
@@ -782,9 +782,9 @@ static unsigned int azx_rirb_get_response(struct hda_bus *bus,
 		return -1; /* give a chance to retry */
 	}
 
-//	snd_printk(KERN_ERR "hda_intel: azx_get_response timeout, "
-//		   "switching to single_cmd mode: last cmd=0x%08x\n",
-;
+	snd_printk(KERN_ERR "hda_intel: azx_get_response timeout, "
+		   "switching to single_cmd mode: last cmd=0x%08x\n",
+		   chip->last_cmd[addr]);
 	chip->single_cmd = 1;
 	bus->response_reset = 0;
 	/* release CORB/RIRB */
@@ -1269,8 +1269,8 @@ static int azx_setup_periods(struct azx *chip,
 				pos_align;
 		pos_adj = frames_to_bytes(runtime, pos_adj);
 		if (pos_adj >= period_bytes) {
-//			snd_printk(KERN_WARNING SFX "Too big adjustment %d\n",
-;
+			snd_printk(KERN_WARNING SFX "Too big adjustment %d\n",
+				   bdl_pos_adj[chip->dev_index]);
 			pos_adj = 0;
 		} else {
 			ofs = setup_bdle(substream, azx_dev,
@@ -1295,8 +1295,8 @@ static int azx_setup_periods(struct azx *chip,
 	return 0;
 
  error:
-//	snd_printk(KERN_ERR SFX "Too many BDL entries: buffer=%d, period=%d\n",
-;
+	snd_printk(KERN_ERR SFX "Too many BDL entries: buffer=%d, period=%d\n",
+		   azx_dev->bufsize, period_bytes);
 	return -EINVAL;
 }
 
@@ -1467,8 +1467,8 @@ static int __devinit azx_codec_create(struct azx *chip, const char *model)
 				/* Some BIOSen give you wrong codec addresses
 				 * that don't exist
 				 */
-//				snd_printk(KERN_WARNING SFX
-;
+				snd_printk(KERN_WARNING SFX
+					   "Codec #%d probe error; "
 					   "disabling it...\n", c);
 				chip->codec_mask &= ~(1 << c);
 				/* More badly, accessing to a non-existing
@@ -1506,7 +1506,7 @@ static int __devinit azx_codec_create(struct azx *chip, const char *model)
 		}
 	}
 	if (!codecs) {
-;
+		snd_printk(KERN_ERR SFX "no codecs initialized\n");
 		return -ENXIO;
 	}
 	return 0;
@@ -1716,9 +1716,9 @@ static int azx_pcm_prepare(struct snd_pcm_substream *substream)
 						hinfo->maxbps,
 						apcm->codec->spdif_ctls);
 	if (!format_val) {
-//		snd_printk(KERN_ERR SFX
-//			   "invalid format_val, rate=%d, ch=%d, format=%d\n",
-;
+		snd_printk(KERN_ERR SFX
+			   "invalid format_val, rate=%d, ch=%d, format=%d\n",
+			   runtime->rate, runtime->channels, runtime->format);
 		return -EINVAL;
 	}
 
@@ -1968,9 +1968,9 @@ static int azx_position_ok(struct azx *chip, struct azx_dev *azx_dev)
 	pos = azx_get_position(chip, azx_dev);
 	if (chip->position_fix[stream] == POS_FIX_AUTO) {
 		if (!pos) {
-//			printk(KERN_WARNING
-//			       "hda-intel: Invalid position buffer, "
-;
+			printk(KERN_WARNING
+			       "hda-intel: Invalid position buffer, "
+			       "using LPIB read method instead.\n");
 			chip->position_fix[stream] = POS_FIX_LPIB;
 			pos = azx_get_position(chip, azx_dev);
 		} else
@@ -1997,10 +1997,10 @@ static void azx_irq_pending_work(struct work_struct *work)
 	int i, pending, ok;
 
 	if (!chip->irq_pending_warned) {
-//		printk(KERN_WARNING
-//		       "hda-intel: IRQ timing workaround is activated "
-//		       "for card #%d. Suggest a bigger bdl_pos_adj.\n",
-;
+		printk(KERN_WARNING
+		       "hda-intel: IRQ timing workaround is activated "
+		       "for card #%d. Suggest a bigger bdl_pos_adj.\n",
+		       chip->card->number);
 		chip->irq_pending_warned = 1;
 	}
 
@@ -2074,12 +2074,12 @@ azx_attach_pcm_stream(struct hda_bus *bus, struct hda_codec *codec,
 	int s, err;
 
 	if (pcm_dev >= HDA_MAX_PCMS) {
-//		snd_printk(KERN_ERR SFX "Invalid PCM device number %d\n",
-;
+		snd_printk(KERN_ERR SFX "Invalid PCM device number %d\n",
+			   pcm_dev);
 		return -EINVAL;
 	}
 	if (chip->pcm[pcm_dev]) {
-;
+		snd_printk(KERN_ERR SFX "PCM %d already exists\n", pcm_dev);
 		return -EBUSY;
 	}
 	err = snd_pcm_new(chip->card, cpcm->name, pcm_dev,
@@ -2152,8 +2152,8 @@ static int azx_acquire_irq(struct azx *chip, int do_disconnect)
 	if (request_irq(chip->pci->irq, azx_interrupt,
 			chip->msi ? 0 : IRQF_SHARED,
 			"hda_intel", chip)) {
-//		printk(KERN_ERR "hda-intel: unable to grab IRQ %d, "
-;
+		printk(KERN_ERR "hda-intel: unable to grab IRQ %d, "
+		       "disabling device\n", chip->pci->irq);
 		if (do_disconnect)
 			snd_card_disconnect(chip->card);
 		return -1;
@@ -2254,8 +2254,8 @@ static int azx_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "hda-intel: pci_enable_device failed, "
-;
+		printk(KERN_ERR "hda-intel: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}
@@ -2388,10 +2388,10 @@ static int __devinit check_position_fix(struct azx *chip, int fix)
 
 	q = snd_pci_quirk_lookup(chip->pci, position_fix_list);
 	if (q) {
-//		printk(KERN_INFO
-//		       "hda_intel: position_fix set to %d "
-//		       "for device %04x:%04x\n",
-;
+		printk(KERN_INFO
+		       "hda_intel: position_fix set to %d "
+		       "for device %04x:%04x\n",
+		       q->value, q->subvendor, q->subdevice);
 		return q->value;
 	}
 
@@ -2437,10 +2437,10 @@ static void __devinit check_probe_mask(struct azx *chip, int dev)
 	if (chip->codec_probe_mask == -1) {
 		q = snd_pci_quirk_lookup(chip->pci, probe_mask_list);
 		if (q) {
-//			printk(KERN_INFO
-//			       "hda_intel: probe_mask set to 0x%x "
-//			       "for device %04x:%04x\n",
-;
+			printk(KERN_INFO
+			       "hda_intel: probe_mask set to 0x%x "
+			       "for device %04x:%04x\n",
+			       q->value, q->subvendor, q->subdevice);
 			chip->codec_probe_mask = q->value;
 		}
 	}
@@ -2449,8 +2449,8 @@ static void __devinit check_probe_mask(struct azx *chip, int dev)
 	if (chip->codec_probe_mask != -1 &&
 	    (chip->codec_probe_mask & AZX_FORCE_CODEC_MASK)) {
 		chip->codec_mask = chip->codec_probe_mask & 0xff;
-//		printk(KERN_INFO "hda_intel: codec_mask forced to 0x%x\n",
-;
+		printk(KERN_INFO "hda_intel: codec_mask forced to 0x%x\n",
+		       chip->codec_mask);
 	}
 }
 
@@ -2478,16 +2478,16 @@ static void __devinit check_msi(struct azx *chip)
 	chip->msi = 1;	/* enable MSI as default */
 	q = snd_pci_quirk_lookup(chip->pci, msi_black_list);
 	if (q) {
-//		printk(KERN_INFO
-//		       "hda_intel: msi for device %04x:%04x set to %d\n",
-;
+		printk(KERN_INFO
+		       "hda_intel: msi for device %04x:%04x set to %d\n",
+		       q->subvendor, q->subdevice, q->value);
 		chip->msi = q->value;
 		return;
 	}
 
 	/* NVidia chipsets seem to cause troubles with MSI */
 	if (chip->driver_caps & AZX_DCAPS_NO_MSI) {
-;
+		printk(KERN_INFO "hda_intel: Disabling MSI\n");
 		chip->msi = 0;
 	}
 }
@@ -2515,7 +2515,7 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 
 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
 	if (!chip) {
-;
+		snd_printk(KERN_ERR SFX "cannot allocate chip\n");
 		pci_disable_device(pci);
 		return -ENOMEM;
 	}
@@ -2569,7 +2569,7 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 	chip->addr = pci_resource_start(pci, 0);
 	chip->remap_addr = pci_ioremap_bar(pci, 0);
 	if (chip->remap_addr == NULL) {
-;
+		snd_printk(KERN_ERR SFX "ioremap error\n");
 		err = -ENXIO;
 		goto errout;
 	}
@@ -2646,7 +2646,7 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 	chip->azx_dev = kcalloc(chip->num_streams, sizeof(*chip->azx_dev),
 				GFP_KERNEL);
 	if (!chip->azx_dev) {
-;
+		snd_printk(KERN_ERR SFX "cannot malloc azx_dev\n");
 		goto errout;
 	}
 
@@ -2656,7 +2656,7 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 					  snd_dma_pci_data(chip->pci),
 					  BDL_SIZE, &chip->azx_dev[i].bdl);
 		if (err < 0) {
-;
+			snd_printk(KERN_ERR SFX "cannot allocate BDL\n");
 			goto errout;
 		}
 	}
@@ -2665,7 +2665,7 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 				  snd_dma_pci_data(chip->pci),
 				  chip->num_streams * 8, &chip->posbuf);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR SFX "cannot allocate posbuf\n");
 		goto errout;
 	}
 	/* allocate CORB/RIRB */
@@ -2682,14 +2682,14 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 
 	/* codec detection */
 	if (!chip->codec_mask) {
-;
+		snd_printk(KERN_ERR SFX "no codecs found!\n");
 		err = -ENODEV;
 		goto errout;
 	}
 
 	err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops);
 	if (err <0) {
-;
+		snd_printk(KERN_ERR SFX "Error creating device [card]!\n");
 		goto errout;
 	}
 
@@ -2738,7 +2738,7 @@ static int __devinit azx_probe(struct pci_dev *pci,
 
 	err = snd_card_create(index[dev], id[dev], THIS_MODULE, 0, &card);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR SFX "Error creating card!\n");
 		return err;
 	}
 
@@ -2760,8 +2760,8 @@ static int __devinit azx_probe(struct pci_dev *pci,
 		goto out_free;
 #ifdef CONFIG_SND_HDA_PATCH_LOADER
 	if (patch[dev] && *patch[dev]) {
-//		snd_printk(KERN_ERR SFX "Applying patch firmware '%s'\n",
-;
+		snd_printk(KERN_ERR SFX "Applying patch firmware '%s'\n",
+			   patch[dev]);
 		err = snd_hda_load_patch(chip->bus, patch[dev]);
 		if (err < 0)
 			goto out_free;

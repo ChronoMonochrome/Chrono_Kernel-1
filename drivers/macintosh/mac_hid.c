@@ -110,17 +110,17 @@ static int mac_hid_emumouse_connect(struct input_handler *handler,
 
 	error = input_register_handle(handle);
 	if (error) {
-//		printk(KERN_ERR
-//			"mac_hid: Failed to register button emulation handle, "
-;
+		printk(KERN_ERR
+			"mac_hid: Failed to register button emulation handle, "
+			"error %d\n", error);
 		goto err_free;
 	}
 
 	error = input_open_device(handle);
 	if (error) {
-//		printk(KERN_ERR
-//			"mac_hid: Failed to open input device, error %d\n",
-;
+		printk(KERN_ERR
+			"mac_hid: Failed to open input device, error %d\n",
+			error);
 		goto err_unregister;
 	}
 

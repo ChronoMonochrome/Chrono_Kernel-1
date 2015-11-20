@@ -62,8 +62,8 @@ cerf_pcmcia_configure_socket(struct soc_pcmcia_socket *skt,
 		break;
 
 	default:
-//		printk(KERN_ERR "%s(): unrecognized Vcc %u\n",
-;
+		printk(KERN_ERR "%s(): unrecognized Vcc %u\n",
+			__func__, state->Vcc);
 		return -1;
 	}
 

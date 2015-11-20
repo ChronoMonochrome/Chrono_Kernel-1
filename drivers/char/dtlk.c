@@ -66,14 +66,14 @@
 #include <linux/dtlk.h>		/* local header file for DoubleTalk values */
 
 #ifdef TRACING
-;
-//#define TRACE_RET printk(")")
-//#else				/* !TRACING */
-//#define TRACE_TEXT(str) ((void) 0)
-//#define TRACE_RET ((void) 0)
-//#endif				/* TRACING */
-//
-;
+#define TRACE_TEXT(str) printk(str);
+#define TRACE_RET printk(")")
+#else				/* !TRACING */
+#define TRACE_TEXT(str) ((void) 0)
+#define TRACE_RET ((void) 0)
+#endif				/* TRACING */
+
+static DEFINE_MUTEX(dtlk_mutex);
 static void dtlk_timer_tick(unsigned long data);
 
 static int dtlk_major;
@@ -150,7 +150,7 @@ static ssize_t dtlk_read(struct file *file, char __user *buf,
 		msleep_interruptible(100);
 	}
 	if (retries == loops_per_jiffy)
-;
+		printk(KERN_ERR "dtlk_read times out\n");
 	TRACE_RET;
 	return -EAGAIN;
 }
@@ -162,18 +162,18 @@ static ssize_t dtlk_write(struct file *file, const char __user *buf,
 
 	TRACE_TEXT("(dtlk_write");
 #ifdef TRACING
-;
+	printk(" \"");
 	{
 		int i, ch;
 		for (i = 0; i < count; i++) {
 			if (get_user(ch, buf + i))
 				return -EFAULT;
 			if (' ' <= ch && ch <= '~')
-;
+				printk("%c", ch);
 			else
-;
+				printk("\\%03o", ch);
 		}
-;
+		printk("\"");
 	}
 #endif
 
@@ -217,9 +217,9 @@ static ssize_t dtlk_write(struct file *file, const char __user *buf,
 
 		if (++retries > 10 * HZ) { /* wait no more than 10 sec
 					      from last write */
-//			printk("dtlk: write timeout.  "
-//			       "inb_p(dtlk_port_tts) = 0x%02x\n",
-;
+			printk("dtlk: write timeout.  "
+			       "inb_p(dtlk_port_tts) = 0x%02x\n",
+			       inb_p(dtlk_port_tts));
 			TRACE_RET;
 			return -EBUSY;
 		}
@@ -236,8 +236,8 @@ static unsigned int dtlk_poll(struct file *file, poll_table * wait)
 	TRACE_TEXT(" dtlk_poll");
 	/*
 	   static long int j;
-;
-;
+	   printk(".");
+	   printk("<%ld>", jiffies-j);
 	   j=jiffies;
 	 */
 	poll_wait(file, &dtlk_process_list, wait);
@@ -337,7 +337,7 @@ static int __init dtlk_init(void)
 	dtlk_busy = 0;
 	dtlk_major = register_chrdev(0, "dtlk", &dtlk_fops);
 	if (dtlk_major < 0) {
-;
+		printk(KERN_ERR "DoubleTalk PC - cannot register device\n");
 		return dtlk_major;
 	}
 	err = dtlk_dev_probe();
@@ -345,7 +345,7 @@ static int __init dtlk_init(void)
 		unregister_chrdev(dtlk_major, "dtlk");
 		return err;
 	}
-;
+	printk(", MAJOR %d\n", dtlk_major);
 
 	init_waitqueue_head(&dtlk_process_list);
 
@@ -373,7 +373,7 @@ module_exit(dtlk_cleanup);
 static int dtlk_readable(void)
 {
 #ifdef TRACING
-;
+	printk(" dtlk_readable=%u@%u", inb_p(dtlk_port_lpc) != 0x7f, jiffies);
 #endif
 	return inb_p(dtlk_port_lpc) != 0x7f;
 }
@@ -382,7 +382,7 @@ static int dtlk_writeable(void)
 {
 	/* TRACE_TEXT(" dtlk_writeable"); */
 #ifdef TRACINGMORE
-;
+	printk(" dtlk_writeable=%u", (inb_p(dtlk_port_tts) & TTS_WRITABLE)!=0);
 #endif
 	return inb_p(dtlk_port_tts) & TTS_WRITABLE;
 }
@@ -398,8 +398,8 @@ static int __init dtlk_dev_probe(void)
 
 	for (i = 0; dtlk_portlist[i]; i++) {
 #if 0
-//		printk("DoubleTalk PC - Port %03x = %04x\n",
-;
+		printk("DoubleTalk PC - Port %03x = %04x\n",
+		       dtlk_portlist[i], (testval = inw_p(dtlk_portlist[i])));
 #endif
 
 		if (!request_region(dtlk_portlist[i], DTLK_IO_EXTENT, 
@@ -411,11 +411,11 @@ static int __init dtlk_dev_probe(void)
 			dtlk_port_tts = dtlk_port_lpc + 1;
 
 			sp = dtlk_interrogate();
-//			printk("DoubleTalk PC at %03x-%03x, "
-//			       "ROM version %s, serial number %u",
-//			       dtlk_portlist[i], dtlk_portlist[i] +
-//			       DTLK_IO_EXTENT - 1,
-;
+			printk("DoubleTalk PC at %03x-%03x, "
+			       "ROM version %s, serial number %u",
+			       dtlk_portlist[i], dtlk_portlist[i] +
+			       DTLK_IO_EXTENT - 1,
+			       sp->rom_version, sp->serial_number);
 
                         /* put LPC port into known state, so
 			   dtlk_readable() gives valid result */
@@ -429,7 +429,7 @@ static int __init dtlk_dev_probe(void)
 			msleep_interruptible(100);
 			dtlk_has_indexing = dtlk_readable();
 #ifdef TRACING
-;
+			printk(", indexing %d\n", dtlk_has_indexing);
 #endif
 #ifdef INSCOPE
 			{
@@ -454,10 +454,10 @@ for (i = 0; i < 10; i++)			\
 				buffer[b++] = 0;
 				LOOK
 
-;
+				printk("\n");
 				for (j = 0; j < b; j++)
-;
-;
+					printk(" %02x", buffer[j]);
+				printk("\n");
 			}
 #endif				/* INSCOPE */
 
@@ -480,10 +480,10 @@ for (i = 0; i < 10; i++)			\
 				LOOK
 				LOOK
 
-;
+				printk("\n");
 				for (j = 0; j < b; j++)
-;
-;
+					printk(" %02x", buffer[j]);
+				printk("\n");
 			}
 #endif				/* OUTSCOPE */
 
@@ -494,15 +494,15 @@ for (i = 0; i < 10; i++)			\
 		release_region(dtlk_portlist[i], DTLK_IO_EXTENT);
 	}
 
-;
+	printk(KERN_INFO "DoubleTalk PC - not found\n");
 	return -ENODEV;
 }
 
 /*
    static void dtlk_handle_error(char op, char rc, unsigned int minor)
    {
-//   printk(KERN_INFO"\nDoubleTalk PC - MINOR: %d, OPCODE: %d, ERROR: %d\n", 
-;
+   printk(KERN_INFO"\nDoubleTalk PC - MINOR: %d, OPCODE: %d, ERROR: %d\n", 
+   minor, op, rc);
    return;
    }
  */
@@ -524,10 +524,10 @@ static struct dtlk_settings *dtlk_interrogate(void)
 			total++;
 	}
 	/*
-;
+	   if (i==50) printk("interrogate() read overrun\n");
 	   for (i=0; i<sizeof(buf); i++)
-;
-;
+	   printk(" %02x", buf[i]);
+	   printk("\n");
 	 */
 	t = buf;
 	status.serial_number = t[0] + t[1] * 256; /* serial number is
@@ -575,7 +575,7 @@ static char dtlk_read_tts(void)
 	} while ((portval & TTS_READABLE) == 0 &&
 		 retries++ < DTLK_MAX_RETRIES);
 	if (retries > DTLK_MAX_RETRIES)
-;
+		printk(KERN_ERR "dtlk_read_tts() timeout\n");
 
 	ch = inb_p(dtlk_port_tts);	/* input from TTS port */
 	ch &= 0x7f;
@@ -587,7 +587,7 @@ static char dtlk_read_tts(void)
 	} while ((portval & TTS_READABLE) != 0 &&
 		 retries++ < DTLK_MAX_RETRIES);
 	if (retries > DTLK_MAX_RETRIES)
-;
+		printk(KERN_ERR "dtlk_read_tts() timeout\n");
 
 	TRACE_RET;
 	return ch;
@@ -611,7 +611,7 @@ static char dtlk_read_lpc(void)
 	retries = (loops_per_jiffy * 20) / (1000000/HZ);
 	while (inb_p(dtlk_port_lpc) != 0x7f && --retries > 0);
 	if (retries == 0)
-;
+		printk(KERN_ERR "dtlk_read_lpc() timeout\n");
 
 	TRACE_RET;
 	return ch;
@@ -633,18 +633,18 @@ static char dtlk_write_tts(char ch)
 {
 	int retries = 0;
 #ifdef TRACINGMORE
-;
+	printk("  dtlk_write_tts(");
 	if (' ' <= ch && ch <= '~')
-;
+		printk("'%c'", ch);
 	else
-;
+		printk("0x%02x", ch);
 #endif
 	if (ch != DTLK_CLEAR)	/* no flow control for CLEAR command */
 		while ((inb_p(dtlk_port_tts) & TTS_WRITABLE) == 0 &&
 		       retries++ < DTLK_MAX_RETRIES)	/* DT ready? */
 			;
 	if (retries > DTLK_MAX_RETRIES)
-;
+		printk(KERN_ERR "dtlk_write_tts() timeout\n");
 
 	outb_p(ch, dtlk_port_tts);	/* output to TTS port */
 	/* the RDY bit goes zero 2-3 usec after writing, and goes
@@ -655,7 +655,7 @@ static char dtlk_write_tts(char ch)
 			break;
 
 #ifdef TRACINGMORE
-;
+	printk(")\n");
 #endif
 	return 0;
 }

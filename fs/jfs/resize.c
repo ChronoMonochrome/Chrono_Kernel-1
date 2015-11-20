@@ -96,8 +96,8 @@ int jfs_extendfs(struct super_block *sb, s64 newLVSize, int newLogSize)
 		    lengthPXD(&sbi->fsckpxd);
 
 	if (oldLVSize >= newLVSize) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "jfs_extendfs: volume hasn't grown, returning\n");
 		goto out;
 	}
 
@@ -105,7 +105,7 @@ int jfs_extendfs(struct super_block *sb, s64 newLVSize, int newLogSize)
 
 	if (VolumeSize) {
 		if (newLVSize > VolumeSize) {
-;
+			printk(KERN_WARNING "jfs_extendfs: invalid size\n");
 			rc = -EINVAL;
 			goto out;
 		}
@@ -113,7 +113,7 @@ int jfs_extendfs(struct super_block *sb, s64 newLVSize, int newLogSize)
 		/* check the device */
 		bh = sb_bread(sb, newLVSize - 1);
 		if (!bh) {
-;
+			printk(KERN_WARNING "jfs_extendfs: invalid size\n");
 			rc = -EINVAL;
 			goto out;
 		}
@@ -123,7 +123,7 @@ int jfs_extendfs(struct super_block *sb, s64 newLVSize, int newLogSize)
 	/* Can't extend write-protected drive */
 
 	if (isReadOnly(ipbmap)) {
-;
+		printk(KERN_WARNING "jfs_extendfs: read-only file system\n");
 		rc = -EROFS;
 		goto out;
 	}
@@ -321,8 +321,8 @@ int jfs_extendfs(struct super_block *sb, s64 newLVSize, int newLogSize)
 	/* compute number of blocks that can be extended by current mapfile */
 	t64 = dbMapFileSizeToMapSize(ipbmap);
 	if (mapSize > t64) {
-//		printk(KERN_ERR "jfs_extendfs: mapSize (0x%Lx) > t64 (0x%Lx)\n",
-;
+		printk(KERN_ERR "jfs_extendfs: mapSize (0x%Lx) > t64 (0x%Lx)\n",
+		       (long long) mapSize, (long long) t64);
 		rc = -EIO;
 		goto error_out;
 	}
@@ -476,7 +476,7 @@ int jfs_extendfs(struct super_block *sb, s64 newLVSize, int newLogSize)
 
 	ipbmap2 = diReadSpecial(sb, BMAP_I, 1);
 	if (ipbmap2 == NULL) {
-;
+		printk(KERN_ERR "jfs_extendfs: diReadSpecial(bmap) failed\n");
 		goto error_out;
 	}
 	memcpy(&JFS_IP(ipbmap2)->i_xtroot, &JFS_IP(ipbmap)->i_xtroot, 288);

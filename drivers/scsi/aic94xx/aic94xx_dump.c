@@ -217,76 +217,76 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 #define STR_32BIT  "   %30s[0x%04x]:0x%08x\n"
 #define STR_64BIT  "   %30s[0x%04x]:0x%llx\n"
 
-//#define PRINT_REG_8bit(_ha, _n, _r) asd_printk(STR_8BIT, #_n, _n,      \
-//					     asd_read_reg_byte(_ha, _r))
-//#define PRINT_REG_16bit(_ha, _n, _r) asd_printk(STR_16BIT, #_n, _n,     \
-//					      asd_read_reg_word(_ha, _r))
-//#define PRINT_REG_32bit(_ha, _n, _r) asd_printk(STR_32BIT, #_n, _n,      \
-//					      asd_read_reg_dword(_ha, _r))
-//
-//#define PRINT_CREG_8bit(_ha, _n) asd_printk(STR_8BIT, #_n, _n,      \
-//					     asd_read_reg_byte(_ha, C##_n))
-//#define PRINT_CREG_16bit(_ha, _n) asd_printk(STR_16BIT, #_n, _n,     \
-//					      asd_read_reg_word(_ha, C##_n))
-//#define PRINT_CREG_32bit(_ha, _n) asd_printk(STR_32BIT, #_n, _n,      \
-//					      asd_read_reg_dword(_ha, C##_n))
-//
-//#define MSTR_8BIT   "   Mode:%02d %30s[0x%04x]:0x%02x\n"
-//#define MSTR_16BIT  "   Mode:%02d %30s[0x%04x]:0x%04x\n"
-//#define MSTR_32BIT  "   Mode:%02d %30s[0x%04x]:0x%08x\n"
-//
-//#define PRINT_MREG_8bit(_ha, _m, _n, _r) asd_printk(MSTR_8BIT, _m, #_n, _n,   \
-//					     asd_read_reg_byte(_ha, _r))
-//#define PRINT_MREG_16bit(_ha, _m, _n, _r) asd_printk(MSTR_16BIT, _m, #_n, _n, \
-//					      asd_read_reg_word(_ha, _r))
-//#define PRINT_MREG_32bit(_ha, _m, _n, _r) asd_printk(MSTR_32BIT, _m, #_n, _n, \
-//					      asd_read_reg_dword(_ha, _r))
-//
-///* can also be used for MD when the register is mode aware already */
-//#define PRINT_MIS_byte(_ha, _n) asd_printk(STR_8BIT, #_n,CSEQ_##_n-CMAPPEDSCR,\
-//                                           asd_read_reg_byte(_ha, CSEQ_##_n))
-//#define PRINT_MIS_word(_ha, _n) asd_printk(STR_16BIT,#_n,CSEQ_##_n-CMAPPEDSCR,\
-//                                           asd_read_reg_word(_ha, CSEQ_##_n))
-//#define PRINT_MIS_dword(_ha, _n)                      \
-//        asd_printk(STR_32BIT,#_n,CSEQ_##_n-CMAPPEDSCR,\
-//                   asd_read_reg_dword(_ha, CSEQ_##_n))
-//#define PRINT_MIS_qword(_ha, _n)                                       \
-//        asd_printk(STR_64BIT, #_n,CSEQ_##_n-CMAPPEDSCR,                \
-//                   (unsigned long long)(((u64)asd_read_reg_dword(_ha, CSEQ_##_n))     \
-//                 | (((u64)asd_read_reg_dword(_ha, (CSEQ_##_n)+4))<<32)))
-//
-//#define CMDP_REG(_n, _m) (_m*(CSEQ_PAGE_SIZE*2)+CSEQ_##_n)
-//#define PRINT_CMDP_word(_ha, _n) \
-//asd_printk("%20s 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n", \
-//	#_n, \
-//	asd_read_reg_word(_ha, CMDP_REG(_n, 0)), \
-//	asd_read_reg_word(_ha, CMDP_REG(_n, 1)), \
-//	asd_read_reg_word(_ha, CMDP_REG(_n, 2)), \
-//	asd_read_reg_word(_ha, CMDP_REG(_n, 3)), \
-//	asd_read_reg_word(_ha, CMDP_REG(_n, 4)), \
-//	asd_read_reg_word(_ha, CMDP_REG(_n, 5)), \
-//	asd_read_reg_word(_ha, CMDP_REG(_n, 6)), \
-//	asd_read_reg_word(_ha, CMDP_REG(_n, 7)))
-//
-//#define PRINT_CMDP_byte(_ha, _n) \
-//asd_printk("%20s 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n", \
-//	#_n, \
-//	asd_read_reg_byte(_ha, CMDP_REG(_n, 0)), \
-//	asd_read_reg_byte(_ha, CMDP_REG(_n, 1)), \
-//	asd_read_reg_byte(_ha, CMDP_REG(_n, 2)), \
-//	asd_read_reg_byte(_ha, CMDP_REG(_n, 3)), \
-//	asd_read_reg_byte(_ha, CMDP_REG(_n, 4)), \
-//	asd_read_reg_byte(_ha, CMDP_REG(_n, 5)), \
-//	asd_read_reg_byte(_ha, CMDP_REG(_n, 6)), \
-//	asd_read_reg_byte(_ha, CMDP_REG(_n, 7)))
-//
-//static void asd_dump_cseq_state(struct asd_ha_struct *asd_ha)
-//{
-;
+#define PRINT_REG_8bit(_ha, _n, _r) asd_printk(STR_8BIT, #_n, _n,      \
+					     asd_read_reg_byte(_ha, _r))
+#define PRINT_REG_16bit(_ha, _n, _r) asd_printk(STR_16BIT, #_n, _n,     \
+					      asd_read_reg_word(_ha, _r))
+#define PRINT_REG_32bit(_ha, _n, _r) asd_printk(STR_32BIT, #_n, _n,      \
+					      asd_read_reg_dword(_ha, _r))
 
-;
+#define PRINT_CREG_8bit(_ha, _n) asd_printk(STR_8BIT, #_n, _n,      \
+					     asd_read_reg_byte(_ha, C##_n))
+#define PRINT_CREG_16bit(_ha, _n) asd_printk(STR_16BIT, #_n, _n,     \
+					      asd_read_reg_word(_ha, C##_n))
+#define PRINT_CREG_32bit(_ha, _n) asd_printk(STR_32BIT, #_n, _n,      \
+					      asd_read_reg_dword(_ha, C##_n))
 
-;
+#define MSTR_8BIT   "   Mode:%02d %30s[0x%04x]:0x%02x\n"
+#define MSTR_16BIT  "   Mode:%02d %30s[0x%04x]:0x%04x\n"
+#define MSTR_32BIT  "   Mode:%02d %30s[0x%04x]:0x%08x\n"
+
+#define PRINT_MREG_8bit(_ha, _m, _n, _r) asd_printk(MSTR_8BIT, _m, #_n, _n,   \
+					     asd_read_reg_byte(_ha, _r))
+#define PRINT_MREG_16bit(_ha, _m, _n, _r) asd_printk(MSTR_16BIT, _m, #_n, _n, \
+					      asd_read_reg_word(_ha, _r))
+#define PRINT_MREG_32bit(_ha, _m, _n, _r) asd_printk(MSTR_32BIT, _m, #_n, _n, \
+					      asd_read_reg_dword(_ha, _r))
+
+/* can also be used for MD when the register is mode aware already */
+#define PRINT_MIS_byte(_ha, _n) asd_printk(STR_8BIT, #_n,CSEQ_##_n-CMAPPEDSCR,\
+                                           asd_read_reg_byte(_ha, CSEQ_##_n))
+#define PRINT_MIS_word(_ha, _n) asd_printk(STR_16BIT,#_n,CSEQ_##_n-CMAPPEDSCR,\
+                                           asd_read_reg_word(_ha, CSEQ_##_n))
+#define PRINT_MIS_dword(_ha, _n)                      \
+        asd_printk(STR_32BIT,#_n,CSEQ_##_n-CMAPPEDSCR,\
+                   asd_read_reg_dword(_ha, CSEQ_##_n))
+#define PRINT_MIS_qword(_ha, _n)                                       \
+        asd_printk(STR_64BIT, #_n,CSEQ_##_n-CMAPPEDSCR,                \
+                   (unsigned long long)(((u64)asd_read_reg_dword(_ha, CSEQ_##_n))     \
+                 | (((u64)asd_read_reg_dword(_ha, (CSEQ_##_n)+4))<<32)))
+
+#define CMDP_REG(_n, _m) (_m*(CSEQ_PAGE_SIZE*2)+CSEQ_##_n)
+#define PRINT_CMDP_word(_ha, _n) \
+asd_printk("%20s 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n", \
+	#_n, \
+	asd_read_reg_word(_ha, CMDP_REG(_n, 0)), \
+	asd_read_reg_word(_ha, CMDP_REG(_n, 1)), \
+	asd_read_reg_word(_ha, CMDP_REG(_n, 2)), \
+	asd_read_reg_word(_ha, CMDP_REG(_n, 3)), \
+	asd_read_reg_word(_ha, CMDP_REG(_n, 4)), \
+	asd_read_reg_word(_ha, CMDP_REG(_n, 5)), \
+	asd_read_reg_word(_ha, CMDP_REG(_n, 6)), \
+	asd_read_reg_word(_ha, CMDP_REG(_n, 7)))
+
+#define PRINT_CMDP_byte(_ha, _n) \
+asd_printk("%20s 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x 0x%04x\n", \
+	#_n, \
+	asd_read_reg_byte(_ha, CMDP_REG(_n, 0)), \
+	asd_read_reg_byte(_ha, CMDP_REG(_n, 1)), \
+	asd_read_reg_byte(_ha, CMDP_REG(_n, 2)), \
+	asd_read_reg_byte(_ha, CMDP_REG(_n, 3)), \
+	asd_read_reg_byte(_ha, CMDP_REG(_n, 4)), \
+	asd_read_reg_byte(_ha, CMDP_REG(_n, 5)), \
+	asd_read_reg_byte(_ha, CMDP_REG(_n, 6)), \
+	asd_read_reg_byte(_ha, CMDP_REG(_n, 7)))
+
+static void asd_dump_cseq_state(struct asd_ha_struct *asd_ha)
+{
+	int mode;
+
+	asd_printk("CSEQ STATE\n");
+
+	asd_printk("ARP2 REGISTERS\n");
 
 	PRINT_CREG_32bit(asd_ha, ARP2CTL);
 	PRINT_CREG_32bit(asd_ha, ARP2INT);
@@ -308,12 +308,12 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 	PRINT_CREG_16bit(asd_ha, LASTADDR);
 	PRINT_CREG_16bit(asd_ha, NXTLADDR);
 
-;
+	asd_printk("IOP REGISTERS\n");
 
 	PRINT_REG_32bit(asd_ha, BISTCTL1, CBISTCTL);
 	PRINT_CREG_32bit(asd_ha, MAPPEDSCR);
 
-;
+	asd_printk("CIO REGISTERS\n");
 
 	for (mode = 0; mode < 9; mode++)
 		PRINT_MREG_16bit(asd_ha, mode, MnSCBPTR, CMnSCBPTR(mode));
@@ -344,9 +344,9 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 	PRINT_REG_32bit(asd_ha, CTIMERCALC, CTIMERCALC);
 	PRINT_REG_8bit(asd_ha, CINTDIS, CINTDIS);
 
-;
+	asd_printk("SCRATCH MEMORY\n");
 
-;
+	asd_printk("MIP 4 >>>>>\n");
 	PRINT_MIS_word(asd_ha, Q_EXE_HEAD);
 	PRINT_MIS_word(asd_ha, Q_EXE_TAIL);
 	PRINT_MIS_word(asd_ha, Q_DONE_HEAD);
@@ -364,7 +364,7 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 	PRINT_MIS_byte(asd_ha, MAX_CSEQ_MODE);
 	PRINT_MIS_byte(asd_ha, FREE_LIST_HACK_COUNT);
 
-;
+	asd_printk("MIP 5 >>>>\n");
 	PRINT_MIS_qword(asd_ha, EST_NEXUS_REQ_QUEUE);
 	PRINT_MIS_qword(asd_ha, EST_NEXUS_REQ_COUNT);
 	PRINT_MIS_word(asd_ha, Q_EST_NEXUS_HEAD);
@@ -374,7 +374,7 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 	PRINT_MIS_byte(asd_ha, EST_NEXUS_REQ_TAIL);
 	PRINT_MIS_byte(asd_ha, EST_NEXUS_SCB_OFFSET);
 
-;
+	asd_printk("MIP 6 >>>>\n");
 	PRINT_MIS_word(asd_ha, INT_ROUT_RET_ADDR0);
 	PRINT_MIS_word(asd_ha, INT_ROUT_RET_ADDR1);
 	PRINT_MIS_word(asd_ha, INT_ROUT_SCBPTR);
@@ -390,7 +390,7 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 	PRINT_MIS_word(asd_ha, EXTENDED_FREE_SCB_HEAD);
 	PRINT_MIS_word(asd_ha, EXTENDED_FREE_SCB_TAIL);
 
-;
+	asd_printk("MIP 7 >>>>\n");
 	PRINT_MIS_qword(asd_ha, EMPTY_REQ_QUEUE);
 	PRINT_MIS_qword(asd_ha, EMPTY_REQ_COUNT);
 	PRINT_MIS_word(asd_ha, Q_EMPTY_HEAD);
@@ -402,16 +402,16 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 	PRINT_MIS_word(asd_ha, PRIMITIVE_DATA);
 	PRINT_MIS_dword(asd_ha, TIMEOUT_CONST);
 
-;
-//	asd_printk("%-20s %6s %6s %6s %6s %6s %6s %6s %6s\n",
-;
+	asd_printk("MDP 0 >>>>\n");
+	asd_printk("%-20s %6s %6s %6s %6s %6s %6s %6s %6s\n",
+		   "Mode: ", "0", "1", "2", "3", "4", "5", "6", "7");
 	PRINT_CMDP_word(asd_ha, LRM_SAVE_SINDEX);
 	PRINT_CMDP_word(asd_ha, LRM_SAVE_SCBPTR);
 	PRINT_CMDP_word(asd_ha, Q_LINK_HEAD);
 	PRINT_CMDP_word(asd_ha, Q_LINK_TAIL);
 	PRINT_CMDP_byte(asd_ha, LRM_SAVE_SCRPAGE);
 
-;
+	asd_printk("MDP 0 Mode 8 >>>>\n");
 	PRINT_MIS_word(asd_ha, RET_ADDR);
 	PRINT_MIS_word(asd_ha, RET_SCBPTR);
 	PRINT_MIS_word(asd_ha, SAVE_SCBPTR);
@@ -427,11 +427,11 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 	PRINT_MIS_word(asd_ha, FIRST_INV_SCB_SITE);
 	PRINT_MIS_word(asd_ha, FIRST_INV_DDB_SITE);
 
-;
+	asd_printk("MDP 1 Mode 8 >>>>\n");
 	PRINT_MIS_qword(asd_ha, LUN_TO_CLEAR);
 	PRINT_MIS_qword(asd_ha, LUN_TO_CHECK);
 
-;
+	asd_printk("MDP 2 Mode 8 >>>>\n");
 	PRINT_MIS_qword(asd_ha, HQ_NEW_POINTER);
 	PRINT_MIS_qword(asd_ha, HQ_DONE_BASE);
 	PRINT_MIS_dword(asd_ha, HQ_DONE_POINTER);
@@ -439,51 +439,51 @@ static struct lseq_cio_regs LSEQmOOBREGS[] = {
 }
 
 #define PRINT_LREG_8bit(_h, _lseq, _n) \
-//        asd_printk(STR_8BIT, #_n, _n, asd_read_reg_byte(_h, Lm##_n(_lseq)))
-//#define PRINT_LREG_16bit(_h, _lseq, _n) \
-//        asd_printk(STR_16BIT, #_n, _n, asd_read_reg_word(_h, Lm##_n(_lseq)))
-//#define PRINT_LREG_32bit(_h, _lseq, _n) \
-//        asd_printk(STR_32BIT, #_n, _n, asd_read_reg_dword(_h, Lm##_n(_lseq)))
-//
-//#define PRINT_LMIP_byte(_h, _lseq, _n)                              \
-//	asd_printk(STR_8BIT, #_n, LmSEQ_##_n(_lseq)-LmSCRATCH(_lseq), \
-//		   asd_read_reg_byte(_h, LmSEQ_##_n(_lseq)))
-//#define PRINT_LMIP_word(_h, _lseq, _n)                              \
-//	asd_printk(STR_16BIT, #_n, LmSEQ_##_n(_lseq)-LmSCRATCH(_lseq), \
-//		   asd_read_reg_word(_h, LmSEQ_##_n(_lseq)))
-//#define PRINT_LMIP_dword(_h, _lseq, _n)                             \
-//	asd_printk(STR_32BIT, #_n, LmSEQ_##_n(_lseq)-LmSCRATCH(_lseq), \
-//		   asd_read_reg_dword(_h, LmSEQ_##_n(_lseq)))
-//#define PRINT_LMIP_qword(_h, _lseq, _n)                                \
-//	asd_printk(STR_64BIT, #_n, LmSEQ_##_n(_lseq)-LmSCRATCH(_lseq), \
-//		 (unsigned long long)(((unsigned long long) \
-//		 asd_read_reg_dword(_h, LmSEQ_##_n(_lseq))) \
-//	          | (((unsigned long long) \
-//		 asd_read_reg_dword(_h, LmSEQ_##_n(_lseq)+4))<<32)))
-//
-//static void asd_print_lseq_cio_reg(struct asd_ha_struct *asd_ha,
-//				   u32 lseq_cio_addr, int i)
-//{
-//	switch (LSEQmCIOREGS[i].width) {
-//	case 8:
-//		asd_printk("%20s[0x%x]: 0x%02x\n", LSEQmCIOREGS[i].name,
-//			   LSEQmCIOREGS[i].offs,
-//			   asd_read_reg_byte(asd_ha, lseq_cio_addr +
-;
+        asd_printk(STR_8BIT, #_n, _n, asd_read_reg_byte(_h, Lm##_n(_lseq)))
+#define PRINT_LREG_16bit(_h, _lseq, _n) \
+        asd_printk(STR_16BIT, #_n, _n, asd_read_reg_word(_h, Lm##_n(_lseq)))
+#define PRINT_LREG_32bit(_h, _lseq, _n) \
+        asd_printk(STR_32BIT, #_n, _n, asd_read_reg_dword(_h, Lm##_n(_lseq)))
+
+#define PRINT_LMIP_byte(_h, _lseq, _n)                              \
+	asd_printk(STR_8BIT, #_n, LmSEQ_##_n(_lseq)-LmSCRATCH(_lseq), \
+		   asd_read_reg_byte(_h, LmSEQ_##_n(_lseq)))
+#define PRINT_LMIP_word(_h, _lseq, _n)                              \
+	asd_printk(STR_16BIT, #_n, LmSEQ_##_n(_lseq)-LmSCRATCH(_lseq), \
+		   asd_read_reg_word(_h, LmSEQ_##_n(_lseq)))
+#define PRINT_LMIP_dword(_h, _lseq, _n)                             \
+	asd_printk(STR_32BIT, #_n, LmSEQ_##_n(_lseq)-LmSCRATCH(_lseq), \
+		   asd_read_reg_dword(_h, LmSEQ_##_n(_lseq)))
+#define PRINT_LMIP_qword(_h, _lseq, _n)                                \
+	asd_printk(STR_64BIT, #_n, LmSEQ_##_n(_lseq)-LmSCRATCH(_lseq), \
+		 (unsigned long long)(((unsigned long long) \
+		 asd_read_reg_dword(_h, LmSEQ_##_n(_lseq))) \
+	          | (((unsigned long long) \
+		 asd_read_reg_dword(_h, LmSEQ_##_n(_lseq)+4))<<32)))
+
+static void asd_print_lseq_cio_reg(struct asd_ha_struct *asd_ha,
+				   u32 lseq_cio_addr, int i)
+{
+	switch (LSEQmCIOREGS[i].width) {
+	case 8:
+		asd_printk("%20s[0x%x]: 0x%02x\n", LSEQmCIOREGS[i].name,
+			   LSEQmCIOREGS[i].offs,
+			   asd_read_reg_byte(asd_ha, lseq_cio_addr +
+					     LSEQmCIOREGS[i].offs));
 
 		break;
 	case 16:
-//		asd_printk("%20s[0x%x]: 0x%04x\n", LSEQmCIOREGS[i].name,
-//			   LSEQmCIOREGS[i].offs,
-//			   asd_read_reg_word(asd_ha, lseq_cio_addr +
-;
+		asd_printk("%20s[0x%x]: 0x%04x\n", LSEQmCIOREGS[i].name,
+			   LSEQmCIOREGS[i].offs,
+			   asd_read_reg_word(asd_ha, lseq_cio_addr +
+					     LSEQmCIOREGS[i].offs));
 
 		break;
 	case 32:
-//		asd_printk("%20s[0x%x]: 0x%08x\n", LSEQmCIOREGS[i].name,
-//			   LSEQmCIOREGS[i].offs,
-//			   asd_read_reg_dword(asd_ha, lseq_cio_addr +
-;
+		asd_printk("%20s[0x%x]: 0x%08x\n", LSEQmCIOREGS[i].name,
+			   LSEQmCIOREGS[i].offs,
+			   asd_read_reg_dword(asd_ha, lseq_cio_addr +
+					      LSEQmCIOREGS[i].offs));
 		break;
 	}
 }
@@ -493,9 +493,9 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	u32 moffs;
 	int mode;
 
-;
+	asd_printk("LSEQ %d STATE\n", lseq);
 
-;
+	asd_printk("LSEQ%d: ARP2 REGISTERS\n", lseq);
 	PRINT_LREG_32bit(asd_ha, lseq, ARP2CTL);
 	PRINT_LREG_32bit(asd_ha, lseq, ARP2INT);
 	PRINT_LREG_32bit(asd_ha, lseq, ARP2INTEN);
@@ -516,7 +516,7 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LREG_16bit(asd_ha, lseq, LASTADDR);
 	PRINT_LREG_16bit(asd_ha, lseq, NXTLADDR);
 
-;
+	asd_printk("LSEQ%d: IOP REGISTERS\n", lseq);
 
 	PRINT_LREG_32bit(asd_ha, lseq, MODECTL);
 	PRINT_LREG_32bit(asd_ha, lseq, DBGMODE);
@@ -524,8 +524,8 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_REG_32bit(asd_ha, BISTCTL0, LmBISTCTL0(lseq));
 	PRINT_REG_32bit(asd_ha, BISTCTL1, LmBISTCTL1(lseq));
 
-;
-;
+	asd_printk("LSEQ%d: CIO REGISTERS\n", lseq);
+	asd_printk("Mode common:\n");
 
 	for (mode = 0; mode < 8; mode++) {
 		u32 lseq_cio_addr = LmSEQ_PHY_BASE(mode, lseq);
@@ -536,12 +536,12 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 				asd_print_lseq_cio_reg(asd_ha,lseq_cio_addr,i);
 	}
 
-;
+	asd_printk("Mode unique:\n");
 	for (mode = 0; mode < 8; mode++) {
 		u32 lseq_cio_addr = LmSEQ_PHY_BASE(mode, lseq);
 		int i;
 
-;
+		asd_printk("Mode %d\n", mode);
 		for  (i = 0; LSEQmCIOREGS[i].name; i++) {
 			if (!(LSEQmCIOREGS[i].mode & (1 << mode)))
 				continue;
@@ -549,9 +549,9 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 		}
 	}
 
-;
+	asd_printk("SCRATCH MEMORY\n");
 
-;
+	asd_printk("LSEQ%d MIP 0 >>>>\n", lseq);
 	PRINT_LMIP_word(asd_ha, lseq, Q_TGTXFR_HEAD);
 	PRINT_LMIP_word(asd_ha, lseq, Q_TGTXFR_TAIL);
 	PRINT_LMIP_byte(asd_ha, lseq, LINK_NUMBER);
@@ -565,7 +565,7 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_word(asd_ha, lseq, REG3_ISR);
 	PRINT_LMIP_qword(asd_ha, lseq,REG0_ISR);
 
-;
+	asd_printk("LSEQ%d MIP 1 >>>>\n", lseq);
 	PRINT_LMIP_word(asd_ha, lseq, EST_NEXUS_SCBPTR0);
 	PRINT_LMIP_word(asd_ha, lseq, EST_NEXUS_SCBPTR1);
 	PRINT_LMIP_word(asd_ha, lseq, EST_NEXUS_SCBPTR2);
@@ -581,7 +581,7 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_word(asd_ha, lseq, ISR_SAVE_SINDEX);
 	PRINT_LMIP_word(asd_ha, lseq, ISR_SAVE_DINDEX);
 
-;
+	asd_printk("LSEQ%d MIP 2 >>>>\n", lseq);
 	PRINT_LMIP_word(asd_ha, lseq, EMPTY_SCB_PTR0);
 	PRINT_LMIP_word(asd_ha, lseq, EMPTY_SCB_PTR1);
 	PRINT_LMIP_word(asd_ha, lseq, EMPTY_SCB_PTR2);
@@ -594,7 +594,7 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_byte(asd_ha, lseq, EMPTY_SCB_TAIL);
 	PRINT_LMIP_byte(asd_ha, lseq, EMPTY_BUFS_AVAIL);
 
-;
+	asd_printk("LSEQ%d MIP 3 >>>>\n", lseq);
 	PRINT_LMIP_dword(asd_ha, lseq, DEV_PRES_TMR_TOUT_CONST);
 	PRINT_LMIP_dword(asd_ha, lseq, SATA_INTERLOCK_TIMEOUT);
 	PRINT_LMIP_dword(asd_ha, lseq, SRST_ASSERT_TIMEOUT);
@@ -604,50 +604,50 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_dword(asd_ha, lseq, SMP_RCV_TIMEOUT);
 
 	for (mode = 0; mode < 3; mode++) {
-;
+		asd_printk("LSEQ%d MDP 0 MODE %d >>>>\n", lseq, mode);
 		moffs = mode * LSEQ_MODE_SCRATCH_SIZE;
 
-//		asd_printk(STR_16BIT, "RET_ADDR", 0,
-//			   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR(lseq)
-;
-//		asd_printk(STR_16BIT, "REG0_MODE", 2,
-//			   asd_read_reg_word(asd_ha, LmSEQ_REG0_MODE(lseq)
-;
-//		asd_printk(STR_16BIT, "MODE_FLAGS", 4,
-//			   asd_read_reg_word(asd_ha, LmSEQ_MODE_FLAGS(lseq)
-;
-//		asd_printk(STR_16BIT, "RET_ADDR2", 0x6,
-//			   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR2(lseq)
-;
-//		asd_printk(STR_16BIT, "RET_ADDR1", 0x8,
-//			   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR1(lseq)
-;
-//		asd_printk(STR_8BIT, "OPCODE_TO_CSEQ", 0xB,
-//			   asd_read_reg_byte(asd_ha, LmSEQ_OPCODE_TO_CSEQ(lseq)
-;
-//		asd_printk(STR_16BIT, "DATA_TO_CSEQ", 0xC,
-//			   asd_read_reg_word(asd_ha, LmSEQ_DATA_TO_CSEQ(lseq)
-;
+		asd_printk(STR_16BIT, "RET_ADDR", 0,
+			   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR(lseq)
+					     + moffs));
+		asd_printk(STR_16BIT, "REG0_MODE", 2,
+			   asd_read_reg_word(asd_ha, LmSEQ_REG0_MODE(lseq)
+					     + moffs));
+		asd_printk(STR_16BIT, "MODE_FLAGS", 4,
+			   asd_read_reg_word(asd_ha, LmSEQ_MODE_FLAGS(lseq)
+					     + moffs));
+		asd_printk(STR_16BIT, "RET_ADDR2", 0x6,
+			   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR2(lseq)
+					     + moffs));
+		asd_printk(STR_16BIT, "RET_ADDR1", 0x8,
+			   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR1(lseq)
+					     + moffs));
+		asd_printk(STR_8BIT, "OPCODE_TO_CSEQ", 0xB,
+			   asd_read_reg_byte(asd_ha, LmSEQ_OPCODE_TO_CSEQ(lseq)
+					     + moffs));
+		asd_printk(STR_16BIT, "DATA_TO_CSEQ", 0xC,
+			   asd_read_reg_word(asd_ha, LmSEQ_DATA_TO_CSEQ(lseq)
+					     + moffs));
 	}
 
-;
+	asd_printk("LSEQ%d MDP 0 MODE 5 >>>>\n", lseq);
 	moffs = LSEQ_MODE5_PAGE0_OFFSET;
-//	asd_printk(STR_16BIT, "RET_ADDR", 0,
-;
-//	asd_printk(STR_16BIT, "REG0_MODE", 2,
-;
-//	asd_printk(STR_16BIT, "MODE_FLAGS", 4,
-;
-//	asd_printk(STR_16BIT, "RET_ADDR2", 0x6,
-;
-//	asd_printk(STR_16BIT, "RET_ADDR1", 0x8,
-;
-//	asd_printk(STR_8BIT, "OPCODE_TO_CSEQ", 0xB,
-;
-//	asd_printk(STR_16BIT, "DATA_TO_CSEQ", 0xC,
-;
+	asd_printk(STR_16BIT, "RET_ADDR", 0,
+		   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR(lseq) + moffs));
+	asd_printk(STR_16BIT, "REG0_MODE", 2,
+		   asd_read_reg_word(asd_ha, LmSEQ_REG0_MODE(lseq) + moffs));
+	asd_printk(STR_16BIT, "MODE_FLAGS", 4,
+		   asd_read_reg_word(asd_ha, LmSEQ_MODE_FLAGS(lseq) + moffs));
+	asd_printk(STR_16BIT, "RET_ADDR2", 0x6,
+		   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR2(lseq) + moffs));
+	asd_printk(STR_16BIT, "RET_ADDR1", 0x8,
+		   asd_read_reg_word(asd_ha, LmSEQ_RET_ADDR1(lseq) + moffs));
+	asd_printk(STR_8BIT, "OPCODE_TO_CSEQ", 0xB,
+	   asd_read_reg_byte(asd_ha, LmSEQ_OPCODE_TO_CSEQ(lseq) + moffs));
+	asd_printk(STR_16BIT, "DATA_TO_CSEQ", 0xC,
+	   asd_read_reg_word(asd_ha, LmSEQ_DATA_TO_CSEQ(lseq) + moffs));
 
-;
+	asd_printk("LSEQ%d MDP 0 MODE 0 >>>>\n", lseq);
 	PRINT_LMIP_word(asd_ha, lseq, FIRST_INV_DDB_SITE);
 	PRINT_LMIP_word(asd_ha, lseq, EMPTY_TRANS_CTX);
 	PRINT_LMIP_word(asd_ha, lseq, RESP_LEN);
@@ -659,7 +659,7 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_byte(asd_ha, lseq, LAST_LOADED_SGE);
 	PRINT_LMIP_byte(asd_ha, lseq, SAVE_SCBPTR);
 
-;
+	asd_printk("LSEQ%d MDP 0 MODE 1 >>>>\n", lseq);
 	PRINT_LMIP_word(asd_ha, lseq, Q_XMIT_HEAD);
 	PRINT_LMIP_word(asd_ha, lseq, M1_EMPTY_TRANS_CTX);
 	PRINT_LMIP_word(asd_ha, lseq, INI_CONN_TAG);
@@ -669,7 +669,7 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_byte(asd_ha, lseq, M1_LAST_LOADED_SGE);
 	PRINT_LMIP_word(asd_ha, lseq, M1_SAVE_SCBPTR);
 
-;
+	asd_printk("LSEQ%d MDP 0 MODE 2 >>>>\n", lseq);
 	PRINT_LMIP_word(asd_ha, lseq, PORT_COUNTER);
 	PRINT_LMIP_word(asd_ha, lseq, PM_TABLE_PTR);
 	PRINT_LMIP_word(asd_ha, lseq, SATA_INTERLOCK_TMR_SAVE);
@@ -677,7 +677,7 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_word(asd_ha, lseq, COPY_SMP_CONN_TAG);
 	PRINT_LMIP_byte(asd_ha, lseq, P0M2_OFFS1AH);
 
-;
+	asd_printk("LSEQ%d MDP 0 MODE 4/5 >>>>\n", lseq);
 	PRINT_LMIP_byte(asd_ha, lseq, SAVED_OOB_STATUS);
 	PRINT_LMIP_byte(asd_ha, lseq, SAVED_OOB_MODE);
 	PRINT_LMIP_word(asd_ha, lseq, Q_LINK_HEAD);
@@ -690,20 +690,20 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_word(asd_ha, lseq, NOTIFY_TIMER_TIMEOUT);
 	PRINT_LMIP_word(asd_ha, lseq, NOTIFY_TIMER_DOWN_COUNT);
 
-;
+	asd_printk("LSEQ%d MDP 1 MODE 0 >>>>\n", lseq);
 	PRINT_LMIP_qword(asd_ha, lseq, SG_LIST_PTR_ADDR0);
 	PRINT_LMIP_qword(asd_ha, lseq, SG_LIST_PTR_ADDR1);
 
-;
+	asd_printk("LSEQ%d MDP 1 MODE 1 >>>>\n", lseq);
 	PRINT_LMIP_qword(asd_ha, lseq, M1_SG_LIST_PTR_ADDR0);
 	PRINT_LMIP_qword(asd_ha, lseq, M1_SG_LIST_PTR_ADDR1);
 
-;
+	asd_printk("LSEQ%d MDP 1 MODE 2 >>>>\n", lseq);
 	PRINT_LMIP_dword(asd_ha, lseq, INVALID_DWORD_COUNT);
 	PRINT_LMIP_dword(asd_ha, lseq, DISPARITY_ERROR_COUNT);
 	PRINT_LMIP_dword(asd_ha, lseq, LOSS_OF_SYNC_COUNT);
 
-;
+	asd_printk("LSEQ%d MDP 1 MODE 4/5 >>>>\n", lseq);
 	PRINT_LMIP_dword(asd_ha, lseq, FRAME_TYPE_MASK);
 	PRINT_LMIP_dword(asd_ha, lseq, HASHED_SRC_ADDR_MASK_PRINT);
 	PRINT_LMIP_byte(asd_ha, lseq, NUM_FILL_BYTES_MASK);
@@ -711,27 +711,27 @@ static void asd_dump_lseq_state(struct asd_ha_struct *asd_ha, int lseq)
 	PRINT_LMIP_word(asd_ha, lseq, TARGET_PORT_XFER_TAG);
 	PRINT_LMIP_dword(asd_ha, lseq, DATA_OFFSET);
 
-;
+	asd_printk("LSEQ%d MDP 2 MODE 0 >>>>\n", lseq);
 	PRINT_LMIP_dword(asd_ha, lseq, SMP_RCV_TIMER_TERM_TS);
 	PRINT_LMIP_byte(asd_ha, lseq, DEVICE_BITS);
 	PRINT_LMIP_word(asd_ha, lseq, SDB_DDB);
 	PRINT_LMIP_word(asd_ha, lseq, SDB_NUM_TAGS);
 	PRINT_LMIP_word(asd_ha, lseq, SDB_CURR_TAG);
 
-;
+	asd_printk("LSEQ%d MDP 2 MODE 1 >>>>\n", lseq);
 	PRINT_LMIP_qword(asd_ha, lseq, TX_ID_ADDR_FRAME);
 	PRINT_LMIP_dword(asd_ha, lseq, OPEN_TIMER_TERM_TS);
 	PRINT_LMIP_dword(asd_ha, lseq, SRST_AS_TIMER_TERM_TS);
 	PRINT_LMIP_dword(asd_ha, lseq, LAST_LOADED_SG_EL);
 
-;
+	asd_printk("LSEQ%d MDP 2 MODE 2 >>>>\n", lseq);
 	PRINT_LMIP_dword(asd_ha, lseq, CLOSE_TIMER_TERM_TS);
 	PRINT_LMIP_dword(asd_ha, lseq, BREAK_TIMER_TERM_TS);
 	PRINT_LMIP_dword(asd_ha, lseq, DWS_RESET_TIMER_TERM_TS);
 	PRINT_LMIP_dword(asd_ha, lseq, SATA_INTERLOCK_TIMER_TERM_TS);
 	PRINT_LMIP_dword(asd_ha, lseq, MCTL_TIMER_TERM_TS);
 
-;
+	asd_printk("LSEQ%d MDP 2 MODE 4/5 >>>>\n", lseq);
 	PRINT_LMIP_dword(asd_ha, lseq, COMINIT_TIMER_TERM_TS);
 	PRINT_LMIP_dword(asd_ha, lseq, RCV_ID_TIMER_TERM_TS);
 	PRINT_LMIP_dword(asd_ha, lseq, RCV_FIS_TIMER_TERM_TS);
@@ -764,30 +764,30 @@ void asd_dump_target_ddb(struct asd_ha_struct *asd_ha, u16 site_no)
 	asd_ddbsite_read_dword(asd_ha, site_no,                    \
 			       offsetof(struct asd_ddb_ssp_smp_target_port, __name))
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
-//	asd_printk("Pathway Blocked Count: 0x%02x\n",
-;
-;
-//	asd_printk("more_compat_features: 0x%08x\n",
-;
-;
-;
-;
-;
-;
-//	asd_printk("Active Task Count: 0x%04x\n",
-;
-;
-;
-;
+	asd_printk("DDB: 0x%02x\n", site_no);
+	asd_printk("conn_type: 0x%02x\n", DDB_FIELDB(conn_type));
+	asd_printk("conn_rate: 0x%02x\n", DDB_FIELDB(conn_rate));
+	asd_printk("init_conn_tag: 0x%04x\n", be16_to_cpu(DDB_FIELDW(init_conn_tag)));
+	asd_printk("send_queue_head: 0x%04x\n", be16_to_cpu(DDB_FIELDW(send_queue_head)));
+	asd_printk("sq_suspended: 0x%02x\n", DDB_FIELDB(sq_suspended));
+	asd_printk("DDB Type: 0x%02x\n", DDB_FIELDB(ddb_type));
+	asd_printk("AWT Default: 0x%04x\n", DDB_FIELDW(awt_def));
+	asd_printk("compat_features: 0x%02x\n", DDB_FIELDB(compat_features));
+	asd_printk("Pathway Blocked Count: 0x%02x\n",
+		   DDB_FIELDB(pathway_blocked_count));
+	asd_printk("arb_wait_time: 0x%04x\n", DDB_FIELDW(arb_wait_time));
+	asd_printk("more_compat_features: 0x%08x\n",
+		   DDB_FIELDD(more_compat_features));
+	asd_printk("Conn Mask: 0x%02x\n", DDB_FIELDB(conn_mask));
+	asd_printk("flags: 0x%02x\n", DDB_FIELDB(flags));
+	asd_printk("flags2: 0x%02x\n", DDB2_FIELDB(flags2));
+	asd_printk("ExecQ Tail: 0x%04x\n",DDB_FIELDW(exec_queue_tail));
+	asd_printk("SendQ Tail: 0x%04x\n",DDB_FIELDW(send_queue_tail));
+	asd_printk("Active Task Count: 0x%04x\n",
+		   DDB_FIELDW(active_task_count));
+	asd_printk("ITNL Reason: 0x%02x\n", DDB_FIELDB(itnl_reason));
+	asd_printk("ITNL Timeout Const: 0x%04x\n", DDB_FIELDW(itnl_timeout));
+	asd_printk("ITNL timestamp: 0x%08x\n", DDB_FIELDD(itnl_timestamp));
 }
 
 void asd_dump_ddb_0(struct asd_ha_struct *asd_ha)
@@ -808,29 +808,29 @@ void asd_dump_ddb_0(struct asd_ha_struct *asd_ha)
 			      offsetof(struct asd_ddb_seq_shared, __name)+_o)
 
 
-;
-;
-;
-;
-;
-;
-;
-;
-;
-//	asd_printk("est_nexus_buf_thresh:%04x\n",
-;
-;
-;
-//	asd_printk("port_map_by_links:%02x %02x %02x %02x "
-//		   "%02x %02x %02x %02x\n",
-//		   DDB0_FIELDA(port_map_by_links, 0),
-//		   DDB0_FIELDA(port_map_by_links, 1),
-//		   DDB0_FIELDA(port_map_by_links, 2),
-//		   DDB0_FIELDA(port_map_by_links, 3),
-//		   DDB0_FIELDA(port_map_by_links, 4),
-//		   DDB0_FIELDA(port_map_by_links, 5),
-//		   DDB0_FIELDA(port_map_by_links, 6),
-;
+	asd_printk("DDB: 0\n");
+	asd_printk("q_free_ddb_head:%04x\n", DDB0_FIELDW(q_free_ddb_head));
+	asd_printk("q_free_ddb_tail:%04x\n", DDB0_FIELDW(q_free_ddb_tail));
+	asd_printk("q_free_ddb_cnt:%04x\n",  DDB0_FIELDW(q_free_ddb_cnt));
+	asd_printk("q_used_ddb_head:%04x\n", DDB0_FIELDW(q_used_ddb_head));
+	asd_printk("q_used_ddb_tail:%04x\n", DDB0_FIELDW(q_used_ddb_tail));
+	asd_printk("shared_mem_lock:%04x\n", DDB0_FIELDW(shared_mem_lock));
+	asd_printk("smp_conn_tag:%04x\n",    DDB0_FIELDW(smp_conn_tag));
+	asd_printk("est_nexus_buf_cnt:%04x\n", DDB0_FIELDW(est_nexus_buf_cnt));
+	asd_printk("est_nexus_buf_thresh:%04x\n",
+		   DDB0_FIELDW(est_nexus_buf_thresh));
+	asd_printk("conn_not_active:%02x\n", DDB0_FIELDB(conn_not_active));
+	asd_printk("phy_is_up:%02x\n",       DDB0_FIELDB(phy_is_up));
+	asd_printk("port_map_by_links:%02x %02x %02x %02x "
+		   "%02x %02x %02x %02x\n",
+		   DDB0_FIELDA(port_map_by_links, 0),
+		   DDB0_FIELDA(port_map_by_links, 1),
+		   DDB0_FIELDA(port_map_by_links, 2),
+		   DDB0_FIELDA(port_map_by_links, 3),
+		   DDB0_FIELDA(port_map_by_links, 4),
+		   DDB0_FIELDA(port_map_by_links, 5),
+		   DDB0_FIELDA(port_map_by_links, 6),
+		   DDB0_FIELDA(port_map_by_links, 7));
 }
 
 static void asd_dump_scb_site(struct asd_ha_struct *asd_ha, u16 site_no)
@@ -846,13 +846,13 @@ static void asd_dump_scb_site(struct asd_ha_struct *asd_ha, u16 site_no)
 	asd_scbsite_read_dword(asd_ha, site_no, sizeof(struct scb_header)  \
 			       + offsetof(struct initiate_ssp_task, __name))
 
-;
-;
-;
-//	asd_printk("Target Port Xfer Tag: 0x%04x.\n",
-;
-;
-;
+	asd_printk("Total Xfer Len: 0x%08x.\n", SCB_FIELDD(total_xfer_len));
+	asd_printk("Frame Type: 0x%02x.\n", SCB_FIELDB(ssp_frame.frame_type));
+	asd_printk("Tag: 0x%04x.\n", SCB_FIELDW(ssp_frame.tag));
+	asd_printk("Target Port Xfer Tag: 0x%04x.\n",
+		   SCB_FIELDW(ssp_frame.tptt));
+	asd_printk("Data Offset: 0x%08x.\n", SCB_FIELDW(ssp_frame.data_offs));
+	asd_printk("Retry Count: 0x%02x.\n", SCB_FIELDB(retry_count));
 }
 
 /**
@@ -877,7 +877,7 @@ void asd_dump_scb_sites(struct asd_ha_struct *asd_ha)
 		if (opcode == 0xFF)
 			continue;
 
-;
+		asd_printk("\nSCB: 0x%x\n", site_no);
 		asd_dump_scb_site(asd_ha, site_no);
 	}
 }
@@ -930,21 +930,21 @@ void asd_dump_frame_rcvd(struct asd_phy *phy,
 
 static void asd_dump_scb(struct asd_ascb *ascb, int ind)
 {
-//	asd_printk("scb%d: vaddr: 0x%p, dma_handle: 0x%llx, next: 0x%llx, "
-//		   "index:%d, opcode:0x%02x\n",
-//		   ind, ascb->dma_scb.vaddr,
-//		   (unsigned long long)ascb->dma_scb.dma_handle,
-//		   (unsigned long long)
-//		   le64_to_cpu(ascb->scb->header.next_scb),
-//		   le16_to_cpu(ascb->scb->header.index),
-;
+	asd_printk("scb%d: vaddr: 0x%p, dma_handle: 0x%llx, next: 0x%llx, "
+		   "index:%d, opcode:0x%02x\n",
+		   ind, ascb->dma_scb.vaddr,
+		   (unsigned long long)ascb->dma_scb.dma_handle,
+		   (unsigned long long)
+		   le64_to_cpu(ascb->scb->header.next_scb),
+		   le16_to_cpu(ascb->scb->header.index),
+		   ascb->scb->header.opcode);
 }
 
 void asd_dump_scb_list(struct asd_ascb *ascb, int num)
 {
 	int i = 0;
 
-;
+	asd_printk("dumping %d scbs:\n", num);
 
 	asd_dump_scb(ascb, i++);
 	--num;

@@ -496,7 +496,7 @@ bool radeon_get_bios(struct radeon_device *rdev)
 		return false;
 	}
 	if (rdev->bios[0] != 0x55 || rdev->bios[1] != 0xaa) {
-;
+		printk("BIOS signature incorrect %x %x\n", rdev->bios[0], rdev->bios[1]);
 		goto free_bios;
 	}
 

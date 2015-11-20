@@ -86,8 +86,8 @@ static int __devinit radeon_parse_montype_prop(struct device_node *dp, u8 **out_
 		mt = MT_CRT;
 	else {
 		if (strcmp(pmt, "NONE") != 0)
-//			printk(KERN_WARNING "radeonfb: Unknown OF display-type: %s\n",
-;
+			printk(KERN_WARNING "radeonfb: Unknown OF display-type: %s\n",
+			       pmt);
 		return MT_NONE;
 	}
 
@@ -173,7 +173,7 @@ static int __devinit radeon_get_panel_info_BIOS(struct radeonfb_info *rinfo)
 		return 0;
 
 	if (!(tmp = BIOS_IN16(rinfo->fp_bios_start + 0x40))) {
-;
+		printk(KERN_ERR "radeonfb: Failed to detect DFP panel info using BIOS\n");
 		rinfo->panel_info.pwr_delay = 200;
 		return 0;
 	}
@@ -181,11 +181,11 @@ static int __devinit radeon_get_panel_info_BIOS(struct radeonfb_info *rinfo)
 	for(i=0; i<24; i++)
 		stmp[i] = BIOS_IN8(tmp+i+1);
 	stmp[24] = 0;
-;
+	printk("radeonfb: panel ID string: %s\n", stmp);
 	rinfo->panel_info.xres = BIOS_IN16(tmp + 25);
 	rinfo->panel_info.yres = BIOS_IN16(tmp + 27);
-//	printk("radeonfb: detected LVDS panel size from BIOS: %dx%d\n",
-;
+	printk("radeonfb: detected LVDS panel size from BIOS: %dx%d\n",
+		rinfo->panel_info.xres, rinfo->panel_info.yres);
 
 	rinfo->panel_info.pwr_delay = BIOS_IN16(tmp + 44);
 	pr_debug("BIOS provided panel power delay: %d\n", rinfo->panel_info.pwr_delay);
@@ -201,7 +201,7 @@ static int __devinit radeon_get_panel_info_BIOS(struct radeonfb_info *rinfo)
 	if (rinfo->panel_info.ref_divider != 0 &&
 	    rinfo->panel_info.fbk_divider > 3) {
 		rinfo->panel_info.use_bios_dividers = 1;
-;
+		printk(KERN_INFO "radeondb: BIOS provided dividers will be used\n");
 		pr_debug("ref_divider = %x\n", rinfo->panel_info.ref_divider);
 		pr_debug("post_divider = %x\n", rinfo->panel_info.post_divider);
 		pr_debug("fbk_divider = %x\n", rinfo->panel_info.fbk_divider);
@@ -266,7 +266,7 @@ static void __devinit radeon_parse_connector_info(struct radeonfb_info *rinfo)
 
 	offset = BIOS_IN16(rinfo->fp_bios_start + 0x50);
 	if (offset == 0) {
-;
+		printk(KERN_WARNING "radeonfb: No connector info table detected\n");
 		return;
 	}
 
@@ -472,7 +472,7 @@ void __devinit radeon_probe_screens(struct radeonfb_info *rinfo,
 				rinfo->mon1_EDID = rinfo->mon2_EDID;
 			} else {
 				rinfo->mon1_type = MT_CRT;
-;
+				printk(KERN_INFO "radeonfb: No valid monitor, assuming CRT on first port\n");
 			}
 			rinfo->mon2_type = MT_NONE;
 			rinfo->mon2_EDID = NULL;
@@ -536,11 +536,11 @@ void __devinit radeon_probe_screens(struct radeonfb_info *rinfo,
 				tmp0 = BIOS_IN16(tmp + i*2);
 				if ((!(tmp0 & 0x01)) && (((tmp0 >> 8) & 0x0f) == ddc_dvi)) {
 					rinfo->reversed_DAC = 1;
-;
+					printk(KERN_INFO "radeonfb: Reversed DACs detected\n");
 				}
 				if ((((tmp0 >> 8) & 0x0f) == ddc_dvi) && ((tmp0 >> 4) & 0x01)) {
 					rinfo->reversed_TMDS = 1;
-;
+					printk(KERN_INFO "radeonfb: Reversed TMDS detected\n");
 				}
 			}
 		}
@@ -568,7 +568,7 @@ void __devinit radeon_probe_screens(struct radeonfb_info *rinfo,
 		    ((rinfo->bios_seg && (INREG(BIOS_4_SCRATCH) & 4))
 		     || (INREG(LVDS_GEN_CNTL) & LVDS_ON))) {
 			rinfo->mon1_type = MT_LCD;
-;
+			printk("Non-DDC laptop panel detected\n");
 		}
 		if (rinfo->mon1_type == MT_NONE)
 			rinfo->mon1_type = radeon_crt_is_connected(rinfo, rinfo->reversed_DAC);
@@ -632,16 +632,16 @@ void __devinit radeon_probe_screens(struct radeonfb_info *rinfo,
 	}
 
  bail:
-//	printk(KERN_INFO "radeonfb: Monitor 1 type %s found\n",
-;
+	printk(KERN_INFO "radeonfb: Monitor 1 type %s found\n",
+	       radeon_get_mon_name(rinfo->mon1_type));
 	if (rinfo->mon1_EDID)
-;
+		printk(KERN_INFO "radeonfb: EDID probed\n");
 	if (!rinfo->has_CRTC2)
 		return;
-//	printk(KERN_INFO "radeonfb: Monitor 2 type %s found\n",
-;
+	printk(KERN_INFO "radeonfb: Monitor 2 type %s found\n",
+	       radeon_get_mon_name(rinfo->mon2_type));
 	if (rinfo->mon2_EDID)
-;
+		printk(KERN_INFO "radeonfb: EDID probed\n");
 }
 
 
@@ -670,11 +670,11 @@ static void radeon_fixup_panel_info(struct radeonfb_info *rinfo)
 		rinfo->panel_info.post_divider = (ppll_divn >> 16) & 0x7;
 		rinfo->panel_info.use_bios_dividers = 1;
 
-//		printk(KERN_DEBUG "radeonfb: Using Firmware dividers 0x%08x "
-//		       "from PPLL %d\n",
-//		       rinfo->panel_info.fbk_divider |
-//		       (rinfo->panel_info.post_divider << 16),
-;
+		printk(KERN_DEBUG "radeonfb: Using Firmware dividers 0x%08x "
+		       "from PPLL %d\n",
+		       rinfo->panel_info.fbk_divider |
+		       (rinfo->panel_info.post_divider << 16),
+		       ppll_div_sel);
 	}
 #endif /* CONFIG_PPC_OF */
 }
@@ -835,18 +835,18 @@ void __devinit radeon_check_modes(struct radeonfb_info *rinfo, const char *mode_
 			rinfo->panel_info.yres = (tmp >> VERT_PANEL_SHIFT) + 1;
 		}
 		if (rinfo->panel_info.xres == 0 || rinfo->panel_info.yres == 0) {
-;
+			printk(KERN_WARNING "radeonfb: Can't find panel size, going back to CRT\n");
 			rinfo->mon1_type = MT_CRT;
 			goto pickup_default;
 		}
-//		printk(KERN_WARNING "radeonfb: Assuming panel size %dx%d\n",
-;
+		printk(KERN_WARNING "radeonfb: Assuming panel size %dx%d\n",
+		       rinfo->panel_info.xres, rinfo->panel_info.yres);
 		modedb = rinfo->mon1_modedb;
 		dbsize = rinfo->mon1_dbsize;
 		snprintf(modename, 31, "%dx%d", rinfo->panel_info.xres, rinfo->panel_info.yres);
 		if (fb_find_mode(&info->var, info, modename,
 				 modedb, dbsize, NULL, 8) == 0) {
-;
+			printk(KERN_WARNING "radeonfb: Can't find mode for panel size, going back to CRT\n");
 			rinfo->mon1_type = MT_CRT;
 			goto pickup_default;
 		}

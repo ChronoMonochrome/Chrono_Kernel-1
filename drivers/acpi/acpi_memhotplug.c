@@ -170,7 +170,7 @@ acpi_memory_get_device(acpi_handle handle,
 	/* Get the parent device */
 	result = acpi_bus_get_device(phandle, &pdevice);
 	if (result) {
-;
+		printk(KERN_WARNING PREFIX "Cannot get acpi bus device");
 		return -EINVAL;
 	}
 
@@ -180,14 +180,14 @@ acpi_memory_get_device(acpi_handle handle,
 	 */
 	result = acpi_bus_add(&device, pdevice, handle, ACPI_BUS_TYPE_DEVICE);
 	if (result) {
-;
+		printk(KERN_WARNING PREFIX "Cannot add acpi bus");
 		return -EINVAL;
 	}
 
       end:
 	*mem_device = acpi_driver_data(device);
 	if (!(*mem_device)) {
-;
+		printk(KERN_ERR "\n driver data not found");
 		return -ENODEV;
 	}
 
@@ -224,7 +224,7 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
 	/* Get the range from the _CRS */
 	result = acpi_memory_get_device_resources(mem_device);
 	if (result) {
-;
+		printk(KERN_ERR PREFIX "get_device_resources failed\n");
 		mem_device->state = MEMORY_INVALID_STATE;
 		return result;
 	}
@@ -257,7 +257,7 @@ static int acpi_memory_enable_device(struct acpi_memory_device *mem_device)
 		num_enabled++;
 	}
 	if (!num_enabled) {
-;
+		printk(KERN_ERR PREFIX "add_memory failed\n");
 		mem_device->state = MEMORY_INVALID_STATE;
 		return -EINVAL;
 	}
@@ -353,14 +353,14 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
 			ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 					  "\nReceived DEVICE CHECK notification for device\n"));
 		if (acpi_memory_get_device(handle, &mem_device)) {
-;
+			printk(KERN_ERR PREFIX "Cannot find driver data\n");
 			return;
 		}
 
 		if (!acpi_memory_check_device(mem_device)) {
 			if (acpi_memory_enable_device(mem_device))
-//				printk(KERN_ERR PREFIX
-;
+				printk(KERN_ERR PREFIX
+					    "Cannot enable memory device\n");
 		}
 		break;
 	case ACPI_NOTIFY_EJECT_REQUEST:
@@ -368,12 +368,12 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
 				  "\nReceived EJECT REQUEST notification for device\n"));
 
 		if (acpi_bus_get_device(handle, &device)) {
-;
+			printk(KERN_ERR PREFIX "Device doesn't exist\n");
 			break;
 		}
 		mem_device = acpi_driver_data(device);
 		if (!mem_device) {
-;
+			printk(KERN_ERR PREFIX "Driver Data is NULL\n");
 			break;
 		}
 
@@ -384,8 +384,8 @@ static void acpi_memory_device_notify(acpi_handle handle, u32 event, void *data)
 		 *      with generic sysfs driver
 		 */
 		if (acpi_memory_disable_device(mem_device))
-//			printk(KERN_ERR PREFIX
-;
+			printk(KERN_ERR PREFIX
+				    "Disable memory device\n");
 		/*
 		 * TBD: Invoke acpi_bus_remove to cleanup data structures
 		 */
@@ -429,7 +429,7 @@ static int acpi_memory_device_add(struct acpi_device *device)
 	/* Set the device state */
 	mem_device->state = MEMORY_POWER_ON_STATE;
 
-;
+	printk(KERN_DEBUG "%s \n", acpi_device_name(device));
 
 	/*
 	 * Early boot code has recognized memory area by EFI/E820.
@@ -444,8 +444,8 @@ static int acpi_memory_device_add(struct acpi_device *device)
 		/* call add_memory func */
 		result = acpi_memory_enable_device(mem_device);
 		if (result)
-//			printk(KERN_ERR PREFIX
-;
+			printk(KERN_ERR PREFIX
+				"Error in acpi_memory_enable_device\n");
 	}
 	return result;
 }

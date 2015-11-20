@@ -89,7 +89,7 @@ static void n411_wait_for_ack(struct hecubafb_par *par, int clear)
 			return;
 		udelay(1);
 	} while (timeout--);
-;
+	printk(KERN_ERR "timed out waiting for ack\n");
 }
 
 static int n411_init_control(struct hecubafb_par *par)
@@ -110,7 +110,7 @@ static int n411_init_control(struct hecubafb_par *par)
 	/* check ACK is not lo */
 	tmp = n411_get_ctl(par);
 	if (tmp & HCB_ACK_BIT) {
-;
+		printk(KERN_ERR "Fail because ACK is already low\n");
 		return -ENXIO;
 	}
 
@@ -154,7 +154,7 @@ static int __init n411_init(void)
 {
 	int ret;
 	if (!dio_addr || !cio_addr || !c2io_addr) {
-;
+		printk(KERN_WARNING "no IO addresses supplied\n");
 		return -EINVAL;
 	}
 

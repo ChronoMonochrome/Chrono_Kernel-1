@@ -309,9 +309,9 @@ static void pll_factors(struct pll_ *pll_div,
 		pll_div->pre_div = 0;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
-//		printk(KERN_WARNING
-//			"WM8974 N value %u outwith recommended range!\n",
-;
+		printk(KERN_WARNING
+			"WM8974 N value %u outwith recommended range!\n",
+			Ndiv);
 
 	pll_div->n = Ndiv;
 	Nmod = target % source;
@@ -696,8 +696,8 @@ static int __init wm8974_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8974_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register wm8974 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register wm8974 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

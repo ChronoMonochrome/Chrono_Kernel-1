@@ -259,7 +259,7 @@ int ibmasm_init_remote_input_dev(struct service_processor *sp)
 
 	enable_mouse_interrupts(sp);
 
-;
+	printk(KERN_INFO "ibmasm remote responding to events on RSA card %d\n", sp->number);
 
 	return 0;
 

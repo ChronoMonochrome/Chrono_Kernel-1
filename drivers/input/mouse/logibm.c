@@ -104,7 +104,7 @@ static irqreturn_t logibm_interrupt(int irq, void *dev_id)
 static int logibm_open(struct input_dev *dev)
 {
 	if (request_irq(logibm_irq, logibm_interrupt, 0, "logibm", NULL)) {
-;
+		printk(KERN_ERR "logibm.c: Can't allocate irq %d\n", logibm_irq);
 		return -EBUSY;
 	}
 	outb(LOGIBM_ENABLE_IRQ, LOGIBM_CONTROL_PORT);
@@ -122,7 +122,7 @@ static int __init logibm_init(void)
 	int err;
 
 	if (!request_region(LOGIBM_BASE, LOGIBM_EXTENT, "logibm")) {
-;
+		printk(KERN_ERR "logibm.c: Can't allocate ports at %#x\n", LOGIBM_BASE);
 		return -EBUSY;
 	}
 
@@ -131,7 +131,7 @@ static int __init logibm_init(void)
 	udelay(100);
 
 	if (inb(LOGIBM_SIGNATURE_PORT) != LOGIBM_SIGNATURE_BYTE) {
-;
+		printk(KERN_INFO "logibm.c: Didn't find Logitech busmouse at %#x\n", LOGIBM_BASE);
 		err = -ENODEV;
 		goto err_release_region;
 	}
@@ -141,7 +141,7 @@ static int __init logibm_init(void)
 
 	logibm_dev = input_allocate_device();
 	if (!logibm_dev) {
-;
+		printk(KERN_ERR "logibm.c: Not enough memory for input device\n");
 		err = -ENOMEM;
 		goto err_release_region;
 	}

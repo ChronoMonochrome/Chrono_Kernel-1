@@ -383,13 +383,13 @@ qla2xxx_dump_post_process(scsi_qla_host_t *vha, int rval)
 	struct qla_hw_data *ha = vha->hw;
 
 	if (rval != QLA_SUCCESS) {
-//		qla_printk(KERN_WARNING, ha,
-;
+		qla_printk(KERN_WARNING, ha,
+		    "Failed to dump firmware (%x)!!!\n", rval);
 		ha->fw_dumped = 0;
 	} else {
-//		qla_printk(KERN_INFO, ha,
-//		    "Firmware dump saved to temp buffer (%ld/%p).\n",
-;
+		qla_printk(KERN_INFO, ha,
+		    "Firmware dump saved to temp buffer (%ld/%p).\n",
+		    vha->host_no, ha->fw_dump);
 		ha->fw_dumped = 1;
 		qla2x00_post_uevent_work(vha, QLA_UEVENT_CODE_FW_DUMP);
 	}
@@ -419,15 +419,15 @@ qla2300_fw_dump(scsi_qla_host_t *vha, int hardware_locked)
 		spin_lock_irqsave(&ha->hardware_lock, flags);
 
 	if (!ha->fw_dump) {
-//		qla_printk(KERN_WARNING, ha,
-;
+		qla_printk(KERN_WARNING, ha,
+		    "No buffer available for dump!!!\n");
 		goto qla2300_fw_dump_failed;
 	}
 
 	if (ha->fw_dumped) {
-//		qla_printk(KERN_WARNING, ha,
-//		    "Firmware has been previously dumped (%p) -- ignoring "
-;
+		qla_printk(KERN_WARNING, ha,
+		    "Firmware has been previously dumped (%p) -- ignoring "
+		    "request...\n", ha->fw_dump);
 		goto qla2300_fw_dump_failed;
 	}
 	fw = &ha->fw_dump->isp.isp23;
@@ -582,15 +582,15 @@ qla2100_fw_dump(scsi_qla_host_t *vha, int hardware_locked)
 		spin_lock_irqsave(&ha->hardware_lock, flags);
 
 	if (!ha->fw_dump) {
-//		qla_printk(KERN_WARNING, ha,
-;
+		qla_printk(KERN_WARNING, ha,
+		    "No buffer available for dump!!!\n");
 		goto qla2100_fw_dump_failed;
 	}
 
 	if (ha->fw_dumped) {
-//		qla_printk(KERN_WARNING, ha,
-//		    "Firmware has been previously dumped (%p) -- ignoring "
-;
+		qla_printk(KERN_WARNING, ha,
+		    "Firmware has been previously dumped (%p) -- ignoring "
+		    "request...\n", ha->fw_dump);
 		goto qla2100_fw_dump_failed;
 	}
 	fw = &ha->fw_dump->isp.isp21;
@@ -779,15 +779,15 @@ qla24xx_fw_dump(scsi_qla_host_t *vha, int hardware_locked)
 		spin_lock_irqsave(&ha->hardware_lock, flags);
 
 	if (!ha->fw_dump) {
-//		qla_printk(KERN_WARNING, ha,
-;
+		qla_printk(KERN_WARNING, ha,
+		    "No buffer available for dump!!!\n");
 		goto qla24xx_fw_dump_failed;
 	}
 
 	if (ha->fw_dumped) {
-//		qla_printk(KERN_WARNING, ha,
-//		    "Firmware has been previously dumped (%p) -- ignoring "
-;
+		qla_printk(KERN_WARNING, ha,
+		    "Firmware has been previously dumped (%p) -- ignoring "
+		    "request...\n", ha->fw_dump);
 		goto qla24xx_fw_dump_failed;
 	}
 	fw = &ha->fw_dump->isp.isp24;
@@ -1017,15 +1017,15 @@ qla25xx_fw_dump(scsi_qla_host_t *vha, int hardware_locked)
 		spin_lock_irqsave(&ha->hardware_lock, flags);
 
 	if (!ha->fw_dump) {
-//		qla_printk(KERN_WARNING, ha,
-;
+		qla_printk(KERN_WARNING, ha,
+		    "No buffer available for dump!!!\n");
 		goto qla25xx_fw_dump_failed;
 	}
 
 	if (ha->fw_dumped) {
-//		qla_printk(KERN_WARNING, ha,
-//		    "Firmware has been previously dumped (%p) -- ignoring "
-;
+		qla_printk(KERN_WARNING, ha,
+		    "Firmware has been previously dumped (%p) -- ignoring "
+		    "request...\n", ha->fw_dump);
 		goto qla25xx_fw_dump_failed;
 	}
 	fw = &ha->fw_dump->isp.isp25;
@@ -1328,15 +1328,15 @@ qla81xx_fw_dump(scsi_qla_host_t *vha, int hardware_locked)
 		spin_lock_irqsave(&ha->hardware_lock, flags);
 
 	if (!ha->fw_dump) {
-//		qla_printk(KERN_WARNING, ha,
-;
+		qla_printk(KERN_WARNING, ha,
+		    "No buffer available for dump!!!\n");
 		goto qla81xx_fw_dump_failed;
 	}
 
 	if (ha->fw_dumped) {
-//		qla_printk(KERN_WARNING, ha,
-//		    "Firmware has been previously dumped (%p) -- ignoring "
-;
+		qla_printk(KERN_WARNING, ha,
+		    "Firmware has been previously dumped (%p) -- ignoring "
+		    "request...\n", ha->fw_dump);
 		goto qla81xx_fw_dump_failed;
 	}
 	fw = &ha->fw_dump->isp.isp81;
@@ -1632,10 +1632,10 @@ qla2x00_dump_regs(scsi_qla_host_t *vha)
 	mbx_reg = IS_FWI2_CAPABLE(ha) ? &reg24->mailbox0:
 	    MAILBOX_REG(ha, reg, 0);
 
-;
+	printk("Mailbox registers:\n");
 	for (i = 0; i < 6; i++)
-//		printk("scsi(%ld): mbox %d 0x%04x \n", vha->host_no, i,
-;
+		printk("scsi(%ld): mbox %d 0x%04x \n", vha->host_no, i,
+		    RD_REG_WORD(mbx_reg++));
 }
 
 
@@ -1645,22 +1645,22 @@ qla2x00_dump_buffer(uint8_t * b, uint32_t size)
 	uint32_t cnt;
 	uint8_t c;
 
-//	printk(" 0   1   2   3   4   5   6   7   8   9  "
-;
-//	printk("----------------------------------------"
-;
+	printk(" 0   1   2   3   4   5   6   7   8   9  "
+	    "Ah  Bh  Ch  Dh  Eh  Fh\n");
+	printk("----------------------------------------"
+	    "----------------------\n");
 
 	for (cnt = 0; cnt < size;) {
 		c = *b++;
-;
+		printk("%02x",(uint32_t) c);
 		cnt++;
 		if (!(cnt % 16))
-;
+			printk("\n");
 		else
-;
+			printk("  ");
 	}
 	if (cnt % 16)
-;
+		printk("\n");
 }
 
 void
@@ -1671,10 +1671,10 @@ qla2x00_dump_buffer_zipped(uint8_t *b, uint32_t size)
 	uint8_t  last16[16], cur16[16];
 	uint32_t lc = 0, num_same16 = 0, j;
 
-//	printk(KERN_DEBUG " 0   1   2   3   4   5   6   7   8   9  "
-;
-//	printk(KERN_DEBUG "----------------------------------------"
-;
+	printk(KERN_DEBUG " 0   1   2   3   4   5   6   7   8   9  "
+	    "Ah  Bh  Ch  Dh  Eh  Fh\n");
+	printk(KERN_DEBUG "----------------------------------------"
+	    "----------------------\n");
 
 	for (cnt = 0; cnt < size;) {
 		c = *b++;
@@ -1697,28 +1697,28 @@ qla2x00_dump_buffer_zipped(uint8_t *b, uint32_t size)
 			continue;
 		}
 		for (j = 0; j < 16; j++)
-;
-;
+			printk(KERN_DEBUG "%02x  ", (uint32_t)last16[j]);
+		printk(KERN_DEBUG "\n");
 
 		if (num_same16 > 1)
-//			printk(KERN_DEBUG "> prev pattern repeats (%u)"
-;
+			printk(KERN_DEBUG "> prev pattern repeats (%u)"
+			    "more times\n", num_same16-1);
 		memcpy(last16, cur16, 16);
 		num_same16 = 1;
 	}
 
 	if (num_same16) {
 		for (j = 0; j < 16; j++)
-;
-;
+			printk(KERN_DEBUG "%02x  ", (uint32_t)last16[j]);
+		printk(KERN_DEBUG "\n");
 
 		if (num_same16 > 1)
-//			printk(KERN_DEBUG "> prev pattern repeats (%u)"
-;
+			printk(KERN_DEBUG "> prev pattern repeats (%u)"
+			    "more times\n", num_same16-1);
 	}
 	if (lc) {
 		for (j = 0; j < lc; j++)
-;
-;
+			printk(KERN_DEBUG "%02x  ", (uint32_t)cur16[j]);
+		printk(KERN_DEBUG "\n");
 	}
 }

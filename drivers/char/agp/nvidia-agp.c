@@ -274,8 +274,8 @@ static void nvidia_tlbflush(struct agp_memory *mem)
 			pci_read_config_dword(nvidia_private.dev_1,
 					NVIDIA_1_WBC, &wbc_reg);
 			if (time_before_eq(end, jiffies)) {
-//				printk(KERN_ERR PFX
-;
+				printk(KERN_ERR PFX
+				    "TLB flush took more than 3 seconds.\n");
 			}
 		} while (wbc_reg & nvidia_private.wbc_mask);
 	}
@@ -346,8 +346,8 @@ static int __devinit agp_nvidia_probe(struct pci_dev *pdev,
 		pci_get_bus_and_slot((unsigned int)pdev->bus->number, PCI_DEVFN(30, 0));
 
 	if (!nvidia_private.dev_1 || !nvidia_private.dev_2 || !nvidia_private.dev_3) {
-//		printk(KERN_INFO PFX "Detected an NVIDIA nForce/nForce2 "
-;
+		printk(KERN_INFO PFX "Detected an NVIDIA nForce/nForce2 "
+			"chipset, but could not find the secondary devices.\n");
 		return -ENODEV;
 	}
 
@@ -357,16 +357,16 @@ static int __devinit agp_nvidia_probe(struct pci_dev *pdev,
 
 	switch (pdev->device) {
 	case PCI_DEVICE_ID_NVIDIA_NFORCE:
-;
+		printk(KERN_INFO PFX "Detected NVIDIA nForce chipset\n");
 		nvidia_private.wbc_mask = 0x00010000;
 		break;
 	case PCI_DEVICE_ID_NVIDIA_NFORCE2:
-;
+		printk(KERN_INFO PFX "Detected NVIDIA nForce2 chipset\n");
 		nvidia_private.wbc_mask = 0x80000000;
 		break;
 	default:
-//		printk(KERN_ERR PFX "Unsupported NVIDIA chipset (device id: %04x)\n",
-;
+		printk(KERN_ERR PFX "Unsupported NVIDIA chipset (device id: %04x)\n",
+			    pdev->device);
 		return -ENODEV;
 	}
 

@@ -214,19 +214,19 @@ static int send_dux_commands(struct usbduxfastsub_s *udfs, int cmd_type)
 	udfs->dux_commands[0] = cmd_type;
 
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi%d: usbduxfast: dux_commands: ",
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast: dux_commands: ",
+	       udfs->comedidev->minor);
 	for (tmp = 0; tmp < SIZEOFDUXBUFFER; tmp++)
-;
-;
+		printk(" %02x", udfs->dux_commands[tmp]);
+	printk("\n");
 #endif
 
 	tmp = usb_bulk_msg(udfs->usbdev,
 			   usb_sndbulkpipe(udfs->usbdev, CHANNELLISTEP),
 			   udfs->dux_commands, SIZEOFDUXBUFFER, &nsent, 10000);
 	if (tmp < 0)
-//		printk(KERN_ERR "comedi%d: could not transmit dux_commands to"
-;
+		printk(KERN_ERR "comedi%d: could not transmit dux_commands to"
+		       "the usb-device, err=%d\n", udfs->comedidev->minor, tmp);
 	return tmp;
 }
 
@@ -246,7 +246,7 @@ static int usbduxfastsub_unlink_InURBs(struct usbduxfastsub_s *udfs)
 		j = 0;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-;
+	printk(KERN_DEBUG "comedi: usbduxfast: unlinked InURB: res=%d\n", j);
 #endif
 	return err;
 }
@@ -261,11 +261,11 @@ static int usbduxfast_ai_stop(struct usbduxfastsub_s *udfs, int do_unlink)
 	int ret = 0;
 
 	if (!udfs) {
-;
+		printk(KERN_ERR "comedi?: usbduxfast_ai_stop: udfs=NULL!\n");
 		return -EFAULT;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-;
+	printk(KERN_DEBUG "comedi: usbduxfast_ai_stop\n");
 #endif
 
 	udfs->ai_cmd_running = 0;
@@ -289,11 +289,11 @@ static int usbduxfast_ai_cancel(struct comedi_device *dev,
 
 	/* force unlink of all urbs */
 #ifdef CONFIG_COMEDI_DEBUG
-;
+	printk(KERN_DEBUG "comedi: usbduxfast_ai_cancel\n");
 #endif
 	udfs = dev->private;
 	if (!udfs) {
-;
+		printk(KERN_ERR "comedi: usbduxfast_ai_cancel: udfs=NULL\n");
 		return -EFAULT;
 	}
 	down(&udfs->sem);
@@ -322,22 +322,22 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
 
 	/* sanity checks - is the urb there? */
 	if (!urb) {
-//		printk(KERN_ERR "comedi_: usbduxfast_: ao int-handler called "
-;
+		printk(KERN_ERR "comedi_: usbduxfast_: ao int-handler called "
+		       "with urb=NULL!\n");
 		return;
 	}
 	/* the context variable points to the subdevice */
 	this_comedidev = urb->context;
 	if (!this_comedidev) {
-//		printk(KERN_ERR "comedi_: usbduxfast_: urb context is a NULL "
-;
+		printk(KERN_ERR "comedi_: usbduxfast_: urb context is a NULL "
+		       "pointer!\n");
 		return;
 	}
 	/* the private structure of the subdevice is usbduxfastsub_s */
 	udfs = this_comedidev->private;
 	if (!udfs) {
-//		printk(KERN_ERR "comedi_: usbduxfast_: private of comedi "
-;
+		printk(KERN_ERR "comedi_: usbduxfast_: private of comedi "
+		       "subdev is a NULL pointer!\n");
 		return;
 	}
 	/* are we running a command? */
@@ -379,9 +379,9 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
 		return;
 
 	default:
-//		printk("comedi%d: usbduxfast: non-zero urb status received in "
-//		       "ai intr context: %d\n",
-;
+		printk("comedi%d: usbduxfast: non-zero urb status received in "
+		       "ai intr context: %d\n",
+		       udfs->comedidev->minor, urb->status);
 		s->async->events |= COMEDI_CB_EOA;
 		s->async->events |= COMEDI_CB_ERROR;
 		comedi_event(udfs->comedidev, s);
@@ -436,8 +436,8 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
 	urb->status = 0;
 	err = usb_submit_urb(urb, GFP_ATOMIC);
 	if (err < 0) {
-//		printk(KERN_ERR "comedi%d: usbduxfast: urb resubm failed: %d",
-;
+		printk(KERN_ERR "comedi%d: usbduxfast: urb resubm failed: %d",
+		       udfs->comedidev->minor, err);
 		s->async->events |= COMEDI_CB_EOA;
 		s->async->events |= COMEDI_CB_ERROR;
 		comedi_event(udfs->comedidev, s);
@@ -462,7 +462,7 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
 				1,	/* Length */
 				EZTIMEOUT);	/* Timeout */
 	if (ret < 0) {
-;
+		printk("comedi_: usbduxfast_: control msg failed (start)\n");
 		return ret;
 	}
 
@@ -484,8 +484,8 @@ static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
 			      local_transfer_buffer, 1,	/* Length */
 			      EZTIMEOUT);	/* Timeout */
 	if (ret < 0) {
-//		printk(KERN_ERR "comedi_: usbduxfast: control msg failed "
-;
+		printk(KERN_ERR "comedi_: usbduxfast: control msg failed "
+		       "(stop)\n");
 		return ret;
 	}
 
@@ -499,9 +499,9 @@ static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
 	int ret;
 
 #ifdef CONFIG_COMEDI_DEBUG
-;
-//	printk(KERN_DEBUG " to addr %d, first byte=%d.\n",
-;
+	printk(KERN_DEBUG "comedi: usbduxfast: uploading %d bytes", len);
+	printk(KERN_DEBUG " to addr %d, first byte=%d.\n",
+	       startAddr, local_transfer_buffer[0]);
 #endif
 	/* brequest, firmware */
 	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
@@ -514,11 +514,11 @@ static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
 				EZTIMEOUT);	/* timeout */
 
 #ifdef CONFIG_COMEDI_DEBUG
-;
+	printk(KERN_DEBUG "comedi_: usbduxfast: result=%d\n", ret);
 #endif
 
 	if (ret < 0) {
-;
+		printk(KERN_ERR "comedi_: usbduxfast: uppload failed\n");
 		return ret;
 	}
 
@@ -538,14 +538,14 @@ static int usbduxfastsub_submit_InURBs(struct usbduxfastsub_s *udfs)
 			  SIZEINBUF, usbduxfastsub_ai_Irq, udfs->comedidev);
 
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi%d: usbduxfast: submitting in-urb: "
-//	       "0x%p,0x%p\n", udfs->comedidev->minor, udfs->urbIn->context,
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast: submitting in-urb: "
+	       "0x%p,0x%p\n", udfs->comedidev->minor, udfs->urbIn->context,
+	       udfs->urbIn->dev);
 #endif
 	ret = usb_submit_urb(udfs->urbIn, GFP_ATOMIC);
 	if (ret) {
-//		printk(KERN_ERR "comedi_: usbduxfast: ai: usb_submit_urb error"
-;
+		printk(KERN_ERR "comedi_: usbduxfast: ai: usb_submit_urb error"
+		       " %d\n", ret);
 		return ret;
 	}
 	return 0;
@@ -564,10 +564,10 @@ static int usbduxfast_ai_cmdtest(struct comedi_device *dev,
 		return -ENODEV;
 
 #ifdef CONFIG_COMEDI_DEBUG
-;
-//	printk(KERN_DEBUG "comedi%d: usbduxfast: convert_arg=%u "
-//	       "scan_begin_arg=%u\n",
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast_ai_cmdtest\n", dev->minor);
+	printk(KERN_DEBUG "comedi%d: usbduxfast: convert_arg=%u "
+	       "scan_begin_arg=%u\n",
+	       dev->minor, cmd->convert_arg, cmd->scan_begin_arg);
 #endif
 	/* step 1: make sure trigger sources are trivially valid */
 
@@ -710,12 +710,12 @@ static int usbduxfast_ai_inttrig(struct comedi_device *dev,
 		return -ENODEV;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast_ai_inttrig\n", dev->minor);
 #endif
 
 	if (trignum != 0) {
-//		printk(KERN_ERR "comedi%d: usbduxfast_ai_inttrig: invalid"
-;
+		printk(KERN_ERR "comedi%d: usbduxfast_ai_inttrig: invalid"
+		       " trignum\n", dev->minor);
 		up(&udfs->sem);
 		return -EINVAL;
 	}
@@ -723,16 +723,16 @@ static int usbduxfast_ai_inttrig(struct comedi_device *dev,
 		udfs->ai_cmd_running = 1;
 		ret = usbduxfastsub_submit_InURBs(udfs);
 		if (ret < 0) {
-//			printk(KERN_ERR "comedi%d: usbduxfast_ai_inttrig: "
-;
+			printk(KERN_ERR "comedi%d: usbduxfast_ai_inttrig: "
+			       "urbSubmit: err=%d\n", dev->minor, ret);
 			udfs->ai_cmd_running = 0;
 			up(&udfs->sem);
 			return ret;
 		}
 		s->async->inttrig = NULL;
 	} else {
-//		printk(KERN_ERR "comedi%d: ai_inttrig but acqu is already"
-;
+		printk(KERN_ERR "comedi%d: ai_inttrig but acqu is already"
+		       " running\n", dev->minor);
 	}
 	up(&udfs->sem);
 	return 1;
@@ -758,7 +758,7 @@ static int usbduxfast_ai_cmd(struct comedi_device *dev,
 	long steps, steps_tmp;
 
 #ifdef CONFIG_COMEDI_DEBUG
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast_ai_cmd\n", dev->minor);
 #endif
 	udfs = dev->private;
 	if (!udfs)
@@ -770,8 +770,8 @@ static int usbduxfast_ai_cmd(struct comedi_device *dev,
 		return -ENODEV;
 	}
 	if (udfs->ai_cmd_running) {
-//		printk(KERN_ERR "comedi%d: ai_cmd not possible. Another ai_cmd"
-;
+		printk(KERN_ERR "comedi%d: ai_cmd not possible. Another ai_cmd"
+		       " is running.\n", dev->minor);
 		up(&udfs->sem);
 		return -EBUSY;
 	}
@@ -789,31 +789,31 @@ static int usbduxfast_ai_cmd(struct comedi_device *dev,
 		for (i = 0; i < cmd->chanlist_len; ++i) {
 			chan = CR_CHAN(cmd->chanlist[i]);
 			if (chan != i) {
-//				printk(KERN_ERR "comedi%d: cmd is accepting "
-//				       "only consecutive channels.\n",
-;
+				printk(KERN_ERR "comedi%d: cmd is accepting "
+				       "only consecutive channels.\n",
+				       dev->minor);
 				up(&udfs->sem);
 				return -EINVAL;
 			}
 			if ((gain != CR_RANGE(cmd->chanlist[i]))
 			    && (cmd->chanlist_len > 3)) {
-//				printk(KERN_ERR "comedi%d: the gain must be"
-//				       " the same for all channels.\n",
-;
+				printk(KERN_ERR "comedi%d: the gain must be"
+				       " the same for all channels.\n",
+				       dev->minor);
 				up(&udfs->sem);
 				return -EINVAL;
 			}
 			if (i >= NUMCHANNELS) {
-//				printk(KERN_ERR "comedi%d: channel list too"
-;
+				printk(KERN_ERR "comedi%d: channel list too"
+				       " long\n", dev->minor);
 				break;
 			}
 		}
 	}
 	steps = 0;
 	if (cmd->scan_begin_src == TRIG_TIMER) {
-//		printk(KERN_ERR "comedi%d: usbduxfast: "
-;
+		printk(KERN_ERR "comedi%d: usbduxfast: "
+		       "scan_begin_src==TRIG_TIMER not valid.\n", dev->minor);
 		up(&udfs->sem);
 		return -EINVAL;
 	}
@@ -821,28 +821,28 @@ static int usbduxfast_ai_cmd(struct comedi_device *dev,
 		steps = (cmd->convert_arg * 30) / 1000;
 
 	if ((steps < MIN_SAMPLING_PERIOD) && (cmd->chanlist_len != 1)) {
-//		printk(KERN_ERR "comedi%d: usbduxfast: ai_cmd: steps=%ld, "
-//		       "scan_begin_arg=%d. Not properly tested by cmdtest?\n",
-;
+		printk(KERN_ERR "comedi%d: usbduxfast: ai_cmd: steps=%ld, "
+		       "scan_begin_arg=%d. Not properly tested by cmdtest?\n",
+		       dev->minor, steps, cmd->scan_begin_arg);
 		up(&udfs->sem);
 		return -EINVAL;
 	}
 	if (steps > MAX_SAMPLING_PERIOD) {
-//		printk(KERN_ERR "comedi%d: usbduxfast: ai_cmd: sampling rate "
-;
+		printk(KERN_ERR "comedi%d: usbduxfast: ai_cmd: sampling rate "
+		       "too low.\n", dev->minor);
 		up(&udfs->sem);
 		return -EINVAL;
 	}
 	if ((cmd->start_src == TRIG_EXT) && (cmd->chanlist_len != 1)
 	    && (cmd->chanlist_len != 16)) {
-//		printk(KERN_ERR "comedi%d: usbduxfast: ai_cmd: TRIG_EXT only"
-;
+		printk(KERN_ERR "comedi%d: usbduxfast: ai_cmd: TRIG_EXT only"
+		       " with 1 or 16 channels possible.\n", dev->minor);
 		up(&udfs->sem);
 		return -EINVAL;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi%d: usbduxfast: steps=%ld, convert_arg=%u\n",
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast: steps=%ld, convert_arg=%u\n",
+	       dev->minor, steps, cmd->convert_arg);
 #endif
 
 	switch (cmd->chanlist_len) {
@@ -1153,30 +1153,30 @@ static int usbduxfast_ai_cmd(struct comedi_device *dev,
 		break;
 
 	default:
-//		printk(KERN_ERR "comedi %d: unsupported combination of "
-;
+		printk(KERN_ERR "comedi %d: unsupported combination of "
+		       "channels\n", dev->minor);
 		up(&udfs->sem);
 		return -EFAULT;
 	}
 
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi %d: sending commands to the usb device\n",
-;
+	printk(KERN_DEBUG "comedi %d: sending commands to the usb device\n",
+	       dev->minor);
 #endif
 	/* 0 means that the AD commands are sent */
 	result = send_dux_commands(udfs, SENDADCOMMANDS);
 	if (result < 0) {
-//		printk(KERN_ERR "comedi%d: adc command could not be submitted."
-;
+		printk(KERN_ERR "comedi%d: adc command could not be submitted."
+		       "Aborting...\n", dev->minor);
 		up(&udfs->sem);
 		return result;
 	}
 	if (cmd->stop_src == TRIG_COUNT) {
 		udfs->ai_sample_count = cmd->stop_arg * cmd->scan_end_arg;
 		if (udfs->ai_sample_count < 1) {
-//			printk(KERN_ERR "comedi%d: "
-//			       "(cmd->stop_arg)*(cmd->scan_end_arg)<1, "
-;
+			printk(KERN_ERR "comedi%d: "
+			       "(cmd->stop_arg)*(cmd->scan_end_arg)<1, "
+			       "aborting.\n", dev->minor);
 			up(&udfs->sem);
 			return -EFAULT;
 		}
@@ -1225,13 +1225,13 @@ static int usbduxfast_ai_insn_read(struct comedi_device *dev,
 
 	udfs = dev->private;
 	if (!udfs) {
-//		printk(KERN_ERR "comedi%d: ai_insn_read: no usb dev.\n",
-;
+		printk(KERN_ERR "comedi%d: ai_insn_read: no usb dev.\n",
+		       dev->minor);
 		return -ENODEV;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi%d: ai_insn_read, insn->n=%d, "
-;
+	printk(KERN_DEBUG "comedi%d: ai_insn_read, insn->n=%d, "
+	       "insn->subdev=%d\n", dev->minor, insn->n, insn->subdev);
 #endif
 	down(&udfs->sem);
 	if (!udfs->probed) {
@@ -1239,8 +1239,8 @@ static int usbduxfast_ai_insn_read(struct comedi_device *dev,
 		return -ENODEV;
 	}
 	if (udfs->ai_cmd_running) {
-//		printk(KERN_ERR "comedi%d: ai_insn_read not possible. Async "
-;
+		printk(KERN_ERR "comedi%d: ai_insn_read not possible. Async "
+		       "Command is running.\n", dev->minor);
 		up(&udfs->sem);
 		return -EBUSY;
 	}
@@ -1294,21 +1294,21 @@ static int usbduxfast_ai_insn_read(struct comedi_device *dev,
 	udfs->dux_commands[LOGBASE + 0] = 0;
 
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi %d: sending commands to the usb device\n",
-;
+	printk(KERN_DEBUG "comedi %d: sending commands to the usb device\n",
+	       dev->minor);
 #endif
 	/* 0 means that the AD commands are sent */
 	err = send_dux_commands(udfs, SENDADCOMMANDS);
 	if (err < 0) {
-//		printk(KERN_ERR "comedi%d: adc command could not be submitted."
-;
+		printk(KERN_ERR "comedi%d: adc command could not be submitted."
+		       "Aborting...\n", dev->minor);
 		up(&udfs->sem);
 		return err;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi%d: usbduxfast: submitting in-urb: "
-//	       "0x%p,0x%p\n", udfs->comedidev->minor, udfs->urbIn->context,
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast: submitting in-urb: "
+	       "0x%p,0x%p\n", udfs->comedidev->minor, udfs->urbIn->context,
+	       udfs->urbIn->dev);
 #endif
 	for (i = 0; i < PACKETS_TO_IGNORE; i++) {
 		err = usb_bulk_msg(udfs->usbdev,
@@ -1316,8 +1316,8 @@ static int usbduxfast_ai_insn_read(struct comedi_device *dev,
 				   udfs->transfer_buffer, SIZEINBUF,
 				   &actual_length, 10000);
 		if (err < 0) {
-//			printk(KERN_ERR "comedi%d: insn timeout. No data.\n",
-;
+			printk(KERN_ERR "comedi%d: insn timeout. No data.\n",
+			       dev->minor);
 			up(&udfs->sem);
 			return err;
 		}
@@ -1329,15 +1329,15 @@ static int usbduxfast_ai_insn_read(struct comedi_device *dev,
 				   udfs->transfer_buffer, SIZEINBUF,
 				   &actual_length, 10000);
 		if (err < 0) {
-//			printk(KERN_ERR "comedi%d: insn data error: %d\n",
-;
+			printk(KERN_ERR "comedi%d: insn data error: %d\n",
+			       dev->minor, err);
 			up(&udfs->sem);
 			return err;
 		}
 		n = actual_length / sizeof(uint16_t);
 		if ((n % 16) != 0) {
-//			printk(KERN_ERR "comedi%d: insn data packet "
-;
+			printk(KERN_ERR "comedi%d: insn data packet "
+			       "corrupted.\n", dev->minor);
 			up(&udfs->sem);
 			return -EINVAL;
 		}
@@ -1404,7 +1404,7 @@ static int firmwareUpload(struct usbduxfastsub_s *usbduxfastsub,
 static void tidy_up(struct usbduxfastsub_s *udfs)
 {
 #ifdef CONFIG_COMEDI_DEBUG
-;
+	printk(KERN_DEBUG "comedi_: usbduxfast: tiding up\n");
 #endif
 
 	if (!udfs)
@@ -1475,13 +1475,13 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 	int ret;
 
 	if (udev->speed != USB_SPEED_HIGH) {
-//		printk(KERN_ERR "comedi_: usbduxfast_: This driver needs"
-;
+		printk(KERN_ERR "comedi_: usbduxfast_: This driver needs"
+		       "USB 2.0 to operate. Aborting...\n");
 		return -ENODEV;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi_: usbduxfast_: finding a free structure for "
-;
+	printk(KERN_DEBUG "comedi_: usbduxfast_: finding a free structure for "
+	       "the usb-device\n");
 #endif
 	down(&start_stop_sem);
 	/* look for a free place in the usbduxfast array */
@@ -1495,13 +1495,13 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 
 	/* no more space */
 	if (index == -1) {
-;
+		printk(KERN_ERR "Too many usbduxfast-devices connected.\n");
 		up(&start_stop_sem);
 		return -EMFILE;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi_: usbduxfast: usbduxfastsub[%d] is ready to "
-;
+	printk(KERN_DEBUG "comedi_: usbduxfast: usbduxfastsub[%d] is ready to "
+	       "connect to comedi.\n", index);
 #endif
 
 	sema_init(&(usbduxfastsub[index].sem), 1);
@@ -1519,15 +1519,15 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 	usb_set_intfdata(uinterf, &(usbduxfastsub[index]));
 
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi_: usbduxfast: ifnum=%d\n",
-;
+	printk(KERN_DEBUG "comedi_: usbduxfast: ifnum=%d\n",
+	       usbduxfastsub[index].ifnum);
 #endif
 	/* create space for the commands going to the usb device */
 	usbduxfastsub[index].dux_commands = kmalloc(SIZEOFDUXBUFFER,
 						    GFP_KERNEL);
 	if (!usbduxfastsub[index].dux_commands) {
-//		printk(KERN_ERR "comedi_: usbduxfast: error alloc space for "
-;
+		printk(KERN_ERR "comedi_: usbduxfast: error alloc space for "
+		       "dac commands\n");
 		tidy_up(&(usbduxfastsub[index]));
 		up(&start_stop_sem);
 		return -ENOMEM;
@@ -1535,8 +1535,8 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 	/* create space of the instruction buffer */
 	usbduxfastsub[index].insnBuffer = kmalloc(SIZEINSNBUF, GFP_KERNEL);
 	if (!usbduxfastsub[index].insnBuffer) {
-//		printk(KERN_ERR "comedi_: usbduxfast: could not alloc space "
-;
+		printk(KERN_ERR "comedi_: usbduxfast: could not alloc space "
+		       "for insnBuffer\n");
 		tidy_up(&(usbduxfastsub[index]));
 		up(&start_stop_sem);
 		return -ENOMEM;
@@ -1545,24 +1545,24 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 	i = usb_set_interface(usbduxfastsub[index].usbdev,
 			      usbduxfastsub[index].ifnum, 1);
 	if (i < 0) {
-//		printk(KERN_ERR "comedi_: usbduxfast%d: could not switch to "
-;
+		printk(KERN_ERR "comedi_: usbduxfast%d: could not switch to "
+		       "alternate setting 1.\n", index);
 		tidy_up(&(usbduxfastsub[index]));
 		up(&start_stop_sem);
 		return -ENODEV;
 	}
 	usbduxfastsub[index].urbIn = usb_alloc_urb(0, GFP_KERNEL);
 	if (!usbduxfastsub[index].urbIn) {
-//		printk(KERN_ERR "comedi_: usbduxfast%d: Could not alloc."
-;
+		printk(KERN_ERR "comedi_: usbduxfast%d: Could not alloc."
+		       "urb\n", index);
 		tidy_up(&(usbduxfastsub[index]));
 		up(&start_stop_sem);
 		return -ENOMEM;
 	}
 	usbduxfastsub[index].transfer_buffer = kmalloc(SIZEINBUF, GFP_KERNEL);
 	if (!usbduxfastsub[index].transfer_buffer) {
-//		printk(KERN_ERR "comedi_: usbduxfast%d: could not alloc. "
-;
+		printk(KERN_ERR "comedi_: usbduxfast%d: could not alloc. "
+		       "transb.\n", index);
 		tidy_up(&(usbduxfastsub[index]));
 		up(&start_stop_sem);
 		return -ENOMEM;
@@ -1584,8 +1584,8 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 		return ret;
 	}
 
-//	printk(KERN_INFO "comedi_: usbduxfast%d has been successfully "
-;
+	printk(KERN_INFO "comedi_: usbduxfast%d has been successfully "
+	       "initialized.\n", index);
 	/* success */
 	return 0;
 }
@@ -1596,13 +1596,13 @@ static void usbduxfastsub_disconnect(struct usb_interface *intf)
 	struct usb_device *udev = interface_to_usbdev(intf);
 
 	if (!udfs) {
-//		printk(KERN_ERR "comedi_: usbduxfast: disconnect called with "
-;
+		printk(KERN_ERR "comedi_: usbduxfast: disconnect called with "
+		       "null pointer.\n");
 		return;
 	}
 	if (udfs->usbdev != udev) {
-//		printk(KERN_ERR "comedi_: usbduxfast: BUG! called with wrong "
-;
+		printk(KERN_ERR "comedi_: usbduxfast: BUG! called with wrong "
+		       "ptr!!!\n");
 		return;
 	}
 
@@ -1615,7 +1615,7 @@ static void usbduxfastsub_disconnect(struct usb_interface *intf)
 	up(&start_stop_sem);
 
 #ifdef CONFIG_COMEDI_DEBUG
-;
+	printk(KERN_DEBUG "comedi_: usbduxfast: disconnected from the usb\n");
 #endif
 }
 
@@ -1645,9 +1645,9 @@ static int usbduxfast_attach(struct comedi_device *dev,
 	}
 
 	if (index < 0) {
-//		printk(KERN_ERR "comedi%d: usbduxfast: error: attach failed, "
-//		       "no usbduxfast devs connected to the usb bus.\n",
-;
+		printk(KERN_ERR "comedi%d: usbduxfast: error: attach failed, "
+		       "no usbduxfast devs connected to the usb bus.\n",
+		       dev->minor);
 		up(&start_stop_sem);
 		return -ENODEV;
 	}
@@ -1672,15 +1672,15 @@ static int usbduxfast_attach(struct comedi_device *dev,
 	/* allocate space for the subdevices */
 	ret = alloc_subdevices(dev, N_SUBDEVICES);
 	if (ret < 0) {
-//		printk(KERN_ERR "comedi%d: usbduxfast: error alloc space for "
-;
+		printk(KERN_ERR "comedi%d: usbduxfast: error alloc space for "
+		       "subdev\n", dev->minor);
 		up(&(usbduxfastsub[index].sem));
 		up(&start_stop_sem);
 		return ret;
 	}
 
-//	printk(KERN_INFO "comedi%d: usbduxfast: usb-device %d is attached to "
-;
+	printk(KERN_INFO "comedi%d: usbduxfast: usb-device %d is attached to "
+	       "comedi.\n", dev->minor, index);
 	/* private structure is also simply the usb-structure */
 	dev->private = usbduxfastsub + index;
 	/* the first subdevice is the A/D converter */
@@ -1715,8 +1715,8 @@ static int usbduxfast_attach(struct comedi_device *dev,
 
 	up(&(usbduxfastsub[index].sem));
 	up(&start_stop_sem);
-//	printk(KERN_INFO "comedi%d: successfully attached to usbduxfast.\n",
-;
+	printk(KERN_INFO "comedi%d: successfully attached to usbduxfast.\n",
+	       dev->minor);
 
 	return 0;
 }
@@ -1726,19 +1726,19 @@ static int usbduxfast_detach(struct comedi_device *dev)
 	struct usbduxfastsub_s *udfs;
 
 	if (!dev) {
-//		printk(KERN_ERR "comedi?: usbduxfast: detach without dev "
-;
+		printk(KERN_ERR "comedi?: usbduxfast: detach without dev "
+		       "variable...\n");
 		return -EFAULT;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi%d: usbduxfast: detach usb device\n",
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast: detach usb device\n",
+	       dev->minor);
 #endif
 
 	udfs = dev->private;
 	if (!udfs) {
-//		printk(KERN_ERR "comedi?: usbduxfast: detach without ptr to "
-;
+		printk(KERN_ERR "comedi?: usbduxfast: detach without ptr to "
+		       "usbduxfastsub[]\n");
 		return -EFAULT;
 	}
 
@@ -1752,8 +1752,8 @@ static int usbduxfast_detach(struct comedi_device *dev)
 	udfs->attached = 0;
 	udfs->comedidev = NULL;
 #ifdef CONFIG_COMEDI_DEBUG
-//	printk(KERN_DEBUG "comedi%d: usbduxfast: detach: successfully "
-;
+	printk(KERN_DEBUG "comedi%d: usbduxfast: detach: successfully "
+	       "removed\n", dev->minor);
 #endif
 	up(&start_stop_sem);
 	up(&udfs->sem);
@@ -1801,8 +1801,8 @@ static struct usb_driver usbduxfastsub_driver = {
  */
 static int __init init_usbduxfast(void)
 {
-//	printk(KERN_INFO
-;
+	printk(KERN_INFO
+	       KBUILD_MODNAME ": " DRIVER_VERSION ":" DRIVER_DESC "\n");
 	usb_register(&usbduxfastsub_driver);
 	comedi_driver_register(&driver_usbduxfast);
 	return 0;

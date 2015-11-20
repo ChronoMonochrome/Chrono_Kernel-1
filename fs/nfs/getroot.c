@@ -100,14 +100,14 @@ struct dentry *nfs_get_root(struct super_block *sb, struct nfs_fh *mntfh,
 
 	error = server->nfs_client->rpc_ops->getroot(server, mntfh, &fsinfo);
 	if (error < 0) {
-;
+		dprintk("nfs_get_root: getattr error = %d\n", -error);
 		ret = ERR_PTR(error);
 		goto out;
 	}
 
 	inode = nfs_fhget(sb, mntfh, fsinfo.fattr);
 	if (IS_ERR(inode)) {
-;
+		dprintk("nfs_get_root: get root inode failed\n");
 		ret = ERR_CAST(inode);
 		goto out;
 	}
@@ -124,7 +124,7 @@ struct dentry *nfs_get_root(struct super_block *sb, struct nfs_fh *mntfh,
 	 */
 	ret = d_obtain_alias(inode);
 	if (IS_ERR(ret)) {
-;
+		dprintk("nfs_get_root: get root dentry failed\n");
 		goto out;
 	}
 
@@ -149,7 +149,7 @@ int nfs4_get_rootfh(struct nfs_server *server, struct nfs_fh *mntfh)
 	struct nfs_fsinfo fsinfo;
 	int ret = -ENOMEM;
 
-;
+	dprintk("--> nfs4_get_rootfh()\n");
 
 	fsinfo.fattr = nfs_alloc_fattr();
 	if (fsinfo.fattr == NULL)
@@ -158,21 +158,21 @@ int nfs4_get_rootfh(struct nfs_server *server, struct nfs_fh *mntfh)
 	/* Start by getting the root filehandle from the server */
 	ret = server->nfs_client->rpc_ops->getroot(server, mntfh, &fsinfo);
 	if (ret < 0) {
-;
+		dprintk("nfs4_get_rootfh: getroot error = %d\n", -ret);
 		goto out;
 	}
 
 	if (!(fsinfo.fattr->valid & NFS_ATTR_FATTR_TYPE)
 			|| !S_ISDIR(fsinfo.fattr->mode)) {
-//		printk(KERN_ERR "nfs4_get_rootfh:"
-;
+		printk(KERN_ERR "nfs4_get_rootfh:"
+		       " getroot encountered non-directory\n");
 		ret = -ENOTDIR;
 		goto out;
 	}
 
 	if (fsinfo.fattr->valid & NFS_ATTR_FATTR_V4_REFERRAL) {
-//		printk(KERN_ERR "nfs4_get_rootfh:"
-;
+		printk(KERN_ERR "nfs4_get_rootfh:"
+		       " getroot obtained referral\n");
 		ret = -EREMOTE;
 		goto out;
 	}
@@ -180,7 +180,7 @@ int nfs4_get_rootfh(struct nfs_server *server, struct nfs_fh *mntfh)
 	memcpy(&server->fsid, &fsinfo.fattr->fsid, sizeof(server->fsid));
 out:
 	nfs_free_fattr(fsinfo.fattr);
-;
+	dprintk("<-- nfs4_get_rootfh() = %d\n", ret);
 	return ret;
 }
 
@@ -197,7 +197,7 @@ struct dentry *nfs4_get_root(struct super_block *sb, struct nfs_fh *mntfh,
 	void *name = kstrdup(devname, GFP_KERNEL);
 	int error;
 
-;
+	dprintk("--> nfs4_get_root()\n");
 
 	if (!name)
 		return ERR_PTR(-ENOMEM);
@@ -205,8 +205,8 @@ struct dentry *nfs4_get_root(struct super_block *sb, struct nfs_fh *mntfh,
 	/* get the info about the server and filesystem */
 	error = nfs4_server_capabilities(server, mntfh);
 	if (error < 0) {
-//		dprintk("nfs_get_root: getcaps error = %d\n",
-;
+		dprintk("nfs_get_root: getcaps error = %d\n",
+			-error);
 		kfree(name);
 		return ERR_PTR(error);
 	}
@@ -220,7 +220,7 @@ struct dentry *nfs4_get_root(struct super_block *sb, struct nfs_fh *mntfh,
 	/* get the actual root for this mount */
 	error = server->nfs_client->rpc_ops->getattr(server, mntfh, fattr);
 	if (error < 0) {
-;
+		dprintk("nfs_get_root: getattr error = %d\n", -error);
 		ret = ERR_PTR(error);
 		goto out;
 	}
@@ -231,7 +231,7 @@ struct dentry *nfs4_get_root(struct super_block *sb, struct nfs_fh *mntfh,
 
 	inode = nfs_fhget(sb, mntfh, fattr);
 	if (IS_ERR(inode)) {
-;
+		dprintk("nfs_get_root: get root inode failed\n");
 		ret = ERR_CAST(inode);
 		goto out;
 	}
@@ -248,7 +248,7 @@ struct dentry *nfs4_get_root(struct super_block *sb, struct nfs_fh *mntfh,
 	 */
 	ret = d_obtain_alias(inode);
 	if (IS_ERR(ret)) {
-;
+		dprintk("nfs_get_root: get root dentry failed\n");
 		goto out;
 	}
 
@@ -263,7 +263,7 @@ out:
 	if (name)
 		kfree(name);
 	nfs_free_fattr(fattr);
-;
+	dprintk("<-- nfs4_get_root()\n");
 	return ret;
 }
 

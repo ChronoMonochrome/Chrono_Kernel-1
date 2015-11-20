@@ -193,14 +193,14 @@ __report_bad_irq(unsigned int irq, struct irq_desc *desc,
 	unsigned long flags;
 
 	if (bad_action_ret(action_ret)) {
-//		printk(KERN_ERR "irq event %d: bogus return value %x\n",
-;
+		printk(KERN_ERR "irq event %d: bogus return value %x\n",
+				irq, action_ret);
 	} else {
-//		printk(KERN_ERR "irq %d: nobody cared (try booting with "
-;
+		printk(KERN_ERR "irq %d: nobody cared (try booting with "
+				"the \"irqpoll\" option)\n", irq);
 	}
 	dump_stack();
-;
+	printk(KERN_ERR "handlers:\n");
 
 	/*
 	 * We need to take desc->lock here. note_interrupt() is called
@@ -211,11 +211,11 @@ __report_bad_irq(unsigned int irq, struct irq_desc *desc,
 	raw_spin_lock_irqsave(&desc->lock, flags);
 	action = desc->action;
 	while (action) {
-;
+		printk(KERN_ERR "[<%p>] %pf", action->handler, action->handler);
 		if (action->thread_fn)
-//			printk(KERN_CONT " threaded [<%p>] %pf",
-;
-;
+			printk(KERN_CONT " threaded [<%p>] %pf",
+					action->thread_fn, action->thread_fn);
+		printk(KERN_CONT "\n");
 		action = action->next;
 	}
 	raw_spin_unlock_irqrestore(&desc->lock, flags);
@@ -315,7 +315,7 @@ void note_interrupt(unsigned int irq, struct irq_desc *desc,
 		/*
 		 * Now kill the IRQ
 		 */
-;
+		printk(KERN_EMERG "Disabling IRQ #%d\n", irq);
 		desc->istate |= IRQS_SPURIOUS_DISABLED;
 		desc->depth++;
 		irq_disable(desc);
@@ -331,7 +331,7 @@ int noirqdebug __read_mostly;
 int noirqdebug_setup(char *str)
 {
 	noirqdebug = 1;
-;
+	printk(KERN_INFO "IRQ lockup detection disabled\n");
 
 	return 1;
 }
@@ -343,8 +343,8 @@ MODULE_PARM_DESC(noirqdebug, "Disable irq lockup detection when true");
 static int __init irqfixup_setup(char *str)
 {
 	irqfixup = 1;
-;
-;
+	printk(KERN_WARNING "Misrouted IRQ fixup support enabled.\n");
+	printk(KERN_WARNING "This may impact system performance.\n");
 
 	return 1;
 }
@@ -355,10 +355,10 @@ module_param(irqfixup, int, 0644);
 static int __init irqpoll_setup(char *str)
 {
 	irqfixup = 2;
-//	printk(KERN_WARNING "Misrouted IRQ fixup and polling support "
-;
-//	printk(KERN_WARNING "This may significantly impact system "
-;
+	printk(KERN_WARNING "Misrouted IRQ fixup and polling support "
+				"enabled\n");
+	printk(KERN_WARNING "This may significantly impact system "
+				"performance\n");
 	return 1;
 }
 

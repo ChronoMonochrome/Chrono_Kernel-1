@@ -58,13 +58,13 @@ static void iseriesvscsi_handle_event(struct HvLpEvent *lpevt)
 	struct srp_lp_event *evt = (struct srp_lp_event *)lpevt;
 
 	if (!evt) {
-;
+		printk(KERN_ERR "ibmvscsi: received null event\n");
 		return;
 	}
 
 	if (single_host_data == NULL) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "ibmvscsi: received event, no adapter present\n");
 		return;
 	}
 
@@ -83,15 +83,15 @@ static int iseriesvscsi_init_crq_queue(struct crq_queue *queue,
 	single_host_data = hostdata;
 	rc = viopath_open(viopath_hostLp, viomajorsubtype_scsi, max_requests);
 	if (rc < 0) {
-//		printk("viopath_open failed with rc %d in open_event_path\n",
-;
+		printk("viopath_open failed with rc %d in open_event_path\n",
+		       rc);
 		goto viopath_open_failed;
 	}
 
 	rc = vio_setHandler(viomajorsubtype_scsi, iseriesvscsi_handle_event);
 	if (rc < 0) {
-//		printk("vio_setHandler failed with rc %d in open_event_path\n",
-;
+		printk("vio_setHandler failed with rc %d in open_event_path\n",
+		       rc);
 		goto vio_setHandler_failed;
 	}
 	return 0;

@@ -105,164 +105,164 @@ MODULE_PARM_DESC(lk201_compose_is_alt,
 
 #undef LKKBD_DEBUG
 #ifdef LKKBD_DEBUG
-//#define DBG(x...) printk(x)
-//#else
-//#define DBG(x...) do {} while (0)
-//#endif
-//
-///* LED control */
-//#define LK_LED_WAIT		0x81
-//#define LK_LED_COMPOSE		0x82
-//#define LK_LED_SHIFTLOCK	0x84
-//#define LK_LED_SCROLLLOCK	0x88
-//#define LK_CMD_LED_ON		0x13
-//#define LK_CMD_LED_OFF		0x11
-//
-///* Mode control */
-//#define LK_MODE_DOWN		0x80
-//#define LK_MODE_AUTODOWN	0x82
-//#define LK_MODE_UPDOWN		0x86
-//#define LK_CMD_SET_MODE(mode, div)	((mode) | ((div) << 3))
-//
-///* Misc commands */
-//#define LK_CMD_ENABLE_KEYCLICK	0x1b
-//#define LK_CMD_DISABLE_KEYCLICK	0x99
-//#define LK_CMD_DISABLE_BELL	0xa1
-//#define LK_CMD_SOUND_BELL	0xa7
-//#define LK_CMD_ENABLE_BELL	0x23
-//#define LK_CMD_DISABLE_CTRCLICK	0xb9
-//#define LK_CMD_ENABLE_CTRCLICK	0xbb
-//#define LK_CMD_SET_DEFAULTS	0xd3
-//#define LK_CMD_POWERCYCLE_RESET	0xfd
-//#define LK_CMD_ENABLE_LK401	0xe9
-//#define LK_CMD_REQUEST_ID	0xab
-//
-///* Misc responses from keyboard */
-//#define LK_STUCK_KEY		0x3d
-//#define LK_SELFTEST_FAILED	0x3e
-//#define LK_ALL_KEYS_UP		0xb3
-//#define LK_METRONOME		0xb4
-//#define LK_OUTPUT_ERROR		0xb5
-//#define LK_INPUT_ERROR		0xb6
-//#define LK_KBD_LOCKED		0xb7
-//#define LK_KBD_TEST_MODE_ACK	0xb8
-//#define LK_PREFIX_KEY_DOWN	0xb9
-//#define LK_MODE_CHANGE_ACK	0xba
-//#define LK_RESPONSE_RESERVED	0xbb
-//
-//#define LK_NUM_KEYCODES		256
-//#define LK_NUM_IGNORE_BYTES	6
-//
-//static unsigned short lkkbd_keycode[LK_NUM_KEYCODES] = {
-//	[0x56] = KEY_F1,
-//	[0x57] = KEY_F2,
-//	[0x58] = KEY_F3,
-//	[0x59] = KEY_F4,
-//	[0x5a] = KEY_F5,
-//	[0x64] = KEY_F6,
-//	[0x65] = KEY_F7,
-//	[0x66] = KEY_F8,
-//	[0x67] = KEY_F9,
-//	[0x68] = KEY_F10,
-//	[0x71] = KEY_F11,
-//	[0x72] = KEY_F12,
-//	[0x73] = KEY_F13,
-//	[0x74] = KEY_F14,
-//	[0x7c] = KEY_F15,
-//	[0x7d] = KEY_F16,
-//	[0x80] = KEY_F17,
-//	[0x81] = KEY_F18,
-//	[0x82] = KEY_F19,
-//	[0x83] = KEY_F20,
-//	[0x8a] = KEY_FIND,
-//	[0x8b] = KEY_INSERT,
-//	[0x8c] = KEY_DELETE,
-//	[0x8d] = KEY_SELECT,
-//	[0x8e] = KEY_PAGEUP,
-//	[0x8f] = KEY_PAGEDOWN,
-//	[0x92] = KEY_KP0,
-//	[0x94] = KEY_KPDOT,
-//	[0x95] = KEY_KPENTER,
-//	[0x96] = KEY_KP1,
-//	[0x97] = KEY_KP2,
-//	[0x98] = KEY_KP3,
-//	[0x99] = KEY_KP4,
-//	[0x9a] = KEY_KP5,
-//	[0x9b] = KEY_KP6,
-//	[0x9c] = KEY_KPCOMMA,
-//	[0x9d] = KEY_KP7,
-//	[0x9e] = KEY_KP8,
-//	[0x9f] = KEY_KP9,
-//	[0xa0] = KEY_KPMINUS,
-//	[0xa1] = KEY_PROG1,
-//	[0xa2] = KEY_PROG2,
-//	[0xa3] = KEY_PROG3,
-//	[0xa4] = KEY_PROG4,
-//	[0xa7] = KEY_LEFT,
-//	[0xa8] = KEY_RIGHT,
-//	[0xa9] = KEY_DOWN,
-//	[0xaa] = KEY_UP,
-//	[0xab] = KEY_RIGHTSHIFT,
-//	[0xac] = KEY_LEFTALT,
-//	[0xad] = KEY_COMPOSE, /* Right Compose, that is. */
-//	[0xae] = KEY_LEFTSHIFT, /* Same as KEY_RIGHTSHIFT on LK201 */
-//	[0xaf] = KEY_LEFTCTRL,
-//	[0xb0] = KEY_CAPSLOCK,
-//	[0xb1] = KEY_COMPOSE, /* Left Compose, that is. */
-//	[0xb2] = KEY_RIGHTALT,
-//	[0xbc] = KEY_BACKSPACE,
-//	[0xbd] = KEY_ENTER,
-//	[0xbe] = KEY_TAB,
-//	[0xbf] = KEY_ESC,
-//	[0xc0] = KEY_1,
-//	[0xc1] = KEY_Q,
-//	[0xc2] = KEY_A,
-//	[0xc3] = KEY_Z,
-//	[0xc5] = KEY_2,
-//	[0xc6] = KEY_W,
-//	[0xc7] = KEY_S,
-//	[0xc8] = KEY_X,
-//	[0xc9] = KEY_102ND,
-//	[0xcb] = KEY_3,
-//	[0xcc] = KEY_E,
-//	[0xcd] = KEY_D,
-//	[0xce] = KEY_C,
-//	[0xd0] = KEY_4,
-//	[0xd1] = KEY_R,
-//	[0xd2] = KEY_F,
-//	[0xd3] = KEY_V,
-//	[0xd4] = KEY_SPACE,
-//	[0xd6] = KEY_5,
-//	[0xd7] = KEY_T,
-//	[0xd8] = KEY_G,
-//	[0xd9] = KEY_B,
-//	[0xdb] = KEY_6,
-//	[0xdc] = KEY_Y,
-//	[0xdd] = KEY_H,
-//	[0xde] = KEY_N,
-//	[0xe0] = KEY_7,
-//	[0xe1] = KEY_U,
-//	[0xe2] = KEY_J,
-//	[0xe3] = KEY_M,
-//	[0xe5] = KEY_8,
-//	[0xe6] = KEY_I,
-//	[0xe7] = KEY_K,
-//	[0xe8] = KEY_COMMA,
-//	[0xea] = KEY_9,
-//	[0xeb] = KEY_O,
-//	[0xec] = KEY_L,
-//	[0xed] = KEY_DOT,
-//	[0xef] = KEY_0,
-//	[0xf0] = KEY_P,
-//	[0xf2] = KEY_SEMICOLON,
-//	[0xf3] = KEY_SLASH,
-//	[0xf5] = KEY_EQUAL,
-//	[0xf6] = KEY_RIGHTBRACE,
-//	[0xf7] = KEY_BACKSLASH,
-//	[0xf9] = KEY_MINUS,
-//	[0xfa] = KEY_LEFTBRACE,
-//	[0xfb] = KEY_APOSTROPHE,
-;
+#define DBG(x...) printk(x)
+#else
+#define DBG(x...) do {} while (0)
+#endif
+
+/* LED control */
+#define LK_LED_WAIT		0x81
+#define LK_LED_COMPOSE		0x82
+#define LK_LED_SHIFTLOCK	0x84
+#define LK_LED_SCROLLLOCK	0x88
+#define LK_CMD_LED_ON		0x13
+#define LK_CMD_LED_OFF		0x11
+
+/* Mode control */
+#define LK_MODE_DOWN		0x80
+#define LK_MODE_AUTODOWN	0x82
+#define LK_MODE_UPDOWN		0x86
+#define LK_CMD_SET_MODE(mode, div)	((mode) | ((div) << 3))
+
+/* Misc commands */
+#define LK_CMD_ENABLE_KEYCLICK	0x1b
+#define LK_CMD_DISABLE_KEYCLICK	0x99
+#define LK_CMD_DISABLE_BELL	0xa1
+#define LK_CMD_SOUND_BELL	0xa7
+#define LK_CMD_ENABLE_BELL	0x23
+#define LK_CMD_DISABLE_CTRCLICK	0xb9
+#define LK_CMD_ENABLE_CTRCLICK	0xbb
+#define LK_CMD_SET_DEFAULTS	0xd3
+#define LK_CMD_POWERCYCLE_RESET	0xfd
+#define LK_CMD_ENABLE_LK401	0xe9
+#define LK_CMD_REQUEST_ID	0xab
+
+/* Misc responses from keyboard */
+#define LK_STUCK_KEY		0x3d
+#define LK_SELFTEST_FAILED	0x3e
+#define LK_ALL_KEYS_UP		0xb3
+#define LK_METRONOME		0xb4
+#define LK_OUTPUT_ERROR		0xb5
+#define LK_INPUT_ERROR		0xb6
+#define LK_KBD_LOCKED		0xb7
+#define LK_KBD_TEST_MODE_ACK	0xb8
+#define LK_PREFIX_KEY_DOWN	0xb9
+#define LK_MODE_CHANGE_ACK	0xba
+#define LK_RESPONSE_RESERVED	0xbb
+
+#define LK_NUM_KEYCODES		256
+#define LK_NUM_IGNORE_BYTES	6
+
+static unsigned short lkkbd_keycode[LK_NUM_KEYCODES] = {
+	[0x56] = KEY_F1,
+	[0x57] = KEY_F2,
+	[0x58] = KEY_F3,
+	[0x59] = KEY_F4,
+	[0x5a] = KEY_F5,
+	[0x64] = KEY_F6,
+	[0x65] = KEY_F7,
+	[0x66] = KEY_F8,
+	[0x67] = KEY_F9,
+	[0x68] = KEY_F10,
+	[0x71] = KEY_F11,
+	[0x72] = KEY_F12,
+	[0x73] = KEY_F13,
+	[0x74] = KEY_F14,
+	[0x7c] = KEY_F15,
+	[0x7d] = KEY_F16,
+	[0x80] = KEY_F17,
+	[0x81] = KEY_F18,
+	[0x82] = KEY_F19,
+	[0x83] = KEY_F20,
+	[0x8a] = KEY_FIND,
+	[0x8b] = KEY_INSERT,
+	[0x8c] = KEY_DELETE,
+	[0x8d] = KEY_SELECT,
+	[0x8e] = KEY_PAGEUP,
+	[0x8f] = KEY_PAGEDOWN,
+	[0x92] = KEY_KP0,
+	[0x94] = KEY_KPDOT,
+	[0x95] = KEY_KPENTER,
+	[0x96] = KEY_KP1,
+	[0x97] = KEY_KP2,
+	[0x98] = KEY_KP3,
+	[0x99] = KEY_KP4,
+	[0x9a] = KEY_KP5,
+	[0x9b] = KEY_KP6,
+	[0x9c] = KEY_KPCOMMA,
+	[0x9d] = KEY_KP7,
+	[0x9e] = KEY_KP8,
+	[0x9f] = KEY_KP9,
+	[0xa0] = KEY_KPMINUS,
+	[0xa1] = KEY_PROG1,
+	[0xa2] = KEY_PROG2,
+	[0xa3] = KEY_PROG3,
+	[0xa4] = KEY_PROG4,
+	[0xa7] = KEY_LEFT,
+	[0xa8] = KEY_RIGHT,
+	[0xa9] = KEY_DOWN,
+	[0xaa] = KEY_UP,
+	[0xab] = KEY_RIGHTSHIFT,
+	[0xac] = KEY_LEFTALT,
+	[0xad] = KEY_COMPOSE, /* Right Compose, that is. */
+	[0xae] = KEY_LEFTSHIFT, /* Same as KEY_RIGHTSHIFT on LK201 */
+	[0xaf] = KEY_LEFTCTRL,
+	[0xb0] = KEY_CAPSLOCK,
+	[0xb1] = KEY_COMPOSE, /* Left Compose, that is. */
+	[0xb2] = KEY_RIGHTALT,
+	[0xbc] = KEY_BACKSPACE,
+	[0xbd] = KEY_ENTER,
+	[0xbe] = KEY_TAB,
+	[0xbf] = KEY_ESC,
+	[0xc0] = KEY_1,
+	[0xc1] = KEY_Q,
+	[0xc2] = KEY_A,
+	[0xc3] = KEY_Z,
+	[0xc5] = KEY_2,
+	[0xc6] = KEY_W,
+	[0xc7] = KEY_S,
+	[0xc8] = KEY_X,
+	[0xc9] = KEY_102ND,
+	[0xcb] = KEY_3,
+	[0xcc] = KEY_E,
+	[0xcd] = KEY_D,
+	[0xce] = KEY_C,
+	[0xd0] = KEY_4,
+	[0xd1] = KEY_R,
+	[0xd2] = KEY_F,
+	[0xd3] = KEY_V,
+	[0xd4] = KEY_SPACE,
+	[0xd6] = KEY_5,
+	[0xd7] = KEY_T,
+	[0xd8] = KEY_G,
+	[0xd9] = KEY_B,
+	[0xdb] = KEY_6,
+	[0xdc] = KEY_Y,
+	[0xdd] = KEY_H,
+	[0xde] = KEY_N,
+	[0xe0] = KEY_7,
+	[0xe1] = KEY_U,
+	[0xe2] = KEY_J,
+	[0xe3] = KEY_M,
+	[0xe5] = KEY_8,
+	[0xe6] = KEY_I,
+	[0xe7] = KEY_K,
+	[0xe8] = KEY_COMMA,
+	[0xea] = KEY_9,
+	[0xeb] = KEY_O,
+	[0xec] = KEY_L,
+	[0xed] = KEY_DOT,
+	[0xef] = KEY_0,
+	[0xf0] = KEY_P,
+	[0xf2] = KEY_SEMICOLON,
+	[0xf3] = KEY_SLASH,
+	[0xf5] = KEY_EQUAL,
+	[0xf6] = KEY_RIGHTBRACE,
+	[0xf7] = KEY_BACKSLASH,
+	[0xf9] = KEY_MINUS,
+	[0xfa] = KEY_LEFTBRACE,
+	[0xfb] = KEY_APOSTROPHE,
+};
 
 #define CHECK_LED(LK, VAR_ON, VAR_OFF, LED, BITS) do {		\
 	if (test_bit(LED, (LK)->dev->led))			\
@@ -384,18 +384,18 @@ static void lkkbd_detection_done(struct lkkbd *lk)
 
 	default:
 		strlcpy(lk->name, "Unknown DEC keyboard", sizeof(lk->name));
-//		printk(KERN_ERR
-//			"lkkbd: keyboard on %s is unknown, please report to "
-;
-;
+		printk(KERN_ERR
+			"lkkbd: keyboard on %s is unknown, please report to "
+			"Jan-Benedict Glaw <jbglaw@lug-owl.de>\n", lk->phys);
+		printk(KERN_ERR "lkkbd: keyboard ID'ed as:");
 		for (i = 0; i < LK_NUM_IGNORE_BYTES; i++)
-;
-;
+			printk(" 0x%02x", lk->id[i]);
+		printk("\n");
 		break;
 	}
 
-//	printk(KERN_INFO "lkkbd: keyboard on %s identified as: %s\n",
-;
+	printk(KERN_INFO "lkkbd: keyboard on %s identified as: %s\n",
+		lk->phys, lk->name);
 
 	/*
 	 * Report errors during keyboard boot-up.
@@ -406,20 +406,20 @@ static void lkkbd_detection_done(struct lkkbd *lk)
 		break;
 
 	case LK_STUCK_KEY:
-//		printk(KERN_ERR "lkkbd: Stuck key on keyboard at %s\n",
-;
+		printk(KERN_ERR "lkkbd: Stuck key on keyboard at %s\n",
+			lk->phys);
 		break;
 
 	case LK_SELFTEST_FAILED:
-//		printk(KERN_ERR
-//			"lkkbd: Selftest failed on keyboard at %s, "
-;
+		printk(KERN_ERR
+			"lkkbd: Selftest failed on keyboard at %s, "
+			"keyboard may not work properly\n", lk->phys);
 		break;
 
 	default:
-//		printk(KERN_ERR
-//			"lkkbd: Unknown error %02x on keyboard at %s\n",
-;
+		printk(KERN_ERR
+			"lkkbd: Unknown error %02x on keyboard at %s\n",
+			lk->id[2], lk->phys);
 		break;
 	}
 
@@ -427,9 +427,9 @@ static void lkkbd_detection_done(struct lkkbd *lk)
 	 * Try to hint user if there's a stuck key.
 	 */
 	if (lk->id[2] == LK_STUCK_KEY && lk->id[3] != 0)
-//		printk(KERN_ERR
-//			"Scancode of stuck key is 0x%02x, keycode is 0x%04x\n",
-;
+		printk(KERN_ERR
+			"Scancode of stuck key is 0x%02x, keycode is 0x%04x\n",
+			lk->id[3], lk->keycode[lk->id[3]]);
 }
 
 /*
@@ -489,9 +489,9 @@ static irqreturn_t lkkbd_interrupt(struct serio *serio,
 					 !test_bit(keycode, input_dev->key));
 			input_sync(input_dev);
 		} else {
-//			printk(KERN_WARNING
-//				"%s: Unknown key with scancode 0x%02x on %s.\n",
-;
+			printk(KERN_WARNING
+				"%s: Unknown key with scancode 0x%02x on %s.\n",
+				__FILE__, data, lk->name);
 		}
 	}
 
@@ -565,8 +565,8 @@ static int lkkbd_event(struct input_dev *dev,
 		break;
 
 	default:
-//		printk(KERN_ERR "%s(): Got unknown type %d, code %d, value %d\n",
-;
+		printk(KERN_ERR "%s(): Got unknown type %d, code %d, value %d\n",
+			__func__, type, code, value);
 	}
 
 	return -1;

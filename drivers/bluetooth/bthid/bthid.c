@@ -56,32 +56,32 @@ struct bthid_di {
 
 static int bthid_ll_start(struct hid_device *hid)
 {
-;
+    printk(KERN_INFO "######## bthid_ll_start: hid = %p ########\n", hid);
     return 0;
 }
 
 static void bthid_ll_stop(struct hid_device *hid)
 {
-;
+    printk(KERN_INFO "######## bthid_ll_stop: hid = %p ########\n", hid);
 }
 
 static int bthid_ll_open(struct hid_device *hid)
 {
-;
+    printk(KERN_INFO "######## bthid_ll_open: hid = %p ########\n", hid);
     return 0;
 }
 
 static void bthid_ll_close(struct hid_device *hid)
 {
-;
+    printk(KERN_INFO "######## bthid_ll_close: hid = %p ########\n", hid);
 }
 
 static int bthid_ll_hidinput_event(struct input_dev *dev, unsigned int type, 
                                    unsigned int code, int value)
 {
     /*
-//    printk("######## bthid_ll_hidinput_event: dev = %p, type = %d, code = %d, value = %d ########\n",
-;
+    printk("######## bthid_ll_hidinput_event: dev = %p, type = %d, code = %d, value = %d ########\n",
+           dev, type, code, value);
     */
     return 0;
 }
@@ -92,7 +92,7 @@ static int bthid_ll_parse(struct hid_device *hid)
     unsigned char *buf;
     struct bthid_ctrl *p_ctrl = hid->driver_data;
 
-;
+    printk(KERN_INFO "######## bthid_ll_parse: hid = %p ########\n", hid);
     
     buf = kmalloc(p_ctrl->size, GFP_KERNEL);
     if (!buf)
@@ -105,8 +105,8 @@ static int bthid_ll_parse(struct hid_device *hid)
     ret = hid_parse_report(hid, buf, p_ctrl->size);
     kfree(buf);
 
-//    printk(KERN_INFO "######## bthid_ll_parse: status = %d, ret = %d ########\n",
-;
+    printk(KERN_INFO "######## bthid_ll_parse: status = %d, ret = %d ########\n",
+		    hid->status, ret);
 
     return ret;
 }
@@ -125,7 +125,7 @@ static int bthid_open(struct inode *inode, struct file *file)
 {
     struct bthid_device *p_dev;
 
-;
+    printk(KERN_INFO "######## bthid_open: ########\n");
 
     p_dev = kzalloc(sizeof(struct bthid_device), GFP_KERNEL);
     if (!p_dev)
@@ -135,7 +135,7 @@ static int bthid_open(struct inode *inode, struct file *file)
 
     file->private_data = p_dev;
     
-;
+    printk(KERN_INFO "######## bthid_open: done ########\n");
     return 0;
 }
 
@@ -143,7 +143,7 @@ static int bthid_release(struct inode *inode, struct file *file)
 {
     struct bthid_device *p_dev = file->private_data;
 
-;
+    printk(KERN_INFO "######## bthid_release: ########\n");
     
     if (p_dev->hid) 
     {
@@ -164,7 +164,7 @@ static int bthid_release(struct inode *inode, struct file *file)
     kfree(p_dev);
     file->private_data = NULL;
 
-;
+    printk(KERN_INFO "######## bthid_release: done ########\n");
     return 0;
 }
 
@@ -174,11 +174,11 @@ static ssize_t bthid_write(struct file *file, const char __user *buffer, size_t 
     struct bthid_device *p_dev = file->private_data;
 
     /*
-;
+    printk("######## bthid_write: count = %d ########\n", count);
     */
 
     if (p_dev->dscp_set == 0) {
-;
+	printk(KERN_INFO "bthid_write: Oops, HID report descriptor not configured\n");
         return 0;
     }
 
@@ -202,7 +202,7 @@ static ssize_t bthid_write(struct file *file, const char __user *buffer, size_t 
     kfree(buf);
 
     /*
-;
+    printk("######## bthid_write: done ########\n");
     */
 
     return 0;
@@ -216,7 +216,7 @@ static int bthid_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
     struct bthid_device *p_dev = file->private_data;
     struct bthid_di di;
 
-;
+    printk(KERN_INFO "######## bthid_ioctl: cmd = %d ########\n", cmd);
 
     if (p_dev == NULL)
     {
@@ -234,13 +234,13 @@ static int bthid_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
             return -EFAULT;
         }
 
-;
+	printk(KERN_INFO "%s: name=%s\n", __func__, name);
 
         if (!p_dev->hid) {
             p_dev->hid = hid_allocate_device();
             if (p_dev->hid == NULL)
             {
-;
+		printk(KERN_INFO "Oops: Failed to allocation HID device.\n");
                 kfree(name);
                 return -ENOMEM;
             }
@@ -255,14 +255,14 @@ static int bthid_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
             return -EFAULT;
         }
 
-//	printk(KERN_INFO "%s: vendor=0x%04x, product=0x%04x, version=0x%04x, country=0x%02x\n",
-;
+	printk(KERN_INFO "%s: vendor=0x%04x, product=0x%04x, version=0x%04x, country=0x%02x\n",
+			__func__, di.vendor_id, di.product_id, di.version, di.ctry_code);
 		
         if (!p_dev->hid) {
             p_dev->hid = hid_allocate_device();
             if (p_dev->hid == NULL)
             {
-;
+		printk(KERN_INFO "Oops: Failed to allocation HID device.\n");
                 return -ENOMEM;
             }
         }
@@ -285,8 +285,8 @@ static int bthid_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 
     if (p_ctrl->size <= 0) 
     {
-//	printk(KERN_INFO "Oops: Invalid BT HID report descriptor size %d\n",
-;
+	printk(KERN_INFO "Oops: Invalid BT HID report descriptor size %d\n",
+			p_ctrl->size);
 
         kfree(p_ctrl);
         return -EINVAL;
@@ -296,7 +296,7 @@ static int bthid_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
     p_dev->hid = hid_allocate_device();
     if (p_dev->hid == NULL)
     {
-;
+	printk(KERN_INFO "Oops: Failed to allocation HID device.\n");
 
         kfree(p_ctrl);
         return -ENOMEM;
@@ -322,12 +322,12 @@ static int bthid_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 
     ret = hid_add_device(p_dev->hid);
 
-//	printk(KERN_INFO "hid_add_device: ret = %d, hid->status = %d\n",
-;
+	printk(KERN_INFO "hid_add_device: ret = %d, hid->status = %d\n",
+		    ret, p_dev->hid->status);
 
     if (ret != 0)
     {
-;
+	printk(KERN_INFO "Oops: Failed to add HID device");
 
         kfree(p_ctrl);
         hid_destroy_device(p_dev->hid);
@@ -338,17 +338,17 @@ static int bthid_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
 
     if (p_dev->hid->status != (HID_STAT_ADDED | HID_STAT_PARSED))
     {
-;
+	printk(KERN_INFO "Oops: Failed to process HID report descriptor");
         return -EINVAL;
     }
 
     p_dev->dscp_set = 1;
     } else {
-;
+	printk(KERN_INFO "Invlid ioctl value");
         return -EINVAL;
     }
 
-;
+    printk(KERN_INFO "######## bthid_ioctl: done ########\n");
     return 0;
 }
 
@@ -372,27 +372,27 @@ static int __init bthid_init(void)
 {
     int ret;
 
-;
+    printk(KERN_INFO "######## bthid_init: ########\n");
 
     ret = misc_register(&bthid_misc);
     if (ret != 0)
     {
-//	printk(KERN_INFO "Oops, failed to register Misc driver, ret = %d\n",
-;
+	printk(KERN_INFO "Oops, failed to register Misc driver, ret = %d\n",
+			ret);
         return ret;
     }
 
-;
+    printk(KERN_INFO "######## bthid_init: done ########\n");
     
     return ret;
 }
 
 static void __exit bthid_exit(void)
 {
-;
+    printk(KERN_INFO "bthid_exit:\n");
 
     misc_deregister(&bthid_misc);
-;
+    printk(KERN_INFO "bthid_exit: done\n");
 }
 
 module_init(bthid_init);

@@ -33,7 +33,7 @@ static void
 anslcd_write_byte_ctrl ( unsigned char c )
 {
 #ifdef DEBUG
-;
+	printk(KERN_DEBUG "LCD: CTRL byte: %02x\n",c);
 #endif
 	out_8(anslcd_ptr + ANSLCD_CTRL_IX, c);
 	switch(c) {
@@ -60,7 +60,7 @@ anslcd_write( struct file * file, const char __user * buf,
 	int i;
 
 #ifdef DEBUG
-;
+	printk(KERN_DEBUG "LCD: write\n");
 #endif
 
 	if (!access_ok(VERIFY_READ, buf, count))
@@ -85,7 +85,7 @@ anslcd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	long ret = 0;
 
 #ifdef DEBUG
-;
+	printk(KERN_DEBUG "LCD: ioctl(%d,%d)\n",cmd,arg);
 #endif
 
 	mutex_lock(&anslcd_mutex);
@@ -169,13 +169,13 @@ anslcd_init(void)
 	
 	retval = misc_register(&anslcd_dev);
 	if(retval < 0){
-;
+		printk(KERN_INFO "LCD: misc_register failed\n");
 		iounmap(anslcd_ptr);
 		return retval;
 	}
 
 #ifdef DEBUG
-;
+	printk(KERN_DEBUG "LCD: init\n");
 #endif
 
 	mutex_lock(&anslcd_mutex);

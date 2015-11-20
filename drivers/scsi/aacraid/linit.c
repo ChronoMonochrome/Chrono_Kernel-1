@@ -325,7 +325,7 @@ static int aac_biosparm(struct scsi_device *sdev, struct block_device *bdev,
 	struct diskparm *param = (struct diskparm *)geom;
 	unsigned char *buf;
 
-;
+	dprintk((KERN_DEBUG "aac_biosparm.\n"));
 
 	/*
 	 *	Assuming extended translation is enabled - #REVISIT#
@@ -389,13 +389,13 @@ static int aac_biosparm(struct scsi_device *sdev, struct block_device *bdev,
 		param->cylinders = cap_to_cyls(capacity, param->heads * param->sectors);
 		if (num < 4 && end_sec == param->sectors) {
 			if (param->cylinders != saved_cylinders)
-//				dprintk((KERN_DEBUG "Adopting geometry: heads=%d, sectors=%d from partition table %d.\n",
-;
+				dprintk((KERN_DEBUG "Adopting geometry: heads=%d, sectors=%d from partition table %d.\n",
+					param->heads, param->sectors, num));
 		} else if (end_head > 0 || end_sec > 0) {
-//			dprintk((KERN_DEBUG "Strange geometry: heads=%d, sectors=%d in partition table %d.\n",
-;
-//			dprintk((KERN_DEBUG "Using geometry: heads=%d, sectors=%d.\n",
-;
+			dprintk((KERN_DEBUG "Strange geometry: heads=%d, sectors=%d in partition table %d.\n",
+				end_head + 1, end_sec, num));
+			dprintk((KERN_DEBUG "Using geometry: heads=%d, sectors=%d.\n",
+					param->heads, param->sectors));
 		}
 	}
 	kfree(buf);
@@ -551,9 +551,9 @@ static int aac_eh_abort(struct scsi_cmnd* cmd)
 	int count;
 	int ret = FAILED;
 
-//	printk(KERN_ERR "%s: Host adapter abort request (%d,%d,%d,%d)\n",
-//		AAC_DRIVERNAME,
-;
+	printk(KERN_ERR "%s: Host adapter abort request (%d,%d,%d,%d)\n",
+		AAC_DRIVERNAME,
+		host->host_no, sdev_channel(dev), sdev_id(dev), dev->lun);
 	switch (cmd->cmnd[0]) {
 	case SERVICE_ACTION_IN:
 		if (!(aac->raw_io_interface) ||
@@ -617,8 +617,8 @@ static int aac_eh_reset(struct scsi_cmnd* cmd)
 			cmd->SCp.phase = AAC_OWNER_ERROR_HANDLER;
 		}
 	}
-//	printk(KERN_ERR "%s: Host adapter reset request. SCSI hang ?\n",
-;
+	printk(KERN_ERR "%s: Host adapter reset request. SCSI hang ?\n",
+					AAC_DRIVERNAME);
 
 	if ((count = aac_check_health(aac)))
 		return count;
@@ -651,7 +651,7 @@ static int aac_eh_reset(struct scsi_cmnd* cmd)
 			return SUCCESS;
 		ssleep(1);
 	}
-;
+	printk(KERN_ERR "%s: SCSI bus appears hung\n", AAC_DRIVERNAME);
 	/*
 	 * This adapter needs a blind reset, only do so for Adapters that
 	 * support a register, instead of a commanded, reset.
@@ -826,8 +826,8 @@ static ssize_t aac_show_flags(struct device *cdev,
 	int len = 0;
 	struct aac_dev *dev = (struct aac_dev*)class_to_shost(cdev)->hostdata;
 
-//	if (nblank(dprintk(x)))
-;
+	if (nblank(dprintk(x)))
+		len = snprintf(buf, PAGE_SIZE, "dprintk\n");
 #ifdef AAC_DETAILED_STATUS_INFO
 	len += snprintf(buf + len, PAGE_SIZE - len,
 			"AAC_DETAILED_STATUS_INFO\n");
@@ -1166,7 +1166,7 @@ static int __devinit aac_probe_one(struct pci_dev *pdev,
 	 */
 	aac->thread = kthread_run(aac_command_thread, aac, AAC_DRIVERNAME);
 	if (IS_ERR(aac->thread)) {
-;
+		printk(KERN_ERR "aacraid: Unable to create command thread.\n");
 		error = PTR_ERR(aac->thread);
 		goto out_deinit;
 	}
@@ -1316,8 +1316,8 @@ static int __init aac_init(void)
 {
 	int error;
 
-//	printk(KERN_INFO "Adaptec %s driver %s\n",
-;
+	printk(KERN_INFO "Adaptec %s driver %s\n",
+	  AAC_DRIVERNAME, aac_driver_version);
 
 	error = pci_register_driver(&aac_pci_driver);
 	if (error < 0)
@@ -1325,8 +1325,8 @@ static int __init aac_init(void)
 
 	aac_cfg_major = register_chrdev( 0, "aac", &aac_cfg_fops);
 	if (aac_cfg_major < 0) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+			"aacraid: unable to register \"aac\" device.\n");
 	}
 
 	return 0;

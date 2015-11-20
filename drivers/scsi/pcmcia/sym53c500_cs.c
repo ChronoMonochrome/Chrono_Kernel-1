@@ -364,7 +364,7 @@ SYM53C500_intr(int irq, void *dev_id)
 
 	spin_lock_irqsave(dev->host_lock, flags);
 
-;
+	VDEB(printk("SYM53C500_intr called\n"));
 
 	REG1(port_base);
 	pio_status = inb(port_base + PIO_STATUS);
@@ -375,37 +375,37 @@ SYM53C500_intr(int irq, void *dev_id)
 	DEB(fifo_size = inb(port_base + FIFO_FLAGS) & 0x1f);
 
 #if SYM53C500_DEBUG
-//	printk("status=%02x, seq_reg=%02x, int_reg=%02x, fifo_size=%02x", 
-;
-;
+	printk("status=%02x, seq_reg=%02x, int_reg=%02x, fifo_size=%02x", 
+	    status, seq_reg, int_reg, fifo_size);
+	printk(", pio=%02x\n", pio_status);
 #endif /* SYM53C500_DEBUG */
 
 	if (int_reg & 0x80) {	/* SCSI reset intr */
-;
+		DEB(printk("SYM53C500: reset intr received\n"));
 		curSC->result = DID_RESET << 16;
 		goto idle_out;
 	}
 
 	if (pio_status & 0x80) {
-;
+		printk("SYM53C500: Warning: PIO error!\n");
 		curSC->result = DID_ERROR << 16;
 		goto idle_out;
 	}
 
 	if (status & 0x20) {		/* Parity error */
-;
+		printk("SYM53C500: Warning: parity error!\n");
 		curSC->result = DID_PARITY << 16;
 		goto idle_out;
 	}
 
 	if (status & 0x40) {		/* Gross error */
-;
+		printk("SYM53C500: Warning: gross error!\n");
 		curSC->result = DID_ERROR << 16;
 		goto idle_out;
 	}
 
 	if (int_reg & 0x20) {		/* Disconnect */
-;
+		DEB(printk("SYM53C500: disconnect intr received\n"));
 		if (curSC->SCp.phase != message_in) {	/* Unexpected disconnect */
 			curSC->result = DID_NO_CONNECT << 16;
 		} else {	/* Command complete, return status and message */
@@ -422,7 +422,7 @@ SYM53C500_intr(int irq, void *dev_id)
 			int i;
 
 			curSC->SCp.phase = data_out;
-;
+			VDEB(printk("SYM53C500: Data-Out phase\n"));
 			outb(FLUSH_FIFO, port_base + CMD_REG);
 			LOAD_DMA_COUNT(port_base, scsi_bufflen(curSC));	/* Max transfer size */
 			outb(TRANSFER_INFO | DMA_OP, port_base + CMD_REG);
@@ -441,7 +441,7 @@ SYM53C500_intr(int irq, void *dev_id)
 			int i;
 
 			curSC->SCp.phase = data_in;
-;
+			VDEB(printk("SYM53C500: Data-In phase\n"));
 			outb(FLUSH_FIFO, port_base + CMD_REG);
 			LOAD_DMA_COUNT(port_base, scsi_bufflen(curSC));	/* Max transfer size */
 			outb(TRANSFER_INFO | DMA_OP, port_base + CMD_REG);
@@ -456,41 +456,41 @@ SYM53C500_intr(int irq, void *dev_id)
 
 	case 0x02:		/* COMMAND */
 		curSC->SCp.phase = command_ph;
-;
+		printk("SYM53C500: Warning: Unknown interrupt occurred in command phase!\n");
 		break;
 
 	case 0x03:		/* STATUS */
 		curSC->SCp.phase = status_ph;
-;
+		VDEB(printk("SYM53C500: Status phase\n"));
 		outb(FLUSH_FIFO, port_base + CMD_REG);
 		outb(INIT_CMD_COMPLETE, port_base + CMD_REG);
 		break;
 
 	case 0x04:		/* Reserved */
 	case 0x05:		/* Reserved */
-;
+		printk("SYM53C500: WARNING: Reserved phase!!!\n");
 		break;
 
 	case 0x06:		/* MESSAGE-OUT */
-;
+		DEB(printk("SYM53C500: Message-Out phase\n"));
 		curSC->SCp.phase = message_out;
 		outb(SET_ATN, port_base + CMD_REG);	/* Reject the message */
 		outb(MSG_ACCEPT, port_base + CMD_REG);
 		break;
 
 	case 0x07:		/* MESSAGE-IN */
-;
+		VDEB(printk("SYM53C500: Message-In phase\n"));
 		curSC->SCp.phase = message_in;
 
 		curSC->SCp.Status = inb(port_base + SCSI_FIFO);
 		curSC->SCp.Message = inb(port_base + SCSI_FIFO);
 
-;
-;
+		VDEB(printk("SCSI FIFO size=%d\n", inb(port_base + FIFO_FLAGS) & 0x1f));
+		DEB(printk("Status = %02x  Message = %02x\n", curSC->SCp.Status, curSC->SCp.Message));
 
 		if (curSC->SCp.Message == SAVE_POINTERS || curSC->SCp.Message == DISCONNECT) {
 			outb(SET_ATN, port_base + CMD_REG);	/* Reject message */
-;
+			DEB(printk("Discarding SAVE_POINTERS message\n"));
 		}
 		outb(MSG_ACCEPT, port_base + CMD_REG);
 		break;
@@ -539,7 +539,7 @@ SYM53C500_info(struct Scsi_Host *SChost)
 	struct sym53c500_data *data =
 	    (struct sym53c500_data *)SChost->hostdata;
 
-;
+	DEB(printk("SYM53C500_info called\n"));
 	(void)snprintf(info_msg, sizeof(info_msg),
 	    "SYM53C500 at 0x%lx, IRQ %d, %s PIO mode.", 
 	    SChost->io_port, SChost->irq, data->fast_pio ? "fast" : "slow");
@@ -554,15 +554,15 @@ SYM53C500_queue_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
 	struct sym53c500_data *data =
 	    (struct sym53c500_data *)SCpnt->device->host->hostdata;
 
-;
+	VDEB(printk("SYM53C500_queue called\n"));
 
-//	DEB(printk("cmd=%02x, cmd_len=%02x, target=%02x, lun=%02x, bufflen=%d\n", 
-//	    SCpnt->cmnd[0], SCpnt->cmd_len, SCpnt->device->id, 
-;
+	DEB(printk("cmd=%02x, cmd_len=%02x, target=%02x, lun=%02x, bufflen=%d\n", 
+	    SCpnt->cmnd[0], SCpnt->cmd_len, SCpnt->device->id, 
+	    SCpnt->device->lun,  scsi_bufflen(SCpnt)));
 
 	VDEB(for (i = 0; i < SCpnt->cmd_len; i++)
-;
-;
+	    printk("cmd[%d]=%02x  ", i, SCpnt->cmnd[i]));
+	VDEB(printk("\n"));
 
 	data->current_SC = SCpnt;
 	data->current_SC->scsi_done = done;
@@ -590,7 +590,7 @@ SYM53C500_host_reset(struct scsi_cmnd *SCpnt)
 {
 	int port_base = SCpnt->device->host->io_port;
 
-;
+	DEB(printk("SYM53C500_host_reset called\n"));
 	spin_lock_irq(SCpnt->device->host->host_lock);
 	SYM53C500_int_host_reset(port_base);
 	spin_unlock_irq(SCpnt->device->host->host_lock);
@@ -605,7 +605,7 @@ SYM53C500_biosparm(struct scsi_device *disk,
 {
 	int size;
 
-;
+	DEB(printk("SYM53C500_biosparm called\n"));
 
 	size = capacity;
 	info_array[0] = 64;		/* heads */
@@ -749,14 +749,14 @@ SYM53C500_config(struct pcmcia_device *link)
 	port_base = link->resource[0]->start;
 	irq_level = link->irq;
 
-//	DEB(printk("SYM53C500: port_base=0x%x, irq=%d, fast_pio=%d\n",
-;
+	DEB(printk("SYM53C500: port_base=0x%x, irq=%d, fast_pio=%d\n",
+	    port_base, irq_level, USE_FAST_PIO);)
 
 	chip_init(port_base);
 
 	host = scsi_host_alloc(tpnt, sizeof(struct sym53c500_data));
 	if (!host) {
-;
+		printk("SYM53C500: Unable to register host, giving up.\n");
 		goto err_release;
 	}
 
@@ -764,15 +764,15 @@ SYM53C500_config(struct pcmcia_device *link)
 
 	if (irq_level > 0) {
 		if (request_irq(irq_level, SYM53C500_intr, IRQF_SHARED, "SYM53C500", host)) {
-;
+			printk("SYM53C500: unable to allocate IRQ %d\n", irq_level);
 			goto err_free_scsi;
 		}
-;
+		DEB(printk("SYM53C500: allocated IRQ %d\n", irq_level));
 	} else if (irq_level == 0) {
-;
+		DEB(printk("SYM53C500: No interrupts detected\n"));
 		goto err_free_scsi;
 	} else {
-;
+		DEB(printk("SYM53C500: Shouldn't get here!\n"));
 		goto err_free_scsi;
 	}
 
@@ -803,7 +803,7 @@ err_free_scsi:
 	scsi_host_put(host);
 err_release:
 	release_region(port_base, 0x10);
-;
+	printk(KERN_INFO "sym53c500_cs: no SCSI devices found\n");
 	return -ENODEV;
 
 failed:

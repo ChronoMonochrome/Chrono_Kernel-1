@@ -449,8 +449,8 @@ static void set_audio_input(struct au8522_state *state, int aud_input)
 
 	if (aud_input != AU8522_AUDIO_SIF) {
 		/* The caller asked for a mode we don't currently support */
-//		printk(KERN_ERR "Unsupported audio mode requested! mode=%d\n",
-;
+		printk(KERN_ERR "Unsupported audio mode requested! mode=%d\n",
+		       aud_input);
 		return;
 	}
 
@@ -669,7 +669,7 @@ static int au8522_s_video_routing(struct v4l2_subdev *sd,
 	} else if (input == AU8522_COMPOSITE_CH4_SIF) {
 		au8522_setup_cvbs_tuner_mode(state);
 	} else {
-;
+		printk(KERN_ERR "au8522 mode not currently supported\n");
 		return -EINVAL;
 	}
 	return 0;
@@ -776,15 +776,15 @@ static int au8522_probe(struct i2c_client *client,
 	instance = au8522_get_state(&state, client->adapter, client->addr);
 	switch (instance) {
 	case 0:
-;
+		printk(KERN_ERR "au8522_decoder allocation failed\n");
 		return -EIO;
 	case 1:
 		/* new demod instance */
-;
+		printk(KERN_INFO "au8522_decoder creating new instance...\n");
 		break;
 	default:
 		/* existing demod instance */
-;
+		printk(KERN_INFO "au8522_decoder attach existing instance.\n");
 		break;
 	}
 

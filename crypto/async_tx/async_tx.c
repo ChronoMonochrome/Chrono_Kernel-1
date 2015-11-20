@@ -32,7 +32,7 @@ static int __init async_tx_init(void)
 {
 	async_dmaengine_get();
 
-;
+	printk(KERN_INFO "async_tx: api initialized (async)\n");
 
 	return 0;
 }

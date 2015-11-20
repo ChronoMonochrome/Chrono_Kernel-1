@@ -122,7 +122,7 @@
     static spinlock_t cpumask_lock;
     static unsigned int suspended;
     #define dprintk(flag,msg...) do { \
-;				      \
+    if (debug_mask & flag) printk(KERN_DEBUG msg); \
     } while (0)
     enum {
     SMARTASS_DEBUG_JUMPS=1,
@@ -219,15 +219,15 @@
     // We should not get here:
     // If we got here we tried to change to a validated new_freq which is different
     // from old_freq, so there is no reason for us to remain at same frequency.
-//    printk(KERN_WARNING "Smartass: frequency change failed: %d to %d => %d\n",
-;
+    printk(KERN_WARNING "Smartass: frequency change failed: %d to %d => %d\n",
+    old_freq,new_freq,target);
     return 0;
     }
     }
     else target = new_freq;
     __cpufreq_driver_target(policy, target, prefered_relation);
-//    dprintk(SMARTASS_DEBUG_JUMPS,"SmartassQ: jumping from %d to %d => %d (%d)\n",
-;
+    dprintk(SMARTASS_DEBUG_JUMPS,"SmartassQ: jumping from %d to %d => %d (%d)\n",
+    old_freq,new_freq,target,policy->cur);
     return target;
     }
     static void cpufreq_smartass_timer(unsigned long cpu)
@@ -257,8 +257,8 @@
     cpu_load = 0;
     else
     cpu_load = 100 * (unsigned int)(delta_time - delta_idle) / (unsigned int)delta_time;
-//    dprintk(SMARTASS_DEBUG_LOAD,"smartassT @ %d: load %d (delta_time %llu)\n",
-;
+    dprintk(SMARTASS_DEBUG_LOAD,"smartassT @ %d: load %d (delta_time %llu)\n",
+    old_freq,cpu_load,delta_time);
     this_smartass->cur_cpu_load = cpu_load;
     this_smartass->old_freq = old_freq;
     // Scale up if load is above max or if there where no idle cycles since coming out of idle,
@@ -270,8 +270,8 @@
     (old_freq < this_smartass->ideal_speed || delta_idle == 0 ||
     cputime64_sub(update_time, this_smartass->freq_change_time) >= up_rate_us))
     {
-//    dprintk(SMARTASS_DEBUG_ALG,"smartassT @ %d ramp up: load %d (delta_idle %llu)\n",
-;
+    dprintk(SMARTASS_DEBUG_ALG,"smartassT @ %d ramp up: load %d (delta_idle %llu)\n",
+    old_freq,cpu_load,delta_idle);
     this_smartass->ramp_dir = 1;
     work_cpumask_set(cpu);
     queue_work(up_wq, &freq_scale_work);
@@ -285,8 +285,8 @@
     (old_freq > this_smartass->ideal_speed ||
     cputime64_sub(update_time, this_smartass->freq_change_time) >= down_rate_us))
     {
-//    dprintk(SMARTASS_DEBUG_ALG,"smartassT @ %d ramp down: load %d (delta_idle %llu)\n",
-;
+    dprintk(SMARTASS_DEBUG_ALG,"smartassT @ %d ramp down: load %d (delta_idle %llu)\n",
+    old_freq,cpu_load,delta_idle);
     this_smartass->ramp_dir = -1;
     work_cpumask_set(cpu);
     queue_work(down_wq, &freq_scale_work);
@@ -335,8 +335,8 @@
     policy = this_smartass->cur_policy;
     if (old_freq != policy->cur) {
     // frequency was changed by someone else?
-//    printk(KERN_WARNING "Smartass: frequency changed by 3rd party: %d to %d\n",
-;
+    printk(KERN_WARNING "Smartass: frequency changed by 3rd party: %d to %d\n",
+    old_freq,policy->cur);
     new_freq = old_freq;
     }
     else if (ramp_dir > 0 && nr_running() > 1) {
@@ -351,8 +351,8 @@
     new_freq = policy->max;
     relation = CPUFREQ_RELATION_H;
     }
-//    dprintk(SMARTASS_DEBUG_ALG,"smartassQ @ %d ramp up: ramp_dir=%d ideal=%d\n",
-;
+    dprintk(SMARTASS_DEBUG_ALG,"smartassQ @ %d ramp up: ramp_dir=%d ideal=%d\n",
+    old_freq,ramp_dir,this_smartass->ideal_speed);
     }
     else if (ramp_dir < 0) {
     // ramp down logic:
@@ -370,15 +370,15 @@
     if (new_freq > old_freq) // min_cpu_load > max_cpu_load ?!
     new_freq = old_freq -1;
     }
-//    dprintk(SMARTASS_DEBUG_ALG,"smartassQ @ %d ramp down: ramp_dir=%d ideal=%d\n",
-;
+    dprintk(SMARTASS_DEBUG_ALG,"smartassQ @ %d ramp down: ramp_dir=%d ideal=%d\n",
+    old_freq,ramp_dir,this_smartass->ideal_speed);
     }
     else { // ramp_dir==0 ?! Could the timer change its mind about a queued ramp up/down
     // before the work task gets to run?
     // This may also happen if we refused to ramp up because the nr_running()==1
     new_freq = old_freq;
-//    dprintk(SMARTASS_DEBUG_ALG,"smartassQ @ %d nothing: ramp_dir=%d nr_running=%lu\n",
-;
+    dprintk(SMARTASS_DEBUG_ALG,"smartassQ @ %d nothing: ramp_dir=%d nr_running=%lu\n",
+    old_freq,ramp_dir,nr_running());
     }
     // do actual ramp up (returns 0, if frequency change failed):
     new_freq = target_freq(policy,this_smartass,new_freq,old_freq,relation);
@@ -590,7 +590,7 @@
     smartass_update_min_max(this_smartass,new_policy,suspended);
     this_smartass->freq_table = cpufreq_frequency_get_table(cpu);
     if (!this_smartass->freq_table)
-;
+    printk(KERN_WARNING "Smartass: no frequency table for cpu %d?!\n",cpu);
     smp_wmb();
     // Do not register the idle hook and create sysfs
     // entries if we have already done so.
@@ -608,12 +608,12 @@
     case CPUFREQ_GOV_LIMITS:
     smartass_update_min_max(this_smartass,new_policy,suspended);
     if (this_smartass->cur_policy->cur > new_policy->max) {
-;
+    dprintk(SMARTASS_DEBUG_JUMPS,"SmartassI: jumping to new max freq: %d\n",new_policy->max);
     __cpufreq_driver_target(this_smartass->cur_policy,
     new_policy->max, CPUFREQ_RELATION_H);
     }
     else if (this_smartass->cur_policy->cur < new_policy->min) {
-;
+    dprintk(SMARTASS_DEBUG_JUMPS,"SmartassI: jumping to new min freq: %d\n",new_policy->min);
     __cpufreq_driver_target(this_smartass->cur_policy,
     new_policy->min, CPUFREQ_RELATION_L);
     }
@@ -645,7 +645,7 @@
     smartass_update_min_max(this_smartass,policy,suspend);
     if (!suspend) { // resume at max speed:
     new_freq = validate_freq(policy,sleep_wakeup_freq);
-;
+    dprintk(SMARTASS_DEBUG_JUMPS,"SmartassS: awaking at %d\n",new_freq);
     __cpufreq_driver_target(policy, new_freq,
     CPUFREQ_RELATION_L);
     } else {
@@ -654,7 +654,7 @@
     // Eventually, the timer will adjust the frequency if necessary.
     this_smartass->freq_change_time_in_idle =
     get_cpu_idle_time_us(cpu,&this_smartass->freq_change_time);
-;
+    dprintk(SMARTASS_DEBUG_JUMPS,"SmartassS: suspending at %d\n",policy->cur);
     }
     reset_timer(smp_processor_id(),this_smartass);
     }

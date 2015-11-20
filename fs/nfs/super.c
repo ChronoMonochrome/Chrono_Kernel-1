@@ -509,7 +509,7 @@ static int nfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	return 0;
 
  out_err:
-;
+	dprintk("%s: statfs error = %d\n", __func__, -error);
 	return error;
 }
 
@@ -935,7 +935,7 @@ static int nfs_verify_server_address(struct sockaddr *addr)
 	}
 	}
 
-;
+	dfprintk(MOUNT, "NFS: Invalid IP address specified\n");
 	return 0;
 }
 
@@ -997,7 +997,7 @@ static int nfs_parse_security_flavors(char *value,
 {
 	substring_t args[MAX_OPT_ARGS];
 
-;
+	dfprintk(MOUNT, "NFS: parsing sec=%s option\n", value);
 
 	switch (match_token(value, nfs_secflavor_tokens, args)) {
 	case Opt_sec_none:
@@ -1078,10 +1078,10 @@ static int nfs_parse_mount_options(char *raw,
 	unsigned short mountfamily = AF_UNSPEC;
 
 	if (!raw) {
-;
+		dfprintk(MOUNT, "NFS: mount options string was NULL.\n");
 		return 1;
 	}
-;
+	dfprintk(MOUNT, "NFS: nfs mount opts='%s'\n", raw);
 
 	secdata = alloc_secdata();
 	if (!secdata)
@@ -1105,7 +1105,7 @@ static int nfs_parse_mount_options(char *raw,
 		if (!*p)
 			continue;
 
-;
+		dfprintk(MOUNT, "NFS:   parsing nfs mount option '%s'\n", p);
 
 		token = match_token(p, nfs_mount_option_tokens, args);
 		switch (token) {
@@ -1323,8 +1323,8 @@ static int nfs_parse_mount_options(char *raw,
 			rc = nfs_parse_security_flavors(string, mnt);
 			kfree(string);
 			if (!rc) {
-//				dfprintk(MOUNT, "NFS:   unrecognized "
-;
+				dfprintk(MOUNT, "NFS:   unrecognized "
+						"security flavor\n");
 				return 0;
 			}
 			break;
@@ -1356,8 +1356,8 @@ static int nfs_parse_mount_options(char *raw,
 				xprt_load_transport(string);
 				break;
 			default:
-//				dfprintk(MOUNT, "NFS:   unrecognized "
-;
+				dfprintk(MOUNT, "NFS:   unrecognized "
+						"transport protocol\n");
 				kfree(string);
 				return 0;
 			}
@@ -1385,8 +1385,8 @@ static int nfs_parse_mount_options(char *raw,
 				break;
 			case Opt_xprt_rdma: /* not used for side protocols */
 			default:
-//				dfprintk(MOUNT, "NFS:   unrecognized "
-;
+				dfprintk(MOUNT, "NFS:   unrecognized "
+						"transport protocol\n");
 				return 0;
 			}
 			break;
@@ -1444,8 +1444,8 @@ static int nfs_parse_mount_options(char *raw,
 					mnt->flags |= NFS_MOUNT_LOOKUP_CACHE_NONEG|NFS_MOUNT_LOOKUP_CACHE_NONE;
 					break;
 				default:
-//					dfprintk(MOUNT, "NFS:   invalid "
-;
+					dfprintk(MOUNT, "NFS:   invalid "
+							"lookupcache argument\n");
 					return 0;
 			};
 			break;
@@ -1477,8 +1477,8 @@ static int nfs_parse_mount_options(char *raw,
 						NFS_MOUNT_LOCAL_FCNTL);
 				break;
 			default:
-//				dfprintk(MOUNT, "NFS:	invalid	"
-;
+				dfprintk(MOUNT, "NFS:	invalid	"
+						"local_lock argument\n");
 				return 0;
 			};
 			break;
@@ -1488,18 +1488,18 @@ static int nfs_parse_mount_options(char *raw,
 		 */
 		case Opt_sloppy:
 			sloppy = 1;
-;
+			dfprintk(MOUNT, "NFS:   relaxing parsing rules\n");
 			break;
 		case Opt_userspace:
 		case Opt_deprecated:
-//			dfprintk(MOUNT, "NFS:   ignoring mount option "
-;
+			dfprintk(MOUNT, "NFS:   ignoring mount option "
+					"'%s'\n", p);
 			break;
 
 		default:
 			invalid_option = 1;
-//			dfprintk(MOUNT, "NFS:   unrecognized mount option "
-;
+			dfprintk(MOUNT, "NFS:   unrecognized mount option "
+					"'%s'\n", p);
 		}
 	}
 
@@ -1527,24 +1527,24 @@ static int nfs_parse_mount_options(char *raw,
 	return 1;
 
 out_mountproto_mismatch:
-//	printk(KERN_INFO "NFS: mount server address does not match mountproto= "
-;
+	printk(KERN_INFO "NFS: mount server address does not match mountproto= "
+			 "option\n");
 	return 0;
 out_proto_mismatch:
-;
+	printk(KERN_INFO "NFS: server address does not match proto= option\n");
 	return 0;
 out_invalid_address:
-;
+	printk(KERN_INFO "NFS: bad IP address specified: %s\n", p);
 	return 0;
 out_invalid_value:
-;
+	printk(KERN_INFO "NFS: bad mount option value specified: %s\n", p);
 	return 0;
 out_nomem:
-;
+	printk(KERN_INFO "NFS: not enough memory to parse option\n");
 	return 0;
 out_security_failure:
 	free_secdata(secdata);
-;
+	printk(KERN_INFO "NFS: security options invalid: %d\n", rc);
 	return 0;
 }
 
@@ -1583,13 +1583,13 @@ static int nfs_walk_authlist(struct nfs_parsed_mount_data *args,
 	for (i = 0; i < args->auth_flavor_len; i++)
 		for (j = 0; j < server_authlist_len; j++)
 			if (args->auth_flavors[i] == request->auth_flavs[j]) {
-//				dfprintk(MOUNT, "NFS: using auth flavor %d\n",
-;
+				dfprintk(MOUNT, "NFS: using auth flavor %d\n",
+					request->auth_flavs[j]);
 				args->auth_flavors[0] = request->auth_flavs[j];
 				return 0;
 			}
 
-;
+	dfprintk(MOUNT, "NFS: server does not support requested auth flavor\n");
 	nfs_umount(request);
 	return -EACCES;
 }
@@ -1648,8 +1648,8 @@ static int nfs_try_mount(struct nfs_parsed_mount_data *args,
 	 */
 	status = nfs_mount(&request);
 	if (status != 0) {
-//		dfprintk(MOUNT, "NFS: unable to mount server %s, error %d\n",
-;
+		dfprintk(MOUNT, "NFS: unable to mount server %s, error %d\n",
+				request.hostname, status);
 		return status;
 	}
 
@@ -1717,19 +1717,19 @@ static int nfs_parse_devname(const char *dev_name,
 	return 0;
 
 out_bad_devname:
-;
+	dfprintk(MOUNT, "NFS: device name not in host:path format\n");
 	return -EINVAL;
 
 out_nomem:
-;
+	dfprintk(MOUNT, "NFS: not enough memory to parse device name\n");
 	return -ENOMEM;
 
 out_hostname:
-;
+	dfprintk(MOUNT, "NFS: server hostname too long\n");
 	return -ENAMETOOLONG;
 
 out_path:
-;
+	dfprintk(MOUNT, "NFS: export pathname too long\n");
 	return -ENAMETOOLONG;
 }
 
@@ -1904,40 +1904,40 @@ static int nfs_validate_mount_data(void *options,
 	return 0;
 
 out_no_data:
-;
+	dfprintk(MOUNT, "NFS: mount program didn't pass any mount data\n");
 	return -EINVAL;
 
 out_no_v3:
-//	dfprintk(MOUNT, "NFS: nfs_mount_data version %d does not support v3\n",
-;
+	dfprintk(MOUNT, "NFS: nfs_mount_data version %d does not support v3\n",
+		 data->version);
 	return -EINVAL;
 
 out_no_sec:
-;
+	dfprintk(MOUNT, "NFS: nfs_mount_data version supports only AUTH_SYS\n");
 	return -EINVAL;
 
 #ifndef CONFIG_NFS_V3
 out_v3_not_compiled:
-;
+	dfprintk(MOUNT, "NFS: NFSv3 is not compiled into kernel\n");
 	return -EPROTONOSUPPORT;
 #endif /* !CONFIG_NFS_V3 */
 
 #ifndef CONFIG_NFS_V4
 out_v4_not_compiled:
-;
+	dfprintk(MOUNT, "NFS: NFSv4 is not compiled into kernel\n");
 	return -EPROTONOSUPPORT;
 #endif /* !CONFIG_NFS_V4 */
 
 out_nomem:
-;
+	dfprintk(MOUNT, "NFS: not enough memory to handle mount options\n");
 	return -ENOMEM;
 
 out_no_address:
-;
+	dfprintk(MOUNT, "NFS: mount program didn't pass remote address\n");
 	return -EINVAL;
 
 out_invalid_fh:
-;
+	dfprintk(MOUNT, "NFS: invalid root filehandle\n");
 	return -EINVAL;
 }
 
@@ -2357,7 +2357,7 @@ nfs_xdev_mount(struct file_system_type *fs_type, int flags,
 	};
 	int error;
 
-;
+	dprintk("--> nfs_xdev_mount()\n");
 
 	/* create a new volume representation */
 	server = nfs_clone_server(NFS_SB(data->sb), data->fh, data->fattr);
@@ -2412,13 +2412,13 @@ nfs_xdev_mount(struct file_system_type *fs_type, int flags,
 	/* clone any lsm security options from the parent to the new sb */
 	security_sb_clone_mnt_opts(data->sb, s);
 
-;
+	dprintk("<-- nfs_xdev_mount() = 0\n");
 	return mntroot;
 
 out_err_nosb:
 	nfs_free_server(server);
 out_err_noserver:
-;
+	dprintk("<-- nfs_xdev_mount() = %d [error]\n", error);
 	return ERR_PTR(error);
 
 error_splat_super:
@@ -2426,7 +2426,7 @@ error_splat_super:
 		bdi_unregister(&server->backing_dev_info);
 error_splat_bdi:
 	deactivate_locked_super(s);
-;
+	dprintk("<-- nfs_xdev_mount() = %d [splat]\n", error);
 	return ERR_PTR(error);
 }
 
@@ -2487,20 +2487,20 @@ static int nfs4_validate_text_mount_data(void *options,
 	nfs4_validate_mount_flags(args);
 
 	if (args->version != 4) {
-//		dfprintk(MOUNT,
-;
+		dfprintk(MOUNT,
+			 "NFS4: Illegal mount version\n");
 		return -EINVAL;
 	}
 
 	if (args->auth_flavor_len > 1) {
-//		dfprintk(MOUNT,
-;
+		dfprintk(MOUNT,
+			 "NFS4: Too many RPC auth flavours specified\n");
 		return -EINVAL;
 	}
 
 	if (args->client_address == NULL) {
-//		dfprintk(MOUNT,
-;
+		dfprintk(MOUNT,
+			 "NFS4: mount program didn't pass callback address\n");
 		return -EINVAL;
 	}
 
@@ -2555,7 +2555,7 @@ static int nfs4_validate_mount_data(void *options,
 		if (IS_ERR(c))
 			return PTR_ERR(c);
 		args->nfs_server.export_path = c;
-;
+		dfprintk(MOUNT, "NFS: MNTPATH: '%s'\n", c);
 
 		c = strndup_user(data->client_addr.data, 16);
 		if (IS_ERR(c))
@@ -2593,16 +2593,16 @@ static int nfs4_validate_mount_data(void *options,
 	return 0;
 
 out_no_data:
-;
+	dfprintk(MOUNT, "NFS4: mount program didn't pass any mount data\n");
 	return -EINVAL;
 
 out_inval_auth:
-//	dfprintk(MOUNT, "NFS4: Invalid number of RPC auth flavours %d\n",
-;
+	dfprintk(MOUNT, "NFS4: Invalid number of RPC auth flavours %d\n",
+		 data->auth_flavourlen);
 	return -EINVAL;
 
 out_no_address:
-;
+	dfprintk(MOUNT, "NFS4: mount program didn't pass remote address\n");
 	return -EINVAL;
 }
 
@@ -2811,7 +2811,7 @@ static struct dentry *nfs4_try_mount(int flags, const char *dev_name,
 	struct vfsmount *root_mnt;
 	struct dentry *res;
 
-;
+	dfprintk(MOUNT, "--> nfs4_try_mount()\n");
 
 	export_path = data->nfs_server.export_path;
 	data->nfs_server.export_path = "/";
@@ -2823,9 +2823,9 @@ static struct dentry *nfs4_try_mount(int flags, const char *dev_name,
 	if (!IS_ERR(root_mnt))
 		res = nfs_follow_remote_path(root_mnt, export_path);
 
-//	dfprintk(MOUNT, "<-- nfs4_try_mount() = %ld%s\n",
-//			IS_ERR(res) ? PTR_ERR(res) : 0,
-;
+	dfprintk(MOUNT, "<-- nfs4_try_mount() = %ld%s\n",
+			IS_ERR(res) ? PTR_ERR(res) : 0,
+			IS_ERR(res) ? " [error]" : "");
 	return res;
 }
 
@@ -2861,8 +2861,8 @@ out:
 	kfree(data->fscache_uniq);
 out_free_data:
 	kfree(data);
-//	dprintk("<-- nfs4_mount() = %d%s\n", error,
-;
+	dprintk("<-- nfs4_mount() = %d%s\n", error,
+			error != 0 ? " [error]" : "");
 	return res;
 }
 
@@ -2870,12 +2870,12 @@ static void nfs4_kill_super(struct super_block *sb)
 {
 	struct nfs_server *server = NFS_SB(sb);
 
-;
+	dprintk("--> %s\n", __func__);
 	nfs_super_return_all_delegations(sb);
 	kill_anon_super(sb);
 	nfs_fscache_release_super_cookie(sb);
 	nfs_free_server(server);
-;
+	dprintk("<-- %s\n", __func__);
 }
 
 /*
@@ -2895,7 +2895,7 @@ nfs4_xdev_mount(struct file_system_type *fs_type, int flags,
 	};
 	int error;
 
-;
+	dprintk("--> nfs4_xdev_mount()\n");
 
 	/* create a new volume representation */
 	server = nfs_clone_server(NFS_SB(data->sb), data->fh, data->fattr);
@@ -2949,13 +2949,13 @@ nfs4_xdev_mount(struct file_system_type *fs_type, int flags,
 
 	security_sb_clone_mnt_opts(data->sb, s);
 
-;
+	dprintk("<-- nfs4_xdev_mount() = 0\n");
 	return mntroot;
 
 out_err_nosb:
 	nfs_free_server(server);
 out_err_noserver:
-;
+	dprintk("<-- nfs4_xdev_mount() = %d [error]\n", error);
 	return ERR_PTR(error);
 
 error_splat_super:
@@ -2963,7 +2963,7 @@ error_splat_super:
 		bdi_unregister(&server->backing_dev_info);
 error_splat_bdi:
 	deactivate_locked_super(s);
-;
+	dprintk("<-- nfs4_xdev_mount() = %d [splat]\n", error);
 	return ERR_PTR(error);
 }
 
@@ -2982,7 +2982,7 @@ nfs4_remote_referral_mount(struct file_system_type *fs_type, int flags,
 	};
 	int error = -ENOMEM;
 
-;
+	dprintk("--> nfs4_referral_get_sb()\n");
 
 	mntfh = nfs_alloc_fhandle();
 	if (mntfh == NULL)
@@ -3041,7 +3041,7 @@ nfs4_remote_referral_mount(struct file_system_type *fs_type, int flags,
 	security_sb_clone_mnt_opts(data->sb, s);
 
 	nfs_free_fhandle(mntfh);
-;
+	dprintk("<-- nfs4_referral_get_sb() = 0\n");
 	return mntroot;
 
 out_err_nosb:
@@ -3049,7 +3049,7 @@ out_err_nosb:
 out_err_noserver:
 	nfs_free_fhandle(mntfh);
 out_err_nofh:
-;
+	dprintk("<-- nfs4_referral_get_sb() = %d [error]\n", error);
 	return ERR_PTR(error);
 
 error_splat_super:
@@ -3058,7 +3058,7 @@ error_splat_super:
 error_splat_bdi:
 	deactivate_locked_super(s);
 	nfs_free_fhandle(mntfh);
-;
+	dprintk("<-- nfs4_referral_get_sb() = %d [splat]\n", error);
 	return ERR_PTR(error);
 }
 
@@ -3073,7 +3073,7 @@ static struct dentry *nfs4_referral_mount(struct file_system_type *fs_type,
 	struct vfsmount *root_mnt;
 	struct dentry *res;
 
-;
+	dprintk("--> nfs4_referral_mount()\n");
 
 	export_path = data->mnt_path;
 	data->mnt_path = "/";
@@ -3085,9 +3085,9 @@ static struct dentry *nfs4_referral_mount(struct file_system_type *fs_type,
 	res = ERR_CAST(root_mnt);
 	if (!IS_ERR(root_mnt))
 		res = nfs_follow_remote_path(root_mnt, export_path);
-//	dprintk("<-- nfs4_referral_mount() = %ld%s\n",
-//			IS_ERR(res) ? PTR_ERR(res) : 0,
-;
+	dprintk("<-- nfs4_referral_mount() = %ld%s\n",
+			IS_ERR(res) ? PTR_ERR(res) : 0,
+			IS_ERR(res) ? " [error]" : "");
 	return res;
 }
 

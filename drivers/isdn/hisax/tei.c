@@ -107,7 +107,7 @@ put_tei_msg(struct PStack *st, u_char m_id, unsigned int ri, u_char tei)
 	u_char *bp;
 
 	if (!(skb = alloc_skb(8, GFP_ATOMIC))) {
-;
+		printk(KERN_WARNING "HiSax: No skb for TEI manager\n");
 		return;
 	}
 	bp = skb_put(skb, 3);

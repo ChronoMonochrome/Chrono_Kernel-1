@@ -38,44 +38,44 @@ void __cachefiles_printk_object(struct cachefiles_object *object,
 	struct fscache_cookie *cookie;
 	unsigned keylen, loop;
 
-//	printk(KERN_ERR "%sobject: OBJ%x\n",
-;
-//	printk(KERN_ERR "%sobjstate=%s fl=%lx wbusy=%x ev=%lx[%lx]\n",
-//	       prefix, fscache_object_states[object->fscache.state],
-//	       object->fscache.flags, work_busy(&object->fscache.work),
-//	       object->fscache.events,
-;
-//	printk(KERN_ERR "%sops=%u inp=%u exc=%u\n",
-//	       prefix, object->fscache.n_ops, object->fscache.n_in_progress,
-;
-//	printk(KERN_ERR "%sparent=%p\n",
-;
+	printk(KERN_ERR "%sobject: OBJ%x\n",
+	       prefix, object->fscache.debug_id);
+	printk(KERN_ERR "%sobjstate=%s fl=%lx wbusy=%x ev=%lx[%lx]\n",
+	       prefix, fscache_object_states[object->fscache.state],
+	       object->fscache.flags, work_busy(&object->fscache.work),
+	       object->fscache.events,
+	       object->fscache.event_mask & FSCACHE_OBJECT_EVENTS_MASK);
+	printk(KERN_ERR "%sops=%u inp=%u exc=%u\n",
+	       prefix, object->fscache.n_ops, object->fscache.n_in_progress,
+	       object->fscache.n_exclusive);
+	printk(KERN_ERR "%sparent=%p\n",
+	       prefix, object->fscache.parent);
 
 	spin_lock(&object->fscache.lock);
 	cookie = object->fscache.cookie;
 	if (cookie) {
-//		printk(KERN_ERR "%scookie=%p [pr=%p nd=%p fl=%lx]\n",
-//		       prefix,
-//		       object->fscache.cookie,
-//		       object->fscache.cookie->parent,
-//		       object->fscache.cookie->netfs_data,
-;
+		printk(KERN_ERR "%scookie=%p [pr=%p nd=%p fl=%lx]\n",
+		       prefix,
+		       object->fscache.cookie,
+		       object->fscache.cookie->parent,
+		       object->fscache.cookie->netfs_data,
+		       object->fscache.cookie->flags);
 		if (keybuf)
 			keylen = cookie->def->get_key(cookie->netfs_data, keybuf,
 						      CACHEFILES_KEYBUF_SIZE);
 		else
 			keylen = 0;
 	} else {
-;
+		printk(KERN_ERR "%scookie=NULL\n", prefix);
 		keylen = 0;
 	}
 	spin_unlock(&object->fscache.lock);
 
 	if (keylen) {
-;
+		printk(KERN_ERR "%skey=[%u] '", prefix, keylen);
 		for (loop = 0; loop < keylen; loop++)
-;
-;
+			printk("%02x", keybuf[loop]);
+		printk("'\n");
 	}
 }
 
@@ -135,13 +135,13 @@ found_dentry:
 	       dentry);
 
 	if (object->fscache.state < FSCACHE_OBJECT_DYING) {
-;
-//		printk(KERN_ERR "CacheFiles: Error:"
-;
+		printk(KERN_ERR "\n");
+		printk(KERN_ERR "CacheFiles: Error:"
+		       " Can't preemptively bury live object\n");
 		cachefiles_printk_object(object, NULL);
 	} else if (test_and_set_bit(CACHEFILES_OBJECT_BURIED, &object->flags)) {
-//		printk(KERN_ERR "CacheFiles: Error:"
-;
+		printk(KERN_ERR "CacheFiles: Error:"
+		       " Object already preemptively buried\n");
 	}
 
 	write_unlock(&cache->active_lock);
@@ -164,7 +164,7 @@ try_again:
 	write_lock(&cache->active_lock);
 
 	if (test_and_set_bit(CACHEFILES_OBJECT_ACTIVE, &object->flags)) {
-;
+		printk(KERN_ERR "CacheFiles: Error: Object already active\n");
 		cachefiles_printk_object(object, NULL);
 		BUG();
 	}
@@ -197,9 +197,9 @@ try_again:
 	 * need to wait for it to be destroyed */
 wait_for_old_object:
 	if (xobject->fscache.state < FSCACHE_OBJECT_DYING) {
-;
-//		printk(KERN_ERR "CacheFiles: Error:"
-;
+		printk(KERN_ERR "\n");
+		printk(KERN_ERR "CacheFiles: Error:"
+		       " Unexpected object collision\n");
 		cachefiles_printk_object(object, xobject);
 		BUG();
 	}
@@ -245,9 +245,9 @@ wait_for_old_object:
 		}
 
 		if (timeout <= 0) {
-;
-//			printk(KERN_ERR "CacheFiles: Error: Overlong"
-;
+			printk(KERN_ERR "\n");
+			printk(KERN_ERR "CacheFiles: Error: Overlong"
+			       " wait for old active object to go away\n");
 			cachefiles_printk_object(object, xobject);
 			goto requeue;
 		}

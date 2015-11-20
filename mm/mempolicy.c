@@ -2294,7 +2294,7 @@ void __init numa_policy_init(void)
 		node_set(prefer, interleave_nodes);
 
 	if (do_set_mempolicy(MPOL_INTERLEAVE, 0, &interleave_nodes))
-;
+		printk("numa_policy_init: interleaving failed\n");
 }
 
 /* Reset policy of current process to default */

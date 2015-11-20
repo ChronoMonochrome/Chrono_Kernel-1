@@ -25,28 +25,28 @@
 #ifndef DEBUG_GPIO
 #define gpio_dbg(x...) do { } while (0)
 #else
-//#define gpio_dbg(x...) printk(KERN_DEBUG x)
-//#endif
-//
-///* The samsung_gpiolib_4bit routines are to control the gpio banks where
-// * the gpio configuration register (GPxCON) has 4 bits per GPIO, as the
-// * following example:
-// *
-// * base + 0x00: Control register, 4 bits per gpio
-// *		gpio n: 4 bits starting at (4*n)
-// *		0000 = input, 0001 = output, others mean special-function
-// * base + 0x04: Data register, 1 bit per gpio
-// *		bit n: data bit n
-// *
-// * Note, since the data register is one bit per gpio and is at base + 0x4
-// * we can use s3c_gpiolib_get and s3c_gpiolib_set to change the state of
-// * the output.
-//*/
-//
-//static int samsung_gpiolib_4bit_input(struct gpio_chip *chip,
-//				      unsigned int offset)
-//{
-;
+#define gpio_dbg(x...) printk(KERN_DEBUG x)
+#endif
+
+/* The samsung_gpiolib_4bit routines are to control the gpio banks where
+ * the gpio configuration register (GPxCON) has 4 bits per GPIO, as the
+ * following example:
+ *
+ * base + 0x00: Control register, 4 bits per gpio
+ *		gpio n: 4 bits starting at (4*n)
+ *		0000 = input, 0001 = output, others mean special-function
+ * base + 0x04: Data register, 1 bit per gpio
+ *		bit n: data bit n
+ *
+ * Note, since the data register is one bit per gpio and is at base + 0x4
+ * we can use s3c_gpiolib_get and s3c_gpiolib_set to change the state of
+ * the output.
+*/
+
+static int samsung_gpiolib_4bit_input(struct gpio_chip *chip,
+				      unsigned int offset)
+{
+	struct s3c_gpio_chip *ourchip = to_s3c_gpio(chip);
 	void __iomem *base = ourchip->base;
 	unsigned long con;
 

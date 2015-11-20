@@ -728,7 +728,7 @@ static int EXT_I2C_ACK(u32 delay)
 	EXT_I2C_SCL_LOW;
 	/* udelay(delay); */
 	if (ack)
-;
+		printk(KERN_INFO "EXT_I2C No ACK\n");
 
 	return ack;
 }
@@ -880,7 +880,7 @@ void ErrorTrap(unsigned char bErrorNumber)
 	/* If Power Cycle programming, turn off the target */
 	RemoveTargetVDD();
 #endif
-;
+	printk(KERN_INFO "\r\nErrorTrap: errorNumber: %d\n", bErrorNumber);
 
 	/* TODO: write retry code or some processing. */
 	return;
@@ -921,7 +921,7 @@ int ISSP_main(void)
 	}
 
 	/* Initialize the Host & Target for ISSP operations */
-;
+	printk(KERN_INFO "fXRESInitializeTargetForISSP Start\n");
 
 	/* INTLOCK(); */
 	local_save_flags(flags);
@@ -945,10 +945,10 @@ int ISSP_main(void)
 #endif				/* RESET_MODE */
 
 #if 0				/* issp_test_2010 block */
-;
+	printk("fXRESInitializeTargetForISSP END\n");
 
 	/* Run the SiliconID Verification, and proceed according to result. */
-;
+	printk("fVerifySiliconID START\n");
 #endif
 
 	/* INTLOCK(); */

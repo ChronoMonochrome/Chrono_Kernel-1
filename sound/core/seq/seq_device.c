@@ -324,7 +324,7 @@ int snd_seq_device_register_driver(char *id, struct snd_seq_dev_ops *entry,
 		return -ENOMEM;
 	}
 	if (ops->driver & DRIVER_LOADED) {
-;
+		snd_printk(KERN_WARNING "driver_register: driver '%s' already exists\n", id);
 		unlock_driver(ops);
 		snd_seq_autoload_unlock();
 		return -EBUSY;
@@ -397,8 +397,8 @@ int snd_seq_device_unregister_driver(char *id)
 		return -ENXIO;
 	if (! (ops->driver & DRIVER_LOADED) ||
 	    (ops->driver & DRIVER_LOCKED)) {
-//		snd_printk(KERN_ERR "driver_unregister: cannot unload driver '%s': status=%x\n",
-;
+		snd_printk(KERN_ERR "driver_unregister: cannot unload driver '%s': status=%x\n",
+			   id, ops->driver);
 		unlock_driver(ops);
 		return -EBUSY;
 	}
@@ -412,8 +412,8 @@ int snd_seq_device_unregister_driver(char *id)
 
 	ops->driver = 0;
 	if (ops->num_init_devices > 0)
-//		snd_printk(KERN_ERR "free_driver: init_devices > 0!! (%d)\n",
-;
+		snd_printk(KERN_ERR "free_driver: init_devices > 0!! (%d)\n",
+			   ops->num_init_devices);
 	mutex_unlock(&ops->reg_mutex);
 
 	unlock_driver(ops);
@@ -458,16 +458,16 @@ static int init_device(struct snd_seq_device *dev, struct ops_list *ops)
 	if (dev->status != SNDRV_SEQ_DEVICE_FREE)
 		return 0; /* already initialized */
 	if (ops->argsize != dev->argsize) {
-//		snd_printk(KERN_ERR "incompatible device '%s' for plug-in '%s' (%d %d)\n",
-;
+		snd_printk(KERN_ERR "incompatible device '%s' for plug-in '%s' (%d %d)\n",
+			   dev->name, ops->id, ops->argsize, dev->argsize);
 		return -EINVAL;
 	}
 	if (ops->ops.init_device(dev) >= 0) {
 		dev->status = SNDRV_SEQ_DEVICE_REGISTERED;
 		ops->num_init_devices++;
 	} else {
-//		snd_printk(KERN_ERR "init_device failed: %s: %s\n",
-;
+		snd_printk(KERN_ERR "init_device failed: %s: %s\n",
+			   dev->name, dev->id);
 	}
 
 	return 0;
@@ -485,8 +485,8 @@ static int free_device(struct snd_seq_device *dev, struct ops_list *ops)
 	if (dev->status != SNDRV_SEQ_DEVICE_REGISTERED)
 		return 0; /* not registered */
 	if (ops->argsize != dev->argsize) {
-//		snd_printk(KERN_ERR "incompatible device '%s' for plug-in '%s' (%d %d)\n",
-;
+		snd_printk(KERN_ERR "incompatible device '%s' for plug-in '%s' (%d %d)\n",
+			   dev->name, ops->id, ops->argsize, dev->argsize);
 		return -EINVAL;
 	}
 	if ((result = ops->ops.free_device(dev)) >= 0 || result == -ENXIO) {
@@ -494,8 +494,8 @@ static int free_device(struct snd_seq_device *dev, struct ops_list *ops)
 		dev->driver_data = NULL;
 		ops->num_init_devices--;
 	} else {
-//		snd_printk(KERN_ERR "free_device failed: %s: %s\n",
-;
+		snd_printk(KERN_ERR "free_device failed: %s: %s\n",
+			   dev->name, dev->id);
 	}
 
 	return 0;
@@ -558,7 +558,7 @@ static void __exit alsa_seq_device_exit(void)
 	snd_info_free_entry(info_entry);
 #endif
 	if (num_ops)
-;
+		snd_printk(KERN_ERR "drivers not released (%d)\n", num_ops);
 }
 
 module_init(alsa_seq_device_init)

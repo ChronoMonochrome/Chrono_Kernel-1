@@ -332,7 +332,7 @@ int viafb_dma_copy_out_sg(unsigned int offset, struct scatterlist *sg, int nsg)
 	wait_for_completion_timeout(&viafb_dma_completion, 1);
 	msleep(1);
 	if ((viafb_mmio_read(VDMA_CSR0)&VDMA_C_DONE) == 0)
-;
+		printk(KERN_ERR "VIA DMA timeout!\n");
 	/*
 	 * Clean up and we're done.
 	 */
@@ -407,7 +407,7 @@ static int viafb_get_fb_size_from_pci(int chip_type)
 	}
 
 	if (!offset) {
-;
+		printk(KERN_ERR "cannot determine framebuffer size\n");
 		return -EIO;
 	}
 

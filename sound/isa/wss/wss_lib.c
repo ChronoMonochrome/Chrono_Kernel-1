@@ -200,8 +200,8 @@ void snd_wss_out(struct snd_wss *chip, unsigned char reg, unsigned char value)
 	snd_wss_wait(chip);
 #ifdef CONFIG_SND_DEBUG
 	if (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT)
-//		snd_printk(KERN_DEBUG "out: auto calibration time out "
-;
+		snd_printk(KERN_DEBUG "out: auto calibration time out "
+			   "- reg = 0x%x, value = 0x%x\n", reg, value);
 #endif
 	wss_outb(chip, CS4231P(REGSEL), chip->mce_bit | reg);
 	wss_outb(chip, CS4231P(REG), value);
@@ -217,8 +217,8 @@ unsigned char snd_wss_in(struct snd_wss *chip, unsigned char reg)
 	snd_wss_wait(chip);
 #ifdef CONFIG_SND_DEBUG
 	if (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT)
-//		snd_printk(KERN_DEBUG "in: auto calibration time out "
-;
+		snd_printk(KERN_DEBUG "in: auto calibration time out "
+			   "- reg = 0x%x\n", reg);
 #endif
 	wss_outb(chip, CS4231P(REGSEL), chip->mce_bit | reg);
 	mb();
@@ -235,7 +235,7 @@ void snd_cs4236_ext_out(struct snd_wss *chip, unsigned char reg,
 	wss_outb(chip, CS4231P(REG), val);
 	chip->eimage[CS4236_REG(reg)] = val;
 #if 0
-;
+	printk(KERN_DEBUG "ext out : reg = 0x%x, val = 0x%x\n", reg, val);
 #endif
 }
 EXPORT_SYMBOL(snd_cs4236_ext_out);
@@ -251,8 +251,8 @@ unsigned char snd_cs4236_ext_in(struct snd_wss *chip, unsigned char reg)
 	{
 		unsigned char res;
 		res = wss_inb(chip, CS4231P(REG));
-//		printk(KERN_DEBUG "ext in : reg = 0x%x, val = 0x%x\n",
-;
+		printk(KERN_DEBUG "ext in : reg = 0x%x, val = 0x%x\n",
+		       reg, res);
 		return res;
 	}
 #endif
@@ -263,91 +263,91 @@ EXPORT_SYMBOL(snd_cs4236_ext_in);
 
 static void snd_wss_debug(struct snd_wss *chip)
 {
-//	printk(KERN_DEBUG
-//		"CS4231 REGS:      INDEX = 0x%02x  "
-//		"                 STATUS = 0x%02x\n",
-//					wss_inb(chip, CS4231P(REGSEL)),
-;
-//	printk(KERN_DEBUG
-//		"  0x00: left input      = 0x%02x  "
-//		"  0x10: alt 1 (CFIG 2)  = 0x%02x\n",
-//					snd_wss_in(chip, 0x00),
-;
-//	printk(KERN_DEBUG
-//		"  0x01: right input     = 0x%02x  "
-//		"  0x11: alt 2 (CFIG 3)  = 0x%02x\n",
-//					snd_wss_in(chip, 0x01),
-;
-//	printk(KERN_DEBUG
-//		"  0x02: GF1 left input  = 0x%02x  "
-//		"  0x12: left line in    = 0x%02x\n",
-//					snd_wss_in(chip, 0x02),
-;
-//	printk(KERN_DEBUG
-//		"  0x03: GF1 right input = 0x%02x  "
-//		"  0x13: right line in   = 0x%02x\n",
-//					snd_wss_in(chip, 0x03),
-;
-//	printk(KERN_DEBUG
-//		"  0x04: CD left input   = 0x%02x  "
-//		"  0x14: timer low       = 0x%02x\n",
-//					snd_wss_in(chip, 0x04),
-;
-//	printk(KERN_DEBUG
-//		"  0x05: CD right input  = 0x%02x  "
-//		"  0x15: timer high      = 0x%02x\n",
-//					snd_wss_in(chip, 0x05),
-;
-//	printk(KERN_DEBUG
-//		"  0x06: left output     = 0x%02x  "
-//		"  0x16: left MIC (PnP)  = 0x%02x\n",
-//					snd_wss_in(chip, 0x06),
-;
-//	printk(KERN_DEBUG
-//		"  0x07: right output    = 0x%02x  "
-//		"  0x17: right MIC (PnP) = 0x%02x\n",
-//					snd_wss_in(chip, 0x07),
-;
-//	printk(KERN_DEBUG
-//		"  0x08: playback format = 0x%02x  "
-//		"  0x18: IRQ status      = 0x%02x\n",
-//					snd_wss_in(chip, 0x08),
-;
-//	printk(KERN_DEBUG
-//		"  0x09: iface (CFIG 1)  = 0x%02x  "
-//		"  0x19: left line out   = 0x%02x\n",
-//					snd_wss_in(chip, 0x09),
-;
-//	printk(KERN_DEBUG
-//		"  0x0a: pin control     = 0x%02x  "
-//		"  0x1a: mono control    = 0x%02x\n",
-//					snd_wss_in(chip, 0x0a),
-;
-//	printk(KERN_DEBUG
-//		"  0x0b: init & status   = 0x%02x  "
-//		"  0x1b: right line out  = 0x%02x\n",
-//					snd_wss_in(chip, 0x0b),
-;
-//	printk(KERN_DEBUG
-//		"  0x0c: revision & mode = 0x%02x  "
-//		"  0x1c: record format   = 0x%02x\n",
-//					snd_wss_in(chip, 0x0c),
-;
-//	printk(KERN_DEBUG
-//		"  0x0d: loopback        = 0x%02x  "
-//		"  0x1d: var freq (PnP)  = 0x%02x\n",
-//					snd_wss_in(chip, 0x0d),
-;
-//	printk(KERN_DEBUG
-//		"  0x0e: ply upr count   = 0x%02x  "
-//		"  0x1e: ply lwr count   = 0x%02x\n",
-//					snd_wss_in(chip, 0x0e),
-;
-//	printk(KERN_DEBUG
-//		"  0x0f: rec upr count   = 0x%02x  "
-//		"  0x1f: rec lwr count   = 0x%02x\n",
-//					snd_wss_in(chip, 0x0f),
-;
+	printk(KERN_DEBUG
+		"CS4231 REGS:      INDEX = 0x%02x  "
+		"                 STATUS = 0x%02x\n",
+					wss_inb(chip, CS4231P(REGSEL)),
+					wss_inb(chip, CS4231P(STATUS)));
+	printk(KERN_DEBUG
+		"  0x00: left input      = 0x%02x  "
+		"  0x10: alt 1 (CFIG 2)  = 0x%02x\n",
+					snd_wss_in(chip, 0x00),
+					snd_wss_in(chip, 0x10));
+	printk(KERN_DEBUG
+		"  0x01: right input     = 0x%02x  "
+		"  0x11: alt 2 (CFIG 3)  = 0x%02x\n",
+					snd_wss_in(chip, 0x01),
+					snd_wss_in(chip, 0x11));
+	printk(KERN_DEBUG
+		"  0x02: GF1 left input  = 0x%02x  "
+		"  0x12: left line in    = 0x%02x\n",
+					snd_wss_in(chip, 0x02),
+					snd_wss_in(chip, 0x12));
+	printk(KERN_DEBUG
+		"  0x03: GF1 right input = 0x%02x  "
+		"  0x13: right line in   = 0x%02x\n",
+					snd_wss_in(chip, 0x03),
+					snd_wss_in(chip, 0x13));
+	printk(KERN_DEBUG
+		"  0x04: CD left input   = 0x%02x  "
+		"  0x14: timer low       = 0x%02x\n",
+					snd_wss_in(chip, 0x04),
+					snd_wss_in(chip, 0x14));
+	printk(KERN_DEBUG
+		"  0x05: CD right input  = 0x%02x  "
+		"  0x15: timer high      = 0x%02x\n",
+					snd_wss_in(chip, 0x05),
+					snd_wss_in(chip, 0x15));
+	printk(KERN_DEBUG
+		"  0x06: left output     = 0x%02x  "
+		"  0x16: left MIC (PnP)  = 0x%02x\n",
+					snd_wss_in(chip, 0x06),
+					snd_wss_in(chip, 0x16));
+	printk(KERN_DEBUG
+		"  0x07: right output    = 0x%02x  "
+		"  0x17: right MIC (PnP) = 0x%02x\n",
+					snd_wss_in(chip, 0x07),
+					snd_wss_in(chip, 0x17));
+	printk(KERN_DEBUG
+		"  0x08: playback format = 0x%02x  "
+		"  0x18: IRQ status      = 0x%02x\n",
+					snd_wss_in(chip, 0x08),
+					snd_wss_in(chip, 0x18));
+	printk(KERN_DEBUG
+		"  0x09: iface (CFIG 1)  = 0x%02x  "
+		"  0x19: left line out   = 0x%02x\n",
+					snd_wss_in(chip, 0x09),
+					snd_wss_in(chip, 0x19));
+	printk(KERN_DEBUG
+		"  0x0a: pin control     = 0x%02x  "
+		"  0x1a: mono control    = 0x%02x\n",
+					snd_wss_in(chip, 0x0a),
+					snd_wss_in(chip, 0x1a));
+	printk(KERN_DEBUG
+		"  0x0b: init & status   = 0x%02x  "
+		"  0x1b: right line out  = 0x%02x\n",
+					snd_wss_in(chip, 0x0b),
+					snd_wss_in(chip, 0x1b));
+	printk(KERN_DEBUG
+		"  0x0c: revision & mode = 0x%02x  "
+		"  0x1c: record format   = 0x%02x\n",
+					snd_wss_in(chip, 0x0c),
+					snd_wss_in(chip, 0x1c));
+	printk(KERN_DEBUG
+		"  0x0d: loopback        = 0x%02x  "
+		"  0x1d: var freq (PnP)  = 0x%02x\n",
+					snd_wss_in(chip, 0x0d),
+					snd_wss_in(chip, 0x1d));
+	printk(KERN_DEBUG
+		"  0x0e: ply upr count   = 0x%02x  "
+		"  0x1e: ply lwr count   = 0x%02x\n",
+					snd_wss_in(chip, 0x0e),
+					snd_wss_in(chip, 0x1e));
+	printk(KERN_DEBUG
+		"  0x0f: rec upr count   = 0x%02x  "
+		"  0x1f: rec lwr count   = 0x%02x\n",
+					snd_wss_in(chip, 0x0f),
+					snd_wss_in(chip, 0x1f));
 }
 
 #endif
@@ -378,16 +378,16 @@ void snd_wss_mce_up(struct snd_wss *chip)
 	snd_wss_wait(chip);
 #ifdef CONFIG_SND_DEBUG
 	if (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT)
-//		snd_printk(KERN_DEBUG
-;
+		snd_printk(KERN_DEBUG
+			   "mce_up - auto calibration time out (0)\n");
 #endif
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	chip->mce_bit |= CS4231_MCE;
 	timeout = wss_inb(chip, CS4231P(REGSEL));
 	if (timeout == 0x80)
-//		snd_printk(KERN_DEBUG "mce_up [0x%lx]: "
-//			   "serious init problem - codec still busy\n",
-;
+		snd_printk(KERN_DEBUG "mce_up [0x%lx]: "
+			   "serious init problem - codec still busy\n",
+			   chip->port);
 	if (!(timeout & CS4231_MCE))
 		wss_outb(chip, CS4231P(REGSEL),
 			 chip->mce_bit | (timeout & 0x1f));
@@ -406,9 +406,9 @@ void snd_wss_mce_down(struct snd_wss *chip)
 
 #ifdef CONFIG_SND_DEBUG
 	if (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT)
-//		snd_printk(KERN_DEBUG "mce_down [0x%lx] - "
-//			   "auto calibration time out (0)\n",
-;
+		snd_printk(KERN_DEBUG "mce_down [0x%lx] - "
+			   "auto calibration time out (0)\n",
+			   (long)CS4231P(REGSEL));
 #endif
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	chip->mce_bit &= ~CS4231_MCE;
@@ -416,9 +416,9 @@ void snd_wss_mce_down(struct snd_wss *chip)
 	wss_outb(chip, CS4231P(REGSEL), chip->mce_bit | (timeout & 0x1f));
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 	if (timeout == 0x80)
-//		snd_printk(KERN_DEBUG "mce_down [0x%lx]: "
-//			   "serious init problem - codec still busy\n",
-;
+		snd_printk(KERN_DEBUG "mce_down [0x%lx]: "
+			   "serious init problem - codec still busy\n",
+			   chip->port);
 	if ((timeout & CS4231_MCE) == 0 || !(chip->hardware & hw_mask))
 		return;
 
@@ -437,8 +437,8 @@ void snd_wss_mce_down(struct snd_wss *chip)
 		CS4231_CALIB_IN_PROGRESS) {
 
 		if (time_after(jiffies, end_time)) {
-//			snd_printk(KERN_ERR "mce_down - "
-;
+			snd_printk(KERN_ERR "mce_down - "
+					"auto calibration time out (2)\n");
 			return;
 		}
 		msleep(1);
@@ -450,7 +450,7 @@ void snd_wss_mce_down(struct snd_wss *chip)
 	end_time = jiffies + msecs_to_jiffies(100);
 	while (wss_inb(chip, CS4231P(REGSEL)) & CS4231_INIT) {
 		if (time_after(jiffies, end_time)) {
-;
+			snd_printk(KERN_ERR "mce_down - auto calibration time out (3)\n");
 			return;
 		}
 		msleep(1);
@@ -556,7 +556,7 @@ static unsigned char snd_wss_get_format(struct snd_wss *chip,
 	if (channels > 1)
 		rformat |= CS4231_STEREO;
 #if 0
-;
+	snd_printk(KERN_DEBUG "get_format: 0x%x (mode=0x%x)\n", format, mode);
 #endif
 	return rformat;
 }
@@ -806,7 +806,7 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_mce_down(chip);
 
 #ifdef SNDRV_DEBUG_MCE
-;
+	snd_printk(KERN_DEBUG "init: (1)\n");
 #endif
 	snd_wss_mce_up(chip);
 	spin_lock_irqsave(&chip->reg_lock, flags);
@@ -821,7 +821,7 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_mce_down(chip);
 
 #ifdef SNDRV_DEBUG_MCE
-;
+	snd_printk(KERN_DEBUG "init: (2)\n");
 #endif
 
 	snd_wss_mce_up(chip);
@@ -834,8 +834,8 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_mce_down(chip);
 
 #ifdef SNDRV_DEBUG_MCE
-//	snd_printk(KERN_DEBUG "init: (3) - afei = 0x%x\n",
-;
+	snd_printk(KERN_DEBUG "init: (3) - afei = 0x%x\n",
+		   chip->image[CS4231_ALT_FEATURE_1]);
 #endif
 
 	spin_lock_irqsave(&chip->reg_lock, flags);
@@ -851,7 +851,7 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_mce_down(chip);
 
 #ifdef SNDRV_DEBUG_MCE
-;
+	snd_printk(KERN_DEBUG "init: (4)\n");
 #endif
 
 	snd_wss_mce_up(chip);
@@ -864,7 +864,7 @@ static void snd_wss_init(struct snd_wss *chip)
 	snd_wss_calibrate_mute(chip, 0);
 
 #ifdef SNDRV_DEBUG_MCE
-;
+	snd_printk(KERN_DEBUG "init: (5)\n");
 #endif
 }
 
@@ -1309,8 +1309,8 @@ static int snd_wss_probe(struct snd_wss *chip)
 		} else if (rev == 0x03) {
 			chip->hardware = WSS_HW_CS4236B;
 		} else {
-//			snd_printk(KERN_ERR
-;
+			snd_printk(KERN_ERR
+				   "unknown CS chip with version 0x%x\n", rev);
 			return -ENODEV;		/* unknown CS4231 chip? */
 		}
 	}
@@ -1378,10 +1378,10 @@ static int snd_wss_probe(struct snd_wss *chip)
 				case 6:
 					break;
 				default:
-//					snd_printk(KERN_WARNING
-//						"unknown CS4235 chip "
-//						"(enhanced version = 0x%x)\n",
-;
+					snd_printk(KERN_WARNING
+						"unknown CS4235 chip "
+						"(enhanced version = 0x%x)\n",
+						id);
 				}
 			} else if ((id & 0x1f) == 0x0b) {	/* CS4236/B */
 				switch (id >> 5) {
@@ -1392,10 +1392,10 @@ static int snd_wss_probe(struct snd_wss *chip)
 					chip->hardware = WSS_HW_CS4236B;
 					break;
 				default:
-//					snd_printk(KERN_WARNING
-//						"unknown CS4236 chip "
-//						"(enhanced version = 0x%x)\n",
-;
+					snd_printk(KERN_WARNING
+						"unknown CS4236 chip "
+						"(enhanced version = 0x%x)\n",
+						id);
 				}
 			} else if ((id & 0x1f) == 0x08) {	/* CS4237B */
 				chip->hardware = WSS_HW_CS4237B;
@@ -1406,10 +1406,10 @@ static int snd_wss_probe(struct snd_wss *chip)
 				case 7:
 					break;
 				default:
-//					snd_printk(KERN_WARNING
-//						"unknown CS4237B chip "
-//						"(enhanced version = 0x%x)\n",
-;
+					snd_printk(KERN_WARNING
+						"unknown CS4237B chip "
+						"(enhanced version = 0x%x)\n",
+						id);
 				}
 			} else if ((id & 0x1f) == 0x09) {	/* CS4238B */
 				chip->hardware = WSS_HW_CS4238B;
@@ -1419,10 +1419,10 @@ static int snd_wss_probe(struct snd_wss *chip)
 				case 7:
 					break;
 				default:
-//					snd_printk(KERN_WARNING
-//						"unknown CS4238B chip "
-//						"(enhanced version = 0x%x)\n",
-;
+					snd_printk(KERN_WARNING
+						"unknown CS4238B chip "
+						"(enhanced version = 0x%x)\n",
+						id);
 				}
 			} else if ((id & 0x1f) == 0x1e) {	/* CS4239 */
 				chip->hardware = WSS_HW_CS4239;
@@ -1432,15 +1432,15 @@ static int snd_wss_probe(struct snd_wss *chip)
 				case 6:
 					break;
 				default:
-//					snd_printk(KERN_WARNING
-//						"unknown CS4239 chip "
-//						"(enhanced version = 0x%x)\n",
-;
+					snd_printk(KERN_WARNING
+						"unknown CS4239 chip "
+						"(enhanced version = 0x%x)\n",
+						id);
 				}
 			} else {
-//				snd_printk(KERN_WARNING
-//					   "unknown CS4236/CS423xB chip "
-;
+				snd_printk(KERN_WARNING
+					   "unknown CS4236/CS423xB chip "
+					   "(enhanced version = 0x%x)\n", id);
 			}
 		}
 	}
@@ -1671,8 +1671,8 @@ static void snd_wss_resume(struct snd_wss *chip)
 	wss_outb(chip, CS4231P(REGSEL), chip->mce_bit | (timeout & 0x1f));
 	spin_unlock_irqrestore(&chip->reg_lock, flags);
 	if (timeout == 0x80)
-//		snd_printk(KERN_ERR "down [0x%lx]: serious init problem "
-;
+		snd_printk(KERN_ERR "down [0x%lx]: serious init problem "
+			   "- codec still busy\n", chip->port);
 	if ((timeout & CS4231_MCE) == 0 ||
 	    !(chip->hardware & (WSS_HW_CS4231_MASK | WSS_HW_CS4232_MASK))) {
 		return;
@@ -1817,7 +1817,7 @@ int snd_wss_create(struct snd_card *card,
 
 	chip->res_port = request_region(port, 4, "WSS");
 	if (!chip->res_port) {
-;
+		snd_printk(KERN_ERR "wss: can't grab port 0x%lx\n", port);
 		snd_wss_free(chip);
 		return -EBUSY;
 	}
@@ -1825,8 +1825,8 @@ int snd_wss_create(struct snd_card *card,
 	if ((long)cport >= 0) {
 		chip->res_cport = request_region(cport, 8, "CS4232 Control");
 		if (!chip->res_cport) {
-//			snd_printk(KERN_ERR
-;
+			snd_printk(KERN_ERR
+				"wss: can't grab control port 0x%lx\n", cport);
 			snd_wss_free(chip);
 			return -ENODEV;
 		}
@@ -1835,20 +1835,20 @@ int snd_wss_create(struct snd_card *card,
 	if (!(hwshare & WSS_HWSHARE_IRQ))
 		if (request_irq(irq, snd_wss_interrupt, IRQF_DISABLED,
 				"WSS", (void *) chip)) {
-;
+			snd_printk(KERN_ERR "wss: can't grab IRQ %d\n", irq);
 			snd_wss_free(chip);
 			return -EBUSY;
 		}
 	chip->irq = irq;
 	if (!(hwshare & WSS_HWSHARE_DMA1) && request_dma(dma1, "WSS - 1")) {
-;
+		snd_printk(KERN_ERR "wss: can't grab DMA1 %d\n", dma1);
 		snd_wss_free(chip);
 		return -EBUSY;
 	}
 	chip->dma1 = dma1;
 	if (!(hwshare & WSS_HWSHARE_DMA2) && dma1 != dma2 &&
 	      dma2 >= 0 && request_dma(dma2, "WSS - 2")) {
-;
+		snd_printk(KERN_ERR "wss: can't grab DMA2 %d\n", dma2);
 		snd_wss_free(chip);
 		return -EBUSY;
 	}
@@ -1874,8 +1874,8 @@ int snd_wss_create(struct snd_card *card,
 #if 0
 	if (chip->hardware & WSS_HW_CS4232_MASK) {
 		if (chip->res_cport == NULL)
-//			snd_printk(KERN_ERR "CS4232 control port features are "
-;
+			snd_printk(KERN_ERR "CS4232 control port features are "
+				   "not accessible\n");
 	}
 #endif
 

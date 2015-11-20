@@ -111,15 +111,15 @@ static int __init map_bios(void)
 	base = ioremap(0xF0000, 0x10000); /* Can't fail */
 	offset = locate_wistron_bios(base);
 	if (offset < 0) {
-;
+		printk(KERN_ERR "wistron_btns: BIOS entry point not found\n");
 		iounmap(base);
 		return -ENODEV;
 	}
 
 	entry_point = readl(base + offset + 5);
-//	printk(KERN_DEBUG
-//		"wistron_btns: BIOS signature found at %p, entry point %08X\n",
-;
+	printk(KERN_DEBUG
+		"wistron_btns: BIOS signature found at %p, entry point %08X\n",
+		base + offset, entry_point);
 
 	if (entry_point >= 0xF0000) {
 		bios_code_map_base = base;
@@ -128,9 +128,9 @@ static int __init map_bios(void)
 		iounmap(base);
 		bios_code_map_base = ioremap(entry_point & ~0x3FFF, 0x4000);
 		if (bios_code_map_base == NULL) {
-//			printk(KERN_ERR
-//				"wistron_btns: Can't map BIOS code at %08X\n",
-;
+			printk(KERN_ERR
+				"wistron_btns: Can't map BIOS code at %08X\n",
+				entry_point & ~0x3FFF);
 			goto err;
 		}
 		bios_entry_point = bios_code_map_base + (entry_point & 0x3FFF);
@@ -138,7 +138,7 @@ static int __init map_bios(void)
 	/* The Windows driver maps 0x10000 bytes, we keep only one page... */
 	bios_data_map_base = ioremap(0x400, 0xc00);
 	if (bios_data_map_base == NULL) {
-;
+		printk(KERN_ERR "wistron_btns: Can't map BIOS data\n");
 		goto err_code;
 	}
 	return 0;
@@ -1006,13 +1006,13 @@ static int __init select_keymap(void)
 		else if (strcmp (keymap_name, "generic") == 0)
 			keymap = keymap_wistron_generic;
 		else {
-;
+			printk(KERN_ERR "wistron_btns: Keymap unknown\n");
 			return -EINVAL;
 		}
 	}
 	if (keymap == NULL) {
 		if (!force) {
-;
+			printk(KERN_ERR "wistron_btns: System unknown\n");
 			return -ENODEV;
 		}
 		keymap = keymap_empty;
@@ -1132,8 +1132,8 @@ static void handle_key(u8 code)
 		}
 		jiffies_last_press = jiffies;
 	} else
-//		printk(KERN_NOTICE
-;
+		printk(KERN_NOTICE
+			"wistron_btns: Unknown key code %02X\n", code);
 }
 
 static void poll_bios(bool discard)
@@ -1190,9 +1190,9 @@ static int __devinit wistron_setup_keymap(struct input_dev *dev,
 
 	case KE_END:
 		if (entry->code & FE_UNTESTED)
-//			printk(KERN_WARNING "Untested laptop multimedia keys, "
-//				"please report success or failure to "
-;
+			printk(KERN_WARNING "Untested laptop multimedia keys, "
+				"please report success or failure to "
+				"eric.piel@tremplin-utc.net\n");
 		break;
 	}
 

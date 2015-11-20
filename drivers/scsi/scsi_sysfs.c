@@ -859,15 +859,15 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
 
 	error = device_add(&sdev->sdev_gendev);
 	if (error) {
-//		sdev_printk(KERN_INFO, sdev,
-;
+		sdev_printk(KERN_INFO, sdev,
+				"failed to add device: %d\n", error);
 		return error;
 	}
 	device_enable_async_suspend(&sdev->sdev_dev);
 	error = device_add(&sdev->sdev_dev);
 	if (error) {
-//		sdev_printk(KERN_INFO, sdev,
-;
+		sdev_printk(KERN_INFO, sdev,
+				"failed to add class device: %d\n", error);
 		device_del(&sdev->sdev_gendev);
 		return error;
 	}
@@ -898,8 +898,8 @@ int scsi_sysfs_add_sdev(struct scsi_device *sdev)
 	if (error)
 		/* we're treating error on bsg register as non-fatal,
 		 * so pretend nothing went wrong */
-//		sdev_printk(KERN_INFO, sdev,
-;
+		sdev_printk(KERN_INFO, sdev,
+			    "Failed to register bsg queue, errno=%d\n", error);
 
 	/* add additional host specific attributes */
 	if (sdev->host->hostt->sdev_attrs) {

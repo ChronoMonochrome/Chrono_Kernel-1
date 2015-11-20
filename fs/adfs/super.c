@@ -34,9 +34,9 @@ void __adfs_error(struct super_block *sb, const char *function, const char *fmt,
 	vsnprintf(error_buf, sizeof(error_buf), fmt, args);
 	va_end(args);
 
-//	printk(KERN_CRIT "ADFS-fs error (device %s)%s%s: %s\n",
-//		sb->s_id, function ? ": " : "",
-;
+	printk(KERN_CRIT "ADFS-fs error (device %s)%s%s: %s\n",
+		sb->s_id, function ? ": " : "",
+		function ? function : "", error_buf);
 }
 
 static int adfs_checkdiscrecord(struct adfs_discrecord *dr)
@@ -201,8 +201,8 @@ static int parse_options(struct super_block *sb, char *options)
 			asb->s_ftsuffix = option;
 			break;
 		default:
-//			printk("ADFS-fs: unrecognised mount option \"%s\" "
-;
+			printk("ADFS-fs: unrecognised mount option \"%s\" "
+					"or missing value\n", p);
 			return -EINVAL;
 		}
 	}
@@ -392,8 +392,8 @@ static int adfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	if (adfs_checkbblk(b_data)) {
 		if (!silent)
-//			printk("VFS: Can't find an adfs filesystem on dev "
-;
+			printk("VFS: Can't find an adfs filesystem on dev "
+				"%s.\n", sb->s_id);
 		goto error_free_bh;
 	}
 
@@ -404,8 +404,8 @@ static int adfs_fill_super(struct super_block *sb, void *data, int silent)
 	 */
 	if (adfs_checkdiscrecord(dr)) {
 		if (!silent)
-//			printk("VPS: Can't find an adfs filesystem on dev "
-;
+			printk("VPS: Can't find an adfs filesystem on dev "
+				"%s.\n", sb->s_id);
 		goto error_free_bh;
 	}
 
@@ -425,8 +425,8 @@ static int adfs_fill_super(struct super_block *sb, void *data, int silent)
 		dr = (struct adfs_discrecord *)(b_data + ADFS_DR_OFFSET);
 	} else {
 		if (!silent)
-//			printk(KERN_ERR "VFS: Unsupported blocksize on dev "
-;
+			printk(KERN_ERR "VFS: Unsupported blocksize on dev "
+				"%s.\n", sb->s_id);
 		goto error;
 	}
 

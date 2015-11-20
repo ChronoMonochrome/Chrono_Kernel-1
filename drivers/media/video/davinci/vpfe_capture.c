@@ -210,7 +210,7 @@ static const struct vpfe_pixel_format *vpfe_lookup_pix_format(u32 pix_format)
 int vpfe_register_ccdc_device(struct ccdc_hw_device *dev)
 {
 	int ret = 0;
-;
+	printk(KERN_NOTICE "vpfe_register_ccdc_device: %s\n", dev->name);
 
 	BUG_ON(!dev->hw_ops.open);
 	BUG_ON(!dev->hw_ops.enable);
@@ -235,7 +235,7 @@ int vpfe_register_ccdc_device(struct ccdc_hw_device *dev)
 		 * Proabably we need to add the request to a linked list and
 		 * walk through it during vpfe probe
 		 */
-;
+		printk(KERN_ERR "vpfe capture not initialized\n");
 		ret = -EFAULT;
 		goto unlock;
 	}
@@ -247,7 +247,7 @@ int vpfe_register_ccdc_device(struct ccdc_hw_device *dev)
 	}
 
 	if (ccdc_dev) {
-;
+		printk(KERN_ERR "ccdc already registered\n");
 		ret = -EINVAL;
 		goto unlock;
 	}
@@ -266,12 +266,12 @@ EXPORT_SYMBOL(vpfe_register_ccdc_device);
 void vpfe_unregister_ccdc_device(struct ccdc_hw_device *dev)
 {
 	if (NULL == dev) {
-;
+		printk(KERN_ERR "invalid ccdc device ptr\n");
 		return;
 	}
 
-//	printk(KERN_NOTICE "vpfe_unregister_ccdc_device, dev->name = %s\n",
-;
+	printk(KERN_NOTICE "vpfe_unregister_ccdc_device, dev->name = %s\n",
+		dev->name);
 
 	if (strcmp(dev->name, ccdc_cfg->name)) {
 		/* ignore this ccdc */
@@ -2078,7 +2078,7 @@ static struct platform_driver vpfe_driver = {
 
 static __init int vpfe_init(void)
 {
-;
+	printk(KERN_NOTICE "vpfe_init\n");
 	/* Register driver to the kernel */
 	return platform_driver_register(&vpfe_driver);
 }

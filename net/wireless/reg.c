@@ -51,7 +51,7 @@
 #ifdef CONFIG_CFG80211_REG_DEBUG
 #define REG_DBG_PRINT(format, args...) \
 	do { \
-;
+		printk(KERN_DEBUG pr_fmt(format), ##args);	\
 	} while (0)
 #else
 #define REG_DBG_PRINT(args...)
@@ -1680,7 +1680,7 @@ void regulatory_hint_11d(struct wiphy *wiphy,
 	*/
 
 #ifdef CONFIG_CFG80211_REG_NOT_UPDATED
-;
+	printk("regulatory is not upadted via %s.\n", __func__);
 	return;
 #endif
 
@@ -1899,7 +1899,7 @@ void regulatory_hint_disconnect(void)
 	*/
 
 #ifdef CONFIG_CFG80211_REG_NOT_UPDATED
-;
+	printk("regulatory is not upadted via %s.\n",__func__);
 	return;
 #endif
 

@@ -224,7 +224,7 @@ int mfd_clone_cell(const char *cell, const char **clones, size_t n_clones)
 	/* fetch the parent cell's device (should already be registered!) */
 	dev = bus_find_device_by_name(&platform_bus_type, NULL, cell);
 	if (!dev) {
-;
+		printk(KERN_ERR "failed to find device for cell %s\n", cell);
 		return -ENODEV;
 	}
 	pdev = to_platform_device(dev);

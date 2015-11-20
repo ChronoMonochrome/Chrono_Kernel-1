@@ -485,8 +485,8 @@ static int __init ir_init(void)
 	if (retval)
 		goto failed_usb_register;
 
-//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-;
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
 
 	return 0;
 

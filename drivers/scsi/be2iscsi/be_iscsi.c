@@ -58,11 +58,11 @@ struct iscsi_cls_session *beiscsi_session_create(struct iscsi_endpoint *ep,
 	phba = beiscsi_ep->phba;
 	shost = phba->shost;
 	if (cmds_max > beiscsi_ep->phba->params.wrbs_per_cxn) {
-//		shost_printk(KERN_ERR, shost, "Cannot handle %d cmds."
-//			     "Max cmds per session supported is %d. Using %d. "
-//			     "\n", cmds_max,
-//			      beiscsi_ep->phba->params.wrbs_per_cxn,
-;
+		shost_printk(KERN_ERR, shost, "Cannot handle %d cmds."
+			     "Max cmds per session supported is %d. Using %d. "
+			     "\n", cmds_max,
+			      beiscsi_ep->phba->params.wrbs_per_cxn,
+			      beiscsi_ep->phba->params.wrbs_per_cxn);
 		cmds_max = beiscsi_ep->phba->params.wrbs_per_cxn;
 	}
 

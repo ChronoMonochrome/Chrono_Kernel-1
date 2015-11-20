@@ -150,7 +150,7 @@ qla24xx_configure_prot_mode(srb_t *sp, uint16_t *fw_prot_opts)
 
 	/* We only support T10 DIF right now */
 	if (guard != SHOST_DIX_GUARD_CRC) {
-;
+		DEBUG2(printk(KERN_ERR "Unsupported guard: %d\n", guard));
 		return 0;
 	}
 
@@ -492,8 +492,8 @@ __qla2x00_marker(struct scsi_qla_host *vha, struct req_que *req,
 	mrk24 = NULL;
 	mrk = (mrk_entry_t *)qla2x00_alloc_iocbs(vha, 0);
 	if (mrk == NULL) {
-//		DEBUG2_3(printk("%s(%ld): failed to allocate Marker IOCB.\n",
-;
+		DEBUG2_3(printk("%s(%ld): failed to allocate Marker IOCB.\n",
+		    __func__, base_vha->host_no));
 
 		return (QLA_FUNCTION_FAILED);
 	}
@@ -549,7 +549,7 @@ qla2x00_isp_cmd(struct scsi_qla_host *vha, struct req_que *req)
 	device_reg_t __iomem *reg = ISP_QUE_REG(ha, req->id);
 	struct device_reg_2xxx __iomem *ioreg = &ha->iobase->isp;
 
-;
+	DEBUG5(printk("%s(): IOCB data:\n", __func__));
 	DEBUG5(qla2x00_dump_buffer(
 	    (uint8_t *)req->ring_ptr, REQUEST_ENTRY_SIZE));
 
@@ -616,8 +616,8 @@ qla24xx_calc_iocbs(uint16_t dsds)
 		if ((dsds - 1) % 5)
 			iocbs++;
 	}
-//	DEBUG3(printk(KERN_DEBUG "%s(): Required PKT(s) = %d\n",
-;
+	DEBUG3(printk(KERN_DEBUG "%s(): Required PKT(s) = %d\n",
+	    __func__, iocbs));
 	return iocbs;
 }
 
@@ -770,9 +770,9 @@ qla24xx_set_t10dif_tags(struct scsi_cmnd *cmd, struct fw_dif_context *pkt,
 		    op == SCSI_PROT_WRITE_PASS)) {
 			spt = page_address(sg_page(scsi_prot_sglist(cmd))) +
 			    scsi_prot_sglist(cmd)[0].offset;
-//			DEBUG18(printk(KERN_DEBUG
-//			    "%s(): LBA from user %p, lba = 0x%x\n",
-;
+			DEBUG18(printk(KERN_DEBUG
+			    "%s(): LBA from user %p, lba = 0x%x\n",
+			    __func__, spt, (int)spt->ref_tag));
 			pkt->ref_tag = swab32(spt->ref_tag);
 			pkt->app_tag_mask[0] = 0x0;
 			pkt->app_tag_mask[1] = 0x0;
@@ -791,11 +791,11 @@ qla24xx_set_t10dif_tags(struct scsi_cmnd *cmd, struct fw_dif_context *pkt,
 		break;
 	}
 
-//	DEBUG18(printk(KERN_DEBUG
-//	    "%s(): Setting protection Tags: (BIG) ref tag = 0x%x,"
-//	    " app tag = 0x%x, prot SG count %d , cmd lba 0x%x,"
-//	    " prot_type=%u\n", __func__, pkt->ref_tag, pkt->app_tag, protcnt,
-;
+	DEBUG18(printk(KERN_DEBUG
+	    "%s(): Setting protection Tags: (BIG) ref tag = 0x%x,"
+	    " app tag = 0x%x, prot SG count %d , cmd lba 0x%x,"
+	    " prot_type=%u\n", __func__, pkt->ref_tag, pkt->app_tag, protcnt,
+	    (int)scsi_get_lba(cmd), scsi_get_prot_type(cmd)));
 }
 
 
@@ -855,9 +855,9 @@ qla24xx_walk_and_build_sglist(struct qla_hw_data *ha, srb_t *sp, uint32_t *dsd,
 			cur_dsd = (uint32_t *)next_dsd;
 		}
 		sle_dma = sg_dma_address(sg);
-//		DEBUG18(printk("%s(): %p, sg entry %d - addr =0x%x 0x%x,"
-//		    " len =%d\n", __func__ , cur_dsd, i, LSD(sle_dma),
-;
+		DEBUG18(printk("%s(): %p, sg entry %d - addr =0x%x 0x%x,"
+		    " len =%d\n", __func__ , cur_dsd, i, LSD(sle_dma),
+		    MSD(sle_dma), sg_dma_len(sg)));
 		*cur_dsd++ = cpu_to_le32(LSD(sle_dma));
 		*cur_dsd++ = cpu_to_le32(MSD(sle_dma));
 		*cur_dsd++ = cpu_to_le32(sg_dma_len(sg));
@@ -865,8 +865,8 @@ qla24xx_walk_and_build_sglist(struct qla_hw_data *ha, srb_t *sp, uint32_t *dsd,
 
 		if (scsi_get_prot_op(sp->cmd) == SCSI_PROT_WRITE_PASS) {
 			cp = page_address(sg_page(sg)) + sg->offset;
-//			DEBUG18(printk("%s(): User Data buffer= %p:\n",
-;
+			DEBUG18(printk("%s(): User Data buffer= %p:\n",
+			    __func__ , cp));
 		}
 	}
 	/* Null termination */
@@ -937,10 +937,10 @@ qla24xx_walk_and_build_prot_sglist(struct qla_hw_data *ha, srb_t *sp,
 		}
 		sle_dma = sg_dma_address(sg);
 		if (scsi_get_prot_op(sp->cmd) == SCSI_PROT_WRITE_PASS) {
-//			DEBUG18(printk(KERN_DEBUG
-//			    "%s(): %p, sg entry %d - addr =0x%x"
-//			    "0x%x, len =%d\n", __func__ , cur_dsd, i,
-;
+			DEBUG18(printk(KERN_DEBUG
+			    "%s(): %p, sg entry %d - addr =0x%x"
+			    "0x%x, len =%d\n", __func__ , cur_dsd, i,
+			    LSD(sle_dma), MSD(sle_dma), sg_dma_len(sg)));
 		}
 		*cur_dsd++ = cpu_to_le32(LSD(sle_dma));
 		*cur_dsd++ = cpu_to_le32(MSD(sle_dma));
@@ -948,8 +948,8 @@ qla24xx_walk_and_build_prot_sglist(struct qla_hw_data *ha, srb_t *sp,
 
 		if (scsi_get_prot_op(sp->cmd) == SCSI_PROT_WRITE_PASS) {
 			cp = page_address(sg_page(sg)) + sg->offset;
-//			DEBUG18(printk("%s(): Protection Data buffer = %p:\n",
-;
+			DEBUG18(printk("%s(): Protection Data buffer = %p:\n",
+			    __func__ , cp));
 		}
 		avail_dsds--;
 	}
@@ -1001,8 +1001,8 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
 	/* No data transfer */
 	data_bytes = scsi_bufflen(cmd);
 	if (!data_bytes || cmd->sc_data_direction == DMA_NONE) {
-//		DEBUG18(printk(KERN_INFO "%s: Zero data bytes or DMA-NONE %d\n",
-;
+		DEBUG18(printk(KERN_INFO "%s: Zero data bytes or DMA-NONE %d\n",
+		    __func__, data_bytes));
 		cmd_pkt->byte_count = __constant_cpu_to_le32(0);
 		return QLA_SUCCESS;
 	}
@@ -1010,9 +1010,9 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
 	vha = sp->fcport->vha;
 	ha = vha->hw;
 
-//	DEBUG18(printk(KERN_DEBUG
-//	    "%s(%ld): Executing cmd sp %p, prot_op=%u.\n", __func__,
-;
+	DEBUG18(printk(KERN_DEBUG
+	    "%s(%ld): Executing cmd sp %p, prot_op=%u.\n", __func__,
+	    vha->host_no, sp, scsi_get_prot_op(sp->cmd)));
 
 	cmd_pkt->vp_index = sp->fcport->vp_idx;
 
@@ -1110,10 +1110,10 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
 
 	cmd_pkt->fcp_rsp_dseg_len = 0; /* Let response come in status iocb */
 
-//	DEBUG18(printk(KERN_INFO "%s(%ld): Total SG(s) Entries %d, Data"
-//	    "entries %d, data bytes %d, Protection entries %d\n",
-//	    __func__, vha->host_no, tot_dsds, (tot_dsds-tot_prot_dsds),
-;
+	DEBUG18(printk(KERN_INFO "%s(%ld): Total SG(s) Entries %d, Data"
+	    "entries %d, data bytes %d, Protection entries %d\n",
+	    __func__, vha->host_no, tot_dsds, (tot_dsds-tot_prot_dsds),
+	    data_bytes, tot_prot_dsds));
 
 	/* Compute dif len and adjust data len to incude protection */
 	total_bytes = data_bytes;
@@ -1152,14 +1152,14 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
 	    additional_fcpcdb_len);
 	*fcp_dl = htonl(total_bytes);
 
-//	DEBUG18(printk(KERN_INFO "%s(%ld): dif bytes = 0x%x (%d), total bytes"
-//	    " = 0x%x (%d), dat block size =0x%x (%d)\n", __func__,
-//	    vha->host_no, dif_bytes, dif_bytes, total_bytes, total_bytes,
-;
+	DEBUG18(printk(KERN_INFO "%s(%ld): dif bytes = 0x%x (%d), total bytes"
+	    " = 0x%x (%d), dat block size =0x%x (%d)\n", __func__,
+	    vha->host_no, dif_bytes, dif_bytes, total_bytes, total_bytes,
+	    crc_ctx_pkt->blk_size, crc_ctx_pkt->blk_size));
 
 	if (!data_bytes || cmd->sc_data_direction == DMA_NONE) {
-//		DEBUG18(printk(KERN_INFO "%s: Zero data bytes or DMA-NONE %d\n",
-;
+		DEBUG18(printk(KERN_INFO "%s: Zero data bytes or DMA-NONE %d\n",
+		    __func__, data_bytes));
 		cmd_pkt->byte_count = __constant_cpu_to_le32(0);
 		return QLA_SUCCESS;
 	}
@@ -1184,8 +1184,8 @@ qla24xx_build_scsi_crc_2_iocbs(srb_t *sp, struct cmd_type_crc_2 *cmd_pkt,
 	return QLA_SUCCESS;
 
 crc_queuing_error:
-//	DEBUG18(qla_printk(KERN_INFO, ha,
-;
+	DEBUG18(qla_printk(KERN_INFO, ha,
+	    "CMD sent FAILED crc_q error:sp = %p\n", sp));
 	/* Cleanup will be performed by the caller */
 
 	return QLA_FUNCTION_FAILED;
@@ -1542,8 +1542,8 @@ queuing_error:
 
 	spin_unlock_irqrestore(&ha->hardware_lock, flags);
 
-//	DEBUG18(qla_printk(KERN_INFO, ha,
-;
+	DEBUG18(qla_printk(KERN_INFO, ha,
+	    "CMD sent FAILED SCSI prot_op:%02x\n", scsi_get_prot_op(cmd)));
 	return QLA_FUNCTION_FAILED;
 }
 

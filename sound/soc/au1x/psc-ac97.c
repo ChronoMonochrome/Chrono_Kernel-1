@@ -184,7 +184,7 @@ static void au1xpsc_ac97_cold_reset(struct snd_ac97 *ac97)
 		msleep(1);
 
 	if (i == 0) {
-;
+		printk(KERN_ERR "au1xpsc-ac97: PSC not ready!\n");
 		return;
 	}
 
@@ -197,7 +197,7 @@ static void au1xpsc_ac97_cold_reset(struct snd_ac97 *ac97)
 	while (!((au_readl(AC97_STAT(pscdata)) & PSC_AC97STAT_DR)) && (--i))
 		msleep(1);
 	if (i == 0)
-;
+		printk(KERN_ERR "au1xpsc-ac97: AC97 ctrl not ready\n");
 }
 
 /* AC97 controller operations */
@@ -262,7 +262,7 @@ static int au1xpsc_ac97_hw_params(struct snd_pcm_substream *substream,
 			msleep(1);
 
 		if (!t)
-;
+			printk(KERN_ERR "PSC-AC97: can't disable!\n");
 
 		/* ...write config... */
 		au_writel(r, AC97_CFG(pscdata));
@@ -278,7 +278,7 @@ static int au1xpsc_ac97_hw_params(struct snd_pcm_substream *substream,
 			msleep(1);
 
 		if (!t)
-;
+			printk(KERN_ERR "PSC-AC97: can't enable!\n");
 
 		mutex_unlock(&pscdata->lock);
 

@@ -177,8 +177,8 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		unsigned long size, paddr, vaddr;
 
 		if (index >= m68k_realnum_memory) {
-//			printk( KERN_ERR DEVICE_NAME
-;
+			printk( KERN_ERR DEVICE_NAME
+				": no such entry in z2ram_map\n" );
 		        goto err_out;
 		}
 
@@ -202,8 +202,8 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 				GFP_KERNEL);
 		if ( z2ram_map == NULL )
 		{
-//		    printk( KERN_ERR DEVICE_NAME
-;
+		    printk( KERN_ERR DEVICE_NAME
+			": cannot get mem for z2ram_map\n" );
 		    goto err_out;
 		}
 
@@ -215,9 +215,9 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		}
 
 		if ( z2ram_size != 0 )
-//		    printk( KERN_INFO DEVICE_NAME
-//			": using %iK List Entry %d Memory\n",
-;
+		    printk( KERN_INFO DEVICE_NAME
+			": using %iK List Entry %d Memory\n",
+			list_count * Z2RAM_CHUNK1024, index );
 	} else
 
 	switch ( device )
@@ -227,8 +227,8 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		z2ram_map = kmalloc( max_z2_map + max_chip_map, GFP_KERNEL );
 		if ( z2ram_map == NULL )
 		{
-//		    printk( KERN_ERR DEVICE_NAME
-;
+		    printk( KERN_ERR DEVICE_NAME
+			": cannot get mem for z2ram_map\n" );
 		    goto err_out;
 		}
 
@@ -236,11 +236,11 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		get_chipram();
 
 		if ( z2ram_size != 0 )
-//		    printk( KERN_INFO DEVICE_NAME 
-//			": using %iK Zorro II RAM and %iK Chip RAM (Total %dK)\n",
-//			z2_count * Z2RAM_CHUNK1024,
-//			chip_count * Z2RAM_CHUNK1024,
-;
+		    printk( KERN_INFO DEVICE_NAME 
+			": using %iK Zorro II RAM and %iK Chip RAM (Total %dK)\n",
+			z2_count * Z2RAM_CHUNK1024,
+			chip_count * Z2RAM_CHUNK1024,
+			( z2_count + chip_count ) * Z2RAM_CHUNK1024 );
 
 	    break;
 
@@ -248,17 +248,17 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		z2ram_map = kmalloc( max_z2_map, GFP_KERNEL );
 		if ( z2ram_map == NULL )
 		{
-//		    printk( KERN_ERR DEVICE_NAME
-;
+		    printk( KERN_ERR DEVICE_NAME
+			": cannot get mem for z2ram_map\n" );
 		    goto err_out;
 		}
 
 		get_z2ram();
 
 		if ( z2ram_size != 0 )
-//		    printk( KERN_INFO DEVICE_NAME 
-//			": using %iK of Zorro II RAM\n",
-;
+		    printk( KERN_INFO DEVICE_NAME 
+			": using %iK of Zorro II RAM\n",
+			z2_count * Z2RAM_CHUNK1024 );
 
 	    break;
 
@@ -266,17 +266,17 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		z2ram_map = kmalloc( max_chip_map, GFP_KERNEL );
 		if ( z2ram_map == NULL )
 		{
-//		    printk( KERN_ERR DEVICE_NAME
-;
+		    printk( KERN_ERR DEVICE_NAME
+			": cannot get mem for z2ram_map\n" );
 		    goto err_out;
 		}
 
 		get_chipram();
 
 		if ( z2ram_size != 0 )
-//		    printk( KERN_INFO DEVICE_NAME 
-//			": using %iK Chip RAM\n",
-;
+		    printk( KERN_INFO DEVICE_NAME 
+			": using %iK Chip RAM\n",
+			chip_count * Z2RAM_CHUNK1024 );
 		    
 	    break;
 
@@ -289,8 +289,8 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 
 	if ( z2ram_size == 0 )
 	{
-//	    printk( KERN_NOTICE DEVICE_NAME
-;
+	    printk( KERN_NOTICE DEVICE_NAME
+		": no unused ZII/Chip RAM found\n" );
 	    goto err_out_kfree;
 	}
 

@@ -40,9 +40,9 @@ struct cx22700_state {
 
 
 static int debug;
-//#define dprintk(args...) \
-//	do { \
-;
+#define dprintk(args...) \
+	do { \
+		if (debug) printk(KERN_DEBUG "cx22700: " args); \
 	} while (0)
 
 static u8 init_tab [] = {
@@ -78,8 +78,8 @@ static int cx22700_writereg (struct cx22700_state* state, u8 reg, u8 data)
 	ret = i2c_transfer (state->i2c, &msg, 1);
 
 	if (ret != 1)
-//		printk("%s: writereg error (reg == 0x%02x, val == 0x%02x, ret == %i)\n",
-;
+		printk("%s: writereg error (reg == 0x%02x, val == 0x%02x, ret == %i)\n",
+			__func__, reg, data, ret);
 
 	return (ret != 1) ? -1 : 0;
 }
@@ -233,7 +233,7 @@ static int cx22700_init (struct dvb_frontend* fe)
 {	struct cx22700_state* state = fe->demodulator_priv;
 	int i;
 
-;
+	dprintk("cx22700_init: init chip\n");
 
 	cx22700_writereg (state, 0x00, 0x02);   /*  soft reset */
 	cx22700_writereg (state, 0x00, 0x00);

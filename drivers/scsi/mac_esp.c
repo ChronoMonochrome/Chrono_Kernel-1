@@ -136,8 +136,8 @@ static inline int mac_esp_wait_for_empty_fifo(struct esp *esp)
 		udelay(2);
 	} while (--i);
 
-//	printk(KERN_ERR PFX "FIFO is not empty (sreg %02x)\n",
-;
+	printk(KERN_ERR PFX "FIFO is not empty (sreg %02x)\n",
+	       esp_read8(ESP_STATUS));
 	mep->error = 1;
 	return 1;
 }
@@ -162,8 +162,8 @@ static inline int mac_esp_wait_for_dreq(struct esp *esp)
 		udelay(2);
 	} while (--i);
 
-//	printk(KERN_ERR PFX "PDMA timeout (sreg %02x)\n",
-;
+	printk(KERN_ERR PFX "PDMA timeout (sreg %02x)\n",
+	       esp_read8(ESP_STATUS));
 	mep->error = 1;
 	return 1;
 }
@@ -291,8 +291,8 @@ static inline unsigned int mac_esp_wait_for_fifo(struct esp *esp)
 		udelay(2);
 	} while (--i);
 
-//	printk(KERN_ERR PFX "FIFO is empty (sreg %02x)\n",
-;
+	printk(KERN_ERR PFX "FIFO is empty (sreg %02x)\n",
+	       esp_read8(ESP_STATUS));
 	return 0;
 }
 
@@ -309,7 +309,7 @@ static inline int mac_esp_wait_for_intr(struct esp *esp)
 		udelay(2);
 	} while (--i);
 
-;
+	printk(KERN_ERR PFX "IRQ timeout (sreg %02x)\n", esp->sreg);
 	mep->error = 1;
 	return 1;
 }
@@ -560,13 +560,13 @@ static int __devinit esp_mac_probe(struct platform_device *dev)
 
 	esp->ops = &mac_esp_ops;
 	if (mep->pdma_io == NULL) {
-;
+		printk(KERN_INFO PFX "using PIO for controller %d\n", dev->id);
 		esp_write8(0, ESP_TCLOW);
 		esp_write8(0, ESP_TCMED);
 		esp->flags = ESP_FLAG_DISABLE_SYNC;
 		mac_esp_ops.send_dma_cmd = mac_esp_send_pio_cmd;
 	} else {
-;
+		printk(KERN_INFO PFX "using PDMA for controller %d\n", dev->id);
 	}
 
 	host->irq = IRQ_MAC_SCSI;

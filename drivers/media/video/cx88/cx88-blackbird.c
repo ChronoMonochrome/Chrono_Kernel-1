@@ -51,26 +51,26 @@ static unsigned int debug;
 module_param(debug,int,0644);
 MODULE_PARM_DESC(debug,"enable debug messages [blackbird]");
 
-//#define dprintk(level,fmt, arg...)	if (debug >= level) \
-//	printk(KERN_DEBUG "%s/2-bb: " fmt, dev->core->name , ## arg)
-//
-//
-///* ------------------------------------------------------------------ */
-//
-//#define BLACKBIRD_FIRM_IMAGE_SIZE 376836
-//
-///* defines below are from ivtv-driver.h */
-//
-//#define IVTV_CMD_HW_BLOCKS_RST 0xFFFFFFFF
-//
-///* Firmware API commands */
-//#define IVTV_API_STD_TIMEOUT 500
-//
-//enum blackbird_capture_type {
-//	BLACKBIRD_MPEG_CAPTURE,
-//	BLACKBIRD_RAW_CAPTURE,
-//	BLACKBIRD_RAW_PASSTHRU_CAPTURE
-;
+#define dprintk(level,fmt, arg...)	if (debug >= level) \
+	printk(KERN_DEBUG "%s/2-bb: " fmt, dev->core->name , ## arg)
+
+
+/* ------------------------------------------------------------------ */
+
+#define BLACKBIRD_FIRM_IMAGE_SIZE 376836
+
+/* defines below are from ivtv-driver.h */
+
+#define IVTV_CMD_HW_BLOCKS_RST 0xFFFFFFFF
+
+/* Firmware API commands */
+#define IVTV_API_STD_TIMEOUT 500
+
+enum blackbird_capture_type {
+	BLACKBIRD_MPEG_CAPTURE,
+	BLACKBIRD_RAW_CAPTURE,
+	BLACKBIRD_RAW_PASSTHRU_CAPTURE
+};
 enum blackbird_capture_bits {
 	BLACKBIRD_RAW_BITS_NONE             = 0x00,
 	BLACKBIRD_RAW_BITS_YUV_CAPTURE      = 0x01,
@@ -316,19 +316,19 @@ static int blackbird_mbox_func(void *priv, u32 command, int in, int out, u32 dat
 	u32 value, flag, retval;
 	int i;
 
-;
+	dprintk(1,"%s: 0x%X\n", __func__, command);
 
 	/* this may not be 100% safe if we can't read any memory location
 	   without side effects */
 	memory_read(dev->core, dev->mailbox - 4, &value);
 	if (value != 0x12345678) {
-;
+		dprintk(0, "Firmware and/or mailbox pointer not initialized or corrupted\n");
 		return -1;
 	}
 
 	memory_read(dev->core, dev->mailbox, &flag);
 	if (flag) {
-;
+		dprintk(0, "ERROR: Mailbox appears to be in use (%x)\n", flag);
 		return -1;
 	}
 
@@ -340,7 +340,7 @@ static int blackbird_mbox_func(void *priv, u32 command, int in, int out, u32 dat
 	memory_write(dev->core, dev->mailbox + 3, IVTV_API_STD_TIMEOUT); /* timeout */
 	for (i = 0; i < in; i++) {
 		memory_write(dev->core, dev->mailbox + 4 + i, data[i]);
-;
+		dprintk(1, "API Input %d = %d\n", i, data[i]);
 	}
 	for (; i < CX2341X_MBOX_MAX_DATA; i++)
 		memory_write(dev->core, dev->mailbox + 4 + i, 0);
@@ -355,7 +355,7 @@ static int blackbird_mbox_func(void *priv, u32 command, int in, int out, u32 dat
 		if (0 != (flag & 4))
 			break;
 		if (time_after(jiffies,timeout)) {
-;
+			dprintk(0, "ERROR: API Mailbox timeout\n");
 			return -1;
 		}
 		udelay(10);
@@ -364,11 +364,11 @@ static int blackbird_mbox_func(void *priv, u32 command, int in, int out, u32 dat
 	/* read output values */
 	for (i = 0; i < out; i++) {
 		memory_read(dev->core, dev->mailbox + 4 + i, data + i);
-;
+		dprintk(1, "API Output %d = %d\n", i, data[i]);
 	}
 
 	memory_read(dev->core, dev->mailbox + 2, &retval);
-;
+	dprintk(1, "API result = %d\n",retval);
 
 	flag = 0;
 	memory_write(dev->core, dev->mailbox, flag);
@@ -412,11 +412,11 @@ static int blackbird_find_mailbox(struct cx8802_dev *dev)
 		else
 			signaturecnt = 0;
 		if (4 == signaturecnt) {
-;
+			dprintk(1, "Mailbox signature found\n");
 			return i+1;
 		}
 	}
-;
+	dprintk(0, "Mailbox signature values not found!\n");
 	return -1;
 }
 
@@ -439,35 +439,35 @@ static int blackbird_load_firmware(struct cx8802_dev *dev)
 	retval |= register_write(dev->core, IVTV_REG_APU, 0);
 
 	if (retval < 0)
-;
+		dprintk(0, "Error with register_write\n");
 
 	retval = request_firmware(&firmware, CX2341X_FIRM_ENC_FILENAME,
 				  &dev->pci->dev);
 
 
 	if (retval != 0) {
-//		dprintk(0, "ERROR: Hotplug firmware request failed (%s).\n",
-;
-//		dprintk(0, "Please fix your hotplug setup, the board will "
-;
+		dprintk(0, "ERROR: Hotplug firmware request failed (%s).\n",
+			CX2341X_FIRM_ENC_FILENAME);
+		dprintk(0, "Please fix your hotplug setup, the board will "
+			"not work without firmware loaded!\n");
 		return -1;
 	}
 
 	if (firmware->size != BLACKBIRD_FIRM_IMAGE_SIZE) {
-//		dprintk(0, "ERROR: Firmware size mismatch (have %zd, expected %d)\n",
-;
+		dprintk(0, "ERROR: Firmware size mismatch (have %zd, expected %d)\n",
+			firmware->size, BLACKBIRD_FIRM_IMAGE_SIZE);
 		release_firmware(firmware);
 		return -1;
 	}
 
 	if (0 != memcmp(firmware->data, magic, 8)) {
-;
+		dprintk(0, "ERROR: Firmware magic mismatch, wrong file?\n");
 		release_firmware(firmware);
 		return -1;
 	}
 
 	/* transfer to the chip */
-;
+	dprintk(1,"Loading firmware ...\n");
 	dataptr = (u32*)firmware->data;
 	for (i = 0; i < (firmware->size >> 2); i++) {
 		value = *dataptr;
@@ -482,12 +482,12 @@ static int blackbird_load_firmware(struct cx8802_dev *dev)
 		checksum -= ~value;
 	}
 	if (checksum) {
-;
+		dprintk(0, "ERROR: Firmware load failed (checksum mismatch).\n");
 		release_firmware(firmware);
 		return -1;
 	}
 	release_firmware(firmware);
-;
+	dprintk(0, "Firmware upload successful.\n");
 
 	retval |= register_write(dev->core, IVTV_REG_HW_BLOCKS, IVTV_CMD_HW_BLOCKS_RST);
 	retval |= register_read(dev->core, IVTV_REG_SPU, &value);
@@ -498,7 +498,7 @@ static int blackbird_load_firmware(struct cx8802_dev *dev)
 	retval |= register_write(dev->core, IVTV_REG_VPU, value & 0xFFFFFFE8);
 
 	if (retval < 0)
-;
+		dprintk(0, "Error with register_write\n");
 	return 0;
 }
 
@@ -535,7 +535,7 @@ static int blackbird_initialize_codec(struct cx8802_dev *dev)
 	int version;
 	int retval;
 
-;
+	dprintk(1,"Initialize codec\n");
 	retval = blackbird_api_cmd(dev, CX2341X_ENC_PING_FW, 0, 0); /* ping */
 	if (retval < 0) {
 
@@ -556,16 +556,16 @@ static int blackbird_initialize_codec(struct cx8802_dev *dev)
 
 		retval = blackbird_api_cmd(dev, CX2341X_ENC_PING_FW, 0, 0); /* ping */
 		if (retval < 0) {
-;
+			dprintk(0, "ERROR: Firmware ping failed!\n");
 			return -1;
 		}
 
 		retval = blackbird_api_cmd(dev, CX2341X_ENC_GET_VERSION, 0, 1, &version);
 		if (retval < 0) {
-;
+			dprintk(0, "ERROR: Firmware get encoder version failed!\n");
 			return -1;
 		}
-;
+		dprintk(0, "Firmware version is 0x%08x\n", version);
 	}
 
 	cx_write(MO_PINMUX_IO, 0x88); /* 656-8bit IO and enable MPEG parallel IO */
@@ -601,7 +601,7 @@ static int blackbird_start_codec(struct file *file, void *priv)
 	for (i = 0; (i < 10) && (i < (lastchange + 4)); i++) {
 		reg = cx_read(AUD_STATUS);
 
-;
+		dprintk(1, "AUD_STATUS:%dL: 0x%x\n", i, reg);
 		if ((reg & 0x0F) != lastval) {
 			lastval = reg & 0x0F;
 			lastchange = i;
@@ -764,8 +764,8 @@ static int vidioc_g_fmt_vid_cap (struct file *file, void *priv,
 	f->fmt.pix.width        = dev->width;
 	f->fmt.pix.height       = dev->height;
 	f->fmt.pix.field        = fh->mpegq.field;
-//	dprintk(0,"VIDIOC_G_FMT: w: %d, h: %d, f: %d\n",
-;
+	dprintk(0,"VIDIOC_G_FMT: w: %d, h: %d, f: %d\n",
+		dev->width, dev->height, fh->mpegq.field );
 	return 0;
 }
 
@@ -779,8 +779,8 @@ static int vidioc_try_fmt_vid_cap (struct file *file, void *priv,
 	f->fmt.pix.bytesperline = 0;
 	f->fmt.pix.sizeimage    = dev->ts_packet_size * dev->ts_packet_count; /* 188 * 4 * 1024; */;
 	f->fmt.pix.colorspace   = 0;
-//	dprintk(0,"VIDIOC_TRY_FMT: w: %d, h: %d, f: %d\n",
-;
+	dprintk(0,"VIDIOC_TRY_FMT: w: %d, h: %d, f: %d\n",
+		dev->width, dev->height, fh->mpegq.field );
 	return 0;
 }
 
@@ -801,8 +801,8 @@ static int vidioc_s_fmt_vid_cap (struct file *file, void *priv,
 	cx88_set_scale(core, f->fmt.pix.width, f->fmt.pix.height, f->fmt.pix.field);
 	blackbird_api_cmd(dev, CX2341X_ENC_SET_FRAME_SIZE, 2, 0,
 				f->fmt.pix.height, f->fmt.pix.width);
-//	dprintk(0,"VIDIOC_S_FMT: w: %d, h: %d, f: %d\n",
-;
+	dprintk(0,"VIDIOC_S_FMT: w: %d, h: %d, f: %d\n",
+		f->fmt.pix.width, f->fmt.pix.height, f->fmt.pix.field );
 	return 0;
 }
 
@@ -914,12 +914,12 @@ static int vidioc_log_status (struct file *file, void *priv)
 	char name[32 + 2];
 
 	snprintf(name, sizeof(name), "%s/2", core->name);
-//	printk("%s/2: ============  START LOG STATUS  ============\n",
-;
+	printk("%s/2: ============  START LOG STATUS  ============\n",
+		core->name);
 	call_all(core, core, log_status);
 	cx2341x_log_status(&dev->params, name);
-//	printk("%s/2: =============  END LOG STATUS  =============\n",
-;
+	printk("%s/2: =============  END LOG STATUS  =============\n",
+		core->name);
 	return 0;
 }
 
@@ -1054,21 +1054,21 @@ static int mpeg_open(struct file *file)
 	struct cx8802_driver *drv = NULL;
 	int err;
 
-;
+	dprintk( 1, "%s\n", __func__);
 
 	mutex_lock(&dev->core->lock);
 
 	/* Make sure we can acquire the hardware */
 	drv = cx8802_get_driver(dev, CX88_MPEG_BLACKBIRD);
 	if (!drv) {
-;
+		dprintk(1, "%s: blackbird driver is not loaded\n", __func__);
 		mutex_unlock(&dev->core->lock);
 		return -ENODEV;
 	}
 
 	err = drv->request_acquire(drv);
 	if (err != 0) {
-;
+		dprintk(1,"%s: Unable to acquire hardware, %d\n", __func__, err);
 		mutex_unlock(&dev->core->lock);
 		return err;
 	}
@@ -1078,7 +1078,7 @@ static int mpeg_open(struct file *file)
 		mutex_unlock(&dev->core->lock);
 		return -EINVAL;
 	}
-;
+	dprintk(1, "open dev=%s\n", video_device_node_name(vdev));
 
 	/* allocate + initialize per filehandle data */
 	fh = kzalloc(sizeof(*fh),GFP_KERNEL);
@@ -1289,12 +1289,12 @@ static int blackbird_register_video(struct cx8802_dev *dev)
 	video_set_drvdata(dev->mpeg_dev, dev);
 	err = video_register_device(dev->mpeg_dev,VFL_TYPE_GRABBER, -1);
 	if (err < 0) {
-//		printk(KERN_INFO "%s/2: can't register mpeg device\n",
-;
+		printk(KERN_INFO "%s/2: can't register mpeg device\n",
+		       dev->core->name);
 		return err;
 	}
-//	printk(KERN_INFO "%s/2: registered device %s [mpeg]\n",
-;
+	printk(KERN_INFO "%s/2: registered device %s [mpeg]\n",
+	       dev->core->name, video_device_node_name(dev->mpeg_dev));
 	return 0;
 }
 
@@ -1306,12 +1306,12 @@ static int cx8802_blackbird_probe(struct cx8802_driver *drv)
 	struct cx8802_dev *dev = core->dvbdev;
 	int err;
 
-;
-//	dprintk( 1, " ->being probed by Card=%d Name=%s, PCI %02x:%02x\n",
-//		core->boardnr,
-//		core->name,
-//		core->pci_bus,
-;
+	dprintk( 1, "%s\n", __func__);
+	dprintk( 1, " ->being probed by Card=%d Name=%s, PCI %02x:%02x\n",
+		core->boardnr,
+		core->name,
+		core->pci_bus,
+		core->pci_slot);
 
 	err = -ENODEV;
 	if (!(core->board.mpeg & CX88_MPEG_BLACKBIRD))
@@ -1331,8 +1331,8 @@ static int cx8802_blackbird_probe(struct cx8802_driver *drv)
 	}
 
 	/* blackbird stuff */
-//	printk("%s/2: cx23416 based mpeg encoder (blackbird reference design)\n",
-;
+	printk("%s/2: cx23416 based mpeg encoder (blackbird reference design)\n",
+	       core->name);
 	host_setup(dev->core);
 
 	blackbird_initialize_codec(dev);
@@ -1368,13 +1368,13 @@ static struct cx8802_driver cx8802_blackbird_driver = {
 
 static int __init blackbird_init(void)
 {
-//	printk(KERN_INFO "cx2388x blackbird driver version %d.%d.%d loaded\n",
-//	       (CX88_VERSION_CODE >> 16) & 0xff,
-//	       (CX88_VERSION_CODE >>  8) & 0xff,
-;
+	printk(KERN_INFO "cx2388x blackbird driver version %d.%d.%d loaded\n",
+	       (CX88_VERSION_CODE >> 16) & 0xff,
+	       (CX88_VERSION_CODE >>  8) & 0xff,
+	       CX88_VERSION_CODE & 0xff);
 #ifdef SNAPSHOT
-//	printk(KERN_INFO "cx2388x: snapshot date %04d-%02d-%02d\n",
-;
+	printk(KERN_INFO "cx2388x: snapshot date %04d-%02d-%02d\n",
+	       SNAPSHOT/10000, (SNAPSHOT/100)%100, SNAPSHOT%100);
 #endif
 	return cx8802_register_driver(&cx8802_blackbird_driver);
 }

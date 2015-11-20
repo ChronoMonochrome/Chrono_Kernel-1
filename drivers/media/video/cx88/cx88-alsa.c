@@ -45,18 +45,18 @@
 #include "cx88.h"
 #include "cx88-reg.h"
 
-//#define dprintk(level,fmt, arg...)	if (debug >= level) \
-//	printk(KERN_INFO "%s/1: " fmt, chip->core->name , ## arg)
-//
-//#define dprintk_core(level,fmt, arg...)	if (debug >= level) \
-//	printk(KERN_DEBUG "%s/1: " fmt, chip->core->name , ## arg)
-//
-///****************************************************************************
-//	Data type declarations - Can be moded to a header file later
-// ****************************************************************************/
-//
-//struct cx88_audio_buffer {
-;
+#define dprintk(level,fmt, arg...)	if (debug >= level) \
+	printk(KERN_INFO "%s/1: " fmt, chip->core->name , ## arg)
+
+#define dprintk_core(level,fmt, arg...)	if (debug >= level) \
+	printk(KERN_DEBUG "%s/1: " fmt, chip->core->name , ## arg)
+
+/****************************************************************************
+	Data type declarations - Can be moded to a header file later
+ ****************************************************************************/
+
+struct cx88_audio_buffer {
+	unsigned int               bpl;
 	struct btcx_riscmem        risc;
 	struct videobuf_dmabuf     dma;
 };
@@ -147,9 +147,9 @@ static int _cx88_start_audio_dma(snd_cx88_card_t *chip)
 	cx_write(MO_AUDD_GPCNTRL, GP_COUNT_CONTROL_RESET);
 	atomic_set(&chip->count, 0);
 
-//	dprintk(1, "Start audio DMA, %d B/line, %d lines/FIFO, %d periods, %d "
-//		"byte buffer\n", buf->bpl, cx_read(audio_ch->cmds_start + 8)>>1,
-;
+	dprintk(1, "Start audio DMA, %d B/line, %d lines/FIFO, %d periods, %d "
+		"byte buffer\n", buf->bpl, cx_read(audio_ch->cmds_start + 8)>>1,
+		chip->num_periods, buf->bpl * chip->num_periods);
 
 	/* Enables corresponding bits at AUD_INT_STAT */
 	cx_write(MO_AUD_INTMSK, AUD_INT_OPC_ERR | AUD_INT_DN_SYNC |
@@ -177,7 +177,7 @@ static int _cx88_start_audio_dma(snd_cx88_card_t *chip)
 static int _cx88_stop_audio_dma(snd_cx88_card_t *chip)
 {
 	struct cx88_core *core=chip->core;
-;
+	dprintk(1, "Stopping audio DMA\n");
 
 	/* stop dma */
 	cx_clear(MO_AUD_DMACNTRL, 0x11);
@@ -230,12 +230,12 @@ static void cx8801_aud_irq(snd_cx88_card_t *chip)
 				   status, mask);
 	/* risc op code error */
 	if (status & AUD_INT_OPC_ERR) {
-;
+		printk(KERN_WARNING "%s/1: Audio risc op code error\n",core->name);
 		cx_clear(MO_AUD_DMACNTRL, 0x11);
 		cx88_sram_channel_dump(core, &cx88_sram_channels[SRAM_CH25]);
 	}
 	if (status & AUD_INT_DN_SYNC) {
-;
+		dprintk(1, "Downstream sync error\n");
 		cx_write(MO_AUDD_GPCNTRL, GP_COUNT_CONTROL_RESET);
 		return;
 	}
@@ -262,8 +262,8 @@ static irqreturn_t cx8801_irq(int irq, void *dev_id)
 			(core->pci_irqmask | PCI_INT_AUDINT);
 		if (0 == status)
 			goto out;
-//		dprintk(3, "cx8801_irq loop %d/%d, status %x\n",
-;
+		dprintk(3, "cx8801_irq loop %d/%d, status %x\n",
+			loop, MAX_IRQ_LOOP, status);
 		handled = 1;
 		cx_write(MO_PCI_INTSTAT, status);
 
@@ -274,9 +274,9 @@ static irqreturn_t cx8801_irq(int irq, void *dev_id)
 	}
 
 	if (MAX_IRQ_LOOP == loop) {
-//		printk(KERN_ERR
-//		       "%s/1: IRQ loop detected, disabling interrupts\n",
-;
+		printk(KERN_ERR
+		       "%s/1: IRQ loop detected, disabling interrupts\n",
+		       core->name);
 		cx_clear(MO_PCI_INTMSK, PCI_INT_AUDINT);
 	}
 
@@ -289,7 +289,7 @@ static int dsp_buffer_free(snd_cx88_card_t *chip)
 {
 	BUG_ON(!chip->dma_size);
 
-;
+	dprintk(2,"Freeing buffer\n");
 	videobuf_dma_unmap(&chip->pci->dev, chip->dma_risc);
 	videobuf_dma_free(chip->dma_risc);
 	btcx_riscmem_free(chip->pci,&chip->buf->risc);
@@ -340,8 +340,8 @@ static int snd_cx88_pcm_open(struct snd_pcm_substream *substream)
 	int err;
 
 	if (!chip) {
-//		printk(KERN_ERR "BUG: cx88 can't find device struct."
-;
+		printk(KERN_ERR "BUG: cx88 can't find device struct."
+				" Can't proceed with open\n");
 		return -ENODEV;
 	}
 
@@ -362,7 +362,7 @@ static int snd_cx88_pcm_open(struct snd_pcm_substream *substream)
 
 	return 0;
 _error:
-;
+	dprintk(1,"Error opening PCM!\n");
 	return err;
 }
 
@@ -500,9 +500,9 @@ static snd_pcm_uframes_t snd_cx88_pointer(struct snd_pcm_substream *substream)
 
 	count = atomic_read(&chip->count);
 
-////	dprintk(2, "%s - count %d (+%u), period %d, frame %lu\n", __func__,
-////		count, new, count & (runtime->periods-1),
-;
+//	dprintk(2, "%s - count %d (+%u), period %d, frame %lu\n", __func__,
+//		count, new, count & (runtime->periods-1),
+//		runtime->period_size * (count & (runtime->periods-1)));
 	return runtime->period_size * (count & (runtime->periods-1));
 }
 
@@ -830,7 +830,7 @@ static int __devinit snd_cx88_create(struct snd_card *card,
 	}
 
 	if (!pci_dma_supported(pci,DMA_BIT_MASK(32))) {
-;
+		dprintk(0, "%s/1: Oops: no 32bit PCI DMA ???\n",core->name);
 		err = -EIO;
 		cx88_core_put(core, pci);
 		return err;
@@ -849,18 +849,18 @@ static int __devinit snd_cx88_create(struct snd_card *card,
 	err = request_irq(chip->pci->irq, cx8801_irq,
 			  IRQF_SHARED | IRQF_DISABLED, chip->core->name, chip);
 	if (err < 0) {
-//		dprintk(0, "%s: can't get IRQ %d\n",
-;
+		dprintk(0, "%s: can't get IRQ %d\n",
+		       chip->core->name, chip->pci->irq);
 		return err;
 	}
 
 	/* print pci info */
 	pci_read_config_byte(pci, PCI_LATENCY_TIMER, &pci_lat);
 
-//	dprintk(1,"ALSA %s/%i: found at %s, rev: %d, irq: %d, "
-//	       "latency: %d, mmio: 0x%llx\n", core->name, devno,
-//	       pci_name(pci), pci->revision, pci->irq,
-;
+	dprintk(1,"ALSA %s/%i: found at %s, rev: %d, irq: %d, "
+	       "latency: %d, mmio: 0x%llx\n", core->name, devno,
+	       pci_name(pci), pci->revision, pci->irq,
+	       pci_lat, (unsigned long long)pci_resource_start(pci,0));
 
 	chip->irq = pci->irq;
 	synchronize_irq(chip->irq);
@@ -973,13 +973,13 @@ static struct pci_driver cx88_audio_pci_driver = {
  */
 static int __init cx88_audio_init(void)
 {
-//	printk(KERN_INFO "cx2388x alsa driver version %d.%d.%d loaded\n",
-//	       (CX88_VERSION_CODE >> 16) & 0xff,
-//	       (CX88_VERSION_CODE >>  8) & 0xff,
-;
+	printk(KERN_INFO "cx2388x alsa driver version %d.%d.%d loaded\n",
+	       (CX88_VERSION_CODE >> 16) & 0xff,
+	       (CX88_VERSION_CODE >>  8) & 0xff,
+	       CX88_VERSION_CODE & 0xff);
 #ifdef SNAPSHOT
-//	printk(KERN_INFO "cx2388x: snapshot date %04d-%02d-%02d\n",
-;
+	printk(KERN_INFO "cx2388x: snapshot date %04d-%02d-%02d\n",
+	       SNAPSHOT/10000, (SNAPSHOT/100)%100, SNAPSHOT%100);
 #endif
 	return pci_register_driver(&cx88_audio_pci_driver);
 }

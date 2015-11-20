@@ -569,8 +569,8 @@ static void pmac_ide_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 	}
 
 #ifdef IDE_PMAC_DEBUG
-//	printk(KERN_ERR "%s: Set PIO timing for mode %d, reg: 0x%08x\n",
-;
+	printk(KERN_ERR "%s: Set PIO timing for mode %d, reg: 0x%08x\n",
+		drive->name, pio,  *timings);
 #endif	
 
 	*timings = t;
@@ -598,8 +598,8 @@ set_timings_udma_ata4(u32 *timings, u8 speed)
 			(addrTicks <<TR_66_UDMA_ADDRSETUP_SHIFT) |
 			TR_66_UDMA_EN;
 #ifdef IDE_PMAC_DEBUG
-//	printk(KERN_ERR "ide_pmac: Set UDMA timing for mode %d, reg: 0x%08x\n",
-;
+	printk(KERN_ERR "ide_pmac: Set UDMA timing for mode %d, reg: 0x%08x\n",
+		speed & 0xf,  *timings);
 #endif	
 
 	return 0;
@@ -700,8 +700,8 @@ set_timings_mdma(ide_drive_t *drive, int intf_type, u32 *timings, u32 *timings2,
 		recTime = tm[i].recoveryTime;
 
 #ifdef IDE_PMAC_DEBUG
-//		printk(KERN_ERR "%s: MDMA, cycleTime: %d, accessTime: %d, recTime: %d\n",
-;
+		printk(KERN_ERR "%s: MDMA, cycleTime: %d, accessTime: %d, recTime: %d\n",
+			drive->name, cycleTime, accessTime, recTime);
 #endif
 	}
 	switch(intf_type) {
@@ -773,8 +773,8 @@ set_timings_mdma(ide_drive_t *drive, int intf_type, u32 *timings, u32 *timings2,
 		}
 	}
 #ifdef IDE_PMAC_DEBUG
-//	printk(KERN_ERR "%s: Set MDMA timing for mode %d, reg: 0x%08x\n",
-;
+	printk(KERN_ERR "%s: Set MDMA timing for mode %d, reg: 0x%08x\n",
+		drive->name, speed & 0xf,  *timings);
 #endif	
 }
 
@@ -1107,10 +1107,10 @@ static int __devinit pmac_ide_setup_device(pmac_ide_hwif_t *pmif,
 		msleep(jiffies_to_msecs(IDE_WAKEUP_DELAY));
 	}
 
-//	printk(KERN_INFO DRV_NAME ": Found Apple %s controller (%s), "
-//	       "bus ID %d%s, irq %d\n", model_name[pmif->kind],
-//	       pmif->mdev ? "macio" : "PCI", pmif->aapl_bus_id,
-;
+	printk(KERN_INFO DRV_NAME ": Found Apple %s controller (%s), "
+	       "bus ID %d%s, irq %d\n", model_name[pmif->kind],
+	       pmif->mdev ? "macio" : "PCI", pmif->aapl_bus_id,
+	       on_media_bay(pmif) ? " (mediabay)" : "", hw->irq);
 
 	rc = ide_host_register(host, &d, hws);
 	if (rc)
@@ -1152,16 +1152,16 @@ pmac_ide_macio_attach(struct macio_dev *mdev, const struct of_device_id *match)
 		return -ENOMEM;
 
 	if (macio_resource_count(mdev) == 0) {
-//		printk(KERN_WARNING "ide-pmac: no address for %s\n",
-;
+		printk(KERN_WARNING "ide-pmac: no address for %s\n",
+				    mdev->ofdev.dev.of_node->full_name);
 		rc = -ENXIO;
 		goto out_free_pmif;
 	}
 
 	/* Request memory resource for IO ports */
 	if (macio_request_resource(mdev, 0, "ide-pmac (ports)")) {
-//		printk(KERN_ERR "ide-pmac: can't request MMIO resource for "
-;
+		printk(KERN_ERR "ide-pmac: can't request MMIO resource for "
+				"%s!\n", mdev->ofdev.dev.of_node->full_name);
 		rc = -EBUSY;
 		goto out_free_pmif;
 	}
@@ -1172,8 +1172,8 @@ pmac_ide_macio_attach(struct macio_dev *mdev, const struct of_device_id *match)
 	 * where that happens though...
 	 */
 	if (macio_irq_count(mdev) == 0) {
-//		printk(KERN_WARNING "ide-pmac: no intrs for device %s, using "
-;
+		printk(KERN_WARNING "ide-pmac: no intrs for device %s, using "
+				    "13\n", mdev->ofdev.dev.of_node->full_name);
 		irq = irq_create_mapping(NULL, 13);
 	} else
 		irq = macio_irq(mdev, 0);
@@ -1189,9 +1189,9 @@ pmac_ide_macio_attach(struct macio_dev *mdev, const struct of_device_id *match)
 
 	if (macio_resource_count(mdev) >= 2) {
 		if (macio_request_resource(mdev, 1, "ide-pmac (dma)"))
-//			printk(KERN_WARNING "ide-pmac: can't request DMA "
-//					    "resource for %s!\n",
-;
+			printk(KERN_WARNING "ide-pmac: can't request DMA "
+					    "resource for %s!\n",
+					    mdev->ofdev.dev.of_node->full_name);
 		else
 			pmif->dma_regs = ioremap(macio_resource_start(mdev, 1), 0x1000);
 	} else
@@ -1273,7 +1273,7 @@ pmac_ide_pci_attach(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	np = pci_device_to_OF_node(pdev);
 	if (np == NULL) {
-;
+		printk(KERN_ERR "ide-pmac: cannot find MacIO node for Kauai ATA interface\n");
 		return -ENODEV;
 	}
 
@@ -1282,16 +1282,16 @@ pmac_ide_pci_attach(struct pci_dev *pdev, const struct pci_device_id *id)
 		return -ENOMEM;
 
 	if (pci_enable_device(pdev)) {
-//		printk(KERN_WARNING "ide-pmac: Can't enable PCI device for "
-;
+		printk(KERN_WARNING "ide-pmac: Can't enable PCI device for "
+				    "%s\n", np->full_name);
 		rc = -ENXIO;
 		goto out_free_pmif;
 	}
 	pci_set_master(pdev);
 			
 	if (pci_request_regions(pdev, "Kauai ATA")) {
-//		printk(KERN_ERR "ide-pmac: Cannot obtain PCI resources for "
-;
+		printk(KERN_ERR "ide-pmac: Cannot obtain PCI resources for "
+				"%s\n", np->full_name);
 		rc = -ENXIO;
 		goto out_free_pmif;
 	}
@@ -1495,8 +1495,8 @@ static int pmac_ide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 
 		if (pmif->broken_dma && cur_addr & (L1_CACHE_BYTES - 1)) {
 			if (pmif->broken_dma_warn == 0) {
-//				printk(KERN_WARNING "%s: DMA on non aligned address, "
-;
+				printk(KERN_WARNING "%s: DMA on non aligned address, "
+				       "switching to PIO on Ohare chipset\n", drive->name);
 				pmif->broken_dma_warn = 1;
 			}
 			return 0;
@@ -1505,8 +1505,8 @@ static int pmac_ide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 			unsigned int tc = (cur_len < 0xfe00)? cur_len: 0xfe00;
 
 			if (count++ >= MAX_DCMDS) {
-//				printk(KERN_WARNING "%s: DMA table too small\n",
-;
+				printk(KERN_WARNING "%s: DMA table too small\n",
+				       drive->name);
 				return 0;
 			}
 			st_le16(&table->command, wr? OUTPUT_MORE: INPUT_MORE);
@@ -1534,7 +1534,7 @@ static int pmac_ide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 		return 1;
 	}
 
-;
+	printk(KERN_DEBUG "%s: empty DMA table?\n", drive->name);
 
 	return 0; /* revert to PIO for this request */
 }
@@ -1654,8 +1654,8 @@ pmac_ide_dma_test_irq (ide_drive_t *drive)
 		if ((status & FLUSH) == 0)
 			break;
 		if (++timeout > 100) {
-//			printk(KERN_WARNING "ide%d, ide_dma_test_irq timeout flushing channel\n",
-;
+			printk(KERN_WARNING "ide%d, ide_dma_test_irq timeout flushing channel\n",
+			       hwif->index);
 			break;
 		}
 	}	
@@ -1675,7 +1675,7 @@ pmac_ide_dma_lost_irq (ide_drive_t *drive)
 	volatile struct dbdma_regs __iomem *dma = pmif->dma_regs;
 	unsigned long status = readl(&dma->status);
 
-;
+	printk(KERN_ERR "ide-pmac lost interrupt, dma status: %lx\n", status);
 }
 
 static const struct ide_dma_ops pmac_dma_ops = {
@@ -1713,8 +1713,8 @@ static int __devinit pmac_ide_init_dma(ide_hwif_t *hwif,
 		(MAX_DCMDS + 2) * sizeof(struct dbdma_cmd),
 		&hwif->dmatable_dma);
 	if (pmif->dma_table_cpu == NULL) {
-//		printk(KERN_ERR "%s: unable to allocate DMA command list\n",
-;
+		printk(KERN_ERR "%s: unable to allocate DMA command list\n",
+		       hwif->name);
 		return -ENOMEM;
 	}
 

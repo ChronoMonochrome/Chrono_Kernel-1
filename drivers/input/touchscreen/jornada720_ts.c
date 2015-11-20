@@ -130,7 +130,7 @@ static int __devinit jornada720_ts_probe(struct platform_device *pdev)
 			IRQF_DISABLED | IRQF_TRIGGER_RISING,
 			"HP7XX Touchscreen driver", pdev);
 	if (error) {
-;
+		printk(KERN_INFO "HP7XX TS : Unable to acquire irq!\n");
 		goto fail1;
 	}
 

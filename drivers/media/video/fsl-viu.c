@@ -89,10 +89,10 @@ static int qctl_regs[ARRAY_SIZE(viu_qctrl)];
 
 static int info_level;
 
-//#define dprintk(level, fmt, arg...)					\
-//	do {								\
-//		if (level <= info_level)				\
-;
+#define dprintk(level, fmt, arg...)					\
+	do {								\
+		if (level <= info_level)				\
+			printk(KERN_DEBUG "viu: " fmt , ## arg);	\
 	} while (0)
 
 /*
@@ -334,11 +334,11 @@ static int restart_video_queue(struct viu_dmaqueue *vidq)
 {
 	struct viu_buf *buf, *prev;
 
-;
+	dprintk(1, "%s vidq=0x%08lx\n", __func__, (unsigned long)vidq);
 	if (!list_empty(&vidq->active)) {
 		buf = list_entry(vidq->active.next, struct viu_buf, vb.queue);
-//		dprintk(2, "restart_queue [%p/%d]: restart dma\n",
-;
+		dprintk(2, "restart_queue [%p/%d]: restart dma\n",
+			buf, buf->vb.i);
 
 		viu_stop_dma(vidq->dev);
 
@@ -361,14 +361,14 @@ static int restart_video_queue(struct viu_dmaqueue *vidq)
 			list_del(&buf->vb.queue);
 			list_add_tail(&buf->vb.queue, &vidq->active);
 
-;
+			dprintk(1, "Restarting video dma\n");
 			viu_stop_dma(vidq->dev);
 			viu_start_dma(vidq->dev);
 
 			buf->vb.state = VIDEOBUF_ACTIVE;
 			mod_timer(&vidq->timeout, jiffies+BUFFER_TIMEOUT);
-//			dprintk(2, "[%p/%d] restart_queue - first active\n",
-;
+			dprintk(2, "[%p/%d] restart_queue - first active\n",
+				buf, buf->vb.i);
 
 		} else if (prev->vb.width  == buf->vb.width  &&
 			   prev->vb.height == buf->vb.height &&
@@ -376,8 +376,8 @@ static int restart_video_queue(struct viu_dmaqueue *vidq)
 			list_del(&buf->vb.queue);
 			list_add_tail(&buf->vb.queue, &vidq->active);
 			buf->vb.state = VIDEOBUF_ACTIVE;
-//			dprintk(2, "[%p/%d] restart_queue - move to active\n",
-;
+			dprintk(2, "[%p/%d] restart_queue - move to active\n",
+				buf, buf->vb.i);
 		} else {
 			return 0;
 		}
@@ -396,7 +396,7 @@ static void viu_vid_timeout(unsigned long data)
 		list_del(&buf->vb.queue);
 		buf->vb.state = VIDEOBUF_ERROR;
 		wake_up(&buf->vb.done);
-;
+		dprintk(1, "viu/0: [%p/%d] timeout\n", buf, buf->vb.i);
 	}
 
 	restart_video_queue(vidq);
@@ -447,8 +447,8 @@ inline int buffer_activate(struct viu_dev *dev, struct viu_buf *buf)
 	/* setup the DMA base address */
 	reg_val.field_base_addr = videobuf_to_dma_contig(&buf->vb);
 
-//	dprintk(1, "buffer_activate [%p/%d]: dma addr 0x%lx\n",
-;
+	dprintk(1, "buffer_activate [%p/%d]: dma addr 0x%lx\n",
+		buf, buf->vb.i, (unsigned long)reg_val.field_base_addr);
 
 	/* interlace is on by default, set horizontal DMA increment */
 	reg_val.status_cfg = 0;
@@ -463,8 +463,8 @@ inline int buffer_activate(struct viu_dev *dev, struct viu_buf *buf)
 		reg_val.dma_inc = buf->vb.width * 4;
 		break;
 	default:
-//		dprintk(0, "doesn't support color depth(%d)\n",
-;
+		dprintk(0, "doesn't support color depth(%d)\n",
+			bpp * 8);
 		return -EINVAL;
 	}
 
@@ -543,43 +543,43 @@ static void buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
 	struct viu_buf       *prev;
 
 	if (!list_empty(&vidq->queued)) {
-//		dprintk(1, "adding vb queue=0x%08lx\n",
-;
-//		dprintk(1, "vidq pointer 0x%p, queued 0x%p\n",
-;
-//		dprintk(1, "dev %p, queued: self %p, next %p, head %p\n",
-//			dev, &vidq->queued, vidq->queued.next,
-;
+		dprintk(1, "adding vb queue=0x%08lx\n",
+				(unsigned long)&buf->vb.queue);
+		dprintk(1, "vidq pointer 0x%p, queued 0x%p\n",
+				vidq, &vidq->queued);
+		dprintk(1, "dev %p, queued: self %p, next %p, head %p\n",
+			dev, &vidq->queued, vidq->queued.next,
+			vidq->queued.prev);
 		list_add_tail(&buf->vb.queue, &vidq->queued);
 		buf->vb.state = VIDEOBUF_QUEUED;
-//		dprintk(2, "[%p/%d] buffer_queue - append to queued\n",
-;
+		dprintk(2, "[%p/%d] buffer_queue - append to queued\n",
+			buf, buf->vb.i);
 	} else if (list_empty(&vidq->active)) {
-//		dprintk(1, "adding vb active=0x%08lx\n",
-;
+		dprintk(1, "adding vb active=0x%08lx\n",
+				(unsigned long)&buf->vb.queue);
 		list_add_tail(&buf->vb.queue, &vidq->active);
 		buf->vb.state = VIDEOBUF_ACTIVE;
 		mod_timer(&vidq->timeout, jiffies+BUFFER_TIMEOUT);
-//		dprintk(2, "[%p/%d] buffer_queue - first active\n",
-;
+		dprintk(2, "[%p/%d] buffer_queue - first active\n",
+			buf, buf->vb.i);
 
 		buffer_activate(dev, buf);
 	} else {
-//		dprintk(1, "adding vb queue2=0x%08lx\n",
-;
+		dprintk(1, "adding vb queue2=0x%08lx\n",
+				(unsigned long)&buf->vb.queue);
 		prev = list_entry(vidq->active.prev, struct viu_buf, vb.queue);
 		if (prev->vb.width  == buf->vb.width  &&
 		    prev->vb.height == buf->vb.height &&
 		    prev->fmt       == buf->fmt) {
 			list_add_tail(&buf->vb.queue, &vidq->active);
 			buf->vb.state = VIDEOBUF_ACTIVE;
-//			dprintk(2, "[%p/%d] buffer_queue - append to active\n",
-;
+			dprintk(2, "[%p/%d] buffer_queue - append to active\n",
+				buf, buf->vb.i);
 		} else {
 			list_add_tail(&buf->vb.queue, &vidq->queued);
 			buf->vb.state = VIDEOBUF_QUEUED;
-//			dprintk(2, "[%p/%d] buffer_queue - first queued\n",
-;
+			dprintk(2, "[%p/%d] buffer_queue - first queued\n",
+				buf, buf->vb.i);
 		}
 	}
 }
@@ -655,8 +655,8 @@ static int vidioc_try_fmt_cap(struct file *file, void *priv,
 
 	fmt = format_by_fourcc(f->fmt.pix.pixelformat);
 	if (!fmt) {
-//		dprintk(1, "Fourcc format (0x%08x) invalid.",
-;
+		dprintk(1, "Fourcc format (0x%08x) invalid.",
+			f->fmt.pix.pixelformat);
 		return -EINVAL;
 	}
 
@@ -665,7 +665,7 @@ static int vidioc_try_fmt_cap(struct file *file, void *priv,
 	if (field == V4L2_FIELD_ANY) {
 		field = V4L2_FIELD_INTERLACED;
 	} else if (field != V4L2_FIELD_INTERLACED) {
-;
+		dprintk(1, "Field type invalid.\n");
 		return -EINVAL;
 	}
 
@@ -770,8 +770,8 @@ static int viu_setup_preview(struct viu_dev *dev, struct viu_fh *fh)
 {
 	int bpp;
 
-//	dprintk(1, "%s %dx%d %s\n", __func__,
-;
+	dprintk(1, "%s %dx%d %s\n", __func__,
+		fh->win.w.width, fh->win.w.height, dev->ovfmt->name);
 
 	reg_val.status_cfg = 0;
 
@@ -791,8 +791,8 @@ static int viu_setup_preview(struct viu_dev *dev, struct viu_fh *fh)
 		reg_val.dma_inc = fh->win.w.width * 4;
 		break;
 	default:
-//		dprintk(0, "device doesn't support color depth(%d)\n",
-;
+		dprintk(0, "device doesn't support color depth(%d)\n",
+			bpp * 8);
 		return -EINVAL;
 	}
 
@@ -1070,14 +1070,14 @@ inline void viu_activate_next_buf(struct viu_dev *dev,
 	if (!list_empty(&vidq->active)) {
 		buf = list_entry(vidq->active.next, struct viu_buf,
 					vb.queue);
-;
+		dprintk(1, "start another queued buffer: 0x%p\n", buf);
 		buffer_activate(dev, buf);
 	} else if (!list_empty(&vidq->queued)) {
 		buf = list_entry(vidq->queued.next, struct viu_buf,
 					vb.queue);
 		list_del(&buf->vb.queue);
 
-;
+		dprintk(1, "start another queued buffer: 0x%p\n", buf);
 		list_add_tail(&buf->vb.queue, &vidq->active);
 		buf->vb.state = VIDEOBUF_ACTIVE;
 		buffer_activate(dev, buf);
@@ -1094,8 +1094,8 @@ inline void viu_default_settings(struct viu_reg *viu_reg)
 	out_be32(&vr->chroma_b, 0x00000409);
 	out_be32(&vr->alpha, 0x000000ff);
 	out_be32(&vr->req_alarm, 0x00000090);
-//	dprintk(1, "status reg: 0x%08x, field base: 0x%08x\n",
-;
+	dprintk(1, "status reg: 0x%08x, field base: 0x%08x\n",
+		in_be32(&vr->status_cfg), in_be32(&vr->field_base_addr));
 }
 
 static void viu_overlay_intr(struct viu_dev *dev, u32 status)
@@ -1148,15 +1148,15 @@ static void viu_capture_intr(struct viu_dev *dev, u32 status)
 	}
 
 	if (status & INT_FIELD_STATUS) {
-//		dprintk(1, "irq: field %d, done %d\n",
-;
+		dprintk(1, "irq: field %d, done %d\n",
+			!!field_num, dma_done);
 		if (unlikely(dev->first)) {
 			if (field_num == 0) {
 				dev->first = 0;
-;
+				dprintk(1, "activate first buf\n");
 				viu_activate_next_buf(dev, vidq);
 			} else
-;
+				dprintk(1, "wait field 0\n");
 			return;
 		}
 
@@ -1166,8 +1166,8 @@ static void viu_capture_intr(struct viu_dev *dev, u32 status)
 
 			if (field_num && need_two) {
 				addr += reg_val.dma_inc;
-//				dprintk(1, "field 1, 0x%lx, dev field %d\n",
-;
+				dprintk(1, "field 1, 0x%lx, dev field %d\n",
+					(unsigned long)addr, dev->field);
 			}
 			out_be32(&vr->field_base_addr, addr);
 			out_be32(&vr->dma_inc, reg_val.dma_inc);
@@ -1183,10 +1183,10 @@ static void viu_capture_intr(struct viu_dev *dev, u32 status)
 		dev->field = 0;
 		buf = list_entry(vidq->active.next,
 				 struct viu_buf, vb.queue);
-//		dprintk(1, "viu/0: [%p/%d] 0x%lx/0x%lx: dma complete\n",
-//			buf, buf->vb.i,
-//			(unsigned long)videobuf_to_dma_contig(&buf->vb),
-;
+		dprintk(1, "viu/0: [%p/%d] 0x%lx/0x%lx: dma complete\n",
+			buf, buf->vb.i,
+			(unsigned long)videobuf_to_dma_contig(&buf->vb),
+			(unsigned long)in_be32(&vr->field_base_addr));
 
 		if (waitqueue_active(&buf->vb.done)) {
 			list_del(&buf->vb.queue);
@@ -1213,8 +1213,8 @@ static irqreturn_t viu_intr(int irq, void *dev_id)
 		dev->irqs.error_irq++;
 		error = status & ERR_MASK;
 		if (error)
-//			dprintk(1, "Err: error(%d), times:%d!\n",
-;
+			dprintk(1, "Err: error(%d), times:%d!\n",
+				error >> 4, dev->irqs.error_irq);
 		/* Clear interrupt error bit and error flags */
 		out_be32(&vr->status_cfg,
 			 (status & 0xffc0ffff) | INT_ERROR_STATUS);
@@ -1223,8 +1223,8 @@ static irqreturn_t viu_intr(int irq, void *dev_id)
 	if (status & INT_DMA_END_STATUS) {
 		dev->irqs.dma_end_irq++;
 		dev->dma_done = 1;
-//		dprintk(2, "VIU DMA end interrupt times: %d\n",
-;
+		dprintk(2, "VIU DMA end interrupt times: %d\n",
+					dev->irqs.dma_end_irq);
 	}
 
 	if (status & INT_HSYNC_STATUS)
@@ -1232,8 +1232,8 @@ static irqreturn_t viu_intr(int irq, void *dev_id)
 
 	if (status & INT_FIELD_STATUS) {
 		dev->irqs.field_irq++;
-//		dprintk(2, "VIU field interrupt times: %d\n",
-;
+		dprintk(2, "VIU field interrupt times: %d\n",
+					dev->irqs.field_irq);
 	}
 
 	if (status & INT_VSTART_STATUS)
@@ -1241,8 +1241,8 @@ static irqreturn_t viu_intr(int irq, void *dev_id)
 
 	if (status & INT_VSYNC_STATUS) {
 		dev->irqs.vsync_irq++;
-//		dprintk(2, "VIU vsync interrupt times: %d\n",
-;
+		dprintk(2, "VIU vsync interrupt times: %d\n",
+			dev->irqs.vsync_irq);
 	}
 
 	/* clear all pending irqs */
@@ -1273,7 +1273,7 @@ static int viu_open(struct file *file)
 	u32 status_cfg;
 	int i;
 
-;
+	dprintk(1, "viu: open (minor=%d)\n", minor);
 
 	dev->users++;
 	if (dev->users > 1) {
@@ -1283,8 +1283,8 @@ static int viu_open(struct file *file)
 
 	vr = dev->vr;
 
-//	dprintk(1, "open minor=%d type=%s users=%d\n", minor,
-;
+	dprintk(1, "open minor=%d type=%s users=%d\n", minor,
+		v4l2_type_names[V4L2_BUF_TYPE_VIDEO_CAPTURE], dev->users);
 
 	/* allocate and initialize per filehandle data */
 	fh = kzalloc(sizeof(*fh), GFP_KERNEL);
@@ -1307,13 +1307,13 @@ static int viu_open(struct file *file)
 	for (i = 0; i < ARRAY_SIZE(viu_qctrl); i++)
 		qctl_regs[i] = viu_qctrl[i].default_value;
 
-//	dprintk(1, "Open: fh=0x%08lx, dev=0x%08lx, dev->vidq=0x%08lx\n",
-//		(unsigned long)fh, (unsigned long)dev,
-;
-//	dprintk(1, "Open: list_empty queued=%d\n",
-;
-//	dprintk(1, "Open: list_empty active=%d\n",
-;
+	dprintk(1, "Open: fh=0x%08lx, dev=0x%08lx, dev->vidq=0x%08lx\n",
+		(unsigned long)fh, (unsigned long)dev,
+		(unsigned long)&dev->vidq);
+	dprintk(1, "Open: list_empty queued=%d\n",
+		list_empty(&dev->vidq.queued));
+	dprintk(1, "Open: list_empty active=%d\n",
+		list_empty(&dev->vidq.active));
 
 	viu_default_settings(vr);
 
@@ -1342,7 +1342,7 @@ static ssize_t viu_read(struct file *file, char __user *data, size_t count,
 	struct viu_dev *dev = fh->dev;
 	int ret = 0;
 
-;
+	dprintk(2, "%s\n", __func__);
 	if (dev->ovenable)
 		dev->ovenable = 0;
 
@@ -1379,8 +1379,8 @@ static int viu_release(struct file *file)
 	kfree(fh);
 
 	dev->users--;
-//	dprintk(1, "close (minor=%d, users=%d)\n",
-;
+	dprintk(1, "close (minor=%d, users=%d)\n",
+		minor, dev->users);
 	return 0;
 }
 
@@ -1403,14 +1403,14 @@ static int viu_mmap(struct file *file, struct vm_area_struct *vma)
 	struct viu_fh *fh = file->private_data;
 	int ret;
 
-;
+	dprintk(1, "mmap called, vma=0x%08lx\n", (unsigned long)vma);
 
 	ret = videobuf_mmap_mapper(&fh->vb_vidq, vma);
 
-//	dprintk(1, "vma start=0x%08lx, size=%ld, ret=%d\n",
-//		(unsigned long)vma->vm_start,
-//		(unsigned long)vma->vm_end-(unsigned long)vma->vm_start,
-;
+	dprintk(1, "vma start=0x%08lx, size=%ld, ret=%d\n",
+		(unsigned long)vma->vm_start,
+		(unsigned long)vma->vm_end-(unsigned long)vma->vm_start,
+		ret);
 
 	return ret;
 }

@@ -730,14 +730,14 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
 	    gpio_is_valid(pdata->buck1_set2)) {
 		/* Check if SET1 is not equal to 0 */
 		if (!pdata->buck1_set1) {
-;
+			printk(KERN_ERR "MAX8998 SET1 GPIO defined as 0 !\n");
 			WARN_ON(!pdata->buck1_set1);
 			ret = -EIO;
 			goto err_free_mem;
 		}
 		/* Check if SET2 is not equal to 0 */
 		if (!pdata->buck1_set2) {
-;
+			printk(KERN_ERR "MAX8998 SET2 GPIO defined as 0 !\n");
 			WARN_ON(!pdata->buck1_set2);
 			ret = -EIO;
 			goto err_free_mem;
@@ -803,7 +803,7 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
 	if (gpio_is_valid(pdata->buck2_set3)) {
 		/* Check if SET3 is not equal to 0 */
 		if (!pdata->buck2_set3) {
-;
+			printk(KERN_ERR "MAX8998 SET3 GPIO defined as 0 !\n");
 			WARN_ON(!pdata->buck2_set3);
 			ret = -EIO;
 			goto err_free_mem;
@@ -829,7 +829,7 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
 		       buck12_voltage_map_desc.step*i
 		       < (pdata->buck2_voltage2 / 1000))
 			i++;
-;
+		printk(KERN_ERR "i2:%d, buck2_idx:%d\n", i, max8998->buck2_idx);
 		max8998->buck2_vol[1] = i;
 		ret = max8998_write_reg(i2c, MAX8998_REG_BUCK2_VOLTAGE2, i);
 		if (ret)

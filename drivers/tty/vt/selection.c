@@ -268,7 +268,7 @@ int set_selection(const struct tiocl_selection __user *sel, struct tty_struct *t
 	multiplier = use_unicode ? 3 : 1;  /* chars can take up to 3 bytes */
 	bp = kmalloc(((sel_end-sel_start)/2+1)*multiplier, GFP_KERNEL);
 	if (!bp) {
-;
+		printk(KERN_WARNING "selection: kmalloc() failed\n");
 		clear_selection();
 		return -ENOMEM;
 	}

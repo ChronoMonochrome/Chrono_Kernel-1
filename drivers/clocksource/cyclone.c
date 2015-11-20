@@ -44,19 +44,19 @@ static int __init init_cyclone_clocksource(void)
 	if (!use_cyclone)
 		return -ENODEV;
 
-;
+	printk(KERN_INFO "Summit chipset: Starting Cyclone Counter.\n");
 
 	/* find base address: */
 	offset = CYCLONE_CBAR_ADDR;
 	reg = ioremap_nocache(offset, sizeof(reg));
 	if (!reg) {
-;
+		printk(KERN_ERR "Summit chipset: Could not find valid CBAR register.\n");
 		return -ENODEV;
 	}
 	/* even on 64bit systems, this is only 32bits: */
 	base = readl(reg);
 	if (!base) {
-;
+		printk(KERN_ERR "Summit chipset: Could not find valid CBAR value.\n");
 		return -ENODEV;
 	}
 	iounmap(reg);
@@ -65,7 +65,7 @@ static int __init init_cyclone_clocksource(void)
 	offset = base + CYCLONE_PMCC_OFFSET;
 	reg = ioremap_nocache(offset, sizeof(reg));
 	if (!reg) {
-;
+		printk(KERN_ERR "Summit chipset: Could not find valid PMCC register.\n");
 		return -ENODEV;
 	}
 	writel(0x00000001,reg);
@@ -75,7 +75,7 @@ static int __init init_cyclone_clocksource(void)
 	offset = base + CYCLONE_MPCS_OFFSET;
 	reg = ioremap_nocache(offset, sizeof(reg));
 	if (!reg) {
-;
+		printk(KERN_ERR "Summit chipset: Could not find valid MPCS register.\n");
 		return -ENODEV;
 	}
 	writel(0x00000001,reg);
@@ -85,7 +85,7 @@ static int __init init_cyclone_clocksource(void)
 	offset = base + CYCLONE_MPMC_OFFSET;
 	cyclone_timer = ioremap_nocache(offset, sizeof(u64));
 	if (!cyclone_timer) {
-;
+		printk(KERN_ERR "Summit chipset: Could not find valid MPMC register.\n");
 		return -ENODEV;
 	}
 
@@ -98,7 +98,7 @@ static int __init init_cyclone_clocksource(void)
 			barrier();
 
 		if (readl(cyclone_timer) == old) {
-;
+			printk(KERN_ERR "Summit chipset: Counter not counting! DISABLED\n");
 			iounmap(cyclone_timer);
 			cyclone_timer = NULL;
 			return -ENODEV;

@@ -74,9 +74,9 @@ static void ttm_mem_zone_kobj_release(struct kobject *kobj)
 	struct ttm_mem_zone *zone =
 		container_of(kobj, struct ttm_mem_zone, kobj);
 
-//	printk(KERN_INFO TTM_PFX
-//	       "Zone %7s: Used memory at exit: %llu kiB.\n",
-;
+	printk(KERN_INFO TTM_PFX
+	       "Zone %7s: Used memory at exit: %llu kiB.\n",
+	       zone->name, (unsigned long long) zone->used_mem >> 10);
 	kfree(zone);
 }
 
@@ -390,9 +390,9 @@ int ttm_mem_global_init(struct ttm_mem_global *glob)
 #endif
 	for (i = 0; i < glob->num_zones; ++i) {
 		zone = glob->zones[i];
-//		printk(KERN_INFO TTM_PFX
-//		       "Zone %7s: Available graphics memory: %llu kiB.\n",
-;
+		printk(KERN_INFO TTM_PFX
+		       "Zone %7s: Available graphics memory: %llu kiB.\n",
+		       zone->name, (unsigned long long) zone->max_mem >> 10);
 	}
 	ttm_page_alloc_init(glob, glob->zone_kernel->max_mem/(2*PAGE_SIZE));
 	return 0;

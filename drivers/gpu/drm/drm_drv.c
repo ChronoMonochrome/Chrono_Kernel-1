@@ -257,7 +257,7 @@ static int __init drm_core_init(void)
 
 	drm_class = drm_sysfs_create(THIS_MODULE, "drm");
 	if (IS_ERR(drm_class)) {
-;
+		printk(KERN_ERR "DRM: Error creating drm class.\n");
 		ret = PTR_ERR(drm_class);
 		goto err_p2;
 	}

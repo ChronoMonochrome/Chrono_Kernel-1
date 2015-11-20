@@ -214,7 +214,7 @@ static void usb_int_complete(struct urb *urb)
 		FsmEvent(&adapter->d_out.fsm, EV_DOUT_UNDERRUN, NULL);
 
 	if (irqbyte & OUT_DOWN)
-;
+;//		printk("OUT_DOWN\n");
 
 	irqbyte = data[MPINT];
 	if (irqbyte & RXCI_INT)

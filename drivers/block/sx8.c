@@ -79,24 +79,24 @@ MODULE_PARM_DESC(max_queue, "Maximum number of queued commands. (min==1, max==30
 
 /* note: prints function name for you */
 #ifdef CARM_DEBUG
-//#define DPRINTK(fmt, args...) printk(KERN_ERR "%s: " fmt, __func__, ## args)
-//#ifdef CARM_VERBOSE_DEBUG
-//#define VPRINTK(fmt, args...) printk(KERN_ERR "%s: " fmt, __func__, ## args)
-//#else
-//#define VPRINTK(fmt, args...)
-//#endif	/* CARM_VERBOSE_DEBUG */
-//#else
-//#define DPRINTK(fmt, args...)
-//#define VPRINTK(fmt, args...)
-//#endif	/* CARM_DEBUG */
-//
-//#ifdef CARM_NDEBUG
-//#define assert(expr)
-//#else
-//#define assert(expr) \
-//        if(unlikely(!(expr))) {                                   \
-//        printk(KERN_ERR "Assertion failed! %s,%s,%s,line=%d\n", \
-;
+#define DPRINTK(fmt, args...) printk(KERN_ERR "%s: " fmt, __func__, ## args)
+#ifdef CARM_VERBOSE_DEBUG
+#define VPRINTK(fmt, args...) printk(KERN_ERR "%s: " fmt, __func__, ## args)
+#else
+#define VPRINTK(fmt, args...)
+#endif	/* CARM_VERBOSE_DEBUG */
+#else
+#define DPRINTK(fmt, args...)
+#define VPRINTK(fmt, args...)
+#endif	/* CARM_DEBUG */
+
+#ifdef CARM_NDEBUG
+#define assert(expr)
+#else
+#define assert(expr) \
+        if(unlikely(!(expr))) {                                   \
+        printk(KERN_ERR "Assertion failed! %s,%s,%s,line=%d\n", \
+	#expr, __FILE__, __func__, __LINE__);          \
         }
 #endif
 
@@ -958,8 +958,8 @@ static void carm_handle_array_info(struct carm_host *host,
 
 	/* should never occur */
 	if ((cur_port < 0) || (cur_port >= CARM_MAX_PORTS)) {
-//		printk(KERN_ERR PFX "BUG: cur_scan_dev==%d, array_id==%d\n",
-;
+		printk(KERN_ERR PFX "BUG: cur_scan_dev==%d, array_id==%d\n",
+		       cur_port, (int) desc->array_id);
 		goto out;
 	}
 
@@ -983,11 +983,11 @@ static void carm_handle_array_info(struct carm_host *host,
 		slen--;
 	}
 
-//	printk(KERN_INFO DRV_NAME "(%s): port %u device %Lu sectors\n",
-//	       pci_name(host->pdev), port->port_no,
-;
-//	printk(KERN_INFO DRV_NAME "(%s): port %u device \"%s\"\n",
-;
+	printk(KERN_INFO DRV_NAME "(%s): port %u device %Lu sectors\n",
+	       pci_name(host->pdev), port->port_no,
+	       (unsigned long long) port->capacity);
+	printk(KERN_INFO DRV_NAME "(%s): port %u device \"%s\"\n",
+	       pci_name(host->pdev), port->port_no, port->name);
 
 out:
 	assert(host->state == HST_DEV_SCAN);
@@ -1018,8 +1018,8 @@ static void carm_handle_scan_chan(struct carm_host *host,
 			dev_count++;
 		}
 
-//	printk(KERN_INFO DRV_NAME "(%s): found %u interesting devices\n",
-;
+	printk(KERN_INFO DRV_NAME "(%s): found %u interesting devices\n",
+	       pci_name(host->pdev), dev_count);
 
 out:
 	assert(host->state == HST_PORT_SCAN);
@@ -1072,8 +1072,8 @@ static inline void carm_handle_resp(struct carm_host *host,
 	VPRINTK("ENTER, handle == 0x%x\n", handle);
 
 	if (unlikely(!TAG_VALID(handle))) {
-//		printk(KERN_ERR DRV_NAME "(%s): BUG: invalid tag 0x%x\n",
-;
+		printk(KERN_ERR DRV_NAME "(%s): BUG: invalid tag 0x%x\n",
+		       pci_name(host->pdev), handle);
 		return;
 	}
 
@@ -1152,8 +1152,8 @@ static inline void carm_handle_resp(struct carm_host *host,
 	return;
 
 err_out:
-//	printk(KERN_WARNING DRV_NAME "(%s): BUG: unhandled message type %d/%d\n",
-;
+	printk(KERN_WARNING DRV_NAME "(%s): BUG: unhandled message type %d/%d\n",
+	       pci_name(host->pdev), crq->msg_type, crq->msg_subtype);
 	carm_end_rq(host, crq, -EIO);
 }
 
@@ -1184,8 +1184,8 @@ static inline void carm_handle_responses(struct carm_host *host)
 		else if ((status & 0xff000000) == (1 << 31)) {
 			u8 *evt_type_ptr = (u8 *) &resp[idx];
 			u8 evt_type = *evt_type_ptr;
-//			printk(KERN_WARNING DRV_NAME "(%s): unhandled event type %d\n",
-;
+			printk(KERN_WARNING DRV_NAME "(%s): unhandled event type %d\n",
+			       pci_name(host->pdev), (int) evt_type);
 			resp[idx].status = cpu_to_le32(0xffffffff);
 		}
 
@@ -1334,8 +1334,8 @@ static void carm_fsm_task (struct work_struct *work)
 				activated++;
 			}
 
-//		printk(KERN_INFO DRV_NAME "(%s): %d ports activated\n",
-;
+		printk(KERN_INFO DRV_NAME "(%s): %d ports activated\n",
+		       pci_name(host->pdev), activated);
 
 		new_state = HST_PROBE_FINISHED;
 		reschedule = 1;
@@ -1352,7 +1352,7 @@ static void carm_fsm_task (struct work_struct *work)
 
 	default:
 		/* should never occur */
-;
+		printk(KERN_ERR PFX "BUG: unknown state %d\n", state);
 		assert(0);
 		break;
 	}
@@ -1385,8 +1385,8 @@ static int carm_init_wait(void __iomem *mmio, u32 bits, unsigned int test_bit)
 		cond_resched();
 	}
 
-//	printk(KERN_ERR PFX "carm_init_wait timeout, bits == 0x%x, test_bit == %s\n",
-;
+	printk(KERN_ERR PFX "carm_init_wait timeout, bits == 0x%x, test_bit == %s\n",
+	       bits, test_bit ? "yes" : "no");
 	return -EBUSY;
 }
 
@@ -1584,8 +1584,8 @@ static int carm_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 	if (!rc) {
 		rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
 		if (rc) {
-//			printk(KERN_ERR DRV_NAME "(%s): consistent DMA mask failure\n",
-;
+			printk(KERN_ERR DRV_NAME "(%s): consistent DMA mask failure\n",
+				pci_name(pdev));
 			goto err_out_regions;
 		}
 		pci_dac = 1;
@@ -1593,8 +1593,8 @@ static int carm_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 #endif
 		rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc) {
-//			printk(KERN_ERR DRV_NAME "(%s): DMA mask failure\n",
-;
+			printk(KERN_ERR DRV_NAME "(%s): DMA mask failure\n",
+				pci_name(pdev));
 			goto err_out_regions;
 		}
 		pci_dac = 0;
@@ -1604,8 +1604,8 @@ static int carm_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	host = kzalloc(sizeof(*host), GFP_KERNEL);
 	if (!host) {
-//		printk(KERN_ERR DRV_NAME "(%s): memory alloc failure\n",
-;
+		printk(KERN_ERR DRV_NAME "(%s): memory alloc failure\n",
+		       pci_name(pdev));
 		rc = -ENOMEM;
 		goto err_out_regions;
 	}
@@ -1622,23 +1622,23 @@ static int carm_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 	host->mmio = ioremap(pci_resource_start(pdev, 0),
 			     pci_resource_len(pdev, 0));
 	if (!host->mmio) {
-//		printk(KERN_ERR DRV_NAME "(%s): MMIO alloc failure\n",
-;
+		printk(KERN_ERR DRV_NAME "(%s): MMIO alloc failure\n",
+		       pci_name(pdev));
 		rc = -ENOMEM;
 		goto err_out_kfree;
 	}
 
 	rc = carm_init_shm(host);
 	if (rc) {
-//		printk(KERN_ERR DRV_NAME "(%s): DMA SHM alloc failure\n",
-;
+		printk(KERN_ERR DRV_NAME "(%s): DMA SHM alloc failure\n",
+		       pci_name(pdev));
 		goto err_out_iounmap;
 	}
 
 	q = blk_init_queue(carm_oob_rq_fn, &host->lock);
 	if (!q) {
-//		printk(KERN_ERR DRV_NAME "(%s): OOB queue alloc failure\n",
-;
+		printk(KERN_ERR DRV_NAME "(%s): OOB queue alloc failure\n",
+		       pci_name(pdev));
 		rc = -ENOMEM;
 		goto err_out_pci_free;
 	}
@@ -1672,8 +1672,8 @@ static int carm_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 
 	rc = request_irq(pdev->irq, carm_interrupt, IRQF_SHARED, DRV_NAME, host);
 	if (rc) {
-//		printk(KERN_ERR DRV_NAME "(%s): irq alloc failure\n",
-;
+		printk(KERN_ERR DRV_NAME "(%s): irq alloc failure\n",
+		       pci_name(pdev));
 		goto err_out_blkdev_disks;
 	}
 
@@ -1684,10 +1684,10 @@ static int carm_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 	DPRINTK("waiting for probe_comp\n");
 	wait_for_completion(&host->probe_comp);
 
-//	printk(KERN_INFO "%s: pci %s, ports %d, io %llx, irq %u, major %d\n",
-//	       host->name, pci_name(pdev), (int) CARM_MAX_PORTS,
-//	       (unsigned long long)pci_resource_start(pdev, 0),
-;
+	printk(KERN_INFO "%s: pci %s, ports %d, io %llx, irq %u, major %d\n",
+	       host->name, pci_name(pdev), (int) CARM_MAX_PORTS,
+	       (unsigned long long)pci_resource_start(pdev, 0),
+		   pdev->irq, host->major);
 
 	carm_host_id++;
 	pci_set_drvdata(pdev, host);
@@ -1722,8 +1722,8 @@ static void carm_remove_one (struct pci_dev *pdev)
 	struct carm_host *host = pci_get_drvdata(pdev);
 
 	if (!host) {
-//		printk(KERN_ERR PFX "BUG: no host data for PCI(%s)\n",
-;
+		printk(KERN_ERR PFX "BUG: no host data for PCI(%s)\n",
+		       pci_name(pdev));
 		return;
 	}
 

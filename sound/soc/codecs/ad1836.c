@@ -319,8 +319,8 @@ static int __init ad1836_init(void)
 
 	ret = spi_register_driver(&ad1836_spi_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register ad1836 SPI driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register ad1836 SPI driver: %d\n",
+				ret);
 	}
 
 	return ret;

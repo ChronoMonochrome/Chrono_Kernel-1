@@ -221,8 +221,8 @@ skip:
 		}
 		break;
 	default:
-//		printk(KERN_ERR "netxen-nic: Unsupported board model %d\n",
-;
+		printk(KERN_ERR "netxen-nic: Unsupported board model %d\n",
+				adapter->ahw.board_type);
 		return -EIO;
 	}
 
@@ -427,8 +427,8 @@ netxen_validate_ringparam(u32 val, u32 min, u32 max, char *r_name)
 	num_desc = roundup_pow_of_two(num_desc);
 
 	if (val != num_desc) {
-//		printk(KERN_INFO "%s: setting %s ring size %d instead of %d\n",
-;
+		printk(KERN_INFO "%s: setting %s ring size %d instead of %d\n",
+		       netxen_nic_driver_name, r_name, num_desc, val);
 	}
 
 	return num_desc;
@@ -514,8 +514,8 @@ netxen_nic_get_pauseparam(struct net_device *dev,
 		else
 			pause->tx_pause = !(netxen_xg_get_xg1_mask(val));
 	} else {
-//		printk(KERN_ERR"%s: Unknown board type: %x\n",
-;
+		printk(KERN_ERR"%s: Unknown board type: %x\n",
+				netxen_nic_driver_name, adapter->ahw.port_type);
 	}
 }
 
@@ -587,9 +587,9 @@ netxen_nic_set_pauseparam(struct net_device *dev,
 		}
 		NXWR32(adapter, NETXEN_NIU_XG_PAUSE_CTL, val);
 	} else {
-//		printk(KERN_ERR "%s: Unknown board type: %x\n",
-//				netxen_nic_driver_name,
-;
+		printk(KERN_ERR "%s: Unknown board type: %x\n",
+				netxen_nic_driver_name,
+				adapter->ahw.port_type);
 	}
 	return 0;
 }

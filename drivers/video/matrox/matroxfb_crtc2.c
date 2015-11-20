@@ -641,8 +641,8 @@ static int matroxfb_dh_regit(const struct matrox_fb_info *minfo,
 	minfo->crtc2.info = m2info;
 	up_write(&minfo->crtc2.lock);
 	if (oldcrtc2) {
-//		printk(KERN_ERR "matroxfb_crtc2: Internal consistency check failed: crtc2 already present: %p\n",
-;
+		printk(KERN_ERR "matroxfb_crtc2: Internal consistency check failed: crtc2 already present: %p\n",
+			oldcrtc2);
 	}
 	return 0;
 #undef minfo
@@ -653,11 +653,11 @@ static int matroxfb_dh_regit(const struct matrox_fb_info *minfo,
 static int matroxfb_dh_registerfb(struct matroxfb_dh_fb_info* m2info) {
 #define minfo (m2info->primary_dev)
 	if (matroxfb_dh_regit(minfo, m2info)) {
-;
+		printk(KERN_ERR "matroxfb_crtc2: secondary head failed to register\n");
 		return -1;
 	}
-//	printk(KERN_INFO "matroxfb_crtc2: secondary head of fb%u was registered as fb%u\n",
-;
+	printk(KERN_INFO "matroxfb_crtc2: secondary head of fb%u was registered as fb%u\n",
+		minfo->fbcon.node, m2info->fbcon.node);
 	m2info->fbcon_registered = 1;
 	return 0;
 #undef minfo
@@ -675,16 +675,16 @@ static void matroxfb_dh_deregisterfb(struct matroxfb_dh_fb_info* m2info) {
 			minfo->crtc2.info = NULL;
 		up_write(&minfo->crtc2.lock);
 		if (crtc2 != m2info) {
-//			printk(KERN_ERR "matroxfb_crtc2: Internal consistency check failed: crtc2 mismatch at unload: %p != %p\n",
-;
-;
+			printk(KERN_ERR "matroxfb_crtc2: Internal consistency check failed: crtc2 mismatch at unload: %p != %p\n",
+				crtc2, m2info);
+			printk(KERN_ERR "matroxfb_crtc2: Expect kernel crash after module unload.\n");
 			return;
 		}
 		id = m2info->fbcon.node;
 		unregister_framebuffer(&m2info->fbcon);
 		/* return memory back to primary head */
 		minfo->video.len_usable += m2info->video.borrowed;
-;
+		printk(KERN_INFO "matroxfb_crtc2: fb%u unregistered\n", id);
 		m2info->fbcon_registered = 0;
 	}
 #undef minfo
@@ -698,13 +698,13 @@ static void* matroxfb_crtc2_probe(struct matrox_fb_info* minfo) {
 		return NULL;
 	m2info = kzalloc(sizeof(*m2info), GFP_KERNEL);
 	if (!m2info) {
-;
+		printk(KERN_ERR "matroxfb_crtc2: Not enough memory for CRTC2 control structs\n");
 		return NULL;
 	}
 	m2info->primary_dev = minfo;
 	if (matroxfb_dh_registerfb(m2info)) {
 		kfree(m2info);
-;
+		printk(KERN_ERR "matroxfb_crtc2: CRTC2 framebuffer failed to register\n");
 		return NULL;
 	}
 	return m2info;

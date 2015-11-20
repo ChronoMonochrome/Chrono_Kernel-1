@@ -84,7 +84,7 @@ static void wait_till_cmd_acked(struct cs5535audio *cs5535au, unsigned long time
 		udelay(1);
 	} while (--timeout);
 	if (!timeout)
-;
+		snd_printk(KERN_ERR "Failure writing to cs5535 codec\n");
 }
 
 static unsigned short snd_cs5535audio_codec_read(struct cs5535audio *cs5535au,
@@ -109,8 +109,8 @@ static unsigned short snd_cs5535audio_codec_read(struct cs5535audio *cs5535au,
 		udelay(1);
 	} while (--timeout);
 	if (!timeout)
-//		snd_printk(KERN_ERR "Failure reading codec reg 0x%x,"
-;
+		snd_printk(KERN_ERR "Failure reading codec reg 0x%x,"
+					"Last value=0x%x\n", reg, val);
 
 	return (unsigned short) val;
 }
@@ -168,7 +168,7 @@ static int __devinit snd_cs5535audio_mixer(struct cs5535audio *cs5535au)
 	olpc_prequirks(card, &ac97);
 
 	if ((err = snd_ac97_mixer(pbus, &ac97, &cs5535au->ac97)) < 0) {
-;
+		snd_printk(KERN_ERR "mixer failed\n");
 		return err;
 	}
 
@@ -176,7 +176,7 @@ static int __devinit snd_cs5535audio_mixer(struct cs5535audio *cs5535au)
 
 	err = olpc_quirks(card, cs5535au->ac97);
 	if (err < 0) {
-;
+		snd_printk(KERN_ERR "olpc quirks failed\n");
 		return err;
 	}
 
@@ -194,8 +194,8 @@ static void process_bm0_irq(struct cs5535audio *cs5535au)
 		dma = cs5535au->playback_substream->runtime->private_data;
 		snd_pcm_period_elapsed(cs5535au->playback_substream);
 	} else {
-//		snd_printk(KERN_ERR "unexpected bm0 irq src, bm_stat=%x\n",
-;
+		snd_printk(KERN_ERR "unexpected bm0 irq src, bm_stat=%x\n",
+					bm_stat);
 	}
 }
 
@@ -241,8 +241,8 @@ static irqreturn_t snd_cs5535audio_interrupt(int irq, void *dev_id)
 				process_bm1_irq(cs5535au);
 				break;
 			default:
-//				snd_printk(KERN_ERR "Unexpected irq src: "
-;
+				snd_printk(KERN_ERR "Unexpected irq src: "
+						"0x%x\n", acc_irq_stat);
 				break;
 			}
 		}
@@ -287,7 +287,7 @@ static int __devinit snd_cs5535audio_create(struct snd_card *card,
 
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(32)) < 0 ||
 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32)) < 0) {
-;
+		printk(KERN_WARNING "unable to get 32bit dma\n");
 		err = -ENXIO;
 		goto pcifail;
 	}
@@ -312,7 +312,7 @@ static int __devinit snd_cs5535audio_create(struct snd_card *card,
 
 	if (request_irq(pci->irq, snd_cs5535audio_interrupt,
 			IRQF_SHARED, "CS5535 Audio", cs5535au)) {
-;
+		snd_printk(KERN_ERR "unable to grab IRQ %d\n", pci->irq);
 		err = -EBUSY;
 		goto sndfail;
 	}

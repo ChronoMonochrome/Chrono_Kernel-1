@@ -1009,7 +1009,7 @@ static int __init dm644x_ccdc_probe(struct platform_device *pdev)
 		goto fail_sclk;
 	}
 	ccdc_cfg.dev = &pdev->dev;
-;
+	printk(KERN_NOTICE "%s is registered with vpfe.\n", ccdc_hw_dev.name);
 	return 0;
 fail_sclk:
 	clk_put(ccdc_cfg.sclk);

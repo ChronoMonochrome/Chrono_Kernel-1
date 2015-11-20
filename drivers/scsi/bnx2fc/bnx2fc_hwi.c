@@ -67,7 +67,7 @@ int bnx2fc_send_fw_fcoe_init_msg(struct bnx2fc_hba *hba)
 	int rc = 0;
 
 	if (!hba->cnic) {
-;
+		printk(KERN_ALERT PFX "hba->cnic NULL during fcoe fw init\n");
 		return -ENODEV;
 	}
 
@@ -362,8 +362,8 @@ static int bnx2fc_send_session_enable_req(struct fcoe_port *port,
 
 	port_id = fc_host_port_id(lport->host);
 	if (port_id != tgt->sid) {
-//		printk(KERN_ERR PFX "WARN: enable_req port_id = 0x%x,"
-;
+		printk(KERN_ERR PFX "WARN: enable_req port_id = 0x%x,"
+				"sid = 0x%x\n", port_id, tgt->sid);
 		port_id = tgt->sid;
 	}
 	enbl_req.s_id[0] = (port_id & 0x000000FF);
@@ -542,7 +542,7 @@ void bnx2fc_process_l2_frame_compl(struct bnx2fc_rport *tgt,
 
 	fp = fc_frame_alloc(lport, payload_len);
 	if (!fp) {
-;
+		printk(KERN_ERR PFX "fc_frame_alloc failure\n");
 		kfree(unsol_els);
 		return;
 	}
@@ -567,7 +567,7 @@ void bnx2fc_process_l2_frame_compl(struct bnx2fc_rport *tgt,
 				 * No need to reply for these
 				 * ELS requests
 				 */
-;
+				printk(KERN_ERR PFX "dropping ELS 0x%x\n", op);
 				kfree_skb(skb);
 				kfree(unsol_els);
 				return;
@@ -689,7 +689,7 @@ static void bnx2fc_process_unsol_compl(struct bnx2fc_rport *tgt, u16 wqe)
 		}
 
 		if (io_req->cmd_type != BNX2FC_SCSI_CMD) {
-;
+			printk(KERN_ERR PFX "err_warn: Not a SCSI cmd\n");
 			spin_unlock_bh(&tgt->tgt_lock);
 			break;
 		}
@@ -727,8 +727,8 @@ static void bnx2fc_process_unsol_compl(struct bnx2fc_rport *tgt, u16 wqe)
 				BUG_ON(rc);
 			}
 		} else
-//			printk(KERN_ERR PFX "err_warn: io_req (0x%x) already "
-;
+			printk(KERN_ERR PFX "err_warn: io_req (0x%x) already "
+					    "in ABTS processing\n", xid);
 		spin_unlock_bh(&tgt->tgt_lock);
 		break;
 
@@ -754,7 +754,7 @@ static void bnx2fc_process_unsol_compl(struct bnx2fc_rport *tgt, u16 wqe)
 		break;
 
 	default:
-;
+		printk(KERN_ERR PFX "Unsol Compl: Invalid CQE Subtype\n");
 		break;
 	}
 }
@@ -775,7 +775,7 @@ void bnx2fc_process_cq_compl(struct bnx2fc_rport *tgt, u16 wqe)
 	spin_lock_bh(&tgt->tgt_lock);
 	xid = wqe & FCOE_PEND_WQ_CQE_TASK_ID;
 	if (xid >= BNX2FC_MAX_TASKS) {
-;
+		printk(KERN_ALERT PFX "ERROR:xid out of range\n");
 		spin_unlock_bh(&tgt->tgt_lock);
 		return;
 	}
@@ -791,7 +791,7 @@ void bnx2fc_process_cq_compl(struct bnx2fc_rport *tgt, u16 wqe)
 	io_req = (struct bnx2fc_cmd *)hba->cmd_mgr->cmds[xid];
 
 	if (io_req == NULL) {
-;
+		printk(KERN_ERR PFX "ERROR? cq_compl - io_req is NULL\n");
 		spin_unlock_bh(&tgt->tgt_lock);
 		return;
 	}
@@ -821,8 +821,8 @@ void bnx2fc_process_cq_compl(struct bnx2fc_rport *tgt, u16 wqe)
 			 FCOE_TASK_RX_STATE_EXCHANGE_CLEANUP_COMPLETED)
 			bnx2fc_process_cleanup_compl(io_req, task, num_rq);
 		else
-//			printk(KERN_ERR PFX "Invalid rx state - %d\n",
-;
+			printk(KERN_ERR PFX "Invalid rx state - %d\n",
+				rx_state);
 		break;
 
 	case BNX2FC_TASK_MGMT_CMD:
@@ -851,7 +851,7 @@ void bnx2fc_process_cq_compl(struct bnx2fc_rport *tgt, u16 wqe)
 		break;
 
 	default:
-;
+		printk(KERN_ERR PFX "Invalid cmd_type %d\n", cmd_type);
 		break;
 	}
 	spin_unlock_bh(&tgt->tgt_lock);
@@ -886,7 +886,7 @@ int bnx2fc_process_new_cqes(struct bnx2fc_rport *tgt)
 	spin_lock_bh(&tgt->cq_lock);
 
 	if (!tgt->cq) {
-;
+		printk(KERN_ERR PFX "process_new_cqes: cq is NULL\n");
 		spin_unlock_bh(&tgt->cq_lock);
 		return 0;
 	}
@@ -969,7 +969,7 @@ static void bnx2fc_fastpath_notification(struct bnx2fc_hba *hba,
 	struct bnx2fc_rport *tgt = hba->tgt_ofld_list[conn_id];
 
 	if (!tgt) {
-;
+		printk(KERN_ALERT PFX "conn_id 0x%x not valid\n", conn_id);
 		return;
 	}
 
@@ -998,14 +998,14 @@ static void bnx2fc_process_ofld_cmpl(struct bnx2fc_hba *hba,
 	context_id = ofld_kcqe->fcoe_conn_context_id;
 	tgt = hba->tgt_ofld_list[conn_id];
 	if (!tgt) {
-;
+		printk(KERN_ALERT PFX "ERROR:ofld_cmpl: No pending ofld req\n");
 		return;
 	}
 	BNX2FC_TGT_DBG(tgt, "Entered ofld compl - context_id = 0x%x\n",
 		ofld_kcqe->fcoe_conn_context_id);
 	port = tgt->port;
 	if (hba != tgt->port->priv) {
-;
+		printk(KERN_ALERT PFX "ERROR:ofld_cmpl: HBA mis-match\n");
 		goto ofld_cmpl_err;
 	}
 	/*
@@ -1016,8 +1016,8 @@ static void bnx2fc_process_ofld_cmpl(struct bnx2fc_hba *hba,
 	if (ofld_kcqe->completion_status) {
 		if (ofld_kcqe->completion_status ==
 				FCOE_KCQE_COMPLETION_STATUS_CTX_ALLOC_FAILURE) {
-//			printk(KERN_ERR PFX "unable to allocate FCoE context "
-;
+			printk(KERN_ERR PFX "unable to allocate FCoE context "
+				"resources\n");
 			set_bit(BNX2FC_FLAG_CTX_ALLOC_FAILURE, &tgt->flags);
 		}
 		goto ofld_cmpl_err;
@@ -1026,7 +1026,7 @@ static void bnx2fc_process_ofld_cmpl(struct bnx2fc_hba *hba,
 		/* now enable the session */
 		rc = bnx2fc_send_session_enable_req(port, tgt);
 		if (rc) {
-;
+			printk(KERN_ALERT PFX "enable session failed\n");
 			goto ofld_cmpl_err;
 		}
 	}
@@ -1056,7 +1056,7 @@ static void bnx2fc_process_enable_conn_cmpl(struct bnx2fc_hba *hba,
 	conn_id = ofld_kcqe->fcoe_conn_id;
 	tgt = hba->tgt_ofld_list[conn_id];
 	if (!tgt) {
-;
+		printk(KERN_ALERT PFX "ERROR:enbl_cmpl: No pending ofld req\n");
 		return;
 	}
 
@@ -1068,11 +1068,11 @@ static void bnx2fc_process_enable_conn_cmpl(struct bnx2fc_hba *hba,
 	 * and enable
 	 */
 	if (tgt->context_id != context_id) {
-;
+		printk(KERN_ALERT PFX "context id mis-match\n");
 		return;
 	}
 	if (hba != tgt->port->priv) {
-;
+		printk(KERN_ALERT PFX "bnx2fc-enbl_cmpl: HBA mis-match\n");
 		goto enbl_cmpl_err;
 	}
 	if (ofld_kcqe->completion_status) {
@@ -1100,15 +1100,15 @@ static void bnx2fc_process_conn_disable_cmpl(struct bnx2fc_hba *hba,
 	conn_id = disable_kcqe->fcoe_conn_id;
 	tgt = hba->tgt_ofld_list[conn_id];
 	if (!tgt) {
-;
+		printk(KERN_ALERT PFX "ERROR: disable_cmpl: No disable req\n");
 		return;
 	}
 
 	BNX2FC_TGT_DBG(tgt, PFX "disable_cmpl: conn_id %d\n", conn_id);
 
 	if (disable_kcqe->completion_status) {
-//		printk(KERN_ALERT PFX "ERROR: Disable failed with cmpl status %d\n",
-;
+		printk(KERN_ALERT PFX "ERROR: Disable failed with cmpl status %d\n",
+			disable_kcqe->completion_status);
 		return;
 	} else {
 		/* disable successful */
@@ -1129,15 +1129,15 @@ static void bnx2fc_process_conn_destroy_cmpl(struct bnx2fc_hba *hba,
 	conn_id = destroy_kcqe->fcoe_conn_id;
 	tgt = hba->tgt_ofld_list[conn_id];
 	if (!tgt) {
-;
+		printk(KERN_ALERT PFX "destroy_cmpl: No destroy req\n");
 		return;
 	}
 
 	BNX2FC_TGT_DBG(tgt, "destroy_cmpl: conn_id %d\n", conn_id);
 
 	if (destroy_kcqe->completion_status) {
-//		printk(KERN_ALERT PFX "Destroy conn failed, cmpl status %d\n",
-;
+		printk(KERN_ALERT PFX "Destroy conn failed, cmpl status %d\n",
+			destroy_kcqe->completion_status);
 		return;
 	} else {
 		/* destroy successful */
@@ -1153,19 +1153,19 @@ static void bnx2fc_init_failure(struct bnx2fc_hba *hba, u32 err_code)
 {
 	switch (err_code) {
 	case FCOE_KCQE_COMPLETION_STATUS_INVALID_OPCODE:
-;
+		printk(KERN_ERR PFX "init_failure due to invalid opcode\n");
 		break;
 
 	case FCOE_KCQE_COMPLETION_STATUS_CTX_ALLOC_FAILURE:
-;
+		printk(KERN_ERR PFX "init failed due to ctx alloc failure\n");
 		break;
 
 	case FCOE_KCQE_COMPLETION_STATUS_NIC_ERROR:
-;
+		printk(KERN_ERR PFX "init_failure due to NIC error\n");
 		break;
 
 	default:
-;
+		printk(KERN_ERR PFX "Unknown Error code %d\n", err_code);
 	}
 }
 
@@ -1209,8 +1209,8 @@ void bnx2fc_indicate_kcqe(void *context, struct kcqe *kcq[],
 			} else {
 				set_bit(ADAPTER_STATE_UP, &hba->adapter_state);
 				bnx2fc_get_link_state(hba);
-//				printk(KERN_INFO PFX "[%.2x]: FCOE_INIT passed\n",
-;
+				printk(KERN_INFO PFX "[%.2x]: FCOE_INIT passed\n",
+					(u8)hba->pcidev->bus->number);
 			}
 			break;
 
@@ -1218,9 +1218,9 @@ void bnx2fc_indicate_kcqe(void *context, struct kcqe *kcq[],
 			if (kcqe->completion_status !=
 					FCOE_KCQE_COMPLETION_STATUS_SUCCESS) {
 
-;
+				printk(KERN_ERR PFX "DESTROY failed\n");
 			} else {
-;
+				printk(KERN_ERR PFX "DESTROY success\n");
 			}
 			hba->flags |= BNX2FC_FLAG_DESTROY_CMPL;
 			wake_up_interruptible(&hba->destroy_wait);
@@ -1237,15 +1237,15 @@ void bnx2fc_indicate_kcqe(void *context, struct kcqe *kcq[],
 		case FCOE_KCQE_OPCODE_STAT_FUNC:
 			if (kcqe->completion_status !=
 			    FCOE_KCQE_COMPLETION_STATUS_SUCCESS)
-;
+				printk(KERN_ERR PFX "STAT failed\n");
 			complete(&hba->stat_req_done);
 			break;
 
 		case FCOE_KCQE_OPCODE_FCOE_ERROR:
 			/* fall thru */
 		default:
-//			printk(KERN_ALERT PFX "unknown opcode 0x%x\n",
-;
+			printk(KERN_ALERT PFX "unknown opcode 0x%x\n",
+								kcqe->op_code);
 		}
 	}
 }
@@ -1580,7 +1580,7 @@ int bnx2fc_setup_task_ctx(struct bnx2fc_hba *hba)
 						  &hba->task_ctx_bd_dma,
 						  GFP_KERNEL);
 	if (!hba->task_ctx_bd_tbl) {
-;
+		printk(KERN_ERR PFX "unable to allocate task context BDT\n");
 		rc = -1;
 		goto out;
 	}
@@ -1593,7 +1593,7 @@ int bnx2fc_setup_task_ctx(struct bnx2fc_hba *hba)
 	hba->task_ctx = kzalloc((BNX2FC_TASK_CTX_ARR_SZ * sizeof(void *)),
 				 GFP_KERNEL);
 	if (!hba->task_ctx) {
-;
+		printk(KERN_ERR PFX "unable to allocate task context array\n");
 		rc = -1;
 		goto out1;
 	}
@@ -1604,7 +1604,7 @@ int bnx2fc_setup_task_ctx(struct bnx2fc_hba *hba)
 	hba->task_ctx_dma = kmalloc((BNX2FC_TASK_CTX_ARR_SZ *
 					sizeof(dma_addr_t)), GFP_KERNEL);
 	if (!hba->task_ctx_dma) {
-;
+		printk(KERN_ERR PFX "unable to alloc context mapping array\n");
 		rc = -1;
 		goto out2;
 	}
@@ -1617,7 +1617,7 @@ int bnx2fc_setup_task_ctx(struct bnx2fc_hba *hba)
 						      &hba->task_ctx_dma[i],
 						      GFP_KERNEL);
 		if (!hba->task_ctx[i]) {
-;
+			printk(KERN_ERR PFX "unable to alloc task context\n");
 			rc = -1;
 			goto out3;
 		}
@@ -1734,13 +1734,13 @@ static int bnx2fc_allocate_hash_table(struct bnx2fc_hba *hba)
 	segment_array_size = segment_count * sizeof(*hba->hash_tbl_segments);
 	hba->hash_tbl_segments = kzalloc(segment_array_size, GFP_KERNEL);
 	if (!hba->hash_tbl_segments) {
-;
+		printk(KERN_ERR PFX "hash table pointers alloc failed\n");
 		return -ENOMEM;
 	}
 	dma_segment_array_size = segment_count * sizeof(*dma_segment_array);
 	dma_segment_array = kzalloc(dma_segment_array_size, GFP_KERNEL);
 	if (!dma_segment_array) {
-;
+		printk(KERN_ERR PFX "hash table pointers (dma) alloc failed\n");
 		return -ENOMEM;
 	}
 
@@ -1751,7 +1751,7 @@ static int bnx2fc_allocate_hash_table(struct bnx2fc_hba *hba)
 					   &dma_segment_array[i],
 					   GFP_KERNEL);
 		if (!hba->hash_tbl_segments[i]) {
-;
+			printk(KERN_ERR PFX "hash segment alloc failed\n");
 			while (--i >= 0) {
 				dma_free_coherent(&hba->pcidev->dev,
 						    BNX2FC_HASH_TBL_CHUNK_SIZE,
@@ -1771,7 +1771,7 @@ static int bnx2fc_allocate_hash_table(struct bnx2fc_hba *hba)
 					       &hba->hash_tbl_pbl_dma,
 					       GFP_KERNEL);
 	if (!hba->hash_tbl_pbl) {
-;
+		printk(KERN_ERR PFX "hash table pbl alloc failed\n");
 		kfree(dma_segment_array);
 		return -ENOMEM;
 	}
@@ -1820,7 +1820,7 @@ int bnx2fc_setup_fw_resc(struct bnx2fc_hba *hba)
 						  &hba->t2_hash_tbl_ptr_dma,
 						  GFP_KERNEL);
 	if (!hba->t2_hash_tbl_ptr) {
-;
+		printk(KERN_ERR PFX "unable to allocate t2 hash table ptr\n");
 		bnx2fc_free_fw_resc(hba);
 		return -ENOMEM;
 	}
@@ -1832,7 +1832,7 @@ int bnx2fc_setup_fw_resc(struct bnx2fc_hba *hba)
 					      &hba->t2_hash_tbl_dma,
 					      GFP_KERNEL);
 	if (!hba->t2_hash_tbl) {
-;
+		printk(KERN_ERR PFX "unable to allocate t2 hash table\n");
 		bnx2fc_free_fw_resc(hba);
 		return -ENOMEM;
 	}
@@ -1848,7 +1848,7 @@ int bnx2fc_setup_fw_resc(struct bnx2fc_hba *hba)
 					       PAGE_SIZE, &hba->dummy_buf_dma,
 					       GFP_KERNEL);
 	if (!hba->dummy_buffer) {
-;
+		printk(KERN_ERR PFX "unable to alloc MP Dummy Buffer\n");
 		bnx2fc_free_fw_resc(hba);
 		return -ENOMEM;
 	}
@@ -1858,7 +1858,7 @@ int bnx2fc_setup_fw_resc(struct bnx2fc_hba *hba)
 					       &hba->stats_buf_dma,
 					       GFP_KERNEL);
 	if (!hba->stats_buffer) {
-;
+		printk(KERN_ERR PFX "unable to alloc Stats Buffer\n");
 		bnx2fc_free_fw_resc(hba);
 		return -ENOMEM;
 	}

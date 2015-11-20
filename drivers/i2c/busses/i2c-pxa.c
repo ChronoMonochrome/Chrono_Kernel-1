@@ -185,11 +185,11 @@ struct bits {
 static inline void
 decode_bits(const char *prefix, const struct bits *bits, int num, u32 val)
 {
-;
+	printk("%s %08x: ", prefix, val);
 	while (num--) {
 		const char *str = val & bits->mask ? bits->set : bits->unset;
 		if (str)
-;
+			printk("%s ", str);
 		bits++;
 	}
 }
@@ -211,7 +211,7 @@ static const struct bits isr_bits[] = {
 static void decode_ISR(unsigned int val)
 {
 	decode_bits(KERN_DEBUG "ISR", isr_bits, ARRAY_SIZE(isr_bits), val);
-;
+	printk("\n");
 }
 
 static const struct bits icr_bits[] = {
@@ -236,7 +236,7 @@ static const struct bits icr_bits[] = {
 static void decode_ICR(unsigned int val)
 {
 	decode_bits(KERN_DEBUG "ICR", icr_bits, ARRAY_SIZE(icr_bits), val);
-;
+	printk("\n");
 }
 #endif
 
@@ -253,15 +253,15 @@ static void i2c_pxa_show_state(struct pxa_i2c *i2c, int lno, const char *fname)
 static void i2c_pxa_scream_blue_murder(struct pxa_i2c *i2c, const char *why)
 {
 	unsigned int i;
-;
-//	printk(KERN_ERR "i2c: msg_num: %d msg_idx: %d msg_ptr: %d\n",
-;
-//	printk(KERN_ERR "i2c: ICR: %08x ISR: %08x\n",
-;
-;
+	printk(KERN_ERR "i2c: error: %s\n", why);
+	printk(KERN_ERR "i2c: msg_num: %d msg_idx: %d msg_ptr: %d\n",
+		i2c->msg_num, i2c->msg_idx, i2c->msg_ptr);
+	printk(KERN_ERR "i2c: ICR: %08x ISR: %08x\n",
+	       readl(_ICR(i2c)), readl(_ISR(i2c)));
+	printk(KERN_DEBUG "i2c: log: ");
 	for (i = 0; i < i2c->irqlogidx; i++)
-;
-;
+		printk("[%08x:%08x] ", i2c->isrlog[i], i2c->icrlog[i]);
+	printk("\n");
 }
 
 #else /* ifdef DEBUG */
@@ -1144,7 +1144,7 @@ static int i2c_pxa_probe(struct platform_device *dev)
 
 	ret = i2c_add_numbered_adapter(&i2c->adap);
 	if (ret < 0) {
-;
+		printk(KERN_INFO "I2C: Failed to add bus\n");
 		goto eadapt;
 	}
 	of_i2c_register_devices(&i2c->adap);
@@ -1152,11 +1152,11 @@ static int i2c_pxa_probe(struct platform_device *dev)
 	platform_set_drvdata(dev, i2c);
 
 #ifdef CONFIG_I2C_PXA_SLAVE
-//	printk(KERN_INFO "I2C: %s: PXA I2C adapter, slave address %d\n",
-;
+	printk(KERN_INFO "I2C: %s: PXA I2C adapter, slave address %d\n",
+	       dev_name(&i2c->adap.dev), i2c->slave_addr);
 #else
-//	printk(KERN_INFO "I2C: %s: PXA I2C adapter\n",
-;
+	printk(KERN_INFO "I2C: %s: PXA I2C adapter\n",
+	       dev_name(&i2c->adap.dev));
 #endif
 	return 0;
 

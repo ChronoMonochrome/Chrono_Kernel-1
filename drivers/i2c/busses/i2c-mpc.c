@@ -329,8 +329,8 @@ static u32 __devinit mpc_i2c_get_sec_cfg_8xxx(void)
 			 */
 			reg = ioremap(get_immrbase() + *prop + 0x14, 0x4);
 			if (!reg)
-//				printk(KERN_ERR
-;
+				printk(KERN_ERR
+				       "Error: couldn't map PORDEVSR2\n");
 			else
 				val = in_be32(reg) & 0x00000080; /* sec-cfg */
 			iounmap(reg);

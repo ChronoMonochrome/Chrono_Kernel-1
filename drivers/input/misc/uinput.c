@@ -247,7 +247,7 @@ static int uinput_create_device(struct uinput_device *udev)
 	int error;
 
 	if (udev->state != UIST_SETUP_COMPLETE) {
-;
+		printk(KERN_DEBUG "%s: write device info first\n", UINPUT_NAME);
 		return -EINVAL;
 	}
 
@@ -310,24 +310,24 @@ static int uinput_validate_absbits(struct input_dev *dev)
 		max = input_abs_get_max(dev, cnt);
 
 		if ((min != 0 || max != 0) && max <= min) {
-//			printk(KERN_DEBUG
-//				"%s: invalid abs[%02x] min:%d max:%d\n",
-//				UINPUT_NAME, cnt,
-//				input_abs_get_min(dev, cnt),
-;
+			printk(KERN_DEBUG
+				"%s: invalid abs[%02x] min:%d max:%d\n",
+				UINPUT_NAME, cnt,
+				input_abs_get_min(dev, cnt),
+				input_abs_get_max(dev, cnt));
 			retval = -EINVAL;
 			break;
 		}
 
 		if (input_abs_get_flat(dev, cnt) >
 		    input_abs_get_max(dev, cnt) - input_abs_get_min(dev, cnt)) {
-//			printk(KERN_DEBUG
-//				"%s: abs_flat #%02x out of range: %d "
-//				"(min:%d/max:%d)\n",
-//				UINPUT_NAME, cnt,
-//				input_abs_get_flat(dev, cnt),
-//				input_abs_get_min(dev, cnt),
-;
+			printk(KERN_DEBUG
+				"%s: abs_flat #%02x out of range: %d "
+				"(min:%d/max:%d)\n",
+				UINPUT_NAME, cnt,
+				input_abs_get_flat(dev, cnt),
+				input_abs_get_min(dev, cnt),
+				input_abs_get_max(dev, cnt));
 			retval = -EINVAL;
 			break;
 		}

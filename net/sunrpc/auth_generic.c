@@ -49,7 +49,7 @@ struct rpc_cred *rpc_lookup_machine_cred(void)
 		.machine_cred = 1,
 	};
 
-;
+	dprintk("RPC:       looking up machine cred\n");
 	return generic_auth.au_ops->lookup_cred(&generic_auth, &acred, 0);
 }
 EXPORT_SYMBOL_GPL(rpc_lookup_machine_cred);
@@ -91,9 +91,9 @@ generic_create_cred(struct rpc_auth *auth, struct auth_cred *acred, int flags)
 		get_group_info(gcred->acred.group_info);
 	gcred->acred.machine_cred = acred->machine_cred;
 
-//	dprintk("RPC:       allocated %s cred %p for uid %d gid %d\n",
-//			gcred->acred.machine_cred ? "machine" : "generic",
-;
+	dprintk("RPC:       allocated %s cred %p for uid %d gid %d\n",
+			gcred->acred.machine_cred ? "machine" : "generic",
+			gcred, acred->uid, acred->gid);
 	return &gcred->gc_base;
 }
 
@@ -102,7 +102,7 @@ generic_free_cred(struct rpc_cred *cred)
 {
 	struct generic_cred *gcred = container_of(cred, struct generic_cred, gc_base);
 
-;
+	dprintk("RPC:       generic_free_cred %p\n", gcred);
 	if (gcred->acred.group_info != NULL)
 		put_group_info(gcred->acred.group_info);
 	kfree(gcred);

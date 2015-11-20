@@ -111,10 +111,10 @@ int ext4_end_io_nolock(ext4_io_end_t *io)
 
 	ret = ext4_convert_unwritten_extents(inode, offset, size);
 	if (ret < 0) {
-//		printk(KERN_EMERG "%s: failed to convert unwritten "
-//			"extents to written extents, error is %d "
-//			"io is still on inode %lu aio dio list\n",
-;
+		printk(KERN_EMERG "%s: failed to convert unwritten "
+			"extents to written extents, error is %d "
+			"io is still on inode %lu aio dio list\n",
+		       __func__, ret, inode->i_ino);
 		return ret;
 	}
 
@@ -198,9 +198,9 @@ ext4_io_end_t *ext4_init_io_end(struct inode *inode, gfp_t flags)
 static void buffer_io_error(struct buffer_head *bh)
 {
 	char b[BDEVNAME_SIZE];
-//	printk(KERN_ERR "Buffer I/O error on device %s, logical block %llu\n",
-//			bdevname(bh->b_bdev, b),
-;
+	printk(KERN_ERR "Buffer I/O error on device %s, logical block %llu\n",
+			bdevname(bh->b_bdev, b),
+			(unsigned long long)bh->b_blocknr);
 }
 
 static void ext4_end_bio(struct bio *bio, int error)

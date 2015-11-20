@@ -609,8 +609,8 @@ static int __devinit virtio_pci_probe(struct pci_dev *pci_dev,
 		return -ENODEV;
 
 	if (pci_dev->revision != VIRTIO_PCI_ABI_VERSION) {
-//		printk(KERN_ERR "virtio_pci: expected ABI version %d, got %d\n",
-;
+		printk(KERN_ERR "virtio_pci: expected ABI version %d, got %d\n",
+		       VIRTIO_PCI_ABI_VERSION, pci_dev->revision);
 		return -ENODEV;
 	}
 

@@ -139,12 +139,12 @@ struct mg_host {
 #undef DO_MG_DEBUG
 #ifdef DO_MG_DEBUG
 #  define MG_DBG(fmt, args...) \
-//	printk(KERN_DEBUG "%s:%d "fmt, __func__, __LINE__, ##args)
-//#else /* CONFIG_MG_DEBUG */
-//#  define MG_DBG(fmt, args...) do { } while (0)
-//#endif /* CONFIG_MG_DEBUG */
-//
-;
+	printk(KERN_DEBUG "%s:%d "fmt, __func__, __LINE__, ##args)
+#else /* CONFIG_MG_DEBUG */
+#  define MG_DBG(fmt, args...) do { } while (0)
+#endif /* CONFIG_MG_DEBUG */
+
+static void mg_request(struct request_queue *);
 
 static bool mg_end_request(struct mg_host *host, int err, unsigned int nr_bytes)
 {
@@ -168,45 +168,45 @@ static void mg_dump_status(const char *msg, unsigned int stat,
 	if (host->req)
 		name = host->req->rq_disk->disk_name;
 
-;
+	printk(KERN_ERR "%s: %s: status=0x%02x { ", name, msg, stat & 0xff);
 	if (stat & ATA_BUSY)
-;
+		printk("Busy ");
 	if (stat & ATA_DRDY)
-;
+		printk("DriveReady ");
 	if (stat & ATA_DF)
-;
+		printk("WriteFault ");
 	if (stat & ATA_DSC)
-;
+		printk("SeekComplete ");
 	if (stat & ATA_DRQ)
-;
+		printk("DataRequest ");
 	if (stat & ATA_CORR)
-;
+		printk("CorrectedError ");
 	if (stat & ATA_ERR)
-;
-;
+		printk("Error ");
+	printk("}\n");
 	if ((stat & ATA_ERR) == 0) {
 		host->error = 0;
 	} else {
 		host->error = inb((unsigned long)host->dev_base + MG_REG_ERROR);
-//		printk(KERN_ERR "%s: %s: error=0x%02x { ", name, msg,
-;
+		printk(KERN_ERR "%s: %s: error=0x%02x { ", name, msg,
+				host->error & 0xff);
 		if (host->error & ATA_BBK)
-;
+			printk("BadSector ");
 		if (host->error & ATA_UNC)
-;
+			printk("UncorrectableError ");
 		if (host->error & ATA_IDNF)
-;
+			printk("SectorIdNotFound ");
 		if (host->error & ATA_ABORTED)
-;
+			printk("DriveStatusError ");
 		if (host->error & ATA_AMNF)
-;
-;
+			printk("AddrMarkNotFound ");
+		printk("}");
 		if (host->error & (ATA_BBK | ATA_UNC | ATA_IDNF | ATA_AMNF)) {
 			if (host->req)
-//				printk(", sector=%u",
-;
+				printk(", sector=%u",
+				       (unsigned int)blk_rq_pos(host->req));
 		}
-;
+		printk("\n");
 	}
 }
 
@@ -387,11 +387,11 @@ static int mg_get_disk_id(struct mg_host *host)
 	mg_id_c_string(id, fwrev, ATA_ID_FW_REV, sizeof(fwrev));
 	mg_id_c_string(id, model, ATA_ID_PROD, sizeof(model));
 	mg_id_c_string(id, serial, ATA_ID_SERNO, sizeof(serial));
-;
-;
-;
-//	printk(KERN_INFO "mg_disk: %d + reserved %d sectors\n",
-;
+	printk(KERN_INFO "mg_disk: model: %s\n", model);
+	printk(KERN_INFO "mg_disk: firm: %.8s\n", fwrev);
+	printk(KERN_INFO "mg_disk: serial: %s\n", serial);
+	printk(KERN_INFO "mg_disk: %d + reserved %d sectors\n",
+			host->n_sectors, host->nres_sectors);
 
 	if (!prv_data->use_polling)
 		outb(0, (unsigned long)host->dev_base + MG_REG_DRV_CTRL);
@@ -649,7 +649,7 @@ void mg_times_out(unsigned long data)
 	host->mg_do_intr = NULL;
 
 	name = host->req->rq_disk->disk_name;
-;
+	printk(KERN_DEBUG "%s: timeout\n", name);
 
 	host->error = MG_ERR_TIMEOUT;
 	mg_bad_rw_intr(host);
@@ -748,10 +748,10 @@ static void mg_request(struct request_queue *q)
 		if (sect_num >= get_capacity(req->rq_disk) ||
 				((sect_num + sect_cnt) >
 				 get_capacity(req->rq_disk))) {
-//			printk(KERN_WARNING
-//					"%s: bad access: sector=%d, count=%d\n",
-//					req->rq_disk->disk_name,
-;
+			printk(KERN_WARNING
+					"%s: bad access: sector=%d, count=%d\n",
+					req->rq_disk->disk_name,
+					sect_num, sect_cnt);
 			mg_end_request_cur(host, -EIO);
 			continue;
 		}
@@ -833,8 +833,8 @@ static int mg_probe(struct platform_device *plat_dev)
 	int err = 0;
 
 	if (!prv_data) {
-//		printk(KERN_ERR	"%s:%d fail (no driver_data)\n",
-;
+		printk(KERN_ERR	"%s:%d fail (no driver_data)\n",
+				__func__, __LINE__);
 		err = -EINVAL;
 		goto probe_err;
 	}
@@ -842,8 +842,8 @@ static int mg_probe(struct platform_device *plat_dev)
 	/* alloc mg_host */
 	host = kzalloc(sizeof(struct mg_host), GFP_KERNEL);
 	if (!host) {
-//		printk(KERN_ERR "%s:%d fail (no memory for mg_host)\n",
-;
+		printk(KERN_ERR "%s:%d fail (no memory for mg_host)\n",
+				__func__, __LINE__);
 		err = -ENOMEM;
 		goto probe_err;
 	}
@@ -856,15 +856,15 @@ static int mg_probe(struct platform_device *plat_dev)
 	/* io remap */
 	rsc = platform_get_resource(plat_dev, IORESOURCE_MEM, 0);
 	if (!rsc) {
-//		printk(KERN_ERR "%s:%d platform_get_resource fail\n",
-;
+		printk(KERN_ERR "%s:%d platform_get_resource fail\n",
+				__func__, __LINE__);
 		err = -EINVAL;
 		goto probe_err_2;
 	}
 	host->dev_base = ioremap(rsc->start, resource_size(rsc));
 	if (!host->dev_base) {
-//		printk(KERN_ERR "%s:%d ioremap fail\n",
-;
+		printk(KERN_ERR "%s:%d ioremap fail\n",
+				__func__, __LINE__);
 		err = -EIO;
 		goto probe_err_2;
 	}
@@ -874,8 +874,8 @@ static int mg_probe(struct platform_device *plat_dev)
 	rsc = platform_get_resource_byname(plat_dev, IORESOURCE_IO,
 			MG_RST_PIN);
 	if (!rsc) {
-//		printk(KERN_ERR "%s:%d get reset pin fail\n",
-;
+		printk(KERN_ERR "%s:%d get reset pin fail\n",
+				__func__, __LINE__);
 		err = -EIO;
 		goto probe_err_3;
 	}
@@ -895,8 +895,8 @@ static int mg_probe(struct platform_device *plat_dev)
 		rsc = platform_get_resource_byname(plat_dev, IORESOURCE_IO,
 				MG_RSTOUT_PIN);
 		if (!rsc) {
-//			printk(KERN_ERR "%s:%d get reset-out pin fail\n",
-;
+			printk(KERN_ERR "%s:%d get reset-out pin fail\n",
+					__func__, __LINE__);
 			err = -EIO;
 			goto probe_err_3a;
 		}
@@ -915,8 +915,8 @@ static int mg_probe(struct platform_device *plat_dev)
 			goto probe_err_3b;
 		err = mg_disk_init(host);
 		if (err) {
-//			printk(KERN_ERR "%s:%d fail (err code : %d)\n",
-;
+			printk(KERN_ERR "%s:%d fail (err code : %d)\n",
+					__func__, __LINE__, err);
 			err = -EIO;
 			goto probe_err_3b;
 		}
@@ -933,8 +933,8 @@ static int mg_probe(struct platform_device *plat_dev)
 				IRQF_DISABLED | IRQF_TRIGGER_RISING,
 				MG_DEV_NAME, host);
 		if (err) {
-//			printk(KERN_ERR "%s:%d fail (request_irq err=%d)\n",
-;
+			printk(KERN_ERR "%s:%d fail (request_irq err=%d)\n",
+					__func__, __LINE__, err);
 			goto probe_err_3b;
 		}
 
@@ -943,16 +943,16 @@ static int mg_probe(struct platform_device *plat_dev)
 	/* get disk id */
 	err = mg_get_disk_id(host);
 	if (err) {
-//		printk(KERN_ERR "%s:%d fail (err code : %d)\n",
-;
+		printk(KERN_ERR "%s:%d fail (err code : %d)\n",
+				__func__, __LINE__, err);
 		err = -EIO;
 		goto probe_err_4;
 	}
 
 	err = register_blkdev(host->major, MG_DISK_NAME);
 	if (err < 0) {
-//		printk(KERN_ERR "%s:%d register_blkdev fail (err code : %d)\n",
-;
+		printk(KERN_ERR "%s:%d register_blkdev fail (err code : %d)\n",
+				__func__, __LINE__, err);
 		goto probe_err_4;
 	}
 	if (!host->major)
@@ -967,8 +967,8 @@ static int mg_probe(struct platform_device *plat_dev)
 
 	if (!host->breq) {
 		err = -ENOMEM;
-//		printk(KERN_ERR "%s:%d (blk_init_queue) fail\n",
-;
+		printk(KERN_ERR "%s:%d (blk_init_queue) fail\n",
+				__func__, __LINE__);
 		goto probe_err_5;
 	}
 	host->breq->queuedata = host;
@@ -976,8 +976,8 @@ static int mg_probe(struct platform_device *plat_dev)
 	/* mflash is random device, thanx for the noop */
 	err = elevator_change(host->breq, "noop");
 	if (err) {
-//		printk(KERN_ERR "%s:%d (elevator_init) fail\n",
-;
+		printk(KERN_ERR "%s:%d (elevator_init) fail\n",
+				__func__, __LINE__);
 		goto probe_err_6;
 	}
 	blk_queue_max_hw_sectors(host->breq, MG_MAX_SECTS);
@@ -989,8 +989,8 @@ static int mg_probe(struct platform_device *plat_dev)
 
 	host->gd = alloc_disk(MG_DISK_MAX_PART);
 	if (!host->gd) {
-//		printk(KERN_ERR "%s:%d (alloc_disk) fail\n",
-;
+		printk(KERN_ERR "%s:%d (alloc_disk) fail\n",
+				__func__, __LINE__);
 		err = -ENOMEM;
 		goto probe_err_7;
 	}
@@ -1090,13 +1090,13 @@ static struct platform_driver mg_disk_driver = {
 
 static int __init mg_init(void)
 {
-;
+	printk(KERN_INFO "mGine mflash driver, (c) 2008 mGine Co.\n");
 	return platform_driver_register(&mg_disk_driver);
 }
 
 static void __exit mg_exit(void)
 {
-;
+	printk(KERN_INFO "mflash driver : bye bye\n");
 	platform_driver_unregister(&mg_disk_driver);
 }
 

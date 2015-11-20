@@ -216,25 +216,25 @@ void fnic_log_q_error(struct fnic *fnic)
 	for (i = 0; i < fnic->raw_wq_count; i++) {
 		error_status = ioread32(&fnic->wq[i].ctrl->error_status);
 		if (error_status)
-//			shost_printk(KERN_ERR, fnic->lport->host,
-//				     "WQ[%d] error_status"
-;
+			shost_printk(KERN_ERR, fnic->lport->host,
+				     "WQ[%d] error_status"
+				     " %d\n", i, error_status);
 	}
 
 	for (i = 0; i < fnic->rq_count; i++) {
 		error_status = ioread32(&fnic->rq[i].ctrl->error_status);
 		if (error_status)
-//			shost_printk(KERN_ERR, fnic->lport->host,
-//				     "RQ[%d] error_status"
-;
+			shost_printk(KERN_ERR, fnic->lport->host,
+				     "RQ[%d] error_status"
+				     " %d\n", i, error_status);
 	}
 
 	for (i = 0; i < fnic->wq_copy_count; i++) {
 		error_status = ioread32(&fnic->wq_copy[i].ctrl->error_status);
 		if (error_status)
-//			shost_printk(KERN_ERR, fnic->lport->host,
-//				     "CWQ[%d] error_status"
-;
+			shost_printk(KERN_ERR, fnic->lport->host,
+				     "CWQ[%d] error_status"
+				     " %d\n", i, error_status);
 	}
 }
 
@@ -268,10 +268,10 @@ static int fnic_notify_set(struct fnic *fnic)
 		err = vnic_dev_notify_set(fnic->vdev, FNIC_MSIX_ERR_NOTIFY);
 		break;
 	default:
-//		shost_printk(KERN_ERR, fnic->lport->host,
-//			     "Interrupt mode should be set up"
-//			     " before devcmd notify set %d\n",
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Interrupt mode should be set up"
+			     " before devcmd notify set %d\n",
+			     vnic_dev_get_intr_mode(fnic->vdev));
 		err = -1;
 		break;
 	}
@@ -427,7 +427,7 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	 */
 	lp = libfc_host_alloc(&fnic_host_template, sizeof(struct fnic));
 	if (!lp) {
-;
+		printk(KERN_ERR PFX "Unable to alloc libfc local port\n");
 		err = -ENOMEM;
 		goto err_out;
 	}
@@ -443,8 +443,8 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 
 	err = scsi_init_shared_tag_map(host, FNIC_MAX_IO_REQ);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Unable to alloc shared tag map\n");
 		goto err_out_free_hba;
 	}
 
@@ -455,15 +455,15 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Cannot enable PCI device, aborting.\n");
 		goto err_out_free_hba;
 	}
 
 	err = pci_request_regions(pdev, DRV_NAME);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Cannot enable PCI resources, aborting\n");
 		goto err_out_disable_device;
 	}
 
@@ -477,32 +477,32 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	if (err) {
 		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (err) {
-//			shost_printk(KERN_ERR, fnic->lport->host,
-//				     "No usable DMA configuration "
-;
+			shost_printk(KERN_ERR, fnic->lport->host,
+				     "No usable DMA configuration "
+				     "aborting\n");
 			goto err_out_release_regions;
 		}
 		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (err) {
-//			shost_printk(KERN_ERR, fnic->lport->host,
-//				     "Unable to obtain 32-bit DMA "
-;
+			shost_printk(KERN_ERR, fnic->lport->host,
+				     "Unable to obtain 32-bit DMA "
+				     "for consistent allocations, aborting.\n");
 			goto err_out_release_regions;
 		}
 	} else {
 		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(40));
 		if (err) {
-//			shost_printk(KERN_ERR, fnic->lport->host,
-//				     "Unable to obtain 40-bit DMA "
-;
+			shost_printk(KERN_ERR, fnic->lport->host,
+				     "Unable to obtain 40-bit DMA "
+				     "for consistent allocations, aborting.\n");
 			goto err_out_release_regions;
 		}
 	}
 
 	/* Map vNIC resources from BAR0 */
 	if (!(pci_resource_flags(pdev, 0) & IORESOURCE_MEM)) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "BAR0 not memory-map'able, aborting.\n");
 		err = -ENODEV;
 		goto err_out_release_regions;
 	}
@@ -512,18 +512,18 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	fnic->bar0.len = pci_resource_len(pdev, 0);
 
 	if (!fnic->bar0.vaddr) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-//			     "Cannot memory-map BAR0 res hdr, "
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Cannot memory-map BAR0 res hdr, "
+			     "aborting.\n");
 		err = -ENODEV;
 		goto err_out_release_regions;
 	}
 
 	fnic->vdev = vnic_dev_register(NULL, fnic, pdev, &fnic->bar0);
 	if (!fnic->vdev) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-//			     "vNIC registration failed, "
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "vNIC registration failed, "
+			     "aborting.\n");
 		err = -ENODEV;
 		goto err_out_iounmap;
 	}
@@ -531,22 +531,22 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	err = fnic_dev_wait(fnic->vdev, vnic_dev_open,
 			    vnic_dev_open_done, 0);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "vNIC dev open failed, aborting.\n");
 		goto err_out_vnic_unregister;
 	}
 
 	err = vnic_dev_init(fnic->vdev, 0);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "vNIC dev init failed, aborting.\n");
 		goto err_out_dev_close;
 	}
 
 	err = vnic_dev_mac_addr(fnic->vdev, fnic->ctlr.ctl_src_addr);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "vNIC get MAC addr failed \n");
 		goto err_out_dev_close;
 	}
 	/* set data_src for point-to-point mode and to keep it non-zero */
@@ -555,9 +555,9 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	/* Get vNIC configuration */
 	err = fnic_get_vnic_config(fnic);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-//			     "Get vNIC configuration failed, "
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Get vNIC configuration failed, "
+			     "aborting.\n");
 		goto err_out_dev_close;
 	}
 	host->max_lun = fnic->config.luns_per_tgt;
@@ -568,17 +568,17 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 
 	err = fnic_set_intr_mode(fnic);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-//			     "Failed to set intr mode, "
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Failed to set intr mode, "
+			     "aborting.\n");
 		goto err_out_dev_close;
 	}
 
 	err = fnic_alloc_vnic_resources(fnic);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-//			     "Failed to alloc vNIC resources, "
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Failed to alloc vNIC resources, "
+			     "aborting.\n");
 		goto err_out_clear_intr;
 	}
 
@@ -624,16 +624,16 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	fnic->ctlr.update_mac = fnic_update_mac;
 	fnic->ctlr.get_src_addr = fnic_get_mac;
 	if (fnic->config.flags & VFCF_FIP_CAPABLE) {
-//		shost_printk(KERN_INFO, fnic->lport->host,
-;
+		shost_printk(KERN_INFO, fnic->lport->host,
+			     "firmware supports FIP\n");
 		/* enable directed and multicast */
 		vnic_dev_packet_filter(fnic->vdev, 1, 1, 0, 0, 0);
 		vnic_dev_add_addr(fnic->vdev, FIP_ALL_ENODE_MACS);
 		vnic_dev_add_addr(fnic->vdev, fnic->ctlr.ctl_src_addr);
 		fcoe_ctlr_init(&fnic->ctlr, FIP_MODE_AUTO);
 	} else {
-//		shost_printk(KERN_INFO, fnic->lport->host,
-;
+		shost_printk(KERN_INFO, fnic->lport->host,
+			     "firmware uses non-FIP mode\n");
 		fcoe_ctlr_init(&fnic->ctlr, FIP_MODE_NON_FIP);
 	}
 	fnic->state = FNIC_IN_FC_MODE;
@@ -644,8 +644,8 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	/* Setup notification buffer area */
 	err = fnic_notify_set(fnic);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Failed to alloc notify buffer, aborting.\n");
 		goto err_out_free_max_pool;
 	}
 
@@ -658,9 +658,9 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	for (i = 0; i < fnic->rq_count; i++) {
 		err = vnic_rq_fill(&fnic->rq[i], fnic_alloc_rq_frame);
 		if (err) {
-//			shost_printk(KERN_ERR, fnic->lport->host,
-//				     "fnic_alloc_rq_frame can't alloc "
-;
+			shost_printk(KERN_ERR, fnic->lport->host,
+				     "fnic_alloc_rq_frame can't alloc "
+				     "frame\n");
 			goto err_out_free_rq_buf;
 		}
 	}
@@ -671,8 +671,8 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 	 */
 	err = scsi_add_host(lp->host, &pdev->dev);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "fnic: scsi_add_host failed...exiting\n");
 		goto err_out_free_rq_buf;
 	}
 
@@ -740,8 +740,8 @@ static int __devinit fnic_probe(struct pci_dev *pdev,
 
 	err = fnic_request_intr(fnic);
 	if (err) {
-//		shost_printk(KERN_ERR, fnic->lport->host,
-;
+		shost_printk(KERN_ERR, fnic->lport->host,
+			     "Unable to request irq.\n");
 		goto err_out_free_exch_mgr;
 	}
 
@@ -870,7 +870,7 @@ static int __init fnic_init_module(void)
 	size_t len;
 	int err = 0;
 
-;
+	printk(KERN_INFO PFX "%s, ver %s\n", DRV_DESCRIPTION, DRV_VERSION);
 
 	/* Create a cache for allocation of default size sgls */
 	len = sizeof(struct fnic_dflt_sgl_list);
@@ -879,7 +879,7 @@ static int __init fnic_init_module(void)
 		 SLAB_HWCACHE_ALIGN | SLAB_CACHE_DMA,
 		 NULL);
 	if (!fnic_sgl_cache[FNIC_SGL_CACHE_DFLT]) {
-;
+		printk(KERN_ERR PFX "failed to create fnic dflt sgl slab\n");
 		err = -ENOMEM;
 		goto err_create_fnic_sgl_slab_dflt;
 	}
@@ -891,7 +891,7 @@ static int __init fnic_init_module(void)
 		 SLAB_HWCACHE_ALIGN | SLAB_CACHE_DMA,
 		 NULL);
 	if (!fnic_sgl_cache[FNIC_SGL_CACHE_MAX]) {
-;
+		printk(KERN_ERR PFX "failed to create fnic max sgl slab\n");
 		err = -ENOMEM;
 		goto err_create_fnic_sgl_slab_max;
 	}
@@ -901,14 +901,14 @@ static int __init fnic_init_module(void)
 					      sizeof(struct fnic_io_req),
 					      0, SLAB_HWCACHE_ALIGN, NULL);
 	if (!fnic_io_req_cache) {
-;
+		printk(KERN_ERR PFX "failed to create fnic io_req slab\n");
 		err = -ENOMEM;
 		goto err_create_fnic_ioreq_slab;
 	}
 
 	fnic_event_queue = create_singlethread_workqueue("fnic_event_wq");
 	if (!fnic_event_queue) {
-;
+		printk(KERN_ERR PFX "fnic work queue create failed\n");
 		err = -ENOMEM;
 		goto err_create_fnic_workq;
 	}
@@ -918,7 +918,7 @@ static int __init fnic_init_module(void)
 
 	fnic_fc_transport = fc_attach_transport(&fnic_fc_functions);
 	if (!fnic_fc_transport) {
-;
+		printk(KERN_ERR PFX "fc_attach_transport error\n");
 		err = -ENOMEM;
 		goto err_fc_transport;
 	}
@@ -926,7 +926,7 @@ static int __init fnic_init_module(void)
 	/* register the driver with PCI system */
 	err = pci_register_driver(&fnic_driver);
 	if (err < 0) {
-;
+		printk(KERN_ERR PFX "pci register error\n");
 		goto err_pci_register;
 	}
 	return err;

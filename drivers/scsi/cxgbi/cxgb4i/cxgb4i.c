@@ -1586,7 +1586,7 @@ static int __init cxgb4i_init_module(void)
 {
 	int rc;
 
-;
+	printk(KERN_INFO "%s", version);
 
 	rc = cxgbi_iscsi_init(&cxgb4i_iscsi_transport, &cxgb4i_stt);
 	if (rc < 0)

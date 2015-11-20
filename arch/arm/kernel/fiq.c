@@ -111,8 +111,8 @@ int claim_fiq(struct fiq_handler *f)
 void release_fiq(struct fiq_handler *f)
 {
 	if (current_fiq != f) {
-////		printk(KERN_ERR "%s FIQ trying to release %s FIQ\n",
-;
+		printk(KERN_ERR "%s FIQ trying to release %s FIQ\n",
+		       f->name, current_fiq->name);
 		dump_stack();
 		return;
 	}

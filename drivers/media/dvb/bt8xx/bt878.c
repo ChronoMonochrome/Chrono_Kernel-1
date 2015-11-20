@@ -75,10 +75,10 @@ EXPORT_SYMBOL(bt878);
 #if defined(dprintk)
 #undef dprintk
 #endif
-//#define dprintk(fmt, arg...) \
-//	do { \
-//		if (bt878_debug) \
-;
+#define dprintk(fmt, arg...) \
+	do { \
+		if (bt878_debug) \
+			printk(KERN_DEBUG fmt, ##arg); \
 	} while (0)
 
 static void bt878_mem_free(struct bt878 *bt)
@@ -158,7 +158,7 @@ static int bt878_make_risc(struct bt878 *bt)
 	}
 
 	if (bt->line_count > 255) {
-;
+		printk(KERN_ERR "bt878: buffer size error!\n");
 		return -EINVAL;
 	}
 	return 0;
@@ -174,8 +174,8 @@ static void bt878_risc_program(struct bt878 *bt, u32 op_sync_orin)
 	RISC_INSTR(RISC_SYNC | RISC_SYNC_FM1 | op_sync_orin);
 	RISC_INSTR(0);
 
-//	dprintk("bt878: risc len lines %u, bytes per line %u\n",
-;
+	dprintk("bt878: risc len lines %u, bytes per line %u\n",
+			bt->line_count, bt->line_bytes);
 	for (line = 0; line < bt->line_count; line++) {
 		// At the beginning of every block we issue an IRQ with previous (finished) block number set
 		if (!(buf_pos % bt->block_bytes))
@@ -212,7 +212,7 @@ void bt878_start(struct bt878 *bt, u32 controlreg, u32 op_sync_orin,
 {
 	u32 int_mask;
 
-;
+	dprintk("bt878 debug: bt878_start (ctl=%8.8x)\n", controlreg);
 	/* complete the writing of the risc dma program now we have
 	 * the card specifics
 	 */
@@ -246,7 +246,7 @@ void bt878_stop(struct bt878 *bt)
 	u32 stat;
 	int i = 0;
 
-;
+	dprintk("bt878 debug: bt878_stop\n");
 
 	btwrite(0, BT878_AINT_MASK);
 	btand(~0x13, BT878_AGPIO_DMA_CTL);
@@ -258,8 +258,8 @@ void bt878_stop(struct bt878 *bt)
 		i++;
 	} while (i < 500);
 
-//	dprintk("bt878(%d) debug: bt878_stop, i=%d, stat=0x%8.8x\n",
-;
+	dprintk("bt878(%d) debug: bt878_stop, i=%d, stat=0x%8.8x\n",
+		bt->nr, i, stat);
 }
 
 EXPORT_SYMBOL(bt878_start);
@@ -289,38 +289,38 @@ static irqreturn_t bt878_irq(int irq, void *dev_id)
 
 		if (astat & (BT878_ASCERR | BT878_AOCERR)) {
 			if (bt878_verbose) {
-//				printk(KERN_INFO
-//				       "bt878(%d): irq%s%s risc_pc=%08x\n",
-//				       bt->nr,
-//				       (astat & BT878_ASCERR) ? " SCERR" :
-//				       "",
-//				       (astat & BT878_AOCERR) ? " OCERR" :
-;
+				printk(KERN_INFO
+				       "bt878(%d): irq%s%s risc_pc=%08x\n",
+				       bt->nr,
+				       (astat & BT878_ASCERR) ? " SCERR" :
+				       "",
+				       (astat & BT878_AOCERR) ? " OCERR" :
+				       "", btread(BT878_ARISC_PC));
 			}
 		}
 		if (astat & (BT878_APABORT | BT878_ARIPERR | BT878_APPERR)) {
 			if (bt878_verbose) {
-//				printk(KERN_INFO
-//				     "bt878(%d): irq%s%s%s risc_pc=%08x\n",
-//				     bt->nr,
-//				     (astat & BT878_APABORT) ? " PABORT" :
-//				     "",
-//				     (astat & BT878_ARIPERR) ? " RIPERR" :
-//				     "",
-//				     (astat & BT878_APPERR) ? " PPERR" :
-;
+				printk(KERN_INFO
+				     "bt878(%d): irq%s%s%s risc_pc=%08x\n",
+				     bt->nr,
+				     (astat & BT878_APABORT) ? " PABORT" :
+				     "",
+				     (astat & BT878_ARIPERR) ? " RIPERR" :
+				     "",
+				     (astat & BT878_APPERR) ? " PPERR" :
+				     "", btread(BT878_ARISC_PC));
 			}
 		}
 		if (astat & (BT878_AFDSR | BT878_AFTRGT | BT878_AFBUS)) {
 			if (bt878_verbose) {
-//				printk(KERN_INFO
-//				     "bt878(%d): irq%s%s%s risc_pc=%08x\n",
-//				     bt->nr,
-//				     (astat & BT878_AFDSR) ? " FDSR" : "",
-//				     (astat & BT878_AFTRGT) ? " FTRGT" :
-//				     "",
-//				     (astat & BT878_AFBUS) ? " FBUS" : "",
-;
+				printk(KERN_INFO
+				     "bt878(%d): irq%s%s%s risc_pc=%08x\n",
+				     bt->nr,
+				     (astat & BT878_AFDSR) ? " FDSR" : "",
+				     (astat & BT878_AFTRGT) ? " FTRGT" :
+				     "",
+				     (astat & BT878_AFBUS) ? " FBUS" : "",
+				     btread(BT878_ARISC_PC));
 			}
 		}
 		if (astat & BT878_ARISCI) {
@@ -331,9 +331,9 @@ static irqreturn_t bt878_irq(int irq, void *dev_id)
 		count++;
 		if (count > 20) {
 			btwrite(0, BT878_AINT_MASK);
-//			printk(KERN_ERR
-//			       "bt878(%d): IRQ lockup, cleared int mask\n",
-;
+			printk(KERN_ERR
+			       "bt878(%d): IRQ lockup, cleared int mask\n",
+			       bt->nr);
 			break;
 		}
 	}
@@ -351,13 +351,13 @@ bt878_device_control(struct bt878 *bt, unsigned int cmd, union dst_gpio_packet *
 	/* special gpio signal */
 	switch (cmd) {
 	    case DST_IG_ENABLE:
-;
+		// dprintk("dvb_bt8xx: dst enable mask 0x%02x enb 0x%02x \n", mp->dstg.enb.mask, mp->dstg.enb.enable);
 		retval = bttv_gpio_enable(bt->bttv_nr,
 				mp->enb.mask,
 				mp->enb.enable);
 		break;
 	    case DST_IG_WRITE:
-;
+		// dprintk("dvb_bt8xx: dst write gpio mask 0x%02x out 0x%02x\n", mp->dstg.outp.mask, mp->dstg.outp.highvals);
 		retval = bttv_write_gpio(bt->bttv_nr,
 				mp->outp.mask,
 				mp->outp.highvals);
@@ -366,7 +366,7 @@ bt878_device_control(struct bt878 *bt, unsigned int cmd, union dst_gpio_packet *
 	    case DST_IG_READ:
 		/* read */
 		retval =  bttv_read_gpio(bt->bttv_nr, &mp->rd.value);
-;
+		// dprintk("dvb_bt8xx: dst read gpio 0x%02x\n", (unsigned)mp->dstg.rd.value);
 		break;
 	    case DST_IG_TS:
 		/* Set packet size */
@@ -430,10 +430,10 @@ static int __devinit bt878_probe(struct pci_dev *dev,
 #endif
 	unsigned int cardid;
 
-//	printk(KERN_INFO "bt878: Bt878 AUDIO function found (%d).\n",
-;
+	printk(KERN_INFO "bt878: Bt878 AUDIO function found (%d).\n",
+	       bt878_num);
 	if (bt878_num >= BT878_MAX) {
-;
+		printk(KERN_ERR "bt878: Too many devices inserted\n");
 		result = -ENOMEM;
 		goto fail0;
 	}
@@ -443,8 +443,8 @@ static int __devinit bt878_probe(struct pci_dev *dev,
 	cardid = dev->subsystem_device << 16;
 	cardid |= dev->subsystem_vendor;
 
-//	printk(KERN_INFO "%s: card id=[0x%x],[ %s ] has DVB functions.\n",
-;
+	printk(KERN_INFO "%s: card id=[0x%x],[ %s ] has DVB functions.\n",
+				__func__, cardid, card_name(pci_id));
 
 	bt = &bt878[bt878_num];
 	bt->dev = dev;
@@ -464,11 +464,11 @@ static int __devinit bt878_probe(struct pci_dev *dev,
 	pci_read_config_byte(dev, PCI_LATENCY_TIMER, &lat);
 
 
-//	printk(KERN_INFO "bt878(%d): Bt%x (rev %d) at %02x:%02x.%x, ",
-//	       bt878_num, bt->id, bt->revision, dev->bus->number,
-;
-//	printk("irq: %d, latency: %d, memory: 0x%lx\n",
-;
+	printk(KERN_INFO "bt878(%d): Bt%x (rev %d) at %02x:%02x.%x, ",
+	       bt878_num, bt->id, bt->revision, dev->bus->number,
+	       PCI_SLOT(dev->devfn), PCI_FUNC(dev->devfn));
+	printk("irq: %d, latency: %d, memory: 0x%lx\n",
+	       bt->irq, lat, bt->bt878_adr);
 
 
 #if defined(__powerpc__)
@@ -492,14 +492,14 @@ static int __devinit bt878_probe(struct pci_dev *dev,
 			     IRQF_SHARED | IRQF_DISABLED, "bt878",
 			     (void *) bt);
 	if (result == -EINVAL) {
-//		printk(KERN_ERR "bt878(%d): Bad irq number or handler\n",
-;
+		printk(KERN_ERR "bt878(%d): Bad irq number or handler\n",
+		       bt878_num);
 		goto fail1;
 	}
 	if (result == -EBUSY) {
-//		printk(KERN_ERR
-//		       "bt878(%d): IRQ %d busy, change your PnP config in BIOS\n",
-;
+		printk(KERN_ERR
+		       "bt878(%d): IRQ %d busy, change your PnP config in BIOS\n",
+		       bt878_num, bt->irq);
 		goto fail1;
 	}
 	if (result < 0)
@@ -509,7 +509,7 @@ static int __devinit bt878_probe(struct pci_dev *dev,
 	pci_set_drvdata(dev, bt);
 
 	if ((result = bt878_mem_alloc(bt))) {
-;
+		printk(KERN_ERR "bt878: failed to allocate memory!\n");
 		goto fail2;
 	}
 
@@ -535,7 +535,7 @@ static void __devexit bt878_remove(struct pci_dev *pci_dev)
 	struct bt878 *bt = pci_get_drvdata(pci_dev);
 
 	if (bt878_verbose)
-;
+		printk(KERN_INFO "bt878(%d): unloading\n", bt->nr);
 
 	/* turn off all capturing, DMA and IRQs */
 	btand(~0x13, BT878_AGPIO_DMA_CTL);
@@ -551,7 +551,7 @@ static void __devexit bt878_remove(struct pci_dev *pci_dev)
 	pci_write_config_byte(bt->dev, PCI_COMMAND, command);
 
 	free_irq(bt->irq, bt);
-;
+	printk(KERN_DEBUG "bt878_mem: 0x%p.\n", bt->bt878_mem);
 	if (bt->bt878_mem)
 		iounmap(bt->bt878_mem);
 
@@ -584,10 +584,10 @@ static int __init bt878_init_module(void)
 {
 	bt878_num = 0;
 
-//	printk(KERN_INFO "bt878: AUDIO driver version %d.%d.%d loaded\n",
-//	       (BT878_VERSION_CODE >> 16) & 0xff,
-//	       (BT878_VERSION_CODE >> 8) & 0xff,
-;
+	printk(KERN_INFO "bt878: AUDIO driver version %d.%d.%d loaded\n",
+	       (BT878_VERSION_CODE >> 16) & 0xff,
+	       (BT878_VERSION_CODE >> 8) & 0xff,
+	       BT878_VERSION_CODE & 0xff);
 
 	return pci_register_driver(&bt878_pci_driver);
 }

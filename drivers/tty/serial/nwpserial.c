@@ -400,7 +400,7 @@ int nwpserial_register_port(struct uart_port *port)
 
 		up->dcr_host = dcr_map(dn, dcr_base, dcr_len);
 		if (!DCR_MAP_OK(up->dcr_host)) {
-;
+			printk(KERN_ERR "Cannot map DCR resources for NWPSERIAL");
 			goto out;
 		}
 	}
@@ -467,7 +467,7 @@ static int __init nwpserial_console_init(void)
 
 	up->dcr_host = dcr_map(dn, dcr_base, dcr_len);
 	if (!DCR_MAP_OK(up->dcr_host)) {
-;
+		printk("Cannot map DCR resources for SERIAL");
 		return -1;
 	}
 	register_console(&nwpserial_console);

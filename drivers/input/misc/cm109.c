@@ -855,23 +855,23 @@ static int __init cm109_select_keymap(void)
 	/* Load the phone keymap */
 	if (!strcasecmp(phone, "kip1000")) {
 		keymap = keymap_kip1000;
-//		printk(KERN_INFO KBUILD_MODNAME ": "
-;
+		printk(KERN_INFO KBUILD_MODNAME ": "
+			"Keymap for Komunikate KIP1000 phone loaded\n");
 	} else if (!strcasecmp(phone, "gtalk")) {
 		keymap = keymap_gtalk;
-//		printk(KERN_INFO KBUILD_MODNAME ": "
-;
+		printk(KERN_INFO KBUILD_MODNAME ": "
+			"Keymap for Genius G-talk phone loaded\n");
 	} else if (!strcasecmp(phone, "usbph01")) {
 		keymap = keymap_usbph01;
-//		printk(KERN_INFO KBUILD_MODNAME ": "
-;
+		printk(KERN_INFO KBUILD_MODNAME ": "
+			"Keymap for Allied-Telesis Corega USBPH01 phone loaded\n");
 	} else if (!strcasecmp(phone, "atcom")) {
 		keymap = keymap_atcom;
-//		printk(KERN_INFO KBUILD_MODNAME ": "
-;
+		printk(KERN_INFO KBUILD_MODNAME ": "
+			"Keymap for ATCom AU-100 phone loaded\n");
 	} else {
-//		printk(KERN_ERR KBUILD_MODNAME ": "
-;
+		printk(KERN_ERR KBUILD_MODNAME ": "
+			"Unsupported phone: %s\n", phone);
 		return -EINVAL;
 	}
 
@@ -890,8 +890,8 @@ static int __init cm109_init(void)
 	if (err)
 		return err;
 
-//	printk(KERN_INFO KBUILD_MODNAME ": "
-;
+	printk(KERN_INFO KBUILD_MODNAME ": "
+		DRIVER_DESC ": " DRIVER_VERSION " (C) " DRIVER_AUTHOR "\n");
 
 	return 0;
 }

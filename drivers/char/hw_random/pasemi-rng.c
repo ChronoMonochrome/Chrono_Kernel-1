@@ -112,7 +112,7 @@ static int __devinit rng_probe(struct platform_device *ofdev)
 
 	pasemi_rng.priv = (unsigned long)rng_regs;
 
-;
+	printk(KERN_INFO "Registering PA Semi RNG\n");
 
 	err = hwrng_register(&pasemi_rng);
 

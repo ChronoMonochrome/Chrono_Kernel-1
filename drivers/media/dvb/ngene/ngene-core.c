@@ -130,16 +130,16 @@ static void demux_tasklet(unsigned long data)
 					chan->HWState = HWSTATE_RUN;
 				}
 			} else {
-;
+				printk(KERN_ERR DEVICE_NAME ": OOPS\n");
 				if (chan->HWState == HWSTATE_RUN) {
 					Cur->ngeneBuffer.SR.Flags &= ~0x40;
 					break;	/* Stop processing stream */
 				}
 			}
 			if (chan->AudioDTOUpdated) {
-//				printk(KERN_INFO DEVICE_NAME
-//				       ": Update AudioDTO = %d\n",
-;
+				printk(KERN_INFO DEVICE_NAME
+				       ": Update AudioDTO = %d\n",
+				       chan->AudioDTOValue);
 				Cur->ngeneBuffer.SR.DTOUpdate =
 					chan->AudioDTOValue;
 				chan->AudioDTOUpdated = 0;
@@ -219,7 +219,7 @@ static irqreturn_t irq_handler(int irq, void *dev_id)
 				*(dev->EventBuffer);
 			dev->EventQueueWriteIndex = nextWriteIndex;
 		} else {
-;
+			printk(KERN_ERR DEVICE_NAME ": event overflow\n");
 			dev->EventQueueOverflowCount += 1;
 			dev->EventQueueOverflowFlag = 1;
 		}
@@ -258,22 +258,22 @@ static void dump_command_io(struct ngene *dev)
 	u8 buf[8], *b;
 
 	ngcpyfrom(buf, HOST_TO_NGENE, 8);
-//	printk(KERN_ERR "host_to_ngene (%04x): %02x %02x %02x %02x %02x %02x %02x %02x\n",
-//		HOST_TO_NGENE, buf[0], buf[1], buf[2], buf[3],
-;
+	printk(KERN_ERR "host_to_ngene (%04x): %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		HOST_TO_NGENE, buf[0], buf[1], buf[2], buf[3],
+		buf[4], buf[5], buf[6], buf[7]);
 
 	ngcpyfrom(buf, NGENE_TO_HOST, 8);
-//	printk(KERN_ERR "ngene_to_host (%04x): %02x %02x %02x %02x %02x %02x %02x %02x\n",
-//		NGENE_TO_HOST, buf[0], buf[1], buf[2], buf[3],
-;
+	printk(KERN_ERR "ngene_to_host (%04x): %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		NGENE_TO_HOST, buf[0], buf[1], buf[2], buf[3],
+		buf[4], buf[5], buf[6], buf[7]);
 
 	b = dev->hosttongene;
-//	printk(KERN_ERR "dev->hosttongene (%p): %02x %02x %02x %02x %02x %02x %02x %02x\n",
-;
+	printk(KERN_ERR "dev->hosttongene (%p): %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		b, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
 
 	b = dev->ngenetohost;
-//	printk(KERN_ERR "dev->ngenetohost (%p): %02x %02x %02x %02x %02x %02x %02x %02x\n",
-;
+	printk(KERN_ERR "dev->ngenetohost (%p): %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		b, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
 }
 
 static int ngene_command_mutex(struct ngene *dev, struct ngene_command *com)
@@ -325,9 +325,9 @@ static int ngene_command_mutex(struct ngene *dev, struct ngene_command *com)
 	if (!ret) {
 		/*ngwritel(0, FORCE_NMI);*/
 
-//		printk(KERN_ERR DEVICE_NAME
-//		       ": Command timeout cmd=%02x prev=%02x\n",
-;
+		printk(KERN_ERR DEVICE_NAME
+		       ": Command timeout cmd=%02x prev=%02x\n",
+		       com->cmd.hdr.Opcode, dev->prev_cmd);
 		dump_command_io(dev);
 		return -1;
 	}
@@ -585,10 +585,10 @@ static int ngene_command_stream_control(struct ngene *dev, u8 stream,
 	com.in_len = sizeof(struct FW_STREAM_CONTROL);
 	com.out_len = 0;
 
-//	dprintk(KERN_INFO DEVICE_NAME
-//		": Stream=%02x, Control=%02x, Mode=%02x\n",
-//		com.cmd.StreamControl.Stream, com.cmd.StreamControl.Control,
-;
+	dprintk(KERN_INFO DEVICE_NAME
+		": Stream=%02x, Control=%02x, Mode=%02x\n",
+		com.cmd.StreamControl.Stream, com.cmd.StreamControl.Control,
+		com.cmd.StreamControl.Mode);
 
 	chan->Mode = mode;
 
@@ -719,18 +719,18 @@ void set_transfer(struct ngene_channel *chan, int state)
 	int ret;
 
 	/*
-;
+	printk(KERN_INFO DEVICE_NAME ": st %d\n", state);
 	msleep(100);
 	*/
 
 	if (state) {
 		if (chan->running) {
-;
+			printk(KERN_INFO DEVICE_NAME ": already running\n");
 			return;
 		}
 	} else {
 		if (!chan->running) {
-;
+			printk(KERN_INFO DEVICE_NAME ": already stopped\n");
 			return;
 		}
 	}
@@ -767,8 +767,8 @@ void set_transfer(struct ngene_channel *chan, int state)
 	if (!ret)
 		chan->running = state;
 	else
-//		printk(KERN_ERR DEVICE_NAME ": set_transfer %d failed\n",
-;
+		printk(KERN_ERR DEVICE_NAME ": set_transfer %d failed\n",
+		       state);
 	if (!state) {
 		spin_lock_irq(&chan->state_lock);
 		chan->pBufferExchange = NULL;
@@ -1234,8 +1234,8 @@ static void ngene_init(struct ngene *dev)
 	dev->icounts = ngreadl(NGENE_INT_COUNTS);
 
 	dev->device_version = ngreadl(DEV_VER) & 0x0f;
-//	printk(KERN_INFO DEVICE_NAME ": Device version %d\n",
-;
+	printk(KERN_INFO DEVICE_NAME ": Device version %d\n",
+	       dev->device_version);
 }
 
 static int ngene_load_firm(struct ngene *dev)
@@ -1273,21 +1273,21 @@ static int ngene_load_firm(struct ngene *dev)
 	}
 
 	if (request_firmware(&fw, fw_name, &dev->pci_dev->dev) < 0) {
-//		printk(KERN_ERR DEVICE_NAME
-;
-//		printk(KERN_INFO DEVICE_NAME
-;
+		printk(KERN_ERR DEVICE_NAME
+			": Could not load firmware file %s.\n", fw_name);
+		printk(KERN_INFO DEVICE_NAME
+			": Copy %s to your hotplug directory!\n", fw_name);
 		return -1;
 	}
 	if (size == 0)
 		size = fw->size;
 	if (size != fw->size) {
-//		printk(KERN_ERR DEVICE_NAME
-;
+		printk(KERN_ERR DEVICE_NAME
+			": Firmware %s has invalid size!", fw_name);
 		err = -1;
 	} else {
-//		printk(KERN_INFO DEVICE_NAME
-;
+		printk(KERN_INFO DEVICE_NAME
+			": Loading firmware file %s.\n", fw_name);
 		ngene_fw = (u8 *) fw->data;
 		err = ngene_command_load_firmware(dev, ngene_fw, size);
 	}
@@ -1386,8 +1386,8 @@ static int ngene_start(struct ngene *dev)
 		free_irq(dev->pci_dev->irq, dev);
 		stat = pci_enable_msi(dev->pci_dev);
 		if (stat) {
-//			printk(KERN_INFO DEVICE_NAME
-;
+			printk(KERN_INFO DEVICE_NAME
+				": MSI not available\n");
 			flags = IRQF_SHARED;
 		} else {
 			flags = 0;
@@ -1617,7 +1617,7 @@ void ngene_shutdown(struct pci_dev *pdev)
 	if (!dev || !shutdown_workaround)
 		return;
 
-;
+	printk(KERN_INFO DEVICE_NAME ": shutdown workaround...\n");
 	ngene_unlink(dev);
 	pci_disable_device(pdev);
 }
@@ -1659,7 +1659,7 @@ int __devinit ngene_probe(struct pci_dev *pci_dev,
 
 	dev->pci_dev = pci_dev;
 	dev->card_info = (struct ngene_info *)id->driver_data;
-;
+	printk(KERN_INFO DEVICE_NAME ": Found %s\n", dev->card_info->name);
 
 	pci_set_drvdata(pci_dev, dev);
 

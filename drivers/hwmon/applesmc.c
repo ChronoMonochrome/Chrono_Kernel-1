@@ -907,7 +907,7 @@ static void applesmc_brightness_set(struct led_classdev *led_cdev,
 	ret = queue_work(applesmc_led_wq, &backlight_work);
 
 	if (debug && (!ret))
-;
+		printk(KERN_DEBUG "applesmc: work was already on the queue.\n");
 }
 
 static ssize_t applesmc_key_count_show(struct device *dev,

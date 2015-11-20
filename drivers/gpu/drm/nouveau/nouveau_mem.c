@@ -822,9 +822,9 @@ nouveau_vram_manager_debug(struct ttm_mem_type_manager *man, const char *prefix)
 
 	mutex_lock(&mm->mutex);
 	list_for_each_entry(r, &mm->nodes, nl_entry) {
-//		printk(KERN_DEBUG "%s %d: 0x%010llx 0x%010llx\n",
-//		       prefix, r->type, ((u64)r->offset << 12),
-;
+		printk(KERN_DEBUG "%s %d: 0x%010llx 0x%010llx\n",
+		       prefix, r->type, ((u64)r->offset << 12),
+		       (((u64)r->offset + r->length) << 12));
 
 		total += r->length;
 		if (!r->type)
@@ -832,10 +832,10 @@ nouveau_vram_manager_debug(struct ttm_mem_type_manager *man, const char *prefix)
 	}
 	mutex_unlock(&mm->mutex);
 
-//	printk(KERN_DEBUG "%s  total: 0x%010llx free: 0x%010llx\n",
-;
-//	printk(KERN_DEBUG "%s  block: 0x%08x\n",
-;
+	printk(KERN_DEBUG "%s  total: 0x%010llx free: 0x%010llx\n",
+	       prefix, (u64)total << 12, (u64)free << 12);
+	printk(KERN_DEBUG "%s  block: 0x%08x\n",
+	       prefix, mm->block_size << 12);
 }
 
 const struct ttm_mem_type_manager_func nouveau_vram_manager = {

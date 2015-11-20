@@ -375,9 +375,9 @@ static int DoC_IdentChip(struct DiskOnChip *doc, int floor, int chip)
 		if (doc->mfr == mfr && doc->id == id)
 			return 1;	/* This is the same as the first */
 		else
-//			printk(KERN_WARNING
-//			       "Flash chip at floor %d, chip %d is different:\n",
-;
+			printk(KERN_WARNING
+			       "Flash chip at floor %d, chip %d is different:\n",
+			       floor, chip);
 	}
 
 	/* Print and store the manufacturer and ID codes. */
@@ -388,10 +388,10 @@ static int DoC_IdentChip(struct DiskOnChip *doc, int floor, int chip)
 				if (nand_manuf_ids[j].id == mfr)
 					break;
 			}
-//			printk(KERN_INFO
-//			       "Flash chip found: Manufacturer ID: %2.2X, "
-//			       "Chip ID: %2.2X (%s:%s)\n", mfr, id,
-;
+			printk(KERN_INFO
+			       "Flash chip found: Manufacturer ID: %2.2X, "
+			       "Chip ID: %2.2X (%s:%s)\n", mfr, id,
+			       nand_manuf_ids[j].name, nand_flash_ids[i].name);
 			if (!doc->mfr) {
 				doc->mfr = mfr;
 				doc->id = id;
@@ -409,10 +409,10 @@ static int DoC_IdentChip(struct DiskOnChip *doc, int floor, int chip)
 
 
 	/* We haven't fully identified the chip. Print as much as we know. */
-//	printk(KERN_WARNING "Unknown flash chip found: %2.2X %2.2X\n",
-;
+	printk(KERN_WARNING "Unknown flash chip found: %2.2X %2.2X\n",
+	       id, mfr);
 
-;
+	printk(KERN_WARNING "Please report to dwmw2@infradead.org\n");
 	return 0;
 }
 
@@ -444,14 +444,14 @@ static void DoC_ScanChips(struct DiskOnChip *this, int maxchips)
 
 	/* If there are none at all that we recognise, bail */
 	if (!this->numchips) {
-;
+		printk(KERN_NOTICE "No flash chips recognised.\n");
 		return;
 	}
 
 	/* Allocate an array to hold the information for each chip */
 	this->chips = kmalloc(sizeof(struct Nand) * this->numchips, GFP_KERNEL);
 	if (!this->chips) {
-;
+		printk(KERN_NOTICE "No memory for allocating chip info structures\n");
 		return;
 	}
 
@@ -472,8 +472,8 @@ static void DoC_ScanChips(struct DiskOnChip *this, int maxchips)
 	/* Calculate and print the total size of the device */
 	this->totlen = this->numchips * (1 << this->chipshift);
 
-//	printk(KERN_INFO "%d flash chips found. Total DiskOnChip size: %ld MiB\n",
-;
+	printk(KERN_INFO "%d flash chips found. Total DiskOnChip size: %ld MiB\n",
+	       this->numchips, this->totlen >> 20);
 }
 
 static int DoC2k_is_alias(struct DiskOnChip *doc1, struct DiskOnChip *doc2)
@@ -521,9 +521,9 @@ void DoC2k_init(struct mtd_info *mtd)
 
 	while (old) {
 		if (DoC2k_is_alias(old, this)) {
-//			printk(KERN_NOTICE
-//			       "Ignoring DiskOnChip 2000 at 0x%lX - already configured\n",
-;
+			printk(KERN_NOTICE
+			       "Ignoring DiskOnChip 2000 at 0x%lX - already configured\n",
+			       this->physadr);
 			iounmap(this->virtadr);
 			kfree(mtd);
 			return;
@@ -554,14 +554,14 @@ void DoC2k_init(struct mtd_info *mtd)
 		maxchips = MAX_CHIPS_MIL;
 		break;
 	default:
-;
+		printk("Unknown ChipID 0x%02x\n", this->ChipID);
 		kfree(mtd);
 		iounmap(this->virtadr);
 		return;
 	}
 
-//	printk(KERN_NOTICE "%s found at address 0x%lX\n", mtd->name,
-;
+	printk(KERN_NOTICE "%s found at address 0x%lX\n", mtd->name,
+	       this->physadr);
 
 	mtd->type = MTD_NANDFLASH;
 	mtd->flags = MTD_CAP_NANDFLASH;
@@ -630,9 +630,9 @@ static int doc_read(struct mtd_info *mtd, loff_t from, size_t len,
 
 		/* The ECC will not be calculated correctly if less than 512 is read */
 		if (len != 0x200)
-//			printk(KERN_WARNING
-//			       "ECC needs a full sector read (adr: %lx size %lx)\n",
-;
+			printk(KERN_WARNING
+			       "ECC needs a full sector read (adr: %lx size %lx)\n",
+			       (long) from, (long) len);
 
 		/* printk("DoC_Read (adr: %lx size %lx)\n", (long) from, (long) len); */
 
@@ -697,7 +697,7 @@ static int doc_read(struct mtd_info *mtd, loff_t from, size_t len,
 			int nb_errors;
 			/* There was an ECC error */
 #ifdef ECC_DEBUG
-;
+			printk(KERN_ERR "DiskOnChip ECC Error: Read at %lx\n", (long)from);
 #endif
 			/* Read the ECC syndrom through the DiskOnChip ECC
 			   logic.  These syndrome will be all ZERO when there
@@ -709,7 +709,7 @@ static int doc_read(struct mtd_info *mtd, loff_t from, size_t len,
 			nb_errors = doc_decode_ecc(buf, syndrome);
 
 #ifdef ECC_DEBUG
-;
+			printk(KERN_ERR "Errors corrected: %x\n", nb_errors);
 #endif
 			if (nb_errors < 0) {
 				/* We return error, but have actually done the
@@ -722,9 +722,9 @@ static int doc_read(struct mtd_info *mtd, loff_t from, size_t len,
 		}
 
 #ifdef PSYCHO_DEBUG
-//		printk(KERN_DEBUG "ECC DATA at %lxB: %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X\n",
-//		       (long)from, eccbuf[0], eccbuf[1], eccbuf[2],
-;
+		printk(KERN_DEBUG "ECC DATA at %lxB: %2.2X %2.2X %2.2X %2.2X %2.2X %2.2X\n",
+		       (long)from, eccbuf[0], eccbuf[1], eccbuf[2],
+		       eccbuf[3], eccbuf[4], eccbuf[5]);
 #endif
 
 		/* disable the ECC engine */
@@ -777,9 +777,9 @@ static int doc_write(struct mtd_info *mtd, loff_t to, size_t len,
 		/* The ECC will not be calculated correctly if less than 512 is written */
 /* DBB-
 		if (len != 0x200 && eccbuf)
-//			printk(KERN_WARNING
-//			       "ECC needs a full sector write (adr: %lx size %lx)\n",
-;
+			printk(KERN_WARNING
+			       "ECC needs a full sector write (adr: %lx size %lx)\n",
+			       (long) to, (long) len);
    -DBB */
 
 		/* printk("DoC_Write (adr: %lx size %lx)\n", (long) to, (long) len); */
@@ -825,7 +825,7 @@ static int doc_write(struct mtd_info *mtd, loff_t to, size_t len,
 			DoC_Delay(this, 2);
 
 			if (ReadDOC_(docptr, this->ioreg) & 1) {
-;
+				printk(KERN_ERR "Error programming flash\n");
 				/* Error in programming */
 				*retlen = 0;
 				mutex_unlock(&this->lock);
@@ -883,7 +883,7 @@ static int doc_write(struct mtd_info *mtd, loff_t to, size_t len,
 		}
 
 		if (status & 1) {
-;
+			printk(KERN_ERR "Error programming flash\n");
 			/* Error in programming */
 			*retlen = 0;
 			mutex_unlock(&this->lock);
@@ -995,8 +995,8 @@ static int doc_write_oob_nolock(struct mtd_info *mtd, loff_t ofs, size_t len,
 	volatile int dummy;
 	int status;
 
-//	//      printk("doc_write_oob(%lx, %d): %2.2X %2.2X %2.2X %2.2X ... %2.2X %2.2X .. %2.2X %2.2X\n",(long)ofs, len,
-;
+	//      printk("doc_write_oob(%lx, %d): %2.2X %2.2X %2.2X %2.2X ... %2.2X %2.2X .. %2.2X %2.2X\n",(long)ofs, len,
+	//   buf[0], buf[1], buf[2], buf[3], buf[8], buf[9], buf[14],buf[15]);
 
 	/* Find the chip which is to be used and select it */
 	if (this->curfloor != mychip->floor) {
@@ -1052,7 +1052,7 @@ static int doc_write_oob_nolock(struct mtd_info *mtd, loff_t ofs, size_t len,
 		}
 
 		if (status & 1) {
-;
+			printk(KERN_ERR "Error programming oob data\n");
 			/* There was an error */
 			*retlen = 0;
 			return -EIO;
@@ -1077,7 +1077,7 @@ static int doc_write_oob_nolock(struct mtd_info *mtd, loff_t ofs, size_t len,
 	}
 
 	if (status & 1) {
-;
+		printk(KERN_ERR "Error programming oob data\n");
 		/* There was an error */
 		*retlen = 0;
 		return -EIO;
@@ -1152,7 +1152,7 @@ static int doc_erase(struct mtd_info *mtd, struct erase_info *instr)
 		}
 
 		if (status & 1) {
-;
+			printk(KERN_ERR "Error erasing at 0x%x\n", ofs);
 			/* There was an error */
 			instr->state = MTD_ERASE_FAILED;
 			goto callback;

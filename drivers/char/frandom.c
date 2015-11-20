@@ -122,7 +122,7 @@ void erandom_get_random_bytes(char *buf, size_t count)
 	if (!erandom_seeded) {
 		erandom_seeded = 1;
 		init_rand_state(state, EXTERNAL_SEED);
-;
+		printk(KERN_INFO "frandom: Seeded global generator now (used by erandom)\n");
 	}
 
 	i = state->i;
@@ -310,11 +310,11 @@ static int frandom_init_module(void)
 	   minimal length in init_rand_state().
 	*/
 	if (frandom_bufsize < 256) {
-;
+		printk(KERN_ERR "frandom: Refused to load because frandom_bufsize=%d < 256\n",frandom_bufsize);
 		return -EINVAL;
 	}
 	if ((frandom_chunklimit != 0) && (frandom_chunklimit < 256)) {
-;
+		printk(KERN_ERR "frandom: Refused to load because frandom_chunklimit=%d < 256 and != 0\n",frandom_chunklimit);
 		return -EINVAL;
 	}
 
@@ -337,7 +337,7 @@ static int frandom_init_module(void)
 	frandom_class = class_create(THIS_MODULE, "fastrng");
 	if (IS_ERR(frandom_class)) {
 		result = PTR_ERR(frandom_class);
-;
+		printk(KERN_WARNING "frandom: Failed to register class fastrng\n");
 		goto error0;
 	}
 
@@ -351,20 +351,20 @@ static int frandom_init_module(void)
 	frandom_cdev.owner = THIS_MODULE;
 	result = cdev_add(&frandom_cdev, MKDEV(frandom_major, frandom_minor), 1);
 	if (result) {
-;
+	  printk(KERN_WARNING "frandom: Failed to add cdev for /dev/frandom\n");
 	  goto error1;
 	}
 
 	result = register_chrdev_region(MKDEV(frandom_major, frandom_minor), 1, "/dev/frandom");
 	if (result < 0) {
-;
+		printk(KERN_WARNING "frandom: can't get major/minor %d/%d\n", frandom_major, frandom_minor);
 	  goto error2;
 	}
 
 	frandom_device = device_create(frandom_class, NULL, MKDEV(frandom_major, frandom_minor), NULL, "frandom");
 
 	if (IS_ERR(frandom_device)) {
-;
+		printk(KERN_WARNING "frandom: Failed to create frandom device\n");
 		goto error3;
 	}
 
@@ -372,20 +372,20 @@ static int frandom_init_module(void)
 	erandom_cdev.owner = THIS_MODULE;
 	result = cdev_add(&erandom_cdev, MKDEV(frandom_major, erandom_minor), 1);
 	if (result) {
-;
+	  printk(KERN_WARNING "frandom: Failed to add cdev for /dev/erandom\n");
 	  goto error4;
 	}
 
 	result = register_chrdev_region(MKDEV(frandom_major, erandom_minor), 1, "/dev/erandom");
 	if (result < 0) {
-;
+		printk(KERN_WARNING "frandom: can't get major/minor %d/%d\n", frandom_major, erandom_minor);
 		goto error5;
 	}
 
 	erandom_device = device_create(frandom_class, NULL, MKDEV(frandom_major, erandom_minor), NULL, "erandom");
 
 	if (IS_ERR(erandom_device)) {
-;
+		printk(KERN_WARNING "frandom: Failed to create erandom device\n");
 		goto error6;
 	}
 	return 0; /* succeed */

@@ -558,26 +558,26 @@ void cx23885_card_list(struct cx23885_dev *dev)
 
 	if (0 == dev->pci->subsystem_vendor &&
 	    0 == dev->pci->subsystem_device) {
-//		printk(KERN_INFO
-//			"%s: Board has no valid PCIe Subsystem ID and can't\n"
-//		       "%s: be autodetected. Pass card=<n> insmod option\n"
-//		       "%s: to workaround that. Redirect complaints to the\n"
-//		       "%s: vendor of the TV card.  Best regards,\n"
-//		       "%s:         -- tux\n",
-;
+		printk(KERN_INFO
+			"%s: Board has no valid PCIe Subsystem ID and can't\n"
+		       "%s: be autodetected. Pass card=<n> insmod option\n"
+		       "%s: to workaround that. Redirect complaints to the\n"
+		       "%s: vendor of the TV card.  Best regards,\n"
+		       "%s:         -- tux\n",
+		       dev->name, dev->name, dev->name, dev->name, dev->name);
 	} else {
-//		printk(KERN_INFO
-//			"%s: Your board isn't known (yet) to the driver.\n"
-//		       "%s: Try to pick one of the existing card configs via\n"
-//		       "%s: card=<n> insmod option.  Updating to the latest\n"
-//		       "%s: version might help as well.\n",
-;
+		printk(KERN_INFO
+			"%s: Your board isn't known (yet) to the driver.\n"
+		       "%s: Try to pick one of the existing card configs via\n"
+		       "%s: card=<n> insmod option.  Updating to the latest\n"
+		       "%s: version might help as well.\n",
+		       dev->name, dev->name, dev->name, dev->name);
 	}
-//	printk(KERN_INFO "%s: Here is a list of valid choices for the card=<n> insmod option:\n",
-;
+	printk(KERN_INFO "%s: Here is a list of valid choices for the card=<n> insmod option:\n",
+	       dev->name);
 	for (i = 0; i < cx23885_bcount; i++)
-//		printk(KERN_INFO "%s:    card=%d -> %s\n",
-;
+		printk(KERN_INFO "%s:    card=%d -> %s\n",
+		       dev->name, i, cx23885_boards[i].name);
 }
 
 static void hauppauge_eeprom(struct cx23885_dev *dev, u8 *eeprom_data)
@@ -719,14 +719,14 @@ static void hauppauge_eeprom(struct cx23885_dev *dev, u8 *eeprom_data)
 			Dual channel ATSC and Basic analog */
 		break;
 	default:
-//		printk(KERN_WARNING "%s: warning: "
-//			"unknown hauppauge model #%d\n",
-;
+		printk(KERN_WARNING "%s: warning: "
+			"unknown hauppauge model #%d\n",
+			dev->name, tv.model);
 		break;
 	}
 
-//	printk(KERN_INFO "%s: hauppauge eeprom: model=%d\n",
-;
+	printk(KERN_INFO "%s: hauppauge eeprom: model=%d\n",
+			dev->name, tv.model);
 }
 
 int cx23885_tuner_callback(void *priv, int component, int command, int arg)
@@ -739,8 +739,8 @@ int cx23885_tuner_callback(void *priv, int component, int command, int arg)
 		return 0;
 
 	if (command != 0) {
-//		printk(KERN_ERR "%s(): Unknown command 0x%x.\n",
-;
+		printk(KERN_ERR "%s(): Unknown command 0x%x.\n",
+			__func__, command);
 		return -EINVAL;
 	}
 
@@ -1393,9 +1393,9 @@ void cx23885_card_setup(struct cx23885_dev *dev)
 
 		ret = request_firmware(&fw, filename, &dev->pci->dev);
 		if (ret != 0)
-//			printk(KERN_ERR "did not find the firmware file. (%s) "
-//			"Please see linux/Documentation/dvb/ for more details "
-;
+			printk(KERN_ERR "did not find the firmware file. (%s) "
+			"Please see linux/Documentation/dvb/ for more details "
+			"on firmware-problems.", filename);
 		else
 			altera_init(&netup_config, fw);
 

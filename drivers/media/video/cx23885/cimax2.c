@@ -67,7 +67,7 @@ MODULE_PARM_DESC(ci_irq_enable, "Enable IRQ from CAM");
 #define ci_dbg_print(args...) \
 	do { \
 		if (ci_dbg) \
-;
+			printk(KERN_DEBUG args); \
 	} while (0)
 
 #define ci_irq_flags() (ci_irq_enable ? NETUP_IRQ_IRQAM : 0)

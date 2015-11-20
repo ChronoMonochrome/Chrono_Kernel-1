@@ -332,8 +332,8 @@ static u32 omap_vout_uservirt_to_phys(u32 virtp)
 			physp =  __pa(page_address(&pages[0]) +
 					(virtp & ~PAGE_MASK));
 		} else {
-//			printk(KERN_WARNING VOUT_NAME
-;
+			printk(KERN_WARNING VOUT_NAME
+					"get_user_pages failed\n");
 			return 0;
 		}
 	}
@@ -874,12 +874,12 @@ void omap_vout_isr(void *arg, unsigned int irqstatus)
 		/* First save the configuration in ovelray structure */
 		ret = omapvid_init(vout, addr);
 		if (ret)
-//			printk(KERN_ERR VOUT_NAME
-;
+			printk(KERN_ERR VOUT_NAME
+					"failed to set overlay info\n");
 		/* Enable the pipeline and set the Go bit */
 		ret = omapvid_apply_changes(vout);
 		if (ret)
-;
+			printk(KERN_ERR VOUT_NAME "failed to change mode\n");
 	} else {
 
 		if (vout->first_int) {
@@ -924,13 +924,13 @@ void omap_vout_isr(void *arg, unsigned int irqstatus)
 			/* First save the configuration in ovelray structure */
 			ret = omapvid_init(vout, addr);
 			if (ret)
-//				printk(KERN_ERR VOUT_NAME
-;
+				printk(KERN_ERR VOUT_NAME
+						"failed to set overlay info\n");
 			/* Enable the pipeline and set the Go bit */
 			ret = omapvid_apply_changes(vout);
 			if (ret)
-//				printk(KERN_ERR VOUT_NAME
-;
+				printk(KERN_ERR VOUT_NAME
+						"failed to change mode\n");
 		}
 
 	}
@@ -2237,8 +2237,8 @@ static int __init omap_vout_setup_video_data(struct omap_vout_device *vout)
 	vfd = vout->vfd = video_device_alloc();
 
 	if (!vfd) {
-//		printk(KERN_ERR VOUT_NAME ": could not allocate"
-;
+		printk(KERN_ERR VOUT_NAME ": could not allocate"
+				" video device struct\n");
 		return -ENOMEM;
 	}
 	vfd->release = video_device_release;
@@ -2621,7 +2621,7 @@ static struct platform_driver omap_vout_driver = {
 static int __init omap_vout_init(void)
 {
 	if (platform_driver_register(&omap_vout_driver) != 0) {
-;
+		printk(KERN_ERR VOUT_NAME ":Could not register Video driver\n");
 		return -EINVAL;
 	}
 	return 0;

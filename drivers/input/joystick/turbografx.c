@@ -167,21 +167,21 @@ static struct tgfx __init *tgfx_probe(int parport, int *n_buttons, int n_devs)
 
 	pp = parport_find_number(parport);
 	if (!pp) {
-;
+		printk(KERN_ERR "turbografx.c: no such parport\n");
 		err = -EINVAL;
 		goto err_out;
 	}
 
 	pd = parport_register_device(pp, "turbografx", NULL, NULL, NULL, PARPORT_DEV_EXCL, NULL);
 	if (!pd) {
-;
+		printk(KERN_ERR "turbografx.c: parport busy already - lp.o loaded?\n");
 		err = -EBUSY;
 		goto err_put_pp;
 	}
 
 	tgfx = kzalloc(sizeof(struct tgfx), GFP_KERNEL);
 	if (!tgfx) {
-;
+		printk(KERN_ERR "turbografx.c: Not enough memory\n");
 		err = -ENOMEM;
 		goto err_unreg_pardev;
 	}
@@ -197,14 +197,14 @@ static struct tgfx __init *tgfx_probe(int parport, int *n_buttons, int n_devs)
 			continue;
 
 		if (n_buttons[i] > 6) {
-;
+			printk(KERN_ERR "turbografx.c: Invalid number of buttons %d\n", n_buttons[i]);
 			err = -EINVAL;
 			goto err_unreg_devs;
 		}
 
 		tgfx->dev[i] = input_dev = input_allocate_device();
 		if (!input_dev) {
-;
+			printk(KERN_ERR "turbografx.c: Not enough memory for input device\n");
 			err = -ENOMEM;
 			goto err_unreg_devs;
 		}
@@ -240,7 +240,7 @@ static struct tgfx __init *tgfx_probe(int parport, int *n_buttons, int n_devs)
 	}
 
         if (!tgfx->sticks) {
-;
+		printk(KERN_ERR "turbografx.c: No valid devices specified\n");
 		err = -EINVAL;
 		goto err_free_tgfx;
         }
@@ -286,7 +286,7 @@ static int __init tgfx_init(void)
 			continue;
 
 		if (tgfx_cfg[i].nargs < 2) {
-;
+			printk(KERN_ERR "turbografx.c: at least one joystick must be specified\n");
 			err = -EINVAL;
 			break;
 		}

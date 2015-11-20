@@ -35,45 +35,45 @@
 
 #define EDAC_MOD_STR      "i7300_edac"
 
-//#define i7300_printk(level, fmt, arg...) \
-//	edac_printk(level, "i7300", fmt, ##arg)
-//
-//#define i7300_mc_printk(mci, level, fmt, arg...) \
-//	edac_mc_chipset_printk(mci, level, "i7300", fmt, ##arg)
-//
-///***********************************************
-// * i7300 Limit constants Structs and static vars
-// ***********************************************/
-//
-///*
-// * Memory topology is organized as:
-// *	Branch 0 - 2 channels: channels 0 and 1 (FDB0 PCI dev 21.0)
-// *	Branch 1 - 2 channels: channels 2 and 3 (FDB1 PCI dev 22.0)
-// * Each channel can have to 8 DIMM sets (called as SLOTS)
-// * Slots should generally be filled in pairs
-// *	Except on Single Channel mode of operation
-// *		just slot 0/channel0 filled on this mode
-// *	On normal operation mode, the two channels on a branch should be
-// *		filled together for the same SLOT#
-// * When in mirrored mode, Branch 1 replicate memory at Branch 0, so, the four
-// *		channels on both branches should be filled
-// */
-//
-///* Limits for i7300 */
-//#define MAX_SLOTS		8
-//#define MAX_BRANCHES		2
-//#define MAX_CH_PER_BRANCH	2
-//#define MAX_CHANNELS		(MAX_CH_PER_BRANCH * MAX_BRANCHES)
-//#define MAX_MIR			3
-//
-//#define to_channel(ch, branch)	((((branch)) << 1) | (ch))
-//
-//#define to_csrow(slot, ch, branch)					\
-//		(to_channel(ch, branch) | ((slot) << 2))
-//
-///* Device name and register DID (Device ID) */
-//struct i7300_dev_info {
-;
+#define i7300_printk(level, fmt, arg...) \
+	edac_printk(level, "i7300", fmt, ##arg)
+
+#define i7300_mc_printk(mci, level, fmt, arg...) \
+	edac_mc_chipset_printk(mci, level, "i7300", fmt, ##arg)
+
+/***********************************************
+ * i7300 Limit constants Structs and static vars
+ ***********************************************/
+
+/*
+ * Memory topology is organized as:
+ *	Branch 0 - 2 channels: channels 0 and 1 (FDB0 PCI dev 21.0)
+ *	Branch 1 - 2 channels: channels 2 and 3 (FDB1 PCI dev 22.0)
+ * Each channel can have to 8 DIMM sets (called as SLOTS)
+ * Slots should generally be filled in pairs
+ *	Except on Single Channel mode of operation
+ *		just slot 0/channel0 filled on this mode
+ *	On normal operation mode, the two channels on a branch should be
+ *		filled together for the same SLOT#
+ * When in mirrored mode, Branch 1 replicate memory at Branch 0, so, the four
+ *		channels on both branches should be filled
+ */
+
+/* Limits for i7300 */
+#define MAX_SLOTS		8
+#define MAX_BRANCHES		2
+#define MAX_CH_PER_BRANCH	2
+#define MAX_CHANNELS		(MAX_CH_PER_BRANCH * MAX_BRANCHES)
+#define MAX_MIR			3
+
+#define to_channel(ch, branch)	((((branch)) << 1) | (ch))
+
+#define to_csrow(slot, ch, branch)					\
+		(to_channel(ch, branch) | ((slot) << 2))
+
+/* Device name and register DID (Device ID) */
+struct i7300_dev_info {
+	const char *ctl_name;	/* name for this device */
 	u16 fsb_mapping_errors;	/* DID for the branchmap,control */
 };
 
@@ -414,8 +414,8 @@ static void i7300_process_error_global(struct mem_ctl_info *mci)
 	return;
 
 error_global:
-//	i7300_mc_printk(mci, KERN_EMERG, "%s misc error: %s\n",
-;
+	i7300_mc_printk(mci, KERN_EMERG, "%s misc error: %s\n",
+			is_fatal ? "Fatal" : "NOT fatal", specific);
 }
 
 /**
@@ -967,13 +967,13 @@ static int __devinit i7300_get_devices(struct mem_ctl_info *mci)
 				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
 		if (!pdev) {
 			/* End of list, leave */
-//			i7300_printk(KERN_ERR,
-//				"'system address,Process Bus' "
-//				"device not found:"
-//				"vendor 0x%x device 0x%x ERR funcs "
-//				"(broken BIOS?)\n",
-//				PCI_VENDOR_ID_INTEL,
-;
+			i7300_printk(KERN_ERR,
+				"'system address,Process Bus' "
+				"device not found:"
+				"vendor 0x%x device 0x%x ERR funcs "
+				"(broken BIOS?)\n",
+				PCI_VENDOR_ID_INTEL,
+				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
 			goto error;
 		}
 
@@ -1005,10 +1005,10 @@ static int __devinit i7300_get_devices(struct mem_ctl_info *mci)
 					    PCI_DEVICE_ID_INTEL_I7300_MCH_FB0,
 					    NULL);
 	if (!pvt->pci_dev_2x_0_fbd_branch[0]) {
-//		i7300_printk(KERN_ERR,
-//			"MC: 'BRANCH 0' device not found:"
-//			"vendor 0x%x device 0x%x Func 0 (broken BIOS?)\n",
-;
+		i7300_printk(KERN_ERR,
+			"MC: 'BRANCH 0' device not found:"
+			"vendor 0x%x device 0x%x Func 0 (broken BIOS?)\n",
+			PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_I7300_MCH_FB0);
 		goto error;
 	}
 
@@ -1016,12 +1016,12 @@ static int __devinit i7300_get_devices(struct mem_ctl_info *mci)
 					    PCI_DEVICE_ID_INTEL_I7300_MCH_FB1,
 					    NULL);
 	if (!pvt->pci_dev_2x_0_fbd_branch[1]) {
-//		i7300_printk(KERN_ERR,
-//			"MC: 'BRANCH 1' device not found:"
-//			"vendor 0x%x device 0x%x Func 0 "
-//			"(broken BIOS?)\n",
-//			PCI_VENDOR_ID_INTEL,
-;
+		i7300_printk(KERN_ERR,
+			"MC: 'BRANCH 1' device not found:"
+			"vendor 0x%x device 0x%x Func 0 "
+			"(broken BIOS?)\n",
+			PCI_VENDOR_ID_INTEL,
+			PCI_DEVICE_ID_INTEL_I7300_MCH_FB1);
 		goto error;
 	}
 
@@ -1138,12 +1138,12 @@ static int __devinit i7300_init_one(struct pci_dev *pdev,
 	/* allocating generic PCI control info */
 	i7300_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i7300_pci) {
-//		printk(KERN_WARNING
-//			"%s(): Unable to create PCI control\n",
-;
-//		printk(KERN_WARNING
-//			"%s(): PCI error report via EDAC not setup\n",
-;
+		printk(KERN_WARNING
+			"%s(): Unable to create PCI control\n",
+			__func__);
+		printk(KERN_WARNING
+			"%s(): PCI error report via EDAC not setup\n",
+			__func__);
 	}
 
 	return 0;

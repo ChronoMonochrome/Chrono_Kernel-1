@@ -462,18 +462,18 @@ static int __init pm_qos_power_init(void)
 
 	ret = register_pm_qos_misc(&cpu_dma_pm_qos);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "pm_qos_param: cpu_dma_latency setup failed\n");
 		return ret;
 	}
 	ret = register_pm_qos_misc(&network_lat_pm_qos);
 	if (ret < 0) {
-;
+		printk(KERN_ERR "pm_qos_param: network_latency setup failed\n");
 		return ret;
 	}
 	ret = register_pm_qos_misc(&network_throughput_pm_qos);
 	if (ret < 0)
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+			"pm_qos_param: network_throughput setup failed\n");
 
 	return ret;
 }

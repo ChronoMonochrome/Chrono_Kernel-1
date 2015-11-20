@@ -443,9 +443,9 @@ static int fc_disc_gpn_ft_parse(struct fc_disc *disc, void *buf, size_t len)
 				rdata->ids.port_name = ids.port_name;
 				rdata->disc_id = disc->disc_id;
 			} else {
-//				printk(KERN_WARNING "libfc: Failed to allocate "
-//				       "memory for the newly discovered port "
-;
+				printk(KERN_WARNING "libfc: Failed to allocate "
+				       "memory for the newly discovered port "
+				       "(%6.6x)\n", ids.port_id);
 				error = -ENOMEM;
 			}
 		}

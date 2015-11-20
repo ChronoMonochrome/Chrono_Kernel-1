@@ -1108,8 +1108,8 @@ static void ap_sta_ps_start(struct sta_info *sta)
 	if (!(local->hw.flags & IEEE80211_HW_AP_LINK_PS))
 		drv_sta_notify(local, sdata, STA_NOTIFY_SLEEP, &sta->sta);
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
-//	printk(KERN_DEBUG "%s: STA %pM aid %d enters power save mode\n",
-;
+	printk(KERN_DEBUG "%s: STA %pM aid %d enters power save mode\n",
+	       sdata->name, sta->sta.addr, sta->sta.aid);
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 }
 
@@ -1120,14 +1120,14 @@ static void ap_sta_ps_end(struct sta_info *sta)
 	atomic_dec(&sdata->bss->num_sta_ps);
 
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
-//	printk(KERN_DEBUG "%s: STA %pM aid %d exits power save mode\n",
-;
+	printk(KERN_DEBUG "%s: STA %pM aid %d exits power save mode\n",
+	       sdata->name, sta->sta.addr, sta->sta.aid);
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 
 	if (test_sta_flags(sta, WLAN_STA_PS_DRIVER)) {
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
-//		printk(KERN_DEBUG "%s: STA %pM aid %d driver-ps-blocked\n",
-;
+		printk(KERN_DEBUG "%s: STA %pM aid %d driver-ps-blocked\n",
+		       sdata->name, sta->sta.addr, sta->sta.aid);
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 		return;
 	}
@@ -1280,12 +1280,12 @@ ieee80211_reassemble_add(struct ieee80211_sub_if_data *sdata,
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 		struct ieee80211_hdr *hdr =
 			(struct ieee80211_hdr *) entry->skb_list.next->data;
-//		printk(KERN_DEBUG "%s: RX reassembly removed oldest "
-//		       "fragment entry (idx=%d age=%lu seq=%d last_frag=%d "
-//		       "addr1=%pM addr2=%pM\n",
-//		       sdata->name, idx,
-//		       jiffies - entry->first_frag_time, entry->seq,
-;
+		printk(KERN_DEBUG "%s: RX reassembly removed oldest "
+		       "fragment entry (idx=%d age=%lu seq=%d last_frag=%d "
+		       "addr1=%pM addr2=%pM\n",
+		       sdata->name, idx,
+		       jiffies - entry->first_frag_time, entry->seq,
+		       entry->last_frag, hdr->addr1, hdr->addr2);
 #endif
 		__skb_queue_purge(&entry->skb_list);
 	}
@@ -1696,8 +1696,8 @@ ieee80211_deliver_skb(struct ieee80211_rx_data *rx)
 			 */
 			xmit_skb = skb_copy(skb, GFP_ATOMIC);
 			if (!xmit_skb && net_ratelimit())
-//				printk(KERN_DEBUG "%s: failed to clone "
-;
+				printk(KERN_DEBUG "%s: failed to clone "
+				       "multicast frame\n", dev->name);
 		} else {
 			dsta = sta_info_get(sdata, skb->data);
 			if (dsta) {
@@ -1880,8 +1880,8 @@ ieee80211_rx_h_mesh_fwding(struct ieee80211_rx_data *rx)
 			fwd_skb = skb_copy(skb, GFP_ATOMIC);
 
 			if (!fwd_skb && net_ratelimit())
-//				printk(KERN_DEBUG "%s: failed to clone mesh frame\n",
-;
+				printk(KERN_DEBUG "%s: failed to clone mesh frame\n",
+						   sdata->name);
 			if (!fwd_skb)
 				goto out;
 

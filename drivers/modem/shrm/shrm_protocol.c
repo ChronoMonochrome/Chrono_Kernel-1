@@ -579,7 +579,7 @@ void shm_ca_sleep_req_work(struct kthread_work *work)
 	}
 
 	log_this(40, NULL, 0, NULL, 0);
-;
+	trace_printk("CA_WAKE_ACK\n");
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 		shm_dev->intr_base + GOP_SET_REGISTER_BASE);
 	preempt_enable();
@@ -635,7 +635,7 @@ void shm_ca_wake_req_work(struct kthread_work *work)
 	}
 
 	log_this(40, NULL, 1, NULL, 0);
-;
+	trace_printk("CA_WAKE_ACK\n");
 	/* send ca_wake_ack_interrupt to CMU */
 	writel((1<<GOP_CA_WAKE_ACK_BIT),
 			shm_dev->intr_base + GOP_SET_REGISTER_BASE);
@@ -826,7 +826,7 @@ static void send_ac_msg_pend_notify_0_work(struct kthread_work *work)
 	}
 
 	log_this(251, NULL, 0, NULL, 0);
-;
+	trace_printk("AC COM PEND NOTIF\n");
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_COMMON_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -876,7 +876,7 @@ static void send_ac_msg_pend_notify_1_work(struct kthread_work *work)
 	}
 
 	log_this(252, NULL, 0, NULL, 0);
-;
+	trace_printk("AC AUD PEND NOTIF\n");
 	/* Trigger AcMsgPendingNotification to CMU */
 	writel((1<<GOP_AUDIO_AC_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -1143,7 +1143,7 @@ irqreturn_t ca_wake_irq_handler(int irq, void *ctrlr)
 
 	/* send ca_wake_ack_interrupt to CMU */
 	log_this(40, NULL, 2, NULL, 0);
-;
+	trace_printk("CA_WAKE_ACK\n");
 	writel((1 << GOP_CA_WAKE_ACK_BIT),
 		shrm->intr_base + GOP_SET_REGISTER_BASE);
 
@@ -1292,7 +1292,7 @@ irqreturn_t ca_msg_pending_notif_0_irq_handler(int irq, void *ctrlr)
 	}
 	/* Clear the interrupt */
 	log_this(248, NULL, 0, NULL, 0);
-;
+	trace_printk("CA MSG PEND\n");
 	writel((1 << GOP_COMMON_CA_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_CLEAR_REGISTER_BASE);
 	preempt_enable();
@@ -1337,7 +1337,7 @@ irqreturn_t ca_msg_pending_notif_1_irq_handler(int irq, void *ctrlr)
 	}
 	/* Clear the interrupt */
 	log_this(249, NULL, 0, NULL, 0);
-;
+	trace_printk("CA MSG PEND\n");
 	writel((1<<GOP_AUDIO_CA_MSG_PENDING_NOTIFICATION_BIT),
 			shrm->intr_base+GOP_CLEAR_REGISTER_BASE);
 	preempt_enable();
@@ -1480,7 +1480,7 @@ void ca_msg_read_notification_0(struct shrm_dev *shrm)
 		}
 
 		log_this(253, NULL, 0, NULL, 0);
-;
+		trace_printk("CA COM READ NOTIF\n");
 		/* Trigger CaMsgReadNotification to CMU */
 		writel((1 << GOP_COMMON_CA_READ_NOTIFICATION_BIT),
 			shrm->intr_base + GOP_SET_REGISTER_BASE);
@@ -1522,7 +1522,7 @@ void ca_msg_read_notification_1(struct shrm_dev *shrm)
 		}
 
 		log_this(254, NULL, 0, NULL, 0);
-;
+		trace_printk("CA AUD READ NOTIF\n");
 		/* Trigger CaMsgReadNotification to CMU */
 		writel((1<<GOP_AUDIO_CA_READ_NOTIFICATION_BIT),
 			shrm->intr_base+GOP_SET_REGISTER_BASE);

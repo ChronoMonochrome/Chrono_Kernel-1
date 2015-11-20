@@ -212,7 +212,7 @@ alloc_init_deleg(struct nfs4_client *clp, struct nfs4_stateid *stp, struct svc_f
 	struct nfs4_delegation *dp;
 	struct nfs4_file *fp = stp->st_file;
 
-;
+	dprintk("NFSD alloc_init_deleg\n");
 	/*
 	 * Major work on the lease subsystem (for example, to support
 	 * calbacks on stat) will be required before we can support
@@ -250,7 +250,7 @@ void
 nfs4_put_delegation(struct nfs4_delegation *dp)
 {
 	if (atomic_dec_and_test(&dp->dl_count)) {
-;
+		dprintk("NFSD: freeing dp %p\n",dp);
 		put_nfs4_file(dp->dl_file);
 		kmem_cache_free(deleg_slab, dp);
 		num_delegations--;
@@ -496,7 +496,7 @@ static inline void
 dump_sessionid(const char *fn, struct nfs4_sessionid *sessionid)
 {
 	u32 *ptr = (u32 *)(&sessionid->data[0]);
-;
+	dprintk("%s: %u:%u:%u:%u\n", fn, ptr[0], ptr[1], ptr[2], ptr[3]);
 }
 
 static void
@@ -817,7 +817,7 @@ find_in_sessionid_hashtbl(struct nfs4_sessionid *sessionid)
 		}
 	}
 
-;
+	dprintk("%s: session not found\n", __func__);
 	return NULL;
 }
 
@@ -836,19 +836,19 @@ static inline void
 renew_client_locked(struct nfs4_client *clp)
 {
 	if (is_client_expired(clp)) {
-//		dprintk("%s: client (clientid %08x/%08x) already expired\n",
-//			__func__,
-//			clp->cl_clientid.cl_boot,
-;
+		dprintk("%s: client (clientid %08x/%08x) already expired\n",
+			__func__,
+			clp->cl_clientid.cl_boot,
+			clp->cl_clientid.cl_id);
 		return;
 	}
 
 	/*
 	* Move client to the end to the LRU list.
 	*/
-//	dprintk("renewing client (clientid %08x/%08x)\n", 
-//			clp->cl_clientid.cl_boot, 
-;
+	dprintk("renewing client (clientid %08x/%08x)\n", 
+			clp->cl_clientid.cl_boot, 
+			clp->cl_clientid.cl_id);
 	list_move_tail(&clp->cl_lru, &client_lru);
 	clp->cl_time = get_seconds();
 }
@@ -867,8 +867,8 @@ STALE_CLIENTID(clientid_t *clid)
 {
 	if (clid->cl_boot == boot_time)
 		return 0;
-//	dprintk("NFSD stale clientid (%08x/%08x) boot_time %08lx\n",
-;
+	dprintk("NFSD stale clientid (%08x/%08x) boot_time %08lx\n",
+		clid->cl_boot, clid->cl_id, boot_time);
 	return 1;
 }
 
@@ -1088,7 +1088,7 @@ static int check_name(struct xdr_netobj name)
 	if (name.len == 0) 
 		return 0;
 	if (name.len > NFS4_OPAQUE_LIMIT) {
-;
+		dprintk("NFSD: check_name: name too long(%d)!\n", name.len);
 		return 0;
 	}
 	return 1;
@@ -1111,7 +1111,7 @@ move_to_confirmed(struct nfs4_client *clp)
 	unsigned int idhashval = clientid_hashval(clp->cl_clientid.cl_id);
 	unsigned int strhashval;
 
-;
+	dprintk("NFSD: move_to_confirm nfs4_client %p\n", clp);
 	list_move(&clp->cl_idhash, &conf_id_hashtbl[idhashval]);
 	strhashval = clientstr_hashval(clp->cl_recdir);
 	list_move(&clp->cl_strhash, &conf_str_hashtbl[strhashval]);
@@ -1223,9 +1223,9 @@ gen_callback(struct nfs4_client *clp, struct nfsd4_setclientid *se, struct svc_r
 out_err:
 	conn->cb_addr.ss_family = AF_UNSPEC;
 	conn->cb_addrlen = 0;
-//	dprintk(KERN_INFO "NFSD: this client (clientid %08x/%08x) "
-//		"will not receive delegations\n",
-;
+	dprintk(KERN_INFO "NFSD: this client (clientid %08x/%08x) "
+		"will not receive delegations\n",
+		clp->cl_clientid.cl_boot, clp->cl_clientid.cl_id);
 
 	return;
 }
@@ -1239,7 +1239,7 @@ nfsd4_store_cache_entry(struct nfsd4_compoundres *resp)
 	struct nfsd4_slot *slot = resp->cstate.slot;
 	unsigned int base;
 
-;
+	dprintk("--> %s slot %p\n", __func__, slot);
 
 	slot->sl_opcnt = resp->opcnt;
 	slot->sl_status = resp->cstate.status;
@@ -1271,8 +1271,8 @@ nfsd4_enc_sequence_replay(struct nfsd4_compoundargs *args,
 	struct nfsd4_op *op;
 	struct nfsd4_slot *slot = resp->cstate.slot;
 
-//	dprintk("--> %s resp->opcnt %d cachethis %u \n", __func__,
-;
+	dprintk("--> %s resp->opcnt %d cachethis %u \n", __func__,
+		resp->opcnt, resp->cstate.slot->sl_cachethis);
 
 	/* Encode the replayed sequence operation */
 	op = &args->ops[resp->opcnt - 1];
@@ -1298,7 +1298,7 @@ nfsd4_replay_cache_entry(struct nfsd4_compoundres *resp,
 	struct nfsd4_slot *slot = resp->cstate.slot;
 	__be32 status;
 
-;
+	dprintk("--> %s slot %p\n", __func__, slot);
 
 	/* Either returns 0 or nfserr_retry_uncached */
 	status = nfsd4_enc_sequence_replay(resp->rqstp->rq_argp, resp);
@@ -1345,10 +1345,10 @@ nfsd4_exchange_id(struct svc_rqst *rqstp,
 	struct sockaddr		*sa = svc_addr(rqstp);
 
 	rpc_ntop(sa, addr_str, sizeof(addr_str));
-//	dprintk("%s rqstp=%p exid=%p clname.len=%u clname.data=%p "
-//		"ip_addr=%s flags %x, spa_how %d\n",
-//		__func__, rqstp, exid, exid->clname.len, exid->clname.data,
-;
+	dprintk("%s rqstp=%p exid=%p clname.len=%u clname.data=%p "
+		"ip_addr=%s flags %x, spa_how %d\n",
+		__func__, rqstp, exid, exid->clname.len, exid->clname.data,
+		addr_str, exid->flags, exid->spa_how);
 
 	if (!check_name(exid->clname) || (exid->flags & ~EXCHGID4_FLAG_MASK_A))
 		return nfserr_inval;
@@ -1448,22 +1448,22 @@ out_copy:
 	exid->seqid = 1;
 	nfsd4_set_ex_flags(new, exid);
 
-//	dprintk("nfsd4_exchange_id seqid %d flags %x\n",
-;
+	dprintk("nfsd4_exchange_id seqid %d flags %x\n",
+		new->cl_cs_slot.sl_seqid, new->cl_exchange_flags);
 	status = nfs_ok;
 
 out:
 	nfs4_unlock_state();
 error:
-;
+	dprintk("nfsd4_exchange_id returns %d\n", ntohl(status));
 	return status;
 }
 
 static int
 check_slot_seqid(u32 seqid, u32 slot_seqid, int slot_inuse)
 {
-//	dprintk("%s enter. seqid %d slot_seqid %d\n", __func__, seqid,
-;
+	dprintk("%s enter. seqid %d slot_seqid %d\n", __func__, seqid,
+		slot_seqid);
 
 	/* The slot is in use, and no response has been sent. */
 	if (slot_inuse) {
@@ -1529,16 +1529,16 @@ nfsd4_create_session(struct svc_rqst *rqstp,
 		cs_slot = &conf->cl_cs_slot;
 		status = check_slot_seqid(cr_ses->seqid, cs_slot->sl_seqid, 0);
 		if (status == nfserr_replay_cache) {
-//			dprintk("Got a create_session replay! seqid= %d\n",
-;
+			dprintk("Got a create_session replay! seqid= %d\n",
+				cs_slot->sl_seqid);
 			/* Return the cached reply status */
 			status = nfsd4_replay_create_session(cr_ses, cs_slot);
 			goto out;
 		} else if (cr_ses->seqid != cs_slot->sl_seqid + 1) {
 			status = nfserr_seq_misordered;
-;
-//			dprintk("Expected seqid= %d but got seqid= %d\n",
-;
+			dprintk("Sequence misordered!\n");
+			dprintk("Expected seqid= %d but got seqid= %d\n",
+				cs_slot->sl_seqid, cr_ses->seqid);
 			goto out;
 		}
 	} else if (unconf) {
@@ -1592,7 +1592,7 @@ nfsd4_create_session(struct svc_rqst *rqstp,
 		move_to_confirmed(conf);
 out:
 	nfs4_unlock_state();
-;
+	dprintk("%s returns %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -1690,7 +1690,7 @@ nfsd4_destroy_session(struct svc_rqst *r,
 	nfsd4_put_session(ses);
 	status = nfs_ok;
 out:
-;
+	dprintk("%s returns %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -1772,7 +1772,7 @@ nfsd4_sequence(struct svc_rqst *rqstp,
 		goto out;
 
 	slot = session->se_slots[seq->slotid];
-;
+	dprintk("%s: slotid %d\n", __func__, seq->slotid);
 
 	/* We do not negotiate the number of slots yet, so set the
 	 * maxslots to the session maxreqs which is used to encode
@@ -1815,7 +1815,7 @@ out:
 	}
 	kfree(conn);
 	spin_unlock(&client_lock);
-;
+	dprintk("%s: return %d\n", __func__, ntohl(status));
 	return status;
 }
 
@@ -1896,8 +1896,8 @@ nfsd4_setclientid(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 			char addr_str[INET6_ADDRSTRLEN];
 			rpc_ntop((struct sockaddr *) &conf->cl_addr, addr_str,
 				 sizeof(addr_str));
-//			dprintk("NFSD: setclientid: string in use by client "
-;
+			dprintk("NFSD: setclientid: string in use by client "
+				"at %s\n", addr_str);
 			goto out;
 		}
 	}
@@ -2144,7 +2144,7 @@ nfsd4_init_slabs(void)
 	return 0;
 out_nomem:
 	nfsd4_free_slabs();
-;
+	dprintk("nfsd4: out of memory while initializing nfsv4\n");
 	return -ENOMEM;
 }
 
@@ -2235,7 +2235,7 @@ init_stateid(struct nfs4_stateid *stp, struct nfs4_file *fp, struct nfsd4_open *
 static void
 move_to_close_lru(struct nfs4_stateowner *sop)
 {
-;
+	dprintk("NFSD: move_to_close_lru nfs4_stateowner %p\n", sop);
 
 	list_move_tail(&sop->so_close_lru, &close_lru);
 	sop->so_time = get_seconds();
@@ -2318,7 +2318,7 @@ nfs4_share_conflict(struct svc_fh *current_fh, unsigned int deny_type)
 	struct nfs4_stateid *stp;
 	__be32 ret;
 
-;
+	dprintk("NFSD: nfs4_share_conflict\n");
 
 	fp = find_file(ino);
 	if (!fp)
@@ -2435,7 +2435,7 @@ nfsd4_process_open1(struct nfsd4_compound_state *cstate,
 		 * processing this OPEN; presumably, we'll
 		 * fail again for the same reason.
 		 */
-;
+		dprintk("nfsd4_process_open1: replay with no replay cache\n");
 		goto renew;
 	}
 	if (open->op_seqid != sop->so_seqid)
@@ -2762,13 +2762,13 @@ nfs4_open_delegation(struct svc_fh *fh, struct nfsd4_open *open, struct nfs4_sta
 
 	memcpy(&open->op_delegate_stateid, &dp->dl_stateid, sizeof(dp->dl_stateid));
 
-//	dprintk("NFSD: delegation stateid=" STATEID_FMT "\n",
-;
+	dprintk("NFSD: delegation stateid=" STATEID_FMT "\n",
+		STATEID_VAL(&dp->dl_stateid));
 out:
 	if (open->op_claim_type == NFS4_OPEN_CLAIM_PREVIOUS
 			&& flag == NFS4_OPEN_DELEGATE_NONE
 			&& open->op_delegate_type != NFS4_OPEN_DELEGATE_NONE)
-;
+		dprintk("NFSD: WARNING: refusing delegation reclaim\n");
 	open->op_delegate_type = flag;
 	return;
 out_free:
@@ -2853,8 +2853,8 @@ nfsd4_process_open2(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nf
 
 	status = nfs_ok;
 
-//	dprintk("%s: stateid=" STATEID_FMT "\n", __func__,
-;
+	dprintk("%s: stateid=" STATEID_FMT "\n", __func__,
+		STATEID_VAL(&stp->st_stateid));
 out:
 	if (fp)
 		put_nfs4_file(fp);
@@ -2879,8 +2879,8 @@ nfsd4_renew(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	__be32 status;
 
 	nfs4_lock_state();
-//	dprintk("process_renew(%08x/%08x): starting\n", 
-;
+	dprintk("process_renew(%08x/%08x): starting\n", 
+			clid->cl_boot, clid->cl_id);
 	status = nfserr_stale_clientid;
 	if (STALE_CLIENTID(clid))
 		goto out;
@@ -2888,7 +2888,7 @@ nfsd4_renew(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	status = nfserr_expired;
 	if (clp == NULL) {
 		/* We assume the client took too long to RENEW. */
-;
+		dprintk("nfsd4_renew: clientid not found!\n");
 		goto out;
 	}
 	renew_client(clp);
@@ -2908,7 +2908,7 @@ static struct lock_manager nfsd4_manager = {
 static void
 nfsd4_end_grace(void)
 {
-;
+	dprintk("NFSD: end of grace period\n");
 	nfsd4_recdir_purge_old();
 	locks_end_grace(&nfsd4_manager);
 	/*
@@ -2932,7 +2932,7 @@ nfs4_laundromat(void)
 
 	nfs4_lock_state();
 
-;
+	dprintk("NFSD: laundromat service - starting\n");
 	if (locks_in_grace())
 		nfsd4_end_grace();
 	INIT_LIST_HEAD(&reaplist);
@@ -2946,8 +2946,8 @@ nfs4_laundromat(void)
 			break;
 		}
 		if (atomic_read(&clp->cl_refcount)) {
-//			dprintk("NFSD: client in use (clientid %08x)\n",
-;
+			dprintk("NFSD: client in use (clientid %08x)\n",
+				clp->cl_clientid.cl_id);
 			continue;
 		}
 		unhash_client_locked(clp);
@@ -2956,8 +2956,8 @@ nfs4_laundromat(void)
 	spin_unlock(&client_lock);
 	list_for_each_safe(pos, next, &reaplist) {
 		clp = list_entry(pos, struct nfs4_client, cl_lru);
-//		dprintk("NFSD: purging unused client (clientid %08x)\n",
-;
+		dprintk("NFSD: purging unused client (clientid %08x)\n",
+			clp->cl_clientid.cl_id);
 		nfsd4_remove_clid_dir(clp);
 		expire_client(clp);
 	}
@@ -2987,8 +2987,8 @@ nfs4_laundromat(void)
 				test_val = u;
 			break;
 		}
-//		dprintk("NFSD: purging unused open stateowner (so_id %d)\n",
-;
+		dprintk("NFSD: purging unused open stateowner (so_id %d)\n",
+			sop->so_id);
 		release_openowner(sop);
 	}
 	if (clientid_val < NFSD_LAUNDROMAT_MINTIMEOUT)
@@ -3007,7 +3007,7 @@ laundromat_main(struct work_struct *not_used)
 	time_t t;
 
 	t = nfs4_laundromat();
-;
+	dprintk("NFSD: laundromat_main - sleeping for %ld seconds\n", t);
 	queue_delayed_work(laundry_wq, &laundromat_work, t*HZ);
 }
 
@@ -3036,8 +3036,8 @@ STALE_STATEID(stateid_t *stateid)
 {
 	if (stateid->si_boot == boot_time)
 		return 0;
-//	dprintk("NFSD: stale stateid " STATEID_FMT "!\n",
-;
+	dprintk("NFSD: stale stateid " STATEID_FMT "!\n",
+		STATEID_VAL(stateid));
 	return 1;
 }
 
@@ -3233,14 +3233,14 @@ nfs4_preprocess_seqid_op(struct nfsd4_compound_state *cstate, u32 seqid,
 	struct svc_fh *current_fh = &cstate->current_fh;
 	__be32 status;
 
-//	dprintk("NFSD: %s: seqid=%d stateid = " STATEID_FMT "\n", __func__,
-;
+	dprintk("NFSD: %s: seqid=%d stateid = " STATEID_FMT "\n", __func__,
+		seqid, STATEID_VAL(stateid));
 
 	*stpp = NULL;
 	*sopp = NULL;
 
 	if (ZERO_STATEID(stateid) || ONE_STATEID(stateid)) {
-;
+		dprintk("NFSD: preprocess_seqid_op: magic stateid!\n");
 		return nfserr_bad_stateid;
 	}
 
@@ -3299,7 +3299,7 @@ nfs4_preprocess_seqid_op(struct nfsd4_compound_state *cstate, u32 seqid,
 	}
 
 	if (nfs4_check_fh(current_fh, stp)) {
-;
+		dprintk("NFSD: preprocess_seqid_op: fh-stateid mismatch!\n");
 		return nfserr_bad_stateid;
 	}
 
@@ -3312,13 +3312,13 @@ nfs4_preprocess_seqid_op(struct nfsd4_compound_state *cstate, u32 seqid,
 		goto check_replay;
 
 	if (sop->so_confirmed && flags & CONFIRM) {
-//		dprintk("NFSD: preprocess_seqid_op: expected"
-;
+		dprintk("NFSD: preprocess_seqid_op: expected"
+				" unconfirmed stateowner!\n");
 		return nfserr_bad_stateid;
 	}
 	if (!sop->so_confirmed && !(flags & CONFIRM)) {
-//		dprintk("NFSD: preprocess_seqid_op: stateowner not"
-;
+		dprintk("NFSD: preprocess_seqid_op: stateowner not"
+				" confirmed yet!\n");
 		return nfserr_bad_stateid;
 	}
 	status = check_stateid_generation(stateid, &stp->st_stateid, flags);
@@ -3329,12 +3329,12 @@ nfs4_preprocess_seqid_op(struct nfsd4_compound_state *cstate, u32 seqid,
 
 check_replay:
 	if (seqid == sop->so_seqid - 1) {
-;
+		dprintk("NFSD: preprocess_seqid_op: retransmission?\n");
 		/* indicate replay to calling function */
 		return nfserr_replay_me;
 	}
-//	dprintk("NFSD: preprocess_seqid_op: bad seqid (expected %d, got %d)\n",
-;
+	dprintk("NFSD: preprocess_seqid_op: bad seqid (expected %d, got %d)\n",
+			sop->so_seqid, seqid);
 	*sopp = NULL;
 	return nfserr_bad_seqid;
 }
@@ -3367,8 +3367,8 @@ nfsd4_open_confirm(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	sop->so_confirmed = 1;
 	update_stateid(&stp->st_stateid);
 	memcpy(&oc->oc_resp_stateid, &stp->st_stateid, sizeof(stateid_t));
-//	dprintk("NFSD: %s: success, seqid=%d stateid=" STATEID_FMT "\n",
-;
+	dprintk("NFSD: %s: success, seqid=%d stateid=" STATEID_FMT "\n",
+		__func__, oc->oc_seqid, STATEID_VAL(&stp->st_stateid));
 
 	nfsd4_create_clid_dir(sop->so_client);
 out:
@@ -3431,13 +3431,13 @@ nfsd4_open_downgrade(struct svc_rqst *rqstp,
 
 	status = nfserr_inval;
 	if (!test_bit(od->od_share_access, &stp->st_access_bmap)) {
-//		dprintk("NFSD:access not a subset current bitmap: 0x%lx, input access=%08x\n",
-;
+		dprintk("NFSD:access not a subset current bitmap: 0x%lx, input access=%08x\n",
+			stp->st_access_bmap, od->od_share_access);
 		goto out;
 	}
 	if (!test_bit(od->od_share_deny, &stp->st_deny_bmap)) {
-//		dprintk("NFSD:deny not a subset current bitmap: 0x%lx, input deny=%08x\n",
-;
+		dprintk("NFSD:deny not a subset current bitmap: 0x%lx, input deny=%08x\n",
+			stp->st_deny_bmap, od->od_share_deny);
 		goto out;
 	}
 	nfs4_file_downgrade(stp, od->od_share_access);
@@ -3595,7 +3595,7 @@ find_stateid(stateid_t *stid, int flags)
 	u32 f_id = stid->si_fileid;
 	unsigned int hashval;
 
-;
+	dprintk("NFSD: find_stateid flags 0x%x\n",flags);
 	if (flags & (LOCK_STATE | RD_STATE | WR_STATE)) {
 		hashval = stateid_hashval(st_id, f_id);
 		list_for_each_entry(local, &lockstateid_hashtbl[hashval], st_hash) {
@@ -3622,8 +3622,8 @@ find_delegation_stateid(struct inode *ino, stateid_t *stid)
 	struct nfs4_file *fp;
 	struct nfs4_delegation *dl;
 
-//	dprintk("NFSD: %s: stateid=" STATEID_FMT "\n", __func__,
-;
+	dprintk("NFSD: %s: stateid=" STATEID_FMT "\n", __func__,
+		STATEID_VAL(stid));
 
 	fp = find_file(ino);
 	if (!fp)
@@ -3801,16 +3801,16 @@ nfsd4_lock(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	unsigned int strhashval;
 	int err;
 
-//	dprintk("NFSD: nfsd4_lock: start=%Ld length=%Ld\n",
-//		(long long) lock->lk_offset,
-;
+	dprintk("NFSD: nfsd4_lock: start=%Ld length=%Ld\n",
+		(long long) lock->lk_offset,
+		(long long) lock->lk_length);
 
 	if (check_lock_length(lock->lk_offset, lock->lk_length))
 		 return nfserr_inval;
 
 	if ((status = fh_verify(rqstp, &cstate->current_fh,
 				S_IFREG, NFSD_MAY_LOCK))) {
-;
+		dprintk("NFSD: nfsd4_lock: permission denied!\n");
 		return status;
 	}
 
@@ -3925,14 +3925,14 @@ nfsd4_lock(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 		break;
 	case (EAGAIN):		/* conflock holds conflicting lock */
 		status = nfserr_denied;
-;
+		dprintk("NFSD: nfsd4_lock: conflicting lock found!\n");
 		nfs4_set_lock_denied(&conflock, &lock->lk_denied);
 		break;
 	case (EDEADLK):
 		status = nfserr_deadlock;
 		break;
 	default:
-;
+		dprintk("NFSD: nfsd4_lock: vfs_lock_file() failed! status %d\n",err);
 		status = nfserrno(err);
 		break;
 	}
@@ -3989,7 +3989,7 @@ nfsd4_lockt(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 		goto out;
 
 	if ((status = fh_verify(rqstp, &cstate->current_fh, S_IFREG, 0))) {
-;
+		dprintk("NFSD: nfsd4_lockt: fh_verify() failed!\n");
 		if (status == nfserr_symlink)
 			status = nfserr_inval;
 		goto out;
@@ -4007,7 +4007,7 @@ nfsd4_lockt(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 			file_lock.fl_type = F_WRLCK;
 		break;
 		default:
-;
+			dprintk("NFSD: nfs4_lockt: bad lock type!\n");
 			status = nfserr_inval;
 		goto out;
 	}
@@ -4047,9 +4047,9 @@ nfsd4_locku(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	__be32 status;
 	int err;
 						        
-//	dprintk("NFSD: nfsd4_locku: start=%Ld length=%Ld\n",
-//		(long long) locku->lu_offset,
-;
+	dprintk("NFSD: nfsd4_locku: start=%Ld length=%Ld\n",
+		(long long) locku->lu_offset,
+		(long long) locku->lu_length);
 
 	if (check_lock_length(locku->lu_offset, locku->lu_length))
 		 return nfserr_inval;
@@ -4086,7 +4086,7 @@ nfsd4_locku(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	*/
 	err = vfs_lock_file(filp, F_SETLK, &file_lock, NULL);
 	if (err) {
-;
+		dprintk("NFSD: nfs4_locku: vfs_lock_file failed!\n");
 		goto out_nfserr;
 	}
 	/*
@@ -4145,8 +4145,8 @@ nfsd4_release_lockowner(struct svc_rqst *rqstp,
 	int i;
 	__be32 status;
 
-//	dprintk("nfsd4_release_lockowner clientid: (%08x/%08x):\n",
-;
+	dprintk("nfsd4_release_lockowner clientid: (%08x/%08x):\n",
+		clid->cl_boot, clid->cl_id);
 
 	/* XXX check for lease expiration */
 
@@ -4338,7 +4338,7 @@ nfsd4_load_reboot_recovery_data(void)
 	status = nfsd4_recdir_load();
 	nfs4_unlock_state();
 	if (status)
-;
+		printk("NFSD: Failure reading reboot recovery data\n");
 }
 
 /*
@@ -4371,8 +4371,8 @@ __nfs4_state_start(void)
 
 	boot_time = get_seconds();
 	locks_start_grace(&nfsd4_manager);
-//	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
-;
+	printk(KERN_INFO "NFSD: starting %ld-second grace period\n",
+	       nfsd4_grace);
 	ret = set_callback_cred();
 	if (ret)
 		return -ENOMEM;

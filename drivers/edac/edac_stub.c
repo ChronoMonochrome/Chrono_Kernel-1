@@ -70,7 +70,7 @@ struct sysdev_class *edac_get_sysfs_class(void)
 	/* create the /sys/devices/system/edac directory */
 	err = sysdev_class_register(&edac_class);
 	if (err) {
-;
+		printk(KERN_ERR "Error registering toplevel EDAC sysfs dir\n");
 		return NULL;
 	}
 

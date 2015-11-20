@@ -78,7 +78,7 @@ static int __init scx200_gpio_init(void)
 	dev_t devid;
 
 	if (!scx200_gpio_present()) {
-;
+		printk(KERN_ERR DRVNAME ": no SCx200 gpio present\n");
 		return -ENODEV;
 	}
 

@@ -173,8 +173,8 @@ static void dbgassert(const char *fcn, int line, const char *expr)
 		      __FILE__, fcn, line, expr);
 	else {
 		int x;
-//		printk(KERN_ERR "ASSERTION FAILED, %s:%s:%d %s\n",
-;
+		printk(KERN_ERR "ASSERTION FAILED, %s:%s:%d %s\n",
+		       __FILE__, fcn, line, expr);
 		x = * (volatile int *) 0; /* force proc to exit */
 	}
 }
@@ -197,47 +197,47 @@ static void dbgassert(const char *fcn, int line, const char *expr)
 
 #define ASSERT(e)      ((e) ? (void) 0 : dbgassert(__func__, __LINE__, #e))
 #define DBGDO(x)            x
-//#define DBGX(fmt, args...)  (in_interrupt() ? 0 : printk(KERN_ERR fmt, ##args))
-//#define DBGP(fmt, args...)  (DBGX("%s: " fmt, __func__ , ##args))
-//#define DBGE(fmt, args...)  (DBGX("%s" fmt, __func__ , ##args))
-//#define DBGC(rtn)           (DBGP("calling %s\n", rtn))
-//#define DBGR()              (DBGP("returning\n"))
-//#define DBGXV(fmt, args...) (shut_up ? 0 : DBGX(fmt, ##args))
-//#define DBGPV(fmt, args...) (shut_up ? 0 : DBGP(fmt, ##args))
-//#define DBGEV(fmt, args...) (shut_up ? 0 : DBGE(fmt, ##args))
-//#define DBGCV(rtn)          (shut_up ? 0 : DBGC(rtn))
-//#define DBGRV()             (shut_up ? 0 : DBGR())
-//
-//#else /* !VWSND_DEBUG */
-//
-//#define ASSERT(e)           ((void) 0)
-//#define DBGDO(x)            /* don't */
-//#define DBGX(fmt, args...)  ((void) 0)
-//#define DBGP(fmt, args...)  ((void) 0)
-//#define DBGE(fmt, args...)  ((void) 0)
-//#define DBGC(rtn)           ((void) 0)
-//#define DBGR()              ((void) 0)
-//#define DBGPV(fmt, args...) ((void) 0)
-//#define DBGXV(fmt, args...) ((void) 0)
-//#define DBGEV(fmt, args...) ((void) 0)
-//#define DBGCV(rtn)          ((void) 0)
-//#define DBGRV()             ((void) 0)
-//
-//#endif /* !VWSND_DEBUG */
-//
-///*****************************************************************************/
-///* low level lithium access */
-//
-///*
-// * We need to talk to Lithium registers on three pages.  Here are
-// * the pages' offsets from the base address (0xFF001000).
-// */
-//
-//enum {
-//	LI_PAGE0_OFFSET = 0x01000 - 0x1000, /* FF001000 */
-//	LI_PAGE1_OFFSET = 0x0F000 - 0x1000, /* FF00F000 */
-//	LI_PAGE2_OFFSET = 0x10000 - 0x1000, /* FF010000 */
-;
+#define DBGX(fmt, args...)  (in_interrupt() ? 0 : printk(KERN_ERR fmt, ##args))
+#define DBGP(fmt, args...)  (DBGX("%s: " fmt, __func__ , ##args))
+#define DBGE(fmt, args...)  (DBGX("%s" fmt, __func__ , ##args))
+#define DBGC(rtn)           (DBGP("calling %s\n", rtn))
+#define DBGR()              (DBGP("returning\n"))
+#define DBGXV(fmt, args...) (shut_up ? 0 : DBGX(fmt, ##args))
+#define DBGPV(fmt, args...) (shut_up ? 0 : DBGP(fmt, ##args))
+#define DBGEV(fmt, args...) (shut_up ? 0 : DBGE(fmt, ##args))
+#define DBGCV(rtn)          (shut_up ? 0 : DBGC(rtn))
+#define DBGRV()             (shut_up ? 0 : DBGR())
+
+#else /* !VWSND_DEBUG */
+
+#define ASSERT(e)           ((void) 0)
+#define DBGDO(x)            /* don't */
+#define DBGX(fmt, args...)  ((void) 0)
+#define DBGP(fmt, args...)  ((void) 0)
+#define DBGE(fmt, args...)  ((void) 0)
+#define DBGC(rtn)           ((void) 0)
+#define DBGR()              ((void) 0)
+#define DBGPV(fmt, args...) ((void) 0)
+#define DBGXV(fmt, args...) ((void) 0)
+#define DBGEV(fmt, args...) ((void) 0)
+#define DBGCV(rtn)          ((void) 0)
+#define DBGRV()             ((void) 0)
+
+#endif /* !VWSND_DEBUG */
+
+/*****************************************************************************/
+/* low level lithium access */
+
+/*
+ * We need to talk to Lithium registers on three pages.  Here are
+ * the pages' offsets from the base address (0xFF001000).
+ */
+
+enum {
+	LI_PAGE0_OFFSET = 0x01000 - 0x1000, /* FF001000 */
+	LI_PAGE1_OFFSET = 0x0F000 - 0x1000, /* FF00F000 */
+	LI_PAGE2_OFFSET = 0x10000 - 0x1000, /* FF010000 */
+};
 
 /* low-level lithium data */
 
@@ -1342,7 +1342,7 @@ static int __init ad1843_init(lithium_t *lith)
 		return err;
 
 	if (ad1843_read_bits(lith, &ad1843_INIT) != 0) {
-;
+		printk(KERN_ERR "vwsnd sound: AD1843 won't initialize\n");
 		return -EIO;
 	}
 
@@ -1355,8 +1355,8 @@ static int __init ad1843_init(lithium_t *lith)
 	DBGDO(shut_up++);
 	while (ad1843_read_bits(lith, &ad1843_PDNO)) {
 		if (time_after(jiffies, later)) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+			       "vwsnd audio: AD1843 won't power up\n");
 			return -EIO;
 		}
 		schedule();
@@ -3262,7 +3262,7 @@ static int __init probe_vwsnd(struct address_info *hw_config)
 	/* XXX verify lithium present (to prevent crash on non-vw) */
 
 	if (li_create(&lith, hw_config->io_base) != 0) {
-;
+		printk(KERN_WARNING "probe_vwsnd: can't map lithium\n");
 		return 0;
 	}
 	later = jiffies + 2;
@@ -3281,17 +3281,17 @@ static int __init probe_vwsnd(struct address_info *hw_config)
 		 * or a future machine with different audio.
 		 * On beta-release 320 w/ no audio, HC == 0x4000 */
 
-;
+		printk(KERN_WARNING "probe_vwsnd: audio codec not found\n");
 		return 0;
 	}
 
 	if (w & LI_HC_LINK_FAILURE) {
-;
+		printk(KERN_WARNING "probe_vwsnd: can't init audio codec\n");
 		return 0;
 	}
 
-//	printk(KERN_INFO "vwsnd: lithium audio at mmio %#x irq %d\n",
-;
+	printk(KERN_INFO "vwsnd: lithium audio at mmio %#x irq %d\n",
+		hw_config->io_base, hw_config->irq);
 
 	return 1;
 }
@@ -3368,17 +3368,17 @@ static int __init attach_vwsnd(struct address_info *hw_config)
 
 	devc->audio_minor = register_sound_dsp(&vwsnd_audio_fops, -1);
 	if ((err = devc->audio_minor) < 0) {
-//		DBGDO(printk(KERN_WARNING
-//			     "attach_vwsnd: register_sound_dsp error %d\n",
-;
+		DBGDO(printk(KERN_WARNING
+			     "attach_vwsnd: register_sound_dsp error %d\n",
+			     err));
 		goto fail6;
 	}
 	devc->mixer_minor = register_sound_mixer(&vwsnd_mixer_fops,
 						 devc->audio_minor >> 4);
 	if ((err = devc->mixer_minor) < 0) {
-//		DBGDO(printk(KERN_WARNING
-//			     "attach_vwsnd: register_sound_mixer error %d\n",
-;
+		DBGDO(printk(KERN_WARNING
+			     "attach_vwsnd: register_sound_mixer error %d\n",
+			     err));
 		goto fail7;
 	}
 

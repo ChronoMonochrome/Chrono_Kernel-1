@@ -417,9 +417,9 @@ static int __init configfs_example_init(void)
 		mutex_init(&subsys->su_mutex);
 		ret = configfs_register_subsystem(subsys);
 		if (ret) {
-//			printk(KERN_ERR "Error %d while registering subsystem %s\n",
-//			       ret,
-;
+			printk(KERN_ERR "Error %d while registering subsystem %s\n",
+			       ret,
+			       subsys->su_group.cg_item.ci_namebuf);
 			goto out_unregister;
 		}
 	}

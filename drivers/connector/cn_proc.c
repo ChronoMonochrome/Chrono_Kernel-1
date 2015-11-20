@@ -290,7 +290,7 @@ static int __init cn_proc_init(void)
 
 	if ((err = cn_add_callback(&cn_proc_event_id, "cn_proc",
 	 			   &cn_proc_mcast_ctl))) {
-;
+		printk(KERN_WARNING "cn_proc failed to register\n");
 		return err;
 	}
 	return 0;

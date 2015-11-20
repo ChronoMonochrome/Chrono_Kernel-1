@@ -45,7 +45,7 @@ proc_debug(const char *fmt, ...)
 
   va_start(ap, fmt);
   vsprintf(buf, fmt, ap);
-;
+  printk(buf);
   va_end(ap);
 }
 #else /* PROC_DEBUG */
@@ -333,7 +333,7 @@ aic7xxx_proc_info ( struct Scsi_Host *HBAptr, char *buffer, char **start, off_t 
   }
   if (size >= aic7xxx_buffer_size)
   {
-;
+    printk(KERN_WARNING "aic7xxx: Overflow in aic7xxx_proc.c\n");
   }
 
   if (offset > size - 1)

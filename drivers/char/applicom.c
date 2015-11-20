@@ -142,14 +142,14 @@ static int ac_register_board(unsigned long physloc, void __iomem *loc,
 		boardno = readb(loc + NUMCARD_OWNER_TO_PC);
 
 	if (!boardno || boardno > MAX_BOARD) {
-//		printk(KERN_WARNING "Board #%d (at 0x%lx) is out of range (1 <= x <= %d).\n",
-;
+		printk(KERN_WARNING "Board #%d (at 0x%lx) is out of range (1 <= x <= %d).\n",
+		       boardno, physloc, MAX_BOARD);
 		return 0;
 	}
 
 	if (apbs[boardno - 1].RamIO) {
-//		printk(KERN_WARNING "Board #%d (at 0x%lx) conflicts with previous board #%d (at 0x%lx)\n", 
-;
+		printk(KERN_WARNING "Board #%d (at 0x%lx) conflicts with previous board #%d (at 0x%lx)\n", 
+		       boardno, physloc, boardno, apbs[boardno-1].PhysIO);
 		return 0;
 	}
 
@@ -190,7 +190,7 @@ static int __init applicom_init(void)
 	void __iomem *RamIO;
 	int boardno, ret;
 
-;
+	printk(KERN_INFO "Applicom driver: $Id: ac.c,v 1.30 2000/03/22 16:03:57 dwmw2 Exp $\n");
 
 	/* No mem and irq given - check for a PCI card */
 
@@ -205,29 +205,29 @@ static int __init applicom_init(void)
 		RamIO = ioremap_nocache(pci_resource_start(dev, 0), LEN_RAM_IO);
 
 		if (!RamIO) {
-//			printk(KERN_INFO "ac.o: Failed to ioremap PCI memory "
-//				"space at 0x%llx\n",
-;
+			printk(KERN_INFO "ac.o: Failed to ioremap PCI memory "
+				"space at 0x%llx\n",
+				(unsigned long long)pci_resource_start(dev, 0));
 			pci_disable_device(dev);
 			return -EIO;
 		}
 
-//		printk(KERN_INFO "Applicom %s found at mem 0x%llx, irq %d\n",
-//		       applicom_pci_devnames[dev->device-1],
-//			   (unsigned long long)pci_resource_start(dev, 0),
-;
+		printk(KERN_INFO "Applicom %s found at mem 0x%llx, irq %d\n",
+		       applicom_pci_devnames[dev->device-1],
+			   (unsigned long long)pci_resource_start(dev, 0),
+		       dev->irq);
 
 		boardno = ac_register_board(pci_resource_start(dev, 0),
 				RamIO, 0);
 		if (!boardno) {
-;
+			printk(KERN_INFO "ac.o: PCI Applicom device doesn't have correct signature.\n");
 			iounmap(RamIO);
 			pci_disable_device(dev);
 			continue;
 		}
 
 		if (request_irq(dev->irq, &ac_interrupt, IRQF_SHARED, "Applicom PCI", &dummy)) {
-;
+			printk(KERN_INFO "Could not allocate IRQ %d for PCI Applicom device.\n", dev->irq);
 			iounmap(RamIO);
 			pci_disable_device(dev);
 			apbs[boardno - 1].RamIO = NULL;
@@ -248,8 +248,8 @@ static int __init applicom_init(void)
 		if (numboards)
 			goto fin;
 		else {
-;
-;
+			printk(KERN_INFO "ac.o: No PCI boards found.\n");
+			printk(KERN_INFO "ac.o: For an ISA board you must supply memory and irq parameters.\n");
 			return -ENXIO;
 		}
 	}
@@ -260,7 +260,7 @@ static int __init applicom_init(void)
 		RamIO = ioremap_nocache(mem + (LEN_RAM_IO * i), LEN_RAM_IO);
 
 		if (!RamIO) {
-;
+			printk(KERN_INFO "ac.o: Failed to ioremap the ISA card's memory space (slot #%d)\n", i + 1);
 			continue;
 		}
 
@@ -274,7 +274,7 @@ static int __init applicom_init(void)
 
 		if (!numisa) {
 			if (request_irq(irq, &ac_interrupt, IRQF_SHARED, "Applicom ISA", &dummy)) {
-;
+				printk(KERN_WARNING "Could not allocate IRQ %d for ISA Applicom device.\n", irq);
 				iounmap(RamIO);
 				apbs[boardno - 1].RamIO = NULL;
 			}
@@ -288,8 +288,8 @@ static int __init applicom_init(void)
 	}
 
 	if (!numisa)
-//		printk(KERN_WARNING "ac.o: No valid ISA Applicom boards found "
-;
+		printk(KERN_WARNING "ac.o: No valid ISA Applicom boards found "
+				"at mem 0x%lx\n", mem);
 
  fin:
 	init_waitqueue_head(&FlagSleepRec);
@@ -301,7 +301,7 @@ static int __init applicom_init(void)
 	if (numboards) {
 		ret = misc_register(&ac_miscdev);
 		if (ret) {
-;
+			printk(KERN_WARNING "ac.o: Unable to register misc device\n");
 			goto out;
 		}
 		for (i = 0; i < MAX_BOARD; i++) {
@@ -317,19 +317,19 @@ static int __init applicom_init(void)
 			boardname[serial] = 0;
 
 
-//			printk(KERN_INFO "Applicom board %d: %s, PROM V%d.%d",
-//			       i+1, boardname,
-//			       (int)(readb(apbs[i].RamIO + VERS) >> 4),
-;
+			printk(KERN_INFO "Applicom board %d: %s, PROM V%d.%d",
+			       i+1, boardname,
+			       (int)(readb(apbs[i].RamIO + VERS) >> 4),
+			       (int)(readb(apbs[i].RamIO + VERS) & 0xF));
 			
 			serial = (readb(apbs[i].RamIO + SERIAL_NUMBER) << 16) + 
 				(readb(apbs[i].RamIO + SERIAL_NUMBER + 1) << 8) + 
 				(readb(apbs[i].RamIO + SERIAL_NUMBER + 2) );
 
 			if (serial != 0)
-;
+				printk(" S/N %d\n", serial);
 			else
-;
+				printk("\n");
 		}
 		return 0;
 	}
@@ -369,8 +369,8 @@ static ssize_t ac_write(struct file *file, const char __user *buf, size_t count,
 	if (count != sizeof(struct st_ram_io) + sizeof(struct mailbox)) {
 		static int warncount = 5;
 		if (warncount) {
-//			printk(KERN_INFO "Hmmm. write() of Applicom card, length %zd != expected %zd\n",
-;
+			printk(KERN_INFO "Hmmm. write() of Applicom card, length %zd != expected %zd\n",
+			       count, sizeof(struct st_ram_io) + sizeof(struct mailbox));
 			warncount--;
 		}
 		return -EINVAL;
@@ -391,8 +391,8 @@ static ssize_t ac_write(struct file *file, const char __user *buf, size_t count,
 		return -EINVAL;
 
 #ifdef DEBUG
-//	printk("Write to applicom card #%d. struct st_ram_io follows:",
-;
+	printk("Write to applicom card #%d. struct st_ram_io follows:",
+	       IndexCard+1);
 
 		for (c = 0; c < sizeof(struct st_ram_io);) {
 		
@@ -403,7 +403,7 @@ static ssize_t ac_write(struct file *file, const char __user *buf, size_t count,
 			}
 		}
 
-;
+		printk("\nstruct mailbox follows:");
 
 		for (c = 0; c < sizeof(struct mailbox);) {
 			printk("\n%5.5X: %2.2X", c, ((unsigned char *) &tmpmailbox)[c]);
@@ -413,7 +413,7 @@ static ssize_t ac_write(struct file *file, const char __user *buf, size_t count,
 			}
 		}
 
-;
+		printk("\n");
 #endif
 
 	spin_lock_irqsave(&apbs[IndexCard].mutex, flags);
@@ -422,8 +422,8 @@ static ssize_t ac_write(struct file *file, const char __user *buf, size_t count,
 	if(readb(apbs[IndexCard].RamIO + DATA_FROM_PC_READY) > 2) { 
 		Dummy = readb(apbs[IndexCard].RamIO + VERS);
 		spin_unlock_irqrestore(&apbs[IndexCard].mutex, flags);
-//		printk(KERN_WARNING "APPLICOM driver write error board %d, DataFromPcReady = %d\n",
-;
+		printk(KERN_WARNING "APPLICOM driver write error board %d, DataFromPcReady = %d\n",
+		       IndexCard,(int)readb(apbs[IndexCard].RamIO + DATA_FROM_PC_READY));
 		DeviceErrorCount++;
 		return -EIO;
 	}
@@ -507,7 +507,7 @@ static int do_ac_read(int IndexCard, char __user *buf,
 	Dummy = readb(apbs[IndexCard].RamIO + VERS);
 
 #ifdef DEBUG
-;
+		printk("Read from applicom card #%d. struct st_ram_io follows:", NumCard);
 
 		for (c = 0; c < sizeof(struct st_ram_io);) {
 			printk("\n%5.5X: %2.2X", c, ((unsigned char *)st_loc)[c]);
@@ -517,7 +517,7 @@ static int do_ac_read(int IndexCard, char __user *buf,
 			}
 		}
 
-;
+		printk("\nstruct mailbox follows:");
 
 		for (c = 0; c < sizeof(struct mailbox);) {
 			printk("\n%5.5X: %2.2X", c, ((unsigned char *)mailbox)[c]);
@@ -526,7 +526,7 @@ static int do_ac_read(int IndexCard, char __user *buf,
 				printk(" %2.2X", ((unsigned char *)mailbox)[c]);
 			}
 		}
-;
+		printk("\n");
 #endif
 	return (sizeof(struct st_ram_io) + sizeof(struct mailbox));
 }
@@ -543,8 +543,8 @@ static ssize_t ac_read (struct file *filp, char __user *buf, size_t count, loff_
 #endif
 	/* No need to ratelimit this. Only root can trigger it anyway */
 	if (count != sizeof(struct st_ram_io) + sizeof(struct mailbox)) {
-//		printk( KERN_WARNING "Hmmm. read() of Applicom card, length %zd != expected %zd\n",
-;
+		printk( KERN_WARNING "Hmmm. read() of Applicom card, length %zd != expected %zd\n",
+			count,sizeof(struct st_ram_io) + sizeof(struct mailbox));
 		return -EINVAL;
 	}
 	
@@ -587,8 +587,8 @@ static ssize_t ac_read (struct file *filp, char __user *buf, size_t count, loff_
 				set_current_state(TASK_RUNNING);
 				remove_wait_queue(&FlagSleepRec, &wait);
 				
-//				printk(KERN_WARNING "APPLICOM driver read error board %d, DataToPcReady = %d\n",
-;
+				printk(KERN_WARNING "APPLICOM driver read error board %d, DataToPcReady = %d\n",
+				       i,(int)readb(apbs[i].RamIO + DATA_TO_PC_READY));
 				DeviceErrorCount++;
 				return -EIO;
 			}
@@ -609,7 +609,7 @@ static ssize_t ac_read (struct file *filp, char __user *buf, size_t count, loff_
 
 #ifdef DEBUG
 		if (loopcount++ > 2) {
-;
+			printk(KERN_DEBUG "Looping in ac_read. loopcount %d\n", loopcount);
 		}
 #endif
 	} 
@@ -622,7 +622,7 @@ static irqreturn_t ac_interrupt(int vec, void *dev_instance)
 	unsigned int LoopCount;
 	int handled = 0;
 
-;
+	//    printk("Applicom interrupt on IRQ %d occurred\n", vec);
 
 	LoopCount = 0;
 
@@ -647,16 +647,16 @@ static irqreturn_t ac_interrupt(int vec, void *dev_instance)
 			writeb(0, apbs[i].RamIO + RAM_IT_TO_PC);
 
 			if (readb(apbs[i].RamIO + DATA_TO_PC_READY) > 2) {
-//				printk(KERN_WARNING "APPLICOM driver interrupt err board %d, DataToPcReady = %d\n",
-;
+				printk(KERN_WARNING "APPLICOM driver interrupt err board %d, DataToPcReady = %d\n",
+				       i+1,(int)readb(apbs[i].RamIO + DATA_TO_PC_READY));
 				DeviceErrorCount++;
 			}
 
 			if((readb(apbs[i].RamIO + DATA_FROM_PC_READY) > 2) && 
 			   (readb(apbs[i].RamIO + DATA_FROM_PC_READY) != 6)) {
 				
-//				printk(KERN_WARNING "APPLICOM driver interrupt err board %d, DataFromPcReady = %d\n",
-;
+				printk(KERN_WARNING "APPLICOM driver interrupt err board %d, DataFromPcReady = %d\n",
+				       i+1,(int)readb(apbs[i].RamIO + DATA_FROM_PC_READY));
 				DeviceErrorCount++;
 			}
 
@@ -715,7 +715,7 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	if(cmd != 6 && ((IndexCard >= MAX_BOARD) || !apbs[IndexCard].RamIO)) {
 		static int warncount = 10;
 		if (warncount) {
-;
+			printk( KERN_WARNING "APPLICOM driver IOCTL, bad board number %d\n",(int)IndexCard+1);
 			warncount--;
 		}
 		kfree(adgl);
@@ -787,10 +787,10 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		writeb(1, apbs[IndexCard].RamIO + RAM_IT_FROM_PC);
 		break;
 	case 6:
-;
-;
-;
-;
+		printk(KERN_INFO "APPLICOM driver release .... V2.8.0 ($Revision: 1.30 $)\n");
+		printk(KERN_INFO "Number of installed boards . %d\n", (int) numboards);
+		printk(KERN_INFO "Segment of board ........... %X\n", (int) mem);
+		printk(KERN_INFO "Interrupt IRQ number ....... %d\n", (int) irq);
 		for (i = 0; i < MAX_BOARD; i++) {
 			int serial;
 			char boardname[(SERIAL_NUMBER - TYPE_CARD) + 1];
@@ -802,11 +802,11 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				boardname[serial] = readb(apbs[i].RamIO + TYPE_CARD + serial);
 			boardname[serial] = 0;
 
-//			printk(KERN_INFO "Prom version board %d ....... V%d.%d %s",
-//			       i+1,
-//			       (int)(readb(apbs[IndexCard].RamIO + VERS) >> 4),
-//			       (int)(readb(apbs[IndexCard].RamIO + VERS) & 0xF),
-;
+			printk(KERN_INFO "Prom version board %d ....... V%d.%d %s",
+			       i+1,
+			       (int)(readb(apbs[IndexCard].RamIO + VERS) >> 4),
+			       (int)(readb(apbs[IndexCard].RamIO + VERS) & 0xF),
+			       boardname);
 
 
 			serial = (readb(apbs[i].RamIO + SERIAL_NUMBER) << 16) + 
@@ -814,21 +814,21 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				(readb(apbs[i].RamIO + SERIAL_NUMBER + 2) );
 
 			if (serial != 0)
-;
+				printk(" S/N %d\n", serial);
 			else
-;
+				printk("\n");
 		}
 		if (DeviceErrorCount != 0)
-;
+			printk(KERN_INFO "DeviceErrorCount ........... %d\n", DeviceErrorCount);
 		if (ReadErrorCount != 0)
-;
+			printk(KERN_INFO "ReadErrorCount ............. %d\n", ReadErrorCount);
 		if (WriteErrorCount != 0)
-;
+			printk(KERN_INFO "WriteErrorCount ............ %d\n", WriteErrorCount);
 		if (waitqueue_active(&FlagSleepRec))
-;
+			printk(KERN_INFO "Process in read pending\n");
 		for (i = 0; i < MAX_BOARD; i++) {
 			if (apbs[i].RamIO && waitqueue_active(&apbs[i].FlagSleepSend))
-;
+				printk(KERN_INFO "Process in write pending board %d\n",i+1);
 		}
 		break;
 	default:

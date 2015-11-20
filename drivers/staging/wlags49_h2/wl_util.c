@@ -454,8 +454,8 @@ void wl_hcf_error( struct net_device *dev, int hcfStatus )
             break;
         }
 
-//        printk( KERN_INFO "%s: Wireless, HCF failure: \"%s\"\n",
-;
+        printk( KERN_INFO "%s: Wireless, HCF failure: \"%s\"\n",
+                dev->name, pMsg );
     }
 } // wl_hcf_error
 /*============================================================================*/

@@ -530,8 +530,8 @@ l3ni1_msg_without_setup(struct l3_process *pc, u_char pr, void *arg)
 			*p++ = pc->para.cause | 0x80;
 			break;
 		default:
-//			printk(KERN_ERR "HiSax l3ni1_msg_without_setup wrong cause %d\n",
-;
+			printk(KERN_ERR "HiSax l3ni1_msg_without_setup wrong cause %d\n",
+				pc->para.cause);
 			return;
 	}
 	l = p - tmp;
@@ -2631,7 +2631,7 @@ static void l3ni1_SendSpid( struct l3_process *pc, u_char pr, struct sk_buff *sk
 
 	if ( !( pSPID = strchr( pChan->setup.eazmsn, ':' ) ) )
 	{
-;
+		printk( KERN_ERR "SPID not supplied in EAZMSN %s\n", pChan->setup.eazmsn );
 		newl3state( pc, 0 );
 		pc->st->l3.l3l2( pc->st, DL_RELEASE | REQUEST, NULL );
 		return;
@@ -2640,7 +2640,7 @@ static void l3ni1_SendSpid( struct l3_process *pc, u_char pr, struct sk_buff *sk
 	l = strlen( ++pSPID );
 	if ( !( skb = l3_alloc_skb( 5+l ) ) )
 	{
-;
+		printk( KERN_ERR "HiSax can't get memory to send SPID\n" );
 		return;
 	}
 
@@ -2689,7 +2689,7 @@ static void l3ni1_spid_tout( struct l3_process *pc, u_char pr, void *arg )
 		L3DelTimer( &pc->timer );
 		dev_kfree_skb( arg);
 
-;
+		printk( KERN_ERR "SPID not accepted\n" );
 		newl3state( pc, 0 );
 		pc->st->l3.l3l2( pc->st, DL_RELEASE | REQUEST, NULL );
 	}
@@ -2905,7 +2905,7 @@ ni1up(struct PStack *st, int pr, void *arg)
 			return;
 
 		default:
-;
+			printk(KERN_ERR "HiSax ni1up unknown pr=%04x\n", pr);
 			return;
 	}
 	if (skb->len < 3) {
@@ -3088,7 +3088,7 @@ ni1down(struct PStack *st, int pr, void *arg)
 		proc = arg;
 	}
 	if (!proc) {
-;
+		printk(KERN_ERR "HiSax ni1down without proc pr=%04x\n", pr);
 		return;
 	}
 
@@ -3122,7 +3122,7 @@ ni1man(struct PStack *st, int pr, void *arg)
         struct l3_process *proc = arg;
 
         if (!proc) {
-;
+                printk(KERN_ERR "HiSax ni1man without proc pr=%04x\n", pr);
                 return;
         }
         for (i = 0; i < ARRAY_SIZE(manstatelist); i++)
@@ -3161,7 +3161,7 @@ setstack_ni1(struct PStack *st)
 		st->prot.ni1.invoke_used[i++] = 0;   
 
 	if (!(st->l3.global = kmalloc(sizeof(struct l3_process), GFP_ATOMIC))) {
-;
+		printk(KERN_ERR "HiSax can't get memory for ni1 global CR\n");
 	} else {
 		st->l3.global->state = 0;
 		st->l3.global->callref = 0;
@@ -3174,5 +3174,5 @@ setstack_ni1(struct PStack *st)
 		L3InitTimer(st->l3.global, &st->l3.global->timer);
 	}
 	strcpy(tmp, ni1_revision);
-;
+	printk(KERN_INFO "HiSax: National ISDN-1 Rev. %s\n", HiSax_getrev(tmp));
 }

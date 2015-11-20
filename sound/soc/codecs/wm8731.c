@@ -696,15 +696,15 @@ static int __init wm8731_modinit(void)
 #if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
 	ret = i2c_add_driver(&wm8731_i2c_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register WM8731 I2C driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register WM8731 I2C driver: %d\n",
+		       ret);
 	}
 #endif
 #if defined(CONFIG_SPI_MASTER)
 	ret = spi_register_driver(&wm8731_spi_driver);
 	if (ret != 0) {
-//		printk(KERN_ERR "Failed to register WM8731 SPI driver: %d\n",
-;
+		printk(KERN_ERR "Failed to register WM8731 SPI driver: %d\n",
+		       ret);
 	}
 #endif
 	return ret;

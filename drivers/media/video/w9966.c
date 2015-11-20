@@ -68,43 +68,43 @@
 /*#define DEBUG*/				/* Undef me for production */
 
 #ifdef DEBUG
-//#define DPRINTF(x, a...) printk(KERN_DEBUG "W9966: %s(): "x, __func__ , ##a)
-//#else
-//#define DPRINTF(x...)
-//#endif
-//
-///*
-// *	Defines, simple typedefs etc.
-// */
-//
-//#define W9966_DRIVERNAME	"W9966CF Webcam"
-//#define W9966_MAXCAMS		4	/* Maximum number of cameras */
-//#define W9966_RBUFFER		2048	/* Read buffer (must be an even number) */
-//#define W9966_SRAMSIZE		131072	/* 128kb */
-//#define W9966_SRAMID		0x02	/* check w9966cf.pdf */
-//
-///* Empirically determined window limits */
-//#define W9966_WND_MIN_X		16
-//#define W9966_WND_MIN_Y		14
-//#define W9966_WND_MAX_X		705
-//#define W9966_WND_MAX_Y		253
-//#define W9966_WND_MAX_W		(W9966_WND_MAX_X - W9966_WND_MIN_X)
-//#define W9966_WND_MAX_H		(W9966_WND_MAX_Y - W9966_WND_MIN_Y)
-//
-///* Keep track of our current state */
-//#define W9966_STATE_PDEV	0x01
-//#define W9966_STATE_CLAIMED	0x02
-//#define W9966_STATE_VDEV	0x04
-//
-//#define W9966_I2C_W_ID		0x48
-//#define W9966_I2C_R_ID		0x49
-//#define W9966_I2C_R_DATA	0x08
-//#define W9966_I2C_R_CLOCK	0x04
-//#define W9966_I2C_W_DATA	0x02
-//#define W9966_I2C_W_CLOCK	0x01
-//
-//struct w9966 {
-;
+#define DPRINTF(x, a...) printk(KERN_DEBUG "W9966: %s(): "x, __func__ , ##a)
+#else
+#define DPRINTF(x...)
+#endif
+
+/*
+ *	Defines, simple typedefs etc.
+ */
+
+#define W9966_DRIVERNAME	"W9966CF Webcam"
+#define W9966_MAXCAMS		4	/* Maximum number of cameras */
+#define W9966_RBUFFER		2048	/* Read buffer (must be an even number) */
+#define W9966_SRAMSIZE		131072	/* 128kb */
+#define W9966_SRAMID		0x02	/* check w9966cf.pdf */
+
+/* Empirically determined window limits */
+#define W9966_WND_MIN_X		16
+#define W9966_WND_MIN_Y		14
+#define W9966_WND_MAX_X		705
+#define W9966_WND_MAX_Y		253
+#define W9966_WND_MAX_W		(W9966_WND_MAX_X - W9966_WND_MIN_X)
+#define W9966_WND_MAX_H		(W9966_WND_MAX_Y - W9966_WND_MIN_Y)
+
+/* Keep track of our current state */
+#define W9966_STATE_PDEV	0x01
+#define W9966_STATE_CLAIMED	0x02
+#define W9966_STATE_VDEV	0x04
+
+#define W9966_I2C_W_ID		0x48
+#define W9966_I2C_R_ID		0x49
+#define W9966_I2C_R_DATA	0x08
+#define W9966_I2C_R_CLOCK	0x04
+#define W9966_I2C_W_DATA	0x02
+#define W9966_I2C_W_CLOCK	0x01
+
+struct w9966 {
+	struct v4l2_device v4l2_dev;
 	unsigned char dev_state;
 	unsigned char i2c_state;
 	unsigned short ppmode;

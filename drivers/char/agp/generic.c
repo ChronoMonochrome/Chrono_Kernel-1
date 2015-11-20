@@ -428,7 +428,7 @@ int agp_bind_memory(struct agp_memory *curr, off_t pg_start)
 		return -EINVAL;
 
 	if (curr->is_bound) {
-;
+		printk(KERN_INFO PFX "memory %p is already bound!\n", curr);
 		return -EINVAL;
 	}
 	if (!curr->is_flushed) {
@@ -468,7 +468,7 @@ int agp_unbind_memory(struct agp_memory *curr)
 		return -EINVAL;
 
 	if (!curr->is_bound) {
-;
+		printk(KERN_INFO PFX "memory %p was not bound!\n", curr);
 		return -EINVAL;
 	}
 
@@ -496,8 +496,8 @@ static void agp_v2_parse_one(u32 *requested_mode, u32 *bridge_agpstat, u32 *vga_
 	u32 tmp;
 
 	if (*requested_mode & AGP2_RESERVED_MASK) {
-//		printk(KERN_INFO PFX "reserved bits set (%x) in mode 0x%x. Fixed.\n",
-;
+		printk(KERN_INFO PFX "reserved bits set (%x) in mode 0x%x. Fixed.\n",
+			*requested_mode & AGP2_RESERVED_MASK, *requested_mode);
 		*requested_mode &= ~AGP2_RESERVED_MASK;
 	}
 
@@ -514,13 +514,13 @@ static void agp_v2_parse_one(u32 *requested_mode, u32 *bridge_agpstat, u32 *vga_
 	switch (*bridge_agpstat & 7) {
 	case 4:
 		*bridge_agpstat |= (AGPSTAT2_2X | AGPSTAT2_1X);
-//		printk(KERN_INFO PFX "BIOS bug. AGP bridge claims to only support x4 rate"
-;
+		printk(KERN_INFO PFX "BIOS bug. AGP bridge claims to only support x4 rate"
+			"Fixing up support for x2 & x1\n");
 		break;
 	case 2:
 		*bridge_agpstat |= AGPSTAT2_1X;
-//		printk(KERN_INFO PFX "BIOS bug. AGP bridge claims to only support x2 rate"
-;
+		printk(KERN_INFO PFX "BIOS bug. AGP bridge claims to only support x2 rate"
+			"Fixing up support for x1\n");
 		break;
 	default:
 		break;
@@ -530,7 +530,7 @@ static void agp_v2_parse_one(u32 *requested_mode, u32 *bridge_agpstat, u32 *vga_
 	tmp = *requested_mode & 7;
 	switch (tmp) {
 		case 0:
-;
+			printk(KERN_INFO PFX "%s tried to set rate=x0. Setting to x1 mode.\n", current->comm);
 			*requested_mode |= AGPSTAT2_1X;
 			break;
 		case 1:
@@ -600,15 +600,15 @@ static void agp_v3_parse_one(u32 *requested_mode, u32 *bridge_agpstat, u32 *vga_
 	u32 tmp;
 
 	if (*requested_mode & AGP3_RESERVED_MASK) {
-//		printk(KERN_INFO PFX "reserved bits set (%x) in mode 0x%x. Fixed.\n",
-;
+		printk(KERN_INFO PFX "reserved bits set (%x) in mode 0x%x. Fixed.\n",
+			*requested_mode & AGP3_RESERVED_MASK, *requested_mode);
 		*requested_mode &= ~AGP3_RESERVED_MASK;
 	}
 
 	/* Check the speed bits make sense. */
 	tmp = *requested_mode & 7;
 	if (tmp == 0) {
-;
+		printk(KERN_INFO PFX "%s tried to set rate=x0. Setting to AGP3 x4 mode.\n", current->comm);
 		*requested_mode |= AGPSTAT3_4X;
 	}
 	if (tmp >= 3) {
@@ -641,8 +641,8 @@ static void agp_v3_parse_one(u32 *requested_mode, u32 *bridge_agpstat, u32 *vga_
 		 * AGP2.x 4x -> AGP3.0 4x.
 		 */
 		if (*requested_mode & AGPSTAT2_4X) {
-//			printk(KERN_INFO PFX "%s passes broken AGP3 flags (%x). Fixed.\n",
-;
+			printk(KERN_INFO PFX "%s passes broken AGP3 flags (%x). Fixed.\n",
+						current->comm, *requested_mode);
 			*requested_mode &= ~AGPSTAT2_4X;
 			*requested_mode |= AGPSTAT3_4X;
 		}
@@ -652,8 +652,8 @@ static void agp_v3_parse_one(u32 *requested_mode, u32 *bridge_agpstat, u32 *vga_
 		 * but have been passed an AGP 2.x mode.
 		 * Convert AGP 1x,2x,4x -> AGP 3.0 4x.
 		 */
-//		printk(KERN_INFO PFX "%s passes broken AGP2 flags (%x) in AGP3 mode. Fixed.\n",
-;
+		printk(KERN_INFO PFX "%s passes broken AGP2 flags (%x) in AGP3 mode. Fixed.\n",
+					current->comm, *requested_mode);
 		*requested_mode &= ~(AGPSTAT2_4X | AGPSTAT2_2X | AGPSTAT2_1X);
 		*requested_mode |= AGPSTAT3_4X;
 	}
@@ -662,13 +662,13 @@ static void agp_v3_parse_one(u32 *requested_mode, u32 *bridge_agpstat, u32 *vga_
 		if (!(*bridge_agpstat & AGPSTAT3_8X)) {
 			*bridge_agpstat &= ~(AGPSTAT3_8X | AGPSTAT3_RSVD);
 			*bridge_agpstat |= AGPSTAT3_4X;
-;
+			printk(KERN_INFO PFX "%s requested AGPx8 but bridge not capable.\n", current->comm);
 			return;
 		}
 		if (!(*vga_agpstat & AGPSTAT3_8X)) {
 			*bridge_agpstat &= ~(AGPSTAT3_8X | AGPSTAT3_RSVD);
 			*bridge_agpstat |= AGPSTAT3_4X;
-;
+			printk(KERN_INFO PFX "%s requested AGPx8 but graphic card not capable.\n", current->comm);
 			return;
 		}
 		/* All set, bridge & device can do AGP x8*/
@@ -688,21 +688,21 @@ static void agp_v3_parse_one(u32 *requested_mode, u32 *bridge_agpstat, u32 *vga_
 		 * If not, we fall back to x4 mode.
 		 */
 		if ((*bridge_agpstat & AGPSTAT3_8X) && (*vga_agpstat & AGPSTAT3_8X)) {
-//			printk(KERN_INFO PFX "No AGP mode specified. Setting to highest mode "
-;
+			printk(KERN_INFO PFX "No AGP mode specified. Setting to highest mode "
+				"supported by bridge & card (x8).\n");
 			*bridge_agpstat &= ~(AGPSTAT3_4X | AGPSTAT3_RSVD);
 			*vga_agpstat &= ~(AGPSTAT3_4X | AGPSTAT3_RSVD);
 		} else {
-;
+			printk(KERN_INFO PFX "Fell back to AGPx4 mode because");
 			if (!(*bridge_agpstat & AGPSTAT3_8X)) {
-//				printk(KERN_INFO PFX "bridge couldn't do x8. bridge_agpstat:%x (orig=%x)\n",
-;
+				printk(KERN_INFO PFX "bridge couldn't do x8. bridge_agpstat:%x (orig=%x)\n",
+					*bridge_agpstat, origbridge);
 				*bridge_agpstat &= ~(AGPSTAT3_8X | AGPSTAT3_RSVD);
 				*bridge_agpstat |= AGPSTAT3_4X;
 			}
 			if (!(*vga_agpstat & AGPSTAT3_8X)) {
-//				printk(KERN_INFO PFX "graphics card couldn't do x8. vga_agpstat:%x (orig=%x)\n",
-;
+				printk(KERN_INFO PFX "graphics card couldn't do x8. vga_agpstat:%x (orig=%x)\n",
+					*vga_agpstat, origvga);
 				*vga_agpstat &= ~(AGPSTAT3_8X | AGPSTAT3_RSVD);
 				*vga_agpstat |= AGPSTAT3_4X;
 			}
@@ -742,7 +742,7 @@ u32 agp_collect_device_status(struct agp_bridge_data *bridge, u32 requested_mode
 	for (;;) {
 		device = pci_get_class(PCI_CLASS_DISPLAY_VGA << 8, device);
 		if (!device) {
-;
+			printk(KERN_INFO PFX "Couldn't find an AGP VGA controller.\n");
 			return 0;
 		}
 		cap_ptr = pci_find_capability(device, PCI_CAP_ID_AGP);
@@ -956,7 +956,7 @@ int agp_generic_create_gatt_table(struct agp_bridge_data *bridge)
 	bridge->driver->cache_flush();
 #ifdef CONFIG_X86
 	if (set_memory_uc((unsigned long)table, 1 << page_order))
-;
+		printk(KERN_WARNING "Could not set GATT table memory to UC!");
 
 	bridge->gatt_table = (void *)table;
 #else

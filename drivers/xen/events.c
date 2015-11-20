@@ -543,8 +543,8 @@ static unsigned int __startup_pirq(unsigned int irq)
 	rc = HYPERVISOR_event_channel_op(EVTCHNOP_bind_pirq, &bind_pirq);
 	if (rc != 0) {
 		if (!probing_irq(irq))
-//			printk(KERN_INFO "Failed to obtain physical IRQ %d\n",
-;
+			printk(KERN_INFO "Failed to obtain physical IRQ %d\n",
+			       irq);
 		return 0;
 	}
 	evtchn = bind_pirq.port;
@@ -640,8 +640,8 @@ int xen_bind_pirq_gsi_to_irq(unsigned gsi,
 
 	irq = find_irq_by_gsi(gsi);
 	if (irq != -1) {
-//		printk(KERN_INFO "xen_map_pirq_gsi: returning irq %d for gsi %u\n",
-;
+		printk(KERN_INFO "xen_map_pirq_gsi: returning irq %d for gsi %u\n",
+		       irq, gsi);
 		goto out;	/* XXX need refcount? */
 	}
 
@@ -760,10 +760,10 @@ int xen_destroy_irq(int irq)
 		 * (free_domain_pirqs).
 		 */
 		if ((rc == -ESRCH && info->u.pirq.domid != DOMID_SELF))
-//			printk(KERN_INFO "domain %d does not have %d anymore\n",
-;
+			printk(KERN_INFO "domain %d does not have %d anymore\n",
+				info->u.pirq.domid, info->u.pirq.pirq);
 		else if (rc) {
-;
+			printk(KERN_WARNING "unmap irq failed %d\n", rc);
 			goto out;
 		}
 	}
@@ -1062,7 +1062,7 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
 
 	spin_lock_irqsave(&debug_lock, flags);
 
-;
+	printk("\nvcpu %d\n  ", cpu);
 
 	for_each_online_cpu(i) {
 		int pending;
@@ -1077,31 +1077,31 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
 	}
 	v = per_cpu(xen_vcpu, cpu);
 
-;
+	printk("\npending:\n   ");
 	for (i = ARRAY_SIZE(sh->evtchn_pending)-1; i >= 0; i--)
 		printk("%0*lx%s", (int)sizeof(sh->evtchn_pending[0])*2,
 		       sh->evtchn_pending[i],
 		       i % 8 == 0 ? "\n   " : " ");
-;
+	printk("\nglobal mask:\n   ");
 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--)
 		printk("%0*lx%s",
 		       (int)(sizeof(sh->evtchn_mask[0])*2),
 		       sh->evtchn_mask[i],
 		       i % 8 == 0 ? "\n   " : " ");
 
-;
+	printk("\nglobally unmasked:\n   ");
 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--)
 		printk("%0*lx%s", (int)(sizeof(sh->evtchn_mask[0])*2),
 		       sh->evtchn_pending[i] & ~sh->evtchn_mask[i],
 		       i % 8 == 0 ? "\n   " : " ");
 
-;
+	printk("\nlocal cpu%d mask:\n   ", cpu);
 	for (i = (NR_EVENT_CHANNELS/BITS_PER_LONG)-1; i >= 0; i--)
 		printk("%0*lx%s", (int)(sizeof(cpu_evtchn[0])*2),
 		       cpu_evtchn[i],
 		       i % 8 == 0 ? "\n   " : " ");
 
-;
+	printk("\nlocally unmasked:\n   ");
 	for (i = ARRAY_SIZE(sh->evtchn_mask)-1; i >= 0; i--) {
 		unsigned long pending = sh->evtchn_pending[i]
 			& ~sh->evtchn_mask[i]
@@ -1110,19 +1110,19 @@ irqreturn_t xen_debug_interrupt(int irq, void *dev_id)
 		       pending, i % 8 == 0 ? "\n   " : " ");
 	}
 
-;
+	printk("\npending list:\n");
 	for (i = 0; i < NR_EVENT_CHANNELS; i++) {
 		if (sync_test_bit(i, sh->evtchn_pending)) {
 			int word_idx = i / BITS_PER_LONG;
-//			printk("  %d: event %d -> irq %d%s%s%s\n",
-//			       cpu_from_evtchn(i), i,
-//			       evtchn_to_irq[i],
-//			       sync_test_bit(word_idx, &v->evtchn_pending_sel)
-//					     ? "" : " l2-clear",
-//			       !sync_test_bit(i, sh->evtchn_mask)
-//					     ? "" : " globally-masked",
-//			       sync_test_bit(i, cpu_evtchn)
-;
+			printk("  %d: event %d -> irq %d%s%s%s\n",
+			       cpu_from_evtchn(i), i,
+			       evtchn_to_irq[i],
+			       sync_test_bit(word_idx, &v->evtchn_pending_sel)
+					     ? "" : " l2-clear",
+			       !sync_test_bit(i, sh->evtchn_mask)
+					     ? "" : " globally-masked",
+			       sync_test_bit(i, cpu_evtchn)
+					     ? "" : " locally-masked");
 		}
 	}
 
@@ -1446,13 +1446,13 @@ static void restore_pirqs(void)
 
 		rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
 		if (rc) {
-//			printk(KERN_WARNING "xen map irq failed gsi=%d irq=%d pirq=%d rc=%d\n",
-;
+			printk(KERN_WARNING "xen map irq failed gsi=%d irq=%d pirq=%d rc=%d\n",
+					gsi, irq, pirq, rc);
 			xen_free_irq(irq);
 			continue;
 		}
 
-;
+		printk(KERN_DEBUG "xen: --> irq=%d, pirq=%d\n", irq, map_irq.pirq);
 
 		__startup_pirq(irq);
 	}
@@ -1664,13 +1664,13 @@ void xen_callback_vector(void)
 		callback_via = HVM_CALLBACK_VECTOR(XEN_HVM_EVTCHN_CALLBACK);
 		rc = xen_set_callback_via(callback_via);
 		if (rc) {
-//			printk(KERN_ERR "Request for Xen HVM callback vector"
-;
+			printk(KERN_ERR "Request for Xen HVM callback vector"
+					" failed.\n");
 			xen_have_vector_callback = 0;
 			return;
 		}
-//		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
-;
+		printk(KERN_INFO "Xen HVM callback vector for event delivery is "
+				"enabled\n");
 		/* in the restore case the vector has already been allocated */
 		if (!test_bit(XEN_HVM_EVTCHN_CALLBACK, used_vectors))
 			alloc_intr_gate(XEN_HVM_EVTCHN_CALLBACK, xen_hvm_callback_vector);

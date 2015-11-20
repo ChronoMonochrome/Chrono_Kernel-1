@@ -60,10 +60,10 @@
 
 static int fib_map_alloc(struct aac_dev *dev)
 {
-//	dprintk((KERN_INFO
-//	  "allocate hardware fibs pci_alloc_consistent(%p, %d * (%d + %d), %p)\n",
-//	  dev->pdev, dev->max_fib_size, dev->scsi_host_ptr->can_queue,
-;
+	dprintk((KERN_INFO
+	  "allocate hardware fibs pci_alloc_consistent(%p, %d * (%d + %d), %p)\n",
+	  dev->pdev, dev->max_fib_size, dev->scsi_host_ptr->can_queue,
+	  AAC_NUM_MGT_FIB, &dev->hw_fib_pa));
 	dev->hw_fib_va = pci_alloc_consistent(dev->pdev,
 		(dev->max_fib_size + sizeof(struct aac_fib_xporthdr))
 		* (dev->scsi_host_ptr->can_queue + AAC_NUM_MGT_FIB) + (ALIGN32 - 1),
@@ -220,9 +220,9 @@ void aac_fib_free(struct fib *fibptr)
 	if (unlikely(fibptr->flags & FIB_CONTEXT_FLAG_TIMED_OUT))
 		aac_config.fib_timeouts++;
 	if (fibptr->hw_fib_va->header.XferState != 0) {
-//		printk(KERN_WARNING "aac_fib_free, XferState != 0, fibptr = 0x%p, XferState = 0x%x\n",
-//			 (void*)fibptr,
-;
+		printk(KERN_WARNING "aac_fib_free, XferState != 0, fibptr = 0x%p, XferState = 0x%x\n",
+			 (void*)fibptr,
+			 le32_to_cpu(fibptr->hw_fib_va->header.XferState));
 	}
 	fibptr->next = fibptr->dev->free_fib;
 	fibptr->dev->free_fib = fibptr;
@@ -320,8 +320,8 @@ static int aac_get_entry (struct aac_dev * dev, u32 qid, struct aac_entry **entr
 
 	/* Queue is full */
 	if ((*index + 1) == le32_to_cpu(*(q->headers.consumer))) {
-//		printk(KERN_WARNING "Queue %d full, %u outstanding.\n",
-;
+		printk(KERN_WARNING "Queue %d full, %u outstanding.\n",
+				qid, q->numpending);
 		return 0;
 	} else {
 		*entry = q->base + *index;
@@ -353,7 +353,7 @@ int aac_queue_get(struct aac_dev * dev, u32 * index, u32 qid, struct hw_fib * hw
 	if (qid == AdapNormCmdQueue) {
 		/*  if no entries wait for some if caller wants to */
 		while (!aac_get_entry(dev, qid, &entry, index, nonotify)) {
-;
+			printk(KERN_ERR "GetEntries failed\n");
 		}
 		/*
 		 *	Setup queue entry with a command, status and fib mapped
@@ -487,13 +487,13 @@ int aac_fib_send(u16 command, struct fib *fibptr, unsigned long size,
 
 	FIB_COUNTER_INCREMENT(aac_config.FibsSent);
 
-;
-;
+	dprintk((KERN_DEBUG "Fib contents:.\n"));
+	dprintk((KERN_DEBUG "  Command =               %d.\n", le32_to_cpu(hw_fib->header.Command)));
 	dprintk((KERN_DEBUG "  SubCommand =            %d.\n", le32_to_cpu(((struct aac_query_mount *)fib_data(fibptr))->command)));
-;
-;
-;
-;
+	dprintk((KERN_DEBUG "  XferState  =            %x.\n", le32_to_cpu(hw_fib->header.XferState)));
+	dprintk((KERN_DEBUG "  hw_fib va being sent=%p\n",fibptr->hw_fib_va));
+	dprintk((KERN_DEBUG "  hw_fib pa being sent=%lx\n",(ulong)fibptr->hw_fib_pa));
+	dprintk((KERN_DEBUG "  fib being sent=%p\n",fibptr));
 
 	if (!dev->queues)
 		return -EBUSY;
@@ -502,8 +502,8 @@ int aac_fib_send(u16 command, struct fib *fibptr, unsigned long size,
 
 		spin_lock_irqsave(&dev->manage_lock, mflags);
 		if (dev->management_fib_count >= AAC_NUM_MGT_FIB) {
-//			printk(KERN_INFO "No management Fibs Available:%d\n",
-;
+			printk(KERN_INFO "No management Fibs Available:%d\n",
+						dev->management_fib_count);
 			spin_unlock_irqrestore(&dev->manage_lock, mflags);
 			return -EBUSY;
 		}
@@ -513,7 +513,7 @@ int aac_fib_send(u16 command, struct fib *fibptr, unsigned long size,
 	}
 
 	if (aac_adapter_deliver(fibptr) != 0) {
-;
+		printk(KERN_ERR "aac_fib_send: returned -EBUSY\n");
 		if (wait) {
 			spin_unlock_irqrestore(&fibptr->event_lock, flags);
 			spin_lock_irqsave(&dev->manage_lock, mflags);
@@ -547,8 +547,8 @@ int aac_fib_send(u16 command, struct fib *fibptr, unsigned long size,
 					q->numpending--;
 					spin_unlock_irqrestore(q->lock, qflags);
 					if (wait == -1) {
-//	        				printk(KERN_ERR "aacraid: aac_fib_send: first asynchronous command timed out.\n"
-;
+	        				printk(KERN_ERR "aacraid: aac_fib_send: first asynchronous command timed out.\n"
+						  "Usually a result of a PCI interrupt routing problem;\n"
 						  "update mother board BIOS or consider utilizing one of\n"
 						  "the SAFE mode kernel options (acpi, apic etc)\n");
 					}
@@ -556,9 +556,9 @@ int aac_fib_send(u16 command, struct fib *fibptr, unsigned long size,
 				}
 				if ((blink = aac_adapter_check_health(dev)) > 0) {
 					if (wait == -1) {
-//	        				printk(KERN_ERR "aacraid: aac_fib_send: adapter blinkLED 0x%x.\n"
-//						  "Usually a result of a serious unrecoverable hardware problem\n",
-;
+	        				printk(KERN_ERR "aacraid: aac_fib_send: adapter blinkLED 0x%x.\n"
+						  "Usually a result of a serious unrecoverable hardware problem\n",
+						  blink);
 					}
 					return -EFAULT;
 				}
@@ -728,8 +728,8 @@ int aac_fib_adapter_complete(struct fib *fibptr, unsigned short size)
 				aac_adapter_notify(dev, AdapNormRespQueue);
 		}
 	} else {
-//		printk(KERN_WARNING "aac_fib_adapter_complete: "
-;
+		printk(KERN_WARNING "aac_fib_adapter_complete: "
+			"Unknown xferstate detected.\n");
 		BUG();
 	}
 	return 0;
@@ -818,9 +818,9 @@ void aac_printf(struct aac_dev *dev, u32 val)
 		if (cp[length] != 0)
 			cp[length] = 0;
 		if (level == LOG_AAC_HIGH_ERROR)
-;
+			printk(KERN_WARNING "%s:%s", dev->name, cp);
 		else
-;
+			printk(KERN_INFO "%s:%s", dev->name, cp);
 	}
 	memset(cp, 0, 256);
 }
@@ -1161,21 +1161,21 @@ retry_next:
 #else
 			if (scsi_device_online(device)) {
 				scsi_device_set_state(device, SDEV_OFFLINE);
-//				sdev_printk(KERN_INFO, device,
-//					"Device offlined - %s\n",
-//					(channel == CONTAINER_CHANNEL) ?
-//						"array deleted" :
-;
+				sdev_printk(KERN_INFO, device,
+					"Device offlined - %s\n",
+					(channel == CONTAINER_CHANNEL) ?
+						"array deleted" :
+						"enclosure services event");
 			}
 #endif
 			break;
 		case ADD:
 			if (!scsi_device_online(device)) {
-//				sdev_printk(KERN_INFO, device,
-//					"Device online - %s\n",
-//					(channel == CONTAINER_CHANNEL) ?
-//						"array created" :
-;
+				sdev_printk(KERN_INFO, device,
+					"Device online - %s\n",
+					(channel == CONTAINER_CHANNEL) ?
+						"array created" :
+						"enclosure services event");
 				scsi_device_set_state(device, SDEV_RUNNING);
 			}
 			/* FALLTHRU */
@@ -1188,9 +1188,9 @@ retry_next:
 				if (!scsi_device_online(device))
 					break;
 				scsi_device_set_state(device, SDEV_OFFLINE);
-//				sdev_printk(KERN_INFO, device,
-//					"Device offlined - %s\n",
-;
+				sdev_printk(KERN_INFO, device,
+					"Device offlined - %s\n",
+					"array failed");
 #endif
 				break;
 			}
@@ -1548,7 +1548,7 @@ int aac_check_health(struct aac_dev * aac)
 			 */
 			up(&fibctx->wait_sem);
 		} else {
-;
+			printk(KERN_WARNING "aifd: didn't allocate NewFib.\n");
 			kfree(fib);
 			kfree(hw_fib);
 		}
@@ -1558,11 +1558,11 @@ int aac_check_health(struct aac_dev * aac)
 	spin_unlock_irqrestore(&aac->fib_lock, flagv);
 
 	if (BlinkLED < 0) {
-;
+		printk(KERN_ERR "%s: Host adapter dead %d\n", aac->name, BlinkLED);
 		goto out;
 	}
 
-;
+	printk(KERN_ERR "%s: Host adapter BLINK LED 0x%x\n", aac->name, BlinkLED);
 
 	if (!aac_check_reset || ((aac_check_reset == 1) &&
 		(aac->supplement_adapter_info.SupportedOptions2 &
@@ -1779,7 +1779,7 @@ int aac_command_thread(void *data)
 						 */
 						up(&fibctx->wait_sem);
 					} else {
-;
+						printk(KERN_WARNING "aifd: didn't allocate NewFib.\n");
 					}
 					entry = entry->next;
 				}

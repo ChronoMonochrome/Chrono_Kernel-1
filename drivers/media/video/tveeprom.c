@@ -54,13 +54,13 @@ MODULE_PARM_DESC(debug, "Debug level (0-1)");
 	(i < sizeof(array) / sizeof(char *) ? array[i] : "unknown")
 
 #define tveeprom_info(fmt, arg...) \
-//	v4l_printk(KERN_INFO, "tveeprom", c->adapter, c->addr, fmt , ## arg)
-//#define tveeprom_warn(fmt, arg...) \
-//	v4l_printk(KERN_WARNING, "tveeprom", c->adapter, c->addr, fmt , ## arg)
-//#define tveeprom_dbg(fmt, arg...) do { \
-//	if (debug) \
-//		v4l_printk(KERN_DEBUG, "tveeprom", \
-;
+	v4l_printk(KERN_INFO, "tveeprom", c->adapter, c->addr, fmt , ## arg)
+#define tveeprom_warn(fmt, arg...) \
+	v4l_printk(KERN_WARNING, "tveeprom", c->adapter, c->addr, fmt , ## arg)
+#define tveeprom_dbg(fmt, arg...) do { \
+	if (debug) \
+		v4l_printk(KERN_DEBUG, "tveeprom", \
+				c->adapter, c->addr, fmt , ## arg); \
 	} while (0)
 
 /*
@@ -500,8 +500,8 @@ void tveeprom_hauppauge_analog(struct i2c_client *c, struct tveeprom *tvee,
 			tveeprom_info("Tag [%02x] + %d bytes:",
 					eeprom_data[i], len - 1);
 			for (j = 1; j < len; j++)
-;
-;
+				printk(KERN_CONT " %02x", eeprom_data[i + j]);
+			printk(KERN_CONT "\n");
 		}
 
 		/* process by tag */
@@ -768,9 +768,9 @@ int tveeprom_read(struct i2c_client *c, unsigned char *eedata, int len)
 		for (i = 0; i < len; i++) {
 			if (0 == (i % 16))
 				tveeprom_info("%02x:", i);
-;
+			printk(KERN_CONT " %02x", eedata[i]);
 			if (15 == (i % 16))
-;
+				printk(KERN_CONT "\n");
 		}
 	}
 	return 0;

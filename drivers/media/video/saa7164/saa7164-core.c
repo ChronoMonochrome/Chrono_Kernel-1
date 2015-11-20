@@ -98,18 +98,18 @@ void saa7164_dumphex16FF(struct saa7164_dev *dev, u8 *buf, int len)
 	u8 tmp[16];
 	memset(&tmp[0], 0xff, sizeof(tmp));
 
-//	printk(KERN_INFO "--------------------> "
-;
+	printk(KERN_INFO "--------------------> "
+		"00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
 
 	for (i = 0; i < len; i += 16) {
 		if (memcmp(&tmp, buf + i, sizeof(tmp)) != 0) {
-//			printk(KERN_INFO "         [0x%08x] "
-//				"%02x %02x %02x %02x %02x %02x %02x %02x "
-//				"%02x %02x %02x %02x %02x %02x %02x %02x\n", i,
-//			*(buf+i+0), *(buf+i+1), *(buf+i+2), *(buf+i+3),
-//			*(buf+i+4), *(buf+i+5), *(buf+i+6), *(buf+i+7),
-//			*(buf+i+8), *(buf+i+9), *(buf+i+10), *(buf+i+11),
-;
+			printk(KERN_INFO "         [0x%08x] "
+				"%02x %02x %02x %02x %02x %02x %02x %02x "
+				"%02x %02x %02x %02x %02x %02x %02x %02x\n", i,
+			*(buf+i+0), *(buf+i+1), *(buf+i+2), *(buf+i+3),
+			*(buf+i+4), *(buf+i+5), *(buf+i+6), *(buf+i+7),
+			*(buf+i+8), *(buf+i+9), *(buf+i+10), *(buf+i+11),
+			*(buf+i+12), *(buf+i+13), *(buf+i+14), *(buf+i+15));
 		}
 	}
 }
@@ -123,7 +123,7 @@ static void saa7164_pack_verifier(struct saa7164_buffer *buf)
 
 		if ((*(p + i + 0) != 0x00) || (*(p + i + 1) != 0x00) ||
 			(*(p + i + 2) != 0x01) || (*(p + i + 3) != 0xBA)) {
-;
+			printk(KERN_ERR "No pack at 0x%x\n", i);
 #if 0
 			saa7164_dumphex16FF(buf->port->dev, (p + i), 32);
 #endif
@@ -157,8 +157,8 @@ static void saa7164_ts_verifier(struct saa7164_buffer *buf)
 		if (pid == FIXED_VIDEO_PID) {
 			a = ((port->last_v_cc + 1) & 0x0f);
 			if (a != cc) {
-//				printk(KERN_ERR "video cc last = %x current = %x i = %d\n",
-;
+				printk(KERN_ERR "video cc last = %x current = %x i = %d\n",
+					port->last_v_cc, cc, i);
 				port->v_cc_errors++;
 			}
 
@@ -167,8 +167,8 @@ static void saa7164_ts_verifier(struct saa7164_buffer *buf)
 		if (pid == FIXED_AUDIO_PID) {
 			a = ((port->last_a_cc + 1) & 0x0f);
 			if (a != cc) {
-//				printk(KERN_ERR "audio cc last = %x current = %x i = %d\n",
-;
+				printk(KERN_ERR "audio cc last = %x current = %x i = %d\n",
+					port->last_a_cc, cc, i);
 				port->a_cc_errors++;
 			}
 
@@ -182,13 +182,13 @@ static void saa7164_ts_verifier(struct saa7164_buffer *buf)
 	 * always generates errors.
 	 */
 	if (port->v_cc_errors && (port->done_first_interrupt > 1))
-;
+		printk(KERN_ERR "video pid cc, %d errors\n", port->v_cc_errors);
 
 	if (port->a_cc_errors && (port->done_first_interrupt > 1))
-;
+		printk(KERN_ERR "audio pid cc, %d errors\n", port->a_cc_errors);
 
 	if (port->sync_errors && (port->done_first_interrupt > 1))
-;
+		printk(KERN_ERR "sync_errors = %d\n", port->sync_errors);
 
 	if (port->done_first_interrupt == 1)
 		port->done_first_interrupt++;
@@ -259,19 +259,19 @@ static void saa7164_histogram_print(struct saa7164_port *port,
 	u32 entries = 0;
 	int i;
 
-;
+	printk(KERN_ERR "Histogram named %s (ms, count, last_update_jiffy)\n", hg->name);
 	for (i = 0; i < 64; i++) {
 		if (hg->counter1[i].count == 0)
 			continue;
 
-//		printk(KERN_ERR " %4d %12d %Ld\n",
-//			hg->counter1[i].val,
-//			hg->counter1[i].count,
-;
+		printk(KERN_ERR " %4d %12d %Ld\n",
+			hg->counter1[i].val,
+			hg->counter1[i].count,
+			hg->counter1[i].update_time);
 
 		entries++;
 	}
-;
+	printk(KERN_ERR "Total: %d\n", entries);
 }
 
 static void saa7164_work_enchandler_helper(struct saa7164_port *port, int bufnr)
@@ -288,15 +288,15 @@ static void saa7164_work_enchandler_helper(struct saa7164_port *port, int bufnr)
 
 		buf = list_entry(c, struct saa7164_buffer, list);
 		if (i++ > port->hwcfg.buffercount) {
-//			printk(KERN_ERR "%s() illegal i count %d\n",
-;
+			printk(KERN_ERR "%s() illegal i count %d\n",
+				__func__, i);
 			break;
 		}
 
 		if (buf->idx == bufnr) {
 
 			/* Found the buffer, deal with it */
-;
+			dprintk(DBGLVL_IRQ, "%s() bufnr: %d\n", __func__, bufnr);
 
 			if (crc_checking) {
 				/* Throw a new checksum on the dma buffer */
@@ -313,8 +313,8 @@ static void saa7164_work_enchandler_helper(struct saa7164_port *port, int bufnr)
 					(*(p + buf->actual_size + 0x11) != 0xff) ||
 					(*(p + buf->actual_size + 0x12) != 0xff) ||
 					(*(p + buf->actual_size + 0x13) != 0xff)) {
-//						printk(KERN_ERR "%s() buf %p guard buffer breach\n",
-;
+						printk(KERN_ERR "%s() buf %p guard buffer breach\n",
+							__func__, buf);
 #if 0
 						saa7164_dumphex16FF(dev, (p + buf->actual_size) - 32 , 64);
 #endif
@@ -356,11 +356,11 @@ static void saa7164_work_enchandler_helper(struct saa7164_port *port, int bufnr)
 					wake_up_interruptible(&port->wait_read);
 
 				} else {
-;
+					printk(KERN_ERR "buf %p bufsize fails match\n", buf);
 				}
 
 			} else
-;
+				printk(KERN_ERR "encirq no free buffers, increase param encoder_buffers\n");
 
 			/* Ensure offset into buffer remains 0, fill buffer
 			 * with known bad data. We check for this data at a later point
@@ -401,19 +401,19 @@ static void saa7164_work_enchandler(struct work_struct *w)
 	saa7164_histogram_update(&port->irq_svc_interval,
 		port->last_irq_svc_msecs_diff);
 
-//	dprintk(DBGLVL_IRQ,
-//		"%s() %Ldms elapsed irq->deferred %Ldms wp: %d rp: %d\n",
-//		__func__,
-//		port->last_svc_msecs_diff,
-//		port->last_irq_svc_msecs_diff,
-//		port->last_svc_wp,
-//		port->last_svc_rp
-;
+	dprintk(DBGLVL_IRQ,
+		"%s() %Ldms elapsed irq->deferred %Ldms wp: %d rp: %d\n",
+		__func__,
+		port->last_svc_msecs_diff,
+		port->last_irq_svc_msecs_diff,
+		port->last_svc_wp,
+		port->last_svc_rp
+		);
 
 	/* Current write position */
 	wp = saa7164_readl(port->bufcounter);
 	if (wp > (port->hwcfg.buffercount - 1)) {
-;
+		printk(KERN_ERR "%s() illegal buf count %d\n", __func__, wp);
 		return;
 	}
 
@@ -431,7 +431,7 @@ static void saa7164_work_enchandler(struct work_struct *w)
 			rp = (port->last_svc_rp + 1) % 8;
 
 		if ((rp < 0) || (rp > (port->hwcfg.buffercount - 1))) {
-;
+			printk(KERN_ERR "%s() illegal rp count %d\n", __func__, rp);
 			break;
 		}
 
@@ -477,19 +477,19 @@ static void saa7164_work_vbihandler(struct work_struct *w)
 	saa7164_histogram_update(&port->irq_svc_interval,
 		port->last_irq_svc_msecs_diff);
 
-//	dprintk(DBGLVL_IRQ,
-//		"%s() %Ldms elapsed irq->deferred %Ldms wp: %d rp: %d\n",
-//		__func__,
-//		port->last_svc_msecs_diff,
-//		port->last_irq_svc_msecs_diff,
-//		port->last_svc_wp,
-//		port->last_svc_rp
-;
+	dprintk(DBGLVL_IRQ,
+		"%s() %Ldms elapsed irq->deferred %Ldms wp: %d rp: %d\n",
+		__func__,
+		port->last_svc_msecs_diff,
+		port->last_irq_svc_msecs_diff,
+		port->last_svc_wp,
+		port->last_svc_rp
+		);
 
 	/* Current write position */
 	wp = saa7164_readl(port->bufcounter);
 	if (wp > (port->hwcfg.buffercount - 1)) {
-;
+		printk(KERN_ERR "%s() illegal buf count %d\n", __func__, wp);
 		return;
 	}
 
@@ -507,7 +507,7 @@ static void saa7164_work_vbihandler(struct work_struct *w)
 			rp = (port->last_svc_rp + 1) % 8;
 
 		if ((rp < 0) || (rp > (port->hwcfg.buffercount - 1))) {
-;
+			printk(KERN_ERR "%s() illegal rp count %d\n", __func__, rp);
 			break;
 		}
 
@@ -566,8 +566,8 @@ static irqreturn_t saa7164_irq_vbi(struct saa7164_port *port)
 	saa7164_histogram_update(&port->irq_interval,
 		port->last_irq_msecs_diff);
 
-//	dprintk(DBGLVL_IRQ, "%s() %Ldms elapsed\n", __func__,
-;
+	dprintk(DBGLVL_IRQ, "%s() %Ldms elapsed\n", __func__,
+		port->last_irq_msecs_diff);
 
 	/* Tis calls the vbi irq handler */
 	schedule_work(&port->workenc);
@@ -591,8 +591,8 @@ static irqreturn_t saa7164_irq_encoder(struct saa7164_port *port)
 	saa7164_histogram_update(&port->irq_interval,
 		port->last_irq_msecs_diff);
 
-//	dprintk(DBGLVL_IRQ, "%s() %Ldms elapsed\n", __func__,
-;
+	dprintk(DBGLVL_IRQ, "%s() %Ldms elapsed\n", __func__,
+		port->last_irq_msecs_diff);
 
 	schedule_work(&port->workenc);
 	return 0;
@@ -625,8 +625,8 @@ static irqreturn_t saa7164_irq_ts(struct saa7164_port *port)
 
 		if (buf->idx == rp) {
 			/* Found the buffer, deal with it */
-//			dprintk(DBGLVL_IRQ, "%s() wp: %d processing: %d\n",
-;
+			dprintk(DBGLVL_IRQ, "%s() wp: %d processing: %d\n",
+				__func__, wp, rp);
 			saa7164_buffer_deliver(buf);
 			break;
 		}
@@ -650,7 +650,7 @@ static irqreturn_t saa7164_irq(int irq, void *dev_id)
 	int i, handled = 0, bit;
 
 	if (dev == NULL) {
-;
+		printk(KERN_ERR "%s() No device specified\n", __func__);
 		handled = 0;
 		goto out;
 	}
@@ -723,11 +723,11 @@ static irqreturn_t saa7164_irq(int irq, void *dev_id)
 
 				} else {
 					/* Find the function */
-//					dprintk(DBGLVL_IRQ,
-//						"%s() unhandled interrupt "
-//						"reg 0x%x bit 0x%x "
-//						"intid = 0x%x\n",
-;
+					dprintk(DBGLVL_IRQ,
+						"%s() unhandled interrupt "
+						"reg 0x%x bit 0x%x "
+						"intid = 0x%x\n",
+						__func__, i, bit, intid);
 				}
 			}
 
@@ -752,13 +752,13 @@ void saa7164_getfirmwarestatus(struct saa7164_dev *dev)
 	dev->fw_status.remainheap =
 		saa7164_readl(SAA_DEVICE_SYSINIT_REMAINHEAP);
 
-;
-;
-;
-;
-;
-;
-;
+	dprintk(1, "Firmware status:\n");
+	dprintk(1, " .status     = 0x%08x\n", s->status);
+	dprintk(1, " .mode       = 0x%08x\n", s->mode);
+	dprintk(1, " .spec       = 0x%08x\n", s->spec);
+	dprintk(1, " .inst       = 0x%08x\n", s->inst);
+	dprintk(1, " .cpuload    = 0x%08x\n", s->cpuload);
+	dprintk(1, " .remainheap = 0x%08x\n", s->remainheap);
 }
 
 u32 saa7164_getcurrentfirmwareversion(struct saa7164_dev *dev)
@@ -766,12 +766,12 @@ u32 saa7164_getcurrentfirmwareversion(struct saa7164_dev *dev)
 	u32 reg;
 
 	reg = saa7164_readl(SAA_DEVICE_VERSION);
-//	dprintk(1, "Device running firmware version %d.%d.%d.%d (0x%x)\n",
-//		(reg & 0x0000fc00) >> 10,
-//		(reg & 0x000003e0) >> 5,
-//		(reg & 0x0000001f),
-//		(reg & 0xffff0000) >> 16,
-;
+	dprintk(1, "Device running firmware version %d.%d.%d.%d (0x%x)\n",
+		(reg & 0x0000fc00) >> 10,
+		(reg & 0x000003e0) >> 5,
+		(reg & 0x0000001f),
+		(reg & 0xffff0000) >> 16,
+		reg);
 
 	return reg;
 }
@@ -781,17 +781,17 @@ void saa7164_dumphex16(struct saa7164_dev *dev, u8 *buf, int len)
 {
 	int i;
 
-//	printk(KERN_INFO "--------------------> "
-;
+	printk(KERN_INFO "--------------------> "
+		"00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
 
 	for (i = 0; i < len; i += 16)
-//		printk(KERN_INFO "         [0x%08x] "
-//			"%02x %02x %02x %02x %02x %02x %02x %02x "
-//			"%02x %02x %02x %02x %02x %02x %02x %02x\n", i,
-//		*(buf+i+0), *(buf+i+1), *(buf+i+2), *(buf+i+3),
-//		*(buf+i+4), *(buf+i+5), *(buf+i+6), *(buf+i+7),
-//		*(buf+i+8), *(buf+i+9), *(buf+i+10), *(buf+i+11),
-;
+		printk(KERN_INFO "         [0x%08x] "
+			"%02x %02x %02x %02x %02x %02x %02x %02x "
+			"%02x %02x %02x %02x %02x %02x %02x %02x\n", i,
+		*(buf+i+0), *(buf+i+1), *(buf+i+2), *(buf+i+3),
+		*(buf+i+4), *(buf+i+5), *(buf+i+6), *(buf+i+7),
+		*(buf+i+8), *(buf+i+9), *(buf+i+10), *(buf+i+11),
+		*(buf+i+12), *(buf+i+13), *(buf+i+14), *(buf+i+15));
 }
 
 /* TODO: Debugging func, remove */
@@ -799,95 +799,95 @@ void saa7164_dumpregs(struct saa7164_dev *dev, u32 addr)
 {
 	int i;
 
-//	dprintk(1, "--------------------> "
-;
+	dprintk(1, "--------------------> "
+		"00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f\n");
 
 	for (i = 0; i < 0x100; i += 16)
-//		dprintk(1, "region0[0x%08x] = "
-//			"%02x %02x %02x %02x %02x %02x %02x %02x"
-//			" %02x %02x %02x %02x %02x %02x %02x %02x\n", i,
-//			(u8)saa7164_readb(addr + i + 0),
-//			(u8)saa7164_readb(addr + i + 1),
-//			(u8)saa7164_readb(addr + i + 2),
-//			(u8)saa7164_readb(addr + i + 3),
-//			(u8)saa7164_readb(addr + i + 4),
-//			(u8)saa7164_readb(addr + i + 5),
-//			(u8)saa7164_readb(addr + i + 6),
-//			(u8)saa7164_readb(addr + i + 7),
-//			(u8)saa7164_readb(addr + i + 8),
-//			(u8)saa7164_readb(addr + i + 9),
-//			(u8)saa7164_readb(addr + i + 10),
-//			(u8)saa7164_readb(addr + i + 11),
-//			(u8)saa7164_readb(addr + i + 12),
-//			(u8)saa7164_readb(addr + i + 13),
-//			(u8)saa7164_readb(addr + i + 14),
-//			(u8)saa7164_readb(addr + i + 15)
-;
+		dprintk(1, "region0[0x%08x] = "
+			"%02x %02x %02x %02x %02x %02x %02x %02x"
+			" %02x %02x %02x %02x %02x %02x %02x %02x\n", i,
+			(u8)saa7164_readb(addr + i + 0),
+			(u8)saa7164_readb(addr + i + 1),
+			(u8)saa7164_readb(addr + i + 2),
+			(u8)saa7164_readb(addr + i + 3),
+			(u8)saa7164_readb(addr + i + 4),
+			(u8)saa7164_readb(addr + i + 5),
+			(u8)saa7164_readb(addr + i + 6),
+			(u8)saa7164_readb(addr + i + 7),
+			(u8)saa7164_readb(addr + i + 8),
+			(u8)saa7164_readb(addr + i + 9),
+			(u8)saa7164_readb(addr + i + 10),
+			(u8)saa7164_readb(addr + i + 11),
+			(u8)saa7164_readb(addr + i + 12),
+			(u8)saa7164_readb(addr + i + 13),
+			(u8)saa7164_readb(addr + i + 14),
+			(u8)saa7164_readb(addr + i + 15)
+			);
 }
 
 static void saa7164_dump_hwdesc(struct saa7164_dev *dev)
 {
-//	dprintk(1, "@0x%p hwdesc sizeof(struct tmComResHWDescr) = %d bytes\n",
-;
+	dprintk(1, "@0x%p hwdesc sizeof(struct tmComResHWDescr) = %d bytes\n",
+		&dev->hwdesc, (u32)sizeof(struct tmComResHWDescr));
 
-;
-;
-//	dprintk(1, " .bDescriptorSubtype = 0x%x\n",
-;
+	dprintk(1, " .bLength = 0x%x\n", dev->hwdesc.bLength);
+	dprintk(1, " .bDescriptorType = 0x%x\n", dev->hwdesc.bDescriptorType);
+	dprintk(1, " .bDescriptorSubtype = 0x%x\n",
+		dev->hwdesc.bDescriptorSubtype);
 
-;
-;
-;
-;
-//	dprintk(1, " .dwDeviceRegistersLocation = 0x%x\n",
-;
+	dprintk(1, " .bcdSpecVersion = 0x%x\n", dev->hwdesc.bcdSpecVersion);
+	dprintk(1, " .dwClockFrequency = 0x%x\n", dev->hwdesc.dwClockFrequency);
+	dprintk(1, " .dwClockUpdateRes = 0x%x\n", dev->hwdesc.dwClockUpdateRes);
+	dprintk(1, " .bCapabilities = 0x%x\n", dev->hwdesc.bCapabilities);
+	dprintk(1, " .dwDeviceRegistersLocation = 0x%x\n",
+		dev->hwdesc.dwDeviceRegistersLocation);
 
-//	dprintk(1, " .dwHostMemoryRegion = 0x%x\n",
-;
+	dprintk(1, " .dwHostMemoryRegion = 0x%x\n",
+		dev->hwdesc.dwHostMemoryRegion);
 
-//	dprintk(1, " .dwHostMemoryRegionSize = 0x%x\n",
-;
+	dprintk(1, " .dwHostMemoryRegionSize = 0x%x\n",
+		dev->hwdesc.dwHostMemoryRegionSize);
 
-//	dprintk(1, " .dwHostHibernatMemRegion = 0x%x\n",
-;
+	dprintk(1, " .dwHostHibernatMemRegion = 0x%x\n",
+		dev->hwdesc.dwHostHibernatMemRegion);
 
-//	dprintk(1, " .dwHostHibernatMemRegionSize = 0x%x\n",
-;
+	dprintk(1, " .dwHostHibernatMemRegionSize = 0x%x\n",
+		dev->hwdesc.dwHostHibernatMemRegionSize);
 }
 
 static void saa7164_dump_intfdesc(struct saa7164_dev *dev)
 {
-//	dprintk(1, "@0x%p intfdesc "
-//		"sizeof(struct tmComResInterfaceDescr) = %d bytes\n",
-;
+	dprintk(1, "@0x%p intfdesc "
+		"sizeof(struct tmComResInterfaceDescr) = %d bytes\n",
+		&dev->intfdesc, (u32)sizeof(struct tmComResInterfaceDescr));
 
-;
-;
-//	dprintk(1, " .bDescriptorSubtype = 0x%x\n",
-;
+	dprintk(1, " .bLength = 0x%x\n", dev->intfdesc.bLength);
+	dprintk(1, " .bDescriptorType = 0x%x\n", dev->intfdesc.bDescriptorType);
+	dprintk(1, " .bDescriptorSubtype = 0x%x\n",
+		dev->intfdesc.bDescriptorSubtype);
 
-;
-;
-;
-;
-;
-//	dprintk(1, " .bDebugInterruptId = 0x%x\n",
-;
+	dprintk(1, " .bFlags = 0x%x\n", dev->intfdesc.bFlags);
+	dprintk(1, " .bInterfaceType = 0x%x\n", dev->intfdesc.bInterfaceType);
+	dprintk(1, " .bInterfaceId = 0x%x\n", dev->intfdesc.bInterfaceId);
+	dprintk(1, " .bBaseInterface = 0x%x\n", dev->intfdesc.bBaseInterface);
+	dprintk(1, " .bInterruptId = 0x%x\n", dev->intfdesc.bInterruptId);
+	dprintk(1, " .bDebugInterruptId = 0x%x\n",
+		dev->intfdesc.bDebugInterruptId);
 
-;
+	dprintk(1, " .BARLocation = 0x%x\n", dev->intfdesc.BARLocation);
 }
 
 static void saa7164_dump_busdesc(struct saa7164_dev *dev)
 {
-//	dprintk(1, "@0x%p busdesc sizeof(struct tmComResBusDescr) = %d bytes\n",
-;
+	dprintk(1, "@0x%p busdesc sizeof(struct tmComResBusDescr) = %d bytes\n",
+		&dev->busdesc, (u32)sizeof(struct tmComResBusDescr));
 
-;
-;
-;
-;
-;
-;
+	dprintk(1, " .CommandRing   = 0x%016Lx\n", dev->busdesc.CommandRing);
+	dprintk(1, " .ResponseRing  = 0x%016Lx\n", dev->busdesc.ResponseRing);
+	dprintk(1, " .CommandWrite  = 0x%x\n", dev->busdesc.CommandWrite);
+	dprintk(1, " .CommandRead   = 0x%x\n", dev->busdesc.CommandRead);
+	dprintk(1, " .ResponseWrite = 0x%x\n", dev->busdesc.ResponseWrite);
+	dprintk(1, " .ResponseRead  = 0x%x\n", dev->busdesc.ResponseRead);
 }
 
 /* Much of the hardware configuration and PCI registers are configured
@@ -904,16 +904,16 @@ static void saa7164_get_descriptors(struct saa7164_dev *dev)
 		sizeof(struct tmComResBusDescr));
 
 	if (dev->hwdesc.bLength != sizeof(struct tmComResHWDescr)) {
-;
-//		printk(KERN_ERR "Need %x got %d\n", dev->hwdesc.bLength,
-;
+		printk(KERN_ERR "Structure struct tmComResHWDescr is mangled\n");
+		printk(KERN_ERR "Need %x got %d\n", dev->hwdesc.bLength,
+			(u32)sizeof(struct tmComResHWDescr));
 	} else
 		saa7164_dump_hwdesc(dev);
 
 	if (dev->intfdesc.bLength != sizeof(struct tmComResInterfaceDescr)) {
-;
-//		printk(KERN_ERR "Need %x got %d\n", dev->intfdesc.bLength,
-;
+		printk(KERN_ERR "struct struct tmComResInterfaceDescr is mangled\n");
+		printk(KERN_ERR "Need %x got %d\n", dev->intfdesc.bLength,
+			(u32)sizeof(struct tmComResInterfaceDescr));
 	} else
 		saa7164_dump_intfdesc(dev);
 
@@ -935,10 +935,10 @@ static int get_resources(struct saa7164_dev *dev)
 			return 0;
 	}
 
-//	printk(KERN_ERR "%s: can't get MMIO memory @ 0x%llx or 0x%llx\n",
-//		dev->name,
-//		(u64)pci_resource_start(dev->pci, 0),
-;
+	printk(KERN_ERR "%s: can't get MMIO memory @ 0x%llx or 0x%llx\n",
+		dev->name,
+		(u64)pci_resource_start(dev->pci, 0),
+		(u64)pci_resource_start(dev->pci, 2));
 
 	return -EBUSY;
 }
@@ -1043,10 +1043,10 @@ static int saa7164_dev_setup(struct saa7164_dev *dev)
 	saa7164_port_init(dev, SAA7164_PORT_VBI2);
 
 	if (get_resources(dev) < 0) {
-//		printk(KERN_ERR "CORE %s No more PCIe resources for "
-//		       "subsystem: %04x:%04x\n",
-//		       dev->name, dev->pci->subsystem_vendor,
-;
+		printk(KERN_ERR "CORE %s No more PCIe resources for "
+		       "subsystem: %04x:%04x\n",
+		       dev->name, dev->pci->subsystem_vendor,
+		       dev->pci->subsystem_device);
 
 		saa7164_devcount--;
 		return -ENODEV;
@@ -1066,12 +1066,12 @@ static int saa7164_dev_setup(struct saa7164_dev *dev)
 	dev->int_status = 0x183000 + 0xf80;
 	dev->int_ack = 0x183000 + 0xf90;
 
-//	printk(KERN_INFO
-//		"CORE %s: subsystem: %04x:%04x, board: %s [card=%d,%s]\n",
-//	       dev->name, dev->pci->subsystem_vendor,
-//	       dev->pci->subsystem_device, saa7164_boards[dev->board].name,
-//	       dev->board, card[dev->nr] == dev->board ?
-;
+	printk(KERN_INFO
+		"CORE %s: subsystem: %04x:%04x, board: %s [card=%d,%s]\n",
+	       dev->name, dev->pci->subsystem_vendor,
+	       dev->pci->subsystem_device, saa7164_boards[dev->board].name,
+	       dev->board, card[dev->nr] == dev->board ?
+	       "insmod option" : "autodetected");
 
 	saa7164_pci_quirks(dev);
 
@@ -1080,7 +1080,7 @@ static int saa7164_dev_setup(struct saa7164_dev *dev)
 
 static void saa7164_dev_unregister(struct saa7164_dev *dev)
 {
-;
+	dprintk(1, "%s()\n", __func__);
 
 	release_mem_region(pci_resource_start(dev->pci, 0),
 		pci_resource_len(dev->pci, 0));
@@ -1194,7 +1194,7 @@ static int saa7164_thread_function(void *data)
 	struct tmFwInfoStruct fwinfo;
 	u64 last_poll_time = 0;
 
-;
+	dprintk(DBGLVL_THR, "thread started\n");
 
 	set_freezable();
 
@@ -1204,7 +1204,7 @@ static int saa7164_thread_function(void *data)
 			break;
 		try_to_freeze();
 
-;
+		dprintk(DBGLVL_THR, "thread running\n");
 
 		/* Dump the firmware debug message to console */
 		/* Polling this costs us 1-2% of the arm CPU */
@@ -1219,7 +1219,7 @@ static int saa7164_thread_function(void *data)
 
 	}
 
-;
+	dprintk(DBGLVL_THR, "thread exiting\n");
 	return 0;
 }
 
@@ -1249,16 +1249,16 @@ static int __devinit saa7164_initdev(struct pci_dev *pci_dev,
 	/* print pci info */
 	dev->pci_rev = pci_dev->revision;
 	pci_read_config_byte(pci_dev, PCI_LATENCY_TIMER,  &dev->pci_lat);
-//	printk(KERN_INFO "%s/0: found at %s, rev: %d, irq: %d, "
-//	       "latency: %d, mmio: 0x%llx\n", dev->name,
-//	       pci_name(pci_dev), dev->pci_rev, pci_dev->irq,
-//	       dev->pci_lat,
-;
+	printk(KERN_INFO "%s/0: found at %s, rev: %d, irq: %d, "
+	       "latency: %d, mmio: 0x%llx\n", dev->name,
+	       pci_name(pci_dev), dev->pci_rev, pci_dev->irq,
+	       dev->pci_lat,
+		(unsigned long long)pci_resource_start(pci_dev, 0));
 
 	pci_set_master(pci_dev);
 	/* TODO */
 	if (!pci_dma_supported(pci_dev, 0xffffffff)) {
-;
+		printk("%s/0: Oops: no 32bit PCI DMA ???\n", dev->name);
 		err = -EIO;
 		goto fail_irq;
 	}
@@ -1266,8 +1266,8 @@ static int __devinit saa7164_initdev(struct pci_dev *pci_dev,
 	err = request_irq(pci_dev->irq, saa7164_irq,
 		IRQF_SHARED | IRQF_DISABLED, dev->name, dev);
 	if (err < 0) {
-//		printk(KERN_ERR "%s: can't get IRQ %d\n", dev->name,
-;
+		printk(KERN_ERR "%s: can't get IRQ %d\n", dev->name,
+			pci_dev->irq);
 		err = -EIO;
 		goto fail_irq;
 	}
@@ -1290,9 +1290,9 @@ static int __devinit saa7164_initdev(struct pci_dev *pci_dev,
 
 		err = saa7164_downloadfirmware(dev);
 		if (err < 0) {
-//			printk(KERN_ERR
-//				"Failed to boot firmware, no features "
-;
+			printk(KERN_ERR
+				"Failed to boot firmware, no features "
+				"registered\n");
 			goto fail_fw;
 		}
 
@@ -1302,8 +1302,8 @@ static int __devinit saa7164_initdev(struct pci_dev *pci_dev,
 		saa7164_getfirmwarestatus(dev);
 		err = saa7164_bus_setup(dev);
 		if (err < 0)
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"Failed to setup the bus, will continue\n");
 		saa7164_bus_dump(dev);
 
 		/* Ping the running firmware via the command bus and get the
@@ -1311,16 +1311,16 @@ static int __devinit saa7164_initdev(struct pci_dev *pci_dev,
 		 */
 		version = 0;
 		if (saa7164_api_get_fw_version(dev, &version) == SAA_OK)
-//			dprintk(1, "Bus is operating correctly using "
-//				"version %d.%d.%d.%d (0x%x)\n",
-//				(version & 0x0000fc00) >> 10,
-//				(version & 0x000003e0) >> 5,
-//				(version & 0x0000001f),
-//				(version & 0xffff0000) >> 16,
-;
+			dprintk(1, "Bus is operating correctly using "
+				"version %d.%d.%d.%d (0x%x)\n",
+				(version & 0x0000fc00) >> 10,
+				(version & 0x000003e0) >> 5,
+				(version & 0x0000001f),
+				(version & 0xffff0000) >> 16,
+				version);
 		else
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"Failed to communicate with the firmware\n");
 
 		/* Bring up the I2C buses */
 		saa7164_i2c_register(&dev->i2c_bus[0]);
@@ -1340,45 +1340,45 @@ static int __devinit saa7164_initdev(struct pci_dev *pci_dev,
 		/* Begin to create the video sub-systems and register funcs */
 		if (saa7164_boards[dev->board].porta == SAA7164_MPEG_DVB) {
 			if (saa7164_dvb_register(&dev->ports[SAA7164_PORT_TS1]) < 0) {
-//				printk(KERN_ERR "%s() Failed to register "
-//					"dvb adapters on porta\n",
-;
+				printk(KERN_ERR "%s() Failed to register "
+					"dvb adapters on porta\n",
+					__func__);
 			}
 		}
 
 		if (saa7164_boards[dev->board].portb == SAA7164_MPEG_DVB) {
 			if (saa7164_dvb_register(&dev->ports[SAA7164_PORT_TS2]) < 0) {
-//				printk(KERN_ERR"%s() Failed to register "
-//					"dvb adapters on portb\n",
-;
+				printk(KERN_ERR"%s() Failed to register "
+					"dvb adapters on portb\n",
+					__func__);
 			}
 		}
 
 		if (saa7164_boards[dev->board].portc == SAA7164_MPEG_ENCODER) {
 			if (saa7164_encoder_register(&dev->ports[SAA7164_PORT_ENC1]) < 0) {
-//				printk(KERN_ERR"%s() Failed to register "
-;
+				printk(KERN_ERR"%s() Failed to register "
+					"mpeg encoder\n", __func__);
 			}
 		}
 
 		if (saa7164_boards[dev->board].portd == SAA7164_MPEG_ENCODER) {
 			if (saa7164_encoder_register(&dev->ports[SAA7164_PORT_ENC2]) < 0) {
-//				printk(KERN_ERR"%s() Failed to register "
-;
+				printk(KERN_ERR"%s() Failed to register "
+					"mpeg encoder\n", __func__);
 			}
 		}
 
 		if (saa7164_boards[dev->board].porte == SAA7164_MPEG_VBI) {
 			if (saa7164_vbi_register(&dev->ports[SAA7164_PORT_VBI1]) < 0) {
-//				printk(KERN_ERR"%s() Failed to register "
-;
+				printk(KERN_ERR"%s() Failed to register "
+					"vbi device\n", __func__);
 			}
 		}
 
 		if (saa7164_boards[dev->board].portf == SAA7164_MPEG_VBI) {
 			if (saa7164_vbi_register(&dev->ports[SAA7164_PORT_VBI2]) < 0) {
-//				printk(KERN_ERR"%s() Failed to register "
-;
+				printk(KERN_ERR"%s() Failed to register "
+					"vbi device\n", __func__);
 			}
 		}
 		saa7164_api_set_debug(dev, fw_debug);
@@ -1387,17 +1387,17 @@ static int __devinit saa7164_initdev(struct pci_dev *pci_dev,
 			dev->kthread = kthread_run(saa7164_thread_function, dev,
 				"saa7164 debug");
 			if (!dev->kthread)
-//				printk(KERN_ERR "%s() Failed to create "
-;
+				printk(KERN_ERR "%s() Failed to create "
+					"debug kernel thread\n", __func__);
 		}
 
 	} /* != BOARD_UNKNOWN */
 	else
-//		printk(KERN_ERR "%s() Unsupported board detected, "
-;
+		printk(KERN_ERR "%s() Unsupported board detected, "
+			"registering without firmware\n", __func__);
 
-;
-;
+	dprintk(1, "%s() parameter debug = %d\n", __func__, saa_debug);
+	dprintk(1, "%s() parameter waitsecs = %d\n", __func__, waitsecs);
 
 fail_fw:
 	return 0;
@@ -1411,7 +1411,7 @@ fail_free:
 
 static void saa7164_shutdown(struct saa7164_dev *dev)
 {
-;
+	dprintk(1, "%s()\n", __func__);
 }
 
 static void __devexit saa7164_finidev(struct pci_dev *pci_dev)
@@ -1505,7 +1505,7 @@ static struct pci_driver saa7164_pci_driver = {
 
 static int __init saa7164_init(void)
 {
-;
+	printk(KERN_INFO "saa7164 driver loaded\n");
 
 #ifdef CONFIG_PROC_FS
 	saa7164_proc_create();

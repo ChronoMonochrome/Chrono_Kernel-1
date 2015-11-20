@@ -791,13 +791,13 @@ static int __devinit snd_als4000_create_gameport(struct snd_card_als4000 *acard,
 	}
 
 	if (!r) {
-;
+		printk(KERN_WARNING "als4000: cannot reserve joystick ports\n");
 		return -EBUSY;
 	}
 
 	acard->gameport = gp = gameport_allocate_port();
 	if (!gp) {
-;
+		printk(KERN_ERR "als4000: cannot allocate memory for gameport\n");
 		release_and_free_resource(r);
 		return -ENOMEM;
 	}
@@ -873,7 +873,7 @@ static int __devinit snd_card_als4000_probe(struct pci_dev *pci,
 	/* check, if we can restrict PCI DMA transfers to 24 bits */
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(24)) < 0 ||
 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(24)) < 0) {
-;
+		snd_printk(KERN_ERR "architecture does not support 24bit PCI busmaster DMA\n");
 		pci_disable_device(pci);
 		return -ENXIO;
 	}
@@ -933,8 +933,8 @@ static int __devinit snd_card_als4000_probe(struct pci_dev *pci,
 					iobase + ALS4K_IOB_30_MIDI_DATA,
 					MPU401_INFO_INTEGRATED,
 					pci->irq, 0, &chip->rmidi)) < 0) {
-//		printk(KERN_ERR "als4000: no MPU-401 device at 0x%lx?\n",
-;
+		printk(KERN_ERR "als4000: no MPU-401 device at 0x%lx?\n",
+				iobase + ALS4K_IOB_30_MIDI_DATA);
 		goto out_err;
 	}
 	/* FIXME: ALS4000 has interesting MPU401 configuration features
@@ -954,9 +954,9 @@ static int __devinit snd_card_als4000_probe(struct pci_dev *pci,
 				iobase + ALS4K_IOB_10_ADLIB_ADDR0,
 				iobase + ALS4K_IOB_12_ADLIB_ADDR2,
 			    OPL3_HW_AUTO, 1, &opl3) < 0) {
-//		printk(KERN_ERR "als4000: no OPL device at 0x%lx-0x%lx?\n",
-//			   iobase + ALS4K_IOB_10_ADLIB_ADDR0,
-;
+		printk(KERN_ERR "als4000: no OPL device at 0x%lx-0x%lx?\n",
+			   iobase + ALS4K_IOB_10_ADLIB_ADDR0,
+			   iobase + ALS4K_IOB_12_ADLIB_ADDR2);
 	} else {
 		if ((err = snd_opl3_hwdep_new(opl3, 0, 1, NULL)) < 0) {
 			goto out_err;
@@ -1013,8 +1013,8 @@ static int snd_als4000_resume(struct pci_dev *pci)
 	pci_set_power_state(pci, PCI_D0);
 	pci_restore_state(pci);
 	if (pci_enable_device(pci) < 0) {
-//		printk(KERN_ERR "als4000: pci_enable_device failed, "
-;
+		printk(KERN_ERR "als4000: pci_enable_device failed, "
+		       "disabling device\n");
 		snd_card_disconnect(card);
 		return -EIO;
 	}

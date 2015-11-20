@@ -97,7 +97,7 @@ int nand_bch_correct_data(struct mtd_info *mtd, unsigned char *buf,
 			      __func__, errloc[i]);
 		}
 	} else if (count < 0) {
-;
+		printk(KERN_ERR "ecc unrecoverable error\n");
 		count = -1;
 	}
 	return count;
@@ -133,7 +133,7 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 	unsigned char *erased_page;
 
 	if (!eccsize || !eccbytes) {
-;
+		printk(KERN_WARNING "ecc parameters not supplied\n");
 		goto fail;
 	}
 
@@ -150,8 +150,8 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 
 	/* verify that eccbytes has the expected value */
 	if (nbc->bch->ecc_bytes != eccbytes) {
-//		printk(KERN_WARNING "invalid eccbytes %u, should be %u\n",
-;
+		printk(KERN_WARNING "invalid eccbytes %u, should be %u\n",
+		       eccbytes, nbc->bch->ecc_bytes);
 		goto fail;
 	}
 
@@ -162,8 +162,8 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 
 		/* handle large page devices only */
 		if (mtd->oobsize < 64) {
-//			printk(KERN_WARNING "must provide an oob scheme for "
-;
+			printk(KERN_WARNING "must provide an oob scheme for "
+			       "oobsize %d\n", mtd->oobsize);
 			goto fail;
 		}
 
@@ -172,9 +172,9 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 
 		/* reserve 2 bytes for bad block marker */
 		if (layout->eccbytes+2 > mtd->oobsize) {
-//			printk(KERN_WARNING "no suitable oob scheme available "
-//			       "for oobsize %d eccbytes %u\n", mtd->oobsize,
-;
+			printk(KERN_WARNING "no suitable oob scheme available "
+			       "for oobsize %d eccbytes %u\n", mtd->oobsize,
+			       eccbytes);
 			goto fail;
 		}
 		/* put ecc bytes at oob tail */
@@ -189,11 +189,11 @@ nand_bch_init(struct mtd_info *mtd, unsigned int eccsize, unsigned int eccbytes,
 
 	/* sanity checks */
 	if (8*(eccsize+eccbytes) >= (1 << m)) {
-;
+		printk(KERN_WARNING "eccsize %u is too large\n", eccsize);
 		goto fail;
 	}
 	if ((*ecclayout)->eccbytes != (eccsteps*eccbytes)) {
-;
+		printk(KERN_WARNING "invalid ecc layout\n");
 		goto fail;
 	}
 

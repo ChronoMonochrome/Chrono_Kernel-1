@@ -505,7 +505,7 @@ dasd_fba_dump_sense(struct dasd_device *device, struct dasd_ccw_req * req,
 	        len += sprintf(page + len, KERN_ERR PRINTK_HEADER
 			       " SORRY - NO VALID SENSE AVAILABLE\n");
 	}
-;
+	printk(KERN_ERR "%s", page);
 
 	/* dump the Channel Program */
 	/* print first CCWs (maximum 8) */
@@ -526,7 +526,7 @@ dasd_fba_dump_sense(struct dasd_device *device, struct dasd_ccw_req * req,
 		len += sprintf(page + len, "\n");
 		act++;
 	}
-;
+	printk(KERN_ERR "%s", page);
 
 
 	/* print failing CCW area */
@@ -567,7 +567,7 @@ dasd_fba_dump_sense(struct dasd_device *device, struct dasd_ccw_req * req,
 		act++;
 	}
 	if (len > 0)
-;
+		printk(KERN_ERR "%s", page);
 	free_page((unsigned long) page);
 }
 

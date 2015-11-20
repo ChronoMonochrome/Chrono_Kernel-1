@@ -99,14 +99,14 @@ static int raid_remove(struct transport_container *tc, struct device *dev,
 {
 	struct raid_data *rd = dev_get_drvdata(cdev);
 	struct raid_component *rc, *next;
-;
+	dev_printk(KERN_ERR, dev, "RAID REMOVE\n");
 	dev_set_drvdata(cdev, NULL);
 	list_for_each_entry_safe(rc, next, &rd->component_list, node) {
 		list_del(&rc->node);
-;
+		dev_printk(KERN_ERR, rc->dev.parent, "RAID COMPONENT REMOVE\n");
 		device_unregister(&rc->dev);
 	}
-;
+	dev_printk(KERN_ERR, dev, "RAID REMOVE DONE\n");
 	kfree(rd);
 	return 0;
 }
@@ -215,7 +215,7 @@ static void raid_component_release(struct device *dev)
 {
 	struct raid_component *rc =
 		container_of(dev, struct raid_component, dev);
-;
+	dev_printk(KERN_ERR, rc->dev.parent, "COMPONENT RELEASE\n");
 	put_device(rc->dev.parent);
 	kfree(rc);
 }

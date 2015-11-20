@@ -273,9 +273,9 @@ int platform_device_add(struct platform_device *pdev)
 		}
 
 		if (p && insert_resource(p, r)) {
-//			printk(KERN_ERR
-//			       "%s: failed to claim resource %d\n",
-;
+			printk(KERN_ERR
+			       "%s: failed to claim resource %d\n",
+			       dev_name(&pdev->dev), i);
 			ret = -EBUSY;
 			goto failed;
 		}

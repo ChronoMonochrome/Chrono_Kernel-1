@@ -149,7 +149,7 @@ static void __cpuinit twd_calibrate_rate(void)
 	 * the timer ticks
 	 */
 	if (twd_timer_rate == 0) {
-;
+		printk(KERN_INFO "Calibrating local timer... ");
 
 		/* Wait for a tick to start */
 		waitjiffies = get_jiffies_64() + 1;
@@ -173,8 +173,8 @@ static void __cpuinit twd_calibrate_rate(void)
 
 		twd_timer_rate = (0xFFFFFFFFU - count) * (HZ / 5);
 
-////		printk("%lu.%02luMHz.\n", twd_timer_rate / 1000000,
-;
+		printk("%lu.%02luMHz.\n", twd_timer_rate / 1000000,
+			(twd_timer_rate / 10000) % 100);
 	}
 }
 

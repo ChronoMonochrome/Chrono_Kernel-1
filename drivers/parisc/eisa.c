@@ -46,15 +46,15 @@
 #include <asm/eisa_eeprom.h>
 
 #if 0
-//#define EISA_DBG(msg, arg... ) printk(KERN_DEBUG "eisa: " msg , ## arg )
-//#else
-//#define EISA_DBG(msg, arg... )  
-//#endif
-//
-//#define SNAKES_EEPROM_BASE_ADDR 0xF0810400
-//#define MIRAGE_EEPROM_BASE_ADDR 0xF00C0400
-//
-;
+#define EISA_DBG(msg, arg... ) printk(KERN_DEBUG "eisa: " msg , ## arg )
+#else
+#define EISA_DBG(msg, arg... )  
+#endif
+
+#define SNAKES_EEPROM_BASE_ADDR 0xF0810400
+#define MIRAGE_EEPROM_BASE_ADDR 0xF00C0400
+
+static DEFINE_SPINLOCK(eisa_irq_lock);
 
 void __iomem *eisa_eeprom_addr __read_mostly;
 
@@ -242,7 +242,7 @@ static irqreturn_t eisa_irq(int wax_irq, void *intr_dev)
 
 static irqreturn_t dummy_irq2_handler(int _, void *dev)
 {
-;
+	printk(KERN_ALERT "eisa: uhh, irq2?\n");
 	return IRQ_HANDLED;
 }
 
@@ -305,8 +305,8 @@ static int __init eisa_probe(struct parisc_device *dev)
 
 	char *name = is_mongoose(dev) ? "Mongoose" : "Wax";
 
-//	printk(KERN_INFO "%s EISA Adapter found at 0x%08lx\n", 
-;
+	printk(KERN_INFO "%s EISA Adapter found at 0x%08lx\n", 
+		name, (unsigned long)dev->hpa.start);
 
 	eisa_dev.hba.dev = dev;
 	eisa_dev.hba.iommu = ccio_get_iommu(dev);
@@ -317,7 +317,7 @@ static int __init eisa_probe(struct parisc_device *dev)
 	eisa_dev.hba.lmmio_space.flags = IORESOURCE_MEM;
 	result = ccio_request_resource(dev, &eisa_dev.hba.lmmio_space);
 	if (result < 0) {
-;
+		printk(KERN_ERR "EISA: failed to claim EISA Bus address space!\n");
 		return result;
 	}
 	eisa_dev.hba.io_space.name = "EISA";
@@ -326,14 +326,14 @@ static int __init eisa_probe(struct parisc_device *dev)
 	eisa_dev.hba.lmmio_space.flags = IORESOURCE_IO;
 	result = request_resource(&ioport_resource, &eisa_dev.hba.io_space);
 	if (result < 0) {
-;
+		printk(KERN_ERR "EISA: failed to claim EISA Bus port space!\n");
 		return result;
 	}
 	pcibios_register_hba(&eisa_dev.hba);
 
 	result = request_irq(dev->irq, eisa_irq, IRQF_SHARED, "EISA", &eisa_dev);
 	if (result) {
-;
+		printk(KERN_ERR "EISA: request_irq failed!\n");
 		return result;
 	}
 	
@@ -371,7 +371,7 @@ static int __init eisa_probe(struct parisc_device *dev)
 		eisa_dev.root.slots = result;
 		eisa_dev.root.dma_mask = 0xffffffff; /* wild guess */
 		if (eisa_root_register (&eisa_dev.root)) {
-;
+			printk(KERN_ERR "EISA: Failed to register EISA root\n");
 			return -1;
 		}
 	}
@@ -403,9 +403,9 @@ static unsigned int eisa_irq_configured;
 void eisa_make_irq_level(int num)
 {
 	if (eisa_irq_configured& (1<<num)) {
-//		printk(KERN_WARNING
-//		       "IRQ %d polarity configured twice (last to level)\n", 
-;
+		printk(KERN_WARNING
+		       "IRQ %d polarity configured twice (last to level)\n", 
+		       num);
 	}
 	eisa_irq_level |= (1<<num); /* set the corresponding bit */
 	eisa_irq_configured |= (1<<num); /* set the corresponding bit */
@@ -414,9 +414,9 @@ void eisa_make_irq_level(int num)
 void eisa_make_irq_edge(int num)
 {
 	if (eisa_irq_configured& (1<<num)) {
-//		printk(KERN_WARNING 
-//		       "IRQ %d polarity configured twice (last to edge)\n",
-;
+		printk(KERN_WARNING 
+		       "IRQ %d polarity configured twice (last to edge)\n",
+		       num);
 	}
 	eisa_irq_level &= ~(1<<num); /* clear the corresponding bit */
 	eisa_irq_configured |= (1<<num); /* set the corresponding bit */
@@ -433,7 +433,7 @@ static int __init eisa_irq_setup(char *str)
 		
 		val = (int) simple_strtoul(cur, &pe, 0);
 		if (val > 15 || val < 0) {
-;
+			printk(KERN_ERR "eisa: EISA irq value are 0-15\n");
 			continue;
 		}
 		if (val == 2) { 

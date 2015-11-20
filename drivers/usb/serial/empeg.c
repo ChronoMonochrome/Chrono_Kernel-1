@@ -148,8 +148,8 @@ static int __init empeg_init(void)
 		usb_serial_deregister(&empeg_device);
 		return retval;
 	}
-//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-;
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
 
 	return 0;
 }

@@ -343,8 +343,8 @@ static u16 *jpeg_quantisation_tables(int *length, int quality)
 	} };
 
 	if (quality < 0 || quality > 10) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "meye: invalid quality level %d - using 8\n", quality);
 		quality = 8;
 	}
 
@@ -419,7 +419,7 @@ static void mchip_sync(int reg)
 			status = readl(meye.mchip_mmregs +
 				       MCHIP_MM_FIFO_STATUS);
 			if (!(status & MCHIP_MM_FIFO_WAIT)) {
-;
+				printk(KERN_WARNING "meye: fifo not ready\n");
 				return;
 			}
 			if (status & MCHIP_MM_FIFO_READY)
@@ -437,9 +437,9 @@ static void mchip_sync(int reg)
 		}
 	} else
 		return;
-//	printk(KERN_WARNING
-//	       "meye: mchip_sync() timeout on reg 0x%x status=0x%x\n",
-;
+	printk(KERN_WARNING
+	       "meye: mchip_sync() timeout on reg 0x%x status=0x%x\n",
+	       reg, status);
 }
 
 /* sets a value into the register */
@@ -570,12 +570,12 @@ static void mchip_hic_stop(void)
 				return;
 			msleep(1);
 		}
-;
+		printk(KERN_ERR "meye: need to reset HIC!\n");
 
 		mchip_set(MCHIP_HIC_CTL, MCHIP_HIC_CTL_SOFT_RESET);
 		msleep(250);
 	}
-;
+	printk(KERN_ERR "meye: resetting HIC hanged!\n");
 }
 
 /****************************************************************************/
@@ -628,8 +628,8 @@ static int mchip_comp_read_frame(u32 v, u8 *buf, int size)
 		fsize = (pt_end - pt_start) * PAGE_SIZE + trailer * 4;
 
 	if (fsize > size) {
-//		printk(KERN_WARNING "meye: oversized compressed frame %d\n",
-;
+		printk(KERN_WARNING "meye: oversized compressed frame %d\n",
+		       fsize);
 		return -1;
 	}
 
@@ -856,7 +856,7 @@ static int meye_open(struct file *file)
 	mchip_hic_stop();
 
 	if (mchip_dma_alloc()) {
-;
+		printk(KERN_ERR "meye: mchip framebuffer allocation failed\n");
 		clear_bit(0, &meye.in_use);
 		return -ENOBUFS;
 	}
@@ -1404,8 +1404,8 @@ static int vidioc_reqbufs(struct file *file, void *fh,
 	meye.grab_fbuffer = rvmalloc(gbuffers * gbufsize);
 
 	if (!meye.grab_fbuffer) {
-//		printk(KERN_ERR "meye: v4l framebuffer allocation"
-;
+		printk(KERN_ERR "meye: v4l framebuffer allocation"
+				" failed\n");
 		mutex_unlock(&meye.lock);
 		return -ENOMEM;
 	}
@@ -1622,7 +1622,7 @@ static int meye_mmap(struct file *file, struct vm_area_struct *vma)
 		/* lazy allocation */
 		meye.grab_fbuffer = rvmalloc(gbuffers*gbufsize);
 		if (!meye.grab_fbuffer) {
-;
+			printk(KERN_ERR "meye: v4l framebuffer allocation failed\n");
 			mutex_unlock(&meye.lock);
 			return -ENOMEM;
 		}
@@ -1736,7 +1736,7 @@ static int __devinit meye_probe(struct pci_dev *pcidev,
 	unsigned long mchip_adr;
 
 	if (meye.mchip_dev != NULL) {
-;
+		printk(KERN_ERR "meye: only one device allowed!\n");
 		goto outnotdev;
 	}
 
@@ -1921,7 +1921,7 @@ static void __devexit meye_remove(struct pci_dev *pcidev)
 		meye.grab_fbuffer = NULL;
 	}
 
-;
+	printk(KERN_INFO "meye: removed\n");
 }
 
 static struct pci_device_id meye_pci_tbl[] = {
@@ -1948,10 +1948,10 @@ static int __init meye_init(void)
 	if (gbufsize < 0 || gbufsize > MEYE_MAX_BUFSIZE)
 		gbufsize = MEYE_MAX_BUFSIZE;
 	gbufsize = PAGE_ALIGN(gbufsize);
-//	printk(KERN_INFO "meye: using %d buffers with %dk (%dk total) "
-//			 "for capture\n",
-//			 gbuffers,
-;
+	printk(KERN_INFO "meye: using %d buffers with %dk (%dk total) "
+			 "for capture\n",
+			 gbuffers,
+			 gbufsize / 1024, gbuffers * gbufsize / 1024);
 	return pci_register_driver(&meye_driver);
 }
 

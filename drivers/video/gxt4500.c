@@ -684,7 +684,7 @@ static int __devinit gxt4500_probe(struct pci_dev *pdev,
 	}
 	info->var = var;
 	if (gxt4500_set_par(info)) {
-;
+		printk(KERN_ERR "gxt4500: cannot set video mode\n");
 		goto err_free_cmap;
 	}
 
@@ -692,8 +692,8 @@ static int __devinit gxt4500_probe(struct pci_dev *pdev,
 		dev_err(&pdev->dev, "gxt4500: cannot register framebuffer\n");
 		goto err_free_cmap;
 	}
-//	printk(KERN_INFO "fb%d: %s frame buffer device\n",
-;
+	printk(KERN_INFO "fb%d: %s frame buffer device\n",
+	       info->node, info->fix.id);
 
 	return 0;
 

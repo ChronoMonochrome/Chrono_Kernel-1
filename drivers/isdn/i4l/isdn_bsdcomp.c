@@ -383,7 +383,7 @@ static int bsd_init (void *state, struct isdn_ppp_comp_data *data, int unit, int
 	int decomp;
 
 	if(!state || !data) {
-;
+		printk(KERN_ERR "isdn_bsd_init: [%d] ERR, state %lx data %lx\n",unit,(long)state,(long)data);
 		return 0;
 	}
 
@@ -393,7 +393,7 @@ static int bsd_init (void *state, struct isdn_ppp_comp_data *data, int unit, int
 		|| (BSD_VERSION(data->options[0]) != BSD_CURRENT_VERSION)
 		|| (BSD_NBITS(data->options[0]) != db->maxbits)
 		|| (decomp && db->lens == NULL)) {
-;
+		printk(KERN_ERR "isdn_bsd: %d %d %d %d %lx\n",data->optlen,data->num,data->options[0],decomp,(unsigned long)db->lens);
 		return 0;
 	}
 
@@ -484,7 +484,7 @@ static int bsd_compress (void *state, struct sk_buff *skb_in, struct sk_buff *sk
 	 * just return without compressing the packet.  If it is,
 	 * the protocol becomes the first byte to compress.
 	 */
-;
+	printk(KERN_DEBUG "bsd_compress called with %x\n",proto);
 	
 	ent = proto;
 	if (proto < 0x21 || proto > 0xf9 || !(proto & 0x1) )
@@ -665,10 +665,10 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 	n_bits   = db->n_bits;
 	tgtbitno = 32 - n_bits;	/* bitno when we have a code */
 
-;
+	printk(KERN_DEBUG "bsd_decompress called\n");
 
 	if(!skb_in || !skb_out) {
-;
+		printk(KERN_ERR "bsd_decompress called with NULL parameter\n");
 		return DECOMP_ERROR;
 	}
     
@@ -689,8 +689,8 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 	 */
 	if (seq != db->seqno) {
 		if (db->debug) {
-//			printk(KERN_DEBUG "bsd_decomp%d: bad sequence # %d, expected %d\n",
-;
+			printk(KERN_DEBUG "bsd_decomp%d: bad sequence # %d, expected %d\n",
+				db->unit, seq, db->seqno - 1);
 		}
 		return DECOMP_ERROR;
 	}
@@ -738,7 +738,7 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 		if (incode == CLEAR) {
 			if (ilen > 0) {
 				if (db->debug)
-;
+					printk(KERN_DEBUG "bsd_decomp%d: bad CLEAR\n", db->unit);
 				return DECOMP_FATALERROR;	/* probably a bug */
 			}
 			bsd_clear(db);
@@ -748,10 +748,10 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 		if ((incode > max_ent + 2) || (incode > db->maxmaxcode)
 			|| (incode > max_ent && oldcode == CLEAR)) {
 			if (db->debug) {
-//				printk(KERN_DEBUG "bsd_decomp%d: bad code 0x%x oldcode=0x%x ",
-;
-//				printk(KERN_DEBUG "max_ent=0x%x skb->Len=%d seqno=%d\n",
-;
+				printk(KERN_DEBUG "bsd_decomp%d: bad code 0x%x oldcode=0x%x ",
+					db->unit, incode, oldcode);
+				printk(KERN_DEBUG "max_ent=0x%x skb->Len=%d seqno=%d\n",
+					max_ent, skb_out->len, db->seqno);
 			}
 			return DECOMP_FATALERROR;	/* probably a bug */
 		}
@@ -768,10 +768,10 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 		codelen = *(lens_ptr (db, finchar));
 		if( skb_tailroom(skb_out) < codelen + extra) {
 			if (db->debug) {
-;
+				printk(KERN_DEBUG "bsd_decomp%d: ran out of mru\n", db->unit);
 #ifdef DEBUG
-//				printk(KERN_DEBUG "  len=%d, finchar=0x%x, codelen=%d,skblen=%d\n",
-;
+				printk(KERN_DEBUG "  len=%d, finchar=0x%x, codelen=%d,skblen=%d\n",
+					ilen, finchar, codelen, skb_out->len);
 #endif
 			}
 			return DECOMP_FATALERROR;
@@ -791,12 +791,12 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 #ifdef DEBUG
 			if (--codelen <= 0 || dictp->codem1 != finchar-1) {
 				if (codelen <= 0) {
-;
-;
+					printk(KERN_ERR "bsd_decomp%d: fell off end of chain ", db->unit);
+					printk(KERN_ERR "0x%x at 0x%x by 0x%x, max_ent=0x%x\n", incode, finchar, dictp2->cptr, max_ent);
 				} else {
 					if (dictp->codem1 != finchar-1) {
-;
-;
+						printk(KERN_ERR "bsd_decomp%d: bad code chain 0x%x finchar=0x%x ",db->unit, incode, finchar);
+						printk(KERN_ERR "oldcode=0x%x cptr=0x%x codem1=0x%x\n", oldcode, dictp2->cptr, dictp->codem1);
 					}
 				}
 				return DECOMP_FATALERROR;
@@ -813,7 +813,7 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 	
 #ifdef DEBUG
 		if (--codelen != 0)
-;
+			printk(KERN_ERR "bsd_decomp%d: short by %d after code 0x%x, max_ent=0x%x\n", db->unit, codelen, incode, max_ent);
 #endif
 	
 		if (extra)		/* the KwKwK case again */
@@ -885,8 +885,8 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 
 	if (bsd_check(db)) {
 		if (db->debug)
-//			printk(KERN_DEBUG "bsd_decomp%d: peer should have cleared dictionary on %d\n",
-;
+			printk(KERN_DEBUG "bsd_decomp%d: peer should have cleared dictionary on %d\n",
+				db->unit, db->seqno - 1);
 	}
 	return skb_out->len;
 }

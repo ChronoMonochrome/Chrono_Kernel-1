@@ -228,7 +228,7 @@ static void tx_result(struct sock *sk, unsigned long cookie, int result)
 
 	if (skb == NULL)
 	{
-;
+		printk(KERN_DEBUG "ec: memory squeeze, transmit result dropped.\n");
 		return;
 	}
 
@@ -539,7 +539,7 @@ static void econet_destroy_timer(unsigned long data)
 
 	sk->sk_timer.expires = jiffies + 10 * HZ;
 	add_timer(&sk->sk_timer);
-;
+	printk(KERN_DEBUG "econet socket destroy delayed\n");
 }
 
 /*
@@ -869,7 +869,7 @@ static void aun_incoming(struct sk_buff *skb, struct aunhdr *ah, size_t len)
 			   GFP_ATOMIC);
 	if (newskb == NULL)
 	{
-;
+		printk(KERN_DEBUG "AUN: memory squeeze, dropping packet.\n");
 		/* Send nack and hope sender tries again */
 		goto bad;
 	}
@@ -914,7 +914,7 @@ static void aun_tx_ack(unsigned long seq, int result)
 			goto foundit;
 	}
 	spin_unlock_irqrestore(&aun_queue_lock, flags);
-;
+	printk(KERN_DEBUG "AUN: unknown sequence %ld\n", seq);
 	return;
 
 foundit:
@@ -939,10 +939,10 @@ static void aun_data_available(struct sock *sk, int slen)
 
 	while ((skb = skb_recv_datagram(sk, 0, 1, &err)) == NULL) {
 		if (err == -EAGAIN) {
-;
+			printk(KERN_ERR "AUN: no data available?!");
 			return;
 		}
-;
+		printk(KERN_DEBUG "AUN: recvfrom() error %d\n", -err);
 	}
 
 	data = skb_transport_header(skb) + sizeof(struct udphdr);
@@ -961,7 +961,7 @@ static void aun_data_available(struct sock *sk, int slen)
 		aun_tx_ack(ah->handle, ECTYPE_TRANSMIT_NOT_LISTENING);
 		break;
 	default:
-;
+		printk(KERN_DEBUG "unknown AUN packet (type %d)\n", data[0]);
 	}
 
 	skb_free_datagram(sk, skb);
@@ -1011,7 +1011,7 @@ static int __init aun_udp_initialise(void)
 	   speak IPv6. :-) */
 	if ((error = sock_create_kern(PF_INET, SOCK_DGRAM, 0, &udpsock)) < 0)
 	{
-;
+		printk("AUN: socket error %d\n", -error);
 		return error;
 	}
 
@@ -1023,7 +1023,7 @@ static int __init aun_udp_initialise(void)
 				sizeof(sin));
 	if (error < 0)
 	{
-;
+		printk("AUN: bind error %d\n", -error);
 		goto release;
 	}
 

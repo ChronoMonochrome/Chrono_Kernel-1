@@ -38,7 +38,7 @@ static int s5pv210_serial_setsource(struct uart_port *port,
 	else if (strcmp(clk->name, "uclk1") == 0)
 		ucon |= S5PV210_UCON_CLKMASK;
 	else {
-;
+		printk(KERN_ERR "unknown clock source %s\n", clk->name);
 		return -EINVAL;
 	}
 

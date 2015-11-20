@@ -170,7 +170,7 @@ static void i2c_parport_attach(struct parport *port)
 
 	adapter = kzalloc(sizeof(struct i2c_par), GFP_KERNEL);
 	if (adapter == NULL) {
-;
+		printk(KERN_ERR "i2c-parport: Failed to kzalloc\n");
 		return;
 	}
 
@@ -179,7 +179,7 @@ static void i2c_parport_attach(struct parport *port)
 	adapter->pdev = parport_register_device(port, "i2c-parport",
 		NULL, NULL, i2c_parport_irq, PARPORT_FLAG_EXCL, adapter);
 	if (!adapter->pdev) {
-;
+		printk(KERN_ERR "i2c-parport: Unable to register with parport\n");
 		goto err_free;
 	}
 
@@ -199,7 +199,7 @@ static void i2c_parport_attach(struct parport *port)
 	adapter->adapter.dev.parent = port->physport->dev;
 
 	if (parport_claim_or_block(adapter->pdev) < 0) {
-;
+		printk(KERN_ERR "i2c-parport: Could not claim parallel port\n");
 		goto err_unregister;
 	}
 
@@ -214,7 +214,7 @@ static void i2c_parport_attach(struct parport *port)
 	}
 
 	if (i2c_bit_add_bus(&adapter->adapter) < 0) {
-;
+		printk(KERN_ERR "i2c-parport: Unable to register with I2C\n");
 		goto err_unregister;
 	}
 
@@ -226,8 +226,8 @@ static void i2c_parport_attach(struct parport *port)
 		if (adapter->ara)
 			parport_enable_irq(port);
 		else
-//			printk(KERN_WARNING "i2c-parport: Failed to register "
-;
+			printk(KERN_WARNING "i2c-parport: Failed to register "
+			       "ARA client\n");
 	}
 
 	/* Add the new adapter to the list */
@@ -281,12 +281,12 @@ static struct parport_driver i2c_parport_driver = {
 static int __init i2c_parport_init(void)
 {
 	if (type < 0) {
-;
+		printk(KERN_WARNING "i2c-parport: adapter type unspecified\n");
 		return -ENODEV;
 	}
 
 	if (type >= ARRAY_SIZE(adapter_parm)) {
-;
+		printk(KERN_WARNING "i2c-parport: invalid type (%d)\n", type);
 		return -ENODEV;
 	}
 

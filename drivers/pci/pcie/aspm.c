@@ -245,8 +245,8 @@ static void pcie_aspm_configure_common_clock(struct pcie_link_state *link)
 		return;
 
 	/* Training failed. Restore common clock configurations */
-//	dev_printk(KERN_ERR, &parent->dev,
-;
+	dev_printk(KERN_ERR, &parent->dev,
+		   "ASPM: Could not configure common clock\n");
 	list_for_each_entry(child, &linkbus->devices, bus_list) {
 		cpos = pci_pcie_cap(child);
 		pci_write_config_word(child, cpos + PCI_EXP_LNKCTL,
@@ -524,9 +524,9 @@ static int pcie_aspm_sanity_check(struct pci_dev *pdev)
 		 */
 		pci_read_config_dword(child, pos + PCI_EXP_DEVCAP, &reg32);
 		if (!(reg32 & PCI_EXP_DEVCAP_RBER) && !aspm_force) {
-//			dev_printk(KERN_INFO, &child->dev, "disabling ASPM"
-//				" on pre-1.1 PCIe device.  You can enable it"
-;
+			dev_printk(KERN_INFO, &child->dev, "disabling ASPM"
+				" on pre-1.1 PCIe device.  You can enable it"
+				" with 'pcie_aspm=force'\n");
 			return -EINVAL;
 		}
 	}
@@ -964,10 +964,10 @@ static int __init pcie_aspm_disable(char *str)
 		aspm_policy = POLICY_DEFAULT;
 		aspm_disabled = 1;
 		aspm_support_enabled = false;
-;
+		printk(KERN_INFO "PCIe ASPM is disabled\n");
 	} else if (!strcmp(str, "force")) {
 		aspm_force = 1;
-;
+		printk(KERN_INFO "PCIe ASPM is forcedly enabled\n");
 	}
 	return 1;
 }

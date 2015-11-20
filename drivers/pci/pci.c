@@ -962,9 +962,9 @@ void pci_restore_state(struct pci_dev *dev)
 	for (i = 15; i >= 0; i--) {
 		pci_read_config_dword(dev, i * 4, &val);
 		if (val != dev->saved_config_space[i]) {
-//			dev_printk(KERN_DEBUG, &dev->dev, "restoring config "
-//				"space at offset %#x (was %#x, writing %#x)\n",
-;
+			dev_printk(KERN_DEBUG, &dev->dev, "restoring config "
+				"space at offset %#x (was %#x, writing %#x)\n",
+				i, val, (int)dev->saved_config_space[i]);
 			pci_write_config_dword(dev,i * 4,
 				dev->saved_config_space[i]);
 		}
@@ -1529,8 +1529,8 @@ void pci_pme_active(struct pci_dev *dev, bool enable)
 	}
 
 out:
-//	dev_printk(KERN_DEBUG, &dev->dev, "PME# %s\n",
-;
+	dev_printk(KERN_DEBUG, &dev->dev, "PME# %s\n",
+			enable ? "enabled" : "disabled");
 }
 
 /**
@@ -1804,20 +1804,20 @@ void pci_pm_init(struct pci_dev *dev)
 			dev->d2_support = true;
 
 		if (dev->d1_support || dev->d2_support)
-//			dev_printk(KERN_DEBUG, &dev->dev, "supports%s%s\n",
-//				   dev->d1_support ? " D1" : "",
-;
+			dev_printk(KERN_DEBUG, &dev->dev, "supports%s%s\n",
+				   dev->d1_support ? " D1" : "",
+				   dev->d2_support ? " D2" : "");
 	}
 
 	pmc &= PCI_PM_CAP_PME_MASK;
 	if (pmc) {
-//		dev_printk(KERN_DEBUG, &dev->dev,
-//			 "PME# supported from%s%s%s%s%s\n",
-//			 (pmc & PCI_PM_CAP_PME_D0) ? " D0" : "",
-//			 (pmc & PCI_PM_CAP_PME_D1) ? " D1" : "",
-//			 (pmc & PCI_PM_CAP_PME_D2) ? " D2" : "",
-//			 (pmc & PCI_PM_CAP_PME_D3) ? " D3hot" : "",
-;
+		dev_printk(KERN_DEBUG, &dev->dev,
+			 "PME# supported from%s%s%s%s%s\n",
+			 (pmc & PCI_PM_CAP_PME_D0) ? " D0" : "",
+			 (pmc & PCI_PM_CAP_PME_D1) ? " D1" : "",
+			 (pmc & PCI_PM_CAP_PME_D2) ? " D2" : "",
+			 (pmc & PCI_PM_CAP_PME_D3) ? " D3hot" : "",
+			 (pmc & PCI_PM_CAP_PME_D3cold) ? " D3cold" : "");
 		dev->pme_support = pmc >> PCI_PM_CAP_PME_SHIFT;
 		/*
 		 * Make device's PM flags reflect the wake-up capability, but
@@ -2640,8 +2640,8 @@ int pci_set_cacheline_size(struct pci_dev *dev)
 	if (cacheline_size == pci_cache_line_size)
 		return 0;
 
-//	dev_printk(KERN_DEBUG, &dev->dev, "cache line size of %d is not "
-;
+	dev_printk(KERN_DEBUG, &dev->dev, "cache line size of %d is not "
+		   "supported\n", pci_cache_line_size << 2);
 
 	return -EINVAL;
 }
@@ -3370,8 +3370,8 @@ resource_size_t pci_specified_resource_alignment(struct pci_dev *dev)
 			if (sscanf(p, "%x:%x.%x%n",
 					&bus, &slot, &func, &count) != 3) {
 				/* Invalid format */
-//				printk(KERN_ERR "PCI: Can't parse resource_alignment parameter: %s\n",
-;
+				printk(KERN_ERR "PCI: Can't parse resource_alignment parameter: %s\n",
+					p);
 				break;
 			}
 		}
@@ -3506,8 +3506,8 @@ static int __init pci_setup(char *str)
 			} else if (!strncmp(str, "hpmemsize=", 10)) {
 				pci_hotplug_mem_size = memparse(str + 10, &str);
 			} else {
-//				printk(KERN_ERR "PCI: Unknown option `%s'\n",
-;
+				printk(KERN_ERR "PCI: Unknown option `%s'\n",
+						str);
 			}
 		}
 		str = k;

@@ -138,15 +138,15 @@ int matroxfb_PLL_calcclock(const struct matrox_pll_features* pll, unsigned int f
 	fwant = freq;
 
 #ifdef DEBUG
-;
-;
-;
-;
-;
-;
-;
-;
-;
+	printk(KERN_ERR "post_shift_max: %d\n", pll->post_shift_max);
+	printk(KERN_ERR "ref_freq: %d\n", pll->ref_freq);
+	printk(KERN_ERR "freq: %d\n", freq);
+	printk(KERN_ERR "vco_freq_min: %d\n", pll->vco_freq_min);
+	printk(KERN_ERR "in_div_min: %d\n", pll->in_div_min);
+	printk(KERN_ERR "in_div_max: %d\n", pll->in_div_max);
+	printk(KERN_ERR "feed_div_min: %d\n", pll->feed_div_min);
+	printk(KERN_ERR "feed_div_max: %d\n", pll->feed_div_max);
+	printk(KERN_ERR "fmax: %d\n", fmax);
 #endif
 	for (p = 1; p <= pll->post_shift_max; p++) {
 		if (fwant * 2 > fmax)
@@ -342,23 +342,23 @@ void matroxfb_vgaHWrestore(struct matrox_fb_info *minfo)
 
 	DBG(__func__)
 
-;
-;
+	dprintk(KERN_INFO "MiscOutReg: %02X\n", hw->MiscOutReg);
+	dprintk(KERN_INFO "SEQ regs:   ");
 	for (i = 0; i < 5; i++)
-;
-;
-;
+		dprintk("%02X:", hw->SEQ[i]);
+	dprintk("\n");
+	dprintk(KERN_INFO "GDC regs:   ");
 	for (i = 0; i < 9; i++)
-;
-;
-;
+		dprintk("%02X:", hw->GCTL[i]);
+	dprintk("\n");
+	dprintk(KERN_INFO "CRTC regs: ");
 	for (i = 0; i < 25; i++)
-;
-;
-;
+		dprintk("%02X:", hw->CRTC[i]);
+	dprintk("\n");
+	dprintk(KERN_INFO "ATTR regs: ");
 	for (i = 0; i < 21; i++)
-;
-;
+		dprintk("%02X:", hw->ATTR[i]);
+	dprintk("\n");
 
 	CRITBEGIN
 
@@ -512,8 +512,8 @@ static void parse_bios(unsigned char __iomem* vbios, struct matrox_bios* bd) {
 		header[2] = readb(vbios + pins_offset + 2);
 		if ( (header[0] == 0x2E) && (header[1] == 0x41)
 		     && ((header[2] == 0x40) || (header[2] == 0x80)) ) {
-//			printk(KERN_INFO "PInS data found at offset %u\n",
-;
+			printk(KERN_INFO "PInS data found at offset %u\n",
+			       pins_offset);
 			get_pins(vbios + pins_offset, bd);
 			break;
 		}
@@ -723,24 +723,24 @@ static int matroxfb_set_limits(struct matrox_fb_info *minfo,
 		case MGA_G550:	default_pins5(minfo); break;
 	}
 	if (!bd->bios_valid) {
-;
+		printk(KERN_INFO "matroxfb: Your Matrox device does not have BIOS\n");
 		return -1;
 	}
 	if (bd->pins_len < 64) {
-;
+		printk(KERN_INFO "matroxfb: BIOS on your Matrox device does not contain powerup info\n");
 		return -1;
 	}
 	if (bd->pins[0] == 0x2E && bd->pins[1] == 0x41) {
 		pins_version = bd->pins[5];
 		if (pins_version < 2 || pins_version > 5) {
-;
+			printk(KERN_INFO "matroxfb: Unknown version (%u) of powerup info\n", pins_version);
 			return -1;
 		}
 	} else {
 		pins_version = 1;
 	}
 	if (bd->pins_len != pinslen[pins_version - 1]) {
-;
+		printk(KERN_INFO "matroxfb: Invalid powerup info\n");
 		return -1;
 	}
 	switch (pins_version) {
@@ -755,7 +755,7 @@ static int matroxfb_set_limits(struct matrox_fb_info *minfo,
 		case 5:
 			return parse_pins5(minfo, bd);
 		default:
-;
+			printk(KERN_DEBUG "matroxfb: Powerup info version %u is not yet supported\n", pins_version);
 			return -1;
 	}
 }
@@ -782,14 +782,14 @@ void matroxfb_read_pins(struct matrox_fb_info *minfo)
 
 		b = ioremap(0x000C0000, 65536);
 		if (!b) {
-;
+			printk(KERN_INFO "matroxfb: Unable to map legacy BIOS\n");
 		} else {
 			unsigned int ven = readb(b+0x64+0) | (readb(b+0x64+1) << 8);
 			unsigned int dev = readb(b+0x64+2) | (readb(b+0x64+3) << 8);
 			
 			if (ven != pdev->vendor || dev != pdev->device) {
-//				printk(KERN_INFO "matroxfb: Legacy BIOS is for %04X:%04X, while this device is %04X:%04X\n",
-;
+				printk(KERN_INFO "matroxfb: Legacy BIOS is for %04X:%04X, while this device is %04X:%04X\n",
+					ven, dev, pdev->vendor, pdev->device);
 			} else {
 				parse_bios(b, &minfo->bios);
 			}
@@ -798,8 +798,8 @@ void matroxfb_read_pins(struct matrox_fb_info *minfo)
 	}
 #endif
 	matroxfb_set_limits(minfo, &minfo->bios);
-//	printk(KERN_INFO "PInS memtype = %u\n",
-;
+	printk(KERN_INFO "PInS memtype = %u\n",
+	       (minfo->values.reg.opt & 0x1C00) >> 10);
 }
 
 EXPORT_SYMBOL(matroxfb_DAC_in);

@@ -909,7 +909,7 @@ man1tr6(struct PStack *st, int pr, void *arg)
         struct l3_process *proc = arg;
  
         if (!proc) {
-;
+                printk(KERN_ERR "HiSax man1tr6 without proc pr=%04x\n", pr);
                 return;
         }
         for (i = 0; i < ARRAY_SIZE(manstatelist); i++)
@@ -941,5 +941,5 @@ setstack_1tr6(struct PStack *st)
 	st->l3.N303 = 0;
 
 	strcpy(tmp, l3_1tr6_revision);
-;
+	printk(KERN_INFO "HiSax: 1TR6 Rev. %s\n", HiSax_getrev(tmp));
 }

@@ -460,12 +460,12 @@ sn_receive_chars(struct sn_cons_port *port, unsigned long flags)
 	struct tty_struct *tty;
 
 	if (!port) {
-;
+		printk(KERN_ERR "sn_receive_chars - port NULL so can't receieve\n");
 		return;
 	}
 
 	if (!port->sc_ops) {
-;
+		printk(KERN_ERR "sn_receive_chars - port->sc_ops  NULL so can't receieve\n");
 		return;
 	}
 
@@ -481,8 +481,8 @@ sn_receive_chars(struct sn_cons_port *port, unsigned long flags)
 	while (port->sc_ops->sal_input_pending()) {
 		ch = port->sc_ops->sal_getc();
 		if (ch < 0) {
-//			printk(KERN_ERR "sn_console: An error occurred while "
-;
+			printk(KERN_ERR "sn_console: An error occurred while "
+			       "obtaining data from the console (0x%0x)\n", ch);
 			break;
 		}
 #ifdef CONFIG_MAGIC_SYSRQ
@@ -748,8 +748,8 @@ static void __init sn_sal_switch_to_interrupts(struct sn_cons_port *port)
 			spin_unlock_irqrestore(&port->sc_port.lock, flags);
 		}
 		else {
-//			printk(KERN_INFO
-;
+			printk(KERN_INFO
+			    "sn_console: console proceeding in polled mode\n");
 		}
 	}
 }
@@ -800,15 +800,15 @@ static int __init sn_sal_module_init(void)
 	if (!ia64_platform_is("sn2"))
 		return 0;
 
-;
+	printk(KERN_INFO "sn_console: Console driver init\n");
 
 	if (USE_DYNAMIC_MINOR == 1) {
 		misc.minor = MISC_DYNAMIC_MINOR;
 		misc.name = DEVICE_NAME_DYNAMIC;
 		retval = misc_register(&misc);
 		if (retval != 0) {
-//			printk(KERN_WARNING "Failed to register console "
-;
+			printk(KERN_WARNING "Failed to register console "
+			       "device using misc_register.\n");
 			return -ENODEV;
 		}
 		sal_console_uart.major = MISC_MAJOR;
@@ -839,7 +839,7 @@ static int __init sn_sal_module_init(void)
 
 	if (uart_add_one_port(&sal_console_uart, &sal_console_port.sc_port) < 0) {
 		/* error - not sure what I'd do - so I'll do nothing */
-;
+		printk(KERN_ERR "%s: unable to add port\n", __func__);
 	}
 
 	/* when this driver is compiled in, the console initialization

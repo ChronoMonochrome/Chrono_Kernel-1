@@ -362,8 +362,8 @@ static int enable_slot(struct hotplug_slot *bss_hotplug_slot)
 
 		ret = acpi_load_table((struct acpi_table_header *)ssdt);
 		if (ACPI_FAILURE(ret)) {
-//			printk(KERN_ERR "%s: acpi_load_table failed (0x%x)\n",
-;
+			printk(KERN_ERR "%s: acpi_load_table failed (0x%x)\n",
+			       __func__, ret);
 			/* try to continue on */
 		}
 	}
@@ -453,11 +453,11 @@ static int enable_slot(struct hotplug_slot *bss_hotplug_slot)
 				ret = acpi_bus_add(&device, pdevice, chandle,
 						   ACPI_BUS_TYPE_DEVICE);
 				if (ACPI_FAILURE(ret)) {
-//					printk(KERN_ERR "%s: acpi_bus_add "
-//					       "failed (0x%x) for slot %d "
-//					       "func %d\n", __func__,
-//					       ret, (int)(adr>>16),
-;
+					printk(KERN_ERR "%s: acpi_bus_add "
+					       "failed (0x%x) for slot %d "
+					       "func %d\n", __func__,
+					       ret, (int)(adr>>16),
+					       (int)(adr&0xffff));
 					/* try to continue on */
 				} else {
 					acpi_bus_start(device);
@@ -564,9 +564,9 @@ static int disable_slot(struct hotplug_slot *bss_hotplug_slot)
 		acpi_status ret;
 		ret = acpi_unload_table_id(ssdt_id);
 		if (ACPI_FAILURE(ret)) {
-//			printk(KERN_ERR "%s: acpi_unload_table_id "
-//			       "failed (0x%x) for id %d\n",
-;
+			printk(KERN_ERR "%s: acpi_unload_table_id "
+			       "failed (0x%x) for id %d\n",
+			       __func__, ret, ssdt_id);
 			/* try to continue on */
 		}
 	}
@@ -685,8 +685,8 @@ static int __init sn_pci_hotplug_init(void)
 	int registered = 0;
 
 	if (!sn_prom_feature_available(PRF_HOTPLUG_SUPPORT)) {
-//		printk(KERN_ERR "%s: PROM version does not support hotplug.\n",
-;
+		printk(KERN_ERR "%s: PROM version does not support hotplug.\n",
+		       __func__);
 		return -EPERM;
 	}
 
@@ -723,7 +723,7 @@ static void __exit sn_pci_hotplug_exit(void)
 		pci_hp_deregister(bss_hotplug_slot);
 
 	if (!list_empty(&sn_hp_list))
-;
+		printk(KERN_ERR "%s: internal list is not empty\n", __FILE__);
 }
 
 module_init(sn_pci_hotplug_init);

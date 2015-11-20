@@ -342,7 +342,7 @@ static void __init clps711x_guess_lcd_params(struct fb_info *info)
 	 * EP7212   - 38400 bytes
 	 */
 	if (size <= 38400) {
-;
+		printk(KERN_INFO "CLPS711xFB: could use on-board SRAM?\n");
 	}
 
 	if ((syscon & SYSCON1_LCDEN) == 0) {
@@ -380,7 +380,7 @@ int __init clps711xfb_init(void)
 	fb_alloc_cmap(&cfb->cmap, CMAP_MAX_SIZE, 0);
 
 	if (!proc_create("backlight", 0444, NULL, &backlight_proc_fops)) {
-;
+		printk("Couldn't create the /proc entry for the backlight.\n");
 		return -EINVAL;
 	}
 

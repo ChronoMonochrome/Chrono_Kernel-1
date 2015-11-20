@@ -47,7 +47,7 @@ static int __init kmemleak_test_init(void)
 	struct test_node *elem;
 	int i;
 
-;
+	printk(KERN_INFO "Kmemleak testing\n");
 
 	/* make some orphan objects */
 	pr_info("kmemleak: kmalloc(32) = %p\n", kmalloc(32, GFP_KERNEL));

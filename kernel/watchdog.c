@@ -295,9 +295,9 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
 		if (__this_cpu_read(soft_watchdog_warn) == true)
 			return HRTIMER_RESTART;
 
-//		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
-//			smp_processor_id(), duration,
-;
+		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+			smp_processor_id(), duration,
+			current->comm, task_pid_nr(current));
 		print_modules();
 		print_irqtrace_events(current);
 		if (regs)
@@ -373,18 +373,18 @@ static int watchdog_nmi_enable(int cpu)
 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
 	if (!IS_ERR(event)) {
-;
+		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
 		goto out_save;
 	}
 
 
 	/* vary the KERN level based on the returned errno */
 	if (PTR_ERR(event) == -EOPNOTSUPP)
-;
+		printk(KERN_INFO "NMI watchdog disabled (cpu%i): not supported (no LAPIC?)\n", cpu);
 	else if (PTR_ERR(event) == -ENOENT)
-;
+		printk(KERN_WARNING "NMI watchdog disabled (cpu%i): hardware events not enabled\n", cpu);
 	else
-;
+		printk(KERN_ERR "NMI watchdog disabled (cpu%i): unable to create perf event: %ld\n", cpu, PTR_ERR(event));
 	return PTR_ERR(event);
 
 	/* success path */
@@ -438,7 +438,7 @@ static int watchdog_enable(int cpu)
 	if (!p) {
 		p = kthread_create(watchdog, (void *)(unsigned long)cpu, "watchdog/%d", cpu);
 		if (IS_ERR(p)) {
-;
+			printk(KERN_ERR "softlockup watchdog for %i failed\n", cpu);
 			if (!err) {
 				/* if hardlockup hasn't already set this */
 				err = PTR_ERR(p);
@@ -491,7 +491,7 @@ static void watchdog_enable_all_cpus(void)
 			watchdog_enabled = 1;
 
 	if (!watchdog_enabled)
-;
+		printk(KERN_ERR "watchdog: failed to be enabled on some cpus\n");
 
 }
 

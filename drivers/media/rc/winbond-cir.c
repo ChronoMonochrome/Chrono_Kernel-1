@@ -1170,12 +1170,12 @@ wbcir_init(void)
 	case IR_PROTOCOL_RC6:
 		break;
 	default:
-;
+		printk(KERN_ERR DRVNAME ": Invalid power-on protocol\n");
 	}
 
 	ret = pnp_register_driver(&wbcir_driver);
 	if (ret)
-;
+		printk(KERN_ERR DRVNAME ": Unable to register driver\n");
 
 	return ret;
 }

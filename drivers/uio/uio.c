@@ -777,7 +777,7 @@ static int init_uio_class(void)
 
 	ret = class_register(&uio_class);
 	if (ret) {
-;
+		printk(KERN_ERR "class_register failed for uio\n");
 		goto err_class_register;
 	}
 	return 0;
@@ -833,7 +833,7 @@ int __uio_register_device(struct module *owner,
 				  MKDEV(uio_major, idev->minor), idev,
 				  "uio%d", idev->minor);
 	if (IS_ERR(idev->dev)) {
-;
+		printk(KERN_ERR "UIO: device register failed\n");
 		ret = PTR_ERR(idev->dev);
 		goto err_device_create;
 	}

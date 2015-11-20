@@ -162,7 +162,7 @@ int bt_printk(const char *level, const char *format, ...)
 	vaf.fmt = format;
 	vaf.va = &args;
 
-;
+	r = printk("%sBluetooth: %pV\n", level, &vaf);
 
 	va_end(args);
 

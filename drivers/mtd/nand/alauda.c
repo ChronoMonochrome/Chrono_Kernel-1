@@ -571,9 +571,9 @@ static int alauda_init_media(struct alauda *al)
 		err = -EIO;
 		goto error;
 	}
-//	printk(KERN_INFO"pagesize=%x\nerasesize=%x\nsize=%xMiB\n",
-//			1<<card->pageshift, 1<<card->blockshift,
-;
+	printk(KERN_INFO"pagesize=%x\nerasesize=%x\nsize=%xMiB\n",
+			1<<card->pageshift, 1<<card->blockshift,
+			1<<(card->chipshift-20));
 	al->card = card;
 	al->pagemask = (1 << (card->blockshift - card->pageshift)) - 1;
 	al->bytemask = (1 << card->pageshift) - 1;

@@ -151,7 +151,7 @@ static inline int gscps2_writeb_output(struct gscps2port *ps2port, u8 data)
 	char *addr = ps2port->addr;
 
 	if (!wait_TBE(addr)) {
-;
+		printk(KERN_DEBUG PFX "timeout - could not write byte %#x\n", data);
 		return 0;
 	}
 
@@ -287,7 +287,7 @@ static int gscps2_write(struct serio *port, unsigned char data)
 	struct gscps2port *ps2port = port->port_data;
 
 	if (!gscps2_writeb_output(ps2port, data)) {
-;
+		printk(KERN_DEBUG PFX "sending byte %#x failed.\n", data);
 		return -1;
 	}
 	return 0;
@@ -373,8 +373,8 @@ static int __devinit gscps2_probe(struct parisc_device *dev)
 		goto fail_miserably;
 
 	if (ps2port->id != GSC_ID_KEYBOARD && ps2port->id != GSC_ID_MOUSE) {
-//		printk(KERN_WARNING PFX "Unsupported PS/2 port at 0x%08lx (id=%d) ignored\n",
-;
+		printk(KERN_WARNING PFX "Unsupported PS/2 port at 0x%08lx (id=%d) ignored\n",
+				hpa, ps2port->id);
 		ret = -ENODEV;
 		goto fail;
 	}
@@ -384,11 +384,11 @@ static int __devinit gscps2_probe(struct parisc_device *dev)
 		goto fail;
 #endif
 
-//	printk(KERN_INFO "serio: %s port at 0x%p irq %d @ %s\n",
-//		ps2port->port->name,
-//		ps2port->addr,
-//		ps2port->padev->irq,
-;
+	printk(KERN_INFO "serio: %s port at 0x%p irq %d @ %s\n",
+		ps2port->port->name,
+		ps2port->addr,
+		ps2port->padev->irq,
+		ps2port->port->phys);
 
 	serio_register_port(ps2port->port);
 

@@ -706,8 +706,8 @@ cmos_do_probe(struct device *dev, struct resource *ports, int rtc_irq)
 			rtc_cmos_int_handler = hpet_rtc_interrupt;
 			err = hpet_register_irq_handler(cmos_interrupt);
 			if (err != 0) {
-//				printk(KERN_WARNING "hpet_register_irq_handler "
-;
+				printk(KERN_WARNING "hpet_register_irq_handler "
+						" failed in rtc_init().");
 				goto cleanup1;
 			}
 		} else

@@ -182,8 +182,8 @@ mspec_close(struct vm_area_struct *vma)
 		if (!mspec_zero_block(my_page, PAGE_SIZE))
 			uncached_free_page(my_page, 1);
 		else
-//			printk(KERN_WARNING "mspec_close(): "
-;
+			printk(KERN_WARNING "mspec_close(): "
+			       "failed to zero page %ld\n", my_page);
 	}
 
 	if (vdata->flags & VMD_VMALLOCED)
@@ -387,34 +387,34 @@ mspec_init(void)
 
 		ret = misc_register(&fetchop_miscdev);
 		if (ret) {
-//			printk(KERN_ERR
-//			       "%s: failed to register device %i\n",
-;
+			printk(KERN_ERR
+			       "%s: failed to register device %i\n",
+			       FETCHOP_ID, ret);
 			goto free_scratch_pages;
 		}
 	}
 #endif
 	ret = misc_register(&cached_miscdev);
 	if (ret) {
-//		printk(KERN_ERR "%s: failed to register device %i\n",
-;
+		printk(KERN_ERR "%s: failed to register device %i\n",
+		       CACHED_ID, ret);
 		if (is_sn2)
 			misc_deregister(&fetchop_miscdev);
 		goto free_scratch_pages;
 	}
 	ret = misc_register(&uncached_miscdev);
 	if (ret) {
-//		printk(KERN_ERR "%s: failed to register device %i\n",
-;
+		printk(KERN_ERR "%s: failed to register device %i\n",
+		       UNCACHED_ID, ret);
 		misc_deregister(&cached_miscdev);
 		if (is_sn2)
 			misc_deregister(&fetchop_miscdev);
 		goto free_scratch_pages;
 	}
 
-//	printk(KERN_INFO "%s %s initialized devices: %s %s %s\n",
-//	       MSPEC_BASENAME, REVISION, is_sn2 ? FETCHOP_ID : "",
-;
+	printk(KERN_INFO "%s %s initialized devices: %s %s %s\n",
+	       MSPEC_BASENAME, REVISION, is_sn2 ? FETCHOP_ID : "",
+	       CACHED_ID, UNCACHED_ID);
 
 	return 0;
 

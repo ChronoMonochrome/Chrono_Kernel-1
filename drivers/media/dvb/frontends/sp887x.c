@@ -31,9 +31,9 @@ struct sp887x_state {
 };
 
 static int debug;
-//#define dprintk(args...) \
-//	do { \
-;
+#define dprintk(args...) \
+	do { \
+		if (debug) printk(KERN_DEBUG "sp887x: " args); \
 	} while (0)
 
 static int i2c_writebytes (struct sp887x_state* state, u8 *buf, u8 len)
@@ -63,9 +63,9 @@ static int sp887x_writereg (struct sp887x_state* state, u16 reg, u16 data)
 		if (!(reg == 0xf1a && data == 0x000 &&
 			(ret == -EREMOTEIO || ret == -EFAULT)))
 		{
-//			printk("%s: writereg error "
-//			       "(reg %03x, data %03x, ret == %i)\n",
-;
+			printk("%s: writereg error "
+			       "(reg %03x, data %03x, ret == %i)\n",
+			       __func__, reg & 0xffff, data & 0xffff, ret);
 			return ret;
 		}
 	}
@@ -82,7 +82,7 @@ static int sp887x_readreg (struct sp887x_state* state, u16 reg)
 			 { .addr = state->config->demod_address, .flags = I2C_M_RD, .buf = b1, .len = 2 }};
 
 	if ((ret = i2c_transfer(state->i2c, msg, 2)) != 2) {
-;
+		printk("%s: readreg error (ret == %i)\n", __func__, ret);
 		return -1;
 	}
 
@@ -91,7 +91,7 @@ static int sp887x_readreg (struct sp887x_state* state, u16 reg)
 
 static void sp887x_microcontroller_stop (struct sp887x_state* state)
 {
-;
+	dprintk("%s\n", __func__);
 	sp887x_writereg(state, 0xf08, 0x000);
 	sp887x_writereg(state, 0xf09, 0x000);
 
@@ -101,7 +101,7 @@ static void sp887x_microcontroller_stop (struct sp887x_state* state)
 
 static void sp887x_microcontroller_start (struct sp887x_state* state)
 {
-;
+	dprintk("%s\n", __func__);
 	sp887x_writereg(state, 0xf08, 0x000);
 	sp887x_writereg(state, 0xf09, 0x000);
 
@@ -112,7 +112,7 @@ static void sp887x_microcontroller_start (struct sp887x_state* state)
 static void sp887x_setup_agc (struct sp887x_state* state)
 {
 	/* setup AGC parameters */
-;
+	dprintk("%s\n", __func__);
 	sp887x_writereg(state, 0x33c, 0x054);
 	sp887x_writereg(state, 0x33b, 0x04c);
 	sp887x_writereg(state, 0x328, 0x000);
@@ -142,7 +142,7 @@ static int sp887x_initial_setup (struct dvb_frontend* fe, const struct firmware 
 	int fw_size = fw->size;
 	const unsigned char *mem = fw->data;
 
-;
+	dprintk("%s\n", __func__);
 
 	/* ignore the first 10 bytes, then we expect 0x4000 bytes of firmware */
 	if (fw_size < FW_SIZE+10)
@@ -430,8 +430,8 @@ static int sp887x_read_status(struct dvb_frontend* fe, fe_status_t* status)
 		int steps = (sync0x200 >> 4) & 0x00f;
 		if (steps & 0x008)
 			steps = -steps;
-//		dprintk("sp887x: implement tuner adjustment (%+i steps)!!\n",
-;
+		dprintk("sp887x: implement tuner adjustment (%+i steps)!!\n",
+		       steps);
 	}
 
 	return 0;
@@ -512,20 +512,20 @@ static int sp887x_init(struct dvb_frontend* fe)
 
 	if (!state->initialised) {
 		/* request the firmware, this will block until someone uploads it */
-;
+		printk("sp887x: waiting for firmware upload (%s)...\n", SP887X_DEFAULT_FIRMWARE);
 		ret = state->config->request_firmware(fe, &fw, SP887X_DEFAULT_FIRMWARE);
 		if (ret) {
-;
+			printk("sp887x: no firmware upload (timeout or file not found?)\n");
 			return ret;
 		}
 
 		ret = sp887x_initial_setup(fe, fw);
 		release_firmware(fw);
 		if (ret) {
-;
+			printk("sp887x: writing firmware to device failed\n");
 			return ret;
 		}
-;
+		printk("sp887x: firmware upload complete\n");
 		state->initialised = 1;
 	}
 

@@ -169,8 +169,8 @@ static int nv_tco_release(struct inode *inode, struct file *file)
 	if (tco_expect_close == 42) {
 		tco_timer_stop();
 	} else {
-//		printk(KERN_CRIT PFX "Unexpected close, not stopping "
-;
+		printk(KERN_CRIT PFX "Unexpected close, not stopping "
+		       "watchdog!\n");
 		tco_timer_keepalive();
 	}
 	clear_bit(0, &timer_alive);
@@ -323,15 +323,15 @@ static unsigned char __devinit nv_tco_getdevice(void)
 	val &= 0xffff;
 	if (val == 0x0001 || val == 0x0000) {
 		/* Something is wrong here, bar isn't setup */
-;
+		printk(KERN_ERR PFX "failed to get tcobase address\n");
 		return 0;
 	}
 	val &= 0xff00;
 	tcobase = val + 0x40;
 
 	if (!request_region(tcobase, 0x10, "NV TCO")) {
-//		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
-;
+		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
+		       tcobase);
 		return 0;
 	}
 
@@ -347,8 +347,8 @@ static unsigned char __devinit nv_tco_getdevice(void)
 
 	/* Disable SMI caused by TCO */
 	if (!request_region(MCP51_SMI_EN(tcobase), 4, "NV TCO")) {
-//		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
-;
+		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
+		       MCP51_SMI_EN(tcobase));
 		goto out;
 	}
 	val = inl(MCP51_SMI_EN(tcobase));
@@ -357,7 +357,7 @@ static unsigned char __devinit nv_tco_getdevice(void)
 	val = inl(MCP51_SMI_EN(tcobase));
 	release_region(MCP51_SMI_EN(tcobase), 4);
 	if (val & MCP51_SMI_EN_TCO) {
-;
+		printk(KERN_ERR PFX "Could not disable SMI caused by TCO\n");
 		goto out;
 	}
 
@@ -367,8 +367,8 @@ static unsigned char __devinit nv_tco_getdevice(void)
 	pci_write_config_dword(tco_pci, MCP51_SMBUS_SETUP_B, val);
 	pci_read_config_dword(tco_pci, MCP51_SMBUS_SETUP_B, &val);
 	if (!(val & MCP51_SMBUS_SETUP_B_TCO_REBOOT)) {
-//		printk(KERN_ERR PFX "failed to reset NO_REBOOT flag, reboot "
-;
+		printk(KERN_ERR PFX "failed to reset NO_REBOOT flag, reboot "
+		       "disabled by hardware\n");
 		goto out;
 	}
 
@@ -387,8 +387,8 @@ static int __devinit nv_tco_init(struct platform_device *dev)
 		return -ENODEV;
 
 	/* Check to see if last reboot was due to watchdog timeout */
-//	printk(KERN_INFO PFX "Watchdog reboot %sdetected.\n",
-;
+	printk(KERN_INFO PFX "Watchdog reboot %sdetected.\n",
+	       inl(TCO_STS(tcobase)) & TCO_STS_TCO2TO_STS ? "" : "not ");
 
 	/* Clear out the old status */
 	outl(TCO_STS_RESET, TCO_STS(tcobase));
@@ -400,14 +400,14 @@ static int __devinit nv_tco_init(struct platform_device *dev)
 	if (tco_timer_set_heartbeat(heartbeat)) {
 		heartbeat = WATCHDOG_HEARTBEAT;
 		tco_timer_set_heartbeat(heartbeat);
-//		printk(KERN_INFO PFX "heartbeat value must be 2<heartbeat<39, "
-;
+		printk(KERN_INFO PFX "heartbeat value must be 2<heartbeat<39, "
+		       "using %d\n", heartbeat);
 	}
 
 	ret = misc_register(&nv_tco_miscdev);
 	if (ret != 0) {
-//		printk(KERN_ERR PFX "cannot register miscdev on minor=%d "
-;
+		printk(KERN_ERR PFX "cannot register miscdev on minor=%d "
+		       "(err=%d)\n", WATCHDOG_MINOR, ret);
 		goto unreg_region;
 	}
 
@@ -415,8 +415,8 @@ static int __devinit nv_tco_init(struct platform_device *dev)
 
 	tco_timer_stop();
 
-//	printk(KERN_INFO PFX "initialized (0x%04x). heartbeat=%d sec "
-;
+	printk(KERN_INFO PFX "initialized (0x%04x). heartbeat=%d sec "
+	       "(nowayout=%d)\n", tcobase, heartbeat, nowayout);
 
 	return 0;
 
@@ -439,8 +439,8 @@ static void __devexit nv_tco_cleanup(void)
 	pci_write_config_dword(tco_pci, MCP51_SMBUS_SETUP_B, val);
 	pci_read_config_dword(tco_pci, MCP51_SMBUS_SETUP_B, &val);
 	if (val & MCP51_SMBUS_SETUP_B_TCO_REBOOT) {
-//		printk(KERN_CRIT PFX "Couldn't unset REBOOT bit.  Machine may "
-;
+		printk(KERN_CRIT PFX "Couldn't unset REBOOT bit.  Machine may "
+		       "soon reset\n");
 	}
 
 	/* Deregister */
@@ -475,8 +475,8 @@ static int __init nv_tco_init_module(void)
 {
 	int err;
 
-//	printk(KERN_INFO PFX "NV TCO WatchDog Timer Driver v%s\n",
-;
+	printk(KERN_INFO PFX "NV TCO WatchDog Timer Driver v%s\n",
+	       TCO_VERSION);
 
 	err = platform_driver_register(&nv_tco_driver);
 	if (err)
@@ -500,7 +500,7 @@ static void __exit nv_tco_cleanup_module(void)
 {
 	platform_device_unregister(nv_tco_platform_device);
 	platform_driver_unregister(&nv_tco_driver);
-;
+	printk(KERN_INFO PFX "NV TCO Watchdog Module Unloaded.\n");
 }
 
 module_init(nv_tco_init_module);

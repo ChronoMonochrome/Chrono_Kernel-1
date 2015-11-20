@@ -186,8 +186,8 @@ static int get_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user
 			return -EFAULT;
 		return 0;
 	default:
-//		printk(KERN_INFO "compat_ioctl32: unexpected VIDIOC_FMT type %d\n",
-;
+		printk(KERN_INFO "compat_ioctl32: unexpected VIDIOC_FMT type %d\n",
+								kp->type);
 		return -EINVAL;
 	}
 }
@@ -219,8 +219,8 @@ static int put_v4l2_format32(struct v4l2_format *kp, struct v4l2_format32 __user
 			return -EFAULT;
 		return 0;
 	default:
-//		printk(KERN_INFO "compat_ioctl32: unexpected VIDIOC_FMT type %d\n",
-;
+		printk(KERN_INFO "compat_ioctl32: unexpected VIDIOC_FMT type %d\n",
+								kp->type);
 		return -EINVAL;
 	}
 }
@@ -926,9 +926,9 @@ long v4l2_compat_ioctl32(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 
 	default:
-//		printk(KERN_WARNING "compat_ioctl32: "
-//			"unknown ioctl '%c', dir=%d, #%d (0x%08x)\n",
-;
+		printk(KERN_WARNING "compat_ioctl32: "
+			"unknown ioctl '%c', dir=%d, #%d (0x%08x)\n",
+			_IOC_TYPE(cmd), _IOC_DIR(cmd), _IOC_NR(cmd), cmd);
 		break;
 	}
 	return ret;

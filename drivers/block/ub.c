@@ -447,14 +447,14 @@ static void ub_id_put(int id)
 	unsigned long flags;
 
 	if (id < 0 || id >= UB_MAX_HOSTS) {
-;
+		printk(KERN_ERR DRV_NAME ": bad host ID %d\n", id);
 		return;
 	}
 
 	spin_lock_irqsave(&ub_lock, flags);
 	if (ub_hostv[id] == 0) {
 		spin_unlock_irqrestore(&ub_lock, flags);
-;
+		printk(KERN_ERR DRV_NAME ": freeing free host ID %d\n", id);
 		return;
 	}
 	ub_hostv[id] = 0;
@@ -557,12 +557,12 @@ static struct ub_scsi_cmd *ub_get_cmd(struct ub_lun *lun)
 static void ub_put_cmd(struct ub_lun *lun, struct ub_scsi_cmd *cmd)
 {
 	if (cmd != &lun->cmdv[0]) {
-//		printk(KERN_WARNING "%s: releasing a foreign cmd %p\n",
-;
+		printk(KERN_WARNING "%s: releasing a foreign cmd %p\n",
+		    lun->name, cmd);
 		return;
 	}
 	if (!lun->cmda[0]) {
-;
+		printk(KERN_WARNING "%s: releasing a free cmd\n", lun->name);
 		return;
 	}
 	lun->cmda[0] = 0;
@@ -675,13 +675,13 @@ static int ub_request_fn_1(struct ub_lun *lun, struct request *rq)
 	n_elem = blk_rq_map_sg(lun->disk->queue, rq, &urq->sgv[0]);
 	if (n_elem < 0) {
 		/* Impossible, because blk_rq_map_sg should not hit ENOMEM. */
-//		printk(KERN_INFO "%s: failed request map (%d)\n",
-;
+		printk(KERN_INFO "%s: failed request map (%d)\n",
+		    lun->name, n_elem);
 		goto drop;
 	}
 	if (n_elem > UB_MAX_REQ_SG) {	/* Paranoia */
-//		printk(KERN_WARNING "%s: request with %d segments\n",
-;
+		printk(KERN_WARNING "%s: request with %d segments\n",
+		    lun->name, n_elem);
 		goto drop;
 	}
 	urq->nsg = n_elem;
@@ -851,10 +851,10 @@ static int ub_rw_cmd_retry(struct ub_dev *sc, struct ub_lun *lun,
 	urq->current_try++;
 
 	/* Remove this if anyone complains of flooding. */
-//	printk(KERN_DEBUG "%s: dir %c len/act %d/%d "
-//	    "[sense %x %02x %02x] retry %d\n",
-//	    sc->name, UB_DIR_CHAR(cmd->dir), cmd->len, cmd->act_len,
-;
+	printk(KERN_DEBUG "%s: dir %c len/act %d/%d "
+	    "[sense %x %02x %02x] retry %d\n",
+	    sc->name, UB_DIR_CHAR(cmd->dir), cmd->len, cmd->act_len,
+	    cmd->key, cmd->asc, cmd->ascq, urq->current_try);
 
 	memset(cmd, 0, sizeof(struct ub_scsi_cmd));
 	ub_cmd_build_block(sc, lun, cmd, urq);
@@ -1037,8 +1037,8 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 			 * STALL while clearning STALL.
 			 * The control pipe clears itself - nothing to do.
 			 */
-//			printk(KERN_NOTICE "%s: stall on control pipe\n",
-;
+			printk(KERN_NOTICE "%s: stall on control pipe\n",
+			    sc->name);
 			goto Bad_End;
 		}
 
@@ -1052,8 +1052,8 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 
 	} else if (cmd->state == UB_CMDST_CLR2STS) {
 		if (urb->status == -EPIPE) {
-//			printk(KERN_NOTICE "%s: stall on control pipe\n",
-;
+			printk(KERN_NOTICE "%s: stall on control pipe\n",
+			    sc->name);
 			goto Bad_End;
 		}
 
@@ -1067,8 +1067,8 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 
 	} else if (cmd->state == UB_CMDST_CLRRS) {
 		if (urb->status == -EPIPE) {
-//			printk(KERN_NOTICE "%s: stall on control pipe\n",
-;
+			printk(KERN_NOTICE "%s: stall on control pipe\n",
+			    sc->name);
 			goto Bad_End;
 		}
 
@@ -1089,9 +1089,9 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		case -EPIPE:
 			rc = ub_submit_clear_stall(sc, cmd, sc->last_pipe);
 			if (rc != 0) {
-//				printk(KERN_NOTICE "%s: "
-//				    "unable to submit clear (%d)\n",
-;
+				printk(KERN_NOTICE "%s: "
+				    "unable to submit clear (%d)\n",
+				    sc->name, rc);
 				/*
 				 * This is typically ENOMEM or some other such shit.
 				 * Retrying is pointless. Just do Bad End on it...
@@ -1124,9 +1124,9 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		if (urb->status == -EPIPE) {
 			rc = ub_submit_clear_stall(sc, cmd, sc->last_pipe);
 			if (rc != 0) {
-//				printk(KERN_NOTICE "%s: "
-//				    "unable to submit clear (%d)\n",
-;
+				printk(KERN_NOTICE "%s: "
+				    "unable to submit clear (%d)\n",
+				    sc->name, rc);
 				ub_state_done(sc, cmd, rc);
 				return;
 			}
@@ -1192,9 +1192,9 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		if (urb->status == -EPIPE) {
 			rc = ub_submit_clear_stall(sc, cmd, sc->last_pipe);
 			if (rc != 0) {
-//				printk(KERN_NOTICE "%s: "
-//				    "unable to submit clear (%d)\n",
-;
+				printk(KERN_NOTICE "%s: "
+				    "unable to submit clear (%d)\n",
+				    sc->name, rc);
 				ub_state_done(sc, cmd, rc);
 				return;
 			}
@@ -1262,9 +1262,9 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 				 * Only start ignoring if this cmd ended well.
 				 */
 				if (cmd->len == cmd->act_len) {
-//					printk(KERN_NOTICE "%s: "
-//					    "bad residual %d of %d, ignoring\n",
-;
+					printk(KERN_NOTICE "%s: "
+					    "bad residual %d of %d, ignoring\n",
+					    sc->name, len, cmd->len);
 					sc->bad_resid = 1;
 				}
 			}
@@ -1279,8 +1279,8 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		case US_BULK_STAT_PHASE:
 			goto Bad_End;
 		default:
-//			printk(KERN_INFO "%s: unknown CSW status 0x%x\n",
-;
+			printk(KERN_INFO "%s: unknown CSW status 0x%x\n",
+			    sc->name, bcs->Status);
 			ub_state_done(sc, cmd, -EINVAL);
 			return;
 		}
@@ -1298,8 +1298,8 @@ static void ub_scsi_urb_compl(struct ub_dev *sc, struct ub_scsi_cmd *cmd)
 		ub_state_done(sc, cmd, -EIO);
 
 	} else {
-//		printk(KERN_WARNING "%s: wrong command state %d\n",
-;
+		printk(KERN_WARNING "%s: wrong command state %d\n",
+		    sc->name, cmd->state);
 		ub_state_done(sc, cmd, -EINVAL);
 		return;
 	}
@@ -1511,18 +1511,18 @@ static void ub_top_sense_done(struct ub_dev *sc, struct ub_scsi_cmd *scmd)
 	 * save the sense into it, and advance its state machine.
 	 */
 	if ((cmd = ub_cmdq_peek(sc)) == NULL) {
-;
+		printk(KERN_WARNING "%s: sense done while idle\n", sc->name);
 		return;
 	}
 	if (cmd != scmd->back) {
-//		printk(KERN_WARNING "%s: "
-//		    "sense done for wrong command 0x%x\n",
-;
+		printk(KERN_WARNING "%s: "
+		    "sense done for wrong command 0x%x\n",
+		    sc->name, cmd->tag);
 		return;
 	}
 	if (cmd->state != UB_CMDST_SENSE) {
-//		printk(KERN_WARNING "%s: sense done with bad cmd state %d\n",
-;
+		printk(KERN_WARNING "%s: sense done with bad cmd state %d\n",
+		    sc->name, cmd->state);
 		return;
 	}
 
@@ -1574,8 +1574,8 @@ static void ub_reset_task(struct work_struct *work)
 	int rc;
 
 	if (!sc->reset) {
-//		printk(KERN_WARNING "%s: Running reset unrequested\n",
-;
+		printk(KERN_WARNING "%s: Running reset unrequested\n",
+		    sc->name);
 		return;
 	}
 
@@ -1591,15 +1591,15 @@ static void ub_reset_task(struct work_struct *work)
 	} else {
 		rc = usb_lock_device_for_reset(sc->dev, sc->intf);
 		if (rc < 0) {
-//			printk(KERN_NOTICE
-//			    "%s: usb_lock_device_for_reset failed (%d)\n",
-;
+			printk(KERN_NOTICE
+			    "%s: usb_lock_device_for_reset failed (%d)\n",
+			    sc->name, rc);
 		} else {
 			rc = usb_reset_device(sc->dev);
 			if (rc < 0) {
-//				printk(KERN_NOTICE "%s: "
-//				    "usb_lock_device_for_reset failed (%d)\n",
-;
+				printk(KERN_NOTICE "%s: "
+				    "usb_lock_device_for_reset failed (%d)\n",
+				    sc->name, rc);
 			}
 			usb_unlock_device(sc->dev);
 		}
@@ -1997,8 +1997,8 @@ static int ub_sync_reset(struct ub_dev *sc)
 	    (unsigned char*) cr, NULL, 0, ub_probe_urb_complete, &compl);
 
 	if ((rc = usb_submit_urb(&sc->work_urb, GFP_KERNEL)) != 0) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		     "%s: Unable to submit a bulk reset (%d)\n", sc->name, rc);
 		return rc;
 	}
 
@@ -2115,8 +2115,8 @@ static int ub_probe_clear_stall(struct ub_dev *sc, int stalled_pipe)
 	    (unsigned char*) cr, NULL, 0, ub_probe_urb_complete, &compl);
 
 	if ((rc = usb_submit_urb(&sc->work_urb, GFP_KERNEL)) != 0) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		     "%s: Unable to submit a probe clear (%d)\n", sc->name, rc);
 		return rc;
 	}
 
@@ -2170,7 +2170,7 @@ static int ub_get_pipes(struct ub_dev *sc, struct usb_device *dev,
 	}
 
 	if (ep_in == NULL || ep_out == NULL) {
-;
+		printk(KERN_NOTICE "%s: failed endpoint check\n", sc->name);
 		return -ENODEV;
 	}
 
@@ -2418,8 +2418,8 @@ static void ub_disconnect(struct usb_interface *intf)
 			cnt++;
 		}
 		if (cnt != 0) {
-//			printk(KERN_WARNING "%s: "
-;
+			printk(KERN_WARNING "%s: "
+			    "%d was queued after shutdown\n", sc->name, cnt);
 		}
 	}
 	spin_unlock_irqrestore(sc->lock, flags);
@@ -2443,8 +2443,8 @@ static void ub_disconnect(struct usb_interface *intf)
 	 */
 	spin_lock_irqsave(sc->lock, flags);
 	if (sc->work_urb.status == -EINPROGRESS) {	/* janitors: ignore */
-//		printk(KERN_WARNING "%s: "
-;
+		printk(KERN_WARNING "%s: "
+		    "URB is active after disconnect\n", sc->name);
 	}
 	spin_unlock_irqrestore(sc->lock, flags);
 

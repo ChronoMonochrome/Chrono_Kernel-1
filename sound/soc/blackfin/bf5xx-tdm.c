@@ -56,7 +56,7 @@ static int bf5xx_tdm_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 	case SND_SOC_DAIFMT_DSP_A:
 		break;
 	default:
-;
+		printk(KERN_ERR "%s: Unknown DAI format type\n", __func__);
 		ret = -EINVAL;
 		break;
 	}
@@ -70,7 +70,7 @@ static int bf5xx_tdm_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		ret = -EINVAL;
 		break;
 	default:
-;
+		printk(KERN_ERR "%s: Unknown DAI master type\n", __func__);
 		ret = -EINVAL;
 		break;
 	}

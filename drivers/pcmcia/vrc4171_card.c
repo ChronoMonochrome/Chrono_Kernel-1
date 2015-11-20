@@ -741,8 +741,8 @@ static int __devinit vrc4171_card_init(void)
 		return retval;
 	}
 
-//	printk(KERN_INFO "%s, connected to IRQ %d\n",
-;
+	printk(KERN_INFO "%s, connected to IRQ %d\n",
+		vrc4171_card_driver.driver.name, vrc4171_irq);
 
 	return 0;
 }

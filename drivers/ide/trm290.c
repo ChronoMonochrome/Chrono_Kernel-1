@@ -239,17 +239,17 @@ static void __devinit init_hwif_trm290(ide_hwif_t *hwif)
 	u8 reg = 0;
 
 	if ((dev->class & 5) && cfg_base)
-;
+		printk(KERN_INFO DRV_NAME " %s: chip", pci_name(dev));
 	else {
 		cfg_base = 0x3df0;
-;
+		printk(KERN_INFO DRV_NAME " %s: using default", pci_name(dev));
 	}
-;
+	printk(KERN_CONT " config base at 0x%04x\n", cfg_base);
 	hwif->config_data = cfg_base;
 	hwif->dma_base = (cfg_base + 4) ^ (hwif->channel ? 0x80 : 0);
 
-//	printk(KERN_INFO "    %s: BM-DMA at 0x%04lx-0x%04lx\n",
-;
+	printk(KERN_INFO "    %s: BM-DMA at 0x%04lx-0x%04lx\n",
+	       hwif->name, hwif->dma_base, hwif->dma_base + 3);
 
 	if (ide_allocate_dma_engine(hwif))
 		return;
@@ -292,9 +292,9 @@ static void __devinit init_hwif_trm290(ide_hwif_t *hwif)
 			hwif->io_ports.ctl_addr = compat + 2;
 			outw(compat | 1, hwif->config_data);
 			new = inw(hwif->config_data);
-//			printk(KERN_INFO "%s: control basereg workaround: "
-//				"old=0x%04x, new=0x%04x\n",
-;
+			printk(KERN_INFO "%s: control basereg workaround: "
+				"old=0x%04x, new=0x%04x\n",
+				hwif->name, old, new & ~1);
 		}
 	}
 #endif

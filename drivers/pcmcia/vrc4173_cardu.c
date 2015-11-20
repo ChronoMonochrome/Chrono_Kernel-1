@@ -516,7 +516,7 @@ static int __devinit vrc4173_cardu_probe(struct pci_dev *dev,
 		goto unregister;
 	}
 
-;
+	printk(KERN_INFO "%s at %#08lx, IRQ %d\n", socket->name, start, dev->irq);
 
 	return 0;
 

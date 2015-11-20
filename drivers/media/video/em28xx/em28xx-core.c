@@ -39,8 +39,8 @@ MODULE_PARM_DESC(core_debug, "enable debug messages [core]");
 
 #define em28xx_coredbg(fmt, arg...) do {\
 	if (core_debug) \
-//		printk(KERN_INFO "%s %s :"fmt, \
-;
+		printk(KERN_INFO "%s %s :"fmt, \
+			 dev->name, __func__ , ##arg); } while (0)
 
 static unsigned int reg_debug;
 module_param(reg_debug, int, 0644);
@@ -48,8 +48,8 @@ MODULE_PARM_DESC(reg_debug, "enable debug messages [URB reg]");
 
 #define em28xx_regdbg(fmt, arg...) do {\
 	if (reg_debug) \
-//		printk(KERN_INFO "%s %s :"fmt, \
-;
+		printk(KERN_INFO "%s %s :"fmt, \
+			 dev->name, __func__ , ##arg); } while (0)
 
 static int alt;
 module_param(alt, int, 0644);
@@ -62,8 +62,8 @@ MODULE_PARM_DESC(disable_vbi, "disable vbi support");
 /* FIXME */
 #define em28xx_isocdbg(fmt, arg...) do {\
 	if (core_debug) \
-//		printk(KERN_INFO "%s %s :"fmt, \
-;
+		printk(KERN_INFO "%s %s :"fmt, \
+			 dev->name, __func__ , ##arg); } while (0)
 
 /*
  * em28xx_read_reg_req()
@@ -82,13 +82,13 @@ int em28xx_read_reg_req_len(struct em28xx *dev, u8 req, u16 reg,
 		return -EINVAL;
 
 	if (reg_debug) {
-//		printk(KERN_DEBUG "(pipe 0x%08x): "
-//			"IN:  %02x %02x %02x %02x %02x %02x %02x %02x ",
-//			pipe,
-//			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-//			req, 0, 0,
-//			reg & 0xff, reg >> 8,
-;
+		printk(KERN_DEBUG "(pipe 0x%08x): "
+			"IN:  %02x %02x %02x %02x %02x %02x %02x %02x ",
+			pipe,
+			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+			req, 0, 0,
+			reg & 0xff, reg >> 8,
+			len & 0xff, len >> 8);
 	}
 
 	mutex_lock(&dev->ctrl_urb_lock);
@@ -97,7 +97,7 @@ int em28xx_read_reg_req_len(struct em28xx *dev, u8 req, u16 reg,
 			      0x0000, reg, dev->urb_buf, len, HZ);
 	if (ret < 0) {
 		if (reg_debug)
-;
+			printk(" failed!\n");
 		mutex_unlock(&dev->ctrl_urb_lock);
 		return ret;
 	}
@@ -110,10 +110,10 @@ int em28xx_read_reg_req_len(struct em28xx *dev, u8 req, u16 reg,
 	if (reg_debug) {
 		int byte;
 
-;
+		printk("<<<");
 		for (byte = 0; byte < len; byte++)
-;
-;
+			printk(" %02x", (unsigned char)buf[byte]);
+		printk("\n");
 	}
 
 	return ret;
@@ -159,17 +159,17 @@ int em28xx_write_regs_req(struct em28xx *dev, u8 req, u16 reg, char *buf,
 	if (reg_debug) {
 		int byte;
 
-//		printk(KERN_DEBUG "(pipe 0x%08x): "
-//			"OUT: %02x %02x %02x %02x %02x %02x %02x %02x >>>",
-//			pipe,
-//			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-//			req, 0, 0,
-//			reg & 0xff, reg >> 8,
-;
+		printk(KERN_DEBUG "(pipe 0x%08x): "
+			"OUT: %02x %02x %02x %02x %02x %02x %02x %02x >>>",
+			pipe,
+			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
+			req, 0, 0,
+			reg & 0xff, reg >> 8,
+			len & 0xff, len >> 8);
 
 		for (byte = 0; byte < len; byte++)
-;
-;
+			printk(" %02x", (unsigned char)buf[byte]);
+		printk("\n");
 	}
 
 	mutex_lock(&dev->ctrl_urb_lock);
@@ -1193,7 +1193,7 @@ int em28xx_register_extension(struct em28xx_ops *ops)
 	list_for_each_entry(dev, &em28xx_devlist, devlist) {
 		ops->init(dev);
 	}
-;
+	printk(KERN_INFO "Em28xx: Initialized (%s) extension\n", ops->name);
 	mutex_unlock(&em28xx_devlist_mutex);
 	return 0;
 }
@@ -1207,7 +1207,7 @@ void em28xx_unregister_extension(struct em28xx_ops *ops)
 	list_for_each_entry(dev, &em28xx_devlist, devlist) {
 		ops->fini(dev);
 	}
-;
+	printk(KERN_INFO "Em28xx: Removed (%s) extension\n", ops->name);
 	list_del(&ops->next);
 	mutex_unlock(&em28xx_devlist_mutex);
 }

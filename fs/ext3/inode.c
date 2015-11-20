@@ -3437,8 +3437,8 @@ void ext3_dirty_inode(struct inode *inode, int flags)
 	if (current_handle &&
 		current_handle->h_transaction != handle->h_transaction) {
 		/* This task has a transaction open against a different fs */
-//		printk(KERN_EMERG "%s: transactions do not match!\n",
-;
+		printk(KERN_EMERG "%s: transactions do not match!\n",
+		       __func__);
 	} else {
 		jbd_debug(5, "marking dirty.  outer handle=%p\n",
 				current_handle);

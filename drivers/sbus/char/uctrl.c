@@ -28,13 +28,13 @@
 
 #define DEBUG 1
 #ifdef DEBUG
-//#define dprintk(x) printk x
-//#else
-//#define dprintk(x)
-//#endif
-//
-//struct uctrl_regs {
-;
+#define dprintk(x) printk x
+#else
+#define dprintk(x)
+#endif
+
+struct uctrl_regs {
+	u32 uctrl_intr;
 	u32 uctrl_data;
 	u32 uctrl_stat;
 	u32 uctrl_xxx[5];
@@ -244,7 +244,7 @@ static struct miscdevice uctrl_dev = {
       if (UCTRL_STAT_TXNF_STA & sbus_readl(&driver->regs->uctrl_stat)) \
       break; \
   } \
-;
+  dprintk(("write data 0x%02x\n", value)); \
   sbus_writel(value, &driver->regs->uctrl_data); \
 }
 
@@ -259,7 +259,7 @@ static struct miscdevice uctrl_dev = {
     udelay(1); \
   } \
   value = sbus_readl(&driver->regs->uctrl_data); \
-;
+  dprintk(("read data 0x%02x\n", value)); \
   sbus_writel(UCTRL_STAT_RXNE_STA, &driver->regs->uctrl_stat); \
 }
 
@@ -272,7 +272,7 @@ static void uctrl_do_txn(struct uctrl_driver *driver, struct uctrl_txn *txn)
 	intr = sbus_readl(&driver->regs->uctrl_intr);
 	sbus_writel(stat, &driver->regs->uctrl_stat);
 
-;
+	dprintk(("interrupt stat 0x%x int 0x%x\n", stat, intr));
 
 	incnt = txn->inbits;
 	outcnt = txn->outbits;
@@ -289,13 +289,13 @@ static void uctrl_do_txn(struct uctrl_driver *driver, struct uctrl_txn *txn)
 
 	/* Get the ack */
 	READUCTLDATA(byte);
-;
+	dprintk(("ack was %x\n", (byte >> 8)));
 
 	bytecnt = 0;
 	while (outcnt > 0) {
 		READUCTLDATA(byte);
 		txn->outbuf[bytecnt] = (byte >> 8);
-;
+		dprintk(("set byte to %02x\n", byte));
 		outcnt--;
 		bytecnt++;
 	}
@@ -314,10 +314,10 @@ static void uctrl_get_event_status(struct uctrl_driver *driver)
 
 	uctrl_do_txn(driver, &txn);
 
-;
+	dprintk(("bytes %x %x\n", (outbits[0] & 0xff), (outbits[1] & 0xff)));
 	driver->status.event_status = 
 		((outbits[0] & 0xff) << 8) | (outbits[1] & 0xff);
-;
+	dprintk(("ev is %x\n", driver->status.event_status));
 }
 
 static void uctrl_get_external_status(struct uctrl_driver *driver)
@@ -334,17 +334,17 @@ static void uctrl_get_external_status(struct uctrl_driver *driver)
 
 	uctrl_do_txn(driver, &txn);
 
-;
+	dprintk(("bytes %x %x\n", (outbits[0] & 0xff), (outbits[1] & 0xff)));
 	driver->status.external_status = 
 		((outbits[0] * 256) + (outbits[1]));
-;
+	dprintk(("ex is %x\n", driver->status.external_status));
 	v = driver->status.external_status;
 	for (i = 0; v != 0; i++, v >>= 1) {
 		if (v & 1) {
-;
+			dprintk(("%s%s", " ", uctrl_extstatus[i]));
 		}
 	}
-;
+	dprintk(("\n"));
 	
 }
 
@@ -355,7 +355,7 @@ static int __devinit uctrl_probe(struct platform_device *op)
 
 	p = kzalloc(sizeof(*p), GFP_KERNEL);
 	if (!p) {
-;
+		printk(KERN_ERR "uctrl: Unable to allocate device struct.\n");
 		goto out;
 	}
 
@@ -363,26 +363,26 @@ static int __devinit uctrl_probe(struct platform_device *op)
 			     resource_size(&op->resource[0]),
 			     "uctrl");
 	if (!p->regs) {
-;
+		printk(KERN_ERR "uctrl: Unable to map registers.\n");
 		goto out_free;
 	}
 
 	p->irq = op->archdata.irqs[0];
 	err = request_irq(p->irq, uctrl_interrupt, 0, "uctrl", p);
 	if (err) {
-;
+		printk(KERN_ERR "uctrl: Unable to register irq.\n");
 		goto out_iounmap;
 	}
 
 	err = misc_register(&uctrl_dev);
 	if (err) {
-;
+		printk(KERN_ERR "uctrl: Unable to register misc device.\n");
 		goto out_free_irq;
 	}
 
 	sbus_writel(UCTRL_INTR_RXNE_REQ|UCTRL_INTR_RXNE_MSK, &p->regs->uctrl_intr);
-//	printk(KERN_INFO "%s: uctrl regs[0x%p] (irq %d)\n",
-;
+	printk(KERN_INFO "%s: uctrl regs[0x%p] (irq %d)\n",
+	       op->dev.of_node->full_name, p->regs, p->irq);
 	uctrl_get_event_status(p);
 	uctrl_get_external_status(p);
 

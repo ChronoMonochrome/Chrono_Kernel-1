@@ -4807,17 +4807,17 @@ lpfc_init_iocb_list(struct lpfc_hba *phba, int iocb_count)
 	for (i = 0; i < iocb_count; i++) {
 		iocbq_entry = kzalloc(sizeof(struct lpfc_iocbq), GFP_KERNEL);
 		if (iocbq_entry == NULL) {
-//			printk(KERN_ERR "%s: only allocated %d iocbs of "
-//				"expected %d count. Unloading driver.\n",
-;
+			printk(KERN_ERR "%s: only allocated %d iocbs of "
+				"expected %d count. Unloading driver.\n",
+				__func__, i, LPFC_IOCB_LIST_CNT);
 			goto out_free_iocbq;
 		}
 
 		iotag = lpfc_sli_next_iotag(phba, iocbq_entry);
 		if (iotag == 0) {
 			kfree(iocbq_entry);
-//			printk(KERN_ERR "%s: failed to allocate IOTAG. "
-;
+			printk(KERN_ERR "%s: failed to allocate IOTAG. "
+				"Unloading driver.\n", __func__);
 			goto out_free_iocbq;
 		}
 		iocbq_entry->sli4_lxritag = NO_XRI;
@@ -4967,9 +4967,9 @@ lpfc_init_sgl_list(struct lpfc_hba *phba)
 	for (i = 0; i < els_xri_cnt; i++) {
 		sglq_entry = kzalloc(sizeof(struct lpfc_sglq), GFP_KERNEL);
 		if (sglq_entry == NULL) {
-//			printk(KERN_ERR "%s: only allocated %d sgls of "
-//				"expected %d count. Unloading driver.\n",
-;
+			printk(KERN_ERR "%s: only allocated %d sgls of "
+				"expected %d count. Unloading driver.\n",
+				__func__, i, els_xri_cnt);
 			goto out_free_mem;
 		}
 
@@ -4977,8 +4977,8 @@ lpfc_init_sgl_list(struct lpfc_hba *phba)
 		sglq_entry->virt = lpfc_mbuf_alloc(phba, 0, &sglq_entry->phys);
 		if (sglq_entry->virt == NULL) {
 			kfree(sglq_entry);
-//			printk(KERN_ERR "%s: failed to allocate mbuf.\n"
-;
+			printk(KERN_ERR "%s: failed to allocate mbuf.\n"
+				"Unloading driver.\n", __func__);
 			goto out_free_mem;
 		}
 		sglq_entry->sgl = sglq_entry->virt;
@@ -5458,16 +5458,16 @@ lpfc_sli_pci_mem_setup(struct lpfc_hba *phba)
 	/* Map HBA SLIM to a kernel virtual address. */
 	phba->slim_memmap_p = ioremap(phba->pci_bar0_map, bar0map_len);
 	if (!phba->slim_memmap_p) {
-//		dev_printk(KERN_ERR, &pdev->dev,
-;
+		dev_printk(KERN_ERR, &pdev->dev,
+			   "ioremap failed for SLIM memory.\n");
 		goto out;
 	}
 
 	/* Map HBA Control Registers to a kernel virtual address. */
 	phba->ctrl_regs_memmap_p = ioremap(phba->pci_bar2_map, bar2map_len);
 	if (!phba->ctrl_regs_memmap_p) {
-//		dev_printk(KERN_ERR, &pdev->dev,
-;
+		dev_printk(KERN_ERR, &pdev->dev,
+			   "ioremap failed for HBA control registers.\n");
 		goto out_iounmap_slim;
 	}
 
@@ -5752,9 +5752,9 @@ lpfc_sli4_bar0_register_memmap(struct lpfc_hba *phba, uint32_t if_type)
 		break;
 	case LPFC_SLI_INTF_IF_TYPE_1:
 	default:
-//		dev_printk(KERN_ERR, &phba->pcidev->dev,
-//			   "FATAL - unsupported SLI4 interface type - %d\n",
-;
+		dev_printk(KERN_ERR, &phba->pcidev->dev,
+			   "FATAL - unsupported SLI4 interface type - %d\n",
+			   if_type);
 		break;
 	}
 }
@@ -7252,9 +7252,9 @@ lpfc_sli4_pci_mem_setup(struct lpfc_hba *phba)
 		phba->sli4_hba.conf_regs_memmap_p =
 			ioremap(phba->pci_bar0_map, bar0map_len);
 		if (!phba->sli4_hba.conf_regs_memmap_p) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-//				   "ioremap failed for SLI4 PCI config "
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+				   "ioremap failed for SLI4 PCI config "
+				   "registers.\n");
 			goto out;
 		}
 		/* Set up BAR0 PCI config space register memory map */
@@ -7263,16 +7263,16 @@ lpfc_sli4_pci_mem_setup(struct lpfc_hba *phba)
 		phba->pci_bar0_map = pci_resource_start(pdev, 1);
 		bar0map_len = pci_resource_len(pdev, 1);
 		if (if_type == LPFC_SLI_INTF_IF_TYPE_2) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+			   "FATAL - No BAR0 mapping for SLI4, if_type 2\n");
 			goto out;
 		}
 		phba->sli4_hba.conf_regs_memmap_p =
 				ioremap(phba->pci_bar0_map, bar0map_len);
 		if (!phba->sli4_hba.conf_regs_memmap_p) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-//				"ioremap failed for SLI4 PCI config "
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+				"ioremap failed for SLI4 PCI config "
+				"registers.\n");
 				goto out;
 		}
 		lpfc_sli4_bar0_register_memmap(phba, if_type);
@@ -7289,8 +7289,8 @@ lpfc_sli4_pci_mem_setup(struct lpfc_hba *phba)
 		phba->sli4_hba.ctrl_regs_memmap_p =
 				ioremap(phba->pci_bar1_map, bar1map_len);
 		if (!phba->sli4_hba.ctrl_regs_memmap_p) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+			   "ioremap failed for SLI4 HBA control registers.\n");
 			goto out_iounmap_conf;
 		}
 		lpfc_sli4_bar1_register_memmap(phba);
@@ -7307,8 +7307,8 @@ lpfc_sli4_pci_mem_setup(struct lpfc_hba *phba)
 		phba->sli4_hba.drbl_regs_memmap_p =
 				ioremap(phba->pci_bar2_map, bar2map_len);
 		if (!phba->sli4_hba.drbl_regs_memmap_p) {
-//			dev_printk(KERN_ERR, &pdev->dev,
-;
+			dev_printk(KERN_ERR, &pdev->dev,
+			   "ioremap failed for SLI4 HBA doorbell registers.\n");
 			goto out_iounmap_ctrl;
 		}
 		error = lpfc_sli4_bar2_register_memmap(phba, LPFC_VF0);
@@ -8774,10 +8774,10 @@ lpfc_io_slot_reset_s3(struct pci_dev *pdev)
 	struct lpfc_sli *psli = &phba->sli;
 	uint32_t intr_mode;
 
-;
+	dev_printk(KERN_INFO, &pdev->dev, "recovering from a slot reset.\n");
 	if (pci_enable_device_mem(pdev)) {
-//		printk(KERN_ERR "lpfc: Cannot re-enable "
-;
+		printk(KERN_ERR "lpfc: Cannot re-enable "
+			"PCI device after reset.\n");
 		return PCI_ERS_RESULT_DISCONNECT;
 	}
 
@@ -9516,10 +9516,10 @@ lpfc_io_slot_reset_s4(struct pci_dev *pdev)
 	struct lpfc_sli *psli = &phba->sli;
 	uint32_t intr_mode;
 
-;
+	dev_printk(KERN_INFO, &pdev->dev, "recovering from a slot reset.\n");
 	if (pci_enable_device_mem(pdev)) {
-//		printk(KERN_ERR "lpfc: Cannot re-enable "
-;
+		printk(KERN_ERR "lpfc: Cannot re-enable "
+			"PCI device after reset.\n");
 		return PCI_ERS_RESULT_DISCONNECT;
 	}
 
@@ -9967,8 +9967,8 @@ lpfc_init(void)
 {
 	int error = 0;
 
-;
-;
+	printk(LPFC_MODULE_DESC "\n");
+	printk(LPFC_COPYRIGHT "\n");
 
 	if (lpfc_enable_npiv) {
 		lpfc_transport_functions.vport_create = lpfc_vport_create;
@@ -10011,16 +10011,16 @@ lpfc_exit(void)
 	if (lpfc_enable_npiv)
 		fc_release_transport(lpfc_vport_transport_template);
 	if (_dump_buf_data) {
-//		printk(KERN_ERR	"9062 BLKGRD: freeing %lu pages for "
-//				"_dump_buf_data at 0x%p\n",
-;
+		printk(KERN_ERR	"9062 BLKGRD: freeing %lu pages for "
+				"_dump_buf_data at 0x%p\n",
+				(1L << _dump_buf_data_order), _dump_buf_data);
 		free_pages((unsigned long)_dump_buf_data, _dump_buf_data_order);
 	}
 
 	if (_dump_buf_dif) {
-//		printk(KERN_ERR	"9049 BLKGRD: freeing %lu pages for "
-//				"_dump_buf_dif at 0x%p\n",
-;
+		printk(KERN_ERR	"9049 BLKGRD: freeing %lu pages for "
+				"_dump_buf_dif at 0x%p\n",
+				(1L << _dump_buf_dif_order), _dump_buf_dif);
 		free_pages((unsigned long)_dump_buf_dif, _dump_buf_dif_order);
 	}
 }

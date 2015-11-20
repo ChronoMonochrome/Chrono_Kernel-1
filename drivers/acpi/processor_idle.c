@@ -97,9 +97,9 @@ static int set_max_cstate(const struct dmi_system_id *id)
 	if (max_cstate > ACPI_PROCESSOR_MAX_POWER)
 		return 0;
 
-//	printk(KERN_NOTICE PREFIX "%s detected - limiting to C%ld max_cstate."
-//	       " Override with \"processor.max_cstate=%d\"\n", id->ident,
-;
+	printk(KERN_NOTICE PREFIX "%s detected - limiting to C%ld max_cstate."
+	       " Override with \"processor.max_cstate=%d\"\n", id->ident,
+	       (long)id->driver_data, ACPI_PROCESSOR_MAX_POWER + 1);
 
 	max_cstate = (long)id->driver_data;
 
@@ -385,7 +385,7 @@ static int acpi_processor_get_power_info_cst(struct acpi_processor *pr)
 
 	/* There must be at least 2 elements */
 	if (!cst || (cst->type != ACPI_TYPE_PACKAGE) || cst->package.count < 2) {
-;
+		printk(KERN_ERR PREFIX "not enough elements in _CST\n");
 		status = -EFAULT;
 		goto end;
 	}
@@ -394,7 +394,7 @@ static int acpi_processor_get_power_info_cst(struct acpi_processor *pr)
 
 	/* Validate number of power states. */
 	if (count < 1 || count != cst->package.count - 1) {
-;
+		printk(KERN_ERR PREFIX "count given by _CST is not valid\n");
 		status = -EFAULT;
 		goto end;
 	}
@@ -505,11 +505,11 @@ static int acpi_processor_get_power_info_cst(struct acpi_processor *pr)
 		 * (From 1 through ACPI_PROCESSOR_MAX_POWER - 1)
 		 */
 		if (current_count >= (ACPI_PROCESSOR_MAX_POWER - 1)) {
-//			printk(KERN_WARNING
-//			       "Limiting number of power states to max (%d)\n",
-;
-//			printk(KERN_WARNING
-;
+			printk(KERN_WARNING
+			       "Limiting number of power states to max (%d)\n",
+			       ACPI_PROCESSOR_MAX_POWER);
+			printk(KERN_WARNING
+			       "Please increase ACPI_PROCESSOR_MAX_POWER if needed.\n");
 			break;
 		}
 	}
@@ -1102,9 +1102,9 @@ int __cpuinit acpi_processor_power_init(struct acpi_processor *pr,
 		dmi_check_system(processor_power_dmi_table);
 		max_cstate = acpi_processor_cstate_check(max_cstate);
 		if (max_cstate < ACPI_C_STATES_MAX)
-//			printk(KERN_NOTICE
-//			       "ACPI: processor limited to max C-state %d\n",
-;
+			printk(KERN_NOTICE
+			       "ACPI: processor limited to max C-state %d\n",
+			       max_cstate);
 		first_run++;
 	}
 

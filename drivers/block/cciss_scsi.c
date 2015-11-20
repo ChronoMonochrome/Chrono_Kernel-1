@@ -277,71 +277,71 @@ print_bytes (unsigned char *c, int len, int hex, int ascii)
 		x = c;
 		for (i=0;i<len;i++)
 		{
-;
-;
+			if ((i % xmargin) == 0 && i>0) printk("\n");
+			if ((i % xmargin) == 0) printk("0x%04x:", i);
 			printk(" %02x", *x);
 			x++;
 		}
-;
+		printk("\n");
 	}
 	if (ascii)
 	{
 		x = c;
 		for (i=0;i<len;i++)
 		{
-;
-;
+			if ((i % amargin) == 0 && i>0) printk("\n");
+			if ((i % amargin) == 0) printk("0x%04x:", i);
 			if (*x > 26 && *x < 128) printk("%c", *x);
-;
+			else printk(".");
 			x++;
 		}
-;
+		printk("\n");
 	}
 }
 
 static void
 print_cmd(CommandList_struct *cp)
 {
-;
-;
-;
-//	printk("Tag:0x%08x/0x%08x\n", cp->Header.Tag.upper, 
-;
-//	printk("LUN:0x%02x%02x%02x%02x%02x%02x%02x%02x\n",
-//		cp->Header.LUN.LunAddrBytes[0],
-//		cp->Header.LUN.LunAddrBytes[1],
-//		cp->Header.LUN.LunAddrBytes[2],
-//		cp->Header.LUN.LunAddrBytes[3],
-//		cp->Header.LUN.LunAddrBytes[4],
-//		cp->Header.LUN.LunAddrBytes[5],
-//		cp->Header.LUN.LunAddrBytes[6],
-;
-;
-;
-;
-;
-;
-//	printk( "CDB: %02x %02x %02x %02x %02x %02x %02x %02x"
-//		" %02x %02x %02x %02x %02x %02x %02x %02x\n",
-//		cp->Request.CDB[0], cp->Request.CDB[1],
-//		cp->Request.CDB[2], cp->Request.CDB[3],
-//		cp->Request.CDB[4], cp->Request.CDB[5],
-//		cp->Request.CDB[6], cp->Request.CDB[7],
-//		cp->Request.CDB[8], cp->Request.CDB[9],
-//		cp->Request.CDB[10], cp->Request.CDB[11],
-//		cp->Request.CDB[12], cp->Request.CDB[13],
-//		cp->Request.CDB[14], cp->Request.CDB[15]),
-//	printk("edesc.Addr: 0x%08x/0%08x, Len  = %d\n", 
-//		cp->ErrDesc.Addr.upper, cp->ErrDesc.Addr.lower, 
-;
-;
-;
-;
-;
-;
-;
-;
-;
+	printk("queue:%d\n", cp->Header.ReplyQueue);
+	printk("sglist:%d\n", cp->Header.SGList);
+	printk("sgtot:%d\n", cp->Header.SGTotal);
+	printk("Tag:0x%08x/0x%08x\n", cp->Header.Tag.upper, 
+			cp->Header.Tag.lower);
+	printk("LUN:0x%02x%02x%02x%02x%02x%02x%02x%02x\n",
+		cp->Header.LUN.LunAddrBytes[0],
+		cp->Header.LUN.LunAddrBytes[1],
+		cp->Header.LUN.LunAddrBytes[2],
+		cp->Header.LUN.LunAddrBytes[3],
+		cp->Header.LUN.LunAddrBytes[4],
+		cp->Header.LUN.LunAddrBytes[5],
+		cp->Header.LUN.LunAddrBytes[6],
+		cp->Header.LUN.LunAddrBytes[7]);
+	printk("CDBLen:%d\n", cp->Request.CDBLen);
+	printk("Type:%d\n",cp->Request.Type.Type);
+	printk("Attr:%d\n",cp->Request.Type.Attribute);
+	printk(" Dir:%d\n",cp->Request.Type.Direction);
+	printk("Timeout:%d\n",cp->Request.Timeout);
+	printk( "CDB: %02x %02x %02x %02x %02x %02x %02x %02x"
+		" %02x %02x %02x %02x %02x %02x %02x %02x\n",
+		cp->Request.CDB[0], cp->Request.CDB[1],
+		cp->Request.CDB[2], cp->Request.CDB[3],
+		cp->Request.CDB[4], cp->Request.CDB[5],
+		cp->Request.CDB[6], cp->Request.CDB[7],
+		cp->Request.CDB[8], cp->Request.CDB[9],
+		cp->Request.CDB[10], cp->Request.CDB[11],
+		cp->Request.CDB[12], cp->Request.CDB[13],
+		cp->Request.CDB[14], cp->Request.CDB[15]),
+	printk("edesc.Addr: 0x%08x/0%08x, Len  = %d\n", 
+		cp->ErrDesc.Addr.upper, cp->ErrDesc.Addr.lower, 
+			cp->ErrDesc.Len);
+	printk("sgs..........Errorinfo:\n");
+	printk("scsistatus:%d\n", cp->err_info->ScsiStatus);
+	printk("senselen:%d\n", cp->err_info->SenseLen);
+	printk("cmd status:%d\n", cp->err_info->CommandStatus);
+	printk("resid cnt:%d\n", cp->err_info->ResidualCnt);
+	printk("offense size:%d\n", cp->err_info->MoreErrInfo.Invalid_Cmd.offense_size);
+	printk("offense byte:%d\n", cp->err_info->MoreErrInfo.Invalid_Cmd.offense_num);
+	printk("offense value:%d\n", cp->err_info->MoreErrInfo.Invalid_Cmd.offense_value);
 			
 }
 
@@ -1042,7 +1042,7 @@ cciss_scsi_do_inquiry(ctlr_info_t *h, unsigned char *scsi3addr,
 	spin_unlock_irqrestore(&h->lock, flags);
 
 	if (c == NULL) {			/* trouble... */
-;
+		printk("cmd_alloc returned NULL!\n");
 		return -1;
 	}
 
@@ -1104,7 +1104,7 @@ cciss_scsi_do_report_phys_luns(ctlr_info_t *h,
 	c = scsi_cmd_alloc(h);
 	spin_unlock_irqrestore(&h->lock, flags);
 	if (c == NULL) {			/* trouble... */
-;
+		printk("cmd_alloc returned NULL!\n");
 		return -1;
 	}
 
@@ -1187,7 +1187,7 @@ cciss_update_non_disk_devices(ctlr_info_t *h, int hostno)
 	currentsd = kzalloc(sizeof(*currentsd) *
 			(CCISS_MAX_SCSI_DEVS_PER_HBA+1), GFP_KERNEL);
 	if (ld_buff == NULL || inq_buff == NULL || currentsd == NULL) {
-;
+		printk(KERN_ERR "cciss: out of memory\n");
 		goto out;
 	}
 	this_device = &currentsd[CCISS_MAX_SCSI_DEVS_PER_HBA];
@@ -1195,15 +1195,15 @@ cciss_update_non_disk_devices(ctlr_info_t *h, int hostno)
 		ch = &ld_buff->LUNListLength[0];
 		num_luns = ((ch[0]<<24) | (ch[1]<<16) | (ch[2]<<8) | ch[3]) / 8;
 		if (num_luns > CISS_MAX_PHYS_LUN) {
-//			printk(KERN_WARNING 
-//				"cciss: Maximum physical LUNs (%d) exceeded.  "
-//				"%d LUNs ignored.\n", CISS_MAX_PHYS_LUN, 
-;
+			printk(KERN_WARNING 
+				"cciss: Maximum physical LUNs (%d) exceeded.  "
+				"%d LUNs ignored.\n", CISS_MAX_PHYS_LUN, 
+				num_luns - CISS_MAX_PHYS_LUN);
 			num_luns = CISS_MAX_PHYS_LUN;
 		}
 	}
 	else {
-;
+		printk(KERN_ERR  "cciss: Report physical LUNs failed.\n");
 		goto out;
 	}
 
@@ -1259,9 +1259,9 @@ cciss_update_non_disk_devices(ctlr_info_t *h, int hostno)
 		  case 0x01: /* sequential access, (tape) */
 		  case 0x08: /* medium changer */
 			if (ncurrent >= CCISS_MAX_SCSI_DEVS_PER_HBA) {
-//				printk(KERN_INFO "cciss%d: %s ignored, "
-//					"too many devices.\n", h->ctlr,
-;
+				printk(KERN_INFO "cciss%d: %s ignored, "
+					"too many devices.\n", h->ctlr,
+					scsi_device_type(this_device->devtype));
 				break;
 			}
 			currentsd[ncurrent] = *this_device;

@@ -220,8 +220,8 @@ static int __devinit stmp3xxx_wdt_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-//	printk(KERN_INFO "stmp3xxx watchdog: initialized, heartbeat %d sec\n",
-;
+	printk(KERN_INFO "stmp3xxx watchdog: initialized, heartbeat %d sec\n",
+		heartbeat);
 
 	return ret;
 }

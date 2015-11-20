@@ -222,17 +222,17 @@ int arcmsr_alloc_sysfs_attr(struct AdapterControlBlock *acb)
 
 	error = sysfs_create_bin_file(&host->shost_dev.kobj, &arcmsr_sysfs_message_read_attr);
 	if (error) {
-;
+		printk(KERN_ERR "arcmsr: alloc sysfs mu_read failed\n");
 		goto error_bin_file_message_read;
 	}
 	error = sysfs_create_bin_file(&host->shost_dev.kobj, &arcmsr_sysfs_message_write_attr);
 	if (error) {
-;
+		printk(KERN_ERR "arcmsr: alloc sysfs mu_write failed\n");
 		goto error_bin_file_message_write;
 	}
 	error = sysfs_create_bin_file(&host->shost_dev.kobj, &arcmsr_sysfs_message_clear_attr);
 	if (error) {
-;
+		printk(KERN_ERR "arcmsr: alloc sysfs mu_clear failed\n");
 		goto error_bin_file_message_clear;
 	}
 	return 0;
