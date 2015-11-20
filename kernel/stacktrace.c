@@ -19,7 +19,11 @@ void print_stack_trace(struct stack_trace *trace, int spaces)
 		return;
 
 	for (i = 0; i < trace->nr_entries; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%*c", 1 + spaces, ' ');
+#else
+		;
+#endif
 		print_ip_sym(trace->entries[i]);
 	}
 }

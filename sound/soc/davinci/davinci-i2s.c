@@ -208,7 +208,11 @@ static void davinci_mcbsp_start(struct davinci_mcbsp_dev *dev,
 			int ret = platform->driver->ops->trigger(substream,
 				SNDRV_PCM_TRIGGER_STOP);
 			if (ret < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "Playback DMA stop failed\n");
+#else
+				;
+#endif
 		}
 
 		/* Enable the transmitter */
@@ -230,7 +234,11 @@ static void davinci_mcbsp_start(struct davinci_mcbsp_dev *dev,
 			int ret = platform->driver->ops->trigger(substream,
 				SNDRV_PCM_TRIGGER_START);
 			if (ret < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "Playback DMA start failed\n");
+#else
+				;
+#endif
 		}
 	}
 
@@ -503,7 +511,11 @@ static int davinci_i2s_hw_params(struct snd_pcm_substream *substream,
 	/* Determine xfer data type */
 	fmt = params_format(params);
 	if ((fmt > SNDRV_PCM_FORMAT_S32_LE) || !data_type[fmt]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "davinci-i2s: unsupported PCM format\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

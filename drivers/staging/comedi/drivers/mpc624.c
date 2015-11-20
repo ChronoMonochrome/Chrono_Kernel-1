@@ -171,7 +171,11 @@ static int mpc624_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned long iobase;
 
 	iobase = it->options[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: mpc624 [0x%04lx, ", dev->minor, iobase);
+#else
+	;
+#endif
 	if (request_region(iobase, MPC624_SIZE, "mpc624") == NULL) {
 		printk(KERN_ERR "I/O port(s) in use\n");
 		return -EIO;
@@ -187,43 +191,83 @@ static int mpc624_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	switch (it->options[1]) {
 	case 0:
 		devpriv->ulConvertionRate = MPC624_SPEED_3_52_kHz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "3.52 kHz, ");
+#else
+		;
+#endif
 		break;
 	case 1:
 		devpriv->ulConvertionRate = MPC624_SPEED_1_76_kHz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "1.76 kHz, ");
+#else
+		;
+#endif
 		break;
 	case 2:
 		devpriv->ulConvertionRate = MPC624_SPEED_880_Hz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "880 Hz, ");
+#else
+		;
+#endif
 		break;
 	case 3:
 		devpriv->ulConvertionRate = MPC624_SPEED_440_Hz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "440 Hz, ");
+#else
+		;
+#endif
 		break;
 	case 4:
 		devpriv->ulConvertionRate = MPC624_SPEED_220_Hz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "220 Hz, ");
+#else
+		;
+#endif
 		break;
 	case 5:
 		devpriv->ulConvertionRate = MPC624_SPEED_110_Hz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "110 Hz, ");
+#else
+		;
+#endif
 		break;
 	case 6:
 		devpriv->ulConvertionRate = MPC624_SPEED_55_Hz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "55 Hz, ");
+#else
+		;
+#endif
 		break;
 	case 7:
 		devpriv->ulConvertionRate = MPC624_SPEED_27_5_Hz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "27.5 Hz, ");
+#else
+		;
+#endif
 		break;
 	case 8:
 		devpriv->ulConvertionRate = MPC624_SPEED_13_75_Hz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "13.75 Hz, ");
+#else
+		;
+#endif
 		break;
 	case 9:
 		devpriv->ulConvertionRate = MPC624_SPEED_6_875_Hz;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "6.875 Hz, ");
+#else
+		;
+#endif
 		break;
 	default:
 		printk
@@ -243,29 +287,49 @@ static int mpc624_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	switch (it->options[1]) {
 	default:
 		s->maxdata = 0x3FFFFFFF;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "30 bit, ");
+#else
+		;
+#endif
 	}
 
 	switch (it->options[1]) {
 	case 0:
 		s->range_table = &range_mpc624_bipolar1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "1.01V]: ");
+#else
+		;
+#endif
 		break;
 	default:
 		s->range_table = &range_mpc624_bipolar10;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "10.1V]: ");
+#else
+		;
+#endif
 	}
 	s->len_chanlist = 1;
 	s->insn_read = mpc624_ai_rinsn;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "attached\n");
+#else
+	;
+#endif
 
 	return 1;
 }
 
 static int mpc624_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: mpc624: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->iobase)
 		release_region(dev->iobase, MPC624_SIZE);
@@ -289,9 +353,17 @@ static int mpc624_ai_rinsn(struct comedi_device *dev,
 	 *  We always write 0 to GNSWA bit, so the channel range is +-/10.1Vdc
 	 */
 	outb(insn->chanspec, dev->iobase + MPC624_GNMUXCH);
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("Channel %d:\n", insn->chanspec); */
+#else
+/* ;
+#endif
 	if (!insn->n) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "MPC624: Warning, no data to acquire\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -375,11 +447,19 @@ static int mpc624_ai_rinsn(struct comedi_device *dev,
 		 */
 
 		if (data_in & MPC624_EOC_BIT)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MPC624:EOC bit is set (data_in=%lu)!",
 			       data_in);
+#else
+			;
+#endif
 		if (data_in & MPC624_DMY_BIT)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MPC624:DMY bit is set (data_in=%lu)!",
 			       data_in);
+#else
+			;
+#endif
 		if (data_in & MPC624_SGN_BIT) {	/* Volatge is positive */
 			/*
 			 * comedi operates on unsigned numbers, so mask off EOC

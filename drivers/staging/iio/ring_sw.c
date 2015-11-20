@@ -181,9 +181,13 @@ static int iio_read_first_n_sw_rb(struct iio_ring_buffer *r,
 	 */
 	if (n % ring->buf.bytes_per_datum) {
 		ret = -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Ring buffer read request not whole number of"
 		       "samples: Request bytes %zd, Current bytes per datum %d\n",
 		       n, ring->buf.bytes_per_datum);
+#else
+		;
+#endif
 		goto error_ret;
 	}
 	/* Limit size to whole of ring buffer */

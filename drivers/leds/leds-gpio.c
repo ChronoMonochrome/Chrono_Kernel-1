@@ -100,8 +100,12 @@ static int __devinit create_gpio_led(const struct gpio_led *template,
 
 	/* skip leds that aren't available */
 	if (!gpio_is_valid(template->gpio)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Skipping unavailable LED gpio %d (%s)\n",
 				template->gpio, template->name);
+#else
+		;
+#endif
 		return 0;
 	}
 

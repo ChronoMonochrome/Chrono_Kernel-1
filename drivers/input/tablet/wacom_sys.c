@@ -377,7 +377,11 @@ static int wacom_retrieve_hid_descriptor(struct usb_interface *intf,
 	if (usb_get_extra_descriptor(interface, HID_DEVICET_HID, &hid_desc)) {
 		if (usb_get_extra_descriptor(&interface->endpoint[0],
 				HID_DEVICET_REPORT, &hid_desc)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("wacom: can not retrieve extra class descriptor\n");
+#else
+			;
+#endif
 			error = 1;
 			goto out;
 		}
@@ -640,8 +644,12 @@ static int __init wacom_init(void)
 
 	result = usb_register(&wacom_driver);
 	if (result == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
 		       DRIVER_DESC "\n");
+#else
+		;
+#endif
 	return result;
 }
 

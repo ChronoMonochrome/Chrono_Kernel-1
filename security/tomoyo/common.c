@@ -725,8 +725,12 @@ static bool tomoyo_manager(void)
 		static pid_t last_pid;
 		const pid_t pid = current->pid;
 		if (last_pid != pid) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s ( %s ) is not permitted to "
 			       "update policies.\n", domainname->name, exe);
+#else
+			;
+#endif
 			last_pid = pid;
 		}
 	}
@@ -2103,6 +2107,14 @@ void tomoyo_check_profile(void)
 		panic("Profile version %u is not supported.\n",
 		      tomoyo_profile_version);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TOMOYO: 2.3.0\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Mandatory Access Control activated.\n");
+#else
+	;
+#endif
 }

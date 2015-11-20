@@ -169,11 +169,15 @@ remove_thermostat(struct i2c_client *client)
 		kthread_stop(thread_therm);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "adt746x: Putting max temperatures back from "
 			 "%d, %d, %d to %d, %d, %d\n",
 		th->limits[0], th->limits[1], th->limits[2],
 		th->initial_limits[0], th->initial_limits[1],
 		th->initial_limits[2]);
+#else
+	;
+#endif
 
 	for (i = 0; i < 3; i++)
 		write_reg(th, LIMIT_REG[i], th->initial_limits[i]);
@@ -223,11 +227,19 @@ static void write_fan_speed(struct thermostat *th, int speed, int fan)
 	if (th->last_speed[fan] != speed) {
 		if (verbose) {
 			if (speed == -1)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "adt746x: Setting speed to automatic "
 					"for %s fan.\n", sensor_location[fan+1]);
+#else
+				;
+#endif
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "adt746x: Setting speed to %d "
 					"for %s fan.\n", speed, sensor_location[fan+1]);
+#else
+				;
+#endif
 		}
 	} else
 		return;
@@ -272,8 +284,12 @@ static void display_stats(struct thermostat *th)
 	if (th->temps[0] != th->cached_temp[0]
 	||  th->temps[1] != th->cached_temp[1]
 	||  th->temps[2] != th->cached_temp[2]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "adt746x: Temperature infos:"
 				 " thermostats: %d,%d,%d;"
+#else
+		;
+#endif
 				 " limits: %d,%d,%d;"
 				 " fan speed: %d RPM\n",
 				 th->temps[0], th->temps[1], th->temps[2],
@@ -315,10 +331,14 @@ static void update_fans_speed (struct thermostat *th)
 				new_speed = 255;
 
 			if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "adt746x: Setting fans speed to %d "
 						 "(limit exceeded by %d on %s)\n",
 						new_speed, var,
 						sensor_location[fan_number+1]);
+#else
+				;
+#endif
 			write_both_fan_speed(th, new_speed);
 			th->last_var[fan_number] = var;
 		} else if (var < -2) {
@@ -327,8 +347,12 @@ static void update_fans_speed (struct thermostat *th)
 			if (i == 2 && lastvar < -1) {
 				if (th->last_speed[fan_number] != 0)
 					if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_DEBUG "adt746x: Stopping "
 							"fans.\n");
+#else
+						;
+#endif
 				write_both_fan_speed(th, 0);
 			}
 		}
@@ -408,22 +432,34 @@ static int probe_thermostat(struct i2c_client *client,
 		fan_speed = 64;
 	
 	if(therm_type == ADT7460) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "adt746x: ADT7460 initializing\n");
+#else
+		;
+#endif
 		/* The 7460 needs to be started explicitly */
 		write_reg(th, CONFIG_REG, 1);
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "adt746x: ADT7467 initializing\n");
+#else
+		;
+#endif
 
 	for (i = 0; i < 3; i++) {
 		th->initial_limits[i] = read_reg(th, LIMIT_REG[i]);
 		set_limit(th, i);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "adt746x: Lowering max temperatures from %d, %d, %d"
 			 " to %d, %d, %d\n",
 			 th->initial_limits[0], th->initial_limits[1],
 			 th->initial_limits[2], th->limits[0], th->limits[1],
 			 th->limits[2]);
+#else
+	;
+#endif
 
 	thermostat = th;
 
@@ -448,7 +484,11 @@ static int probe_thermostat(struct i2c_client *client,
 	thread_therm = kthread_run(monitor_task, th, "kfand");
 
 	if (thread_therm == ERR_PTR(-ENOMEM)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "adt746x: Kthread creation failed\n");
+#else
+		;
+#endif
 		thread_therm = NULL;
 		return -ENOMEM;
 	}
@@ -507,7 +547,11 @@ static ssize_t store_##name(struct device *dev, struct device_attribute *attr, c
 	int val;						\
 	int i;							\
 	val = simple_strtol(buf, NULL, 10);			\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Adjusting limits by %d degrees\n", val);	\
+#else
+	;
+#endif
 	limit_adjust = val;					\
 	for (i=0; i < 3; i++)					\
 		set_limit(thermostat, i);			\
@@ -521,7 +565,11 @@ static ssize_t store_##name(struct device *dev, struct device_attribute *attr, c
 	val = simple_strtol(buf, NULL, 10);			\
 	if (val < 0 || val > 255)				\
 		return -EINVAL;					\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Setting specified fan speed to %d\n", val);	\
+#else
+	;
+#endif
 	data = val;						\
 	return n;						\
 }
@@ -586,8 +634,12 @@ thermostat_init(void)
 	}
 
 	prop = of_get_property(np, "hwsensor-params-version", NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "adt746x: version %d (%ssupported)\n", *prop,
 			 (*prop == 1)?"":"un");
+#else
+	;
+#endif
 	if (*prop != 1) {
 		of_node_put(np);
 		return -ENODEV;
@@ -609,9 +661,13 @@ thermostat_init(void)
 
 	therm_address = ((*prop) & 0xff) >> 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "adt746x: Thermostat bus: %d, address: 0x%02x, "
 			 "limit_adjust: %d, fan_speed: %d\n",
 			 therm_bus, therm_address, limit_adjust, fan_speed);
+#else
+	;
+#endif
 
 	if (of_get_property(np, "hwsensor-location", NULL)) {
 		for (i = 0; i < 3; i++) {
@@ -621,7 +677,11 @@ thermostat_init(void)
 			if (sensor_location[i] == NULL)
 				sensor_location[i] = "";
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "sensor %d: %s\n", i, sensor_location[i]);
+#else
+			;
+#endif
 			offset += strlen(sensor_location[i]) + 1;
 		}
 	} else {
@@ -661,8 +721,12 @@ static void thermostat_create_files(void)
 	if(therm_type == ADT7460)
 		err |= device_create_file(&of_dev->dev, &dev_attr_sensor2_fan_speed);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Failed to create temperature attribute file(s).\n");
+#else
+		;
+#endif
 }
 
 static void thermostat_remove_files(void)

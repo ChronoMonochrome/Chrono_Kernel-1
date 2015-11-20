@@ -184,7 +184,11 @@ static int lx_hardware_stop(struct lx6464es *chip,
 	snd_printd(LXP "stopping pipe\n");
 	err = lx_pipe_stop(chip, 0, is_capture);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXP "stopping pipe failed\n");
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -201,7 +205,11 @@ static int lx_hardware_close(struct lx6464es *chip,
 	snd_printd(LXP "releasing pipe\n");
 	err = lx_pipe_release(chip, 0, is_capture);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXP "releasing pipe failed\n");
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -227,7 +235,11 @@ static int lx_pcm_open(struct snd_pcm_substream *substream)
 	err = snd_pcm_hw_constraint_integer(runtime,
 					    SNDRV_PCM_HW_PARAM_PERIODS);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING LXP "could not constrain periods\n");
+#else
+		;
+#endif
 		goto exit;
 	}
 #endif
@@ -238,7 +250,11 @@ static int lx_pcm_open(struct snd_pcm_substream *substream)
 					   board_rate, board_rate);
 
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING LXP "could not constrain periods\n");
+#else
+		;
+#endif
 		goto exit;
 	}
 
@@ -248,8 +264,12 @@ static int lx_pcm_open(struct snd_pcm_substream *substream)
 					   MICROBLAZE_IBL_MIN,
 					   MICROBLAZE_IBL_MAX);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING LXP
 			   "could not constrain period size\n");
+#else
+		;
+#endif
 		goto exit;
 	}
 
@@ -681,8 +701,12 @@ static int __devinit lx_init_ethersound_config(struct lx6464es *chip)
 		}
 		msleep(1);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING LXP
 		   "ethersound could not be initialized after %dms\n", i);
+#else
+	;
+#endif
 	return -ETIMEDOUT;
 
  ethersound_initialized:
@@ -703,9 +727,13 @@ static int __devinit lx_init_get_version_features(struct lx6464es *chip)
 	if (err == 0) {
 		u32 freq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXP "DSP version: V%02d.%02d #%d\n",
 			   (dsp_version>>16) & 0xff, (dsp_version>>8) & 0xff,
 			   dsp_version & 0xff);
+#else
+		;
+#endif
 
 		/* later: what firmware version do we expect? */
 
@@ -745,12 +773,20 @@ static int lx_set_granularity(struct lx6464es *chip, u32 gran)
 
 	err = lx_dsp_set_granularity(chip, snapped_gran);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING LXP "could not set granularity\n");
+#else
+		;
+#endif
 		err = -EAGAIN;
 	}
 
 	if (snapped_gran != gran)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(LXP "snapped blocksize to %d\n", snapped_gran);
+#else
+		;
+#endif
 
 	snd_printd(LXP "set blocksize on board %d\n", snapped_gran);
 	chip->pcm_granularity = snapped_gran;
@@ -799,9 +835,13 @@ static int __devinit lx_init_dsp(struct lx6464es *chip)
 
 mac_ready:
 	snd_printd(LXP "mac address ready read after: %dms\n", i);
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(LXP "mac address: %02X.%02X.%02X.%02X.%02X.%02X\n",
 		   mac_address[0], mac_address[1], mac_address[2],
 		   mac_address[3], mac_address[4], mac_address[5]);
+#else
+	;
+#endif
 
 	err = lx_init_get_version_features(chip);
 	if (err)

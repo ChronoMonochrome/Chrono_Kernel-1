@@ -115,8 +115,12 @@ static void out(int offset, int value)
 		parport_write_control(pport, value);
 		break;
 	case LIRC_LP_STATUS:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: attempt to write to status register\n",
 		       LIRC_DRIVER_NAME);
+#else
+		;
+#endif
 		break;
 	}
 }
@@ -166,27 +170,47 @@ static unsigned int init_lirc_timer(void)
 		if (default_timer == 0) {
 			/* autodetect timer */
 			newtimer = (1000000*count)/timeelapsed;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: %u Hz timer detected\n",
 			       LIRC_DRIVER_NAME, newtimer);
+#else
+			;
+#endif
 			return newtimer;
 		}  else {
 			newtimer = (1000000*count)/timeelapsed;
 			if (abs(newtimer - default_timer) > default_timer/10) {
 				/* bad timer */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "%s: bad timer: %u Hz\n",
 				       LIRC_DRIVER_NAME, newtimer);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "%s: using default timer: "
 				       "%u Hz\n",
 				       LIRC_DRIVER_NAME, default_timer);
+#else
+				;
+#endif
 				return default_timer;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s: %u Hz timer detected\n",
 				       LIRC_DRIVER_NAME, newtimer);
+#else
+				;
+#endif
 				return newtimer; /* use detected value */
 			}
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: no timer detected\n", LIRC_DRIVER_NAME);
+#else
+		;
+#endif
 		return 0;
 	}
 }
@@ -194,13 +218,25 @@ static unsigned int init_lirc_timer(void)
 static int lirc_claim(void)
 {
 	if (parport_claim(ppdevice) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: could not claim port\n",
 		       LIRC_DRIVER_NAME);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: waiting for port becoming available"
 		       "\n", LIRC_DRIVER_NAME);
+#else
+		;
+#endif
 		if (parport_claim_or_block(ppdevice) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: could not claim port, giving"
 			       " up\n", LIRC_DRIVER_NAME);
+#else
+			;
+#endif
 			return 0;
 		}
 	}
@@ -219,7 +255,11 @@ static void rbuf_write(int signal)
 	if (nwptr == rptr) {
 		/* no new signals will be accepted */
 		lost_irqs++;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: buffer overrun\n", LIRC_DRIVER_NAME);
+#else
+		;
+#endif
 		return;
 	}
 	rbuf[wptr] = signal;
@@ -290,7 +330,11 @@ static void irq_handler(void *blah)
 		if (signal > timeout
 		    || (check_pselecd && (in(1) & LP_PSELECD))) {
 			signal = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: timeout\n", LIRC_DRIVER_NAME);
+#else
+			;
+#endif
 			break;
 		}
 	} while (lirc_get_signal());
@@ -635,7 +679,11 @@ static void kf(void *handle)
 	lirc_off();
 	/* this is a bit annoying when you actually print...*/
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: reclaimed port\n", LIRC_DRIVER_NAME);
+#else
+	;
+#endif
 	*/
 }
 
@@ -647,8 +695,12 @@ static int __init lirc_parallel_init(void)
 
 	result = platform_driver_register(&lirc_parallel_driver);
 	if (result) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "platform_driver_register"
 					" returned %d\n", result);
+#else
+		;
+#endif
 		return result;
 	}
 
@@ -664,8 +716,12 @@ static int __init lirc_parallel_init(void)
 
 	pport = parport_find_base(io);
 	if (pport == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: no port at %x found\n",
 		       LIRC_DRIVER_NAME, io);
+#else
+		;
+#endif
 		result = -ENXIO;
 		goto exit_device_put;
 	}
@@ -673,8 +729,12 @@ static int __init lirc_parallel_init(void)
 					   pf, kf, irq_handler, 0, NULL);
 	parport_put_port(pport);
 	if (ppdevice == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: parport_register_device() failed\n",
 		       LIRC_DRIVER_NAME);
+#else
+		;
+#endif
 		result = -ENXIO;
 		goto exit_device_put;
 	}
@@ -709,14 +769,22 @@ static int __init lirc_parallel_init(void)
 	driver.dev = &lirc_parallel_dev->dev;
 	driver.minor = lirc_register_driver(&driver);
 	if (driver.minor < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: register_chrdev() failed\n",
 		       LIRC_DRIVER_NAME);
+#else
+		;
+#endif
 		parport_unregister_device(ppdevice);
 		result = -EIO;
 		goto exit_device_put;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: installed using port 0x%04x irq %d\n",
 	       LIRC_DRIVER_NAME, io, irq);
+#else
+	;
+#endif
 	return 0;
 
 exit_device_put:

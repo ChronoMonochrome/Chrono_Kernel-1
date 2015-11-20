@@ -1467,7 +1467,11 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
 	}
 	rcu_read_unlock();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Task in %s killed", memcg_name);
+#else
+	;
+#endif
 
 	rcu_read_lock();
 	ret = cgroup_path(mem_cgrp, memcg_name, PATH_MAX);
@@ -1480,18 +1484,30 @@ void mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
 	/*
 	 * Continues from above, so we don't need an KERN_ level
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT " as a result of limit of %s\n", memcg_name);
+#else
+	;
+#endif
 done:
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "memory: usage %llukB, limit %llukB, failcnt %llu\n",
 		res_counter_read_u64(&memcg->res, RES_USAGE) >> 10,
 		res_counter_read_u64(&memcg->res, RES_LIMIT) >> 10,
 		res_counter_read_u64(&memcg->res, RES_FAILCNT));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "memory+swap: usage %llukB, limit %llukB, "
 		"failcnt %llu\n",
 		res_counter_read_u64(&memcg->memsw, RES_USAGE) >> 10,
 		res_counter_read_u64(&memcg->memsw, RES_LIMIT) >> 10,
 		res_counter_read_u64(&memcg->memsw, RES_FAILCNT));
+#else
+	;
+#endif
 }
 
 /*
@@ -3495,8 +3511,12 @@ void mem_cgroup_print_bad_page(struct page *page)
 		int ret = -1;
 		char *path;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "pc:%p pc->flags:%lx pc->mem_cgroup:%p",
 		       pc, pc->flags, pc->mem_cgroup);
+#else
+		;
+#endif
 
 		path = kmalloc(PATH_MAX, GFP_KERNEL);
 		if (path) {
@@ -3506,8 +3526,12 @@ void mem_cgroup_print_bad_page(struct page *page)
 			rcu_read_unlock();
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "(%s)\n",
 				(ret < 0) ? "cannot get the path" : path);
+#else
+		;
+#endif
 		kfree(path);
 	}
 }

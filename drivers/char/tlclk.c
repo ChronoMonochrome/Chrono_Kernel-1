@@ -29,6 +29,7 @@
 
 #include <linux/module.h>
 #include <linux/init.h>
+#ifdef CONFIG_DEBUG_PRINTK
 #include <linux/kernel.h>	/* printk() */
 #include <linux/fs.h>		/* everything... */
 #include <linux/errno.h>	/* error codes */
@@ -47,6 +48,9 @@
 #include <asm/uaccess.h>
 
 MODULE_AUTHOR("Sebastien Bouchard <sebastien.bouchard@ca.kontron.com>");
+#else
+#include <linux/kernel.h>	/* ;
+#endif
 MODULE_LICENSE("GPL");
 
 /*Hardware Reset of the PLL */

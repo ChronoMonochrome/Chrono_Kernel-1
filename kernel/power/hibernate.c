@@ -89,7 +89,11 @@ EXPORT_SYMBOL(system_entering_hibernation);
 #ifdef CONFIG_PM_DEBUG
 static void hibernation_debug_sleep(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hibernation debug: Waiting for 5 seconds.\n");
+#else
+	;
+#endif
 	mdelay(5000);
 }
 
@@ -244,10 +248,14 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
 		centisecs = 1;	/* avoid div-by-zero */
 	k = nr_pages * (PAGE_SIZE / 1024);
 	kps = (k * 100) / centisecs;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: %s %d kbytes in %d.%02d seconds (%d.%02d MB/s)\n",
 			msg, k,
 			centisecs / 100, centisecs % 100,
 			kps / 1000, (kps % 1000) / 10);
+#else
+	;
+#endif
 }
 
 /**
@@ -591,7 +599,11 @@ static void power_down(void)
 	 * Valid image is on the disk, if we continue we risk serious data
 	 * corruption after resume.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "PM: Please power down manually\n");
+#else
+	;
+#endif
 	while(1);
 }
 
@@ -961,7 +973,11 @@ static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
 	mutex_lock(&pm_mutex);
 	swsusp_resume_device = res;
 	mutex_unlock(&pm_mutex);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Starting manual resume from disk\n");
+#else
+	;
+#endif
 	noresume = 0;
 	software_resume();
 	ret = n;

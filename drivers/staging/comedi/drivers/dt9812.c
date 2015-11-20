@@ -448,8 +448,12 @@ static int dt9812_digital_in(struct slot_dt9812 *slot, u8 * bits)
 			 * digital input port
 			 */
 			*bits = (value[0] & 0x7f) | ((value[1] & 0x08) << 4);
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("%2.2x, %2.2x -> %2.2x\n",
 			   value[0], value[1], *bits); */
+#else
+			/* ;
+#endif
 		}
 	}
 	up(&slot->mutex);
@@ -1075,8 +1079,12 @@ static int dt9812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->insn_write = &dt9812_ao_winsn;
 	s->insn_read = &dt9812_ao_rinsn;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: successfully attached to dt9812.\n",
 	       dev->minor);
+#else
+	;
+#endif
 
 	down(&dt9812_mutex);
 	/* Find a slot for the comedi device */

@@ -307,7 +307,11 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 					       mpu_port[dev],
 					       MPU401_INFO_INTEGRATED,
 					       pci->irq, 0, &chip->rawmidi)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ymfpci: cannot initialize MPU401 at 0x%lx, skipping...\n", mpu_port[dev]);
+#else
+			;
+#endif
 			legacy_ctrl &= ~YMFPCI_LEGACY_MIEN; /* disable MPU401 irq */
 			pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
 		}
@@ -317,7 +321,11 @@ static int __devinit snd_card_ymfpci_probe(struct pci_dev *pci,
 					   fm_port[dev],
 					   fm_port[dev] + 2,
 					   OPL3_HW_OPL3, 1, &opl3)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ymfpci: cannot initialize FM OPL3 at 0x%lx, skipping...\n", fm_port[dev]);
+#else
+			;
+#endif
 			legacy_ctrl &= ~YMFPCI_LEGACY_FMEN;
 			pci_write_config_word(pci, PCIR_DSXG_LEGACY, legacy_ctrl);
 		} else if ((err = snd_opl3_hwdep_new(opl3, 0, 1, NULL)) < 0) {

@@ -280,8 +280,12 @@ static int epat_test_proto( PIA *pi, char * scratch, int verbose )
         epat_disconnect(pi);
 
         if (verbose)  {
+#ifdef CONFIG_DEBUG_PRINTK
             printk("%s: epat: port 0x%x, mode %d, ccr %x, test=(%d,%d,%d)\n",
 		   pi->device,pi->port,pi->mode,cc,e[0],e[1],f);
+#else
+            ;
+#endif
 	}
 	
         return (e[0] && e[1]) || f;
@@ -298,10 +302,18 @@ static void epat_log_adapter( PIA *pi, char * scratch, int verbose )
         ver = RR(0xb);
         epat_disconnect(pi);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: epat %s, Shuttle EPAT chip %x at 0x%x, ",
 		pi->device,EPAT_VERSION,ver,pi->port);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("mode %d (%s), delay %d\n",pi->mode,
 		mode_string[pi->mode],pi->delay);
+#else
+	;
+#endif
 
 }
 

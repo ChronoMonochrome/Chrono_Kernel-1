@@ -49,11 +49,15 @@
 #define SLRAM_MAX_DEVICES_PARAMS 6		/* 3 parameters / device */
 #define SLRAM_BLK_SZ 0x4000
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define T(fmt, args...) printk(KERN_DEBUG fmt, ## args)
 #define E(fmt, args...) printk(KERN_NOTICE fmt, ## args)
 
 typedef struct slram_priv {
 	u_char *start;
+#else
+#define T(fmt, args...) ;
+#endif
 	u_char *end;
 } slram_priv_t;
 

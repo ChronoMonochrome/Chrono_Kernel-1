@@ -1701,7 +1701,11 @@ static struct pci_driver denali_pci_driver = {
 
 static int __devinit denali_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Spectra MTD driver\n");
+#else
+	;
+#endif
 	return pci_register_driver(&denali_pci_driver);
 }
 

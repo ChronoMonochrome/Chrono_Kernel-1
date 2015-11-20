@@ -68,8 +68,12 @@ int speakup_set_selection(struct tty_struct *tty)
 	if (spk_sel_cons != vc_cons[fg_console].d) {
 		speakup_clear_selection();
 		spk_sel_cons = vc_cons[fg_console].d;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Selection: mark console not the same as cut\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -95,7 +99,11 @@ int speakup_set_selection(struct tty_struct *tty)
 	/* Allocate a new buffer before freeing the old one ... */
 	bp = kmalloc((sel_end-sel_start)/2+1, GFP_ATOMIC);
 	if (!bp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "selection: kmalloc() failed\n");
+#else
+		;
+#endif
 		speakup_clear_selection();
 		return -ENOMEM;
 	}

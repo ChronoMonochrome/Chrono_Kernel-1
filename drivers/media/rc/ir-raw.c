@@ -87,8 +87,12 @@ int ir_raw_event_store(struct rc_dev *dev, struct ir_raw_event *ev)
 	if (!dev->raw)
 		return -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	IR_dprintk(2, "sample: (%05dus %s)\n",
 		   TO_US(ev->duration), TO_STR(ev->pulse));
+#else
+	IR_d;
+#endif
 
 	if (kfifo_in(&dev->raw->kfifo, ev, sizeof(*ev)) != sizeof(*ev))
 		return -ENOMEM;
@@ -198,7 +202,11 @@ void ir_raw_event_set_idle(struct rc_dev *dev, bool idle)
 	if (!dev->raw)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	IR_dprintk(2, "%s idle mode\n", idle ? "enter" : "leave");
+#else
+	IR_d;
+#endif
 
 	if (idle) {
 		dev->raw->this_ev.timeout = true;

@@ -116,14 +116,26 @@ static int subdev_8255_cb(int dir, int port, int data, unsigned long arg)
 {
 	unsigned long iobase = arg;
 	unsigned char inbres;
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("8255cb %d %d %d %lx\n", dir,port,data,arg); */
+#else
+	/* ;
+#endif
 	if (dir) {
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("8255 cb   outb(%x, %lx)\n", data, iobase+port); */
+#else
+		/* ;
+#endif
 		outb(data, iobase + port);
 		return 0;
 	} else {
 		inbres = inb(iobase + port);
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("8255 cb   inb(%lx) = %x\n", iobase+port, inbres); */
+#else
+		/* ;
+#endif
 		return inbres;
 	}
 }
@@ -181,8 +193,12 @@ static void do_3724_config(struct comedi_device *dev,
 		port_8255_cfg = dev->iobase + SIZE_8255 + _8255_CR;
 
 	outb(buffer_config, dev->iobase + 8);	/* update buffer register */
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("pcm3724 buffer_config (%lx) %d, %x\n",
 	       dev->iobase + _8255_CR, chanspec, buffer_config); */
+#else
+	/* ;
+#endif
 
 	outb(config, port_8255_cfg);
 }
@@ -221,7 +237,11 @@ static void enable_chan(struct comedi_device *dev, struct comedi_subdevice *s,
 	if (priv->dio_2 & 0xff)
 		gatecfg |= GATE_A1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/*       printk("gate control %x\n", gatecfg); */
+#else
+	/*       ;
+#endif
 	outb(gatecfg, dev->iobase + 9);
 }
 
@@ -280,16 +300,28 @@ static int pcm3724_attach(struct comedi_device *dev,
 	((struct priv_pcm3724 *)(dev->private))->dio_1 = 0;
 	((struct priv_pcm3724 *)(dev->private))->dio_2 = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pcm3724: board=%s, 0x%03lx ", dev->minor,
 	       this_board->name, iobase);
+#else
+	;
+#endif
 	if (!iobase || !request_region(iobase, iorange, "pcm3724")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 
 	dev->iobase = iobase;
 	dev->board_name = this_board->name;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
+#else
+	;
+#endif
 
 	n_subdevices = this_board->numofports;
 

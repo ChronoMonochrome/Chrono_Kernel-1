@@ -533,7 +533,11 @@ static void dt282x_ai_dma_interrupt(struct comedi_device *dev)
 	devpriv->nread -= size / 2;
 
 	if (devpriv->nread < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "dt282x: off by one\n");
+#else
+		;
+#endif
 		devpriv->nread = 0;
 	}
 	if (!devpriv->nread) {
@@ -644,7 +648,11 @@ static irqreturn_t dt282x_interrupt(int irq, void *d)
 		static int warn = 5;
 		if (--warn <= 0) {
 			disable_irq(dev->irq);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "disabling irq\n");
+#else
+			;
+#endif
 		}
 #endif
 		comedi_error(dev, "D/A error");
@@ -678,8 +686,12 @@ static irqreturn_t dt282x_interrupt(int irq, void *d)
 	}
 #endif
 	comedi_event(dev, s);
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("adcsr=0x%02x dacsr-0x%02x supcsr=0x%02x\n",
 		adcsr, dacsr, supcsr); */
+#else
+	/* ;
+#endif
 	return IRQ_RETVAL(handled);
 }
 
@@ -1298,9 +1310,17 @@ static int dt282x_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (!iobase)
 		iobase = 0x240;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: dt282x: 0x%04lx", dev->minor, iobase);
+#else
+	;
+#endif
 	if (!request_region(iobase, DT2821_SIZE, "dt282x")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " I/O port conflict\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 	dev->iobase = iobase;
@@ -1308,12 +1328,16 @@ static int dt282x_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	outw(DT2821_BDINIT, dev->iobase + DT2821_SUPCSR);
 	i = inw(dev->iobase + DT2821_ADCSR);
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " fingerprint=%x,%x,%x,%x,%x",
 	       inw(dev->iobase + DT2821_ADCSR),
 	       inw(dev->iobase + DT2821_CHANCSR),
 	       inw(dev->iobase + DT2821_DACSR),
 	       inw(dev->iobase + DT2821_SUPCSR),
 	       inw(dev->iobase + DT2821_TMRCTR));
+#else
+	;
+#endif
 #endif
 
 	if (((inw(dev->iobase + DT2821_ADCSR) & DT2821_ADCSR_MASK)
@@ -1352,7 +1376,11 @@ static int dt282x_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	}
 #endif
 	if (irq > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " ( irq = %d )", irq);
+#else
+		;
+#endif
 		ret = request_irq(irq, dt282x_interrupt, 0, "dt282x", dev);
 		if (ret < 0) {
 			printk(KERN_ERR " failed to get irq\n");
@@ -1360,12 +1388,24 @@ static int dt282x_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 		dev->irq = irq;
 	} else if (irq == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " (no irq)");
+#else
+		;
+#endif
 	} else {
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " (probe returned multiple irqs--bad)");
 #else
+		;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " (irq probe not implemented)");
+#else
+		;
+#endif
 #endif
 	}
 
@@ -1437,7 +1477,11 @@ static int dt282x_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->maxdata = 1;
 	s->range_table = &range_digital;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -1462,7 +1506,11 @@ static void free_resources(struct comedi_device *dev)
 
 static int dt282x_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: dt282x: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	free_resources(dev);
 
@@ -1508,7 +1556,11 @@ static int dt282x_grab_dma(struct comedi_device *dev, int dma1, int dma2)
 		return -ENOMEM;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO " (dma=%d,%d)", dma1, dma2);
+#else
+	;
+#endif
 
 	devpriv->usedma = 1;
 

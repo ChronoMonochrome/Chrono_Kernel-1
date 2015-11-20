@@ -479,8 +479,12 @@ static int usb6fire_pcm_prepare(struct snd_pcm_substream *alsa_sub)
 				break;
 		if (rt->rate == ARRAY_SIZE(rates)) {
 			mutex_unlock(&rt->stream_mutex);
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk("invalid rate %d in prepare.\n",
 					alsa_rt->rate);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 

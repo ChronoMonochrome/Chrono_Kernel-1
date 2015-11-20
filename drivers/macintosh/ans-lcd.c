@@ -33,7 +33,11 @@ static void
 anslcd_write_byte_ctrl ( unsigned char c )
 {
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "LCD: CTRL byte: %02x\n",c);
+#else
+	;
+#endif
 #endif
 	out_8(anslcd_ptr + ANSLCD_CTRL_IX, c);
 	switch(c) {
@@ -60,7 +64,11 @@ anslcd_write( struct file * file, const char __user * buf,
 	int i;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "LCD: write\n");
+#else
+	;
+#endif
 #endif
 
 	if (!access_ok(VERIFY_READ, buf, count))
@@ -85,7 +93,11 @@ anslcd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	long ret = 0;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "LCD: ioctl(%d,%d)\n",cmd,arg);
+#else
+	;
+#endif
 #endif
 
 	mutex_lock(&anslcd_mutex);
@@ -169,13 +181,21 @@ anslcd_init(void)
 	
 	retval = misc_register(&anslcd_dev);
 	if(retval < 0){
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "LCD: misc_register failed\n");
+#else
+		;
+#endif
 		iounmap(anslcd_ptr);
 		return retval;
 	}
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "LCD: init\n");
+#else
+	;
+#endif
 #endif
 
 	mutex_lock(&anslcd_mutex);

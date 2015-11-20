@@ -230,10 +230,14 @@ static irqreturn_t t1isa_interrupt(int interrupt, void *devptr)
 			cinfo->versionlen = t1_get_slice(card->port, cinfo->versionbuf);
 			spin_unlock_irqrestore(&card->lock, flags);
 			b1_parse_version(cinfo);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: %s-card (%s) now active\n",
 			       card->name,
 			       cinfo->version[VER_CARDTYPE],
 			       cinfo->version[VER_DRIVER]);
+#else
+			;
+#endif
 			capi_ctr_ready(ctrl);
 			break;
 
@@ -248,8 +252,12 @@ static irqreturn_t t1isa_interrupt(int interrupt, void *devptr)
 				card->msgbuf[MsgLen-1] = 0;
 				MsgLen--;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: task %d \"%s\" ready.\n",
 					card->name, ApplId, card->msgbuf);
+#else
+			;
+#endif
 			break;
 
 		case RECEIVE_DEBUGMSG:
@@ -262,7 +270,11 @@ static irqreturn_t t1isa_interrupt(int interrupt, void *devptr)
 				card->msgbuf[MsgLen-1] = 0;
 				MsgLen--;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: DEBUG: %s\n", card->name, card->msgbuf);
+#else
+			;
+#endif
 			break;
 
 
@@ -377,7 +389,11 @@ static int t1isa_probe(struct pci_dev *pdev, int cardnr)
 
 	card = b1_alloc_card(1);
 	if (!card) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "t1isa: no memory.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err;
 	}
@@ -390,31 +406,51 @@ static int t1isa_probe(struct pci_dev *pdev, int cardnr)
 	sprintf(card->name, "t1isa-%x", card->port);
 
 	if (!(((card->port & 0x7) == 0) && ((card->port & 0x30) != 0x30))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "t1isa: invalid port 0x%x.\n", card->port);
+#else
+		;
+#endif
 		retval = -EINVAL;
 		goto err_free;
         }
 	if (hema_irq_table[card->irq & 0xf] == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "t1isa: irq %d not valid.\n", card->irq);
+#else
+		;
+#endif
 		retval = -EINVAL;
 		goto err_free;
 	}
 	if (!request_region(card->port, AVMB1_PORTLEN, card->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "t1isa: ports 0x%03x-0x%03x in use.\n",
 		       card->port, card->port + AVMB1_PORTLEN);
+#else
+		;
+#endif
 		retval = -EBUSY;
 		goto err_free;
 	}
 	retval = request_irq(card->irq, t1isa_interrupt, 0, card->name, card);
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "t1isa: unable to get IRQ %d.\n", card->irq);
+#else
+		;
+#endif
 		retval = -EBUSY;
 		goto err_release_region;
 	}
 
         if ((retval = t1_detectandinit(card->port, card->irq, card->cardnr)) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "t1isa: NO card at 0x%x (%d)\n",
 		       card->port, retval);
+#else
+		;
+#endif
 		retval = -ENODEV;
 		goto err_free_irq;
 	}
@@ -435,12 +471,20 @@ static int t1isa_probe(struct pci_dev *pdev, int cardnr)
 
 	retval = attach_capi_ctr(&cinfo->capi_ctrl);
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "t1isa: attach controller failed.\n");
+#else
+		;
+#endif
 		goto err_free_irq;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "t1isa: AVM T1 ISA at i/o %#x, irq %d, card %d\n",
 	       card->port, card->irq, card->cardnr);
+#else
+	;
+#endif
 
 	pci_set_drvdata(pdev, cinfo);
 	return 0;
@@ -572,7 +616,11 @@ static int __init t1isa_init(void)
 
 	strlcpy(capi_driver_t1isa.revision, rev, 32);
 	register_capi_driver(&capi_driver_t1isa);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "t1isa: revision %s\n", rev);
+#else
+	;
+#endif
 
 	return 0;
 }

@@ -112,8 +112,12 @@ static void wdt_timer_ping(unsigned long data)
 					ALI_7101_GPIO_O, tmp & ~0x20);
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 			"Heartbeat lost! Will not ping the watchdog\n");
+#else
+		;
+#endif
 	}
 	/* Re-set the timer interval */
 	mod_timer(&timer, jiffies + WDT_INTERVAL);
@@ -162,7 +166,11 @@ static void wdt_startup(void)
 	/* Start the timer */
 	mod_timer(&timer, jiffies + WDT_INTERVAL);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog timer is now enabled.\n");
+#else
+	;
+#endif
 }
 
 static void wdt_turnoff(void)
@@ -170,7 +178,11 @@ static void wdt_turnoff(void)
 	/* Stop the timer */
 	del_timer_sync(&timer);
 	wdt_change(WDT_DISABLE);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog timer is now disabled...\n");
+#else
+	;
+#endif
 }
 
 static void wdt_keepalive(void)
@@ -226,8 +238,12 @@ static int fop_close(struct inode *inode, struct file *file)
 		wdt_turnoff();
 	else {
 		/* wim: shouldn't there be a: del_timer(&timer); */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 		  "device file closed unexpectedly. Will not stop the WDT!\n");
+#else
+		;
+#endif
 	}
 	clear_bit(0, &wdt_is_open);
 	wdt_expect_close = 0;
@@ -322,8 +338,12 @@ static int wdt_notify_sys(struct notifier_block *this,
 		 * watchdog on reboot with no heartbeat
 		 */
 		wdt_change(WDT_ENABLE);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Watchdog timer is now enabled "
 			"with no heartbeat - should reboot in ~1 second.\n");
+#else
+		;
+#endif
 	}
 	return NOTIFY_DONE;
 }
@@ -352,12 +372,20 @@ static int __init alim7101_wdt_init(void)
 	struct pci_dev *ali1543_south;
 	char tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Steve Hill <steve@navaho.co.uk>.\n");
+#else
+	;
+#endif
 	alim7101_pmu = pci_get_device(PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M7101,
 		NULL);
 	if (!alim7101_pmu) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"ALi M7101 PMU not present - WDT not set\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
@@ -367,34 +395,50 @@ static int __init alim7101_wdt_init(void)
 	ali1543_south = pci_get_device(PCI_VENDOR_ID_AL, PCI_DEVICE_ID_AL_M1533,
 		NULL);
 	if (!ali1543_south) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"ALi 1543 South-Bridge not present - WDT not set\n");
+#else
+		;
+#endif
 		goto err_out;
 	}
 	pci_read_config_byte(ali1543_south, 0x5e, &tmp);
 	pci_dev_put(ali1543_south);
 	if ((tmp & 0x1e) == 0x00) {
 		if (!use_gpio) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 				"Detected old alim7101 revision 'a1d'.  "
 				"If this is a cobalt board, set the 'use_gpio' "
 				"module parameter.\n");
+#else
+			;
+#endif
 			goto err_out;
 		}
 		nowayout = 1;
 	} else if ((tmp & 0x1e) != 0x12 && (tmp & 0x1e) != 0x00) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"ALi 1543 South-Bridge does not have the correct "
 			"revision number (???1001?) - WDT not set\n");
+#else
+		;
+#endif
 		goto err_out;
 	}
 
 	if (timeout < 1 || timeout > 3600) {
 		/* arbitrary upper limit */
 		timeout = WATCHDOG_TIMEOUT;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"timeout value must be 1 <= x <= 3600, using %d\n",
 								timeout);
+#else
+		;
+#endif
 	}
 
 	rc = register_reboot_notifier(&wdt_notifier);
@@ -415,9 +459,13 @@ static int __init alim7101_wdt_init(void)
 	if (nowayout)
 		__module_get(THIS_MODULE);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "WDT driver for ALi M7101 initialised. "
 					"timeout=%d sec (nowayout=%d)\n",
 		timeout, nowayout);
+#else
+	;
+#endif
 	return 0;
 
 err_out_reboot:

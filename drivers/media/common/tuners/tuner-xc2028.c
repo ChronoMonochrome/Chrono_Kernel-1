@@ -159,67 +159,191 @@ static int xc2028_get_reg(struct xc2028_data *priv, u16 reg, u16 *val)
 static void dump_firm_type_and_int_freq(unsigned int type, u16 int_freq)
 {
 	 if (type & BASE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("BASE ");
+#else
+		;
+#endif
 	 if (type & INIT1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("INIT1 ");
+#else
+		;
+#endif
 	 if (type & F8MHZ)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("F8MHZ ");
+#else
+		;
+#endif
 	 if (type & MTS)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("MTS ");
+#else
+		;
+#endif
 	 if (type & D2620)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("D2620 ");
+#else
+		;
+#endif
 	 if (type & D2633)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("D2633 ");
+#else
+		;
+#endif
 	 if (type & DTV6)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DTV6 ");
+#else
+		;
+#endif
 	 if (type & QAM)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("QAM ");
+#else
+		;
+#endif
 	 if (type & DTV7)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DTV7 ");
+#else
+		;
+#endif
 	 if (type & DTV78)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DTV78 ");
+#else
+		;
+#endif
 	 if (type & DTV8)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DTV8 ");
+#else
+		;
+#endif
 	 if (type & FM)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("FM ");
+#else
+		;
+#endif
 	 if (type & INPUT1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("INPUT1 ");
+#else
+		;
+#endif
 	 if (type & LCD)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("LCD ");
+#else
+		;
+#endif
 	 if (type & NOGD)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("NOGD ");
+#else
+		;
+#endif
 	 if (type & MONO)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("MONO ");
+#else
+		;
+#endif
 	 if (type & ATSC)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ATSC ");
+#else
+		;
+#endif
 	 if (type & IF)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IF ");
+#else
+		;
+#endif
 	 if (type & LG60)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("LG60 ");
+#else
+		;
+#endif
 	 if (type & ATI638)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ATI638 ");
+#else
+		;
+#endif
 	 if (type & OREN538)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("OREN538 ");
+#else
+		;
+#endif
 	 if (type & OREN36)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("OREN36 ");
+#else
+		;
+#endif
 	 if (type & TOYOTA388)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("TOYOTA388 ");
+#else
+		;
+#endif
 	 if (type & TOYOTA794)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("TOYOTA794 ");
+#else
+		;
+#endif
 	 if (type & DIBCOM52)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DIBCOM52 ");
+#else
+		;
+#endif
 	 if (type & ZARLINK456)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ZARLINK456 ");
+#else
+		;
+#endif
 	 if (type & CHINA)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("CHINA ");
+#else
+		;
+#endif
 	 if (type & F6MHZ)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("F6MHZ ");
+#else
+		;
+#endif
 	 if (type & INPUT2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("INPUT2 ");
+#else
+		;
+#endif
 	 if (type & SCODE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("SCODE ");
+#else
+		;
+#endif
 	 if (type & HAS_IF)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("HAS_IF_%d ", int_freq);
+#else
+		;
+#endif
 }
 
 static  v4l2_std_id parse_audio_std_option(void)
@@ -355,10 +479,14 @@ static int load_all_firmwares(struct dvb_frontend *fe)
 		if (!size || size > endp - p) {
 			tuner_err("Firmware type ");
 			dump_firm_type(type);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(%x), id %llx is corrupted "
 			       "(size=%d, expected %d)\n",
 			       type, (unsigned long long)id,
 			       (unsigned)(endp - p), size);
+#else
+			;
+#endif
 			goto corrupt;
 		}
 
@@ -371,8 +499,12 @@ static int load_all_firmwares(struct dvb_frontend *fe)
 		tuner_dbg("Reading firmware type ");
 		if (debug) {
 			dump_firm_type_and_int_freq(type, int_freq);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(%x), id %llx, size=%d.\n",
 			       type, (unsigned long long)id, size);
+#else
+			;
+#endif
 		}
 
 		memcpy(priv->firm[n].ptr, p, size);
@@ -419,7 +551,11 @@ static int seek_firmware(struct dvb_frontend *fe, unsigned int type,
 	tuner_dbg("%s called, want type=", __func__);
 	if (debug) {
 		dump_firm_type(type);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(%x), id %016llx.\n", type, (unsigned long long)*id);
+#else
+		;
+#endif
 	}
 
 	if (!priv->firm) {
@@ -478,7 +614,11 @@ static int seek_firmware(struct dvb_frontend *fe, unsigned int type,
 		tuner_dbg("Selecting best matching firmware (%d bits) for "
 			  "type=", best_nr_matches);
 		dump_firm_type(type);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(%x), id %016llx:\n", type, (unsigned long long)*id);
+#else
+		;
+#endif
 		i = best_i;
 		goto found;
 	}
@@ -495,7 +635,11 @@ ret:
 	tuner_dbg("%s firmware for type=", (i < 0) ? "Can't find" : "Found");
 	if (debug) {
 		dump_firm_type(type);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(%x), id %016llx.\n", type, (unsigned long long)*id);
+#else
+		;
+#endif
 	}
 	return i;
 }
@@ -532,8 +676,12 @@ static int load_firmware(struct dvb_frontend *fe, unsigned int type,
 
 	tuner_info("Loading firmware for type=");
 	dump_firm_type(priv->firm[pos].type);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("(%x), id %016llx.\n", priv->firm[pos].type,
 	       (unsigned long long)*id);
+#else
+	;
+#endif
 
 	p = priv->firm[pos].ptr;
 	endp = p + priv->firm[pos].size;
@@ -659,8 +807,12 @@ static int load_scode(struct dvb_frontend *fe, unsigned int type,
 	tuner_info("Loading SCODE for type=");
 	dump_firm_type_and_int_freq(priv->firm[pos].type,
 				    priv->firm[pos].int_freq);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("(%x), id %016llx.\n", priv->firm[pos].type,
 	       (unsigned long long)*id);
+#else
+	;
+#endif
 
 	if (priv->firm_version < 0x0202)
 		rc = send_seq(priv, {0x20, 0x00, 0x00, 0x00});
@@ -716,15 +868,35 @@ retry:
 	tuner_dbg("checking firmware, user requested type=");
 	if (debug) {
 		dump_firm_type(new_fw.type);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(%x), id %016llx, ", new_fw.type,
 		       (unsigned long long)new_fw.std_req);
+#else
+		;
+#endif
 		if (!int_freq) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("scode_tbl ");
+#else
+			;
+#endif
 			dump_firm_type(priv->ctrl.scode_table);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(%x), ", priv->ctrl.scode_table);
+#else
+			;
+#endif
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("int_freq %d, ", new_fw.int_freq);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("scode_nr %d\n", new_fw.scode_nr);
+#else
+		;
+#endif
 	}
 
 	/* No need to reload base firmware if it matches */
@@ -1295,7 +1467,11 @@ struct dvb_frontend *xc2028_attach(struct dvb_frontend *fe,
 	int instance;
 
 	if (debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "xc2028: Xcv2028/3028 init called!\n");
+#else
+		;
+#endif
 
 	if (NULL == cfg)
 		return NULL;

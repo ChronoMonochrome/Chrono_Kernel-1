@@ -430,10 +430,14 @@ void store_cpu_topology(unsigned int cpuid)
 	 */
 	default_cpu_topology_mask(cpuid);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
 		cpuid, cpu_topology[cpuid].thread_id,
 		cpu_topology[cpuid].core_id,
 		cpu_topology[cpuid].socket_id, mpidr);
+#else
+	;
+#endif
 }
 
 /*

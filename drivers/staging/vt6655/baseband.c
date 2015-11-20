@@ -1736,7 +1736,11 @@ s_vChangeAntenna (
 {
 
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("Enter s_vChangeAntenna:original RxMode is %d,TxMode is %d\n",pDevice->byRxAntennaMode,pDevice->byTxAntennaMode);
+#else
+	//;
+#endif
 #endif
     if ( pDevice->dwRxAntennaSel == 0) {
         pDevice->dwRxAntennaSel=1;
@@ -2567,7 +2571,11 @@ BBvSetTxAntennaMode (unsigned long dwIoBase, unsigned char byAntennaMode)
     unsigned char byBBTxConf;
 
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("Enter BBvSetTxAntennaMode\n");
+#else
+	//;
+#endif
 #endif
     BBbReadEmbeded(dwIoBase, 0x09, &byBBTxConf);//CR09
     if (byAntennaMode == ANT_DIVERSITY) {
@@ -2578,7 +2586,11 @@ BBvSetTxAntennaMode (unsigned long dwIoBase, unsigned char byAntennaMode)
         byBBTxConf &= 0xF9; // 1111 1001
     } else if (byAntennaMode == ANT_B) {
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("BBvSetTxAntennaMode:ANT_B\n");
+#else
+	//;
+#endif
 #endif
         byBBTxConf &= 0xFD; // 1111 1101
         byBBTxConf |= 0x04;
@@ -2815,7 +2827,11 @@ BBvAntennaDiversity (PSDevice pDevice, unsigned char byRxRate, unsigned char byS
                               (int)pDevice->ulRatio_State0, (int)pDevice->wAntDiversityMaxRate,
                               (int)pDevice->uNumSQ3[(int)pDevice->wAntDiversityMaxRate], (int)pDevice->uDiversityCnt);
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("BBvAntennaDiversity1:call s_vChangeAntenna\n");
+#else
+		//;
+#endif
 #endif
 		s_vChangeAntenna(pDevice);
                 pDevice->byAntennaState = 1;
@@ -2848,7 +2864,11 @@ BBvAntennaDiversity (PSDevice pDevice, unsigned char byRxRate, unsigned char byS
                               (int)pDevice->wAntDiversityMaxRate,
                               (int)pDevice->uNumSQ3[(int)pDevice->wAntDiversityMaxRate], (int)pDevice->uDiversityCnt);
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("BBvAntennaDiversity2:call s_vChangeAntenna\n");
+#else
+		//;
+#endif
 #endif
 				s_vChangeAntenna(pDevice);
                 pDevice->TimerSQ3Tmax3.expires =  RUN_AT(pDevice->byTMax3 * HZ);
@@ -2888,7 +2908,11 @@ TimerSQ3CallBack (
 
     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"3.[%08x][%08x], %d\n",(int)pDevice->ulRatio_State0, (int)pDevice->ulRatio_State1, (int)pDevice->uDiversityCnt);
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("TimerSQ3CallBack1:call s_vChangeAntenna\n");
+#else
+		//;
+#endif
 #endif
 
     s_vChangeAntenna(pDevice);
@@ -2936,7 +2960,11 @@ TimerState1CallBack (
     spin_lock_irq(&pDevice->lock);
     if (pDevice->uDiversityCnt < pDevice->ulDiversityMValue/100) {
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("TimerSQ3CallBack2:call s_vChangeAntenna\n");
+#else
+		//;
+#endif
 #endif
 
 		s_vChangeAntenna(pDevice);
@@ -2955,7 +2983,11 @@ TimerState1CallBack (
                           (int)pDevice->wAntDiversityMaxRate,
                           (int)pDevice->uNumSQ3[(int)pDevice->wAntDiversityMaxRate], (int)pDevice->uDiversityCnt);
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("TimerSQ3CallBack3:call s_vChangeAntenna\n");
+#else
+		//;
+#endif
 #endif
 
 			s_vChangeAntenna(pDevice);

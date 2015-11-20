@@ -474,8 +474,12 @@ static int build_via_table(struct viadev *dev, struct snd_pcm_substream *substre
 			} else
 				flag = 0; /* period continues to the next */
 			/*
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "via: tbl %d: at %d  size %d "
 			       "(rest %d)\n", idx, ofs, r, rest);
+#else
+			;
+#endif
 			*/
 			((u32 *)dev->table.area)[(idx<<1) + 1] = cpu_to_le32(r | flag);
 			dev->idx_table[idx].offset = ofs;
@@ -807,12 +811,16 @@ static inline unsigned int calc_linear_pos(struct viadev *viadev, unsigned int i
 		}
 		if (check_invalid_pos(viadev, res)) {
 #ifdef POINTER_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "fail: idx = %i/%i, lastpos = 0x%x, "
 			       "bufsize2 = 0x%x, offsize = 0x%x, size = 0x%x, "
 			       "count = 0x%x\n", idx, viadev->tbl_entries,
 			       viadev->lastpos, viadev->bufsize2,
 			       viadev->idx_table[idx].offset,
 			       viadev->idx_table[idx].size, count);
+#else
+			;
+#endif
 #endif
 			/* count register returns full size when end of buffer is reached */
 			res = base + size;
@@ -889,8 +897,12 @@ static snd_pcm_uframes_t snd_via8233_pcm_pointer(struct snd_pcm_substream *subst
 		idx = count >> 24;
 		if (idx >= viadev->tbl_entries) {
 #ifdef POINTER_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "fail: invalid idx = %i/%i\n", idx,
 			       viadev->tbl_entries);
+#else
+			;
+#endif
 #endif
 			res = viadev->lastpos;
 		} else {
@@ -1909,8 +1921,12 @@ static int __devinit snd_via686_create_gameport(struct via82xx *chip, unsigned c
 
 	r = request_region(JOYSTICK_ADDR, 8, "VIA686 gameport");
 	if (!r) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "via82xx: cannot reserve joystick port 0x%#x\n",
 		       JOYSTICK_ADDR);
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
@@ -2070,8 +2086,12 @@ static int __devinit snd_via686_init_misc(struct via82xx *chip)
 		if (snd_mpu401_uart_new(chip->card, 0, MPU401_HW_VIA686A,
 					mpu_port, MPU401_INFO_INTEGRATED,
 					chip->irq, 0, &chip->rmidi) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "unable to initialize MPU-401"
 			       " at 0x%lx, skipping\n", mpu_port);
+#else
+			;
+#endif
 			legacy &= ~VIA_FUNC_ENABLE_MIDI;
 		} else {
 			legacy &= ~VIA_FUNC_MIDI_IRQMASK;	/* enable MIDI interrupt */
@@ -2489,10 +2509,26 @@ static int __devinit check_dxs_list(struct pci_dev *pci, int revision)
 	/*
 	 * not detected, try 48k rate only to be sure.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "via82xx: Assuming DXS channels with 48k fixed sample rate.\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "         Please try dxs_support=5 option\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "         and report if it works on your machine.\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "         For more details, read ALSA-Configuration.txt.\n");
+#else
+	;
+#endif
 	return VIA_DXS_48K;
 };
 

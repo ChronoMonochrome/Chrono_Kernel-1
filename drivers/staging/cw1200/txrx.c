@@ -17,6 +17,7 @@
 #include "debug.h"
 
 #if defined(CONFIG_CW1200_TX_POLICY_DEBUG)
+#ifdef CONFIG_DEBUG_PRINTK
 #define tx_policy_printk(...) printk(__VA_ARGS__)
 #else
 #define tx_policy_printk(...)
@@ -24,6 +25,9 @@
 
 static int cw1200_handle_action_rx(struct cw1200_common *priv,
 				   struct sk_buff *skb);
+#else
+#define tx_policy_;
+#endif
 static int cw1200_handle_action_tx(struct cw1200_common *priv,
 				   struct sk_buff *skb);
 static const struct ieee80211_rate *
@@ -52,6 +56,7 @@ static inline void cw1200_tx_queues_unlock(struct cw1200_common *priv)
 
 static void tx_policy_dump(struct tx_policy *policy)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	tx_policy_printk(KERN_DEBUG "[TX policy] "
 		"%.1X%.1X%.1X%.1X%.1X%.1X%.1X%.1X"
 		"%.1X%.1X%.1X%.1X%.1X%.1X%.1X%.1X"
@@ -69,6 +74,9 @@ static void tx_policy_dump(struct tx_policy *policy)
 		policy->raw[10] & 0x0F,  policy->raw[10] >> 4,
 		policy->raw[11] & 0x0F,  policy->raw[11] >> 4,
 		policy->defined);
+#else
+	tx_policy_;
+#endif
 }
 
 static void tx_policy_build(const struct cw1200_common *priv,
@@ -141,6 +149,7 @@ static void tx_policy_build(const struct cw1200_common *priv,
 		policy->retry_count += retries;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	tx_policy_printk(KERN_DEBUG "[TX policy] Policy (%d): " \
 		"%d:%d, %d:%d, %d:%d, %d:%d, %d:%d\n",
 		count,
@@ -149,6 +158,9 @@ static void tx_policy_build(const struct cw1200_common *priv,
 		rates[2].idx, rates[2].count,
 		rates[3].idx, rates[3].count,
 		rates[4].idx, rates[4].count);
+#else
+	tx_policy_;
+#endif
 }
 
 static inline bool tx_policy_is_equal(const struct tx_policy *wanted,
@@ -236,8 +248,12 @@ static int tx_policy_get(struct cw1200_common *priv,
 	BUG_ON(list_empty(&cache->free));
 	idx = tx_policy_find(cache, &wanted);
 	if (idx >= 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		tx_policy_printk(KERN_DEBUG "[TX policy] Used TX policy: %d\n",
 					idx);
+#else
+		tx_policy_;
+#endif
 		*renew = false;
 	} else {
 		struct tx_policy_cache_entry *entry;
@@ -248,8 +264,12 @@ static int tx_policy_get(struct cw1200_common *priv,
 			struct tx_policy_cache_entry, link);
 		entry->policy = wanted;
 		idx = entry - cache->cache;
+#ifdef CONFIG_DEBUG_PRINTK
 		tx_policy_printk(KERN_DEBUG "[TX policy] New TX policy: %d\n",
 					idx);
+#else
+		tx_policy_;
+#endif
 		tx_policy_dump(&entry->policy);
 	}
 	tx_policy_use(cache, &cache->cache[idx]);
@@ -324,8 +344,12 @@ static int tx_policy_upload(struct cw1200_common *priv)
 	}
 	spin_unlock_bh(&cache->lock);
 	cw1200_debug_tx_cache_miss(priv);
+#ifdef CONFIG_DEBUG_PRINTK
 	tx_policy_printk(KERN_DEBUG "[TX policy] Upload %d policies\n",
 				arg.hdr.numTxRatePolicies);
+#else
+	tx_policy_;
+#endif
 	return wsm_set_tx_rate_retry_policy(priv, &arg);
 }
 
@@ -334,7 +358,11 @@ void tx_policy_upload_work(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, tx_policy_upload_work);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	tx_policy_printk(KERN_DEBUG "[TX] TX policy upload.\n");
+#else
+	tx_policy_;
+#endif
 	WARN_ON(tx_policy_upload(priv));
 
 	wsm_unlock_tx(priv);
@@ -395,7 +423,11 @@ int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
 		&tx_policy_renew) << 4;
 
 	if (tx_policy_renew) {
+#ifdef CONFIG_DEBUG_PRINTK
 		tx_policy_printk(KERN_DEBUG "[TX] TX policy renew.\n");
+#else
+		tx_policy_;
+#endif
 		/* It's not so optimal to stop TX queues every now and then.
 		 * Maybe it's better to reimplement task scheduling with
 		 * a counter. */
@@ -429,8 +461,12 @@ int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	else if (tx_info->control.sta)
 		link_id = sta_priv->link_id;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d).\n",
 			skb->len, queue, link_id);
+#else
+	txrx_;
+#endif
 
 	if (WARN_ON(queue >= 4))
 		goto err;
@@ -563,7 +599,11 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	struct cw1200_queue *queue = &priv->tx_queue[queue_id];
 	struct sk_buff *skb;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	txrx_printk(KERN_DEBUG "[TX] TX confirm.\n");
+#else
+	txrx_;
+#endif
 
 	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
 		/* STA is stopped. */
@@ -654,14 +694,26 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 
 	if (unlikely(arg->status)) {
 		if (arg->status == WSM_STATUS_MICFAILURE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			txrx_printk(KERN_DEBUG "[RX] MIC failure.\n");
+#else
+			txrx_;
+#endif
 			hdr->flag |= RX_FLAG_MMIC_ERROR;
 		} else if (arg->status == WSM_STATUS_NO_KEY_FOUND) {
+#ifdef CONFIG_DEBUG_PRINTK
 			txrx_printk(KERN_DEBUG "[RX] No key found.\n");
+#else
+			txrx_;
+#endif
 			goto drop;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			txrx_printk(KERN_DEBUG "[RX] Receive failure: %d.\n",
 				arg->status);
+#else
+			txrx_;
+#endif
 			goto drop;
 		}
 	}

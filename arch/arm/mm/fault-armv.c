@@ -237,7 +237,11 @@ void __init check_writebuffer_bugs(void)
 	const char *reason;
 	unsigned long v = 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CPU: Testing write buffer coherency: ");
+#else
+	;
+#endif
 
 	page = alloc_page(GFP_KERNEL);
 	if (page) {
@@ -263,9 +267,17 @@ void __init check_writebuffer_bugs(void)
 	}
 
 	if (v) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("failed, %s\n", reason);
+#else
+		;
+#endif
 		shared_pte_mask = L_PTE_MT_UNCACHED;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ok\n");
+#else
+		;
+#endif
 	}
 }

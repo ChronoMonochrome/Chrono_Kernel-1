@@ -1036,9 +1036,17 @@ BOOL BBbVT3184Init(PSDevice pDevice)
   }
 else {
    if(pDevice->config_file.ZoneType !=pDevice->abyEEPROM[EEP_OFS_ZONETYPE])
+#ifdef CONFIG_DEBUG_PRINTK
       printk("zonetype in file[%02x] mismatch with in EEPROM[%02x]\n",pDevice->config_file.ZoneType,pDevice->abyEEPROM[EEP_OFS_ZONETYPE]);
+#else
+      ;
+#endif
    else
+#ifdef CONFIG_DEBUG_PRINTK
       printk("Read Zonetype file success,use default zonetype setting[%02x]\n",pDevice->config_file.ZoneType);
+#else
+      ;
+#endif
  }
 }
 

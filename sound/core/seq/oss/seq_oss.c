@@ -246,7 +246,11 @@ register_device(void)
 		mutex_unlock(&register_mutex);
 		return rc;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("device registered\n"));
+#else
+	debug_;
+#endif
 	mutex_unlock(&register_mutex);
 	return 0;
 }
@@ -255,7 +259,11 @@ static void
 unregister_device(void)
 {
 	mutex_lock(&register_mutex);
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("device unregistered\n"));
+#else
+	debug_;
+#endif
 	if (snd_unregister_oss_device(SNDRV_OSS_DEVICE_TYPE_MUSIC, NULL, 0) < 0)		
 		snd_printk(KERN_ERR "error unregister device music\n");
 	if (snd_unregister_oss_device(SNDRV_OSS_DEVICE_TYPE_SEQUENCER, NULL, 0) < 0)

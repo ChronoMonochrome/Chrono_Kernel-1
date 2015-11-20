@@ -39,15 +39,27 @@ static int __init divert_init(void)
 { int i;
 
   if (divert_dev_init())
+#ifdef CONFIG_DEBUG_PRINTK
    { printk(KERN_WARNING "dss1_divert: cannot install device, not loaded\n");
+#else
+   { ;
+#endif
      return(-EIO);
    }
   if ((i = DIVERT_REG_NAME(&divert_if)) != DIVERT_NO_ERR)
    { divert_dev_deinit();
+#ifdef CONFIG_DEBUG_PRINTK
      printk(KERN_WARNING "dss1_divert: error %d registering module, not loaded\n",i);
+#else
+     ;
+#endif
      return(-EIO);
    } 
+#ifdef CONFIG_DEBUG_PRINTK
   printk(KERN_INFO "dss1_divert module successfully installed\n");
+#else
+  ;
+#endif
   return(0);
 }
 
@@ -62,19 +74,31 @@ static void __exit divert_exit(void)
   spin_lock_irqsave(&divert_lock, flags);
   divert_if.cmd = DIVERT_CMD_REL; /* release */
   if ((i = DIVERT_REG_NAME(&divert_if)) != DIVERT_NO_ERR)
+#ifdef CONFIG_DEBUG_PRINTK
    { printk(KERN_WARNING "dss1_divert: error %d releasing module\n",i);
+#else
+   { ;
+#endif
      spin_unlock_irqrestore(&divert_lock, flags);
      return;
    } 
   if (divert_dev_deinit()) 
+#ifdef CONFIG_DEBUG_PRINTK
    { printk(KERN_WARNING "dss1_divert: device busy, remove cancelled\n");
+#else
+   { ;
+#endif
      spin_unlock_irqrestore(&divert_lock, flags);
      return;
    }
   spin_unlock_irqrestore(&divert_lock, flags);
   deleterule(-1); /* delete all rules and free mem */
   deleteprocs();
+#ifdef CONFIG_DEBUG_PRINTK
   printk(KERN_INFO "dss1_divert module successfully removed \n");
+#else
+  ;
+#endif
 }
 
 module_init(divert_init);

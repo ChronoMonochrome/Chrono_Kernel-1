@@ -145,7 +145,11 @@ static int __init ms02nv_init_one(ulong addr)
 		goto err_out_mod_res_rel;
 
 	if (!version_printed) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s", version);
+#else
+		;
+#endif
 		version_printed = 1;
 	}
 
@@ -226,8 +230,12 @@ static int __init ms02nv_init_one(ulong addr)
 		goto err_out_csr_res;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mtd%d: %s at 0x%08lx, size %zuMiB.\n",
 		mtd->index, ms02nv_name, addr, size >> 20);
+#else
+	;
+#endif
 
 	mp->next = root_ms02nv_mtd;
 	root_ms02nv_mtd = mtd;

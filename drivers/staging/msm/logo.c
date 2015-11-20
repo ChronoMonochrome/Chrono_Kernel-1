@@ -46,15 +46,23 @@ int load_565rle_image(char *filename)
 
 	info = registered_fb[0];
 	if (!info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Can not access framebuffer\n",
 			__func__);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	fd = sys_open(filename, O_RDONLY, 0);
 	if (fd < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Can not open %s\n",
 			__func__, filename);
+#else
+		;
+#endif
 		return -ENOENT;
 	}
 	count = (unsigned)sys_lseek(fd, (off_t)0, 2);
@@ -66,7 +74,11 @@ int load_565rle_image(char *filename)
 	sys_lseek(fd, (off_t)0, 0);
 	data = kmalloc(count, GFP_KERNEL);
 	if (!data) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Can not alloc data\n", __func__);
+#else
+		;
+#endif
 		err = -ENOMEM;
 		goto err_logo_close_file;
 	}

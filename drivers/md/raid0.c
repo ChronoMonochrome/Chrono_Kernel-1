@@ -56,26 +56,50 @@ static void dump_zones(struct mddev *mddev)
 	char b[BDEVNAME_SIZE];
 	struct r0conf *conf = mddev->private;
 	int raid_disks = conf->strip_zone[0].nb_dev;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "md: RAID0 configuration for %s - %d zone%s\n",
 	       mdname(mddev),
 	       conf->nr_strip_zones, conf->nr_strip_zones==1?"":"s");
+#else
+	;
+#endif
 	for (j = 0; j < conf->nr_strip_zones; j++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "md: zone%d=[", j);
+#else
+		;
+#endif
 		for (k = 0; k < conf->strip_zone[j].nb_dev; k++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "%s%s", k?"/":"",
 			bdevname(conf->devlist[j*raid_disks
 						+ k]->bdev, b));
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "]\n");
+#else
+		;
+#endif
 
 		zone_size  = conf->strip_zone[j].zone_end - zone_start;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "      zone-offset=%10lluKB, "
 				"device-offset=%10lluKB, size=%10lluKB\n",
 			(unsigned long long)zone_start>>1,
 			(unsigned long long)conf->strip_zone[j].dev_start>>1,
 			(unsigned long long)zone_size>>1);
+#else
+		;
+#endif
 		zone_start = conf->strip_zone[j].zone_end;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
+#else
+	;
+#endif
 }
 
 static int create_strip_zones(struct mddev *mddev, struct r0conf **private_conf)
@@ -436,9 +460,13 @@ static int raid0_run(struct mddev *mddev)
 	/* calculate array device size */
 	md_set_array_sectors(mddev, raid0_size(mddev, 0, 0));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "md/raid0:%s: md_size is %llu sectors.\n",
 	       mdname(mddev),
 	       (unsigned long long)mddev->array_sectors);
+#else
+	;
+#endif
 	/* calculate the max read-ahead size.
 	 * For read-ahead of large files to be effective, we need to
 	 * readahead at least twice a whole stripe. i.e. number of devices
@@ -540,10 +568,14 @@ static void raid0_make_request(struct mddev *mddev, struct bio *bio)
 	return;
 
 bad_map:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("md/raid0:%s: make_request bug: can't convert block across chunks"
 	       " or bigger than %dk %llu %d\n",
 	       mdname(mddev), chunk_sects / 2,
 	       (unsigned long long)bio->bi_sector, bio->bi_size >> 10);
+#else
+	;
+#endif
 
 	bio_io_error(bio);
 	return;

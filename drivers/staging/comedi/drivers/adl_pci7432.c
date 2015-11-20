@@ -90,7 +90,11 @@ static int adl_pci7432_attach(struct comedi_device *dev,
 	struct comedi_subdevice *s;
 	int bus, slot;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: attach adl_pci7432\n", dev->minor);
+#else
+	;
+#endif
 
 	dev->board_name = "pci7432";
 	bus = it->options[0];
@@ -119,8 +123,12 @@ static int adl_pci7432_attach(struct comedi_device *dev,
 				return -EIO;
 			}
 			dev->iobase = pci_resource_start(pcidev, 2);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "comedi: base addr %4lx\n",
 				dev->iobase);
+#else
+			;
+#endif
 
 			s = dev->subdevices + 0;
 			s->type = COMEDI_SUBD_DI;
@@ -144,8 +152,12 @@ static int adl_pci7432_attach(struct comedi_device *dev,
 			s->range_table = &range_digital;
 			s->insn_bits = adl_pci7432_do_insn_bits;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "comedi%d: adl_pci7432 attached\n",
 				dev->minor);
+#else
+			;
+#endif
 			return 1;
 		}
 	}
@@ -157,7 +169,11 @@ static int adl_pci7432_attach(struct comedi_device *dev,
 
 static int adl_pci7432_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pci7432: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (devpriv && devpriv->pci_dev) {
 		if (dev->iobase)
@@ -173,8 +189,16 @@ static int adl_pci7432_do_insn_bits(struct comedi_device *dev,
 				    struct comedi_insn *insn,
 				    unsigned int *data)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: pci7432_do_insn_bits called\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: data0: %8x data1: %8x\n", data[0], data[1]);
+#else
+	;
+#endif
 
 	if (insn->n != 2)
 		return -EINVAL;
@@ -183,8 +207,12 @@ static int adl_pci7432_do_insn_bits(struct comedi_device *dev,
 		s->state &= ~data[0];
 		s->state |= (data[0] & data[1]);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "comedi: out: %8x on iobase %4lx\n", s->state,
 		       dev->iobase + PCI7432_DO);
+#else
+		;
+#endif
 		outl(s->state & 0xffffffff, dev->iobase + PCI7432_DO);
 	}
 	return 2;
@@ -195,14 +223,26 @@ static int adl_pci7432_di_insn_bits(struct comedi_device *dev,
 				    struct comedi_insn *insn,
 				    unsigned int *data)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: pci7432_di_insn_bits called\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: data0: %8x data1: %8x\n", data[0], data[1]);
+#else
+	;
+#endif
 
 	if (insn->n != 2)
 		return -EINVAL;
 
 	data[1] = inl(dev->iobase + PCI7432_DI) & 0xffffffff;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: data1 %8x\n", data[1]);
+#else
+	;
+#endif
 
 	return 2;
 }

@@ -215,9 +215,13 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		}
 
 		if ( z2ram_size != 0 )
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk( KERN_INFO DEVICE_NAME
 			": using %iK List Entry %d Memory\n",
 			list_count * Z2RAM_CHUNK1024, index );
+#else
+		    ;
+#endif
 	} else
 
 	switch ( device )
@@ -236,11 +240,15 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		get_chipram();
 
 		if ( z2ram_size != 0 )
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk( KERN_INFO DEVICE_NAME 
 			": using %iK Zorro II RAM and %iK Chip RAM (Total %dK)\n",
 			z2_count * Z2RAM_CHUNK1024,
 			chip_count * Z2RAM_CHUNK1024,
 			( z2_count + chip_count ) * Z2RAM_CHUNK1024 );
+#else
+		    ;
+#endif
 
 	    break;
 
@@ -256,9 +264,13 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		get_z2ram();
 
 		if ( z2ram_size != 0 )
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk( KERN_INFO DEVICE_NAME 
 			": using %iK of Zorro II RAM\n",
 			z2_count * Z2RAM_CHUNK1024 );
+#else
+		    ;
+#endif
 
 	    break;
 
@@ -274,9 +286,13 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 		get_chipram();
 
 		if ( z2ram_size != 0 )
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk( KERN_INFO DEVICE_NAME 
 			": using %iK Chip RAM\n",
 			chip_count * Z2RAM_CHUNK1024 );
+#else
+		    ;
+#endif
 		    
 	    break;
 
@@ -289,8 +305,12 @@ static int z2_open(struct block_device *bdev, fmode_t mode)
 
 	if ( z2ram_size == 0 )
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk( KERN_NOTICE DEVICE_NAME
 		": no unused ZII/Chip RAM found\n" );
+#else
+	    ;
+#endif
 	    goto err_out_kfree;
 	}
 

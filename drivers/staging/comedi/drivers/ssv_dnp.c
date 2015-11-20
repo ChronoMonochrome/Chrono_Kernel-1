@@ -134,7 +134,11 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	struct comedi_subdevice *s;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: dnp: ", dev->minor);
+#else
+	;
+#endif
 
 	/* Autoprobing: this should find out which board we have. Currently  */
 	/* only the 1486 board is supported and autoprobing is not           */
@@ -166,7 +170,11 @@ static int dnp_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->insn_bits = dnp_dio_insn_bits;
 	s->insn_config = dnp_dio_insn_config;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("attached\n");
+#else
+	;
+#endif
 
 	/* We use the I/O ports 0x22,0x23 and 0xa3-0xa9, which are always
 	 * allocated for the primary 8259, so we don't need to allocate them
@@ -204,7 +212,11 @@ static int dnp_detach(struct comedi_device *dev)
 	outb((inb(CSCDR) & 0xAA), CSCDR);
 
 	/* announce that we are finished                                     */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: dnp: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	return 0;
 

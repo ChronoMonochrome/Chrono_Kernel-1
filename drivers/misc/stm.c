@@ -660,7 +660,11 @@ static int __devinit stm_probe(struct platform_device *pdev)
 	stm_set_modes(STM_MMC_DEFAULT); /* Set all sources in HW mode */
 
 	dev_info(&pdev->dev, "STM-Trace driver probed successfully\n");
+#ifdef CONFIG_DEBUG_PRINTK
 	stm_printk("STM-Trace driver initialized\n");
+#else
+	stm_;
+#endif
 	return 0;
 
 err_channels:
@@ -683,9 +687,13 @@ static int __devexit stm_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 int stm_printk(const char *fmt, ...)
 {
 	int ret;
+#else
+int stm_;
+#endif
 	size_t size;
 	va_list args;
 

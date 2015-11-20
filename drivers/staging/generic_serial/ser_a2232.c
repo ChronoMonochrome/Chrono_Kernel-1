@@ -340,7 +340,11 @@ static int  a2232_set_real_termios(void *ptr)
 		}
 	}
 	if (rate == A2232_BAUD_TABLE_NOAVAIL){
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("a2232: Board %d Port %d unsupported baud rate: %d baud. Using another.\n",port->which_a2232,port->which_port_on_a2232,baud);
+#else
+		;
+#endif
 		// This is useful for both (turbo or normal) Crystal versions.
 		rate = A2232PARAM_B9600;
 	}
@@ -355,23 +359,35 @@ static int  a2232_set_real_termios(void *ptr)
 		case CS7: 	a2232_param |= A2232PARAM_7Bit; break;
 		case CS6: 	a2232_param |= A2232PARAM_6Bit; break;
 		case CS5: 	a2232_param |= A2232PARAM_5Bit; break;
+#ifdef CONFIG_DEBUG_PRINTK
 		default:	printk("a2232: Board %d Port %d unsupported character size: %d. Using 8 data bits.\n",
 					port->which_a2232,port->which_port_on_a2232,chsize);
+#else
+		default:	;
+#endif
 				a2232_param |= A2232PARAM_8Bit; break;
 	}
 
 	// get number of stop bits
 	stopb  = cflag & CSTOPB;
 	if (stopb){ // two stop bits instead of one
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("a2232: Board %d Port %d 2 stop bits unsupported. Using 1 stop bit.\n",
 			port->which_a2232,port->which_port_on_a2232);
+#else
+		;
+#endif
 	}
 
 	// Warn if RTS/CTS not wanted
 	if (!(cflag & CRTSCTS)){
 #ifndef A2232_SUPPRESS_RTSCTS_WARNING
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("a2232: Board %d Port %d cannot switch off firmware-implemented RTS/CTS hardware flow control.\n",
 			port->which_a2232,port->which_port_on_a2232);
+#else
+		;
+#endif
 #endif
 	}
 
@@ -552,10 +568,18 @@ int ch, err, n, p;
 									/*	A2232EVENT_CarrierOn and A2232EVENT_CarrierOff are
 										handled in a separate queue and should not occur here. */
 								case A2232EVENT_Sync:
+#ifdef CONFIG_DEBUG_PRINTK
 									printk("A2232: 65EC02 software sent SYNC event, don't know what to do. Ignoring.");
+#else
+									;
+#endif
 									break;
 								default:
+#ifdef CONFIG_DEBUG_PRINTK
 									printk("A2232: 65EC02 software broken, unknown event type %d occurred.\n",ibuf[bufpos-1]);
+#else
+									;
+#endif
 								} /* event type switch */
 								break;
  							case A2232INCTL_CHAR:
@@ -564,7 +588,11 @@ int ch, err, n, p;
 								bufpos++;
 								break;
  							default:
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("A2232: 65EC02 software broken, unknown data type %d occurred.\n",cbuf[bufpos]);
+#else
+								;
+#endif
 								bufpos++;
 							} /* switch on input data type */
 						} /* while there's something in the buffer */
@@ -729,7 +757,11 @@ static int __init a2232board_init(void)
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Commodore A2232 driver initializing.\n"); /* Say that we're alive. */
+#else
+	;
+#endif
 
 	z = NULL;
 	nr_a2232 = 0;
@@ -741,12 +773,20 @@ static int __init a2232board_init(void)
 		if (!zorro_request_device(z,"A2232 driver"))
 			continue;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Commodore A2232 found (#%d).\n",nr_a2232);
+#else
+		;
+#endif
 
 		zd_a2232[nr_a2232] = z;
 
 		boardaddr = ZTWO_VADDR( z->resource.start );
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Board is located at address 0x%x, size is 0x%x.\n", boardaddr, (unsigned int) ((z->resource.end+1) - (z->resource.start)));
+#else
+		;
+#endif
 
 		mem = (volatile struct a2232memory *) boardaddr;
 
@@ -756,13 +796,21 @@ static int __init a2232board_init(void)
 		from += sizeof(start);
 		to += start;
 		while(bcount--) *to++ = *from++;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("65EC02 software uploaded to the A2232 memory.\n");
+#else
+		;
+#endif
   
 		mem->Common.Crystal = A2232_UNKNOWN;  /* use automatic speed check */
   
 		/* start 6502 running */
 		(void) mem->ResetBoard;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("A2232's 65EC02 CPU up and running.\n");
+#else
+		;
+#endif
   
 		/* wait until speed detector has finished */
 		for (bcount = 0; bcount < 2000; bcount++) {
@@ -770,10 +818,18 @@ static int __init a2232board_init(void)
 			if (mem->Common.Crystal)
 				break;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk((mem->Common.Crystal?"A2232 oscillator crystal detected by 65EC02 software: ":"65EC02 software could not determine A2232 oscillator crystal: "));
+#else
+		;
+#endif
 		switch (mem->Common.Crystal){
 		case A2232_UNKNOWN:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Unknown crystal.\n");
+#else
+			;
+#endif
 			break;
  		case A2232_NORMAL:
 			printk ("Normal crystal.\n");
@@ -789,7 +845,11 @@ static int __init a2232board_init(void)
 
 	}	
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Total: %d A2232 boards initialized.\n", nr_a2232); /* Some status report if no card was found */
+#else
+	;
+#endif
 
 	a2232_init_portstructs();
 

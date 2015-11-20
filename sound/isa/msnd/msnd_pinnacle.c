@@ -236,12 +236,16 @@ static int __devinit snd_msnd_probe(struct snd_card *card)
 #ifdef MSND_CLASSIC
 	strcpy(card->shortname, "Classic/Tahiti/Monterey");
 	strcpy(card->longname, "Turtle Beach Multisound");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": %s, "
 	       "I/O 0x%lx-0x%lx, IRQ %d, memory mapped to 0x%lX-0x%lX\n",
 	       card->shortname,
 	       chip->io, chip->io + DSP_NUMIO - 1,
 	       chip->irq,
 	       chip->base, chip->base + 0x7fff);
+#else
+	;
+#endif
 #else
 	switch (info >> 4) {
 	case 0xf:
@@ -296,6 +300,7 @@ static int __devinit snd_msnd_probe(struct snd_card *card)
 		break;
 	}
 	strcpy(card->longname, "Turtle Beach Multisound Pinnacle");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": %s revision %s, Xilinx version %s, "
 	       "I/O 0x%lx-0x%lx, IRQ %d, memory mapped to 0x%lX-0x%lX\n",
 	       card->shortname,
@@ -303,6 +308,9 @@ static int __devinit snd_msnd_probe(struct snd_card *card)
 	       chip->io, chip->io + DSP_NUMIO - 1,
 	       chip->irq,
 	       chip->base, chip->base + 0x7fff);
+#else
+	;
+#endif
 #endif
 
 	release_region(chip->io, DSP_NUMIO);
@@ -399,11 +407,19 @@ static int upload_dsp_code(struct snd_card *card)
 
 	memcpy_toio(chip->mappedbase, perm_fw->data, perm_fw->size);
 	if (snd_msnd_upload_host(chip, init_fw->data, init_fw->size) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": Error uploading to DSP\n");
+#else
+		;
+#endif
 		err = -ENODEV;
 		goto cleanup;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": DSP firmware uploaded\n");
+#else
+	;
+#endif
 	err = 0;
 
 cleanup:
@@ -436,7 +452,11 @@ static int snd_msnd_initialize(struct snd_card *card)
 #endif
 	err = snd_msnd_init_sma(chip);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": Cannot initialize SMA\n");
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -446,7 +466,11 @@ static int snd_msnd_initialize(struct snd_card *card)
 
 	err = upload_dsp_code(card);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": Cannot upload DSP code\n");
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -477,7 +501,11 @@ static int snd_msnd_dsp_full_reset(struct snd_card *card)
 
 	rv = snd_msnd_initialize(card);
 	if (rv)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": DSP reset failed\n");
+#else
+		;
+#endif
 	snd_msndmix_force_recsrc(chip, 0);
 	clear_bit(F_RESETTING, &chip->flags);
 	return rv;
@@ -512,7 +540,11 @@ static int __devinit snd_msnd_calibrate_adc(struct snd_msnd *chip, u16 srate)
 		schedule_timeout_interruptible(msecs_to_jiffies(333));
 		return 0;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING LOGNAME ": ADC calibration failed\n");
+#else
+	;
+#endif
 	return -EIO;
 }
 
@@ -743,7 +775,11 @@ static int __devinit snd_msnd_pinnacle_cfg_reset(int cfg)
 	int i;
 
 	/* Reset devices if told to */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": Resetting all devices\n");
+#else
+	;
+#endif
 	for (i = 0; i < 4; ++i)
 		if (snd_msnd_write_cfg_logical(cfg, i, 0, 0, 0, 0))
 			return -EIO;
@@ -824,7 +860,11 @@ static int __devinit snd_msnd_isa_match(struct device *pdev, unsigned int i)
 		return 0;
 
 	if (irq[i] == SNDRV_AUTO_PORT || mem[i] == SNDRV_AUTO_PORT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": io, irq and mem must be set\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -876,11 +916,19 @@ static int __devinit snd_msnd_isa_match(struct device *pdev, unsigned int i)
 
 #ifndef MSND_CLASSIC
 	if (cfg[i] == SNDRV_AUTO_PORT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME ": Assuming PnP mode\n");
+#else
+		;
+#endif
 	} else if (cfg[i] != 0x250 && cfg[i] != 0x260 && cfg[i] != 0x270) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME
 			": Config port must be 0x250, 0x260 or 0x270 "
 			"(or unspecified for PnP mode)\n");
+#else
+		;
+#endif
 		return 0;
 	}
 #endif /* MSND_CLASSIC */
@@ -899,7 +947,11 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 	    || cfg[idx] == SNDRV_AUTO_PORT
 #endif
 	    ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME ": Assuming PnP mode\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -943,8 +995,12 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 		chip->memid = HPMEM_E800; break;
 	}
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": Non-PnP mode: configuring at port 0x%lx\n",
 			cfg[idx]);
+#else
+	;
+#endif
 
 	if (!request_region(cfg[idx], 2, "Pinnacle/Fiji Config")) {
 		printk(KERN_ERR LOGNAME ": Config port 0x%lx conflict\n",
@@ -971,9 +1027,13 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 	/* MPU */
 	if (mpu_io[idx] != SNDRV_AUTO_PORT
 	    && mpu_irq[idx] != SNDRV_AUTO_IRQ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME
 		       ": Configuring MPU to I/O 0x%lx IRQ %d\n",
 		       mpu_io[idx], mpu_irq[idx]);
+#else
+		;
+#endif
 		err = snd_msnd_write_cfg_logical(cfg[idx], 1,
 						 mpu_io[idx], 0,
 						 mpu_irq[idx], 0);
@@ -986,9 +1046,13 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 	if (ide_io0[idx] != SNDRV_AUTO_PORT
 	    && ide_io1[idx] != SNDRV_AUTO_PORT
 	    && ide_irq[idx] != SNDRV_AUTO_IRQ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME
 		       ": Configuring IDE to I/O 0x%lx, 0x%lx IRQ %d\n",
 		       ide_io0[idx], ide_io1[idx], ide_irq[idx]);
+#else
+		;
+#endif
 		err = snd_msnd_write_cfg_logical(cfg[idx], 2,
 						 ide_io0[idx], ide_io1[idx],
 						 ide_irq[idx], 0);
@@ -999,9 +1063,13 @@ static int __devinit snd_msnd_isa_probe(struct device *pdev, unsigned int idx)
 
 	/* Joystick */
 	if (joystick_io[idx] != SNDRV_AUTO_PORT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME
 		       ": Configuring joystick to I/O 0x%lx\n",
 		       joystick_io[idx]);
+#else
+		;
+#endif
 		err = snd_msnd_write_cfg_logical(cfg[idx], 3,
 						 joystick_io[idx], 0,
 						 0, 0);
@@ -1110,12 +1178,20 @@ static int __devinit snd_msnd_pnp_detect(struct pnp_card_link *pcard,
 		return -ENODEV;
 
 	if (!pnp_is_active(pnp_dev) && pnp_activate_dev(pnp_dev) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "msnd_pinnacle: device is inactive\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
 	if (!pnp_is_active(mpu_dev) && pnp_activate_dev(mpu_dev) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "msnd_pinnacle: MPU device is inactive\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 

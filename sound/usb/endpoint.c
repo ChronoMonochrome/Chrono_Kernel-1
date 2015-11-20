@@ -168,10 +168,14 @@ static int parse_uac_endpoint_attributes(struct snd_usb_audio *chip,
 
 	if (!csep || csep->bLength < 7 ||
 	    csep->bDescriptorSubtype != UAC_EP_GENERAL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "%d:%u:%d : no or invalid"
 			   " class specific endpoint descriptor\n",
 			   chip->dev->devnum, iface_no,
 			   altsd->bAlternateSetting);
+#else
+		;
+#endif
 		return 0;
 	}
 

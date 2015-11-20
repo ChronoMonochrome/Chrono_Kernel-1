@@ -214,9 +214,21 @@ module_exit(driver_a2150_cleanup_module);
 
 static void ni_dump_regs(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("config bits 0x%x\n", devpriv->config_bits);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("irq dma bits 0x%x\n", devpriv->irq_dma_bits);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("status bits 0x%x\n", inw(dev->iobase + STATUS_REG));
+#else
+	;
+#endif
 }
 
 #endif
@@ -346,32 +358,64 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	static const int timeout = 2000;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_a2150.driver_name,
 	       iobase);
+#else
+	;
+#endif
 	if (irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", irq %u", irq);
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", no irq");
+#else
+		;
+#endif
 	}
 	if (dma) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", dma %u", dma);
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", no dma");
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	/* allocate and initialize dev->private */
 	if (alloc_private(dev, sizeof(struct a2150_private)) < 0)
 		return -ENOMEM;
 
 	if (iobase == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" io base address required\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	/* check if io addresses are available */
 	if (!request_region(iobase, A2150_SIZE, driver_a2150.driver_name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -380,12 +424,20 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (irq) {
 		/*  check that irq is supported */
 		if (irq < 3 || irq == 8 || irq == 13 || irq > 15) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" invalid irq line %u\n", irq);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		if (request_irq(irq, a2150_interrupt, 0,
 				driver_a2150.driver_name, dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("unable to allocate irq %u\n", irq);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		devpriv->irq_dma_bits |= IRQ_LVL_BITS(irq);
@@ -394,11 +446,19 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	/*  initialize dma */
 	if (dma) {
 		if (dma == 4 || dma > 7) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" invalid dma channel %u\n", dma);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		if (request_dma(dma, driver_a2150.driver_name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" failed to allocate dma channel %u\n", dma);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		devpriv->dma = dma;
@@ -465,7 +525,11 @@ static int a2150_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int a2150_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: %s: remove\n", dev->minor, driver_a2150.driver_name);
+#else
+	;
+#endif
 
 	/* only free stuff if it has been allocated by _attach */
 	if (dev->iobase) {
@@ -801,7 +865,11 @@ static int a2150_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 #endif
 		data[n] = inw(dev->iobase + FIFO_DATA_REG);
 #ifdef A2150_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" data is %i\n", data[n]);
+#else
+		;
+#endif
 #endif
 		data[n] ^= 0x8000;
 	}

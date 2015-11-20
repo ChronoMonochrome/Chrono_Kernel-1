@@ -193,8 +193,12 @@ static int __init obsolete_checksetup(char *line)
 				if (line[n] == '\0' || line[n] == '=')
 					had_early_param = 1;
 			} else if (!p->setup_func) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "Parameter %s is obsolete,"
 				       " ignored\n", p->str);
+#else
+				;
+#endif
 				return 1;
 			} else if (p->setup_func(line + n))
 				return 1;
@@ -407,8 +411,12 @@ static int __init do_early_param(char *param, char *val)
 		     strcmp(p->str, "earlycon") == 0)
 		) {
 			if (p->setup_func(val) != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "Malformed early option '%s'\n", param);
+#else
+				;
+#endif
 		}
 	}
 	/* We accept everything at this stage. */
@@ -505,7 +513,11 @@ asmlinkage void __init start_kernel(void)
 	tick_init();
 	boot_cpu_init();
 	page_address_init();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "%s", linux_banner);
+#else
+	;
+#endif
 	setup_arch(&command_line);
 #ifdef CONFIG_PASR
 	early_pasr_setup();
@@ -520,7 +532,11 @@ asmlinkage void __init start_kernel(void)
 	build_all_zonelists(NULL);
 	page_alloc_init();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Kernel command line: %s\n", boot_command_line);
+#else
+	;
+#endif
 	parse_early_param();
 	parse_args("Booting kernel", static_command_line, __start___param,
 		   __stop___param - __start___param,
@@ -548,8 +564,12 @@ asmlinkage void __init start_kernel(void)
 	 */
 	preempt_disable();
 	if (!irqs_disabled()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "start_kernel(): bug: interrupts were "
 				"enabled *very* early, fixing it\n");
+#else
+		;
+#endif
 		local_irq_disable();
 	}
 	idr_init_cache();
@@ -568,8 +588,12 @@ asmlinkage void __init start_kernel(void)
 	profile_init();
 	call_function_init();
 	if (!irqs_disabled())
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "start_kernel(): bug: interrupts were "
 				 "enabled early\n");
+#else
+		;
+#endif
 	early_boot_irqs_disabled = false;
 	local_irq_enable();
 
@@ -600,10 +624,14 @@ asmlinkage void __init start_kernel(void)
 #ifdef CONFIG_BLK_DEV_INITRD
 	if (initrd_start && !initrd_below_start_ok &&
 	    page_to_pfn(virt_to_page((void *)initrd_start)) < min_low_pfn) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "initrd overwritten (0x%08lx < 0x%08lx) - "
 		    "disabling it.\n",
 		    page_to_pfn(virt_to_page((void *)initrd_start)),
 		    min_low_pfn);
+#else
+		;
+#endif
 		initrd_start = 0;
 	}
 #endif
@@ -649,28 +677,48 @@ asmlinkage void __init start_kernel(void)
 		struct membank * bank =&meminfo.bank[meminfo.nr_banks-1];
 		log_buf_base = ioremap(bank->start + bank->size, 0x100000);
 		if(!log_buf_base)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "[LOG][ERROR] %s() log_buf_base = 0x%p\n", __FUNCTION__, log_buf_base);
+#else
+			;
+#endif
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "[LOG] %s() log_buf_base = 0x%p, size=%ld\n", __FUNCTION__, 
 				(long unsigned int)log_buf_base, bank->size);
+#else
+			;
+#endif
 
 			/* irq log buffer initialize */
 			if (LOG_IRQ_BUF_SIZE < (log_buf_irq_entry_size*(log_buf_irq_entry_count+2))) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "LOG_IRQ_BUF_SIZE should be checked!!\n");
+#else
+				;
+#endif
 			} else {
 				log_buf_irq = (void*)((unsigned long)log_buf_base + LOG_IRQ_BUF_START + log_buf_irq_entry_size);
 			}
 
 			/* scheduler log buffer initialize */
 			if (LOG_SCHED_BUF_SIZE < (log_buf_sched_entry_size*(log_buf_sched_entry_count+2))) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "LOG_SCHED_BUF_SIZE should be checked!!\n");
+#else
+				;
+#endif
 			} else {
 				log_buf_sched = (void*)((unsigned long)log_buf_base + LOG_SCHED_BUF_START + log_buf_sched_entry_size);
 			}
 
 			/* prcmu/shrm log buffer initialize */
 			if (LOG_SHRM_PRCMU_BUF_SIZE < (log_buf_prcmu_entry_size*(log_buf_prcmu_entry_count+2))) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "LOG_SHRM_PRCMU_BUF_SIZE should be checked!!\n");
+#else
+				;
+#endif
 			} else {
 				log_buf_prcmu = (void*)((unsigned long)log_buf_base + LOG_SHRM_PRCMU_BUF_START + log_buf_prcmu_entry_size);
 			}
@@ -714,14 +762,22 @@ static int __init_or_module do_one_initcall_debug(initcall_t fn)
 	unsigned long long duration;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "calling  %pF @ %i\n", fn, task_pid_nr(current));
+#else
+	;
+#endif
 	calltime = ktime_get();
 	ret = fn();
 	rettime = ktime_get();
 	delta = ktime_sub(rettime, calltime);
 	duration = (unsigned long long) ktime_to_ns(delta) >> 10;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "initcall %pF returned %d after %lld usecs\n", fn,
 		ret, duration);
+#else
+	;
+#endif
 
 	return ret;
 }
@@ -752,7 +808,11 @@ int __init_or_module do_one_initcall(initcall_t fn)
 		local_irq_enable();
 	}
 	if (msgbuf[0]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("initcall %pF returned with %s\n", fn, msgbuf);
+#else
+		;
+#endif
 	}
 
 	return ret;
@@ -820,8 +880,12 @@ static noinline int init_post(void)
 
 	if (ramdisk_execute_command) {
 		run_init_process(ramdisk_execute_command);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to execute %s\n",
 				ramdisk_execute_command);
+#else
+		;
+#endif
 	}
 
 	/*
@@ -832,8 +896,12 @@ static noinline int init_post(void)
 	 */
 	if (execute_command) {
 		run_init_process(execute_command);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to execute %s.  Attempting "
 					"defaults...\n", execute_command);
+#else
+		;
+#endif
 	}
 	run_init_process("/sbin/init");
 	run_init_process("/etc/init");
@@ -878,7 +946,11 @@ static int __init kernel_init(void * unused)
 
 	/* Open the /dev/console on the rootfs, this should never fail */
 	if (sys_open((const char __user *) "/dev/console", O_RDWR, 0) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning: unable to open an initial console.\n");
+#else
+		;
+#endif
 
 	(void) sys_dup(0);
 	(void) sys_dup(0);

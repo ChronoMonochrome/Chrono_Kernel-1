@@ -668,7 +668,11 @@ static int das16m1_attach(struct comedi_device *dev,
 
 	iobase = it->options[0];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: das16m1:", dev->minor);
+#else
+	;
+#endif
 
 	ret = alloc_private(dev, sizeof(struct das16m1_private_struct));
 	if (ret < 0)
@@ -676,17 +680,29 @@ static int das16m1_attach(struct comedi_device *dev,
 
 	dev->board_name = thisboard->name;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" io 0x%lx-0x%lx 0x%lx-0x%lx",
 	       iobase, iobase + DAS16M1_SIZE,
 	       iobase + DAS16M1_82C55, iobase + DAS16M1_82C55 + DAS16M1_SIZE2);
+#else
+	;
+#endif
 	if (!request_region(iobase, DAS16M1_SIZE, driver_das16m1.driver_name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	if (!request_region(iobase + DAS16M1_82C55, DAS16M1_SIZE2,
 			    driver_das16m1.driver_name)) {
 		release_region(iobase, DAS16M1_SIZE);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -698,16 +714,32 @@ static int das16m1_attach(struct comedi_device *dev,
 		ret = request_irq(irq, das16m1_interrupt, 0,
 				  driver_das16m1.driver_name, dev);
 		if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", irq unavailable\n");
+#else
+			;
+#endif
 			return ret;
 		}
 		dev->irq = irq;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", irq %u\n", irq);
+#else
+		;
+#endif
 	} else if (irq == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", no irq\n");
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", invalid irq\n"
 		       " valid irqs are 2, 3, 5, 7, 10, 11, 12, or 15\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -771,7 +803,11 @@ static int das16m1_attach(struct comedi_device *dev,
 
 static int das16m1_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: das16m1: remove\n", dev->minor);
+#else
+	;
+#endif
 
 /* das16m1_reset(dev); */
 

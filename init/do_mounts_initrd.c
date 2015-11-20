@@ -81,26 +81,54 @@ static void __init handle_initrd(void)
 	ROOT_DEV = new_decode_dev(real_root_dev);
 	mount_root();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Trying to move old root to /initrd ... ");
+#else
+	;
+#endif
 	error = sys_mount("/old", "/root/initrd", NULL, MS_MOVE, NULL);
 	if (!error)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("okay\n");
+#else
+		;
+#endif
 	else {
 		int fd = sys_open("/dev/root.old", O_RDWR, 0);
 		if (error == -ENOENT)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("/initrd does not exist. Ignored.\n");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("failed\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Unmounting old root\n");
+#else
+		;
+#endif
 		sys_umount("/old", MNT_DETACH);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Trying to free ramdisk memory ... ");
+#else
+		;
+#endif
 		if (fd < 0) {
 			error = fd;
 		} else {
 			error = sys_ioctl(fd, BLKFLSBUF, 0);
 			sys_close(fd);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(!error ? "okay\n" : "failed\n");
+#else
+		;
+#endif
 	}
 }
 

@@ -226,13 +226,21 @@ static int pci20xxx_attach(struct comedi_device *dev,
 
 	/* Check PCI-20001 C-2A Carrier Board ID */
 	if ((readb(devpriv->ioaddr) & PCI20000_ID) != PCI20000_ID) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "comedi%d: ii_pci20kc PCI-20001"
 		       " C-2A Carrier Board at base=0x%p not found !\n",
 		       dev->minor, devpriv->ioaddr);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: ii_pci20kc: PCI-20001 C-2A at base=0x%p\n",
 	       dev->minor, devpriv->ioaddr);
+#else
+	;
+#endif
 
 	for (i = 0; i < PCI20000_MODULES; i++) {
 		s = dev->subdevices + i;
@@ -245,23 +253,35 @@ static int pci20xxx_attach(struct comedi_device *dev,
 			    devpriv->ioaddr + (i + 1) * PCI20000_OFFSET;
 			pci20006_init(dev, s, it->options[2 * i + 2],
 				      it->options[2 * i + 3]);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "comedi%d: "
 			       "ii_pci20kc PCI-20006 module in slot %d\n",
 			       dev->minor, i + 1);
+#else
+			;
+#endif
 			break;
 		case PCI20341_ID:
 			sdp->pci20341.iobase =
 			    devpriv->ioaddr + (i + 1) * PCI20000_OFFSET;
 			pci20341_init(dev, s, it->options[2 * i + 2],
 				      it->options[2 * i + 3]);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "comedi%d: "
 			       "ii_pci20kc PCI-20341 module in slot %d\n",
 			       dev->minor, i + 1);
+#else
+			;
+#endif
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ii_pci20kc: unknown module "
 			       "code 0x%02x in slot %d: module disabled\n",
 			       id, i); /* XXX this looks like a bug! i + 1 ?? */
+#else
+			;
+#endif
 			/* fall through */
 		case PCI20xxx_EMPTY_ID:
 			s->type = COMEDI_SUBD_UNUSED;
@@ -277,7 +297,11 @@ static int pci20xxx_attach(struct comedi_device *dev,
 
 static int pci20xxx_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pci20xxx: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -359,8 +383,12 @@ static int pci20006_insn_write(struct comedi_device *dev,
 		writeb(0x00, sdp->iobase + PCI20006_STROBE1);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       " comedi%d: pci20xxx: ao channel Error!\n", dev->minor);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -475,10 +503,14 @@ static int pci20341_insn_read(struct comedi_device *dev,
 			eoc = readb(sdp->iobase + PCI20341_STATUS_REG);
 		}
 		if (j >= 100) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "comedi%d:  pci20xxx: "
 			       "AI interrupt channel %i polling exit !\n",
 			       dev->minor, i);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		lo = readb(sdp->iobase + PCI20341_LDATA);

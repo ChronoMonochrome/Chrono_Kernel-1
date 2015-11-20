@@ -68,40 +68,120 @@ static void snd_trident_print_voice_regs(struct snd_trident *trident, int voice)
 {
 	unsigned int val, tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Trident voice %i:\n", voice);
+#else
+	;
+#endif
 	outb(voice, TRID_REG(trident, T4D_LFO_GC_CIR));
 	val = inl(TRID_REG(trident, CH_LBA));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "LBA: 0x%x\n", val);
+#else
+	;
+#endif
 	val = inl(TRID_REG(trident, CH_GVSEL_PAN_VOL_CTRL_EC));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "GVSel: %i\n", val >> 31);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Pan: 0x%x\n", (val >> 24) & 0x7f);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Vol: 0x%x\n", (val >> 16) & 0xff);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "CTRL: 0x%x\n", (val >> 12) & 0x0f);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "EC: 0x%x\n", val & 0x0fff);
+#else
+	;
+#endif
 	if (trident->device != TRIDENT_DEVICE_ID_NX) {
 		val = inl(TRID_REG(trident, CH_DX_CSO_ALPHA_FMS));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "CSO: 0x%x\n", val >> 16);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Alpha: 0x%x\n", (val >> 4) & 0x0fff);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "FMS: 0x%x\n", val & 0x0f);
+#else
+		;
+#endif
 		val = inl(TRID_REG(trident, CH_DX_ESO_DELTA));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ESO: 0x%x\n", val >> 16);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Delta: 0x%x\n", val & 0xffff);
+#else
+		;
+#endif
 		val = inl(TRID_REG(trident, CH_DX_FMC_RVOL_CVOL));
 	} else {		// TRIDENT_DEVICE_ID_NX
 		val = inl(TRID_REG(trident, CH_NX_DELTA_CSO));
 		tmp = (val >> 24) & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "CSO: 0x%x\n", val & 0x00ffffff);
+#else
+		;
+#endif
 		val = inl(TRID_REG(trident, CH_NX_DELTA_ESO));
 		tmp |= (val >> 16) & 0xff00;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Delta: 0x%x\n", tmp);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ESO: 0x%x\n", val & 0x00ffffff);
+#else
+		;
+#endif
 		val = inl(TRID_REG(trident, CH_NX_ALPHA_FMS_FMC_RVOL_CVOL));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Alpha: 0x%x\n", val >> 20);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "FMS: 0x%x\n", (val >> 16) & 0x0f);
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "FMC: 0x%x\n", (val >> 14) & 3);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "RVol: 0x%x\n", (val >> 7) & 0x7f);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "CVol: 0x%x\n", val & 0x7f);
+#else
+	;
+#endif
 }
 #endif
 
@@ -496,17 +576,41 @@ void snd_trident_write_voice_regs(struct snd_trident * trident,
 	outl(regs[4], TRID_REG(trident, CH_START + 16));
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "written %i channel:\n", voice->number);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "  regs[0] = 0x%x/0x%x\n",
 	       regs[0], inl(TRID_REG(trident, CH_START + 0)));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "  regs[1] = 0x%x/0x%x\n",
 	       regs[1], inl(TRID_REG(trident, CH_START + 4)));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "  regs[2] = 0x%x/0x%x\n",
 	       regs[2], inl(TRID_REG(trident, CH_START + 8)));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "  regs[3] = 0x%x/0x%x\n",
 	       regs[3], inl(TRID_REG(trident, CH_START + 12)));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "  regs[4] = 0x%x/0x%x\n",
 	       regs[4], inl(TRID_REG(trident, CH_START + 16)));
+#else
+	;
+#endif
 #endif
 }
 
@@ -588,7 +692,11 @@ static void snd_trident_write_vol_reg(struct snd_trident * trident,
 		outb(voice->Vol >> 2, TRID_REG(trident, CH_GVSEL_PAN_VOL_CTRL_EC + 2));
 		break;
 	case TRIDENT_DEVICE_ID_SI7018:
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk(KERN_DEBUG "voice->Vol = 0x%x\n", voice->Vol); */
+#else
+		/* ;
+#endif
 		outw((voice->CTRL << 12) | voice->Vol,
 		     TRID_REG(trident, CH_GVSEL_PAN_VOL_CTRL_EC));
 		break;

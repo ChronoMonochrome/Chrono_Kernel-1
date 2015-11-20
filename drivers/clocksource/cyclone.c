@@ -44,7 +44,11 @@ static int __init init_cyclone_clocksource(void)
 	if (!use_cyclone)
 		return -ENODEV;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Summit chipset: Starting Cyclone Counter.\n");
+#else
+	;
+#endif
 
 	/* find base address: */
 	offset = CYCLONE_CBAR_ADDR;

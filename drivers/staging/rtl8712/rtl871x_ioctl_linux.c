@@ -414,8 +414,12 @@ static int wpa_set_encryption(struct net_device *dev, struct ieee_param *param,
 	} else
 		return -EINVAL;
 	if (strcmp(param->u.crypt.alg, "WEP") == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: wpa_set_encryption, crypt.alg ="
 		       " WEP\n");
+#else
+		;
+#endif
 		padapter->securitypriv.ndisencryptstatus =
 			     Ndis802_11Encryption1Enabled;
 		padapter->securitypriv.PrivacyAlgrthm = _WEP40_;
@@ -607,8 +611,12 @@ static int r871x_set_wpa_ie(struct _adapter *padapter, char *pie,
 
 				if ((eid == _VENDOR_SPECIFIC_IE_) &&
 				    (!memcmp(&buf[cnt+2], wps_oui, 4))) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "r8712u: "
 					       "SET WPS_IE\n");
+#else
+					;
+#endif
 					padapter->securitypriv.wps_ie_len =
 					    ((buf[cnt+1] + 2) <
 					    (MAX_WPA_IE_LEN << 2)) ?
@@ -619,8 +627,12 @@ static int r871x_set_wpa_ie(struct _adapter *padapter, char *pie,
 					    padapter->securitypriv.wps_ie_len);
 					padapter->securitypriv.wps_phase =
 								 true;
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "r8712u: SET WPS_IE,"
 					    " wps_phase==true\n");
+#else
+					;
+#endif
 					cnt += buf[cnt+1]+2;
 					break;
 				} else
@@ -827,8 +839,12 @@ static int r871x_wx_set_pmkid(struct net_device *dev,
 			    strIssueBssid, ETH_ALEN)) {
 				/* BSSID is matched, the same AP => rewrite
 				 * with new PMKID. */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "r8712u: r871x_wx_set_pmkid:"
 				    " BSSID exists in the PMKList.\n");
+#else
+				;
+#endif
 				memcpy(psecuritypriv->PMKIDList[j].PMKID,
 					pPMK->pmkid, IW_PMKID_LEN);
 				psecuritypriv->PMKIDList[j].bUsed = true;
@@ -839,9 +855,13 @@ static int r871x_wx_set_pmkid(struct net_device *dev,
 		}
 		if (!blInserted) {
 			/* Find a new entry */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "r8712u: r871x_wx_set_pmkid: Use the"
 			    " new entry index = %d for this PMKID.\n",
 			    psecuritypriv->PMKIDIndex);
+#else
+			;
+#endif
 			memcpy(psecuritypriv->PMKIDList[psecuritypriv->
 				PMKIDIndex].Bssid, strIssueBssid, ETH_ALEN);
 			memcpy(psecuritypriv->PMKIDList[psecuritypriv->
@@ -874,8 +894,12 @@ static int r871x_wx_set_pmkid(struct net_device *dev,
 		intReturn = true;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: r871x_wx_set_pmkid: "
 		       "unknown Command\n");
+#else
+		;
+#endif
 		intReturn = false;
 		break;
 	}
@@ -1083,8 +1107,12 @@ static int r8711_wx_set_scan(struct net_device *dev,
 	u8 status = true;
 
 	if (padapter->bDriverStopped == true) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "r8712u: in r8711_wx_set_scan: "
 		    "bDriverStopped=%d\n", padapter->bDriverStopped);
+#else
+		;
+#endif
 		return -1;
 	}
 	if (padapter->bup == false)
@@ -1438,8 +1466,12 @@ static int r8711_wx_set_enc(struct net_device *dev,
 	key = erq->flags & IW_ENCODE_INDEX;
 	memset(&wep, 0, sizeof(struct NDIS_802_11_WEP));
 	if (erq->flags & IW_ENCODE_DISABLED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: r8711_wx_set_enc: "
 		       "EncryptionDisabled\n");
+#else
+		;
+#endif
 		padapter->securitypriv.ndisencryptstatus =
 				 Ndis802_11EncryptionDisabled;
 		padapter->securitypriv.PrivacyAlgrthm = _NO_PRIVACY_;
@@ -1460,8 +1492,12 @@ static int r8711_wx_set_enc(struct net_device *dev,
 	}
 	/* set authentication mode */
 	if (erq->flags & IW_ENCODE_OPEN) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: r8711_wx_set_enc: "
 		       "IW_ENCODE_OPEN\n");
+#else
+		;
+#endif
 		padapter->securitypriv.ndisencryptstatus =
 				 Ndis802_11Encryption1Enabled;
 		padapter->securitypriv.AuthAlgrthm = 0; /* open system */
@@ -1470,8 +1506,12 @@ static int r8711_wx_set_enc(struct net_device *dev,
 		authmode = Ndis802_11AuthModeOpen;
 		padapter->securitypriv.ndisauthtype = authmode;
 	} else if (erq->flags & IW_ENCODE_RESTRICTED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: r8711_wx_set_enc: "
 		       "IW_ENCODE_RESTRICTED\n");
+#else
+		;
+#endif
 		padapter->securitypriv.ndisencryptstatus =
 				 Ndis802_11Encryption1Enabled;
 		padapter->securitypriv.AuthAlgrthm = 1; /* shared system */
@@ -1859,9 +1899,13 @@ static int r871x_mp_ioctl_hdl(struct net_device *dev,
 		status = phandler->handler(&oid_par);
 		/* todo:check status, BytesNeeded, etc. */
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: r871x_mp_ioctl_hdl(): err!,"
 		    " subcode=%d, oid=%d, handler=%p\n",
 		    poidparam->subcode, phandler->oid, phandler->handler);
+#else
+		;
+#endif
 		ret = -EFAULT;
 		goto _r871x_mp_ioctl_hdl_exit;
 	}
@@ -1916,13 +1960,21 @@ static int r871x_get_ap_info(struct net_device *dev,
 			break;
 		pnetwork = LIST_CONTAINOR(plist, struct wlan_network, list);
 		if (hwaddr_aton_i(data, bssid)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "r8712u: Invalid BSSID '%s'.\n",
 			       (u8 *)data);
+#else
+			;
+#endif
 			spin_unlock_irqrestore(&(pmlmepriv->scanned_queue.lock),
 									irqL);
 			return -EINVAL;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: BSSID:%pM\n", bssid);
+#else
+		;
+#endif
 		if (!memcmp(bssid, pnetwork->network.MacAddress, ETH_ALEN)) {
 			/* BSSID match, then check if supporting wpa/wpa2 */
 			pbuf = r8712_get_wpa_ie(&pnetwork->network.IEs[12],

@@ -185,7 +185,11 @@ static int ad1980_soc_probe(struct snd_soc_codec *codec)
 	u16 vendor_id2;
 	u16 ext_status;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "AD1980 SoC Audio Codec\n");
+#else
+	;
+#endif
 
 	ret = snd_soc_new_ac97_codec(codec, &soc_ac97_ops, 0);
 	if (ret < 0) {
@@ -209,9 +213,13 @@ static int ad1980_soc_probe(struct snd_soc_codec *codec)
 		if (vendor_id2 != 0x5374)
 			goto reset_err;
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ad1980: "
 				"Found AD1981 - only 2/2 IN/OUT Channels "
 				"supported\n");
+#else
+			;
+#endif
 	}
 
 	/* unmute captures and playbacks volume */

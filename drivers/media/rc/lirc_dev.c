@@ -441,8 +441,12 @@ int lirc_dev_fop_open(struct inode *inode, struct file *file)
 	int retval = 0;
 
 	if (iminor(inode) >= MAX_IRCTL_DEVICES) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "lirc_dev [%d]: open result = -ENODEV\n",
 		       iminor(inode));
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -806,8 +810,12 @@ static int __init lirc_dev_init(void)
 	}
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "lirc_dev: IR Remote Control driver registered, "
 	       "major %d \n", MAJOR(lirc_base_dev));
+#else
+	;
+#endif
 
 error:
 	return retval;
@@ -819,7 +827,11 @@ static void __exit lirc_dev_exit(void)
 {
 	class_destroy(lirc_class);
 	unregister_chrdev_region(lirc_base_dev, MAX_IRCTL_DEVICES);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "lirc_dev: module unloaded\n");
+#else
+	;
+#endif
 }
 
 module_init(lirc_dev_init);

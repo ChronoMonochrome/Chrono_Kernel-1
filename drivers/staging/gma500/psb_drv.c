@@ -267,7 +267,11 @@ void mrst_get_vbt_data(struct drm_psb_private *dev_priv)
 	memcpy(vbt, vbt_virtual, sizeof(*vbt));
 	iounmap(vbt_virtual); /* Free virtual address space */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "GCT revision is %x\n", vbt->revision);
+#else
+	;
+#endif
 
 	switch (vbt->revision) {
 	case 0:

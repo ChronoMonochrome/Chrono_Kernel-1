@@ -341,9 +341,13 @@ static void bad_page(struct page *page)
 			goto out;
 		}
 		if (nr_unshown) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_ALERT
 			      "BUG: Bad page state: %lu messages suppressed\n",
 				nr_unshown);
+#else
+			;
+#endif
 			nr_unshown = 0;
 		}
 		nr_shown = 0;
@@ -351,8 +355,12 @@ static void bad_page(struct page *page)
 	if (nr_shown++ == 0)
 		resume = jiffies + 60 * HZ;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "BUG: Bad page state in process %s  pfn:%05lx\n",
 		current->comm, page_to_pfn(page));
+#else
+	;
+#endif
 	dump_page(page);
 
 	dump_stack();
@@ -1827,9 +1835,17 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
 		filter &= ~SHOW_MEM_FILTER_NODES;
 
 	if (fmt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING);
+#else
+		;
+#endif
 		va_start(args, fmt);
+#ifdef CONFIG_DEBUG_PRINTK
 		vprintk(fmt, args);
+#else
+		;
+#endif
 		va_end(args);
 	}
 
@@ -2622,7 +2638,11 @@ unsigned int nr_free_pagecache_pages(void)
 static inline void show_node(struct zone *zone)
 {
 	if (NUMA_BUILD)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Node %d ", zone_to_nid(zone));
+#else
+		;
+#endif
 }
 
 void si_meminfo(struct sysinfo *val)
@@ -2695,19 +2715,28 @@ void show_free_areas(unsigned int filter)
 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
 			continue;
 		show_node(zone);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s per-cpu:\n", zone->name);
+#else
+		;
+#endif
 
 		for_each_online_cpu(cpu) {
 			struct per_cpu_pageset *pageset;
 
 			pageset = per_cpu_ptr(zone->pageset, cpu);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("CPU %4d: hi:%5d, btch:%4d usd:%4d\n",
 			       cpu, pageset->pcp.high,
 			       pageset->pcp.batch, pageset->pcp.count);
+#else
+			;
+#endif
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("active_anon:%lu inactive_anon:%lu isolated_anon:%lu\n"
 		" active_file:%lu inactive_file:%lu isolated_file:%lu\n"
 		" unevictable:%lu"
@@ -2731,6 +2760,9 @@ void show_free_areas(unsigned int filter)
 		global_page_state(NR_SHMEM),
 		global_page_state(NR_PAGETABLE),
 		global_page_state(NR_BOUNCE));
+#else
+	;
+#endif
 
 	for_each_populated_zone(zone) {
 		int i;
@@ -2738,6 +2770,7 @@ void show_free_areas(unsigned int filter)
 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
 			continue;
 		show_node(zone);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s"
 			" free:%lukB"
 			" min:%lukB"
@@ -2795,10 +2828,25 @@ void show_free_areas(unsigned int filter)
 			zone->pages_scanned,
 			(zone->all_unreclaimable ? "yes" : "no")
 			);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("lowmem_reserve[]:");
+#else
+		;
+#endif
 		for (i = 0; i < MAX_NR_ZONES; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %lu", zone->lowmem_reserve[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	for_each_populated_zone(zone) {
@@ -2807,7 +2855,11 @@ void show_free_areas(unsigned int filter)
 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
 			continue;
 		show_node(zone);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: ", zone->name);
+#else
+		;
+#endif
 
 		spin_lock_irqsave(&zone->lock, flags);
 		for (order = 0; order < MAX_ORDER; order++) {
@@ -2816,11 +2868,23 @@ void show_free_areas(unsigned int filter)
 		}
 		spin_unlock_irqrestore(&zone->lock, flags);
 		for (order = 0; order < MAX_ORDER; order++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%lu*%lukB ", nr[order], K(1UL) << order);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("= %lukB\n", K(total));
+#else
+		;
+#endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%ld total pagecache pages\n", global_page_state(NR_FILE_PAGES));
+#else
+	;
+#endif
 
 	show_swap_cache_info();
 }
@@ -2933,9 +2997,13 @@ static int __parse_numa_zonelist_order(char *s)
 	} else if (*s == 'z' || *s == 'Z') {
 		user_zonelist_order = ZONELIST_ORDER_ZONE;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Ignoring invalid numa_zonelist_order value:  "
 			"%s\n", s);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	return 0;
@@ -3446,14 +3514,22 @@ void __ref build_all_zonelists(void *data)
 	else
 		page_group_by_mobility_disabled = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Built %i zonelists in %s order, mobility grouping %s.  "
 		"Total pages: %ld\n",
 			nr_online_nodes,
 			zonelist_order_name[current_zonelist_order],
 			page_group_by_mobility_disabled ? "off" : "on",
 			vm_total_pages);
+#else
+	;
+#endif
 #ifdef CONFIG_NUMA
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Policy zone: %s\n", zone_names[policy_zone]);
+#else
+	;
+#endif
 #endif
 }
 
@@ -3891,9 +3967,13 @@ static __meminit void zone_pcp_init(struct zone *zone)
 	zone->pageset = &boot_pageset;
 
 	if (zone->present_pages)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "  %s zone: %lu pages, LIFO batch:%u\n",
 			zone->name, zone->present_pages,
 					 zone_batchsize(zone));
+#else
+		;
+#endif
 }
 
 __meminit int init_currently_empty_zone(struct zone *zone,
@@ -3910,11 +3990,15 @@ __meminit int init_currently_empty_zone(struct zone *zone,
 
 	zone->zone_start_pfn = zone_start_pfn;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "memmap_init",
 			"Initialising map node %d zone %lu pfns %lu -> %lu\n",
 			pgdat->node_id,
 			(unsigned long)zone_idx(zone),
 			zone_start_pfn, (zone_start_pfn + size));
+#else
+	;
+#endif
 
 	zone_init_free_lists(zone);
 
@@ -4379,8 +4463,12 @@ static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
 			zone_absent_pages_in_node(pgdat->node_id, i,
 								zholes_size);
 	pgdat->node_present_pages = realtotalpages;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "On node %d totalpages: %lu\n", pgdat->node_id,
 							realtotalpages);
+#else
+	;
+#endif
 }
 
 #ifndef CONFIG_SPARSEMEM
@@ -4499,19 +4587,31 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
 		if (realsize >= memmap_pages) {
 			realsize -= memmap_pages;
 			if (memmap_pages)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "  %s zone: %lu pages used for memmap\n",
 				       zone_names[j], memmap_pages);
+#else
+				;
+#endif
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"  %s zone: %lu pages exceeds realsize %lu\n",
 				zone_names[j], memmap_pages, realsize);
+#else
+			;
+#endif
 
 		/* Account for reserved pages */
 		if (j == 0 && realsize > dma_reserve) {
 			realsize -= dma_reserve;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "  %s zone: %lu pages reserved\n",
 					zone_names[0], dma_reserve);
+#else
+			;
+#endif
 		}
 
 		if (!is_highmem_idx(j))
@@ -4606,9 +4706,13 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
 
 	alloc_node_mem_map(pgdat);
 #ifdef CONFIG_FLAT_NODE_MEM_MAP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "free_area_init_node: node %d, pgdat %08lx, node_mem_map %08lx\n",
 		nid, (unsigned long)pgdat,
 		(unsigned long)pgdat->node_mem_map);
+#else
+	;
+#endif
 #endif
 
 	free_area_init_core(pgdat, zones_size, zholes_size);
@@ -4652,11 +4756,15 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "memory_register",
 			"Entering add_active_range(%d, %#lx, %#lx) "
 			"%d entries of %d used\n",
 			nid, start_pfn, end_pfn,
 			nr_nodemap_entries, MAX_ACTIVE_REGIONS);
+#else
+	mminit_d;
+#endif
 
 	mminit_validate_memmodel_limits(&start_pfn, &end_pfn);
 
@@ -4687,8 +4795,12 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
 
 	/* Check that early_node_map is large enough */
 	if (i >= MAX_ACTIVE_REGIONS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "More than %d memory regions, truncating\n",
 							MAX_ACTIVE_REGIONS);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -4715,8 +4827,12 @@ void __init remove_active_range(unsigned int nid, unsigned long start_pfn,
 	int i, j;
 	int removed = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "remove_active_range (%d, %lu, %lu)\n",
 			  nid, start_pfn, end_pfn);
+#else
+	;
+#endif
 
 	/* Find the old active region end and shrink */
 	for_each_active_range_index_in_nid(i, nid) {
@@ -4810,8 +4926,12 @@ static unsigned long __init find_min_pfn_for_node(int nid)
 		min_pfn = min(min_pfn, early_node_map[i].start_pfn);
 
 	if (min_pfn == ULONG_MAX) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Could not find start_pfn for node %d\n", nid);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -5052,33 +5172,65 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
 	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
 
 	/* Print out the zone ranges */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Zone PFN ranges:\n");
+#else
+	;
+#endif
 	for (i = 0; i < MAX_NR_ZONES; i++) {
 		if (i == ZONE_MOVABLE)
 			continue;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  %-8s ", zone_names[i]);
+#else
+		;
+#endif
 		if (arch_zone_lowest_possible_pfn[i] ==
 				arch_zone_highest_possible_pfn[i])
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("empty\n");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%0#10lx -> %0#10lx\n",
 				arch_zone_lowest_possible_pfn[i],
 				arch_zone_highest_possible_pfn[i]);
+#else
+			;
+#endif
 	}
 
 	/* Print out the PFNs ZONE_MOVABLE begins at in each node */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Movable zone start PFN for each node\n");
+#else
+	;
+#endif
 	for (i = 0; i < MAX_NUMNODES; i++) {
 		if (zone_movable_pfn[i])
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  Node %d: %lu\n", i, zone_movable_pfn[i]);
+#else
+			;
+#endif
 	}
 
 	/* Print out the early_node_map[] */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("early_node_map[%d] active PFN ranges\n", nr_nodemap_entries);
+#else
+	;
+#endif
 	for (i = 0; i < nr_nodemap_entries; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  %3d: %0#10lx -> %0#10lx\n", early_node_map[i].nid,
 						early_node_map[i].start_pfn,
 						early_node_map[i].end_pfn);
+#else
+		;
+#endif
 
 	/* Initialise every node */
 	mminit_verify_pageflags_layout();
@@ -5602,11 +5754,15 @@ void *__init alloc_large_system_hash(const char *tablename,
 	if (!table)
 		panic("Failed to allocate %s hash table\n", tablename);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s hash table entries: %ld (order: %d, %lu bytes)\n",
 	       tablename,
 	       (1UL << log2qty),
 	       ilog2(size) - PAGE_SHIFT,
 	       size);
+#else
+	;
+#endif
 
 	if (_hash_shift)
 		*_hash_shift = log2qty;
@@ -5867,8 +6023,12 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
 		BUG_ON(!PageBuddy(page));
 		order = page_order(page);
 #ifdef CONFIG_DEBUG_VM
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "remove from free list %lx %d %lx\n",
 		       pfn, 1 << order, end_pfn);
+#else
+		;
+#endif
 #endif
 		list_del(&page->lru);
 		rmv_page_order(page);
@@ -5952,7 +6112,11 @@ static void dump_page_flags(unsigned long flags)
 	unsigned long mask;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "page flags: %#lx(", flags);
+#else
+	;
+#endif
 
 	/* remove zone id */
 	flags &= (1UL << NR_PAGEFLAGS) - 1;
@@ -5964,23 +6128,39 @@ static void dump_page_flags(unsigned long flags)
 			continue;
 
 		flags &= ~mask;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s%s", delim, pageflag_names[i].name);
+#else
+		;
+#endif
 		delim = "|";
 	}
 
 	/* check for left over flags */
 	if (flags)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s%#lx", delim, flags);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(")\n");
+#else
+	;
+#endif
 }
 
 void dump_page(struct page *page)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT
 	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
 		page, atomic_read(&page->_count), page_mapcount(page),
 		page->mapping, page->index);
+#else
+	;
+#endif
 	dump_page_flags(page->flags);
 	mem_cgroup_print_bad_page(page);
 }

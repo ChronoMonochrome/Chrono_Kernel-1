@@ -868,7 +868,11 @@ void isac_d_l2l1(struct hisax_if *hisax_d_if, int pr, void *arg)
 
 static int __init hisax_isac_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hisax_isac: ISAC-S/ISAC-SX ISDN driver v0.1.0\n");
+#else
+	;
+#endif
 
 	l1fsm.state_count = L1_STATE_COUNT;
 	l1fsm.event_count = L1_EVENT_COUNT;

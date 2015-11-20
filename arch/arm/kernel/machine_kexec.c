@@ -44,8 +44,12 @@ void machine_crash_nonpanic_core(void *unused)
 	struct pt_regs regs;
 
 	crash_setup_regs(&regs, NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "CPU %u will stop doing anything useful since another CPU has crashed\n",
 	       smp_processor_id());
+#else
+	;
+#endif
 	crash_save_cpu(&regs, smp_processor_id());
 	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
 	flush_cache_all();
@@ -71,11 +75,19 @@ void machine_crash_shutdown(struct pt_regs *regs)
 		msecs--;
 	}
 	if (atomic_read(&waiting_for_crash_ipi) > 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Non-crashing CPUs did not react to IPI\n");
+#else
+		;
+#endif
 
 	crash_save_cpu(regs, smp_processor_id());
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Loading crashdump kernel...\n");
+#else
+	;
+#endif
 }
 
 /*
@@ -110,7 +122,11 @@ void machine_kexec(struct kimage *image)
 
 	flush_icache_range((unsigned long) reboot_code_buffer,
 			   (unsigned long) reboot_code_buffer + KEXEC_CONTROL_PAGE_SIZE);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Bye!\n");
+#else
+	;
+#endif
 
 	if (kexec_reinit)
 		kexec_reinit();
@@ -128,7 +144,11 @@ void machine_kexec(struct kimage *image)
 
 void machine_crash_swreset(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Software reset on panic!\n");
+#else
+	;
+#endif
 
 	flush_cache_all();
 	outer_flush_all();
@@ -138,7 +158,11 @@ void machine_crash_swreset(void)
 
 void machine_crash_swreset(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Software reset on panic!\n");
+#else
+	;
+#endif
 
 	flush_cache_all();
 	outer_flush_all();

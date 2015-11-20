@@ -82,7 +82,11 @@ static int adl_pci7296_attach(struct comedi_device *dev,
 	int bus, slot;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: attach adl_pci7432\n", dev->minor);
+#else
+	;
+#endif
 
 	dev->board_name = "pci7432";
 	bus = it->options[0];
@@ -112,8 +116,12 @@ static int adl_pci7296_attach(struct comedi_device *dev,
 			}
 
 			dev->iobase = pci_resource_start(pcidev, 2);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "comedi: base addr %4lx\n",
 				dev->iobase);
+#else
+			;
+#endif
 
 			/*  four 8255 digital io subdevices */
 			s = dev->subdevices + 0;
@@ -141,8 +149,12 @@ static int adl_pci7296_attach(struct comedi_device *dev,
 			if (ret < 0)
 				return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "comedi%d: adl_pci7432 attached\n",
 				dev->minor);
+#else
+			;
+#endif
 
 			return 1;
 		}
@@ -155,7 +167,11 @@ static int adl_pci7296_attach(struct comedi_device *dev,
 
 static int adl_pci7296_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pci7432: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (devpriv && devpriv->pci_dev) {
 		if (dev->iobase)

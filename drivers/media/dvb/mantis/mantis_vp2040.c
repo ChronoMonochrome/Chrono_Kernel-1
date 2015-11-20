@@ -131,42 +131,66 @@ static int vp2040_frontend_init(struct mantis_pci *mantis, struct dvb_frontend *
 		mantis_frontend_soft_reset(mantis);
 		msleep(250);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Probing for CU1216 (DVB-C)");
+#else
+		d;
+#endif
 		fe = dvb_attach(tda10021_attach, &vp2040_tda1002x_cu1216_config,
 				     adapter,
 				     read_pwm(mantis));
 
 		if (fe) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(MANTIS_ERROR, 1,
 				"found Philips CU1216 DVB-C frontend (TDA10021) @ 0x%02x",
 				vp2040_tda1002x_cu1216_config.demod_address);
+#else
+			d;
+#endif
 		} else {
 			fe = dvb_attach(tda10023_attach, &vp2040_tda10023_cu1216_config,
 					     adapter,
 					     read_pwm(mantis));
 
 			if (fe) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(MANTIS_ERROR, 1,
 					"found Philips CU1216 DVB-C frontend (TDA10023) @ 0x%02x",
 					vp2040_tda1002x_cu1216_config.demod_address);
+#else
+				d;
+#endif
 			}
 		}
 
 		if (fe) {
 			fe->ops.tuner_ops.set_params = tda1002x_cu1216_tuner_set;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(MANTIS_ERROR, 1, "Mantis DVB-C Philips CU1216 frontend attach success");
+#else
+			d;
+#endif
 		} else {
 			return -1;
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Frontend on <%s> POWER ON failed! <%d>",
 			adapter->name,
 			err);
+#else
+		d;
+#endif
 
 		return -EIO;
 	}
 	mantis->fe = fe;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Done!");
+#else
+	d;
+#endif
 
 	return 0;
 }

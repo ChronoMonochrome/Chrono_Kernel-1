@@ -36,11 +36,19 @@ MODULE_PARM_DESC(debug, "Activates frontend debugging (default:0)");
 	printk(KERN_ERR  "s921: " args);				\
 } while (0)
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...)						\
 	do {								\
 		if (debug) {						\
 			printk(KERN_DEBUG "s921: %s: ", __func__);	\
+#else
+#define d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(args);					\
+#else
+			;
+#endif
 		}							\
 	} while (0)
 
@@ -214,8 +222,12 @@ static int s921_i2c_writereg(struct s921_state *state,
 
 	rc = i2c_transfer(state->i2c, &msg, 1);
 	if (rc != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: writereg rcor(rc == %i, reg == 0x%02x,"
 			 " data == 0x%02x)\n", __func__, rc, reg, data);
+#else
+		;
+#endif
 		return rc;
 	}
 
@@ -271,7 +283,11 @@ static int s921_pll_tune(struct dvb_frontend *fe,
 	u8 f_switch;
 	u64 offset;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("frequency=%i\n", p->frequency);
+#else
+	d;
+#endif
 
 	for (band = 0; band < ARRAY_SIZE(s921_bandselect); band++)
 		if (p->frequency < s921_bandselect[band].freq_low)
@@ -311,25 +327,49 @@ static int s921_pll_tune(struct dvb_frontend *fe,
 
 	for (i = 0 ; i < 6; i++) {
 		rc = s921_readreg(state, 0x80);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("status 0x80: %02x\n", rc);
+#else
+		d;
+#endif
 	}
 	rc = s921_writereg(state, 0x01, 0x40);
 	if (rc < 0)
 		return rc;
 
 	rc = s921_readreg(state, 0x01);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("status 0x01: %02x\n", rc);
+#else
+	d;
+#endif
 
 	rc = s921_readreg(state, 0x80);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("status 0x80: %02x\n", rc);
+#else
+	d;
+#endif
 
 	rc = s921_readreg(state, 0x80);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("status 0x80: %02x\n", rc);
+#else
+	d;
+#endif
 
 	rc = s921_readreg(state, 0x32);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("status 0x32: %02x\n", rc);
+#else
+	d;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("pll tune band=%d, pll=%d\n", f_switch, (int)f_offset);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -339,7 +379,11 @@ static int s921_initfe(struct dvb_frontend *fe)
 	struct s921_state *state = fe->demodulator_priv;
 	int rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 
 	rc = s921_writeregdata(state, s921_init);
 	if (rc < 0)
@@ -367,7 +411,11 @@ static int s921_read_status(struct dvb_frontend *fe, fe_status_t *status)
 
 	regstatus |= rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("status = %04x\n", regstatus);
+#else
+	d;
+#endif
 
 	/* Full Sync - We don't know what each bit means on regs 0x81/0x82 */
 	if ((regstatus & 0xff) == 0x40) {
@@ -400,16 +448,32 @@ static int s921_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 
 	*strength = (status & FE_HAS_LOCK) ? 0xffff : 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("strength = 0x%04x\n", *strength);
+#else
+	d;
+#endif
 
 	rc = s921_readreg(state, 0x01);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("status 0x01: %02x\n", rc);
+#else
+	d;
+#endif
 
 	rc = s921_readreg(state, 0x80);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("status 0x80: %02x\n", rc);
+#else
+	d;
+#endif
 
 	rc = s921_readreg(state, 0x32);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("status 0x32: %02x\n", rc);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -420,7 +484,11 @@ static int s921_set_frontend(struct dvb_frontend *fe,
 	struct s921_state *state = fe->demodulator_priv;
 	int rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 
 	/* FIXME: We don't know how to use non-auto mode */
 
@@ -452,7 +520,11 @@ static int s921_tune(struct dvb_frontend *fe,
 {
 	int rc = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 
 	if (params != NULL)
 		rc = s921_set_frontend(fe, params);
@@ -472,7 +544,11 @@ static void s921_release(struct dvb_frontend *fe)
 {
 	struct s921_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 	kfree(state);
 }
 
@@ -485,7 +561,11 @@ struct dvb_frontend *s921_attach(const struct s921_config *config,
 	struct s921_state *state =
 		kzalloc(sizeof(struct s921_state), GFP_KERNEL);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("\n");
+#else
+	d;
+#endif
 	if (state == NULL) {
 		rc("Unable to kzalloc\n");
 		goto rcor;

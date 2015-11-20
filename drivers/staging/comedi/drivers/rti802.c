@@ -117,9 +117,17 @@ static int rti802_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned long iobase;
 
 	iobase = it->options[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: rti802: 0x%04lx ", dev->minor, iobase);
+#else
+	;
+#endif
 	if (!request_region(iobase, RTI802_SIZE, "rti802")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -154,7 +162,11 @@ static int rti802_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int rti802_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: rti802: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->iobase)
 		release_region(dev->iobase, RTI802_SIZE);

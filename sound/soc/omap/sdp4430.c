@@ -223,7 +223,11 @@ static int __init sdp4430_soc_init(void)
 
 	if (!machine_is_omap_4430sdp())
 		return -ENODEV;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SDP4430 SoC init\n");
+#else
+	;
+#endif
 
 	sdp4430_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!sdp4430_snd_device) {

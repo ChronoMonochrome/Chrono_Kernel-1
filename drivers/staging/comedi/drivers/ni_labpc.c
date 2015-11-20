@@ -533,10 +533,22 @@ int labpc_common_attach(struct comedi_device *dev, unsigned long iobase,
 								thisboard->name,
 	       iobase);
 	if (irq)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", irq %u", irq);
+#else
+		;
+#endif
 	if (dma_chan)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", dma %u", dma_chan);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	if (iobase == 0) {
 		printk(KERN_ERR "io base address is zero!\n");
@@ -697,8 +709,16 @@ int labpc_common_attach(struct comedi_device *dev, unsigned long iobase,
 #ifdef LABPC_DEBUG
 		printk(KERN_ERR " eeprom:");
 		for (i = 0; i < EEPROM_SIZE; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %i:0x%x ", i, devpriv->eeprom_data[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 #endif
 	} else
 		s->type = COMEDI_SUBD_UNUSED;

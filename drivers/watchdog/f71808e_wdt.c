@@ -487,8 +487,12 @@ static int watchdog_release(struct inode *inode, struct file *file)
 
 	if (!watchdog.expect_close) {
 		watchdog_keepalive();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT DRVNAME
 			": Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 	} else if (!nowayout) {
 		watchdog_stop();
 	}
@@ -720,9 +724,13 @@ static int __init watchdog_init(int sioaddr)
 		if (nowayout)
 			__module_get(THIS_MODULE);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRVNAME
 			": watchdog started with initial timeout of %u sec\n",
 			start_withtimeout);
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -774,15 +782,23 @@ static int __init f71808e_find(int sioaddr)
 		err = -ENODEV;
 		goto exit;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRVNAME ": Unrecognized Fintek device: %04x\n",
 		       (unsigned int)devid);
+#else
+		;
+#endif
 		err = -ENODEV;
 		goto exit;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRVNAME ": Found %s watchdog chip, revision %d\n",
 		f71808e_names[watchdog.type],
 		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
+#else
+	;
+#endif
 exit:
 	superio_exit(sioaddr);
 	return err;
@@ -808,8 +824,12 @@ static int __init f71808e_init(void)
 static void __exit f71808e_exit(void)
 {
 	if (watchdog_is_running()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DRVNAME
 			": Watchdog timer still running, stopping it\n");
+#else
+		;
+#endif
 		watchdog_stop();
 	}
 	misc_deregister(&watchdog_miscdev);

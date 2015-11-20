@@ -309,7 +309,11 @@ static void pluto_dma_end(struct pluto *pluto, unsigned int nbpackets)
 		nbpackets = i / 188;
 		if (i == 0) {
 			pluto_reset_ts(pluto, 1);
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_DEBUG, &pluto->pdev->dev, "resetting TS because of invalid packet counter\n");
+#else
+			dev_;
+#endif
 		}
 	}
 
@@ -584,12 +588,20 @@ static int __devinit pluto_read_serial(struct pluto *pluto)
 		for (j = 0; j < 32; j += 8) {
 			if ((val & 0xff) == 0xff)
 				goto out;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c", val & 0xff);
+#else
+			;
+#endif
 			val >>= 8;
 		}
 	}
 out:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 	pci_iounmap(pdev, cis);
 
 	return 0;

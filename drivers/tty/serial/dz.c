@@ -938,7 +938,11 @@ static int __init dz_init(void)
 	if (IOASIC)
 		return -ENXIO;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s%s\n", dz_name, dz_version);
+#else
+	;
+#endif
 
 	dz_init_ports();
 

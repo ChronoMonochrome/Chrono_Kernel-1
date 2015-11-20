@@ -127,8 +127,12 @@ static int __init macide_init(void)
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ide: Macintosh %s IDE controller\n",
 			 mac_ide_name[macintosh_config->ide_type - 1]);
+#else
+	;
+#endif
 
 	macide_setup_ports(&hw, base, irq);
 

@@ -169,7 +169,11 @@ static int unioxx5_attach(struct comedi_device *dev,
 			return -1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("attached\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -304,7 +308,11 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
 	}
 
 	usp->usp_iobase = subdev_iobase;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: |", minor);
+#else
+	;
+#endif
 
 	/* defining modules types */
 	for (i = 0; i < 12; i++) {
@@ -331,11 +339,19 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
 		} else
 			usp->usp_module_type[i] = inb(subdev_iobase + 6);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" [%d] 0x%02x |", i, usp->usp_module_type[i]);
+#else
+		;
+#endif
 		udelay(1);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	/* initial subdevice for digital or analog i/o */
 	subdev->type = COMEDI_SUBD_DIO;
@@ -348,7 +364,11 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
 	subdev->insn_write = unioxx5_subdev_write;
 	subdev->insn_config = unioxx5_insn_config;	/* for digital modules only!!! */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("subdevice configured\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -410,7 +430,11 @@ static void __unioxx5_digital_config(struct unioxx5_subd_priv *usp, int mode)
 	int i, mask;
 
 	mask = (mode == ALL_2_OUTPUT) ? 0xFF : 0x00;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("COMEDI: mode = %d\n", mask);
+#else
+	;
+#endif
 
 	outb(1, usp->usp_iobase + 0);
 
@@ -485,7 +509,11 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
 
 	/* if four bytes readding error occurs - return 0(false) */
 	if ((control & Rx4CA_ERR_MASK)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("COMEDI: 4 bytes error\n");
+#else
+		;
+#endif
 		return 0;
 	}
 

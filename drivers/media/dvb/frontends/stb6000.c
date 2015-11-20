@@ -28,10 +28,14 @@
 #include "stb6000.h"
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) \
 			printk(KERN_DEBUG "stb6000: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 struct stb6000_priv {
@@ -60,14 +64,22 @@ static int stb6000_sleep(struct dvb_frontend *fe)
 		.len = 2
 	};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);
 
 	ret = i2c_transfer(priv->i2c, &msg, 1);
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: i2c error\n", __func__);
+#else
+		d;
+#endif
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 0);
@@ -91,7 +103,11 @@ static int stb6000_set_params(struct dvb_frontend *fe,
 		.len = 12
 	};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	freq_mhz = params->frequency / 1000;
 	bandwidth = params->u.qpsk.symbol_rate / 1000000;
@@ -148,7 +164,11 @@ static int stb6000_set_params(struct dvb_frontend *fe,
 
 		ret = i2c_transfer(priv->i2c, &msg, 1);
 		if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: i2c error\n", __func__);
+#else
+			d;
+#endif
 
 		udelay(10);
 		if (fe->ops.i2c_gate_ctrl)
@@ -166,7 +186,11 @@ static int stb6000_set_params(struct dvb_frontend *fe,
 
 		ret = i2c_transfer(priv->i2c, &msg, 1);
 		if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: i2c error\n", __func__);
+#else
+			d;
+#endif
 
 		udelay(10);
 		if (fe->ops.i2c_gate_ctrl)
@@ -219,7 +243,11 @@ struct dvb_frontend *stb6000_attach(struct dvb_frontend *fe, int addr,
 	};
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:\n", __func__);
+#else
+	d;
+#endif
 
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 1);

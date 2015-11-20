@@ -123,11 +123,19 @@ static int rc_paranoia_check(struct riscom_port const *port,
 		"rc: Warning: null riscom port for device %s in %s\n";
 
 	if (!port) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(badinfo, name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 	if (port->magic != RISCOM8_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(badmagic, name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 #endif
@@ -182,7 +190,11 @@ static void rc_wait_CCR(struct riscom_board const *bp)
 		if (!rc_in(bp, CD180_CCR))
 			return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "rc%d: Timeout waiting for CCR.\n", board_No(bp));
+#else
+	;
+#endif
 }
 
 /*
@@ -200,8 +212,12 @@ static int rc_request_io_range(struct riscom_board * const bp)
 		}
 	return 0;
 out_release:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "rc%d: Skipping probe at 0x%03x. IO address in use.\n",
 			 board_No(bp), bp->base);
+#else
+	;
+#endif
 	while (--i >= 0)
 		release_region(RC_TO_ISA(rc_ioport[i]) + bp->base, 1);
 	return 1;
@@ -296,11 +312,15 @@ static int __init rc_probe(struct riscom_board *bp)
 	bp->irq = irqs;
 	bp->flags |= RC_BOARD_PRESENT;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "rc%d: RISCom/8 Rev. %c board detected at "
 			 "0x%03x, IRQ %d.\n",
 	       board_No(bp),
 	       (rc_in(bp, CD180_GFRCR) & 0x0f) + 'A',   /* Board revision */
 	       bp->base, bp->irq);
+#else
+	;
+#endif
 
 	return 0;
 out_release:
@@ -356,14 +376,22 @@ static void rc_receive_exc(struct riscom_board const *bp)
 	if (!status)
 		goto out;
 	if (status & RCSR_TOUT)  {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "rc%d: port %d: Receiver timeout. "
 				    "Hardware problems ?\n",
 		       board_No(bp), port_No(port));
+#else
+		;
+#endif
 		goto out;
 
 	} else if (status & RCSR_BREAK)  {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "rc%d: port %d: Handling break...\n",
 		       board_No(bp), port_No(port));
+#else
+		;
+#endif
 		flag = TTY_BREAK;
 		if (tty && (port->port.flags & ASYNC_SAK))
 			do_SAK(tty);
@@ -563,8 +591,12 @@ static irqreturn_t rc_interrupt(int dummy, void *dev_id)
 				  RC_BSR_MINT | RC_BSR_RINT))) {
 		handled = 1;
 		if (status & RC_BSR_TOUT)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "rc%d: Got timeout. Hardware "
 					    "error?\n", board_No(bp));
+#else
+			;
+#endif
 		else if (status & RC_BSR_RINT) {
 			ack = rc_in(bp, RC_ACK_RINT);
 			if (ack == (RC_ID | GIVR_IT_RCV))
@@ -572,25 +604,37 @@ static irqreturn_t rc_interrupt(int dummy, void *dev_id)
 			else if (ack == (RC_ID | GIVR_IT_REXC))
 				rc_receive_exc(bp);
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "rc%d: Bad receive ack "
 						    "0x%02x.\n",
 				       board_No(bp), ack);
+#else
+				;
+#endif
 		} else if (status & RC_BSR_TINT) {
 			ack = rc_in(bp, RC_ACK_TINT);
 			if (ack == (RC_ID | GIVR_IT_TX))
 				rc_transmit(bp);
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "rc%d: Bad transmit ack "
 						    "0x%02x.\n",
 				       board_No(bp), ack);
+#else
+				;
+#endif
 		} else /* if (status & RC_BSR_MINT) */ {
 			ack = rc_in(bp, RC_ACK_MINT);
 			if (ack == (RC_ID | GIVR_IT_MODEM))
 				rc_check_modem(bp);
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "rc%d: Bad modem ack "
 						    "0x%02x.\n",
 				       board_No(bp), ack);
+#else
+				;
+#endif
 		}
 		rc_out(bp, CD180_EOIR, 0);   /* Mark end of interrupt */
 		rc_out(bp, RC_CTOUT, 0);     /* Clear timeout flag    */
@@ -816,18 +860,34 @@ static void rc_shutdown_port(struct tty_struct *tty,
 			struct riscom_board *bp, struct riscom_port *port)
 {
 #ifdef RC_REPORT_OVERRUN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "rc%d: port %d: Total %ld overruns were detected.\n",
 	       board_No(bp), port_No(port), port->overrun);
+#else
+	;
+#endif
 #endif
 #ifdef RC_REPORT_FIFO
 	{
 		int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "rc%d: port %d: FIFO hits [ ",
 		       board_No(bp), port_No(port));
+#else
+		;
+#endif
 		for (i = 0; i < 10; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%ld ", port->hits[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("].\n");
+#else
+		;
+#endif
 	}
 #endif
 	tty_port_free_xmit_buf(&port->port);
@@ -844,9 +904,13 @@ static void rc_shutdown_port(struct tty_struct *tty,
 	set_bit(TTY_IO_ERROR, &tty->flags);
 
 	if (--bp->count < 0)  {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "rc%d: rc_shutdown_port: "
 				 "bad board count: %d\n",
 		       board_No(bp), bp->count);
+#else
+		;
+#endif
 		bp->count = 0;
 	}
 	/*
@@ -1487,7 +1551,11 @@ static int __init riscom8_init(void)
 	int i;
 	int found = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner);
+#else
+	;
+#endif
 
 	if (rc_init_drivers())
 		return -EIO;
@@ -1497,7 +1565,11 @@ static int __init riscom8_init(void)
 			found++;
 	if (!found)  {
 		rc_release_drivers();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(no_boards_msg);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	return 0;

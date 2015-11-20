@@ -195,10 +195,18 @@ static void dstr_log_adapter( PIA *pi, char * scratch, int verbose )
 {       char    *mode_string[5] = {"4-bit","8-bit","EPP-8",
 				   "EPP-16","EPP-32"};
 
+#ifdef CONFIG_DEBUG_PRINTK
         printk("%s: dstr %s, DataStor EP2000 at 0x%x, ",
                 pi->device,DSTR_VERSION,pi->port);
+#else
+        ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
         printk("mode %d (%s), delay %d\n",pi->mode,
 		mode_string[pi->mode],pi->delay);
+#else
+        ;
+#endif
 
 }
 

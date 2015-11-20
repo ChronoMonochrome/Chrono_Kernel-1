@@ -171,13 +171,25 @@ static irqreturn_t intr_handler(int irq, void *d)
 	struct comedi_subdevice *s = dev->subdevices;
 
 	if (!dev->attached || devpriv->das6402_ignoreirq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("das6402: BUG: spurious interrupt\n");
+#else
+		;
+#endif
 		return IRQ_HANDLED;
 	}
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("das6402: interrupt! das6402_irqcount=%i\n",
 	       devpriv->das6402_irqcount);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("das6402: iobase+2=%i\n", inw_p(dev->iobase + 2));
+#else
+	;
+#endif
 #endif
 
 	das6402_ai_fifo_dregs(dev, s);
@@ -186,8 +198,12 @@ static irqreturn_t intr_handler(int irq, void *d)
 		outw_p(SCANL, dev->iobase + 2);	/* clears the fifo */
 		outb(0x07, dev->iobase + 8);	/* clears all flip-flops */
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("das6402: Got %i samples\n\n",
 		       devpriv->das6402_wordsread - diff);
+#else
+		;
+#endif
 #endif
 		s->async->events |= COMEDI_CB_EOA;
 		comedi_event(dev, s);
@@ -229,7 +245,11 @@ static int das6402_ai_cancel(struct comedi_device *dev,
 
 	devpriv->das6402_ignoreirq = 1;
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("das6402: Stopping acquisition\n");
+#else
+	;
+#endif
 #endif
 	devpriv->das6402_ignoreirq = 1;
 	outb_p(0x02, dev->iobase + 10);	/* disable external trigging */
@@ -248,7 +268,11 @@ static int das6402_ai_mode2(struct comedi_device *dev,
 	devpriv->das6402_ignoreirq = 1;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("das6402: Starting acquisition\n");
+#else
+	;
+#endif
 #endif
 	outb_p(0x03, dev->iobase + 10);	/* enable external trigging */
 	outw_p(SCANL, dev->iobase + 2);	/* resets the card fifo */
@@ -329,10 +353,18 @@ static int das6402_attach(struct comedi_device *dev,
 	if (iobase == 0)
 		iobase = 0x300;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: das6402: 0x%04lx", dev->minor, iobase);
+#else
+	;
+#endif
 
 	if (!request_region(iobase, DAS6402_SIZE, "das6402")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -340,10 +372,18 @@ static int das6402_attach(struct comedi_device *dev,
 	/* should do a probe here */
 
 	irq = it->options[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" ( irq = %u )", irq);
+#else
+	;
+#endif
 	ret = request_irq(irq, intr_handler, 0, "das6402", dev);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("irq conflict\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	dev->irq = irq;

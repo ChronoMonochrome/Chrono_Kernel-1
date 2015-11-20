@@ -58,9 +58,17 @@ static void dump_mem(const char *, const char *, unsigned long, unsigned long);
 void dump_backtrace_entry(unsigned long where, unsigned long from, unsigned long frame)
 {
 #ifdef CONFIG_KALLSYMS
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[<%08lx>] (%pS) from [<%08lx>] (%pS)\n", where, (void *)where, from, (void *)from);
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Function entered at [<%08lx>] from [<%08lx>]\n", where, from);
+#else
+	;
+#endif
 #endif
 
 	if (in_exception_text(where))
@@ -101,7 +109,11 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s%s(0x%08lx to 0x%08lx)\n", lvl, str, bottom, top);
+#else
+	;
+#endif
 
 	for (first = bottom & ~31; first < top; first += 32) {
 		unsigned long p;
@@ -119,7 +131,11 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
 					sprintf(str + i * 9, " ????????");
 			}
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s%04lx:%s\n", lvl, first & 0xffff, str);
+#else
+		;
+#endif
 	}
 
 	set_fs(fs);
@@ -158,7 +174,11 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
 			break;
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%sCode: %s\n", lvl, str);
+#else
+	;
+#endif
 
 	set_fs(fs);
 }
@@ -174,7 +194,11 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 	unsigned int fp, mode;
 	int ok = 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Backtrace: ");
+#else
+	;
+#endif
 
 	if (!tsk)
 		tsk = current;
@@ -191,14 +215,30 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 	}
 
 	if (!fp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("no frame pointer");
+#else
+		;
+#endif
 		ok = 0;
 	} else if (verify_stack(fp)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("invalid frame pointer 0x%08x", fp);
+#else
+		;
+#endif
 		ok = 0;
 	} else if (fp < (unsigned long)end_of_stack(tsk))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("frame pointer underflow");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	if (ok)
 		c_backtrace(fp, mode);
@@ -235,8 +275,12 @@ static int __die(const char *str, int err, struct thread_info *thread, struct pt
 //	static int die_counter;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "Internal error: %s: %x [#%d]" S_PREEMPT S_SMP "\n",
 	       str, err, ++die_counter);
+#else
+	;
+#endif
 
 	/* trap and error numbers are mostly meaningless on ARM */
 	ret = notify_die(DIE_OOPS, str, regs, err, tsk->thread.trap_no, SIGSEGV);
@@ -245,8 +289,12 @@ static int __die(const char *str, int err, struct thread_info *thread, struct pt
 
 	print_modules();
 	__show_regs(regs);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "Process %.*s (pid: %d, stack limit = 0x%p)\n",
 		TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), thread + 1);
+#else
+	;
+#endif
 
 	if (!user_mode(regs) || in_interrupt()) {
 		dump_mem(KERN_EMERG, "Stack: ", regs->ARM_sp,
@@ -417,8 +465,12 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 
 #ifdef CONFIG_DEBUG_USER
 	if (user_debug & UDBG_UNDEFINED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s (%d): undefined instruction: pc=%p\n",
 			current->comm, task_pid_nr(current), pc);
+#else
+		;
+#endif
 		dump_instr(KERN_INFO, regs);
 	}
 #endif
@@ -433,8 +485,16 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 
 asmlinkage void do_unexp_fiq (struct pt_regs *regs)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Hmm.  Unexpected FIQ received, but trying to continue\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("You may have a hardware problem...\n");
+#else
+	;
+#endif
 }
 
 /*
@@ -447,7 +507,11 @@ asmlinkage void bad_mode(struct pt_regs *regs, int reason)
 {
 	console_verbose();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "Bad mode in %s handler detected\n", handler[reason]);
+#else
+	;
+#endif
 
 	die("Oops - bad mode", regs, 0);
 	local_irq_disable();
@@ -651,8 +715,12 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
 	 * something catastrophic has happened
 	 */
 	if (user_debug & UDBG_SYSCALL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[%d] %s: arm syscall %d\n",
 		       task_pid_nr(current), current->comm, no);
+#else
+		;
+#endif
 		dump_instr("", regs);
 		if (user_mode(regs)) {
 			__show_regs(regs);
@@ -710,8 +778,12 @@ late_initcall(arm_mrc_hook_init);
 
 void __bad_xchg(volatile void *ptr, int size)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("xchg: bad data size: pc 0x%p, ptr 0x%p, size %d\n",
 		__builtin_return_address(0), ptr, size);
+#else
+	;
+#endif
 	BUG();
 }
 EXPORT_SYMBOL(__bad_xchg);
@@ -745,29 +817,49 @@ baddataabort(int code, unsigned long instr, struct pt_regs *regs)
 
 void __readwrite_bug(const char *fn)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s called, but not implemented\n", fn);
+#else
+	;
+#endif
 	BUG();
 }
 EXPORT_SYMBOL(__readwrite_bug);
 
 void __pte_error(const char *file, int line, pte_t pte)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s:%d: bad pte %08llx.\n", file, line, (long long)pte_val(pte));
+#else
+	;
+#endif
 }
 
 void __pmd_error(const char *file, int line, pmd_t pmd)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s:%d: bad pmd %08llx.\n", file, line, (long long)pmd_val(pmd));
+#else
+	;
+#endif
 }
 
 void __pgd_error(const char *file, int line, pgd_t pgd)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s:%d: bad pgd %08llx.\n", file, line, (long long)pgd_val(pgd));
+#else
+	;
+#endif
 }
 
 asmlinkage void __div0(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Division by zero in kernel.\n");
+#else
+	;
+#endif
 	dump_stack();
 }
 EXPORT_SYMBOL(__div0);

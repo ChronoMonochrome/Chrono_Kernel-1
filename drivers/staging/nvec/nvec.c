@@ -47,10 +47,22 @@ static int nvec_status_notifier(struct notifier_block *nb, unsigned long event_t
 	if(event_type != NVEC_CNTL)
 		return NOTIFY_DONE;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("unhandled msg type %ld, payload: ", event_type);
+#else
+	;
+#endif
 	for (i = 0; i < msg[1]; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%0x ", msg[i+2]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	return NOTIFY_OK;
 }
@@ -169,7 +181,11 @@ static irqreturn_t i2c_interrupt(int irq, void *dev)
 	if(status & END_TRANS && !(status & RCVD))
 	{
 		//Reenable IRQ only when even has been sent
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("Write sequence ended !\n");
+#else
+		//;
+#endif
                 //parse_msg(nvec);
 		nvec->state = NVEC_WAIT;
 		if(nvec->rx->size > 1)

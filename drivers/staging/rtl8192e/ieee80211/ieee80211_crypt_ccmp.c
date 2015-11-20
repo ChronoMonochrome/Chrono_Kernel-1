@@ -80,8 +80,12 @@ static void * ieee80211_ccmp_init(int key_idx)
 
        priv->tfm = (void*)crypto_alloc_cipher("aes", 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(priv->tfm)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ieee80211_crypt_ccmp: could not allocate "
 		       "crypto API aes\n");
+#else
+		;
+#endif
 		priv->tfm = NULL;
 		goto fail;
 	}
@@ -289,23 +293,35 @@ static int ieee80211_ccmp_decrypt(struct sk_buff *skb, int hdr_len, void *priv)
 	keyidx = pos[3];
 	if (!(keyidx & (1 << 5))) {
 		if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "CCMP: received packet without ExtIV"
 			       " flag from %pM\n", hdr->addr2);
+#else
+			;
+#endif
 		}
 		key->dot11RSNAStatsCCMPFormatErrors++;
 		return -2;
 	}
 	keyidx >>= 6;
 	if (key->key_idx != keyidx) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "CCMP: RX tkey->key_idx=%d frame "
 		       "keyidx=%d priv=%p\n", key->key_idx, keyidx, priv);
+#else
+		;
+#endif
 		return -6;
 	}
 	if (!key->key_set) {
 		if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "CCMP: received packet from %pM"
 			       " with keyid=%d that does not have a configured"
 			       " key\n", hdr->addr2, keyidx);
+#else
+			;
+#endif
 		}
 		return -3;
 	}
@@ -353,8 +369,12 @@ static int ieee80211_ccmp_decrypt(struct sk_buff *skb, int hdr_len, void *priv)
 
 		if (memcmp(mic, a, CCMP_MIC_LEN) != 0) {
 			if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "CCMP: decrypt failed: STA="
 				"%pM\n", hdr->addr2);
+#else
+				;
+#endif
 			}
 			key->dot11RSNAStatsCCMPDecryptErrors++;
 			return -5;

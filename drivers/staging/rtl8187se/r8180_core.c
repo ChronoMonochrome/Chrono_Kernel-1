@@ -449,17 +449,37 @@ void print_buffer(u32 *buffer, int len)
 	int i;
 	u8 *buf = (u8 *)buffer;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ASCII BUFFER DUMP (len: %x):\n", len);
+#else
+	;
+#endif
 
 	for (i = 0; i < len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%c", buf[i]);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\nBINARY BUFFER DUMP (len: %x):\n", len);
+#else
+	;
+#endif
 
 	for (i = 0; i < len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%02x", buf[i]);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 int get_curr_tx_free_desc(struct net_device *dev, int priority)
@@ -763,7 +783,11 @@ void rtl8180_set_chan(struct net_device *dev, short ch)
 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
 
 	if ((ch > 14) || (ch < 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("In %s: Invalid chnanel %d\n", __func__, ch);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -1603,7 +1627,11 @@ void rtl8180_rx(struct net_device *dev)
 		if (stats.signalstrength > 100)
 			stats.signalstrength = 100;
 		stats.signalstrength = (stats.signalstrength * 70)/100 + 30;
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("==========================>rx : RXAGC is %d,signalstrength is %d\n",RXAGC,stats.signalstrength); */
+#else
+		/* ;
+#endif
 		stats.rssi = priv->wstats.qual.qual = priv->SignalQuality;
 		stats.noise = priv->wstats.qual.noise = 100 - priv->wstats.qual.qual;
 		bHwError = (((*(priv->rxringtail)) & (0x00000fff)) == 4080) | (((*(priv->rxringtail)) & (0x04000000)) != 0)
@@ -2316,7 +2344,11 @@ void rtl8180_hw_sleep(struct net_device *dev, u32 th, u32 tl)
 	if (((tl >= rb) && (tl-rb) <= MSECS(MIN_SLEEP_TIME))
 		|| ((rb > tl) && (rb-tl) < MSECS(MIN_SLEEP_TIME))) {
 		spin_unlock_irqrestore(&priv->ps_lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("too short to sleep\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -2387,7 +2419,11 @@ void rtl8180_wmm_param_update(struct work_struct *work)
 					write_nic_dword(dev, AC_VO_PARAM, u4bAcParam);
 					break;
 				default:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "SetHwReg8185():invalid ACI: %d!\n", eACI);
+#else
+					;
+#endif
 					break;
 				}
 			}
@@ -2426,7 +2462,11 @@ void rtl8180_wmm_param_update(struct work_struct *work)
 				write_nic_dword(dev, AC_VO_PARAM, u4bAcParam);
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "SetHwReg8185(): invalid ACI: %d !\n", eACI);
+#else
+				;
+#endif
 				break;
 			}
 		}
@@ -2606,7 +2646,11 @@ short rtl8180_init(struct net_device *dev)
 	eeprom_93cx6_read(&eeprom, EEPROM_COUNTRY_CODE>>1, &eeprom_val);
 	priv->channel_plan = eeprom_val & 0xFF;
 	if (priv->channel_plan > COUNTRY_CODE_GLOBAL_DOMAIN) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("rtl8180_init:Error channel plan! Set to default.\n");
+#else
+		;
+#endif
 		priv->channel_plan = 0;
 	}
 
@@ -3725,8 +3769,16 @@ static int __init rtl8180_pci_module_init(void)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\nLinux kernel driver for RTL8180 / RTL8185 based WLAN cards\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Copyright (c) 2004-2005, Andrea Merello\n");
+#else
+	;
+#endif
 	DMESG("Initializing module");
 	DMESG("Wireless extensions version %d", WIRELESS_EXT);
 	rtl8180_proc_module_init();

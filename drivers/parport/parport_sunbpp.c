@@ -42,6 +42,7 @@
 
 #undef __SUNBPP_DEBUG
 #ifdef __SUNBPP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(x) printk x
 #else
 #define dprintk(x)
@@ -50,6 +51,9 @@
 static void parport_sunbpp_disable_irq(struct parport *p)
 {
 	struct bpp_regs __iomem *regs = (struct bpp_regs __iomem *)p->base;
+#else
+#define d;
+#endif
 	u32 tmp;
 
 	tmp = sbus_readl(&regs->p_csr);
@@ -72,7 +76,11 @@ static void parport_sunbpp_write_data(struct parport *p, unsigned char d)
 	struct bpp_regs __iomem *regs = (struct bpp_regs __iomem *)p->base;
 
 	sbus_writeb(d, &regs->p_dr);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "wrote 0x%x\n", d));
+#else
+	d;
+#endif
 }
 
 static unsigned char parport_sunbpp_read_data(struct parport *p)
@@ -121,8 +129,16 @@ static unsigned char status_sunbpp_to_pc(struct parport *p)
 	if (!(value_tcr & P_TCR_BUSY))
 		bits |= PARPORT_STATUS_BUSY;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "tcr 0x%x ir 0x%x\n", value_tcr, value_ir));
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "read status 0x%x\n", bits));
+#else
+	d;
+#endif
 	return bits;
 }
 
@@ -142,8 +158,16 @@ static unsigned char control_sunbpp_to_pc(struct parport *p)
 	if (value_or & P_OR_SLCT_IN)
 		bits |= PARPORT_CONTROL_SELECT;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "tcr 0x%x or 0x%x\n", value_tcr, value_or));
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "read control 0x%x\n", bits));
+#else
+	d;
+#endif
 	return bits;
 }
 
@@ -160,8 +184,12 @@ static unsigned char parport_sunbpp_frob_control(struct parport *p,
 	unsigned char value_tcr = sbus_readb(&regs->p_tcr);
 	unsigned char value_or = sbus_readb(&regs->p_or);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "frob1: tcr 0x%x or 0x%x\n",
 		 value_tcr, value_or));
+#else
+	d;
+#endif
 	if (mask & PARPORT_CONTROL_STROBE) {
 		if (val & PARPORT_CONTROL_STROBE) {
 			value_tcr &= ~P_TCR_DS;
@@ -193,8 +221,12 @@ static unsigned char parport_sunbpp_frob_control(struct parport *p,
 
 	sbus_writeb(value_or, &regs->p_or);
 	sbus_writeb(value_tcr, &regs->p_tcr);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "frob2: tcr 0x%x or 0x%x\n",
 		 value_tcr, value_or));
+#else
+	d;
+#endif
 	return parport_sunbpp_read_control(p);
 }
 
@@ -218,7 +250,11 @@ static void parport_sunbpp_data_forward (struct parport *p)
 	struct bpp_regs __iomem *regs = (struct bpp_regs __iomem *)p->base;
 	unsigned char value_tcr = sbus_readb(&regs->p_tcr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "forward\n"));
+#else
+	d;
+#endif
 	value_tcr &= ~P_TCR_DIR;
 	sbus_writeb(value_tcr, &regs->p_tcr);
 }
@@ -228,7 +264,11 @@ static void parport_sunbpp_data_reverse (struct parport *p)
 	struct bpp_regs __iomem *regs = (struct bpp_regs __iomem *)p->base;
 	u8 val = sbus_readb(&regs->p_tcr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk((KERN_DEBUG "reverse\n"));
+#else
+	d;
+#endif
 	val |= P_TCR_DIR;
 	sbus_writeb(val, &regs->p_tcr);
 }
@@ -311,7 +351,11 @@ static int __devinit bpp_probe(struct platform_device *op)
 
         memcpy (ops, &parport_sunbpp_ops, sizeof(struct parport_operations));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(("register_port\n"));
+#else
+	d;
+#endif
 	if (!(p = parport_register_port((unsigned long)base, irq, dma, ops)))
 		goto out_free_ops;
 
@@ -331,7 +375,11 @@ static int __devinit bpp_probe(struct platform_device *op)
 	value_tcr &= ~P_TCR_DIR;
 	sbus_writeb(value_tcr, &regs->p_tcr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: sunbpp at 0x%lx\n", p->name, p->base);
+#else
+	;
+#endif
 
 	dev_set_drvdata(&op->dev, p);
 

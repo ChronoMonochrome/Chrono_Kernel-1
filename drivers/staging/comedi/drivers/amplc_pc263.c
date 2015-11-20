@@ -233,8 +233,12 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 #endif
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor,
 	       PC263_DRIVER_NAME);
+#else
+	;
+#endif
 /*
  * Allocate the private structure area.  alloc_private() is a
  * convenient macro defined in comedidev.h.
@@ -323,16 +327,32 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->state = inb(dev->iobase);
 	s->state = s->state | (inb(dev->iobase) << 8);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: %s ", dev->minor, dev->board_name);
+#else
+	;
+#endif
 	if (thisboard->bustype == isa_bustype) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(base %#lx) ", iobase);
+#else
+		;
+#endif
 	} else {
 #ifdef CONFIG_COMEDI_PCI
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(pci %s) ", pci_name(pci_dev));
+#else
+		;
+#endif
 #endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("attached\n");
+#else
+	;
+#endif
 
 	return 1;
 }
@@ -347,8 +367,12 @@ static int pc263_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 static int pc263_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
 	       PC263_DRIVER_NAME);
+#else
+	;
+#endif
 
 #ifdef CONFIG_COMEDI_PCI
 	if (devpriv) {
@@ -366,8 +390,12 @@ static int pc263_detach(struct comedi_device *dev)
 		}
 	}
 	if (dev->board_name) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "comedi%d: %s removed\n",
 		       dev->minor, dev->board_name);
+#else
+		;
+#endif
 	}
 	return 0;
 }

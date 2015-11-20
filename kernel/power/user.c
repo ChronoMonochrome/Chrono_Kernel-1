@@ -218,10 +218,14 @@ unlock:
 static void snapshot_deprecated_ioctl(unsigned int cmd)
 {
 	if (printk_ratelimit())
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%pf: ioctl '%.8x' is deprecated and will "
 				"be removed soon, update your suspend-to-disk "
 				"utilities\n",
 				__builtin_return_address(0), cmd);
+#else
+		;
+#endif
 }
 
 static long snapshot_ioctl(struct file *filp, unsigned int cmd,

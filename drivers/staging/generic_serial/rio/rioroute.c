@@ -150,12 +150,20 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 		}
 
 		if (Lies) {
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_ROUTE, "LIES! DAMN LIES! %d LIES!\n", Lies);
+#else
+			rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_ROUTE, "%d:%c %d:%c %d:%c %d:%c\n",
 				    readb(&PktCmdP->RouteTopology[0].Unit),
 				    'A' + readb(&PktCmdP->RouteTopology[0].Link),
 				    readb(&PktCmdP->RouteTopology[1].Unit),
 				    'A' + readb(&PktCmdP->RouteTopology[1].Link), readb(&PktCmdP->RouteTopology[2].Unit), 'A' + readb(&PktCmdP->RouteTopology[2].Link), readb(&PktCmdP->RouteTopology[3].Unit), 'A' + readb(&PktCmdP->RouteTopology[3].Link));
+#else
+			rio_d;
+#endif
 			return 1;
 		}
 
@@ -181,7 +189,11 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 				 */
 
 				if (NewUnit > MAX_RUP && NewUnit != ROUTE_DISCONNECT && NewUnit != ROUTE_NO_ID && NewUnit != ROUTE_INTERCONNECT) {
+#ifdef CONFIG_DEBUG_PRINTK
 					rio_dprintk(RIO_DEBUG_ROUTE, "I have a link from %s %s to unit %d:%d - I don't like it.\n", MyType, MyName, NewUnit, NewLink);
+#else
+					rio_d;
+#endif
 				} else {
 					/*
 					 ** put the new values in
@@ -203,11 +215,19 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 						RIOConCon(p, HostP, ThisUnit, ThisLink, NewUnit, NewLink, CONNECT);
 
 					if (NewUnit == ROUTE_NO_ID)
+#ifdef CONFIG_DEBUG_PRINTK
 						rio_dprintk(RIO_DEBUG_ROUTE, "%s %s (%c) is connected to an unconfigured unit.\n", MyType, MyName, 'A' + ThisLink);
+#else
+						rio_d;
+#endif
 
 					if (NewUnit == ROUTE_INTERCONNECT) {
 						if (!p->RIONoMessage)
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_DEBUG "rio: %s '%s' (%c) is connected to another network.\n", MyType, MyName, 'A' + ThisLink);
+#else
+							;
+#endif
 					}
 
 					/*
@@ -217,27 +237,51 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 					 */
 					if (OldUnit == HOST_ID) {
 						if (HostP->Topology[OldLink].Unit == ThisUnit && HostP->Topology[OldLink].Link == ThisLink) {
+#ifdef CONFIG_DEBUG_PRINTK
 							rio_dprintk(RIO_DEBUG_ROUTE, "SETTING HOST (%c) TO DISCONNECTED!\n", OldLink + 'A');
+#else
+							rio_d;
+#endif
 							HostP->Topology[OldLink].Unit = ROUTE_DISCONNECT;
 							HostP->Topology[OldLink].Link = NO_LINK;
 						} else {
+#ifdef CONFIG_DEBUG_PRINTK
 							rio_dprintk(RIO_DEBUG_ROUTE, "HOST(%c) WAS NOT CONNECTED TO %s (%c)!\n", OldLink + 'A', HostP->Mapping[ThisUnit - 1].Name, ThisLink + 'A');
+#else
+							rio_d;
+#endif
 						}
 					} else if (OldUnit <= MAX_RUP) {
 						if (HostP->Mapping[OldUnit - 1].Topology[OldLink].Unit == ThisUnit && HostP->Mapping[OldUnit - 1].Topology[OldLink].Link == ThisLink) {
+#ifdef CONFIG_DEBUG_PRINTK
 							rio_dprintk(RIO_DEBUG_ROUTE, "SETTING RTA %s (%c) TO DISCONNECTED!\n", HostP->Mapping[OldUnit - 1].Name, OldLink + 'A');
+#else
+							rio_d;
+#endif
 							HostP->Mapping[OldUnit - 1].Topology[OldLink].Unit = ROUTE_DISCONNECT;
 							HostP->Mapping[OldUnit - 1].Topology[OldLink].Link = NO_LINK;
 						} else {
+#ifdef CONFIG_DEBUG_PRINTK
 							rio_dprintk(RIO_DEBUG_ROUTE, "RTA %s (%c) WAS NOT CONNECTED TO %s (%c)\n", HostP->Mapping[OldUnit - 1].Name, OldLink + 'A', HostP->Mapping[ThisUnit - 1].Name, ThisLink + 'A');
+#else
+							rio_d;
+#endif
 						}
 					}
 					if (NewUnit == HOST_ID) {
+#ifdef CONFIG_DEBUG_PRINTK
 						rio_dprintk(RIO_DEBUG_ROUTE, "MARKING HOST (%c) CONNECTED TO %s (%c)\n", NewLink + 'A', MyName, ThisLink + 'A');
+#else
+						rio_d;
+#endif
 						HostP->Topology[NewLink].Unit = ThisUnit;
 						HostP->Topology[NewLink].Link = ThisLink;
 					} else if (NewUnit <= MAX_RUP) {
+#ifdef CONFIG_DEBUG_PRINTK
 						rio_dprintk(RIO_DEBUG_ROUTE, "MARKING RTA %s (%c) CONNECTED TO %s (%c)\n", HostP->Mapping[NewUnit - 1].Name, NewLink + 'A', MyName, ThisLink + 'A');
+#else
+						rio_d;
+#endif
 						HostP->Mapping[NewUnit - 1].Topology[NewLink].Unit = ThisUnit;
 						HostP->Mapping[NewUnit - 1].Topology[NewLink].Link = ThisLink;
 					}
@@ -253,7 +297,11 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 	 ** The only other command we recognise is a route_request command
 	 */
 	if (readb(&PktCmdP->Command) != ROUTE_REQUEST) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Unknown command %d received on rup %d host %p ROUTE_RUP\n", readb(&PktCmdP->Command), Rup, HostP);
+#else
+		rio_d;
+#endif
 		return 1;
 	}
 
@@ -264,7 +312,11 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 	 */
 	RtaType = GetUnitType(RtaUniq);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_ROUTE, "Received a request for an ID for serial number %x\n", RtaUniq);
+#else
+	rio_d;
+#endif
 
 	Mod = readb(&PktCmdP->ModuleTypes);
 	Mod1 = LONYBLE(Mod);
@@ -274,17 +326,29 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 		 ** with 8 port, set 2nd ident in Mod2 to the same as Mod1.
 		 */
 		Mod2 = Mod1;
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Backplane type is %s (all ports)\n", p->RIOModuleTypes[Mod1].Name);
+#else
+		rio_d;
+#endif
 	} else {
 		Mod2 = HINYBLE(Mod);
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Module types are %s (ports 0-3) and %s (ports 4-7)\n", p->RIOModuleTypes[Mod1].Name, p->RIOModuleTypes[Mod2].Name);
+#else
+		rio_d;
+#endif
 	}
 
 	/*
 	 ** try to unhook a command block from the command free list.
 	 */
 	if (!(CmdBlkP = RIOGetCmdBlk())) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "No command blocks to route RTA! come back later.\n");
+#else
+		rio_d;
+#endif
 		return 0;
 	}
 
@@ -300,7 +364,11 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 	PktReplyP = (struct PktCmd_M *) CmdBlkP->Packet.data;
 
 	if (!RIOBootOk(p, HostP, RtaUniq)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "RTA %x tried to get an ID, but does not belong - FOAD it!\n", RtaUniq);
+#else
+		rio_d;
+#endif
 		PktReplyP->Command = ROUTE_FOAD;
 		memcpy(PktReplyP->CommandText, "RT_FOAD", 7);
 		RIOQueueCmdBlk(HostP, Rup, CmdBlkP);
@@ -311,8 +379,12 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 	 ** Check to see if the RTA is configured for this host
 	 */
 	for (ThisUnit = 0; ThisUnit < MAX_RUP; ThisUnit++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Entry %d Flags=%s %s UniqueNum=0x%x\n",
 			    ThisUnit, HostP->Mapping[ThisUnit].Flags & SLOT_IN_USE ? "Slot-In-Use" : "Not In Use", HostP->Mapping[ThisUnit].Flags & SLOT_TENTATIVE ? "Slot-Tentative" : "Not Tentative", HostP->Mapping[ThisUnit].RtaUniqueNum);
+#else
+		rio_d;
+#endif
 
 		/*
 		 ** We have an entry for it.
@@ -320,9 +392,17 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 		if ((HostP->Mapping[ThisUnit].Flags & (SLOT_IN_USE | SLOT_TENTATIVE)) && (HostP->Mapping[ThisUnit].RtaUniqueNum == RtaUniq)) {
 			if (RtaType == TYPE_RTA16) {
 				ThisUnit2 = HostP->Mapping[ThisUnit].ID2 - 1;
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "Found unit 0x%x at slots %d+%d\n", RtaUniq, ThisUnit, ThisUnit2);
+#else
+				rio_d;
+#endif
 			} else
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "Found unit 0x%x at slot %d\n", RtaUniq, ThisUnit);
+#else
+				rio_d;
+#endif
 			/*
 			 ** If we have no knowledge of booting it, then the host has
 			 ** been re-booted, and so we must kill the RTA, so that it
@@ -332,7 +412,11 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 			if ((HostP->Mapping[ThisUnit].Flags & SLOT_IN_USE) && !(HostP->Mapping[ThisUnit].Flags & RTA_BOOTED)) {
 				if (!(HostP->Mapping[ThisUnit].Flags & MSG_DONE)) {
 					if (!p->RIONoMessage)
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_DEBUG "rio: RTA '%s' is being updated.\n", HostP->Mapping[ThisUnit].Name);
+#else
+						;
+#endif
 					HostP->Mapping[ThisUnit].Flags |= MSG_DONE;
 				}
 				PktReplyP->Command = ROUTE_FOAD;
@@ -357,10 +441,18 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 					 */
 					RIOFixPhbs(p, HostP, ThisUnit2);
 				PktReplyP->IDNum2 = ThisUnit2 + 1;
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "RTA '%s' has been allocated IDs %d+%d\n", HostP->Mapping[ThisUnit].Name, PktReplyP->IDNum, PktReplyP->IDNum2);
+#else
+				rio_d;
+#endif
 			} else {
 				PktReplyP->IDNum2 = ROUTE_NO_ID;
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "RTA '%s' has been allocated ID %d\n", HostP->Mapping[ThisUnit].Name, PktReplyP->IDNum);
+#else
+				rio_d;
+#endif
 			}
 			memcpy(PktReplyP->CommandText, "RT_ALLOCAT", 10);
 
@@ -380,7 +472,11 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 				for (port = 0; port < PORTS_PER_RTA; port++) {
 					PortP = p->RIOPortp[port + HostP->Mapping[ThisUnit].SysPort];
 					if (PortP->State & (RIO_MOPEN | RIO_LOPEN)) {
+#ifdef CONFIG_DEBUG_PRINTK
 						rio_dprintk(RIO_DEBUG_ROUTE, "Re-opened this port\n");
+#else
+						rio_d;
+#endif
 						rio_spin_lock_irqsave(&PortP->portSem, flags);
 						PortP->MagicFlags |= MAGIC_REBOOT;
 						rio_spin_unlock_irqrestore(&PortP->portSem, flags);
@@ -390,7 +486,11 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 					for (port = 0; port < PORTS_PER_RTA; port++) {
 						PortP = p->RIOPortp[port + HostP->Mapping[ThisUnit2].SysPort];
 						if (PortP->State & (RIO_MOPEN | RIO_LOPEN)) {
+#ifdef CONFIG_DEBUG_PRINTK
 							rio_dprintk(RIO_DEBUG_ROUTE, "Re-opened this port\n");
+#else
+							rio_d;
+#endif
 							rio_spin_lock_irqsave(&PortP->portSem, flags);
 							PortP->MagicFlags |= MAGIC_REBOOT;
 							rio_spin_unlock_irqrestore(&PortP->portSem, flags);
@@ -459,7 +559,11 @@ int RIORouteRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct
 
 		if (!UnknownMesgDone) {
 			if (!p->RIONoMessage)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "rio: One or more unknown RTAs are being updated.\n");
+#else
+				;
+#endif
 			UnknownMesgDone = 1;
 		}
 
@@ -498,7 +602,11 @@ void RIOFixPhbs(struct rio_info *p, struct Host *HostP, unsigned int unit)
 	unsigned long flags;
 	int PortN = HostP->Mapping[unit].SysPort;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_ROUTE, "RIOFixPhbs unit %d sysport %d\n", unit, PortN);
+#else
+	rio_d;
+#endif
 
 	if (PortN != -1) {
 		unsigned short dest_unit = HostP->Mapping[unit].ID2;
@@ -523,7 +631,11 @@ void RIOFixPhbs(struct rio_info *p, struct Host *HostP, unsigned int unit)
 			 ** unset, so go no further.
 			 */
 			if (!PortP->TxStart) {
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "Tx pkts not set up yet\n");
+#else
+				rio_d;
+#endif
 				rio_spin_unlock_irqrestore(&PortP->portSem, flags);
 				break;
 			}
@@ -559,7 +671,11 @@ void RIOFixPhbs(struct rio_info *p, struct Host *HostP, unsigned int unit)
 				writeb(dest_unit, &Pkt->dest_unit);
 				writeb(dest_port, &Pkt->dest_port);
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_ROUTE, "phb dest: Old %x:%x New %x:%x\n", readw(&PortP->PhbP->destination) & 0xff, (readw(&PortP->PhbP->destination) >> 8) & 0xff, dest_unit, dest_port);
+#else
+			rio_d;
+#endif
 			writew(dest_unit + (dest_port << 8), &PortP->PhbP->destination);
 			writew(link, &PortP->PhbP->link);
 
@@ -572,7 +688,11 @@ void RIOFixPhbs(struct rio_info *p, struct Host *HostP, unsigned int unit)
 		if (link > 3)
 			return;
 		if (((unit * 8) + 7) > readw(&HostP->LinkStrP[link].last_port)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_ROUTE, "last port on host link %d: %d\n", link, (unit * 8) + 7);
+#else
+			rio_d;
+#endif
 			writew((unit * 8) + 7, &HostP->LinkStrP[link].last_port);
 		}
 	}
@@ -590,7 +710,11 @@ static int RIOCheckIsolated(struct rio_info *p, struct Host *HostP, unsigned int
 	rio_spin_lock_irqsave(&HostP->HostLock, flags);
 
 	if (RIOCheck(HostP, UnitId)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Unit %d is NOT isolated\n", UnitId);
+#else
+		rio_d;
+#endif
 		rio_spin_unlock_irqrestore(&HostP->HostLock, flags);
 		return (0);
 	}
@@ -621,7 +745,11 @@ static int RIOIsolate(struct rio_info *p, struct Host *HostP, unsigned int UnitI
 	HostP->Mapping[UnitId].Flags |= BEEN_HERE;
 
 	if (p->RIOPrintDisabled == DO_PRINT)
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "RIOMesgIsolated %s", HostP->Mapping[UnitId].Name);
+#else
+		rio_d;
+#endif
 
 	for (link = 0; link < LINKS_PER_UNIT; link++) {
 		unit = HostP->Mapping[UnitId].Topology[link].Unit;
@@ -638,7 +766,11 @@ static int RIOCheck(struct Host *HostP, unsigned int UnitId)
 	unsigned char link;
 
 /* 	rio_dprint(RIO_DEBUG_ROUTE, ("Check to see if unit %d has a route to the host\n",UnitId)); */
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_ROUTE, "RIOCheck : UnitID = %d\n", UnitId);
+#else
+	rio_d;
+#endif
 
 	if (UnitId == HOST_ID) {
 		/* rio_dprint(RIO_DEBUG_ROUTE, ("Unit %d is NOT isolated - it IS the host!\n", UnitId)); */
@@ -694,16 +826,32 @@ unsigned int GetUnitType(unsigned int Uniq)
 	case RIO_MCA:
 	case RIO_EISA:
 	case RIO_PCI:
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Unit type: Host\n");
+#else
+		rio_d;
+#endif
 		return (TYPE_HOST);
 	case RIO_RTA_16:
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Unit type: 16 port RTA\n");
+#else
+		rio_d;
+#endif
 		return (TYPE_RTA16);
 	case RIO_RTA:
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Unit type: 8 port RTA\n");
+#else
+		rio_d;
+#endif
 		return (TYPE_RTA8);
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Unit type: Unrecognised\n");
+#else
+		rio_d;
+#endif
 		return (99);
 	}
 }
@@ -714,7 +862,11 @@ int RIOSetChange(struct rio_info *p)
 		return (0);
 	p->RIOQuickCheck = CHANGED;
 	if (p->RIOSignalProcess) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Send SIG-HUP");
+#else
+		rio_d;
+#endif
 		/*
 		   psignal( RIOSignalProcess, SIGHUP );
 		 */
@@ -787,8 +939,16 @@ static void RIOConCon(struct rio_info *p,
 	ToName = ToId ? HostP->Mapping[ToId - 1].Name : HostP->Name;
 	ToType = ToId ? "RTA" : "HOST";
 
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_ROUTE, "Link between %s '%s' (%c) and %s '%s' (%c) %s.\n", FromType, FromName, 'A' + FromLink, ToType, ToName, 'A' + ToLink, (Change == CONNECT) ? "established" : "disconnected");
+#else
+	rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "rio: Link between %s '%s' (%c) and %s '%s' (%c) %s.\n", FromType, FromName, 'A' + FromLink, ToType, ToName, 'A' + ToLink, (Change == CONNECT) ? "established" : "disconnected");
+#else
+	;
+#endif
 }
 
 /*
@@ -826,7 +986,11 @@ static int RIOFreeDisconnected(struct rio_info *p, struct Host *HostP, int unit)
 	int link;
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_ROUTE, "RIOFreeDisconnect unit %d\n", unit);
+#else
+	rio_d;
+#endif
 	/*
 	 ** If the slot is tentative and does not belong to the
 	 ** second half of a 16 port RTA then scan to see if
@@ -848,14 +1012,30 @@ static int RIOFreeDisconnected(struct rio_info *p, struct Host *HostP, int unit)
 	 ** made this slot tentative and not yet received a topology update.
 	 ** Lets check how long ago we made it tentative.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_ROUTE, "Just about to check LBOLT on entry %d\n", unit);
+#else
+	rio_d;
+#endif
 	if (drv_getparm(LBOLT, (ulong_t *) & current_time))
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "drv_getparm(LBOLT,....) Failed.\n");
+#else
+		rio_d;
+#endif
 
 	elapse_time = current_time - TentTime[unit];
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_ROUTE, "elapse %d = current %d - tent %d (%d usec)\n", elapse_time, current_time, TentTime[unit], drv_hztousec(elapse_time));
+#else
+	rio_d;
+#endif
 	if (drv_hztousec(elapse_time) < WAIT_TO_FINISH) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Skipping slot %d, not timed out yet %d\n", unit, drv_hztousec(elapse_time));
+#else
+		rio_d;
+#endif
 		return 1;
 	}
 #endif
@@ -867,7 +1047,11 @@ static int RIOFreeDisconnected(struct rio_info *p, struct Host *HostP, int unit)
 	if (HostP->Mapping[unit].ID2 != 0) {
 		int nOther = (HostP->Mapping[unit].ID2) - 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "RioFreedis second slot %d.\n", nOther);
+#else
+		rio_d;
+#endif
 		memset(&HostP->Mapping[nOther], 0, sizeof(struct Map));
 	}
 	RIORemoveFromSavedTable(p, &HostP->Mapping[unit]);
@@ -902,17 +1086,29 @@ int RIOFindFreeID(struct rio_info *p, struct Host *HostP, unsigned int * pID1, u
 	 ** we start all over again looking for tentative slots we can re-use.
 	 */
 	for (unit = 0; unit < MAX_RUP; unit++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_ROUTE, "Scanning unit %d\n", unit);
+#else
+		rio_d;
+#endif
 		/*
 		 ** If the flags are zero then the slot is empty.
 		 */
 		if (HostP->Mapping[unit].Flags == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_ROUTE, "      This slot is empty.\n");
+#else
+			rio_d;
+#endif
 			/*
 			 ** If we haven't allocated the first ID then do it now.
 			 */
 			if (*pID1 == MAX_RUP) {
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "Make tentative entry for first unit %d\n", unit);
+#else
+				rio_d;
+#endif
 				*pID1 = unit;
 
 				/*
@@ -925,7 +1121,11 @@ int RIOFindFreeID(struct rio_info *p, struct Host *HostP, unsigned int * pID1, u
 				/*
 				 ** Allocate the second slot and return.
 				 */
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "Make tentative entry for second unit %d\n", unit);
+#else
+				rio_d;
+#endif
 				*pID2 = unit;
 				return 0;
 			}
@@ -937,13 +1137,25 @@ int RIOFindFreeID(struct rio_info *p, struct Host *HostP, unsigned int * pID1, u
 	 ** need to start all over again looking for tentative slots
 	 ** that we can re-use.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_ROUTE, "Starting to scan for tentative slots\n");
+#else
+	rio_d;
+#endif
 	for (unit = 0; unit < MAX_RUP; unit++) {
 		if (((HostP->Mapping[unit].Flags & SLOT_TENTATIVE) || (HostP->Mapping[unit].Flags == 0)) && !(HostP->Mapping[unit].Flags & RTA16_SECOND_SLOT)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_ROUTE, "    Slot %d looks promising.\n", unit);
+#else
+			rio_d;
+#endif
 
 			if (unit == *pID1) {
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "    No it isn't, its the 1st half\n");
+#else
+				rio_d;
+#endif
 				continue;
 			}
 
@@ -962,7 +1174,11 @@ int RIOFindFreeID(struct rio_info *p, struct Host *HostP, unsigned int * pID1, u
 			 ** If we haven't allocated the first ID then do it now.
 			 */
 			if (*pID1 == MAX_RUP) {
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "Grab tentative entry for first unit %d\n", unit);
+#else
+				rio_d;
+#endif
 				*pID1 = unit;
 
 				/*
@@ -980,7 +1196,11 @@ int RIOFindFreeID(struct rio_info *p, struct Host *HostP, unsigned int * pID1, u
 				/*
 				 ** Allocate the second slot and return.
 				 */
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_ROUTE, "Grab tentative/empty  entry for second unit %d\n", unit);
+#else
+				rio_d;
+#endif
 				*pID2 = unit;
 
 				/*
@@ -996,7 +1216,11 @@ int RIOFindFreeID(struct rio_info *p, struct Host *HostP, unsigned int * pID1, u
 				 */
 
 				if (*pID1 > *pID2) {
+#ifdef CONFIG_DEBUG_PRINTK
 					rio_dprintk(RIO_DEBUG_ROUTE, "Swapping IDS %d %d\n", *pID1, *pID2);
+#else
+					rio_d;
+#endif
 					tempID = *pID1;
 					*pID1 = *pID2;
 					*pID2 = tempID;

@@ -761,7 +761,11 @@ static int __devinit modemctl_probe(struct platform_device *pdev)
 	int r = 0;
 	int irq_phone_active, irq_sim_ndetect;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s]\n",__func__);
+#else
+	;
+#endif
 
 	pdata = pdev->dev.platform_data;
 	if(!pdata || !pdata->cfg_gpio) {
@@ -914,7 +918,11 @@ static struct platform_driver modemctl_driver = {
 
 static int __init modemctl_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s]\n",__func__);
+#else
+	;
+#endif
 	return platform_driver_register(&modemctl_driver);
 }
 

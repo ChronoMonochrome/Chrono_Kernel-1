@@ -170,22 +170,42 @@ static int __devinit esb2rom_init_one(struct pci_dev *pdev,
 
 /*
 	pci_read_config_word(pdev, FWH_DEC_EN1, &word);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Original FWH_DEC_EN1 : %x\n", word);
+#else
+	;
+#endif
 	pci_write_config_byte(pdev, FWH_DEC_EN1, 0xff);
 	pci_read_config_byte(pdev, FWH_DEC_EN1, &byte);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "New FWH_DEC_EN1 : %x\n", byte);
+#else
+	;
+#endif
 
 	pci_read_config_byte(pdev, FWH_DEC_EN2, &byte);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Original FWH_DEC_EN2 : %x\n", byte);
+#else
+	;
+#endif
 	pci_write_config_byte(pdev, FWH_DEC_EN2, 0x0f);
 	pci_read_config_byte(pdev, FWH_DEC_EN2, &byte);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "New FWH_DEC_EN2 : %x\n", byte);
+#else
+	;
+#endif
 */
 
 	/* Find a region continuous to the end of the ROM window  */
 	window->phys = 0;
 	pci_read_config_word(pdev, FWH_DEC_EN1, &word);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pci_read_config_word : %x\n", word);
+#else
+	;
+#endif
 
 	if ((word & FWH_8MiB) == FWH_8MiB)
 		window->phys = 0xff400000;
@@ -242,9 +262,13 @@ static int __devinit esb2rom_init_one(struct pci_dev *pdev,
 	window->rsrc.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
 	if (request_resource(&iomem_resource, &window->rsrc)) {
 		window->rsrc.parent = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG MOD_NAME ": "
 		       "%s(): Unable to register resource %pR - kernel bug?\n",
 			__func__, &window->rsrc);
+#else
+		;
+#endif
 	}
 
 	/* Map the firmware hub into my address space. */
@@ -321,9 +345,13 @@ static int __devinit esb2rom_init_one(struct pci_dev *pdev,
 	found:
 		/* Trim the size if we are larger than the map */
 		if (map->mtd->size > map->map.size) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING MOD_NAME
 				" rom(%llu) larger than window(%lu). fixing...\n",
 				(unsigned long long)map->mtd->size, map->map.size);
+#else
+			;
+#endif
 			map->mtd->size = map->map.size;
 		}
 		if (window->rsrc.parent) {
@@ -419,18 +447,34 @@ static int __init init_esb2rom(void)
 
 	pdev = NULL;
 	for (id = esb2rom_pci_tbl; id->vendor; id++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "device id = %x\n", id->device);
+#else
+		;
+#endif
 		pdev = pci_get_device(id->vendor, id->device, NULL);
 		if (pdev) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "matched device = %x\n", id->device);
+#else
+			;
+#endif
 			break;
 		}
 	}
 	if (pdev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "matched device id %x\n", id->device);
+#else
+		;
+#endif
 		retVal = esb2rom_init_one(pdev, &esb2rom_pci_tbl[0]);
 		pci_dev_put(pdev);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "retVal = %d\n", retVal);
+#else
+		;
+#endif
 		return retVal;
 	}
 	return -ENXIO;

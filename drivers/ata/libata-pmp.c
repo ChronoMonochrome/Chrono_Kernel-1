@@ -147,8 +147,12 @@ int sata_pmp_scr_read(struct ata_link *link, int reg, u32 *r_val)
 
 	err_mask = sata_pmp_read(link, reg, r_val);
 	if (err_mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_WARNING, "failed to read SCR %d "
 				"(Emask=0x%x)\n", reg, err_mask);
+#else
+		ata_link_;
+#endif
 		return -EIO;
 	}
 	return 0;
@@ -178,8 +182,12 @@ int sata_pmp_scr_write(struct ata_link *link, int reg, u32 val)
 
 	err_mask = sata_pmp_write(link, reg, val);
 	if (err_mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_WARNING, "failed to write SCR %d "
 				"(Emask=0x%x)\n", reg, err_mask);
+#else
+		ata_link_;
+#endif
 		return -EIO;
 	}
 	return 0;
@@ -311,18 +319,26 @@ static int sata_pmp_configure(struct ata_device *dev, int print_info)
 	}
 
 	if (print_info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "Port Multiplier %s, "
 			       "0x%04x:0x%04x r%d, %d ports, feat 0x%x/0x%x\n",
 			       sata_pmp_spec_rev_str(gscr), vendor, devid,
 			       sata_pmp_gscr_rev(gscr),
 			       nr_ports, gscr[SATA_PMP_GSCR_FEAT_EN],
 			       gscr[SATA_PMP_GSCR_FEAT]);
+#else
+		ata_dev_;
+#endif
 
 		if (!(dev->flags & ATA_DFLAG_AN))
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_INFO,
 				"Asynchronous notification not supported, "
 				"hotplug won't\n         work on fan-out "
 				"ports. Use warm-plug instead.\n");
+#else
+			ata_dev_;
+#endif
 	}
 
 	return 0;
@@ -517,8 +533,12 @@ int sata_pmp_attach(struct ata_device *dev)
 
 	rc = sata_pmp_init_links(ap, sata_pmp_gscr_ports(dev->gscr));
 	if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO,
 			       "failed to initialize PMP links\n");
+#else
+		ata_dev_;
+#endif
 		goto fail;
 	}
 
@@ -562,7 +582,11 @@ static void sata_pmp_detach(struct ata_device *dev)
 	struct ata_link *tlink;
 	unsigned long flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_dev_printk(dev, KERN_INFO, "Port Multiplier detaching\n");
+#else
+	ata_dev_;
+#endif
 
 	WARN_ON(!ata_is_host_link(link) || dev->devno ||
 		link->pmp != SATA_PMP_CTRL_PORT);
@@ -609,23 +633,35 @@ static int sata_pmp_same_pmp(struct ata_device *dev, const u32 *new_gscr)
 	new_nr_ports = sata_pmp_gscr_ports(new_gscr);
 
 	if (old_vendor != new_vendor) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "Port Multiplier "
 			       "vendor mismatch '0x%x' != '0x%x'\n",
 			       old_vendor, new_vendor);
+#else
+		ata_dev_;
+#endif
 		return 0;
 	}
 
 	if (old_devid != new_devid) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "Port Multiplier "
 			       "device ID mismatch '0x%x' != '0x%x'\n",
 			       old_devid, new_devid);
+#else
+		ata_dev_;
+#endif
 		return 0;
 	}
 
 	if (old_nr_ports != new_nr_ports) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "Port Multiplier "
 			       "nr_ports mismatch '0x%x' != '0x%x'\n",
 			       old_nr_ports, new_nr_ports);
+#else
+		ata_dev_;
+#endif
 		return 0;
 	}
 
@@ -890,9 +926,13 @@ static int sata_pmp_handle_link_fail(struct ata_link *link, int *link_tries)
 
 	/* disable this link */
 	if (!(link->flags & ATA_LFLAG_DISABLED)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_WARNING,
 			"failed to recover link after %d tries, disabling\n",
 			ATA_EH_PMP_LINK_TRIES);
+#else
+		ata_link_;
+#endif
 
 		spin_lock_irqsave(ap->lock, flags);
 		link->flags |= ATA_LFLAG_DISABLED;
@@ -974,9 +1014,13 @@ static int sata_pmp_eh_recover(struct ata_port *ap)
 		err_mask = sata_pmp_write(pmp_link, SATA_PMP_GSCR_FEAT_EN,
 					  gscr[SATA_PMP_GSCR_FEAT_EN]);
 		if (err_mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(pmp_link, KERN_WARNING,
 				"failed to disable NOTIFY (err_mask=0x%x)\n",
 				err_mask);
+#else
+			ata_link_;
+#endif
 			goto pmp_fail;
 		}
 	}
@@ -1043,17 +1087,29 @@ static int sata_pmp_eh_recover(struct ata_port *ap)
 			ata_ehi_hotplugged(&link->eh_context.i);
 			cnt++;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_WARNING,
 				"PHY status changed but maxed out on retries, "
 				"giving up\n");
+#else
+			ata_link_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_WARNING,
 				"Manully issue scan to resume this link\n");
+#else
+			ata_link_;
+#endif
 		}
 	}
 
 	if (cnt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_INFO, "PMP SError.N set for some "
 				"ports, repeating recovery\n");
+#else
+		ata_port_;
+#endif
 		goto retry;
 	}
 

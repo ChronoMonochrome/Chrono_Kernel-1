@@ -390,12 +390,20 @@ static bool disk_unlock_native_capacity(struct gendisk *disk)
 
 	if (bdops->unlock_native_capacity &&
 	    !(disk->flags & GENHD_FL_NATIVE_CAPACITY)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "enabling native capacity\n");
+#else
+		;
+#endif
 		bdops->unlock_native_capacity(disk);
 		disk->flags |= GENHD_FL_NATIVE_CAPACITY;
 		return true;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "truncated\n");
+#else
+		;
+#endif
 		return false;
 	}
 }
@@ -448,8 +456,12 @@ rescan:
 		 * after unlocking native capacity.
 		 */
 		if (PTR_ERR(state) == -ENOSPC) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: partition table beyond EOD, ",
 			       disk->disk_name);
+#else
+			;
+#endif
 			if (disk_unlock_native_capacity(disk))
 				goto rescan;
 		}
@@ -461,9 +473,13 @@ rescan:
 	 * successfully read as we could be missing some partitions.
 	 */
 	if (state->access_beyond_eod) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: partition table partially beyond EOD, ",
 		       disk->disk_name);
+#else
+		;
+#endif
 		if (disk_unlock_native_capacity(disk))
 			goto rescan;
 	}
@@ -492,18 +508,26 @@ rescan:
 
 		from = state->parts[p].from;
 		if (from >= get_capacity(disk)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: p%d start %llu is beyond EOD, ",
 			       disk->disk_name, p, (unsigned long long) from);
+#else
+			;
+#endif
 			if (disk_unlock_native_capacity(disk))
 				goto rescan;
 			continue;
 		}
 
 		if (from + size > get_capacity(disk)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: p%d size %llu extends beyond EOD, ",
 			       disk->disk_name, p, (unsigned long long) size);
+#else
+			;
+#endif
 
 			if (disk_unlock_native_capacity(disk)) {
 				/* free state and restart */

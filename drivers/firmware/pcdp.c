@@ -76,7 +76,11 @@ setup_vga_console(struct pcdp_device *dev)
 	}
 
 	conswitchp = &vga_con;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PCDP: VGA console\n");
+#else
+	;
+#endif
 	return 0;
 #else
 	return -ENODEV;
@@ -96,13 +100,21 @@ efi_setup_pcdp_console(char *cmdline)
 		return -ENODEV;
 
 	pcdp = early_ioremap(efi.hcdp, 4096);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PCDP: v%d at 0x%lx\n", pcdp->rev, efi.hcdp);
+#else
+	;
+#endif
 
 	if (strstr(cmdline, "console=hcdp")) {
 		if (pcdp->rev < 3)
 			serial = 1;
 	} else if (strstr(cmdline, "console=")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Explicit \"console=\"; ignoring PCDP\n");
+#else
+		;
+#endif
 		goto out;
 	}
 

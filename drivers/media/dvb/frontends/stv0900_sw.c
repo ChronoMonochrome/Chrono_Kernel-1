@@ -315,11 +315,15 @@ static u32 stv0900_get_symbol_rate(struct stv0900_internal *intp,
 		(stv0900_get_bits(intp, SYMB_FREQ2) << 16) +
 		(stv0900_get_bits(intp, SYMB_FREQ1) << 8) +
 		(stv0900_get_bits(intp, SYMB_FREQ0));
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("lock: srate=%d r0=0x%x r1=0x%x r2=0x%x r3=0x%x \n",
 		srate, stv0900_get_bits(intp, SYMB_FREQ0),
 		stv0900_get_bits(intp, SYMB_FREQ1),
 		stv0900_get_bits(intp, SYMB_FREQ2),
 		stv0900_get_bits(intp, SYMB_FREQ3));
+#else
+	d;
+#endif
 
 	intval1 = (mclk) >> 16;
 	intval2 = (srate) >> 16;
@@ -339,8 +343,12 @@ static void stv0900_set_symbol_rate(struct stv0900_internal *intp,
 {
 	u32 symb;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: Mclk %d, SR %d, Dmd %d\n", __func__, mclk,
 							srate, demod);
+#else
+	d;
+#endif
 
 	if (srate > 60000000) {
 		symb = srate << 4;
@@ -689,7 +697,11 @@ static void stv0900_set_viterbi_tracq(struct stv0900_internal *intp,
 
 	s32 vth_reg = VTH12;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	stv0900_write_reg(intp, vth_reg++, 0xd0);
 	stv0900_write_reg(intp, vth_reg++, 0x7d);
@@ -704,16 +716,28 @@ static void stv0900_set_viterbi_standard(struct stv0900_internal *intp,
 				   enum fe_stv0900_fec fec,
 				   enum fe_stv0900_demod_num demod)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ViterbiStandard = ", __func__);
+#else
+	d;
+#endif
 
 	switch (standard) {
 	case STV0900_AUTO_SEARCH:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Auto\n");
+#else
+		d;
+#endif
 		stv0900_write_reg(intp, FECM, 0x10);
 		stv0900_write_reg(intp, PRVIT, 0x3f);
 		break;
 	case STV0900_SEARCH_DVBS1:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("DVBS1\n");
+#else
+		d;
+#endif
 		stv0900_write_reg(intp, FECM, 0x00);
 		switch (fec) {
 		case STV0900_FEC_UNKNOWN:
@@ -739,7 +763,11 @@ static void stv0900_set_viterbi_standard(struct stv0900_internal *intp,
 
 		break;
 	case STV0900_SEARCH_DSS:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("DSS\n");
+#else
+		d;
+#endif
 		stv0900_write_reg(intp, FECM, 0x80);
 		switch (fec) {
 		case STV0900_FEC_UNKNOWN:
@@ -838,7 +866,11 @@ static void stv0900_track_optimization(struct dvb_frontend *fe)
 	enum fe_stv0900_rolloff rolloff;
 	enum fe_stv0900_modcode foundModcod;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	srate = stv0900_get_symbol_rate(intp, intp->mclk, demod);
 	srate += stv0900_get_timing_offst(intp, srate, demod);
@@ -846,7 +878,11 @@ static void stv0900_track_optimization(struct dvb_frontend *fe)
 	switch (intp->result[demod].standard) {
 	case STV0900_DVBS1_STANDARD:
 	case STV0900_DSS_STANDARD:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: found DVB-S or DSS\n", __func__);
+#else
+		d;
+#endif
 		if (intp->srch_standard[demod] == STV0900_AUTO_SEARCH) {
 			stv0900_write_bits(intp, DVBS1_ENABLE, 1);
 			stv0900_write_bits(intp, DVBS2_ENABLE, 0);
@@ -871,7 +907,11 @@ static void stv0900_track_optimization(struct dvb_frontend *fe)
 		stv0900_write_reg(intp, ERRCTRL1, 0x75);
 		break;
 	case STV0900_DVBS2_STANDARD:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: found DVB-S2\n", __func__);
+#else
+		d;
+#endif
 		stv0900_write_bits(intp, DVBS1_ENABLE, 0);
 		stv0900_write_bits(intp, DVBS2_ENABLE, 1);
 		stv0900_write_reg(intp, ACLC, 0);
@@ -932,7 +972,11 @@ static void stv0900_track_optimization(struct dvb_frontend *fe)
 		break;
 	case STV0900_UNKNOWN_STANDARD:
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: found unknown standard\n", __func__);
+#else
+		d;
+#endif
 		stv0900_write_bits(intp, DVBS1_ENABLE, 1);
 		stv0900_write_bits(intp, DVBS2_ENABLE, 1);
 		break;
@@ -1038,7 +1082,11 @@ static int stv0900_get_fec_lock(struct stv0900_internal *intp,
 
 	enum fe_stv0900_search_state dmd_state;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	dmd_state = stv0900_get_bits(intp, HEADER_MODE);
 
@@ -1064,9 +1112,17 @@ static int stv0900_get_fec_lock(struct stv0900_internal *intp,
 	}
 
 	if (lock)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: DEMOD FEC LOCK OK\n", __func__);
+#else
+		d;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: DEMOD FEC LOCK FAIL\n", __func__);
+#else
+		d;
+#endif
 
 	return lock;
 }
@@ -1078,7 +1134,11 @@ static int stv0900_wait_for_lock(struct stv0900_internal *intp,
 
 	s32 timer = 0, lock = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	lock = stv0900_get_demod_lock(intp, demod, dmd_timeout);
 
@@ -1088,8 +1148,12 @@ static int stv0900_wait_for_lock(struct stv0900_internal *intp,
 	if (lock) {
 		lock = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: Timer = %d, time_out = %d\n",
 				__func__, timer, fec_timeout);
+#else
+		d;
+#endif
 
 		while ((timer < fec_timeout) && (lock == 0)) {
 			lock = stv0900_get_bits(intp, TSFIFO_LINEOK);
@@ -1099,9 +1163,17 @@ static int stv0900_wait_for_lock(struct stv0900_internal *intp,
 	}
 
 	if (lock)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: DEMOD LOCK OK\n", __func__);
+#else
+		d;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: DEMOD LOCK FAIL\n", __func__);
+#else
+		d;
+#endif
 
 	if (lock)
 		return TRUE;
@@ -1133,7 +1205,11 @@ enum fe_stv0900_tracking_standard stv0900_get_standard(struct dvb_frontend *fe,
 		fnd_standard = STV0900_UNKNOWN_STANDARD;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: standard %d\n", __func__, fnd_standard);
+#else
+	d;
+#endif
 
 	return fnd_standard;
 }
@@ -1177,9 +1253,17 @@ static u32 stv0900_get_tuner_freq(struct dvb_frontend *fe)
 
 	if (tuner_ops->get_frequency) {
 		if ((tuner_ops->get_frequency(fe, &freq)) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: Invalid parameter\n", __func__);
+#else
+			d;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: Frequency=%d\n", __func__, freq);
+#else
+			d;
+#endif
 
 	}
 
@@ -1231,7 +1315,11 @@ fe_stv0900_signal_type stv0900_get_signal_params(struct dvb_frontend *fe)
 	result->frame_len = ((u32)stv0900_get_bits(intp, DEMOD_TYPE)) >> 1;
 	result->rolloff = stv0900_get_bits(intp, ROLLOFF_STATUS);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: modcode=0x%x \n", __func__, result->modcode);
+#else
+	d;
+#endif
 
 	switch (result->standard) {
 	case STV0900_DVBS2_STANDARD:
@@ -1274,7 +1362,11 @@ fe_stv0900_signal_type stv0900_get_signal_params(struct dvb_frontend *fe)
 	} else if (ABS(offsetFreq) <= ((intp->srch_range[d] / 2000) + 500))
 		range = STV0900_RANGEOK;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: range %d\n", __func__, range);
+#else
+	d;
+#endif
 
 	return range;
 }
@@ -1348,7 +1440,11 @@ static u16 stv0900_blind_check_agc2_min_level(struct stv0900_internal *intp,
 
 	s32 i, j, nb_steps, direction;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	stv0900_write_reg(intp, AGC2REF, 0x38);
 	stv0900_write_bits(intp, SCAN_ENABLE, 0);
@@ -1490,9 +1586,13 @@ static u32 stv0900_search_srate_coarse(struct dvb_frontend *fe)
 		current_step++;
 		direction *= -1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("lock: I2C_DEMOD_MODE_FIELD =0. Search started."
 			" tuner freq=%d agc2=0x%x srate_coarse=%d tmg_cpt=%d\n",
 			tuner_freq, agc2_integr, coarse_srate, timingcpt);
+#else
+		d;
+#endif
 
 		if ((timingcpt >= 5) &&
 				(agc2_integr < agc2_th) &&
@@ -1620,7 +1720,11 @@ static int stv0900_blind_search_algo(struct dvb_frontend *fe)
 	u16	agc2_int;
 	u8	dstatus2;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (intp->chip_id < 0x20) {
 		k_ref_tmg_max = 233;
@@ -1637,7 +1741,11 @@ static int stv0900_blind_search_algo(struct dvb_frontend *fe)
 
 	agc2_int = stv0900_blind_check_agc2_min_level(intp, demod);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s agc2_int=%d agc2_th=%d \n", __func__, agc2_int, agc2_th);
+#else
+	d;
+#endif
 	if (agc2_int > agc2_th)
 		return FALSE;
 
@@ -1716,7 +1824,11 @@ static void stv0900_set_viterbi_acq(struct stv0900_internal *intp,
 {
 	s32 vth_reg = VTH12;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	stv0900_write_reg(intp, vth_reg++, 0x96);
 	stv0900_write_reg(intp, vth_reg++, 0x64);
@@ -1730,20 +1842,40 @@ static void stv0900_set_search_standard(struct stv0900_internal *intp,
 					enum fe_stv0900_demod_num demod)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	switch (intp->srch_standard[demod]) {
 	case STV0900_SEARCH_DVBS1:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Search Standard = DVBS1\n");
+#else
+		d;
+#endif
 		break;
 	case STV0900_SEARCH_DSS:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Search Standard = DSS\n");
+#else
+		d;
+#endif
 	case STV0900_SEARCH_DVBS2:
 		break;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Search Standard = DVBS2\n");
+#else
+		d;
+#endif
 	case STV0900_AUTO_SEARCH:
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Search Standard = AUTO\n");
+#else
+		d;
+#endif
 		break;
 	}
 
@@ -1835,7 +1967,11 @@ enum fe_stv0900_signal_type stv0900_algo(struct dvb_frontend *fe)
 	enum fe_stv0900_search_algo algo;
 	int no_signal = FALSE;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	algo = intp->srch_algo[demod];
 	stv0900_write_bits(intp, RST_HWARE, 1);
@@ -1927,7 +2063,11 @@ enum fe_stv0900_signal_type stv0900_algo(struct dvb_frontend *fe)
 	if ((agc1_power == 0) && (aq_power < IQPOWER_THRESHOLD)) {
 		intp->result[demod].locked = FALSE;
 		signal_type = STV0900_NOAGC1;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: NO AGC1, POWERI, POWERQ\n", __func__);
+#else
+		d;
+#endif
 	} else {
 		stv0900_write_bits(intp, SPECINV_CONTROL,
 					intp->srch_iq_inv[demod]);

@@ -48,9 +48,13 @@ struct s5h1411_state {
 
 static int debug;
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(arg...) do {	\
 	if (debug)		\
 		printk(arg);	\
+#else
+#define d;
+#endif
 	} while (0)
 
 /* Register values to initialise the demod, defaults to VSB */
@@ -378,7 +382,11 @@ static int s5h1411_softreset(struct dvb_frontend *fe)
 {
 	struct s5h1411_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0xf7, 0);
 	s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0xf7, 1);
@@ -389,7 +397,11 @@ static int s5h1411_set_if_freq(struct dvb_frontend *fe, int KHz)
 {
 	struct s5h1411_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d KHz)\n", __func__, KHz);
+#else
+	d;
+#endif
 
 	switch (KHz) {
 	case 3250:
@@ -408,8 +420,12 @@ static int s5h1411_set_if_freq(struct dvb_frontend *fe, int KHz)
 		s5h1411_writereg(state, S5H1411_I2C_QAM_ADDR, 0x2c, 0x14bd);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s(%d KHz) Invalid, defaulting to 5380\n",
 			__func__, KHz);
+#else
+		d;
+#endif
 		/* no break, need to continue */
 	case 5380:
 	case 44000:
@@ -429,7 +445,11 @@ static int s5h1411_set_mpeg_timing(struct dvb_frontend *fe, int mode)
 	struct s5h1411_state *state = fe->demodulator_priv;
 	u16 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, mode);
+#else
+	d;
+#endif
 
 	val = s5h1411_readreg(state, S5H1411_I2C_TOP_ADDR, 0xbe) & 0xcfff;
 	switch (mode) {
@@ -437,7 +457,11 @@ static int s5h1411_set_mpeg_timing(struct dvb_frontend *fe, int mode)
 		val |= 0x0000;
 		break;
 	case S5H1411_MPEGTIMING_CONTINOUS_NONINVERTING_CLOCK:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s(%d) Mode1 or Defaulting\n", __func__, mode);
+#else
+		d;
+#endif
 		val |= 0x1000;
 		break;
 	case S5H1411_MPEGTIMING_NONCONTINOUS_INVERTING_CLOCK:
@@ -459,7 +483,11 @@ static int s5h1411_set_spectralinversion(struct dvb_frontend *fe, int inversion)
 	struct s5h1411_state *state = fe->demodulator_priv;
 	u16 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, inversion);
+#else
+	d;
+#endif
 	val = s5h1411_readreg(state, S5H1411_I2C_TOP_ADDR, 0x24) & ~0x1000;
 
 	if (inversion == 1)
@@ -474,7 +502,11 @@ static int s5h1411_set_serialmode(struct dvb_frontend *fe, int serial)
 	struct s5h1411_state *state = fe->demodulator_priv;
 	u16 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, serial);
+#else
+	d;
+#endif
 	val = s5h1411_readreg(state, S5H1411_I2C_TOP_ADDR, 0xbd) & ~0x100;
 
 	if (serial == 1)
@@ -488,17 +520,29 @@ static int s5h1411_enable_modulation(struct dvb_frontend *fe,
 {
 	struct s5h1411_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(0x%08x)\n", __func__, m);
+#else
+	d;
+#endif
 
 	if ((state->first_tune == 0) && (m == state->current_modulation)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() Already at desired modulation.  Skipping...\n",
 			__func__);
+#else
+		d;
+#endif
 		return 0;
 	}
 
 	switch (m) {
 	case VSB_8:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() VSB_8\n", __func__);
+#else
+		d;
+#endif
 		s5h1411_set_if_freq(fe, state->config->vsb_if);
 		s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0x00, 0x71);
 		s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0xf6, 0x00);
@@ -507,7 +551,11 @@ static int s5h1411_enable_modulation(struct dvb_frontend *fe,
 	case QAM_64:
 	case QAM_256:
 	case QAM_AUTO:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() QAM_AUTO (64/256)\n", __func__);
+#else
+		d;
+#endif
 		s5h1411_set_if_freq(fe, state->config->qam_if);
 		s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0x00, 0x0171);
 		s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0xf6, 0x0001);
@@ -515,7 +563,11 @@ static int s5h1411_enable_modulation(struct dvb_frontend *fe,
 		s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0xcd, 0x00f0);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() Invalid modulation\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -530,7 +582,11 @@ static int s5h1411_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
 {
 	struct s5h1411_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, enable);
+#else
+	d;
+#endif
 
 	if (enable)
 		return s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0xf5, 1);
@@ -543,7 +599,11 @@ static int s5h1411_set_gpio(struct dvb_frontend *fe, int enable)
 	struct s5h1411_state *state = fe->demodulator_priv;
 	u16 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, enable);
+#else
+	d;
+#endif
 
 	val = s5h1411_readreg(state, S5H1411_I2C_TOP_ADDR, 0xe0) & ~0x02;
 
@@ -558,7 +618,11 @@ static int s5h1411_set_powerstate(struct dvb_frontend *fe, int enable)
 {
 	struct s5h1411_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, enable);
+#else
+	d;
+#endif
 
 	if (enable)
 		s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0xf4, 1);
@@ -579,7 +643,11 @@ static int s5h1411_register_reset(struct dvb_frontend *fe)
 {
 	struct s5h1411_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	return s5h1411_writereg(state, S5H1411_I2C_TOP_ADDR, 0xf3, 0);
 }
@@ -590,7 +658,11 @@ static int s5h1411_set_frontend(struct dvb_frontend *fe,
 {
 	struct s5h1411_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(frequency=%d)\n", __func__, p->frequency);
+#else
+	d;
+#endif
 
 	s5h1411_softreset(fe);
 
@@ -622,7 +694,11 @@ static int s5h1411_init(struct dvb_frontend *fe)
 	struct s5h1411_state *state = fe->demodulator_priv;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	s5h1411_set_powerstate(fe, 0);
 	s5h1411_register_reset(fe);
@@ -716,7 +792,11 @@ static int s5h1411_read_status(struct dvb_frontend *fe, fe_status_t *status)
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s() status 0x%08x\n", __func__, *status);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -724,7 +804,11 @@ static int s5h1411_read_status(struct dvb_frontend *fe, fe_status_t *status)
 static int s5h1411_qam256_lookup_snr(struct dvb_frontend *fe, u16 *snr, u16 v)
 {
 	int i, ret = -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	for (i = 0; i < ARRAY_SIZE(qam256_snr_tab); i++) {
 		if (v < qam256_snr_tab[i].val) {
@@ -739,7 +823,11 @@ static int s5h1411_qam256_lookup_snr(struct dvb_frontend *fe, u16 *snr, u16 v)
 static int s5h1411_qam64_lookup_snr(struct dvb_frontend *fe, u16 *snr, u16 v)
 {
 	int i, ret = -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	for (i = 0; i < ARRAY_SIZE(qam64_snr_tab); i++) {
 		if (v < qam64_snr_tab[i].val) {
@@ -754,7 +842,11 @@ static int s5h1411_qam64_lookup_snr(struct dvb_frontend *fe, u16 *snr, u16 v)
 static int s5h1411_vsb_lookup_snr(struct dvb_frontend *fe, u16 *snr, u16 v)
 {
 	int i, ret = -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	for (i = 0; i < ARRAY_SIZE(vsb_snr_tab); i++) {
 		if (v > vsb_snr_tab[i].val) {
@@ -763,7 +855,11 @@ static int s5h1411_vsb_lookup_snr(struct dvb_frontend *fe, u16 *snr, u16 v)
 			break;
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s() snr=%d\n", __func__, *snr);
+#else
+	d;
+#endif
 	return ret;
 }
 
@@ -771,7 +867,11 @@ static int s5h1411_read_snr(struct dvb_frontend *fe, u16 *snr)
 {
 	struct s5h1411_state *state = fe->demodulator_priv;
 	u16 reg;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	switch (state->current_modulation) {
 	case QAM_64:

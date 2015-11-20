@@ -1470,8 +1470,12 @@ static void m_series_stc_writew(struct comedi_device *dev, uint16_t data,
 		/* FIXME: DIO_Output_Register (16 bit reg) is replaced by M_Offset_Static_Digital_Output (32 bit)
 		   and M_Offset_SCXI_Serial_Data_Out (8 bit) */
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: bug! unhandled register=0x%x in switch.\n",
 		       __func__, reg);
+#else
+		;
+#endif
 		BUG();
 		return;
 		break;
@@ -1505,8 +1509,12 @@ static uint16_t m_series_stc_readw(struct comedi_device *dev, int reg)
 		offset = M_Offset_G01_Status;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: bug! unhandled register=0x%x in switch.\n",
 		       __func__, reg);
+#else
+		;
+#endif
 		BUG();
 		return 0;
 		break;
@@ -1547,8 +1555,12 @@ static void m_series_stc_writel(struct comedi_device *dev, uint32_t data,
 		offset = M_Offset_G1_Load_B;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: bug! unhandled register=0x%x in switch.\n",
 		       __func__, reg);
+#else
+		;
+#endif
 		BUG();
 		return;
 		break;
@@ -1573,8 +1585,12 @@ static uint32_t m_series_stc_readl(struct comedi_device *dev, int reg)
 		offset = M_Offset_G1_Save;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: bug! unhandled register=0x%x in switch.\n",
 		       __func__, reg);
+#else
+		;
+#endif
 		BUG();
 		return 0;
 		break;
@@ -1685,7 +1701,11 @@ static int pcimio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: ni_pcimio:", dev->minor);
+#else
+	;
+#endif
 
 	ret = ni_alloc_private(dev);
 	if (ret < 0)
@@ -1695,7 +1715,11 @@ static int pcimio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (ret < 0)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" %s", boardtype.name);
+#else
+	;
+#endif
 	dev->board_name = boardtype.name;
 
 	if (boardtype.reg_type & ni_reg_m_series_mask) {
@@ -1712,7 +1736,11 @@ static int pcimio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	ret = mite_setup(devpriv->mite);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" error setting up mite\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	comedi_set_hw_dev(dev, &devpriv->mite->pcidev->dev);
@@ -1740,13 +1768,25 @@ static int pcimio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	dev->irq = mite_irq(devpriv->mite);
 
 	if (dev->irq == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" unknown irq (bad)\n");
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" ( irq = %u )", dev->irq);
+#else
+		;
+#endif
 		ret = request_irq(dev->irq, ni_E_interrupt, NI_E_IRQ_FLAGS,
 				  DRV_NAME, dev);
 		if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" irq not available\n");
+#else
+			;
+#endif
 			dev->irq = 0;
 		}
 	}
@@ -1787,7 +1827,11 @@ static int pcimio_find_device(struct comedi_device *dev, int bus, int slot)
 			}
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("no device found\n");
+#else
+	;
+#endif
 	mite_list_devices();
 	return -EIO;
 }

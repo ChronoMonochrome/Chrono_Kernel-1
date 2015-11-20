@@ -41,6 +41,7 @@
 #define F_STRUCT(args...)				args
 
 #undef F_printk
+#ifdef CONFIG_DEBUG_PRINTK
 #define F_printk(fmt, args...) fmt, args
 
 #undef FTRACE_ENTRY
@@ -48,12 +49,19 @@
 struct ____ftrace_##name {					\
 	tstruct							\
 };								\
+#else
+#define F_;
+#endif
 static void __always_unused ____ftrace_check_##name(void)	\
 {								\
 	struct ____ftrace_##name *__entry = NULL;		\
 								\
+#ifdef CONFIG_DEBUG_PRINTK
 	/* force compile-time check on F_printk() */		\
 	printk(print);						\
+#else
+	/* force compile-time check on F_;
+#endif
 }
 
 #undef FTRACE_ENTRY_DUP
@@ -150,6 +158,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
 #define __dynamic_array(type, item)
 
 #undef F_printk
+#ifdef CONFIG_DEBUG_PRINTK
 #define F_printk(fmt, args...) __stringify(fmt) ", "  __stringify(args)
 
 #undef FTRACE_ENTRY
@@ -160,6 +169,9 @@ struct ftrace_event_class event_class_ftrace_##call = {			\
 	.define_fields		= ftrace_define_fields_##call,		\
 	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
 };									\
+#else
+#define F_;
+#endif
 									\
 struct ftrace_event_call __used event_##call = {			\
 	.name			= #call,				\

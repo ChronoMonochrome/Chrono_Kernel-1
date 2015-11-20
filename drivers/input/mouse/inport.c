@@ -141,7 +141,11 @@ static int __init inport_init(void)
 	b = inb(INPORT_SIGNATURE_PORT);
 	c = inb(INPORT_SIGNATURE_PORT);
 	if (a == b || a != c) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "inport.c: Didn't find InPort mouse at %#x\n", INPORT_BASE);
+#else
+		;
+#endif
 		err = -ENODEV;
 		goto err_release_region;
 	}

@@ -182,7 +182,11 @@ int MIDIbuf_open(int dev, struct file *file)
 
 	if (midi_in_buf[dev] == NULL)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "midi: Can't allocate buffer\n");
+#else
+		;
+#endif
 		midi_devs[dev]->close(dev);
 		return -EIO;
 	}
@@ -192,7 +196,11 @@ int MIDIbuf_open(int dev, struct file *file)
 
 	if (midi_out_buf[dev] == NULL)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "midi: Can't allocate buffer\n");
+#else
+		;
+#endif
 		midi_devs[dev]->close(dev);
 		vfree(midi_in_buf[dev]);
 		midi_in_buf[dev] = NULL;
@@ -370,7 +378,11 @@ int MIDIbuf_ioctl(int dev, struct file *file,
 	{
 		if (midi_devs[dev]->coproc)	/* Coprocessor ioctl */
 			return midi_devs[dev]->coproc->ioctl(midi_devs[dev]->coproc->devc, cmd, arg, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 /*		printk("/dev/midi%d: No coprocessor for this device\n", dev);*/
+#else
+/*		;
+#endif
 		return -ENXIO;
 	}
 	else

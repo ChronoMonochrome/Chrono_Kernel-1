@@ -155,11 +155,15 @@ static u32 acpi_osi_handler(acpi_string interface, u32 supported)
 {
 	if (!strcmp("Linux", interface)) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE FW_BUG PREFIX
 			"BIOS _OSI(Linux) query %s%s\n",
 			osi_linux.enable ? "honored" : "ignored",
 			osi_linux.cmdline ? " via cmdline" :
 			osi_linux.dmi ? " via DMI" : "");
+#else
+		;
+#endif
 	}
 
 	return supported;
@@ -230,10 +234,18 @@ void acpi_os_vprintf(const char *fmt, va_list args)
 	if (acpi_in_debugger) {
 		kdb_printf("%s", buffer);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "%s", buffer);
+#else
+		;
+#endif
 	}
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "%s", buffer);
+#else
+	;
+#endif
 #endif
 }
 
@@ -476,8 +488,12 @@ acpi_os_predefined_override(const struct acpi_predefined_names *init_val,
 
 	*new_val = NULL;
 	if (!memcmp(init_val->name, "_OS_", 4) && strlen(acpi_os_name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "Overriding _OS definition to '%s'\n",
 		       acpi_os_name);
+#else
+		;
+#endif
 		*new_val = acpi_os_name;
 	}
 
@@ -498,10 +514,14 @@ acpi_os_table_override(struct acpi_table_header * existing_table,
 		*new_table = (struct acpi_table_header *)AmlCode;
 #endif
 	if (*new_table != NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Override [%4.4s-%8.8s], "
 			   "this is unsafe: tainting kernel\n",
 		       existing_table->signature,
 		       existing_table->oem_table_id);
+#else
+		;
+#endif
 		add_taint(TAINT_OVERRIDDEN_ACPI_TABLE);
 	}
 	return AE_OK;
@@ -1095,7 +1115,11 @@ void __init acpi_osi_setup(char *str)
 		return;
 
 	if (str == NULL || *str == '\0') {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "_OSI method disabled\n");
+#else
+		;
+#endif
 		acpi_gbl_create_osi_method = FALSE;
 		return;
 	}
@@ -1142,7 +1166,11 @@ static void __init acpi_cmdline_osi_linux(unsigned int enable)
 
 void __init acpi_dmi_osi_linux(int enable, const struct dmi_system_id *d)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE PREFIX "DMI detected: %s\n", d->ident);
+#else
+	;
+#endif
 
 	if (enable == -1)
 		return;
@@ -1177,12 +1205,20 @@ static void __init acpi_osi_setup_late(void)
 			status = acpi_install_interface(str);
 
 			if (ACPI_SUCCESS(status))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PREFIX "Added _OSI(%s)\n", str);
+#else
+				;
+#endif
 		} else {
 			status = acpi_remove_interface(str);
 
 			if (ACPI_SUCCESS(status))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PREFIX "Deleted _OSI(%s)\n", str);
+#else
+				;
+#endif
 		}
 	}
 }
@@ -1204,7 +1240,11 @@ __setup("acpi_osi=", osi_setup);
 /* enable serialization to combat AE_ALREADY_EXISTS errors */
 static int __init acpi_serialize_setup(char *str)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "serialize enabled\n");
+#else
+	;
+#endif
 
 	acpi_gbl_all_methods_serialized = TRUE;
 
@@ -1286,6 +1326,7 @@ int acpi_check_resource_conflict(const struct resource *res)
 
 	if (clash) {
 		if (acpi_enforce_resources != ENFORCE_RESOURCES_NO) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ACPI: resource %s %pR"
 			       " conflicts with ACPI region %s "
 			       "[%s 0x%zx-0x%zx]\n",
@@ -1294,13 +1335,24 @@ int acpi_check_resource_conflict(const struct resource *res)
 				ACPI_ADR_SPACE_SYSTEM_IO) ? "io" : "mem",
 			       (size_t) res_list_elem->start,
 			       (size_t) res_list_elem->end);
+#else
+			;
+#endif
 			if (acpi_enforce_resources == ENFORCE_RESOURCES_LAX)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "ACPI: This conflict may"
 				       " cause random problems and system"
 				       " instability\n");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "ACPI: If an ACPI driver is available"
 			       " for this device, you should use it instead of"
 			       " the native driver\n");
+#else
+			;
+#endif
 		}
 		if (acpi_enforce_resources == ENFORCE_RESOURCES_STRICT)
 			return -EBUSY;

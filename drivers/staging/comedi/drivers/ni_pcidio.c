@@ -78,6 +78,7 @@ comedi_nonfree_firmware tarball available from http://www.comedi.org
 
 #undef DPRINTK
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DPRINTK(format, args...)	printk(format, ## args)
 #else
 #define DPRINTK(format, args...)
@@ -210,6 +211,9 @@ comedi_nonfree_firmware tarball available from http://www.comedi.org
 static inline unsigned primary_DMAChannel_bits(unsigned channel)
 {
 	return channel & 0x3;
+#else
+#define DPRINTK(format, args...)	;
+#endif
 }
 
 static inline unsigned secondary_DMAChannel_bits(unsigned channel)
@@ -514,9 +518,17 @@ static irqreturn_t nidio_interrupt(int irq, void *d)
 	ni_pcidio_print_flags(flags);
 	ni_pcidio_print_status(status);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("buf[0]=%08x\n",*(unsigned int *)async->prealloc_buf); */
+#else
+	/* ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("buf[4096]=%08x\n",
 	       *(unsigned int *)(async->prealloc_buf+4096)); */
+#else
+	/* ;
+#endif
 
 	spin_lock_irqsave(&devpriv->mite_channel_lock, irq_flags);
 	if (devpriv->di_mite_chan)
@@ -524,8 +536,12 @@ static irqreturn_t nidio_interrupt(int irq, void *d)
 #ifdef MITE_DEBUG
 	mite_print_chsr(m_status);
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("mite_bytes_transferred: %d\n",
 	       mite_bytes_transferred(mite,DI_DMA_CHAN)); */
+#else
+	/* ;
+#endif
 
 	/* mite_dump_regs(mite); */
 	if (m_status & CHSR_INT) {
@@ -620,7 +636,11 @@ static irqreturn_t nidio_interrupt(int irq, void *d)
 		}
 #if 0
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ni_pcidio: unknown interrupt\n");
+#else
+			;
+#endif
 			async->events |= COMEDI_CB_ERROR | COMEDI_CB_EOA;
 			writeb(0x00,
 			       devpriv->mite->daq_io_addr +
@@ -658,12 +678,24 @@ static void ni_pcidio_print_flags(unsigned int flags)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "group_1_flags:");
+#else
+	;
+#endif
 	for (i = 7; i >= 0; i--) {
 		if (flags & (1 << i))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %s", flags_strings[i]);
+#else
+			;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 static char *status_strings[] = {
@@ -675,12 +707,24 @@ static void ni_pcidio_print_status(unsigned int flags)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "group_status:");
+#else
+	;
+#endif
 	for (i = 7; i >= 0; i--) {
 		if (flags & (1 << i))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %s", status_strings[i]);
+#else
+			;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 #endif
 
@@ -1069,8 +1113,12 @@ static int pci_6534_load_fpga(struct comedi_device *dev, int fpga_index,
 		udelay(1);
 	}
 	if (i == timeout) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ni_pcidio: failed to load fpga %i, "
 		       "waiting for status 0x2\n", fpga_index);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	writew(0x80 | fpga_index,
@@ -1081,8 +1129,12 @@ static int pci_6534_load_fpga(struct comedi_device *dev, int fpga_index,
 		udelay(1);
 	}
 	if (i == timeout) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ni_pcidio: failed to load fpga %i, "
 		       "waiting for status 0x3\n", fpga_index);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	for (j = 0; j + 1 < data_len;) {
@@ -1097,8 +1149,12 @@ static int pci_6534_load_fpga(struct comedi_device *dev, int fpga_index,
 			udelay(1);
 		}
 		if (i == timeout) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ni_pcidio: failed to load word into fpga %i\n",
 			       fpga_index);
+#else
+			;
+#endif
 			return -EIO;
 		}
 		if (need_resched())
@@ -1175,7 +1231,11 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	int n_subdevices;
 	unsigned int irq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: nidio:", dev->minor);
+#else
+	;
+#endif
 
 	ret = alloc_private(dev, sizeof(struct nidio96_private));
 	if (ret < 0)
@@ -1188,7 +1248,11 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	ret = mite_setup(devpriv->mite);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "error setting up mite\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	comedi_set_hw_dev(dev, &devpriv->mite->pcidev->dev);
@@ -1198,7 +1262,11 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	dev->board_name = this_board->name;
 	irq = mite_irq(devpriv->mite);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO " %s", dev->board_name);
+#else
+	;
+#endif
 	if (this_board->uses_firmware) {
 		ret = pci_6534_upload_firmware(dev, it->options);
 		if (ret < 0)
@@ -1223,8 +1291,12 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 	} else {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " rev=%d",
 		       readb(devpriv->mite->daq_io_addr + Chip_Version));
+#else
+		;
+#endif
 
 		s = dev->subdevices + 0;
 
@@ -1257,12 +1329,20 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		ret = request_irq(irq, nidio_interrupt, IRQF_SHARED,
 				  "ni_pcidio", dev);
 		if (ret < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING " irq not available");
+#else
+			;
+#endif
 
 		dev->irq = irq;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -1312,7 +1392,11 @@ static int nidio_find_device(struct comedi_device *dev, int bus, int slot)
 			}
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "no device found\n");
+#else
+	;
+#endif
 	mite_list_devices();
 	return -EIO;
 }

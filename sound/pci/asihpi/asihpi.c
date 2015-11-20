@@ -69,6 +69,7 @@ static void pcm_debug_name(struct snd_pcm_substream *substream,
  * snd_printddd - very verbose debug printk
  * @format: format string
  *
+#ifdef CONFIG_DEBUG_PRINTK
  * Works like snd_printk() for debugging purposes.
  * Ignored when CONFIG_SND_DEBUG_VERBOSE is not set.
  * Must set snd module debug parameter to 3 to enable at runtime.
@@ -80,6 +81,9 @@ static void pcm_debug_name(struct snd_pcm_substream *substream,
 #endif
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* index 0-MAX */
+#else
+ * Works like ;
+#endif
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	/* ID for this card */
 static int enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;
 static int enable_hpi_hwdep = 1;
@@ -291,9 +295,13 @@ static inline u16 hpi_stream_group_get_map(
 static u16 handle_error(u16 err, int line, char *filename)
 {
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"in file %s, line %d: HPI error %d\n",
 			filename, line, err);
+#else
+		;
+#endif
 	return err;
 }
 
@@ -1359,7 +1367,11 @@ static inline int ctl_add(struct snd_card *card, struct snd_kcontrol_new *ctl,
 	if (err < 0)
 		return err;
 	else if (mixer_dump)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "added %s(%d)\n", ctl->name, ctl->index);
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -1408,8 +1420,12 @@ static void asihpi_ctl_init(struct snd_kcontrol_new *snd_control,
 		hpi_ctl->src_node_index,
 		dir, name);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_INFO "Adding %s %d to %d ",  hpi_ctl->name,
 		hpi_ctl->wSrcNodeType, hpi_ctl->wDstNodeType); */
+#else
+	/* ;
+#endif
 }
 
 /*------------------------------------------------------------
@@ -2538,9 +2554,13 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 		if (err) {
 			if (err == HPI_ERROR_CONTROL_DISABLED) {
 				if (mixer_dump)
+#ifdef CONFIG_DEBUG_PRINTK
 					snd_printk(KERN_INFO
 						   "Disabled HPI Control(%d)\n",
 						   idx);
+#else
+					;
+#endif
 				continue;
 			} else
 				break;
@@ -2603,6 +2623,7 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 		case HPI_CONTROL_COMPANDER:
 		default:
 			if (mixer_dump)
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_INFO
 					"Untranslated HPI Control"
 					"(%d) %d %d %d %d %d\n",
@@ -2612,6 +2633,9 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 					hpi_ctl.src_node_index,
 					hpi_ctl.dst_node_type,
 					hpi_ctl.dst_node_index);
+#else
+				;
+#endif
 			continue;
 		};
 		if (err < 0)
@@ -2620,7 +2644,11 @@ static int __devinit snd_card_asihpi_mixer_new(struct snd_card_asihpi *asihpi)
 	if (HPI_ERROR_INVALID_OBJ_INDEX != err)
 		hpi_handle_error(err);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "%d mixer controls found\n", idx);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -2782,9 +2810,13 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 				    &card);
 		if (err < 0)
 			return err;
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING
 			"**** WARNING **** Adapter index %d->ALSA index %d\n",
 			hpi_card->index, card->number);
+#else
+		;
+#endif
 	}
 
 	snd_card_set_dev(card, &pci_dev->dev);
@@ -2801,6 +2833,7 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 				 &asihpi->serial_number, &asihpi->type));
 
 	version = asihpi->version;
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "adapter ID=%4X index=%d num_outstreams=%d "
 			"num_instreams=%d S/N=%d\n"
 			"Hw Version %c%d DSP code version %03d\n",
@@ -2810,6 +2843,9 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 			((version >> 3) & 0xf) + 'A',
 			version & 0x7,
 			((version >> 13) * 100) + ((version >> 7) & 0x3f));
+#else
+	;
+#endif
 
 	pcm_substreams = asihpi->num_outstreams;
 	if (pcm_substreams < asihpi->num_instreams)
@@ -2852,11 +2888,15 @@ static int __devinit snd_asihpi_probe(struct pci_dev *pci_dev,
 		asihpi->out_max_chans = 2;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "has dma:%d, grouping:%d, mrx:%d\n",
 			asihpi->can_dma,
 			asihpi->support_grouping,
 			asihpi->support_mrx
 	      );
+#else
+	;
+#endif
 
 	err = snd_card_asihpi_pcm_new(asihpi, 0, pcm_substreams);
 	if (err < 0) {

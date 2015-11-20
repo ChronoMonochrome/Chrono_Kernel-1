@@ -174,7 +174,11 @@ static int write_reg(struct i2c_client *client, u8 reg, u8 value)
 
 	usb = go->hpi_context;
 	if (mutex_lock_interruptible(&usb->i2c_lock) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "i2c lock failed\n");
+#else
+		;
+#endif
 		kfree(buf);
 		return -EINTR;
 	}
@@ -212,7 +216,11 @@ static int write_reg_fp(struct i2c_client *client, u16 addr, u16 val)
 
 	usb = go->hpi_context;
 	if (mutex_lock_interruptible(&usb->i2c_lock) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "i2c lock failed\n");
+#else
+		;
+#endif
 		kfree(buf);
 		return -EINTR;
 	}
@@ -229,13 +237,21 @@ static int write_reg_fp(struct i2c_client *client, u16 addr, u16 val)
 		val_read = (buf[2] << 8) + buf[3];
 		kfree(buf);
 		if (val_read != val) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "invalid fp write %x %x\n",
 			       val_read, val);
+#else
+			;
+#endif
 			return -EFAULT;
 		}
 		if (subaddr != addr) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "invalid fp write addr %x %x\n",
 			       subaddr, addr);
+#else
+			;
+#endif
 			return -EFAULT;
 		}
 	} else {
@@ -272,7 +288,11 @@ static int read_reg_fp(struct i2c_client *client, u16 addr, u16 *val)
 	memset(buf, 0xcd, 6);
 	usb = go->hpi_context;
 	if (mutex_lock_interruptible(&usb->i2c_lock) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "i2c lock failed\n");
+#else
+		;
+#endif
 		kfree(buf);
 		return -EINTR;
 	}
@@ -295,7 +315,11 @@ static int write_regs(struct i2c_client *client, u8 *regs)
 
 	for (i = 0; !((regs[i] == 0x00) && (regs[i+1] == 0x00)); i += 2) {
 		if (write_reg(client, regs[i], regs[i+1]) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "s2250: failed\n");
+#else
+			;
+#endif
 			return -1;
 		}
 	}
@@ -308,7 +332,11 @@ static int write_regs_fp(struct i2c_client *client, u16 *regs)
 
 	for (i = 0; !((regs[i] == 0x00) && (regs[i+1] == 0x00)); i += 2) {
 		if (write_reg_fp(client, regs[i], regs[i+1]) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "s2250: failed fp\n");
+#else
+			;
+#endif
 			return -1;
 		}
 	}

@@ -237,10 +237,18 @@ static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		iobase = 0x1c0;
 	ao_unipolar = it->options[3];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: ni_at_ao: 0x%04lx", dev->minor, iobase);
+#else
+	;
+#endif
 
 	if (!request_region(iobase, ATAO_SIZE, "ni_at_ao")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -294,14 +302,22 @@ static int atao_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	atao_reset(dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
+#else
+	;
+#endif
 
 	return 0;
 }
 
 static int atao_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: atao: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->iobase)
 		release_region(dev->iobase, ATAO_SIZE);

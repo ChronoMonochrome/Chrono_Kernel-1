@@ -254,8 +254,12 @@ static int usb_stream_hwdep_mmap(struct snd_hwdep *hw,
 		    read ? s->read_size : s->write_size);
 	/* if userspace tries to mmap beyond end of our buffer, fail */
 	if (size > PAGE_ALIGN(read ? s->read_size : s->write_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "%lu > %u\n", size,
 			   read ? s->read_size : s->write_size);
+#else
+		;
+#endif
 		err = -EINVAL;
 		goto out;
 	}

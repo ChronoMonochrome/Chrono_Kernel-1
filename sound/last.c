@@ -27,14 +27,26 @@ static int __init alsa_sound_last_init(void)
 {
 	int idx, ok = 0;
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ALSA device list:\n");
+#else
+	;
+#endif
 	for (idx = 0; idx < SNDRV_CARDS; idx++)
 		if (snd_cards[idx] != NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "  #%i: %s\n", idx, snd_cards[idx]->longname);
+#else
+			;
+#endif
 			ok++;
 		}
 	if (ok == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "  No soundcards found.\n");
+#else
+		;
+#endif
 	return 0;
 }
 

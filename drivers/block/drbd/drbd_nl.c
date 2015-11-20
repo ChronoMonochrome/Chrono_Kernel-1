@@ -2349,7 +2349,11 @@ static void drbd_connector_callback(struct cn_msg *req, struct netlink_skb_parms
 
 	rr = cn_netlink_send(cn_reply, CN_IDX_DRBD, GFP_KERNEL);
 	if (rr && rr != -ESRCH)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "drbd: cn_netlink_send()=%d\n", rr);
+#else
+		;
+#endif
 
 	kfree(cn_reply);
 	module_put(THIS_MODULE);
@@ -2646,6 +2650,10 @@ void drbd_nl_send_reply(struct cn_msg *req, int ret_code)
 
 	rr = cn_netlink_send(cn_reply, CN_IDX_DRBD, GFP_NOIO);
 	if (rr && rr != -ESRCH)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "drbd: cn_netlink_send()=%d\n", rr);
+#else
+		;
+#endif
 }
 

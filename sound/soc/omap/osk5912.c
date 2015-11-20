@@ -193,8 +193,12 @@ static int __init osk_soc_init(void)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MCLK = %d [%d]\n",
 	       (uint) clk_get_rate(tlv320aic23_mclk), CODEC_CLOCK);
+#else
+	;
+#endif
 
 	return 0;
 

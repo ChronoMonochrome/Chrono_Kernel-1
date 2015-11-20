@@ -94,8 +94,12 @@ struct pmem_region_node {
 #define PMEM_DEBUG_MSGS 0
 #if PMEM_DEBUG_MSGS
 #define DLOG(fmt,args...) \
+#ifdef CONFIG_DEBUG_PRINTK
 	do { printk(KERN_INFO "[%s:%s:%d] "fmt, __FILE__, __func__, __LINE__, \
 		    ##args); } \
+#else
+	do { ;
+#endif
 	while (0)
 #else
 #define DLOG(x...) do {} while (0)
@@ -346,7 +350,11 @@ static int pmem_open(struct inode *inode, struct file *file)
 		return -1;
 	data = kmalloc(sizeof(struct pmem_data), GFP_KERNEL);
 	if (!data) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pmem: unable to allocate memory for pmem metadata.");
+#else
+		;
+#endif
 		return -1;
 	}
 	data->flags = 0;
@@ -426,7 +434,11 @@ static int pmem_allocate(int id, unsigned long len)
 	 * return an error
 	 */
 	if (best_fit < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pmem: no space left to allocate!\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -564,9 +576,13 @@ static void pmem_vma_close(struct vm_area_struct *vma)
 	DLOG("current %u ppid %u file %p count %d\n", current->pid,
 	     current->parent->pid, file, file_count(file));
 	if (unlikely(!is_pmem_file(file) || !has_allocation(file))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "pmem: something is very wrong, you are "
 		       "closing a vm backing an allocation that doesn't "
 		       "exist!\n");
+#else
+		;
+#endif
 		return;
 	}
 	down_write(&data->sem);
@@ -623,15 +639,23 @@ static int pmem_mmap(struct file *file, struct vm_area_struct *vma)
 	/* either no space was available or an error occured */
 	if (!has_allocation(file)) {
 		ret = -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pmem: could not find allocation for map.\n");
+#else
+		;
+#endif
 		goto error;
 	}
 
 	if (pmem_len(id, data) < vma_size) {
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "pmem: mmap size [%lu] does not match"
 		       "size of backing region [%lu].\n", vma_size,
 		       pmem_len(id, data));
+#else
+		;
+#endif
 #endif
 		ret = -EINVAL;
 		goto error;
@@ -644,7 +668,11 @@ static int pmem_mmap(struct file *file, struct vm_area_struct *vma)
 		struct pmem_region_node *region_node;
 		struct list_head *elt;
 		if (pmem_map_garbage(id, vma, data, 0, vma_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("pmem: mmap failed in kernel!\n");
+#else
+			;
+#endif
 			ret = -EAGAIN;
 			goto error;
 		}
@@ -672,7 +700,11 @@ static int pmem_mmap(struct file *file, struct vm_area_struct *vma)
 		     current->pid);
 	} else {
 		if (pmem_map_pfn_range(id, vma, data, 0, vma_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "pmem: mmap failed in kernel!\n");
+#else
+			;
+#endif
 			ret = -EAGAIN;
 			goto error;
 		}
@@ -693,8 +725,12 @@ int get_pmem_user_addr(struct file *file, unsigned long *start,
 	struct pmem_data *data;
 	if (!is_pmem_file(file) || !has_allocation(file)) {
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pmem: requested pmem data from invalid"
 				  "file.\n");
+#else
+		;
+#endif
 #endif
 		return -1;
 	}
@@ -724,8 +760,12 @@ int get_pmem_addr(struct file *file, unsigned long *start,
 	data = (struct pmem_data *)file->private_data;
 	if (data->index == -1) {
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pmem: requested pmem data from file with no "
 		       "allocation.\n");
+#else
+		;
+#endif
 		return -1;
 #endif
 	}
@@ -751,8 +791,12 @@ int get_pmem_file(int fd, unsigned long *start, unsigned long *vstart,
 
 	file = fget(fd);
 	if (unlikely(file == NULL)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pmem: requested data from file descriptor "
 		       "that doesn't exist.");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -779,8 +823,12 @@ void put_pmem_file(struct file *file)
 #if PMEM_DEBUG
 	down_write(&data->sem);
 	if (data->ref == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pmem: pmem_put > pmem_get %s (pid %d)\n",
 		       pmem[id].dev.name, data->pid);
+#else
+		;
+#endif
 		BUG();
 	}
 	data->ref--;
@@ -842,21 +890,33 @@ static int pmem_connect(unsigned long connect, struct file *file)
 	src_file = fget_light(connect, &put_needed);
 	DLOG("connect %p to %p\n", file, src_file);
 	if (!src_file) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pmem: src file not found!\n");
+#else
+		;
+#endif
 		ret = -EINVAL;
 		goto err_no_file;
 	}
 	if (unlikely(!is_pmem_file(src_file) || !has_allocation(src_file))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pmem: src file is not a pmem file or has no "
 		       "alloc!\n");
+#else
+		;
+#endif
 		ret = -EINVAL;
 		goto err_bad_file;
 	}
 	src_data = (struct pmem_data *)src_file->private_data;
 
 	if (has_allocation(file) && (data->index != src_data->index)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pmem: file is already mapped but doesn't match this"
 		       " src_file!\n");
+#else
+		;
+#endif
 		ret = -EINVAL;
 		goto err_bad_file;
 	}
@@ -894,7 +954,11 @@ lock_mm:
 		mm = get_task_mm(data->task);
 		if (!mm) {
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("pmem: can't remap task is gone!\n");
+#else
+			;
+#endif
 #endif
 			up_read(&data->sem);
 			return -1;
@@ -945,8 +1009,12 @@ int pmem_remap(struct pmem_region *region, struct file *file,
 	if (unlikely(!PMEM_IS_PAGE_ALIGNED(region->offset) ||
 		 !PMEM_IS_PAGE_ALIGNED(region->len))) {
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pmem: request for unaligned pmem suballocation "
 		       "%lx %lx\n", region->offset, region->len);
+#else
+		;
+#endif
 #endif
 		return -EINVAL;
 	}
@@ -964,7 +1032,11 @@ int pmem_remap(struct pmem_region *region, struct file *file,
 	 * that back in it */
 	if (!is_master_owner(file)) {
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("pmem: remap requested from non-master process\n");
+#else
+		;
+#endif
 #endif
 		ret = -EINVAL;
 		goto err;
@@ -975,7 +1047,11 @@ int pmem_remap(struct pmem_region *region, struct file *file,
 		     (region->len > pmem_len(id, data)) ||
 		     (region->offset + region->len > pmem_len(id, data)))) {
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pmem: suballoc doesn't fit in src_file!\n");
+#else
+		;
+#endif
 #endif
 		ret = -EINVAL;
 		goto err;
@@ -987,7 +1063,11 @@ int pmem_remap(struct pmem_region *region, struct file *file,
 		if (!region_node) {
 			ret = -ENOMEM;
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "No space to allocate metadata!");
+#else
+			;
+#endif
 #endif
 			goto err;
 		}
@@ -1008,8 +1088,12 @@ int pmem_remap(struct pmem_region *region, struct file *file,
 		}
 		if (!found) {
 #if PMEM_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("pmem: Unmap region does not map any mapped "
 				"region!");
+#else
+			;
+#endif
 #endif
 			ret = -EINVAL;
 			goto err;
@@ -1096,8 +1180,12 @@ static long pmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				region.offset = pmem_start_addr(id, data);
 				region.len = pmem_len(id, data);
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "pmem: request for physical address of pmem region "
 					"from process %d.\n", current->pid);
+#else
+			;
+#endif
 			if (copy_to_user((void __user *)arg, &region,
 						sizeof(struct pmem_region)))
 				return -EFAULT;
@@ -1256,11 +1344,19 @@ int pmem_setup(struct android_pmem_platform_data *pdata,
 	pmem[id].dev.name = pdata->name;
 	pmem[id].dev.minor = id;
 	pmem[id].dev.fops = &pmem_fops;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %d init\n", pdata->name, pdata->cached);
+#else
+	;
+#endif
 
 	err = misc_register(&pmem[id].dev);
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "Unable to register pmem driver!\n");
+#else
+		;
+#endif
 		goto err_cant_register_device;
 	}
 	pmem[id].num_entries = pmem[id].size / PMEM_MIN_ALLOC;
@@ -1322,7 +1418,11 @@ static int pmem_probe(struct platform_device *pdev)
 	struct android_pmem_platform_data *pdata;
 
 	if (!pdev || !pdev->dev.platform_data) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "Unable to probe pmem!\n");
+#else
+		;
+#endif
 		return -1;
 	}
 	pdata = pdev->dev.platform_data;

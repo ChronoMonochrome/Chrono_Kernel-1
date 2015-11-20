@@ -166,10 +166,22 @@ static int DIVA_INIT_FUNCTION divasi_init(void)
 	char tmprev[50];
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", DRIVERNAME);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_IDI);
+#else
+	;
+#endif
 	strcpy(tmprev, main_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s  Build: %s\n", getrev(tmprev), DIVA_BUILD);
+#else
+	;
+#endif
 
 	if (!divas_idi_register_chrdev()) {
 		ret = -EIO;
@@ -192,7 +204,11 @@ static int DIVA_INIT_FUNCTION divasi_init(void)
 		ret = -EIO;
 		goto out;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: started with major %d\n", DRIVERLNAME, major);
+#else
+	;
+#endif
 
       out:
 	return (ret);
@@ -208,7 +224,11 @@ static void DIVA_EXIT_FUNCTION divasi_exit(void)
 	remove_um_idi_proc();
 	divas_idi_unregister_chrdev();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
+#else
+	;
+#endif
 }
 
 module_init(divasi_init);

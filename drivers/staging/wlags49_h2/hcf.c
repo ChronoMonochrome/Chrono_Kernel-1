@@ -730,7 +730,11 @@ hcf_16	i;
 			// 800 us latency before FW switches to high power
 			MSF_WAIT(800);								// MSF-defined function to wait n microseconds.
 //OOR		if ( ifbp->IFB_DSLinkStat & CFG_LINK_STAT_DS_OOR ) { // OutOfRange
+#ifdef CONFIG_DEBUG_PRINTK
 //				printk( "<5>ACT_INT_OFF: Deepsleep phase terminated, enable and go to AwaitConnection\n" );		//;?remove me 1 day
+#else
+//				;
+#endif
 //				hcf_cntl( ifbp, HCF_CNTL_ENABLE );
 //			}
 //			ifbp->IFB_DSLinkStat &= ~( CFG_LINK_STAT_DS_IR | CFG_LINK_STAT_DS_OOR);	//clear IR/OOR state
@@ -3099,8 +3103,12 @@ CFG_DDS_TICK_TIME_STRCT ltv;
 			ltv.typ = CFG_DDS_TICK_TIME;
 			ltv.tick_time = ( ( ifbp->IFB_DSLinkStat & CFG_LINK_STAT_TIMER ) + 0x10 ) *64; //78 is more right
 			hcf_put_info( ifbp, (LTVP)&ltv );
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( "<5>Preparing for sleep, link_status: %04X, timer : %d\n",
 					ifbp->IFB_DSLinkStat, ltv.tick_time );//;?remove me 1 day
+#else
+			;
+#endif
 			ifbp->IFB_TickCnt++; //;?just to make sure we do not keep on printing above message
 			if ( ltv.tick_time < 300 * 125 ) ifbp->IFB_DSLinkStat += 0x0010;
 
@@ -4354,11 +4362,19 @@ hcf_32	*p;
 // /*4*/	if ( info[1] == CFG_LINK_STAT ) {
 // 			ifbp->IFB_DSLinkStat = IPW( HREG_DATA_1 ) | CFG_LINK_STAT_CHANGE;	//corrupts BAP !! ;?
 // 			ifbp->IFB_LinkStat = ifbp->IFB_DSLinkStat & CFG_LINK_STAT_FW; //;? to be obsoleted
+#ifdef CONFIG_DEBUG_PRINTK
 // 			printk( "<4>linkstatus: %04x\n", ifbp->IFB_DSLinkStat );		//;?remove me 1 day
+#else
+// 			;
+#endif
 // #if (HCF_SLEEP) & HCF_DDS
 // 			if ( ( ifbp->IFB_DSLinkStat & CFG_LINK_STAT_CONNECTED ) == 0 ) { 	//even values are disconnected etc.
 // 				ifbp->IFB_TickCnt = 0;				//start 2 second period (with 1 tick uncertanty)
+#ifdef CONFIG_DEBUG_PRINTK
 // 				printk( "<5>isr_info: AwaitConnection phase started, IFB_TickCnt = 0\n" );		//;?remove me 1 day
+#else
+// 				;
+#endif
 // 			}
 // #endif // HCF_DDS
 // 		}

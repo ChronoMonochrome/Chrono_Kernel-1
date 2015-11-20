@@ -95,8 +95,12 @@ static int set_freq(struct i2c_client *client, int freq)
 		band_name = "UHF";
 		band_select = tun->UHF;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "wis-sony-tuner: tuning to frequency %d.%04d (%s)\n",
 			freq / 16, (freq % 16) * 625, band_name);
+#else
+	;
+#endif
 	n = freq + tun->IFPCoff;
 
 	buffer[0] = n >> 8;
@@ -288,6 +292,7 @@ static int mpx_setup(struct i2c_client *client)
 		u8 buf1[3], buf2[2];
 		struct i2c_msg msgs[2];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "wis-sony-tuner: MPX registers: %04x %04x "
 				"%04x %04x %04x %04x %04x %04x\n",
 				mpx_audio_modes[t->mpxmode].modus,
@@ -298,6 +303,9 @@ static int mpx_setup(struct i2c_client *client)
 				mpx_audio_modes[t->mpxmode].scart_prescale,
 				mpx_audio_modes[t->mpxmode].system,
 				mpx_audio_modes[t->mpxmode].volume);
+#else
+		;
+#endif
 		buf1[0] = 0x11;
 		buf1[1] = 0x00;
 		buf1[2] = 0x7e;
@@ -310,14 +318,22 @@ static int mpx_setup(struct i2c_client *client)
 		msgs[1].len = 2;
 		msgs[1].buf = buf2;
 		i2c_transfer(client->adapter, msgs, 2);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "wis-sony-tuner: MPX system: %02x%02x\n",
 				buf2[0], buf2[1]);
+#else
+		;
+#endif
 		buf1[0] = 0x11;
 		buf1[1] = 0x02;
 		buf1[2] = 0x00;
 		i2c_transfer(client->adapter, msgs, 2);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "wis-sony-tuner: MPX status: %02x%02x\n",
 				buf2[0], buf2[1]);
+#else
+		;
+#endif
 	}
 #endif
 	return 0;
@@ -375,8 +391,12 @@ static int set_if(struct i2c_client *client)
 		t->mpxmode = force_mpx_mode;
 	else
 		t->mpxmode = default_mpx_mode;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "wis-sony-tuner: setting MPX to mode %d\n",
 			t->mpxmode);
+#else
+	;
+#endif
 	mpx_setup(client);
 
 	return 0;
@@ -414,28 +434,44 @@ static int tuner_command(struct i2c_client *client, unsigned int cmd, void *arg)
 			case 'B':
 			case 'g':
 			case 'G':
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "wis-sony-tuner: forcing "
 						"tuner to PAL-B/G bands\n");
+#else
+				;
+#endif
 				force_band = V4L2_STD_PAL_BG;
 				break;
 			case 'i':
 			case 'I':
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "wis-sony-tuner: forcing "
 						"tuner to PAL-I band\n");
+#else
+				;
+#endif
 				force_band = V4L2_STD_PAL_I;
 				break;
 			case 'd':
 			case 'D':
 			case 'k':
 			case 'K':
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "wis-sony-tuner: forcing "
 						"tuner to PAL-D/K bands\n");
+#else
+				;
+#endif
 				force_band = V4L2_STD_PAL_I;
 				break;
 			case 'l':
 			case 'L':
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "wis-sony-tuner: forcing "
 						"tuner to SECAM-L band\n");
+#else
+				;
+#endif
 				force_band = V4L2_STD_SECAM_L;
 				break;
 			default:
@@ -460,9 +496,13 @@ static int tuner_command(struct i2c_client *client, unsigned int cmd, void *arg)
 			break;
 		}
 		if (type >= 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"wis-sony-tuner: type set to %d (%s)\n",
 				t->type, sony_tuners[t->type - 200].name);
+#else
+			;
+#endif
 		break;
 	}
 #endif
@@ -544,9 +584,13 @@ static int tuner_command(struct i2c_client *client, unsigned int cmd, void *arg)
 			if (force_band && (*std & force_band) != *std &&
 					*std != V4L2_STD_PAL &&
 					*std != V4L2_STD_SECAM) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "wis-sony-tuner: ignoring "
 						"requested TV standard in "
 						"favor of force_band value\n");
+#else
+				;
+#endif
 				t->std = force_band;
 			} else if (*std & V4L2_STD_PAL_BG) { /* default */
 				t->std = V4L2_STD_PAL_BG;
@@ -673,9 +717,13 @@ static int wis_sony_tuner_probe(struct i2c_client *client,
 	t->audmode = V4L2_TUNER_MODE_STEREO;
 	i2c_set_clientdata(client, t);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"wis-sony-tuner: initializing tuner at address %d on %s\n",
 		client->addr, adapter->name);
+#else
+	;
+#endif
 
 	return 0;
 }

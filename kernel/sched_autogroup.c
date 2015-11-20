@@ -101,8 +101,12 @@ out_free:
 	kfree(ag);
 out_fail:
 	if (printk_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "autogroup_create: %s failure.\n",
 			ag ? "sched_create_group()" : "kmalloc()");
+#else
+		;
+#endif
 	}
 
 	return autogroup_kref_get(&autogroup_default);

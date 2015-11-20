@@ -467,7 +467,11 @@ static int __init nwpserial_console_init(void)
 
 	up->dcr_host = dcr_map(dn, dcr_base, dcr_len);
 	if (!DCR_MAP_OK(up->dcr_host)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Cannot map DCR resources for SERIAL");
+#else
+		;
+#endif
 		return -1;
 	}
 	register_console(&nwpserial_console);

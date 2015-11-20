@@ -336,20 +336,28 @@ static void idedisk_check_hpa(ide_drive_t *drive)
 
 	drive->probed_capacity = set_max;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Host Protected Area detected.\n"
 			 "\tcurrent capacity is %llu sectors (%llu MB)\n"
 			 "\tnative  capacity is %llu sectors (%llu MB)\n",
 			 drive->name,
 			 capacity, sectors_to_MB(capacity),
 			 set_max, sectors_to_MB(set_max));
+#else
+	;
+#endif
 
 	if ((drive->dev_flags & IDE_DFLAG_NOHPA) == 0)
 		return;
 
 	set_max = ide_disk_hpa_set_capacity(drive, set_max, lba48);
 	if (set_max)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Host Protected Area disabled.\n",
 				 drive->name);
+#else
+		;
+#endif
 }
 
 static int ide_disk_get_capacity(ide_drive_t *drive)
@@ -387,19 +395,27 @@ static int ide_disk_get_capacity(ide_drive_t *drive)
 	/* limit drive capacity to 137GB if LBA48 cannot be used */
 	if ((drive->dev_flags & IDE_DFLAG_LBA48) == 0 &&
 	    drive->capacity64 > 1ULL << 28) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: cannot use LBA48 - full capacity "
 		       "%llu sectors (%llu MB)\n",
 		       drive->name, (unsigned long long)drive->capacity64,
 		       sectors_to_MB(drive->capacity64));
+#else
+		;
+#endif
 		drive->probed_capacity = drive->capacity64 = 1ULL << 28;
 	}
 
 	if ((drive->hwif->host_flags & IDE_HFLAG_NO_LBA48_DMA) &&
 	    (drive->dev_flags & IDE_DFLAG_LBA48)) {
 		if (drive->capacity64 > 1ULL << 28) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: cannot use LBA48 DMA - PIO mode"
 					 " will be used for accessing sectors "
 					 "> %u\n", drive->name, 1 << 28);
+#else
+			;
+#endif
 		} else
 			drive->dev_flags &= ~IDE_DFLAG_LBA48;
 	}
@@ -543,8 +559,12 @@ static void update_flush(ide_drive_t *drive)
 			 capacity <= (1ULL << 28) ||
 			 ata_id_flush_ext_enabled(id));
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: cache flushes %ssupported\n",
 		       drive->name, barrier ? "" : "not ");
+#else
+		;
+#endif
 
 		if (barrier) {
 			flush = REQ_FLUSH;
@@ -683,8 +703,12 @@ static void ide_disk_setup(ide_drive_t *drive)
 		blk_queue_max_hw_sectors(q, max_s);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: max request size: %dKiB\n", drive->name,
 	       queue_max_sectors(q) / 2);
+#else
+	;
+#endif
 
 	if (ata_id_is_ssd(id))
 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, q);
@@ -721,15 +745,27 @@ static void ide_disk_setup(ide_drive_t *drive)
 			}
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %llu sectors (%llu MB)",
 			 drive->name, capacity, sectors_to_MB(capacity));
+#else
+	;
+#endif
 
 	/* Only print cache size when it was specified */
 	if (id[ATA_ID_BUF_SIZE])
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT " w/%dKiB Cache", id[ATA_ID_BUF_SIZE] / 2);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT ", CHS=%d/%d/%d\n",
 			 drive->bios_cyl, drive->bios_head, drive->bios_sect);
+#else
+	;
+#endif
 
 	/* write cache enabled? */
 	if ((id[ATA_ID_CSFO] & 1) || ata_id_wcache_enabled(id))
@@ -753,7 +789,11 @@ static void ide_disk_flush(ide_drive_t *drive)
 		return;
 
 	if (do_idedisk_flushcache(drive))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: wcache flush failed!\n", drive->name);
+#else
+		;
+#endif
 }
 
 static int ide_disk_init_media(ide_drive_t *drive, struct gendisk *disk)

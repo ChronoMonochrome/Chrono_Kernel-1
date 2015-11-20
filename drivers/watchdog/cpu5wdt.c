@@ -71,7 +71,11 @@ static struct {
 static void cpu5wdt_trigger(unsigned long unused)
 {
 	if (verbose > 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "trigger at %i ticks\n", ticks);
+#else
+		;
+#endif
 
 	if (cpu5wdt_device.running)
 		ticks--;
@@ -96,7 +100,11 @@ static void cpu5wdt_reset(void)
 	ticks = cpu5wdt_device.default_ticks;
 
 	if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX "reset (%i ticks)\n", (int) ticks);
+#else
+		;
+#endif
 
 }
 
@@ -129,7 +137,11 @@ static int cpu5wdt_stop(void)
 	ticks = cpu5wdt_device.default_ticks;
 	spin_unlock_irqrestore(&cpu5wdt_lock, flags);
 	if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "stop not possible\n");
+#else
+		;
+#endif
 	return -EIO;
 }
 
@@ -219,8 +231,12 @@ static int __devinit cpu5wdt_init(void)
 	int err;
 
 	if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PFX
 				"port=0x%x, verbose=%i\n", port, verbose);
+#else
+		;
+#endif
 
 	init_completion(&cpu5wdt_device.stop);
 	spin_lock_init(&cpu5wdt_lock);
@@ -238,7 +254,11 @@ static int __devinit cpu5wdt_init(void)
 	val = inb(port + CPU5WDT_STATUS_REG);
 	val = (val >> 2) & 1;
 	if (!val)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "sorry, was my fault\n");
+#else
+		;
+#endif
 
 	err = misc_register(&cpu5wdt_misc);
 	if (err < 0) {
@@ -247,7 +267,11 @@ static int __devinit cpu5wdt_init(void)
 	}
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "init success\n");
+#else
+	;
+#endif
 	return 0;
 
 no_misc:

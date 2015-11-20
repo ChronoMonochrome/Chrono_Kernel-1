@@ -79,8 +79,12 @@ static int parse_cfe_partitions(struct mtd_info *master,
 	tagversion = &(buf->tag_version[0]);
 	boardid = &(buf->board_id[0]);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "CFE boot tag found with version %s "
 				"and board type %s\n", tagversion, boardid);
+#else
+	;
+#endif
 
 	kerneladdr = kerneladdr - BCM63XX_EXTENDED_SIZE;
 	rootfsaddr = kerneladdr + kernellen;
@@ -139,13 +143,21 @@ static int parse_cfe_partitions(struct mtd_info *master,
 	parts[curpart].size = master->size - parts[0].size - parts[3].size;
 
 	for (i = 0; i < nrparts; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Partition %d is %s offset %lx and "
 					"length %lx\n", i, parts[i].name,
 					(long unsigned int)(parts[i].offset),
 					(long unsigned int)(parts[i].size));
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Spare partition is %x offset and length %x\n",
 							spareaddr, sparelen);
+#else
+	;
+#endif
 	*pparts = parts;
 	vfree(buf);
 
@@ -162,7 +174,11 @@ static int bcm963xx_detect_cfe(struct mtd_info *master)
 
 	ret = master->read(master, idoffset, 8, &retlen, (void *)buf);
 	buf[retlen] = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Read Signature value of %s\n", buf);
+#else
+	;
+#endif
 
 	return strncmp(idstring, buf, 8);
 }

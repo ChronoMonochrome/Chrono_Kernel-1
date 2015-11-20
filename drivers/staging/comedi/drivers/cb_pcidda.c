@@ -282,7 +282,11 @@ static int cb_pcidda_attach(struct comedi_device *dev,
 	struct pci_dev *pcidev = NULL;
 	int index;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: cb_pcidda: ", dev->minor);
+#else
+	;
+#endif
 
 /*
  * Allocate the private structure area.
@@ -293,7 +297,11 @@ static int cb_pcidda_attach(struct comedi_device *dev,
 /*
  * Probe the device to determine what device in the series it is.
  */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	for_each_pci_dev(pcidev) {
 		if (pcidev->vendor == PCI_VENDOR_ID_CB) {
@@ -320,7 +328,11 @@ found:
 	devpriv->pci_dev = pcidev;
 	dev->board_ptr = cb_pcidda_boards + index;
 	/*  "thisboard" macro can be used from here. */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Found %s at requested position\n", thisboard->name);
+#else
+	;
+#endif
 
 	/*
 	 * Enable PCI device and request regions.
@@ -377,12 +389,24 @@ found:
 	s = dev->subdevices + 2;
 	subdev_8255_init(dev, s, NULL, devpriv->digitalio + PORT2A);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" eeprom:");
+#else
+	;
+#endif
 	for (index = 0; index < EEPROM_SIZE; index++) {
 		devpriv->eeprom_data[index] = cb_pcidda_read_eeprom(dev, index);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %i:0x%x ", index, devpriv->eeprom_data[index]);
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	/*  set calibrations dacs */
 	for (index = 0; index < thisboard->ao_chans; index++)
@@ -417,7 +441,11 @@ static int cb_pcidda_detach(struct comedi_device *dev)
 		subdev_8255_cleanup(dev, dev->subdevices + 2);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: cb_pcidda: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -429,19 +457,71 @@ static int cb_pcidda_detach(struct comedi_device *dev)
 static int cb_pcidda_ai_cmd(struct comedi_device *dev,
 			    struct comedi_subdevice *s)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cb_pcidda_ai_cmd\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("subdev: %d\n", cmd->subdev);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("flags: %d\n", cmd->flags);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("start_src: %d\n", cmd->start_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("start_arg: %d\n", cmd->start_arg);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("scan_begin_src: %d\n", cmd->scan_begin_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("convert_src: %d\n", cmd->convert_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("convert_arg: %d\n", cmd->convert_arg);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("scan_end_src: %d\n", cmd->scan_end_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("scan_end_arg: %d\n", cmd->scan_end_arg);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("stop_src: %d\n", cmd->stop_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("stop_arg: %d\n", cmd->stop_arg);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("chanlist_len: %d\n", cmd->chanlist_len);
+#else
+	;
+#endif
 }
 #endif
 

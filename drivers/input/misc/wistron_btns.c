@@ -117,9 +117,13 @@ static int __init map_bios(void)
 	}
 
 	entry_point = readl(base + offset + 5);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"wistron_btns: BIOS signature found at %p, entry point %08X\n",
 		base + offset, entry_point);
+#else
+	;
+#endif
 
 	if (entry_point >= 0xF0000) {
 		bios_code_map_base = base;
@@ -1132,8 +1136,12 @@ static void handle_key(u8 code)
 		}
 		jiffies_last_press = jiffies;
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 			"wistron_btns: Unknown key code %02X\n", code);
+#else
+		;
+#endif
 }
 
 static void poll_bios(bool discard)
@@ -1190,9 +1198,13 @@ static int __devinit wistron_setup_keymap(struct input_dev *dev,
 
 	case KE_END:
 		if (entry->code & FE_UNTESTED)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Untested laptop multimedia keys, "
 				"please report success or failure to "
 				"eric.piel@tremplin-utc.net\n");
+#else
+			;
+#endif
 		break;
 	}
 

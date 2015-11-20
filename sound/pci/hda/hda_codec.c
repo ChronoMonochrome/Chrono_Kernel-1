@@ -377,8 +377,12 @@ static int _hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
 	wcaps = get_wcaps(codec, nid);
 	if (!(wcaps & AC_WCAP_CONN_LIST) &&
 	    get_wcaps_type(wcaps) != AC_WID_VOL_KNB) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "hda_codec: "
 			   "connection list not available for 0x%x\n", nid);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -424,18 +428,26 @@ static int _hda_get_connections(struct hda_codec *codec, hda_nid_t nid,
 		range_val = !!(parm & (1 << (shift-1))); /* ranges */
 		val = parm & mask;
 		if (val == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "hda_codec: "
 				   "invalid CONNECT_LIST verb %x[%i]:%x\n",
 				    nid, i, parm);
+#else
+			;
+#endif
 			return 0;
 		}
 		parm >>= shift;
 		if (range_val) {
 			/* ranges between the previous and this one */
 			if (!prev_nid || prev_nid >= val) {
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_WARNING "hda_codec: "
 					   "invalid dep_range_val %x:%x\n",
 					   prev_nid, val);
+#else
+				;
+#endif
 				continue;
 			}
 			for (n = prev_nid + 1; n <= val; n++) {
@@ -1802,9 +1814,13 @@ int snd_hda_mixer_amp_volume_info(struct snd_kcontrol *kcontrol,
 	uinfo->value.integer.min = 0;
 	uinfo->value.integer.max = get_amp_max_value(codec, nid, dir, ofs);
 	if (!uinfo->value.integer.max) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hda_codec: "
 		       "num_steps = 0 for NID=0x%x (ctl = %s)\n", nid,
 		       kcontrol->id.name);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	return 0;
@@ -3648,7 +3664,11 @@ static int get_empty_pcm_device(struct hda_bus *bus, int type)
 	int i;
 
 	if (type >= HDA_PCM_NTYPES) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "Invalid PCM type %d\n", type);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -3656,8 +3676,12 @@ static int get_empty_pcm_device(struct hda_bus *bus, int type)
 		if (!test_and_set_bit(audio_idx[type][i], bus->pcm_dev_bits))
 			return audio_idx[type][i];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING "Too many %s devices\n",
 		snd_hda_pcm_type_name[type]);
+#else
+	;
+#endif
 	return -EAGAIN;
 }
 

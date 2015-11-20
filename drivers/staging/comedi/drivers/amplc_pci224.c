@@ -1387,7 +1387,11 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned n;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor, DRIVER_NAME);
+#else
+	;
+#endif
 
 	bus = it->options[0];
 	slot = it->options[1];
@@ -1488,10 +1492,14 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 		for (n = 2; n < 3 + s->n_chan; n++) {
 			if (it->options[n] < 0 || it->options[n] > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "comedi%d: %s: warning! "
 				       "bad options[%u]=%d\n",
 				       dev->minor, DRIVER_NAME, n,
 				       it->options[n]);
+#else
+				;
+#endif
 			}
 		}
 		for (n = 0; n < s->n_chan; n++) {
@@ -1519,9 +1527,13 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			devpriv->hwrange = hwrange_pci224_external;
 		} else {
 			if (it->options[2] != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "comedi%d: %s: warning! "
 				       "bad options[2]=%d\n",
 				       dev->minor, DRIVER_NAME, it->options[2]);
+#else
+				;
+#endif
 			}
 			s->range_table = &range_pci224_internal;
 			devpriv->hwrange = hwrange_pci224_internal;
@@ -1542,15 +1554,35 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: %s ", dev->minor, dev->board_name);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("(pci %s) ", pci_name(pci_dev));
+#else
+	;
+#endif
 	if (irq)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(irq %u%s) ", irq, (dev->irq ? "" : " UNAVAILABLE"));
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(no irq) ");
+#else
+		;
+#endif
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("attached\n");
+#else
+	;
+#endif
 
 	return 1;
 }
@@ -1565,7 +1597,11 @@ static int pci224_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 static int pci224_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor, DRIVER_NAME);
+#else
+	;
+#endif
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);
@@ -1589,8 +1625,12 @@ static int pci224_detach(struct comedi_device *dev)
 		}
 	}
 	if (dev->board_name) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "comedi%d: %s removed\n",
 		       dev->minor, dev->board_name);
+#else
+		;
+#endif
 	}
 
 	return 0;

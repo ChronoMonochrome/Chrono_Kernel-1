@@ -196,7 +196,11 @@ static void envtrl_i2c_test_pin(void)
 	} 
 
 	if (limit <= 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Pin status will not clear.\n");
+#else
+		;
+#endif
 }
 
 /* Function Description: Test busy bit.
@@ -214,7 +218,11 @@ static void envctrl_i2c_test_bb(void)
 	} 
 
 	if (limit <= 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Busy bit will not clear.\n");
+#else
+		;
+#endif
 }
 
 /* Function Description: Send the address for a read access.
@@ -977,10 +985,18 @@ static void envctrl_do_shutdown(void)
 		return;
 
 	inprog = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "kenvctrld: WARNING: Shutting down the system now.\n");
+#else
+	;
+#endif
 	ret = orderly_poweroff(true);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "kenvctrld: WARNING: system shutdown failed!\n"); 
+#else
+		;
+#endif
 		inprog = 0;  /* unlikely to succeed, but we could try again */
 	}
 }
@@ -1002,7 +1018,11 @@ static int kenvctrld(void *__unused)
 
 	poll_interval = 5000; /* TODO env_mon_interval */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "%s starting...\n", current->comm);
+#else
+	;
+#endif
 	for (;;) {
 		msleep_interruptible(poll_interval);
 
@@ -1014,17 +1034,25 @@ static int kenvctrld(void *__unused)
 						      ENVCTRL_CPUTEMP_MON,
 						      tempbuf)) {
 				if (tempbuf[0] >= shutdown_temperature) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_CRIT 
 						"%s: WARNING: CPU%i temperature %i C meets or exceeds "\
 						"shutdown threshold %i C\n", 
 						current->comm, whichcpu, 
 						tempbuf[0], shutdown_temperature);
+#else
+					;
+#endif
 					envctrl_do_shutdown();
 				}
 			}
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "%s exiting...\n", current->comm);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -1078,12 +1106,20 @@ static int __devinit envctrl_probe(struct platform_device *op)
 	 * a next child device, so we decrement before reverse-traversal of
 	 * child devices.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Initialized ");
+#else
+	;
+#endif
 	for (--index; index >= 0; --index) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[%s 0x%lx]%s", 
 			(I2C_ADC == i2c_childlist[index].i2ctype) ? "adc" : 
 			((I2C_GPIO == i2c_childlist[index].i2ctype) ? "gpio" : "unknown"), 
 			i2c_childlist[index].addr, (0 == index) ? "\n" : " ");
+#else
+		;
+#endif
 	}
 
 	kenvctrld_task = kthread_run(kenvctrld, NULL, "kenvctrld");

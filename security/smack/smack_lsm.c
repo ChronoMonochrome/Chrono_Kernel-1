@@ -1963,9 +1963,13 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
 		if (sock->sk->sk_family != PF_UNIX) {
 			rc = smack_netlabel(sock->sk, SMACK_CIPSO_SOCKET);
 			if (rc != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 					"Smack: \"%s\" netlbl error %d.\n",
 					__func__, -rc);
+#else
+				;
+#endif
 		}
 	} else
 		return -EOPNOTSUPP;
@@ -3583,7 +3587,11 @@ static __init int smack_init(void)
 	if (tsp == NULL)
 		return -ENOMEM;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Smack:  Initializing.\n");
+#else
+	;
+#endif
 
 	/*
 	 * Set the security state for the initial task.

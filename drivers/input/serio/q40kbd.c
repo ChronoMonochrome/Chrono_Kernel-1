@@ -129,7 +129,11 @@ static int __devinit q40kbd_probe(struct platform_device *dev)
 	strlcpy(q40kbd_port->phys, "Q40", sizeof(q40kbd_port->phys));
 
 	serio_register_port(q40kbd_port);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "serio: Q40 kbd registered\n");
+#else
+	;
+#endif
 
 	return 0;
 }

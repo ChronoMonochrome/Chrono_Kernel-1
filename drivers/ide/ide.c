@@ -283,30 +283,54 @@ static void ide_dev_apply_params(ide_drive_t *drive, u8 unit)
 	int i = drive->hwif->index * MAX_DRIVES + unit;
 
 	if (ide_nodma & (1 << i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: disallowing DMA for %s\n", drive->name);
+#else
+		;
+#endif
 		drive->dev_flags |= IDE_DFLAG_NODMA;
 	}
 	if (ide_noflush & (1 << i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: disabling flush requests for %s\n",
 				 drive->name);
+#else
+		;
+#endif
 		drive->dev_flags |= IDE_DFLAG_NOFLUSH;
 	}
 	if (ide_nohpa & (1 << i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: disabling Host Protected Area for %s\n",
 				 drive->name);
+#else
+		;
+#endif
 		drive->dev_flags |= IDE_DFLAG_NOHPA;
 	}
 	if (ide_noprobe & (1 << i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: skipping probe for %s\n", drive->name);
+#else
+		;
+#endif
 		drive->dev_flags |= IDE_DFLAG_NOPROBE;
 	}
 	if (ide_nowerr & (1 << i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: ignoring the ATA_DF bit for %s\n",
 				 drive->name);
+#else
+		;
+#endif
 		drive->bad_wstat = BAD_R_STAT;
 	}
 	if (ide_cdroms & (1 << i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: forcing %s as a CD-ROM\n", drive->name);
+#else
+		;
+#endif
 		drive->dev_flags |= IDE_DFLAG_PRESENT;
 		drive->media = ide_cdrom;
 		/* an ATAPI device ignores DRDY */
@@ -317,9 +341,13 @@ static void ide_dev_apply_params(ide_drive_t *drive, u8 unit)
 		drive->head = drive->bios_head = ide_disks_chs[i].head;
 		drive->sect = drive->bios_sect = ide_disks_chs[i].sect;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: forcing %s as a disk (%d/%d/%d)\n",
 				 drive->name,
 				 drive->cyl, drive->head, drive->sect);
+#else
+		;
+#endif
 
 		drive->dev_flags |= IDE_DFLAG_FORCED_GEOM | IDE_DFLAG_PRESENT;
 		drive->media = ide_disk;
@@ -358,8 +386,12 @@ void ide_port_apply_params(ide_hwif_t *hwif)
 	int i;
 
 	if (ide_ignore_cable & (1 << hwif->index)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ide: ignoring cable detection for %s\n",
 				 hwif->name);
+#else
+		;
+#endif
 		hwif->cbl = ATA_CBL_PATA40_SHORT;
 	}
 
@@ -374,11 +406,19 @@ static int __init ide_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Uniform Multi-Platform E-IDE driver\n");
+#else
+	;
+#endif
 
 	ret = bus_register(&ide_bus_type);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IDE: bus_register error: %d\n", ret);
+#else
+		;
+#endif
 		return ret;
 	}
 

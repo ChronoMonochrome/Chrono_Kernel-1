@@ -51,7 +51,11 @@ static void epx_c3_stop(void)
 
 	outb(0, EPXC3_WATCHDOG_CTL_REG);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Stopped watchdog timer.\n");
+#else
+	;
+#endif
 }
 
 static void epx_c3_pet(void)
@@ -75,7 +79,11 @@ static int epx_c3_open(struct inode *inode, struct file *file)
 	epx_c3_pet();
 
 	epx_c3_alive = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Started watchdog timer.\n");
+#else
+	;
+#endif
 
 	return nonseekable_open(inode, file);
 }
@@ -198,7 +206,11 @@ static int __init watchdog_init(void)
 		goto out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner);
+#else
+	;
+#endif
 
 	return 0;
 

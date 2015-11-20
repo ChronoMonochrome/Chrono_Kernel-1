@@ -127,8 +127,12 @@ static int __init mddi_toshiba_vga_init(void)
 
 	ret = mddi_toshiba_device_register(&pinfo, TOSHIBA_VGA_SECD, panel);
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s: failed to register device!\n", __func__);
+#else
+		;
+#endif
 
 	return ret;
 }

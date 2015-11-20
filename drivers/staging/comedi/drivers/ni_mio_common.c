@@ -443,8 +443,16 @@ static inline void ni_set_bitfield(struct comedi_device *dev, int reg,
 		ni_writeb(devpriv->g0_g1_select_reg, G0_G1_Select);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Warning %s() called with invalid register\n", __func__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("reg is %d\n", reg);
+#else
+		;
+#endif
 		break;
 	}
 	mmiowb();
@@ -1064,8 +1072,12 @@ static void handle_a_interrupt(struct comedi_device *dev, unsigned short status,
 		}
 		if (status & (AI_Overrun_St | AI_Overflow_St |
 			      AI_SC_TC_Error_St)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ni_mio_common: ai error a_status=%04x\n",
 			       status);
+#else
+			;
+#endif
 			ni_mio_print_status_a(status);
 
 			shutdown_ai_command(dev);
@@ -1080,7 +1092,11 @@ static void handle_a_interrupt(struct comedi_device *dev, unsigned short status,
 		}
 		if (status & AI_SC_TC_St) {
 #ifdef DEBUG_INTERRUPT
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ni_mio_common: SC_TC interrupt\n");
+#else
+			;
+#endif
 #endif
 			if (!devpriv->ai_continuous) {
 				shutdown_ai_command(dev);
@@ -1153,8 +1169,12 @@ static void handle_b_interrupt(struct comedi_device *dev,
 	struct comedi_subdevice *s = dev->subdevices + NI_AO_SUBDEV;
 	/* unsigned short ack=0; */
 #ifdef DEBUG_INTERRUPT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_mio_common: interrupt: b_status=%04x m1_status=%08x\n",
 	       b_status, ao_mite_status);
+#else
+	;
+#endif
 	ni_mio_print_status_b(b_status);
 #endif
 
@@ -1196,7 +1216,11 @@ static void handle_b_interrupt(struct comedi_device *dev,
 
 		ret = ni_ao_fifo_half_empty(dev, s);
 		if (!ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ni_mio_common: AO buffer underrun\n");
+#else
+			;
+#endif
 			ni_set_bits(dev, Interrupt_B_Enable_Register,
 				    AO_FIFO_Interrupt_Enable |
 				    AO_Error_Interrupt_Enable, 0);
@@ -1220,13 +1244,25 @@ static void ni_mio_print_status_a(int status)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("A status:");
+#else
+	;
+#endif
 	for (i = 15; i >= 0; i--) {
 		if (status & (1 << i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %s", status_a_strings[i]);
+#else
+			;
+#endif
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 #endif
 
@@ -1242,13 +1278,25 @@ static void ni_mio_print_status_b(int status)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("B status:");
+#else
+	;
+#endif
 	for (i = 15; i >= 0; i--) {
 		if (status & (1 << i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %s", status_b_strings[i]);
+#else
+			;
+#endif
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 #endif
 
@@ -1450,7 +1498,11 @@ static int ni_ai_drain_dma(struct comedi_device *dev)
 			udelay(5);
 		}
 		if (i == timeout) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ni_mio_common: wait for dma drain timed out\n");
+#else
+			;
+#endif
 			printk
 			    ("mite_bytes_in_transit=%i, AI_Status1_Register=0x%x\n",
 			     mite_bytes_in_transit(devpriv->ai_mite_chan),
@@ -1605,7 +1657,11 @@ static int ni_ai_setup_MITE_dma(struct comedi_device *dev)
 	retval = ni_request_ai_mite_channel(dev);
 	if (retval)
 		return retval;
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("comedi_debug: using mite channel %i for ai.\n", devpriv->ai_mite_chan->channel); */
+#else
+/* ;
+#endif
 
 	/* write alloc the entire buffer */
 	comedi_buf_write_alloc(s->async, s->async->prealloc_bufsz);
@@ -1893,7 +1949,11 @@ void ni_prime_channelgain_list(struct comedi_device *dev)
 		}
 		udelay(1);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_mio_common: timeout loading channel/gain list\n");
+#else
+	;
+#endif
 }
 
 static void ni_m_series_load_channelgain_list(struct comedi_device *dev,
@@ -2922,8 +2982,12 @@ static int ni_m_series_ao_config_chanlist(struct comedi_device *dev,
 				  M_Offset_AO_Reference_Attenuation(chan));
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: bug! unhandled ao reference voltage\n",
 			       __func__);
+#else
+			;
+#endif
 			break;
 		}
 		switch (krange->max + krange->min) {
@@ -2934,8 +2998,12 @@ static int ni_m_series_ao_config_chanlist(struct comedi_device *dev,
 			conf |= MSeries_AO_DAC_Offset_5V_Bits;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: bug! unhandled ao offset voltage\n",
 			       __func__);
+#else
+			;
+#endif
 			break;
 		}
 		if (timed)
@@ -3532,8 +3600,12 @@ static int ni_dio_insn_config(struct comedi_device *dev,
 			      struct comedi_insn *insn, unsigned int *data)
 {
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_dio_insn_config() chan=%d io=%d\n",
 	       CR_CHAN(insn->chanspec), data[0]);
+#else
+	;
+#endif
 #endif
 	switch (data[0]) {
 	case INSN_CONFIG_DIO_OUTPUT:
@@ -3565,7 +3637,11 @@ static int ni_dio_insn_bits(struct comedi_device *dev,
 			    struct comedi_insn *insn, unsigned int *data)
 {
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_dio_insn_bits() mask=0x%x bits=0x%x\n", data[0], data[1]);
+#else
+	;
+#endif
 #endif
 	if (insn->n != 2)
 		return -EINVAL;
@@ -3594,8 +3670,12 @@ static int ni_m_series_dio_insn_config(struct comedi_device *dev,
 				       unsigned int *data)
 {
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_m_series_dio_insn_config() chan=%d io=%d\n",
 	       CR_CHAN(insn->chanspec), data[0]);
+#else
+	;
+#endif
 #endif
 	switch (data[0]) {
 	case INSN_CONFIG_DIO_OUTPUT:
@@ -3626,8 +3706,12 @@ static int ni_m_series_dio_insn_bits(struct comedi_device *dev,
 				     unsigned int *data)
 {
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_m_series_dio_insn_bits() mask=0x%x bits=0x%x\n", data[0],
 	       data[1]);
+#else
+	;
+#endif
 #endif
 	if (insn->n != 2)
 		return -EINVAL;
@@ -3879,12 +3963,20 @@ static void handle_cdio_interrupt(struct comedi_device *dev)
 
 	cdio_status = ni_readl(M_Offset_CDIO_Status);
 	if (cdio_status & (CDO_Overrun_Bit | CDO_Underflow_Bit)) {
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("cdio error: statux=0x%x\n", cdio_status); */
+#else
+/* ;
+#endif
 		ni_writel(CDO_Error_Interrupt_Confirm_Bit, M_Offset_CDIO_Command);	/*  XXX just guessing this is needed and does something useful */
 		s->async->events |= COMEDI_CB_OVERFLOW;
 	}
 	if (cdio_status & CDO_FIFO_Empty_Bit) {
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("cdio fifo empty\n"); */
+#else
+/* ;
+#endif
 		ni_writel(CDO_Empty_FIFO_Interrupt_Enable_Clear_Bit,
 			  M_Offset_CDIO_Command);
 /* s->async->events |= COMEDI_CB_EOA; */
@@ -3906,7 +3998,11 @@ static int ni_serial_insn_config(struct comedi_device *dev,
 	case INSN_CONFIG_SERIAL_CLOCK:
 
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("SPI serial clock Config cd\n", data[1]);
+#else
+		;
+#endif
 #endif
 		devpriv->serial_hw_mode = 1;
 		devpriv->dio_control |= DIO_HW_Serial_Enable;
@@ -3972,7 +4068,11 @@ static int ni_serial_insn_config(struct comedi_device *dev,
 			err = ni_serial_sw_readwrite8(dev, s, byte_out,
 						      &byte_in);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ni_serial_insn_config: serial disabled!\n");
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		if (err < 0)
@@ -3996,7 +4096,11 @@ static int ni_serial_hw_readwrite8(struct comedi_device *dev,
 	int err = 0, count = 20;
 
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_serial_hw_readwrite8: outputting 0x%x\n", data_out);
+#else
+	;
+#endif
 #endif
 
 	devpriv->dio_output &= ~DIO_Serial_Data_Mask;
@@ -4035,7 +4139,11 @@ static int ni_serial_hw_readwrite8(struct comedi_device *dev,
 	if (data_in != NULL) {
 		*data_in = devpriv->stc_readw(dev, DIO_Serial_Input_Register);
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ni_serial_hw_readwrite8: inputted 0x%x\n", *data_in);
+#else
+		;
+#endif
 #endif
 	}
 
@@ -4053,7 +4161,11 @@ static int ni_serial_sw_readwrite8(struct comedi_device *dev,
 	unsigned char mask, input = 0;
 
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_serial_sw_readwrite8: outputting 0x%x\n", data_out);
+#else
+	;
+#endif
 #endif
 
 	/* Wait for one bit before transfer */
@@ -4088,12 +4200,20 @@ static int ni_serial_sw_readwrite8(struct comedi_device *dev,
 		if (devpriv->stc_readw(dev,
 				       DIO_Parallel_Input_Register) & DIO_SDIN)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 /*			printk("DIO_P_I_R: 0x%x\n", devpriv->stc_readw(dev, DIO_Parallel_Input_Register)); */
+#else
+/*			;
+#endif
 			input |= mask;
 		}
 	}
 #ifdef DEBUG_DIO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ni_serial_sw_readwrite8: inputted 0x%x\n", input);
+#else
+	;
+#endif
 #endif
 	if (data_in)
 		*data_in = input;
@@ -4206,8 +4326,12 @@ static unsigned ni_gpct_to_stc_register(enum ni_gpct_register reg)
 		stc_register = Interrupt_B_Enable_Register;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: unhandled register 0x%x in switch.\n",
 		       __func__, reg);
+#else
+		;
+#endif
 		BUG();
 		return 0;
 		break;
@@ -4408,7 +4532,11 @@ static int ni_E_init(struct comedi_device *dev, struct comedi_devconfig *it)
 	enum ni_gpct_variant counter_variant;
 
 	if (boardtype.n_aochan > MAX_N_AO_CHAN) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("bug! boardtype.n_aochan > MAX_N_AO_CHAN\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -4718,7 +4846,11 @@ static int ni_E_init(struct comedi_device *dev, struct comedi_devconfig *it)
 		ni_writeb(0x0, M_Offset_AO_Calibration);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -4996,7 +5128,11 @@ static void caldac_setup(struct comedi_device *dev, struct comedi_subdevice *s)
 		unsigned int *maxdata_list;
 
 		if (n_chans > MAX_N_CALDACS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("BUG! MAX_N_CALDACS too small\n");
+#else
+			;
+#endif
 		}
 		s->maxdata_list = maxdata_list = devpriv->caldac_maxdata_list;
 		chan = 0;
@@ -5026,7 +5162,11 @@ static void ni_write_caldac(struct comedi_device *dev, int addr, int val)
 	int i;
 	int type;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("ni_write_caldac: chan=%d val=%d\n",addr,val); */
+#else
+	/* ;
+#endif
 	if (devpriv->caldacs[addr] == val)
 		return;
 	devpriv->caldacs[addr] = val;
@@ -5038,7 +5178,11 @@ static void ni_write_caldac(struct comedi_device *dev, int addr, int val)
 		if (addr < caldacs[type].n_chans) {
 			bits = caldacs[type].packbits(addr, val, &bitstring);
 			loadbit = SerDacLd(i);
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("caldac: using i=%d addr=%d %x\n",i,addr,bitstring); */
+#else
+			/* ;
+#endif
 			break;
 		}
 		addr -= caldacs[type].n_chans;
@@ -5134,7 +5278,11 @@ static void GPCT_Reset(struct comedi_device *dev, int chan)
 {
 	int temp_ack_reg = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("GPCT_Reset..."); */
+#else
+	/* ;
+#endif
 	devpriv->gpct_cur_operation[chan] = GPCT_RESET;
 
 	switch (chan) {
@@ -5187,7 +5335,11 @@ static void GPCT_Reset(struct comedi_device *dev, int chan)
 			    G_Input_Select_Register(chan));
 	devpriv->stc_writew(dev, 0, G_Autoincrement_Register(chan));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("exit GPCT_Reset\n"); */
+#else
+	/* ;
+#endif
 }
 
 #endif
@@ -5353,7 +5505,11 @@ static unsigned ni_old_get_pfi_routing(struct comedi_device *dev, unsigned chan)
 		return NI_PFI_OUTPUT_G_GATE0;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: bug, unhandled case in switch.\n", __func__);
+#else
+		;
+#endif
 		break;
 	}
 	return 0;
@@ -5448,7 +5604,11 @@ static void ni_rtsi_init(struct comedi_device *dev)
 	/*  Set clock mode to internal */
 	devpriv->clock_and_fout2 = MSeries_RTSI_10MHz_Bit;
 	if (ni_set_master_clock(dev, NI_MIO_INTERNAL_CLOCK, 0) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ni_set_master_clock failed, bug?");
+#else
+		;
+#endif
 	}
 	/*  default internal lines routing to RTSI bus lines */
 	devpriv->rtsi_trig_a_output_reg =
@@ -5525,7 +5685,11 @@ static int ni_mseries_get_pll_parameters(unsigned reference_period_ns,
 		}
 	}
 	if (best_period_picosec == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: bug, failed to find pll parameters\n", __func__);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	*freq_divider = best_div;
@@ -5624,9 +5788,17 @@ static int ni_mseries_set_pll_master_clock(struct comedi_device *dev,
 	    MSeries_PLL_Divisor_Bits(freq_divider) |
 	    MSeries_PLL_Multiplier_Bits(freq_multiplier);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("using divider=%i, multiplier=%i for PLL. pll_control_bits = 0x%x\n",
 	 * freq_divider, freq_multiplier, pll_control_bits); */
+#else
+	/* ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("clock_ns=%d\n", devpriv->clock_ns); */
+#else
+	/* ;
+#endif
 	ni_writew(pll_control_bits, M_Offset_PLL_Control);
 	devpriv->clock_source = source;
 	/* it seems to typically take a few hundred microseconds for PLL to lock */
@@ -5762,7 +5934,11 @@ static unsigned ni_get_rtsi_routing(struct comedi_device *dev, unsigned chan)
 	} else {
 		if (chan == old_RTSI_clock_channel)
 			return NI_RTSI_OUTPUT_RTSI_OSC;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: bug! should never get here?\n", __func__);
+#else
+		;
+#endif
 		return 0;
 	}
 }
@@ -5856,9 +6032,17 @@ static int cs5529_wait_for_idle(struct comedi_device *dev)
 			return -EIO;
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("looped %i times waiting for idle\n", i); */
+#else
+/* ;
+#endif
 	if (i == timeout) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %s: timeout\n", __FILE__, __func__);
+#else
+		;
+#endif
 		return -ETIME;
 	}
 	return 0;
@@ -5879,7 +6063,11 @@ static void cs5529_command(struct comedi_device *dev, unsigned short value)
 			break;
 		udelay(1);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("looped %i times writing command to cs5529\n", i); */
+#else
+/* ;
+#endif
 	if (i == timeout) {
 		comedi_error(dev, "possible problem - never saw adc go busy?");
 	}
@@ -5995,11 +6183,23 @@ static int init_cs5529(struct comedi_device *dev)
 		comedi_error(dev, "timeout or signal in init_cs5529()\n");
 #endif
 #ifdef NI_CS5529_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("config: 0x%x\n", cs5529_config_read(dev,
 						    CSCMD_CONFIG_REGISTER));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("gain: 0x%x\n", cs5529_config_read(dev, CSCMD_GAIN_REGISTER));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("offset: 0x%x\n", cs5529_config_read(dev,
 						    CSCMD_OFFSET_REGISTER));
+#else
+	;
+#endif
 #endif
 	return 0;
 }

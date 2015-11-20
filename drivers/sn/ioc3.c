@@ -127,7 +127,11 @@ nic_find(struct ioc3_driver_data *idd, int *last, unsigned long addr)
 		b = nic_read_bit(idd);
 
 		if (a && b) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "IOC3 NIC search failed.\n");
+#else
+			;
+#endif
 			*last = 0;
 			return 0;
 		}
@@ -434,8 +438,12 @@ static irqreturn_t ioc3_intr_io(int irq, void *arg)
 	}
 	read_unlock_irqrestore(&ioc3_submodules_lock, flags);
 	if(pending) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		  "IOC3: Pending IRQs 0x%08x discarded and disabled\n",pending);
+#else
+		;
+#endif
 		write_ireg(idd, pending, IOC3_W_IEC);
 		handled = 1;
 	}
@@ -509,14 +517,22 @@ int ioc3_register_submodule(struct ioc3_submodule *is)
 			if(ioc3_ethernet==NULL)
 				ioc3_ethernet=is;
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				  "IOC3 Ethernet module already registered!\n");
+#else
+				;
+#endif
 		}
 	}
 	write_unlock_irqrestore(&ioc3_submodules_lock, flags);
 
 	if(alloc_id == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Increase IOC3_MAX_SUBMODULES!\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -547,8 +563,12 @@ void ioc3_unregister_submodule(struct ioc3_submodule *is)
 	if(ioc3_submodules[is->id]==is)
 		ioc3_submodules[is->id]=NULL;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"IOC3 submodule %s has wrong ID.\n",is->name);
+#else
+		;
+#endif
 	if(ioc3_ethernet==is)
 		ioc3_ethernet = NULL;
 	write_unlock_irqrestore(&ioc3_submodules_lock, flags);
@@ -559,11 +579,15 @@ void ioc3_unregister_submodule(struct ioc3_submodule *is)
 		if(idd->active[is->id]) {
 			if(is->remove)
 				if(is->remove(is, idd))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING
 					       "%s: IOC3 submodule %s remove failed "
 					       "for pci_dev %s.\n",
 					       __func__, module_name(is->owner),
 					       pci_name(idd->pdev));
+#else
+					;
+#endif
 			idd->active[is->id] = 0;
 			if(is->irq_mask)
 				write_ireg(idd, is->irq_mask, IOC3_W_IEC);
@@ -597,8 +621,12 @@ static int __devinit ioc3_class(struct ioc3_driver_data *idd)
 		res = IOC3_CLASS_BASE_IP27;
 #endif
 	/* print educational message */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IOC3 part: [%s], serial: [%s] => class %s\n",
 			idd->nic_part, idd->nic_serial, ioc3_class_names[res]);
+#else
+	;
+#endif
 	return res;
 }
 /* Adds a new instance of an IOC3 card */
@@ -611,9 +639,13 @@ ioc3_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 
 	/* Enable IOC3 and take ownership of it */
 	if ((ret = pci_enable_device(pdev))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Failed to enable IOC3 device for pci_dev %s.\n",
 		       __func__, pci_name(pdev));
+#else
+		;
+#endif
 		goto out;
 	}
 	pci_set_master(pdev);
@@ -623,9 +655,13 @@ ioc3_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
         if (!ret) {
                 ret = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
                 if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
                         printk(KERN_WARNING "%s: Unable to obtain 64 bit DMA "
                                "for consistent allocations\n",
 				__func__);
+#else
+                        ;
+#endif
                 }
 	}
 #endif
@@ -633,9 +669,13 @@ ioc3_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 	/* Set up per-IOC3 data */
 	idd = kzalloc(sizeof(struct ioc3_driver_data), GFP_KERNEL);
 	if (!idd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Failed to allocate IOC3 data for pci_dev %s.\n",
 		       __func__, pci_name(pdev));
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_idd;
 	}
@@ -648,27 +688,39 @@ ioc3_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 	 */
 	idd->pma = pci_resource_start(pdev, 0);
 	if (!idd->pma) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Unable to find IOC3 resource "
 		       "for pci_dev %s.\n",
 		       __func__, pci_name(pdev));
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_pci;
 	}
 	if (!request_mem_region(idd->pma, IOC3_PCI_SIZE, "ioc3")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Unable to request IOC3 region "
 		       "for pci_dev %s.\n",
 		       __func__, pci_name(pdev));
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_pci;
 	}
 	idd->vma = ioremap(idd->pma, IOC3_PCI_SIZE);
 	if (!idd->vma) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Unable to remap IOC3 region "
 		       "for pci_dev %s.\n",
 		       __func__, pci_name(pdev));
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_misc_region;
 	}
@@ -709,26 +761,38 @@ ioc3_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 				 "ioc3-eth", (void *)idd)) {
 			idd->irq_eth = pdev->irq;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s : request_irq fails for IRQ 0x%x\n ",
 			       __func__, pdev->irq);
+#else
+			;
+#endif
 		}
 		if (!request_irq(pdev->irq+2, ioc3_intr_io, IRQF_SHARED,
 				 "ioc3-io", (void *)idd)) {
 			idd->irq_io = pdev->irq+2;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s : request_irq fails for IRQ 0x%x\n ",
 			       __func__, pdev->irq+2);
+#else
+			;
+#endif
 		}
 	} else {
 		if (!request_irq(pdev->irq, ioc3_intr_io, IRQF_SHARED,
 				 "ioc3", (void *)idd)) {
 			idd->irq_io = pdev->irq;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s : request_irq fails for IRQ 0x%x\n ",
 			       __func__, pdev->irq);
+#else
+			;
+#endif
 		}
 	}
 
@@ -740,7 +804,11 @@ ioc3_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 						(ioc3_submodules[id], idd);
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IOC3 Master Driver loaded for %s\n", pci_name(pdev));
+#else
+	;
+#endif
 
 	return 0;
 
@@ -768,12 +836,16 @@ static void __devexit ioc3_remove(struct pci_dev *pdev)
 			if(ioc3_submodules[id] && ioc3_submodules[id]->remove)
 				if(ioc3_submodules[id]->remove(ioc3_submodules[id],
 								idd))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING
 					       "%s: IOC3 submodule 0x%s remove failed "
 					       "for pci_dev %s.\n",
 						__func__,
 						module_name(ioc3_submodules[id]->owner),
 					        pci_name(pdev));
+#else
+					;
+#endif
 			idd->active[id] = 0;
 		}
 

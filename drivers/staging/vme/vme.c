@@ -274,7 +274,11 @@ struct vme_resource *vme_slave_request(struct device *dev,
 
 	resource = kmalloc(sizeof(struct vme_resource), GFP_KERNEL);
 	if (resource == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unable to allocate resource structure\n");
+#else
+		;
+#endif
 		goto err_alloc;
 	}
 	resource->type = VME_SLAVE;
@@ -406,7 +410,11 @@ struct vme_resource *vme_master_request(struct device *dev,
 			struct vme_master_resource, list);
 
 		if (master_image == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Registered NULL master resource\n");
+#else
+			;
+#endif
 			continue;
 		}
 
@@ -468,14 +476,22 @@ int vme_master_set(struct vme_resource *resource, int enabled,
 	image = list_entry(resource->entry, struct vme_master_resource, list);
 
 	if (bridge->master_set == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "vme_master_set not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	if (!(((image->address_attr & aspace) == aspace) &&
 		((image->cycle_attr & cycle) == cycle) &&
 		((image->width_attr & dwidth) == dwidth))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Invalid attributes\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -503,7 +519,11 @@ int vme_master_get(struct vme_resource *resource, int *enabled,
 	image = list_entry(resource->entry, struct vme_master_resource, list);
 
 	if (bridge->master_get == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "vme_master_set not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -523,7 +543,11 @@ ssize_t vme_master_read(struct vme_resource *resource, void *buf, size_t count,
 	size_t length;
 
 	if (bridge->master_read == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Reading from resource not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -537,7 +561,11 @@ ssize_t vme_master_read(struct vme_resource *resource, void *buf, size_t count,
 	length = vme_get_size(resource);
 
 	if (offset > length) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Invalid Offset\n");
+#else
+		;
+#endif
 		return -EFAULT;
 	}
 
@@ -560,7 +588,11 @@ ssize_t vme_master_write(struct vme_resource *resource, void *buf,
 	size_t length;
 
 	if (bridge->master_write == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Writing to resource not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -574,7 +606,11 @@ ssize_t vme_master_write(struct vme_resource *resource, void *buf,
 	length = vme_get_size(resource);
 
 	if (offset > length) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Invalid Offset\n");
+#else
+		;
+#endif
 		return -EFAULT;
 	}
 
@@ -595,7 +631,11 @@ unsigned int vme_master_rmw(struct vme_resource *resource, unsigned int mask,
 	struct vme_master_resource *image;
 
 	if (bridge->master_rmw == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Writing to resource not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -689,7 +729,11 @@ struct vme_resource *vme_dma_request(struct device *dev, vme_dma_route_t route)
 
 	resource = kmalloc(sizeof(struct vme_resource), GFP_KERNEL);
 	if (resource == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unable to allocate resource structure\n");
+#else
+		;
+#endif
 		goto err_alloc;
 	}
 	resource->type = VME_DMA;
@@ -872,7 +916,11 @@ int vme_dma_list_add(struct vme_dma_list *list, struct vme_dma_attr *src,
 	int retval;
 
 	if (bridge->dma_list_add == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Link List DMA generation not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -915,7 +963,11 @@ int vme_dma_list_free(struct vme_dma_list *list)
 	int retval;
 
 	if (bridge->dma_list_empty == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Emptying of Link Lists not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -958,7 +1010,11 @@ int vme_dma_free(struct vme_resource *resource)
 	}
 
 	if (!(list_empty(&ctrlr->pending) && list_empty(&ctrlr->running))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Resource still processing transfers\n");
+#else
+		;
+#endif
 		mutex_unlock(&ctrlr->mtx);
 		return -EBUSY;
 	}
@@ -982,8 +1038,12 @@ void vme_irq_handler(struct vme_bridge *bridge, int level, int statid)
 	if (call != NULL)
 		call(level, statid, priv_data);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Spurilous VME interrupt, level:%x, "
 			"vector:%x\n", level, statid);
+#else
+		;
+#endif
 }
 EXPORT_SYMBOL(vme_irq_handler);
 
@@ -1013,7 +1073,11 @@ int vme_irq_request(struct device *dev, int level, int statid,
 
 	if (bridge->irq[level - 1].callback[statid].func) {
 		mutex_unlock(&bridge->irq_mtx);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "VME Interrupt already taken\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
@@ -1076,12 +1140,20 @@ int vme_irq_generate(struct device *dev, int level, int statid)
 	}
 
 	if ((level < 1) || (level > 7)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Invalid interrupt level\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	if (bridge->irq_generate == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Interrupt generation not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -1292,7 +1364,11 @@ int vme_slot_get(struct device *bus)
 	}
 
 	if (bridge->slot_get == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "vme_slot_get not supported\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

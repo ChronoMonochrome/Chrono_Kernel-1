@@ -604,7 +604,11 @@ static int pci9111_ai_cancel(struct comedi_device *dev,
 	pci9111_fifo_reset();
 
 #ifdef AI_DO_CMD_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": ai_cancel\n");
+#else
+	;
+#endif
 #endif
 
 	return 0;
@@ -878,9 +882,13 @@ static int pci9111_ai_do_cmd(struct comedi_device *dev,
 					       async_cmd->
 					       flags & TRIG_ROUND_MASK);
 #ifdef AI_DO_CMD_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PCI9111_DRIVER_NAME ": divisors = %d, %d\n",
 		       dev_private->timer_divisor_1,
 		       dev_private->timer_divisor_2);
+#else
+		;
+#endif
 #endif
 
 		pci9111_trigger_source_set(dev, software);
@@ -924,20 +932,52 @@ static int pci9111_ai_do_cmd(struct comedi_device *dev,
 	    dev_private->chanlist_len * (1 + dev_private->scan_delay);
 
 #ifdef AI_DO_CMD_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": start interruptions!\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": trigger source = %2x\n",
 	       pci9111_trigger_and_autoscan_get());
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": irq source     = %2x\n",
 	       pci9111_interrupt_and_fifo_get());
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": ai_do_cmd\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": stop counter   = %d\n",
 	       dev_private->stop_counter);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": scan delay     = %d\n",
 	       dev_private->scan_delay);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": chanlist_len   = %d\n",
 	       dev_private->chanlist_len);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": chunk num samples = %d\n",
 	       dev_private->chunk_num_samples);
+#else
+	;
+#endif
 #endif
 
 	return 0;
@@ -1023,7 +1063,11 @@ static irqreturn_t pci9111_interrupt(int irq, void *p_device)
 			unsigned int bytes_written = 0;
 
 #ifdef INTERRUPT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(PCI9111_DRIVER_NAME ": fifo is half full\n");
+#else
+			;
+#endif
 #endif
 
 			num_samples =
@@ -1129,9 +1173,13 @@ static int pci9111_ai_insn_read(struct comedi_device *dev,
 	int timeout, i;
 
 #ifdef AI_INSN_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": ai_insn set c/r/n = %2x/%2x/%2x\n",
 	       CR_CHAN((&insn->chanspec)[0]),
 	       CR_RANGE((&insn->chanspec)[0]), insn->n);
+#else
+	;
+#endif
 #endif
 
 	pci9111_ai_channel_set(CR_CHAN((&insn->chanspec)[0]));
@@ -1165,9 +1213,13 @@ conversion_done:
 	}
 
 #ifdef AI_INSN_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PCI9111_DRIVER_NAME ": ai_insn get c/r/t = %2x/%2x/%2x\n",
 	       pci9111_ai_channel_get(),
 	       pci9111_ai_range_get(), pci9111_trigger_and_autoscan_get());
+#else
+	;
+#endif
 #endif
 
 	return i;

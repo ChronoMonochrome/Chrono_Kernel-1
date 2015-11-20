@@ -288,8 +288,12 @@ static int pci_frontend_enable_msix(struct pci_dev *dev,
 				vector[i] = op.msix_entries[i].vector;
 			}
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "enable msix get value %x\n",
 				op.value);
+#else
+			;
+#endif
 		}
 	} else {
 		dev_err(&dev->dev, "enable msix get err %x\n", err);
@@ -360,12 +364,20 @@ static void pci_frontend_disable_msi(struct pci_dev *dev)
 	err = do_pci_op(pdev, &op);
 	if (err == XEN_PCI_ERR_dev_not_found) {
 		/* XXX No response from backend, what shall we do? */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "get no response from backend for disable MSI\n");
+#else
+		;
+#endif
 		return;
 	}
 	if (err)
 		/* how can pciback notify us fail? */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "get fake response frombackend\n");
+#else
+		;
+#endif
 }
 
 static struct xen_pci_frontend_ops pci_frontend_ops = {

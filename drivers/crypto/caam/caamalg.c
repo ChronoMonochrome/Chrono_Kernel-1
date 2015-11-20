@@ -83,6 +83,7 @@
 /* for print_hex_dumps with line references */
 #define xstr(s) str(s)
 #define str(s) #s
+#ifdef CONFIG_DEBUG_PRINTK
 #define debug(format, arg...) printk(format, arg)
 #else
 #define debug(format, arg...)
@@ -92,6 +93,9 @@
 static inline void append_dec_op1(u32 *desc, u32 type)
 {
 	u32 *jump_cmd, *uncond_jump_cmd;
+#else
+#define debug(format, arg...) ;
+#endif
 
 	jump_cmd = append_jump(desc, JUMP_TEST_ALL | JUMP_COND_SHRD);
 	append_operation(desc, type | OP_ALG_AS_INITFINAL |

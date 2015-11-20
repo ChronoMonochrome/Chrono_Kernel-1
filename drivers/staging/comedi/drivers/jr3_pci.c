@@ -226,10 +226,14 @@ struct six_axis_t {
 static void set_full_scales(volatile struct jr3_channel *channel,
 			    struct six_axis_t full_scale)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d %d %d %d %d %d\n",
 	       full_scale.fx,
 	       full_scale.fy,
 	       full_scale.fz, full_scale.mx, full_scale.my, full_scale.mz);
+#else
+	;
+#endif
 	set_s16(&channel->full_scale.fx, full_scale.fx);
 	set_s16(&channel->full_scale.fy, full_scale.fy);
 	set_s16(&channel->full_scale.fz, full_scale.fz);
@@ -378,14 +382,22 @@ static int jr3_pci_open(struct comedi_device *dev)
 	int i;
 	struct jr3_pci_dev_private *devpriv = dev->private;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("jr3_pci_open\n");
+#else
+	;
+#endif
 	for (i = 0; i < devpriv->n_channels; i++) {
 		struct jr3_pci_subdev_private *p;
 
 		p = dev->subdevices[i].private;
 		if (p) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("serial: %p %d (%d)\n", p, p->serial_no,
 			       p->channel_no);
+#else
+			;
+#endif
 		}
 	}
 	return 0;
@@ -463,8 +475,12 @@ static int jr3_download_firmware(struct comedi_device *dev, const u8 * data,
 					break;
 				more = more
 				    && read_idm_word(data, size, &pos, &addr);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Loading#%d %4.4x bytes at %4.4x\n", i,
 				       count, addr);
+#else
+				;
+#endif
 				while (more && count > 0) {
 					if (addr & 0x4000) {
 						/*  16 bit data, never seen in real life!! */
@@ -475,7 +491,11 @@ static int jr3_download_firmware(struct comedi_device *dev, const u8 * data,
 								     size, &pos,
 								     &data1);
 						count--;
+#ifdef CONFIG_DEBUG_PRINTK
 						/* printk("jr3_data, not tested\n"); */
+#else
+						/* ;
+#endif
 						/* jr3[addr + 0x20000 * pnum] = data1; */
 					} else {
 						/*   Download 24 bit program */
@@ -523,7 +543,11 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
 		int errors = get_u16(&channel->errors);
 
 		if (errors != p->errors) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Errors: %x -> %x\n", p->errors, errors);
+#else
+			;
+#endif
 			p->errors = errors;
 		}
 		if (errors & (watch_dog | watch_dog2 | sensor_change)) {
@@ -566,10 +590,18 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
 					printk
 					    ("Setting transform for channel %d\n",
 					     p->channel_no);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Sensor Model     = %i\n",
 					       p->model_no);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Sensor Serial    = %i\n",
 					       p->serial_no);
+#else
+					;
+#endif
 
 					/*  Transformation all zeros */
 					for (i = 0; i < ARRAY_SIZE(transf.link); i++) {
@@ -598,25 +630,89 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
 
 					min_full_scale =
 					    get_min_full_scales(channel);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Obtained Min. Full Scales:\n");
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (min_full_scale).fx);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (min_full_scale).fy);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (min_full_scale).fz);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (min_full_scale).mx);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (min_full_scale).my);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (min_full_scale).mz);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("\n");
+#else
+					;
+#endif
 
 					max_full_scale =
 					    get_max_full_scales(channel);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Obtained Max. Full Scales:\n");
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (max_full_scale).fx);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (max_full_scale).fy);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (max_full_scale).fz);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (max_full_scale).mx);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (max_full_scale).my);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%i   ", (max_full_scale).mz);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("\n");
+#else
+					;
+#endif
 
 					set_full_scales(channel,
 							max_full_scale);
@@ -672,6 +768,7 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
 					{
 						int i;
 						for (i = 0; i < 9; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 							printk("%d %d - %d\n",
 							       i,
 							       p->
@@ -680,6 +777,9 @@ static struct poll_delay_t jr3_pci_poll_subdevice(struct comedi_subdevice *s)
 							       p->
 							       range[i].range.
 							       max);
+#else
+							;
+#endif
 						}
 					}
 
@@ -779,14 +879,22 @@ static int jr3_pci_attach(struct comedi_device *dev,
 	int opt_bus, opt_slot, i;
 	struct jr3_pci_dev_private *devpriv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: jr3_pci\n", dev->minor);
+#else
+	;
+#endif
 
 	opt_bus = it->options[0];
 	opt_slot = it->options[1];
 
 	if (sizeof(struct jr3_channel) != 0xc00) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("sizeof(struct jr3_channel) = %x [expected %x]\n",
 		       (unsigned)sizeof(struct jr3_channel), 0xc00);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -840,7 +948,11 @@ static int jr3_pci_attach(struct comedi_device *dev,
 		}
 	}
 	if (!card) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" no jr3_pci found\n");
+#else
+		;
+#endif
 		return -EIO;
 	} else {
 		devpriv->pci_dev = card;
@@ -875,10 +987,14 @@ static int jr3_pci_attach(struct comedi_device *dev,
 
 			p = dev->subdevices[i].private;
 			p->channel = &devpriv->iobase->channel[i].data;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("p->channel %p %p (%tx)\n",
 			       p->channel, devpriv->iobase,
 			       ((char *)(p->channel) -
 				(char *)(devpriv->iobase)));
+#else
+			;
+#endif
 			p->channel_no = i;
 			for (j = 0; j < 8; j++) {
 				int k;
@@ -916,7 +1032,11 @@ static int jr3_pci_attach(struct comedi_device *dev,
 	writel(0, &devpriv->iobase->channel[0].reset);
 
 	result = comedi_load_firmware(dev, "jr3pci.idm", jr3_download_firmware);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Firmare load %d\n", result);
+#else
+	;
+#endif
 
 	if (result < 0)
 		goto out;
@@ -934,9 +1054,13 @@ static int jr3_pci_attach(struct comedi_device *dev,
  */
 	msleep_interruptible(25);
 	for (i = 0; i < 0x18; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%c",
 		       get_u16(&devpriv->iobase->channel[0].
 			       data.copyright[i]) >> 8);
+#else
+		;
+#endif
 	}
 
 	/*  Start card timer */
@@ -963,7 +1087,11 @@ static int jr3_pci_detach(struct comedi_device *dev)
 	int i;
 	struct jr3_pci_dev_private *devpriv = dev->private;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: jr3_pci: remove\n", dev->minor);
+#else
+	;
+#endif
 	if (devpriv) {
 		del_timer_sync(&devpriv->timer);
 

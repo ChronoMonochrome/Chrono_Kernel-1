@@ -927,7 +927,11 @@ BSSvUpdateAPNode(
     pMgmt->sNodeDBTable[0].bShortPreamble = WLAN_GET_CAP_INFO_SHORTPREAMBLE(*pwCapInfo);
     pMgmt->sNodeDBTable[0].uRatePollTimeout = FALLBACK_POLL_SECOND;
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("BSSvUpdateAPNode:MaxSuppRate is %d\n",pMgmt->sNodeDBTable[0].wMaxSuppRate);
+#else
+	;
+#endif
 #endif
     // Auto rate fallback function initiation.
     // RATEbInit(pDevice);
@@ -977,7 +981,11 @@ BSSvAddMulticastNode(
                      );
     pMgmt->sNodeDBTable[0].wTxDataRate = pMgmt->sNodeDBTable[0].wMaxBasicRate;
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("BSSvAddMultiCastNode:pMgmt->sNodeDBTable[0].wTxDataRate is %d\n",pMgmt->sNodeDBTable[0].wTxDataRate);
+#else
+	;
+#endif
 #endif
     pMgmt->sNodeDBTable[0].uRatePollTimeout = FALLBACK_POLL_SECOND;
 
@@ -1086,7 +1094,11 @@ start:
 {
        pDevice->byReAssocCount++;
    if((pDevice->byReAssocCount > 10) && (pDevice->bLinkPass != true)) {  //10 sec timeout
+#ifdef CONFIG_DEBUG_PRINTK
                      printk("Re-association timeout!!!\n");
+#else
+                     ;
+#endif
 		   pDevice->byReAssocCount = 0;
                      #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
                     // if(pDevice->bWPASuppWextEnabled == true)
@@ -1161,11 +1173,19 @@ start:
                     // ii = 0 reserved for unicast AP node (Infra STA)
                     if (pMgmt->eCurrMode == WMAC_MODE_ESS_STA)
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("SecondCallback:Before:TxDataRate is %d\n",pMgmt->sNodeDBTable[0].wTxDataRate);
+#else
+		;
+#endif
 #endif
                         RATEvTxRateFallBack((void *)pDevice, &(pMgmt->sNodeDBTable[ii]));
 #ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("SecondCallback:After:TxDataRate is %d\n",pMgmt->sNodeDBTable[0].wTxDataRate);
+#else
+		;
+#endif
 #endif
 
 		}
@@ -1415,11 +1435,23 @@ BSSvUpdateNodeTxCounter(
         byFallBack = AUTO_FB_NONE;
     }
     wRate = pTxBufHead->wReserved; //?wRate
+#ifdef CONFIG_DEBUG_PRINTK
     //printk("BSSvUpdateNodeTxCounter:byTxRetry is %d\n",byTxRetry);
+#else
+    //;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 //printk("BSSvUpdateNodeTx:wRate is %d,byFallback is %d\n",wRate,byFallBack);
+#else
+//;
+#endif
 //#ifdef	PLICE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("BSSvUpdateNodeTx: wRate is %d\n",wRate);
+#else
+	//;
+#endif
 ////#endif
     // Only Unicast using support rates
     if (pTxBufHead->wFIFOCtl & FIFOCTL_NEEDACK) {
@@ -1468,13 +1500,21 @@ BSSvUpdateNodeTxCounter(
 
 //PLICE_DEBUG
 						wFallBackRate = awHWRetry0[wRate-RATE_18M][ii];
+#ifdef CONFIG_DEBUG_PRINTK
 					//printk(" II is %d:BSSvUpdateNodeTx:wFallBackRate is %d\n",ii,wFallBackRate);
+#else
+					//;
+#endif
 				//wFallBackRate = awHWRetry0[wRate-RATE_12M][ii];
                         	}
 			else
 				{
 			wFallBackRate = awHWRetry0[wRate-RATE_18M][4];
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("ii is %d BSSvUpdateNodeTx:wFallBackRate is %d\n",ii,wFallBackRate);
+#else
+			//;
+#endif
 				//wFallBackRate = awHWRetry0[wRate-RATE_12M][4];
 				}
 						pMgmt->sNodeDBTable[0].uTxFail[wFallBackRate]++;
@@ -1688,7 +1728,11 @@ RxOkRatio = (RxCnt < 6) ? 2000:((pDevice->scStatistic.RxOkCnt * 2000) / RxCnt);
 //decide link quality
 if(pDevice->bLinkPass !=true)
 {
+#ifdef CONFIG_DEBUG_PRINTK
  //  printk("s_uCalculateLinkQual-->Link disconnect and Poor quality**\n");
+#else
+ //  ;
+#endif
    pDevice->scStatistic.LinkQuality = 0;
    pDevice->scStatistic.SignalStren = 0;
 }

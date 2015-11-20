@@ -1842,9 +1842,13 @@ static void panel_process_inputs(void)
 	struct logical_input *input;
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "entering panel_process_inputs with pp=%016Lx & pc=%016Lx\n",
 	       phys_prev, phys_curr);
+#else
+	;
+#endif
 #endif
 
 	keypressed = 0;
@@ -2007,8 +2011,12 @@ static struct logical_input *panel_bind_key(char *name, char *press,
 	key->fall_time = 1;
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "bind: <%s> : m=%016Lx v=%016Lx\n", name, key->mask,
 	       key->value);
+#else
+	;
+#endif
 #endif
 	strncpy(key->u.kbd.press_str, press, sizeof(key->u.kbd.press_str));
 	strncpy(key->u.kbd.repeat_str, repeat, sizeof(key->u.kbd.repeat_str));
@@ -2303,12 +2311,20 @@ int panel_init(void)
 	register_reboot_notifier(&panel_notifier);
 
 	if (pprt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Panel driver version " PANEL_VERSION
 		       " registered on parport%d (io=0x%lx).\n", parport,
 		       pprt->port->base);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Panel driver version " PANEL_VERSION
 		       " not yet registered\n");
+#else
+		;
+#endif
 	/* tells various subsystems about the fact that initialization
 	   is finished */
 	init_in_progress = 0;

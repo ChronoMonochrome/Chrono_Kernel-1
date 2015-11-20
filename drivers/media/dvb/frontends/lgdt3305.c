@@ -34,6 +34,7 @@ MODULE_PARM_DESC(debug, "set debug level (info=1, reg=2 (or-able))");
 #define DBG_INFO 1
 #define DBG_REG  2
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define lg_printk(kern, fmt, arg...)					\
 	printk(kern "%s: " fmt, __func__, ##arg)
 
@@ -48,6 +49,9 @@ MODULE_PARM_DESC(debug, "set debug level (info=1, reg=2 (or-able))");
 #define lg_fail(ret)							\
 ({									\
 	int __ret;							\
+#else
+#define lg_;
+#endif
 	__ret = (ret < 0);						\
 	if (__ret)							\
 		lg_err("error %d on line %d\n",	ret, __LINE__);		\

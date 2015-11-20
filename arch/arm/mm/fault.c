@@ -74,10 +74,18 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 	if (!mm)
 		mm = &init_mm;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "pgd = %p\n", mm->pgd);
+#else
+	;
+#endif
 	pgd = pgd_offset(mm, addr);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "[%08lx] *pgd=%08llx",
 			addr, (long long)pgd_val(*pgd));
+#else
+	;
+#endif
 
 	do {
 		pud_t *pud;
@@ -88,31 +96,51 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 			break;
 
 		if (pgd_bad(*pgd)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(bad)");
+#else
+			;
+#endif
 			break;
 		}
 
 		pud = pud_offset(pgd, addr);
 		if (PTRS_PER_PUD != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", *pud=%08lx", pud_val(*pud));
+#else
+			;
+#endif
 
 		if (pud_none(*pud))
 			break;
 
 		if (pud_bad(*pud)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(bad)");
+#else
+			;
+#endif
 			break;
 		}
 
 		pmd = pmd_offset(pud, addr);
 		if (PTRS_PER_PMD != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", *pmd=%08llx", (long long)pmd_val(*pmd));
+#else
+			;
+#endif
 
 		if (pmd_none(*pmd))
 			break;
 
 		if (pmd_bad(*pmd)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(bad)");
+#else
+			;
+#endif
 			break;
 		}
 
@@ -121,13 +149,25 @@ void show_pte(struct mm_struct *mm, unsigned long addr)
 			break;
 
 		pte = pte_offset_map(pmd, addr);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", *pte=%08llx", (long long)pte_val(*pte));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", *ppte=%08llx",
 		       (long long)pte_val(pte[PTE_HWTABLE_PTRS]));
+#else
+		;
+#endif
 		pte_unmap(pte);
 	} while(0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 #else					/* CONFIG_MMU */
 void show_pte(struct mm_struct *mm, unsigned long addr)
@@ -151,10 +191,14 @@ __do_kernel_fault(struct mm_struct *mm, unsigned long addr, unsigned int fsr,
 	 * No handler, we'll have to terminate things with extreme prejudice.
 	 */
 	bust_spinlocks(1);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT
 		"Unable to handle kernel %s at virtual address %08lx\n",
 		(addr < PAGE_SIZE) ? "NULL pointer dereference" :
 		"paging request", addr);
+#else
+	;
+#endif
 
 	show_pte(mm, addr);
 	die("Oops", regs, fsr);
@@ -175,8 +219,12 @@ __do_user_fault(struct task_struct *tsk, unsigned long addr,
 
 #ifdef CONFIG_DEBUG_USER
 	if (user_debug & UDBG_SEGV) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: unhandled page fault (%d) at 0x%08lx, code 0x%03x\n",
 		       tsk->comm, sig, addr, fsr);
+#else
+		;
+#endif
 		show_pte(tsk->mm, addr);
 		show_regs(regs);
 	}
@@ -560,8 +608,12 @@ do_DataAbort(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 	if (!inf->fn(addr, fsr & ~FSR_LNX_PF, regs))
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "Unhandled fault: %s (0x%03x) at 0x%08lx\n",
 		inf->name, fsr, addr);
+#else
+	;
+#endif
 
 	info.si_signo = inf->sig;
 	info.si_errno = 0;
@@ -628,8 +680,12 @@ do_PrefetchAbort(unsigned long addr, unsigned int ifsr, struct pt_regs *regs)
 	if (!inf->fn(addr, ifsr | FSR_LNX_PF, regs))
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "Unhandled prefetch abort: %s (0x%03x) at 0x%08lx\n",
 		inf->name, ifsr, addr);
+#else
+	;
+#endif
 
 	info.si_signo = inf->sig;
 	info.si_errno = 0;

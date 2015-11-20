@@ -1447,7 +1447,11 @@ if (0) //to test current channel from RF reg 0x7.
 {
 	u8		eRFPath;
 	for(eRFPath = 0; eRFPath < 2; eRFPath++){
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("====>set channel:%x\n",rtl8192_phy_QueryRFReg(dev, (RF90_RADIO_PATH_E)eRFPath, 0x7, bZebra1_ChannelNum));
+#else
+	;
+#endif
 	udelay(10);
 	}
 }

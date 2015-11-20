@@ -54,28 +54,52 @@ struct mb86a16_state {
 #define MB86A16_INFO		2
 #define MB86A16_DEBUG		3
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(x, y, z, format, arg...) do {						\
 	if (z) {									\
 		if	((x > MB86A16_ERROR) && (x > y))				\
 			printk(KERN_ERR "%s: " format "\n", __func__, ##arg);		\
+#else
+#define d;
+#endif
 		else if ((x > MB86A16_NOTICE) && (x > y))				\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: " format "\n", __func__, ##arg);	\
+#else
+			;
+#endif
 		else if ((x > MB86A16_INFO) && (x > y))					\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: " format "\n", __func__, ##arg);		\
+#else
+			;
+#endif
 		else if ((x > MB86A16_DEBUG) && (x > y))				\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: " format "\n", __func__, ##arg);		\
+#else
+			;
+#endif
 	} else {									\
 		if (x > y)								\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(format, ##arg);						\
+#else
+			;
+#endif
 	}										\
 } while (0)
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define TRACE_IN	dprintk(verbose, MB86A16_DEBUG, 1, "-->()")
 #define TRACE_OUT	dprintk(verbose, MB86A16_DEBUG, 1, "()-->")
 
 static int mb86a16_write(struct mb86a16_state *state, u8 reg, u8 val)
 {
 	int ret;
+#else
+#define TRACE_IN	d;
+#endif
 	u8 buf[] = { reg, val };
 
 	struct i2c_msg msg = {
@@ -85,9 +109,13 @@ static int mb86a16_write(struct mb86a16_state *state, u8 reg, u8 val)
 		.len = 2
 	};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_DEBUG, 1,
 		"writing to [0x%02x],Reg[0x%02x],Data[0x%02x]",
 		state->config->demod_address, buf[0], buf[1]);
+#else
+	d;
+#endif
 
 	ret = i2c_transfer(state->i2c_adap, &msg, 1);
 
@@ -115,8 +143,12 @@ static int mb86a16_read(struct mb86a16_state *state, u8 reg, u8 *val)
 	};
 	ret = i2c_transfer(state->i2c_adap, msg, 2);
 	if (ret != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "read error(reg=0x%02x, ret=0x%i)",
 			reg, ret);
+#else
+		d;
+#endif
 
 		return -EREMOTEIO;
 	}
@@ -139,7 +171,11 @@ static int CNTM_set(struct mb86a16_state *state,
 	return 0;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -166,7 +202,11 @@ static int smrt_set(struct mb86a16_state *state, int rate)
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -1;
 }
 
@@ -177,7 +217,11 @@ static int srst(struct mb86a16_state *state)
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 
 }
@@ -193,7 +237,11 @@ static int afcex_data_set(struct mb86a16_state *state,
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 
 	return -1;
 }
@@ -209,7 +257,11 @@ static int afcofs_data_set(struct mb86a16_state *state,
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -222,7 +274,11 @@ static int stlp_set(struct mb86a16_state *state,
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -235,7 +291,11 @@ static int Vi_set(struct mb86a16_state *state, unsigned char ETH, unsigned char 
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -277,7 +337,11 @@ static int initial_set(struct mb86a16_state *state)
 	return 0;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -290,7 +354,11 @@ static int S01T_set(struct mb86a16_state *state,
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -307,7 +375,11 @@ static int EN_set(struct mb86a16_state *state,
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -332,7 +404,11 @@ static int AFCEXEN_set(struct mb86a16_state *state,
 	return 0;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -346,7 +422,11 @@ static int DAGC_data_set(struct mb86a16_state *state,
 	return 0;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -424,13 +504,21 @@ static int signal_det(struct mb86a16_state *state,
 
 	if (*SIG > 45) {
 		if (CNTM_set(state, 2, 1, 2) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "CNTM set Error");
+#else
+			d;
+#endif
 			return -1;
 		}
 		wait_sym = 40000;
 	} else {
 		if (CNTM_set(state, 3, 1, 2) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "CNTM set Error");
+#else
+			d;
+#endif
 			return -1;
 		}
 		wait_sym = 80000;
@@ -450,7 +538,11 @@ static int signal_det(struct mb86a16_state *state,
 			wait_t = 1;
 		msleep_interruptible(10);
 		if (mb86a16_read(state, 0x37, &(S[i])) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+			d;
+#endif
 			return -EREMOTEIO;
 		}
 	}
@@ -464,7 +556,11 @@ static int signal_det(struct mb86a16_state *state,
 	*SIG = S[1];
 
 	if (CNTM_set(state, 0, 1, 2) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "CNTM set Error");
+#else
+		d;
+#endif
 		return -1;
 	}
 
@@ -539,7 +635,11 @@ static int rf_val_set(struct mb86a16_state *state,
 	if (mb86a16_write(state, 0x25, 0x01) < 0)
 		ack = 0;
 	if (ack == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "RF Setup - I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -568,7 +668,11 @@ static int afcerr_chk(struct mb86a16_state *state)
 	return afcerr;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -587,7 +691,11 @@ static int dagcm_val_get(struct mb86a16_state *state)
 	return DAGCM;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -624,7 +732,11 @@ static int mb86a16_read_status(struct dvb_frontend *fe, fe_status_t *status)
 	return 0;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -637,13 +749,21 @@ static int sync_chk(struct mb86a16_state *state,
 	if (mb86a16_read(state, 0x0d, &val) != 2)
 		goto err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_INFO, 1, "Status = %02x,", val);
+#else
+	d;
+#endif
 	sync = val & 0x01;
 	*VIRM = (val & 0x1c) >> 2;
 
 	return sync;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 
 }
@@ -730,7 +850,11 @@ static int freqerr_chk(struct mb86a16_state *state,
 
 	return frqerr;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -967,7 +1091,11 @@ static int SEQ_set(struct mb86a16_state *state, unsigned char loop)
 {
 	/* SLOCK0 = 0 */
 	if (mb86a16_write(state, 0x32, 0x02 | (loop << 2)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -978,7 +1106,11 @@ static int iq_vt_set(struct mb86a16_state *state, unsigned char IQINV)
 {
 	/* Viterbi Rate, IQ Settings */
 	if (mb86a16_write(state, 0x06, 0xdf | (IQINV << 5)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -988,7 +1120,11 @@ static int iq_vt_set(struct mb86a16_state *state, unsigned char IQINV)
 static int FEC_srst(struct mb86a16_state *state)
 {
 	if (mb86a16_write(state, MB86A16_RESET, 0x02) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -998,7 +1134,11 @@ static int FEC_srst(struct mb86a16_state *state)
 static int S2T_set(struct mb86a16_state *state, unsigned char S2T)
 {
 	if (mb86a16_write(state, 0x34, 0x70 | S2T) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -1008,7 +1148,11 @@ static int S2T_set(struct mb86a16_state *state, unsigned char S2T)
 static int S45T_set(struct mb86a16_state *state, unsigned char S4T, unsigned char S5T)
 {
 	if (mb86a16_write(state, 0x35, 0x00 | (S5T << 4) | S4T) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -1060,7 +1204,11 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 	int ret = -1;
 	int sync;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_INFO, 1, "freq=%d Mhz, symbrt=%d Ksps", state->frequency, state->srate);
+#else
+	d;
+#endif
 
 	fcp = 3000;
 	swp_ofs = state->srate / 4;
@@ -1087,32 +1235,60 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 		S0T = 0;
 
 		if (initial_set(state) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "initial set failed");
+#else
+			d;
+#endif
 			return -1;
 		}
 		if (DAGC_data_set(state, 3, 2) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "DAGC data set error");
+#else
+			d;
+#endif
 			return -1;
 		}
 		if (EN_set(state, CREN, AFCEN) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "EN set error");
+#else
+			d;
+#endif
 			return -1; /* (0, 0) */
 		}
 		if (AFCEXEN_set(state, AFCEXEN, state->srate) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "AFCEXEN set error");
+#else
+			d;
+#endif
 			return -1; /* (1, smrt) = (1, symbolrate) */
 		}
 		if (CNTM_set(state, TIMINT1, TIMINT2, TIMEXT) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "CNTM set error");
+#else
+			d;
+#endif
 			return -1; /* (0, 1, 2) */
 		}
 		if (S01T_set(state, S1T, S0T) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "S01T set error");
+#else
+			d;
+#endif
 			return -1; /* (0, 0) */
 		}
 		smrt_info_get(state, state->srate);
 		if (smrt_set(state, state->srate) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_ERROR, 1, "smrt info get error");
+#else
+			d;
+#endif
 			return -1;
 		}
 
@@ -1185,22 +1361,38 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 
 			udelay(100);
 			if (rf_val_set(state, fOSC, state->srate, R) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "rf val set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			udelay(100);
 			if (afcex_data_set(state, AFCEX_L, AFCEX_H) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "afcex data set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			if (srst(state) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "srst error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			msleep_interruptible(wait_t);
 
 			if (mb86a16_read(state, 0x37, &SIG1) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			V[30 + v] = SIG1 ;
@@ -1212,11 +1404,19 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 			for (j = 0; j < prev_freq_num; j++) {
 				if ((ABS(prev_swp_freq[j] - swp_freq)) < (swp_ofs * 3 / 2)) {
 					signal_dupl = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_INFO, 1, "Probably Duplicate Signal, j = %d", j);
+#else
+					d;
+#endif
 				}
 			}
 			if ((signal_dupl == 0) && (swp_freq > 0) && (ABS(swp_freq - state->frequency * 1000) < fcp + state->srate / 6)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_DEBUG, 1, "------ Signal detect ------ [swp_freq=[%07d, srate=%05d]]", swp_freq, state->srate);
+#else
+				d;
+#endif
 				prev_swp_freq[prev_freq_num] = swp_freq;
 				prev_freq_num++;
 				swp_info_get2(state, state->srate, R, swp_freq,
@@ -1224,22 +1424,42 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 					      &AFCEX_L, &AFCEX_H);
 
 				if (rf_val_set(state, fOSC, state->srate, R) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "rf val set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (afcex_data_set(state, AFCEX_L, AFCEX_H) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "afcex data set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				signal = signal_det(state, state->srate, &SIG1);
 				if (signal == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "***** Signal Found *****");
+#else
+					d;
+#endif
 					loop = 0;
 				} else {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "!!!!! No signal !!!!!, try again...");
+#else
+					d;
+#endif
 					smrt_info_get(state, state->srate);
 					if (smrt_set(state, state->srate) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 						dprintk(verbose, MB86A16_ERROR, 1, "smrt set error");
+#else
+						d;
+#endif
 						return -1;
 					}
 				}
@@ -1265,7 +1485,11 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 		}
 
 		if (signal == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_INFO, 1, " Start Freq Error Check");
+#else
+			d;
+#endif
 			S1T = 7 ;
 			S0T = 1 ;
 			CREN = 0 ;
@@ -1273,29 +1497,53 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 			AFCEXEN = 0 ;
 
 			if (S01T_set(state, S1T, S0T) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "S01T set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			smrt_info_get(state, state->srate);
 			if (smrt_set(state, state->srate) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "smrt set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			if (EN_set(state, CREN, AFCEN) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "EN set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			if (AFCEXEN_set(state, AFCEXEN, state->srate) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "AFCEXEN set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			afcex_info_get(state, afcex_freq, &AFCEX_L, &AFCEX_H);
 			if (afcofs_data_set(state, AFCEX_L, AFCEX_H) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "AFCOFS data set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			if (srst(state) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "srst error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			/* delay 4~200 */
@@ -1313,27 +1561,47 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 				smrt_d = state->srate / 2;
 			smrt_info_get(state, smrt_d);
 			if (smrt_set(state, smrt_d) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "smrt set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			if (AFCEXEN_set(state, AFCEXEN, smrt_d) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "AFCEXEN set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			R = vco_dev_get(state, smrt_d);
 			if (DAGC_data_set(state, 2, 0) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_ERROR, 1, "DAGC data set error");
+#else
+				d;
+#endif
 				return -1;
 			}
 			for (i = 0; i < 3; i++) {
 				temp_freq = swp_freq + (i - 1) * state->srate / 8;
 				swp_info_get2(state, smrt_d, R, temp_freq, &afcex_freq, &fOSC, &AFCEX_L, &AFCEX_H);
 				if (rf_val_set(state, fOSC, smrt_d, R) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "rf val set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (afcex_data_set(state, AFCEX_L, AFCEX_H) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "afcex data set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				wait_t = 200000 / state->master_clk + 40000 / smrt_d;
@@ -1347,11 +1615,19 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 				temp_freq = swp_freq - 2 * state->srate / 8;
 				swp_info_get2(state, smrt_d, R, temp_freq, &afcex_freq, &fOSC, &AFCEX_L, &AFCEX_H);
 				if (rf_val_set(state, fOSC, smrt_d, R) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "rf val set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (afcex_data_set(state, AFCEX_L, AFCEX_H) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "afcex data set");
+#else
+					d;
+#endif
 					return -1;
 				}
 				wait_t = 200000 / state->master_clk + 40000 / smrt_d;
@@ -1368,11 +1644,19 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 				temp_freq = swp_freq + 2 * state->srate / 8;
 				swp_info_get2(state, smrt_d, R, temp_freq, &afcex_freq, &fOSC, &AFCEX_L, &AFCEX_H);
 				if (rf_val_set(state, fOSC, smrt_d, R) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "rf val set");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (afcex_data_set(state, AFCEX_L, AFCEX_H) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "afcex data set");
+#else
+					d;
+#endif
 					return -1;
 				}
 				wait_t = 200000 / state->master_clk + 40000 / smrt_d;
@@ -1386,11 +1670,23 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 			} else {
 				delta_freq = 0 ;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_INFO, 1, "SWEEP Frequency = %d", swp_freq);
+#else
+			d;
+#endif
 			swp_freq += delta_freq;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_INFO, 1, "Adjusting .., DELTA Freq = %d, SWEEP Freq=%d", delta_freq, swp_freq);
+#else
+			d;
+#endif
 			if (ABS(state->frequency * 1000 - swp_freq) > 3800) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_INFO, 1, "NO  --  SIGNAL !");
+#else
+				d;
+#endif
 			} else {
 
 				S1T = 0;
@@ -1400,38 +1696,70 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 				AFCEXEN = 1;
 
 				if (S01T_set(state, S1T, S0T) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "S01T set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (DAGC_data_set(state, 0, 0) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "DAGC data set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				R = vco_dev_get(state, state->srate);
 				smrt_info_get(state, state->srate);
 				if (smrt_set(state, state->srate) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "smrt set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (EN_set(state, CREN, AFCEN) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "EN set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (AFCEXEN_set(state, AFCEXEN, state->srate) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "AFCEXEN set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				swp_info_get2(state, state->srate, R, swp_freq, &afcex_freq, &fOSC, &AFCEX_L, &AFCEX_H);
 				if (rf_val_set(state, fOSC, state->srate, R) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "rf val set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (afcex_data_set(state, AFCEX_L, AFCEX_H) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "afcex data set error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				if (srst(state) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "srst error");
+#else
+					d;
+#endif
 					return -1;
 				}
 				wait_t = 7 + (10000 + state->srate / 2) / state->srate;
@@ -1439,7 +1767,11 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 					wait_t = 1;
 				msleep_interruptible(wait_t);
 				if (mb86a16_read(state, 0x37, &SIG1) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+					d;
+#endif
 					return -EREMOTEIO;
 				}
 
@@ -1466,7 +1798,11 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 				srst(state);
 				msleep_interruptible(wait_t);
 				sync = sync_chk(state, &VIRM);
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk(verbose, MB86A16_INFO, 1, "-------- Viterbi=[%d] SYNC=[%d] ---------", VIRM, sync);
+#else
+				d;
+#endif
 				if (VIRM) {
 					if (VIRM == 4) {
 						/* 5/6 */
@@ -1493,19 +1829,31 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 					msleep_interruptible(wait_t);
 					SEQ_set(state, 1);
 				} else {
+#ifdef CONFIG_DEBUG_PRINTK
 					dprintk(verbose, MB86A16_INFO, 1, "NO  -- SYNC");
+#else
+					d;
+#endif
 					SEQ_set(state, 1);
 					ret = -1;
 				}
 			}
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_INFO, 1, "NO  -- SIGNAL");
+#else
+			d;
+#endif
 			ret = -1;
 		}
 
 		sync = sync_chk(state, &junk);
 		if (sync) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_INFO, 1, "******* SYNC *******");
+#else
+			d;
+#endif
 			freqerr_chk(state, state->frequency, state->srate, 1);
 			ret = 0;
 			break;
@@ -1514,7 +1862,11 @@ static int mb86a16_set_fe(struct mb86a16_state *state)
 
 	mb86a16_read(state, 0x15, &agcval);
 	mb86a16_read(state, 0x26, &cnmval);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_INFO, 1, "AGC = %02x CNM = %02x", agcval, cnmval);
+#else
+	d;
+#endif
 
 	return ret;
 }
@@ -1556,7 +1908,11 @@ static int mb86a16_send_diseqc_msg(struct dvb_frontend *fe,
 	return 0;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -1584,7 +1940,11 @@ static int mb86a16_send_diseqc_burst(struct dvb_frontend *fe, fe_sec_mini_cmd_t 
 
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -1617,7 +1977,11 @@ static int mb86a16_set_tone(struct dvb_frontend *fe, fe_sec_tone_mode_t tone)
 	return 0;
 
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -1630,11 +1994,19 @@ static enum dvbfe_search mb86a16_search(struct dvb_frontend *fe,
 	state->srate = p->u.qpsk.symbol_rate / 1000;
 
 	if (!mb86a16_set_fe(state)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "Successfully acquired LOCK");
+#else
+		d;
+#endif
 		return DVBFE_ALGO_SEARCH_SUCCESS;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "Lock acquisition failed!");
+#else
+	d;
+#endif
 	return DVBFE_ALGO_SEARCH_FAILED;
 }
 
@@ -1676,7 +2048,11 @@ static int mb86a16_read_ber(struct dvb_frontend *fe, u32 *ber)
 	if (ber_mon & 0x04) {
 		/* coarse, fast calculation	*/
 		*ber = ber_tab & 0x1f;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_DEBUG, 1, "BER coarse=[0x%02x]", *ber);
+#else
+		d;
+#endif
 		if (ber_mon & 0x01) {
 			/*
 			 * BER_SEL = 1, The monitored BER is the estimated
@@ -1696,7 +2072,11 @@ static int mb86a16_read_ber(struct dvb_frontend *fe, u32 *ber)
 				timer = 100000000;
 
 			*ber /= timer;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_DEBUG, 1, "BER fine=[0x%02x]", *ber);
+#else
+			d;
+#endif
 		} else {
 			/*
 			 * BER_SEL = 0, The monitored BER is the estimated
@@ -1712,12 +2092,20 @@ static int mb86a16_read_ber(struct dvb_frontend *fe, u32 *ber)
 				timer = 24;
 
 			*ber /= 2 ^ timer;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(verbose, MB86A16_DEBUG, 1, "BER fine=[0x%02x]", *ber);
+#else
+			d;
+#endif
 		}
 	}
 	return 0;
 err:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+	d;
+#endif
 	return -EREMOTEIO;
 }
 
@@ -1728,12 +2116,20 @@ static int mb86a16_read_signal_strength(struct dvb_frontend *fe, u16 *strength)
 
 	*strength = 0;
 	if (mb86a16_read(state, MB86A16_AGCM, &agcm) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
 	*strength = ((0xff - agcm) * 100) / 256;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_DEBUG, 1, "Signal strength=[%d %%]", (u8) *strength);
+#else
+	d;
+#endif
 	*strength = (0xffff - 0xff) + agcm;
 
 	return 0;
@@ -1777,7 +2173,11 @@ static int mb86a16_read_snr(struct dvb_frontend *fe, u16 *snr)
 
 	*snr = 0;
 	if (mb86a16_read(state, 0x26, &cn) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -1788,7 +2188,11 @@ static int mb86a16_read_snr(struct dvb_frontend *fe, u16 *snr)
 		}
 	}
 	q_level = (*snr * 100) / (high_tide - low_tide);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MB86A16_ERROR, 1, "SNR (Quality) = [%d dB], Level=%d %%", *snr, q_level);
+#else
+	d;
+#endif
 	*snr = (0xffff - 0xff) + *snr;
 
 	return 0;
@@ -1800,7 +2204,11 @@ static int mb86a16_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 	struct mb86a16_state *state = fe->demodulator_priv;
 
 	if (mb86a16_read(state, MB86A16_DISTMON, &dist) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MB86A16_ERROR, 1, "I2C transfer error");
+#else
+		d;
+#endif
 		return -EREMOTEIO;
 	}
 	*ucblocks = dist;

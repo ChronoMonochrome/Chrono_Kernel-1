@@ -310,7 +310,11 @@ int dlpar_add_slot(char *drc_name)
 			break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: slot %s added\n", DLPAR_MODULE_NAME, drc_name);
+#else
+	;
+#endif
 exit:
 	mutex_unlock(&rpadlpar_mutex);
 	return rc;
@@ -433,7 +437,11 @@ int dlpar_remove_slot(char *drc_name)
 	}
 	vm_unmap_aliases();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: slot %s removed\n", DLPAR_MODULE_NAME, drc_name);
+#else
+	;
+#endif
 exit:
 	mutex_unlock(&rpadlpar_mutex);
 	return rc;
@@ -451,8 +459,12 @@ int __init rpadlpar_io_init(void)
 	int rc = 0;
 
 	if (!is_dlpar_capable()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: partition not DLPAR capable\n",
 			__func__);
+#else
+		;
+#endif
 		return -EPERM;
 	}
 

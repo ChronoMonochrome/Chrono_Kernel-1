@@ -113,7 +113,11 @@ static int __init spia_init(void)
 	/* Allocate memory for MTD device structure and private data */
 	spia_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip), GFP_KERNEL);
 	if (!spia_mtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to allocate SPIA NAND MTD device structure.\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 

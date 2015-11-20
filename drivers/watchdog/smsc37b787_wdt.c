@@ -363,9 +363,13 @@ static int wb_smsc_wdt_open(struct inode *inode, struct file *file)
 	/* Reload and activate timer */
 	wb_smsc_wdt_enable();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO MODNAME
 		"Watchdog enabled. Timeout set to %d %s.\n",
 		timeout, (unit == UNIT_SECOND) ? "second(s)" : "minute(s)");
+#else
+	;
+#endif
 
 	return nonseekable_open(inode, file);
 }
@@ -378,11 +382,19 @@ static int wb_smsc_wdt_release(struct inode *inode, struct file *file)
 
 	if (expect_close == 42) {
 		wb_smsc_wdt_disable();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO MODNAME
 				"Watchdog disabled, sleeping again...\n");
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT MODNAME
 				"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		wb_smsc_wdt_reset_timer();
 	}
 
@@ -534,8 +546,12 @@ static int __init wb_smsc_wdt_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SMsC 37B787 watchdog component driver "
 					VERSION " initialising...\n");
+#else
+	;
+#endif
 
 	if (!request_region(IOPORT, IOPORT_SIZE, "SMsC 37B787 watchdog")) {
 		printk(KERN_ERR MODNAME "Unable to register IO port %#x\n",
@@ -567,11 +583,19 @@ static int __init wb_smsc_wdt_init(void)
 	}
 
 	/* output info */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO MODNAME "Timeout set to %d %s.\n",
 		timeout, (unit == UNIT_SECOND) ? "second(s)" : "minute(s)");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO MODNAME
 		"Watchdog initialized and sleeping (nowayout=%d)...\n",
 								nowayout);
+#else
+	;
+#endif
 out_clean:
 	return ret;
 
@@ -592,14 +616,22 @@ static void __exit wb_smsc_wdt_exit(void)
 	/* Stop the timer before we leave */
 	if (!nowayout) {
 		wb_smsc_wdt_shutdown();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO MODNAME "Watchdog disabled.\n");
+#else
+		;
+#endif
 	}
 
 	misc_deregister(&wb_smsc_wdt_miscdev);
 	unregister_reboot_notifier(&wb_smsc_wdt_notifier);
 	release_region(IOPORT, IOPORT_SIZE);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SMsC 37B787 watchdog component driver removed.\n");
+#else
+	;
+#endif
 }
 
 module_init(wb_smsc_wdt_init);

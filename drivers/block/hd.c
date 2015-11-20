@@ -211,43 +211,135 @@ static void dump_status(const char *msg, unsigned int stat)
 		name = hd_req->rq_disk->disk_name;
 
 #ifdef VERBOSE_ERRORS
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s: status=0x%02x { ", name, msg, stat & 0xff);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	if (stat & BUSY_STAT)	printk("Busy ");
+#else
+	if (stat & BUSY_STAT)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	if (stat & READY_STAT)	printk("DriveReady ");
+#else
+	if (stat & READY_STAT)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	if (stat & WRERR_STAT)	printk("WriteFault ");
+#else
+	if (stat & WRERR_STAT)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	if (stat & SEEK_STAT)	printk("SeekComplete ");
+#else
+	if (stat & SEEK_STAT)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	if (stat & DRQ_STAT)	printk("DataRequest ");
+#else
+	if (stat & DRQ_STAT)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	if (stat & ECC_STAT)	printk("CorrectedError ");
+#else
+	if (stat & ECC_STAT)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	if (stat & INDEX_STAT)	printk("Index ");
+#else
+	if (stat & INDEX_STAT)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	if (stat & ERR_STAT)	printk("Error ");
+#else
+	if (stat & ERR_STAT)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("}\n");
+#else
+	;
+#endif
 	if ((stat & ERR_STAT) == 0) {
 		hd_error = 0;
 	} else {
 		hd_error = inb(HD_ERROR);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %s: error=0x%02x { ", name, msg, hd_error & 0xff);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (hd_error & BBD_ERR)		printk("BadSector ");
+#else
+		if (hd_error & BBD_ERR)		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (hd_error & ECC_ERR)		printk("UncorrectableError ");
+#else
+		if (hd_error & ECC_ERR)		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (hd_error & ID_ERR)		printk("SectorIdNotFound ");
+#else
+		if (hd_error & ID_ERR)		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (hd_error & ABRT_ERR)	printk("DriveStatusError ");
+#else
+		if (hd_error & ABRT_ERR)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (hd_error & TRK0_ERR)	printk("TrackZeroNotFound ");
+#else
+		if (hd_error & TRK0_ERR)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (hd_error & MARK_ERR)	printk("AddrMarkNotFound ");
+#else
+		if (hd_error & MARK_ERR)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("}");
+#else
+		;
+#endif
 		if (hd_error & (BBD_ERR|ECC_ERR|ID_ERR|MARK_ERR)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", CHS=%d/%d/%d", (inb(HD_HCYL)<<8) + inb(HD_LCYL),
 				inb(HD_CURRENT) & 0xf, inb(HD_SECTOR));
+#else
+			;
+#endif
 			if (hd_req)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(", sector=%ld", blk_rq_pos(hd_req));
+#else
+				;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s: status=0x%02x.\n", name, msg, stat & 0xff);
+#else
+	;
+#endif
 	if ((stat & ERR_STAT) == 0) {
 		hd_error = 0;
 	} else {
 		hd_error = inb(HD_ERROR);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %s: error=0x%02x.\n", name, msg, hd_error & 0xff);
+#else
+		;
+#endif
 	}
 #endif
 }
@@ -359,9 +451,17 @@ static void reset_controller(void)
 	outb_p(hd_info[0].ctl & 0x0f, HD_CMD);
 	for (i = 0; i < 1000; i++) barrier();
 	if (drive_busy())
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hd: controller still busy\n");
+#else
+		;
+#endif
 	else if ((hd_error = inb(HD_ERROR)) != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hd: controller reset failed: %02x\n", hd_error);
+#else
+		;
+#endif
 }
 
 static void reset_hd(void)
@@ -467,9 +567,13 @@ ok_to_read:
 	req = hd_req;
 	insw(HD_DATA, req->buffer, 256);
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: read: sector %ld, remaining = %u, buffer=%p\n",
 	       req->rq_disk->disk_name, blk_rq_pos(req) + 1,
 	       blk_rq_sectors(req) - 1, req->buffer+512);
+#else
+	;
+#endif
 #endif
 	if (hd_end_request(0, 512)) {
 		SET_HANDLER(&read_intr);
@@ -541,10 +645,18 @@ static void hd_times_out(unsigned long dummy)
 	spin_lock_irq(hd_queue->queue_lock);
 	reset = 1;
 	name = hd_req->rq_disk->disk_name;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: timeout\n", name);
+#else
+	;
+#endif
 	if (++hd_req->errors >= MAX_ERRORS) {
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: too many errors\n", name);
+#else
+		;
+#endif
 #endif
 		hd_end_request_cur(-EIO);
 	}
@@ -560,7 +672,11 @@ static int do_special_op(struct hd_i_struct *disk, struct request *req)
 		return reset;
 	}
 	if (disk->head > 16) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: cannot handle device with more than 16 heads - giving up\n", req->rq_disk->disk_name);
+#else
+		;
+#endif
 		hd_end_request_cur(-EIO);
 	}
 	disk->special_op = 0;
@@ -606,8 +722,12 @@ repeat:
 	nsect = blk_rq_sectors(req);
 	if (block >= get_capacity(req->rq_disk) ||
 	    ((block+nsect) > get_capacity(req->rq_disk))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: bad access: block=%d, count=%d\n",
 			req->rq_disk->disk_name, block, nsect);
+#else
+		;
+#endif
 		hd_end_request_cur(-EIO);
 		goto repeat;
 	}
@@ -622,10 +742,14 @@ repeat:
 	head  = track % disk->head;
 	cyl   = track / disk->head;
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %sing: CHS=%d/%d/%d, sectors=%d, buffer=%p\n",
 		req->rq_disk->disk_name,
 		req_data_dir(req) == READ ? "read" : "writ",
 		cyl, head, sec, nsect, req->buffer);
+#else
+	;
+#endif
 #endif
 	if (req->cmd_type == REQ_TYPE_FS) {
 		switch (rq_data_dir(req)) {
@@ -647,7 +771,11 @@ repeat:
 			outsw(HD_DATA, req->buffer, 256);
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("unknown hd-command\n");
+#else
+			;
+#endif
 			hd_end_request_cur(-EIO);
 			break;
 		}
@@ -738,8 +866,12 @@ static int __init hd_init(void)
 		 * definitely safest to have the user explicitly specify
 		 * the information.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hd: no drives specified - use hd=cyl,head,sectors"
 			" on kernel command line\n");
+#else
+		;
+#endif
 		goto out;
 	}
 
@@ -757,22 +889,38 @@ static int __init hd_init(void)
 		disk->queue = hd_queue;
 		p->unit = drive;
 		hd_gendisk[drive] = disk;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %luMB, CHS=%d/%d/%d\n",
 			disk->disk_name, (unsigned long)get_capacity(disk)/2048,
 			p->cyl, p->head, p->sect);
+#else
+		;
+#endif
 	}
 
 	if (request_irq(HD_IRQ, hd_interrupt, IRQF_DISABLED, "hd", NULL)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hd: unable to get IRQ%d for the hard disk driver\n",
 			HD_IRQ);
+#else
+		;
+#endif
 		goto out1;
 	}
 	if (!request_region(HD_DATA, 8, "hd")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hd: port 0x%x busy\n", HD_DATA);
+#else
+		;
+#endif
 		goto out2;
 	}
 	if (!request_region(HD_CMD, 1, "hd(cmd)")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hd: port 0x%x busy\n", HD_CMD);
+#else
+		;
+#endif
 		goto out3;
 	}
 

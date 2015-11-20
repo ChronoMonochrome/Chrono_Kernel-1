@@ -42,9 +42,13 @@ MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk( args... ) \
 	do { \
 		if (debug) printk(KERN_DEBUG args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 #define IF_FREQUENCYx6 217    /* 6 * 36.16666666667MHz */
@@ -53,7 +57,11 @@ static void dvb_bt8xx_task(unsigned long data)
 {
 	struct dvb_bt8xx_card *card = (struct dvb_bt8xx_card *)data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("%d ", card->bt->finished_block);
+#else
+	//;
+#endif
 
 	while (card->bt->last_block != card->bt->finished_block) {
 		(card->bt->TS_Size ? dvb_dmx_swfilter_204 : dvb_dmx_swfilter)
@@ -72,7 +80,11 @@ static int dvb_bt8xx_start_feed(struct dvb_demux_feed *dvbdmxfeed)
 	struct dvb_bt8xx_card *card = dvbdmx->priv;
 	int rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("dvb_bt8xx: start_feed\n");
+#else
+	d;
+#endif
 
 	if (!dvbdmx->dmx.frontend)
 		return -EINVAL;
@@ -92,7 +104,11 @@ static int dvb_bt8xx_stop_feed(struct dvb_demux_feed *dvbdmxfeed)
 	struct dvb_demux *dvbdmx = dvbdmxfeed->demux;
 	struct dvb_bt8xx_card *card = dvbdmx->priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("dvb_bt8xx: stop_feed\n");
+#else
+	d;
+#endif
 
 	if (!dvbdmx->dmx.frontend)
 		return -EINVAL;
@@ -205,7 +221,11 @@ static int cx24108_tuner_set_params(struct dvb_frontend* fe, struct dvb_frontend
 		0x00120000,0x00140000};
 
 	#define XTAL 1011100 /* Hz, really 1.0111 MHz and a /10 prescaler */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cx24108 debug: entering SetTunerFreq, freq=%d\n",freq);
+#else
+	;
+#endif
 
 	/* This is really the bit driving the tuner chip cx24108 */
 
@@ -216,7 +236,11 @@ static int cx24108_tuner_set_params(struct dvb_frontend* fe, struct dvb_frontend
 
 	/* decide which VCO to use for the input frequency */
 	for(i = 1; (i < ARRAY_SIZE(osci) - 1) && (osci[i] < freq); i++);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cx24108 debug: select vco #%d (f=%d)\n",i,freq);
+#else
+	;
+#endif
 	band=bandsel[i];
 	/* the gain values must be set by SetSymbolrate */
 	/* compute the pll divider needed, from Conexant data sheet,
@@ -232,7 +256,11 @@ static int cx24108_tuner_set_params(struct dvb_frontend* fe, struct dvb_frontend
 	    ((a&0x1f)<<11);
 	/* everything is shifted left 11 bits to left-align the bits in the
 	   32bit word. Output to the tuner goes MSB-aligned, after all */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cx24108 debug: pump=%d, n=%d, a=%d\n",pump,n,a);
+#else
+	;
+#endif
 	cx24110_pll_write(fe,band);
 	/* set vga and vca to their widest-band settings, as a precaution.
 	   SetSymbolrate might not be called to set this up */
@@ -438,7 +466,11 @@ static void or51211_reset(struct dvb_frontend * fe)
 	/* reset & PRM1,2&4 are outputs */
 	int ret = bttv_gpio_enable(bt->bttv_nr, 0x001F, 0x001F);
 	if (ret != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "or51211: Init Error - Can't Reset DVR (%i)\n", ret);
+#else
+		;
+#endif
 	bttv_write_gpio(bt->bttv_nr, 0x001F, 0x0000);   /* Reset */
 	msleep(20);
 	/* Now set for normal operation */
@@ -528,7 +560,11 @@ static int digitv_alps_tded4_tuner_calc_regs(struct dvb_frontend* fe, struct dvb
 	pllbuf[2] = div & 0xFF;
 	pllbuf[3] = 0x85;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("frequency %u, div %u\n", params->frequency, div);
+#else
+	d;
+#endif
 
 	if (params->frequency < 470000000)
 		pllbuf[4] = 0x02;
@@ -554,7 +590,11 @@ static void digitv_alps_tded4_reset(struct dvb_bt8xx_card *bt)
 
 	int ret = bttv_gpio_enable(bt->bttv_nr, 0x08, 0x08);
 	if (ret != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "digitv_alps_tded4: Init Error - Can't Reset DVR (%i)\n", ret);
+#else
+		;
+#endif
 
 	/* Pulse the reset line */
 	bttv_write_gpio(bt->bttv_nr, 0x08, 0x08); /* High */
@@ -663,7 +703,11 @@ static void frontend_init(struct dvb_bt8xx_card *card, u32 type)
 		/*	DST is not a frontend driver !!!		*/
 		state = kmalloc(sizeof (struct dst_state), GFP_KERNEL);
 		if (!state) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dvb_bt8xx: No memory\n");
+#else
+			;
+#endif
 			break;
 		}
 		/*	Setup the Card					*/
@@ -673,7 +717,11 @@ static void frontend_init(struct dvb_bt8xx_card *card, u32 type)
 		state->dst_ca = NULL;
 		/*	DST is not a frontend, attaching the ASIC	*/
 		if (dvb_attach(dst_attach, state, &card->dvb_adapter) == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: Could not find a Twinhan DST.\n", __func__);
+#else
+			;
+#endif
 			break;
 		}
 		/*	Attach other DST peripherals if any		*/
@@ -702,14 +750,22 @@ static void frontend_init(struct dvb_bt8xx_card *card, u32 type)
 	}
 
 	if (card->fe == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb-bt8xx: A frontend driver was not found for device [%04x:%04x] subsystem [%04x:%04x]\n",
 		       card->bt->dev->vendor,
 		       card->bt->dev->device,
 		       card->bt->dev->subsystem_vendor,
 		       card->bt->dev->subsystem_device);
+#else
+		;
+#endif
 	else
 		if (dvb_register_frontend(&card->dvb_adapter, card->fe)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dvb-bt8xx: Frontend registration failed!\n");
+#else
+			;
+#endif
 			dvb_frontend_detach(card->fe);
 			card->fe = NULL;
 		}
@@ -723,7 +779,11 @@ static int __devinit dvb_bt8xx_load_card(struct dvb_bt8xx_card *card, u32 type)
 				      THIS_MODULE, &card->bt->dev->dev,
 				      adapter_nr);
 	if (result < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: dvb_register_adapter failed (errno = %d)\n", result);
+#else
+		;
+#endif
 		return result;
 	}
 	card->dvb_adapter.priv = card;
@@ -742,7 +802,11 @@ static int __devinit dvb_bt8xx_load_card(struct dvb_bt8xx_card *card, u32 type)
 	card->demux.write_to_decoder = NULL;
 
 	if ((result = dvb_dmx_init(&card->demux)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: dvb_dmx_init failed (errno = %d)\n", result);
+#else
+		;
+#endif
 
 		dvb_unregister_adapter(&card->dvb_adapter);
 		return result;
@@ -753,7 +817,11 @@ static int __devinit dvb_bt8xx_load_card(struct dvb_bt8xx_card *card, u32 type)
 	card->dmxdev.capabilities = 0;
 
 	if ((result = dvb_dmxdev_init(&card->dmxdev, &card->dvb_adapter)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: dvb_dmxdev_init failed (errno = %d)\n", result);
+#else
+		;
+#endif
 
 		dvb_dmx_release(&card->demux);
 		dvb_unregister_adapter(&card->dvb_adapter);
@@ -763,7 +831,11 @@ static int __devinit dvb_bt8xx_load_card(struct dvb_bt8xx_card *card, u32 type)
 	card->fe_hw.source = DMX_FRONTEND_0;
 
 	if ((result = card->demux.dmx.add_frontend(&card->demux.dmx, &card->fe_hw)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: dvb_dmx_init failed (errno = %d)\n", result);
+#else
+		;
+#endif
 
 		dvb_dmxdev_release(&card->dmxdev);
 		dvb_dmx_release(&card->demux);
@@ -774,7 +846,11 @@ static int __devinit dvb_bt8xx_load_card(struct dvb_bt8xx_card *card, u32 type)
 	card->fe_mem.source = DMX_MEMORY_FE;
 
 	if ((result = card->demux.dmx.add_frontend(&card->demux.dmx, &card->fe_mem)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: dvb_dmx_init failed (errno = %d)\n", result);
+#else
+		;
+#endif
 
 		card->demux.dmx.remove_frontend(&card->demux.dmx, &card->fe_hw);
 		dvb_dmxdev_release(&card->dmxdev);
@@ -784,7 +860,11 @@ static int __devinit dvb_bt8xx_load_card(struct dvb_bt8xx_card *card, u32 type)
 	}
 
 	if ((result = card->demux.dmx.connect_frontend(&card->demux.dmx, &card->fe_hw)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: dvb_dmx_init failed (errno = %d)\n", result);
+#else
+		;
+#endif
 
 		card->demux.dmx.remove_frontend(&card->demux.dmx, &card->fe_mem);
 		card->demux.dmx.remove_frontend(&card->demux.dmx, &card->fe_hw);
@@ -881,25 +961,45 @@ static int __devinit dvb_bt8xx_probe(struct bttv_sub_device *sub)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "dvb_bt8xx: Unknown bttv card type: %d.\n",
 				sub->core->type);
+#else
+		;
+#endif
 		kfree(card);
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("dvb_bt8xx: identified card%d as %s\n", card->bttv_nr, card->card_name);
+#else
+	d;
+#endif
 
 	if (!(bttv_pci_dev = bttv_get_pcidev(card->bttv_nr))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: no pci device for card %d\n", card->bttv_nr);
+#else
+		;
+#endif
 		kfree(card);
 		return -EFAULT;
 	}
 
 	if (!(card->bt = dvb_bt8xx_878_match(card->bttv_nr, bttv_pci_dev))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: unable to determine DMA core of card %d,\n",
 		       card->bttv_nr);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb_bt8xx: if you have the ALSA bt87x audio driver "
 		       "installed, try removing it.\n");
+#else
+		;
+#endif
 
 		kfree(card);
 		return -EFAULT;
@@ -921,7 +1021,11 @@ static void dvb_bt8xx_remove(struct bttv_sub_device *sub)
 {
 	struct dvb_bt8xx_card *card = dev_get_drvdata(&sub->dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("dvb_bt8xx: unloading card%d\n", card->bttv_nr);
+#else
+	d;
+#endif
 
 	bt878_stop(card->bt);
 	tasklet_kill(&card->bt->tasklet);

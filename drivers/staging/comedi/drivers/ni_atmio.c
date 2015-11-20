@@ -409,7 +409,11 @@ static int ni_isapnp_find_board(struct pnp_dev **dev)
 		if (!pnp_port_valid(isapnp_dev, 0)
 		    || !pnp_irq_valid(isapnp_dev, 0)) {
 			pnp_device_detach(isapnp_dev);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ni_atmio: pnp invalid port or irq, aborting\n");
+#else
+			;
+#endif
 			return -ENOMEM;
 		}
 		break;
@@ -454,9 +458,17 @@ static int ni_atmio_attach(struct comedi_device *dev,
 
 	/* reserve our I/O region */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: ni_atmio: 0x%04lx", dev->minor, iobase);
+#else
+	;
+#endif
 	if (!request_region(iobase, NI_SIZE, "ni_atmio")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -467,10 +479,18 @@ static int ni_atmio_attach(struct comedi_device *dev,
 	{
 		int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" board fingerprint:");
+#else
+		;
+#endif
 		for (i = 0; i < 16; i += 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %04x %02x", inw(dev->iobase + i),
 			       inb(dev->iobase + i + 1));
+#else
+			;
+#endif
 		}
 	}
 #endif
@@ -483,22 +503,38 @@ static int ni_atmio_attach(struct comedi_device *dev,
 
 	dev->board_ptr = ni_boards + board;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" %s", boardtype.name);
+#else
+	;
+#endif
 	dev->board_name = boardtype.name;
 
 	/* irq stuff */
 
 	if (irq != 0) {
 		if (irq > 15 || ni_irqpin[irq] == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" invalid irq %u\n", irq);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" ( irq = %u )", irq);
+#else
+		;
+#endif
 		ret = request_irq(irq, ni_E_interrupt, NI_E_IRQ_FLAGS,
 				  "ni_atmio", dev);
 
 		if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" irq not available\n");
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		dev->irq = irq;
@@ -525,11 +561,23 @@ static int ni_getboardtype(struct comedi_device *dev)
 
 	}
 	if (device_id == 255)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" can't find board\n");
+#else
+		;
+#endif
 	 else if (device_id == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" EEPROM read error (?) or device not found\n");
+#else
+		;
+#endif
 	 else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" unknown device ID %d -- contact author\n", device_id);
+#else
+		;
+#endif
 
 	return -1;
 }

@@ -743,17 +743,25 @@ static unsigned int azx_rirb_get_response(struct hda_bus *bus,
 
 
 	if (!chip->polling_mode) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING SFX "azx_get_response timeout, "
 			   "switching to polling mode: last cmd=0x%08x\n",
 			   chip->last_cmd[addr]);
+#else
+		;
+#endif
 		chip->polling_mode = 1;
 		goto again;
 	}
 
 	if (chip->msi) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING SFX "No response from codec, "
 			   "disabling MSI: last cmd=0x%08x\n",
 			   chip->last_cmd[addr]);
+#else
+		;
+#endif
 		free_irq(chip->irq, chip);
 		chip->irq = -1;
 		pci_disable_msi(chip->pci);
@@ -1269,8 +1277,12 @@ static int azx_setup_periods(struct azx *chip,
 				pos_align;
 		pos_adj = frames_to_bytes(runtime, pos_adj);
 		if (pos_adj >= period_bytes) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING SFX "Too big adjustment %d\n",
 				   bdl_pos_adj[chip->dev_index]);
+#else
+			;
+#endif
 			pos_adj = 0;
 		} else {
 			ofs = setup_bdle(substream, azx_dev,
@@ -1467,8 +1479,12 @@ static int __devinit azx_codec_create(struct azx *chip, const char *model)
 				/* Some BIOSen give you wrong codec addresses
 				 * that don't exist
 				 */
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_WARNING SFX
 					   "Codec #%d probe error; "
+#else
+				;
+#endif
 					   "disabling it...\n", c);
 				chip->codec_mask &= ~(1 << c);
 				/* More badly, accessing to a non-existing
@@ -1968,9 +1984,13 @@ static int azx_position_ok(struct azx *chip, struct azx_dev *azx_dev)
 	pos = azx_get_position(chip, azx_dev);
 	if (chip->position_fix[stream] == POS_FIX_AUTO) {
 		if (!pos) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "hda-intel: Invalid position buffer, "
 			       "using LPIB read method instead.\n");
+#else
+			;
+#endif
 			chip->position_fix[stream] = POS_FIX_LPIB;
 			pos = azx_get_position(chip, azx_dev);
 		} else
@@ -1997,10 +2017,14 @@ static void azx_irq_pending_work(struct work_struct *work)
 	int i, pending, ok;
 
 	if (!chip->irq_pending_warned) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "hda-intel: IRQ timing workaround is activated "
 		       "for card #%d. Suggest a bigger bdl_pos_adj.\n",
 		       chip->card->number);
+#else
+		;
+#endif
 		chip->irq_pending_warned = 1;
 	}
 
@@ -2388,10 +2412,14 @@ static int __devinit check_position_fix(struct azx *chip, int fix)
 
 	q = snd_pci_quirk_lookup(chip->pci, position_fix_list);
 	if (q) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "hda_intel: position_fix set to %d "
 		       "for device %04x:%04x\n",
 		       q->value, q->subvendor, q->subdevice);
+#else
+		;
+#endif
 		return q->value;
 	}
 
@@ -2437,10 +2465,14 @@ static void __devinit check_probe_mask(struct azx *chip, int dev)
 	if (chip->codec_probe_mask == -1) {
 		q = snd_pci_quirk_lookup(chip->pci, probe_mask_list);
 		if (q) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_intel: probe_mask set to 0x%x "
 			       "for device %04x:%04x\n",
 			       q->value, q->subvendor, q->subdevice);
+#else
+			;
+#endif
 			chip->codec_probe_mask = q->value;
 		}
 	}
@@ -2449,8 +2481,12 @@ static void __devinit check_probe_mask(struct azx *chip, int dev)
 	if (chip->codec_probe_mask != -1 &&
 	    (chip->codec_probe_mask & AZX_FORCE_CODEC_MASK)) {
 		chip->codec_mask = chip->codec_probe_mask & 0xff;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_intel: codec_mask forced to 0x%x\n",
 		       chip->codec_mask);
+#else
+		;
+#endif
 	}
 }
 
@@ -2478,16 +2514,24 @@ static void __devinit check_msi(struct azx *chip)
 	chip->msi = 1;	/* enable MSI as default */
 	q = snd_pci_quirk_lookup(chip->pci, msi_black_list);
 	if (q) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "hda_intel: msi for device %04x:%04x set to %d\n",
 		       q->subvendor, q->subdevice, q->value);
+#else
+		;
+#endif
 		chip->msi = q->value;
 		return;
 	}
 
 	/* NVidia chipsets seem to cause troubles with MSI */
 	if (chip->driver_caps & AZX_DCAPS_NO_MSI) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_intel: Disabling MSI\n");
+#else
+		;
+#endif
 		chip->msi = 0;
 	}
 }

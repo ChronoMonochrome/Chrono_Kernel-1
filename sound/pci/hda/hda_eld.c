@@ -153,7 +153,11 @@ static unsigned char hdmi_get_eld_byte(struct hda_codec *codec, hda_nid_t nid,
 					AC_VERB_GET_HDMI_ELDD, byte_index);
 
 #ifdef BE_PARANOID
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HDMI: ELD data byte %d: 0x%x\n", byte_index, val);
+#else
+	;
+#endif
 #endif
 
 	if ((val & AC_ELDD_ELD_VALID) == 0) {
@@ -368,12 +372,16 @@ static void hdmi_show_short_audio_desc(struct cea_sad *a)
 	else
 		buf2[0] = '\0';
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HDMI: supports coding type %s:"
 			" channels = %d, rates =%s%s\n",
 			cea_audio_coding_type_names[a->format],
 			a->channels,
 			buf,
 			buf2);
+#else
+	;
+#endif
 }
 
 void snd_print_channel_allocation(int spk_alloc, char *buf, int buflen)
@@ -392,14 +400,22 @@ void snd_hdmi_show_eld(struct hdmi_eld *e)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HDMI: detected monitor %s at connection type %s\n",
 			e->monitor_name,
 			eld_connection_type_names[e->conn_type]);
+#else
+	;
+#endif
 
 	if (e->spk_alloc) {
 		char buf[SND_PRINT_CHANNEL_ALLOCATION_ADVISED_BUFSIZE];
 		snd_print_channel_allocation(e->spk_alloc, buf, sizeof(buf));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HDMI: available speakers:%s\n", buf);
+#else
+		;
+#endif
 	}
 
 	for (i = 0; i < e->sad_count; i++)

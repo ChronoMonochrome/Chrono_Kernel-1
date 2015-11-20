@@ -280,8 +280,12 @@ static int sbc8360_close(struct inode *inode, struct file *file)
 	if (expect_close == 42)
 		sbc8360_stop();
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "SBC8360 device closed unexpectedly.  "
 						"SBC8360 will not stop!\n");
+#else
+		;
+#endif
 
 	clear_bit(0, &sbc8360_is_open);
 	expect_close = 0;
@@ -378,7 +382,11 @@ static int __init sbc8360_init(void)
 		mseconds = (wd_margin + 1) * 100000;
 
 	/* My kingdom for the ability to print "0.5 seconds" in the kernel! */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Timeout set at %ld ms.\n", mseconds);
+#else
+	;
+#endif
 
 	return 0;
 

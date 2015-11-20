@@ -161,7 +161,11 @@ static void __init qsd8x50_allocate_memory_regions(void)
 
 	addr = alloc_bootmem(size); // (void *)MSM_FB_BASE;
 	if (!addr)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Failed to allocate bootmem for framebuffer\n");
+#else
+		;
+#endif
 
 
 	msm_fb_resources[0].start = __pa(addr);

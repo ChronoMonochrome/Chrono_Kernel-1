@@ -72,16 +72,28 @@ void log_wakeup_reason(int irq)
 	struct irq_desc *desc;
 	desc = irq_to_desc(irq);
 	if (desc && desc->action && desc->action->name)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Resume caused by IRQ %d, %s\n", irq,
 				desc->action->name);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Resume caused by IRQ %d\n", irq);
+#else
+		;
+#endif
 
 	spin_lock(&resume_reason_lock);
 	if (irq_count == MAX_WAKEUP_REASON_IRQS) {
 		spin_unlock(&resume_reason_lock);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Resume caused by more than %d IRQs\n",
 				MAX_WAKEUP_REASON_IRQS);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -118,20 +130,32 @@ int __init wakeup_reason_init(void)
 	spin_lock_init(&resume_reason_lock);
 	retval = register_pm_notifier(&wakeup_reason_pm_notifier_block);
 	if (retval)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "[%s] failed to register PM notifier %d\n",
 				__func__, retval);
+#else
+		;
+#endif
 
 	wakeup_reason = kobject_create_and_add("wakeup_reasons", kernel_kobj);
 	if (!wakeup_reason) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "[%s] failed to create a sysfs kobject\n",
 				__func__);
+#else
+		;
+#endif
 		return 1;
 	}
 	retval = sysfs_create_group(wakeup_reason, &attr_group);
 	if (retval) {
 		kobject_put(wakeup_reason);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "[%s] failed to create a sysfs group %d\n",
 				__func__, retval);
+#else
+		;
+#endif
 	}
 	return 0;
 }

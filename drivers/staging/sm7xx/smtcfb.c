@@ -45,12 +45,16 @@
 #include "smtcfb.h"
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define smdbg(format, arg...) printk(KERN_DEBUG format , ## arg)
 #else
 #define smdbg(format, arg...)
 #endif
 
 struct screen_info smtc_screen_info;
+#else
+#define smdbg(format, arg...) ;
+#endif
 
 /*
 * Private structure
@@ -870,8 +874,12 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
 	int err;
 	unsigned long pFramebufferPhysical;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"Silicon Motion display driver " SMTC_LINUX_FB_VERSION "\n");
+#else
+	;
+#endif
 
 	err = pci_enable_device(pdev);	/* enable SMTC chip */
 	if (err)
@@ -932,9 +940,13 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
 		if (sfb->fb.var.bits_per_pixel == 32) {
 			smtc_VRAMBaseAddress += 0x800000;
 			hw.m_pLFB += 0x800000;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"\nsmtc_VRAMBaseAddress=%p hw.m_pLFB=%p\n",
 					smtc_VRAMBaseAddress, hw.m_pLFB);
+#else
+			;
+#endif
 		}
 #endif
 		if (!smtc_RegBaseAddress) {
@@ -998,10 +1010,14 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
 	if (err < 0)
 		goto failed;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Silicon Motion SM%X Rev%X primary display mode"
 			"%dx%d-%d Init Complete.\n", hw.chipID, hw.chipRevID,
 			sfb->fb.var.xres, sfb->fb.var.yres,
 			sfb->fb.var.bits_per_pixel);
+#else
+	;
+#endif
 
 	return 0;
 

@@ -634,8 +634,12 @@ wavefront_get_sample_status (snd_wavefront_t *dev, int assume_rom)
 		wbuf[1] = i >> 7;
 
 		if (snd_wavefront_cmd (dev, WFC_IDENTIFY_SAMPLE_TYPE, rbuf, wbuf)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "cannot identify sample "
 				   "type of slot %d\n", i);
+#else
+			;
+#endif
 			dev->sample_status[i] = WF_ST_EMPTY;
 			continue;
 		}

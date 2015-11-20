@@ -81,13 +81,21 @@ static int erase_eraseblock(int ebnum)
 
 	err = mtd->erase(mtd, &ei);
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d while erasing EB %d\n", err, ebnum);
+#else
+		;
+#endif
 		return err;
 	}
 
 	if (ei.state == MTD_ERASE_FAILED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "some erase error occurred at EB %d\n",
 		       ebnum);
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -107,14 +115,22 @@ static int multiblock_erase(int ebnum, int blocks)
 
 	err = mtd->erase(mtd, &ei);
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d while erasing EB %d, blocks %d\n",
 		       err, ebnum, blocks);
+#else
+		;
+#endif
 		return err;
 	}
 
 	if (ei.state == MTD_ERASE_FAILED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "some erase error occurred at EB %d,"
 		       "blocks %d\n", ebnum, blocks);
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -145,7 +161,11 @@ static int write_eraseblock(int ebnum)
 
 	err = mtd->write(mtd, addr, mtd->erasesize, &written, iobuf);
 	if (err || written != mtd->erasesize) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: write failed at %#llx\n", addr);
+#else
+		;
+#endif
 		if (!err)
 			err = -EINVAL;
 	}
@@ -163,8 +183,12 @@ static int write_eraseblock_by_page(int ebnum)
 	for (i = 0; i < pgcnt; i++) {
 		err = mtd->write(mtd, addr, pgsize, &written, buf);
 		if (err || written != pgsize) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: write failed at %#llx\n",
 			       addr);
+#else
+			;
+#endif
 			if (!err)
 				err = -EINVAL;
 			break;
@@ -186,8 +210,12 @@ static int write_eraseblock_by_2pages(int ebnum)
 	for (i = 0; i < n; i++) {
 		err = mtd->write(mtd, addr, sz, &written, buf);
 		if (err || written != sz) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: write failed at %#llx\n",
 			       addr);
+#else
+			;
+#endif
 			if (!err)
 				err = -EINVAL;
 			return err;
@@ -198,8 +226,12 @@ static int write_eraseblock_by_2pages(int ebnum)
 	if (pgcnt % 2) {
 		err = mtd->write(mtd, addr, pgsize, &written, buf);
 		if (err || written != pgsize) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: write failed at %#llx\n",
 			       addr);
+#else
+			;
+#endif
 			if (!err)
 				err = -EINVAL;
 		}
@@ -219,7 +251,11 @@ static int read_eraseblock(int ebnum)
 	if (err == -EUCLEAN)
 		err = 0;
 	if (err || read != mtd->erasesize) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: read failed at %#llx\n", addr);
+#else
+		;
+#endif
 		if (!err)
 			err = -EINVAL;
 	}
@@ -240,8 +276,12 @@ static int read_eraseblock_by_page(int ebnum)
 		if (err == -EUCLEAN)
 			err = 0;
 		if (err || read != pgsize) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: read failed at %#llx\n",
 			       addr);
+#else
+			;
+#endif
 			if (!err)
 				err = -EINVAL;
 			break;
@@ -266,8 +306,12 @@ static int read_eraseblock_by_2pages(int ebnum)
 		if (err == -EUCLEAN)
 			err = 0;
 		if (err || read != sz) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: read failed at %#llx\n",
 			       addr);
+#else
+			;
+#endif
 			if (!err)
 				err = -EINVAL;
 			return err;
@@ -281,8 +325,12 @@ static int read_eraseblock_by_2pages(int ebnum)
 		if (err == -EUCLEAN)
 			err = 0;
 		if (err || read != pgsize) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(PRINT_PREF "error: read failed at %#llx\n",
 			       addr);
+#else
+			;
+#endif
 			if (!err)
 				err = -EINVAL;
 		}
@@ -298,7 +346,11 @@ static int is_block_bad(int ebnum)
 
 	ret = mtd->block_isbad(mtd, addr);
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "block %d is bad\n", ebnum);
+#else
+		;
+#endif
 	return ret;
 }
 
@@ -332,7 +384,11 @@ static int scan_for_bad_eraseblocks(void)
 
 	bbt = kzalloc(ebcnt, GFP_KERNEL);
 	if (!bbt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -340,14 +396,22 @@ static int scan_for_bad_eraseblocks(void)
 	if (mtd->block_isbad == NULL)
 		goto out;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "scanning for bad eraseblocks\n");
+#else
+	;
+#endif
 	for (i = 0; i < ebcnt; ++i) {
 		bbt[i] = is_block_bad(i) ? 1 : 0;
 		if (bbt[i])
 			bad += 1;
 		cond_resched();
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "scanned %d eraseblocks, %d are bad\n", i, bad);
+#else
+	;
+#endif
 out:
 	goodebcnt = ebcnt - bad;
 	return 0;
@@ -359,23 +423,47 @@ static int __init mtd_speedtest_init(void)
 	long speed;
 	uint64_t tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "=================================================\n");
+#else
+	;
+#endif
 	if (count)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "MTD device: %d    count: %d\n", dev, count);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "MTD device: %d\n", dev);
+#else
+		;
+#endif
 
 	mtd = get_mtd_device(NULL, dev);
 	if (IS_ERR(mtd)) {
 		err = PTR_ERR(mtd);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot get MTD device\n");
+#else
+		;
+#endif
 		return err;
 	}
 
 	if (mtd->writesize == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "not NAND flash, assume page size is 512 "
 		       "bytes.\n");
+#else
+		;
+#endif
 		pgsize = 512;
 	} else
 		pgsize = mtd->writesize;
@@ -385,11 +473,15 @@ static int __init mtd_speedtest_init(void)
 	ebcnt = tmp;
 	pgcnt = mtd->erasesize / pgsize;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "MTD device size %llu, eraseblock size %u, "
 	       "page size %u, count of eraseblocks %u, pages per "
 	       "eraseblock %u, OOB size %u\n",
 	       (unsigned long long)mtd->size, mtd->erasesize,
 	       pgsize, ebcnt, pgcnt, mtd->oobsize);
+#else
+	;
+#endif
 
 	if (count > 0 && count < ebcnt)
 		ebcnt = count;
@@ -397,7 +489,11 @@ static int __init mtd_speedtest_init(void)
 	err = -ENOMEM;
 	iobuf = kmalloc(mtd->erasesize, GFP_KERNEL);
 	if (!iobuf) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error: cannot allocate memory\n");
+#else
+		;
+#endif
 		goto out;
 	}
 
@@ -413,7 +509,11 @@ static int __init mtd_speedtest_init(void)
 		goto out;
 
 	/* Write all eraseblocks, 1 eraseblock at a time */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "testing eraseblock write speed\n");
+#else
+	;
+#endif
 	start_timing();
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
@@ -425,10 +525,18 @@ static int __init mtd_speedtest_init(void)
 	}
 	stop_timing();
 	speed = calc_speed();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "eraseblock write speed is %ld KiB/s\n", speed);
+#else
+	;
+#endif
 
 	/* Read all eraseblocks, 1 eraseblock at a time */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "testing eraseblock read speed\n");
+#else
+	;
+#endif
 	start_timing();
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
@@ -440,14 +548,22 @@ static int __init mtd_speedtest_init(void)
 	}
 	stop_timing();
 	speed = calc_speed();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "eraseblock read speed is %ld KiB/s\n", speed);
+#else
+	;
+#endif
 
 	err = erase_whole_device();
 	if (err)
 		goto out;
 
 	/* Write all eraseblocks, 1 page at a time */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "testing page write speed\n");
+#else
+	;
+#endif
 	start_timing();
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
@@ -459,10 +575,18 @@ static int __init mtd_speedtest_init(void)
 	}
 	stop_timing();
 	speed = calc_speed();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "page write speed is %ld KiB/s\n", speed);
+#else
+	;
+#endif
 
 	/* Read all eraseblocks, 1 page at a time */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "testing page read speed\n");
+#else
+	;
+#endif
 	start_timing();
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
@@ -474,14 +598,22 @@ static int __init mtd_speedtest_init(void)
 	}
 	stop_timing();
 	speed = calc_speed();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "page read speed is %ld KiB/s\n", speed);
+#else
+	;
+#endif
 
 	err = erase_whole_device();
 	if (err)
 		goto out;
 
 	/* Write all eraseblocks, 2 pages at a time */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "testing 2 page write speed\n");
+#else
+	;
+#endif
 	start_timing();
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
@@ -493,10 +625,18 @@ static int __init mtd_speedtest_init(void)
 	}
 	stop_timing();
 	speed = calc_speed();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "2 page write speed is %ld KiB/s\n", speed);
+#else
+	;
+#endif
 
 	/* Read all eraseblocks, 2 pages at a time */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "testing 2 page read speed\n");
+#else
+	;
+#endif
 	start_timing();
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
@@ -508,10 +648,18 @@ static int __init mtd_speedtest_init(void)
 	}
 	stop_timing();
 	speed = calc_speed();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "2 page read speed is %ld KiB/s\n", speed);
+#else
+	;
+#endif
 
 	/* Erase all eraseblocks */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "Testing erase speed\n");
+#else
+	;
+#endif
 	start_timing();
 	for (i = 0; i < ebcnt; ++i) {
 		if (bbt[i])
@@ -523,13 +671,21 @@ static int __init mtd_speedtest_init(void)
 	}
 	stop_timing();
 	speed = calc_speed();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "erase speed is %ld KiB/s\n", speed);
+#else
+	;
+#endif
 
 	/* Multi-block erase all eraseblocks */
 	for (k = 1; k < 7; k++) {
 		blocks = 1 << k;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "Testing %dx multi-block erase speed\n",
 		       blocks);
+#else
+		;
+#endif
 		start_timing();
 		for (i = 0; i < ebcnt; ) {
 			for (j = 0; j < blocks && (i + j) < ebcnt; j++)
@@ -547,17 +703,33 @@ static int __init mtd_speedtest_init(void)
 		}
 		stop_timing();
 		speed = calc_speed();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "%dx multi-block erase speed is %ld KiB/s\n",
 		       blocks, speed);
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(PRINT_PREF "finished\n");
+#else
+	;
+#endif
 out:
 	kfree(iobuf);
 	kfree(bbt);
 	put_mtd_device(mtd);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(PRINT_PREF "error %d occurred\n", err);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "=================================================\n");
+#else
+	;
+#endif
 	return err;
 }
 module_init(mtd_speedtest_init);

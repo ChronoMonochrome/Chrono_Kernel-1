@@ -27,7 +27,11 @@ static void packet_came(struct ieee80211_hw *hw, char *pRxBufferAddress, int Pac
 
 	skb = dev_alloc_skb(PacketSize);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Not enough memory for packet, FIXME\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -255,7 +259,11 @@ static void Wb35Rx(struct ieee80211_hw *hw)
 
 	pWb35Rx->pDRx = kzalloc(MAX_USB_RX_BUFFER, GFP_ATOMIC);
 	if (!pWb35Rx->pDRx) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("w35und: Rx memory alloc failed\n");
+#else
+		;
+#endif
 		goto error;
 	}
 	pRxBufferAddress = pWb35Rx->pDRx;
@@ -270,7 +278,11 @@ static void Wb35Rx(struct ieee80211_hw *hw)
 	retv = usb_submit_urb(urb, GFP_ATOMIC);
 
 	if (retv != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Rx URB sending error\n");
+#else
+		;
+#endif
 		goto error;
 	}
 	return;

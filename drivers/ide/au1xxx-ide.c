@@ -233,8 +233,12 @@ static int auide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 			unsigned int tc = (cur_len < 0xfe00)? cur_len: 0xfe00;
 
 			if (++count >= PRD_ENTRIES) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s: DMA table too small\n",
 				       drive->name);
+#else
+				;
+#endif
 				return 0;
 			}
 
@@ -296,8 +300,12 @@ static int auide_dma_test_irq(ide_drive_t *drive)
 	 */
 	drive->waiting_for_dma++;
 	if (drive->waiting_for_dma >= DMA_WAIT_TIMEOUT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: timeout waiting for ddma to complete\n",
 		       drive->name);
+#else
+		;
+#endif
 		return 1;
 	}
 	udelay(10);
@@ -553,7 +561,11 @@ static int au_ide_probe(struct platform_device *dev)
 
 	platform_set_drvdata(dev, host);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Au1xxx IDE(builtin) configured for %s\n", mode );
+#else
+	;
+#endif
 
  out:
 	return ret;

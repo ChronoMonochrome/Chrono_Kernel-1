@@ -109,9 +109,13 @@ short hpi_dsp_code_open(u32 adapter, struct dsp_code *ps_dsp_code,
 	}
 
 	if (header.version != HPI_VER_DECIMAL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &ps_dsp_code->ps_dev->dev,
 			"Firmware: release version mismatch  DSP image %d != Driver %d\n",
 			header.version, HPI_VER_DECIMAL);
+#else
+		dev_;
+#endif
 	}
 
 	HPI_DEBUG_LOG(DEBUG, "dsp code %s opened\n", fw_name);

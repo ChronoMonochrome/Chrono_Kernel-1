@@ -180,8 +180,12 @@ static int wait_for_ready(struct map_info *map, struct flchip *chip,
 	if (dsr & DSR_ERR) {
 		/* Clear DSR*/
 		map_write(map, CMD(~(DSR_ERR)), map->pfow_base + PFOW_DSR);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"%s: Bad status on wait: 0x%x \n",
 				map->name, dsr);
+#else
+		;
+#endif
 		print_drs_error(dsr);
 		ret = -EIO;
 	}
@@ -465,7 +469,11 @@ int do_write_buffer(struct map_info *map, struct flchip *chip,
 	chip->state = FL_WRITING;
 	ret = wait_for_ready(map, chip, (1<<lpddr->qinfo->ProgBufferTime));
 	if (ret)	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"%s Buffer program error: %d at %lx; \n",
+#else
+		;
+#endif
 			map->name, ret, adr);
 		goto out;
 	}
@@ -493,8 +501,12 @@ int do_erase_oneblock(struct mtd_info *mtd, loff_t adr)
 	chip->state = FL_ERASING;
 	ret = wait_for_ready(map, chip, (1<<lpddr->qinfo->BlockEraseTime)*1000);
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"%s Erase block error %d at : %llx\n",
 			map->name, ret, adr);
+#else
+		;
+#endif
 		goto out;
 	}
  out:	put_chip(map, chip);
@@ -610,8 +622,12 @@ static void lpddr_unpoint (struct mtd_info *mtd, loff_t adr, size_t len)
 			if (chip->ref_point_counter == 0)
 				chip->state = FL_READY;
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Warning: unpoint called on non"
 					"pointed region\n", map->name);
+#else
+			;
+#endif
 
 		put_chip(map, chip);
 		mutex_unlock(&chip->mutex);
@@ -775,7 +791,11 @@ int word_program(struct map_info *map, loff_t adr, uint32_t curval)
 
 	ret = wait_for_ready(map, chip, (1<<lpddr->qinfo->SingleWordProgTime));
 	if (ret)	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"%s word_program error at: %llx; val: %x\n",
+#else
+		;
+#endif
 			map->name, adr, curval);
 		goto out;
 	}

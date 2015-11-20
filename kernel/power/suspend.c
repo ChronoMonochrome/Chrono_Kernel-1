@@ -82,7 +82,11 @@ static int suspend_test(int level)
 {
 #ifdef CONFIG_PM_DEBUG
 	if (pm_test_level == level) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "suspend debug: Waiting for 5 seconds.\n");
+#else
+		;
+#endif
 		mdelay(5000);
 		return 1;
 	}
@@ -307,14 +311,30 @@ int enter_state(suspend_state_t state)
 	WARN_ON(error == 0);
 #ifdef CONFIG_PM_SYNC_CTRL
 	if (pm_sync_active) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PM: Syncing filesystems ... ");
+#else
+		;
+#endif
 		sys_sync();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("done.\n");
+#else
+		;
+#endif
 	}
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
+#else
+	;
+#endif
 	sys_sync();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.\n");
+#else
+	;
+#endif
 #endif
 
 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);

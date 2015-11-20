@@ -166,11 +166,15 @@
 #ifdef DEBUG
 
 #define DPRINTK(format, args...) \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG DEV_LABEL ": " format, ##args)
 #define APRINTK(truth, format, args...) \
 	do { \
 		if (unlikely(!(truth))) \
 			printk(KERN_ERR DEV_LABEL ": " format, ##args); \
+#else
+	;
+#endif
 	} while (0)
 
 #else /* !DEBUG */
@@ -182,6 +186,7 @@
 
 #ifdef DEBUG_RW
 #define RWDEBUG(format, args...) \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG DEV_LABEL ": " format, ##args)
 #else /* !DEBUG_RW */
 #define RWDEBUG(format, args...)
@@ -193,6 +198,9 @@
 #define LANAI_EEPROM_SIZE	(128)
 
 typedef int vci_t;
+#else
+	;
+#endif
 typedef void __iomem *bus_addr_t;
 
 /* DMA buffer in host memory for TX, RX, or service list. */
@@ -862,8 +870,12 @@ static inline void aal0_buffer_free(struct lanai_dev *lanai)
 /* Stub functions to use if EEPROM reading is disabled */
 static int __devinit eeprom_read(struct lanai_dev *lanai)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEV_LABEL "(itf %d): *NOT* reading EEPROM\n",
 	    lanai->number);
+#else
+	;
+#endif
 	memset(&lanai->eeprom[EEPROM_MAC], 0, 6);
 	return 0;
 }
@@ -1020,10 +1032,14 @@ static int __devinit eeprom_validate(struct lanai_dev *lanai)
 	}
 	DPRINTK("eeprom: Magic number = 0x%08X\n", lanai->magicno);
 	if (lanai->magicno != EEPROM_MAGIC_VALUE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DEV_LABEL "(itf %d): warning - EEPROM "
 		    "magic not what expected (got 0x%08X, not 0x%08X)\n",
 		    lanai->number, (unsigned int) lanai->magicno,
 		    (unsigned int) EEPROM_MAGIC_VALUE);
+#else
+		;
+#endif
 	return 0;
 }
 
@@ -1081,8 +1097,12 @@ static inline void intr_disable(const struct lanai_dev *lanai, u32 i)
 static void status_message(int itf, const char *name, int status)
 {
 	static const char *onoff[2] = { "off to on", "on to off" };
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEV_LABEL "(itf %d): %s changed from %s\n",
 	    itf, name, onoff[!status]);
+#else
+	;
+#endif
 }
 
 static void lanai_check_status(struct lanai_dev *lanai)
@@ -1102,7 +1122,11 @@ static void lanai_check_status(struct lanai_dev *lanai)
 
 static void pcistatus_got(int itf, const char *name)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEV_LABEL "(itf %d): PCI got %s error\n", itf, name);
+#else
+	;
+#endif
 }
 
 static void pcistatus_check(struct lanai_dev *lanai, int clearonly)
@@ -1358,14 +1382,22 @@ static void vcc_tx_aal5(struct lanai_dev *lanai, struct lanai_vcc *lvcc,
 static void vcc_tx_unqueue_aal0(struct lanai_dev *lanai,
 	struct lanai_vcc *lvcc, int endptr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEV_LABEL
 	    ": vcc_tx_unqueue_aal0: not implemented\n");
+#else
+	;
+#endif
 }
 
 static void vcc_tx_aal0(struct lanai_dev *lanai, struct lanai_vcc *lvcc,
 	struct sk_buff *skb)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEV_LABEL ": vcc_tx_aal0: not implemented\n");
+#else
+	;
+#endif
 	/* Remember to increment lvcc->tx.atmvcc->stats->tx */
 	lanai_free_skb(lvcc->tx.atmvcc, skb);
 }
@@ -1410,9 +1442,13 @@ static void vcc_rx_aal5(struct lanai_vcc *lvcc, int endptr)
 	size = be32_to_cpup(x) & 0xffff;
 	if (unlikely(n != aal5_size(size))) {
 		/* Make sure size matches padding */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DEV_LABEL "(itf %d): Got bad AAL5 length "
 		    "on vci=%d - size=%d n=%d\n",
 		    lvcc->rx.atmvcc->dev->number, lvcc->vci, size, n);
+#else
+		;
+#endif
 		lvcc->stats.x.aal5.rx_badlen++;
 		goto out;
 	}
@@ -1434,7 +1470,11 @@ static void vcc_rx_aal5(struct lanai_vcc *lvcc, int endptr)
 
 static void vcc_rx_aal0(struct lanai_dev *lanai)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEV_LABEL ": vcc_rx_aal0: not implemented\n");
+#else
+	;
+#endif
 	/* Remember to get read_lock(&vcc_sklist_lock) while looking up VC */
 	/* Remember to increment lvcc->rx.atmvcc->stats->rx */
 }
@@ -1501,9 +1541,13 @@ static int lanai_get_sized_buffer(struct lanai_dev *lanai,
 	if (unlikely(buf->start == NULL))
 		return -ENOMEM;
 	if (unlikely(lanai_buf_size(buf) < size))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DEV_LABEL "(itf %d): wanted %d bytes "
 		    "for %s buffer, got only %Zu\n", lanai->number, size,
 		    name, lanai_buf_size(buf));
+#else
+		;
+#endif
 	DPRINTK("Allocated %Zu byte %s buffer\n", lanai_buf_size(buf), name);
 	return 0;
 }
@@ -1573,8 +1617,12 @@ static inline void host_vcc_unbind(struct lanai_dev *lanai,
 
 static void lanai_reset(struct lanai_dev *lanai)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT DEV_LABEL "(itf %d): *NOT* reseting - not "
 	    "implemented\n", lanai->number);
+#else
+	;
+#endif
 	/* TODO */
 	/* The following is just a hack until we write the real
 	 * resetter - at least ack whatever interrupt sent us
@@ -1956,13 +2004,21 @@ static int __devinit lanai_pci_start(struct lanai_dev *lanai)
 	}
 	pci_set_master(pci);
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(32)) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DEV_LABEL
 		    "(itf %d): No suitable DMA available.\n", lanai->number);
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 	if (pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32)) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING DEV_LABEL
 		    "(itf %d): No suitable DMA available.\n", lanai->number);
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 	result = pci_read_config_word(pci, PCI_SUBSYSTEM_ID, &w);
@@ -2240,13 +2296,21 @@ static int __devinit lanai_dev_open(struct atm_dev *atmdev)
 #endif
 	memcpy(atmdev->esi, eeprom_mac(lanai), ESI_LEN);
 	lanai_timed_poll_start(lanai);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE DEV_LABEL "(itf %d): rev.%d, base=0x%lx, irq=%u "
 		"(%pMF)\n", lanai->number, (int) lanai->pci->revision,
 		(unsigned long) lanai->base, lanai->pci->irq, atmdev->esi);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE DEV_LABEL "(itf %d): LANAI%s, serialno=%u(0x%X), "
 	    "board_rev=%d\n", lanai->number,
 	    lanai->type==lanai2 ? "2" : "HB", (unsigned int) lanai->serialno,
 	    (unsigned int) lanai->serialno, lanai->board_rev);
+#else
+	;
+#endif
 	return 0;
 
     error_vcctable:
@@ -2272,8 +2336,12 @@ static int __devinit lanai_dev_open(struct atm_dev *atmdev)
 static void lanai_dev_close(struct atm_dev *atmdev)
 {
 	struct lanai_dev *lanai = (struct lanai_dev *) atmdev->dev_data;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEV_LABEL "(itf %d): shutting down interface\n",
 	    lanai->number);
+#else
+	;
+#endif
 	lanai_timed_poll_stop(lanai);
 #ifdef USE_POWERDOWN
 	lanai->conf1 = reg_read(lanai, Config1_Reg) & ~CONFIG1_POWERDOWN;

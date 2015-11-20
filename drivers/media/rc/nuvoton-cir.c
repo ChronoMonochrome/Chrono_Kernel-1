@@ -124,12 +124,16 @@ static u8 nvt_cir_wake_reg_read(struct nvt_dev *nvt, u8 offset)
 }
 
 #define pr_reg(text, ...) \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO KBUILD_MODNAME ": " text, ## __VA_ARGS__)
 
 /* dump current cir register contents */
 static void cir_dump_regs(struct nvt_dev *nvt)
 {
 	nvt_efm_enable(nvt);
+#else
+	;
+#endif
 	nvt_select_logical_dev(nvt, LOGICAL_DEV_CIR);
 
 	pr_reg("%s: Dump CIR logical device registers:\n", NVT_DRIVER_NAME);
@@ -220,9 +224,17 @@ static void cir_wake_dump_regs(struct nvt_dev *nvt)
 	pr_reg("%s: Dump CIR WAKE FIFO (len %d)\n", NVT_DRIVER_NAME, fifo_len);
 	pr_reg("* Contents = ");
 	for (i = 0; i < fifo_len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "%02x ",
 		       nvt_cir_wake_reg_read(nvt, CIR_WAKE_RD_FIFO_ONLY));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "\n");
+#else
+	;
+#endif
 }
 
 /* detect hardware features */
@@ -603,10 +615,22 @@ static void nvt_dump_rx_buf(struct nvt_dev *nvt)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s (len %d): ", __func__, nvt->pkts);
+#else
+	;
+#endif
 	for (i = 0; (i < nvt->pkts) && (i < RX_BUF_LEN); i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "0x%02x ", nvt->buf[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "\n");
+#else
+	;
+#endif
 }
 
 /*

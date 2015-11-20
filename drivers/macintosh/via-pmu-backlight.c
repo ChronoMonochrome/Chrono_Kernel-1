@@ -191,5 +191,9 @@ void __init pmu_backlight_init()
 	bd->props.power = FB_BLANK_UNBLANK;
 	backlight_update_status(bd);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PMU Backlight initialized (%s)\n", name);
+#else
+	;
+#endif
 }

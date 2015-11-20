@@ -445,9 +445,13 @@ overflow:
 		goto retry;
 	}
 	if (printk_ratelimit())
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"vmap allocation for size %lu failed: "
 			"use vmalloc=<size> to increase size.\n", size);
+#else
+		;
+#endif
 	kfree(va);
 	return ERR_PTR(-EBUSY);
 }

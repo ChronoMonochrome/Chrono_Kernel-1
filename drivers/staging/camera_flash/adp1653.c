@@ -36,6 +36,7 @@ int __flash_gpio_to_irq(int gpio)
 	return NOMADIK_GPIO_TO_IRQ(gpio);
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_LOG(...) printk(KERN_DEBUG "Adp1653 flash driver: " __VA_ARGS__)
 
 #define ADP1653_SUPPORTED_MODES (FLASH_MODE_VIDEO_LED | FLASH_MODE_STILL_LED | \
@@ -46,6 +47,9 @@ int __flash_gpio_to_irq(int gpio)
 	FLASH_SELFTEST_VIDEO_LIGHT | FLASH_SELFTEST_AF_LIGHT | FLASH_SELFTEST_INDICATOR | FLASH_SELFTEST_TORCH_LIGHT)
 
 static int adp1653_trigger_strobe(void *priv_data, int enable);
+#else
+#define DEBUG_LOG(...) ;
+#endif
 
 static int adp1653_get_modes(void *priv_data,unsigned long *modes)
 {

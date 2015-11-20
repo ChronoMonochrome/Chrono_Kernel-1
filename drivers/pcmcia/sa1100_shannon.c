@@ -73,10 +73,18 @@ shannon_pcmcia_configure_socket(struct soc_pcmcia_socket *skt,
 {
 	switch (state->Vcc) {
 	case 0:	/* power off */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s(): CS asked for 0V, still applying 3.3V..\n", __func__);
+#else
+		;
+#endif
 		break;
 	case 50:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s(): CS asked for 5V, applying 3.3V..\n", __func__);
+#else
+		;
+#endif
 	case 33:
 		break;
 	default:
@@ -85,7 +93,11 @@ shannon_pcmcia_configure_socket(struct soc_pcmcia_socket *skt,
 		return -1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s(): Warning, Can't perform reset\n", __func__);
+#else
+	;
+#endif
 	
 	/* Silently ignore Vpp, output enable, speaker enable. */
 

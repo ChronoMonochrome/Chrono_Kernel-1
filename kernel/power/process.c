@@ -114,12 +114,20 @@ static int try_to_freeze_tasks(bool sig_only)
 		 * but it cleans up leftover PF_FREEZE requests.
 		 */
 		if(wakeup) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 			printk(KERN_ERR "Freezing of %s aborted\n",
 					sig_only ? "user space " : "tasks ");
 		}
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 			printk(KERN_ERR "Freezing of tasks failed after %d.%02d seconds "
 			       "(%d tasks refusing to freeze, wq_busy=%d):\n",
 			       elapsed_csecs / 100, elapsed_csecs % 100,
@@ -138,8 +146,12 @@ static int try_to_freeze_tasks(bool sig_only)
 		} while_each_thread(g, p);
 		read_unlock(&tasklist_lock);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(elapsed %d.%02d seconds) ", elapsed_csecs / 100,
 			elapsed_csecs % 100);
+#else
+		;
+#endif
 	}
 
 	return todo ? -EBUSY : 0;
@@ -168,22 +180,42 @@ int freeze_processes(void)
 		pr_err("%s: power key unmapped\n", __func__);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Freezing user space processes ... ");
+#else
+	;
+#endif
 	error = try_to_freeze_tasks(true);
 	if (error)
 		goto Exit;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.\n");
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Freezing remaining freezable tasks ... ");
+#else
+	;
+#endif
 	error = try_to_freeze_tasks(false);
 	if (error)
 		goto Exit;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.");
+#else
+	;
+#endif
 
 	oom_killer_disable();
  Exit:
 	BUG_ON(in_atomic());
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	return error;
 }
@@ -212,11 +244,19 @@ void thaw_processes(void)
 {
 	oom_killer_enable();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Restarting tasks ... ");
+#else
+	;
+#endif
 	thaw_workqueues();
 	thaw_tasks(true);
 	thaw_tasks(false);
 	schedule();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.\n");
+#else
+	;
+#endif
 }
 

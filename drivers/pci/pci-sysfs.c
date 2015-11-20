@@ -751,8 +751,12 @@ legacy_io_err:
 	kfree(b->legacy_io);
 	b->legacy_io = NULL;
 kzalloc_err:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "pci: warning: could not create legacy I/O port "
 	       "and ISA memory resources to sysfs\n");
+#else
+	;
+#endif
 	return;
 }
 

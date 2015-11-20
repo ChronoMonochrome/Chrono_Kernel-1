@@ -518,15 +518,27 @@ static int SmapiQuerySystemID(void)
 	unsigned short usAX = 0xffff, usBX = 0xffff, usCX = 0xffff,
 		usDX = 0xffff, usDI = 0xffff, usSI = 0xffff;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("smapi::SmapiQUerySystemID entry\n");
+#else
+	;
+#endif
 	bRC = smapi_request(0x0000, 0, 0, 0,
 		&usAX, &usBX, &usCX, &usDX, &usDI, &usSI);
 
 	if (bRC == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("AX=%x, BX=%x, CX=%x, DX=%x, DI=%x, SI=%x\n",
 			usAX, usBX, usCX, usDX, usDI, usSI);
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("smapi::SmapiQuerySystemID smapi_request error\n");
+#else
+		;
+#endif
 	}
 
 	return bRC;

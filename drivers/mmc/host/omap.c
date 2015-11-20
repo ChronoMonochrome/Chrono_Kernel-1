@@ -701,8 +701,16 @@ static inline void mmc_omap_report_irq(u16 status)
 	for (i = 0; i < ARRAY_SIZE(mmc_omap_status_bits); i++)
 		if (status & (1 << i)) {
 			if (c)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" ");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s", mmc_omap_status_bits[i]);
+#else
+			;
+#endif
 			c++;
 		}
 }
@@ -743,7 +751,11 @@ static irqreturn_t mmc_omap_irq(int irq, void *dev_id)
 		dev_dbg(mmc_dev(host->mmc), "MMC IRQ %04x (CMD %d): ",
 			status, cmd);
 		mmc_omap_report_irq(status);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 #endif
 		if (host->total_bytes_left) {
 			if ((status & OMAP_MMC_STAT_A_FULL) ||

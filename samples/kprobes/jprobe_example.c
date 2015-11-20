@@ -27,9 +27,13 @@ static long jdo_fork(unsigned long clone_flags, unsigned long stack_start,
 	      struct pt_regs *regs, unsigned long stack_size,
 	      int __user *parent_tidptr, int __user *child_tidptr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "jprobe: clone_flags = 0x%lx, stack_size = 0x%lx,"
 			" regs = 0x%p\n",
 	       clone_flags, stack_size, regs);
+#else
+	;
+#endif
 
 	/* Always end with a call to jprobe_return(). */
 	jprobe_return();
@@ -49,18 +53,30 @@ static int __init jprobe_init(void)
 
 	ret = register_jprobe(&my_jprobe);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "register_jprobe failed, returned %d\n", ret);
+#else
+		;
+#endif
 		return -1;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Planted jprobe at %p, handler addr %p\n",
 	       my_jprobe.kp.addr, my_jprobe.entry);
+#else
+	;
+#endif
 	return 0;
 }
 
 static void __exit jprobe_exit(void)
 {
 	unregister_jprobe(&my_jprobe);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "jprobe at %p unregistered\n", my_jprobe.kp.addr);
+#else
+	;
+#endif
 }
 
 module_init(jprobe_init)

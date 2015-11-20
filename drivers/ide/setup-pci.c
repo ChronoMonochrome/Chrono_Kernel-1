@@ -39,12 +39,20 @@ static int ide_setup_pci_baseregs(struct pci_dev *dev, const char *name)
 	if (pci_read_config_byte(dev, PCI_CLASS_PROG, &progif) ||
 			 (progif & 5) != 5) {
 		if ((progif & 0xa) != 0xa) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s %s: device not capable of full "
 				"native PCI mode\n", name, pci_name(dev));
+#else
+			;
+#endif
 			return -EOPNOTSUPP;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s %s: placing both ports into native PCI "
 			"mode\n", name, pci_name(dev));
+#else
+		;
+#endif
 		(void) pci_write_config_byte(dev, PCI_CLASS_PROG, progif|5);
 		if (pci_read_config_byte(dev, PCI_CLASS_PROG, &progif) ||
 		    (progif & 5) != 5) {
@@ -115,8 +123,12 @@ int ide_pci_check_simplex(ide_hwif_t *hwif, const struct ide_port_info *d)
 
 	if (d->host_flags & IDE_HFLAG_CLEAR_SIMPLEX) {
 		if (ide_pci_clear_simplex(hwif->dma_base, d->name))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s %s: simplex device: DMA forced\n",
 				d->name, pci_name(dev));
+#else
+			;
+#endif
 		goto out;
 	}
 
@@ -132,8 +144,12 @@ int ide_pci_check_simplex(ide_hwif_t *hwif, const struct ide_port_info *d)
 	 */
 	dma_stat = hwif->dma_ops->dma_sff_read_status(hwif);
 	if ((dma_stat & 0x80) && hwif->mate && hwif->mate->dma_base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s %s: simplex device: DMA disabled\n",
 			d->name, pci_name(dev));
+#else
+		;
+#endif
 		return -1;
 	}
 out:
@@ -168,9 +184,13 @@ EXPORT_SYMBOL_GPL(ide_pci_set_master);
 
 void ide_setup_pci_noise(struct pci_dev *dev, const struct ide_port_info *d)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s %s: IDE controller (0x%04x:0x%04x rev 0x%02x)\n",
 		d->name, pci_name(dev),
 		dev->vendor, dev->device, dev->revision);
+#else
+	;
+#endif
 }
 EXPORT_SYMBOL_GPL(ide_setup_pci_noise);
 
@@ -195,12 +215,20 @@ static int ide_pci_enable(struct pci_dev *dev, const struct ide_port_info *d)
 	if (pci_enable_device(dev)) {
 		ret = pci_enable_device_io(dev);
 		if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s %s: couldn't enable device\n",
 				d->name, pci_name(dev));
+#else
+			;
+#endif
 			goto out;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s %s: BIOS configuration fixed\n",
 			d->name, pci_name(dev));
+#else
+		;
+#endif
 	}
 
 	/*
@@ -256,8 +284,12 @@ static int ide_pci_configure(struct pci_dev *dev, const struct ide_port_info *d)
 	 */
 	if (ide_setup_pci_baseregs(dev, d->name) ||
 	    pci_write_config_word(dev, PCI_COMMAND, pcicmd | PCI_COMMAND_IO)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s %s: device disabled (BIOS)\n",
 			d->name, pci_name(dev));
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 	if (pci_read_config_word(dev, PCI_COMMAND, &pcicmd)) {
@@ -384,10 +416,18 @@ int ide_hwif_setup_dma(ide_hwif_t *hwif, const struct ide_port_info *d)
 			return -1;
 
 		if (hwif->host_flags & IDE_HFLAG_MMIO)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "    %s: MMIO-DMA\n", hwif->name);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "    %s: BM-DMA at 0x%04lx-0x%04lx\n",
 					 hwif->name, base, base + 7);
+#else
+			;
+#endif
 
 		hwif->extra_base = base + (hwif->channel ? 8 : 16);
 
@@ -433,8 +473,12 @@ static int ide_setup_pci_controller(struct pci_dev *dev,
 		ret = ide_pci_configure(dev, d);
 		if (ret < 0)
 			goto out;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s %s: device enabled (Linux)\n",
 			d->name, pci_name(dev));
+#else
+		;
+#endif
 	}
 
 out:
@@ -472,8 +516,12 @@ void ide_pci_setup_ports(struct pci_dev *dev, const struct ide_port_info *d,
 
 		if (e->reg && (pci_read_config_byte(dev, e->reg, &tmp) ||
 		    (tmp & e->mask) != e->val)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s %s: IDE port disabled\n",
 				d->name, pci_name(dev));
+#else
+			;
+#endif
 			continue;	/* port not enabled */
 		}
 
@@ -518,15 +566,27 @@ static int do_ide_setup_pci_device(struct pci_dev *dev,
 
 	if (ide_pci_is_in_compatibility_mode(dev)) {
 		if (noisy)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s %s: not 100%% native mode: will "
 				"probe irqs later\n", d->name, pci_name(dev));
+#else
+			;
+#endif
 		pciirq = 0;
 	} else if (!pciirq && noisy) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s %s: bad irq (%d): will probe later\n",
 			d->name, pci_name(dev), pciirq);
+#else
+		;
+#endif
 	} else if (noisy) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s %s: 100%% native mode on irq %d\n",
 			d->name, pci_name(dev), pciirq);
+#else
+		;
+#endif
 	}
 
 	ret = pciirq;

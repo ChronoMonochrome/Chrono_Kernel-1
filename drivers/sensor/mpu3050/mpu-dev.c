@@ -197,8 +197,12 @@ static int accel_open_calibration(void)
 		err = -EIO;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: (%u,%u,%u)\n", __func__,
 			cal_data.x, cal_data.y, cal_data.z);
+#else
+	;
+#endif
 
 	filp_close(cal_filp, current->files);
 	set_fs(old_fs);
@@ -211,8 +215,12 @@ static int accel_open_calibration(void)
 
 		return -1;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: (%u,%u,%u)\n", __func__,
 			cal_data.x, cal_data.y, cal_data.z);
+#else
+	;
+#endif
 
 	return err;
 }
@@ -253,8 +261,12 @@ static int accel_do_calibrate(int enable)
 		cal_data.y = 0xffff;
 		cal_data.z = 0xffff;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: cal data (%d,%d,%d)\n", __func__,
 			cal_data.x, cal_data.y, cal_data.z);
+#else
+	;
+#endif
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);
@@ -1329,7 +1341,11 @@ static ssize_t mpu3050_get_temp(struct device *dev,
 			MPUREG_TEMP_OUT_H, 2, data);
 	temperature = (short) (((data[0]) << 8) | data[1]);
 	temperature = (((temperature + 13200) / 280) + 35);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "read temperature = %d\n", temperature);
+#else
+	;
+#endif
 
 	count = sprintf(buf, "%d\n", temperature);
 	if (prev_gyro_suspended)
@@ -1363,7 +1379,11 @@ static ssize_t mpu3050_get_temp(struct device *dev,
 
 #define CHECK_TEST_ERROR(x)                                                 \
 	if (x) {                                                                \
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("error %d @ %s|%d\n", x, __func__, __LINE__);                \
+#else
+		;
+#endif
 		return -1;                                                        \
 	}
 
@@ -1407,9 +1427,17 @@ static ssize_t mpu3050_acc_read(struct device *dev,
 	   acc_data);
 
 	   if (ML_SUCCESS == retval)
+#ifdef CONFIG_DEBUG_PRINTK
 	   printk("[mpu3050] %s,%d - success\n",__func__,__LINE__);
+#else
+	   ;
+#endif
 	   else
+#ifdef CONFIG_DEBUG_PRINTK
 	   printk("[mpu3050] %s,%d - fail\n",__func__,__LINE__);
+#else
+	   ;
+#endif
 	 */
 
 #ifdef CONFIG_MPU_SENSORS_BMA222
@@ -1452,8 +1480,12 @@ static ssize_t accel_calibration_show(struct device *dev,
 	if (err < 0)
 		pr_err("%s: accel_open_calibration() failed\n", __func__);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(buf, "%d %d %d %d\n",
 			err, cal_data.x, cal_data.y, cal_data.z);
+#else
+	;
+#endif
 	count = sprintf(buf, "%d %d %d %d\n", err,
 		cal_data.x, cal_data.y, cal_data.z);
 	return count;
@@ -1472,8 +1504,12 @@ static ssize_t accel_calibration_store(struct device *dev,
 	if (err < 0)
 		pr_err("%s: accel_do_calibrate() failed\n", __func__);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(buf, "%d %d %d\n",
 			cal_data.x, cal_data.y, cal_data.z);
+#else
+	;
+#endif
 	if (err > 0)
 		err = 0;
 	count = sprintf(buf, "%d\n", err);
@@ -1516,7 +1552,11 @@ int mpu3050_probe(struct i2c_client *client,
 	struct i2c_adapter *compass_adapter = NULL;
 	struct i2c_adapter *pressure_adapter = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[mpu3050] %s,%d\n", __func__, __LINE__);
+#else
+	;
+#endif
 	dev_dbg(&client->adapter->dev, "%s\n", __func__);
 
 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
@@ -1912,7 +1952,11 @@ static int __init mpu_init(void)
 	int res = i2c_add_driver(&mpu3050_driver);
 	pid = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s\n", __func__);
+#else
+	;
+#endif
 	if (res)
 		dev_err(&this_client->adapter->dev, "%s failed\n",
 				__func__);
@@ -1921,7 +1965,11 @@ static int __init mpu_init(void)
 
 static void __exit mpu_exit(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s\n", __func__);
+#else
+	;
+#endif
 	i2c_del_driver(&mpu3050_driver);
 }
 

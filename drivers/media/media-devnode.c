@@ -288,18 +288,30 @@ static int __init media_devnode_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Linux media interface: v0.10\n");
+#else
+	;
+#endif
 	ret = alloc_chrdev_region(&media_dev_t, 0, MEDIA_NUM_DEVICES,
 				  MEDIA_NAME);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "media: unable to allocate major\n");
+#else
+		;
+#endif
 		return ret;
 	}
 
 	ret = bus_register(&media_bus_type);
 	if (ret < 0) {
 		unregister_chrdev_region(media_dev_t, MEDIA_NUM_DEVICES);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "media: bus_register failed\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 

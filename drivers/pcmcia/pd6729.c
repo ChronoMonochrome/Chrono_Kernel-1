@@ -596,8 +596,12 @@ static u_int __devinit pd6729_isa_scan(void)
 	int i;
 
 	if (irq_mode == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pd6729: PCI card interrupts, "
 		       "PCI status changes\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -608,15 +612,31 @@ static u_int __devinit pd6729_isa_scan(void)
 		if ((mask0 & (1 << i)) && (pd6729_check_irq(i) == 0))
 			mask |= (1 << i);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "pd6729: ISA irqs = ");
+#else
+	;
+#endif
 	for (i = 0; i < 16; i++)
 		if (mask & (1<<i))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%d", ((mask & ((1<<i)-1)) ? "," : ""), i);
+#else
+			;
+#endif
 
 	if (mask == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("none!");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  polling status changes.\n");
+#else
+		;
+#endif
 
 	return mask;
 }

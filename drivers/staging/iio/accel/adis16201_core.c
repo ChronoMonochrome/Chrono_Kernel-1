@@ -277,8 +277,12 @@ static int adis16201_initial_setup(struct adis16201_state *st)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRIVER_NAME ": at CS%d (irq %d)\n",
 			st->us->chip_select, st->us->irq);
+#else
+	;
+#endif
 
 err_ret:
 	return ret;

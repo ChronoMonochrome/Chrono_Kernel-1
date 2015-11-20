@@ -205,18 +205,34 @@ int prism2_fwtry(struct usb_device *udev, wlandevice_t *wlandev)
 {
 	const struct firmware *fw_entry = NULL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "prism2_usb: Checking for firmware %s\n",
 	       PRISM2_USB_FWFILE);
+#else
+	;
+#endif
 	if (request_ihex_firmware(&fw_entry, PRISM2_USB_FWFILE, &udev->dev) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "prism2_usb: Firmware not available, but not essential\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "prism2_usb: can continue to use card anyway.\n");
+#else
+		;
+#endif
 		return 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "prism2_usb: %s will be processed, size %zu\n",
 	       PRISM2_USB_FWFILE, fw_entry->size);
+#else
+	;
+#endif
 	prism2_fwapply((const struct ihex_binrec *)fw_entry->data, wlandev);
 
 	release_firmware(fw_entry);
@@ -353,7 +369,11 @@ int prism2_fwapply(const struct ihex_binrec *rfptr, wlandevice_t *wlandev)
 	free_chunks(fchunk, &nfchunks);
 	free_srecs();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "prism2_usb: firmware loading finished.\n");
+#else
+	;
+#endif
 
 	return result;
 }
@@ -683,9 +703,13 @@ int plugimage(struct imgchunk *fchunk, unsigned int nfchunks,
 			j = -1;
 		}
 		if (j >= pda->nrec && j != -1) { /*  if no matching PDR, fail */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "warning: Failed to find PDR for "
 			       "plugrec 0x%04x.\n", s3plug[i].itemcode);
+#else
+			;
+#endif
 			continue;	/* and move on to the next PDR */
 #if 0
 			/* MSM: They swear that unless it's the MAC address,

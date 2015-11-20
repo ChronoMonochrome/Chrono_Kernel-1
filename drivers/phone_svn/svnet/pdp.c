@@ -89,7 +89,11 @@ struct net_device* create_pdp(int channel, struct net_device *parent)
 	priv->channel = channel;
 	priv->parent = parent;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[create_rmnet] channel: %d\n", channel);
+#else
+	;
+#endif
 
 	r = register_netdev(ndev);
 	if (r) {

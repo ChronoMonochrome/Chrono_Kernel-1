@@ -207,22 +207,42 @@ static void psb_intel_sdvo_write_cmd(struct psb_intel_output *psb_intel_output,
 	if (0) {
 		DRM_DEBUG("%s: W: %02X ", SDVO_NAME(sdvo_priv), cmd);
 		for (i = 0; i < args_len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO"%02X ", ((u8 *) args)[i]);
+#else
+			;
+#endif
 		for (; i < 8; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("   ");
+#else
+			;
+#endif
 		for (i = 0;
 		     i <
 		     sizeof(sdvo_cmd_names) / sizeof(sdvo_cmd_names[0]);
 		     i++) {
 			if (cmd == sdvo_cmd_names[i].cmd) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("(%s)", sdvo_cmd_names[i].name);
+#else
+				;
+#endif
 				break;
 			}
 		}
 		if (i ==
 		    sizeof(sdvo_cmd_names) / sizeof(sdvo_cmd_names[0]))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("(%02X)", cmd);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	for (i = 0; i < args_len; i++) {
@@ -269,15 +289,35 @@ static u8 psb_intel_sdvo_read_response(
 		if (0) {
 			DRM_DEBUG("%s: R: ", SDVO_NAME(sdvo_priv));
 			for (i = 0; i < response_len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO"%02X ", ((u8 *) response)[i]);
+#else
+				;
+#endif
 			for (; i < 8; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("   ");
+#else
+				;
+#endif
 			if (status <= SDVO_CMD_STATUS_SCALING_NOT_SUPP)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO"(%s)",
 					 cmd_status_names[status]);
+#else
+				;
+#endif
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO"(??? %d)", status);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 		}
 
 		if (status != SDVO_CMD_STATUS_PENDING)

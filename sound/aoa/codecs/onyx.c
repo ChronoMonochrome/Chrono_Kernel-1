@@ -977,7 +977,11 @@ static int onyx_init_codec(struct aoa_codec *codec)
 		}
 	}
 #undef ADDCTL
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "attached to onyx codec via i2c\n");
+#else
+	;
+#endif
 
 	return 0;
  error:
@@ -1064,7 +1068,11 @@ static int onyx_i2c_probe(struct i2c_client *client,
 	if (aoa_codec_register(&onyx->codec)) {
 		goto fail;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG PFX "created and attached onyx instance\n");
+#else
+	;
+#endif
 	return 0;
  fail:
 	i2c_set_clientdata(client, NULL);
@@ -1085,7 +1093,11 @@ static int onyx_i2c_attach(struct i2c_adapter *adapter)
 	while ((dev = of_get_next_child(busnode, dev)) != NULL) {
 		if (of_device_is_compatible(dev, "pcm3052")) {
 			const u32 *addr;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG PFX "found pcm3052\n");
+#else
+			;
+#endif
 			addr = of_get_property(dev, "reg", NULL);
 			if (!addr)
 				return -ENODEV;
@@ -1099,7 +1111,11 @@ static int onyx_i2c_attach(struct i2c_adapter *adapter)
 	if (!of_device_is_compatible(busnode, "k2-i2c"))
 		return -ENODEV;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG PFX "found k2-i2c, checking if onyx chip is on it\n");
+#else
+	;
+#endif
 	/* probe both possible addresses for the onyx chip */
 	if (onyx_create(adapter, NULL, 0x46) == 0)
 		return 0;

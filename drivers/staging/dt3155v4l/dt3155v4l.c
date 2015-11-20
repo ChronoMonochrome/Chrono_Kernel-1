@@ -413,7 +413,11 @@ dt3155_threadfn(void *arg)
 			dt3155_start_acq(pd);
 			continue;
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s(): This is a BUG\n", __func__);
+#else
+			;
+#endif
 done:
 		spin_unlock_irqrestore(&pd->lock, flags);
 	}
@@ -426,7 +430,11 @@ dt3155_open(struct file *filp)
 	int ret = 0;
 	struct dt3155_priv *pd = video_drvdata(filp);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: open(): minor: %i\n", pd->vdev->minor);
+#else
+	;
+#endif
 
 	if (mutex_lock_interruptible(&pd->mux) == -EINTR)
 		return -ERESTARTSYS;
@@ -482,7 +490,11 @@ dt3155_release(struct file *filp)
 	unsigned long flags;
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: release(): minor: %i\n", pd->vdev->minor);
+#else
+	;
+#endif
 
 	if (mutex_lock_interruptible(&pd->mux) == -EINTR)
 		return -ERESTARTSYS;
@@ -717,7 +729,11 @@ done:
 	if (b->count)
 		ret = videobuf_reqbufs(q, b);
 	else { /* FIXME: is it necessary? */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "dt3155: request to free buffers\n");
+#else
+		;
+#endif
 		/* ret = videobuf_mmap_free(q); */
 		ret = dt3155_ioc_streamoff(filp, p,
 						V4L2_BUF_TYPE_VIDEO_CAPTURE);
@@ -1063,7 +1079,11 @@ dt3155_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	int err;
 	struct dt3155_priv *pd;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: probe()\n");
+#else
+	;
+#endif
 	err = dma_set_mask(&dev->dev, DMA_BIT_MASK(32));
 	if (err) {
 		printk(KERN_ERR "dt3155: cannot set dma_mask\n");
@@ -1122,8 +1142,16 @@ dt3155_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	err = dt3155_alloc_coherent(&dev->dev, DT3155_CHUNK_SIZE,
 							DMA_MEMORY_MAP);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "dt3155: preallocated 8 buffers\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: /dev/video%i is ready\n", pd->vdev->minor);
+#else
+	;
+#endif
 	return 0;  /*   success   */
 
 err_init_board:
@@ -1144,7 +1172,11 @@ dt3155_remove(struct pci_dev *dev)
 {
 	struct dt3155_priv *pd = pci_get_drvdata(dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: remove()\n");
+#else
+	;
+#endif
 	dt3155_free_coherent(&dev->dev);
 	video_unregister_device(pd->vdev);
 	pci_iounmap(dev, pd->regs);
@@ -1175,8 +1207,16 @@ dt3155_init_module(void)
 {
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: ==================\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: init()\n");
+#else
+	;
+#endif
 	err = pci_register_driver(&pci_driver);
 	if (err) {
 		printk(KERN_ERR "dt3155: cannot register pci_driver\n");
@@ -1189,8 +1229,16 @@ static void __exit
 dt3155_exit_module(void)
 {
 	pci_unregister_driver(&pci_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: exit()\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "dt3155: ==================\n");
+#else
+	;
+#endif
 }
 
 module_init(dt3155_init_module);

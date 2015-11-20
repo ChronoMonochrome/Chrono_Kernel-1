@@ -236,7 +236,11 @@ static __init int qdi_init_one(unsigned long port, int type, unsigned long io, i
 	qdi_data[nr_qdi_host].fast = fast;
 	qdi_data[nr_qdi_host].platform_dev = pdev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME": qd%d at 0x%lx.\n", type, io);
+#else
+	;
+#endif
 
 	/* activate */
 	ret = ata_host_activate(host, irq, ata_sff_interrupt, 0, &qdi_sht);

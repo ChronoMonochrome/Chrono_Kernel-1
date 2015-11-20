@@ -69,7 +69,11 @@ static int b1pci_probe(struct capicardparams *p, struct pci_dev *pdev)
 
 	card = b1_alloc_card(1);
 	if (!card) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "b1pci: no memory.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err;
 	}
@@ -81,16 +85,24 @@ static int b1pci_probe(struct capicardparams *p, struct pci_dev *pdev)
 	card->cardtype = avm_b1pci;
 	
 	if (!request_region(card->port, AVMB1_PORTLEN, card->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "b1pci: ports 0x%03x-0x%03x in use.\n",
 		       card->port, card->port + AVMB1_PORTLEN);
+#else
+		;
+#endif
 		retval = -EBUSY;
 		goto err_free;
 	}
 	b1_reset(card->port);
 	retval = b1_detect(card->port, card->cardtype);
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "b1pci: NO card at 0x%x (%d)\n",
 		       card->port, retval);
+#else
+		;
+#endif
 		retval = -ENODEV;
 		goto err_release_region;
 	}
@@ -123,11 +135,19 @@ static int b1pci_probe(struct capicardparams *p, struct pci_dev *pdev)
 	}
 
 	if (card->revision >= 4) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "b1pci: AVM B1 PCI V4 at i/o %#x, irq %d, revision %d (no dma)\n",
 		       card->port, card->irq, card->revision);
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "b1pci: AVM B1 PCI at i/o %#x, irq %d, revision %d\n",
 		       card->port, card->irq, card->revision);
+#else
+		;
+#endif
 	}
 
 	pci_set_drvdata(pdev, card);
@@ -188,14 +208,22 @@ static int b1pciv4_probe(struct capicardparams *p, struct pci_dev *pdev)
 
 	card = b1_alloc_card(1);
 	if (!card) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "b1pci: no memory.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err;
 	}
 
         card->dma = avmcard_dma_alloc("b1pci", pdev, 2048+128, 2048+128);
 	if (!card->dma) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "b1pci: dma alloc.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err_free;
 	}
@@ -208,16 +236,24 @@ static int b1pciv4_probe(struct capicardparams *p, struct pci_dev *pdev)
 	card->cardtype = avm_b1pci;
 
 	if (!request_region(card->port, AVMB1_PORTLEN, card->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "b1pci: ports 0x%03x-0x%03x in use.\n",
 		       card->port, card->port + AVMB1_PORTLEN);
+#else
+		;
+#endif
 		retval = -EBUSY;
 		goto err_free_dma;
 	}
 
 	card->mbase = ioremap(card->membase, 64);
 	if (!card->mbase) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "b1pci: can't remap memory at 0x%lx\n",
 		       card->membase);
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err_release_region;
 	}
@@ -226,8 +262,12 @@ static int b1pciv4_probe(struct capicardparams *p, struct pci_dev *pdev)
 
 	retval = b1pciv4_detect(card);
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "b1pci: NO card at 0x%x (%d)\n",
 		       card->port, retval);
+#else
+		;
+#endif
 		retval = -ENODEV;
 		goto err_unmap;
 	}
@@ -261,8 +301,12 @@ static int b1pciv4_probe(struct capicardparams *p, struct pci_dev *pdev)
 	}
 	card->cardnr = cinfo->capi_ctrl.cnr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "b1pci: AVM B1 PCI V4 at i/o %#x, irq %d, mem %#lx, revision %d (dma)\n",
 	       card->port, card->irq, card->membase, card->revision);
+#else
+	;
+#endif
 
 	pci_set_drvdata(pdev, card);
 	return 0;
@@ -318,8 +362,12 @@ static int __devinit b1pci_pci_probe(struct pci_dev *pdev,
 		param.membase = pci_resource_start(pdev, 0);
 		param.port = pci_resource_start(pdev, 2);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "b1pci: PCI BIOS reports AVM-B1 V4 at i/o %#x, irq %d, mem %#x\n",
 		       param.port, param.irq, param.membase);
+#else
+		;
+#endif
 #ifdef CONFIG_ISDN_DRV_AVMB1_B1PCIV4
 		retval = b1pciv4_probe(&param, pdev);
 #else
@@ -333,8 +381,12 @@ static int __devinit b1pci_pci_probe(struct pci_dev *pdev,
 		param.membase = 0;
 		param.port = pci_resource_start(pdev, 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "b1pci: PCI BIOS reports AVM-B1 at i/o %#x, irq %d\n",
 		       param.port, param.irq);
+#else
+		;
+#endif
 		retval = b1pci_probe(&param, pdev);
 		if (retval != 0) {
 		        printk(KERN_ERR "b1pci: no AVM-B1 at i/o %#x, irq %d detected\n",
@@ -398,7 +450,11 @@ static int __init b1pci_init(void)
 		strlcpy(capi_driver_b1pciv4.revision, rev, 32);
 		register_capi_driver(&capi_driver_b1pciv4);
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "b1pci: revision %s\n", rev);
+#else
+		;
+#endif
 	}
 	return err;
 }

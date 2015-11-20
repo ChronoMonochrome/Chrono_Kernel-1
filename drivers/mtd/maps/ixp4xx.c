@@ -262,11 +262,19 @@ static int ixp4xx_flash_probe(struct platform_device *dev)
 		part_type = "static";
 	}
 	if (nr_parts == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "IXP4xx flash: no partition info "
 			"available, registering whole flash\n");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "IXP4xx flash: using %s partition "
 			"definition\n", part_type);
+#else
+		;
+#endif
 
 	err = mtd_device_register(info->mtd, info->partitions, nr_parts);
 	if (err)

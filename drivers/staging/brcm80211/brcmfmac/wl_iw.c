@@ -35,6 +35,7 @@ typedef const struct si_pub si_t;
 #include <dngl_stats.h>
 #include <dhd.h>
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define WL_ERROR(fmt, args...)	printk(fmt, ##args)
 #define WL_TRACE(fmt, args...)	no_printk(fmt, ##args)
 #define WL_INFORM(fmt, args...)	no_printk(fmt, ##args)
@@ -52,6 +53,9 @@ typedef const struct si_pub si_t;
 #define ENABLE_ACTIVE_PASSIVE_SCAN_SUPPRESS  1
 
 bool g_set_essid_before_scan = true;
+#else
+#define WL_ERROR(fmt, args...)	;
+#endif
 
 #define WL_IW_IOCTL_CALL(func_call) \
 	do {				\

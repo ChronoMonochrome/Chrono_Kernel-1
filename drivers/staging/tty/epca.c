@@ -881,7 +881,11 @@ static void __exit epca_module_exit(void)
 
 	if (tty_unregister_driver(pc_driver) ||
 				tty_unregister_driver(pc_info)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "epca: cleanup_module failed to un-register tty driver\n");
+#else
+		;
+#endif
 		return;
 	}
 	put_tty_driver(pc_driver);
@@ -984,7 +988,11 @@ static int __init pc_init(void)
 	 * Set up interrupt, we will worry about memory allocation in
 	 * post_fep_init.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DIGI epca driver version %s loaded.\n", VERSION);
+#else
+	;
+#endif
 
 	/*
 	 * NOTE : This code assumes that the number of ports found in the
@@ -1403,10 +1411,14 @@ static void post_fep_init(unsigned int crd)
 		spin_unlock_irqrestore(&epca_lock, flags);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	"Digi PC/Xx Driver V%s:  %s I/O = 0x%lx Mem = 0x%lx Ports = %d\n",
 				VERSION, board_desc[bd->type], (long)bd->port,
 					(long)bd->membase, bd->numports);
+#else
+	;
+#endif
 	memwinoff(bd, 0);
 }
 
@@ -1886,7 +1898,11 @@ static void receive_data(struct channel *ch, struct tty_struct *tty)
 
 	if (readb(&bc->orun)) {
 		writeb(0, &bc->orun);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "epca; overrun! DigiBoard device %s\n",
+#else
+		;
+#endif
 								tty->name);
 		tty_insert_flip_char(tty, 0, TTY_OVERRUN);
 	}
@@ -2649,9 +2665,13 @@ static void __init epca_setup(char *str, int *ints)
 	/* Copies our local copy of board into boards */
 	memcpy((void *)&boards[num_cards], (void *)&board, sizeof(board));
 	/* Does this get called once per lilo arg are what ? */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PC/Xx: Added board %i, %s %i ports at 0x%4.4X base 0x%6.6X\n",
 		num_cards, board_desc[board.type],
 		board.numports, (int)board.port, (unsigned int) board.membase);
+#else
+	;
+#endif
 	num_cards++;
 }
 

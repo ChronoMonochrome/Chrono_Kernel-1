@@ -367,9 +367,13 @@ static int pcd_wait(struct pcd_unit *cd, int go, int stop, char *fun, char *msg)
 		if (j > PCD_SPIN)
 			e |= 0x100;
 		if (fun)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s %s: alt=0x%x stat=0x%x err=0x%x"
 			       " loop=%d phase=%d\n",
 			       cd->name, fun, msg, r, s, e, j, p);
+#else
+			;
+#endif
 		return (s << 8) + r;
 	}
 	return 0;
@@ -396,7 +400,11 @@ static int pcd_command(struct pcd_unit *cd, char *cmd, int dlen, char *fun)
 	}
 
 	if (read_reg(cd, 2) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %s: command phase error\n", cd->name, fun);
+#else
+		;
+#endif
 		pi_disconnect(cd->pi);
 		return -1;
 	}
@@ -425,8 +433,12 @@ static int pcd_completion(struct pcd_unit *cd, char *buf, char *fun)
 			if ((p == 2) && (n > 0) && (j == 0)) {
 				pi_read_block(cd->pi, buf, n);
 				if (verbose > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%s: %s: Read %d bytes\n",
 					       cd->name, fun, n);
+#else
+					;
+#endif
 				r = 0;
 				j++;
 			} else {
@@ -441,7 +453,11 @@ static int pcd_completion(struct pcd_unit *cd, char *buf, char *fun)
 				mdelay(1);
 			}
 			if (k++ > PCD_TMO) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s: Stuck DRQ\n", cd->name);
+#else
+				;
+#endif
 				break;
 			}
 			if (pcd_wait
@@ -473,8 +489,12 @@ static void pcd_req_sense(struct pcd_unit *cd, char *fun)
 	c = 2;
 	if (!r) {
 		if (fun)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s: Sense key: %x, ASC: %x, ASQ: %x\n",
 			       cd->name, fun, buf[2] & 0xf, buf[12], buf[13]);
+#else
+			;
+#endif
 		c = buf[2] & 0xf;
 		cd->last_sense =
 		    c | ((buf[12] & 0xff) << 8) | ((buf[13] & 0xff) << 16);
@@ -556,12 +576,28 @@ static int pcd_reset(struct pcd_unit *cd)
 		flg &= (read_reg(cd, i + 1) == expect[i]);
 
 	if (verbose) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Reset (%d) signature = ", cd->name, k);
+#else
+		;
+#endif
 		for (i = 0; i < 5; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%3x", read_reg(cd, i + 1));
+#else
+			;
+#endif
 		if (!flg)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" (incorrect)");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	pi_disconnect(cd->pi);
@@ -618,8 +654,12 @@ static int pcd_identify(struct pcd_unit *cd, char *id)
 		return -1;
 	if ((pcd_buffer[0] & 0x1f) != 5) {
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s is not a CD-ROM\n",
 			       cd->name, cd->drive ? "Slave" : "Master");
+#else
+			;
+#endif
 		return -1;
 	}
 	memcpy(id, pcd_buffer + 16, 16);
@@ -630,7 +670,11 @@ static int pcd_identify(struct pcd_unit *cd, char *id)
 		k--;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s: %s\n", cd->name, cd->drive ? "Slave" : "Master", id);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -688,8 +732,12 @@ static int pcd_detect(void)
 	int k, unit;
 	struct pcd_unit *cd;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s version %s, major %d, nice %d\n",
 	       name, name, PCD_VERSION, major, nice);
+#else
+	;
+#endif
 
 	k = 0;
 	if (pcd_drive_count == 0) { /* nothing spec'd - so autoprobe for 1 */
@@ -721,7 +769,11 @@ static int pcd_detect(void)
 	if (k)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: No CD-ROM drive found\n", name);
+#else
+	;
+#endif
 	for (unit = 0, cd = pcd; unit < PCD_UNITS; unit++, cd++)
 		put_disk(cd->disk);
 	return -1;

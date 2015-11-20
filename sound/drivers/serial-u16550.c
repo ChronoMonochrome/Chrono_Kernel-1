@@ -241,9 +241,13 @@ static void snd_uart16550_io_loop(struct snd_uart16550 * uart)
 			snd_rawmidi_receive(uart->midi_input[substream], &c, 1);
 
 		if (status & UART_LSR_OE)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING
 				   "%s: Overrun on device at 0x%lx\n",
 			       uart->rmidi->name, uart->base);
+#else
+			;
+#endif
 	}
 
 	/* remember the last stream */
@@ -637,9 +641,13 @@ static int snd_uart16550_output_byte(struct snd_uart16550 *uart,
 		}
 	} else {
 		if (!snd_uart16550_write_buffer(uart, midi_byte)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING
 				   "%s: Buffer overrun on device at 0x%lx\n",
 				   uart->rmidi->name, uart->base);
+#else
+			;
+#endif
 			return 0;
 		}
 	}
@@ -817,8 +825,12 @@ static int __devinit snd_uart16550_create(struct snd_card *card,
 	if (irq >= 0 && irq != SNDRV_AUTO_IRQ) {
 		if (request_irq(irq, snd_uart16550_interrupt,
 				IRQF_DISABLED, "Serial MIDI", uart)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING
 				   "irq %d busy. Using Polling.\n", irq);
+#else
+			;
+#endif
 		} else {
 			uart->irq = irq;
 		}

@@ -156,7 +156,11 @@ ReleaseWin(struct Layer2 *l2)
 	int cnt;
 
 	if((cnt = freewin1(l2)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdl2 freed %d skbuffs in release\n", cnt);
+#else
+		;
+#endif
 }
 
 static inline unsigned int
@@ -430,7 +434,11 @@ send_uframe(struct PStack *st, u_char cmd, u_char cr)
 	i = sethdraddr(&st->l2, tmp, cr);
 	tmp[i++] = cmd;
 	if (!(skb = alloc_skb(i, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdl2 can't alloc sbbuff for send_uframe\n");
+#else
+		;
+#endif
 		return;
 	}
 	memcpy(skb_put(skb, i), tmp, i);
@@ -891,7 +899,11 @@ enquiry_cr(struct PStack *st, u_char typ, u_char cr, u_char pf)
 	} else
 		tmp[i++] = (l2->vr << 5) | typ | (pf ? 0x10 : 0);
 	if (!(skb = alloc_skb(i, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdl2 can't alloc sbbuff for enquiry_cr\n");
+#else
+		;
+#endif
 		return;
 	}
 	memcpy(skb_put(skb, i), tmp, i);
@@ -1278,8 +1290,12 @@ l2_pull_iqueue(struct FsmInst *fi, int event, void *arg)
 		p1 = (l2->vs - l2->va) % 8;
 	p1 = (p1 + l2->sow) % l2->window;
 	if (l2->windowar[p1]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdnl2 try overwrite ack queue entry %d\n",
 		       p1);
+#else
+		;
+#endif
 		dev_kfree_skb(l2->windowar[p1]);
 	}
 	l2->windowar[p1] = skb_clone(skb, GFP_ATOMIC);

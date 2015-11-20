@@ -748,8 +748,12 @@ static void __init sn_sal_switch_to_interrupts(struct sn_cons_port *port)
 			spin_unlock_irqrestore(&port->sc_port.lock, flags);
 		}
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			    "sn_console: console proceeding in polled mode\n");
+#else
+			;
+#endif
 		}
 	}
 }
@@ -800,15 +804,23 @@ static int __init sn_sal_module_init(void)
 	if (!ia64_platform_is("sn2"))
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sn_console: Console driver init\n");
+#else
+	;
+#endif
 
 	if (USE_DYNAMIC_MINOR == 1) {
 		misc.minor = MISC_DYNAMIC_MINOR;
 		misc.name = DEVICE_NAME_DYNAMIC;
 		retval = misc_register(&misc);
 		if (retval != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Failed to register console "
 			       "device using misc_register.\n");
+#else
+			;
+#endif
 			return -ENODEV;
 		}
 		sal_console_uart.major = MISC_MAJOR;

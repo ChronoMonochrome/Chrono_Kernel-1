@@ -322,8 +322,12 @@ static int __devinit rdc_init_one(struct pci_dev *pdev,
 	int rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev,
 			   "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	port_info[0] = rdc_port_info;
 	port_info[1] = rdc_port_info;

@@ -682,8 +682,12 @@ static void usbduxsub_ao_IsocIrq(struct urb *urb)
 			datap[0] = temp;
 			datap[1] = temp >> 8;
 			datap[2] = this_usbduxsub->dac_commands[i];
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("data[0]=%x, data[1]=%x, data[2]=%x\n", */
 			/* datap[0],datap[1],datap[2]); */
+#else
+			/* ;
+#endif
 			if (ret < 0) {
 				dev_err(&urb->dev->dev,
 					"comedi: buffer underflow\n");
@@ -1101,11 +1105,23 @@ static int send_dux_commands(struct usbduxsub *this_usbduxsub, int cmd_type)
 
 	this_usbduxsub->dux_commands[0] = cmd_type;
 #ifdef NOISY_DUX_DEBUGBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbdux: dux_commands: ",
 	       this_usbduxsub->comedidev->minor);
+#else
+	;
+#endif
 	for (result = 0; result < SIZEOFDUXBUFFER; result++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %02x", this_usbduxsub->dux_commands[result]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 	result = usb_bulk_msg(this_usbduxsub->usbdev,
 			      usb_sndbulkpipe(this_usbduxsub->usbdev,
@@ -1949,7 +1965,11 @@ static void usbduxsub_pwm_irq(struct urb *urb)
 	struct comedi_device *this_comedidev;
 	struct comedi_subdevice *s;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_DEBUG "PWM: IRQ\n"); */
+#else
+	/* ;
+#endif
 
 	/* the context variable points to the subdevice */
 	this_comedidev = urb->context;
@@ -2847,8 +2867,12 @@ static struct usb_driver usbduxsub_driver = {
 /* registering the usb-system _and_ the comedi-driver */
 static int __init init_usbdux(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO KBUILD_MODNAME ": "
 	       DRIVER_VERSION ":" DRIVER_DESC "\n");
+#else
+	;
+#endif
 	usb_register(&usbduxsub_driver);
 	comedi_driver_register(&driver_usbdux);
 	return 0;

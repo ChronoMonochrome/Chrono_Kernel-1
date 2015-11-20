@@ -175,11 +175,15 @@ static int rx_buf[RBUF_LEN];
 static unsigned int rx_tail, rx_head;
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(fmt, args...)						\
 	do {								\
 		if (debug)						\
 			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "		\
 				fmt, ## args);				\
+#else
+#define d;
+#endif
 	} while (0)
 
 /* SECTION: Prototypes */
@@ -424,7 +428,11 @@ static void add_read_queue(int flag, unsigned long val)
 	unsigned int new_rx_tail;
 	int newval;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("add flag %d with val %lu\n", flag, val);
+#else
+	d;
+#endif
 
 	newval = val & PULSE_MASK;
 
@@ -444,7 +452,11 @@ static void add_read_queue(int flag, unsigned long val)
 	}
 	new_rx_tail = (rx_tail + 1) & (RBUF_LEN - 1);
 	if (new_rx_tail == rx_head) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Buffer overrun.\n");
+#else
+		d;
+#endif
 		return;
 	}
 	rx_buf[rx_tail] = newval;
@@ -543,7 +555,11 @@ static void sir_timeout(unsigned long data)
 #endif
 		/* determine 'virtual' pulse end: */
 		pulse_end = delta(&last_tv, &last_intr_tv);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("timeout add %d for %lu usec\n", last_value, pulse_end);
+#else
+		d;
+#endif
 		add_read_queue(last_value, pulse_end);
 		last_value = 0;
 		last_tv = last_intr_tv;
@@ -569,15 +585,31 @@ static irqreturn_t sir_interrupt(int irq, void *dev_id)
 		int bstat;
 
 		if (debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("EIF\n");
+#else
+			d;
+#endif
 			bstat = Ser2UTSR1;
 
 			if (bstat & UTSR1_FRE)
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("frame error\n");
+#else
+				d;
+#endif
 			if (bstat & UTSR1_ROR)
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("receive fifo overrun\n");
+#else
+				d;
+#endif
 			if (bstat & UTSR1_PRE)
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("parity error\n");
+#else
+				d;
+#endif
 		}
 
 		bstat = Ser2UTDR;
@@ -590,7 +622,11 @@ static irqreturn_t sir_interrupt(int irq, void *dev_id)
 		deltv = delta(&last_tv, &curr_tv);
 		do {
 			data = Ser2UTDR;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%d data: %u\n", n, (unsigned int) data);
+#else
+			d;
+#endif
 			n++;
 		} while (status & UTSR0_RID && /* do not empty fifo in order to
 						* get UTSR0_RID in any case */
@@ -639,14 +675,22 @@ static irqreturn_t sir_interrupt(int irq, void *dev_id)
 				do_gettimeofday(&curr_tv);
 				deltv = delta(&last_tv, &curr_tv);
 				deltintrtv = delta(&last_intr_tv, &curr_tv);
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("t %lu, d %d\n", deltintrtv, (int)data);
+#else
+				d;
+#endif
 				/*
 				 * if nothing came in last X cycles,
 				 * it was gap
 				 */
 				if (deltintrtv > TIME_CONST * threshold) {
 					if (last_value) {
+#ifdef CONFIG_DEBUG_PRINTK
 						dprintk("GAP\n");
+#else
+						d;
+#endif
 						/* simulate signal change */
 						add_read_queue(last_value,
 							       deltv -
@@ -788,7 +832,11 @@ static int init_hardware(void)
 #ifdef LIRC_ON_SA1100
 #ifdef CONFIG_SA1100_BITSY
 	if (machine_is_bitsy()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Power on IR module\n");
+#else
+		;
+#endif
 		set_bitsy_egpio(EGPIO_BITSY_IR_ON);
 	}
 #endif
@@ -886,8 +934,12 @@ static int init_hardware(void)
 	udelay(1500);
 
 	/* read previous control byte */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LIRC_DRIVER_NAME
 	       ": 0x%02x\n", sinp(UART_RX));
+#else
+	;
+#endif
 
 	/* Set DLAB 1. */
 	soutp(UART_LCR, sinp(UART_LCR) | UART_LCR_DLAB);
@@ -982,9 +1034,13 @@ static int init_port(void)
 		return retval;
 	}
 #ifndef LIRC_ON_SA1100
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LIRC_DRIVER_NAME
 		": I/O port 0x%.4x, IRQ %d.\n",
 		io, irq);
+#else
+	;
+#endif
 #endif
 
 	init_timer(&timerlist);
@@ -1214,8 +1270,12 @@ static int init_lirc_sir(void)
 	if (retval < 0)
 		return retval;
 	init_hardware();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LIRC_DRIVER_NAME
 		": Installed.\n");
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -1293,7 +1353,11 @@ static void __exit lirc_sir_exit(void)
 	drop_port();
 	platform_device_unregister(lirc_sir_dev);
 	platform_driver_unregister(&lirc_sir_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LIRC_DRIVER_NAME ": Uninstalled.\n");
+#else
+	;
+#endif
 }
 
 module_init(lirc_sir_init);

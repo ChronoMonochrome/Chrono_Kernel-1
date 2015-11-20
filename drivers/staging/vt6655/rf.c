@@ -1025,7 +1025,11 @@ unsigned char byPwrdBm = 0;
 	//byPwr+=5;
 //PLICE_DEBUG <-
 
+#ifdef CONFIG_DEBUG_PRINTK
 //printk("Rate <11:byPwr is %d\n",byPwr);
+#else
+//;
+#endif
 		break;
     case RATE_6M:
     case RATE_9M:
@@ -1052,7 +1056,11 @@ unsigned char byPwrdBm = 0;
 	//byPwr+=5;
 //PLICE_DEBUG<-
 
+#ifdef CONFIG_DEBUG_PRINTK
 //printk("Rate <24:byPwr is %d\n",byPwr);
+#else
+//;
+#endif
 		break;
     case RATE_24M:
     case RATE_36M:
@@ -1063,7 +1071,11 @@ unsigned char byPwrdBm = 0;
 //PLICE_DEBUG->
 	//byPwr+=5;
 //PLICE_DEBUG<-
+#ifdef CONFIG_DEBUG_PRINTK
 //printk("Rate < 54:byPwr is %d\n",byPwr);
+#else
+//;
+#endif
 		break;
     }
 

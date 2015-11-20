@@ -605,7 +605,11 @@ static int __devinit agp_intel_i460_probe(struct pci_dev *pdev,
 	bridge->dev = pdev;
 	bridge->capndx = cap_ptr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Detected Intel 460GX chipset\n");
+#else
+	;
+#endif
 
 	pci_set_drvdata(pdev, bridge);
 	return agp_add_bridge(bridge);

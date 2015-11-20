@@ -583,8 +583,12 @@ int ft_register_configfs(void)
 	 */
 	fabric = target_fabric_configfs_init(THIS_MODULE, "fc");
 	if (!fabric) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: target_fabric_configfs_init() failed!\n",
 		       __func__);
+#else
+		;
+#endif
 		return -1;
 	}
 	fabric->tf_ops = ft_fabric_ops;
@@ -612,9 +616,13 @@ int ft_register_configfs(void)
 	if (ret < 0) {
 		FT_CONF_DBG("target_fabric_configfs_register() for"
 			    " FC Target failed!\n");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "%s: target_fabric_configfs_register() failed!\n",
 		       __func__);
+#else
+		;
+#endif
 		target_fabric_configfs_free(fabric);
 		return -1;
 	}

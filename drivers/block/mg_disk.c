@@ -139,12 +139,16 @@ struct mg_host {
 #undef DO_MG_DEBUG
 #ifdef DO_MG_DEBUG
 #  define MG_DBG(fmt, args...) \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s:%d "fmt, __func__, __LINE__, ##args)
 #else /* CONFIG_MG_DEBUG */
 #  define MG_DBG(fmt, args...) do { } while (0)
 #endif /* CONFIG_MG_DEBUG */
 
 static void mg_request(struct request_queue *);
+#else
+	;
+#endif
 
 static bool mg_end_request(struct mg_host *host, int err, unsigned int nr_bytes)
 {
@@ -170,20 +174,52 @@ static void mg_dump_status(const char *msg, unsigned int stat,
 
 	printk(KERN_ERR "%s: %s: status=0x%02x { ", name, msg, stat & 0xff);
 	if (stat & ATA_BUSY)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Busy ");
+#else
+		;
+#endif
 	if (stat & ATA_DRDY)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DriveReady ");
+#else
+		;
+#endif
 	if (stat & ATA_DF)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("WriteFault ");
+#else
+		;
+#endif
 	if (stat & ATA_DSC)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("SeekComplete ");
+#else
+		;
+#endif
 	if (stat & ATA_DRQ)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DataRequest ");
+#else
+		;
+#endif
 	if (stat & ATA_CORR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("CorrectedError ");
+#else
+		;
+#endif
 	if (stat & ATA_ERR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Error ");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("}\n");
+#else
+	;
+#endif
 	if ((stat & ATA_ERR) == 0) {
 		host->error = 0;
 	} else {
@@ -191,22 +227,54 @@ static void mg_dump_status(const char *msg, unsigned int stat,
 		printk(KERN_ERR "%s: %s: error=0x%02x { ", name, msg,
 				host->error & 0xff);
 		if (host->error & ATA_BBK)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("BadSector ");
+#else
+			;
+#endif
 		if (host->error & ATA_UNC)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("UncorrectableError ");
+#else
+			;
+#endif
 		if (host->error & ATA_IDNF)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("SectorIdNotFound ");
+#else
+			;
+#endif
 		if (host->error & ATA_ABORTED)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("DriveStatusError ");
+#else
+			;
+#endif
 		if (host->error & ATA_AMNF)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("AddrMarkNotFound ");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("}");
+#else
+		;
+#endif
 		if (host->error & (ATA_BBK | ATA_UNC | ATA_IDNF | ATA_AMNF)) {
 			if (host->req)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(", sector=%u",
 				       (unsigned int)blk_rq_pos(host->req));
+#else
+				;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -387,11 +455,27 @@ static int mg_get_disk_id(struct mg_host *host)
 	mg_id_c_string(id, fwrev, ATA_ID_FW_REV, sizeof(fwrev));
 	mg_id_c_string(id, model, ATA_ID_PROD, sizeof(model));
 	mg_id_c_string(id, serial, ATA_ID_SERNO, sizeof(serial));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mg_disk: model: %s\n", model);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mg_disk: firm: %.8s\n", fwrev);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mg_disk: serial: %s\n", serial);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mg_disk: %d + reserved %d sectors\n",
 			host->n_sectors, host->nres_sectors);
+#else
+	;
+#endif
 
 	if (!prv_data->use_polling)
 		outb(0, (unsigned long)host->dev_base + MG_REG_DRV_CTRL);
@@ -649,7 +733,11 @@ void mg_times_out(unsigned long data)
 	host->mg_do_intr = NULL;
 
 	name = host->req->rq_disk->disk_name;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: timeout\n", name);
+#else
+	;
+#endif
 
 	host->error = MG_ERR_TIMEOUT;
 	mg_bad_rw_intr(host);
@@ -748,10 +836,14 @@ static void mg_request(struct request_queue *q)
 		if (sect_num >= get_capacity(req->rq_disk) ||
 				((sect_num + sect_cnt) >
 				 get_capacity(req->rq_disk))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 					"%s: bad access: sector=%d, count=%d\n",
 					req->rq_disk->disk_name,
 					sect_num, sect_cnt);
+#else
+			;
+#endif
 			mg_end_request_cur(host, -EIO);
 			continue;
 		}
@@ -1090,13 +1182,21 @@ static struct platform_driver mg_disk_driver = {
 
 static int __init mg_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mGine mflash driver, (c) 2008 mGine Co.\n");
+#else
+	;
+#endif
 	return platform_driver_register(&mg_disk_driver);
 }
 
 static void __exit mg_exit(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mflash driver : bye bye\n");
+#else
+	;
+#endif
 	platform_driver_unregister(&mg_disk_driver);
 }
 

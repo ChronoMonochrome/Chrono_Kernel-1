@@ -140,10 +140,14 @@ mptspi_setTargetNegoParms(MPT_SCSI_HOST *hd, VirtTarget *target,
 				else {
 					factor = MPT_ULTRA320;
 					if (scsi_device_qas(sdev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 						ddvprintk(ioc,
 						printk(MYIOC_s_DEBUG_FMT "Enabling QAS due to "
 						"byte56=%02x on id=%d!\n", ioc->name,
 						scsi_device_qas(sdev), id));
+#else
+						ddv;
+#endif
 						noQas = 0;
 					}
 					if (sdev->type == TYPE_TAPE &&
@@ -234,8 +238,12 @@ mptspi_setTargetNegoParms(MPT_SCSI_HOST *hd, VirtTarget *target,
 		/* Disable QAS in a mixed configuration case
 		 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 		ddvprintk(ioc, printk(MYIOC_s_DEBUG_FMT
 			"Disabling QAS due to noQas=%02x on id=%d!\n", ioc->name, noQas, id));
+#else
+		ddv;
+#endif
 	}
 }
 
@@ -266,8 +274,12 @@ mptspi_writeIOCPage4(MPT_SCSI_HOST *hd, u8 channel , u8 id)
 	/* Get a MF for this command.
 	 */
 	if ((mf = mpt_get_msg_frame(ioc->DoneCtx, ioc)) == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dfailprintk(ioc, printk(MYIOC_s_WARN_FMT
 				"writeIOCPage4 : no msg frames!\n",ioc->name));
+#else
+		dfail;
+#endif
 		return -EAGAIN;
 	}
 
@@ -307,9 +319,13 @@ mptspi_writeIOCPage4(MPT_SCSI_HOST *hd, u8 channel , u8 id)
 
 	ioc->add_sge((char *)&pReq->PageBufferSGE, flagsLength, dataDma);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ddvprintk(ioc, printk(MYIOC_s_DEBUG_FMT
 		"writeIOCPage4: MaxSEP=%d ActiveSEP=%d id=%d bus=%d\n",
 		ioc->name, IOCPage4Ptr->MaxSEP, IOCPage4Ptr->ActiveSEP, id, channel));
+#else
+	ddv;
+#endif
 
 	mpt_put_msg_frame(ioc->DoneCtx, ioc, mf);
 
@@ -435,9 +451,13 @@ static int mptspi_target_alloc(struct scsi_target *starget)
 	if (starget->channel == 0 &&
 	    mptspi_is_raid(hd, starget->id)) {
 		vtarget->raidVolume = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		ddvprintk(ioc, printk(MYIOC_s_DEBUG_FMT
 		    "RAID Volume @ channel=%d id=%d\n", ioc->name, starget->channel,
 		    starget->id));
+#else
+		ddv;
+#endif
 	}
 
 	if (ioc->spi_data.nvram &&
@@ -476,6 +496,7 @@ mptspi_target_destroy(struct scsi_target *starget)
 static void
 mptspi_print_write_nego(struct _MPT_SCSI_HOST *hd, struct scsi_target *starget, u32 ii)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	ddvprintk(hd->ioc, printk(MYIOC_s_DEBUG_FMT "id=%d Requested = 0x%08x"
 	    " ( %s factor = 0x%02x @ offset = 0x%02x %s%s%s%s%s%s%s%s)\n",
 	    hd->ioc->name, starget->id, ii,
@@ -489,6 +510,9 @@ mptspi_print_write_nego(struct _MPT_SCSI_HOST *hd, struct scsi_target *starget, 
 	    ii & MPI_SCSIDEVPAGE0_NP_RD_STRM ? "RDSTRM ": "",
 	    ii & MPI_SCSIDEVPAGE0_NP_RTI ? "RTI ": "",
 	    ii & MPI_SCSIDEVPAGE0_NP_PCOMP_EN ? "PCOMP ": ""));
+#else
+	ddv;
+#endif
 }
 
 /**
@@ -501,6 +525,7 @@ mptspi_print_write_nego(struct _MPT_SCSI_HOST *hd, struct scsi_target *starget, 
 static void
 mptspi_print_read_nego(struct _MPT_SCSI_HOST *hd, struct scsi_target *starget, u32 ii)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	ddvprintk(hd->ioc, printk(MYIOC_s_DEBUG_FMT "id=%d Read = 0x%08x"
 	    " ( %s factor = 0x%02x @ offset = 0x%02x %s%s%s%s%s%s%s%s)\n",
 	    hd->ioc->name, starget->id, ii,
@@ -514,6 +539,9 @@ mptspi_print_read_nego(struct _MPT_SCSI_HOST *hd, struct scsi_target *starget, u
 	    ii & MPI_SCSIDEVPAGE0_NP_RD_STRM ? "RDSTRM ": "",
 	    ii & MPI_SCSIDEVPAGE0_NP_RTI ? "RTI ": "",
 	    ii & MPI_SCSIDEVPAGE0_NP_PCOMP_EN ? "PCOMP ": ""));
+#else
+	ddv;
+#endif
 }
 
 static int mptspi_read_spi_device_pg0(struct scsi_target *starget,
@@ -634,8 +662,12 @@ mptscsih_quiesce_raid(MPT_SCSI_HOST *hd, int quiesce, u8 channel, u8 id)
 	/* Get and Populate a free Frame
 	 */
 	if ((mf = mpt_get_msg_frame(ioc->InternalCtx, ioc)) == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dfailprintk(hd->ioc, printk(MYIOC_s_WARN_FMT
 			"%s: no msg frames!\n", ioc->name, __func__));
+#else
+		dfail;
+#endif
 		ret = -EAGAIN;
 		goto out;
 	}
@@ -657,21 +689,33 @@ mptscsih_quiesce_raid(MPT_SCSI_HOST *hd, int quiesce, u8 channel, u8 id)
 	ioc->add_sge((char *)&pReq->ActionDataSGE,
 		MPT_SGE_FLAGS_SSIMPLE_READ | 0, (dma_addr_t) -1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ddvprintk(ioc, printk(MYIOC_s_DEBUG_FMT "RAID Volume action=%x channel=%d id=%d\n",
 			ioc->name, pReq->Action, channel, id));
+#else
+	ddv;
+#endif
 
 	INITIALIZE_MGMT_STATUS(ioc->internal_cmds.status)
 	mpt_put_msg_frame(ioc->InternalCtx, ioc, mf);
 	timeleft = wait_for_completion_timeout(&ioc->internal_cmds.done, 10*HZ);
 	if (!(ioc->internal_cmds.status & MPT_MGMT_STATUS_COMMAND_GOOD)) {
 		ret = -ETIME;
+#ifdef CONFIG_DEBUG_PRINTK
 		dfailprintk(ioc, printk(MYIOC_s_DEBUG_FMT "%s: TIMED OUT!\n",
 		    ioc->name, __func__));
+#else
+		dfail;
+#endif
 		if (ioc->internal_cmds.status & MPT_MGMT_STATUS_DID_IOCRESET)
 			goto out;
 		if (!timeleft) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(MYIOC_s_WARN_FMT "Issuing Reset from %s!!\n",
 			    ioc->name, __func__);
+#else
+			;
+#endif
 			mpt_HardResetHandler(ioc, CAN_SLEEP);
 			mpt_free_msg_frame(ioc, mf);
 		}
@@ -733,8 +777,12 @@ static int mptspi_slave_alloc(struct scsi_device *sdev)
 
 	vdevice = kzalloc(sizeof(VirtDevice), GFP_KERNEL);
 	if (!vdevice) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(MYIOC_s_ERR_FMT "slave_alloc kmalloc(%zd) FAILED!\n",
 				ioc->name, sizeof(VirtDevice));
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -765,11 +813,15 @@ static int mptspi_slave_configure(struct scsi_device *sdev)
 	if (ret)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ddvprintk(hd->ioc, printk(MYIOC_s_DEBUG_FMT "id=%d min_period=0x%02x"
 		" max_offset=0x%02x max_width=%d\n", hd->ioc->name,
 		sdev->id, spi_min_period(scsi_target(sdev)),
 		spi_max_offset(scsi_target(sdev)),
 		spi_max_width(scsi_target(sdev))));
+#else
+	ddv;
+#endif
 
 	if ((sdev->channel == 1 ||
 	     !(mptspi_is_raid(hd, sdev->id))) &&
@@ -800,7 +852,11 @@ mptspi_qcmd_lck(struct scsi_cmnd *SCpnt, void (*done)(struct scsi_cmnd *))
 	}
 
 	if (spi_dv_pending(scsi_target(SCpnt->device)))
+#ifdef CONFIG_DEBUG_PRINTK
 		ddvprintk(ioc, scsi_print_command(SCpnt));
+#else
+		ddv;
+#endif
 
 	return mptscsih_qcmd(SCpnt,done);
 }
@@ -916,8 +972,12 @@ static int mptspi_write_spi_device_pg1(struct scsi_target *starget,
 		for (i = 0 ; i < 16; i++) {
 			sdev = scsi_device_lookup_by_target(starget, i);
 			if (sdev && sdev->type == TYPE_TAPE) {
+#ifdef CONFIG_DEBUG_PRINTK
 				sdev_printk(KERN_DEBUG, sdev, MYIOC_s_FMT
 					    "IDP:ON\n", ioc->name);
+#else
+				sdev_;
+#endif
 				nego_parms |= MPI_SCSIDEVPAGE1_RP_IDP;
 				pg1->RequestedParameters =
 				    cpu_to_le32(nego_parms);
@@ -1147,12 +1207,20 @@ static void mpt_work_wrapper(struct work_struct *work)
 		if(vtarget->id != disk)
 			continue;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		starget_printk(KERN_INFO, vtarget->starget, MYIOC_s_FMT
 		    "Integrated RAID requests DV of new device\n", ioc->name);
+#else
+		starget_;
+#endif
 		mptspi_dv_device(hd, sdev);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	shost_printk(KERN_INFO, shost, MYIOC_s_FMT
 	    "Integrated RAID detects new device %d\n", ioc->name, disk);
+#else
+	shost_;
+#endif
 	scsi_scan_target(&ioc->sh->shost_gendev, 1, disk, 0, 1);
 }
 
@@ -1382,16 +1450,24 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	/*  Added sanity check on readiness of the MPT adapter.
 	 */
 	if (ioc->last_state != MPI_IOC_STATE_OPERATIONAL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(MYIOC_s_WARN_FMT
 		  "Skipping because it's not operational!\n",
 		  ioc->name);
+#else
+		;
+#endif
 		error = -ENODEV;
 		goto out_mptspi_probe;
 	}
 
 	if (!ioc->active) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(MYIOC_s_WARN_FMT "Skipping because it's disabled!\n",
 		  ioc->name);
+#else
+		;
+#endif
 		error = -ENODEV;
 		goto out_mptspi_probe;
 	}
@@ -1406,18 +1482,26 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	}
 
 	if (!ioc_cap) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(MYIOC_s_WARN_FMT
 			"Skipping ioc=%p because SCSI Initiator mode is NOT enabled!\n",
 			ioc->name, ioc);
+#else
+		;
+#endif
 		return 0;
 	}
 
 	sh = scsi_host_alloc(&mptspi_driver_template, sizeof(MPT_SCSI_HOST));
 
 	if (!sh) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(MYIOC_s_WARN_FMT
 			"Unable to register controller with SCSI subsystem\n",
 			ioc->name);
+#else
+		;
+#endif
 		error = -1;
 		goto out_mptspi_probe;
         }
@@ -1483,9 +1567,13 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	if (numSGE < sh->sg_tablesize) {
 		/* Reset this value */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(ioc, printk(MYIOC_s_DEBUG_FMT
 		  "Resetting sg_tablesize to %d from %d\n",
 		  ioc->name, numSGE, sh->sg_tablesize));
+#else
+		d;
+#endif
 		sh->sg_tablesize = numSGE;
 	}
 
@@ -1504,14 +1592,22 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	}
 	spin_lock_init(&ioc->scsi_lookup_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(ioc, printk(MYIOC_s_DEBUG_FMT "ScsiLookup @ %p\n",
 		 ioc->name, ioc->ScsiLookup));
+#else
+	d;
+#endif
 
 	ioc->spi_data.Saf_Te = mpt_saf_te;
+#ifdef CONFIG_DEBUG_PRINTK
 	ddvprintk(ioc, printk(MYIOC_s_DEBUG_FMT
 		"saf_te %x\n",
 		ioc->name,
 		mpt_saf_te));
+#else
+	ddv;
+#endif
 	ioc->spi_data.noQas = 0;
 
 	hd->last_queue_full = 0;
@@ -1524,8 +1620,12 @@ mptspi_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 
 	error = scsi_add_host (sh, &ioc->pcidev->dev);
 	if(error) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(ioc, printk(MYIOC_s_ERR_FMT
 		  "scsi_add_host failed\n", ioc->name));
+#else
+		d;
+#endif
 		goto out_mptspi_probe;
 	}
 

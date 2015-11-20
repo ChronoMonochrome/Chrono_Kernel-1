@@ -184,7 +184,11 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	int index;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: cb_pcidio: \n", dev->minor);
+#else
+	;
+#endif
 
 /*
  * Allocate the private structure area.  alloc_private() is a
@@ -223,8 +227,12 @@ static int pcidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("No supported ComputerBoards/MeasurementComputing card found on "
 	       "requested position\n");
+#else
+	;
+#endif
 	return -EIO;
 
 found:
@@ -236,9 +244,13 @@ found:
 	dev->board_name = thisboard->name;
 
 	devpriv->pci_dev = pcidev;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Found %s on bus %i, slot %i\n", thisboard->name,
 	       devpriv->pci_dev->bus->number,
 	       PCI_SLOT(devpriv->pci_dev->devfn));
+#else
+	;
+#endif
 	if (comedi_pci_enable(pcidev, thisboard->name)) {
 		printk
 		    ("cb_pcidio: failed to enable PCI device and request regions\n");
@@ -259,11 +271,19 @@ found:
 	for (i = 0; i < thisboard->n_8255; i++) {
 		subdev_8255_init(dev, dev->subdevices + i,
 				 NULL, devpriv->dio_reg_base + i * 4);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" subdev %d: base = 0x%lx\n", i,
 		       devpriv->dio_reg_base + i * 4);
+#else
+		;
+#endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("attached\n");
+#else
+	;
+#endif
 	return 1;
 }
 
@@ -277,7 +297,11 @@ found:
  */
 static int pcidio_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: cb_pcidio: remove\n", dev->minor);
+#else
+	;
+#endif
 	if (devpriv) {
 		if (devpriv->pci_dev) {
 			if (devpriv->dio_reg_base)

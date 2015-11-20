@@ -36,7 +36,11 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) do { if (debug) {printk(KERN_DEBUG "MT2060: " args); printk("\n"); }} while (0)
+#else
+#define d;
+#endif
 
 // Reads a single register
 static int mt2060_readreg(struct mt2060_priv *priv, u8 reg, u8 *val)
@@ -47,7 +51,11 @@ static int mt2060_readreg(struct mt2060_priv *priv, u8 reg, u8 *val)
 	};
 
 	if (i2c_transfer(priv->i2c, msg, 2) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mt2060 I2C read failed\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -62,7 +70,11 @@ static int mt2060_writereg(struct mt2060_priv *priv, u8 reg, u8 val)
 	};
 
 	if (i2c_transfer(priv->i2c, &msg, 1) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mt2060 I2C write failed\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -75,7 +87,11 @@ static int mt2060_writeregs(struct mt2060_priv *priv,u8 *buf, u8 len)
 		.addr = priv->cfg->i2c_address, .flags = 0, .buf = buf, .len = len
 	};
 	if (i2c_transfer(priv->i2c, &msg, 1) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mt2060 I2C write failed (len=%i)\n",(int)len);
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -128,8 +144,12 @@ static int mt2060_spurcheck(u32 lo1,u32 lo2,u32 if2)
 	Spur=mt2060_spurcalc(lo1,lo2,if2);
 	if (Spur < BANDWIDTH) {
 		/* Potential spurs detected */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Spurs before : f_lo1: %d  f_lo2: %d  (kHz)",
 			(int)lo1,(int)lo2);
+#else
+		d;
+#endif
 		I=1000;
 		Sp1 = mt2060_spurcalc(lo1+I,lo2+I,if2);
 		Sp2 = mt2060_spurcalc(lo1-I,lo2-I,if2);
@@ -143,8 +163,12 @@ static int mt2060_spurcheck(u32 lo1,u32 lo2,u32 if2)
 			I += J;
 			Spur = mt2060_spurcalc(lo1+I,lo2+I,if2);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Spurs after  : f_lo1: %d  f_lo2: %d  (kHz)",
 			(int)(lo1+I),(int)(lo2+I));
+#else
+		d;
+#endif
 	}
 	return I;
 }
@@ -220,10 +244,26 @@ static int mt2060_set_params(struct dvb_frontend *fe, struct dvb_frontend_parame
 	b[4] = num2 >> 4;
 	b[5] = ((num2 >>12) & 1) | (div2 << 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("IF1: %dMHz",(int)if1);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("PLL freq=%dkHz  f_lo1=%dkHz  f_lo2=%dkHz",(int)freq,(int)f_lo1,(int)f_lo2);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("PLL div1=%d  num1=%d  div2=%d  num2=%d",(int)div1,(int)num1,(int)div2,(int)num2);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("PLL [1..5]: %2x %2x %2x %2x %2x",(int)b[1],(int)b[2],(int)b[3],(int)b[4],(int)b[5]);
+#else
+	d;
+#endif
 
 	mt2060_writeregs(priv,b,6);
 
@@ -281,9 +321,17 @@ static void mt2060_calibrate(struct mt2060_priv *priv)
 
 	if (i <= 10) {
 		mt2060_readreg(priv, REG_FM_FREQ, &priv->fmfreq); // now find out, what is fmreq used for :)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("calibration was successful: %d", (int)priv->fmfreq);
+#else
+		d;
+#endif
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("FMCAL timed out");
+#else
+		d;
+#endif
 }
 
 static int mt2060_get_frequency(struct dvb_frontend *fe, u32 *frequency)
@@ -385,7 +433,11 @@ struct dvb_frontend * mt2060_attach(struct dvb_frontend *fe, struct i2c_adapter 
 		kfree(priv);
 		return NULL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MT2060: successfully identified (IF1 = %d)\n", if1);
+#else
+	;
+#endif
 	memcpy(&fe->ops.tuner_ops, &mt2060_tuner_ops, sizeof(struct dvb_tuner_ops));
 
 	fe->tuner_priv = priv;

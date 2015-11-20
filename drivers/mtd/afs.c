@@ -239,9 +239,13 @@ static int parse_afs_partitions(struct mtd_info *mtd,
 		parts[idx].offset	= img_ptr;
 		parts[idx].mask_flags	= 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  mtd%d: at 0x%08x, %5lluKiB, %8u, %s\n",
 			idx, img_ptr, parts[idx].size / 1024,
 			iis.imageNumber, str);
+#else
+		;
+#endif
 
 		idx += 1;
 		str = str + strlen(iis.name) + 1;

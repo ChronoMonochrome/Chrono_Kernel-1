@@ -192,7 +192,11 @@ int i_APCI2032_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 					devpriv->iobase + APCI2032_DIGITAL_OP);
 			}	/*  if(data[1]==1) */
 			else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\nSpecified channel not supported\n");
+#else
+				;
+#endif
 			}	/* else if(data[1]==1) */
 		}		/* elseif(data[1]==0) */
 	}			/* if(data[3]==0) */
@@ -281,12 +285,20 @@ int i_APCI2032_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 						APCI2032_DIGITAL_OP);
 				}	/*  if(data[1]==1) */
 				else {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("\nSpecified channel not supported\n");
+#else
+					;
+#endif
 				}	/* else if(data[1]==1) */
 			}	/* elseif(data[1]==0) */
 		}		/* if(data[3]==1); */
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nSpecified functionality does not exist\n");
+#else
+			;
+#endif
 			return -EINVAL;
 		}		/* if else data[3]==1) */
 	}			/* if else data[3]==0) */
@@ -354,7 +366,11 @@ int i_APCI2032_ReadDigitalOutput(struct comedi_device *dev, struct comedi_subdev
 			}	/* switch(ui_NoOfChannels) */
 		}		/* if  (ui_Temp==1) */
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nSpecified channel not supported \n");
+#else
+			;
+#endif
 		}		/* elseif  (ui_Temp==1) */
 	}
 	return insn->n;
@@ -393,7 +409,11 @@ int i_APCI2032_ConfigWatchdog(struct comedi_device *dev, struct comedi_subdevice
 			devpriv->iobase + APCI2032_DIGITAL_OP_WATCHDOG +
 			APCI2032_TCW_RELOAD_VALUE);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe input parameters are wrong\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -439,7 +459,11 @@ int i_APCI2032_StartStopWriteWatchdog(struct comedi_device *dev, struct comedi_s
 			APCI2032_TCW_PROG);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nSpecified functionality does not exist\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	return insn->n;
@@ -501,7 +525,11 @@ void v_APCI2032_Interrupt(int irq, void *d)
 	ui_DO = inl(devpriv->iobase + APCI2032_DIGITAL_OP_IRQ) & 0x1;	/* Check if VCC OR CC interrupt has occurred. */
 
 	if (ui_DO == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nInterrupt from unKnown source\n");
+#else
+		;
+#endif
 	}			/*  if(ui_DO==0) */
 	if (ui_DO) {
 		/*  Check for Digital Output interrupt Type - 1: Vcc interrupt 2: CC interrupt. */

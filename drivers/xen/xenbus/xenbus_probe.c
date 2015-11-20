@@ -275,15 +275,23 @@ void xenbus_dev_shutdown(struct device *_dev)
 
 	get_device(&dev->dev);
 	if (dev->state != XenbusStateConnected) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: %s: %s != Connected, skipping\n", __func__,
 		       dev->nodename, xenbus_strstate(dev->state));
+#else
+		;
+#endif
 		goto out;
 	}
 	xenbus_switch_state(dev, XenbusStateClosing);
 	timeout = wait_for_completion_timeout(&dev->down, timeout);
 	if (!timeout)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: %s timeout closing device\n",
 		       __func__, dev->nodename);
+#else
+		;
+#endif
  out:
 	put_device(&dev->dev);
 }
@@ -592,8 +600,12 @@ int xenbus_dev_suspend(struct device *dev)
 	if (drv->suspend)
 		err = drv->suspend(xdev);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "xenbus: suspend %s failed: %i\n", dev_name(dev), err);
+#else
+		;
+#endif
 	return 0;
 }
 EXPORT_SYMBOL_GPL(xenbus_dev_suspend);
@@ -612,9 +624,13 @@ int xenbus_dev_resume(struct device *dev)
 	drv = to_xenbus_driver(dev->driver);
 	err = talk_to_otherend(xdev);
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "xenbus: resume (talk_to_otherend) %s failed: %i\n",
 		       dev_name(dev), err);
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -623,18 +639,26 @@ int xenbus_dev_resume(struct device *dev)
 	if (drv->resume) {
 		err = drv->resume(xdev);
 		if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "xenbus: resume %s failed: %i\n",
 			       dev_name(dev), err);
+#else
+			;
+#endif
 			return err;
 		}
 	}
 
 	err = watch_otherend(xdev);
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "xenbus_probe: resume (watch_otherend) %s failed: "
 		       "%d.\n", dev_name(dev), err);
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -759,8 +783,12 @@ static int __init xenbus_init(void)
 	/* Initialize the interface to xenstore. */
 	err = xs_init();
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "XENBUS: Error initializing xenstore comms: %i\n", err);
+#else
+		;
+#endif
 		goto out_error;
 	}
 

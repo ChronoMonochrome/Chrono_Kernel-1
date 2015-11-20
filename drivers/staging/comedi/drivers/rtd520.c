@@ -760,7 +760,11 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	int index;
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: rtd520 attaching.\n", dev->minor);
+#else
+	;
+#endif
 
 #if defined(CONFIG_COMEDI_DEBUG) && defined(USE_DMA)
 	/* You can set this a load time: modprobe comedi comedi_debug=1 */
@@ -800,10 +804,18 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	}
 	if (!pcidev) {
 		if (it->options[0] && it->options[1]) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "No RTD card at bus=%d slot=%d.\n",
 			       it->options[0], it->options[1]);
+#else
+			;
+#endif
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "No RTD card found.\n");
+#else
+			;
+#endif
 		}
 		return -EIO;
 	}
@@ -812,7 +824,11 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	ret = comedi_pci_enable(pcidev, DRV_NAME);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Failed to enable PCI device and request regions.\n");
+#else
+		;
+#endif
 		return ret;
 	}
 	devpriv->got_regions = 1;
@@ -849,8 +865,12 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		pci_read_config_byte(devpriv->pci_dev,
 				     PCI_LATENCY_TIMER, &pci_latency);
 		if (pci_latency < 32) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: PCI latency changed from %d to %d\n",
 			       dev->board_name, pci_latency, 32);
+#else
+			;
+#endif
 			pci_write_config_byte(devpriv->pci_dev,
 					      PCI_LATENCY_TIMER, 32);
 		} else {
@@ -869,7 +889,11 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	}
 
 	/* Show board configuration */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s:", dev->board_name);
+#else
+	;
+#endif
 
 	/*
 	 * Allocate the subdevice structures.  alloc_subdevice() is a
@@ -953,23 +977,39 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			  IRQF_SHARED, DRV_NAME, dev);
 
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Could not get interrupt! (%u)\n",
 		       devpriv->pci_dev->irq);
+#else
+		;
+#endif
 		return ret;
 	}
 	dev->irq = devpriv->pci_dev->irq;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("( irq=%u )", dev->irq);
+#else
+	;
+#endif
 
 	ret = rtd520_probe_fifo_depth(dev);
 	if (ret < 0)
 		return ret;
 
 	devpriv->fifoLen = ret;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("( fifoLen=%d )", devpriv->fifoLen);
+#else
+	;
+#endif
 
 #ifdef USE_DMA
 	if (dev->irq > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("( DMA buff=%d )\n", DMA_CHAIN_COUNT);
+#else
+		;
+#endif
 		/* The PLX9080 has 2 DMA controllers, but there could be 4 sources:
 		   ADC, digital, DAC1, and DAC2.  Since only the ADC supports cmd mode
 		   right now, this isn't an issue (yet) */
@@ -1028,7 +1068,11 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		RtdDma0Mode(dev, DMA_MODE_BITS);
 		RtdDma0Source(dev, DMAS_ADFIFO_HALF_FULL);	/* set DMA trigger source */
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "( no IRQ->no DMA )");
+#else
+		;
+#endif
 	}
 #endif /* USE_DMA */
 
@@ -1036,7 +1080,11 @@ static int rtd_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		RtdPlxInterruptWrite(dev, ICS_PIE | ICS_PLIE);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\ncomedi%d: rtd520 driver attached.\n", dev->minor);
+#else
+	;
+#endif
 
 	return 1;
 
@@ -1175,7 +1223,11 @@ static int rtd_detach(struct comedi_device *dev)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: rtd520: removed.\n", dev->minor);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -1275,7 +1327,11 @@ static int rtd520_probe_fifo_depth(struct comedi_device *dev)
 		}
 	}
 	if (i == limit) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "\ncomedi: %s: failed to probe fifo size.\n", DRV_NAME);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	RtdAdcClearFifo(dev);
@@ -1447,8 +1503,12 @@ void abort_dma(struct comedi_device *dev, unsigned int channel)
 		status = readb(dma_cs_addr);
 	}
 	if (status & PLX_DMA_DONE_BIT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("rtd520: Timeout waiting for dma %i done clear\n",
 		       channel);
+#else
+		;
+#endif
 		goto abortDmaExit;
 	}
 
@@ -1466,8 +1526,12 @@ void abort_dma(struct comedi_device *dev, unsigned int channel)
 		WAIT_QUIETLY;
 	}
 	if ((status & PLX_DMA_DONE_BIT) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("rtd520: Timeout waiting for dma %i done set\n",
 		       channel);
+#else
+		;
+#endif
 	}
 
 abortDmaExit:

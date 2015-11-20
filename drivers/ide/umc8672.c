@@ -100,8 +100,12 @@ static void umc_set_speeds(u8 speeds[])
 	}
 	outb_p(0xa5, 0x108); /* disable umc */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("umc8672: drive speeds [0 to 11]: %d %d %d %d\n",
 		speeds[0], speeds[1], speeds[2], speeds[3]);
+#else
+	;
+#endif
 }
 
 static void umc_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
@@ -110,8 +114,12 @@ static void umc_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 	unsigned long uninitialized_var(flags);
 	const u8 pio = drive->pio_mode - XFER_PIO_0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: setting umc8672 to PIO mode%d (speed %d)\n",
 		drive->name, pio, pio_to_umc[pio]);
+#else
+	;
+#endif
 	if (mate)
 		spin_lock_irqsave(&mate->lock, flags);
 	if (mate && mate->handler) {

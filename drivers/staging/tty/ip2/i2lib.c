@@ -119,21 +119,53 @@ fatality(i2eBordStrPtr pB )
 
 	for (i=0;i<sizeof(DBGBuf);i++) {
 		if ((i%16) == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n%4x:",i);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%02x ",DBGBuf[i]);
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 	for (i=0;i<sizeof(DBGBuf);i++) {
 		if ((i%16) == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n%4x:",i);
+#else
+			;
+#endif
 		if (DBGBuf[i] >= ' ' && DBGBuf[i] <= '~') {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %c ",DBGBuf[i]);
+#else
+			;
+#endif
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" . ");
+#else
+			;
+#endif
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Last index %x\n",I);
+#else
+	;
+#endif
 }
 #endif /* DEBUG_FIFO */
 

@@ -212,7 +212,11 @@ static int __init list_sort_test(void)
 	struct list_head *cur, *tmp;
 	LIST_HEAD(head);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "list_sort_test: start testing list_sort()\n");
+#else
+	;
+#endif
 
 	elts = kmalloc(sizeof(void *) * TEST_LIST_LEN, GFP_KERNEL);
 	if (!elts) {

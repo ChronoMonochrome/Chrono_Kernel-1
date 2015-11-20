@@ -78,8 +78,12 @@ void w1_unregister_family(struct w1_family *fent)
 	w1_reconnect_slaves(fent, 0);
 
 	while (atomic_read(&fent->refcnt)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Waiting for family %u to become free: refcnt=%d.\n",
 				fent->fid, atomic_read(&fent->refcnt));
+#else
+		;
+#endif
 
 		if (msleep_interruptible(1000))
 			flush_signals(current);

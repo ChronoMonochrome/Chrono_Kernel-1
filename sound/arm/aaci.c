@@ -1045,8 +1045,12 @@ static int __devinit aaci_probe(struct amba_device *dev,
 	 */
 	aaci->fifo_depth = aaci_size_fifo(aaci);
 	if (aaci->fifo_depth & 15) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "AACI: FIFO depth %d not supported\n",
 		       aaci->fifo_depth);
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out;
 	}

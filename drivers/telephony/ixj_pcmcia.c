@@ -3,6 +3,7 @@
 #include <linux/module.h>
 
 #include <linux/init.h>
+#ifdef CONFIG_DEBUG_PRINTK
 #include <linux/kernel.h>	/* printk() */
 #include <linux/fs.h>		/* everything... */
 #include <linux/errno.h>	/* error codes */
@@ -20,6 +21,9 @@
 
 typedef struct ixj_info_t {
 	int ndev;
+#else
+#include <linux/kernel.h>	/* ;
+#endif
 	struct ixj *port;
 } ixj_info_t;
 
@@ -57,11 +61,19 @@ static void ixj_get_serial(struct pcmcia_device * link, IXJ * j)
 	str = link->prod_id[0];
 	if (!str)
 		goto failed;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s", str);
+#else
+	;
+#endif
 	str = link->prod_id[1];
 	if (!str)
 		goto failed;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" %s", str);
+#else
+	;
+#endif
 	str = link->prod_id[2];
 	if (!str)
 		goto failed;
@@ -102,7 +114,11 @@ static void ixj_get_serial(struct pcmcia_device * link, IXJ * j)
 	str = link->prod_id[3];
 	if (!str)
 		goto failed;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" version %s\n", str);
+#else
+	;
+#endif
 failed:
 	return;
 }

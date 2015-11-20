@@ -920,7 +920,11 @@ static int iio_device_add_event_sysfs(struct iio_dev *dev_info,
 						  i%IIO_EV_TYPE_MAX);
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "currently unhandled type of event\n");
+#else
+			;
+#endif
 		}
 		ret = __iio_add_chan_devattr(postfix,
 					     NULL,

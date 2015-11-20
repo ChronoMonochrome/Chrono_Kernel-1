@@ -4411,7 +4411,11 @@ static int __init easycap_module_init(void)
 {
 	int k, rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Easycap version: "EASYCAP_DRIVER_VERSION "\n");
+#else
+	;
+#endif
 
 	JOT(4, "begins.  %i=debug %i=bars %i=gain\n",
 		easycap_debug, easycap_bars, easycap_gain);

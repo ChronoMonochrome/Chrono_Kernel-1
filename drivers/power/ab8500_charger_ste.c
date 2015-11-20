@@ -3024,7 +3024,11 @@ static void ab8500_charger_tsp_vbus_notify_work(struct work_struct *work)
 	mxt224e_ts_vbus_state = mxt224e_ts_change_vbus_state;
 
 	vbus_state = (bool)ab8500_vbus_is_detected(di);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s, VBUS : %d\n", __func__, vbus_state);
+#else
+	;
+#endif
 
 	if (cypress_touchkey_ta_status)
 		cypress_touchkey_ta_status(vbus_state);

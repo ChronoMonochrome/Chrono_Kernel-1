@@ -386,7 +386,11 @@ static void usb_write_port_complete(struct urb *purb)
 	case 0:
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "r8712u: pipe error: (%d)\n", purb->status);
+#else
+		;
+#endif
 		break;
 	}
 	/* not to consider tx fragment */

@@ -62,8 +62,12 @@ static int hppb_probe(struct parisc_device *dev)
 		}
 		card = card->next;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Found GeckoBoa at 0x%llx\n",
 			(unsigned long long) dev->hpa.start);
+#else
+	;
+#endif
 
 	card->hpa = dev->hpa.start;
 	card->mmio_region.name = "HP-PB Bus";

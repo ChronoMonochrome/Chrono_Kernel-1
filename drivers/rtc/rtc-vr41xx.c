@@ -352,7 +352,11 @@ static int __devinit rtc_probe(struct platform_device *pdev)
 	disable_irq(aie_irq);
 	disable_irq(pie_irq);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "rtc: Real Time Clock of NEC VR4100 series\n");
+#else
+	;
+#endif
 
 	return 0;
 

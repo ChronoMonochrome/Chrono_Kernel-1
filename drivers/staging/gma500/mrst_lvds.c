@@ -213,15 +213,51 @@ mrst_lvds_get_configuration_mode(struct drm_device *dev)
 				((ti->vblank_hi << 8) | ti->vblank_lo);
 		mode->clock = ti->pixel_clock * 10;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hdisplay is %d\n", mode->hdisplay);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "vdisplay is %d\n", mode->vdisplay);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HSS is %d\n", mode->hsync_start);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HSE is %d\n", mode->hsync_end);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "htotal is %d\n", mode->htotal);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "VSS is %d\n", mode->vsync_start);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "VSE is %d\n", mode->vsync_end);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "vtotal is %d\n", mode->vtotal);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "clock is %d\n", mode->clock);
+#else
+		;
+#endif
 #endif
 	} else
 		mode = drm_mode_duplicate(dev, &lvds_configuration_modes[2]);
@@ -311,7 +347,11 @@ void mrst_lvds_init(struct drm_device *dev,
         	i2c_adap = i2c_get_adapter(1);
 
 	if (i2c_adap == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "No ddc adapter available!\n");
+#else
+		;
+#endif
 	/*
 	 * Attempt to get the fixed panel mode from DDC.  Assume that the
 	 * preferred mode is the right one.

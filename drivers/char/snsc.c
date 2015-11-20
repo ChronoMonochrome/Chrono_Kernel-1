@@ -81,8 +81,12 @@ scdrv_open(struct inode *inode, struct file *file)
 	/* allocate memory for subchannel data */
 	sd = kzalloc(sizeof (struct subch_data_s), GFP_KERNEL);
 	if (sd == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: couldn't allocate subchannel data\n",
 		       __func__);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -92,7 +96,11 @@ scdrv_open(struct inode *inode, struct file *file)
 
 	if (sd->sd_subch < 0) {
 		kfree(sd);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: couldn't allocate subchannel\n", __func__);
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
@@ -113,7 +121,11 @@ scdrv_open(struct inode *inode, struct file *file)
 	if (rv) {
 		ia64_sn_irtr_close(sd->sd_nasid, sd->sd_subch);
 		kfree(sd);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: irq request failed (%d)\n", __func__, rv);
+#else
+		;
+#endif
 		mutex_unlock(&scdrv_mutex);
 		return -EBUSY;
 	}
@@ -388,8 +400,12 @@ scdrv_init(void)
 
 	if (alloc_chrdev_region(&first_dev, 0, num_cnodes,
 				SYSCTL_BASENAME) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: failed to register SN system controller device\n",
 		       __func__);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 	snsc_class = class_create(THIS_MODULE, SYSCTL_BASENAME);
@@ -407,18 +423,26 @@ scdrv_init(void)
 			scd = kzalloc(sizeof (struct sysctl_data_s),
 				      GFP_KERNEL);
 			if (!scd) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s: failed to allocate device info"
 				       "for %s/%s\n", __func__,
 				       SYSCTL_BASENAME, devname);
+#else
+				;
+#endif
 				continue;
 			}
 
 			/* initialize sysctl device data fields */
 			scd->scd_nasid = cnodeid_to_nasid(cnode);
 			if (!(salbuf = kmalloc(SCDRV_BUFSZ, GFP_KERNEL))) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s: failed to allocate driver buffer"
 				       "(%s%s)\n", __func__,
 				       SYSCTL_BASENAME, devname);
+#else
+				;
+#endif
 				kfree(scd);
 				continue;
 			}
@@ -438,9 +462,13 @@ scdrv_init(void)
 			dev = first_dev + cnode;
 			cdev_init(&scd->scd_cdev, &scdrv_fops);
 			if (cdev_add(&scd->scd_cdev, dev, 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s: failed to register system"
 				       " controller device (%s%s)\n",
 				       __func__, SYSCTL_BASENAME, devname);
+#else
+				;
+#endif
 				kfree(scd);
 				kfree(salbuf);
 				continue;

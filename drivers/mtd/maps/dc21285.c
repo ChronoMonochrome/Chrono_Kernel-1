@@ -183,7 +183,11 @@ static int __init init_dc21285(void)
 	/* Let's map the flash area */
 	dc21285_map.virt = ioremap(DC21285_FLASH, 16*1024*1024);
 	if (!dc21285_map.virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Failed to ioremap\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 

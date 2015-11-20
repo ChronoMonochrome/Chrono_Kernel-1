@@ -18,6 +18,7 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(args...)	printk(args)
 #else
 #define DBG(args...)	do { } while(0)
@@ -26,6 +27,9 @@
 void wf_pid_init(struct wf_pid_state *st, struct wf_pid_param *param)
 {
 	memset(st, 0, sizeof(struct wf_pid_state));
+#else
+#define DBG(args...)	;
+#endif
 	st->param = *param;
 	st->first = 1;
 }

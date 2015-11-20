@@ -177,10 +177,14 @@ int core_scsi3_ua_allocate(
 	spin_unlock(&deve->ua_lock);
 	spin_unlock_irq(&nacl->device_list_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s]: Allocated UNIT ATTENTION, mapped LUN: %u, ASC:"
 		" 0x%02x, ASCQ: 0x%02x\n",
 		TPG_TFO(nacl->se_tpg)->get_fabric_name(), unpacked_lun,
 		asc, ascq);
+#else
+	;
+#endif
 
 	atomic_inc(&deve->ua_count);
 	smp_mb__after_atomic_inc();
@@ -264,6 +268,7 @@ void core_scsi3_ua_for_check_condition(
 	spin_unlock(&deve->ua_lock);
 	spin_unlock_irq(&nacl->device_list_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s]: %s UNIT ATTENTION condition with"
 		" INTLCK_CTRL: %d, mapped LUN: %u, got CDB: 0x%02x"
 		" reported ASC: 0x%02x, ASCQ: 0x%02x\n",
@@ -271,6 +276,9 @@ void core_scsi3_ua_for_check_condition(
 		(DEV_ATTRIB(dev)->emulate_ua_intlck_ctrl != 0) ? "Reporting" :
 		"Releasing", DEV_ATTRIB(dev)->emulate_ua_intlck_ctrl,
 		cmd->orig_fe_lun, T_TASK(cmd)->t_task_cdb[0], *asc, *ascq);
+#else
+	;
+#endif
 }
 
 int core_scsi3_ua_clear_for_request_sense(
@@ -323,10 +331,14 @@ int core_scsi3_ua_clear_for_request_sense(
 	spin_unlock(&deve->ua_lock);
 	spin_unlock_irq(&nacl->device_list_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[%s]: Released UNIT ATTENTION condition, mapped"
 		" LUN: %u, got REQUEST_SENSE reported ASC: 0x%02x,"
 		" ASCQ: 0x%02x\n", TPG_TFO(nacl->se_tpg)->get_fabric_name(),
 		cmd->orig_fe_lun, *asc, *ascq);
+#else
+	;
+#endif
 
 	return (head) ? -1 : 0;
 }

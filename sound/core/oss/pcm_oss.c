@@ -1176,11 +1176,19 @@ snd_pcm_sframes_t snd_pcm_oss_write3(struct snd_pcm_substream *substream, const 
 		    runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
 #ifdef OSS_DEBUG
 			if (runtime->status->state == SNDRV_PCM_STATE_XRUN)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "pcm_oss: write: "
 				       "recovering from XRUN\n");
+#else
+				;
+#endif
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "pcm_oss: write: "
 				       "recovering from SUSPEND\n");
+#else
+				;
+#endif
 #endif
 			ret = snd_pcm_oss_prepare(substream);
 			if (ret < 0)
@@ -1214,11 +1222,19 @@ snd_pcm_sframes_t snd_pcm_oss_read3(struct snd_pcm_substream *substream, char *p
 		    runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
 #ifdef OSS_DEBUG
 			if (runtime->status->state == SNDRV_PCM_STATE_XRUN)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "pcm_oss: read: "
 				       "recovering from XRUN\n");
+#else
+				;
+#endif
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "pcm_oss: read: "
 				       "recovering from SUSPEND\n");
+#else
+				;
+#endif
 #endif
 			ret = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DRAIN, NULL);
 			if (ret < 0)
@@ -1262,11 +1278,19 @@ snd_pcm_sframes_t snd_pcm_oss_writev3(struct snd_pcm_substream *substream, void 
 		    runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
 #ifdef OSS_DEBUG
 			if (runtime->status->state == SNDRV_PCM_STATE_XRUN)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "pcm_oss: writev: "
 				       "recovering from XRUN\n");
+#else
+				;
+#endif
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "pcm_oss: writev: "
 				       "recovering from SUSPEND\n");
+#else
+				;
+#endif
 #endif
 			ret = snd_pcm_oss_prepare(substream);
 			if (ret < 0)
@@ -1300,11 +1324,19 @@ snd_pcm_sframes_t snd_pcm_oss_readv3(struct snd_pcm_substream *substream, void *
 		    runtime->status->state == SNDRV_PCM_STATE_SUSPENDED) {
 #ifdef OSS_DEBUG
 			if (runtime->status->state == SNDRV_PCM_STATE_XRUN)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "pcm_oss: readv: "
 				       "recovering from XRUN\n");
+#else
+				;
+#endif
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "pcm_oss: readv: "
 				       "recovering from SUSPEND\n");
+#else
+				;
+#endif
 #endif
 			ret = snd_pcm_kernel_ioctl(substream, SNDRV_PCM_IOCTL_DRAIN, NULL);
 			if (ret < 0)
@@ -1561,7 +1593,11 @@ static int snd_pcm_oss_sync1(struct snd_pcm_substream *substream, size_t size)
 	init_waitqueue_entry(&wait, current);
 	add_wait_queue(&runtime->sleep, &wait);
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "sync1: size = %li\n", size);
+#else
+	;
+#endif
 #endif
 	while (1) {
 		result = snd_pcm_oss_write2(substream, runtime->oss.buffer, size, 1);
@@ -1618,7 +1654,11 @@ static int snd_pcm_oss_sync(struct snd_pcm_oss_file *pcm_oss_file)
 		mutex_lock(&runtime->oss.params_lock);
 		if (runtime->oss.buffer_used > 0) {
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "sync: buffer_used\n");
+#else
+			;
+#endif
 #endif
 			size = (8 * (runtime->oss.period_bytes - runtime->oss.buffer_used) + 7) / width;
 			snd_pcm_format_set_silence(format,
@@ -1631,7 +1671,11 @@ static int snd_pcm_oss_sync(struct snd_pcm_oss_file *pcm_oss_file)
 			}
 		} else if (runtime->oss.period_ptr > 0) {
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "sync: period_ptr\n");
+#else
+			;
+#endif
 #endif
 			size = runtime->oss.period_bytes - runtime->oss.period_ptr;
 			snd_pcm_format_set_silence(format,
@@ -1983,7 +2027,11 @@ static int snd_pcm_oss_set_trigger(struct snd_pcm_oss_file *pcm_oss_file, int tr
 	int err, cmd;
 
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcm_oss: trigger = 0x%x\n", trigger);
+#else
+	;
+#endif
 #endif
 	
 	psubstream = pcm_oss_file->streams[SNDRV_PCM_STREAM_PLAYBACK];
@@ -2203,9 +2251,13 @@ static int snd_pcm_oss_get_space(struct snd_pcm_oss_file *pcm_oss_file, int stre
 	}
 
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcm_oss: space: bytes = %i, fragments = %i, "
 	       "fragstotal = %i, fragsize = %i\n",
 	       info.bytes, info.fragments, info.fragstotal, info.fragsize);
+#else
+	;
+#endif
 #endif
 	if (copy_to_user(_info, &info, sizeof(info)))
 		return -EFAULT;
@@ -2519,7 +2571,11 @@ static long snd_pcm_oss_ioctl(struct file *file, unsigned int cmd, unsigned long
 	if (((cmd >> 8) & 0xff) != 'P')
 		return -EINVAL;
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcm_oss: ioctl = 0x%x\n", cmd);
+#else
+	;
+#endif
 #endif
 	switch (cmd) {
 	case SNDCTL_DSP_RESET:
@@ -2673,8 +2729,12 @@ static ssize_t snd_pcm_oss_read(struct file *file, char __user *buf, size_t coun
 #else
 	{
 		ssize_t res = snd_pcm_oss_read1(substream, buf, count);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "pcm_oss: read %li bytes "
 		       "(returned %li bytes)\n", (long)count, (long)res);
+#else
+		;
+#endif
 		return res;
 	}
 #endif
@@ -2693,8 +2753,12 @@ static ssize_t snd_pcm_oss_write(struct file *file, const char __user *buf, size
 	substream->f_flags = file->f_flags & O_NONBLOCK;
 	result = snd_pcm_oss_write1(substream, buf, count);
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcm_oss: write %li bytes (wrote %li bytes)\n",
 	       (long)count, (long)result);
+#else
+	;
+#endif
 #endif
 	return result;
 }
@@ -2772,7 +2836,11 @@ static int snd_pcm_oss_mmap(struct file *file, struct vm_area_struct *area)
 	int err;
 
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcm_oss: mmap begin\n");
+#else
+	;
+#endif
 #endif
 	pcm_oss_file = file->private_data;
 	switch ((area->vm_flags & (VM_READ | VM_WRITE))) {
@@ -2822,8 +2890,12 @@ static int snd_pcm_oss_mmap(struct file *file, struct vm_area_struct *area)
 	runtime->silence_threshold = 0;
 	runtime->silence_size = 0;
 #ifdef OSS_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcm_oss: mmap ok, bytes = 0x%x\n",
 	       runtime->oss.mmap_bytes);
+#else
+	;
+#endif
 #endif
 	/* In mmap mode we never stop */
 	runtime->stop_threshold = runtime->boundary;

@@ -76,11 +76,19 @@ static inline void print_err_status(struct tm6000_core *dev,
 		break;
 	}
 	if (packet < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(dev, 1, "URB status %d [%s].\n",
 			status, errmsg);
+#else
+		d;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(dev, 1, "URB packet %d, status %d [%s].\n",
 			packet, status, errmsg);
+#else
+		d;
+#endif
 	}
 }
 
@@ -111,7 +119,11 @@ int tm6000_start_stream(struct tm6000_core *dev)
 	unsigned int pipe, size;
 	struct tm6000_dvb *dvb = dev->dvb;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tm6000: got start stream request %s\n", __FUNCTION__);
+#else
+	;
+#endif
 
 	if (dev->mode != TM6000_MODE_DIGITAL) {
 		tm6000_init_digital_mode(dev);
@@ -171,9 +183,17 @@ void tm6000_stop_stream(struct tm6000_core *dev)
 	struct tm6000_dvb *dvb = dev->dvb;
 
 	if (dvb->bulk_urb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "urb killing\n");
+#else
+		;
+#endif
 		usb_kill_urb(dvb->bulk_urb);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "urb buffer free\n");
+#else
+		;
+#endif
 		kfree(dvb->bulk_urb->transfer_buffer);
 		usb_free_urb(dvb->bulk_urb);
 		dvb->bulk_urb = NULL;
@@ -185,7 +205,11 @@ int tm6000_start_feed(struct dvb_demux_feed *feed)
 	struct dvb_demux *demux = feed->demux;
 	struct tm6000_core *dev = demux->priv;
 	struct tm6000_dvb *dvb = dev->dvb;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tm6000: got start feed request %s\n", __FUNCTION__);
+#else
+	;
+#endif
 
 	mutex_lock(&dvb->mutex);
 	if (dvb->streams == 0) {
@@ -205,14 +229,26 @@ int tm6000_stop_feed(struct dvb_demux_feed *feed)
 	struct tm6000_core *dev = demux->priv;
 	struct tm6000_dvb *dvb = dev->dvb;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tm6000: got stop feed request %s\n", __FUNCTION__);
+#else
+	;
+#endif
 
 	mutex_lock(&dvb->mutex);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "stream %#x\n", dvb->streams);
+#else
+	;
+#endif
 	--(dvb->streams);
 	if (dvb->streams == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "stop stream\n");
+#else
+		;
+#endif
 		tm6000_stop_stream(dev);
 /*		mutex_destroy(&tm6000_dev->streaming_mutex); */
 	}
@@ -289,8 +325,12 @@ int register_dvb(struct tm6000_core *dev)
 				ret = -EINVAL;
 				goto frontend_err;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "tm6000: XC2028/3028 asked to be "
 					 "attached to frontend!\n");
+#else
+			;
+#endif
 			break;
 			}
 		case TUNER_XC5000: {
@@ -312,8 +352,12 @@ int register_dvb(struct tm6000_core *dev)
 				ret = -EINVAL;
 				goto frontend_err;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "tm6000: XC5000 asked to be "
 					 "attached to frontend!\n");
+#else
+			;
+#endif
 			break;
 			}
 		}
@@ -330,7 +374,11 @@ int register_dvb(struct tm6000_core *dev)
 	dvb->demux.write_to_decoder = NULL;
 	ret = dvb_dmx_init(&dvb->demux);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tm6000: dvb_dmx_init failed (errno = %d)\n", ret);
+#else
+		;
+#endif
 		goto frontend_err;
 	}
 
@@ -340,7 +388,11 @@ int register_dvb(struct tm6000_core *dev)
 
 	ret =  dvb_dmxdev_init(&dvb->dmxdev, &dvb->adapter);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tm6000: dvb_dmxdev_init failed (errno = %d)\n", ret);
+#else
+		;
+#endif
 		goto dvb_dmx_err;
 	}
 
@@ -398,7 +450,11 @@ static int dvb_init(struct tm6000_core *dev)
 
 	dvb = kzalloc(sizeof(struct tm6000_dvb), GFP_KERNEL);
 	if (!dvb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Cannot allocate memory\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 

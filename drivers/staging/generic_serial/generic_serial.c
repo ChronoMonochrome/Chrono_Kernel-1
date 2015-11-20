@@ -37,6 +37,7 @@
 static int gs_debug;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define gs_dprintk(f, str...) if (gs_debug & f) printk (str)
 #else
 #define gs_dprintk(f, str...) /* nothing */
@@ -48,6 +49,9 @@ static int gs_debug;
 #define RS_EVENT_WRITE_WAKEUP	1
 
 module_param(gs_debug, int, 0644);
+#else
+#define gs_d;
+#endif
 
 
 int gs_put_char(struct tty_struct * tty, unsigned char ch)
@@ -544,7 +548,11 @@ void gs_close(struct tty_struct * tty, struct file * filp)
 	}
 
 	if (port->port.count) {
+#ifdef CONFIG_DEBUG_PRINTK
 		gs_dprintk(GS_DEBUG_CLOSE, "gs_close port %p: count: %d\n", port, port->port.count);
+#else
+		gs_d;
+#endif
 		spin_unlock_irqrestore(&port->port.lock, flags);
 		func_exit ();
 		return;
@@ -633,12 +641,36 @@ void gs_set_termios (struct tty_struct * tty,
 	}
 
 	if(old_termios && (gs_debug & GS_DEBUG_TERMIOS)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		if(tiosp->c_iflag != old_termios->c_iflag)  printk("c_iflag changed\n");
+#else
+		if(tiosp->c_iflag != old_termios->c_iflag)  ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if(tiosp->c_oflag != old_termios->c_oflag)  printk("c_oflag changed\n");
+#else
+		if(tiosp->c_oflag != old_termios->c_oflag)  ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if(tiosp->c_cflag != old_termios->c_cflag)  printk("c_cflag changed\n");
+#else
+		if(tiosp->c_cflag != old_termios->c_cflag)  ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if(tiosp->c_lflag != old_termios->c_lflag)  printk("c_lflag changed\n");
+#else
+		if(tiosp->c_lflag != old_termios->c_lflag)  ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if(tiosp->c_line  != old_termios->c_line)   printk("c_line changed\n");
+#else
+		if(tiosp->c_line  != old_termios->c_line)   ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if(!memcmp(tiosp->c_cc, old_termios->c_cc, NCC)) printk("c_cc changed\n");
+#else
+		if(!memcmp(tiosp->c_cc, old_termios->c_cc, NCC)) ;
+#endif
 	}
 
 	baudrate = tty_get_baud_rate(tty);

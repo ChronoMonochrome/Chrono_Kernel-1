@@ -65,13 +65,21 @@ static int __init uclinux_mtd_init(void)
 		mapp->size = PAGE_ALIGN(ntohl(*((unsigned long *)(mapp->phys + 8))));
 	mapp->bankwidth = 4;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("uclinux[mtd]: RAM probe address=0x%x size=0x%x\n",
 	       	(int) mapp->phys, (int) mapp->size);
+#else
+	;
+#endif
 
 	mapp->virt = ioremap_nocache(mapp->phys, mapp->size);
 
 	if (mapp->virt == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("uclinux[mtd]: ioremap_nocache() failed\n");
+#else
+		;
+#endif
 		return(-EIO);
 	}
 
@@ -79,7 +87,11 @@ static int __init uclinux_mtd_init(void)
 
 	mtd = do_map_probe("map_ram", mapp);
 	if (!mtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("uclinux[mtd]: failed to find a mapping?\n");
+#else
+		;
+#endif
 		iounmap(mapp->virt);
 		return(-ENXIO);
 	}

@@ -368,7 +368,11 @@ int init_test_probes(void)
 		rand1 = random32();
 	} while (rand1 <= div_factor);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Kprobe smoke test started\n");
+#else
+	;
+#endif
 	num_tests++;
 	ret = test_kprobe();
 	if (ret < 0)
@@ -408,7 +412,11 @@ int init_test_probes(void)
 		printk(KERN_ERR "BUG: Kprobe smoke test: %d error(s) "
 				"running handlers\n", handler_errors);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Kprobe smoke test passed successfully\n");
+#else
+		;
+#endif
 
 	return 0;
 }

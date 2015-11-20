@@ -116,9 +116,13 @@ static int mtdoops_erase_block(struct mtdoops_context *cxt, int offset)
 	if (ret) {
 		set_current_state(TASK_RUNNING);
 		remove_wait_queue(&wait_q, &wait);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mtdoops: erase of region [0x%llx, 0x%llx] on \"%s\" failed\n",
 		       (unsigned long long)erase.addr,
 		       (unsigned long long)erase.len, mtddev);
+#else
+		;
+#endif
 		return ret;
 	}
 
@@ -146,8 +150,12 @@ static void mtdoops_inc_counter(struct mtdoops_context *cxt)
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "mtdoops: ready %d, %d (no erase)\n",
 	       cxt->nextpage, cxt->nextcount);
+#else
+	;
+#endif
 }
 
 /* Scheduled work - when we can't proceed without erasing a block */
@@ -178,8 +186,12 @@ static void mtdoops_workfunc_erase(struct work_struct *work)
 			return;
 		}
 badblock:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mtdoops: bad block at %08lx\n",
 		       cxt->nextpage * record_size);
+#else
+		;
+#endif
 		i++;
 		cxt->nextpage = cxt->nextpage + (mtd->erasesize / record_size);
 		if (cxt->nextpage >= cxt->oops_pages)
@@ -194,8 +206,12 @@ badblock:
 		ret = mtdoops_erase_block(cxt, cxt->nextpage * record_size);
 
 	if (ret >= 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "mtdoops: ready %d, %d\n",
 		       cxt->nextpage, cxt->nextcount);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -390,7 +406,11 @@ static void mtdoops_notify_add(struct mtd_info *mtd)
 	cxt->mtd = mtd;
 	cxt->oops_pages = (int)mtd->size / record_size;
 	find_next_position(cxt);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mtdoops: Attached to MTD device %d\n", mtd->index);
+#else
+	;
+#endif
 }
 
 static void mtdoops_notify_remove(struct mtd_info *mtd)
@@ -401,7 +421,11 @@ static void mtdoops_notify_remove(struct mtd_info *mtd)
 		return;
 
 	if (kmsg_dump_unregister(&cxt->dump) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mtdoops: could not unregister kmsg_dumper\n");
+#else
+		;
+#endif
 
 	cxt->mtd = NULL;
 	flush_work_sync(&cxt->work_erase);

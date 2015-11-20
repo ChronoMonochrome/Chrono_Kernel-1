@@ -474,16 +474,24 @@ static struct mtd_part *allocate_partition(struct mtd_info *master,
 		if (mtd_mod_by_eb(cur_offset, master) != 0) {
 			/* Round up to next erasesize */
 			slave->offset = (mtd_div_by_eb(cur_offset, master) + 1) * master->erasesize;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "Moving partition %d: "
 			       "0x%012llx -> 0x%012llx\n", partno,
 			       (unsigned long long)cur_offset, (unsigned long long)slave->offset);
+#else
+			;
+#endif
 		}
 	}
 	if (slave->mtd.size == MTDPART_SIZ_FULL)
 		slave->mtd.size = master->size - slave->offset;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "0x%012llx-0x%012llx : \"%s\"\n", (unsigned long long)slave->offset,
 		(unsigned long long)(slave->offset + slave->mtd.size), slave->mtd.name);
+#else
+	;
+#endif
 
 	/* let's do some sanity checks */
 	if (slave->offset >= master->size) {
@@ -496,8 +504,12 @@ static struct mtd_part *allocate_partition(struct mtd_info *master,
 	}
 	if (slave->offset + slave->mtd.size > master->size) {
 		slave->mtd.size = master->size - slave->offset;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"mtd: partition \"%s\" extends beyond the end of device \"%s\" -- size truncated to %#llx\n",
 			part->name, master->name, (unsigned long long)slave->mtd.size);
+#else
+		;
+#endif
 	}
 	if (master->numeraseregions > 1) {
 		/* Deal with variable erase size stuff */
@@ -531,14 +543,22 @@ static struct mtd_part *allocate_partition(struct mtd_info *master,
 		/* FIXME: Let it be writable if it is on a boundary of
 		 * _minor_ erase size though */
 		slave->mtd.flags &= ~MTD_WRITEABLE;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"mtd: partition \"%s\" doesn't start on an erase block boundary -- force read-only\n",
 			part->name);
+#else
+		;
+#endif
 	}
 	if ((slave->mtd.flags & MTD_WRITEABLE) &&
 	    mtd_mod_by_eb(slave->mtd.size, &slave->mtd)) {
 		slave->mtd.flags &= ~MTD_WRITEABLE;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"mtd: partition \"%s\" doesn't end on an erase block -- force read-only\n",
 			part->name);
+#else
+		;
+#endif
 	}
 
 	slave->mtd.ecclayout = master->ecclayout;
@@ -654,7 +674,11 @@ int add_mtd_partitions(struct mtd_info *master,
 	uint64_t cur_offset = 0;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Creating %d MTD partitions on \"%s\":\n", nbparts, master->name);
+#else
+	;
+#endif
 
 	for (i = 0; i < nbparts; i++) {
 		slave = allocate_partition(master, parts + i, i, cur_offset);
@@ -726,8 +750,12 @@ int parse_mtd_partitions(struct mtd_info *master, const char **types,
 			continue;
 		ret = (*parser->parse_fn)(master, pparts, origin);
 		if (ret > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%d %s partitions found on MTD device %s\n",
 			       ret, parser->name, master->name);
+#else
+			;
+#endif
 		}
 		put_partition_parser(parser);
 	}

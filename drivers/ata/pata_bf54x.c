@@ -1382,7 +1382,11 @@ idle_irq:
 #ifdef ATA_IRQ_TRAP
 	if ((ap->stats.idle_irq % 1000) == 0) {
 		ap->ops->irq_ack(ap, 0); /* debug trap */
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING, "irq trap\n");
+#else
+		ata_port_;
+#endif
 		return 1;
 	}
 #endif

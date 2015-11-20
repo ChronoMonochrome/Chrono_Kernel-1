@@ -408,8 +408,12 @@ static int dev_8255_attach(struct comedi_device *dev,
 			break;
 	}
 	if (i == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "comedi%d: 8255: no devices specified\n", dev->minor);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -417,18 +421,34 @@ static int dev_8255_attach(struct comedi_device *dev,
 	if (ret < 0) {
 		/* FIXME this printk call should give a proper message, the
 		 * below line just maintains previous functionality */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: 8255:", dev->minor);
+#else
+		;
+#endif
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: 8255:", dev->minor);
+#else
+	;
+#endif
 
 	for (i = 0; i < dev->n_subdevices; i++) {
 		iobase = it->options[i];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" 0x%04lx", iobase);
+#else
+		;
+#endif
 		if (!request_region(iobase, _8255_SIZE, "8255")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" (I/O port conflict)");
+#else
+			;
+#endif
 
 			dev->subdevices[i].type = COMEDI_SUBD_UNUSED;
 		} else {
@@ -437,7 +457,11 @@ static int dev_8255_attach(struct comedi_device *dev,
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -448,7 +472,11 @@ static int dev_8255_detach(struct comedi_device *dev)
 	unsigned long iobase;
 	struct comedi_subdevice *s;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: 8255: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	for (i = 0; i < dev->n_subdevices; i++) {
 		s = dev->subdevices + i;

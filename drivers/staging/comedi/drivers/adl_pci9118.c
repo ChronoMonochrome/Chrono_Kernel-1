@@ -88,6 +88,7 @@ Configuration options:
 
 #undef DPRINTK
 #ifdef PCI9118_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DPRINTK(fmt, args...) printk(fmt, ## args)
 #else
 #define DPRINTK(fmt, args...)
@@ -202,6 +203,9 @@ static const struct comedi_lrange range_pci9118dg_hr = { 8, {
 							     UNI_RANGE(1.25)
 							     }
 };
+#else
+#define DPRINTK(fmt, args...) ;
+#endif
 
 static const struct comedi_lrange range_pci9118hg = { 8, {
 							  BIP_RANGE(5),
@@ -1154,11 +1158,19 @@ static int pci9118_ai_cmdtest(struct comedi_device *dev,
 
 	if (cmd->scan_begin_src == TRIG_TIMER) {
 		tmp = cmd->scan_begin_arg;
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("S1 timer1=%u timer2=%u\n",cmd->scan_begin_arg,cmd->convert_arg); */
+#else
+/* ;
+#endif
 		i8253_cascade_ns_to_timer(devpriv->i8254_osc_base, &divisor1,
 					  &divisor2, &cmd->scan_begin_arg,
 					  cmd->flags & TRIG_ROUND_MASK);
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("S2 timer1=%u timer2=%u\n",cmd->scan_begin_arg,cmd->convert_arg); */
+#else
+/* ;
+#endif
 		if (cmd->scan_begin_arg < this_board->ai_ns_min)
 			cmd->scan_begin_arg = this_board->ai_ns_min;
 		if (tmp != cmd->scan_begin_arg)
@@ -1170,7 +1182,11 @@ static int pci9118_ai_cmdtest(struct comedi_device *dev,
 		i8253_cascade_ns_to_timer(devpriv->i8254_osc_base, &divisor1,
 					  &divisor2, &cmd->convert_arg,
 					  cmd->flags & TRIG_ROUND_MASK);
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("s1 timer1=%u timer2=%u\n",cmd->scan_begin_arg,cmd->convert_arg); */
+#else
+/* ;
+#endif
 		if (cmd->convert_arg < this_board->ai_ns_min)
 			cmd->convert_arg = this_board->ai_ns_min;
 		if (tmp != cmd->convert_arg)
@@ -1184,7 +1200,11 @@ static int pci9118_ai_cmdtest(struct comedi_device *dev,
 					cmd->scan_begin_arg =
 					    this_board->ai_ns_min *
 					    (cmd->scan_end_arg + 2);
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("s2 timer1=%u timer2=%u\n",cmd->scan_begin_arg,cmd->convert_arg); */
+#else
+/* ;
+#endif
 					err++;
 				}
 			} else {
@@ -1193,7 +1213,11 @@ static int pci9118_ai_cmdtest(struct comedi_device *dev,
 					cmd->scan_begin_arg =
 					    cmd->convert_arg *
 					    cmd->chanlist_len;
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("s3 timer1=%u timer2=%u\n",cmd->scan_begin_arg,cmd->convert_arg); */
+#else
+/* ;
+#endif
 					err++;
 				}
 			}
@@ -2206,7 +2230,11 @@ static int pci9118_attach(struct comedi_device *dev,
 	unsigned char pci_bus, pci_slot, pci_func;
 	u16 u16w;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: adl_pci9118: board=%s", dev->minor, this_board->name);
+#else
+	;
+#endif
 
 	opt_bus = it->options[0];
 	opt_slot = it->options[1];
@@ -2217,7 +2245,11 @@ static int pci9118_attach(struct comedi_device *dev,
 
 	ret = alloc_private(dev, sizeof(struct pci9118_private));
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" - Allocation failed!\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -2283,14 +2315,26 @@ static int pci9118_attach(struct comedi_device *dev,
 	if (irq > 0) {
 		if (request_irq(irq, interrupt_pci9118, IRQF_SHARED,
 				"ADLink PCI-9118", dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", unable to allocate IRQ %d, DISABLING IT",
 			       irq);
+#else
+			;
+#endif
 			irq = 0;	/* Can't use IRQ */
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", irq=%u", irq);
+#else
+			;
+#endif
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", IRQ disabled");
+#else
+		;
+#endif
 	}
 
 	dev->irq = irq;
@@ -2316,7 +2360,11 @@ static int pci9118_attach(struct comedi_device *dev,
 			}
 		}
 		if (!devpriv->dmabuf_virt[0]) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", Can't allocate DMA buffer, DMA disabled!");
+#else
+			;
+#endif
 			master = 0;
 		}
 
@@ -2327,9 +2375,17 @@ static int pci9118_attach(struct comedi_device *dev,
 
 	devpriv->master = master;
 	if (devpriv->master)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", bus master");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", no bus master");
+#else
+		;
+#endif
 
 	devpriv->usemux = 0;
 	if (it->options[2] > 0) {
@@ -2341,7 +2397,11 @@ static int pci9118_attach(struct comedi_device *dev,
 				devpriv->usemux = 128;
 					/* max 128 channels with softare S&H! */
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", ext. mux %d channels", devpriv->usemux);
+#else
+		;
+#endif
 	}
 
 	devpriv->softsshdelay = it->options[4];
@@ -2355,7 +2415,11 @@ static int pci9118_attach(struct comedi_device *dev,
 		devpriv->softsshhold = 0x80;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(".\n");
+#else
+	;
+#endif
 
 	pci_read_config_word(devpriv->pcidev, PCI_COMMAND, &u16w);
 	pci_write_config_word(devpriv->pcidev, PCI_COMMAND, u16w | 64);

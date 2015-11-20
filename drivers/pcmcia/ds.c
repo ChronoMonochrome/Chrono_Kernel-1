@@ -50,8 +50,12 @@ static void pcmcia_check_driver(struct pcmcia_driver *p_drv)
 	u32 hash;
 
 	if (!p_drv->probe || !p_drv->remove)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "pcmcia: %s lacks a requisite callback "
 		       "function\n", p_drv->name);
+#else
+		;
+#endif
 
 	while (did && did->match_flags) {
 		for (i = 0; i < 4; i++) {
@@ -62,13 +66,21 @@ static void pcmcia_check_driver(struct pcmcia_driver *p_drv)
 			if (hash == did->prod_id_hash[i])
 				continue;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "pcmcia: %s: invalid hash for "
 			       "product string \"%s\": is 0x%x, should "
 			       "be 0x%x\n", p_drv->name, did->prod_id[i],
 			       did->prod_id_hash[i], hash);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "pcmcia: see "
 				"Documentation/pcmcia/devicetable.txt for "
 				"details\n");
+#else
+			;
+#endif
 		}
 		did++;
 	}
@@ -281,8 +293,12 @@ static int pcmcia_device_probe(struct device *dev)
 		dev_dbg(dev, "base %x, regs %x", p_dev->config_base,
 			p_dev->config_regs);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, dev,
 			   "pcmcia: could not parse base and rmask0 of CIS\n");
+#else
+		dev_;
+#endif
 		p_dev->config_base = 0;
 		p_dev->config_regs = 0;
 	}
@@ -379,15 +395,23 @@ static int pcmcia_device_remove(struct device *dev)
 
 	/* check for proper unloading */
 	if (p_dev->_irq || p_dev->_io || p_dev->_locked)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, dev,
 			"pcmcia: driver %s did not release config properly\n",
 			p_drv->name);
+#else
+		dev_;
+#endif
 
 	for (i = 0; i < MAX_WIN; i++)
 		if (p_dev->_win & CLIENT_WIN_REQ(i))
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_INFO, dev,
 			  "pcmcia: driver %s did not release window properly\n",
 			   p_drv->name);
+#else
+			dev_;
+#endif
 
 	/* references from pcmcia_probe_device */
 	pcmcia_put_dev(p_dev);
@@ -575,9 +599,13 @@ static struct pcmcia_device *pcmcia_device_add(struct pcmcia_socket *s,
 
 	mutex_unlock(&s->ops_mutex);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_NOTICE, &p_dev->dev,
 		   "pcmcia: registering new device %s (IRQ: %d)\n",
 		   p_dev->devname, p_dev->irq);
+#else
+	dev_;
+#endif
 
 	pcmcia_device_query(p_dev);
 
@@ -1411,13 +1439,21 @@ static int __init init_pcmcia_bus(void)
 
 	ret = bus_register(&pcmcia_bus_type);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "pcmcia: bus_register error: %d\n", ret);
+#else
+		;
+#endif
 		return ret;
 	}
 	ret = class_interface_register(&pcmcia_bus_interface);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"pcmcia: class_interface_register error: %d\n", ret);
+#else
+		;
+#endif
 		bus_unregister(&pcmcia_bus_type);
 		return ret;
 	}

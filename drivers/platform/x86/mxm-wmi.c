@@ -51,7 +51,11 @@ int mxm_wmi_call_mxds(int adapter)
 	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
 	acpi_status status;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("calling mux switch %d\n", adapter);
+#else
+	;
+#endif
 
 	status = wmi_evaluate_method(MXM_WMMX_GUID, 0x1, adapter, &input,
 				     &output);
@@ -59,7 +63,11 @@ int mxm_wmi_call_mxds(int adapter)
 	if (ACPI_FAILURE(status))
 		return status;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("mux switched %d\n", status);
+#else
+	;
+#endif
 	return 0;
 			    
 }
@@ -76,7 +84,11 @@ int mxm_wmi_call_mxmx(int adapter)
 	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
 	acpi_status status;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("calling mux switch %d\n", adapter);
+#else
+	;
+#endif
 
 	status = wmi_evaluate_method(MXM_WMMX_GUID, 0x1, adapter, &input,
 				     &output);
@@ -84,7 +96,11 @@ int mxm_wmi_call_mxmx(int adapter)
 	if (ACPI_FAILURE(status))
 		return status;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("mux mutex set switched %d\n", status);
+#else
+	;
+#endif
 	return 0;
 			    
 }

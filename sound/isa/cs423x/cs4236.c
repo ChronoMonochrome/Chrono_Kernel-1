@@ -437,7 +437,11 @@ static int __devinit snd_cs423x_probe(struct snd_card *card, int dev)
 		if (snd_opl3_create(card,
 				    fm_port[dev], fm_port[dev] + 2,
 				    OPL3_HW_OPL3_CS, 0, &opl3) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING IDENT ": OPL3 not detected\n");
+#else
+			;
+#endif
 		} else {
 			if ((err = snd_opl3_hwdep_new(opl3, 0, 1, NULL)) < 0)
 				return err;
@@ -451,7 +455,11 @@ static int __devinit snd_cs423x_probe(struct snd_card *card, int dev)
 					mpu_port[dev], 0,
 					mpu_irq[dev],
 					mpu_irq[dev] >= 0 ? IRQF_DISABLED : 0, NULL) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING IDENT ": MPU401 not detected\n");
+#else
+			;
+#endif
 	}
 
 	return snd_card_register(card);

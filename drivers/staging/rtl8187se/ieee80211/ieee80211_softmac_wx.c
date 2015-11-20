@@ -31,7 +31,11 @@ int ieee80211_wx_set_freq(struct ieee80211_device *ieee, struct iw_request_info 
 {
 	int ret;
 	struct iw_freq *fwrq = & wrqu->freq;
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("in %s\n",__func__);
+#else
+//	;
+#endif
 	down(&ieee->wx_sem);
 
 	if(ieee->iw_mode == IW_MODE_INFRA){
@@ -137,7 +141,11 @@ int ieee80211_wx_set_wap(struct ieee80211_device *ieee,
 	short ifup = ieee->proto_started;//dev->flags & IFF_UP;
 	struct sockaddr *temp = (struct sockaddr *)awrq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("=======Set WAP:");
+#else
+	//;
+#endif
 	ieee->sync_scan_hurryup = 1;
 
 	down(&ieee->wx_sem);
@@ -162,7 +170,11 @@ int ieee80211_wx_set_wap(struct ieee80211_device *ieee,
 
 	memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
 	ieee->wap_set = memcmp(temp->sa_data, zero,ETH_ALEN)!=0;
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk(" %x:%x:%x:%x:%x:%x\n", ieee->current_network.bssid[0],ieee->current_network.bssid[1],ieee->current_network.bssid[2],ieee->current_network.bssid[3],ieee->current_network.bssid[4],ieee->current_network.bssid[5]);
+#else
+	//;
+#endif
 
 	spin_unlock_irqrestore(&ieee->lock, flags);
 
@@ -387,7 +399,11 @@ int ieee80211_wx_set_essid(struct ieee80211_device *ieee,
 		ieee->current_network.ssid[0] = '\0';
 		ieee->current_network.ssid_len = 0;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("==========set essid %s!\n",ieee->current_network.ssid);
+#else
+	//;
+#endif
 	spin_unlock_irqrestore(&ieee->lock, flags);
 
 	if (proto_started)
@@ -421,8 +437,12 @@ out:
 	else
 		ieee->raw_tx = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO"raw TX is %s\n",
 	      ieee->raw_tx ? "enabled" : "disabled");
+#else
+	;
+#endif
 
 	if(ieee->iw_mode == IW_MODE_MONITOR)
 	{
@@ -478,7 +498,11 @@ int ieee80211_wx_set_power(struct ieee80211_device *ieee,
 		(!ieee->enter_sleep_state) ||
 		(!ieee->ps_is_queue_empty)){
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ERROR. PS mode tried to be use but driver missed a callback\n\n");
+#else
+		;
+#endif
 
 		return -1;
 	}
@@ -511,7 +535,11 @@ int ieee80211_wx_set_power(struct ieee80211_device *ieee,
 	if (wrqu->power.flags & IW_POWER_TIMEOUT) {
 
 		ieee->ps_timeout = wrqu->power.value / 1000;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Timeout %d\n",ieee->ps_timeout);
+#else
+		;
+#endif
 	}
 
 	if (wrqu->power.flags & IW_POWER_PERIOD) {

@@ -1092,8 +1092,12 @@ nj_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
 		return err;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "nj_probe(mISDN): found adapter at %s\n",
 		pci_name(pdev));
+#else
+	;
+#endif
 
 	pci_set_master(pdev);
 

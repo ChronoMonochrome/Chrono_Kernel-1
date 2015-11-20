@@ -50,9 +50,13 @@
 #define ldm_info(f, a...)  _ldm_printk (KERN_INFO,  __func__, f, ##a)
 
 static __printf(3, 4)
+#ifdef CONFIG_DEBUG_PRINTK
 void _ldm_printk(const char *level, const char *function, const char *fmt, ...)
 {
 	struct va_format vaf;
+#else
+void _ldm_;
+#endif
 	va_list args;
 
 	va_start (args, fmt);
@@ -60,7 +64,11 @@ void _ldm_printk(const char *level, const char *function, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s%s(): %pV\n", level, function, &vaf);
+#else
+	;
+#endif
 
 	va_end(args);
 }

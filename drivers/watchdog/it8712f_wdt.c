@@ -153,10 +153,18 @@ static void it8712f_wdt_update_margin(void)
 	 */
 	if (units <= max_units) {
 		config |= WDT_UNIT_SEC; /* else UNIT is MINUTES */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO NAME ": timer margin %d seconds\n", units);
+#else
+		;
+#endif
 	} else {
 		units /= 60;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO NAME ": timer margin %d minutes\n", units);
+#else
+		;
+#endif
 	}
 	superio_outb(config, WDT_CONFIG);
 
@@ -175,7 +183,11 @@ static int it8712f_wdt_get_status(void)
 
 static void it8712f_wdt_enable(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG NAME ": enabling watchdog timer\n");
+#else
+	;
+#endif
 	superio_enter();
 	superio_select(LDN_GPIO);
 
@@ -190,7 +202,11 @@ static void it8712f_wdt_enable(void)
 
 static void it8712f_wdt_disable(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG NAME ": disabling watchdog timer\n");
+#else
+	;
+#endif
 
 	superio_enter();
 	superio_select(LDN_GPIO);
@@ -309,9 +325,13 @@ static int it8712f_wdt_open(struct inode *inode, struct file *file)
 static int it8712f_wdt_release(struct inode *inode, struct file *file)
 {
 	if (expect_close != 42) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING NAME
 			": watchdog device closed unexpectedly, will not"
 			" disable the watchdog timer\n");
+#else
+		;
+#endif
 	} else if (!nowayout) {
 		it8712f_wdt_disable();
 	}
@@ -369,9 +389,13 @@ static int __init it8712f_wdt_find(unsigned short *address)
 	if (margin > (max_units * 60))
 		margin = (max_units * 60);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO NAME ": Found IT%04xF chip revision %d - "
 		"using DogFood address 0x%x\n",
 		chip_type, revision, *address);
+#else
+	;
+#endif
 
 exit:
 	superio_exit();
@@ -388,7 +412,11 @@ static int __init it8712f_wdt_init(void)
 		return -ENODEV;
 
 	if (!request_region(address, 1, "IT8712F Watchdog")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING NAME ": watchdog I/O region busy\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 

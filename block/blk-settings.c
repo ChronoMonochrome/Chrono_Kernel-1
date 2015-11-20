@@ -250,8 +250,12 @@ void blk_limits_max_hw_sectors(struct queue_limits *limits, unsigned int max_hw_
 {
 	if ((max_hw_sectors << 9) < PAGE_CACHE_SIZE) {
 		max_hw_sectors = 1 << (PAGE_CACHE_SHIFT - 9);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: set to minimum %d\n",
 		       __func__, max_hw_sectors);
+#else
+		;
+#endif
 	}
 
 	limits->max_hw_sectors = max_hw_sectors;
@@ -299,8 +303,12 @@ void blk_queue_max_segments(struct request_queue *q, unsigned short max_segments
 {
 	if (!max_segments) {
 		max_segments = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: set to minimum %d\n",
 		       __func__, max_segments);
+#else
+		;
+#endif
 	}
 
 	q->limits.max_segments = max_segments;
@@ -320,8 +328,12 @@ void blk_queue_max_segment_size(struct request_queue *q, unsigned int max_size)
 {
 	if (max_size < PAGE_CACHE_SIZE) {
 		max_size = PAGE_CACHE_SIZE;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: set to minimum %d\n",
 		       __func__, max_size);
+#else
+		;
+#endif
 	}
 
 	q->limits.max_segment_size = max_size;
@@ -655,8 +667,12 @@ void disk_stack_limits(struct gendisk *disk, struct block_device *bdev,
 		disk_name(disk, 0, top);
 		bdevname(bdev, bottom);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: Warning: Device %s is misaligned\n",
 		       top, bottom);
+#else
+		;
+#endif
 	}
 }
 EXPORT_SYMBOL(disk_stack_limits);
@@ -740,8 +756,12 @@ void blk_queue_segment_boundary(struct request_queue *q, unsigned long mask)
 {
 	if (mask < PAGE_CACHE_SIZE - 1) {
 		mask = PAGE_CACHE_SIZE - 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: set to minimum %lx\n",
 		       __func__, mask);
+#else
+		;
+#endif
 	}
 
 	q->limits.seg_boundary_mask = mask;

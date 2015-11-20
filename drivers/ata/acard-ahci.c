@@ -343,14 +343,22 @@ static int acard_ahci_port_start(struct ata_port *ap)
 		if (cmd & PORT_CMD_FBSCP)
 			pp->fbs_supported = true;
 		else if (hpriv->flags & AHCI_HFLAG_YES_FBS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_INFO, dev,
 				   "port %d can do FBS, forcing FBSCP\n",
 				   ap->port_no);
+#else
+			dev_;
+#endif
 			pp->fbs_supported = true;
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_WARNING, dev,
 				   "port %d is not capable of FBS\n",
 				   ap->port_no);
+#else
+			dev_;
+#endif
 	}
 
 	if (pp->fbs_supported) {
@@ -420,7 +428,11 @@ static int acard_ahci_init_one(struct pci_dev *pdev, const struct pci_device_id 
 	WARN_ON((int)ATA_MAX_QUEUE > AHCI_MAX_CMDS);
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	/* acquire resources */
 	rc = pcim_enable_device(pdev);
@@ -473,7 +485,11 @@ static int acard_ahci_init_one(struct pci_dev *pdev, const struct pci_device_id 
 	if (!(hpriv->cap & HOST_CAP_SSS) || ahci_ignore_sss)
 		host->flags |= ATA_HOST_PARALLEL_SCAN;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ahci: SSS flag set, parallel bus scan disabled\n");
+#else
+		;
+#endif
 
 	for (i = 0; i < host->n_ports; i++) {
 		struct ata_port *ap = host->ports[i];

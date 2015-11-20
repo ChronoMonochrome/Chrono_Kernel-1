@@ -180,21 +180,45 @@ void blk_dump_rq_flags(struct request *rq, char *msg)
 {
 	int bit;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: dev %s: type=%x, flags=%x\n", msg,
 		rq->rq_disk ? rq->rq_disk->disk_name : "?", rq->cmd_type,
 		rq->cmd_flags);
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "  sector %llu, nr/cnr %u/%u\n",
 	       (unsigned long long)blk_rq_pos(rq),
 	       blk_rq_sectors(rq), blk_rq_cur_sectors(rq));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "  bio %p, biotail %p, buffer %p, len %u\n",
 	       rq->bio, rq->biotail, rq->buffer, blk_rq_bytes(rq));
+#else
+	;
+#endif
 
 	if (rq->cmd_type == REQ_TYPE_BLOCK_PC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "  cdb: ");
+#else
+		;
+#endif
 		for (bit = 0; bit < BLK_MAX_CDB; bit++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02x ", rq->cmd[bit]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 }
 EXPORT_SYMBOL(blk_dump_rq_flags);
@@ -1448,12 +1472,20 @@ static void handle_bad_sector(struct bio *bio)
 {
 	char b[BDEVNAME_SIZE];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "attempt to access beyond end of device\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: rw=%ld, want=%Lu, limit=%Lu\n",
 			bdevname(bio->bi_bdev, b),
 			bio->bi_rw,
 			(unsigned long long)bio->bi_sector + bio_sectors(bio),
 			(long long)(i_size_read(bio->bi_bdev->bd_inode) >> 9));
+#else
+	;
+#endif
 
 	set_bit(BIO_EOF, &bio->bi_flags);
 }
@@ -1709,12 +1741,16 @@ void submit_bio(int rw, struct bio *bio)
 
 		if (unlikely(block_dump)) {
 			char b[BDEVNAME_SIZE];
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s(%d): %s block %Lu on %s (%u sectors)\n",
 			current->comm, task_pid_nr(current),
 				(rw & WRITE) ? "WRITE" : "READ",
 				(unsigned long long)bio->bi_sector,
 				bdevname(bio->bi_bdev, b),
 				count);
+#else
+			;
+#endif
 		}
 	}
 

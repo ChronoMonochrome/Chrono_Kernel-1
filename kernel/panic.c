@@ -350,8 +350,12 @@ late_initcall(init_oops_id);
 void print_oops_end_marker(void)
 {
 	init_oops_id();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "---[ end trace %016llx ]---\n",
 		(unsigned long long)oops_id);
+#else
+	;
+#endif
 }
 
 /*

@@ -229,10 +229,18 @@ void cypress_touchkey_panic_display(struct i2c_adapter *pAdap)
 		printk(KERN_ERR "failed to read FW ver.\n");
 
 	else if ((buf[1] == mod_ver) &&	(buf[0] < fw_ver)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TouchKey] %s : Mod Ver 0x%02x\n", __func__,
 			buf[1]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TouchKey] FW mod 0x%02x, phone 0x%02x\n",
 			buf[0], fw_ver);
+#else
+		;
+#endif
 	}
 }
 #endif
@@ -275,7 +283,11 @@ static void cypress_touchkey_work(struct work_struct *work)
 
 	if (touch_is_pressed && press) {
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TouchKey]touchkey pressed but don't send event because touch is pressed.\n");
+#else
+		;
+#endif
 #endif
 		goto out;
 	}
@@ -368,8 +380,12 @@ static int cypress_touchkey_auto_cal(struct cypress_touchkey_info *info)
 			return ret;
 		}
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TouchKey] touchkey_autocalibration : buf[0]=%x buf[1]=%x buf[2]=%x buf[3]=%x\n",
 				buf[0], buf[1], buf[2], buf[3]);
+#else
+		;
+#endif
 #endif
 
 		/* Send autocal Command */
@@ -384,12 +400,20 @@ static int cypress_touchkey_auto_cal(struct cypress_touchkey_info *info)
 
 		if ((buf[0] & 0x80)) {
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[Touchkey] autocal Enabled\n");
+#else
+			;
+#endif
 #endif
 			break;
 		} else
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[Touchkey] autocal disabled, retry %d\n", retry);
+#else
+			;
+#endif
 #endif
 
 		retry += 1;
@@ -397,7 +421,11 @@ static int cypress_touchkey_auto_cal(struct cypress_touchkey_info *info)
 
 	if (retry == 3)
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[Touchkey] autocal failed\n");
+#else
+		;
+#endif
 #endif
 
 	return count;
@@ -430,8 +458,16 @@ static void cypress_thd_change(bool vbus_status)
 void cypress_touchkey_change_thd(bool vbus_status)
 {
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[Touchkey] VBUS_STATUS %d\n", vbus_status);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[Touchkey] CYPRESS_VBUS_STATUS %d\n", vbus_status);
+#else
+	;
+#endif
 #endif
 	if (info)
 		cypress_thd_change(vbus_status);
@@ -542,10 +578,18 @@ static int __devinit cypress_touchkey_probe(struct i2c_client *client,
 		info->fw_ver = buf[0];
 		info->mod_ver = buf[1];
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TouchKey] %s : Mod Ver 0x%02x\n", __func__,
 			info->mod_ver);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TouchKey] FW mod 0x%02x\n",
 			info->fw_ver);
+#else
+		;
+#endif
 #endif
 #ifdef TOUCHKEY_UPDATE_ONBOOT
 		if ((info->mod_ver == mod_ver) && (info->fw_ver < fw_ver))
@@ -711,7 +755,11 @@ static ssize_t touch_version_read(struct device *dev,
 	count = sprintf(buf, "0x%02x\n", data);
 
 	info->fw_ver = data;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[TouchKey] %s : FW Ver 0x%02x\n", __func__, data);
+#else
+	;
+#endif
 
 	return count;
 }
@@ -720,7 +768,11 @@ static ssize_t touch_version_write(struct device *dev,
 				   struct device_attribute *attr,
 				   const char *buf, size_t size)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[TouchKey] %s : input data --> %s\n", __func__, buf);
+#else
+	;
+#endif
 
 	return size;
 }
@@ -744,7 +796,11 @@ static ssize_t touch_update_write(struct device *dev,
 				  struct device_attribute *attr,
 				  const char *buf, size_t size)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[TouchKey] touchkey firmware update\n");
+#else
+	;
+#endif
 
 /*
 	if (*buf == 'S') {
@@ -763,7 +819,11 @@ static ssize_t touch_update_read(struct device *dev,
 {
 	int count = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[TouchKey] touchkey firmware update \n");
+#else
+	;
+#endif
 
 	INIT_WORK(&update_work, touch_FW_update_func);
 	queue_work(touchkey_wq, &update_work);
@@ -780,20 +840,32 @@ static void touch_FW_update_func(struct work_struct *work)
 	u8 data;
 
 	touchkey_update_status = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[TouchKey] %s start... !\n", __func__);
+#else
+	;
+#endif
 
 	disable_irq(info->irq);
 	while (retry--) {
 		if (ISSP_main() == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[TOUCHKEY] Update success!\n");
+#else
+			;
+#endif
 			cypress_touchkey_con_hw(info, true);
 			msleep(200);
 			enable_irq(info->irq);
 
 			data = i2c_smbus_read_byte_data(info->client, CYPRESS_FW_VER);
 			info->fw_ver = data;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[TouchKey] %s : FW Ver 0x%02x\n", __func__,
 			data);
+#else
+			;
+#endif
 
 			cypress_thd_change(vbus_state);
 			cypress_touchkey_auto_cal(info);
@@ -809,7 +881,11 @@ static void touch_FW_update_func(struct work_struct *work)
 	}
 
 	touchkey_update_status = -1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[TOUCHKEY]Touchkey_update fail\n");
+#else
+	;
+#endif
 	return;
 }
 
@@ -822,21 +898,37 @@ static int touch_FW_update(void)
 	touchkey_update_status = 1;
 
 	while (retry--) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TOUCHKEY] Updating... !\n");
+#else
+		;
+#endif
 		msleep(300);
 		if (ISSP_main() == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[TOUCHKEY] Update success!\n");
+#else
+			;
+#endif
 			touchkey_update_status = 0;
 			count = 1;
 			break;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TOUCHKEY] Touchkey_update failed... retry...\n");
+#else
+		;
+#endif
 	}
 
 	if (retry <= 0) {
 		cypress_touchkey_con_hw(info, false);
 		count = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TOUCHKEY]Touchkey_update fail\n");
+#else
+		;
+#endif
 		touchkey_update_status = -1;
 		msleep(300);
 	}
@@ -881,8 +973,12 @@ static ssize_t touchkey_menu_show(struct device *dev,
 		}
 		menu_sensitivity = ((0x00FF & data[0])<<8) | data[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "called %s , data : %d %d\n", __func__,
 				data[0], data[1]);
+#else
+		;
+#endif
 	}
 	return sprintf(buf, "%d\n", menu_sensitivity);
 
@@ -904,8 +1000,12 @@ static ssize_t touchkey_back_show(struct device *dev,
 
 		back_sensitivity = ((0x00FF & data[0])<<8) | data[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "called %s , data : %d %d\n", __func__,
 				data[0], data[1]);
+#else
+		;
+#endif
 	}
 	return sprintf(buf, "%d\n", back_sensitivity);
 
@@ -927,8 +1027,12 @@ static ssize_t touchkey_raw_data0_show(struct device *dev,
 
 		raw_data0 = ((0x00FF & data[0])<<8) | data[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "called %s , data : %d %d\n", __func__,
 				data[0], data[1]);
+#else
+		;
+#endif
 	}
 	return sprintf(buf, "%d\n", raw_data0);
 
@@ -950,8 +1054,12 @@ static ssize_t touchkey_raw_data1_show(struct device *dev,
 
 		raw_data1 = ((0x00FF & data[0])<<8) | data[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "called %s , data : %d %d\n", __func__,
 				data[0], data[1]);
+#else
+		;
+#endif
 	}
 	return sprintf(buf, "%d\n", raw_data1);
 
@@ -965,7 +1073,11 @@ static ssize_t touchkey_idac0_show(struct device *dev,
 	if (!touchkey_update_status) {
 		data = i2c_smbus_read_byte_data(info->client, CYPRESS_IDAC_MENU);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "called %s , data : %d\n", __func__, data);
+#else
+		;
+#endif
 		idac0 = data;
 	}
 	return sprintf(buf, "%d\n", idac0);
@@ -980,7 +1092,11 @@ static ssize_t touchkey_idac1_show(struct device *dev,
 	if (!touchkey_update_status) {
 		data = i2c_smbus_read_byte_data(info->client, CYPRESS_IDAC_BACK);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "called %s , data : %d\n", __func__, data);
+#else
+		;
+#endif
 		idac1 = data;
 	}
 	return sprintf(buf, "%d\n", idac1);
@@ -994,7 +1110,11 @@ static ssize_t touchkey_threshold_show(struct device *dev,
 
 	data = i2c_smbus_read_byte_data(info->client, CYPRESS_THRESHOLD);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "called %s , data : %d\n", __func__, data);
+#else
+	;
+#endif
 	touchkey_threshold = data;
 	return sprintf(buf, "%d\n", touchkey_threshold);
 }
@@ -1007,7 +1127,11 @@ static ssize_t touch_autocal_testmode(struct device *dev,
 	int on_off;
 
 	if (sscanf(buf, "%d\n", &on_off) == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TouchKey] Test Mode : %d \n", on_off);
+#else
+		;
+#endif
 
 		if (on_off == 1) {
 			count = i2c_smbus_write_byte_data(info->client,
@@ -1020,7 +1144,11 @@ static ssize_t touch_autocal_testmode(struct device *dev,
 			cypress_touchkey_auto_cal(info);
 		}
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[TouchKey] touch_led_brightness Error\n");
+#else
+		;
+#endif
 
 	return count;
 }
@@ -1032,7 +1160,11 @@ static ssize_t touch_sensitivity_control(struct device *dev,
 	u8 data[] = {CYPRESS_DATA_UPDATE};
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "called %s \n", __func__);
+#else
+	;
+#endif
 
 	ret = i2c_smbus_write_i2c_block_data(info->client, CYPRESS_GEN, ARRAY_SIZE(data), data);
 

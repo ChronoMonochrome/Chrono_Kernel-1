@@ -122,8 +122,12 @@ static bool uac_clock_source_is_valid(struct snd_usb_audio *chip, int source_id)
 			      &data, sizeof(data), 1000);
 
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "%s(): cannot get clock validity for id %d\n",
 			   __func__, source_id);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -140,9 +144,13 @@ static int __uac_clock_find_source(struct snd_usb_audio *chip,
 	entity_id &= 0xff;
 
 	if (test_and_set_bit(entity_id, visited)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING
 			"%s(): recursive clock topology detected, id %d.\n",
 			__func__, entity_id);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -233,8 +241,12 @@ static int set_sample_rate_v1(struct snd_usb_audio *chip, int iface,
 				   USB_TYPE_CLASS | USB_RECIP_ENDPOINT | USB_DIR_IN,
 				   UAC_EP_CS_ATTR_SAMPLE_RATE << 8, ep,
 				   data, sizeof(data), 1000)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "%d:%d:%d: cannot get freq at ep %#x\n",
 			   dev->devnum, iface, fmt->altsetting, ep);
+#else
+		;
+#endif
 		return 0; /* some devices don't support reading */
 	}
 
@@ -285,8 +297,12 @@ static int set_sample_rate_v2(struct snd_usb_audio *chip, int iface,
 				   UAC2_CS_CONTROL_SAM_FREQ << 8,
 				   snd_usb_ctrl_intf(chip) | (clock << 8),
 				   data, sizeof(data), 1000)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "%d:%d:%d: cannot get freq (v2)\n",
 			   dev->devnum, iface, fmt->altsetting);
+#else
+		;
+#endif
 		return err;
 	}
 

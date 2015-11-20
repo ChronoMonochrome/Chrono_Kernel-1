@@ -414,7 +414,11 @@ vCommandTimer (
                     s_bCommandComplete(pDevice);
                     return;
                 }
+#ifdef CONFIG_DEBUG_PRINTK
 //printk("chester-pMgmt->uScanChannel=%d,pDevice->byMaxChannel=%d\n",pMgmt->uScanChannel,pDevice->byMaxChannel);
+#else
+//;
+#endif
                 if (pMgmt->uScanChannel == pDevice->byMinChannel) {
                     //pMgmt->eScanType = WMAC_SCAN_ACTIVE;
                     pMgmt->abyScanBSSID[0] = 0xFF;
@@ -438,8 +442,16 @@ vCommandTimer (
                     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"SET SCAN Channel Fail: %d\n", pMgmt->uScanChannel);
                 }
                 CARDbSetBSSID(pMgmt->pAdapter, pMgmt->abyCurrBSSID, OP_MODE_UNKNOWN);
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("chester-mxch=%d\n",pDevice->byMaxChannel);
+#else
+//	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
       //          printk("chester-ch=%d\n",pMgmt->uScanChannel);
+#else
+      //          ;
+#endif
 	pMgmt->uScanChannel++;
 //2008-8-4 <modify> by chester
 		if (!is_channel_valid(pMgmt->uScanChannel) &&
@@ -545,8 +557,16 @@ vCommandTimer (
                 spin_unlock_irq(&pDevice->lock);
                 return;
             }
+#ifdef CONFIG_DEBUG_PRINTK
 //printk("chester-currmode=%d\n",pMgmt->eCurrMode);
+#else
+//;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 printk("chester-abyDesireSSID=%s\n",((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->abySSID);
+#else
+;
+#endif
                      //memcpy(pMgmt->abyAdHocSSID,pMgmt->abyDesireSSID,
                               //((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->len + WLAN_IEHDR_LEN);
             pItemSSID = (PWLAN_IE_SSID)pMgmt->abyDesireSSID;
@@ -646,7 +666,11 @@ printk("chester-abyDesireSSID=%s\n",((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->abySS
                   	union iwreq_data  wrqu;
                   	memset(&wrqu, 0, sizeof (wrqu));
                           wrqu.ap_addr.sa_family = ARPHRD_ETHER;
+#ifdef CONFIG_DEBUG_PRINTK
                   	printk("wireless_send_event--->SIOCGIWAP(disassociated:vMgrJoinBSSBegin Fail !!)\n");
+#else
+                  	;
+#endif
                   	wireless_send_event(pDevice->dev, SIOCGIWAP, &wrqu, NULL);
                        }
                     #endif
@@ -674,11 +698,19 @@ printk("chester-abyDesireSSID=%s\n",((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->abySS
             }
 
 	else if(pMgmt->eCurrState < WMAC_STATE_AUTHPENDING) {
+#ifdef CONFIG_DEBUG_PRINTK
                printk("WLAN_AUTHENTICATE_WAIT:Authen Fail???\n");
+#else
+               ;
+#endif
 	   }
 	   else  if(pDevice->byLinkWaitCount <= 4){    //mike add:wait another 2 sec if authenticated_frame delay!
                 pDevice->byLinkWaitCount ++;
+#ifdef CONFIG_DEBUG_PRINTK
 	       printk("WLAN_AUTHENTICATE_WAIT:wait %d times!!\n",pDevice->byLinkWaitCount);
+#else
+	       ;
+#endif
 	       spin_unlock_irq(&pDevice->lock);
 	       vCommandTimerWait((void *)pDevice, AUTHENTICATE_TIMEOUT/2);
 	       return;
@@ -691,7 +723,11 @@ printk("chester-abyDesireSSID=%s\n",((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->abySS
                   	union iwreq_data  wrqu;
                   	memset(&wrqu, 0, sizeof (wrqu));
                           wrqu.ap_addr.sa_family = ARPHRD_ETHER;
+#ifdef CONFIG_DEBUG_PRINTK
                   	printk("wireless_send_event--->SIOCGIWAP(disassociated:AUTHENTICATE_WAIT_timeout)\n");
+#else
+                  	;
+#endif
                   	wireless_send_event(pDevice->dev, SIOCGIWAP, &wrqu, NULL);
                        }
                     #endif
@@ -721,7 +757,11 @@ printk("chester-abyDesireSSID=%s\n",((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->abySS
                 }
 	     #ifdef TxInSleep
 		 if(pDevice->IsTxDataTrigger != false)   {    //TxDataTimer is not triggered at the first time
+#ifdef CONFIG_DEBUG_PRINTK
                      // printk("Re-initial TxDataTimer****\n");
+#else
+                     // ;
+#endif
 		    del_timer(&pDevice->sTimerTxData);
                       init_timer(&pDevice->sTimerTxData);
                       pDevice->sTimerTxData.data = (unsigned long) pDevice;
@@ -731,18 +771,30 @@ printk("chester-abyDesireSSID=%s\n",((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->abySS
                       pDevice->nTxDataTimeCout = 0;
 		 }
 		 else {
+#ifdef CONFIG_DEBUG_PRINTK
 		   // printk("mike:-->First time triger TimerTxData InSleep\n");
+#else
+		   // ;
+#endif
 		 }
 		pDevice->IsTxDataTrigger = true;
                 add_timer(&pDevice->sTimerTxData);
              #endif
             }
 		   else if(pMgmt->eCurrState < WMAC_STATE_ASSOCPENDING) {
+#ifdef CONFIG_DEBUG_PRINTK
                printk("WLAN_ASSOCIATE_WAIT:Association Fail???\n");
+#else
+               ;
+#endif
 	   }
 	   else  if(pDevice->byLinkWaitCount <= 4){    //mike add:wait another 2 sec if associated_frame delay!
                 pDevice->byLinkWaitCount ++;
+#ifdef CONFIG_DEBUG_PRINTK
 	       printk("WLAN_ASSOCIATE_WAIT:wait %d times!!\n",pDevice->byLinkWaitCount);
+#else
+	       ;
+#endif
 	       spin_unlock_irq(&pDevice->lock);
 	       vCommandTimerWait((void *)pDevice, ASSOCIATE_TIMEOUT/2);
 	       return;
@@ -755,7 +807,11 @@ printk("chester-abyDesireSSID=%s\n",((PWLAN_IE_SSID)pMgmt->abyDesireSSID)->abySS
                   	union iwreq_data  wrqu;
                   	memset(&wrqu, 0, sizeof (wrqu));
                           wrqu.ap_addr.sa_family = ARPHRD_ETHER;
+#ifdef CONFIG_DEBUG_PRINTK
                   	printk("wireless_send_event--->SIOCGIWAP(disassociated:ASSOCIATE_WAIT_timeout)\n");
+#else
+                  	;
+#endif
                   	wireless_send_event(pDevice->dev, SIOCGIWAP, &wrqu, NULL);
                        }
                     #endif
@@ -1117,8 +1173,12 @@ BSSvSecondTxData(
 
   if(pDevice->nTxDataTimeCout<4)     //don't tx data if timer less than 40s
     {
+#ifdef CONFIG_DEBUG_PRINTK
      // printk("mike:%s-->no data Tx not exceed the desired Time as %d\n",__FUNCTION__,
 	//  	(int)pDevice->nTxDataTimeCout);
+#else
+     // ;
+#endif
      pDevice->sTimerTxData.expires = RUN_AT(10*HZ);      //10s callback
      add_timer(&pDevice->sTimerTxData);
       return;
@@ -1132,7 +1192,11 @@ BSSvSecondTxData(
   if(pDevice->bLinkPass ==true) {
  #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
         //   printk("mike:%s-->InSleep Tx Data Procedure\n",__FUNCTION__);
+#else
+        //   ;
+#endif
 	  pDevice->fTxDataInSleep = true;
 	  PSbSendNullPacket(pDevice);      //send null packet
 	  pDevice->fTxDataInSleep = false;

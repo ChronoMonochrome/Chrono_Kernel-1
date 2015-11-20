@@ -188,7 +188,11 @@ int ieee80211_encrypt_fragment(
 
 	if (!(crypt && crypt->ops))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("=========>%s(), crypt is null\n", __FUNCTION__);
+#else
+		;
+#endif
 		return -1;
 	}
 #ifdef CONFIG_IEEE80211_CRYPT_TKIP
@@ -198,9 +202,13 @@ int ieee80211_encrypt_fragment(
 	    crypt && crypt->ops && strcmp(crypt->ops->name, "TKIP") == 0) {
 		header = (struct ieee80211_hdr *) frag->data;
 		if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: TKIP countermeasures: dropped "
 			       "TX packet to %pM\n",
 			       ieee->dev->name, header->addr1);
+#else
+			;
+#endif
 		}
 		return -1;
 	}
@@ -220,8 +228,12 @@ int ieee80211_encrypt_fragment(
 
 	atomic_dec(&crypt->refcnt);
 	if (res < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Encryption failed: len=%d.\n",
 		       ieee->dev->name, frag->len);
+#else
+		;
+#endif
 		ieee->ieee_stats.tx_discards++;
 		return -1;
 	}
@@ -339,7 +351,11 @@ void ieee80211_tx_query_agg_cap(struct ieee80211_device* ieee, struct sk_buff* s
 	{
 		if (!GetTs(ieee, (PTS_COMMON_INFO*)(&pTxTs), hdr->addr1, skb->priority, TX_DIR, true))
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("===>can't get TS\n");
+#else
+			;
+#endif
 			return;
 		}
 		if (pTxTs->TxAdmittedBARecord.bValid == false)
@@ -629,16 +645,24 @@ int ieee80211_rtl_xmit(struct sk_buff *skb, struct net_device *dev)
 	 * creating it... */
 	if ((!ieee->hard_start_xmit && !(ieee->softmac_features & IEEE_SOFTMAC_TX_QUEUE))||
 	   ((!ieee->softmac_data_hard_start_xmit && (ieee->softmac_features & IEEE_SOFTMAC_TX_QUEUE)))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: No xmit handler.\n",
 		       ieee->dev->name);
+#else
+		;
+#endif
 		goto success;
 	}
 
 
 	if(likely(ieee->raw_tx == 0)){
 		if (unlikely(skb->len < SNAP_SIZE + sizeof(u16))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: skb too small (%d).\n",
 			ieee->dev->name, skb->len);
+#else
+			;
+#endif
 			goto success;
 		}
 
@@ -675,7 +699,11 @@ int ieee80211_rtl_xmit(struct sk_buff *skb, struct net_device *dev)
 							((((u8 *)udp)[1] == 67) && (((u8 *)udp)[3] == 68))) {
 						// 68 : UDP BOOTP client
 						// 67 : UDP BOOTP server
+#ifdef CONFIG_DEBUG_PRINTK
 						printk("DHCP pkt src port:%d, dest port:%d!!\n", ((u8 *)udp)[1],((u8 *)udp)[3]);
+#else
+						;
+#endif
 
 						bdhcp = true;
 #ifdef _RTL8192_EXT_PATCH_
@@ -686,7 +714,11 @@ int ieee80211_rtl_xmit(struct sk_buff *skb, struct net_device *dev)
 					}
 				}
 				}else if(ETH_P_ARP == ether_type){// IP ARP packet
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("=================>DHCP Protocol start tx ARP pkt!!\n");
+#else
+					;
+#endif
 					bdhcp = true;
 					ieee->LPSDelayCnt = ieee->current_network.tim.tim_count;
 
@@ -781,8 +813,12 @@ int ieee80211_rtl_xmit(struct sk_buff *skb, struct net_device *dev)
 		* postfix, header, FCS, etc.) */
 		txb = ieee80211_alloc_txb(nr_frags, frag_size + ieee->tx_headroom, GFP_ATOMIC);
 		if (unlikely(!txb)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Could not allocate TXB\n",
 			ieee->dev->name);
+#else
+			;
+#endif
 			goto failed;
 		}
 		txb->encrypted = encrypt;
@@ -879,15 +915,23 @@ int ieee80211_rtl_xmit(struct sk_buff *skb, struct net_device *dev)
 		}
 	}else{
 		if (unlikely(skb->len < sizeof(struct ieee80211_hdr_3addr))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: skb too small (%d).\n",
 			ieee->dev->name, skb->len);
+#else
+			;
+#endif
 			goto success;
 		}
 
 		txb = ieee80211_alloc_txb(1, skb->len, GFP_ATOMIC);
 		if(!txb){
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Could not allocate TXB\n",
 			ieee->dev->name);
+#else
+			;
+#endif
 			goto failed;
 		}
 

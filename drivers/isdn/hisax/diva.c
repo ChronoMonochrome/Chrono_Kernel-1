@@ -305,7 +305,11 @@ diva_interrupt(int intno, void *dev_id)
 		cnt--;
 	}
 	if (!cnt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Diva: IRQ LOOP\n");
+#else
+		;
+#endif
 	writereg(cs->hw.diva.hscx_adr, cs->hw.diva.hscx, HSCX_MASK, 0xFF);
 	writereg(cs->hw.diva.hscx_adr, cs->hw.diva.hscx, HSCX_MASK + 0x40, 0xFF);
 	writereg(cs->hw.diva.isac_adr, cs->hw.diva.isac, ISAC_MASK, 0xFF);
@@ -356,7 +360,11 @@ Start_IPACISA:
 		goto Start_IPACISA;
 	}
 	if (!icnt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "DIVA IPAC IRQ LOOP\n");
+#else
+		;
+#endif
 	writereg(cs->hw.diva.isac_adr, cs->hw.diva.isac, IPAC_MASK, 0xFF);
 	writereg(cs->hw.diva.isac_adr, cs->hw.diva.isac, IPAC_MASK, 0xC0);
 	spin_unlock_irqrestore(&cs->lock, flags);
@@ -373,7 +381,11 @@ MemwaitforCEC(struct IsdnCardState *cs, int hscx)
 		to--;
 	}
 	if (!to)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: waitforCEC timeout\n");
+#else
+		;
+#endif
 }
 
 
@@ -387,7 +399,11 @@ MemwaitforXFW(struct IsdnCardState *cs, int hscx)
 		to--;
 	}
 	if (!to)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: waitforXFW timeout\n");
+#else
+		;
+#endif
 }
 
 static inline void
@@ -509,7 +525,11 @@ Memhscx_interrupt(struct IsdnCardState *cs, u_char val, u_char hscx)
 				if (cs->debug & L1_DEB_HSCX_FIFO)
 					debugl1(cs, "HX Frame %d", count);
 				if (!(skb = dev_alloc_skb(count)))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "HSCX: receive out of memory\n");
+#else
+					;
+#endif
 				else {
 					memcpy(skb_put(skb, count), bcs->hw.hscx.rcvbuf, count);
 					skb_queue_tail(&bcs->rqueue, skb);
@@ -524,7 +544,11 @@ Memhscx_interrupt(struct IsdnCardState *cs, u_char val, u_char hscx)
 		if (bcs->mode == L1_MODE_TRANS) {
 			/* receive audio data */
 			if (!(skb = dev_alloc_skb(fifo_size)))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: receive out of memory\n");
+#else
+				;
+#endif
 			else {
 				memcpy(skb_put(skb, fifo_size), bcs->hw.hscx.rcvbuf, fifo_size);
 				skb_queue_tail(&bcs->rqueue, skb);
@@ -675,7 +699,11 @@ Start_IPACPCI:
 		goto Start_IPACPCI;
 	}
 	if (!icnt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "DIVA IPAC PCI IRQ LOOP\n");
+#else
+		;
+#endif
 	memwritereg(cs->hw.diva.cfg_reg, IPAC_MASK, 0xFF);
 	memwritereg(cs->hw.diva.cfg_reg, IPAC_MASK, 0xC0);
 	spin_unlock_irqrestore(&cs->lock, flags);
@@ -914,6 +942,7 @@ static int __devinit setup_diva_common(struct IsdnCardState *cs)
 	else
 		bytecnt = 32;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"Diva: %s card configured at %#lx IRQ %d\n",
 		(cs->subtyp == DIVA_PCI) ? "PCI" :
@@ -921,21 +950,32 @@ static int __devinit setup_diva_common(struct IsdnCardState *cs)
 		(cs->subtyp == DIVA_IPAC_ISA) ? "IPAC ISA" :
 		(cs->subtyp == DIVA_IPAC_PCI) ? "IPAC PCI" : "IPACX PCI",
 		cs->hw.diva.cfg_reg, cs->irq);
+#else
+	;
+#endif
 	if ((cs->subtyp == DIVA_IPAC_PCI)  || 
 	    (cs->subtyp == DIVA_IPACX_PCI) || 
 	    (cs->subtyp == DIVA_PCI)         )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Diva: %s space at %#lx\n",
 			(cs->subtyp == DIVA_PCI) ? "PCI" :
 			(cs->subtyp == DIVA_IPAC_PCI) ? "IPAC PCI" : "IPACX PCI",
 			cs->hw.diva.pci_cfg);
+#else
+		;
+#endif
 	if ((cs->subtyp != DIVA_IPAC_PCI) &&
 	    (cs->subtyp != DIVA_IPACX_PCI)   ) {
 		if (!request_region(cs->hw.diva.cfg_reg, bytecnt, "diva isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "HiSax: %s config port %lx-%lx already in use\n",
 			       "diva",
 			       cs->hw.diva.cfg_reg,
 			       cs->hw.diva.cfg_reg + bytecnt);
+#else
+			;
+#endif
 			iounmap_diva(cs);
 			return (0);
 		}
@@ -952,7 +992,11 @@ static int __devinit setup_diva_common(struct IsdnCardState *cs)
 		cs->writeisacfifo = &WriteISACfifo_IPAC;
 		cs->irq_func = &diva_irq_ipac_isa;
 		val = readreg(cs->hw.diva.isac_adr, cs->hw.diva.isac, IPAC_ID);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Diva: IPAC version %x\n", val);
+#else
+		;
+#endif
 	} else if (cs->subtyp == DIVA_IPAC_PCI) {
 		cs->readisac  = &MemReadISAC_IPAC;
 		cs->writeisac = &MemWriteISAC_IPAC;
@@ -963,7 +1007,11 @@ static int __devinit setup_diva_common(struct IsdnCardState *cs)
 		cs->BC_Send_Data = &Memhscx_fill_fifo;
 		cs->irq_func = &diva_irq_ipac_pci;
 		val = memreadreg(cs->hw.diva.cfg_reg, IPAC_ID);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Diva: IPAC version %x\n", val);
+#else
+		;
+#endif
 	} else if (cs->subtyp == DIVA_IPACX_PCI) {
 		cs->readisac  = &MemReadISAC_IPACX;
 		cs->writeisac = &MemWriteISAC_IPACX;
@@ -973,8 +1021,12 @@ static int __devinit setup_diva_common(struct IsdnCardState *cs)
 		cs->BC_Write_Reg = &MemWriteHSCX_IPACX;
 		cs->BC_Send_Data = NULL; // function located in ipacx module
 		cs->irq_func = &diva_irq_ipacx_pci;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Diva: IPACX Design Id: %x\n", 
 			MemReadISAC_IPACX(cs, IPACX_ID) &0x3F);
+#else
+		;
+#endif
 	} else { /* DIVA 2.0 */
 		cs->hw.diva.tl.function = (void *) diva_led_handler;
 		cs->hw.diva.tl.data = (long) cs;
@@ -986,8 +1038,12 @@ static int __devinit setup_diva_common(struct IsdnCardState *cs)
 		cs->irq_func = &diva_interrupt;
 		ISACVersion(cs, "Diva:");
 		if (HscxVersion(cs, "Diva:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 		       "Diva: wrong HSCX versions check IO address\n");
+#else
+			;
+#endif
 			release_io_diva(cs);
 			return (0);
 		}
@@ -1009,7 +1065,11 @@ static int __devinit setup_diva_isa(struct IsdnCard *card)
 	cs->hw.diva.cfg_reg = card->para[1];
 	val = readreg(cs->hw.diva.cfg_reg + DIVA_IPAC_ADR,
 		cs->hw.diva.cfg_reg + DIVA_IPAC_DATA, IPAC_ID);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Diva: IPAC version %x\n", val);
+#else
+	;
+#endif
 	if ((val == 1) || (val==2)) {
 		cs->subtyp = DIVA_IPAC_ISA;
 		cs->hw.diva.ctrl = 0;
@@ -1082,13 +1142,21 @@ static int __devinit setup_diva_isapnp(struct IsdnCard *card)
 				ipid->vendor, ipid->function, pnp_d))) {
 				int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "HiSax: %s detected\n",
 					(char *)ipid->driver_data);
+#else
+				;
+#endif
 				pnp_disable_dev(pnp_d);
 				err = pnp_activate_dev(pnp_d);
 				if (err<0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "%s: pnp_activate_dev ret(%d)\n",
 						__func__, err);
+#else
+					;
+#endif
 					return(0);
 				}
 				card->para[1] = pnp_port_start(pnp_d, 0);
@@ -1198,13 +1266,21 @@ static int __devinit setup_diva_pci(struct IsdnCard *card)
 	}
 
 	if (!cs->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Diva: No IRQ for PCI card found\n");
+#else
+		;
+#endif
 		iounmap_diva(cs);
 		return(0);
 	}
 
 	if (!cs->hw.diva.cfg_reg) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Diva: No IO-Adr for PCI card found\n");
+#else
+		;
+#endif
 		iounmap_diva(cs);
 		return(0);
 	}
@@ -1246,7 +1322,11 @@ setup_diva(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, Diva_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: Eicon.Diehl Diva driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_DIEHLDIVA)
 		return(0);
 	cs->hw.diva.status = 0;
@@ -1275,7 +1355,11 @@ setup_diva(struct IsdnCard *card)
 
 ready:
 	if (!have_card) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Diva: No ISA, ISAPNP or PCI card found\n");
+#else
+		;
+#endif
 		return(0);
 	}
 

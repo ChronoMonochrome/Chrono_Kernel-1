@@ -1048,9 +1048,13 @@ static void make_request(struct mddev *mddev, struct bio * bio)
 		bio_pair_release(bp);
 		return;
 	bad_map:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("md/raid10:%s: make_request bug: can't convert block across chunks"
 		       " or bigger than %dk %llu %d\n", mdname(mddev), chunk_sects/2,
 		       (unsigned long long)bio->bi_sector, bio->bi_size >> 10);
+#else
+		;
+#endif
 
 		bio_io_error(bio);
 		return;
@@ -1461,11 +1465,15 @@ static void error(struct mddev *mddev, struct md_rdev *rdev)
 	set_bit(Blocked, &rdev->flags);
 	set_bit(Faulty, &rdev->flags);
 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT
 	       "md/raid10:%s: Disk failure on %s, disabling device.\n"
 	       "md/raid10:%s: Operation continuing on %d devices.\n",
 	       mdname(mddev), bdevname(rdev->bdev, b),
 	       mdname(mddev), conf->raid_disks - mddev->degraded);
+#else
+	;
+#endif
 }
 
 static void print_conf(struct r10conf *conf)
@@ -1473,22 +1481,38 @@ static void print_conf(struct r10conf *conf)
 	int i;
 	struct mirror_info *tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "RAID10 conf printout:\n");
+#else
+	;
+#endif
 	if (!conf) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "(!conf)\n");
+#else
+		;
+#endif
 		return;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " --- wd:%d rd:%d\n", conf->raid_disks - conf->mddev->degraded,
 		conf->raid_disks);
+#else
+	;
+#endif
 
 	for (i = 0; i < conf->raid_disks; i++) {
 		char b[BDEVNAME_SIZE];
 		tmp = conf->mirrors + i;
 		if (tmp->rdev)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " disk %d, wo:%d, o:%d, dev:%s\n",
 				i, !test_bit(In_sync, &tmp->rdev->flags),
 			        !test_bit(Faulty, &tmp->rdev->flags),
 				bdevname(tmp->rdev->bdev,b));
+#else
+			;
+#endif
 	}
 }
 
@@ -1990,10 +2014,14 @@ static void fix_recovery_read_error(struct r10bio *r10_bio)
 				ok = rdev_set_badblocks(rdev2, addr, s, 0);
 				if (!ok) {
 					/* just abort the recovery */
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_NOTICE
 					       "md/raid10:%s: recovery aborted"
 					       " due to read error\n",
 					       mdname(mddev));
+#else
+					;
+#endif
 
 					conf->mirrors[dw].recovery_disabled
 						= mddev->recovery_disabled;
@@ -2142,14 +2170,22 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
 		char b[BDEVNAME_SIZE];
 		bdevname(rdev->bdev, b);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "md/raid10:%s: %s: Raid device exceeded "
 		       "read_error threshold [cur %d:max %d]\n",
 		       mdname(mddev), b,
 		       atomic_read(&rdev->read_errors), max_read_errors);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "md/raid10:%s: %s: Failing raid device\n",
 		       mdname(mddev), b);
+#else
+		;
+#endif
 		md_error(mddev, conf->mirrors[d].rdev);
 		r10_bio->devs[r10_bio->read_slot].bio = IO_BLOCKED;
 		return;
@@ -2238,6 +2274,7 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
 					     s, conf->tmppage, WRITE)
 			    == 0) {
 				/* Well, this device is dead */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE
 				       "md/raid10:%s: read correction "
 				       "write failed"
@@ -2246,10 +2283,17 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
 				       (unsigned long long)(
 					       sect + rdev->data_offset),
 				       bdevname(rdev->bdev, b));
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "md/raid10:%s: %s: failing "
 				       "drive\n",
 				       mdname(mddev),
 				       bdevname(rdev->bdev, b));
+#else
+				;
+#endif
 			}
 			rdev_dec_pending(rdev, mddev);
 			rcu_read_lock();
@@ -2276,6 +2320,7 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
 						 READ)) {
 			case 0:
 				/* Well, this device is dead */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE
 				       "md/raid10:%s: unable to read back "
 				       "corrected sectors"
@@ -2284,12 +2329,20 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
 				       (unsigned long long)(
 					       sect + rdev->data_offset),
 				       bdevname(rdev->bdev, b));
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "md/raid10:%s: %s: failing "
 				       "drive\n",
 				       mdname(mddev),
 				       bdevname(rdev->bdev, b));
+#else
+				;
+#endif
 				break;
 			case 1:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 				       "md/raid10:%s: read error corrected"
 				       " (%d sectors at %llu on %s)\n",
@@ -2297,6 +2350,9 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
 				       (unsigned long long)(
 					       sect + rdev->data_offset),
 				       bdevname(rdev->bdev, b));
+#else
+				;
+#endif
 				atomic_add(s, &rdev->corrected_errors);
 			}
 
@@ -2421,10 +2477,14 @@ static void handle_read_error(struct mddev *mddev, struct r10bio *r10_bio)
 read_more:
 	rdev = read_balance(conf, r10_bio, &max_sectors);
 	if (rdev == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "md/raid10:%s: %s: unrecoverable I/O"
 		       " read error for block %llu\n",
 		       mdname(mddev), b,
 		       (unsigned long long)r10_bio->sector);
+#else
+		;
+#endif
 		raid_end_bio_io(r10_bio);
 		return;
 	}
@@ -2971,9 +3031,13 @@ static sector_t sync_request(struct mddev *mddev, sector_t sector_nr,
 				if (!any_working)  {
 					if (!test_and_set_bit(MD_RECOVERY_INTR,
 							      &mddev->recovery))
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "md/raid10:%s: insufficient "
 						       "working devices for recovery.\n",
 						       mdname(mddev));
+#else
+						;
+#endif
 					mirror->recovery_disabled
 						= mddev->recovery_disabled;
 				}
@@ -3398,13 +3462,21 @@ static int run(struct mddev *mddev)
 	}
 
 	if (mddev->recovery_cp != MaxSector)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "md/raid10:%s: not clean"
 		       " -- starting background reconstruction\n",
 		       mdname(mddev));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"md/raid10:%s: active with %d out of %d devices\n",
 		mdname(mddev), conf->raid_disks - mddev->degraded,
 		conf->raid_disks);
+#else
+	;
+#endif
 	/*
 	 * Ok, everything is just fine now
 	 */

@@ -323,7 +323,11 @@ static irqreturn_t snd_bt87x_interrupt(int irq, void *dev_id)
 
 	if (irq_status & ERROR_INTERRUPTS) {
 		if (irq_status & (INT_FBUS | INT_FTRGT))
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "FIFO overrun, status %#08x\n", status);
+#else
+			;
+#endif
 		if (irq_status & INT_OCERR)
 			snd_printk(KERN_ERR "internal RISC error, status %#08x\n", status);
 		if (irq_status & (INT_PPERR | INT_RIPERR | INT_PABORT))
@@ -856,11 +860,19 @@ static int __devinit snd_bt87x_detect_card(struct pci_dev *pci)
 			return -EBUSY;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "unknown card %#04x-%#04x:%#04x\n",
 		   pci->device, pci->subsystem_vendor, pci->subsystem_device);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "please mail id, board name, and, "
 		   "if it works, the correct digital_rate option to "
 		   "<alsa-devel@alsa-project.org>\n");
+#else
+	;
+#endif
 	return SND_BT87X_BOARD_UNKNOWN;
 }
 
@@ -925,10 +937,14 @@ static int __devinit snd_bt87x_probe(struct pci_dev *pci,
 		if (err < 0)
 			goto _error;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "bt87x%d: Using board %d, %sanalog, %sdigital "
 		   "(rate %d Hz)\n", dev, boardid,
 		   chip->board.no_analog ? "no " : "",
 		   chip->board.no_digital ? "no " : "", chip->board.dig_rate);
+#else
+	;
+#endif
 
 	strcpy(card->driver, "Bt87x");
 	sprintf(card->shortname, "Brooktree Bt%x", pci->device);

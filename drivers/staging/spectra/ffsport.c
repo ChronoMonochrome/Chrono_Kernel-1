@@ -417,7 +417,11 @@ static int do_transfer(struct spectra_nand_dev *tr, struct request *req)
 		return 0;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Unknown request %u\n", rq_data_dir(req));
+#else
+		;
+#endif
 		return -EIO;
 	}
 }
@@ -750,13 +754,21 @@ static void register_spectra_ftl_async(void *unused, async_cookie_t cookie)
 		       (int)IdentifyDeviceData.wECCBytesPerSector);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "Spectra: searching block table, please wait ...\n");
+#else
+	;
+#endif
 	if (GLOB_FTL_Init() != PASS) {
 		printk(KERN_ERR "Spectra: Unable to Initialize FTL Layer. "
 		       "Aborting\n");
 		goto out_ftl_flash_register;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "Spectra: block table has been found.\n");
+#else
+	;
+#endif
 
 	GLOB_SBD_majornum = register_blkdev(0, GLOB_SBD_NAME);
 	if (GLOB_SBD_majornum <= 0) {
@@ -792,7 +804,11 @@ EXPORT_SYMBOL_GPL(register_spectra_ftl);
 static int GLOB_SBD_init(void)
 {
 	/* Set debug output level (0~3) here. 3 is most verbose */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "Spectra: %s\n", GLOB_version);
+#else
+	;
+#endif
 
 	mutex_init(&spectra_lock);
 

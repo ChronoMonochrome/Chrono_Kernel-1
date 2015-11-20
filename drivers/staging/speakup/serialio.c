@@ -37,7 +37,11 @@ struct serial_state *spk_serial_init(int index)
 		cval |= UART_LCR_EPAR;
 	if (synth_request_region(ser->port, 8)) {
 		/* try to take it back. */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Ports not available, trying to steal them\n");
+#else
+		;
+#endif
 		__release_region(&ioport_resource, ser->port, 8);
 		err = synth_request_region(ser->port, 8);
 		if (err) {

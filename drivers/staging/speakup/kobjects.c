@@ -97,7 +97,11 @@ static void report_char_chartab_status(int reset, int received, int used,
 			snprintf(buf + (len - 1), sizeof(buf) - (len - 1),
 				 " with %d reject%s\n",
 				 rejected, rejected > 1 ? "s" : "");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(buf);
+#else
+		;
+#endif
 	}
 }
 
@@ -720,7 +724,11 @@ static void report_msg_status(int reset, int received, int used,
 			snprintf(buf + (len - 1), sizeof(buf) - (len - 1),
 				 " with %d reject%s\n",
 				 rejected, rejected > 1 ? "s" : "");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(buf);
+#else
+		;
+#endif
 	}
 }
 

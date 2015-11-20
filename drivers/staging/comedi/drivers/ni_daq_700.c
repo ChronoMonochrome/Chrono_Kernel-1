@@ -381,22 +381,42 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 #endif
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("bug! couldn't determine board type\n");
+#else
+		;
+#endif
 		return -EINVAL;
 		break;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: ni_daq_700: %s, io 0x%lx", dev->minor,
 	       thisboard->name, iobase);
+#else
+	;
+#endif
 #ifdef incomplete
 	if (irq)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", irq %u", irq);
+#else
+		;
+#endif
 
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	if (iobase == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("io base address is zero!\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -421,7 +441,11 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int dio700_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: ni_daq_700: cs-remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->subdevices)
 		subdev_700_cleanup(dev, dev->subdevices + 0);
@@ -452,7 +476,11 @@ static int dio700_cs_attach(struct pcmcia_device *link)
 {
 	struct local_info_t *local;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ni_daq_700:  cs-attach\n");
+#else
+	;
+#endif
 
 	dev_dbg(&link->dev, "dio700_cs_attach()\n");
 
@@ -473,7 +501,11 @@ static int dio700_cs_attach(struct pcmcia_device *link)
 static void dio700_cs_detach(struct pcmcia_device *link)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ni_daq_700: cs-detach!\n");
+#else
+	;
+#endif
 
 	dev_dbg(&link->dev, "dio700_cs_detach\n");
 
@@ -498,7 +530,11 @@ static void dio700_config(struct pcmcia_device *link)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ni_daq_700:  cs-config\n");
+#else
+	;
+#endif
 
 	dev_dbg(&link->dev, "dio700_config\n");
 
@@ -521,7 +557,11 @@ static void dio700_config(struct pcmcia_device *link)
 	return;
 
 failed:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ni_daq_700 cs failed");
+#else
+	;
+#endif
 	dio700_release(link);
 
 }				/* dio700_config */

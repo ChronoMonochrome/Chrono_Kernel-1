@@ -217,7 +217,11 @@ static int pdc2027x_cable_detect(struct ata_port *ap)
 
 	return ATA_CBL_PATA80;
 cbl40:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME ": 40-conductor cable detected on port %d\n", ap->port_no);
+#else
+	;
+#endif
 	return ATA_CBL_PATA40;
 }
 
@@ -655,7 +659,11 @@ static int pdc_hardware_init(struct ata_host *host, unsigned int board_idx)
 	 */
 	pll_clock = pdc_detect_pll_input_clock(host);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, host->dev, "PLL input clock %ld kHz\n", pll_clock/1000);
+#else
+	dev_;
+#endif
 
 	/* Adjust PLL control register */
 	pdc_adjust_pll(host, pll_clock, board_idx);
@@ -708,7 +716,11 @@ static int __devinit pdc2027x_init_one(struct pci_dev *pdev, const struct pci_de
 	int i, rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	/* alloc host */
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, 2);

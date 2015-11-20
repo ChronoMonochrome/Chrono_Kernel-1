@@ -57,9 +57,13 @@ struct tda10023_state {
 	u32 sysclk;
 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(x...)
 
 static int verbose;
+#else
+#define d;
+#endif
 
 static u8 tda10023_readreg (struct tda10023_state* state, u8 reg)
 {
@@ -135,7 +139,11 @@ static int lock_tuner(struct tda10023_state* state)
 
 	if(i2c_transfer(state->i2c, &msg, 1) != 1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tda10023: lock tuner fails\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -149,7 +157,11 @@ static int unlock_tuner(struct tda10023_state* state)
 
 	if(i2c_transfer(state->i2c, &msg_post, 1) != 1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("tda10023: unlock tuner fails\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -217,8 +229,12 @@ static int tda10023_set_symbolrate (struct tda10023_state* state, u32 sr)
 
 		BDR=(s32)BDRX;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Symbolrate %i, BDR %i BDRI %i, NDEC %i\n",
 		sr, BDR, BDRI, NDEC);
+#else
+	d;
+#endif
 	tda10023_writebit (state, 0x03, 0xc0, NDEC<<6);
 	tda10023_writereg (state, 0x0a, BDR&255);
 	tda10023_writereg (state, 0x0b, (BDR>>8)&255);
@@ -282,7 +298,11 @@ static int tda10023_init (struct dvb_frontend *fe)
 /* 120 */ 0xff, 0x64, 0x00,  /* Sleep 100ms */
 /* 123 */ 0xff, 0xff, 0xff
 };
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("DVB: TDA10023(%d): init chip\n", fe->dvb->num);
+#else
+	d;
+#endif
 
 	/* override default values if set in config */
 	if (state->config->deltaf) {
@@ -430,10 +450,14 @@ static int tda10023_get_frontend(struct dvb_frontend* fe, struct dvb_frontend_pa
 
 	if (verbose) {
 		/* AFC only valid when carrier has been recovered */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(sync & 2 ? "DVB: TDA10023(%d): AFC (%d) %dHz\n" :
 				  "DVB: TDA10023(%d): [AFC (%d) %dHz]\n",
 			state->frontend.dvb->num, afc,
 		       -((s32)p->u.qam.symbol_rate * afc) >> 10);
+#else
+		;
+#endif
 	}
 
 	p->inversion = (inv&0x20?0:1);
@@ -521,9 +545,13 @@ struct dvb_frontend *tda10023_attach(const struct tda10023_config *config,
 	state->frontend.ops.info.symbol_rate_min = (state->sysclk/2)/64;
 	state->frontend.ops.info.symbol_rate_max = (state->sysclk/2)/4;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("DVB: TDA10023 %s: xtal:%d pll_m:%d pll_p:%d pll_n:%d\n",
 		__func__, state->xtal, state->pll_m, state->pll_p,
 		state->pll_n);
+#else
+	d;
+#endif
 
 	state->frontend.demodulator_priv = state;
 	return &state->frontend;

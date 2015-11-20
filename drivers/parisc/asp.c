@@ -79,8 +79,12 @@ static int __init asp_init_chip(struct parisc_device *dev)
 	asp.name = (asp.version == 1) ? "Asp" : "Cutoff";
 	asp.hpa = ASP_INTERRUPT_ADDR;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s version %d at 0x%lx found.\n", 
 		asp.name, asp.version, (unsigned long)dev->hpa.start);
+#else
+	;
+#endif
 
 	/* the IRQ ASP should use */
 	ret = -EBUSY;

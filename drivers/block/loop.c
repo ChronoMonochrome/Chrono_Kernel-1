@@ -1940,7 +1940,11 @@ static int __init loop_init(void)
 		loop_add(&lo, i);
 	mutex_unlock(&loop_index_mutex);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "loop: module loaded\n");
+#else
+	;
+#endif
 	return 0;
 }
 

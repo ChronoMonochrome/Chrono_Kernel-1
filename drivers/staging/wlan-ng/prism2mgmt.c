@@ -176,8 +176,12 @@ int prism2mgmt_scan(wlandevice_t *wlandev, void *msgp)
 		    hfa384x_drvr_setconfig16(hw, HFA384x_RID_CNFPASSIVESCANCTRL,
 					     word);
 		if (result) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Passive scan not supported with "
 			       "current firmware.  (<1.5.1)\n");
+#else
+			;
+#endif
 		}
 	}
 
@@ -1148,7 +1152,11 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
 
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "monitor mode disabled\n");
+#else
+		;
+#endif
 		msg->resultcode.data = P80211ENUM_resultcode_success;
 		result = 0;
 		goto exit;
@@ -1279,7 +1287,11 @@ int prism2mgmt_wlansniff(wlandevice_t *wlandev, void *msgp)
 		}
 
 		if (wlandev->netdev->type == ARPHRD_ETHER)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "monitor mode enabled\n");
+#else
+			;
+#endif
 
 		/* Set the driver state */
 		/* Do we want the prism2 header? */

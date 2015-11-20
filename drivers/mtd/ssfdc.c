@@ -128,8 +128,12 @@ static int get_valid_cis_sector(struct mtd_info *mtd)
 
 			/* CIS pattern match on the sector buffer */
 			if (ret < 0 || retlen != SECTOR_SIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 					"SSFDC_RO:can't read CIS/IDI sector\n");
+#else
+				;
+#endif
 			} else if (!memcmp(sect_buf, cis_numbers,
 					sizeof(cis_numbers))) {
 				/* Found */
@@ -305,8 +309,12 @@ static void ssfdcr_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 
 	ssfdc = kzalloc(sizeof(struct ssfdcr_record), GFP_KERNEL);
 	if (!ssfdc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"SSFDC_RO: out of memory for data structures\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -343,8 +351,12 @@ static void ssfdcr_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	ssfdc->logic_block_map = kmalloc(sizeof(ssfdc->logic_block_map[0]) *
 					 ssfdc->map_len, GFP_KERNEL);
 	if (!ssfdc->logic_block_map) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"SSFDC_RO: out of memory for data structures\n");
+#else
+		;
+#endif
 		goto out_err;
 	}
 	memset(ssfdc->logic_block_map, 0xff, sizeof(ssfdc->logic_block_map[0]) *
@@ -358,8 +370,12 @@ static void ssfdcr_add_mtd(struct mtd_blktrans_ops *tr, struct mtd_info *mtd)
 	if (add_mtd_blktrans_dev(&ssfdc->mbd))
 		goto out_err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SSFDC_RO: Found ssfdc%c on mtd%d (%s)\n",
 		ssfdc->mbd.devnum + 'a', mtd->index, mtd->name);
+#else
+	;
+#endif
 	return;
 
 out_err:
@@ -454,7 +470,11 @@ static struct mtd_blktrans_ops ssfdcr_tr = {
 
 static int __init init_ssfdcr(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SSFDC read-only Flash Translation layer\n");
+#else
+	;
+#endif
 
 	return register_mtd_blktrans(&ssfdcr_tr);
 }

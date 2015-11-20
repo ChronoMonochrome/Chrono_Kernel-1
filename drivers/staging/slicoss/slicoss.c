@@ -3856,8 +3856,16 @@ static int __devinit slic_entry_probe(struct pci_dev *pcidev,
 		return err;
 
 	if (slic_debug > 0 && did_version++ == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s\n", slic_banner);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s\n", slic_proc_version);
+#else
+		;
+#endif
 	}
 
 	if (!pci_set_dma_mask(pcidev, DMA_BIT_MASK(64))) {
@@ -3983,8 +3991,12 @@ static int __init slic_module_init(void)
 	slic_init_driver();
 
 	if (debug >= 0 && slic_debug != debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG KBUILD_MODNAME ": debug level is %d.\n",
 		       debug);
+#else
+		;
+#endif
 	if (debug >= 0)
 		slic_debug = debug;
 

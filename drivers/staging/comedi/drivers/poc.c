@@ -122,8 +122,12 @@ static int poc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned int iosize;
 
 	iobase = it->options[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: poc: using %s iobase 0x%lx\n", dev->minor,
 	       this_board->name, iobase);
+#else
+	;
+#endif
 
 	dev->board_name = this_board->name;
 
@@ -167,7 +171,11 @@ static int poc_detach(struct comedi_device *dev)
 	if (dev->iobase)
 		release_region(dev->iobase, this_board->iosize);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: dac02: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	return 0;
 }

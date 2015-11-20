@@ -75,8 +75,12 @@ static void * ieee80211_tkip_init(int key_idx)
 	priv->tx_tfm_arc4 = crypto_alloc_blkcipher("ecb(arc4)", 0,
 			CRYPTO_ALG_ASYNC);
 	if (IS_ERR(priv->tx_tfm_arc4)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ieee80211_crypt_tkip: could not allocate "
 				"crypto API arc4\n");
+#else
+		;
+#endif
 		priv->tx_tfm_arc4 = NULL;
 		goto fail;
 	}
@@ -84,8 +88,12 @@ static void * ieee80211_tkip_init(int key_idx)
 	priv->tx_tfm_michael = crypto_alloc_hash("michael_mic", 0,
 			CRYPTO_ALG_ASYNC);
 	if (IS_ERR(priv->tx_tfm_michael)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ieee80211_crypt_tkip: could not allocate "
 				"crypto API michael_mic\n");
+#else
+		;
+#endif
 		priv->tx_tfm_michael = NULL;
 		goto fail;
 	}
@@ -93,8 +101,12 @@ static void * ieee80211_tkip_init(int key_idx)
 	priv->rx_tfm_arc4 = crypto_alloc_blkcipher("ecb(arc4)", 0,
 			CRYPTO_ALG_ASYNC);
 	if (IS_ERR(priv->rx_tfm_arc4)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ieee80211_crypt_tkip: could not allocate "
 				"crypto API arc4\n");
+#else
+		;
+#endif
 		priv->rx_tfm_arc4 = NULL;
 		goto fail;
 	}
@@ -102,8 +114,12 @@ static void * ieee80211_tkip_init(int key_idx)
 	priv->rx_tfm_michael = crypto_alloc_hash("michael_mic", 0,
 			CRYPTO_ALG_ASYNC);
 	if (IS_ERR(priv->rx_tfm_michael)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ieee80211_crypt_tkip: could not allocate "
 				"crypto API michael_mic\n");
+#else
+		;
+#endif
 		priv->rx_tfm_michael = NULL;
 		goto fail;
 	}
@@ -408,22 +424,34 @@ static int ieee80211_tkip_decrypt(struct sk_buff *skb, int hdr_len, void *priv)
 	keyidx = pos[3];
 	if (!(keyidx & (1 << 5))) {
 		if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "TKIP: received packet without ExtIV"
 			       " flag from %pM\n", hdr->addr2);
+#else
+			;
+#endif
 		}
 		return -2;
 	}
 	keyidx >>= 6;
 	if (tkey->key_idx != keyidx) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "TKIP: RX tkey->key_idx=%d frame "
 		       "keyidx=%d priv=%p\n", tkey->key_idx, keyidx, priv);
+#else
+		;
+#endif
 		return -6;
 	}
 	if (!tkey->key_set) {
 		if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "TKIP: received packet from %pM"
 			       " with keyid=%d that does not have a configured"
 			       " key\n", hdr->addr2, keyidx);
+#else
+			;
+#endif
 		}
 		return -3;
 	}
@@ -436,10 +464,14 @@ static int ieee80211_tkip_decrypt(struct sk_buff *skb, int hdr_len, void *priv)
 		if (iv32 < tkey->rx_iv32 ||
 		(iv32 == tkey->rx_iv32 && iv16 <= tkey->rx_iv16)) {
 			if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "TKIP: replay detected: STA=%pM"
 				" previous TSC %08x%04x received TSC "
 				"%08x%04x\n", hdr->addr2,
 				tkey->rx_iv32, tkey->rx_iv16, iv32, iv16);
+#else
+				;
+#endif
 			}
 			tkey->dot11RSNAStatsTKIPReplays++;
 			return -4;
@@ -458,9 +490,13 @@ static int ieee80211_tkip_decrypt(struct sk_buff *skb, int hdr_len, void *priv)
 
 		if (crypto_blkcipher_decrypt(&desc, &sg, &sg, plen + 4)) {
 			if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG ": TKIP: failed to decrypt "
 						"received packet from %pM\n",
 						hdr->addr2);
+#else
+				;
+#endif
 			}
 			return -7;
 		}
@@ -478,8 +514,12 @@ static int ieee80211_tkip_decrypt(struct sk_buff *skb, int hdr_len, void *priv)
 				tkey->rx_phase1_done = 0;
 			}
 			if (net_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "TKIP: ICV error detected: STA="
 				"%pM\n", hdr->addr2);
+#else
+				;
+#endif
 			}
 			tkey->dot11RSNAStatsTKIPICVErrors++;
 			return -5;
@@ -507,7 +547,11 @@ static int michael_mic(struct crypto_hash *tfm_michael, u8 * key, u8 * hdr,
 	struct scatterlist sg[2];
 
 	if (tfm_michael == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "michael_mic: tfm_michael == NULL\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -563,9 +607,13 @@ static int ieee80211_michael_mic_add(struct sk_buff *skb, int hdr_len, void *pri
 	hdr = (struct ieee80211_hdr_4addr *) skb->data;
 
 	if (skb_tailroom(skb) < 8 || skb->len < hdr_len) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Invalid packet for Michael MIC add "
 		       "(tailroom=%d hdr_len=%d skb->len=%d)\n",
 		       skb_tailroom(skb), hdr_len, skb->len);
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -633,10 +681,14 @@ static int ieee80211_michael_mic_verify(struct sk_buff *skb, int keyidx,
 	if (memcmp(mic, skb->data + skb->len - 8, 8) != 0) {
 		struct ieee80211_hdr_4addr *hdr;
 		hdr = (struct ieee80211_hdr_4addr *) skb->data;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: Michael MIC verification failed for "
 		       "MSDU from %pM keyidx=%d\n",
 		       skb->dev ? skb->dev->name : "N/A", hdr->addr2,
 		       keyidx);
+#else
+		;
+#endif
 		if (skb->dev)
 			ieee80211_michael_mic_failure(skb->dev, hdr, keyidx);
 		tkey->dot11RSNAStatsTKIPLocalMICFailures++;
@@ -774,6 +826,10 @@ void __exit ieee80211_crypto_tkip_exit(void)
 
 void ieee80211_tkip_null(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 //    printk("============>%s()\n", __FUNCTION__);
+#else
+//    ;
+#endif
 	return;
 }

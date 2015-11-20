@@ -279,15 +279,23 @@ static int waveform_attach(struct comedi_device *dev,
 	devpriv->timer.function = waveform_ai_interrupt;
 	devpriv->timer.data = (unsigned long)dev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: comedi_test: "
 	       "%i microvolt, %li microsecond waveform attached\n", dev->minor,
 	       devpriv->uvolt_amplitude, devpriv->usec_period);
+#else
+	;
+#endif
 	return 1;
 }
 
 static int waveform_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: comedi_test: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->private)
 		waveform_ai_cancel(dev, dev->read_subdev);

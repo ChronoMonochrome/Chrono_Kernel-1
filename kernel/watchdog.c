@@ -373,16 +373,28 @@ static int watchdog_nmi_enable(int cpu)
 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
 	if (!IS_ERR(event)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
+#else
+		;
+#endif
 		goto out_save;
 	}
 
 
 	/* vary the KERN level based on the returned errno */
 	if (PTR_ERR(event) == -EOPNOTSUPP)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "NMI watchdog disabled (cpu%i): not supported (no LAPIC?)\n", cpu);
+#else
+		;
+#endif
 	else if (PTR_ERR(event) == -ENOENT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "NMI watchdog disabled (cpu%i): hardware events not enabled\n", cpu);
+#else
+		;
+#endif
 	else
 		printk(KERN_ERR "NMI watchdog disabled (cpu%i): unable to create perf event: %ld\n", cpu, PTR_ERR(event));
 	return PTR_ERR(event);

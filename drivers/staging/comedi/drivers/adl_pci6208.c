@@ -188,7 +188,11 @@ static int pci6208_attach(struct comedi_device *dev,
 	int retval;
 	unsigned long io_base;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pci6208: ", dev->minor);
+#else
+	;
+#endif
 
 	retval = alloc_private(dev, sizeof(struct pci6208_private));
 	if (retval < 0)
@@ -232,7 +236,11 @@ static int pci6208_attach(struct comedi_device *dev,
 	/* s->insn_bits = pci6208_dio_insn_bits; */
 	/* s->insn_config = pci6208_dio_insn_config; */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "attached\n");
+#else
+	;
+#endif
 
 	return 1;
 }
@@ -247,7 +255,11 @@ static int pci6208_attach(struct comedi_device *dev,
  */
 static int pci6208_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pci6208: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (devpriv && devpriv->pci_dev) {
 		if (dev->iobase)
@@ -386,12 +398,16 @@ static int pci6208_find_device(struct comedi_device *dev, int bus, int slot)
 	return -EIO;
 
 found:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: found %s (b:s:f=%d:%d:%d) , irq=%d\n",
 	       dev->minor,
 	       pci6208_boards[i].name,
 	       pci_dev->bus->number,
 	       PCI_SLOT(pci_dev->devfn),
 	       PCI_FUNC(pci_dev->devfn), pci_dev->irq);
+#else
+	;
+#endif
 
 	/*  TODO: Warn about non-tested boards. */
 	/* switch(board->device_id) */
@@ -422,16 +438,24 @@ pci6208_pci_setup(struct pci_dev *pci_dev, unsigned long *io_base_ptr,
 	lcr_io_base = pci_resource_start(pci_dev, 1);
 	lcr_io_range = pci_resource_len(pci_dev, 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: local config registers at address"
 			" 0x%4lx [0x%4lx]\n",
 			dev_minor, lcr_io_base, lcr_io_range);
+#else
+	;
+#endif
 
 	/*  Read PCI6208 register base address [PCI_BASE_ADDRESS #2]. */
 	io_base = pci_resource_start(pci_dev, 2);
 	io_range = pci_resource_end(pci_dev, 2) - io_base + 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: 6208 registers at address 0x%4lx [0x%4lx]\n",
 	       dev_minor, io_base, io_range);
+#else
+	;
+#endif
 
 	*io_base_ptr = io_base;
 	/* devpriv->io_range = io_range; */

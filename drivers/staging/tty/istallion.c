@@ -767,7 +767,11 @@ static int stli_parsebrd(struct stlconf *confp, char **argp)
 			break;
 	}
 	if (i == ARRAY_SIZE(stli_brdstr)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "istallion: unknown board name, %s?\n", argp[0]);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -1133,7 +1137,11 @@ static void stli_dtr_rts(struct tty_port *port, int on)
 	stli_mkasysigs(&portp->asig, on, on);
 	if (stli_cmdwait(brdp, portp, A_SETSIGNALS, &portp->asig,
 		sizeof(asysigs_t), 0) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "istallion: dtr set failed.\n");
+#else
+			;
+#endif
 }
 
 
@@ -2536,7 +2544,11 @@ static int stli_initports(struct stlibrd *brdp)
 	for (i = 0, panelnr = 0, panelport = 0; (i < brdp->nrports); i++) {
 		portp = kzalloc(sizeof(struct stliport), GFP_KERNEL);
 		if (!portp) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "istallion: failed to allocate port structure\n");
+#else
+			;
+#endif
 			continue;
 		}
 		tty_port_init(&portp->port);
@@ -3336,11 +3348,15 @@ static int stli_startbrd(struct stlibrd *brdp)
 	nrdevs = hdrp->nrdevs;
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s(%d): CDK version %d.%d.%d --> "
 		"nrdevs=%d memp=%x hostp=%x slavep=%x\n",
 		 __FILE__, __LINE__, readb(&hdrp->ver_release), readb(&hdrp->ver_modification),
 		 readb(&hdrp->ver_fix), nrdevs, (int) readl(&hdrp->memp), readl(&hdrp->hostp),
 		 readl(&hdrp->slavep));
+#else
+	;
+#endif
 #endif
 
 	if (nrdevs < (brdp->nrports + 1)) {
@@ -3454,10 +3470,14 @@ static int __devinit stli_brdinit(struct stlibrd *brdp)
 		return retval;
 
 	stli_initports(brdp);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "istallion: %s found, board=%d io=%x mem=%x "
 		"nrpanels=%d nrports=%d\n", stli_brdnames[brdp->brdtype],
 		brdp->brdnr, brdp->iobase, (int) brdp->memaddr,
 		brdp->nrpanels, brdp->nrports);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -3693,8 +3713,12 @@ static int __devinit stli_pciprobe(struct pci_dev *pdev,
 	mutex_lock(&stli_brdslock);
 	brdnr = stli_getbrdnr();
 	if (brdnr < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "istallion: too many boards found, "
 			"maximum supported %d\n", STL_MAXBRDS);
+#else
+		;
+#endif
 		mutex_unlock(&stli_brdslock);
 		retval = -EIO;
 		goto err_fr;
@@ -4404,7 +4428,11 @@ static int __init istallion_module_init(void)
 	unsigned int i;
 	int retval;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: version %s\n", stli_drvtitle, stli_drvversion);
+#else
+	;
+#endif
 
 	spin_lock_init(&stli_lock);
 	spin_lock_init(&brd_lock);
@@ -4480,8 +4508,12 @@ static void __exit istallion_module_exit(void)
 {
 	unsigned int j;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Unloading %s: version %s\n", stli_drvtitle,
 		stli_drvversion);
+#else
+	;
+#endif
 
 	if (stli_timeron) {
 		stli_timeron = 0;

@@ -106,12 +106,16 @@ struct pt1_adapter {
 	int sleep;
 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define pt1_printk(level, pt1, format, arg...)	\
 	dev_printk(level, &(pt1)->pdev->dev, format, ##arg)
 
 static void pt1_write_reg(struct pt1 *pt1, int reg, u32 data)
 {
 	writel(data, pt1->regs + reg * 4);
+#else
+#define pt1_;
+#endif
 }
 
 static u32 pt1_read_reg(struct pt1 *pt1, int reg)

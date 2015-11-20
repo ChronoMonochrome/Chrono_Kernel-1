@@ -82,6 +82,7 @@
 /*#define DEBUG_MODUL*/
 
 /* Macro helpers for debug output: */
+#ifdef CONFIG_DEBUG_PRINTK
 #define TRACE(format, args...) printk("r3964: " format "\n" , ## args)
 
 #ifdef DEBUG_MODUL
@@ -110,6 +111,9 @@
 #define TRACE_Q(fmt, arg...) do {} while (0)
 #endif
 static void add_tx_queue(struct r3964_info *, struct r3964_block_header *);
+#else
+#define TRACE(format, args...) ;
+#endif
 static void remove_from_tx_queue(struct r3964_info *pInfo, int error_code);
 static void put_char(struct r3964_info *pInfo, unsigned char ch);
 static void trigger_transmit(struct r3964_info *pInfo);
@@ -198,7 +202,11 @@ static int __init r3964_init(void)
 {
 	int status;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("r3964: Philips r3964 Driver $Revision: 1.10 $\n");
+#else
+	;
+#endif
 
 	/*
 	 * Register the tty line discipline
@@ -261,11 +269,23 @@ static void remove_from_tx_queue(struct r3964_info *pInfo, int error_code)
 		return;
 
 #ifdef DEBUG_QUEUE
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("r3964: remove_from_tx_queue: %p, length %u - ",
 		pHeader, pHeader->length);
+#else
+	;
+#endif
 	for (pDump = pHeader; pDump; pDump = pDump->next)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%p ", pDump);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 
 	if (pHeader->owner) {

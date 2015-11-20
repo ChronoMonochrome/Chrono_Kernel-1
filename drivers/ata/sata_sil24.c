@@ -714,8 +714,12 @@ static int sil24_hardreset(struct ata_link *link, unsigned int *class,
 	 * This happens often after PM DMA CS errata.
 	 */
 	if (pp->do_port_rst) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_WARNING, "controller in dubious "
 				"state, performing PORT_RST\n");
+#else
+		ata_port_;
+#endif
 
 		writel(PORT_CS_PORT_RST, port + PORT_CTRL_STAT);
 		ata_msleep(ap, 10);
@@ -925,8 +929,12 @@ static void sil24_pmp_attach(struct ata_port *ap)
 
 	if (sata_pmp_gscr_vendor(gscr) == 0x11ab &&
 	    sata_pmp_gscr_devid(gscr) == 0x4140) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_INFO,
 			"disabling NCQ support due to sil24-mv4140 quirk\n");
+#else
+		ata_port_;
+#endif
 		ap->flags &= ~ATA_FLAG_NCQ;
 	}
 }
@@ -1141,9 +1149,13 @@ static inline void sil24_host_intr(struct ata_port *ap)
 
 	/* spurious interrupts are expected if PCIX_IRQ_WOC */
 	if (!(ap->flags & SIL24_FLAG_PCIX_IRQ_WOC) && ata_ratelimit())
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_INFO, "spurious interrupt "
 			"(slot_stat 0x%x active_tag %d sactive 0x%x)\n",
 			slot_stat, ap->link.active_tag, ap->link.sactive);
+#else
+		ata_port_;
+#endif
 }
 
 static irqreturn_t sil24_interrupt(int irq, void *dev_instance)
@@ -1284,7 +1296,11 @@ static int sil24_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 		__MARKER__sil24_cmd_block_is_sized_wrongly = 1;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	/* acquire resources */
 	rc = pcim_enable_device(pdev);
@@ -1302,9 +1318,13 @@ static int sil24_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	if (pi.flags & SIL24_FLAG_PCIX_IRQ_WOC) {
 		tmp = readl(iomap[SIL24_HOST_BAR] + HOST_CTRL);
 		if (tmp & (HOST_CTRL_TRDY | HOST_CTRL_STOP | HOST_CTRL_DEVSEL))
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_INFO, &pdev->dev,
 				   "Applying completion IRQ loss on PCI-X "
 				   "errata fix\n");
+#else
+			dev_;
+#endif
 		else
 			pi.flags &= ~SIL24_FLAG_PCIX_IRQ_WOC;
 	}
@@ -1350,7 +1370,11 @@ static int sil24_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	sil24_init_controller(host);
 
 	if (sata_sil24_msi && !pci_enable_msi(pdev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pdev->dev, "Using MSI\n");
+#else
+		dev_;
+#endif
 		pci_intx(pdev, 0);
 	}
 

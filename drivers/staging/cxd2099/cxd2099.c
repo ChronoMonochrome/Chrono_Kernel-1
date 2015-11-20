@@ -250,7 +250,11 @@ static void cam_mode(struct cxd *ci, int mode)
 		write_regm(ci, 0x20, 0x80, 0x80);
 		break;
 	case 0x01:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "enable cam buffer mode\n");
+#else
+		;
+#endif
 		/* write_reg(ci, 0x0d, 0x00); */
 		/* write_reg(ci, 0x0e, 0x01); */
 		write_regm(ci, 0x08, 0x40, 0x40);
@@ -398,7 +402,11 @@ static int slot_shutdown(struct dvb_ca_en50221 *ca, int slot)
 {
 	struct cxd *ci = ca->data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "slot_shutdown\n");
+#else
+	;
+#endif
 	mutex_lock(&ci->lock);
 	/* write_regm(ci, 0x09, 0x08, 0x08); */
 	write_regm(ci, 0x20, 0x80, 0x80);
@@ -434,10 +442,18 @@ static int campoll(struct cxd *ci)
 
 	if (istat&0x40) {
 		ci->dr = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "DR\n");
+#else
+		;
+#endif
 	}
 	if (istat&0x20)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "WC\n");
+#else
+		;
+#endif
 
 	if (istat&2) {
 		u8 slotstat;
@@ -453,14 +469,22 @@ static int campoll(struct cxd *ci)
 			if (ci->slot_stat) {
 				ci->slot_stat = 0;
 				write_regm(ci, 0x03, 0x00, 0x08);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "NO CAM\n");
+#else
+				;
+#endif
 				ci->ready = 0;
 			}
 		}
 		if (istat&8 && ci->slot_stat == DVB_CA_EN50221_POLL_CAM_PRESENT) {
 			ci->ready = 1;
 			ci->slot_stat |= DVB_CA_EN50221_POLL_CAM_READY;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "READY\n");
+#else
+			;
+#endif
 		}
 	}
 	return 0;
@@ -491,7 +515,11 @@ static int read_data(struct dvb_ca_en50221 *ca, int slot, u8 *ebuf, int ecount)
 	campoll(ci);
 	mutex_unlock(&ci->lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "read_data\n");
+#else
+	;
+#endif
 	if (!ci->dr)
 		return 0;
 
@@ -511,7 +539,11 @@ static int write_data(struct dvb_ca_en50221 *ca, int slot, u8 *ebuf, int ecount)
 	struct cxd *ci = ca->data;
 
 	mutex_lock(&ci->lock);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "write_data %d\n", ecount);
+#else
+	;
+#endif
 	write_reg(ci, 0x0d, ecount>>8);
 	write_reg(ci, 0x0e, ecount&0xff);
 	write_block(ci, 0x11, ebuf, ecount);
@@ -564,7 +596,11 @@ struct dvb_ca_en50221 *cxd2099_attach(u8 adr, void *priv,
 	memcpy(&ci->en, &en_templ, sizeof(en_templ));
 	ci->en.data = ci;
 	init(ci);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Attached CXD2099AR at %02x\n", ci->adr);
+#else
+	;
+#endif
 	return &ci->en;
 }
 EXPORT_SYMBOL(cxd2099_attach);

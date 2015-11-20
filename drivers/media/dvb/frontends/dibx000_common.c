@@ -7,14 +7,22 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "turn on debugging (default: 0)");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) do { if (debug) { printk(KERN_DEBUG "DiBX000: "); printk(args); printk("\n"); } } while (0)
+#else
+#define d;
+#endif
 
 static int dibx000_write_word(struct dibx000_i2c_master *mst, u16 reg, u16 val)
 {
 	int ret;
 
 	if (mutex_lock_interruptible(&mst->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -40,7 +48,11 @@ static u16 dibx000_read_word(struct dibx000_i2c_master *mst, u16 reg)
 	u16 ret;
 
 	if (mutex_lock_interruptible(&mst->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return 0;
 	}
 
@@ -58,7 +70,11 @@ static u16 dibx000_read_word(struct dibx000_i2c_master *mst, u16 reg)
 	mst->msg[1].len = 2;
 
 	if (i2c_transfer(mst->i2c_adap, mst->msg, 2) != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("i2c read error on %d", reg);
+#else
+		d;
+#endif
 
 	ret = (mst->i2c_read_buffer[0] << 8) | mst->i2c_read_buffer[1];
 	mutex_unlock(&mst->i2c_buffer_lock);
@@ -191,7 +207,11 @@ static int dibx000_i2c_select_interface(struct dibx000_i2c_master *mst,
 					enum dibx000_i2c_interface intf)
 {
 	if (mst->device_rev > DIB3000MC && mst->selected_interface != intf) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("selecting interface: %d", intf);
+#else
+		d;
+#endif
 		mst->selected_interface = intf;
 		return dibx000_write_word(mst, mst->base_reg + 4, intf);
 	}
@@ -281,15 +301,23 @@ static int dibx000_i2c_gated_gpio67_xfer(struct i2c_adapter *i2c_adap,
 	int ret;
 
 	if (num > 32) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: too much I2C message to be transmitted (%i).\
 				Maximum is 32", __func__, num);
+#else
+		d;
+#endif
 		return -ENOMEM;
 	}
 
 	dibx000_i2c_select_interface(mst, DIBX000_I2C_INTERFACE_GPIO_6_7);
 
 	if (mutex_lock_interruptible(&mst->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -328,15 +356,23 @@ static int dibx000_i2c_gated_tuner_xfer(struct i2c_adapter *i2c_adap,
 	int ret;
 
 	if (num > 32) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: too much I2C message to be transmitted (%i).\
 				Maximum is 32", __func__, num);
+#else
+		d;
+#endif
 		return -ENOMEM;
 	}
 
 	dibx000_i2c_select_interface(mst, DIBX000_I2C_INTERFACE_TUNER);
 
 	if (mutex_lock_interruptible(&mst->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	memset(mst->msg, 0, sizeof(struct i2c_msg) * (2 + num));
@@ -433,7 +469,11 @@ int dibx000_init_i2c_master(struct dibx000_i2c_master *mst, u16 device_rev,
 
 	mutex_init(&mst->i2c_buffer_lock);
 	if (mutex_lock_interruptible(&mst->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	memset(mst->msg, 0, sizeof(struct i2c_msg));

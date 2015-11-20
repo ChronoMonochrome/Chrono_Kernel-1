@@ -371,9 +371,13 @@ void v_GetAPCI3200EepromCalibrationValue(unsigned int dw_PCIBoardEepromAddress,
 				w_GainValue[w_GainIndex] = w_GainValue;
 
 #             ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n Gain value = %d",
 				BoardInformations->s_Module[w_ModulCounter].
 				w_GainValue[w_GainIndex]);
+#else
+			;
+#endif
 #             endif
 
 	  /*************************************/
@@ -389,9 +393,13 @@ void v_GetAPCI3200EepromCalibrationValue(unsigned int dw_PCIBoardEepromAddress,
 				w_GainFactorValue[0];
 
 #             ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n w_GainFactorValue [%d] = %lu", w_GainIndex,
 				BoardInformations->s_Module[w_ModulCounter].
 				ul_GainFactor[w_GainIndex]);
+#else
+			;
+#endif
 #             endif
 		}
 
@@ -416,9 +424,13 @@ void v_GetAPCI3200EepromCalibrationValue(unsigned int dw_PCIBoardEepromAddress,
 				((w_CurrentSources[1] & 0xFFF) << 16));
 
 #             ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n Current sources [%d] = %lu", w_Input,
 				BoardInformations->s_Module[w_ModulCounter].
 				ul_CurrentSource[w_Input]);
+#else
+			;
+#endif
 #             endif
 		}
 
@@ -439,9 +451,13 @@ void v_GetAPCI3200EepromCalibrationValue(unsigned int dw_PCIBoardEepromAddress,
 			((w_CurrentSources[1] & 0xFFF) << 16));
 
 #          ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n Current sources CJC = %lu",
 			BoardInformations->s_Module[w_ModulCounter].
 			ul_CurrentSourceCJC);
+#else
+		;
+#endif
 #          endif
 	}
 }
@@ -454,7 +470,11 @@ int i_APCI3200_GetChannelCalibrationValue(struct comedi_device *dev,
 	int i_Module = 0;
 
 #ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n Channel = %u", ui_Channel_num);
+#else
+	;
+#endif
 #endif
 
 	/* Test if single or differential mode */
@@ -494,14 +514,22 @@ int i_APCI3200_GetChannelCalibrationValue(struct comedi_device *dev,
 	*CJCCurrentSource =
 		s_BoardInfos[dev->minor].s_Module[i_Module].ul_CurrentSourceCJC;
 #ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n CJCCurrentSource = %lu", *CJCCurrentSource);
+#else
+	;
+#endif
 #endif
 
 	*ChannelCurrentSource =
 		s_BoardInfos[dev->minor].s_Module[i_Module].
 		ul_CurrentSource[i_DiffChannel];
 #ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n ChannelCurrentSource = %lu", *ChannelCurrentSource);
+#else
+	;
+#endif
 #endif
 	/*       } */
 	/*    } */
@@ -511,7 +539,11 @@ int i_APCI3200_GetChannelCalibrationValue(struct comedi_device *dev,
 		s_BoardInfos[dev->minor].s_Module[i_Module].
 		ul_GainFactor[s_BoardInfos[dev->minor].i_ADDIDATAGain];
 #ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n ChannelGainFactor = %lu", *ChannelGainFactor);
+#else
+	;
+#endif
 #endif
 	/* End JK 21.10.2004: APCI-3200 / APCI-3300 Reading of EEPROM values */
 
@@ -558,7 +590,11 @@ int i_APCI3200_ReadDigitalInput(struct comedi_device *dev, struct comedi_subdevi
 	else {
 		if (ui_Temp == 1) {
 			if (data[1] < 0 || data[1] > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\nThe port number is in error\n");
+#else
+				;
+#endif
 				return -EINVAL;
 			}	/* if(data[1] < 0 || data[1] >1) */
 			switch (ui_NoOfChannel) {
@@ -576,7 +612,11 @@ int i_APCI3200_ReadDigitalInput(struct comedi_device *dev, struct comedi_subdevi
 			}	/* switch(ui_NoOfChannels) */
 		}		/* if  (ui_Temp==1) */
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nSpecified channel not supported \n");
+#else
+			;
+#endif
 		}		/* elseif  (ui_Temp==1) */
 	}
 	return insn->n;
@@ -680,7 +720,11 @@ int i_APCI3200_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 				outl(data[0], devpriv->i_IobaseAddon);
 			}	/*  if(data[1]==1) */
 			else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\nSpecified channel not supported\n");
+#else
+				;
+#endif
 			}	/* else if(data[1]==1) */
 		}		/* elseif(data[1]==0) */
 	}			/* if(data[3]==0) */
@@ -724,12 +768,20 @@ int i_APCI3200_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 					outl(data[0], devpriv->i_IobaseAddon);
 				}	/*  if(data[1]==1) */
 				else {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("\nSpecified channel not supported\n");
+#else
+					;
+#endif
 				}	/* else if(data[1]==1) */
 			}	/* elseif(data[1]==0) */
 		}		/* if(data[3]==1); */
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nSpecified functionality does not exist\n");
+#else
+			;
+#endif
 			return -EINVAL;
 		}		/* if else data[3]==1) */
 	}			/* if else data[3]==0) */
@@ -773,7 +825,11 @@ int i_APCI3200_ReadDigitalOutput(struct comedi_device *dev, struct comedi_subdev
 	else {
 		if (ui_Temp == 1) {
 			if (data[1] < 0 || data[1] > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\nThe port selection is in error\n");
+#else
+				;
+#endif
 				return -EINVAL;
 			}	/* if(data[1] <0 ||data[1] >1) */
 			switch (ui_NoOfChannel) {
@@ -791,7 +847,11 @@ int i_APCI3200_ReadDigitalOutput(struct comedi_device *dev, struct comedi_subdev
 			}	/*  switch(ui_NoOfChannels) */
 		}		/*  if  (ui_Temp==1) */
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nSpecified channel not supported \n");
+#else
+			;
+#endif
 		}		/*  else if (ui_Temp==1) */
 	}			/*  else if  (ui_Temp==0) */
 	return insn->n;
@@ -911,23 +971,39 @@ int i_APCI3200_ConfigAnalogInput(struct comedi_device *dev, struct comedi_subdev
 
 #ifdef PRINT_INFO
 		for (i = 0; i < MAX_MODULE; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n s_Module[%i].ul_CurrentSourceCJC = %lu", i,
 				s_BoardInfos[dev->minor].s_Module[i].
 				ul_CurrentSourceCJC);
+#else
+			;
+#endif
 
 			for (i2 = 0; i2 < 5; i2++) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n s_Module[%i].ul_CurrentSource [%i] = %lu", i, i2, s_BoardInfos[dev->minor].s_Module[i].ul_CurrentSource[i2]);
+#else
+				;
+#endif
 			}
 
 			for (i2 = 0; i2 < 8; i2++) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n s_Module[%i].ul_GainFactor [%i] = %lu", i, i2, s_BoardInfos[dev->minor].s_Module[i].ul_GainFactor[i2]);
+#else
+				;
+#endif
 			}
 
 			for (i2 = 0; i2 < 8; i2++) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n s_Module[%i].w_GainValue [%i] = %u",
 					i, i2,
 					s_BoardInfos[dev->minor].s_Module[i].
 					w_GainValue[i2]);
+#else
+				;
+#endif
 			}
 		}
 #endif
@@ -935,64 +1011,120 @@ int i_APCI3200_ConfigAnalogInput(struct comedi_device *dev, struct comedi_subdev
 	}
 
 	if (data[0] != 0 && data[0] != 1 && data[0] != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of acquisition type is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/* if(data[0]!=0 && data[0]!=1 && data[0]!=2) */
 	if (data[0] == 1) {
 		if (data[14] != 0 && data[14] != 1 && data[14] != 2
 			&& data[14] != 4) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n Error in selection of RTD connection type\n");
+#else
+			;
+#endif
 			i_err++;
 		}		/* if(data[14]!=0 && data[14]!=1 && data[14]!=2 && data[14]!=4) */
 	}			/* if(data[0]==1 ) */
 	if (data[1] < 0 || data[1] > 7) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of gain is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/*  if(data[1]<0 || data[1]>7) */
 	if (data[2] != 0 && data[2] != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of polarity is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/* if(data[2]!=0 &&  data[2]!=1) */
 	if (data[3] != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of offset range  is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/*  if(data[3]!=0) */
 	if (data[4] != 0 && data[4] != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of coupling is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/* if(data[4]!=0 &&  data[4]!=1) */
 	if (data[5] != 0 && data[5] != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of single/differential mode is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/* if(data[5]!=0 &&  data[5]!=1) */
 	if (data[8] != 0 && data[8] != 1 && data[2] != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nError in selection of functionality\n");
+#else
+		;
+#endif
 	}			/* if(data[8]!=0 && data[8]!=1 && data[2]!=2) */
 	if (data[12] == 0 || data[12] == 1) {
 		if (data[6] != 20 && data[6] != 40 && data[6] != 80
 			&& data[6] != 160) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe selection of conversion time reload value is in error\n");
+#else
+			;
+#endif
 			i_err++;
 		}		/*  if (data[6]!=20 && data[6]!=40 && data[6]!=80 && data[6]!=160 ) */
 		if (data[7] != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe selection of conversion time unit  is in error\n");
+#else
+			;
+#endif
 			i_err++;
 		}		/*  if(data[7]!=2) */
 	}
 	if (data[9] != 0 && data[9] != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of interrupt enable is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/* if(data[9]!=0 &&  data[9]!=1) */
 	if (data[11] < 0 || data[11] > 4) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of module is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/* if(data[11] <0 ||  data[11]>1) */
 	if (data[12] < 0 || data[12] > 3) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of singlechannel/scan selection is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/* if(data[12] < 0 ||  data[12]> 3) */
 	if (data[13] < 0 || data[13] > 16) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe selection of number of channels is in error\n");
+#else
+		;
+#endif
 		i_err++;
 	}			/*  if(data[13] <0 ||data[13] >15) */
 
@@ -1034,7 +1166,11 @@ int i_APCI3200_ConfigAnalogInput(struct comedi_device *dev, struct comedi_subdev
 		/*  we used a printk to have a little delay because udelay */
 		/*  seems to be broken under the MSX-Box. */
 		/*  This solution hat to be studied. */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("");
+#else
+		;
+#endif
 #endif
 	}
 	/* END JK 02.07.04 : This while can't be do, it block the process when using severals boards */
@@ -1051,20 +1187,32 @@ int i_APCI3200_ConfigAnalogInput(struct comedi_device *dev, struct comedi_subdev
 
 	if (data[5] == 0) {
 		if (ui_ChannelNo < 0 || ui_ChannelNo > 15) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe Selection of the channel is in error\n");
+#else
+			;
+#endif
 			i_err++;
 		}		/*  if(ui_ChannelNo<0 || ui_ChannelNo>15) */
 	}			/* if(data[5]==0) */
 	else {
 		if (data[14] == 2) {
 			if (ui_ChannelNo < 0 || ui_ChannelNo > 3) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\nThe Selection of the channel is in error\n");
+#else
+				;
+#endif
 				i_err++;
 			}	/*  if(ui_ChannelNo<0 || ui_ChannelNo>3) */
 		}		/* if(data[14]==2) */
 		else {
 			if (ui_ChannelNo < 0 || ui_ChannelNo > 7) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\nThe Selection of the channel is in error\n");
+#else
+				;
+#endif
 				i_err++;
 			}	/*  if(ui_ChannelNo<0 || ui_ChannelNo>7) */
 		}		/* elseif(data[14]==2) */
@@ -1173,7 +1321,11 @@ int i_APCI3200_ConfigAnalogInput(struct comedi_device *dev, struct comedi_subdev
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n This selection of polarity does not exist\n");
+#else
+			;
+#endif
 			i_err++;
 		}		/* switch(data[2]) */
 	}			/* if(data[12]==0 || data[12]==1) */
@@ -1204,7 +1356,11 @@ int i_APCI3200_ConfigAnalogInput(struct comedi_device *dev, struct comedi_subdev
 			/* END JK 06.07.04: Management of sevrals boards */
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nError in module selection\n");
+#else
+			;
+#endif
 			i_err++;
 		}		/*  switch(data[11]) */
 	}			/*  elseif(data[12]==0 || data[12]==1) */
@@ -1371,7 +1527,11 @@ int i_APCI3200_ReadAnalogInput(struct comedi_device *dev, struct comedi_subdevic
 	}			/* if(i_Initialised==0); */
 
 #ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n insn->unused[0] = %i", insn->unused[0]);
+#else
+	;
+#endif
 #endif
 
 	switch (insn->unused[0]) {
@@ -1400,11 +1560,23 @@ int i_APCI3200_ReadAnalogInput(struct comedi_device *dev, struct comedi_subdevic
 				i_Count + 8]);
 
 #ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n s_BoardInfos [dev->minor].ui_InterruptChannelValue[s_BoardInfos [dev->minor].i_Count+6] = %lu", s_BoardInfos[dev->minor].ui_InterruptChannelValue[s_BoardInfos[dev->minor].i_Count + 6]);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n s_BoardInfos [dev->minor].ui_InterruptChannelValue[s_BoardInfos [dev->minor].i_Count+7] = %lu", s_BoardInfos[dev->minor].ui_InterruptChannelValue[s_BoardInfos[dev->minor].i_Count + 7]);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n s_BoardInfos [dev->minor].ui_InterruptChannelValue[s_BoardInfos [dev->minor].i_Count+8] = %lu", s_BoardInfos[dev->minor].ui_InterruptChannelValue[s_BoardInfos[dev->minor].i_Count + 8]);
+#else
+		;
+#endif
 #endif
 
 		/* End JK 25.10.2004: APCI-3200 / APCI-3300 Reading of EEPROM values */
@@ -1563,7 +1735,11 @@ int i_APCI3200_ReadAnalogInput(struct comedi_device *dev, struct comedi_subdevic
 			   data[5]= ui_InterruptChannelValue[5];
 			 */
 #ifdef PRINT_INFO
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n data[0]= s_BoardInfos [dev->minor].ui_InterruptChannelValue[0];");
+#else
+			;
+#endif
 #endif
 			data[0] =
 				s_BoardInfos[dev->minor].
@@ -1585,7 +1761,11 @@ int i_APCI3200_ReadAnalogInput(struct comedi_device *dev, struct comedi_subdevic
 				ui_InterruptChannelValue[5];
 
 			/* Begin JK 22.10.2004: APCI-3200 / APCI-3300 Reading of EEPROM values */
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("\n 0 - i_APCI3200_GetChannelCalibrationValue data [6] = %lu, data [7] = %lu, data [8] = %lu", data [6], data [7], data [8]); */
+#else
+			/* ;
+#endif
 			i_APCI3200_GetChannelCalibrationValue(dev,
 				s_BoardInfos[dev->minor].ui_Channel_num,
 				&data[6], &data[7], &data[8]);
@@ -1615,7 +1795,11 @@ int i_APCI3200_ReadAnalogInput(struct comedi_device *dev, struct comedi_subdevic
 		}
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nThe parameters passed are in error\n");
+#else
+		;
+#endif
 		i_APCI3200_Reset(dev);
 		return -EINVAL;
 	}			/* switch(insn->unused[0]) */
@@ -2409,7 +2593,11 @@ int i_APCI3200_InsnBits_AnalogInput_Test(struct comedi_device *dev,
 		return -EINVAL;
 	}			/* if(i_Initialised==0); */
 	if (data[0] != 0 && data[0] != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\nError in selection of functionality\n");
+#else
+		;
+#endif
 		i_APCI3200_Reset(dev);
 		return -EINVAL;
 	}			/* if(data[0]!=0 && data[0]!=1) */
@@ -2496,7 +2684,11 @@ int i_APCI3200_InsnBits_AnalogInput_Test(struct comedi_device *dev,
 	}
 	/* i_InterruptFlag=i_Temp ; */
 	s_BoardInfos[dev->minor].i_InterruptFlag = i_Temp;
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("\ni_InterruptFlag=%d\n",i_InterruptFlag); */
+#else
+	/* ;
+#endif
 	return insn->n;
 }
 
@@ -2594,7 +2786,11 @@ int i_APCI3200_CommandTestAnalogInput(struct comedi_device *dev, struct comedi_s
 	/* if(i_InterruptFlag==0) */
 	if (s_BoardInfos[dev->minor].i_InterruptFlag == 0) {
 		err++;
+#ifdef CONFIG_DEBUG_PRINTK
 		/*           printk("\nThe interrupt should be enabled\n"); */
+#else
+		/*           ;
+#endif
 	}
 	if (err) {
 		i_APCI3200_Reset(dev);
@@ -2609,11 +2805,19 @@ int i_APCI3200_CommandTestAnalogInput(struct comedi_device *dev, struct comedi_s
 		i_Triggermode = cmd->start_arg >> 16;
 		if (i_TriggerEdge < 1 || i_TriggerEdge > 3) {
 			err++;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe trigger edge selection is in error\n");
+#else
+			;
+#endif
 		}
 		if (i_Triggermode != 2) {
 			err++;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe trigger mode selection is in error\n");
+#else
+			;
+#endif
 		}
 	}
 
@@ -2647,11 +2851,19 @@ int i_APCI3200_CommandTestAnalogInput(struct comedi_device *dev, struct comedi_s
 		if (ui_ConvertTime != 20 && ui_ConvertTime != 40
 			&& ui_ConvertTime != 80 && ui_ConvertTime != 160)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe selection of conversion time reload value is in error\n");
+#else
+			;
+#endif
 			err++;
 		}		/*  if (ui_ConvertTime!=20 && ui_ConvertTime!=40 && ui_ConvertTime!=80 && ui_ConvertTime!=160 ) */
 		if (ui_ConvertTimeBase != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe selection of conversion time unit  is in error\n");
+#else
+			;
+#endif
 			err++;
 		}		/* if(ui_ConvertTimeBase!=2) */
 	} else {
@@ -2667,11 +2879,19 @@ int i_APCI3200_CommandTestAnalogInput(struct comedi_device *dev, struct comedi_s
 		ui_DelayTimeBase = cmd->scan_begin_arg >> 16;
 		if (ui_DelayTimeBase != 2 && ui_DelayTimeBase != 3) {
 			err++;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe Delay time base selection is in error\n");
+#else
+			;
+#endif
 		}
 		if (ui_DelayTime < 1 || ui_DelayTime > 1023) {
 			err++;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nThe Delay time value is in error\n");
+#else
+			;
+#endif
 		}
 		if (err) {
 			i_APCI3200_Reset(dev);
@@ -2722,7 +2942,11 @@ int i_APCI3200_CommandTestAnalogInput(struct comedi_device *dev, struct comedi_s
 
 		if (d_ConversionTimeForAllChannels >= d_SCANTimeNewUnit) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\nSCAN Delay value cannot be used\n");
+#else
+			;
+#endif
 	  /*********************************/
 			/*SCAN Delay value cannot be used */
 	  /*********************************/
@@ -2851,8 +3075,16 @@ int i_APCI3200_CommandAnalogInput(struct comedi_device *dev, struct comedi_subde
 		ui_DelayTimeBase = cmd->scan_begin_arg >> 16;
 		ui_DelayMode = 1;
 	}			/* else if(cmd->scan_begin_src==TRIG_FOLLOW) */
+#ifdef CONFIG_DEBUG_PRINTK
 	/*         printk("\nui_DelayTime=%u\n",ui_DelayTime); */
+#else
+	/*         ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/*         printk("\nui_DelayTimeBase=%u\n",ui_DelayTimeBase); */
+#else
+	/*         ;
+#endif
 	if (cmd->convert_src == TRIG_TIMER) {
 		ui_ConvertTime = cmd->convert_arg & 0xFFFF;
 		ui_ConvertTimeBase = cmd->convert_arg >> 16;
@@ -2880,13 +3112,41 @@ int i_APCI3200_CommandAnalogInput(struct comedi_device *dev, struct comedi_subde
 		devpriv->iobase + s_BoardInfos[dev->minor].i_Offset + 12);
 	/*  } */
 	ui_Configuration = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	/*      printk("\nfirstchannel=%u\n",i_FirstChannel); */
+#else
+	/*      ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/*      printk("\nlastchannel=%u\n",i_LastChannel); */
+#else
+	/*      ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/*      printk("\nui_Trigger=%u\n",ui_Trigger); */
+#else
+	/*      ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/*      printk("\nui_TriggerEdge=%u\n",ui_TriggerEdge); */
+#else
+	/*      ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/*      printk("\nui_Triggermode=%u\n",ui_Triggermode); */
+#else
+	/*      ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/*       printk("\nui_DelayMode=%u\n",ui_DelayMode); */
+#else
+	/*       ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/*      printk("\nui_ScanMode=%u\n",ui_ScanMode); */
+#else
+	/*      ;
+#endif
 
 	/* ui_Configuration = i_FirstChannel |(i_LastChannel << 8)| 0x00100000 | */
 	ui_Configuration =
@@ -3118,7 +3378,11 @@ void v_APCI3200_Interrupt(int irq, void *d)
 
 					/* Begin JK 22.10.2004: APCI-3200 / APCI-3300 Reading of EEPROM values */
 					/*
+#ifdef CONFIG_DEBUG_PRINTK
 					   printk("\n 1 - i_APCI3200_GetChannelCalibrationValue (dev, s_BoardInfos %i", ui_ChannelNumber);
+#else
+					   ;
+#endif
 					   i_APCI3200_GetChannelCalibrationValue (dev, s_BoardInfos [dev->minor].ui_Channel_num,
 					   &s_BoardInfos [dev->minor].ui_InterruptChannelValue[s_BoardInfos [dev->minor].i_Count + 6],
 					   &s_BoardInfos [dev->minor].ui_InterruptChannelValue[s_BoardInfos [dev->minor].i_Count + 7],
@@ -3600,7 +3864,11 @@ int i_APCI3200_InterruptHandleEos(struct comedi_device *dev)
 
 			/*  If not enougth memory available, event is set to Comedi Buffer Errror */
 			if (n > ((7 + 12) * sizeof(unsigned int))) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\ncomedi_buf_write_alloc n = %i", n);
+#else
+				;
+#endif
 				s->async->events |= COMEDI_CB_ERROR;
 			}
 			/*  Write all 7 scan values in the comedi buffer */

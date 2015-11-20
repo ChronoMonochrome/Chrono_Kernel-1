@@ -181,7 +181,11 @@ void Ssfdc_D_Reset(struct us_data *us)
 	//PBULK_CBW       pBulkCbw = fdoExt->pBulkCbw;
 	//BYTE            buf[0x200];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("Ssfdc_D_Reset --- But do nothing !!\n");
+#else
+	//;
+#endif
 	return;
 /*	RtlZeroMemory(pBulkCbw, sizeof(struct _BULK_CBW));
 	pBulkCbw->dCBWSignature          = CBW_SIGNTURE;
@@ -256,7 +260,11 @@ int Ssfdc_D_ReadSect(struct us_data *us, BYTE *buf,BYTE *redundant)
 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Load SM RW Code Fail !!\n");
+#else
+		;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 
@@ -305,11 +313,19 @@ int Ssfdc_D_ReadBlock(struct us_data *us, WORD count, BYTE *buf,BYTE *redundant)
 	int	result;
 	WORD	addr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("Ssfdc_D_ReadBlock\n");
+#else
+	//;
+#endif
 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Load SM RW Code Fail !!\n");
+#else
+		;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 
@@ -519,12 +535,20 @@ int Ssfdc_D_CopyBlock(struct us_data *us, WORD count, BYTE *buf,BYTE *redundant)
     //NTSTATUS                ntStatus;
 	WORD	ReadAddr, WriteAddr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("Ssfdc_D_WriteSect --- ZONE = %x, ReadBlock = %x, WriteBlock = %x\n", Media.Zone, ReadBlock, WriteBlock);
+#else
+	//;
+#endif
 
 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Load SM RW Code Fail !!\n");
+#else
+		;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 
@@ -739,11 +763,19 @@ int Ssfdc_D_WriteSectForCopy(struct us_data *us, BYTE *buf, BYTE *redundant)
 	//NTSTATUS                ntStatus;
 	WORD                    addr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("SMILSUB --- Ssfdc_D_WriteSectForCopy\n");
+#else
+	//;
+#endif
 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Load SM RW Code Fail !!\n");
+#else
+		;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 
@@ -782,7 +814,11 @@ int Ssfdc_D_EraseBlock(struct us_data *us)
 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Load SM RW Code Fail !!\n");
+#else
+		;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 
@@ -818,7 +854,11 @@ int Ssfdc_D_ReadRedtData(struct us_data *us, BYTE *redundant)
 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Load SM RW Code Fail !!\n");
+#else
+		;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 
@@ -861,7 +901,11 @@ int Ssfdc_D_WriteRedtData(struct us_data *us, BYTE *redundant)
 	result = ENE_LoadBinCode(us, SM_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Load SM RW Code Fail !!\n");
+#else
+		;
+#endif
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 

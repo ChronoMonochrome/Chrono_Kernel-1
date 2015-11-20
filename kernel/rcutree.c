@@ -690,12 +690,20 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
 			continue;
 		for (cpu = 0; cpu <= rnp->grphi - rnp->grplo; cpu++)
 			if (rnp->qsmask & (1UL << cpu)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" %d", rnp->grplo + cpu);
+#else
+				;
+#endif
 				ndetected++;
 			}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("} (detected by %d, t=%ld jiffies)\n",
 	       smp_processor_id(), (long)(jiffies - rsp->gp_start));
+#else
+	;
+#endif
 	if (ndetected == 0)
 		printk(KERN_ERR "INFO: Stall ended before state dump start\n");
 	else if (!trigger_all_cpu_backtrace())

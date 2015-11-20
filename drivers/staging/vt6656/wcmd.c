@@ -706,11 +706,19 @@ void vRunCommand(void *hDeviceContext)
                 }
             }
 	   else if(pMgmt->eCurrState < WMAC_STATE_AUTHPENDING) {
+#ifdef CONFIG_DEBUG_PRINTK
                printk("WLAN_AUTHENTICATE_WAIT:Authen Fail???\n");
+#else
+               ;
+#endif
 	   }
 	   else  if(pDevice->byLinkWaitCount <= 4){    //mike add:wait another 2 sec if authenticated_frame delay!
                 pDevice->byLinkWaitCount ++;
+#ifdef CONFIG_DEBUG_PRINTK
 	       printk("WLAN_AUTHENTICATE_WAIT:wait %d times!!\n",pDevice->byLinkWaitCount);
+#else
+	       ;
+#endif
 	       spin_unlock_irq(&pDevice->lock);
 	       vCommandTimerWait((void *) pDevice, AUTHENTICATE_TIMEOUT/2);
 	       return;
@@ -743,7 +751,11 @@ void vRunCommand(void *hDeviceContext)
                 }
 
 		 if(pDevice->IsTxDataTrigger != FALSE)   {    //TxDataTimer is not triggered at the first time
+#ifdef CONFIG_DEBUG_PRINTK
                      // printk("Re-initial TxDataTimer****\n");
+#else
+                     // ;
+#endif
 		    del_timer(&pDevice->sTimerTxData);
                       init_timer(&pDevice->sTimerTxData);
 			pDevice->sTimerTxData.data = (unsigned long) pDevice;
@@ -753,18 +765,30 @@ void vRunCommand(void *hDeviceContext)
                       pDevice->nTxDataTimeCout = 0;
 		 }
 		 else {
+#ifdef CONFIG_DEBUG_PRINTK
 		   // printk("mike:-->First time triger TimerTxData InSleep\n");
+#else
+		   // ;
+#endif
 		 }
 		pDevice->IsTxDataTrigger = TRUE;
                 add_timer(&pDevice->sTimerTxData);
 
             }
 	   else if(pMgmt->eCurrState < WMAC_STATE_ASSOCPENDING) {
+#ifdef CONFIG_DEBUG_PRINTK
                printk("WLAN_ASSOCIATE_WAIT:Association Fail???\n");
+#else
+               ;
+#endif
 	   }
 	   else  if(pDevice->byLinkWaitCount <= 4){    //mike add:wait another 2 sec if associated_frame delay!
                 pDevice->byLinkWaitCount ++;
+#ifdef CONFIG_DEBUG_PRINTK
 	       printk("WLAN_ASSOCIATE_WAIT:wait %d times!!\n",pDevice->byLinkWaitCount);
+#else
+	       ;
+#endif
 	       spin_unlock_irq(&pDevice->lock);
 	       vCommandTimerWait((void *) pDevice, ASSOCIATE_TIMEOUT/2);
 	       return;
@@ -1282,8 +1306,12 @@ void BSSvSecondTxData(void *hDeviceContext)
 
   if(pDevice->nTxDataTimeCout<4)     //don't tx data if timer less than 40s
     {
+#ifdef CONFIG_DEBUG_PRINTK
      // printk("mike:%s-->no data Tx not exceed the desired Time as %d\n",__FUNCTION__,
 	//  	(int)pDevice->nTxDataTimeCout);
+#else
+     // ;
+#endif
      pDevice->sTimerTxData.expires = RUN_AT(10*HZ);      //10s callback
      add_timer(&pDevice->sTimerTxData);
       return;
@@ -1293,7 +1321,11 @@ void BSSvSecondTxData(void *hDeviceContext)
   //is wap_supplicant running successful OR only open && sharekey mode!
   if(((pDevice->bLinkPass ==TRUE)&&(pMgmt->eAuthenMode < WMAC_AUTH_WPA)) ||  //open && sharekey linking
       (pDevice->fWPA_Authened == TRUE)) {   //wpa linking
+#ifdef CONFIG_DEBUG_PRINTK
         //   printk("mike:%s-->InSleep Tx Data Procedure\n",__FUNCTION__);
+#else
+        //   ;
+#endif
 	  pDevice->fTxDataInSleep = TRUE;
 	  PSbSendNullPacket(pDevice);      //send null packet
 	  pDevice->fTxDataInSleep = FALSE;

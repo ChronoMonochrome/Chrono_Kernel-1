@@ -344,7 +344,11 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
 			  "Cannot alloc memory for Packet Status Ring\n");
 		return -ENOMEM;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PSR %lx\n", (unsigned long) rx_ring->pPSRingPa);
+#else
+	;
+#endif
 
 	/*
 	 * NOTE : pci_alloc_consistent(), used above to alloc DMA regions,
@@ -363,7 +367,11 @@ int et131x_rx_dma_memory_alloc(struct et131x_adapter *adapter)
 		return -ENOMEM;
 	}
 	rx_ring->NumRfd = NIC_DEFAULT_NUM_RFD;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PRS %lx\n", (unsigned long)rx_ring->rx_status_bus);
+#else
+	;
+#endif
 
 	/* Recv
 	 * pci_pool_create initializes a lookaside list. After successful

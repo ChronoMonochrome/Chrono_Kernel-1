@@ -983,7 +983,11 @@ void BSSvSecondCallBack(void *hDeviceContext)
 if(pDevice->byReAssocCount > 0) {
        pDevice->byReAssocCount++;
    if((pDevice->byReAssocCount > 10) && (pDevice->bLinkPass != TRUE)) {  //10 sec timeout
+#ifdef CONFIG_DEBUG_PRINTK
                      printk("Re-association timeout!!!\n");
+#else
+                     ;
+#endif
 		   pDevice->byReAssocCount = 0;
                      #ifdef WPA_SUPPLICANT_DRIVER_WEXT_SUPPORT
                     // if(pDevice->bWPASuppWextEnabled == TRUE)
@@ -1584,7 +1588,11 @@ RxOkRatio = (RxCnt < 6) ? 2000:((pDevice->scStatistic.RxOkCnt * 2000) / RxCnt);
 //decide link quality
 if(pDevice->bLinkPass !=TRUE)
 {
+#ifdef CONFIG_DEBUG_PRINTK
  //  printk("s_uCalculateLinkQual-->Link disconnect and Poor quality**\n");
+#else
+ //  ;
+#endif
    pDevice->scStatistic.LinkQuality = 0;
    pDevice->scStatistic.SignalStren = 0;
 }

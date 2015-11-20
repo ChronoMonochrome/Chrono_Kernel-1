@@ -65,7 +65,11 @@ static int __init soekris_init(void)
 
 	rombase = ioremap(0xffff0000, 0xffff);
 	if (!rombase) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Soekris net5501 LED driver failed to get rombase");
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -78,7 +82,11 @@ static int __init soekris_init(void)
 		unsigned char *model = rombase + boards[i].offset;
 
 		if (strncmp(model, boards[i].sig, boards[i].len) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Soekris %s: %s\n", model, bios);
+#else
+			;
+#endif
 
 			if (boards[i].init)
 				boards[i].init();

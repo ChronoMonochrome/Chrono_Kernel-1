@@ -167,7 +167,11 @@ static int on26_test_port( PIA *pi)  /* hard reset */
             }
 
 	    if (i == RESET_WAIT) 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("on26: Device reset failed (%x,%x)\n",x,y);
+#else
+		;
+#endif
 
             w0(4); P1; w0(4); P1;
         }
@@ -280,10 +284,18 @@ static void on26_log_adapter( PIA *pi, char * scratch, int verbose )
 {       char    *mode_string[5] = {"4-bit","8-bit","EPP-8",
 				   "EPP-16","EPP-32"};
 
+#ifdef CONFIG_DEBUG_PRINTK
         printk("%s: on26 %s, OnSpec 90c26 at 0x%x, ",
                 pi->device,ON26_VERSION,pi->port);
+#else
+        ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
         printk("mode %d (%s), delay %d\n",pi->mode,
 		mode_string[pi->mode],pi->delay);
+#else
+        ;
+#endif
 
 }
 

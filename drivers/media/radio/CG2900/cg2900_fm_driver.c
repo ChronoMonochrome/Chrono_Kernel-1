@@ -479,7 +479,11 @@ static u8 fmd_get_event(
 		event = FMD_EVENT_AF_UPDATE_SWITCH_COMPLETE;
 		break;
 	case FMD_STATE_SEEK_STOP:
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("fmd_get_event: FMD_STATE_SEEK_STOP is the current command so event name is FMD_EVENT_SEEK_STOPPED\n");
+#else
+	    ;
+#endif
 		event = FMD_EVENT_SEEK_STOPPED;
 		break;
 	default:
@@ -634,14 +638,30 @@ static void fmd_process_interrupt(
 	FM_DEBUG_REPORT("%s", irpt_name);
 	if ((interrupt & IRPT_OPERATION_SUCCEEDED) |
 		(interrupt & IRPT_OPERATION_FAILED)) {
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("fmd_process_interrupt irq succeed or failed \n");
+#else
+	    ;
+#endif
 		bool event_status = (interrupt & IRPT_OPERATION_SUCCEEDED);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fmd_process_interrupt irq succeed or failed event status=%d \n", event_status);
+#else
+		;
+#endif
 		u8 event = fmd_get_event(fmd_state_info.gocmd);
+#ifdef CONFIG_DEBUG_PRINTK
         printk("fmd_process_interrupt cmd that is pending and event id=%d \n",fmd_state_info.gocmd, event);
+#else
+        ;
+#endif
         
         if(fmd_state_info.gocmd == FMD_STATE_SEEK_STOP) {
+#ifdef CONFIG_DEBUG_PRINTK
             printk("fmd_process_interrupt: Scan stop command has been sent!!!\n");
+#else
+            ;
+#endif
         }
 		switch (fmd_state_info.gocmd) {
 		case FMD_STATE_MODE:
@@ -694,7 +714,11 @@ static void fmd_process_interrupt(
 			 * Set State to None. No need to set the
 			 * semaphore since this is an asyncronous event.
 			 */
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk("current command was Scan or Seek \n");
+#else
+		    ;
+#endif
 			fmd_state_info.gocmd = FMD_STATE_NONE;
 			/* Inform Upper layer. */
 			fmd_callback(event,	event_status);
@@ -1239,7 +1263,11 @@ static int fmd_irq_thread(
 						"Interrupt = %04x",
 						fmd_state_info.
 						interrupt_queue[index]);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Process IRQ Now \n");
+#else
+					;
+#endif
 					fmd_process_interrupt(
 					fmd_state_info.interrupt_queue[index]);
 					fmd_state_info.interrupt_queue[index]
@@ -1540,7 +1568,11 @@ static int fmd_send_cmd_and_read_resp(
 	 * Check that the response belongs to the sent command
 	 */
 	if (read_cmd_id != cmd_id) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" Alert!!! read_cmd_id =%d cmd_id =%d",read_cmd_id, cmd_id);
+#else
+		;
+#endif
 	    result = -EINVAL;
 		
 	}
@@ -2495,7 +2527,11 @@ int fmd_rx_set_snr_threshold(
 {
     int err;
     
+#ifdef CONFIG_DEBUG_PRINTK
     printk("fmd_rx_set_snr_threshold rssi snr value=%d\n", rssi_snr);
+#else
+    ;
+#endif
 
     if (fmd_go_cmd_busy()) {
         err = -EBUSY;
@@ -2509,7 +2545,11 @@ int fmd_rx_set_snr_threshold(
 
     fmd_state_info.rx_seek_rssi_snr = rssi_snr;
     
+#ifdef CONFIG_DEBUG_PRINTK
     printk("fmd_rx_set_snr_threshold: final noise threshold final value=%d", fmd_state_info.rx_seek_rssi_snr);
+#else
+    ;
+#endif
     err = 0;
 
 error:
@@ -2567,7 +2607,11 @@ int fmd_rx_seek(
 	else
 		parameters[0] = 0x0001;
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_seek, snr value=%d \n",fmd_state_info.rx_seek_rssi_snr);
+#else
+	;
+#endif
 	parameters[1] = fmd_state_info.rx_seek_stop_level;
 	parameters[2] = DEFAULT_PEAK_NOISE_VALUE;
 	parameters[3] = fmd_state_info.rx_seek_rssi_snr;
@@ -2614,7 +2658,11 @@ int fmd_rx_scan_band(
 		goto error;
 	}
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_scan_band, snr value=%d \n",fmd_state_info.rx_seek_rssi_snr);
+#else
+	;
+#endif
 
 	parameters[0] = max_channels_to_scan;
 	parameters[1] = fmd_state_info.rx_seek_stop_level;
@@ -2912,14 +2960,22 @@ int fmd_rx_stop_seeking(void)
 
 	fmd_state_info.gocmd = FMD_STATE_SEEK_STOP;
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_stop_seeking : Send command!!!\n");
+#else
+	;
+#endif
 	io_result = fmd_send_cmd_and_read_resp(
 			CMD_FMR_SP_STOP,
 			CMD_SP_STOP_PARAM_LEN,
 			NULL,
 			NULL,
 			NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_stop_seeking : Command Sent!!! io_result=%d \n", io_result);
+#else
+	;
+#endif
 
 	if (io_result != 0) {
 		fmd_state_info.gocmd = FMD_STATE_NONE;
@@ -2933,7 +2989,11 @@ int fmd_rx_stop_seeking(void)
 		err = 0;
 
 error:
+#ifdef CONFIG_DEBUG_PRINTK
     printk("fmd_rx_stop_seeking : return =%d!!!\n", err);
+#else
+    ;
+#endif
 	return err;
 }
 
@@ -3045,7 +3105,11 @@ int fmd_rx_af_switch_start(
 	int io_result;
 	u16  parameters[CMD_SP_AF_SWITCH_START_PARAM_LEN];
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_af_switch_start minrssi=%d\n", minrssi);
+#else
+	;
+#endif
 
 	if (fmd_go_cmd_busy()) {
 		err = -EBUSY;
@@ -3074,7 +3138,11 @@ int fmd_rx_af_switch_start(
 
 	fmd_state_info.gocmd = FMD_STATE_AF_SWITCH;
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_af_switch_start: Send command to chip \n");
+#else
+	;
+#endif
 	io_result = fmd_send_cmd_and_read_resp(
 			CMD_FMR_SP_AF_SWITCH_START,
 			CMD_SP_AF_SWITCH_START_PARAM_LEN,
@@ -3082,7 +3150,11 @@ int fmd_rx_af_switch_start(
 			NULL,
 			NULL);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_af_switch_start: Command sent to chip result=%d\n", io_result);
+#else
+	;
+#endif
 	if (io_result != 0) {
 		fmd_state_info.gocmd = FMD_STATE_NONE;
 		err = io_result;
@@ -3365,7 +3437,11 @@ int fmd_rx_set_softmute(
     int io_result;
     u16  parameters[CMD_RP_SETMODE_SOFTMUTE_PARAM_LEN];
     
+#ifdef CONFIG_DEBUG_PRINTK
     printk("fmd_rx_set_softmute \n");
+#else
+    ;
+#endif
 
     if (fmd_go_cmd_busy()) {
         err = -EBUSY;
@@ -3379,11 +3455,19 @@ int fmd_rx_set_softmute(
 
     if (on_off_state == FMD_SOFTMUTE_ON) {
         parameters[0] = 0x0001;
+#ifdef CONFIG_DEBUG_PRINTK
         printk("fmd_rx_set_softmute On \n");
+#else
+        ;
+#endif
     }
     else if (on_off_state == FMD_SOFTMUTE_OFF) {
         parameters[0] = 0x0000;
+#ifdef CONFIG_DEBUG_PRINTK
         printk("fmd_rx_set_softmute Off\n");
+#else
+        ;
+#endif
     }
 
     io_result = fmd_send_cmd_and_read_resp(
@@ -3393,7 +3477,11 @@ int fmd_rx_set_softmute(
             NULL,
             NULL);
     
+#ifdef CONFIG_DEBUG_PRINTK
     printk("fmd_rx_set_softmute On-Off io result=%d\n", io_result);
+#else
+    ;
+#endif
 
     if (io_result != 0) {
         err = io_result;
@@ -3416,6 +3504,7 @@ int fmd_rx_softmute_setcontrol(
     int io_result;
     u16  parameters[CMD_RP_SOFTMUTE_SETCONTROL_PARAM_LEN];
     
+#ifdef CONFIG_DEBUG_PRINTK
     printk("fmd_rx_softmute_setcontrol "
             "minRssi %d "
             "max_Rssi=%d "
@@ -3423,6 +3512,9 @@ int fmd_rx_softmute_setcontrol(
             minRssi, 
             maxRssi, 
             maxAttenuation);
+#else
+    ;
+#endif
 
     if (fmd_go_cmd_busy()) {
         err = -EBUSY;
@@ -3438,14 +3530,22 @@ int fmd_rx_softmute_setcontrol(
 	parameters[1] = maxRssi;
 	parameters[2] = maxAttenuation;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_softmute_setcontrol: send command \n");
+#else
+	;
+#endif
     io_result = fmd_send_cmd_and_read_resp(
             CMD_FMR_RP_SOFTMUTE_SET_CONTROL,
             CMD_RP_SOFTMUTE_SETCONTROL_PARAM_LEN,
             parameters,
             NULL,
             NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fmd_rx_softmute_setcontrol: send command io_result=%d\n", io_result);
+#else
+	;
+#endif
 
     if (io_result != 0) {
         err = io_result;

@@ -1788,7 +1788,11 @@ static int write_back_to_l2_cache(u8 *buf, u64 logical_addr)
 		if (FAIL == get_l2_cache_blks()) {
 			GLOB_FTL_Garbage_Collection();
 			if (FAIL == get_l2_cache_blks()) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_ALERT "Fail to get L2 cache blks!\n");
+#else
+				;
+#endif
 				return FAIL;
 			}
 		}
@@ -2208,14 +2212,26 @@ static int  force_format_nand(void)
 	u32 i;
 
 	/* Force erase the whole unprotected physical partiton of NAND */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "Start to force erase whole NAND device ...\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "From phyical block %d to %d\n",
 		DeviceInfo.wSpectraStartBlock, DeviceInfo.wSpectraEndBlock);
+#else
+	;
+#endif
 	for (i = DeviceInfo.wSpectraStartBlock; i <= DeviceInfo.wSpectraEndBlock; i++) {
 		if (GLOB_LLD_Erase_Block(i))
 			printk(KERN_ERR "Failed to force erase NAND block %d\n", i);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "Force Erase ends. Please reboot the system ...\n");
+#else
+	;
+#endif
 	while(1);
 
 	return PASS;
@@ -3150,8 +3166,12 @@ int GLOB_FTL_Garbage_Collection(void)
 			       __FILE__, __LINE__, __func__);
 
 	if (GC_Called) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "GLOB_FTL_Garbage_Collection() "
 			"has been re-entered! Exit.\n");
+#else
+		;
+#endif
 		return PASS;
 	}
 
@@ -3807,7 +3827,11 @@ int GLOB_FTL_Flush_Cache(void)
 			if (PASS == ret) {
 				Cache.array[i].changed = CLEAR;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_ALERT "Failed when write back to L2 cache!\n");
+#else
+				;
+#endif
 				/* TODO - How to handle this? */
 			}
 		}

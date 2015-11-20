@@ -135,7 +135,11 @@ static unsigned long determine_cpu_load(void)
 		if (info->idx >= LOAD_MONITOR)
 			info->idx = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		hp_printk("cpu %d load %u ", i, load);
+#else
+		hp_;
+#endif
 
 		total_load += load;
 	}
@@ -160,7 +164,11 @@ static unsigned long determine_cpu_load_trend(void)
 
 		load /= LOAD_MONITOR;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		hp_printk("cpu %d load trend %u\n", i, load);
+#else
+		hp_;
+#endif
 
 		total_load += load;
 	}
@@ -446,22 +454,38 @@ static void delayed_usecase_work(struct work_struct *work)
 
 	/* determine loadavg  */
 	avg = determine_loadavg();
+#ifdef CONFIG_DEBUG_PRINTK
 	hp_printk("loadavg = %lu lower th %lu upper th %lu\n",
 					avg, lower_threshold, upper_threshold);
+#else
+	hp_;
+#endif
 
 	/* determine instant load */
 	load = determine_cpu_load();
+#ifdef CONFIG_DEBUG_PRINTK
 	hp_printk("cpu instant load = %lu max %lu\n", load, max_instant);
+#else
+	hp_;
+#endif
 
 	/* determine load trend */
 	trend = determine_cpu_load_trend();
+#ifdef CONFIG_DEBUG_PRINTK
 	hp_printk("cpu load trend = %lu min %lu unbal %lu\n",
 					trend, min_trend, trend_unbalance);
+#else
+	hp_;
+#endif
 
 	/* determine load balancing */
 	balance = determine_cpu_balance_trend();
+#ifdef CONFIG_DEBUG_PRINTK
 	hp_printk("load balancing trend = %lu min %lu\n",
 					balance, max_unbalance);
+#else
+	hp_;
+#endif
 
 	irqs_per_s = get_num_interrupts_per_s();
 
@@ -534,7 +558,11 @@ static ssize_t set_##_name(struct file *file, \
 		return err; \
  \
 	_name = i; \
+#ifdef CONFIG_DEBUG_PRINTK
 	hp_printk("New value : %lu\n", _name); \
+#else
+	hp_;
+#endif
  \
 	return count; \
 }

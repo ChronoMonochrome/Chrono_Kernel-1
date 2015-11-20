@@ -835,9 +835,13 @@ static snd_pcm_uframes_t snd_cs4281_pointer(struct snd_pcm_substream *substream)
 	struct cs4281 *chip = snd_pcm_substream_chip(substream);
 
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "DCC = 0x%x, buffer_size = 0x%x, jiffies = %li\n",
 	       snd_cs4281_peekBA0(chip, dma->regDCC), runtime->buffer_size,
 	       jiffies);
+#else
+	;
+#endif
 	*/
 	return runtime->buffer_size -
 	       snd_cs4281_peekBA0(chip, dma->regDCC) - 1;
@@ -1539,7 +1543,11 @@ static int snd_cs4281_chip_init(struct cs4281 *chip)
 				goto __codec2_ok;
 			schedule_timeout_uninterruptible(1);
 		} while (time_after_eq(end_time, jiffies));
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "secondary codec doesn't respond. disable it...\n");
+#else
+		;
+#endif
 		chip->dual_codec = 0;
 	__codec2_ok: ;
 	}

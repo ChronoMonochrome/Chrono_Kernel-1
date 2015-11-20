@@ -1937,9 +1937,17 @@ static int __devinit aureon_add_controls(struct snd_ice1712 *ice)
 		snd_ice1712_save_gpio_status(ice);
 		id = aureon_cs8415_get(ice, CS8415_ID);
 		if (id != 0x41)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "No CS8415 chip. Skipping CS8415 controls.\n");
+#else
+			;
+#endif
 		else if ((id & 0x0F) != 0x01)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "Detected unsupported CS8415 rev. (%c)\n", (char)((id & 0x0F) + 'A' - 1));
+#else
+			;
+#endif
 		else {
 			for (i = 0; i < ARRAY_SIZE(cs8415_controls); i++) {
 				struct snd_kcontrol *kctl;

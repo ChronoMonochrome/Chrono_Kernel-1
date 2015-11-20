@@ -150,7 +150,11 @@ static const struct das16cs_board *das16cs_probe(struct comedi_device *dev,
 			return das16cs_boards + i;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("unknown board!\n");
+#else
+	;
+#endif
 
 	return NULL;
 }
@@ -163,20 +167,40 @@ static int das16cs_attach(struct comedi_device *dev,
 	int ret;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: cb_das16_cs: ", dev->minor);
+#else
+	;
+#endif
 
 	link = cur_dev;		/* XXX hack */
 	if (!link)
 		return -EIO;
 
 	dev->iobase = link->resource[0]->start;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("I/O base=0x%04lx ", dev->iobase);
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("fingerprint:\n");
+#else
+	;
+#endif
 	for (i = 0; i < 48; i += 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%04x ", inw(dev->iobase + i));
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	ret = request_irq(link->irq, das16cs_interrupt,
 			  IRQF_SHARED, "cb_das16_cs", dev);
@@ -185,7 +209,11 @@ static int das16cs_attach(struct comedi_device *dev,
 
 	dev->irq = link->irq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("irq=%u ", dev->irq);
+#else
+	;
+#endif
 
 	dev->board_ptr = das16cs_probe(dev, link);
 	if (!dev->board_ptr)
@@ -252,14 +280,22 @@ static int das16cs_attach(struct comedi_device *dev,
 		s->type = COMEDI_SUBD_UNUSED;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("attached\n");
+#else
+	;
+#endif
 
 	return 1;
 }
 
 static int das16cs_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: das16cs: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);
@@ -312,7 +348,11 @@ static int das16cs_ai_rinsn(struct comedi_device *dev,
 				break;
 		}
 		if (to == TIMEOUT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("cb_das16_cs: ai timeout\n");
+#else
+			;
+#endif
 			return -ETIME;
 		}
 		data[i] = (unsigned short)inw(dev->iobase + 0);
@@ -508,17 +548,29 @@ static int das16cs_ao_winsn(struct comedi_device *dev,
 		else
 			status1 |= 0x0008;
 
+#ifdef CONFIG_DEBUG_PRINTK
 /* 		printk("0x%04x\n",status1);*/
+#else
+/* 		;
+#endif
 		outw(status1, dev->iobase + 4);
 		udelay(1);
 
 		for (bit = 15; bit >= 0; bit--) {
 			int b = (d >> bit) & 0x1;
 			b <<= 1;
+#ifdef CONFIG_DEBUG_PRINTK
 /*			printk("0x%04x\n",status1 | b | 0x0000);*/
+#else
+/*			;
+#endif
 			outw(status1 | b | 0x0000, dev->iobase + 4);
 			udelay(1);
+#ifdef CONFIG_DEBUG_PRINTK
 /*			printk("0x%04x\n",status1 | b | 0x0004);*/
+#else
+/*			;
+#endif
 			outw(status1 | b | 0x0004, dev->iobase + 4);
 			udelay(1);
 		}

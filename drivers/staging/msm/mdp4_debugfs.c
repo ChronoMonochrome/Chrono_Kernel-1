@@ -77,8 +77,12 @@ static ssize_t mdp4_debugfs_write(
 	int cnt;
 	unsigned int data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: offset=%d count=%d *ppos=%d\n",
 		__func__, (int)mdp4_debug_offset, (int)count, (int)*ppos);
+#else
+	;
+#endif
 
 	if (count > sizeof(mdp4_debug_buf))
 		return -EFAULT;
@@ -109,8 +113,12 @@ static ssize_t mdp4_debugfs_read(
 	int len = 0;
 	unsigned int data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: offset=%d count=%d *ppos=%d\n",
 		__func__, (int)mdp4_debug_offset, (int)count, (int)*ppos);
+#else
+	;
+#endif
 
 	if (*ppos)
 		return 0;	/* the end */
@@ -126,7 +134,11 @@ static ssize_t mdp4_debugfs_read(
 			return -EFAULT;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: len=%d\n", __func__, len);
+#else
+	;
+#endif
 
 	if (len < 0)
 		return 0;

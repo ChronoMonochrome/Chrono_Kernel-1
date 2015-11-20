@@ -238,8 +238,12 @@ int ide_dma_sff_timer_expiry(ide_drive_t *drive)
 	ide_hwif_t *hwif = drive->hwif;
 	u8 dma_stat = hwif->dma_ops->dma_sff_read_status(hwif);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s: %s: DMA status (0x%02x)\n",
 		drive->name, __func__, dma_stat);
+#else
+	;
+#endif
 
 	if ((dma_stat & 0x18) == 0x18)	/* BUSY Stupid Early Timer !! */
 		return WAIT_CMD;

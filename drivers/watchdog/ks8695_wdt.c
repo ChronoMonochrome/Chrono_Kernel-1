@@ -233,8 +233,12 @@ static int __devinit ks8695wdt_probe(struct platform_device *pdev)
 	if (res)
 		return res;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "KS8695 Watchdog Timer enabled (%d seconds%s)\n",
 				wdt_time, nowayout ? ", nowayout" : "");
+#else
+	;
+#endif
 	return 0;
 }
 

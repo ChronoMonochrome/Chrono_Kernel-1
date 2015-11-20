@@ -178,7 +178,11 @@ static int i_APCI3XXX_AnalogInputConfigOperatingMode(struct comedi_device *dev,
 							/* Single/Diff selection error */
 			   /*******************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 							printk("Single/Diff selection error\n");
+#else
+							;
+#endif
 							i_ReturnValue = -1;
 						} else {
 			   /**********************************/
@@ -220,7 +224,11 @@ static int i_APCI3XXX_AnalogInputConfigOperatingMode(struct comedi_device *dev,
 								/* Any conversion started */
 			      /**************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("Any conversion started\n");
+#else
+								;
+#endif
 								i_ReturnValue =
 									-10;
 							}
@@ -230,7 +238,11 @@ static int i_APCI3XXX_AnalogInputConfigOperatingMode(struct comedi_device *dev,
 						/* Single/Diff selection error */
 		       /*******************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 						printk("Single/Diff selection error\n");
+#else
+						;
+#endif
 						i_ReturnValue = -1;
 					}
 				} else {
@@ -238,7 +250,11 @@ static int i_APCI3XXX_AnalogInputConfigOperatingMode(struct comedi_device *dev,
 					/* Time selection error */
 		    /************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Convert time value selection error\n");
+#else
+					;
+#endif
 					i_ReturnValue = -3;
 				}
 			} else {
@@ -246,7 +262,11 @@ static int i_APCI3XXX_AnalogInputConfigOperatingMode(struct comedi_device *dev,
 				/* Time selection error */
 		 /************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Convert time value selection error\n");
+#else
+				;
+#endif
 				i_ReturnValue = -3;
 			}
 		} else {
@@ -254,7 +274,11 @@ static int i_APCI3XXX_AnalogInputConfigOperatingMode(struct comedi_device *dev,
 			/* Time base selection error */
 	      /*****************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Convert time base unity selection error\n");
+#else
+			;
+#endif
 			i_ReturnValue = -2;
 		}
 	} else {
@@ -262,7 +286,11 @@ static int i_APCI3XXX_AnalogInputConfigOperatingMode(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -313,7 +341,11 @@ static int i_APCI3XXX_InsnConfigAnalogInput(struct comedi_device *dev,
 
 		default:
 			i_ReturnValue = -100;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Config command error %d\n", data[0]);
+#else
+			;
+#endif
 			break;
 		}
 	} else {
@@ -321,7 +353,11 @@ static int i_APCI3XXX_InsnConfigAnalogInput(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -389,8 +425,12 @@ static int i_APCI3XXX_InsnReadAnalogInput(struct comedi_device *dev,
 		 /***************************/
 
 				i_ReturnValue = -4;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Channel %d range %d selection error\n",
 					b_Channel, b_Configuration);
+#else
+				;
+#endif
 			}
 		} else {
 	      /***************************/
@@ -398,7 +438,11 @@ static int i_APCI3XXX_InsnReadAnalogInput(struct comedi_device *dev,
 	      /***************************/
 
 			i_ReturnValue = -3;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Channel %d selection error\n", b_Channel);
+#else
+			;
+#endif
 		}
 
 	   /**************************/
@@ -529,7 +573,11 @@ static int i_APCI3XXX_InsnReadAnalogInput(struct comedi_device *dev,
 					/* Any conversion started */
 		    /**************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Any conversion started\n");
+#else
+					;
+#endif
 					i_ReturnValue = -10;
 				}
 			} else {
@@ -537,7 +585,11 @@ static int i_APCI3XXX_InsnReadAnalogInput(struct comedi_device *dev,
 				/* Data size error */
 		 /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Buffer size error\n");
+#else
+				;
+#endif
 				i_ReturnValue = -101;
 			}
 		}
@@ -546,7 +598,11 @@ static int i_APCI3XXX_InsnReadAnalogInput(struct comedi_device *dev,
 		/* Channel selection error */
 	   /***************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Operating mode not configured\n");
+#else
+		;
+#endif
 		i_ReturnValue = -1;
 	}
 	return i_ReturnValue;
@@ -697,8 +753,12 @@ static int i_APCI3XXX_InsnWriteAnalogOutput(struct comedi_device *dev,
 		 /***************************/
 
 				i_ReturnValue = -4;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Channel %d range %d selection error\n",
 					b_Channel, b_Range);
+#else
+				;
+#endif
 			}
 		} else {
 	      /***************************/
@@ -706,14 +766,22 @@ static int i_APCI3XXX_InsnWriteAnalogOutput(struct comedi_device *dev,
 	      /***************************/
 
 			i_ReturnValue = -3;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Channel %d selection error\n", b_Channel);
+#else
+			;
+#endif
 		}
 	} else {
 	   /*******************/
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -784,7 +852,11 @@ static int i_APCI3XXX_InsnConfigInitTTLIO(struct comedi_device *dev,
 				/* Data size error */
 		 /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Buffer size error\n");
+#else
+				;
+#endif
 				i_ReturnValue = -101;
 			}
 		} else {
@@ -792,7 +864,11 @@ static int i_APCI3XXX_InsnConfigInitTTLIO(struct comedi_device *dev,
 			/* Config command error */
 	      /************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Command selection error\n");
+#else
+			;
+#endif
 			i_ReturnValue = -100;
 		}
 	} else {
@@ -800,7 +876,11 @@ static int i_APCI3XXX_InsnConfigInitTTLIO(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -826,7 +906,11 @@ static int i_APCI3XXX_InsnConfigInitTTLIO(struct comedi_device *dev,
 			/* Port direction error */
 	      /************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Port 2 direction selection error\n");
+#else
+			;
+#endif
 			i_ReturnValue = -1;
 		}
 	}
@@ -1001,7 +1085,11 @@ static int i_APCI3XXX_InsnBitsTTLIO(struct comedi_device *dev,
 			/* Config command error */
 	      /************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Channel mask error\n");
+#else
+			;
+#endif
 			i_ReturnValue = -4;
 		}
 	} else {
@@ -1009,7 +1097,11 @@ static int i_APCI3XXX_InsnBitsTTLIO(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -1106,8 +1198,12 @@ static int i_APCI3XXX_InsnReadTTLIO(struct comedi_device *dev,
 		    /***************************/
 
 					i_ReturnValue = -3;
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Channel %d selection error\n",
 						b_Channel);
+#else
+					;
+#endif
 				}
 			}
 		}
@@ -1116,7 +1212,11 @@ static int i_APCI3XXX_InsnReadTTLIO(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -1211,8 +1311,12 @@ static int i_APCI3XXX_InsnWriteTTLIO(struct comedi_device *dev,
 		    /***************************/
 
 					i_ReturnValue = -3;
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("Channel %d selection error\n",
 						b_Channel);
+#else
+					;
+#endif
 				}
 			} else {
 		 /***************************/
@@ -1220,8 +1324,12 @@ static int i_APCI3XXX_InsnWriteTTLIO(struct comedi_device *dev,
 		 /***************************/
 
 				i_ReturnValue = -3;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Channel %d selection error\n",
 					b_Channel);
+#else
+				;
+#endif
 			}
 		}
 	} else {
@@ -1229,7 +1337,11 @@ static int i_APCI3XXX_InsnWriteTTLIO(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -1288,7 +1400,11 @@ static int i_APCI3XXX_InsnReadDigitalInput(struct comedi_device *dev,
 			/* Data size error */
 	      /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Buffer size error\n");
+#else
+			;
+#endif
 			i_ReturnValue = -101;
 		}
 	} else {
@@ -1296,7 +1412,11 @@ static int i_APCI3XXX_InsnReadDigitalInput(struct comedi_device *dev,
 		/* Channel selection error */
 	   /***************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Channel selection error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -3;
 	}
 
@@ -1342,7 +1462,11 @@ static int i_APCI3XXX_InsnBitsDigitalInput(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -1439,7 +1563,11 @@ static int i_APCI3XXX_InsnBitsDigitalOutput(struct comedi_device *dev,
 			/* Config command error */
 	      /************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Channel mask error\n");
+#else
+			;
+#endif
 			i_ReturnValue = -4;
 		}
 	} else {
@@ -1447,7 +1575,11 @@ static int i_APCI3XXX_InsnBitsDigitalOutput(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -1517,7 +1649,11 @@ static int i_APCI3XXX_InsnWriteDigitalOutput(struct comedi_device *dev,
 			/* Channel selection error */
 	      /***************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Channel selection error\n");
+#else
+			;
+#endif
 			i_ReturnValue = -3;
 		}
 	} else {
@@ -1525,7 +1661,11 @@ static int i_APCI3XXX_InsnWriteDigitalOutput(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 
@@ -1584,7 +1724,11 @@ static int i_APCI3XXX_InsnReadDigitalOutput(struct comedi_device *dev,
 			/* Channel selection error */
 	      /***************************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Channel selection error\n");
+#else
+			;
+#endif
 			i_ReturnValue = -3;
 		}
 	} else {
@@ -1592,7 +1736,11 @@ static int i_APCI3XXX_InsnReadDigitalOutput(struct comedi_device *dev,
 		/* Data size error */
 	   /*******************/
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Buffer size error\n");
+#else
+		;
+#endif
 		i_ReturnValue = -101;
 	}
 

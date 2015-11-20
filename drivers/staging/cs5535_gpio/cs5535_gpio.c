@@ -181,7 +181,11 @@ static int __init cs5535_gpio_init(void)
 	int	retval;
 
 	if (pci_dev_present(divil_pci) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING NAME ": DIVIL not found\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -190,7 +194,11 @@ static int __init cs5535_gpio_init(void)
 
 	/* Check the mask and whether GPIO is enabled (sanity check) */
 	if (hi != 0x0000f001) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING NAME ": GPIO not enabled\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -238,8 +246,12 @@ static int __init cs5535_gpio_init(void)
 		return -1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG NAME ": base=%#x mask=%#lx major=%d\n",
 	       gpio_base, mask, major);
+#else
+	;
+#endif
 
 	cdev_init(&cs5535_gpio_cdev, &cs5535_gpio_fops);
 	cdev_add(&cs5535_gpio_cdev, dev_id, CS5535_GPIO_COUNT);

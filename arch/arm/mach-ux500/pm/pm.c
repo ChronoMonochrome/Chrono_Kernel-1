@@ -189,8 +189,12 @@ void ux500_pm_gpio_save_wake_up_status(void)
 
 	// if gpio cause wakeup, then print wakeup status.
 	for (i = 0; i < num_banks; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		if(ux500_gpio_wks[i])	printk(KERN_INFO "%s: bank%d: 0x%08x\n",
 				__func__, i, ux500_gpio_wks[i]);
+#else
+		if(ux500_gpio_wks[i])	;
+#endif
 
 	nmk_gpio_clocks_disable();
 }

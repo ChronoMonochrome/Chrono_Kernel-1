@@ -160,7 +160,11 @@ static struct dvb_frontend *lnbx2x_attach(struct dvb_frontend *fe,
 	fe->ops.enable_high_lnb_voltage = lnbp21_enable_high_lnb_voltage;
 	if (!(override_clear & LNBH24_TEN)) /*22kHz logic controlled by demod*/
 		fe->ops.set_tone = lnbp21_set_tone;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "LNBx2x attached on addr=%x\n", lnbp21->i2c_addr);
+#else
+	;
+#endif
 
 	return fe;
 }

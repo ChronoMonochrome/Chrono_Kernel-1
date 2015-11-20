@@ -532,9 +532,13 @@ static void ps3av_set_videomode_packet(u32 id)
 	len += offsetof(struct ps3av_pkt_avb_param, buf);
 	res = ps3av_cmd_avb_param(&avb_param, len);
 	if (res == PS3AV_STATUS_NO_SYNC_HEAD)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Command failed. Please try your request again.\n",
 		       __func__);
+#else
+		;
+#endif
 	else if (res)
 		dev_dbg(&ps3av->dev->core, "ps3av_cmd_avb_param failed\n");
 }

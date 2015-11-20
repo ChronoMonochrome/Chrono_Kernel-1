@@ -1147,8 +1147,12 @@ static int sis_chip_init(struct sis7019 *sis)
 	}
 
 	if (sis->codecs_present != codecs) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "sis7019: missing codecs, found %0x, expected %0x\n",
 		       sis->codecs_present, codecs);
+#else
+		;
+#endif
 	}
 
 	/* Let the hardware know that the audio driver is alive,

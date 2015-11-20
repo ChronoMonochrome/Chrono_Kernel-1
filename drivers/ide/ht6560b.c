@@ -146,8 +146,12 @@ static void ht6560b_dev_select(ide_drive_t *drive)
 		outb(timing, hwif->io_ports.device_addr);
 		(void)inb(hwif->io_ports.status_addr);
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ht6560b: %s: select=%#x timing=%#x\n",
 			drive->name, select, timing);
+#else
+		;
+#endif
 #endif
 	}
 	local_irq_restore(flags);
@@ -186,6 +190,7 @@ static int __init try_to_init_ht6560b(void)
 	outb(HT_TIMING_DEFAULT, 0x1f6);	/* Select register */
 	(void)inb(0x1f7);		/* Status register */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ht6560b " HT6560B_VERSION
 	       ": chipset detected and initialized"
 #ifdef DEBUG
@@ -193,6 +198,9 @@ static int __init try_to_init_ht6560b(void)
 #endif
 	       "\n"
 		);
+#else
+	;
+#endif
 	return 1;
 }
 
@@ -229,14 +237,22 @@ static u8 ht_pio2timings(ide_drive_t *drive, const u8 pio)
 		if (recovery_cycles > 15) recovery_cycles = 0;  /* 0==16 */
 		
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ht6560b: drive %s setting pio=%d recovery=%d (%dns) active=%d (%dns)\n", drive->name, pio, recovery_cycles, recovery_time, active_cycles, active_time);
+#else
+		;
+#endif
 #endif
 		
 		return (u8)((recovery_cycles << 4) | active_cycles);
 	} else {
 		
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ht6560b: drive %s setting pio=0\n", drive->name);
+#else
+		;
+#endif
 #endif
 		
 		return HT_TIMING_DEFAULT;    /* default setting */
@@ -274,7 +290,11 @@ static void ht_set_prefetch(ide_drive_t *drive, u8 state)
 	spin_unlock_irqrestore(&ht6560b_lock, flags);
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ht6560b: drive %s prefetch mode %sabled\n", drive->name, (state ? "en" : "dis"));
+#else
+	;
+#endif
 #endif
 }
 
@@ -301,7 +321,11 @@ static void ht6560b_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 	spin_unlock_irqrestore(&ht6560b_lock, flags);
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ht6560b: drive %s tuned to pio mode %#x timing=%#x\n", drive->name, pio, timing);
+#else
+	;
+#endif
 #endif
 }
 
@@ -358,13 +382,21 @@ static int __init ht6560b_init(void)
 		return -ENODEV;
 
 	if (!request_region(HT_CONFIG_PORT, 1, DRV_NAME)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: HT_CONFIG_PORT not found\n",
 			__func__);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if (!try_to_init_ht6560b()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: HBA not found\n", __func__);
+#else
+		;
+#endif
 		goto release_region;
 	}
 

@@ -341,9 +341,13 @@ int add_mtd_device(struct mtd_info *mtd)
 	if ((mtd->flags & MTD_WRITEABLE)
 	    && (mtd->flags & MTD_POWERUP_LOCK) && mtd->unlock) {
 		if (mtd->unlock(mtd, 0, mtd->size))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: unlock failed, writes may not work\n",
 			       mtd->name);
+#else
+			;
+#endif
 	}
 
 	/* Caller should have set dev.parent to match the
@@ -411,8 +415,12 @@ int del_mtd_device(struct mtd_info *mtd)
 		not->remove(mtd);
 
 	if (mtd->usecount) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Removing MTD device #%d (%s) with use count %d\n",
 		       mtd->index, mtd->name, mtd->usecount);
+#else
+		;
+#endif
 		ret = -EBUSY;
 	} else {
 		device_unregister(&mtd->dev);

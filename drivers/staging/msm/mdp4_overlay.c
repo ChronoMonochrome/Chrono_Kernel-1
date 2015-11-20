@@ -874,8 +874,12 @@ struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(void)
 		if (pipe->pipe_ndx == 0) {
 			pipe->pipe_ndx = i + 1;	/* start from 1 */
 			init_completion(&pipe->comp);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mdp4_overlay_pipe_alloc: pipe=%p ndx=%d\n",
 					pipe, pipe->pipe_ndx);
+#else
+	;
+#endif
 			return pipe;
 		}
 		pipe++;
@@ -887,8 +891,12 @@ struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(void)
 
 void mdp4_overlay_pipe_free(struct mdp4_overlay_pipe *pipe)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mdp4_overlay_pipe_free: pipe=%p ndx=%d\n",
 					pipe, pipe->pipe_ndx);
+#else
+	;
+#endif
 	memset(pipe, 0, sizeof(*pipe));
 }
 
@@ -976,8 +984,12 @@ static int mdp4_overlay_req2pipe(struct mdp_overlay *req, int mixer,
 		pipe->mixer_stage = req->z_order + MDP4_MIXER_STAGE0;
 		pipe->pipe_type = ptype;
 		pipe->pipe_num = get_pipe_num(ptype, pipe->mixer_stage);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "mpd4_overlay_req2pipe: zorder=%d pipe_num=%d\n",
 				req->z_order, pipe->pipe_num);
+#else
+		;
+#endif
 	}
 
 	pipe->src_width = req->src.width & 0x07ff;	/* source img width */

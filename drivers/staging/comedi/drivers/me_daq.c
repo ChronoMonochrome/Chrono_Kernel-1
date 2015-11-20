@@ -735,9 +735,13 @@ static int me_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	return -EIO;
 
 found:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: found %s at PCI bus %d, slot %d\n",
 	       dev->minor, me_boards[i].name,
 	       pci_device->bus->number, PCI_SLOT(pci_device->devfn));
+#else
+	;
+#endif
 
 	/* Enable PCI device and request PCI regions */
 	if (comedi_pci_enable(pci_device, ME_DRIVER_NAME) < 0) {
@@ -756,7 +760,11 @@ found:
 	    ioremap(plx_regbase_tmp, plx_regbase_size_tmp);
 	dev_private->plx_regbase_size = plx_regbase_size_tmp;
 	if (!dev_private->plx_regbase) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: Failed to remap I/O memory\n", dev->minor);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -867,8 +875,12 @@ found:
 	subdevice->insn_config = me_dio_insn_config;
 	subdevice->io_bits = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: " ME_DRIVER_NAME " attached.\n",
 	       dev->minor);
+#else
+	;
+#endif
 	return 0;
 }
 

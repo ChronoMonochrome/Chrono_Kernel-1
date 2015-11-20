@@ -70,7 +70,11 @@ void aa_info_message(const char *str)
 		sa.aad.info = str;
 		aa_audit_msg(AUDIT_APPARMOR_STATUS, &sa, NULL);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "AppArmor: %s\n", str);
+#else
+	;
+#endif
 }
 
 /**

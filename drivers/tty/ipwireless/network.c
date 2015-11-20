@@ -76,8 +76,12 @@ static void notify_packet_sent(void *callback_data, unsigned int packet_length)
 			spin_unlock_irqrestore(&network->lock, flags);
 			ppp_output_wakeup(network->ppp_channel);
 			if (ipwireless_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME
 				       ": ppp unblocked\n");
+#else
+				;
+#endif
 		} else
 			spin_unlock_irqrestore(&network->lock, flags);
 	} else
@@ -146,7 +150,11 @@ static int ipwireless_ppp_start_xmit(struct ppp_channel *ppp_channel,
 		network->ppp_blocked = 1;
 		spin_unlock_irqrestore(&network->lock, flags);
 		if (ipwireless_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME ": ppp blocked\n");
+#else
+			;
+#endif
 		return 0;
 	}
 }
@@ -464,7 +472,11 @@ void ipwireless_disassociate_network_ttys(struct ipw_network *network,
 void ipwireless_ppp_open(struct ipw_network *network)
 {
 	if (ipwireless_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME ": online\n");
+#else
+		;
+#endif
 	schedule_work(&network->work_go_online);
 }
 
@@ -472,7 +484,11 @@ void ipwireless_ppp_close(struct ipw_network *network)
 {
 	/* Disconnect from the wireless network. */
 	if (ipwireless_debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME ": offline\n");
+#else
+		;
+#endif
 	schedule_work(&network->work_go_offline);
 }
 

@@ -336,8 +336,12 @@ EXPORT_SYMBOL(agp_try_unsupported_boot);
 static int __init agp_init(void)
 {
 	if (!agp_off)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Linux agpgart interface v%d.%d\n",
 			AGPGART_VERSION_MAJOR, AGPGART_VERSION_MINOR);
+#else
+		;
+#endif
 	return 0;
 }
 

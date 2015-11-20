@@ -15,6 +15,7 @@ module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "set debugging level (1=info (|-able))." DVB_USB_DEBUG_STATUS);
 MODULE_LICENSE("GPL");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_info(args...) dprintk(debug,0x01,args)
 
 /* common stuff used by the different dibusb modules */
@@ -22,6 +23,9 @@ int dibusb_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
 {
 	if (adap->priv != NULL) {
 		struct dibusb_state *st = adap->priv;
+#else
+#define deb_info(args...) d;
+#endif
 		if (st->ops.fifo_ctrl != NULL)
 			if (st->ops.fifo_ctrl(adap->fe,onoff)) {
 				err("error while controlling the fifo of the demod.");

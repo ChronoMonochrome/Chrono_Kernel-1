@@ -215,9 +215,13 @@ static void debug_fcp(const u8 *data, int length)
 	op           = debug_fcp_opcode(opcode, data, length);
 
 	if (op) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%ssu=%x.%x l=%d: %-8s - %s\n",
 		       prefix, subunit_type, subunit_id, length,
 		       debug_fcp_ctype(data[0]), op);
+#else
+		;
+#endif
 		if (avc_debug & AVC_DEBUG_FCP_PAYLOADS)
 			print_hex_dump(KERN_INFO, prefix, DUMP_PREFIX_NONE,
 				       16, 1, data, length, false);
@@ -226,7 +230,11 @@ static void debug_fcp(const u8 *data, int length)
 
 static void debug_pmt(char *msg, int length)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "APP PMT -> l=%d\n", length);
+#else
+	;
+#endif
 	print_hex_dump(KERN_INFO, "APP PMT -> ", DUMP_PREFIX_NONE,
 		       16, 1, msg, length, false);
 }

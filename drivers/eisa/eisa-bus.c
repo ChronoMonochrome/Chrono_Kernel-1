@@ -315,8 +315,12 @@ static int __init eisa_probe(struct eisa_root_device *root)
         int i, c;
 	struct eisa_device *edev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EISA: Probing bus %d at %s\n",
 	       root->bus_nr, dev_name(root->dev));
+#else
+	;
+#endif
 
 	/* First try to get hold of slot 0. If there is no device
 	 * here, simply fail, unless root->force_probe is set. */
@@ -328,8 +332,12 @@ static int __init eisa_probe(struct eisa_root_device *root)
 	}
 		
 	if (eisa_request_resources(root, edev, 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING \
 		       "EISA: Cannot allocate resource for mainboard\n");
+#else
+		;
+#endif
 		kfree(edev);
 		if (!root->force_probe)
 			return -EBUSY;
@@ -344,7 +352,11 @@ static int __init eisa_probe(struct eisa_root_device *root)
 		goto force_probe;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EISA: Mainboard %s detected.\n", edev->id.sig);
+#else
+	;
+#endif
 
 	if (eisa_register_device(edev)) {
 		printk(KERN_ERR "EISA: Failed to register %s\n",
@@ -363,9 +375,13 @@ static int __init eisa_probe(struct eisa_root_device *root)
 		}
 
 		if (eisa_request_resources(root, edev, i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING \
 			       "Cannot allocate resource for EISA slot %d\n",
 			       i);
+#else
+			;
+#endif
 			kfree(edev);
 			continue;
 		}
@@ -376,20 +392,36 @@ static int __init eisa_probe(struct eisa_root_device *root)
 			continue;
 		}
 		
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "EISA: slot %d : %s detected",
 		       i, edev->id.sig);
+#else
+		;
+#endif
 			
 		switch (edev->state) {
 		case EISA_CONFIG_ENABLED | EISA_CONFIG_FORCED:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" (forced enabled)");
+#else
+			;
+#endif
 			break;
 
 		case EISA_CONFIG_FORCED:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" (forced disabled)");
+#else
+			;
+#endif
 			break;
 
 		case 0:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" (disabled)");
+#else
+			;
+#endif
 			break;
 		}
 			
@@ -405,7 +437,11 @@ static int __init eisa_probe(struct eisa_root_device *root)
 		}
         }
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EISA: Detected %d card%s.\n", c, c == 1 ? "" : "s");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -454,7 +490,11 @@ static int __init eisa_init(void)
 	if (r)
 		return r;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EISA bus registered\n");
+#else
+	;
+#endif
 	return 0;
 }
 

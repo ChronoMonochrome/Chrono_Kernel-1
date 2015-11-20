@@ -33,6 +33,7 @@
 #define TORCH_TIME_EXPIRE	1
 
 #if	TORCH_FLASH_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define	torch_debug_msg(fmt, args...)	printk(KERN_INFO "[TORCH: %-18s:%5d]" fmt, __FUNCTION__, __LINE__, ## args)
 #else
 #define	torch_debug_msg(fmt, args...)	do{}while(0)
@@ -40,6 +41,9 @@
 
 #if TORCH_TIME_EXPIRE
 struct hrtimer torch_timer;
+#else
+#define	torch_debug_msg(fmt, args...)	;
+#endif
 struct work_struct  torch_work;
 static struct workqueue_struct *torch_wq;
 #endif

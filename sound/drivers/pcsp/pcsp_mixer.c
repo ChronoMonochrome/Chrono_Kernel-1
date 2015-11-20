@@ -72,7 +72,11 @@ static int pcsp_treble_put(struct snd_kcontrol *kcontrol,
 	if (treble != chip->treble) {
 		chip->treble = treble;
 #if PCSP_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PCSP: rate set to %li\n", PCSP_RATE());
+#else
+		;
+#endif
 #endif
 		changed = 1;
 	}

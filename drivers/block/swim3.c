@@ -334,11 +334,19 @@ static void start_request(struct floppy_state *fs)
 		}
 		req = fd_req;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("do_fd_req: dev=%s cmd=%d sec=%ld nr_sec=%u buf=%p\n",
 		       req->rq_disk->disk_name, req->cmd,
 		       (long)blk_rq_pos(req), blk_rq_sectors(req), req->buffer);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("           errors=%d current_nr_sectors=%u\n",
 		       req->errors, blk_rq_cur_sectors(req));
+#else
+		;
+#endif
 #endif
 
 		if (blk_rq_pos(req) >= fs->total_secs) {
@@ -511,7 +519,11 @@ static void act(struct floppy_state *fs)
 				break;
 			}
 			if (fs->req_cyl == fs->cur_cyl) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("whoops, seeking 0\n");
+#else
+				;
+#endif
 				fs->state = do_transfer;
 				break;
 			}
@@ -736,9 +748,13 @@ static irqreturn_t swim3_interrupt(int irq, void *dev_id)
 				++fs->retries;
 				act(fs);
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("swim3: error %sing block %ld (err=%x)\n",
 				       rq_data_dir(fd_req) == WRITE? "writ": "read",
 				       (long)blk_rq_pos(fd_req), err);
+#else
+				;
+#endif
 				swim3_end_request_cur(-EIO);
 				fs->state = idle;
 			}
@@ -1039,13 +1055,21 @@ static int swim3_add_device(struct macio_dev *mdev, int index)
 
 	/* Check & Request resources */
 	if (macio_resource_count(mdev) < 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ifd%d: no address for %s\n",
 		       index, swim->full_name);
+#else
+		;
+#endif
 		return -ENXIO;
 	}
 	if (macio_irq_count(mdev) < 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "fd%d: no intrs for device %s\n",
 			index, swim->full_name);
+#else
+		;
+#endif
 	}
 	if (macio_request_resource(mdev, 0, "swim3 (mmio)")) {
 		printk(KERN_ERR "fd%d: can't request mmio resource for %s\n",
@@ -1069,16 +1093,24 @@ static int swim3_add_device(struct macio_dev *mdev, int index)
 	fs->swim3 = (struct swim3 __iomem *)
 		ioremap(macio_resource_start(mdev, 0), 0x200);
 	if (fs->swim3 == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fd%d: couldn't map registers for %s\n",
 		       index, swim->full_name);
+#else
+		;
+#endif
 		rc = -ENOMEM;
 		goto out_release;
 	}
 	fs->dma = (struct dbdma_regs __iomem *)
 		ioremap(macio_resource_start(mdev, 1), 0x200);
 	if (fs->dma == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fd%d: couldn't map DMA for %s\n",
 		       index, swim->full_name);
+#else
+		;
+#endif
 		iounmap(fs->swim3);
 		rc = -ENOMEM;
 		goto out_release;
@@ -1114,8 +1146,12 @@ static int swim3_add_device(struct macio_dev *mdev, int index)
 
 	init_timer(&fs->timeout);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "fd%d: SWIM3 floppy controller %s\n", floppy_count,
 		mdev->media_bay ? "in media bay" : "");
+#else
+	;
+#endif
 
 	return 0;
 

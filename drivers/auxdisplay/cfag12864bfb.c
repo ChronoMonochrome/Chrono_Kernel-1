@@ -102,8 +102,12 @@ static int __devinit cfag12864bfb_probe(struct platform_device *device)
 
 	platform_set_drvdata(device, info);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "fb%d: %s frame buffer device\n", info->node,
 		info->fix.id);
+#else
+	;
+#endif
 
 	return 0;
 

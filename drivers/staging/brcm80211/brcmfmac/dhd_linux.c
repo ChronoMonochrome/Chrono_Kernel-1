@@ -1966,8 +1966,12 @@ dhd_pub_t *dhd_attach(struct dhd_bus *bus, uint bus_hdrlen)
 		dhd->watchdog_tsk = kthread_run(dhd_watchdog_thread, dhd,
 						"dhd_watchdog");
 		if (IS_ERR(dhd->watchdog_tsk)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"dhd_watchdog thread failed to start\n");
+#else
+			;
+#endif
 			dhd->watchdog_tsk = NULL;
 		}
 	} else {
@@ -1980,8 +1984,12 @@ dhd_pub_t *dhd_attach(struct dhd_bus *bus, uint bus_hdrlen)
 		sema_init(&dhd->dpc_sem, 0);
 		dhd->dpc_tsk = kthread_run(dhd_dpc_thread, dhd, "dhd_dpc");
 		if (IS_ERR(dhd->dpc_tsk)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"dhd_dpc thread failed to start\n");
+#else
+			;
+#endif
 			dhd->dpc_tsk = NULL;
 		}
 	} else {
@@ -1994,8 +2002,12 @@ dhd_pub_t *dhd_attach(struct dhd_bus *bus, uint bus_hdrlen)
 		dhd->sysioc_tsk = kthread_run(_dhd_sysioc_thread, dhd,
 						"_dhd_sysioc");
 		if (IS_ERR(dhd->sysioc_tsk)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"_dhd_sysioc thread failed to start\n");
+#else
+			;
+#endif
 			dhd->sysioc_tsk = NULL;
 		}
 	} else

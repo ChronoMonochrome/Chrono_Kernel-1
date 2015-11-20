@@ -479,7 +479,11 @@ ssize_t iio_store_ring_enable(struct device *dev,
 	requested_state = !(buf[0] == '0');
 	current_state = !!(previous_mode & INDIO_ALL_RING_MODES);
 	if (current_state == requested_state) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "iio-ring, current state requested again\n");
+#else
+		;
+#endif
 		goto done;
 	}
 	if (requested_state) {
@@ -495,9 +499,13 @@ ssize_t iio_store_ring_enable(struct device *dev,
 		if (ring->access->request_update) {
 			ret = ring->access->request_update(ring);
 			if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 				       "Buffer not started:"
 				       "ring parameter update failed\n");
+#else
+				;
+#endif
 				goto error_ret;
 			}
 		}
@@ -506,8 +514,12 @@ ssize_t iio_store_ring_enable(struct device *dev,
 		/* Definitely possible for devices to support both of these.*/
 		if (dev_info->modes & INDIO_RING_TRIGGERED) {
 			if (!dev_info->trig) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 				       "Buffer not started: no trigger\n");
+#else
+				;
+#endif
 				ret = -EINVAL;
 				if (ring->access->unmark_in_use)
 					ring->access->unmark_in_use(ring);
@@ -524,9 +536,13 @@ ssize_t iio_store_ring_enable(struct device *dev,
 		if (ring->setup_ops->postenable) {
 			ret = ring->setup_ops->postenable(dev_info);
 			if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 				       "Buffer not started:"
 				       "postenable failed\n");
+#else
+				;
+#endif
 				if (ring->access->unmark_in_use)
 					ring->access->unmark_in_use(ring);
 				dev_info->currentmode = previous_mode;

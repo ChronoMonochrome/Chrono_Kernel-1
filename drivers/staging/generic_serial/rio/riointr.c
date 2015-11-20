@@ -104,7 +104,11 @@ void RIOTxEnable(char *en)
 	tty = PortP->gs.port.tty;
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 	rio_dprintk(RIO_DEBUG_INTR, "tx port %d: %d chars queued.\n", PortP->PortNum, PortP->gs.xmit_cnt);
+#else
+	rio_d;
+#endif
 
 	if (!PortP->gs.xmit_cnt)
 		return;
@@ -131,7 +135,11 @@ void RIOTxEnable(char *en)
 			int t;
 			t = (c > 10) ? 10 : c;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_INTR, "rio: tx port %d: copying %d chars: %s - %s\n", PortP->PortNum, c, firstchars(PortP->gs.xmit_buf + PortP->gs.xmit_tail, t), firstchars(PortP->gs.xmit_buf + PortP->gs.xmit_tail + c - t, t));
+#else
+			rio_d;
+#endif
 		}
 		/* If for one reason or another, we can't copy more data,
 		   we're done! */
@@ -177,7 +185,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 		static int t = 0;
 		rio_spin_unlock(&HostP->HostLock);
 		if ((t++ % 200) == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_INTR, "Interrupt but host not running. flags=%x.\n", (int) HostP->Flags);
+#else
+			rio_d;
+#endif
 		return;
 	}
 	rio_spin_unlock(&HostP->HostLock);
@@ -186,7 +198,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 		writew(0, &HostP->ParmMapP->rup_intr);
 		p->RIORupCount++;
 		RupIntr++;
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_INTR, "rio: RUP interrupt on host %Zd\n", HostP - p->RIOHosts);
+#else
+		rio_d;
+#endif
 		RIOPollHostCommands(p, HostP);
 	}
 
@@ -197,7 +213,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 		p->RIORxCount++;
 		RxIntr++;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_INTR, "rio: RX interrupt on host %Zd\n", HostP - p->RIOHosts);
+#else
+		rio_d;
+#endif
 		/*
 		 ** Loop through every port. If the port is mapped into
 		 ** the system ( i.e. has /dev/ttyXXXX associated ) then it is
@@ -263,7 +283,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 				 ** MAGIC! ( Basically, handshake the RX buffer, so that
 				 ** the RTAs upstream can be re-enabled. )
 				 */
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, "Set RX handshake bit\n");
+#else
+				rio_d;
+#endif
 				writew(PHB_HANDSHAKE_SET | PHB_HANDSHAKE_RESET, &PortP->PhbP->handshake);
 			}
 			rio_spin_unlock(&PortP->portSem);
@@ -277,7 +301,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 
 		p->RIOTxCount++;
 		TxIntr++;
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_INTR, "rio: TX interrupt on host %Zd\n", HostP - p->RIOHosts);
+#else
+		rio_d;
+#endif
 
 		/*
 		 ** Loop through every port.
@@ -314,7 +342,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 				continue;
 			}
 
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_INTR, "rio: Looking into port %d.\n", port);
+#else
+			rio_d;
+#endif
 			/*
 			 ** Lock the port before we begin working on it.
 			 */
@@ -325,7 +357,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 			 ** we need do none of this processing.
 			 */
 			if (!can_add_transmit(&PacketP, PortP)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, "Can't add to port, so skipping.\n");
+#else
+				rio_d;
+#endif
 				rio_spin_unlock(&PortP->portSem);
 				continue;
 			}
@@ -337,7 +373,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 			ttyP = PortP->gs.port.tty;
 			/* If ttyP is NULL, the port is getting closed. Forget about it. */
 			if (!ttyP) {
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, "no tty, so skipping.\n");
+#else
+				rio_d;
+#endif
 				rio_spin_unlock(&PortP->portSem);
 				continue;
 			}
@@ -407,17 +447,29 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 				 ** with WFLUSH
 				 */
 				if (PortP->WflushFlag) {
+#ifdef CONFIG_DEBUG_PRINTK
 					rio_dprintk(RIO_DEBUG_INTR, "Want to WFLUSH mark this port\n");
+#else
+					rio_d;
+#endif
 
 					if (PortP->InUse)
+#ifdef CONFIG_DEBUG_PRINTK
 						rio_dprintk(RIO_DEBUG_INTR, "FAILS - PORT IS IN USE\n");
+#else
+						rio_d;
+#endif
 				}
 
 				while (PortP->WflushFlag && can_add_transmit(&PacketP, PortP) && (PortP->InUse == NOT_INUSE)) {
 					int p;
 					struct PktCmd __iomem *PktCmdP;
 
+#ifdef CONFIG_DEBUG_PRINTK
 					rio_dprintk(RIO_DEBUG_INTR, "Add WFLUSH marker to data queue\n");
+#else
+					rio_d;
+#endif
 					/*
 					 ** make it look just like a WFLUSH command
 					 */
@@ -472,7 +524,11 @@ void RIOServiceHost(struct rio_info *p, struct Host *HostP)
 						PortP->MagicFlags &= ~MAGIC_FLUSH;
 					}
 
+#ifdef CONFIG_DEBUG_PRINTK
 					rio_dprintk(RIO_DEBUG_INTR, "Wflush count now stands at %d\n", PortP->WflushFlag);
+#else
+					rio_d;
+#endif
 				}
 				if (PortP->MagicFlags & MORE_OUTPUT_EYGOR) {
 					if (PortP->MagicFlags & MAGIC_FLUSH) {
@@ -543,12 +599,20 @@ static void RIOReceive(struct rio_info *p, struct Port *PortP)
 
 	TtyP = PortP->gs.port.tty;
 	if (!TtyP) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_INTR, "RIOReceive: tty is null. \n");
+#else
+		rio_d;
+#endif
 		return;
 	}
 
 	if (PortP->State & RIO_THROTTLE_RX) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_INTR, "RIOReceive: Throttled. Can't handle more input.\n");
+#else
+		rio_d;
+#endif
 		return;
 	}
 
@@ -574,18 +638,58 @@ static void RIOReceive(struct rio_info *p, struct Port *PortP)
 			 ** check that it is not a command!
 			 */
 			if (readb(&PacketP->len) & PKT_CMD_BIT) {
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, "RIO: unexpected command packet received on PHB\n");
+#else
+				rio_d;
+#endif
 				/*      rio_dprint(RIO_DEBUG_INTR, (" sysport   = %d\n", p->RIOPortp->PortNum)); */
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, " dest_unit = %d\n", readb(&PacketP->dest_unit));
+#else
+				rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, " dest_port = %d\n", readb(&PacketP->dest_port));
+#else
+				rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, " src_unit  = %d\n", readb(&PacketP->src_unit));
+#else
+				rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, " src_port  = %d\n", readb(&PacketP->src_port));
+#else
+				rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, " len	   = %d\n", readb(&PacketP->len));
+#else
+				rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, " control   = %d\n", readb(&PacketP->control));
+#else
+				rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, " csum	   = %d\n", readw(&PacketP->csum));
+#else
+				rio_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				rio_dprintk(RIO_DEBUG_INTR, "	 data bytes: ");
+#else
+				rio_d;
+#endif
 				for (DataCnt = 0; DataCnt < PKT_MAX_DATA_LEN; DataCnt++)
+#ifdef CONFIG_DEBUG_PRINTK
 					rio_dprintk(RIO_DEBUG_INTR, "%d\n", readb(&PacketP->data[DataCnt]));
+#else
+					rio_d;
+#endif
 				remove_receive(PortP);
 				put_free_end(PortP->HostP, PacketP);
 				continue;	/* with next packet */
@@ -607,7 +711,11 @@ static void RIOReceive(struct rio_info *p, struct Port *PortP)
 			 */
 
 			transCount = tty_buffer_request_room(TtyP, readb(&PacketP->len) & PKT_LEN_MASK);
+#ifdef CONFIG_DEBUG_PRINTK
 			rio_dprintk(RIO_DEBUG_REC, "port %d: Copy %d bytes\n", PortP->PortNum, transCount);
+#else
+			rio_d;
+#endif
 			/*
 			 ** To use the following 'kkprintfs' for debugging - change the '#undef'
 			 ** to '#define', (this is the only place ___DEBUG_IT___ occurs in the
@@ -636,7 +744,11 @@ static void RIOReceive(struct rio_info *p, struct Port *PortP)
 		}
 	}
 	if (copied) {
+#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_REC, "port %d: pushing tty flip buffer: %d total bytes copied.\n", PortP->PortNum, copied);
+#else
+		rio_d;
+#endif
 		tty_flip_buffer_push(TtyP);
 	}
 

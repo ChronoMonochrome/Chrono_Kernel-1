@@ -388,7 +388,11 @@ static int ttusbir_init_module(void)
 
 static void ttusbir_exit_module(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Module ttusbir exit\n");
+#else
+	;
+#endif
 	usb_deregister(&usb_driver);
 }
 

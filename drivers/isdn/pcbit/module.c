@@ -37,9 +37,13 @@ static int __init pcbit_init(void)
 
 	num_boards = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE 
 	       "PCBIT-D device driver v 0.5-fjpc0 19991204 - "
 	       "Copyright (C) 1996 Universidade de Lisboa\n");
+#else
+	;
+#endif
 
 	if (mem[0] || irq[0]) 
 	{
@@ -55,9 +59,13 @@ static int __init pcbit_init(void)
 		
 			else 
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING 
 				       "pcbit_init failed for dev %d", 
 				       board + 1);
+#else
+				;
+#endif
 				return -EIO;
 			}
 		}
@@ -67,8 +75,12 @@ static int __init pcbit_init(void)
 
 	if (!num_boards)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO 
 		       "Trying to detect board using default settings\n");
+#else
+		;
+#endif
 		if (pcbit_init_dev(0, 0xD0000, 5) == 0)
 			num_boards++;
 		else
@@ -84,8 +96,12 @@ static void __exit pcbit_exit(void)
 
 	for (board = 0; board < num_boards; board++)
 		pcbit_terminate(board);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE 
 	       "PCBIT-D module unloaded\n");
+#else
+	;
+#endif
 #endif
 }
 

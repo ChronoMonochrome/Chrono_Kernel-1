@@ -104,11 +104,15 @@ static struct pohmelfs_name *pohmelfs_insert_hash(struct pohmelfs_inode *pi,
 	}
 
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: exist: parent: %llu, ino: %llu, hash: %x, len: %u, data: '%s', "
 					"new: ino: %llu, hash: %x, len: %u, data: '%s'.\n",
 				__func__, pi->ino,
 				ret->ino, ret->hash, ret->len, ret->data,
 				new->ino, new->hash, new->len, new->data);
+#else
+		;
+#endif
 		ret->ino = new->ino;
 		return ret;
 	}
@@ -233,8 +237,12 @@ struct pohmelfs_inode *pohmelfs_new_inode(struct pohmelfs_sb *psb,
 	struct pohmelfs_inode *npi;
 	int err = -EEXIST;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: creating inode: parent: %llu, ino: %llu, str: %p.\n",
 			__func__, (parent) ? parent->ino : 0, info->ino, str);
+#else
+	d;
+#endif
 
 	err = -ENOMEM;
 	new = iget_locked(psb->sb, info->ino);
@@ -246,8 +254,12 @@ struct pohmelfs_inode *pohmelfs_new_inode(struct pohmelfs_sb *psb,
 	err = 0;
 
 	if (new->i_state & I_NEW) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: filling VFS inode: %lu/%llu.\n",
 				__func__, new->i_ino, info->ino);
+#else
+		d;
+#endif
 		pohmelfs_fill_inode(new, info);
 
 		if (S_ISDIR(info->mode)) {
@@ -276,9 +288,13 @@ struct pohmelfs_inode *pohmelfs_new_inode(struct pohmelfs_sb *psb,
 		if (parent) {
 			err = pohmelfs_add_dir(psb, parent, npi, str, info->mode, link);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: %s inserted name: '%s', new_offset: %llu, ino: %llu, parent: %llu.\n",
 					__func__, (err) ? "unsuccessfully" : "successfully",
 					str->name, parent->total_len, info->ino, parent->ino);
+#else
+			d;
+#endif
 
 			if (err && err != -EEXIST)
 				goto err_out_put;
@@ -298,7 +314,11 @@ struct pohmelfs_inode *pohmelfs_new_inode(struct pohmelfs_sb *psb,
 	return npi;
 
 err_out_put:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: putting inode: %p, npi: %p, error: %d.\n", __func__, new, npi, err);
+#else
+	;
+#endif
 	iput(new);
 err_out_exit:
 	return ERR_PTR(err);
@@ -310,7 +330,11 @@ static int pohmelfs_remote_sync_complete(struct page **pages, unsigned int page_
 	struct pohmelfs_inode *pi = private;
 	struct pohmelfs_sb *psb = POHMELFS_SB(pi->vfs_inode.i_sb);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ino: %llu, err: %d.\n", __func__, pi->ino, err);
+#else
+	d;
+#endif
 
 	if (err)
 		pi->error = err;
@@ -332,8 +356,12 @@ static int pohmelfs_sync_remote_dir(struct pohmelfs_inode *pi)
 	long ret = psb->wait_on_page_timeout;
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: dir: %llu, state: %lx: remote_synced: %d.\n",
 		__func__, pi->ino, pi->state, test_bit(NETFS_INODE_REMOTE_SYNCED, &pi->state));
+#else
+	d;
+#endif
 
 	if (test_bit(NETFS_INODE_REMOTE_DIR_SYNCED, &pi->state))
 		return 0;
@@ -351,7 +379,11 @@ static int pohmelfs_sync_remote_dir(struct pohmelfs_inode *pi)
 	pi->error = 0;
 	ret = wait_event_interruptible_timeout(psb->wait,
 			test_bit(NETFS_INODE_REMOTE_DIR_SYNCED, &pi->state) || pi->error, ret);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: awake dir: %llu, ret: %ld, err: %d.\n", __func__, pi->ino, ret, pi->error);
+#else
+	d;
+#endif
 	if (ret <= 0) {
 		err = ret;
 		if (!err)
@@ -389,9 +421,13 @@ static int pohmelfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	int err = 0, mode;
 	u64 len;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: parent: %llu, fpos: %llu, hash: %08lx.\n",
 			__func__, pi->ino, (u64)file->f_pos,
 			(unsigned long)file->private_data);
+#else
+	d;
+#endif
 #if 0
 	err = pohmelfs_data_lock(pi, 0, ~0, POHMELFS_READ_LOCK);
 	if (err)
@@ -410,10 +446,14 @@ static int pohmelfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 	while (n) {
 		mode = (n->mode >> 12) & 15;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: offset: %llu, parent ino: %llu, name: '%s', len: %u, ino: %llu, "
 				"mode: %o/%o, fpos: %llu, hash: %08x.\n",
 				__func__, file->f_pos, pi->ino, n->data, n->len,
 				n->ino, n->mode, mode, file->f_pos, n->hash);
+#else
+		d;
+#endif
 
 		file->private_data = (void *)(unsigned long)n->hash;
 
@@ -421,7 +461,11 @@ static int pohmelfs_readdir(struct file *file, void *dirent, filldir_t filldir)
 		err = filldir(dirent, n->data, n->len, file->f_pos, n->ino, mode);
 
 		if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: err: %d.\n", __func__, err);
+#else
+			d;
+#endif
 			err = 0;
 			break;
 		}
@@ -489,8 +533,12 @@ static int pohmelfs_lookup_single(struct pohmelfs_inode *parent,
 err_out_exit:
 	clear_bit(NETFS_COMMAND_PENDING, &parent->state);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: failed: parent: %llu, ino: %llu, name: '%s', err: %d.\n",
 			__func__, parent->ino, ino, str->name, err);
+#else
+	;
+#endif
 
 	return err;
 }
@@ -533,8 +581,12 @@ struct dentry *pohmelfs_lookup(struct inode *dir, struct dentry *dentry, struct 
 		ino = n->ino;
 	mutex_unlock(&parent->offset_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: start ino: %lu, inode: %p, name: '%s', hash: %x, parent_state: %lx, need_lock: %d.\n",
 			__func__, ino, inode, str.name, str.hash, parent->state, need_lock);
+#else
+	d;
+#endif
 
 	if (ino) {
 		inode = ilookup(dir->i_sb, ino);
@@ -542,9 +594,13 @@ struct dentry *pohmelfs_lookup(struct inode *dir, struct dentry *dentry, struct 
 			goto out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: no inode dir: %p, dir_ino: %llu, name: '%s', len: %u, dir_state: %lx, ino: %lu.\n",
 			__func__, dir, parent->ino,
 			str.name, str.len, parent->state, ino);
+#else
+	d;
+#endif
 
 	if (!ino) {
 		if (!need_lock)
@@ -569,17 +625,29 @@ struct dentry *pohmelfs_lookup(struct inode *dir, struct dentry *dentry, struct 
 
 	if (ino) {
 		inode = ilookup(dir->i_sb, ino);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: second lookup ino: %lu, inode: %p, name: '%s', hash: %x.\n",
 				__func__, ino, inode, str.name, str.hash);
+#else
+		d;
+#endif
 		if (!inode) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: No inode for ino: %lu, name: '%s', hash: %x.\n",
 				__func__, ino, str.name, str.hash);
+#else
+			d;
+#endif
 			/* return NULL; */
 			return ERR_PTR(-EACCES);
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: No inode number : name: '%s', hash: %x.\n",
 			__func__, str.name, str.hash);
+#else
+		;
+#endif
 	}
 out:
 	return d_splice_alias(inode, dentry);
@@ -596,8 +664,12 @@ struct pohmelfs_inode *pohmelfs_create_entry_local(struct pohmelfs_sb *psb,
 	int err = -ENOMEM;
 	struct netfs_inode_info info;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: name: '%s', mode: %o, start: %llu.\n",
 			__func__, str->name, mode, start);
+#else
+	d;
+#endif
 
 	info.mode = mode;
 	info.ino = start;
@@ -623,7 +695,11 @@ struct pohmelfs_inode *pohmelfs_create_entry_local(struct pohmelfs_sb *psb,
 	return npi;
 
 err_out_unlock:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: err: %d.\n", __func__, err);
+#else
+	d;
+#endif
 	return ERR_PTR(err);
 }
 
@@ -651,9 +727,13 @@ static int pohmelfs_create_entry(struct inode *dir, struct dentry *dentry, u64 s
 
 	d_instantiate(dentry, &npi->vfs_inode);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: parent: %llu, inode: %llu, name: '%s', parent_nlink: %d, nlink: %d.\n",
 			__func__, parent->ino, npi->ino, dentry->d_name.name,
 			(signed)dir->i_nlink, (signed)npi->vfs_inode.i_nlink);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -694,9 +774,13 @@ static int pohmelfs_remove_entry(struct inode *dir, struct dentry *dentry)
 
 	str.hash = jhash(dentry->d_name.name, dentry->d_name.len, 0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: dir_ino: %llu, inode: %llu, name: '%s', nlink: %d.\n",
 			__func__, parent->ino, pi->ino,
 			str.name, (signed)inode->i_nlink);
+#else
+	d;
+#endif
 
 	BUG_ON(!inode);
 
@@ -740,9 +824,13 @@ static int pohmelfs_rmdir(struct inode *dir, struct dentry *dentry)
 	int err;
 	struct inode *inode = dentry->d_inode;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: parent: %llu, inode: %llu, name: '%s', parent_nlink: %d, nlink: %d.\n",
 			__func__, POHMELFS_I(dir)->ino, POHMELFS_I(inode)->ino,
 			dentry->d_name.name, (signed)dir->i_nlink, (signed)inode->i_nlink);
+#else
+	d;
+#endif
 
 	err = pohmelfs_remove_entry(dir, dentry);
 	if (!err) {
@@ -848,9 +936,13 @@ static int pohmelfs_create_link(struct pohmelfs_inode *parent, struct qstr *obj,
 		cmd->start = 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: parent: %llu, obj: '%s', target_inode: %llu, target_str: '%s', full: '%s'.\n",
 			__func__, parent->ino, obj->name, (target) ? target->ino : 0, (tstr) ? tstr->name : NULL,
 			(char *)data);
+#else
+	d;
+#endif
 
 	cmd->cmd = NETFS_LINK;
 	cmd->size = path_size;
@@ -1037,9 +1129,13 @@ static int pohmelfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		new_parent = old_parent;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ino: %llu, parent: %llu, name: '%s' -> parent: %llu, name: '%s', i_size: %llu.\n",
 			__func__, pi->ino, old_parent->ino, old_dentry->d_name.name,
 			new_parent->ino, new_dentry->d_name.name, inode->i_size);
+#else
+	d;
+#endif
 
 	if (test_bit(NETFS_INODE_REMOTE_SYNCED, &pi->state) &&
 			test_bit(NETFS_INODE_OWNED, &pi->state)) {

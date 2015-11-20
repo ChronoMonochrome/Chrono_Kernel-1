@@ -536,8 +536,12 @@ static int __init phantom_init(void)
 		goto err_unchr;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Phantom Linux Driver, version " PHANTOM_VERSION ", "
 			"init OK\n");
+#else
+	;
+#endif
 
 	return 0;
 err_unchr:

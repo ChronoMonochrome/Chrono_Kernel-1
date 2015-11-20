@@ -403,7 +403,11 @@ hysdn_procconf_init(void)
 		card = card->next;	/* next entry */
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "HYSDN: procfs initialised\n");
+#else
+	;
+#endif
 	return (0);
 }				/* hysdn_procconf_init */
 

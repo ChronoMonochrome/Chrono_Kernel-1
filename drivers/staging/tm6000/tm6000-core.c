@@ -51,18 +51,38 @@ int tm6000_read_write_usb(struct tm6000_core *dev, u8 req_type, u8 req,
 	}
 
 	if (tm6000_debug & V4L2_DEBUG_I2C) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(dev %p, pipe %08x): ", dev->udev, pipe);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %02x %02x %02x %02x %02x %02x %02x %02x ",
 			(req_type & USB_DIR_IN) ? " IN" : "OUT",
 			req_type, req, value&0xff, value>>8, index&0xff,
 			index>>8, len&0xff, len>>8);
+#else
+		;
+#endif
 
 		if (!(req_type & USB_DIR_IN)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(">>> ");
+#else
+			;
+#endif
 			for (i = 0; i < len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" %02x", buf[i]);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 		}
 	}
 
@@ -75,14 +95,34 @@ int tm6000_read_write_usb(struct tm6000_core *dev, u8 req_type, u8 req,
 	if (tm6000_debug & V4L2_DEBUG_I2C) {
 		if (ret < 0) {
 			if (req_type &  USB_DIR_IN)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("<<< (len=%d)\n", len);
+#else
+				;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: Error #%d\n", __FUNCTION__, ret);
+#else
+			;
+#endif
 		} else if (req_type &  USB_DIR_IN) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("<<< ");
+#else
+			;
+#endif
 			for (i = 0; i < len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" %02x", buf[i]);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 		}
 	}
 
@@ -552,17 +592,29 @@ int tm6000_init(struct tm6000_core *dev)
 	if (board >= 0) {
 		switch (board & 0xff) {
 		case 0xf3:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Found tm6000\n");
+#else
+			;
+#endif
 			if (dev->dev_type != TM6000)
 				dev->dev_type = TM6000;
 			break;
 		case 0xf4:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Found tm6010\n");
+#else
+			;
+#endif
 			if (dev->dev_type != TM6010)
 				dev->dev_type = TM6010;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Unknown board version = 0x%08x\n", board);
+#else
+			;
+#endif
 		}
 	} else
 		printk(KERN_ERR "Error %i while retrieving board version\n", board);
@@ -656,8 +708,12 @@ int tm6000_set_audio_rinput(struct tm6000_core *dev)
 			areg_f0 = 0x04;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: audio input dosn't support\n",
 				dev->name);
+#else
+			;
+#endif
 			return 0;
 			break;
 		}
@@ -675,8 +731,12 @@ int tm6000_set_audio_rinput(struct tm6000_core *dev)
 			areg_eb = 0x04;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: audio input dosn't support\n",
 				dev->name);
+#else
+			;
+#endif
 			return 0;
 			break;
 		}
@@ -732,9 +792,13 @@ int tm6000_tvaudio_set_mute(struct tm6000_core *dev, u8 mute)
 		if (dev->dev_type == TM6010)
 			tm6010_set_mute_sif(dev, mute);
 		else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "ERROR: TM5600 and TM6000 don't has"
 					" SIF audio inputs. Please check the %s"
 					" configuration.\n", dev->name);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		break;
@@ -793,9 +857,13 @@ void tm6000_set_volume(struct tm6000_core *dev, int vol)
 		if (dev->dev_type == TM6010)
 			tm6010_set_volume_sif(dev, vol);
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "ERROR: TM5600 and TM6000 don't has"
 					" SIF audio inputs. Please check the %s"
 					" configuration.\n", dev->name);
+#else
+			;
+#endif
 		break;
 	case TM6000_AMUX_ADC1:
 	case TM6000_AMUX_ADC2:
@@ -858,8 +926,12 @@ int tm6000_register_extension(struct tm6000_ops *ops)
 	list_add_tail(&ops->next, &tm6000_extension_devlist);
 	list_for_each_entry(dev, &tm6000_devlist, devlist) {
 		ops->init(dev);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Initialized (%s) extension\n",
 		       dev->name, ops->name);
+#else
+		;
+#endif
 	}
 	mutex_unlock(&tm6000_devlist_mutex);
 	return 0;
@@ -874,7 +946,11 @@ void tm6000_unregister_extension(struct tm6000_ops *ops)
 	list_for_each_entry(dev, &tm6000_devlist, devlist)
 		ops->fini(dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tm6000: Remove (%s) extension\n", ops->name);
+#else
+	;
+#endif
 	list_del(&ops->next);
 	mutex_unlock(&tm6000_devlist_mutex);
 }

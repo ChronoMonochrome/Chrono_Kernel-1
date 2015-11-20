@@ -509,12 +509,20 @@ static int __init padlock_init(void)
 	struct cpuinfo_x86 *c = &cpu_data(0);
 
 	if (!cpu_has_xcrypt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE PFX "VIA PadLock not detected.\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if (!cpu_has_xcrypt_enabled) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE PFX "VIA PadLock detected, but not enabled. Hmm, strange...\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -527,12 +535,20 @@ static int __init padlock_init(void)
 	if ((ret = crypto_register_alg(&cbc_aes_alg)))
 		goto cbc_aes_err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE PFX "Using VIA PadLock ACE for AES algorithm.\n");
+#else
+	;
+#endif
 
 	if (c->x86 == 6 && c->x86_model == 15 && c->x86_mask == 2) {
 		ecb_fetch_blocks = MAX_ECB_FETCH_BLOCKS;
 		cbc_fetch_blocks = MAX_CBC_FETCH_BLOCKS;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE PFX "VIA Nano stepping 2 detected: enabling workaround.\n");
+#else
+		;
+#endif
 	}
 
 out:

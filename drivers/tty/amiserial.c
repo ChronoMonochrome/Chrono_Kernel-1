@@ -44,6 +44,7 @@
 /* Sanity checks */
 
 #if defined(MODULE) && defined(SERIAL_DEBUG_MCOUNT)
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG_CNT(s) printk("(%s): [%x] refc=%d, serc=%d, ttyc=%d -> %s\n", \
  tty->name, (info->flags), serial_driver->refcount,info->count,tty->count,s)
 #else
@@ -61,6 +62,9 @@
 #include <linux/serialP.h>
 #include <linux/serial_reg.h>
 static char *serial_version = "4.30";
+#else
+#define DBG_CNT(s) ;
+#endif
 
 #include <linux/errno.h>
 #include <linux/signal.h>
@@ -127,11 +131,19 @@ static inline int serial_paranoia_check(struct async_struct *info,
 		"Warning: null async_struct for (%s) in %s\n";
 
 	if (!info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(badinfo, name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 	if (info->magic != SERIAL_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(badmagic, name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 #endif
@@ -268,7 +280,11 @@ static void receive_chars(struct async_struct *info)
 	icount->rx++;
 
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DR%02x:%02x...", ch, status);
+#else
+	;
+#endif
 #endif
 	flag = TTY_NORMAL;
 
@@ -305,7 +321,11 @@ static void receive_chars(struct async_struct *info)
 
 	  if (status & (UART_LSR_BI)) {
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("handling break....");
+#else
+	    ;
+#endif
 #endif
 	    flag = TTY_BREAK;
 	    if (info->flags & ASYNC_SAK)
@@ -362,7 +382,11 @@ static void transmit_chars(struct async_struct *info)
 		rs_sched_event(info, RS_EVENT_WRITE_WAKEUP);
 
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("THRE...");
+#else
+	;
+#endif
 #endif
 	if (info->xmit.head == info->xmit.tail) {
 	        custom.intena = IF_TBE;
@@ -401,14 +425,22 @@ static void check_modem_status(struct async_struct *info)
 
 	if ((info->flags & ASYNC_CHECK_CD) && (dstatus & SER_DCD)) {
 #if (defined(SERIAL_DEBUG_OPEN) || defined(SERIAL_DEBUG_INTR))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ttyS%d CD now %s...", info->line,
 		       (!(status & SER_DCD)) ? "on" : "off");
+#else
+		;
+#endif
 #endif
 		if (!(status & SER_DCD))
 			wake_up_interruptible(&info->open_wait);
 		else {
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("doing serial hangup...");
+#else
+			;
+#endif
 #endif
 			if (info->tty)
 				tty_hangup(info->tty);
@@ -418,7 +450,11 @@ static void check_modem_status(struct async_struct *info)
 		if (info->tty->hw_stopped) {
 			if (!(status & SER_CTS)) {
 #if (defined(SERIAL_DEBUG_INTR) || defined(SERIAL_DEBUG_FLOW))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("CTS tx start...");
+#else
+				;
+#endif
 #endif
 				info->tty->hw_stopped = 0;
 				info->IER |= UART_IER_THRI;
@@ -433,7 +469,11 @@ static void check_modem_status(struct async_struct *info)
 		} else {
 			if ((status & SER_CTS)) {
 #if (defined(SERIAL_DEBUG_INTR) || defined(SERIAL_DEBUG_FLOW))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("CTS tx stop...");
+#else
+				;
+#endif
 #endif
 				info->tty->hw_stopped = 1;
 				info->IER &= ~UART_IER_THRI;
@@ -465,7 +505,11 @@ static irqreturn_t ser_rx_int(int irq, void *dev_id)
 	struct async_struct * info;
 
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ser_rx_int...");
+#else
+	;
+#endif
 #endif
 
 	info = IRQ_ports;
@@ -475,7 +519,11 @@ static irqreturn_t ser_rx_int(int irq, void *dev_id)
 	receive_chars(info);
 	info->last_active = jiffies;
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("end.\n");
+#else
+	;
+#endif
 #endif
 	return IRQ_HANDLED;
 }
@@ -486,7 +534,11 @@ static irqreturn_t ser_tx_int(int irq, void *dev_id)
 
 	if (custom.serdatr & SDR_TBE) {
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	  printk("ser_tx_int...");
+#else
+	  ;
+#endif
 #endif
 
 	  info = IRQ_ports;
@@ -496,7 +548,11 @@ static irqreturn_t ser_tx_int(int irq, void *dev_id)
 	  transmit_chars(info);
 	  info->last_active = jiffies;
 #ifdef SERIAL_DEBUG_INTR
+#ifdef CONFIG_DEBUG_PRINTK
 	  printk("end.\n");
+#else
+	  ;
+#endif
 #endif
 	}
 	return IRQ_HANDLED;
@@ -563,7 +619,11 @@ static int startup(struct async_struct * info)
 		info->xmit.buf = (unsigned char *) page;
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("starting up ttys%d ...", info->line);
+#else
+	;
+#endif
 #endif
 
 	/* Clear anything in the input buffer */
@@ -644,7 +704,11 @@ static void shutdown(struct async_struct * info)
 	state = info->state;
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Shutting down serial port %d ....\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	local_irq_save(flags); /* Disable interrupts */
@@ -1009,8 +1073,12 @@ static void rs_throttle(struct tty_struct * tty)
 #ifdef SERIAL_DEBUG_THROTTLE
 	char	buf[64];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("throttle %s: %d....\n", tty_name(tty, buf),
 	       tty->ldisc.chars_in_buffer(tty));
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "rs_throttle"))
@@ -1034,8 +1102,12 @@ static void rs_unthrottle(struct tty_struct * tty)
 #ifdef SERIAL_DEBUG_THROTTLE
 	char	buf[64];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("unthrottle %s: %d....\n", tty_name(tty, buf),
 	       tty->ldisc.chars_in_buffer(tty));
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "rs_unthrottle"))
@@ -1452,7 +1524,11 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
 	}
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("rs_close ttys%d, count = %d\n", info->line, state->count);
+#else
+	;
+#endif
 #endif
 	if ((tty->count == 1) && (state->count != 1)) {
 		/*
@@ -1462,13 +1538,21 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
 		 * one, we've got real problems, since it means the
 		 * serial port won't be shutdown.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("rs_close: bad serial port count; tty->count is 1, "
+#else
+		;
+#endif
 		       "state->count is %d\n", state->count);
 		state->count = 1;
 	}
 	if (--state->count < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("rs_close: bad serial port count for ttys%d: %d\n",
 		       info->line, state->count);
+#else
+		;
+#endif
 		state->count = 0;
 	}
 	if (state->count) {
@@ -1574,12 +1658,24 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
 	if (!timeout || timeout > 2*info->timeout)
 		timeout = 2*info->timeout;
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("In rs_wait_until_sent(%d) check=%lu...", timeout, char_time);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("jiff=%lu...", jiffies);
+#else
+	;
+#endif
 #endif
 	while(!((lsr = custom.serdatr) & SDR_TSRE)) {
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("serdatr = %d (jiff=%lu)...", lsr, jiffies);
+#else
+		;
+#endif
 #endif
 		msleep_interruptible(jiffies_to_msecs(char_time));
 		if (signal_pending(current))
@@ -1591,7 +1687,11 @@ static void rs_wait_until_sent(struct tty_struct *tty, int timeout)
 	if (!tty_was_locked)
 		tty_unlock();
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("lsr = %d (jiff=%lu)...done\n", lsr, jiffies);
+#else
+	;
+#endif
 #endif
 }
 
@@ -1674,8 +1774,12 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
 	retval = 0;
 	add_wait_queue(&info->open_wait, &wait);
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("block_til_ready before block: ttys%d, count = %d\n",
 	       state->line, state->count);
+#else
+	;
+#endif
 #endif
 	local_irq_save(flags);
 	if (!tty_hung_up_p(filp)) {
@@ -1710,8 +1814,12 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
 			break;
 		}
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("block_til_ready blocking: ttys%d, count = %d\n",
 		       info->line, state->count);
+#else
+		;
+#endif
 #endif
 		tty_unlock();
 		schedule();
@@ -1723,8 +1831,12 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
 		state->count++;
 	info->blocked_open--;
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("block_til_ready after blocking: ttys%d, count = %d\n",
 	       info->line, state->count);
+#else
+	;
+#endif
 #endif
 	if (retval)
 		return retval;
@@ -1794,7 +1906,11 @@ static int rs_open(struct tty_struct *tty, struct file * filp)
 		return -ENODEV;
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("rs_open %s, count = %d\n", tty->name, info->state->count);
+#else
+	;
+#endif
 #endif
 	info->tty->low_latency = (info->flags & ASYNC_LOW_LATENCY) ? 1 : 0;
 
@@ -1824,14 +1940,22 @@ static int rs_open(struct tty_struct *tty, struct file * filp)
 	retval = block_til_ready(tty, filp, info);
 	if (retval) {
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("rs_open returning after block_til_ready with %d\n",
 		       retval);
+#else
+		;
+#endif
 #endif
 		return retval;
 	}
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("rs_open %s successful...", tty->name);
+#else
+	;
+#endif
 #endif
 	return 0;
 }
@@ -1936,7 +2060,11 @@ static const struct file_operations rs_proc_fops = {
  */
 static void show_serial_version(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
  	printk(KERN_INFO "%s version %s\n", serial_name, serial_version);
+#else
+ 	;
+#endif
 }
 
 
@@ -2014,8 +2142,12 @@ static int __init amiga_serial_probe(struct platform_device *pdev)
 	state->icount.frame = state->icount.parity = 0;
 	state->icount.overrun = state->icount.brk = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ttyS%d is the amiga builtin serial port\n",
 		       state->line);
+#else
+	;
+#endif
 
 	/* Hardware set up */
 
@@ -2070,11 +2202,19 @@ static int __exit amiga_serial_remove(struct platform_device *pdev)
 	struct serial_state *state = platform_get_drvdata(pdev);
 	struct async_struct *info = state->info;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Unloading %s: version %s\n", serial_name, serial_version); */
+#else
+	/* ;
+#endif
 	tasklet_kill(&info->tlet);
 	if ((error = tty_unregister_driver(serial_driver)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("SERIAL: failed to unregister serial driver (%d)\n",
 		       error);
+#else
+		;
+#endif
 	put_tty_driver(serial_driver);
 
 	rs_table[0].info = NULL;

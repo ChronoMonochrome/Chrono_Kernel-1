@@ -356,12 +356,20 @@ he_init_one(struct pci_dev *pci_dev, const struct pci_device_id *pci_ent)
 	struct he_dev *he_dev = NULL;
 	int err = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ATM he driver\n");
+#else
+	;
+#endif
 
 	if (pci_enable_device(pci_dev))
 		return -EIO;
 	if (pci_set_dma_mask(pci_dev, DMA_BIT_MASK(32)) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "he: no suitable dma available\n");
+#else
+		;
+#endif
 		err = -EIO;
 		goto init_one_failure;
 	}
@@ -543,7 +551,11 @@ he_init_tpdrq(struct he_dev *he_dev)
 	he_dev->tpdrq_base = pci_alloc_consistent(he_dev->pci_dev,
 		CONFIG_TPDRQ_SIZE * sizeof(struct he_tpdrq), &he_dev->tpdrq_phys);
 	if (he_dev->tpdrq_base == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("failed to alloc tpdrq\n");
+#else
+		h;
+#endif
 		return -ENOMEM;
 	}
 	memset(he_dev->tpdrq_base, 0,
@@ -793,7 +805,11 @@ he_init_group(struct he_dev *he_dev, int group)
 	he_dev->rbpl_table = kmalloc(BITS_TO_LONGS(RBPL_TABLE_SIZE)
 				     * sizeof(unsigned long), GFP_KERNEL);
 	if (!he_dev->rbpl_table) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("unable to allocate rbpl bitmap table\n");
+#else
+		h;
+#endif
 		return -ENOMEM;
 	}
 	bitmap_zero(he_dev->rbpl_table, RBPL_TABLE_SIZE);
@@ -802,7 +818,11 @@ he_init_group(struct he_dev *he_dev, int group)
 	he_dev->rbpl_virt = kmalloc(RBPL_TABLE_SIZE
 				    * sizeof(struct he_buff *), GFP_KERNEL);
 	if (!he_dev->rbpl_virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("unable to allocate rbpl virt table\n");
+#else
+		h;
+#endif
 		goto out_free_rbpl_table;
 	}
 
@@ -810,14 +830,22 @@ he_init_group(struct he_dev *he_dev, int group)
 	he_dev->rbpl_pool = pci_pool_create("rbpl", he_dev->pci_dev,
 					    CONFIG_RBPL_BUFSIZE, 64, 0);
 	if (he_dev->rbpl_pool == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("unable to create rbpl pool\n");
+#else
+		h;
+#endif
 		goto out_free_rbpl_virt;
 	}
 
 	he_dev->rbpl_base = pci_alloc_consistent(he_dev->pci_dev,
 		CONFIG_RBPL_SIZE * sizeof(struct he_rbp), &he_dev->rbpl_phys);
 	if (he_dev->rbpl_base == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("failed to alloc rbpl_base\n");
+#else
+		h;
+#endif
 		goto out_destroy_rbpl_pool;
 	}
 	memset(he_dev->rbpl_base, 0, CONFIG_RBPL_SIZE * sizeof(struct he_rbp));
@@ -856,7 +884,11 @@ he_init_group(struct he_dev *he_dev, int group)
 	he_dev->rbrq_base = pci_alloc_consistent(he_dev->pci_dev,
 		CONFIG_RBRQ_SIZE * sizeof(struct he_rbrq), &he_dev->rbrq_phys);
 	if (he_dev->rbrq_base == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("failed to allocate rbrq\n");
+#else
+		h;
+#endif
 		goto out_free_rbpl;
 	}
 	memset(he_dev->rbrq_base, 0, CONFIG_RBRQ_SIZE * sizeof(struct he_rbrq));
@@ -868,7 +900,11 @@ he_init_group(struct he_dev *he_dev, int group)
 		RBRQ_THRESH(CONFIG_RBRQ_THRESH) | RBRQ_SIZE(CONFIG_RBRQ_SIZE - 1),
 						G0_RBRQ_Q + (group * 16));
 	if (irq_coalesce) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("coalescing interrupts\n");
+#else
+		h;
+#endif
 		he_writel(he_dev, RBRQ_TIME(768) | RBRQ_COUNT(7),
 						G0_RBRQ_I + (group * 16));
 	} else
@@ -880,7 +916,11 @@ he_init_group(struct he_dev *he_dev, int group)
 	he_dev->tbrq_base = pci_alloc_consistent(he_dev->pci_dev,
 		CONFIG_TBRQ_SIZE * sizeof(struct he_tbrq), &he_dev->tbrq_phys);
 	if (he_dev->tbrq_base == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("failed to allocate tbrq\n");
+#else
+		h;
+#endif
 		goto out_free_rbpq_base;
 	}
 	memset(he_dev->tbrq_base, 0, CONFIG_TBRQ_SIZE * sizeof(struct he_tbrq));
@@ -926,7 +966,11 @@ he_init_irq(struct he_dev *he_dev)
 	he_dev->irq_base = pci_alloc_consistent(he_dev->pci_dev,
 			(CONFIG_IRQ_SIZE+1) * sizeof(struct he_irq), &he_dev->irq_phys);
 	if (he_dev->irq_base == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("failed to allocate irq\n");
+#else
+		h;
+#endif
 		return -ENOMEM;
 	}
 	he_dev->irq_tailoffset = (unsigned *)
@@ -969,7 +1013,11 @@ he_init_irq(struct he_dev *he_dev)
 
 	if (request_irq(he_dev->pci_dev->irq,
 			he_irq_handler, IRQF_SHARED, DEV_LABEL, he_dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("irq %d already in use\n", he_dev->pci_dev->irq);
+#else
+		h;
+#endif
 		return -EINVAL;
 	}   
 
@@ -1005,39 +1053,67 @@ he_start(struct atm_dev *dev)
 
 	/* 4.3 pci bus controller-specific initialization */
 	if (pci_read_config_dword(pci_dev, GEN_CNTL_0, &gen_cntl_0) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("can't read GEN_CNTL_0\n");
+#else
+		h;
+#endif
 		return -EINVAL;
 	}
 	gen_cntl_0 |= (MRL_ENB | MRM_ENB | IGNORE_TIMEOUT);
 	if (pci_write_config_dword(pci_dev, GEN_CNTL_0, gen_cntl_0) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("can't write GEN_CNTL_0.\n");
+#else
+		h;
+#endif
 		return -EINVAL;
 	}
 
 	if (pci_read_config_word(pci_dev, PCI_COMMAND, &command) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("can't read PCI_COMMAND.\n");
+#else
+		h;
+#endif
 		return -EINVAL;
 	}
 
 	command |= (PCI_COMMAND_MEMORY | PCI_COMMAND_MASTER | PCI_COMMAND_INVALIDATE);
 	if (pci_write_config_word(pci_dev, PCI_COMMAND, command) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("can't enable memory.\n");
+#else
+		h;
+#endif
 		return -EINVAL;
 	}
 
 	if (pci_read_config_byte(pci_dev, PCI_CACHE_LINE_SIZE, &cache_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("can't read cache line size?\n");
+#else
+		h;
+#endif
 		return -EINVAL;
 	}
 
 	if (cache_size < 16) {
 		cache_size = 16;
 		if (pci_write_config_byte(pci_dev, PCI_CACHE_LINE_SIZE, cache_size))
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("can't set cache line size to %d\n", cache_size);
+#else
+			h;
+#endif
 	}
 
 	if (pci_read_config_byte(pci_dev, PCI_LATENCY_TIMER, &timer)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("can't read latency timer?\n");
+#else
+		h;
+#endif
 		return -EINVAL;
 	}
 
@@ -1054,11 +1130,19 @@ he_start(struct atm_dev *dev)
 		HPRINTK("latency timer was %d, setting to %d\n", timer, LAT_TIMER);
 		timer = LAT_TIMER;
 		if (pci_write_config_byte(pci_dev, PCI_LATENCY_TIMER, timer))
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("can't set latency timer to %d\n", timer);
+#else
+			h;
+#endif
 	}
 
 	if (!(he_dev->membase = ioremap(membase, HE_REGMAP_SIZE))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("can't set up page mapping\n");
+#else
+		h;
+#endif
 		return -EINVAL;
 	}
 
@@ -1069,7 +1153,11 @@ he_start(struct atm_dev *dev)
 	udelay(16*1000);	/* 16 ms */
 	status = he_readl(he_dev, RESET_CNTL);
 	if ((status & BOARD_RST_STATUS) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("reset failed\n");
+#else
+		h;
+#endif
 		return -EINVAL;
 	}
 
@@ -1081,12 +1169,20 @@ he_start(struct atm_dev *dev)
 		gen_cntl_0 &= ~ENBL_64;
 
 	if (disable64 == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("disabling 64-bit pci bus transfers\n");
+#else
+		h;
+#endif
 		gen_cntl_0 &= ~ENBL_64;
 	}
 
 	if (gen_cntl_0 & ENBL_64)
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("64-bit transfers enabled\n");
+#else
+		h;
+#endif
 
 	pci_write_config_dword(pci_dev, GEN_CNTL_0, gen_cntl_0);
 
@@ -1099,6 +1195,7 @@ he_start(struct atm_dev *dev)
 	for (i = 0; i < 6; ++i)
 		dev->esi[i] = read_prom_byte(he_dev, MAC_ADDR + i);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	hprintk("%s%s, %x:%x:%x:%x:%x:%x\n",
 				he_dev->prod_id,
 					he_dev->media & 0x40 ? "SM" : "MM",
@@ -1108,6 +1205,9 @@ he_start(struct atm_dev *dev)
 						dev->esi[3],
 						dev->esi[4],
 						dev->esi[5]);
+#else
+	h;
+#endif
 	he_dev->atm_dev->link_rate = he_is622(he_dev) ?
 						ATM_OC12_PCR : ATM_OC3_PCR;
 
@@ -1183,7 +1283,11 @@ he_start(struct atm_dev *dev)
 	he_dev->vpibits = CONFIG_DEFAULT_VPIBITS;
 
 	if (nvpibits != -1 && nvcibits != -1 && nvpibits+nvcibits != HE_MAXCIDBITS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("nvpibits + nvcibits != %d\n", HE_MAXCIDBITS);
+#else
+		h;
+#endif
 		return -ENODEV;
 	}
 
@@ -1442,7 +1546,11 @@ he_start(struct atm_dev *dev)
 	he_dev->tpd_pool = pci_pool_create("tpd", he_dev->pci_dev,
 		sizeof(struct he_tpd), TPD_ALIGNMENT, 0);
 	if (he_dev->tpd_pool == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("unable to create tpd pci_pool\n");
+#else
+		h;
+#endif
 		return -ENOMEM;         
 	}
 
@@ -1482,7 +1590,11 @@ he_start(struct atm_dev *dev)
 	he_dev->hsp = pci_alloc_consistent(he_dev->pci_dev,
 				sizeof(struct he_hsp), &he_dev->hsp_phys);
 	if (he_dev->hsp == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("failed to allocate host status page\n");
+#else
+		h;
+#endif
 		return -ENOMEM;
 	}
 	memset(he_dev->hsp, 0, sizeof(struct he_hsp));
@@ -1697,7 +1809,11 @@ he_service_rbrq(struct he_dev *he_dev, int group)
 		lastcid = cid;
 
 		if (vcc == NULL || (he_vcc = HE_VCC(vcc)) == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("vcc/he_vcc == NULL  (cid 0x%x)\n", cid);
+#else
+			h;
+#endif
 			if (!RBRQ_HBUF_ERR(he_dev->rbrq_head)) {
 				clear_bit(i, he_dev->rbpl_table);
 				list_del(&heb->entry);
@@ -1708,7 +1824,11 @@ he_service_rbrq(struct he_dev *he_dev, int group)
 		}
 
 		if (RBRQ_HBUF_ERR(he_dev->rbrq_head)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("HBUF_ERR!  (cid 0x%x)\n", cid);
+#else
+			h;
+#endif
 				atomic_inc(&vcc->stats->rx_drop);
 			goto return_host_buffers;
 		}
@@ -1778,7 +1898,11 @@ he_service_rbrq(struct he_dev *he_dev, int group)
 
 #ifdef should_never_happen
 		if (skb->len > vcc->qos.rxtp.max_sdu)
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("pdu_len (%d) > vcc->qos.rxtp.max_sdu (%d)!  cid 0x%x\n", skb->len, vcc->qos.rxtp.max_sdu, cid);
+#else
+			h;
+#endif
 #endif
 
 #ifdef notdef
@@ -1847,8 +1971,12 @@ he_service_tbrq(struct he_dev *he_dev, int group)
 		}
 
 		if (tpd == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("unable to locate tpd for dma buffer %x\n",
 						TBRQ_TPD(he_dev->tbrq_head));
+#else
+			h;
+#endif
 			goto next_tbrq_entry;
 		}
 
@@ -1992,10 +2120,18 @@ he_tasklet(unsigned long data)
 			case ITYPE_OTHER:
 				switch (type|group) {
 					case ITYPE_PARITY:
+#ifdef CONFIG_DEBUG_PRINTK
 						hprintk("parity error\n");
+#else
+						h;
+#endif
 						break;
 					case ITYPE_ABORT:
+#ifdef CONFIG_DEBUG_PRINTK
 						hprintk("abort 0x%x\n", he_readl(he_dev, ABORT_ADDR));
+#else
+						h;
+#endif
 						break;
 				}
 				break;
@@ -2009,7 +2145,11 @@ he_tasklet(unsigned long data)
 				he_service_tbrq(he_dev, 0);
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				hprintk("bad isw 0x%x?\n", he_dev->irq_head->isw);
+#else
+				h;
+#endif
 		}
 
 		he_dev->irq_head->isw = ITYPE_INVALID;
@@ -2054,7 +2194,11 @@ he_irq_handler(int irq, void *dev_id)
 
 #ifdef DEBUG
 	if (he_dev->irq_head == he_dev->irq_tail /* && !IRQ_PENDING */)
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("spurious (or shared) interrupt?\n");
+#else
+		h;
+#endif
 #endif
 
 	if (he_dev->irq_head != he_dev->irq_tail) {
@@ -2095,7 +2239,11 @@ __enqueue_tpd(struct he_dev *he_dev, struct he_tpd *tpd, unsigned cid)
 		if (new_tail == he_dev->tpdrq_head) {
 			int slot;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("tpdrq full (cid 0x%x)\n", cid);
+#else
+			h;
+#endif
 			/*
 			 * FIXME
 			 * push tpd onto a transmit backlog queue
@@ -2155,7 +2303,11 @@ he_open(struct atm_vcc *vcc)
 
 	he_vcc = kmalloc(sizeof(struct he_vcc), GFP_ATOMIC);
 	if (he_vcc == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("unable to allocate he_vcc during open\n");
+#else
+		h;
+#endif
 		return -ENOMEM;
 	}
 
@@ -2198,7 +2350,11 @@ he_open(struct atm_vcc *vcc)
 		spin_unlock_irqrestore(&he_dev->global_lock, flags);
 
 		if (TSR0_CONN_STATE(tsr0) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("cid 0x%x not idle (tsr0 = 0x%x)\n", cid, tsr0);
+#else
+			h;
+#endif
 			err = -EBUSY;
 			goto open_failed;
 		}
@@ -2308,7 +2464,11 @@ he_open(struct atm_vcc *vcc)
 		if (rsr0 & RSR0_OPEN_CONN) {
 			spin_unlock_irqrestore(&he_dev->global_lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("cid 0x%x not idle (rsr0 = 0x%x)\n", cid, rsr0);
+#else
+			h;
+#endif
 			err = -EBUSY;
 			goto open_failed;
 		}
@@ -2392,7 +2552,11 @@ he_close(struct atm_vcc *vcc)
 		set_current_state(TASK_RUNNING);
 
 		if (timeout == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("close rx timeout cid 0x%x\n", cid);
+#else
+			h;
+#endif
 
 		HPRINTK("close rx cid 0x%x complete\n", cid);
 
@@ -2423,7 +2587,11 @@ he_close(struct atm_vcc *vcc)
 		}
 
 		if (tx_inuse > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("close tx cid 0x%x tx_inuse = %d\n", cid, tx_inuse);
+#else
+			h;
+#endif
 
 		/* 2.3.1.1 generic close operations with flush */
 
@@ -2445,7 +2613,11 @@ he_close(struct atm_vcc *vcc)
 
 		tpd = __alloc_tpd(he_dev);
 		if (tpd == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("close tx he_alloc_tpd failed cid 0x%x\n", cid);
+#else
+			h;
+#endif
 			goto close_tx_incomplete;
 		}
 		tpd->status |= TPD_EOS | TPD_INT;
@@ -2466,7 +2638,11 @@ he_close(struct atm_vcc *vcc)
 		spin_lock_irqsave(&he_dev->global_lock, flags);
 
 		if (timeout == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			hprintk("close tx timeout cid 0x%x\n", cid);
+#else
+			h;
+#endif
 			goto close_tx_incomplete;
 		}
 
@@ -2488,7 +2664,11 @@ close_tx_incomplete:
 			HPRINTK("cs_stper reg = %d\n", reg);
 
 			if (he_dev->cs_stper[reg].inuse == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 				hprintk("cs_stper[%d].inuse = 0!\n", reg);
+#else
+				h;
+#endif
 			else
 				--he_dev->cs_stper[reg].inuse;
 
@@ -2521,7 +2701,11 @@ he_send(struct atm_vcc *vcc, struct sk_buff *skb)
 
 	if ((skb->len > HE_TPD_BUFSIZE) ||
 	    ((vcc->qos.aal == ATM_AAL0) && (skb->len != ATM_AAL0_SDU))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("buffer too large (or small) -- %d bytes\n", skb->len );
+#else
+		h;
+#endif
 		if (vcc->pop)
 			vcc->pop(vcc, skb);
 		else
@@ -2532,7 +2716,11 @@ he_send(struct atm_vcc *vcc, struct sk_buff *skb)
 
 #ifndef USE_SCATTERGATHER
 	if (skb_shinfo(skb)->nr_frags) {
+#ifdef CONFIG_DEBUG_PRINTK
 		hprintk("no scatter/gather support\n");
+#else
+		h;
+#endif
 		if (vcc->pop)
 			vcc->pop(vcc, skb);
 		else

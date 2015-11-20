@@ -32,7 +32,11 @@ readreg(unsigned int ale, unsigned int adr, u_char off)
 	while (ret && --max_delay)
 		ret = HFC_BUSY & bytein(ale);
 	if (!max_delay) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "TeleInt Busy not inactive\n");
+#else
+		;
+#endif
 		return (0);
 	}
 	ret = bytein(adr);
@@ -52,7 +56,11 @@ readfifo(unsigned int ale, unsigned int adr, u_char off, u_char * data, int size
 		while (ret && --max_delay)
 			ret = HFC_BUSY & bytein(ale);
 		if (!max_delay) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "TeleInt Busy not inactive\n");
+#else
+			;
+#endif
 			return;
 		}
 		data[i] = bytein(adr);
@@ -71,7 +79,11 @@ writereg(unsigned int ale, unsigned int adr, u_char off, u_char data)
 	while (ret && --max_delay)
 		ret = HFC_BUSY & bytein(ale);
 	if (!max_delay) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "TeleInt Busy not inactive\n");
+#else
+		;
+#endif
 		return;
 	}
 	byteout(adr, data);
@@ -90,7 +102,11 @@ writefifo(unsigned int ale, unsigned int adr, u_char off, u_char * data, int siz
 		while (ret && --max_delay)
 			ret = HFC_BUSY & bytein(ale);
 		if (!max_delay) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "TeleInt Busy not inactive\n");
+#else
+			;
+#endif
 			return;
 		}
 		byteout(adr, data[i]);
@@ -213,7 +229,11 @@ release_io_TeleInt(struct IsdnCardState *cs)
 static void
 reset_TeleInt(struct IsdnCardState *cs)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TeleInt: resetting card\n");
+#else
+	;
+#endif
 	cs->hw.hfc.cirm |= HFC_RESET;
 	byteout(cs->hw.hfc.addr | 1, cs->hw.hfc.cirm);	/* Reset On */
 	mdelay(10);
@@ -266,7 +286,11 @@ setup_TeleInt(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, TeleInt_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: TeleInt driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_TELEINT)
 		return (0);
 
@@ -283,10 +307,14 @@ setup_TeleInt(struct IsdnCard *card)
 	cs->hw.hfc.timer.data = (long) cs;
 	init_timer(&cs->hw.hfc.timer);
 	if (!request_region(cs->hw.hfc.addr, 2, "TeleInt isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: TeleInt config port %x-%x already in use\n",
 		       cs->hw.hfc.addr,
 		       cs->hw.hfc.addr + 2);
+#else
+		;
+#endif
 		return (0);
 	}
 	/* HW IO = IO */
@@ -312,15 +340,23 @@ setup_TeleInt(struct IsdnCard *card)
 			cs->hw.hfc.cirm |= HFC_INTF;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "TeleInt: wrong IRQ\n");
+#else
+			;
+#endif
 			release_io_TeleInt(cs);
 			return (0);
 	}
 	byteout(cs->hw.hfc.addr | 1, cs->hw.hfc.cirm);
 	byteout(cs->hw.hfc.addr | 1, cs->hw.hfc.ctmt);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TeleInt: defined at 0x%x IRQ %d\n",
 		cs->hw.hfc.addr, cs->irq);
+#else
+	;
+#endif
 
 	setup_isac(cs);
 	cs->readisac = &ReadISAC;

@@ -1267,11 +1267,15 @@ static void __init i8042_register_ports(void)
 
 	for (i = 0; i < I8042_NUM_PORTS; i++) {
 		if (i8042_ports[i].serio) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "serio: %s at %#lx,%#lx irq %d\n",
 				i8042_ports[i].serio->name,
 				(unsigned long) I8042_DATA_REG,
 				(unsigned long) I8042_COMMAND_REG,
 				i8042_ports[i].irq);
+#else
+			;
+#endif
 			serio_register_port(i8042_ports[i].serio);
 		}
 	}

@@ -23,8 +23,12 @@
 #define elantech_debug(fmt, ...)					\
 	do {								\
 		if (etd->debug)						\
+#ifdef CONFIG_DEBUG_PRINTK
 			psmouse_printk(KERN_DEBUG, psmouse,		\
 					fmt, ##__VA_ARGS__);		\
+#else
+			psmouse_;
+#endif
 	} while (0)
 
 /*
@@ -204,10 +208,22 @@ static void elantech_packet_dump(struct psmouse *psmouse)
 {
 	int	i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	psmouse_printk(KERN_DEBUG, psmouse, "PS/2 packet [");
+#else
+	psmouse_;
+#endif
 	for (i = 0; i < psmouse->pktsize; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s0x%02x ", i ? ", " : " ", psmouse->packet[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("]\n");
+#else
+	;
+#endif
 }
 
 /*

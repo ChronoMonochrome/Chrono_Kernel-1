@@ -29,6 +29,7 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(args...)	printk(args)
 #else
 #define DBG(args...)	do { } while(0)
@@ -36,6 +37,9 @@
 
 struct wf_lm75_sensor {
 	int			ds1775 : 1;
+#else
+#define DBG(args...)	;
+#endif
 	int			inited : 1;
 	struct 	i2c_client	*i2c;
 	struct 	wf_sensor	sens;

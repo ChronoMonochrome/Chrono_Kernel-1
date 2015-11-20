@@ -334,10 +334,22 @@ static int bpck_test_proto( PIA *pi, char * scratch, int verbose )
 	}
 
 	if (verbose) {
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("%s: bpck: 0x%x unit %d mode %d: ",
 		   pi->device,pi->port,pi->unit,pi->mode);
+#else
+	    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	    for (i=0;i<TEST_LEN;i++) printk("%3d",buf[i]);
+#else
+	    for (i=0;i<TEST_LEN;i++) ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("\n");
+#else
+	    ;
+#endif
 	}
 
 	e = 0;
@@ -432,15 +444,31 @@ static void bpck_log_adapter( PIA *pi, char * scratch, int verbose )
 	   for(i=0;i<128;i++)
 		if ((scratch[i] < ' ') || (scratch[i] > '~'))
 		    scratch[i] = '.';
+#ifdef CONFIG_DEBUG_PRINTK
 	   printk("%s: bpck EEPROM: %64.64s\n",pi->device,scratch);
+#else
+	   ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	   printk("%s:              %64.64s\n",pi->device,&scratch[64]);
+#else
+	   ;
+#endif
 	}
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: bpck %s, backpack %8.8s unit %d",
 		pi->device,BPCK_VERSION,&scratch[110],pi->unit);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" at 0x%x, mode %d (%s), delay %d\n",pi->port,
 		pi->mode,mode_string[pi->mode],pi->delay);
+#else
+	;
+#endif
 }
 
 static struct pi_protocol bpck = {

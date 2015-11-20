@@ -67,9 +67,13 @@ static int wis_uda1342_probe(struct i2c_client *client,
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_WORD_DATA))
 		return -ENODEV;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"wis-uda1342: initializing UDA1342 at address %d on %s\n",
 		client->addr, adapter->name);
+#else
+	;
+#endif
 
 	write_reg(client, 0x00, 0x8000); /* reset registers */
 	write_reg(client, 0x00, 0x1241); /* select input 1 */

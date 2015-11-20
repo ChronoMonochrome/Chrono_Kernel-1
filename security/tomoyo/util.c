@@ -888,9 +888,13 @@ void tomoyo_warn_log(struct tomoyo_request_info *r, const char *fmt, ...)
 	vsnprintf(buffer, 4095, fmt, args);
 	va_end(args);
 	buffer[4095] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s: Access %s denied for %s\n",
 	       r->mode == TOMOYO_CONFIG_ENFORCING ? "ERROR" : "WARNING", buffer,
 	       tomoyo_last_word(domain->domainname->name));
+#else
+	;
+#endif
 	kfree(buffer);
 }
 
@@ -958,9 +962,13 @@ bool tomoyo_domain_quota_is_ok(struct tomoyo_request_info *r)
 		return true;
 	if (!domain->quota_warned) {
 		domain->quota_warned = true;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "TOMOYO-WARNING: "
 		       "Domain '%s' has so many ACLs to hold. "
 		       "Stopped learning mode.\n", domain->domainname->name);
+#else
+		;
+#endif
 	}
 	return false;
 }

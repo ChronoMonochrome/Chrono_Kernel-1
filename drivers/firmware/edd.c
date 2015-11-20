@@ -748,11 +748,19 @@ edd_init(void)
 	int rc=0;
 	struct edd_device *edev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "BIOS EDD facility v%s %s, %d devices found\n",
 	       EDD_VERSION, EDD_DATE, edd_num_devices());
+#else
+	;
+#endif
 
 	if (!edd_num_devices()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "EDD information not available.\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 

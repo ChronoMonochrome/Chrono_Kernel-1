@@ -355,9 +355,13 @@ static int submit_rx_urb(hfa384x_t *hw, gfp_t memflags)
 
 		/* Check whether we need to reset the RX pipe */
 		if (result == -EPIPE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s rx pipe stalled: requesting reset\n",
 			       hw->wlandev->netdev->name);
+#else
+			;
+#endif
 			if (!test_and_set_bit(WORK_RX_HALT, &hw->usb_flags))
 				schedule_work(&hw->usb_work);
 		}
@@ -405,9 +409,13 @@ static int submit_tx_urb(hfa384x_t *hw, struct urb *tx_urb, gfp_t memflags)
 
 			/* Test whether we need to reset the TX pipe */
 			if (result == -EPIPE) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "%s tx pipe stalled: requesting reset\n",
 				       netdev->name);
+#else
+				;
+#endif
 				set_bit(WORK_TX_HALT, &hw->usb_flags);
 				schedule_work(&hw->usb_work);
 			} else if (result == 0) {
@@ -458,8 +466,12 @@ static void hfa384x_usb_defer(struct work_struct *data)
 			       "Failed to clear rx pipe for %s: err=%d\n",
 			       netdev->name, ret);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s rx pipe reset complete.\n",
 			       netdev->name);
+#else
+			;
+#endif
 			clear_bit(WORK_RX_HALT, &hw->usb_flags);
 			set_bit(WORK_RX_RESUME, &hw->usb_flags);
 		}
@@ -489,8 +501,12 @@ static void hfa384x_usb_defer(struct work_struct *data)
 			       "Failed to clear tx pipe for %s: err=%d\n",
 			       netdev->name, ret);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s tx pipe reset complete.\n",
 			       netdev->name);
+#else
+			;
+#endif
 			clear_bit(WORK_TX_HALT, &hw->usb_flags);
 			set_bit(WORK_TX_RESUME, &hw->usb_flags);
 
@@ -715,10 +731,14 @@ static int usbctlx_rrid_completor_fn(struct usbctlx_completor *head)
 
 	/* Validate the length, note body len calculation in bytes */
 	if (rridresult.riddata_len != complete->riddatalen) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "RID len mismatch, rid=0x%04x hlen=%d fwlen=%d\n",
 		       rridresult.rid,
 		       complete->riddatalen, rridresult.riddata_len);
+#else
+		;
+#endif
 		return -ENODATA;
 	}
 
@@ -1311,9 +1331,13 @@ cleanup:
 		if (ctlx->state == CTLX_COMPLETE) {
 			result = completor->complete(completor);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "CTLX[%d] error: state(%s)\n",
 			       le16_to_cpu(ctlx->outbuf.type),
 			       ctlxstr(ctlx->state));
+#else
+			;
+#endif
 			result = -EIO;
 		}
 
@@ -2018,7 +2042,11 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
 	if (hw->dlstate != HFA384x_DLSTATE_FLASHENABLED)
 		return -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Download %d bytes to flash @0x%06x\n", len, daddr);
+#else
+	;
+#endif
 
 	/* Convert to flat address for arithmetic */
 	/* NOTE: dlbuffer RID stores the address in AUX format */
@@ -2028,8 +2056,12 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
 		 hw->bufinfo.page, hw->bufinfo.offset, dlbufaddr);
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "dlbuf@0x%06lx len=%d to=%d\n", dlbufaddr,
 	       hw->bufinfo.len, hw->dltimeout);
+#else
+	;
+#endif
 #endif
 	/* Calculations to determine how many fills of the dlbuffer to do
 	 * and how many USB wmemreq's to do for each fill.  At this point
@@ -2055,8 +2087,12 @@ int hfa384x_drvr_flashdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
 		burnlo = HFA384x_ADDR_CMD_MKOFF(burndaddr);
 		burnhi = HFA384x_ADDR_CMD_MKPAGE(burndaddr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Writing %d bytes to flash @0x%06x\n",
 		       burnlen, burndaddr);
+#else
+		;
+#endif
 
 		/* Set the download mode */
 		result = hfa384x_cmd_download(hw, HFA384x_PROGMODE_NV,
@@ -2356,7 +2392,11 @@ int hfa384x_drvr_ramdl_write(hfa384x_t *hw, u32 daddr, void *buf, u32 len)
 	if (hw->dlstate != HFA384x_DLSTATE_RAMENABLED)
 		return -EINVAL;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Writing %d bytes to ram @0x%06x\n", len, daddr);
+#else
+	;
+#endif
 
 	/* How many dowmem calls?  */
 	nwrites = len / HFA384x_USB_RWMEM_MAXLEN;
@@ -2453,8 +2493,12 @@ int hfa384x_drvr_readpda(hfa384x_t *hw, void *buf, unsigned int len)
 						len);
 
 		if (result) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "Read from index %zd failed, continuing\n", i);
+#else
+			;
+#endif
 			continue;
 		}
 
@@ -2488,6 +2532,7 @@ int hfa384x_drvr_readpda(hfa384x_t *hw, void *buf, unsigned int len)
 			}
 		}
 		if (pdaok) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "PDA Read from 0x%08x in %s space.\n",
 			       pdaloc[i].cardaddr,
@@ -2496,6 +2541,9 @@ int hfa384x_drvr_readpda(hfa384x_t *hw, void *buf, unsigned int len)
 			       pdaloc[i].auxctl == 2 ? "PHY" :
 			       pdaloc[i].auxctl == 3 ? "ICSRAM" :
 			       "<bogus auxctl>");
+#else
+			;
+#endif
 			break;
 		}
 	}
@@ -2620,10 +2668,18 @@ int hfa384x_drvr_start(hfa384x_t *hw)
 			pr_debug("but second attempt succeeded. All should be ok\n");
 		}
 	} else if (result2 != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "First cmd_initialize() succeeded, but second attempt failed (result=%d)\n",
 			result2);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "Most likely the card will be functional\n");
+#else
+		;
+#endif
 		goto done;
 	}
 
@@ -2713,7 +2769,11 @@ int hfa384x_drvr_txframe(hfa384x_t *hw, struct sk_buff *skb,
 	char *ptr;
 
 	if (hw->tx_urb.status == -EINPROGRESS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "TX URB already in use\n");
+#else
+		;
+#endif
 		result = 3;
 		goto exit;
 	}
@@ -3095,9 +3155,13 @@ static void hfa384x_usbctlxq_run(hfa384x_t *hw)
 			 * this CTLX back in the "pending" queue
 			 * and schedule a reset ...
 			 */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s tx pipe stalled: requesting reset\n",
 			       hw->wlandev->netdev->name);
+#else
+			;
+#endif
 			list_move(&head->list, &hw->ctlxq.pending);
 			set_bit(WORK_TX_HALT, &hw->usb_flags);
 			schedule_work(&hw->usb_work);
@@ -3105,8 +3169,12 @@ static void hfa384x_usbctlxq_run(hfa384x_t *hw)
 		}
 
 		if (result == -ESHUTDOWN) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s urb shutdown!\n",
 			       hw->wlandev->netdev->name);
+#else
+			;
+#endif
 			break;
 		}
 
@@ -3177,8 +3245,12 @@ static void hfa384x_usbin_callback(struct urb *urb)
 		break;
 
 	case -EPIPE:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s rx pipe stalled: requesting reset\n",
 		       wlandev->netdev->name);
+#else
+		;
+#endif
 		if (!test_and_set_bit(WORK_RX_HALT, &hw->usb_flags))
 			schedule_work(&hw->usb_work);
 		++(wlandev->linux_stats.rx_errors);
@@ -3364,10 +3436,14 @@ retry:
 		 * Check that our message is what we're expecting ...
 		 */
 		if (ctlx->outbuf.type != intype) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "Expected IN[%d], received IN[%d] - ignored.\n",
 			       le16_to_cpu(ctlx->outbuf.type),
 			       le16_to_cpu(intype));
+#else
+			;
+#endif
 			goto unlock;
 		}
 
@@ -3538,8 +3614,12 @@ static void hfa384x_usbin_rx(wlandevice_t *wlandev, struct sk_buff *skb)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Received frame on unsupported port=%d\n",
 		       HFA384x_RXSTATUS_MACPORT_GET(usbin->rxfrm.desc.status));
+#else
+		;
+#endif
 		goto done;
 		break;
 	}
@@ -3718,9 +3798,13 @@ static void hfa384x_usbout_callback(struct urb *urb)
 		case -EPIPE:
 			{
 				hfa384x_t *hw = wlandev->priv;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "%s tx pipe stalled: requesting reset\n",
 				       wlandev->netdev->name);
+#else
+				;
+#endif
 				if (!test_and_set_bit
 				    (WORK_TX_HALT, &hw->usb_flags))
 					schedule_work(&hw->usb_work);
@@ -3751,8 +3835,12 @@ static void hfa384x_usbout_callback(struct urb *urb)
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "unknown urb->status=%d\n",
 			       urb->status);
+#else
+			;
+#endif
 			++(wlandev->linux_stats.tx_errors);
 			break;
 		}		/* switch */
@@ -3855,9 +3943,13 @@ retry:
 		/* If the pipe has stalled then we need to reset it */
 		if ((urb->status == -EPIPE) &&
 		    !test_and_set_bit(WORK_TX_HALT, &hw->usb_flags)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s tx pipe stalled: requesting reset\n",
 			       hw->wlandev->netdev->name);
+#else
+			;
+#endif
 			schedule_work(&hw->usb_work);
 		}
 

@@ -1032,8 +1032,12 @@ no_irq:
 		rtc_int_handler_ptr = hpet_rtc_interrupt;
 		err = hpet_register_irq_handler(rtc_interrupt);
 		if (err != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "hpet_register_irq_handler failed "
 					"in rtc_init().");
+#else
+			;
+#endif
 			return err;
 		}
 	} else {
@@ -1068,7 +1072,11 @@ no_irq:
 #ifdef CONFIG_PROC_FS
 	ent = proc_create("driver/rtc", 0, NULL, &rtc_proc_fops);
 	if (!ent)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "rtc: Failed to register with procfs.\n");
+#else
+		;
+#endif
 #endif
 
 #if defined(__alpha__) || defined(__mips__)
@@ -1108,8 +1116,12 @@ no_irq:
 #endif
 	}
 	if (guess)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "rtc: %s epoch (%lu) detected\n",
 			guess, epoch);
+#else
+		;
+#endif
 #endif
 #ifdef RTC_IRQ
 	if (rtc_has_irq == 0)
@@ -1131,7 +1143,11 @@ no_irq2:
 
 	(void) init_sysctl();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Real Time Clock Driver v" RTC_VERSION "\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -1196,8 +1212,12 @@ static void rtc_dropped_irq(unsigned long data)
 	spin_unlock_irq(&rtc_lock);
 
 	if (printk_ratelimit()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "rtc: lost some interrupts at %ldHz.\n",
 			freq);
+#else
+		;
+#endif
 	}
 
 	/* Now we have new data */

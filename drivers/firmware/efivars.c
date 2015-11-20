@@ -366,8 +366,12 @@ get_var_data(struct efivars *efivars, struct efi_variable *var)
 					    var->Data);
 	spin_unlock(&efivars->lock);
 	if (status != EFI_SUCCESS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "efivars: get_variable() failed 0x%lx!\n",
 			status);
+#else
+		;
+#endif
 	}
 	return status;
 }
@@ -502,8 +506,12 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
 	spin_unlock(&efivars->lock);
 
 	if (status != EFI_SUCCESS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
 			status);
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -653,8 +661,12 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
 					    new_var->Data);
 
 	if (status != EFI_SUCCESS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
 			status);
+#else
+		;
+#endif
 		spin_unlock(&efivars->lock);
 		return -EIO;
 	}
@@ -667,7 +679,11 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
 					   new_var->VariableName,
 					   &new_var->VendorGuid);
 	if (status) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "efivars: variable created, but sysfs entry wasn't.\n");
+#else
+		;
+#endif
 	}
 	return count;
 }
@@ -718,8 +734,12 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
 					    del_var->Data);
 
 	if (status != EFI_SUCCESS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "efivars: set_variable() failed: status=%lx\n",
 			status);
+#else
+		;
+#endif
 		spin_unlock(&efivars->lock);
 		return -EIO;
 	}
@@ -983,8 +1003,12 @@ static void dup_variable_bug(efi_char16_t *s16, efi_guid_t *vendor_guid,
 	for (i = 0; i < len8; i++)
 		s8[i] = s16[i];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "efivars: duplicate variable: %s-%pUl\n",
 	       s8, vendor_guid);
+#else
+	;
+#endif
 	kfree(s8);
 }
 
@@ -1054,8 +1078,12 @@ int register_efivars(struct efivars *efivars,
 		case EFI_NOT_FOUND:
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "efivars: get_next_variable: status=%lx\n",
 				status);
+#else
+			;
+#endif
 			status = EFI_NOT_FOUND;
 			break;
 		}
@@ -1085,8 +1113,12 @@ efivars_init(void)
 {
 	int error = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EFI Variables Facility v%s %s\n", EFIVARS_VERSION,
 	       EFIVARS_DATE);
+#else
+	;
+#endif
 
 	if (!efi_enabled)
 		return 0;

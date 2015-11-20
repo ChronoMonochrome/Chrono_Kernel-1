@@ -116,8 +116,12 @@ static void ide_classify_ata_dev(ide_drive_t *drive)
 	if (!ata_id_has_unload(drive->id))
 		drive->dev_flags |= IDE_DFLAG_NO_UNLOAD;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %s, %s DISK drive\n", drive->name, m,
 		is_cfa ? "CFA" : "ATA");
+#else
+	;
+#endif
 }
 
 static void ide_classify_atapi_dev(ide_drive_t *drive)
@@ -126,16 +130,28 @@ static void ide_classify_atapi_dev(ide_drive_t *drive)
 	char *m = (char *)&id[ATA_ID_PROD];
 	u8 type = (id[ATA_ID_CONFIG] >> 8) & 0x1f;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %s, ATAPI ", drive->name, m);
+#else
+	;
+#endif
 	switch (type) {
 	case ide_floppy:
 		if (!strstr(m, "CD-ROM")) {
 			if (!strstr(m, "oppy") &&
 			    !strstr(m, "poyp") &&
 			    !strstr(m, "ZIP"))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CONT "cdrom or floppy?, assuming ");
+#else
+				;
+#endif
 			if (drive->media != ide_cdrom) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CONT "FLOPPY");
+#else
+				;
+#endif
 				drive->dev_flags |= IDE_DFLAG_REMOVABLE;
 				break;
 			}
@@ -147,26 +163,50 @@ static void ide_classify_atapi_dev(ide_drive_t *drive)
 #ifdef CONFIG_PPC
 		/* kludge for Apple PowerBook internal zip */
 		if (!strstr(m, "CD-ROM") && strstr(m, "ZIP")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "FLOPPY");
+#else
+			;
+#endif
 			type = ide_floppy;
 			break;
 		}
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "CD/DVD-ROM");
+#else
+		;
+#endif
 		break;
 	case ide_tape:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "TAPE");
+#else
+		;
+#endif
 		break;
 	case ide_optical:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "OPTICAL");
+#else
+		;
+#endif
 		drive->dev_flags |= IDE_DFLAG_REMOVABLE;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "UNKNOWN (type %d)", type);
+#else
+		;
+#endif
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT " drive\n");
+#else
+	;
+#endif
 	drive->media = type;
 	/* an ATAPI device ignores DRDY */
 	drive->ready_stat = 0;
@@ -203,7 +243,11 @@ static void do_identify(ide_drive_t *drive, u8 cmd, u16 *id)
 
 	drive->dev_flags |= IDE_DFLAG_ID_READ;
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: dumping identify data\n", drive->name);
+#else
+	;
+#endif
 	ide_dump_identify((u8 *)id);
 #endif
 	ide_fix_driveid(id);
@@ -275,9 +319,13 @@ int ide_dev_read_id(ide_drive_t *drive, u8 cmd, u16 *id, int irq_ctx)
 		s = tp_ops->read_status(hwif);
 		if ((a ^ s) & ~ATA_IDX)
 			/* ancient Seagate drives, broken interfaces */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: probing with STATUS(0x%02x) "
 					 "instead of ALTSTATUS(0x%02x)\n",
 					 drive->name, s, a);
+#else
+			;
+#endif
 		else
 			/* use non-intrusive polling */
 			use_altstatus = 1;
@@ -390,9 +438,13 @@ static int do_probe (ide_drive_t *drive, u8 cmd)
 		return 4;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "probing for %s: present=%d, media=%d, probetype=%s\n",
 		drive->name, present, drive->media,
 		(cmd == ATA_CMD_ID_ATA) ? "ATA" : "ATAPI");
+#else
+	;
+#endif
 #endif
 
 	/* needed for some systems
@@ -498,14 +550,26 @@ static u8 probe_for_drive(ide_drive_t *drive)
 		/* identification failed? */
 		if ((drive->dev_flags & IDE_DFLAG_ID_READ) == 0) {
 			if (drive->media == ide_disk) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s: non-IDE drive, CHS=%d/%d/%d\n",
 					drive->name, drive->cyl,
 					drive->head, drive->sect);
+#else
+				;
+#endif
 			} else if (drive->media == ide_cdrom) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s: ATAPI cdrom (?)\n", drive->name);
+#else
+				;
+#endif
 			} else {
 				/* nuke it */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s: Unknown device on bus refused identification. Ignoring.\n", drive->name);
+#else
+				;
+#endif
 				drive->dev_flags &= ~IDE_DFLAG_PRESENT;
 			}
 		} else {
@@ -553,8 +617,12 @@ static int ide_register_port(ide_hwif_t *hwif)
 
 	ret = device_register(&hwif->gendev);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IDE: %s: device_register error: %d\n",
 			__func__, ret);
+#else
+		;
+#endif
 		goto out;
 	}
 
@@ -600,7 +668,11 @@ static int ide_port_wait_ready(ide_hwif_t *hwif)
 	ide_drive_t *drive;
 	int i, rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Probing IDE interface %s...\n", hwif->name);
+#else
+	;
+#endif
 
 	/* Let HW settle down a bit from whatever init state we
 	 * come from */
@@ -626,8 +698,12 @@ static int ide_port_wait_ready(ide_hwif_t *hwif)
 			if (rc)
 				goto out;
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: ide_wait_not_busy() skipped\n",
 					  drive->name);
+#else
+			;
+#endif
 	}
 out:
 	/* Exit function with master reselected (let's be sane) */
@@ -668,7 +744,11 @@ void ide_undecoded_slave(ide_drive_t *dev1)
 		return;
 
 	/* Appears to be an IDE flash adapter with decode bugs */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "ide-probe: ignoring undecoded slave\n");
+#else
+	;
+#endif
 
 	dev1->dev_flags &= ~IDE_DFLAG_PRESENT;
 }
@@ -696,7 +776,11 @@ static int ide_probe_port(ide_hwif_t *hwif)
 		disable_irq(hwif->irq);
 
 	if (ide_port_wait_ready(hwif) == -EBUSY)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: Wait for ready failed before probe !\n", hwif->name);
+#else
+		;
+#endif
 
 	/*
 	 * Second drive should only exist if first drive was found,
@@ -857,16 +941,32 @@ static int init_irq (ide_hwif_t *hwif)
 		goto out_up;
 
 #if !defined(__mc68000__)
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s at 0x%03lx-0x%03lx,0x%03lx on irq %d", hwif->name,
 		io_ports->data_addr, io_ports->status_addr,
 		io_ports->ctl_addr, hwif->irq);
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s at 0x%08lx on irq %d", hwif->name,
 		io_ports->data_addr, hwif->irq);
+#else
+	;
+#endif
 #endif /* __mc68000__ */
 	if (hwif->host->host_flags & IDE_HFLAG_SERIALIZE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT " (serialized)");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "\n");
+#else
+	;
+#endif
 
 	return 0;
 out_up:
@@ -1013,8 +1113,12 @@ static void hwif_register_devices(ide_hwif_t *hwif)
 
 		ret = device_register(dev);
 		if (ret < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "IDE: %s: device_register error: "
 					    "%d\n", __func__, ret);
+#else
+			;
+#endif
 	}
 }
 
@@ -1079,7 +1183,11 @@ static void ide_init_port(ide_hwif_t *hwif, unsigned int port,
 			rc = ide_hwif_setup_dma(hwif, d);
 
 		if (rc < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: DMA disabled\n", hwif->name);
+#else
+			;
+#endif
 
 			hwif->dma_ops = NULL;
 			hwif->dma_base = 0;
@@ -1353,7 +1461,11 @@ static void ide_disable_port(ide_hwif_t *hwif)
 	struct ide_host *host = hwif->host;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: disabling port\n", hwif->name);
+#else
+	;
+#endif
 
 	for (i = 0; i < MAX_HOST_PORTS; i++) {
 		if (host->ports[i] == hwif) {
@@ -1423,8 +1535,12 @@ int ide_host_register(struct ide_host *host, const struct ide_port_info *d,
 			continue;
 
 		if (hwif_init(hwif) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: failed to initialize IDE "
 					 "interface\n", hwif->name);
+#else
+			;
+#endif
 			device_unregister(&hwif->gendev);
 			ide_disable_port(hwif);
 			continue;

@@ -94,6 +94,7 @@ www.measurementcomputing.com
 
 #ifdef DEBUG
 #define DEBUG_PRINT(format, args...)	\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "das16: " format, ## args)
 #else
 #define DEBUG_PRINT(format, args...)
@@ -190,6 +191,9 @@ www.measurementcomputing.com
 
 /*  size in bytes of a sample from board */
 static const int sample_size = 2;
+#else
+	;
+#endif
 
 #define DAS16_TRIG		0
 #define DAS16_AI_LSB		0
@@ -1099,7 +1103,11 @@ static int das16_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 				break;
 		}
 		if (i == DAS16_TIMEOUT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("das16: timeout\n");
+#else
+			;
+#endif
 			return -ETIME;
 		}
 		msb = inb(dev->iobase + DAS16_AI_MSB);
@@ -1366,10 +1374,18 @@ static int das16_probe(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	diobits = inb(dev->iobase + DAS16_DIO) & 0xf0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO " id bits are 0x%02x\n", diobits);
+#else
+	;
+#endif
 	if (thisboard->id != diobits) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " requested board's id bits are 0x%x (ignore)\n",
 		       thisboard->id);
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -1383,10 +1399,18 @@ static int das1600_mode_detect(struct comedi_device *dev)
 
 	if (status & DAS1600_CLK_10MHZ) {
 		devpriv->clockbase = 100;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " 10MHz pacer clock\n");
+#else
+		;
+#endif
 	} else {
 		devpriv->clockbase = 1000;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " 1MHz pacer clock\n");
+#else
+		;
+#endif
 	}
 
 	reg_dump(dev);
@@ -1426,7 +1450,11 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (timer_mode)
 		irq = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: das16:", dev->minor);
+#else
+	;
+#endif
 
 	/*  check that clock setting is valid */
 	if (it->options[3]) {
@@ -1444,16 +1472,24 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		return ret;
 
 	if (thisboard->size < 0x400) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" 0x%04lx-0x%04lx\n", iobase, iobase + thisboard->size);
+#else
+		;
+#endif
 		if (!request_region(iobase, thisboard->size, "das16")) {
 			printk(KERN_ERR " I/O port conflict\n");
 			return -EIO;
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " 0x%04lx-0x%04lx 0x%04lx-0x%04lx\n",
 		       iobase, iobase + 0x0f,
 		       iobase + 0x400,
 		       iobase + 0x400 + (thisboard->size & 0x3ff));
+#else
+		;
+#endif
 		if (!request_region(iobase, 0x10, "das16")) {
 			printk(KERN_ERR " I/O port conflict:  0x%04lx-0x%04lx\n",
 			       iobase, iobase + 0x0f);
@@ -1495,11 +1531,23 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		if (ret < 0)
 			return ret;
 		dev->irq = irq;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " ( irq = %u )", irq);
+#else
+		;
+#endif
 	} else if (irq == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" ( no irq )");
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" invalid irq\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -1526,9 +1574,17 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		disable_dma(devpriv->dma_chan);
 		set_dma_mode(devpriv->dma_chan, DMA_MODE_READ);
 		release_dma_lock(flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " ( dma = %u)\n", dma_chan);
+#else
+		;
+#endif
 	} else if (dma_chan == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " ( no dma )\n");
+#else
+		;
+#endif
 	} else {
 		printk(KERN_ERR " invalid dma channel\n");
 		return -EINVAL;
@@ -1677,7 +1733,11 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int das16_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: das16: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	das16_reset(dev);
 

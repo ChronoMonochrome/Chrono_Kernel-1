@@ -87,25 +87,53 @@ static int rt_trace_on = 1;
 static void printk_task(struct task_struct *p)
 {
 	if (p)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%16s:%5d [%p, %3d]", p->comm, task_pid_nr(p), p, p->prio);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("<none>");
+#else
+		;
+#endif
 }
 
 static void printk_lock(struct rt_mutex *lock, int print_owner)
 {
 	if (lock->name)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" [%p] {%s}\n",
 			lock, lock->name);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" [%p] {%s:%d}\n",
 			lock, lock->file, lock->line);
+#else
+		;
+#endif
 
 	if (print_owner && rt_mutex_owner(lock)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(".. ->owner: %p\n", lock->owner);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(".. held by:  ");
+#else
+		;
+#endif
 		printk_task(rt_mutex_owner(lock));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 }
 
@@ -151,35 +179,71 @@ void debug_rt_mutex_print_deadlock(struct rt_mutex_waiter *waiter)
 
 	TRACE_OFF_NOLOCK();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n============================================\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(  "[ BUG: circular locking deadlock detected! ]\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(  "--------------------------------------------\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s/%d is deadlocking current task %s/%d\n\n",
 	       task->comm, task_pid_nr(task),
 	       current->comm, task_pid_nr(current));
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n1) %s/%d is trying to acquire this lock:\n",
 	       current->comm, task_pid_nr(current));
+#else
+	;
+#endif
 	printk_lock(waiter->lock, 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n2) %s/%d is blocked on this lock:\n",
 		task->comm, task_pid_nr(task));
+#else
+	;
+#endif
 	printk_lock(waiter->deadlock_lock, 1);
 
 	debug_show_held_locks(current);
 	debug_show_held_locks(task);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n%s/%d's [blocked] stackdump:\n\n",
 		task->comm, task_pid_nr(task));
+#else
+	;
+#endif
 	show_stack(task, NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n%s/%d's [current] stackdump:\n\n",
 		current->comm, task_pid_nr(current));
+#else
+	;
+#endif
 	dump_stack();
 	debug_show_all_locks();
 	rcu_read_unlock();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[ turning off deadlock detection."
 	       "Please report this trace. ]\n\n");
+#else
+	;
+#endif
 	local_irq_disable();
 }
 

@@ -236,7 +236,11 @@ static int rti800_ai_insn_read(struct comedi_device *dev,
 		for (t = RTI800_TIMEOUT; t; t--) {
 			status = inb(dev->iobase + RTI800_CSR);
 			if (status & RTI800_OVERRUN) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "rti800: a/d overrun\n");
+#else
+				;
+#endif
 				outb(0, dev->iobase + RTI800_CLRFLAGS);
 				return -EIO;
 			}
@@ -245,7 +249,11 @@ static int rti800_ai_insn_read(struct comedi_device *dev,
 			udelay(1);
 		}
 		if (t == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "rti800: timeout\n");
+#else
+			;
+#endif
 			return -ETIME;
 		}
 		data[i] = inb(dev->iobase + RTI800_ADCLO);
@@ -346,19 +354,31 @@ static int rti800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	struct comedi_subdevice *s;
 
 	iobase = it->options[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: rti800: 0x%04lx\n", dev->minor, iobase);
+#else
+	;
+#endif
 	if (!request_region(iobase, RTI800_SIZE, "rti800")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	dev->iobase = iobase;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "fingerprint=%x,%x,%x,%x,%x ",
 	       inb(dev->iobase + 0),
 	       inb(dev->iobase + 1),
 	       inb(dev->iobase + 2),
 	       inb(dev->iobase + 3), inb(dev->iobase + 4));
+#else
+	;
+#endif
 #endif
 
 	outb(0, dev->iobase + RTI800_CSR);
@@ -367,15 +387,27 @@ static int rti800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	irq = it->options[1];
 	if (irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "( irq = %u )\n", irq);
+#else
+		;
+#endif
 		ret = request_irq(irq, rti800_interrupt, 0, "rti800", dev);
 		if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING " Failed to allocate IRQ\n");
+#else
+			;
+#endif
 			return ret;
 		}
 		dev->irq = irq;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "( no irq )\n");
+#else
+		;
+#endif
 	}
 
 	dev->board_name = this_board->name;
@@ -476,7 +508,11 @@ static int rti800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int rti800_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: rti800: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->iobase)
 		release_region(dev->iobase, RTI800_SIZE);

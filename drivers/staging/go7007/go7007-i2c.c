@@ -61,12 +61,20 @@ static int go7007_i2c_xfer(struct go7007 *go, u16 addr, int read,
 
 #ifdef GO7007_I2C_DEBUG
 	if (read)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "go7007-i2c: reading 0x%02x on 0x%02x\n",
 			command, addr);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 			"go7007-i2c: writing 0x%02x to 0x%02x on 0x%02x\n",
 			*data, command, addr);
+#else
+		;
+#endif
 #endif
 
 	mutex_lock(&go->hw_lock);

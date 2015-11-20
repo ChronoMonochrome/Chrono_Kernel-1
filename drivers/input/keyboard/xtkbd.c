@@ -76,8 +76,12 @@ static irqreturn_t xtkbd_interrupt(struct serio *serio,
 				input_report_key(xtkbd->dev, xtkbd->keycode[data & XTKBD_KEY], !(data & XTKBD_RELEASE));
 				input_sync(xtkbd->dev);
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "xtkbd.c: Unknown key (scancode %#x) %s.\n",
 					data & XTKBD_KEY, data & XTKBD_RELEASE ? "released" : "pressed");
+#else
+				;
+#endif
 			}
 	}
 	return IRQ_HANDLED;

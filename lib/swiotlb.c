@@ -130,11 +130,19 @@ void swiotlb_print_info(void)
 	pstart = virt_to_phys(io_tlb_start);
 	pend = virt_to_phys(io_tlb_end);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Placing %luMB software IO TLB between %p - %p\n",
 	       bytes >> 20, io_tlb_start, io_tlb_end);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "software IO TLB at phys %#llx - %#llx\n",
 	       (unsigned long long)pstart,
 	       (unsigned long long)pend);
+#else
+	;
+#endif
 }
 
 void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
@@ -235,8 +243,12 @@ swiotlb_late_init_with_default_size(size_t default_size)
 		goto cleanup1;
 
 	if (order != get_order(bytes)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning: only able to allocate %ld MB "
 		       "for software IO TLB\n", (PAGE_SIZE << order) >> 20);
+#else
+		;
+#endif
 		io_tlb_nslabs = SLABS_PER_PAGE << order;
 		bytes = io_tlb_nslabs << IO_TLB_SHIFT;
 	}
@@ -599,9 +611,13 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
 
 	/* Confirm address can be DMA'd by device */
 	if (dev_addr + size - 1 > dma_mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hwdev DMA mask = 0x%016Lx, dev_addr = 0x%016Lx\n",
 		       (unsigned long long)dma_mask,
 		       (unsigned long long)dev_addr);
+#else
+		;
+#endif
 
 		/* DMA_TO_DEVICE to avoid memcpy in unmap_single */
 		swiotlb_tbl_unmap_single(hwdev, ret, size, DMA_TO_DEVICE);

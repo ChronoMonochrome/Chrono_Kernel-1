@@ -490,7 +490,11 @@ static int uda134x_soc_probe(struct snd_soc_codec *codec)
 
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "UDA134X SoC Audio Codec\n");
+#else
+	;
+#endif
 
 	if (!pd) {
 		printk(KERN_ERR "UDA134X SoC codec: "

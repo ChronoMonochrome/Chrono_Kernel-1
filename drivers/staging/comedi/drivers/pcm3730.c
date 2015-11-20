@@ -84,9 +84,17 @@ static int pcm3730_attach(struct comedi_device *dev,
 	unsigned long iobase;
 
 	iobase = it->options[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pcm3730: 0x%04lx ", dev->minor, iobase);
+#else
+	;
+#endif
 	if (!request_region(iobase, PCM3730_SIZE, "pcm3730")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -151,14 +159,22 @@ static int pcm3730_attach(struct comedi_device *dev,
 	s->range_table = &range_digital;
 	s->private = (void *)PCM3730_DIC;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
+#else
+	;
+#endif
 
 	return 0;
 }
 
 static int pcm3730_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pcm3730: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->iobase)
 		release_region(dev->iobase, PCM3730_SIZE);

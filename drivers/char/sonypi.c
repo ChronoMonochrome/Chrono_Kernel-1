@@ -508,7 +508,11 @@ static struct sonypi_device {
 	while (--n && (command)) \
 		udelay(1); \
 	if (!n && (verbose || !quiet)) \
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "sonypi command failed at %s : %s (line %d)\n", __FILE__, __func__, __LINE__); \
+#else
+		;
+#endif
 }
 
 #ifdef CONFIG_ACPI
@@ -591,11 +595,23 @@ static void sonypi_type1_srs(void)
 static void sonypi_type2_srs(void)
 {
 	if (sonypi_ec_write(SONYPI_SHIB, (sonypi_device.ioport1 & 0xFF00) >> 8))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ec_write failed\n");
+#else
+		;
+#endif
 	if (sonypi_ec_write(SONYPI_SLOB, sonypi_device.ioport1 & 0x00FF))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ec_write failed\n");
+#else
+		;
+#endif
 	if (sonypi_ec_write(SONYPI_SIRQ, sonypi_device.bits))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ec_write failed\n");
+#else
+		;
+#endif
 	udelay(10);
 }
 
@@ -633,11 +649,23 @@ static void sonypi_type1_dis(void)
 static void sonypi_type2_dis(void)
 {
 	if (sonypi_ec_write(SONYPI_SHIB, 0))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ec_write failed\n");
+#else
+		;
+#endif
 	if (sonypi_ec_write(SONYPI_SLOB, 0))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ec_write failed\n");
+#else
+		;
+#endif
 	if (sonypi_ec_write(SONYPI_SIRQ, 0))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ec_write failed\n");
+#else
+		;
+#endif
 }
 
 static void sonypi_type3_dis(void)
@@ -752,7 +780,11 @@ static void sonypi_camera_on(void)
 	}
 
 	if (j == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "sonypi: failed to power on camera\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -861,9 +893,13 @@ static irqreturn_t sonypi_irq(int irq, void *dev_id)
 	}
 
 	if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "sonypi: unknown event port1=0x%02x,port2=0x%02x\n",
 		       v1, v2);
+#else
+		;
+#endif
 	/* We need to return IRQ_HANDLED here because there *are*
 	 * events belonging to the sonypi device we don't know about,
 	 * but we still don't want those to pollute the logs... */
@@ -871,8 +907,12 @@ static irqreturn_t sonypi_irq(int irq, void *dev_id)
 
 found:
 	if (verbose > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "sonypi: event port1=0x%02x,port2=0x%02x\n", v1, v2);
+#else
+		;
+#endif
 
 	if (useinput)
 		sonypi_report_input_event(event);
@@ -1285,6 +1325,7 @@ static int __devinit sonypi_setup_irq(struct sonypi_device *dev,
 
 static void __devinit sonypi_display_info(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sonypi: detected type%d model, "
 	       "verbose = %d, fnkeyinit = %s, camera = %s, "
 	       "compat = %s, mask = 0x%08lx, useinput = %s, acpi = %s\n",
@@ -1296,13 +1337,24 @@ static void __devinit sonypi_display_info(void)
 	       mask,
 	       useinput ? "on" : "off",
 	       SONYPI_ACPI_ACTIVE ? "on" : "off");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sonypi: enabled at irq=%d, port1=0x%x, port2=0x%x\n",
 	       sonypi_device.irq,
 	       sonypi_device.ioport1, sonypi_device.ioport2);
+#else
+	;
+#endif
 
 	if (minor == -1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "sonypi: device allocated minor is %d\n",
 		       sonypi_misc_device.minor);
+#else
+		;
+#endif
 }
 
 static int __devinit sonypi_probe(struct platform_device *dev)
@@ -1312,9 +1364,13 @@ static int __devinit sonypi_probe(struct platform_device *dev)
 	struct pci_dev *pcidev;
 	int error;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "sonypi: please try the sony-laptop module instead "
 			"and report failures, see also "
 			"http://www.linux.it/~malattia/wiki/index.php/Sony_drivers\n");
+#else
+	;
+#endif
 
 	spin_lock_init(&sonypi_device.fifo_lock);
 	error = kfifo_alloc(&sonypi_device.fifo, SONYPI_BUF_SIZE, GFP_KERNEL);
@@ -1519,9 +1575,13 @@ static int __init sonypi_init(void)
 {
 	int error;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"sonypi: Sony Programmable I/O Controller Driver v%s.\n",
 		SONYPI_DRIVER_VERSION);
+#else
+	;
+#endif
 
 	if (!dmi_check_system(sonypi_dmi_table))
 		return -ENODEV;
@@ -1562,7 +1622,11 @@ static void __exit sonypi_exit(void)
 #endif
 	platform_device_unregister(sonypi_platform_device);
 	platform_driver_unregister(&sonypi_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "sonypi: removed.\n");
+#else
+	;
+#endif
 }
 
 module_init(sonypi_init);

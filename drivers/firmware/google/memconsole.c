@@ -60,11 +60,19 @@ static struct bin_attribute memconsole_bin_attr = {
 
 static void found_v1_header(struct biosmemcon_ebda *hdr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "BIOS console v1 EBDA structure found at %p\n", hdr);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "BIOS console buffer at 0x%.8x, "
 	       "start = %d, end = %d, num = %d\n",
 	       hdr->v1.buffer_addr, hdr->v1.start,
 	       hdr->v1.end, hdr->v1.num_chars);
+#else
+	;
+#endif
 
 	memconsole_length = hdr->v1.num_chars;
 	memconsole_baseaddr = phys_to_virt(hdr->v1.buffer_addr);
@@ -72,11 +80,19 @@ static void found_v1_header(struct biosmemcon_ebda *hdr)
 
 static void found_v2_header(struct biosmemcon_ebda *hdr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "BIOS console v2 EBDA structure found at %p\n", hdr);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "BIOS console buffer at 0x%.8x, "
 	       "start = %d, end = %d, num_bytes = %d\n",
 	       hdr->v2.buffer_addr, hdr->v2.start,
 	       hdr->v2.end, hdr->v2.num_bytes);
+#else
+	;
+#endif
 
 	memconsole_length = hdr->v2.end - hdr->v2.start;
 	memconsole_baseaddr = phys_to_virt(hdr->v2.buffer_addr
@@ -94,7 +110,11 @@ static bool found_memconsole(void)
 
 	address = get_bios_ebda();
 	if (!address) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "BIOS EBDA non-existent.\n");
+#else
+		;
+#endif
 		return false;
 	}
 
@@ -122,7 +142,11 @@ static bool found_memconsole(void)
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "BIOS console EBDA structure not found!\n");
+#else
+	;
+#endif
 	return false;
 }
 

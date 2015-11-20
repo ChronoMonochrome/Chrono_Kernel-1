@@ -23,11 +23,15 @@
 #include <wlioctl.h>
 #include <wl_iw.h>
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define WL_ERROR(fmt, args...) printk(fmt, ##args)
 #define WL_TRACE(fmt, args...) no_printk(fmt, ##args)
 
 #ifdef CUSTOMER_HW
 extern void bcm_wlan_power_off(int);
+#else
+#define WL_ERROR(fmt, args...) ;
+#endif
 extern void bcm_wlan_power_on(int);
 #endif				/* CUSTOMER_HW */
 #ifdef CUSTOMER_HW2

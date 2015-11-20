@@ -275,9 +275,13 @@ int crypto_init_cipher_ops(struct crypto_tfm *tfm)
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: block size %u not supported\n",
 			       crypto_tfm_alg_name(tfm),
 			       crypto_tfm_alg_blocksize(tfm));
+#else
+			;
+#endif
 			ret = -EINVAL;
 			goto out;
 		}

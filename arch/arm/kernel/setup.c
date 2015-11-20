@@ -296,6 +296,7 @@ static void __init cacheid_init(void)
 		cacheid = CACHEID_VIVT;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("CPU: %s data cache, %s instruction cache\n",
 		cache_is_vivt() ? "VIVT" :
 		cache_is_vipt_aliasing() ? "VIPT aliasing" :
@@ -304,6 +305,9 @@ static void __init cacheid_init(void)
 		icache_is_vivt_asid_tagged() ? "VIVT ASID tagged" :
 		icache_is_vipt_aliasing() ? "VIPT aliasing" :
 		cache_is_vipt_nonaliasing() ? "VIPT nonaliasing" : "unknown");
+#else
+	;
+#endif
 }
 
 /*
@@ -325,7 +329,11 @@ void __init early_print(const char *str, ...)
 #ifdef CONFIG_DEBUG_LL
 	printascii(buf);
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s", buf);
+#else
+	;
+#endif
 }
 
 static void __init feat_v6_fixup(void)
@@ -354,8 +362,12 @@ static void __init setup_processor(void)
 	 */
 	list = lookup_processor_type(read_cpuid_id());
 	if (!list) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("CPU configuration botched (ID %08x), unable "
 		       "to continue.\n", read_cpuid_id());
+#else
+		;
+#endif
 		while (1);
 	}
 
@@ -374,9 +386,13 @@ static void __init setup_processor(void)
 	cpu_cache = *list->cache;
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("CPU: %s [%08x] revision %d (ARMv%s), cr=%08lx\n",
 	       cpu_name, read_cpuid_id(), read_cpuid_id() & 15,
 	       proc_arch[cpu_architecture()], cr_alignment);
+#else
+	;
+#endif
 
 	sprintf(init_utsname()->machine, "%s%c", list->arch_name, ENDIANNESS);
 	sprintf(elf_platform, "%s%c", list->elf_name, ENDIANNESS);
@@ -402,7 +418,11 @@ void cpu_init(void)
 	struct stack *stk = &stacks[cpu];
 
 	if (cpu >= NR_CPUS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "CPU%u: bad primary CPU number\n", cpu);
+#else
+		;
+#endif
 		BUG();
 	}
 
@@ -461,8 +481,12 @@ int __init arm_add_memory(phys_addr_t start, unsigned long size)
 	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
 
 	if (meminfo.nr_banks >= NR_BANKS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "NR_BANKS too low, "
 			"ignoring memory at 0x%08llx\n", (long long)start);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -753,9 +777,13 @@ static void __init parse_tags(const struct tag *t)
 {
 	for (; t->hdr.size; t = tag_next(t))
 		if (!parse_tag(t))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"Ignoring unrecognised tag 0x%08x\n",
 				t->hdr.tag);
+#else
+			;
+#endif
 }
 
 /*
@@ -814,16 +842,24 @@ static void __init reserve_crashkernel(void)
 
 	ret = reserve_bootmem(crash_base, crash_size, BOOTMEM_EXCLUSIVE);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "crashkernel reservation failed - "
 		       "memory is in use (0x%lx)\n", (unsigned long)crash_base);
+#else
+		;
+#endif
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Reserving %ldMB of memory at %ldMB "
 	       "for crashkernel (System RAM: %ldMB)\n",
 	       (unsigned long)(crash_size >> 20),
 	       (unsigned long)(crash_base >> 20),
 	       (unsigned long)(total_mem >> 20));
+#else
+	;
+#endif
 
 	crashk_res.start = crash_base;
 	crashk_res.end = crash_base + crash_size - 1;
@@ -853,7 +889,11 @@ static struct machine_desc * __init setup_machine_tags(unsigned int nr)
 	 */
 	for_each_machine_desc(p)
 		if (nr == p->nr) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Machine: %s\n", p->name);
+#else
+			;
+#endif
 			mdesc = p;
 			break;
 		}
@@ -876,9 +916,13 @@ static struct machine_desc * __init setup_machine_tags(unsigned int nr)
 		 */
 		if (mdesc->boot_params < PHYS_OFFSET ||
 		    mdesc->boot_params >= PHYS_OFFSET + SZ_1M) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "Default boot params at physical 0x%08lx out of reach\n",
 			       mdesc->boot_params);
+#else
+			;
+#endif
 		} else
 #endif
 		{

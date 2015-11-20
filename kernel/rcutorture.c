@@ -74,9 +74,17 @@ MODULE_PARM_DESC(nreaders, "Number of RCU reader threads");
 module_param(nfakewriters, int, 0444);
 MODULE_PARM_DESC(nfakewriters, "Number of RCU fake writer threads");
 module_param(stat_interval, int, 0644);
+#ifdef CONFIG_DEBUG_PRINTK
 MODULE_PARM_DESC(stat_interval, "Number of seconds between stats printk()s");
+#else
+MODULE_PARM_DESC(stat_interval, "Number of seconds between stats ;
+#endif
 module_param(verbose, bool, 0444);
+#ifdef CONFIG_DEBUG_PRINTK
 MODULE_PARM_DESC(verbose, "Enable verbose debugging printk()s");
+#else
+MODULE_PARM_DESC(verbose, "Enable verbose debugging ;
+#endif
 module_param(test_no_idle_hz, bool, 0444);
 MODULE_PARM_DESC(test_no_idle_hz, "Test support for tickless idle CPUs");
 module_param(shuffle_interval, int, 0444);
@@ -102,11 +110,23 @@ MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, srcu)");
 
 #define TORTURE_FLAG "-torture:"
 #define PRINTK_STRING(s) \
+#ifdef CONFIG_DEBUG_PRINTK
 	do { printk(KERN_ALERT "%s" TORTURE_FLAG s "\n", torture_type); } while (0)
+#else
+	do { ;
+#endif
 #define VERBOSE_PRINTK_STRING(s) \
+#ifdef CONFIG_DEBUG_PRINTK
 	do { if (verbose) printk(KERN_ALERT "%s" TORTURE_FLAG s "\n", torture_type); } while (0)
+#else
+	do { if (verbose) ;
+#endif
 #define VERBOSE_PRINTK_ERRSTRING(s) \
+#ifdef CONFIG_DEBUG_PRINTK
 	do { if (verbose) printk(KERN_ALERT "%s" TORTURE_FLAG "!!! " s "\n", torture_type); } while (0)
+#else
+	do { if (verbose) ;
+#endif
 
 static char printk_buf[4096];
 
@@ -193,8 +213,12 @@ rcutorture_shutdown_notify(struct notifier_block *unused1,
 	if (fullstop == FULLSTOP_DONTSTOP)
 		fullstop = FULLSTOP_SHUTDOWN;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING /* but going down anyway, so... */
 		       "Concurrent 'rmmod rcutorture' and shutdown illegal!\n");
+#else
+		;
+#endif
 	mutex_unlock(&fullstop_mutex);
 	return NOTIFY_DONE;
 }
@@ -206,9 +230,13 @@ rcutorture_shutdown_notify(struct notifier_block *unused1,
 static void rcutorture_shutdown_absorb(char *title)
 {
 	if (ACCESS_ONCE(fullstop) == FULLSTOP_SHUTDOWN) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE
 		       "rcutorture thread %s parking due to system shutdown\n",
 		       title);
+#else
+		;
+#endif
 		schedule_timeout_uninterruptible(MAX_SCHEDULE_TIMEOUT);
 	}
 }
@@ -1054,9 +1082,13 @@ rcu_torture_reader(void *arg)
  * Create an RCU-torture statistics message in the specified buffer.
  */
 static int
+#ifdef CONFIG_DEBUG_PRINTK
 rcu_torture_printk(char *page)
 {
 	int cnt = 0;
+#else
+rcu_torture_;
+#endif
 	int cpu;
 	int i;
 	long pipesummary[RCU_TORTURE_PIPE_LEN + 1] = { 0 };
@@ -1132,8 +1164,16 @@ rcu_torture_stats_print(void)
 {
 	int cnt;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	cnt = rcu_torture_printk(printk_buf);
+#else
+	cnt = rcu_torture_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "%s", printk_buf);
+#else
+	;
+#endif
 }
 
 /*
@@ -1246,6 +1286,7 @@ rcu_torture_stutter(void *arg)
 static inline void
 rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "%s" TORTURE_FLAG
 		"--- %s: nreaders=%d nfakewriters=%d "
 		"stat_interval=%d verbose=%d test_no_idle_hz=%d "
@@ -1258,6 +1299,9 @@ rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
 		stutter, irqreader, fqs_duration, fqs_holdoff, fqs_stutter,
 		test_boost, cur_ops->can_boost,
 		test_boost_interval, test_boost_duration);
+#else
+	;
+#endif
 }
 
 static struct notifier_block rcutorture_shutdown_nb = {
@@ -1338,8 +1382,12 @@ rcu_torture_cleanup(void)
 	mutex_lock(&fullstop_mutex);
 	rcutorture_record_test_transition();
 	if (fullstop == FULLSTOP_SHUTDOWN) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING /* but going down anyway, so... */
 		       "Concurrent 'rmmod rcutorture' and shutdown illegal!\n");
+#else
+		;
+#endif
 		mutex_unlock(&fullstop_mutex);
 		schedule_timeout_uninterruptible(10);
 		if (cur_ops->cb_barrier != NULL)
@@ -1448,18 +1496,38 @@ rcu_torture_init(void)
 			break;
 	}
 	if (i == ARRAY_SIZE(torture_ops)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "rcu-torture: invalid torture type: \"%s\"\n",
 		       torture_type);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "rcu-torture types:");
+#else
+		;
+#endif
 		for (i = 0; i < ARRAY_SIZE(torture_ops); i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_ALERT " %s", torture_ops[i]->name);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "\n");
+#else
+		;
+#endif
 		mutex_unlock(&fullstop_mutex);
 		return -EINVAL;
 	}
 	if (cur_ops->fqs == NULL && fqs_duration != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "rcu-torture: ->fqs NULL and non-zero "
 				  "fqs_duration, fqs disabled.\n");
+#else
+		;
+#endif
 		fqs_duration = 0;
 	}
 	if (cur_ops->init)

@@ -168,8 +168,12 @@ static int sa1100_probe_subdev(struct sa_subdev_info *subdev, struct resource *r
 	 */
 	switch (phys) {
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "SA1100 flash: unknown base address "
 		       "0x%08lx, assuming CS0\n", phys);
+#else
+		;
+#endif
 
 	case SA1100_CS0_PHYS:
 		subdev->map.bankwidth = (MSC0 & MSC_RBW) ? 2 : 4;
@@ -209,9 +213,13 @@ static int sa1100_probe_subdev(struct sa_subdev_info *subdev, struct resource *r
 	}
 	subdev->mtd->owner = THIS_MODULE;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SA1100 flash: CFI device at 0x%08lx, %uMiB, %d-bit\n",
 		phys, (unsigned)(subdev->mtd->size >> 20),
 		subdev->map.bankwidth * 8);
+#else
+	;
+#endif
 
 	return 0;
 
@@ -369,11 +377,19 @@ static int __devinit sa1100_mtd_probe(struct platform_device *pdev)
 	}
 
 	if (nr_parts == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "SA1100 flash: no partition info "
 			"available, registering whole flash\n");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "SA1100 flash: using %s partition "
 			"definition\n", part_type);
+#else
+		;
+#endif
 
 	mtd_device_register(info->mtd, parts, nr_parts);
 

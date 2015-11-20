@@ -148,7 +148,11 @@ static void eurwdt_activate_timer(void)
 		irq = 0;	/* if invalid we disable interrupt */
 	}
 	if (irq == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO ": interrupt disabled\n");
+#else
+		;
+#endif
 
 	eurwdt_write_reg(WDT_TIMER_CFG, irq << 4);
 
@@ -163,12 +167,24 @@ static void eurwdt_activate_timer(void)
 
 static irqreturn_t eurwdt_interrupt(int irq, void *dev_id)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "timeout WDT timeout\n");
+#else
+	;
+#endif
 
 #ifdef ONLY_TESTING
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "Would Reboot.\n");
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "Initiating system reboot.\n");
+#else
+	;
+#endif
 	emergency_restart();
 #endif
 	return IRQ_HANDLED;
@@ -335,8 +351,12 @@ static int eurwdt_release(struct inode *inode, struct file *file)
 	if (eur_expect_close == 42)
 		eurwdt_disable_timer();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT
 			"eurwdt: Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		eurwdt_ping();
 	}
 	clear_bit(0, &eurwdt_is_open);
@@ -458,9 +478,13 @@ static int __init eurwdt_init(void)
 	eurwdt_unlock_chip();
 
 	ret = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Eurotech WDT driver 0.01 at %X (Interrupt %d)"
 		" - timeout event: %s\n",
 		io, irq, (!strcmp("int", ev) ? "int" : "reboot"));
+#else
+	;
+#endif
 
 out:
 	return ret;

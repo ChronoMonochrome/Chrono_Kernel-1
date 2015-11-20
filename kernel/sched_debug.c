@@ -27,7 +27,11 @@ static DEFINE_SPINLOCK(sched_debug_lock);
 	if (m)					\
 		seq_printf(m, x);		\
 	else					\
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(x);			\
+#else
+		;
+#endif
  } while (0)
 
 /*

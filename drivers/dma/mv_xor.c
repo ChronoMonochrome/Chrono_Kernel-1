@@ -622,8 +622,12 @@ static int mv_xor_alloc_chan_resources(struct dma_chan *chan)
 	while (idx < num_descs_in_pool) {
 		slot = kzalloc(sizeof(*slot), GFP_KERNEL);
 		if (!slot) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MV XOR Channel only initialized"
 				" %d descriptor slots", idx);
+#else
+			;
+#endif
 			break;
 		}
 		hw_desc = (char *) mv_chan->device->dma_desc_pool_virt;
@@ -1231,12 +1235,16 @@ static int __devinit mv_xor_probe(struct platform_device *pdev)
 			goto err_free_dma;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &pdev->dev, "Marvell XOR: "
 	  "( %s%s%s%s)\n",
 	  dma_has_cap(DMA_XOR, dma_dev->cap_mask) ? "xor " : "",
 	  dma_has_cap(DMA_MEMSET, dma_dev->cap_mask)  ? "fill " : "",
 	  dma_has_cap(DMA_MEMCPY, dma_dev->cap_mask) ? "cpy " : "",
 	  dma_has_cap(DMA_INTERRUPT, dma_dev->cap_mask) ? "intr " : "");
+#else
+	dev_;
+#endif
 
 	dma_async_device_register(dma_dev);
 	goto out;
@@ -1294,7 +1302,11 @@ static int mv_xor_shared_probe(struct platform_device *pdev)
 	struct mv_xor_shared_private *msp;
 	struct resource *res;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_NOTICE, &pdev->dev, "Marvell shared XOR driver\n");
+#else
+	dev_;
+#endif
 
 	msp = devm_kzalloc(&pdev->dev, sizeof(*msp), GFP_KERNEL);
 	if (!msp)

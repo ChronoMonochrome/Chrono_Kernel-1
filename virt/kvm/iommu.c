@@ -181,11 +181,15 @@ int kvm_assign_device(struct kvm *kvm,
 			goto out_unmap;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "assign device %x:%x:%x.%x\n",
 		assigned_dev->host_segnr,
 		assigned_dev->host_busnr,
 		PCI_SLOT(assigned_dev->host_devfn),
 		PCI_FUNC(assigned_dev->host_devfn));
+#else
+	;
+#endif
 
 	return 0;
 out_unmap:
@@ -209,11 +213,15 @@ int kvm_deassign_device(struct kvm *kvm,
 
 	iommu_detach_device(domain, &pdev->dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "deassign device %x:%x:%x.%x\n",
 		assigned_dev->host_segnr,
 		assigned_dev->host_busnr,
 		PCI_SLOT(assigned_dev->host_devfn),
 		PCI_FUNC(assigned_dev->host_devfn));
+#else
+	;
+#endif
 
 	return 0;
 }

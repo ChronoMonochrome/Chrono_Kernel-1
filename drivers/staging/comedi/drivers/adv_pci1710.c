@@ -60,6 +60,7 @@ Configuration options:
 
 #undef DPRINTK
 #ifdef PCI171X_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DPRINTK(fmt, args...) printk(fmt, ## args)
 #else
 #define DPRINTK(fmt, args...)
@@ -142,6 +143,9 @@ static const struct comedi_lrange range_pci1710_3 = { 9, {
 							  UNI_RANGE(1.25)
 							  }
 };
+#else
+#define DPRINTK(fmt, args...) ;
+#endif
 
 static const char range_codes_pci1710_3[] = { 0x00, 0x01, 0x02, 0x03, 0x04,
 					      0x10, 0x11, 0x12, 0x13 };
@@ -617,7 +621,11 @@ static void interrupt_pci1710_every_sample(void *d)
 	DPRINTK("adv_pci1710 EDBG: BGN: interrupt_pci1710_every_sample(...)\n");
 	m = inw(dev->iobase + PCI171x_STATUS);
 	if (m & Status_FE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: A/D FIFO empty (%4x)\n", dev->minor, m);
+#else
+		;
+#endif
 		pci171x_ai_cancel(dev, s);
 		s->async->events |= COMEDI_CB_EOA | COMEDI_CB_ERROR;
 		comedi_event(dev, s);
@@ -749,8 +757,12 @@ static void interrupt_pci1710_half_fifo(void *d)
 	DPRINTK("adv_pci1710 EDBG: BGN: interrupt_pci1710_half_fifo(...)\n");
 	m = inw(dev->iobase + PCI171x_STATUS);
 	if (!(m & Status_FH)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: A/D FIFO not half full! (%4x)\n",
 		       dev->minor, m);
+#else
+		;
+#endif
 		pci171x_ai_cancel(dev, s);
 		s->async->events |= COMEDI_CB_EOA | COMEDI_CB_ERROR;
 		comedi_event(dev, s);
@@ -925,14 +937,30 @@ static int pci171x_ai_docmd_and_mode(int mode, struct comedi_device *dev,
 */
 static void pci171x_cmdtest_out(int e, struct comedi_cmd *cmd)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adv_pci1710 e=%d startsrc=%x scansrc=%x convsrc=%x\n", e,
 	       cmd->start_src, cmd->scan_begin_src, cmd->convert_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adv_pci1710 e=%d startarg=%d scanarg=%d convarg=%d\n", e,
 	       cmd->start_arg, cmd->scan_begin_arg, cmd->convert_arg);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adv_pci1710 e=%d stopsrc=%x scanend=%x\n", e, cmd->stop_src,
 	       cmd->scan_end_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adv_pci1710 e=%d stoparg=%d scanendarg=%d chanlistlen=%d\n",
 	       e, cmd->stop_arg, cmd->scan_end_arg, cmd->chanlist_len);
+#else
+	;
+#endif
 }
 #endif
 
@@ -1163,7 +1191,11 @@ static int check_channel_list(struct comedi_device *dev,
 	if (n_chan > 1) {
 		chansegment[0] = chanlist[0];	/*  first channel is every time ok */
 		for (i = 1, seglen = 1; i < n_chan; i++, seglen++) {	/*  build part of chanlist */
+#ifdef CONFIG_DEBUG_PRINTK
 			/*  printk("%d. %d %d\n",i,CR_CHAN(chanlist[i]),CR_RANGE(chanlist[i])); */
+#else
+			/*  ;
+#endif
 			if (chanlist[0] == chanlist[i])
 				break;	/*  we detect loop, this must by finish */
 			if (CR_CHAN(chanlist[i]) & 1)	/*  odd channel cann't by differencial */
@@ -1187,7 +1219,11 @@ static int check_channel_list(struct comedi_device *dev,
 		}
 
 		for (i = 0, segpos = 0; i < n_chan; i++) {	/*  check whole chanlist */
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("%d %d=%d %d\n",CR_CHAN(chansegment[i%seglen]),CR_RANGE(chansegment[i%seglen]),CR_CHAN(chanlist[i]),CR_RANGE(chanlist[i])); */
+#else
+			/* ;
+#endif
 			if (chanlist[i] != chansegment[i % seglen]) {
 				printk
 				    ("bad channel, reference or range number! chanlist[%i]=%d,%d,%d and not %d,%d,%d!\n",
@@ -1382,14 +1418,22 @@ static int pci1710_attach(struct comedi_device *dev,
 	int i;
 	int board_index;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: adv_pci1710: ", dev->minor);
+#else
+	;
+#endif
 
 	opt_bus = it->options[0];
 	opt_slot = it->options[1];
 
 	ret = alloc_private(dev, sizeof(struct pci1710_private));
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" - Allocation failed!\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -1436,10 +1480,18 @@ static int pci1710_attach(struct comedi_device *dev,
 
 	if (!pcidev) {
 		if (opt_bus || opt_slot) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" - Card at b:s %d:%d %s\n",
 			       opt_bus, opt_slot, errstr);
+#else
+			;
+#endif
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" - Card %s\n", errstr);
+#else
+			;
+#endif
 		}
 		return -EIO;
 	}
@@ -1450,8 +1502,12 @@ static int pci1710_attach(struct comedi_device *dev,
 	irq = pcidev->irq;
 	iobase = pci_resource_start(pcidev, 2);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(", b:s:f=%d:%d:%d, io=0x%4lx", pci_bus, pci_slot, pci_func,
 	       iobase);
+#else
+	;
+#endif
 
 	dev->iobase = iobase;
 
@@ -1472,7 +1528,11 @@ static int pci1710_attach(struct comedi_device *dev,
 
 	ret = alloc_subdevices(dev, n_subdevices);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" - Allocation failed!\n");
+#else
+		;
+#endif
 		return ret;
 	}
 
@@ -1488,10 +1548,18 @@ static int pci1710_attach(struct comedi_device *dev,
 				     irq);
 				irq = 0;	/* Can't use IRQ */
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(", irq=%u", irq);
+#else
+				;
+#endif
 			}
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", IRQ disabled");
+#else
+			;
+#endif
 		}
 	} else {
 		irq = 0;
@@ -1499,7 +1567,11 @@ static int pci1710_attach(struct comedi_device *dev,
 
 	dev->irq = irq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(".\n");
+#else
+	;
+#endif
 
 	subdev = 0;
 

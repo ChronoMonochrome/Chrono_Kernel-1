@@ -446,9 +446,13 @@ static void read_proc_kallsyms(void)
 
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 static void read_ftrace_printk(void)
 {
 	unsigned int size, check_size;
+#else
+static void read_ftrace_;
+#endif
 	char *path;
 	struct stat st;
 	int ret;
@@ -543,7 +547,11 @@ int read_tracing_data(int fd, struct list_head *pattrs)
 	read_ftrace_files(tps);
 	read_event_files(tps);
 	read_proc_kallsyms();
+#ifdef CONFIG_DEBUG_PRINTK
 	read_ftrace_printk();
+#else
+	read_ftrace_;
+#endif
 
 	return 0;
 }

@@ -971,7 +971,11 @@ inline int wait_rn_b_high(void)
 	 * while (OMAP_GPIO_BIT(AST_RnB, GPIO_DATA_IN)  == 0) {
 	 * w_spins++;
 	 * }
+#ifdef CONFIG_DEBUG_PRINTK
 	 * printk("<1>RnB=0!:%d\n",w_spins);
+#else
+	 * ;
+#endif
 	 * }
 	 */
 	return w_spins;
@@ -1012,10 +1016,18 @@ static void p_nand_lbd_read(u16 col_addr, u32 row_addr, u16 count, void *buff)
 #ifdef PFE_READ_DEBUG
 	tmp32 = IORD32(GPMC_VMA(GPMC_PREFETCH_CONFIG1));
 	if (tmp32 != GPMC_PREFETCH_CONFIG1_VAL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "<1> prefetch is CONFIG1 read val:%8.8x, != VAL written:%8.8x\n",
 				tmp32, GPMC_PREFETCH_CONFIG1_VAL);
+#else
+		;
+#endif
 		tmp32 = IORD32(GPMC_VMA(GPMC_PREFETCH_STATUS));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "<1> GPMC_PREFETCH_STATUS : %8.8x\n", tmp32);
+#else
+		;
+#endif
 	}
 
 	/*
@@ -1023,8 +1035,12 @@ static void p_nand_lbd_read(u16 col_addr, u32 row_addr, u16 count, void *buff)
 	 */
 	tmp32 = IORD32(GPMC_VMA(GPMC_PREFETCH_CONFIG2));
 	if (tmp32 != (count))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "<1> GPMC_PREFETCH_CONFIG2 read val:%d, "
 				"!= VAL written:%d\n", tmp32, count);
+#else
+		;
+#endif
 #endif
 
 	/*

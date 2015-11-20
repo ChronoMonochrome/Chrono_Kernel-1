@@ -76,23 +76,35 @@ static int __devinit pxa2xx_flash_probe(struct platform_device *pdev)
 
 	info->map.virt = ioremap(info->map.phys, info->map.size);
 	if (!info->map.virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to ioremap %s\n",
 		       info->map.name);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 	info->map.cached =
 		ioremap_cached(info->map.phys, info->map.size);
 	if (!info->map.cached)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to ioremap cached %s\n",
 		       info->map.name);
+#else
+		;
+#endif
 	info->map.inval_cache = pxa2xx_map_inval_cache;
 	simple_map_init(&info->map);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE
 	       "Probing %s at physical address 0x%08lx"
 	       " (%d-bit bankwidth)\n",
 	       info->map.name, (unsigned long)info->map.phys,
 	       info->map.bankwidth * 8);
+#else
+	;
+#endif
 
 	info->mtd = do_map_probe(flash->map_name, &info->map);
 
@@ -112,8 +124,12 @@ static int __devinit pxa2xx_flash_probe(struct platform_device *pdev)
 	}
 
 	if (!info->nr_parts)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Registering %s as whole device\n",
 		       info->map.name);
+#else
+		;
+#endif
 
 	mtd_device_register(info->mtd, info->parts, info->nr_parts);
 

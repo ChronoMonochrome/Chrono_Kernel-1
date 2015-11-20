@@ -203,9 +203,17 @@ static int r871x_suspend(struct usb_interface *pusb_intf, pm_message_t state)
 {
 	struct net_device *pnetdev = usb_get_intfdata(pusb_intf);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "r8712: suspending...\n");
+#else
+	;
+#endif
 	if (!pnetdev || !netif_running(pnetdev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712: unable to suspend\n");
+#else
+		;
+#endif
 		return 0;
 	}
 	if (pnetdev->netdev_ops->ndo_stop)
@@ -219,9 +227,17 @@ static int r871x_resume(struct usb_interface *pusb_intf)
 {
 	struct net_device *pnetdev = usb_get_intfdata(pusb_intf);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "r8712: resuming...\n");
+#else
+	;
+#endif
 	if (!pnetdev || !netif_running(pnetdev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712: unable to resume\n");
+#else
+		;
+#endif
 		return 0;
 	}
 	netif_device_attach(pnetdev);
@@ -271,12 +287,20 @@ static uint r8712_usb_dvobj_init(struct _adapter *padapter)
 	pdvobjpriv->nr_endpoint = piface_desc->bNumEndpoints;
 	if (pusbd->speed == USB_SPEED_HIGH) {
 		pdvobjpriv->ishighspeed = true;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: USB_SPEED_HIGH with %d endpoints\n",
 		       pdvobjpriv->nr_endpoint);
+#else
+		;
+#endif
 	} else {
 		pdvobjpriv->ishighspeed = false;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: USB_SPEED_LOW with %d endpoints\n",
 		       pdvobjpriv->nr_endpoint);
+#else
+		;
+#endif
 	}
 	if ((r8712_alloc_io_queue(padapter)) == _FAIL)
 		status = _FAIL;
@@ -371,7 +395,11 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
 	struct dvobj_priv *pdvobjpriv;
 	struct net_device *pnetdev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "r8712u: DriverVersion: %s\n", DRVER);
+#else
+	;
+#endif
 	/* In this probe function, O.S. will provide the usb interface pointer
 	 * to driver. We have to increase the reference count of the usb device
 	 * structure by using the usb_get_dev function.
@@ -419,9 +447,13 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
 		tmpU1b = r8712_read8(padapter, EE_9346CR);/*CR9346*/
 
 		/* To check system boot selection.*/
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "r8712u: Boot from %s: Autoload %s\n",
 		       (tmpU1b & _9356SEL) ? "EEPROM" : "EFUSE",
 		       (tmpU1b & _EEPROM_EN) ? "OK" : "Failed");
+#else
+		;
+#endif
 
 		/* To check autoload success or not.*/
 		if (tmpU1b & _EEPROM_EN) {
@@ -529,8 +561,12 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
 						 RT_CID_DEFAULT;
 				break;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "r8712u: CustomerID = 0x%.4x\n",
 			     padapter->eeprompriv.CustomerID);
+#else
+			;
+#endif
 			/* Led mode */
 			switch (padapter->eeprompriv.CustomerID) {
 			case RT_CID_DEFAULT:
@@ -586,11 +622,19 @@ static int r871xu_drv_init(struct usb_interface *pusb_intf,
 			 * address by setting bit 1 of first octet.
 			 */
 			mac[0] &= 0xFE;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "r8712u: MAC Address from user = "
 			       "%pM\n", mac);
+#else
+			;
+#endif
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "r8712u: MAC Address from efuse = "
 			       "%pM\n", mac);
+#else
+			;
+#endif
 		memcpy(pnetdev->dev_addr, mac, ETH_ALEN);
 	}
 	/* step 6. Tell the network stack we exist */
@@ -649,7 +693,11 @@ static void __exit r8712u_drv_halt(void)
 {
 	drvpriv.drv_registered = false;
 	usb_deregister(&drvpriv.r871xu_drv);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "r8712u: Driver unloaded\n");
+#else
+	;
+#endif
 }
 
 module_init(r8712u_drv_entry);

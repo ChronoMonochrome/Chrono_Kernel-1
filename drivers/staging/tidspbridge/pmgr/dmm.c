@@ -504,15 +504,23 @@ u32 dmm_mem_map_dump(struct dmm_object *dmm_mgr)
 		     virtual_mapping_table[i].region_size) {
 			curr_node = virtual_mapping_table + i;
 			if (curr_node->reserved) {
+#ifdef CONFIG_DEBUG_PRINTK
 				/*printk("RESERVED size = 0x%x, "
 				   "Map size = 0x%x\n",
 				   (curr_node->region_size * PG_SIZE4K),
 				   (curr_node->mapped == false) ? 0 :
 				   (curr_node->mapped_size * PG_SIZE4K));
+#else
+				/*;
+#endif
 				 */
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 /*				printk("UNRESERVED size = 0x%x\n",
 					(curr_node->region_size * PG_SIZE4K));
+#else
+/*				;
+#endif
  */
 				freemem += (curr_node->region_size * PG_SIZE4K);
 				if (curr_node->region_size > bigsize)
@@ -521,12 +529,24 @@ u32 dmm_mem_map_dump(struct dmm_object *dmm_mgr)
 		}
 	}
 	spin_unlock(&dmm_mgr->dmm_lock);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Total DSP VA FREE memory = %d Mbytes\n",
 	       freemem / (1024 * 1024));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Total DSP VA USED memory= %d Mbytes \n",
 	       (((table_size * PG_SIZE4K) - freemem)) / (1024 * 1024));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DSP VA - Biggest FREE block = %d Mbytes \n\n",
 	       (bigsize * PG_SIZE4K / (1024 * 1024)));
+#else
+	;
+#endif
 
 	return 0;
 }

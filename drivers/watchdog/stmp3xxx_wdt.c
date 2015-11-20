@@ -220,8 +220,12 @@ static int __devinit stmp3xxx_wdt_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "stmp3xxx watchdog: initialized, heartbeat %d sec\n",
 		heartbeat);
+#else
+	;
+#endif
 
 	return ret;
 }

@@ -115,11 +115,15 @@ static int debug;
 static int sense = -1;	/* -1 = auto, 0 = active high, 1 = active low */
 static int txsense;	/* 0 = active high, 1 = active low */
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(fmt, args...)					\
 	do {							\
 		if (debug)					\
 			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "	\
 			       fmt, ## args);			\
+#else
+#define d;
+#endif
 	} while (0)
 
 /* forward declarations */
@@ -395,11 +399,15 @@ static int init_timing_params(unsigned int new_duty_cycle,
 	/* Derive pulse and space from the period */
 	pulse_width = period * duty_cycle / 100;
 	space_width = period - pulse_width;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("in init_timing_params, freq=%d, duty_cycle=%d, "
 		"clk/jiffy=%ld, pulse=%ld, space=%ld, "
 		"conv_us_to_clocks=%ld\n",
 		freq, duty_cycle, __this_cpu_read(cpu_info.loops_per_jiffy),
 		pulse_width, space_width, conv_us_to_clocks);
+#else
+	d;
+#endif
 	return 0;
 }
 #else /* ! USE_RDTSC */
@@ -421,8 +429,12 @@ static int init_timing_params(unsigned int new_duty_cycle,
 	period = 256 * 1000000L / freq;
 	pulse_width = period * duty_cycle / 100;
 	space_width = period - pulse_width;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("in init_timing_params, freq=%d pulse=%ld, "
 		"space=%ld\n", freq, pulse_width, space_width);
+#else
+	d;
+#endif
 	return 0;
 }
 #endif /* USE_RDTSC */
@@ -594,7 +606,11 @@ static void rbwrite(int l)
 {
 	if (lirc_buffer_full(&rbuf)) {
 		/* no new signals will be accepted */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Buffer overrun\n");
+#else
+		d;
+#endif
 		return;
 	}
 	lirc_buffer_write(&rbuf, (void *)&l);
@@ -662,8 +678,12 @@ static irqreturn_t irq_handler(int i, void *blah)
 		counter++;
 		status = sinp(UART_MSR);
 		if (counter > RS_ISR_PASS_LIMIT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING LIRC_DRIVER_NAME ": AIEEEE: "
 			       "We're caught!\n");
+#else
+			;
+#endif
 			break;
 		}
 		if ((status & hardware[type].signal_pin_change)
@@ -698,11 +718,15 @@ static irqreturn_t irq_handler(int i, void *blah)
 			dcd = (status & hardware[type].signal_pin) ? 1 : 0;
 
 			if (dcd == last_dcd) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING LIRC_DRIVER_NAME
 				": ignoring spike: %d %d %lx %lx %lx %lx\n",
 				dcd, sense,
 				tv.tv_sec, lasttv.tv_sec,
 				tv.tv_usec, lasttv.tv_usec);
+#else
+				;
+#endif
 				continue;
 			}
 
@@ -710,25 +734,37 @@ static irqreturn_t irq_handler(int i, void *blah)
 			if (tv.tv_sec < lasttv.tv_sec ||
 			    (tv.tv_sec == lasttv.tv_sec &&
 			     tv.tv_usec < lasttv.tv_usec)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING LIRC_DRIVER_NAME
 				       ": AIEEEE: your clock just jumped "
 				       "backwards\n");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING LIRC_DRIVER_NAME
 				       ": %d %d %lx %lx %lx %lx\n",
 				       dcd, sense,
 				       tv.tv_sec, lasttv.tv_sec,
 				       tv.tv_usec, lasttv.tv_usec);
+#else
+				;
+#endif
 				data = PULSE_MASK;
 			} else if (deltv > 15) {
 				data = PULSE_MASK; /* really long time */
 				if (!(dcd^sense)) {
 					/* sanity check */
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING LIRC_DRIVER_NAME
 					       ": AIEEEE: "
 					       "%d %d %lx %lx %lx %lx\n",
 					       dcd, sense,
 					       tv.tv_sec, lasttv.tv_sec,
 					       tv.tv_usec, lasttv.tv_usec);
+#else
+					;
+#endif
 					/*
 					 * detecting pulse while this
 					 * MUST be a space!
@@ -868,10 +904,18 @@ static int __devinit lirc_serial_probe(struct platform_device *dev)
 		       ": port %04x already in use\n", io);
 		printk(KERN_WARNING LIRC_DRIVER_NAME
 		       ": use 'setserial /dev/ttySX uart none'\n");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LIRC_DRIVER_NAME
 		       ": or compile the serial port driver as module and\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LIRC_DRIVER_NAME
 		       ": make sure this module is loaded first\n");
+#else
+		;
+#endif
 		result = -EBUSY;
 		goto exit_free_irq;
 	}
@@ -903,13 +947,25 @@ static int __devinit lirc_serial_probe(struct platform_device *dev)
 			msleep(40);
 		}
 		sense = (nlow >= nhigh ? 1 : 0);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LIRC_DRIVER_NAME  ": auto-detected active "
 		       "%s receiver\n", sense ? "low" : "high");
+#else
+		;
+#endif
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LIRC_DRIVER_NAME  ": Manually using active "
 		       "%s receiver\n", sense ? "low" : "high");
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Interrupt %d, port %04x obtained\n", irq, io);
+#else
+	d;
+#endif
 	return 0;
 
 exit_release_region:
@@ -1036,7 +1092,11 @@ static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 		break;
 
 	case LIRC_SET_SEND_DUTY_CYCLE:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("SET_SEND_DUTY_CYCLE\n");
+#else
+		d;
+#endif
 		if (!(hardware[type].features&LIRC_CAN_SET_SEND_DUTY_CYCLE))
 			return -ENOIOCTLCMD;
 
@@ -1049,7 +1109,11 @@ static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 		break;
 
 	case LIRC_SET_SEND_CARRIER:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("SET_SEND_CARRIER\n");
+#else
+		d;
+#endif
 		if (!(hardware[type].features&LIRC_CAN_SET_SEND_CARRIER))
 			return -ENOIOCTLCMD;
 
@@ -1162,7 +1226,11 @@ static int __init lirc_serial_init(void)
 
 	result = platform_driver_register(&lirc_serial_driver);
 	if (result) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("lirc register returned %d\n", result);
+#else
+		;
+#endif
 		goto exit_buffer_free;
 	}
 
@@ -1253,7 +1321,11 @@ static void __exit lirc_serial_exit_module(void)
 {
 	lirc_unregister_driver(driver.minor);
 	lirc_serial_exit();
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("cleaned up module\n");
+#else
+	d;
+#endif
 }
 
 

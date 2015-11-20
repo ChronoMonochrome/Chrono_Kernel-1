@@ -1725,8 +1725,12 @@ static int alc_auto_parse_customize_define(struct hda_codec *codec)
 	ass = snd_hda_codec_get_pincfg(codec, nid);
 
 	if (!(ass & 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: SKU not ready 0x%08x\n",
 		       codec->chip_name, ass);
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -5950,7 +5954,11 @@ static void fillup_priv_adc_nids(struct hda_codec *codec, const hda_nid_t *nids,
 		}
 	}
 	if (!spec->num_adc_nids) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hda_codec: %s: no valid ADC found;"
+#else
+		;
+#endif
 		       " using fallback 0x%x\n",
 		       codec->chip_name, fallback_adc);
 		spec->private_adc_nids[0] = fallback_adc;
@@ -6010,8 +6018,12 @@ static int patch_alc880(struct hda_codec *codec)
 						  alc880_models,
 						  alc880_cfg_tbl);
 	if (board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC880_AUTO;
 	}
 
@@ -6022,9 +6034,13 @@ static int patch_alc880(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using 3-stack mode...\n");
+#else
+			;
+#endif
 			board_config = ALC880_3ST;
 		}
 	}
@@ -7635,9 +7651,13 @@ static int patch_alc260(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 			board_config = ALC260_BASIC;
 		}
 	}
@@ -11327,8 +11347,12 @@ static int patch_alc882(struct hda_codec *codec)
 			ALC882_MODEL_LAST, alc882_models, alc882_ssid_cfg_tbl);
 
 	if (board_config < 0 || board_config >= ALC882_MODEL_LAST) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC882_AUTO;
 	}
 
@@ -11346,9 +11370,13 @@ static int patch_alc882(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 			board_config = ALC882_3ST_DIG;
 		}
 	}
@@ -13079,8 +13107,12 @@ static int patch_alc262(struct hda_codec *codec)
 						  alc262_cfg_tbl);
 
 	if (board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC262_AUTO;
 	}
 
@@ -13096,9 +13128,13 @@ static int patch_alc262(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 			board_config = ALC262_BASIC;
 		}
 	}
@@ -14099,8 +14135,12 @@ static int patch_alc268(struct hda_codec *codec)
 			ALC268_MODEL_LAST, alc268_models, alc268_ssid_cfg_tbl);
 
 	if (board_config < 0 || board_config >= ALC268_MODEL_LAST) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC268_AUTO;
 	}
 
@@ -14111,9 +14151,13 @@ static int patch_alc268(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 			board_config = ALC268_3ST;
 		}
 	}
@@ -15288,8 +15332,12 @@ static int patch_alc269(struct hda_codec *codec)
 						  alc269_cfg_tbl);
 
 	if (board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC269_AUTO;
 	}
 
@@ -15305,9 +15353,13 @@ static int patch_alc269(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 			board_config = ALC269_BASIC;
 		}
 	}
@@ -16466,8 +16518,12 @@ static int patch_alc861(struct hda_codec *codec)
 						  alc861_cfg_tbl);
 
 	if (board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC861_AUTO;
 	}
 
@@ -16483,9 +16539,13 @@ static int patch_alc861(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 		   board_config = ALC861_3ST_DIG;
 		}
 	}
@@ -17440,8 +17500,12 @@ static int patch_alc861vd(struct hda_codec *codec)
 						  alc861vd_cfg_tbl);
 
 	if (board_config < 0 || board_config >= ALC861VD_MODEL_LAST) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC861VD_AUTO;
 	}
 
@@ -17457,9 +17521,13 @@ static int patch_alc861vd(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 			board_config = ALC861VD_3ST;
 		}
 	}
@@ -19471,8 +19539,12 @@ static void alc272_fixup_mario(struct hda_codec *codec,
 				      (0x3b << AC_AMPCAP_NUM_STEPS_SHIFT) |
 				      (0x03 << AC_AMPCAP_STEP_SIZE_SHIFT) |
 				      (0 << AC_AMPCAP_MUTE_SHIFT)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "hda_codec: failed to override amp caps for NID 0x2\n");
+#else
+		;
+#endif
 }
 
 enum {
@@ -19562,8 +19634,12 @@ static int patch_alc662(struct hda_codec *codec)
 						  alc662_models,
 			  	                  alc662_cfg_tbl);
 	if (board_config < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC662_AUTO;
 	}
 
@@ -19577,9 +19653,13 @@ static int patch_alc662(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 			board_config = ALC662_3ST_2ch_DIG;
 		}
 	}
@@ -20075,8 +20155,12 @@ static int patch_alc680(struct hda_codec *codec)
 						  alc680_cfg_tbl);
 
 	if (board_config < 0 || board_config >= ALC680_MODEL_LAST) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "hda_codec: %s: BIOS auto-probing.\n",
 		       codec->chip_name);
+#else
+		;
+#endif
 		board_config = ALC680_AUTO;
 	}
 
@@ -20087,9 +20171,13 @@ static int patch_alc680(struct hda_codec *codec)
 			alc_free(codec);
 			return err;
 		} else if (!err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "hda_codec: Cannot set up configuration "
 			       "from BIOS.  Using base mode...\n");
+#else
+			;
+#endif
 			board_config = ALC680_BASE;
 		}
 	}

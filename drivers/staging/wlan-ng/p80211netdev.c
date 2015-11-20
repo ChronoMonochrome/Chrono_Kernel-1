@@ -386,8 +386,12 @@ static int p80211knetdev_hard_start_xmit(struct sk_buff *skb,
 		 */
 		if (skb->protocol != ETH_P_80211_RAW) {
 			netif_start_queue(wlandev->netdev);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE
 			       "Tx attempt prior to association, frame dropped.\n");
+#else
+			;
+#endif
 			wlandev->linux_stats.tx_dropped++;
 			result = 0;
 			goto failed;
@@ -973,55 +977,107 @@ static int p80211_rx_typedrop(wlandevice_t *wlandev, u16 fc)
 		wlandev->rx.mgmt++;
 		switch (fstype) {
 		case WLAN_FSTYPE_ASSOCREQ:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("assocreq"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.assocreq++;
 			break;
 		case WLAN_FSTYPE_ASSOCRESP:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("assocresp"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.assocresp++;
 			break;
 		case WLAN_FSTYPE_REASSOCREQ:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("reassocreq"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.reassocreq++;
 			break;
 		case WLAN_FSTYPE_REASSOCRESP:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("reassocresp"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.reassocresp++;
 			break;
 		case WLAN_FSTYPE_PROBEREQ:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("probereq"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.probereq++;
 			break;
 		case WLAN_FSTYPE_PROBERESP:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("proberesp"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.proberesp++;
 			break;
 		case WLAN_FSTYPE_BEACON:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("beacon"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.beacon++;
 			break;
 		case WLAN_FSTYPE_ATIM:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("atim"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.atim++;
 			break;
 		case WLAN_FSTYPE_DISASSOC:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("disassoc"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.disassoc++;
 			break;
 		case WLAN_FSTYPE_AUTHEN:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("authen"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.authen++;
 			break;
 		case WLAN_FSTYPE_DEAUTHEN:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("deauthen"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.deauthen++;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("unknown"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.mgmt_unknown++;
 			break;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("\n"); */
+#else
+		/* ;
+#endif
 		drop = 2;
 		break;
 
@@ -1035,35 +1091,67 @@ static int p80211_rx_typedrop(wlandevice_t *wlandev, u16 fc)
 		wlandev->rx.ctl++;
 		switch (fstype) {
 		case WLAN_FSTYPE_PSPOLL:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("pspoll"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.pspoll++;
 			break;
 		case WLAN_FSTYPE_RTS:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("rts"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.rts++;
 			break;
 		case WLAN_FSTYPE_CTS:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("cts"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.cts++;
 			break;
 		case WLAN_FSTYPE_ACK:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("ack"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.ack++;
 			break;
 		case WLAN_FSTYPE_CFEND:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("cfend"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.cfend++;
 			break;
 		case WLAN_FSTYPE_CFENDCFACK:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("cfendcfack"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.cfendcfack++;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("unknown"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.ctl_unknown++;
 			break;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("\n"); */
+#else
+		/* ;
+#endif
 		drop = 2;
 		break;
 
@@ -1099,7 +1187,11 @@ static int p80211_rx_typedrop(wlandevice_t *wlandev, u16 fc)
 			wlandev->rx.cfack_cfpoll++;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("unknown"); */
+#else
+			/* ;
+#endif
 			wlandev->rx.data_unknown++;
 			break;
 		}
@@ -1116,8 +1208,12 @@ static void p80211knetdev_tx_timeout(netdevice_t *netdev)
 	if (wlandev->tx_timeout) {
 		wlandev->tx_timeout(wlandev);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Implement tx_timeout for %s\n",
 		       wlandev->nsdname);
+#else
+		;
+#endif
 		netif_wake_queue(wlandev->netdev);
 	}
 }

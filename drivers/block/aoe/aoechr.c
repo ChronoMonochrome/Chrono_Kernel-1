@@ -160,7 +160,11 @@ aoechr_write(struct file *filp, const char __user *buf, size_t cnt, loff_t *offp
 
 	switch ((unsigned long) filp->private_data) {
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "aoe: can't write to that file.\n");
+#else
+		;
+#endif
 		break;
 	case MINOR_DISCOVER:
 		ret = discover();

@@ -125,9 +125,13 @@ static int __init alix_present(unsigned long bios_phys,
 	char name[64];
 
 	if (force) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: forced to skip BIOS test, "
 		       "assume system has ALIX.2 style LEDs\n",
 		       KBUILD_MODNAME);
+#else
+		;
+#endif
 		return 1;
 	}
 
@@ -154,9 +158,13 @@ static int __init alix_present(unsigned long bios_phys,
 
 		tail = p + alix_sig_len;
 		if ((tail[0] == '2' || tail[0] == '3')) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "%s: system is recognized as \"%s\"\n",
 			       KBUILD_MODNAME, name);
+#else
+			;
+#endif
 			return 1;
 		}
 	}
@@ -171,7 +179,11 @@ static int __init alix_pci_led_init(void)
 	u32 low, hi;
 
 	if (pci_dev_present(divil_pci) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING KBUILD_MODNAME": DIVIL not found\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -180,7 +192,11 @@ static int __init alix_pci_led_init(void)
 
 	/* Check the mask and whether GPIO is enabled (sanity check) */
 	if (hi != 0x0000f001) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING KBUILD_MODNAME": GPIO not enabled\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 

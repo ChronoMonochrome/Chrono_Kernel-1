@@ -311,9 +311,13 @@ static int me4000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 				s->do_cmd = me4000_ai_do_cmd;
 			}
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "comedi%d: me4000: me4000_attach(): "
 			       "No interrupt available\n", dev->minor);
+#else
+			;
+#endif
 		}
 	} else {
 		s->type = COMEDI_SUBD_UNUSED;
@@ -443,11 +447,15 @@ static int me4000_probe(struct comedi_device *dev, struct comedi_devconfig *it)
 
 found:
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "comedi%d: me4000: me4000_probe(): "
 	       "Found %s at PCI bus %d, slot %d\n",
 	       dev->minor, me4000_boards[i].name, pci_device->bus->number,
 	       PCI_SLOT(pci_device->devfn));
+#else
+	;
+#endif
 
 	/* Set data in device structure */
 	dev->board_name = board->name;

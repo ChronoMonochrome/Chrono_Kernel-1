@@ -95,7 +95,11 @@ static const struct dev_pm_ops SM5103_pm_ops = {
 
 static int SM5103_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "-> SM5103_%s(client=%s, id=%s)", __func__, client->name, id->name);
+#else
+	;
+#endif
 
     int ret = 0;
 	/* Struct NCP6914_platform_data * platdata = client->dev.platform_data; */
@@ -104,7 +108,11 @@ static int SM5103_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	pClient = client;
 	gpio_power_on  = 145; /* SM5103 SUBPMU_PWRON -> GPIO145 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "<- SM5103_%s(client=%s) = %d", __func__, client->name, ret);
+#else
+	;
+#endif
 	return ret;	
 }
 
@@ -112,8 +120,16 @@ static int SM5103_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 static int SM5103_i2c_remove(struct i2c_client *client)
 {
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "-> SM5103_%s(client=%s)", __func__, client->name);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "<- SM5103_%s(client=%s) = 0", __func__, client->name);
+#else
+	;
+#endif
     return 0;
 }
 

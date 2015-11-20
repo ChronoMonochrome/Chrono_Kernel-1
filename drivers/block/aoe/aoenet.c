@@ -77,7 +77,11 @@ set_aoe_iflist(const char __user *user_str, size_t size)
 		return -EINVAL;
 
 	if (copy_from_user(aoe_iflist, user_str, size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "aoe: copy from user failed\n");
+#else
+		;
+#endif
 		return -EFAULT;
 	}
 	aoe_iflist[size] = 0x00;
@@ -145,7 +149,11 @@ aoenet_rcv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt, 
 	default:
 		if (h->cmd >= AOECMD_VEND_MIN)
 			break;	/* don't complain about vendor commands */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "aoe: unknown cmd %d\n", h->cmd);
+#else
+		;
+#endif
 	}
 exit:
 	dev_kfree_skb(skb);

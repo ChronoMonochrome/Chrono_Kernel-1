@@ -116,7 +116,11 @@ int __init hp300_setup_serial_console(void)
 	/* Check for APCI console */
 	if (scode == 256) {
 #ifdef CONFIG_HPAPCI
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Serial console is HP APCI 1\n");
+#else
+		;
+#endif
 
 		port.uartclk = HPAPCI_BAUD_BASE * 16;
 		port.mapbase = (FRODO_BASE + FRODO_APCI_OFFSET(1));
@@ -124,7 +128,11 @@ int __init hp300_setup_serial_console(void)
 		port.regshift = 2;
 		add_preferred_console("ttyS", port.line, "9600n8");
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Serial console is APCI but support is disabled (CONFIG_HPAPCI)!\n");
+#else
+		;
+#endif
 		return 0;
 #endif
 	} else {
@@ -133,7 +141,11 @@ int __init hp300_setup_serial_console(void)
 		if (!pa)
 			return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Serial console is HP DCA at select code %d\n", scode);
+#else
+		;
+#endif
 
 		port.uartclk = HPDCA_BAUD_BASE * 16;
 		port.mapbase = (pa + UART_OFFSET);
@@ -147,13 +159,21 @@ int __init hp300_setup_serial_console(void)
 		if (DIO_ID(pa + DIO_VIRADDRBASE) & 0x80)
 			add_preferred_console("ttyS", port.line, "9600n8");
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Serial console is DCA but support is disabled (CONFIG_HPDCA)!\n");
+#else
+		;
+#endif
 		return 0;
 #endif
 	}
 
 	if (early_serial_setup(&port) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hp300_setup_serial_console(): early_serial_setup() failed.\n");
+#else
+		;
+#endif
 	return 0;
 }
 #endif /* CONFIG_SERIAL_8250_CONSOLE */
@@ -185,8 +205,12 @@ static int __devinit hpdca_init_one(struct dio_dev *d,
 	line = serial8250_register_port(&port);
 
 	if (line < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "8250_hp300: register_serial() DCA scode %d"
 		       " irq %d failed\n", d->scode, port.irq);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -266,8 +290,12 @@ static int __init hp300_8250_init(void)
 		line = serial8250_register_port(&uport);
 
 		if (line < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "8250_hp300: register_serial() APCI"
 			       " %d irq %d failed\n", i, uport.irq);
+#else
+			;
+#endif
 			kfree(port);
 			continue;
 		}

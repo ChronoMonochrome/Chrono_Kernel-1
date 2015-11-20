@@ -92,6 +92,7 @@ MODULE_LICENSE("GPL");
 
 #undef VSXXXAA_DEBUG
 #ifdef VSXXXAA_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(x...) printk(x)
 #else
 #define DBG(x...) do {} while (0)
@@ -113,6 +114,9 @@ MODULE_LICENSE("GPL");
 
 struct vsxxxaa {
 	struct input_dev *dev;
+#else
+#define DBG(x...) ;
+#endif
 	struct serio *serio;
 #define BUFLEN 15 /* At least 5 is needed for a full tablet packet */
 	unsigned char buf[BUFLEN];
@@ -167,9 +171,13 @@ static void vsxxxaa_detection_done(struct vsxxxaa *mouse)
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"Found %s version 0x%02x from country 0x%02x on port %s\n",
 		mouse->name, mouse->version, mouse->country, mouse->phys);
+#else
+	;
+#endif
 }
 
 /*
@@ -365,8 +373,12 @@ static void vsxxxaa_handle_POR_packet(struct vsxxxaa *mouse)
 		input_sync(dev);
 
 		if (error != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Your %s on %s reports error=0x%02x\n",
 				mouse->name, mouse->phys, error);
+#else
+			;
+#endif
 
 	}
 
@@ -374,10 +386,14 @@ static void vsxxxaa_handle_POR_packet(struct vsxxxaa *mouse)
 	 * If the mouse was hot-plugged, we need to force differential mode
 	 * now... However, give it a second to recover from it's reset.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE
 		"%s on %s: Forcing standard packet format, "
 		"incremental streaming mode and 72 samples/sec\n",
 		mouse->name, mouse->phys);
+#else
+	;
+#endif
 	serio_write(mouse->serio, 'S');	/* Standard format */
 	mdelay(50);
 	serio_write(mouse->serio, 'R');	/* Incremental */

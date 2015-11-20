@@ -659,7 +659,11 @@ static int __init stl_parsebrd(struct stlconf *confp, char **argp)
 			break;
 
 	if (i == ARRAY_SIZE(stl_brdstr)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: unknown board name, %s?\n", argp[0]);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -691,8 +695,12 @@ static struct stlbrd *stl_allocbrd(void)
 
 	brdp = kzalloc(sizeof(struct stlbrd), GFP_KERNEL);
 	if (!brdp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: failed to allocate memory (size=%Zd)\n",
 			sizeof(struct stlbrd));
+#else
+		;
+#endif
 		return NULL;
 	}
 
@@ -1611,8 +1619,12 @@ static int __devinit stl_initports(struct stlbrd *brdp, struct stlpanel *panelp)
 	for (i = 0; i < panelp->nrports; i++) {
 		portp = kzalloc(sizeof(struct stlport), GFP_KERNEL);
 		if (!portp) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("STALLION: failed to allocate memory "
 				"(size=%Zd)\n", sizeof(struct stlport));
+#else
+			;
+#endif
 			break;
 		}
 		tty_port_init(&portp->port);
@@ -1701,8 +1713,12 @@ static int __devinit stl_initeio(struct stlbrd *brdp)
 		name = "serial(EIO)";
 		if ((brdp->irq < 0) || (brdp->irq > 15) ||
 		    (stl_vecmap[brdp->irq] == (unsigned char) 0xff)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("STALLION: invalid irq=%d for brd=%d\n",
 				brdp->irq, brdp->brdnr);
+#else
+			;
+#endif
 			retval = -EINVAL;
 			goto err;
 		}
@@ -1713,20 +1729,32 @@ static int __devinit stl_initeio(struct stlbrd *brdp)
 
 	retval = -EBUSY;
 	if (!request_region(brdp->ioaddr1, brdp->iosize1, name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "STALLION: Warning, board %d I/O address "
 			"%x conflicts with another device\n", brdp->brdnr, 
 			brdp->ioaddr1);
+#else
+		;
+#endif
 		goto err;
 	}
 	
 	if (brdp->iosize2 > 0)
 		if (!request_region(brdp->ioaddr2, brdp->iosize2, name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "STALLION: Warning, board %d I/O "
 				"address %x conflicts with another device\n",
 				brdp->brdnr, brdp->ioaddr2);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "STALLION: Warning, also "
 				"releasing board %d I/O address %x \n", 
 				brdp->brdnr, brdp->ioaddr1);
+#else
+			;
+#endif
 			goto err_rel1;
 		}
 
@@ -1774,8 +1802,12 @@ static int __devinit stl_initeio(struct stlbrd *brdp)
 
 	panelp = kzalloc(sizeof(struct stlpanel), GFP_KERNEL);
 	if (!panelp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "STALLION: failed to allocate memory "
 			"(size=%Zd)\n", sizeof(struct stlpanel));
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err_rel2;
 	}
@@ -1799,8 +1831,12 @@ static int __devinit stl_initeio(struct stlbrd *brdp)
 	brdp->state |= BRD_FOUND;
 	brdp->hwid = status;
 	if (request_irq(brdp->irq, stl_intr, IRQF_SHARED, name, brdp) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: failed to register interrupt "
 		    "routine for %s irq=%d\n", name, brdp->irq);
+#else
+		;
+#endif
 		retval = -ENODEV;
 		goto err_fr;
 	}
@@ -1854,8 +1890,12 @@ static int __devinit stl_initech(struct stlbrd *brdp)
 		}
 		if ((brdp->irq < 0) || (brdp->irq > 15) ||
 		    (stl_vecmap[brdp->irq] == (unsigned char) 0xff)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("STALLION: invalid irq=%d for brd=%d\n",
 				brdp->irq, brdp->brdnr);
+#else
+			;
+#endif
 			retval = -EINVAL;
 			goto err;
 		}
@@ -1883,8 +1923,12 @@ static int __devinit stl_initech(struct stlbrd *brdp)
 		}
 		if ((brdp->irq < 0) || (brdp->irq > 15) ||
 		    (stl_vecmap[brdp->irq] == (unsigned char) 0xff)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("STALLION: invalid irq=%d for brd=%d\n",
 				brdp->irq, brdp->brdnr);
+#else
+			;
+#endif
 			retval = -EINVAL;
 			goto err;
 		}
@@ -1912,7 +1956,11 @@ static int __devinit stl_initech(struct stlbrd *brdp)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: unknown board type=%d\n", brdp->brdtype);
+#else
+		;
+#endif
 		retval = -EINVAL;
 		goto err;
 	}
@@ -1923,20 +1971,32 @@ static int __devinit stl_initech(struct stlbrd *brdp)
  */
 	retval = -EBUSY;
 	if (!request_region(brdp->ioaddr1, brdp->iosize1, name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "STALLION: Warning, board %d I/O address "
 			"%x conflicts with another device\n", brdp->brdnr, 
 			brdp->ioaddr1);
+#else
+		;
+#endif
 		goto err;
 	}
 	
 	if (brdp->iosize2 > 0)
 		if (!request_region(brdp->ioaddr2, brdp->iosize2, name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "STALLION: Warning, board %d I/O "
 				"address %x conflicts with another device\n",
 				brdp->brdnr, brdp->ioaddr2);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "STALLION: Warning, also "
 				"releasing board %d I/O address %x \n", 
 				brdp->brdnr, brdp->ioaddr1);
+#else
+			;
+#endif
 			goto err_rel1;
 		}
 
@@ -1962,8 +2022,12 @@ static int __devinit stl_initech(struct stlbrd *brdp)
 			break;
 		panelp = kzalloc(sizeof(struct stlpanel), GFP_KERNEL);
 		if (!panelp) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("STALLION: failed to allocate memory "
 				"(size=%Zd)\n", sizeof(struct stlpanel));
+#else
+			;
+#endif
 			retval = -ENOMEM;
 			goto err_fr;
 		}
@@ -2024,8 +2088,12 @@ static int __devinit stl_initech(struct stlbrd *brdp)
 
 	brdp->state |= BRD_FOUND;
 	if (request_irq(brdp->irq, stl_intr, IRQF_SHARED, name, brdp) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: failed to register interrupt "
 		    "routine for %s irq=%d\n", name, brdp->irq);
+#else
+		;
+#endif
 		retval = -ENODEV;
 		goto err_fr;
 	}
@@ -2072,16 +2140,24 @@ static int __devinit stl_brdinit(struct stlbrd *brdp)
 			goto err;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: board=%d is unknown board type=%d\n",
 			brdp->brdnr, brdp->brdtype);
+#else
+		;
+#endif
 		retval = -ENODEV;
 		goto err;
 	}
 
 	if ((brdp->state & BRD_FOUND) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: %s board not found, board=%d io=%x irq=%d\n",
 			stl_brdnames[brdp->brdtype], brdp->brdnr,
 			brdp->ioaddr1, brdp->irq);
+#else
+		;
+#endif
 		goto err_free;
 	}
 
@@ -2089,10 +2165,14 @@ static int __devinit stl_brdinit(struct stlbrd *brdp)
 		if (brdp->panels[i] != NULL)
 			stl_initports(brdp, brdp->panels[i]);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("STALLION: %s found, board=%d io=%x irq=%d "
 		"nrpanels=%d nrports=%d\n", stl_brdnames[brdp->brdtype],
 		brdp->brdnr, brdp->ioaddr1, brdp->irq, brdp->nrpanels,
 		brdp->nrports);
+#else
+	;
+#endif
 
 	return 0;
 err_free:
@@ -2585,9 +2665,13 @@ static int stl_cd1400panelinit(struct stlbrd *brdp, struct stlpanel *panelp)
 				break;
 
 		if ((j >= CCR_MAXWAIT) || (gfrcr < 0x40) || (gfrcr > 0x60)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("STALLION: cd1400 not responding, "
 				"brd=%d panel=%d chip=%d\n",
 				panelp->brdnr, panelp->panelnr, i);
+#else
+			;
+#endif
 			continue;
 		}
 		chipmask |= (0x1 << i);
@@ -2645,8 +2729,12 @@ static void stl_cd1400ccrwait(struct stlport *portp)
 		if (stl_cd1400getreg(portp, CCR) == 0)
 			return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("STALLION: cd1400 not responding, port=%d panel=%d brd=%d\n",
 		portp->portnr, portp->panelnr, portp->brdnr);
+#else
+	;
+#endif
 }
 
 /*****************************************************************************/
@@ -3311,7 +3399,11 @@ static void stl_cd1400txisr(struct stlpanel *panelp, int ioaddr)
 	ioack = inb(ioaddr + EREG_TXACK);
 	if (((ioack & panelp->ackmask) != 0) ||
 	    ((ioack & ACK_TYPMASK) != ACK_TYPTX)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: bad TX interrupt ack value=%x\n", ioack);
+#else
+		;
+#endif
 		return;
 	}
 	portp = panelp->ports[(ioack >> 3)];
@@ -3395,7 +3487,11 @@ static void stl_cd1400rxisr(struct stlpanel *panelp, int ioaddr)
 
 	ioack = inb(ioaddr + EREG_RXACK);
 	if ((ioack & panelp->ackmask) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: bad RX interrupt ack value=%x\n", ioack);
+#else
+		;
+#endif
 		return;
 	}
 	portp = panelp->ports[(ioack >> 3)];
@@ -3462,7 +3558,11 @@ static void stl_cd1400rxisr(struct stlpanel *panelp, int ioaddr)
 			tty_schedule_flip(tty);
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: bad RX interrupt ack value=%x\n", ioack);
+#else
+		;
+#endif
 		tty_kref_put(tty);
 		return;
 	}
@@ -3492,7 +3592,11 @@ static void stl_cd1400mdmisr(struct stlpanel *panelp, int ioaddr)
 	ioack = inb(ioaddr + EREG_MDACK);
 	if (((ioack & panelp->ackmask) != 0) ||
 	    ((ioack & ACK_TYPMASK) != ACK_TYPMDM)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: bad MODEM interrupt ack value=%x\n", ioack);
+#else
+		;
+#endif
 		return;
 	}
 	portp = panelp->ports[(ioack >> 3)];
@@ -3591,9 +3695,13 @@ static int stl_sc26198panelinit(struct stlbrd *brdp, struct stlpanel *panelp)
 		outb(CR_RESETALL, (ioaddr + XP_DATA));
 		outb(TSTR, (ioaddr + XP_ADDR));
 		if (inb(ioaddr + XP_DATA) != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("STALLION: sc26198 not responding, "
 				"brd=%d panel=%d chip=%d\n",
 				panelp->brdnr, panelp->panelnr, i);
+#else
+			;
+#endif
 			continue;
 		}
 		chipmask |= (0x1 << i);
@@ -4520,7 +4628,11 @@ static int __init stallion_module_init(void)
 	unsigned int i, j;
 	int retval;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: version %s\n", stl_drvtitle, stl_drvversion);
+#else
+	;
+#endif
 
 	spin_lock_init(&stallion_lock);
 	spin_lock_init(&brd_lock);
@@ -4544,7 +4656,11 @@ static int __init stallion_module_init(void)
 
 	retval = tty_register_driver(stl_serial);
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: failed to register serial driver\n");
+#else
+		;
+#endif
 		goto err_frtty;
 	}
 
@@ -4588,11 +4704,19 @@ static int __init stallion_module_init(void)
  *	to do stats ioctls on the ports.
  */
 	if (register_chrdev(STL_SIOMEMMAJOR, "staliomem", &stl_fsiomem))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: failed to register serial board device\n");
+#else
+		;
+#endif
 
 	stallion_class = class_create(THIS_MODULE, "staliomem");
 	if (IS_ERR(stallion_class))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("STALLION: failed to create class\n");
+#else
+		;
+#endif
 	for (i = 0; i < 4; i++)
 		device_create(stallion_class, NULL, MKDEV(STL_SIOMEMMAJOR, i),
 			      NULL, "staliomem%d", i);
@@ -4613,8 +4737,12 @@ static void __exit stallion_module_exit(void)
 
 	pr_debug("cleanup_module()\n");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Unloading %s: version %s\n", stl_drvtitle,
 		stl_drvversion);
+#else
+	;
+#endif
 
 /*
  *	Free up all allocated resources used by the ports. This includes

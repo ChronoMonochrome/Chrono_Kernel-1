@@ -380,12 +380,20 @@ static void adma_qc_prep(struct ata_queued_cmd *qc)
 		for (j = 0; j < i; ++j) {
 			len += sprintf(obuf+len, "%02x ", buf[j]);
 			if ((j & 7) == 7) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s\n", obuf);
+#else
+				;
+#endif
 				len = 0;
 			}
 		}
 		if (len)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s\n", obuf);
+#else
+			;
+#endif
 	}
 #endif
 }
@@ -620,7 +628,11 @@ static int adma_ata_init_one(struct pci_dev *pdev,
 	int rc, port_no;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	/* alloc host */
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, ADMA_PORTS);

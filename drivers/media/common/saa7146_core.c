@@ -37,7 +37,11 @@ static void dump_registers(struct saa7146_dev* dev)
 
 	INFO((" @ %li jiffies:\n",jiffies));
 	for(i = 0; i <= 0x148; i+=4) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("0x%03x: 0x%08x\n",i,saa7146_read(dev,i));
+#else
+		;
+#endif
 	}
 }
 #endif
@@ -264,7 +268,11 @@ int saa7146_pgtable_build_single(struct pci_dev *pci, struct saa7146_pgtable *pt
 	ptr = pt->cpu;
 	for (i = 0; i < sglen; i++, list++) {
 /*
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("i:%d, adr:0x%08x, len:%d, offset:%d\n", i,sg_dma_address(list), sg_dma_len(list), list->offset);
+#else
+		;
+#endif
 */
 		for (p = 0; p * 4096 < list->length; p++, ptr++) {
 			*ptr = cpu_to_le32(sg_dma_address(list) + p * 4096);
@@ -281,9 +289,17 @@ int saa7146_pgtable_build_single(struct pci_dev *pci, struct saa7146_pgtable *pt
 
 /*
 	ptr = pt->cpu;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("offset: %d\n",pt->offset);
+#else
+	;
+#endif
 	for(i=0;i<5;i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ptr1 %d: 0x%08x\n",i,ptr[i]);
+#else
+		;
+#endif
 	}
 */
 	return 0;
@@ -333,8 +349,12 @@ static irqreturn_t interrupt_hw(int irq, void *dev_id)
 		} else {
 			u32 psr = saa7146_read(dev, PSR);
 			u32 ssr = saa7146_read(dev, SSR);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: unexpected i2c irq: isr %08x psr %08x ssr %08x\n",
 			       dev->name, isr, psr, ssr);
+#else
+			;
+#endif
 		}
 		isr &= ~(MASK_16|MASK_17);
 	}
@@ -559,14 +579,22 @@ int saa7146_register_extension(struct saa7146_extension* ext)
 	ext->driver.probe = saa7146_init_one;
 	ext->driver.remove = saa7146_remove_one;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("saa7146: register extension '%s'.\n",ext->name);
+#else
+	;
+#endif
 	return pci_register_driver(&ext->driver);
 }
 
 int saa7146_unregister_extension(struct saa7146_extension* ext)
 {
 	DEB_EE(("ext:%p\n",ext));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("saa7146: unregister extension '%s'.\n",ext->name);
+#else
+	;
+#endif
 	pci_unregister_driver(&ext->driver);
 	return 0;
 }

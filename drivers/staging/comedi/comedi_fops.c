@@ -782,12 +782,16 @@ static int check_insn_config_length(struct comedi_insn *insn,
 		/* by default we allow the insn since we don't have checks for
 		 * all possible cases yet */
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "comedi: no check for data length of config insn id "
 		       "%i is implemented.\n"
 		       " Add a check to %s in %s.\n"
 		       " Assuming n=%i is correct.\n", data[0], __func__,
 		       __FILE__, insn->n);
+#else
+		;
+#endif
 		return 0;
 		break;
 	}
@@ -1770,10 +1774,18 @@ static ssize_t comedi_read(struct file *file, char __user *buf, size_t nbytes,
 		n = nbytes;
 
 		m = comedi_buf_read_n_available(async);
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("%d available\n",m); */
+#else
+		/* ;
+#endif
 		if (async->buf_read_ptr + m > async->prealloc_bufsz)
 			m = async->prealloc_bufsz - async->buf_read_ptr;
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("%d contiguous\n",m); */
+#else
+		/* ;
+#endif
 		if (m < n)
 			n = m;
 
@@ -2025,8 +2037,12 @@ static int __init comedi_init(void)
 	int i;
 	int retval;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi: version " COMEDI_RELEASE
 	       " - http://www.comedi.org\n");
+#else
+	;
+#endif
 
 	if (comedi_num_legacy_minors < 0 ||
 	    comedi_num_legacy_minors > COMEDI_NUM_BOARD_MINORS) {

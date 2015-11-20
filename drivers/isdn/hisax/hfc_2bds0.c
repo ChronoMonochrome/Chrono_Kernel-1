@@ -28,7 +28,11 @@
 static void
 dummyf(struct IsdnCardState *cs, u_char * data, int size)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "HiSax: hfcd dummy fifo called\n");
+#else
+	;
+#endif
 }
 
 static inline u_char
@@ -90,7 +94,11 @@ WaitForBusy(struct IsdnCardState *cs)
 		to--;
 	}
 	if (!to)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: WaitForBusy timeout\n");
+#else
+		;
+#endif
 	return (to);
 }
 
@@ -104,7 +112,11 @@ WaitNoBusy(struct IsdnCardState *cs)
 		to--;
 	}
 	if (!to) 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: WaitNoBusy timeout\n");
+#else
+		;
+#endif
 	return (to);
 }
 
@@ -212,7 +224,11 @@ static struct sk_buff
 			ReadReg(cs, HFCD_DATA_NODEB, cip);
 		skb = NULL;
 	} else if (!(skb = dev_alloc_skb(count - 3)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC: receive out of memory\n");
+#else
+		;
+#endif
 	else {
 		ptr = skb_put(skb, count - 3);
 		idx = 0;
@@ -226,7 +242,11 @@ static struct sk_buff
 		}
 		if (idx != count - 3) {
 			debugl1(cs, "RFIFO BUSY error");
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HFC FIFO channel %d BUSY Error\n", bcs->channel);
+#else
+			;
+#endif
 			dev_kfree_skb_irq(skb);
 			skb = NULL;
 		} else {
@@ -313,7 +333,11 @@ hfc_fill_fifo(struct BCState *bcs)
 	}
 	if (idx != bcs->tx_skb->len) {
 		debugl1(cs, "FIFO Send BUSY error");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC S FIFO channel %d BUSY Error\n", bcs->channel);
+#else
+		;
+#endif
 	} else {
 		bcs->tx_cnt -= bcs->tx_skb->len;
 		if (test_bit(FLG_LLI_L1WAKEUP,&bcs->st->lli.flag) &&
@@ -471,7 +495,11 @@ hfc_l2l1(struct PStack *st, int pr, void *arg)
 		case (PH_PULL | INDICATION):
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "hfc_l2l1: this shouldn't happen\n");
+#else
+				;
+#endif
 			} else {
 //				test_and_set_bit(BC_FLG_BUSY, &bcs->Flag);
 				bcs->tx_skb = skb;
@@ -642,7 +670,11 @@ int receive_dmsg(struct IsdnCardState *cs)
 			}
 			if (idx != (rcnt - 3)) {
 				debugl1(cs, "RFIFO D BUSY error");
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HFC DFIFO channel BUSY Error\n");
+#else
+				;
+#endif
 				dev_kfree_skb_irq(skb);
 				skb = NULL;
 #ifdef ERROR_STATISTIC
@@ -671,7 +703,11 @@ int receive_dmsg(struct IsdnCardState *cs)
 				}
 			}
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HFC: D receive out of memory\n");
+#else
+			;
+#endif
 		WaitForBusy(cs);
 		cip = HFCD_FIFO | HFCD_F2_INC | HFCD_REC;
 		WaitNoBusy(cs);
@@ -739,7 +775,11 @@ hfc_fill_dfifo(struct IsdnCardState *cs)
 	}
 	if (idx != cs->tx_skb->len) {
 		debugl1(cs, "DFIFO Send BUSY error");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC S DFIFO channel BUSY Error\n");
+#else
+		;
+#endif
 	}
 	WaitForBusy(cs);
 	WaitNoBusy(cs);
@@ -1025,8 +1065,12 @@ static unsigned int
 	unsigned *send;
 
 	if (!(send = kmalloc(cnt * sizeof(unsigned int), GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: No memory for hfcd.send\n");
+#else
+		;
+#endif
 		return(NULL);
 	}
 	for (i = 0; i < cnt; i++)

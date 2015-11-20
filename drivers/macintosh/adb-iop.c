@@ -113,11 +113,23 @@ static void adb_iop_listen(struct iop_msg *msg)
 	req = current_req;
 
 #ifdef DEBUG_ADB_IOP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adb_iop_listen %p: rcvd packet, %d bytes: %02X %02X", req,
 		(uint) amsg->count + 2, (uint) amsg->flags, (uint) amsg->cmd);
+#else
+	;
+#endif
 	for (i = 0; i < amsg->count; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %02X", (uint) amsg->data[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 
 	/* Handle a timeout. Timeout packets seem to occur even after */
@@ -174,10 +186,22 @@ static void adb_iop_start(void)
 	local_irq_save(flags);
 
 #ifdef DEBUG_ADB_IOP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adb_iop_start %p: sending packet, %d bytes:", req, req->nbytes);
+#else
+	;
+#endif
 	for (i = 0 ; i < req->nbytes ; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %02X", (uint) req->data[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 
 	/* The IOP takes MacII-style packets, so */
@@ -209,7 +233,11 @@ int adb_iop_probe(void)
 
 int adb_iop_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adb: IOP ISM driver v0.4 for Unified ADB.\n");
+#else
+	;
+#endif
 	iop_listen(ADB_IOP, ADB_CHAN, adb_iop_listen, "ADB");
 	return 0;
 }

@@ -512,22 +512,38 @@ static void ecard_dump_irq_state(void)
 {
 	ecard_t *ec;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Expansion card IRQ state:\n");
+#else
+	;
+#endif
 
 	for (ec = cards; ec; ec = ec->next) {
 		if (ec->slot_no == 8)
 			continue;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  %d: %sclaimed, ",
 		       ec->slot_no, ec->claimed ? "" : "not ");
+#else
+		;
+#endif
 
 		if (ec->ops && ec->ops->irqpending &&
 		    ec->ops != &ecard_default_ops)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("irq %spending\n",
 			       ec->ops->irqpending(ec) ? "" : "not ");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("irqaddr %p, mask = %02X, status = %02X\n",
 			       ec->irqaddr, ec->irqmask, readb(ec->irqaddr));
+#else
+			;
+#endif
 	}
 }
 
@@ -563,7 +579,11 @@ static void ecard_check_lockup(struct irq_desc *desc)
 	 */
 	if (!last || time_after(jiffies, last + 5*HZ)) {
 		last = jiffies;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unrecognised interrupt from backplane\n");
+#else
+		;
+#endif
 		ecard_dump_irq_state();
 	}
 }
@@ -635,13 +655,21 @@ ecard_irqexp_handler(unsigned int irq, struct irq_desc *desc)
 			 */
 			generic_handle_irq(ec->irq);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "card%d: interrupt from unclaimed "
 			       "card???\n", slot);
+#else
+			;
+#endif
 			have_expmask &= ~(1 << slot);
 			__raw_writeb(have_expmask, EXPMASK_ENABLE);
 		}
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Wild interrupt from backplane (masks)\n");
+#else
+		;
+#endif
 }
 
 static int __init ecard_probeirqhw(void)
@@ -655,8 +683,12 @@ static int __init ecard_probeirqhw(void)
 	__raw_writeb(0xff, EXPMASK_ENABLE);
 
 	if (found) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Expansion card interrupt "
 		       "management hardware found\n");
+#else
+		;
+#endif
 
 		/* for each card present, set a bit to '1' */
 		have_expmask = 0x80000000;
@@ -1090,7 +1122,11 @@ static int __init ecard_init(void)
 		return PTR_ERR(task);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Probing expansion cards\n");
+#else
+	;
+#endif
 
 	for (slot = 0; slot < 8; slot ++) {
 		if (ecard_probe(slot, ECARD_EASI) == -ENODEV)

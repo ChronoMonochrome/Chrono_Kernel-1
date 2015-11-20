@@ -331,17 +331,25 @@ static int add_edac_dev_to_global_list(struct edac_device_ctl_info *edac_dev)
 	return 0;
 
 fail0:
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_printk(KERN_WARNING, EDAC_MC,
 			"%s (%s) %s %s already assigned %d\n",
 			dev_name(rover->dev), edac_dev_name(rover),
 			rover->mod_name, rover->ctl_name, rover->dev_idx);
+#else
+	edac_;
+#endif
 	return 1;
 
 fail1:
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_printk(KERN_WARNING, EDAC_MC,
 			"bug in low-level driver: attempt to assign\n"
 			"    duplicate dev_idx %d in %s()\n", rover->dev_idx,
 			__func__);
+#else
+	edac_;
+#endif
 	return 1;
 }
 
@@ -518,8 +526,12 @@ int edac_device_add_device(struct edac_device_ctl_info *edac_dev)
 
 	/* create this instance's sysfs entries */
 	if (edac_device_create_sysfs(edac_dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_device_printk(edac_dev, KERN_WARNING,
 					"failed to create sysfs device\n");
+#else
+		edac_device_;
+#endif
 		goto fail1;
 	}
 
@@ -538,6 +550,7 @@ int edac_device_add_device(struct edac_device_ctl_info *edac_dev)
 	}
 
 	/* Report action taken */
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_device_printk(edac_dev, KERN_INFO,
 				"Giving out device to module '%s' controller "
 				"'%s': DEV '%s' (%s)\n",
@@ -545,6 +558,9 @@ int edac_device_add_device(struct edac_device_ctl_info *edac_dev)
 				edac_dev->ctl_name,
 				edac_dev_name(edac_dev),
 				edac_op_state_to_string(edac_dev->op_state));
+#else
+	edac_device_;
+#endif
 
 	mutex_unlock(&device_ctls_mutex);
 	return 0;
@@ -601,10 +617,14 @@ struct edac_device_ctl_info *edac_device_del_device(struct device *dev)
 	/* Tear down the sysfs entries for this instance */
 	edac_device_remove_sysfs(edac_dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	edac_printk(KERN_INFO, EDAC_MC,
 		"Removed device %d for %s %s: DEV %s\n",
 		edac_dev->dev_idx,
 		edac_dev->mod_name, edac_dev->ctl_name, edac_dev_name(edac_dev));
+#else
+	edac_;
+#endif
 
 	return edac_dev;
 }
@@ -665,10 +685,14 @@ void edac_device_handle_ce(struct edac_device_ctl_info *edac_dev,
 	edac_dev->counters.ce_count++;
 
 	if (edac_device_get_log_ce(edac_dev))
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_device_printk(edac_dev, KERN_WARNING,
 				"CE: %s instance: %s block: %s '%s'\n",
 				edac_dev->ctl_name, instance->name,
 				block ? block->name : "N/A", msg);
+#else
+		edac_device_;
+#endif
 }
 EXPORT_SYMBOL_GPL(edac_device_handle_ce);
 
@@ -711,10 +735,14 @@ void edac_device_handle_ue(struct edac_device_ctl_info *edac_dev,
 	edac_dev->counters.ue_count++;
 
 	if (edac_device_get_log_ue(edac_dev))
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_device_printk(edac_dev, KERN_EMERG,
 				"UE: %s instance: %s block: %s '%s'\n",
 				edac_dev->ctl_name, instance->name,
 				block ? block->name : "N/A", msg);
+#else
+		edac_device_;
+#endif
 
 	if (edac_device_get_panic_on_ue(edac_dev))
 		panic("EDAC %s: UE instance: %s block %s '%s'\n",

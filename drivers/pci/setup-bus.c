@@ -171,8 +171,12 @@ static void adjust_resources_sorted(struct resource_list_x *add_head,
 			resource_size_t align = list->min_align;
 			res->flags |= list->flags & (IORESOURCE_STARTALIGN|IORESOURCE_SIZEALIGN);
 			if (pci_reassign_resource(list->dev, idx, add_size, align))
+#ifdef CONFIG_DEBUG_PRINTK
 				dev_printk(KERN_DEBUG, &list->dev->dev, "failed to add optional resources res=%pR\n",
 							res);
+#else
+				dev_;
+#endif
 		}
 out:
 		tmp = list;
@@ -943,8 +947,12 @@ static void pci_bridge_release_resources(struct pci_bus *bus,
 		 */
 		release_child_resources(r);
 		if (!release_resource(r)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_DEBUG, &dev->dev,
 				 "resource %d %pR released\n", idx, r);
+#else
+			dev_;
+#endif
 			/* keep the old size */
 			r->end = resource_size(r) - 1;
 			r->start = 0;
@@ -1010,7 +1018,11 @@ static void pci_bus_dump_res(struct pci_bus *bus)
 		if (!res || !res->end || !res->flags)
                         continue;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &bus->dev, "resource %d %pR\n", i, res);
+#else
+		dev_;
+#endif
         }
 }
 
@@ -1091,8 +1103,12 @@ pci_assign_unassigned_resources(void)
 	add_list.next = NULL;
 
 	pci_try_num = max_depth + 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "PCI: max bus depth: %d pci_try_num: %d\n",
 		 max_depth, pci_try_num);
+#else
+	;
+#endif
 
 again:
 	/* Depth first, calculate sizes and alignments of all
@@ -1131,8 +1147,12 @@ again:
 		goto enable_and_dump;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "PCI: No. %d try to assign unassigned res\n",
 			 tried_times + 1);
+#else
+	;
+#endif
 
 	/* third times and later will not check if it is leaf */
 	if ((tried_times + 1) > 2)
@@ -1200,8 +1220,12 @@ again:
 		goto enable_all;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "PCI: No. %d try to assign unassigned res\n",
 			 tried_times + 1);
+#else
+	;
+#endif
 
 	/*
 	 * Try to release leaf bridge's resources that doesn't fit resource of

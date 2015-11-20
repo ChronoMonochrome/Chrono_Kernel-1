@@ -405,7 +405,11 @@ int __sca3000_hw_ring_state_set(struct iio_dev *indio_dev, bool state)
 	if (ret)
 		goto error_ret;
 	if (state) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "supposedly enabling ring buffer\n");
+#else
+		;
+#endif
 		ret = sca3000_write_reg(st,
 					SCA3000_REG_ADDR_MODE,
 					(st->rx[0] | SCA3000_RING_BUF_ENABLE));

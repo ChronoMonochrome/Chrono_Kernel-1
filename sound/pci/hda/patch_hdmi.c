@@ -292,7 +292,11 @@ static int hda_node_index(hda_nid_t *nids, hda_nid_t nid)
 		if (nids[i] == nid)
 			return i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING "HDMI: nid %d not registered\n", nid);
+#else
+	;
+#endif
 	return -EINVAL;
 }
 
@@ -451,8 +455,12 @@ static void hdmi_debug_channel_mapping(struct hda_codec *codec,
 	for (i = 0; i < 8; i++) {
 		slot = snd_hda_codec_read(codec, pin_nid, 0,
 						AC_VERB_GET_HDMI_CHAN_SLOT, i);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "HDMI: ASP channel %d => slot %d\n",
 						slot >> 4, slot & 0xf);
+#else
+		;
+#endif
 	}
 #endif
 }
@@ -520,12 +528,20 @@ static void hdmi_debug_dip_size(struct hda_codec *codec, hda_nid_t pin_nid)
 	int size;
 
 	size = snd_hdmi_get_eld_size(codec, pin_nid);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "HDMI: ELD buf size is %d\n", size);
+#else
+	;
+#endif
 
 	for (i = 0; i < 8; i++) {
 		size = snd_hda_codec_read(codec, pin_nid, 0,
 						AC_VERB_GET_HDMI_DIP_SIZE, i);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "HDMI: DIP GP[%d] buf size is %d\n", i, size);
+#else
+		;
+#endif
 	}
 #endif
 }
@@ -688,9 +704,13 @@ static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
 	int eldv = !!(res & AC_UNSOL_RES_ELDV);
 	int index;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"HDMI hot plug event: Pin=%d Presence_Detect=%d ELD_Valid=%d\n",
 		pin_nid, pd, eldv);
+#else
+	;
+#endif
 
 	index = hda_node_index(spec->pin, pin_nid);
 	if (index < 0)
@@ -706,12 +726,16 @@ static void hdmi_non_intrinsic_event(struct hda_codec *codec, unsigned int res)
 	int cp_state = !!(res & AC_UNSOL_RES_CP_STATE);
 	int cp_ready = !!(res & AC_UNSOL_RES_CP_READY);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"HDMI CP event: PIN=%d SUBTAG=0x%x CP_STATE=%d CP_READY=%d\n",
 		tag,
 		subtag,
 		cp_state,
 		cp_ready);
+#else
+	;
+#endif
 
 	/* TODO */
 	if (cp_state)
@@ -850,10 +874,14 @@ static int hdmi_read_pin_conn(struct hda_codec *codec, hda_nid_t pin_nid)
 	int index;
 
 	if (!(get_wcaps(codec, pin_nid) & AC_WCAP_CONN_LIST)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING
 			   "HDMI: pin %d wcaps %#x "
 			   "does not support connection list\n",
 			   pin_nid, get_wcaps(codec, pin_nid));
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -898,9 +926,13 @@ static void hdmi_present_sense(struct hda_codec *codec, hda_nid_t pin_nid,
 	if (eld->monitor_present)
 		eld_valid	= !!(present & AC_PINSENSE_ELDV);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"HDMI status: Pin=%d Presence_Detect=%d ELD_Valid=%d\n",
 		pin_nid, eld->monitor_present, eld->eld_valid);
+#else
+	;
+#endif
 		codec->addr, pin_nid, eld->monitor_present, eld_valid);
 
 	if (eld_valid)
@@ -916,8 +948,12 @@ static int hdmi_add_pin(struct hda_codec *codec, hda_nid_t pin_nid)
 	int err;
 
 	if (spec->num_pins >= MAX_HDMI_PINS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING
 			   "HDMI: no space for pin %d\n", pin_nid);
+#else
+		;
+#endif
 		return -E2BIG;
 	}
 
@@ -968,7 +1004,11 @@ static int hdmi_parse_codec(struct hda_codec *codec)
 
 	nodes = snd_hda_get_sub_nodes(codec, codec->afg, &nid);
 	if (!nid || nodes < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "HDMI: failed to get afg sub nodes\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -986,8 +1026,12 @@ static int hdmi_parse_codec(struct hda_codec *codec)
 		switch (type) {
 		case AC_WID_AUD_OUT:
 			if (num_tmp_cvts >= MAX_HDMI_CVTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_WARNING
 					   "HDMI: no space for converter %d\n", nid);
+#else
+				;
+#endif
 				continue;
 			}
 			tmp_cvt[num_tmp_cvts] = nid;

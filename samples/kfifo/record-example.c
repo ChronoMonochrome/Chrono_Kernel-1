@@ -75,12 +75,20 @@ static int __init testfunc(void)
 	unsigned int	ret;
 	struct { unsigned char buf[6]; } hello = { "hello" };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "record fifo test start\n");
+#else
+	;
+#endif
 
 	kfifo_in(&test, &hello, sizeof(hello));
 
 	/* show the size of the next record in the fifo */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "fifo peek len: %u\n", kfifo_peek_len(&test));
+#else
+	;
+#endif
 
 	/* put in variable length data */
 	for (i = 0; i < 10; i++) {
@@ -89,32 +97,60 @@ static int __init testfunc(void)
 	}
 
 	/* skip first element of the fifo */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "skip 1st element\n");
+#else
+	;
+#endif
 	kfifo_skip(&test);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "fifo len: %u\n", kfifo_len(&test));
+#else
+	;
+#endif
 
 	/* show the first record without removing from the fifo */
 	ret = kfifo_out_peek(&test, buf, sizeof(buf));
 	if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%.*s\n", ret, buf);
+#else
+		;
+#endif
 
 	/* check the correctness of all values in the fifo */
 	i = 0;
 	while (!kfifo_is_empty(&test)) {
 		ret = kfifo_out(&test, buf, sizeof(buf));
 		buf[ret] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "item = %.*s\n", ret, buf);
+#else
+		;
+#endif
 		if (strcmp(buf, expected_result[i++])) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "value mismatch: test failed\n");
+#else
+			;
+#endif
 			return -EIO;
 		}
 	}
 	if (i != ARRAY_SIZE(expected_result)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "size mismatch: test failed\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "test passed\n");
+#else
+	;
+#endif
 
 	return 0;
 }

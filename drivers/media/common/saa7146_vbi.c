@@ -490,13 +490,41 @@ static ssize_t vbi_read(struct file *file, char __user *data, size_t count, loff
 	ret = videobuf_read_stream(&fh->vbi_q, data, count, ppos, 1,
 				   file->f_flags & O_NONBLOCK);
 /*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("BASE_ODD3:      0x%08x\n", saa7146_read(dev, BASE_ODD3));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("BASE_EVEN3:     0x%08x\n", saa7146_read(dev, BASE_EVEN3));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("PROT_ADDR3:     0x%08x\n", saa7146_read(dev, PROT_ADDR3));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("PITCH3:         0x%08x\n", saa7146_read(dev, PITCH3));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("BASE_PAGE3:     0x%08x\n", saa7146_read(dev, BASE_PAGE3));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("NUM_LINE_BYTE3: 0x%08x\n", saa7146_read(dev, NUM_LINE_BYTE3));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("BRS_CTRL:       0x%08x\n", saa7146_read(dev, BRS_CTRL));
+#else
+	;
+#endif
 */
 	return ret;
 }

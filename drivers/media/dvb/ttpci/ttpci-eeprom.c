@@ -40,8 +40,13 @@
 #include "ttpci-eeprom.h"
 
 #if 1
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(x...) do { printk(x); } while (0)
 #else
+#define d;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(x...) do { } while (0)
 #endif
 
@@ -49,6 +54,9 @@
 static int check_mac_tt(u8 *buf)
 {
 	int i;
+#else
+#define d;
+#endif
 	u16 tmp = 0xffff;
 
 	for (i = 0; i < 8; i++) {
@@ -95,7 +103,11 @@ static int ttpci_eeprom_read_encodedMAC(struct i2c_adapter *adapter, u8 * encode
 		{ .addr = 0x50, .flags = I2C_M_RD, .buf = encodedMAC, .len = 20 }
 	};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* dprintk("%s\n", __func__); */
+#else
+	/* d;
+#endif
 
 	ret = i2c_transfer(adapter, msg, 2);
 
@@ -115,27 +127,51 @@ int ttpci_eeprom_parse_mac(struct i2c_adapter *adapter, u8 *proposed_mac)
 	ret = ttpci_eeprom_read_encodedMAC(adapter, encodedMAC);
 
 	if (ret != 0) {		/* Will only be -ENODEV */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Couldn't read from EEPROM: not there?\n");
+#else
+		d;
+#endif
 		memset(proposed_mac, 0, 6);
 		return ret;
 	}
 
 	ret = getmac_tt(decodedMAC, encodedMAC);
 	if( ret != 0 ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("adapter failed MAC signature check\n");
+#else
+		d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("encoded MAC from EEPROM was " );
+#else
+		d;
+#endif
 		for(i=0; i<19; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk( "%.2x:", encodedMAC[i]);
+#else
+			d;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%.2x\n", encodedMAC[19]);
+#else
+		d;
+#endif
 		memset(proposed_mac, 0, 6);
 		return ret;
 	}
 
 	memcpy(proposed_mac, decodedMAC, 6);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("adapter has MAC addr = %.2x:%.2x:%.2x:%.2x:%.2x:%.2x\n",
 		decodedMAC[0], decodedMAC[1], decodedMAC[2],
 		decodedMAC[3], decodedMAC[4], decodedMAC[5]);
+#else
+	d;
+#endif
 	return 0;
 }
 

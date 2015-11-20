@@ -198,20 +198,32 @@ static inline int serial_paranoia_check(struct cyclades_port *info, char *name,
 {
 #ifdef SERIAL_PARANOIA_CHECK
 	if (!info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Warning: null cyclades_port for (%s) in %s\n", name,
 				routine);
+#else
+		;
+#endif
 		return 1;
 	}
 
 	if (info < &cy_port[0] || info >= &cy_port[NR_PORTS]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Warning: cyclades_port out of range for (%s) in %s\n",
 				name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 
 	if (info->magic != CYCLADES_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Warning: bad magic number for serial struct (%s) in "
 				"%s\n", name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 #endif
@@ -226,7 +238,11 @@ void SP(char *data)
 {
 	unsigned long flags;
 	local_irq_save(flags);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "%s", data);
+#else
+	;
+#endif
 	local_irq_restore(flags);
 }
 
@@ -236,7 +252,11 @@ void CP(char data)
 	unsigned long flags;
 	local_irq_save(flags);
 	scrn[0] = data;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "%c", scrn);
+#else
+	;
+#endif
 	local_irq_restore(flags);
 }				/* CP */
 
@@ -303,7 +323,11 @@ static void cy_stop(struct tty_struct *tty)
 	unsigned long flags;
 
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_stop %s\n", tty->name);	/* */
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_stop"))
@@ -325,7 +349,11 @@ static void cy_start(struct tty_struct *tty)
 	unsigned long flags;
 
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_start %s\n", tty->name);	/* */
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_start"))
@@ -672,7 +700,11 @@ static int startup(struct cyclades_port *info)
 	channel = info->line;
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("startup channel %d\n", channel);
+#else
+	;
+#endif
 #endif
 
 	local_irq_save(flags);
@@ -685,9 +717,17 @@ static int startup(struct cyclades_port *info)
 	base_addr[CyMSVR2] = CyDTR;
 
 #ifdef SERIAL_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cyc: %d: raising DTR\n", __LINE__);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
 	       base_addr[CyMSVR2]);
+#else
+	;
+#endif
 #endif
 
 	base_addr[CyIER] |= CyRxData;
@@ -701,7 +741,11 @@ static int startup(struct cyclades_port *info)
 	local_irq_restore(flags);
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" done\n");
+#else
+	;
+#endif
 #endif
 	return 0;
 }				/* startup */
@@ -737,7 +781,11 @@ static void shutdown(struct cyclades_port *info)
 	channel = info->line;
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("shutdown channel %d\n", channel);
+#else
+	;
+#endif
 #endif
 
 	/* !!! REALLY MUST WAIT FOR LAST CHARACTER TO BE
@@ -758,9 +806,17 @@ static void shutdown(struct cyclades_port *info)
 /* CP('C');CP('1'); */
 		base_addr[CyMSVR2] = 0;
 #ifdef SERIAL_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cyc: %d: dropping DTR\n", __LINE__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
 		       base_addr[CyMSVR2]);
+#else
+		;
+#endif
 #endif
 	}
 	write_cy_cmd(base_addr, CyDIS_RCVR);
@@ -774,7 +830,11 @@ static void shutdown(struct cyclades_port *info)
 	local_irq_restore(flags);
 
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" done\n");
+#else
+	;
+#endif
 #endif
 }				/* shutdown */
 
@@ -1003,17 +1063,33 @@ static void config_setup(struct cyclades_port *info)
 		if ((base_addr[CyMSVR2] & CyDTR) == CyDTR)
 			base_addr[CyMSVR2] = 0;
 #ifdef SERIAL_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cyc: %d: dropping DTR\n", __LINE__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
 		       base_addr[CyMSVR2]);
+#else
+		;
+#endif
 #endif
 	} else {
 		if ((base_addr[CyMSVR2] & CyDTR) != CyDTR)
 			base_addr[CyMSVR2] = CyDTR;
 #ifdef SERIAL_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cyc: %d: raising DTR\n", __LINE__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
 		       base_addr[CyMSVR2]);
+#else
+		;
+#endif
 #endif
 	}
 
@@ -1031,7 +1107,11 @@ static int cy_put_char(struct tty_struct *tty, unsigned char ch)
 	unsigned long flags;
 
 #ifdef SERIAL_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_put_char %s(0x%02x)\n", tty->name, ch);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_put_char"))
@@ -1061,7 +1141,11 @@ static void cy_flush_chars(struct tty_struct *tty)
 	int channel;
 
 #ifdef SERIAL_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_flush_chars %s\n", tty->name);	/* */
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_flush_chars"))
@@ -1092,7 +1176,11 @@ static int cy_write(struct tty_struct *tty, const unsigned char *buf, int count)
 	int c, total = 0;
 
 #ifdef SERIAL_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_write %s\n", tty->name);	/* */
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_write")) {
@@ -1135,7 +1223,11 @@ static int cy_write_room(struct tty_struct *tty)
 	int ret;
 
 #ifdef SERIAL_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_write_room %s\n", tty->name);	/* */
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_write_room"))
@@ -1151,7 +1243,11 @@ static int cy_chars_in_buffer(struct tty_struct *tty)
 	struct cyclades_port *info = tty->driver_data;
 
 #ifdef SERIAL_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_chars_in_buffer %s %d\n", tty->name, info->xmit_cnt);	/* */
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_chars_in_buffer"))
@@ -1166,7 +1262,11 @@ static void cy_flush_buffer(struct tty_struct *tty)
 	unsigned long flags;
 
 #ifdef SERIAL_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_flush_buffer %s\n", tty->name);	/* */
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_flush_buffer"))
@@ -1191,9 +1291,17 @@ static void cy_throttle(struct tty_struct *tty)
 #ifdef SERIAL_DEBUG_THROTTLE
 	char buf[64];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("throttle %s: %d....\n", tty_name(tty, buf),
 	       tty->ldisc.chars_in_buffer(tty));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_throttle %s\n", tty->name);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_nthrottle")) {
@@ -1223,9 +1331,17 @@ static void cy_unthrottle(struct tty_struct *tty)
 #ifdef SERIAL_DEBUG_THROTTLE
 	char buf[64];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("throttle %s: %d....\n", tty_name(tty, buf),
 	       tty->ldisc.chars_in_buffer(tty));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_unthrottle %s\n", tty->name);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_nthrottle")) {
@@ -1352,9 +1468,17 @@ cy_tiocmset(struct tty_struct *tty, unsigned int set, unsigned int clear)
 /* CP('S');CP('2'); */
 		base_addr[CyMSVR2] = CyDTR;
 #ifdef SERIAL_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cyc: %d: raising DTR\n", __LINE__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
 		       base_addr[CyMSVR2]);
+#else
+		;
+#endif
 #endif
 		local_irq_restore(flags);
 	}
@@ -1371,9 +1495,17 @@ cy_tiocmset(struct tty_struct *tty, unsigned int set, unsigned int clear)
 /* CP('C');CP('2'); */
 		base_addr[CyMSVR2] = 0;
 #ifdef SERIAL_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cyc: %d: dropping DTR\n", __LINE__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
 		       base_addr[CyMSVR2]);
+#else
+		;
+#endif
 #endif
 		local_irq_restore(flags);
 	}
@@ -1500,7 +1632,11 @@ cy_ioctl(struct tty_struct *tty,
 	void __user *argp = (void __user *)arg;
 
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_ioctl %s, cmd = %x arg = %lx\n", tty->name, cmd, arg);	/* */
+#else
+	;
+#endif
 #endif
 
 	tty_lock();
@@ -1562,7 +1698,11 @@ cy_ioctl(struct tty_struct *tty,
 	tty_unlock();
 
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_ioctl done\n");
+#else
+	;
+#endif
 #endif
 
 	return ret_val;
@@ -1573,7 +1713,11 @@ static void cy_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
 	struct cyclades_port *info = tty->driver_data;
 
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_set_termios %s\n", tty->name);
+#else
+	;
+#endif
 #endif
 
 	if (tty->termios->c_cflag == old_termios->c_cflag)
@@ -1598,14 +1742,22 @@ static void cy_close(struct tty_struct *tty, struct file *filp)
 
 /* CP('C'); */
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_close %s\n", tty->name);
+#else
+	;
+#endif
 #endif
 
 	if (!info || serial_paranoia_check(info, tty->name, "cy_close")) {
 		return;
 	}
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_close %s, count = %d\n", tty->name, info->count);
+#else
+	;
+#endif
 #endif
 
 	if ((tty->count == 1) && (info->count != 1)) {
@@ -1616,19 +1768,35 @@ static void cy_close(struct tty_struct *tty, struct file *filp)
 		 * one, we've got real problems, since it means the
 		 * serial port won't be shutdown.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cy_close: bad serial port count; tty->count is 1, "
+#else
+		;
+#endif
 		       "info->count is %d\n", info->count);
 		info->count = 1;
 	}
 #ifdef SERIAL_DEBUG_COUNT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cyc: %d: decrementing count to %d\n", __LINE__,
 	       info->count - 1);
+#else
+	;
+#endif
 #endif
 	if (--info->count < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cy_close: bad serial port count for ttys%d: %d\n",
 		       info->line, info->count);
+#else
+		;
+#endif
 #ifdef SERIAL_DEBUG_COUNT
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cyc: %d: setting count to 0\n", __LINE__);
+#else
+		;
+#endif
 #endif
 		info->count = 0;
 	}
@@ -1652,7 +1820,11 @@ static void cy_close(struct tty_struct *tty, struct file *filp)
 	wake_up_interruptible(&info->close_wait);
 
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_close done\n");
+#else
+	;
+#endif
 #endif
 }				/* cy_close */
 
@@ -1664,7 +1836,11 @@ void cy_hangup(struct tty_struct *tty)
 	struct cyclades_port *info = tty->driver_data;
 
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_hangup %s\n", tty->name);	/* */
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_hangup"))
@@ -1675,7 +1851,11 @@ void cy_hangup(struct tty_struct *tty)
 	info->event = 0;
 	info->count = 0;
 #ifdef SERIAL_DEBUG_COUNT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cyc: %d: setting count to 0\n", __LINE__);
+#else
+	;
+#endif
 #endif
 	info->tty = 0;
 #endif
@@ -1731,13 +1911,21 @@ block_til_ready(struct tty_struct *tty, struct file *filp,
 	retval = 0;
 	add_wait_queue(&info->open_wait, &wait);
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("block_til_ready before block: %s, count = %d\n",
 	       tty->name, info->count);
+#else
+	;
+#endif
 	/**/
 #endif
 	    info->count--;
 #ifdef SERIAL_DEBUG_COUNT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cyc: %d: decrementing count to %d\n", __LINE__, info->count);
+#else
+	;
+#endif
 #endif
 	info->blocked_open++;
 
@@ -1750,9 +1938,17 @@ block_til_ready(struct tty_struct *tty, struct file *filp,
 /* CP('S');CP('4'); */
 		base_addr[CyMSVR2] = CyDTR;
 #ifdef SERIAL_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cyc: %d: raising DTR\n", __LINE__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("     status: 0x%x, 0x%x\n", base_addr[CyMSVR1],
 		       base_addr[CyMSVR2]);
+#else
+		;
+#endif
 #endif
 		local_irq_restore(flags);
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -1780,8 +1976,12 @@ block_til_ready(struct tty_struct *tty, struct file *filp,
 			break;
 		}
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("block_til_ready blocking: %s, count = %d\n",
 		       tty->name, info->count);
+#else
+		;
+#endif
 		/**/
 #endif
 		tty_unlock();
@@ -1793,14 +1993,22 @@ block_til_ready(struct tty_struct *tty, struct file *filp,
 	if (!tty_hung_up_p(filp)) {
 		info->count++;
 #ifdef SERIAL_DEBUG_COUNT
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cyc: %d: incrementing count to %d\n", __LINE__,
 		       info->count);
+#else
+		;
+#endif
 #endif
 	}
 	info->blocked_open--;
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("block_til_ready after blocking: %s, count = %d\n",
 	       tty->name, info->count);
+#else
+	;
+#endif
 	/**/
 #endif
 	    if (retval)
@@ -1828,18 +2036,30 @@ int cy_open(struct tty_struct *tty, struct file *filp)
 		return -ENODEV;
 	}
 #ifdef SERIAL_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_open %s\n", tty->name);	/* */
+#else
+	;
+#endif
 #endif
 	if (serial_paranoia_check(info, tty->name, "cy_open")) {
 		return -ENODEV;
 	}
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_open %s, count = %d\n", tty->name, info->count);
+#else
+	;
+#endif
 	/**/
 #endif
 	    info->count++;
 #ifdef SERIAL_DEBUG_COUNT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cyc: %d: incrementing count to %d\n", __LINE__, info->count);
+#else
+	;
+#endif
 #endif
 	tty->driver_data = info;
 	info->tty = tty;
@@ -1855,13 +2075,21 @@ int cy_open(struct tty_struct *tty, struct file *filp)
 	retval = block_til_ready(tty, filp, info);
 	if (retval) {
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cy_open returning after block_til_ready with %d\n",
 		       retval);
+#else
+		;
+#endif
 #endif
 		return retval;
 	}
 #ifdef SERIAL_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cy_open done\n");
+#else
+	;
+#endif
 	/**/
 #endif
 	    return 0;
@@ -1882,7 +2110,11 @@ int cy_open(struct tty_struct *tty, struct file *filp)
  */
 static void show_version(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("MVME166/167 cd2401 driver\n");
+#else
+	;
+#endif
 }				/* show_version */
 
 /* initialize chips on card -- return number of valid
@@ -1931,7 +2163,11 @@ void mvme167_serial_console_setup(int cflag)
 	my_udelay(20000L);	/* Allow time for any active o/p to complete */
 	if (base_addr[CyCCR] != 0x00) {
 		local_irq_restore(flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk(" chip is never idle (CCR != 0)\n"); */
+#else
+		/* ;
+#endif
 		return;
 	}
 
@@ -1940,7 +2176,11 @@ void mvme167_serial_console_setup(int cflag)
 
 	if (base_addr[CyGFRCR] == 0x00) {
 		local_irq_restore(flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		/* printk(" chip is not responding (GFRCR stayed 0)\n"); */
+#else
+		/* ;
+#endif
 		return;
 	}
 
@@ -2002,7 +2242,11 @@ void mvme167_serial_console_setup(int cflag)
 
 	my_udelay(20000L);	/* Let it all settle down */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("CD2401 initialised,  chip is rev 0x%02x\n", base_addr[CyGFRCR]);
+#else
+	;
+#endif
 	if (badspeed)
 		printk
 		    ("  WARNING:  Failed to identify line speed, rcor=%02x,rbpr=%02x\n",
@@ -2134,8 +2378,12 @@ static int __init serial167_init(void)
 				info->x_char = 0;
 				info->count = 0;
 #ifdef SERIAL_DEBUG_COUNT
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("cyc: %d: setting count to 0\n",
 				       __LINE__);
+#else
+				;
+#endif
 #endif
 				info->blocked_open = 0;
 				info->default_threshold = 0;
@@ -2150,15 +2398,27 @@ static int __init serial167_init(void)
 				    CyFRAME | CyOVERRUN;
 				/* info->timeout */
 
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("ttyS%d ", info->line);
+#else
+				;
+#endif
 				port_num++;
 				info++;
 				if (!(port_num & 7)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("\n               ");
+#else
+					;
+#endif
 				}
 			}
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 	while (port_num < NR_PORTS) {
 		info->line = -1;
@@ -2229,82 +2489,270 @@ static void show_status(int line_num)
 
 	info = &cy_port[line_num];
 	channel = info->line;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  channel %d\n", channel);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	/**/ printk(" cy_port\n");
+#else
+	/**/ ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  card line flags = %d %d %x\n",
 	       info->card, info->line, info->flags);
+#else
+	;
+#endif
 	printk
 	    ("  *tty read_status_mask timeout xmit_fifo_size = %lx %x %x %x\n",
 	     (long)info->tty, info->read_status_mask, info->timeout,
 	     info->xmit_fifo_size);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  cor1,cor2,cor3,cor4,cor5,cor6,cor7 = %x %x %x %x %x %x %x\n",
 	       info->cor1, info->cor2, info->cor3, info->cor4, info->cor5,
 	       info->cor6, info->cor7);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  tbpr,tco,rbpr,rco = %d %d %d %d\n", info->tbpr, info->tco,
 	       info->rbpr, info->rco);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  close_delay event count = %d %d %d\n", info->close_delay,
 	       info->event, info->count);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  x_char blocked_open = %x %x\n", info->x_char,
 	       info->blocked_open);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  open_wait = %lx %lx %lx\n", (long)info->open_wait);
+#else
+	;
+#endif
 
 	local_irq_save(flags);
 
 /* Global Registers */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyGFRCR %x\n", base_addr[CyGFRCR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyCAR %x\n", base_addr[CyCAR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyRISR %x\n", base_addr[CyRISR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyTISR %x\n", base_addr[CyTISR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyMISR %x\n", base_addr[CyMISR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyRIR %x\n", base_addr[CyRIR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyTIR %x\n", base_addr[CyTIR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyMIR %x\n", base_addr[CyMIR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyTPR %x\n", base_addr[CyTPR]);
+#else
+	;
+#endif
 
 	base_addr[CyCAR] = (u_char) channel;
 
 /* Virtual Registers */
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyRIVR %x\n", base_addr[CyRIVR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyTIVR %x\n", base_addr[CyTIVR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyMIVR %x\n", base_addr[CyMIVR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyMISR %x\n", base_addr[CyMISR]);
+#else
+	;
+#endif
 #endif
 
 /* Channel Registers */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyCCR %x\n", base_addr[CyCCR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyIER %x\n", base_addr[CyIER]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyCOR1 %x\n", base_addr[CyCOR1]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyCOR2 %x\n", base_addr[CyCOR2]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyCOR3 %x\n", base_addr[CyCOR3]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyCOR4 %x\n", base_addr[CyCOR4]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyCOR5 %x\n", base_addr[CyCOR5]);
+#else
+	;
+#endif
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyCCSR %x\n", base_addr[CyCCSR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyRDCR %x\n", base_addr[CyRDCR]);
+#else
+	;
 #endif
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CySCHR1 %x\n", base_addr[CySCHR1]);
-	printk(" CySCHR2 %x\n", base_addr[CySCHR2]);
-#if 0
-	printk(" CySCHR3 %x\n", base_addr[CySCHR3]);
-	printk(" CySCHR4 %x\n", base_addr[CySCHR4]);
-	printk(" CySCRL %x\n", base_addr[CySCRL]);
-	printk(" CySCRH %x\n", base_addr[CySCRH]);
-	printk(" CyLNC %x\n", base_addr[CyLNC]);
-	printk(" CyMCOR1 %x\n", base_addr[CyMCOR1]);
-	printk(" CyMCOR2 %x\n", base_addr[CyMCOR2]);
+#else
+	;
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(" CySCHR2 %x\n", base_addr[CySCHR2]);
+#else
+	;
+#endif
+#if 0
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(" CySCHR3 %x\n", base_addr[CySCHR3]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(" CySCHR4 %x\n", base_addr[CySCHR4]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(" CySCRL %x\n", base_addr[CySCRL]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(" CySCRH %x\n", base_addr[CySCRH]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(" CyLNC %x\n", base_addr[CyLNC]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(" CyMCOR1 %x\n", base_addr[CyMCOR1]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
+	printk(" CyMCOR2 %x\n", base_addr[CyMCOR2]);
+#else
+	;
+#endif
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyRTPRL %x\n", base_addr[CyRTPRL]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyRTPRH %x\n", base_addr[CyRTPRH]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyMSVR1 %x\n", base_addr[CyMSVR1]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyMSVR2 %x\n", base_addr[CyMSVR2]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyRBPR %x\n", base_addr[CyRBPR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyRCOR %x\n", base_addr[CyRCOR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyTBPR %x\n", base_addr[CyTBPR]);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" CyTCOR %x\n", base_addr[CyTCOR]);
+#else
+	;
+#endif
 
 	local_irq_restore(flags);
 }				/* show_status */

@@ -415,9 +415,13 @@ static int wis_saa7115_probe(struct i2c_client *client,
 	dec->hue = 0;
 	i2c_set_clientdata(client, dec);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"wis-saa7115: initializing SAA7115 at address %d on %s\n",
 		client->addr, adapter->name);
+#else
+	;
+#endif
 
 	if (write_regs(client, initial_registers) < 0) {
 		printk(KERN_ERR

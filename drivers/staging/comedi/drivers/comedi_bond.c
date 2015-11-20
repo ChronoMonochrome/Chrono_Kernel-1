@@ -71,15 +71,23 @@ module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "If true, print extra cryptic debugging output useful"
 		 "only to developers.");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define LOG_MSG(x...) printk(KERN_INFO MODULE_NAME": "x)
 #define DEBUG(x...)							\
 	do {								\
 		if (debug)						\
 			printk(KERN_DEBUG MODULE_NAME": DEBUG: "x);	\
+#else
+#define LOG_MSG(x...) ;
+#endif
 	} while (0)
+#ifdef CONFIG_DEBUG_PRINTK
 #define WARNING(x...)  printk(KERN_WARNING MODULE_NAME ": WARNING: "x)
 #define ERROR(x...)  printk(KERN_ERR MODULE_NAME ": INTERNAL ERROR: "x)
 MODULE_AUTHOR("Calin A. Culianu");
+#else
+#define WARNING(x...)  ;
+#endif
 MODULE_DESCRIPTION(MODULE_NAME "A driver for COMEDI to bond multiple COMEDI "
 		   "devices together as one.  In the words of John Lennon: "
 		   "'And the world will live as one...'");

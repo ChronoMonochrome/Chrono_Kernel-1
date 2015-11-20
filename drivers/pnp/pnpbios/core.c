@@ -190,9 +190,13 @@ static int pnp_dock_thread(void *unused)
 			if (pnp_dock_event(d, &now) == 0) {
 				docked = d;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 				       "PnPBIOS: Docking station %stached\n",
 				       docked ? "at" : "de");
+#else
+				;
+#endif
 #endif
 			}
 		}
@@ -391,8 +395,12 @@ static void __init build_devlist(void)
 	}
 	kfree(node);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "PnPBIOS: %i node%s reported by PnP BIOS; %i recorded by driver\n",
+#else
+	;
+#endif
 	       nodes_got, nodes_got != 1 ? "s" : "", devs);
 }
 
@@ -438,7 +446,11 @@ static int __init pnpbios_probe_system(void)
 	u8 sum;
 	int length, i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PnPBIOS: Scanning system for PnP BIOS support...\n");
+#else
+	;
+#endif
 
 	/*
 	 * Search the defined area (0xf0000-0xffff0) for a valid PnP BIOS
@@ -450,9 +462,13 @@ static int __init pnpbios_probe_system(void)
 	     check = (void *)check + 16) {
 		if (check->fields.signature != PNP_SIGNATURE)
 			continue;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "PnPBIOS: Found PnP BIOS installation structure at 0x%p\n",
 		       check);
+#else
+		;
+#endif
 		length = check->fields.length;
 		if (!length) {
 			printk(KERN_ERR
@@ -467,28 +483,44 @@ static int __init pnpbios_probe_system(void)
 			continue;
 		}
 		if (check->fields.version < 0x10) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "PnPBIOS: PnP BIOS version %d.%d is not supported\n",
 			       check->fields.version >> 4,
 			       check->fields.version & 15);
+#else
+			;
+#endif
 			continue;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "PnPBIOS: PnP BIOS version %d.%d, entry 0x%x:0x%x, dseg 0x%x\n",
 		       check->fields.version >> 4, check->fields.version & 15,
 		       check->fields.pm16cseg, check->fields.pm16offset,
 		       check->fields.pm16dseg);
+#else
+		;
+#endif
 		pnp_bios_install = check;
 		return 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PnPBIOS: PnP BIOS support was not detected.\n");
+#else
+	;
+#endif
 	return 0;
 }
 
 static int __init exploding_pnp_bios(const struct dmi_system_id *d)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s detected. Disabling PnPBIOS\n", d->ident);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -524,13 +556,21 @@ static int __init pnpbios_init(void)
 #endif
 	if (pnpbios_disabled || dmi_check_system(pnpbios_dmi_table) ||
 	    paravirt_enabled()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PnPBIOS: Disabled\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 #ifdef CONFIG_PNPACPI
 	if (!acpi_disabled && !pnpacpi_disabled) {
 		pnpbios_disabled = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PnPBIOS: Disabled by ACPI PNP\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 #endif				/* CONFIG_ACPI */

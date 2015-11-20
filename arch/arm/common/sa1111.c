@@ -648,8 +648,12 @@ sa1111_init_one_child(struct sa1111 *sachip, struct resource *parent,
 
 	ret = request_resource(parent, &dev->res);
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("SA1111: failed to allocate resource for %s\n",
 			dev->res.name);
+#else
+		;
+#endif
 		dev_set_name(&dev->dev, NULL);
 		kfree(dev);
 		goto out;
@@ -741,14 +745,22 @@ __sa1111_probe(struct device *me, struct resource *mem, int irq)
 	 */
 	id = sa1111_readl(sachip->base + SA1111_SKID);
 	if ((id & SKID_ID_MASK) != SKID_SA1111_ID) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "SA1111 not detected: ID = %08lx\n", id);
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto err_unmap;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SA1111 Microprocessor Companion Chip: "
 		"silicon revision %lx, metal revision %lx\n",
 		(id & SKID_SIREV_MASK)>>4, (id & SKID_MTREV_MASK));
+#else
+	;
+#endif
 
 	/*
 	 * We found it.  Wake the chip up, and initialise.

@@ -58,10 +58,18 @@ static int s2250loader_probe(struct usb_interface *interface,
 		printk(KERN_ERR "Enter s2250loader_probe failed\n");
 		return -1;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Enter s2250loader_probe 2.6 kernel\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "vendor id 0x%x, device id 0x%x devnum:%d\n",
 	   usbdev->descriptor.idVendor, usbdev->descriptor.idProduct,
 	   usbdev->devnum);
+#else
+	;
+#endif
 
 	if (usbdev->descriptor.bNumConfigurations != 1) {
 		printk(KERN_ERR "can't handle multiple config\n");
@@ -87,12 +95,20 @@ static int s2250loader_probe(struct usb_interface *interface,
 	}
 	s2250_dev_table[minor] = s;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "s2250loader_probe: Device %d on Bus %d Minor %d\n",
 		usbdev->devnum, usbdev->bus->busnum, minor);
+#else
+	;
+#endif
 
 	memset(s, 0, sizeof(device_extension_t));
 	s->usbdev = usbdev;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "loading 2250 loader\n");
+#else
+	;
+#endif
 
 	kref_init(&(s->kref));
 
@@ -140,7 +156,11 @@ failed2:
 static void s2250loader_disconnect(struct usb_interface *interface)
 {
 	pdevice_extension_t s;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "s2250: disconnect\n");
+#else
+	;
+#endif
 	s = usb_get_intfdata(interface);
 	usb_set_intfdata(interface, NULL);
 	kref_put(&(s->kref), s2250loader_delete);
@@ -174,14 +194,22 @@ static int __init s2250loader_init(void)
 		return -1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "s2250loader_init: driver registered\n");
+#else
+	;
+#endif
 	return 0;
 }
 module_init(s2250loader_init);
 
 static void __exit s2250loader_cleanup(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "s2250loader_cleanup\n");
+#else
+	;
+#endif
 	usb_deregister(&s2250loader_driver);
 }
 module_exit(s2250loader_cleanup);

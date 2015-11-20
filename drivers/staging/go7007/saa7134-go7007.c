@@ -161,7 +161,11 @@ static int saa7134_go7007_interface_reset(struct go7007 *go)
 	saa_setb(SAA7134_GPIO_GPMODE3, SAA7134_GPIO_GPRESCAN);
 
 	status = saa_readb(SAA7134_GPIO_GPSTATUS2);
+#ifdef CONFIG_DEBUG_PRINTK
 	/*printk(KERN_DEBUG "status is %s\n", status & 0x40 ? "OK" : "not OK"); */
+#else
+	/*;
+#endif
 
 	/* enter command mode...(?) */
 	saa_writeb(SAA7134_GPIO_GPSTATUS2, GPIO_COMMAND_REQ1);
@@ -171,7 +175,11 @@ static int saa7134_go7007_interface_reset(struct go7007 *go)
 		saa_clearb(SAA7134_GPIO_GPMODE3, SAA7134_GPIO_GPRESCAN);
 		saa_setb(SAA7134_GPIO_GPMODE3, SAA7134_GPIO_GPRESCAN);
 		status = saa_readb(SAA7134_GPIO_GPSTATUS2);
+#ifdef CONFIG_DEBUG_PRINTK
 		/*printk(KERN_INFO "gpio is %08x\n", saa_readl(SAA7134_GPIO_GPSTATUS0 >> 2)); */
+#else
+		/*;
+#endif
 	} while (--count > 0);
 
 	/* Wait for an interrupt to indicate successful hardware reset */
@@ -192,8 +200,12 @@ static int saa7134_go7007_write_interrupt(struct go7007 *go, int addr, int data)
 	u16 status_reg;
 
 #ifdef GO7007_HPI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"saa7134-go7007: WriteInterrupt: %04x %04x\n", addr, data);
+#else
+	;
+#endif
 #endif
 
 	for (i = 0; i < 100; ++i) {
@@ -224,8 +236,12 @@ static int saa7134_go7007_read_interrupt(struct go7007 *go)
 	gpio_read(dev, HPI_ADDR_INTR_RET_VALUE, &go->interrupt_value);
 	gpio_read(dev, HPI_ADDR_INTR_RET_DATA, &go->interrupt_data);
 #ifdef GO7007_HPI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "saa7134-go7007: ReadInterrupt: %04x %04x\n",
 			go->interrupt_value, go->interrupt_data);
+#else
+	;
+#endif
 #endif
 	return 0;
 }
@@ -239,8 +255,12 @@ static void saa7134_go7007_irq_ts_done(struct saa7134_dev *dev,
 	if (!go->streaming)
 		return;
 	if (0 != (status & 0x000f0000))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "saa7134-go7007: irq: lost %ld\n",
 				(status >> 16) & 0x0f);
+#else
+		;
+#endif
 	if (status & 0x100000) {
 		dma_sync_single_for_cpu(&dev->pci->dev,
 					saa->bottom_dma, PAGE_SIZE, DMA_FROM_DEVICE);
@@ -349,8 +369,12 @@ static int saa7134_go7007_send_firmware(struct go7007 *go, u8 *data, int len)
 	int i;
 
 #ifdef GO7007_HPI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "saa7134-go7007: DownloadBuffer "
 			"sending %d bytes\n", len);
+#else
+	;
+#endif
 #endif
 
 	while (len > 0) {
@@ -438,7 +462,11 @@ static int saa7134_go7007_init(struct saa7134_dev *dev)
 	struct go7007 *go;
 	struct saa7134_go7007 *saa;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "saa7134-go7007: probing new SAA713X board\n");
+#else
+	;
+#endif
 
 	saa = kzalloc(sizeof(struct saa7134_go7007), GFP_KERNEL);
 	if (saa == NULL)

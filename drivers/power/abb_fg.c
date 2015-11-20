@@ -2719,7 +2719,11 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 
 		val->intval = (di->bat_cap.mah  * 1000) / di->bat_cap.max_mah ;
 		if (last_capacity != val->intval)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("raw soc = %d\n",val->intval);
+#else
+			;
+#endif
 		last_capacity = val->intval;
 		break;
 #endif

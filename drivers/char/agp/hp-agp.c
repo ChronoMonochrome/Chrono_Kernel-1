@@ -78,7 +78,11 @@ static int __init hp_zx1_ioc_shared(void)
 {
 	struct _hp_private *hp = &hp_private;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "HP ZX1 IOC: IOPDIR shared with sba_iommu\n");
+#else
+	;
+#endif
 
 	/*
 	 * IOC already configured by sba_iommu module; just use
@@ -128,7 +132,11 @@ hp_zx1_ioc_owner (void)
 {
 	struct _hp_private *hp = &hp_private;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "HP ZX1 IOC: IOPDIR dedicated to GART\n");
+#else
+	;
+#endif
 
 	/*
 	 * Select an IOV page size no larger than system page size.
@@ -515,9 +523,13 @@ zx1_gart_probe (acpi_handle obj, u32 depth, void *context, void **ret)
 	if (hp_zx1_setup(sba_hpa + HP_ZX1_IOC_OFFSET, lba_hpa))
 		return AE_OK;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Detected HP ZX1 %s AGP chipset "
 		"(ioc=%llx, lba=%llx)\n", (char *)context,
 		sba_hpa + HP_ZX1_IOC_OFFSET, lba_hpa);
+#else
+	;
+#endif
 
 	hp_zx1_gart_found = 1;
 	return AE_CTRL_TERMINATE; /* we only support one bridge; quit looking */

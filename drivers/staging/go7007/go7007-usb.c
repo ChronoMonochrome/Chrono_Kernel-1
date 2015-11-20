@@ -586,7 +586,11 @@ static int go7007_usb_interface_reset(struct go7007 *go)
 	if (usb->board->flags & GO7007_USB_EZUSB) {
 		/* Reset buffer in EZ-USB */
 #ifdef GO7007_USB_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "go7007-usb: resetting EZ-USB buffers\n");
+#else
+		;
+#endif
 #endif
 		if (go7007_usb_vendor_request(go, 0x10, 0, 0, NULL, 0, 0) < 0 ||
 		    go7007_usb_vendor_request(go, 0x10, 0, 0, NULL, 0, 0) < 0)
@@ -617,8 +621,12 @@ static int go7007_usb_ezusb_write_interrupt(struct go7007 *go,
 	int timeout = 500;
 
 #ifdef GO7007_USB_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"go7007-usb: WriteInterrupt: %04x %04x\n", addr, data);
+#else
+	;
+#endif
 #endif
 
 	for (i = 0; i < 100; ++i) {
@@ -666,8 +674,12 @@ static int go7007_usb_onboard_write_interrupt(struct go7007 *go,
 	int timeout = 500;
 
 #ifdef GO7007_USB_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 		"go7007-usb: WriteInterrupt: %04x %04x\n", addr, data);
+#else
+	;
+#endif
 #endif
 
 	tbuf = kzalloc(8, GFP_KERNEL);
@@ -711,8 +723,12 @@ static void go7007_usb_readinterrupt_complete(struct urb *urb)
 		go->interrupt_data = __le16_to_cpu(regs[0]);
 		go->interrupt_value = __le16_to_cpu(regs[1]);
 #ifdef GO7007_USB_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "go7007-usb: ReadInterrupt: %04x %04x\n",
 				go->interrupt_value, go->interrupt_data);
+#else
+		;
+#endif
 #endif
 	}
 
@@ -837,7 +853,11 @@ static int go7007_usb_send_firmware(struct go7007 *go, u8 *data, int len)
 	int timeout = 500;
 
 #ifdef GO7007_USB_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "go7007-usb: DownloadBuffer sending %d bytes\n", len);
+#else
+	;
+#endif
 #endif
 
 	if (usb->board->flags & GO7007_USB_EZUSB)
@@ -891,9 +911,13 @@ static int go7007_usb_i2c_master_xfer(struct i2c_adapter *adapter,
 				!(msgs[i].flags & I2C_M_RD) &&
 				(msgs[i + 1].flags & I2C_M_RD)) {
 #ifdef GO7007_I2C_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "go7007-usb: i2c write/read %d/%d "
 					"bytes on %02x\n", msgs[i].len,
 					msgs[i + 1].len, msgs[i].addr);
+#else
+			;
+#endif
 #endif
 			buf[0] = 0x01;
 			buf[1] = msgs[i].len + 1;
@@ -903,9 +927,13 @@ static int go7007_usb_i2c_master_xfer(struct i2c_adapter *adapter,
 			buf[buf_len++] = msgs[++i].len;
 		} else if (msgs[i].flags & I2C_M_RD) {
 #ifdef GO7007_I2C_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "go7007-usb: i2c read %d "
 					"bytes on %02x\n", msgs[i].len,
 					msgs[i].addr);
+#else
+			;
+#endif
 #endif
 			buf[0] = 0x01;
 			buf[1] = 1;
@@ -914,9 +942,13 @@ static int go7007_usb_i2c_master_xfer(struct i2c_adapter *adapter,
 			buf_len = 4;
 		} else {
 #ifdef GO7007_I2C_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "go7007-usb: i2c write %d "
 					"bytes on %02x\n", msgs[i].len,
 					msgs[i].addr);
+#else
+			;
+#endif
 #endif
 			buf[0] = 0x00;
 			buf[1] = msgs[i].len + 1;
@@ -973,7 +1005,11 @@ static int go7007_usb_probe(struct usb_interface *intf,
 	char *name;
 	int video_pipe, i, v_urb_len;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "go7007-usb: probing new GO7007 USB board\n");
+#else
+	;
+#endif
 
 	switch (id->driver_info) {
 	case GO7007_BOARDID_MATRIX_II:
@@ -1020,7 +1056,11 @@ static int go7007_usb_probe(struct usb_interface *intf,
 		board = &board_lifeview_lr192;
 		break;
 	case GO7007_BOARDID_SENSORAY_2250:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Sensoray 2250 found\n");
+#else
+		;
+#endif
 		name = "Sensoray 2250/2251";
 		board = &board_sensoray_2250;
 		break;
@@ -1150,8 +1190,12 @@ static int go7007_usb_probe(struct usb_interface *intf,
 					sizeof(go->name));
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "go7007-usb: unable to detect "
 						"tuner type!\n");
+#else
+			;
+#endif
 			break;
 		}
 		/* Configure tuner mode selection inputs connected

@@ -210,9 +210,13 @@ static int __init uv_mmtimer_init(void)
 		return -1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: v%s, %ld MHz\n", UV_MMTIMER_DESC,
 		UV_MMTIMER_VERSION,
 		sn_rtc_cycles_per_second/(unsigned long)1E6);
+#else
+	;
+#endif
 
 	return 0;
 }

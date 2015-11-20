@@ -46,9 +46,13 @@ static int read_eeprom_byte(struct mantis_pci *mantis, u8 *data, u8 length)
 
 	err = i2c_transfer(&mantis->adapter, msg, 2);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1,
 			"ERROR: i2c read: < err=%i d0=0x%02x d1=0x%02x >",
 			err, data[0], data[1]);
+#else
+		d;
+#endif
 
 		return err;
 	}
@@ -69,9 +73,13 @@ static int write_eeprom_byte(struct mantis_pci *mantis, u8 *data, u8 length)
 
 	err = i2c_transfer(&mantis->adapter, &msg, 1);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1,
 			"ERROR: i2c write: < err=%i length=0x%02x d0=0x%02x, d1=0x%02x >",
 			err, length, data[0], data[1]);
+#else
+		d;
+#endif
 
 		return err;
 	}
@@ -86,12 +94,20 @@ static int get_mac_address(struct mantis_pci *mantis)
 	mantis->mac_address[0] = 0x08;
 	err = read_eeprom_byte(mantis, &mantis->mac_address[0], 6);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1, "Mantis EEPROM read error");
+#else
+		d;
+#endif
 
 		return err;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MANTIS_ERROR, 0,
 		"    MAC Address=[%pM]\n", mantis->mac_address);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -139,40 +155,72 @@ int mantis_core_init(struct mantis_pci *mantis)
 	int err = 0;
 
 	mantis_load_config(mantis);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MANTIS_ERROR, 0, "found a %s PCI %s device on (%02x:%02x.%x),\n",
 		mantis->hwconfig->model_name, mantis->hwconfig->dev_type,
 		mantis->pdev->bus->number, PCI_SLOT(mantis->pdev->devfn), PCI_FUNC(mantis->pdev->devfn));
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MANTIS_ERROR, 0, "    Mantis Rev %d [%04x:%04x], ",
 		mantis->revision,
 		mantis->subsystem_vendor, mantis->subsystem_device);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MANTIS_ERROR, 0,
 		"irq: %d, latency: %d\n    memory: 0x%lx, mmio: 0x%p\n",
 		mantis->pdev->irq, mantis->latency,
 		mantis->mantis_addr, mantis->mantis_mmio);
+#else
+	d;
+#endif
 
 	err = mantis_i2c_init(mantis);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1, "Mantis I2C init failed");
+#else
+		d;
+#endif
 		return err;
 	}
 	err = get_mac_address(mantis);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1, "get MAC address failed");
+#else
+		d;
+#endif
 		return err;
 	}
 	err = mantis_dma_init(mantis);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1, "Mantis DMA init failed");
+#else
+		d;
+#endif
 		return err;
 	}
 	err = mantis_dvb_init(mantis);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_DEBUG, 1, "Mantis DVB init failed");
+#else
+		d;
+#endif
 		return err;
 	}
 	err = mantis_uart_init(mantis);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_DEBUG, 1, "Mantis UART init failed");
+#else
+		d;
+#endif
 		return err;
 	}
 
@@ -182,17 +230,37 @@ int mantis_core_init(struct mantis_pci *mantis)
 int mantis_core_exit(struct mantis_pci *mantis)
 {
 	mantis_dma_stop(mantis);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MANTIS_ERROR, 1, "DMA engine stopping");
+#else
+	d;
+#endif
 
 	mantis_uart_exit(mantis);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MANTIS_ERROR, 1, "UART exit failed");
+#else
+	d;
+#endif
 
 	if (mantis_dma_exit(mantis) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1, "DMA exit failed");
+#else
+		d;
+#endif
 	if (mantis_dvb_exit(mantis) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1, "DVB exit failed");
+#else
+		d;
+#endif
 	if (mantis_i2c_exit(mantis) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(verbose, MANTIS_ERROR, 1, "I2C adapter delete.. failed");
+#else
+		d;
+#endif
 
 	return 0;
 }
@@ -219,7 +287,11 @@ void mantis_set_direction(struct mantis_pci *mantis, int direction)
 	u32 reg;
 
 	reg = mmread(0x28);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(verbose, MANTIS_DEBUG, 1, "TS direction setup");
+#else
+	d;
+#endif
 	if (direction == 0x01) {
 		/* to CI */
 		reg |= 0x04;

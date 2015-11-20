@@ -452,8 +452,12 @@ void ni_tio_acknowledge_and_confirm(struct ni_gpct *counter, int *gate_error,
 				  NITIO_Gxx_Joint_Status2_Reg
 				  (counter->counter_index)) &
 		    Gi_Permanent_Stale_Bit(counter->counter_index)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: Gi_Permanent_Stale_Data detected.\n",
 			       __func__);
+#else
+			;
+#endif
 			if (perm_stale_data)
 				*perm_stale_data = 1;
 		}
@@ -473,7 +477,11 @@ void ni_tio_handle_interrupt(struct ni_gpct *counter,
 	ni_tio_acknowledge_and_confirm(counter, &gate_error, &tc_error,
 				       &perm_stale_data, NULL);
 	if (gate_error) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: Gi_Gate_Error detected.\n", __func__);
+#else
+		;
+#endif
 		s->async->events |= COMEDI_CB_OVERFLOW;
 	}
 	if (perm_stale_data)
@@ -484,8 +492,12 @@ void ni_tio_handle_interrupt(struct ni_gpct *counter,
 		if (read_register(counter,
 				NITIO_Gi_DMA_Status_Reg
 				(counter->counter_index)) & Gi_DRQ_Error_Bit) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: Gi_DRQ_Error detected.\n",
 							__func__);
+#else
+			;
+#endif
 			s->async->events |= COMEDI_CB_OVERFLOW;
 		}
 		break;

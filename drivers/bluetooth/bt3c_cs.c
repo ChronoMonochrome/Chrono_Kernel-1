@@ -228,7 +228,11 @@ static void bt3c_receive(bt3c_info_t *info)
 	iobase = info->p_dev->resource[0]->start;
 
 	avail = bt3c_read(iobase, 0x7006);
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("bt3c_cs: receiving %d bytes\n", avail);
+#else
+	//;
+#endif
 
 	bt3c_address(iobase, 0x7480);
 	while (size < avail) {
@@ -251,7 +255,11 @@ static void bt3c_receive(bt3c_info_t *info)
 			info->rx_skb->dev = (void *) info->hdev;
 			bt_cb(info->rx_skb)->pkt_type = inb(iobase + DATA_L);
 			inb(iobase + DATA_H);
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("bt3c: PACKET_TYPE=%02x\n", bt_cb(info->rx_skb)->pkt_type);
+#else
+			//;
+#endif
 
 			switch (bt_cb(info->rx_skb)->pkt_type) {
 

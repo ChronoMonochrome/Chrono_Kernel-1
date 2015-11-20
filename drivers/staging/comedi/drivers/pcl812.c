@@ -626,15 +626,31 @@ static int pcl812_do_insn_bits(struct comedi_device *dev,
 */
 static void pcl812_cmdtest_out(int e, struct comedi_cmd *cmd)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "pcl812 e=%d startsrc=%x scansrc=%x convsrc=%x\n", e,
 	       cmd->start_src, cmd->scan_begin_src, cmd->convert_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "pcl812 e=%d startarg=%d scanarg=%d convarg=%d\n", e,
 	       cmd->start_arg, cmd->scan_begin_arg, cmd->convert_arg);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "pcl812 e=%d stopsrc=%x scanend=%x\n", e,
 	       cmd->stop_src, cmd->scan_end_src);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "pcl812 e=%d stoparg=%d scanendarg=%d "
 	       "chanlistlen=%d\n", e, cmd->stop_arg, cmd->scan_end_arg,
 	       cmd->chanlist_len);
+#else
+	;
+#endif
 }
 #endif
 
@@ -648,7 +664,11 @@ static int pcl812_ai_cmdtest(struct comedi_device *dev,
 	int tmp, divisor1, divisor2;
 
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("pcl812 EDBG: BGN: pcl812_ai_cmdtest(...)\n");
+#else
+	;
+#endif
 	pcl812_cmdtest_out(-1, cmd);
 #endif
 	/* step 1: make sure trigger sources are trivially valid */
@@ -829,7 +849,11 @@ static int pcl812_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 	struct comedi_cmd *cmd = &s->async->cmd;
 
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: BGN: pcl812_ai_cmd(...)\n");
+#else
+	;
+#endif
 #endif
 
 	if (cmd->start_src != TRIG_NOW)
@@ -976,7 +1000,11 @@ static int pcl812_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 		outb(devpriv->mode_reg_int | 6, dev->iobase + PCL812_MODE);
 
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: END: pcl812_ai_cmd(...)\n");
+#else
+	;
+#endif
 #endif
 
 	return 0;
@@ -1099,7 +1127,11 @@ static irqreturn_t interrupt_pcl812_ai_dma(int irq, void *d)
 	short *ptr;
 
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: BGN: interrupt_pcl812_ai_dma(...)\n");
+#else
+	;
+#endif
 #endif
 	ptr = (short *)devpriv->dmabuf[devpriv->next_dma_buf];
 	len = (devpriv->dmabytestomove[devpriv->next_dma_buf] >> 1) -
@@ -1134,7 +1166,11 @@ static irqreturn_t interrupt_pcl812_ai_dma(int irq, void *d)
 	transfer_from_dma_buf(dev, s, ptr, bufptr, len);
 
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: END: interrupt_pcl812_ai_dma(...)\n");
+#else
+	;
+#endif
 #endif
 	return IRQ_HANDLED;
 }
@@ -1253,8 +1289,12 @@ static void start_pacer(struct comedi_device *dev, int mode,
 			unsigned int divisor1, unsigned int divisor2)
 {
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: BGN: start_pacer(%d,%u,%u)\n", mode,
 	       divisor1, divisor2);
+#else
+	;
+#endif
 #endif
 	outb(0xb4, dev->iobase + PCL812_CTRCTL);
 	outb(0x74, dev->iobase + PCL812_CTRCTL);
@@ -1267,7 +1307,11 @@ static void start_pacer(struct comedi_device *dev, int mode,
 		outb((divisor1 >> 8) & 0xff, dev->iobase + PCL812_CTR1);
 	}
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: END: start_pacer(...)\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -1298,7 +1342,11 @@ static int pcl812_ai_cancel(struct comedi_device *dev,
 			    struct comedi_subdevice *s)
 {
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: BGN: pcl812_ai_cancel(...)\n");
+#else
+	;
+#endif
 #endif
 	if (devpriv->ai_dma)
 		disable_dma(devpriv->dma);
@@ -1308,7 +1356,11 @@ static int pcl812_ai_cancel(struct comedi_device *dev,
 	start_pacer(dev, -1, 0, 0);	/*  stop 8254 */
 	outb(0, dev->iobase + PCL812_CLRINT);	/* clear INT request */
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: END: pcl812_ai_cancel(...)\n");
+#else
+	;
+#endif
 #endif
 	return 0;
 }
@@ -1319,7 +1371,11 @@ static int pcl812_ai_cancel(struct comedi_device *dev,
 static void pcl812_reset(struct comedi_device *dev)
 {
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: BGN: pcl812_reset(...)\n");
+#else
+	;
+#endif
 #endif
 	outb(0, dev->iobase + PCL812_MUX);
 	outb(0 + devpriv->range_correction, dev->iobase + PCL812_GAIN);
@@ -1351,7 +1407,11 @@ static void pcl812_reset(struct comedi_device *dev)
 	}
 	udelay(5);
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pcl812 EDBG: END: pcl812_reset(...)\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -1369,11 +1429,19 @@ static int pcl812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	int n_subdevices;
 
 	iobase = it->options[0];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: pcl812:  board=%s, ioport=0x%03lx",
 	       dev->minor, this_board->name, iobase);
+#else
+	;
+#endif
 
 	if (!request_region(iobase, this_board->io_range, "pcl812")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("I/O port conflict\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -1403,7 +1471,11 @@ static int pcl812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 					     "DISABLING IT", irq);
 					irq = 0;	/* Can't use IRQ */
 				} else {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO ", irq=%u", irq);
+#else
+					;
+#endif
 				}
 			}
 		}
@@ -1418,7 +1490,11 @@ static int pcl812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (this_board->DMAbits != 0) {	/* board support DMA */
 		dma = it->options[2];
 		if (((1 << dma) & this_board->DMAbits) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", DMA is out of allowed range, FAIL!\n");
+#else
+			;
+#endif
 			return -EINVAL;	/* Bad DMA */
 		}
 		ret = request_dma(dma, "pcl812");
@@ -1428,11 +1504,19 @@ static int pcl812_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			return -EBUSY;	/* DMA isn't free */
 		}
 		devpriv->dma = dma;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO ", dma=%u", dma);
+#else
+		;
+#endif
 		pages = 1;	/* we want 8KB */
 		devpriv->dmabuf[0] = __get_dma_pages(GFP_KERNEL, pages);
 		if (!devpriv->dmabuf[0]) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", unable to allocate DMA buffer, FAIL!\n");
+#else
+			;
+#endif
 			/*
 			 * maybe experiment with try_to_free_pages()
 			 * will help ....
@@ -1693,7 +1777,11 @@ no_dma:
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
+#else
+	;
+#endif
 	devpriv->valid = 1;
 
 	pcl812_reset(dev);
@@ -1708,7 +1796,11 @@ static int pcl812_detach(struct comedi_device *dev)
 {
 
 #ifdef PCL812_EXTDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: pcl812: remove\n", dev->minor);
+#else
+	;
+#endif
 #endif
 	free_resources(dev);
 	return 0;

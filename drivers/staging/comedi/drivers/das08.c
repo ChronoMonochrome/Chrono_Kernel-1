@@ -554,7 +554,11 @@ static int das08_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 		/* clear over-range bits for 16-bit boards */
 		if (thisboard->ai_nbits == 16)
 			if (inb(dev->iobase + DAS08_MSB) & 0x80)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "das08: over-range\n");
+#else
+				;
+#endif
 
 		/* trigger conversion */
 		outb_p(0, dev->iobase + DAS08_TRIG_12BIT);
@@ -802,9 +806,17 @@ static int das08_counter_read(struct comedi_device *dev,
 {
 	int chan = insn->chanspec;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Reading counter channel %d ",chan); */
+#else
+	/* ;
+#endif
 	data[0] = i8254_read_channel(&devpriv->i8254, chan);
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("=> 0x%08X\n",data[0]); */
+#else
+	/* ;
+#endif
 
 	return 1;
 }
@@ -815,7 +827,11 @@ static int das08_counter_write(struct comedi_device *dev,
 {
 	int chan = insn->chanspec;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("Writing counter channel %d with 0x%04X\n",chan,data[0]); */
+#else
+	/* ;
+#endif
 	i8254_write_channel(&devpriv->i8254, chan, data[0]);
 
 	return 1;
@@ -863,7 +879,11 @@ int das08_common_attach(struct comedi_device *dev, unsigned long iobase)
 
 	/*  allocate ioports for non-pcmcia, non-pci boards */
 	if ((thisboard->bustype != pcmcia) && (thisboard->bustype != pci)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO " iobase 0x%lx\n", iobase);
+#else
+		;
+#endif
 		if (!request_region(iobase, thisboard->iosize, DRV_NAME)) {
 			printk(KERN_ERR " I/O port conflict\n");
 			return -EIO;
@@ -987,15 +1007,27 @@ static int das08_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (ret < 0)
 		return ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: das08: ", dev->minor);
+#else
+	;
+#endif
 	/*  deal with a pci board */
 	if (thisboard->bustype == pci) {
 #ifdef CONFIG_COMEDI_PCI
 		if (it->options[0] || it->options[1]) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("bus %i slot %i ",
 			       it->options[0], it->options[1]);
+#else
+			;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 		/*  find card */
 		for_each_pci_dev(pdev) {
 			if (pdev->vendor == PCI_VENDOR_ID_COMPUTERBOARDS
@@ -1025,8 +1057,12 @@ static int das08_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		/*  read base addresses */
 		pci_iobase = pci_resource_start(pdev, 1);
 		iobase = pci_resource_start(pdev, 2);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pcibase 0x%lx  iobase 0x%lx\n",
 							pci_iobase, iobase);
+#else
+		;
+#endif
 		devpriv->pci_iobase = pci_iobase;
 #if 0
 /* We could enable to pci-das08's interrupt here to make it possible
@@ -1046,7 +1082,11 @@ static int das08_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	} else {
 		iobase = it->options[0];
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\n");
+#else
+	;
+#endif
 
 	return das08_common_attach(dev, iobase);
 }
@@ -1054,7 +1094,11 @@ static int das08_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 int das08_common_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: das08: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->subdevices)
 		subdev_8255_cleanup(dev, dev->subdevices + 4);

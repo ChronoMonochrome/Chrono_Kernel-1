@@ -297,7 +297,11 @@ int trackpoint_detect(struct psmouse *psmouse, bool set_properties)
 		return 0;
 
 	if (trackpoint_read(&psmouse->ps2dev, TP_EXT_BTN, &button_info)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "trackpoint.c: failed to get extended button data\n");
+#else
+		;
+#endif
 		button_info = 0;
 	}
 
@@ -327,8 +331,12 @@ int trackpoint_detect(struct psmouse *psmouse, bool set_properties)
 		return -1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IBM TrackPoint firmware: 0x%02x, buttons: %d/%d\n",
 		firmware_id, (button_info & 0xf0) >> 4, button_info & 0x0f);
+#else
+	;
+#endif
 
 	return 0;
 }

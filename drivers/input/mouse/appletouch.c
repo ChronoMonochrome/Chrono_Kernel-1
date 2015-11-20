@@ -215,16 +215,32 @@ struct atp {
 #define dbg_dump(msg, tab) \
 	if (debug > 1) {						\
 		int __i;						\
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "appletouch: %s", msg);		\
+#else
+		;
+#endif
 		for (__i = 0; __i < ATP_XSENSORS + ATP_YSENSORS; __i++)	\
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", tab[__i]);			\
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");						\
+#else
+		;
+#endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(format, a...)						\
 	do {								\
 		if (debug)						\
 			printk(KERN_DEBUG format, ##a);			\
+#else
+#define d;
+#endif
 	} while (0)
 
 MODULE_AUTHOR("Johannes Berg");
@@ -273,9 +289,17 @@ static int atp_geyser_init(struct usb_device *udev)
 			ATP_GEYSER_MODE_REQUEST_INDEX, data, 8, 5000);
 
 	if (size != 8) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("atp_geyser_init: read error\n");
+#else
+		d;
+#endif
 		for (i = 0; i < 8; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("appletouch[%d]: %d\n", i, data[i]);
+#else
+			d;
+#endif
 
 		err("Failed to read mode from device.");
 		ret = -EIO;
@@ -292,9 +316,17 @@ static int atp_geyser_init(struct usb_device *udev)
 			ATP_GEYSER_MODE_REQUEST_INDEX, data, 8, 5000);
 
 	if (size != 8) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("atp_geyser_init: write error\n");
+#else
+		d;
+#endif
 		for (i = 0; i < 8; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("appletouch[%d]: %d\n", i, data[i]);
+#else
+			d;
+#endif
 
 		err("Failed to request geyser raw mode");
 		ret = -EIO;
@@ -316,7 +348,11 @@ static void atp_reinit(struct work_struct *work)
 	struct usb_device *udev = dev->udev;
 	int retval;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("appletouch: putting appletouch to sleep (reinit)\n");
+#else
+	d;
+#endif
 	atp_geyser_init(udev);
 
 	retval = usb_submit_urb(dev->urb, GFP_ATOMIC);
@@ -407,9 +443,13 @@ static int atp_status_check(struct urb *urb)
 		break;
 	case -EOVERFLOW:
 		if (!dev->overflow_warned) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "appletouch: OVERFLOW with data "
 				"length %d, actual length is %d\n",
 				dev->info->datalen, dev->urb->actual_length);
+#else
+			;
+#endif
 			dev->overflow_warned = true;
 		}
 	case -ECONNRESET:
@@ -428,9 +468,13 @@ static int atp_status_check(struct urb *urb)
 
 	/* drop incomplete datasets */
 	if (dev->urb->actual_length != dev->info->datalen) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("appletouch: incomplete data package"
 			" (first byte: %d, length: %d).\n",
 			dev->data[0], dev->urb->actual_length);
+#else
+		d;
+#endif
 		return ATP_URB_STATUS_ERROR;
 	}
 
@@ -445,7 +489,11 @@ static void atp_detect_size(struct atp *dev)
 	for (i = dev->info->xsensors; i < ATP_XSENSORS; i++) {
 		if (dev->xy_cur[i]) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "appletouch: 17\" model detected.\n");
+#else
+			;
+#endif
 
 			input_set_abs_params(dev->input, ABS_X, 0,
 					     (dev->info->xsensors_17 - 1) *
@@ -557,9 +605,13 @@ static void atp_complete_geyser_1_2(struct urb *urb)
 			dev->y_old = y;
 
 			if (debug > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "appletouch: "
 					"X: %3d Y: %3d Xz: %3d Yz: %3d\n",
 					x, y, x_z, y_z);
+#else
+				;
+#endif
 
 			input_report_key(dev->input, BTN_TOUCH, 1);
 			input_report_abs(dev->input, ABS_X, x);
@@ -630,7 +682,11 @@ static void atp_complete_geyser_3_4(struct urb *urb)
 	/* Just update the base values (i.e. touchpad in untouched state) */
 	if (dev->data[dev->info->datalen - 1] & ATP_STATUS_BASE_UPDATE) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("appletouch: updated base values\n");
+#else
+		d;
+#endif
 
 		memcpy(dev->xy_old, dev->xy_cur, sizeof(dev->xy_old));
 		goto exit;
@@ -668,9 +724,13 @@ static void atp_complete_geyser_3_4(struct urb *urb)
 			dev->y_old = y;
 
 			if (debug > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "appletouch: X: %3d Y: %3d "
 				       "Xz: %3d Yz: %3d\n",
 				       x, y, x_z, y_z);
+#else
+				;
+#endif
 
 			input_report_key(dev->input, BTN_TOUCH, 1);
 			input_report_abs(dev->input, ABS_X, x);
@@ -755,7 +815,11 @@ static int atp_handle_geyser(struct atp *dev)
 		if (atp_geyser_init(udev))
 			return -EIO;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "appletouch: Geyser mode initialized.\n");
+#else
+		;
+#endif
 	}
 
 	return 0;
@@ -886,7 +950,11 @@ static void atp_disconnect(struct usb_interface *iface)
 		usb_free_urb(dev->urb);
 		kfree(dev);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "input: appletouch disconnected\n");
+#else
+	;
+#endif
 }
 
 static int atp_recover(struct atp *dev)

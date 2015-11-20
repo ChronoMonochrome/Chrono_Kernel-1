@@ -33,6 +33,7 @@ static int sysbus_parity = -1;
 
 static struct edac_pci_ctl_info *e752x_pci;
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define e752x_printk(level, fmt, arg...) \
 	edac_printk(level, "e752x", fmt, ##arg)
 
@@ -186,6 +187,9 @@ enum e752x_chips {
 	E7320 = 2,
 	I3100 = 3
 };
+#else
+#define e752x_;
+#endif
 
 struct e752x_pvt {
 	struct pci_dev *bridge_ck;
@@ -323,11 +327,15 @@ static void do_process_ce(struct mem_ctl_info *mci, u16 error_one,
 	if (pvt->mc_symmetric) {
 		/* chip select are bits 14 & 13 */
 		row = ((page >> 1) & 3);
+#ifdef CONFIG_DEBUG_PRINTK
 		e752x_printk(KERN_WARNING,
 			"Test row %d Table %d %d %d %d %d %d %d %d\n", row,
 			pvt->map[0], pvt->map[1], pvt->map[2], pvt->map[3],
 			pvt->map[4], pvt->map[5], pvt->map[6],
 			pvt->map[7]);
+#else
+		e752x_;
+#endif
 
 		/* test for channel remapping */
 		for (i = 0; i < 8; i++) {
@@ -335,14 +343,22 @@ static void do_process_ce(struct mem_ctl_info *mci, u16 error_one,
 				break;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		e752x_printk(KERN_WARNING, "Test computed row %d\n", i);
+#else
+		e752x_;
+#endif
 
 		if (i < 8)
 			row = i;
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			e752x_mc_printk(mci, KERN_WARNING,
 					"row %d not found in remap table\n",
 					row);
+#else
+			e752x_mc_;
+#endif
 	} else
 		row = edac_mc_find_csrow_by_page(mci, page);
 
@@ -443,9 +459,13 @@ static void do_process_ded_retry(struct mem_ctl_info *mci, u16 error,
 	row = pvt->mc_symmetric ? ((page >> 1) & 3) :
 		edac_mc_find_csrow_by_page(mci, page);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	e752x_mc_printk(mci, KERN_WARNING,
 			"CE page 0x%lx, row %d : Memory read retry\n",
 			(long unsigned int)page, row);
+#else
+	e752x_mc_;
+#endif
 }
 
 static inline void process_ded_retry(struct mem_ctl_info *mci, u16 error,
@@ -464,7 +484,11 @@ static inline void process_threshold_ce(struct mem_ctl_info *mci, u16 error,
 	*error_found = 1;
 
 	if (handle_error)
+#ifdef CONFIG_DEBUG_PRINTK
 		e752x_mc_printk(mci, KERN_WARNING, "Memory threshold CE\n");
+#else
+		e752x_mc_;
+#endif
 }
 
 static char *global_message[11] = {
@@ -496,9 +520,13 @@ static void do_global_error(int fatal, u32 errors)
 			 * report the error
 			 */
 			if ((i == DRAM_ENTRY) || report_non_memory_errors)
+#ifdef CONFIG_DEBUG_PRINTK
 				e752x_printk(KERN_WARNING, "%sError %s\n",
 					fatal_message[fatal],
 					global_message[i]);
+#else
+				e752x_;
+#endif
 		}
 	}
 }
@@ -525,8 +553,12 @@ static void do_hub_error(int fatal, u8 errors)
 
 	for (i = 0; i < 7; i++) {
 		if (errors & (1 << i))
+#ifdef CONFIG_DEBUG_PRINTK
 			e752x_printk(KERN_WARNING, "%sError %s\n",
 				fatal_message[fatal], hub_message[i]);
+#else
+			e752x_;
+#endif
 	}
 }
 
@@ -582,8 +614,12 @@ static void do_nsi_error(int fatal, u32 errors)
 
 	for (i = 0; i < 30; i++) {
 		if (errors & (1 << i))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%sError %s\n",
 			       fatal_message[fatal], nsi_message[i]);
+#else
+			;
+#endif
 	}
 }
 
@@ -609,8 +645,12 @@ static void do_membuf_error(u8 errors)
 
 	for (i = 0; i < 4; i++) {
 		if (errors & (1 << i))
+#ifdef CONFIG_DEBUG_PRINTK
 			e752x_printk(KERN_WARNING, "Non-Fatal Error %s\n",
 				membuf_message[i]);
+#else
+			e752x_;
+#endif
 	}
 }
 
@@ -640,8 +680,12 @@ static void do_sysbus_error(int fatal, u32 errors)
 
 	for (i = 0; i < 10; i++) {
 		if (errors & (1 << i))
+#ifdef CONFIG_DEBUG_PRINTK
 			e752x_printk(KERN_WARNING, "%sError System Bus %s\n",
 				fatal_message[fatal], sysbus_message[i]);
+#else
+			e752x_;
+#endif
 	}
 }
 
@@ -1009,8 +1053,12 @@ static int get_sdram_scrub_rate(struct mem_ctl_info *mci)
 			break;
 
 	if (scrubrates[i].bandwidth == SDRATE_EOT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		e752x_printk(KERN_WARNING,
 			"Invalid sdram scrub control value: 0x%x\n", scrubval);
+#else
+		e752x_;
+#endif
 		return -1;
 	}
 	return scrubrates[i].bandwidth;
@@ -1187,8 +1235,12 @@ static void e752x_init_sysbus_parity_mask(struct e752x_pvt *pvt)
 	if (sysbus_parity != -1) {
 		enable = sysbus_parity;
 	} else if (cpu_id[0] && !strstr(cpu_id, "Xeon")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		e752x_printk(KERN_INFO, "System Bus Parity not "
 			     "supported by CPU, disabling\n");
+#else
+		e752x_;
+#endif
 		enable = 0;
 	}
 
@@ -1240,8 +1292,12 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
 	 * fail the probe. */
 	pci_read_config_byte(pdev, E752X_DEVPRES1, &stat8);
 	if (!force_function_unhide && !(stat8 & (1 << 5))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Contact your BIOS vendor to see if the "
 			"E752x error registers can be safely un-hidden\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 	stat8 |= (1 << 5);
@@ -1309,9 +1365,13 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
 	pvt->remapbase = ((u32) pci_data) << 14;
 	pci_read_config_word(pdev, E752X_REMAPLIMIT, &pci_data);
 	pvt->remaplimit = ((u32) pci_data) << 14;
+#ifdef CONFIG_DEBUG_PRINTK
 	e752x_printk(KERN_INFO,
 			"tolm = %x, remapbase = %x, remaplimit = %x\n",
 			pvt->tolm, pvt->remapbase, pvt->remaplimit);
+#else
+	e752x_;
+#endif
 
 	/* Here we assume that we will never see multiple instances of this
 	 * type of memory controller.  The ID is therefore hardcoded to 0.
@@ -1327,11 +1387,19 @@ static int e752x_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	e752x_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!e752x_pci) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n", __func__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
+#else
+		;
+#endif
 	}
 
 	/* get this far and it's successful */

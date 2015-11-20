@@ -207,7 +207,11 @@ static int hpt3x3_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
 	hpt3x3_init_chipset(pdev);
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, 2);
 	if (!host)

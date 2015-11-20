@@ -458,7 +458,11 @@ static int vfp_pm_suspend(void)
 
 	/* if vfp is on, then save state for resumption */
 	if (fpexc & FPEXC_EN) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: saving vfp state\n", __func__);
+#else
+		;
+#endif
 		vfp_save_state(&ti->vfpstate, fpexc);
 
 		/* disable, just in case */
@@ -742,21 +746,37 @@ static int __init vfp_init(void)
 	barrier();
 	vfp_vector = vfp_null_entry;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "VFP support v0.3: ");
+#else
+	;
+#endif
 	if (VFP_arch)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("not present\n");
+#else
+		;
+#endif
 	else if (vfpsid & FPSID_NODOUBLE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("no double precision support\n");
+#else
+		;
+#endif
 	} else {
 		hotcpu_notifier(vfp_hotplug, 0);
 
 		VFP_arch = (vfpsid & FPSID_ARCH_MASK) >> FPSID_ARCH_BIT;  /* Extract the architecture version */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("implementor %02x architecture %d part %02x variant %x rev %x\n",
 			(vfpsid & FPSID_IMPLEMENTER_MASK) >> FPSID_IMPLEMENTER_BIT,
 			(vfpsid & FPSID_ARCH_MASK) >> FPSID_ARCH_BIT,
 			(vfpsid & FPSID_PART_MASK) >> FPSID_PART_BIT,
 			(vfpsid & FPSID_VARIANT_MASK) >> FPSID_VARIANT_BIT,
 			(vfpsid & FPSID_REV_MASK) >> FPSID_REV_BIT);
+#else
+		;
+#endif
 
 		vfp_vector = vfp_support_entry;
 

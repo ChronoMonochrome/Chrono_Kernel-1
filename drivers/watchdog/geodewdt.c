@@ -100,7 +100,11 @@ static int geodewdt_release(struct inode *inode, struct file *file)
 		geodewdt_disable();
 		module_put(THIS_MODULE);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "Unexpected close - watchdog is not stopping.\n");
+#else
+		;
+#endif
 		geodewdt_ping();
 
 		set_bit(WDT_FLAGS_ORPHAN, &wdt_flags);

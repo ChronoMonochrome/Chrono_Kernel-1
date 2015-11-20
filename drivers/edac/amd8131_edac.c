@@ -176,8 +176,13 @@ static void amd8131_pcix_check(struct edac_pci_ctl_info *edac_dev)
 	/* Check PCI-X Bridge Memory Base-Limit Register for errors */
 	edac_pci_read_dword(dev, REG_MEM_LIM, &val32);
 	if (val32 & MEM_LIMIT_MASK) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Error(s) in mem limit register "
 			"on %s bridge\n", dev_info->ctl_name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "DPE: %d, RSE: %d, RMA: %d\n"
 			"RTA: %d, STA: %d, MDPE: %d\n",
 			val32 & MEM_LIMIT_DPE,
@@ -186,6 +191,9 @@ static void amd8131_pcix_check(struct edac_pci_ctl_info *edac_dev)
 			val32 & MEM_LIMIT_RTA,
 			val32 & MEM_LIMIT_STA,
 			val32 & MEM_LIMIT_MDPE);
+#else
+		;
+#endif
 
 		val32 |= MEM_LIMIT_MASK;
 		edac_pci_write_dword(dev, REG_MEM_LIM, val32);
@@ -196,9 +204,17 @@ static void amd8131_pcix_check(struct edac_pci_ctl_info *edac_dev)
 	/* Check if Discard Timer timed out */
 	edac_pci_read_dword(dev, REG_INT_CTLR, &val32);
 	if (val32 & INT_CTLR_DTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Error(s) in interrupt and control register "
 			"on %s bridge\n", dev_info->ctl_name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "DTS: %d\n", val32 & INT_CTLR_DTS);
+#else
+		;
+#endif
 
 		val32 |= INT_CTLR_DTS;
 		edac_pci_write_dword(dev, REG_INT_CTLR, val32);
@@ -209,9 +225,17 @@ static void amd8131_pcix_check(struct edac_pci_ctl_info *edac_dev)
 	/* Check if CRC error happens on link side A */
 	edac_pci_read_dword(dev, REG_LNK_CTRL_A, &val32);
 	if (val32 & LNK_CTRL_CRCERR_A) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Error(s) in link conf and control register "
 			"on %s bridge\n", dev_info->ctl_name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CRCERR: %d\n", val32 & LNK_CTRL_CRCERR_A);
+#else
+		;
+#endif
 
 		val32 |= LNK_CTRL_CRCERR_A;
 		edac_pci_write_dword(dev, REG_LNK_CTRL_A, val32);
@@ -222,9 +246,17 @@ static void amd8131_pcix_check(struct edac_pci_ctl_info *edac_dev)
 	/* Check if CRC error happens on link side B */
 	edac_pci_read_dword(dev, REG_LNK_CTRL_B, &val32);
 	if (val32 & LNK_CTRL_CRCERR_B) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Error(s) in link conf and control register "
 			"on %s bridge\n", dev_info->ctl_name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CRCERR: %d\n", val32 & LNK_CTRL_CRCERR_B);
+#else
+		;
+#endif
 
 		val32 |= LNK_CTRL_CRCERR_B;
 		edac_pci_write_dword(dev, REG_LNK_CTRL_B, val32);
@@ -302,10 +334,14 @@ static int amd8131_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "added one device on AMD8131 "
 		"vendor %x, device %x, devfn %x, name %s\n",
 		PCI_VENDOR_ID_AMD, amd8131_chipset.err_dev,
 		dev_info->devfn, dev_info->ctl_name);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -357,8 +393,16 @@ static struct pci_driver amd8131_edac_driver = {
 
 static int __init amd8131_edac_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "AMD8131 EDAC driver " AMD8131_EDAC_REVISION "\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "\t(c) 2008 Wind River Systems, Inc.\n");
+#else
+	;
+#endif
 
 	/* Only POLL mode supported so far */
 	edac_op_state = EDAC_OPSTATE_POLL;

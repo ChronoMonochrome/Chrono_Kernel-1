@@ -2916,9 +2916,13 @@ static int wq_clamp_max_active(int max_active, unsigned int flags,
 	int lim = flags & WQ_UNBOUND ? WQ_UNBOUND_MAX_ACTIVE : WQ_MAX_ACTIVE;
 
 	if (max_active < 1 || max_active > lim)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "workqueue: max_active %d requested for %s "
 		       "is out of range, clamping between %d and %d\n",
 		       max_active, name, 1, lim);
+#else
+		;
+#endif
 
 	return clamp_val(max_active, 1, lim);
 }
@@ -3069,9 +3073,13 @@ reflush:
 
 		if (++flush_cnt == 10 ||
 		    (flush_cnt % 100 == 0 && flush_cnt <= 1000))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "workqueue %s: flush on "
 			       "destruction isn't complete after %u tries\n",
 			       wq->name, flush_cnt);
+#else
+			;
+#endif
 		goto reflush;
 	}
 

@@ -342,7 +342,11 @@ static int pci1723_attach(struct comedi_device *dev,
 
 	ret = alloc_private(dev, sizeof(struct pci1723_private));
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" - Allocation failed!\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -403,7 +407,11 @@ static int pci1723_attach(struct comedi_device *dev,
 
 	ret = alloc_subdevices(dev, n_subdevices);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" - Allocation failed!\n");
+#else
+		;
+#endif
 		return ret;
 	}
 

@@ -119,13 +119,21 @@ static int __devinit cs5520_init_one(struct pci_dev *dev, const struct pci_devic
 	 * BARS too and we will freak out other bits of the kernel
 	 */
 	if (pci_enable_device_io(dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Unable to enable 55x0.\n", d->name);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 	pci_set_master(dev);
 	if (pci_set_dma_mask(dev, DMA_BIT_MASK(32))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: No suitable DMA available.\n",
 			d->name);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 

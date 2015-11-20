@@ -54,15 +54,23 @@ static void * prism2_wep_init(int keyidx)
 
 	priv->tx_tfm = crypto_alloc_blkcipher("ecb(arc4)", 0, CRYPTO_ALG_ASYNC);
         if (IS_ERR(priv->tx_tfm)) {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG "ieee80211_crypt_wep: could not allocate "
                        "crypto API arc4\n");
+#else
+                ;
+#endif
                 priv->tx_tfm = NULL;
                 goto fail;
         }
         priv->rx_tfm = crypto_alloc_blkcipher("ecb(arc4)", 0, CRYPTO_ALG_ASYNC);
         if (IS_ERR(priv->rx_tfm)) {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG "ieee80211_crypt_wep: could not allocate "
                        "crypto API arc4\n");
+#else
+                ;
+#endif
                 priv->rx_tfm = NULL;
                 goto fail;
         }

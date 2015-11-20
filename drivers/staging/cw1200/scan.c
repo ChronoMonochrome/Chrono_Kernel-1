@@ -48,8 +48,12 @@ int cw1200_hw_scan(struct ieee80211_hw *hw,
 	if (req->n_ssids == 1 && !req->ssids[0].ssid_len)
 		req->n_ssids = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[SCAN] Scan request for %d SSIDs.\n",
 		req->n_ssids);
+#else
+	;
+#endif
 
 	if (req->n_ssids > WSM_SCAN_MAX_NUM_OF_SSIDS)
 		return -EINVAL;
@@ -143,9 +147,17 @@ void cw1200_scan_work(struct work_struct *work)
 			WARN_ON(wsm_set_pm(priv, &priv->powersave_mode));
 
 		if (priv->scan.req)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[SCAN] Scan completed.\n");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[SCAN] Scan canceled.\n");
+#else
+			;
+#endif
 
 		priv->scan.req = NULL;
 
@@ -153,9 +165,13 @@ void cw1200_scan_work(struct work_struct *work)
 			priv->delayed_link_loss = 0;
 			/* Restart beacon loss timer and requeue
 			   BSS loss work. */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[CQM] Requeue BSS loss in %d " \
 					"beacons.\n",
 				priv->cqm_beacon_loss_count);
+#else
+			;
+#endif
 			cancel_delayed_work_sync(&priv->bss_loss_work);
 			queue_delayed_work(priv->workqueue,
 					&priv->bss_loss_work,
@@ -229,14 +245,22 @@ fail:
 static void cw1200_scan_complete(struct cw1200_common *priv)
 {
 	if (priv->scan.direct_probe) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[SCAN] Direct probe complete.\n");
+#else
+		;
+#endif
 		priv->scan.direct_probe = 0;
 
 		if (priv->delayed_link_loss) {
 			priv->delayed_link_loss = 0;
 			/* Requeue BSS loss work now. Direct probe does not
 			 * affect BSS loss subscription. */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "[CQM] Requeue BSS loss now.\n");
+#else
+			;
+#endif
 			cancel_delayed_work_sync(&priv->bss_loss_work);
 			queue_delayed_work(priv->workqueue,
 						&priv->bss_loss_work, 0);
@@ -305,7 +329,11 @@ void cw1200_probe_work(struct work_struct *work)
 	size_t ies_len;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "[SCAN] Direct probe work.\n");
+#else
+	;
+#endif
 
 	if (!priv->channel) {
 		dev_kfree_skb(priv->scan.probe_skb);

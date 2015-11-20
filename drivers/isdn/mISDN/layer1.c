@@ -107,7 +107,11 @@ l1m_debug(struct FsmInst *fi, char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &va;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: %pV\n", dev_name(&l1->dch->dev.dev), &vaf);
+#else
+	;
+#endif
 
 	va_end(va);
 }
@@ -357,8 +361,12 @@ l1_event(struct layer1 *l1, u_int event)
 		break;
 	default:
 		if (*debug & DEBUG_L1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s %x unhandled\n",
 			    __func__, event);
+#else
+			;
+#endif
 		err = -EINVAL;
 	}
 	return err;

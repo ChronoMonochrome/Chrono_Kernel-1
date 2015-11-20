@@ -215,7 +215,11 @@ static int s3c_nand_calc_rate(int wanted, unsigned long clk, int max)
 	pr_debug("result %d from %ld, %d\n", result, clk, wanted);
 
 	if (result > max) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%d ns is too big for current clock rate %ld\n", wanted, clk);
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1144,7 +1148,11 @@ static struct platform_driver s3c24xx_nand_driver = {
 
 static int __init s3c2410_nand_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("S3C24XX NAND Driver, (c) 2004 Simtec Electronics\n");
+#else
+	;
+#endif
 
 	return platform_driver_register(&s3c24xx_nand_driver);
 }

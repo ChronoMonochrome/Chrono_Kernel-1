@@ -178,13 +178,21 @@ static unsigned char __snd_opl3sa2_read(struct snd_opl3sa2 *chip, unsigned char 
 	unsigned char result;
 #if 0
 	outb(0x1d, port);	/* password */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "read [0x%lx] = 0x%x\n", port, inb(port));
+#else
+	;
+#endif
 #endif
 	outb(reg, chip->port);	/* register */
 	result = inb(chip->port + 1);
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "read [0x%lx] = 0x%x [0x%x]\n",
 	       port, result, inb(port));
+#else
+	;
+#endif
 #endif
 	return result;
 }
@@ -234,8 +242,12 @@ static int __devinit snd_opl3sa2_detect(struct snd_card *card)
 		return -EBUSY;
 	}
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "REG 0A = 0x%x\n",
 		   snd_opl3sa2_read(chip, 0x0a));
+#else
+	;
+#endif
 	*/
 	chip->version = 0;
 	tmp = snd_opl3sa2_read(chip, OPL3SA2_MISC);

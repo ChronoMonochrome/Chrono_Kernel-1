@@ -4087,7 +4087,11 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
 {
 	struct cgroup_subsys_state *css;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Initializing cgroup subsys %s\n", ss->name);
+#else
+	;
+#endif
 
 	/* Create the top cgroup state for this subsystem */
 	list_add(&ss->sibling, &rootnode.subsys_list);
@@ -4830,8 +4834,12 @@ static int __init cgroup_disable(char *str)
 
 			if (!strcmp(token, ss->name)) {
 				ss->disabled = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "Disabling %s control group"
 					" subsystem\n", ss->name);
+#else
+				;
+#endif
 				break;
 			}
 		}

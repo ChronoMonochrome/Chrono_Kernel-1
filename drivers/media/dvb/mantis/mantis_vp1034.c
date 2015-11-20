@@ -49,20 +49,36 @@ int vp1034_set_voltage(struct dvb_frontend *fe, fe_sec_voltage_t voltage)
 
 	switch (voltage) {
 	case SEC_VOLTAGE_13:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Polarization=[13V]");
+#else
+		d;
+#endif
 		mantis_gpio_set_bits(mantis, 13, 1);
 		mantis_gpio_set_bits(mantis, 14, 0);
 		break;
 	case SEC_VOLTAGE_18:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Polarization=[18V]");
+#else
+		d;
+#endif
 		mantis_gpio_set_bits(mantis, 13, 1);
 		mantis_gpio_set_bits(mantis, 14, 1);
 		break;
 	case SEC_VOLTAGE_OFF:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Frontend (dummy) POWERDOWN");
+#else
+		d;
+#endif
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Invalid = (%d)", (u32) voltage);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	mmwrite(0x00, MANTIS_GPIF_DOUT);
@@ -81,25 +97,41 @@ static int vp1034_frontend_init(struct mantis_pci *mantis, struct dvb_frontend *
 		mantis_frontend_soft_reset(mantis);
 		msleep(250);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Probing for MB86A16 (DVB-S/DSS)");
+#else
+		d;
+#endif
 		fe = dvb_attach(mb86a16_attach, &vp1034_mb86a16_config, adapter);
 		if (fe) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(MANTIS_ERROR, 1,
 			"found MB86A16 DVB-S/DSS frontend @0x%02x",
 			vp1034_mb86a16_config.demod_address);
+#else
+			d;
+#endif
 
 		} else {
 			return -1;
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Frontend on <%s> POWER ON failed! <%d>",
 			adapter->name,
 			err);
+#else
+		d;
+#endif
 
 		return -EIO;
 	}
 	mantis->fe = fe;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "Done!");
+#else
+	d;
+#endif
 
 	return 0;
 }

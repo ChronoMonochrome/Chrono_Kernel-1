@@ -767,8 +767,12 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	struct pci_dev *pci_dev = NULL;
 	int i = 0, irq_hdl, rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: amplc_pci230: attach %s %d,%d\n", dev->minor,
 	       thisboard->name, it->options[0], it->options[1]);
+#else
+	;
+#endif
 
 	/* Allocate the private structure area using alloc_private().
 	 * Macro defined in comedidev.h - memsets struct fields to 0. */
@@ -842,8 +846,12 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 	}
 	if (!pci_dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: No %s card found\n", dev->minor,
 		       thisboard->name);
+#else
+		;
+#endif
 		return -EIO;
 	}
 	devpriv->pci_dev = pci_dev;
@@ -855,8 +863,12 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	/* Enable PCI device and reserve I/O spaces. */
 	if (comedi_pci_enable(pci_dev, "amplc_pci230") < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: failed to enable PCI device "
 		       "and request regions\n", dev->minor);
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -865,8 +877,12 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	iobase1 = pci_resource_start(pci_dev, 2);
 	iobase2 = pci_resource_start(pci_dev, 3);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: %s I/O region 1 0x%04lx I/O region 2 0x%04lx\n",
 	       dev->minor, dev->board_name, iobase1, iobase2);
+#else
+	;
+#endif
 
 	devpriv->iobase1 = iobase1;
 	dev->iobase = iobase2;
@@ -881,10 +897,14 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 		devpriv->hwver = inw(dev->iobase + PCI230P_HWVER);
 		if (devpriv->hwver < thisboard->min_hwver) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("comedi%d: %s - bad hardware version "
 			       "- got %u, need %u\n", dev->minor,
 			       dev->board_name, devpriv->hwver,
 			       thisboard->min_hwver);
+#else
+			;
+#endif
 			return -EIO;
 		}
 		if (devpriv->hwver > 0) {
@@ -932,13 +952,21 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	irq_hdl = request_irq(devpriv->pci_dev->irq, pci230_interrupt,
 			      IRQF_SHARED, "amplc_pci230", dev);
 	if (irq_hdl < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: unable to register irq, "
 		       "commands will not be available %d\n", dev->minor,
 		       devpriv->pci_dev->irq);
+#else
+		;
+#endif
 	} else {
 		dev->irq = devpriv->pci_dev->irq;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: registered irq %u\n", dev->minor,
 		       devpriv->pci_dev->irq);
+#else
+		;
+#endif
 	}
 
 	/*
@@ -1001,7 +1029,11 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		s->type = COMEDI_SUBD_UNUSED;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: attached\n", dev->minor);
+#else
+	;
+#endif
 
 	return 1;
 }
@@ -1016,7 +1048,11 @@ static int pci230_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  */
 static int pci230_detach(struct comedi_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("comedi%d: amplc_pci230: remove\n", dev->minor);
+#else
+	;
+#endif
 
 	if (dev->subdevices && thisboard->have_dio)
 		/* Clean up dio subdevice. */
@@ -1203,9 +1239,13 @@ static int pci230_ai_rinsn(struct comedi_device *dev,
 			udelay(1);
 		}
 		if (i == TIMEOUT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			/* printk() should be used instead of printk()
 			 * whenever the code can be called from real-time. */
 			printk("timeout\n");
+#else
+			/* ;
+#endif
 			return -ETIMEDOUT;
 		}
 
@@ -2079,12 +2119,16 @@ static int pci230_ai_cmdtest(struct comedi_device *dev,
 			}
 			if ((errors & buggy_chan0_err) != 0) {
 				/* Use printk instead of DPRINTK here. */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("comedi: comedi%d: amplc_pci230: "
 				       "ai_cmdtest: Buggy PCI230+/260+ "
 				       "h/w version %u requires first channel "
 				       "of multi-channel sequence to be 0 "
 				       "(corrected in h/w version 4)\n",
 				       dev->minor, devpriv->hwver);
+#else
+				;
+#endif
 			}
 		}
 	}

@@ -120,7 +120,11 @@ pas_mixer_set(int whichDev, unsigned int level)
 {
 	int             left, right, devmask, changed, i, mixer = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("static int pas_mixer_set(int whichDev = %d, unsigned int level = %X)\n", whichDev, level));
+#else
+	DEB(;
+#endif
 
 	left = level & 0x7f;
 	right = (level & 0x7f00) >> 8;
@@ -207,7 +211,11 @@ pas_mixer_reset(void)
 {
 	int             foo;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_mixer.c: void pas_mixer_reset(void)\n"));
+#else
+	DEB(;
+#endif
 
 	for (foo = 0; foo < SOUND_MIXER_NRDEVICES; foo++)
 		pas_mixer_set(foo, levels[foo]);
@@ -220,7 +228,11 @@ static int pas_mixer_ioctl(int dev, unsigned int cmd, void __user *arg)
 	int level,v ;
 	int __user *p = (int __user *)arg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("pas2_mixer.c: int pas_mixer_ioctl(unsigned int cmd = %X, unsigned int arg = %X)\n", cmd, arg));
+#else
+	DEB(;
+#endif
 	if (cmd == SOUND_MIXER_PRIVATE1) { /* Set loudness bit */
 		if (get_user(level, p))
 			return -EFAULT;

@@ -39,7 +39,11 @@ static inline int m920x_read(struct usb_device *udev, u8 request, u16 value,
 			      request, USB_TYPE_VENDOR | USB_DIR_IN,
 			      value, index, data, size, 2000);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "m920x_read = error: %d\n", ret);
+#else
+		;
+#endif
 		return ret;
 	}
 
@@ -94,7 +98,11 @@ static int m920x_init(struct dvb_usb_device *d, struct m920x_inits *rc_seq)
 			epi = d->adapter[i].props.stream.endpoint - 0x81;
 
 			if (epi < 0 || epi >= M9206_MAX_ADAPTERS) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "m920x: Unexpected adapter endpoint!\n");
+#else
+				;
+#endif
 				return -EINVAL;
 			}
 

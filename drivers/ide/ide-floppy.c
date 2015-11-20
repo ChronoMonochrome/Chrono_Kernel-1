@@ -343,10 +343,14 @@ static int ide_floppy_get_flexible_disk_page(ide_drive_t *drive,
 	capacity = cyls * heads * sectors * sector_size;
 
 	if (memcmp(page, &floppy->flexible_disk_page, 32))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "%s: %dkB, %d/%d/%d CHS, %d kBps, "
 				"%d sector size, %d rpm\n",
 				drive->name, capacity / 1024, cyls, heads,
 				sectors, transfer_rate / 8, sector_size, rpm);
+#else
+		;
+#endif
 
 	memcpy(&floppy->flexible_disk_page, page, 32);
 	drive->bios_cyl = cyls;
@@ -355,9 +359,13 @@ static int ide_floppy_get_flexible_disk_page(ide_drive_t *drive,
 	lba_capacity = floppy->blocks * floppy->block_size;
 
 	if (capacity < lba_capacity) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE PFX "%s: The disk reports a capacity of %d "
 			"bytes, but the drive only handles %d\n",
 			drive->name, lba_capacity, capacity);
+#else
+		;
+#endif
 		floppy->blocks = floppy->block_size ?
 			capacity / floppy->block_size : 0;
 		drive->capacity64 = floppy->blocks * floppy->bs_factor;
@@ -425,24 +433,36 @@ static int ide_floppy_get_capacity(ide_drive_t *drive)
 		case CAPACITY_CURRENT:
 			/* Normal Zip/LS-120 disks */
 			if (memcmp(cap_desc, &floppy->cap_desc, 8))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PFX "%s: %dkB, %d blocks, %d "
 				       "sector size\n",
 				       drive->name, blocks * length / 1024,
 				       blocks, length);
+#else
+				;
+#endif
 			memcpy(&floppy->cap_desc, cap_desc, 8);
 
 			if (!length || length % 512) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE PFX "%s: %d bytes block size"
 				       " not supported\n", drive->name, length);
+#else
+				;
+#endif
 			} else {
 				floppy->blocks = blocks;
 				floppy->block_size = length;
 				floppy->bs_factor = length / 512;
 				if (floppy->bs_factor != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_NOTICE PFX "%s: Warning: "
 					       "non 512 bytes block size not "
 					       "fully supported\n",
 					       drive->name);
+#else
+					;
+#endif
 				drive->capacity64 =
 					floppy->blocks * floppy->bs_factor;
 				rc = 0;

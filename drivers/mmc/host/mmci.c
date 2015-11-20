@@ -1649,10 +1649,18 @@ static ssize_t mmci_sd_detection_cmd_show(struct device *dev,
 	
 #ifdef SD_HW_NODETECTION
 	 if (host->mmc->card) {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG "sdcc3: card inserted.\n");
+#else
+                ;
+#endif
                 return sprintf(buf, "Insert\n");
         } else {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_DEBUG "sdcc3: card removed.\n");
+#else
+                ;
+#endif
                 return sprintf(buf, "Remove\n");
         }
 #else
@@ -1913,7 +1921,11 @@ static int __devinit mmci_probe(struct amba_device *dev,
 		&& !(mmc->caps & MMC_CAP_NONREMOVABLE)){
 
 		if(mmc->index == 2)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("WLAN is not setting MMC_CAP_NEEDS_POLL\n");
+#else
+			;
+#endif
 		else
 		mmc->caps |= MMC_CAP_NEEDS_POLL;
 	}

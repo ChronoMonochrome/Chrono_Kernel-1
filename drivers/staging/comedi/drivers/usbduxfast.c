@@ -214,11 +214,23 @@ static int send_dux_commands(struct usbduxfastsub_s *udfs, int cmd_type)
 	udfs->dux_commands[0] = cmd_type;
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast: dux_commands: ",
 	       udfs->comedidev->minor);
+#else
+	;
+#endif
 	for (tmp = 0; tmp < SIZEOFDUXBUFFER; tmp++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %02x", udfs->dux_commands[tmp]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 
 	tmp = usb_bulk_msg(udfs->usbdev,
@@ -246,7 +258,11 @@ static int usbduxfastsub_unlink_InURBs(struct usbduxfastsub_s *udfs)
 		j = 0;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: usbduxfast: unlinked InURB: res=%d\n", j);
+#else
+	;
+#endif
 #endif
 	return err;
 }
@@ -265,7 +281,11 @@ static int usbduxfast_ai_stop(struct usbduxfastsub_s *udfs, int do_unlink)
 		return -EFAULT;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: usbduxfast_ai_stop\n");
+#else
+	;
+#endif
 #endif
 
 	udfs->ai_cmd_running = 0;
@@ -289,7 +309,11 @@ static int usbduxfast_ai_cancel(struct comedi_device *dev,
 
 	/* force unlink of all urbs */
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: usbduxfast_ai_cancel\n");
+#else
+	;
+#endif
 #endif
 	udfs = dev->private;
 	if (!udfs) {
@@ -379,9 +403,13 @@ static void usbduxfastsub_ai_Irq(struct urb *urb)
 		return;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi%d: usbduxfast: non-zero urb status received in "
 		       "ai intr context: %d\n",
 		       udfs->comedidev->minor, urb->status);
+#else
+		;
+#endif
 		s->async->events |= COMEDI_CB_EOA;
 		s->async->events |= COMEDI_CB_ERROR;
 		comedi_event(udfs->comedidev, s);
@@ -462,7 +490,11 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
 				1,	/* Length */
 				EZTIMEOUT);	/* Timeout */
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("comedi_: usbduxfast_: control msg failed (start)\n");
+#else
+		;
+#endif
 		return ret;
 	}
 
@@ -499,9 +531,17 @@ static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
 	int ret;
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi: usbduxfast: uploading %d bytes", len);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " to addr %d, first byte=%d.\n",
 	       startAddr, local_transfer_buffer[0]);
+#else
+	;
+#endif
 #endif
 	/* brequest, firmware */
 	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
@@ -514,7 +554,11 @@ static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
 				EZTIMEOUT);	/* timeout */
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi_: usbduxfast: result=%d\n", ret);
+#else
+	;
+#endif
 #endif
 
 	if (ret < 0) {
@@ -538,9 +582,13 @@ static int usbduxfastsub_submit_InURBs(struct usbduxfastsub_s *udfs)
 			  SIZEINBUF, usbduxfastsub_ai_Irq, udfs->comedidev);
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast: submitting in-urb: "
 	       "0x%p,0x%p\n", udfs->comedidev->minor, udfs->urbIn->context,
 	       udfs->urbIn->dev);
+#else
+	;
+#endif
 #endif
 	ret = usb_submit_urb(udfs->urbIn, GFP_ATOMIC);
 	if (ret) {
@@ -564,10 +612,18 @@ static int usbduxfast_ai_cmdtest(struct comedi_device *dev,
 		return -ENODEV;
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast_ai_cmdtest\n", dev->minor);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast: convert_arg=%u "
 	       "scan_begin_arg=%u\n",
 	       dev->minor, cmd->convert_arg, cmd->scan_begin_arg);
+#else
+	;
+#endif
 #endif
 	/* step 1: make sure trigger sources are trivially valid */
 
@@ -710,7 +766,11 @@ static int usbduxfast_ai_inttrig(struct comedi_device *dev,
 		return -ENODEV;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast_ai_inttrig\n", dev->minor);
+#else
+	;
+#endif
 #endif
 
 	if (trignum != 0) {
@@ -758,7 +818,11 @@ static int usbduxfast_ai_cmd(struct comedi_device *dev,
 	long steps, steps_tmp;
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast_ai_cmd\n", dev->minor);
+#else
+	;
+#endif
 #endif
 	udfs = dev->private;
 	if (!udfs)
@@ -841,8 +905,12 @@ static int usbduxfast_ai_cmd(struct comedi_device *dev,
 		return -EINVAL;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast: steps=%ld, convert_arg=%u\n",
 	       dev->minor, steps, cmd->convert_arg);
+#else
+	;
+#endif
 #endif
 
 	switch (cmd->chanlist_len) {
@@ -1160,8 +1228,12 @@ static int usbduxfast_ai_cmd(struct comedi_device *dev,
 	}
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi %d: sending commands to the usb device\n",
 	       dev->minor);
+#else
+	;
+#endif
 #endif
 	/* 0 means that the AD commands are sent */
 	result = send_dux_commands(udfs, SENDADCOMMANDS);
@@ -1230,8 +1302,12 @@ static int usbduxfast_ai_insn_read(struct comedi_device *dev,
 		return -ENODEV;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: ai_insn_read, insn->n=%d, "
 	       "insn->subdev=%d\n", dev->minor, insn->n, insn->subdev);
+#else
+	;
+#endif
 #endif
 	down(&udfs->sem);
 	if (!udfs->probed) {
@@ -1294,8 +1370,12 @@ static int usbduxfast_ai_insn_read(struct comedi_device *dev,
 	udfs->dux_commands[LOGBASE + 0] = 0;
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi %d: sending commands to the usb device\n",
 	       dev->minor);
+#else
+	;
+#endif
 #endif
 	/* 0 means that the AD commands are sent */
 	err = send_dux_commands(udfs, SENDADCOMMANDS);
@@ -1306,9 +1386,13 @@ static int usbduxfast_ai_insn_read(struct comedi_device *dev,
 		return err;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast: submitting in-urb: "
 	       "0x%p,0x%p\n", udfs->comedidev->minor, udfs->urbIn->context,
 	       udfs->urbIn->dev);
+#else
+	;
+#endif
 #endif
 	for (i = 0; i < PACKETS_TO_IGNORE; i++) {
 		err = usb_bulk_msg(udfs->usbdev,
@@ -1404,7 +1488,11 @@ static int firmwareUpload(struct usbduxfastsub_s *usbduxfastsub,
 static void tidy_up(struct usbduxfastsub_s *udfs)
 {
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi_: usbduxfast: tiding up\n");
+#else
+	;
+#endif
 #endif
 
 	if (!udfs)
@@ -1480,8 +1568,12 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 		return -ENODEV;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi_: usbduxfast_: finding a free structure for "
 	       "the usb-device\n");
+#else
+	;
+#endif
 #endif
 	down(&start_stop_sem);
 	/* look for a free place in the usbduxfast array */
@@ -1500,8 +1592,12 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 		return -EMFILE;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi_: usbduxfast: usbduxfastsub[%d] is ready to "
 	       "connect to comedi.\n", index);
+#else
+	;
+#endif
 #endif
 
 	sema_init(&(usbduxfastsub[index].sem), 1);
@@ -1519,8 +1615,12 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 	usb_set_intfdata(uinterf, &(usbduxfastsub[index]));
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi_: usbduxfast: ifnum=%d\n",
 	       usbduxfastsub[index].ifnum);
+#else
+	;
+#endif
 #endif
 	/* create space for the commands going to the usb device */
 	usbduxfastsub[index].dux_commands = kmalloc(SIZEOFDUXBUFFER,
@@ -1584,8 +1684,12 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi_: usbduxfast%d has been successfully "
 	       "initialized.\n", index);
+#else
+	;
+#endif
 	/* success */
 	return 0;
 }
@@ -1615,7 +1719,11 @@ static void usbduxfastsub_disconnect(struct usb_interface *intf)
 	up(&start_stop_sem);
 
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi_: usbduxfast: disconnected from the usb\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -1679,8 +1787,12 @@ static int usbduxfast_attach(struct comedi_device *dev,
 		return ret;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: usbduxfast: usb-device %d is attached to "
 	       "comedi.\n", dev->minor, index);
+#else
+	;
+#endif
 	/* private structure is also simply the usb-structure */
 	dev->private = usbduxfastsub + index;
 	/* the first subdevice is the A/D converter */
@@ -1715,8 +1827,12 @@ static int usbduxfast_attach(struct comedi_device *dev,
 
 	up(&(usbduxfastsub[index].sem));
 	up(&start_stop_sem);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: successfully attached to usbduxfast.\n",
 	       dev->minor);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -1731,8 +1847,12 @@ static int usbduxfast_detach(struct comedi_device *dev)
 		return -EFAULT;
 	}
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast: detach usb device\n",
 	       dev->minor);
+#else
+	;
+#endif
 #endif
 
 	udfs = dev->private;
@@ -1752,8 +1872,12 @@ static int usbduxfast_detach(struct comedi_device *dev)
 	udfs->attached = 0;
 	udfs->comedidev = NULL;
 #ifdef CONFIG_COMEDI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: usbduxfast: detach: successfully "
 	       "removed\n", dev->minor);
+#else
+	;
+#endif
 #endif
 	up(&start_stop_sem);
 	up(&udfs->sem);
@@ -1801,8 +1925,12 @@ static struct usb_driver usbduxfastsub_driver = {
  */
 static int __init init_usbduxfast(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       KBUILD_MODNAME ": " DRIVER_VERSION ":" DRIVER_DESC "\n");
+#else
+	;
+#endif
 	usb_register(&usbduxfastsub_driver);
 	comedi_driver_register(&driver_usbduxfast);
 	return 0;

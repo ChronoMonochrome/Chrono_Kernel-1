@@ -34,7 +34,11 @@
 	\
 	memcpy(temp, Address, 40);\
 	for (i = 0; i <40; i+=4)\
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\r\n %08x", temp[i]);\
+#else
+		;
+#endif
 }\
 /*---------------------------Define functions---------------------------------*/
 

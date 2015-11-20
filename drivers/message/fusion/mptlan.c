@@ -170,18 +170,30 @@ lan_reply (MPT_ADAPTER *ioc, MPT_FRAME_HDR *mf, MPT_FRAME_HDR *reply)
 	struct net_device *dev = ioc->netdev;
 	int FreeReqFrame = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": %s/%s: Got reply.\n",
 		  IOC_AND_NETDEV_NAMES_s_s(dev)));
+#else
+	dio;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 //	dioprintk((KERN_INFO MYNAM "@lan_reply: mf = %p, reply = %p\n",
 //			mf, reply));
+#else
+//	dio;
+#endif
 
 	if (mf == NULL) {
 		u32 tmsg = CAST_PTR_TO_U32(reply);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dioprintk((KERN_INFO MYNAM ": %s/%s: @lan_reply, tmsg %08x\n",
 				IOC_AND_NETDEV_NAMES_s_s(dev),
 				tmsg));
+#else
+		dio;
+#endif
 
 		switch (GET_LAN_FORM(tmsg)) {
 
@@ -190,15 +202,23 @@ lan_reply (MPT_ADAPTER *ioc, MPT_FRAME_HDR *mf, MPT_FRAME_HDR *reply)
 		//  is now skipped for this case!
 #if 0
 		case LAN_REPLY_FORM_MESSAGE_CONTEXT:
+#ifdef CONFIG_DEBUG_PRINTK
 //			dioprintk((KERN_INFO MYNAM "/lan_reply: "
 //				  "MessageContext turbo reply received\n"));
+#else
+//			dio;
+#endif
 			FreeReqFrame = 1;
 			break;
 #endif
 
 		case LAN_REPLY_FORM_SEND_SINGLE:
+#ifdef CONFIG_DEBUG_PRINTK
 //			dioprintk((MYNAM "/lan_reply: "
 //				  "calling mpt_lan_send_reply (turbo)\n"));
+#else
+//			dio;
+#endif
 
 			// Potential BUG here?
 			//	FreeReqFrame = mpt_lan_send_turbo(dev, tmsg);
@@ -217,8 +237,12 @@ lan_reply (MPT_ADAPTER *ioc, MPT_FRAME_HDR *mf, MPT_FRAME_HDR *reply)
 			break;
 
 		case LAN_REPLY_FORM_RECEIVE_SINGLE:
+#ifdef CONFIG_DEBUG_PRINTK
 //			dioprintk((KERN_INFO MYNAM "@lan_reply: "
 //				  "rcv-Turbo = %08x\n", tmsg));
+#else
+//			dio;
+#endif
 			mpt_lan_receive_post_turbo(dev, tmsg);
 			break;
 
@@ -235,11 +259,19 @@ lan_reply (MPT_ADAPTER *ioc, MPT_FRAME_HDR *mf, MPT_FRAME_HDR *reply)
 	}
 
 //	msg = (u32 *) reply;
+#ifdef CONFIG_DEBUG_PRINTK
 //	dioprintk((KERN_INFO MYNAM "@lan_reply: msg = %08x %08x %08x %08x\n",
 //		  le32_to_cpu(msg[0]), le32_to_cpu(msg[1]),
 //		  le32_to_cpu(msg[2]), le32_to_cpu(msg[3])));
+#else
+//	dio;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 //	dioprintk((KERN_INFO MYNAM "@lan_reply: Function = %02xh\n",
 //		  reply->u.hdr.Function));
+#else
+//	dio;
+#endif
 
 	switch (reply->u.hdr.Function) {
 
@@ -262,8 +294,12 @@ lan_reply (MPT_ADAPTER *ioc, MPT_FRAME_HDR *mf, MPT_FRAME_HDR *reply)
 			if (!(pRecvRep->MsgFlags & MPI_MSGFLAGS_CONTINUATION_REPLY))
 				FreeReqFrame = 1;
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			dioprintk((KERN_INFO MYNAM "@lan_reply: zero context "
 				  "ReceivePostReply received.\n"));
+#else
+			dio;
+#endif
 		break;
 	}
 
@@ -307,9 +343,13 @@ mpt_lan_ioc_reset(MPT_ADAPTER *ioc, int reset_phase)
 	else
 		priv = netdev_priv(dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM ": IOC %s_reset routed to LAN driver!\n",
 			reset_phase==MPT_IOC_SETUP_RESET ? "setup" : (
 			reset_phase==MPT_IOC_PRE_RESET ? "pre" : "post")));
+#else
+	dl;
+#endif
 
 	if (priv->mpt_rxfidx == NULL)
 		return (1);
@@ -344,7 +384,11 @@ mpt_lan_ioc_reset(MPT_ADAPTER *ioc, int reset_phase)
 static int
 mpt_lan_event_process(MPT_ADAPTER *ioc, EventNotificationReply_t *pEvReply)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM ": MPT event routed to LAN driver!\n"));
+#else
+	dl;
+#endif
 
 	switch (le32_to_cpu(pEvReply->Event)) {
 	case MPI_EVENT_NONE:				/* 00 */
@@ -406,7 +450,11 @@ mpt_lan_open(struct net_device *dev)
 	for (i = 0; i < priv->tx_max_out; i++)
 		priv->mpt_txfidx[++priv->mpt_txfidx_tail] = i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM "@lo: Finished initializing SendCtl\n"));
+#else
+	dl;
+#endif
 
 	priv->mpt_rxfidx = kmalloc(priv->max_buckets_out * sizeof(int),
 				   GFP_KERNEL);
@@ -422,16 +470,36 @@ mpt_lan_open(struct net_device *dev)
 	for (i = 0; i < priv->max_buckets_out; i++)
 		priv->mpt_rxfidx[++priv->mpt_rxfidx_tail] = i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 /**/	dlprintk((KERN_INFO MYNAM "/lo: txfidx contains - "));
+#else
+/**/	dl;
+#endif
 /**/	for (i = 0; i < priv->tx_max_out; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 /**/		dlprintk((" %xh", priv->mpt_txfidx[i]));
+#else
+/**/		dl;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 /**/	dlprintk(("\n"));
+#else
+/**/	dl;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM "/lo: Finished initializing RcvCtl\n"));
+#else
+	dl;
+#endif
 
 	mpt_lan_post_receive_buckets(priv);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO MYNAM ": %s/%s: interface up & active\n",
 			IOC_AND_NETDEV_NAMES_s_s(dev));
+#else
+	;
+#endif
 
 	if (mpt_event_register(LanCtx, mpt_lan_event_process) != 0) {
 		printk (KERN_WARNING MYNAM "/lo: Unable to register for Event"
@@ -441,7 +509,11 @@ mpt_lan_open(struct net_device *dev)
 	}
 
 	netif_start_queue(dev);
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM "/lo: Done.\n"));
+#else
+	dl;
+#endif
 
 	return 0;
 out_mpt_rxfidx:
@@ -498,13 +570,21 @@ mpt_lan_close(struct net_device *dev)
 	unsigned long timeout;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM ": mpt_lan_close called\n"));
+#else
+	dl;
+#endif
 
 	mpt_event_deregister(LanCtx);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM ":lan_close: Posted %d buckets "
 		  "since driver was loaded, %d still out\n",
 		  priv->total_posted,atomic_read(&priv->buckets_out)));
+#else
+	dl;
+#endif
 
 	netif_stop_queue(dev);
 
@@ -516,8 +596,12 @@ mpt_lan_close(struct net_device *dev)
 
 	for (i = 0; i < priv->max_buckets_out; i++) {
 		if (priv->RcvCtl[i].skb != NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 /**/			dlprintk((KERN_INFO MYNAM "/lan_close: bucket %05x "
 /**/				  "is still out\n", i));
+#else
+/**/			dl;
+#endif
 			pci_unmap_single(mpt_dev->pcidev, priv->RcvCtl[i].dma,
 					 priv->RcvCtl[i].len,
 					 PCI_DMA_FROMDEVICE);
@@ -542,8 +626,12 @@ mpt_lan_close(struct net_device *dev)
 
 	atomic_set(&priv->buckets_out, 0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO MYNAM ": %s/%s: interface down & inactive\n",
 			IOC_AND_NETDEV_NAMES_s_s(dev));
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -589,9 +677,13 @@ mpt_lan_send_turbo(struct net_device *dev, u32 tmsg)
 	dev->stats.tx_packets++;
 	dev->stats.tx_bytes += sent->len;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": %s/%s: @%s, skb %p sent.\n",
 			IOC_AND_NETDEV_NAMES_s_s(dev),
 			__func__, sent));
+#else
+	dio;
+#endif
 
 	priv->SendCtl[ctx].skb = NULL;
 	pci_unmap_single(mpt_dev->pcidev, priv->SendCtl[ctx].dma,
@@ -621,8 +713,12 @@ mpt_lan_send_reply(struct net_device *dev, LANSendReply_t *pSendRep)
 
 	count = pSendRep->NumberOfContexts;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": send_reply: IOCStatus: %04x\n",
 		 le16_to_cpu(pSendRep->IOCStatus)));
+#else
+	dio;
+#endif
 
 	/* Add check for Loginfo Flag in IOCStatus */
 
@@ -655,9 +751,13 @@ mpt_lan_send_reply(struct net_device *dev, LANSendReply_t *pSendRep)
 		sent = priv->SendCtl[ctx].skb;
 		dev->stats.tx_bytes += sent->len;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dioprintk((KERN_INFO MYNAM ": %s/%s: @%s, skb %p sent.\n",
 				IOC_AND_NETDEV_NAMES_s_s(dev),
 				__func__, sent));
+#else
+		dio;
+#endif
 
 		priv->SendCtl[ctx].skb = NULL;
 		pci_unmap_single(mpt_dev->pcidev, priv->SendCtl[ctx].dma,
@@ -695,8 +795,12 @@ mpt_lan_sdu_send (struct sk_buff *skb, struct net_device *dev)
 	int ctx;
 	u16 cur_naa = 0x1000;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": %s called, skb_addr = %p\n",
 			__func__, skb));
+#else
+	dio;
+#endif
 
 	spin_lock_irqsave(&priv->txfidx_lock, flags);
 	if (priv->mpt_txfidx_tail < 0) {
@@ -721,8 +825,12 @@ mpt_lan_sdu_send (struct sk_buff *skb, struct net_device *dev)
 	ctx = priv->mpt_txfidx[priv->mpt_txfidx_tail--];
 	spin_unlock_irqrestore(&priv->txfidx_lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 //	dioprintk((KERN_INFO MYNAM ": %s/%s: Creating new msg frame (send).\n",
 //			IOC_AND_NETDEV_NAMES_s_s(dev)));
+#else
+//	dio;
+#endif
 
 	pSendReq = (LANSendRequest_t *) mf;
 
@@ -756,9 +864,13 @@ mpt_lan_sdu_send (struct sk_buff *skb, struct net_device *dev)
 	pTrans->Flags         = 0;
 	pTrans->TransactionContext[0] = cpu_to_le32(ctx);
 
+#ifdef CONFIG_DEBUG_PRINTK
 //	dioprintk((KERN_INFO MYNAM ": %s/%s: BC = %08x, skb = %p, buff = %p\n",
 //			IOC_AND_NETDEV_NAMES_s_s(dev),
 //			ctx, skb, skb->data));
+#else
+//	dio;
+#endif
 
 	mac = skb_mac_header(skb);
 
@@ -793,9 +905,13 @@ mpt_lan_sdu_send (struct sk_buff *skb, struct net_device *dev)
 	mpt_put_msg_frame (LanCtx, mpt_dev, mf);
 	dev->trans_start = jiffies;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": %s/%s: Sending packet. FlagsLength = %08x.\n",
 			IOC_AND_NETDEV_NAMES_s_s(dev),
 			le32_to_cpu(pSimple->FlagsLength)));
+#else
+	dio;
+#endif
 
 	return NETDEV_TX_OK;
 }
@@ -814,11 +930,19 @@ mpt_lan_wake_post_buckets_task(struct net_device *dev, int priority)
 			schedule_delayed_work(&priv->post_buckets_task, 0);
 		} else {
 			schedule_delayed_work(&priv->post_buckets_task, 1);
+#ifdef CONFIG_DEBUG_PRINTK
 			dioprintk((KERN_INFO MYNAM ": post_buckets queued on "
 				   "timer.\n"));
+#else
+			dio;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 	        dioprintk((KERN_INFO MYNAM ": %s/%s: Queued post_buckets task.\n",
 			   IOC_AND_NETDEV_NAMES_s_s(dev) ));
+#else
+	        dio;
+#endif
 	}
 }
 
@@ -830,9 +954,13 @@ mpt_lan_receive_skb(struct net_device *dev, struct sk_buff *skb)
 
 	skb->protocol = mpt_lan_type_trans(skb, dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": %s/%s: Incoming packet (%d bytes) "
 		 "delivered to upper level.\n",
 			IOC_AND_NETDEV_NAMES_s_s(dev), skb->len));
+#else
+	dio;
+#endif
 
 	dev->stats.rx_bytes += skb->len;
 	dev->stats.rx_packets++;
@@ -840,15 +968,23 @@ mpt_lan_receive_skb(struct net_device *dev, struct sk_buff *skb)
 	skb->dev = dev;
 	netif_rx(skb);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((MYNAM "/receive_skb: %d buckets remaining\n",
 		 atomic_read(&priv->buckets_out)));
+#else
+	dio;
+#endif
 
 	if (atomic_read(&priv->buckets_out) < priv->bucketthresh)
 		mpt_lan_wake_post_buckets_task(dev, 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM "/receive_post_reply: %d buckets "
 		  "remaining, %d received back since sod\n",
 		  atomic_read(&priv->buckets_out), priv->total_received));
+#else
+	dio;
+#endif
 
 	return 0;
 }
@@ -923,8 +1059,12 @@ mpt_lan_receive_post_free(struct net_device *dev,
 
 	count = pRecvRep->NumberOfContexts;
 
+#ifdef CONFIG_DEBUG_PRINTK
 /**/	dlprintk((KERN_INFO MYNAM "/receive_post_reply: "
 		  "IOC returned %d buckets, freeing them...\n", count));
+#else
+/**/	dl;
+#endif
 
 	spin_lock_irqsave(&priv->rxfidx_lock, flags);
 	for (i = 0; i < count; i++) {
@@ -932,11 +1072,23 @@ mpt_lan_receive_post_free(struct net_device *dev,
 
 		skb = priv->RcvCtl[ctx].skb;
 
+#ifdef CONFIG_DEBUG_PRINTK
 //		dlprintk((KERN_INFO MYNAM ": %s: dev_name = %s\n",
 //				IOC_AND_NETDEV_NAMES_s_s(dev)));
+#else
+//		dl;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 //		dlprintk((KERN_INFO MYNAM "@rpr[2], priv = %p, buckets_out addr = %p",
 //				priv, &(priv->buckets_out)));
+#else
+//		dl;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 //		dlprintk((KERN_INFO MYNAM "@rpr[2] TC + 3\n"));
+#else
+//		dl;
+#endif
 
 		priv->RcvCtl[ctx].skb = NULL;
 		pci_unmap_single(mpt_dev->pcidev, priv->RcvCtl[ctx].dma,
@@ -951,15 +1103,27 @@ mpt_lan_receive_post_free(struct net_device *dev,
 
 //	for (i = 0; i < priv->max_buckets_out; i++)
 //		if (priv->RcvCtl[i].skb != NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 //			dlprintk((KERN_INFO MYNAM "@rpr: bucket %03x "
 //				  "is still out\n", i));
+#else
+//			dl;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 /*	dlprintk((KERN_INFO MYNAM "/receive_post_reply: freed %d buckets\n",
 		  count));
+#else
+/*	dl;
+#endif
 */
+#ifdef CONFIG_DEBUG_PRINTK
 /**/	dlprintk((KERN_INFO MYNAM "@receive_post_reply: %d buckets "
 /**/		  "remaining, %d received back since sod.\n",
 /**/		  atomic_read(&priv->buckets_out), priv->total_received));
+#else
+/**/	dl;
+#endif
 	return 0;
 }
 
@@ -977,9 +1141,17 @@ mpt_lan_receive_post_reply(struct net_device *dev,
 	int count;
 	int i, l;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": mpt_lan_receive_post_reply called\n"));
+#else
+	dio;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": receive_post_reply: IOCStatus: %04x\n",
 		 le16_to_cpu(pRecvRep->IOCStatus)));
+#else
+	dio;
+#endif
 
 	if ((le16_to_cpu(pRecvRep->IOCStatus) & MPI_IOCSTATUS_MASK) ==
 						MPI_IOCSTATUS_LAN_CANCELED)
@@ -1007,16 +1179,24 @@ mpt_lan_receive_post_reply(struct net_device *dev,
 //				offset);
 //	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": %s/%s: @rpr, offset = %d, len = %d\n",
 			IOC_AND_NETDEV_NAMES_s_s(dev),
 			offset, len));
+#else
+	dio;
+#endif
 
 	if (count > 1) {
 		int szrem = len;
 
+#ifdef CONFIG_DEBUG_PRINTK
 //		dioprintk((KERN_INFO MYNAM ": %s/%s: Multiple buckets returned "
 //			"for single packet, concatenating...\n",
 //				IOC_AND_NETDEV_NAMES_s_s(dev)));
+#else
+//		dio;
+#endif
 
 		skb = (struct sk_buff *)dev_alloc_skb(len);
 		if (!skb) {
@@ -1036,9 +1216,13 @@ mpt_lan_receive_post_reply(struct net_device *dev,
 			if (szrem < l)
 				l = szrem;
 
+#ifdef CONFIG_DEBUG_PRINTK
 //			dioprintk((KERN_INFO MYNAM ": %s/%s: Buckets = %d, len = %u\n",
 //					IOC_AND_NETDEV_NAMES_s_s(dev),
 //					i, l));
+#else
+//			dio;
+#endif
 
 			pci_dma_sync_single_for_cpu(mpt_dev->pcidev,
 						    priv->RcvCtl[ctx].dma,
@@ -1163,9 +1347,13 @@ mpt_lan_post_receive_buckets(struct mpt_lan_priv *priv)
 	curr = atomic_read(&priv->buckets_out);
 	buckets = (priv->max_buckets_out - curr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM ": %s/%s: @%s, Start_buckets = %u, buckets_out = %u\n",
 			IOC_AND_NETDEV_NAMES_s_s(dev),
 			__func__, buckets, curr));
+#else
+	dio;
+#endif
 
 	max = (mpt_dev->req_sz - MPT_LAN_RECEIVE_POST_REQUEST_SIZE) /
 			(MPT_LAN_TRANSACTION32_SIZE + sizeof(SGESimple64_t));
@@ -1271,7 +1459,11 @@ mpt_lan_post_receive_buckets(struct mpt_lan_priv *priv)
 
 		pRecvReq->BucketCount = cpu_to_le32(i);
 
+#ifdef CONFIG_DEBUG_PRINTK
 /*	printk(KERN_INFO MYNAM ": posting buckets\n   ");
+#else
+/*	;
+#endif
  *	for (i = 0; i < j + 2; i ++)
  *	    printk (" %08x", le32_to_cpu(msg[i]));
  *	printk ("\n");
@@ -1285,10 +1477,18 @@ mpt_lan_post_receive_buckets(struct mpt_lan_priv *priv)
 	}
 
 out:
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM "/%s: End_buckets = %u, priv->buckets_out = %u\n",
 		  __func__, buckets, atomic_read(&priv->buckets_out)));
+#else
+	dio;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dioprintk((KERN_INFO MYNAM "/%s: Posted %u buckets and received %u back\n",
 	__func__, priv->total_posted, priv->total_received));
+#else
+	dio;
+#endif
 
 	clear_bit(0, &priv->post_buckets_active);
 }
@@ -1332,8 +1532,12 @@ mpt_register_lan_device (MPT_ADAPTER *mpt_dev, int pnum)
 			  mpt_lan_post_receive_buckets_work);
 	priv->post_buckets_active = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM "@%d: bucketlen = %d\n",
 			__LINE__, dev->mtu + dev->hard_header_len + 4));
+#else
+	dl;
+#endif
 
 	atomic_set(&priv->buckets_out, 0);
 	priv->total_posted = 0;
@@ -1342,11 +1546,15 @@ mpt_register_lan_device (MPT_ADAPTER *mpt_dev, int pnum)
 	if (mpt_dev->pfacts[0].MaxLanBuckets < max_buckets_out)
 		priv->max_buckets_out = mpt_dev->pfacts[0].MaxLanBuckets;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM "@%d: MaxLanBuckets=%d, max_buckets_out/priv=%d/%d\n",
 			__LINE__,
 			mpt_dev->pfacts[0].MaxLanBuckets,
 			max_buckets_out,
 			priv->max_buckets_out));
+#else
+	dl;
+#endif
 
 	priv->bucketthresh = priv->max_buckets_out * 2 / 3;
 	spin_lock_init(&priv->txfidx_lock);
@@ -1375,8 +1583,12 @@ mpt_register_lan_device (MPT_ADAPTER *mpt_dev, int pnum)
 	dev->netdev_ops = &mpt_netdev_ops;
 	dev->watchdog_timeo = MPT_LAN_TX_TIMEOUT;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM ": Finished registering dev "
 		"and setting initial values\n"));
+#else
+	dl;
+#endif
 
 	if (register_netdev(dev) != 0) {
 		free_netdev(dev);
@@ -1393,18 +1605,26 @@ mptlan_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	int			i;
 
 	for (i = 0; i < ioc->facts.NumberOfPorts; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO MYNAM ": %s: PortNum=%x, "
 		       "ProtocolFlags=%02Xh (%c%c%c%c)\n",
 		       ioc->name, ioc->pfacts[i].PortNumber,
 		       ioc->pfacts[i].ProtocolFlags,
 		       MPT_PROTOCOL_FLAGS_c_c_c_c(
 			       ioc->pfacts[i].ProtocolFlags));
+#else
+		;
+#endif
 
 		if (!(ioc->pfacts[i].ProtocolFlags &
 					MPI_PORTFACTS_PROTOCOL_LAN)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO MYNAM ": %s: Hmmm... LAN protocol "
 			       "seems to be disabled on this adapter port!\n",
 			       ioc->name);
+#else
+			;
+#endif
 			continue;
 		}
 
@@ -1416,12 +1636,20 @@ mptlan_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 			continue;
 		}
 		
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO MYNAM ": %s: Fusion MPT LAN device "
 		       "registered as '%s'\n", ioc->name, dev->name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO MYNAM ": %s/%s: "
 		       "LanAddr = %pM\n",
 		       IOC_AND_NETDEV_NAMES_s_s(dev),
 		       dev->dev_addr);
+#else
+		;
+#endif
 	
 		ioc->netdev = dev;
 
@@ -1459,7 +1687,11 @@ static int __init mpt_lan_init (void)
 		return -EBUSY;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM ": assigned context of %d\n", LanCtx));
+#else
+	dl;
+#endif
 
 	if (mpt_reset_register(LanCtx, mpt_lan_ioc_reset)) {
 		printk(KERN_ERR MYNAM ": Eieee! unable to register a reset "
@@ -1468,7 +1700,11 @@ static int __init mpt_lan_init (void)
 		return -EBUSY;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dlprintk((KERN_INFO MYNAM ": Registered for IOC reset notifications\n"));
+#else
+	dl;
+#endif
 	
 	mpt_device_driver_register(&mptlan_driver, MPTLAN_DRIVER);
 	return 0;

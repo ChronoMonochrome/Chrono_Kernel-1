@@ -450,8 +450,12 @@ static int __init quickstart_init(void)
 	if (ret)
 		goto fail_input;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "quickstart: ACPI Direct App Launch ver %s\n",
 						QUICKSTART_VERSION);
+#else
+	;
+#endif
 
 	return 0;
 fail_input:

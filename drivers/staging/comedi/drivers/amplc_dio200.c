@@ -1345,8 +1345,12 @@ static int dio200_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned n;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor,
 	       DIO200_DRIVER_NAME);
+#else
+	;
+#endif
 
 	ret = alloc_private(dev, sizeof(struct dio200_private));
 	if (ret < 0) {
@@ -1470,26 +1474,54 @@ static int dio200_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 				DIO200_DRIVER_NAME, dev) >= 0) {
 			dev->irq = irq;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "comedi%d: warning! irq %u unavailable!\n",
 			       dev->minor, irq);
+#else
+			;
+#endif
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "comedi%d: %s ", dev->minor, dev->board_name);
+#else
+	;
+#endif
 	if (thisboard->bustype == isa_bustype) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(base %#lx) ", iobase);
+#else
+		;
+#endif
 	} else {
 #ifdef CONFIG_COMEDI_PCI
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(pci %s) ", pci_name(pci_dev));
+#else
+		;
+#endif
 #endif
 	}
 	if (irq)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(irq %u%s) ", irq, (dev->irq ? "" : " UNAVAILABLE"));
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(no irq) ");
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("attached\n");
+#else
+	;
+#endif
 
 	return 1;
 }
@@ -1507,8 +1539,12 @@ static int dio200_detach(struct comedi_device *dev)
 	const struct dio200_layout_struct *layout;
 	unsigned n;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
 	       DIO200_DRIVER_NAME);
+#else
+	;
+#endif
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);
@@ -1545,8 +1581,12 @@ static int dio200_detach(struct comedi_device *dev)
 		}
 	}
 	if (dev->board_name)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "comedi%d: %s removed\n",
 		       dev->minor, dev->board_name);
+#else
+		;
+#endif
 
 	return 0;
 }

@@ -126,8 +126,12 @@ static void elanfreq_set_cpu_state(unsigned int state)
 
 	cpufreq_notify_transition(&freqs, CPUFREQ_PRECHANGE);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "elanfreq: attempting to set frequency to %i kHz\n",
 			elan_multiplier[state].clock);
+#else
+	;
+#endif
 
 
 	/*
@@ -253,7 +257,11 @@ static int elanfreq_cpu_exit(struct cpufreq_policy *policy)
 static int __init elanfreq_setup(char *str)
 {
 	max_freq = simple_strtoul(str, &str, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "You're using the deprecated elanfreq command line option. Use elanfreq.max_freq instead, please!\n");
+#else
+	;
+#endif
 	return 1;
 }
 __setup("elanfreq=", elanfreq_setup);
@@ -285,7 +293,11 @@ static int __init elanfreq_init(void)
 	/* Test if we have the right hardware */
 	if ((c->x86_vendor != X86_VENDOR_AMD) ||
 		(c->x86 != 4) || (c->x86_model != 10)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "elanfreq: error: no Elan processor found!\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 	return cpufreq_register_driver(&elanfreq_driver);

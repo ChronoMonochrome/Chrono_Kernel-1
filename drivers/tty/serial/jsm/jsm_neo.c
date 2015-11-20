@@ -52,7 +52,11 @@ static void neo_set_cts_flow_control(struct jsm_channel *ch)
 	ier = readb(&ch->ch_neo_uart->ier);
 	efr = readb(&ch->ch_neo_uart->efr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(PARAM, INFO, &ch->ch_bd->pci_dev, "Setting CTSFLOW\n");
+#else
+	jsm_;
+#endif
 
 	/* Turn on auto CTS flow control */
 	ier |= (UART_17158_IER_CTSDSR);
@@ -83,7 +87,11 @@ static void neo_set_rts_flow_control(struct jsm_channel *ch)
 	ier = readb(&ch->ch_neo_uart->ier);
 	efr = readb(&ch->ch_neo_uart->efr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(PARAM, INFO, &ch->ch_bd->pci_dev, "Setting RTSFLOW\n");
+#else
+	jsm_;
+#endif
 
 	/* Turn on auto RTS flow control */
 	ier |= (UART_17158_IER_RTSDTR);
@@ -123,7 +131,11 @@ static void neo_set_ixon_flow_control(struct jsm_channel *ch)
 	ier = readb(&ch->ch_neo_uart->ier);
 	efr = readb(&ch->ch_neo_uart->efr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(PARAM, INFO, &ch->ch_bd->pci_dev, "Setting IXON FLOW\n");
+#else
+	jsm_;
+#endif
 
 	/* Turn off auto CTS flow control */
 	ier &= ~(UART_17158_IER_CTSDSR);
@@ -160,7 +172,11 @@ static void neo_set_ixoff_flow_control(struct jsm_channel *ch)
 	ier = readb(&ch->ch_neo_uart->ier);
 	efr = readb(&ch->ch_neo_uart->efr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(PARAM, INFO, &ch->ch_bd->pci_dev, "Setting IXOFF FLOW\n");
+#else
+	jsm_;
+#endif
 
 	/* Turn off auto RTS flow control */
 	ier &= ~(UART_17158_IER_RTSDTR);
@@ -198,7 +214,11 @@ static void neo_set_no_input_flow_control(struct jsm_channel *ch)
 	ier = readb(&ch->ch_neo_uart->ier);
 	efr = readb(&ch->ch_neo_uart->efr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(PARAM, INFO, &ch->ch_bd->pci_dev, "Unsetting Input FLOW\n");
+#else
+	jsm_;
+#endif
 
 	/* Turn off auto RTS flow control */
 	ier &= ~(UART_17158_IER_RTSDTR);
@@ -237,7 +257,11 @@ static void neo_set_no_output_flow_control(struct jsm_channel *ch)
 	ier = readb(&ch->ch_neo_uart->ier);
 	efr = readb(&ch->ch_neo_uart->efr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(PARAM, INFO, &ch->ch_bd->pci_dev, "Unsetting Output FLOW\n");
+#else
+	jsm_;
+#endif
 
 	/* Turn off auto CTS flow control */
 	ier &= ~(UART_17158_IER_CTSDSR);
@@ -276,7 +300,11 @@ static inline void neo_set_new_start_stop_chars(struct jsm_channel *ch)
 	if (ch->ch_c_cflag & CRTSCTS)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(PARAM, INFO, &ch->ch_bd->pci_dev, "start\n");
+#else
+	jsm_;
+#endif
 
 	/* Tell UART what start/stop chars it should be looking for */
 	writeb(ch->ch_startc, &ch->ch_neo_uart->xonchar1);
@@ -455,9 +483,13 @@ static void neo_copy_data_from_uart_to_queue(struct jsm_channel *ch)
 		 * I hope thats okay with everyone? Yes? Good.
 		 */
 		while (qleft < 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(READ, INFO, &ch->ch_bd->pci_dev,
 				"Queue full, dropping DATA:%x LSR:%x\n",
 				ch->ch_rqueue[tail], ch->ch_equeue[tail]);
+#else
+			jsm_;
+#endif
 
 			ch->ch_r_tail = tail = (tail + 1) & RQUEUEMASK;
 			ch->ch_err_overrun++;
@@ -467,8 +499,12 @@ static void neo_copy_data_from_uart_to_queue(struct jsm_channel *ch)
 		memcpy_fromio(ch->ch_rqueue + head, &ch->ch_neo_uart->txrxburst, 1);
 		ch->ch_equeue[head] = (u8) linestatus;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(READ, INFO, &ch->ch_bd->pci_dev,
 				"DATA/LSR pair: %x %x\n", ch->ch_rqueue[head], ch->ch_equeue[head]);
+#else
+		jsm_;
+#endif
 
 		/* Ditch any remaining linestatus value. */
 		linestatus = 0;
@@ -521,8 +557,12 @@ static void neo_copy_data_from_queue_to_uart(struct jsm_channel *ch)
 			ch->ch_cached_lsr &= ~(UART_LSR_THRE);
 
 			writeb(circ->buf[circ->tail], &ch->ch_neo_uart->txrx);
+#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(WRITE, INFO, &ch->ch_bd->pci_dev,
 					"Tx data: %x\n", circ->buf[circ->head]);
+#else
+			jsm_;
+#endif
 			circ->tail = (circ->tail + 1) & (UART_XMIT_SIZE - 1);
 			ch->ch_txcount++;
 		}
@@ -575,8 +615,12 @@ static void neo_parse_modem(struct jsm_channel *ch, u8 signals)
 {
 	u8 msignals = signals;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(MSIGS, INFO, &ch->ch_bd->pci_dev,
 			"neo_parse_modem: port: %d msignals: %x\n", ch->ch_portnum, msignals);
+#else
+	jsm_;
+#endif
 
 	/* Scrub off lower bits. They signify delta's, which I don't care about */
 	/* Keep DDCD and DDSR though */
@@ -606,6 +650,7 @@ static void neo_parse_modem(struct jsm_channel *ch, u8 signals)
 	else
 		ch->ch_mistat &= ~UART_MSR_CTS;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(MSIGS, INFO, &ch->ch_bd->pci_dev,
 			"Port: %d DTR: %d RTS: %d CTS: %d DSR: %d " "RI: %d CD: %d\n",
 		ch->ch_portnum,
@@ -615,6 +660,9 @@ static void neo_parse_modem(struct jsm_channel *ch, u8 signals)
 		!!((ch->ch_mistat | ch->ch_mostat) & UART_MSR_DSR),
 		!!((ch->ch_mistat | ch->ch_mostat) & UART_MSR_RI),
 		!!((ch->ch_mistat | ch->ch_mostat) & UART_MSR_DCD));
+#else
+	jsm_;
+#endif
 }
 
 /* Make the UART raise any of the output signals we want up */
@@ -649,8 +697,12 @@ static void neo_flush_uart_write(struct jsm_channel *ch)
 		/* Check to see if the UART feels it completely flushed the FIFO. */
 		tmp = readb(&ch->ch_neo_uart->isr_fcr);
 		if (tmp & 4) {
+#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(IOCTL, INFO, &ch->ch_bd->pci_dev,
 					"Still flushing TX UART... i: %d\n", i);
+#else
+			jsm_;
+#endif
 			udelay(10);
 		}
 		else
@@ -681,8 +733,12 @@ static void neo_flush_uart_read(struct jsm_channel *ch)
 		/* Check to see if the UART feels it completely flushed the FIFO. */
 		tmp = readb(&ch->ch_neo_uart->isr_fcr);
 		if (tmp & 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(IOCTL, INFO, &ch->ch_bd->pci_dev,
 					"Still flushing RX UART... i: %d\n", i);
+#else
+			jsm_;
+#endif
 			udelay(10);
 		}
 		else
@@ -705,8 +761,12 @@ static void neo_clear_break(struct jsm_channel *ch, int force)
 		writeb((temp & ~UART_LCR_SBC), &ch->ch_neo_uart->lcr);
 
 		ch->ch_flags &= ~(CH_BREAK_SENDING);
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(IOCTL, INFO, &ch->ch_bd->pci_dev,
 				"clear break Finishing UART_LCR_SBC! finished: %lx\n", jiffies);
+#else
+		jsm_;
+#endif
 
 		/* flush write operation */
 		neo_pci_posting_flush(ch->ch_bd);
@@ -748,8 +808,12 @@ static inline void neo_parse_isr(struct jsm_board *brd, u32 port)
 		 */
 		isr &= ~(UART_17158_IIR_FIFO_ENABLED);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, INFO, &ch->ch_bd->pci_dev,
 				"%s:%d isr: %x\n", __FILE__, __LINE__, isr);
+#else
+		jsm_;
+#endif
 
 		if (isr & (UART_17158_IIR_RDI_TIMEOUT | UART_IIR_RDI)) {
 			/* Read data from uart -> queue */
@@ -772,8 +836,12 @@ static inline void neo_parse_isr(struct jsm_board *brd, u32 port)
 		if (isr & UART_17158_IIR_XONXOFF) {
 			cause = readb(&ch->ch_neo_uart->xoffchar1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(INTR, INFO, &ch->ch_bd->pci_dev,
 					"Port %d. Got ISR_XONXOFF: cause:%x\n", port, cause);
+#else
+			jsm_;
+#endif
 
 			/*
 			 * Since the UART detected either an XON or
@@ -786,17 +854,29 @@ static inline void neo_parse_isr(struct jsm_board *brd, u32 port)
 				if (brd->channels[port]->ch_flags & CH_STOP) {
 					ch->ch_flags &= ~(CH_STOP);
 				}
+#ifdef CONFIG_DEBUG_PRINTK
 				jsm_printk(INTR, INFO, &ch->ch_bd->pci_dev,
 						"Port %d. XON detected in incoming data\n", port);
+#else
+				jsm_;
+#endif
 			}
 			else if (cause == UART_17158_XOFF_DETECT) {
 				if (!(brd->channels[port]->ch_flags & CH_STOP)) {
 					ch->ch_flags |= CH_STOP;
+#ifdef CONFIG_DEBUG_PRINTK
 					jsm_printk(INTR, INFO, &ch->ch_bd->pci_dev,
 							"Setting CH_STOP\n");
+#else
+					jsm_;
+#endif
 				}
+#ifdef CONFIG_DEBUG_PRINTK
 				jsm_printk(INTR, INFO, &ch->ch_bd->pci_dev,
 						"Port: %d. XOFF detected in incoming data\n", port);
+#else
+				jsm_;
+#endif
 			}
 			spin_unlock_irqrestore(&ch->ch_lock, lock_flags);
 		}
@@ -825,8 +905,12 @@ static inline void neo_parse_isr(struct jsm_board *brd, u32 port)
 		}
 
 		/* Parse any modem signal changes */
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, INFO, &ch->ch_bd->pci_dev,
 				"MOD_STAT: sending to parse_modem_sigs\n");
+#else
+		jsm_;
+#endif
 		neo_parse_modem(ch, readb(&ch->ch_neo_uart->msr));
 	}
 }
@@ -849,8 +933,12 @@ static inline void neo_parse_lsr(struct jsm_board *brd, u32 port)
 
 	linestatus = readb(&ch->ch_neo_uart->lsr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INTR, INFO, &ch->ch_bd->pci_dev,
 			"%s:%d port: %d linestatus: %x\n", __FILE__, __LINE__, port, linestatus);
+#else
+	jsm_;
+#endif
 
 	ch->ch_cached_lsr |= linestatus;
 
@@ -869,9 +957,13 @@ static inline void neo_parse_lsr(struct jsm_board *brd, u32 port)
 	 *to do the special RX+LSR read for this FIFO load.
 	 */
 	if (linestatus & UART_17158_RX_FIFO_DATA_ERROR)
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, DEBUG, &ch->ch_bd->pci_dev,
 			"%s:%d Port: %d Got an RX error, need to parse LSR\n",
 			__FILE__, __LINE__, port);
+#else
+		jsm_;
+#endif
 
 	/*
 	 * The next 3 tests should *NOT* happen, as the above test
@@ -880,20 +972,32 @@ static inline void neo_parse_lsr(struct jsm_board *brd, u32 port)
 
 	if (linestatus & UART_LSR_PE) {
 		ch->ch_err_parity++;
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, DEBUG, &ch->ch_bd->pci_dev,
 			"%s:%d Port: %d. PAR ERR!\n", __FILE__, __LINE__, port);
+#else
+		jsm_;
+#endif
 	}
 
 	if (linestatus & UART_LSR_FE) {
 		ch->ch_err_frame++;
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, DEBUG, &ch->ch_bd->pci_dev,
 			"%s:%d Port: %d. FRM ERR!\n", __FILE__, __LINE__, port);
+#else
+		jsm_;
+#endif
 	}
 
 	if (linestatus & UART_LSR_BI) {
 		ch->ch_err_break++;
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, DEBUG, &ch->ch_bd->pci_dev,
 			"%s:%d Port: %d. BRK INTR!\n", __FILE__, __LINE__, port);
+#else
+		jsm_;
+#endif
 	}
 
 	if (linestatus & UART_LSR_OE) {
@@ -904,8 +1008,12 @@ static inline void neo_parse_lsr(struct jsm_board *brd, u32 port)
 		 * Probably we should eventually have an orun stat in our driver...
 		 */
 		ch->ch_err_overrun++;
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, DEBUG, &ch->ch_bd->pci_dev,
 			"%s:%d Port: %d. Rx Overrun!\n", __FILE__, __LINE__, port);
+#else
+		jsm_;
+#endif
 	}
 
 	if (linestatus & UART_LSR_THRE) {
@@ -1128,12 +1236,20 @@ static irqreturn_t neo_intr(int irq, void *voidbrd)
 	 */
 	uart_poll = readl(brd->re_map_membase + UART_17158_POLL_ADDR_OFFSET);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INTR, INFO, &brd->pci_dev,
 		"%s:%d uart_poll: %x\n", __FILE__, __LINE__, uart_poll);
+#else
+	jsm_;
+#endif
 
 	if (!uart_poll) {
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, INFO, &brd->pci_dev,
 			"Kernel interrupted to me, but no pending interrupts...\n");
+#else
+		jsm_;
+#endif
 		spin_unlock_irqrestore(&brd->bd_intr_lock, lock_flags);
 		return IRQ_NONE;
 	}
@@ -1158,16 +1274,24 @@ static irqreturn_t neo_intr(int irq, void *voidbrd)
 			continue;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		jsm_printk(INTR, INFO, &brd->pci_dev,
 		"%s:%d port: %x type: %x\n", __FILE__, __LINE__, port, type);
+#else
+		jsm_;
+#endif
 
 		/* Remove this port + type from uart_poll */
 		uart_poll &= ~(jsm_offset_table[port]);
 
 		if (!type) {
 			/* If no type, just ignore it, and move onto next port */
+#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(INTR, ERR, &brd->pci_dev,
 				"Interrupt with no type! port: %d\n", port);
+#else
+			jsm_;
+#endif
 			continue;
 		}
 
@@ -1231,15 +1355,23 @@ static irqreturn_t neo_intr(int irq, void *voidbrd)
 			 * these once and awhile.
 			 * Its harmless, just ignore it and move on.
 			 */
+#ifdef CONFIG_DEBUG_PRINTK
 			jsm_printk(INTR, ERR, &brd->pci_dev,
 				"%s:%d Unknown Interrupt type: %x\n", __FILE__, __LINE__, type);
+#else
+			jsm_;
+#endif
 			continue;
 		}
 	}
 
 	spin_unlock_irqrestore(&brd->bd_intr_lock, lock_flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	jsm_printk(INTR, INFO, &brd->pci_dev, "finish.\n");
+#else
+	jsm_;
+#endif
 	return IRQ_HANDLED;
 }
 

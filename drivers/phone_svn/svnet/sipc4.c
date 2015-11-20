@@ -276,13 +276,21 @@ void _dbg_dump(u8 *buf, int size)
 		len += sprintf(&dump_buf[len], "%02x ", buf[i]);
 		if ((i & 0xf) == 0xf) {
 			dump_buf[len] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "dump %04x [ %s]\n", (i>>4), dump_buf);
+#else
+			;
+#endif
 			len = 0;
 		}
 	}
 	if (len) {
 		dump_buf[len] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "dump %04x [ %s]\n", i, dump_buf);
+#else
+		;
+#endif
 	}
 }
 #else
@@ -417,12 +425,20 @@ static void _do_command(struct sipc *si, u32 mailbox)
 #endif
 		break;
 	case MBC_RESET:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "svnet reset mailbox msg : 0x%08x\n", mailbox);
+#else
+		;
+#endif
 		si->queue(SIPC_RESET_MB, si->queue_data);
 		break;
 	case MBC_ERR_DISPLAY:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "svnet error display mailbox msg : 0x%08x\n",
 				mailbox);
+#else
+		;
+#endif
 		si->queue(SIPC_EXIT_MB, si->queue_data);
 		break;
 	/* TODO : impletment other commands... */
@@ -439,7 +455,11 @@ void sipc_msr_crash_handler(void *data)
 {
 	struct sipc *si = (struct sipc *)data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Modem crash detected on SIPC side\n");
+#else
+	;
+#endif
 
 	if (netif_running(si->svndev))
 		netif_stop_queue(si->svndev);
@@ -452,7 +472,11 @@ void sipc_msr_reinit_handler(void *data)
 {
 	struct sipc *si = (struct sipc *)data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Modem reinit detected on SIPC side\n");
+#else
+	;
+#endif
 	netif_start_queue(si->svndev);
 }
 
@@ -916,10 +940,26 @@ static int _write_raw_to_shrm(int res, struct sk_buff *skb)
 	struct sk_buff *nskb;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	 printk(KERN_DEBUG, "%s: len = %d++\n", __func__, skb->len);
+#else
+	 ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk(KERN_DEBUG, "skb->tail = %x\n", skb->tail);
+#else
+	// ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk(KERN_DEBUG, "skb->end = %x\n", skb->end);
+#else
+	// ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk(KERN_DEBUG, "skb->len = %x\n", skb->len);
+#else
+	// ;
+#endif
 #endif
 
 	orig_len = skb->len;
@@ -927,19 +967,31 @@ static int _write_raw_to_shrm(int res, struct sk_buff *skb)
 	if(skb_headroom(skb) > (sizeof(struct raw_hdr) + sizeof(hdlc_start))
 			&& skb_tailroom(skb) > sizeof(hdlc_end)) {
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		 printk(KERN_DEBUG, "---------Writing through skbuff------------\n");
+#else
+		 ;
+#endif
 #endif
 		nskb = skb;
 	} else {
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG, "=================Writing through increased skbuff=============-\n");
+#else
+		;
+#endif
 #endif
 		newheadroom = sizeof(struct raw_hdr) + sizeof(hdlc_start);
 		newtailroom = sizeof(hdlc_end);
 
 		nskb = skb_copy_expand(skb, newheadroom, newtailroom, GFP_ATOMIC);
 		if (!nskb) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: skb_alloc failed\n", __func__);
+#else
+			;
+#endif
 			return -ENOMEM;
 		}
 	}
@@ -960,8 +1012,16 @@ static int _write_raw_to_shrm(int res, struct sk_buff *skb)
 #ifdef DEBUG
 	int i = 0;
 	for (; i<nskb->len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%02x\t", nskb->data[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 	err = shrm_host_modem_msg_send(IPCDATA, nskb->data,
 			nskb->len);
@@ -969,15 +1029,27 @@ static int _write_raw_to_shrm(int res, struct sk_buff *skb)
 	if (skb != nskb)
 		kfree_skb(nskb);
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "-%s--: skbuff write err = %d\n",__func__, err);
+#else
+	;
+#endif
 #endif
 	return err;
 }
 
 static int _write_rfs_to_shrm(struct sk_buff *skb)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "+%s\n", __func__);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "-%s\n", __func__);
+#else
+	;
+#endif
 	return 0;
 }
 #define swap_en(x) ((x & 0xff00)>>8)|((x & 0xff)<<8)
@@ -988,7 +1060,11 @@ static int _write_fmt_to_shrm(struct sipc *si, struct sk_buff *skb)
 	int err;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "%s: ++\n", __func__);
+#else
+	;
+#endif
 #endif
         /*copy hdlc start*/
         memcpy(buf, hdlc_start, sizeof(hdlc_start));
@@ -1014,7 +1090,11 @@ static int _write_fmt_to_shrm(struct sipc *si, struct sk_buff *skb)
                 sizeof(hdlc_end)));
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "KERN_DEBUG, %s: --\n", __func__);
+#else
+	;
+#endif
 #endif
 	return err;
 }
@@ -1918,7 +1998,11 @@ static int _read_pn_from_shrm(struct net_device *ndev, u8 *buf, int len,
 	int read_len = len + sizeof(hdlc_end);
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "IN %s\n",__func__);
+#else
+	;
+#endif
 #endif
 	skb = netdev_alloc_skb(ndev, read_len + sizeof(struct phonethdr));
 	if(unlikely(!skb))
@@ -1929,7 +2013,11 @@ static int _read_pn_from_shrm(struct net_device *ndev, u8 *buf, int len,
 	memcpy(p, &buf[sizeof(hdlc_start) + sizeof(struct raw_hdr)], read_len);
 	_phonet_rx(ndev, skb, res);
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "OUT %s\n",__func__);
+#else
+	;
+#endif
 #endif
 	return r;
 }
@@ -1945,7 +2033,11 @@ static int _read_pdp_from_shrm(u8 *buf, int len, int res)
 	const u8 *ip_version;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "\n%s:++\n", __func__);
+#else
+	;
+#endif
 #endif
 
 	spin_lock(&shm_raw);
@@ -2004,9 +2096,21 @@ static int _read_pdp_from_shrm(u8 *buf, int len, int res)
 #ifdef DEBUG
 	int i = 0;
 	for (; i< len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%02x\t", skb->data[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "\n%s: --\n", __func__);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "OUT %s\n",__func__);
+#else
+	;
+#endif
 #endif
 	return read_len;
 
@@ -2019,11 +2123,23 @@ static int _read_raw_from_shrm(struct sipc *si, u8 *buf, u16 len)
 	int r = 0;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "IN %s\n",__func__);
+#else
+	;
+#endif
 	int i;
 	for (i=0; i< len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%02x\t", buf[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG, "\n----------------------------------------\n\n");
+#else
+	;
+#endif
 #endif
 /*
 	dev_dbg(&ndev->dev, "IN %s\n", __func__);
@@ -2628,7 +2744,11 @@ static void _go_dump(struct sipc *si)
 		memcpy(cp_errmsg, p, sizeof(cp_errmsg));
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CP Dump Cause - %s\n", cp_errmsg);
+#else
+	;
+#endif
 
 //	kernel_sec_set_cause_strptr(cp_errmsg, sizeof(cp_errmsg));
 	kernel_sec_set_upload_magic_number();

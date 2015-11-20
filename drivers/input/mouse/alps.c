@@ -25,6 +25,7 @@
 
 #undef DEBUG
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define dbg(format, arg...) printk(KERN_INFO "alps.c: " format "\n", ## arg)
 #else
 #define dbg(format, arg...) do {} while (0)
@@ -67,6 +68,9 @@ static const struct alps_model_info alps_model_data[] = {
 	{ { 0x52, 0x01, 0x14 }, 0xff, 0xff,
 		ALPS_PASS | ALPS_DUALPOINT | ALPS_PS2_INTERLEAVED },	  /* Toshiba Tecra A11-11L */
 };
+#else
+#define dbg(format, arg...) ;
+#endif
 
 /*
  * XXX - this entry is suspicious. First byte has zero lower nibble,
@@ -608,7 +612,11 @@ static int alps_hw_init(struct psmouse *psmouse)
 	}
 
 	if (alps_tap_mode(psmouse, true)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "alps.c: Failed to enable hardware tapping\n");
+#else
+		;
+#endif
 		return -1;
 	}
 

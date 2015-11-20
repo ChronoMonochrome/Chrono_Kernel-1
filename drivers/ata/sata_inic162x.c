@@ -408,9 +408,13 @@ static void inic_host_intr(struct ata_port *ap)
 	}
 
  spurious:
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_port_printk(ap, KERN_WARNING, "unhandled interrupt: "
 			"cmd=0x%x irq_stat=0x%x idma_stat=0x%x\n",
 			qc ? qc->tf.command : 0xff, irq_stat, idma_stat);
+#else
+	ata_port_;
+#endif
 }
 
 static irqreturn_t inic_interrupt(int irq, void *dev_instance)
@@ -631,8 +635,12 @@ static int inic_hardreset(struct ata_link *link, unsigned int *class,
 
 	rc = sata_link_resume(link, timing, deadline);
 	if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_WARNING, "failed to resume "
 				"link after reset (errno=%d)\n", rc);
+#else
+		ata_link_;
+#endif
 		return rc;
 	}
 
@@ -644,8 +652,12 @@ static int inic_hardreset(struct ata_link *link, unsigned int *class,
 		rc = ata_wait_after_reset(link, deadline, inic_check_ready);
 		/* link occupied, -ENODEV too is an error */
 		if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_WARNING, "device not ready "
 					"after hardreset (errno=%d)\n", rc);
+#else
+			ata_link_;
+#endif
 			return rc;
 		}
 
@@ -820,7 +832,11 @@ static int inic_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	int i, rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	dev_alert(&pdev->dev, "inic162x support is broken with common data corruption issues and will be disabled by default, contact linux-ide@vger.kernel.org if in production use\n");
 

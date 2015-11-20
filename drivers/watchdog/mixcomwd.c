@@ -163,8 +163,12 @@ static int mixcomwd_release(struct inode *inode, struct file *file)
 		mixcomwd_timer_alive = 1;
 		mod_timer(&mixcomwd_timer, jiffies + 5 * HZ);
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 		    "WDT device closed unexpectedly.  WDT will not stop!\n");
+#else
+		;
+#endif
 
 	clear_bit(0, &mixcomwd_opened);
 	expect_close = 0;
@@ -287,9 +291,13 @@ static int __init mixcomwd_init(void)
 		goto error_misc_register_watchdog;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"MixCOM watchdog driver v%s, watchdog port at 0x%3x\n",
 					VERSION, watchdog_port);
+#else
+	;
+#endif
 
 	return 0;
 
@@ -303,8 +311,12 @@ static void __exit mixcomwd_exit(void)
 {
 	if (!nowayout) {
 		if (mixcomwd_timer_alive) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX "I quit now, hardware will"
 			       " probably reboot!\n");
+#else
+			;
+#endif
 			del_timer_sync(&mixcomwd_timer);
 			mixcomwd_timer_alive = 0;
 		}

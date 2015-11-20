@@ -107,7 +107,11 @@ int lgtdqcs001f_tuner_set(struct dvb_frontend *fe,
 	else
 		buf[3] &= ~0x04;
 	if (i2c_transfer(adapter, &msg, 1) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Write: I2C Transfer failed");
+#else
+		d;
+#endif
 		return -EIO;
 	}
 	msleep_interruptible(100);
@@ -172,27 +176,47 @@ static int vp1033_frontend_init(struct mantis_pci *mantis, struct dvb_frontend *
 		mantis_frontend_soft_reset(mantis);
 		msleep(250);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Probing for STV0299 (DVB-S)");
+#else
+		d;
+#endif
 		fe = dvb_attach(stv0299_attach, &lgtdqcs001f_config, adapter);
 
 		if (fe) {
 			fe->ops.tuner_ops.set_params = lgtdqcs001f_tuner_set;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(MANTIS_ERROR, 1, "found STV0299 DVB-S frontend @ 0x%02x",
 				lgtdqcs001f_config.demod_address);
+#else
+			d;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(MANTIS_ERROR, 1, "Mantis DVB-S STV0299 frontend attach success");
+#else
+			d;
+#endif
 		} else {
 			return -1;
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Frontend on <%s> POWER ON failed! <%d>",
 			adapter->name,
 			err);
+#else
+		d;
+#endif
 
 		return -EIO;
 	}
 	mantis->fe = fe;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "Done!");
+#else
+	d;
+#endif
 
 	return 0;
 }

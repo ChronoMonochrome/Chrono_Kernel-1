@@ -68,7 +68,11 @@ static int __init init_l440gx(void)
 	pci_dev_put(dev);
 
 	if (!dev || !pm_dev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "L440GX flash mapping: failed to find PIIX4 ISA bridge, cannot continue\n");
+#else
+		;
+#endif
 		pci_dev_put(pm_dev);
 		return -ENODEV;
 	}
@@ -76,12 +80,20 @@ static int __init init_l440gx(void)
 	l440gx_map.virt = ioremap_nocache(WINDOW_ADDR, WINDOW_SIZE);
 
 	if (!l440gx_map.virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to ioremap L440GX flash region\n");
+#else
+		;
+#endif
 		pci_dev_put(pm_dev);
 		return -ENOMEM;
 	}
 	simple_map_init(&l440gx_map);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "window_addr = 0x%08lx\n", (unsigned long)l440gx_map.virt);
+#else
+	;
+#endif
 
 	/* Setup the pm iobase resource
 	 * This code should move into some kind of generic bridge
@@ -107,7 +119,11 @@ static int __init init_l440gx(void)
 		if (pci_assign_resource(pm_dev, PIIXE_IOBASE_RESOURCE) != 0) {
 			pci_dev_put(dev);
 			pci_dev_put(pm_dev);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Could not allocate pm iobase resource\n");
+#else
+			;
+#endif
 			iounmap(l440gx_map.virt);
 			return -ENXIO;
 		}
@@ -128,11 +144,19 @@ static int __init init_l440gx(void)
 	/* Enable the gate on the WE line */
 	outb(inb(TRIBUF_PORT) & ~1, TRIBUF_PORT);
 
+#ifdef CONFIG_DEBUG_PRINTK
        	printk(KERN_NOTICE "Enabled WE line to L440GX BIOS flash chip.\n");
+#else
+       	;
+#endif
 
 	mymtd = do_map_probe("jedec_probe", &l440gx_map);
 	if (!mymtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "JEDEC probe on BIOS chip failed. Using ROM\n");
+#else
+		;
+#endif
 		mymtd = do_map_probe("map_rom", &l440gx_map);
 	}
 	if (mymtd) {

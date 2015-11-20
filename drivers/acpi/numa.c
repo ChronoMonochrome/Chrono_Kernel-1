@@ -144,9 +144,13 @@ acpi_table_print_srat_entry(struct acpi_subtable_header *header)
 #endif				/* ACPI_DEBUG_OUTPUT */
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 		       "Found unsupported SRAT entry (type = 0x%x)\n",
 		       header->type);
+#else
+		;
+#endif
 		break;
 	}
 }
@@ -184,7 +188,11 @@ static int __init acpi_parse_slit(struct acpi_table_header *table)
 	slit = (struct acpi_table_slit *)table;
 
 	if (!slit_valid(slit)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ACPI: SLIT table looks invalid. Not used.\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	acpi_numa_slit_init(slit);
@@ -195,8 +203,12 @@ static int __init acpi_parse_slit(struct acpi_table_header *table)
 void __init __attribute__ ((weak))
 acpi_numa_x2apic_affinity_init(struct acpi_srat_x2apic_cpu_affinity *pa)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING PREFIX
 	       "Found unsupported x2apic [0x%08x] SRAT entry\n", pa->apic_id);
+#else
+	;
+#endif
 	return;
 }
 

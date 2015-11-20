@@ -175,9 +175,13 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
 	window->rsrc.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
 	if (request_resource(&iomem_resource, &window->rsrc)) {
 		window->rsrc.parent = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG MOD_NAME ": "
 		       "%s(): Unable to register resource %pR - kernel bug?\n",
 		       __func__, &window->rsrc);
+#else
+		;
+#endif
 	}
 
 	/* Map the firmware hub into my address space. */
@@ -255,9 +259,13 @@ static int __devinit ichxrom_init_one (struct pci_dev *pdev,
 	found:
 		/* Trim the size if we are larger than the map */
 		if (map->mtd->size > map->map.size) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING MOD_NAME
 				" rom(%llu) larger than window(%lu). fixing...\n",
 				(unsigned long long)map->mtd->size, map->map.size);
+#else
+			;
+#endif
 			map->mtd->size = map->map.size;
 		}
 		if (window->rsrc.parent) {

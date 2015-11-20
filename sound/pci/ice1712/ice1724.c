@@ -801,12 +801,16 @@ static int snd_vt1724_playback_pro_prepare(struct snd_pcm_substream *substream)
 	spin_unlock_irq(&ice->reg_lock);
 
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "pro prepare: ch = %d, addr = 0x%x, "
 	       "buffer = 0x%x, period = 0x%x\n",
 	       substream->runtime->channels,
 	       (unsigned int)substream->runtime->dma_addr,
 	       snd_pcm_lib_buffer_bytes(substream),
 	       snd_pcm_lib_period_bytes(substream));
+#else
+	;
+#endif
 	*/
 	return 0;
 }
@@ -1478,7 +1482,11 @@ static int __devinit snd_vt1724_ac97_mixer(struct snd_ice1712 *ice)
 		ac97.private_data = ice;
 		err = snd_ac97_mixer(pbus, &ac97, &ice->ac97);
 		if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ice1712: cannot initialize pro ac97, skipped\n");
+#else
+			;
+#endif
 		else
 			return 0;
 	}
@@ -2216,7 +2224,11 @@ unsigned char snd_vt1724_read_i2c(struct snd_ice1712 *ice,
 	val = inb(ICEREG1724(ice, I2C_DATA));
 	mutex_unlock(&ice->i2c_mutex);
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "i2c_read: [0x%x,0x%x] = 0x%x\n", dev, addr, val);
+#else
+	;
+#endif
 	*/
 	return val;
 }
@@ -2227,7 +2239,11 @@ void snd_vt1724_write_i2c(struct snd_ice1712 *ice,
 	mutex_lock(&ice->i2c_mutex);
 	wait_i2c_busy(ice);
 	/*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "i2c_write: [0x%x,0x%x] = 0x%x\n", dev, addr, data);
+#else
+	;
+#endif
 	*/
 	outb(addr, ICEREG1724(ice, I2C_BYTE_ADDR));
 	outb(data, ICEREG1724(ice, I2C_DATA));
@@ -2273,8 +2289,12 @@ static int __devinit snd_vt1724_read_eeprom(struct snd_ice1712 *ice,
 		for (c = *tbl; c->subvendor; c++) {
 			if (modelname && c->model &&
 			    !strcmp(modelname, c->model)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "ice1724: Using board model %s\n",
 				       c->name);
+#else
+				;
+#endif
 				ice->eeprom.subvendor = c->subvendor;
 			} else if (c->subvendor != ice->eeprom.subvendor)
 				continue;
@@ -2288,8 +2308,12 @@ static int __devinit snd_vt1724_read_eeprom(struct snd_ice1712 *ice,
 			goto read_skipped;
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "ice1724: No matching model found for ID 0x%x\n",
 	       ice->eeprom.subvendor);
+#else
+	;
+#endif
 
  found:
 	ice->eeprom.size = snd_vt1724_read_i2c(ice, dev, 0x04);
@@ -2302,8 +2326,12 @@ static int __devinit snd_vt1724_read_eeprom(struct snd_ice1712 *ice,
 	}
 	ice->eeprom.version = snd_vt1724_read_i2c(ice, dev, 0x05);
 	if (ice->eeprom.version != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ice1724: Invalid EEPROM version %i\n",
 		       ice->eeprom.version);
+#else
+		;
+#endif
 	size = ice->eeprom.size - 6;
 	for (i = 0; i < size; i++)
 		ice->eeprom.data[i] = snd_vt1724_read_i2c(ice, dev, i + 6);

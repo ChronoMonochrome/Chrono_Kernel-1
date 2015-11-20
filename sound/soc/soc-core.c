@@ -286,8 +286,12 @@ static void soc_init_codec_debugfs(struct snd_soc_codec *codec)
 	codec->debugfs_codec_root = debugfs_create_dir(codec->name,
 						       debugfs_card_root);
 	if (!codec->debugfs_codec_root) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "ASoC: Failed to create codec debugfs directory\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -300,8 +304,12 @@ static void soc_init_codec_debugfs(struct snd_soc_codec *codec)
 						 codec->debugfs_codec_root,
 						 codec, &codec_reg_fops);
 	if (!codec->debugfs_reg)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "ASoC: Failed to create codec register debugfs file\n");
+#else
+		;
+#endif
 
 	snd_soc_dapm_debugfs_init(&codec->dapm, codec->debugfs_codec_root);
 }
@@ -1689,7 +1697,11 @@ static int soc_probe_dai_link(struct snd_soc_card *card, int num)
 
 	ret = device_create_file(&rtd->dev, &dev_attr_pmdown_time);
 	if (ret < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "asoc: failed to add pmdown_time sysfs\n");
+#else
+		;
+#endif
 
 	/* create the pcm */
 	ret = soc_new_pcm(rtd, num);
@@ -2166,8 +2178,12 @@ static int soc_new_pcm(struct snd_soc_pcm_runtime *rtd, int num)
 	}
 
 	pcm->private_free = platform->driver->pcm_free;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "asoc: %s <-> %s mapping ok\n", codec_dai->name,
 		cpu_dai->name);
+#else
+	;
+#endif
 	return ret;
 }
 
@@ -3861,8 +3877,12 @@ static int __init snd_soc_init(void)
 #ifdef CONFIG_DEBUG_FS
 	snd_soc_debugfs_root = debugfs_create_dir("asoc", NULL);
 	if (IS_ERR(snd_soc_debugfs_root) || !snd_soc_debugfs_root) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "ASoC: Failed to create debugfs directory\n");
+#else
+		;
+#endif
 		snd_soc_debugfs_root = NULL;
 	}
 

@@ -386,16 +386,24 @@ static int append_values(struct asus_oled_dev *odev, uint8_t val, size_t count)
 
 		default:
 			i = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(ASUS_OLED_ERROR "Unknown OLED Pack Mode: %d!\n",
 			       odev->pack_mode);
+#else
+			;
+#endif
 			break;
 		}
 
 		if (i >= odev->buf_size) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(ASUS_OLED_ERROR "Buffer overflow! Report a bug:"
 			       "offs: %d >= %d i: %d (x: %d y: %d)\n",
 			       (int) odev->buf_offs, (int) odev->buf_size,
 			       (int) i, (int) x, (int) y);
+#else
+			;
+#endif
 			return -EIO;
 		}
 
@@ -438,7 +446,11 @@ static ssize_t odev_set_picture(struct asus_oled_dev *odev,
 		odev->buf = kmalloc(odev->buf_size, GFP_KERNEL);
 		if (odev->buf == NULL) {
 			odev->buf_size = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(ASUS_OLED_ERROR "Out of memory!\n");
+#else
+			;
+#endif
 			return -ENOMEM;
 		}
 
@@ -476,8 +488,12 @@ static ssize_t odev_set_picture(struct asus_oled_dev *odev,
 			odev->pic_mode = buf[1];
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(ASUS_OLED_ERROR "Wrong picture mode: '%c'.\n",
 			       buf[1]);
+#else
+			;
+#endif
 			return -EIO;
 			break;
 		}
@@ -536,7 +552,11 @@ static ssize_t odev_set_picture(struct asus_oled_dev *odev,
 
 		if (odev->buf == NULL) {
 			odev->buf_size = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(ASUS_OLED_ERROR "Out of memory!\n");
+#else
+			;
+#endif
 			return -ENOMEM;
 		}
 
@@ -596,15 +616,27 @@ static ssize_t odev_set_picture(struct asus_oled_dev *odev,
 	return count;
 
 error_width:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(ASUS_OLED_ERROR "Wrong picture width specified.\n");
+#else
+	;
+#endif
 	return -EIO;
 
 error_height:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(ASUS_OLED_ERROR "Wrong picture height specified.\n");
+#else
+	;
+#endif
 	return -EIO;
 
 error_header:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(ASUS_OLED_ERROR "Wrong picture header.\n");
+#else
+	;
+#endif
 	return -EIO;
 }
 

@@ -1819,9 +1819,17 @@ static void dump_line(char *data, int offset, int limit)
 			error = data[offset + i];
 			bad_count++;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %02x", (unsigned char)data[offset + i]);
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	if (bad_count == 1) {
 		error ^= POISON_FREE;
@@ -1857,7 +1865,11 @@ static void print_objinfo(struct kmem_cache *cachep, void *objp, int lines)
 			*dbg_userword(cachep, objp));
 		print_symbol("(%s)",
 				(unsigned long)*dbg_userword(cachep, objp));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 	realobj = (char *)objp + obj_offset(cachep);
 	size = obj_size(cachep);
@@ -2994,10 +3006,22 @@ bad:
 		     i < sizeof(*slabp) + cachep->num * sizeof(kmem_bufctl_t);
 		     i++) {
 			if (i % 16 == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("\n%03x:", i);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %02x", ((unsigned char *)slabp)[i]);
+#else
+			;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 		BUG();
 	}
 }

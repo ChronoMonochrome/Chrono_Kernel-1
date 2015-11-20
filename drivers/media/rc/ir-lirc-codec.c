@@ -47,7 +47,11 @@ static int ir_lirc_decode(struct rc_dev *dev, struct ir_raw_event ev)
 	/* Carrier reports */
 	if (ev.carrier_report) {
 		sample = LIRC_FREQUENCY(ev.carrier);
+#ifdef CONFIG_DEBUG_PRINTK
 		IR_dprintk(2, "carrier report (freq: %d)\n", sample);
+#else
+		IR_d;
+#endif
 
 	/* Packet end */
 	} else if (ev.timeout) {
@@ -63,7 +67,11 @@ static int ir_lirc_decode(struct rc_dev *dev, struct ir_raw_event ev)
 			return 0;
 
 		sample = LIRC_TIMEOUT(ev.duration / 1000);
+#ifdef CONFIG_DEBUG_PRINTK
 		IR_dprintk(2, "timeout report (duration: %d)\n", sample);
+#else
+		IR_d;
+#endif
 
 	/* Normal sample */
 	} else {
@@ -87,8 +95,12 @@ static int ir_lirc_decode(struct rc_dev *dev, struct ir_raw_event ev)
 
 		sample = ev.pulse ? LIRC_PULSE(ev.duration / 1000) :
 					LIRC_SPACE(ev.duration / 1000);
+#ifdef CONFIG_DEBUG_PRINTK
 		IR_dprintk(2, "delivering %uus %s to lirc_dev\n",
 			   TO_US(ev.duration), TO_STR(ev.pulse));
+#else
+		IR_d;
+#endif
 	}
 
 	lirc_buffer_write(dev->raw->lirc.drv->rbuf,
@@ -388,7 +400,11 @@ static int __init ir_lirc_codec_init(void)
 {
 	ir_raw_handler_register(&lirc_handler);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IR LIRC bridge handler initialized\n");
+#else
+	;
+#endif
 	return 0;
 }
 

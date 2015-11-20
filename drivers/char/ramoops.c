@@ -162,7 +162,11 @@ static int __exit ramoops_remove(struct platform_device *pdev)
 	struct ramoops_context *cxt = &oops_cxt;
 
 	if (kmsg_dump_unregister(&cxt->dump) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ramoops: could not unregister kmsg_dumper");
+#else
+		;
+#endif
 
 	iounmap(cxt->virt_addr);
 	release_mem_region(cxt->phys_addr, cxt->size);

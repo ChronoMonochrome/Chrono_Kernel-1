@@ -299,7 +299,11 @@ static int snd_pmac_pcm_trigger(struct snd_pmac *chip, struct pmac_stream *rec,
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 		spin_lock(&chip->reg_lock);
 		rec->running = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		/*printk(KERN_DEBUG "stopped!!\n");*/
+#else
+		/*;
+#endif
 		snd_pmac_dma_stop(rec);
 		for (i = 0, cp = rec->cmd.cmds; i < rec->nperiods; i++, cp++)
 			out_le16(&cp->command, DBDMA_STOP);
@@ -334,7 +338,11 @@ static snd_pcm_uframes_t snd_pmac_pcm_pointer(struct snd_pmac *chip,
 	}
 #endif
 	count += rec->cur_period * rec->period_size;
+#ifdef CONFIG_DEBUG_PRINTK
 	/*printk(KERN_DEBUG "pointer=%d\n", count);*/
+#else
+	/*;
+#endif
 	return bytes_to_frames(subs->runtime, count);
 }
 
@@ -414,7 +422,11 @@ static inline void snd_pmac_pcm_dead_xfer(struct pmac_stream *rec,
 	unsigned short req, res ;
 	unsigned int phy ;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_WARNING "snd-powermac: DMA died - patching it up!\n"); */
+#else
+	/* ;
+#endif
 
 	/* to clear DEAD status we must first clear RUN
 	   set it to quiescent to be on the safe side */
@@ -486,7 +498,11 @@ static void snd_pmac_pcm_update(struct snd_pmac *chip, struct pmac_stream *rec)
 			if (! (stat & ACTIVE))
 				break;
 
+#ifdef CONFIG_DEBUG_PRINTK
 			/*printk(KERN_DEBUG "update frag %d\n", rec->cur_period);*/
+#else
+			/*;
+#endif
 			st_le16(&cp->xfer_status, 0);
 			st_le16(&cp->req_count, rec->period_size);
 			/*st_le16(&cp->res_count, 0);*/
@@ -806,7 +822,11 @@ snd_pmac_ctrl_intr(int irq, void *devid)
 	struct snd_pmac *chip = devid;
 	int ctrl = in_le32(&chip->awacs->control);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/*printk(KERN_DEBUG "pmac: control interrupt.. 0x%x\n", ctrl);*/
+#else
+	/*;
+#endif
 	if (ctrl & MASK_PORTCHG) {
 		/* do something when headphone is plugged/unplugged? */
 		if (chip->update_automute)
@@ -815,7 +835,11 @@ snd_pmac_ctrl_intr(int irq, void *devid)
 	if (ctrl & MASK_CNTLERR) {
 		int err = (in_le32(&chip->awacs->codec_stat) & MASK_ERRCODE) >> 16;
 		if (err && chip->model <= PMAC_SCREAMER)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_DEBUG "error %x\n", err);
+#else
+			;
+#endif
 	}
 	/* Writing 1s to the CNTLERR and PORTCHG bits clears them... */
 	out_le32(&chip->awacs->control, ctrl);
@@ -1007,9 +1031,13 @@ static int __devinit snd_pmac_detect(struct snd_pmac *chip)
 	if (prop) {
 		/* partly deprecate snd-powermac, for those machines
 		 * that have a layout-id property for now */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "snd-powermac no longer handles any "
 				 "machines with a layout-id property "
 				 "in the device-tree, use snd-aoa.\n");
+#else
+		;
+#endif
 		of_node_put(sound);
 		of_node_put(chip->node);
 		chip->node = NULL;
@@ -1064,7 +1092,11 @@ static int __devinit snd_pmac_detect(struct snd_pmac *chip)
 	 */
 	macio = macio_find(chip->node, macio_unknown);
 	if (macio == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "snd-powermac: can't locate macio !\n");
+#else
+		;
+#endif
 	else {
 		struct pci_dev *pdev = NULL;
 
@@ -1077,8 +1109,12 @@ static int __devinit snd_pmac_detect(struct snd_pmac *chip)
 		}
 	}
 	if (chip->pdev == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "snd-powermac: can't locate macio PCI"
 		       " device !\n");
+#else
+		;
+#endif
 
 	detect_byte_swap(chip);
 

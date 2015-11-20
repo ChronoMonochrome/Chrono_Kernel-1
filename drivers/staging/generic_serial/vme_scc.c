@@ -199,7 +199,11 @@ static int __init mvme147_scc_init(void)
 	struct scc_port *port;
 	int error;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SCC: MVME147 Serial Driver\n");
+#else
+	;
+#endif
 	/* Init channel A */
 	port = &scc_ports[0];
 	port->channel = CHANNEL_A;
@@ -305,7 +309,11 @@ static int __init mvme162_scc_init(void)
 	if (!(mvme16x_config & MVME16x_CONFIG_GOT_SCCA))
 		return (-ENODEV);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SCC: MVME162 Serial Driver\n");
+#else
+	;
+#endif
 	/* Init channel A */
 	port = &scc_ports[0];
 	port->channel = CHANNEL_A;
@@ -408,7 +416,11 @@ static int __init bvme6000_scc_init(void)
 	struct scc_port *port;
 	int error;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SCC: BVME6000 Serial Driver\n");
+#else
+	;
+#endif
 	/* Init channel A */
 	port = &scc_ports[0];
 	port->channel = CHANNEL_A;
@@ -537,7 +549,11 @@ static irqreturn_t scc_rx_int(int irq, void *data)
 
 	ch = SCCread_NB(RX_DATA_REG);
 	if (!tty) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "scc_rx_int with NULL tty!\n");
+#else
+		;
+#endif
 		SCCwrite_NB(COMMAND_REG, CR_HIGHEST_IUS_RESET);
 		return IRQ_HANDLED;
 	}
@@ -570,7 +586,11 @@ static irqreturn_t scc_spcond_int(int irq, void *data)
 	SCC_ACCESS_INIT(port);
 	
 	if (!tty) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "scc_spcond_int with NULL tty!\n");
+#else
+		;
+#endif
 		SCCwrite(COMMAND_REG, CR_ERROR_RESET);
 		SCCwrite_NB(COMMAND_REG, CR_HIGHEST_IUS_RESET);
 		return IRQ_HANDLED;
@@ -611,7 +631,11 @@ static irqreturn_t scc_tx_int(int irq, void *data)
 	SCC_ACCESS_INIT(port);
 
 	if (!port->gs.port.tty) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "scc_tx_int with NULL tty!\n");
+#else
+		;
+#endif
 		SCCmod (INT_AND_DMA_REG, ~IDR_TX_INT_ENAB, 0);
 		SCCwrite(COMMAND_REG, CR_TX_PENDING_RESET);
 		SCCwrite_NB(COMMAND_REG, CR_HIGHEST_IUS_RESET);
@@ -784,7 +808,11 @@ static int scc_set_real_termios (void *ptr)
 	else if ((MACH_IS_MVME16x && (baud < 50 || baud > 38400)) ||
 		 (MACH_IS_MVME147 && (baud < 50 || baud > 19200)) ||
 		 (MACH_IS_BVME6000 &&(baud < 50 || baud > 76800))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "SCC: Bad speed requested, %d\n", baud);
+#else
+		;
+#endif
 		return 0;
 	}
 

@@ -3340,7 +3340,11 @@ static void drbd_cleanup(void)
 
 	unregister_blkdev(DRBD_MAJOR, "drbd");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "drbd: module cleanup done.\n");
+#else
+	;
+#endif
 }
 
 /**
@@ -3556,13 +3560,29 @@ int __init drbd_init(void)
 
 	rwlock_init(&global_state_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "drbd: initialized. "
 	       "Version: " REL_VERSION " (api:%d/proto:%d-%d)\n",
 	       API_VERSION, PRO_VERSION_MIN, PRO_VERSION_MAX);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "drbd: %s\n", drbd_buildtag());
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "drbd: registered as block device major %d\n",
 		DRBD_MAJOR);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "drbd: minor_table @ 0x%p\n", minor_table);
+#else
+	;
+#endif
 
 	return 0; /* Success! */
 

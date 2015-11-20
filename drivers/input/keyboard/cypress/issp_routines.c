@@ -241,8 +241,12 @@ signed char fDetectHiLoTransition(void)
 	// Generate clocks for the target to pull SDATA High
 	//dog_kick();
 	iTimer = TRANSITION_TIMEOUT;
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk(KERN_DEBUG
 	//       "Generate clocks for the target to pull SDATA High\n");
+#else
+	// ;
+#endif
 	SCLKHigh();
 	while (1) {
 		SCLKLow();
@@ -257,8 +261,12 @@ signed char fDetectHiLoTransition(void)
 	//dog_kick();
 	// Generate Clocks and wait for Target to pull SDATA Low again
 	iTimer = TRANSITION_TIMEOUT;	// reset the timeout counter
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk(KERN_DEBUG
 	//       "Generate Clocks and wait for Target to pull SDATA Low again\n");
+#else
+	// ;
+#endif
 	while (1) {
 		SCLKLow();	//issp_test_20100709 unblock
 		if (!fSDATACheck()) {	// exit once SDATA returns LOW
@@ -309,7 +317,11 @@ signed char fXRESInitializeTargetForISSP(void)
 	SendVector(id_setup_1, num_bits_id_setup_1);
 	if (fIsError = fDetectHiLoTransition()) {
 //        TX8SW_CPutString("\r\n fDetectHiLoTransition Error");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "\r\n fDetectHiLoTransition Error\n");
+#else
+		;
+#endif
 		return (INIT_ERROR);
 	}
 	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
@@ -353,7 +365,11 @@ signed char fPowerCycleInitializeTargetForISSP(unsigned long flag)
 	// Set SCLK to high Z so there is no clock and wait for a high to low
 	// transition on SDAT. SCLK is not needed this time.
 	//SetSCLKHiZ();
+#ifdef CONFIG_DEBUG_PRINTK
 //    printk(KERN_DEBUG "fDetectHiLoTransition\n");
+#else
+//    ;
+#endif
 	if ((fIsError = fDetectHiLoTransition())) {
 		printk(KERN_ERR"[TOUCHKEY]fDetectHiLoTransition()error!!!\n");
 		return (INIT_ERROR);
@@ -371,7 +387,11 @@ signed char fPowerCycleInitializeTargetForISSP(unsigned long flag)
 	//  and cause the target device to exit ISSP Mode.
 
 	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);	//PTJ: rev308, added to match spec
+#ifdef CONFIG_DEBUG_PRINTK
 //    printk("SendVector(id_setup_1)\n",0,0,0);
+#else
+//    ;
+#endif
 	SendVector(id_setup_1, num_bits_id_setup_1);
 	if ((fIsError = fDetectHiLoTransition())) {
 		printk(KERN_ERR"[TOUCHKEY]fDetectHiLoTransition()error!!!\n");
@@ -397,7 +417,11 @@ signed char fVerifySiliconID(void)
 	//printk(KERN_ERR"fVerifySiliconID: SendVector id_stup2 END\n");
 
 	if ((fIsError = fDetectHiLoTransition())) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "fVerifySiliconID(): fDetectHiLoTransition Error\n");
+#else
+		;
+#endif
 		return (SiID_ERROR);
 	}
 	SendVector(wait_and_poll_end, num_bits_wait_and_poll_end);
@@ -446,8 +470,12 @@ signed char fVerifySiliconID(void)
 	   TX8SW_PutChar(' ');
 	 */
 #if 0				// issp_test_20100709 block
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("issp_routines.c: ID0:0x%X, ID1:0x%X, ID2: 0x%X, ID2: 0x%X\n",
 	       bTargetID[0], bTargetID[1], bTargetID[2], bTargetID[3]);
+#else
+	;
+#endif
 
 	if ((bTargetID[0] != target_id_v[0]) || (bTargetID[1] != target_id_v[1])
 	    || (bTargetID[2] != target_id_v[2])
@@ -607,7 +635,11 @@ signed char fEraseTarget(void)
 	SendVector(erase, num_bits_erase);
 	if ((fIsError = fDetectHiLoTransition())) {
 //        TX8SW_CPutString("\r\n fDetectHiLoTransition");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "\r\n fEraseTarget fDetectHiLoTransition\n");
+#else
+		;
+#endif
 		/* issp_test_2010 block */
 		return (ERASE_ERROR);
 	}

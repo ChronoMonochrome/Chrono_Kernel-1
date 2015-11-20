@@ -1803,7 +1803,11 @@ static void __devinit es1968_measure_clock(struct es1968 *chip)
 			if (offset >= 40000 && offset <= 50000)
 				chip->clock = (chip->clock * offset) / 48000;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "es1968: clocking to %d\n", chip->clock);
+#else
+		;
+#endif
 	}
 	snd_es1968_free_memory(chip, memory);
 	snd_es1968_free_apu_pair(chip, apu);
@@ -2145,7 +2149,11 @@ static void snd_es1968_ac97_reset(struct es1968 *chip)
 	outw(inw(ioaddr + 0x3c) & 0xfffc, ioaddr + 0x3c);
 
 #if 0				/* the loop here needs to be much better if we want it.. */
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "trying software reset\n");
+#else
+	;
+#endif
 	/* try and do a software reset */
 	outb(0x80 | 0x7c, ioaddr + 0x30);
 	for (w = 0;; w++) {
@@ -2777,7 +2785,11 @@ static int __devinit snd_es1968_create(struct snd_card *card,
 		}
 		if (do_pm > 1) {
 			/* not matched; disabling pm */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "es1968: not attempting power management.\n");
+#else
+			;
+#endif
 			do_pm = 0;
 		}
 	}
@@ -2798,7 +2810,11 @@ static int __devinit snd_es1968_create(struct snd_card *card,
 	strlcpy(chip->tea.card, "SF64-PCE2", sizeof(chip->tea.card));
 	sprintf(chip->tea.bus_info, "PCI:%s", pci_name(pci));
 	if (!snd_tea575x_init(&chip->tea))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "es1968: detected TEA575x radio\n");
+#else
+		;
+#endif
 #endif
 
 	*chip_ret = chip;
@@ -2887,7 +2903,11 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 					       chip->io_port + ESM_MPU401_PORT,
 					       MPU401_INFO_INTEGRATED,
 					       chip->irq, 0, &chip->rmidi)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "es1968: skipping MPU-401 MIDI support..\n");
+#else
+			;
+#endif
 		}
 	}
 
@@ -2896,8 +2916,12 @@ static int __devinit snd_es1968_probe(struct pci_dev *pci,
 #ifdef CONFIG_SND_ES1968_INPUT
 	err = snd_es1968_input_register(chip);
 	if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "Input device registration "
 			"failed with error %i", err);
+#else
+		;
+#endif
 #endif
 
 	snd_es1968_start_irq(chip);

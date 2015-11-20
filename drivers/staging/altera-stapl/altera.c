@@ -40,9 +40,13 @@ MODULE_DESCRIPTION("altera FPGA kernel module");
 MODULE_AUTHOR("Igor M. Liplianin  <liplianin@netup.ru>");
 MODULE_LICENSE("GPL");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	if (debug) { \
 		printk(KERN_DEBUG args); \
+#else
+#define d;
+#endif
 	}
 
 enum altera_fpga_opcode {
@@ -142,7 +146,11 @@ static int altera_check_stack(int stack_ptr, int count, int *status)
 
 static void altera_export_int(char *key, s32 value)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Export: key = \"%s\", value = %d\n", key, value);
+#else
+	d;
+#endif
 }
 
 #define HEX_LINE_CHARS 72
@@ -155,8 +163,12 @@ static void altera_export_bool_array(char *key, u8 *data, s32 count)
 	u32 size, line, lines, linebits, value, j, k;
 
 	if (count > HEX_LINE_BITS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Export: key = \"%s\", %d bits, value = HEX\n",
 							key, count);
+#else
+		d;
+#endif
 		lines = (count + (HEX_LINE_BITS - 1)) / HEX_LINE_BITS;
 
 		for (line = 0; line < lines; ++line) {
@@ -188,7 +200,11 @@ static void altera_export_bool_array(char *key, u8 *data, s32 count)
 			if ((k & 3) > 0)
 				sprintf(&string[j], "%1x", value);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s\n", string);
+#else
+			d;
+#endif
 		}
 
 	} else {
@@ -209,8 +225,12 @@ static void altera_export_bool_array(char *key, u8 *data, s32 count)
 		if ((i & 3) > 0)
 			sprintf(&string[j], "%1x", value);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Export: key = \"%s\", %d bits, value = HEX %s\n",
 			key, count, string);
+#else
+		d;
+#endif
 	}
 }
 
@@ -273,7 +293,11 @@ static int altera_execute(struct altera_state *astate,
 
 	char *name;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* Read header information */
 	if (program_size > 52L) {
@@ -525,7 +549,11 @@ exit_done:
 		++pc;
 
 		if (debug > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("opcode: %02x\n", opcode);
+#else
+			;
+#endif
 
 		arg_count = (opcode >> 6) & 3;
 		for (i = 0; i < arg_count; ++i) {
@@ -716,7 +744,11 @@ exit_done:
 		case OP_PRNT:
 			/* PRINT finish */
 			if (debug)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(msg_buff, "\n");
+#else
+				;
+#endif
 
 			msg_buff[0] = '\0';
 			break;
@@ -2271,8 +2303,12 @@ static int altera_check_crc(u8 *p, s32 program_size)
 	if (debug || status) {
 		switch (status) {
 		case 0:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: CRC matched: %04x\n", __func__,
 				local_actual);
+#else
+			;
+#endif
 			break;
 		case -EILSEQ:
 			printk(KERN_ERR "%s: CRC mismatch: expected %04x, "
@@ -2443,7 +2479,11 @@ int altera_init(struct altera_config *config, const struct firmware *fw)
 
 	astate->config = config;
 	if (!astate->config->jtag_io) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(KERN_INFO "%s: using byteblaster!\n", __func__);
+#else
+		d;
+#endif
 		astate->config->jtag_io = netup_jtag_io_lpt;
 	}
 
@@ -2452,17 +2492,29 @@ int altera_init(struct altera_config *config, const struct firmware *fw)
 	if (debug) {
 		altera_get_file_info((u8 *)fw->data, fw->size, &format_version,
 					&action_count, &procedure_count);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: File format is %s ByteCode format\n",
 			__func__, (format_version == 2) ? "Jam STAPL" :
 						"pre-standardized Jam 1.1");
+#else
+		;
+#endif
 		while (altera_get_note((u8 *)fw->data, fw->size,
 					&offset, key, value, 256) == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: NOTE \"%s\" = \"%s\"\n",
 					__func__, key, value);
+#else
+			;
+#endif
 	}
 
 	if (debug && (format_version == 2) && (action_count > 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Actions available:\n", __func__);
+#else
+		;
+#endif
 		for (index = 0; index < action_count; ++index) {
 			altera_get_act_info((u8 *)fw->data, fw->size,
 						index, &action_name,
@@ -2470,23 +2522,35 @@ int altera_init(struct altera_config *config, const struct firmware *fw)
 						&proc_list);
 
 			if (description == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s: %s\n",
 						__func__,
 						action_name);
+#else
+				;
+#endif
 			else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "%s: %s \"%s\"\n",
 						__func__,
 						action_name,
 						description);
+#else
+				;
+#endif
 
 			procptr = proc_list;
 			while (procptr != NULL) {
 				if (procptr->attrs != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "%s:    %s (%s)\n",
 						__func__,
 						procptr->name,
 						(procptr->attrs == 1) ?
 						"optional" : "recommended");
+#else
+					;
+#endif
 
 				proc_list = procptr->next;
 				kfree(procptr);
@@ -2494,7 +2558,11 @@ int altera_init(struct altera_config *config, const struct firmware *fw)
 			}
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "\n");
+#else
+		;
+#endif
 	}
 
 	exec_result = altera_execute(astate, (u8 *)fw->data, fw->size,

@@ -35,8 +35,12 @@ static inline void __cw1200_queue_lock(struct cw1200_queue *queue,
 						struct cw1200_common *cw1200)
 {
 	if (queue->tx_locked_cnt++ == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		txrx_printk(KERN_DEBUG "[TX] Queue %d is locked.\n",
 				queue->queue_id);
+#else
+		txrx_;
+#endif
 		ieee80211_stop_queue(cw1200->hw, queue->queue_id);
 	}
 }
@@ -46,8 +50,12 @@ static inline void __cw1200_queue_unlock(struct cw1200_queue *queue,
 {
 	BUG_ON(!queue->tx_locked_cnt);
 	if (--queue->tx_locked_cnt == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		txrx_printk(KERN_DEBUG "[TX] Queue %d is unlocked.\n",
 				queue->queue_id);
+#else
+		txrx_;
+#endif
 		ieee80211_wake_queue(cw1200->hw, queue->queue_id);
 	}
 }

@@ -62,7 +62,11 @@ void ux500_restart(char mode, const char *cmd)
 	unsigned short reset_code;
 	int i ;
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ux500_restart: Call arch_reset(), mode: %c, cmd: %s\n", mode, cmd );
+#else
+	;
+#endif
 
 #ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
         if( 'L' == mode || 'U' == mode || 'K' == mode)

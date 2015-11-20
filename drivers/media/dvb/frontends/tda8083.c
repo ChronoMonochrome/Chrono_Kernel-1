@@ -42,9 +42,13 @@ struct tda8083_state {
 };
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) printk(KERN_DEBUG "tda8083: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 
@@ -154,7 +158,11 @@ static int tda8083_set_symbolrate (struct tda8083_state* state, u32 srate)
 	tmp = (tmp % srate) << 8;
 	ratio = (ratio << 8) + tmp / srate;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("tda8083: ratio == %08x\n", (unsigned int) ratio);
+#else
+	d;
+#endif
 
 	tda8083_writereg (state, 0x05, filter);
 	tda8083_writereg (state, 0x02, (ratio >> 16) & 0xff);

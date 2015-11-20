@@ -162,7 +162,11 @@ static int cw1200_sdio_irq_subscribe(struct sbus_priv *self,
 	self->irq_handler = handler;
 	spin_unlock_irqrestore(&self->lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SW IRQ subscribe\n");
+#else
+	;
+#endif
 	sdio_claim_host(self->func);
 #ifndef CONFIG_CW1200_USE_GPIO_IRQ
 	ret = sdio_claim_irq(self->func, cw1200_sdio_irq_handler);
@@ -185,7 +189,11 @@ static int cw1200_sdio_irq_unsubscribe(struct sbus_priv *self)
 	if (!self->irq_handler)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "SW IRQ unsubscribe\n");
+#else
+	;
+#endif
 #ifndef CONFIG_CW1200_USE_GPIO_IRQ
 	sdio_claim_host(self->func);
 	ret = sdio_release_irq(self->func);

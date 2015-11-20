@@ -585,9 +585,13 @@ static void snd_es1370_codec_write(struct snd_ak4531 *ak4531,
 	unsigned long end_time = jiffies + HZ / 10;
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "CODEC WRITE: reg = 0x%x, val = 0x%x (0x%x), creg = 0x%x\n",
 	       reg, val, ES_1370_CODEC_WRITE(reg, val), ES_REG(ensoniq, 1370_CODEC));
+#else
+	;
+#endif
 #endif
 	do {
 		if (!(inl(ES_REG(ensoniq, STATUS)) & ES_1370_CSTAT)) {
@@ -1821,15 +1825,23 @@ static int __devinit snd_ensoniq_create_gameport(struct ensoniq *ensoniq, int de
 			if (request_region(io_port, 8, "ens137x: gameport"))
 				break;
 		if (io_port > 0x218) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ens137x: no gameport ports available\n");
+#else
+			;
+#endif
 			return -EBUSY;
 		}
 		break;
 
 	default:
 		if (!request_region(io_port, 8, "ens137x: gameport")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ens137x: gameport io port 0x%#x in use\n",
 			       io_port);
+#else
+			;
+#endif
 			return -EBUSY;
 		}
 		break;

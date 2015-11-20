@@ -48,10 +48,14 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Activates frontend debugging (default:0)");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) \
 			printk(KERN_INFO "cx24116: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 #define CX24116_DEFAULT_FIRMWARE "dvb-fe-cx24116.fw"
@@ -204,8 +208,12 @@ static int cx24116_writereg(struct cx24116_state *state, int reg, int data)
 	int err;
 
 	if (debug > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cx24116: %s: write reg 0x%02x, value 0x%02x\n",
 			__func__, reg, data);
+#else
+		;
+#endif
 
 	err = i2c_transfer(state->i2c, &msg, 1);
 	if (err != 1) {
@@ -227,7 +235,11 @@ static int cx24116_writeregN(struct cx24116_state *state, int reg,
 
 	buf = kmalloc(len + 1, GFP_KERNEL);
 	if (buf == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to kmalloc\n");
+#else
+		;
+#endif
 		ret = -ENOMEM;
 		goto error;
 	}
@@ -241,8 +253,12 @@ static int cx24116_writeregN(struct cx24116_state *state, int reg,
 	msg.len = len + 1;
 
 	if (debug > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "cx24116: %s:  write regN 0x%02x, len = %d\n",
 			__func__, reg, len);
+#else
+		;
+#endif
 
 	ret = i2c_transfer(state->i2c, &msg, 1);
 	if (ret != 1) {
@@ -278,8 +294,12 @@ static int cx24116_readreg(struct cx24116_state *state, u8 reg)
 	}
 
 	if (debug > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "cx24116: read reg 0x%02x, value 0x%02x\n",
 			reg, b1[0]);
+#else
+		;
+#endif
 
 	return b1[0];
 }
@@ -287,7 +307,11 @@ static int cx24116_readreg(struct cx24116_state *state, u8 reg)
 static int cx24116_set_inversion(struct cx24116_state *state,
 	fe_spectral_inversion_t inversion)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, inversion);
+#else
+	d;
+#endif
 
 	switch (inversion) {
 	case INVERSION_OFF:
@@ -419,7 +443,11 @@ static int cx24116_lookup_fecmod(struct cx24116_state *state,
 {
 	int i, ret = -EOPNOTSUPP;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(0x%02x,0x%02x)\n", __func__, m, f);
+#else
+	d;
+#endif
 
 	for (i = 0; i < ARRAY_SIZE(CX24116_MODFEC_MODES); i++) {
 		if ((d == CX24116_MODFEC_MODES[i].delivery_system) &&
@@ -438,7 +466,11 @@ static int cx24116_set_fec(struct cx24116_state *state,
 {
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(0x%02x,0x%02x)\n", __func__, mod, fec);
+#else
+	d;
+#endif
 
 	ret = cx24116_lookup_fecmod(state, delsys, mod, fec);
 
@@ -448,25 +480,41 @@ static int cx24116_set_fec(struct cx24116_state *state,
 	state->dnxt.fec = fec;
 	state->dnxt.fec_val = CX24116_MODFEC_MODES[ret].val;
 	state->dnxt.fec_mask = CX24116_MODFEC_MODES[ret].mask;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s() mask/val = 0x%02x/0x%02x\n", __func__,
 		state->dnxt.fec_mask, state->dnxt.fec_val);
+#else
+	d;
+#endif
 
 	return 0;
 }
 
 static int cx24116_set_symbolrate(struct cx24116_state *state, u32 rate)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, rate);
+#else
+	d;
+#endif
 
 	/*  check if symbol rate is within limits */
 	if ((rate > state->frontend.ops.info.symbol_rate_max) ||
 	    (rate < state->frontend.ops.info.symbol_rate_min)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s() unsupported symbol_rate = %d\n", __func__, rate);
+#else
+		d;
+#endif
 		return -EOPNOTSUPP;
 	}
 
 	state->dnxt.symbol_rate = rate;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s() symbol_rate = %d\n", __func__, rate);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -480,7 +528,11 @@ static int cx24116_firmware_ondemand(struct dvb_frontend *fe)
 	const struct firmware *fw;
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if (cx24116_readreg(state, 0x20) > 0) {
 
@@ -489,12 +541,20 @@ static int cx24116_firmware_ondemand(struct dvb_frontend *fe)
 
 		/* Load firmware */
 		/* request the firmware, this will block until loaded */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Waiting for firmware upload (%s)...\n",
 			__func__, CX24116_DEFAULT_FIRMWARE);
+#else
+		;
+#endif
 		ret = request_firmware(&fw, CX24116_DEFAULT_FIRMWARE,
 			state->i2c->dev.parent);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Waiting for firmware upload(2)...\n",
 			__func__);
+#else
+		;
+#endif
 		if (ret) {
 			printk(KERN_ERR "%s: No firmware uploaded "
 				"(timeout or file not found?)\n", __func__);
@@ -512,8 +572,12 @@ static int cx24116_firmware_ondemand(struct dvb_frontend *fe)
 
 		release_firmware(fw);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Firmware upload %s\n", __func__,
 			ret == 0 ? "complete" : "failed");
+#else
+		;
+#endif
 
 		/* Ensure firmware is always loaded if required */
 		state->skip_fw_load = 0;
@@ -530,7 +594,11 @@ static int cx24116_cmd_execute(struct dvb_frontend *fe, struct cx24116_cmd *cmd)
 	struct cx24116_state *state = fe->demodulator_priv;
 	int i, ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	/* Load the firmware if required */
 	ret = cx24116_firmware_ondemand(fe);
@@ -542,7 +610,11 @@ static int cx24116_cmd_execute(struct dvb_frontend *fe, struct cx24116_cmd *cmd)
 
 	/* Write the command */
 	for (i = 0; i < cmd->len ; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: 0x%02x == 0x%02x\n", __func__, i, cmd->args[i]);
+#else
+		d;
+#endif
 		cx24116_writereg(state, i, cmd->args[i]);
 	}
 
@@ -553,8 +625,12 @@ static int cx24116_cmd_execute(struct dvb_frontend *fe, struct cx24116_cmd *cmd)
 		if (i++ > 64) {
 			/* Avoid looping forever if the firmware does
 				not respond */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s() Firmware not responding\n",
 				__func__);
+#else
+			;
+#endif
 			return -EREMOTEIO;
 		}
 	}
@@ -569,13 +645,21 @@ static int cx24116_load_firmware(struct dvb_frontend *fe,
 	int i, ret, len, max, remaining;
 	unsigned char vers[4];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Firmware is %zu bytes (%02x %02x .. %02x %02x)\n",
 			fw->size,
 			fw->data[0],
 			fw->data[1],
 			fw->data[fw->size-2],
 			fw->data[fw->size-1]);
+#else
+	d;
+#endif
 
 	/* Toggle 88x SRST pin to reset demod */
 	if (state->config->reset_device)
@@ -677,8 +761,12 @@ static int cx24116_load_firmware(struct dvb_frontend *fe,
 			return ret;
 		vers[i] = cx24116_readreg(state, CX24116_REG_MAILBOX);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: FW version %i.%i.%i.%i\n", __func__,
 		vers[0], vers[1], vers[2], vers[3]);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -690,7 +778,11 @@ static int cx24116_read_status(struct dvb_frontend *fe, fe_status_t *status)
 	int lock = cx24116_readreg(state, CX24116_REG_SSTATUS) &
 		CX24116_STATUS_MASK;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: status = 0x%02x\n", __func__, lock);
+#else
+	d;
+#endif
 
 	*status = 0;
 
@@ -710,7 +802,11 @@ static int cx24116_read_ber(struct dvb_frontend *fe, u32 *ber)
 {
 	struct cx24116_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	*ber =  (cx24116_readreg(state, CX24116_REG_BER24) << 24) |
 		(cx24116_readreg(state, CX24116_REG_BER16) << 16) |
@@ -729,7 +825,11 @@ static int cx24116_read_signal_strength(struct dvb_frontend *fe,
 	int ret;
 	u16 sig_reading;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	/* Firmware CMD 19: Get AGC */
 	cmd.args[0x00] = CMD_GETAGC;
@@ -744,8 +844,12 @@ static int cx24116_read_signal_strength(struct dvb_frontend *fe,
 		(cx24116_readreg(state, CX24116_REG_SIGNAL) << 6);
 	*signal_strength = 0 - sig_reading;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: raw / cooked = 0x%04x / 0x%04x\n",
 		__func__, sig_reading, *signal_strength);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -761,7 +865,11 @@ static int cx24116_read_snr_pct(struct dvb_frontend *fe, u16 *snr)
 		0x10000, 0x1199A, 0x13333, 0x14ccD, 0x16667,
 		0x18000 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	snr_reading = cx24116_readreg(state, CX24116_REG_QUALITY0);
 
@@ -771,8 +879,12 @@ static int cx24116_read_snr_pct(struct dvb_frontend *fe, u16 *snr)
 		*snr = snr_tab[(snr_reading & 0xf0) >> 4] +
 			(snr_tab[(snr_reading & 0x0f)] >> 4);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: raw / cooked = 0x%02x / 0x%04x\n", __func__,
 		snr_reading, *snr);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -785,12 +897,20 @@ static int cx24116_read_snr_esno(struct dvb_frontend *fe, u16 *snr)
 {
 	struct cx24116_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	*snr = cx24116_readreg(state, CX24116_REG_QUALITY8) << 8 |
 		cx24116_readreg(state, CX24116_REG_QUALITY0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: raw 0x%04x\n", __func__, *snr);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -807,7 +927,11 @@ static int cx24116_read_ucblocks(struct dvb_frontend *fe, u32 *ucblocks)
 {
 	struct cx24116_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	*ucblocks = (cx24116_readreg(state, CX24116_REG_UCB8) << 8) |
 		cx24116_readreg(state, CX24116_REG_UCB0);
@@ -828,8 +952,12 @@ static int cx24116_wait_for_lnb(struct dvb_frontend *fe)
 	struct cx24116_state *state = fe->demodulator_priv;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s() qstatus = 0x%02x\n", __func__,
 		cx24116_readreg(state, CX24116_REG_QSTATUS));
+#else
+	d;
+#endif
 
 	/* Wait for up to 300 ms */
 	for (i = 0; i < 30 ; i++) {
@@ -838,7 +966,11 @@ static int cx24116_wait_for_lnb(struct dvb_frontend *fe)
 		msleep(10);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(): LNB not ready\n", __func__);
+#else
+	d;
+#endif
 
 	return -ETIMEDOUT; /* -EBUSY ? */
 }
@@ -849,9 +981,13 @@ static int cx24116_set_voltage(struct dvb_frontend *fe,
 	struct cx24116_cmd cmd;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: %s\n", __func__,
 		voltage == SEC_VOLTAGE_13 ? "SEC_VOLTAGE_13" :
 		voltage == SEC_VOLTAGE_18 ? "SEC_VOLTAGE_18" : "??");
+#else
+	d;
+#endif
 
 	/* Wait for LNB ready */
 	ret = cx24116_wait_for_lnb(fe);
@@ -877,7 +1013,11 @@ static int cx24116_set_tone(struct dvb_frontend *fe,
 	struct cx24116_cmd cmd;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, tone);
+#else
+	d;
+#endif
 	if ((tone != SEC_TONE_ON) && (tone != SEC_TONE_OFF)) {
 		printk(KERN_ERR "%s: Invalid, tone=%d\n", __func__, tone);
 		return -EINVAL;
@@ -898,11 +1038,19 @@ static int cx24116_set_tone(struct dvb_frontend *fe,
 
 	switch (tone) {
 	case SEC_TONE_ON:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: setting tone on\n", __func__);
+#else
+		d;
+#endif
 		cmd.args[0x03] = 0x01;
 		break;
 	case SEC_TONE_OFF:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: setting tone off\n", __func__);
+#else
+		d;
+#endif
 		cmd.args[0x03] = 0x00;
 		break;
 	}
@@ -965,13 +1113,29 @@ static int cx24116_send_diseqc_msg(struct dvb_frontend *fe,
 
 	/* Dump DiSEqC message */
 	if (debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "cx24116: %s(", __func__);
+#else
+		;
+#endif
 		for (i = 0 ; i < d->msg_len ;) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "0x%02x", d->msg[i]);
+#else
+			;
+#endif
 			if (++i < d->msg_len)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO ", ");
+#else
+				;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(") toneburst=%d\n", toneburst);
+#else
+		;
+#endif
 	}
 
 	/* Validate length */
@@ -1021,8 +1185,12 @@ static int cx24116_send_diseqc_msg(struct dvb_frontend *fe,
 			state->dsec_cmd.args[CX24116_DISEQC_BURST] =
 				((d->msg[3] & 4) >> 2);
 		if (debug)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s burst=%d\n", __func__,
 				state->dsec_cmd.args[CX24116_DISEQC_BURST]);
+#else
+			d;
+#endif
 	}
 
 	/* Wait for LNB ready */
@@ -1060,7 +1228,11 @@ static int cx24116_diseqc_send_burst(struct dvb_frontend *fe,
 	struct cx24116_state *state = fe->demodulator_priv;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d) toneburst=%d\n", __func__, burst, toneburst);
+#else
+	d;
+#endif
 
 	/* DiSEqC burst */
 	if (burst == SEC_MINI_A)
@@ -1110,7 +1282,11 @@ static int cx24116_diseqc_send_burst(struct dvb_frontend *fe,
 static void cx24116_release(struct dvb_frontend *fe)
 {
 	struct cx24116_state *state = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 	kfree(state);
 }
 
@@ -1122,7 +1298,11 @@ struct dvb_frontend *cx24116_attach(const struct cx24116_config *config,
 	struct cx24116_state *state = NULL;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* allocate memory for the internal state */
 	state = kzalloc(sizeof(struct cx24116_state), GFP_KERNEL);
@@ -1136,7 +1316,11 @@ struct dvb_frontend *cx24116_attach(const struct cx24116_config *config,
 	ret = (cx24116_readreg(state, 0xFF) << 8) |
 		cx24116_readreg(state, 0xFE);
 	if (ret != 0x0501) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Invalid probe, probably not a CX24116 device\n");
+#else
+		;
+#endif
 		goto error2;
 	}
 
@@ -1162,7 +1346,11 @@ static int cx24116_initfe(struct dvb_frontend *fe)
 	struct cx24116_cmd cmd;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	/* Power on */
 	cx24116_writereg(state, 0xe0, 0);
@@ -1194,7 +1382,11 @@ static int cx24116_sleep(struct dvb_frontend *fe)
 	struct cx24116_cmd cmd;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	/* Firmware CMD 36: Power config */
 	cmd.args[0x00] = CMD_TUNERSLEEP;
@@ -1215,14 +1407,22 @@ static int cx24116_sleep(struct dvb_frontend *fe)
 static int cx24116_set_property(struct dvb_frontend *fe,
 	struct dtv_property *tvp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(..)\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 
 static int cx24116_get_property(struct dvb_frontend *fe,
 	struct dtv_property *tvp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(..)\n", __func__);
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -1238,16 +1438,28 @@ static int cx24116_set_frontend(struct dvb_frontend *fe,
 	fe_status_t tunerstat;
 	int i, status, ret, retune = 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s()\n", __func__);
+#else
+	d;
+#endif
 
 	switch (c->delivery_system) {
 	case SYS_DVBS:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: DVB-S delivery system selected\n", __func__);
+#else
+		d;
+#endif
 
 		/* Only QPSK is supported for DVB-S */
 		if (c->modulation != QPSK) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: unsupported modulation selected (%d)\n",
 				__func__, c->modulation);
+#else
+			d;
+#endif
 			return -EOPNOTSUPP;
 		}
 
@@ -1256,23 +1468,35 @@ static int cx24116_set_frontend(struct dvb_frontend *fe,
 
 		/* DVB-S only supports 0.35 */
 		if (c->rolloff != ROLLOFF_35) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: unsupported rolloff selected (%d)\n",
 				__func__, c->rolloff);
+#else
+			d;
+#endif
 			return -EOPNOTSUPP;
 		}
 		state->dnxt.rolloff_val = CX24116_ROLLOFF_035;
 		break;
 
 	case SYS_DVBS2:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: DVB-S2 delivery system selected\n", __func__);
+#else
+		d;
+#endif
 
 		/*
 		 * NBC 8PSK/QPSK with DVB-S is supported for DVB-S2,
 		 * but not hardware auto detection
 		 */
 		if (c->modulation != PSK_8 && c->modulation != QPSK) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: unsupported modulation selected (%d)\n",
 				__func__, c->modulation);
+#else
+			d;
+#endif
 			return -EOPNOTSUPP;
 		}
 
@@ -1289,8 +1513,12 @@ static int cx24116_set_frontend(struct dvb_frontend *fe,
 			state->dnxt.pilot_val = CX24116_PILOT_ON;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: unsupported pilot mode selected (%d)\n",
 				__func__, c->pilot);
+#else
+			d;
+#endif
 			return -EOPNOTSUPP;
 		}
 
@@ -1306,15 +1534,23 @@ static int cx24116_set_frontend(struct dvb_frontend *fe,
 			break;
 		case ROLLOFF_AUTO:	/* Rolloff must be explicit */
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: unsupported rolloff selected (%d)\n",
 				__func__, c->rolloff);
+#else
+			d;
+#endif
 			return -EOPNOTSUPP;
 		}
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: unsupported delivery system selected (%d)\n",
 			__func__, c->delivery_system);
+#else
+		d;
+#endif
 		return -EOPNOTSUPP;
 	}
 	state->dnxt.delsys = c->delivery_system;
@@ -1339,19 +1575,55 @@ static int cx24116_set_frontend(struct dvb_frontend *fe,
 	/* discard the 'current' tuning parameters and prepare to tune */
 	cx24116_clone_params(fe);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   delsys      = %d\n", __func__, state->dcur.delsys);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   modulation  = %d\n", __func__, state->dcur.modulation);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   frequency   = %d\n", __func__, state->dcur.frequency);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   pilot       = %d (val = 0x%02x)\n", __func__,
 		state->dcur.pilot, state->dcur.pilot_val);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   retune      = %d\n", __func__, retune);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   rolloff     = %d (val = 0x%02x)\n", __func__,
 		state->dcur.rolloff, state->dcur.rolloff_val);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   symbol_rate = %d\n", __func__, state->dcur.symbol_rate);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   FEC         = %d (mask/val = 0x%02x/0x%02x)\n", __func__,
 		state->dcur.fec, state->dcur.fec_mask, state->dcur.fec_val);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s:   Inversion   = %d (val = 0x%02x)\n", __func__,
 		state->dcur.inversion, state->dcur.inversion_val);
+#else
+	d;
+#endif
 
 	/* This is also done in advise/acquire on HVR4000 but not on LITE */
 	if (state->config->set_ts_params)
@@ -1435,13 +1707,21 @@ static int cx24116_set_frontend(struct dvb_frontend *fe,
 			cx24116_read_status(fe, &tunerstat);
 			status = tunerstat & (FE_HAS_SIGNAL | FE_HAS_SYNC);
 			if (status == (FE_HAS_SIGNAL | FE_HAS_SYNC)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("%s: Tuned\n", __func__);
+#else
+				d;
+#endif
 				goto tuned;
 			}
 			msleep(10);
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: Not tuned\n", __func__);
+#else
+		d;
+#endif
 
 		/* Toggle pilot bit when in auto-pilot */
 		if (state->dcur.pilot == PILOT_AUTO)

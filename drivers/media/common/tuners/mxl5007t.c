@@ -33,6 +33,7 @@ MODULE_PARM_DESC(debug, "set debug level");
 
 /* ------------------------------------------------------------------------- */
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define mxl_printk(kern, fmt, arg...) \
 	printk(kern "%s: " fmt "\n", __func__, ##arg)
 
@@ -49,6 +50,9 @@ MODULE_PARM_DESC(debug, "set debug level");
 ({							\
 	if (mxl5007t_debug)				\
 		mxl_printk(KERN_DEBUG, fmt, ##arg);	\
+#else
+#define mxl_;
+#endif
 })
 
 #define mxl_fail(ret)							\
@@ -802,7 +806,11 @@ static int mxl5007t_get_chip_id(struct mxl5007t_state *state)
 		break;
 	default:
 		name = "MxL5007T";
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: unknown rev (%02x)\n", __func__, id);
+#else
+		;
+#endif
 		id = MxL_UNKNOWN_ID;
 	}
 	state->chip_id = id;

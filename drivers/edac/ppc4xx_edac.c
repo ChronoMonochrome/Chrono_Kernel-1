@@ -120,6 +120,7 @@
 /*
  * Kernel logging without an EDAC instance
  */
+#ifdef CONFIG_DEBUG_PRINTK
 #define ppc4xx_edac_printk(level, fmt, arg...) \
 	edac_printk(level, "PPC4xx MC", fmt, ##arg)
 
@@ -144,6 +145,9 @@
  * The ibm,sdram-4xx-ddr2 Device Control Registers (DCRs) are
  * indirectly acccessed and have a base and length defined by the
  * device tree. The base can be anything; however, we expect the
+#else
+#define ppc4xx_edac_;
+#endif
  * length to be precisely two registers, the first for the address
  * window and the second for the data window.
  */
@@ -635,6 +639,7 @@ ppc4xx_ecc_dump_status(const struct mem_ctl_info *mci,
 
 	ppc4xx_edac_generate_message(mci, status, message, sizeof(message));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ppc4xx_edac_mc_printk(KERN_INFO, mci,
 			      "\n"
 			      "\tECCES: 0x%08x\n"
@@ -648,6 +653,9 @@ ppc4xx_ecc_dump_status(const struct mem_ctl_info *mci,
 			      status->bearh,
 			      status->bearl,
 			      message);
+#else
+	ppc4xx_edac_mc_;
+#endif
 }
 #endif /* DEBUG */
 
@@ -1148,8 +1156,16 @@ ppc4xx_edac_register_irq(struct platform_device *op, struct mem_ctl_info *mci)
 		goto fail2;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ppc4xx_edac_mc_printk(KERN_INFO, mci, "ECCDED irq is %d\n", ded_irq);
+#else
+	ppc4xx_edac_mc_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	ppc4xx_edac_mc_printk(KERN_INFO, mci, "ECCSEC irq is %d\n", sec_irq);
+#else
+	ppc4xx_edac_mc_;
+#endif
 
 	pdata->irqs.ded = ded_irq;
 	pdata->irqs.sec = sec_irq;
@@ -1211,7 +1227,11 @@ ppc4xx_edac_map_dcrs(const struct device_node *np, dcr_host_t *dcr_host)
 	*dcr_host = dcr_map(np, dcr_base, dcr_len);
 
 	if (!DCR_MAP_OK(*dcr_host)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ppc4xx_edac_printk(KERN_INFO, "Failed to map DCRs.\n");
+#else
+		ppc4xx_edac_;
+#endif
 		    return -ENODEV;
 	}
 
@@ -1245,8 +1265,12 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
 
 	if (!of_device_is_compatible(np, "ibm,sdram-405ex") &&
 	    !of_device_is_compatible(np, "ibm,sdram-405exr")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ppc4xx_edac_printk(KERN_NOTICE,
 				   "Only the PPC405EX[r] is supported.\n");
+#else
+		ppc4xx_edac_;
+#endif
 		return -ENODEV;
 	}
 
@@ -1270,8 +1294,12 @@ static int __devinit ppc4xx_edac_probe(struct platform_device *op)
 	memcheck = (mcopt1 & SDRAM_MCOPT1_MCHK_MASK);
 
 	if (memcheck == SDRAM_MCOPT1_MCHK_NON) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ppc4xx_edac_printk(KERN_INFO, "%s: No ECC memory detected or "
 				   "ECC is disabled.\n", np->full_name);
+#else
+		ppc4xx_edac_;
+#endif
 		status = -ENODEV;
 		goto done;
 	}
@@ -1389,12 +1417,16 @@ ppc4xx_edac_opstate_init(void)
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ppc4xx_edac_printk(KERN_INFO, "Reporting type: %s\n",
 			   ((edac_op_state == EDAC_OPSTATE_POLL) ?
 			    EDAC_OPSTATE_POLL_STR :
 			    ((edac_op_state == EDAC_OPSTATE_INT) ?
 			     EDAC_OPSTATE_INT_STR :
 			     EDAC_OPSTATE_UNKNOWN_STR)));
+#else
+	ppc4xx_edac_;
+#endif
 }
 
 /**
@@ -1408,7 +1440,11 @@ ppc4xx_edac_opstate_init(void)
 static int __init
 ppc4xx_edac_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	ppc4xx_edac_printk(KERN_INFO, PPC4XX_EDAC_MODULE_REVISION "\n");
+#else
+	ppc4xx_edac_;
+#endif
 
 	ppc4xx_edac_opstate_init();
 

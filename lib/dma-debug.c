@@ -187,8 +187,12 @@ static bool driver_filter(struct device *dev)
 	return ret;
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define err_printk(dev, entry, format, arg...) do {			\
 		error_count += 1;					\
+#else
+#define err_;
+#endif
 		if (driver_filter(dev) &&				\
 		    (show_all_errors || show_num_errors > 0)) {		\
 			WARN(1, "%s %s: " format,			\
@@ -687,6 +691,7 @@ static int dma_debug_device_change(struct notifier_block *nb, unsigned long acti
 		count = device_dma_allocations(dev, &entry);
 		if (count == 0)
 			break;
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(dev, entry, "DMA-API: device driver has pending "
 				"DMA allocations while released from device "
 				"[count=%d]\n"
@@ -695,6 +700,9 @@ static int dma_debug_device_change(struct notifier_block *nb, unsigned long acti
 				"[mapped with %s] [mapped as %s]\n",
 			count, entry->dev_addr, entry->size,
 			dir2name[entry->direction], type2name[entry->type]);
+#else
+		err_;
+#endif
 		break;
 	default:
 		break;
@@ -796,8 +804,12 @@ static void check_unmap(struct dma_debug_entry *ref)
 	unsigned long flags;
 
 	if (dma_mapping_error(ref->dev, ref->dev_addr)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(ref->dev, NULL, "DMA-API: device driver tries "
 			   "to free an invalid DMA memory address\n");
+#else
+		err_;
+#endif
 		return;
 	}
 
@@ -805,30 +817,43 @@ static void check_unmap(struct dma_debug_entry *ref)
 	entry = hash_bucket_find(bucket, ref);
 
 	if (!entry) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(ref->dev, NULL, "DMA-API: device driver tries "
 			   "to free DMA memory it has not allocated "
 			   "[device address=0x%016llx] [size=%llu bytes]\n",
 			   ref->dev_addr, ref->size);
+#else
+		err_;
+#endif
 		goto out;
 	}
 
 	if (ref->size != entry->size) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(ref->dev, entry, "DMA-API: device driver frees "
 			   "DMA memory with different size "
 			   "[device address=0x%016llx] [map size=%llu bytes] "
 			   "[unmap size=%llu bytes]\n",
 			   ref->dev_addr, entry->size, ref->size);
+#else
+		err_;
+#endif
 	}
 
 	if (ref->type != entry->type) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(ref->dev, entry, "DMA-API: device driver frees "
 			   "DMA memory with wrong function "
 			   "[device address=0x%016llx] [size=%llu bytes] "
 			   "[mapped as %s] [unmapped as %s]\n",
 			   ref->dev_addr, ref->size,
 			   type2name[entry->type], type2name[ref->type]);
+#else
+		err_;
+#endif
 	} else if ((entry->type == dma_debug_coherent) &&
 		   (ref->paddr != entry->paddr)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(ref->dev, entry, "DMA-API: device driver frees "
 			   "DMA memory with different CPU address "
 			   "[device address=0x%016llx] [size=%llu bytes] "
@@ -837,14 +862,21 @@ static void check_unmap(struct dma_debug_entry *ref)
 			   ref->dev_addr, ref->size,
 			   (unsigned long long)entry->paddr,
 			   (unsigned long long)ref->paddr);
+#else
+		err_;
+#endif
 	}
 
 	if (ref->sg_call_ents && ref->type == dma_debug_sg &&
 	    ref->sg_call_ents != entry->sg_call_ents) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(ref->dev, entry, "DMA-API: device driver frees "
 			   "DMA sg list with different entry count "
 			   "[map count=%d] [unmap count=%d]\n",
 			   entry->sg_call_ents, ref->sg_call_ents);
+#else
+		err_;
+#endif
 	}
 
 	/*
@@ -852,6 +884,7 @@ static void check_unmap(struct dma_debug_entry *ref)
 	 * DMA API don't handle this properly, so check for it here
 	 */
 	if (ref->direction != entry->direction) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(ref->dev, entry, "DMA-API: device driver frees "
 			   "DMA memory with different direction "
 			   "[device address=0x%016llx] [size=%llu bytes] "
@@ -859,6 +892,9 @@ static void check_unmap(struct dma_debug_entry *ref)
 			   ref->dev_addr, ref->size,
 			   dir2name[entry->direction],
 			   dir2name[ref->direction]);
+#else
+		err_;
+#endif
 	}
 
 	hash_bucket_del(entry);
@@ -871,8 +907,12 @@ out:
 static void check_for_stack(struct device *dev, void *addr)
 {
 	if (object_is_on_stack(addr))
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(dev, NULL, "DMA-API: device driver maps memory from"
 				"stack [addr=%p]\n", addr);
+#else
+		err_;
+#endif
 }
 
 static inline bool overlap(void *addr, unsigned long len, void *start, void *end)
@@ -889,7 +929,11 @@ static void check_for_illegal_area(struct device *dev, void *addr, unsigned long
 {
 	if (overlap(addr, len, _text, _etext) ||
 	    overlap(addr, len, __start_rodata, __end_rodata))
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(dev, NULL, "DMA-API: device driver maps memory from kernel text or rodata [addr=%p] [len=%lu]\n", addr, len);
+#else
+		err_;
+#endif
 }
 
 static void check_sync(struct device *dev,
@@ -905,14 +949,19 @@ static void check_sync(struct device *dev,
 	entry = hash_bucket_find(bucket, ref);
 
 	if (!entry) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(dev, NULL, "DMA-API: device driver tries "
 				"to sync DMA memory it has not allocated "
 				"[device address=0x%016llx] [size=%llu bytes]\n",
 				(unsigned long long)ref->dev_addr, ref->size);
+#else
+		err_;
+#endif
 		goto out;
 	}
 
 	if (ref->size > entry->size) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(dev, entry, "DMA-API: device driver syncs"
 				" DMA memory outside allocated range "
 				"[device address=0x%016llx] "
@@ -920,12 +969,16 @@ static void check_sync(struct device *dev,
 				"[sync offset+size=%llu]\n",
 				entry->dev_addr, entry->size,
 				ref->size);
+#else
+		err_;
+#endif
 	}
 
 	if (entry->direction == DMA_BIDIRECTIONAL)
 		goto out;
 
 	if (ref->direction != entry->direction) {
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(dev, entry, "DMA-API: device driver syncs "
 				"DMA memory with different direction "
 				"[device address=0x%016llx] [size=%llu bytes] "
@@ -933,10 +986,14 @@ static void check_sync(struct device *dev,
 				(unsigned long long)ref->dev_addr, entry->size,
 				dir2name[entry->direction],
 				dir2name[ref->direction]);
+#else
+		err_;
+#endif
 	}
 
 	if (to_cpu && !(entry->direction == DMA_FROM_DEVICE) &&
 		      !(ref->direction == DMA_TO_DEVICE))
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(dev, entry, "DMA-API: device driver syncs "
 				"device read-only DMA memory for cpu "
 				"[device address=0x%016llx] [size=%llu bytes] "
@@ -944,9 +1001,13 @@ static void check_sync(struct device *dev,
 				(unsigned long long)ref->dev_addr, entry->size,
 				dir2name[entry->direction],
 				dir2name[ref->direction]);
+#else
+		err_;
+#endif
 
 	if (!to_cpu && !(entry->direction == DMA_TO_DEVICE) &&
 		       !(ref->direction == DMA_FROM_DEVICE))
+#ifdef CONFIG_DEBUG_PRINTK
 		err_printk(dev, entry, "DMA-API: device driver syncs "
 				"device write-only DMA memory to device "
 				"[device address=0x%016llx] [size=%llu bytes] "
@@ -954,6 +1015,9 @@ static void check_sync(struct device *dev,
 				(unsigned long long)ref->dev_addr, entry->size,
 				dir2name[entry->direction],
 				dir2name[ref->direction]);
+#else
+		err_;
+#endif
 
 out:
 	put_hash_bucket(bucket, &flags);

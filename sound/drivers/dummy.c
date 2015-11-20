@@ -993,9 +993,13 @@ static int __devinit snd_dummy_probe(struct platform_device *devptr)
 	dummy->card = card;
 	for (mdl = dummy_models; *mdl && model[dev]; mdl++) {
 		if (strcmp(model[dev], (*mdl)->name) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"snd-dummy: Using model '%s' for card %i\n",
 				(*mdl)->name, card->number);
+#else
+			;
+#endif
 			m = dummy->model = *mdl;
 			break;
 		}

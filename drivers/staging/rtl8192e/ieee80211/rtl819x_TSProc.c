@@ -530,7 +530,11 @@ void RemovePeerTS(struct ieee80211_device* ieee, u8* Addr)
 {
 	PTS_COMMON_INFO	pTS, pTmpTS;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("===========>RemovePeerTS,%pM\n", Addr);
+#else
+	;
+#endif
 	list_for_each_entry_safe(pTS, pTmpTS, &ieee->Tx_TS_Pending_List, List)
 	{
 		if (memcmp(pTS->Addr, Addr, 6) == 0)
@@ -545,7 +549,11 @@ void RemovePeerTS(struct ieee80211_device* ieee, u8* Addr)
 	{
 		if (memcmp(pTS->Addr, Addr, 6) == 0)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("====>remove Tx_TS_admin_list\n");
+#else
+			;
+#endif
 			RemoveTsEntry(ieee, pTS, TX_DIR);
 			list_del_init(&pTS->List);
 			list_add_tail(&pTS->List, &ieee->Tx_TS_Unused_List);

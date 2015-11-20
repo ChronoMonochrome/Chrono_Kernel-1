@@ -37,10 +37,18 @@ static void sysctl_print_path(struct ctl_table *table)
 	if (table->procname) {
 		for (i = depth; i >= 0; i--) {
 			tmp = sysctl_parent(table, i);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("/%s", tmp->procname?tmp->procname:"");
+#else
+			;
+#endif
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" ");
+#else
+	;
+#endif
 }
 
 static struct ctl_table *sysctl_check_lookup(struct nsproxy *namespaces,
@@ -88,7 +96,11 @@ static void set_fail(const char **fail, struct ctl_table *table, const char *str
 	if (*fail) {
 		printk(KERN_ERR "sysctl table check failed: ");
 		sysctl_print_path(table);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %s\n", *fail);
+#else
+		;
+#endif
 		dump_stack();
 	}
 	*fail = str;

@@ -104,9 +104,13 @@ static void fill_balloon(struct virtio_balloon *vb, size_t num)
 					__GFP_NOMEMALLOC | __GFP_NOWARN);
 		if (!page) {
 			if (printk_ratelimit())
+#ifdef CONFIG_DEBUG_PRINTK
 				dev_printk(KERN_INFO, &vb->vdev->dev,
 					   "Out of puff! Can't get %zu pages\n",
 					   num);
+#else
+				dev_;
+#endif
 			/* Sleep for at least 1/5 of a second before retry. */
 			msleep(200);
 			break;

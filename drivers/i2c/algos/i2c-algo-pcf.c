@@ -60,27 +60,43 @@ static int i2c_debug;
 
 static void i2c_start(struct i2c_algo_pcf_data *adap)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	DEBPROTO(printk(KERN_DEBUG "S "));
+#else
+	DEBPROTO(;
+#endif
 	set_pcf(adap, 1, I2C_PCF_START);
 }
 
 static void i2c_repstart(struct i2c_algo_pcf_data *adap)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	DEBPROTO(printk(" Sr "));
+#else
+	DEBPROTO(;
+#endif
 	set_pcf(adap, 1, I2C_PCF_REPSTART);
 }
 
 static void i2c_stop(struct i2c_algo_pcf_data *adap)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	DEBPROTO(printk("P\n"));
+#else
+	DEBPROTO(;
+#endif
 	set_pcf(adap, 1, I2C_PCF_STOP);
 }
 
 static void handle_lab(struct i2c_algo_pcf_data *adap, const int *status)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB2(printk(KERN_INFO
 		"i2c-algo-pcf.o: lost arbitration (CSR 0x%02x)\n",
 		*status));
+#else
+	DEB2(;
+#endif
 	/*
 	 * Cleanup from LAB -- reset and enable ESO.
 	 * This resets the PCF8584; since we've lost the bus, no
@@ -101,9 +117,13 @@ static void handle_lab(struct i2c_algo_pcf_data *adap, const int *status)
 	if (adap->lab_mdelay)
 		mdelay(adap->lab_mdelay);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB2(printk(KERN_INFO
 		"i2c-algo-pcf.o: reset LAB condition (CSR 0x%02x)\n",
 		get_pcf(adap, 1)));
+#else
+	DEB2(;
+#endif
 }
 
 static int wait_for_bb(struct i2c_algo_pcf_data *adap)
@@ -164,8 +184,12 @@ static int pcf_init_8584 (struct i2c_algo_pcf_data *adap)
 {
 	unsigned char temp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB3(printk(KERN_DEBUG "i2c-algo-pcf.o: PCF state 0x%02x\n",
 				get_pcf(adap, 1)));
+#else
+	DEB3(;
+#endif
 
 	/* S1=0x80: S0 selected, serial interface off */
 	set_pcf(adap, 1, I2C_PCF_PIN);
@@ -211,7 +235,11 @@ static int pcf_init_8584 (struct i2c_algo_pcf_data *adap)
 		return -ENXIO;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "i2c-algo-pcf.o: detected and initialized PCF8584.\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -333,9 +361,13 @@ static int pcf_xfer(struct i2c_adapter *i2c_adap,
 	for (i = 0;ret >= 0 && i < num; i++) {
 		pmsg = &msgs[i];
 
+#ifdef CONFIG_DEBUG_PRINTK
 		DEB2(printk(KERN_DEBUG "i2c-algo-pcf.o: Doing %s %d bytes to 0x%02x - %d of %d messages\n",
 		     pmsg->flags & I2C_M_RD ? "read" : "write",
 		     pmsg->len, pmsg->addr, i + 1, num);)
+#else
+		DEB2(;
+#endif
 
 		ret = pcf_doAddress(adap, pmsg);
 
@@ -366,28 +398,48 @@ static int pcf_xfer(struct i2c_adapter *i2c_adap,
 			goto out;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		DEB3(printk(KERN_DEBUG "i2c-algo-pcf.o: Msg %d, addr=0x%x, flags=0x%x, len=%d\n",
 			    i, msgs[i].addr, msgs[i].flags, msgs[i].len);)
+#else
+		DEB3(;
+#endif
 
 		if (pmsg->flags & I2C_M_RD) {
 			ret = pcf_readbytes(i2c_adap, pmsg->buf, pmsg->len,
 					    (i + 1 == num));
 
 			if (ret != pmsg->len) {
+#ifdef CONFIG_DEBUG_PRINTK
 				DEB2(printk(KERN_DEBUG "i2c-algo-pcf.o: fail: "
 					    "only read %d bytes.\n",ret));
+#else
+				DEB2(;
+#endif
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				DEB2(printk(KERN_DEBUG "i2c-algo-pcf.o: read %d bytes.\n",ret));
+#else
+				DEB2(;
+#endif
 			}
 		} else {
 			ret = pcf_sendbytes(i2c_adap, pmsg->buf, pmsg->len,
 					    (i + 1 == num));
 
 			if (ret != pmsg->len) {
+#ifdef CONFIG_DEBUG_PRINTK
 				DEB2(printk(KERN_DEBUG "i2c-algo-pcf.o: fail: "
 					    "only wrote %d bytes.\n",ret));
+#else
+				DEB2(;
+#endif
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				DEB2(printk(KERN_DEBUG "i2c-algo-pcf.o: wrote %d bytes.\n",ret));
+#else
+				DEB2(;
+#endif
 			}
 		}
 	}

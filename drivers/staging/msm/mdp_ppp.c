@@ -1374,8 +1374,12 @@ int mdp_ppp_blit(struct fb_info *info, struct mdp_blit_req *req,
 	if (req->flags & MDP_BLUR) {
 #ifdef CONFIG_FB_MSM_MDP31
 		if (req->flags & MDP_SHARPENING)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"mdp: MDP_SHARPENING is set with MDP_BLUR!\n");
+#else
+			;
+#endif
 		req->flags |= MDP_SHARPENING;
 		req->sharpening_strength = -127;
 #else

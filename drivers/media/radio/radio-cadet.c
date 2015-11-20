@@ -293,12 +293,20 @@ static void cadet_handler(unsigned long data)
 	if (mutex_trylock(&dev->lock)) {
 		outb(0x3, dev->io);       /* Select RDS Decoder Control */
 		if ((inb(dev->io + 1) & 0x20) != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "cadet: RDS fifo overflow\n");
+#else
+			;
+#endif
 		outb(0x80, dev->io);      /* Select RDS fifo */
 		while ((inb(dev->io) & 0x80) != 0) {
 			dev->rdsbuf[dev->rdsin] = inb(dev->io + 1);
 			if (dev->rdsin == dev->rdsout)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "cadet: RDS buffer overflow\n");
+#else
+				;
+#endif
 			else
 				dev->rdsin++;
 		}
@@ -607,7 +615,11 @@ static int cadet_pnp_probe(struct pnp_dev *dev, const struct pnp_device_id *dev_
 
 	io = pnp_port_start(dev, 0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "radio-cadet: PnP reports device at %#x\n", io);
+#else
+	;
+#endif
 
 	return io;
 }

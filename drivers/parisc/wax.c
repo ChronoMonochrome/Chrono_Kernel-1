@@ -83,7 +83,11 @@ static int __init wax_init_chip(struct parisc_device *dev)
 	wax->hpa = dev->hpa.start;
 
 	wax->version = 0;   /* gsc_readb(wax->hpa+WAX_VER); */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s at 0x%lx found.\n", wax->name, wax->hpa);
+#else
+	;
+#endif
 
 	/* Stop wax hissing for a bit */
 	wax_init_irq(wax);

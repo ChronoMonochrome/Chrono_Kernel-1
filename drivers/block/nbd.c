@@ -42,10 +42,14 @@
 #define LO_MAGIC 0x68797548
 
 #ifdef NDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(flags, fmt...)
 #else /* NDEBUG */
 #define dprintk(flags, fmt...) do { \
 	if (debugflags & (flags)) printk(KERN_DEBUG fmt); \
+#else
+#define d;
+#endif
 } while (0)
 #define DBG_IOCTL       0x0004
 #define DBG_INIT        0x0010
@@ -108,8 +112,12 @@ static void nbd_end_request(struct request *req)
 	struct request_queue *q = req->q;
 	unsigned long flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(DBG_BLKDEV, "%s: request %p: %s\n", req->rq_disk->disk_name,
 			req, error ? "failed" : "done");
+#else
+	d;
+#endif
 
 	spin_lock_irqsave(q->queue_lock, flags);
 	__blk_end_request_all(req, error);
@@ -127,8 +135,12 @@ static void sock_shutdown(struct nbd_device *lo, int lock)
 	if (lock)
 		mutex_lock(&lo->tx_lock);
 	if (lo->sock) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: shutting down socket\n",
 			lo->disk->disk_name);
+#else
+		;
+#endif
 		kernel_sock_shutdown(lo->sock, SHUT_RDWR);
 		lo->sock = NULL;
 	}
@@ -140,8 +152,12 @@ static void nbd_xmit_timeout(unsigned long arg)
 {
 	struct task_struct *task = (struct task_struct *)arg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "nbd: killing hung xmit (%s, pid: %d)\n",
 		task->comm, task->pid);
+#else
+	;
+#endif
 	force_sig(SIGKILL, task);
 }
 
@@ -197,9 +213,13 @@ static int sock_xmit(struct nbd_device *lo, int send, void *buf, int size,
 
 		if (signal_pending(current)) {
 			siginfo_t info;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "nbd (pid %d: %s) got signal %d\n",
 				task_pid_nr(current), current->comm,
 				dequeue_signal_lock(current, &current->blocked, &info));
+#else
+			;
+#endif
 			result = -EINTR;
 			sock_shutdown(lo, !send);
 			break;
@@ -242,11 +262,15 @@ static int nbd_send_req(struct nbd_device *lo, struct request *req)
 	request.len = htonl(size);
 	memcpy(request.handle, &req, sizeof(req));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(DBG_TX, "%s: request %p: sending control (%s@%llu,%uB)\n",
 			lo->disk->disk_name, req,
 			nbdcmd_to_ascii(nbd_cmd(req)),
 			(unsigned long long)blk_rq_pos(req) << 9,
 			blk_rq_bytes(req));
+#else
+	d;
+#endif
 	result = sock_xmit(lo, 1, &request, sizeof(request),
 			(nbd_cmd(req) == NBD_CMD_WRITE) ? MSG_MORE : 0);
 	if (result <= 0) {
@@ -266,8 +290,12 @@ static int nbd_send_req(struct nbd_device *lo, struct request *req)
 			flags = 0;
 			if (!rq_iter_last(req, iter))
 				flags = MSG_MORE;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(DBG_TX, "%s: request %p: sending %d bytes data\n",
 					lo->disk->disk_name, req, bvec->bv_len);
+#else
+			d;
+#endif
 			result = sock_send_bvec(lo, bvec, flags);
 			if (result <= 0) {
 				printk(KERN_ERR "%s: Send data failed (result %d)\n",
@@ -360,8 +388,12 @@ static struct request *nbd_read_stat(struct nbd_device *lo)
 		return req;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(DBG_RX, "%s: request %p: got reply\n",
 			lo->disk->disk_name, req);
+#else
+	d;
+#endif
 	if (nbd_cmd(req) == NBD_CMD_READ) {
 		struct req_iterator iter;
 		struct bio_vec *bvec;
@@ -374,8 +406,12 @@ static struct request *nbd_read_stat(struct nbd_device *lo)
 				req->errors++;
 				return req;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk(DBG_RX, "%s: request %p: got %d bytes data\n",
 				lo->disk->disk_name, req, bvec->bv_len);
+#else
+			d;
+#endif
 		}
 	}
 	return req;
@@ -529,7 +565,11 @@ static int nbd_thread(void *data)
  * We always wait for result of write, for now. It would be nice to make it optional
  * in future
  * if ((rq_data_dir(req) == WRITE) && (lo->flags & NBD_WRITE_NOCHK))
+#ifdef CONFIG_DEBUG_PRINTK
  *   { printk( "Warning: Ignoring result!\n"); nbd_end_request( req ); }
+#else
+ *   { ;
+#endif
  */
 
 static void do_nbd_request(struct request_queue *q)
@@ -541,8 +581,12 @@ static void do_nbd_request(struct request_queue *q)
 
 		spin_unlock_irq(q->queue_lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(DBG_BLKDEV, "%s: request %p: dequeued (flags=%x)\n",
 				req->rq_disk->disk_name, req, req->cmd_type);
+#else
+		d;
+#endif
 
 		lo = req->rq_disk->private_data;
 
@@ -576,7 +620,11 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
 	case NBD_DISCONNECT: {
 		struct request sreq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	        printk(KERN_INFO "%s: NBD_DISCONNECT\n", lo->disk->disk_name);
+#else
+	        ;
+#endif
 
 		blk_rq_init(NULL, &sreq);
 		sreq.cmd_type = REQ_TYPE_SPECIAL;
@@ -675,7 +723,11 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
 		file = lo->file;
 		lo->file = NULL;
 		nbd_clear_que(lo);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: queue cleared\n", lo->disk->disk_name);
+#else
+		;
+#endif
 		if (file)
 			fput(file);
 		lo->bytesize = 0;
@@ -695,10 +747,14 @@ static int __nbd_ioctl(struct block_device *bdev, struct nbd_device *lo,
 		return 0;
 
 	case NBD_PRINT_DEBUG:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: next = %p, prev = %p, head = %p\n",
 			bdev->bd_disk->disk_name,
 			lo->queue_head.next, lo->queue_head.prev,
 			&lo->queue_head);
+#else
+		;
+#endif
 		return 0;
 	}
 	return -ENOTTY;
@@ -716,8 +772,12 @@ static int nbd_ioctl(struct block_device *bdev, fmode_t mode,
 	BUG_ON(lo->magic != LO_MAGIC);
 
 	/* Anyone capable of this syscall can do *real bad* things */
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(DBG_IOCTL, "%s: nbd_ioctl cmd=%s(0x%x) arg=%lu\n",
 			lo->disk->disk_name, ioctl_cmd_to_ascii(cmd), cmd, arg);
+#else
+	d;
+#endif
 
 	mutex_lock(&lo->tx_lock);
 	error = __nbd_ioctl(bdev, lo, cmd, arg);
@@ -746,7 +806,11 @@ static int __init nbd_init(void)
 	BUILD_BUG_ON(sizeof(struct nbd_request) != 28);
 
 	if (max_part < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "nbd: max_part must be >= 0\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -801,8 +865,16 @@ static int __init nbd_init(void)
 		goto out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "nbd: registered device at major %d\n", NBD_MAJOR);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(DBG_INIT, "nbd: debugflags=0x%x\n", debugflags);
+#else
+	d;
+#endif
 
 	for (i = 0; i < nbds_max; i++) {
 		struct gendisk *disk = nbd_dev[i].disk;
@@ -850,7 +922,11 @@ static void __exit nbd_cleanup(void)
 	}
 	unregister_blkdev(NBD_MAJOR, "nbd");
 	kfree(nbd_dev);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "nbd: unregistered device at major %d\n", NBD_MAJOR);
+#else
+	;
+#endif
 }
 
 module_init(nbd_init);

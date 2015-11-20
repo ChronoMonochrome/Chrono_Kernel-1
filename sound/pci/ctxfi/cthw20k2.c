@@ -1176,7 +1176,11 @@ static int hw_daio_init(struct hw *hw, const struct daio_conf *info)
 		hw_write_20kx(hw, AUDIO_IO_TX_BLRCLK, 0x11111111);
 		hw_write_20kx(hw, AUDIO_IO_RX_BLRCLK, 0);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "ctxfi: ERROR!!! Invalid sampling rate!!!\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -1229,8 +1233,12 @@ static int hw_trn_init(struct hw *hw, const struct trn_conf *info)
 
 	/* Set up device page table */
 	if ((~0UL) == info->vm_pgt_phys) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "ctxfi: "
 		       "Wrong device page table page address!!!\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1338,7 +1346,11 @@ static int hw_pll_init(struct hw *hw, unsigned int rsr)
 		break;
 	}
 	if (i >= 1000) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "ctxfi: PLL initialization failed!!!\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
@@ -1362,7 +1374,11 @@ static int hw_auto_init(struct hw *hw)
 			break;
 	}
 	if (!get_field(gctl, GCTL_AID)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "ctxfi: Card Auto-init failed!!!\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 
@@ -1792,7 +1808,11 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
 	/* Initialize I2C */
 	err = hw20k2_i2c_init(hw, 0x1A, 1, 1);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "ctxfi: Failure to acquire I2C!!!\n");
+#else
+		;
+#endif
 		goto error;
 	}
 
@@ -1812,8 +1832,12 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
 		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_MMC, 0x0A),
 						MAKE_WM8775_DATA(0x0A));
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "ctxfi: Invalid master sampling "
 				  "rate (msr %d)!!!\n", info->msr);
+#else
+		;
+#endif
 		err = -EINVAL;
 		goto error;
 	}
@@ -1852,7 +1876,11 @@ static int hw_adc_init(struct hw *hw, const struct adc_conf *info)
 		hw20k2_i2c_write(hw, MAKE_WM8775_ADDR(WM8775_AADCR, 0xCF),
 				MAKE_WM8775_DATA(0xCF)); /* No boost */
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "ctxfi: ERROR!!! Invalid input mux!!!\n");
+#else
+		;
+#endif
 		err = -EINVAL;
 		goto error;
 	}

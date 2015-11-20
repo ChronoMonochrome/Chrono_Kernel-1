@@ -216,10 +216,22 @@ static int DIVA_INIT_FUNCTION maint_init(void)
 	do_gettimeofday(&start_time);
 	init_waitqueue_head(&msgwaitq);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", DRIVERNAME);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_MNT);
+#else
+	;
+#endif
 	strcpy(tmprev, main_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s  Build: %s \n", getrev(tmprev), DIVA_BUILD);
+#else
+	;
+#endif
 
 	if (!divas_maint_register_chrdev()) {
 		ret = -EIO;
@@ -234,9 +246,13 @@ static int DIVA_INIT_FUNCTION maint_init(void)
 		goto out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: trace buffer = %p - %d kBytes, %s (Major: %d)\n",
 	       DRIVERLNAME, buffer, (buffer_length / 1024),
 	       (diva_dbg_mem == 0) ? "internal" : "external", major);
+#else
+	;
+#endif
 
       out:
 	return (ret);
@@ -250,7 +266,11 @@ static void DIVA_EXIT_FUNCTION maint_exit(void)
 	divas_maint_unregister_chrdev();
 	mntfunc_finit();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
+#else
+	;
+#endif
 }
 
 module_init(maint_init);

@@ -269,6 +269,7 @@ static int tracewrap;
 /**********/
 
 #ifdef IP2DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG_CNT(s) printk(KERN_DEBUG "(%s): [%x] ttyc=%d, modc=%x -> %s\n", \
 		    tty->name,(pCh->flags), \
 		    tty->count,/*GET_USE_COUNT(module)*/0,s)
@@ -287,6 +288,9 @@ static int tracewrap;
 /* Configuration area for modprobe */
 
 MODULE_AUTHOR("Doug McNash");
+#else
+#define DBG_CNT(s) ;
+#endif
 MODULE_DESCRIPTION("Computone IntelliPort Plus Driver");
 MODULE_LICENSE("GPL");
 
@@ -591,7 +595,11 @@ static int __init ip2_loadmain(void)
 	poll_only = !poll_only;
 
 	/* Announce our presence */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s version %s\n", pcName, pcVersion);
+#else
+	;
+#endif
 
 	ip2_tty_driver = alloc_tty_driver(IP2_MAX_PORTS);
 	if (!ip2_tty_driver)
@@ -788,7 +796,11 @@ out:
 retry:
 			if (!timer_pending(&PollTimer)) {
 				mod_timer(&PollTimer, POLL_TIMEOUT);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IP2: polling\n");
+#else
+				;
+#endif
 			}
 		} else {
 			if (have_requested_irq(ip2config.irq[i]))
@@ -801,8 +813,12 @@ retry:
 				printk(KERN_ERR "IP2: request_irq failed: "
 						"error %d\n", rc);
 				ip2config.irq[i] = CIR_POLL;
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IP2: Polling %ld/sec.\n",
 						(POLL_TIMEOUT - jiffies));
+#else
+				;
+#endif
 				goto retry;
 			}
 			mark_requested_irq(ip2config.irq[i]);
@@ -852,8 +868,12 @@ ip2_init_board(int boardnum, const struct firmware *fw)
 			 pB->i2eBase, pB->i2eError );
 		goto err_initialize;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IP2: Board %d: addr=0x%x irq=%d\n", boardnum + 1,
 	       ip2config.addr[boardnum], ip2config.irq[boardnum] );
+#else
+	;
+#endif
 
 	if (!request_region( ip2config.addr[boardnum], 8, pcName )) {
 		printk(KERN_ERR "IP2: bad addr=0x%x\n", ip2config.addr[boardnum]);
@@ -934,8 +954,12 @@ ip2_init_board(int boardnum, const struct firmware *fw)
 				}
 			}
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IP2: EX box=%d ports=%d %d bit\n",
 			nboxes, nports, pB->i2eDataWidth16 ? 16 : 8 );
+#else
+		;
+#endif
 		}
 		goto ex_exit;
 	}
@@ -1050,13 +1074,25 @@ find_eisa_board( int start_slot )
 	}
 
 #ifdef IP2DEBUG_INIT
+#ifdef CONFIG_DEBUG_PRINTK
 printk(KERN_DEBUG "Computone EISA board in slot %d, I.D. 0x%x%x, Address 0x%x",
 	       base >> 12, idm, idp, setup_address);
+#else
+;
+#endif
 	if ( Eisa_irq ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG ", Interrupt %d %s\n",
 		       setup_irq, (ismine & 2) ? "(edge)" : "(level)");
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG ", (polled)\n");
+#else
+		;
+#endif
 	}
 #endif
 	return setup_address;
@@ -1434,7 +1470,11 @@ open_sanity_check( i2ChanStrPtr pCh, i2eBordStrPtr pBrd )
 		printk(KERN_ERR "IP2: bad device index (%d)\n", pCh->port_index );
 	} else if (&((i2ChanStrPtr)pBrd->i2eChannelPtr)[pCh->port_index] != pCh) {
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IP2: all pointers check out!\n" );
+#else
+		;
+#endif
 	}
 }
 #endif
@@ -1470,9 +1510,13 @@ ip2_open( PTTY tty, struct file *pFile )
 	tty->driver_data = pCh;
 
 #ifdef IP2DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG \
 			"IP2:open(tty=%p,pFile=%p):dev=%s,ch=%d,idx=%d\n",
 	       tty, pFile, tty->name, pCh->infl.hd.i2sChannel, pCh->port_index);
+#else
+	;
+#endif
 	open_sanity_check ( pCh, pCh->pMyBord );
 #endif
 
@@ -1519,7 +1563,11 @@ ip2_open( PTTY tty, struct file *pFile )
 		do_clocal = 1;
 
 #ifdef IP2DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "OpenBlock: do_clocal = %d\n", do_clocal);
+#else
+	;
+#endif
 #endif
 
 	++pCh->wopen;
@@ -1544,9 +1592,17 @@ ip2_open( PTTY tty, struct file *pFile )
 		}
 
 #ifdef IP2DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ASYNC_CLOSING = %s\n",
 			(pCh->flags & ASYNC_CLOSING)?"True":"False");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "OpenBlock: waiting for CD or signal\n");
+#else
+		;
+#endif
 #endif
 		ip2trace (CHANN, ITRC_OPEN, 3, 2, 0,
 				(pCh->flags & ASYNC_CLOSING) );
@@ -1618,7 +1674,11 @@ ip2_close( PTTY tty, struct file *pFile )
 	ip2trace (CHANN, ITRC_CLOSE, ITRC_ENTER, 0 );
 
 #ifdef IP2DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "IP2:close %s:\n",tty->name);
+#else
+	;
+#endif
 #endif
 
 	if ( tty_hung_up_p ( pFile ) ) {
@@ -2145,7 +2205,11 @@ ip2_ioctl ( PTTY tty, UINT cmd, ULONG arg )
 	ip2trace (CHANN, ITRC_IOCTL, ITRC_ENTER, 2, cmd, arg );
 
 #ifdef IP2DEBUG_IOCTL
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "IP2: ioctl cmd (%x), arg (%lx)\n", cmd, arg );
+#else
+	;
+#endif
 #endif
 
 	switch(cmd) {
@@ -2809,7 +2873,11 @@ DumpFifoBuffer ( char __user *pData, int count )
 	int rc;
 	rc = copy_to_user(pData, DBGBuf, count);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Last index %d\n", I );
+#else
+	;
+#endif
 
 	return count;
 #endif	/* DEBUG_FIFO */

@@ -137,7 +137,11 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	if (hm->h.size > sizeof(*hm))
 		hm->h.size = sizeof(*hm);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_INFO "message size %d\n", hm->h.wSize); */
+#else
+	/* ;
+#endif
 
 	uncopied_bytes = copy_from_user(hm, puhm, hm->h.size);
 	if (uncopied_bytes) {
@@ -150,7 +154,11 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		err = -EFAULT;
 		goto out;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_INFO "user response size %d\n", res_max_size); */
+#else
+	/* ;
+#endif
 	if (res_max_size < sizeof(struct hpi_response_header)) {
 		HPI_DEBUG_LOG(WARNING, "small res size %d\n", res_max_size);
 		err = -EFAULT;
@@ -285,7 +293,11 @@ long asihpi_hpi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 
 	/* on return response size must be set */
+#ifdef CONFIG_DEBUG_PRINTK
 	/*printk(KERN_INFO "response size %d\n", hr->h.wSize); */
+#else
+	/*;
+#endif
 
 	if (!hr->h.size) {
 		HPI_DEBUG_LOG(ERROR, "response zero size\n");
@@ -326,10 +338,14 @@ int __devinit asihpi_adapter_probe(struct pci_dev *pci_dev,
 
 	memset(&adapter, 0, sizeof(adapter));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &pci_dev->dev,
 		"probe %04x:%04x,%04x:%04x,%04x\n", pci_dev->vendor,
 		pci_dev->device, pci_dev->subsystem_vendor,
 		pci_dev->subsystem_device, pci_dev->devfn);
+#else
+	dev_;
+#endif
 
 	if (pci_enable_device(pci_dev) < 0) {
 		dev_printk(KERN_ERR, &pci_dev->dev,
@@ -409,9 +425,13 @@ int __devinit asihpi_adapter_probe(struct pci_dev *pci_dev,
 	mutex_init(&adapters[adapter.index].mutex);
 	pci_set_drvdata(pci_dev, &adapters[adapter.index]);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &pci_dev->dev,
 		"probe succeeded for ASI%04X HPI index %d\n", adapter.type,
 		adapter.index);
+#else
+	dev_;
+#endif
 
 	return 0;
 
@@ -458,11 +478,15 @@ void __devexit asihpi_adapter_remove(struct pci_dev *pci_dev)
 
 	pci_set_drvdata(pci_dev, NULL);
 	if (1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pci_dev->dev,
 			"remove %04x:%04x,%04x:%04x,%04x," " HPI index %d.\n",
 			pci_dev->vendor, pci_dev->device,
 			pci_dev->subsystem_vendor, pci_dev->subsystem_device,
 			pci_dev->devfn, pa->index);
+#else
+		dev_;
+#endif
 
 	memset(pa, 0, sizeof(*pa));
 }
@@ -474,7 +498,11 @@ void __init asihpi_init(void)
 
 	memset(adapters, 0, sizeof(adapters));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ASIHPI driver " HPI_VER_STRING "\n");
+#else
+	;
+#endif
 
 	hpi_init_message_response(&hm, &hr, HPI_OBJ_SUBSYSTEM,
 		HPI_SUBSYS_DRIVER_LOAD);

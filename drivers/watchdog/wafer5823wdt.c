@@ -203,8 +203,12 @@ static int wafwdt_close(struct inode *inode, struct file *file)
 	if (expect_close == 42)
 		wafwdt_stop();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 		    "WDT device closed unexpectedly.  WDT will not stop!\n");
+#else
+		;
+#endif
 		wafwdt_ping();
 	}
 	clear_bit(0, &wafwdt_is_open);
@@ -256,14 +260,22 @@ static int __init wafwdt_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	  "WDT driver for Wafer 5823 single board computer initialising.\n");
+#else
+	;
+#endif
 
 	if (timeout < 1 || timeout > 255) {
 		timeout = WD_TIMO;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"timeout value must be 1 <= x <= 255, using %d\n",
 								timeout);
+#else
+		;
+#endif
 	}
 
 	if (wdt_stop != wdt_start) {
@@ -298,8 +310,12 @@ static int __init wafwdt_init(void)
 		goto error4;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. timeout=%d sec (nowayout=%d)\n",
 		timeout, nowayout);
+#else
+	;
+#endif
 
 	return ret;
 error4:

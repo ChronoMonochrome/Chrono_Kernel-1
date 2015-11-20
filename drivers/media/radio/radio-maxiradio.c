@@ -62,6 +62,7 @@ MODULE_PARM_DESC(debug, "activates debug info");
 
 #define RADIO_VERSION KERNEL_VERSION(0, 7, 7)
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(dev, num, fmt, arg...) \
 	v4l2_dbg(num, debug, &dev->v4l2_dev, fmt, ## arg)
 
@@ -76,6 +77,9 @@ MODULE_PARM_DESC(debug, "activates debug info");
 
 /* TEA5757 pin mappings */
 static const int clk = 1, data = 2, wren = 4, mo_st = 8, power = 16;
+#else
+#define d;
+#endif
 
 #define FREQ_LO		(87 * 16000)
 #define FREQ_HI		(108 * 16000)
@@ -126,10 +130,18 @@ static void outbit(unsigned long bit, u16 io)
 static void turn_power(struct maxiradio *dev, int p)
 {
 	if (p != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(dev, 1, "Radio powered on\n");
+#else
+		d;
+#endif
 		outb(power, dev->io);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(dev, 1, "Radio powered off\n");
+#else
+		d;
+#endif
 		outb(0, dev->io);
 	}
 }
@@ -163,9 +175,13 @@ static void set_freq(struct maxiradio *dev, u32 freq)
 		si >>= 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(dev, 1, "Radio freq set to %d.%02d MHz\n",
 				freq / 16000,
 				freq % 16000 * 100 / 16000);
+#else
+	d;
+#endif
 
 	turn_power(dev, 1);
 }
@@ -266,10 +282,14 @@ static int vidioc_s_frequency(struct file *file, void *priv,
 	if (f->tuner != 0 || f->type != V4L2_TUNER_RADIO)
 		return -EINVAL;
 	if (f->frequency < FREQ_LO || f->frequency > FREQ_HI) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(dev, 1, "radio freq (%d.%02d MHz) out of range (%d-%d)\n",
 					f->frequency / 16000,
 					f->frequency % 16000 * 100 / 16000,
 					FREQ_LO / 16000, FREQ_HI / 16000);
+#else
+		d;
+#endif
 
 		return -EINVAL;
 	}
@@ -293,9 +313,13 @@ static int vidioc_g_frequency(struct file *file, void *priv,
 	f->type = V4L2_TUNER_RADIO;
 	f->frequency = dev->freq;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(dev, 4, "radio freq is %d.%02d MHz",
 				f->frequency / 16000,
 				f->frequency % 16000 * 100 / 16000);
+#else
+	d;
+#endif
 
 	return 0;
 }

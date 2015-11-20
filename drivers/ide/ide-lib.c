@@ -64,30 +64,70 @@ static void ide_dump_sector(ide_drive_t *drive)
 	ide_tf_readback(drive, &cmd);
 
 	if (lba48 || (tf->device & ATA_LBA))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT ", LBAsect=%llu",
 			(unsigned long long)ide_get_lba_addr(&cmd, lba48));
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT ", CHS=%d/%d/%d", (tf->lbah << 8) + tf->lbam,
 			tf->device & 0xf, tf->lbal);
+#else
+		;
+#endif
 }
 
 static void ide_dump_ata_error(ide_drive_t *drive, u8 err)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "{ ");
+#else
+	;
+#endif
 	if (err & ATA_ABORTED)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "DriveStatusError ");
+#else
+		;
+#endif
 	if (err & ATA_ICRC)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "%s",
 			(err & ATA_ABORTED) ? "BadCRC " : "BadSector ");
+#else
+		;
+#endif
 	if (err & ATA_UNC)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "UncorrectableError ");
+#else
+		;
+#endif
 	if (err & ATA_IDNF)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "SectorIdNotFound ");
+#else
+		;
+#endif
 	if (err & ATA_TRK0NF)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "TrackZeroNotFound ");
+#else
+		;
+#endif
 	if (err & ATA_AMNF)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "AddrMarkNotFound ");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "}");
+#else
+	;
+#endif
 	if ((err & (ATA_BBK | ATA_ABORTED)) == ATA_BBK ||
 	    (err & (ATA_UNC | ATA_IDNF | ATA_AMNF))) {
 		struct request *rq = drive->hwif->rq;
@@ -95,27 +135,63 @@ static void ide_dump_ata_error(ide_drive_t *drive, u8 err)
 		ide_dump_sector(drive);
 
 		if (rq)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT ", sector=%llu",
 			       (unsigned long long)blk_rq_pos(rq));
+#else
+			;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "\n");
+#else
+	;
+#endif
 }
 
 static void ide_dump_atapi_error(ide_drive_t *drive, u8 err)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "{ ");
+#else
+	;
+#endif
 	if (err & ATAPI_ILI)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "IllegalLengthIndication ");
+#else
+		;
+#endif
 	if (err & ATAPI_EOM)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "EndOfMedia ");
+#else
+		;
+#endif
 	if (err & ATA_ABORTED)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "AbortedCommand ");
+#else
+		;
+#endif
 	if (err & ATA_MCR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "MediaChangeRequested ");
+#else
+		;
+#endif
 	if (err & ATAPI_LFS)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "LastFailedSense=0x%02x ",
 			(err & ATAPI_LFS) >> 4);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "}\n");
+#else
+	;
+#endif
 }
 
 /**
@@ -135,24 +211,60 @@ u8 ide_dump_status(ide_drive_t *drive, const char *msg, u8 stat)
 
 	printk(KERN_ERR "%s: %s: status=0x%02x { ", drive->name, msg, stat);
 	if (stat & ATA_BUSY)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "Busy ");
+#else
+		;
+#endif
 	else {
 		if (stat & ATA_DRDY)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "DriveReady ");
+#else
+			;
+#endif
 		if (stat & ATA_DF)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "DeviceFault ");
+#else
+			;
+#endif
 		if (stat & ATA_DSC)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "SeekComplete ");
+#else
+			;
+#endif
 		if (stat & ATA_DRQ)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "DataRequest ");
+#else
+			;
+#endif
 		if (stat & ATA_CORR)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "CorrectedError ");
+#else
+			;
+#endif
 		if (stat & ATA_IDX)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "Index ");
+#else
+			;
+#endif
 		if (stat & ATA_ERR)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "Error ");
+#else
+			;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CONT "}\n");
+#else
+	;
+#endif
 	if ((stat & (ATA_BUSY | ATA_ERR)) == ATA_ERR) {
 		err = ide_read_error(drive);
 		printk(KERN_ERR "%s: %s: error=0x%02x ", drive->name, msg, err);

@@ -406,9 +406,13 @@ char *iscsi_parse_pr_out_transport_id(
 			tid_len += padding;
 
 		if ((add_len + 4) != tid_len) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "LIO-Target Extracted add_len: %hu "
 				"does not match calculated tid_len: %u,"
 				" using tid_len instead\n", add_len+4, tid_len);
+#else
+			;
+#endif
 			*out_tid_len = tid_len;
 		} else
 			*out_tid_len = (add_len + 4);

@@ -45,8 +45,12 @@ int sgi_partition(struct parsed_partitions *state)
 	p = &label->partitions[0];
 	magic = label->magic_mushroom;
 	if(be32_to_cpu(magic) != SGI_LABEL_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		/*printk("Dev %s SGI disklabel: bad magic %08x\n",
 		       bdevname(bdev, b), be32_to_cpu(magic));*/
+#else
+		/*;
+#endif
 		put_dev_sector(sect);
 		return 0;
 	}
@@ -56,8 +60,12 @@ int sgi_partition(struct parsed_partitions *state)
 		csum += be32_to_cpu(cs);
 	}
 	if(csum) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Dev %s SGI disklabel: csum bad, label corrupted\n",
 		       bdevname(state->bdev, b));
+#else
+		;
+#endif
 		put_dev_sector(sect);
 		return 0;
 	}

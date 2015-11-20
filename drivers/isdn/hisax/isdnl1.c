@@ -238,7 +238,11 @@ DChannel_proc_rcv(struct IsdnCardState *cs)
 					if ((nskb = skb_clone(skb, GFP_ATOMIC)))
 						stptr->l1.l1l2(stptr, PH_DATA | INDICATION, nskb);
 					else
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "HiSax: isdn broadcast buffer shortage\n");
+#else
+						;
+#endif
 					stptr = stptr->next;
 				}
 			} else if (sapi == TEI_SAPI) {
@@ -246,7 +250,11 @@ DChannel_proc_rcv(struct IsdnCardState *cs)
 					if ((nskb = skb_clone(skb, GFP_ATOMIC)))
 						stptr->l1.l1tei(stptr, PH_DATA | INDICATION, nskb);
 					else
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "HiSax: tei broadcast buffer shortage\n");
+#else
+						;
+#endif
 					stptr = stptr->next;
 				}
 			}

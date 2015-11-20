@@ -93,7 +93,11 @@ static int __devinit t3e3_init_channel(struct channel *channel, struct pci_dev *
 	t3e3_init(channel);
 
 	if (request_irq(dev->irq, &t3e3_intr, IRQF_SHARED, dev->name, dev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: could not get irq: %d\n", dev->name, dev->irq);
+#else
+		;
+#endif
 		goto free_regions;
 	}
 

@@ -484,7 +484,11 @@ static int bsd_compress (void *state, struct sk_buff *skb_in, struct sk_buff *sk
 	 * just return without compressing the packet.  If it is,
 	 * the protocol becomes the first byte to compress.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "bsd_compress called with %x\n",proto);
+#else
+	;
+#endif
 	
 	ent = proto;
 	if (proto < 0x21 || proto > 0xf9 || !(proto & 0x1) )
@@ -665,7 +669,11 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 	n_bits   = db->n_bits;
 	tgtbitno = 32 - n_bits;	/* bitno when we have a code */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "bsd_decompress called\n");
+#else
+	;
+#endif
 
 	if(!skb_in || !skb_out) {
 		printk(KERN_ERR "bsd_decompress called with NULL parameter\n");
@@ -689,8 +697,12 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 	 */
 	if (seq != db->seqno) {
 		if (db->debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "bsd_decomp%d: bad sequence # %d, expected %d\n",
 				db->unit, seq, db->seqno - 1);
+#else
+			;
+#endif
 		}
 		return DECOMP_ERROR;
 	}
@@ -738,7 +750,11 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 		if (incode == CLEAR) {
 			if (ilen > 0) {
 				if (db->debug)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "bsd_decomp%d: bad CLEAR\n", db->unit);
+#else
+					;
+#endif
 				return DECOMP_FATALERROR;	/* probably a bug */
 			}
 			bsd_clear(db);
@@ -748,10 +764,18 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 		if ((incode > max_ent + 2) || (incode > db->maxmaxcode)
 			|| (incode > max_ent && oldcode == CLEAR)) {
 			if (db->debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "bsd_decomp%d: bad code 0x%x oldcode=0x%x ",
 					db->unit, incode, oldcode);
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "max_ent=0x%x skb->Len=%d seqno=%d\n",
 					max_ent, skb_out->len, db->seqno);
+#else
+				;
+#endif
 			}
 			return DECOMP_FATALERROR;	/* probably a bug */
 		}
@@ -768,10 +792,18 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 		codelen = *(lens_ptr (db, finchar));
 		if( skb_tailroom(skb_out) < codelen + extra) {
 			if (db->debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "bsd_decomp%d: ran out of mru\n", db->unit);
+#else
+				;
+#endif
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "  len=%d, finchar=0x%x, codelen=%d,skblen=%d\n",
 					ilen, finchar, codelen, skb_out->len);
+#else
+				;
+#endif
 #endif
 			}
 			return DECOMP_FATALERROR;
@@ -885,8 +917,12 @@ static int bsd_decompress (void *state, struct sk_buff *skb_in, struct sk_buff *
 
 	if (bsd_check(db)) {
 		if (db->debug)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "bsd_decomp%d: peer should have cleared dictionary on %d\n",
 				db->unit, db->seqno - 1);
+#else
+			;
+#endif
 	}
 	return skb_out->len;
 }

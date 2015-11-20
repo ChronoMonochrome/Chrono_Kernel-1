@@ -33,7 +33,11 @@ static int iio_trig_periodic_rtc_set_state(struct iio_trigger *trig, bool state)
 	struct iio_prtc_trigger_info *trig_info = trig->private_data;
 	if (trig_info->frequency == 0)
 		return -EINVAL;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "trigger frequency is %d\n", trig_info->frequency);
+#else
+	;
+#endif
 	return rtc_irq_set_state(trig_info->rtc, &trig_info->task, state);
 }
 

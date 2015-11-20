@@ -195,9 +195,13 @@ u16 mtd_Erase_Block(u32 block_add)
 			ret = -EIO;
 	}
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mtd_Erase_Block error! "
 		       "erase of region [0x%llx, 0x%llx] failed\n",
 		       erase.addr, erase.len);
+#else
+		;
+#endif
 		return FAIL;
 	}
 
