@@ -467,7 +467,6 @@ void blk_free_devt(dev_t devt)
 	}
 }
 
-/*
 static char *bdevt_str(dev_t devt, char *buf)
 {
 	if (MAJOR(devt) <= 0xff && MINOR(devt) <= 0xff) {
@@ -479,7 +478,6 @@ static char *bdevt_str(dev_t devt, char *buf)
 
 	return buf;
 }
-*/
 
 /*
  * Register device numbers dev..(dev+range-1)
@@ -752,8 +750,8 @@ void __init printk_all_partitions(void)
 		struct gendisk *disk = dev_to_disk(dev);
 		struct disk_part_iter piter;
 		struct hd_struct *part;
-//		char name_buf[BDEVNAME_SIZE];
-//		char devt_buf[BDEVT_SIZE];
+		char name_buf[BDEVNAME_SIZE];
+		char devt_buf[BDEVT_SIZE];
 		char uuid_buf[PARTITION_META_INFO_UUIDLTH * 2 + 5];
 
 		/*

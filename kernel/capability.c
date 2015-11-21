@@ -44,7 +44,7 @@ static void warn_legacy_capability_use(void)
 {
 	static int warned;
 	if (unlikely(!warned)) {
-//		char name[sizeof(current->comm)];
+		char name[sizeof(current->comm)];
 
 #ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "warning: `%s' uses 32-bit capabilities"
@@ -78,7 +78,7 @@ static void warn_deprecated_v2(void)
 	static int warned;
 
 	if (unlikely(!warned)) {
-//		char name[sizeof(current->comm)];
+		char name[sizeof(current->comm)];
 
 #ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "warning: `%s' uses deprecated v2"

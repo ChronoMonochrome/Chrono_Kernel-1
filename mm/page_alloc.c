@@ -2970,7 +2970,7 @@ static int build_zonelists_node(pg_data_t *pgdat, struct zonelist *zonelist,
  * set_zonelist_order() will set this to NODE or ZONE.
  */
 static int current_zonelist_order = ZONELIST_ORDER_DEFAULT;
-//static char zonelist_order_name[3][8] = {"Default", "Node", "Zone"};
+static char zonelist_order_name[3][8] = {"Default", "Node", "Zone"};
 
 
 #ifdef CONFIG_NUMA

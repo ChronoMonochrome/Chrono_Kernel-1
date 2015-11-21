@@ -326,7 +326,6 @@ static inline void task_dirties_fraction(struct task_struct *tsk,
  * dirty threshold may never get throttled.
  */
 #define TASK_LIMIT_FRACTION 8
-#if 0
 static unsigned long task_dirty_limit(struct task_struct *tsk,
 				       unsigned long bdi_dirty)
 {
@@ -348,7 +347,6 @@ static unsigned long task_min_dirty_limit(unsigned long bdi_dirty)
 {
 	return bdi_dirty - bdi_dirty / TASK_LIMIT_FRACTION;
 }
-#endif
 
 /*
  *

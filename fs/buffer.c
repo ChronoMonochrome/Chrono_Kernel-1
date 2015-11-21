@@ -109,7 +109,7 @@ static int quiet_error(struct buffer_head *bh)
 
 static void buffer_io_error(struct buffer_head *bh)
 {
-//	char b[BDEVNAME_SIZE];
+	char b[BDEVNAME_SIZE];
 //	printk(KERN_ERR "Buffer I/O error on device %s, logical block %Lu\n",
 //			bdevname(bh->b_bdev, b),
 ;
@@ -147,7 +147,7 @@ EXPORT_SYMBOL(end_buffer_read_sync);
 
 void end_buffer_write_sync(struct buffer_head *bh, int uptodate)
 {
-	//char b[BDEVNAME_SIZE];
+	char b[BDEVNAME_SIZE];
 
 	if (uptodate) {
 		set_buffer_uptodate(bh);
@@ -369,7 +369,7 @@ still_busy:
  */
 void end_buffer_async_write(struct buffer_head *bh, int uptodate)
 {
-	//char b[BDEVNAME_SIZE];
+	char b[BDEVNAME_SIZE];
 	unsigned long flags;
 	struct buffer_head *first;
 	struct buffer_head *tmp;
@@ -563,7 +563,7 @@ repeat:
 
 static void do_thaw_one(struct super_block *sb, void *unused)
 {
-	//char b[BDEVNAME_SIZE];
+	char b[BDEVNAME_SIZE];
 	while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
 //		printk(KERN_WARNING "Emergency Thaw on %s\n",
 ;
@@ -1073,7 +1073,7 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
 	 * pagecache index.  (this comparison is done using sector_t types).
 	 */
 	if (unlikely(index != block >> sizebits)) {
-		//char b[BDEVNAME_SIZE];
+		char b[BDEVNAME_SIZE];
 
 //		printk(KERN_ERR "%s: requested out-of-range block %llu for "
 //			"device %s\n",

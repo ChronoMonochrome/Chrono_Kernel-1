@@ -10,6 +10,14 @@ config PRINTK_TIME
 	  in kernel startup.  Or add printk.time=1 at boot-time.
 	  See Documentation/kernel-parameters.txt
 
+config DEBUG_PRINTK
+	bool "Debug printk messages"
+	depends on PRINTK
+	help
+	  Selecting this option enables debug printk messages.
+	  Without this option set, only printk(KERN_ERR ...) calls
+	  are active. 
+
 config DEFAULT_MESSAGE_LOGLEVEL
 	int "Default message log level (1-7)"
 	range 1 7

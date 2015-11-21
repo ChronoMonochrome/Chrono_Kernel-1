@@ -38,7 +38,7 @@
 
 #include "signal.h"
 
-//static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
+static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
 
 void *vectors_page;
 
@@ -272,7 +272,7 @@ void show_stack(struct task_struct *tsk, unsigned long *sp)
 static int __die(const char *str, int err, struct thread_info *thread, struct pt_regs *regs)
 {
 	struct task_struct *tsk = thread->task;
-//	static int die_counter;
+	static int die_counter;
 	int ret;
 
 #ifdef CONFIG_DEBUG_PRINTK
