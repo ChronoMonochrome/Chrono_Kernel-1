@@ -412,8 +412,6 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -pipe \
 		  --param ggc-min-expand=90 \
 		  --param ggc-min-heapsize=512288 \
-		  --param l1-cache-size=32 \
-		  --param l1-cache-line-size=32 \
 		  --param l2-cache-size=512 \
 
 KBUILD_AFLAGS_KERNEL :=
