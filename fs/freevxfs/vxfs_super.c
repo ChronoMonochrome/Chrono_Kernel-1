@@ -161,21 +161,21 @@ static int vxfs_fill_super(struct super_block *sbp, void *dp, int silent)
 
 	infp = kzalloc(sizeof(*infp), GFP_KERNEL);
 	if (!infp) {
-		printk(KERN_WARNING "vxfs: unable to allocate incore superblock\n");
+;
 		return -ENOMEM;
 	}
 
 	bsize = sb_min_blocksize(sbp, BLOCK_SIZE);
 	if (!bsize) {
-		printk(KERN_WARNING "vxfs: unable to set blocksize\n");
+;
 		goto out;
 	}
 
 	bp = sb_bread(sbp, 1);
 	if (!bp || !buffer_mapped(bp)) {
 		if (!silent) {
-			printk(KERN_WARNING
-				"vxfs: unable to read disk superblock\n");
+//			printk(KERN_WARNING
+;
 		}
 		goto out;
 	}
@@ -183,19 +183,19 @@ static int vxfs_fill_super(struct super_block *sbp, void *dp, int silent)
 	rsbp = (struct vxfs_sb *)bp->b_data;
 	if (rsbp->vs_magic != VXFS_SUPER_MAGIC) {
 		if (!silent)
-			printk(KERN_NOTICE "vxfs: WRONG superblock magic\n");
+;
 		goto out;
 	}
 
 	if ((rsbp->vs_version < 2 || rsbp->vs_version > 4) && !silent) {
-		printk(KERN_NOTICE "vxfs: unsupported VxFS version (%d)\n",
-		       rsbp->vs_version);
+//		printk(KERN_NOTICE "vxfs: unsupported VxFS version (%d)\n",
+;
 		goto out;
 	}
 
 #ifdef DIAGNOSTIC
-	printk(KERN_DEBUG "vxfs: supported VxFS version (%d)\n", rsbp->vs_version);
-	printk(KERN_DEBUG "vxfs: blocksize: %d\n", rsbp->vs_bsize);
+;
+;
 #endif
 
 	sbp->s_magic = rsbp->vs_magic;
@@ -207,17 +207,17 @@ static int vxfs_fill_super(struct super_block *sbp, void *dp, int silent)
 	infp->vsi_oltsize = rsbp->vs_oltsize;
 
 	if (!sb_set_blocksize(sbp, rsbp->vs_bsize)) {
-		printk(KERN_WARNING "vxfs: unable to set final block size\n");
+;
 		goto out;
 	}
 
 	if (vxfs_read_olt(sbp, bsize)) {
-		printk(KERN_WARNING "vxfs: unable to read olt\n");
+;
 		goto out;
 	}
 
 	if (vxfs_read_fshead(sbp)) {
-		printk(KERN_WARNING "vxfs: unable to read fshead\n");
+;
 		goto out;
 	}
 
@@ -230,7 +230,7 @@ static int vxfs_fill_super(struct super_block *sbp, void *dp, int silent)
 	sbp->s_root = d_alloc_root(root);
 	if (!sbp->s_root) {
 		iput(root);
-		printk(KERN_WARNING "vxfs: unable to get root dentry.\n");
+;
 		goto out_free_ilist;
 	}
 

@@ -863,14 +863,14 @@ static int __devinit mpc52xx_fec_probe(struct platform_device *op)
 	/* Reserve FEC control zone */
 	rv = of_address_to_resource(op->dev.of_node, 0, &mem);
 	if (rv) {
-		printk(KERN_ERR DRIVER_NAME ": "
-				"Error while parsing device node resource\n" );
+//		printk(KERN_ERR DRIVER_NAME ": "
+;
 		goto err_netdev;
 	}
 	if ((mem.end - mem.start + 1) < sizeof(struct mpc52xx_fec)) {
-		printk(KERN_ERR DRIVER_NAME
-			" - invalid resource size (%lx < %x), check mpc52xx_devices.c\n",
-			(unsigned long)(mem.end - mem.start + 1), sizeof(struct mpc52xx_fec));
+//		printk(KERN_ERR DRIVER_NAME
+//			" - invalid resource size (%lx < %x), check mpc52xx_devices.c\n",
+;
 		rv = -EINVAL;
 		goto err_netdev;
 	}
@@ -906,7 +906,7 @@ static int __devinit mpc52xx_fec_probe(struct platform_device *op)
 	priv->tx_dmatsk = bcom_fec_tx_init(FEC_TX_NUM_BD, tx_fifo);
 
 	if (!priv->rx_dmatsk || !priv->tx_dmatsk) {
-		printk(KERN_ERR DRIVER_NAME ": Can not init SDMA tasks\n" );
+;
 		rv = -ENOMEM;
 		goto err_rx_tx_dmatsk;
 	}
@@ -1074,7 +1074,7 @@ mpc52xx_fec_init(void)
 	int ret;
 	ret = platform_driver_register(&mpc52xx_fec_mdio_driver);
 	if (ret) {
-		printk(KERN_ERR DRIVER_NAME ": failed to register mdio driver\n");
+;
 		return ret;
 	}
 #endif

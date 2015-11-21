@@ -98,22 +98,14 @@ static int aio_iiro_16_attach(struct comedi_device *dev,
 	int iobase;
 	struct comedi_subdevice *s;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: aio_iiro_16: ", dev->minor);
-#else
-	;
-#endif
+;
 
 	dev->board_name = thisboard->name;
 
 	iobase = it->options[0];
 
 	if (!request_region(iobase, AIO_IIRO_16_SIZE, dev->board_name)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("I/O port conflict");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 
@@ -141,22 +133,14 @@ static int aio_iiro_16_attach(struct comedi_device *dev,
 	s->range_table = &range_digital;
 	s->insn_bits = aio_iiro_16_dio_insn_bits_read;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("attached\n");
-#else
-	;
-#endif
+;
 
 	return 1;
 }
 
 static int aio_iiro_16_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: aio_iiro_16: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	if (dev->iobase)
 		release_region(dev->iobase, AIO_IIRO_16_SIZE);

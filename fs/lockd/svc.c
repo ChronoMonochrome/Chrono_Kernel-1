@@ -130,7 +130,7 @@ lockd(void *vrqstp)
 	/* Allow SIGKILL to tell lockd to drop all of its locks */
 	allow_signal(SIGKILL);
 
-	dprintk("NFS locking service started (ver " LOCKD_VERSION ").\n");
+;
 
 	if (!nlm_timeout)
 		nlm_timeout = LOCKD_DFLT_TIMEO;
@@ -168,8 +168,8 @@ lockd(void *vrqstp)
 		}
 		if (err < 0) {
 			if (err != preverr) {
-				printk(KERN_WARNING "%s: unexpected error "
-					"from svc_recv (%d)\n", __func__, err);
+//				printk(KERN_WARNING "%s: unexpected error "
+;
 				preverr = err;
 			}
 			schedule_timeout_interruptible(HZ);
@@ -177,8 +177,8 @@ lockd(void *vrqstp)
 		}
 		preverr = err;
 
-		dprintk("lockd: request from %s\n",
-				svc_print_addr(rqstp, buf, sizeof(buf)));
+//		dprintk("lockd: request from %s\n",
+;
 
 		svc_process(rqstp);
 	}
@@ -243,8 +243,8 @@ static int make_socks(struct svc_serv *serv)
 
 out_err:
 	if (warned++ == 0)
-		printk(KERN_WARNING
-			"lockd_up: makesock failed, error=%d\n", err);
+//		printk(KERN_WARNING
+;
 	return err;
 }
 
@@ -268,13 +268,13 @@ int lockd_up(void)
 	 * we should be the first user ...
 	 */
 	if (nlmsvc_users)
-		printk(KERN_WARNING
-			"lockd_up: no pid, %d users??\n", nlmsvc_users);
+//		printk(KERN_WARNING
+;
 
 	error = -ENOMEM;
 	serv = svc_create(&nlmsvc_program, LOCKD_BUFSIZE, NULL);
 	if (!serv) {
-		printk(KERN_WARNING "lockd_up: create service failed\n");
+;
 		goto out;
 	}
 
@@ -289,9 +289,9 @@ int lockd_up(void)
 	if (IS_ERR(nlmsvc_rqst)) {
 		error = PTR_ERR(nlmsvc_rqst);
 		nlmsvc_rqst = NULL;
-		printk(KERN_WARNING
-			"lockd_up: svc_rqst allocation failed, error=%d\n",
-			error);
+//		printk(KERN_WARNING
+//			"lockd_up: svc_rqst allocation failed, error=%d\n",
+;
 		goto destroy_and_out;
 	}
 
@@ -304,8 +304,8 @@ int lockd_up(void)
 		svc_exit_thread(nlmsvc_rqst);
 		nlmsvc_task = NULL;
 		nlmsvc_rqst = NULL;
-		printk(KERN_WARNING
-			"lockd_up: kthread_run failed, error=%d\n", error);
+//		printk(KERN_WARNING
+;
 		goto destroy_and_out;
 	}
 
@@ -334,13 +334,13 @@ lockd_down(void)
 		if (--nlmsvc_users)
 			goto out;
 	} else {
-		printk(KERN_ERR "lockd_down: no users! task=%p\n",
-			nlmsvc_task);
+//		printk(KERN_ERR "lockd_down: no users! task=%p\n",
+;
 		BUG();
 	}
 
 	if (!nlmsvc_task) {
-		printk(KERN_ERR "lockd_down: no lockd running.\n");
+;
 		BUG();
 	}
 	kthread_stop(nlmsvc_task);

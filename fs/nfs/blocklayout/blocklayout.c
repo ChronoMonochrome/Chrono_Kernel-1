@@ -54,16 +54,16 @@ wait_queue_head_t bl_wq;
 
 static void print_page(struct page *page)
 {
-	dprintk("PRINTPAGE page %p\n", page);
-	dprintk("	PagePrivate %d\n", PagePrivate(page));
-	dprintk("	PageUptodate %d\n", PageUptodate(page));
-	dprintk("	PageError %d\n", PageError(page));
-	dprintk("	PageDirty %d\n", PageDirty(page));
-	dprintk("	PageReferenced %d\n", PageReferenced(page));
-	dprintk("	PageLocked %d\n", PageLocked(page));
-	dprintk("	PageWriteback %d\n", PageWriteback(page));
-	dprintk("	PageMappedToDisk %d\n", PageMappedToDisk(page));
-	dprintk("\n");
+;
+;
+;
+;
+;
+;
+;
+;
+;
+;
 }
 
 /* Given the be associated with isect, determine if page data needs to be
@@ -119,7 +119,7 @@ static void destroy_parallel(struct kref *kref)
 {
 	struct parallel_io *p = container_of(kref, struct parallel_io, refcnt);
 
-	dprintk("%s enter\n", __func__);
+;
 	p->pnfs_callback(p->data);
 	kfree(p);
 }
@@ -134,9 +134,9 @@ bl_submit_bio(int rw, struct bio *bio)
 {
 	if (bio) {
 		get_parallel(bio->bi_private);
-		dprintk("%s submitting %s bio %u@%llu\n", __func__,
-			rw == READ ? "read" : "write",
-			bio->bi_size, (unsigned long long)bio->bi_sector);
+//		dprintk("%s submitting %s bio %u@%llu\n", __func__,
+//			rw == READ ? "read" : "write",
+;
 		submit_bio(rw, bio);
 	}
 	return NULL;
@@ -208,7 +208,7 @@ static void bl_read_cleanup(struct work_struct *work)
 {
 	struct rpc_task *task;
 	struct nfs_read_data *rdata;
-	dprintk("%s enter\n", __func__);
+;
 	task = container_of(work, struct rpc_task, u.tk_work);
 	rdata = container_of(task, struct nfs_read_data, task);
 	pnfs_ld_read_done(rdata);
@@ -244,8 +244,8 @@ bl_read_pagelist(struct nfs_read_data *rdata)
 	struct page **pages = rdata->args.pages;
 	int pg_index = rdata->args.pgbase >> PAGE_CACHE_SHIFT;
 
-	dprintk("%s enter nr_pages %u offset %lld count %Zd\n", __func__,
-	       rdata->npages, f_offset, count);
+//	dprintk("%s enter nr_pages %u offset %lld count %Zd\n", __func__,
+;
 
 	par = alloc_parallel(rdata);
 	if (!par)
@@ -282,7 +282,7 @@ bl_read_pagelist(struct nfs_read_data *rdata)
 		if (hole && !cow_read) {
 			bio = bl_submit_bio(READ, bio);
 			/* Fill hole w/ zeroes w/o accessing device */
-			dprintk("%s Zeroing page for hole\n", __func__);
+;
 			zero_user_segment(pages[i], 0, PAGE_CACHE_SIZE);
 			print_page(pages[i]);
 			SetPageUptodate(pages[i]);
@@ -316,7 +316,7 @@ out:
 	return PNFS_ATTEMPTED;
 
  use_mds:
-	dprintk("Giving up and using normal NFS\n");
+;
 	return PNFS_NOT_ATTEMPTED;
 }
 
@@ -326,7 +326,7 @@ static void mark_extents_written(struct pnfs_block_layout *bl,
 	sector_t isect, end;
 	struct pnfs_block_extent *be;
 
-	dprintk("%s(%llu, %u)\n", __func__, offset, count);
+;
 	if (count == 0)
 		return;
 	isect = (offset & (long)(PAGE_CACHE_MASK)) >> SECTOR_SHIFT;
@@ -392,7 +392,7 @@ static void bl_write_cleanup(struct work_struct *work)
 {
 	struct rpc_task *task;
 	struct nfs_write_data *wdata;
-	dprintk("%s enter\n", __func__);
+;
 	task = container_of(work, struct rpc_task, u.tk_work);
 	wdata = container_of(task, struct nfs_write_data, task);
 	if (!wdata->pnfs_error) {
@@ -429,16 +429,16 @@ static void mark_bad_read(void)
 static void
 map_block(struct buffer_head *bh, sector_t isect, struct pnfs_block_extent *be)
 {
-	dprintk("%s enter be=%p\n", __func__, be);
+;
 
 	set_buffer_mapped(bh);
 	bh->b_bdev = be->be_mdev;
 	bh->b_blocknr = (isect - be->be_f_offset + be->be_v_offset) >>
 	    (be->be_mdev->bd_inode->i_blkbits - SECTOR_SHIFT);
 
-	dprintk("%s isect %llu, bh->b_blocknr %ld, using bsize %Zd\n",
-		__func__, (unsigned long long)isect, (long)bh->b_blocknr,
-		bh->b_size);
+//	dprintk("%s isect %llu, bh->b_blocknr %ld, using bsize %Zd\n",
+//		__func__, (unsigned long long)isect, (long)bh->b_blocknr,
+;
 	return;
 }
 
@@ -452,7 +452,7 @@ init_page_for_write(struct page *page, struct pnfs_block_extent *cow_read)
 	int ret = 0;
 	sector_t isect;
 
-	dprintk("%s enter, %p\n", __func__, page);
+;
 	BUG_ON(PageUptodate(page));
 	if (!cow_read) {
 		zero_user_segment(page, 0, PAGE_SIZE);
@@ -504,7 +504,7 @@ bl_write_pagelist(struct nfs_write_data *wdata, int sync)
 	int npg_per_block =
 	    NFS_SERVER(wdata->inode)->pnfs_blksize >> PAGE_CACHE_SHIFT;
 
-	dprintk("%s enter, %Zu@%lld\n", __func__, count, offset);
+;
 	/* At this point, wdata->pages is a (sequential) list of nfs_pages.
 	 * We want to write each, and if there is an error set pnfs_error
 	 * to have it redone using nfs.
@@ -520,7 +520,7 @@ bl_write_pagelist(struct nfs_write_data *wdata, int sync)
 	isect = (sector_t) ((offset & (long)PAGE_CACHE_MASK) >> SECTOR_SHIFT);
 	be = bl_find_get_extent(BLK_LSEG2EXT(wdata->lseg), isect, &cow_read);
 	if (!be || !is_writable(be, isect)) {
-		dprintk("%s no matching extents!\n", __func__);
+;
 		wdata->pnfs_error = -EINVAL;
 		goto out;
 	}
@@ -534,23 +534,23 @@ bl_write_pagelist(struct nfs_write_data *wdata, int sync)
 		extent_length = be->be_length - (isect - be->be_f_offset);
 
 fill_invalid_ext:
-		dprintk("%s need to zero %d pages\n", __func__, npg_zero);
+;
 		for (;npg_zero > 0; npg_zero--) {
 			if (bl_is_sector_init(be->be_inval, isect)) {
-				dprintk("isect %llu already init\n",
-					(unsigned long long)isect);
+//				dprintk("isect %llu already init\n",
+;
 				goto next_page;
 			}
 			/* page ref released in bl_end_io_write_zero */
 			index = isect >> PAGE_CACHE_SECTOR_SHIFT;
-			dprintk("%s zero %dth page: index %lu isect %llu\n",
-				__func__, npg_zero, index,
-				(unsigned long long)isect);
+//			dprintk("%s zero %dth page: index %lu isect %llu\n",
+//				__func__, npg_zero, index,
+;
 			page =
 			    find_or_create_page(wdata->inode->i_mapping, index,
 						GFP_NOFS);
 			if (!page) {
-				dprintk("%s oom\n", __func__);
+;
 				wdata->pnfs_error = -ENOMEM;
 				goto out;
 			}
@@ -577,8 +577,8 @@ fill_invalid_ext:
 						       PAGE_CACHE_SECTORS,
 						       NULL);
 			if (unlikely(ret)) {
-				dprintk("%s bl_mark_sectors_init fail %d\n",
-					__func__, ret);
+//				dprintk("%s bl_mark_sectors_init fail %d\n",
+;
 				end_page_writeback(page);
 				page_cache_release(page);
 				wdata->pnfs_error = ret;
@@ -627,8 +627,8 @@ next_page:
 						       PAGE_CACHE_SECTORS,
 						       NULL);
 			if (unlikely(ret)) {
-				dprintk("%s bl_mark_sectors_init fail %d\n",
-					__func__, ret);
+//				dprintk("%s bl_mark_sectors_init fail %d\n",
+;
 				wdata->pnfs_error = ret;
 				goto out;
 			}
@@ -705,7 +705,7 @@ static void bl_free_layout_hdr(struct pnfs_layout_hdr *lo)
 {
 	struct pnfs_block_layout *bl = BLK_LO2EXT(lo);
 
-	dprintk("%s enter\n", __func__);
+;
 	release_extents(bl, NULL);
 	release_inval_marks(&bl->bl_inval);
 	kfree(bl);
@@ -716,7 +716,7 @@ static struct pnfs_layout_hdr *bl_alloc_layout_hdr(struct inode *inode,
 {
 	struct pnfs_block_layout *bl;
 
-	dprintk("%s enter\n", __func__);
+;
 	bl = kzalloc(sizeof(*bl), gfp_flags);
 	if (!bl)
 		return NULL;
@@ -733,7 +733,7 @@ static struct pnfs_layout_hdr *bl_alloc_layout_hdr(struct inode *inode,
 
 static void bl_free_lseg(struct pnfs_layout_segment *lseg)
 {
-	dprintk("%s enter\n", __func__);
+;
 	kfree(lseg);
 }
 
@@ -747,7 +747,7 @@ static struct pnfs_layout_segment *bl_alloc_lseg(struct pnfs_layout_hdr *lo,
 	struct pnfs_layout_segment *lseg;
 	int status;
 
-	dprintk("%s enter\n", __func__);
+;
 	lseg = kzalloc(sizeof(*lseg), gfp_flags);
 	if (!lseg)
 		return ERR_PTR(-ENOMEM);
@@ -766,7 +766,7 @@ static void
 bl_encode_layoutcommit(struct pnfs_layout_hdr *lo, struct xdr_stream *xdr,
 		       const struct nfs4_layoutcommit_args *arg)
 {
-	dprintk("%s enter\n", __func__);
+;
 	encode_pnfs_block_layoutupdate(BLK_LO2EXT(lo), xdr, arg);
 }
 
@@ -775,7 +775,7 @@ bl_cleanup_layoutcommit(struct nfs4_layoutcommit_data *lcdata)
 {
 	struct pnfs_layout_hdr *lo = NFS_I(lcdata->args.inode)->layout;
 
-	dprintk("%s enter\n", __func__);
+;
 	clean_pnfs_block_layoutupdate(BLK_LO2EXT(lo), &lcdata->args, lcdata->res.status);
 }
 
@@ -816,12 +816,12 @@ nfs4_blk_get_deviceinfo(struct nfs_server *server, const struct nfs_fh *fh,
 	 */
 	max_resp_sz = server->nfs_client->cl_session->fc_attrs.max_resp_sz;
 	max_pages = max_resp_sz >> PAGE_SHIFT;
-	dprintk("%s max_resp_sz %u max_pages %d\n",
-		__func__, max_resp_sz, max_pages);
+//	dprintk("%s max_resp_sz %u max_pages %d\n",
+;
 
 	dev = kmalloc(sizeof(*dev), GFP_NOFS);
 	if (!dev) {
-		dprintk("%s kmalloc failed\n", __func__);
+;
 		return ERR_PTR(-ENOMEM);
 	}
 
@@ -845,9 +845,9 @@ nfs4_blk_get_deviceinfo(struct nfs_server *server, const struct nfs_fh *fh,
 	dev->pglen = PAGE_SIZE * max_pages;
 	dev->mincount = 0;
 
-	dprintk("%s: dev_id: %s\n", __func__, dev->dev_id.data);
+;
 	rc = nfs4_proc_getdeviceinfo(server, dev);
-	dprintk("%s getdevice info returns %d\n", __func__, rc);
+;
 	if (rc) {
 		rv = ERR_PTR(rc);
 		goto out_free;
@@ -871,10 +871,10 @@ bl_set_layoutdriver(struct nfs_server *server, const struct nfs_fh *fh)
 	LIST_HEAD(block_disklist);
 	int status, i;
 
-	dprintk("%s enter\n", __func__);
+;
 
 	if (server->pnfs_blksize == 0) {
-		dprintk("%s Server did not return blksize\n", __func__);
+;
 		return -EINVAL;
 	}
 	b_mt_id = kzalloc(sizeof(struct block_mount_id), GFP_NOFS);
@@ -896,8 +896,8 @@ bl_set_layoutdriver(struct nfs_server *server, const struct nfs_fh *fh)
 		status = nfs4_proc_getdevicelist(server, fh, dlist);
 		if (status)
 			goto out_error;
-		dprintk("%s GETDEVICELIST numdevs=%i, eof=%i\n",
-			__func__, dlist->num_devs, dlist->eof);
+//		dprintk("%s GETDEVICELIST numdevs=%i, eof=%i\n",
+;
 		for (i = 0; i < dlist->num_devs; i++) {
 			bdev = nfs4_blk_get_deviceinfo(server, fh,
 						       &dlist->dev_id[i]);
@@ -910,7 +910,7 @@ bl_set_layoutdriver(struct nfs_server *server, const struct nfs_fh *fh)
 			spin_unlock(&b_mt_id->bm_lock);
 		}
 	}
-	dprintk("%s SUCCESS\n", __func__);
+;
 	server->pnfs_ld_data = b_mt_id;
 
  out_return:
@@ -927,9 +927,9 @@ bl_clear_layoutdriver(struct nfs_server *server)
 {
 	struct block_mount_id *b_mt_id = server->pnfs_ld_data;
 
-	dprintk("%s enter\n", __func__);
+;
 	free_blk_mountid(b_mt_id);
-	dprintk("%s RETURNS\n", __func__);
+;
 	return 0;
 }
 
@@ -974,7 +974,7 @@ static int __init nfs4blocklayout_init(void)
 	struct path path;
 	int ret;
 
-	dprintk("%s: NFSv4 Block Layout Driver Registering...\n", __func__);
+;
 
 	ret = pnfs_register_layoutdriver(&blocklayout_type);
 	if (ret)
@@ -1013,8 +1013,8 @@ out_remove:
 
 static void __exit nfs4blocklayout_exit(void)
 {
-	dprintk("%s: NFSv4 Block Layout Driver Unregistering...\n",
-	       __func__);
+//	dprintk("%s: NFSv4 Block Layout Driver Unregistering...\n",
+;
 
 	pnfs_unregister_layoutdriver(&blocklayout_type);
 	rpc_unlink(bl_device_pipe);

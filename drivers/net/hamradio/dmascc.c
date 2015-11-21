@@ -320,7 +320,7 @@ static int __init dmascc_init(void)
 	n = 0;
 	/* Warning message */
 	if (!io[0])
-		printk(KERN_INFO "dmascc: autoprobing (dangerous)\n");
+;
 
 	/* Run autodetection for each card type */
 	for (h = 0; h < NUM_TYPES; h++) {
@@ -423,7 +423,7 @@ static int __init dmascc_init(void)
 		return 0;
 
 	/* If no adapter found, return error */
-	printk(KERN_INFO "dmascc: no adapters found\n");
+;
 	return -EIO;
 }
 
@@ -464,26 +464,26 @@ static int __init setup_adapter(int card_base, int type, int n)
 	/* Initialize what is necessary for write_scc and write_scc_data */
 	info = kzalloc(sizeof(struct scc_info), GFP_KERNEL | GFP_DMA);
 	if (!info) {
-		printk(KERN_ERR "dmascc: "
-		       "could not allocate memory for %s at %#3x\n",
-		       hw[type].name, card_base);
+//		printk(KERN_ERR "dmascc: "
+//		       "could not allocate memory for %s at %#3x\n",
+;
 		goto out;
 	}
 
 
 	info->dev[0] = alloc_netdev(0, "", dev_setup);
 	if (!info->dev[0]) {
-		printk(KERN_ERR "dmascc: "
-		       "could not allocate memory for %s at %#3x\n",
-		       hw[type].name, card_base);
+//		printk(KERN_ERR "dmascc: "
+//		       "could not allocate memory for %s at %#3x\n",
+;
 		goto out1;
 	}
 
 	info->dev[1] = alloc_netdev(0, "", dev_setup);
 	if (!info->dev[1]) {
-		printk(KERN_ERR "dmascc: "
-		       "could not allocate memory for %s at %#3x\n",
-		       hw[type].name, card_base);
+//		printk(KERN_ERR "dmascc: "
+//		       "could not allocate memory for %s at %#3x\n",
+;
 		goto out2;
 	}
 	spin_lock_init(&info->register_lock);
@@ -551,9 +551,9 @@ static int __init setup_adapter(int card_base, int type, int n)
 	}
 
 	if (irq <= 0) {
-		printk(KERN_ERR
-		       "dmascc: could not find irq of %s at %#3x (irq=%d)\n",
-		       hw[type].name, card_base, irq);
+//		printk(KERN_ERR
+//		       "dmascc: could not find irq of %s at %#3x (irq=%d)\n",
+;
 		goto out3;
 	}
 
@@ -588,21 +588,21 @@ static int __init setup_adapter(int card_base, int type, int n)
 		dev->header_ops = &ax25_header_ops;
 	}
 	if (register_netdev(info->dev[0])) {
-		printk(KERN_ERR "dmascc: could not register %s\n",
-		       info->dev[0]->name);
+//		printk(KERN_ERR "dmascc: could not register %s\n",
+;
 		goto out3;
 	}
 	if (register_netdev(info->dev[1])) {
-		printk(KERN_ERR "dmascc: could not register %s\n",
-		       info->dev[1]->name);
+//		printk(KERN_ERR "dmascc: could not register %s\n",
+;
 		goto out4;
 	}
 
 
 	info->next = first;
 	first = info;
-	printk(KERN_INFO "dmascc: found %s (%s) at %#3x, irq %d\n",
-	       hw[type].name, chipnames[chip], card_base, irq);
+//	printk(KERN_INFO "dmascc: found %s (%s) at %#3x, irq %d\n",
+;
 	return 0;
 
       out4:
@@ -1115,8 +1115,8 @@ static inline void z8530_isr(struct scc_info *info)
 		i++;
 	}
 	if (i < 0) {
-		printk(KERN_ERR "dmascc: stuck in ISR with RR3=0x%02x.\n",
-		       is);
+//		printk(KERN_ERR "dmascc: stuck in ISR with RR3=0x%02x.\n",
+;
 	}
 	/* Ok, no interrupts pending from this 8530. The INT line should
 	   be inactive now. */

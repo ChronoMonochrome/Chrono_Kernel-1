@@ -285,11 +285,7 @@ static int r8192_wx_force_reset(struct net_device *dev,
 
 	down(&priv->wx_sem);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s(): force reset ! extra is %d\n",__FUNCTION__, *extra);
-#else
-	;
-#endif
 	priv->force_reset = *extra;
 	up(&priv->wx_sem);
 	return 0;
@@ -500,18 +496,10 @@ static int r8192_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
 		struct iw_scan_req* req = (struct iw_scan_req*)b;
 		if (req->essid_len)
 		{
-#ifdef CONFIG_DEBUG_PRINTK
 			//printk("==**&*&*&**===>scan set ssid:%s\n", req->essid);
-#else
-			//;
-#endif
 			ieee->current_network.ssid_len = req->essid_len;
 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
-#ifdef CONFIG_DEBUG_PRINTK
-			//printk("=====>network ssid:%s\n", ieee->current_network.ssid);
-#else
-			//;
-#endif
+;
 		}
 	}
 
@@ -758,11 +746,7 @@ static int r8192_wx_set_enc(struct net_device *dev,
 				hwkey);                 //KeyContent
 
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		else printk("wrong type in WEP, not WEP40 and WEP104\n");
-#else
-		else ;
-#endif
+;
 
 	}
 
@@ -857,11 +841,7 @@ static int r8192_wx_get_retry(struct net_device *dev,
 		wrqu->retry.flags = IW_RETRY_LIMIT | IW_RETRY_MIN;
 		wrqu->retry.value = priv->retry_data;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("returning %d",wrqu->retry.value);
-#else
-	//;
-#endif
+;
 
 
 	return 0;
@@ -913,11 +893,7 @@ static int r8192_wx_set_enc_ext(struct net_device *dev,
 	int ret=0;
 	struct r8192_priv *priv = ieee80211_priv(dev);
 	struct ieee80211_device* ieee = priv->ieee80211;
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("===>%s()\n", __FUNCTION__);
-#else
-	//;
-#endif
+;
 
 
 	down(&priv->wx_sem);
@@ -996,11 +972,7 @@ static int r8192_wx_set_auth(struct net_device *dev,
 					union iwreq_data *data, char *extra)
 {
 	int ret=0;
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("====>%s()\n", __FUNCTION__);
-#else
-	//;
-#endif
+;
 	struct r8192_priv *priv = ieee80211_priv(dev);
 	down(&priv->wx_sem);
 	ret = ieee80211_wx_set_auth(priv->ieee80211, info, &(data->param), extra);
@@ -1012,11 +984,7 @@ static int r8192_wx_set_mlme(struct net_device *dev,
 					struct iw_request_info *info,
 					union iwreq_data *wrqu, char *extra)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("====>%s()\n", __FUNCTION__);
-#else
-	//;
-#endif
+;
 
 	int ret=0;
 	struct r8192_priv *priv = ieee80211_priv(dev);
@@ -1031,21 +999,13 @@ static int r8192_wx_set_gen_ie(struct net_device *dev,
 					struct iw_request_info *info,
 					union iwreq_data *data, char *extra)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	   //printk("====>%s(), len:%d\n", __FUNCTION__, data->length);
-#else
-	   //;
-#endif
+;
 	int ret=0;
 	struct r8192_priv *priv = ieee80211_priv(dev);
 	down(&priv->wx_sem);
 	ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, data->data.length);
 	up(&priv->wx_sem);
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("<======%s(), ret:%d\n", __FUNCTION__, ret);
-#else
-	//;
-#endif
+;
 	return ret;
 
 
@@ -1238,11 +1198,7 @@ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
        tmp_level = (&ieee->current_network)->stats.rssi;
 	tmp_qual = (&ieee->current_network)->stats.signal;
 	tmp_noise = (&ieee->current_network)->stats.noise;
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("level:%d, qual:%d, noise:%d\n", tmp_level, tmp_qual, tmp_noise);
-#else
-	//;
-#endif
+;
 
 	wstats->qual.level = tmp_level;
 	wstats->qual.qual = tmp_qual;

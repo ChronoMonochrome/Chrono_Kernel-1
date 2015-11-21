@@ -688,11 +688,7 @@ int i_APCI1710_InsnBitsTimer(struct comedi_device *dev, struct comedi_subdevice 
 	int i_ReturnValue = 0;
 	b_BitsType = data[0];
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n82X54");
-#else
-	;
-#endif
+;
 
 	switch (b_BitsType) {
 	case APCI1710_TIMER_READVALUE:
@@ -725,11 +721,7 @@ int i_APCI1710_InsnBitsTimer(struct comedi_device *dev, struct comedi_subdevice 
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("Bits Config Parameter Wrong\n");
-#else
-		;
-#endif
+;
 		i_ReturnValue = -1;
 	}
 
@@ -958,11 +950,7 @@ int i_APCI1710_GetTimerProgressStatus(struct comedi_device *dev,
 					dw_TimerStatus = inl(devpriv->s_BoardInfos.ui_Address + 16 + (b_TimerNbr * 4) + (64 * b_ModulNbr));
 
 					*pb_TimerStatus = (unsigned char) ((dw_TimerStatus) >> 8) & 1;
-#ifdef CONFIG_DEBUG_PRINTK
 					printk("ProgressStatus : %d", *pb_TimerStatus);
-#else
-					;
-#endif
 				} else {
 					/* Timer not initialised see function */
 					i_ReturnValue = -5;

@@ -752,11 +752,7 @@ s_vMgrRxAssocRequest(
         pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate =
                 pMgmt->sNodeDBTable[uNodeIndex].wMaxSuppRate;
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("RxAssocRequest:wTxDataRate is %d\n",pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate);
-#else
-	;
-#endif
+;
 #endif
 		// Todo: check sta preamble, if ap can't support, set status code
         pMgmt->sNodeDBTable[uNodeIndex].bShortPreamble =
@@ -915,11 +911,7 @@ s_vMgrRxReAssocRequest(
         pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate =
                 pMgmt->sNodeDBTable[uNodeIndex].wMaxSuppRate;
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("RxReAssocRequest:TxDataRate is %d\n",pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate);
-#else
-	;
-#endif
+;
 #endif
 		// Todo: check sta preamble, if ap can't support, set status code
         pMgmt->sNodeDBTable[uNodeIndex].bShortPreamble =
@@ -1723,11 +1715,7 @@ s_vMgrRxDisassociation(
 	union iwreq_data  wrqu;
 	memset(&wrqu, 0, sizeof (wrqu));
         wrqu.ap_addr.sa_family = ARPHRD_ETHER;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("wireless_send_event--->SIOCGIWAP(disassociated)\n");
-#else
-	;
-#endif
+;
 	wireless_send_event(pDevice->dev, SIOCGIWAP, &wrqu, NULL);
      }
   #endif
@@ -2115,11 +2103,7 @@ if(ChannelExceedZoneType(pDevice,byCurrChannel)==true)
                                &(pMgmt->sNodeDBTable[0].byTopOFDMBasicRate)
                               );
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("RxBeacon:MaxSuppRate is %d\n",pMgmt->sNodeDBTable[0].wMaxSuppRate);
-#else
-		//;
-#endif
+;
 #endif
 			if (bUpdatePhyParameter == true) {
                 CARDbSetPhyParameter( pMgmt->pAdapter,
@@ -2311,11 +2295,7 @@ if(ChannelExceedZoneType(pDevice,byCurrChannel)==true)
 #ifdef	PLICE_DEBUG
 		//if (uNodeIndex == 0)
 		{
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("s_vMgrRxBeacon:TxDataRate is %d,Index is %d\n",pMgmt->sNodeDBTable[uNodeIndex].wTxDataRate,uNodeIndex);
-#else
-			;
-#endif
+;
 		}
 #endif
 /*
@@ -3088,20 +3068,12 @@ s_vMgrSynchBSS (
     if (pDevice->byBBVGANew != pDevice->byBBVGACurrent) {
         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO"RSSI[%d] NewGain[%d] OldGain[%d] \n",
                         (int)pCurr->ldBmMAX, pDevice->byBBVGANew, pDevice->byBBVGACurrent);
-#ifdef CONFIG_DEBUG_PRINTK
-        printk("RSSI[%d] NewGain[%d] OldGain[%d] \n",
-                        (int)pCurr->ldBmMAX, pDevice->byBBVGANew, pDevice->byBBVGACurrent);
-#else
-        ;
-#endif
+//        printk("RSSI[%d] NewGain[%d] OldGain[%d] \n",
+;
         BBvSetVGAGainOffset(pDevice, pDevice->byBBVGANew);
     }
-#ifdef CONFIG_DEBUG_PRINTK
-    printk("ldBmMAX[%d] NewGain[%d] OldGain[%d] \n",
-           (int)pCurr->ldBmMAX, pDevice->byBBVGANew, pDevice->byBBVGACurrent);
-#else
-    ;
-#endif
+//    printk("ldBmMAX[%d] NewGain[%d] OldGain[%d] \n",
+;
 */
     pMgmt->uCurrChannel = pCurr->uChannel;
     pMgmt->eCurrentPHYMode = ePhyType;

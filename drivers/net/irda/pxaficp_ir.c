@@ -274,7 +274,7 @@ static irqreturn_t pxa_irda_sir_irq(int irq, void *dev_id)
 		while (lsr & LSR_FIFOE) {
 			data = STRBR;
 			if (lsr & (LSR_OE | LSR_PE | LSR_FE | LSR_BI)) {
-				printk(KERN_DEBUG "pxa_ir: sir receiving error\n");
+;
 				dev->stats.rx_errors++;
 				if (lsr & LSR_FE)
 					dev->stats.rx_frame_errors++;
@@ -346,7 +346,7 @@ static void pxa_irda_fir_dma_rx_irq(int channel, void *data)
 
 	DCSR(channel) = dcsr & ~DCSR_RUN;
 
-	printk(KERN_DEBUG "pxa_ir: fir rx dma bus error %#x\n", dcsr);
+;
 }
 
 /* FIR Transmit DMA interrupt handler */
@@ -389,7 +389,7 @@ static void pxa_irda_fir_dma_tx_irq(int channel, void *data)
 		ICCR0 = ICCR0_ITR | ICCR0_RXE;
 
 		if (i < 0)
-			printk(KERN_ERR "pxa_ir: cannot clear Rx FIFO!\n");
+;
 	}
 	netif_wake_queue(dev);
 }
@@ -411,11 +411,11 @@ static void pxa_irda_fir_irq_eif(struct pxa_irda *si, struct net_device *dev, in
 		if (stat & (ICSR1_CRE | ICSR1_ROR)) {
 			dev->stats.rx_errors++;
 			if (stat & ICSR1_CRE) {
-				printk(KERN_DEBUG "pxa_ir: fir receive CRC error\n");
+;
 				dev->stats.rx_crc_errors++;
 			}
 			if (stat & ICSR1_ROR) {
-				printk(KERN_DEBUG "pxa_ir: fir receive overrun\n");
+;
 				dev->stats.rx_over_errors++;
 			}
 		} else	{
@@ -431,14 +431,14 @@ static void pxa_irda_fir_irq_eif(struct pxa_irda *si, struct net_device *dev, in
 		struct sk_buff *skb;
 
 		if (icsr0 & ICSR0_FRE) {
-			printk(KERN_ERR "pxa_ir: dropping erroneous frame\n");
+;
 			dev->stats.rx_dropped++;
 			return;
 		}
 
 		skb = alloc_skb(len+1,GFP_ATOMIC);
 		if (!skb)  {
-			printk(KERN_ERR "pxa_ir: fir out of memory for receive skb\n");
+;
 			dev->stats.rx_dropped++;
 			return;
 		}
@@ -473,10 +473,10 @@ static irqreturn_t pxa_irda_fir_irq(int irq, void *dev_id)
 
 	if (icsr0 & (ICSR0_FRE | ICSR0_RAB)) {
 		if (icsr0 & ICSR0_FRE) {
-		        printk(KERN_DEBUG "pxa_ir: fir receive frame error\n");
+;
 			dev->stats.rx_frame_errors++;
 		} else {
-			printk(KERN_DEBUG "pxa_ir: fir receive abort\n");
+;
 			dev->stats.rx_errors++;
 		}
 		ICSR0 = icsr0 & (ICSR0_FRE | ICSR0_RAB);
@@ -494,7 +494,7 @@ static irqreturn_t pxa_irda_fir_irq(int irq, void *dev_id)
 	ICCR0 = ICCR0_ITR | ICCR0_RXE;
 
 	if (i < 0)
-		printk(KERN_ERR "pxa_ir: cannot clear Rx FIFO!\n");
+;
 
 	return IRQ_HANDLED;
 }
@@ -577,7 +577,7 @@ static int pxa_irda_ioctl(struct net_device *dev, struct ifreq *ifreq, int cmd)
 				ret = pxa_irda_set_speed(si,
 						rq->ifr_baudrate);
 			} else {
-				printk(KERN_INFO "pxa_ir: SIOCSBANDWIDTH: !netif_running\n");
+;
 				ret = 0;
 			}
 		}
@@ -629,7 +629,7 @@ static void pxa_irda_startup(struct pxa_irda *si)
 	si->speed = 4000000;
 	pxa_irda_set_speed(si, 9600);
 
-	printk(KERN_DEBUG "pxa_ir: irda startup\n");
+;
 }
 
 static void pxa_irda_shutdown(struct pxa_irda *si)
@@ -660,7 +660,7 @@ static void pxa_irda_shutdown(struct pxa_irda *si)
 	/* power off board transceiver */
 	pxa_irda_set_mode(si, IR_OFF);
 
-	printk(KERN_DEBUG "pxa_ir: irda shutdown\n");
+;
 }
 
 static int pxa_irda_start(struct net_device *dev)
@@ -722,7 +722,7 @@ static int pxa_irda_start(struct net_device *dev)
 	enable_irq(IRQ_ICP);
 	netif_start_queue(dev);
 
-	printk(KERN_DEBUG "pxa_ir: irda driver opened\n");
+;
 
 	return 0;
 
@@ -769,7 +769,7 @@ static int pxa_irda_stop(struct net_device *dev)
 	if (si->dma_tx_buff)
 		dma_free_coherent(si->dev, IRDA_FRAME_SIZE_LIMIT, si->dma_rx_buff, si->dma_rx_buff_phy);
 
-	printk(KERN_DEBUG "pxa_ir: irda driver closed\n");
+;
 	return 0;
 }
 

@@ -1384,11 +1384,7 @@ static void handle_cursor_read_all(struct vc_data *vc, int command)
 	case RA_NEXT_SENT:
 		/* Get Current Sentence */
 		get_index_count(&indcount, &sentcount);
-#ifdef CONFIG_DEBUG_PRINTK
 		/*printk("%d %d  ", indcount, sentcount); */
-#else
-		/*;
-#endif
 		reset_index_count(sentcount + 1);
 		if (indcount == 1) {
 			if (!say_sentence_num(sentcount + 1, 0)) {

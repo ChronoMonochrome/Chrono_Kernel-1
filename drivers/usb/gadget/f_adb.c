@@ -258,7 +258,7 @@ static int adb_create_bulk_endpoints(struct adb_dev *dev,
 	return 0;
 
 fail:
-	printk(KERN_ERR "adb_bind() could not allocate requests\n");
+;
 	return -1;
 }
 
@@ -406,7 +406,7 @@ static ssize_t adb_write(struct file *fp, const char __user *buf,
 
 static int adb_open(struct inode *ip, struct file *fp)
 {
-	printk(KERN_INFO "adb_open\n");
+;
 	if (!_adb_dev)
 		return -ENODEV;
 
@@ -423,7 +423,7 @@ static int adb_open(struct inode *ip, struct file *fp)
 
 static int adb_release(struct inode *ip, struct file *fp)
 {
-	printk(KERN_INFO "adb_release\n");
+;
 	adb_unlock(&_adb_dev->open_excl);
 	return 0;
 }
@@ -550,7 +550,7 @@ static int adb_bind_config(struct usb_configuration *c)
 {
 	struct adb_dev *dev = _adb_dev;
 
-	printk(KERN_INFO "adb_bind_config\n");
+;
 
 	dev->cdev = c->cdev;
 	dev->function.name = "adb";
@@ -594,7 +594,7 @@ static int adb_setup(void)
 
 err:
 	kfree(dev);
-	printk(KERN_ERR "adb gadget driver failed to initialize\n");
+;
 	return ret;
 }
 

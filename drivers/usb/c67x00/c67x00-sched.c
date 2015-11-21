@@ -780,7 +780,7 @@ static int c67x00_add_iso_urb(struct c67x00_hcd *c67x00, struct urb *urb)
 		ret = c67x00_create_td(c67x00, urb, td_buf, len, pid, 0,
 				       urbp->cnt);
 		if (ret) {
-			printk(KERN_DEBUG "create failed: %d\n", ret);
+;
 			urb->iso_frame_desc[urbp->cnt].actual_length = 0;
 			urb->iso_frame_desc[urbp->cnt].status = ret;
 			if (urbp->cnt + 1 == urb->number_of_packets)

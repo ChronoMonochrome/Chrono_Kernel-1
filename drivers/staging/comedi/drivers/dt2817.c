@@ -152,17 +152,9 @@ static int dt2817_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned long iobase;
 
 	iobase = it->options[0];
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: dt2817: 0x%04lx ", dev->minor, iobase);
-#else
-	;
-#endif
+;
 	if (!request_region(iobase, DT2817_SIZE, "dt2817")) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("I/O port conflict\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -185,22 +177,14 @@ static int dt2817_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->state = 0;
 	outb(0, dev->iobase + DT2817_CR);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "\n");
-#else
-	;
-#endif
+;
 
 	return 0;
 }
 
 static int dt2817_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: dt2817: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	if (dev->iobase)
 		release_region(dev->iobase, DT2817_SIZE);

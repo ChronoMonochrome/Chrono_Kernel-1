@@ -56,8 +56,8 @@ static int __init siemens_usb_mpi_init(void)
 	retval = usb_register(&siemens_usb_mpi_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO DRIVER_DESC "\n");
-	printk(KERN_INFO DRIVER_VERSION " " DRIVER_AUTHOR "\n");
+;
+;
 	return retval;
 failed_usb_register:
 	usb_serial_deregister(&siemens_usb_mpi_device);

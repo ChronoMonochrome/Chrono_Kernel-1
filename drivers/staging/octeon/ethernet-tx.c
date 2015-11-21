@@ -299,73 +299,45 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
 	fpa_head = skb->head + 256 - ((unsigned long)skb->head & 0x7f);
 	if (unlikely(skb->data < fpa_head)) {
 		/*
-#ifdef CONFIG_DEBUG_PRINTK
 		 * printk("TX buffer beginning can't meet FPA
 		 * alignment constraints\n");
-#else
-		 * ;
-#endif
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely
 	    ((skb_end_pointer(skb) - fpa_head) < CVMX_FPA_PACKET_POOL_SIZE)) {
 		/*
-#ifdef CONFIG_DEBUG_PRINTK
-		   printk("TX buffer isn't large enough for the FPA\n");
-#else
-		   ;
-#endif
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb_shared(skb))) {
 		/*
-#ifdef CONFIG_DEBUG_PRINTK
-		   printk("TX buffer sharing data with someone else\n");
-#else
-		   ;
-#endif
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb_cloned(skb))) {
 		/*
-#ifdef CONFIG_DEBUG_PRINTK
-		   printk("TX buffer has been cloned\n");
-#else
-		   ;
-#endif
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb_header_cloned(skb))) {
 		/*
-#ifdef CONFIG_DEBUG_PRINTK
-		   printk("TX buffer header has been cloned\n");
-#else
-		   ;
-#endif
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb->destructor)) {
 		/*
-#ifdef CONFIG_DEBUG_PRINTK
-		   printk("TX buffer has a destructor\n");
-#else
-		   ;
-#endif
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
 	if (unlikely(skb_shinfo(skb)->nr_frags)) {
 		/*
-#ifdef CONFIG_DEBUG_PRINTK
-		   printk("TX buffer has fragments\n");
-#else
-		   ;
-#endif
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}
@@ -373,11 +345,7 @@ int cvm_oct_xmit(struct sk_buff *skb, struct net_device *dev)
 	    (skb->truesize !=
 	     sizeof(*skb) + skb_end_pointer(skb) - skb->head)) {
 		/*
-#ifdef CONFIG_DEBUG_PRINTK
-		   printk("TX buffer truesize has been changed\n");
-#else
-		   ;
-#endif
+;
 		 */
 		goto dont_put_skbuff_in_hw;
 	}

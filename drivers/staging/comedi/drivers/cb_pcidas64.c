@@ -98,23 +98,19 @@ TODO:
 /* #define PCIDAS64_DEBUG         enable debugging code */
 
 #ifdef PCIDAS64_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-#define DEBUG_PRINT(format, args...)  printk(format , ## args)
-#else
-#define DEBUG_PRINT(format, args...)
-#endif
-
-#define TIMER_BASE 25		/*  40MHz master clock */
-#define PRESCALED_TIMER_BASE	10000	/*  100kHz 'prescaled' clock for slow acquisition, maybe I'll support this someday */
-#define DMA_BUFFER_SIZE 0x1000
-
-#define PCI_VENDOR_ID_COMPUTERBOARDS	0x1307
-
-/* maximum value that can be loaded into board's 24-bit counters*/
-static const int max_counter_value = 0xffffff;
-#else
-#define DEBUG_PRINT(format, args...)  ;
-#endif
+//#define DEBUG_PRINT(format, args...)  printk(format , ## args)
+//#else
+//#define DEBUG_PRINT(format, args...)
+//#endif
+//
+//#define TIMER_BASE 25		/*  40MHz master clock */
+//#define PRESCALED_TIMER_BASE	10000	/*  100kHz 'prescaled' clock for slow acquisition, maybe I'll support this someday */
+//#define DMA_BUFFER_SIZE 0x1000
+//
+//#define PCI_VENDOR_ID_COMPUTERBOARDS	0x1307
+//
+///* maximum value that can be loaded into board's 24-bit counters*/
+;
 
 /* PCI-DAS64xxx base addresses */
 
@@ -1743,11 +1739,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	uint32_t local_range, local_decode;
 	int retval;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: cb_pcidas64\n", dev->minor);
-#else
-	;
-#endif
+;
 
 /*
  * Allocate the private structure area.
@@ -1789,20 +1781,12 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		return -EIO;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("Found %s on bus %i, slot %i\n", board(dev)->name,
-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-#else
-	;
-#endif
+//	printk("Found %s on bus %i, slot %i\n", board(dev)->name,
+;
 
 	if (comedi_pci_enable(pcidev, driver_cb_pcidas.driver_name)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING
-		       " failed to enable PCI device and request regions\n");
-#else
-		;
-#endif
+//		printk(KERN_WARNING
+;
 		return -EIO;
 	}
 	pci_set_master(pcidev);
@@ -1830,11 +1814,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	if (!priv(dev)->plx9080_iobase || !priv(dev)->main_iobase
 	    || !priv(dev)->dio_counter_iobase) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" failed to remap io memory\n");
-#else
-		;
-#endif
+;
 		return -ENOMEM;
 	}
 
@@ -1870,29 +1850,17 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	priv(dev)->hw_revision =
 	    hw_revision(dev, readw(priv(dev)->main_iobase + HW_STATUS_REG));
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(" stc hardware revision %i\n", priv(dev)->hw_revision);
-#else
-	;
-#endif
+;
 	init_plx9080(dev);
 	init_stc_registers(dev);
 	/*  get irq */
 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
 			"cb_pcidas64", dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" unable to allocate irq %u\n", pcidev->irq);
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 	dev->irq = pcidev->irq;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(" irq %u\n", dev->irq);
-#else
-	;
-#endif
+;
 
 	retval = setup_subdevices(dev);
 	if (retval < 0)
@@ -1914,11 +1882,7 @@ static int detach(struct comedi_device *dev)
 {
 	unsigned int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);
@@ -2103,11 +2067,7 @@ static int ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 		DEBUG_PRINT(" looped %i times waiting for data\n", i);
 		if (i == timeout) {
 			comedi_error(dev, " analog input read insn timed out");
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" status 0x%x\n", bits);
-#else
-			;
-#endif
+;
 			return -ETIME;
 		}
 		if (board(dev)->layout == LAYOUT_4020)
@@ -2133,11 +2093,7 @@ static int ai_config_calibration_source(struct comedi_device *dev,
 	else
 		num_calibration_sources = 8;
 	if (source >= num_calibration_sources) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("invalid calibration source: %i\n", source);
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 
@@ -2968,11 +2924,7 @@ static void pio_drain_ai_fifo_16(struct comedi_device *dev)
 		}
 
 		if (num_samples < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" cb_pcidas64: bug! num_samples < 0\n");
-#else
-			;
-#endif
+;
 			break;
 		}
 

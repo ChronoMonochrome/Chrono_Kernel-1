@@ -1738,11 +1738,11 @@ static inline void hci_conn_complete_evt(struct hci_dev *hdev, struct sk_buff *s
 				"current link policy = %d",
 				batostr(&ev->bdaddr),
 				conn->link_policy);
-			printk("hci_conn_complete_evt: "
-				"forbidding role switch for %s "
-				"current link policy = %d\n",
-				batostr(&ev->bdaddr),
-				conn->link_policy);
+//			printk("hci_conn_complete_evt: "
+//				"forbidding role switch for %s "
+//				"current link policy = %d\n",
+//				batostr(&ev->bdaddr),
+;
 
 			lp.handle = conn->handle;
 			lp.policy = conn->link_policy & ~HCI_LP_RSWITCH;

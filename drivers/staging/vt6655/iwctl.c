@@ -222,11 +222,7 @@ if(pDevice->byReAssocCount > 0) {   //reject scan when re-associating!
  }
 
 	 pMgmt->eScanType = WMAC_SCAN_PASSIVE;
-#ifdef CONFIG_DEBUG_PRINTK
-          //printk("SIOCSIWSCAN:WLAN_CMD_BSSID_SCAN\n");
-#else
-          //;
-#endif
+;
 	bScheduleCommand((void *) pDevice, WLAN_CMD_BSSID_SCAN, NULL);
 	spin_unlock_irq(&pDevice->lock);
 
@@ -697,11 +693,7 @@ int iwctl_siwap(struct net_device *dev,
     DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO " SIOCSIWAP \n");
 if (pMgmt->eScanState ==  WMAC_IS_SCANNING) {
         // In scanning..
-#ifdef CONFIG_DEBUG_PRINTK
-     printk("SIOCSIWAP(??)-->In scanning...\n");
-#else
-     ;
-#endif
+;
    //  return -EAGAIN;
   }
 	if (wrq->sa_family != ARPHRD_ETHER)
@@ -845,11 +837,7 @@ int iwctl_siwessid(struct net_device *dev,
  pDevice->fWPA_Authened = false;
 if (pMgmt->eScanState ==  WMAC_IS_SCANNING) {
         // In scanning..
-#ifdef CONFIG_DEBUG_PRINTK
-     printk("SIOCSIWESSID(??)-->In scanning...\n");
-#else
-     ;
-#endif
+;
    //  return -EAGAIN;
   }
 	// Check if we asked for `any'
@@ -877,11 +865,7 @@ if (pMgmt->eScanState ==  WMAC_IS_SCANNING) {
          }
 	else
 	  pItemSSID->len = wrq->length;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("set essid to %s \n",pItemSSID->abySSID);
-#else
-	;
-#endif
+;
 		//2008-0409-05, <Add> by Einsn Liu
        len=(pItemSSID->len > ((PWLAN_IE_SSID)pMgmt->abyCurrSSID)->len)?pItemSSID->len:((PWLAN_IE_SSID)pMgmt->abyCurrSSID)->len;
    if((pDevice->bLinkPass == true) &&
@@ -927,11 +911,7 @@ if (pMgmt->eScanState ==  WMAC_IS_SCANNING) {
                      }
                   }
 	     if(uSameBssidNum >= 2) {  //hit: desired AP is in hidden ssid mode!!!
-#ifdef CONFIG_DEBUG_PRINTK
-                 printk("SIOCSIWESSID:hidden ssid directly associate.......\n");
-#else
-                 ;
-#endif
+;
 	        vResetCommandTimer((void *) pDevice);
 	        pMgmt->eScanType = WMAC_SCAN_PASSIVE;          //this scan type,you'll submit scan result!
 	        bScheduleCommand((void *) pDevice, WLAN_CMD_BSSID_SCAN, pMgmt->abyDesireSSID);
@@ -1052,11 +1032,7 @@ int iwctl_siwrate(struct net_device *dev,
 	if(wrq->fixed != 0) {
 		// Fixed mode
 		// One rate, fixed
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("Rate Fix\n");
-#else
-	;
-#endif
+;
 		pDevice->bFixRate = true;
         if ((pDevice->byBBType == BB_TYPE_11B)&& (brate > 3)) {
 	    pDevice->uConnectionRate = 3;
@@ -1070,11 +1046,7 @@ int iwctl_siwrate(struct net_device *dev,
 	else {
         pDevice->bFixRate = false;
         pDevice->uConnectionRate = 13;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("auto rate:connection_rate is 13\n");
-#else
-	;
-#endif
+;
      }
 
 	return rc;
@@ -2045,74 +2017,22 @@ param->u.wpa_key.seq = (u8 *)seq;
 param->u.wpa_key.seq_len = seq_len;
 
 #if 0
-#ifdef CONFIG_DEBUG_PRINTK
-printk("param->u.wpa_key.alg_name =%d\n",param->u.wpa_key.alg_name);
-#else
 ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-printk(KERN_DEBUG "param->addr=%pM\n", param->addr);
-#else
 ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-printk("param->u.wpa_key.set_tx =%d\n",param->u.wpa_key.set_tx);
-#else
 ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-printk("param->u.wpa_key.key_index =%d\n",param->u.wpa_key.key_index);
-#else
 ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-printk("param->u.wpa_key.key_len =%d\n",param->u.wpa_key.key_len);
-#else
 ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-printk("param->u.wpa_key.key =");
-#else
 ;
-#endif
 for(ii=0;ii<param->u.wpa_key.key_len;ii++)
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("%02x:",param->u.wpa_key.key[ii]);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-         printk("\n");
-#else
-         ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-printk("param->u.wpa_key.seq_len =%d\n",param->u.wpa_key.seq_len);
-#else
 ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-printk("param->u.wpa_key.seq =");
-#else
 ;
-#endif
+;
+;
 for(ii=0;ii<param->u.wpa_key.seq_len;ii++)
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("%02x:",param->u.wpa_key.seq[ii]);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-         printk("\n");
-#else
-         ;
-#endif
-
-#ifdef CONFIG_DEBUG_PRINTK
-printk("...........\n");
-#else
 ;
-#endif
+;
+
+;
 #endif
 //****set if current action is Network Manager count??
 //****this method is so foolish,but there is no other way???
@@ -2131,11 +2051,7 @@ if(param->u.wpa_key.alg_name == WPA_ALG_NONE) {
         }
 		 }
 if( pDevice->bwextcount == 4) {
-#ifdef CONFIG_DEBUG_PRINTK
-    printk("SIOCSIWENCODEEXT:Enable WPA WEXT SUPPORT!!!!!\n");
-#else
-    ;
-#endif
+;
  pDevice->bwextcount=0;
    pDevice->bWPASuppWextEnabled = true;
 		 }
@@ -2182,11 +2098,7 @@ int iwctl_siwmlme(struct net_device *dev,
 		break;
 	case IW_MLME_DISASSOC:
 		if(pDevice->bLinkPass == true){
-#ifdef CONFIG_DEBUG_PRINTK
-					  printk("iwctl_siwmlme--->send DISASSOCIATE\n");
-#else
-					  ;
-#endif
+;
 		  //clear related flags
 		   memset(pMgmt->abyDesireBSSID, 0xFF,6);
 		KeyvInitTable(&pDevice->sKey, pDevice->PortOffset);

@@ -178,8 +178,8 @@ static int w83977af_open(int i, unsigned int iobase, unsigned int irq,
 	 */
 	dev = alloc_irdadev(sizeof(struct w83977af_ir));
 	if (dev == NULL) {
-		printk( KERN_ERR "IrDA: Can't allocate memory for "
-			"IrDA control block!\n");
+//		printk( KERN_ERR "IrDA: Can't allocate memory for "
+;
 		err = -ENOMEM;
 		goto err_out;
 	}
@@ -856,8 +856,8 @@ static int w83977af_dma_receive_complete(struct w83977af_ir *self)
 						
 			skb = dev_alloc_skb(len+1);
 			if (skb == NULL)  {
-				printk(KERN_INFO
-				       "%s(), memory squeeze, dropping frame.\n", __func__);
+//				printk(KERN_INFO
+;
 				/* Restore set register */
 				outb(set, iobase+SSR);
 

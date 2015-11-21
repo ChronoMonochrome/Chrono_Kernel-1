@@ -137,7 +137,7 @@ static void __init com90xx_probe(void)
 		return;
 	}
 
-	BUGLVL(D_NORMAL) printk(VERSION);
+;
 
 	/* set up the arrays where we'll store the possible probe addresses */
 	numports = numshmems = 0;
@@ -409,8 +409,8 @@ static void __init com90xx_probe(void)
 		}
 
 		if (openparen) {
-			BUGLVL(D_INIT) printk("no matching shmem)\n");
-			BUGLVL(D_INIT_REASONS) printk("S5: ");
+;
+;
 			BUGLVL(D_INIT_REASONS) numprint = 0;
 		}
 		if (!found)
@@ -418,7 +418,7 @@ static void __init com90xx_probe(void)
 		*port-- = ports[--numports];
 	}
 
-	BUGLVL(D_INIT_REASONS) printk("\n");
+;
 
 	/* Now put back TESTvalue on all leftover shmems. */
 	for (index = 0; index < numshmems; index++) {
@@ -678,13 +678,13 @@ static int __init com90xx_setup(char *s)
 
 	s = get_options(s, 8, ints);
 	if (!ints[0] && !*s) {
-		printk("com90xx: Disabled.\n");
+;
 		return 1;
 	}
 
 	switch (ints[0]) {
 	default:		/* ERROR */
-		printk("com90xx: Too many arguments.\n");
+;
 	case 3:		/* Mem address */
 		shmem = ints[3];
 	case 2:		/* IRQ */

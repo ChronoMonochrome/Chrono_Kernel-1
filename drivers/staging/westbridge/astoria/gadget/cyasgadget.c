@@ -2150,12 +2150,8 @@ static int __init cyas_init(void)
 	init_res = cyasgadget_initialize();
 
 	if (init_res != 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "<1> gadget ctl instance "
-			"init error:%d\n", init_res);
-#else
-		;
-#endif
+//		printk(KERN_WARNING "<1> gadget ctl instance "
+;
 		if (init_res > 0) {
 			/* force -E/0 linux convention */
 			init_res = init_res * -1;

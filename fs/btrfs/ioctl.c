@@ -1221,13 +1221,13 @@ return -EPERM;
 		*devstr = '\0';
 		devstr = vol_args->name;
 		devid = simple_strtoull(devstr, &end, 10);
-		printk(KERN_INFO "resizing devid %llu\n",
-		       (unsigned long long)devid);
+//		printk(KERN_INFO "resizing devid %llu\n",
+;
 	}
 	device = btrfs_find_device(root, devid, NULL, NULL);
 	if (!device) {
-		printk(KERN_INFO "resizer unable to find device %llu\n",
-		       (unsigned long long)devid);
+//		printk(KERN_INFO "resizer unable to find device %llu\n",
+;
 		ret = -EINVAL;
 		goto out_unlock;
 	}
@@ -1272,8 +1272,8 @@ return -EPERM;
 	do_div(new_size, root->sectorsize);
 	new_size *= root->sectorsize;
 
-	printk(KERN_INFO "new size for %s is %llu\n",
-		device->name, (unsigned long long)new_size);
+//	printk(KERN_INFO "new size for %s is %llu\n",
+;
 
 	if (new_size > old_size) {
 		trans = btrfs_start_transaction(root, 0);
@@ -1327,8 +1327,8 @@ static noinline int btrfs_ioctl_snap_create_transid(struct file *file,
 
 		src_inode = src_file->f_path.dentry->d_inode;
 		if (src_inode->i_sb != file->f_path.dentry->d_inode->i_sb) {
-			printk(KERN_INFO "btrfs: Snapshot src from "
-			       "another FS\n");
+//			printk(KERN_INFO "btrfs: Snapshot src from "
+;
 			ret = -EINVAL;
 			fput(src_file);
 			goto out;
@@ -1652,8 +1652,8 @@ static noinline int search_ioctl(struct inode *inode,
 		key.offset = (u64)-1;
 		root = btrfs_read_fs_root_no_name(info, &key);
 		if (IS_ERR(root)) {
-			printk(KERN_ERR "could not find root %llu\n",
-			       sk->tree_id);
+//			printk(KERN_ERR "could not find root %llu\n",
+;
 			btrfs_free_path(path);
 			return -ENOENT;
 		}
@@ -1755,7 +1755,7 @@ static noinline int btrfs_search_path_in_tree(struct btrfs_fs_info *info,
 	key.offset = (u64)-1;
 	root = btrfs_read_fs_root_no_name(info, &key);
 	if (IS_ERR(root)) {
-		printk(KERN_ERR "could not find root %llu\n", tree_id);
+;
 		ret = -ENOENT;
 		goto out;
 	}
@@ -2656,8 +2656,8 @@ return -EPERM;
 	if (IS_ERR_OR_NULL(di)) {
 		btrfs_free_path(path);
 		btrfs_end_transaction(trans, root);
-		printk(KERN_ERR "Umm, you don't have the default dir item, "
-		       "this isn't going to work\n");
+//		printk(KERN_ERR "Umm, you don't have the default dir item, "
+;
 		return -ENOENT;
 	}
 

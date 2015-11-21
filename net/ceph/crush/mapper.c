@@ -5,36 +5,36 @@
 # include <linux/bug.h>
 # include <linux/kernel.h>
 # ifndef dprintk
-#  define dprintk(args...)
-# endif
-#else
-# include <string.h>
-# include <stdio.h>
-# include <stdlib.h>
-# include <assert.h>
-# define BUG_ON(x) assert(!(x))
-# define dprintk(args...) /* printf(args) */
-# define kmalloc(x, f) malloc(x)
-# define kfree(x) free(x)
-#endif
-
-#include <linux/crush/crush.h>
-#include <linux/crush/hash.h>
-
-/*
- * Implement the core CRUSH mapping algorithm.
- */
-
-/**
- * crush_find_rule - find a crush_rule id for a given ruleset, type, and size.
- * @map: the crush_map
- * @ruleset: the storage ruleset id (user defined)
- * @type: storage ruleset type (user defined)
- * @size: output set size
- */
-int crush_find_rule(struct crush_map *map, int ruleset, int type, int size)
-{
-	int i;
+//#  define dprintk(args...)
+//# endif
+//#else
+//# include <string.h>
+//# include <stdio.h>
+//# include <stdlib.h>
+//# include <assert.h>
+//# define BUG_ON(x) assert(!(x))
+//# define dprintk(args...) /* printf(args) */
+//# define kmalloc(x, f) malloc(x)
+//# define kfree(x) free(x)
+//#endif
+//
+//#include <linux/crush/crush.h>
+//#include <linux/crush/hash.h>
+//
+///*
+// * Implement the core CRUSH mapping algorithm.
+// */
+//
+///**
+// * crush_find_rule - find a crush_rule id for a given ruleset, type, and size.
+// * @map: the crush_map
+// * @ruleset: the storage ruleset id (user defined)
+// * @type: storage ruleset type (user defined)
+// * @size: output set size
+// */
+//int crush_find_rule(struct crush_map *map, int ruleset, int type, int size)
+//{
+;
 
 	for (i = 0; i < map->max_rules; i++) {
 		if (map->rules[i] &&
@@ -73,7 +73,7 @@ static int bucket_perm_choose(struct crush_bucket *bucket,
 
 	/* start a new permutation if @x has changed */
 	if (bucket->perm_x != x || bucket->perm_n == 0) {
-		dprintk("bucket %d new x=%d\n", bucket->id, x);
+;
 		bucket->perm_x = x;
 
 		/* optimize common r=0 case */
@@ -98,7 +98,7 @@ static int bucket_perm_choose(struct crush_bucket *bucket,
 
 	/* calculate permutation up to pr */
 	for (i = 0; i < bucket->perm_n; i++)
-		dprintk(" perm_choose have %d: %d\n", i, bucket->perm[i]);
+;
 	while (bucket->perm_n <= pr) {
 		unsigned p = bucket->perm_n;
 		/* no point in swapping the final entry */
@@ -110,17 +110,17 @@ static int bucket_perm_choose(struct crush_bucket *bucket,
 				bucket->perm[p + i] = bucket->perm[p];
 				bucket->perm[p] = t;
 			}
-			dprintk(" perm_choose swap %d with %d\n", p, p+i);
+;
 		}
 		bucket->perm_n++;
 	}
 	for (i = 0; i < bucket->size; i++)
-		dprintk(" perm_choose  %d: %d\n", i, bucket->perm[i]);
+;
 
 	s = bucket->perm[pr];
 out:
-	dprintk(" perm_choose %d sz=%d x=%d r=%d (%d) s=%d\n", bucket->id,
-		bucket->size, x, r, pr, s);
+//	dprintk(" perm_choose %d sz=%d x=%d r=%d (%d) s=%d\n", bucket->id,
+;
 	return bucket->items[s];
 }
 
@@ -141,10 +141,10 @@ static int bucket_list_choose(struct crush_bucket_list *bucket,
 		__u64 w = crush_hash32_4(bucket->h.hash,x, bucket->h.items[i],
 					 r, bucket->h.id);
 		w &= 0xffff;
-		dprintk("list_choose i=%d x=%d r=%d item %d weight %x "
-			"sw %x rand %llx",
-			i, x, r, bucket->h.items[i], bucket->item_weights[i],
-			bucket->sum_weights[i], w);
+//		dprintk("list_choose i=%d x=%d r=%d item %d weight %x "
+//			"sw %x rand %llx",
+//			i, x, r, bucket->h.items[i], bucket->item_weights[i],
+;
 		w *= bucket->sum_weights[i];
 		w = w >> 16;
 		/*dprintk(" scaled %llx\n", w);*/
@@ -238,7 +238,7 @@ static int bucket_straw_choose(struct crush_bucket_straw *bucket,
 
 static int crush_bucket_choose(struct crush_bucket *in, int x, int r)
 {
-	dprintk(" crush_bucket_choose %d x=%d r=%d\n", in->id, x, r);
+;
 	switch (in->alg) {
 	case CRUSH_BUCKET_UNIFORM:
 		return bucket_uniform_choose((struct crush_bucket_uniform *)in,
@@ -306,8 +306,8 @@ static int crush_choose(struct crush_map *map,
 	int collide, reject;
 	const int orig_tries = 5; /* attempts before we fall back to search */
 
-	dprintk("CHOOSE%s bucket %d x %d outpos %d numrep %d\n", recurse_to_leaf ? "_LEAF" : "",
-		bucket->id, x, outpos, numrep);
+//	dprintk("CHOOSE%s bucket %d x %d outpos %d numrep %d\n", recurse_to_leaf ? "_LEAF" : "",
+;
 
 	for (rep = outpos; rep < numrep; rep++) {
 		/* keep trying until we get a non-out, non-colliding item */
@@ -361,7 +361,7 @@ static int crush_choose(struct crush_map *map,
 					itemtype = map->buckets[-1-item]->type;
 				else
 					itemtype = 0;
-				dprintk("  item %d type %d\n", item, itemtype);
+;
 
 				/* keep going? */
 				if (itemtype != type) {
@@ -424,25 +424,25 @@ reject:
 					else
 						/* else give up */
 						skip_rep = 1;
-					dprintk("  reject %d  collide %d  "
-						"ftotal %d  flocal %d\n",
-						reject, collide, ftotal,
-						flocal);
+//					dprintk("  reject %d  collide %d  "
+//						"ftotal %d  flocal %d\n",
+//						reject, collide, ftotal,
+;
 				}
 			} while (retry_bucket);
 		} while (retry_descent);
 
 		if (skip_rep) {
-			dprintk("skip rep\n");
+;
 			continue;
 		}
 
-		dprintk("CHOOSE got %d\n", item);
+;
 		out[outpos] = item;
 		outpos++;
 	}
 
-	dprintk("CHOOSE returns %d\n", outpos);
+;
 	return outpos;
 }
 

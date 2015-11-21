@@ -1976,12 +1976,8 @@ static int __init quausb2_usb_init(void)
 	if (retval)
 		goto failed_usb_serial_register;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-			DRIVER_DESC "\n");
-#else
-	;
-#endif
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 	/* register with usb */
 

@@ -82,11 +82,7 @@ static int mpc8260cpm_attach(struct comedi_device *dev,
 	struct comedi_subdevice *s;
 	int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: mpc8260cpm: ", dev->minor);
-#else
-	;
-#endif
+;
 
 	dev->board_ptr = mpc8260cpm_boards + dev->board;
 
@@ -114,11 +110,7 @@ static int mpc8260cpm_attach(struct comedi_device *dev,
 
 static int mpc8260cpm_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: mpc8260cpm: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	return 0;
 }

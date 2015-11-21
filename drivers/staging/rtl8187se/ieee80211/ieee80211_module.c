@@ -70,12 +70,8 @@ static inline int ieee80211_networks_allocate(struct ieee80211_device *ieee)
 		MAX_NETWORK_COUNT, sizeof(struct ieee80211_network),
 		GFP_KERNEL);
 	if (!ieee->networks) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "%s: Out of memory allocating beacons\n",
-		       ieee->dev->name);
-#else
-		;
-#endif
+//		printk(KERN_WARNING "%s: Out of memory allocating beacons\n",
+;
 		return -ENOMEM;
 	}
 

@@ -316,8 +316,8 @@ static int __init usb_ipw_init(void)
 		usb_serial_deregister(&ipw_device);
 		return retval;
 	}
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 }
 

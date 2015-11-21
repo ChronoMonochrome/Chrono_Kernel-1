@@ -85,7 +85,7 @@ static int dn_fib_sync_up(struct net_device *dev);
 void dn_fib_free_info(struct dn_fib_info *fi)
 {
 	if (fi->fib_dead == 0) {
-		printk(KERN_DEBUG "DECnet: BUG! Attempt to free alive dn_fib_info\n");
+;
 		return;
 	}
 
@@ -438,7 +438,7 @@ int dn_fib_semantic_match(int type, struct dn_fib_info *fi, const struct flowidn
 				return 1;
 			default:
 				if (net_ratelimit())
-					 printk("DECnet: impossible routing event : dn_fib_semantic_match type=%d\n", type);
+;
 				res->fi = NULL;
 				return -EINVAL;
 		}

@@ -220,8 +220,8 @@ static int __devinit ariadne_init_one(struct zorro_dev *z,
     }
     zorro_set_drvdata(z, dev);
 
-    printk(KERN_INFO "%s: Ariadne at 0x%08lx, Ethernet Address %pM\n",
-           dev->name, board, dev->dev_addr);
+//    printk(KERN_INFO "%s: Ariadne at 0x%08lx, Ethernet Address %pM\n",
+;
 
     return 0;
 }
@@ -247,17 +247,17 @@ static int ariadne_open(struct net_device *dev)
     lance->RAP = CSR89;		/* Chip ID */
     version |= swapw(lance->RDP)<<16;
     if ((version & 0x00000fff) != 0x00000003) {
-	printk(KERN_WARNING "ariadne_open: Couldn't find AMD Ethernet Chip\n");
+;
 	return -EAGAIN;
     }
     if ((version & 0x0ffff000) != 0x00003000) {
-	printk(KERN_WARNING "ariadne_open: Couldn't find Am79C960 (Wrong part "
-	       "number = %ld)\n", (version & 0x0ffff000)>>12);
+//	printk(KERN_WARNING "ariadne_open: Couldn't find Am79C960 (Wrong part "
+;
 	return -EAGAIN;
     }
 #if 0
-    printk(KERN_DEBUG "ariadne_open: Am79C960 (PCnet-ISA) Revision %ld\n",
-	   (version & 0xf0000000)>>28);
+//    printk(KERN_DEBUG "ariadne_open: Am79C960 (PCnet-ISA) Revision %ld\n",
+;
 #endif
 
     ariadne_init_ring(dev);
@@ -356,8 +356,8 @@ static void ariadne_init_ring(struct net_device *dev)
 	priv->tx_ring[i] = &lancedata->tx_ring[i];
 	priv->tx_buff[i] = lancedata->tx_buff[i];
 #if 0
-	printk(KERN_DEBUG "TX Entry %2d at %p, Buf at %p\n", i,
-	       &lancedata->tx_ring[i], lancedata->tx_buff[i]);
+//	printk(KERN_DEBUG "TX Entry %2d at %p, Buf at %p\n", i,
+;
 #endif
     }
 
@@ -372,8 +372,8 @@ static void ariadne_init_ring(struct net_device *dev)
 	priv->rx_ring[i] = &lancedata->rx_ring[i];
 	priv->rx_buff[i] = lancedata->rx_buff[i];
 #if 0
-	printk(KERN_DEBUG "RX Entry %2d at %p, Buf at %p\n", i,
-	       &lancedata->rx_ring[i], lancedata->rx_buff[i]);
+//	printk(KERN_DEBUG "RX Entry %2d at %p, Buf at %p\n", i,
+;
 #endif
     }
 }
@@ -390,10 +390,10 @@ static int ariadne_close(struct net_device *dev)
     lance->RAP = CSR0;		/* PCnet-ISA Controller Status */
 
     if (ariadne_debug > 1) {
-	printk(KERN_DEBUG "%s: Shutting down ethercard, status was %2.2x.\n",
-	       dev->name, lance->RDP);
-	printk(KERN_DEBUG "%s: %lu packets missed\n", dev->name,
-	       dev->stats.rx_missed_errors);
+//	printk(KERN_DEBUG "%s: Shutting down ethercard, status was %2.2x.\n",
+;
+//	printk(KERN_DEBUG "%s: %lu packets missed\n", dev->name,
+;
     }
 
     /* We stop the LANCE here -- it occasionally polls memory if we don't. */
@@ -439,42 +439,42 @@ static irqreturn_t ariadne_interrupt(int irq, void *data)
 
 #if 0
 	if (ariadne_debug > 5) {
-	    printk(KERN_DEBUG "%s: interrupt  csr0=%#2.2x new csr=%#2.2x.",
-		   dev->name, csr0, lance->RDP);
-	    printk("[");
+//	    printk(KERN_DEBUG "%s: interrupt  csr0=%#2.2x new csr=%#2.2x.",
+;
+;
 	    if (csr0 & INTR)
-		printk(" INTR");
+;
 	    if (csr0 & INEA)
-		printk(" INEA");
+;
 	    if (csr0 & RXON)
-		printk(" RXON");
+;
 	    if (csr0 & TXON)
-		printk(" TXON");
+;
 	    if (csr0 & TDMD)
-		printk(" TDMD");
+;
 	    if (csr0 & STOP)
-		printk(" STOP");
+;
 	    if (csr0 & STRT)
-		printk(" STRT");
+;
 	    if (csr0 & INIT)
-		printk(" INIT");
+;
 	    if (csr0 & ERR)
-		printk(" ERR");
+;
 	    if (csr0 & BABL)
-		printk(" BABL");
+;
 	    if (csr0 & CERR)
-		printk(" CERR");
+;
 	    if (csr0 & MISS)
-		printk(" MISS");
+;
 	    if (csr0 & MERR)
-		printk(" MERR");
+;
 	    if (csr0 & RINT)
-		printk(" RINT");
+;
 	    if (csr0 & TINT)
-		printk(" TINT");
+;
 	    if (csr0 & IDON)
-		printk(" IDON");
-	    printk(" ]\n");
+;
+;
 	}
 #endif
 
@@ -510,8 +510,8 @@ static irqreturn_t ariadne_interrupt(int irq, void *data)
 			/* Ackk!  On FIFO errors the Tx unit is turned off! */
 			dev->stats.tx_fifo_errors++;
 			/* Remove this verbosity later! */
-			printk(KERN_ERR "%s: Tx FIFO error! Status %4.4x.\n",
-			       dev->name, csr0);
+//			printk(KERN_ERR "%s: Tx FIFO error! Status %4.4x.\n",
+;
 			/* Restart the chip. */
 			lance->RDP = STRT;
 		    }
@@ -525,8 +525,8 @@ static irqreturn_t ariadne_interrupt(int irq, void *data)
 
 #ifndef final_version
 	    if (priv->cur_tx - dirty_tx >= TX_RING_SIZE) {
-		printk(KERN_ERR "out-of-sync dirty pointer, %d vs. %d, "
-		       "full=%d.\n", dirty_tx, priv->cur_tx, priv->tx_full);
+//		printk(KERN_ERR "out-of-sync dirty pointer, %d vs. %d, "
+;
 		dirty_tx += TX_RING_SIZE;
 	    }
 #endif
@@ -552,8 +552,8 @@ static irqreturn_t ariadne_interrupt(int irq, void *data)
 	}
 	if (csr0 & MERR) {
 	    handled = 1;
-	    printk(KERN_ERR "%s: Bus master arbitration failure, status "
-		   "%4.4x.\n", dev->name, csr0);
+//	    printk(KERN_ERR "%s: Bus master arbitration failure, status "
+;
 	    /* Restart the chip. */
 	    lance->RDP = STRT;
 	}
@@ -565,8 +565,8 @@ static irqreturn_t ariadne_interrupt(int irq, void *data)
 
 #if 0
     if (ariadne_debug > 4)
-	printk(KERN_DEBUG "%s: exiting interrupt, csr%d=%#4.4x.\n", dev->name,
-	       lance->RAP, lance->RDP);
+//	printk(KERN_DEBUG "%s: exiting interrupt, csr%d=%#4.4x.\n", dev->name,
+;
 #endif
     return IRQ_RETVAL(handled);
 }
@@ -576,8 +576,8 @@ static void ariadne_tx_timeout(struct net_device *dev)
 {
     volatile struct Am79C960 *lance = (struct Am79C960*)dev->base_addr;
 
-    printk(KERN_ERR "%s: transmit timed out, status %4.4x, resetting.\n",
-	   dev->name, lance->RDP);
+//    printk(KERN_ERR "%s: transmit timed out, status %4.4x, resetting.\n",
+;
     ariadne_reset(dev);
     netif_wake_queue(dev);
 }
@@ -595,8 +595,8 @@ static netdev_tx_t ariadne_start_xmit(struct sk_buff *skb,
 #if 0
     if (ariadne_debug > 3) {
 	lance->RAP = CSR0;	/* PCnet-ISA Controller Status */
-	printk(KERN_DEBUG "%s: ariadne_start_xmit() called, csr0 %4.4x.\n",
-	       dev->name, lance->RDP);
+//	printk(KERN_DEBUG "%s: ariadne_start_xmit() called, csr0 %4.4x.\n",
+;
 	lance->RDP = 0x0000;
     }
 #endif
@@ -613,11 +613,11 @@ static netdev_tx_t ariadne_start_xmit(struct sk_buff *skb,
 
 #if 0
 {
-    printk(KERN_DEBUG "TX pkt type 0x%04x from %pM to %pM "
-	   " data 0x%08x len %d\n",
-	   ((u_short *)skb->data)[6],
-	   skb->data + 6, skb->data,
-	   (int)skb->data, (int)skb->len);
+//    printk(KERN_DEBUG "TX pkt type 0x%04x from %pM to %pM "
+//	   " data 0x%08x len %d\n",
+//	   ((u_short *)skb->data)[6],
+//	   skb->data + 6, skb->data,
+;
 }
 #endif
 
@@ -640,13 +640,13 @@ static netdev_tx_t ariadne_start_xmit(struct sk_buff *skb,
 	len >>= 1;
 	for (i = 0; i < len; i += 8) {
 	    int j;
-	    printk(KERN_DEBUG "%04x:", i);
+;
 	    for (j = 0; (j < 8) && ((i+j) < len); j++) {
 		if (!(j & 1))
-		    printk(" ");
-		printk("%04x", priv->tx_buff[entry][i+j]);
+;
+;
 	    }
-	    printk("\n");
+;
 	}
     }
 #endif
@@ -716,8 +716,8 @@ static int ariadne_rx(struct net_device *dev)
 
 	    skb = dev_alloc_skb(pkt_len+2);
 	    if (skb == NULL) {
-		printk(KERN_WARNING "%s: Memory squeeze, deferring packet.\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Memory squeeze, deferring packet.\n",
+;
 		for (i = 0; i < RX_RING_SIZE; i++)
 		    if (lowb(priv->rx_ring[(entry+i) % RX_RING_SIZE]->RMD1) & RF_OWN)
 			break;
@@ -737,18 +737,18 @@ static int ariadne_rx(struct net_device *dev)
 	    skb->protocol=eth_type_trans(skb,dev);
 #if 0
 {
-	    printk(KERN_DEBUG "RX pkt type 0x%04x from ",
-		   ((u_short *)skb->data)[6]);
+//	    printk(KERN_DEBUG "RX pkt type 0x%04x from ",
+;
 	    {
 		u_char *ptr = &((u_char *)skb->data)[6];
-		printk("%pM", ptr);
+;
 	    }
-	    printk(" to ");
+;
 	    {
 		u_char *ptr = (u_char *)skb->data;
-		printk("%pM", ptr);
+;
 	    }
-	    printk(" data 0x%08x len %d\n", (int)skb->data, (int)skb->len);
+;
 }
 #endif
 

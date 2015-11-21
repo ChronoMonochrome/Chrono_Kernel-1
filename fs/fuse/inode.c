@@ -1227,8 +1227,8 @@ static int __init fuse_init(void)
 {
 	int res;
 
-	printk(KERN_INFO "fuse init (API version %i.%i)\n",
-	       FUSE_KERNEL_VERSION, FUSE_KERNEL_MINOR_VERSION);
+//	printk(KERN_INFO "fuse init (API version %i.%i)\n",
+;
 
 	INIT_LIST_HEAD(&fuse_conn_list);
 	res = fuse_fs_init();
@@ -1264,7 +1264,7 @@ static int __init fuse_init(void)
 
 static void __exit fuse_exit(void)
 {
-	printk(KERN_DEBUG "fuse exit\n");
+;
 
 	fuse_ctl_cleanup();
 	fuse_sysfs_cleanup();

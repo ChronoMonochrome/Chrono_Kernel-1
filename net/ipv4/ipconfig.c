@@ -213,7 +213,7 @@ static int __init ic_open_devs(void)
 		if (!(dev->flags & IFF_LOOPBACK))
 			continue;
 		if (dev_change_flags(dev, dev->flags | IFF_UP) < 0)
-			printk(KERN_ERR "IP-Config: Failed to open %s\n", dev->name);
+;
 	}
 
 	for_each_netdev(&init_net, dev) {
@@ -222,7 +222,7 @@ static int __init ic_open_devs(void)
 			if (dev->mtu >= 364)
 				able |= IC_BOOTP;
 			else
-				printk(KERN_WARNING "DHCP/BOOTP: Ignoring device %s, MTU %d too small", dev->name, dev->mtu);
+;
 			if (!(dev->flags & IFF_NOARP))
 				able |= IC_RARP;
 			able &= ic_proto_enabled;
@@ -230,7 +230,7 @@ static int __init ic_open_devs(void)
 				continue;
 			oflags = dev->flags;
 			if (dev_change_flags(dev, oflags | IFF_UP) < 0) {
-				printk(KERN_ERR "IP-Config: Failed to open %s\n", dev->name);
+;
 				continue;
 			}
 			if (!(d = kmalloc(sizeof(struct ic_device), GFP_KERNEL))) {
@@ -272,9 +272,9 @@ have_carrier:
 
 	if (!ic_first_dev) {
 		if (user_dev_name[0])
-			printk(KERN_ERR "IP-Config: Device `%s' not found.\n", user_dev_name);
+;
 		else
-			printk(KERN_ERR "IP-Config: No network devices available.\n");
+;
 		return -ENODEV;
 	}
 	return 0;
@@ -358,17 +358,17 @@ static int __init ic_setup_if(void)
 	strcpy(ir.ifr_ifrn.ifrn_name, ic_dev->name);
 	set_sockaddr(sin, ic_myaddr, 0);
 	if ((err = ic_devinet_ioctl(SIOCSIFADDR, &ir)) < 0) {
-		printk(KERN_ERR "IP-Config: Unable to set interface address (%d).\n", err);
+;
 		return -1;
 	}
 	set_sockaddr(sin, ic_netmask, 0);
 	if ((err = ic_devinet_ioctl(SIOCSIFNETMASK, &ir)) < 0) {
-		printk(KERN_ERR "IP-Config: Unable to set interface netmask (%d).\n", err);
+;
 		return -1;
 	}
 	set_sockaddr(sin, ic_myaddr | ~ic_netmask, 0);
 	if ((err = ic_devinet_ioctl(SIOCSIFBRDADDR, &ir)) < 0) {
-		printk(KERN_ERR "IP-Config: Unable to set interface broadcast address (%d).\n", err);
+;
 		return -1;
 	}
 	/* Handle the case where we need non-standard MTU on the boot link (a network
@@ -379,8 +379,8 @@ static int __init ic_setup_if(void)
 		strcpy(ir.ifr_name, ic_dev->name);
 		ir.ifr_mtu = ic_dev_mtu;
 		if ((err = ic_dev_ioctl(SIOCSIFMTU, &ir)) < 0)
-			printk(KERN_ERR "IP-Config: Unable to set interface mtu to %d (%d).\n",
-			                 ic_dev_mtu, err);
+//			printk(KERN_ERR "IP-Config: Unable to set interface mtu to %d (%d).\n",
+;
 	}
 	return 0;
 }
@@ -395,7 +395,7 @@ static int __init ic_setup_routes(void)
 
 		memset(&rm, 0, sizeof(rm));
 		if ((ic_gateway ^ ic_myaddr) & ic_netmask) {
-			printk(KERN_ERR "IP-Config: Gateway not on directly connected network.\n");
+;
 			return -1;
 		}
 		set_sockaddr((struct sockaddr_in *) &rm.rt_dst, 0, 0);
@@ -403,7 +403,7 @@ static int __init ic_setup_routes(void)
 		set_sockaddr((struct sockaddr_in *) &rm.rt_gateway, ic_gateway, 0);
 		rm.rt_flags = RTF_UP | RTF_GATEWAY;
 		if ((err = ic_route_ioctl(SIOCADDRT, &rm)) < 0) {
-			printk(KERN_ERR "IP-Config: Cannot add default route (%d).\n", err);
+;
 			return -1;
 		}
 	}
@@ -436,11 +436,11 @@ static int __init ic_defaults(void)
 		else if (IN_CLASSC(ntohl(ic_myaddr)))
 			ic_netmask = htonl(IN_CLASSC_NET);
 		else {
-			printk(KERN_ERR "IP-Config: Unable to guess netmask for address %pI4\n",
-				&ic_myaddr);
+//			printk(KERN_ERR "IP-Config: Unable to guess netmask for address %pI4\n",
+;
 			return -1;
 		}
-		printk("IP-Config: Guessing netmask %pI4\n", &ic_netmask);
+;
 	}
 
 	return 0;
@@ -639,7 +639,7 @@ ic_dhcp_init_options(u8 *options)
 	int len;
 
 #ifdef IPCONFIG_DEBUG
-	printk("DHCP: Sending message type %d\n", mt);
+;
 #endif
 
 	memcpy(e, ic_bootp_cookie, 4);	/* RFC1048 Magic Cookie */
@@ -687,8 +687,8 @@ ic_dhcp_init_options(u8 *options)
 			e += len;
 		}
 		if (*vendor_class_identifier) {
-			printk(KERN_INFO "DHCP: sending class identifier \"%s\"\n",
-			       vendor_class_identifier);
+//			printk(KERN_INFO "DHCP: sending class identifier \"%s\"\n",
+;
 			*e++ = 60;	/* Class-identifier */
 			len = strlen(vendor_class_identifier);
 			*e++ = len;
@@ -803,7 +803,7 @@ static void __init ic_bootp_send_if(struct ic_device *d, unsigned long jiffies_d
 	else if (dev->type == ARPHRD_FDDI)
 		b->htype = ARPHRD_ETHER;
 	else {
-		printk("Unknown ARP type 0x%04x for device %s\n", dev->type, dev->name);
+;
 		b->htype = dev->type; /* can cause undefined behavior */
 	}
 
@@ -827,7 +827,7 @@ static void __init ic_bootp_send_if(struct ic_device *d, unsigned long jiffies_d
 	if (dev_hard_header(skb, dev, ntohs(skb->protocol),
 			    dev->broadcast, dev->dev_addr, skb->len) < 0 ||
 	    dev_queue_xmit(skb) < 0)
-		printk("E");
+;
 }
 
 
@@ -861,7 +861,7 @@ static void __init ic_do_bootp_ext(u8 *ext)
 	printk("DHCP/BOOTP: Got extension %d:",*ext);
 	for (c=ext+2; c<ext+2+ext[1]; c++)
 		printk(" %02x", *c);
-	printk("\n");
+;
 #endif
 
 	switch (*ext++) {
@@ -938,8 +938,8 @@ static int __init ic_bootp_recv(struct sk_buff *skb, struct net_device *dev, str
 	/* Fragments are not supported */
 	if (h->frag_off & htons(IP_OFFSET | IP_MF)) {
 		if (net_ratelimit())
-			printk(KERN_ERR "DHCP/BOOTP: Ignoring fragmented "
-			       "reply.\n");
+//			printk(KERN_ERR "DHCP/BOOTP: Ignoring fragmented "
+;
 		goto drop;
 	}
 
@@ -988,16 +988,16 @@ static int __init ic_bootp_recv(struct sk_buff *skb, struct net_device *dev, str
 	if (b->op != BOOTP_REPLY ||
 	    b->xid != d->xid) {
 		if (net_ratelimit())
-			printk(KERN_ERR "DHCP/BOOTP: Reply not for us, "
-			       "op[%x] xid[%x]\n",
-			       b->op, b->xid);
+//			printk(KERN_ERR "DHCP/BOOTP: Reply not for us, "
+//			       "op[%x] xid[%x]\n",
+;
 		goto drop_unlock;
 	}
 
 	/* Is it a reply for the device we are configuring? */
 	if (b->xid != ic_dev_xid) {
 		if (net_ratelimit())
-			printk(KERN_ERR "DHCP/BOOTP: Ignoring delayed packet\n");
+;
 		goto drop_unlock;
 	}
 
@@ -1033,7 +1033,7 @@ static int __init ic_bootp_recv(struct sk_buff *skb, struct net_device *dev, str
 			}
 
 #ifdef IPCONFIG_DEBUG
-			printk("DHCP: Got message type %d\n", mt);
+;
 #endif
 
 			switch (mt) {
@@ -1048,8 +1048,8 @@ static int __init ic_bootp_recv(struct sk_buff *skb, struct net_device *dev, str
 				ic_myaddr = b->your_ip;
 				ic_servaddr = server_id;
 #ifdef IPCONFIG_DEBUG
-				printk("DHCP: Offered address %pI4 by server %pI4\n",
-				       &ic_myaddr, &ic_servaddr);
+//				printk("DHCP: Offered address %pI4 by server %pI4\n",
+;
 #endif
 				/* The DHCP indicated server address takes
 				 * precedence over the bootp header one if
@@ -1135,17 +1135,17 @@ static int __init ic_dynamic(void)
 	 * are missing, and without DHCP/BOOTP/RARP we are unable to get it.
 	 */
 	if (!ic_proto_enabled) {
-		printk(KERN_ERR "IP-Config: Incomplete network configuration information.\n");
+;
 		return -1;
 	}
 
 #ifdef IPCONFIG_BOOTP
 	if ((ic_proto_enabled ^ ic_proto_have_if) & IC_BOOTP)
-		printk(KERN_ERR "DHCP/BOOTP: No suitable device found.\n");
+;
 #endif
 #ifdef IPCONFIG_RARP
 	if ((ic_proto_enabled ^ ic_proto_have_if) & IC_RARP)
-		printk(KERN_ERR "RARP: No suitable device found.\n");
+;
 #endif
 
 	if (!ic_proto_have_if)
@@ -1172,11 +1172,11 @@ static int __init ic_dynamic(void)
 	 * [Actually we could now, but the nothing else running note still
 	 *  applies.. - AC]
 	 */
-	printk(KERN_NOTICE "Sending %s%s%s requests .",
-	       do_bootp
-		? ((ic_proto_enabled & IC_USE_DHCP) ? "DHCP" : "BOOTP") : "",
-	       (do_bootp && do_rarp) ? " and " : "",
-	       do_rarp ? "RARP" : "");
+//	printk(KERN_NOTICE "Sending %s%s%s requests .",
+//	       do_bootp
+//		? ((ic_proto_enabled & IC_USE_DHCP) ? "DHCP" : "BOOTP") : "",
+//	       (do_bootp && do_rarp) ? " and " : "",
+;
 
 	start_jiffies = jiffies;
 	d = ic_first_dev;
@@ -1205,13 +1205,13 @@ static int __init ic_dynamic(void)
 		    (ic_proto_enabled & IC_USE_DHCP) &&
 		    ic_dhcp_msgtype != DHCPACK) {
 			ic_got_reply = 0;
-			printk(KERN_CONT ",");
+;
 			continue;
 		}
 #endif /* IPCONFIG_DHCP */
 
 		if (ic_got_reply) {
-			printk(KERN_CONT " OK\n");
+;
 			break;
 		}
 
@@ -1219,7 +1219,7 @@ static int __init ic_dynamic(void)
 			continue;
 
 		if (! --retries) {
-			printk(KERN_CONT " timed out!\n");
+;
 			break;
 		}
 
@@ -1229,7 +1229,7 @@ static int __init ic_dynamic(void)
 		if (timeout > CONF_TIMEOUT_MAX)
 			timeout = CONF_TIMEOUT_MAX;
 
-		printk(KERN_CONT ".");
+;
 	}
 
 #ifdef IPCONFIG_BOOTP
@@ -1246,11 +1246,11 @@ static int __init ic_dynamic(void)
 		return -1;
 	}
 
-	printk("IP-Config: Got %s answer from %pI4, ",
-		((ic_got_reply & IC_RARP) ? "RARP"
-		 : (ic_proto_enabled & IC_USE_DHCP) ? "DHCP" : "BOOTP"),
-		&ic_servaddr);
-	printk(KERN_CONT "my address is %pI4\n", &ic_myaddr);
+//	printk("IP-Config: Got %s answer from %pI4, ",
+//		((ic_got_reply & IC_RARP) ? "RARP"
+//		 : (ic_proto_enabled & IC_USE_DHCP) ? "DHCP" : "BOOTP"),
+;
+;
 
 	return 0;
 }
@@ -1426,24 +1426,24 @@ static int __init ip_auto_config(void)
 			 */
 #ifdef CONFIG_ROOT_NFS
 			if (ROOT_DEV ==  Root_NFS) {
-				printk(KERN_ERR
-					"IP-Config: Retrying forever (NFS root)...\n");
+//				printk(KERN_ERR
+;
 				goto try_try_again;
 			}
 #endif
 
 			if (--retries) {
-				printk(KERN_ERR
-				       "IP-Config: Reopening network devices...\n");
+//				printk(KERN_ERR
+;
 				goto try_try_again;
 			}
 
 			/* Oh, well.  At least we tried. */
-			printk(KERN_ERR "IP-Config: Auto-configuration of network failed.\n");
+;
 			return -1;
 		}
 #else /* !DYNAMIC */
-		printk(KERN_ERR "IP-Config: Incomplete network configuration information.\n");
+;
 		ic_close_devs();
 		return -1;
 #endif /* IPCONFIG_DYNAMIC */
@@ -1481,19 +1481,19 @@ static int __init ip_auto_config(void)
 	/*
 	 * Clue in the operator.
 	 */
-	printk("IP-Config: Complete:\n");
-	printk("     device=%s", ic_dev->name);
-	printk(KERN_CONT ", addr=%pI4", &ic_myaddr);
-	printk(KERN_CONT ", mask=%pI4", &ic_netmask);
-	printk(KERN_CONT ", gw=%pI4", &ic_gateway);
-	printk(KERN_CONT ",\n     host=%s, domain=%s, nis-domain=%s",
-	       utsname()->nodename, ic_domain, utsname()->domainname);
-	printk(KERN_CONT ",\n     bootserver=%pI4", &ic_servaddr);
-	printk(KERN_CONT ", rootserver=%pI4", &root_server_addr);
-	printk(KERN_CONT ", rootpath=%s", root_server_path);
+;
+;
+;
+;
+;
+//	printk(KERN_CONT ",\n     host=%s, domain=%s, nis-domain=%s",
+;
+;
+;
+;
 	if (ic_dev_mtu)
-		printk(KERN_CONT ", mtu=%d", ic_dev_mtu);
-	printk(KERN_CONT "\n");
+;
+;
 #endif /* !SILENT */
 
 	return 0;
@@ -1626,8 +1626,8 @@ static int __init vendor_class_identifier_setup(char *addrs)
 	if (strlcpy(vendor_class_identifier, addrs,
 		    sizeof(vendor_class_identifier))
 	    >= sizeof(vendor_class_identifier))
-		printk(KERN_WARNING "DHCP: vendorclass too long, truncated to \"%s\"",
-		       vendor_class_identifier);
+//		printk(KERN_WARNING "DHCP: vendorclass too long, truncated to \"%s\"",
+;
 	return 1;
 }
 

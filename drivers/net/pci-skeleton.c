@@ -121,12 +121,12 @@ static char version[] __devinitdata =
 #ifdef NETDRV_DEBUG
 /* note: prints function name for you */
 #define DPRINTK(fmt, args...)					\
-	printk(KERN_DEBUG "%s: " fmt, __func__ , ## args)
-#else
-#define DPRINTK(fmt, args...)				\
-do {							\
-	if (0)						\
-		printk(KERN_DEBUG fmt, ##args);		\
+//	printk(KERN_DEBUG "%s: " fmt, __func__ , ## args)
+//#else
+//#define DPRINTK(fmt, args...)				\
+//do {							\
+//	if (0)						\
+;
 } while (0)
 #endif
 
@@ -135,8 +135,8 @@ do {							\
 #else
 #define assert(expr)						\
 	if (!(expr)) {						\
-		printk("Assertion failed! %s,%s,%s,line=%d\n",	\
-		       #expr, __FILE__, __func__, __LINE__);	\
+//		printk("Assertion failed! %s,%s,%s,line=%d\n",	\
+;
 	}
 #endif
 
@@ -717,10 +717,10 @@ static int __devinit netdrv_init_board(struct pci_dev *pdev,
 		}
 
 	/* if unknown chip, assume array element #0, original RTL-8139 in this case */
-	dev_printk(KERN_DEBUG, &pdev->dev,
-		   "unknown chip version, assuming RTL-8139\n");
-	dev_printk(KERN_DEBUG, &pdev->dev, "TxConfig = %#lx\n",
-		   NETDRV_R32(TxConfig));
+//	dev_printk(KERN_DEBUG, &pdev->dev,
+;
+//	dev_printk(KERN_DEBUG, &pdev->dev, "TxConfig = %#lx\n",
+;
 	tp->chipset = 0;
 
 match:
@@ -773,7 +773,7 @@ static int __devinit netdrv_init_one(struct pci_dev *pdev,
 #ifndef MODULE
 	static int printed_version;
 	if (!printed_version++)
-		printk(version);
+;
 #endif
 
 	DPRINTK("ENTER\n");
@@ -825,8 +825,8 @@ static int __devinit netdrv_init_one(struct pci_dev *pdev,
 		    board_info[ent->driver_data].name,
 		    dev->base_addr, dev->dev_addr, dev->irq);
 
-	netdev_printk(KERN_DEBUG, dev, "Identified 8139 chip type '%s'\n",
-		      rtl_chip_info[tp->chipset].name);
+//	netdev_printk(KERN_DEBUG, dev, "Identified 8139 chip type '%s'\n",
+;
 
 	/* Put the chip into low-power mode. */
 	NETDRV_W8_F(Cfg9346, Cfg9346_Unlock);
@@ -1588,8 +1588,8 @@ static void netdrv_weird_interrupt(struct net_device *dev,
 				   void *ioaddr,
 				   int status, int link_changed)
 {
-	netdev_printk(KERN_DEBUG, dev, "Abnormal interrupt, status %08x\n",
-		      status);
+//	netdev_printk(KERN_DEBUG, dev, "Abnormal interrupt, status %08x\n",
+;
 
 	assert(dev != NULL);
 	assert(tp != NULL);
@@ -1907,7 +1907,7 @@ static int __init netdrv_init_module(void)
 {
 /* when a module, this is printed whether or not devices are found in probe */
 #ifdef MODULE
-	printk(version);
+;
 #endif
 	return pci_register_driver(&netdrv_pci_driver);
 }

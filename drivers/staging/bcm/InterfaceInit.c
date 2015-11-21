@@ -664,20 +664,12 @@ struct class *bcm_class;
 
 static __init int bcm_init(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "%s: %s, %s\n", DRV_NAME, DRV_DESCRIPTION, DRV_VERSION);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "%s\n", DRV_COPYRIGHT);
-#else
-	;
-#endif
+;
+;
 
 	bcm_class = class_create(THIS_MODULE, DRV_NAME);
 	if (IS_ERR(bcm_class)) {
-		printk(KERN_ERR DRV_NAME ": could not create class\n");
+;
 		return PTR_ERR(bcm_class);
 	}
 

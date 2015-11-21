@@ -210,10 +210,10 @@ void cmdma_stop_dma(void)
     if(cmdma_setup_relink_area_called) {
         cmdma_setup_relink_area_called = false;
         if (readl(dmabase + SSLNK_CHAN_2) & (0x3 << 28)) {
-            printk(KERN_ERR "CM: ERROR - RX DMA was running\n");
+;
         }
         if (readl(dmabase + SDLNK_CHAN_2) & (0x3 << 28)) {
-            printk(KERN_ERR "CM: ERROR - TX DMA was running\n");
+;
         }
 
         writel(~(1 << 28), dmabase + SSLNK_CHAN_2);

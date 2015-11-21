@@ -133,8 +133,8 @@ static void __nfs3_forget_cached_acls(struct nfs_inode *nfsi)
 
 void nfs3_forget_cached_acls(struct inode *inode)
 {
-	dprintk("NFS: nfs3_forget_cached_acls(%s/%ld)\n", inode->i_sb->s_id,
-		inode->i_ino);
+//	dprintk("NFS: nfs3_forget_cached_acls(%s/%ld)\n", inode->i_sb->s_id,
+;
 	spin_lock(&inode->i_lock);
 	__nfs3_forget_cached_acls(NFS_I(inode));
 	spin_unlock(&inode->i_lock);
@@ -164,8 +164,8 @@ static struct posix_acl *nfs3_get_cached_acl(struct inode *inode, int type)
 		acl = posix_acl_dup(acl);
 out:
 	spin_unlock(&inode->i_lock);
-	dprintk("NFS: nfs3_get_cached_acl(%s/%ld, %d) = %p\n", inode->i_sb->s_id,
-		inode->i_ino, type, acl);
+//	dprintk("NFS: nfs3_get_cached_acl(%s/%ld, %d) = %p\n", inode->i_sb->s_id,
+;
 	return acl;
 }
 
@@ -174,8 +174,8 @@ static void nfs3_cache_acls(struct inode *inode, struct posix_acl *acl,
 {
 	struct nfs_inode *nfsi = NFS_I(inode);
 
-	dprintk("nfs3_cache_acls(%s/%ld, %p, %p)\n", inode->i_sb->s_id,
-		inode->i_ino, acl, dfacl);
+//	dprintk("nfs3_cache_acls(%s/%ld, %p, %p)\n", inode->i_sb->s_id,
+;
 	spin_lock(&inode->i_lock);
 	__nfs3_forget_cached_acls(NFS_I(inode));
 	if (!IS_ERR(acl))
@@ -228,14 +228,14 @@ struct posix_acl *nfs3_proc_getacl(struct inode *inode, int type)
 	if (args.mask == 0)
 		return NULL;
 
-	dprintk("NFS call getacl\n");
+;
 	msg.rpc_proc = &server->client_acl->cl_procinfo[ACLPROC3_GETACL];
 	res.fattr = nfs_alloc_fattr();
 	if (res.fattr == NULL)
 		return ERR_PTR(-ENOMEM);
 
 	status = rpc_call_sync(server->client_acl, &msg, 0);
-	dprintk("NFS reply getacl: %d\n", status);
+;
 
 	/* pages may have been allocated at the xdr layer. */
 	for (count = 0; count < NFSACL_MAXPAGES && args.pages[count]; count++)
@@ -247,7 +247,7 @@ struct posix_acl *nfs3_proc_getacl(struct inode *inode, int type)
 			break;
 		case -EPFNOSUPPORT:
 		case -EPROTONOSUPPORT:
-			dprintk("NFS_V3_ACL extension not supported; disabling\n");
+;
 			server->caps &= ~NFS_CAP_ACLS;
 		case -ENOTSUPP:
 			status = -EOPNOTSUPP;
@@ -340,7 +340,7 @@ static int nfs3_proc_setacls(struct inode *inode, struct posix_acl *acl,
 		} while (args.npages < npages);
 	}
 
-	dprintk("NFS call setacl\n");
+;
 	status = -ENOMEM;
 	fattr = nfs_alloc_fattr();
 	if (fattr == NULL)
@@ -351,7 +351,7 @@ static int nfs3_proc_setacls(struct inode *inode, struct posix_acl *acl,
 	status = rpc_call_sync(server->client_acl, &msg, 0);
 	nfs_access_zap_cache(inode);
 	nfs_zap_acl_cache(inode);
-	dprintk("NFS reply setacl: %d\n", status);
+;
 
 	switch (status) {
 		case 0:
@@ -360,8 +360,8 @@ static int nfs3_proc_setacls(struct inode *inode, struct posix_acl *acl,
 			break;
 		case -EPFNOSUPPORT:
 		case -EPROTONOSUPPORT:
-			dprintk("NFS_V3_ACL SETACL RPC not supported"
-					"(will not retry)\n");
+//			dprintk("NFS_V3_ACL SETACL RPC not supported"
+;
 			server->caps &= ~NFS_CAP_ACLS;
 		case -ENOTSUPP:
 			status = -EOPNOTSUPP;

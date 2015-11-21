@@ -94,106 +94,102 @@ www.measurementcomputing.com
 
 #ifdef DEBUG
 #define DEBUG_PRINT(format, args...)	\
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "das16: " format, ## args)
-#else
-#define DEBUG_PRINT(format, args...)
-#endif
-
-#define DAS16_SIZE 20		/*  number of ioports */
-#define DAS16_DMA_SIZE 0xff00	/*  size in bytes of allocated dma buffer */
-
-/*
-    cio-das16.pdf
-
-    "das16"
-    "das16/f"
-
-  0	a/d bits 0-3		start 12 bit
-  1	a/d bits 4-11		unused
-  2	mux read		mux set
-  3	di 4 bit		do 4 bit
-  4	unused			ao0_lsb
-  5	unused			ao0_msb
-  6	unused			ao1_lsb
-  7	unused			ao1_msb
-  8	status eoc uni/bip	interrupt reset
-  9	dma, int, trig ctrl	set dma, int
-  a	pacer control		unused
-  b	reserved		reserved
-  cdef	8254
-  0123	8255
-
-*/
-
-/*
-    cio-das16jr.pdf
-
-    "das16jr"
-
-  0	a/d bits 0-3		start 12 bit
-  1	a/d bits 4-11		unused
-  2	mux read		mux set
-  3	di 4 bit		do 4 bit
-  4567	unused			unused
-  8	status eoc uni/bip	interrupt reset
-  9	dma, int, trig ctrl	set dma, int
-  a	pacer control		unused
-  b	gain status		gain control
-  cdef	8254
-
-*/
-
-/*
-    cio-das16jr_16.pdf
-
-    "das16jr_16"
-
-  0	a/d bits 0-7		start 16 bit
-  1	a/d bits 8-15		unused
-  2	mux read		mux set
-  3	di 4 bit		do 4 bit
-  4567	unused			unused
-  8	status eoc uni/bip	interrupt reset
-  9	dma, int, trig ctrl	set dma, int
-  a	pacer control		unused
-  b	gain status		gain control
-  cdef	8254
-
-*/
-/*
-    cio-das160x-1x.pdf
-
-    "das1601/12"
-    "das1602/12"
-    "das1602/16"
-
-  0	a/d bits 0-3		start 12 bit
-  1	a/d bits 4-11		unused
-  2	mux read		mux set
-  3	di 4 bit		do 4 bit
-  4	unused			ao0_lsb
-  5	unused			ao0_msb
-  6	unused			ao1_lsb
-  7	unused			ao1_msb
-  8	status eoc uni/bip	interrupt reset
-  9	dma, int, trig ctrl	set dma, int
-  a	pacer control		unused
-  b	gain status		gain control
-  cdef	8254
-  400	8255
-  404	unused			conversion enable
-  405	unused			burst enable
-  406	unused			das1600 enable
-  407	status
-
-*/
-
-/*  size in bytes of a sample from board */
-static const int sample_size = 2;
-#else
-	;
-#endif
+//	printk(KERN_DEBUG "das16: " format, ## args)
+//#else
+//#define DEBUG_PRINT(format, args...)
+//#endif
+//
+//#define DAS16_SIZE 20		/*  number of ioports */
+//#define DAS16_DMA_SIZE 0xff00	/*  size in bytes of allocated dma buffer */
+//
+///*
+//    cio-das16.pdf
+//
+//    "das16"
+//    "das16/f"
+//
+//  0	a/d bits 0-3		start 12 bit
+//  1	a/d bits 4-11		unused
+//  2	mux read		mux set
+//  3	di 4 bit		do 4 bit
+//  4	unused			ao0_lsb
+//  5	unused			ao0_msb
+//  6	unused			ao1_lsb
+//  7	unused			ao1_msb
+//  8	status eoc uni/bip	interrupt reset
+//  9	dma, int, trig ctrl	set dma, int
+//  a	pacer control		unused
+//  b	reserved		reserved
+//  cdef	8254
+//  0123	8255
+//
+//*/
+//
+///*
+//    cio-das16jr.pdf
+//
+//    "das16jr"
+//
+//  0	a/d bits 0-3		start 12 bit
+//  1	a/d bits 4-11		unused
+//  2	mux read		mux set
+//  3	di 4 bit		do 4 bit
+//  4567	unused			unused
+//  8	status eoc uni/bip	interrupt reset
+//  9	dma, int, trig ctrl	set dma, int
+//  a	pacer control		unused
+//  b	gain status		gain control
+//  cdef	8254
+//
+//*/
+//
+///*
+//    cio-das16jr_16.pdf
+//
+//    "das16jr_16"
+//
+//  0	a/d bits 0-7		start 16 bit
+//  1	a/d bits 8-15		unused
+//  2	mux read		mux set
+//  3	di 4 bit		do 4 bit
+//  4567	unused			unused
+//  8	status eoc uni/bip	interrupt reset
+//  9	dma, int, trig ctrl	set dma, int
+//  a	pacer control		unused
+//  b	gain status		gain control
+//  cdef	8254
+//
+//*/
+///*
+//    cio-das160x-1x.pdf
+//
+//    "das1601/12"
+//    "das1602/12"
+//    "das1602/16"
+//
+//  0	a/d bits 0-3		start 12 bit
+//  1	a/d bits 4-11		unused
+//  2	mux read		mux set
+//  3	di 4 bit		do 4 bit
+//  4	unused			ao0_lsb
+//  5	unused			ao0_msb
+//  6	unused			ao1_lsb
+//  7	unused			ao1_msb
+//  8	status eoc uni/bip	interrupt reset
+//  9	dma, int, trig ctrl	set dma, int
+//  a	pacer control		unused
+//  b	gain status		gain control
+//  cdef	8254
+//  400	8255
+//  404	unused			conversion enable
+//  405	unused			burst enable
+//  406	unused			das1600 enable
+//  407	status
+//
+//*/
+//
+///*  size in bytes of a sample from board */
+;
 
 #define DAS16_TRIG		0
 #define DAS16_AI_LSB		0
@@ -1103,11 +1099,7 @@ static int das16_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 				break;
 		}
 		if (i == DAS16_TIMEOUT) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("das16: timeout\n");
-#else
-			;
-#endif
+;
 			return -ETIME;
 		}
 		msb = inb(dev->iobase + DAS16_AI_MSB);
@@ -1374,18 +1366,10 @@ static int das16_probe(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	diobits = inb(dev->iobase + DAS16_DIO) & 0xf0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO " id bits are 0x%02x\n", diobits);
-#else
-	;
-#endif
+;
 	if (thisboard->id != diobits) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO " requested board's id bits are 0x%x (ignore)\n",
-		       thisboard->id);
-#else
-		;
-#endif
+//		printk(KERN_INFO " requested board's id bits are 0x%x (ignore)\n",
+;
 	}
 
 	return 0;
@@ -1399,18 +1383,10 @@ static int das1600_mode_detect(struct comedi_device *dev)
 
 	if (status & DAS1600_CLK_10MHZ) {
 		devpriv->clockbase = 100;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO " 10MHz pacer clock\n");
-#else
-		;
-#endif
+;
 	} else {
 		devpriv->clockbase = 1000;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO " 1MHz pacer clock\n");
-#else
-		;
-#endif
+;
 	}
 
 	reg_dump(dev);
@@ -1450,11 +1426,7 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (timer_mode)
 		irq = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: das16:", dev->minor);
-#else
-	;
-#endif
+;
 
 	/*  check that clock setting is valid */
 	if (it->options[3]) {
@@ -1472,35 +1444,27 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		return ret;
 
 	if (thisboard->size < 0x400) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" 0x%04lx-0x%04lx\n", iobase, iobase + thisboard->size);
-#else
-		;
-#endif
+;
 		if (!request_region(iobase, thisboard->size, "das16")) {
-			printk(KERN_ERR " I/O port conflict\n");
+;
 			return -EIO;
 		}
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO " 0x%04lx-0x%04lx 0x%04lx-0x%04lx\n",
-		       iobase, iobase + 0x0f,
-		       iobase + 0x400,
-		       iobase + 0x400 + (thisboard->size & 0x3ff));
-#else
-		;
-#endif
+//		printk(KERN_INFO " 0x%04lx-0x%04lx 0x%04lx-0x%04lx\n",
+//		       iobase, iobase + 0x0f,
+//		       iobase + 0x400,
+;
 		if (!request_region(iobase, 0x10, "das16")) {
-			printk(KERN_ERR " I/O port conflict:  0x%04lx-0x%04lx\n",
-			       iobase, iobase + 0x0f);
+//			printk(KERN_ERR " I/O port conflict:  0x%04lx-0x%04lx\n",
+;
 			return -EIO;
 		}
 		if (!request_region(iobase + 0x400, thisboard->size & 0x3ff,
 				    "das16")) {
 			release_region(iobase, 0x10);
-			printk(KERN_ERR " I/O port conflict:  0x%04lx-0x%04lx\n",
-			       iobase + 0x400,
-			       iobase + 0x400 + (thisboard->size & 0x3ff));
+//			printk(KERN_ERR " I/O port conflict:  0x%04lx-0x%04lx\n",
+//			       iobase + 0x400,
+;
 			return -EIO;
 		}
 	}
@@ -1509,7 +1473,7 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	/*  probe id bits to make sure they are consistent */
 	if (das16_probe(dev, it)) {
-		printk(KERN_ERR " id bits do not match selected board, aborting\n");
+;
 		return -EINVAL;
 	}
 	dev->board_name = thisboard->name;
@@ -1531,23 +1495,11 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		if (ret < 0)
 			return ret;
 		dev->irq = irq;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO " ( irq = %u )", irq);
-#else
-		;
-#endif
+;
 	} else if (irq == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" ( no irq )");
-#else
-		;
-#endif
+;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" invalid irq\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 
@@ -1565,8 +1517,8 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 				return -ENOMEM;
 		}
 		if (request_dma(dma_chan, "das16")) {
-			printk(KERN_ERR " failed to allocate dma channel %i\n",
-			       dma_chan);
+//			printk(KERN_ERR " failed to allocate dma channel %i\n",
+;
 			return -EINVAL;
 		}
 		devpriv->dma_chan = dma_chan;
@@ -1574,19 +1526,11 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		disable_dma(devpriv->dma_chan);
 		set_dma_mode(devpriv->dma_chan, DMA_MODE_READ);
 		release_dma_lock(flags);
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO " ( dma = %u)\n", dma_chan);
-#else
-		;
-#endif
+;
 	} else if (dma_chan == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO " ( no dma )\n");
-#else
-		;
-#endif
+;
 	} else {
-		printk(KERN_ERR " invalid dma channel\n");
+;
 		return -EINVAL;
 	}
 
@@ -1733,11 +1677,7 @@ static int das16_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int das16_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: das16: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	das16_reset(dev);
 

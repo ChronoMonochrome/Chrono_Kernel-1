@@ -321,11 +321,7 @@ int i_APCI1710_InsnConfigInitTTLIO(struct comedi_device *dev, struct comedi_subd
 
 				DPRINTK("\n");
 			default:
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("Bad Config Type\n");
-#else
-				;
-#endif
+;
 			}	/*  switch end */
 		} else {
 	      /**********************************/
@@ -612,11 +608,7 @@ int i_APCI1710_InsnBitsReadTTLIO(struct comedi_device *dev, struct comedi_subdev
 				break;
 
 			default:
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("Bad ReadType\n");
-#else
-				;
-#endif
+;
 
 			}	/* End Switch */
 		} else {

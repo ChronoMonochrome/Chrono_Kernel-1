@@ -84,9 +84,9 @@ nfs_file_open(struct inode *inode, struct file *filp)
 {
 	int res;
 
-	dprintk("NFS: open file(%s/%s)\n",
-			filp->f_path.dentry->d_parent->d_name.name,
-			filp->f_path.dentry->d_name.name);
+//	dprintk("NFS: open file(%s/%s)\n",
+//			filp->f_path.dentry->d_parent->d_name.name,
+;
 
 	nfs_inc_stats(inode, NFSIOS_VFSOPEN);
 	res = nfs_check_flags(filp->f_flags);
@@ -100,9 +100,9 @@ nfs_file_open(struct inode *inode, struct file *filp)
 static int
 nfs_file_release(struct inode *inode, struct file *filp)
 {
-	dprintk("NFS: release(%s/%s)\n",
-			filp->f_path.dentry->d_parent->d_name.name,
-			filp->f_path.dentry->d_name.name);
+//	dprintk("NFS: release(%s/%s)\n",
+//			filp->f_path.dentry->d_parent->d_name.name,
+;
 
 	nfs_inc_stats(inode, NFSIOS_VFSRELEASE);
 	return nfs_release(inode, filp);
@@ -141,10 +141,10 @@ force_reval:
 
 static loff_t nfs_file_llseek(struct file *filp, loff_t offset, int origin)
 {
-	dprintk("NFS: llseek file(%s/%s, %lld, %d)\n",
-			filp->f_path.dentry->d_parent->d_name.name,
-			filp->f_path.dentry->d_name.name,
-			offset, origin);
+//	dprintk("NFS: llseek file(%s/%s, %lld, %d)\n",
+//			filp->f_path.dentry->d_parent->d_name.name,
+//			filp->f_path.dentry->d_name.name,
+;
 
 	/*
 	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
@@ -170,9 +170,9 @@ nfs_file_flush(struct file *file, fl_owner_t id)
 	struct dentry	*dentry = file->f_path.dentry;
 	struct inode	*inode = dentry->d_inode;
 
-	dprintk("NFS: flush(%s/%s)\n",
-			dentry->d_parent->d_name.name,
-			dentry->d_name.name);
+//	dprintk("NFS: flush(%s/%s)\n",
+//			dentry->d_parent->d_name.name,
+;
 
 	nfs_inc_stats(inode, NFSIOS_VFSFLUSH);
 	if ((file->f_mode & FMODE_WRITE) == 0)
@@ -193,9 +193,9 @@ nfs_file_read(struct kiocb *iocb, const struct iovec *iov,
 	if (iocb->ki_filp->f_flags & O_DIRECT)
 		return nfs_file_direct_read(iocb, iov, nr_segs, pos);
 
-	dprintk("NFS: read(%s/%s, %lu@%lu)\n",
-		dentry->d_parent->d_name.name, dentry->d_name.name,
-		(unsigned long) iov_length(iov, nr_segs), (unsigned long) pos);
+//	dprintk("NFS: read(%s/%s, %lu@%lu)\n",
+//		dentry->d_parent->d_name.name, dentry->d_name.name,
+;
 
 	result = nfs_revalidate_mapping(inode, iocb->ki_filp->f_mapping);
 	if (!result) {
@@ -215,9 +215,9 @@ nfs_file_splice_read(struct file *filp, loff_t *ppos,
 	struct inode *inode = dentry->d_inode;
 	ssize_t res;
 
-	dprintk("NFS: splice_read(%s/%s, %lu@%Lu)\n",
-		dentry->d_parent->d_name.name, dentry->d_name.name,
-		(unsigned long) count, (unsigned long long) *ppos);
+//	dprintk("NFS: splice_read(%s/%s, %lu@%Lu)\n",
+//		dentry->d_parent->d_name.name, dentry->d_name.name,
+;
 
 	res = nfs_revalidate_mapping(inode, filp->f_mapping);
 	if (!res) {
@@ -235,8 +235,8 @@ nfs_file_mmap(struct file * file, struct vm_area_struct * vma)
 	struct inode *inode = dentry->d_inode;
 	int	status;
 
-	dprintk("NFS: mmap(%s/%s)\n",
-		dentry->d_parent->d_name.name, dentry->d_name.name);
+//	dprintk("NFS: mmap(%s/%s)\n",
+;
 
 	/* Note: generic_file_mmap() returns ENOSYS on nommu systems
 	 *       so we call that before revalidating the mapping
@@ -270,9 +270,9 @@ nfs_file_fsync(struct file *file, int datasync)
 	int have_error, status;
 	int ret = 0;
 
-	dprintk("NFS: fsync file(%s/%s) datasync %d\n",
-			dentry->d_parent->d_name.name, dentry->d_name.name,
-			datasync);
+//	dprintk("NFS: fsync file(%s/%s) datasync %d\n",
+//			dentry->d_parent->d_name.name, dentry->d_name.name,
+;
 	mutex_lock(&inode->i_mutex);
 
 	nfs_inc_stats(inode, NFSIOS_VFSFSYNC);
@@ -343,10 +343,10 @@ static int nfs_write_begin(struct file *file, struct address_space *mapping,
 	struct page *page;
 	int once_thru = 0;
 
-	dfprintk(PAGECACHE, "NFS: write_begin(%s/%s(%ld), %u@%lld)\n",
-		file->f_path.dentry->d_parent->d_name.name,
-		file->f_path.dentry->d_name.name,
-		mapping->host->i_ino, len, (long long) pos);
+//	dfprintk(PAGECACHE, "NFS: write_begin(%s/%s(%ld), %u@%lld)\n",
+//		file->f_path.dentry->d_parent->d_name.name,
+//		file->f_path.dentry->d_name.name,
+;
 
 start:
 	/*
@@ -385,10 +385,10 @@ static int nfs_write_end(struct file *file, struct address_space *mapping,
 	unsigned offset = pos & (PAGE_CACHE_SIZE - 1);
 	int status;
 
-	dfprintk(PAGECACHE, "NFS: write_end(%s/%s(%ld), %u@%lld)\n",
-		file->f_path.dentry->d_parent->d_name.name,
-		file->f_path.dentry->d_name.name,
-		mapping->host->i_ino, len, (long long) pos);
+//	dfprintk(PAGECACHE, "NFS: write_end(%s/%s(%ld), %u@%lld)\n",
+//		file->f_path.dentry->d_parent->d_name.name,
+//		file->f_path.dentry->d_name.name,
+;
 
 	/*
 	 * Zero any uninitialised parts of the page, and then mark the page
@@ -429,7 +429,7 @@ static int nfs_write_end(struct file *file, struct address_space *mapping,
  */
 static void nfs_invalidate_page(struct page *page, unsigned long offset)
 {
-	dfprintk(PAGECACHE, "NFS: invalidate_page(%p, %lu)\n", page, offset);
+;
 
 	if (offset != 0)
 		return;
@@ -449,7 +449,7 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
 {
 	struct address_space *mapping = page->mapping;
 
-	dfprintk(PAGECACHE, "NFS: release_page(%p)\n", page);
+;
 
 	/* Only do I/O if gfp is a superset of GFP_KERNEL */
 	if (mapping && (gfp & GFP_KERNEL) == GFP_KERNEL) {
@@ -479,8 +479,8 @@ static int nfs_launder_page(struct page *page)
 	struct inode *inode = page->mapping->host;
 	struct nfs_inode *nfsi = NFS_I(inode);
 
-	dfprintk(PAGECACHE, "NFS: launder_page(%ld, %llu)\n",
-		inode->i_ino, (long long)page_offset(page));
+//	dfprintk(PAGECACHE, "NFS: launder_page(%ld, %llu)\n",
+;
 
 	nfs_fscache_wait_on_page_write(nfsi, page);
 	return nfs_wb_page(inode, page);
@@ -516,10 +516,10 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
 	int ret = VM_FAULT_NOPAGE;
 	struct address_space *mapping;
 
-	dfprintk(PAGECACHE, "NFS: vm_page_mkwrite(%s/%s(%ld), offset %lld)\n",
-		dentry->d_parent->d_name.name, dentry->d_name.name,
-		filp->f_mapping->host->i_ino,
-		(long long)page_offset(page));
+//	dfprintk(PAGECACHE, "NFS: vm_page_mkwrite(%s/%s(%ld), offset %lld)\n",
+//		dentry->d_parent->d_name.name, dentry->d_name.name,
+//		filp->f_mapping->host->i_ino,
+;
 
 	/* make sure the cache has finished storing the page */
 	nfs_fscache_wait_on_page_write(NFS_I(dentry->d_inode), page);
@@ -574,9 +574,9 @@ static ssize_t nfs_file_write(struct kiocb *iocb, const struct iovec *iov,
 	if (iocb->ki_filp->f_flags & O_DIRECT)
 		return nfs_file_direct_write(iocb, iov, nr_segs, pos);
 
-	dprintk("NFS: write(%s/%s, %lu@%Ld)\n",
-		dentry->d_parent->d_name.name, dentry->d_name.name,
-		(unsigned long) count, (long long) pos);
+//	dprintk("NFS: write(%s/%s, %lu@%Ld)\n",
+//		dentry->d_parent->d_name.name, dentry->d_name.name,
+;
 
 	result = -EBUSY;
 	if (IS_SWAPFILE(inode))
@@ -610,7 +610,7 @@ out:
 	return result;
 
 out_swapfile:
-	printk(KERN_INFO "NFS: attempt to write to active swap file!\n");
+;
 	goto out;
 }
 
@@ -623,9 +623,9 @@ static ssize_t nfs_file_splice_write(struct pipe_inode_info *pipe,
 	unsigned long written = 0;
 	ssize_t ret;
 
-	dprintk("NFS splice_write(%s/%s, %lu@%llu)\n",
-		dentry->d_parent->d_name.name, dentry->d_name.name,
-		(unsigned long) count, (unsigned long long) *ppos);
+//	dprintk("NFS splice_write(%s/%s, %lu@%llu)\n",
+//		dentry->d_parent->d_name.name, dentry->d_name.name,
+;
 
 	/*
 	 * The combination of splice and an O_APPEND destination is disallowed.
@@ -774,11 +774,11 @@ static int nfs_lock(struct file *filp, int cmd, struct file_lock *fl)
 	int ret = -ENOLCK;
 	int is_local = 0;
 
-	dprintk("NFS: lock(%s/%s, t=%x, fl=%x, r=%lld:%lld)\n",
-			filp->f_path.dentry->d_parent->d_name.name,
-			filp->f_path.dentry->d_name.name,
-			fl->fl_type, fl->fl_flags,
-			(long long)fl->fl_start, (long long)fl->fl_end);
+//	dprintk("NFS: lock(%s/%s, t=%x, fl=%x, r=%lld:%lld)\n",
+//			filp->f_path.dentry->d_parent->d_name.name,
+//			filp->f_path.dentry->d_name.name,
+//			fl->fl_type, fl->fl_flags,
+;
 
 	nfs_inc_stats(inode, NFSIOS_VFSLOCK);
 
@@ -813,10 +813,10 @@ static int nfs_flock(struct file *filp, int cmd, struct file_lock *fl)
 	struct inode *inode = filp->f_mapping->host;
 	int is_local = 0;
 
-	dprintk("NFS: flock(%s/%s, t=%x, fl=%x)\n",
-			filp->f_path.dentry->d_parent->d_name.name,
-			filp->f_path.dentry->d_name.name,
-			fl->fl_type, fl->fl_flags);
+//	dprintk("NFS: flock(%s/%s, t=%x, fl=%x)\n",
+//			filp->f_path.dentry->d_parent->d_name.name,
+//			filp->f_path.dentry->d_name.name,
+;
 
 	if (!(fl->fl_flags & FL_FLOCK))
 		return -ENOLCK;
@@ -840,9 +840,9 @@ static int nfs_flock(struct file *filp, int cmd, struct file_lock *fl)
  */
 static int nfs_setlease(struct file *file, long arg, struct file_lock **fl)
 {
-	dprintk("NFS: setlease(%s/%s, arg=%ld)\n",
-			file->f_path.dentry->d_parent->d_name.name,
-			file->f_path.dentry->d_name.name, arg);
+//	dprintk("NFS: setlease(%s/%s, arg=%ld)\n",
+//			file->f_path.dentry->d_parent->d_name.name,
+;
 	return -EINVAL;
 }
 
@@ -873,7 +873,7 @@ nfs4_file_open(struct inode *inode, struct file *filp)
 	 * NFSv4 opens are handled in d_lookup and d_revalidate. If we get to
 	 * this point, then something is very wrong
 	 */
-	dprintk("NFS: %s called! inode=%p filp=%p\n", __func__, inode, filp);
+;
 	return -ENOTDIR;
 }
 

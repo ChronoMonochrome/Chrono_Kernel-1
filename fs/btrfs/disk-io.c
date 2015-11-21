@@ -431,15 +431,15 @@ static int check_tree_block_fsid(struct btrfs_root *root,
 }
 
 #define CORRUPT(reason, eb, root, slot)				\
-	printk(KERN_CRIT "btrfs: corrupt leaf, %s: block=%llu,"	\
-	       "root=%llu, slot=%d\n", reason,			\
-	       (unsigned long long)btrfs_header_bytenr(eb),	\
-	       (unsigned long long)root->objectid, slot)
-
-static noinline int check_leaf(struct btrfs_root *root,
-			       struct extent_buffer *leaf)
-{
-	struct btrfs_key key;
+//	printk(KERN_CRIT "btrfs: corrupt leaf, %s: block=%llu,"	\
+//	       "root=%llu, slot=%d\n", reason,			\
+//	       (unsigned long long)btrfs_header_bytenr(eb),	\
+//	       (unsigned long long)root->objectid, slot)
+//
+//static noinline int check_leaf(struct btrfs_root *root,
+//			       struct extent_buffer *leaf)
+//{
+;
 	struct btrfs_key leaf_key;
 	u32 nritems = btrfs_header_nritems(leaf);
 	int slot;
@@ -542,8 +542,8 @@ static int btree_readpage_end_io_hook(struct page *page, u64 start, u64 end,
 		goto err;
 	}
 	if (eb->first_page != page) {
-		printk(KERN_INFO "btrfs bad first page %lu %lu\n",
-		       eb->first_page->index, page->index);
+//		printk(KERN_INFO "btrfs bad first page %lu %lu\n",
+;
 		WARN_ON(1);
 		ret = -EIO;
 		goto err;
@@ -914,8 +914,8 @@ static void btree_invalidatepage(struct page *page, unsigned long offset)
 	extent_invalidatepage(tree, page, offset);
 	btree_releasepage(page, GFP_NOFS);
 	if (PagePrivate(page)) {
-		printk(KERN_WARNING "btrfs warning page private not zero "
-		       "on page %llu\n", (unsigned long long)page_offset(page));
+//		printk(KERN_WARNING "btrfs warning page private not zero "
+;
 		ClearPagePrivate(page);
 		set_page_private(page, 0);
 		page_cache_release(page);
@@ -1774,9 +1774,9 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 	features = btrfs_super_incompat_flags(disk_super) &
 		~BTRFS_FEATURE_INCOMPAT_SUPP;
 	if (features) {
-		printk(KERN_ERR "BTRFS: couldn't mount because of "
-		       "unsupported optional features (%Lx).\n",
-		       (unsigned long long)features);
+//		printk(KERN_ERR "BTRFS: couldn't mount because of "
+//		       "unsupported optional features (%Lx).\n",
+;
 		err = -EINVAL;
 		goto fail_alloc;
 	}
@@ -1790,9 +1790,9 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 	features = btrfs_super_compat_ro_flags(disk_super) &
 		~BTRFS_FEATURE_COMPAT_RO_SUPP;
 	if (!(sb->s_flags & MS_RDONLY) && features) {
-		printk(KERN_ERR "BTRFS: couldn't mount RDWR because of "
-		       "unsupported option features (%Lx).\n",
-		       (unsigned long long)features);
+//		printk(KERN_ERR "BTRFS: couldn't mount RDWR because of "
+//		       "unsupported option features (%Lx).\n",
+;
 		err = -EINVAL;
 		goto fail_alloc;
 	}
@@ -1885,7 +1885,7 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 
 	if (strncmp((char *)(&disk_super->magic), BTRFS_MAGIC,
 		    sizeof(disk_super->magic))) {
-		printk(KERN_INFO "btrfs: valid FS not found on %s\n", sb->s_id);
+;
 		goto fail_sb_buffer;
 	}
 
@@ -1893,8 +1893,8 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 	ret = btrfs_read_sys_array(tree_root);
 	mutex_unlock(&fs_info->chunk_mutex);
 	if (ret) {
-		printk(KERN_WARNING "btrfs: failed to read the system "
-		       "array on %s\n", sb->s_id);
+//		printk(KERN_WARNING "btrfs: failed to read the system "
+;
 		goto fail_sb_buffer;
 	}
 
@@ -1910,8 +1910,8 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 					   blocksize, generation);
 	BUG_ON(!chunk_root->node);
 	if (!test_bit(EXTENT_BUFFER_UPTODATE, &chunk_root->node->bflags)) {
-		printk(KERN_WARNING "btrfs: failed to read chunk root on %s\n",
-		       sb->s_id);
+//		printk(KERN_WARNING "btrfs: failed to read chunk root on %s\n",
+;
 		goto fail_chunk_root;
 	}
 	btrfs_set_root_node(&chunk_root->root_item, chunk_root->node);
@@ -1925,8 +1925,8 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 	ret = btrfs_read_chunk_tree(chunk_root);
 	mutex_unlock(&fs_info->chunk_mutex);
 	if (ret) {
-		printk(KERN_WARNING "btrfs: failed to read chunk tree on %s\n",
-		       sb->s_id);
+//		printk(KERN_WARNING "btrfs: failed to read chunk tree on %s\n",
+;
 		goto fail_chunk_root;
 	}
 
@@ -1942,8 +1942,8 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 	if (!tree_root->node)
 		goto fail_chunk_root;
 	if (!test_bit(EXTENT_BUFFER_UPTODATE, &tree_root->node->bflags)) {
-		printk(KERN_WARNING "btrfs: failed to read tree root on %s\n",
-		       sb->s_id);
+//		printk(KERN_WARNING "btrfs: failed to read tree root on %s\n",
+;
 		goto fail_tree_root;
 	}
 	btrfs_set_root_node(&tree_root->root_item, tree_root->node);
@@ -1976,13 +1976,13 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 
 	ret = btrfs_init_space_info(fs_info);
 	if (ret) {
-		printk(KERN_ERR "Failed to initial space info: %d\n", ret);
+;
 		goto fail_block_groups;
 	}
 
 	ret = btrfs_read_block_groups(extent_root);
 	if (ret) {
-		printk(KERN_ERR "Failed to read block groups: %d\n", ret);
+;
 		goto fail_block_groups;
 	}
 
@@ -2000,8 +2000,8 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 	if (!btrfs_test_opt(tree_root, SSD) &&
 	    !btrfs_test_opt(tree_root, NOSSD) &&
 	    !fs_info->fs_devices->rotating) {
-		printk(KERN_INFO "Btrfs detected SSD devices, enabling SSD "
-		       "mode\n");
+//		printk(KERN_INFO "Btrfs detected SSD devices, enabling SSD "
+;
 		btrfs_set_opt(fs_info->mount_opt, SSD);
 	}
 
@@ -2011,8 +2011,8 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 		u64 bytenr = btrfs_super_log_root(disk_super);
 
 		if (fs_devices->rw_devices == 0) {
-			printk(KERN_WARNING "Btrfs log replay required "
-			       "on RO media\n");
+//			printk(KERN_WARNING "Btrfs log replay required "
+;
 			err = -EIO;
 			goto fail_trans_kthread;
 		}
@@ -2050,8 +2050,8 @@ struct btrfs_root *open_ctree(struct super_block *sb,
 
 		ret = btrfs_recover_relocation(tree_root);
 		if (ret < 0) {
-			printk(KERN_WARNING
-			       "btrfs: failed to recover relocation\n");
+//			printk(KERN_WARNING
+;
 			err = -EINVAL;
 			goto fail_trans_kthread;
 		}
@@ -2345,8 +2345,8 @@ int write_all_supers(struct btrfs_root *root, int max_mirrors)
 			total_errors++;
 	}
 	if (total_errors > max_errors) {
-		printk(KERN_ERR "btrfs: %d errors while writing supers\n",
-		       total_errors);
+//		printk(KERN_ERR "btrfs: %d errors while writing supers\n",
+;
 		BUG();
 	}
 
@@ -2363,8 +2363,8 @@ int write_all_supers(struct btrfs_root *root, int max_mirrors)
 	}
 	mutex_unlock(&root->fs_info->fs_devices->device_list_mutex);
 	if (total_errors > max_errors) {
-		printk(KERN_ERR "btrfs: %d errors while writing supers\n",
-		       total_errors);
+//		printk(KERN_ERR "btrfs: %d errors while writing supers\n",
+;
 		BUG();
 	}
 	return 0;
@@ -2537,13 +2537,13 @@ int close_ctree(struct btrfs_root *root)
 	if (!(fs_info->sb->s_flags & MS_RDONLY)) {
 		ret = btrfs_commit_super(root);
 		if (ret)
-			printk(KERN_ERR "btrfs: commit super ret %d\n", ret);
+;
 	}
 
 	if (fs_info->fs_state & BTRFS_SUPER_FLAG_ERROR) {
 		ret = btrfs_error_commit_super(root);
 		if (ret)
-			printk(KERN_ERR "btrfs: commit super ret %d\n", ret);
+;
 	}
 
 	kthread_stop(root->fs_info->transaction_kthread);
@@ -2553,12 +2553,12 @@ int close_ctree(struct btrfs_root *root)
 	smp_mb();
 
 	if (fs_info->delalloc_bytes) {
-		printk(KERN_INFO "btrfs: at unmount delalloc count %llu\n",
-		       (unsigned long long)fs_info->delalloc_bytes);
+//		printk(KERN_INFO "btrfs: at unmount delalloc count %llu\n",
+;
 	}
 	if (fs_info->total_ref_cache_size) {
-		printk(KERN_INFO "btrfs: at umount reference cache size %llu\n",
-		       (unsigned long long)fs_info->total_ref_cache_size);
+//		printk(KERN_INFO "btrfs: at umount reference cache size %llu\n",
+;
 	}
 
 	free_extent_buffer(fs_info->extent_root->node);
@@ -2638,11 +2638,11 @@ void btrfs_mark_buffer_dirty(struct extent_buffer *buf)
 
 	btrfs_assert_tree_locked(buf);
 	if (transid != root->fs_info->generation) {
-		printk(KERN_CRIT "btrfs transid mismatch buffer %llu, "
-		       "found %llu running %llu\n",
-			(unsigned long long)buf->start,
-			(unsigned long long)transid,
-			(unsigned long long)root->fs_info->generation);
+//		printk(KERN_CRIT "btrfs transid mismatch buffer %llu, "
+//		       "found %llu running %llu\n",
+//			(unsigned long long)buf->start,
+//			(unsigned long long)transid,
+;
 		WARN_ON(1);
 	}
 	was_dirty = set_extent_buffer_dirty(&BTRFS_I(btree_inode)->io_tree,
@@ -2751,8 +2751,8 @@ static void btrfs_check_super_valid(struct btrfs_fs_info *fs_info,
 		return;
 
 	if (fs_info->fs_state & BTRFS_SUPER_FLAG_ERROR)
-		printk(KERN_WARNING "warning: mount fs with errors, "
-		       "running btrfsck is recommended\n");
+//		printk(KERN_WARNING "warning: mount fs with errors, "
+;
 }
 
 int btrfs_error_commit_super(struct btrfs_root *root)
@@ -2849,7 +2849,7 @@ static int btrfs_destroy_delayed_refs(struct btrfs_transaction *trans,
 	spin_lock(&delayed_refs->lock);
 	if (delayed_refs->num_entries == 0) {
 		spin_unlock(&delayed_refs->lock);
-		printk(KERN_INFO "delayed_refs has NO entry\n");
+;
 		return ret;
 	}
 

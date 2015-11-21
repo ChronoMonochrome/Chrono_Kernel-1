@@ -151,11 +151,7 @@ int i_APCI1710_InsnConfigInitTorCounter(struct comedi_device *dev,
 	b_PCIInputClock = (unsigned char) data[1];
 	b_TimingUnit = (unsigned char) data[2];
 	ul_TimingInterval = (unsigned int) data[3];
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("INPUT clock %d\n", b_PCIInputClock);
-#else
-	;
-#endif
+;
 
 		/**************************/
 	/* Test the module number */
@@ -2004,11 +2000,7 @@ int i_APCI1710_InsnBitsGetTorCounterProgressStatusAndValue(struct comedi_device 
 							break;
 
 						default:
-#ifdef CONFIG_DEBUG_PRINTK
-							printk("Inputs wrong\n");
-#else
-							;
-#endif
+;
 						}	/*  switch end */
 					}	/*  if (dw_Status & 0x1) */
 					else {

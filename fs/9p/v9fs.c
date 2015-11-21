@@ -96,7 +96,7 @@ static int get_cache_mode(char *s)
 		version = CACHE_NONE;
 		P9_DPRINTK(P9_DEBUG_9P, "Cache mode: none\n");
 	} else
-		printk(KERN_INFO "9p: Unknown Cache mode %s.\n", s);
+;
 	return version;
 }
 
@@ -224,8 +224,8 @@ static int v9fs_parse_options(struct v9fs_session_info *v9ses, char *opts)
 				v9ses->uid = simple_strtoul(s, &e, 10);
 				if (*e != '\0') {
 					ret = -EINVAL;
-					printk(KERN_INFO "9p: Unknown access "
-							"argument %s.\n", s);
+//					printk(KERN_INFO "9p: Unknown access "
+;
 					kfree(s);
 					goto free_and_return;
 				}
@@ -575,23 +575,23 @@ static void v9fs_cache_unregister(void)
 static int __init init_v9fs(void)
 {
 	int err;
-	printk(KERN_INFO "Installing v9fs 9p2000 file system support\n");
+;
 	/* TODO: Setup list of registered trasnport modules */
 	err = register_filesystem(&v9fs_fs_type);
 	if (err < 0) {
-		printk(KERN_ERR "Failed to register filesystem\n");
+;
 		return err;
 	}
 
 	err = v9fs_cache_register();
 	if (err < 0) {
-		printk(KERN_ERR "Failed to register v9fs for caching\n");
+;
 		goto out_fs_unreg;
 	}
 
 	err = v9fs_sysfs_init();
 	if (err < 0) {
-		printk(KERN_ERR "Failed to register with sysfs\n");
+;
 		goto out_sysfs_cleanup;
 	}
 

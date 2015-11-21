@@ -588,8 +588,8 @@ static int __init bpq_init_driver(void)
 {
 #ifdef CONFIG_PROC_FS
 	if (!proc_net_fops_create(&init_net, "bpqether", S_IRUGO, &bpq_info_fops)) {
-		printk(KERN_ERR
-			"bpq: cannot create /proc/net/bpqether entry.\n");
+//		printk(KERN_ERR
+;
 		return -ENOENT;
 	}
 #endif  /* CONFIG_PROC_FS */
@@ -598,7 +598,7 @@ static int __init bpq_init_driver(void)
 
 	register_netdevice_notifier(&bpq_dev_notifier);
 
-	printk(banner);
+;
 
 	return 0;
 }

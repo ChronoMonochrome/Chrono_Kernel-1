@@ -24,12 +24,12 @@
 #include <net/llc_pdu.h>
 
 #if 0
-#define dprintk(args...) printk(KERN_DEBUG args)
-#else
-#define dprintk(args...)
-#endif
-
-static int llc_find_offset(int state, int ev_type);
+//#define dprintk(args...) printk(KERN_DEBUG args)
+//#else
+//#define dprintk(args...)
+//#endif
+//
+;
 static void llc_conn_send_pdus(struct sock *sk);
 static int llc_conn_service(struct sock *sk, struct sk_buff *skb);
 static int llc_exec_conn_trans_actions(struct sock *sk,
@@ -74,7 +74,7 @@ int llc_conn_state_process(struct sock *sk, struct sk_buff *skb)
 	 */
 	rc = llc_conn_service(skb->sk, skb);
 	if (unlikely(rc != 0)) {
-		printk(KERN_ERR "%s: llc_conn_service failed\n", __func__);
+;
 		goto out_kfree_skb;
 	}
 
@@ -95,8 +95,8 @@ int llc_conn_state_process(struct sock *sk, struct sk_buff *skb)
 			/*
 			 * shouldn't happen
 			 */
-			printk(KERN_ERR "%s: sock_queue_rcv_skb failed!\n",
-			       __func__);
+//			printk(KERN_ERR "%s: sock_queue_rcv_skb failed!\n",
+;
 			kfree_skb(skb);
 		}
 		break;
@@ -129,13 +129,13 @@ int llc_conn_state_process(struct sock *sk, struct sk_buff *skb)
 		 * FIXME:
 		 * RESET is not being notified to upper layers for now
 		 */
-		printk(KERN_INFO "%s: received a reset ind!\n", __func__);
+;
 		kfree_skb(skb);
 		break;
 	default:
 		if (ev->ind_prim) {
-			printk(KERN_INFO "%s: received unknown %d prim!\n",
-				__func__, ev->ind_prim);
+//			printk(KERN_INFO "%s: received unknown %d prim!\n",
+;
 			kfree_skb(skb);
 		}
 		/* No indication */
@@ -176,12 +176,12 @@ int llc_conn_state_process(struct sock *sk, struct sk_buff *skb)
 		 * FIXME:
 		 * RESET is not being notified to upper layers for now
 		 */
-		printk(KERN_INFO "%s: received a reset conf!\n", __func__);
+;
 		break;
 	default:
 		if (ev->cfm_prim) {
-			printk(KERN_INFO "%s: received unknown %d prim!\n",
-					__func__, ev->cfm_prim);
+//			printk(KERN_INFO "%s: received unknown %d prim!\n",
+;
 			break;
 		}
 		goto out_skb_put; /* No confirmation */
@@ -826,7 +826,7 @@ void llc_conn_handler(struct llc_sap *sap, struct sk_buff *skb)
 	if (!sock_owned_by_user(sk))
 		llc_conn_rcv(sk, skb);
 	else {
-		dprintk("%s: adding to backlog...\n", __func__);
+;
 		llc_set_backlog_type(skb, LLC_PACKET);
 		if (sk_add_backlog(sk, skb))
 			goto drop_unlock;
@@ -875,7 +875,7 @@ static int llc_backlog_rcv(struct sock *sk, struct sk_buff *skb)
 		else
 			goto out_kfree_skb;
 	} else {
-		printk(KERN_ERR "%s: invalid skb in backlog\n", __func__);
+;
 		goto out_kfree_skb;
 	}
 out:
@@ -941,8 +941,8 @@ struct sock *llc_sk_alloc(struct net *net, int family, gfp_t priority, struct pr
 	sock_init_data(NULL, sk);
 #ifdef LLC_REFCNT_DEBUG
 	atomic_inc(&llc_sock_nr);
-	printk(KERN_DEBUG "LLC socket %p created in %s, now we have %d alive\n", sk,
-		__func__, atomic_read(&llc_sock_nr));
+//	printk(KERN_DEBUG "LLC socket %p created in %s, now we have %d alive\n", sk,
+;
 #endif
 out:
 	return sk;
@@ -962,23 +962,23 @@ void llc_sk_free(struct sock *sk)
 	/* Stop all (possibly) running timers */
 	llc_conn_ac_stop_all_timers(sk, NULL);
 #ifdef DEBUG_LLC_CONN_ALLOC
-	printk(KERN_INFO "%s: unackq=%d, txq=%d\n", __func__,
-		skb_queue_len(&llc->pdu_unack_q),
-		skb_queue_len(&sk->sk_write_queue));
+//	printk(KERN_INFO "%s: unackq=%d, txq=%d\n", __func__,
+//		skb_queue_len(&llc->pdu_unack_q),
+;
 #endif
 	skb_queue_purge(&sk->sk_receive_queue);
 	skb_queue_purge(&sk->sk_write_queue);
 	skb_queue_purge(&llc->pdu_unack_q);
 #ifdef LLC_REFCNT_DEBUG
 	if (atomic_read(&sk->sk_refcnt) != 1) {
-		printk(KERN_DEBUG "Destruction of LLC sock %p delayed in %s, cnt=%d\n",
-			sk, __func__, atomic_read(&sk->sk_refcnt));
-		printk(KERN_DEBUG "%d LLC sockets are still alive\n",
-			atomic_read(&llc_sock_nr));
+//		printk(KERN_DEBUG "Destruction of LLC sock %p delayed in %s, cnt=%d\n",
+;
+//		printk(KERN_DEBUG "%d LLC sockets are still alive\n",
+;
 	} else {
 		atomic_dec(&llc_sock_nr);
-		printk(KERN_DEBUG "LLC socket %p released in %s, %d are still alive\n", sk,
-			__func__, atomic_read(&llc_sock_nr));
+//		printk(KERN_DEBUG "LLC socket %p released in %s, %d are still alive\n", sk,
+;
 	}
 #endif
 	sock_put(sk);

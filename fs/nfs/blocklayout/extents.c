@@ -62,7 +62,7 @@ static int32_t _find_entry(struct my_tree *tree, u64 s)
 {
 	struct pnfs_inval_tracking *pos;
 
-	dprintk("%s(%llu) enter\n", __func__, s);
+;
 	list_for_each_entry_reverse(pos, &tree->mtt_stub, it_link) {
 		if (pos->it_sector > s)
 			continue;
@@ -79,7 +79,7 @@ int _has_tag(struct my_tree *tree, u64 s, int32_t tag)
 {
 	int32_t tags;
 
-	dprintk("%s(%llu, %i) enter\n", __func__, s, tag);
+;
 	s = normalize(s, tree->mtt_step_size);
 	tags = _find_entry(tree, s);
 	if ((tags < 0) || !(tags & (1 << tag)))
@@ -98,7 +98,7 @@ static int _add_entry(struct my_tree *tree, u64 s, int32_t tag,
 	int found = 0;
 	struct pnfs_inval_tracking *pos;
 
-	dprintk("%s(%llu, %i, %p) enter\n", __func__, s, tag, storage);
+;
 	list_for_each_entry_reverse(pos, &tree->mtt_stub, it_link) {
 		if (pos->it_sector > s)
 			continue;
@@ -133,7 +133,7 @@ static int _set_range(struct my_tree *tree, int32_t tag, u64 s, u64 length)
 {
 	u64 i;
 
-	dprintk("%s(%i, %llu, %llu) enter\n", __func__, tag, s, length);
+;
 	for (i = normalize(s, tree->mtt_step_size); i < s + length;
 	     i += tree->mtt_step_size)
 		if (_add_entry(tree, i, tag, NULL))
@@ -148,7 +148,7 @@ static int _preload_range(struct my_tree *tree, u64 offset, u64 length)
 	int count, i, used = 0, status = -ENOMEM;
 	struct pnfs_inval_tracking **storage;
 
-	dprintk("%s(%llu, %llu) enter\n", __func__, offset, length);
+;
 	start = normalize(offset, tree->mtt_step_size);
 	end = normalize_up(offset + length, tree->mtt_step_size);
 	count = (int)(end - start) / (int)tree->mtt_step_size;
@@ -186,7 +186,7 @@ static void set_needs_init(sector_t *array, sector_t offset)
 {
 	sector_t *p = array;
 
-	dprintk("%s enter\n", __func__);
+;
 	if (!p)
 		return;
 	while (*p < offset)
@@ -199,7 +199,7 @@ static void set_needs_init(sector_t *array, sector_t offset)
 		return;
 	} else {
 		sector_t *save = p;
-		dprintk("%s Adding %llu\n", __func__, (u64)offset);
+;
 		while (*p != ~0)
 			p++;
 		p++;
@@ -227,7 +227,7 @@ _range_has_tag(struct my_tree *tree, u64 start, u64 end, int32_t tag)
 	struct pnfs_inval_tracking *pos;
 	u64 expect = 0;
 
-	dprintk("%s(%llu, %llu, %i) enter\n", __func__, start, end, tag);
+;
 	list_for_each_entry_reverse(pos, &tree->mtt_stub, it_link) {
 		if (pos->it_sector >= end)
 			continue;
@@ -275,11 +275,11 @@ int bl_mark_sectors_init(struct pnfs_inval_markings *marks,
 	sector_t s, start, end;
 	sector_t *array = NULL; /* Pages to mark */
 
-	dprintk("%s(offset=%llu,len=%llu) enter\n",
-		__func__, (u64)offset, (u64)length);
+//	dprintk("%s(offset=%llu,len=%llu) enter\n",
+;
 	s = max((sector_t) 3,
 		2 * (marks->im_block_size / (PAGE_CACHE_SECTORS)));
-	dprintk("%s set max=%llu\n", __func__, (u64)s);
+;
 	if (pages) {
 		array = kmalloc(s * sizeof(sector_t), GFP_NOFS);
 		if (!array)
@@ -296,7 +296,7 @@ int bl_mark_sectors_init(struct pnfs_inval_markings *marks,
 
 	for (s = normalize_up(start, PAGE_CACHE_SECTORS);
 	     s < offset; s += PAGE_CACHE_SECTORS) {
-		dprintk("%s pre-area pages\n", __func__);
+;
 		/* Portion of used block is not initialized */
 		if (!_has_tag(&marks->im_tree, s, EXTENT_INITIALIZED))
 			set_needs_init(array, s);
@@ -305,7 +305,7 @@ int bl_mark_sectors_init(struct pnfs_inval_markings *marks,
 		goto out_unlock;
 	for (s = normalize_up(offset + length, PAGE_CACHE_SECTORS);
 	     s < end; s += PAGE_CACHE_SECTORS) {
-		dprintk("%s post-area pages\n", __func__);
+;
 		if (!_has_tag(&marks->im_tree, s, EXTENT_INITIALIZED))
 			set_needs_init(array, s);
 	}
@@ -339,8 +339,8 @@ static int mark_written_sectors(struct pnfs_inval_markings *marks,
 {
 	int status;
 
-	dprintk("%s(offset=%llu,len=%llu) enter\n", __func__,
-		(u64)offset, (u64)length);
+//	dprintk("%s(offset=%llu,len=%llu) enter\n", __func__,
+;
 	spin_lock(&marks->im_lock);
 	status = _set_range(&marks->im_tree, EXTENT_WRITTEN, offset, length);
 	spin_unlock(&marks->im_lock);
@@ -349,10 +349,10 @@ static int mark_written_sectors(struct pnfs_inval_markings *marks,
 
 static void print_short_extent(struct pnfs_block_short_extent *be)
 {
-	dprintk("PRINT SHORT EXTENT extent %p\n", be);
+;
 	if (be) {
-		dprintk("        be_f_offset %llu\n", (u64)be->bse_f_offset);
-		dprintk("        be_length   %llu\n", (u64)be->bse_length);
+;
+;
 	}
 }
 
@@ -363,13 +363,13 @@ static void print_clist(struct list_head *list, unsigned int count)
 
 	ifdebug(FACILITY) {
 		printk(KERN_DEBUG "****************\n");
-		printk(KERN_DEBUG "Extent list looks like:\n");
+;
 		list_for_each_entry(be, list, bse_node) {
 			i++;
 			print_short_extent(be);
 		}
 		if (i != count)
-			printk(KERN_DEBUG "\n\nExpected %u entries\n\n\n", count);
+;
 		printk(KERN_DEBUG "****************\n");
 	}
 }
@@ -385,7 +385,7 @@ static void add_to_commitlist(struct pnfs_block_layout *bl,
 	struct pnfs_block_short_extent *old, *save;
 	sector_t end = new->bse_f_offset + new->bse_length;
 
-	dprintk("%s enter\n", __func__);
+;
 	print_short_extent(new);
 	print_clist(clist, bl->bl_count);
 	bl->bl_count++;
@@ -437,7 +437,7 @@ static void add_to_commitlist(struct pnfs_block_layout *bl,
 			kfree(old);
 		}
 	}
-	dprintk("%s: after merging\n", __func__);
+;
 	print_clist(clist, bl->bl_count);
 }
 
@@ -496,12 +496,12 @@ int bl_mark_for_commit(struct pnfs_block_extent *be,
 
 static void print_bl_extent(struct pnfs_block_extent *be)
 {
-	dprintk("PRINT EXTENT extent %p\n", be);
+;
 	if (be) {
-		dprintk("        be_f_offset %llu\n", (u64)be->be_f_offset);
-		dprintk("        be_length   %llu\n", (u64)be->be_length);
-		dprintk("        be_v_offset %llu\n", (u64)be->be_v_offset);
-		dprintk("        be_state    %d\n", be->be_state);
+;
+;
+;
+;
 	}
 }
 
@@ -511,7 +511,7 @@ destroy_extent(struct kref *kref)
 	struct pnfs_block_extent *be;
 
 	be = container_of(kref, struct pnfs_block_extent, be_refcnt);
-	dprintk("%s be=%p\n", __func__, be);
+;
 	kfree(be);
 }
 
@@ -519,8 +519,8 @@ void
 bl_put_extent(struct pnfs_block_extent *be)
 {
 	if (be) {
-		dprintk("%s enter %p (%i)\n", __func__, be,
-			atomic_read(&be->be_refcnt.refcount));
+//		dprintk("%s enter %p (%i)\n", __func__, be,
+;
 		kref_put(&be->be_refcnt, destroy_extent);
 	}
 }
@@ -542,7 +542,7 @@ static void print_elist(struct list_head *list)
 {
 	struct pnfs_block_extent *be;
 	dprintk("****************\n");
-	dprintk("Extent list looks like:\n");
+;
 	list_for_each_entry(be, list, be_node) {
 		print_bl_extent(be);
 	}
@@ -578,7 +578,7 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
 	sector_t end = new->be_f_offset + new->be_length;
 	struct list_head *list;
 
-	dprintk("%s enter with be=%p\n", __func__, new);
+;
 	print_bl_extent(new);
 	list = &bl->bl_extents[bl_choose_list(new->be_state)];
 	print_elist(list);
@@ -593,8 +593,8 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
 			if (end <= be->be_f_offset + be->be_length) {
 				/* new is a subset of existing be*/
 				if (extents_consistent(be, new)) {
-					dprintk("%s: new is subset, ignoring\n",
-						__func__);
+//					dprintk("%s: new is subset, ignoring\n",
+;
 					bl_put_extent(new);
 					return 0;
 				} else {
@@ -609,7 +609,7 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
 						be->be_f_offset;
 					new->be_f_offset = be->be_f_offset;
 					new->be_v_offset = be->be_v_offset;
-					dprintk("%s: removing %p\n", __func__, be);
+;
 					list_del(&be->be_node);
 					bl_put_extent(be);
 				} else {
@@ -620,7 +620,7 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
 			/* new extent overlap existing be */
 			if (extents_consistent(be, new)) {
 				/* extend new to fully replace be */
-				dprintk("%s: removing %p\n", __func__, be);
+;
 				list_del(&be->be_node);
 				bl_put_extent(be);
 			} else {
@@ -633,7 +633,7 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
 				/* extend new to fully replace be */
 				new->be_length += be->be_f_offset + be->be_length -
 					new->be_f_offset - new->be_length;
-				dprintk("%s: removing %p\n", __func__, be);
+;
 				list_del(&be->be_node);
 				bl_put_extent(be);
 			} else {
@@ -645,7 +645,7 @@ bl_add_merge_extent(struct pnfs_block_layout *bl,
 	 * valid extent.  However, in that case &be->be_node==list.
 	 */
 	list_add(&new->be_node, &be->be_node);
-	dprintk("%s: inserting new\n", __func__);
+;
 	print_elist(list);
 	/* FIXME - The per-list consistency checks have all been done,
 	 * should now check cross-list consistency.
@@ -672,7 +672,7 @@ bl_find_get_extent(struct pnfs_block_layout *bl, sector_t isect,
 	struct pnfs_block_extent *be, *cow, *ret;
 	int i;
 
-	dprintk("%s enter with isect %llu\n", __func__, (u64)isect);
+;
 	cow = ret = NULL;
 	spin_lock(&bl->bl_ext_lock);
 	for (i = 0; i < EXTENT_LISTS; i++) {
@@ -681,8 +681,8 @@ bl_find_get_extent(struct pnfs_block_layout *bl, sector_t isect,
 				break;
 			if (isect >= be->be_f_offset) {
 				/* We have found an extent */
-				dprintk("%s Get %p (%i)\n", __func__, be,
-					atomic_read(&be->be_refcnt.refcount));
+//				dprintk("%s Get %p (%i)\n", __func__, be,
+;
 				kref_get(&be->be_refcnt);
 				if (!ret)
 					ret = be;
@@ -711,7 +711,7 @@ bl_find_get_extent_locked(struct pnfs_block_layout *bl, sector_t isect)
 	struct pnfs_block_extent *be, *ret = NULL;
 	int i;
 
-	dprintk("%s enter with isect %llu\n", __func__, (u64)isect);
+;
 	for (i = 0; i < EXTENT_LISTS; i++) {
 		if (ret)
 			break;
@@ -720,8 +720,8 @@ bl_find_get_extent_locked(struct pnfs_block_layout *bl, sector_t isect)
 				break;
 			if (isect >= be->be_f_offset) {
 				/* We have found an extent */
-				dprintk("%s Get %p (%i)\n", __func__, be,
-					atomic_read(&be->be_refcnt.refcount));
+//				dprintk("%s Get %p (%i)\n", __func__, be,
+;
 				kref_get(&be->be_refcnt);
 				ret = be;
 				break;
@@ -741,7 +741,7 @@ encode_pnfs_block_layoutupdate(struct pnfs_block_layout *bl,
 	unsigned int count = 0;
 	__be32 *p, *xdr_start;
 
-	dprintk("%s enter\n", __func__);
+;
 	/* BUG - creation of bl_commit is buggy - need to wait for
 	 * entire block to be marked WRITTEN before it can be added.
 	 */
@@ -771,7 +771,7 @@ encode_pnfs_block_layoutupdate(struct pnfs_block_layout *bl,
 	xdr_start[1] = cpu_to_be32(count);
 out:
 	spin_unlock(&bl->bl_ext_lock);
-	dprintk("%s found %i ranges\n", __func__, count);
+;
 	return 0;
 }
 
@@ -831,7 +831,7 @@ set_to_rw(struct pnfs_block_layout *bl, u64 offset, u64 length)
 	struct pnfs_block_extent *merge1 = NULL, *merge2 = NULL;
 	int i = 0, j;
 
-	dprintk("%s(%llu, %llu)\n", __func__, offset, length);
+;
 	/* Create storage for up to three new extents e1, e2, e3 */
 	e1 = kmalloc(sizeof(*e1), GFP_ATOMIC);
 	e2 = kmalloc(sizeof(*e2), GFP_ATOMIC);
@@ -898,14 +898,14 @@ set_to_rw(struct pnfs_block_layout *bl, u64 offset, u64 length)
 	 * destruction.
 	 */
 	bl_put_extent(be);
-	dprintk("%s returns %llu after split\n", __func__, rv);
+;
 	return rv;
 
  out_nosplit:
 	kfree(e1);
 	kfree(e2);
 	kfree(e3);
-	dprintk("%s returns %llu without splitting\n", __func__, rv);
+;
 	return rv;
 }
 
@@ -916,7 +916,7 @@ clean_pnfs_block_layoutupdate(struct pnfs_block_layout *bl,
 {
 	struct pnfs_block_short_extent *lce, *save;
 
-	dprintk("%s status %d\n", __func__, status);
+;
 	list_for_each_entry_safe(lce, save, &bl->bl_committing, bse_node) {
 		if (likely(!status)) {
 			u64 offset = lce->bse_f_offset;

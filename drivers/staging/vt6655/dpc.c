@@ -298,11 +298,7 @@ void	MngWorkItem(void *Context)
 {
 	PSRxMgmtPacket			pRxMgmtPacket;
 	PSDevice	pDevice =  (PSDevice) Context;
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("Enter MngWorkItem,Queue packet num is %d\n",pDevice->rxManeQueue.packet_num);
-#else
-	//;
-#endif
+;
 	spin_lock_irq(&pDevice->lock);
 	 while(pDevice->rxManeQueue.packet_num != 0)
 	 {
@@ -326,11 +322,7 @@ device_receive_frame (
 
     PDEVICE_RD_INFO  pRDInfo = pCurrRD->pRDInfo;
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("device_receive_frame:pCurrRD is %x,pRDInfo is %x\n",pCurrRD,pCurrRD->pRDInfo);
-#else
-	//;
-#endif
+;
 #endif
     struct net_device_stats* pStats=&pDevice->stats;
     struct sk_buff* skb;
@@ -609,11 +601,7 @@ device_receive_frame (
 #ifdef	THREAD
 		EnQueue(pDevice,pRxPacket);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("enque time is %x\n",jiffies);
-#else
-		//;
-#endif
+;
 		//up(&pDevice->mlme_semaphore);
 			//Enque (pDevice->FirstRecvMngList,pDevice->LastRecvMngList,pMgmt);
 #else
@@ -622,11 +610,7 @@ device_receive_frame (
 		EnQueue(pDevice,pRxPacket);
 		tasklet_schedule(&pDevice->RxMngWorkItem);
 #else
-#ifdef CONFIG_DEBUG_PRINTK
-//printk("RxMan\n");
-#else
-//;
-#endif
+;
 	vMgrRxManagePacket((void *)pDevice, pDevice->pMgmt, pRxPacket);
            //tasklet_schedule(&pDevice->RxMngWorkItem);
 #endif
@@ -722,11 +706,7 @@ device_receive_frame (
     if (pDevice->bDiversityEnable && (FrameSize>50) &&
         (pDevice->eOPMode == OP_MODE_INFRASTRUCTURE) &&
         (pDevice->bLinkPass == true)) {
-#ifdef CONFIG_DEBUG_PRINTK
 	//printk("device_receive_frame: RxRate is %d\n",*pbyRxRate);
-#else
-	//;
-#endif
 		BBvAntennaDiversity(pDevice, s_byGetRateIdx(*pbyRxRate), 0);
     }
 
@@ -991,16 +971,8 @@ device_receive_frame (
 
 //        if(pDevice->bRxMICFail == false) {
 //           for (ii =0; ii < 100; ii++)
-#ifdef CONFIG_DEBUG_PRINTK
 //                printk(" %02x", *(skb->data + ii));
-#else
-//                ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-//           printk("\n");
-#else
-//           ;
-#endif
+;
 //	    }
 
     }

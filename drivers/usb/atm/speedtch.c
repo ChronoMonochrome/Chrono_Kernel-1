@@ -634,8 +634,8 @@ static void speedtch_handle_int(struct urb *int_urb)
 
 		atm_dbg(usbatm, "%s: unknown interrupt packet of length %d:", __func__, count);
 		for (i = 0; i < count; i++)
-			printk(" %02x", instance->int_data[i]);
-		printk("\n");
+;
+;
 		goto fail;
 	}
 

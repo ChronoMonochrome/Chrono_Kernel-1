@@ -101,13 +101,13 @@ int lbtf_update_hw_spec(struct lbtf_private *priv)
 	priv->fwrelease = (priv->fwrelease << 8) |
 		(priv->fwrelease >> 24 & 0xff);
 
-	printk(KERN_INFO "libertastf: %pM, fw %u.%u.%up%u, cap 0x%08x\n",
-		cmd.permanentaddr,
-		priv->fwrelease >> 24 & 0xff,
-		priv->fwrelease >> 16 & 0xff,
-		priv->fwrelease >>  8 & 0xff,
-		priv->fwrelease       & 0xff,
-		priv->fwcapinfo);
+//	printk(KERN_INFO "libertastf: %pM, fw %u.%u.%up%u, cap 0x%08x\n",
+//		cmd.permanentaddr,
+//		priv->fwrelease >> 24 & 0xff,
+//		priv->fwrelease >> 16 & 0xff,
+//		priv->fwrelease >>  8 & 0xff,
+//		priv->fwrelease       & 0xff,
+;
 	lbtf_deb_cmd("GET_HW_SPEC: hardware interface 0x%x, hardware spec 0x%04x\n",
 		    cmd.hwifversion, cmd.version);
 

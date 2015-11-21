@@ -71,9 +71,9 @@ prism54_mib_mode_helper(islpci_private *priv, u32 iw_mode)
 
 	/* For now, just catch early the Repeater and Secondary modes here */
 	if (iw_mode == IW_MODE_REPEAT || iw_mode == IW_MODE_SECOND) {
-		printk(KERN_DEBUG
-		       "%s(): Sorry, Repeater mode and Secondary mode "
-		       "are not yet supported by this driver.\n", __func__);
+//		printk(KERN_DEBUG
+//		       "%s(): Sorry, Repeater mode and Secondary mode "
+;
 		return -EINVAL;
 	}
 
@@ -331,9 +331,9 @@ prism54_set_mode(struct net_device *ndev, struct iw_request_info *info,
 
 	/* Let's see if the user passed a valid Linux Wireless mode */
 	if (*uwrq > IW_MODE_MONITOR || *uwrq < IW_MODE_AUTO) {
-		printk(KERN_DEBUG
-		       "%s: %s() You passed a non-valid init_mode.\n",
-		       priv->ndev->name, __func__);
+//		printk(KERN_DEBUG
+//		       "%s: %s() You passed a non-valid init_mode.\n",
+;
 		return -EINVAL;
 	}
 
@@ -878,12 +878,12 @@ prism54_set_rate(struct net_device *ndev,
 
 /*
 	i = 0;
-	printk("prism54 rate: ");
+;
 	while(data[i]) {
-		printk("%u ", data[i]);
+;
 		i++;
 	}
-	printk("0\n");
+;
 */
 	profile = -1;
 	ret = mgt_set_request(priv, DOT11_OID_PROFILES, 0, &profile);
@@ -1232,17 +1232,17 @@ prism54_set_txpower(struct net_device *ndev, struct iw_request_info *info,
 	u *= 4;
 	if (vwrq->disabled) {
 		/* don't know how to disable radio */
-		printk(KERN_DEBUG
-		       "%s: %s() disabling radio is not yet supported.\n",
-		       priv->ndev->name, __func__);
+//		printk(KERN_DEBUG
+//		       "%s: %s() disabling radio is not yet supported.\n",
+;
 		return -ENOTSUPP;
 	} else if (vwrq->fixed)
 		/* currently only fixed value is supported */
 		return mgt_set_request(priv, OID_INL_OUTPUTPOWER, 0, &u);
 	else {
-		printk(KERN_DEBUG
-		       "%s: %s() auto power will be implemented later.\n",
-		       priv->ndev->name, __func__);
+//		printk(KERN_DEBUG
+//		       "%s: %s() auto power will be implemented later.\n",
+;
 		return -ENOTSUPP;
 	}
 }
@@ -1287,8 +1287,8 @@ static int prism54_set_genie(struct net_device *ndev,
 		ret = mgt_set_varlen(priv, DOT11_OID_ATTACHMENT, attach,
 			priv->wpa_ie_len);
 		if (ret == 0)
-			printk(KERN_DEBUG "%s: WPA IE Attachment was set\n",
-				ndev->name);
+//			printk(KERN_DEBUG "%s: WPA IE Attachment was set\n",
+;
 	}
 
 	kfree(attach);
@@ -2151,8 +2151,8 @@ prism54_wpa_bss_ie_add(islpci_private *priv, u8 *bssid,
 		bss->wpa_ie_len = wpa_ie_len;
 		bss->last_update = jiffies;
 	} else {
-		printk(KERN_DEBUG "Failed to add BSS WPA entry for "
-		       "%pM\n", bssid);
+//		printk(KERN_DEBUG "Failed to add BSS WPA entry for "
+;
 	}
 
 	/* expire old entries from WPA list */
@@ -2226,8 +2226,8 @@ prism54_process_bss_data(islpci_private *priv, u32 oid, u8 *addr,
 	end = payload + len;
 	while (pos < end) {
 		if (pos + 2 + pos[1] > end) {
-			printk(KERN_DEBUG "Parsing Beacon/ProbeResp failed "
-			       "for %pM\n", addr);
+//			printk(KERN_DEBUG "Parsing Beacon/ProbeResp failed "
+;
 			return;
 		}
 		if (pos[0] == WLAN_EID_GENERIC && pos[1] >= 4 &&
@@ -2354,8 +2354,8 @@ prism54_process_trap_helper(islpci_private *priv, enum oid_num_t oid,
 			break;
 
 		memcpy(&confirm->address, mlmeex->address, ETH_ALEN);
-		printk(KERN_DEBUG "Authenticate from: address:\t%pM\n",
-		       mlmeex->address);
+//		printk(KERN_DEBUG "Authenticate from: address:\t%pM\n",
+;
 		confirm->id = -1; /* or mlmeex->id ? */
 		confirm->state = 0; /* not used */
 		confirm->code = 0;
@@ -2400,8 +2400,8 @@ prism54_process_trap_helper(islpci_private *priv, enum oid_num_t oid,
 		wpa_ie_len = prism54_wpa_bss_ie_get(priv, mlmeex->address, wpa_ie);
 
 		if (!wpa_ie_len) {
-			printk(KERN_DEBUG "No WPA IE found from address:\t%pM\n",
-			       mlmeex->address);
+//			printk(KERN_DEBUG "No WPA IE found from address:\t%pM\n",
+;
 			kfree(confirm);
 			break;
 		}
@@ -2437,8 +2437,8 @@ prism54_process_trap_helper(islpci_private *priv, enum oid_num_t oid,
 		wpa_ie_len = prism54_wpa_bss_ie_get(priv, mlmeex->address, wpa_ie);
 
 		if (!wpa_ie_len) {
-			printk(KERN_DEBUG "No WPA IE found from address:\t%pM\n",
-			       mlmeex->address);
+//			printk(KERN_DEBUG "No WPA IE found from address:\t%pM\n",
+;
 			kfree(confirm);
 			break;
 		}
@@ -2681,8 +2681,8 @@ prism2_ioctl_set_generic_element(struct net_device *ndev,
 	       ret = mgt_set_varlen(priv, DOT11_OID_ATTACHMENT, attach, len);
 
 	       if (ret == 0)
-		       printk(KERN_DEBUG "%s: WPA IE Attachment was set\n",
-				       ndev->name);
+//		       printk(KERN_DEBUG "%s: WPA IE Attachment was set\n",
+;
        }
 
        kfree(attach);
@@ -2746,7 +2746,7 @@ prism54_hostapd(struct net_device *ndev, struct iw_point *p)
        int ret = 0;
        u32 uwrq;
 
-       printk(KERN_DEBUG "prism54_hostapd - len=%d\n", p->length);
+;
        if (p->length < sizeof(struct prism2_hostapd_param) ||
            p->length > PRISM2_HOSTAPD_MAX_BUF_SIZE || !p->pointer)
                return -EINVAL;
@@ -2757,35 +2757,35 @@ prism54_hostapd(struct net_device *ndev, struct iw_point *p)
 
        switch (param->cmd) {
        case PRISM2_SET_ENCRYPTION:
-	       printk(KERN_DEBUG "%s: Caught WPA supplicant set encryption request\n",
-			       ndev->name);
+//	       printk(KERN_DEBUG "%s: Caught WPA supplicant set encryption request\n",
+;
                ret = prism2_ioctl_set_encryption(ndev, param, p->length);
                break;
        case PRISM2_HOSTAPD_SET_GENERIC_ELEMENT:
-	       printk(KERN_DEBUG "%s: Caught WPA supplicant set WPA IE request\n",
-			       ndev->name);
+//	       printk(KERN_DEBUG "%s: Caught WPA supplicant set WPA IE request\n",
+;
                ret = prism2_ioctl_set_generic_element(ndev, param,
                                                       p->length);
                break;
        case PRISM2_HOSTAPD_MLME:
-	       printk(KERN_DEBUG "%s: Caught WPA supplicant MLME request\n",
-			       ndev->name);
+//	       printk(KERN_DEBUG "%s: Caught WPA supplicant MLME request\n",
+;
                ret = prism2_ioctl_mlme(ndev, param);
                break;
        case PRISM2_HOSTAPD_SCAN_REQ:
-	       printk(KERN_DEBUG "%s: Caught WPA supplicant scan request\n",
-			       ndev->name);
+//	       printk(KERN_DEBUG "%s: Caught WPA supplicant scan request\n",
+;
                ret = prism2_ioctl_scan_req(ndev, param);
                break;
 	case PRISM54_SET_WPA:
-	       printk(KERN_DEBUG "%s: Caught WPA supplicant wpa init request\n",
-			       ndev->name);
+//	       printk(KERN_DEBUG "%s: Caught WPA supplicant wpa init request\n",
+;
 	       uwrq = 1;
 	       ret = prism54_set_wpa(ndev, NULL, &uwrq, NULL);
 	       break;
 	case PRISM54_DROP_UNENCRYPTED:
-	       printk(KERN_DEBUG "%s: Caught WPA drop unencrypted request\n",
-			       ndev->name);
+//	       printk(KERN_DEBUG "%s: Caught WPA drop unencrypted request\n",
+;
 #if 0
 	       uwrq = 0x01;
 	       mgt_set(priv, DOT11_OID_EXUNENCRYPTED, &uwrq);
@@ -2797,8 +2797,8 @@ prism54_hostapd(struct net_device *ndev, struct iw_point *p)
 	       ret = 0;
 	       break;
        default:
-	       printk(KERN_DEBUG "%s: Caught a WPA supplicant request that is not supported\n",
-			       ndev->name);
+//	       printk(KERN_DEBUG "%s: Caught a WPA supplicant request that is not supported\n",
+;
                ret = -EOPNOTSUPP;
                break;
        }
@@ -2837,11 +2837,11 @@ prism54_set_wpa(struct net_device *ndev, struct iw_request_info *info,
 			filter = 0; /* Do not filter un-encrypted data */
 			dot1x = 0;
 			mlme = DOT11_MLME_AUTO;
-			printk("%s: Disabling WPA\n", ndev->name);
+;
 			break;
 		case 2:
 		case 1: /* WPA */
-			printk("%s: Enabling WPA\n", ndev->name);
+;
 			break;
 	}
 	up_write(&priv->mib_sem);
@@ -2906,7 +2906,7 @@ prism54_debug_get_oid(struct net_device *ndev, struct iw_request_info *info,
 	struct islpci_mgmtframe *response;
 	int ret = -EIO;
 
-	printk("%s: get_oid 0x%08X\n", ndev->name, priv->priv_oid);
+;
 	data->length = 0;
 
 	if (islpci_get_state(priv) >= PRV_STATE_INIT) {
@@ -2914,20 +2914,20 @@ prism54_debug_get_oid(struct net_device *ndev, struct iw_request_info *info,
 		    islpci_mgt_transaction(priv->ndev, PIMFOR_OP_GET,
 					   priv->priv_oid, extra, 256,
 					   &response);
-		printk("%s: ret: %i\n", ndev->name, ret);
+;
 		if (ret || !response
 		    || response->header->operation == PIMFOR_OP_ERROR) {
 			if (response) {
 				islpci_mgt_release(response);
 			}
-			printk("%s: EIO\n", ndev->name);
+;
 			ret = -EIO;
 		}
 		if (!ret) {
 			data->length = response->header->length;
 			memcpy(extra, response->data, data->length);
 			islpci_mgt_release(response);
-			printk("%s: len: %i\n", ndev->name, data->length);
+;
 		}
 	}
 
@@ -2942,27 +2942,27 @@ prism54_debug_set_oid(struct net_device *ndev, struct iw_request_info *info,
 	struct islpci_mgmtframe *response;
 	int ret = 0, response_op = PIMFOR_OP_ERROR;
 
-	printk("%s: set_oid 0x%08X\tlen: %d\n", ndev->name, priv->priv_oid,
-	       data->length);
+//	printk("%s: set_oid 0x%08X\tlen: %d\n", ndev->name, priv->priv_oid,
+;
 
 	if (islpci_get_state(priv) >= PRV_STATE_INIT) {
 		ret =
 		    islpci_mgt_transaction(priv->ndev, PIMFOR_OP_SET,
 					   priv->priv_oid, extra, data->length,
 					   &response);
-		printk("%s: ret: %i\n", ndev->name, ret);
+;
 		if (ret || !response
 		    || response->header->operation == PIMFOR_OP_ERROR) {
 			if (response) {
 				islpci_mgt_release(response);
 			}
-			printk("%s: EIO\n", ndev->name);
+;
 			ret = -EIO;
 		}
 		if (!ret) {
 			response_op = response->header->operation;
-			printk("%s: response_op: %i\n", ndev->name,
-			       response_op);
+//			printk("%s: response_op: %i\n", ndev->name,
+;
 			islpci_mgt_release(response);
 		}
 	}

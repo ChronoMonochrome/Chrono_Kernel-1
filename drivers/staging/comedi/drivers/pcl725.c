@@ -77,17 +77,9 @@ static int pcl725_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned long iobase;
 
 	iobase = it->options[0];
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: pcl725: 0x%04lx ", dev->minor, iobase);
-#else
-	;
-#endif
+;
 	if (!request_region(iobase, PCL725_SIZE, "pcl725")) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("I/O port conflict\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 	dev->board_name = "pcl725";
@@ -115,22 +107,14 @@ static int pcl725_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->insn_bits = pcl725_di_insn;
 	s->range_table = &range_digital;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "\n");
-#else
-	;
-#endif
+;
 
 	return 0;
 }
 
 static int pcl725_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: pcl725: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	if (dev->iobase)
 		release_region(dev->iobase, PCL725_SIZE);

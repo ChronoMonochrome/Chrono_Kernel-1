@@ -112,8 +112,8 @@ static void orinoco_add_hostscan_result(struct orinoco_private *priv,
 	freq = ieee80211_dsss_chan_to_freq(le16_to_cpu(bss->a.channel));
 	channel = ieee80211_get_channel(wiphy, freq);
 	if (!channel) {
-		printk(KERN_DEBUG "Invalid channel designation %04X(%04X)",
-			bss->a.channel, freq);
+//		printk(KERN_DEBUG "Invalid channel designation %04X(%04X)",
+;
 		return;	/* Then ignore it for now */
 	}
 	timestamp = 0;
@@ -195,9 +195,9 @@ void orinoco_add_hostscan_results(struct orinoco_private *priv,
 			atom_len = le16_to_cpup((__le16 *)buf);
 			/* Sanity check for atom_len */
 			if (atom_len < sizeof(struct prism2_scan_apinfo)) {
-				printk(KERN_ERR "%s: Invalid atom_len in scan "
-				       "data: %zu\n", priv->ndev->name,
-				       atom_len);
+//				printk(KERN_ERR "%s: Invalid atom_len in scan "
+//				       "data: %zu\n", priv->ndev->name,
+;
 				abort = true;
 				goto scan_abort;
 			}
@@ -212,9 +212,9 @@ void orinoco_add_hostscan_results(struct orinoco_private *priv,
 
 	/* Check that we got an whole number of atoms */
 	if ((len - offset) % atom_len) {
-		printk(KERN_ERR "%s: Unexpected scan data length %zu, "
-		       "atom_len %zu, offset %d\n", priv->ndev->name, len,
-		       atom_len, offset);
+//		printk(KERN_ERR "%s: Unexpected scan data length %zu, "
+//		       "atom_len %zu, offset %d\n", priv->ndev->name, len,
+;
 		abort = true;
 		goto scan_abort;
 	}

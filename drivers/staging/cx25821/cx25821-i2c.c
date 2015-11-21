@@ -34,14 +34,10 @@ static unsigned int i2c_scan;
 module_param(i2c_scan, int, 0444);
 MODULE_PARM_DESC(i2c_scan, "scan i2c bus at insmod time");
 
-#ifdef CONFIG_DEBUG_PRINTK
-#define dprintk(level, fmt, arg...)					\
-do {									\
-	if (i2c_debug >= level)						\
-		printk(KERN_DEBUG "%s/0: " fmt, dev->name, ##arg);	\
-#else
-#define d;
-#endif
+//#define dprintk(level, fmt, arg...)					\
+//do {									\
+//	if (i2c_debug >= level)						\
+;
 } while (0)
 
 #define I2C_WAIT_DELAY 32
@@ -89,18 +85,10 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 	int retval, cnt;
 
 	if (joined_rlen)
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(1, "%s(msg->wlen=%d, nextmsg->rlen=%d)\n", __func__,
-			msg->len, joined_rlen);
-#else
-		d;
-#endif
+//		dprintk(1, "%s(msg->wlen=%d, nextmsg->rlen=%d)\n", __func__,
+;
 	else
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(1, "%s(msg->len=%d)\n", __func__, msg->len);
-#else
-		d;
-#endif
+;
 
 	/* Deal with i2c probe functions with zero payload */
 	if (msg->len == 0) {
@@ -113,11 +101,7 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 		if (!i2c_slave_did_ack(i2c_adap))
 			return -EIO;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(1, "%s(): returns 0\n", __func__);
-#else
-		d;
-#endif
+;
 		return 0;
 	}
 
@@ -145,11 +129,7 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 
 	if (i2c_debug) {
 		if (!(ctrl & I2C_NOSTOP))
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" >\n");
-#else
-			;
-#endif
+;
 	}
 
 	for (cnt = 1; cnt < msg->len; cnt++) {
@@ -174,17 +154,9 @@ static int i2c_sendbytes(struct i2c_adapter *i2c_adap,
 			goto eio;
 
 		if (i2c_debug) {
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk(1, " %02x", msg->buf[cnt]);
-#else
-			d;
-#endif
+;
 			if (!(ctrl & I2C_NOSTOP))
-#ifdef CONFIG_DEBUG_PRINTK
-				dprintk(1, " >\n");
-#else
-				d;
-#endif
+;
 		}
 	}
 
@@ -207,11 +179,7 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 	int retval;
 
 	if (i2c_debug && !joined)
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(1, "6-%s(msg->len=%d)\n", __func__, msg->len);
-#else
-		d;
-#endif
+;
 
 	/* Deal with i2c probe functions with zero payload */
 	if (msg->len == 0) {
@@ -222,27 +190,15 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 		if (!i2c_slave_did_ack(i2c_adap))
 			return -EIO;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(1, "%s(): returns 0\n", __func__);
-#else
-		d;
-#endif
+;
 		return 0;
 	}
 
 	if (i2c_debug) {
 		if (joined)
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk(1, " R");
-#else
-			d;
-#endif
+;
 		else
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk(1, " <R %02x", (msg->addr << 1) + 1);
-#else
-			d;
-#endif
+;
 	}
 
 	for (cnt = 0; cnt < msg->len; cnt++) {
@@ -263,17 +219,9 @@ static int i2c_readbytes(struct i2c_adapter *i2c_adap,
 		msg->buf[cnt] = cx_read(bus->reg_rdata) & 0xff;
 
 		if (i2c_debug) {
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk(1, " %02x", msg->buf[cnt]);
-#else
-			d;
-#endif
+;
 			if (!(ctrl & I2C_NOSTOP))
-#ifdef CONFIG_DEBUG_PRINTK
-				dprintk(1, " >\n");
-#else
-				d;
-#endif
+;
 		}
 	}
 
@@ -292,19 +240,11 @@ static int i2c_xfer(struct i2c_adapter *i2c_adap, struct i2c_msg *msgs, int num)
 	struct cx25821_dev *dev = bus->dev;
 	int i, retval = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s(num = %d)\n", __func__, num);
-#else
-	d;
-#endif
+;
 
 	for (i = 0; i < num; i++) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(1, "%s(num = %d) addr = 0x%02x  len = 0x%x\n",
-			__func__, num, msgs[i].addr, msgs[i].len);
-#else
-		d;
-#endif
+//		dprintk(1, "%s(num = %d) addr = 0x%02x  len = 0x%x\n",
+;
 
 		if (msgs[i].flags & I2C_M_RD) {
 			/* read */
@@ -365,11 +305,7 @@ int cx25821_i2c_register(struct cx25821_i2c *bus)
 {
 	struct cx25821_dev *dev = bus->dev;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s(bus = %d)\n", __func__, bus->nr);
-#else
-	d;
-#endif
+;
 
 	memcpy(&bus->i2c_adap, &cx25821_i2c_adap_template,
 	       sizeof(bus->i2c_adap));
@@ -406,11 +342,7 @@ void cx25821_av_clk(struct cx25821_dev *dev, int enable)
 	/* write 0 to bus 2 addr 0x144 via i2x_xfer() */
 	char buffer[3];
 	struct i2c_msg msg;
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s(enabled = %d)\n", __func__, enable);
-#else
-	d;
-#endif
+;
 
 	/* Register 0x144 */
 	buffer[0] = 0x01;

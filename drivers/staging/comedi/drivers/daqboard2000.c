@@ -393,11 +393,7 @@ static void setup_sampling(struct comedi_device *dev, int chan, int gain)
 	/* These should be read from EEPROM */
 	word2 |= 0x0800;
 	word3 |= 0xc000;
-#ifdef CONFIG_DEBUG_PRINTK
 /*  printk("%d %4.4x %4.4x %4.4x %4.4x\n", chan, word0, word1, word2, word3);*/
-#else
-/*  ;
-#endif
 	writeAcqScanListEntry(dev, word0);
 	writeAcqScanListEntry(dev, word1);
 	writeAcqScanListEntry(dev, word2);
@@ -511,11 +507,7 @@ static int daqboard2000_ao_insn_write(struct comedi_device *dev,
 
 static void daqboard2000_resetLocalBus(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("daqboard2000_resetLocalBus\n");
-#else
-	;
-#endif
+;
 	writel(DAQBOARD2000_SECRLocalBusHi, devpriv->plx + 0x6c);
 	udelay(10000);
 	writel(DAQBOARD2000_SECRLocalBusLo, devpriv->plx + 0x6c);
@@ -524,11 +516,7 @@ static void daqboard2000_resetLocalBus(struct comedi_device *dev)
 
 static void daqboard2000_reloadPLX(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("daqboard2000_reloadPLX\n");
-#else
-	;
-#endif
+;
 	writel(DAQBOARD2000_SECRReloadLo, devpriv->plx + 0x6c);
 	udelay(10000);
 	writel(DAQBOARD2000_SECRReloadHi, devpriv->plx + 0x6c);
@@ -539,11 +527,7 @@ static void daqboard2000_reloadPLX(struct comedi_device *dev)
 
 static void daqboard2000_pulseProgPin(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("daqboard2000_pulseProgPin 1\n");
-#else
-	;
-#endif
+;
 	writel(DAQBOARD2000_SECRProgPinHi, devpriv->plx + 0x6c);
 	udelay(10000);
 	writel(DAQBOARD2000_SECRProgPinLo, devpriv->plx + 0x6c);
@@ -595,22 +579,14 @@ static int initialize_daqboard2000(struct comedi_device *dev,
 	secr = readl(devpriv->plx + 0x6c);
 	if (!(secr & DAQBOARD2000_EEPROM_PRESENT)) {
 #ifdef DEBUG_EEPROM
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("no serial eeprom\n");
-#else
-		;
-#endif
+;
 #endif
 		return -EIO;
 	}
 
 	for (retry = 0; retry < 3; retry++) {
 #ifdef DEBUG_EEPROM
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("Programming EEPROM try %x\n", retry);
-#else
-		;
-#endif
+;
 #endif
 
 		daqboard2000_resetLocalBus(dev);
@@ -621,11 +597,7 @@ static int initialize_daqboard2000(struct comedi_device *dev,
 				if (cpld_array[i] == 0xff
 				    && cpld_array[i + 1] == 0x20) {
 #ifdef DEBUG_EEPROM
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("Preamble found at %d\n", i);
-#else
-					;
-#endif
+;
 #endif
 					break;
 				}
@@ -639,11 +611,7 @@ static int initialize_daqboard2000(struct comedi_device *dev,
 			}
 			if (i >= len) {
 #ifdef DEBUG_EEPROM
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("Programmed\n");
-#else
-				;
-#endif
+;
 #endif
 				daqboard2000_resetLocalBus(dev);
 				daqboard2000_reloadPLX(dev);
@@ -657,11 +625,7 @@ static int initialize_daqboard2000(struct comedi_device *dev,
 
 static void daqboard2000_adcStopDmaTransfer(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 /*  printk("Implement: daqboard2000_adcStopDmaTransfer\n");*/
-#else
-/*  ;
-#endif
 }
 
 static void daqboard2000_adcDisarm(struct comedi_device *dev)
@@ -699,11 +663,7 @@ static void daqboard2000_activateReferenceDacs(struct comedi_device *dev)
 		}
 		udelay(2);
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 /*  printk("DAQBOARD2000_PosRefDacSelect %d\n", timeout);*/
-#else
-/*  ;
-#endif
 
 	/*  Set the - reference dac value in the FPGA */
 	fpga->refDacs = 0x80 | DAQBOARD2000_NegRefDacSelect;
@@ -713,38 +673,22 @@ static void daqboard2000_activateReferenceDacs(struct comedi_device *dev)
 		}
 		udelay(2);
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 /*  printk("DAQBOARD2000_NegRefDacSelect %d\n", timeout);*/
-#else
-/*  ;
-#endif
 }
 
 static void daqboard2000_initializeCtrs(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 /*  printk("Implement: daqboard2000_initializeCtrs\n");*/
-#else
-/*  ;
-#endif
 }
 
 static void daqboard2000_initializeTmrs(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 /*  printk("Implement: daqboard2000_initializeTmrs\n");*/
-#else
-/*  ;
-#endif
 }
 
 static void daqboard2000_dacDisarm(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 /*  printk("Implement: daqboard2000_dacDisarm\n");*/
-#else
-/*  ;
-#endif
 }
 
 static void daqboard2000_initializeAdc(struct comedi_device *dev)
@@ -777,12 +721,8 @@ static int daqboard2000_8255_cb(int dir, int port, int data,
 		result = readw(((void *)ioaddr) + port * 2);
 	}
 /*
-#ifdef CONFIG_DEBUG_PRINTK
-  printk("daqboard2000_8255_cb %x %d %d %2.2x -> %2.2x\n",
-        arg, dir, port, data, result);
-#else
-  ;
-#endif
+//  printk("daqboard2000_8255_cb %x %d %d %2.2x -> %2.2x\n",
+;
 */
 	return result;
 }
@@ -797,11 +737,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
 	unsigned int aux_len;
 	int bus, slot;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: daqboard2000:", dev->minor);
-#else
-	;
-#endif
+;
 
 	bus = it->options[0];
 	slot = it->options[1];
@@ -823,18 +759,10 @@ static int daqboard2000_attach(struct comedi_device *dev,
 	}
 	if (!card) {
 		if (bus || slot)
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" no daqboard2000 found at bus/slot: %d/%d\n",
-			       bus, slot);
-#else
-			;
-#endif
+//			printk(" no daqboard2000 found at bus/slot: %d/%d\n",
+;
 		else
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" no daqboard2000 found\n");
-#else
-			;
-#endif
+;
 		return -EIO;
 	} else {
 		u32 id;
@@ -844,11 +772,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
 		      subsystem_device << 16) | card->subsystem_vendor;
 		for (i = 0; i < n_boardtypes; i++) {
 			if (boardtypes[i].id == id) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(" %s", boardtypes[i].name);
-#else
-				;
-#endif
+;
 				dev->board_ptr = boardtypes + i;
 			}
 		}
@@ -862,11 +786,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
 
 	result = comedi_pci_enable(card, "daqboard2000");
 	if (result < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" failed to enable PCI device and request regions\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 	devpriv->got_regions = 1;
@@ -888,11 +808,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
 	   u8 interrupt;
 	   Windows code does restore interrupts, but since we don't use them...
 	   pci_read_config_byte(card, PCI_INTERRUPT_LINE, &interrupt);
-#ifdef CONFIG_DEBUG_PRINTK
-	   printk("Interrupt before is: %x\n", interrupt);
-#else
-	   ;
-#endif
+;
 	 */
 
 	aux_data = comedi_aux_data(it->options, 0);
@@ -901,11 +817,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
 	if (aux_data && aux_len) {
 		result = initialize_daqboard2000(dev, aux_data, aux_len);
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("no FPGA initialization code, aborting\n");
-#else
-		;
-#endif
+;
 		result = -EIO;
 	}
 	if (result < 0)
@@ -915,11 +827,7 @@ static int daqboard2000_attach(struct comedi_device *dev,
 	/*
 	   Windows code does restore interrupts, but since we don't use them...
 	   pci_read_config_byte(card, PCI_INTERRUPT_LINE, &interrupt);
-#ifdef CONFIG_DEBUG_PRINTK
-	   printk("Interrupt after is: %x\n", interrupt);
-#else
-	   ;
-#endif
+;
 	 */
 
 	dev->iobase = (unsigned long)devpriv->daq;
@@ -949,22 +857,14 @@ static int daqboard2000_attach(struct comedi_device *dev,
 	result = subdev_8255_init(dev, s, daqboard2000_8255_cb,
 				  (unsigned long)(dev->iobase + 0x40));
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 out:
 	return result;
 }
 
 static int daqboard2000_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: daqboard2000: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	if (dev->subdevices)
 		subdev_8255_cleanup(dev, dev->subdevices + 2);

@@ -127,8 +127,8 @@ static void dm_write_async_callback(struct urb *urb)
 	int status = urb->status;
 
 	if (status < 0)
-		printk(KERN_DEBUG "dm_write_async_callback() failed with %d\n",
-		       status);
+//		printk(KERN_DEBUG "dm_write_async_callback() failed with %d\n",
+;
 
 	kfree(req);
 	usb_free_urb(urb);
@@ -459,7 +459,7 @@ static int dm9601_bind(struct usbnet *dev, struct usb_interface *intf)
 
 	/* read MAC */
 	if (dm_read(dev, DM_PHY_ADDR, ETH_ALEN, mac) < 0) {
-		printk(KERN_ERR "Error reading MAC address\n");
+;
 		ret = -ENODEV;
 		goto out;
 	}
@@ -470,9 +470,9 @@ static int dm9601_bind(struct usbnet *dev, struct usb_interface *intf)
 	if (is_valid_ether_addr(mac))
 		memcpy(dev->net->dev_addr, mac, ETH_ALEN);
 	else {
-		printk(KERN_WARNING
-			"dm9601: No valid MAC address in EEPROM, using %pM\n",
-			dev->net->dev_addr);
+//		printk(KERN_WARNING
+//			"dm9601: No valid MAC address in EEPROM, using %pM\n",
+;
 		__dm9601_set_mac_address(dev);
 	}
 

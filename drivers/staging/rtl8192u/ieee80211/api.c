@@ -222,11 +222,7 @@ int crypto_alg_available(const char *name, u32 flags)
 
 static int __init init_crypto(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "Initializing Cryptographic API\n");
-#else
-	;
-#endif
+;
 	crypto_init_proc();
 	return 0;
 }

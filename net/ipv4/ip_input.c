@@ -210,8 +210,8 @@ static int ip_local_deliver_finish(struct sk_buff *skb)
 
 			if (!net_eq(net, &init_net) && !ipprot->netns_ok) {
 				if (net_ratelimit())
-					printk("%s: proto %d isn't netns-ready\n",
-						__func__, protocol);
+//					printk("%s: proto %d isn't netns-ready\n",
+;
 				kfree_skb(skb);
 				goto out;
 			}
@@ -299,8 +299,8 @@ static inline int ip_rcv_options(struct sk_buff *skb)
 			if (!IN_DEV_SOURCE_ROUTE(in_dev)) {
 				if (IN_DEV_LOG_MARTIANS(in_dev) &&
 				    net_ratelimit())
-					printk(KERN_INFO "source route option %pI4 -> %pI4\n",
-					       &iph->saddr, &iph->daddr);
+//					printk(KERN_INFO "source route option %pI4 -> %pI4\n",
+;
 				goto drop;
 			}
 		}

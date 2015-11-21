@@ -372,7 +372,7 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
 	/* send frame to monitor interfaces now */
 
 	if (skb_headroom(skb) < sizeof(*rthdr)) {
-		printk(KERN_ERR "ieee80211_tx_status: headroom too small\n");
+;
 		dev_kfree_skb(skb);
 		return;
 	}

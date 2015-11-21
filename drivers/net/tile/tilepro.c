@@ -130,13 +130,13 @@
 
 /* Debug print. */
 #ifdef TILE_NET_DEBUG
-#define PDEBUG(fmt, args...) net_printk(fmt, ## args)
-#else
-#define PDEBUG(fmt, args...)
-#endif
-
-
-MODULE_AUTHOR("Tilera");
+//#define PDEBUG(fmt, args...) net_printk(fmt, ## args)
+//#else
+//#define PDEBUG(fmt, args...)
+//#endif
+//
+//
+;
 MODULE_LICENSE("GPL");
 
 
@@ -1100,9 +1100,9 @@ static void tile_net_register(void *dev_ptr)
 	       ret);
 	if (ret < 0) {
 		if (ret != NETIO_LINK_DOWN) {
-			printk(KERN_DEBUG "hv_dev_pwrite "
-			       "NETIO_IPP_INPUT_REGISTER_OFF failure %d\n",
-			       ret);
+//			printk(KERN_DEBUG "hv_dev_pwrite "
+//			       "NETIO_IPP_INPUT_REGISTER_OFF failure %d\n",
+;
 		}
 		info->link_down = (ret == NETIO_LINK_DOWN);
 		return;
@@ -1645,7 +1645,7 @@ static int tile_net_stop(struct net_device *dev)
 	 * has never been observed, but in theory it could happen.
 	 */
 	if (tile_net_drain_lipp_buffers(priv) != 0)
-		printk("Had to drain some extra LIPP buffers!\n");
+;
 
 	/* Stop LIPP/LEPP. */
 	tile_net_stop_aux(dev);
@@ -2228,11 +2228,11 @@ static int tile_net_get_mac(struct net_device *dev)
 	       hv_dev_name, priv->hv_devhdl, &priv->hv_devhdl);
 	if (priv->hv_devhdl < 0) {
 		if (priv->hv_devhdl == HV_ENODEV)
-			printk(KERN_DEBUG "Ignoring unconfigured device %s\n",
-				 hv_dev_name);
+//			printk(KERN_DEBUG "Ignoring unconfigured device %s\n",
+;
 		else
-			printk(KERN_DEBUG "hv_dev_open(%s) returned %d\n",
-				 hv_dev_name, priv->hv_devhdl);
+//			printk(KERN_DEBUG "hv_dev_open(%s) returned %d\n",
+;
 		return -1;
 	}
 
@@ -2247,8 +2247,8 @@ static int tile_net_get_mac(struct net_device *dev)
 			   offset.word);
 	PDEBUG("hv_dev_pread(NETIO_PARAM_MAC) returned %d\n", ret);
 	if (ret <= 0) {
-		printk(KERN_DEBUG "hv_dev_pread(NETIO_PARAM_MAC) %s failed\n",
-		       dev->name);
+//		printk(KERN_DEBUG "hv_dev_pread(NETIO_PARAM_MAC) %s failed\n",
+;
 		/*
 		 * Since the device is configured by the hypervisor but we
 		 * can't get its MAC address, we are most likely running

@@ -103,13 +103,9 @@ static int pohmelfs_move_config_entry(struct pohmelfs_sb *psb,
 		(dst->state.ctl.perm == new->state.ctl.perm))
 		return 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: dst: prio: %d, perm: %x, new: prio: %d, perm: %d.\n",
-			__func__, dst->state.ctl.prio, dst->state.ctl.perm,
-			new->state.ctl.prio, new->state.ctl.perm);
-#else
-	d;
-#endif
+//	dprintk("%s: dst: prio: %d, perm: %x, new: prio: %d, perm: %d.\n",
+//			__func__, dst->state.ctl.prio, dst->state.ctl.perm,
+;
 	dst->state.ctl.prio = new->state.ctl.prio;
 	dst->state.ctl.perm = new->state.ctl.perm;
 
@@ -494,13 +490,9 @@ static int pohmelfs_cn_crypto(struct cn_msg *msg)
 	struct pohmelfs_config_group *g;
 	int err = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: idx: %u, strlen: %u, type: %u, keysize: %u, algo: %s.\n",
-			__func__, crypto->idx, crypto->strlen, crypto->type,
-			crypto->keysize, (char *)crypto->data);
-#else
-	d;
-#endif
+//	dprintk("%s: idx: %u, strlen: %u, type: %u, keysize: %u, algo: %s.\n",
+//			__func__, crypto->idx, crypto->strlen, crypto->type,
+;
 
 	mutex_lock(&pohmelfs_config_lock);
 	g = pohmelfs_find_create_config_group(crypto->idx);

@@ -217,7 +217,7 @@ do_register(const char *name, void *data, const struct file_operations *fops)
 {
 	struct sunrpc_net *sn;
 
-	dprintk("RPC:       registering /proc/net/rpc/%s\n", name);
+;
 	sn = net_generic(&init_net, sunrpc_net_id);
 	return proc_create_data(name, 0, sn->proc_net_rpc, fops, data);
 }
@@ -260,7 +260,7 @@ int rpc_proc_init(struct net *net)
 {
 	struct sunrpc_net *sn;
 
-	dprintk("RPC:       registering /proc/net/rpc\n");
+;
 	sn = net_generic(net, sunrpc_net_id);
 	sn->proc_net_rpc = proc_mkdir("rpc", net->proc_net);
 	if (sn->proc_net_rpc == NULL)
@@ -271,7 +271,7 @@ int rpc_proc_init(struct net *net)
 
 void rpc_proc_exit(struct net *net)
 {
-	dprintk("RPC:       unregistering /proc/net/rpc\n");
+;
 	remove_proc_entry("rpc", net->proc_net);
 }
 

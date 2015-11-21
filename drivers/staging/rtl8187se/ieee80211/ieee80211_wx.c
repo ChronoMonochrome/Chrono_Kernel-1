@@ -72,11 +72,7 @@ static inline char *rtl818x_translate_scan(struct ieee80211_device *ieee,
 		iwe.u.data.length = min(network->ssid_len, (u8)32);
 		start = iwe_stream_add_point(info, start, stop, &iwe, network->ssid);
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("ESSID: %s\n",network->ssid);
-#else
-	//;
-#endif
+;
 	/* Add the protocol name */
 	iwe.cmd = SIOCGIWNAME;
 	snprintf(iwe.u.name, IFNAMSIZ, "IEEE 802.11%s", ieee80211_modes[network->mode]);
@@ -149,17 +145,9 @@ static inline char *rtl818x_translate_scan(struct ieee80211_device *ieee,
 	/* Add quality statistics */
 	/* TODO: Fix these values... */
 	if (network->stats.signal == 0 || network->stats.rssi == 0)
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("========>signal:%d, rssi:%d\n", network->stats.signal, network->stats.rssi);
-#else
-	;
-#endif
+;
 	iwe.cmd = IWEVQUAL;
-#ifdef CONFIG_DEBUG_PRINTK
-//	printk("SIGNAL: %d,RSSI: %d,NOISE: %d\n",network->stats.signal,network->stats.rssi,network->stats.noise);
-#else
-//	;
-#endif
+;
 	iwe.u.qual.qual = network->stats.signalstrength;
 	iwe.u.qual.level = network->stats.signal;
 	iwe.u.qual.noise = network->stats.noise;
@@ -182,11 +170,7 @@ static inline char *rtl818x_translate_scan(struct ieee80211_device *ieee,
 
 		memset(&iwe, 0, sizeof(iwe));
         if (network->wpa_ie_len) {
-#ifdef CONFIG_DEBUG_PRINTK
-	//	printk("wpa_ie_len:%d\n", network->wpa_ie_len);
-#else
-	//	;
-#endif
+;
                 char buf[MAX_WPA_IE_LEN];
                 memcpy(buf, network->wpa_ie, network->wpa_ie_len);
                 iwe.cmd = IWEVGENIE;
@@ -196,11 +180,7 @@ static inline char *rtl818x_translate_scan(struct ieee80211_device *ieee,
 
         memset(&iwe, 0, sizeof(iwe));
         if (network->rsn_ie_len) {
-#ifdef CONFIG_DEBUG_PRINTK
-	//	printk("=====>rsn_ie_len:\n", network->rsn_ie_len);
-#else
-	//	;
-#endif
+;
                 char buf[MAX_WPA_IE_LEN];
                 memcpy(buf, network->rsn_ie, network->rsn_ie_len);
                 iwe.cmd = IWEVGENIE;
@@ -360,13 +340,9 @@ int ieee80211_wx_set_encode(struct ieee80211_device *ieee,
 			kfree(new_crypt);
 			new_crypt = NULL;
 
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "%s: could not initialize WEP: "
-			       "load module ieee80211_crypt_wep\n",
-			       dev->name);
-#else
-			;
-#endif
+//			printk(KERN_WARNING "%s: could not initialize WEP: "
+//			       "load module ieee80211_crypt_wep\n",
+;
 			return -EOPNOTSUPP;
 		}
 		*crypt = new_crypt;
@@ -438,11 +414,7 @@ int ieee80211_wx_set_encode(struct ieee80211_device *ieee,
 	if (ieee->reset_on_keychange &&
 	    ieee->iw_mode != IW_MODE_INFRA &&
 	    ieee->reset_port && ieee->reset_port(dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "%s: reset_port failed\n", dev->name);
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 	return 0;
@@ -515,11 +487,7 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
         struct ieee80211_security sec = {
                 .flags = 0,
         };
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("======>encoding flag:%x,ext flag:%x, ext alg:%d\n", encoding->flags,ext->ext_flags, ext->alg);
-#else
-	//;
-#endif
+;
         idx = encoding->flags & IW_ENCODE_INDEX;
         if (idx) {
                 if (idx < 1 || idx > WEP_KEYS)
@@ -533,11 +501,7 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
                 group_key = 1;
         } else {
                 /* some Cisco APs use idx>0 for unicast in dynamic WEP */
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("not group key, flags:%x, ext->alg:%d\n", ext->ext_flags, ext->alg);
-#else
-		//;
-#endif
+;
                 if (idx != 0 && ext->alg != IW_ENCODE_ALG_WEP)
                         return -EINVAL;
                 if (ieee->iw_mode == IW_MODE_INFRA)
@@ -562,11 +526,7 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
                         sec.level = SEC_LEVEL_0;
                         sec.flags |= SEC_LEVEL;
                 }
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("disabled: flag:%x\n", encoding->flags);
-#else
-		//;
-#endif
+;
                 goto done;
         }
 
@@ -589,11 +549,7 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
                 ret = -EINVAL;
                 goto done;
         }
-#ifdef CONFIG_DEBUG_PRINTK
-//	printk("8-09-08-9=====>%s, alg name:%s\n",__func__, alg);
-#else
-//	;
-#endif
+;
 
 	 ops = ieee80211_get_crypto_ops(alg);
         if (ops == NULL)
@@ -601,11 +557,7 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
         if (ops == NULL) {
                 IEEE80211_DEBUG_WX("%s: unknown crypto alg %d\n",
                                    dev->name, ext->alg);
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("========>unknown crypto alg %d\n", ext->alg);
-#else
-		;
-#endif
+;
                 ret = -EINVAL;
                 goto done;
         }
@@ -636,21 +588,13 @@ int ieee80211_wx_set_encode_ext(struct ieee80211_device *ieee,
             (*crypt)->ops->set_key(ext->key, ext->key_len, ext->rx_seq,
                                    (*crypt)->priv) < 0) {
                 IEEE80211_DEBUG_WX("%s: key setting failed\n", dev->name);
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("key setting failed\n");
-#else
-		;
-#endif
+;
                 ret = -EINVAL;
                 goto done;
         }
 #if 1
  //skip_host_crypt:
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("skip_host_crypt:ext_flags:%x\n", ext->ext_flags);
-#else
-	//;
-#endif
+;
         if (ext->ext_flags & IW_ENCODE_EXT_SET_TX_KEY) {
                 ieee->tx_keyidx = idx;
                 sec.active_key = idx;
@@ -697,20 +641,12 @@ int ieee80211_wx_set_mlme(struct ieee80211_device *ieee,
                                union iwreq_data *wrqu, char *extra)
 {
 	struct iw_mlme *mlme = (struct iw_mlme *) extra;
-#ifdef CONFIG_DEBUG_PRINTK
-//	printk("\ndkgadfslkdjgalskdf===============>%s(), cmd:%x\n", __func__, mlme->cmd);
-#else
-//	;
-#endif
+;
 #if 1
 	switch (mlme->cmd) {
         case IW_MLME_DEAUTH:
 	case IW_MLME_DISASSOC:
-#ifdef CONFIG_DEBUG_PRINTK
-	//	printk("disassoc now\n");
-#else
-	//	;
-#endif
+;
 		ieee80211_disassociate(ieee);
 		break;
 	 default:
@@ -729,19 +665,11 @@ int ieee80211_wx_set_auth(struct ieee80211_device *ieee,
                 .flags = SEC_AUTH_MODE,
 	}
 */
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("set auth:flag:%x, data value:%x\n", data->flags, data->value);
-#else
-	//;
-#endif
+;
 	switch (data->flags & IW_AUTH_INDEX) {
         case IW_AUTH_WPA_VERSION:
 	     /*need to support wpa2 here*/
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("wpa version:%x\n", data->value);
-#else
-		//;
-#endif
+;
 		break;
         case IW_AUTH_CIPHER_PAIRWISE:
         case IW_AUTH_CIPHER_GROUP:
@@ -760,21 +688,13 @@ int ieee80211_wx_set_auth(struct ieee80211_device *ieee,
 
 	case IW_AUTH_80211_AUTH_ALG:
 		ieee->open_wep = (data->value&IW_AUTH_ALG_OPEN_SYSTEM)?1:0;
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("open_wep:%d\n", ieee->open_wep);
-#else
-		//;
-#endif
+;
 		break;
 
 #if 1
 	case IW_AUTH_WPA_ENABLED:
 		ieee->wpa_enabled = (data->value)?1:0;
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("enable wpa:%d\n", ieee->wpa_enabled);
-#else
-		//;
-#endif
+;
 		break;
 
 #endif
@@ -797,22 +717,14 @@ int ieee80211_wx_set_gen_ie(struct ieee80211_device *ieee, u8 *ie, size_t len)
 
 	if (len>MAX_WPA_IE_LEN || (len && ie == NULL))
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("return error out, len:%zu\n", len);
-#else
-		;
-#endif
+;
 	return -EINVAL;
 	}
 
 	if (len)
 	{
 		if (len != ie[1]+2){
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("len:%zu, ie:%d\n", len, ie[1]);
-#else
-			;
-#endif
+;
 			return -EINVAL;
 		}
 		buf = kmemdup(ie, len, GFP_KERNEL);
@@ -827,11 +739,7 @@ int ieee80211_wx_set_gen_ie(struct ieee80211_device *ieee, u8 *ie, size_t len)
 		ieee->wpa_ie = NULL;
 		ieee->wpa_ie_len = 0;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-//	printk("<=====out %s()\n", __func__);
-#else
-//	;
-#endif
+;
 
 	return 0;
 

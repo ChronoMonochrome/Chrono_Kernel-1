@@ -2581,7 +2581,7 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
 	int ret;
 
 	if (!hsotg) {
-		printk(KERN_ERR "%s: called with no device\n", __func__);
+;
 		return -ENODEV;
 	}
 

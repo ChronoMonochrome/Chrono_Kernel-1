@@ -208,9 +208,9 @@ static struct rds_message *rds_ib_send_unmap_op(struct rds_ib_connection *ic,
 		break;
 	default:
 		if (printk_ratelimit())
-			printk(KERN_NOTICE
-			       "RDS/IB: %s: unexpected opcode 0x%x in WR!\n",
-			       __func__, send->s_wr.opcode);
+//			printk(KERN_NOTICE
+//			       "RDS/IB: %s: unexpected opcode 0x%x in WR!\n",
+;
 		break;
 	}
 
@@ -760,8 +760,8 @@ int rds_ib_xmit(struct rds_connection *conn, struct rds_message *rm,
 		 first, &first->s_wr, ret, failed_wr);
 	BUG_ON(failed_wr != &first->s_wr);
 	if (ret) {
-		printk(KERN_WARNING "RDS/IB: ib_post_send to %pI4 "
-		       "returned %d\n", &conn->c_faddr, ret);
+//		printk(KERN_WARNING "RDS/IB: ib_post_send to %pI4 "
+;
 		rds_ib_ring_unalloc(&ic->i_send_ring, work_alloc);
 		rds_ib_sub_signaled(ic, nr_sig);
 		if (prev->s_op) {
@@ -857,15 +857,15 @@ int rds_ib_xmit_atomic(struct rds_connection *conn, struct rm_atomic_op *op)
 		 send, &send->s_wr, ret, failed_wr);
 	BUG_ON(failed_wr != &send->s_wr);
 	if (ret) {
-		printk(KERN_WARNING "RDS/IB: atomic ib_post_send to %pI4 "
-		       "returned %d\n", &conn->c_faddr, ret);
+//		printk(KERN_WARNING "RDS/IB: atomic ib_post_send to %pI4 "
+;
 		rds_ib_ring_unalloc(&ic->i_send_ring, work_alloc);
 		rds_ib_sub_signaled(ic, nr_sig);
 		goto out;
 	}
 
 	if (unlikely(failed_wr != &send->s_wr)) {
-		printk(KERN_WARNING "RDS/IB: atomic ib_post_send() rc=%d, but failed_wqe updated!\n", ret);
+;
 		BUG_ON(failed_wr != &send->s_wr);
 	}
 
@@ -994,15 +994,15 @@ int rds_ib_xmit_rdma(struct rds_connection *conn, struct rm_rdma_op *op)
 		 first, &first->s_wr, ret, failed_wr);
 	BUG_ON(failed_wr != &first->s_wr);
 	if (ret) {
-		printk(KERN_WARNING "RDS/IB: rdma ib_post_send to %pI4 "
-		       "returned %d\n", &conn->c_faddr, ret);
+//		printk(KERN_WARNING "RDS/IB: rdma ib_post_send to %pI4 "
+;
 		rds_ib_ring_unalloc(&ic->i_send_ring, work_alloc);
 		rds_ib_sub_signaled(ic, nr_sig);
 		goto out;
 	}
 
 	if (unlikely(failed_wr != &first->s_wr)) {
-		printk(KERN_WARNING "RDS/IB: ib_post_send() rc=%d, but failed_wqe updated!\n", ret);
+;
 		BUG_ON(failed_wr != &first->s_wr);
 	}
 

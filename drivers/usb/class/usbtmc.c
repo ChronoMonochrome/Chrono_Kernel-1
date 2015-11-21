@@ -116,8 +116,8 @@ static int usbtmc_open(struct inode *inode, struct file *filp)
 
 	intf = usb_find_interface(&usbtmc_driver, iminor(inode));
 	if (!intf) {
-		printk(KERN_ERR KBUILD_MODNAME
-		       ": can not find device for minor %d", iminor(inode));
+//		printk(KERN_ERR KBUILD_MODNAME
+;
 		retval = -ENODEV;
 		goto exit;
 	}
@@ -1123,7 +1123,7 @@ static int __init usbtmc_init(void)
 
 	retcode = usb_register(&usbtmc_driver);
 	if (retcode)
-		printk(KERN_ERR KBUILD_MODNAME": Unable to register driver\n");
+;
 	return retcode;
 }
 module_init(usbtmc_init);

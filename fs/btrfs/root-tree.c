@@ -104,9 +104,9 @@ int btrfs_update_root(struct btrfs_trans_handle *trans, struct btrfs_root
 
 	if (ret != 0) {
 		btrfs_print_leaf(root, path->nodes[0]);
-		printk(KERN_CRIT "unable to update root key %llu %u %llu\n",
-		       (unsigned long long)key->objectid, key->type,
-		       (unsigned long long)key->offset);
+//		printk(KERN_CRIT "unable to update root key %llu %u %llu\n",
+//		       (unsigned long long)key->objectid, key->type,
+;
 		BUG_ON(1);
 	}
 

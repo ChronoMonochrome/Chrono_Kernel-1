@@ -114,11 +114,7 @@ void cx25821_dump_video_queue(struct cx25821_dev *dev, struct cx25821_dmaqueue *
 {
 	struct cx25821_buffer *buf;
 	struct list_head *item;
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s()\n", __func__);
-#else
-	d;
-#endif
+;
 
 	if (!list_empty(&q->active)) {
 		list_for_each(item, &q->active)
@@ -140,11 +136,7 @@ void cx25821_video_wakeup(struct cx25821_dev *dev, struct cx25821_dmaqueue *q,
 
 	for (bc = 0;; bc++) {
 		if (list_empty(&q->active)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk(1, "bc=%d (=0: active empty)\n", bc);
-#else
-			d;
-#endif
+;
 			break;
 		}
 
@@ -176,12 +168,8 @@ void cx25821_video_wakeup(struct cx25821_dev *dev, struct cx25821_dmaqueue *q,
 #ifdef TUNER_FLAG
 int cx25821_set_tvnorm(struct cx25821_dev *dev, v4l2_std_id norm)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s(norm = 0x%08x) name: [%s]\n",
-		__func__, (unsigned int)norm, v4l2_norm_to_name(norm));
-#else
-	d;
-#endif
+//	dprintk(1, "%s(norm = 0x%08x) name: [%s]\n",
+;
 
 	dev->tvnorm = norm;
 
@@ -198,11 +186,7 @@ struct video_device *cx25821_vdev_init(struct cx25821_dev *dev,
 				       char *type)
 {
 	struct video_device *vfd;
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s()\n", __func__);
-#else
-	d;
-#endif
+;
 
 	vfd = video_device_alloc();
 	if (NULL == vfd)
@@ -238,11 +222,7 @@ static int cx25821_ctrl_query(struct v4l2_queryctrl *qctrl)
 /* resource management */
 int cx25821_res_get(struct cx25821_dev *dev, struct cx25821_fh *fh, unsigned int bit)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s()\n", __func__);
-#else
-	d;
-#endif
+;
 	if (fh->resources & bit)
 		/* have it already allocated */
 		return 1;
@@ -257,11 +237,7 @@ int cx25821_res_get(struct cx25821_dev *dev, struct cx25821_fh *fh, unsigned int
 	/* it's free, grab it */
 	fh->resources |= bit;
        dev->channels[fh->channel_id].resources |= bit;
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "res: get %d\n", bit);
-#else
-	d;
-#endif
+;
 	mutex_unlock(&dev->lock);
 	return 1;
 }
@@ -279,20 +255,12 @@ int cx25821_res_locked(struct cx25821_fh *fh, unsigned int bit)
 void cx25821_res_free(struct cx25821_dev *dev, struct cx25821_fh *fh, unsigned int bits)
 {
 	BUG_ON((fh->resources & bits) != bits);
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s()\n", __func__);
-#else
-	d;
-#endif
+;
 
 	mutex_lock(&dev->lock);
 	fh->resources &= ~bits;
        dev->channels[fh->channel_id].resources &= ~bits;
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "res: put %d\n", bits);
-#else
-	d;
-#endif
+;
 	mutex_unlock(&dev->lock);
 }
 
@@ -301,13 +269,9 @@ int cx25821_video_mux(struct cx25821_dev *dev, unsigned int input)
 	struct v4l2_routing route;
 	memset(&route, 0, sizeof(route));
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s(): video_mux: %d [vmux=%d, gpio=0x%x,0x%x,0x%x,0x%x]\n",
-		__func__, input, INPUT(input)->vmux, INPUT(input)->gpio0,
-		INPUT(input)->gpio1, INPUT(input)->gpio2, INPUT(input)->gpio3);
-#else
-	d;
-#endif
+//	dprintk(1, "%s(): video_mux: %d [vmux=%d, gpio=0x%x,0x%x,0x%x,0x%x]\n",
+//		__func__, input, INPUT(input)->vmux, INPUT(input)->gpio0,
+;
 	dev->input = input;
 
 	route.input = INPUT(input)->vmux;
@@ -456,11 +420,7 @@ int cx25821_video_irq(struct cx25821_dev *dev, int chan_num, u32 status)
 
 	/* risc2 y */
 	if (status & 0x10) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(2, "stopper video\n");
-#else
-		d;
-#endif
+;
 		spin_lock(&dev->slock);
 	       cx25821_restart_video_queue(dev,
 			       &dev->channels[channel->i].vidq,
@@ -632,20 +592,12 @@ int cx25821_buffer_prepare(struct videobuf_queue *q, struct videobuf_buffer *vb,
 		init_buffer = 1;
 		rc = videobuf_iolock(q, &buf->vb, NULL);
 		if (0 != rc) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_DEBUG pr_fmt("videobuf_iolock failed!\n"));
-#else
-			;
-#endif
+;
 			goto fail;
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "init_buffer=%d\n", init_buffer);
-#else
-	d;
-#endif
+;
 
 	if (init_buffer) {
 
@@ -695,11 +647,7 @@ int cx25821_buffer_prepare(struct videobuf_queue *q, struct videobuf_buffer *vb,
 			/* All other formats are top field first */
 			line0_offset = 0;
 			line1_offset = buf->bpl;
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk(1, "top field first\n");
-#else
-			d;
-#endif
+;
 
 			cx25821_risc_buffer(dev->pci, &buf->risc,
 					    dma->sglist, line0_offset,
@@ -723,13 +671,9 @@ int cx25821_buffer_prepare(struct videobuf_queue *q, struct videobuf_buffer *vb,
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(2, "[%p/%d] buffer_prep - %dx%d %dbpp \"%s\" - dma=0x%08lx\n",
-		buf, buf->vb.i, fh->width, fh->height, fh->fmt->depth,
-		fh->fmt->name, (unsigned long)buf->risc.dma);
-#else
-	d;
-#endif
+//	dprintk(2, "[%p/%d] buffer_prep - %dx%d %dbpp \"%s\" - dma=0x%08lx\n",
+//		buf, buf->vb.i, fh->width, fh->height, fh->fmt->depth,
+;
 
 	buf->vb.state = VIDEOBUF_PREPARED;
 
@@ -792,21 +736,13 @@ static void buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
        buf->risc.jmp[1] = cpu_to_le32(q->stopper.dma);
        buf->risc.jmp[2] = cpu_to_le32(0);      /* bits 63-32 */
 
-#ifdef CONFIG_DEBUG_PRINTK
-       dprintk(2, "jmp to stopper (0x%x)\n", buf->risc.jmp[1]);
-#else
-       d;
-#endif
+;
 
        if (!list_empty(&q->queued)) {
 	       list_add_tail(&buf->vb.queue, &q->queued);
 	       buf->vb.state = VIDEOBUF_QUEUED;
-#ifdef CONFIG_DEBUG_PRINTK
-	       dprintk(2, "[%p/%d] buffer_queue - append to queued\n", buf,
-		       buf->vb.i);
-#else
-	       d;
-#endif
+//	       dprintk(2, "[%p/%d] buffer_queue - append to queued\n", buf,
+;
 
        } else if (list_empty(&q->active)) {
 	       list_add_tail(&buf->vb.queue, &q->active);
@@ -816,14 +752,10 @@ static void buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
 	       buf->vb.state = VIDEOBUF_ACTIVE;
 	       buf->count = q->count++;
 	       mod_timer(&q->timeout, jiffies + BUFFER_TIMEOUT);
-#ifdef CONFIG_DEBUG_PRINTK
-	       dprintk(2,
-		       "[%p/%d] buffer_queue - first active, buf cnt = %d, \
-		       q->count = %d\n",
-		       buf, buf->vb.i, buf->count, q->count);
-#else
-	       d;
-#endif
+//	       dprintk(2,
+//		       "[%p/%d] buffer_queue - first active, buf cnt = %d, \
+//		       q->count = %d\n",
+;
        } else {
 	       prev =
 		   list_entry(q->active.prev, struct cx25821_buffer, vb.queue);
@@ -837,33 +769,21 @@ static void buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
 
 		       /* 64 bit bits 63-32 */
 		       prev->risc.jmp[2] = cpu_to_le32(0);
-#ifdef CONFIG_DEBUG_PRINTK
-		       dprintk(2,
-			       "[%p/%d] buffer_queue - append to active, \
-			       buf->count=%d\n",
-			       buf, buf->vb.i, buf->count);
-#else
-		       d;
-#endif
+//		       dprintk(2,
+//			       "[%p/%d] buffer_queue - append to active, \
+//			       buf->count=%d\n",
+;
 
 	       } else {
 		       list_add_tail(&buf->vb.queue, &q->queued);
 		       buf->vb.state = VIDEOBUF_QUEUED;
-#ifdef CONFIG_DEBUG_PRINTK
-		       dprintk(2, "[%p/%d] buffer_queue - first queued\n", buf,
-			       buf->vb.i);
-#else
-		       d;
-#endif
+//		       dprintk(2, "[%p/%d] buffer_queue - first queued\n", buf,
+;
 	       }
        }
 
        if (list_empty(&q->active))
-#ifdef CONFIG_DEBUG_PRINTK
-	       dprintk(2, "active queue empty!\n");
-#else
-	       d;
-#endif
+;
 }
 
 static struct videobuf_queue_ops cx25821_video_qops = {
@@ -885,13 +805,9 @@ static int video_open(struct file *file)
        int ch_id = 0;
        int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
-       dprintk(1, "open dev=%s type=%s\n",
-		       video_device_node_name(vdev),
-		       v4l2_type_names[type]);
-#else
-       d;
-#endif
+//       dprintk(1, "open dev=%s type=%s\n",
+//		       video_device_node_name(vdev),
+;
 
        /* allocate + initialize per filehandle data */
        fh = kzalloc(sizeof(*fh), GFP_KERNEL);
@@ -945,11 +861,7 @@ static int video_open(struct file *file)
 			      V4L2_FIELD_INTERLACED,
 			      sizeof(struct cx25821_buffer), fh, NULL);
 
-#ifdef CONFIG_DEBUG_PRINTK
-       dprintk(1, "post videobuf_queue_init()\n");
-#else
-       d;
-#endif
+;
 	mutex_unlock(&cx25821_devlist_mutex);
 
        return 0;
@@ -1095,11 +1007,7 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 		       return err;
        }
 
-#ifdef CONFIG_DEBUG_PRINTK
-       dprintk(2, "%s()\n", __func__);
-#else
-       d;
-#endif
+;
        err = cx25821_vidioc_try_fmt_vid_cap(file, priv, f);
 
        if (0 != err)
@@ -1133,12 +1041,8 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
        dev->channels[fh->channel_id].cif_width = fh->width;
        medusa_set_resolution(dev, fh->width, SRAM_CH00);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(2, "%s(): width=%d height=%d field=%d\n", __func__, fh->width,
-		fh->height, fh->vidq.field);
-#else
-	d;
-#endif
+//	dprintk(2, "%s(): width=%d height=%d field=%d\n", __func__, fh->width,
+;
 	v4l2_fill_mbus_format(&mbus_fmt, &f->fmt.pix, V4L2_MBUS_FMT_FIXED);
 	cx25821_call_all(dev, video, s_mbus_fmt, &mbus_fmt);
 
@@ -1329,11 +1233,7 @@ int cx25821_vidioc_s_std(struct file *file, void *priv, v4l2_std_id * tvnorms)
 	struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
 	int err;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s()\n", __func__);
-#else
-	d;
-#endif
+;
 
 	if (fh) {
 	       err = v4l2_prio_check(&dev->channels[fh->channel_id]
@@ -1364,11 +1264,7 @@ int cx25821_enum_input(struct cx25821_dev *dev, struct v4l2_input *i)
 		[CX25821_VMUX_DEBUG] = "for debug only",
 	};
 	unsigned int n;
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s()\n", __func__);
-#else
-	d;
-#endif
+;
 
 	n = i->index;
 	if (n >= 2)
@@ -1387,11 +1283,7 @@ int cx25821_enum_input(struct cx25821_dev *dev, struct v4l2_input *i)
 int cx25821_vidioc_enum_input(struct file *file, void *priv, struct v4l2_input *i)
 {
 	struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s()\n", __func__);
-#else
-	d;
-#endif
+;
 	return cx25821_enum_input(dev, i);
 }
 
@@ -1400,11 +1292,7 @@ int cx25821_vidioc_g_input(struct file *file, void *priv, unsigned int *i)
 	struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
 
 	*i = dev->input;
-#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s(): returns %d\n", __func__, *i);
-#else
-	d;
-#endif
 	return 0;
 }
 
@@ -1414,11 +1302,7 @@ int cx25821_vidioc_s_input(struct file *file, void *priv, unsigned int i)
 	struct cx25821_dev *dev = ((struct cx25821_fh *)priv)->dev;
 	int err;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s(%d)\n", __func__, i);
-#else
-	d;
-#endif
+;
 
 	if (fh) {
 	       err = v4l2_prio_check(&dev->channels[fh->channel_id]
@@ -1428,11 +1312,7 @@ int cx25821_vidioc_s_input(struct file *file, void *priv, unsigned int i)
 	}
 
 	if (i > 2) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(1, "%s(): -EINVAL\n", __func__);
-#else
-		d;
-#endif
+;
 		return -EINVAL;
 	}
 
@@ -1552,11 +1432,7 @@ int cx25821_vidioc_s_tuner(struct file *file, void *priv, struct v4l2_tuner *t)
 			return err;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk(1, "%s()\n", __func__);
-#else
-	d;
-#endif
+;
 	if (UNSET == dev->tuner_type)
 		return -EINVAL;
 	if (0 != t->index)

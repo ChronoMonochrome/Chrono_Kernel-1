@@ -189,15 +189,15 @@ static u32 ieee80211_enable_ht(struct ieee80211_sub_if_data *sdata,
 			 * Netgear WNDR3700 sometimes reports 4 higher than
 			 * the actual channel, for instance.
 			 */
-			printk(KERN_DEBUG
-			       "%s: Wrong control channel in association"
-			       " response: configured center-freq: %d"
-			       " hti-cfreq: %d  hti->control_chan: %d"
-			       " band: %d.  Disabling HT.\n",
-			       sdata->name,
-			       local->hw.conf.channel->center_freq,
-			       hti_cfreq, hti->control_chan,
-			       sband->band);
+//			printk(KERN_DEBUG
+//			       "%s: Wrong control channel in association"
+//			       " response: configured center-freq: %d"
+//			       " hti-cfreq: %d  hti->control_chan: %d"
+//			       " band: %d.  Disabling HT.\n",
+//			       sdata->name,
+//			       local->hw.conf.channel->center_freq,
+//			       hti_cfreq, hti->control_chan,
+;
 			enable_ht = false;
 		}
 	}
@@ -272,8 +272,8 @@ static void ieee80211_send_deauth_disassoc(struct ieee80211_sub_if_data *sdata,
 
 	skb = dev_alloc_skb(local->hw.extra_tx_headroom + sizeof(*mgmt));
 	if (!skb) {
-		printk(KERN_DEBUG "%s: failed to allocate buffer for "
-		       "deauth/disassoc frame\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to allocate buffer for "
+;
 		return;
 	}
 	skb_reserve(skb, local->hw.extra_tx_headroom);
@@ -355,8 +355,8 @@ static void ieee80211_send_4addr_nullfunc(struct ieee80211_local *local,
 
 	skb = dev_alloc_skb(local->hw.extra_tx_headroom + 30);
 	if (!skb) {
-		printk(KERN_DEBUG "%s: failed to allocate buffer for 4addr "
-		       "nullfunc frame\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to allocate buffer for 4addr "
+;
 		return;
 	}
 	skb_reserve(skb, local->hw.extra_tx_headroom);
@@ -1237,8 +1237,8 @@ static void ieee80211_mgd_probe_ap(struct ieee80211_sub_if_data *sdata,
 
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 	if (beacon && net_ratelimit())
-		printk(KERN_DEBUG "%s: detected beacon loss from AP "
-		       "- sending probe request\n", sdata->name);
+//		printk(KERN_DEBUG "%s: detected beacon loss from AP "
+;
 #endif
 
 	/*
@@ -1312,8 +1312,8 @@ static void __ieee80211_connection_loss(struct ieee80211_sub_if_data *sdata)
 
 	memcpy(bssid, ifmgd->associated->bssid, ETH_ALEN);
 
-	printk(KERN_DEBUG "%s: Connection to AP %pM lost.\n",
-	       sdata->name, bssid);
+//	printk(KERN_DEBUG "%s: Connection to AP %pM lost.\n",
+;
 
 	ieee80211_set_disassoc(sdata, true, true);
 	mutex_unlock(&ifmgd->mtx);
@@ -1385,8 +1385,8 @@ ieee80211_rx_mgmt_deauth(struct ieee80211_sub_if_data *sdata,
 
 	reason_code = le16_to_cpu(mgmt->u.deauth.reason_code);
 
-	printk(KERN_DEBUG "%s: deauthenticated from %pM (Reason: %u)\n",
-			sdata->name, bssid, reason_code);
+//	printk(KERN_DEBUG "%s: deauthenticated from %pM (Reason: %u)\n",
+;
 
 	ieee80211_set_disassoc(sdata, true, false);
 	mutex_lock(&sdata->local->mtx);
@@ -1417,8 +1417,8 @@ ieee80211_rx_mgmt_disassoc(struct ieee80211_sub_if_data *sdata,
 
 	reason_code = le16_to_cpu(mgmt->u.disassoc.reason_code);
 
-	printk(KERN_DEBUG "%s: disassociated from %pM (Reason: %u)\n",
-			sdata->name, mgmt->sa, reason_code);
+//	printk(KERN_DEBUG "%s: disassociated from %pM (Reason: %u)\n",
+;
 
 	ieee80211_set_disassoc(sdata, true, false);
 	mutex_lock(&sdata->local->mtx);
@@ -1453,17 +1453,17 @@ static bool ieee80211_assoc_success(struct ieee80211_work *wk,
 	capab_info = le16_to_cpu(mgmt->u.assoc_resp.capab_info);
 
 	if ((aid & (BIT(15) | BIT(14))) != (BIT(15) | BIT(14)))
-		printk(KERN_DEBUG
-		       "%s: invalid AID value 0x%x; bits 15:14 not set\n",
+//		printk(KERN_DEBUG
+;
 		       sdata->name, aid);
 	aid &= ~(BIT(15) | BIT(14));
 
 	ifmgd->broken_ap = false;
 
 	if (aid == 0 || aid > IEEE80211_MAX_AID) {
-		printk(KERN_DEBUG
-		       "%s: invalid AID value %d (out of range), turn off PS\n",
-		       sdata->name, aid);
+//		printk(KERN_DEBUG
+//		       "%s: invalid AID value %d (out of range), turn off PS\n",
+;
 		aid = 0;
 		ifmgd->broken_ap = true;
 	}
@@ -1472,8 +1472,8 @@ static bool ieee80211_assoc_success(struct ieee80211_work *wk,
 	ieee802_11_parse_elems(pos, len - (pos - (u8 *) mgmt), &elems);
 
 	if (!elems.supp_rates) {
-		printk(KERN_DEBUG "%s: no SuppRates element in AssocResp\n",
-		       sdata->name);
+//		printk(KERN_DEBUG "%s: no SuppRates element in AssocResp\n",
+;
 		return false;
 	}
 
@@ -1481,8 +1481,8 @@ static bool ieee80211_assoc_success(struct ieee80211_work *wk,
 
 	sta = sta_info_alloc(sdata, cbss->bssid, GFP_KERNEL);
 	if (!sta) {
-		printk(KERN_DEBUG "%s: failed to alloc STA entry for"
-		       " the AP\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to alloc STA entry for"
+;
 		return false;
 	}
 
@@ -1556,8 +1556,8 @@ static bool ieee80211_assoc_success(struct ieee80211_work *wk,
 	err = sta_info_insert(sta);
 	sta = NULL;
 	if (err) {
-		printk(KERN_DEBUG "%s: failed to insert STA entry for"
-		       " the AP (error %d)\n", sdata->name, err);
+//		printk(KERN_DEBUG "%s: failed to insert STA entry for"
+;
 		return false;
 	}
 
@@ -1796,8 +1796,8 @@ static void ieee80211_rx_mgmt_beacon(struct ieee80211_sub_if_data *sdata,
 	if (ifmgd->flags & IEEE80211_STA_BEACON_POLL) {
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 		if (net_ratelimit()) {
-			printk(KERN_DEBUG "%s: cancelling probereq poll due "
-			       "to a received beacon\n", sdata->name);
+//			printk(KERN_DEBUG "%s: cancelling probereq poll due "
+;
 		}
 #endif
 		ifmgd->flags &= ~IEEE80211_STA_BEACON_POLL;
@@ -1997,10 +1997,10 @@ void ieee80211_sta_rx_queued_mgmt(struct ieee80211_sub_if_data *sdata,
 			 * Ultimately, I suspect cfg80211 should print the
 			 * messages instead.
 			 */
-			printk(KERN_DEBUG
-			       "%s: deauthenticated from %pM (Reason: %u)\n",
-			       sdata->name, mgmt->bssid,
-			       le16_to_cpu(mgmt->u.deauth.reason_code));
+//			printk(KERN_DEBUG
+//			       "%s: deauthenticated from %pM (Reason: %u)\n",
+//			       sdata->name, mgmt->bssid,
+;
 
 			list_del_rcu(&wk->list);
 			free_work(wk);
@@ -2602,8 +2602,8 @@ int ieee80211_mgd_deauth(struct ieee80211_sub_if_data *sdata,
 		}
 	}
 
-	printk(KERN_DEBUG "%s: deauthenticating from %pM by local choice (reason=%d)\n",
-	       sdata->name, bssid, req->reason_code);
+//	printk(KERN_DEBUG "%s: deauthenticating from %pM by local choice (reason=%d)\n",
+;
 
 	ieee80211_send_deauth_disassoc(sdata, bssid, IEEE80211_STYPE_DEAUTH,
 				       req->reason_code, cookie,
@@ -2638,8 +2638,8 @@ int ieee80211_mgd_disassoc(struct ieee80211_sub_if_data *sdata,
 		return -ENOLINK;
 	}
 
-	printk(KERN_DEBUG "%s: disassociating from %pM by local choice (reason=%d)\n",
-	       sdata->name, req->bss->bssid, req->reason_code);
+//	printk(KERN_DEBUG "%s: disassociating from %pM by local choice (reason=%d)\n",
+;
 
 	memcpy(bssid, req->bss->bssid, ETH_ALEN);
 	ieee80211_set_disassoc(sdata, false, true);

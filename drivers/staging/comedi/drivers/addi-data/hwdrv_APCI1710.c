@@ -264,11 +264,7 @@ void v_APCI1710_Interrupt(int irq, void *d)
 
 	union str_ModuleInfo *ps_ModuleInfo;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("APCI1710 Interrupt\n");
-#else
-	;
-#endif
+;
 	for (b_ModuleCpt = 0; b_ModuleCpt < 4; b_ModuleCpt++, ps_ModuleInfo++) {
 
 		 /**************************/
@@ -284,11 +280,7 @@ void v_APCI1710_Interrupt(int irq, void *d)
 				dw_MolduleConfiguration[b_ModuleCpt] &
 				0xFFFF0000UL) == APCI1710_82X54_TIMER) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("TIMER Interrupt Occurred\n"); */
-#else
-			/* ;
-#endif
 			ul_82X54InterruptStatus = inl(devpriv->s_BoardInfos.
 				ui_Address + 12 + (64 * b_ModuleCpt));
 
@@ -1080,11 +1072,7 @@ void v_APCI1710_Interrupt(int irq, void *d)
 				dw_MolduleConfiguration[b_ModuleCpt] &
 				0xFFFF0000UL) == APCI1710_CHRONOMETER) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 			/* printk("APCI1710 Chrono Interrupt\n"); */
-#else
-			/* ;
-#endif
 		    /*****************************/
 			/* Read the interrupt status */
 		    /*****************************/

@@ -1123,11 +1123,7 @@ int i_APCI1710_InsnReadChrono(struct comedi_device *dev, struct comedi_subdevice
 		break;
 
 	case APCI1710_CHRONO_READINTERRUPT:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("In Chrono Read Interrupt\n");
-#else
-		;
-#endif
+;
 
 		data[0] = devpriv->s_InterruptParameters.
 			s_FIFOInterruptParameters[devpriv->
@@ -1151,11 +1147,7 @@ int i_APCI1710_InsnReadChrono(struct comedi_device *dev, struct comedi_subdevice
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("ReadType Parameter wrong\n");
-#else
-		;
-#endif
+;
 	}
 
 	if (i_ReturnValue >= 0)

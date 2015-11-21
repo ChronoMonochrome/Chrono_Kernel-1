@@ -84,11 +84,7 @@ int i_APCI2200_Read1DigitalInput(struct comedi_device *dev, struct comedi_subdev
 		*data = (ui_TmpValue >> ui_Channel) & 0x1;
 	}			/* if(ui_Channel >= 0 && ui_Channel <=7) */
 	else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nThe specified channel does not exist\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;	/*  "sorry channel spec wrong " */
 	}			/* else if(ui_Channel >= 0 && ui_Channel <=7) */
 
@@ -140,11 +136,7 @@ int i_APCI2200_ReadMoreDigitalInput(struct comedi_device *dev, struct comedi_sub
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nWrong parameters\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;	/*  "sorry channel spec wrong " */
 		break;
 	}			/* switch(ui_NoOfChannels) */
@@ -256,11 +248,7 @@ int i_APCI2200_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 					devpriv->iobase + APCI2200_DIGITAL_OP);
 			}	/*  if(data[1]==1) */
 			else {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("\nSpecified channel not supported\n");
-#else
-				;
-#endif
+;
 			}	/* else if(data[1]==1) */
 		}		/* elseif(data[1]==0) */
 	}			/* if(data[3]==0) */
@@ -333,20 +321,12 @@ int i_APCI2200_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 						APCI2200_DIGITAL_OP);
 				}	/*  if(data[1]==1) */
 				else {
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("\nSpecified channel not supported\n");
-#else
-					;
-#endif
+;
 				}	/* else if(data[1]==1) */
 			}	/* elseif(data[1]==0) */
 		}		/* if(data[3]==1); */
 		else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nSpecified functionality does not exist\n");
-#else
-			;
-#endif
+;
 			return -EINVAL;
 		}		/* if else data[3]==1) */
 	}			/* if else data[3]==0) */
@@ -411,11 +391,7 @@ int i_APCI2200_ReadDigitalOutput(struct comedi_device *dev, struct comedi_subdev
 			}	/* switch(ui_NoOfChannels) */
 		}		/* if(ui_Temp==1) */
 		else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nSpecified channel not supported \n");
-#else
-			;
-#endif
+;
 		}		/* elseif(ui_Temp==1) */
 	}			/* elseif(ui_Temp==0) */
 	return insn->n;
@@ -460,11 +436,7 @@ int i_APCI2200_ConfigWatchdog(struct comedi_device *dev, struct comedi_subdevice
 			APCI2200_WATCHDOG_RELOAD_VALUE + 2);
 	}			/* if(data[0]==0) */
 	else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nThe input parameters are wrong\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}			/* elseif(data[0]==0) */
 
@@ -510,11 +482,7 @@ int i_APCI2200_StartStopWriteWatchdog(struct comedi_device *dev, struct comedi_s
 			APCI2200_WATCHDOG_ENABLEDISABLE);
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nSpecified functionality does not exist\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}			/*  switch(data[0]) */
 	return insn->n;

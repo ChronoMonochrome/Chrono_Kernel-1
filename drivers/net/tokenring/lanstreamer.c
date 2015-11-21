@@ -247,13 +247,13 @@ static int __devinit streamer_init_one(struct pci_dev *pdev,
 	u16 pcr;
 
 #if STREAMER_DEBUG
-	printk("lanstreamer::streamer_init_one, entry pdev %p\n",pdev);
+;
 #endif
 
 	card_no++;
 	dev = alloc_trdev(sizeof(*streamer_priv));
 	if (dev==NULL) {
-		printk(KERN_ERR "lanstreamer: out of memory.\n");
+;
 		return -ENOMEM;
 	}
 
@@ -271,15 +271,15 @@ static int __devinit streamer_init_one(struct pci_dev *pdev,
 
 	rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (rc) {
-		printk(KERN_ERR "%s: No suitable PCI mapping available.\n",
-				dev->name);
+//		printk(KERN_ERR "%s: No suitable PCI mapping available.\n",
+;
 		rc = -ENODEV;
 		goto err_out;
 	}
 
 	rc = pci_enable_device(pdev);
 	if (rc) {
-		printk(KERN_ERR "lanstreamer: unable to enable pci device\n");
+;
 		rc=-EIO;
 		goto err_out;
 	}
@@ -288,7 +288,7 @@ static int __devinit streamer_init_one(struct pci_dev *pdev,
 
 	rc = pci_set_mwi(pdev);
 	if (rc) {
-		printk(KERN_ERR "lanstreamer: unable to enable MWI on pci device\n");
+;
 		goto err_out_disable;
 	}
 
@@ -303,30 +303,30 @@ static int __devinit streamer_init_one(struct pci_dev *pdev,
 	mmio_len = pci_resource_len(pdev, 1);
 
 #if STREAMER_DEBUG
-	printk("lanstreamer: pio_start %x pio_end %x pio_len %x pio_flags %x\n",
-		pio_start, pio_end, pio_len, pio_flags);
-	printk("lanstreamer: mmio_start %x mmio_end %x mmio_len %x mmio_flags %x\n",
-		mmio_start, mmio_end, mmio_flags, mmio_len);
+//	printk("lanstreamer: pio_start %x pio_end %x pio_len %x pio_flags %x\n",
+;
+//	printk("lanstreamer: mmio_start %x mmio_end %x mmio_len %x mmio_flags %x\n",
+;
 #endif
 
 	if (!request_region(pio_start, pio_len, "lanstreamer")) {
-		printk(KERN_ERR "lanstreamer: unable to get pci io addr %lx\n",
-			pio_start);
+//		printk(KERN_ERR "lanstreamer: unable to get pci io addr %lx\n",
+;
 		rc= -EBUSY;
 		goto err_out_mwi;
 	}
 
 	if (!request_mem_region(mmio_start, mmio_len, "lanstreamer")) {
-		printk(KERN_ERR "lanstreamer: unable to get pci mmio addr %lx\n",
-			mmio_start);
+//		printk(KERN_ERR "lanstreamer: unable to get pci mmio addr %lx\n",
+;
 		rc= -EBUSY;
 		goto err_out_free_pio;
 	}
 
 	streamer_priv->streamer_mmio=ioremap(mmio_start, mmio_len);
 	if (streamer_priv->streamer_mmio == NULL) {
-		printk(KERN_ERR "lanstreamer: unable to remap MMIO %lx\n",
-			mmio_start);
+//		printk(KERN_ERR "lanstreamer: unable to remap MMIO %lx\n",
+;
 		rc= -EIO;
 		goto err_out_free_mmio;
 	}
@@ -358,12 +358,12 @@ static int __devinit streamer_init_one(struct pci_dev *pdev,
 	pcr |= PCI_COMMAND_SERR;
 	pci_write_config_word (pdev, PCI_COMMAND, pcr);
 
-	printk("%s\n", version);
-	printk("%s: %s. I/O at %hx, MMIO at %p, using irq %d\n",dev->name,
-		streamer_priv->streamer_card_name,
-		(unsigned int) dev->base_addr,
-		streamer_priv->streamer_mmio, 
-		dev->irq);
+;
+//	printk("%s: %s. I/O at %hx, MMIO at %p, using irq %d\n",dev->name,
+//		streamer_priv->streamer_card_name,
+//		(unsigned int) dev->base_addr,
+//		streamer_priv->streamer_mmio, 
+;
 
 	if (streamer_reset(dev))
 		goto err_out_unmap;
@@ -386,7 +386,7 @@ err_out_disable:
 err_out:
 	free_netdev(dev);
 #if STREAMER_DEBUG
-	printk("lanstreamer: Exit error %x\n",rc);
+;
 #endif
 	return rc;
 }
@@ -397,17 +397,17 @@ static void __devexit streamer_remove_one(struct pci_dev *pdev)
 	struct streamer_private *streamer_priv;
 
 #if STREAMER_DEBUG
-	printk("lanstreamer::streamer_remove_one entry pdev %p\n",pdev);
+;
 #endif
 
 	if (dev == NULL) {
-		printk(KERN_ERR "lanstreamer::streamer_remove_one, ERROR dev is NULL\n");
+;
 		return;
 	}
 
 	streamer_priv=netdev_priv(dev);
 	if (streamer_priv == NULL) {
-		printk(KERN_ERR "lanstreamer::streamer_remove_one, ERROR dev->priv is NULL\n");
+;
 		return;
 	}
 
@@ -461,9 +461,9 @@ static int streamer_reset(struct net_device *dev)
 	       streamer_mmio + BCTL);
 
 #if STREAMER_DEBUG
-	printk("BCTL: %x\n", readw(streamer_mmio + BCTL));
-	printk("GPR: %x\n", readw(streamer_mmio + GPR));
-	printk("SISRMASK: %x\n", readw(streamer_mmio + SISR_MASK));
+;
+;
+;
 #endif
 	writew(readw(streamer_mmio + BCTL) | (BCTL_RX_FIFO_8 | BCTL_TX_FIFO_8), streamer_mmio + BCTL );
 
@@ -471,24 +471,24 @@ static int streamer_reset(struct net_device *dev)
 		writew(readw(streamer_mmio + GPR) | GPR_AUTOSENSE,
 		       streamer_mmio + GPR);
 		if (streamer_priv->streamer_message_level)
-			printk(KERN_INFO "%s: Ringspeed autosense mode on\n",
-			       dev->name);
+//			printk(KERN_INFO "%s: Ringspeed autosense mode on\n",
+;
 	} else if (streamer_priv->streamer_ring_speed == 16) {
 		if (streamer_priv->streamer_message_level)
-			printk(KERN_INFO "%s: Trying to open at 16 Mbps as requested\n",
-			       dev->name);
+//			printk(KERN_INFO "%s: Trying to open at 16 Mbps as requested\n",
+;
 		writew(GPR_16MBPS, streamer_mmio + GPR);
 	} else if (streamer_priv->streamer_ring_speed == 4) {
 		if (streamer_priv->streamer_message_level)
-			printk(KERN_INFO "%s: Trying to open at 4 Mbps as requested\n",
-			       dev->name);
+//			printk(KERN_INFO "%s: Trying to open at 4 Mbps as requested\n",
+;
 		writew(0, streamer_mmio + GPR);
 	}
 
 	skb = dev_alloc_skb(streamer_priv->pkt_buf_sz);
 	if (!skb) {
-		printk(KERN_INFO "%s: skb allocation for diagnostics failed...proceeding\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: skb allocation for diagnostics failed...proceeding\n",
+;
 	} else {
 	        struct streamer_rx_desc *rx_ring;
                 u8 *data;
@@ -505,7 +505,7 @@ static int streamer_reset(struct net_device *dev)
 	}
 
 #if STREAMER_DEBUG
-	printk("GPR = %x\n", readw(streamer_mmio + GPR));
+;
 #endif
 	/* start solo init */
 	writew(SISR_MI, streamer_mmio + SISR_MASK_SUM);
@@ -513,8 +513,8 @@ static int streamer_reset(struct net_device *dev)
 	while (!((readw(streamer_mmio + SISR)) & SISR_SRB_REPLY)) {
 		msleep_interruptible(100);
 		if (time_after(jiffies, t + 40 * HZ)) {
-			printk(KERN_ERR
-			       "IBM PCI tokenring card not responding\n");
+//			printk(KERN_ERR
+;
 			release_region(dev->base_addr, STREAMER_IO_SPACE);
 			if (skb)
 				dev_kfree_skb(skb);
@@ -529,9 +529,9 @@ static int streamer_reset(struct net_device *dev)
 		dev_kfree_skb(skb);	/* release skb used for diagnostics */
 
 #if STREAMER_DEBUG
-	printk("LAPWWO: %x, LAPA: %x LAPE:  %x\n",
-	       readw(streamer_mmio + LAPWWO), readw(streamer_mmio + LAPA),
-	       readw(streamer_mmio + LAPE));
+//	printk("LAPWWO: %x, LAPA: %x LAPE:  %x\n",
+//	       readw(streamer_mmio + LAPWWO), readw(streamer_mmio + LAPA),
+;
 #endif
 
 #if STREAMER_DEBUG
@@ -539,18 +539,18 @@ static int streamer_reset(struct net_device *dev)
 		int i;
 		writew(readw(streamer_mmio + LAPWWO),
 		       streamer_mmio + LAPA);
-		printk("initialization response srb dump: ");
+;
 		for (i = 0; i < 10; i++)
-			printk("%x:",
-			       ntohs(readw(streamer_mmio + LAPDINC)));
-		printk("\n");
+//			printk("%x:",
+;
+;
 	}
 #endif
 
 	writew(readw(streamer_mmio + LAPWWO) + 6, streamer_mmio + LAPA);
 	if (readw(streamer_mmio + LAPD)) {
-		printk(KERN_INFO "tokenring card initialization failed. errorcode : %x\n",
-		       ntohs(readw(streamer_mmio + LAPD)));
+//		printk(KERN_INFO "tokenring card initialization failed. errorcode : %x\n",
+;
 		release_region(dev->base_addr, STREAMER_IO_SPACE);
 		return -1;
 	}
@@ -562,7 +562,7 @@ static int streamer_reset(struct net_device *dev)
 	streamer_priv->streamer_parms_addr = ntohs(readw(streamer_mmio + LAPDINC));
 
 #if STREAMER_DEBUG
-	printk("UAA resides at %x\n", uaa_addr);
+;
 #endif
 
 	/* setup uaa area for access with LAPD */
@@ -576,7 +576,7 @@ static int streamer_reset(struct net_device *dev)
 			dev->dev_addr[i+1]= addr & 0xff;
 		}
 #if STREAMER_DEBUG
-		printk("Adapter address: %pM\n", dev->dev_addr);
+;
 #endif
 	}
 	return 0;
@@ -601,8 +601,8 @@ static int streamer_open(struct net_device *dev)
 		return -EAGAIN;
 	}
 #if STREAMER_DEBUG
-	printk("BMCTL: %x\n", readw(streamer_mmio + BMCTL_SUM));
-	printk("pending ints: %x\n", readw(streamer_mmio + SISR));
+;
+;
 #endif
 
 	writew(SISR_MI | SISR_SRB_REPLY, streamer_mmio + SISR_MASK);	/* more ints later, doesn't stop arb cmd interrupt */
@@ -612,10 +612,10 @@ static int streamer_open(struct net_device *dev)
 	writew(readw(streamer_mmio + LAPWWO), streamer_mmio + LAPA);
 
 #if STREAMER_DEBUG
-	printk("LAPWWO: %x, LAPA: %x\n", readw(streamer_mmio + LAPWWO),
-	       readw(streamer_mmio + LAPA));
-	printk("LAPE: %x\n", readw(streamer_mmio + LAPE));
-	printk("SISR Mask = %04x\n", readw(streamer_mmio + SISR_MASK));
+//	printk("LAPWWO: %x, LAPA: %x\n", readw(streamer_mmio + LAPWWO),
+;
+;
+;
 #endif
 	do {
 		for (i = 0; i < SRB_COMMAND_SIZE; i += 2) {
@@ -651,11 +651,11 @@ static int streamer_open(struct net_device *dev)
 #if STREAMER_DEBUG
 		writew(readw(streamer_mmio + LAPWWO),
 		       streamer_mmio + LAPA);
-		printk("srb open request:\n");
+;
 		for (i = 0; i < 16; i++) {
-			printk("%x:", ntohs(readw(streamer_mmio + LAPDINC)));
+;
 		}
-		printk("\n");
+;
 #endif
 		spin_lock_irqsave(&streamer_priv->streamer_lock, flags);
 		streamer_priv->srb_queued = 1;
@@ -667,23 +667,23 @@ static int streamer_open(struct net_device *dev)
 		while (streamer_priv->srb_queued) {
 			interruptible_sleep_on_timeout(&streamer_priv->srb_wait, 5 * HZ);
 			if (signal_pending(current)) {
-				printk(KERN_WARNING "%s: SRB timed out.\n", dev->name);
-				printk(KERN_WARNING "SISR=%x MISR=%x, LISR=%x\n",
-				       readw(streamer_mmio + SISR),
-				       readw(streamer_mmio + MISR_RUM),
-				       readw(streamer_mmio + LISR));
+;
+//				printk(KERN_WARNING "SISR=%x MISR=%x, LISR=%x\n",
+//				       readw(streamer_mmio + SISR),
+//				       readw(streamer_mmio + MISR_RUM),
+;
 				streamer_priv->srb_queued = 0;
 				break;
 			}
 		}
 
 #if STREAMER_DEBUG
-		printk("SISR_MASK: %x\n", readw(streamer_mmio + SISR_MASK));
-		printk("srb open response:\n");
+;
+;
 		writew(srb_open, streamer_mmio + LAPA);
 		for (i = 0; i < 10; i++) {
-			printk("%x:",
-			       ntohs(readw(streamer_mmio + LAPDINC)));
+//			printk("%x:",
+;
 		}
 #endif
 
@@ -693,16 +693,16 @@ static int streamer_open(struct net_device *dev)
 		writew(srb_open + 2, streamer_mmio + LAPA);
 		srb_word = ntohs(readw(streamer_mmio + LAPD)) >> 8;
 		if (srb_word == STREAMER_CLEAR_RET_CODE) {
-			printk(KERN_WARNING "%s: Adapter Open time out or error.\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Adapter Open time out or error.\n",
+;
 			return -EIO;
 		}
 
 		if (srb_word != 0) {
 			if (srb_word == 0x07) {
 				if (!streamer_priv->streamer_ring_speed && open_finished) {	/* Autosense , first time around */
-					printk(KERN_WARNING "%s: Retrying at different ring speed\n",
-					       dev->name);
+//					printk(KERN_WARNING "%s: Retrying at different ring speed\n",
+;
 					open_finished = 0;
 				} else {
 					__u16 error_code;
@@ -716,21 +716,21 @@ static int streamer_open(struct net_device *dev)
 					if (!streamer_priv->streamer_ring_speed &&
 					    ((error_code & 0x0f) == 0x0d))
 					{
-						printk(KERN_WARNING "%s: Tried to autosense ring speed with no monitors present\n", dev->name);
-						printk(KERN_WARNING "%s: Please try again with a specified ring speed\n", dev->name);
+;
+;
 						free_irq(dev->irq, dev);
 						return -EIO;
 					}
 
-					printk(KERN_WARNING "%s: %s\n",
-					       dev->name, open_error);
+//					printk(KERN_WARNING "%s: %s\n",
+;
 					free_irq(dev->irq, dev);
 					return -EIO;
 
 				}	/* if autosense && open_finished */
 			} else {
-				printk(KERN_WARNING "%s: Bad OPEN response: %x\n",
-				       dev->name, srb_word);
+//				printk(KERN_WARNING "%s: Bad OPEN response: %x\n",
+;
 				free_irq(dev->irq, dev);
 				return -EIO;
 			}
@@ -742,7 +742,7 @@ static int streamer_open(struct net_device *dev)
 	srb_word=ntohs(readw(streamer_mmio+LAPD)) >> 8;
 	if (srb_word & (1 << 3))
 		if (streamer_priv->streamer_message_level)
-			printk(KERN_INFO "%s: Opened in FDX Mode\n", dev->name);
+;
 
 	if (srb_word & 1)
 		streamer_priv->streamer_ring_speed = 16;
@@ -750,9 +750,9 @@ static int streamer_open(struct net_device *dev)
 		streamer_priv->streamer_ring_speed = 4;
 
 	if (streamer_priv->streamer_message_level)
-		printk(KERN_INFO "%s: Opened in %d Mbps mode\n", 
-			dev->name,
-			streamer_priv->streamer_ring_speed);
+//		printk(KERN_INFO "%s: Opened in %d Mbps mode\n", 
+//			dev->name,
+;
 
 	writew(srb_open + 8, streamer_mmio + LAPA);
 	streamer_priv->asb = ntohs(readw(streamer_mmio + LAPDINC));
@@ -773,7 +773,7 @@ static int streamer_open(struct net_device *dev)
 	    kmalloc( sizeof(struct streamer_rx_desc)*
 		     STREAMER_RX_RING_SIZE,GFP_KERNEL);
 	if (!streamer_priv->streamer_rx_ring) {
-	    printk(KERN_WARNING "%s ALLOC of streamer rx ring FAILED!!\n",dev->name);
+;
 	    return -EIO;
 	}
 
@@ -801,7 +801,7 @@ static int streamer_open(struct net_device *dev)
 						sizeof(struct streamer_rx_desc), PCI_DMA_FROMDEVICE));
 
 	if (i == 0) {
-		printk(KERN_WARNING "%s: Not enough memory to allocate rx buffers. Adapter disabled\n", dev->name);
+;
 		free_irq(dev->irq, dev);
 		return -EIO;
 	}
@@ -823,7 +823,7 @@ static int streamer_open(struct net_device *dev)
 	streamer_priv->streamer_tx_ring=kmalloc(sizeof(struct streamer_tx_desc)*
 						STREAMER_TX_RING_SIZE,GFP_KERNEL);
 	if (!streamer_priv->streamer_tx_ring) {
-	    printk(KERN_WARNING "%s ALLOC of streamer_tx_ring FAILED\n",dev->name);
+;
 	    return -EIO;
 	}
 
@@ -855,29 +855,29 @@ static int streamer_open(struct net_device *dev)
 	writew(SISR_ADAPTER_CHECK | SISR_ARB_CMD | SISR_TRB_REPLY | SISR_ASB_FREE, streamer_mmio + SISR_MASK_SUM);
 
 #if STREAMER_DEBUG
-	printk("BMCTL: %x\n", readw(streamer_mmio + BMCTL_SUM));
-	printk("SISR MASK: %x\n", readw(streamer_mmio + SISR_MASK));
+;
+;
 #endif
 
 #if STREAMER_NETWORK_MONITOR
 
 	writew(streamer_priv->streamer_addr_table_addr, streamer_mmio + LAPA);
-	printk("%s: Node Address: %04x:%04x:%04x\n", dev->name,
-		ntohs(readw(streamer_mmio + LAPDINC)),
-		ntohs(readw(streamer_mmio + LAPDINC)),
-		ntohs(readw(streamer_mmio + LAPDINC)));
+//	printk("%s: Node Address: %04x:%04x:%04x\n", dev->name,
+//		ntohs(readw(streamer_mmio + LAPDINC)),
+//		ntohs(readw(streamer_mmio + LAPDINC)),
+;
 	readw(streamer_mmio + LAPDINC);
 	readw(streamer_mmio + LAPDINC);
-	printk("%s: Functional Address: %04x:%04x\n", dev->name,
-		ntohs(readw(streamer_mmio + LAPDINC)),
-		ntohs(readw(streamer_mmio + LAPDINC)));
+//	printk("%s: Functional Address: %04x:%04x\n", dev->name,
+//		ntohs(readw(streamer_mmio + LAPDINC)),
+;
 
 	writew(streamer_priv->streamer_parms_addr + 4,
 		streamer_mmio + LAPA);
-	printk("%s: NAUN Address: %04x:%04x:%04x\n", dev->name,
-		ntohs(readw(streamer_mmio + LAPDINC)),
-		ntohs(readw(streamer_mmio + LAPDINC)),
-		ntohs(readw(streamer_mmio + LAPDINC)));
+//	printk("%s: NAUN Address: %04x:%04x:%04x\n", dev->name,
+//		ntohs(readw(streamer_mmio + LAPDINC)),
+//		ntohs(readw(streamer_mmio + LAPDINC)),
+;
 #endif
 
 	netif_start_queue(dev);
@@ -912,8 +912,8 @@ static void streamer_rx(struct net_device *dev)
 	while (rx_desc->status & 0x01000000) {	/* While processed descriptors are available */
 		if (rx_ring_last_received != streamer_priv->rx_ring_last_received) 
 		{
-			printk(KERN_WARNING "RX Error 1 rx_ring_last_received not the same %x %x\n",
-				rx_ring_last_received, streamer_priv->rx_ring_last_received);
+//			printk(KERN_WARNING "RX Error 1 rx_ring_last_received not the same %x %x\n",
+;
 		}
 		streamer_priv->rx_ring_last_received = (streamer_priv->rx_ring_last_received + 1) & (STREAMER_RX_RING_SIZE - 1);
 		rx_ring_last_received = streamer_priv->rx_ring_last_received;
@@ -923,8 +923,8 @@ static void streamer_rx(struct net_device *dev)
 
 		if (rx_desc->status & 0x7E830000) {	/* errors */
 			if (streamer_priv->streamer_message_level) {
-				printk(KERN_WARNING "%s: Rx Error %x\n",
-				       dev->name, rx_desc->status);
+//				printk(KERN_WARNING "%s: Rx Error %x\n",
+;
 			}
 		} else {	/* received without errors */
 			if (rx_desc->status & 0x80000000) {	/* frame complete */
@@ -936,7 +936,7 @@ static void streamer_rx(struct net_device *dev)
 
 			if (skb == NULL) 
 			{
-				printk(KERN_WARNING "%s: Not enough memory to copy packet to upper layers.\n",	dev->name);
+;
 				dev->stats.rx_dropped++;
 			} else {	/* we allocated an skb OK */
 				if (buffer_cnt == 1) {
@@ -949,14 +949,14 @@ static void streamer_rx(struct net_device *dev)
 #if STREAMER_DEBUG_PACKETS
 					{
 						int i;
-						printk("streamer_rx packet print: skb->data2 %p  skb->head %p\n", skb2->data, skb2->head);
+;
 						for (i = 0; i < frame_length; i++) 
 						{
-							printk("%x:", skb2->data[i]);
+;
 							if (((i + 1) % 16) == 0)
-								printk("\n");
+;
 						}
-						printk("\n");
+;
 					}
 #endif
 					skb_put(skb2, length);
@@ -994,9 +994,9 @@ static void streamer_rx(struct net_device *dev)
 						/* else get the next pending descriptor */
 						if (rx_ring_last_received!= streamer_priv->rx_ring_last_received)
 						{
-							printk("RX Error rx_ring_last_received not the same %x %x\n",
-								rx_ring_last_received,
-								streamer_priv->rx_ring_last_received);
+//							printk("RX Error rx_ring_last_received not the same %x %x\n",
+//								rx_ring_last_received,
+;
 						}
 						rx_desc = &streamer_priv->streamer_rx_ring[(streamer_priv->rx_ring_last_received+1) & (STREAMER_RX_RING_SIZE-1)];
 
@@ -1095,16 +1095,16 @@ static irqreturn_t streamer_interrupt(int irq, void *dev_id)
 		}
 
 		else if (sisr & SISR_ADAPTER_CHECK) {
-			printk(KERN_WARNING "%s: Adapter Check Interrupt Raised, 8 bytes of information follow:\n", dev->name);
+;
 			writel(readl(streamer_mmio + LAPWWO), streamer_mmio + LAPA);
-			printk(KERN_WARNING "%s: Words %x:%x:%x:%x:\n",
-			       dev->name, readw(streamer_mmio + LAPDINC),
-			       ntohs(readw(streamer_mmio + LAPDINC)),
-			       ntohs(readw(streamer_mmio + LAPDINC)),
-			       ntohs(readw(streamer_mmio + LAPDINC)));
+//			printk(KERN_WARNING "%s: Words %x:%x:%x:%x:\n",
+//			       dev->name, readw(streamer_mmio + LAPDINC),
+//			       ntohs(readw(streamer_mmio + LAPDINC)),
+//			       ntohs(readw(streamer_mmio + LAPDINC)),
+;
 			netif_stop_queue(dev);
 			netif_carrier_off(dev);
-			printk(KERN_WARNING "%s: Adapter must be manually reset.\n", dev->name);
+;
 		}
 
 		/* SISR_ADAPTER_CHECK */
@@ -1168,13 +1168,13 @@ static netdev_tx_t streamer_xmit(struct sk_buff *skb,
 #if STREAMER_DEBUG_PACKETS
 		{
 			int i;
-			printk("streamer_xmit packet print:\n");
+;
 			for (i = 0; i < skb->len; i++) {
-				printk("%x:", skb->data[i]);
+;
 				if (((i + 1) % 16) == 0)
-					printk("\n");
+;
 			}
-			printk("\n");
+;
 		}
 #endif
 
@@ -1222,11 +1222,11 @@ static int streamer_close(struct net_device *dev)
 					       jiffies + 60 * HZ);
 		if (signal_pending(current)) 
 		{
-			printk(KERN_WARNING "%s: SRB timed out.\n", dev->name);
-			printk(KERN_WARNING "SISR=%x MISR=%x LISR=%x\n",
-			       readw(streamer_mmio + SISR),
-			       readw(streamer_mmio + MISR_RUM),
-			       readw(streamer_mmio + LISR));
+;
+//			printk(KERN_WARNING "SISR=%x MISR=%x LISR=%x\n",
+//			       readw(streamer_mmio + SISR),
+//			       readw(streamer_mmio + MISR_RUM),
+;
 			streamer_priv->srb_queued = 0;
 			break;
 		}
@@ -1251,11 +1251,11 @@ static int streamer_close(struct net_device *dev)
 
 #if STREAMER_DEBUG
 	writew(streamer_priv->srb, streamer_mmio + LAPA);
-	printk("srb): ");
+;
 	for (i = 0; i < 2; i++) {
-		printk("%x ", ntohs(readw(streamer_mmio + LAPDINC)));
+;
 	}
-	printk("\n");
+;
 #endif
 	free_irq(dev->irq, dev);
 	return 0;
@@ -1340,17 +1340,17 @@ static void streamer_srb_bh(struct net_device *dev)
 
 		switch (srb_word) {
 		case 0x01:
-			printk(KERN_WARNING "%s: Unrecognized srb command\n", dev->name);
+;
 			break;
 		case 0x04:
-			printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n", dev->name);
+;
 			break;
 		default:
 			if (streamer_priv->streamer_message_level)
-				printk(KERN_WARNING "%s: Receive Options Modified to %x,%x\n",
-				       dev->name,
-				       streamer_priv->streamer_copy_all_options,
-				       streamer_priv->streamer_receive_options);
+//				printk(KERN_WARNING "%s: Receive Options Modified to %x,%x\n",
+//				       dev->name,
+//				       streamer_priv->streamer_copy_all_options,
+;
 			break;
 		}		/* switch srb[2] */
 		break;
@@ -1364,19 +1364,19 @@ static void streamer_srb_bh(struct net_device *dev)
 		case 0x00:
 		        break;
 		case 0x01:
-			printk(KERN_WARNING "%s: Unrecognized srb command\n",dev->name);
+;
 			break;
 		case 0x04:
-			printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n", dev->name);
+;
 			break;
 		case 0x3c:
-			printk(KERN_WARNING "%s: Group/Functional address indicator bits not set correctly\n", dev->name);
+;
 			break;
 		case 0x3e:	/* If we ever implement individual multicast addresses, will need to deal with this */
-			printk(KERN_WARNING "%s: Group address registers full\n", dev->name);
+;
 			break;
 		case 0x55:
-			printk(KERN_INFO "%s: Group Address already set.\n", dev->name);
+;
 			break;
 		default:
 			break;
@@ -1392,13 +1392,13 @@ static void streamer_srb_bh(struct net_device *dev)
 		case 0x00:
 		        break;
 		case 0x01:
-			printk(KERN_WARNING "%s: Unrecognized srb command\n", dev->name);
+;
 			break;
 		case 0x04:
-			printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n", dev->name);
+;
 			break;
 		case 0x39:	/* Must deal with this if individual multicast addresses used */
-			printk(KERN_INFO "%s: Group address not found\n", dev->name);
+;
 			break;
 		default:
 			break;
@@ -1414,13 +1414,13 @@ static void streamer_srb_bh(struct net_device *dev)
 		switch (srb_word) {
 		case 0x00:
 			if (streamer_priv->streamer_message_level)
-				printk(KERN_INFO "%s: Functional Address Mask Set\n", dev->name);
+;
 			break;
 		case 0x01:
-			printk(KERN_WARNING "%s: Unrecognized srb command\n", dev->name);
+;
 			break;
 		case 0x04:
-			printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n", dev->name);
+;
 			break;
 		default:
 			break;
@@ -1437,21 +1437,21 @@ static void streamer_srb_bh(struct net_device *dev)
 			{
 				int i;
 				if (streamer_priv->streamer_message_level)
-					printk(KERN_INFO "%s: Read Log command complete\n", dev->name);
-				printk("Read Log statistics: ");
+;
+;
 				writew(streamer_priv->srb + 6,
 				       streamer_mmio + LAPA);
 				for (i = 0; i < 5; i++) {
-					printk("%x:", ntohs(readw(streamer_mmio + LAPDINC)));
+;
 				}
-				printk("\n");
+;
 			}
 			break;
 		case 0x01:
-			printk(KERN_WARNING "%s: Unrecognized srb command\n", dev->name);
+;
 			break;
 		case 0x04:
-			printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n", dev->name);
+;
 			break;
 
 		}		/* switch srb[2] */
@@ -1464,13 +1464,13 @@ static void streamer_srb_bh(struct net_device *dev)
 		switch (srb_word) {
 		case 0x00:
 			if (streamer_priv->streamer_message_level)
-				printk(KERN_INFO "%s: Read Source Routing Counters issued\n", dev->name);
+;
 			break;
 		case 0x01:
-			printk(KERN_WARNING "%s: Unrecognized srb command\n", dev->name);
+;
 			break;
 		case 0x04:
-			printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n", dev->name);
+;
 			break;
 		default:
 			break;
@@ -1478,7 +1478,7 @@ static void streamer_srb_bh(struct net_device *dev)
 		break;
 
 	default:
-		printk(KERN_WARNING "%s: Unrecognized srb bh return value.\n", dev->name);
+;
 		break;
 	}			/* switch srb[0] */
 }
@@ -1490,20 +1490,20 @@ static int streamer_set_mac_address(struct net_device *dev, void *addr)
 
 	if (netif_running(dev)) 
 	{
-		printk(KERN_WARNING "%s: Cannot set mac/laa address while card is open\n", dev->name);
+;
 		return -EIO;
 	}
 
 	memcpy(streamer_priv->streamer_laa, saddr->sa_data, dev->addr_len);
 
 	if (streamer_priv->streamer_message_level) {
-		printk(KERN_INFO "%s: MAC/LAA Set to  = %x.%x.%x.%x.%x.%x\n",
-		       dev->name, streamer_priv->streamer_laa[0],
-		       streamer_priv->streamer_laa[1],
-		       streamer_priv->streamer_laa[2],
-		       streamer_priv->streamer_laa[3],
-		       streamer_priv->streamer_laa[4],
-		       streamer_priv->streamer_laa[5]);
+//		printk(KERN_INFO "%s: MAC/LAA Set to  = %x.%x.%x.%x.%x.%x\n",
+//		       dev->name, streamer_priv->streamer_laa[0],
+//		       streamer_priv->streamer_laa[1],
+//		       streamer_priv->streamer_laa[2],
+//		       streamer_priv->streamer_laa[3],
+//		       streamer_priv->streamer_laa[4],
+;
 	}
 	return 0;
 }
@@ -1551,18 +1551,18 @@ static void streamer_arb_cmd(struct net_device *dev)
 
 			/* print out 1st 14 bytes of frame data */
 			for (i = 0; i < 7; i++) {
-				printk("Loc %d = %04x\n", i,
-				       ntohs(readw
-					     (streamer_mmio + LAPDINC)));
+//				printk("Loc %d = %04x\n", i,
+//				       ntohs(readw
+;
 			}
 
-			printk("next %04x, fs %02x, len %04x\n", next,
-			       status, len);
+//			printk("next %04x, fs %02x, len %04x\n", next,
+;
 		}
 #endif
 		if (!(mac_frame = dev_alloc_skb(frame_len))) {
-			printk(KERN_WARNING "%s: Memory squeeze, dropping frame.\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: Memory squeeze, dropping frame.\n",
+;
 			goto drop_frame;
 		}
 		/* Walk the buffer chain, creating the frame */
@@ -1593,15 +1593,15 @@ static void streamer_arb_cmd(struct net_device *dev)
 
 		mac_frame->protocol = tr_type_trans(mac_frame, dev);
 #if STREAMER_NETWORK_MONITOR
-		printk(KERN_WARNING "%s: Received MAC Frame, details:\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Received MAC Frame, details:\n",
+;
 		mac_hdr = tr_hdr(mac_frame);
-		printk(KERN_WARNING
-		       "%s: MAC Frame Dest. Addr: %pM\n",
-		       dev->name, mac_hdr->daddr);
-		printk(KERN_WARNING
-		       "%s: MAC Frame Srce. Addr: %pM\n",
-		       dev->name, mac_hdr->saddr);
+//		printk(KERN_WARNING
+//		       "%s: MAC Frame Dest. Addr: %pM\n",
+;
+//		printk(KERN_WARNING
+//		       "%s: MAC Frame Srce. Addr: %pM\n",
+;
 #endif
 		netif_rx(mac_frame);
 
@@ -1646,13 +1646,13 @@ drop_frame:
 		if (lan_status_diff & (LSC_LWF | LSC_ARW | LSC_FPE | LSC_RR)) 
 		{
 			if (lan_status_diff & LSC_LWF)
-				printk(KERN_WARNING "%s: Short circuit detected on the lobe\n", dev->name);
+;
 			if (lan_status_diff & LSC_ARW)
-				printk(KERN_WARNING "%s: Auto removal error\n", dev->name);
+;
 			if (lan_status_diff & LSC_FPE)
-				printk(KERN_WARNING "%s: FDX Protocol Error\n", dev->name);
+;
 			if (lan_status_diff & LSC_RR)
-				printk(KERN_WARNING "%s: Force remove MAC frame received\n", dev->name);
+;
 
 			/* Adapter has been closed by the hardware */
 
@@ -1664,29 +1664,29 @@ drop_frame:
 
 			netif_stop_queue(dev);
 			netif_carrier_off(dev);
-			printk(KERN_WARNING "%s: Adapter must be manually reset.\n", dev->name);
+;
 		}
 		/* If serious error */
 		if (streamer_priv->streamer_message_level) {
 			if (lan_status_diff & LSC_SIG_LOSS)
-				printk(KERN_WARNING "%s: No receive signal detected\n", dev->name);
+;
 			if (lan_status_diff & LSC_HARD_ERR) 
-				printk(KERN_INFO "%s: Beaconing\n", dev->name);
+;
 			if (lan_status_diff & LSC_SOFT_ERR)
-				printk(KERN_WARNING "%s: Adapter transmitted Soft Error Report Mac Frame\n", dev->name);
+;
 			if (lan_status_diff & LSC_TRAN_BCN)
-				printk(KERN_INFO "%s: We are transmitting the beacon, aaah\n", dev->name);
+;
 			if (lan_status_diff & LSC_SS)
-				printk(KERN_INFO "%s: Single Station on the ring\n", dev->name);
+;
 			if (lan_status_diff & LSC_RING_REC)
-				printk(KERN_INFO "%s: Ring recovery ongoing\n", dev->name);
+;
 			if (lan_status_diff & LSC_FDX_MODE)
-				printk(KERN_INFO "%s: Operating in FDX mode\n", dev->name);
+;
 		}
 
 		if (lan_status_diff & LSC_CO) {
 			if (streamer_priv->streamer_message_level)
-				printk(KERN_INFO "%s: Counter Overflow\n", dev->name);
+;
 
 			/* Issue READ.LOG command */
 
@@ -1701,7 +1701,7 @@ drop_frame:
 
 		if (lan_status_diff & LSC_SR_CO) {
 			if (streamer_priv->streamer_message_level)
-				printk(KERN_INFO "%s: Source routing counters overflow\n", dev->name);
+;
 
 			/* Issue a READ.SR.COUNTERS */
 			writew(streamer_priv->srb, streamer_mmio + LAPA);
@@ -1716,7 +1716,7 @@ drop_frame:
 		streamer_priv->streamer_lan_status = lan_status;
 	} /* Lan.change.status */
 	else
-		printk(KERN_WARNING "%s: Unknown arb command\n", dev->name);
+;
 }
 
 static void streamer_asb_bh(struct net_device *dev)
@@ -1747,16 +1747,16 @@ static void streamer_asb_bh(struct net_device *dev)
 		rc=ntohs(readw(streamer_mmio+LAPD)) >> 8;
 		switch (rc) {
 		case 0x01:
-			printk(KERN_WARNING "%s: Unrecognized command code\n", dev->name);
+;
 			break;
 		case 0x26:
-			printk(KERN_WARNING "%s: Unrecognized buffer address\n", dev->name);
+;
 			break;
 		case 0xFF:
 			/* Valid response, everything should be ok again */
 			break;
 		default:
-			printk(KERN_WARNING "%s: Invalid return code in asb\n", dev->name);
+;
 			break;
 		}
 	}

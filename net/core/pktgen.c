@@ -891,8 +891,8 @@ static ssize_t pktgen_if_write(struct file *file,
 		if (copy_from_user(tb, user_buffer, copy))
 			return -EFAULT;
 		tb[copy] = 0;
-		printk(KERN_DEBUG "pktgen: %s,%lu  buffer -:%s:-\n", name,
-		       (unsigned long)count, tb);
+//		printk(KERN_DEBUG "pktgen: %s,%lu  buffer -:%s:-\n", name,
+;
 	}
 
 	if (!strcmp(name, "min_pkt_size")) {
@@ -1261,8 +1261,8 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->cur_daddr = pkt_dev->daddr_min;
 		}
 		if (debug)
-			printk(KERN_DEBUG "pktgen: dst_min set to: %s\n",
-			       pkt_dev->dst_min);
+//			printk(KERN_DEBUG "pktgen: dst_min set to: %s\n",
+;
 		i += len;
 		sprintf(pg_result, "OK: dst_min=%s", pkt_dev->dst_min);
 		return count;
@@ -1284,8 +1284,8 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->cur_daddr = pkt_dev->daddr_max;
 		}
 		if (debug)
-			printk(KERN_DEBUG "pktgen: dst_max set to: %s\n",
-			       pkt_dev->dst_max);
+//			printk(KERN_DEBUG "pktgen: dst_max set to: %s\n",
+;
 		i += len;
 		sprintf(pg_result, "OK: dst_max=%s", pkt_dev->dst_max);
 		return count;
@@ -1307,7 +1307,7 @@ static ssize_t pktgen_if_write(struct file *file,
 		ipv6_addr_copy(&pkt_dev->cur_in6_daddr, &pkt_dev->in6_daddr);
 
 		if (debug)
-			printk(KERN_DEBUG "pktgen: dst6 set to: %s\n", buf);
+;
 
 		i += len;
 		sprintf(pg_result, "OK: dst6=%s", buf);
@@ -1330,7 +1330,7 @@ static ssize_t pktgen_if_write(struct file *file,
 		ipv6_addr_copy(&pkt_dev->cur_in6_daddr,
 			       &pkt_dev->min_in6_daddr);
 		if (debug)
-			printk(KERN_DEBUG "pktgen: dst6_min set to: %s\n", buf);
+;
 
 		i += len;
 		sprintf(pg_result, "OK: dst6_min=%s", buf);
@@ -1351,7 +1351,7 @@ static ssize_t pktgen_if_write(struct file *file,
 		snprintf(buf, sizeof(buf), "%pI6c", &pkt_dev->max_in6_daddr);
 
 		if (debug)
-			printk(KERN_DEBUG "pktgen: dst6_max set to: %s\n", buf);
+;
 
 		i += len;
 		sprintf(pg_result, "OK: dst6_max=%s", buf);
@@ -1374,7 +1374,7 @@ static ssize_t pktgen_if_write(struct file *file,
 		ipv6_addr_copy(&pkt_dev->cur_in6_saddr, &pkt_dev->in6_saddr);
 
 		if (debug)
-			printk(KERN_DEBUG "pktgen: src6 set to: %s\n", buf);
+;
 
 		i += len;
 		sprintf(pg_result, "OK: src6=%s", buf);
@@ -1395,8 +1395,8 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->cur_saddr = pkt_dev->saddr_min;
 		}
 		if (debug)
-			printk(KERN_DEBUG "pktgen: src_min set to: %s\n",
-			       pkt_dev->src_min);
+//			printk(KERN_DEBUG "pktgen: src_min set to: %s\n",
+;
 		i += len;
 		sprintf(pg_result, "OK: src_min=%s", pkt_dev->src_min);
 		return count;
@@ -1416,8 +1416,8 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->cur_saddr = pkt_dev->saddr_max;
 		}
 		if (debug)
-			printk(KERN_DEBUG "pktgen: src_max set to: %s\n",
-			       pkt_dev->src_max);
+//			printk(KERN_DEBUG "pktgen: src_max set to: %s\n",
+;
 		i += len;
 		sprintf(pg_result, "OK: src_max=%s", pkt_dev->src_max);
 		return count;
@@ -1528,7 +1528,7 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->svlan_id = 0xffff;
 
 			if (debug)
-				printk(KERN_DEBUG "pktgen: VLAN/SVLAN auto turned off\n");
+;
 		}
 		return count;
 	}
@@ -1543,10 +1543,10 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->vlan_id = value;  /* turn on VLAN */
 
 			if (debug)
-				printk(KERN_DEBUG "pktgen: VLAN turned on\n");
+;
 
 			if (debug && pkt_dev->nr_labels)
-				printk(KERN_DEBUG "pktgen: MPLS auto turned off\n");
+;
 
 			pkt_dev->nr_labels = 0;    /* turn off MPLS */
 			sprintf(pg_result, "OK: vlan_id=%u", pkt_dev->vlan_id);
@@ -1555,7 +1555,7 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->svlan_id = 0xffff;
 
 			if (debug)
-				printk(KERN_DEBUG "pktgen: VLAN/SVLAN turned off\n");
+;
 		}
 		return count;
 	}
@@ -1600,10 +1600,10 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->svlan_id = value;  /* turn on SVLAN */
 
 			if (debug)
-				printk(KERN_DEBUG "pktgen: SVLAN turned on\n");
+;
 
 			if (debug && pkt_dev->nr_labels)
-				printk(KERN_DEBUG "pktgen: MPLS auto turned off\n");
+;
 
 			pkt_dev->nr_labels = 0;    /* turn off MPLS */
 			sprintf(pg_result, "OK: svlan_id=%u", pkt_dev->svlan_id);
@@ -1612,7 +1612,7 @@ static ssize_t pktgen_if_write(struct file *file,
 			pkt_dev->svlan_id = 0xffff;
 
 			if (debug)
-				printk(KERN_DEBUG "pktgen: VLAN/SVLAN turned off\n");
+;
 		}
 		return count;
 	}
@@ -1780,8 +1780,8 @@ static ssize_t pktgen_thread_write(struct file *file,
 	i += len;
 
 	if (debug)
-		printk(KERN_DEBUG "pktgen: t=%s, count=%lu\n",
-		       name, (unsigned long)count);
+//		printk(KERN_DEBUG "pktgen: t=%s, count=%lu\n",
+;
 
 	if (!t) {
 		pr_err("ERROR: No thread\n");

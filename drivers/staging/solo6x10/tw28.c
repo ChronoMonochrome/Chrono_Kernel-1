@@ -180,12 +180,8 @@ static void tw_write_and_verify(struct solo_dev *solo_dev, u8 addr, u8 off,
 		msleep_interruptible(1);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 /*	printk("solo6x10/tw28: Error writing register: %02x->%02x [%02x]\n",
 		addr, off, val); */
-#else
-/*	;
-#endif
 }
 
 static int tw2865_setup(struct solo_dev *solo_dev, u8 dev_addr)
@@ -590,28 +586,12 @@ int solo_tw28_init(struct solo_dev *solo_dev)
 		 solo_dev->tw28_cnt, solo_dev->tw28_cnt == 1 ? "" : "s");
 
 	if (solo_dev->tw2865)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" tw2865[%d]", hweight32(solo_dev->tw2865));
-#else
-		;
-#endif
+;
 	if (solo_dev->tw2864)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" tw2864[%d]", hweight32(solo_dev->tw2864));
-#else
-		;
-#endif
+;
 	if (solo_dev->tw2815)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" tw2815[%d]", hweight32(solo_dev->tw2815));
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
+;
 
 	return 0;
 }

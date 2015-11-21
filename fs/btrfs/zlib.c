@@ -100,7 +100,7 @@ static int zlib_compress_pages(struct list_head *ws,
 	*total_in = 0;
 
 	if (Z_OK != zlib_deflateInit(&workspace->def_strm, 3)) {
-		printk(KERN_WARNING "deflateInit failed\n");
+;
 		ret = -1;
 		goto out;
 	}
@@ -128,8 +128,8 @@ static int zlib_compress_pages(struct list_head *ws,
 	while (workspace->def_strm.total_in < len) {
 		ret = zlib_deflate(&workspace->def_strm, Z_SYNC_FLUSH);
 		if (ret != Z_OK) {
-			printk(KERN_DEBUG "btrfs deflate in loop returned %d\n",
-			       ret);
+//			printk(KERN_DEBUG "btrfs deflate in loop returned %d\n",
+;
 			zlib_deflateEnd(&workspace->def_strm);
 			ret = -1;
 			goto out;
@@ -255,7 +255,7 @@ static int zlib_decompress_biovec(struct list_head *ws, struct page **pages_in,
 	}
 
 	if (Z_OK != zlib_inflateInit2(&workspace->inf_strm, wbits)) {
-		printk(KERN_WARNING "inflateInit failed\n");
+;
 		return -1;
 	}
 	while (workspace->inf_strm.total_in < srclen) {
@@ -339,7 +339,7 @@ static int zlib_decompress(struct list_head *ws, unsigned char *data_in,
 	}
 
 	if (Z_OK != zlib_inflateInit2(&workspace->inf_strm, wbits)) {
-		printk(KERN_WARNING "inflateInit failed\n");
+;
 		return -1;
 	}
 

@@ -212,11 +212,7 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
 	int index;
 	/* int i; */
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: cb_pcimdas: ", dev->minor);
-#else
-	;
-#endif
+;
 
 /*
  * Allocate the private structure area.
@@ -227,11 +223,7 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
 /*
  * Probe the device to determine what device in the series it is.
  */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 
 	for_each_pci_dev(pcidev) {
 		/*  is it not a computer boards card? */
@@ -256,42 +248,26 @@ static int cb_pcimdas_attach(struct comedi_device *dev,
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("No supported ComputerBoards/MeasurementComputing card found on "
-	       "requested position\n");
-#else
-	;
-#endif
+//	printk("No supported ComputerBoards/MeasurementComputing card found on "
+;
 	return -EIO;
 
 found:
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("Found %s on bus %i, slot %i\n", cb_pcimdas_boards[index].name,
-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
-#else
-	;
-#endif
+//	printk("Found %s on bus %i, slot %i\n", cb_pcimdas_boards[index].name,
+;
 
 	/*  Warn about non-tested features */
 	switch (thisboard->device_id) {
 	case 0x56:
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("THIS CARD IS UNSUPPORTED.\n"
-		       "PLEASE REPORT USAGE TO <mocelet@sucs.org>\n");
-#else
-		;
-#endif
+//		printk("THIS CARD IS UNSUPPORTED.\n"
+;
 	}
 
 	if (comedi_pci_enable(pcidev, "cb_pcimdas")) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" Failed to enable PCI device and request regions\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 
@@ -302,42 +278,18 @@ found:
 	devpriv->BADR4 = pci_resource_start(devpriv->pci_dev, 4);
 
 #ifdef CBPCIMDAS_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
-#else
-	;
-#endif
+;
+;
+;
+;
+;
 #endif
 
 /* Dont support IRQ yet */
 /*  get irq */
 /* if(request_irq(devpriv->pci_dev->irq, cb_pcimdas_interrupt, IRQF_SHARED, "cb_pcimdas", dev )) */
 /* { */
-#ifdef CONFIG_DEBUG_PRINTK
 /* printk(" unable to allocate irq %u\n", devpriv->pci_dev->irq); */
-#else
-/* ;
-#endif
 /* return -EINVAL; */
 /* } */
 /* dev->irq = devpriv->pci_dev->irq; */
@@ -381,11 +333,7 @@ found:
 	else
 		s->type = COMEDI_SUBD_UNUSED;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("attached\n");
-#else
-	;
-#endif
+;
 
 	return 1;
 }
@@ -402,38 +350,14 @@ static int cb_pcimdas_detach(struct comedi_device *dev)
 {
 #ifdef CBPCIMDAS_DEBUG
 	if (devpriv) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("devpriv->BADR0 = 0x%lx\n", devpriv->BADR0);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("devpriv->BADR1 = 0x%lx\n", devpriv->BADR1);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("devpriv->BADR2 = 0x%lx\n", devpriv->BADR2);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("devpriv->BADR3 = 0x%lx\n", devpriv->BADR3);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("devpriv->BADR4 = 0x%lx\n", devpriv->BADR4);
-#else
-		;
-#endif
+;
+;
+;
+;
+;
 	}
 #endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: cb_pcimdas: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 	if (dev->irq)
 		free_irq(dev->irq, dev);
 	if (devpriv) {
@@ -501,11 +425,7 @@ static int cb_pcimdas_ai_rinsn(struct comedi_device *dev,
 				break;
 		}
 		if (i == TIMEOUT) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("timeout\n");
-#else
-			;
-#endif
+;
 			return -ETIMEDOUT;
 		}
 		/* read data */

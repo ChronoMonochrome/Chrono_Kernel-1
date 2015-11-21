@@ -59,22 +59,22 @@ int emu_load_file_to_mem(void)
 
 	nef_filp = filp_open("/root/nand_emu_file", O_RDWR | O_LARGEFILE, 0);
 	if (IS_ERR(nef_filp)) {
-		printk(KERN_ERR "filp_open error: "
-		       "Unable to open nand emu file!\n");
+//		printk(KERN_ERR "filp_open error: "
+;
 		return PTR_ERR(nef_filp);
 	}
 
 	if (nef_filp->f_path.dentry) {
 		inode = nef_filp->f_path.dentry->d_inode;
 	} else {
-		printk(KERN_ERR "Can not get valid inode!\n");
+;
 		goto out;
 	}
 
 	nef_size = i_size_read(inode->i_mapping->host);
 	if (nef_size <= 0) {
-		printk(KERN_ERR "Invalid nand emu file size: "
-		       "0x%llx\n", nef_size);
+//		printk(KERN_ERR "Invalid nand emu file size: "
+;
 		goto out;
 	} else {
 		nand_dbg_print(NAND_DBG_DEBUG, "nand emu file size: %lld\n",
@@ -88,9 +88,9 @@ int emu_load_file_to_mem(void)
 				 (char __user *)flash_memory[i],
 				 GLOB_LLD_PAGE_SIZE, &tmp_file_offset);
 		if (nread < GLOB_LLD_PAGE_SIZE) {
-			printk(KERN_ERR "%s, Line %d - "
-			       "nand emu file partial read: "
-			       "%d bytes\n", __FILE__, __LINE__, (int)nread);
+//			printk(KERN_ERR "%s, Line %d - "
+//			       "nand emu file partial read: "
+;
 			goto out;
 		}
 		file_offset += GLOB_LLD_PAGE_SIZE;
@@ -122,22 +122,22 @@ int emu_write_mem_to_file(void)
 
 	nef_filp = filp_open("/root/nand_emu_file", O_RDWR | O_LARGEFILE, 0);
 	if (IS_ERR(nef_filp)) {
-		printk(KERN_ERR "filp_open error: "
-		       "Unable to open nand emu file!\n");
+//		printk(KERN_ERR "filp_open error: "
+;
 		return PTR_ERR(nef_filp);
 	}
 
 	if (nef_filp->f_path.dentry) {
 		inode = nef_filp->f_path.dentry->d_inode;
 	} else {
-		printk(KERN_ERR "Invalid " "nef_filp->f_path.dentry value!\n");
+;
 		goto out;
 	}
 
 	nef_size = i_size_read(inode->i_mapping->host);
 	if (nef_size <= 0) {
-		printk(KERN_ERR "Invalid "
-		       "nand emu file size: 0x%llx\n", nef_size);
+//		printk(KERN_ERR "Invalid "
+;
 		goto out;
 	} else {
 		nand_dbg_print(NAND_DBG_DEBUG, "nand emu file size: "
@@ -151,9 +151,9 @@ int emu_write_mem_to_file(void)
 				     (char __user *)flash_memory[i],
 				     GLOB_LLD_PAGE_SIZE, &tmp_file_offset);
 		if (nwritten < GLOB_LLD_PAGE_SIZE) {
-			printk(KERN_ERR "%s, Line %d - "
-			       "nand emu file partial write: "
-			       "%d bytes\n", __FILE__, __LINE__, (int)nwritten);
+//			printk(KERN_ERR "%s, Line %d - "
+//			       "nand emu file partial write: "
+;
 			goto out;
 		}
 		file_offset += GLOB_LLD_PAGE_SIZE;
@@ -183,8 +183,8 @@ u16 emu_Flash_Init(void)
 	flash_memory[0] = vmalloc(GLOB_LLD_PAGE_SIZE * GLOB_LLD_BLOCKS *
 				  GLOB_LLD_PAGES * sizeof(u8));
 	if (!flash_memory[0]) {
-		printk(KERN_ERR "Fail to allocate memory "
-		       "for nand emulator!\n");
+//		printk(KERN_ERR "Fail to allocate memory "
+;
 		return ERR;
 	}
 
@@ -295,8 +295,8 @@ u16 emu_Erase_Block(u32 block_add)
 		       __FILE__, __LINE__, __func__);
 
 	if (block_add >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "emu_Erase_Block error! "
-		       "Too big block address: %d\n", block_add);
+//		printk(KERN_ERR "emu_Erase_Block error! "
+;
 		return FAIL;
 	}
 
@@ -345,7 +345,7 @@ u16 emu_Write_Page_Main(u8 *write_data, u32 Block,
 
 	for (i = 0; i < PageCount; i++) {
 		if (NULL == flash_memory[Block * GLOB_LLD_PAGES + Page]) {
-			printk(KERN_ERR "Run out of memory\n");
+;
 			return FAIL;
 		}
 		memcpy((u8 *) (flash_memory[Block * GLOB_LLD_PAGES + Page]),
@@ -421,14 +421,14 @@ u16 emu_Read_Page_Main_Spare(u8 *read_data, u32 Block,
 		       __FILE__, __LINE__, __func__);
 
 	if (Block >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "Read Page Main+Spare "
-		       "Error: Block Address too big\n");
+//		printk(KERN_ERR "Read Page Main+Spare "
+;
 		return FAIL;
 	}
 
 	if (Page + PageCount > DeviceInfo.wPagesPerBlock) {
-		printk(KERN_ERR "Read Page Main+Spare "
-		       "Error: Page number too big\n");
+//		printk(KERN_ERR "Read Page Main+Spare "
+;
 		return FAIL;
 	}
 
@@ -472,14 +472,14 @@ u16 emu_Write_Page_Main_Spare(u8 *write_data, u32 Block,
 		       __FILE__, __LINE__, __func__);
 
 	if (Block >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "Write Page Main + Spare "
-		       "Error: Block Address too big\n");
+//		printk(KERN_ERR "Write Page Main + Spare "
+;
 		return FAIL;
 	}
 
 	if (Page + page_count > DeviceInfo.wPagesPerBlock) {
-		printk(KERN_ERR "Write Page Main + Spare "
-		       "Error: Page number too big\n");
+//		printk(KERN_ERR "Write Page Main + Spare "
+;
 		return FAIL;
 	}
 
@@ -490,7 +490,7 @@ u16 emu_Write_Page_Main_Spare(u8 *write_data, u32 Block,
 
 	for (i = 0; i < page_count; i++) {
 		if (NULL == flash_memory[Block * GLOB_LLD_PAGES + Page]) {
-			printk(KERN_ERR "Run out of memory!\n");
+;
 			return FAIL;
 		}
 		memcpy((u8 *) (flash_memory[Block * GLOB_LLD_PAGES + Page]),
@@ -518,14 +518,14 @@ u16 emu_Write_Page_Spare(u8 *write_data, u32 Block,
 		       __FILE__, __LINE__, __func__);
 
 	if (Block >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "Read Page Spare Error: "
-		       "Block Address too big\n");
+//		printk(KERN_ERR "Read Page Spare Error: "
+;
 		return FAIL;
 	}
 
 	if (Page + PageCount > DeviceInfo.wPagesPerBlock) {
-		printk(KERN_ERR "Read Page Spare Error: "
-		       "Page number too big\n");
+//		printk(KERN_ERR "Read Page Spare Error: "
+;
 		return FAIL;
 	}
 
@@ -534,7 +534,7 @@ u16 emu_Write_Page_Spare(u8 *write_data, u32 Block,
 		       (unsigned int)Block, (unsigned int)Page);
 
 	if (NULL == flash_memory[Block * GLOB_LLD_PAGES + Page]) {
-		printk(KERN_ERR "Run out of memory!\n");
+;
 		return FAIL;
 	}
 
@@ -561,14 +561,14 @@ u16 emu_Read_Page_Spare(u8 *write_data, u32 Block,
 		       __FILE__, __LINE__, __func__);
 
 	if (Block >= DeviceInfo.wTotalBlocks) {
-		printk(KERN_ERR "Read Page Spare "
-		       "Error: Block Address too big\n");
+//		printk(KERN_ERR "Read Page Spare "
+;
 		return FAIL;
 	}
 
 	if (Page + PageCount > DeviceInfo.wPagesPerBlock) {
-		printk(KERN_ERR "Read Page Spare "
-		       "Error: Page number too big\n");
+//		printk(KERN_ERR "Read Page Spare "
+;
 		return FAIL;
 	}
 

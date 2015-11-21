@@ -261,7 +261,7 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
 	if (parse_options(data, &pipefd, &root_inode->i_uid, &root_inode->i_gid,
 				&sbi->oz_pgrp, &sbi->type, &sbi->min_proto,
 				&sbi->max_proto)) {
-		printk("autofs: called with bogus options\n");
+;
 		goto fail_dput;
 	}
 
@@ -274,10 +274,10 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
 	/* Couldn't this be tested earlier? */
 	if (sbi->max_proto < AUTOFS_MIN_PROTO_VERSION ||
 	    sbi->min_proto > AUTOFS_MAX_PROTO_VERSION) {
-		printk("autofs: kernel does not match daemon version "
-		       "daemon (%d, %d) kernel (%d, %d)\n",
-			sbi->min_proto, sbi->max_proto,
-			AUTOFS_MIN_PROTO_VERSION, AUTOFS_MAX_PROTO_VERSION);
+//		printk("autofs: kernel does not match daemon version "
+//		       "daemon (%d, %d) kernel (%d, %d)\n",
+//			sbi->min_proto, sbi->max_proto,
+;
 		goto fail_dput;
 	}
 
@@ -292,7 +292,7 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
 	pipe = fget(pipefd);
 	
 	if (!pipe) {
-		printk("autofs: could not open pipe file descriptor\n");
+;
 		goto fail_dput;
 	}
 	if (autofs_prepare_pipe(pipe) < 0)
@@ -311,14 +311,14 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
 	 * Failure ... clean up.
 	 */
 fail_fput:
-	printk("autofs: pipe file descriptor does not contain proper ops\n");
+;
 	fput(pipe);
 	/* fall through */
 fail_dput:
 	dput(root);
 	goto fail_free;
 fail_iput:
-	printk("autofs: get root dentry failed\n");
+;
 	iput(root_inode);
 fail_ino:
 	kfree(ino);

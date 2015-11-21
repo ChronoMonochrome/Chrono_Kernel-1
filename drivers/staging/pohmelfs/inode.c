@@ -48,11 +48,7 @@ void pohmelfs_inode_del_inode(struct pohmelfs_sb *psb, struct pohmelfs_inode *pi
 	pohmelfs_free_names(pi);
 	mutex_unlock(&pi->offset_lock);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: deleted stuff in ino: %llu.\n", __func__, pi->ino);
-#else
-	d;
-#endif
+;
 }
 
 /*
@@ -97,11 +93,7 @@ int pohmelfs_write_inode_create(struct inode *inode, struct netfs_trans *trans)
 	return 0;
 
 err_out_exit:
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("%s: completed ino: %llu, err: %d.\n", __func__, pi->ino, err);
-#else
-	;
-#endif
+;
 	return err;
 }
 
@@ -110,13 +102,9 @@ static int pohmelfs_write_trans_complete(struct page **pages, unsigned int page_
 {
 	unsigned i;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: pages: %lu-%lu, page_num: %u, err: %d.\n",
-			__func__, pages[0]->index, pages[page_num-1]->index,
-			page_num, err);
-#else
-	d;
-#endif
+//	dprintk("%s: pages: %lu-%lu, page_num: %u, err: %d.\n",
+//			__func__, pages[0]->index, pages[page_num-1]->index,
+;
 
 	for (i = 0; i < page_num; i++) {
 		struct page *page = pages[i];
@@ -134,11 +122,7 @@ static int pohmelfs_write_trans_complete(struct page **pages, unsigned int page_
 		unlock_page(page);
 		page_cache_release(page);
 
-#ifdef CONFIG_DEBUG_PRINTK
 		/* dprintk("%s: %3u/%u: page: %p.\n", __func__, i, page_num, page); */
-#else
-		/* d;
-#endif
 	}
 	return err;
 }
@@ -210,12 +194,8 @@ retry:
 				PAGECACHE_TAG_DIRTY, trans->page_num,
 				trans->pages);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("%s: t: %p, nr_pages: %u, end: %lu, index: %lu, max: %u.\n",
-				__func__, trans, nr_pages, end, index, trans->page_num);
-#else
-		d;
-#endif
+//		dprintk("%s: t: %p, nr_pages: %u, end: %lu, index: %lu, max: %u.\n",
+;
 
 		if (!nr_pages)
 			goto err_out_reset;
@@ -245,12 +225,8 @@ retry:
 
 			if (PageWriteback(page) ||
 			    !clear_page_dirty_for_io(page)) {
-#ifdef CONFIG_DEBUG_PRINTK
-				dprintk("%s: not clear for io page: %p, writeback: %d.\n",
-						__func__, page, PageWriteback(page));
-#else
-				d;
-#endif
+//				dprintk("%s: not clear for io page: %p, writeback: %d.\n",
+;
 				goto out_continue;
 			}
 
@@ -259,13 +235,9 @@ retry:
 			trans->attached_size += page_private(page);
 			trans->attached_pages++;
 #if 0
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk("%s: %u/%u added trans: %p, gen: %u, page: %p, [High: %d], size: %lu, idx: %lu.\n",
-					__func__, i, trans->page_num, trans, trans->gen, page,
-					!!PageHighMem(page), page_private(page), page->index);
-#else
-			d;
-#endif
+//			dprintk("%s: %u/%u added trans: %p, gen: %u, page: %p, [High: %d], size: %lu, idx: %lu.\n",
+//					__func__, i, trans->page_num, trans, trans->gen, page,
+;
 #endif
 			wbc->nr_to_write--;
 
@@ -342,11 +314,7 @@ int pohmelfs_write_create_inode(struct pohmelfs_inode *pi)
 	if (test_bit(NETFS_INODE_REMOTE_SYNCED, &pi->state))
 		return 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: started ino: %llu.\n", __func__, pi->ino);
-#else
-	d;
-#endif
+;
 
 	err = pohmelfs_path_length(pi);
 	if (err < 0)
@@ -403,12 +371,8 @@ static int pohmelfs_write_inode_create_children(struct inode *inode)
 
 		inode = ilookup(sb, n->ino);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("%s: parent: %llu, ino: %llu, inode: %p.\n",
-				__func__, parent->ino, n->ino, inode);
-#else
-		d;
-#endif
+//		dprintk("%s: parent: %llu, ino: %llu, inode: %p.\n",
+;
 
 		if (inode && (inode->i_state & I_DIRTY)) {
 			struct pohmelfs_inode *pi = POHMELFS_I(inode);
@@ -467,13 +431,9 @@ static int pohmelfs_wait_on_page_locked(struct page *page)
 		prepare_to_wait(page_waitqueue(page),
 				&wait.wait, TASK_INTERRUPTIBLE);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("%s: page: %p, locked: %d, uptodate: %d, error: %d, flags: %lx.\n",
-				__func__, page, PageLocked(page), PageUptodate(page),
-				PageError(page), page->flags);
-#else
-		d;
-#endif
+//		dprintk("%s: page: %p, locked: %d, uptodate: %d, error: %d, flags: %lx.\n",
+//				__func__, page, PageLocked(page), PageUptodate(page),
+;
 
 		if (!PageLocked(page))
 			break;
@@ -497,12 +457,8 @@ static int pohmelfs_wait_on_page_locked(struct page *page)
 		SetPageUptodate(page);
 
 	if (err)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("%s: page: %p, uptodate: %d, locked: %d, err: %d.\n",
-			__func__, page, PageUptodate(page), PageLocked(page), err);
-#else
-		;
-#endif
+//		printk("%s: page: %p, uptodate: %d, locked: %d, err: %d.\n",
+;
 
 	return err;
 }
@@ -516,11 +472,7 @@ static int pohmelfs_read_page_complete(struct page **pages, unsigned int page_nu
 		return err;
 
 	if (err < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("%s: page: %p, err: %d.\n", __func__, page, err);
-#else
-		d;
-#endif
+;
 		SetPageError(page);
 	}
 
@@ -587,12 +539,8 @@ static int pohmelfs_readpage(struct file *file, struct page *page)
 	cmd->cmd = NETFS_READ_PAGE;
 	cmd->ext = path_len;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: path: '%s', page: %p, ino: %llu, start: %llu, size: %lu.\n",
-			__func__, (char *)data, page, pi->ino, cmd->start, PAGE_CACHE_SIZE);
-#else
-	d;
-#endif
+//	dprintk("%s: path: '%s', page: %p, ino: %llu, start: %llu, size: %lu.\n",
+;
 
 	netfs_convert_cmd(cmd);
 	netfs_trans_update(cmd, t, path_len);
@@ -611,12 +559,8 @@ err_out_exit:
 	if (PageLocked(page))
 		unlock_page(page);
 err_out_return:
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("%s: page: %p, start: %lu, size: %lu, err: %d.\n",
-		__func__, page, page->index << PAGE_CACHE_SHIFT, PAGE_CACHE_SIZE, err);
-#else
-	;
-#endif
+//	printk("%s: page: %p, start: %lu, size: %lu, err: %d.\n",
+;
 
 	return err;
 }
@@ -643,12 +587,8 @@ static int pohmelfs_write_begin(struct file *file, struct address_space *mapping
 
 	page = grab_cache_page(mapping, index);
 #if 0
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: page: %p pos: %llu, len: %u, index: %lu, start: %u, end: %u, uptodate: %d.\n",
-			__func__, page,	pos, len, index, start, end, PageUptodate(page));
-#else
-	d;
-#endif
+//	dprintk("%s: page: %p pos: %llu, len: %u, index: %lu, start: %u, end: %u, uptodate: %d.\n",
+;
 #endif
 	if (!page) {
 		err = -ENOMEM;
@@ -706,14 +646,10 @@ static int pohmelfs_write_end(struct file *file, struct address_space *mapping,
 	SetPageUptodate(page);
 	set_page_dirty(page);
 #if 0
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: page: %p [U: %d, D: %d, L: %d], pos: %llu, len: %u, copied: %u.\n",
-			__func__, page,
-			PageUptodate(page), PageDirty(page), PageLocked(page),
-			pos, len, copied);
-#else
-	d;
-#endif
+//	dprintk("%s: page: %p [U: %d, D: %d, L: %d], pos: %llu, len: %u, copied: %u.\n",
+//			__func__, page,
+//			PageUptodate(page), PageDirty(page), PageLocked(page),
+;
 #endif
 	flush_dcache_page(page);
 
@@ -753,13 +689,9 @@ static int pohmelfs_readpages_trans_complete(struct page **__pages, unsigned int
 		page = pages[i];
 
 		if (err)
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%s: %u/%u: page: %p, index: %lu, uptodate: %d, locked: %d, err: %d.\n",
-				__func__, i, num, page, page->index,
-				PageUptodate(page), PageLocked(page), err);
-#else
-			;
-#endif
+//			printk("%s: %u/%u: page: %p, index: %lu, uptodate: %d, locked: %d, err: %d.\n",
+//				__func__, i, num, page, page->index,
+;
 
 		if (!PageChecked(page)) {
 			if (err < 0)
@@ -821,14 +753,10 @@ static int pohmelfs_send_readpages(struct pohmelfs_inode *pi, struct page *first
 	cmd->id = pi->ino;
 	cmd->ext = path_len;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: t: %p, gen: %u, path: '%s', path_len: %u, "
-			"start: %lu, num: %u.\n",
-			__func__, t, t->gen, (char *)data, path_len,
-			first->index, num);
-#else
-	d;
-#endif
+//	dprintk("%s: t: %p, gen: %u, path: '%s', path_len: %u, "
+//			"start: %lu, num: %u.\n",
+//			__func__, t, t->gen, (char *)data, path_len,
+;
 
 	netfs_convert_cmd(cmd);
 	netfs_trans_update(cmd, t, path_len);
@@ -865,12 +793,8 @@ static int pohmelfs_readpages(struct file *file, struct address_space *mapping,
 				continue;
 			}
 
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk("%s: added to lru page: %p, page_index: %lu, first_index: %lu.\n",
-					__func__, page, page->index, first->index);
-#else
-			d;
-#endif
+//			dprintk("%s: added to lru page: %p, page_index: %lu, first_index: %lu.\n",
+;
 
 			if (unlikely(first->index + num != page->index) || (num > 500)) {
 				pohmelfs_send_readpages(POHMELFS_I(mapping->host),
@@ -924,12 +848,8 @@ static void pohmelfs_destroy_inode(struct inode *inode)
 
 	pohmelfs_inode_del_inode(psb, pi);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: pi: %p, inode: %p, ino: %llu.\n",
-		__func__, pi, &pi->vfs_inode, pi->ino);
-#else
-	d;
-#endif
+//	dprintk("%s: pi: %p, inode: %p, ino: %llu.\n",
+;
 	atomic_long_dec(&psb->total_inodes);
 	call_rcu(&inode->i_rcu, pohmelfs_i_callback);
 }
@@ -957,11 +877,7 @@ static struct inode *pohmelfs_alloc_inode(struct super_block *sb)
 	pi->total_len = 0;
 	pi->drop_count = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: pi: %p, inode: %p.\n", __func__, pi, &pi->vfs_inode);
-#else
-	d;
-#endif
+;
 
 	atomic_long_inc(&POHMELFS_SB(sb)->total_inodes);
 
@@ -993,11 +909,7 @@ ssize_t pohmelfs_write(struct file *file, const char __user *buf,
 	kiocb.ki_pos = pos;
 	kiocb.ki_left = len;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: len: %zu, pos: %llu.\n", __func__, len, pos);
-#else
-	d;
-#endif
+;
 
 	mutex_lock(&inode->i_mutex);
 	ret = pohmelfs_data_lock(pi, pos, len, POHMELFS_WRITE_LOCK);
@@ -1056,11 +968,7 @@ int pohmelfs_setattr_raw(struct inode *inode, struct iattr *attr)
 
 	err = inode_change_ok(inode, attr);
 	if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("%s: ino: %llu, inode changes are not allowed.\n", __func__, POHMELFS_I(inode)->ino);
-#else
-		d;
-#endif
+;
 		goto err_out_exit;
 	}
 
@@ -1068,11 +976,7 @@ int pohmelfs_setattr_raw(struct inode *inode, struct iattr *attr)
 	    attr->ia_size != i_size_read(inode)) {
 		err = vmtruncate(inode, attr->ia_size);
 		if (err) {
-#ifdef CONFIG_DEBUG_PRINTK
-			dprintk("%s: ino: %llu, failed to set the attributes.\n", __func__, POHMELFS_I(inode)->ino);
-#else
-			d;
-#endif
+;
 			goto err_out_exit;
 		}
 	}
@@ -1080,13 +984,9 @@ int pohmelfs_setattr_raw(struct inode *inode, struct iattr *attr)
 	setattr_copy(inode, attr);
 	mark_inode_dirty(inode);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: ino: %llu, mode: %o -> %o, uid: %u -> %u, gid: %u -> %u, size: %llu -> %llu.\n",
-			__func__, POHMELFS_I(inode)->ino, inode->i_mode, attr->ia_mode,
-			inode->i_uid, attr->ia_uid, inode->i_gid, attr->ia_gid, inode->i_size, attr->ia_size);
-#else
-	d;
-#endif
+//	dprintk("%s: ino: %llu, mode: %o -> %o, uid: %u -> %u, gid: %u -> %u, size: %llu -> %llu.\n",
+//			__func__, POHMELFS_I(inode)->ino, inode->i_mode, attr->ia_mode,
+;
 
 	return 0;
 
@@ -1127,12 +1027,8 @@ static int pohmelfs_send_xattr_req(struct pohmelfs_inode *pi, u64 id, u64 start,
 	struct netfs_cmd *cmd;
 	void *data;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: id: %llu, start: %llu, name: '%s', attrsize: %zu, cmd: %d.\n",
-			__func__, id, start, name, attrsize, command);
-#else
-	d;
-#endif
+//	dprintk("%s: id: %llu, start: %llu, name: '%s', attrsize: %zu, cmd: %d.\n",
+;
 
 	path_len = pohmelfs_path_length(pi);
 	if (path_len < 0) {
@@ -1216,12 +1112,8 @@ static ssize_t pohmelfs_getxattr(struct dentry *dentry, const char *name,
 	if (IS_ERR(m))
 		return PTR_ERR(m);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: ino: %llu, name: '%s', size: %zu.\n",
-			__func__, pi->ino, name, attrsize);
-#else
-	d;
-#endif
+//	dprintk("%s: ino: %llu, name: '%s', size: %zu.\n",
+;
 
 	err = pohmelfs_send_xattr_req(pi, m->gen, attrsize, name, value, 0, NETFS_XATTR_GET);
 	if (err)
@@ -1259,11 +1151,7 @@ static ssize_t pohmelfs_getxattr(struct dentry *dentry, const char *name,
 
 	pohmelfs_mcache_put(psb, m);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: ino: %llu, err: %d.\n", __func__, pi->ino, err);
-#else
-	d;
-#endif
+;
 
 	return err;
 
@@ -1282,13 +1170,9 @@ static int pohmelfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct 
 	err = pohmelfs_data_lock(pi, 0, ~0, POHMELFS_READ_LOCK);
 	if (err)
 		return err;
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: ino: %llu, mode: %o, uid: %u, gid: %u, size: %llu.\n",
-			__func__, pi->ino, inode->i_mode, inode->i_uid,
-			inode->i_gid, inode->i_size);
-#else
-	d;
-#endif
+//	dprintk("%s: ino: %llu, mode: %o, uid: %u, gid: %u, size: %llu.\n",
+//			__func__, pi->ino, inode->i_mode, inode->i_uid,
+;
 #endif
 
 	generic_fillattr(inode, stat);
@@ -1317,14 +1201,10 @@ void pohmelfs_fill_inode(struct inode *inode, struct netfs_inode_info *info)
 	inode->i_version = info->version;
 	inode->i_blkbits = ffs(info->blocksize);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: inode: %p, num: %lu/%llu inode is regular: %d, dir: %d, link: %d, mode: %o, size: %llu.\n",
-			__func__, inode, inode->i_ino, info->ino,
-			S_ISREG(inode->i_mode), S_ISDIR(inode->i_mode),
-			S_ISLNK(inode->i_mode), inode->i_mode, inode->i_size);
-#else
-	d;
-#endif
+//	dprintk("%s: inode: %p, num: %lu/%llu inode is regular: %d, dir: %d, link: %d, mode: %o, size: %llu.\n",
+//			__func__, inode, inode->i_ino, info->ino,
+//			S_ISREG(inode->i_mode), S_ISDIR(inode->i_mode),
+;
 
 	inode->i_mtime = inode->i_atime = inode->i_ctime = CURRENT_TIME_SEC;
 
@@ -1400,11 +1280,7 @@ static void pohmelfs_put_super(struct super_block *sb)
 	unsigned int in_drop_list = 0;
 	struct inode *inode, *tmp;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s.\n", __func__);
-#else
-	d;
-#endif
+;
 
 	/*
 	 * Kill pending transactions, which could affect inodes in-flight.
@@ -1414,21 +1290,13 @@ static void pohmelfs_put_super(struct super_block *sb)
 	while ((pi = pohmelfs_get_inode_from_list(psb, &psb->drop_list, &count))) {
 		inode = &pi->vfs_inode;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("%s: ino: %llu, pi: %p, inode: %p, count: %u.\n",
-				__func__, pi->ino, pi, inode, count);
-#else
-		d;
-#endif
+//		dprintk("%s: ino: %llu, pi: %p, inode: %p, count: %u.\n",
+;
 
 		if (atomic_read(&inode->i_count) != count) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%s: ino: %llu, pi: %p, inode: %p, count: %u, i_count: %d.\n",
-					__func__, pi->ino, pi, inode, count,
-					atomic_read(&inode->i_count));
-#else
-			;
-#endif
+//			printk("%s: ino: %llu, pi: %p, inode: %p, count: %u, i_count: %d.\n",
+//					__func__, pi->ino, pi, inode, count,
+;
 			count = atomic_read(&inode->i_count);
 			in_drop_list++;
 		}
@@ -1440,12 +1308,8 @@ static void pohmelfs_put_super(struct super_block *sb)
 	list_for_each_entry_safe(inode, tmp, &sb->s_inodes, i_sb_list) {
 		pi = POHMELFS_I(inode);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("%s: ino: %llu, pi: %p, inode: %p, i_count: %u.\n",
-				__func__, pi->ino, pi, inode, atomic_read(&inode->i_count));
-#else
-		d;
-#endif
+//		dprintk("%s: ino: %llu, pi: %p, inode: %p, i_count: %u.\n",
+;
 
 		/*
 		 * These are special inodes, they were created during
@@ -1466,11 +1330,7 @@ static void pohmelfs_put_super(struct super_block *sb)
 	cancel_delayed_work_sync(&psb->drop_dwork);
 	flush_scheduled_work();
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: stopped workqueues.\n", __func__);
-#else
-	d;
-#endif
+;
 
 	pohmelfs_crypto_exit(psb);
 	pohmelfs_state_exit(psb);
@@ -1499,12 +1359,8 @@ static int pohmelfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	buf->f_bfree = buf->f_bavail = psb->avail_size >> PAGE_SHIFT;
 	buf->f_blocks = psb->total_size >> PAGE_SHIFT;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: total: %llu, avail: %llu, inodes: %llu, bsize: %lu.\n",
-		__func__, psb->total_size, psb->avail_size, buf->f_files, sb->s_blocksize);
-#else
-	d;
-#endif
+//	dprintk("%s: total: %llu, avail: %llu, inodes: %llu, bsize: %lu.\n",
+;
 
 	return 0;
 }
@@ -1635,12 +1491,8 @@ static void pohmelfs_flush_inode(struct pohmelfs_inode *pi, unsigned int count)
 {
 	struct inode *inode = &pi->vfs_inode;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: %p: ino: %llu, owned: %d.\n",
-		__func__, inode, pi->ino, test_bit(NETFS_INODE_OWNED, &pi->state));
-#else
-	d;
-#endif
+//	dprintk("%s: %p: ino: %llu, owned: %d.\n",
+;
 
 	mutex_lock(&inode->i_mutex);
 	if (test_and_clear_bit(NETFS_INODE_OWNED, &pi->state)) {
@@ -1658,12 +1510,8 @@ static void pohmelfs_flush_inode(struct pohmelfs_inode *pi, unsigned int count)
 
 static void pohmelfs_put_inode_count(struct pohmelfs_inode *pi, unsigned int count)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: ino: %llu, pi: %p, inode: %p, count: %u.\n",
-			__func__, pi->ino, pi, &pi->vfs_inode, count);
-#else
-	d;
-#endif
+//	dprintk("%s: ino: %llu, pi: %p, inode: %p, count: %u.\n",
+;
 
 	if (test_and_clear_bit(NETFS_INODE_NEED_FLUSH, &pi->state))
 		pohmelfs_flush_inode(pi, count);
@@ -1711,12 +1559,8 @@ static void pohmelfs_trans_scan_state(struct netfs_state *st)
 				&& dst->retries == 0)
 			break;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("%s: t: %p, gen: %u, st: %p, retries: %u, max: %u.\n",
-			__func__, t, t->gen, st, dst->retries, psb->trans_retries);
-#else
-		d;
-#endif
+//		dprintk("%s: t: %p, gen: %u, st: %p, retries: %u, max: %u.\n",
+;
 		netfs_trans_get(t);
 
 		rb_node = rb_next(rb_node);
@@ -1775,11 +1619,7 @@ int pohmelfs_meta_command_data(struct pohmelfs_inode *pi, u64 id, unsigned int c
 	struct netfs_inode_info *info;
 	struct netfs_cmd *cmd;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: ino: %llu, cmd: %u, addon: %p.\n", __func__, pi->ino, cmd_op, addon);
-#else
-	d;
-#endif
+;
 
 	path_len = pohmelfs_path_length(pi);
 	if (path_len < 0) {
@@ -1828,11 +1668,7 @@ int pohmelfs_meta_command_data(struct pohmelfs_inode *pi, u64 id, unsigned int c
 	if (path_len < 0)
 		goto err_out_free;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: path_len: %d.\n", __func__, path_len);
-#else
-	d;
-#endif
+;
 
 	if (addon) {
 		path_len--; /* Do not place null-byte before the addon */
@@ -2102,11 +1938,7 @@ err_out_free_sb:
 	kfree(psb);
 err_out_exit:
 
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("%s: err: %d.\n", __func__, err);
-#else
-	d;
-#endif
+;
 	return err;
 }
 

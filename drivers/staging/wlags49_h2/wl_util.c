@@ -454,12 +454,8 @@ void wl_hcf_error( struct net_device *dev, int hcfStatus )
             break;
         }
 
-#ifdef CONFIG_DEBUG_PRINTK
-        printk( KERN_INFO "%s: Wireless, HCF failure: \"%s\"\n",
-                dev->name, pMsg );
-#else
-        ;
-#endif
+//        printk( KERN_INFO "%s: Wireless, HCF failure: \"%s\"\n",
+;
     }
 } // wl_hcf_error
 /*============================================================================*/

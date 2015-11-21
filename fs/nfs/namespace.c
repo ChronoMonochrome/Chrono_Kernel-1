@@ -244,7 +244,7 @@ struct vfsmount *nfs_d_automount(struct path *path)
 	int err;
 	rpc_authflavor_t flavor = RPC_AUTH_UNIX;
 
-	dprintk("--> nfs_d_automount()\n");
+;
 
 	mnt = ERR_PTR(-ESTALE);
 	if (IS_ROOT(path->dentry))
@@ -256,7 +256,7 @@ struct vfsmount *nfs_d_automount(struct path *path)
 	if (fh == NULL || fattr == NULL)
 		goto out;
 
-	dprintk("%s: enter\n", __func__);
+;
 
 	/* Look it up again to get its attributes */
 	parent = dget_parent(path->dentry);
@@ -278,7 +278,7 @@ struct vfsmount *nfs_d_automount(struct path *path)
 	if (IS_ERR(mnt))
 		goto out;
 
-	dprintk("%s: done, success\n", __func__);
+;
 	mntget(mnt); /* prevent immediate expiration */
 	mnt_set_expiry(mnt, &nfs_automount_list);
 	schedule_delayed_work(&nfs_automount_task, nfs_mountpoint_expiry_timeout);
@@ -287,7 +287,7 @@ out:
 	nfs_free_fattr(fattr);
 	nfs_free_fhandle(fh);
 out_nofree:
-	dprintk("<-- nfs_follow_mountpoint() = %p\n", mnt);
+;
 	return mnt;
 }
 
@@ -360,11 +360,11 @@ static struct vfsmount *nfs_do_submount(struct dentry *dentry,
 	char *page = (char *) __get_free_page(GFP_USER);
 	char *devname;
 
-	dprintk("--> nfs_do_submount()\n");
+;
 
-	dprintk("%s: submounting on %s/%s\n", __func__,
-			dentry->d_parent->d_name.name,
-			dentry->d_name.name);
+//	dprintk("%s: submounting on %s/%s\n", __func__,
+//			dentry->d_parent->d_name.name,
+;
 	if (page == NULL)
 		goto out;
 	devname = nfs_devname(dentry, page, PAGE_SIZE);
@@ -375,8 +375,8 @@ static struct vfsmount *nfs_do_submount(struct dentry *dentry,
 free_page:
 	free_page((unsigned long)page);
 out:
-	dprintk("%s: done\n", __func__);
+;
 
-	dprintk("<-- nfs_do_submount() = %p\n", mnt);
+;
 	return mnt;
 }

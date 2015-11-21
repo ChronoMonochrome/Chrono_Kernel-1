@@ -34,7 +34,7 @@ static void stmmac_timer_handler(void *data)
 }
 
 #define STMMAC_TIMER_MSG(timer, freq) \
-printk(KERN_INFO "stmmac_timer: %s Timer ON (freq %dHz)\n", timer, freq);
+;
 
 #if defined(CONFIG_STMMAC_RTC_TIMER)
 #include <linux/rtc.h>

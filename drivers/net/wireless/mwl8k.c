@@ -515,8 +515,8 @@ static int mwl8k_request_firmware(struct mwl8k_priv *priv, char *fw_image,
 			rc = mwl8k_request_fw(priv, di->helper_image,
 					      &priv->fw_helper, false);
 		if (rc)
-			printk(KERN_ERR "%s: Error requesting helper fw %s\n",
-			       pci_name(priv->pdev), di->helper_image);
+//			printk(KERN_ERR "%s: Error requesting helper fw %s\n",
+;
 
 		if (rc || nowait)
 			return rc;
@@ -535,8 +535,8 @@ static int mwl8k_request_firmware(struct mwl8k_priv *priv, char *fw_image,
 		rc = mwl8k_request_fw(priv, fw_image,
 				      &priv->fw_ucode, false);
 	if (rc) {
-		printk(KERN_ERR "%s: Error requesting firmware file %s\n",
-		       pci_name(priv->pdev), fw_image);
+//		printk(KERN_ERR "%s: Error requesting firmware file %s\n",
+;
 		mwl8k_release_fw(&priv->fw_helper);
 		return rc;
 	}
@@ -705,15 +705,15 @@ static int mwl8k_load_firmware(struct ieee80211_hw *hw)
 		const struct firmware *helper = priv->fw_helper;
 
 		if (helper == NULL) {
-			printk(KERN_ERR "%s: helper image needed but none "
-			       "given\n", pci_name(priv->pdev));
+//			printk(KERN_ERR "%s: helper image needed but none "
+;
 			return -EINVAL;
 		}
 
 		rc = mwl8k_load_fw_image(priv, helper->data, helper->size);
 		if (rc) {
-			printk(KERN_ERR "%s: unable to load firmware "
-			       "helper image\n", pci_name(priv->pdev));
+//			printk(KERN_ERR "%s: unable to load firmware "
+;
 			return rc;
 		}
 		msleep(20);
@@ -724,8 +724,8 @@ static int mwl8k_load_firmware(struct ieee80211_hw *hw)
 	}
 
 	if (rc) {
-		printk(KERN_ERR "%s: unable to load firmware image\n",
-		       pci_name(priv->pdev));
+//		printk(KERN_ERR "%s: unable to load firmware image\n",
+;
 		return rc;
 	}
 
@@ -2401,11 +2401,11 @@ static int mwl8k_cmd_get_hw_spec_ap(struct ieee80211_hw *hw)
 
 		api_version = le32_to_cpu(cmd->fw_api_version);
 		if (priv->device_info->fw_api_ap != api_version) {
-			printk(KERN_ERR "%s: Unsupported fw API version for %s."
-			       "  Expected %d got %d.\n", MWL8K_NAME,
-			       priv->device_info->part_name,
-			       priv->device_info->fw_api_ap,
-			       api_version);
+//			printk(KERN_ERR "%s: Unsupported fw API version for %s."
+//			       "  Expected %d got %d.\n", MWL8K_NAME,
+//			       priv->device_info->part_name,
+//			       priv->device_info->fw_api_ap,
+;
 			rc = -EINVAL;
 			goto done;
 		}
@@ -5176,13 +5176,13 @@ MODULE_DEVICE_TABLE(pci, mwl8k_pci_id_table);
 static int mwl8k_request_alt_fw(struct mwl8k_priv *priv)
 {
 	int rc;
-	printk(KERN_ERR "%s: Error requesting preferred fw %s.\n"
-	       "Trying alternative firmware %s\n", pci_name(priv->pdev),
-	       priv->fw_pref, priv->fw_alt);
+//	printk(KERN_ERR "%s: Error requesting preferred fw %s.\n"
+//	       "Trying alternative firmware %s\n", pci_name(priv->pdev),
+;
 	rc = mwl8k_request_fw(priv, priv->fw_alt, &priv->fw_ucode, true);
 	if (rc) {
-		printk(KERN_ERR "%s: Error requesting alt fw %s\n",
-		       pci_name(priv->pdev), priv->fw_alt);
+//		printk(KERN_ERR "%s: Error requesting alt fw %s\n",
+;
 		return rc;
 	}
 	return 0;
@@ -5198,8 +5198,8 @@ static void mwl8k_fw_state_machine(const struct firmware *fw, void *context)
 	switch (priv->fw_state) {
 	case FW_STATE_INIT:
 		if (!fw) {
-			printk(KERN_ERR "%s: Error requesting helper fw %s\n",
-			       pci_name(priv->pdev), di->helper_image);
+//			printk(KERN_ERR "%s: Error requesting helper fw %s\n",
+;
 			goto fail;
 		}
 		priv->fw_helper = fw;
@@ -5237,8 +5237,8 @@ static void mwl8k_fw_state_machine(const struct firmware *fw, void *context)
 
 	case FW_STATE_LOADING_ALT:
 		if (!fw) {
-			printk(KERN_ERR "%s: Error requesting alt fw %s\n",
-			       pci_name(priv->pdev), di->helper_image);
+//			printk(KERN_ERR "%s: Error requesting alt fw %s\n",
+;
 			goto fail;
 		}
 		priv->fw_ucode = fw;
@@ -5250,8 +5250,8 @@ static void mwl8k_fw_state_machine(const struct firmware *fw, void *context)
 		break;
 
 	default:
-		printk(KERN_ERR "%s: Unexpected firmware loading state: %d\n",
-		       MWL8K_NAME, priv->fw_state);
+//		printk(KERN_ERR "%s: Unexpected firmware loading state: %d\n",
+;
 		BUG_ON(1);
 	}
 
@@ -5472,7 +5472,7 @@ static int mwl8k_reload_firmware(struct ieee80211_hw *hw, char *fw_image)
 	return rc;
 
 fail:
-	printk(KERN_WARNING "mwl8k: Failed to reload firmware image.\n");
+;
 	return rc;
 }
 
@@ -5580,22 +5580,22 @@ static int __devinit mwl8k_probe(struct pci_dev *pdev,
 	int rc;
 
 	if (!printed_version) {
-		printk(KERN_INFO "%s version %s\n", MWL8K_DESC, MWL8K_VERSION);
+;
 		printed_version = 1;
 	}
 
 
 	rc = pci_enable_device(pdev);
 	if (rc) {
-		printk(KERN_ERR "%s: Cannot enable new PCI device\n",
-		       MWL8K_NAME);
+//		printk(KERN_ERR "%s: Cannot enable new PCI device\n",
+;
 		return rc;
 	}
 
 	rc = pci_request_regions(pdev, MWL8K_NAME);
 	if (rc) {
-		printk(KERN_ERR "%s: Cannot obtain PCI resources\n",
-		       MWL8K_NAME);
+//		printk(KERN_ERR "%s: Cannot obtain PCI resources\n",
+;
 		goto err_disable_device;
 	}
 
@@ -5604,7 +5604,7 @@ static int __devinit mwl8k_probe(struct pci_dev *pdev,
 
 	hw = ieee80211_alloc_hw(sizeof(*priv), &mwl8k_ops);
 	if (hw == NULL) {
-		printk(KERN_ERR "%s: ieee80211 alloc failed\n", MWL8K_NAME);
+;
 		rc = -ENOMEM;
 		goto err_free_reg;
 	}
@@ -5651,10 +5651,10 @@ static int __devinit mwl8k_probe(struct pci_dev *pdev,
 		priv->fw_pref = di->fw_image_sta;
 		priv->fw_alt = di->fw_image_ap;
 	} else if (ap_mode_default && !di->fw_image_ap && di->fw_image_sta) {
-		printk(KERN_WARNING "AP fw is unavailable.  Using STA fw.");
+;
 		priv->fw_pref = di->fw_image_sta;
 	} else if (!ap_mode_default && !di->fw_image_sta && di->fw_image_ap) {
-		printk(KERN_WARNING "STA fw is unavailable.  Using AP fw.");
+;
 		priv->fw_pref = di->fw_image_ap;
 	}
 	rc = mwl8k_init_firmware(hw, priv->fw_pref, true);
@@ -5686,7 +5686,7 @@ err_disable_device:
 
 static void __devexit mwl8k_shutdown(struct pci_dev *pdev)
 {
-	printk(KERN_ERR "===>%s(%u)\n", __func__, __LINE__);
+;
 }
 
 static void __devexit mwl8k_remove(struct pci_dev *pdev)

@@ -322,12 +322,12 @@ PrintRegisters(struct net_device *dev)
     if (pc_debug > 1) {
 	int i, page;
 
-	printk(KERN_DEBUG pr_fmt("Register  common: "));
+;
 	for (i = 0; i < 8; i++)
 	    pr_cont(" %2.2x", GetByte(i));
 	pr_cont("\n");
 	for (page = 0; page <= 8; page++) {
-	    printk(KERN_DEBUG pr_fmt("Register page %2x: "), page);
+;
 	    SelectPage(page);
 	    for (i = 8; i < 16; i++)
 		pr_cont(" %2.2x", GetByte(i));
@@ -337,7 +337,7 @@ PrintRegisters(struct net_device *dev)
 		if (page == 0x43 || (page >= 0x46 && page <= 0x4f) ||
 		    (page >= 0x51 && page <=0x5e))
 			continue;
-	    printk(KERN_DEBUG pr_fmt("Register page %2x: "), page);
+;
 	    SelectPage(page);
 	    for (i = 8; i < 16; i++)
 		pr_cont(" %2.2x", GetByte(i));

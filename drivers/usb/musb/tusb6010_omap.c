@@ -109,8 +109,8 @@ static inline void tusb_omap_free_shared_dmareq(struct tusb_omap_dma_ch *chdat)
 	u32		reg = musb_readl(chdat->tbase, TUSB_DMA_EP_MAP);
 
 	if ((reg & 0xf) != chdat->epnum) {
-		printk(KERN_ERR "ep%i trying to release dmareq0 for ep%i\n",
-			chdat->epnum, reg & 0xf);
+//		printk(KERN_ERR "ep%i trying to release dmareq0 for ep%i\n",
+;
 		return;
 	}
 	musb_writel(chdat->tbase, TUSB_DMA_EP_MAP, 0);
@@ -141,7 +141,7 @@ static void tusb_omap_dma_cb(int lch, u16 ch_status, void *data)
 		ch = tusb_dma->ch;
 
 	if (ch_status != OMAP_DMA_BLOCK_IRQ)
-		printk(KERN_ERR "TUSB DMA error status: %i\n", ch_status);
+;
 
 	dev_dbg(musb->controller, "ep%i %s dma callback ch: %i status: %x\n",
 		chdat->epnum, chdat->tx ? "tx" : "rx",

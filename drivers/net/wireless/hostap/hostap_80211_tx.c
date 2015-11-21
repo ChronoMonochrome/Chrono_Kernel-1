@@ -22,33 +22,33 @@ void hostap_dump_tx_80211(const char *name, struct sk_buff *skb)
 
 	hdr = (struct ieee80211_hdr *) skb->data;
 
-	printk(KERN_DEBUG "%s: TX len=%d jiffies=%ld\n",
-	       name, skb->len, jiffies);
+//	printk(KERN_DEBUG "%s: TX len=%d jiffies=%ld\n",
+;
 
 	if (skb->len < 2)
 		return;
 
 	fc = le16_to_cpu(hdr->frame_control);
-	printk(KERN_DEBUG "   FC=0x%04x (type=%d:%d)%s%s",
-	       fc, (fc & IEEE80211_FCTL_FTYPE) >> 2,
-	       (fc & IEEE80211_FCTL_STYPE) >> 4,
-	       fc & IEEE80211_FCTL_TODS ? " [ToDS]" : "",
-	       fc & IEEE80211_FCTL_FROMDS ? " [FromDS]" : "");
+//	printk(KERN_DEBUG "   FC=0x%04x (type=%d:%d)%s%s",
+//	       fc, (fc & IEEE80211_FCTL_FTYPE) >> 2,
+//	       (fc & IEEE80211_FCTL_STYPE) >> 4,
+//	       fc & IEEE80211_FCTL_TODS ? " [ToDS]" : "",
+;
 
 	if (skb->len < IEEE80211_DATA_HDR3_LEN) {
-		printk("\n");
+;
 		return;
 	}
 
-	printk(" dur=0x%04x seq=0x%04x\n", le16_to_cpu(hdr->duration_id),
-	       le16_to_cpu(hdr->seq_ctrl));
+//	printk(" dur=0x%04x seq=0x%04x\n", le16_to_cpu(hdr->duration_id),
+;
 
-	printk(KERN_DEBUG "   A1=%pM", hdr->addr1);
-	printk(" A2=%pM", hdr->addr2);
-	printk(" A3=%pM", hdr->addr3);
+;
+;
+;
 	if (skb->len >= 30)
-		printk(" A4=%pM", hdr->addr4);
-	printk("\n");
+;
+;
 }
 
 
@@ -75,8 +75,8 @@ netdev_tx_t hostap_data_start_xmit(struct sk_buff *skb,
 	local = iface->local;
 
 	if (skb->len < ETH_HLEN) {
-		printk(KERN_DEBUG "%s: hostap_data_start_xmit: short skb "
-		       "(len=%d)\n", dev->name, skb->len);
+//		printk(KERN_DEBUG "%s: hostap_data_start_xmit: short skb "
+;
 		kfree_skb(skb);
 		return NETDEV_TX_OK;
 	}
@@ -89,15 +89,15 @@ netdev_tx_t hostap_data_start_xmit(struct sk_buff *skb,
 			to_assoc_ap = 1;
 			use_wds = WDS_NO;
 		} else if (dev == local->apdev) {
-			printk(KERN_DEBUG "%s: prism2_tx: trying to use "
-			       "AP device with Ethernet net dev\n", dev->name);
+//			printk(KERN_DEBUG "%s: prism2_tx: trying to use "
+;
 			kfree_skb(skb);
 			return NETDEV_TX_OK;
 		}
 	} else {
 		if (local->iw_mode == IW_MODE_REPEAT) {
-			printk(KERN_DEBUG "%s: prism2_tx: trying to use "
-			       "non-WDS link in Repeater mode\n", dev->name);
+//			printk(KERN_DEBUG "%s: prism2_tx: trying to use "
+;
 			kfree_skb(skb);
 			return NETDEV_TX_OK;
 		} else if (local->iw_mode == IW_MODE_INFRA &&
@@ -277,8 +277,8 @@ netdev_tx_t hostap_mgmt_start_xmit(struct sk_buff *skb,
 	local = iface->local;
 
 	if (skb->len < 10) {
-		printk(KERN_DEBUG "%s: hostap_mgmt_start_xmit: short skb "
-		       "(len=%d)\n", dev->name, skb->len);
+//		printk(KERN_DEBUG "%s: hostap_mgmt_start_xmit: short skb "
+;
 		kfree_skb(skb);
 		return NETDEV_TX_OK;
 	}
@@ -330,9 +330,9 @@ static struct sk_buff * hostap_tx_encrypt(struct sk_buff *skb,
 	    strcmp(crypt->ops->name, "TKIP") == 0) {
 		hdr = (struct ieee80211_hdr *) skb->data;
 		if (net_ratelimit()) {
-			printk(KERN_DEBUG "%s: TKIP countermeasures: dropped "
-			       "TX packet to %pM\n",
-			       local->dev->name, hdr->addr1);
+//			printk(KERN_DEBUG "%s: TKIP countermeasures: dropped "
+//			       "TX packet to %pM\n",
+;
 		}
 		kfree_skb(skb);
 		return NULL;
@@ -398,9 +398,9 @@ netdev_tx_t hostap_master_start_xmit(struct sk_buff *skb,
 
 	meta = (struct hostap_skb_tx_data *) skb->cb;
 	if (meta->magic != HOSTAP_SKB_TX_DATA_MAGIC) {
-		printk(KERN_DEBUG "%s: invalid skb->cb magic (0x%08x, "
-		       "expected 0x%08x)\n",
-		       dev->name, meta->magic, HOSTAP_SKB_TX_DATA_MAGIC);
+//		printk(KERN_DEBUG "%s: invalid skb->cb magic (0x%08x, "
+//		       "expected 0x%08x)\n",
+;
 		ret = NETDEV_TX_OK;
 		iface->stats.tx_dropped++;
 		goto fail;
@@ -417,8 +417,8 @@ netdev_tx_t hostap_master_start_xmit(struct sk_buff *skb,
 	}
 
 	if (skb->len < 24) {
-		printk(KERN_DEBUG "%s: hostap_master_start_xmit: short skb "
-		       "(len=%d)\n", dev->name, skb->len);
+//		printk(KERN_DEBUG "%s: hostap_master_start_xmit: short skb "
+;
 		ret = NETDEV_TX_OK;
 		iface->stats.tx_dropped++;
 		goto fail;
@@ -441,9 +441,9 @@ netdev_tx_t hostap_master_start_xmit(struct sk_buff *skb,
 		    ieee80211_is_data(hdr->frame_control) &&
 		    meta->ethertype != ETH_P_PAE &&
 		    !(meta->flags & HOSTAP_TX_FLAGS_WDS)) {
-			printk(KERN_DEBUG "%s: dropped frame to unauthorized "
-			       "port (IEEE 802.1X): ethertype=0x%04x\n",
-			       dev->name, meta->ethertype);
+//			printk(KERN_DEBUG "%s: dropped frame to unauthorized "
+//			       "port (IEEE 802.1X): ethertype=0x%04x\n",
+;
 			hostap_dump_tx_80211(dev->name, skb);
 
 			ret = NETDEV_TX_OK; /* drop packet */
@@ -502,8 +502,8 @@ netdev_tx_t hostap_master_start_xmit(struct sk_buff *skb,
 		   ieee80211_is_data(hdr->frame_control) &&
 		   meta->ethertype != ETH_P_PAE) {
 		if (net_ratelimit()) {
-			printk(KERN_DEBUG "%s: dropped unencrypted TX data "
-			       "frame (drop_unencrypted=1)\n", dev->name);
+//			printk(KERN_DEBUG "%s: dropped unencrypted TX data "
+;
 		}
 		iface->stats.tx_dropped++;
 		ret = NETDEV_TX_OK;
@@ -513,17 +513,17 @@ netdev_tx_t hostap_master_start_xmit(struct sk_buff *skb,
 	if (tx.crypt) {
 		skb = hostap_tx_encrypt(skb, tx.crypt);
 		if (skb == NULL) {
-			printk(KERN_DEBUG "%s: TX - encryption failed\n",
-			       dev->name);
+//			printk(KERN_DEBUG "%s: TX - encryption failed\n",
+;
 			ret = NETDEV_TX_OK;
 			goto fail;
 		}
 		meta = (struct hostap_skb_tx_data *) skb->cb;
 		if (meta->magic != HOSTAP_SKB_TX_DATA_MAGIC) {
-			printk(KERN_DEBUG "%s: invalid skb->cb magic (0x%08x, "
-			       "expected 0x%08x) after hostap_tx_encrypt\n",
-			       dev->name, meta->magic,
-			       HOSTAP_SKB_TX_DATA_MAGIC);
+//			printk(KERN_DEBUG "%s: invalid skb->cb magic (0x%08x, "
+//			       "expected 0x%08x) after hostap_tx_encrypt\n",
+//			       dev->name, meta->magic,
+;
 			ret = NETDEV_TX_OK;
 			iface->stats.tx_dropped++;
 			goto fail;

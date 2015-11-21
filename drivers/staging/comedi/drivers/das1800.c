@@ -572,34 +572,22 @@ static int das1800_init_dma(struct comedi_device *dev, unsigned int dma0,
 			devpriv->dma_bits |= DMA_CH7_CH5;
 			break;
 		default:
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" only supports dma channels 5 through 7\n"
-			       " Dual dma only allows the following combinations:\n"
-			       " dma 5,6 / 6,7 / or 7,5\n");
-#else
-			;
-#endif
+//			printk(" only supports dma channels 5 through 7\n"
+//			       " Dual dma only allows the following combinations:\n"
+;
 			return -EINVAL;
 			break;
 		}
 		if (request_dma(dma0, driver_das1800.driver_name)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" failed to allocate dma channel %i\n", dma0);
-#else
-			;
-#endif
+;
 			return -EINVAL;
 		}
 		devpriv->dma0 = dma0;
 		devpriv->dma_current = dma0;
 		if (dma1) {
 			if (request_dma(dma1, driver_das1800.driver_name)) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(" failed to allocate dma channel %i\n",
-				       dma1);
-#else
-				;
-#endif
+//				printk(" failed to allocate dma channel %i\n",
+;
 				return -EINVAL;
 			}
 			devpriv->dma1 = dma1;
@@ -642,44 +630,20 @@ static int das1800_attach(struct comedi_device *dev,
 	if (alloc_private(dev, sizeof(struct das1800_private)) < 0)
 		return -ENOMEM;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_das1800.driver_name,
-	       iobase);
-#else
-	;
-#endif
+//	printk("comedi%d: %s: io 0x%lx", dev->minor, driver_das1800.driver_name,
+;
 	if (irq) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(", irq %u", irq);
-#else
-		;
-#endif
+;
 		if (dma0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(", dma %u", dma0);
-#else
-			;
-#endif
+;
 			if (dma1)
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(" and %u", dma1);
-#else
-				;
-#endif
+;
 		}
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 
 	if (iobase == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" io base address required\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 
@@ -694,11 +658,7 @@ static int das1800_attach(struct comedi_device *dev,
 
 	board = das1800_probe(dev);
 	if (board < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" unable to determine board type\n");
-#else
-		;
-#endif
+;
 		return -ENODEV;
 	}
 
@@ -722,11 +682,7 @@ static int das1800_attach(struct comedi_device *dev,
 	if (irq) {
 		if (request_irq(irq, das1800_interrupt, 0,
 				driver_das1800.driver_name, dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" unable to allocate irq %u\n", irq);
-#else
-			;
-#endif
+;
 			return -EINVAL;
 		}
 	}
@@ -755,11 +711,7 @@ static int das1800_attach(struct comedi_device *dev,
 		devpriv->irq_dma_bits |= 0x38;
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" irq out of range\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 		break;
 	}
@@ -860,12 +812,8 @@ static int das1800_detach(struct comedi_device *dev)
 		kfree(devpriv->ai_buf1);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: %s: remove\n", dev->minor,
-	       driver_das1800.driver_name);
-#else
-	;
-#endif
+//	printk("comedi%d: %s: remove\n", dev->minor,
+;
 
 	return 0;
 };
@@ -884,12 +832,8 @@ static int das1800_probe(struct comedi_device *dev)
 	case 0x3:
 		if (board == das1801st_da || board == das1802st_da ||
 		    board == das1701st_da || board == das1702st_da) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: %s\n",
-			       das1800_boards[board].name);
-#else
-			;
-#endif
+//			printk(" Board model: %s\n",
+;
 			return board;
 		}
 		printk
@@ -898,12 +842,8 @@ static int das1800_probe(struct comedi_device *dev)
 		break;
 	case 0x4:
 		if (board == das1802hr_da || board == das1702hr_da) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: %s\n",
-			       das1800_boards[board].name);
-#else
-			;
-#endif
+//			printk(" Board model: %s\n",
+;
 			return board;
 		}
 		printk
@@ -913,12 +853,8 @@ static int das1800_probe(struct comedi_device *dev)
 	case 0x5:
 		if (board == das1801ao || board == das1802ao ||
 		    board == das1701ao || board == das1702ao) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: %s\n",
-			       das1800_boards[board].name);
-#else
-			;
-#endif
+//			printk(" Board model: %s\n",
+;
 			return board;
 		}
 		printk
@@ -927,30 +863,18 @@ static int das1800_probe(struct comedi_device *dev)
 		break;
 	case 0x6:
 		if (board == das1802hr || board == das1702hr) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: %s\n",
-			       das1800_boards[board].name);
-#else
-			;
-#endif
+//			printk(" Board model: %s\n",
+;
 			return board;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" Board model (probed, not recommended): das-1802hr\n");
-#else
-		;
-#endif
+;
 		return das1802hr;
 		break;
 	case 0x7:
 		if (board == das1801st || board == das1802st ||
 		    board == das1701st || board == das1702st) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: %s\n",
-			       das1800_boards[board].name);
-#else
-			;
-#endif
+//			printk(" Board model: %s\n",
+;
 			return board;
 		}
 		printk
@@ -959,12 +883,8 @@ static int das1800_probe(struct comedi_device *dev)
 		break;
 	case 0x8:
 		if (board == das1801hc || board == das1802hc) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: %s\n",
-			       das1800_boards[board].name);
-#else
-			;
-#endif
+//			printk(" Board model: %s\n",
+;
 			return board;
 		}
 		printk

@@ -244,7 +244,7 @@ static void mv88e6060_poll_link(struct dsa_switch *ds)
 
 		if (!link) {
 			if (netif_carrier_ok(dev)) {
-				printk(KERN_INFO "%s: link down\n", dev->name);
+;
 				netif_carrier_off(dev);
 			}
 			continue;
@@ -255,10 +255,10 @@ static void mv88e6060_poll_link(struct dsa_switch *ds)
 		fc = ((port_status & 0xc000) == 0xc000) ? 1 : 0;
 
 		if (!netif_carrier_ok(dev)) {
-			printk(KERN_INFO "%s: link up, %d Mb/s, %s duplex, "
-					 "flow control %sabled\n", dev->name,
-					 speed, duplex ? "full" : "half",
-					 fc ? "en" : "dis");
+//			printk(KERN_INFO "%s: link up, %d Mb/s, %s duplex, "
+//					 "flow control %sabled\n", dev->name,
+//					 speed, duplex ? "full" : "half",
+;
 			netif_carrier_on(dev);
 		}
 	}

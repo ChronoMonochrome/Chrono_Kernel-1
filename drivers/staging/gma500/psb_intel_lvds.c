@@ -395,11 +395,11 @@ bool psb_intel_lvds_mode_fixup(struct drm_encoder *encoder,
 
 	/* PSB requires the LVDS is on pipe B, MRST has only one pipe anyway */
 	if (!IS_MRST(dev) && psb_intel_crtc->pipe == 0) {
-		printk(KERN_ERR "Can't support LVDS on pipe A\n");
+;
 		return false;
 	}
 	if (IS_MRST(dev) && psb_intel_crtc->pipe != 0) {
-		printk(KERN_ERR "Must use PIPE A\n");
+;
 		return false;
 	}
 	/* Should never happen!! */
@@ -407,8 +407,8 @@ bool psb_intel_lvds_mode_fixup(struct drm_encoder *encoder,
 			    head) {
 		if (tmp_encoder != encoder
 		    && tmp_encoder->crtc == encoder->crtc) {
-			printk(KERN_ERR "Can't enable LVDS and another "
-			       "encoder on the same pipe\n");
+//			printk(KERN_ERR "Can't enable LVDS and another "
+;
 			return false;
 		}
 	}
@@ -766,8 +766,8 @@ void psb_intel_lvds_init(struct drm_device *dev,
 							 GPIOB,
 							 "LVDSBLC_B");
 	if (!psb_intel_output->i2c_bus) {
-		dev_printk(KERN_ERR,
-			&dev->pdev->dev, "I2C bus registration failed.\n");
+//		dev_printk(KERN_ERR,
+;
 		goto failed_blc_i2c;
 	}
 	psb_intel_output->i2c_bus->slave_addr = 0x2C;
@@ -788,8 +788,8 @@ void psb_intel_lvds_init(struct drm_device *dev,
 							 GPIOC,
 							 "LVDSDDC_C");
 	if (!psb_intel_output->ddc_bus) {
-		dev_printk(KERN_ERR, &dev->pdev->dev,
-			   "DDC bus registration " "failed.\n");
+//		dev_printk(KERN_ERR, &dev->pdev->dev,
+;
 		goto failed_ddc;
 	}
 

@@ -238,12 +238,8 @@ ieee80211_rx_frame_mgmt(struct ieee80211_device *ieee, struct sk_buff *skb,
 
 	#ifdef NOT_YET
 	if (ieee->iw_mode == IW_MODE_MASTER) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "%s: Master mode not yet suppported.\n",
-		       ieee->dev->name);
-#else
-		;
-#endif
+//		printk(KERN_DEBUG "%s: Master mode not yet suppported.\n",
+;
 		return 0;
 	}
 
@@ -268,13 +264,9 @@ ieee80211_rx_frame_mgmt(struct ieee80211_device *ieee, struct sk_buff *skb,
 
 	    if (ieee->iw_mode == IW_MODE_MASTER) {
 		if (type != WLAN_FC_TYPE_MGMT && type != WLAN_FC_TYPE_CTRL) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_DEBUG "%s: unknown management frame "
-			       "(type=0x%02x, stype=0x%02x) dropped\n",
-			       skb->dev->name, type, stype);
-#else
-			;
-#endif
+//			printk(KERN_DEBUG "%s: unknown management frame "
+//			       "(type=0x%02x, stype=0x%02x) dropped\n",
+;
 			return -1;
 		}
 
@@ -282,12 +274,8 @@ ieee80211_rx_frame_mgmt(struct ieee80211_device *ieee, struct sk_buff *skb,
 		return 0;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "%s: hostap_rx_frame_mgmt: management frame "
-	       "received in non-Host AP mode\n", skb->dev->name);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG "%s: hostap_rx_frame_mgmt: management frame "
+;
 	return -1;
 	#endif
 }
@@ -376,13 +364,9 @@ ieee80211_rx_frame_decrypt(struct ieee80211_device* ieee, struct sk_buff *skb,
 	if (ieee->tkip_countermeasures &&
 	    strcmp(crypt->ops->name, "TKIP") == 0) {
 		if (net_ratelimit()) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_DEBUG "%s: TKIP countermeasures: dropped "
-			       "received packet from %pM\n",
-			       ieee->dev->name, hdr->addr2);
-#else
-			;
-#endif
+//			printk(KERN_DEBUG "%s: TKIP countermeasures: dropped "
+//			       "received packet from %pM\n",
+;
 		}
 		return -1;
 	}
@@ -434,13 +418,9 @@ ieee80211_rx_frame_decrypt_msdu(struct ieee80211_device* ieee, struct sk_buff *s
 	res = crypt->ops->decrypt_msdu(skb, keyidx, hdrlen, crypt->priv);
 	atomic_dec(&crypt->refcnt);
 	if (res < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "%s: MSDU decryption/MIC verification failed"
-		       " (SA=%pM keyidx=%d)\n",
-		       ieee->dev->name, hdr->addr2, keyidx);
-#else
-		;
-#endif
+//		printk(KERN_DEBUG "%s: MSDU decryption/MIC verification failed"
+//		       " (SA=%pM keyidx=%d)\n",
+;
 		return -1;
 	}
 
@@ -496,11 +476,7 @@ static int is_duplicate_packet(struct ieee80211_device *ieee,
 		if (p == &ieee->ibss_mac_hash[index]) {
 			entry = kmalloc(sizeof(struct ieee_ibss_seq), GFP_ATOMIC);
 			if (!entry) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_WARNING "Cannot malloc new mac entry\n");
-#else
-				;
-#endif
+;
 				return 0;
 			}
 			memcpy(entry->mac, mac, ETH_ALEN);
@@ -858,27 +834,11 @@ u8 parse_subframe(struct ieee80211_device* ieee,struct sk_buff *skb,
 			nSubframe_Length = (nSubframe_Length>>8) + (nSubframe_Length<<8);
 
 			if(skb->len<(ETHERNET_HEADER_SIZE + nSubframe_Length)) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("%s: A-MSDU parse error!! pRfd->nTotalSubframe : %d\n",\
-						__FUNCTION__,rxb->nr_subframes);
-#else
-				;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("%s: A-MSDU parse error!! Subframe Length: %d\n",__FUNCTION__, nSubframe_Length);
-#else
-				;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("nRemain_Length is %d and nSubframe_Length is : %d\n",skb->len,nSubframe_Length);
-#else
-				;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("The Packet SeqNum is %d\n",SeqNum);
-#else
-				;
-#endif
+//				printk("%s: A-MSDU parse error!! pRfd->nTotalSubframe : %d\n",\
+;
+;
+;
+;
 				return 0;
 			}
 
@@ -965,12 +925,8 @@ int ieee80211_rtl_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
 	stats = &ieee->stats;
 
 	if (skb->len < 10) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "%s: SKB length < 10\n",
-		       dev->name);
-#else
-		;
-#endif
+//		printk(KERN_INFO "%s: SKB length < 10\n",
+;
 		goto rx_dropped;
 	}
 
@@ -985,11 +941,7 @@ int ieee80211_rtl_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
 	if(HTCCheck(ieee, skb->data))
 	{
 		if(net_ratelimit())
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("find HTCControl\n");
-#else
-		;
-#endif
+;
 		hdrlen += 4;
 		rx_stats->bContainHTC = 1;
 	}
@@ -1217,11 +1169,7 @@ int ieee80211_rtl_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
 	if (ieee->host_decrypt && (fc & IEEE80211_FCTL_WEP) &&
 	    (keyidx = ieee80211_rx_frame_decrypt(ieee, skb, crypt)) < 0)
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("decrypt frame error\n");
-#else
-		;
-#endif
+;
 		goto rx_dropped;
 	}
 
@@ -1249,13 +1197,9 @@ int ieee80211_rtl_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
 			flen -= hdrlen;
 
 		if (frag_skb->tail + flen > frag_skb->end) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "%s: host decrypted and "
-			       "reassembled frame did not fit skb\n",
-			       dev->name);
-#else
-			;
-#endif
+//			printk(KERN_WARNING "%s: host decrypted and "
+//			       "reassembled frame did not fit skb\n",
+;
 			ieee80211_frag_cache_invalidate(ieee, hdr);
 			goto rx_dropped;
 		}
@@ -1292,11 +1236,7 @@ int ieee80211_rtl_rx(struct ieee80211_device *ieee, struct sk_buff *skb,
 	if (ieee->host_decrypt && (fc & IEEE80211_FCTL_WEP) &&
 	    ieee80211_rx_frame_decrypt_msdu(ieee, skb, keyidx, crypt))
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("==>decrypt msdu error\n");
-#else
-		;
-#endif
+;
 		goto rx_dropped;
 	}
 
@@ -2164,8 +2104,8 @@ int ieee80211_parse_info_param(struct ieee80211_device *ieee,
 			}
 			break;
 		case MFIE_TYPE_QOS_PARAMETER:
-			printk(KERN_ERR
-			       "QoS Error need to parse QOS_PARAMETER IE\n");
+//			printk(KERN_ERR
+;
 			break;
 
 #ifdef ENABLE_DOT11D
@@ -2555,11 +2495,7 @@ static inline void ieee80211_process_probe_response(
 			{
 				if( !IsLegalChannel(ieee, network.channel) )
 				{
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("GetScanInfo(): For Country code, filter probe response at channel(%d).\n", network.channel);
-#else
-					;
-#endif
+;
 					return;
 				}
 			}
@@ -2569,11 +2505,7 @@ static inline void ieee80211_process_probe_response(
 				// Filter over channel ch12~14
 				if(network.channel > 11)
 				{
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("GetScanInfo(): For Global Domain, filter probe response at channel(%d).\n", network.channel);
-#else
-					;
-#endif
+;
 					return;
 				}
 			}
@@ -2585,11 +2517,7 @@ static inline void ieee80211_process_probe_response(
 			{
 				if( !IsLegalChannel(ieee, network.channel) )
 				{
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("GetScanInfo(): For Country code, filter beacon at channel(%d).\n",network.channel);
-#else
-					;
-#endif
+;
 					return;
 				}
 			}
@@ -2599,11 +2527,7 @@ static inline void ieee80211_process_probe_response(
 				// Filter over channel ch12~14
 				if(network.channel > 14)
 				{
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("GetScanInfo(): For Global Domain, filter beacon at channel(%d).\n",network.channel);
-#else
-					;
-#endif
+;
 					return;
 				}
 			}

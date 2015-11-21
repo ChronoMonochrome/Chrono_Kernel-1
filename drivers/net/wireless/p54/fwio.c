@@ -99,8 +99,8 @@ int p54_parse_firmware(struct ieee80211_hw *dev, const struct firmware *fw)
 				 4 + /* rx alignment */
 				 IEEE80211_MAX_FRAG_THRESHOLD;
 			if (priv->rx_mtu > maxlen && PAGE_SIZE == 4096) {
-				printk(KERN_INFO "p54: rx_mtu reduced from %d "
-				       "to %d\n", priv->rx_mtu, maxlen);
+//				printk(KERN_INFO "p54: rx_mtu reduced from %d "
+;
 				priv->rx_mtu = maxlen;
 			}
 			break;

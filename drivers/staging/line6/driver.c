@@ -1265,11 +1265,7 @@ static int __init line6_init(void)
 {
 	int i, retval;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "%s driver version %s\n", DRIVER_NAME, DRIVER_VERSION);
-#else
-	;
-#endif
+;
 
 	for (i = LINE6_MAX_DEVICES; i--;)
 		line6_devices[i] = NULL;

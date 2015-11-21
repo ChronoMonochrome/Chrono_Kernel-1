@@ -467,8 +467,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 				 HERMES_BYTES_TO_RECLEN(ETH_ALEN),
 				 dev->dev_addr);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting MAC address\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting MAC address\n",
+;
 		return err;
 	}
 
@@ -476,8 +476,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 	err = hermes_write_wordrec(hw, USER_BAP, HERMES_RID_CNFPORTTYPE,
 				   priv->port_type);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting port type\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting port type\n",
+;
 		return err;
 	}
 	/* Set the channel/frequency */
@@ -486,8 +486,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 					   HERMES_RID_CNFOWNCHANNEL,
 					   priv->channel);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d setting channel %d\n",
-			       dev->name, err, priv->channel);
+//			printk(KERN_ERR "%s: Error %d setting channel %d\n",
+;
 			return err;
 		}
 	}
@@ -496,8 +496,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 		u16 createibss;
 
 		if ((strlen(priv->desired_essid) == 0) && (priv->createibss)) {
-			printk(KERN_WARNING "%s: This firmware requires an "
-			       "ESSID in IBSS-Ad-Hoc mode.\n", dev->name);
+//			printk(KERN_WARNING "%s: This firmware requires an "
+;
 			/* With wvlan_cs, in this case, we would crash.
 			 * hopefully, this driver will behave better...
 			 * Jean II */
@@ -510,8 +510,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 					   HERMES_RID_CNFCREATEIBSS,
 					   createibss);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d setting CREATEIBSS\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d setting CREATEIBSS\n",
+;
 			return err;
 		}
 	}
@@ -519,8 +519,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 	/* Set the desired BSSID */
 	err = __orinoco_hw_set_wap(priv);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting AP address\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting AP address\n",
+;
 		return err;
 	}
 
@@ -532,16 +532,16 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 			HERMES_BYTES_TO_RECLEN(strlen(priv->desired_essid)+2),
 			&idbuf);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting OWNSSID\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting OWNSSID\n",
+;
 		return err;
 	}
 	err = hw->ops->write_ltv(hw, USER_BAP, HERMES_RID_CNFDESIREDSSID,
 			HERMES_BYTES_TO_RECLEN(strlen(priv->desired_essid)+2),
 			&idbuf);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting DESIREDSSID\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting DESIREDSSID\n",
+;
 		return err;
 	}
 
@@ -552,8 +552,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 				 HERMES_BYTES_TO_RECLEN(strlen(priv->nick)+2),
 				 &idbuf);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting nickname\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting nickname\n",
+;
 		return err;
 	}
 
@@ -563,9 +563,9 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 					   HERMES_RID_CNFSYSTEMSCALE,
 					   priv->ap_density);
 		if (err) {
-			printk(KERN_WARNING "%s: Error %d setting SYSTEMSCALE. "
-			       "Disabling sensitivity control\n",
-			       dev->name, err);
+//			printk(KERN_WARNING "%s: Error %d setting SYSTEMSCALE. "
+//			       "Disabling sensitivity control\n",
+;
 
 			priv->has_sensitivity = 0;
 		}
@@ -575,8 +575,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 	err = hermes_write_wordrec(hw, USER_BAP, HERMES_RID_CNFRTSTHRESHOLD,
 				   priv->rts_thresh);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting RTS threshold\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting RTS threshold\n",
+;
 		return err;
 	}
 
@@ -590,16 +590,16 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 					   HERMES_RID_CNFFRAGMENTATIONTHRESHOLD,
 					   priv->frag_thresh);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting fragmentation\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting fragmentation\n",
+;
 		return err;
 	}
 
 	/* Set bitrate */
 	err = __orinoco_hw_set_bitrate(priv);
 	if (err) {
-		printk(KERN_ERR "%s: Error %d setting bitrate\n",
-		       dev->name, err);
+//		printk(KERN_ERR "%s: Error %d setting bitrate\n",
+;
 		return err;
 	}
 
@@ -609,8 +609,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 					   HERMES_RID_CNFPMENABLED,
 					   priv->pm_on);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d setting up PM\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d setting up PM\n",
+;
 			return err;
 		}
 
@@ -618,24 +618,24 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 					   HERMES_RID_CNFMULTICASTRECEIVE,
 					   priv->pm_mcast);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d setting up PM\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d setting up PM\n",
+;
 			return err;
 		}
 		err = hermes_write_wordrec(hw, USER_BAP,
 					   HERMES_RID_CNFMAXSLEEPDURATION,
 					   priv->pm_period);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d setting up PM\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d setting up PM\n",
+;
 			return err;
 		}
 		err = hermes_write_wordrec(hw, USER_BAP,
 					   HERMES_RID_CNFPMHOLDOVERDURATION,
 					   priv->pm_timeout);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d setting up PM\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d setting up PM\n",
+;
 			return err;
 		}
 	}
@@ -646,8 +646,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 					   HERMES_RID_CNFPREAMBLE_SYMBOL,
 					   priv->preamble);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d setting preamble\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d setting preamble\n",
+;
 			return err;
 		}
 	}
@@ -656,8 +656,8 @@ int orinoco_hw_program_rids(struct orinoco_private *priv)
 	if (priv->has_wep || priv->has_wpa) {
 		err = __orinoco_hw_setup_enc(priv);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d activating encryption\n",
-			       dev->name, err);
+//			printk(KERN_ERR "%s: Error %d activating encryption\n",
+;
 			return err;
 		}
 	}
@@ -711,8 +711,8 @@ int __orinoco_hw_set_bitrate(struct orinoco_private *priv)
 	int err = 0;
 
 	if (ratemode >= BITRATE_TABLE_SIZE) {
-		printk(KERN_ERR "%s: BUG: Invalid bitrate mode %d\n",
-		       priv->ndev->name, ratemode);
+//		printk(KERN_ERR "%s: BUG: Invalid bitrate mode %d\n",
+;
 		return -EINVAL;
 	}
 
@@ -768,8 +768,8 @@ int orinoco_hw_get_act_bitrate(struct orinoco_private *priv, int *bitrate)
 			}
 
 		if (i >= BITRATE_TABLE_SIZE) {
-			printk(KERN_INFO "%s: Unable to determine current bitrate (0x%04hx)\n",
-			       priv->ndev->name, val);
+//			printk(KERN_INFO "%s: Unable to determine current bitrate (0x%04hx)\n",
+;
 			err = -EIO;
 		}
 
@@ -862,8 +862,8 @@ int __orinoco_hw_setup_wepkeys(struct orinoco_private *priv)
 			keylen = priv->keys[priv->tx_key].key_len;
 
 			if (keylen > LARGE_KEY_SIZE) {
-				printk(KERN_ERR "%s: BUG: Key %d has oversize length %d.\n",
-				       priv->ndev->name, priv->tx_key, keylen);
+//				printk(KERN_ERR "%s: BUG: Key %d has oversize length %d.\n",
+;
 				return -E2BIG;
 			} else if (keylen > SMALL_KEY_SIZE)
 				keylen = LARGE_KEY_SIZE;
@@ -1059,8 +1059,8 @@ int orinoco_clear_tkip_key(struct orinoco_private *priv, int key_idx)
 				   HERMES_RID_CNFREMDEFAULTTKIPKEY_AGERE,
 				   key_idx);
 	if (err)
-		printk(KERN_WARNING "%s: Error %d clearing TKIP key %d\n",
-		       priv->ndev->name, err, key_idx);
+//		printk(KERN_WARNING "%s: Error %d clearing TKIP key %d\n",
+;
 	return err;
 }
 
@@ -1076,8 +1076,8 @@ int __orinoco_hw_set_multicast_list(struct orinoco_private *priv,
 					   HERMES_RID_CNFPROMISCUOUSMODE,
 					   promisc);
 		if (err) {
-			printk(KERN_ERR "%s: Error %d setting PROMISCUOUSMODE to 1.\n",
-			       priv->ndev->name, err);
+//			printk(KERN_ERR "%s: Error %d setting PROMISCUOUSMODE to 1.\n",
+;
 		} else
 			priv->promiscuous = promisc;
 	}
@@ -1101,8 +1101,8 @@ int __orinoco_hw_set_multicast_list(struct orinoco_private *priv,
 				   HERMES_BYTES_TO_RECLEN(mc_count * ETH_ALEN),
 				   &mclist);
 		if (err)
-			printk(KERN_ERR "%s: Error %d setting multicast list.\n",
-			       priv->ndev->name, err);
+//			printk(KERN_ERR "%s: Error %d setting multicast list.\n",
+;
 		else
 			priv->mc_count = mc_count;
 	}
@@ -1187,8 +1187,8 @@ int orinoco_hw_get_freq(struct orinoco_private *priv)
 	}
 
 	if ((channel < 1) || (channel > NUM_CHANNELS)) {
-		printk(KERN_WARNING "%s: Channel out of range (%d)!\n",
-		       priv->ndev->name, channel);
+//		printk(KERN_WARNING "%s: Channel out of range (%d)!\n",
+;
 		err = -EBUSY;
 		goto out;
 

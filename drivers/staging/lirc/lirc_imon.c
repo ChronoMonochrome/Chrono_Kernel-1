@@ -212,12 +212,8 @@ static void deregister_from_lirc(struct imon_context *context)
 		err("%s: unable to deregister from lirc(%d)",
 			__func__, retval);
 	else
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO MOD_NAME ": Deregistered iMON driver "
-		       "(minor:%d)\n", minor);
-#else
-		;
-#endif
+//		printk(KERN_INFO MOD_NAME ": Deregistered iMON driver "
+;
 
 }
 
@@ -617,22 +613,10 @@ static void imon_incoming_packet(struct imon_context *context,
 	}
 
 	if (debug) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "raw packet: ");
-#else
-		;
-#endif
+;
 		for (i = 0; i < len; ++i)
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%02x ", buf[i]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\n");
-#else
-		;
-#endif
+;
+;
 	}
 
 	/*
@@ -1011,12 +995,8 @@ static void imon_disconnect(struct usb_interface *interface)
 
 	mutex_unlock(&driver_lock);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "%s: iMON device (intf%d) disconnected\n",
-	       __func__, ifnum);
-#else
-	;
-#endif
+//	printk(KERN_INFO "%s: iMON device (intf%d) disconnected\n",
+;
 }
 
 static int imon_suspend(struct usb_interface *intf, pm_message_t message)
@@ -1049,11 +1029,7 @@ static int __init imon_init(void)
 {
 	int rc;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO MOD_NAME ": " MOD_DESC ", v" MOD_VERSION "\n");
-#else
-	;
-#endif
+;
 
 	rc = usb_register(&imon_driver);
 	if (rc) {
@@ -1067,11 +1043,7 @@ static int __init imon_init(void)
 static void __exit imon_exit(void)
 {
 	usb_deregister(&imon_driver);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO MOD_NAME ": module removed. Goodbye!\n");
-#else
-	;
-#endif
+;
 }
 
 module_init(imon_init);

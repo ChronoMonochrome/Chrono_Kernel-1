@@ -291,9 +291,9 @@ ieee80211_tx_h_check_assoc(struct ieee80211_tx_data *tx)
 			     tx->sdata->vif.type != NL80211_IFTYPE_ADHOC &&
 			     ieee80211_is_data(hdr->frame_control))) {
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
-			printk(KERN_DEBUG "%s: dropped data frame to not "
-			       "associated station %pM\n",
-			       tx->sdata->name, hdr->addr1);
+//			printk(KERN_DEBUG "%s: dropped data frame to not "
+//			       "associated station %pM\n",
+;
 #endif /* CONFIG_MAC80211_VERBOSE_DEBUG */
 			I802_DEBUG_INC(tx->local->tx_handlers_drop_not_assoc);
 			return TX_DROP;
@@ -400,8 +400,8 @@ ieee80211_tx_h_multicast_ps_buf(struct ieee80211_tx_data *tx)
 	if (skb_queue_len(&tx->sdata->bss->ps_bc_buf) >= AP_MAX_BC_BUFFER) {
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
 		if (net_ratelimit())
-			printk(KERN_DEBUG "%s: BC TX buffer full - dropping the oldest frame\n",
-			       tx->sdata->name);
+//			printk(KERN_DEBUG "%s: BC TX buffer full - dropping the oldest frame\n",
+;
 #endif
 		dev_kfree_skb(skb_dequeue(&tx->sdata->bss->ps_bc_buf));
 	} else
@@ -449,10 +449,10 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
 	if (unlikely((staflags & (WLAN_STA_PS_STA | WLAN_STA_PS_DRIVER)) &&
 		     !(info->flags & IEEE80211_TX_CTL_PSPOLL_RESPONSE))) {
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
-		printk(KERN_DEBUG "STA %pM aid %d: PS buffer (entries "
-		       "before %d)\n",
-		       sta->sta.addr, sta->sta.aid,
-		       skb_queue_len(&sta->ps_tx_buf));
+//		printk(KERN_DEBUG "STA %pM aid %d: PS buffer (entries "
+//		       "before %d)\n",
+//		       sta->sta.addr, sta->sta.aid,
+;
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
 			purge_old_ps_buffers(tx->local);
@@ -460,9 +460,9 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
 			struct sk_buff *old = skb_dequeue(&sta->ps_tx_buf);
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
 			if (net_ratelimit()) {
-				printk(KERN_DEBUG "%s: STA %pM TX "
-				       "buffer full - dropping oldest frame\n",
-				       tx->sdata->name, sta->sta.addr);
+//				printk(KERN_DEBUG "%s: STA %pM TX "
+//				       "buffer full - dropping oldest frame\n",
+;
 			}
 #endif
 			dev_kfree_skb(old);
@@ -492,9 +492,9 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
 	}
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
 	else if (unlikely(staflags & WLAN_STA_PS_STA)) {
-		printk(KERN_DEBUG "%s: STA %pM in PS mode, but pspoll "
-		       "set -> send frame\n", tx->sdata->name,
-		       sta->sta.addr);
+//		printk(KERN_DEBUG "%s: STA %pM in PS mode, but pspoll "
+//		       "set -> send frame\n", tx->sdata->name,
+;
 	}
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 
@@ -1878,9 +1878,9 @@ netdev_tx_t ieee80211_subif_start_xmit(struct sk_buff *skb,
 					  skb->data + ETH_ALEN) == 0))) {
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
 		if (net_ratelimit())
-			printk(KERN_DEBUG "%s: dropped frame to %pM"
-			       " (unauthorized port)\n", dev->name,
-			       hdr.addr1);
+//			printk(KERN_DEBUG "%s: dropped frame to %pM"
+//			       " (unauthorized port)\n", dev->name,
+;
 #endif
 
 		I802_DEBUG_INC(local->tx_handlers_drop_unauth_port);
@@ -2338,8 +2338,8 @@ struct sk_buff *ieee80211_pspoll_get(struct ieee80211_hw *hw,
 
 	skb = dev_alloc_skb(local->hw.extra_tx_headroom + sizeof(*pspoll));
 	if (!skb) {
-		printk(KERN_DEBUG "%s: failed to allocate buffer for "
-		       "pspoll template\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to allocate buffer for "
+;
 		return NULL;
 	}
 	skb_reserve(skb, local->hw.extra_tx_headroom);
@@ -2378,8 +2378,8 @@ struct sk_buff *ieee80211_nullfunc_get(struct ieee80211_hw *hw,
 
 	skb = dev_alloc_skb(local->hw.extra_tx_headroom + sizeof(*nullfunc));
 	if (!skb) {
-		printk(KERN_DEBUG "%s: failed to allocate buffer for nullfunc "
-		       "template\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to allocate buffer for nullfunc "
+;
 		return NULL;
 	}
 	skb_reserve(skb, local->hw.extra_tx_headroom);
@@ -2417,8 +2417,8 @@ struct sk_buff *ieee80211_probereq_get(struct ieee80211_hw *hw,
 	skb = dev_alloc_skb(local->hw.extra_tx_headroom + sizeof(*hdr) +
 			    ie_ssid_len + ie_len);
 	if (!skb) {
-		printk(KERN_DEBUG "%s: failed to allocate buffer for probe "
-		       "request template\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to allocate buffer for probe "
+;
 		return NULL;
 	}
 

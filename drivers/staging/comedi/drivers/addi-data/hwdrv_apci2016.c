@@ -168,11 +168,7 @@ int i_APCI2016_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 					devpriv->iobase + APCI2016_DIGITAL_OP);
 			}	/*  if  (data[1]==1) */
 			else {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("\nSpecified channel not supported\n");
-#else
-				;
-#endif
+;
 			}	/*  else if  (data[1]==1) */
 		}		/*  else if (data[1]==0) */
 	}			/*  if (data[3]==0) */
@@ -239,20 +235,12 @@ int i_APCI2016_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 						APCI2016_DIGITAL_OP);
 				}	/*  if(data[1]==1) */
 				else {
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("\nSpecified channel not supported\n");
-#else
-					;
-#endif
+;
 				}	/* else if(data[1]==1) */
 			}	/* elseif(data[1]==0) */
 		}		/* if(data[3]==1); */
 		else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nSpecified functionality does not exist\n");
-#else
-			;
-#endif
+;
 			return -EINVAL;
 		}		/* if else data[3]==1) */
 	}			/* if else data[3]==0) */
@@ -323,11 +311,7 @@ int i_APCI2016_BitsDigitalOutput(struct comedi_device *dev, struct comedi_subdev
 			}	/* switch(ui_NoOfChannel) */
 		}		/*  if  (ui_Temp==1) */
 		else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nSpecified channel not supported \n");
-#else
-			;
-#endif
+;
 		}		/*  else if  (ui_Temp==1) */
 	}			/*  if  (ui_Temp==0) */
 	return insn->n;
@@ -371,11 +355,7 @@ int i_APCI2016_ConfigWatchdog(struct comedi_device *dev, struct comedi_subdevice
 			devpriv->i_IobaseAddon +
 			APCI2016_WATCHDOG_RELOAD_VALUE + 2);
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nThe input parameters are wrong\n");
-#else
-		;
-#endif
+;
 	}
 	return insn->n;
 }
@@ -419,11 +399,7 @@ int i_APCI2016_StartStopWriteWatchdog(struct comedi_device *dev, struct comedi_s
 			APCI2016_WATCHDOG_ENABLEDISABLE);
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nSpecified functionality does not exist\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}			/*  switch(data[0]) */
 

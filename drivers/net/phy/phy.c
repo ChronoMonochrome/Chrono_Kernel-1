@@ -47,11 +47,11 @@ void phy_print_status(struct phy_device *phydev)
 	pr_info("PHY: %s - Link is %s", dev_name(&phydev->dev),
 			phydev->link ? "Up" : "Down");
 	if (phydev->link)
-		printk(KERN_CONT " - %d/%s", phydev->speed,
-				DUPLEX_FULL == phydev->duplex ?
-				"Full" : "Half");
+//		printk(KERN_CONT " - %d/%s", phydev->speed,
+//				DUPLEX_FULL == phydev->duplex ?
+;
 
-	printk(KERN_CONT "\n");
+;
 }
 EXPORT_SYMBOL(phy_print_status);
 
@@ -598,9 +598,9 @@ int phy_start_interrupts(struct phy_device *phydev)
 				IRQF_SHARED,
 				"phy_interrupt",
 				phydev) < 0) {
-		printk(KERN_WARNING "%s: Can't get IRQ %d (PHY)\n",
-				phydev->bus->name,
-				phydev->irq);
+//		printk(KERN_WARNING "%s: Can't get IRQ %d (PHY)\n",
+//				phydev->bus->name,
+;
 		phydev->irq = PHY_POLL;
 		return 0;
 	}

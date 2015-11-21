@@ -106,32 +106,20 @@ int RIOBootCodeRTA(struct rio_info *p, struct DownLoad * rbp)
 
 	func_enter();
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_BOOT, "Data at user address %p\n", rbp->DataP);
-#else
-	rio_d;
-#endif
+;
 
 	/*
 	 ** Check that we have set aside enough memory for this
 	 */
 	if (rbp->Count > SIXTY_FOUR_K) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "RTA Boot Code Too Large!\n");
-#else
-		rio_d;
-#endif
+;
 		p->RIOError.Error = HOST_FILE_TOO_LARGE;
 		func_exit();
 		return -ENOMEM;
 	}
 
 	if (p->RIOBooting) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "RTA Boot Code : BUSY BUSY BUSY!\n");
-#else
-		rio_d;
-#endif
+;
 		p->RIOError.Error = BOOT_IN_PROGRESS;
 		func_exit();
 		return -EBUSY;
@@ -156,11 +144,7 @@ int RIOBootCodeRTA(struct rio_info *p, struct DownLoad * rbp)
 	 */
 
 	if (copy_from_user(((u8 *)p->RIOBootPackets) + offset, rbp->DataP, rbp->Count)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Bad data copy from user space\n");
-#else
-		rio_d;
-#endif
+;
 		p->RIOError.Error = COPYIN_FAILED;
 		func_exit();
 		return -EFAULT;
@@ -189,11 +173,7 @@ void rio_start_card_running(struct Host *HostP)
 {
 	switch (HostP->Type) {
 	case RIO_AT:
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Start ISA card running\n");
-#else
-		rio_d;
-#endif
+;
 		writeb(BOOT_FROM_RAM | EXTERNAL_BUS_ON | HostP->Mode | RIOAtVec2Ctrl[HostP->Ivec & 0xF], &HostP->Control);
 		break;
 	case RIO_PCI:
@@ -202,19 +182,11 @@ void rio_start_card_running(struct Host *HostP)
 		 ** mapped, so we are writing to memory registers instead of io
 		 ** ports.
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Start PCI card running\n");
-#else
-		rio_d;
-#endif
+;
 		writeb(PCITpBootFromRam | PCITpBusEnable | HostP->Mode, &HostP->Control);
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Unknown host type %d\n", HostP->Type);
-#else
-		rio_d;
-#endif
+;
 		break;
 	}
 	return;
@@ -249,26 +221,14 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 
 	/* Walk the hosts */
 	for (host = 0; host < p->RIONumHosts; host++) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Attempt to boot host %d\n", host);
-#else
-		rio_d;
-#endif
+;
 		HostP = &p->RIOHosts[host];
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Host Type = 0x%x, Mode = 0x%x, IVec = 0x%x\n", HostP->Type, HostP->Mode, HostP->Ivec);
-#else
-		rio_d;
-#endif
+;
 
 		/* Don't boot hosts already running */
 		if ((HostP->Flags & RUN_STATE) != RC_WAITING) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "%s %d already running\n", "Host", host);
-#else
-			rio_d;
-#endif
+;
 			continue;
 		}
 
@@ -285,34 +245,14 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		 */
 		StartP = &Cad[p->RIOConf.HostLoadBase - rbp->Count];
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "kernel virtual address for host is %p\n", Cad);
-#else
-		rio_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "kernel virtual address for download is %p\n", StartP);
-#else
-		rio_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "host loadbase is 0x%x\n", p->RIOConf.HostLoadBase);
-#else
-		rio_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "size of download is 0x%x\n", rbp->Count);
-#else
-		rio_d;
-#endif
+;
+;
+;
+;
 
 		/* Make sure it fits */
 		if (p->RIOConf.HostLoadBase < rbp->Count) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "Bin too large\n");
-#else
-			rio_d;
-#endif
+;
 			p->RIOError.Error = HOST_FILE_TOO_LARGE;
 			func_exit();
 			return -EFBIG;
@@ -328,11 +268,7 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		 ** This ain't going to be none too clever if the download
 		 ** code is bigger than this segment.
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Copy in code\n");
-#else
-		rio_d;
-#endif
+;
 
 		/* Buffer to local memory as we want to use I/O space and
 		   some cards only do 8 or 16 bit I/O */
@@ -352,11 +288,7 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		HostP->Copy(DownCode, StartP, rbp->Count);
 		vfree(DownCode);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Copy completed\n");
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 **                     S T O P !
@@ -458,16 +390,8 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		writeb(NFIX(0), DestP + 6);
 		writeb(JUMP(8), DestP + 7);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "host loadbase is 0x%x\n", p->RIOConf.HostLoadBase);
-#else
-		rio_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "startup offset is 0x%x\n", offset);
-#else
-		rio_d;
-#endif
+;
+;
 
 		/*
 		 ** Flag what is going on
@@ -481,41 +405,25 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		 */
 		OldParmMap = readw(&HostP->__ParmMapR);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Original parmmap is 0x%x\n", OldParmMap);
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 ** And start it running (I hope).
 		 ** As there is nothing dodgy or obscure about the
 		 ** above code, this is guaranteed to work every time.
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Host Type = 0x%x, Mode = 0x%x, IVec = 0x%x\n", HostP->Type, HostP->Mode, HostP->Ivec);
-#else
-		rio_d;
-#endif
+;
 
 		rio_start_card_running(HostP);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Set control port\n");
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 ** Now, wait for up to five seconds for the Tp to setup the parmmap
 		 ** pointer:
 		 */
 		for (wait_count = 0; (wait_count < p->RIOConf.StartupTime) && (readw(&HostP->__ParmMapR) == OldParmMap); wait_count++) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "Checkout %d, 0x%x\n", wait_count, readw(&HostP->__ParmMapR));
-#else
-			rio_d;
-#endif
+;
 			mdelay(100);
 
 		}
@@ -525,27 +433,15 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		 ** has crashed & burned in a really spectacular way
 		 */
 		if (readw(&HostP->__ParmMapR) == OldParmMap) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "parmmap 0x%x\n", readw(&HostP->__ParmMapR));
-#else
-			rio_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "RIO Mesg Run Fail\n");
-#else
-			rio_d;
-#endif
+;
+;
 			HostP->Flags &= ~RUN_STATE;
 			HostP->Flags |= RC_STUFFED;
 			RIOHostReset( HostP->Type, HostP->CardP, HostP->Slot );
 			continue;
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Running 0x%x\n", readw(&HostP->__ParmMapR));
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 ** Well, the board thought it was OK, and setup its parmmap
@@ -557,17 +453,9 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		 ** Grab a 32 bit pointer to the parmmap structure
 		 */
 		ParmMapP = (PARM_MAP __iomem *) RIO_PTR(Cad, readw(&HostP->__ParmMapR));
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "ParmMapP : %p\n", ParmMapP);
-#else
-		rio_d;
-#endif
+;
 		ParmMapP = (PARM_MAP __iomem *)(Cad + readw(&HostP->__ParmMapR));
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "ParmMapP : %p\n", ParmMapP);
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 ** The links entry should be 0xFFFF; we set it up
@@ -575,16 +463,8 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		 ** which links to use.
 		 */
 		if (readw(&ParmMapP->links) != 0xFFFF) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "RIO Mesg Run Fail %s\n", HostP->Name);
-#else
-			rio_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "Links = 0x%x\n", readw(&ParmMapP->links));
-#else
-			rio_d;
-#endif
+;
+;
 			HostP->Flags &= ~RUN_STATE;
 			HostP->Flags |= RC_STUFFED;
 			RIOHostReset( HostP->Type, HostP->CardP, HostP->Slot );
@@ -597,57 +477,29 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 		 ** now wait for the card to set all the parmmap->XXX stuff
 		 ** this is a wait of up to two seconds....
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Looking for init_done - %d ticks\n", p->RIOConf.StartupTime);
-#else
-		rio_d;
-#endif
+;
 		HostP->timeout_id = 0;
 		for (wait_count = 0; (wait_count < p->RIOConf.StartupTime) && !readw(&ParmMapP->init_done); wait_count++) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "Waiting for init_done\n");
-#else
-			rio_d;
-#endif
+;
 			mdelay(100);
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "OK! init_done!\n");
-#else
-		rio_d;
-#endif
+;
 
 		if (readw(&ParmMapP->error) != E_NO_ERROR || !readw(&ParmMapP->init_done)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "RIO Mesg Run Fail %s\n", HostP->Name);
-#else
-			rio_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "Timedout waiting for init_done\n");
-#else
-			rio_d;
-#endif
+;
+;
 			HostP->Flags &= ~RUN_STATE;
 			HostP->Flags |= RC_STUFFED;
 			RIOHostReset( HostP->Type, HostP->CardP, HostP->Slot );
 			continue;
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Got init_done\n");
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 ** It runs! It runs!
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Host ID %x Running\n", HostP->UniqueNum);
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 ** set the time period between interrupts.
@@ -714,11 +566,7 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 			}
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Set the card running... \n");
-#else
-		rio_d;
-#endif
+;
 		/*
 		 ** last thing - show the world that everything is in place
 		 */
@@ -734,11 +582,7 @@ int RIOBootCodeHOST(struct rio_info *p, struct DownLoad *rbp)
 
 	p->RIOSystemUp++;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_BOOT, "Done everything %x\n", HostP->Ivec);
-#else
-	rio_d;
-#endif
+;
 	func_exit();
 	return 0;
 }
@@ -767,11 +611,7 @@ int RIOBootRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct 
 	 ** If we haven't been told what to boot, we can't boot it.
 	 */
 	if (p->RIONumBootPkts == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "No RTA code to download yet\n");
-#else
-		rio_d;
-#endif
+;
 		return 0;
 	}
 
@@ -788,11 +628,7 @@ int RIOBootRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct 
 	 ** Try to allocate a command block. This is in kernel space
 	 */
 	if (!(CmdBlkP = RIOGetCmdBlk())) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "No command blocks to boot RTA! come back later.\n");
-#else
-		rio_d;
-#endif
+;
 		return 0;
 	}
 
@@ -815,11 +651,7 @@ int RIOBootRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct 
 		 ** We only expect one type of command - a BOOT_REQUEST!
 		 */
 		if (readb(&PktCmdP->Command) != BOOT_REQUEST) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "Unexpected command %d on BOOT RUP %d of host %Zd\n", readb(&PktCmdP->Command), Rup, HostP - p->RIOHosts);
-#else
-			rio_d;
-#endif
+;
 			RIOFreeCmdBlk(CmdBlkP);
 			return 1;
 		}
@@ -844,11 +676,7 @@ int RIOBootRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct 
 
 		memcpy((void *) &CmdBlkP->Packet.data[BOOT_SEQUENCE_LEN], "BOOT", 4);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Boot RTA on Host %Zd Rup %d - %d (0x%x) packets to 0x%x\n", HostP - p->RIOHosts, Rup, p->RIONumBootPkts, p->RIONumBootPkts, p->RIOConf.RtaLoadBase);
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 ** If this host is in slave mode, send the RTA an invalid boot
@@ -867,18 +695,10 @@ int RIOBootRup(struct rio_info *p, unsigned int Rup, struct Host *HostP, struct 
 	 */
 	sequence = readw(&PktCmdP->Sequence);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_BOOT, "Boot block %d on Host %Zd Rup%d\n", sequence, HostP - p->RIOHosts, Rup);
-#else
-	rio_d;
-#endif
+;
 
 	if (sequence >= p->RIONumBootPkts) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Got a request for packet %d, max is %d\n", sequence, p->RIONumBootPkts);
-#else
-		rio_d;
-#endif
+;
 	}
 
 	PktReplyP->Sequence = sequence;
@@ -917,11 +737,7 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 
 	p->RIOBooting = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_BOOT, "RTA Boot completed - BootInProgress now %d\n", p->RIOBooting);
-#else
-	rio_d;
-#endif
+;
 
 	/*
 	 ** Determine type of unit (16/8 port RTA).
@@ -929,30 +745,14 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 
 	RtaType = GetUnitType(RtaUniq);
 	if (Rup >= (unsigned short) MAX_RUP)
-#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_BOOT, "RIO: Host %s has booted an RTA(%d) on link %c\n", HostP->Name, 8 * RtaType, readb(&PktCmdP->LinkNum) + 'A');
-#else
-		rio_d;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		rio_dprintk(RIO_DEBUG_BOOT, "RIO: RTA %s has booted an RTA(%d) on link %c\n", HostP->Mapping[Rup].Name, 8 * RtaType, readb(&PktCmdP->LinkNum) + 'A');
-#else
-		rio_d;
-#endif
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_BOOT, "UniqNum is 0x%x\n", RtaUniq);
-#else
-	rio_d;
-#endif
+;
 
 	if (RtaUniq == 0x00000000 || RtaUniq == 0xffffffff) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Illegal RTA Uniq Number\n");
-#else
-		rio_d;
-#endif
+;
 		return 1;
 	}
 
@@ -971,11 +771,7 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 			 ** seconds.
 			 */
 			if (RIOSuspendBootRta(HostP, HostP->Mapping[Rup].ID, MyLink)) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_BOOT, "RTA failed to suspend booting on link %c\n", 'A' + MyLink);
-#else
-				rio_d;
-#endif
+;
 			}
 		} else
 			/*
@@ -984,11 +780,7 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 			 ** chance to boot it.
 			 */
 			writew(30, &HostP->LinkStrP[MyLink].WaitNoBoot);
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "RTA %x not owned - suspend booting down link %c on unit %x\n", RtaUniq, 'A' + MyLink, HostP->Mapping[Rup].RtaUniqueNum);
-#else
-		rio_d;
-#endif
+;
 		return 1;
 	}
 
@@ -1027,26 +819,14 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 				}
 			}
 			if (RtaType == TYPE_RTA16)
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_BOOT, "RTA will be given IDs %d+%d\n", entry + 1, entry2 + 1);
-#else
-				rio_d;
-#endif
+;
 			else
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_BOOT, "RTA will be given ID %d\n", entry + 1);
-#else
-				rio_d;
-#endif
+;
 			return 1;
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_BOOT, "RTA not configured for this host\n");
-#else
-	rio_d;
-#endif
+;
 
 	if (Rup >= (unsigned short) MAX_RUP) {
 		/*
@@ -1077,25 +857,13 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 			if (RtaType == TYPE_RTA16) {
 				entry2 = HostP->Mapping[entry].ID2 - 1;
 				if ((HostP->Mapping[entry2].Flags & SLOT_TENTATIVE) && (HostP->Mapping[entry2].RtaUniqueNum == RtaUniq))
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_BOOT, "Found previous tentative slots (%d+%d)\n", entry, entry2);
-#else
-					rio_d;
-#endif
+;
 				else
 					continue;
 			} else
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_BOOT, "Found previous tentative slot (%d)\n", entry);
-#else
-				rio_d;
-#endif
+;
 			if (!p->RIONoMessage)
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("RTA connected to %s '%s' (%c) not configured.\n", MyType, MyName, MyLink + 'A');
-#else
-				;
-#endif
+;
 			return 1;
 		}
 	}
@@ -1122,11 +890,7 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 	 ** + Configure RTA on host A. We now have the same RTA configured
 	 **   with different ports on two different hosts.
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_BOOT, "Have we seen RTA %x before?\n", RtaUniq);
-#else
-	rio_d;
-#endif
+;
 	found = 0;
 	Flag = 0;		/* Convince the compiler this variable is initialized */
 	for (host = 0; !found && (host < p->RIONumHosts); host++) {
@@ -1136,17 +900,9 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 				MapP = &p->RIOHosts[host].Mapping[rta];
 				if (RtaType == TYPE_RTA16) {
 					MapP2 = &p->RIOHosts[host].Mapping[MapP->ID2 - 1];
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_BOOT, "This RTA is units %d+%d from host %s\n", rta + 1, MapP->ID2, p->RIOHosts[host].Name);
-#else
-					rio_d;
-#endif
+;
 				} else
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_BOOT, "This RTA is unit %d from host %s\n", rta + 1, p->RIOHosts[host].Name);
-#else
-					rio_d;
-#endif
+;
 				found = 1;
 				break;
 			}
@@ -1163,17 +919,9 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 	 ** Check for a SLOT_IN_USE entry for this RTA in the config table.
 	 */
 	if (!MapP) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_BOOT, "Look for RTA %x in RIOSavedTable\n", RtaUniq);
-#else
-		rio_d;
-#endif
+;
 		for (rta = 0; rta < TOTAL_MAP_ENTRIES; rta++) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_BOOT, "Check table entry %d (%x)", rta, p->RIOSavedTable[rta].RtaUniqueNum);
-#else
-			rio_d;
-#endif
+;
 
 			if ((p->RIOSavedTable[rta].Flags & SLOT_IN_USE) && (p->RIOSavedTable[rta].RtaUniqueNum == RtaUniq)) {
 				MapP = &p->RIOSavedTable[rta];
@@ -1184,17 +932,9 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 							break;
 					}
 					MapP2 = &p->RIOSavedTable[entry2];
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_BOOT, "This RTA is from table entries %d+%d\n", rta, entry2);
-#else
-					rio_d;
-#endif
+;
 				} else
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_BOOT, "This RTA is from table entry %d\n", rta);
-#else
-					rio_d;
-#endif
+;
 				break;
 			}
 		}
@@ -1242,11 +982,7 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 	if (EmptySlot == 0) {
 		if (MapP) {
 			if (Flag & SLOT_IN_USE) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_BOOT, "This RTA configured on another host - move entry to current host (1)\n");
-#else
-				rio_d;
-#endif
+;
 				HostP->Mapping[entry].SysPort = MapP->SysPort;
 				memcpy(HostP->Mapping[entry].Name, MapP->Name, MAX_NAME_LEN);
 				HostP->Mapping[entry].Flags = SLOT_IN_USE | RTA_BOOTED | RTA_NEWBOOT;
@@ -1255,17 +991,9 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 					p->RIOFirstPortsBooted = HostP->Mapping[entry].SysPort;
 				if (HostP->Mapping[entry].SysPort > p->RIOLastPortsBooted)
 					p->RIOLastPortsBooted = HostP->Mapping[entry].SysPort;
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_BOOT, "SysPort %d, Name %s\n", (int) MapP->SysPort, MapP->Name);
-#else
-				rio_d;
-#endif
+;
 			} else {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_BOOT, "This RTA has a tentative entry on another host - delete that entry (1)\n");
-#else
-				rio_d;
-#endif
+;
 				HostP->Mapping[entry].Flags = SLOT_TENTATIVE | RTA_BOOTED | RTA_NEWBOOT;
 			}
 			if (RtaType == TYPE_RTA16) {
@@ -1280,28 +1008,16 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 						p->RIOFirstPortsBooted = HostP->Mapping[entry2].SysPort;
 					if (HostP->Mapping[entry2].SysPort > p->RIOLastPortsBooted)
 						p->RIOLastPortsBooted = HostP->Mapping[entry2].SysPort;
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_BOOT, "SysPort %d, Name %s\n", (int) HostP->Mapping[entry2].SysPort, HostP->Mapping[entry].Name);
-#else
-					rio_d;
-#endif
+;
 				} else
 					HostP->Mapping[entry2].Flags = SLOT_TENTATIVE | RTA_BOOTED | RTA_NEWBOOT | RTA16_SECOND_SLOT;
 				memset(MapP2, 0, sizeof(struct Map));
 			}
 			memset(MapP, 0, sizeof(struct Map));
 			if (!p->RIONoMessage)
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("An orphaned RTA has been adopted by %s '%s' (%c).\n", MyType, MyName, MyLink + 'A');
-#else
-				;
-#endif
+;
 		} else if (!p->RIONoMessage)
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("RTA connected to %s '%s' (%c) not configured.\n", MyType, MyName, MyLink + 'A');
-#else
-			;
-#endif
+;
 		RIOSetChange(p);
 		return 1;
 	}
@@ -1312,11 +1028,7 @@ static int RIOBootComplete(struct rio_info *p, struct Host *HostP, unsigned int 
 	 ** so we can ignore it's ID requests.
 	 */
 	if (!p->RIONoMessage)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("The RTA connected to %s '%s' (%c) cannot be configured.  You cannot configure more than 128 ports to one host card.\n", MyType, MyName, MyLink + 'A');
-#else
-		;
-#endif
+;
 	for (entry = 0; entry < HostP->NumExtraBooted; entry++) {
 		if (HostP->ExtraUnits[entry] == RtaUniq) {
 			/*
@@ -1368,11 +1080,7 @@ void rio_fill_host_slot(int entry, int entry2, unsigned int rta_uniq, struct Hos
 {
 	int link;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_BOOT, "rio_fill_host_slot(%d, %d, 0x%x...)\n", entry, entry2, rta_uniq);
-#else
-	rio_d;
-#endif
+;
 
 	host->Mapping[entry].Flags = (RTA_BOOTED | RTA_NEWBOOT | SLOT_TENTATIVE);
 	host->Mapping[entry].SysPort = NO_PORT;

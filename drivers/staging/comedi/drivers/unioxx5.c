@@ -152,13 +152,13 @@ static int unioxx5_attach(struct comedi_device *dev,
 
 	/* unioxx5 can has from two to four subdevices */
 	if (n_subd < 2) {
-		printk(KERN_ERR
-		       "your card must has at least 2 'g01' subdevices\n");
+//		printk(KERN_ERR
+;
 		return -1;
 	}
 
 	if (alloc_subdevices(dev, n_subd) < 0) {
-		printk(KERN_ERR "out of memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -169,11 +169,7 @@ static int unioxx5_attach(struct comedi_device *dev,
 			return -1;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("attached\n");
-#else
-	;
-#endif
+;
 	return 0;
 }
 
@@ -231,17 +227,17 @@ static int unioxx5_insn_config(struct comedi_device *dev,
 	type = usp->usp_module_type[channel / 2];
 
 	if (type != MODULE_DIGITAL) {
-		printk(KERN_ERR
-		       "comedi%d: channel configuration accessible only for digital modules\n",
-		       dev->minor);
+//		printk(KERN_ERR
+//		       "comedi%d: channel configuration accessible only for digital modules\n",
+;
 		return -1;
 	}
 
 	channel_offset = __unioxx5_define_chan_offset(channel);
 	if (channel_offset < 0) {
-		printk(KERN_ERR
-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
-		       dev->minor, channel);
+//		printk(KERN_ERR
+//		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+;
 		return -1;
 	}
 
@@ -256,7 +252,7 @@ static int unioxx5_insn_config(struct comedi_device *dev,
 		flags |= mask;
 		break;
 	default:
-		printk(KERN_ERR "comedi%d: unknown flag\n", dev->minor);
+;
 		return -1;
 	}
 
@@ -296,23 +292,19 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
 	int i, to, ndef_flag = 0;
 
 	if (!request_region(subdev_iobase, UNIOXX5_SIZE, DRIVER_NAME)) {
-		printk(KERN_ERR "comedi%d: I/O port conflict\n", minor);
+;
 		return -EIO;
 	}
 
 	usp = kzalloc(sizeof(*usp), GFP_KERNEL);
 
 	if (usp == NULL) {
-		printk(KERN_ERR "comedi%d: erorr! --> out of memory!\n", minor);
+;
 		return -1;
 	}
 
 	usp->usp_iobase = subdev_iobase;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: |", minor);
-#else
-	;
-#endif
+;
 
 	/* defining modules types */
 	for (i = 0; i < 12; i++) {
@@ -339,19 +331,11 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
 		} else
 			usp->usp_module_type[i] = inb(subdev_iobase + 6);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" [%d] 0x%02x |", i, usp->usp_module_type[i]);
-#else
-		;
-#endif
+;
 		udelay(1);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 
 	/* initial subdevice for digital or analog i/o */
 	subdev->type = COMEDI_SUBD_DIO;
@@ -364,11 +348,7 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
 	subdev->insn_write = unioxx5_subdev_write;
 	subdev->insn_config = unioxx5_insn_config;	/* for digital modules only!!! */
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("subdevice configured\n");
-#else
-	;
-#endif
+;
 
 	return 0;
 }
@@ -381,9 +361,9 @@ static int __unioxx5_digital_write(struct unioxx5_subd_priv *usp,
 
 	channel_offset = __unioxx5_define_chan_offset(channel);
 	if (channel_offset < 0) {
-		printk(KERN_ERR
-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
-		       minor, channel);
+//		printk(KERN_ERR
+//		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+;
 		return 0;
 	}
 
@@ -408,9 +388,9 @@ static int __unioxx5_digital_read(struct unioxx5_subd_priv *usp,
 
 	channel_offset = __unioxx5_define_chan_offset(channel);
 	if (channel_offset < 0) {
-		printk(KERN_ERR
-		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
-		       minor, channel);
+//		printk(KERN_ERR
+//		       "comedi%d: undefined channel %d. channel range is 0 .. 23\n",
+;
 		return 0;
 	}
 
@@ -430,11 +410,7 @@ static void __unioxx5_digital_config(struct unioxx5_subd_priv *usp, int mode)
 	int i, mask;
 
 	mask = (mode == ALL_2_OUTPUT) ? 0xFF : 0x00;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("COMEDI: mode = %d\n", mask);
-#else
-	;
-#endif
+;
 
 	outb(1, usp->usp_iobase + 0);
 
@@ -455,9 +431,9 @@ static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
 
 	/* defining if given module can work on output */
 	if (!(usp->usp_module_type[module] & MODULE_OUTPUT_MASK)) {
-		printk(KERN_ERR
-		       "comedi%d: module in position %d with id 0x%0x is for input only!\n",
-		       minor, module, usp->usp_module_type[module]);
+//		printk(KERN_ERR
+//		       "comedi%d: module in position %d with id 0x%0x is for input only!\n",
+;
 		return 0;
 	}
 
@@ -492,9 +468,9 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
 
 	/* defining if given module can work on input */
 	if (usp->usp_module_type[module_no] & MODULE_OUTPUT_MASK) {
-		printk(KERN_ERR
-		       "comedi%d: module in position %d with id 0x%02x is for output only",
-		       minor, module_no, usp->usp_module_type[module_no]);
+//		printk(KERN_ERR
+//		       "comedi%d: module in position %d with id 0x%02x is for output only",
+;
 		return 0;
 	}
 
@@ -509,11 +485,7 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
 
 	/* if four bytes readding error occurs - return 0(false) */
 	if ((control & Rx4CA_ERR_MASK)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("COMEDI: 4 bytes error\n");
-#else
-		;
-#endif
+;
 		return 0;
 	}
 

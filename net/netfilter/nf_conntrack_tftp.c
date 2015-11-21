@@ -138,9 +138,9 @@ static int __init nf_conntrack_tftp_init(void)
 
 			ret = nf_conntrack_helper_register(&tftp[i][j]);
 			if (ret) {
-				printk(KERN_ERR "nf_ct_tftp: failed to register"
-				       " helper for pf: %u port: %u\n",
-					tftp[i][j].tuple.src.l3num, ports[i]);
+//				printk(KERN_ERR "nf_ct_tftp: failed to register"
+//				       " helper for pf: %u port: %u\n",
+;
 				nf_conntrack_tftp_fini();
 				return ret;
 			}

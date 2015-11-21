@@ -152,17 +152,9 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	struct comedi_subdevice *s;
 
 	iobase = it->options[0];
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi:%d fl512: 0x%04lx", dev->minor, iobase);
-#else
-	;
-#endif
+;
 	if (!request_region(iobase, FL512_SIZE, "fl512")) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING " I/O port conflict\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -171,11 +163,7 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		return -ENOMEM;
 
 #if DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "malloc ok\n");
-#else
-	;
-#endif
+;
 #endif
 
 	if (alloc_subdevices(dev, 2) < 0)
@@ -198,11 +186,7 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->range_table = &range_fl512;
 	/* function to call when read AD */
 	s->insn_read = fl512_ai_insn;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi: fl512: subdevice 0 initialized\n");
-#else
-	;
-#endif
+;
 
 	/* Analog output */
 	s = dev->subdevices + 1;
@@ -220,11 +204,7 @@ static int fl512_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->insn_write = fl512_ao_insn;
 	/* function to call when reading DA */
 	s->insn_read = fl512_ao_insn_readback;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi: fl512: subdevice 1 initialized\n");
-#else
-	;
-#endif
+;
 
 	return 1;
 }
@@ -233,11 +213,7 @@ static int fl512_detach(struct comedi_device *dev)
 {
 	if (dev->iobase)
 		release_region(dev->iobase, FL512_SIZE);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: fl512: dummy i detach\n", dev->minor);
-#else
-	;
-#endif
+;
 	return 0;
 }
 

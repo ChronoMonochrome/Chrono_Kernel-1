@@ -34,7 +34,7 @@ befs_error(const struct super_block *sb, const char *fmt, ...)
 	va_list args;
 	char *err_buf = kmalloc(ERRBUFSIZE, GFP_KERNEL);
 	if (err_buf == NULL) {
-		printk(KERN_ERR "could not allocate %d bytes\n", ERRBUFSIZE);
+;
 		return;
 	}
 
@@ -42,7 +42,7 @@ befs_error(const struct super_block *sb, const char *fmt, ...)
 	vsnprintf(err_buf, ERRBUFSIZE, fmt, args);
 	va_end(args);
 
-	printk(KERN_ERR "BeFS(%s): %s\n", sb->s_id, err_buf);
+;
 	kfree(err_buf);
 }
 
@@ -52,7 +52,7 @@ befs_warning(const struct super_block *sb, const char *fmt, ...)
 	va_list args;
 	char *err_buf = kmalloc(ERRBUFSIZE, GFP_KERNEL);
 	if (err_buf == NULL) {
-		printk(KERN_ERR "could not allocate %d bytes\n", ERRBUFSIZE);
+;
 		return;
 	}
 
@@ -60,7 +60,7 @@ befs_warning(const struct super_block *sb, const char *fmt, ...)
 	vsnprintf(err_buf, ERRBUFSIZE, fmt, args);
 	va_end(args);
 
-	printk(KERN_WARNING "BeFS(%s): %s\n", sb->s_id, err_buf);
+;
 
 	kfree(err_buf);
 }
@@ -76,8 +76,8 @@ befs_debug(const struct super_block *sb, const char *fmt, ...)
 	if (BEFS_SB(sb)->mount_opts.debug) {
 		err_buf = kmalloc(ERRBUFSIZE, GFP_KERNEL);
 		if (err_buf == NULL) {
-			printk(KERN_ERR "could not allocate %d bytes\n",
-				ERRBUFSIZE);
+//			printk(KERN_ERR "could not allocate %d bytes\n",
+;
 			return;
 		}
 
@@ -85,7 +85,7 @@ befs_debug(const struct super_block *sb, const char *fmt, ...)
 		vsnprintf(err_buf, ERRBUFSIZE, fmt, args);
 		va_end(args);
 
-		printk(KERN_DEBUG "BeFS(%s): %s\n", sb->s_id, err_buf);
+;
 
 		kfree(err_buf);
 	}

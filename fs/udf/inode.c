@@ -86,12 +86,12 @@ void udf_evict_inode(struct inode *inode)
 	end_writeback(inode);
 	if (iinfo->i_alloc_type != ICBTAG_FLAG_AD_IN_ICB &&
 	    inode->i_size != iinfo->i_lenExtents) {
-		printk(KERN_WARNING "UDF-fs (%s): Inode %lu (mode %o) has "
-			"inode size %llu different from extent length %llu. "
-			"Filesystem need not be standards compliant.\n",
-			inode->i_sb->s_id, inode->i_ino, inode->i_mode,
-			(unsigned long long)inode->i_size,
-			(unsigned long long)iinfo->i_lenExtents);
+//		printk(KERN_WARNING "UDF-fs (%s): Inode %lu (mode %o) has "
+//			"inode size %llu different from extent length %llu. "
+//			"Filesystem need not be standards compliant.\n",
+//			inode->i_sb->s_id, inode->i_ino, inode->i_mode,
+//			(unsigned long long)inode->i_size,
+;
 	}
 	kfree(iinfo->i_ext.i_data);
 	iinfo->i_ext.i_data = NULL;
@@ -1202,16 +1202,16 @@ static void __udf_read_inode(struct inode *inode)
 	 */
 	bh = udf_read_ptagged(inode->i_sb, &iinfo->i_location, 0, &ident);
 	if (!bh) {
-		printk(KERN_ERR "udf: udf_read_inode(ino %ld) failed !bh\n",
-		       inode->i_ino);
+//		printk(KERN_ERR "udf: udf_read_inode(ino %ld) failed !bh\n",
+;
 		make_bad_inode(inode);
 		return;
 	}
 
 	if (ident != TAG_IDENT_FE && ident != TAG_IDENT_EFE &&
 	    ident != TAG_IDENT_USE) {
-		printk(KERN_ERR "udf: udf_read_inode(ino %ld) "
-				"failed ident=%d\n", inode->i_ino, ident);
+//		printk(KERN_ERR "udf: udf_read_inode(ino %ld) "
+;
 		brelse(bh);
 		make_bad_inode(inode);
 		return;
@@ -1251,8 +1251,8 @@ static void __udf_read_inode(struct inode *inode)
 		}
 		brelse(ibh);
 	} else if (fe->icbTag.strategyType != cpu_to_le16(4)) {
-		printk(KERN_ERR "udf: unsupported strategy type: %d\n",
-		       le16_to_cpu(fe->icbTag.strategyType));
+//		printk(KERN_ERR "udf: unsupported strategy type: %d\n",
+;
 		brelse(bh);
 		make_bad_inode(inode);
 		return;
@@ -1446,9 +1446,9 @@ static void udf_fill_inode(struct inode *inode, struct buffer_head *bh)
 		udf_debug("METADATA BITMAP FILE-----\n");
 		break;
 	default:
-		printk(KERN_ERR "udf: udf_fill_inode(ino %ld) failed unknown "
-				"file type=%d\n", inode->i_ino,
-				fe->icbTag.fileType);
+//		printk(KERN_ERR "udf: udf_fill_inode(ino %ld) failed unknown "
+//				"file type=%d\n", inode->i_ino,
+;
 		make_bad_inode(inode);
 		return;
 	}
@@ -1471,8 +1471,8 @@ static int udf_alloc_i_data(struct inode *inode, size_t size)
 	iinfo->i_ext.i_data = kmalloc(size, GFP_KERNEL);
 
 	if (!iinfo->i_ext.i_data) {
-		printk(KERN_ERR "udf:udf_alloc_i_data (ino %ld) "
-				"no free memory\n", inode->i_ino);
+//		printk(KERN_ERR "udf:udf_alloc_i_data (ino %ld) "
+;
 		return -ENOMEM;
 	}
 
@@ -1722,9 +1722,9 @@ out:
 	if (do_sync) {
 		sync_dirty_buffer(bh);
 		if (buffer_write_io_error(bh)) {
-			printk(KERN_WARNING "IO error syncing udf inode "
-				"[%s:%08lx]\n", inode->i_sb->s_id,
-				inode->i_ino);
+//			printk(KERN_WARNING "IO error syncing udf inode "
+//				"[%s:%08lx]\n", inode->i_sb->s_id,
+;
 			err = -EIO;
 		}
 	}

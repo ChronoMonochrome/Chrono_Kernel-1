@@ -82,11 +82,7 @@ int i_APCI1710_InsnConfigINCCPT(struct comedi_device *dev, struct comedi_subdevi
 	int i_ReturnValue = 0;
 	ui_ConfigType = CR_CHAN(insn->chanspec);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\nINC_CPT");
-#else
-	;
-#endif
+;
 
 	devpriv->tsk_Current = current;	/*  Save the current process task structure */
 	switch (ui_ConfigType) {
@@ -134,11 +130,7 @@ int i_APCI1710_InsnConfigINCCPT(struct comedi_device *dev, struct comedi_subdevi
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("Insn Config : Config Parameter Wrong\n");
-#else
-		;
-#endif
+;
 
 	}
 
@@ -2068,11 +2060,7 @@ int i_APCI1710_InsnBitsINCCPT(struct comedi_device *dev, struct comedi_subdevice
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("Bits Config Parameter Wrong\n");
-#else
-		;
-#endif
+;
 	}
 
 	if (i_ReturnValue >= 0)
@@ -3025,11 +3013,7 @@ int i_APCI1710_InsnWriteINCCPT(struct comedi_device *dev, struct comedi_subdevic
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("Write Config Parameter Wrong\n");
-#else
-		;
-#endif
+;
 	}
 
 	if (i_ReturnValue >= 0)
@@ -4085,11 +4069,7 @@ int i_APCI1710_InsnReadINCCPT(struct comedi_device *dev, struct comedi_subdevice
 		i_ReturnValue = i_APCI1710_ReadLatchRegisterValue(dev,
 			(unsigned char) CR_AREF(insn->chanspec),
 			(unsigned char) CR_RANGE(insn->chanspec), (unsigned int *) &data[0]);
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("Latch Register Value %d\n", data[0]);
-#else
-		;
-#endif
+;
 		break;
 
 	case APCI1710_INCCPT_READ16BITCOUNTERVALUE:
@@ -4170,11 +4150,7 @@ int i_APCI1710_InsnReadINCCPT(struct comedi_device *dev, struct comedi_subdevice
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("ReadType Parameter wrong\n");
-#else
-		;
-#endif
+;
 	}
 
 	if (i_ReturnValue >= 0)

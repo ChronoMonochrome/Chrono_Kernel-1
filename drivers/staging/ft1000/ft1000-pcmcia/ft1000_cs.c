@@ -70,19 +70,15 @@ MODULE_LICENSE("GPL");
    be present but disabled.
 */
 #ifdef FT_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-#define DEBUG(n, args...) printk(KERN_DEBUG args)
-#else
-#define DEBUG(n, args...)
-#endif
-
-/*====================================================================*/
-
-struct net_device *init_ft1000_card(struct pcmcia_device *link,
-					void *ft1000_reset);
-#else
-#define DEBUG(n, args...) ;
-#endif
+//#define DEBUG(n, args...) printk(KERN_DEBUG args)
+//#else
+//#define DEBUG(n, args...)
+//#endif
+//
+///*====================================================================*/
+//
+//struct net_device *init_ft1000_card(struct pcmcia_device *link,
+;
 void stop_ft1000_card(struct net_device *);
 
 static int ft1000_config(struct pcmcia_device *link);
@@ -198,33 +194,21 @@ static int ft1000_config(struct pcmcia_device *link)
 	/* setup IO window */
 	ret = pcmcia_loop_config(link, ft1000_confcheck, NULL);
 	if (ret) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "ft1000: Could not configure pcmcia\n");
-#else
-		;
-#endif
+;
 		return -ENODEV;
 	}
 
 	/* configure device */
 	ret = pcmcia_enable_device(link);
 	if (ret) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "ft1000: could not enable pcmcia\n");
-#else
-		;
-#endif
+;
 		goto failed;
 	}
 
 	((local_info_t *) link->priv)->dev = init_ft1000_card(link,
 								&ft1000_reset);
 	if (((local_info_t *) link->priv)->dev == NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "ft1000: Could not register as network device\n");
-#else
-		;
-#endif
+;
 		goto failed;
 	}
 

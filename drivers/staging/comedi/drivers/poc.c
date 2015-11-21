@@ -122,25 +122,21 @@ static int poc_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned int iosize;
 
 	iobase = it->options[0];
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: poc: using %s iobase 0x%lx\n", dev->minor,
-	       this_board->name, iobase);
-#else
-	;
-#endif
+//	printk(KERN_INFO "comedi%d: poc: using %s iobase 0x%lx\n", dev->minor,
+;
 
 	dev->board_name = this_board->name;
 
 	if (iobase == 0) {
-		printk(KERN_ERR "io base address required\n");
+;
 		return -EINVAL;
 	}
 
 	iosize = this_board->iosize;
 	/* check if io addresses are available */
 	if (!request_region(iobase, iosize, "dac02")) {
-		printk(KERN_ERR "I/O port conflict: failed to allocate ports "
-			"0x%lx to 0x%lx\n", iobase, iobase + iosize - 1);
+//		printk(KERN_ERR "I/O port conflict: failed to allocate ports "
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -171,11 +167,7 @@ static int poc_detach(struct comedi_device *dev)
 	if (dev->iobase)
 		release_region(dev->iobase, this_board->iosize);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: dac02: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	return 0;
 }

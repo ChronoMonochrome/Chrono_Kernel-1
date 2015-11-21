@@ -168,7 +168,7 @@ s32 ffsMountVol(struct super_block *sb)
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 	BD_INFO_T *p_bd = &(EXFAT_SB(sb)->bd_info);
 
-	printk("[EXFAT] trying to mount...\n");
+;
 
 	sm_init(&p_fs->v_sem);
 	p_fs->dev_ejected = FALSE;
@@ -241,7 +241,7 @@ s32 ffsMountVol(struct super_block *sb)
 		return FFS_MEDIAERR;
 	}
 
-	printk("[EXFAT] mounted successfully\n");
+;
 
 	return FFS_SUCCESS;
 } /* end of ffsMountVol */
@@ -251,7 +251,7 @@ s32 ffsUmountVol(struct super_block *sb)
 {
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
-	printk("[EXFAT] trying to unmount...\n");
+;
 
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
@@ -268,12 +268,12 @@ s32 ffsUmountVol(struct super_block *sb)
 	bdev_close(sb);
 
 	if (p_fs->dev_ejected) {
-		printk("[EXFAT] unmounted with media errors. "
-			"device's already ejected.\n");
+//		printk("[EXFAT] unmounted with media errors. "
+;
 		return FFS_MEDIAERR;
 	}
 
-	printk("[EXFAT] unmounted successfully\n");
+;
 
 	return FFS_SUCCESS;
 } /* end of ffsUmountVol */
@@ -749,9 +749,9 @@ s32 ffsTruncateFile(struct inode *inode, u64 old_size, u64 new_size)
 		return FFS_PERMISSIONERR;
 
 	if (fid->size != old_size) {
-		printk(KERN_ERR "[EXFAT] truncate : can't skip it because of "
-				"size-mismatch(old:%lld->fid:%lld).\n"
-				,old_size, fid->size);
+//		printk(KERN_ERR "[EXFAT] truncate : can't skip it because of "
+//				"size-mismatch(old:%lld->fid:%lld).\n"
+;
 	}
 
 	if (old_size <= new_size)
@@ -1755,7 +1755,7 @@ void fs_error(struct super_block *sb)
 		panic("[EXFAT] Filesystem panic from previous error\n");
 	else if ((opts->errors == EXFAT_ERRORS_RO) && !(sb->s_flags & MS_RDONLY)) {
 		sb->s_flags |= MS_RDONLY;
-		printk(KERN_ERR "[EXFAT] Filesystem has been set read-only\n");
+;
 	}
 }
 
@@ -1975,9 +1975,9 @@ void exfat_free_cluster(struct super_block *sb, CHAIN_T *p_chain, s32 do_relse)
 		return;
 
 	if (p_chain->size <= 0) {
-		printk(KERN_ERR "[EXFAT] free_cluster : skip free-req clu:%u, "
-				"because of zero-size truncation\n"
-				,p_chain->dir);
+//		printk(KERN_ERR "[EXFAT] free_cluster : skip free-req clu:%u, "
+//				"because of zero-size truncation\n"
+;
 		return;
 	}
 
@@ -2254,7 +2254,7 @@ s32 clr_alloc_bitmap(struct super_block *sb, u32 clu)
 		ret = sb_issue_discard(sb, START_SECTOR(clu), (1 << p_fs->sectors_per_clu_bits), GFP_NOFS, 0);
 #endif
 		if (ret == -EOPNOTSUPP) {
-			printk(KERN_WARNING "discard not supported by device, disabling");
+;
 			opts->discard = 0;
 		}
 	}
@@ -5031,7 +5031,7 @@ s32 sector_read(struct super_block *sb, u32 sec, struct buffer_head **bh, s32 re
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
 	if ((sec >= (p_fs->PBR_sector+p_fs->num_sectors)) && (p_fs->num_sectors > 0)) {
-		printk("[EXFAT] sector_read: out of range error! (sec = %d)\n", sec);
+;
 		fs_error(sb);
 		return ret;
 	}
@@ -5051,13 +5051,13 @@ s32 sector_write(struct super_block *sb, u32 sec, struct buffer_head *bh, s32 sy
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
 	if (sec >= (p_fs->PBR_sector+p_fs->num_sectors) && (p_fs->num_sectors > 0)) {
-		printk("[EXFAT] sector_write: out of range error! (sec = %d)\n", sec);
+;
 		fs_error(sb);
 		return ret;
 	}
 
 	if (bh == NULL) {
-		printk("[EXFAT] sector_write: bh is NULL!\n");
+;
 		fs_error(sb);
 		return ret;
 	}
@@ -5077,7 +5077,7 @@ s32 multi_sector_read(struct super_block *sb, u32 sec, struct buffer_head **bh, 
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
 	if (((sec+num_secs) > (p_fs->PBR_sector+p_fs->num_sectors)) && (p_fs->num_sectors > 0)) {
-		printk("[EXFAT] multi_sector_read: out of range error! (sec = %d, num_secs = %d)\n", sec, num_secs);
+;
 		fs_error(sb);
 		return ret;
 	}
@@ -5097,12 +5097,12 @@ s32 multi_sector_write(struct super_block *sb, u32 sec, struct buffer_head *bh, 
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
 	if ((sec+num_secs) > (p_fs->PBR_sector+p_fs->num_sectors) && (p_fs->num_sectors > 0)) {
-		printk("[EXFAT] multi_sector_write: out of range error! (sec = %d, num_secs = %d)\n", sec, num_secs);
+;
 		fs_error(sb);
 		return ret;
 	}
 	if (bh == NULL) {
-		printk("[EXFAT] multi_sector_write: bh is NULL!\n");
+;
 		fs_error(sb);
 		return ret;
 	}

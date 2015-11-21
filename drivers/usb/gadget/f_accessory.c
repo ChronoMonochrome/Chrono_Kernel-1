@@ -739,7 +739,7 @@ static long acc_ioctl(struct file *fp, unsigned code, unsigned long value)
 
 static int acc_open(struct inode *ip, struct file *fp)
 {
-	printk(KERN_INFO "acc_open\n");
+;
 	if (atomic_xchg(&_acc_dev->open_excl, 1))
 		return -EBUSY;
 
@@ -750,7 +750,7 @@ static int acc_open(struct inode *ip, struct file *fp)
 
 static int acc_release(struct inode *ip, struct file *fp)
 {
-	printk(KERN_INFO "acc_release\n");
+;
 
 	WARN_ON(!atomic_xchg(&_acc_dev->open_excl, 0));
 	_acc_dev->disconnected = 0;
@@ -810,10 +810,10 @@ static int acc_ctrlrequest(struct usb_composite_dev *cdev,
 	unsigned long flags;
 
 /*
-	printk(KERN_INFO "acc_ctrlrequest "
-			"%02x.%02x v%04x i%04x l%u\n",
-			b_requestType, b_request,
-			w_value, w_index, w_length);
+//	printk(KERN_INFO "acc_ctrlrequest "
+//			"%02x.%02x v%04x i%04x l%u\n",
+//			b_requestType, b_request,
+;
 */
 
 	if (b_requestType == (USB_DIR_OUT | USB_TYPE_VENDOR)) {
@@ -1132,7 +1132,7 @@ static int acc_bind_config(struct usb_configuration *c)
 	struct acc_dev *dev = _acc_dev;
 	int ret;
 
-	printk(KERN_INFO "acc_bind_config\n");
+;
 
 	/* allocate a string ID for our interface */
 	if (acc_string_defs[INTERFACE_STRING_INDEX].id == 0) {

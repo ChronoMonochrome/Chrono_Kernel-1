@@ -168,9 +168,9 @@ int nfs_mount(struct nfs_mount_request *info)
 	struct rpc_clnt		*mnt_clnt;
 	int			status;
 
-	dprintk("NFS: sending MNT request for %s:%s\n",
-		(info->hostname ? info->hostname : "server"),
-			info->dirpath);
+//	dprintk("NFS: sending MNT request for %s:%s\n",
+//		(info->hostname ? info->hostname : "server"),
+;
 
 	if (info->noresvport)
 		args.flags |= RPC_CLNT_CREATE_NONPRIVPORT;
@@ -192,7 +192,7 @@ int nfs_mount(struct nfs_mount_request *info)
 	if (result.errno != 0)
 		goto out_mnt_err;
 
-	dprintk("NFS: MNT request succeeded\n");
+;
 	status = 0;
 
 out:
@@ -200,15 +200,15 @@ out:
 
 out_clnt_err:
 	status = PTR_ERR(mnt_clnt);
-	dprintk("NFS: failed to create MNT RPC client, status=%d\n", status);
+;
 	goto out;
 
 out_call_err:
-	dprintk("NFS: MNT request failed, status=%d\n", status);
+;
 	goto out;
 
 out_mnt_err:
-	dprintk("NFS: MNT server returned result %d\n", result.errno);
+;
 	status = result.errno;
 	goto out;
 }
@@ -252,8 +252,8 @@ void nfs_umount(const struct nfs_mount_request *info)
 	if (IS_ERR(clnt))
 		goto out_clnt_err;
 
-	dprintk("NFS: sending UMNT request for %s:%s\n",
-		(info->hostname ? info->hostname : "server"), info->dirpath);
+//	dprintk("NFS: sending UMNT request for %s:%s\n",
+;
 
 	if (info->version == NFS_MNT3_VERSION)
 		msg.rpc_proc = &clnt->cl_procinfo[MOUNTPROC3_UMNT];
@@ -269,12 +269,12 @@ void nfs_umount(const struct nfs_mount_request *info)
 	return;
 
 out_clnt_err:
-	dprintk("NFS: failed to create UMNT RPC client, status=%ld\n",
-			PTR_ERR(clnt));
+//	dprintk("NFS: failed to create UMNT RPC client, status=%ld\n",
+;
 	return;
 
 out_call_err:
-	dprintk("NFS: UMNT request failed, status=%d\n", status);
+;
 }
 
 /*
@@ -324,7 +324,7 @@ static int decode_status(struct xdr_stream *xdr, struct mountres *res)
 		}
 	}
 
-	dprintk("NFS: unrecognized MNT status code: %u\n", status);
+;
 	res->errno = -EACCES;
 	return 0;
 }
@@ -373,7 +373,7 @@ static int decode_fhs_status(struct xdr_stream *xdr, struct mountres *res)
 		}
 	}
 
-	dprintk("NFS: unrecognized MNT3 status code: %u\n", status);
+;
 	res->errno = -EACCES;
 	return 0;
 }
@@ -415,7 +415,7 @@ static int decode_auth_flavors(struct xdr_stream *xdr, struct mountres *res)
 	if (unlikely(p == NULL))
 		return -EIO;
 	entries = be32_to_cpup(p);
-	dprintk("NFS: received %u auth flavors\n", entries);
+;
 	if (entries > NFS_MAX_SECFLAVORS)
 		entries = NFS_MAX_SECFLAVORS;
 
@@ -428,7 +428,7 @@ static int decode_auth_flavors(struct xdr_stream *xdr, struct mountres *res)
 
 	for (i = 0; i < entries; i++) {
 		flavors[i] = be32_to_cpup(p++);
-		dprintk("NFS:   auth flavor[%u]: %d\n", i, flavors[i]);
+;
 	}
 	*count = i;
 

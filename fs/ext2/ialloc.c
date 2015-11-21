@@ -640,14 +640,14 @@ unsigned long ext2_count_free_inodes (struct super_block * sb)
 			continue;
 
 		x = ext2_count_free(bitmap_bh, EXT2_INODES_PER_GROUP(sb) / 8);
-		printk("group %d: stored = %d, counted = %u\n",
-			i, le16_to_cpu(desc->bg_free_inodes_count), x);
+//		printk("group %d: stored = %d, counted = %u\n",
+;
 		bitmap_count += x;
 	}
 	brelse(bitmap_bh);
-	printk("ext2_count_free_inodes: stored = %lu, computed = %lu, %lu\n",
-		percpu_counter_read(&EXT2_SB(sb)->s_freeinodes_counter),
-		desc_count, bitmap_count);
+//	printk("ext2_count_free_inodes: stored = %lu, computed = %lu, %lu\n",
+//		percpu_counter_read(&EXT2_SB(sb)->s_freeinodes_counter),
+;
 	return desc_count;
 #else
 	for (i = 0; i < EXT2_SB(sb)->s_groups_count; i++) {

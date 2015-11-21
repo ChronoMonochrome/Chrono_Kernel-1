@@ -604,11 +604,7 @@ static int pci9111_ai_cancel(struct comedi_device *dev,
 	pci9111_fifo_reset();
 
 #ifdef AI_DO_CMD_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": ai_cancel\n");
-#else
-	;
-#endif
+;
 #endif
 
 	return 0;
@@ -882,13 +878,9 @@ static int pci9111_ai_do_cmd(struct comedi_device *dev,
 					       async_cmd->
 					       flags & TRIG_ROUND_MASK);
 #ifdef AI_DO_CMD_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(PCI9111_DRIVER_NAME ": divisors = %d, %d\n",
-		       dev_private->timer_divisor_1,
-		       dev_private->timer_divisor_2);
-#else
-		;
-#endif
+//		printk(PCI9111_DRIVER_NAME ": divisors = %d, %d\n",
+//		       dev_private->timer_divisor_1,
+;
 #endif
 
 		pci9111_trigger_source_set(dev, software);
@@ -932,52 +924,20 @@ static int pci9111_ai_do_cmd(struct comedi_device *dev,
 	    dev_private->chanlist_len * (1 + dev_private->scan_delay);
 
 #ifdef AI_DO_CMD_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": start interruptions!\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": trigger source = %2x\n",
-	       pci9111_trigger_and_autoscan_get());
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": irq source     = %2x\n",
-	       pci9111_interrupt_and_fifo_get());
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": ai_do_cmd\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": stop counter   = %d\n",
-	       dev_private->stop_counter);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": scan delay     = %d\n",
-	       dev_private->scan_delay);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": chanlist_len   = %d\n",
-	       dev_private->chanlist_len);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": chunk num samples = %d\n",
-	       dev_private->chunk_num_samples);
-#else
-	;
-#endif
+;
+//	printk(PCI9111_DRIVER_NAME ": trigger source = %2x\n",
+;
+//	printk(PCI9111_DRIVER_NAME ": irq source     = %2x\n",
+;
+;
+//	printk(PCI9111_DRIVER_NAME ": stop counter   = %d\n",
+;
+//	printk(PCI9111_DRIVER_NAME ": scan delay     = %d\n",
+;
+//	printk(PCI9111_DRIVER_NAME ": chanlist_len   = %d\n",
+;
+//	printk(PCI9111_DRIVER_NAME ": chunk num samples = %d\n",
+;
 #endif
 
 	return 0;
@@ -1063,11 +1023,7 @@ static irqreturn_t pci9111_interrupt(int irq, void *p_device)
 			unsigned int bytes_written = 0;
 
 #ifdef INTERRUPT_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(PCI9111_DRIVER_NAME ": fifo is half full\n");
-#else
-			;
-#endif
+;
 #endif
 
 			num_samples =
@@ -1173,13 +1129,9 @@ static int pci9111_ai_insn_read(struct comedi_device *dev,
 	int timeout, i;
 
 #ifdef AI_INSN_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": ai_insn set c/r/n = %2x/%2x/%2x\n",
-	       CR_CHAN((&insn->chanspec)[0]),
-	       CR_RANGE((&insn->chanspec)[0]), insn->n);
-#else
-	;
-#endif
+//	printk(PCI9111_DRIVER_NAME ": ai_insn set c/r/n = %2x/%2x/%2x\n",
+//	       CR_CHAN((&insn->chanspec)[0]),
+;
 #endif
 
 	pci9111_ai_channel_set(CR_CHAN((&insn->chanspec)[0]));
@@ -1213,13 +1165,9 @@ conversion_done:
 	}
 
 #ifdef AI_INSN_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(PCI9111_DRIVER_NAME ": ai_insn get c/r/t = %2x/%2x/%2x\n",
-	       pci9111_ai_channel_get(),
-	       pci9111_ai_range_get(), pci9111_trigger_and_autoscan_get());
-#else
-	;
-#endif
+//	printk(PCI9111_DRIVER_NAME ": ai_insn get c/r/t = %2x/%2x/%2x\n",
+//	       pci9111_ai_channel_get(),
+;
 #endif
 
 	return i;
@@ -1344,8 +1292,8 @@ static int pci9111_attach(struct comedi_device *dev,
 		return -ENOMEM;
 	/*  Probe the device to determine what device in the series it is. */
 
-	printk(KERN_ERR "comedi%d: " PCI9111_DRIVER_NAME " driver\n",
-								dev->minor);
+//	printk(KERN_ERR "comedi%d: " PCI9111_DRIVER_NAME " driver\n",
+;
 
 	for_each_pci_dev(pci_device) {
 		if (pci_device->vendor == PCI_VENDOR_ID_ADLINK) {
@@ -1378,19 +1326,19 @@ static int pci9111_attach(struct comedi_device *dev,
 		}
 	}
 
-	printk(KERN_ERR
-		"comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
-			dev->minor, it->options[0], it->options[1]);
+//	printk(KERN_ERR
+//		"comedi%d: no supported board found! (req. bus/slot : %d/%d)\n",
+;
 	return -EIO;
 
 found:
 
-	printk(KERN_ERR "comedi%d: found %s (b:s:f=%d:%d:%d) , irq=%d\n",
-	       dev->minor,
-	       pci9111_boards[i].name,
-	       pci_device->bus->number,
-	       PCI_SLOT(pci_device->devfn),
-	       PCI_FUNC(pci_device->devfn), pci_device->irq);
+//	printk(KERN_ERR "comedi%d: found %s (b:s:f=%d:%d:%d) , irq=%d\n",
+//	       dev->minor,
+//	       pci9111_boards[i].name,
+//	       pci_device->bus->number,
+//	       PCI_SLOT(pci_device->devfn),
+;
 
 	/*  TODO: Warn about non-tested boards. */
 
@@ -1416,8 +1364,8 @@ found:
 	io_base = pci_resource_start(pci_device, 2);
 	io_range = pci_resource_len(pci_device, 2);
 
-	printk(KERN_ERR "comedi%d: 6503 registers at address 0x%4lx [0x%4lx]\n",
-	       dev->minor, io_base, io_range);
+//	printk(KERN_ERR "comedi%d: 6503 registers at address 0x%4lx [0x%4lx]\n",
+;
 
 	dev->iobase = io_base;
 	dev->board_name = board->name;
@@ -1434,9 +1382,9 @@ found:
 	if (pci_device->irq > 0) {
 		if (request_irq(pci_device->irq, pci9111_interrupt,
 				IRQF_SHARED, PCI9111_DRIVER_NAME, dev) != 0) {
-			printk(KERN_ERR
-				"comedi%d: unable to allocate irq  %u\n",
-					dev->minor, pci_device->irq);
+//			printk(KERN_ERR
+//				"comedi%d: unable to allocate irq  %u\n",
+;
 			return -EINVAL;
 		}
 	}

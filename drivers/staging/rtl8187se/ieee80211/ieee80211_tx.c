@@ -197,13 +197,9 @@ int ieee80211_encrypt_fragment(
 	    crypt && crypt->ops && strcmp(crypt->ops->name, "TKIP") == 0) {
 		header = (struct ieee80211_hdr_4addr *)frag->data;
 		if (net_ratelimit()) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_DEBUG "%s: TKIP countermeasures: dropped "
-			       "TX packet to %pM\n",
-			       ieee->dev->name, header->addr1);
-#else
-			;
-#endif
+//			printk(KERN_DEBUG "%s: TKIP countermeasures: dropped "
+//			       "TX packet to %pM\n",
+;
 		}
 		return -1;
 	}
@@ -223,12 +219,8 @@ int ieee80211_encrypt_fragment(
 
 	atomic_dec(&crypt->refcnt);
 	if (res < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "%s: Encryption failed: len=%d.\n",
-		       ieee->dev->name, frag->len);
-#else
-		;
-#endif
+//		printk(KERN_INFO "%s: Encryption failed: len=%d.\n",
+;
 		ieee->ieee_stats.tx_discards++;
 		return -1;
 	}
@@ -303,11 +295,7 @@ ieee80211_classify(struct sk_buff *skb, struct ieee80211_network *network)
 	u32 tag = vlan_tx_tag_get(skb);
 	wme_UP = (tag >> VLAN_PRI_SHIFT) & VLAN_PRI_MASK;
   } else if(ETH_P_PAE ==  ntohs(((struct ethhdr *)skb->data)->h_proto)) {
-#ifdef CONFIG_DEBUG_PRINTK
-    //printk(KERN_WARNING "type = normal packet\n");
-#else
-    //;
-#endif
+;
     wme_UP = 7;
   }
 
@@ -337,23 +325,15 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
 
 	struct ieee80211_crypt_data* crypt;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk(KERN_WARNING "upper layer packet!\n");
-#else
-	//;
-#endif
+;
 	spin_lock_irqsave(&ieee->lock, flags);
 
 	/* If there is no driver handler to take the TXB, dont' bother
 	 * creating it... */
 	if ((!ieee->hard_start_xmit && !(ieee->softmac_features & IEEE_SOFTMAC_TX_QUEUE))||
 	   ((!ieee->softmac_data_hard_start_xmit && (ieee->softmac_features & IEEE_SOFTMAC_TX_QUEUE)))) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "%s: No xmit handler.\n",
-		       ieee->dev->name);
-#else
-		;
-#endif
+//		printk(KERN_WARNING "%s: No xmit handler.\n",
+;
 		goto success;
 	}
 
@@ -361,12 +341,8 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
 	if(likely(ieee->raw_tx == 0)){
 
 		if (unlikely(skb->len < SNAP_SIZE + sizeof(u16))) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "%s: skb too small (%d).\n",
-			ieee->dev->name, skb->len);
-#else
-			;
-#endif
+//			printk(KERN_WARNING "%s: skb too small (%d).\n",
+;
 			goto success;
 		}
 
@@ -431,11 +407,7 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
 			memcpy(&header.addr2, src, ETH_ALEN);
 			memcpy(&header.addr3, ieee->current_network.bssid, ETH_ALEN);
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-	//	printk(KERN_WARNING "essid MAC address is %pM", &header.addr1);
-#else
-	//	;
-#endif
+;
 		header.frame_ctl = cpu_to_le16(fc);
 		//hdr_len = IEEE80211_3ADDR_LEN;
 
@@ -449,11 +421,7 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
 			qos_ctl = QOS_CTL_NOTCONTAIN_ACK;
 		}
 		else {
-#ifdef CONFIG_DEBUG_PRINTK
-			//printk(KERN_WARNING "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&frag_size = %d\n", frag_size);
-#else
-			//;
-#endif
+;
 			frag_size = ieee->fts;//default:392
 			qos_ctl = 0;
 		}
@@ -496,12 +464,8 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
 		* postfix, header, FCS, etc.) */
 		txb = ieee80211_alloc_txb(nr_frags, frag_size, GFP_ATOMIC);
 		if (unlikely(!txb)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "%s: Could not allocate TXB\n",
-			ieee->dev->name);
-#else
-			;
-#endif
+//			printk(KERN_WARNING "%s: Could not allocate TXB\n",
+;
 			goto failed;
 		}
 		txb->encrypted = encrypt;
@@ -530,16 +494,8 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
 			if(ieee->current_network.QoS_Enable) {
 			  // add 1 only indicate to corresponding seq number control 2006/7/12
 			  frag_hdr->seq_ctl = cpu_to_le16(ieee->seq_ctrl[UP2AC(skb->priority)+1]<<4 | i);
-#ifdef CONFIG_DEBUG_PRINTK
-			  //printk(KERN_WARNING "skb->priority = %d,", skb->priority);
-#else
-			  //;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-			  //printk(KERN_WARNING "type:%d: seq = %d\n",UP2AC(skb->priority),ieee->seq_ctrl[UP2AC(skb->priority)+1]);
-#else
-			  //;
-#endif
+;
+;
 			} else {
 			  frag_hdr->seq_ctl = cpu_to_le16(ieee->seq_ctrl[0]<<4 | i);
 			}
@@ -568,11 +524,7 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
 				skb_put(skb_frag, 4);
 		}
 		// Advance sequence number in data frame.
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk(KERN_WARNING "QoS Enalbed? %s\n", ieee->current_network.QoS_Enable?"Y":"N");
-#else
-		//;
-#endif
+;
 		if (ieee->current_network.QoS_Enable) {
 		  if (ieee->seq_ctrl[UP2AC(skb->priority) + 1] == 0xFFF)
 			ieee->seq_ctrl[UP2AC(skb->priority) + 1] = 0;
@@ -587,23 +539,15 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
 		//---
 	}else{
 		if (unlikely(skb->len < sizeof(struct ieee80211_hdr_3addr))) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "%s: skb too small (%d).\n",
-			ieee->dev->name, skb->len);
-#else
-			;
-#endif
+//			printk(KERN_WARNING "%s: skb too small (%d).\n",
+;
 			goto success;
 		}
 
 		txb = ieee80211_alloc_txb(1, skb->len, GFP_ATOMIC);
 		if(!txb){
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "%s: Could not allocate TXB\n",
-			ieee->dev->name);
-#else
-			;
-#endif
+//			printk(KERN_WARNING "%s: Could not allocate TXB\n",
+;
 			goto failed;
 		}
 

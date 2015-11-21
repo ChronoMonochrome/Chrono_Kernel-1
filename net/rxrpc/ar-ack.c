@@ -842,7 +842,7 @@ void rxrpc_process_call(struct work_struct *work)
 	u32 abort_code = RX_PROTOCOL_ERROR;
 	u8 *acks = NULL;
 
-	//printk("\n--------------------\n");
+;
 	_enter("{%d,%s,%lx} [%lu]",
 	       call->debug_id, rxrpc_call_states[call->state], call->events,
 	       (jiffies - call->creation_jif) / (HZ / 10));

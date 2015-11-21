@@ -599,12 +599,12 @@ dio200_find_pci(struct comedi_device *dev, int bus, int slot,
 	}
 	/* No match found. */
 	if (bus || slot) {
-		printk(KERN_ERR
-		       "comedi%d: error! no %s found at pci %02x:%02x!\n",
-		       dev->minor, thisboard->name, bus, slot);
+//		printk(KERN_ERR
+//		       "comedi%d: error! no %s found at pci %02x:%02x!\n",
+;
 	} else {
-		printk(KERN_ERR "comedi%d: error! no %s found!\n",
-		       dev->minor, thisboard->name);
+//		printk(KERN_ERR "comedi%d: error! no %s found!\n",
+;
 	}
 	return -EIO;
 }
@@ -618,8 +618,8 @@ static int
 dio200_request_region(unsigned minor, unsigned long from, unsigned long extent)
 {
 	if (!from || !request_region(from, extent, DIO200_DRIVER_NAME)) {
-		printk(KERN_ERR "comedi%d: I/O port conflict (%#lx,%lu)!\n",
-		       minor, from, extent);
+//		printk(KERN_ERR "comedi%d: I/O port conflict (%#lx,%lu)!\n",
+;
 		return -EIO;
 	}
 	return 0;
@@ -1017,8 +1017,8 @@ dio200_subdev_intr_init(struct comedi_device *dev, struct comedi_subdevice *s,
 
 	subpriv = kzalloc(sizeof(*subpriv), GFP_KERNEL);
 	if (!subpriv) {
-		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+;
 		return -ENOMEM;
 	}
 	subpriv->iobase = iobase;
@@ -1271,8 +1271,8 @@ dio200_subdev_8254_init(struct comedi_device *dev, struct comedi_subdevice *s,
 
 	subpriv = kzalloc(sizeof(*subpriv), GFP_KERNEL);
 	if (!subpriv) {
-		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+;
 		return -ENOMEM;
 	}
 
@@ -1345,17 +1345,13 @@ static int dio200_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned n;
 	int ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor,
-	       DIO200_DRIVER_NAME);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG "comedi%d: %s: attach\n", dev->minor,
+;
 
 	ret = alloc_private(dev, sizeof(struct dio200_private));
 	if (ret < 0) {
-		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+;
 		return ret;
 	}
 
@@ -1379,9 +1375,9 @@ static int dio200_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		break;
 #endif
 	default:
-		printk(KERN_ERR
-		       "comedi%d: %s: BUG! cannot determine board type!\n",
-		       dev->minor, DIO200_DRIVER_NAME);
+//		printk(KERN_ERR
+//		       "comedi%d: %s: BUG! cannot determine board type!\n",
+;
 		return -EINVAL;
 		break;
 	}
@@ -1393,9 +1389,9 @@ static int dio200_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (pci_dev) {
 		ret = comedi_pci_enable(pci_dev, DIO200_DRIVER_NAME);
 		if (ret < 0) {
-			printk(KERN_ERR
-			       "comedi%d: error! cannot enable PCI device and request regions!\n",
-			       dev->minor);
+//			printk(KERN_ERR
+//			       "comedi%d: error! cannot enable PCI device and request regions!\n",
+;
 			return ret;
 		}
 		iobase = pci_resource_start(pci_dev, 2);
@@ -1413,8 +1409,8 @@ static int dio200_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	ret = alloc_subdevices(dev, layout->n_subdevs);
 	if (ret < 0) {
-		printk(KERN_ERR "comedi%d: error! out of memory!\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: error! out of memory!\n",
+;
 		return ret;
 	}
 
@@ -1474,54 +1470,26 @@ static int dio200_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 				DIO200_DRIVER_NAME, dev) >= 0) {
 			dev->irq = irq;
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING
-			       "comedi%d: warning! irq %u unavailable!\n",
-			       dev->minor, irq);
-#else
-			;
-#endif
+//			printk(KERN_WARNING
+//			       "comedi%d: warning! irq %u unavailable!\n",
+;
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: %s ", dev->minor, dev->board_name);
-#else
-	;
-#endif
+;
 	if (thisboard->bustype == isa_bustype) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("(base %#lx) ", iobase);
-#else
-		;
-#endif
+;
 	} else {
 #ifdef CONFIG_COMEDI_PCI
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("(pci %s) ", pci_name(pci_dev));
-#else
-		;
-#endif
+;
 #endif
 	}
 	if (irq)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("(irq %u%s) ", irq, (dev->irq ? "" : " UNAVAILABLE"));
-#else
-		;
-#endif
+;
 	else
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("(no irq) ");
-#else
-		;
-#endif
+;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("attached\n");
-#else
-	;
-#endif
+;
 
 	return 1;
 }
@@ -1539,12 +1507,8 @@ static int dio200_detach(struct comedi_device *dev)
 	const struct dio200_layout_struct *layout;
 	unsigned n;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
-	       DIO200_DRIVER_NAME);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG "comedi%d: %s: detach\n", dev->minor,
+;
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);
@@ -1581,12 +1545,8 @@ static int dio200_detach(struct comedi_device *dev)
 		}
 	}
 	if (dev->board_name)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "comedi%d: %s removed\n",
-		       dev->minor, dev->board_name);
-#else
-		;
-#endif
+//		printk(KERN_INFO "comedi%d: %s removed\n",
+;
 
 	return 0;
 }

@@ -202,8 +202,8 @@ static irqreturn_t mipsnet_interrupt(int irq, void *dev_id)
 	return ret;
 
 out_badirq:
-	printk(KERN_INFO "%s: %s(): irq %d for unknown device\n",
-	       dev->name, __func__, irq);
+//	printk(KERN_INFO "%s: %s(): irq %d for unknown device\n",
+;
 	return ret;
 }
 
@@ -284,7 +284,7 @@ static int __devinit mipsnet_probe(struct platform_device *dev)
 
 	err = register_netdev(netdev);
 	if (err) {
-		printk(KERN_ERR "MIPSNet: failed to register netdev.\n");
+;
 		goto out_free_region;
 	}
 
@@ -325,12 +325,12 @@ static int __init mipsnet_init_module(void)
 {
 	int err;
 
-	printk(KERN_INFO "MIPSNet Ethernet driver. Version: %s. "
-	       "(c)2005 MIPS Technologies, Inc.\n", MIPSNET_VERSION);
+//	printk(KERN_INFO "MIPSNet Ethernet driver. Version: %s. "
+;
 
 	err = platform_driver_register(&mipsnet_driver);
 	if (err)
-		printk(KERN_ERR "Driver registration failed\n");
+;
 
 	return err;
 }

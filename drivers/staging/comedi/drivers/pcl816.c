@@ -48,11 +48,7 @@ Configuration Options:
 /* IO space len */
 #define PCLx1x_RANGE 16
 
-#ifdef CONFIG_DEBUG_PRINTK
 /* #define outb(x,y)  printk("OUTB(%x, 200+%d)\n", x,y-0x200); outb(x,y) */
-#else
-/* #define outb(x,y)  ;
-#endif
 
 /* INTEL 8254 counters */
 #define PCL816_CTR0 4
@@ -487,30 +483,14 @@ static irqreturn_t interrupt_pcl816(int irq, void *d)
 */
 static void pcl816_cmdtest_out(int e, struct comedi_cmd *cmd)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "pcl816 e=%d startsrc=%x scansrc=%x convsrc=%x\n", e,
-	       cmd->start_src, cmd->scan_begin_src, cmd->convert_src);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "pcl816 e=%d startarg=%d scanarg=%d convarg=%d\n", e,
-	       cmd->start_arg, cmd->scan_begin_arg, cmd->convert_arg);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "pcl816 e=%d stopsrc=%x scanend=%x\n", e,
-	       cmd->stop_src, cmd->scan_end_src);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "pcl816 e=%d stoparg=%d scanendarg=%d chanlistlen=%d\n",
-	       e, cmd->stop_arg, cmd->scan_end_arg, cmd->chanlist_len);
-#else
-	;
-#endif
+//	printk(KERN_INFO "pcl816 e=%d startsrc=%x scansrc=%x convsrc=%x\n", e,
+;
+//	printk(KERN_INFO "pcl816 e=%d startarg=%d scanarg=%d convarg=%d\n", e,
+;
+//	printk(KERN_INFO "pcl816 e=%d stopsrc=%x scanend=%x\n", e,
+;
+//	printk(KERN_INFO "pcl816 e=%d stoparg=%d scanendarg=%d chanlistlen=%d\n",
+;
 }
 
 /*
@@ -522,11 +502,7 @@ static int pcl816_ai_cmdtest(struct comedi_device *dev,
 	int err = 0;
 	int tmp, divisor1 = 0, divisor2 = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	DEBUG(printk(KERN_INFO "pcl816 pcl812_ai_cmdtest\n");
-#else
-	DEBUG(;
-#endif
+;
 	      pcl816_cmdtest_out(-1, cmd);
 	     );
 
@@ -724,12 +700,8 @@ static int pcl816_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 
 	/*  don't we want wake up every scan? */
 	if ((cmd->flags & TRIG_WAKE_EOS)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO
-		       "pl816: You wankt WAKE_EOS but I dont want handle it");
-#else
-		;
-#endif
+//		printk(KERN_INFO
+;
 		/*               devpriv->ai_eos=1; */
 		/* if (devpriv->ai_n_chan==1) */
 		/*       devpriv->dma=0; // DMA is useless for this situation */
@@ -841,11 +813,7 @@ static int pcl816_ai_poll(struct comedi_device *dev, struct comedi_subdevice *s)
 static int pcl816_ai_cancel(struct comedi_device *dev,
 			    struct comedi_subdevice *s)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 /* DEBUG(printk("pcl816_ai_cancel()\n");) */
-#else
-/* DEBUG(;
-#endif
 
 	if (devpriv->irq_blocked > 0) {
 		switch (devpriv->int816_mode) {
@@ -886,11 +854,7 @@ static int pcl816_ai_cancel(struct comedi_device *dev,
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	DEBUG(printk("comedi: pcl816_ai_cancel() successful\n");)
-#else
-	DEBUG(;
-#endif
+;
 	    return 0;
 }
 
@@ -994,13 +958,9 @@ check_channel_list(struct comedi_device *dev,
 		chansegment[0] = chanlist[0];
 		for (i = 1, seglen = 1; i < chanlen; i++, seglen++) {
 			/*  build part of chanlist */
-#ifdef CONFIG_DEBUG_PRINTK
-			DEBUG(printk(KERN_INFO "%d. %d %d\n", i,
-				     CR_CHAN(chanlist[i]),
-				     CR_RANGE(chanlist[i]));)
-#else
-			DEBUG(;
-#endif
+//			DEBUG(printk(KERN_INFO "%d. %d %d\n", i,
+//				     CR_CHAN(chanlist[i]),
+;
 
 			/*  we detect loop, this must by finish */
 			    if (chanlist[0] == chanlist[i])
@@ -1009,16 +969,12 @@ check_channel_list(struct comedi_device *dev,
 			    (CR_CHAN(chansegment[i - 1]) + 1) % chanlen;
 			if (nowmustbechan != CR_CHAN(chanlist[i])) {
 				/*  channel list isn't continuous :-( */
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_WARNING
-				       "comedi%d: pcl816: channel list must "
-				       "be continuous! chanlist[%i]=%d but "
-				       "must be %d or %d!\n", dev->minor,
-				       i, CR_CHAN(chanlist[i]), nowmustbechan,
-				       CR_CHAN(chanlist[0]));
-#else
-				;
-#endif
+//				printk(KERN_WARNING
+//				       "comedi%d: pcl816: channel list must "
+//				       "be continuous! chanlist[%i]=%d but "
+//				       "must be %d or %d!\n", dev->minor,
+//				       i, CR_CHAN(chanlist[i]), nowmustbechan,
+;
 				return 0;
 			}
 			/*  well, this is next correct channel in list */
@@ -1027,30 +983,22 @@ check_channel_list(struct comedi_device *dev,
 
 		/*  check whole chanlist */
 		for (i = 0, segpos = 0; i < chanlen; i++) {
-#ifdef CONFIG_DEBUG_PRINTK
-			DEBUG(printk("%d %d=%d %d\n",
-				     CR_CHAN(chansegment[i % seglen]),
-				     CR_RANGE(chansegment[i % seglen]),
-				     CR_CHAN(chanlist[i]),
-				     CR_RANGE(chanlist[i]));)
-#else
-			DEBUG(;
-#endif
+//			DEBUG(printk("%d %d=%d %d\n",
+//				     CR_CHAN(chansegment[i % seglen]),
+//				     CR_RANGE(chansegment[i % seglen]),
+//				     CR_CHAN(chanlist[i]),
+;
 			    if (chanlist[i] != chansegment[i % seglen]) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_WARNING
-				       "comedi%d: pcl816: bad channel or range"
-				       " number! chanlist[%i]=%d,%d,%d and not"
-				       " %d,%d,%d!\n", dev->minor, i,
-				       CR_CHAN(chansegment[i]),
-				       CR_RANGE(chansegment[i]),
-				       CR_AREF(chansegment[i]),
-				       CR_CHAN(chanlist[i % seglen]),
-				       CR_RANGE(chanlist[i % seglen]),
-				       CR_AREF(chansegment[i % seglen]));
-#else
-				;
-#endif
+//				printk(KERN_WARNING
+//				       "comedi%d: pcl816: bad channel or range"
+//				       " number! chanlist[%i]=%d,%d,%d and not"
+//				       " %d,%d,%d!\n", dev->minor, i,
+//				       CR_CHAN(chansegment[i]),
+//				       CR_RANGE(chansegment[i]),
+//				       CR_AREF(chansegment[i]),
+//				       CR_CHAN(chanlist[i % seglen]),
+//				       CR_RANGE(chanlist[i % seglen]),
+;
 				return 0;	/*  chan/gain list is strange */
 			}
 		}
@@ -1132,11 +1080,7 @@ static int set_rtc_irq_bit(unsigned char bit)
 */
 static void free_resources(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("free_resource()\n"); */
-#else
-	/* ;
-#endif
 	if (dev->private) {
 		pcl816_ai_cancel(dev, devpriv->sub_ai);
 		pcl816_reset(dev);
@@ -1161,11 +1105,7 @@ static void free_resources(struct comedi_device *dev)
 		free_irq(dev->irq, dev);
 	if (dev->iobase)
 		release_region(dev->iobase, this_board->io_range);
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("free_resource() end\n"); */
-#else
-	/* ;
-#endif
 }
 
 /*
@@ -1185,26 +1125,18 @@ static int pcl816_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	/* claim our I/O space */
 	iobase = it->options[0];
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: pcl816:  board=%s, ioport=0x%03lx", dev->minor,
-	       this_board->name, iobase);
-#else
-	;
-#endif
+//	printk("comedi%d: pcl816:  board=%s, ioport=0x%03lx", dev->minor,
+;
 
 	if (!request_region(iobase, this_board->io_range, "pcl816")) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("I/O port conflict\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 
 	dev->iobase = iobase;
 
 	if (pcl816_check(iobase)) {
-		printk(KERN_ERR ", I cann't detect board. FAIL!\n");
+;
 		return -EIO;
 	}
 
@@ -1233,11 +1165,7 @@ static int pcl816_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 					     "DISABLING IT", irq);
 					irq = 0;	/* Can't use IRQ */
 				} else {
-#ifdef CONFIG_DEBUG_PRINTK
-					printk(KERN_INFO ", irq=%u", irq);
-#else
-					;
-#endif
+;
 				}
 			}
 		}
@@ -1269,11 +1197,7 @@ static int pcl816_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 				 "pcl816 DMA (RTC)", dev)) {
 			devpriv->dma_rtc = 1;
 			devpriv->rtc_irq = RTC_IRQ;
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(", dma_irq=%u", devpriv->rtc_irq);
-#else
-			;
-#endif
+;
 		} else {
 			RTC_lock--;
 			if (RTC_lock == 0) {
@@ -1285,11 +1209,7 @@ static int pcl816_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			devpriv->rtc_iosize = 0;
 		}
 #else
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("pcl816: RTC code missing");
-#else
-		;
-#endif
+;
 #endif
 
 	}
@@ -1308,35 +1228,23 @@ no_rtc:
 			goto no_dma;	/* DMA disabled */
 
 		if (((1 << dma) & this_board->DMAbits) == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(", DMA is out of allowed range, FAIL!\n");
-#else
-			;
-#endif
+;
 			return -EINVAL;	/* Bad DMA */
 		}
 		ret = request_dma(dma, "pcl816");
 		if (ret) {
-			printk(KERN_ERR
-			       ", unable to allocate DMA %u, FAIL!\n", dma);
+//			printk(KERN_ERR
+;
 			return -EBUSY;	/* DMA isn't free */
 		}
 
 		devpriv->dma = dma;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO ", dma=%u", dma);
-#else
-		;
-#endif
+;
 		pages = 2;	/* we need 16KB */
 		devpriv->dmabuf[0] = __get_dma_pages(GFP_KERNEL, pages);
 
 		if (!devpriv->dmabuf[0]) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(", unable to allocate DMA buffer, FAIL!\n");
-#else
-			;
-#endif
+;
 			/*
 			 * maybe experiment with try_to_free_pages()
 			 * will help ....
@@ -1346,18 +1254,14 @@ no_rtc:
 		devpriv->dmapages[0] = pages;
 		devpriv->hwdmaptr[0] = virt_to_bus((void *)devpriv->dmabuf[0]);
 		devpriv->hwdmasize[0] = (1 << pages) * PAGE_SIZE;
-#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("%d %d %ld, ",devpriv->dmapages[0],devpriv->hwdmasize[0],PAGE_SIZE); */
-#else
-		/* ;
-#endif
 
 		if (devpriv->dma_rtc == 0) {	/*  we must do duble buff :-( */
 			devpriv->dmabuf[1] = __get_dma_pages(GFP_KERNEL, pages);
 			if (!devpriv->dmabuf[1]) {
-				printk(KERN_ERR
-				       ", unable to allocate DMA buffer, "
-				       "FAIL!\n");
+//				printk(KERN_ERR
+//				       ", unable to allocate DMA buffer, "
+;
 				return -EBUSY;
 			}
 			devpriv->dmapages[1] = pages;
@@ -1430,11 +1334,7 @@ case COMEDI_SUBD_DO:
 
 	pcl816_reset(dev);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 
 	return 0;
 }
@@ -1445,11 +1345,7 @@ case COMEDI_SUBD_DO:
  */
 static int pcl816_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	DEBUG(printk(KERN_INFO "comedi%d: pcl816: remove\n", dev->minor);)
-#else
-	DEBUG(;
-#endif
+;
 	    free_resources(dev);
 #ifdef unused
 	if (devpriv->dma_rtc)

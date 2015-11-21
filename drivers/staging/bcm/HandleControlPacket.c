@@ -81,11 +81,7 @@ static VOID handle_rx_control_packet(PMINI_ADAPTER Adapter, struct sk_buff *skb)
 			if mask bit is enable to particular pkt status, send it out to app else stop it.
 		*/
 		cntrl_msg_mask_bit = (usStatus & 0x1F);
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("\ninew  msg  mask bit which is disable in mask:%X", cntrl_msg_mask_bit);
-#else
-		//;
-#endif
+;
 		if(pTarang->RxCntrlMsgBitMask & (1<<cntrl_msg_mask_bit))
 				drop_pkt_flag = FALSE;
 

@@ -15,12 +15,8 @@ int MS_ReaderCopyBlock(struct us_data *us, WORD oldphy, WORD newphy,
 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
 	int	result;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_INFO "MS_ReaderCopyBlock --- PhyBlockAddr = %x,
 				PageNum = %x\n", PhyBlockAddr, PageNum); */
-#else
-	/* ;
-#endif
 	result = ENE_LoadBinCode(us, MS_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 		return USB_STOR_TRANSPORT_ERROR;
@@ -59,12 +55,8 @@ int MS_ReaderReadPage(struct us_data *us, DWORD PhyBlockAddr,
 	BYTE	ExtBuf[4];
 	DWORD	bn = PhyBlockAddr * 0x20 + PageNum;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_INFO "MS --- MS_ReaderReadPage,
 		PhyBlockAddr = %x, PageNum = %x\n", PhyBlockAddr, PageNum); */
-#else
-	/* ;
-#endif
 
 	result = ENE_LoadBinCode(us, MS_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
@@ -123,12 +115,8 @@ int MS_ReaderEraseBlock(struct us_data *us, DWORD PhyBlockAddr)
 	int	result;
 	DWORD	bn = PhyBlockAddr;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_INFO "MS --- MS_ReaderEraseBlock,
 		PhyBlockAddr = %x\n", PhyBlockAddr); */
-#else
-	/* ;
-#endif
 	result = ENE_LoadBinCode(us, MS_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 		return USB_STOR_TRANSPORT_ERROR;
@@ -162,11 +150,7 @@ int MS_CardInit(struct us_data *us)
 	WORD			btBlk1st, btBlk2nd;
 	DWORD			btBlk1stErred;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "MS_CardInit start\n");
-#else
-	;
-#endif
+;
 
 	MS_LibFreeAllocatedArea(us);
 
@@ -273,11 +257,7 @@ exit:
 	kfree(PageBuffer1);
 	kfree(PageBuffer0);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "MS_CardInit end\n");
-#else
-	;
-#endif
+;
 	return result;
 }
 
@@ -744,12 +724,8 @@ int MS_LibReadExtraBlock(struct us_data *us, DWORD PhyBlock,
 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
 	int	result;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("MS_LibReadExtraBlock --- PhyBlock = %x,
 		PageNum = %x, blen = %x\n", PhyBlock, PageNum, blen); */
-#else
-	/* ;
-#endif
 
 	/* Read Extra Data */
 	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
@@ -781,12 +757,8 @@ int MS_LibReadExtra(struct us_data *us, DWORD PhyBlock,
 	int	result;
 	BYTE	ExtBuf[4];
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("MS_LibReadExtra --- PhyBlock = %x, PageNum = %x\n"
 						, PhyBlock, PageNum); */
-#else
-	/* ;
-#endif
 	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
 	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
 	bcb->DataTransferLength = 0x4;
@@ -901,12 +873,8 @@ int MS_LibOverwriteExtra(struct us_data *us, DWORD PhyBlockAddr,
 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
 	int	result;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("MS --- MS_LibOverwriteExtra,  \
 		PhyBlockAddr = %x, PageNum = %x\n", PhyBlockAddr, PageNum); */
-#else
-	/* ;
-#endif
 	result = ENE_LoadBinCode(us, MS_RW_PATTERN);
 	if (result != USB_STOR_XFER_GOOD)
 		return USB_STOR_TRANSPORT_ERROR;

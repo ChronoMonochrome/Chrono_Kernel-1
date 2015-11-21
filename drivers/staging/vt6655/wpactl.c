@@ -627,11 +627,7 @@ static int wpa_get_scan(PSDevice pDevice,
 
     if (ptempBSS == NULL) {
 
-#ifdef CONFIG_DEBUG_PRINTK
-       printk("bubble sort kmalloc memory fail@@@\n");
-#else
-       ;
-#endif
+;
 
         ret = -ENOMEM;
 
@@ -661,21 +657,13 @@ static int wpa_get_scan(PSDevice pDevice,
 
   kfree(ptempBSS);
 
-#ifdef CONFIG_DEBUG_PRINTK
- // printk("bubble sort result:\n");
-#else
- // ;
-#endif
+;
 
   //for (ii = 0; ii < MAX_BSS_NUM; ii++)
 
-#ifdef CONFIG_DEBUG_PRINTK
-  //    printk("%d [%s]:RSSI=%d\n",ii,((PWLAN_IE_SSID)(pMgmt->sBSSList[ii].abySSID))->abySSID,
-
-  //                                                                 pMgmt->sBSSList[ii].uRSSI);
-#else
-  //    ;
-#endif
+//  //    printk("%d [%s]:RSSI=%d\n",ii,((PWLAN_IE_SSID)(pMgmt->sBSSList[ii].abySSID))->abySSID,
+//
+;
 
  #endif
 
@@ -885,11 +873,7 @@ if (!((pMgmt->eAuthenMode == WMAC_AUTH_SHAREKEY) ||
                               );
 
     if (pCurr == NULL){
-#ifdef CONFIG_DEBUG_PRINTK
-    printk("wpa_set_associate---->hidden mode site survey before associate.......\n");
-#else
-    ;
-#endif
+;
     bScheduleCommand((void *) pDevice, WLAN_CMD_BSSID_SCAN, pMgmt->abyDesireSSID);
   }
 }

@@ -229,17 +229,17 @@ static void prism2_clear_cmd_queue(local_info_t *local)
 	list_for_each_safe(ptr, n, &local->cmd_queue) {
 		entry = list_entry(ptr, struct hostap_cmd_queue, list);
 		atomic_inc(&entry->usecnt);
-		printk(KERN_DEBUG "%s: removed pending cmd_queue entry "
-		       "(type=%d, cmd=0x%04x, param0=0x%04x)\n",
-		       local->dev->name, entry->type, entry->cmd,
-		       entry->param0);
+//		printk(KERN_DEBUG "%s: removed pending cmd_queue entry "
+//		       "(type=%d, cmd=0x%04x, param0=0x%04x)\n",
+//		       local->dev->name, entry->type, entry->cmd,
+;
 		__hostap_cmd_queue_free(local, entry, 1);
 	}
 	if (local->cmd_queue_len) {
 		/* This should not happen; print debug message and clear
 		 * queue length. */
-		printk(KERN_DEBUG "%s: cmd_queue_len (%d) not zero after "
-		       "flush\n", local->dev->name, local->cmd_queue_len);
+//		printk(KERN_DEBUG "%s: cmd_queue_len (%d) not zero after "
+;
 		local->cmd_queue_len = 0;
 	}
 	spin_unlock_irqrestore(&local->cmdlock, flags);
@@ -267,8 +267,8 @@ static int hfa384x_cmd_issue(struct net_device *dev,
 		return -ENODEV;
 
 	if (entry->issued) {
-		printk(KERN_DEBUG "%s: driver bug - re-issuing command @%p\n",
-		       dev->name, entry);
+//		printk(KERN_DEBUG "%s: driver bug - re-issuing command @%p\n",
+;
 	}
 
 	/* wait until busy bit is clear; this should always be clear since the
@@ -281,16 +281,16 @@ static int hfa384x_cmd_issue(struct net_device *dev,
 #ifndef final_version
 	if (tries != HFA384X_CMD_BUSY_TIMEOUT) {
 		prism2_io_debug_error(dev, 1);
-		printk(KERN_DEBUG "%s: hfa384x_cmd_issue: cmd reg was busy "
-		       "for %d usec\n", dev->name,
-		       HFA384X_CMD_BUSY_TIMEOUT - tries);
+//		printk(KERN_DEBUG "%s: hfa384x_cmd_issue: cmd reg was busy "
+//		       "for %d usec\n", dev->name,
+;
 	}
 #endif
 	if (tries == 0) {
 		reg = HFA384X_INW(HFA384X_CMD_OFF);
 		prism2_io_debug_error(dev, 2);
-		printk(KERN_DEBUG "%s: hfa384x_cmd_issue - timeout - "
-		       "reg=0x%04x\n", dev->name, reg);
+//		printk(KERN_DEBUG "%s: hfa384x_cmd_issue - timeout - "
+;
 		return -ETIMEDOUT;
 	}
 
@@ -332,14 +332,14 @@ static int hfa384x_cmd(struct net_device *dev, u16 cmd, u16 param0,
 	local = iface->local;
 
 	if (in_interrupt()) {
-		printk(KERN_DEBUG "%s: hfa384x_cmd called from interrupt "
-		       "context\n", dev->name);
+//		printk(KERN_DEBUG "%s: hfa384x_cmd called from interrupt "
+;
 		return -1;
 	}
 
 	if (local->cmd_queue_len >= HOSTAP_CMD_QUEUE_MAX_LEN) {
-		printk(KERN_DEBUG "%s: hfa384x_cmd: cmd_queue full\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: hfa384x_cmd: cmd_queue full\n",
+;
 		return -1;
 	}
 
@@ -348,8 +348,8 @@ static int hfa384x_cmd(struct net_device *dev, u16 cmd, u16 param0,
 
 	entry = kzalloc(sizeof(*entry), GFP_ATOMIC);
 	if (entry == NULL) {
-		printk(KERN_DEBUG "%s: hfa384x_cmd - kmalloc failed\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: hfa384x_cmd - kmalloc failed\n",
+;
 		return -ENOMEM;
 	}
 	atomic_set(&entry->usecnt, 1);
@@ -428,16 +428,16 @@ static int hfa384x_cmd(struct net_device *dev, u16 cmd, u16 param0,
 
 	spin_lock_irqsave(&local->cmdlock, flags);
 	if (!list_empty(&entry->list)) {
-		printk(KERN_DEBUG "%s: hfa384x_cmd: entry still in list? "
-		       "(entry=%p, type=%d, res=%d)\n", dev->name, entry,
-		       entry->type, res);
+//		printk(KERN_DEBUG "%s: hfa384x_cmd: entry still in list? "
+//		       "(entry=%p, type=%d, res=%d)\n", dev->name, entry,
+;
 		list_del_init(&entry->list);
 		local->cmd_queue_len--;
 	}
 	spin_unlock_irqrestore(&local->cmdlock, flags);
 
 	if (err) {
-		printk(KERN_DEBUG "%s: hfa384x_cmd: interrupted; err=%d\n",
+;
 		       dev->name, err);
 		res = err;
 		goto done;
@@ -445,17 +445,17 @@ static int hfa384x_cmd(struct net_device *dev, u16 cmd, u16 param0,
 
 	if (entry->type != CMD_COMPLETED) {
 		u16 reg = HFA384X_INW(HFA384X_EVSTAT_OFF);
-		printk(KERN_DEBUG "%s: hfa384x_cmd: command was not "
-		       "completed (res=%d, entry=%p, type=%d, cmd=0x%04x, "
-		       "param0=0x%04x, EVSTAT=%04x INTEN=%04x)\n", dev->name,
-		       res, entry, entry->type, entry->cmd, entry->param0, reg,
-		       HFA384X_INW(HFA384X_INTEN_OFF));
+//		printk(KERN_DEBUG "%s: hfa384x_cmd: command was not "
+//		       "completed (res=%d, entry=%p, type=%d, cmd=0x%04x, "
+//		       "param0=0x%04x, EVSTAT=%04x INTEN=%04x)\n", dev->name,
+//		       res, entry, entry->type, entry->cmd, entry->param0, reg,
+;
 		if (reg & HFA384X_EV_CMD) {
 			/* Command completion event is pending, but the
 			 * interrupt was not delivered - probably an issue
 			 * with pcmcia-cs configuration. */
-			printk(KERN_WARNING "%s: interrupt delivery does not "
-			       "seem to work\n", dev->name);
+//			printk(KERN_WARNING "%s: interrupt delivery does not "
+;
 		}
 		prism2_io_debug_error(dev, 3);
 		res = -ETIMEDOUT;
@@ -466,9 +466,9 @@ static int hfa384x_cmd(struct net_device *dev, u16 cmd, u16 param0,
 		*resp0 = entry->resp0;
 #ifndef final_version
 	if (entry->res) {
-		printk(KERN_DEBUG "%s: CMD=0x%04x => res=0x%02x, "
-		       "resp0=0x%04x\n",
-		       dev->name, cmd, entry->res, entry->resp0);
+//		printk(KERN_DEBUG "%s: CMD=0x%04x => res=0x%02x, "
+//		       "resp0=0x%04x\n",
+;
 	}
 #endif /* final_version */
 
@@ -509,15 +509,15 @@ static int hfa384x_cmd_callback(struct net_device *dev, u16 cmd, u16 param0,
 	local = iface->local;
 
 	if (local->cmd_queue_len >= HOSTAP_CMD_QUEUE_MAX_LEN + 2) {
-		printk(KERN_DEBUG "%s: hfa384x_cmd: cmd_queue full\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: hfa384x_cmd: cmd_queue full\n",
+;
 		return -1;
 	}
 
 	entry = kzalloc(sizeof(*entry), GFP_ATOMIC);
 	if (entry == NULL) {
-		printk(KERN_DEBUG "%s: hfa384x_cmd_callback - kmalloc "
-		       "failed\n", dev->name);
+//		printk(KERN_DEBUG "%s: hfa384x_cmd_callback - kmalloc "
+;
 		return -ENOMEM;
 	}
 	atomic_set(&entry->usecnt, 1);
@@ -571,8 +571,8 @@ static int __hfa384x_cmd_no_wait(struct net_device *dev, u16 cmd, u16 param0,
 	if (tries == 0) {
 		reg = HFA384X_INW(HFA384X_CMD_OFF);
 		prism2_io_debug_error(dev, io_debug_num);
-		printk(KERN_DEBUG "%s: __hfa384x_cmd_no_wait(%d) - timeout - "
-		       "reg=0x%04x\n", dev->name, io_debug_num, reg);
+//		printk(KERN_DEBUG "%s: __hfa384x_cmd_no_wait(%d) - timeout - "
+;
 		return -ETIMEDOUT;
 	}
 
@@ -613,8 +613,8 @@ static int hfa384x_cmd_wait(struct net_device *dev, u16 cmd, u16 param0)
         if (tries == 0) {
                 reg = HFA384X_INW(HFA384X_EVSTAT_OFF);
 		prism2_io_debug_error(dev, 5);
-                printk(KERN_DEBUG "%s: hfa384x_cmd_wait - timeout2 - "
-		       "reg=0x%04x\n", dev->name, reg);
+//                printk(KERN_DEBUG "%s: hfa384x_cmd_wait - timeout2 - "
+;
                 return -ETIMEDOUT;
         }
 
@@ -623,8 +623,8 @@ static int hfa384x_cmd_wait(struct net_device *dev, u16 cmd, u16 param0)
                 BIT(8))) >> 8;
 #ifndef final_version
 	if (res) {
-		printk(KERN_DEBUG "%s: CMD=0x%04x => res=0x%02x\n",
-		       dev->name, cmd, res);
+//		printk(KERN_DEBUG "%s: CMD=0x%04x => res=0x%02x\n",
+;
 	}
 #endif
 
@@ -675,8 +675,8 @@ static void prism2_cmd_ev(struct net_device *dev)
 		local->cmd_queue_len--;
 
 		if (!entry->issued) {
-			printk(KERN_DEBUG "%s: Command completion event, but "
-			       "cmd not issued\n", dev->name);
+//			printk(KERN_DEBUG "%s: Command completion event, but "
+;
 			__hostap_cmd_queue_free(local, entry, 1);
 			entry = NULL;
 		}
@@ -685,8 +685,8 @@ static void prism2_cmd_ev(struct net_device *dev)
 
 	if (!entry) {
 		HFA384X_OUTW(HFA384X_EV_CMD, HFA384X_EVACK_OFF);
-		printk(KERN_DEBUG "%s: Command completion event, but no "
-		       "pending commands\n", dev->name);
+//		printk(KERN_DEBUG "%s: Command completion event, but no "
+;
 		return;
 	}
 
@@ -705,8 +705,8 @@ static void prism2_cmd_ev(struct net_device *dev)
 			entry->callback(dev, entry->context, entry->resp0,
 					entry->res);
 	} else {
-		printk(KERN_DEBUG "%s: Invalid command completion type %d\n",
-		       dev->name, entry->type);
+//		printk(KERN_DEBUG "%s: Invalid command completion type %d\n",
+;
 	}
 	hostap_cmd_queue_free(local, entry, 1);
 
@@ -771,8 +771,8 @@ static int hfa384x_setup_bap(struct net_device *dev, u16 bap, u16 id,
 
 	if (hfa384x_wait_offset(dev, o_off)) {
 		prism2_io_debug_error(dev, 7);
-		printk(KERN_DEBUG "%s: hfa384x_setup_bap - timeout before\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: hfa384x_setup_bap - timeout before\n",
+;
 		ret = -ETIMEDOUT;
 		goto out;
 	}
@@ -782,16 +782,16 @@ static int hfa384x_setup_bap(struct net_device *dev, u16 bap, u16 id,
 
 	if (hfa384x_wait_offset(dev, o_off)) {
 		prism2_io_debug_error(dev, 8);
-		printk(KERN_DEBUG "%s: hfa384x_setup_bap - timeout after\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: hfa384x_setup_bap - timeout after\n",
+;
 		ret = -ETIMEDOUT;
 		goto out;
 	}
 #ifndef final_version
 	if (HFA384X_INW(o_off) & HFA384X_OFFSET_ERR) {
 		prism2_io_debug_error(dev, 9);
-		printk(KERN_DEBUG "%s: hfa384x_setup_bap - offset error "
-		       "(%d,0x04%x,%d); reg=0x%04x\n",
+//		printk(KERN_DEBUG "%s: hfa384x_setup_bap - offset error "
+;
 		       dev->name, bap, id, offset, HFA384X_INW(o_off));
 		ret = -EINVAL;
 	}
@@ -814,8 +814,8 @@ static int hfa384x_get_rid(struct net_device *dev, u16 rid, void *buf, int len,
 	local = iface->local;
 
 	if (local->no_pri) {
-		printk(KERN_DEBUG "%s: cannot get RID %04x (len=%d) - no PRI "
-		       "f/w\n", dev->name, rid, len);
+//		printk(KERN_DEBUG "%s: cannot get RID %04x (len=%d) - no PRI "
+;
 		return -ENOTTY; /* Well.. not really correct, but return
 				 * something unique enough.. */
 	}
@@ -830,9 +830,9 @@ static int hfa384x_get_rid(struct net_device *dev, u16 rid, void *buf, int len,
 
 	res = hfa384x_cmd(dev, HFA384X_CMDCODE_ACCESS, rid, NULL, NULL);
 	if (res) {
-		printk(KERN_DEBUG "%s: hfa384x_get_rid: CMDCODE_ACCESS failed "
-		       "(res=%d, rid=%04x, len=%d)\n",
-		       dev->name, res, rid, len);
+//		printk(KERN_DEBUG "%s: hfa384x_get_rid: CMDCODE_ACCESS failed "
+//		       "(res=%d, rid=%04x, len=%d)\n",
+;
 		mutex_unlock(&local->rid_bap_mtx);
 		return res;
 	}
@@ -850,9 +850,9 @@ static int hfa384x_get_rid(struct net_device *dev, u16 rid, void *buf, int len,
 
 	rlen = (le16_to_cpu(rec.len) - 1) * 2;
 	if (!res && exact_len && rlen != len) {
-		printk(KERN_DEBUG "%s: hfa384x_get_rid - RID len mismatch: "
-		       "rid=0x%04x, len=%d (expected %d)\n",
-		       dev->name, rid, rlen, len);
+//		printk(KERN_DEBUG "%s: hfa384x_get_rid - RID len mismatch: "
+//		       "rid=0x%04x, len=%d (expected %d)\n",
+;
 		res = -ENODATA;
 	}
 
@@ -864,9 +864,9 @@ static int hfa384x_get_rid(struct net_device *dev, u16 rid, void *buf, int len,
 
 	if (res) {
 		if (res != -ENODATA)
-			printk(KERN_DEBUG "%s: hfa384x_get_rid (rid=%04x, "
-			       "len=%d) - failed - res=%d\n", dev->name, rid,
-			       len, res);
+//			printk(KERN_DEBUG "%s: hfa384x_get_rid (rid=%04x, "
+//			       "len=%d) - failed - res=%d\n", dev->name, rid,
+;
 		if (res == -ETIMEDOUT)
 			prism2_hw_reset(dev);
 		return res;
@@ -887,8 +887,8 @@ static int hfa384x_set_rid(struct net_device *dev, u16 rid, void *buf, int len)
 	local = iface->local;
 
 	if (local->no_pri) {
-		printk(KERN_DEBUG "%s: cannot set RID %04x (len=%d) - no PRI "
-		       "f/w\n", dev->name, rid, len);
+//		printk(KERN_DEBUG "%s: cannot set RID %04x (len=%d) - no PRI "
+;
 		return -ENOTTY; /* Well.. not really correct, but return
 				 * something unique enough.. */
 	}
@@ -914,8 +914,8 @@ static int hfa384x_set_rid(struct net_device *dev, u16 rid, void *buf, int len)
 	spin_unlock_bh(&local->baplock);
 
 	if (res) {
-		printk(KERN_DEBUG "%s: hfa384x_set_rid (rid=%04x, len=%d) - "
-		       "failed - res=%d\n", dev->name, rid, len, res);
+//		printk(KERN_DEBUG "%s: hfa384x_set_rid (rid=%04x, len=%d) - "
+;
 		mutex_unlock(&local->rid_bap_mtx);
 		return res;
 	}
@@ -924,9 +924,9 @@ static int hfa384x_set_rid(struct net_device *dev, u16 rid, void *buf, int len)
 	mutex_unlock(&local->rid_bap_mtx);
 
 	if (res) {
-		printk(KERN_DEBUG "%s: hfa384x_set_rid: CMDCODE_ACCESS_WRITE "
-		       "failed (res=%d, rid=%04x, len=%d)\n",
-		       dev->name, res, rid, len);
+//		printk(KERN_DEBUG "%s: hfa384x_set_rid: CMDCODE_ACCESS_WRITE "
+//		       "failed (res=%d, rid=%04x, len=%d)\n",
+;
 
 		if (res == -ETIMEDOUT)
 			prism2_hw_reset(dev);
@@ -980,8 +980,8 @@ static u16 hfa384x_allocate_fid(struct net_device *dev, int len)
 	 * below would be handled like CmdCompl event (sleep here, wake up from
 	 * interrupt handler */
 	if (hfa384x_cmd_wait(dev, HFA384X_CMDCODE_ALLOC, len)) {
-		printk(KERN_DEBUG "%s: cannot allocate fid, len=%d\n",
-		       dev->name, len);
+//		printk(KERN_DEBUG "%s: cannot allocate fid, len=%d\n",
+;
 		return 0xffff;
 	}
 
@@ -990,7 +990,7 @@ static u16 hfa384x_allocate_fid(struct net_device *dev, int len)
 	       time_before(jiffies, delay))
 		yield();
 	if (!(HFA384X_INW(HFA384X_EVSTAT_OFF) & HFA384X_EV_ALLOC)) {
-		printk("%s: fid allocate, len=%d - timeout\n", dev->name, len);
+;
 		return 0xffff;
 	}
 
@@ -1016,14 +1016,14 @@ static int prism2_reset_port(struct net_device *dev)
 	res = hfa384x_cmd(dev, HFA384X_CMDCODE_DISABLE, 0,
 			  NULL, NULL);
 	if (res)
-		printk(KERN_DEBUG "%s: reset port failed to disable port\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: reset port failed to disable port\n",
+;
 	else {
 		res = hfa384x_cmd(dev, HFA384X_CMDCODE_ENABLE, 0,
 				  NULL, NULL);
 		if (res)
-			printk(KERN_DEBUG "%s: reset port failed to enable "
-			       "port\n", dev->name);
+//			printk(KERN_DEBUG "%s: reset port failed to enable "
+;
 	}
 
 	/* It looks like at least some STA firmware versions reset
@@ -1032,9 +1032,9 @@ static int prism2_reset_port(struct net_device *dev)
 	if (local->fragm_threshold != 2346 &&
 	    hostap_set_word(dev, HFA384X_RID_FRAGMENTATIONTHRESHOLD,
 			    local->fragm_threshold)) {
-		printk(KERN_DEBUG "%s: failed to restore fragmentation "
-		       "threshold (%d) after Port0 enable\n",
-		       dev->name, local->fragm_threshold);
+//		printk(KERN_DEBUG "%s: failed to restore fragmentation "
+//		       "threshold (%d) after Port0 enable\n",
+;
 	}
 
 	/* Some firmwares lose antenna selection settings on reset */
@@ -1059,13 +1059,13 @@ static int prism2_get_version_info(struct net_device *dev, u16 rid,
 		return -1;
 	}
 	if (hfa384x_get_rid(dev, rid, &comp, sizeof(comp), 1) < 0) {
-		printk(KERN_DEBUG "Could not get RID for component %s\n", txt);
+;
 		return -1;
 	}
 
-	printk(KERN_INFO "%s: %s: id=0x%02x v%d.%d.%d\n", dev->name, txt,
-	       __le16_to_cpu(comp.id), __le16_to_cpu(comp.major),
-	       __le16_to_cpu(comp.minor), __le16_to_cpu(comp.variant));
+//	printk(KERN_INFO "%s: %s: id=0x%02x v%d.%d.%d\n", dev->name, txt,
+//	       __le16_to_cpu(comp.id), __le16_to_cpu(comp.major),
+;
 	return 0;
 }
 
@@ -1086,8 +1086,8 @@ static int prism2_setup_rids(struct net_device *dev)
 		u16 tmp1 = hostap_get_porttype(local);
 		ret = hostap_set_word(dev, HFA384X_RID_CNFPORTTYPE, tmp1);
 		if (ret) {
-			printk("%s: Port type setting to %d failed\n",
-			       dev->name, tmp1);
+//			printk("%s: Port type setting to %d failed\n",
+;
 			goto fail;
 		}
 	}
@@ -1098,7 +1098,7 @@ static int prism2_setup_rids(struct net_device *dev)
 		ret = hostap_set_string(dev, HFA384X_RID_CNFOWNSSID,
 					local->essid);
 		if (ret) {
-			printk("%s: AP own SSID setting failed\n", dev->name);
+;
 			goto fail;
 		}
 	}
@@ -1106,13 +1106,13 @@ static int prism2_setup_rids(struct net_device *dev)
 	ret = hostap_set_word(dev, HFA384X_RID_CNFMAXDATALEN,
 			      PRISM2_DATA_MAXLEN);
 	if (ret) {
-		printk("%s: MAC data length setting to %d failed\n",
-		       dev->name, PRISM2_DATA_MAXLEN);
+//		printk("%s: MAC data length setting to %d failed\n",
+;
 		goto fail;
 	}
 
 	if (hfa384x_get_rid(dev, HFA384X_RID_CHANNELLIST, &tmp, 2, 1) < 0) {
-		printk("%s: Channel list read failed\n", dev->name);
+;
 		ret = -EINVAL;
 		goto fail;
 	}
@@ -1120,24 +1120,24 @@ static int prism2_setup_rids(struct net_device *dev)
 
 	if (local->channel < 1 || local->channel > 14 ||
 	    !(local->channel_mask & (1 << (local->channel - 1)))) {
-		printk(KERN_WARNING "%s: Channel setting out of range "
-		       "(%d)!\n", dev->name, local->channel);
+//		printk(KERN_WARNING "%s: Channel setting out of range "
+;
 		ret = -EBUSY;
 		goto fail;
 	}
 
 	ret = hostap_set_word(dev, HFA384X_RID_CNFOWNCHANNEL, local->channel);
 	if (ret) {
-		printk("%s: Channel setting to %d failed\n",
-		       dev->name, local->channel);
+//		printk("%s: Channel setting to %d failed\n",
+;
 		goto fail;
 	}
 
 	ret = hostap_set_word(dev, HFA384X_RID_CNFBEACONINT,
 			      local->beacon_int);
 	if (ret) {
-		printk("%s: Beacon interval setting to %d failed\n",
-		       dev->name, local->beacon_int);
+//		printk("%s: Beacon interval setting to %d failed\n",
+;
 		/* this may fail with Symbol/Lucent firmware */
 		if (ret == -ETIMEDOUT)
 			goto fail;
@@ -1146,8 +1146,8 @@ static int prism2_setup_rids(struct net_device *dev)
 	ret = hostap_set_word(dev, HFA384X_RID_CNFOWNDTIMPERIOD,
 			      local->dtim_period);
 	if (ret) {
-		printk("%s: DTIM period setting to %d failed\n",
-		       dev->name, local->dtim_period);
+//		printk("%s: DTIM period setting to %d failed\n",
+;
 		/* this may fail with Symbol/Lucent firmware */
 		if (ret == -ETIMEDOUT)
 			goto fail;
@@ -1156,14 +1156,14 @@ static int prism2_setup_rids(struct net_device *dev)
 	ret = hostap_set_word(dev, HFA384X_RID_PROMISCUOUSMODE,
 			      local->is_promisc);
 	if (ret)
-		printk(KERN_INFO "%s: Setting promiscuous mode (%d) failed\n",
-		       dev->name, local->is_promisc);
+//		printk(KERN_INFO "%s: Setting promiscuous mode (%d) failed\n",
+;
 
 	if (!local->fw_ap) {
 		ret = hostap_set_string(dev, HFA384X_RID_CNFDESIREDSSID,
 					local->essid);
 		if (ret) {
-			printk("%s: Desired SSID setting failed\n", dev->name);
+;
 			goto fail;
 		}
 	}
@@ -1185,29 +1185,29 @@ static int prism2_setup_rids(struct net_device *dev)
 		ret = hostap_set_word(dev, HFA384X_RID_TXRATECONTROL,
 				      local->tx_rate_control);
 		if (ret) {
-			printk("%s: TXRateControl setting to %d failed\n",
-			       dev->name, local->tx_rate_control);
+//			printk("%s: TXRateControl setting to %d failed\n",
+;
 			goto fail;
 		}
 
 		ret = hostap_set_word(dev, HFA384X_RID_CNFSUPPORTEDRATES,
 				      local->tx_rate_control);
 		if (ret) {
-			printk("%s: cnfSupportedRates setting to %d failed\n",
-			       dev->name, local->tx_rate_control);
+//			printk("%s: cnfSupportedRates setting to %d failed\n",
+;
 		}
 
 		ret = hostap_set_word(dev, HFA384X_RID_CNFBASICRATES,
 				      local->basic_rates);
 		if (ret) {
-			printk("%s: cnfBasicRates setting to %d failed\n",
-			       dev->name, local->basic_rates);
+//			printk("%s: cnfBasicRates setting to %d failed\n",
+;
 		}
 
 		ret = hostap_set_word(dev, HFA384X_RID_CREATEIBSS, 1);
 		if (ret) {
-			printk("%s: Create IBSS setting to 1 failed\n",
-			       dev->name);
+//			printk("%s: Create IBSS setting to 1 failed\n",
+;
 		}
 	}
 
@@ -1216,21 +1216,21 @@ static int prism2_setup_rids(struct net_device *dev)
 					 local->name);
 
 	if (hostap_set_encryption(local)) {
-		printk(KERN_INFO "%s: could not configure encryption\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: could not configure encryption\n",
+;
 	}
 
 	(void) hostap_set_antsel(local);
 
 	if (hostap_set_roaming(local)) {
-		printk(KERN_INFO "%s: could not set host roaming\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: could not set host roaming\n",
+;
 	}
 
 	if (local->sta_fw_ver >= PRISM2_FW_VER(1,6,3) &&
 	    hostap_set_word(dev, HFA384X_RID_CNFENHSECURITY, local->enh_sec))
-		printk(KERN_INFO "%s: cnfEnhSecurity setting to 0x%x failed\n",
-		       dev->name, local->enh_sec);
+//		printk(KERN_INFO "%s: cnfEnhSecurity setting to 0x%x failed\n",
+;
 
 	/* 32-bit tallies were added in STA f/w 0.8.0, but they were apparently
 	 * not working correctly (last seven counters report bogus values).
@@ -1240,8 +1240,8 @@ static int prism2_setup_rids(struct net_device *dev)
 	 * versions, too? */
 	if (local->sta_fw_ver >= PRISM2_FW_VER(0,8,2)) {
 		if (hostap_set_word(dev, HFA384X_RID_CNFTHIRTY2TALLY, 1)) {
-			printk(KERN_INFO "%s: cnfThirty2Tally setting "
-			       "failed\n", dev->name);
+//			printk(KERN_INFO "%s: cnfThirty2Tally setting "
+;
 			local->tallies32 = 0;
 		} else
 			local->tallies32 = 1;
@@ -1252,21 +1252,21 @@ static int prism2_setup_rids(struct net_device *dev)
 
 	if (hostap_set_word(dev, HFA384X_RID_FRAGMENTATIONTHRESHOLD,
 			    local->fragm_threshold)) {
-		printk(KERN_INFO "%s: setting FragmentationThreshold to %d "
-		       "failed\n", dev->name, local->fragm_threshold);
+//		printk(KERN_INFO "%s: setting FragmentationThreshold to %d "
+;
 	}
 
 	if (hostap_set_word(dev, HFA384X_RID_RTSTHRESHOLD,
 			    local->rts_threshold)) {
-		printk(KERN_INFO "%s: setting RTSThreshold to %d failed\n",
-		       dev->name, local->rts_threshold);
+//		printk(KERN_INFO "%s: setting RTSThreshold to %d failed\n",
+;
 	}
 
 	if (local->manual_retry_count >= 0 &&
 	    hostap_set_word(dev, HFA384X_RID_CNFALTRETRYCOUNT,
 			    local->manual_retry_count)) {
-		printk(KERN_INFO "%s: setting cnfAltRetryCount to %d failed\n",
-		       dev->name, local->manual_retry_count);
+//		printk(KERN_INFO "%s: setting cnfAltRetryCount to %d failed\n",
+;
 	}
 
 	if (local->sta_fw_ver >= PRISM2_FW_VER(1,3,1) &&
@@ -1276,15 +1276,15 @@ static int prism2_setup_rids(struct net_device *dev)
 
 	if (local->sta_fw_ver >= PRISM2_FW_VER(1,7,0) && local->wpa &&
 	    hostap_set_word(dev, HFA384X_RID_SSNHANDLINGMODE, 1)) {
-		printk(KERN_INFO "%s: setting ssnHandlingMode to 1 failed\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: setting ssnHandlingMode to 1 failed\n",
+;
 	}
 
 	if (local->sta_fw_ver >= PRISM2_FW_VER(1,7,0) && local->generic_elem &&
 	    hfa384x_set_rid(dev, HFA384X_RID_GENERICELEMENT,
 			    local->generic_elem, local->generic_elem_len)) {
-		printk(KERN_INFO "%s: setting genericElement failed\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: setting genericElement failed\n",
+;
 	}
 
  fail:
@@ -1310,16 +1310,16 @@ static int prism2_hw_init(struct net_device *dev, int initial)
 	/* initialize HFA 384x */
 	ret = hfa384x_cmd_no_wait(dev, HFA384X_CMDCODE_INIT, 0);
 	if (ret) {
-		printk(KERN_INFO "%s: first command failed - assuming card "
-		       "does not have primary firmware\n", dev_info);
+//		printk(KERN_INFO "%s: first command failed - assuming card "
+;
 	}
 
 	if (first && (HFA384X_INW(HFA384X_EVSTAT_OFF) & HFA384X_EV_CMD)) {
 		/* EvStat has Cmd bit set in some cases, so retry once if no
 		 * wait was needed */
 		HFA384X_OUTW(HFA384X_EV_CMD, HFA384X_EVACK_OFF);
-		printk(KERN_DEBUG "%s: init command completed too quickly - "
-		       "retrying\n", dev->name);
+//		printk(KERN_DEBUG "%s: init command completed too quickly - "
+;
 		first = 0;
 		goto init;
 	}
@@ -1330,9 +1330,9 @@ static int prism2_hw_init(struct net_device *dev, int initial)
 	       time_before(jiffies, delay))
 		yield();
 	if (!(HFA384X_INW(HFA384X_EVSTAT_OFF) & HFA384X_EV_CMD)) {
-		printk(KERN_DEBUG "%s: assuming no Primary image in "
-		       "flash - card initialization not completed\n",
-		       dev_info);
+//		printk(KERN_DEBUG "%s: assuming no Primary image in "
+//		       "flash - card initialization not completed\n",
+;
 		local->no_pri = 1;
 #ifdef PRISM2_DOWNLOAD_SUPPORT
 			if (local->sram_type == -1)
@@ -1341,8 +1341,8 @@ static int prism2_hw_init(struct net_device *dev, int initial)
 		return 1;
 	}
 	local->no_pri = 0;
-	printk(KERN_DEBUG "prism2_hw_init: initialized in %lu ms\n",
-	       (jiffies - start) * 1000 / HZ);
+//	printk(KERN_DEBUG "prism2_hw_init: initialized in %lu ms\n",
+;
 	HFA384X_OUTW(HFA384X_EV_CMD, HFA384X_EVACK_OFF);
 	return 0;
 }
@@ -1370,8 +1370,8 @@ static int prism2_hw_init2(struct net_device *dev, int initial)
 #ifndef final_version
 	HFA384X_OUTW(HFA384X_MAGIC, HFA384X_SWSUPPORT0_OFF);
 	if (HFA384X_INW(HFA384X_SWSUPPORT0_OFF) != HFA384X_MAGIC) {
-		printk("SWSUPPORT0 write/read failed: %04X != %04X\n",
-		       HFA384X_INW(HFA384X_SWSUPPORT0_OFF), HFA384X_MAGIC);
+//		printk("SWSUPPORT0 write/read failed: %04X != %04X\n",
+;
 		goto failed;
 	}
 #endif
@@ -1386,8 +1386,8 @@ static int prism2_hw_init2(struct net_device *dev, int initial)
 		}
 
 		if (prism2_get_version_info(dev, HFA384X_RID_STAID, "STA")) {
-			printk(KERN_DEBUG "%s: Failed to read STA f/w version "
-			       "- only Primary f/w present\n", dev->name);
+//			printk(KERN_DEBUG "%s: Failed to read STA f/w version "
+;
 			local->pri_only = 1;
 			return 0;
 		}
@@ -1406,8 +1406,8 @@ static int prism2_hw_init2(struct net_device *dev, int initial)
 		if (local->txfid[i] == 0xffff && local->txfid_len > 1600) {
 			local->txfid[i] = hfa384x_allocate_fid(dev, 1600);
 			if (local->txfid[i] != 0xffff) {
-				printk(KERN_DEBUG "%s: Using shorter TX FID "
-				       "(1600 bytes)\n", dev->name);
+//				printk(KERN_DEBUG "%s: Using shorter TX FID "
+;
 				local->txfid_len = 1600;
 			}
 		}
@@ -1424,8 +1424,8 @@ static int prism2_hw_init2(struct net_device *dev, int initial)
 
 		if (hfa384x_get_rid(dev, HFA384X_RID_CNFOWNMACADDR,
 				    dev->dev_addr, 6, 1) < 0) {
-			printk("%s: could not get own MAC address\n",
-			       dev->name);
+//			printk("%s: could not get own MAC address\n",
+;
 		}
 		list_for_each(ptr, &local->hostap_interfaces) {
 			iface = list_entry(ptr, struct hostap_interface, list);
@@ -1441,7 +1441,7 @@ static int prism2_hw_init2(struct net_device *dev, int initial)
 
  failed:
 	if (!local->no_pri)
-		printk(KERN_WARNING "%s: Initialization failed\n", dev_info);
+;
 	return 1;
 }
 
@@ -1457,7 +1457,7 @@ static int prism2_hw_enable(struct net_device *dev, int initial)
 	was_resetting = local->hw_resetting;
 
 	if (hfa384x_cmd(dev, HFA384X_CMDCODE_ENABLE, 0, NULL, NULL)) {
-		printk("%s: MAC port 0 enabling failed\n", dev->name);
+;
 		return 1;
 	}
 
@@ -1470,7 +1470,7 @@ static int prism2_hw_enable(struct net_device *dev, int initial)
 	 * before it starts acting as an AP, so reset port automatically
 	 * here just in case */
 	if (initial && prism2_reset_port(dev)) {
-		printk("%s: MAC port 0 reseting failed\n", dev->name);
+;
 		return 1;
 	}
 
@@ -1534,14 +1534,14 @@ static void prism2_hw_shutdown(struct net_device *dev, int no_disable)
 	local->dev_enabled = 0;
 
 	if (local->func->card_present && !local->func->card_present(local)) {
-		printk(KERN_DEBUG "%s: card already removed or not configured "
-		       "during shutdown\n", dev->name);
+//		printk(KERN_DEBUG "%s: card already removed or not configured "
+;
 		return;
 	}
 
 	if ((no_disable & HOSTAP_HW_NO_DISABLE) == 0 &&
 	    hfa384x_cmd(dev, HFA384X_CMDCODE_DISABLE, 0, NULL, NULL))
-		printk(KERN_WARNING "%s: Shutdown failed\n", dev_info);
+;
 
 	hfa384x_disable_interrupts(dev);
 
@@ -1571,8 +1571,8 @@ static void prism2_hw_reset(struct net_device *dev)
 	local = iface->local;
 
 	if (in_interrupt()) {
-		printk(KERN_DEBUG "%s: driver bug - prism2_hw_reset() called "
-		       "in interrupt context\n", dev->name);
+//		printk(KERN_DEBUG "%s: driver bug - prism2_hw_reset() called "
+;
 		return;
 	}
 
@@ -1580,19 +1580,19 @@ static void prism2_hw_reset(struct net_device *dev)
 		return;
 
 	if (local->hw_resetting) {
-		printk(KERN_WARNING "%s: %s: already resetting card - "
-		       "ignoring reset request\n", dev_info, dev->name);
+//		printk(KERN_WARNING "%s: %s: already resetting card - "
+;
 		return;
 	}
 
 	local->hw_reset_tries++;
 	if (local->hw_reset_tries > 10) {
-		printk(KERN_WARNING "%s: too many reset tries, skipping\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: too many reset tries, skipping\n",
+;
 		return;
 	}
 
-	printk(KERN_WARNING "%s: %s: resetting card\n", dev_info, dev->name);
+;
 	hfa384x_disable_interrupts(dev);
 	local->hw_resetting = 1;
 	if (local->func->cor_sreset) {
@@ -1612,19 +1612,19 @@ static void prism2_hw_reset(struct net_device *dev)
 
 #ifdef PRISM2_DOWNLOAD_SUPPORT
 	if (local->dl_pri) {
-		printk(KERN_DEBUG "%s: persistent download of primary "
-		       "firmware\n", dev->name);
+//		printk(KERN_DEBUG "%s: persistent download of primary "
+;
 		if (prism2_download_genesis(local, local->dl_pri) < 0)
-			printk(KERN_WARNING "%s: download (PRI) failed\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: download (PRI) failed\n",
+;
 	}
 
 	if (local->dl_sec) {
-		printk(KERN_DEBUG "%s: persistent download of secondary "
-		       "firmware\n", dev->name);
+//		printk(KERN_DEBUG "%s: persistent download of secondary "
+;
 		if (prism2_download_volatile(local, local->dl_sec) < 0)
-			printk(KERN_WARNING "%s: download (SEC) failed\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: download (SEC) failed\n",
+;
 	}
 #endif /* PRISM2_DOWNLOAD_SUPPORT */
 
@@ -1644,7 +1644,7 @@ static void handle_reset_queue(struct work_struct *work)
 {
 	local_info_t *local = container_of(work, local_info_t, reset_queue);
 
-	printk(KERN_DEBUG "%s: scheduled card reset\n", local->dev->name);
+;
 	prism2_hw_reset(local->dev);
 
 	if (netif_queue_stopped(local->dev)) {
@@ -1700,20 +1700,20 @@ static void prism2_transmit_cb(struct net_device *dev, long context,
 	local = iface->local;
 
 	if (res) {
-		printk(KERN_DEBUG "%s: prism2_transmit_cb - res=0x%02x\n",
-		       dev->name, res);
+//		printk(KERN_DEBUG "%s: prism2_transmit_cb - res=0x%02x\n",
+;
 		return;
 	}
 
 	if (idx < 0 || idx >= PRISM2_TXFID_COUNT) {
-		printk(KERN_DEBUG "%s: prism2_transmit_cb called with invalid "
-		       "idx=%d\n", dev->name, idx);
+//		printk(KERN_DEBUG "%s: prism2_transmit_cb called with invalid "
+;
 		return;
 	}
 
 	if (!test_and_clear_bit(HOSTAP_BITS_TRANSMIT, &local->bits)) {
-		printk(KERN_DEBUG "%s: driver bug: prism2_transmit_cb called "
-		       "with no pending transmit\n", dev->name);
+//		printk(KERN_DEBUG "%s: driver bug: prism2_transmit_cb called "
+;
 	}
 
 	if (netif_queue_stopped(dev)) {
@@ -1771,8 +1771,8 @@ static int prism2_transmit(struct net_device *dev, int idx)
 	 * is really the case */
 
 	if (test_and_set_bit(HOSTAP_BITS_TRANSMIT, &local->bits)) {
-		printk(KERN_DEBUG "%s: driver bug - prism2_transmit() called "
-		       "when previous TX was pending\n", dev->name);
+//		printk(KERN_DEBUG "%s: driver bug - prism2_transmit() called "
+;
 		return -1;
 	}
 
@@ -1787,8 +1787,8 @@ static int prism2_transmit(struct net_device *dev, int idx)
 		prism2_transmit_cb, (long) idx);
 
 	if (res) {
-		printk(KERN_DEBUG "%s: prism2_transmit: CMDCODE_TRANSMIT "
-		       "failed (res=%d)\n", dev->name, res);
+//		printk(KERN_DEBUG "%s: prism2_transmit: CMDCODE_TRANSMIT "
+;
 		dev->stats.tx_dropped++;
 		netif_wake_queue(dev);
 		return -1;
@@ -1825,8 +1825,8 @@ static int prism2_tx_80211(struct sk_buff *skb, struct net_device *dev)
 	if ((local->func->card_present && !local->func->card_present(local)) ||
 	    !local->hw_ready || local->hw_downloading || local->pri_only) {
 		if (net_ratelimit()) {
-			printk(KERN_DEBUG "%s: prism2_tx_80211: hw not ready -"
-			       " skipping\n", dev->name);
+//			printk(KERN_DEBUG "%s: prism2_tx_80211: hw not ready -"
+;
 		}
 		goto fail;
 	}
@@ -1878,8 +1878,8 @@ static int prism2_tx_80211(struct sk_buff *skb, struct net_device *dev)
 	if (!res)
 		res = prism2_transmit(dev, idx);
 	if (res) {
-		printk(KERN_DEBUG "%s: prism2_tx_80211 - to BAP0 failed\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: prism2_tx_80211 - to BAP0 failed\n",
+;
 		local->intransmitfid[idx] = PRISM2_TXFID_EMPTY;
 		schedule_work(&local->reset_queue);
 		goto fail;
@@ -1914,16 +1914,16 @@ static u16 prism2_read_fid_reg(struct net_device *dev, u16 reg)
 		if (val == val2 && val == val3)
 			return val;
 
-		printk(KERN_DEBUG "%s: detected fid change (try=%d, reg=%04x):"
-		       " %04x %04x %04x\n",
-		       dev->name, i, reg, val, val2, val3);
+//		printk(KERN_DEBUG "%s: detected fid change (try=%d, reg=%04x):"
+//		       " %04x %04x %04x\n",
+;
 		if ((val == val2 || val == val3) && val != 0)
 			return val;
 		if (val2 == val3 && val2 != 0)
 			return val2;
 	}
-	printk(KERN_WARNING "%s: Uhhuh.. could not read good fid from reg "
-	       "%04x (%04x %04x %04x)\n", dev->name, reg, val, val2, val3);
+//	printk(KERN_WARNING "%s: Uhhuh.. could not read good fid from reg "
+;
 	return val;
 #else /* EXTRA_FID_READ_TESTS */
 	return HFA384X_INW(reg);
@@ -1946,8 +1946,8 @@ static void prism2_rx(local_info_t *local)
 #ifndef final_version
 	if (rxfid == 0) {
 		rxfid = HFA384X_INW(HFA384X_RXFID_OFF);
-		printk(KERN_DEBUG "prism2_rx: rxfid=0 (next 0x%04x)\n",
-		       rxfid);
+//		printk(KERN_DEBUG "prism2_rx: rxfid=0 (next 0x%04x)\n",
+;
 		if (rxfid == 0) {
 			schedule_work(&local->reset_queue);
 			goto rx_dropped;
@@ -1963,8 +1963,8 @@ static void prism2_rx(local_info_t *local)
 
 	if (res) {
 		spin_unlock(&local->baplock);
-		printk(KERN_DEBUG "%s: copy from BAP0 failed %d\n", dev->name,
-		       res);
+//		printk(KERN_DEBUG "%s: copy from BAP0 failed %d\n", dev->name,
+;
 		if (res == -ETIMEDOUT) {
 			schedule_work(&local->reset_queue);
 		}
@@ -1989,8 +1989,8 @@ static void prism2_rx(local_info_t *local)
 			len = 0;
 		} else {
 			spin_unlock(&local->baplock);
-			printk(KERN_DEBUG "%s: Received frame with invalid "
-			       "length 0x%04x\n", dev->name, len);
+//			printk(KERN_DEBUG "%s: Received frame with invalid "
+;
 			hostap_dump_rx_header(dev->name, &rxdesc);
 			goto rx_dropped;
 		}
@@ -1999,8 +1999,8 @@ static void prism2_rx(local_info_t *local)
 	skb = dev_alloc_skb(len + hdr_len);
 	if (!skb) {
 		spin_unlock(&local->baplock);
-		printk(KERN_DEBUG "%s: RX failed to allocate skb\n",
-		       dev->name);
+//		printk(KERN_DEBUG "%s: RX failed to allocate skb\n",
+;
 		goto rx_dropped;
 	}
 	skb->dev = dev;
@@ -2010,8 +2010,8 @@ static void prism2_rx(local_info_t *local)
 		res = hfa384x_from_bap(dev, BAP0, skb_put(skb, len), len);
 	spin_unlock(&local->baplock);
 	if (res) {
-		printk(KERN_DEBUG "%s: RX failed to read "
-		       "frame data\n", dev->name);
+//		printk(KERN_DEBUG "%s: RX failed to read "
+;
 		goto rx_dropped;
 	}
 
@@ -2066,8 +2066,8 @@ static void hostap_rx_skb(local_info_t *local, struct sk_buff *skb)
 		goto drop;
 
 	if (skb->len > PRISM2_DATA_MAXLEN) {
-		printk(KERN_DEBUG "%s: RX: len(%d) > MAX(%d)\n",
-		       dev->name, skb->len, PRISM2_DATA_MAXLEN);
+//		printk(KERN_DEBUG "%s: RX: len(%d) > MAX(%d)\n",
+;
 		goto drop;
 	}
 
@@ -2128,11 +2128,11 @@ static void prism2_alloc_ev(struct net_device *dev)
 
 #ifndef final_version
 			if (local->intransmitfid[idx] == PRISM2_TXFID_EMPTY)
-				printk("Already released txfid found at idx "
-				       "%d\n", idx);
+//				printk("Already released txfid found at idx "
+;
 			if (local->intransmitfid[idx] == PRISM2_TXFID_RESERVED)
-				printk("Already reserved txfid found at idx "
-				       "%d\n", idx);
+//				printk("Already reserved txfid found at idx "
+;
 #endif
 			local->intransmitfid[idx] = PRISM2_TXFID_EMPTY;
 			idx++;
@@ -2152,14 +2152,14 @@ static void prism2_alloc_ev(struct net_device *dev)
 			idx = 0;
 	} while (idx != local->next_alloc);
 
-	printk(KERN_WARNING "%s: could not find matching txfid (0x%04x, new "
-	       "read 0x%04x) for alloc event\n", dev->name, fid,
-	       HFA384X_INW(HFA384X_ALLOCFID_OFF));
-	printk(KERN_DEBUG "TXFIDs:");
+//	printk(KERN_WARNING "%s: could not find matching txfid (0x%04x, new "
+//	       "read 0x%04x) for alloc event\n", dev->name, fid,
+;
+;
 	for (idx = 0; idx < PRISM2_TXFID_COUNT; idx++)
-		printk(" %04x[%04x]", local->txfid[idx],
-		       local->intransmitfid[idx]);
-	printk("\n");
+//		printk(" %04x[%04x]", local->txfid[idx],
+;
+;
 	spin_unlock(&local->txfidlock);
 
 	/* FIX: should probably schedule reset; reference to one txfid was lost
@@ -2180,8 +2180,8 @@ static void hostap_tx_callback(local_info_t *local,
 
 	/* Make sure that frame was from us. */
 	if (memcmp(txdesc->addr2, local->dev->dev_addr, ETH_ALEN)) {
-		printk(KERN_DEBUG "%s: TX callback - foreign frame\n",
-		       local->dev->name);
+//		printk(KERN_DEBUG "%s: TX callback - foreign frame\n",
+;
 		return;
 	}
 
@@ -2194,8 +2194,8 @@ static void hostap_tx_callback(local_info_t *local,
 	spin_unlock(&local->lock);
 
 	if (cb == NULL) {
-		printk(KERN_DEBUG "%s: could not find TX callback (idx %d)\n",
-		       local->dev->name, sw_support);
+//		printk(KERN_DEBUG "%s: could not find TX callback (idx %d)\n",
+;
 		return;
 	}
 
@@ -2203,8 +2203,8 @@ static void hostap_tx_callback(local_info_t *local,
 	len = le16_to_cpu(txdesc->data_len);
 	skb = dev_alloc_skb(hdrlen + len);
 	if (skb == NULL) {
-		printk(KERN_DEBUG "%s: hostap_tx_callback failed to allocate "
-		       "skb\n", local->dev->name);
+//		printk(KERN_DEBUG "%s: hostap_tx_callback failed to allocate "
+;
 		return;
 	}
 
@@ -2430,8 +2430,8 @@ static void prism2_info(local_info_t *local)
 		res = hfa384x_from_bap(dev, BAP0, &info, sizeof(info));
 	if (res) {
 		spin_unlock(&local->baplock);
-		printk(KERN_DEBUG "Could not get info frame (fid=0x%04x)\n",
-		       fid);
+//		printk(KERN_DEBUG "Could not get info frame (fid=0x%04x)\n",
+;
 		if (res == -ETIMEDOUT) {
 			schedule_work(&local->reset_queue);
 		}
@@ -2445,17 +2445,17 @@ static void prism2_info(local_info_t *local)
 		 * though busy bit is not set in offset register;
 		 * in addition, length must be at least 1 due to type field */
 		spin_unlock(&local->baplock);
-		printk(KERN_DEBUG "%s: Received info frame with invalid "
-		       "length 0x%04x (type 0x%04x)\n", dev->name,
-		       le16_to_cpu(info.len), le16_to_cpu(info.type));
+//		printk(KERN_DEBUG "%s: Received info frame with invalid "
+//		       "length 0x%04x (type 0x%04x)\n", dev->name,
+;
 		goto out;
 	}
 
 	skb = dev_alloc_skb(sizeof(info) + left);
 	if (skb == NULL) {
 		spin_unlock(&local->baplock);
-		printk(KERN_DEBUG "%s: Could not allocate skb for info "
-		       "frame\n", dev->name);
+//		printk(KERN_DEBUG "%s: Could not allocate skb for info "
+;
 		goto out;
 	}
 
@@ -2463,9 +2463,9 @@ static void prism2_info(local_info_t *local)
 	if (left > 0 && hfa384x_from_bap(dev, BAP0, skb_put(skb, left), left))
 	{
 		spin_unlock(&local->baplock);
-		printk(KERN_WARNING "%s: Info frame read failed (fid=0x%04x, "
-		       "len=0x%04x, type=0x%04x\n", dev->name, fid,
-		       le16_to_cpu(info.len), le16_to_cpu(info.type));
+//		printk(KERN_WARNING "%s: Info frame read failed (fid=0x%04x, "
+//		       "len=0x%04x, type=0x%04x\n", dev->name, fid,
+;
 		dev_kfree_skb(skb);
 		goto out;
 	}
@@ -2553,15 +2553,15 @@ static void prism2_ev_tick(struct net_device *dev)
 		evstat = HFA384X_INW(HFA384X_EVSTAT_OFF);
 		inten = HFA384X_INW(HFA384X_INTEN_OFF);
 		if (!prev_stuck) {
-			printk(KERN_INFO "%s: SW TICK stuck? "
-			       "bits=0x%lx EvStat=%04x IntEn=%04x\n",
-			       dev->name, local->bits, evstat, inten);
+//			printk(KERN_INFO "%s: SW TICK stuck? "
+//			       "bits=0x%lx EvStat=%04x IntEn=%04x\n",
+;
 		}
 		local->sw_tick_stuck++;
 		if ((evstat & HFA384X_BAP0_EVENTS) &&
 		    (inten & HFA384X_BAP0_EVENTS)) {
-			printk(KERN_INFO "%s: trying to recover from IRQ "
-			       "hang\n", dev->name);
+//			printk(KERN_INFO "%s: trying to recover from IRQ "
+;
 			hfa384x_events_no_bap0(dev);
 		}
 		prev_stuck = 1;
@@ -2589,16 +2589,16 @@ static void prism2_check_magic(local_info_t *local)
 			return;
 		HFA384X_OUTW(0xffff, HFA384X_EVACK_OFF);
 		if (time_after(jiffies, last_magic_err + 10 * HZ)) {
-			printk("%s: Interrupt, but SWSUPPORT0 does not match: "
-			       "%04X != %04X - card removed?\n", dev->name,
-			       HFA384X_INW(HFA384X_SWSUPPORT0_OFF),
-			       HFA384X_MAGIC);
+//			printk("%s: Interrupt, but SWSUPPORT0 does not match: "
+//			       "%04X != %04X - card removed?\n", dev->name,
+//			       HFA384X_INW(HFA384X_SWSUPPORT0_OFF),
+;
 			last_magic_err = jiffies;
 		} else if (net_ratelimit()) {
-			printk(KERN_DEBUG "%s: interrupt - SWSUPPORT0=%04x "
-			       "MAGIC=%04x\n", dev->name,
-			       HFA384X_INW(HFA384X_SWSUPPORT0_OFF),
-			       HFA384X_MAGIC);
+//			printk(KERN_DEBUG "%s: interrupt - SWSUPPORT0=%04x "
+//			       "MAGIC=%04x\n", dev->name,
+//			       HFA384X_INW(HFA384X_SWSUPPORT0_OFF),
+;
 		}
 		if (HFA384X_INW(HFA384X_SWSUPPORT0_OFF) != 0xffff)
 			schedule_work(&local->reset_queue);
@@ -2625,8 +2625,8 @@ static irqreturn_t prism2_interrupt(int irq, void *dev_id)
 	spin_lock(&local->irq_init_lock);
 	if (!dev->base_addr) {
 		if (net_ratelimit()) {
-			printk(KERN_DEBUG "%s: Interrupt, but dev not configured\n",
-			       dev->name);
+//			printk(KERN_DEBUG "%s: Interrupt, but dev not configured\n",
+;
 		}
 		spin_unlock(&local->irq_init_lock);
 		return IRQ_HANDLED;
@@ -2637,8 +2637,8 @@ static irqreturn_t prism2_interrupt(int irq, void *dev_id)
 
 	if (local->func->card_present && !local->func->card_present(local)) {
 		if (net_ratelimit()) {
-			printk(KERN_DEBUG "%s: Interrupt, but dev not OK\n",
-			       dev->name);
+//			printk(KERN_DEBUG "%s: Interrupt, but dev not OK\n",
+;
 		}
 		return IRQ_HANDLED;
 	}
@@ -2651,8 +2651,8 @@ static irqreturn_t prism2_interrupt(int irq, void *dev_id)
 			if (local->shutdown)
 				return IRQ_HANDLED;
 			HFA384X_OUTW(0xffff, HFA384X_EVACK_OFF);
-			printk(KERN_DEBUG "%s: prism2_interrupt: ev=0xffff\n",
-			       dev->name);
+//			printk(KERN_DEBUG "%s: prism2_interrupt: ev=0xffff\n",
+;
 			return IRQ_HANDLED;
 		}
 
@@ -2677,8 +2677,8 @@ static irqreturn_t prism2_interrupt(int irq, void *dev_id)
 				return IRQ_HANDLED;
 			if (local->dev_enabled && (ev & ~HFA384X_EV_TICK) &&
 			    net_ratelimit()) {
-				printk(KERN_DEBUG "%s: prism2_interrupt: hw "
-				       "not ready; skipping events 0x%04x "
+//				printk(KERN_DEBUG "%s: prism2_interrupt: hw "
+;
 				       "(IntEn=0x%04x)%s%s%s\n",
 				       dev->name, ev,
 				       HFA384X_INW(HFA384X_INTEN_OFF),
@@ -2769,9 +2769,9 @@ static void prism2_check_sta_fw_version(local_info_t *local)
 
 	if (local->iw_mode == IW_MODE_MASTER && !local->host_encrypt &&
 	    !local->fw_encrypt_ok) {
-		printk(KERN_DEBUG "%s: defaulting to host-based encryption as "
-		       "a workaround for firmware bug in Host AP mode WEP\n",
-		       local->dev->name);
+//		printk(KERN_DEBUG "%s: defaulting to host-based encryption as "
+//		       "a workaround for firmware bug in Host AP mode WEP\n",
+;
 		local->host_encrypt = 1;
 	}
 
@@ -2785,9 +2785,9 @@ static void prism2_check_sta_fw_version(local_info_t *local)
 	if (local->sta_fw_ver >= PRISM2_FW_VER(1,5,0))
 		local->wds_type |= HOSTAP_WDS_STANDARD_FRAME;
 	else {
-		printk(KERN_DEBUG "%s: defaulting to bogus WDS frame as a "
-		       "workaround for firmware bug in Host AP mode WDS\n",
-		       local->dev->name);
+//		printk(KERN_DEBUG "%s: defaulting to bogus WDS frame as a "
+//		       "workaround for firmware bug in Host AP mode WDS\n",
+;
 	}
 
 	hostap_check_sta_fw_version(local->ap, local->sta_fw_ver);
@@ -2811,8 +2811,8 @@ static void hostap_passive_scan(unsigned long data)
 		 * passive scanning when a host-generated frame is being
 		 * transmitted */
 		if (test_bit(HOSTAP_BITS_TRANSMIT, &local->bits)) {
-			printk(KERN_DEBUG "%s: passive scan detected pending "
-			       "TX - delaying\n", dev->name);
+//			printk(KERN_DEBUG "%s: passive scan detected pending "
+;
 			local->passive_scan_timer.expires = jiffies + HZ / 10;
 			add_timer(&local->passive_scan_timer);
 			return;
@@ -2828,13 +2828,13 @@ static void hostap_passive_scan(unsigned long data)
 			 max_tries > 0);
 
 		if (max_tries == 0) {
-			printk(KERN_INFO "%s: no allowed passive scan channels"
-			       " found\n", dev->name);
+//			printk(KERN_INFO "%s: no allowed passive scan channels"
+;
 			return;
 		}
 
-		printk(KERN_DEBUG "%s: passive scan channel %d\n",
-		       dev->name, local->passive_scan_channel);
+//		printk(KERN_DEBUG "%s: passive scan channel %d\n",
+;
 		chan = local->passive_scan_channel;
 		local->passive_scan_state = PASSIVE_SCAN_WAIT;
 		local->passive_scan_timer.expires = jiffies + HZ / 10;
@@ -2848,8 +2848,8 @@ static void hostap_passive_scan(unsigned long data)
 	if (hfa384x_cmd_callback(dev, HFA384X_CMDCODE_TEST |
 				 (HFA384X_TEST_CHANGE_CHANNEL << 8),
 				 chan, NULL, 0))
-		printk(KERN_ERR "%s: passive scan channel set %d "
-		       "failed\n", dev->name, chan);
+//		printk(KERN_ERR "%s: passive scan channel set %d "
+;
 
 	add_timer(&local->passive_scan_timer);
 }
@@ -2979,8 +2979,8 @@ static int prism2_set_tim(struct net_device *dev, int aid, int set)
 
 	new_entry = kzalloc(sizeof(*new_entry), GFP_ATOMIC);
 	if (new_entry == NULL) {
-		printk(KERN_DEBUG "%s: prism2_set_tim: kmalloc failed\n",
-		       local->dev->name);
+//		printk(KERN_DEBUG "%s: prism2_set_tim: kmalloc failed\n",
+;
 		return -ENOMEM;
 	}
 	new_entry->aid = aid;
@@ -3035,9 +3035,9 @@ static void handle_set_tim_queue(struct work_struct *work)
 		if (entry->set)
 			val |= 0x8000;
 		if (hostap_set_word(local->dev, HFA384X_RID_CNFTIMCTRL, val)) {
-			printk(KERN_DEBUG "%s: set_tim failed (aid=%d "
-			       "set=%d)\n",
-			       local->dev->name, entry->aid, entry->set);
+//			printk(KERN_DEBUG "%s: set_tim failed (aid=%d "
+//			       "set=%d)\n",
+;
 		}
 
 		kfree(entry);
@@ -3095,8 +3095,8 @@ prism2_init_local_data(struct prism2_helper_functions *funcs, int card_idx,
 
 	len = strlen(dev_template);
 	if (len >= IFNAMSIZ || strstr(dev_template, "%d") == NULL) {
-		printk(KERN_WARNING "hostap: Invalid dev_template='%s'\n",
-		       dev_template);
+//		printk(KERN_WARNING "hostap: Invalid dev_template='%s'\n",
+;
 		return NULL;
 	}
 
@@ -3166,7 +3166,7 @@ prism2_init_local_data(struct prism2_helper_functions *funcs, int card_idx,
 	    i == IW_MODE_MONITOR) {
 		local->iw_mode = i;
 	} else {
-		printk(KERN_WARNING "prism2: Unknown iw_mode %d; using "
+;
 		       "IW_MODE_MASTER\n", i);
 		local->iw_mode = IW_MODE_MASTER;
 	}
@@ -3247,11 +3247,11 @@ while (0)
 	prism2_set_lockdep_class(dev);
 	rtnl_unlock();
 	if (ret < 0) {
-		printk(KERN_WARNING "%s: register netdevice failed!\n",
-		       dev_info);
+//		printk(KERN_WARNING "%s: register netdevice failed!\n",
+;
 		goto fail;
 	}
-	printk(KERN_INFO "%s: Registered netdevice %s\n", dev_info, dev->name);
+;
 
 	hostap_init_data(local);
 	return dev;

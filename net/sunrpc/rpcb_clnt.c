@@ -191,17 +191,17 @@ static int rpcb_create_local_unix(void)
 	 */
 	clnt = rpc_create(&args);
 	if (IS_ERR(clnt)) {
-		dprintk("RPC:       failed to create AF_LOCAL rpcbind "
-				"client (errno %ld).\n", PTR_ERR(clnt));
+//		dprintk("RPC:       failed to create AF_LOCAL rpcbind "
+;
 		result = PTR_ERR(clnt);
 		goto out;
 	}
 
 	clnt4 = rpc_bind_new_program(clnt, &rpcb_program, RPCBVERS_4);
 	if (IS_ERR(clnt4)) {
-		dprintk("RPC:       failed to bind second program to "
-				"rpcbind v4 client (errno %ld).\n",
-				PTR_ERR(clnt4));
+//		dprintk("RPC:       failed to bind second program to "
+//				"rpcbind v4 client (errno %ld).\n",
+;
 		clnt4 = NULL;
 	}
 
@@ -240,8 +240,8 @@ static int rpcb_create_local_net(void)
 
 	clnt = rpc_create(&args);
 	if (IS_ERR(clnt)) {
-		dprintk("RPC:       failed to create local rpcbind "
-				"client (errno %ld).\n", PTR_ERR(clnt));
+//		dprintk("RPC:       failed to create local rpcbind "
+;
 		result = PTR_ERR(clnt);
 		goto out;
 	}
@@ -253,9 +253,9 @@ static int rpcb_create_local_net(void)
 	 */
 	clnt4 = rpc_bind_new_program(clnt, &rpcb_program, RPCBVERS_4);
 	if (IS_ERR(clnt4)) {
-		dprintk("RPC:       failed to bind second program to "
-				"rpcbind v4 client (errno %ld).\n",
-				PTR_ERR(clnt4));
+//		dprintk("RPC:       failed to bind second program to "
+//				"rpcbind v4 client (errno %ld).\n",
+;
 		clnt4 = NULL;
 	}
 
@@ -329,8 +329,8 @@ static int rpcb_register_call(struct rpc_clnt *clnt, struct rpc_message *msg)
 
 	error = rpc_call_sync(clnt, msg, RPC_TASK_SOFTCONN);
 	if (error < 0) {
-		dprintk("RPC:       failed to contact local rpcbind "
-				"server (errno %d).\n", -error);
+//		dprintk("RPC:       failed to contact local rpcbind "
+;
 		return error;
 	}
 
@@ -388,9 +388,9 @@ int rpcb_register(u32 prog, u32 vers, int prot, unsigned short port)
 	if (error)
 		return error;
 
-	dprintk("RPC:       %sregistering (%u, %u, %d, %u) with local "
-			"rpcbind\n", (port ? "" : "un"),
-			prog, vers, prot, port);
+//	dprintk("RPC:       %sregistering (%u, %u, %d, %u) with local "
+//			"rpcbind\n", (port ? "" : "un"),
+;
 
 	msg.rpc_proc = &rpcb_procedures2[RPCBPROC_UNSET];
 	if (port)
@@ -412,10 +412,10 @@ static int rpcb_register_inet4(const struct sockaddr *sap,
 
 	map->r_addr = rpc_sockaddr2uaddr(sap);
 
-	dprintk("RPC:       %sregistering [%u, %u, %s, '%s'] with "
-		"local rpcbind\n", (port ? "" : "un"),
-			map->r_prog, map->r_vers,
-			map->r_addr, map->r_netid);
+//	dprintk("RPC:       %sregistering [%u, %u, %s, '%s'] with "
+//		"local rpcbind\n", (port ? "" : "un"),
+//			map->r_prog, map->r_vers,
+;
 
 	msg->rpc_proc = &rpcb_procedures4[RPCBPROC_UNSET];
 	if (port)
@@ -439,10 +439,10 @@ static int rpcb_register_inet6(const struct sockaddr *sap,
 
 	map->r_addr = rpc_sockaddr2uaddr(sap);
 
-	dprintk("RPC:       %sregistering [%u, %u, %s, '%s'] with "
-		"local rpcbind\n", (port ? "" : "un"),
-			map->r_prog, map->r_vers,
-			map->r_addr, map->r_netid);
+//	dprintk("RPC:       %sregistering [%u, %u, %s, '%s'] with "
+//		"local rpcbind\n", (port ? "" : "un"),
+//			map->r_prog, map->r_vers,
+;
 
 	msg->rpc_proc = &rpcb_procedures4[RPCBPROC_UNSET];
 	if (port)
@@ -457,9 +457,9 @@ static int rpcb_unregister_all_protofamilies(struct rpc_message *msg)
 {
 	struct rpcbind_args *map = msg->rpc_argp;
 
-	dprintk("RPC:       unregistering [%u, %u, '%s'] with "
-		"local rpcbind\n",
-			map->r_prog, map->r_vers, map->r_netid);
+//	dprintk("RPC:       unregistering [%u, %u, '%s'] with "
+//		"local rpcbind\n",
+;
 
 	map->r_addr = "";
 	msg->rpc_proc = &rpcb_procedures4[RPCBPROC_UNSET];
@@ -607,25 +607,25 @@ void rpcb_getport_async(struct rpc_task *task)
 	clnt = rpcb_find_transport_owner(task->tk_client);
 	xprt = clnt->cl_xprt;
 
-	dprintk("RPC: %5u %s(%s, %u, %u, %d)\n",
-		task->tk_pid, __func__,
-		clnt->cl_server, clnt->cl_prog, clnt->cl_vers, xprt->prot);
+//	dprintk("RPC: %5u %s(%s, %u, %u, %d)\n",
+//		task->tk_pid, __func__,
+;
 
 	/* Put self on the wait queue to ensure we get notified if
 	 * some other task is already attempting to bind the port */
 	rpc_sleep_on(&xprt->binding, task, NULL);
 
 	if (xprt_test_and_set_binding(xprt)) {
-		dprintk("RPC: %5u %s: waiting for another binder\n",
-			task->tk_pid, __func__);
+//		dprintk("RPC: %5u %s: waiting for another binder\n",
+;
 		return;
 	}
 
 	/* Someone else may have bound if we slept */
 	if (xprt_bound(xprt)) {
 		status = 0;
-		dprintk("RPC: %5u %s: already bound\n",
-			task->tk_pid, __func__);
+//		dprintk("RPC: %5u %s: already bound\n",
+;
 		goto bailout_nofree;
 	}
 
@@ -644,35 +644,35 @@ void rpcb_getport_async(struct rpc_task *task)
 		break;
 	default:
 		status = -EAFNOSUPPORT;
-		dprintk("RPC: %5u %s: bad address family\n",
-				task->tk_pid, __func__);
+//		dprintk("RPC: %5u %s: bad address family\n",
+;
 		goto bailout_nofree;
 	}
 	if (proc == NULL) {
 		xprt->bind_index = 0;
 		status = -EPFNOSUPPORT;
-		dprintk("RPC: %5u %s: no more getport versions available\n",
-			task->tk_pid, __func__);
+//		dprintk("RPC: %5u %s: no more getport versions available\n",
+;
 		goto bailout_nofree;
 	}
 
-	dprintk("RPC: %5u %s: trying rpcbind version %u\n",
-		task->tk_pid, __func__, bind_version);
+//	dprintk("RPC: %5u %s: trying rpcbind version %u\n",
+;
 
 	rpcb_clnt = rpcb_create(clnt->cl_server, sap, salen, xprt->prot,
 				bind_version);
 	if (IS_ERR(rpcb_clnt)) {
 		status = PTR_ERR(rpcb_clnt);
-		dprintk("RPC: %5u %s: rpcb_create failed, error %ld\n",
-			task->tk_pid, __func__, PTR_ERR(rpcb_clnt));
+//		dprintk("RPC: %5u %s: rpcb_create failed, error %ld\n",
+;
 		goto bailout_nofree;
 	}
 
 	map = kzalloc(sizeof(struct rpcbind_args), GFP_ATOMIC);
 	if (!map) {
 		status = -ENOMEM;
-		dprintk("RPC: %5u %s: no memory available\n",
-			task->tk_pid, __func__);
+//		dprintk("RPC: %5u %s: no memory available\n",
+;
 		goto bailout_release_client;
 	}
 	map->r_prog = clnt->cl_prog;
@@ -700,8 +700,8 @@ void rpcb_getport_async(struct rpc_task *task)
 	rpc_release_client(rpcb_clnt);
 	if (IS_ERR(child)) {
 		/* rpcb_map_release() has freed the arguments */
-		dprintk("RPC: %5u %s: rpc_run_task failed\n",
-			task->tk_pid, __func__);
+//		dprintk("RPC: %5u %s: rpc_run_task failed\n",
+;
 		return;
 	}
 
@@ -748,8 +748,8 @@ static void rpcb_getport_done(struct rpc_task *child, void *data)
 		status = 0;
 	}
 
-	dprintk("RPC: %5u rpcb_getport_done(status %d, port %u)\n",
-			child->tk_pid, status, map->r_port);
+//	dprintk("RPC: %5u rpcb_getport_done(status %d, port %u)\n",
+;
 
 	map->r_status = status;
 }
@@ -764,9 +764,9 @@ static void rpcb_enc_mapping(struct rpc_rqst *req, struct xdr_stream *xdr,
 	struct rpc_task *task = req->rq_task;
 	__be32 *p;
 
-	dprintk("RPC: %5u encoding PMAP_%s call (%u, %u, %d, %u)\n",
-			task->tk_pid, task->tk_msg.rpc_proc->p_name,
-			rpcb->r_prog, rpcb->r_vers, rpcb->r_prot, rpcb->r_port);
+//	dprintk("RPC: %5u encoding PMAP_%s call (%u, %u, %d, %u)\n",
+//			task->tk_pid, task->tk_msg.rpc_proc->p_name,
+;
 
 	p = xdr_reserve_space(xdr, RPCB_mappingargs_sz << 2);
 	*p++ = cpu_to_be32(rpcb->r_prog);
@@ -789,8 +789,8 @@ static int rpcb_dec_getport(struct rpc_rqst *req, struct xdr_stream *xdr,
 		return -EIO;
 
 	port = be32_to_cpup(p);
-	dprintk("RPC: %5u PMAP_%s result: %lu\n", task->tk_pid,
-			task->tk_msg.rpc_proc->p_name, port);
+//	dprintk("RPC: %5u PMAP_%s result: %lu\n", task->tk_pid,
+;
 	if (unlikely(port > USHRT_MAX))
 		return -EIO;
 
@@ -812,9 +812,9 @@ static int rpcb_dec_set(struct rpc_rqst *req, struct xdr_stream *xdr,
 	if (*p != xdr_zero)
 		*boolp = 1;
 
-	dprintk("RPC: %5u RPCB_%s call %s\n",
-			task->tk_pid, task->tk_msg.rpc_proc->p_name,
-			(*boolp ? "succeeded" : "failed"));
+//	dprintk("RPC: %5u RPCB_%s call %s\n",
+//			task->tk_pid, task->tk_msg.rpc_proc->p_name,
+;
 	return 0;
 }
 
@@ -836,10 +836,10 @@ static void rpcb_enc_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
 	struct rpc_task *task = req->rq_task;
 	__be32 *p;
 
-	dprintk("RPC: %5u encoding RPCB_%s call (%u, %u, '%s', '%s')\n",
-			task->tk_pid, task->tk_msg.rpc_proc->p_name,
-			rpcb->r_prog, rpcb->r_vers,
-			rpcb->r_netid, rpcb->r_addr);
+//	dprintk("RPC: %5u encoding RPCB_%s call (%u, %u, '%s', '%s')\n",
+//			task->tk_pid, task->tk_msg.rpc_proc->p_name,
+//			rpcb->r_prog, rpcb->r_vers,
+;
 
 	p = xdr_reserve_space(xdr, (RPCB_program_sz + RPCB_version_sz) << 2);
 	*p++ = cpu_to_be32(rpcb->r_prog);
@@ -871,8 +871,8 @@ static int rpcb_dec_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
 	 * the requested RPC service was not registered.
 	 */
 	if (len == 0) {
-		dprintk("RPC: %5u RPCB reply: program not registered\n",
-				task->tk_pid);
+//		dprintk("RPC: %5u RPCB reply: program not registered\n",
+;
 		return 0;
 	}
 
@@ -882,8 +882,8 @@ static int rpcb_dec_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
 	p = xdr_inline_decode(xdr, len);
 	if (unlikely(p == NULL))
 		goto out_fail;
-	dprintk("RPC: %5u RPCB_%s reply: %s\n", task->tk_pid,
-			task->tk_msg.rpc_proc->p_name, (char *)p);
+//	dprintk("RPC: %5u RPCB_%s reply: %s\n", task->tk_pid,
+;
 
 	if (rpc_uaddr2sockaddr((char *)p, len, sap, sizeof(address)) == 0)
 		goto out_fail;
@@ -892,8 +892,8 @@ static int rpcb_dec_getaddr(struct rpc_rqst *req, struct xdr_stream *xdr,
 	return 0;
 
 out_fail:
-	dprintk("RPC: %5u malformed RPCB_%s reply\n",
-			task->tk_pid, task->tk_msg.rpc_proc->p_name);
+//	dprintk("RPC: %5u malformed RPCB_%s reply\n",
+;
 	return -EIO;
 }
 

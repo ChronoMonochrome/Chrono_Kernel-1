@@ -317,7 +317,7 @@ static u64 nic_find(struct ioc3 *ioc3, int *last)
 		b = nic_read_bit(ioc3);
 
 		if (a && b) {
-			printk("NIC search failed (not fatal).\n");
+;
 			*last = 0;
 			return 0;
 		}
@@ -387,10 +387,10 @@ static int nic_init(struct ioc3 *ioc3)
 		break;
 	}
 
-	printk("Found %s NIC", type);
+;
 	if (type != unknown)
 		printk (" registration number %pM, CRC %02x", serial, crc);
-	printk(".\n");
+;
 
 	return 0;
 }
@@ -415,7 +415,7 @@ static void ioc3_get_eaddr_nic(struct ioc3_private *ip)
 	}
 
 	if (tries < 0) {
-		printk("Failed to read MAC address\n");
+;
 		return;
 	}
 
@@ -440,7 +440,7 @@ static void ioc3_get_eaddr(struct ioc3_private *ip)
 {
 	ioc3_get_eaddr_nic(ip);
 
-	printk("Ethernet address is %pM.\n", priv_netdev(ip)->dev_addr);
+;
 }
 
 static void __ioc3_set_mac_address(struct net_device *dev)
@@ -706,17 +706,17 @@ static void ioc3_error(struct net_device *dev, u32 eisr)
 	spin_lock(&ip->ioc3_lock);
 
 	if (eisr & EISR_RXOFLO)
-		printk(KERN_ERR "%s: RX overflow.\n", iface);
+;
 	if (eisr & EISR_RXBUFOFLO)
-		printk(KERN_ERR "%s: RX buffer overflow.\n", iface);
+;
 	if (eisr & EISR_RXMEMERR)
-		printk(KERN_ERR "%s: RX PCI error.\n", iface);
+;
 	if (eisr & EISR_RXPARERR)
-		printk(KERN_ERR "%s: RX SSRAM parity error.\n", iface);
+;
 	if (eisr & EISR_TXBUFUFLO)
-		printk(KERN_ERR "%s: TX buffer underflow.\n", iface);
+;
 	if (eisr & EISR_TXMEMERR)
-		printk(KERN_ERR "%s: TX PCI error.\n", iface);
+;
 
 	ioc3_stop(ip);
 	ioc3_init(dev);
@@ -905,7 +905,7 @@ static void ioc3_alloc_rings(struct net_device *dev)
 		ip->rxr = (unsigned long *) get_zeroed_page(GFP_ATOMIC);
 		rxr = (unsigned long *) ip->rxr;
 		if (!rxr)
-			printk("ioc3_alloc_rings(): get_zeroed_page() failed!\n");
+;
 
 		/* Now the rx buffers.  The RX ring may be larger but
 		   we only allocate 16 buffers for now.  Need to tune
@@ -935,7 +935,7 @@ static void ioc3_alloc_rings(struct net_device *dev)
 		/* Allocate and initialize tx rings.  16kb = 128 bufs.  */
 		ip->txr = (struct ioc3_etxd *)__get_free_pages(GFP_KERNEL, 2);
 		if (!ip->txr)
-			printk("ioc3_alloc_rings(): __get_free_pages() failed!\n");
+;
 		ip->tx_pi = 0;
 		ip->tx_ci = 0;
 	}
@@ -1046,7 +1046,7 @@ static int ioc3_open(struct net_device *dev)
 	struct ioc3_private *ip = netdev_priv(dev);
 
 	if (request_irq(dev->irq, ioc3_interrupt, IRQF_SHARED, ioc3_str, dev)) {
-		printk(KERN_ERR "%s: Can't get irq %d\n", dev->name, dev->irq);
+;
 
 		return -EAGAIN;
 	}
@@ -1244,15 +1244,15 @@ static int __devinit ioc3_probe(struct pci_dev *pdev,
 		pci_using_dac = 1;
 		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
 		if (err < 0) {
-			printk(KERN_ERR "%s: Unable to obtain 64 bit DMA "
-			       "for consistent allocations\n", pci_name(pdev));
+//			printk(KERN_ERR "%s: Unable to obtain 64 bit DMA "
+;
 			goto out;
 		}
 	} else {
 		err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (err) {
-			printk(KERN_ERR "%s: No usable DMA configuration, "
-			       "aborting.\n", pci_name(pdev));
+//			printk(KERN_ERR "%s: No usable DMA configuration, "
+;
 			goto out;
 		}
 		pci_using_dac = 0;
@@ -1284,8 +1284,8 @@ static int __devinit ioc3_probe(struct pci_dev *pdev,
 	ioc3_size = pci_resource_len(pdev, 0);
 	ioc3 = (struct ioc3 *) ioremap(ioc3_base, ioc3_size);
 	if (!ioc3) {
-		printk(KERN_CRIT "ioc3eth(%s): ioremap failed, goodbye.\n",
-		       pci_name(pdev));
+//		printk(KERN_CRIT "ioc3eth(%s): ioremap failed, goodbye.\n",
+;
 		err = -ENOMEM;
 		goto out_res;
 	}
@@ -1312,8 +1312,8 @@ static int __devinit ioc3_probe(struct pci_dev *pdev,
 	ioc3_mii_init(ip);
 
 	if (ip->mii.phy_id == -1) {
-		printk(KERN_CRIT "ioc3-eth(%s): Didn't find a PHY, goodbye.\n",
-		       pci_name(pdev));
+//		printk(KERN_CRIT "ioc3-eth(%s): Didn't find a PHY, goodbye.\n",
+;
 		err = -ENODEV;
 		goto out_stop;
 	}
@@ -1342,10 +1342,10 @@ static int __devinit ioc3_probe(struct pci_dev *pdev,
 	vendor = (sw_physid1 << 12) | (sw_physid2 >> 4);
 	model  = (sw_physid2 >> 4) & 0x3f;
 	rev    = sw_physid2 & 0xf;
-	printk(KERN_INFO "%s: Using PHY %d, vendor 0x%x, model %d, "
-	       "rev %d.\n", dev->name, ip->mii.phy_id, vendor, model, rev);
-	printk(KERN_INFO "%s: IOC3 SSRAM has %d kbyte.\n", dev->name,
-	       ip->emcr & EMCR_BUFSIZ ? 128 : 64);
+//	printk(KERN_INFO "%s: Using PHY %d, vendor 0x%x, model %d, "
+;
+//	printk(KERN_INFO "%s: IOC3 SSRAM has %d kbyte.\n", dev->name,
+;
 
 	return 0;
 
@@ -1522,7 +1522,7 @@ static void ioc3_timeout(struct net_device *dev)
 {
 	struct ioc3_private *ip = netdev_priv(dev);
 
-	printk(KERN_ERR "%s: transmit timed out, resetting\n", dev->name);
+;
 
 	spin_lock_irq(&ip->ioc3_lock);
 

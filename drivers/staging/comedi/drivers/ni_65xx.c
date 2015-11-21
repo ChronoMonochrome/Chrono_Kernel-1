@@ -450,19 +450,11 @@ static int ni_65xx_dio_insn_bits(struct comedi_device *dev,
 			writeb(bits,
 			       private(dev)->mite->daq_io_addr +
 			       Port_Data(port));
-#ifdef CONFIG_DEBUG_PRINTK
 /* printk("wrote 0x%x to port %i\n", bits, port); */
-#else
-/* ;
-#endif
 		}
 		port_read_bits =
 		    readb(private(dev)->mite->daq_io_addr + Port_Data(port));
-#ifdef CONFIG_DEBUG_PRINTK
 /* printk("read 0x%x from port %i\n", port_read_bits, port); */
-#else
-/* ;
-#endif
 		if (s->type == COMEDI_SUBD_DO && board(dev)->invert_outputs) {
 			/* Outputs inverted, so invert value read back from
 			 * DO subdevice.  (Does not apply to boards with DIO
@@ -659,11 +651,7 @@ static int ni_65xx_attach(struct comedi_device *dev,
 	unsigned i;
 	int ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: ni_65xx:", dev->minor);
-#else
-	;
-#endif
+;
 
 	ret = alloc_private(dev, sizeof(struct ni_65xx_private));
 	if (ret < 0)
@@ -675,28 +663,16 @@ static int ni_65xx_attach(struct comedi_device *dev,
 
 	ret = mite_setup(private(dev)->mite);
 	if (ret < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "error setting up mite\n");
-#else
-		;
-#endif
+;
 		return ret;
 	}
 
 	dev->board_name = board(dev)->name;
 	dev->irq = mite_irq(private(dev)->mite);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO " %s", dev->board_name);
-#else
-	;
-#endif
+;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO " ID=0x%02x",
-	       readb(private(dev)->mite->daq_io_addr + ID_Register));
-#else
-	;
-#endif
+//	printk(KERN_INFO " ID=0x%02x",
+;
 
 	ret = alloc_subdevices(dev, 4);
 	if (ret < 0)
@@ -796,18 +772,10 @@ static int ni_65xx_attach(struct comedi_device *dev,
 			  "ni_65xx", dev);
 	if (ret < 0) {
 		dev->irq = 0;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING " irq not available");
-#else
-		;
-#endif
+;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 
 	return 0;
 }
@@ -857,11 +825,7 @@ static int ni_65xx_find_device(struct comedi_device *dev, int bus, int slot)
 			}
 		}
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_WARNING "no device found\n");
-#else
-	;
-#endif
+;
 	mite_list_devices();
 	return -EIO;
 }

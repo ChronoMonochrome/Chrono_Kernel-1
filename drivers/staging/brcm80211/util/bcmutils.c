@@ -384,11 +384,7 @@ void bcm_prpkt(const char *msg, struct sk_buff *p0)
 	struct sk_buff *p;
 
 	if (msg && (msg[0] != '\0'))
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "%s:\n", msg);
-#else
-		;
-#endif
+;
 
 	for (p = p0; p; p = p->next)
 		print_hex_dump_bytes("", DUMP_PREFIX_OFFSET, p->data, p->len);

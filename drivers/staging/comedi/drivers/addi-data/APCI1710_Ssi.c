@@ -649,11 +649,7 @@ int i_APCI1710_InsnReadSSIValue(struct comedi_device *dev, struct comedi_subdevi
 					break;
 
 				default:
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("Read Type Inputs Wrong\n");
-#else
-					;
-#endif
+;
 
 				}	/*  switch  ending */
 
@@ -812,11 +808,7 @@ int i_APCI1710_InsnBitsSSIDigitalIO(struct comedi_device *dev, struct comedi_sub
 				break;
 
 			default:
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("IO type wrong\n");
-#else
-				;
-#endif
+;
 
 			}	/* switch end */
 		} else {

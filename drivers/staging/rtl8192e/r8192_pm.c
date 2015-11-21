@@ -16,11 +16,7 @@
 
 int rtl8192E_save_state (struct pci_dev *dev, pm_message_t state)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-        printk(KERN_NOTICE "r8192E save state call (state %u).\n", state.event);
-#else
-        ;
-#endif
+;
 	return -EAGAIN;
 }
 
@@ -83,8 +79,8 @@ int rtl8192E_resume (struct pci_dev *pdev)
 
 	err = pci_enable_device(pdev);
 	if(err) {
-		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
-				dev->name);
+//		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
+;
 		return err;
 	}
 
@@ -121,11 +117,7 @@ out:
 
 int rtl8192E_enable_wake (struct pci_dev *dev, pm_message_t state, int enable)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-        printk(KERN_NOTICE "r8192E enable wake call (state %u, enable %d).\n",
-	       state.event, enable);
-#else
-        ;
-#endif
+//        printk(KERN_NOTICE "r8192E enable wake call (state %u, enable %d).\n",
+;
 	return -EAGAIN;
 }

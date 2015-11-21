@@ -300,11 +300,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		return err;
 
 /* Output some info */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: %s: ", dev->minor, thisboard->name);
-#else
-	;
-#endif
+;
 
 /*
  * Initialize dev->board_name.  Note that we can use the "thisboard"
@@ -345,11 +341,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			break;
 		case DIO_INTERNAL:
 		default:
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("DIO_INTERNAL not implemented yet!\n");
-#else
-			;
-#endif
+;
 			return -ENXIO;
 			break;
 		}
@@ -359,11 +351,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	devpriv->attached_successfully = 1;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("attached\n");
-#else
-	;
-#endif
+;
 
 	return 1;
 }
@@ -393,12 +381,8 @@ static int detach(struct comedi_device *dev)
 		}
 
 		if (devpriv->attached_successfully && thisboard)
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("comedi%d: %s: detached\n", dev->minor,
-			       thisboard->name);
-#else
-			;
-#endif
+//			printk("comedi%d: %s: detached\n", dev->minor,
+;
 
 	}
 
@@ -519,11 +503,7 @@ static int probe(struct comedi_device *dev, const struct comedi_devconfig *it)
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
-	       "card found at the requested position\n");
-#else
-	;
-#endif
+//	printk("cb_pcimdda: No supported ComputerBoards/MeasurementComputing "
+;
 	return -ENODEV;
 }

@@ -36,8 +36,8 @@ void rtl8187_rfkill_init(struct ieee80211_hw *hw)
 	struct rtl8187_priv *priv = hw->priv;
 
 	priv->rfkill_off = rtl8187_is_radio_enabled(priv);
-	printk(KERN_INFO "rtl8187: wireless switch is %s\n",
-	       priv->rfkill_off ? "on" : "off");
+//	printk(KERN_INFO "rtl8187: wireless switch is %s\n",
+;
 	wiphy_rfkill_set_hw_state(hw->wiphy, !priv->rfkill_off);
 	wiphy_rfkill_start_polling(hw->wiphy);
 }
@@ -51,8 +51,8 @@ void rtl8187_rfkill_poll(struct ieee80211_hw *hw)
 	enabled = rtl8187_is_radio_enabled(priv);
 	if (unlikely(enabled != priv->rfkill_off)) {
 		priv->rfkill_off = enabled;
-		printk(KERN_INFO "rtl8187: wireless radio switch turned %s\n",
-		       enabled ? "on" : "off");
+//		printk(KERN_INFO "rtl8187: wireless radio switch turned %s\n",
+;
 		wiphy_rfkill_set_hw_state(hw->wiphy, !enabled);
 	}
 	mutex_unlock(&priv->conf_mutex);

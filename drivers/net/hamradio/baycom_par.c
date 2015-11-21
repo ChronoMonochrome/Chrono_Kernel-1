@@ -302,9 +302,9 @@ static void par96_wakeup(void *handle)
         struct net_device *dev = (struct net_device *)handle;
 	struct baycom_state *bc = netdev_priv(dev);
 
-	printk(KERN_DEBUG "baycom_par: %s: why am I being woken up?\n", dev->name);
+;
 	if (!parport_claim(bc->pdev))
-		printk(KERN_DEBUG "baycom_par: %s: I'm broken.\n", dev->name);
+;
 }
 
 /* --------------------------------------------------------------------- */
@@ -318,16 +318,16 @@ static int par96_open(struct net_device *dev)
 		return -ENXIO;
 	pp = parport_find_base(dev->base_addr);
 	if (!pp) {
-		printk(KERN_ERR "baycom_par: parport at 0x%lx unknown\n", dev->base_addr);
+;
 		return -ENXIO;
 	}
 	if (pp->irq < 0) {
-		printk(KERN_ERR "baycom_par: parport at 0x%lx has no irq\n", pp->base);
+;
 		parport_put_port(pp);
 		return -ENXIO;
 	}
 	if ((~pp->modes) & (PARPORT_MODE_PCSPP | PARPORT_MODE_SAFEININT)) {
-		printk(KERN_ERR "baycom_par: parport at 0x%lx cannot be used\n", pp->base);
+;
 		parport_put_port(pp);
 		return -ENXIO;
 	}
@@ -337,11 +337,11 @@ static int par96_open(struct net_device *dev)
 				 par96_interrupt, PARPORT_DEV_EXCL, dev);
 	parport_put_port(pp);
 	if (!bc->pdev) {
-		printk(KERN_ERR "baycom_par: cannot register parport at 0x%lx\n", dev->base_addr);
+;
 		return -ENXIO;
 	}
 	if (parport_claim(bc->pdev)) {
-		printk(KERN_ERR "baycom_par: parport at 0x%lx busy\n", pp->base);
+;
 		parport_unregister_device(bc->pdev);
 		return -EBUSY;
 	}
@@ -351,8 +351,8 @@ static int par96_open(struct net_device *dev)
         bc->hdrv.par.bitrate = 9600;
 	pp->ops->write_data(pp, PAR96_PTT | PAR97_POWER); /* switch off PTT */
 	pp->ops->enable_irq(pp);
-	printk(KERN_INFO "%s: par96 at iobase 0x%lx irq %u options 0x%x\n",
-	       bc_drvname, dev->base_addr, dev->irq, bc->options);
+//	printk(KERN_INFO "%s: par96 at iobase 0x%lx irq %u options 0x%x\n",
+;
 	return 0;
 }
 
@@ -372,8 +372,8 @@ static int par96_close(struct net_device *dev)
 	pp->ops->write_data(pp, PAR96_PTT | PAR97_POWER);
 	parport_release(bc->pdev);
 	parport_unregister_device(bc->pdev);
-	printk(KERN_INFO "%s: close par96 at iobase 0x%lx irq %u\n",
-	       bc_drvname, dev->base_addr, dev->irq);
+//	printk(KERN_INFO "%s: close par96 at iobase 0x%lx irq %u\n",
+;
 	return 0;
 }
 
@@ -496,7 +496,7 @@ static int __init init_baycompar(void)
 	int i, found = 0;
 	char set_hw = 1;
 
-	printk(bc_drvinfo);
+;
 	/*
 	 * register net devices
 	 */

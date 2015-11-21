@@ -79,7 +79,7 @@ static int pppolac_recv_core(struct sock *sk_udp, struct sk_buff *skb)
 
 	/* Linearize the skb if it is fragmented */
 	if (skb_linearize(skb) < 0) {
-		printk(KERN_ERR "%s: Failed to linearize the skb\n", __func__);
+;
 		goto drop;
 	}
 

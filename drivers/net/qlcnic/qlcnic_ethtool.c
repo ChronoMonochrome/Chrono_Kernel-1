@@ -430,8 +430,8 @@ qlcnic_validate_ringparam(u32 val, u32 min, u32 max, char *r_name)
 	num_desc = roundup_pow_of_two(num_desc);
 
 	if (val != num_desc) {
-		printk(KERN_INFO "%s: setting %s ring size %d instead of %d\n",
-		       qlcnic_driver_name, r_name, num_desc, val);
+//		printk(KERN_INFO "%s: setting %s ring size %d instead of %d\n",
+;
 	}
 
 	return num_desc;

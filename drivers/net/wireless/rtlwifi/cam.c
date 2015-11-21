@@ -347,7 +347,7 @@ void rtl_cam_del_entry(struct ieee80211_hw *hw, u8 *sta_addr)
 			/* Remove from HW Security CAM */
 			memset(rtlpriv->sec.hwsec_cam_sta_addr[i], 0, ETH_ALEN);
 			rtlpriv->sec.hwsec_cam_bitmap &= ~(BIT(0) << i);
-			printk(KERN_INFO "&&&&&&&&&del entry %d\n", i);
+;
 		}
 	}
 	return;

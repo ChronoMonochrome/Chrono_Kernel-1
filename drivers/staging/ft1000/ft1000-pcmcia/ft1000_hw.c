@@ -48,11 +48,7 @@
 #include <pcmcia/ds.h>
 
 #ifdef FT_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-#define DEBUG(n, args...) printk(KERN_DEBUG args);
-#else
-#define DEBUG(n, args...) ;
-#endif
+;
 #else
 #define DEBUG(n, args...)
 #endif
@@ -650,12 +646,8 @@ static void ft1000_hbchk(u_long data)
 			}
 		}
 		if (tempword != ho) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO
-				   "ft1000: heartbeat failed - no ho detected\n");
-#else
-			;
-#endif
+//			printk(KERN_INFO
+;
 			if (info->AsicID == ELECTRABUZZ_ID) {
 				info->DSP_TIME[0] =
 					ft1000_read_dpram(dev, FT1000_DSP_TIMER0);
@@ -685,12 +677,8 @@ static void ft1000_hbchk(u_long data)
 			}
 			info->DrvErrNum = DSP_HB_INFO;
 			if (ft1000_reset_card(dev) == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_INFO
-					   "ft1000: Hardware Failure Detected - PC Card disabled\n");
-#else
-				;
-#endif
+//				printk(KERN_INFO
+;
 				info->ProgConStat = 0xff;
 				return;
 			}
@@ -707,12 +695,8 @@ static void ft1000_hbchk(u_long data)
 			tempword = ft1000_read_reg(dev, FT1000_REG_DOORBELL);
 		}
 		if (tempword & FT1000_DB_HB) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO
-				   "ft1000: heartbeat doorbell not clear by firmware\n");
-#else
-			;
-#endif
+//			printk(KERN_INFO
+;
 			if (info->AsicID == ELECTRABUZZ_ID) {
 				info->DSP_TIME[0] =
 					ft1000_read_dpram(dev, FT1000_DSP_TIMER0);
@@ -742,12 +726,8 @@ static void ft1000_hbchk(u_long data)
 			}
 			info->DrvErrNum = DSP_HB_INFO;
 			if (ft1000_reset_card(dev) == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_INFO
-					   "ft1000: Hardware Failure Detected - PC Card disabled\n");
-#else
-				;
-#endif
+//				printk(KERN_INFO
+;
 				info->ProgConStat = 0xff;
 				return;
 			}
@@ -793,12 +773,8 @@ static void ft1000_hbchk(u_long data)
 		}
 
 		if (tempword != hi) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO
-				   "ft1000: heartbeat failed - cannot write hi into DPRAM\n");
-#else
-			;
-#endif
+//			printk(KERN_INFO
+;
 			if (info->AsicID == ELECTRABUZZ_ID) {
 				info->DSP_TIME[0] =
 					ft1000_read_dpram(dev, FT1000_DSP_TIMER0);
@@ -828,12 +804,8 @@ static void ft1000_hbchk(u_long data)
 			}
 			info->DrvErrNum = DSP_HB_INFO;
 			if (ft1000_reset_card(dev) == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_INFO
-					   "ft1000: Hardware Failure Detected - PC Card disabled\n");
-#else
-				;
-#endif
+//				printk(KERN_INFO
+;
 				info->ProgConStat = 0xff;
 				return;
 			}
@@ -2203,18 +2175,14 @@ struct net_device *init_ft1000_card(struct pcmcia_device *link,
 	if (flarion_ft1000_cnt > 1) {
 		flarion_ft1000_cnt--;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO
-			   "ft1000: This driver can not support more than one instance\n");
-#else
-		;
-#endif
+//		printk(KERN_INFO
+;
 		return NULL;
 	}
 
 	dev = alloc_etherdev(sizeof(FT1000_INFO));
 	if (!dev) {
-		printk(KERN_ERR "ft1000: failed to allocate etherdev\n");
+;
 		return NULL;
 	}
 
@@ -2264,17 +2232,17 @@ struct net_device *init_ft1000_card(struct pcmcia_device *link,
 	dev->irq = link->irq;
 	dev->base_addr = link->resource[0]->start;
 	if (pcmcia_get_mac_from_cis(link, dev)) {
-		printk(KERN_ERR "ft1000: Could not read mac address\n");
+;
 		goto err_dev;
 	}
 
 	if (request_irq(dev->irq, ft1000_interrupt, IRQF_SHARED, dev->name, dev)) {
-		printk(KERN_ERR "ft1000: Could not request_irq\n");
+;
 		goto err_dev;
 	}
 
 	if (request_region(dev->base_addr, 256, dev->name) == NULL) {
-		printk(KERN_ERR "ft1000: Could not request_region\n");
+;
 		goto err_irq;
 	}
 
@@ -2287,21 +2255,13 @@ struct net_device *init_ft1000_card(struct pcmcia_device *link,
 	if (info->AsicID == ELECTRABUZZ_ID) {
 		DEBUG(0, "ft1000_hw: ELECTRABUZZ ASIC\n");
 		if (request_firmware(&fw_entry, "ft1000.img", &link->dev) != 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "ft1000: Could not open ft1000.img\n");
-#else
-			;
-#endif
+;
 			goto err_unreg;
 		}
 	} else {
 		DEBUG(0, "ft1000_hw: MAGNEMITE ASIC\n");
 		if (request_firmware(&fw_entry, "ft2000.img", &link->dev) != 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "ft1000: Could not open ft2000.img\n");
-#else
-			;
-#endif
+;
 			goto err_unreg;
 		}
 	}
@@ -2311,15 +2271,11 @@ struct net_device *init_ft1000_card(struct pcmcia_device *link,
 	ft1000InitProc(dev);
 	ft1000_card_present = 1;
 	SET_ETHTOOL_OPS(dev, &ops);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO
-		   "ft1000: %s: addr 0x%04lx irq %d, MAC addr %02x:%02x:%02x:%02x:%02x:%02x\n",
-		   dev->name, dev->base_addr, dev->irq, dev->dev_addr[0],
-		   dev->dev_addr[1], dev->dev_addr[2], dev->dev_addr[3],
-		   dev->dev_addr[4], dev->dev_addr[5]);
-#else
-	;
-#endif
+//	printk(KERN_INFO
+//		   "ft1000: %s: addr 0x%04lx irq %d, MAC addr %02x:%02x:%02x:%02x:%02x:%02x\n",
+//		   dev->name, dev->base_addr, dev->irq, dev->dev_addr[0],
+//		   dev->dev_addr[1], dev->dev_addr[2], dev->dev_addr[3],
+;
 	return dev;
 
 err_unreg:

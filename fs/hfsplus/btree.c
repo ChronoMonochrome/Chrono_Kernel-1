@@ -43,8 +43,8 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id)
 	tree->inode = inode;
 
 	if (!HFSPLUS_I(tree->inode)->first_blocks) {
-		printk(KERN_ERR
-		       "hfs: invalid btree extent records (0 size).\n");
+//		printk(KERN_ERR
+;
 		goto free_inode;
 	}
 
@@ -71,12 +71,12 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id)
 	switch (id) {
 	case HFSPLUS_EXT_CNID:
 		if (tree->max_key_len != HFSPLUS_EXT_KEYLEN - sizeof(u16)) {
-			printk(KERN_ERR "hfs: invalid extent max_key_len %d\n",
-				tree->max_key_len);
+//			printk(KERN_ERR "hfs: invalid extent max_key_len %d\n",
+;
 			goto fail_page;
 		}
 		if (tree->attributes & HFS_TREE_VARIDXKEYS) {
-			printk(KERN_ERR "hfs: invalid extent btree flag\n");
+;
 			goto fail_page;
 		}
 
@@ -84,12 +84,12 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id)
 		break;
 	case HFSPLUS_CAT_CNID:
 		if (tree->max_key_len != HFSPLUS_CAT_KEYLEN - sizeof(u16)) {
-			printk(KERN_ERR "hfs: invalid catalog max_key_len %d\n",
-				tree->max_key_len);
+//			printk(KERN_ERR "hfs: invalid catalog max_key_len %d\n",
+;
 			goto fail_page;
 		}
 		if (!(tree->attributes & HFS_TREE_VARIDXKEYS)) {
-			printk(KERN_ERR "hfs: invalid catalog btree flag\n");
+;
 			goto fail_page;
 		}
 
@@ -107,7 +107,7 @@ struct hfs_btree *hfs_btree_open(struct super_block *sb, u32 id)
 	}
 
 	if (!(tree->attributes & HFS_TREE_BIGKEYS)) {
-		printk(KERN_ERR "hfs: invalid btree flag\n");
+;
 		goto fail_page;
 	}
 
@@ -150,10 +150,10 @@ void hfs_btree_close(struct hfs_btree *tree)
 		while ((node = tree->node_hash[i])) {
 			tree->node_hash[i] = node->next_hash;
 			if (atomic_read(&node->refcnt))
-				printk(KERN_CRIT "hfs: node %d:%d "
-						"still has %d user(s)!\n",
-					node->tree->cnid, node->this,
-					atomic_read(&node->refcnt));
+//				printk(KERN_CRIT "hfs: node %d:%d "
+//						"still has %d user(s)!\n",
+//					node->tree->cnid, node->this,
+;
 			hfs_bnode_free(node);
 			tree->node_hash_cnt--;
 		}
@@ -339,9 +339,9 @@ void hfs_bmap_free(struct hfs_bnode *node)
 		hfs_bnode_put(node);
 		if (!i) {
 			/* panic */;
-			printk(KERN_CRIT "hfs: unable to free bnode %u. "
-					"bmap not found!\n",
-				node->this);
+//			printk(KERN_CRIT "hfs: unable to free bnode %u. "
+//					"bmap not found!\n",
+;
 			return;
 		}
 		node = hfs_bnode_find(tree, i);
@@ -349,9 +349,9 @@ void hfs_bmap_free(struct hfs_bnode *node)
 			return;
 		if (node->type != HFS_NODE_MAP) {
 			/* panic */;
-			printk(KERN_CRIT "hfs: invalid bmap found! "
-					"(%u,%d)\n",
-				node->this, node->type);
+//			printk(KERN_CRIT "hfs: invalid bmap found! "
+//					"(%u,%d)\n",
+;
 			hfs_bnode_put(node);
 			return;
 		}
@@ -364,9 +364,9 @@ void hfs_bmap_free(struct hfs_bnode *node)
 	m = 1 << (~nidx & 7);
 	byte = data[off];
 	if (!(byte & m)) {
-		printk(KERN_CRIT "hfs: trying to free free bnode "
-				"%u(%d)\n",
-			node->this, node->type);
+//		printk(KERN_CRIT "hfs: trying to free free bnode "
+//				"%u(%d)\n",
+;
 		kunmap(page);
 		hfs_bnode_put(node);
 		return;

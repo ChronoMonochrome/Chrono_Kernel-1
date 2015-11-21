@@ -67,8 +67,8 @@ void ext2_error(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_CRIT "EXT2-fs (%s): error: %s: %pV\n",
-	       sb->s_id, function, &vaf);
+//	printk(KERN_CRIT "EXT2-fs (%s): error: %s: %pV\n",
+;
 
 	va_end(args);
 
@@ -92,7 +92,7 @@ void ext2_msg(struct super_block *sb, const char *prefix,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk("%sEXT2-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
+;
 
 	va_end(args);
 }
@@ -381,8 +381,8 @@ static unsigned long get_sb_block(void **data)
 	options += 3;
 	sb_block = simple_strtoul(options, &options, 0);
 	if (*options && *options != ',') {
-		printk("EXT2-fs: Invalid sb specification: %s\n",
-		       (char *) *data);
+//		printk("EXT2-fs: Invalid sb specification: %s\n",
+;
 		return 1;
 	}
 	if (*options == ',')

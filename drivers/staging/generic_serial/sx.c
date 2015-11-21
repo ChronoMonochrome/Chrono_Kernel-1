@@ -377,31 +377,27 @@ static struct real_driver sx_real_driver = {
 #define DEBUG
 
 #ifdef DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-#define sx_dprintk(f, str...)	if (sx_debug & f) printk (str)
-#else
-#define sx_dprintk(f, str...)	/* nothing */
-#endif
-
-#define func_enter()	sx_dprintk(SX_DEBUG_FLOW, "sx: enter %s\n",__func__)
-#define func_exit()	sx_dprintk(SX_DEBUG_FLOW, "sx: exit  %s\n",__func__)
-
-#define func_enter2()	sx_dprintk(SX_DEBUG_FLOW, "sx: enter %s (port %d)\n", \
-				__func__, port->line)
-
-/* 
- *  Firmware loader driver specific routines
- *
- */
-
-static const struct file_operations sx_fw_fops = {
-	.owner = THIS_MODULE,
-	.unlocked_ioctl = sx_fw_ioctl,
-	.llseek = noop_llseek,
-};
-#else
-#define sx_d;
-#endif
+//#define sx_dprintk(f, str...)	if (sx_debug & f) printk (str)
+//#else
+//#define sx_dprintk(f, str...)	/* nothing */
+//#endif
+//
+//#define func_enter()	sx_dprintk(SX_DEBUG_FLOW, "sx: enter %s\n",__func__)
+//#define func_exit()	sx_dprintk(SX_DEBUG_FLOW, "sx: exit  %s\n",__func__)
+//
+//#define func_enter2()	sx_dprintk(SX_DEBUG_FLOW, "sx: enter %s (port %d)\n", \
+//				__func__, port->line)
+//
+///* 
+// *  Firmware loader driver specific routines
+// *
+// */
+//
+//static const struct file_operations sx_fw_fops = {
+//	.owner = THIS_MODULE,
+//	.unlocked_ioctl = sx_fw_ioctl,
+//	.llseek = noop_llseek,
+;
 
 static struct miscdevice sx_fw_device = {
 	SXCTL_MISC_MINOR, "sxctl", &sx_fw_fops
@@ -420,19 +416,11 @@ static inline int sx_paranoia_check(struct sx_port const *port,
 			"device %s in %s\n";
 
 	if (!port) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(badinfo, name, routine);
-#else
-		;
-#endif
+;
 		return 1;
 	}
 	if (port->magic != SX_MAGIC) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(badmagic, name, routine);
-#else
-		;
-#endif
+;
 		return 1;
 	}
 
@@ -456,33 +444,17 @@ static void my_hd_io(void __iomem *p, int len)
 	unsigned char __iomem *addr = p;
 
 	for (i = 0; i < len; i += 16) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("%p ", addr + i);
-#else
-		;
-#endif
+;
 		for (j = 0; j < 16; j++) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%02x %s", readb(addr + j + i),
-					(j == 7) ? " " : "");
-#else
-			;
-#endif
+//			printk("%02x %s", readb(addr + j + i),
+;
 		}
 		for (j = 0; j < 16; j++) {
 			ch = readb(addr + j + i);
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%c", (ch < 0x20) ? '.' :
-					((ch > 0x7f) ? '.' : ch));
-#else
-			;
-#endif
+//			printk("%c", (ch < 0x20) ? '.' :
+;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\n");
-#else
-		;
-#endif
+;
 	}
 }
 static void my_hd(void *p, int len)
@@ -491,32 +463,16 @@ static void my_hd(void *p, int len)
 	unsigned char *addr = p;
 
 	for (i = 0; i < len; i += 16) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("%p ", addr + i);
-#else
-		;
-#endif
+;
 		for (j = 0; j < 16; j++) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%02x %s", addr[j + i], (j == 7) ? " " : "");
-#else
-			;
-#endif
+;
 		}
 		for (j = 0; j < 16; j++) {
 			ch = addr[j + i];
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%c", (ch < 0x20) ? '.' :
-					((ch > 0x7f) ? '.' : ch));
-#else
-			;
-#endif
+//			printk("%c", (ch < 0x20) ? '.' :
+;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\n");
-#else
-		;
-#endif
+;
 	}
 }
 #endif
@@ -604,12 +560,8 @@ static int sx_reset(struct sx_board *board)
 		write_sx_byte(board, SX_RESET, 1); /* Value doesn't matter */
 
 		if (!sx_busy_wait_eq(board, SX_RESET_STATUS, 1, 0)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "sx: Card doesn't respond to "
-					"reset...\n");
-#else
-			;
-#endif
+//			printk(KERN_INFO "sx: Card doesn't respond to "
+;
 			return 0;
 		}
 	} else if (IS_EISA_BOARD(board)) {
@@ -726,12 +678,8 @@ static int sx_start_interrupts(struct sx_board *board)
 			write_sx_byte(board, SI2_ISA_IRQ15, SI2_ISA_IRQ15_SET);
 			break;
 		default:
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "sx: SI/XIO card doesn't support "
-					"interrupt %d.\n", board->irq);
-#else
-			;
-#endif
+//			printk(KERN_INFO "sx: SI/XIO card doesn't support "
+;
 			return 0;
 		}
 		write_sx_byte(board, SI2_ISA_INTCLEAR, SI2_ISA_INTCLEAR_SET);
@@ -807,21 +755,13 @@ static void sx_reconfigure_port(struct sx_port *port)
 {
 	if (sx_read_channel_byte(port, hi_hstat) == HS_IDLE_OPEN) {
 		if (sx_send_command(port, HS_CONFIG, -1, HS_IDLE_OPEN) != 1) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "sx: Sent reconfigure command, but "
-					"card didn't react.\n");
-#else
-			;
-#endif
+//			printk(KERN_WARNING "sx: Sent reconfigure command, but "
+;
 		}
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_TERMIOS, "sx: Not sending reconfigure: "
-				"port isn't open (%02x).\n",
-				sx_read_channel_byte(port, hi_hstat));
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_TERMIOS, "sx: Not sending reconfigure: "
+//				"port isn't open (%02x).\n",
+;
 	}
 }
 
@@ -836,11 +776,7 @@ static void sx_setsignals(struct sx_port *port, int dtr, int rts)
 	if (rts >= 0)
 		t = rts ? (t | OP_RTS) : (t & ~OP_RTS);
 	sx_write_channel_byte(port, hi_op, t);
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_MODEMSIGNALS, "setsignals: %d/%d\n", dtr, rts);
-#else
-	sx_d;
-#endif
+;
 
 	func_exit();
 }
@@ -852,16 +788,12 @@ static int sx_getsignals(struct sx_port *port)
 	o_stat = sx_read_channel_byte(port, hi_op);
 	i_stat = sx_read_channel_byte(port, hi_ip);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_MODEMSIGNALS, "getsignals: %d/%d  (%d/%d) "
-			"%02x/%02x\n",
-			(o_stat & OP_DTR) != 0, (o_stat & OP_RTS) != 0,
-			port->c_dcd, tty_port_carrier_raised(&port->gs.port),
-			sx_read_channel_byte(port, hi_ip),
-			sx_read_channel_byte(port, hi_state));
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_MODEMSIGNALS, "getsignals: %d/%d  (%d/%d) "
+//			"%02x/%02x\n",
+//			(o_stat & OP_DTR) != 0, (o_stat & OP_RTS) != 0,
+//			port->c_dcd, tty_port_carrier_raised(&port->gs.port),
+//			sx_read_channel_byte(port, hi_ip),
+;
 
 	return (((o_stat & OP_DTR) ? TIOCM_DTR : 0) |
 		((o_stat & OP_RTS) ? TIOCM_RTS : 0) |
@@ -917,12 +849,8 @@ static void sx_set_baud(struct sx_port *port)
 		default:
 			/* Can I return "invalid"? */
 			t = BAUD_9600;
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "sx: unsupported baud rate: %d.\n",
-					port->gs.baud);
-#else
-			;
-#endif
+//			printk(KERN_INFO "sx: unsupported baud rate: %d.\n",
+;
 			break;
 		}
 #undef e
@@ -959,23 +887,15 @@ static void sx_set_baud(struct sx_port *port)
 				break;
 			} else {
 				t = CSR_9600;
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_INFO "sx: Unsupported baud rate: "
-						"%d.\n", port->gs.baud);
-#else
-				;
-#endif
+//				printk(KERN_INFO "sx: Unsupported baud rate: "
+;
 				break;
 			}
 		case 115200:
 			if (port->board->ta_type == MOD_TA) {
 				t = CSR_9600;
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_INFO "sx: Unsupported baud rate: "
-						"%d.\n", port->gs.baud);
-#else
-				;
-#endif
+//				printk(KERN_INFO "sx: Unsupported baud rate: "
+;
 				break;
 			} else {
 				t = CSR_110;
@@ -986,12 +906,8 @@ static void sx_set_baud(struct sx_port *port)
 			break;
 		default:
 			t = CSR_9600;
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "sx: Unsupported baud rate: %d.\n",
-					port->gs.baud);
-#else
-			;
-#endif
+//			printk(KERN_INFO "sx: Unsupported baud rate: %d.\n",
+;
 			break;
 		}
 #undef e
@@ -1053,12 +969,8 @@ static int sx_set_real_termios(void *ptr)
 		sx_write_channel_byte(port, hi_mask, 0x1f);
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "sx: Invalid wordsize: %u\n",
-			(unsigned int)CFLAG & CSIZE);
-#else
-		;
-#endif
+//		printk(KERN_INFO "sx: Invalid wordsize: %u\n",
+;
 		break;
 	}
 
@@ -1084,13 +996,9 @@ static int sx_set_real_termios(void *ptr)
 	} else {
 		set_bit(TTY_HW_COOK_IN, &port->gs.port.tty->flags);
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_TERMIOS, "iflags: %x(%d) ",
-			(unsigned int)port->gs.port.tty->termios->c_iflag,
-			I_OTHER(port->gs.port.tty));
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_TERMIOS, "iflags: %x(%d) ",
+//			(unsigned int)port->gs.port.tty->termios->c_iflag,
+;
 
 /* Tell line discipline whether we will do output cooking.
  * If OPOST is set and no other output flags are set then we can do output
@@ -1102,13 +1010,9 @@ static int sx_set_real_termios(void *ptr)
 	} else {
 		clear_bit(TTY_HW_COOK_OUT, &port->gs.port.tty->flags);
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_TERMIOS, "oflags: %x(%d)\n",
-			(unsigned int)port->gs.port.tty->termios->c_oflag,
-			O_OTHER(port->gs.port.tty));
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_TERMIOS, "oflags: %x(%d)\n",
+//			(unsigned int)port->gs.port.tty->termios->c_oflag,
+;
 	/* port->c_dcd = sx_get_CD (port); */
 	func_exit();
 	return 0;
@@ -1136,12 +1040,8 @@ static void sx_transmit_chars(struct sx_port *port)
 	int txroom;
 
 	func_enter2();
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_TRANSMIT, "Port %p: transmit %d chars\n",
-			port, port->gs.xmit_cnt);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_TRANSMIT, "Port %p: transmit %d chars\n",
+;
 
 	if (test_and_set_bit(SX_PORT_TRANSMIT_LOCK, &port->locks)) {
 		return;
@@ -1150,11 +1050,7 @@ static void sx_transmit_chars(struct sx_port *port)
 	while (1) {
 		c = port->gs.xmit_cnt;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_TRANSMIT, "Copying %d ", c);
-#else
-		sx_d;
-#endif
+;
 		tx_ip = sx_read_channel_byte(port, hi_txipos);
 
 		/* Took me 5 minutes to deduce this formula. 
@@ -1165,32 +1061,20 @@ static void sx_transmit_chars(struct sx_port *port)
 		/* Don't copy more bytes than there is room for in the buffer */
 		if (c > txroom)
 			c = txroom;
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_TRANSMIT, " %d(%d) ", c, txroom);
-#else
-		sx_d;
-#endif
+;
 
 		/* Don't copy past the end of the hardware transmit buffer */
 		if (c > 0x100 - tx_ip)
 			c = 0x100 - tx_ip;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_TRANSMIT, " %d(%d) ", c, 0x100 - tx_ip);
-#else
-		sx_d;
-#endif
+;
 
 		/* Don't copy pas the end of the source buffer */
 		if (c > SERIAL_XMIT_SIZE - port->gs.xmit_tail)
 			c = SERIAL_XMIT_SIZE - port->gs.xmit_tail;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_TRANSMIT, " %d(%ld) \n",
-				c, SERIAL_XMIT_SIZE - port->gs.xmit_tail);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_TRANSMIT, " %d(%ld) \n",
+;
 
 		/* If for one reason or another, we can't copy more data, we're
 		   done! */
@@ -1219,12 +1103,8 @@ static void sx_transmit_chars(struct sx_port *port)
 
 	if ((port->gs.xmit_cnt <= port->gs.wakeup_chars) && port->gs.port.tty) {
 		tty_wakeup(port->gs.port.tty);
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_TRANSMIT, "Waking up.... ldisc (%d)....\n",
-				port->gs.wakeup_chars);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_TRANSMIT, "Waking up.... ldisc (%d)....\n",
+;
 	}
 
 	clear_bit(SX_PORT_TRANSMIT_LOCK, &port->locks);
@@ -1250,44 +1130,28 @@ static inline void sx_receive_chars(struct sx_port *port)
 		rx_op = sx_read_channel_byte(port, hi_rxopos);
 		c = (sx_read_channel_byte(port, hi_rxipos) - rx_op) & 0xff;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_RECEIVE, "rxop=%d, c = %d.\n", rx_op, c);
-#else
-		sx_d;
-#endif
+;
 
 		/* Don't copy past the end of the hardware receive buffer */
 		if (rx_op + c > 0x100)
 			c = 0x100 - rx_op;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_RECEIVE, "c = %d.\n", c);
-#else
-		sx_d;
-#endif
+;
 
 		/* Don't copy more bytes than there is room for in the buffer */
 
 		c = tty_prepare_flip_string(tty, &rp, c);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_RECEIVE, "c = %d.\n", c);
-#else
-		sx_d;
-#endif
+;
 
 		/* If for one reason or another, we can't copy more data, we're done! */
 		if (c == 0)
 			break;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_RECEIVE, "Copying over %d chars. First is "
-				"%d at %lx\n", c, read_sx_byte(port->board,
-					CHAN_OFFSET(port, hi_rxbuf) + rx_op),
-				CHAN_OFFSET(port, hi_rxbuf));
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_RECEIVE, "Copying over %d chars. First is "
+//				"%d at %lx\n", c, read_sx_byte(port->board,
+//					CHAN_OFFSET(port, hi_rxbuf) + rx_op),
+;
 		memcpy_fromio(rp, port->board->base +
 				CHAN_OFFSET(port, hi_rxbuf) + rx_op, c);
 
@@ -1303,14 +1167,10 @@ static inline void sx_receive_chars(struct sx_port *port)
 		struct timeval tv;
 
 		do_gettimeofday(&tv);
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_RECEIVE, "pushing flipq port %d (%3d "
-				"chars): %d.%06d  (%d/%d)\n", port->line,
-				copied, (int)(tv.tv_sec % 60), (int)tv.tv_usec,
-				tty->raw, tty->real_raw);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_RECEIVE, "pushing flipq port %d (%3d "
+//				"chars): %d.%06d  (%d/%d)\n", port->line,
+//				copied, (int)(tv.tv_sec % 60), (int)tv.tv_usec,
+;
 
 		/* Tell the rest of the system the news. Great news. New
 		   characters! */
@@ -1329,37 +1189,21 @@ static inline void sx_check_modem_signals(struct sx_port *port)
 	int c_dcd;
 
 	hi_state = sx_read_channel_byte(port, hi_state);
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_MODEMSIGNALS, "Checking modem signals (%d/%d)\n",
-			port->c_dcd, tty_port_carrier_raised(&port->gs.port));
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_MODEMSIGNALS, "Checking modem signals (%d/%d)\n",
+;
 
 	if (hi_state & ST_BREAK) {
 		hi_state &= ~ST_BREAK;
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_MODEMSIGNALS, "got a break.\n");
-#else
-		sx_d;
-#endif
+;
 		sx_write_channel_byte(port, hi_state, hi_state);
 		gs_got_break(&port->gs);
 	}
 	if (hi_state & ST_DCD) {
 		hi_state &= ~ST_DCD;
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_MODEMSIGNALS, "got a DCD change.\n");
-#else
-		sx_d;
-#endif
+;
 		sx_write_channel_byte(port, hi_state, hi_state);
 		c_dcd = tty_port_carrier_raised(&port->gs.port);
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD is now %d\n", c_dcd);
-#else
-		sx_d;
-#endif
+;
 		if (c_dcd != port->c_dcd) {
 			port->c_dcd = c_dcd;
 			if (tty_port_carrier_raised(&port->gs.port)) {
@@ -1369,48 +1213,28 @@ static inline void sx_check_modem_signals(struct sx_port *port)
 						!(port->gs.port.tty->termios->
 							c_cflag & CLOCAL)) {
 					/* Are we blocking in open? */
-#ifdef CONFIG_DEBUG_PRINTK
-					sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD "
-						"active, unblocking open\n");
-#else
-					sx_d;
-#endif
+//					sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD "
+;
 					wake_up_interruptible(&port->gs.port.
 							open_wait);
 				} else {
-#ifdef CONFIG_DEBUG_PRINTK
-					sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD "
-						"raised. Ignoring.\n");
-#else
-					sx_d;
-#endif
+//					sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD "
+;
 				}
 			} else {
 				/* DCD went down! */
 				if (!(port->gs.port.tty->termios->c_cflag & CLOCAL)){
-#ifdef CONFIG_DEBUG_PRINTK
-					sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD "
-						"dropped. hanging up....\n");
-#else
-					sx_d;
-#endif
+//					sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD "
+;
 					tty_hangup(port->gs.port.tty);
 				} else {
-#ifdef CONFIG_DEBUG_PRINTK
-					sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD "
-						"dropped. ignoring.\n");
-#else
-					sx_d;
-#endif
+//					sx_dprintk(SX_DEBUG_MODEMSIGNALS, "DCD "
+;
 				}
 			}
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_MODEMSIGNALS, "Hmmm. card told us "
-				"DCD changed, but it didn't.\n");
-#else
-			sx_d;
-#endif
+//			sx_dprintk(SX_DEBUG_MODEMSIGNALS, "Hmmm. card told us "
+;
 		}
 	}
 }
@@ -1426,12 +1250,8 @@ static irqreturn_t sx_interrupt(int irq, void *ptr)
 	int i;
 
 	func_enter();
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_FLOW, "sx: enter sx_interrupt (%d/%d)\n", irq,
-			board->irq);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_FLOW, "sx: enter sx_interrupt (%d/%d)\n", irq,
+;
 
 	/* AAargh! The order in which to do these things is essential and
 	   not trivial. 
@@ -1464,9 +1284,9 @@ static irqreturn_t sx_interrupt(int irq, void *ptr)
 		if (lastjif == jiffies) {
 			if (++nintr > IRQ_RATE_LIMIT) {
 				free_irq(board->irq, board);
-				printk(KERN_ERR "sx: Too many interrupts. "
-						"Turning off interrupt %d.\n",
-						board->irq);
+//				printk(KERN_ERR "sx: Too many interrupts. "
+//						"Turning off interrupt %d.\n",
+;
 			}
 		} else {
 			lastjif = jiffies;
@@ -1498,7 +1318,7 @@ static irqreturn_t sx_interrupt(int irq, void *ptr)
 		return IRQ_HANDLED;
 
 	if (test_and_set_bit(SX_BOARD_INTR_LOCK, &board->locks)) {
-		printk(KERN_ERR "Recursive interrupt! (%d)\n", board->irq);
+;
 		return IRQ_HANDLED;
 	}
 
@@ -1506,12 +1326,8 @@ static irqreturn_t sx_interrupt(int irq, void *ptr)
 		port = &board->ports[i];
 		if (port->gs.port.flags & GS_ACTIVE) {
 			if (sx_read_channel_byte(port, hi_state)) {
-#ifdef CONFIG_DEBUG_PRINTK
-				sx_dprintk(SX_DEBUG_INTERRUPTS, "Port %d: "
-						"modem signal change?... \n",i);
-#else
-				sx_d;
-#endif
+//				sx_dprintk(SX_DEBUG_INTERRUPTS, "Port %d: "
+;
 				sx_check_modem_signals(port);
 			}
 			if (port->gs.xmit_cnt) {
@@ -1525,12 +1341,8 @@ static irqreturn_t sx_interrupt(int irq, void *ptr)
 
 	clear_bit(SX_BOARD_INTR_LOCK, &board->locks);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_FLOW, "sx: exit sx_interrupt (%d/%d)\n", irq,
-			board->irq);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_FLOW, "sx: exit sx_interrupt (%d/%d)\n", irq,
+;
 	func_exit();
 	return IRQ_HANDLED;
 }
@@ -1653,13 +1465,9 @@ static int sx_open(struct tty_struct *tty, struct file *filp)
 	}
 
 	line = tty->index;
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_OPEN, "%d: opening line %d. tty=%p ctty=%p, "
-			"np=%d)\n", task_pid_nr(current), line, tty,
-			current->signal->tty, sx_nports);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_OPEN, "%d: opening line %d. tty=%p ctty=%p, "
+//			"np=%d)\n", task_pid_nr(current), line, tty,
+;
 
 	if ((line < 0) || (line >= SX_NPORTS) || (line >= sx_nports))
 		return -ENODEV;
@@ -1668,11 +1476,7 @@ static int sx_open(struct tty_struct *tty, struct file *filp)
 	port->c_dcd = 0; /* Make sure that the first interrupt doesn't detect a
 			    1 -> 0 transition. */
 
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_OPEN, "port = %p c_dcd = %d\n", port, port->c_dcd);
-#else
-	sx_d;
-#endif
+;
 
 	spin_lock_irqsave(&port->gs.driver_lock, flags);
 
@@ -1681,21 +1485,13 @@ static int sx_open(struct tty_struct *tty, struct file *filp)
 	port->gs.port.count++;
 	spin_unlock_irqrestore(&port->gs.driver_lock, flags);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_OPEN, "starting port\n");
-#else
-	sx_d;
-#endif
+;
 
 	/*
 	 * Start up serial port
 	 */
 	retval = gs_init_port(&port->gs);
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_OPEN, "done gs_init\n");
-#else
-	sx_d;
-#endif
+;
 	if (retval) {
 		port->gs.port.count--;
 		return retval;
@@ -1715,8 +1511,8 @@ static int sx_open(struct tty_struct *tty, struct file *filp)
 
 	if (port->gs.port.count <= 1) {
 		if (sx_send_command(port, HS_LOPEN, -1, HS_IDLE_OPEN) != 1) {
-			printk(KERN_ERR "sx: Card didn't respond to LOPEN "
-					"command.\n");
+//			printk(KERN_ERR "sx: Card didn't respond to LOPEN "
+;
 			spin_lock_irqsave(&port->gs.driver_lock, flags);
 			port->gs.port.count--;
 			spin_unlock_irqrestore(&port->gs.driver_lock, flags);
@@ -1725,12 +1521,8 @@ static int sx_open(struct tty_struct *tty, struct file *filp)
 	}
 
 	retval = gs_block_til_ready(port, filp);
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_OPEN, "Block til ready returned %d. Count=%d\n",
-			retval, port->gs.port.count);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_OPEN, "Block til ready returned %d. Count=%d\n",
+;
 
 	if (retval) {
 /*
@@ -1742,11 +1534,7 @@ static int sx_open(struct tty_struct *tty, struct file *filp)
 	/* tty->low_latency = 1; */
 
 	port->c_dcd = sx_carrier_raised(&port->gs.port);
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_OPEN, "at open: cd=%d\n", port->c_dcd);
-#else
-	sx_d;
-#endif
+;
 
 	func_exit();
 	return 0;
@@ -1771,37 +1559,21 @@ static void sx_close(void *ptr)
 	if (sx_read_channel_byte(port, hi_hstat) != HS_IDLE_CLOSED) {
 		if (sx_send_command(port, HS_FORCE_CLOSED, -1, HS_IDLE_CLOSED)
 				!= 1) {
-			printk(KERN_ERR "sx: sent the force_close command, but "
-					"card didn't react\n");
+//			printk(KERN_ERR "sx: sent the force_close command, but "
+;
 		} else
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_CLOSE, "sent the force_close "
-					"command.\n");
-#else
-			sx_d;
-#endif
+//			sx_dprintk(SX_DEBUG_CLOSE, "sent the force_close "
+;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_CLOSE, "waited %d jiffies for close. count=%d\n",
-			5 * HZ - to - 1, port->gs.port.count);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_CLOSE, "waited %d jiffies for close. count=%d\n",
+;
 
 	if (port->gs.port.count) {
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_CLOSE, "WARNING port count:%d\n",
-				port->gs.port.count);
-#else
-		sx_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
+//		sx_dprintk(SX_DEBUG_CLOSE, "WARNING port count:%d\n",
+;
 		/*printk("%s SETTING port count to zero: %p count: %d\n",
 				__func__, port, port->gs.port.count);
-#else
-		/*;
-#endif
 		port->gs.port.count = 0;*/
 	}
 
@@ -1929,65 +1701,33 @@ static long sx_fw_ioctl(struct file *filp, unsigned int cmd,
 
 	tty_lock();
 
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_FIRMWARE, "IOCTL %x: %lx\n", cmd, arg);
-#else
-	sx_d;
-#endif
+;
 
 	if (!board)
 		board = &boards[0];
 	if (board->flags & SX_BOARD_PRESENT) {
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE, "Board present! (%x)\n",
-				board->flags);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_FIRMWARE, "Board present! (%x)\n",
+;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE, "Board not present! (%x) all:",
-				board->flags);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_FIRMWARE, "Board not present! (%x) all:",
+;
 		for (i = 0; i < SX_NBOARDS; i++)
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_FIRMWARE, "<%x> ", boards[i].flags);
-#else
-			sx_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE, "\n");
-#else
-		sx_d;
-#endif
+;
+;
 		rc = -EIO;
 		goto out;
 	}
 
 	switch (cmd) {
 	case SXIO_SET_BOARD:
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE, "set board to %ld\n", arg);
-#else
-		sx_d;
-#endif
+;
 		rc = -EIO;
 		if (arg >= SX_NBOARDS)
 			break;
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE, "not out of range\n");
-#else
-		sx_d;
-#endif
+;
 		if (!(boards[arg].flags & SX_BOARD_PRESENT))
 			break;
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE, ".. and present!\n");
-#else
-		sx_d;
-#endif
+;
 		board = &boards[arg];
 		rc = 0;
 		/* FIXME: And this does ... nothing?? */
@@ -2004,11 +1744,7 @@ static long sx_fw_ioctl(struct file *filp, unsigned int cmd,
 			rc = SX_TYPE_SI;
 		if (IS_EISA_BOARD(board))
 			rc = SX_TYPE_SI;
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE, "returning type= %ld\n", rc);
-#else
-		sx_d;
-#endif
+;
 		break;
 	case SXIO_DO_RAMTEST:
 		if (sx_initialized) {	/* Already initialized: better not ramtest the board.  */
@@ -2024,12 +1760,8 @@ static long sx_fw_ioctl(struct file *filp, unsigned int cmd,
 			rc = do_memtest(board, 0, 0x7ff8);
 			/* if (!rc) rc = do_memtest_w (board, 0, 0x7ff8); */
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE,
-				"returning memtest result= %ld\n", rc);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_FIRMWARE,
+;
 		break;
 	case SXIO_DOWNLOAD:
 		if (sx_initialized) {/* Already initialized */
@@ -2040,11 +1772,7 @@ static long sx_fw_ioctl(struct file *filp, unsigned int cmd,
 			rc = -EIO;
 			break;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_INIT, "reset the board...\n");
-#else
-		sx_d;
-#endif
+;
 
 		tmp = kmalloc(SX_CHUNK_SIZE, GFP_USER);
 		if (!tmp) {
@@ -2094,13 +1822,9 @@ static long sx_fw_ioctl(struct file *filp, unsigned int cmd,
 			if (!(boards[i].flags & SX_BOARD_PRESENT))
 				break;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_FIRMWARE, "initing portstructs, %d boards, "
-				"%d channels, first board: %d ports\n",
-				i, sx_nports, boards[0].nports);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_FIRMWARE, "initing portstructs, %d boards, "
+//				"%d channels, first board: %d ports\n",
+;
 		rc = sx_init_portstructs(i, sx_nports);
 		sx_init_drivers();
 		if (rc >= 0)
@@ -2142,8 +1866,8 @@ static int sx_break(struct tty_struct *tty, int flag)
 	else
 		rv = sx_send_command(port, HS_STOP, -1, HS_IDLE_OPEN);
 	if (rv != 1)
-		printk(KERN_ERR "sx: couldn't send break (%x).\n",
-			read_sx_byte(port->board, CHAN_OFFSET(port, hi_hstat)));
+//		printk(KERN_ERR "sx: couldn't send break (%x).\n",
+;
 	tty_unlock();
 	func_exit();
 	return 0;
@@ -2275,42 +1999,26 @@ static int sx_init_board(struct sx_board *board)
 	sx_start_board(board);
 	udelay(10);
 	if (!sx_busy_wait_neq(board, 0, 0xff, 0)) {
-		printk(KERN_ERR "sx: Ooops. Board won't initialize.\n");
+;
 		return 0;
 	}
 
 	/* Ok. So now the processor on the card is running. It gathered
 	   some info for us... */
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_INIT, "The sxcard structure:\n");
-#else
-	sx_d;
-#endif
+;
 	if (sx_debug & SX_DEBUG_INIT)
 		my_hd_io(board->base, 0x10);
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_INIT, "the first sx_module structure:\n");
-#else
-	sx_d;
-#endif
+;
 	if (sx_debug & SX_DEBUG_INIT)
 		my_hd_io(board->base + 0x80, 0x30);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_INIT, "init_status: %x, %dk memory, firmware "
-			"V%x.%02x,\n",
-			read_sx_byte(board, 0), read_sx_byte(board, 1),
-			read_sx_byte(board, 5), read_sx_byte(board, 4));
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_INIT, "init_status: %x, %dk memory, firmware "
+//			"V%x.%02x,\n",
+//			read_sx_byte(board, 0), read_sx_byte(board, 1),
+;
 
 	if (read_sx_byte(board, 0) == 0xff) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "sx: No modules found. Sorry.\n");
-#else
-		;
-#endif
+;
 		board->nports = 0;
 		return 0;
 	}
@@ -2333,53 +2041,41 @@ static int sx_init_board(struct sx_board *board)
 	/* XXX byteorder */
 	for (addr = 0x80; addr != 0; addr = read_sx_word(board, addr) & 0x7fff){
 		type = sx_read_module_byte(board, addr, mc_chip);
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_INIT, "Module at %x: %d channels\n",
-				addr, read_sx_byte(board, addr + 2));
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_INIT, "Module at %x: %d channels\n",
+;
 
 		chans += sx_read_module_byte(board, addr, mc_type);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_INIT, "module is an %s, which has %s/%s "
-				"panels\n",
-				mod_type_s(type),
-				pan_type_s(sx_read_module_byte(board, addr,
-						mc_mods) & 0xf),
-				pan_type_s(sx_read_module_byte(board, addr,
-						mc_mods) >> 4));
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_INIT, "module is an %s, which has %s/%s "
+//				"panels\n",
+//				mod_type_s(type),
+//				pan_type_s(sx_read_module_byte(board, addr,
+//						mc_mods) & 0xf),
+//				pan_type_s(sx_read_module_byte(board, addr,
+;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_INIT, "CD1400 versions: %x/%x, ASIC "
-			"version: %x\n",
-			sx_read_module_byte(board, addr, mc_rev1),
-			sx_read_module_byte(board, addr, mc_rev2),
-			sx_read_module_byte(board, addr, mc_mtaasic_rev));
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_INIT, "CD1400 versions: %x/%x, ASIC "
+//			"version: %x\n",
+//			sx_read_module_byte(board, addr, mc_rev1),
+//			sx_read_module_byte(board, addr, mc_rev2),
+;
 
 		/* The following combinations are illegal: It should theoretically
 		   work, but timing problems make the bus HANG. */
 
 		if (mod_compat_type(type) != board->ta_type) {
-			printk(KERN_ERR "sx: This is an invalid "
-				"configuration.\nDon't mix TA/MTA/SXDC on the "
-				"same hostadapter.\n");
+//			printk(KERN_ERR "sx: This is an invalid "
+//				"configuration.\nDon't mix TA/MTA/SXDC on the "
+;
 			chans = 0;
 			break;
 		}
 		if ((IS_EISA_BOARD(board) ||
 				IS_SI_BOARD(board)) &&
 				(mod_compat_type(type) == 4)) {
-			printk(KERN_ERR	"sx: This is an invalid "
-				"configuration.\nDon't use SXDCs on an SI/XIO "
-				"adapter.\n");
+//			printk(KERN_ERR	"sx: This is an invalid "
+//				"configuration.\nDon't use SXDCs on an SI/XIO "
+;
 			chans = 0;
 			break;
 		}
@@ -2389,13 +2085,9 @@ static int sx_init_board(struct sx_board *board)
 			   lines. It might work if you tie them together or something.
 			   It might also work if you get a newer sx_firmware.   Therefore
 			   this is just a warning. */
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING
-			       "sx: The SX host doesn't work too well "
-			       "with the TA8 adapters.\nSpecialix is working on it.\n");
-#else
-			;
-#endif
+//			printk(KERN_WARNING
+//			       "sx: The SX host doesn't work too well "
+;
 		}
 #endif
 	}
@@ -2407,8 +2099,8 @@ static int sx_init_board(struct sx_board *board)
 				if (request_irq(board->irq, sx_interrupt,
 						IRQF_SHARED | IRQF_DISABLED,
 						"sx", board)) {
-					printk(KERN_ERR "sx: Cannot allocate "
-						"irq %d.\n", board->irq);
+//					printk(KERN_ERR "sx: Cannot allocate "
+;
 					board->irq = 0;
 				}
 			} else
@@ -2425,31 +2117,23 @@ static int sx_init_board(struct sx_board *board)
 						"sx", board))
 						break;
 			if (!irqnr)
-				printk(KERN_ERR "sx: Cannot allocate IRQ.\n");
+;
 			board->irq = irqnr;
 		} else
 			board->irq = 0;
 
 		if (board->irq) {
 			/* Found a valid interrupt, start up interrupts! */
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_INIT, "Using irq %d.\n",
-					board->irq);
-#else
-			sx_d;
-#endif
+//			sx_dprintk(SX_DEBUG_INIT, "Using irq %d.\n",
+;
 			sx_start_interrupts(board);
 			board->poll = sx_slowpoll;
 			board->flags |= SX_IRQ_ALLOCATED;
 		} else {
 			/* no irq: setup board for polled operation */
 			board->poll = sx_poll;
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_INIT, "Using poll-interval %d.\n",
-					board->poll);
-#else
-			sx_d;
-#endif
+//			sx_dprintk(SX_DEBUG_INIT, "Using poll-interval %d.\n",
+;
 		}
 
 		/* The timer should be initialized anyway: That way we can
@@ -2463,11 +2147,7 @@ static int sx_init_board(struct sx_board *board)
 	}
 
 	board->nports = chans;
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_INIT, "returning %d ports.", board->nports);
-#else
-	sx_d;
-#endif
+;
 
 	func_exit();
 	return chans;
@@ -2478,17 +2158,9 @@ static void __devinit printheader(void)
 	static int header_printed;
 
 	if (!header_printed) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "Specialix SX driver "
-			"(C) 1998/1999 R.E.Wolff@BitWizard.nl\n");
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "sx: version " __stringify(SX_VERSION) "\n");
-#else
-		;
-#endif
+//		printk(KERN_INFO "Specialix SX driver "
+;
+;
 		header_printed = 1;
 	}
 }
@@ -2502,12 +2174,8 @@ static int __devinit probe_sx(struct sx_board *board)
 	func_enter();
 
 	if (!IS_CF_BOARD(board)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_PROBE, "Going to verify vpd prom at %p.\n",
-				board->base + SX_VPD_ROM);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_PROBE, "Going to verify vpd prom at %p.\n",
+;
 
 		if (sx_debug & SX_DEBUG_PROBE)
 			my_hd_io(board->base + SX_VPD_ROM, 0x40);
@@ -2519,19 +2187,11 @@ static int __devinit probe_sx(struct sx_board *board)
 		if (sx_debug & SX_DEBUG_PROBE)
 			my_hd(&vpdp, 0x20);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_PROBE, "checking identifier...\n");
-#else
-		sx_d;
-#endif
+;
 
 		if (strncmp(vpdp.identifier, SX_VPD_IDENT_STRING, 16) != 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_PROBE, "Got non-SX identifier: "
-					"'%s'\n", vpdp.identifier);
-#else
-			sx_d;
-#endif
+//			sx_dprintk(SX_DEBUG_PROBE, "Got non-SX identifier: "
+;
 			return 0;
 		}
 	}
@@ -2539,51 +2199,31 @@ static int __devinit probe_sx(struct sx_board *board)
 	printheader();
 
 	if (!IS_CF_BOARD(board)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "sx: Found an SX board at %lx\n",
-			board->hw_base);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "sx: hw_rev: %d, assembly level: %d, "
-				"uniq ID:%08x, ",
-				vpdp.hwrev, vpdp.hwass, vpdp.uniqid);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("Manufactured: %d/%d\n", 1970 + vpdp.myear, vpdp.mweek);
-#else
-		;
-#endif
+//		printk(KERN_DEBUG "sx: Found an SX board at %lx\n",
+;
+//		printk(KERN_DEBUG "sx: hw_rev: %d, assembly level: %d, "
+//				"uniq ID:%08x, ",
+;
+;
 
 		if ((((vpdp.uniqid >> 24) & SX_UNIQUEID_MASK) !=
 				SX_PCI_UNIQUEID1) && (((vpdp.uniqid >> 24) &
 				SX_UNIQUEID_MASK) != SX_ISA_UNIQUEID1)) {
 			/* This might be a bit harsh. This was the primary
 			   reason the SX/ISA card didn't work at first... */
-			printk(KERN_ERR "sx: Hmm. Not an SX/PCI or SX/ISA "
-					"card. Sorry: giving up.\n");
+//			printk(KERN_ERR "sx: Hmm. Not an SX/PCI or SX/ISA "
+;
 			return (0);
 		}
 
 		if (((vpdp.uniqid >> 24) & SX_UNIQUEID_MASK) ==
 				SX_ISA_UNIQUEID1) {
 			if (((unsigned long)board->hw_base) & 0x8000) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_WARNING "sx: Warning: There may be "
-					"hardware problems with the card at "
-					"%lx.\n", board->hw_base);
-#else
-				;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_WARNING "sx: Read sx.txt for more "
-						"info.\n");
-#else
-				;
-#endif
+//				printk(KERN_WARNING "sx: Warning: There may be "
+//					"hardware problems with the card at "
+;
+//				printk(KERN_WARNING "sx: Read sx.txt for more "
+;
 			}
 		}
 	}
@@ -2593,11 +2233,7 @@ static int __devinit probe_sx(struct sx_board *board)
 	/* This resets the processor, and keeps it off the bus. */
 	if (!sx_reset(board))
 		return 0;
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_INIT, "reset the board...\n");
-#else
-	sx_d;
-#endif
+;
 
 	func_exit();
 	return 1;
@@ -2616,12 +2252,8 @@ static int __devinit probe_si(struct sx_board *board)
 	int i;
 
 	func_enter();
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_PROBE, "Going to verify SI signature hw %lx at "
-		"%p.\n", board->hw_base, board->base + SI2_ISA_ID_BASE);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_PROBE, "Going to verify SI signature hw %lx at "
+;
 
 	if (sx_debug & SX_DEBUG_PROBE)
 		my_hd_io(board->base + SI2_ISA_ID_BASE, 0x8);
@@ -2685,11 +2317,7 @@ static int __devinit probe_si(struct sx_board *board)
 
 	printheader();
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "sx: Found an SI board at %lx\n", board->hw_base);
-#else
-	;
-#endif
+;
 	/* Compared to the SX boards, it is a complete guess as to what
 	   this card is up to... */
 
@@ -2698,11 +2326,7 @@ static int __devinit probe_si(struct sx_board *board)
 	/* This resets the processor, and keeps it off the bus. */
 	if (!sx_reset(board))
 		return 0;
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_INIT, "reset the board...\n");
-#else
-	sx_d;
-#endif
+;
 
 	func_exit();
 	return 1;
@@ -2758,8 +2382,8 @@ static int sx_init_drivers(void)
 
 	if ((error = tty_register_driver(sx_driver))) {
 		put_tty_driver(sx_driver);
-		printk(KERN_ERR "sx: Couldn't register sx driver, error = %d\n",
-			error);
+//		printk(KERN_ERR "sx: Couldn't register sx driver, error = %d\n",
+;
 		return 1;
 	}
 	func_exit();
@@ -2788,11 +2412,7 @@ static int sx_init_portstructs(int nboards, int nports)
 		board = &boards[i];
 		board->ports = port;
 		for (j = 0; j < boards[i].nports; j++) {
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_INIT, "initing port %d\n", j);
-#else
-			sx_d;
-#endif
+;
 			tty_port_init(&port->gs.port);
 			port->gs.port.ops = &sx_port_ops;
 			port->gs.magic = SX_MAGIC;
@@ -2817,29 +2437,17 @@ static int sx_init_portstructs(int nboards, int nports)
 		board = &boards[i];
 		board->port_base = portno;
 		/* Possibly the configuration was rejected. */
-#ifdef CONFIG_DEBUG_PRINTK
-		sx_dprintk(SX_DEBUG_PROBE, "Board has %d channels\n",
-				board->nports);
-#else
-		sx_d;
-#endif
+//		sx_dprintk(SX_DEBUG_PROBE, "Board has %d channels\n",
+;
 		if (board->nports <= 0)
 			continue;
 		/* XXX byteorder ?? */
 		for (addr = 0x80; addr != 0;
 				addr = read_sx_word(board, addr) & 0x7fff) {
 			chans = sx_read_module_byte(board, addr, mc_type);
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_PROBE, "Module at %x: %d "
-					"channels\n", addr, chans);
-#else
-			sx_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_PROBE, "Port at");
-#else
-			sx_d;
-#endif
+//			sx_dprintk(SX_DEBUG_PROBE, "Module at %x: %d "
+;
+;
 			for (j = 0; j < chans; j++) {
 				/* The "sx-way" is the way it SHOULD be done.
 				   That way in the future, the firmware may for
@@ -2853,20 +2461,12 @@ static int sx_init_portstructs(int nboards, int nports)
 				else
 					port->ch_base = addr + 0x100 + 0x300 *j;
 
-#ifdef CONFIG_DEBUG_PRINTK
-				sx_dprintk(SX_DEBUG_PROBE, " %x",
-						port->ch_base);
-#else
-				sx_d;
-#endif
+//				sx_dprintk(SX_DEBUG_PROBE, " %x",
+;
 				port->line = portno++;
 				port++;
 			}
-#ifdef CONFIG_DEBUG_PRINTK
-			sx_dprintk(SX_DEBUG_PROBE, "\n");
-#else
-			sx_d;
-#endif
+;
 		}
 		/* This has to be done earlier. */
 		/* board->flags |= SX_BOARD_INITIALIZED; */
@@ -2965,22 +2565,10 @@ static int __devinit sx_eisa_probe(struct device *dev)
 		goto err_reg;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_PROBE, "IO hw_base address: %lx\n", board->hw_base);
-#else
-	sx_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_PROBE, "base: %p\n", board->base);
-#else
-	sx_d;
-#endif
+;
+;
 	board->irq = inb(eisa_slot + 0xc02) >> 4;
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_PROBE, "IRQ: %d\n", board->irq);
-#else
-	sx_d;
-#endif
+;
 
 	if (!probe_si(board))
 		goto err_unmap;
@@ -3051,12 +2639,8 @@ static void __devinit fix_sx_pci(struct pci_dev *pdev, struct sx_board *board)
 	rebase = ioremap_nocache(hwbase, 0x80);
 	t = readl(rebase + CNTRL_REG_OFFSET);
 	if (t != CNTRL_REG_GOODVALUE) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "sx: performing cntrl reg fix: %08x -> "
-			"%08x\n", t, CNTRL_REG_GOODVALUE);
-#else
-		;
-#endif
+//		printk(KERN_DEBUG "sx: performing cntrl reg fix: %08x -> "
+;
 		writel(CNTRL_REG_GOODVALUE, rebase + CNTRL_REG_OFFSET);
 	}
 	iounmap(rebase);
@@ -3175,25 +2759,17 @@ static int __init sx_init(void)
 	int retval;
 
 	func_enter();
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_INIT, "Initing sx module... (sx_debug=%d)\n",
-			sx_debug);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_INIT, "Initing sx module... (sx_debug=%d)\n",
+;
 	if (abs((long)(&sx_debug) - sx_debug) < 0x10000) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "sx: sx_debug is an address, instead of a "
-				"value. Assuming -1.\n(%p)\n", &sx_debug);
-#else
-		;
-#endif
+//		printk(KERN_WARNING "sx: sx_debug is an address, instead of a "
+;
 		sx_debug = -1;
 	}
 
 	if (misc_register(&sx_fw_device) < 0) {
-		printk(KERN_ERR "SX: Unable to register firmware loader "
-				"driver.\n");
+//		printk(KERN_ERR "SX: Unable to register firmware loader "
+;
 		return -EIO;
 	}
 #ifdef CONFIG_ISA
@@ -3274,11 +2850,7 @@ err_si1_reg:
 	retval = pci_register_driver(&sx_pcidriver);
 
 	if (found) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "sx: total of %d boards detected.\n", found);
-#else
-		;
-#endif
+;
 		retval = 0;
 	} else if (retval) {
 #ifdef CONFIG_EISA
@@ -3306,19 +2878,11 @@ static void __exit sx_exit(void)
 		sx_remove_card(&boards[i], NULL);
 
 	if (misc_deregister(&sx_fw_device) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "sx: couldn't deregister firmware loader "
-				"device\n");
-#else
-		;
-#endif
+//		printk(KERN_INFO "sx: couldn't deregister firmware loader "
+;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	sx_dprintk(SX_DEBUG_CLEANUP, "Cleaning up drivers (%d)\n",
-			sx_initialized);
-#else
-	sx_d;
-#endif
+//	sx_dprintk(SX_DEBUG_CLEANUP, "Cleaning up drivers (%d)\n",
+;
 	if (sx_initialized)
 		sx_release_drivers();
 

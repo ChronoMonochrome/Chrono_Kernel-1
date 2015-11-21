@@ -47,16 +47,12 @@ static u32 rtl871x_open_fw(struct _adapter *padapter, void **pphfwfile_hdl,
 					(&padapter->dvobjpriv);
 	struct usb_device *pusbdev = pdvobjpriv->pusbdev;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "r8712u: Loading firmware from \"%s\"\n",
-	       firmware_file);
-#else
-	;
-#endif
+//	printk(KERN_INFO "r8712u: Loading firmware from \"%s\"\n",
+;
 	rc = request_firmware(praw, firmware_file, &pusbdev->dev);
 	if (rc < 0) {
-		printk(KERN_ERR "r8712u: Unable to load firmware\n");
-		printk(KERN_ERR "r8712u: Install latest linux-firmware\n");
+;
+;
 		return 0;
 	}
 	*ppmappedfw = (u8 *)((*praw)->data);
@@ -309,19 +305,11 @@ uint rtl8712_hal_init(struct _adapter *padapter)
 	if (rtl8712_dl_fw(padapter) != _SUCCESS)
 		return _FAIL;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "r8712u: 1 RCR=0x%x\n",  r8712_read32(padapter, RCR));
-#else
-	;
-#endif
+;
 	val32 = r8712_read32(padapter, RCR);
 	r8712_write32(padapter, RCR, (val32 | BIT(26))); /* Enable RX TCP
 							    Checksum offload */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "r8712u: 2 RCR=0x%x\n", r8712_read32(padapter, RCR));
-#else
-	;
-#endif
+;
 	val32 = r8712_read32(padapter, RCR);
 	r8712_write32(padapter, RCR, (val32|BIT(25))); /* Append PHY status */
 	val32 = 0;

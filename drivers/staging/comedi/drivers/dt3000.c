@@ -352,11 +352,7 @@ static int dt3k_send_cmd(struct comedi_device *dev, unsigned int cmd)
 	if ((status & DT3000_COMPLETION_MASK) == DT3000_NOERROR)
 		return 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("dt3k_send_cmd() timeout/error status=0x%04x\n", status);
-#else
-	;
-#endif
+;
 
 	return -ETIME;
 }
@@ -433,24 +429,12 @@ static char *intr_flags[] = {
 static void debug_intr_flags(unsigned int flags)
 {
 	int i;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("dt3k: intr_flags:");
-#else
-	;
-#endif
+;
 	for (i = 0; i < 8; i++) {
 		if (flags & (1 << i))
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" %s", intr_flags[i]);
-#else
-			;
-#endif
+;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 }
 #endif
 
@@ -468,11 +452,7 @@ static void dt3k_ai_empty_fifo(struct comedi_device *dev,
 	if (count < 0)
 		count += AI_FIFO_DEPTH;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("reading %d samples\n", count);
-#else
-	;
-#endif
+;
 
 	rear = devpriv->ai_rear;
 
@@ -660,11 +640,7 @@ static int dt3k_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 	int ret;
 	unsigned int mode;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("dt3k_ai_cmd:\n");
-#else
-	;
-#endif
+;
 	for (i = 0; i < cmd->chanlist_len; i++) {
 		chan = CR_CHAN(cmd->chanlist[i]);
 		range = CR_RANGE(cmd->chanlist[i]);
@@ -675,27 +651,15 @@ static int dt3k_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 	aref = CR_AREF(cmd->chanlist[0]);
 
 	writew(cmd->scan_end_arg, devpriv->io_addr + DPR_Params(0));
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("param[0]=0x%04x\n", cmd->scan_end_arg);
-#else
-	;
-#endif
+;
 
 	if (cmd->convert_src == TRIG_TIMER) {
 		divider = dt3k_ns_to_timer(50, &cmd->convert_arg,
 					   cmd->flags & TRIG_ROUND_MASK);
 		writew((divider >> 16), devpriv->io_addr + DPR_Params(1));
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("param[1]=0x%04x\n", divider >> 16);
-#else
-		;
-#endif
+;
 		writew((divider & 0xffff), devpriv->io_addr + DPR_Params(2));
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("param[2]=0x%04x\n", divider & 0xffff);
-#else
-		;
-#endif
+;
 	} else {
 		/* not supported */
 	}
@@ -704,41 +668,21 @@ static int dt3k_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 		tscandiv = dt3k_ns_to_timer(100, &cmd->scan_begin_arg,
 					    cmd->flags & TRIG_ROUND_MASK);
 		writew((tscandiv >> 16), devpriv->io_addr + DPR_Params(3));
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("param[3]=0x%04x\n", tscandiv >> 16);
-#else
-		;
-#endif
+;
 		writew((tscandiv & 0xffff), devpriv->io_addr + DPR_Params(4));
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("param[4]=0x%04x\n", tscandiv & 0xffff);
-#else
-		;
-#endif
+;
 	} else {
 		/* not supported */
 	}
 
 	mode = DT3000_AD_RETRIG_INTERNAL | 0 | 0;
 	writew(mode, devpriv->io_addr + DPR_Params(5));
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("param[5]=0x%04x\n", mode);
-#else
-	;
-#endif
+;
 	writew(aref == AREF_DIFF, devpriv->io_addr + DPR_Params(6));
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("param[6]=0x%04x\n", aref == AREF_DIFF);
-#else
-	;
-#endif
+;
 
 	writew(AI_FIFO_DEPTH / 2, devpriv->io_addr + DPR_Params(7));
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("param[7]=0x%04x\n", AI_FIFO_DEPTH / 2);
-#else
-	;
-#endif
+;
 
 	writew(SUBS_AI, devpriv->io_addr + DPR_SubSys);
 	ret = dt3k_send_cmd(dev, CMD_CONFIG);
@@ -904,11 +848,7 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	int bus, slot;
 	int ret = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("dt3000:");
-#else
-	;
-#endif
+;
 	bus = it->options[0];
 	slot = it->options[1];
 
@@ -920,11 +860,7 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (ret < 0)
 		return ret;
 	if (ret == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" no DT board found\n");
-#else
-		;
-#endif
+;
 		return -ENODEV;
 	}
 
@@ -932,11 +868,7 @@ static int dt3000_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	if (request_irq(devpriv->pci_dev->irq, dt3k_interrupt, IRQF_SHARED,
 			"dt3000", dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" unable to allocate IRQ %u\n", devpriv->pci_dev->irq);
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 	dev->irq = devpriv->pci_dev->irq;
@@ -1067,12 +999,8 @@ static int setup_pci(struct comedi_device *dev)
 	if (!devpriv->io_addr)
 		return -ENOMEM;
 #if DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("0x%08llx mapped to %p, ",
-	       (unsigned long long)devpriv->phys_addr, devpriv->io_addr);
-#else
-	;
-#endif
+//	printk("0x%08llx mapped to %p, ",
+;
 #endif
 
 	return 0;

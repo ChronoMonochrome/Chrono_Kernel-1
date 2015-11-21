@@ -673,8 +673,8 @@ static int __init spcp8x5_init(void)
 	retval = usb_register(&spcp8x5_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&spcp8x5_device);

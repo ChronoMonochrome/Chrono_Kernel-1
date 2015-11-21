@@ -79,37 +79,21 @@ static int das08_cs_attach(struct comedi_device *dev,
 	if (ret < 0)
 		return ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: das08_cs: ", dev->minor);
-#else
-	;
-#endif
+;
 	/*  deal with a pci board */
 
 	if (thisboard->bustype == pcmcia) {
 		if (link == NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" no pcmcia cards found\n");
-#else
-			;
-#endif
+;
 			return -EIO;
 		}
 		iobase = link->resource[0]->start;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" bug! board does not have PCMCIA bustype\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 
 	return das08_common_attach(dev, iobase);
 }

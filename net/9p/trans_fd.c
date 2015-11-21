@@ -983,7 +983,7 @@ p9_fd_create(struct p9_client *client, const char *addr, char *args)
 	parse_opts(args, &opts);
 
 	if (opts.rfd == ~0 || opts.wfd == ~0) {
-		printk(KERN_ERR "v9fs: Insufficient options for proto=fd\n");
+;
 		return -ENOPROTOOPT;
 	}
 

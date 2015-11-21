@@ -349,7 +349,7 @@ static int __init lance_probe( struct net_device *dev)
 #ifdef CONFIG_SUN3
 		iounmap((void __iomem *)ioaddr);
 #endif
-		printk(KERN_WARNING "SUN3 Lance couldn't allocate DVMA memory\n");
+;
 		return 0;
 	}
 
@@ -363,17 +363,17 @@ static int __init lance_probe( struct net_device *dev)
 		iounmap((void __iomem *)ioaddr);
 #endif
 		dvma_free((void *)MEM);
-		printk(KERN_WARNING "SUN3 Lance unable to allocate IRQ\n");
+;
 		return 0;
 	}
 	dev->irq = (unsigned short)LANCE_IRQ;
 
 
-	printk("%s: SUN3 Lance at io %#lx, mem %#lx, irq %d, hwaddr ",
-		   dev->name,
-		   (unsigned long)ioaddr,
-		   (unsigned long)MEM,
-		   dev->irq);
+//	printk("%s: SUN3 Lance at io %#lx, mem %#lx, irq %d, hwaddr ",
+//		   dev->name,
+//		   (unsigned long)ioaddr,
+//		   (unsigned long)MEM,
+;
 
 	/* copy in the ethernet address from the prom */
 	for(i = 0; i < 6 ; i++)
@@ -387,7 +387,7 @@ static int __init lance_probe( struct net_device *dev)
 	MEM->init.hwaddr[4] = dev->dev_addr[5];
 	MEM->init.hwaddr[5] = dev->dev_addr[4];
 
-	printk("%pM\n", dev->dev_addr);
+;
 
 	MEM->init.mode = 0x0000;
 	MEM->init.filter[0] = 0x00000000;
@@ -404,7 +404,7 @@ static int __init lance_probe( struct net_device *dev)
 	       (dvma_vtob(MEM->tx_head))));
 
 	if (did_version++ == 0)
-		printk( version );
+;
 
 	dev->netdev_ops = &lance_netdev_ops;
 //	KLUDGE -- REMOVE ME
@@ -539,20 +539,20 @@ static int lance_start_xmit( struct sk_buff *skb, struct net_device *dev )
 
 		if(lance_debug >= 2) {
 			int i;
-			printk("Ring data: old_tx %d new_tx %d%s new_rx %d\n",
-			       lp->old_tx, lp->new_tx,
-			       lp->tx_full ? " (full)" : "",
-			       lp->new_rx );
+//			printk("Ring data: old_tx %d new_tx %d%s new_rx %d\n",
+//			       lp->old_tx, lp->new_tx,
+//			       lp->tx_full ? " (full)" : "",
+;
 			for( i = 0 ; i < RX_RING_SIZE; i++ )
-				printk( "rx #%d: base=%04x blen=%04x mlen=%04x\n",
-					i, MEM->rx_head[i].base,
-					-MEM->rx_head[i].buf_length,
-					MEM->rx_head[i].msg_length);
+//				printk( "rx #%d: base=%04x blen=%04x mlen=%04x\n",
+//					i, MEM->rx_head[i].base,
+//					-MEM->rx_head[i].buf_length,
+;
 			for( i = 0 ; i < TX_RING_SIZE; i++ )
-				printk("tx #%d: base=%04x len=%04x misc=%04x\n",
-				       i, MEM->tx_head[i].base,
-				       -MEM->tx_head[i].length,
-				       MEM->tx_head[i].misc );
+//				printk("tx #%d: base=%04x len=%04x misc=%04x\n",
+//				       i, MEM->tx_head[i].base,
+//				       -MEM->tx_head[i].length,
+;
 		}
 
 		lance_init_ring(dev);
@@ -573,7 +573,7 @@ static int lance_start_xmit( struct sk_buff *skb, struct net_device *dev )
 	netif_stop_queue(dev);
 
 	if (test_and_set_bit( 0, (void*)&lp->lock ) != 0) {
-		printk( "%s: tx queue lock!.\n", dev->name);
+;
 		/* don't clear dev->tbusy flag. */
 		return NETDEV_TX_BUSY;
 	}
@@ -595,12 +595,12 @@ static int lance_start_xmit( struct sk_buff *skb, struct net_device *dev )
 	/* Fill in a Tx ring entry */
 #if 0
 	if (lance_debug >= 2) {
-		printk( "%s: TX pkt %d type 0x%04x"
-			" from %s to %s"
-			" data at 0x%08x len %d\n",
-			dev->name, lp->new_tx, ((u_short *)skb->data)[6],
-			DEV_ADDR(&skb->data[6]), DEV_ADDR(skb->data),
-			(int)skb->data, (int)skb->len );
+//		printk( "%s: TX pkt %d type 0x%04x"
+//			" from %s to %s"
+//			" data at 0x%08x len %d\n",
+//			dev->name, lp->new_tx, ((u_short *)skb->data)[6],
+//			DEV_ADDR(&skb->data[6]), DEV_ADDR(skb->data),
+;
 	}
 #endif
 	/* We're not prepared for the int until the last flags are set/reset.
@@ -689,11 +689,11 @@ static irqreturn_t lance_interrupt( int irq, void *dev_id)
 //		if(lance_debug >= 3) {
 //			int i;
 //
-//			printk("%s: tx int\n", dev->name);
+;
 //
 //			for(i = 0; i < TX_RING_SIZE; i++)
-//				printk("ring %d flag=%04x\n", i,
-//				       MEM->tx_head[i].flag);
+////				printk("ring %d flag=%04x\n", i,
+;
 //		}
 
 		while( old_tx != lp->new_tx) {
@@ -712,8 +712,8 @@ static irqreturn_t lance_interrupt( int irq, void *dev_id)
 				if (status & TMD3_LCOL) dev->stats.tx_window_errors++;
 				if (status & (TMD3_UFLO | TMD3_BUFF)) {
 					dev->stats.tx_fifo_errors++;
-					printk("%s: Tx FIFO error\n",
-					       dev->name);
+//					printk("%s: Tx FIFO error\n",
+;
 					REGA(CSR0) = CSR0_STOP;
 					REGA(CSR3) = CSR3_BSWP;
 					lance_init_ring(dev);
@@ -806,7 +806,7 @@ static int lance_rx( struct net_device *dev )
 			struct sk_buff *skb;
 
 			if (pkt_len < 60) {
-				printk( "%s: Runt packet!\n", dev->name );
+;
 				dev->stats.rx_errors++;
 			}
 			else {
@@ -825,16 +825,16 @@ static int lance_rx( struct net_device *dev )
 #if 0
 				if (lance_debug >= 3) {
 					u_char *data = PKTBUF_ADDR(head);
-					printk("%s: RX pkt %d type 0x%04x"
-					       " from %pM to %pM",
-					       dev->name, lp->new_tx, ((u_short *)data)[6],
-					       &data[6], data);
+//					printk("%s: RX pkt %d type 0x%04x"
+//					       " from %pM to %pM",
+//					       dev->name, lp->new_tx, ((u_short *)data)[6],
+;
 
-					printk(" data %02x %02x %02x %02x %02x %02x %02x %02x "
-					       "len %d at %08x\n",
-					       data[15], data[16], data[17], data[18],
-					       data[19], data[20], data[21], data[22],
-					       pkt_len, data);
+//					printk(" data %02x %02x %02x %02x %02x %02x %02x %02x "
+//					       "len %d at %08x\n",
+//					       data[15], data[16], data[17], data[18],
+//					       data[19], data[20], data[21], data[22],
+;
 				}
 #endif
 				if (lance_debug >= 3) {

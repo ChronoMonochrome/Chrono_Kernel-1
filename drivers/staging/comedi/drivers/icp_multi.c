@@ -267,11 +267,7 @@ static int icp_multi_insn_read_ai(struct comedi_device *dev,
 	int n, timeout;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "icp multi EDBG: BGN: icp_multi_insn_read_ai(...)\n");
-#else
-	;
-#endif
+;
 #endif
 	/*  Disable A/D conversion ready interrupt */
 	devpriv->IntEnable &= ~ADC_READY;
@@ -285,13 +281,9 @@ static int icp_multi_insn_read_ai(struct comedi_device *dev,
 	setup_channel_list(dev, s, &insn->chanspec, 1);
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "icp_multi A ST=%4x IO=%p\n",
-	       readw(devpriv->io_addr + ICP_MULTI_ADC_CSR),
-	       devpriv->io_addr + ICP_MULTI_ADC_CSR);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG "icp_multi A ST=%4x IO=%p\n",
+//	       readw(devpriv->io_addr + ICP_MULTI_ADC_CSR),
+;
 #endif
 
 	for (n = 0; n < insn->n; n++) {
@@ -302,23 +294,15 @@ static int icp_multi_insn_read_ai(struct comedi_device *dev,
 		devpriv->AdcCmdStatus &= ~ADC_ST;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "icp multi B n=%d ST=%4x\n", n,
-		       readw(devpriv->io_addr + ICP_MULTI_ADC_CSR));
-#else
-		;
-#endif
+//		printk(KERN_DEBUG "icp multi B n=%d ST=%4x\n", n,
+;
 #endif
 
 		udelay(1);
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "icp multi C n=%d ST=%4x\n", n,
-		       readw(devpriv->io_addr + ICP_MULTI_ADC_CSR));
-#else
-		;
-#endif
+//		printk(KERN_DEBUG "icp multi C n=%d ST=%4x\n", n,
+;
 #endif
 
 		/*  Wait for conversion to complete, or get fed up waiting */
@@ -330,15 +314,11 @@ static int icp_multi_insn_read_ai(struct comedi_device *dev,
 
 #ifdef ICP_MULTI_EXTDEBUG
 			if (!(timeout % 10))
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_DEBUG
-				       "icp multi D n=%d tm=%d ST=%4x\n", n,
-				       timeout,
-				       readw(devpriv->io_addr +
-					     ICP_MULTI_ADC_CSR));
-#else
-				;
-#endif
+//				printk(KERN_DEBUG
+//				       "icp multi D n=%d tm=%d ST=%4x\n", n,
+//				       timeout,
+//				       readw(devpriv->io_addr +
+;
 #endif
 
 			udelay(1);
@@ -360,13 +340,9 @@ static int icp_multi_insn_read_ai(struct comedi_device *dev,
 		data[n] = 0;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG
-		      "icp multi EDBG: END: icp_multi_insn_read_ai(...) n=%d\n",
-		      n);
-#else
-		;
-#endif
+//		printk(KERN_DEBUG
+//		      "icp multi EDBG: END: icp_multi_insn_read_ai(...) n=%d\n",
+;
 #endif
 		return -ETIME;
 
@@ -384,12 +360,8 @@ conv_finish:
 	writew(devpriv->IntStatus, devpriv->io_addr + ICP_MULTI_INT_STAT);
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG: END: icp_multi_insn_read_ai(...) n=%d\n", n);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+;
 #endif
 	return n;
 }
@@ -419,12 +391,8 @@ static int icp_multi_insn_write_ao(struct comedi_device *dev,
 	int n, chan, range, timeout;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG: BGN: icp_multi_insn_write_ao(...)\n");
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+;
 #endif
 	/*  Disable D/A conversion ready interrupt */
 	devpriv->IntEnable &= ~DAC_READY;
@@ -460,15 +428,11 @@ static int icp_multi_insn_write_ao(struct comedi_device *dev,
 
 #ifdef ICP_MULTI_EXTDEBUG
 			if (!(timeout % 10))
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_DEBUG
-				       "icp multi A n=%d tm=%d ST=%4x\n", n,
-				       timeout,
-				       readw(devpriv->io_addr +
-					     ICP_MULTI_DAC_CSR));
-#else
-				;
-#endif
+//				printk(KERN_DEBUG
+//				       "icp multi A n=%d tm=%d ST=%4x\n", n,
+//				       timeout,
+//				       readw(devpriv->io_addr +
+;
 #endif
 
 			udelay(1);
@@ -490,13 +454,9 @@ static int icp_multi_insn_write_ao(struct comedi_device *dev,
 		devpriv->ao_data[chan] = 0;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG
-		     "icp multi EDBG: END: icp_multi_insn_write_ao(...) n=%d\n",
-		     n);
-#else
-		;
-#endif
+//		printk(KERN_DEBUG
+//		     "icp multi EDBG: END: icp_multi_insn_write_ao(...) n=%d\n",
+;
 #endif
 		return -ETIME;
 
@@ -515,12 +475,8 @@ dac_ready:
 	}
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG: END: icp_multi_insn_write_ao(...) n=%d\n", n);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+;
 #endif
 	return n;
 }
@@ -609,22 +565,14 @@ static int icp_multi_insn_bits_do(struct comedi_device *dev,
 				  struct comedi_insn *insn, unsigned int *data)
 {
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "icp multi EDBG: BGN: icp_multi_insn_bits_do(...)\n");
-#else
-	;
-#endif
+;
 #endif
 
 	if (data[0]) {
 		s->state &= ~data[0];
 		s->state |= (data[0] & data[1]);
 
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG "Digital outputs = %4x \n", s->state);
-#else
-		;
-#endif
+;
 
 		writew(s->state, devpriv->io_addr + ICP_MULTI_DO);
 	}
@@ -632,11 +580,7 @@ static int icp_multi_insn_bits_do(struct comedi_device *dev,
 	data[1] = readw(devpriv->io_addr + ICP_MULTI_DI);
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "icp multi EDBG: END: icp_multi_insn_bits_do(...)\n");
-#else
-	;
-#endif
+;
 #endif
 	return 2;
 }
@@ -713,13 +657,9 @@ static irqreturn_t interrupt_service_icp_multi(int irq, void *d)
 	int int_no;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG: BGN: interrupt_service_icp_multi(%d,...)\n",
-	       irq);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+//	       "icp multi EDBG: BGN: interrupt_service_icp_multi(%d,...)\n",
+;
 #endif
 
 	/*  Is this interrupt from our board? */
@@ -729,13 +669,9 @@ static irqreturn_t interrupt_service_icp_multi(int irq, void *d)
 		return IRQ_NONE;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG: interrupt_service_icp_multi() ST: %4x\n",
-	       readw(devpriv->io_addr + ICP_MULTI_INT_STAT));
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+//	       "icp multi EDBG: interrupt_service_icp_multi() ST: %4x\n",
+;
 #endif
 
 	/*  Determine which interrupt is active & handle it */
@@ -762,12 +698,8 @@ static irqreturn_t interrupt_service_icp_multi(int irq, void *d)
 	}
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG: END: interrupt_service_icp_multi(...)\n");
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+;
 #endif
 	return IRQ_HANDLED;
 }
@@ -800,12 +732,8 @@ static int check_channel_list(struct comedi_device *dev,
 	unsigned int i;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG:  check_channel_list(...,%d)\n", n_chan);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+;
 #endif
 	/*  Check that we at least have one channel to check */
 	if (n_chan < 1) {
@@ -861,12 +789,8 @@ static void setup_channel_list(struct comedi_device *dev,
 	unsigned int diff;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG:  setup_channel_list(...,%d)\n", n_chan);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+;
 #endif
 	devpriv->act_chanlist_len = n_chan;
 	devpriv->act_chanlist_pos = 0;
@@ -907,13 +831,9 @@ static void setup_channel_list(struct comedi_device *dev,
 		       devpriv->io_addr + ICP_MULTI_ADC_CSR);
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_DEBUG
-		       "GS: %2d. [%4x]=%4x %4x\n", i, chanprog, range,
-		       devpriv->act_chanlist[i]);
-#else
-		;
-#endif
+//		printk(KERN_DEBUG
+//		       "GS: %2d. [%4x]=%4x %4x\n", i, chanprog, range,
+;
 #endif
 	}
 
@@ -939,12 +859,8 @@ static int icp_multi_reset(struct comedi_device *dev)
 	unsigned int i;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp_multi EDBG: BGN: icp_multi_reset(...)\n");
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+;
 #endif
 	/*  Clear INT enables and requests */
 	writew(0, devpriv->io_addr + ICP_MULTI_INT_EN);
@@ -975,12 +891,8 @@ static int icp_multi_reset(struct comedi_device *dev)
 	writew(0, devpriv->io_addr + ICP_MULTI_DO);
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "icp multi EDBG: END: icp_multi_reset(...)\n");
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+;
 #endif
 	return 0;
 }
@@ -1012,12 +924,8 @@ static int icp_multi_attach(struct comedi_device *dev,
 	resource_size_t io_addr[5], iobase;
 	unsigned char pci_bus, pci_slot, pci_func;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_WARNING
-	       "icp_multi EDBG: BGN: icp_multi_attach(...)\n");
-#else
-	;
-#endif
+//	printk(KERN_WARNING
+;
 
 	/*  Alocate private data storage space */
 	ret = alloc_private(dev, sizeof(struct icp_multi_private));
@@ -1035,13 +943,9 @@ static int icp_multi_attach(struct comedi_device *dev,
 		    );
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_WARNING
-	       "Anne's comedi%d: icp_multi: board=%s", dev->minor,
-	       this_board->name);
-#else
-	;
-#endif
+//	printk(KERN_WARNING
+//	       "Anne's comedi%d: icp_multi: board=%s", dev->minor,
+;
 
 	card = select_and_alloc_pci_card(PCI_VENDOR_ID_ICP,
 					 this_board->device_id, it->options[0],
@@ -1054,43 +958,27 @@ static int icp_multi_attach(struct comedi_device *dev,
 
 	if ((pci_card_data(card, &pci_bus, &pci_slot, &pci_func, &io_addr[0],
 			   &irq)) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING " - Can't get configuration data!\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 
 	iobase = io_addr[2];
 	devpriv->phys_iobase = iobase;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_WARNING
-	       ", b:s:f=%d:%d:%d, io=0x%8llx \n", pci_bus, pci_slot, pci_func,
-	       (unsigned long long)iobase);
-#else
-	;
-#endif
+//	printk(KERN_WARNING
+//	       ", b:s:f=%d:%d:%d, io=0x%8llx \n", pci_bus, pci_slot, pci_func,
+;
 
 	devpriv->io_addr = ioremap(iobase, ICP_MULTI_SIZE);
 
 	if (devpriv->io_addr == NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "ioremap failed.\n");
-#else
-		;
-#endif
+;
 		return -ENOMEM;
 	}
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "0x%08llx mapped to %p, ", (unsigned long long)iobase,
-	       devpriv->io_addr);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG
+//	       "0x%08llx mapped to %p, ", (unsigned long long)iobase,
+;
 #endif
 
 	dev->board_name = this_board->name;
@@ -1117,36 +1005,20 @@ static int icp_multi_attach(struct comedi_device *dev,
 		if (irq) {
 			if (request_irq(irq, interrupt_service_icp_multi,
 					IRQF_SHARED, "Inova Icp Multi", dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_WARNING
-				    "unable to allocate IRQ %u, DISABLING IT",
-				     irq);
-#else
-				;
-#endif
+//				printk(KERN_WARNING
+//				    "unable to allocate IRQ %u, DISABLING IT",
+;
 				irq = 0;	/* Can't use IRQ */
 			} else
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_WARNING ", irq=%u", irq);
-#else
-				;
-#endif
+;
 		} else
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING ", IRQ disabled");
-#else
-			;
-#endif
+;
 	} else
 		irq = 0;
 
 	dev->irq = irq;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_WARNING ".\n");
-#else
-	;
-#endif
+;
 
 	subdev = 0;
 
@@ -1221,11 +1093,7 @@ static int icp_multi_attach(struct comedi_device *dev,
 	devpriv->valid = 1;
 
 #ifdef ICP_MULTI_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "icp multi EDBG: END: icp_multi_attach(...)\n");
-#else
-	;
-#endif
+;
 #endif
 
 	return 0;

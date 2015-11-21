@@ -43,7 +43,7 @@ svc_authenticate(struct svc_rqst *rqstp, __be32 *authp)
 
 	flavor = svc_getnl(&rqstp->rq_arg.head[0]);
 
-	dprintk("svc: svc_authenticate (%d)\n", flavor);
+;
 
 	spin_lock(&authtab_lock);
 	if (flavor >= RPC_AUTH_MAXFLAVOR || !(aops = authtab[flavor]) ||

@@ -267,18 +267,10 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	iobase = it->options[0];
 	iorange = this_board->io_range;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_WARNING "comedi%d: pcl726: board=%s, 0x%03lx ", dev->minor,
-	       this_board->name, iobase);
-#else
-	;
-#endif
+//	printk(KERN_WARNING "comedi%d: pcl726: board=%s, 0x%03lx ", dev->minor,
+;
 	if (!request_region(iobase, iorange, "pcl726")) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "I/O port conflict\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 
@@ -302,31 +294,19 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		devpriv->first_chan = 2;
 		if (irq) {	/* we want to use IRQ */
 			if (((1 << irq) & boardtypes[board].IRQbits) == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_WARNING
-					", IRQ %d is out of allowed range,"
-					" DISABLING IT", irq);
-#else
-				;
-#endif
+//				printk(KERN_WARNING
+//					", IRQ %d is out of allowed range,"
+;
 				irq = 0;	/* Bad IRQ */
 			} else {
 				if (request_irq(irq, interrupt_pcl818, 0,
 						"pcl726", dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
-					printk(KERN_WARNING
-						", unable to allocate IRQ %d,"
-						" DISABLING IT", irq);
-#else
-					;
-#endif
+//					printk(KERN_WARNING
+//						", unable to allocate IRQ %d,"
+;
 					irq = 0;	/* Can't use IRQ */
 				} else {
-#ifdef CONFIG_DEBUG_PRINTK
-					printk(", irq=%d", irq);
-#else
-					;
-#endif
+;
 				}
 			}
 		}
@@ -335,11 +315,7 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	dev->irq = irq;
 #endif
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
 
 	ret = alloc_subdevices(dev, 3);
 	if (ret < 0)
@@ -404,11 +380,7 @@ static int pcl726_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int pcl726_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 /* printk("comedi%d: pcl726: remove\n",dev->minor); */
-#else
-/* ;
-#endif
 
 #ifdef ACL6126_IRQ
 	if (dev->irq)

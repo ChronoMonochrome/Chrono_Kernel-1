@@ -2619,11 +2619,7 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		v_pci_card_list_init(this_board->i_VendorId, 1);	/* 1 for displaying the list.. */
 		pci_list_builded = 1;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("comedi%d: "ADDIDATA_DRIVER_NAME": board=%s",dev->minor,this_board->pc_DriverName); */
-#else
-	/* ;
-#endif
 
 	if ((this_board->i_Dma) && (it->options[2] == 0)) {
 		i_Dma = 1;
@@ -2642,11 +2638,7 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if ((i_pci_card_data(card, &pci_bus, &pci_slot, &pci_func, &io_addr[0],
 				&irq)) < 0) {
 		i_pci_card_free(card);
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" - Can't get AMCC data!\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 
@@ -2654,11 +2646,7 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	iobase_main = io_addr[1];
 	iobase_addon = io_addr[2];
 	iobase_reserved = io_addr[3];
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\nBus %d: Slot %d: Funct%d\nBase0: 0x%8llx\nBase1: 0x%8llx\nBase2: 0x%8llx\nBase3: 0x%8llx\n", pci_bus, pci_slot, pci_func, (unsigned long long)io_addr[0], (unsigned long long)io_addr[1], (unsigned long long)io_addr[2], (unsigned long long)io_addr[3]);
-#else
-	;
-#endif
+;
 
 	if ((this_board->pc_EepromChip == NULL)
 		|| (strcmp(this_board->pc_EepromChip, ADDIDATA_9054) != 0)) {
@@ -2684,18 +2672,10 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		devpriv->amcc = card;
 		devpriv->iobase = (int) io_addr[2];
 		devpriv->i_IobaseReserved = (int) io_addr[3];
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nioremap begin");
-#else
-		;
-#endif
+;
 		devpriv->dw_AiBase = ioremap(io_addr[3],
 					     this_board->i_IorangeBase3);
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nioremap end");
-#else
-		;
-#endif
+;
 	}
 
 	/* Initialize parameters that can be overridden in EEPROM */
@@ -2718,44 +2698,24 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (irq > 0) {
 		if (request_irq(irq, v_ADDI_Interrupt, IRQF_SHARED,
 				this_board->pc_DriverName, dev) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(", unable to allocate IRQ %u, DISABLING IT",
-				irq);
-#else
-			;
-#endif
+//			printk(", unable to allocate IRQ %u, DISABLING IT",
+;
 			irq = 0;	/* Can't use IRQ */
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nirq=%u", irq);
-#else
-			;
-#endif
+;
 		}
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(", IRQ disabled");
-#else
-		;
-#endif
+;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\nOption %d %d %d\n", it->options[0], it->options[1],
-		it->options[2]);
-#else
-	;
-#endif
+//	printk("\nOption %d %d %d\n", it->options[0], it->options[1],
+;
 	dev->irq = irq;
 
 	/*  Read eepeom and fill addi_board Structure */
 
 	if (this_board->i_PCIEeprom) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nPCI Eeprom used");
-#else
-		;
-#endif
+;
 		if (!(strcmp(this_board->pc_EepromChip, "S5920"))) {
 			/*  Set 3 wait stait */
 			if (!(strcmp(this_board->pc_DriverName, "apci035"))) {
@@ -2766,25 +2726,13 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			/*  Enable the interrupt for the controller */
 			dw_Dummy = inl(devpriv->i_IobaseAmcc + 0x38);
 			outl(dw_Dummy | 0x2000, devpriv->i_IobaseAmcc + 0x38);
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nEnable the interrupt for the controller");
-#else
-			;
-#endif
+;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nRead Eeprom");
-#else
-		;
-#endif
+;
 		i_EepromReadMainHeader(io_addr[0], this_board->pc_EepromChip,
 			dev);
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nPCI Eeprom unused");
-#else
-		;
-#endif
+;
 	}
 
 	if (it->options[2] > 0) {
@@ -2794,11 +2742,7 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	}
 
 	if (devpriv->s_EeParameters.i_Dma) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nDMA used");
-#else
-		;
-#endif
+;
 		if (devpriv->us_UseDma == ADDI_ENABLE) {
 			/*  alloc DMA buffers */
 			devpriv->b_DmaDoubleBuffer = 0;
@@ -2834,17 +2778,9 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 
 		if ((devpriv->us_UseDma == ADDI_ENABLE)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nDMA ENABLED\n");
-#else
-			;
-#endif
+;
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nDMA DISABLED\n");
-#else
-			;
-#endif
+;
 		}
 	}
 
@@ -3012,11 +2948,7 @@ static int i_ADDI_Attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\ni_ADDI_Attach end\n");
-#else
-	;
-#endif
+;
 	i_ADDI_Reset(dev);
 	devpriv->b_ValidDriver = 1;
 	return 0;

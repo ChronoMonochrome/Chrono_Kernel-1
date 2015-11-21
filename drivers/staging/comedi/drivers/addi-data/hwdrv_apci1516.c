@@ -138,11 +138,7 @@ int i_APCI1516_ReadMoreDigitalInput(struct comedi_device *dev, struct comedi_sub
 		break;
 
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nWrong parameters\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;	/*  "sorry channel spec wrong " */
 		break;
 	}			/* switch(ui_NoOfChannels) */
@@ -209,11 +205,7 @@ int i_APCI1516_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 	unsigned int ui_Temp, ui_Temp1;
 	unsigned int ui_NoOfChannel = CR_CHAN(insn->chanspec);	/*  get the channel */
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("EL311003 : @=%x\n", devpriv->iobase + APCI1516_DIGITAL_OP);
-#else
-	;
-#endif
+;
 
 	if (devpriv->b_OutputMemoryStatus) {
 		ui_Temp = inw(devpriv->iobase + APCI1516_DIGITAL_OP);
@@ -227,12 +219,8 @@ int i_APCI1516_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 			data[0] = (data[0] << ui_NoOfChannel) | ui_Temp;
 			outw(data[0], devpriv->iobase + APCI1516_DIGITAL_OP);
 
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("EL311003 : d=%d @=%x\n", data[0],
-				devpriv->iobase + APCI1516_DIGITAL_OP);
-#else
-			;
-#endif
+//			printk("EL311003 : d=%d @=%x\n", data[0],
+;
 
 		}		/* if(data[1]==0) */
 		else {
@@ -264,19 +252,11 @@ int i_APCI1516_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 				outw(data[0],
 					devpriv->iobase + APCI1516_DIGITAL_OP);
 
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("EL311003 : d=%d @=%x\n", data[0],
-					devpriv->iobase + APCI1516_DIGITAL_OP);
-#else
-				;
-#endif
+//				printk("EL311003 : d=%d @=%x\n", data[0],
+;
 			}	/*  if(data[1]==1) */
 			else {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("\nSpecified channel not supported\n");
-#else
-				;
-#endif
+;
 			}	/* else if(data[1]==1) */
 		}		/* elseif(data[1]==0) */
 	}			/* if(data[3]==0) */
@@ -292,12 +272,8 @@ int i_APCI1516_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 				outw(data[0],
 					devpriv->iobase + APCI1516_DIGITAL_OP);
 
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("EL311003 : d=%d @=%x\n", data[0],
-					devpriv->iobase + APCI1516_DIGITAL_OP);
-#else
-				;
-#endif
+//				printk("EL311003 : d=%d @=%x\n", data[0],
+;
 
 			}	/* if(data[1]==0) */
 			else {
@@ -344,30 +320,18 @@ int i_APCI1516_WriteDigitalOutput(struct comedi_device *dev, struct comedi_subde
 						devpriv->iobase +
 						APCI1516_DIGITAL_OP);
 
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("EL311003 : d=%d @=%x\n",
-						data[0],
-						devpriv->iobase +
-						APCI1516_DIGITAL_OP);
-#else
-					;
-#endif
+//					printk("EL311003 : d=%d @=%x\n",
+//						data[0],
+//						devpriv->iobase +
+;
 				}	/*  if(data[1]==1) */
 				else {
-#ifdef CONFIG_DEBUG_PRINTK
-					printk("\nSpecified channel not supported\n");
-#else
-					;
-#endif
+;
 				}	/* else if(data[1]==1) */
 			}	/* elseif(data[1]==0) */
 		}		/* if(data[3]==1); */
 		else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nSpecified functionality does not exist\n");
-#else
-			;
-#endif
+;
 			return -EINVAL;
 		}		/* if else data[3]==1) */
 	}			/* if else data[3]==0) */
@@ -428,11 +392,7 @@ int i_APCI1516_ReadDigitalOutput(struct comedi_device *dev, struct comedi_subdev
 			}	/* switch(ui_NoOfChannels) */
 		}		/* if(ui_Temp==1) */
 		else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\nSpecified channel not supported \n");
-#else
-			;
-#endif
+;
 		}		/* elseif(ui_Temp==1) */
 	}			/* elseif(ui_Temp==0) */
 	return insn->n;
@@ -477,11 +437,7 @@ int i_APCI1516_ConfigWatchdog(struct comedi_device *dev, struct comedi_subdevice
 			APCI1516_WATCHDOG_RELOAD_VALUE + 2);
 	}			/* if(data[0]==0) */
 	else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nThe input parameters are wrong\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}			/* elseif(data[0]==0) */
 
@@ -527,11 +483,7 @@ int i_APCI1516_StartStopWriteWatchdog(struct comedi_device *dev, struct comedi_s
 			APCI1516_WATCHDOG_ENABLEDISABLE);
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("\nSpecified functionality does not exist\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}			/*  switch(data[0]) */
 	return insn->n;

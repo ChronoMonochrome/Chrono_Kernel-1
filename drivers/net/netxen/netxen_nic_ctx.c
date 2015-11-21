@@ -74,15 +74,15 @@ netxen_issue_cmd(struct netxen_adapter *adapter,
 	rsp = netxen_poll_rsp(adapter);
 
 	if (rsp == NX_CDRP_RSP_TIMEOUT) {
-		printk(KERN_ERR "%s: card response timeout.\n",
-				netxen_nic_driver_name);
+//		printk(KERN_ERR "%s: card response timeout.\n",
+;
 
 		rcode = NX_RCODE_TIMEOUT;
 	} else if (rsp == NX_CDRP_RSP_FAIL) {
 		rcode = NXRD32(adapter, NX_ARG1_CRB_OFFSET);
 
-		printk(KERN_ERR "%s: failed card response code:0x%x\n",
-				netxen_nic_driver_name, rcode);
+//		printk(KERN_ERR "%s: failed card response code:0x%x\n",
+;
 	}
 
 	/* Release semaphore */
@@ -226,8 +226,8 @@ nx_fw_cmd_create_rx_ctx(struct netxen_adapter *adapter)
 			rq_size,
 			NX_CDRP_CMD_CREATE_RX_CTX);
 	if (err) {
-		printk(KERN_WARNING
-			"Failed to create rx ctx in firmware%d\n", err);
+//		printk(KERN_WARNING
+;
 		goto out_free_rsp;
 	}
 
@@ -282,9 +282,9 @@ nx_fw_cmd_destroy_rx_ctx(struct netxen_adapter *adapter)
 			0,
 			NX_CDRP_CMD_DESTROY_RX_CTX)) {
 
-		printk(KERN_WARNING
-			"%s: Failed to destroy rx ctx in firmware\n",
-			netxen_nic_driver_name);
+//		printk(KERN_WARNING
+//			"%s: Failed to destroy rx ctx in firmware\n",
+;
 	}
 }
 
@@ -364,8 +364,8 @@ nx_fw_cmd_create_tx_ctx(struct netxen_adapter *adapter)
 		adapter->tx_context_id =
 			le16_to_cpu(prsp->context_id);
 	} else {
-		printk(KERN_WARNING
-			"Failed to create tx ctx in firmware%d\n", err);
+//		printk(KERN_WARNING
+;
 		err = -EIO;
 	}
 
@@ -388,9 +388,9 @@ nx_fw_cmd_destroy_tx_ctx(struct netxen_adapter *adapter)
 			0,
 			NX_CDRP_CMD_DESTROY_TX_CTX)) {
 
-		printk(KERN_WARNING
-			"%s: Failed to destroy tx ctx in firmware\n",
-			netxen_nic_driver_name);
+//		printk(KERN_WARNING
+//			"%s: Failed to destroy tx ctx in firmware\n",
+;
 	}
 }
 

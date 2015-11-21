@@ -121,7 +121,7 @@ static int __init do_lne390_probe(struct net_device *dev)
 
 	if (!EISA_bus) {
 #if LNE390_DEBUG & LNE390_D_PROBE
-		printk("lne390-debug: Not an EISA bus. Not probing high ports.\n");
+;
 #endif
 		return -ENXIO;
 	}
@@ -170,9 +170,9 @@ static int __init lne390_probe1(struct net_device *dev, int ioaddr)
 	if (inb_p(ioaddr + LNE390_ID_PORT) == 0xff) return -ENODEV;
 
 #if LNE390_DEBUG & LNE390_D_PROBE
-	printk("lne390-debug: probe at %#x, ID %#8x\n", ioaddr, inl(ioaddr + LNE390_ID_PORT));
-	printk("lne390-debug: config regs: %#x %#x\n",
-		inb(ioaddr + LNE390_CFG1), inb(ioaddr + LNE390_CFG2));
+;
+//	printk("lne390-debug: config regs: %#x %#x\n",
+;
 #endif
 
 
@@ -189,32 +189,32 @@ static int __init lne390_probe1(struct net_device *dev, int ioaddr)
 	if (inb(ioaddr + LNE390_SA_PROM + 0) != LNE390_ADDR0
 		|| inb(ioaddr + LNE390_SA_PROM + 1) != LNE390_ADDR1
 		|| inb(ioaddr + LNE390_SA_PROM + 2) != LNE390_ADDR2 ) {
-		printk("lne390.c: card not found");
+;
 		for(i = 0; i < ETHER_ADDR_LEN; i++)
-			printk(" %02x", inb(ioaddr + LNE390_SA_PROM + i));
-		printk(" (invalid prefix).\n");
+;
+;
 		return -ENODEV;
 	}
 #endif
 
 	for(i = 0; i < ETHER_ADDR_LEN; i++)
 		dev->dev_addr[i] = inb(ioaddr + LNE390_SA_PROM + i);
-	printk("lne390.c: LNE390%X in EISA slot %d, address %pM.\n",
-	       0xa+revision, ioaddr/0x1000, dev->dev_addr);
+//	printk("lne390.c: LNE390%X in EISA slot %d, address %pM.\n",
+;
 
-	printk("lne390.c: ");
+;
 
 	/* Snarf the interrupt now. CFG file has them all listed as `edge' with share=NO */
 	if (dev->irq == 0) {
 		unsigned char irq_reg = inb(ioaddr + LNE390_CFG2) >> 3;
 		dev->irq = irq_map[irq_reg & 0x07];
-		printk("using");
+;
 	} else {
 		/* This is useless unless we reprogram the card here too */
 		if (dev->irq == 2) dev->irq = 9;	/* Doh! */
-		printk("assigning");
+;
 	}
-	printk(" IRQ %d,", dev->irq);
+;
 
 	if ((ret = request_irq(dev->irq, ei_interrupt, 0, DRV_NAME, dev))) {
 		printk (" unable to get IRQ %d.\n", dev->irq);
@@ -228,15 +228,15 @@ static int __init lne390_probe1(struct net_device *dev, int ioaddr)
 			dev->mem_start = shmem_mapB[mem_reg] * 0x10000;
 		else		/* LNE390A */
 			dev->mem_start = shmem_mapA[mem_reg] * 0x10000;
-		printk(" using ");
+;
 	} else {
 		/* Should check for value in shmem_map and reprogram the card to use it */
 		dev->mem_start &= 0xfff0000;
-		printk(" assigning ");
+;
 	}
 
-	printk("%dkB memory at physical address %#lx\n",
-			LNE390_STOP_PG/4, dev->mem_start);
+//	printk("%dkB memory at physical address %#lx\n",
+;
 
 	/*
 	   BEWARE!! Some dain-bramaged EISA SCUs will allow you to put
@@ -246,14 +246,14 @@ static int __init lne390_probe1(struct net_device *dev, int ioaddr)
 	*/
 	ei_status.mem = ioremap(dev->mem_start, LNE390_STOP_PG*0x100);
 	if (!ei_status.mem) {
-		printk(KERN_ERR "lne390.c: Unable to remap card memory above 1MB !!\n");
-		printk(KERN_ERR "lne390.c: Try using EISA SCU to set memory below 1MB.\n");
-		printk(KERN_ERR "lne390.c: Driver NOT installed.\n");
+;
+;
+;
 		ret = -EAGAIN;
 		goto cleanup;
 	}
-	printk("lne390.c: remapped %dkB card memory to virtual address %p\n",
-			LNE390_STOP_PG/4, ei_status.mem);
+//	printk("lne390.c: remapped %dkB card memory to virtual address %p\n",
+;
 
 	dev->mem_start = (unsigned long)ei_status.mem;
 	dev->mem_end = dev->mem_start + (LNE390_STOP_PG - LNE390_START_PG)*256;
@@ -268,7 +268,7 @@ static int __init lne390_probe1(struct net_device *dev, int ioaddr)
 	ei_status.word16 = 1;
 
 	if (ei_debug > 0)
-		printk(version);
+;
 
 	ei_status.reset_8390 = &lne390_reset_8390;
 	ei_status.block_input = &lne390_block_input;
@@ -300,13 +300,13 @@ static void lne390_reset_8390(struct net_device *dev)
 	unsigned short ioaddr = dev->base_addr;
 
 	outb(0x04, ioaddr + LNE390_RESET_PORT);
-	if (ei_debug > 1) printk("%s: resetting the LNE390...", dev->name);
+;
 
 	mdelay(2);
 
 	ei_status.txing = 0;
 	outb(0x01, ioaddr + LNE390_RESET_PORT);
-	if (ei_debug > 1) printk("reset done\n");
+;
 }
 
 /*
@@ -401,7 +401,7 @@ int __init init_module(void)
 			continue;
 		}
 		free_netdev(dev);
-		printk(KERN_WARNING "lne390.c: No LNE390 card found (i/o = 0x%x).\n", io[this_dev]);
+;
 		break;
 	}
 	if (found)

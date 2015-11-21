@@ -264,7 +264,7 @@ static int __init atp_probe1(long ioaddr)
 	   wrong. */
 	saved_ctrl_reg = inb(ioaddr + PAR_CONTROL);
 	if (net_debug > 3)
-		printk("atp: Control register was %#2.2x.\n", saved_ctrl_reg);
+;
 	/* IRQEN=0, SLCTB=high INITB=high, AUTOFDB=high, STBB=high. */
 	outb(0x04, ioaddr + PAR_CONTROL);
 #ifndef final_version
@@ -273,10 +273,10 @@ static int __init atp_probe1(long ioaddr)
 		for (i = 0; i < 8; i++)
 			outb(mux_8012[i], ioaddr + PAR_DATA);
 		write_reg(ioaddr, MODSEL, 0x00);
-		printk("atp: Registers are ");
+;
 		for (i = 0; i < 32; i++)
-			printk(" %2.2x", read_nibble(ioaddr, i));
-		printk(".\n");
+;
+;
 	}
 #endif
 	/* Turn off the printer multiplexer on the 8012. */
@@ -287,10 +287,10 @@ static int __init atp_probe1(long ioaddr)
 	status = read_nibble(ioaddr, CMR1);
 
 	if (net_debug > 3) {
-		printk(KERN_DEBUG "atp: Status nibble was %#2.2x..", status);
+;
 		for (i = 0; i < 32; i++)
-			printk(" %2.2x", read_nibble(ioaddr, i));
-		printk("\n");
+;
+;
 	}
 
 	if ((status & 0x78) != 0x08) {
@@ -329,12 +329,12 @@ static int __init atp_probe1(long ioaddr)
 
 #ifndef MODULE
 	if (net_debug)
-		printk(KERN_INFO "%s", version);
+;
 #endif
 
-	printk(KERN_NOTICE "%s: Pocket adapter found at %#3lx, IRQ %d, "
-	       "SAPROM %pM.\n",
-	       dev->name, dev->base_addr, dev->irq, dev->dev_addr);
+//	printk(KERN_NOTICE "%s: Pocket adapter found at %#3lx, IRQ %d, "
+//	       "SAPROM %pM.\n",
+;
 
 	/* Reset the ethernet hardware and activate the printer pass-through. */
 	write_reg_high(ioaddr, CMR1, CMR1h_RESET | CMR1h_MUX);
@@ -471,8 +471,8 @@ static void hardware_init(struct net_device *dev)
 	write_reg_high(ioaddr, CMR2, lp->addr_mode);
 
 	if (net_debug > 2) {
-		printk(KERN_DEBUG "%s: Reset: current Rx mode %d.\n", dev->name,
-			   (read_nibble(ioaddr, CMR2_h) >> 3) & 0x0f);
+//		printk(KERN_DEBUG "%s: Reset: current Rx mode %d.\n", dev->name,
+;
 	}
 
     write_reg(ioaddr, CMR2, CMR2_IRQOUT);
@@ -541,9 +541,9 @@ static void tx_timeout(struct net_device *dev)
 {
 	long ioaddr = dev->base_addr;
 
-	printk(KERN_WARNING "%s: Transmit timed out, %s?\n", dev->name,
-		   inb(ioaddr + PAR_CONTROL) & 0x10 ? "network cable problem"
-		   :  "IRQ conflict");
+//	printk(KERN_WARNING "%s: Transmit timed out, %s?\n", dev->name,
+//		   inb(ioaddr + PAR_CONTROL) & 0x10 ? "network cable problem"
+;
 	dev->stats.tx_errors++;
 	/* Try to restart the adapter. */
 	hardware_init(dev);
@@ -614,10 +614,10 @@ static irqreturn_t atp_interrupt(int irq, void *dev_instance)
 	write_reg(ioaddr, CMR2, CMR2_NULL);
 	write_reg(ioaddr, IMR, 0);
 
-	if (net_debug > 5) printk(KERN_DEBUG "%s: In interrupt ", dev->name);
+;
     while (--boguscount > 0) {
 		int status = read_nibble(ioaddr, ISR);
-		if (net_debug > 5) printk("loop status %02x..", status);
+;
 
 		if (status & (ISR_RxOK<<3)) {
 			handled = 1;
@@ -625,7 +625,7 @@ static irqreturn_t atp_interrupt(int irq, void *dev_instance)
 			do {
 				int read_status = read_nibble(ioaddr, CMR1);
 				if (net_debug > 6)
-					printk("handling Rx packet %02x..", read_status);
+;
 				/* We acknowledged the normal Rx interrupt, so if the interrupt
 				   is still outstanding we must have a Rx error. */
 				if (read_status & (CMR1_IRQ << 3)) { /* Overrun. */
@@ -644,7 +644,7 @@ static irqreturn_t atp_interrupt(int irq, void *dev_instance)
 			} while (--boguscount > 0);
 		} else if (status & ((ISR_TxErr + ISR_TxOK)<<3)) {
 			handled = 1;
-			if (net_debug > 6)  printk("handling Tx done..");
+;
 			/* Clear the Tx interrupt.  We should check for too many failures
 			   and reinitialize the adapter. */
 			write_reg(ioaddr, ISR, ISR_TxErr + ISR_TxOK);
@@ -656,7 +656,7 @@ static irqreturn_t atp_interrupt(int irq, void *dev_instance)
 					break;
 				}
 				/* Attempt to retransmit. */
-				if (net_debug > 6)  printk("attempting to ReTx");
+;
 				write_reg(ioaddr, CMR1, CMR1_ReXmit + CMR1_Xmit);
 			} else {
 				/* Finish up the transmit. */
@@ -674,10 +674,10 @@ static irqreturn_t atp_interrupt(int irq, void *dev_instance)
 		} else if (num_tx_since_rx > 8 &&
 			   time_after(jiffies, dev->last_rx + HZ)) {
 			if (net_debug > 2)
-				printk(KERN_DEBUG "%s: Missed packet? No Rx after %d Tx and "
-					   "%ld jiffies status %02x  CMR1 %02x.\n", dev->name,
-					   num_tx_since_rx, jiffies - dev->last_rx, status,
-					   (read_nibble(ioaddr, CMR1) >> 3) & 15);
+//				printk(KERN_DEBUG "%s: Missed packet? No Rx after %d Tx and "
+//					   "%ld jiffies status %02x  CMR1 %02x.\n", dev->name,
+//					   num_tx_since_rx, jiffies - dev->last_rx, status,
+;
 			dev->stats.rx_missed_errors++;
 			hardware_init(dev);
 			num_tx_since_rx = 0;
@@ -707,7 +707,7 @@ static irqreturn_t atp_interrupt(int irq, void *dev_instance)
 
 	spin_unlock(&lp->lock);
 
-	if (net_debug > 5) printk("exiting interrupt.\n");
+;
 	return IRQ_RETVAL(handled);
 }
 
@@ -762,15 +762,15 @@ static void net_rx(struct net_device *dev)
 	outb(EOC+MAR, ioaddr + PAR_DATA);
 	read_block(ioaddr, 8, (unsigned char*)&rx_head, dev->if_port);
 	if (net_debug > 5)
-		printk(KERN_DEBUG " rx_count %04x %04x %04x %04x..", rx_head.pad,
-			   rx_head.rx_count, rx_head.rx_status, rx_head.cur_addr);
+//		printk(KERN_DEBUG " rx_count %04x %04x %04x %04x..", rx_head.pad,
+;
 	if ((rx_head.rx_status & 0x77) != 0x01) {
 		dev->stats.rx_errors++;
 		if (rx_head.rx_status & 0x0004) dev->stats.rx_frame_errors++;
 		else if (rx_head.rx_status & 0x0002) dev->stats.rx_crc_errors++;
 		if (net_debug > 3)
-			printk(KERN_DEBUG "%s: Unknown ATP Rx error %04x.\n",
-				   dev->name, rx_head.rx_status);
+//			printk(KERN_DEBUG "%s: Unknown ATP Rx error %04x.\n",
+;
 		if  (rx_head.rx_status & 0x0020) {
 			dev->stats.rx_fifo_errors++;
 			write_reg_high(ioaddr, CMR1, CMR1h_TxENABLE);
@@ -785,8 +785,8 @@ static void net_rx(struct net_device *dev)
 
 		skb = dev_alloc_skb(pkt_len + 2);
 		if (skb == NULL) {
-			printk(KERN_ERR "%s: Memory squeeze, dropping packet.\n",
-				   dev->name);
+//			printk(KERN_ERR "%s: Memory squeeze, dropping packet.\n",
+;
 			dev->stats.rx_dropped++;
 			goto done;
 		}
@@ -895,11 +895,11 @@ static void set_rx_mode_8012(struct net_device *dev)
 		write_reg_byte(ioaddr, i, mc_filter[i]);
 	if (net_debug > 2 || 1) {
 		lp->addr_mode = 1;
-		printk(KERN_DEBUG "%s: Mode %d, setting multicast filter to",
-			   dev->name, lp->addr_mode);
+//		printk(KERN_DEBUG "%s: Mode %d, setting multicast filter to",
+;
 		for (i = 0; i < 8; i++)
-			printk(" %2.2x", mc_filter[i]);
-		printk(".\n");
+;
+;
 	}
 
 	write_reg_high(ioaddr, CMR2, lp->addr_mode);
@@ -919,7 +919,7 @@ static void set_rx_mode(struct net_device *dev)
 
 static int __init atp_init_module(void) {
 	if (debug)					/* Emit version even if no cards detected. */
-		printk(KERN_INFO "%s", version);
+;
 	return atp_init();
 }
 

@@ -538,14 +538,14 @@ static inline void syn_flood_warning(struct sk_buff *skb)
 {
 #ifdef CONFIG_SYN_COOKIES
 	if (sysctl_tcp_syncookies)
-		printk(KERN_INFO
-		       "TCPv6: Possible SYN flooding on port %d. "
-		       "Sending cookies.\n", ntohs(tcp_hdr(skb)->dest));
+//		printk(KERN_INFO
+//		       "TCPv6: Possible SYN flooding on port %d. "
+;
 	else
 #endif
-		printk(KERN_INFO
-		       "TCPv6: Possible SYN flooding on port %d. "
-		       "Dropping request.\n", ntohs(tcp_hdr(skb)->dest));
+//		printk(KERN_INFO
+//		       "TCPv6: Possible SYN flooding on port %d. "
+;
 }
 
 static void tcp_v6_reqsk_destructor(struct request_sock *req)
@@ -892,10 +892,10 @@ static int tcp_v6_inbound_md5_hash (struct sock *sk, struct sk_buff *skb)
 
 	if (genhash || memcmp(hash_location, newhash, 16) != 0) {
 		if (net_ratelimit()) {
-			printk(KERN_INFO "MD5 Hash %s for [%pI6c]:%u->[%pI6c]:%u\n",
-			       genhash ? "failed" : "mismatch",
-			       &ip6h->saddr, ntohs(th->source),
-			       &ip6h->daddr, ntohs(th->dest));
+//			printk(KERN_INFO "MD5 Hash %s for [%pI6c]:%u->[%pI6c]:%u\n",
+//			       genhash ? "failed" : "mismatch",
+//			       &ip6h->saddr, ntohs(th->source),
+;
 		}
 		return 1;
 	}

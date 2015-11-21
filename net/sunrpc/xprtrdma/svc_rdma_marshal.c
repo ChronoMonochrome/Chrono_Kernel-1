@@ -64,7 +64,7 @@ static u32 *decode_read_list(u32 *va, u32 *vaend)
 
 		if (((unsigned long)ch + sizeof(struct rpcrdma_read_chunk)) >
 		    (unsigned long)vaend) {
-			dprintk("svcrdma: vaend=%p, ch=%p\n", vaend, ch);
+;
 			return NULL;
 		}
 
@@ -118,7 +118,7 @@ static u32 *decode_write_list(u32 *va, u32 *vaend)
 
 	if ((unsigned long)ary + sizeof(struct rpcrdma_write_array) >
 	    (unsigned long)vaend) {
-		dprintk("svcrdma: ary=%p, vaend=%p\n", ary, vaend);
+;
 		return NULL;
 	}
 	ary->wc_discrim = ntohl(ary->wc_discrim);
@@ -126,8 +126,8 @@ static u32 *decode_write_list(u32 *va, u32 *vaend)
 	if (((unsigned long)&ary->wc_array[0] +
 	     (sizeof(struct rpcrdma_write_chunk) * ary->wc_nchunks)) >
 	    (unsigned long)vaend) {
-		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
-			ary, ary->wc_nchunks, vaend);
+//		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
+;
 		return NULL;
 	}
 	for (ch_no = 0; ch_no < ary->wc_nchunks; ch_no++) {
@@ -161,7 +161,7 @@ static u32 *decode_reply_array(u32 *va, u32 *vaend)
 
 	if ((unsigned long)ary + sizeof(struct rpcrdma_write_array) >
 	    (unsigned long)vaend) {
-		dprintk("svcrdma: ary=%p, vaend=%p\n", ary, vaend);
+;
 		return NULL;
 	}
 	ary->wc_discrim = ntohl(ary->wc_discrim);
@@ -169,8 +169,8 @@ static u32 *decode_reply_array(u32 *va, u32 *vaend)
 	if (((unsigned long)&ary->wc_array[0] +
 	     (sizeof(struct rpcrdma_write_chunk) * ary->wc_nchunks)) >
 	    (unsigned long)vaend) {
-		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
-			ary, ary->wc_nchunks, vaend);
+//		dprintk("svcrdma: ary=%p, wc_nchunks=%d, vaend=%p\n",
+;
 		return NULL;
 	}
 	for (ch_no = 0; ch_no < ary->wc_nchunks; ch_no++) {
@@ -200,8 +200,8 @@ int svc_rdma_xdr_decode_req(struct rpcrdma_msg **rdma_req,
 
 	/* Verify that there's enough bytes for header + something */
 	if (rqstp->rq_arg.len <= RPCRDMA_HDRLEN_MIN) {
-		dprintk("svcrdma: header too short = %d\n",
-			rqstp->rq_arg.len);
+//		dprintk("svcrdma: header too short = %d\n",
+;
 		return -EINVAL;
 	}
 
@@ -262,8 +262,8 @@ int svc_rdma_xdr_decode_deferred_req(struct svc_rqst *rqstp)
 	u32 *va;
 	u32 hdrlen;
 
-	dprintk("svcrdma: processing deferred RDMA header on rqstp=%p\n",
-		rqstp);
+//	dprintk("svcrdma: processing deferred RDMA header on rqstp=%p\n",
+;
 	rmsgp = (struct rpcrdma_msg *)rqstp->rq_arg.head[0].iov_base;
 
 	/* Pull in the extra for the padded case and bump our pointer */

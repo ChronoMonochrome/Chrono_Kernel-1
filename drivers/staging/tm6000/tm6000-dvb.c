@@ -76,19 +76,11 @@ static inline void print_err_status(struct tm6000_core *dev,
 		break;
 	}
 	if (packet < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(dev, 1, "URB status %d [%s].\n",
-			status, errmsg);
-#else
-		d;
-#endif
+//		dprintk(dev, 1, "URB status %d [%s].\n",
+;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk(dev, 1, "URB packet %d, status %d [%s].\n",
-			packet, status, errmsg);
-#else
-		d;
-#endif
+//		dprintk(dev, 1, "URB packet %d, status %d [%s].\n",
+;
 	}
 }
 
@@ -106,7 +98,7 @@ static void tm6000_urb_received(struct urb *urb)
 	if (dev->dvb->streams > 0) {
 		ret = usb_submit_urb(urb, GFP_ATOMIC);
 		if (ret < 0) {
-			printk(KERN_ERR "tm6000:  error %s\n", __FUNCTION__);
+;
 			kfree(urb->transfer_buffer);
 			usb_free_urb(urb);
 		}
@@ -119,11 +111,7 @@ int tm6000_start_stream(struct tm6000_core *dev)
 	unsigned int pipe, size;
 	struct tm6000_dvb *dvb = dev->dvb;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "tm6000: got start stream request %s\n", __FUNCTION__);
-#else
-	;
-#endif
+;
 
 	if (dev->mode != TM6000_MODE_DIGITAL) {
 		tm6000_init_digital_mode(dev);
@@ -132,7 +120,7 @@ int tm6000_start_stream(struct tm6000_core *dev)
 
 	dvb->bulk_urb = usb_alloc_urb(0, GFP_KERNEL);
 	if (dvb->bulk_urb == NULL) {
-		printk(KERN_ERR "tm6000: couldn't allocate urb\n");
+;
 		return -ENOMEM;
 	}
 
@@ -145,7 +133,7 @@ int tm6000_start_stream(struct tm6000_core *dev)
 	dvb->bulk_urb->transfer_buffer = kzalloc(size, GFP_KERNEL);
 	if (dvb->bulk_urb->transfer_buffer == NULL) {
 		usb_free_urb(dvb->bulk_urb);
-		printk(KERN_ERR "tm6000: couldn't allocate transfer buffer!\n");
+;
 		return -ENOMEM;
 	}
 
@@ -156,19 +144,19 @@ int tm6000_start_stream(struct tm6000_core *dev)
 
 	ret = usb_clear_halt(dev->udev, pipe);
 	if (ret < 0) {
-		printk(KERN_ERR "tm6000: error %i in %s during pipe reset\n",
-							ret, __FUNCTION__);
+//		printk(KERN_ERR "tm6000: error %i in %s during pipe reset\n",
+;
 		return ret;
 	} else
-		printk(KERN_ERR "tm6000: pipe resetted\n");
+;
 
 /*	mutex_lock(&tm6000_driver.open_close_mutex); */
 	ret = usb_submit_urb(dvb->bulk_urb, GFP_KERNEL);
 
 /*	mutex_unlock(&tm6000_driver.open_close_mutex); */
 	if (ret) {
-		printk(KERN_ERR "tm6000: submit of urb failed (error=%i)\n",
-									ret);
+//		printk(KERN_ERR "tm6000: submit of urb failed (error=%i)\n",
+;
 
 		kfree(dvb->bulk_urb->transfer_buffer);
 		usb_free_urb(dvb->bulk_urb);
@@ -183,17 +171,9 @@ void tm6000_stop_stream(struct tm6000_core *dev)
 	struct tm6000_dvb *dvb = dev->dvb;
 
 	if (dvb->bulk_urb) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "urb killing\n");
-#else
-		;
-#endif
+;
 		usb_kill_urb(dvb->bulk_urb);
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "urb buffer free\n");
-#else
-		;
-#endif
+;
 		kfree(dvb->bulk_urb->transfer_buffer);
 		usb_free_urb(dvb->bulk_urb);
 		dvb->bulk_urb = NULL;
@@ -205,11 +185,7 @@ int tm6000_start_feed(struct dvb_demux_feed *feed)
 	struct dvb_demux *demux = feed->demux;
 	struct tm6000_core *dev = demux->priv;
 	struct tm6000_dvb *dvb = dev->dvb;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "tm6000: got start feed request %s\n", __FUNCTION__);
-#else
-	;
-#endif
+;
 
 	mutex_lock(&dvb->mutex);
 	if (dvb->streams == 0) {
@@ -229,26 +205,14 @@ int tm6000_stop_feed(struct dvb_demux_feed *feed)
 	struct tm6000_core *dev = demux->priv;
 	struct tm6000_dvb *dvb = dev->dvb;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "tm6000: got stop feed request %s\n", __FUNCTION__);
-#else
-	;
-#endif
+;
 
 	mutex_lock(&dvb->mutex);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "stream %#x\n", dvb->streams);
-#else
-	;
-#endif
+;
 	--(dvb->streams);
 	if (dvb->streams == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "stop stream\n");
-#else
-		;
-#endif
+;
 		tm6000_stop_stream(dev);
 /*		mutex_destroy(&tm6000_dev->streaming_mutex); */
 	}
@@ -274,7 +238,7 @@ int tm6000_dvb_attach_frontend(struct tm6000_core *dev)
 		dvb->frontend = dvb_attach(zl10353_attach, &config,
 							   &dev->i2c_adap);
 	} else {
-		printk(KERN_ERR "tm6000: no frontend defined for the device!\n");
+;
 		return -1;
 	}
 
@@ -295,7 +259,7 @@ int register_dvb(struct tm6000_core *dev)
 	/* attach the frontend */
 	ret = tm6000_dvb_attach_frontend(dev);
 	if (ret < 0) {
-		printk(KERN_ERR "tm6000: couldn't attach the frontend!\n");
+;
 		goto err;
 	}
 
@@ -314,23 +278,19 @@ int register_dvb(struct tm6000_core *dev)
 			dvb->frontend->callback = tm6000_tuner_callback;
 			ret = dvb_register_frontend(&dvb->adapter, dvb->frontend);
 			if (ret < 0) {
-				printk(KERN_ERR
-					"tm6000: couldn't register frontend\n");
+//				printk(KERN_ERR
+;
 				goto adapter_err;
 			}
 
 			if (!dvb_attach(xc2028_attach, dvb->frontend, &cfg)) {
-				printk(KERN_ERR "tm6000: couldn't register "
-						"frontend (xc3028)\n");
+//				printk(KERN_ERR "tm6000: couldn't register "
+;
 				ret = -EINVAL;
 				goto frontend_err;
 			}
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "tm6000: XC2028/3028 asked to be "
-					 "attached to frontend!\n");
-#else
-			;
-#endif
+//			printk(KERN_INFO "tm6000: XC2028/3028 asked to be "
+;
 			break;
 			}
 		case TUNER_XC5000: {
@@ -341,28 +301,24 @@ int register_dvb(struct tm6000_core *dev)
 			dvb->frontend->callback = tm6000_xc5000_callback;
 			ret = dvb_register_frontend(&dvb->adapter, dvb->frontend);
 			if (ret < 0) {
-				printk(KERN_ERR
-					"tm6000: couldn't register frontend\n");
+//				printk(KERN_ERR
+;
 				goto adapter_err;
 			}
 
 			if (!dvb_attach(xc5000_attach, dvb->frontend, &dev->i2c_adap, &cfg)) {
-				printk(KERN_ERR "tm6000: couldn't register "
-						"frontend (xc5000)\n");
+//				printk(KERN_ERR "tm6000: couldn't register "
+;
 				ret = -EINVAL;
 				goto frontend_err;
 			}
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "tm6000: XC5000 asked to be "
-					 "attached to frontend!\n");
-#else
-			;
-#endif
+//			printk(KERN_INFO "tm6000: XC5000 asked to be "
+;
 			break;
 			}
 		}
 	} else
-		printk(KERN_ERR "tm6000: no frontend found\n");
+;
 
 	dvb->demux.dmx.capabilities = DMX_TS_FILTERING | DMX_SECTION_FILTERING
 							    | DMX_MEMORY_BASED_FILTERING;
@@ -374,11 +330,7 @@ int register_dvb(struct tm6000_core *dev)
 	dvb->demux.write_to_decoder = NULL;
 	ret = dvb_dmx_init(&dvb->demux);
 	if (ret < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("tm6000: dvb_dmx_init failed (errno = %d)\n", ret);
-#else
-		;
-#endif
+;
 		goto frontend_err;
 	}
 
@@ -388,11 +340,7 @@ int register_dvb(struct tm6000_core *dev)
 
 	ret =  dvb_dmxdev_init(&dvb->dmxdev, &dvb->adapter);
 	if (ret < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("tm6000: dvb_dmxdev_init failed (errno = %d)\n", ret);
-#else
-		;
-#endif
+;
 		goto dvb_dmx_err;
 	}
 
@@ -450,11 +398,7 @@ static int dvb_init(struct tm6000_core *dev)
 
 	dvb = kzalloc(sizeof(struct tm6000_dvb), GFP_KERNEL);
 	if (!dvb) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "Cannot allocate memory\n");
-#else
-		;
-#endif
+;
 		return -ENOMEM;
 	}
 

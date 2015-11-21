@@ -371,23 +371,15 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	iobase = it->options[0];
 	irq[0] = it->options[1];
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: %s: io: %lx ", dev->minor, driver.driver_name,
-	       iobase);
-#else
-	;
-#endif
+//	printk("comedi%d: %s: io: %lx ", dev->minor, driver.driver_name,
+;
 
 	dev->iobase = iobase;
 
 	if (!iobase || !request_region(iobase,
 				       thisboard->total_iosize,
 				       driver.driver_name)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("I/O port conflict\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 
@@ -402,11 +394,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  * convenient macro defined in comedidev.h.
  */
 	if (alloc_private(dev, sizeof(struct pcmmio_private)) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("cannot allocate private data structure\n");
-#else
-		;
-#endif
+;
 		return -ENOMEM;
 	}
 
@@ -429,11 +417,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	    kcalloc(n_subdevs, sizeof(struct pcmmio_subdev_private),
 		    GFP_KERNEL);
 	if (!devpriv->sprivs) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("cannot allocate subdevice private data structures\n");
-#else
-		;
-#endif
+;
 		return -ENOMEM;
 	}
 	/*
@@ -443,11 +427,7 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	 * Allocate 1 AI + 1 AO + 2 DIO subdevs (24 lines per DIO)
 	 */
 	if (alloc_subdevices(dev, n_subdevs) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("cannot allocate subdevice data structures\n");
-#else
-		;
-#endif
+;
 		return -ENOMEM;
 	}
 
@@ -577,30 +557,14 @@ static int pcmmio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 				 */
 
 	if (irq[0]) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("irq: %u ", irq[0]);
-#else
-		;
-#endif
+;
 		if (thisboard->dio_num_asics == 2 && irq[1])
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("second ASIC irq: %u ", irq[1]);
-#else
-			;
-#endif
+;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("(IRQ mode disabled) ");
-#else
-		;
-#endif
+;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("attached\n");
-#else
-	;
-#endif
+;
 
 	return 1;
 }
@@ -617,11 +581,7 @@ static int pcmmio_detach(struct comedi_device *dev)
 {
 	int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: %s: remove\n", dev->minor, driver.driver_name);
-#else
-	;
-#endif
+;
 	if (dev->iobase)
 		release_region(dev->iobase, thisboard->total_iosize);
 
@@ -662,11 +622,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
 
 #ifdef DAMMIT_ITS_BROKEN
 	/* DEBUG */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("write mask: %08x  data: %08x\n", data[0], data[1]);
-#else
-	;
-#endif
+;
 #endif
 
 	s->state = 0;
@@ -707,11 +663,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
 		}
 #ifdef DAMMIT_ITS_BROKEN
 		/* DEBUG */
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("data_out_byte %02x\n", (unsigned)byte);
-#else
-		;
-#endif
+;
 #endif
 		/* save the digital input lines for this byte.. */
 		s->state |= ((unsigned int)byte) << offset;
@@ -722,11 +674,7 @@ static int pcmmio_dio_insn_bits(struct comedi_device *dev,
 
 #ifdef DAMMIT_ITS_BROKEN
 	/* DEBUG */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("s->state %08x data_out %08x\n", s->state, data[1]);
-#else
-	;
-#endif
+;
 #endif
 
 	return 2;

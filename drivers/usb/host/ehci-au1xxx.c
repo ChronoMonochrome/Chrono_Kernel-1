@@ -139,9 +139,9 @@ static int ehci_hcd_au1xxx_drv_probe(struct platform_device *pdev)
 #if defined(CONFIG_SOC_AU1200) && defined(CONFIG_DMA_COHERENT)
 	/* Au1200 AB USB does not support coherent memory */
 	if (!(read_c0_prid() & 0xff)) {
-		printk(KERN_INFO "%s: this is chip revision AB!\n", pdev->name);
-		printk(KERN_INFO "%s: update your board or re-configure"
-				 " the kernel\n", pdev->name);
+;
+//		printk(KERN_INFO "%s: update your board or re-configure"
+;
 		return -ENODEV;
 	}
 #endif

@@ -58,7 +58,7 @@ nlmsg_failure:
 		kfree_skb(skb);
 	*errp = -ENOMEM;
 	if (net_ratelimit())
-		printk(KERN_ERR "dn_rtmsg: error creating netlink message\n");
+;
 	return NULL;
 }
 
@@ -132,7 +132,7 @@ static int __init dn_rtmsg_init(void)
 				      dnrmg_receive_user_skb,
 				      NULL, THIS_MODULE);
 	if (dnrmg == NULL) {
-		printk(KERN_ERR "dn_rtmsg: Cannot create netlink socket");
+;
 		return -ENOMEM;
 	}
 

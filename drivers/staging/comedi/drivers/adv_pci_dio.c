@@ -41,28 +41,24 @@ Configuration options:
 
 #undef DPRINTK
 #ifdef PCI_DIO_EXTDEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-#define DPRINTK(fmt, args...) printk(fmt, ## args)
-#else
-#define DPRINTK(fmt, args...)
-#endif
-
-#define PCI_VENDOR_ID_ADVANTECH		0x13fe
-
-/* hardware types of the cards */
-enum hw_cards_id {
-	TYPE_PCI1730, TYPE_PCI1733, TYPE_PCI1734, TYPE_PCI1735, TYPE_PCI1736,
-	TYPE_PCI1750,
-	TYPE_PCI1751,
-	TYPE_PCI1752,
-	TYPE_PCI1753, TYPE_PCI1753E,
-	TYPE_PCI1754, TYPE_PCI1756,
-	TYPE_PCI1760,
-	TYPE_PCI1762
-};
-#else
-#define DPRINTK(fmt, args...) ;
-#endif
+//#define DPRINTK(fmt, args...) printk(fmt, ## args)
+//#else
+//#define DPRINTK(fmt, args...)
+//#endif
+//
+//#define PCI_VENDOR_ID_ADVANTECH		0x13fe
+//
+///* hardware types of the cards */
+//enum hw_cards_id {
+//	TYPE_PCI1730, TYPE_PCI1733, TYPE_PCI1734, TYPE_PCI1735, TYPE_PCI1736,
+//	TYPE_PCI1750,
+//	TYPE_PCI1751,
+//	TYPE_PCI1752,
+//	TYPE_PCI1753, TYPE_PCI1753E,
+//	TYPE_PCI1754, TYPE_PCI1756,
+//	TYPE_PCI1760,
+//	TYPE_PCI1762
+;
 
 /* which I/O instructions to use */
 enum hw_io_access {
@@ -1110,19 +1106,11 @@ static int pci_dio_attach(struct comedi_device *dev,
 	unsigned long iobase;
 	struct pci_dev *pcidev = NULL;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: adv_pci_dio: ", dev->minor);
-#else
-	;
-#endif
+;
 
 	ret = alloc_private(dev, sizeof(struct pci_dio_private));
 	if (ret < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(", Error: Cann't allocate private memory!\n");
-#else
-		;
-#endif
+;
 		return -ENOMEM;
 	}
 
@@ -1152,11 +1140,7 @@ static int pci_dio_attach(struct comedi_device *dev,
 	}
 
 	if (!dev->board_ptr) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(", Error: Requested type of the card was not found!\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 
@@ -1166,13 +1150,9 @@ static int pci_dio_attach(struct comedi_device *dev,
 		return -EIO;
 	}
 	iobase = pci_resource_start(pcidev, this_board->main_pci_region);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
-	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
-	       PCI_FUNC(pcidev->devfn), iobase);
-#else
-	;
-#endif
+//	printk(", b:s:f=%d:%d:%d, io=0x%4lx",
+//	       pcidev->bus->number, PCI_SLOT(pcidev->devfn),
+;
 
 	dev->iobase = iobase;
 	dev->board_name = this_board->name;
@@ -1198,19 +1178,11 @@ static int pci_dio_attach(struct comedi_device *dev,
 
 	ret = alloc_subdevices(dev, n_subdevices);
 	if (ret < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(", Error: Cann't allocate subdevice memory!\n");
-#else
-		;
-#endif
+;
 		return ret;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(".\n");
-#else
-	;
-#endif
+;
 
 	subdev = 0;
 

@@ -57,7 +57,7 @@ display_buffer(char *buffer, int length)
 		buffer++;
 	}
 
-	printk("\n");
+;
 }
 #endif
 
@@ -125,8 +125,8 @@ islpci_mgmt_rx_fill(struct net_device *ndev)
 		if (buf->mem == NULL) {
 			buf->mem = kmalloc(MGMT_FRAME_SIZE, GFP_ATOMIC);
 			if (!buf->mem) {
-				printk(KERN_WARNING
-				       "Error allocating management frame.\n");
+//				printk(KERN_WARNING
+;
 				return -ENOMEM;
 			}
 			buf->size = MGMT_FRAME_SIZE;
@@ -136,8 +136,8 @@ islpci_mgmt_rx_fill(struct net_device *ndev)
 						       MGMT_FRAME_SIZE,
 						       PCI_DMA_FROMDEVICE);
 			if (!buf->pci_addr) {
-				printk(KERN_WARNING
-				       "Failed to make memory DMA'able.\n");
+//				printk(KERN_WARNING
+;
 				return -ENOMEM;
 			}
 		}
@@ -185,16 +185,16 @@ islpci_mgt_transmit(struct net_device *ndev, int operation, unsigned long oid,
 #endif
 
 	if (frag_len > MGMT_FRAME_SIZE) {
-		printk(KERN_DEBUG "%s: mgmt frame too large %d\n",
-		       ndev->name, frag_len);
+//		printk(KERN_DEBUG "%s: mgmt frame too large %d\n",
+;
 		goto error;
 	}
 
 	err = -ENOMEM;
 	p = buf.mem = kmalloc(frag_len, GFP_KERNEL);
 	if (!buf.mem) {
-		printk(KERN_DEBUG "%s: cannot allocate mgmt frame\n",
-		       ndev->name);
+//		printk(KERN_DEBUG "%s: cannot allocate mgmt frame\n",
+;
 		goto error;
 	}
 	buf.size = frag_len;
@@ -225,8 +225,8 @@ islpci_mgt_transmit(struct net_device *ndev, int operation, unsigned long oid,
 	buf.pci_addr = pci_map_single(priv->pdev, buf.mem, frag_len,
 				      PCI_DMA_TODEVICE);
 	if (!buf.pci_addr) {
-		printk(KERN_WARNING "%s: cannot map PCI memory for mgmt\n",
-		       ndev->name);
+//		printk(KERN_WARNING "%s: cannot map PCI memory for mgmt\n",
+;
 		goto error_free;
 	}
 
@@ -234,8 +234,8 @@ islpci_mgt_transmit(struct net_device *ndev, int operation, unsigned long oid,
 	spin_lock_irqsave(&priv->slock, flags);
 	curr_frag = le32_to_cpu(cb->driver_curr_frag[ISL38XX_CB_TX_MGMTQ]);
 	if (curr_frag - priv->index_mgmt_tx >= ISL38XX_CB_MGMT_QSIZE) {
-		printk(KERN_WARNING "%s: mgmt tx queue is still full\n",
-		       ndev->name);
+//		printk(KERN_WARNING "%s: mgmt tx queue is still full\n",
+;
 		goto error_unlock;
 	}
 
@@ -300,9 +300,9 @@ islpci_mgt_receive(struct net_device *ndev)
 		/* I have no idea (and no documentation) if flags != 0
 		 * is possible.  Drop the frame, reuse the buffer. */
 		if (le16_to_cpu(cb->rx_data_mgmt[index].flags) != 0) {
-			printk(KERN_WARNING "%s: unknown flags 0x%04x\n",
-			       ndev->name,
-			       le16_to_cpu(cb->rx_data_mgmt[index].flags));
+//			printk(KERN_WARNING "%s: unknown flags 0x%04x\n",
+//			       ndev->name,
+;
 			continue;
 		}
 
@@ -314,9 +314,9 @@ islpci_mgt_receive(struct net_device *ndev)
 		 * size of a receive buffer.  Thus, if this check
 		 * triggers, we likely have kernel heap corruption. */
 		if (frag_len > MGMT_FRAME_SIZE) {
-			printk(KERN_WARNING
-				"%s: Bogus packet size of %d (%#x).\n",
-				ndev->name, frag_len, frag_len);
+//			printk(KERN_WARNING
+//				"%s: Bogus packet size of %d (%#x).\n",
+;
 			frag_len = MGMT_FRAME_SIZE;
 		}
 
@@ -327,8 +327,8 @@ islpci_mgt_receive(struct net_device *ndev)
 		/* Perform endianess conversion for PIMFOR header in-place. */
 		header = pimfor_decode_header(buf->mem, frag_len);
 		if (!header) {
-			printk(KERN_WARNING "%s: no PIMFOR header found\n",
-			       ndev->name);
+//			printk(KERN_WARNING "%s: no PIMFOR header found\n",
+;
 			continue;
 		}
 
@@ -351,9 +351,9 @@ islpci_mgt_receive(struct net_device *ndev)
 
 		/* nobody sends these */
 		if (header->flags & PIMFOR_FLAG_APPLIC_ORIGIN) {
-			printk(KERN_DEBUG
-			       "%s: errant PIMFOR application frame\n",
-			       ndev->name);
+//			printk(KERN_DEBUG
+//			       "%s: errant PIMFOR application frame\n",
+;
 			continue;
 		}
 
@@ -362,9 +362,9 @@ islpci_mgt_receive(struct net_device *ndev)
 		frame = kmalloc(sizeof (struct islpci_mgmtframe) + size,
 				GFP_ATOMIC);
 		if (!frame) {
-			printk(KERN_WARNING
-			       "%s: Out of memory, cannot handle oid 0x%08x\n",
-			       ndev->name, header->oid);
+//			printk(KERN_WARNING
+//			       "%s: Out of memory, cannot handle oid 0x%08x\n",
+;
 			continue;
 		}
 		frame->ndev = ndev;
@@ -380,10 +380,10 @@ islpci_mgt_receive(struct net_device *ndev)
 
 		if (header->operation == PIMFOR_OP_TRAP) {
 #if VERBOSE > SHOW_ERROR_MESSAGES
-			printk(KERN_DEBUG
-			       "TRAP: oid 0x%x, device %i, flags 0x%x length %i\n",
-			       header->oid, header->device_id, header->flags,
-			       header->length);
+//			printk(KERN_DEBUG
+//			       "TRAP: oid 0x%x, device %i, flags 0x%x length %i\n",
+//			       header->oid, header->device_id, header->flags,
+;
 #endif
 
 			/* Create work to handle trap out of interrupt
@@ -395,9 +395,9 @@ islpci_mgt_receive(struct net_device *ndev)
 			/* Signal the one waiting process that a response
 			 * has been received. */
 			if ((frame = xchg(&priv->mgmt_received, frame)) != NULL) {
-				printk(KERN_WARNING
-				       "%s: mgmt response not collected\n",
-				       ndev->name);
+//				printk(KERN_WARNING
+//				       "%s: mgmt response not collected\n",
+;
 				kfree(frame);
 			}
 #if VERBOSE > SHOW_ERROR_MESSAGES
@@ -483,25 +483,25 @@ islpci_mgt_transaction(struct net_device *ndev,
 				err = 0;
 				goto out;
 			} else {
-				printk(KERN_DEBUG
-				       "%s: expecting oid 0x%x, received 0x%x.\n",
-				       ndev->name, (unsigned int) oid,
-				       frame->header->oid);
+//				printk(KERN_DEBUG
+//				       "%s: expecting oid 0x%x, received 0x%x.\n",
+//				       ndev->name, (unsigned int) oid,
+;
 				kfree(frame);
 				frame = NULL;
 			}
 		}
 		if (timeleft == 0) {
-			printk(KERN_DEBUG
-				"%s: timeout waiting for mgmt response %lu, "
-				"triggering device\n",
-				ndev->name, timeout_left);
+//			printk(KERN_DEBUG
+//				"%s: timeout waiting for mgmt response %lu, "
+//				"triggering device\n",
+;
 			islpci_trigger(priv);
 		}
 		timeout_left += timeleft - wait_cycle_jiffies;
 	}
-	printk(KERN_WARNING "%s: timeout waiting for mgmt response\n",
-	       ndev->name);
+//	printk(KERN_WARNING "%s: timeout waiting for mgmt response\n",
+;
 
 	/* TODO: we should reset the device here */
  out:

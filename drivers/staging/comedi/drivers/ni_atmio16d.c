@@ -291,11 +291,7 @@ static irqreturn_t atmio16d_interrupt(int irq, void *d)
 	struct comedi_subdevice *s = dev->subdevices + 0;
 
 #ifdef DEBUG1
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "atmio16d_interrupt!\n");
-#else
-	;
-#endif
+;
 #endif
 
 	comedi_buf_put(s->async, inw(dev->iobase + AD_FIFO_REG));
@@ -310,11 +306,7 @@ static int atmio16d_ai_cmdtest(struct comedi_device *dev,
 {
 	int err = 0, tmp;
 #ifdef DEBUG1
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "atmio16d_ai_cmdtest\n");
-#else
-	;
-#endif
+;
 #endif
 	/* make sure triggers are valid */
 	tmp = cmd->start_src;
@@ -418,11 +410,7 @@ static int atmio16d_ai_cmd(struct comedi_device *dev,
 	unsigned int sample_count, tmp, chan, gain;
 	int i;
 #ifdef DEBUG1
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "atmio16d_ai_cmd\n");
-#else
-	;
-#endif
+;
 #endif
 	/* This is slowly becoming a working command interface. *
 	 * It is still uber-experimental */
@@ -584,11 +572,7 @@ static int atmio16d_ai_insn_read(struct comedi_device *dev,
 	int status;
 
 #ifdef DEBUG1
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "atmio16d_ai_insn_read\n");
-#else
-	;
-#endif
+;
 #endif
 	chan = CR_CHAN(insn->chanspec);
 	gain = CR_RANGE(insn->chanspec);
@@ -609,11 +593,7 @@ static int atmio16d_ai_insn_read(struct comedi_device *dev,
 			/* check conversion status */
 			status = inw(dev->iobase + STAT_REG);
 #ifdef DEBUG1
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_DEBUG "status=%x\n", status);
-#else
-			;
-#endif
+;
 #endif
 			if (status & STAT_AD_CONVAVAIL) {
 				/* read the data now */
@@ -624,11 +604,7 @@ static int atmio16d_ai_insn_read(struct comedi_device *dev,
 				break;
 			}
 			if (status & STAT_AD_OVERFLOW) {
-#ifdef CONFIG_DEBUG_PRINTK
-				printk(KERN_INFO "atmio16d: a/d FIFO overflow\n");
-#else
-				;
-#endif
+;
 				outw(0, dev->iobase + AD_CLEAR_REG);
 
 				return -ETIME;
@@ -636,11 +612,7 @@ static int atmio16d_ai_insn_read(struct comedi_device *dev,
 		}
 		/* end waiting, now check if it timed out */
 		if (t == ATMIO16D_TIMEOUT) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "atmio16d: timeout\n");
-#else
-			;
-#endif
+;
 
 			return -ETIME;
 		}
@@ -655,11 +627,7 @@ static int atmio16d_ao_insn_read(struct comedi_device *dev,
 {
 	int i;
 #ifdef DEBUG1
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "atmio16d_ao_insn_read\n");
-#else
-	;
-#endif
+;
 #endif
 
 	for (i = 0; i < insn->n; i++)
@@ -675,11 +643,7 @@ static int atmio16d_ao_insn_write(struct comedi_device *dev,
 	int chan;
 	int d;
 #ifdef DEBUG1
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "atmio16d_ao_insn_write\n");
-#else
-	;
-#endif
+;
 #endif
 
 	chan = CR_CHAN(insn->chanspec);
@@ -789,17 +753,9 @@ static int atmio16d_attach(struct comedi_device *dev,
 
 	/* make sure the address range is free and allocate it */
 	iobase = it->options[0];
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: atmio16d: 0x%04lx ", dev->minor, iobase);
-#else
-	;
-#endif
+;
 	if (!request_region(iobase, ATMIO16D_SIZE, "ni_atmio16d")) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("I/O port conflict\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -824,25 +780,13 @@ static int atmio16d_attach(struct comedi_device *dev,
 
 		ret = request_irq(irq, atmio16d_interrupt, 0, "atmio16d", dev);
 		if (ret < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO "failed to allocate irq %u\n", irq);
-#else
-			;
-#endif
+;
 			return ret;
 		}
 		dev->irq = irq;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "( irq = %u )\n", irq);
-#else
-		;
-#endif
+;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "( no irq )");
-#else
-		;
-#endif
+;
 	}
 
 	/* set device options */
@@ -932,22 +876,14 @@ static int atmio16d_attach(struct comedi_device *dev,
 	s->n_chan = 0;
 	s->maxdata = 0
 #endif
-#ifdef CONFIG_DEBUG_PRINTK
-	    printk("\n");
-#else
-	    ;
-#endif
+;
 
 	return 0;
 }
 
 static int atmio16d_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: atmio16d: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	if (dev->subdevices && boardtype->has_8255)
 		subdev_8255_cleanup(dev, dev->subdevices + 3);

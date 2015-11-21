@@ -135,14 +135,14 @@ static inline void sca_set_carrier(port_t *port)
 {
 	if (!(sca_in(get_msci(port) + ST3, port_to_card(port)) & ST3_DCD)) {
 #ifdef DEBUG_LINK
-		printk(KERN_DEBUG "%s: sca_set_carrier on\n",
-		       port_to_dev(port)->name);
+//		printk(KERN_DEBUG "%s: sca_set_carrier on\n",
+;
 #endif
 		netif_carrier_on(port_to_dev(port));
 	} else {
 #ifdef DEBUG_LINK
-		printk(KERN_DEBUG "%s: sca_set_carrier off\n",
-		       port_to_dev(port)->name);
+//		printk(KERN_DEBUG "%s: sca_set_carrier off\n",
+;
 #endif
 		netif_carrier_off(port_to_dev(port));
 	}
@@ -278,7 +278,7 @@ static inline void sca_rx(card_t *card, port_t *port, pkt_desc __iomem *desc,
 #endif
 	skb_put(skb, len);
 #ifdef DEBUG_PKT
-	printk(KERN_DEBUG "%s RX(%i):", dev->name, skb->len);
+;
 	debug_frame(skb);
 #endif
 	dev->stats.rx_packets++;
@@ -576,41 +576,41 @@ static void sca_dump_rings(struct net_device *dev)
 	openwin(card, 0);
 #endif
 
-	printk(KERN_DEBUG "RX ring: CDA=%u EDA=%u DSR=%02X in=%u %sactive",
-	       sca_inw(get_dmac_rx(port) + CDAL, card),
-	       sca_inw(get_dmac_rx(port) + EDAL, card),
-	       sca_in(DSR_RX(phy_node(port)), card), port->rxin,
-	       sca_in(DSR_RX(phy_node(port)), card) & DSR_DE ? "" : "in");
+//	printk(KERN_DEBUG "RX ring: CDA=%u EDA=%u DSR=%02X in=%u %sactive",
+//	       sca_inw(get_dmac_rx(port) + CDAL, card),
+//	       sca_inw(get_dmac_rx(port) + EDAL, card),
+//	       sca_in(DSR_RX(phy_node(port)), card), port->rxin,
+;
 	for (cnt = 0; cnt < port_to_card(port)->rx_ring_buffers; cnt++)
-		printk(" %02X", readb(&(desc_address(port, cnt, 0)->stat)));
-	printk(KERN_CONT "\n");
+;
+;
 
-	printk(KERN_DEBUG "TX ring: CDA=%u EDA=%u DSR=%02X in=%u "
-	       "last=%u %sactive",
-	       sca_inw(get_dmac_tx(port) + CDAL, card),
-	       sca_inw(get_dmac_tx(port) + EDAL, card),
-	       sca_in(DSR_TX(phy_node(port)), card), port->txin, port->txlast,
-	       sca_in(DSR_TX(phy_node(port)), card) & DSR_DE ? "" : "in");
+//	printk(KERN_DEBUG "TX ring: CDA=%u EDA=%u DSR=%02X in=%u "
+//	       "last=%u %sactive",
+//	       sca_inw(get_dmac_tx(port) + CDAL, card),
+//	       sca_inw(get_dmac_tx(port) + EDAL, card),
+//	       sca_in(DSR_TX(phy_node(port)), card), port->txin, port->txlast,
+;
 
 	for (cnt = 0; cnt < port_to_card(port)->tx_ring_buffers; cnt++)
-		printk(" %02X", readb(&(desc_address(port, cnt, 1)->stat)));
-	printk("\n");
+;
+;
 
-	printk(KERN_DEBUG "MSCI: MD: %02x %02x %02x, ST: %02x %02x %02x %02x,"
-	       " FST: %02x CST: %02x %02x\n",
-	       sca_in(get_msci(port) + MD0, card),
-	       sca_in(get_msci(port) + MD1, card),
-	       sca_in(get_msci(port) + MD2, card),
-	       sca_in(get_msci(port) + ST0, card),
-	       sca_in(get_msci(port) + ST1, card),
-	       sca_in(get_msci(port) + ST2, card),
-	       sca_in(get_msci(port) + ST3, card),
-	       sca_in(get_msci(port) + FST, card),
-	       sca_in(get_msci(port) + CST0, card),
-	       sca_in(get_msci(port) + CST1, card));
+//	printk(KERN_DEBUG "MSCI: MD: %02x %02x %02x, ST: %02x %02x %02x %02x,"
+//	       " FST: %02x CST: %02x %02x\n",
+//	       sca_in(get_msci(port) + MD0, card),
+//	       sca_in(get_msci(port) + MD1, card),
+//	       sca_in(get_msci(port) + MD2, card),
+//	       sca_in(get_msci(port) + ST0, card),
+//	       sca_in(get_msci(port) + ST1, card),
+//	       sca_in(get_msci(port) + ST2, card),
+//	       sca_in(get_msci(port) + ST3, card),
+//	       sca_in(get_msci(port) + FST, card),
+//	       sca_in(get_msci(port) + CST0, card),
+;
 
-	printk(KERN_DEBUG "ISR: %02x %02x %02x\n", sca_in(ISR0, card),
-	       sca_in(ISR1, card), sca_in(ISR2, card));
+//	printk(KERN_DEBUG "ISR: %02x %02x %02x\n", sca_in(ISR0, card),
+;
 
 #ifndef PAGE0_ALWAYS_MAPPED
 	openwin(card, page); /* Restore original page */
@@ -634,7 +634,7 @@ static netdev_tx_t sca_xmit(struct sk_buff *skb, struct net_device *dev)
 	BUG_ON(readb(&desc->stat)); /* previous xmit should stop queue */
 
 #ifdef DEBUG_PKT
-	printk(KERN_DEBUG "%s TX(%i):", dev->name, skb->len);
+;
 	debug_frame(skb);
 #endif
 

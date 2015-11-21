@@ -576,22 +576,14 @@ static void device_init_registers(PSDevice pDevice, DEVICE_INIT_TYPE InitType)
         else
             pDevice->bTxRxAntInv = false;
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("init_register:TxRxAntInv is %d,byValue is %d\n",pDevice->bTxRxAntInv,byValue);
-#else
-	//;
-#endif
+;
 #endif
 
         byValue &= (EEP_ANTENNA_AUX | EEP_ANTENNA_MAIN);
         if (byValue == 0) // if not set default is All
             byValue = (EEP_ANTENNA_AUX | EEP_ANTENNA_MAIN);
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("init_register:byValue is %d\n",byValue);
-#else
-	//;
-#endif
+;
 #endif
         pDevice->ulDiversityNValue = 100*260;//100*SROMbyReadEmbedded(pDevice->PortOffset, 0x51);
         pDevice->ulDiversityMValue = 100*16;//SROMbyReadEmbedded(pDevice->PortOffset, 0x52);
@@ -617,11 +609,7 @@ byValue1 = SROMbyReadEmbedded(pDevice->PortOffset, EEP_OFS_ANTENNA);
             else
                 pDevice->bDiversityEnable = true;
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("aux |main antenna: RxAntennaMode is %d\n",pDevice->byRxAntennaMode);
-#else
-		//;
-#endif
+;
 #endif
 	} else  {
             pDevice->bDiversityEnable = false;
@@ -643,11 +631,7 @@ byValue1 = SROMbyReadEmbedded(pDevice->PortOffset, EEP_OFS_ANTENNA);
             }
         }
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("init registers: TxAntennaMode is %d\n",pDevice->byTxAntennaMode);
-#else
-	//;
-#endif
+;
 #endif
         DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "bDiversityEnable=[%d],NValue=[%d],MValue=[%d],TMax=[%d],TMax2=[%d]\n",
             pDevice->bDiversityEnable,(int)pDevice->ulDiversityNValue,(int)pDevice->ulDiversityMValue,pDevice->byTMax,pDevice->byTMax2);
@@ -679,25 +663,13 @@ byValue1 = SROMbyReadEmbedded(pDevice->PortOffset, EEP_OFS_ANTENNA);
 else
 {
    if(zonetype!=pDevice->abyEEPROM[EEP_OFS_ZONETYPE])
-#ifdef CONFIG_DEBUG_PRINTK
-      printk("zonetype in file[%02x] mismatch with in EEPROM[%02x]\n",zonetype,pDevice->abyEEPROM[EEP_OFS_ZONETYPE]);
-#else
-      ;
-#endif
+;
    else
-#ifdef CONFIG_DEBUG_PRINTK
-      printk("Read Zonetype file success,use default zonetype setting[%02x]\n",zonetype);
-#else
-      ;
-#endif
+;
  }
  	}
   else
-#ifdef CONFIG_DEBUG_PRINTK
-    printk("Read Zonetype file fail,use default zonetype setting[%02x]\n",SROMbyReadEmbedded(pDevice->PortOffset, EEP_OFS_ZONETYPE));
-#else
-    ;
-#endif
+;
 
         // Get RFType
         pDevice->byRFType = SROMbyReadEmbedded(pDevice->PortOffset, EEP_OFS_RFTYPE);
@@ -725,11 +697,7 @@ else
         //byCCKPwrdBm = SROMbyReadEmbedded(pDevice->PortOffset, EEP_OFS_CCK_PWR_dBm);
 
 	//byOFDMPwrdBm = SROMbyReadEmbedded(pDevice->PortOffset, EEP_OFS_OFDM_PWR_dBm);
-#ifdef CONFIG_DEBUG_PRINTK
-//printk("CCKPwrdBm is 0x%x,byOFDMPwrdBm is 0x%x\n",byCCKPwrdBm,byOFDMPwrdBm);
-#else
-//;
-#endif
+;
 		// Load power Table
 
 
@@ -794,11 +762,7 @@ else
             BBvSetVGAGainOffset(pDevice, pDevice->abyBBVGA[0]);
         }
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("init registers:RxAntennaMode is %x,TxAntennaMode is %x\n",pDevice->byRxAntennaMode,pDevice->byTxAntennaMode);
-#else
-	//;
-#endif
+;
 #endif
         BBvSetRxAntennaMode(pDevice->PortOffset, pDevice->byRxAntennaMode);
         BBvSetTxAntennaMode(pDevice->PortOffset, pDevice->byTxAntennaMode);
@@ -961,11 +925,7 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
     PSDevice    pDevice;
     int         rc;
     if (device_nics ++>= MAX_UINTS) {
-#ifdef CONFIG_DEBUG_PRINTK
-        printk(KERN_NOTICE DEVICE_NAME ": already found %d NICs\n", device_nics);
-#else
-        ;
-#endif
+;
         return -ENODEV;
     }
 
@@ -975,7 +935,7 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
     pDevice = (PSDevice) netdev_priv(dev);
 
     if (dev == NULL) {
-        printk(KERN_ERR DEVICE_NAME ": allocate net device failed \n");
+;
         return -ENODEV;
     }
 
@@ -984,16 +944,8 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
     SET_NETDEV_DEV(dev, &pcid->dev);
 
     if (bFirst) {
-#ifdef CONFIG_DEBUG_PRINTK
-        printk(KERN_NOTICE "%s Ver. %s\n",DEVICE_FULL_DRV_NAM, DEVICE_VERSION);
-#else
-        ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-        printk(KERN_NOTICE "Copyright (c) 2003 VIA Networking Technologies, Inc.\n");
-#else
-        ;
-#endif
+;
+;
         bFirst=false;
     }
 
@@ -1011,14 +963,10 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
     dev->irq = pcid->irq;
 
 #ifdef	DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("Before get pci_info memaddr is %x\n",pDevice->memaddr);
-#else
-	;
-#endif
+;
 #endif
     if (device_get_pci_info(pDevice,pcid) == false) {
-        printk(KERN_ERR DEVICE_NAME ": Failed to find PCI device.\n");
+;
         device_free_info(pDevice);
         return -ENODEV;
     }
@@ -1028,11 +976,7 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
 #ifdef	DEBUG
 
 	//pci_read_config_byte(pcid, PCI_BASE_ADDRESS_0, &pDevice->byRevId);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("after get pci_info memaddr is %x, io addr is %x,io_size is %d\n",pDevice->memaddr,pDevice->ioaddr,pDevice->io_size);
-#else
-	;
-#endif
+;
 	{
 		int i;
 		u32			bar,len;
@@ -1048,18 +992,10 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
 		{
 			//pci_write_config_dword(pcid,address[i], 0xFFFFFFFF);
 			pci_read_config_dword(pcid, address[i], &bar);
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("bar %d is %x\n",i,bar);
-#else
-			;
-#endif
+;
 			if (!bar)
 			{
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("bar %d not implemented\n",i);
-#else
-				;
-#endif
+;
 				continue;
 			}
 			if (bar & PCI_BASE_ADDRESS_SPACE_IO) {
@@ -1068,22 +1004,14 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
 			len = bar & (PCI_BASE_ADDRESS_IO_MASK & 0xFFFF);
 			len = len & ~(len - 1);
 
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("IO space:  len in IO %x, BAR %d\n", len, i);
-#else
-			;
-#endif
+;
 			}
 			else
 			{
 				len = bar & 0xFFFFFFF0;
 				len = ~len + 1;
 
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("len in MEM %x, BAR %d\n", len, i);
-#else
-				;
-#endif
+;
 			}
 		}
 	}
@@ -1099,7 +1027,7 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
 	//pDevice->PortOffset = (unsigned long)ioremap(pDevice->ioaddr & PCI_BASE_ADDRESS_IO_MASK, pDevice->io_size);
 
 	if(pDevice->PortOffset == 0) {
-       printk(KERN_ERR DEVICE_NAME ": Failed to IO remapping ..\n");
+;
        device_free_info(pDevice);
         return -ENODEV;
     }
@@ -1109,7 +1037,7 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
 
     rc = pci_request_regions(pcid, DEVICE_NAME);
     if (rc) {
-        printk(KERN_ERR DEVICE_NAME ": Failed to find PCI device\n");
+;
         device_free_info(pDevice);
         return -ENODEV;
     }
@@ -1119,19 +1047,11 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
 	unsigned char 	value;
 
 	VNSvInPortB(pDevice->PortOffset+0x4F, &value);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("Before write: value is %x\n",value);
-#else
-	;
-#endif
+;
 	//VNSvInPortB(pDevice->PortOffset+0x3F, 0x00);
 	VNSvOutPortB(pDevice->PortOffset,value);
 	VNSvInPortB(pDevice->PortOffset+0x4F, &value);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("After write: value is %x\n",value);
-#else
-	;
-#endif
+;
 #endif
 
 
@@ -1141,7 +1061,7 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
 #endif
     // do reset
     if (!MACbSoftwareReset(pDevice->PortOffset)) {
-        printk(KERN_ERR DEVICE_NAME ": Failed to access MAC hardware..\n");
+;
         device_free_info(pDevice);
         return -ENODEV;
     }
@@ -1168,7 +1088,7 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
     rc = register_netdev(dev);
     if (rc)
     {
-        printk(KERN_ERR DEVICE_NAME " Failed to register netdev\n");
+;
         device_free_info(pDevice);
         return -ENODEV;
     }
@@ -1176,11 +1096,7 @@ vt6655_probe(struct pci_dev *pcid, const struct pci_device_id *ent)
 //register wpadev
 #if 0
    if(wpa_set_wpadev(pDevice, 1)!=0) {
-#ifdef CONFIG_DEBUG_PRINTK
-     printk("Fail to Register WPADEV?\n");
-#else
-     ;
-#endif
+;
         unregister_netdev(pDevice->dev);
         free_netdev(dev);
    }
@@ -1273,21 +1189,13 @@ static bool device_get_pci_info(PSDevice pDevice, struct pci_dev* pcid) {
 
 #ifdef	PLICE_DEBUG
    	//pci_read_config_word(pcid,PCI_MAX_LAT,&max_lat);
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("max lat is %x,SubSystemID is %x\n",max_lat,pDevice->SubSystemID);
-#else
-	//;
-#endif
+;
 	//for (ii=0;ii<0xFF;ii++)
 	//pci_read_config_word(pcid,PCI_MAX_LAT,&max_lat);
 	//max_lat  = 0x20;
 	//pci_write_config_word(pcid,PCI_MAX_LAT,max_lat);
 	//pci_read_config_word(pcid,PCI_MAX_LAT,&max_lat);
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("max lat is %x\n",max_lat);
-#else
-	//;
-#endif
+;
 
 	for (ii=0;ii<0xFF;ii++)
 	{
@@ -1298,24 +1206,12 @@ static bool device_get_pci_info(PSDevice pDevice, struct pci_dev* pcid) {
 	{
 		if (j %16 == 0)
 		{
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%x:",pci_config[ii]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\n");
-#else
-			;
-#endif
+;
+;
 		}
 		else
 		{
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("%x:",pci_config[ii]);
-#else
-			;
-#endif
+;
 		}
 	}
 #endif
@@ -1333,11 +1229,7 @@ device_release_WPADEV(pDevice);
 //2008-07-21-01<Add>by MikeLiu
 //unregister wpadev
    if(wpa_set_wpadev(pDevice, 0)!=0)
-#ifdef CONFIG_DEBUG_PRINTK
-     printk("unregister wpadev fail?\n");
-#else
-     ;
-#endif
+;
 
     if (pDevice_Infos==NULL)
         return;
@@ -1740,11 +1632,7 @@ static bool device_alloc_rx_buf(PSDevice pDevice, PSRxDesc pRD) {
 
     pRDInfo->skb = dev_alloc_skb((int)pDevice->rx_buf_sz);
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("device_alloc_rx_buf:skb is %x\n",pRDInfo->skb);
-#else
-	//;
-#endif
+;
 #endif
     if (pRDInfo->skb==NULL)
         return false;
@@ -1967,27 +1855,15 @@ int MlmeThread(
 	PSRxMgmtPacket			pRxMgmtPacket;
 	// int i ;
 	//complete(&pDevice->notify);
-#ifdef CONFIG_DEBUG_PRINTK
-//printk("Enter MngWorkItem,Queue packet num is %d\n",pDevice->rxManeQueue.packet_num);
-#else
-//;
-#endif
+;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("Enter MlmeThread,packet _num is %d\n",pDevice->rxManeQueue.packet_num);
-#else
-	//;
-#endif
+;
 	//i = 0;
 #if 1
 	while (1)
 	{
 
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("DDDD\n");
-#else
-	//;
-#endif
+;
 	//down(&pDevice->mlme_semaphore);
         // pRxMgmtPacket =  DeQueue(pDevice);
 #if 1
@@ -1998,11 +1874,7 @@ int MlmeThread(
         			//pDevice;
         			//DequeueManageObject(pDevice->FirstRecvMngList, pDevice->LastRecvMngList);
 			vMgrRxManagePacket(pDevice, pDevice->pMgmt, pRxMgmtPacket);
-#ifdef CONFIG_DEBUG_PRINTK
-			//printk("packet_num is %d\n",pDevice->rxManeQueue.packet_num);
-#else
-			//;
-#endif
+;
 
 		 }
 		spin_unlock_irq(&pDevice->lock);
@@ -2010,24 +1882,12 @@ int MlmeThread(
 		break;
 		//udelay(200);
 #endif
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("Before schedule thread jiffies is %x\n",jiffies);
-#else
-	//;
-#endif
+;
 	schedule();
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("after schedule thread jiffies is %x\n",jiffies);
-#else
-	//;
-#endif
+;
 	if (mlme_kill == 0)
 		break;
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("i is %d\n",i);
-#else
-	//;
-#endif
+;
 	}
 
 #endif
@@ -2052,11 +1912,7 @@ static int  device_open(struct net_device *dev) {
     i=request_irq(pDevice->pcid->irq, &device_intr, IRQF_SHARED, dev->name, dev);
     if (i)
         return i;
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("DEBUG1\n");
-#else
-	//;
-#endif
+;
 #ifdef WPA_SM_Transtatus
      memset(wpa_Result.ifname,0,sizeof(wpa_Result.ifname));
      wpa_Result.proto = 0;
@@ -2089,11 +1945,7 @@ device_init_rd0_ring(pDevice);
 	mlme_kill = 0;
 	mlme_task = kthread_run(MlmeThread,(void *) pDevice, "MLME");
 	if (IS_ERR(mlme_task)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("thread create fail\n");
-#else
-		;
-#endif
+;
 		return -1;
 	}
 
@@ -2106,25 +1958,13 @@ device_init_rd0_ring(pDevice);
 	pDevice->MLMEThr_pid = kernel_thread(MlmeThread, pDevice, CLONE_VM);
 	if (pDevice->MLMEThr_pid <0 )
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("unable start thread MlmeThread\n");
-#else
-		;
-#endif
+;
 		return -1;
 	}
 #endif
 
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("thread id is %d\n",pDevice->MLMEThr_pid);
-#else
-	//;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	//printk("Create thread time is %x\n",jiffies);
-#else
-	//;
-#endif
+;
+;
 	//wait_for_completion(&pDevice->notify);
 
 
@@ -2168,11 +2008,7 @@ DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "call device_init_registers\n");
          pDevice->eEncryptionStatus = Ndis802_11Encryption1Enabled;
     }
 
-#ifdef CONFIG_DEBUG_PRINTK
-//printk("DEBUG2\n");
-#else
-//;
-#endif
+;
 
 
 DBG_PRT(MSG_LEVEL_DEBUG, KERN_INFO "call MACvIntEnable\n");
@@ -2615,11 +2451,7 @@ static int  device_xmit(struct sk_buff *skb, struct net_device *dev) {
 
     if (pDevice->bFixRate) {
 #ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("Fix Rate: PhyType is %d,ConnectionRate is %d\n",pDevice->eCurrentPHYType,pDevice->uConnectionRate);
-#else
-	;
-#endif
+;
 #endif
 
         if (pDevice->eCurrentPHYType == PHY_TYPE_11B) {
@@ -2668,13 +2500,9 @@ static int  device_xmit(struct sk_buff *skb, struct net_device *dev) {
                                 &(pDevice->byTopOFDMBasicRate));
 
 #if 0
-#ifdef CONFIG_DEBUG_PRINTK
-printk("auto rate:Rate : %d,AckRate:%d,TopCCKRate:%d,TopOFDMRate:%d\n",
-pDevice->wCurrentRate,pDevice->byACKRate,
-pDevice->byTopCCKBasicRate,pDevice->byTopOFDMBasicRate);
-#else
+//printk("auto rate:Rate : %d,AckRate:%d,TopCCKRate:%d,TopOFDMRate:%d\n",
+//pDevice->wCurrentRate,pDevice->byACKRate,
 ;
-#endif
 
 #endif
 
@@ -2705,11 +2533,7 @@ pDevice->byTopCCKBasicRate,pDevice->byTopOFDMBasicRate);
     }
 
 //#ifdef	PLICE_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-//	printk("FIX RATE:CurrentRate is %d");
-#else
-//	;
-#endif
+;
 //#endif
 
     if (bNeedEncryption == true) {
@@ -2759,11 +2583,7 @@ pDevice->byTopCCKBasicRate,pDevice->byTopOFDMBasicRate);
 #ifdef	PLICE_DEBUG
 	//if (skb->len == 98)
 	//{
-#ifdef CONFIG_DEBUG_PRINTK
-	//	printk("ping:len is %d\n");
-#else
-	//	;
-#endif
+;
 	//}
 #endif
     vGenerateFIFOHeader(pDevice, byPktType, pDevice->pbyTmpBuff, bNeedEncryption,
@@ -2806,19 +2626,11 @@ pDevice->byTopCCKBasicRate,pDevice->byTopOFDMBasicRate);
 //#ifdef	PLICE_DEBUG
 	if (pDevice->bFixRate)
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("FixRate:Rate is %d,TxPower is %d\n",pDevice->wCurrentRate,pDevice->byCurPwr);
-#else
-		;
-#endif
+;
 	}
 	else
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		//printk("Auto Rate:Rate is %d,TxPower is %d\n",pDevice->wCurrentRate,pDevice->byCurPwr);
-#else
-		//;
-#endif
+;
 	}
 //#endif
 
@@ -2841,22 +2653,10 @@ bool bTxeapol_key = false;
 			   (Key_info & BIT8) && (Key_info & BIT9)) {    //send 2/2 key
 			  pDevice->fWPA_Authened = true;
 			  if(Descriptor_type==254)
-#ifdef CONFIG_DEBUG_PRINTK
-			      printk("WPA ");
-#else
-			      ;
-#endif
+;
 			  else
-#ifdef CONFIG_DEBUG_PRINTK
-			      printk("WPA2 ");
-#else
-			      ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-			  printk("Authentication completed!!\n");
-#else
-			  ;
-#endif
+;
+;
                         }
 		 }
              }
@@ -3219,52 +3019,32 @@ int Config_FileOperation(PSDevice pDevice,bool fwrite,unsigned char *Parameter) 
     //open file
       filp = filp_open(config_path, O_RDWR, 0);
         if (IS_ERR(filp)) {
-#ifdef CONFIG_DEBUG_PRINTK
-	     printk("Config_FileOperation:open file fail?\n");
-#else
-	     ;
-#endif
+;
 	     result=-1;
              goto error2;
 	  }
 
      if(!(filp->f_op) || !(filp->f_op->read) ||!(filp->f_op->write)) {
-#ifdef CONFIG_DEBUG_PRINTK
-           printk("file %s cann't readable or writable?\n",config_path);
-#else
-           ;
-#endif
+;
 	  result = -1;
 	  goto error1;
      	}
 
 buffer = kmalloc(1024, GFP_KERNEL);
 if(buffer==NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
-  printk("allocate mem for file fail?\n");
-#else
-  ;
-#endif
+;
   result = -1;
   goto error1;
 }
 
 if(filp->f_op->read(filp, buffer, 1024, &filp->f_pos)<0) {
-#ifdef CONFIG_DEBUG_PRINTK
- printk("read file error?\n");
-#else
- ;
-#endif
+;
  result = -1;
  goto error1;
 }
 
 if(Config_FileGetParameter("ZONETYPE",tmpbuffer,buffer)!=true) {
-#ifdef CONFIG_DEBUG_PRINTK
-  printk("get parameter error?\n");
-#else
-  ;
-#endif
+;
   result = -1;
   goto error1;
 }
@@ -3280,22 +3060,14 @@ else if(memcmp(tmpbuffer,"EUROPE",5)==0) {
 }
 else {
   result = -1;
-#ifdef CONFIG_DEBUG_PRINTK
-  printk("Unknown Zonetype[%s]?\n",tmpbuffer);
-#else
-  ;
-#endif
+;
 }
 
 error1:
   kfree(buffer);
 
   if(filp_close(filp,NULL))
-#ifdef CONFIG_DEBUG_PRINTK
-       printk("Config_FileOperation:close file fail\n");
-#else
-       ;
-#endif
+;
 
 error2:
   set_fs (old_fs);

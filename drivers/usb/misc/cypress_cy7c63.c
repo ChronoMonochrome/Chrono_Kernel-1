@@ -278,8 +278,8 @@ static int __init cypress_init(void)
 	/* register this driver with the USB subsystem */
 	result = usb_register(&cypress_driver);
 	if (result)
-		printk(KERN_ERR KBUILD_MODNAME ": usb_register failed! "
-		       "Error number: %d\n", result);
+//		printk(KERN_ERR KBUILD_MODNAME ": usb_register failed! "
+;
 
 	return result;
 }

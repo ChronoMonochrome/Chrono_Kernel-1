@@ -381,8 +381,8 @@ static void _exofs_print_device(const char *msg, const char *dev_path,
 {
 	const struct osd_dev_info *odi = osduld_device_info(od);
 
-	printk(KERN_NOTICE "exofs: %s %s osd_name-%s pid-0x%llx\n",
-		msg, dev_path ?: "", odi->osdname, _LLU(pid));
+//	printk(KERN_NOTICE "exofs: %s %s osd_name-%s pid-0x%llx\n",
+;
 }
 
 void exofs_free_sbi(struct exofs_sb_info *sbi)
@@ -413,9 +413,9 @@ static void exofs_put_super(struct super_block *sb)
 	     num_pend = atomic_read(&sbi->s_curr_pending)) {
 		wait_queue_head_t wq;
 
-		printk(KERN_NOTICE "%s: !!Pending operations in flight. "
-		       "This is a BUG. please report to osd-dev@open-osd.org\n",
-		       __func__);
+//		printk(KERN_NOTICE "%s: !!Pending operations in flight. "
+//		       "This is a BUG. please report to osd-dev@open-osd.org\n",
+;
 		init_waitqueue_head(&wq);
 		wait_event_timeout(wq,
 				  (atomic_read(&sbi->s_curr_pending) == 0),
@@ -486,9 +486,9 @@ static int _read_and_match_data_map(struct exofs_sb_info *sbi, unsigned numdevs,
 						sbi->data_map.odm_group_width;
 	} else {
 		if (sbi->data_map.odm_group_depth) {
-			printk(KERN_NOTICE "Warning: group_depth ignored "
-				"group_width == 0 && group_depth == %d\n",
-				sbi->data_map.odm_group_depth);
+//			printk(KERN_NOTICE "Warning: group_depth ignored "
+//				"group_width == 0 && group_depth == %d\n",
+;
 			sbi->data_map.odm_group_depth = 0;
 		}
 		sbi->layout.group_width = sbi->data_map.odm_num_comps /
@@ -614,8 +614,8 @@ static int exofs_read_lookup_dev_table(struct exofs_sb_info **psbi,
 			goto out;
 		}
 
-		printk(KERN_NOTICE "Add device[%d]: osd_name-%s\n",
-		       i, odi.osdname);
+//		printk(KERN_NOTICE "Add device[%d]: osd_name-%s\n",
+;
 
 		/* On all devices the device table is identical. The user can
 		 * specify any one of the participating devices on the command

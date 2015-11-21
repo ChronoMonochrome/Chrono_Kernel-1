@@ -188,7 +188,7 @@ const void *wimax_msg_data_len(struct sk_buff *msg, size_t *size)
 	nla = nlmsg_find_attr(nlh, sizeof(struct genlmsghdr),
 			      WIMAX_GNL_MSG_DATA);
 	if (nla == NULL) {
-		printk(KERN_ERR "Cannot find attribute WIMAX_GNL_MSG_DATA\n");
+;
 		return NULL;
 	}
 	*size = nla_len(nla);
@@ -210,7 +210,7 @@ const void *wimax_msg_data(struct sk_buff *msg)
 	nla = nlmsg_find_attr(nlh, sizeof(struct genlmsghdr),
 			      WIMAX_GNL_MSG_DATA);
 	if (nla == NULL) {
-		printk(KERN_ERR "Cannot find attribute WIMAX_GNL_MSG_DATA\n");
+;
 		return NULL;
 	}
 	return nla_data(nla);
@@ -231,7 +231,7 @@ ssize_t wimax_msg_len(struct sk_buff *msg)
 	nla = nlmsg_find_attr(nlh, sizeof(struct genlmsghdr),
 			      WIMAX_GNL_MSG_DATA);
 	if (nla == NULL) {
-		printk(KERN_ERR "Cannot find attribute WIMAX_GNL_MSG_DATA\n");
+;
 		return -EINVAL;
 	}
 	return nla_len(nla);
@@ -354,8 +354,8 @@ int wimax_gnl_doit_msg_from_user(struct sk_buff *skb, struct genl_info *info)
 	d_fnstart(3, NULL, "(skb %p info %p)\n", skb, info);
 	result = -ENODEV;
 	if (info->attrs[WIMAX_GNL_MSG_IFIDX] == NULL) {
-		printk(KERN_ERR "WIMAX_GNL_MSG_FROM_USER: can't find IFIDX "
-		       "attribute\n");
+//		printk(KERN_ERR "WIMAX_GNL_MSG_FROM_USER: can't find IFIDX "
+;
 		goto error_no_wimax_dev;
 	}
 	ifindex = nla_get_u32(info->attrs[WIMAX_GNL_MSG_IFIDX]);

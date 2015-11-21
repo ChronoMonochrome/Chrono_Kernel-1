@@ -81,11 +81,11 @@ void extent_io_exit(void)
 
 	while (!list_empty(&states)) {
 		state = list_entry(states.next, struct extent_state, leak_list);
-		printk(KERN_ERR "btrfs state leak: start %llu end %llu "
-		       "state %lu in tree %p refs %d\n",
-		       (unsigned long long)state->start,
-		       (unsigned long long)state->end,
-		       state->state, state->tree, atomic_read(&state->refs));
+//		printk(KERN_ERR "btrfs state leak: start %llu end %llu "
+//		       "state %lu in tree %p refs %d\n",
+//		       (unsigned long long)state->start,
+//		       (unsigned long long)state->end,
+;
 		list_del(&state->leak_list);
 		kmem_cache_free(extent_state_cache, state);
 
@@ -93,9 +93,9 @@ void extent_io_exit(void)
 
 	while (!list_empty(&buffers)) {
 		eb = list_entry(buffers.next, struct extent_buffer, leak_list);
-		printk(KERN_ERR "btrfs buffer leak start %llu len %lu "
-		       "refs %d\n", (unsigned long long)eb->start,
-		       eb->len, atomic_read(&eb->refs));
+//		printk(KERN_ERR "btrfs buffer leak start %llu len %lu "
+//		       "refs %d\n", (unsigned long long)eb->start,
+;
 		list_del(&eb->leak_list);
 		kmem_cache_free(extent_buffer_cache, eb);
 	}
@@ -332,9 +332,9 @@ static int insert_state(struct extent_io_tree *tree,
 	int ret;
 
 	if (end < start) {
-		printk(KERN_ERR "btrfs end < start %llu %llu\n",
-		       (unsigned long long)end,
-		       (unsigned long long)start);
+//		printk(KERN_ERR "btrfs end < start %llu %llu\n",
+//		       (unsigned long long)end,
+;
 		WARN_ON(1);
 	}
 	state->start = start;
@@ -350,10 +350,10 @@ static int insert_state(struct extent_io_tree *tree,
 	if (node) {
 		struct extent_state *found;
 		found = rb_entry(node, struct extent_state, rb_node);
-		printk(KERN_ERR "btrfs found node %llu %llu on insert of "
-		       "%llu %llu\n", (unsigned long long)found->start,
-		       (unsigned long long)found->end,
-		       (unsigned long long)start, (unsigned long long)end);
+//		printk(KERN_ERR "btrfs found node %llu %llu on insert of "
+//		       "%llu %llu\n", (unsigned long long)found->start,
+//		       (unsigned long long)found->end,
+;
 		free_extent_state(state);
 		return -EEXIST;
 	}
@@ -2373,10 +2373,10 @@ static int __extent_writepage(struct page *page, struct writeback_control *wbc,
 
 			set_range_writeback(tree, cur, cur + iosize - 1);
 			if (!PageWriteback(page)) {
-				printk(KERN_ERR "btrfs warning page %lu not "
-				       "writeback, cur %llu end %llu\n",
-				       page->index, (unsigned long long)cur,
-				       (unsigned long long)end);
+//				printk(KERN_ERR "btrfs warning page %lu not "
+//				       "writeback, cur %llu end %llu\n",
+//				       page->index, (unsigned long long)cur,
+;
 			}
 
 			ret = submit_extent_page(write_flags, tree, page,
@@ -3538,9 +3538,9 @@ int map_private_extent_buffer(struct extent_buffer *eb, unsigned long start,
 	}
 
 	if (start + min_len > eb->len) {
-		printk(KERN_ERR "btrfs bad mapping eb start %llu len %lu, "
-		       "wanted %lu %lu\n", (unsigned long long)eb->start,
-		       eb->len, start, min_len);
+//		printk(KERN_ERR "btrfs bad mapping eb start %llu len %lu, "
+//		       "wanted %lu %lu\n", (unsigned long long)eb->start,
+;
 		WARN_ON(1);
 		return -EINVAL;
 	}
@@ -3772,13 +3772,13 @@ void memcpy_extent_buffer(struct extent_buffer *dst, unsigned long dst_offset,
 	unsigned long src_i;
 
 	if (src_offset + len > dst->len) {
-		printk(KERN_ERR "btrfs memmove bogus src_offset %lu move "
-		       "len %lu dst len %lu\n", src_offset, len, dst->len);
+//		printk(KERN_ERR "btrfs memmove bogus src_offset %lu move "
+;
 		BUG_ON(1);
 	}
 	if (dst_offset + len > dst->len) {
-		printk(KERN_ERR "btrfs memmove bogus dst_offset %lu move "
-		       "len %lu dst len %lu\n", dst_offset, len, dst->len);
+//		printk(KERN_ERR "btrfs memmove bogus dst_offset %lu move "
+;
 		BUG_ON(1);
 	}
 
@@ -3819,13 +3819,13 @@ void memmove_extent_buffer(struct extent_buffer *dst, unsigned long dst_offset,
 	unsigned long src_i;
 
 	if (src_offset + len > dst->len) {
-		printk(KERN_ERR "btrfs memmove bogus src_offset %lu move "
-		       "len %lu len %lu\n", src_offset, len, dst->len);
+//		printk(KERN_ERR "btrfs memmove bogus src_offset %lu move "
+;
 		BUG_ON(1);
 	}
 	if (dst_offset + len > dst->len) {
-		printk(KERN_ERR "btrfs memmove bogus dst_offset %lu move "
-		       "len %lu len %lu\n", dst_offset, len, dst->len);
+//		printk(KERN_ERR "btrfs memmove bogus dst_offset %lu move "
+;
 		BUG_ON(1);
 	}
 	if (!areas_overlap(src_offset, dst_offset, len)) {

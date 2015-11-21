@@ -102,8 +102,8 @@ ecryptfs_filldir(void *dirent, const char *lower_name, int lower_namelen,
 						  buf->dentry, lower_name,
 						  lower_namelen);
 	if (rc) {
-		printk(KERN_ERR "%s: Error attempting to decode and decrypt "
-		       "filename [%s]; rc = [%d]\n", __func__, lower_name,
+//		printk(KERN_ERR "%s: Error attempting to decode and decrypt "
+;
 		       rc);
 		goto out;
 	}
@@ -199,7 +199,7 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 	    && ((file->f_flags & O_WRONLY) || (file->f_flags & O_RDWR)
 		|| (file->f_flags & O_CREAT) || (file->f_flags & O_TRUNC)
 		|| (file->f_flags & O_APPEND))) {
-		printk(KERN_WARNING "Mount has encrypted view enabled; "
+;
 		       "files may only be read\n");
 		rc = -EPERM;
 		goto out;
@@ -208,8 +208,8 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 	file_info = kmem_cache_zalloc(ecryptfs_file_info_cache, GFP_KERNEL);
 	ecryptfs_set_file_private(file, file_info);
 	if (!file_info) {
-		ecryptfs_printk(KERN_ERR,
-				"Error attempting to allocate memory\n");
+//		ecryptfs_printk(KERN_ERR,
+;
 		rc = -ENOMEM;
 		goto out;
 	}
@@ -217,7 +217,7 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 	crypt_stat = &ecryptfs_inode_to_private(inode)->crypt_stat;
 	mutex_lock(&crypt_stat->cs_mutex);
 	if (!(crypt_stat->flags & ECRYPTFS_POLICY_APPLIED)) {
-		ecryptfs_printk(KERN_DEBUG, "Setting flags for stat...\n");
+;
 		/* Policy code enabled in future release */
 		crypt_stat->flags |= (ECRYPTFS_POLICY_APPLIED
 				      | ECRYPTFS_ENCRYPTED);
@@ -225,23 +225,23 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 	mutex_unlock(&crypt_stat->cs_mutex);
 	rc = ecryptfs_get_lower_file(ecryptfs_dentry, inode);
 	if (rc) {
-		printk(KERN_ERR "%s: Error attempting to initialize "
-			"the lower file for the dentry with name "
-			"[%s]; rc = [%d]\n", __func__,
+//		printk(KERN_ERR "%s: Error attempting to initialize "
+//			"the lower file for the dentry with name "
+;
 			ecryptfs_dentry->d_name.name, rc);
 		goto out_free;
 	}
 	if ((ecryptfs_inode_to_private(inode)->lower_file->f_flags & O_ACCMODE)
 	    == O_RDONLY && (file->f_flags & O_ACCMODE) != O_RDONLY) {
 		rc = -EPERM;
-		printk(KERN_WARNING "%s: Lower file is RO; eCryptfs "
+;
 		       "file must hence be opened RO\n", __func__);
 		goto out_put;
 	}
 	ecryptfs_set_file_lower(
 		file, ecryptfs_inode_to_private(inode)->lower_file);
 	if (S_ISDIR(ecryptfs_dentry->d_inode->i_mode)) {
-		ecryptfs_printk(KERN_DEBUG, "This is a directory\n");
+;
 		mutex_lock(&crypt_stat->cs_mutex);
 		crypt_stat->flags &= ~(ECRYPTFS_ENCRYPTED);
 		mutex_unlock(&crypt_stat->cs_mutex);
@@ -292,16 +292,16 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 	    || !(crypt_stat->flags & ECRYPTFS_KEY_VALID)) {
 		rc = ecryptfs_read_metadata(ecryptfs_dentry);
 		if (rc) {
-			ecryptfs_printk(KERN_DEBUG,
-					"Valid headers not found\n");
+//			ecryptfs_printk(KERN_DEBUG,
+;
 			if (!(mount_crypt_stat->flags
 			      & ECRYPTFS_PLAINTEXT_PASSTHROUGH_ENABLED)) {
 				rc = -EIO;
-				printk(KERN_WARNING "Either the lower file "
-				       "is not in a valid eCryptfs format, "
-				       "or the key could not be retrieved. "
-				       "Plaintext passthrough mode is not "
-				       "enabled; returning -EIO\n");
+//				printk(KERN_WARNING "Either the lower file "
+//				       "is not in a valid eCryptfs format, "
+//				       "or the key could not be retrieved. "
+//				       "Plaintext passthrough mode is not "
+;
 				mutex_unlock(&crypt_stat->cs_mutex);
 				goto out_put;
 			}
@@ -313,9 +313,9 @@ static int ecryptfs_open(struct inode *inode, struct file *file)
 		}
 	}
 	mutex_unlock(&crypt_stat->cs_mutex);
-	ecryptfs_printk(KERN_DEBUG, "inode w/ addr = [0x%p], i_ino = "
-			"[0x%.16lx] size: [0x%.16llx]\n", inode, inode->i_ino,
-			(unsigned long long)i_size_read(inode));
+//	ecryptfs_printk(KERN_DEBUG, "inode w/ addr = [0x%p], i_ino = "
+//			"[0x%.16lx] size: [0x%.16llx]\n", inode, inode->i_ino,
+;
 	goto out;
 out_put:
 	ecryptfs_put_lower_file(inode);
@@ -440,9 +440,9 @@ int is_file_name_match(struct ecryptfs_mount_crypt_stat *mcs,
 		return 0;
 	str = kzalloc(mcs->max_name_filter_len + 1, GFP_KERNEL);
 	if (!str) {
-		printk(KERN_ERR "%s: Out of memory whilst attempting "
-			       "to kzalloc [%zd] bytes\n", __func__,
-			       (mcs->max_name_filter_len + 1));
+//		printk(KERN_ERR "%s: Out of memory whilst attempting "
+//			       "to kzalloc [%zd] bytes\n", __func__,
+;
 		return 0;
 	}
 

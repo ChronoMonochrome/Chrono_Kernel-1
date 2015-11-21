@@ -52,8 +52,8 @@ static int __init vivopay_serial_init(void)
 	retval = usb_register(&vivopay_serial_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	    DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&vivopay_serial_device);

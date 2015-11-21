@@ -116,19 +116,11 @@ void r8712_free_recv_priv(struct recv_priv *precvpriv)
 	kfree(precvpriv->pallocated_recv_buf);
 	skb_queue_purge(&precvpriv->rx_skb_queue);
 	if (skb_queue_len(&precvpriv->rx_skb_queue))
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "r8712u: rx_skb_queue not empty\n");
-#else
-		;
-#endif
+;
 	skb_queue_purge(&precvpriv->free_recv_skb_queue);
 	if (skb_queue_len(&precvpriv->free_recv_skb_queue))
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "r8712u: free_recv_skb_queue not empty "
-		       "%d\n", skb_queue_len(&precvpriv->free_recv_skb_queue));
-#else
-		;
-#endif
+//		printk(KERN_WARNING "r8712u: free_recv_skb_queue not empty "
+;
 }
 
 int r8712_init_recvbuf(struct _adapter *padapter, struct recv_buf *precvbuf)
@@ -371,13 +363,9 @@ static int amsdu_to_msdu(struct _adapter *padapter, union recv_frame *prframe)
 		nSubframe_Length = (nSubframe_Length >> 8) +
 				   (nSubframe_Length << 8);
 		if (a_len < (ETHERNET_HEADER_SIZE + nSubframe_Length)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "r8712u: nRemain_Length is %d and"
-			    " nSubframe_Length is: %d\n",
-			    a_len, nSubframe_Length);
-#else
-			;
-#endif
+//			printk(KERN_WARNING "r8712u: nRemain_Length is %d and"
+//			    " nSubframe_Length is: %d\n",
+;
 			goto exit;
 		}
 		/* move the data point to data content */
@@ -390,12 +378,8 @@ static int amsdu_to_msdu(struct _adapter *padapter, union recv_frame *prframe)
 		memcpy(data_ptr, pdata, nSubframe_Length);
 		subframes[nr_subframes++] = sub_skb;
 		if (nr_subframes >= MAX_SUBFRAME_COUNT) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "r8712u: ParseSubframe(): Too"
-			    " many Subframes! Packets dropped!\n");
-#else
-			;
-#endif
+//			printk(KERN_WARNING "r8712u: ParseSubframe(): Too"
+;
 			break;
 		}
 		pdata += nSubframe_Length;

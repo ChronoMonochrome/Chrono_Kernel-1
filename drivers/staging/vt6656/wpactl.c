@@ -518,12 +518,8 @@ static int wpa_set_scan(PSDevice pDevice,
 /**set ap_scan=1&&scan_ssid=1 under hidden ssid mode**/
         PSMgmtObject        pMgmt = &(pDevice->sMgmtObj);
         PWLAN_IE_SSID       pItemSSID;
-#ifdef CONFIG_DEBUG_PRINTK
-printk("wpa_set_scan-->desired [ssid=%s,ssid_len=%d]\n",
-	     param->u.scan_req.ssid,param->u.scan_req.ssid_len);
-#else
+//printk("wpa_set_scan-->desired [ssid=%s,ssid_len=%d]\n",
 ;
-#endif
 // Set the SSID
 memset(pMgmt->abyDesireSSID, 0, WLAN_IEHDR_LEN + WLAN_SSID_MAXLEN + 1);
 pItemSSID = (PWLAN_IE_SSID)pMgmt->abyDesireSSID;
@@ -638,11 +634,7 @@ static int wpa_get_scan(PSDevice pDevice,
 
     if (ptempBSS == NULL) {
 
-#ifdef CONFIG_DEBUG_PRINTK
-       printk("bubble sort kmalloc memory fail@@@\n");
-#else
-       ;
-#endif
+;
 
         ret = -ENOMEM;
 
@@ -672,11 +664,7 @@ static int wpa_get_scan(PSDevice pDevice,
 
   kfree(ptempBSS);
 
-#ifdef CONFIG_DEBUG_PRINTK
- // printk("bubble sort result:\n");
-#else
- // ;
-#endif
+;
 
 	count = 0;
 	pBSS = &(pMgmt->sBSSList[0]);
@@ -833,11 +821,7 @@ static int wpa_set_associate(PSDevice pDevice,
 	case CIPHER_WEP104:
 		pDevice->eEncryptionStatus = Ndis802_11Encryption1Enabled;
 		bwepEnabled = TRUE;
-#ifdef CONFIG_DEBUG_PRINTK
 	//	printk("****************wpa_set_associate:set CIPHER_WEP40_104\n");
-#else
-	//	;
-#endif
 		break;
 	case CIPHER_NONE:
 		if (param->u.wpa_associate.group_suite == CIPHER_CCMP)
@@ -898,11 +882,7 @@ static int wpa_set_associate(PSDevice pDevice,
                               );
 
     if (pCurr == NULL){
-#ifdef CONFIG_DEBUG_PRINTK
-    printk("wpa_set_associate---->hidden mode site survey before associate.......\n");
-#else
-    ;
-#endif
+;
     bScheduleCommand((void *) pDevice,
 		     WLAN_CMD_BSSID_SCAN,
 		     pMgmt->abyDesireSSID);

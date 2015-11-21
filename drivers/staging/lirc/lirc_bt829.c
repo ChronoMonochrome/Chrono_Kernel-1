@@ -54,14 +54,10 @@ static unsigned char do_get_bits(void);
 #define DRIVER_NAME "lirc_bt829"
 
 static int debug;
-#ifdef CONFIG_DEBUG_PRINTK
-#define dprintk(fmt, args...)						 \
-	do {								 \
-		if (debug)						 \
-			printk(KERN_DEBUG DRIVER_NAME ": "fmt, ## args); \
-#else
-#define d;
-#endif
+//#define dprintk(fmt, args...)						 \
+//	do {								 \
+//		if (debug)						 \
+;
 	} while (0)
 
 static int atir_minor;
@@ -76,24 +72,20 @@ static struct pci_dev *do_pci_probe(void)
 	my_dev = pci_get_device(PCI_VENDOR_ID_ATI,
 				PCI_DEVICE_ID_ATI_264VT, NULL);
 	if (my_dev) {
-		printk(KERN_ERR DRIVER_NAME ": Using device: %s\n",
-		       pci_name(my_dev));
+//		printk(KERN_ERR DRIVER_NAME ": Using device: %s\n",
+;
 		pci_addr_phys = 0;
 		if (my_dev->resource[0].flags & IORESOURCE_MEM) {
 			pci_addr_phys = my_dev->resource[0].start;
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_INFO DRIVER_NAME ": memory at 0x%08X\n",
-			       (unsigned int)pci_addr_phys);
-#else
-			;
-#endif
+//			printk(KERN_INFO DRIVER_NAME ": memory at 0x%08X\n",
+;
 		}
 		if (pci_addr_phys == 0) {
-			printk(KERN_ERR DRIVER_NAME ": no memory resource ?\n");
+;
 			return NULL;
 		}
 	} else {
-		printk(KERN_ERR DRIVER_NAME ": pci_probe failed\n");
+;
 		return NULL;
 	}
 	return my_dev;
@@ -106,11 +98,7 @@ static int atir_add_to_buf(void *data, struct lirc_buffer *buf)
 	status = poll_main();
 	key = (status >> 8) & 0xFF;
 	if (status & 0xFF) {
-#ifdef CONFIG_DEBUG_PRINTK
-		dprintk("reading key %02X\n", key);
-#else
-		d;
-#endif
+;
 		lirc_buffer_write(buf, &key);
 		return 0;
 	}
@@ -119,21 +107,13 @@ static int atir_add_to_buf(void *data, struct lirc_buffer *buf)
 
 static int atir_set_use_inc(void *data)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("driver is opened\n");
-#else
-	d;
-#endif
+;
 	return 0;
 }
 
 static void atir_set_use_dec(void *data)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("driver is closed\n");
-#else
-	d;
-#endif
+;
 }
 
 int init_module(void)
@@ -160,14 +140,10 @@ int init_module(void)
 
 	atir_minor = lirc_register_driver(&atir_driver);
 	if (atir_minor < 0) {
-		printk(KERN_ERR DRIVER_NAME ": failed to register driver!\n");
+;
 		return atir_minor;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
-	dprintk("driver is registered on minor %d\n", atir_minor);
-#else
-	d;
-#endif
+;
 
 	return 0;
 }
@@ -183,11 +159,7 @@ static int atir_init_start(void)
 {
 	pci_addr_lin = ioremap(pci_addr_phys + DATA_PCI_OFF, 0x400);
 	if (pci_addr_lin == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO DRIVER_NAME ": pci mem must be mapped\n");
-#else
-		;
-#endif
+;
 		return 0;
 	}
 	return 1;

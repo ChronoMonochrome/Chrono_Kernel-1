@@ -615,7 +615,7 @@ static int mon_text_release(struct inode *inode, struct file *file)
 	mbus = inode->i_private;
 
 	if (mbus->nreaders <= 0) {
-		printk(KERN_ERR TAG ": consistency error on close\n");
+;
 		mutex_unlock(&mon_lock);
 		return 0;
 	}
@@ -740,11 +740,11 @@ int __init mon_text_init(void)
 
 	mondir = debugfs_create_dir("usbmon", usb_debug_root);
 	if (IS_ERR(mondir)) {
-		printk(KERN_NOTICE TAG ": debugfs is not available\n");
+;
 		return -ENODEV;
 	}
 	if (mondir == NULL) {
-		printk(KERN_NOTICE TAG ": unable to create usbmon directory\n");
+;
 		return -ENODEV;
 	}
 	mon_dir = mondir;

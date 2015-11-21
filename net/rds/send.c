@@ -1006,16 +1006,16 @@ int rds_sendmsg(struct kiocb *iocb, struct socket *sock, struct msghdr *msg,
 
 	if (rm->rdma.op_active && !conn->c_trans->xmit_rdma) {
 		if (printk_ratelimit())
-			printk(KERN_NOTICE "rdma_op %p conn xmit_rdma %p\n",
-			       &rm->rdma, conn->c_trans->xmit_rdma);
+//			printk(KERN_NOTICE "rdma_op %p conn xmit_rdma %p\n",
+;
 		ret = -EOPNOTSUPP;
 		goto out;
 	}
 
 	if (rm->atomic.op_active && !conn->c_trans->xmit_atomic) {
 		if (printk_ratelimit())
-			printk(KERN_NOTICE "atomic_op %p conn xmit_atomic %p\n",
-			       &rm->atomic, conn->c_trans->xmit_atomic);
+//			printk(KERN_NOTICE "atomic_op %p conn xmit_atomic %p\n",
+;
 		ret = -EOPNOTSUPP;
 		goto out;
 	}

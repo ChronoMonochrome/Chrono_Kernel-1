@@ -161,7 +161,7 @@ static int lcdc_probe(struct platform_device *pdev)
 	if (platform_device_add_data
 	    (mdp_dev, pdev->dev.platform_data,
 	     sizeof(struct msm_fb_panel_data))) {
-		printk(KERN_ERR "lcdc_probe: platform_device_add_data failed!\n");
+;
 		platform_device_put(mdp_dev);
 		return -ENOMEM;
 	}
@@ -223,12 +223,12 @@ static int __init lcdc_driver_init(void)
 {
 	mdp_lcdc_pclk_clk = clk_get(NULL, "mdp_lcdc_pclk_clk");
 	if (IS_ERR(mdp_lcdc_pclk_clk)) {
-		printk(KERN_ERR "error: can't get mdp_lcdc_pclk_clk!\n");
+;
 		return PTR_ERR(mdp_lcdc_pclk_clk);
 	}
 	mdp_lcdc_pad_pclk_clk = clk_get(NULL, "mdp_lcdc_pad_pclk_clk");
 	if (IS_ERR(mdp_lcdc_pad_pclk_clk)) {
-		printk(KERN_ERR "error: can't get mdp_lcdc_pad_pclk_clk!\n");
+;
 		return PTR_ERR(mdp_lcdc_pad_pclk_clk);
 	}
 //	pm_qos_add_requirement(PM_QOS_SYSTEM_BUS_FREQ , "lcdc",

@@ -296,91 +296,47 @@ static int das800_probe(struct comedi_device *dev)
 	switch (id_bits) {
 	case 0x0:
 		if (board == das800) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: DAS-800\n");
-#else
-			;
-#endif
+;
 			return board;
 		}
 		if (board == ciodas800) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: CIO-DAS800\n");
-#else
-			;
-#endif
+;
 			return board;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" Board model (probed): DAS-800\n");
-#else
-		;
-#endif
+;
 		return das800;
 		break;
 	case 0x2:
 		if (board == das801) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: DAS-801\n");
-#else
-			;
-#endif
+;
 			return board;
 		}
 		if (board == ciodas801) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: CIO-DAS801\n");
-#else
-			;
-#endif
+;
 			return board;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" Board model (probed): DAS-801\n");
-#else
-		;
-#endif
+;
 		return das801;
 		break;
 	case 0x3:
 		if (board == das802) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: DAS-802\n");
-#else
-			;
-#endif
+;
 			return board;
 		}
 		if (board == ciodas802) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: CIO-DAS802\n");
-#else
-			;
-#endif
+;
 			return board;
 		}
 		if (board == ciodas80216) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" Board model: CIO-DAS802/16\n");
-#else
-			;
-#endif
+;
 			return board;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" Board model (probed): DAS-802\n");
-#else
-		;
-#endif
+;
 		return das802;
 		break;
 	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(" Board model: probe returned 0x%x (unknown)\n",
-		       id_bits);
-#else
-		;
-#endif
+//		printk(" Board model: probe returned 0x%x (unknown)\n",
+;
 		return board;
 		break;
 	}
@@ -510,74 +466,42 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	unsigned long irq_flags;
 	int board;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: das800: io 0x%lx", dev->minor, iobase);
-#else
-	;
-#endif
+;
 	if (irq)
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(", irq %u", irq);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
+;
 
 	/* allocate and initialize dev->private */
 	if (alloc_private(dev, sizeof(struct das800_private)) < 0)
 		return -ENOMEM;
 
 	if (iobase == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("io base address required for das800\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 
 	/* check if io addresses are available */
 	if (!request_region(iobase, DAS800_SIZE, "das800")) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("I/O port conflict\n");
-#else
-		;
-#endif
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
 
 	board = das800_probe(dev);
 	if (board < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("unable to determine board type\n");
-#else
-		;
-#endif
+;
 		return -ENODEV;
 	}
 	dev->board_ptr = das800_boards + board;
 
 	/* grab our IRQ */
 	if (irq == 1 || irq > 7) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("irq out of range\n");
-#else
-		;
-#endif
+;
 		return -EINVAL;
 	}
 	if (irq) {
 		if (request_irq(irq, das800_interrupt, 0, "das800", dev)) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("unable to allocate irq %u\n", irq);
-#else
-			;
-#endif
+;
 			return -EINVAL;
 		}
 	}
@@ -633,11 +557,7 @@ static int das800_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 static int das800_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("comedi%d: das800: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	/* only free stuff if it has been allocated by _attach */
 	if (dev->iobase)

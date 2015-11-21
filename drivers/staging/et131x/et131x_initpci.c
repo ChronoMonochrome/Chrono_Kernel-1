@@ -825,11 +825,7 @@ static int __init et131x_init_module(void)
 {
 	if (et131x_speed_set < PARM_SPEED_DUPLEX_MIN ||
 	    et131x_speed_set > PARM_SPEED_DUPLEX_MAX) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "et131x: invalid speed setting ignored.\n");
-#else
-		;
-#endif
+;
 		et131x_speed_set = 0;
 	}
 	return pci_register_driver(&et131x_driver);

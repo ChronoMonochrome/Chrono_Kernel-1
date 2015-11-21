@@ -23,11 +23,7 @@ Dot11d_Init(struct ieee80211_device *ieee)
 	memset(pDot11dInfo->MaxTxPwrDbmList, 0xFF, MAX_CHANNEL_NUMBER+1);
 	RESET_CIE_WATCHDOG(ieee);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("Dot11d_Init()\n");
-#else
-	;
-#endif
+;
 }
 
 //
@@ -92,20 +88,12 @@ Dot11d_UpdateCountryIe(
 	{
 		if(MaxChnlNum >= pTriple->FirstChnl)
 		{ // It is not in a monotonically increasing order, so stop processing.
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("Dot11d_UpdateCountryIe(): Invalid country IE, skip it........1\n");
-#else
-			;
-#endif
+;
 			return;
 		}
 		if(MAX_CHANNEL_NUMBER < (pTriple->FirstChnl + pTriple->NumChnls))
 		{ // It is not a valid set of channel id, so stop processing.
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("Dot11d_UpdateCountryIe(): Invalid country IE, skip it........2\n");
-#else
-			;
-#endif
+;
 			return;
 		}
 
@@ -119,23 +107,11 @@ Dot11d_UpdateCountryIe(
 		pTriple = (PCHNL_TXPOWER_TRIPLE)((u8*)pTriple + 3);
 	}
 #if 1
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("Channel List:");
-#else
-	;
-#endif
+;
 	for(i=1; i<= MAX_CHANNEL_NUMBER; i++)
 		if(pDot11dInfo->channel_map[i] > 0)
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(" %d", i);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("\n");
-#else
-	;
-#endif
+;
+;
 #endif
 
 	UPDATE_CIE_SRC(dev, pTaddr);
@@ -157,11 +133,7 @@ DOT11D_GetMaxTxPwrInDbm(
 
 	if(MAX_CHANNEL_NUMBER < Channel)
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("DOT11D_GetMaxTxPwrInDbm(): Invalid Channel\n");
-#else
-		;
-#endif
+;
 		return MaxTxPwrInDbm;
 	}
 	if(pDot11dInfo->channel_map[Channel])
@@ -206,11 +178,7 @@ int IsLegalChannel(
 
 	if(MAX_CHANNEL_NUMBER < channel)
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("IsLegalChannel(): Invalid Channel\n");
-#else
-		;
-#endif
+;
 		return 0;
 	}
 	if(pDot11dInfo->channel_map[channel] > 0)
@@ -238,11 +206,7 @@ int ToLegalChannel(
 
 	if(MAX_CHANNEL_NUMBER < channel)
 	{
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("IsLegalChannel(): Invalid Channel\n");
-#else
-		;
-#endif
+;
 		return default_chn;
 	}
 

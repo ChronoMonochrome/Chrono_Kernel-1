@@ -73,7 +73,7 @@ static void jffs2_write_super(struct super_block *sb)
 	sb->s_dirt = 0;
 
 	if (!(sb->s_flags & MS_RDONLY)) {
-		D1(printk(KERN_DEBUG "jffs2_write_super()\n"));
+;
 		jffs2_flush_wbuf_gc(c, 0);
 	}
 
@@ -218,8 +218,8 @@ static int jffs2_parse_options(struct jffs2_sb_info *c, char *data)
 						JFFS2_COMPR_MODE_FORCEZLIB;
 #endif
 			else {
-				printk(KERN_ERR "JFFS2 Error: unknown compressor \"%s\"",
-						name);
+//				printk(KERN_ERR "JFFS2 Error: unknown compressor \"%s\"",
+;
 				kfree(name);
 				return -EINVAL;
 			}
@@ -227,8 +227,8 @@ static int jffs2_parse_options(struct jffs2_sb_info *c, char *data)
 			c->mount_opts.override_compr = true;
 			break;
 		default:
-			printk(KERN_ERR "JFFS2 Error: unrecognized mount option '%s' or missing value\n",
-					p);
+//			printk(KERN_ERR "JFFS2 Error: unrecognized mount option '%s' or missing value\n",
+;
 			return -EINVAL;
 		}
 	}
@@ -270,9 +270,9 @@ static int jffs2_fill_super(struct super_block *sb, void *data, int silent)
 	struct jffs2_sb_info *c;
 	int ret;
 
-	D1(printk(KERN_DEBUG "jffs2_get_sb_mtd():"
-		  " New superblock for device %d (\"%s\")\n",
-		  sb->s_mtd->index, sb->s_mtd->name));
+//	D1(printk(KERN_DEBUG "jffs2_get_sb_mtd():"
+//		  " New superblock for device %d (\"%s\")\n",
+;
 
 	c = kzalloc(sizeof(*c), GFP_KERNEL);
 	if (!c)
@@ -319,7 +319,7 @@ static void jffs2_put_super (struct super_block *sb)
 {
 	struct jffs2_sb_info *c = JFFS2_SB_INFO(sb);
 
-	D2(printk(KERN_DEBUG "jffs2: jffs2_put_super()\n"));
+;
 
 	if (sb->s_dirt)
 		jffs2_write_super(sb);
@@ -342,7 +342,7 @@ static void jffs2_put_super (struct super_block *sb)
 	if (c->mtd->sync)
 		c->mtd->sync(c->mtd);
 
-	D1(printk(KERN_DEBUG "jffs2_put_super returning\n"));
+;
 }
 
 static void jffs2_kill_sb(struct super_block *sb)
@@ -377,14 +377,14 @@ static int __init init_jffs2_fs(void)
 	BUILD_BUG_ON(sizeof(struct jffs2_raw_inode) != 68);
 	BUILD_BUG_ON(sizeof(struct jffs2_raw_summary) != 32);
 
-	printk(KERN_INFO "JFFS2 version 2.2."
-#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
-	       " (NAND)"
-#endif
-#ifdef CONFIG_JFFS2_SUMMARY
-	       " (SUMMARY) "
-#endif
-	       " © 2001-2006 Red Hat, Inc.\n");
+//	printk(KERN_INFO "JFFS2 version 2.2."
+//#ifdef CONFIG_JFFS2_FS_WRITEBUFFER
+//	       " (NAND)"
+//#endif
+//#ifdef CONFIG_JFFS2_SUMMARY
+//	       " (SUMMARY) "
+//#endif
+;
 
 	jffs2_inode_cachep = kmem_cache_create("jffs2_i",
 					     sizeof(struct jffs2_inode_info),
@@ -392,22 +392,22 @@ static int __init init_jffs2_fs(void)
 						SLAB_MEM_SPREAD),
 					     jffs2_i_init_once);
 	if (!jffs2_inode_cachep) {
-		printk(KERN_ERR "JFFS2 error: Failed to initialise inode cache\n");
+;
 		return -ENOMEM;
 	}
 	ret = jffs2_compressors_init();
 	if (ret) {
-		printk(KERN_ERR "JFFS2 error: Failed to initialise compressors\n");
+;
 		goto out;
 	}
 	ret = jffs2_create_slab_caches();
 	if (ret) {
-		printk(KERN_ERR "JFFS2 error: Failed to initialise slab caches\n");
+;
 		goto out_compressors;
 	}
 	ret = register_filesystem(&jffs2_fs_type);
 	if (ret) {
-		printk(KERN_ERR "JFFS2 error: Failed to register filesystem\n");
+;
 		goto out_slab;
 	}
 	return 0;

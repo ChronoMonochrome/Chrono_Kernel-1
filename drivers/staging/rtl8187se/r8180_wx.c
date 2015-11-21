@@ -192,11 +192,7 @@ static int r8180_wx_set_mode(struct net_device *dev, struct iw_request_info *a,
 		return 0;
 
 	down(&priv->wx_sem);
-#ifdef CONFIG_DEBUG_PRINTK
 /*	printk("set mode ENABLE_IPS\n");	*/
-#else
-/*	;
-#endif
 	if (priv->bInactivePs)	{
 		if (wrqu->mode == IW_MODE_ADHOC)
 			IPSLeave(dev);
@@ -344,42 +340,22 @@ static int r8180_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
 		return 0;
 
 /*YJ,add,080819, for hidden ap	*/
-#ifdef CONFIG_DEBUG_PRINTK
 	/*printk("==*&*&*&==>%s in\n", __func__);	*/
-#else
-	/*;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	/*printk("=*&*&*&*===>flag:%x, %x\n", wrqu->data.flags, IW_SCAN_THIS_ESSID);	*/
-#else
-	/*;
-#endif
 	if (wrqu->data.flags & IW_SCAN_THIS_ESSID)	{
 		struct iw_scan_req* req = (struct iw_scan_req*)b;
 		if (req->essid_len)		{
-#ifdef CONFIG_DEBUG_PRINTK
 			/*printk("==**&*&*&**===>scan set ssid:%s\n", req->essid); */
-#else
-			/*;
-#endif
 			ieee->current_network.ssid_len = req->essid_len;
 			memcpy(ieee->current_network.ssid, req->essid, req->essid_len);
-#ifdef CONFIG_DEBUG_PRINTK
 			/*printk("=====>network ssid:%s\n", ieee->current_network.ssid); */
-#else
-			/*;
-#endif
 		}
 	}
 /*YJ,add,080819, for hidden ap, end */
 
 	down(&priv->wx_sem);
 	if (priv->up)	{
-#ifdef CONFIG_DEBUG_PRINTK
 /*		printk("set scan ENABLE_IPS\n");	*/
-#else
-/*		;
-#endif
 		priv->ieee80211->actscanning = true;
 		if (priv->bInactivePs && (priv->ieee80211->state != IEEE80211_LINKED))	{
 			IPSLeave(dev);
@@ -393,11 +369,7 @@ static int r8180_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
 			}
 */
 	/*	queue_work(priv->ieee80211->wq, &priv->ieee80211->wx_sync_scan_wq); */
-#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("start scan============================>\n"); */
-#else
-		/* ;
-#endif
 		ieee80211_softmac_ips_scan_syncro(priv->ieee80211);
 /* ieee80211_rtl_start_scan(priv->ieee80211); */
 		/* intentionally forget to up sem */
@@ -408,11 +380,7 @@ static int r8180_wx_set_scan(struct net_device *dev, struct iw_request_info *a,
 			/* FIXME: Need to consider last scan time */
 			if ((priv->link_detect.bBusyTraffic) && (true))	{
 				ret = 0;
-#ifdef CONFIG_DEBUG_PRINTK
-				printk("Now traffic is busy, please try later!\n");
-#else
-				;
-#endif
+;
 			}	else
 				/* YJ,add,080828, prevent scan in BusyTraffic,end */
 				ret = ieee80211_wx_set_scan(priv->ieee80211, a, wrqu, b);
@@ -456,18 +424,10 @@ static int r8180_wx_set_essid(struct net_device *dev,
 		return 0;
 
 	down(&priv->wx_sem);
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("set essid ENABLE_IPS\n"); */
-#else
-	/* ;
-#endif
 	if (priv->bInactivePs)
 		IPSLeave(dev);
-#ifdef CONFIG_DEBUG_PRINTK
 /*	printk("haha:set essid %s essid_len = %d essid_flgs = %d\n",b,  wrqu->essid.length, wrqu->essid.flags);	*/
-#else
-/*	;
-#endif
 
 	ret = ieee80211_wx_set_essid(priv->ieee80211, a, wrqu, b);
 
@@ -831,11 +791,7 @@ static int r8180_wx_set_power(struct net_device *dev,
 		return 0;
 
 	down(&priv->wx_sem);
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("=>>>>>>>>>>=============================>set power:%d, %d!\n", wrqu->power.disabled, wrqu->power.flags);
-#else
-	;
-#endif
+;
 	if (wrqu->power.disabled == 0) {
 		wrqu->power.flags |= IW_POWER_ALL_R;
 		wrqu->power.flags |= IW_POWER_TIMEOUT;
@@ -988,28 +944,16 @@ static int r8180_wx_set_iwmode(struct net_device *dev,
 	if (*param == 1) {
 		modulation |= IEEE80211_CCK_MODULATION;
 		mode = IEEE_B;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "B mode!\n");
-#else
-	;
-#endif
+;
 	} else if (*param == 2) {
 		modulation |= IEEE80211_OFDM_MODULATION;
 		mode = IEEE_G;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "G mode!\n");
-#else
-	;
-#endif
+;
 	} else if (*param == 3) {
 		modulation |= IEEE80211_CCK_MODULATION;
 		modulation |= IEEE80211_OFDM_MODULATION;
 		mode = IEEE_B|IEEE_G;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "B/G mode!\n");
-#else
-	;
-#endif
+;
 	}
 
 	if (ieee->proto_started) {
@@ -1209,11 +1153,7 @@ static int r8180_wx_set_channelplan(struct net_device *dev,
 	/* struct ieee80211_device *ieee = netdev_priv(dev); */
 	int *val = (int *)extra;
 	int i;
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("-----in fun %s\n", __func__);
-#else
-	;
-#endif
+;
 
 	if (priv->ieee80211->bHwRadioOff)
 		return 0;
@@ -1261,11 +1201,7 @@ static int r8180_wx_set_forcerate(struct net_device *dev,
 
 	down(&priv->wx_sem);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk("==============>%s(): forcerate is %d\n", __func__, forcerate);
-#else
-	;
-#endif
+;
 	if ((forcerate == 2) || (forcerate == 4) || (forcerate == 11) || (forcerate == 22) || (forcerate == 12) ||
 		(forcerate == 18) || (forcerate == 24) || (forcerate == 36) || (forcerate == 48) || (forcerate == 72) ||
 		(forcerate == 96) || (forcerate == 108))
@@ -1274,17 +1210,9 @@ static int r8180_wx_set_forcerate(struct net_device *dev,
 		priv->ieee80211->rate = forcerate * 5;
 	}	else if (forcerate == 0)	{
 		priv->ForcedDataRate = 0;
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("OK! return rate adaptive\n");
-#else
-		;
-#endif
+;
 	}	else
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("ERR: wrong rate\n");
-#else
-			;
-#endif
+;
 	up(&priv->wx_sem);
 	return 0;
 }
@@ -1295,11 +1223,7 @@ static int r8180_wx_set_enc_ext(struct net_device *dev,
 {
 
 	struct r8180_priv *priv = ieee80211_priv(dev);
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("===>%s()\n", __func__); */
-#else
-	/* ;
-#endif
 
 	int ret = 0;
 
@@ -1316,11 +1240,7 @@ static int r8180_wx_set_auth(struct net_device *dev,
 			     struct iw_request_info *info,
 			     union iwreq_data *wrqu, char *extra)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("====>%s()\n", __func__); */
-#else
-	/* ;
-#endif
 	struct r8180_priv *priv = ieee80211_priv(dev);
 	int ret = 0;
 
@@ -1337,11 +1257,7 @@ static int r8180_wx_set_mlme(struct net_device *dev,
 										struct iw_request_info *info,
 										union iwreq_data *wrqu, char *extra)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("====>%s()\n", __func__); */
-#else
-	/* ;
-#endif
 
 	int ret = 0;
 	struct r8180_priv *priv = ieee80211_priv(dev);
@@ -1362,11 +1278,7 @@ static int r8180_wx_set_gen_ie(struct net_device *dev,
 			       struct iw_request_info *info,
 			       union iwreq_data *wrqu, char *extra)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 /*	printk("====>%s(), len:%d\n", __func__, data->length); */
-#else
-/*	;
-#endif
 	int ret = 0;
 		struct r8180_priv *priv = ieee80211_priv(dev);
 
@@ -1379,11 +1291,7 @@ static int r8180_wx_set_gen_ie(struct net_device *dev,
 		ret = ieee80211_wx_set_gen_ie(priv->ieee80211, extra, wrqu->data.length);
 #endif
 		up(&priv->wx_sem);
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("<======%s(), ret:%d\n", __func__, ret); */
-#else
-	/* ;
-#endif
 		return ret;
 
 
@@ -1644,17 +1552,9 @@ static struct iw_statistics *r8180_get_wireless_stats(struct net_device *dev)
 	tmp_level = (&ieee->current_network)->stats.signal;
 	tmp_qual = (&ieee->current_network)->stats.signalstrength;
 	tmp_noise = (&ieee->current_network)->stats.noise;
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("level:%d, qual:%d, noise:%d\n", tmp_level, tmp_qual, tmp_noise); */
-#else
-	/* ;
-#endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 /*	printk("level:%d\n", tmp_level);	*/
-#else
-/*	;
-#endif
 	wstats->qual.level = tmp_level;
 	wstats->qual.qual = tmp_qual;
 	wstats->qual.noise = tmp_noise;

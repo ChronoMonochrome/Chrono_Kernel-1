@@ -431,7 +431,7 @@ static int p9_virtio_probe(struct virtio_device *vdev)
 
 	chan = kmalloc(sizeof(struct virtio_chan), GFP_KERNEL);
 	if (!chan) {
-		printk(KERN_ERR "9p: Failed to allocate virtio 9P channel\n");
+;
 		err = -ENOMEM;
 		goto fail;
 	}
@@ -532,7 +532,7 @@ p9_virtio_create(struct p9_client *client, const char *devname, char *args)
 	mutex_unlock(&virtio_9p_lock);
 
 	if (!found) {
-		printk(KERN_ERR "9p: no channels available\n");
+;
 		return ret;
 	}
 

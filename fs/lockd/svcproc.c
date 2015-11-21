@@ -96,7 +96,7 @@ no_locks:
 static __be32
 nlmsvc_proc_null(struct svc_rqst *rqstp, void *argp, void *resp)
 {
-	dprintk("lockd: NULL          called\n");
+;
 	return rpc_success;
 }
 
@@ -111,7 +111,7 @@ nlmsvc_proc_test(struct svc_rqst *rqstp, struct nlm_args *argp,
 	struct nlm_file	*file;
 	__be32 rc = rpc_success;
 
-	dprintk("lockd: TEST          called\n");
+;
 	resp->cookie = argp->cookie;
 
 	/* Obtain client and file */
@@ -123,8 +123,8 @@ nlmsvc_proc_test(struct svc_rqst *rqstp, struct nlm_args *argp,
 	if (resp->status == nlm_drop_reply)
 		rc = rpc_drop_reply;
 	else
-		dprintk("lockd: TEST          status %d vers %d\n",
-			ntohl(resp->status), rqstp->rq_vers);
+//		dprintk("lockd: TEST          status %d vers %d\n",
+;
 
 	nlmsvc_release_host(host);
 	nlm_release_file(file);
@@ -139,7 +139,7 @@ nlmsvc_proc_lock(struct svc_rqst *rqstp, struct nlm_args *argp,
 	struct nlm_file	*file;
 	__be32 rc = rpc_success;
 
-	dprintk("lockd: LOCK          called\n");
+;
 
 	resp->cookie = argp->cookie;
 
@@ -166,7 +166,7 @@ nlmsvc_proc_lock(struct svc_rqst *rqstp, struct nlm_args *argp,
 	if (resp->status == nlm_drop_reply)
 		rc = rpc_drop_reply;
 	else
-		dprintk("lockd: LOCK         status %d\n", ntohl(resp->status));
+;
 
 	nlmsvc_release_host(host);
 	nlm_release_file(file);
@@ -180,7 +180,7 @@ nlmsvc_proc_cancel(struct svc_rqst *rqstp, struct nlm_args *argp,
 	struct nlm_host	*host;
 	struct nlm_file	*file;
 
-	dprintk("lockd: CANCEL        called\n");
+;
 
 	resp->cookie = argp->cookie;
 
@@ -197,7 +197,7 @@ nlmsvc_proc_cancel(struct svc_rqst *rqstp, struct nlm_args *argp,
 	/* Try to cancel request. */
 	resp->status = cast_status(nlmsvc_cancel_blocked(file, &argp->lock));
 
-	dprintk("lockd: CANCEL        status %d\n", ntohl(resp->status));
+;
 	nlmsvc_release_host(host);
 	nlm_release_file(file);
 	return rpc_success;
@@ -213,7 +213,7 @@ nlmsvc_proc_unlock(struct svc_rqst *rqstp, struct nlm_args *argp,
 	struct nlm_host	*host;
 	struct nlm_file	*file;
 
-	dprintk("lockd: UNLOCK        called\n");
+;
 
 	resp->cookie = argp->cookie;
 
@@ -230,7 +230,7 @@ nlmsvc_proc_unlock(struct svc_rqst *rqstp, struct nlm_args *argp,
 	/* Now try to remove the lock */
 	resp->status = cast_status(nlmsvc_unlock(file, &argp->lock));
 
-	dprintk("lockd: UNLOCK        status %d\n", ntohl(resp->status));
+;
 	nlmsvc_release_host(host);
 	nlm_release_file(file);
 	return rpc_success;
@@ -246,9 +246,9 @@ nlmsvc_proc_granted(struct svc_rqst *rqstp, struct nlm_args *argp,
 {
 	resp->cookie = argp->cookie;
 
-	dprintk("lockd: GRANTED       called\n");
+;
 	resp->status = nlmclnt_grant(svc_addr(rqstp), &argp->lock);
-	dprintk("lockd: GRANTED       status %d\n", ntohl(resp->status));
+;
 	return rpc_success;
 }
 
@@ -257,8 +257,8 @@ nlmsvc_proc_granted(struct svc_rqst *rqstp, struct nlm_args *argp,
  */
 static void nlmsvc_callback_exit(struct rpc_task *task, void *data)
 {
-	dprintk("lockd: %5u callback returned %d\n", task->tk_pid,
-			-task->tk_status);
+//	dprintk("lockd: %5u callback returned %d\n", task->tk_pid,
+;
 }
 
 void nlmsvc_release_call(struct nlm_rqst *call)
@@ -316,21 +316,21 @@ static __be32 nlmsvc_callback(struct svc_rqst *rqstp, u32 proc, struct nlm_args 
 static __be32 nlmsvc_proc_test_msg(struct svc_rqst *rqstp, struct nlm_args *argp,
 					     void	     *resp)
 {
-	dprintk("lockd: TEST_MSG      called\n");
+;
 	return nlmsvc_callback(rqstp, NLMPROC_TEST_RES, argp, nlmsvc_proc_test);
 }
 
 static __be32 nlmsvc_proc_lock_msg(struct svc_rqst *rqstp, struct nlm_args *argp,
 					     void	     *resp)
 {
-	dprintk("lockd: LOCK_MSG      called\n");
+;
 	return nlmsvc_callback(rqstp, NLMPROC_LOCK_RES, argp, nlmsvc_proc_lock);
 }
 
 static __be32 nlmsvc_proc_cancel_msg(struct svc_rqst *rqstp, struct nlm_args *argp,
 					       void	       *resp)
 {
-	dprintk("lockd: CANCEL_MSG    called\n");
+;
 	return nlmsvc_callback(rqstp, NLMPROC_CANCEL_RES, argp, nlmsvc_proc_cancel);
 }
 
@@ -338,7 +338,7 @@ static __be32
 nlmsvc_proc_unlock_msg(struct svc_rqst *rqstp, struct nlm_args *argp,
                                                void            *resp)
 {
-	dprintk("lockd: UNLOCK_MSG    called\n");
+;
 	return nlmsvc_callback(rqstp, NLMPROC_UNLOCK_RES, argp, nlmsvc_proc_unlock);
 }
 
@@ -346,7 +346,7 @@ static __be32
 nlmsvc_proc_granted_msg(struct svc_rqst *rqstp, struct nlm_args *argp,
                                                 void            *resp)
 {
-	dprintk("lockd: GRANTED_MSG   called\n");
+;
 	return nlmsvc_callback(rqstp, NLMPROC_GRANTED_RES, argp, nlmsvc_proc_granted);
 }
 
@@ -360,7 +360,7 @@ nlmsvc_proc_share(struct svc_rqst *rqstp, struct nlm_args *argp,
 	struct nlm_host	*host;
 	struct nlm_file	*file;
 
-	dprintk("lockd: SHARE         called\n");
+;
 
 	resp->cookie = argp->cookie;
 
@@ -377,7 +377,7 @@ nlmsvc_proc_share(struct svc_rqst *rqstp, struct nlm_args *argp,
 	/* Now try to create the share */
 	resp->status = cast_status(nlmsvc_share_file(host, file, argp));
 
-	dprintk("lockd: SHARE         status %d\n", ntohl(resp->status));
+;
 	nlmsvc_release_host(host);
 	nlm_release_file(file);
 	return rpc_success;
@@ -393,7 +393,7 @@ nlmsvc_proc_unshare(struct svc_rqst *rqstp, struct nlm_args *argp,
 	struct nlm_host	*host;
 	struct nlm_file	*file;
 
-	dprintk("lockd: UNSHARE       called\n");
+;
 
 	resp->cookie = argp->cookie;
 
@@ -410,7 +410,7 @@ nlmsvc_proc_unshare(struct svc_rqst *rqstp, struct nlm_args *argp,
 	/* Now try to unshare the file */
 	resp->status = cast_status(nlmsvc_unshare_file(host, file, argp));
 
-	dprintk("lockd: UNSHARE       status %d\n", ntohl(resp->status));
+;
 	nlmsvc_release_host(host);
 	nlm_release_file(file);
 	return rpc_success;
@@ -423,7 +423,7 @@ static __be32
 nlmsvc_proc_nm_lock(struct svc_rqst *rqstp, struct nlm_args *argp,
 				            struct nlm_res  *resp)
 {
-	dprintk("lockd: NM_LOCK       called\n");
+;
 
 	argp->monitor = 0;		/* just clean the monitor flag */
 	return nlmsvc_proc_lock(rqstp, argp, resp);
@@ -454,12 +454,12 @@ static __be32
 nlmsvc_proc_sm_notify(struct svc_rqst *rqstp, struct nlm_reboot *argp,
 					      void	        *resp)
 {
-	dprintk("lockd: SM_NOTIFY     called\n");
+;
 
 	if (!nlm_privileged_requester(rqstp)) {
 		char buf[RPC_MAX_ADDRBUFLEN];
-		printk(KERN_WARNING "lockd: rejected NSM callback from %s\n",
-				svc_print_addr(rqstp, buf, sizeof(buf)));
+//		printk(KERN_WARNING "lockd: rejected NSM callback from %s\n",
+;
 		return rpc_system_err;
 	}
 
@@ -477,7 +477,7 @@ nlmsvc_proc_granted_res(struct svc_rqst *rqstp, struct nlm_res  *argp,
 	if (!nlmsvc_ops)
 		return rpc_success;
 
-	dprintk("lockd: GRANTED_RES   called\n");
+;
 
 	nlmsvc_grant_reply(&argp->cookie, argp->status);
 	return rpc_success;

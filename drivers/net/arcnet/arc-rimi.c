@@ -85,8 +85,8 @@ static void arcrimi_copy_from_card(struct net_device *dev, int bufnum, int offse
  */
 static int __init arcrimi_probe(struct net_device *dev)
 {
-	BUGLVL(D_NORMAL) printk(VERSION);
-	BUGLVL(D_NORMAL) printk("E-mail me if you actually test the RIM I driver, please!\n");
+;
+;
 
 	BUGMSG(D_NORMAL, "Given: node %02Xh, shmem %lXh, irq %d\n",
 	       dev->dev_addr[0], dev->mem_start, dev->irq);
@@ -378,7 +378,7 @@ static int __init arcrimi_setup(char *s)
 		return 1;
 	switch (ints[0]) {
 	default:		/* ERROR */
-		printk("arcrimi: Too many arguments.\n");
+;
 	case 3:		/* Node ID */
 		node = ints[3];
 	case 2:		/* IRQ */

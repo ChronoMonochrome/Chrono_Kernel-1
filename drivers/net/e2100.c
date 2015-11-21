@@ -210,10 +210,10 @@ static int __init e21_probe1(struct net_device *dev, int ioaddr)
 	outb(0, ioaddr + E21_ASIC); 	/* and disable the secondary interface. */
 
 	if (ei_debug  &&  version_printed++ == 0)
-		printk(version);
+;
 
 	for (i = 0; i < 6; i++)
-		printk(" %02X", station_addr[i]);
+;
 
 	if (dev->irq < 2) {
 		static const int irqlist[] = {15, 11, 10, 12, 5, 9, 3, 4};
@@ -223,7 +223,7 @@ static int __init e21_probe1(struct net_device *dev, int ioaddr)
 				break;
 			}
 		if (i >= ARRAY_SIZE(irqlist)) {
-			printk(" unable to get IRQ %d.\n", dev->irq);
+;
 			retval = -EAGAIN;
 			goto out;
 		}
@@ -262,7 +262,7 @@ static int __init e21_probe1(struct net_device *dev, int ioaddr)
 
 	ei_status.mem = ioremap(dev->mem_start, 2*1024);
 	if (!ei_status.mem) {
-		printk("unable to remap memory\n");
+;
 		retval = -EAGAIN;
 		goto out;
 	}
@@ -274,8 +274,8 @@ static int __init e21_probe1(struct net_device *dev, int ioaddr)
 	dev->mem_end = ei_status.rmem_end = dev->mem_start + 2*1024;
 #endif
 
-	printk(", IRQ %d, %s media, memory @ %#lx.\n", dev->irq,
-		   dev->if_port ? "secondary" : "primary", dev->mem_start);
+//	printk(", IRQ %d, %s media, memory @ %#lx.\n", dev->irq,
+;
 
 	ei_status.reset_8390 = &e21_reset_8390;
 	ei_status.block_input = &e21_block_input;
@@ -322,12 +322,12 @@ e21_reset_8390(struct net_device *dev)
 	short ioaddr = dev->base_addr;
 
 	outb(0x01, ioaddr);
-	if (ei_debug > 1) printk("resetting the E2180x3 t=%ld...", jiffies);
+;
 	ei_status.txing = 0;
 
 	/* Set up the ASIC registers, just in case something changed them. */
 
-	if (ei_debug > 1) printk("reset done\n");
+;
 }
 
 /* Grab the 8390 specific header. We put the 2k window so the header page
@@ -392,7 +392,7 @@ e21_close(struct net_device *dev)
 	short ioaddr = dev->base_addr;
 
 	if (ei_debug > 1)
-		printk("%s: Shutting down ethercard.\n", dev->name);
+;
 
 	free_irq(dev->irq, dev);
 	dev->irq = ei_status.saved_irq;
@@ -443,7 +443,7 @@ int __init init_module(void)
 	for (this_dev = 0; this_dev < MAX_E21_CARDS; this_dev++) {
 		if (io[this_dev] == 0)  {
 			if (this_dev != 0) break; /* only autoprobe 1st one */
-			printk(KERN_NOTICE "e2100.c: Presently autoprobing (not recommended) for a single card.\n");
+;
 		}
 		dev = alloc_ei_netdev();
 		if (!dev)
@@ -457,7 +457,7 @@ int __init init_module(void)
 			continue;
 		}
 		free_netdev(dev);
-		printk(KERN_WARNING "e2100.c: No E2100 card found (i/o = 0x%x).\n", io[this_dev]);
+;
 		break;
 	}
 	if (found)

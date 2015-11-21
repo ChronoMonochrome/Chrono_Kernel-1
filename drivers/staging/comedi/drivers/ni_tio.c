@@ -705,8 +705,8 @@ static unsigned ni_m_series_source_select_bits(unsigned int clock_source)
 		}
 		if (i <= ni_m_series_max_pfi_channel)
 			break;
-		printk(KERN_ERR "invalid clock source 0x%lx\n",
-		       (unsigned long)clock_source);
+//		printk(KERN_ERR "invalid clock source 0x%lx\n",
+;
 		BUG();
 		ni_m_series_clock = 0;
 		break;
@@ -1320,11 +1320,7 @@ static int ni_tio_set_other_src(struct ni_gpct *counter, unsigned index,
 		counter_dev->regs[abz_reg] &= ~mask;
 		counter_dev->regs[abz_reg] |= (source << shift) & mask;
 		write_register(counter, counter_dev->regs[abz_reg], abz_reg);
-#ifdef CONFIG_DEBUG_PRINTK
 /* printk("%s %x %d %d\n", __func__, counter_dev->regs[abz_reg], index, source); */
-#else
-/* ;
-#endif
 		return 0;
 	}
 	return -EINVAL;

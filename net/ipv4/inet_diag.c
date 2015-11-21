@@ -453,7 +453,7 @@ static int inet_diag_bc_audit(const void *bytecode, int bytecode_len)
 	while (len > 0) {
 		const struct inet_diag_bc_op *op = bc;
 
-//printk("BC: %d %d %d {%d} / %d\n", op->code, op->yes, op->no, op[1].no, len);
+;
 		switch (op->code) {
 		case INET_DIAG_BC_AUTO:
 		case INET_DIAG_BC_S_COND:

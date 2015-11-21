@@ -108,11 +108,7 @@ int RIONewTable(struct rio_info *p)
 	 ** (9) That names aren't duplicated
 	 ** xx (10) That hosts that actually exist are mentioned in the table. xx
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(1)\n");
-#else
-	rio_d;
-#endif
+;
 	if (p->RIOSystemUp) {	/* (1) */
 		p->RIOError.Error = HOST_HAS_ALREADY_BEEN_BOOTED;
 		return -EBUSY;
@@ -125,11 +121,7 @@ int RIONewTable(struct rio_info *p)
 	for (Entry = 0; Entry < TOTAL_MAP_ENTRIES; Entry++) {
 		MapP = &p->RIOConnectTable[Entry];
 		if ((MapP->Flags & RTA16_SECOND_SLOT) == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(2)\n");
-#else
-			rio_d;
-#endif
+;
 			cptr = MapP->Name;	/* (2) */
 			cptr[MAX_NAME_LEN - 1] = '\0';
 			if (cptr[0] == '\0') {
@@ -157,35 +149,19 @@ int RIONewTable(struct rio_info *p)
 			continue;
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(3)\n");
-#else
-		rio_d;
-#endif
+;
 		if (!MapP->RtaUniqueNum && !MapP->HostUniqueNum) {	/* (3) */
 			if (MapP->ID || MapP->SysPort || MapP->Flags) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "%s pretending to be empty but isn't\n", MapP->Name);
-#else
-				rio_d;
-#endif
+;
 				p->RIOError.Error = TABLE_ENTRY_ISNT_PROPERLY_NULL;
 				p->RIOError.Entry = Entry;
 				return -ENXIO;
 			}
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "!RIO: Daemon: test (3) passes\n");
-#else
-			rio_d;
-#endif
+;
 			continue;
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(4)\n");
-#else
-		rio_d;
-#endif
+;
 		for (Host = 0; Host < p->RIONumHosts; Host++) {	/* (4) */
 			if (p->RIOHosts[Host].UniqueNum == MapP->HostUniqueNum) {
 				HostP = &p->RIOHosts[Host];
@@ -199,11 +175,7 @@ int RIONewTable(struct rio_info *p)
 		}
 
 		if (Host >= p->RIONumHosts) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "RTA %s has unknown host unique number 0x%x\n", MapP->Name, MapP->HostUniqueNum);
-#else
-			rio_d;
-#endif
+;
 			MapP->HostUniqueNum = 0;
 			/* MapP->RtaUniqueNum   = 0; */
 			/* MapP->ID                     = 0; */
@@ -213,39 +185,23 @@ int RIONewTable(struct rio_info *p)
 			continue;
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(5)\n");
-#else
-		rio_d;
-#endif
+;
 		if (MapP->RtaUniqueNum) {	/* (5) */
 			if (!MapP->ID) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "RIO: RTA %s has been allocated an ID of zero!\n", MapP->Name);
-#else
-				rio_d;
-#endif
+;
 				p->RIOError.Error = ZERO_RTA_ID;
 				p->RIOError.Entry = Entry;
 				return -ENXIO;
 			}
 			if (MapP->ID > MAX_RUP) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "RIO: RTA %s has been allocated an invalid ID %d\n", MapP->Name, MapP->ID);
-#else
-				rio_d;
-#endif
+;
 				p->RIOError.Error = ID_NUMBER_OUT_OF_RANGE;
 				p->RIOError.Entry = Entry;
 				return -ENXIO;
 			}
 			for (SubEnt = 0; SubEnt < Entry; SubEnt++) {
 				if (MapP->HostUniqueNum == p->RIOConnectTable[SubEnt].HostUniqueNum && MapP->ID == p->RIOConnectTable[SubEnt].ID) {
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_TABLE, "Dupl. ID number allocated to RTA %s and RTA %s\n", MapP->Name, p->RIOConnectTable[SubEnt].Name);
-#else
-					rio_d;
-#endif
+;
 					p->RIOError.Error = DUPLICATED_RTA_ID;
 					p->RIOError.Entry = Entry;
 					p->RIOError.Other = SubEnt;
@@ -257,50 +213,26 @@ int RIONewTable(struct rio_info *p)
 				 */
 				if ((MapP->RtaUniqueNum == p->RIOConnectTable[SubEnt].RtaUniqueNum)
 				    && (MapP->ID2 != p->RIOConnectTable[SubEnt].ID)) {
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_TABLE, "RTA %s has duplicate unique number\n", MapP->Name);
-#else
-					rio_d;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_TABLE, "RTA %s has duplicate unique number\n", p->RIOConnectTable[SubEnt].Name);
-#else
-					rio_d;
-#endif
+;
+;
 					p->RIOError.Error = DUPLICATE_UNIQUE_NUMBER;
 					p->RIOError.Entry = Entry;
 					p->RIOError.Other = SubEnt;
 					return -ENXIO;
 				}
 			}
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(7a)\n");
-#else
-			rio_d;
-#endif
+;
 			/* (7a) */
 			if ((MapP->SysPort != NO_PORT) && (MapP->SysPort % PORTS_PER_RTA)) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "TTY Port number %d-RTA %s is not a multiple of %d!\n", (int) MapP->SysPort, MapP->Name, PORTS_PER_RTA);
-#else
-				rio_d;
-#endif
+;
 				p->RIOError.Error = TTY_NUMBER_OUT_OF_RANGE;
 				p->RIOError.Entry = Entry;
 				return -ENXIO;
 			}
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(7b)\n");
-#else
-			rio_d;
-#endif
+;
 			/* (7b) */
 			if ((MapP->SysPort != NO_PORT) && (MapP->SysPort >= RIO_PORTS)) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "TTY Port number %d for RTA %s is too big\n", (int) MapP->SysPort, MapP->Name);
-#else
-				rio_d;
-#endif
+;
 				p->RIOError.Error = TTY_NUMBER_OUT_OF_RANGE;
 				p->RIOError.Entry = Entry;
 				return -ENXIO;
@@ -309,34 +241,18 @@ int RIONewTable(struct rio_info *p)
 				if (p->RIOConnectTable[SubEnt].Flags & RTA16_SECOND_SLOT)
 					continue;
 				if (p->RIOConnectTable[SubEnt].RtaUniqueNum) {
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(8)\n");
-#else
-					rio_d;
-#endif
+;
 					/* (8) */
 					if ((MapP->SysPort != NO_PORT) && (MapP->SysPort == p->RIOConnectTable[SubEnt].SysPort)) {
-#ifdef CONFIG_DEBUG_PRINTK
-						rio_dprintk(RIO_DEBUG_TABLE, "RTA %s:same TTY port # as RTA %s (%d)\n", MapP->Name, p->RIOConnectTable[SubEnt].Name, (int) MapP->SysPort);
-#else
-						rio_d;
-#endif
+;
 						p->RIOError.Error = TTY_NUMBER_IN_USE;
 						p->RIOError.Entry = Entry;
 						p->RIOError.Other = SubEnt;
 						return -ENXIO;
 					}
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(9)\n");
-#else
-					rio_d;
-#endif
+;
 					if (strcmp(MapP->Name, p->RIOConnectTable[SubEnt].Name) == 0 && !(MapP->Flags & RTA16_SECOND_SLOT)) {	/* (9) */
-#ifdef CONFIG_DEBUG_PRINTK
-						rio_dprintk(RIO_DEBUG_TABLE, "RTA name %s used twice\n", MapP->Name);
-#else
-						rio_d;
-#endif
+;
 						p->RIOError.Error = NAME_USED_TWICE;
 						p->RIOError.Entry = Entry;
 						p->RIOError.Other = SubEnt;
@@ -345,27 +261,15 @@ int RIONewTable(struct rio_info *p)
 				}
 			}
 		} else {	/* (6) */
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: entering(6)\n");
-#else
-			rio_d;
-#endif
+;
 			if (MapP->ID) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "RIO:HOST %s has been allocated ID that isn't zero!\n", MapP->Name);
-#else
-				rio_d;
-#endif
+;
 				p->RIOError.Error = HOST_ID_NOT_ZERO;
 				p->RIOError.Entry = Entry;
 				return -ENXIO;
 			}
 			if (MapP->SysPort != NO_PORT) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "RIO: HOST %s has been allocated port numbers!\n", MapP->Name);
-#else
-				rio_d;
-#endif
+;
 				p->RIOError.Error = HOST_SYSPORT_BAD;
 				p->RIOError.Entry = Entry;
 				return -ENXIO;
@@ -391,11 +295,7 @@ int RIONewTable(struct rio_info *p)
 	 ** Copy in the new table entries
 	 */
 	for (Entry = 0; Entry < TOTAL_MAP_ENTRIES; Entry++) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "RIONewTable: Copy table for Host entry %d\n", Entry);
-#else
-		rio_d;
-#endif
+;
 		MapP = &p->RIOConnectTable[Entry];
 
 		/*
@@ -413,11 +313,7 @@ int RIONewTable(struct rio_info *p)
 		 ** If it is a host, then we only need to fill in the name field.
 		 */
 		if (MapP->ID == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "Host entry found. Name %s\n", MapP->Name);
-#else
-			rio_d;
-#endif
+;
 			memcpy(HostP->Name, MapP->Name, MAX_NAME_LEN);
 			continue;
 		}
@@ -430,11 +326,7 @@ int RIONewTable(struct rio_info *p)
 		HostMapP = &HostP->Mapping[MapP->ID - 1];
 
 		if (MapP->Flags & SLOT_IN_USE) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "Rta entry found. Name %s\n", MapP->Name);
-#else
-			rio_d;
-#endif
+;
 			/*
 			 ** structure assign, then sort out the bits we shouldn't have done
 			 */
@@ -446,11 +338,7 @@ int RIONewTable(struct rio_info *p)
 
 			RIOReMapPorts(p, HostP, HostMapP);
 		} else {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "TENTATIVE Rta entry found. Name %s\n", MapP->Name);
-#else
-			rio_d;
-#endif
+;
 		}
 	}
 
@@ -497,19 +385,11 @@ int RIONewTable(struct rio_info *p)
 		 ** Rename host if name already used.
 		 */
 		if (Host1 != Host) {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "Default name %s already used\n", p->RIOHosts[Host].Name);
-#else
-			rio_d;
-#endif
+;
 			memcpy(p->RIOHosts[Host].Name, "HOST 1", 7);
 			p->RIOHosts[Host].Name[5] += Host1;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "Assigning default name %s\n", p->RIOHosts[Host].Name);
-#else
-		rio_d;
-#endif
+;
 	}
 	return 0;
 }
@@ -530,20 +410,12 @@ int RIOApel(struct rio_info *p)
 	struct Host *HostP;
 	unsigned long flags;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Generating a table to return to config.rio\n");
-#else
-	rio_d;
-#endif
+;
 
 	memset(&p->RIOConnectTable[0], 0, sizeof(struct Map) * TOTAL_MAP_ENTRIES);
 
 	for (Host = 0; Host < RIO_HOSTS; Host++) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "Processing host %d\n", Host);
-#else
-		rio_d;
-#endif
+;
 		HostP = &p->RIOHosts[Host];
 		rio_spin_lock_irqsave(&HostP->HostLock, flags);
 
@@ -592,11 +464,7 @@ int RIODeleteRta(struct rio_info *p, struct Map *MapP)
 	int work_done = 0;
 	unsigned long lock_flags, sem_flags;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Delete entry on host %x, rta %x\n", MapP->HostUniqueNum, MapP->RtaUniqueNum);
-#else
-	rio_d;
-#endif
+;
 
 	for (host = 0; host < p->RIONumHosts; host++) {
 		HostP = &p->RIOHosts[host];
@@ -611,22 +479,14 @@ int RIODeleteRta(struct rio_info *p, struct Map *MapP)
 		for (entry = 0; entry < MAX_RUP; entry++) {
 			if (MapP->RtaUniqueNum == HostP->Mapping[entry].RtaUniqueNum) {
 				HostMapP = &HostP->Mapping[entry];
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "Found entry offset %d on host %s\n", entry, HostP->Name);
-#else
-				rio_d;
-#endif
+;
 
 				/*
 				 ** Check all four links of the unit are disconnected
 				 */
 				for (link = 0; link < LINKS_PER_UNIT; link++) {
 					if (HostMapP->Topology[link].Unit != ROUTE_DISCONNECT) {
-#ifdef CONFIG_DEBUG_PRINTK
-						rio_dprintk(RIO_DEBUG_TABLE, "Entry is in use and cannot be deleted!\n");
-#else
-						rio_d;
-#endif
+;
 						p->RIOError.Error = UNIT_IS_IN_USE;
 						rio_spin_unlock_irqrestore(&HostP->HostLock, lock_flags);
 						return -EBUSY;
@@ -641,11 +501,7 @@ int RIODeleteRta(struct rio_info *p, struct Map *MapP)
 				if (SysPort != NO_PORT) {
 					for (port = SysPort; port < SysPort + PORTS_PER_RTA; port++) {
 						PortP = p->RIOPortp[port];
-#ifdef CONFIG_DEBUG_PRINTK
-						rio_dprintk(RIO_DEBUG_TABLE, "Unmap port\n");
-#else
-						rio_d;
-#endif
+;
 
 						rio_spin_lock_irqsave(&PortP->portSem, sem_flags);
 
@@ -653,11 +509,7 @@ int RIODeleteRta(struct rio_info *p, struct Map *MapP)
 
 						if (PortP->State & (RIO_MOPEN | RIO_LOPEN)) {
 
-#ifdef CONFIG_DEBUG_PRINTK
-							rio_dprintk(RIO_DEBUG_TABLE, "Gob on port\n");
-#else
-							rio_d;
-#endif
+;
 							PortP->TxBufferIn = PortP->TxBufferOut = 0;
 							/* What should I do 
 							   wakeup( &PortP->TxBufferIn );
@@ -692,29 +544,17 @@ int RIODeleteRta(struct rio_info *p, struct Map *MapP)
 								 ** accessed from the driver.
 								 */
 								Pkt = (struct PKT __iomem *) RIO_PTR(HostP->Caddr, readw(&*TxPktP));
-#ifdef CONFIG_DEBUG_PRINTK
-								rio_dprintk(RIO_DEBUG_TABLE, "Tx packet (%x) destination: Old %x:%x New %x:%x\n", readw(TxPktP), readb(&Pkt->dest_unit), readb(&Pkt->dest_port), dest_unit, dest_port);
-#else
-								rio_d;
-#endif
+;
 								writew(dest_unit, &Pkt->dest_unit);
 								writew(dest_port, &Pkt->dest_port);
 							}
-#ifdef CONFIG_DEBUG_PRINTK
-							rio_dprintk(RIO_DEBUG_TABLE, "Port %d phb destination: Old %x:%x New %x:%x\n", port, readb(&PortP->PhbP->destination) & 0xff, (readb(&PortP->PhbP->destination) >> 8) & 0xff, dest_unit, dest_port);
-#else
-							rio_d;
-#endif
+;
 							writew(dest_unit + (dest_port << 8), &PortP->PhbP->destination);
 						}
 						rio_spin_unlock_irqrestore(&PortP->portSem, sem_flags);
 					}
 				}
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "Entry nulled.\n");
-#else
-				rio_d;
-#endif
+;
 				memset(HostMapP, 0, sizeof(struct Map));
 				work_done++;
 			}
@@ -736,11 +576,7 @@ int RIODeleteRta(struct rio_info *p, struct Map *MapP)
 	if (work_done)
 		return 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Couldn't find entry to be deleted\n");
-#else
-	rio_d;
-#endif
+;
 	p->RIOError.Error = COULDNT_FIND_ENTRY;
 	return -ENXIO;
 }
@@ -753,45 +589,25 @@ int RIOAssignRta(struct rio_info *p, struct Map *MapP)
 	int link;
 
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Assign entry on host %x, rta %x, ID %d, Sysport %d\n", MapP->HostUniqueNum, MapP->RtaUniqueNum, MapP->ID, (int) MapP->SysPort);
-#else
-	rio_d;
-#endif
+;
 
 	if ((MapP->ID != (u16) - 1) && ((int) MapP->ID < (int) 1 || (int) MapP->ID > MAX_RUP)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "Bad ID in map entry!\n");
-#else
-		rio_d;
-#endif
+;
 		p->RIOError.Error = ID_NUMBER_OUT_OF_RANGE;
 		return -EINVAL;
 	}
 	if (MapP->RtaUniqueNum == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "Rta Unique number zero!\n");
-#else
-		rio_d;
-#endif
+;
 		p->RIOError.Error = RTA_UNIQUE_NUMBER_ZERO;
 		return -EINVAL;
 	}
 	if ((MapP->SysPort != NO_PORT) && (MapP->SysPort % PORTS_PER_RTA)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "Port %d not multiple of %d!\n", (int) MapP->SysPort, PORTS_PER_RTA);
-#else
-		rio_d;
-#endif
+;
 		p->RIOError.Error = TTY_NUMBER_OUT_OF_RANGE;
 		return -EINVAL;
 	}
 	if ((MapP->SysPort != NO_PORT) && (MapP->SysPort >= RIO_PORTS)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "Port %d not valid!\n", (int) MapP->SysPort);
-#else
-		rio_d;
-#endif
+;
 		p->RIOError.Error = TTY_NUMBER_OUT_OF_RANGE;
 		return -EINVAL;
 	}
@@ -803,11 +619,7 @@ int RIOAssignRta(struct rio_info *p, struct Map *MapP)
 	sptr = MapP->Name;
 	while (*sptr) {
 		if (*sptr < ' ' || *sptr > '~') {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "Name entry contains non-printing characters!\n");
-#else
-			rio_d;
-#endif
+;
 			p->RIOError.Error = BAD_CHARACTER_IN_NAME;
 			return -EINVAL;
 		}
@@ -828,11 +640,7 @@ int RIOAssignRta(struct rio_info *p, struct Map *MapP)
 			if (MapP->ID == (u16) - 1) {
 				int nNewID;
 
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "Attempting to get a new ID for rta \"%s\"\n", MapP->Name);
-#else
-				rio_d;
-#endif
+;
 				/*
 				 ** The idea here is to allow RTA's to be assigned
 				 ** before they actually appear on the network.
@@ -849,11 +657,7 @@ int RIOAssignRta(struct rio_info *p, struct Map *MapP)
 					return -EBUSY;
 				}
 				MapP->ID = (u16) nNewID + 1;
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "Allocated ID %d for this new RTA.\n", MapP->ID);
-#else
-				rio_d;
-#endif
+;
 				HostMapP = &p->RIOHosts[host].Mapping[nNewID];
 				HostMapP->RtaUniqueNum = MapP->RtaUniqueNum;
 				HostMapP->HostUniqueNum = MapP->HostUniqueNum;
@@ -875,22 +679,14 @@ int RIOAssignRta(struct rio_info *p, struct Map *MapP)
 					HostMapP->Flags |= RTA16_SECOND_SLOT;
 					HostMapP->ID2 = MapP->ID2 = p->RIOHosts[host].Mapping[unit].ID;
 					p->RIOHosts[host].Mapping[unit].ID2 = MapP->ID;
-#ifdef CONFIG_DEBUG_PRINTK
-					rio_dprintk(RIO_DEBUG_TABLE, "Cross referenced id %d to ID %d.\n", MapP->ID, p->RIOHosts[host].Mapping[unit].ID);
-#else
-					rio_d;
-#endif
+;
 				}
 			}
 
 			HostMapP = &p->RIOHosts[host].Mapping[MapP->ID - 1];
 
 			if (HostMapP->Flags & SLOT_IN_USE) {
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "Map table slot for ID %d is already in use.\n", MapP->ID);
-#else
-				rio_d;
-#endif
+;
 				p->RIOError.Error = ID_ALREADY_IN_USE;
 				return -EBUSY;
 			}
@@ -923,26 +719,14 @@ int RIOAssignRta(struct rio_info *p, struct Map *MapP)
 					p->RIOLastPortsBooted = HostMapP->SysPort;
 			}
 			if (MapP->Flags & RTA16_SECOND_SLOT)
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "Second map of RTA %s added to configuration\n", p->RIOHosts[host].Mapping[MapP->ID2 - 1].Name);
-#else
-				rio_d;
-#endif
+;
 			else
-#ifdef CONFIG_DEBUG_PRINTK
-				rio_dprintk(RIO_DEBUG_TABLE, "RTA %s added to configuration\n", MapP->Name);
-#else
-				rio_d;
-#endif
+;
 			return 0;
 		}
 	}
 	p->RIOError.Error = UNKNOWN_HOST_NUMBER;
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Unknown host %x\n", MapP->HostUniqueNum);
-#else
-	rio_d;
-#endif
+;
 	return -ENXIO;
 }
 
@@ -956,11 +740,7 @@ int RIOReMapPorts(struct rio_info *p, struct Host *HostP, struct Map *HostMapP)
 	u16 RtaType;
 	unsigned long flags;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Mapping sysport %d to id %d\n", (int) HostMapP->SysPort, HostMapP->ID);
-#else
-	rio_d;
-#endif
+;
 
 	/*
 	 ** We need to tell the UnixRups which sysport the rup corresponds to
@@ -971,37 +751,21 @@ int RIOReMapPorts(struct rio_info *p, struct Host *HostP, struct Map *HostMapP)
 		return (0);
 
 	RtaType = GetUnitType(HostMapP->RtaUniqueNum);
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Mapping sysport %d-%d\n", (int) HostMapP->SysPort, (int) HostMapP->SysPort + PORTS_PER_RTA - 1);
-#else
-	rio_d;
-#endif
+;
 
 	/*
 	 ** now map each of its eight ports
 	 */
 	for (SubEnt = 0; SubEnt < PORTS_PER_RTA; SubEnt++) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "subent = %d, HostMapP->SysPort = %d\n", SubEnt, (int) HostMapP->SysPort);
-#else
-		rio_d;
-#endif
+;
 		SysPort = HostMapP->SysPort + SubEnt;	/* portnumber within system */
 		/* portnumber on host */
 
 		HostPort = (HostMapP->ID - 1) * PORTS_PER_RTA + SubEnt;
 
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "c1 p = %p, p->rioPortp = %p\n", p, p->RIOPortp);
-#else
-		rio_d;
-#endif
+;
 		PortP = p->RIOPortp[SysPort];
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "Map port\n");
-#else
-		rio_d;
-#endif
+;
 
 		/*
 		 ** Point at all the real neat data structures
@@ -1130,18 +894,10 @@ int RIOChangeName(struct rio_info *p, struct Map *MapP)
 	struct Map *HostMapP;
 	char *sptr;
 
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Change name entry on host %x, rta %x, ID %d, Sysport %d\n", MapP->HostUniqueNum, MapP->RtaUniqueNum, MapP->ID, (int) MapP->SysPort);
-#else
-	rio_d;
-#endif
+;
 
 	if (MapP->ID > MAX_RUP) {
-#ifdef CONFIG_DEBUG_PRINTK
-		rio_dprintk(RIO_DEBUG_TABLE, "Bad ID in map entry!\n");
-#else
-		rio_d;
-#endif
+;
 		p->RIOError.Error = ID_NUMBER_OUT_OF_RANGE;
 		return -EINVAL;
 	}
@@ -1151,11 +907,7 @@ int RIOChangeName(struct rio_info *p, struct Map *MapP)
 
 	while (*sptr) {
 		if (*sptr < ' ' || *sptr > '~') {
-#ifdef CONFIG_DEBUG_PRINTK
-			rio_dprintk(RIO_DEBUG_TABLE, "Name entry contains non-printing characters!\n");
-#else
-			rio_d;
-#endif
+;
 			p->RIOError.Error = BAD_CHARACTER_IN_NAME;
 			return -EINVAL;
 		}
@@ -1184,10 +936,6 @@ int RIOChangeName(struct rio_info *p, struct Map *MapP)
 		}
 	}
 	p->RIOError.Error = UNKNOWN_HOST_NUMBER;
-#ifdef CONFIG_DEBUG_PRINTK
-	rio_dprintk(RIO_DEBUG_TABLE, "Unknown host %x\n", MapP->HostUniqueNum);
-#else
-	rio_d;
-#endif
+;
 	return -ENXIO;
 }

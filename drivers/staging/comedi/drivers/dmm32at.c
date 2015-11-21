@@ -299,22 +299,14 @@ static int dmm32at_attach(struct comedi_device *dev,
 	iobase = it->options[0];
 	irq = it->options[1];
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: dmm32at: attaching\n", dev->minor);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "dmm32at: probing at address 0x%04lx, irq %u\n",
-	       iobase, irq);
-#else
-	;
-#endif
+;
+//	printk(KERN_DEBUG "dmm32at: probing at address 0x%04lx, irq %u\n",
+;
 
 	/* register address space */
 	if (!request_region(iobase, DMM32AT_MEMSIZE, thisboard->name)) {
-		printk(KERN_ERR "comedi%d: dmm32at: I/O port conflict\n",
-		       dev->minor);
+//		printk(KERN_ERR "comedi%d: dmm32at: I/O port conflict\n",
+;
 		return -EIO;
 	}
 	dev->iobase = iobase;
@@ -352,23 +344,15 @@ static int dmm32at_attach(struct comedi_device *dev,
 	intstat = dmm_inb(dev, DMM32AT_INTCLOCK);
 	airback = dmm_inb(dev, DMM32AT_AIRBACK);
 
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG "dmm32at: lo=0x%02x hi=0x%02x fifostat=0x%02x\n",
-	       ailo, aihi, fifostat);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_DEBUG
-	       "dmm32at: aistat=0x%02x intstat=0x%02x airback=0x%02x\n",
-	       aistat, intstat, airback);
-#else
-	;
-#endif
+//	printk(KERN_DEBUG "dmm32at: lo=0x%02x hi=0x%02x fifostat=0x%02x\n",
+;
+//	printk(KERN_DEBUG
+//	       "dmm32at: aistat=0x%02x intstat=0x%02x airback=0x%02x\n",
+;
 
 	if ((ailo != 0x00) || (aihi != 0x1f) || (fifostat != 0x80) ||
 	    (aistat != 0x60 || (intstat != 0x00) || airback != 0x0c)) {
-		printk(KERN_ERR "dmmat32: board detection failed\n");
+;
 		return -EIO;
 	}
 
@@ -376,7 +360,7 @@ static int dmm32at_attach(struct comedi_device *dev,
 	if (irq) {
 		ret = request_irq(irq, dmm32at_isr, 0, thisboard->name, dev);
 		if (ret < 0) {
-			printk(KERN_ERR "dmm32at: irq conflict\n");
+;
 			return ret;
 		}
 		dev->irq = irq;
@@ -460,11 +444,7 @@ static int dmm32at_attach(struct comedi_device *dev,
 	}
 
 	/* success */
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: dmm32at: attached\n", dev->minor);
-#else
-	;
-#endif
+;
 
 	return 1;
 
@@ -480,11 +460,7 @@ static int dmm32at_attach(struct comedi_device *dev,
  */
 static int dmm32at_detach(struct comedi_device *dev)
 {
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "comedi%d: dmm32at: remove\n", dev->minor);
-#else
-	;
-#endif
+;
 	if (dev->irq)
 		free_irq(dev->irq, dev);
 	if (dev->iobase)
@@ -514,11 +490,7 @@ static int dmm32at_ai_rinsn(struct comedi_device *dev,
 	chan = CR_CHAN(insn->chanspec) & (s->n_chan - 1);
 	range = CR_RANGE(insn->chanspec);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("channel=0x%02x, range=%d\n",chan,range); */
-#else
-	/* ;
-#endif
 
 	/* zero scan and fifo control and reset fifo */
 	dmm_outb(dev, DMM32AT_FIFOCNTRL, DMM32AT_FIFORESET);
@@ -536,11 +508,7 @@ static int dmm32at_ai_rinsn(struct comedi_device *dev,
 			break;
 	}
 	if (i == 40000) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "dmm32at: timeout\n");
-#else
-		;
-#endif
+;
 		return -ETIMEDOUT;
 	}
 
@@ -555,11 +523,7 @@ static int dmm32at_ai_rinsn(struct comedi_device *dev,
 				break;
 		}
 		if (i == 40000) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "dmm32at: timeout\n");
-#else
-			;
-#endif
+;
 			return -ETIMEDOUT;
 		}
 
@@ -590,11 +554,7 @@ static int dmm32at_ai_cmdtest(struct comedi_device *dev,
 	int tmp;
 	int start_chan, gain, i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	/* printk("dmmat32 in command test\n"); */
-#else
-	/* ;
-#endif
 
 	/* cmdtest tests a particular command to see if it is valid.
 	 * Using the cmdtest ioctl, a user can create a valid cmd
@@ -818,11 +778,7 @@ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 			break;
 	}
 	if (i == 40000) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "dmm32at: timeout\n");
-#else
-		;
-#endif
+;
 		return -ETIMEDOUT;
 	}
 
@@ -835,11 +791,7 @@ static int dmm32at_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 		dmm_outb(dev, DMM32AT_CONV, 0xff);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 /*	printk("dmmat32 in command\n"); */
-#else
-/*	;
-#endif
 
 /*	for(i=0;i<cmd->chanlist_len;i++) */
 /*		comedi_buf_put(s->async,i*100); */
@@ -941,11 +893,7 @@ static int dmm32at_ao_winsn(struct comedi_device *dev,
 		lo = data[i] & 0x00ff;
 		/* high byte also contains channel number */
 		hi = (data[i] >> 8) + chan * (1 << 6);
-#ifdef CONFIG_DEBUG_PRINTK
 		/* printk("writing 0x%02x  0x%02x\n",hi,lo); */
-#else
-		/* ;
-#endif
 		/* write the low and high values to the board */
 		dmm_outb(dev, DMM32AT_DACLSB, lo);
 		dmm_outb(dev, DMM32AT_DACMSB, hi);
@@ -957,11 +905,7 @@ static int dmm32at_ao_winsn(struct comedi_device *dev,
 				break;
 		}
 		if (i == 40000) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk(KERN_WARNING "dmm32at: timeout\n");
-#else
-			;
-#endif
+;
 			return -ETIMEDOUT;
 		}
 		/* dummy read to update trigger the output */
