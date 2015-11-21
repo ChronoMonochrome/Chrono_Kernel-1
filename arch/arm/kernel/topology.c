@@ -25,7 +25,7 @@
 #include <linux/cpufreq.h>
 #endif
 
-#ifdef CONFIG_DEBUG_FS_ENABLE
+#ifdef CONFIG_DEBUG_FS
 #include <linux/debugfs.h>
 #include <linux/uaccess.h>	/* for copy_from_user */
 #endif
@@ -488,7 +488,7 @@ void init_cpu_topology(void)
  * debugfs interface for scaling cpu power
  */
 
-#ifdef CONFIG_DEBUG_FS_ENABLE
+#ifdef CONFIG_DEBUG_FS
 static struct dentry *topo_debugfs_root;
 
 static ssize_t dbg_write(struct file *file, const char __user *buf,
