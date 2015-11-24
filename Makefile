@@ -410,8 +410,6 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -fno-toplevel-reorder \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
-		  --param ggc-min-expand=90 \
-		  --param ggc-min-heapsize=512288 \
 		  --param l2-cache-size=512 \
 
 KBUILD_AFLAGS_KERNEL :=
