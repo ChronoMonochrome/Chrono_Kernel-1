@@ -410,6 +410,8 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -fno-toplevel-reorder \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
+		  --param l1-cache-size=32 \
+		  --param l1-cache-line-size=32 \
 		  --param l2-cache-size=512 \
 
 KBUILD_AFLAGS_KERNEL :=
