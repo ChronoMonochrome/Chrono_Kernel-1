@@ -34,6 +34,10 @@
 #include <linux/ratelimit.h>
 #include <linux/err.h>
 
+
+size_t max_zpage_size = PAGE_SIZE / 10 * 9;
+module_param(max_zpage_size, uint, 0644);
+
 #include "zram_drv.h"
 
 /* Globals */
