@@ -600,7 +600,7 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 			   int offset)
 {
 	int ret = 0;
-	size_t clen, chunk_clen;
+	size_t clen, chunk_clen, approx_clen;
 	unsigned long handle;
 	struct page *page;
 	unsigned char *user_mem, *cmem, *src, *uncmem = NULL;
@@ -654,24 +654,28 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 	}
 
 	memset(page_chunk, 0, PAGE_SIZE);
-	memcpy(page_chunk, uncmem, PAGE_SIZE / 8);
+	memcpy(page_chunk, uncmem, PAGE_SIZE * 3 / 32);
 	ret = zcomp_compress(zram->comp, zstrm, page_chunk, &chunk_clen);
 
-	if (chunk_clen * 8 <= max_zpage_size || debug) {
+	approx_clen = chunk_clen * 32 / 3;
+	if (chunk_clen * 32 - approx_clen * 3 > 1)
+		approx_clen++;
+
+	if (unlikely(approx_clen  <= max_zpage_size || debug)) {
 		ret = zcomp_compress(zram->comp, zstrm, uncmem, &clen);
 	} else {
 		clen = PAGE_SIZE;
 	}
 
-	if (chunk_clen * 8 > max_zpage_size) {
+	if (likely(approx_clen > max_zpage_size)) {
 		discarded_total++;
-		if (clen > max_zpage_size && debug)
+		if (likely(clen > max_zpage_size && debug))
 			discarded_useful++;
 	} else
 		compressed++;
 
-	if (debug > 1)
-		pr_err("[zram] chunk_clen=%d, approx=%d, real=%d\n", chunk_clen, chunk_clen * 8, clen);
+	if (unlikely(debug > 1))
+		pr_err("[zram] chunk_clen=%d, approx=%d, real=%d\n", chunk_clen, approx_clen, clen);
 
 	if (!is_partial_io(bvec)) {
 		kunmap_atomic(user_mem);
