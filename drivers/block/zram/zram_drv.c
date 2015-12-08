@@ -669,8 +669,10 @@ static int zram_bvec_write(struct zram *zram, struct bio_vec *bvec, u32 index,
 
 	if (likely(approx_clen > max_zpage_size)) {
 		discarded_total++;
-		if (likely(clen > max_zpage_size && debug))
-			discarded_useful++;
+		if (unlikely(debug > 0)) {
+			if (likely(clen > max_zpage_size))
+				discarded_useful++;
+		}
 	} else
 		compressed++;
 
