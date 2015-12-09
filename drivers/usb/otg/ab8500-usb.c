@@ -36,7 +36,7 @@
 #include <linux/mfd/ab8500.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/kernel_stat.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 #include <linux/wakelock.h>
 #include <linux/usb/ab8500-otg.h>
 #include <linux/input/ab8505_micro_usb_iddet.h>
