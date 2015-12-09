@@ -430,7 +430,8 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 }
 
 static int enter_sleep(struct cpuidle_device *dev,
-		       struct cpuidle_state *ci_state)
+		       struct cpuidle_driver *drv,
+		       int index)
 {
 	ktime_t time_enter, time_exit, time_wake;
 	ktime_t wake_up;
@@ -440,6 +441,7 @@ static int enter_sleep(struct cpuidle_device *dev,
 	int rtcrtt_program_time = NO_SLEEP_PROGRAMMED;
 	int target;
 	struct cpu_state *state;
+	struct cpuidle_state_usage *ci_state_usage = &dev->states_usage[index];
 	bool slept_well = false;
 	int this_cpu = smp_processor_id();
 	bool migrate_timer;
@@ -462,7 +464,7 @@ static int enter_sleep(struct cpuidle_device *dev,
 	state->sched_wake_up = wake_up;
 
 	/* Retrive the cstate that the governor recommends for this CPU */
-	state->gov_cstate = (int) cpuidle_get_statedata(ci_state);
+	state->gov_cstate = (int) cpuidle_get_statedata(ci_state_usage);
 
 	if (state->gov_cstate > ux500_ci_dbg_deepest_state())
 		state->gov_cstate = ux500_ci_dbg_deepest_state();
@@ -717,20 +719,25 @@ exit_fast:
 	return ret;
 }
 
+struct cpuidle_driver dbx500_cpuidle_driver;
+
 static int __init init_cstates(int cpu, struct cpu_state *state)
 {
 	int i;
 	struct cpuidle_state *ci_state;
+	struct cpuidle_state_usage *ci_state_usage;
 	struct cpuidle_device *dev;
+	struct cpuidle_driver *drv = &dbx500_cpuidle_driver;
 
 	dev = &state->dev;
 	dev->cpu = cpu;
 
 	for (i = 0; i < ARRAY_SIZE(cstates); i++) {
 
-		ci_state = &dev->states[i];
+		ci_state = &drv->states[i];
+		ci_state_usage = &dev->states_usage[i];
 
-		cpuidle_set_statedata(ci_state, (void *)i);
+		cpuidle_set_statedata(ci_state_usage, (void *)i);
 
 		ci_state->exit_latency = cstates[i].exit_latency;
 		ci_state->target_residency = cstates[i].threshold;
