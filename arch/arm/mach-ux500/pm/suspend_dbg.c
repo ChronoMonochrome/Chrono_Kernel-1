@@ -115,6 +115,7 @@ static int suspend_test_fail_count;
 
 void ux500_suspend_dbg_test_set_wakeup(void)
 {
+#if 0
 	if (suspend_test_count == 0)
 		return;
 
@@ -125,6 +126,7 @@ void ux500_suspend_dbg_test_set_wakeup(void)
 
 	/* Program RTC to generate an interrupt 1s later */
 	ux500_rtcrtt_next(1000000);
+#endif
 }
 
 void ux500_suspend_dbg_test_start(int num)
