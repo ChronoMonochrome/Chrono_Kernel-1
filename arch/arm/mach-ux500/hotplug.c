@@ -17,8 +17,6 @@
 #include <asm/cacheflush.h>
 
 #include <mach/context.h>
-
-#include <../../../drivers/cpuidle/cpuidle-dbx500_dbg.h>
 #include <linux/mfd/dbx500-prcmu.h>
 
 extern volatile int pen_release;
@@ -27,8 +25,6 @@ static DECLARE_COMPLETION(cpu_killed);
 
 static inline void platform_do_lowpower(unsigned int cpu)
 {
-	ux500_ci_dbg_unplug(cpu);
-
 	flush_cache_all();
 
 	for (;;) {
@@ -48,8 +44,6 @@ static inline void platform_do_lowpower(unsigned int cpu)
 			break;
 		}
 	}
-	ux500_ci_dbg_plug(cpu);
-
 }
 
 int platform_cpu_kill(unsigned int cpu)
