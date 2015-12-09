@@ -72,6 +72,37 @@ typedef int (*cpuidle_enter_t)(struct cpuidle_device *dev,
 static cpuidle_enter_t cpuidle_enter_ops;
 
 /**
+ * cpuidle_play_dead - cpu off-lining
+ *
+ * Returns in case of an error or no driver
+ */
+int cpuidle_play_dead(void)
+{
+	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+	struct cpuidle_driver *drv = cpuidle_get_driver();
+	int i, dead_state = -1;
+	int power_usage = -1;
+
+	if (!drv)
+		return -ENODEV;
+
+	/* Find lowest-power state that supports long-term idle */
+	for (i = CPUIDLE_DRIVER_STATE_START; i < drv->state_count; i++) {
+		struct cpuidle_state *s = &drv->states[i];
+
+		if (s->power_usage < power_usage && s->enter_dead) {
+			power_usage = s->power_usage;
+			dead_state = i;
+		}
+	}
+
+	if (dead_state != -1)
+		return drv->states[dead_state].enter_dead(dev, dead_state);
+
+	return -ENODEV;
+}
+
+/**
  * cpuidle_idle_call - the main idle loop
  *
  * NOTE: no locks or semaphores should be used here
@@ -109,13 +140,13 @@ int cpuidle_idle_call(void)
 		return 0;
 	}
 
-	trace_power_start(POWER_CSTATE, next_state, dev->cpu);
-	trace_cpu_idle(next_state, dev->cpu);
+	trace_power_start_rcuidle(POWER_CSTATE, next_state, dev->cpu);
+	trace_cpu_idle_rcuidle(next_state, dev->cpu);
 
 	entered_state = cpuidle_enter_ops(dev, drv, next_state);
 
-	trace_power_end(dev->cpu);
-	trace_cpu_idle(PWR_EVENT_EXIT, dev->cpu);
+	trace_power_end_rcuidle(dev->cpu);
+	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
 
 	if (entered_state >= 0) {
 		/* Update cpuidle counters */
@@ -245,6 +276,7 @@ static void poll_idle_init(struct cpuidle_driver *drv)
 	state->power_usage = -1;
 	state->flags = 0;
 	state->enter = poll_idle;
+	state->disable = 0;
 }
 #else
 static void poll_idle_init(struct cpuidle_driver *drv) {}
@@ -267,7 +299,7 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
 	if (!drv || !cpuidle_curr_governor)
 		return -EIO;
 	if (!dev->state_count)
-		return -EINVAL;
+		dev->state_count = drv->state_count;
 
 	if (dev->registered == 0) {
 		ret = __cpuidle_register_device(dev);
