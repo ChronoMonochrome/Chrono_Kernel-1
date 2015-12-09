@@ -466,8 +466,8 @@ static int enter_sleep(struct cpuidle_device *dev,
 	/* Retrive the cstate that the governor recommends for this CPU */
 	state->gov_cstate = (int) cpuidle_get_statedata(ci_state_usage);
 
-	if (state->gov_cstate > ux500_ci_dbg_deepest_state())
-		state->gov_cstate = ux500_ci_dbg_deepest_state();
+	if (state->gov_cstate > deepest_state)
+		state->gov_cstate = deepest_state;
 
 	if (cstates[state->gov_cstate].ARM != ARM_ON)
 		migrate_timer = true;
