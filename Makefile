@@ -5,12 +5,7 @@ EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
 ifeq ("$(CROSS_COMPILE)", "")
-   #GCC=/home/chrono/tools/opt/armv7a-linux-gnueabihf-linaro-gcc-4.9.4/bin/armv7a-linux-gnueabihf
-   GCC=/media/chrono/Other/cross/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin/arm-linux-gnueabihf-
-   FILE_EXISTS=$(stat $GCC"gcc" 2>&1 | grep -c "File")
-   ifeq ("$(FILE_EXISTS)", "1")
-      CROSS_COMPILE=$(GCC)
-   endif
+   CROSS_COMPILE=/home/Ishida/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
 endif
 
 # *DOCUMENTATION*
