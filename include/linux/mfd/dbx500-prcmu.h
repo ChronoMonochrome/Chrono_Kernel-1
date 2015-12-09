@@ -351,14 +351,6 @@ static inline bool prcmu_pending_irq(void)
                 return db8500_prcmu_pending_irq();
 }
 
-static inline int prcmu_set_epod(u16 epod_id, u8 epod_state)
-{
-	if (cpu_is_u5500())
-		return -EINVAL;
-	else
-		return db8500_prcmu_set_epod(epod_id, epod_state);
-}
-
 void prcmu_config_abb_event_readout(u32 abb_events);
 
 void prcmu_get_abb_event_buffer(void __iomem **buf);
