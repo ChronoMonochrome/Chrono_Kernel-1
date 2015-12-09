@@ -44,12 +44,15 @@ struct cpuidle_state {
 
 	unsigned int	flags;
 	unsigned int	exit_latency; /* in US */
-	unsigned int	power_usage; /* in mW */
+	int		power_usage; /* in mW */
 	unsigned int	target_residency; /* in US */
+	unsigned int    disable;
 
 	int (*enter)	(struct cpuidle_device *dev,
 			struct cpuidle_driver *drv,
 			int index);
+
+	int (*enter_dead) (struct cpuidle_device *dev, int index);
 };
 
 /* Idle State Flags */
@@ -97,7 +100,6 @@ struct cpuidle_device {
 	struct list_head 	device_list;
 	struct kobject		kobj;
 	struct completion	kobj_unregister;
-	void			*governor_data;
 };
 
 DECLARE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
@@ -119,7 +121,7 @@ static inline int cpuidle_get_last_residency(struct cpuidle_device *dev)
  ****************************/
 
 struct cpuidle_driver {
-	char			name[CPUIDLE_NAME_LEN];
+	const char		*name;
 	struct module 		*owner;
 
 	unsigned int		power_specified:1;
@@ -147,6 +149,8 @@ extern int cpuidle_wrap_enter(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv, int index,
 				int (*enter)(struct cpuidle_device *dev,
 					struct cpuidle_driver *drv, int index));
+extern int cpuidle_play_dead(void);
+
 #else
 static inline void disable_cpuidle(void) { }
 static inline int cpuidle_idle_call(void) { return -ENODEV; }
@@ -168,6 +172,7 @@ static inline int cpuidle_wrap_enter(struct cpuidle_device *dev,
 				int (*enter)(struct cpuidle_device *dev,
 					struct cpuidle_driver *drv, int index))
 { return -ENODEV; }
+static inline int cpuidle_play_dead(void) {return -ENODEV; }
 
 #endif
 
