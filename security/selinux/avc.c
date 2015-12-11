@@ -527,7 +527,7 @@ int avc_audit(u32 ssid, u32 tsid,
 	 * happened a little later.
 	 */
 	if ((a->type == LSM_AUDIT_DATA_INODE) &&
-	    (flags & MAY_NOT_BLOCK))
+	    (flags & IPERM_FLAG_RCU))
 		return -ECHILD;
 
 	a->selinux_audit_data.tclass = tclass;

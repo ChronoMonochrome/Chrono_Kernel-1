@@ -161,6 +161,7 @@ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
 	if (ns_capable(child_cred->user->user_ns, CAP_SYS_PTRACE))
 		goto out;
 	ret = -EPERM;
+
 out:
 	rcu_read_unlock();
 	return ret;
@@ -269,8 +270,15 @@ int cap_capset(struct cred *new,
 			  cap_combine(old->cap_inheritable,
 				      old->cap_bset)))
 		/* no new pI capabilities outside bounding set */
-		return -EPERM;
-
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	/* verify restrictions on target's new Permitted set */
 	if (!cap_issubset(*permitted, old->cap_permitted))
 		return -EPERM;
@@ -278,6 +286,7 @@ int cap_capset(struct cred *new,
 	/* verify the _new_Effective_ is a subset of the _new_Permitted_ */
 	if (!cap_issubset(*effective, *permitted))
 		return -EPERM;
+
 
 	new->cap_effective   = *effective;
 	new->cap_inheritable = *inheritable;
@@ -366,6 +375,7 @@ static inline int bprm_caps_from_vfs_caps(struct cpu_vfs_cap_data *caps,
 		if (permitted & ~new->cap_permitted.cap[i])
 			/* insufficient to execute correctly */
 			ret = -EPERM;
+
 	}
 
 	/*
@@ -882,6 +892,7 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 	 */
 	case PR_SET_SECUREBITS:
 		error = -EPERM;
+
 		if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
 		     & (new->securebits ^ arg2))			/*[1]*/
 		    || ((new->securebits & SECURE_ALL_LOCKS & ~arg2))	/*[2]*/

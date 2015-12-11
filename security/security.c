@@ -127,26 +127,6 @@ int __init register_security(struct security_operations *ops)
 
 /* Security operations */
 
-int security_binder_set_context_mgr(struct task_struct *mgr)
-{
-	return security_ops->binder_set_context_mgr(mgr);
-}
-
-int security_binder_transaction(struct task_struct *from, struct task_struct *to)
-{
-	return security_ops->binder_transaction(from, to);
-}
-
-int security_binder_transfer_binder(struct task_struct *from, struct task_struct *to)
-{
-	return security_ops->binder_transfer_binder(from, to);
-}
-
-int security_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file)
-{
-	return security_ops->binder_transfer_file(from, to, file);
-}
-
 int security_ptrace_access_check(struct task_struct *child, unsigned int mode)
 {
 	return security_ops->ptrace_access_check(child, mode);
@@ -538,7 +518,14 @@ int security_inode_permission(struct inode *inode, int mask)
 {
 	if (unlikely(IS_PRIVATE(inode)))
 		return 0;
-	return security_ops->inode_permission(inode, mask);
+	return security_ops->inode_permission(inode, mask, 0);
+}
+
+int security_inode_exec_permission(struct inode *inode, unsigned int flags)
+{
+	if (unlikely(IS_PRIVATE(inode)))
+		return 0;
+	return security_ops->inode_permission(inode, MAY_EXEC, flags);
 }
 
 int security_inode_setattr(struct dentry *dentry, struct iattr *attr)
