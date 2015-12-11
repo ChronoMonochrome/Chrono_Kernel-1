@@ -54,8 +54,8 @@ struct user_namespace;
  * These functions are in security/capability.c and are used
  * as the default capabilities functions
  */
-extern int cap_capable(const struct cred *cred, struct user_namespace *ns,
-		       int cap, int audit);
+extern int cap_capable(struct task_struct *tsk, const struct cred *cred,
+		       struct user_namespace *ns, int cap, int audit);
 extern int cap_settime(const struct timespec *ts, const struct timezone *tz);
 extern int cap_ptrace_access_check(struct task_struct *child, unsigned int mode);
 extern int cap_ptrace_traceme(struct task_struct *parent);
@@ -1266,6 +1266,7 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
  * @capable:
  *	Check whether the @tsk process has the @cap capability in the indicated
  *	credentials.
+ *	@tsk contains the task_struct for the process.
  *	@cred contains the credentials to use.
  *      @ns contains the user namespace we want the capability in
  *	@cap contains the capability <include/linux/capability.h>.
@@ -1379,11 +1380,6 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
 struct security_operations {
 	char name[SECURITY_NAME_MAX + 1];
 
-	int (*binder_set_context_mgr) (struct task_struct *mgr);
-	int (*binder_transaction) (struct task_struct *from, struct task_struct *to);
-	int (*binder_transfer_binder) (struct task_struct *from, struct task_struct *to);
-	int (*binder_transfer_file) (struct task_struct *from, struct task_struct *to, struct file *file);
-
 	int (*ptrace_access_check) (struct task_struct *child, unsigned int mode);
 	int (*ptrace_traceme) (struct task_struct *parent);
 	int (*capget) (struct task_struct *target,
@@ -1394,8 +1390,8 @@ struct security_operations {
 		       const kernel_cap_t *effective,
 		       const kernel_cap_t *inheritable,
 		       const kernel_cap_t *permitted);
-	int (*capable) (const struct cred *cred, struct user_namespace *ns,
-			int cap, int audit);
+	int (*capable) (struct task_struct *tsk, const struct cred *cred,
+			struct user_namespace *ns, int cap, int audit);
 	int (*quotactl) (int cmds, int type, int id, struct super_block *sb);
 	int (*quota_on) (struct dentry *dentry);
 	int (*syslog) (int type);
@@ -1465,7 +1461,7 @@ struct security_operations {
 			     struct inode *new_dir, struct dentry *new_dentry);
 	int (*inode_readlink) (struct dentry *dentry);
 	int (*inode_follow_link) (struct dentry *dentry, struct nameidata *nd);
-	int (*inode_permission) (struct inode *inode, int mask);
+	int (*inode_permission) (struct inode *inode, int mask, unsigned flags);
 	int (*inode_setattr)	(struct dentry *dentry, struct iattr *attr);
 	int (*inode_getattr) (struct vfsmount *mnt, struct dentry *dentry);
 	int (*inode_setxattr) (struct dentry *dentry, const char *name,
@@ -1666,10 +1662,6 @@ extern int security_module_enable(struct security_operations *ops);
 extern int register_security(struct security_operations *ops);
 
 /* Security operations */
-int security_binder_set_context_mgr(struct task_struct *mgr);
-int security_binder_transaction(struct task_struct *from, struct task_struct *to);
-int security_binder_transfer_binder(struct task_struct *from, struct task_struct *to);
-int security_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file);
 int security_ptrace_access_check(struct task_struct *child, unsigned int mode);
 int security_ptrace_traceme(struct task_struct *parent);
 int security_capget(struct task_struct *target,
@@ -1736,6 +1728,7 @@ int security_inode_rename(struct inode *old_dir, struct dentry *old_dentry,
 int security_inode_readlink(struct dentry *dentry);
 int security_inode_follow_link(struct dentry *dentry, struct nameidata *nd);
 int security_inode_permission(struct inode *inode, int mask);
+int security_inode_exec_permission(struct inode *inode, unsigned int flags);
 int security_inode_setattr(struct dentry *dentry, struct iattr *attr);
 int security_inode_getattr(struct vfsmount *mnt, struct dentry *dentry);
 int security_inode_setxattr(struct dentry *dentry, const char *name,
@@ -1852,26 +1845,6 @@ static inline int security_init(void)
 	return 0;
 }
 
-static inline int security_binder_set_context_mgr(struct task_struct *mgr)
-{
-	return 0;
-}
-
-static inline int security_binder_transaction(struct task_struct *from, struct task_struct *to)
-{
-	return 0;
-}
-
-static inline int security_binder_transfer_binder(struct task_struct *from, struct task_struct *to)
-{
-	return 0;
-}
-
-static inline int security_binder_transfer_file(struct task_struct *from, struct task_struct *to, struct file *file)
-{
-	return 0;
-}
-
 static inline int security_ptrace_access_check(struct task_struct *child,
 					     unsigned int mode)
 {
@@ -1903,7 +1876,7 @@ static inline int security_capset(struct cred *new,
 static inline int security_capable(struct user_namespace *ns,
 				   const struct cred *cred, int cap)
 {
-	return cap_capable(cred, ns, cap, SECURITY_CAP_AUDIT);
+	return cap_capable(current, cred, ns, cap, SECURITY_CAP_AUDIT);
 }
 
 static inline int security_real_capable(struct task_struct *tsk, struct user_namespace *ns, int cap)
@@ -1911,7 +1884,7 @@ static inline int security_real_capable(struct task_struct *tsk, struct user_nam
 	int ret;
 
 	rcu_read_lock();
-	ret = cap_capable(__task_cred(tsk), ns, cap, SECURITY_CAP_AUDIT);
+	ret = cap_capable(tsk, __task_cred(tsk), ns, cap, SECURITY_CAP_AUDIT);
 	rcu_read_unlock();
 	return ret;
 }
@@ -1922,7 +1895,8 @@ int security_real_capable_noaudit(struct task_struct *tsk, struct user_namespace
 	int ret;
 
 	rcu_read_lock();
-	ret = cap_capable(__task_cred(tsk), ns, cap, SECURITY_CAP_NOAUDIT);
+	ret = cap_capable(tsk, __task_cred(tsk), ns, cap,
+			       SECURITY_CAP_NOAUDIT);
 	rcu_read_unlock();
 	return ret;
 }
@@ -2072,7 +2046,7 @@ static inline int security_inode_init_security(struct inode *inode,
 						initxattrs initxattrs,
 						void *fs_data)
 {
-	return -EOPNOTSUPP;
+       return -EOPNOTSUPP;
 }
 
 static inline int security_inode_create(struct inode *dir,
@@ -2142,6 +2116,12 @@ static inline int security_inode_follow_link(struct dentry *dentry,
 }
 
 static inline int security_inode_permission(struct inode *inode, int mask)
+{
+	return 0;
+}
+
+static inline int security_inode_exec_permission(struct inode *inode,
+						  unsigned int flags)
 {
 	return 0;
 }
