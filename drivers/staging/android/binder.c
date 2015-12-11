@@ -33,7 +33,6 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/vmalloc.h>
-#include <linux/security.h>
 
 #include "binder.h"
 #include "binder_trace.h"
@@ -367,7 +366,7 @@ binder_defer_work(struct binder_proc *proc, enum binder_deferred_state defer);
 /*
  * copied from get_unused_fd_flags
  */
-int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
+static int task_get_unused_fd_flags(struct binder_proc *proc, int flags)
 {
 	struct files_struct *files = proc->files;
 	int fd, error;
@@ -418,13 +417,13 @@ repeat:
 	else
 		FD_CLR(fd, fdt->close_on_exec);
 	files->next_fd = fd + 1;
-#if 1
+
 	/* Sanity check */
 	if (fdt->fd[fd] != NULL) {
 		printk(KERN_WARNING "get_unused_fd: slot %d not NULL!\n", fd);
 		fdt->fd[fd] = NULL;
 	}
-#endif
+
 	error = fd;
 
 out:
@@ -1491,10 +1490,6 @@ static void binder_transaction(struct binder_proc *proc,
 			return_error = BR_DEAD_REPLY;
 			goto err_dead_binder;
 		}
-		if (security_binder_transaction(proc->tsk, target_proc->tsk) < 0) {
-			return_error = BR_FAILED_REPLY;
-			goto err_invalid_target_handle;
-		}
 		if (!(tr->flags & TF_ONE_WAY) && thread->transaction_stack) {
 			struct binder_transaction *tmp;
 			tmp = thread->transaction_stack;
@@ -1644,10 +1639,6 @@ static void binder_transaction(struct binder_proc *proc,
 					fp->cookie, node->cookie);
 				goto err_binder_get_ref_for_node_failed;
 			}
-			if (security_binder_transfer_binder(proc->tsk, target_proc->tsk)) {
-				return_error = BR_FAILED_REPLY;
-				goto err_binder_get_ref_for_node_failed;
-			}
 			ref = binder_get_ref_for_node(target_proc, node);
 			if (ref == NULL) {
 				return_error = BR_FAILED_REPLY;
@@ -1675,10 +1666,6 @@ static void binder_transaction(struct binder_proc *proc,
 					"transaction with invalid "
 					"handle, %ld\n", proc->pid,
 					thread->pid, fp->handle);
-				return_error = BR_FAILED_REPLY;
-				goto err_binder_get_ref_failed;
-			}
-			if (security_binder_transfer_binder(proc->tsk, target_proc->tsk)) {
 				return_error = BR_FAILED_REPLY;
 				goto err_binder_get_ref_failed;
 			}
@@ -1737,11 +1724,6 @@ static void binder_transaction(struct binder_proc *proc,
 					proc->pid, thread->pid, fp->handle);
 				return_error = BR_FAILED_REPLY;
 				goto err_fget_failed;
-			}
-			if (security_binder_transfer_file(proc->tsk, target_proc->tsk, file) < 0) {
-				fput(file);
-				return_error = BR_FAILED_REPLY;
-				goto err_get_unused_fd_failed;
 			}
 			target_fd = task_get_unused_fd_flags(target_proc, O_CLOEXEC);
 			if (target_fd < 0) {
@@ -2795,9 +2777,6 @@ static long binder_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			ret = -EBUSY;
 			goto err;
 		}
-		ret = security_binder_set_context_mgr(proc->tsk);
-		if (ret < 0)
-			goto err;
 		if (binder_context_mgr_uid != -1) {
 			if (binder_context_mgr_uid != current->cred->euid) {
 				printk(KERN_ERR "binder: BINDER_SET_"
@@ -2888,6 +2867,9 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 	const char *failure_string;
 	struct binder_buffer *buffer;
 
+	if (proc->tsk != current)
+		return -EINVAL;
+
 	if ((vma->vm_end - vma->vm_start) > SZ_4M)
 		vma->vm_end = vma->vm_start + SZ_4M;
 
@@ -2952,7 +2934,7 @@ static int binder_mmap(struct file *filp, struct vm_area_struct *vma)
 	binder_insert_free_buffer(proc, buffer);
 	proc->free_async_space = proc->buffer_size / 2;
 	barrier();
-	proc->files = get_files_struct(proc->tsk);
+	proc->files = get_files_struct(current);
 	proc->vma = vma;
 	proc->vma_vm_mm = vma->vm_mm;
 
