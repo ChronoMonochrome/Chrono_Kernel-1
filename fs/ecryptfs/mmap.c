@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /**
  * eCryptfs: Linux filesystem encryption layer
  * This is where eCryptfs coordinates the symmetric encryption and
@@ -79,8 +76,8 @@ static int ecryptfs_writepage(struct page *page, struct writeback_control *wbc)
 
 	rc = ecryptfs_encrypt_page(page);
 	if (rc) {
-//		ecryptfs_printk(KERN_WARNING, "Error encrypting "
-;
+		ecryptfs_printk(KERN_WARNING, "Error encrypting "
+				"page (upper index [0x%.16lx])\n", page->index);
 		ClearPageUptodate(page);
 		goto out;
 	}
@@ -165,8 +162,8 @@ ecryptfs_copy_up_encrypted_with_header(struct page *page,
 			kunmap_atomic(page_virt, KM_USER0);
 			flush_dcache_page(page);
 			if (rc) {
-//				printk(KERN_ERR "%s: Error reading xattr "
-;
+				printk(KERN_ERR "%s: Error reading xattr "
+				       "region; rc = [%d]\n", __func__, rc);
 				goto out;
 			}
 		} else {
@@ -180,9 +177,9 @@ ecryptfs_copy_up_encrypted_with_header(struct page *page,
 				(lower_offset & ~PAGE_CACHE_MASK),
 				crypt_stat->extent_size, page->mapping->host);
 			if (rc) {
-//				printk(KERN_ERR "%s: Error attempting to read "
-//				       "extent at offset [%lld] in the lower "
-;
+				printk(KERN_ERR "%s: Error attempting to read "
+				       "extent at offset [%lld] in the lower "
+				       "file; rc = [%d]\n", __func__,
 				       lower_offset, rc);
 				goto out;
 			}
@@ -217,10 +214,10 @@ static int ecryptfs_readpage(struct file *file, struct page *page)
 			rc = ecryptfs_copy_up_encrypted_with_header(page,
 								    crypt_stat);
 			if (rc) {
-//				printk(KERN_ERR "%s: Error attempting to copy "
-//				       "the encrypted content from the lower "
-//				       "file whilst inserting the metadata "
-;
+				printk(KERN_ERR "%s: Error attempting to copy "
+				       "the encrypted content from the lower "
+				       "file whilst inserting the metadata "
+				       "from the xattr into the header; rc = "
 				       "[%d]\n", __func__, rc);
 				goto out;
 			}
@@ -230,7 +227,7 @@ static int ecryptfs_readpage(struct file *file, struct page *page)
 				page, page->index, 0, PAGE_CACHE_SIZE,
 				page->mapping->host);
 			if (rc) {
-;
+				printk(KERN_ERR "Error reading page; rc = "
 				       "[%d]\n", rc);
 				goto out;
 			}
@@ -238,7 +235,7 @@ static int ecryptfs_readpage(struct file *file, struct page *page)
 	} else {
 		rc = ecryptfs_decrypt_page(page);
 		if (rc) {
-;
+			ecryptfs_printk(KERN_ERR, "Error decrypting page; "
 					"rc = [%d]\n", rc);
 			goto out;
 		}
@@ -248,8 +245,8 @@ out:
 		ClearPageUptodate(page);
 	else
 		SetPageUptodate(page);
-//	ecryptfs_printk(KERN_DEBUG, "Unlocking page with index = [0x%.16lx]\n",
-;
+	ecryptfs_printk(KERN_DEBUG, "Unlocking page with index = [0x%.16lx]\n",
+			page->index);
 	unlock_page(page);
 	return rc;
 }
@@ -310,8 +307,8 @@ static int ecryptfs_write_begin(struct file *file,
 			rc = ecryptfs_read_lower_page_segment(
 				page, index, 0, PAGE_CACHE_SIZE, mapping->host);
 			if (rc) {
-//				printk(KERN_ERR "%s: Error attemping to read "
-;
+				printk(KERN_ERR "%s: Error attemping to read "
+				       "lower page segment; rc = [%d]\n",
 				       __func__, rc);
 				ClearPageUptodate(page);
 				goto out;
@@ -322,11 +319,11 @@ static int ecryptfs_write_begin(struct file *file,
 				rc = ecryptfs_copy_up_encrypted_with_header(
 					page, crypt_stat);
 				if (rc) {
-//					printk(KERN_ERR "%s: Error attempting "
-//					       "to copy the encrypted content "
-//					       "from the lower file whilst "
-//					       "inserting the metadata from "
-;
+					printk(KERN_ERR "%s: Error attempting "
+					       "to copy the encrypted content "
+					       "from the lower file whilst "
+					       "inserting the metadata from "
+					       "the xattr into the header; rc "
 					       "= [%d]\n", __func__, rc);
 					ClearPageUptodate(page);
 					goto out;
@@ -337,8 +334,8 @@ static int ecryptfs_write_begin(struct file *file,
 					page, index, 0, PAGE_CACHE_SIZE,
 					mapping->host);
 				if (rc) {
-//					printk(KERN_ERR "%s: Error reading "
-;
+					printk(KERN_ERR "%s: Error reading "
+					       "page; rc = [%d]\n",
 					       __func__, rc);
 					ClearPageUptodate(page);
 					goto out;
@@ -352,8 +349,8 @@ static int ecryptfs_write_begin(struct file *file,
 			} else {
 				rc = ecryptfs_decrypt_page(page);
 				if (rc) {
-//					printk(KERN_ERR "%s: Error decrypting "
-;
+					printk(KERN_ERR "%s: Error decrypting "
+					       "page at index [%ld]; "
 					       "rc = [%d]\n",
 					       __func__, page->index, rc);
 					ClearPageUptodate(page);
@@ -370,8 +367,8 @@ static int ecryptfs_write_begin(struct file *file,
 			rc = ecryptfs_truncate(file->f_path.dentry,
 					       prev_page_end_size);
 			if (rc) {
-//				printk(KERN_ERR "%s: Error on attempt to "
-;
+				printk(KERN_ERR "%s: Error on attempt to "
+				       "truncate to (higher) offset [%lld];"
 				       " rc = [%d]\n", __func__,
 				       prev_page_end_size, rc);
 				goto out;
@@ -414,7 +411,7 @@ static int ecryptfs_write_inode_size_to_header(struct inode *ecryptfs_inode)
 				  sizeof(u64));
 	kfree(file_size_virt);
 	if (rc < 0)
-;
+		printk(KERN_ERR "%s: Error writing file size to header; "
 		       "rc = [%d]\n", __func__, rc);
 	else
 		rc = 0;
@@ -434,15 +431,15 @@ static int ecryptfs_write_inode_size_to_xattr(struct inode *ecryptfs_inode)
 	int rc;
 
 	if (!lower_inode->i_op->getxattr || !lower_inode->i_op->setxattr) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "No support for setting xattr in lower filesystem\n");
 		rc = -ENOSYS;
 		goto out;
 	}
 	xattr_virt = kmem_cache_alloc(ecryptfs_xattr_cache, GFP_KERNEL);
 	if (!xattr_virt) {
-//		printk(KERN_ERR "Out of memory whilst attempting to write "
-;
+		printk(KERN_ERR "Out of memory whilst attempting to write "
+		       "inode size to xattr\n");
 		rc = -ENOMEM;
 		goto out;
 	}
@@ -456,8 +453,8 @@ static int ecryptfs_write_inode_size_to_xattr(struct inode *ecryptfs_inode)
 					 xattr_virt, size, 0);
 	mutex_unlock(&lower_inode->i_mutex);
 	if (rc)
-//		printk(KERN_ERR "Error whilst attempting to write inode size "
-;
+		printk(KERN_ERR "Error whilst attempting to write inode size "
+		       "to lower file xattr; rc = [%d]\n", rc);
 	kmem_cache_free(ecryptfs_xattr_cache, xattr_virt);
 out:
 	return rc;
@@ -503,8 +500,8 @@ static int ecryptfs_write_end(struct file *file,
 	int rc;
 	int need_unlock_page = 1;
 
-//	ecryptfs_printk(KERN_DEBUG, "Calling fill_zeros_to_end_of_page"
-;
+	ecryptfs_printk(KERN_DEBUG, "Calling fill_zeros_to_end_of_page"
+			"(page w/ index = [0x%.16lx], to = [%d])\n", index, to);
 	if (!(crypt_stat->flags & ECRYPTFS_ENCRYPTED)) {
 		rc = ecryptfs_write_lower_page_segment(ecryptfs_inode, page, 0,
 						       to);
@@ -518,8 +515,8 @@ static int ecryptfs_write_end(struct file *file,
 	/* Fills in zeros if 'to' goes beyond inode size */
 	rc = fill_zeros_to_end_of_page(page, to);
 	if (rc) {
-//		ecryptfs_printk(KERN_WARNING, "Error attempting to fill "
-;
+		ecryptfs_printk(KERN_WARNING, "Error attempting to fill "
+			"zeros in page with index = [0x%.16lx]\n", index);
 		goto out;
 	}
 	set_page_dirty(page);
@@ -527,13 +524,13 @@ static int ecryptfs_write_end(struct file *file,
 	need_unlock_page = 0;
 	if (pos + copied > i_size_read(ecryptfs_inode)) {
 		i_size_write(ecryptfs_inode, pos + copied);
-//		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
-//			"[0x%.16llx]\n",
-;
+		ecryptfs_printk(KERN_DEBUG, "Expanded file size to "
+			"[0x%.16llx]\n",
+			(unsigned long long)i_size_read(ecryptfs_inode));
 		balance_dirty_pages_ratelimited(mapping);
 		rc = ecryptfs_write_inode_size_to_metadata(ecryptfs_inode);
 		if (rc) {
-;
+			printk(KERN_ERR "Error writing inode size to metadata; "
 			       "rc = [%d]\n", rc);
 			goto out;
 		}
