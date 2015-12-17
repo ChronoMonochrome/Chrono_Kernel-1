@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /**
  * eCryptfs: Linux filesystem encryption layer
  *
@@ -41,12 +38,6 @@
 #include <linux/slab.h>
 #include <linux/magic.h>
 #include "ecryptfs_kernel.h"
-
-
-#ifdef CONFIG_WTL_ENCRYPTION_FILTER
-#include <linux/ctype.h>
-#endif
-
 
 /**
  * Module parameter that defines the ecryptfs_verbosity level.
@@ -98,9 +89,9 @@ void __ecryptfs_printk(const char *fmt, ...)
 	va_start(args, fmt);
 	if (fmt[1] == '7') { /* KERN_DEBUG */
 		if (ecryptfs_verbosity >= 1)
-;
+			vprintk(fmt, args);
 	} else
-;
+		vprintk(fmt, args);
 	va_end(args);
 }
 
@@ -136,8 +127,8 @@ static int ecryptfs_init_lower_file(struct dentry *dentry,
 	rc = ecryptfs_privileged_open(lower_file, lower_dentry, lower_mnt,
 				      cred);
 	if (rc) {
-//		printk(KERN_ERR "Error opening lower file "
-;
+		printk(KERN_ERR "Error opening lower file "
+		       "for lower_dentry [0x%p] and lower_mnt [0x%p]; "
 		       "rc = [%d]\n", lower_dentry, lower_mnt, rc);
 		(*lower_file) = NULL;
 	}
@@ -185,9 +176,6 @@ enum { ecryptfs_opt_sig, ecryptfs_opt_ecryptfs_sig,
        ecryptfs_opt_fn_cipher, ecryptfs_opt_fn_cipher_key_bytes,
        ecryptfs_opt_unlink_sigs, ecryptfs_opt_mount_auth_tok_only,
        ecryptfs_opt_check_dev_ruid,
-#ifdef CONFIG_WTL_ENCRYPTION_FILTER
-	ecryptfs_opt_enable_filtering,
-#endif
        ecryptfs_opt_err };
 
 static const match_table_t tokens = {
@@ -205,9 +193,6 @@ static const match_table_t tokens = {
 	{ecryptfs_opt_unlink_sigs, "ecryptfs_unlink_sigs"},
 	{ecryptfs_opt_mount_auth_tok_only, "ecryptfs_mount_auth_tok_only"},
 	{ecryptfs_opt_check_dev_ruid, "ecryptfs_check_dev_ruid"},
-#ifdef CONFIG_WTL_ENCRYPTION_FILTER
-	{ecryptfs_opt_enable_filtering, "ecryptfs_enable_filtering=%s"},
-#endif
 	{ecryptfs_opt_err, NULL}
 };
 
@@ -225,9 +210,9 @@ static int ecryptfs_init_global_auth_toks(
 			&global_auth_tok->global_auth_tok_key, &auth_tok,
 			global_auth_tok->sig);
 		if (rc) {
-//			printk(KERN_ERR "Could not find valid key in user "
-//			       "session keyring for sig specified in mount "
-;
+			printk(KERN_ERR "Could not find valid key in user "
+			       "session keyring for sig specified in mount "
+			       "option: [%s]\n", global_auth_tok->sig);
 			global_auth_tok->flags |= ECRYPTFS_AUTH_TOK_INVALID;
 			goto out;
 		} else {
@@ -248,57 +233,7 @@ static void ecryptfs_init_mount_crypt_stat(
 	mutex_init(&mount_crypt_stat->global_auth_tok_list_mutex);
 	mount_crypt_stat->flags |= ECRYPTFS_MOUNT_CRYPT_STAT_INITIALIZED;
 }
-#ifdef CONFIG_WTL_ENCRYPTION_FILTER
 
-static int parse_enc_file_filter_parms(
-	struct ecryptfs_mount_crypt_stat *mcs, char *str)
-{
-	char *token = NULL;
-	int count = 0;
-	mcs->max_name_filter_len = 0;
-	while ((token = strsep(&str, "|")) != NULL) {
-		if (count >= ENC_NAME_FILTER_MAX_INSTANCE)
-			return -1;
-		strncpy(mcs->enc_filter_name[count++],
-			token, ENC_NAME_FILTER_MAX_LEN);
-		if (mcs->max_name_filter_len < strlen(token))
-			mcs->max_name_filter_len = strlen(token);
-	}
-	return 0;
-}
-
-
-static int parse_enc_ext_filter_parms(
-	struct ecryptfs_mount_crypt_stat *mcs, char *str)
-{
-	char *token = NULL;
-	int count = 0;
-	while ((token = strsep(&str, "|")) != NULL) {
-		if (count >= ENC_EXT_FILTER_MAX_INSTANCE)
-			return -1;
-		strncpy(mcs->enc_filter_ext[count++],
-			token, ENC_EXT_FILTER_MAX_LEN);
-	}
-	return 0;
-}
-
-static int parse_enc_filter_parms(
-	struct ecryptfs_mount_crypt_stat *mcs, char *str)
-{
-	char *token = NULL;
-	if (!strcmp("*", str)) {
-		mcs->flags |= ECRYPTFS_ENABLE_NEW_PASSTHROUGH;
-		return 0;
-	}
-	token = strsep(&str, ":");
-	if (token != NULL)
-		parse_enc_file_filter_parms(mcs, token);
-	token = strsep(&str, ":");
-	if (token != NULL)
-		parse_enc_ext_filter_parms(mcs, token);
-	return 0;
-}
-#endif
 /**
  * ecryptfs_parse_options
  * @sb: The ecryptfs super block
@@ -344,9 +279,6 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 	char *fnek_src;
 	char *cipher_key_bytes_src;
 	char *fn_cipher_key_bytes_src;
-	u8 cipher_code;
-
-	*check_ruid = 0;
 
 	*check_ruid = 0;
 
@@ -366,8 +298,8 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 			rc = ecryptfs_add_global_auth_tok(mount_crypt_stat,
 							  sig_src, 0);
 			if (rc) {
-//				printk(KERN_ERR "Error attempting to register "
-;
+				printk(KERN_ERR "Error attempting to register "
+				       "global sig; rc = [%d]\n", rc);
 				goto out;
 			}
 			sig_set = 1;
@@ -418,8 +350,8 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 				mount_crypt_stat->global_default_fnek_sig,
 				ECRYPTFS_AUTH_TOK_FNEK);
 			if (rc) {
-//				printk(KERN_ERR "Error attempting to register "
-;
+				printk(KERN_ERR "Error attempting to register "
+				       "global fnek sig [%s]; rc = [%d]\n",
 				       mount_crypt_stat->global_default_fnek_sig,
 				       rc);
 				goto out;
@@ -457,31 +389,18 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 		case ecryptfs_opt_check_dev_ruid:
 			*check_ruid = 1;
 			break;
-#ifdef CONFIG_WTL_ENCRYPTION_FILTER
-		case ecryptfs_opt_enable_filtering:
-			rc = parse_enc_filter_parms(mount_crypt_stat,
-							 args[0].from);
-			if (rc) {
-//				printk(KERN_ERR "Error attempting to parse encryption "
-;
-				rc = -EINVAL;
-				goto out;
-			}
-			mount_crypt_stat->flags |= ECRYPTFS_ENABLE_FILTERING;
-			break;
-#endif
 		case ecryptfs_opt_err:
 		default:
-//			printk(KERN_WARNING
-//			       "%s: eCryptfs: unrecognized option [%s]\n",
-;
+			printk(KERN_WARNING
+			       "%s: eCryptfs: unrecognized option [%s]\n",
+			       __func__, p);
 		}
 	}
 	if (!sig_set) {
 		rc = -EINVAL;
-//		ecryptfs_printk(KERN_ERR, "You must supply at least one valid "
-//				"auth tok signature as a mount "
-;
+		ecryptfs_printk(KERN_ERR, "You must supply at least one valid "
+				"auth tok signature as a mount "
+				"parameter; see the eCryptfs README\n");
 		goto out;
 	}
 	if (!cipher_name_set) {
@@ -501,18 +420,6 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 	    && !fn_cipher_key_bytes_set)
 		mount_crypt_stat->global_default_fn_cipher_key_bytes =
 			mount_crypt_stat->global_default_cipher_key_size;
-
-	cipher_code = ecryptfs_code_for_cipher_string(
-		mount_crypt_stat->global_default_cipher_name,
-		mount_crypt_stat->global_default_cipher_key_size);
-	if (!cipher_code) {
-//		ecryptfs_printk(KERN_ERR,
-//				"eCryptfs doesn't support cipher: %s",
-;
-		rc = -EINVAL;
-		goto out;
-	}
-
 	mutex_lock(&key_tfm_list_mutex);
 	if (!ecryptfs_tfm_exists(mount_crypt_stat->global_default_cipher_name,
 				 NULL)) {
@@ -520,8 +427,8 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 			NULL, mount_crypt_stat->global_default_cipher_name,
 			mount_crypt_stat->global_default_cipher_key_size);
 		if (rc) {
-//			printk(KERN_ERR "Error attempting to initialize "
-;
+			printk(KERN_ERR "Error attempting to initialize "
+			       "cipher with name = [%s] and key size = [%td]; "
 			       "rc = [%d]\n",
 			       mount_crypt_stat->global_default_cipher_name,
 			       mount_crypt_stat->global_default_cipher_key_size,
@@ -538,8 +445,8 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 			NULL, mount_crypt_stat->global_default_fn_cipher_name,
 			mount_crypt_stat->global_default_fn_cipher_key_bytes);
 		if (rc) {
-//			printk(KERN_ERR "Error attempting to initialize "
-;
+			printk(KERN_ERR "Error attempting to initialize "
+			       "cipher with name = [%s] and key size = [%td]; "
 			       "rc = [%d]\n",
 			       mount_crypt_stat->global_default_fn_cipher_name,
 			       mount_crypt_stat->global_default_fn_cipher_key_bytes,
@@ -552,8 +459,8 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_info *sbi, char *options,
 	mutex_unlock(&key_tfm_list_mutex);
 	rc = ecryptfs_init_global_auth_toks(mount_crypt_stat);
 	if (rc)
-//		printk(KERN_WARNING "One or more global auth toks could not "
-;
+		printk(KERN_WARNING "One or more global auth toks could not "
+		       "properly register; rc = [%d]\n", rc);
 out:
 	return rc;
 }
@@ -598,6 +505,7 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
 		goto out;
 	}
 
+	s->s_flags = flags;
 	rc = bdi_setup_and_register(&sbi->bdi, "ecryptfs", BDI_CAP_MAP_COPY);
 	if (rc)
 		goto out1;
@@ -613,35 +521,26 @@ static struct dentry *ecryptfs_mount(struct file_system_type *fs_type, int flags
 	err = "Reading sb failed";
 	rc = kern_path(dev_name, LOOKUP_FOLLOW | LOOKUP_DIRECTORY, &path);
 	if (rc) {
-;
+		ecryptfs_printk(KERN_WARNING, "kern_path() failed\n");
 		goto out1;
 	}
 	if (path.dentry->d_sb->s_type == &ecryptfs_fs_type) {
 		rc = -EINVAL;
-//		printk(KERN_ERR "Mount on filesystem of type "
-//			"eCryptfs explicitly disallowed due to "
-;
+		printk(KERN_ERR "Mount on filesystem of type "
+			"eCryptfs explicitly disallowed due to "
+			"known incompatibilities\n");
 		goto out_free;
 	}
 
 	if (check_ruid && path.dentry->d_inode->i_uid != current_uid()) {
 		rc = -EPERM;
-//		printk(KERN_ERR "Mount of device (uid: %d) not owned by "
-//		       "requested user (uid: %d)\n",
-;
+		printk(KERN_ERR "Mount of device (uid: %d) not owned by "
+		       "requested user (uid: %d)\n",
+		       path.dentry->d_inode->i_uid, current_uid());
 		goto out_free;
 	}
 
 	ecryptfs_set_superblock_lower(s, path.dentry->d_sb);
-
-	/**
-	 * Set the POSIX ACL flag based on whether they're enabled in the lower
-	 * mount. Force a read-only eCryptfs mount if the lower mount is ro.
-	 * Allow a ro eCryptfs mount even when the lower mount is rw.
-	 */
-	s->s_flags = flags & ~MS_POSIXACL;
-	s->s_flags |= path.dentry->d_sb->s_flags & (MS_RDONLY | MS_POSIXACL);
-
 	s->s_maxbytes = path.dentry->d_sb->s_maxbytes;
 	s->s_blocksize = path.dentry->d_sb->s_blocksize;
 	s->s_magic = ECRYPTFS_SUPER_MAGIC;
@@ -680,7 +579,7 @@ out:
 		ecryptfs_destroy_mount_crypt_stat(&sbi->mount_crypt_stat);
 		kmem_cache_free(ecryptfs_sb_info_cache, sbi);
 	}
-;
+	printk(KERN_ERR "%s; rc = [%d]\n", err, rc);
 	return ERR_PTR(rc);
 }
 
@@ -821,9 +720,9 @@ static int ecryptfs_init_kmem_caches(void)
 				0, SLAB_HWCACHE_ALIGN, info->ctor);
 		if (!*(info->cache)) {
 			ecryptfs_free_kmem_caches();
-//			ecryptfs_printk(KERN_WARNING, "%s: "
-//					"kmem_cache_create failed\n",
-;
+			ecryptfs_printk(KERN_WARNING, "%s: "
+					"kmem_cache_create failed\n",
+					info->name);
 			return -ENOMEM;
 		}
 	}
@@ -855,14 +754,14 @@ static int do_sysfs_registration(void)
 
 	ecryptfs_kobj = kobject_create_and_add("ecryptfs", fs_kobj);
 	if (!ecryptfs_kobj) {
-;
+		printk(KERN_ERR "Unable to create ecryptfs kset\n");
 		rc = -ENOMEM;
 		goto out;
 	}
 	rc = sysfs_create_group(ecryptfs_kobj, &attr_group);
 	if (rc) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "Unable to create ecryptfs version attributes\n");
 		kobject_put(ecryptfs_kobj);
 	}
 out:
@@ -881,10 +780,10 @@ static int __init ecryptfs_init(void)
 
 	if (ECRYPTFS_DEFAULT_EXTENT_SIZE > PAGE_CACHE_SIZE) {
 		rc = -EINVAL;
-//		ecryptfs_printk(KERN_ERR, "The eCryptfs extent size is "
-//				"larger than the host's page size, and so "
-//				"eCryptfs cannot run on this system. The "
-;
+		ecryptfs_printk(KERN_ERR, "The eCryptfs extent size is "
+				"larger than the host's page size, and so "
+				"eCryptfs cannot run on this system. The "
+				"default eCryptfs extent size is [%u] bytes; "
 				"the page size is [%lu] bytes.\n",
 				ECRYPTFS_DEFAULT_EXTENT_SIZE,
 				(unsigned long)PAGE_CACHE_SIZE);
@@ -892,42 +791,42 @@ static int __init ecryptfs_init(void)
 	}
 	rc = ecryptfs_init_kmem_caches();
 	if (rc) {
-//		printk(KERN_ERR
-;
+		printk(KERN_ERR
+		       "Failed to allocate one or more kmem_cache objects\n");
 		goto out;
 	}
 	rc = register_filesystem(&ecryptfs_fs_type);
 	if (rc) {
-;
+		printk(KERN_ERR "Failed to register filesystem\n");
 		goto out_free_kmem_caches;
 	}
 	rc = do_sysfs_registration();
 	if (rc) {
-;
+		printk(KERN_ERR "sysfs registration failed\n");
 		goto out_unregister_filesystem;
 	}
 	rc = ecryptfs_init_kthread();
 	if (rc) {
-;
+		printk(KERN_ERR "%s: kthread initialization failed; "
 		       "rc = [%d]\n", __func__, rc);
 		goto out_do_sysfs_unregistration;
 	}
 	rc = ecryptfs_init_messaging();
 	if (rc) {
-//		printk(KERN_ERR "Failure occurred while attempting to "
-//				"initialize the communications channel to "
-;
+		printk(KERN_ERR "Failure occurred while attempting to "
+				"initialize the communications channel to "
+				"ecryptfsd\n");
 		goto out_destroy_kthread;
 	}
 	rc = ecryptfs_init_crypto();
 	if (rc) {
-;
+		printk(KERN_ERR "Failure whilst attempting to init crypto; "
 		       "rc = [%d]\n", rc);
 		goto out_release_messaging;
 	}
 	if (ecryptfs_verbosity > 0)
-//		printk(KERN_CRIT "eCryptfs verbosity set to %d. Secret values "
-;
+		printk(KERN_CRIT "eCryptfs verbosity set to %d. Secret values "
+			"will be written to the syslog!\n", ecryptfs_verbosity);
 
 	goto out;
 out_release_messaging:
@@ -950,7 +849,7 @@ static void __exit ecryptfs_exit(void)
 
 	rc = ecryptfs_destroy_crypto();
 	if (rc)
-;
+		printk(KERN_ERR "Failure whilst attempting to destroy crypto; "
 		       "rc = [%d]\n", rc);
 	ecryptfs_release_messaging();
 	ecryptfs_destroy_kthread();
@@ -958,7 +857,6 @@ static void __exit ecryptfs_exit(void)
 	unregister_filesystem(&ecryptfs_fs_type);
 	ecryptfs_free_kmem_caches();
 }
-
 
 MODULE_AUTHOR("Michael A. Halcrow <mhalcrow@us.ibm.com>");
 MODULE_DESCRIPTION("eCryptfs");
