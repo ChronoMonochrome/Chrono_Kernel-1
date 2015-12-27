@@ -50,8 +50,7 @@ CONFIG_HAVE_KERNEL_LZ4=y
 CONFIG_KERNEL_LZ4=y
 CONFIG_DEFAULT_HOSTNAME="(none)"
 CONFIG_SWAP=y
-CONFIG_SYSVIPC=y
-CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_SYSVIPC=n
 # CONFIG_POSIX_MQUEUE is not set
 CONFIG_BSD_PROCESS_ACCT=y
 # CONFIG_BSD_PROCESS_ACCT_V3 is not set
@@ -260,6 +259,9 @@ CONFIG_FREEZER=y
 # System Type
 #
 CONFIG_MMU=y
+CONFIG_ARCH_MMAP_RND_BITS_MIN=8
+CONFIG_ARCH_MMAP_RND_BITS_MAX=16
+CONFIG_ARCH_MMAP_RND_BITS=8
 CONFIG_ARCH_U8500=y
 # CONFIG_ARCH_NOMADIK is not set
 CONFIG_PLAT_NOMADIK=y
@@ -471,7 +473,7 @@ CONFIG_ARM_USE_GLIBC_MEMCOPY=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=84M@256M mem=43M@340M mem_issw=1M@383M mem_ram_console=1M@384M mem=382M@385M vmalloc=294M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 sbl_copy=1"
+CONFIG_CMDLINE="androidboot.hardware=samsungcodina androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=84M@256M mem=43M@340M mem_issw=1M@383M mem_ram_console=1M@384M mem=382M@385M vmalloc=294M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 sbl_copy=1"
 # CONFIG_CMDLINE_FROM_BOOTLOADER is not set
 # CONFIG_CMDLINE_EXTEND=n
 CONFIG_CMDLINE_FORCE=y
@@ -1012,6 +1014,7 @@ CONFIG_AB8500_PWM=y
 # CONFIG_DS1682 is not set
 # CONFIG_TI_DAC7512 is not set
 CONFIG_UID_STAT=y
+CONFIG_UID_CPUTIME=y
 CONFIG_STE_TRACE_MODEM=m
 CONFIG_DBX500_MLOADER=y
 # CONFIG_BMP085 is not set
@@ -2336,6 +2339,7 @@ CONFIG_STAGING=y
 #
 CONFIG_ANDROID=y
 CONFIG_ANDROID_BINDER_IPC=y
+CONFIG_ANDROID_BINDER_IPC_32BIT=y
 CONFIG_ANDROID_LOGGER=m
 CONFIG_ANDROID_RAM_CONSOLE=y
 # CONFIG_ANDROID_RAM_CONSOLE_ENABLE_VERBOSE is not set

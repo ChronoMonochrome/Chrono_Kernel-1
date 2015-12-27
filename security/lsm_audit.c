@@ -237,10 +237,11 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 		audit_log_d_path(ab, "path=", &a->u.path);
 
 		inode = a->u.path.dentry->d_inode;
-		if (inode)
-			audit_log_format(ab, " dev=%s ino=%lu",
-					inode->i_sb->s_id,
-					inode->i_ino);
+		if (inode) {
+			audit_log_format(ab, " dev=");
+			audit_log_untrustedstring(ab, inode->i_sb->s_id);
+			audit_log_format(ab, " ino=%lu", inode->i_ino);
+		}
 		break;
 	}
 	case LSM_AUDIT_DATA_IOCTL_OP: {
@@ -265,10 +266,11 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 		audit_log_untrustedstring(ab, a->u.dentry->d_name.name);
 
 		inode = a->u.dentry->d_inode;
-		if (inode)
-			audit_log_format(ab, " dev=%s ino=%lu",
-					inode->i_sb->s_id,
-					inode->i_ino);
+		if (inode) {
+			audit_log_format(ab, " dev=");
+			audit_log_untrustedstring(ab, inode->i_sb->s_id);
+			audit_log_format(ab, " ino=%lu", inode->i_ino);
+		}
 		break;
 	}
 	case LSM_AUDIT_DATA_INODE: {
@@ -283,8 +285,9 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 					 dentry->d_name.name);
 			dput(dentry);
 		}
-		audit_log_format(ab, " dev=%s ino=%lu", inode->i_sb->s_id,
-				 inode->i_ino);
+		audit_log_format(ab, " dev=");
+		audit_log_untrustedstring(ab, inode->i_sb->s_id);
+		audit_log_format(ab, " ino=%lu", inode->i_ino);
 		break;
 	}
 	case LSM_AUDIT_DATA_TASK:

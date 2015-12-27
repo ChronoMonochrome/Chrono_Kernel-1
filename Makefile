@@ -5,7 +5,7 @@ EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
 ifeq ("$(CROSS_COMPILE)", "")
-   CROSS_COMPILE=/home/eupherion/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
+   CROSS_COMPILE=/home/sergeyl/eabi/prebuilt/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
 endif
 
 # *DOCUMENTATION*
@@ -413,7 +413,7 @@ KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 KBUILD_AFLAGS_MODULE  := -DMODULE -pipe
-KBUILD_CFLAGS_MODULE := -DMODULE -pipe
+KBUILD_CFLAGS_MODULE := -DMODULE -pipe -fno-pic
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)

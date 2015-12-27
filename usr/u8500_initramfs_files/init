@@ -2,92 +2,37 @@
 _PATH="$PATH"
 export PATH=/stage1
 
-busybox mount -t ext4 /dev/block/mmcblk0p17 /ramdisk
-busybox rm /ramdisk/last_boot.txt 
-busybox date >>/ramdisk/last_boot.txt
-exec >>/ramdisk/last_boot.txt 2>&1
-
 busybox cd /
+busybox date >>boot.txt
+exec >>boot.txt 2>&1
 busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-load_image=/ramdisk/boot.cpio
-lvm=/ramdisk/lvm.cpio
+load_image=/stage1/boot.cpio
 
-busybox insmod /ramdisk/modules/startup_reason.ko
-busybox insmod /ramdisk/modules/exfat.ko
-busybox insmod /ramdisk/modules/f2fs.ko
-busybox insmod /ramdisk/modules/snd-soc-ab8500_audio.ko
-
-if ! busybox grep -q bootmode=2 /proc/cmdline ; then
-
-	for i in /ramdisk/modules/autoload/*.ko
-	do
-		busybox insmod $i
-	done
-
-	busybox sh /ramdisk/00userinit
+if busybox grep -q lpm_boot=1 /proc/cmdline ; then
+       busybox echo 1 > /sys/module/doubletap2wake/parameters/enable
+       busybox echo 1 > /sys/module/sweep2wake/parameters/enable
 fi
 
-if busybox grep -q lcdtype=4 /proc/cmdline ; then
-	busybox insmod /ramdisk/modules/display-ws2401_dpi.ko
-fi
-
-if ! busybox grep -q lcdtype=4 /proc/cmdline ; then
-	busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
-fi
-
-if busybox grep -q lcdtype=13 /proc/cmdline ; then
-	busybox insmod /ramdisk/modules/display-s6d27a1_dpi.ko
-fi
 
 if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
-	busybox chmod 644 /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-	busybox echo 200000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-	busybox chmod 644 /ramdisk/recovery.cpio
-	load_image=/ramdisk/recovery.cpio
-	# since it's pain, load j4fs and param from separate partition
-	busybox insmod /ramdisk/modules/j4fs.ko
-	busybox insmod /ramdisk/modules/param.ko
-
-	busybox mount -t j4fs /dev/block/mmcblk0p1 /mnt/.lfs
-	busybox sh /ramdisk/00recovery
+	load_image=/stage1/recovery.cpio
 fi
 
-if test -f ${load_image} ; then
-	busybox cpio -i < ${load_image}
+busybox cpio -i < ${load_image}
+
+if busybox grep -q bootmode=2 /proc/cmdline ; then
+       busybox insmod /modules/j4fs.ko
+       busybox insmod /modules/param.ko
+       busybox mount -t j4fs /dev/block/mmcblk0p1 /mnt/.lfs
 fi
-
-if test -f ${load_image}.gz ; then
-	busybox zcat ${load_image}.gz | busybox cpio -i -u
-fi
-
-if test -f ${lvm} ; then
-	busybox cpio -i < ${lwm}
-fi
-
-if test -f ${lvm}.gz ; then
-	busybox zcat ${lvm}.gz | cpio -i -u
-fi
-
-if test -f /ramdisk/init.kernel.rc ; then
-	busybox ln -s /ramdisk/init.kernel.rc /init.kernel.rc
-	busybox chmod 750 /ramdisk/init.kernel.rc
-fi
-
-busybox cp /init.rc /stage1/
-
-busybox echo "import /init.kernel.rc" > /init.rc
-busybox echo "" >> /init.rc
-
-busybox cat /stage1/init.rc >> /init.rc
-
 
 busybox umount /sys
 busybox umount /proc
-busybox date >>/ramdisk/last_boot.txt
+busybox date >>boot.txt
 busybox rm -fr /stage1 /dev/*
 export PATH="${_PATH}"
 exec /init

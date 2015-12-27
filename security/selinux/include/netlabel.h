@@ -4,7 +4,7 @@
 /*
  * SELinux interface to the NetLabel subsystem
  *
- * Author : Paul Moore <paul.moore@hp.com>
+ * Author: Paul Moore <paul@paul-moore.com>
  *
  */
 
