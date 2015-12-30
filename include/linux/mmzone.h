@@ -59,7 +59,7 @@ enum {
 #endif
 	MIGRATE_ISOLATE,       /* can't allocate from here */
 	MIGRATE_TYPES
-}
+};
 
 /*
  * Returns a list which contains the migrate types on to which
