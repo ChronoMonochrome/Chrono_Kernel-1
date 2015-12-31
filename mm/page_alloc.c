@@ -2365,7 +2365,7 @@ rebalance:
 		 * prevent reclaim making forward progress without
 		 * invoking OOM. Bail if we are suspending
 		 */
-		if (pm_suspending())
+		if (pm_suspended_storage())
 			goto nopage;
 	}
 
