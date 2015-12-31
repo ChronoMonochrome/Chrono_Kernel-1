@@ -51,6 +51,7 @@ static struct vfsmount *shm_mnt;
 #include <linux/shmem_fs.h>
 #include <linux/writeback.h>
 #include <linux/blkdev.h>
+#include <linux/pagevec.h>
 #include <linux/percpu_counter.h>
 #include <linux/splice.h>
 #include <linux/security.h>
@@ -428,6 +429,7 @@ void shmem_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 	struct address_space *mapping = inode->i_mapping;
 	struct shmem_inode_info *info = SHMEM_I(inode);
 	pgoff_t start = (lstart + PAGE_CACHE_SIZE - 1) >> PAGE_CACHE_SHIFT;
+	unsigned partial = lstart & (PAGE_CACHE_SIZE - 1);
 	pgoff_t end = (lend >> PAGE_CACHE_SHIFT);
 	struct pagevec pvec;
 	pgoff_t indices[PAGEVEC_SIZE];
@@ -550,24 +552,7 @@ static int shmem_setattr(struct dentry *dentry, struct iattr *attr)
 	if (S_ISREG(inode->i_mode) && (attr->ia_valid & ATTR_SIZE)) {
 		loff_t oldsize = inode->i_size;
 		loff_t newsize = attr->ia_size;
-		struct page *page = NULL;
 
-		if (newsize < oldsize) {
-			/*
-			 * If truncating down to a partial page, then
-			 * if that page is already allocated, hold it
-			 * in memory until the truncation is over, so
-			 * truncate_partial_page cannot miss it were
-			 * it assigned to swap.
-			 */
-			if (newsize & (PAGE_CACHE_SIZE-1)) {
-				(void) shmem_getpage(inode,
-					newsize >> PAGE_CACHE_SHIFT,
-						&page, SGP_READ, NULL);
-				if (page)
-					unlock_page(page);
-			}
-		}
 		if (newsize != oldsize) {
 			i_size_write(inode, newsize);
 			inode->i_ctime = inode->i_mtime = CURRENT_TIME;
@@ -579,8 +564,6 @@ static int shmem_setattr(struct dentry *dentry, struct iattr *attr)
 			/* unmap again to remove racily COWed private pages */
 			unmap_mapping_range(inode->i_mapping, holebegin, 0, 1);
 		}
-		if (page)
-			page_cache_release(page);
 	}
 
 	setattr_copy(inode, attr);
