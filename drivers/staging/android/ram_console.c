@@ -36,6 +36,10 @@ struct ram_console_buffer {
 
 #define RAM_CONSOLE_SIG (0x43474244) /* DBGC */
 
+#ifdef CONFIG_ANDROID_RAM_CONSOLE_EARLY_INIT
+static char __initdata
+	ram_console_old_log_init_buffer[CONFIG_ANDROID_RAM_CONSOLE_EARLY_SIZE];
+#endif
 static char *ram_console_old_log;
 static size_t ram_console_old_log_size;
 static const char *bootinfo;
@@ -376,6 +380,7 @@ static int __init ram_console_module_init(void)
 	err = platform_driver_register(&ram_console_driver);
 	return err;
 }
+#endif
 
 static ssize_t ram_console_read_old(struct file *file, char __user *buf,
 				    size_t len, loff_t *offset)
@@ -460,6 +465,10 @@ static int __init ram_console_late_init(void)
 	return 0;
 }
 
+#ifdef CONFIG_ANDROID_RAM_CONSOLE_EARLY_INIT
+console_initcall(ram_console_early_init);
+#else
 postcore_initcall(ram_console_module_init);
+#endif
 late_initcall(ram_console_late_init);
 
