@@ -721,11 +721,7 @@ static int __init ashmem_init(void)
 
 	register_shrinker(&ashmem_shrinker);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ashmem: initialized\n");
-#else
-	;
-#endif
 
 	return 0;
 }
@@ -743,11 +739,7 @@ static void __exit ashmem_exit(void)
 	kmem_cache_destroy(ashmem_range_cachep);
 	kmem_cache_destroy(ashmem_area_cachep);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ashmem: unloaded\n");
-#else
-	;
-#endif
 }
 
 module_init(ashmem_init);
