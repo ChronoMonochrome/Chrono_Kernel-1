@@ -2315,10 +2315,6 @@ static const struct inode_operations shmem_inode_operations = {
 	.listxattr	= shmem_listxattr,
 	.removexattr	= shmem_removexattr,
 #endif
-#ifdef CONFIG_TMPFS_POSIX_ACL
-	.check_acl	= generic_check_acl,
-#endif
-
 };
 
 static const struct inode_operations shmem_dir_inode_operations = {
@@ -2340,8 +2336,7 @@ static const struct inode_operations shmem_dir_inode_operations = {
 	.removexattr	= shmem_removexattr,
 #endif
 #ifdef CONFIG_TMPFS_POSIX_ACL
-	.setattr	= shmem_setattr,
-	.check_acl	= generic_check_acl,
+	.setattr	= shmem_notify_change,
 #endif
 };
 
@@ -2353,8 +2348,7 @@ static const struct inode_operations shmem_special_inode_operations = {
 	.removexattr	= shmem_removexattr,
 #endif
 #ifdef CONFIG_TMPFS_POSIX_ACL
-	.setattr	= shmem_setattr,
-	.check_acl	= generic_check_acl,
+	.setattr	= shmem_notify_change,
 #endif
 };
 
@@ -2526,7 +2520,7 @@ struct file *shmem_file_setup(const char *name, loff_t size, unsigned long flags
 
 	d_instantiate(path.dentry, inode);
 	inode->i_size = size;
-	inode->i_nlink = 0;	/* It is unlinked */
+	clear_nlink(inode);	/* It is unlinked */
 #ifndef CONFIG_MMU
 	error = ramfs_nommu_expand_for_mapping(inode, size);
 	if (error)
