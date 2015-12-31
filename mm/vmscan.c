@@ -724,13 +724,7 @@ static enum page_references page_check_references(struct page *page,
 		 */
 		SetPageReferenced(page);
 
-		if (referenced_page || referenced_ptes > 1)
-			return PAGEREF_ACTIVATE;
-
-		/*
-		 * Activate file-backed executable pages after first usage.
-		 */
-		if (vm_flags & VM_EXEC)
+		if (referenced_page)
 			return PAGEREF_ACTIVATE;
 
 		return PAGEREF_KEEP;
@@ -1214,7 +1208,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 			 * anon page which don't already have a swap slot is
 			 * pointless.
 			 */
-			if (nr_swap_pages <= 0 && PageSwapBacked(cursor_page) &&
+			if (nr_swap_pages <= 0 && PageAnon(cursor_page) &&
 			    !PageSwapCache(cursor_page))
 				break;
 
@@ -1981,8 +1975,7 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
 	unsigned long nr_force_scan[2];
 
 	/* kswapd does zone balancing and needs to scan this zone */
-	if (scanning_global_lru(sc) && current_is_kswapd() &&
-	    zone->all_unreclaimable)
+	if (scanning_global_lru(sc) && current_is_kswapd())
 		force_scan = true;
 	/* memcg may have small limit and need to avoid priority drop */
 	if (!scanning_global_lru(sc))
@@ -2140,9 +2133,8 @@ static inline bool should_continue_reclaim(struct zone *zone,
 	 * inactive lists are large enough, continue reclaiming
 	 */
 	pages_for_compaction = (2UL << sc->order);
-	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
-	if (nr_swap_pages > 0)
-		inactive_lru_pages += zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON);
+	inactive_lru_pages = zone_nr_lru_pages(zone, sc, LRU_INACTIVE_ANON) +
+				zone_nr_lru_pages(zone, sc, LRU_INACTIVE_FILE);
 	if (sc->nr_reclaimed < pages_for_compaction &&
 			inactive_lru_pages > pages_for_compaction)
 		return true;
@@ -2298,8 +2290,7 @@ static void set_kswapd_nice(struct task_struct *kswapd, int active)
  *
  * This function returns true if a zone is being reclaimed for a costly
  * high-order allocation and compaction is ready to begin. This indicates to
- * the caller that it should consider retrying the allocation instead of
- * further reclaim.
+ * the caller that it should retry the allocation or fail.
  */
 static bool shrink_zones(int priority, struct zonelist *zonelist,
 					struct scan_control *sc)
@@ -2308,7 +2299,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
 	struct zone *zone;
 	unsigned long nr_soft_reclaimed;
 	unsigned long nr_soft_scanned;
-	bool aborted_reclaim = false;
+	bool should_abort_reclaim = false;
 
 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
 					gfp_zone(sc->gfp_mask), sc->nodemask) {
@@ -2334,7 +2325,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
 				 * allocations.
 				 */
 				if (compaction_ready(zone, sc)) {
-					aborted_reclaim = true;
+					should_abort_reclaim = true;
 					continue;
 				}
 			}
@@ -2356,7 +2347,7 @@ static bool shrink_zones(int priority, struct zonelist *zonelist,
 		shrink_zone(priority, zone, sc);
 	}
 
-	return aborted_reclaim;
+	return should_abort_reclaim;
 }
 
 static bool zone_reclaimable(struct zone *zone)
@@ -2410,8 +2401,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 	struct zoneref *z;
 	struct zone *zone;
 	unsigned long writeback_threshold;
-	bool aborted_reclaim;
 
+	get_mems_allowed();
 	delayacct_freepages_start();
 
 	if (scanning_global_lru(sc))
@@ -2421,7 +2412,8 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 		sc->nr_scanned = 0;
 		if (!priority)
 			disable_swap_token(sc->mem_cgroup);
-		aborted_reclaim = shrink_zones(priority, zonelist, sc);
+		if (shrink_zones(priority, zonelist, sc))
+			break;
 
 		/*
 		 * Don't shrink slabs when reclaiming memory from
@@ -2475,6 +2467,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 
 out:
 	delayacct_freepages_end();
+	put_mems_allowed();
 
 	if (sc->nr_reclaimed)
 		return sc->nr_reclaimed;
@@ -2486,10 +2479,6 @@ out:
 	 */
 	if (oom_killer_disabled)
 		return 0;
-
-	/* Aborted reclaim to try compaction? don't OOM, then */
-	if (aborted_reclaim)
-		return 1;
 
 	/* top priority shrink_zones still had more to do? don't OOM, then */
 	if (scanning_global_lru(sc) && !all_unreclaimable(zonelist, sc))
