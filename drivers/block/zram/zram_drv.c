@@ -34,6 +34,8 @@
 #include <linux/ratelimit.h>
 #include <linux/err.h>
 
+// FIXME: move the line below to include/linux/pagemap.h  
+void page_endio(struct page *page, int rw, int err);
 
 size_t max_zpage_size = 1706; // PAGE_SIZE / 2.4;
 module_param(max_zpage_size, uint, 0644);
