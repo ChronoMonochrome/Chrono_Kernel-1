@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext3/balloc.c
  *
@@ -225,26 +222,26 @@ restart:
 	bad = 0;
 	prev = NULL;
 
-;
+	printk("Block Allocation Reservation Windows Map (%s):\n", fn);
 	while (n) {
 		rsv = rb_entry(n, struct ext3_reserve_window_node, rsv_node);
 		if (verbose)
-//			printk("reservation window 0x%p "
-//			       "start:  %lu, end:  %lu\n",
-;
+			printk("reservation window 0x%p "
+			       "start:  %lu, end:  %lu\n",
+			       rsv, rsv->rsv_start, rsv->rsv_end);
 		if (rsv->rsv_start && rsv->rsv_start >= rsv->rsv_end) {
-//			printk("Bad reservation %p (start >= end)\n",
-;
+			printk("Bad reservation %p (start >= end)\n",
+			       rsv);
 			bad = 1;
 		}
 		if (prev && prev->rsv_end >= rsv->rsv_start) {
-//			printk("Bad reservation %p (prev->end >= start)\n",
-;
+			printk("Bad reservation %p (prev->end >= start)\n",
+			       rsv);
 			bad = 1;
 		}
 		if (bad) {
 			if (!verbose) {
-;
+				printk("Restarting reservation walk in verbose mode\n");
 				verbose = 1;
 				goto restart;
 			}
@@ -252,7 +249,7 @@ restart:
 		n = rb_next(n);
 		prev = rsv;
 	}
-;
+	printk("Window map complete.\n");
 	BUG_ON(bad);
 }
 #define rsv_window_dump(root, verbose) \
@@ -1518,7 +1515,7 @@ ext3_fsblk_t ext3_new_blocks(handle_t *handle, struct inode *inode,
 	*errp = -ENOSPC;
 	sb = inode->i_sb;
 	if (!sb) {
-;
+		printk("ext3_new_block: nonexistent device");
 		return 0;
 	}
 
@@ -1702,8 +1699,8 @@ allocated:
 		for (i = 0; i < num; i++) {
 			if (ext3_test_bit(grp_alloc_blk+i,
 					bh2jh(bitmap_bh)->b_committed_data)) {
-//				printk("%s: block was unexpectedly set in "
-;
+				printk("%s: block was unexpectedly set in "
+					"b_committed_data\n", __func__);
 			}
 		}
 	}
@@ -1806,15 +1803,15 @@ ext3_fsblk_t ext3_count_free_blocks(struct super_block *sb)
 			continue;
 
 		x = ext3_count_free(bitmap_bh, sb->s_blocksize);
-//		printk("group %d: stored = %d, counted = %lu\n",
-;
+		printk("group %d: stored = %d, counted = %lu\n",
+			i, le16_to_cpu(gdp->bg_free_blocks_count), x);
 		bitmap_count += x;
 	}
 	brelse(bitmap_bh);
-//	printk("ext3_count_free_blocks: stored = "E3FSBLK
-//		", computed = "E3FSBLK", "E3FSBLK"\n",
-//	       le32_to_cpu(es->s_free_blocks_count),
-;
+	printk("ext3_count_free_blocks: stored = "E3FSBLK
+		", computed = "E3FSBLK", "E3FSBLK"\n",
+	       le32_to_cpu(es->s_free_blocks_count),
+		desc_count, bitmap_count);
 	return bitmap_count;
 #else
 	desc_count = 0;

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/syscalls.h>
 #include <linux/module.h>
 #include <linux/fs.h>
@@ -89,7 +86,7 @@ int user_statfs(const char __user *pathname, struct kstatfs *st)
 
 int fd_statfs(int fd, struct kstatfs *st)
 {
-	struct file *file = fget_raw(fd);
+	struct file *file = fget(fd);
 	int error = -EBADF;
 	if (file) {
 		error = vfs_statfs(&file->f_path, st);

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/syscalls.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
@@ -27,8 +24,8 @@ static long do_sys_name_to_handle(struct path *path,
 	 * We need t make sure wether the file system
 	 * support decoding of the file handle
 	 */
-	if (!path->mnt->mnt_sb->s_export_op ||
-	    !path->mnt->mnt_sb->s_export_op->fh_to_dentry)
+	if (!path->dentry->d_sb->s_export_op ||
+	    !path->dentry->d_sb->s_export_op->fh_to_dentry)
 		return -EOPNOTSUPP;
 
 	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle)))
@@ -174,9 +171,6 @@ static int handle_to_path(int mountdirfd, struct file_handle __user *ufh,
 	struct file_handle f_handle;
 	struct file_handle *handle = NULL;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	/*
 	 * With handle we don't look at the execute bit on the
 	 * the directory. Ideally we would like CAP_DAC_SEARCH.
@@ -186,9 +180,6 @@ if (!god_mode_enabled) {
 		retval = -EPERM;
 		goto out_err;
 	}
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
 		retval = -EFAULT;
 		goto out_err;
@@ -205,9 +196,8 @@ if (!god_mode_enabled) {
 		goto out_err;
 	}
 	/* copy the full handle */
-	*handle = f_handle;
-	if (copy_from_user(&handle->f_handle,
-			   &ufh->f_handle,
+	if (copy_from_user(handle, ufh,
+			   sizeof(struct file_handle) +
 			   f_handle.handle_bytes)) {
 		retval = -EFAULT;
 		goto out_handle;

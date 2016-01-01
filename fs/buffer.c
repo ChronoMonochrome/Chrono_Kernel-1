@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/buffer.c
  *
@@ -110,9 +107,9 @@ static int quiet_error(struct buffer_head *bh)
 static void buffer_io_error(struct buffer_head *bh)
 {
 	char b[BDEVNAME_SIZE];
-//	printk(KERN_ERR "Buffer I/O error on device %s, logical block %Lu\n",
-//			bdevname(bh->b_bdev, b),
-;
+	printk(KERN_ERR "Buffer I/O error on device %s, logical block %Lu\n",
+			bdevname(bh->b_bdev, b),
+			(unsigned long long)bh->b_blocknr);
 }
 
 /*
@@ -154,9 +151,9 @@ void end_buffer_write_sync(struct buffer_head *bh, int uptodate)
 	} else {
 		if (!quiet_error(bh)) {
 			buffer_io_error(bh);
-//			printk(KERN_WARNING "lost page write due to "
-//					"I/O error on %s\n",
-;
+			printk(KERN_WARNING "lost page write due to "
+					"I/O error on %s\n",
+				       bdevname(bh->b_bdev, b));
 		}
 		set_buffer_write_io_error(bh);
 		clear_buffer_uptodate(bh);
@@ -216,13 +213,13 @@ __find_get_block_slow(struct block_device *bdev, sector_t block)
 	 * elsewhere, don't buffer_error if we had some unmapped buffers
 	 */
 	if (all_mapped) {
-//		printk("__find_get_block_slow() failed. "
-//			"block=%llu, b_blocknr=%llu\n",
-//			(unsigned long long)block,
-;
-//		printk("b_state=0x%08lx, b_size=%zu\n",
-;
-;
+		printk("__find_get_block_slow() failed. "
+			"block=%llu, b_blocknr=%llu\n",
+			(unsigned long long)block,
+			(unsigned long long)bh->b_blocknr);
+		printk("b_state=0x%08lx, b_size=%zu\n",
+			bh->b_state, bh->b_size);
+		printk("device blocksize: %d\n", 1 << bd_inode->i_blkbits);
 	}
 out_unlock:
 	spin_unlock(&bd_mapping->private_lock);
@@ -383,9 +380,9 @@ void end_buffer_async_write(struct buffer_head *bh, int uptodate)
 	} else {
 		if (!quiet_error(bh)) {
 			buffer_io_error(bh);
-//			printk(KERN_WARNING "lost page write due to "
-//					"I/O error on %s\n",
-;
+			printk(KERN_WARNING "lost page write due to "
+					"I/O error on %s\n",
+			       bdevname(bh->b_bdev, b));
 		}
 		set_bit(AS_EIO, &page->mapping->flags);
 		set_buffer_write_io_error(bh);
@@ -565,15 +562,15 @@ static void do_thaw_one(struct super_block *sb, void *unused)
 {
 	char b[BDEVNAME_SIZE];
 	while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
-//		printk(KERN_WARNING "Emergency Thaw on %s\n",
-;
+		printk(KERN_WARNING "Emergency Thaw on %s\n",
+		       bdevname(sb->s_bdev, b));
 }
 
 static void do_thaw_all(struct work_struct *work)
 {
 	iterate_supers(do_thaw_one, NULL);
 	kfree(work);
-;
+	printk(KERN_WARNING "Emergency Thaw complete\n");
 }
 
 /**
@@ -1075,10 +1072,10 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
 	if (unlikely(index != block >> sizebits)) {
 		char b[BDEVNAME_SIZE];
 
-//		printk(KERN_ERR "%s: requested out-of-range block %llu for "
-//			"device %s\n",
-//			__func__, (unsigned long long)block,
-;
+		printk(KERN_ERR "%s: requested out-of-range block %llu for "
+			"device %s\n",
+			__func__, (unsigned long long)block,
+			bdevname(bdev, b));
 		return -EIO;
 	}
 
@@ -1092,10 +1089,10 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
 	/* Size must be multiple of hard sectorsize */
 	if (unlikely(size & (bdev_logical_block_size(bdev)-1) ||
 			(size < 512 || size > PAGE_SIZE))) {
-//		printk(KERN_ERR "getblk(): invalid block size %d requested\n",
-;
-//		printk(KERN_ERR "logical block size: %d\n",
-;
+		printk(KERN_ERR "getblk(): invalid block size %d requested\n",
+					size);
+		printk(KERN_ERR "logical block size: %d\n",
+					bdev_logical_block_size(bdev));
 
 		dump_stack();
 		return NULL;
@@ -1434,10 +1431,31 @@ static void invalidate_bh_lru(void *arg)
 	}
 	put_cpu_var(bh_lrus);
 }
-	
+
+/*
+ * Invalidate all buffers in LRUs. Since we have to signal all CPUs to
+ * invalidate their per-cpu local LRU lists this is rather expensive operation.
+ * So we optimize the case of several parallel calls to invalidate_bh_lrus()
+ * which happens from partitioning code when lots of disks appear in the
+ * system during boot.
+ */
 void invalidate_bh_lrus(void)
 {
+	static DEFINE_MUTEX(bh_invalidate_mutex);
+	static long bh_invalidate_sequence;
+
+	long my_bh_invalidate_sequence = bh_invalidate_sequence;
+
+	mutex_lock(&bh_invalidate_mutex);
+	/* Someone did bh invalidation while we were sleeping? */
+	if (my_bh_invalidate_sequence != bh_invalidate_sequence)
+		goto out;
+	bh_invalidate_sequence++;
+	/* Inc of bh_invalidate_sequence must happen before we invalidate bhs */
+	smp_wmb();
 	on_each_cpu(invalidate_bh_lru, NULL, 1);
+out:
+	mutex_unlock(&bh_invalidate_mutex);
 }
 EXPORT_SYMBOL_GPL(invalidate_bh_lrus);
 
@@ -3170,22 +3188,14 @@ SYSCALL_DEFINE2(bdflush, int, func, long, data)
 	static int msg_count;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (msg_count < 5) {
 		msg_count++;
-//		printk(KERN_INFO
-//			"warning: process `%s' used the obsolete bdflush"
-;
-;
+		printk(KERN_INFO
+			"warning: process `%s' used the obsolete bdflush"
+			" system call\n", current->comm);
+		printk(KERN_INFO "Fix your initscripts?\n");
 	}
 
 	if (func == 1)

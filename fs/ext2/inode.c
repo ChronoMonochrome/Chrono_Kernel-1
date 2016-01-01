@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext2/inode.c
  *
@@ -1185,15 +1182,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
 	if (ext2_inode_is_fast_symlink(inode))
 		return -EINVAL;
 	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	inode_dio_wait(inode);
 

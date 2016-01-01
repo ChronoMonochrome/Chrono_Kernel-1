@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * segment.c - NILFS segment constructor.
  *
@@ -132,9 +129,9 @@ static int nilfs_prepare_segment_lock(struct nilfs_transaction_info *ti)
 			 * it is saved and will be restored on
 			 * nilfs_transaction_commit().
 			 */
-//			printk(KERN_WARNING
-//			       "NILFS warning: journal info from a different "
-;
+			printk(KERN_WARNING
+			       "NILFS warning: journal info from a different "
+			       "FS\n");
 			save = current->journal_info;
 		}
 	}
@@ -2361,9 +2358,9 @@ int nilfs_clean_segments(struct super_block *sb, struct nilfs_argv *argv,
 		int ret = nilfs_discard_segments(nilfs, sci->sc_freesegs,
 						 sci->sc_nfreesegs);
 		if (ret) {
-//			printk(KERN_WARNING
-//			       "NILFS warning: error %d on discard request, "
-;
+			printk(KERN_WARNING
+			       "NILFS warning: error %d on discard request, "
+			       "turning discards off for the device\n", ret);
 			nilfs_clear_opt(nilfs, DISCARD);
 		}
 	}
@@ -2446,10 +2443,10 @@ static int nilfs_segctor_thread(void *arg)
 	/* start sync. */
 	sci->sc_task = current;
 	wake_up(&sci->sc_wait_task); /* for nilfs_segctor_start_thread() */
-//	printk(KERN_INFO
-//	       "segctord starting. Construction interval = %lu seconds, "
-//	       "CP frequency < %lu seconds\n",
-;
+	printk(KERN_INFO
+	       "segctord starting. Construction interval = %lu seconds, "
+	       "CP frequency < %lu seconds\n",
+	       sci->sc_interval / HZ, sci->sc_mjcp_freq / HZ);
 
 	spin_lock(&sci->sc_state_lock);
  loop:
@@ -2523,8 +2520,8 @@ static int nilfs_segctor_start_thread(struct nilfs_sc_info *sci)
 	if (IS_ERR(t)) {
 		int err = PTR_ERR(t);
 
-//		printk(KERN_ERR "NILFS: error %d creating segctord thread\n",
-;
+		printk(KERN_ERR "NILFS: error %d creating segctord thread\n",
+		       err);
 		return err;
 	}
 	wait_event(sci->sc_wait_task, sci->sc_task != NULL);

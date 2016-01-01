@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   Copyright (C) International Business Machines Corp., 2000-2004
  *
@@ -346,9 +343,9 @@ int dbFree(struct inode *ip, s64 blkno, s64 nblocks)
 	/* block to be freed better be within the mapsize. */
 	if (unlikely((blkno == 0) || (blkno + nblocks > bmp->db_mapsize))) {
 		IREAD_UNLOCK(ipbmap);
-//		printk(KERN_ERR "blkno = %Lx, nblocks = %Lx\n",
-//		       (unsigned long long) blkno,
-;
+		printk(KERN_ERR "blkno = %Lx, nblocks = %Lx\n",
+		       (unsigned long long) blkno,
+		       (unsigned long long) nblocks);
 		jfs_error(ip->i_sb,
 			  "dbFree: block to be freed is outside the map");
 		return -EIO;
@@ -434,9 +431,9 @@ dbUpdatePMap(struct inode *ipbmap,
 
 	/* the blocks better be within the mapsize. */
 	if (blkno + nblocks > bmp->db_mapsize) {
-//		printk(KERN_ERR "blkno = %Lx, nblocks = %Lx\n",
-//		       (unsigned long long) blkno,
-;
+		printk(KERN_ERR "blkno = %Lx, nblocks = %Lx\n",
+		       (unsigned long long) blkno,
+		       (unsigned long long) nblocks);
 		jfs_error(ipbmap->i_sb,
 			  "dbUpdatePMap: blocks are outside the map");
 		return -EIO;
@@ -1410,9 +1407,9 @@ dbAllocAG(struct bmap * bmp, int agno, s64 nblocks, int l2nb, s64 * results)
 		rc = dbAllocCtl(bmp, nblocks, l2nb, blkno, results);
 		if ((rc == -ENOSPC) &&
 		    (bmp->db_agfree[agno] == bmp->db_agsize)) {
-//			printk(KERN_ERR "blkno = %Lx, blocks = %Lx\n",
-//			       (unsigned long long) blkno,
-;
+			printk(KERN_ERR "blkno = %Lx, blocks = %Lx\n",
+			       (unsigned long long) blkno,
+			       (unsigned long long) nblocks);
 			jfs_error(bmp->db_ipbmap->i_sb,
 				  "dbAllocAG: dbAllocCtl failed in free AG");
 		}

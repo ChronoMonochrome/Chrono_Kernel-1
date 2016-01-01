@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Hodge-podge collection of knfsd-related stuff.
  * I will sort this out later.

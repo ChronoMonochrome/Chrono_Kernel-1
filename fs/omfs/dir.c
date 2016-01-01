@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * OMFS (as used by RIO Karma) directory operations.
  * Copyright (C) 2005 Bob Copeland <me@bobcopeland.com>
@@ -96,7 +93,7 @@ int omfs_make_empty(struct inode *inode, struct super_block *sb)
 
 	memset(bh->b_data, 0, sizeof(struct omfs_inode));
 
-	if (S_ISDIR(inode->i_mode)) {
+	if (inode->i_mode & S_IFDIR) {
 		memset(&bh->b_data[OMFS_DIR_START], 0xff,
 			sbi->s_sys_blocksize - OMFS_DIR_START);
 	} else
@@ -325,7 +322,7 @@ int omfs_is_bad(struct omfs_sb_info *sbi, struct omfs_header *header,
 		(ino > sbi->s_num_blocks));
 
 	if (is_bad)
-;
+		printk(KERN_WARNING "omfs: bad hash chain detected\n");
 
 	return is_bad;
 }

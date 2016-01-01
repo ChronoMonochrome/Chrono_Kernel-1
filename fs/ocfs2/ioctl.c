@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ocfs2/ioctl.c
  *
@@ -30,6 +27,8 @@
 #include "buffer_head_io.h"
 #include "suballoc.h"
 #include "move_extents.h"
+
+#include <linux/ext2_fs.h>
 
 #define o2info_from_user(a, b)	\
 		copy_from_user(&(a), (b), sizeof(a))
@@ -911,7 +910,7 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			return status;
 		status = ocfs2_set_inode_attr(inode, flags,
 			OCFS2_FL_MODIFIABLE);
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return status;
 	case OCFS2_IOC_RESVSP:
 	case OCFS2_IOC_RESVSP64:
@@ -923,15 +922,7 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return ocfs2_change_file_space(filp, cmd, &sr);
 	case OCFS2_IOC_GROUP_EXTEND:
 		if (!capable(CAP_SYS_RESOURCE))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (get_user(new_clusters, (int __user *)arg))
 			return -EFAULT;
@@ -940,15 +931,7 @@ return -EPERM;
 	case OCFS2_IOC_GROUP_ADD:
 	case OCFS2_IOC_GROUP_ADD64:
 		if (!capable(CAP_SYS_RESOURCE))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (copy_from_user(&input, (int __user *) arg, sizeof(input)))
 			return -EFAULT;
@@ -976,15 +959,7 @@ return -EPERM;
 		int ret = 0;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (copy_from_user(&range, (struct fstrim_range *)arg,
 		    sizeof(range)))

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* /proc interface for AFS
  *
  * Copyright (C) 2002 Red Hat, Inc. All Rights Reserved.
@@ -304,7 +301,7 @@ static ssize_t afs_proc_cells_write(struct file *file, const char __user *buf,
 		}
 
 		afs_put_cell(cell);
-;
+		printk("kAFS: Added new cell '%s'\n", name);
 	} else {
 		goto inval;
 	}
@@ -318,7 +315,7 @@ done:
 
 inval:
 	ret = -EINVAL;
-;
+	printk("kAFS: Invalid Command on /proc/fs/afs/cells file\n");
 	goto done;
 }
 

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2003-2006, Cluster File Systems, Inc, info@clusterfs.com
  * Written by Alex Tomas <alex@clusterfs.com>
@@ -98,13 +95,17 @@ static int ext4_ext_get_access(handle_t *handle, struct inode *inode,
  *  - ENOMEM
  *  - EIO
  */
-static int ext4_ext_dirty(handle_t *handle, struct inode *inode,
-				struct ext4_ext_path *path)
+#define ext4_ext_dirty(handle, inode, path) \
+		__ext4_ext_dirty(__func__, __LINE__, (handle), (inode), (path))
+static int __ext4_ext_dirty(const char *where, unsigned int line,
+			    handle_t *handle, struct inode *inode,
+			    struct ext4_ext_path *path)
 {
 	int err;
 	if (path->p_bh) {
 		/* path points to block */
-		err = ext4_handle_dirty_metadata(handle, inode, path->p_bh);
+		err = __ext4_handle_dirty_metadata(where, line, handle,
+						   inode, path->p_bh);
 	} else {
 		/* path points to leaf/index in inode body */
 		err = ext4_mark_inode_dirty(handle, inode);
@@ -533,12 +534,12 @@ ext4_ext_binsearch_idx(struct inode *inode,
 		for (k = 0; k < le16_to_cpu(eh->eh_entries); k++, ix++) {
 		  if (k != 0 &&
 		      le32_to_cpu(ix->ei_block) <= le32_to_cpu(ix[-1].ei_block)) {
-//				printk(KERN_DEBUG "k=%d, ix=0x%p, "
-//				       "first=0x%p\n", k,
-;
-//				printk(KERN_DEBUG "%u <= %u\n",
-//				       le32_to_cpu(ix->ei_block),
-;
+				printk(KERN_DEBUG "k=%d, ix=0x%p, "
+				       "first=0x%p\n", k,
+				       ix, EXT_FIRST_INDEX(eh));
+				printk(KERN_DEBUG "%u <= %u\n",
+				       le32_to_cpu(ix->ei_block),
+				       le32_to_cpu(ix[-1].ei_block));
 			}
 			BUG_ON(k && le32_to_cpu(ix->ei_block)
 					   <= le32_to_cpu(ix[-1].ei_block));
@@ -745,29 +746,23 @@ static int ext4_ext_insert_index(handle_t *handle, struct inode *inode,
 		return -EIO;
 	}
 
-	len = EXT_MAX_INDEX(curp->p_hdr) - curp->p_idx;
 	if (logical > le32_to_cpu(curp->p_idx->ei_block)) {
 		/* insert after */
-		if (curp->p_idx != EXT_LAST_INDEX(curp->p_hdr)) {
-			len = (len - 1) * sizeof(struct ext4_extent_idx);
-			len = len < 0 ? 0 : len;
-			ext_debug("insert new index %d after: %llu. "
-					"move %d from 0x%p to 0x%p\n",
-					logical, ptr, len,
-					(curp->p_idx + 1), (curp->p_idx + 2));
-			memmove(curp->p_idx + 2, curp->p_idx + 1, len);
-		}
+		ext_debug("insert new index %d after: %llu\n", logical, ptr);
 		ix = curp->p_idx + 1;
 	} else {
 		/* insert before */
-		len = len * sizeof(struct ext4_extent_idx);
-		len = len < 0 ? 0 : len;
-		ext_debug("insert new index %d before: %llu. "
-				"move %d from 0x%p to 0x%p\n",
-				logical, ptr, len,
-				curp->p_idx, (curp->p_idx + 1));
-		memmove(curp->p_idx + 1, curp->p_idx, len);
+		ext_debug("insert new index %d before: %llu\n", logical, ptr);
 		ix = curp->p_idx;
+	}
+
+	len = EXT_LAST_INDEX(curp->p_hdr) - ix + 1;
+	BUG_ON(len < 0);
+	if (len > 0) {
+		ext_debug("insert new index %d: "
+				"move %d indices from 0x%p to 0x%p\n",
+				logical, len, ix, ix + 1);
+		memmove(ix + 1, ix, len * sizeof(struct ext4_extent_idx));
 	}
 
 	if (unlikely(ix > EXT_MAX_INDEX(curp->p_hdr))) {
@@ -1786,13 +1781,13 @@ has_space:
 		} else {
 			/* Insert before */
 			BUG_ON(newext->ee_block == nearex->ee_block);
-			ext_debug("insert %d:%llu:[%d]%d %s after: "
-					"nearest 0x%p\n"
-				le32_to_cpu(newext->ee_block),
-				ext4_ext_pblock(newext),
-				ext4_ext_is_uninitialized(newext),
-				ext4_ext_get_actual_len(newext),
-				nearex);
+			ext_debug("insert %u:%llu:[%d]%d after: "
+					"nearest %p\n",
+					le32_to_cpu(newext->ee_block),
+					ext4_ext_pblock(newext),
+					ext4_ext_is_uninitialized(newext),
+					ext4_ext_get_actual_len(newext),
+					nearex);
 		}
 		len = EXT_LAST_EXTENT(eh) - nearex + 1;
 		if (len > 0) {
@@ -1837,7 +1832,7 @@ cleanup:
 	return err;
 }
 
-int ext4_ext_walk_space(struct inode *inode, ext4_lblk_t block,
+static int ext4_ext_walk_space(struct inode *inode, ext4_lblk_t block,
 			       ext4_lblk_t num, ext_prepare_callback func,
 			       void *cbdata)
 {
@@ -2217,10 +2212,10 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
 	unsigned short ee_len =  ext4_ext_get_actual_len(ex);
 	ext4_fsblk_t pblk;
-	int flags = 0;
+	int flags = EXT4_FREE_BLOCKS_FORGET;
 
 	if (S_ISDIR(inode->i_mode) || S_ISLNK(inode->i_mode))
- 		flags |= EXT4_FREE_BLOCKS_METADATA;
+		flags |= EXT4_FREE_BLOCKS_METADATA;
 	/*
 	 * For bigalloc file systems, we never free a partial cluster
 	 * at the beginning of the extent.  Instead, we make a note
@@ -2294,9 +2289,9 @@ static int ext4_remove_blocks(handle_t *handle, struct inode *inode,
 		ext4_free_blocks(handle, inode, NULL, start, num, flags);
 
 	} else {
-//		printk(KERN_INFO "strange request: removal(2) "
-//				"%u-%u from %u:%u\n",
-;
+		printk(KERN_INFO "strange request: removal(2) "
+				"%u-%u from %u:%u\n",
+				from, to, le32_to_cpu(ex->ee_block), ee_len);
 	}
 	return 0;
 }
@@ -2673,17 +2668,17 @@ void ext4_ext_init(struct super_block *sb)
 
 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_EXTENTS)) {
 #if defined(AGGRESSIVE_TEST) || defined(CHECK_BINSEARCH) || defined(EXTENTS_STATS)
-;
+		printk(KERN_INFO "EXT4-fs: file extents enabled");
 #ifdef AGGRESSIVE_TEST
-;
+		printk(", aggressive tests");
 #endif
 #ifdef CHECK_BINSEARCH
-;
+		printk(", check binsearch");
 #endif
 #ifdef EXTENTS_STATS
-;
+		printk(", stats");
 #endif
-;
+		printk("\n");
 #endif
 #ifdef EXTENTS_STATS
 		spin_lock_init(&EXT4_SB(sb)->s_ext_stats_lock);
@@ -2704,11 +2699,11 @@ void ext4_ext_release(struct super_block *sb)
 #ifdef EXTENTS_STATS
 	if (EXT4_SB(sb)->s_ext_blocks && EXT4_SB(sb)->s_ext_extents) {
 		struct ext4_sb_info *sbi = EXT4_SB(sb);
-//		printk(KERN_ERR "EXT4-fs: %lu blocks in %lu extents (%lu ave)\n",
-//			sbi->s_ext_blocks, sbi->s_ext_extents,
-;
-//		printk(KERN_ERR "EXT4-fs: extents: %lu min, %lu max, max depth %lu\n",
-;
+		printk(KERN_ERR "EXT4-fs: %lu blocks in %lu extents (%lu ave)\n",
+			sbi->s_ext_blocks, sbi->s_ext_extents,
+			sbi->s_ext_blocks / sbi->s_ext_extents);
+		printk(KERN_ERR "EXT4-fs: extents: %lu min, %lu max, max depth %lu\n",
+			sbi->s_ext_min, sbi->s_ext_max, sbi->s_depth_max);
 	}
 #endif
 }
@@ -4386,10 +4381,10 @@ retry:
 		if (ret <= 0) {
 #ifdef EXT4FS_DEBUG
 			WARN_ON(ret <= 0);
-//			printk(KERN_ERR "%s: ext4_ext_map_blocks "
-//				    "returned error inode#%lu, block=%u, "
-//				    "max_blocks=%u", __func__,
-;
+			printk(KERN_ERR "%s: ext4_ext_map_blocks "
+				    "returned error inode#%lu, block=%u, "
+				    "max_blocks=%u", __func__,
+				    inode->i_ino, map.m_lblk, max_blocks);
 #endif
 			ext4_mark_inode_dirty(handle, inode);
 			ret2 = ext4_journal_stop(handle);
@@ -4462,10 +4457,10 @@ int ext4_convert_unwritten_extents(struct inode *inode, loff_t offset,
 				      EXT4_GET_BLOCKS_IO_CONVERT_EXT);
 		if (ret <= 0) {
 			WARN_ON(ret <= 0);
-//			printk(KERN_ERR "%s: ext4_ext_map_blocks "
-//				    "returned error inode#%lu, block=%u, "
-//				    "max_blocks=%u", __func__,
-;
+			printk(KERN_ERR "%s: ext4_ext_map_blocks "
+				    "returned error inode#%lu, block=%u, "
+				    "max_blocks=%u", __func__,
+				    inode->i_ino, map.m_lblk, map.m_len);
 		}
 		ext4_mark_inode_dirty(handle, inode);
 		ret2 = ext4_journal_stop(handle);

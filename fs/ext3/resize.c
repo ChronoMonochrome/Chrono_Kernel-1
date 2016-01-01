@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext3/resize.c
  *
@@ -44,11 +41,11 @@ static int verify_group_input(struct super_block *sb,
 		input->blocks_count - 2 - overhead - sbi->s_itb_per_group;
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT3-fs: adding %s group %u: %u blocks "
-//		       "(%d free, %u reserved)\n",
-//		       ext3_bg_has_super(sb, input->group) ? "normal" :
-//		       "no-super", input->group, input->blocks_count,
-;
+		printk(KERN_DEBUG "EXT3-fs: adding %s group %u: %u blocks "
+		       "(%d free, %u reserved)\n",
+		       ext3_bg_has_super(sb, input->group) ? "normal" :
+		       "no-super", input->group, input->blocks_count,
+		       free_blocks_count, input->reserved_blocks);
 
 	if (group != sbi->s_groups_count)
 		ext3_warning(sb, __func__,
@@ -446,9 +443,9 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
 	int err;
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG
-//		       "EXT3-fs: ext3_add_new_gdb: adding group block %lu\n",
-;
+		printk(KERN_DEBUG
+		       "EXT3-fs: ext3_add_new_gdb: adding group block %lu\n",
+		       gdb_num);
 
 	/*
 	 * If we are not using the primary superblock/GDT copy don't resize,
@@ -460,15 +457,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
 		ext3_warning(sb, __func__,
 			"won't resize using backup superblock at %llu",
 			(unsigned long long)EXT3_SB(sb)->s_sbh->b_blocknr);
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	*primary = sb_bread(sb, gdblock);
@@ -814,15 +803,7 @@ int ext3_group_add(struct super_block *sb, struct ext3_new_group_data *input)
 					EXT3_FEATURE_RO_COMPAT_SPARSE_SUPER)) {
 		ext3_warning(sb, __func__,
 			     "Can't resize non-sparse filesystem further");
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	if (le32_to_cpu(es->s_blocks_count) + input->blocks_count <
@@ -843,15 +824,7 @@ return -EPERM;
 		    || !le16_to_cpu(es->s_reserved_gdt_blocks)) {
 			ext3_warning(sb, __func__,
 				     "No reserved GDT blocks, can't resize");
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 		}
 		inode = ext3_iget(sb, EXT3_RESIZE_INO);
 		if (IS_ERR(inode)) {
@@ -1035,17 +1008,17 @@ int ext3_group_extend(struct super_block *sb, struct ext3_super_block *es,
 	o_blocks_count = le32_to_cpu(es->s_blocks_count);
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT3-fs: extending last group from "E3FSBLK
-//		       " up to "E3FSBLK" blocks\n",
-;
+		printk(KERN_DEBUG "EXT3-fs: extending last group from "E3FSBLK
+		       " up to "E3FSBLK" blocks\n",
+		       o_blocks_count, n_blocks_count);
 
 	if (n_blocks_count == 0 || n_blocks_count == o_blocks_count)
 		return 0;
 
 	if (n_blocks_count > (sector_t)(~0ULL) >> (sb->s_blocksize_bits - 9)) {
-//		printk(KERN_ERR "EXT3-fs: filesystem on %s:"
-//			" too large to resize to "E3FSBLK" blocks safely\n",
-;
+		printk(KERN_ERR "EXT3-fs: filesystem on %s:"
+			" too large to resize to "E3FSBLK" blocks safely\n",
+			sb->s_id, n_blocks_count);
 		if (sizeof(sector_t) < 8)
 			ext3_warning(sb, __func__,
 			"CONFIG_LBDAF not enabled\n");
@@ -1065,15 +1038,7 @@ int ext3_group_extend(struct super_block *sb, struct ext3_super_block *es,
 	if (last == 0) {
 		ext3_warning(sb, __func__,
 			     "need to use ext2online to resize further");
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	add = EXT3_BLOCKS_PER_GROUP(sb) - last;
@@ -1146,8 +1111,8 @@ return -EPERM;
 	if ((err = ext3_journal_stop(handle)))
 		goto exit_put;
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT3-fs: extended group to %u blocks\n",
-;
+		printk(KERN_DEBUG "EXT3-fs: extended group to %u blocks\n",
+		       le32_to_cpu(es->s_blocks_count));
 	update_backups(sb, EXT3_SB(sb)->s_sbh->b_blocknr, (char *)es,
 		       sizeof(struct ext3_super_block));
 exit_put:

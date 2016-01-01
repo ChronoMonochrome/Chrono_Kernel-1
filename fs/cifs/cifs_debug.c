@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   fs/cifs_debug.c
  *
@@ -42,8 +39,8 @@ cifs_dump_mem(char *label, void *data, int length)
 	char *charptr = data;
 	char buf[10], line[80];
 
-//	printk(KERN_DEBUG "%s: dump of %d bytes of data at 0x%p\n",
-;
+	printk(KERN_DEBUG "%s: dump of %d bytes of data at 0x%p\n",
+		label, length, data);
 	for (i = 0; i < length; i += 16) {
 		line[0] = 0;
 		for (j = 0; (j < 4) && (i + j * 4 < length); j++) {
@@ -56,7 +53,7 @@ cifs_dump_mem(char *label, void *data, int length)
 			buf[1] = isprint(charptr[i + j]) ? charptr[i + j] : '.';
 			strcat(line, buf);
 		}
-;
+		printk(KERN_DEBUG "%s\n", line);
 	}
 }
 
@@ -179,7 +176,7 @@ static int cifs_debug_data_proc_show(struct seq_file *m, void *v)
 
 #ifdef CONFIG_CIFS_STATS2
 			seq_printf(m, " In Send: %d In MaxReq Wait: %d",
-				atomic_read(&server->in_send),
+				atomic_read(&server->inSend),
 				atomic_read(&server->num_waiters));
 #endif
 
@@ -514,7 +511,7 @@ static const struct file_operations cifsFYI_proc_fops = {
 
 static int cifs_oplock_proc_show(struct seq_file *m, void *v)
 {
-	seq_printf(m, "%d\n", enable_oplocks);
+	seq_printf(m, "%d\n", oplockEnabled);
 	return 0;
 }
 
@@ -529,16 +526,13 @@ static ssize_t cifs_oplock_proc_write(struct file *file,
 	char c;
 	int rc;
 
-//	printk(KERN_WARNING "CIFS: The /proc/fs/cifs/OplockEnabled interface "
-//	       "will be removed in kernel version 3.4. Please migrate to "
-;
 	rc = get_user(c, buffer);
 	if (rc)
 		return rc;
 	if (c == '0' || c == 'n' || c == 'N')
-		enable_oplocks = false;
+		oplockEnabled = 0;
 	else if (c == '1' || c == 'y' || c == 'Y')
-		enable_oplocks = true;
+		oplockEnabled = 1;
 
 	return count;
 }

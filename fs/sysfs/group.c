@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * fs/sysfs/group.c - Operations for adding/removing multiple files at once.
  *

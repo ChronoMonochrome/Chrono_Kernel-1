@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2000-2006 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -980,7 +977,7 @@ xfs_release(
 	if (ip->i_d.di_nlink == 0)
 		return 0;
 
-	if ((S_ISREG(ip->i_d.di_mode) &&
+	if ((((ip->i_d.di_mode & S_IFMT) == S_IFREG) &&
 	     ((ip->i_size > 0) || (VN_CACHED(VFS_I(ip)) > 0 ||
 	       ip->i_delayed_blks > 0)) &&
 	     (ip->i_df.if_flags & XFS_IFEXTENTS))  &&
@@ -1061,7 +1058,7 @@ xfs_inactive(
 	truncate = ((ip->i_d.di_nlink == 0) &&
 	    ((ip->i_d.di_size != 0) || (ip->i_size != 0) ||
 	     (ip->i_d.di_nextents > 0) || (ip->i_delayed_blks > 0)) &&
-	    S_ISREG(ip->i_d.di_mode));
+	    ((ip->i_d.di_mode & S_IFMT) == S_IFREG));
 
 	mp = ip->i_mount;
 
@@ -1072,7 +1069,7 @@ xfs_inactive(
 		goto out;
 
 	if (ip->i_d.di_nlink != 0) {
-		if ((S_ISREG(ip->i_d.di_mode) &&
+		if ((((ip->i_d.di_mode & S_IFMT) == S_IFREG) &&
                      ((ip->i_size > 0) || (VN_CACHED(VFS_I(ip)) > 0 ||
                        ip->i_delayed_blks > 0)) &&
 		      (ip->i_df.if_flags & XFS_IFEXTENTS) &&
@@ -1140,7 +1137,7 @@ xfs_inactive(
 			xfs_iunlock(ip, XFS_IOLOCK_EXCL | XFS_ILOCK_EXCL);
 			return VN_INACTIVE_CACHE;
 		}
-	} else if (S_ISLNK(ip->i_d.di_mode)) {
+	} else if ((ip->i_d.di_mode & S_IFMT) == S_IFLNK) {
 
 		/*
 		 * If we get an error while cleaning up a
@@ -1366,6 +1363,14 @@ xfs_create(
 
 	xfs_ilock(dp, XFS_ILOCK_EXCL | XFS_ILOCK_PARENT);
 	unlock_dp_on_error = B_TRUE;
+
+	/*
+	 * Check for directory link count overflow.
+	 */
+	if (is_dir && dp->i_d.di_nlink >= XFS_MAXLINK) {
+		error = XFS_ERROR(EMLINK);
+		goto out_trans_cancel;
+	}
 
 	xfs_bmap_init(&free_list, &first_block);
 
@@ -1869,6 +1874,14 @@ xfs_link(
 
 	xfs_trans_ijoin_ref(tp, sip, XFS_ILOCK_EXCL);
 	xfs_trans_ijoin_ref(tp, tdp, XFS_ILOCK_EXCL);
+
+	/*
+	 * If the source has too many links, we can't make any more to it.
+	 */
+	if (sip->i_d.di_nlink >= XFS_MAXLINK) {
+		error = XFS_ERROR(EMLINK);
+		goto error_return;
+	}
 
 	/*
 	 * If we are using project inheritance, we only allow hard link

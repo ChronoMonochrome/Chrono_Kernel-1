@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2006 Red Hat, Inc.  All rights reserved.
@@ -149,7 +146,7 @@ static int __init init_gfs2_fs(void)
 
 	gfs2_register_debugfs();
 
-;
+	printk("GFS2 installed\n");
 
 	return 0;
 

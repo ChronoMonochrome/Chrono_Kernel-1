@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #ifndef _FS_CEPH_SUPER_H
 #define _FS_CEPH_SUPER_H
 
@@ -731,7 +728,8 @@ extern void ceph_put_cap(struct ceph_mds_client *mdsc,
 
 extern void ceph_queue_caps_release(struct inode *inode);
 extern int ceph_write_inode(struct inode *inode, struct writeback_control *wbc);
-extern int ceph_fsync(struct file *file, int datasync);
+extern int ceph_fsync(struct file *file, loff_t start, loff_t end,
+		      int datasync);
 extern void ceph_kick_flushing_caps(struct ceph_mds_client *mdsc,
 				    struct ceph_mds_session *session);
 extern struct ceph_cap *ceph_get_cap_for_mds(struct ceph_inode_info *ci,

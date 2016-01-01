@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* 
  * QNX4 file system, Linux implementation.
  * 
@@ -32,7 +29,7 @@ static int qnx4_match(int len, const char *name,
 	int namelen, thislen;
 
 	if (bh == NULL) {
-;
+		printk(KERN_WARNING "qnx4: matching unassigned buffer !\n");
 		return 0;
 	}
 	de = (struct qnx4_inode_entry *) (bh->b_data + *offset);
@@ -68,7 +65,7 @@ static struct buffer_head *qnx4_find_entry(int len, struct inode *dir,
 
 	*res_dir = NULL;
 	if (!dir->i_sb) {
-;
+		printk(KERN_WARNING "qnx4: no superblock on dir.\n");
 		return NULL;
 	}
 	bh = NULL;

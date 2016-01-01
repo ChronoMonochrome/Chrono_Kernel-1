@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/super.c
  *
@@ -19,7 +16,7 @@
  *  Added change_root: Werner Almesberger & Hans Lermen, Feb '96
  *  Added options to /proc/mounts:
  *    Torbjörn Lindh (torbjorn.lindh@gopta.se), April 14, 1996.
- *  Added devfs support: Richard Gooch <rgooch@atnf.csiro.au>, 1-JAN-1998
+ *  Added devfs support: Richard Gooch <rgooch@atnf.csiro.au>, 13-JAN-1998
  *  Heavily rewritten for 'one fs - one tree' dcache architecture. AV, Mar 2000
  */
 
@@ -51,8 +48,7 @@ DEFINE_SPINLOCK(sb_lock);
 static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
 {
 	struct super_block *sb;
-	int	fs_objects = 0;
-	int	total_objects;
+	int count;
 
 	sb = container_of(shrink, struct super_block, s_shrink);
 
@@ -64,44 +60,24 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
 		return -1;
 
 	if (!grab_super_passive(sb))
-		return !sc->nr_to_scan ? 0 : -1;
-
-	if (sb->s_op && sb->s_op->nr_cached_objects)
-		fs_objects = sb->s_op->nr_cached_objects(sb);
-
-	total_objects = sb->s_nr_dentry_unused +
-			sb->s_nr_inodes_unused + fs_objects + 1;
+		return -1;
 
 	if (sc->nr_to_scan) {
-		int	dentries;
-		int	inodes;
+		/* proportion the scan between the two caches */
+		int total;
 
-		/* proportion the scan between the caches */
-		dentries = (sc->nr_to_scan * sb->s_nr_dentry_unused) /
-							total_objects;
-		inodes = (sc->nr_to_scan * sb->s_nr_inodes_unused) /
-							total_objects;
-		if (fs_objects)
-			fs_objects = (sc->nr_to_scan * fs_objects) /
-							total_objects;
-		/*
-		 * prune the dcache first as the icache is pinned by it, then
-		 * prune the icache, followed by the filesystem specific caches
-		 */
-		prune_dcache_sb(sb, dentries);
-		prune_icache_sb(sb, inodes);
+		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
+		count = (sc->nr_to_scan * sb->s_nr_dentry_unused) / total;
 
-		if (fs_objects && sb->s_op->free_cached_objects) {
-			sb->s_op->free_cached_objects(sb, fs_objects);
-			fs_objects = sb->s_op->nr_cached_objects(sb);
-		}
-		total_objects = sb->s_nr_dentry_unused +
-				sb->s_nr_inodes_unused + fs_objects;
+		/* prune dcache first as icache is pinned by it */
+		prune_dcache_sb(sb, count);
+		prune_icache_sb(sb, sc->nr_to_scan - count);
 	}
 
-	total_objects = (total_objects / 100) * sysctl_vfs_cache_pressure;
+	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
+						* sysctl_vfs_cache_pressure;
 	drop_super(sb);
-	return total_objects;
+	return count;
 }
 
 /**
@@ -185,7 +161,6 @@ static struct super_block *alloc_super(struct file_system_type *type)
 
 		s->s_shrink.seeks = DEFAULT_SEEKS;
 		s->s_shrink.shrink = prune_super;
-		s->s_shrink.batch = 1024;
 	}
 out:
 	return s;
@@ -213,7 +188,7 @@ static inline void destroy_super(struct super_block *s)
 /*
  * Drop a superblock's refcount.  The caller must hold sb_lock.
  */
-void __put_super(struct super_block *sb)
+static void __put_super(struct super_block *sb)
 {
 	if (!--sb->s_count) {
 		list_del_init(&sb->s_list);
@@ -228,7 +203,7 @@ void __put_super(struct super_block *sb)
  *	Drops a temporary reference, frees superblock if there's no
  *	references left.
  */
-void put_super(struct super_block *sb)
+static void put_super(struct super_block *sb)
 {
 	spin_lock(&sb_lock);
 	__put_super(sb);
@@ -317,36 +292,36 @@ static int grab_super(struct super_block *s) __releases(sb_lock)
 }
 
 /*
-*      grab_super_passive - acquire a passive reference
-*      @s: reference we are trying to grab
-*
-*      Tries to acquire a passive reference. This is used in places where we
-*      cannot take an active reference but we need to ensure that the
-*      superblock does not go away while we are working on it. It returns
-*      false if a reference was not gained, and returns true with the s_umount
-*      lock held in read mode if a reference is gained. On successful return,
-*      the caller must drop the s_umount lock and the passive reference when
-*      done.
-*/
+ *	grab_super_passive - acquire a passive reference
+ *	@s: reference we are trying to grab
+ *
+ *	Tries to acquire a passive reference. This is used in places where we
+ *	cannot take an active reference but we need to ensure that the
+ *	superblock does not go away while we are working on it. It returns
+ *	false if a reference was not gained, and returns true with the s_umount
+ *	lock held in read mode if a reference is gained. On successful return,
+ *	the caller must drop the s_umount lock and the passive reference when
+ *	done.
+ */
 bool grab_super_passive(struct super_block *sb)
 {
-        spin_lock(&sb_lock);
-        if (list_empty(&sb->s_instances)) {
-                spin_unlock(&sb_lock);
-                return false;
-        }
+	spin_lock(&sb_lock);
+	if (list_empty(&sb->s_instances)) {
+		spin_unlock(&sb_lock);
+		return false;
+	}
 
-        sb->s_count++;
-        spin_unlock(&sb_lock);
- 
-        if (down_read_trylock(&sb->s_umount)) {
-                if (sb->s_root)
-                        return true;
-                up_read(&sb->s_umount);
-        }
+	sb->s_count++;
+	spin_unlock(&sb_lock);
 
-        put_super(sb);
-        return false;
+	if (down_read_trylock(&sb->s_umount)) {
+		if (sb->s_root)
+			return true;
+		up_read(&sb->s_umount);
+	}
+
+	put_super(sb);
+	return false;
 }
 
 /*
@@ -354,13 +329,11 @@ bool grab_super_passive(struct super_block *sb)
  */
 void lock_super(struct super_block * sb)
 {
-	get_fs_excl();
 	mutex_lock(&sb->s_lock);
 }
 
 void unlock_super(struct super_block * sb)
 {
-	put_fs_excl();
 	mutex_unlock(&sb->s_lock);
 }
 
@@ -388,7 +361,6 @@ void generic_shutdown_super(struct super_block *sb)
 	if (sb->s_root) {
 		shrink_dcache_for_umount(sb);
 		sync_filesystem(sb);
-		get_fs_excl();
 		sb->s_flags &= ~MS_ACTIVE;
 
 		fsnotify_unmount_inodes(&sb->s_inodes);
@@ -399,11 +371,10 @@ void generic_shutdown_super(struct super_block *sb)
 			sop->put_super(sb);
 
 		if (!list_empty(&sb->s_inodes)) {
-//			printk("VFS: Busy inodes after unmount of %s. "
-//			   "Self-destruct in 5 seconds.  Have a nice day...\n",
-;
+			printk("VFS: Busy inodes after unmount of %s. "
+			   "Self-destruct in 5 seconds.  Have a nice day...\n",
+			   sb->s_id);
 		}
-		put_fs_excl();
 	}
 	spin_lock(&sb_lock);
 	/* should be initialized for __put_super_and_need_restart() */
@@ -714,6 +685,7 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
 	if (flags & MS_RDONLY)
 		acct_auto_close(sb);
 	shrink_dcache_sb(sb);
+	sync_filesystem(sb);
 
 	remount_ro = (flags & MS_RDONLY) && !(sb->s_flags & MS_RDONLY);
 
@@ -725,8 +697,6 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
 		else if (!fs_may_remount_ro(sb))
 			return -EBUSY;
 	}
-
-	sync_filesystem(sb);
 
 	if (sb->s_op->remount_fs) {
 		retval = sb->s_op->remount_fs(sb, &flags, data);
@@ -760,13 +730,10 @@ static void do_emergency_remount(struct work_struct *work)
 		spin_unlock(&sb_lock);
 		down_write(&sb->s_umount);
 		if (sb->s_root && sb->s_bdev && !(sb->s_flags & MS_RDONLY)) {
-			/* u8500: param.ko needs to update params.blk before rebooting */
-			if (strcmp(sb->s_id, "mmcblk0p1")) {
-				/*
-				 * What lock protects sb->s_flags??
-				 */
-				do_remount_sb(sb, MS_RDONLY, NULL, 1);
-			}
+			/*
+			 * What lock protects sb->s_flags??
+			 */
+			do_remount_sb(sb, MS_RDONLY, NULL, 1);
 		}
 		up_write(&sb->s_umount);
 		spin_lock(&sb_lock);
@@ -778,7 +745,7 @@ static void do_emergency_remount(struct work_struct *work)
 		__put_super(p);
 	spin_unlock(&sb_lock);
 	kfree(work);
-;
+	printk("Emergency Remount complete\n");
 }
 
 void emergency_remount(void)
@@ -1164,8 +1131,8 @@ int freeze_super(struct super_block *sb)
 	if (sb->s_op->freeze_fs) {
 		ret = sb->s_op->freeze_fs(sb);
 		if (ret) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"VFS:Filesystem freeze failed\n");
 			sb->s_frozen = SB_UNFROZEN;
 			smp_wmb();
 			wake_up(&sb->s_wait_unfrozen);
@@ -1200,8 +1167,8 @@ int thaw_super(struct super_block *sb)
 	if (sb->s_op->unfreeze_fs) {
 		error = sb->s_op->unfreeze_fs(sb);
 		if (error) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+				"VFS:Filesystem thaw failed\n");
 			sb->s_frozen = SB_FREEZE_TRANS;
 			up_write(&sb->s_umount);
 			return error;

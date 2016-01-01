@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
  *

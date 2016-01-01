@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /******************************************************************************
 *******************************************************************************
 **
@@ -53,7 +50,7 @@ static int __init init_dlm(void)
 	if (error)
 		goto out_netlink;
 
-;
+	printk("DLM installed\n");
 
 	return 0;
 

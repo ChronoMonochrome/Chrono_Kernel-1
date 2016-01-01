@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/minix/inode.c
  *
@@ -143,11 +140,11 @@ static int minix_remount (struct super_block * sb, int * flags, char * data)
 		mark_buffer_dirty(sbi->s_sbh);
 
 		if (!(sbi->s_mount_state & MINIX_VALID_FS))
-//			printk("MINIX-fs warning: remounting unchecked fs, "
-;
+			printk("MINIX-fs warning: remounting unchecked fs, "
+				"running fsck is recommended\n");
 		else if ((sbi->s_mount_state & MINIX_ERROR_FS))
-//			printk("MINIX-fs warning: remounting fs with errors, "
-;
+			printk("MINIX-fs warning: remounting fs with errors, "
+				"running fsck is recommended\n");
 	}
 	return 0;
 }
@@ -193,24 +190,24 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		sbi->s_version = MINIX_V1;
 		sbi->s_dirsize = 16;
 		sbi->s_namelen = 14;
-		s->s_max_links = MINIX_LINK_MAX;
+		sbi->s_link_max = MINIX_LINK_MAX;
 	} else if (s->s_magic == MINIX_SUPER_MAGIC2) {
 		sbi->s_version = MINIX_V1;
 		sbi->s_dirsize = 32;
 		sbi->s_namelen = 30;
-		s->s_max_links = MINIX_LINK_MAX;
+		sbi->s_link_max = MINIX_LINK_MAX;
 	} else if (s->s_magic == MINIX2_SUPER_MAGIC) {
 		sbi->s_version = MINIX_V2;
 		sbi->s_nzones = ms->s_zones;
 		sbi->s_dirsize = 16;
 		sbi->s_namelen = 14;
-		s->s_max_links = MINIX2_LINK_MAX;
+		sbi->s_link_max = MINIX2_LINK_MAX;
 	} else if (s->s_magic == MINIX2_SUPER_MAGIC2) {
 		sbi->s_version = MINIX_V2;
 		sbi->s_nzones = ms->s_zones;
 		sbi->s_dirsize = 32;
 		sbi->s_namelen = 30;
-		s->s_max_links = MINIX2_LINK_MAX;
+		sbi->s_link_max = MINIX2_LINK_MAX;
 	} else if ( *(__u16 *)(bh->b_data + 24) == MINIX3_SUPER_MAGIC) {
 		m3s = (struct minix3_super_block *) bh->b_data;
 		s->s_magic = m3s->s_magic;
@@ -224,9 +221,9 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		sbi->s_dirsize = 64;
 		sbi->s_namelen = 60;
 		sbi->s_version = MINIX_V3;
+		sbi->s_link_max = MINIX2_LINK_MAX;
 		sbi->s_mount_state = MINIX_VALID_FS;
 		sb_set_blocksize(s, m3s->s_blocksize);
-		s->s_max_links = MINIX2_LINK_MAX;
 	} else
 		goto out_no_fs;
 
@@ -276,32 +273,11 @@ static int minix_fill_super(struct super_block *s, void *data, int silent)
 		mark_buffer_dirty(bh);
 	}
 	if (!(sbi->s_mount_state & MINIX_VALID_FS))
-//		printk("MINIX-fs: mounting unchecked file system, "
-;
+		printk("MINIX-fs: mounting unchecked file system, "
+			"running fsck is recommended\n");
  	else if (sbi->s_mount_state & MINIX_ERROR_FS)
-//		printk("MINIX-fs: mounting file system with errors, "
-;
-
-	/* Apparently minix can create filesystems that allocate more blocks for
-	 * the bitmaps than needed.  We simply ignore that, but verify it didn't
-	 * create one with not enough blocks and bail out if so.
-	 */
-	block = minix_blocks_needed(sbi->s_ninodes, s->s_blocksize);
-	if (sbi->s_imap_blocks < block) {
-//		printk("MINIX-fs: file system does not have enough "
-;
-		goto out_iput;
-	}
-
-	block = minix_blocks_needed(
-			(sbi->s_nzones - (sbi->s_firstdatazone + 1)),
-			s->s_blocksize);
-	if (sbi->s_zmap_blocks < block) {
-//		printk("MINIX-fs: file system does not have enough "
-;
-		goto out_iput;
-	}
-
+		printk("MINIX-fs: mounting file system with errors, "
+			"running fsck is recommended\n");
 	return 0;
 
 out_iput:
@@ -310,11 +286,11 @@ out_iput:
 
 out_no_root:
 	if (!silent)
-;
+		printk("MINIX-fs: get root inode failed\n");
 	goto out_freemap;
 
 out_no_bitmap:
-;
+	printk("MINIX-fs: bad superblock or unable to read bitmaps\n");
 out_freemap:
 	for (i = 0; i < sbi->s_imap_blocks; i++)
 		brelse(sbi->s_imap[i]);
@@ -326,28 +302,28 @@ out_freemap:
 out_no_map:
 	ret = -ENOMEM;
 	if (!silent)
-;
+		printk("MINIX-fs: can't allocate map\n");
 	goto out_release;
 
 out_illegal_sb:
 	if (!silent)
-;
+		printk("MINIX-fs: bad superblock\n");
 	goto out_release;
 
 out_no_fs:
 	if (!silent)
-//		printk("VFS: Can't find a Minix filesystem V1 | V2 | V3 "
-;
+		printk("VFS: Can't find a Minix filesystem V1 | V2 | V3 "
+		       "on device %s.\n", s->s_id);
 out_release:
 	brelse(bh);
 	goto out;
 
 out_bad_hblock:
-;
+	printk("MINIX-fs: blocksize too small for device\n");
 	goto out;
 
 out_bad_sb:
-;
+	printk("MINIX-fs: unable to read superblock\n");
 out:
 	s->s_fs_info = NULL;
 	kfree(sbi);
@@ -362,10 +338,10 @@ static int minix_statfs(struct dentry *dentry, struct kstatfs *buf)
 	buf->f_type = sb->s_magic;
 	buf->f_bsize = sb->s_blocksize;
 	buf->f_blocks = (sbi->s_nzones - sbi->s_firstdatazone) << sbi->s_log_zone_size;
-	buf->f_bfree = minix_count_free_blocks(sb);
+	buf->f_bfree = minix_count_free_blocks(sbi);
 	buf->f_bavail = buf->f_bfree;
 	buf->f_files = sbi->s_ninodes;
-	buf->f_ffree = minix_count_free_inodes(sb);
+	buf->f_ffree = minix_count_free_inodes(sbi);
 	buf->f_namelen = sbi->s_namelen;
 	buf->f_fsid.val[0] = (u32)id;
 	buf->f_fsid.val[1] = (u32)(id >> 32);
@@ -608,8 +584,8 @@ static int minix_write_inode(struct inode *inode, struct writeback_control *wbc)
 	if (wbc->sync_mode == WB_SYNC_ALL && buffer_dirty(bh)) {
 		sync_dirty_buffer(bh);
 		if (buffer_req(bh) && !buffer_uptodate(bh)) {
-//			printk("IO error syncing minix inode [%s:%08lx]\n",
-;
+			printk("IO error syncing minix inode [%s:%08lx]\n",
+				inode->i_sb->s_id, inode->i_ino);
 			err = -EIO;
 		}
 	}
@@ -619,7 +595,8 @@ static int minix_write_inode(struct inode *inode, struct writeback_control *wbc)
 
 int minix_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
 {
-	struct super_block *sb = dentry->d_sb;
+	struct inode *dir = dentry->d_parent->d_inode;
+	struct super_block *sb = dir->i_sb;
 	generic_fillattr(dentry->d_inode, stat);
 	if (INODE_VERSION(dentry->d_inode) == MINIX_V1)
 		stat->blocks = (BLOCK_SIZE / 512) * V1_minix_blocks(stat->size, sb);

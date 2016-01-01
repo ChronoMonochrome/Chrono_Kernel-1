@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Bind and unbind a cache from the filesystem backing it
  *
  * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.
@@ -132,6 +129,7 @@ static int cachefiles_daemon_add_cache(struct cachefiles_cache *cache)
 	    !root->d_inode->i_op->mkdir ||
 	    !root->d_inode->i_op->setxattr ||
 	    !root->d_inode->i_op->getxattr ||
+	    !root->d_sb ||
 	    !root->d_sb->s_op->statfs ||
 	    !root->d_sb->s_op->sync_fs)
 		goto error_unsupported;
@@ -232,9 +230,9 @@ static int cachefiles_daemon_add_cache(struct cachefiles_cache *cache)
 	set_bit(CACHEFILES_READY, &cache->flags);
 	dput(root);
 
-//	printk(KERN_INFO "CacheFiles:"
-//	       " File cache on %s registered\n",
-;
+	printk(KERN_INFO "CacheFiles:"
+	       " File cache on %s registered\n",
+	       cache->cache.identifier);
 
 	/* check how much space the cache has */
 	cachefiles_has_space(cache, 0, 0);
@@ -266,9 +264,9 @@ void cachefiles_daemon_unbind(struct cachefiles_cache *cache)
 	_enter("");
 
 	if (test_bit(CACHEFILES_READY, &cache->flags)) {
-//		printk(KERN_INFO "CacheFiles:"
-//		       " File cache on %s unregistering\n",
-;
+		printk(KERN_INFO "CacheFiles:"
+		       " File cache on %s unregistering\n",
+		       cache->cache.identifier);
 
 		fscache_withdraw_cache(&cache->cache);
 	}

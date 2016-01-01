@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext2/super.c
  *
@@ -67,8 +64,8 @@ void ext2_error(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-//	printk(KERN_CRIT "EXT2-fs (%s): error: %s: %pV\n",
-;
+	printk(KERN_CRIT "EXT2-fs (%s): error: %s: %pV\n",
+	       sb->s_id, function, &vaf);
 
 	va_end(args);
 
@@ -92,7 +89,7 @@ void ext2_msg(struct super_block *sb, const char *prefix,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-;
+	printk("%sEXT2-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
 
 	va_end(args);
 }
@@ -380,8 +377,8 @@ static unsigned long get_sb_block(void **data)
 	options += 3;
 	sb_block = simple_strtoul(options, &options, 0);
 	if (*options && *options != ',') {
-//		printk("EXT2-fs: Invalid sb specification: %s\n",
-;
+		printk("EXT2-fs: Invalid sb specification: %s\n",
+		       (char *) *data);
 		return 1;
 	}
 	if (*options == ',')
@@ -922,7 +919,6 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
 	}
 
 	sb->s_maxbytes = ext2_max_size(sb->s_blocksize_bits);
-	sb->s_max_links = EXT2_LINK_MAX;
 
 	if (le32_to_cpu(es->s_rev_level) == EXT2_GOOD_OLD_REV) {
 		sbi->s_inode_size = EXT2_GOOD_OLD_INODE_SIZE;

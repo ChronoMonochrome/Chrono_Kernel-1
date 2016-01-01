@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2008, Christoph Hellwig
  * All Rights Reserved.
@@ -359,15 +356,7 @@ xfs_xattr_acl_set(struct dentry *dentry, const char *name,
 	if (type == ACL_TYPE_DEFAULT && !S_ISDIR(inode->i_mode))
 		return value ? -EACCES : 0;
 	if ((current_fsuid() != inode->i_uid) && !capable(CAP_FOWNER))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (!value)
 		goto set_acl;

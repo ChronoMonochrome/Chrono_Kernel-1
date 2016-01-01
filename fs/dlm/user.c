@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2006-2010 Red Hat, Inc.  All rights reserved.
  *
@@ -393,15 +390,7 @@ static int device_create_lockspace(struct dlm_lspace_params *params)
 	int error;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	error = dlm_new_lockspace(params->name, strlen(params->name),
 				  &lockspace, params->flags, DLM_USER_LVB_LEN);
@@ -430,15 +419,7 @@ static int device_remove_lockspace(struct dlm_lspace_params *params)
 	int error, force = 0;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	ls = dlm_find_lockspace_device(params->minor);
 	if (!ls)
@@ -470,16 +451,16 @@ static int check_version(struct dlm_write_request *req)
 	    (req->version[0] == DLM_DEVICE_VERSION_MAJOR &&
 	     req->version[1] > DLM_DEVICE_VERSION_MINOR)) {
 
-//		printk(KERN_DEBUG "dlm: process %s (%d) version mismatch "
-//		       "user (%d.%d.%d) kernel (%d.%d.%d)\n",
-//		       current->comm,
-//		       task_pid_nr(current),
-//		       req->version[0],
-//		       req->version[1],
-//		       req->version[2],
-//		       DLM_DEVICE_VERSION_MAJOR,
-//		       DLM_DEVICE_VERSION_MINOR,
-;
+		printk(KERN_DEBUG "dlm: process %s (%d) version mismatch "
+		       "user (%d.%d.%d) kernel (%d.%d.%d)\n",
+		       current->comm,
+		       task_pid_nr(current),
+		       req->version[0],
+		       req->version[1],
+		       req->version[2],
+		       DLM_DEVICE_VERSION_MAJOR,
+		       DLM_DEVICE_VERSION_MINOR,
+		       DLM_DEVICE_VERSION_PATCH);
 		return -EINVAL;
 	}
 	return 0;

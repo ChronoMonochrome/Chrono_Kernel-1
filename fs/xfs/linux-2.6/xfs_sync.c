@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2000-2005 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -181,8 +178,6 @@ restart:
 		/* bail out if the filesystem is corrupted.  */
 		if (error == EFSCORRUPTED)
 			break;
-
-		cond_resched();
 
 	} while (nr_found && !done);
 
@@ -1039,8 +1034,6 @@ restart:
 
 			*nr_to_scan -= XFS_LOOKUP_BATCH;
 
-			cond_resched();
-
 		} while (nr_found && !done && *nr_to_scan > 0);
 
 		if (trylock && !done)
@@ -1058,7 +1051,7 @@ restart:
 	 * ensure that when we get more reclaimers than AGs we block rather
 	 * than spin trying to execute reclaim.
 	 */
-	if (skipped && (flags & SYNC_WAIT) && *nr_to_scan > 0) {
+	if (trylock && skipped && *nr_to_scan > 0) {
 		trylock = 0;
 		goto restart;
 	}
@@ -1076,38 +1069,44 @@ xfs_reclaim_inodes(
 }
 
 /*
- * Scan a certain number of inodes for reclaim.
+ * Inode cache shrinker.
  *
  * When called we make sure that there is a background (fast) inode reclaim in
- * progress, while we will throttle the speed of reclaim via doing synchronous
+ * progress, while we will throttle the speed of reclaim via doiing synchronous
  * reclaim of inodes. That means if we come across dirty inodes, we wait for
  * them to be cleaned, which we hope will not be very long due to the
  * background walker having already kicked the IO off on those dirty inodes.
  */
-void
-xfs_reclaim_inodes_nr(
-	struct xfs_mount	*mp,
-	int			nr_to_scan)
+static int
+xfs_reclaim_inode_shrink(
+	struct shrinker	*shrink,
+	struct shrink_control *sc)
 {
-	/* kick background reclaimer and push the AIL */
-	xfs_syncd_queue_reclaim(mp);
-	xfs_ail_push_all(mp->m_ail);
+	struct xfs_mount *mp;
+	struct xfs_perag *pag;
+	xfs_agnumber_t	ag;
+	int		reclaimable;
+	int nr_to_scan = sc->nr_to_scan;
+	gfp_t gfp_mask = sc->gfp_mask;
 
-	xfs_reclaim_inodes_ag(mp, SYNC_TRYLOCK | SYNC_WAIT, &nr_to_scan);
-}
+	mp = container_of(shrink, struct xfs_mount, m_inode_shrink);
+	if (nr_to_scan) {
+		/* kick background reclaimer and push the AIL */
+		xfs_syncd_queue_reclaim(mp);
+		xfs_ail_push_all(mp->m_ail);
 
-/*
- * Return the number of reclaimable inodes in the filesystem for
- * the shrinker to determine how much to reclaim.
- */
-int
-xfs_reclaim_inodes_count(
-	struct xfs_mount	*mp)
-{
-	struct xfs_perag	*pag;
-	xfs_agnumber_t		ag = 0;
-	int			reclaimable = 0;
+		if (!(gfp_mask & __GFP_FS))
+			return -1;
 
+		xfs_reclaim_inodes_ag(mp, SYNC_TRYLOCK | SYNC_WAIT,
+					&nr_to_scan);
+		/* terminate if we don't exhaust the scan */
+		if (nr_to_scan > 0)
+			return -1;
+       }
+
+	reclaimable = 0;
+	ag = 0;
 	while ((pag = xfs_perag_get_tag(mp, ag, XFS_ICI_RECLAIM_TAG))) {
 		ag = pag->pag_agno + 1;
 		reclaimable += pag->pag_ici_reclaimable;
@@ -1116,3 +1115,18 @@ xfs_reclaim_inodes_count(
 	return reclaimable;
 }
 
+void
+xfs_inode_shrinker_register(
+	struct xfs_mount	*mp)
+{
+	mp->m_inode_shrink.shrink = xfs_reclaim_inode_shrink;
+	mp->m_inode_shrink.seeks = DEFAULT_SEEKS;
+	register_shrinker(&mp->m_inode_shrink);
+}
+
+void
+xfs_inode_shrinker_unregister(
+	struct xfs_mount	*mp)
+{
+	unregister_shrinker(&mp->m_inode_shrink);
+}

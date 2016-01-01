@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ext4/xattr.c
  *
@@ -71,18 +68,18 @@
 
 #ifdef EXT4_XATTR_DEBUG
 # define ea_idebug(inode, f...) do { \
-//		printk(KERN_DEBUG "inode %s:%lu: ", \
-;
-;
-;
+		printk(KERN_DEBUG "inode %s:%lu: ", \
+			inode->i_sb->s_id, inode->i_ino); \
+		printk(f); \
+		printk("\n"); \
 	} while (0)
 # define ea_bdebug(bh, f...) do { \
 		char b[BDEVNAME_SIZE]; \
-//		printk(KERN_DEBUG "block %s:%lu: ", \
-//			bdevname(bh->b_bdev, b), \
-;
-;
-;
+		printk(KERN_DEBUG "block %s:%lu: ", \
+			bdevname(bh->b_bdev, b), \
+			(unsigned long) bh->b_blocknr); \
+		printk(f); \
+		printk("\n"); \
 	} while (0)
 #else
 # define ea_idebug(f...)
@@ -1270,8 +1267,6 @@ retry:
 				    s_min_extra_isize) {
 					tried_min_extra_isize++;
 					new_extra_isize = s_min_extra_isize;
-					kfree(is); is = NULL;
-					kfree(bs); bs = NULL;
 					goto retry;
 				}
 				error = -1;

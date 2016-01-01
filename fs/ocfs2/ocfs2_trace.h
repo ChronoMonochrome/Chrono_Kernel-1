@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #undef TRACE_SYSTEM
 #define TRACE_SYSTEM ocfs2
 

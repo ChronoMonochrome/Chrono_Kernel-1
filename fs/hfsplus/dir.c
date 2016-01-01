@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/hfsplus/dir.c
  *
@@ -103,7 +100,7 @@ again:
 		} else if (!dentry->d_fsdata)
 			dentry->d_fsdata = (void *)(unsigned long)cnid;
 	} else {
-;
+		printk(KERN_ERR "hfs: invalid catalog entry type in lookup\n");
 		err = -EIO;
 		goto fail;
 	}
@@ -157,12 +154,12 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		hfs_bnode_read(fd.bnode, &entry, fd.entryoffset,
 			fd.entrylength);
 		if (be16_to_cpu(entry.type) != HFSPLUS_FOLDER_THREAD) {
-;
+			printk(KERN_ERR "hfs: bad catalog folder thread\n");
 			err = -EIO;
 			goto out;
 		}
 		if (fd.entrylength < HFSPLUS_MIN_THREAD_SZ) {
-;
+			printk(KERN_ERR "hfs: truncated catalog thread\n");
 			err = -EIO;
 			goto out;
 		}
@@ -181,7 +178,7 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 
 	for (;;) {
 		if (be32_to_cpu(fd.key->cat.parent) != inode->i_ino) {
-;
+			printk(KERN_ERR "hfs: walked past end of dir\n");
 			err = -EIO;
 			goto out;
 		}
@@ -201,7 +198,7 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		if (type == HFSPLUS_FOLDER) {
 			if (fd.entrylength <
 					sizeof(struct hfsplus_cat_folder)) {
-;
+				printk(KERN_ERR "hfs: small dir entry\n");
 				err = -EIO;
 				goto out;
 			}
@@ -214,7 +211,7 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 				break;
 		} else if (type == HFSPLUS_FILE) {
 			if (fd.entrylength < sizeof(struct hfsplus_cat_file)) {
-;
+				printk(KERN_ERR "hfs: small file entry\n");
 				err = -EIO;
 				goto out;
 			}
@@ -222,7 +219,7 @@ static int hfsplus_readdir(struct file *filp, void *dirent, filldir_t filldir)
 				    be32_to_cpu(entry.file.id), DT_REG))
 				break;
 		} else {
-;
+			printk(KERN_ERR "hfs: bad catalog entry type\n");
 			err = -EIO;
 			goto out;
 		}
@@ -275,25 +272,9 @@ static int hfsplus_link(struct dentry *src_dentry, struct inode *dst_dir,
 	int res;
 
 	if (HFSPLUS_IS_RSRC(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (!S_ISREG(inode->i_mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	mutex_lock(&sbi->vh_mutex);
 	if (inode->i_ino == (u32)(unsigned long)src_dentry->d_fsdata) {
@@ -347,15 +328,7 @@ static int hfsplus_unlink(struct inode *dir, struct dentry *dentry)
 	int res;
 
 	if (HFSPLUS_IS_RSRC(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	mutex_lock(&sbi->vh_mutex);
 	cnid = (u32)(unsigned long)dentry->d_fsdata;

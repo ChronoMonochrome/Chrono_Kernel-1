@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Key to pathname encoder
  *
  * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.

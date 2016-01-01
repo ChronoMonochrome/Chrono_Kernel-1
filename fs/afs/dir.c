@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* dir.c: AFS filesystem directory handling
  *
  * Copyright (C) 2002 Red Hat, Inc. All Rights Reserved.
@@ -144,9 +141,9 @@ static inline void afs_dir_check_page(struct inode *dir, struct page *page)
 		goto error;
 
 	if (page->index == 0 && qty != ntohs(dbuf->blocks[0].pagehdr.npages)) {
-//		printk("kAFS: %s(%lu): wrong number of dir blocks %d!=%hu\n",
-//		       __func__, dir->i_ino, qty,
-;
+		printk("kAFS: %s(%lu): wrong number of dir blocks %d!=%hu\n",
+		       __func__, dir->i_ino, qty,
+		       ntohs(dbuf->blocks[0].pagehdr.npages));
 		goto error;
 	}
 #endif
@@ -163,9 +160,9 @@ static inline void afs_dir_check_page(struct inode *dir, struct page *page)
 	dbuf = page_address(page);
 	for (tmp = 0; tmp < qty; tmp++) {
 		if (dbuf->blocks[tmp].pagehdr.magic != AFS_DIR_MAGIC) {
-//			printk("kAFS: %s(%lu): bad magic %d/%d is %04hx\n",
-//			       __func__, dir->i_ino, tmp, qty,
-;
+			printk("kAFS: %s(%lu): bad magic %d/%d is %04hx\n",
+			       __func__, dir->i_ino, tmp, qty,
+			       ntohs(dbuf->blocks[tmp].pagehdr.magic));
 			goto error;
 		}
 	}
@@ -656,8 +653,8 @@ static int afs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
 		if (!dentry->d_inode)
 			goto out_bad;
 		if (is_bad_inode(dentry->d_inode)) {
-//			printk("kAFS: afs_d_revalidate: %s/%s has bad inode\n",
-;
+			printk("kAFS: afs_d_revalidate: %s/%s has bad inode\n",
+			       parent->d_name.name, dentry->d_name.name);
 			goto out_bad;
 		}
 

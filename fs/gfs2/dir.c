@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2006 Red Hat, Inc.  All rights reserved.
@@ -449,8 +446,8 @@ static int gfs2_check_dirent(struct gfs2_dirent *dent, unsigned int offset,
 		goto error;
 	return 0;
 error:
-//	printk(KERN_WARNING "gfs2_check_dirent: %s (%s)\n", msg,
-;
+	printk(KERN_WARNING "gfs2_check_dirent: %s (%s)\n", msg,
+	       first ? "first in block" : "not first in block");
 	return -EIO;
 }
 
@@ -473,8 +470,8 @@ static int gfs2_dirent_offset(const void *buf)
 	}
 	return offset;
 wrong_type:
-//	printk(KERN_WARNING "gfs2_scan_dirent: wrong block type %u\n",
-;
+	printk(KERN_WARNING "gfs2_scan_dirent: wrong block type %u\n",
+	       be32_to_cpu(h->mh_type));
 	return -1;
 }
 
@@ -948,7 +945,7 @@ static int dir_split_leaf(struct inode *inode, const struct qstr *name)
 	len = 1 << (dip->i_depth - be16_to_cpu(oleaf->lf_depth));
 	half_len = len >> 1;
 	if (!half_len) {
-;
+		printk(KERN_WARNING "i_depth %u lf_depth %u index %u\n", dip->i_depth, be16_to_cpu(oleaf->lf_depth), index);
 		gfs2_consist_inode(dip);
 		error = -EIO;
 		goto fail_brelse;

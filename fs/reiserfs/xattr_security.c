@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/reiserfs_fs.h>
 #include <linux/errno.h>
 #include <linux/fs.h>
@@ -19,15 +16,7 @@ security_get(struct dentry *dentry, const char *name, void *buffer, size_t size,
 		return -EINVAL;
 
 	if (IS_PRIVATE(dentry->d_inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	return reiserfs_xattr_get(dentry->d_inode, name, buffer, size);
 }
@@ -40,15 +29,7 @@ security_set(struct dentry *dentry, const char *name, const void *buffer,
 		return -EINVAL;
 
 	if (IS_PRIVATE(dentry->d_inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	return reiserfs_xattr_set(dentry->d_inode, name, buffer, size, flags);
 }

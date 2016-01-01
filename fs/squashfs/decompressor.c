@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Squashfs - a compressed read only filesystem for Linux
  *
@@ -52,12 +49,6 @@ static const struct squashfs_decompressor squashfs_lzo_comp_ops = {
 #ifndef CONFIG_SQUASHFS_XZ
 static const struct squashfs_decompressor squashfs_xz_comp_ops = {
 	NULL, NULL, NULL, XZ_COMPRESSION, "xz", 0
-};
-#endif
-
-#ifndef CONFIG_SQUASHFS_ZLIB
-static const struct squashfs_decompressor squashfs_zlib_comp_ops = {
-	NULL, NULL, NULL, ZLIB_COMPRESSION, "zlib", 0
 };
 #endif
 

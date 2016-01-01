@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext4/balloc.c
  *
@@ -562,8 +559,8 @@ ext4_fsblk_t ext4_count_free_clusters(struct super_block *sb)
 
 		x = ext4_count_free(bitmap_bh->b_data,
 				    EXT4_BLOCKS_PER_GROUP(sb) / 8);
-//		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
-;
+		printk(KERN_DEBUG "group %u: stored = %d, counted = %u\n",
+			i, ext4_free_group_clusters(sb, gdp), x);
 		bitmap_count += x;
 	}
 	brelse(bitmap_bh);

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Squashfs - a compressed read only filesystem for Linux
  *
@@ -98,7 +95,7 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
 	}
 	msblk = sb->s_fs_info;
 
-	msblk->devblksize = sb_min_blocksize(sb, SQUASHFS_DEVBLK_SIZE);
+	msblk->devblksize = sb_min_blocksize(sb, BLOCK_SIZE);
 	msblk->devblksize_log2 = ffz(~msblk->devblksize);
 
 	mutex_init(&msblk->read_data_mutex);
@@ -441,8 +438,8 @@ static int __init init_squashfs_fs(void)
 		return err;
 	}
 
-//	printk(KERN_INFO "squashfs: version 4.0 (2009/01/31) "
-;
+	printk(KERN_INFO "squashfs: version 4.0 (2009/01/31) "
+		"Phillip Lougher\n");
 
 	return 0;
 }

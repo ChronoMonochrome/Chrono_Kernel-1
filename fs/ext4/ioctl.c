@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ext4/ioctl.c
  *
@@ -54,17 +51,11 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		flags = ext4_mask_flags(inode->i_mode, flags);
 
-		mutex_lock(&inode->i_mutex);
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 		err = -EPERM;
+		mutex_lock(&inode->i_mutex);
 		/* Is it quota file? Do not allow user to mess with it */
 		if (IS_NOQUOTA(inode))
 			goto flags_out;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 		oldflags = ei->i_flags;
 
@@ -148,7 +139,7 @@ flags_err:
 			err = ext4_ext_migrate(inode);
 flags_out:
 		mutex_unlock(&inode->i_mutex);
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 	case EXT4_IOC_GETVERSION:
@@ -162,15 +153,7 @@ flags_out:
 		int err;
 
 		if (!inode_owner_or_capable(inode))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		err = mnt_want_write(filp->f_path.mnt);
 		if (err)
@@ -193,7 +176,7 @@ return -EPERM;
 		}
 		ext4_journal_stop(handle);
 setversion_out:
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 	case EXT4_IOC_GROUP_EXTEND: {
@@ -226,7 +209,7 @@ setversion_out:
 		}
 		if (err == 0)
 			err = err2;
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		ext4_resize_end(sb);
 
 		return err;
@@ -268,7 +251,7 @@ setversion_out:
 
 		err = ext4_move_extents(filp, donor_filp, me.orig_start,
 					me.donor_start, me.len, &me.moved_len);
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 
 		if (copy_to_user((struct move_extent __user *)arg,
 				 &me, sizeof(me)))
@@ -309,7 +292,7 @@ mext_out:
 		}
 		if (err == 0)
 			err = err2;
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		ext4_resize_end(sb);
 
 		return err;
@@ -333,7 +316,7 @@ mext_out:
 		mutex_lock(&(inode->i_mutex));
 		err = ext4_ext_migrate(inode);
 		mutex_unlock(&(inode->i_mutex));
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 
@@ -347,7 +330,7 @@ mext_out:
 		if (err)
 			return err;
 		err = ext4_alloc_da_blocks(inode);
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 
@@ -358,15 +341,7 @@ mext_out:
 		int ret = 0;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (!blk_queue_discard(q))
 			return -EOPNOTSUPP;

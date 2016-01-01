@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2008 Christoph Hellwig.
  * Portions Copyright (C) 2000-2008 Silicon Graphics, Inc.

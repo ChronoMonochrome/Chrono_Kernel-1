@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -38,7 +35,7 @@
 
 void ocfs2_print_version(void)
 {
-;
+	printk(KERN_INFO "%s\n", VERSION_STR);
 }
 
 MODULE_DESCRIPTION(VERSION_STR);

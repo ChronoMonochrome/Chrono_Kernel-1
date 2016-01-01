@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * fs/sysfs/symlink.c - operations for initializing and mounting sysfs
  *
@@ -173,7 +170,7 @@ int __init sysfs_init(void)
 	if (!err) {
 		sysfs_mnt = kern_mount(&sysfs_fs_type);
 		if (IS_ERR(sysfs_mnt)) {
-;
+			printk(KERN_ERR "sysfs: could not mount!\n");
 			err = PTR_ERR(sysfs_mnt);
 			sysfs_mnt = NULL;
 			unregister_filesystem(&sysfs_fs_type);

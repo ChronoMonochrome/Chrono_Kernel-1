@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2009 Red Hat, Inc.  All rights reserved.
@@ -84,7 +81,7 @@ static void gdlm_bast(void *arg, int mode)
 		gfs2_glock_cb(gl, LM_ST_SHARED);
 		break;
 	default:
-;
+		printk(KERN_ERR "unknown bast mode %d", mode);
 		BUG();
 	}
 }
@@ -103,7 +100,7 @@ static int make_mode(const unsigned int lmstate)
 	case LM_ST_SHARED:
 		return DLM_LOCK_PR;
 	}
-;
+	printk(KERN_ERR "unknown LM state %d", lmstate);
 	BUG();
 	return -1;
 }
@@ -175,9 +172,9 @@ static void gdlm_put_lock(struct gfs2_glock *gl)
 	error = dlm_unlock(ls->ls_dlm, gl->gl_lksb.sb_lkid, DLM_LKF_VALBLK,
 			   NULL, gl);
 	if (error) {
-//		printk(KERN_ERR "gdlm_unlock %x,%llx err=%d\n",
-//		       gl->gl_name.ln_type,
-;
+		printk(KERN_ERR "gdlm_unlock %x,%llx err=%d\n",
+		       gl->gl_name.ln_type,
+		       (unsigned long long)gl->gl_name.ln_number, error);
 		return;
 	}
 }
@@ -203,7 +200,7 @@ static int gdlm_mount(struct gfs2_sbd *sdp, const char *fsname)
 				  (ls->ls_nodir ? DLM_LSFL_NODIR : 0),
 				  GDLM_LVB_SIZE);
 	if (error)
-;
+		printk(KERN_ERR "dlm_new_lockspace error %d", error);
 
 	return error;
 }

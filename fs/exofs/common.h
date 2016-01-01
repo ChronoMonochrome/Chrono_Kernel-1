@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * common.h - Common definitions for both Kernel and user-mode utilities
  *

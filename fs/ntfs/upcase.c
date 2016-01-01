@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * upcase.c - Generate the full NTFS Unicode upcase table in little endian.
  *	      Part of the Linux-NTFS project.

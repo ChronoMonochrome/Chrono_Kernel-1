@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/exec.c
  *
@@ -62,6 +59,8 @@
 #include <asm/uaccess.h>
 #include <asm/mmu_context.h>
 #include <asm/tlb.h>
+
+#include <trace/events/task.h>
 #include "internal.h"
 
 int core_uses_pid;
@@ -1055,6 +1054,8 @@ void set_task_comm(struct task_struct *tsk, char *buf)
 {
 	task_lock(tsk);
 
+	trace_task_rename(tsk, buf);
+
 	/*
 	 * Threads may access current->comm without holding
 	 * the task lock, so write the string carefully.
@@ -1243,7 +1244,7 @@ EXPORT_SYMBOL(install_exec_creds);
  * - the caller must hold ->cred_guard_mutex to protect against
  *   PTRACE_ATTACH
  */
-int check_unsafe_exec(struct linux_binprm *bprm)
+static int check_unsafe_exec(struct linux_binprm *bprm)
 {
 	struct task_struct *p = current, *t;
 	unsigned n_fs;
@@ -1646,26 +1647,15 @@ expand_fail:
 	return ret;
 }
 
-static void cn_escape(char *str)
-{
-	for (; *str; str++)
-		if (*str == '/')
-			*str = '!';
-}
-
 static int cn_print_exe_file(struct core_name *cn)
 {
 	struct file *exe_file;
-	char *pathbuf, *path;
+	char *pathbuf, *path, *p;
 	int ret;
 
 	exe_file = get_mm_exe_file(current->mm);
-	if (!exe_file) {
-		char *commstart = cn->corename + cn->used;
-		ret = cn_printf(cn, "%s (path unknown)", current->comm);
-		cn_escape(commstart);
-		return ret;
-	}
+	if (!exe_file)
+		return cn_printf(cn, "(unknown)");
 
 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
 	if (!pathbuf) {
@@ -1679,7 +1669,9 @@ static int cn_print_exe_file(struct core_name *cn)
 		goto free_buf;
 	}
 
-	cn_escape(path);
+	for (p = path; *p; p++)
+		if (*p == '/')
+			*p = '!';
 
 	ret = cn_printf(cn, "%s", path);
 
@@ -1751,22 +1743,16 @@ static int format_corename(struct core_name *cn, long signr)
 				break;
 			}
 			/* hostname */
-			case 'h': {
-				char *namestart = cn->corename + cn->used;
+			case 'h':
 				down_read(&uts_sem);
 				err = cn_printf(cn, "%s",
 					      utsname()->nodename);
 				up_read(&uts_sem);
-				cn_escape(namestart);
 				break;
-			}
 			/* executable */
-			case 'e': {
-				char *commstart = cn->corename + cn->used;
+			case 'e':
 				err = cn_printf(cn, "%s", current->comm);
-				cn_escape(commstart);
 				break;
-			}
 			case 'E':
 				err = cn_print_exe_file(cn);
 				break;
@@ -2060,8 +2046,8 @@ static int umh_pipe_setup(struct subprocess_info *info, struct cred *new)
 	fd_install(0, rp);
 	spin_lock(&cf->file_lock);
 	fdt = files_fdtable(cf);
-	__set_open_fd(0, fdt);
-	__clear_close_on_exec(0, fdt);
+	FD_SET(0, fdt->open_fds);
+	FD_CLR(0, fdt->close_on_exec);
 	spin_unlock(&cf->file_lock);
 
 	/* and disallow core files too */
@@ -2131,8 +2117,8 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
 	ispipe = format_corename(&cn, signr);
 
 	if (ispipe == -ENOMEM) {
-;
-;
+		printk(KERN_WARNING "format_corename failed\n");
+		printk(KERN_WARNING "Aborting core\n");
 		goto fail_corename;
 	}
 
@@ -2155,26 +2141,26 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
 			 * right pid if a thread in a multi-threaded
 			 * core_pattern process dies.
 			 */
-//			printk(KERN_WARNING
-//				"Process %d(%s) has RLIMIT_CORE set to 1\n",
-;
-;
+			printk(KERN_WARNING
+				"Process %d(%s) has RLIMIT_CORE set to 1\n",
+				task_tgid_vnr(current), current->comm);
+			printk(KERN_WARNING "Aborting core\n");
 			goto fail_unlock;
 		}
 		cprm.limit = RLIM_INFINITY;
 
 		dump_count = atomic_inc_return(&core_dump_count);
 		if (core_pipe_limit && (core_pipe_limit < dump_count)) {
-//			printk(KERN_WARNING "Pid %d(%s) over core_pipe_limit\n",
-;
-;
+			printk(KERN_WARNING "Pid %d(%s) over core_pipe_limit\n",
+			       task_tgid_vnr(current), current->comm);
+			printk(KERN_WARNING "Skipping core dump\n");
 			goto fail_dropcount;
 		}
 
 		helper_argv = argv_split(GFP_KERNEL, cn.corename+1, NULL);
 		if (!helper_argv) {
-//			printk(KERN_WARNING "%s failed to allocate memory\n",
-;
+			printk(KERN_WARNING "%s failed to allocate memory\n",
+			       __func__);
 			goto fail_dropcount;
 		}
 
@@ -2183,8 +2169,8 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
 					NULL, &cprm);
 		argv_free(helper_argv);
 		if (retval) {
-// 			printk(KERN_INFO "Core dump to %s pipe failed\n",
-;
+ 			printk(KERN_INFO "Core dump to %s pipe failed\n",
+			       cn.corename);
 			goto close_fail;
  		}
 	} else {

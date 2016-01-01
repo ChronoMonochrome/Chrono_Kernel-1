@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -655,15 +652,7 @@ static int ocfs2_link(struct dentry *old_dentry,
 			 dentry->d_name.len, dentry->d_name.name);
 
 	if (S_ISDIR(inode->i_mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	dquot_initialize(dir);
 
@@ -826,15 +815,7 @@ static int ocfs2_unlink(struct inode *dir,
 	BUG_ON(dentry->d_parent->d_inode != dir);
 
 	if (inode == osb->root_inode)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	status = ocfs2_inode_lock_nested(dir, &parent_node_bh, 1,
 					 OI_LS_PARENT);

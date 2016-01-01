@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2008  Miklos Szeredi <miklos@szeredi.hu>
@@ -74,7 +71,7 @@ struct fuse_mount_data {
 	unsigned blksize;
 };
 
-struct fuse_forget_link *fuse_alloc_forget()
+struct fuse_forget_link *fuse_alloc_forget(void)
 {
 	return kzalloc(sizeof(struct fuse_forget_link), GFP_KERNEL);
 }
@@ -346,8 +343,7 @@ void fuse_conn_kill(struct fuse_conn *fc)
 	spin_unlock(&fc->lock);
 	/* Flush all readers on this fs */
 	kill_fasync(&fc->fasync, SIGIO, POLL_IN);
-	wake_up_all(&fc->waitq[0]);
-	wake_up_all(&fc->waitq[1]);
+	wake_up_all(&fc->waitq);
 	wake_up_all(&fc->blocked_waitq);
 	wake_up_all(&fc->reserved_req_waitq);
 	mutex_lock(&fuse_mutex);
@@ -423,7 +419,6 @@ enum {
 	OPT_ALLOW_OTHER,
 	OPT_MAX_READ,
 	OPT_BLKSIZE,
-	OPT_HANDLE_RT_CLASS,
 	OPT_ERR
 };
 
@@ -436,7 +431,6 @@ static const match_table_t tokens = {
 	{OPT_ALLOW_OTHER,		"allow_other"},
 	{OPT_MAX_READ,			"max_read=%u"},
 	{OPT_BLKSIZE,			"blksize=%u"},
-	{OPT_HANDLE_RT_CLASS,		"handle_rt_class"},
 	{OPT_ERR,			NULL}
 };
 
@@ -470,10 +464,6 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
 				return 0;
 			d->rootmode = value;
 			d->rootmode_present = 1;
-			break;
-
-		case OPT_HANDLE_RT_CLASS:
-			d->flags |= FUSE_HANDLE_RT_CLASS;
 			break;
 
 		case OPT_USER_ID:
@@ -547,16 +537,13 @@ void fuse_conn_init(struct fuse_conn *fc)
 	mutex_init(&fc->inst_mutex);
 	init_rwsem(&fc->killsb);
 	atomic_set(&fc->count, 1);
-	init_waitqueue_head(&fc->waitq[0]);
-	init_waitqueue_head(&fc->waitq[1]);
+	init_waitqueue_head(&fc->waitq);
 	init_waitqueue_head(&fc->blocked_waitq);
 	init_waitqueue_head(&fc->reserved_req_waitq);
-	INIT_LIST_HEAD(&fc->pending[0]);
-	INIT_LIST_HEAD(&fc->pending[1]);
+	INIT_LIST_HEAD(&fc->pending);
 	INIT_LIST_HEAD(&fc->processing);
 	INIT_LIST_HEAD(&fc->io);
-	INIT_LIST_HEAD(&fc->interrupts[0]);
-	INIT_LIST_HEAD(&fc->interrupts[1]);
+	INIT_LIST_HEAD(&fc->interrupts);
 	INIT_LIST_HEAD(&fc->bg_queue);
 	INIT_LIST_HEAD(&fc->entry);
 	fc->forget_list_tail = &fc->forget_list_head;
@@ -905,7 +892,7 @@ static int fuse_bdi_init(struct fuse_conn *fc, struct super_block *sb)
 	int err;
 
 	fc->bdi.name = "fuse";
-	fc->bdi.ra_pages = (VM_MAX_READAHEAD * 1024) / PAGE_CACHE_SIZE;
+	fc->bdi.ra_pages = max_readahead_pages;
 	/* fuse does it's own writeback accounting */
 	fc->bdi.capabilities = BDI_CAP_NO_ACCT_WB;
 
@@ -1235,8 +1222,8 @@ static int __init fuse_init(void)
 {
 	int res;
 
-//	printk(KERN_INFO "fuse init (API version %i.%i)\n",
-;
+	printk(KERN_INFO "fuse init (API version %i.%i)\n",
+	       FUSE_KERNEL_VERSION, FUSE_KERNEL_MINOR_VERSION);
 
 	INIT_LIST_HEAD(&fuse_conn_list);
 	res = fuse_fs_init();
@@ -1272,7 +1259,7 @@ static int __init fuse_init(void)
 
 static void __exit fuse_exit(void)
 {
-;
+	printk(KERN_DEBUG "fuse exit\n");
 
 	fuse_ctl_cleanup();
 	fuse_sysfs_cleanup();

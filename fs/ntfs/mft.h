@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * mft.h - Defines for mft record handling in NTFS Linux kernel driver.
  *	   Part of the Linux-NTFS project.

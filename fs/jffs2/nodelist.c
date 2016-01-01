@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * JFFS2 -- Journalling Flash File System, Version 2.
  *
@@ -690,8 +687,8 @@ int jffs2_scan_dirty_space(struct jffs2_sb_info *c, struct jffs2_eraseblock *jeb
 	if (!size)
 		return 0;
 	if (unlikely(size > jeb->free_size)) {
-//		printk(KERN_CRIT "Dirty space 0x%x larger then free_size 0x%x (wasted 0x%x)\n",
-;
+		printk(KERN_CRIT "Dirty space 0x%x larger then free_size 0x%x (wasted 0x%x)\n",
+		       size, jeb->free_size, jeb->wasted_size);
 		BUG();
 	}
 	/* REF_EMPTY_NODE is !obsolete, so that works OK */
@@ -729,8 +726,8 @@ static inline uint32_t __ref_totlen(struct jffs2_sb_info *c,
 
 		/* Last node in block. Use free_space */
 		if (unlikely(ref != jeb->last_node)) {
-//			printk(KERN_CRIT "ref %p @0x%08x is not jeb->last_node (%p @0x%08x)\n",
-;
+			printk(KERN_CRIT "ref %p @0x%08x is not jeb->last_node (%p @0x%08x)\n",
+			       ref, ref_offset(ref), jeb->last_node, jeb->last_node?ref_offset(jeb->last_node):0);
 			BUG();
 		}
 		ref_end = jeb->offset + c->sector_size - jeb->free_size;
@@ -750,16 +747,16 @@ uint32_t __jffs2_ref_totlen(struct jffs2_sb_info *c, struct jffs2_eraseblock *je
 		if (!jeb)
 			jeb = &c->blocks[ref->flash_offset / c->sector_size];
 
-//		printk(KERN_CRIT "Totlen for ref at %p (0x%08x-0x%08x) miscalculated as 0x%x instead of %x\n",
-//		       ref, ref_offset(ref), ref_offset(ref)+ref->__totlen,
-;
+		printk(KERN_CRIT "Totlen for ref at %p (0x%08x-0x%08x) miscalculated as 0x%x instead of %x\n",
+		       ref, ref_offset(ref), ref_offset(ref)+ref->__totlen,
+		       ret, ref->__totlen);
 		if (ref_next(ref)) {
-//			printk(KERN_CRIT "next %p (0x%08x-0x%08x)\n", ref_next(ref), ref_offset(ref_next(ref)),
-;
+			printk(KERN_CRIT "next %p (0x%08x-0x%08x)\n", ref_next(ref), ref_offset(ref_next(ref)),
+			       ref_offset(ref_next(ref))+ref->__totlen);
 		} else 
-;
+			printk(KERN_CRIT "No next ref. jeb->last_node is %p\n", jeb->last_node);
 
-;
+		printk(KERN_CRIT "jeb->wasted_size %x, dirty_size %x, used_size %x, free_size %x\n", jeb->wasted_size, jeb->dirty_size, jeb->used_size, jeb->free_size);
 
 #if defined(JFFS2_DBG_DUMPS) || defined(JFFS2_DBG_PARANOIA_CHECKS)
 		__jffs2_dbg_dump_node_refs_nolock(c, jeb);

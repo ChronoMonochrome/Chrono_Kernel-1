@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * segbuf.c - NILFS segment buffer
  *
@@ -531,7 +528,7 @@ static int nilfs_segbuf_wait(struct nilfs_segment_buffer *segbuf)
 	} while (--segbuf->sb_nbio > 0);
 
 	if (unlikely(atomic_read(&segbuf->sb_err) > 0)) {
-;
+		printk(KERN_ERR "NILFS: IO error writing segment\n");
 		err = -EIO;
 	}
 	return err;

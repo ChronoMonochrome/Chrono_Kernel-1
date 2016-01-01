@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/jbd2/checkpoint.c
  *
@@ -165,12 +162,12 @@ void __jbd2_log_wait_for_space(journal_t *journal)
 			} else if (tid) {
 				jbd2_log_wait_commit(journal, tid);
 			} else {
-//				printk(KERN_ERR "%s: needed %d blocks and "
-//				       "only had %d space available\n",
-;
-//				printk(KERN_ERR "%s: no way to get more "
-//				       "journal space in %s\n", __func__,
-;
+				printk(KERN_ERR "%s: needed %d blocks and "
+				       "only had %d space available\n",
+				       __func__, nblocks, space_left);
+				printk(KERN_ERR "%s: no way to get more "
+				       "journal space in %s\n", __func__,
+				       journal->j_devname);
 				WARN_ON(1);
 				jbd2_journal_abort(journal, 0);
 			}
@@ -260,12 +257,9 @@ static void
 __flush_batch(journal_t *journal, int *batch_count)
 {
 	int i;
-	struct blk_plug plug;
 
-	blk_start_plug(&plug);
 	for (i = 0; i < *batch_count; i++)
-		write_dirty_buffer(journal->j_chkpt_bhs[i], WRITE_SYNC);
-	blk_finish_plug(&plug);
+		write_dirty_buffer(journal->j_chkpt_bhs[i], WRITE);
 
 	for (i = 0; i < *batch_count; i++) {
 		struct buffer_head *bh = journal->j_chkpt_bhs[i];
@@ -314,10 +308,10 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
 			 * waiting for a commit to finish will cause
 			 * us to wait for a _very_ long time.
 			 */
-//			printk(KERN_ERR "JBD2: %s: "
-//			       "Waiting for Godot: block %llu\n",
-//			       journal->j_devname,
-;
+			printk(KERN_ERR "JBD2: %s: "
+			       "Waiting for Godot: block %llu\n",
+			       journal->j_devname,
+			       (unsigned long long) bh->b_blocknr);
 		jbd2_log_start_commit(journal, tid);
 		jbd2_log_wait_commit(journal, tid);
 		ret = 1;
@@ -549,7 +543,8 @@ int jbd2_cleanup_journal_tail(journal_t *journal)
 	 * correctness.  Fortunately jbd2_cleanup_journal_tail()
 	 * doesn't get called all that often.
 	 */
-	if (journal->j_flags & JBD2_BARRIER)
+	if ((journal->j_fs_dev != journal->j_dev) &&
+	    (journal->j_flags & JBD2_BARRIER))
 		blkdev_issue_flush(journal->j_fs_dev, GFP_KERNEL, NULL);
 	if (!(journal->j_flags & JBD2_ABORT))
 		jbd2_journal_update_superblock(journal, 1);

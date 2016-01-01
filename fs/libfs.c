@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *	fs/libfs.c
  *	Library for filesystems writers.
@@ -503,9 +500,9 @@ int simple_fill_super(struct super_block *s, unsigned long magic,
 
 		/* warn if it tries to conflict with the root inode */
 		if (unlikely(i == 1))
-//			printk(KERN_WARNING "%s: %s passed in a files array"
-//				"with an index of 1!\n", __func__,
-;
+			printk(KERN_WARNING "%s: %s passed in a files array"
+				"with an index of 1!\n", __func__,
+				s->s_type->name);
 
 		dentry = d_alloc_name(root, files->name);
 		if (!dentry)
@@ -908,21 +905,29 @@ EXPORT_SYMBOL_GPL(generic_fh_to_parent);
  * filesystems which track all non-inode metadata in the buffers list
  * hanging off the address_space structure.
  */
-int generic_file_fsync(struct file *file, int datasync)
+int generic_file_fsync(struct file *file, loff_t start, loff_t end,
+		       int datasync)
 {
 	struct inode *inode = file->f_mapping->host;
 	int err;
 	int ret;
 
+	err = filemap_write_and_wait_range(inode->i_mapping, start, end);
+	if (err)
+		return err;
+
+	mutex_lock(&inode->i_mutex);
 	ret = sync_mapping_buffers(inode->i_mapping);
 	if (!(inode->i_state & I_DIRTY))
-		return ret;
+		goto out;
 	if (datasync && !(inode->i_state & I_DIRTY_DATASYNC))
-		return ret;
+		goto out;
 
 	err = sync_inode_metadata(inode, 1);
 	if (ret == 0)
 		ret = err;
+out:
+	mutex_unlock(&inode->i_mutex);
 	return ret;
 }
 EXPORT_SYMBOL(generic_file_fsync);
@@ -959,7 +964,7 @@ EXPORT_SYMBOL(generic_check_addressable);
 /*
  * No-op implementation of ->fsync for in-memory filesystems.
  */
-int noop_fsync(struct file *file, int datasync)
+int noop_fsync(struct file *file, loff_t start, loff_t end, int datasync)
 {
 	return 0;
 }

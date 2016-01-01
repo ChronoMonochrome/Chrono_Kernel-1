@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/proc/inode.c
  *
@@ -492,7 +489,7 @@ int proc_fill_super(struct super_block *s)
 	return 0;
 
 out_no_root:
-;
+	printk("proc_read_super: get root inode failed\n");
 	iput(root_inode);
 	pde_put(&proc_root);
 	return -ENOMEM;

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *      	An implementation of a loadable kernel mode driver providing
  *		multiple kernel/user space bidirectional communications links.
@@ -117,14 +114,14 @@ static ssize_t coda_psdev_write(struct file *file, const char __user *buf,
 		int size = sizeof(*dcbuf);
 
 		if  ( nbytes < sizeof(struct coda_out_hdr) ) {
-//		        printk("coda_downcall opc %d uniq %d, not enough!\n",
-;
+		        printk("coda_downcall opc %d uniq %d, not enough!\n",
+			       hdr.opcode, hdr.unique);
 			count = nbytes;
 			goto out;
 		}
 		if ( nbytes > size ) {
-//		        printk("Coda: downcall opc %d, uniq %d, too much!",
-;
+		        printk("Coda: downcall opc %d, uniq %d, too much!",
+			       hdr.opcode, hdr.unique);
 		        nbytes = size;
 		}
 		CODA_ALLOC(dcbuf, union outputArgs *, nbytes);
@@ -139,7 +136,7 @@ static ssize_t coda_psdev_write(struct file *file, const char __user *buf,
 
 		CODA_FREE(dcbuf, nbytes);
 		if (error) {
-;
+		        printk("psdev_write: coda_downcall error: %d\n", error);
 			retval = error;
 			goto out;
 		}
@@ -160,16 +157,16 @@ static ssize_t coda_psdev_write(struct file *file, const char __user *buf,
 	mutex_unlock(&vcp->vc_mutex);
 
 	if (!req) {
-//		printk("psdev_write: msg (%d, %d) not found\n", 
-;
+		printk("psdev_write: msg (%d, %d) not found\n", 
+			hdr.opcode, hdr.unique);
 		retval = -ESRCH;
 		goto out;
 	}
 
         /* move data into response buffer. */
 	if (req->uc_outSize < nbytes) {
-//                printk("psdev_write: too much cnt: %d, cnt: %ld, opc: %d, uniq: %d.\n",
-;
+                printk("psdev_write: too much cnt: %d, cnt: %ld, opc: %d, uniq: %d.\n",
+		       req->uc_outSize, (long)nbytes, hdr.opcode, hdr.unique);
 		nbytes = req->uc_outSize; /* don't have more space! */
 	}
         if (copy_from_user(req->uc_data, buf, nbytes)) {
@@ -302,7 +299,7 @@ static int coda_psdev_release(struct inode * inode, struct file * file)
 	struct upc_req *req, *tmp;
 
 	if (!vcp || !vcp->vc_inuse ) {
-;
+		printk("psdev_release: Not open.\n");
 		return -1;
 	}
 
@@ -351,8 +348,8 @@ static int init_coda_psdev(void)
 {
 	int i, err = 0;
 	if (register_chrdev(CODA_PSDEV_MAJOR, "coda", &coda_psdev_fops)) {
-//              printk(KERN_ERR "coda_psdev: unable to get major %d\n", 
-;
+              printk(KERN_ERR "coda_psdev: unable to get major %d\n", 
+		     CODA_PSDEV_MAJOR);
               return -EIO;
 	}
 	coda_psdev_class = class_create(THIS_MODULE, "coda");
@@ -390,13 +387,13 @@ static int __init init_coda(void)
 		goto out2;
 	status = init_coda_psdev();
 	if ( status ) {
-;
+		printk("Problem (%d) in init_coda_psdev\n", status);
 		goto out1;
 	}
 	
 	status = register_filesystem(&coda_fs_type);
 	if (status) {
-;
+		printk("coda: failed to register filesystem!\n");
 		goto out;
 	}
 	return 0;
@@ -418,7 +415,7 @@ static void __exit exit_coda(void)
 
 	err = unregister_filesystem(&coda_fs_type);
         if ( err != 0 ) {
-;
+                printk("coda: failed to unregister filesystem\n");
         }
 	for (i = 0; i < MAX_CODADEVS; i++)
 		device_destroy(coda_psdev_class, MKDEV(CODA_PSDEV_MAJOR, i));

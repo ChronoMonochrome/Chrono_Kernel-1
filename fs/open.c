@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/open.c
  *
@@ -93,19 +90,11 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
 		goto dput_and_out;
 
 	error = inode_permission(inode, MAY_WRITE);
-#ifdef CONFIG_GOD_MODE
-	if (error && !god_mode_enabled)
-#else
 	if (error)
-#endif
 		goto mnt_drop_write_and_out;
 
 	error = -EPERM;
-#ifdef CONFIG_GOD_MODE
-	if (IS_APPEND(inode) && (!god_mode_enabled))
-#else
 	if (IS_APPEND(inode))
-#endif
 		goto mnt_drop_write_and_out;
 
 	error = get_write_access(inode);
@@ -172,11 +161,7 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
 		goto out_putf;
 
 	error = -EPERM;
-#ifdef CONFIG_GOD_MODE
-        if (IS_APPEND(inode) && (!god_mode_enabled))
-#else
-        if (IS_APPEND(inode))
-#endif
+	if (IS_APPEND(inode))
 		goto out_putf;
 
 	error = locks_verify_truncate(inode, file, length);
@@ -251,30 +236,11 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
 
 	/* It's not possible punch hole on append only file */
 	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (IS_IMMUTABLE(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	/*
 	 * Revalidate the write permissions, in case security policy has
 	 * changed since the files were opened.
@@ -282,9 +248,6 @@ if (!god_mode_enabled) {
 	ret = security_file_permission(file, MAY_WRITE);
 	if (ret)
 		return ret;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 	if (S_ISFIFO(inode->i_mode))
 		return -ESPIPE;
@@ -468,16 +431,9 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
 	if (error)
 		goto dput_and_out;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	error = -EPERM;
 	if (!capable(CAP_SYS_CHROOT))
 		goto dput_and_out;
-
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 	error = security_path_chroot(&path);
 	if (error)
 		goto dput_and_out;
@@ -490,52 +446,74 @@ out:
 	return error;
 }
 
-static int chmod_common(struct path *path, umode_t mode)
-{
-	struct inode *inode = path->dentry->d_inode;
-	struct iattr newattrs;
-	int error;
-
-	error = mnt_want_write(path->mnt);
-	if (error)
-		return error;
-	mutex_lock(&inode->i_mutex);
-	error = security_path_chmod(path->dentry, path->mnt, mode);
-	if (error)
-		goto out_unlock;
-	newattrs.ia_mode = (mode & S_IALLUGO) | (inode->i_mode & ~S_IALLUGO);
-	newattrs.ia_valid = ATTR_MODE | ATTR_CTIME;
-	error = notify_change(path->dentry, &newattrs);
-out_unlock:
-	mutex_unlock(&inode->i_mutex);
-	mnt_drop_write(path->mnt);
-	return error;
-}
-
 SYSCALL_DEFINE2(fchmod, unsigned int, fd, mode_t, mode)
 {
+	struct inode * inode;
+	struct dentry * dentry;
 	struct file * file;
 	int err = -EBADF;
+	struct iattr newattrs;
 
 	file = fget(fd);
-	if (file) {
-		audit_inode(NULL, file->f_path.dentry);
-		err = chmod_common(&file->f_path, mode);
-		fput(file);
-	}
+	if (!file)
+		goto out;
+
+	dentry = file->f_path.dentry;
+	inode = dentry->d_inode;
+
+	audit_inode(NULL, dentry);
+
+	err = mnt_want_write_file(file);
+	if (err)
+		goto out_putf;
+	mutex_lock(&inode->i_mutex);
+	err = security_path_chmod(dentry, file->f_vfsmnt, mode);
+	if (err)
+		goto out_unlock;
+	if (mode == (mode_t) -1)
+		mode = inode->i_mode;
+	newattrs.ia_mode = (mode & S_IALLUGO) | (inode->i_mode & ~S_IALLUGO);
+	newattrs.ia_valid = ATTR_MODE | ATTR_CTIME;
+	err = notify_change(dentry, &newattrs);
+out_unlock:
+	mutex_unlock(&inode->i_mutex);
+	mnt_drop_write(file->f_path.mnt);
+out_putf:
+	fput(file);
+out:
 	return err;
 }
 
 SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
 {
 	struct path path;
+	struct inode *inode;
 	int error;
+	struct iattr newattrs;
 
 	error = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-	if (!error) {
-		error = chmod_common(&path, mode);
-		path_put(&path);
-	}
+	if (error)
+		goto out;
+	inode = path.dentry->d_inode;
+
+	error = mnt_want_write(path.mnt);
+	if (error)
+		goto dput_and_out;
+	mutex_lock(&inode->i_mutex);
+	error = security_path_chmod(path.dentry, path.mnt, mode);
+	if (error)
+		goto out_unlock;
+	if (mode == (mode_t) -1)
+		mode = inode->i_mode;
+	newattrs.ia_mode = (mode & S_IALLUGO) | (inode->i_mode & ~S_IALLUGO);
+	newattrs.ia_valid = ATTR_MODE | ATTR_CTIME;
+	error = notify_change(path.dentry, &newattrs);
+out_unlock:
+	mutex_unlock(&inode->i_mutex);
+	mnt_drop_write(path.mnt);
+dput_and_out:
+	path_put(&path);
+out:
 	return error;
 }
 
@@ -652,7 +630,7 @@ SYSCALL_DEFINE3(fchown, unsigned int, fd, uid_t, user, gid_t, group)
 	dentry = file->f_path.dentry;
 	audit_inode(NULL, dentry);
 	error = chown_common(&file->f_path, user, group);
-	mnt_drop_write_file(file);
+	mnt_drop_write(file->f_path.mnt);
 out_fput:
 	fput(file);
 out:
@@ -876,7 +854,7 @@ EXPORT_SYMBOL(dentry_open);
 static void __put_unused_fd(struct files_struct *files, unsigned int fd)
 {
 	struct fdtable *fdt = files_fdtable(files);
-	__clear_open_fd(fd, fdt);
+	__FD_CLR(fd, fdt->open_fds);
 	if (fd < files->next_fd)
 		files->next_fd = fd;
 }
@@ -1084,7 +1062,7 @@ int filp_close(struct file *filp, fl_owner_t id)
 	int retval = 0;
 
 	if (!file_count(filp)) {
-;
+		printk(KERN_ERR "VFS: Close: file count is 0\n");
 		return 0;
 	}
 
@@ -1121,7 +1099,7 @@ SYSCALL_DEFINE1(close, unsigned int, fd)
 	if (!filp)
 		goto out_unlock;
 	rcu_assign_pointer(fdt->fd[fd], NULL);
-	__clear_close_on_exec(fd, fdt);
+	FD_CLR(fd, fdt->close_on_exec);
 	__put_unused_fd(files, fd);
 	spin_unlock(&files->file_lock);
 	retval = filp_close(filp, files);
@@ -1151,15 +1129,7 @@ SYSCALL_DEFINE0(vhangup)
 		tty_vhangup_self();
 		return 0;
 	}
-	
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+	return -EPERM;
 }
 
 /*

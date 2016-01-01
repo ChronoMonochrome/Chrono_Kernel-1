@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 
 /*
  * Directory operations for Coda filesystem
@@ -204,15 +201,7 @@ static int coda_create(struct inode *dir, struct dentry *de, umode_t mode, struc
 	struct coda_vattr attrs;
 
 	if (coda_isroot(dir) && coda_iscontrol(name, length))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	error = venus_create(dir->i_sb, coda_i2f(dir), name, length, 
 				0, mode, &newfid, &attrs);
@@ -244,15 +233,7 @@ static int coda_mkdir(struct inode *dir, struct dentry *de, int mode)
 	struct CodaFid newfid;
 
 	if (coda_isroot(dir) && coda_iscontrol(name, len))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	attrs.va_mode = mode;
 	error = venus_mkdir(dir->i_sb, coda_i2f(dir), 
@@ -286,15 +267,7 @@ static int coda_link(struct dentry *source_de, struct inode *dir_inode,
 	int error;
 
 	if (coda_isroot(dir_inode) && coda_iscontrol(name, len))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	error = venus_link(dir_inode->i_sb, coda_i2f(inode),
 			   coda_i2f(dir_inode), (const char *)name, len);
@@ -320,15 +293,7 @@ static int coda_symlink(struct inode *dir_inode, struct dentry *de,
 	int error;
 
 	if (coda_isroot(dir_inode) && coda_iscontrol(name, len))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	symlen = strlen(symname);
 	if (symlen > CODA_MAXPATHLEN)
@@ -484,7 +449,8 @@ static int coda_venus_readdir(struct file *coda_file, void *buf,
 	struct file *host_file;
 	struct dentry *de;
 	struct venus_dirent *vdir;
-	unsigned long vdir_size = offsetof(struct venus_dirent, d_name);
+	unsigned long vdir_size =
+	    (unsigned long)(&((struct venus_dirent *)0)->d_name);
 	unsigned int type;
 	struct qstr name;
 	ino_t ino;
@@ -508,7 +474,7 @@ static int coda_venus_readdir(struct file *coda_file, void *buf,
 		coda_file->f_pos++;
 	}
 	if (coda_file->f_pos == 1) {
-		ret = filldir(buf, "..", 2, 1, parent_ino(de), DT_DIR);
+		ret = filldir(buf, "..", 2, 1, de->d_parent->d_inode->i_ino, DT_DIR);
 		if (ret < 0)
 			goto out;
 		result++;
@@ -519,23 +485,23 @@ static int coda_venus_readdir(struct file *coda_file, void *buf,
 		ret = kernel_read(host_file, coda_file->f_pos - 2, (char *)vdir,
 				  sizeof(*vdir));
 		if (ret < 0) {
-//			printk(KERN_ERR "coda readdir: read dir %s failed %d\n",
-;
+			printk(KERN_ERR "coda readdir: read dir %s failed %d\n",
+			       coda_f2s(&cii->c_fid), ret);
 			break;
 		}
 		if (ret == 0) break; /* end of directory file reached */
 
 		/* catch truncated reads */
 		if (ret < vdir_size || ret < vdir_size + vdir->d_namlen) {
-//			printk(KERN_ERR "coda readdir: short read on %s\n",
-;
+			printk(KERN_ERR "coda readdir: short read on %s\n",
+			       coda_f2s(&cii->c_fid));
 			ret = -EBADF;
 			break;
 		}
 		/* validate whether the directory file actually makes sense */
 		if (vdir->d_reclen < vdir_size + vdir->d_namlen) {
-//			printk(KERN_ERR "coda readdir: invalid dir %s\n",
-;
+			printk(KERN_ERR "coda readdir: invalid dir %s\n",
+			       coda_f2s(&cii->c_fid));
 			ret = -EBADF;
 			break;
 		}
@@ -665,8 +631,8 @@ int coda_revalidate_inode(struct dentry *dentry)
 		coda_vattr_to_iattr(inode, &attr);
 
 		if ((old_mode & S_IFMT) != (inode->i_mode & S_IFMT)) {
-//			printk("Coda: inode %ld, fid %s changed type!\n",
-;
+			printk("Coda: inode %ld, fid %s changed type!\n",
+			       inode->i_ino, coda_f2s(&(cii->c_fid)));
 		}
 
 		/* the following can happen when a local fid is replaced 

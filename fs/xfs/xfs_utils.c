@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2000-2002,2005 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -299,6 +296,8 @@ xfs_bumplink(
 	xfs_trans_t *tp,
 	xfs_inode_t *ip)
 {
+	if (ip->i_d.di_nlink >= XFS_MAXLINK)
+		return XFS_ERROR(EMLINK);
 	xfs_trans_ichgtime(tp, ip, XFS_ICHGTIME_CHG);
 
 	ASSERT(ip->i_d.di_nlink > 0);

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * mst.c - NTFS multi sector transfer protection handling code. Part of the
  *	   Linux-NTFS project.

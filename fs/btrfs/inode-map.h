@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #ifndef __BTRFS_INODE_MAP
 #define __BTRFS_INODE_MAP
 

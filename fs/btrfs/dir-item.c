@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
  *
@@ -92,13 +89,8 @@ int btrfs_insert_xattr_item(struct btrfs_trans_handle *trans,
 	data_size = sizeof(*dir_item) + name_len + data_len;
 	dir_item = insert_with_overflow(trans, root, path, &key, data_size,
 					name, name_len);
-	/*
-	 * FIXME: at some point we should handle xattr's that are larger than
-	 * what we can fit in our leaf.  We set location to NULL b/c we arent
-	 * pointing at anything else, that will change if we store the xattr
-	 * data in a separate inode.
-	 */
-	BUG_ON(IS_ERR(dir_item));
+	if (IS_ERR(dir_item))
+		return PTR_ERR(dir_item);
 	memset(&location, 0, sizeof(location));
 
 	leaf = path->nodes[0];
@@ -206,8 +198,6 @@ struct btrfs_dir_item *btrfs_lookup_dir_item(struct btrfs_trans_handle *trans,
 	struct btrfs_key key;
 	int ins_len = mod < 0 ? -1 : 0;
 	int cow = mod != 0;
-	struct btrfs_key found_key;
-	struct extent_buffer *leaf;
 
 	key.objectid = dir;
 	btrfs_set_key_type(&key, BTRFS_DIR_ITEM_KEY);
@@ -217,18 +207,7 @@ struct btrfs_dir_item *btrfs_lookup_dir_item(struct btrfs_trans_handle *trans,
 	ret = btrfs_search_slot(trans, root, &key, path, ins_len, cow);
 	if (ret < 0)
 		return ERR_PTR(ret);
-	if (ret > 0) {
-		if (path->slots[0] == 0)
-			return NULL;
-		path->slots[0]--;
-	}
-
-	leaf = path->nodes[0];
-	btrfs_item_key_to_cpu(leaf, &found_key, path->slots[0]);
-
-	if (found_key.objectid != dir ||
-	    btrfs_key_type(&found_key) != BTRFS_DIR_ITEM_KEY ||
-	    found_key.offset != key.offset)
+	if (ret > 0)
 		return NULL;
 
 	return btrfs_match_dir_item_name(root, path, name, name_len);
@@ -323,8 +302,6 @@ struct btrfs_dir_item *btrfs_lookup_xattr(struct btrfs_trans_handle *trans,
 	struct btrfs_key key;
 	int ins_len = mod < 0 ? -1 : 0;
 	int cow = mod != 0;
-	struct btrfs_key found_key;
-	struct extent_buffer *leaf;
 
 	key.objectid = dir;
 	btrfs_set_key_type(&key, BTRFS_XATTR_ITEM_KEY);
@@ -332,18 +309,7 @@ struct btrfs_dir_item *btrfs_lookup_xattr(struct btrfs_trans_handle *trans,
 	ret = btrfs_search_slot(trans, root, &key, path, ins_len, cow);
 	if (ret < 0)
 		return ERR_PTR(ret);
-	if (ret > 0) {
-		if (path->slots[0] == 0)
-			return NULL;
-		path->slots[0]--;
-	}
-
-	leaf = path->nodes[0];
-	btrfs_item_key_to_cpu(leaf, &found_key, path->slots[0]);
-
-	if (found_key.objectid != dir ||
-	    btrfs_key_type(&found_key) != BTRFS_XATTR_ITEM_KEY ||
-	    found_key.offset != key.offset)
+	if (ret > 0)
 		return NULL;
 
 	return btrfs_match_dir_item_name(root, path, name, name_len);
@@ -431,8 +397,8 @@ int verify_dir_item(struct btrfs_root *root,
 	u8 type = btrfs_dir_type(leaf, dir_item);
 
 	if (type >= BTRFS_FT_MAX) {
-//		printk(KERN_CRIT "btrfs: invalid dir item type: %d\n",
-;
+		printk(KERN_CRIT "btrfs: invalid dir item type: %d\n",
+		       (int)type);
 		return 1;
 	}
 
@@ -440,15 +406,15 @@ int verify_dir_item(struct btrfs_root *root,
 		namelen = XATTR_NAME_MAX;
 
 	if (btrfs_dir_name_len(leaf, dir_item) > namelen) {
-//		printk(KERN_CRIT "btrfs: invalid dir item name len: %u\n",
-;
+		printk(KERN_CRIT "btrfs: invalid dir item name len: %u\n",
+		       (unsigned)btrfs_dir_data_len(leaf, dir_item));
 		return 1;
 	}
 
 	/* BTRFS_MAX_XATTR_SIZE is the same for all dir items */
 	if (btrfs_dir_data_len(leaf, dir_item) > BTRFS_MAX_XATTR_SIZE(root)) {
-//		printk(KERN_CRIT "btrfs: invalid dir item data len: %u\n",
-;
+		printk(KERN_CRIT "btrfs: invalid dir item data len: %u\n",
+		       (unsigned)btrfs_dir_data_len(leaf, dir_item));
 		return 1;
 	}
 

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/reiserfs_fs.h>
 #include <linux/mutex.h>
 

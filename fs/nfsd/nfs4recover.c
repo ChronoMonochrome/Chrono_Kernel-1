@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
 *  Copyright (c) 2004 The Regents of the University of Michigan.
 *  All rights reserved.
@@ -127,7 +124,7 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
 	struct dentry *dir, *dentry;
 	int status;
 
-;
+	dprintk("NFSD: nfsd4_create_clid_dir for \"%s\"\n", dname);
 
 	if (!rec_file || clp->cl_firststate)
 		return 0;
@@ -147,14 +144,14 @@ nfsd4_create_clid_dir(struct nfs4_client *clp)
 	}
 	status = -EEXIST;
 	if (dentry->d_inode) {
-;
+		dprintk("NFSD: nfsd4_create_clid_dir: DIRECTORY EXISTS\n");
 		goto out_put;
 	}
 	status = mnt_want_write(rec_file->f_path.mnt);
 	if (status)
 		goto out_put;
 	status = vfs_mkdir(dir->d_inode, dentry, S_IRWXU);
-	mnt_drop_write_file(rec_file);
+	mnt_drop_write(rec_file->f_path.mnt);
 out_put:
 	dput(dentry);
 out_unlock:
@@ -164,7 +161,7 @@ out_unlock:
 		vfs_fsync(rec_file, 0);
 	}
 	nfs4_reset_creds(original_cred);
-;
+	dprintk("NFSD: nfsd4_create_clid_dir returns %d\n", status);
 	return status;
 }
 
@@ -194,42 +191,52 @@ nfsd4_build_namelist(void *arg, const char *name, int namlen,
 }
 
 static int
-nfsd4_list_rec_dir(recdir_func *f)
+nfsd4_list_rec_dir(struct dentry *dir, recdir_func *f)
 {
 	const struct cred *original_cred;
-	struct dentry *dir = rec_file->f_path.dentry;
+	struct file *filp;
 	LIST_HEAD(names);
+	struct name_list *entry;
+	struct dentry *dentry;
 	int status;
+
+	if (!rec_file)
+		return 0;
 
 	status = nfs4_save_creds(&original_cred);
 	if (status < 0)
 		return status;
 
-	status = vfs_llseek(rec_file, 0, SEEK_SET);
-	if (status < 0) {
-		nfs4_reset_creds(original_cred);
-		return status;
-	}
-
-	status = vfs_readdir(rec_file, nfsd4_build_namelist, &names);
+	filp = dentry_open(dget(dir), mntget(rec_file->f_path.mnt), O_RDONLY,
+			   current_cred());
+	status = PTR_ERR(filp);
+	if (IS_ERR(filp))
+		goto out;
+	status = vfs_readdir(filp, nfsd4_build_namelist, &names);
+	fput(filp);
 	mutex_lock_nested(&dir->d_inode->i_mutex, I_MUTEX_PARENT);
 	while (!list_empty(&names)) {
-		struct name_list *entry;
 		entry = list_entry(names.next, struct name_list, list);
-		if (!status) {
-			struct dentry *dentry;
-			dentry = lookup_one_len(entry->name, dir, HEXDIR_LEN-1);
-			if (IS_ERR(dentry)) {
-				status = PTR_ERR(dentry);
-				break;
-			}
-			status = f(dir, dentry);
-			dput(dentry);
+
+		dentry = lookup_one_len(entry->name, dir, HEXDIR_LEN-1);
+		if (IS_ERR(dentry)) {
+			status = PTR_ERR(dentry);
+			break;
 		}
+		status = f(dir, dentry);
+		dput(dentry);
+		if (status)
+			break;
 		list_del(&entry->list);
 		kfree(entry);
 	}
 	mutex_unlock(&dir->d_inode->i_mutex);
+out:
+	while (!list_empty(&names)) {
+		entry = list_entry(names.next, struct name_list, list);
+		list_del(&entry->list);
+		kfree(entry);
+	}
 	nfs4_reset_creds(original_cred);
 	return status;
 }
@@ -282,11 +289,11 @@ nfsd4_remove_clid_dir(struct nfs4_client *clp)
 	nfs4_reset_creds(original_cred);
 	if (status == 0)
 		vfs_fsync(rec_file, 0);
-	mnt_drop_write_file(rec_file);
+	mnt_drop_write(rec_file->f_path.mnt);
 out:
 	if (status)
-//		printk("NFSD: Failed to remove expired client state directory"
-;
+		printk("NFSD: Failed to remove expired client state directory"
+				" %.*s\n", HEXDIR_LEN, clp->cl_recdir);
 	return;
 }
 
@@ -300,8 +307,8 @@ purge_old(struct dentry *parent, struct dentry *child)
 
 	status = vfs_rmdir(parent->d_inode, child);
 	if (status)
-//		printk("failed to remove client recovery directory %s\n",
-;
+		printk("failed to remove client recovery directory %s\n",
+				child->d_name.name);
 	/* Keep trying, success or failure: */
 	return 0;
 }
@@ -315,22 +322,22 @@ nfsd4_recdir_purge_old(void) {
 	status = mnt_want_write(rec_file->f_path.mnt);
 	if (status)
 		goto out;
-	status = nfsd4_list_rec_dir(purge_old);
+	status = nfsd4_list_rec_dir(rec_file->f_path.dentry, purge_old);
 	if (status == 0)
 		vfs_fsync(rec_file, 0);
-	mnt_drop_write_file(rec_file);
+	mnt_drop_write(rec_file->f_path.mnt);
 out:
 	if (status)
-//		printk("nfsd4: failed to purge old clients from recovery"
-;
+		printk("nfsd4: failed to purge old clients from recovery"
+			" directory %s\n", rec_file->f_path.dentry->d_name.name);
 }
 
 static int
 load_recdir(struct dentry *parent, struct dentry *child)
 {
 	if (child->d_name.len != HEXDIR_LEN - 1) {
-//		printk("nfsd4: illegal name %s in recovery directory\n",
-;
+		printk("nfsd4: illegal name %s in recovery directory\n",
+				child->d_name.name);
 		/* Keep trying; maybe the others are OK: */
 		return 0;
 	}
@@ -345,10 +352,10 @@ nfsd4_recdir_load(void) {
 	if (!rec_file)
 		return 0;
 
-	status = nfsd4_list_rec_dir(load_recdir);
+	status = nfsd4_list_rec_dir(rec_file->f_path.dentry, load_recdir);
 	if (status)
-//		printk("nfsd4: failed loading clients from recovery"
-;
+		printk("nfsd4: failed loading clients from recovery"
+			" directory %s\n", rec_file->f_path.dentry->d_name.name);
 	return status;
 }
 
@@ -362,23 +369,23 @@ nfsd4_init_recdir(char *rec_dirname)
 	const struct cred *original_cred;
 	int status;
 
-//	printk("NFSD: Using %s as the NFSv4 state recovery directory\n",
-;
+	printk("NFSD: Using %s as the NFSv4 state recovery directory\n",
+			rec_dirname);
 
 	BUG_ON(rec_file);
 
 	status = nfs4_save_creds(&original_cred);
 	if (status < 0) {
-//		printk("NFSD: Unable to change credentials to find recovery"
-//		       " directory: error %d\n",
-;
+		printk("NFSD: Unable to change credentials to find recovery"
+		       " directory: error %d\n",
+		       status);
 		return;
 	}
 
 	rec_file = filp_open(rec_dirname, O_RDONLY | O_DIRECTORY, 0);
 	if (IS_ERR(rec_file)) {
-//		printk("NFSD: unable to find recovery directory %s\n",
-;
+		printk("NFSD: unable to find recovery directory %s\n",
+				rec_dirname);
 		rec_file = NULL;
 	}
 

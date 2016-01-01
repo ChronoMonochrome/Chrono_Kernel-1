@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/errno.h>
 #include <linux/fs.h>
 #include <linux/quota.h>
@@ -149,9 +146,9 @@ static int v1_check_quota_file(struct super_block *sb, int type)
 		return 1;	/* Probably not new format */
 	if (le32_to_cpu(dqhead.dqh_magic) != quota_magics[type])
 		return 1;	/* Definitely not new format */
-//	printk(KERN_INFO
-//	       "VFS: %s: Refusing to turn on old quota format on given file."
-;
+	printk(KERN_INFO
+	       "VFS: %s: Refusing to turn on old quota format on given file."
+	       " It probably contains newer quota format.\n", sb->s_id);
         return 0;		/* Seems like a new format file -> refuse it */
 }
 

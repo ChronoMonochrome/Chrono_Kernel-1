@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * usnjrnl.h - Defines for NTFS kernel transaction log ($UsnJrnl) handling.
  *	       Part of the Linux-NTFS project.

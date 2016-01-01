@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ncpfs/symlink.c
  *
@@ -126,15 +123,7 @@ int ncp_symlink(struct inode *dir, struct dentry *dentry, const char *symname) {
 	else
 #endif
 	/* EPERM is returned by VFS if symlink procedure does not exist */
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
   
 	rawlink = kmalloc(NCP_MAX_SYMLINK_SIZE, GFP_KERNEL);
 	if (!rawlink)

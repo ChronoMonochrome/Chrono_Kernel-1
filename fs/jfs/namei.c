@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   Copyright (C) International Business Machines Corp., 2000-2004
  *   Portions Copyright (C) Christoph Hellwig, 2001-2002
@@ -222,6 +219,12 @@ static int jfs_mkdir(struct inode *dip, struct dentry *dentry, int mode)
 	jfs_info("jfs_mkdir: dip:0x%p name:%s", dip, dentry->d_name.name);
 
 	dquot_initialize(dip);
+
+	/* link count overflow on parent directory ? */
+	if (dip->i_nlink == JFS_LINK_MAX) {
+		rc = -EMLINK;
+		goto out1;
+	}
 
 	/*
 	 * search parent directory for entry/freespace
@@ -803,6 +806,9 @@ static int jfs_link(struct dentry *old_dentry,
 	jfs_info("jfs_link: %s %s", old_dentry->d_name.name,
 		 dentry->d_name.name);
 
+	if (ip->i_nlink == JFS_LINK_MAX)
+		return -EMLINK;
+
 	dquot_initialize(dir);
 
 	tid = txBegin(ip->i_sb, 0);
@@ -1133,6 +1139,10 @@ static int jfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 				rc = -ENOTEMPTY;
 				goto out3;
 			}
+		} else if ((new_dir != old_dir) &&
+			   (new_dir->i_nlink == JFS_LINK_MAX)) {
+			rc = -EMLINK;
+			goto out3;
 		}
 	} else if (new_ip) {
 		IWRITE_LOCK(new_ip, RDWRLOCK_NORMAL);
@@ -1446,24 +1456,33 @@ static struct dentry *jfs_lookup(struct inode *dip, struct dentry *dentry, struc
 	ino_t inum;
 	struct inode *ip;
 	struct component_name key;
+	const char *name = dentry->d_name.name;
+	int len = dentry->d_name.len;
 	int rc;
 
-	jfs_info("jfs_lookup: name = %s", dentry->d_name.name);
+	jfs_info("jfs_lookup: name = %s", name);
 
-	if ((rc = get_UCSname(&key, dentry)))
-		return ERR_PTR(rc);
-	rc = dtSearch(dip, &key, &inum, &btstack, JFS_LOOKUP);
-	free_UCSname(&key);
-	if (rc == -ENOENT) {
-		ip = NULL;
-	} else if (rc) {
-		jfs_err("jfs_lookup: dtSearch returned %d", rc);
-		ip = ERR_PTR(rc);
-	} else {
-		ip = jfs_iget(dip->i_sb, inum);
-		if (IS_ERR(ip))
-			jfs_err("jfs_lookup: iget failed on inum %d", (uint)inum);
+	if ((name[0] == '.') && (len == 1))
+		inum = dip->i_ino;
+	else if (strcmp(name, "..") == 0)
+		inum = PARENT(dip);
+	else {
+		if ((rc = get_UCSname(&key, dentry)))
+			return ERR_PTR(rc);
+		rc = dtSearch(dip, &key, &inum, &btstack, JFS_LOOKUP);
+		free_UCSname(&key);
+		if (rc == -ENOENT) {
+			d_add(dentry, NULL);
+			return NULL;
+		} else if (rc) {
+			jfs_err("jfs_lookup: dtSearch returned %d", rc);
+			return ERR_PTR(rc);
+		}
 	}
+
+	ip = jfs_iget(dip->i_sb, inum);
+	if (IS_ERR(ip))
+		jfs_err("jfs_lookup: iget failed on inum %d", (uint) inum);
 
 	return d_splice_alias(ip, dentry);
 }
@@ -1576,6 +1595,8 @@ out:
 
 static int jfs_ci_revalidate(struct dentry *dentry, struct nameidata *nd)
 {
+	if (nd && nd->flags & LOOKUP_RCU)
+		return -ECHILD;
 	/*
 	 * This is not negative dentry. Always valid.
 	 *
@@ -1601,8 +1622,10 @@ static int jfs_ci_revalidate(struct dentry *dentry, struct nameidata *nd)
 	 * case sensitive name which is specified by user if this is
 	 * for creation.
 	 */
-	if (nd->flags & (LOOKUP_CREATE | LOOKUP_RENAME_TARGET))
-		return 0;
+	if (!(nd->flags & (LOOKUP_CONTINUE | LOOKUP_PARENT))) {
+		if (nd->flags & (LOOKUP_CREATE | LOOKUP_RENAME_TARGET))
+			return 0;
+	}
 	return 1;
 }
 

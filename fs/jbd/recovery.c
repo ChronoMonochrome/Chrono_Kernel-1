@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/jbd/recovery.c
  *
@@ -140,7 +137,7 @@ static int jread(struct buffer_head **bhp, journal_t *journal,
 	*bhp = NULL;
 
 	if (offset >= journal->j_maxlen) {
-;
+		printk(KERN_ERR "JBD: corrupted journal superblock\n");
 		return -EIO;
 	}
 
@@ -293,7 +290,7 @@ int journal_skip_recovery(journal_t *journal)
 	err = do_one_pass(journal, &info, PASS_SCAN);
 
 	if (err) {
-;
+		printk(KERN_ERR "JBD: error %d scanning journal\n", err);
 		++journal->j_transaction_sequence;
 	} else {
 #ifdef CONFIG_JBD_DEBUG
@@ -463,9 +460,9 @@ static int do_one_pass(journal_t *journal,
 							blocknr,
 							journal->j_blocksize);
 					if (nbh == NULL) {
-//						printk(KERN_ERR
-//						       "JBD: Out of memory "
-;
+						printk(KERN_ERR
+						       "JBD: Out of memory "
+						       "during recovery.\n");
 						err = -ENOMEM;
 						brelse(bh);
 						brelse(obh);

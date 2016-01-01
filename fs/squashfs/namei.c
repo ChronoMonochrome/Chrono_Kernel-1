@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Squashfs - a compressed read only filesystem for Linux
  *
@@ -230,7 +227,10 @@ static struct dentry *squashfs_lookup(struct inode *dir, struct dentry *dentry,
 
 exit_lookup:
 	kfree(dire);
-	return d_splice_alias(inode, dentry);
+	if (inode)
+		return d_splice_alias(inode, dentry);
+	d_add(dentry, inode);
+	return ERR_PTR(0);
 
 data_error:
 	err = -EIO;

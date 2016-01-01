@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext4/super.c
  *
@@ -378,8 +375,8 @@ void ext4_journal_abort_handle(const char *caller, unsigned int line,
 	if (is_handle_aborted(handle))
 		return;
 
-//	printk(KERN_ERR "%s:%d: aborting transaction: %s in %s\n",
-;
+	printk(KERN_ERR "%s:%d: aborting transaction: %s in %s\n",
+	       caller, line, errstr, err_fn);
 
 	jbd2_journal_abort_handle(handle);
 }
@@ -480,8 +477,8 @@ void __ext4_error(struct super_block *sb, const char *function,
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-//	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n",
-;
+	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: comm %s: %pV\n",
+	       sb->s_id, function, line, current->comm, &vaf);
 	va_end(args);
 	save_error_info(sb, function, line);
 
@@ -502,11 +499,11 @@ void ext4_error_inode(struct inode *inode, const char *function,
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-//	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: inode #%lu: ",
-;
+	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: inode #%lu: ",
+	       inode->i_sb->s_id, function, line, inode->i_ino);
 	if (block)
-;
-;
+		printk(KERN_CONT "block %llu: ", block);
+	printk(KERN_CONT "comm %s: %pV\n", current->comm, &vaf);
 	va_end(args);
 
 	ext4_handle_error(inode->i_sb);
@@ -528,15 +525,15 @@ void ext4_error_file(struct file *file, const char *function,
 	path = d_path(&(file->f_path), pathname, sizeof(pathname));
 	if (IS_ERR(path))
 		path = "(unknown)";
-//	printk(KERN_CRIT
-//	       "EXT4-fs error (device %s): %s:%d: inode #%lu: ",
-;
+	printk(KERN_CRIT
+	       "EXT4-fs error (device %s): %s:%d: inode #%lu: ",
+	       inode->i_sb->s_id, function, line, inode->i_ino);
 	if (block)
-;
+		printk(KERN_CONT "block %llu: ", block);
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-;
+	printk(KERN_CONT "comm %s: path %s: %pV\n", current->comm, path, &vaf);
 	va_end(args);
 
 	ext4_handle_error(inode->i_sb);
@@ -593,8 +590,8 @@ void __ext4_std_error(struct super_block *sb, const char *function,
 		return;
 
 	errstr = ext4_decode_error(sb, errno, nbuf);
-//	printk(KERN_CRIT "EXT4-fs error (device %s) in %s:%d: %s\n",
-;
+	printk(KERN_CRIT "EXT4-fs error (device %s) in %s:%d: %s\n",
+	       sb->s_id, function, line, errstr);
 	save_error_info(sb, function, line);
 
 	ext4_handle_error(sb);
@@ -617,10 +614,10 @@ void __ext4_abort(struct super_block *sb, const char *function,
 
 	save_error_info(sb, function, line);
 	va_start(args, fmt);
-//	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: ", sb->s_id,
-;
-;
-;
+	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: ", sb->s_id,
+	       function, line);
+	vprintk(fmt, args);
+	printk("\n");
 	va_end(args);
 
 	if ((sb->s_flags & MS_RDONLY) == 0) {
@@ -643,7 +640,7 @@ void ext4_msg(struct super_block *sb, const char *prefix, const char *fmt, ...)
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-;
+	printk("%sEXT4-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
 	va_end(args);
 }
 
@@ -656,8 +653,8 @@ void __ext4_warning(struct super_block *sb, const char *function,
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-//	printk(KERN_WARNING "EXT4-fs warning (device %s): %s:%d: %pV\n",
-;
+	printk(KERN_WARNING "EXT4-fs warning (device %s): %s:%d: %pV\n",
+	       sb->s_id, function, line, &vaf);
 	va_end(args);
 }
 
@@ -680,13 +677,13 @@ __acquires(bitlock)
 
 	vaf.fmt = fmt;
 	vaf.va = &args;
-//	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: group %u, ",
-;
+	printk(KERN_CRIT "EXT4-fs error (device %s): %s:%d: group %u, ",
+	       sb->s_id, function, line, grp);
 	if (ino)
-;
+		printk(KERN_CONT "inode %lu: ", ino);
 	if (block)
-;
-;
+		printk(KERN_CONT "block %llu:", (unsigned long long) block);
+	printk(KERN_CONT "%pV\n", &vaf);
 	va_end(args);
 
 	if (test_opt(sb, ERRORS_CONT)) {
@@ -788,14 +785,14 @@ static void dump_orphan_list(struct super_block *sb, struct ext4_sb_info *sbi)
 	ext4_msg(sb, KERN_ERR, "sb orphan head is %d",
 		 le32_to_cpu(sbi->s_es->s_last_orphan));
 
-;
+	printk(KERN_ERR "sb_info orphan list:\n");
 	list_for_each(l, &sbi->s_orphan) {
 		struct inode *inode = orphan_list_entry(l);
-//		printk(KERN_ERR "  "
-//		       "inode %s:%lu at %p: mode %o, nlink %d, next %d\n",
-//		       inode->i_sb->s_id, inode->i_ino, inode,
-//		       inode->i_mode, inode->i_nlink,
-;
+		printk(KERN_ERR "  "
+		       "inode %s:%lu at %p: mode %o, nlink %d, next %d\n",
+		       inode->i_sb->s_id, inode->i_ino, inode,
+		       inode->i_mode, inode->i_nlink,
+		       NEXT_ORPHAN(inode));
 	}
 }
 
@@ -1078,8 +1075,6 @@ static int ext4_show_options(struct seq_file *seq, struct vfsmount *vfs)
 		seq_puts(seq, ",nouid32");
 	if (test_opt(sb, DEBUG) && !(def_mount_opts & EXT4_DEFM_DEBUG))
 		seq_puts(seq, ",debug");
-	if (test_opt(sb, OLDALLOC))
-		seq_puts(seq, ",oldalloc");
 #ifdef CONFIG_EXT4_FS_XATTR
 	if (test_opt(sb, XATTR_USER))
 		seq_puts(seq, ",user_xattr");
@@ -1430,8 +1425,8 @@ static ext4_fsblk_t get_sb_block(void **data)
 	/* TODO: use simple_strtoll with >32bit ext4 */
 	sb_block = simple_strtoul(options, &options, 0);
 	if (*options && *options != ',') {
-//		printk(KERN_ERR "EXT4-fs: Invalid sb specification: %s\n",
-;
+		printk(KERN_ERR "EXT4-fs: Invalid sb specification: %s\n",
+		       (char *) *data);
 		return 1;
 	}
 	if (*options == ',')
@@ -1587,10 +1582,12 @@ static int parse_options(char *options, struct super_block *sb,
 			set_opt(sb, DEBUG);
 			break;
 		case Opt_oldalloc:
-			set_opt(sb, OLDALLOC);
+			ext4_msg(sb, KERN_WARNING,
+				 "Ignoring deprecated oldalloc option");
 			break;
 		case Opt_orlov:
-			clear_opt(sb, OLDALLOC);
+			ext4_msg(sb, KERN_WARNING,
+				 "Ignoring deprecated orlov option");
 			break;
 #ifdef CONFIG_EXT4_FS_XATTR
 		case Opt_user_xattr:
@@ -1992,13 +1989,13 @@ static int ext4_setup_super(struct super_block *sb, struct ext4_super_block *es,
 	ext4_commit_super(sb, 1);
 done:
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_INFO "[EXT4 FS bs=%lu, gc=%u, "
-//				"bpg=%lu, ipg=%lu, mo=%04x, mo2=%04x]\n",
-//			sb->s_blocksize,
-//			sbi->s_groups_count,
-//			EXT4_BLOCKS_PER_GROUP(sb),
-//			EXT4_INODES_PER_GROUP(sb),
-;
+		printk(KERN_INFO "[EXT4 FS bs=%lu, gc=%u, "
+				"bpg=%lu, ipg=%lu, mo=%04x, mo2=%04x]\n",
+			sb->s_blocksize,
+			sbi->s_groups_count,
+			EXT4_BLOCKS_PER_GROUP(sb),
+			EXT4_INODES_PER_GROUP(sb),
+			sbi->s_mount_opt, sbi->s_mount_opt2);
 
 	cleancache_init_fs(sb);
 	return res;
@@ -2743,12 +2740,12 @@ static void print_daily_error_info(unsigned long arg)
 		       es->s_first_error_func,
 		       le32_to_cpu(es->s_first_error_line));
 		if (es->s_first_error_ino)
-//			printk(": inode %u",
-;
+			printk(": inode %u",
+			       le32_to_cpu(es->s_first_error_ino));
 		if (es->s_first_error_block)
-//			printk(": block %llu", (unsigned long long)
-;
-;
+			printk(": block %llu", (unsigned long long)
+			       le64_to_cpu(es->s_first_error_block));
+		printk("\n");
 	}
 	if (es->s_last_error_time) {
 		printk(KERN_NOTICE "EXT4-fs (%s): last error at %u: %.*s:%d",
@@ -2757,12 +2754,12 @@ static void print_daily_error_info(unsigned long arg)
 		       es->s_last_error_func,
 		       le32_to_cpu(es->s_last_error_line));
 		if (es->s_last_error_ino)
-//			printk(": inode %u",
-;
+			printk(": inode %u",
+			       le32_to_cpu(es->s_last_error_ino));
 		if (es->s_last_error_block)
-//			printk(": block %llu", (unsigned long long)
-;
-;
+			printk(": block %llu", (unsigned long long)
+			       le64_to_cpu(es->s_last_error_block));
+		printk("\n");
 	}
 	mod_timer(&sbi->s_err_report, jiffies + 24*60*60*HZ);  /* Once a day */
 }
@@ -2953,9 +2950,9 @@ static int ext4_run_lazyinit_thread(void)
 		ext4_clear_request_list();
 		kfree(ext4_li_info);
 		ext4_li_info = NULL;
-//		printk(KERN_CRIT "EXT4: error %d creating inode table "
-//				 "initialization thread\n",
-;
+		printk(KERN_CRIT "EXT4: error %d creating inode table "
+				 "initialization thread\n",
+				 err);
 		return err;
 	}
 	ext4_li_info->li_state |= EXT4_LAZYINIT_RUNNING;
@@ -3722,7 +3719,7 @@ no_journal:
 	EXT4_SB(sb)->dio_unwritten_wq =
 		alloc_workqueue("ext4-dio-unwritten", WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
 	if (!EXT4_SB(sb)->dio_unwritten_wq) {
-;
+		printk(KERN_ERR "EXT4-fs: failed to create DIO workqueue\n");
 		goto failed_mount_wq;
 	}
 
@@ -4788,7 +4785,7 @@ static int ext4_quota_on(struct super_block *sb, int type, int format_id,
 		return -EINVAL;
 
 	/* Quotafile not on the same filesystem? */
-	if (path->mnt->mnt_sb != sb)
+	if (path->dentry->d_sb != sb)
 		return -EXDEV;
 	/* Journaling quota? */
 	if (EXT4_SB(sb)->s_qf_names[type]) {
@@ -4956,8 +4953,8 @@ static inline void register_as_ext2(void)
 {
 	int err = register_filesystem(&ext2_fs_type);
 	if (err)
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "EXT4-fs: Unable to register as ext2 (%d)\n", err);
 }
 
 static inline void unregister_as_ext2(void)
@@ -4987,8 +4984,8 @@ static inline void register_as_ext3(void)
 {
 	int err = register_filesystem(&ext3_fs_type);
 	if (err)
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "EXT4-fs: Unable to register as ext3 (%d)\n", err);
 }
 
 static inline void unregister_as_ext3(void)

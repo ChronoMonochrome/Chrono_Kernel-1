@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2008  Miklos Szeredi <miklos@szeredi.hu>
@@ -22,8 +19,6 @@
 #include <linux/pipe_fs_i.h>
 #include <linux/swap.h>
 #include <linux/splice.h>
-#include <linux/iocontext.h>
-#include <linux/ioprio.h>
 #include <linux/freezer.h>
 
 MODULE_ALIAS_MISCDEV(FUSE_MINOR);
@@ -243,43 +238,17 @@ static u64 fuse_get_unique(struct fuse_conn *fc)
 	return fc->reqctr;
 }
 
-extern void get_io_context(struct io_context *ioc);
-
-static inline int is_rt(struct fuse_conn *fc)
-{
-	/*
-	* Returns 1 if a process is RT class.
-	*/
-	struct io_context *ioc = NULL;
-	int ret = 0;
-
-	if (!fc)
-		return 0;
-	if (!(fc->flags & FUSE_HANDLE_RT_CLASS)) /* Don't handle RT class */
-		return 0;
-
-	get_io_context(ioc);
-	if(!ioc)
-		return 0;
-
-	if(IOPRIO_PRIO_CLASS(ioc->ioprio) == IOPRIO_CLASS_RT)
-		ret = 1;
-
-	put_io_context(ioc);
-	return ret;
-}
-
 static void queue_request(struct fuse_conn *fc, struct fuse_req *req)
 {
 	req->in.h.len = sizeof(struct fuse_in_header) +
 		len_args(req->in.numargs, (struct fuse_arg *) req->in.args);
-	list_add_tail(&req->list, &fc->pending[is_rt(fc)]);
+	list_add_tail(&req->list, &fc->pending);
 	req->state = FUSE_REQ_PENDING;
 	if (!req->waiting) {
 		req->waiting = 1;
 		atomic_inc(&fc->num_waiting);
 	}
-	wake_up(&fc->waitq[is_rt(fc)]);
+	wake_up(&fc->waitq);
 	kill_fasync(&fc->fasync, SIGIO, POLL_IN);
 }
 
@@ -293,7 +262,7 @@ void fuse_queue_forget(struct fuse_conn *fc, struct fuse_forget_link *forget,
 	if (fc->connected) {
 		fc->forget_list_tail->next = forget;
 		fc->forget_list_tail = forget;
-		wake_up(&fc->waitq[is_rt(fc)]);
+		wake_up(&fc->waitq);
 		kill_fasync(&fc->fasync, SIGIO, POLL_IN);
 	} else {
 		kfree(forget);
@@ -369,8 +338,8 @@ __acquires(fc->lock)
 
 static void queue_interrupt(struct fuse_conn *fc, struct fuse_req *req)
 {
-	list_add_tail(&req->intr_entry, &fc->interrupts[is_rt(fc)]);
-	wake_up(&fc->waitq[is_rt(fc)]);
+	list_add_tail(&req->intr_entry, &fc->interrupts);
+	wake_up(&fc->waitq);
 	kill_fasync(&fc->fasync, SIGIO, POLL_IN);
 }
 
@@ -715,8 +684,8 @@ static int fuse_check_page(struct page *page)
 	       1 << PG_lru |
 	       1 << PG_active |
 	       1 << PG_reclaim))) {
-;
-;
+		printk(KERN_WARNING "fuse: trying to steal weird page\n");
+		printk(KERN_WARNING "  page=%p index=%li flags=%08lx, count=%i, mapcount=%i, mapping=%p\n", page, page->index, page->flags, page_count(page), page_mapcount(page), page->mapping);
 		return 1;
 	}
 	return 0;
@@ -994,8 +963,8 @@ static int forget_pending(struct fuse_conn *fc)
 
 static int request_pending(struct fuse_conn *fc)
 {
-	return !list_empty(&fc->pending[is_rt(fc)]) ||
-		!list_empty(&fc->interrupts[is_rt(fc)]) || forget_pending(fc);
+	return !list_empty(&fc->pending) || !list_empty(&fc->interrupts) ||
+		forget_pending(fc);
 }
 
 /* Wait until a request is available on the pending list */
@@ -1005,7 +974,7 @@ __acquires(fc->lock)
 {
 	DECLARE_WAITQUEUE(wait, current);
 
-	add_wait_queue_exclusive(&fc->waitq[is_rt(fc)], &wait);
+	add_wait_queue_exclusive(&fc->waitq, &wait);
 	while (fc->connected && !request_pending(fc)) {
 		set_current_state(TASK_INTERRUPTIBLE);
 		if (signal_pending(current))
@@ -1016,7 +985,7 @@ __acquires(fc->lock)
 		spin_lock(&fc->lock);
 	}
 	set_current_state(TASK_RUNNING);
-	remove_wait_queue(&fc->waitq[is_rt(fc)], &wait);
+	remove_wait_queue(&fc->waitq, &wait);
 }
 
 /*
@@ -1203,22 +1172,21 @@ static ssize_t fuse_dev_do_read(struct fuse_conn *fc, struct file *file,
 	if (!request_pending(fc))
 		goto err_unlock;
 
-	if (!list_empty(&fc->interrupts[is_rt(fc)])) {
-		req = list_entry(fc->interrupts[is_rt(fc)].next,
-				struct fuse_req, intr_entry);
+	if (!list_empty(&fc->interrupts)) {
+		req = list_entry(fc->interrupts.next, struct fuse_req,
+				 intr_entry);
 		return fuse_read_interrupt(fc, cs, nbytes, req);
 	}
 
 	if (forget_pending(fc)) {
-		if (list_empty(&fc->pending[is_rt(fc)]) ||
-			fc->forget_batch-- > 0)
+		if (list_empty(&fc->pending) || fc->forget_batch-- > 0)
 			return fuse_read_forget(fc, cs, nbytes);
 
 		if (fc->forget_batch <= -8)
 			fc->forget_batch = 16;
 	}
 
-	req = list_entry(fc->pending[is_rt(fc)].next, struct fuse_req, list);
+	req = list_entry(fc->pending.next, struct fuse_req, list);
 	req->state = FUSE_REQ_READING;
 	list_move(&req->list, &fc->io);
 
@@ -1274,15 +1242,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
 	struct file *file = iocb->ki_filp;
 	struct fuse_conn *fc = fuse_get_conn(file);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	fuse_copy_init(&cs, fc, 1, iov, nr_segs);
 
@@ -1316,15 +1276,7 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
 	struct fuse_copy_state cs;
 	struct fuse_conn *fc = fuse_get_conn(in);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	bufs = kmalloc(pipe->buffers * sizeof(struct pipe_buffer), GFP_KERNEL);
 	if (!bufs)
@@ -1900,15 +1852,7 @@ static ssize_t fuse_dev_write(struct kiocb *iocb, const struct iovec *iov,
 	struct fuse_copy_state cs;
 	struct fuse_conn *fc = fuse_get_conn(iocb->ki_filp);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	fuse_copy_init(&cs, fc, 0, iov, nr_segs);
 
@@ -1929,15 +1873,7 @@ static ssize_t fuse_dev_splice_write(struct pipe_inode_info *pipe,
 
 	fc = fuse_get_conn(out);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	bufs = kmalloc(pipe->buffers * sizeof(struct pipe_buffer), GFP_KERNEL);
 	if (!bufs)
@@ -2008,7 +1944,7 @@ static unsigned fuse_dev_poll(struct file *file, poll_table *wait)
 	if (!fc)
 		return POLLERR;
 
-	poll_wait(file, &fc->waitq[is_rt(fc)], wait);
+	poll_wait(file, &fc->waitq, wait);
 
 	spin_lock(&fc->lock);
 	if (!fc->connected)
@@ -2081,8 +2017,7 @@ __acquires(fc->lock)
 {
 	fc->max_background = UINT_MAX;
 	flush_bg_queue(fc);
-	end_requests(fc, &fc->pending[0]);
-	end_requests(fc, &fc->pending[1]);
+	end_requests(fc, &fc->pending);
 	end_requests(fc, &fc->processing);
 	while (forget_pending(fc))
 		kfree(dequeue_forget(fc, 1, NULL));
@@ -2131,8 +2066,7 @@ void fuse_abort_conn(struct fuse_conn *fc)
 		end_io_requests(fc);
 		end_queued_requests(fc);
 		end_polls(fc);
-		wake_up_all(&fc->waitq[0]);
-		wake_up_all(&fc->waitq[1]);
+		wake_up_all(&fc->waitq);
 		wake_up_all(&fc->blocked_waitq);
 		kill_fasync(&fc->fasync, SIGIO, POLL_IN);
 	}
@@ -2162,15 +2096,7 @@ static int fuse_dev_fasync(int fd, struct file *file, int on)
 {
 	struct fuse_conn *fc = fuse_get_conn(file);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/* No locking - fasync_helper does its own locking */
 	return fasync_helper(fd, file, on, &fc->fasync);

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * ioctl.c - NILFS ioctl operations.
  *
@@ -30,7 +27,7 @@
 #include <linux/uaccess.h>	/* copy_from_user(), copy_to_user() */
 #include <linux/vmalloc.h>
 #include <linux/compat.h>	/* compat_ptr() */
-#include <linux/mount.h>	/* mnt_want_write_file(), mnt_drop_write_file() */
+#include <linux/mount.h>	/* mnt_want_write(), mnt_drop_write() */
 #include <linux/buffer_head.h>
 #include <linux/nilfs2_fs.h>
 #include "nilfs.h"
@@ -157,7 +154,7 @@ static int nilfs_ioctl_setflags(struct inode *inode, struct file *filp,
 	ret = nilfs_transaction_commit(inode->i_sb);
 out:
 	mutex_unlock(&inode->i_mutex);
-	mnt_drop_write_file(filp);
+	mnt_drop_write(filp->f_path.mnt);
 	return ret;
 }
 
@@ -175,15 +172,7 @@ static int nilfs_ioctl_change_cpmode(struct inode *inode, struct file *filp,
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	ret = mnt_want_write(filp->f_path.mnt);
 	if (ret)
@@ -205,7 +194,7 @@ return -EPERM;
 
 	mutex_unlock(&nilfs->ns_snapshot_mount_mutex);
 out:
-	mnt_drop_write_file(filp);
+	mnt_drop_write(filp->f_path.mnt);
 	return ret;
 }
 
@@ -219,15 +208,7 @@ nilfs_ioctl_delete_checkpoint(struct inode *inode, struct file *filp,
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	ret = mnt_want_write(filp->f_path.mnt);
 	if (ret)
@@ -244,7 +225,7 @@ return -EPERM;
 	else
 		nilfs_transaction_commit(inode->i_sb); /* never fails */
 out:
-	mnt_drop_write_file(filp);
+	mnt_drop_write(filp->f_path.mnt);
 	return ret;
 }
 
@@ -388,27 +369,27 @@ static int nilfs_ioctl_move_inode_block(struct inode *inode,
 
 	if (unlikely(ret < 0)) {
 		if (ret == -ENOENT)
-//			printk(KERN_CRIT
-//			       "%s: invalid virtual block address (%s): "
-//			       "ino=%llu, cno=%llu, offset=%llu, "
-//			       "blocknr=%llu, vblocknr=%llu\n",
-//			       __func__, vdesc->vd_flags ? "node" : "data",
-//			       (unsigned long long)vdesc->vd_ino,
-//			       (unsigned long long)vdesc->vd_cno,
-//			       (unsigned long long)vdesc->vd_offset,
-//			       (unsigned long long)vdesc->vd_blocknr,
-;
+			printk(KERN_CRIT
+			       "%s: invalid virtual block address (%s): "
+			       "ino=%llu, cno=%llu, offset=%llu, "
+			       "blocknr=%llu, vblocknr=%llu\n",
+			       __func__, vdesc->vd_flags ? "node" : "data",
+			       (unsigned long long)vdesc->vd_ino,
+			       (unsigned long long)vdesc->vd_cno,
+			       (unsigned long long)vdesc->vd_offset,
+			       (unsigned long long)vdesc->vd_blocknr,
+			       (unsigned long long)vdesc->vd_vblocknr);
 		return ret;
 	}
 	if (unlikely(!list_empty(&bh->b_assoc_buffers))) {
-//		printk(KERN_CRIT "%s: conflicting %s buffer: ino=%llu, "
-//		       "cno=%llu, offset=%llu, blocknr=%llu, vblocknr=%llu\n",
-//		       __func__, vdesc->vd_flags ? "node" : "data",
-//		       (unsigned long long)vdesc->vd_ino,
-//		       (unsigned long long)vdesc->vd_cno,
-//		       (unsigned long long)vdesc->vd_offset,
-//		       (unsigned long long)vdesc->vd_blocknr,
-;
+		printk(KERN_CRIT "%s: conflicting %s buffer: ino=%llu, "
+		       "cno=%llu, offset=%llu, blocknr=%llu, vblocknr=%llu\n",
+		       __func__, vdesc->vd_flags ? "node" : "data",
+		       (unsigned long long)vdesc->vd_ino,
+		       (unsigned long long)vdesc->vd_cno,
+		       (unsigned long long)vdesc->vd_offset,
+		       (unsigned long long)vdesc->vd_blocknr,
+		       (unsigned long long)vdesc->vd_vblocknr);
 		brelse(bh);
 		return -EEXIST;
 	}
@@ -585,8 +566,8 @@ int nilfs_ioctl_prepare_clean_segments(struct the_nilfs *nilfs,
 	return 0;
 
  failed:
-//	printk(KERN_ERR "NILFS: GC failed during preparation: %s: err=%d\n",
-;
+	printk(KERN_ERR "NILFS: GC failed during preparation: %s: err=%d\n",
+	       msg, ret);
 	return ret;
 }
 
@@ -608,15 +589,7 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
 	int n, ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	ret = mnt_want_write(filp->f_path.mnt);
 	if (ret)
@@ -686,8 +659,8 @@ return -EPERM;
 
 	ret = nilfs_ioctl_move_blocks(inode->i_sb, &argv[0], kbufs[0]);
 	if (ret < 0)
-//		printk(KERN_ERR "NILFS: GC failed during preparation: "
-;
+		printk(KERN_ERR "NILFS: GC failed during preparation: "
+			"cannot read source blocks: err=%d\n", ret);
 	else {
 		if (nilfs_sb_need_update(nilfs))
 			set_nilfs_discontinued(nilfs);
@@ -702,7 +675,7 @@ out_free:
 		vfree(kbufs[n]);
 	kfree(kbufs[4]);
 out:
-	mnt_drop_write_file(filp);
+	mnt_drop_write(filp->f_path.mnt);
 	return ret;
 }
 
@@ -748,7 +721,7 @@ static int nilfs_ioctl_resize(struct inode *inode, struct file *filp,
 	ret = nilfs_resize_fs(inode->i_sb, newsize);
 
 out_drop_write:
-	mnt_drop_write_file(filp);
+	mnt_drop_write(filp->f_path.mnt);
 out:
 	return ret;
 }

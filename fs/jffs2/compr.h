@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * JFFS2 -- Journalling Flash File System, Version 2.
  *
@@ -43,8 +40,6 @@
 #define JFFS2_COMPR_MODE_PRIORITY   1
 #define JFFS2_COMPR_MODE_SIZE       2
 #define JFFS2_COMPR_MODE_FAVOURLZO  3
-#define JFFS2_COMPR_MODE_FORCELZO   4
-#define JFFS2_COMPR_MODE_FORCEZLIB  5
 
 #define FAVOUR_LZO_PERCENT 80
 

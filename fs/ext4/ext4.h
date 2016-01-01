@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  ext4.h
  *
@@ -310,9 +307,9 @@ struct ext4_group_desc
  */
 
 struct flex_groups {
-	atomic_t	free_inodes;
-	atomic_t	free_clusters;
-	atomic_t	used_dirs;
+	atomic_t free_inodes;
+	atomic_t free_clusters;
+	atomic_t used_dirs;
 };
 
 #define EXT4_BG_INODE_UNINIT	0x0001 /* Inode table/bitmap not in use */
@@ -912,7 +909,6 @@ struct ext4_inode_info {
 /*
  * Mount flags
  */
-#define EXT4_MOUNT_OLDALLOC		0x00002  /* Don't use the new Orlov allocator */
 #define EXT4_MOUNT_GRPID		0x00004	/* Create files with directory's group */
 #define EXT4_MOUNT_DEBUG		0x00008	/* Some debugging messages */
 #define EXT4_MOUNT_ERRORS_CONT		0x00010	/* Continue on errors */
@@ -1816,7 +1812,7 @@ extern int ext4_htree_store_dirent(struct file *dir_file, __u32 hash,
 extern void ext4_htree_free_dir_info(struct dir_private_info *p);
 
 /* fsync.c */
-extern int ext4_sync_file(struct file *, int);
+extern int ext4_sync_file(struct file *, loff_t, loff_t, int);
 extern int ext4_flush_completed_IO(struct inode *);
 
 /* hash.c */
@@ -1902,9 +1898,6 @@ extern int ext4_ind_map_blocks(handle_t *handle, struct inode *inode,
 extern ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
 				const struct iovec *iov, loff_t offset,
 				unsigned long nr_segs);
-extern ssize_t ext4_ind_direct_IO_bvec(int rw, struct kiocb *iocb,
-				struct bio_vec *bvec, loff_t offset,
-				unsigned long bvec_len);
 extern int ext4_ind_calc_metadata_amount(struct inode *inode, sector_t lblock);
 extern int ext4_ind_trans_blocks(struct inode *inode, int nrblocks, int chunk);
 extern void ext4_ind_truncate(struct inode *inode);

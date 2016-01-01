@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2001-2005 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -54,10 +51,7 @@ extern int posix_acl_default_exists(struct inode *inode);
 extern const struct xattr_handler xfs_xattr_acl_access_handler;
 extern const struct xattr_handler xfs_xattr_acl_default_handler;
 #else
-static inline struct posix_acl *xfs_get_acl(struct inode *inode, int type)
-{
-	return NULL;
-}
+# define xfs_get_acl(inode, type)			NULL
 # define xfs_inherit_acl(inode, default_acl)		0
 # define xfs_acl_chmod(inode)				0
 # define posix_acl_access_exists(inode)			0

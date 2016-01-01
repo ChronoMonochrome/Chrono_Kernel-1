@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2000-2005 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -268,7 +265,7 @@ xfs_open_by_handle(
 		return PTR_ERR(filp);
 	}
 
-	if (S_ISREG(inode->i_mode)) {
+	if (inode->i_mode & S_IFREG) {
 		filp->f_flags |= O_NOATIME;
 		filp->f_mode |= FMODE_NOCMTIME;
 	}
@@ -654,15 +651,7 @@ xfs_ioc_bulkstat(
 	/* should be called again (unused here, but used in dmapi) */
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (XFS_FORCED_SHUTDOWN(mp))
 		return -XFS_ERROR(EIO);
@@ -861,14 +850,14 @@ xfs_set_diflags(
 		di_flags |= XFS_DIFLAG_NODEFRAG;
 	if (xflags & XFS_XFLAG_FILESTREAM)
 		di_flags |= XFS_DIFLAG_FILESTREAM;
-	if (S_ISDIR(ip->i_d.di_mode)) {
+	if ((ip->i_d.di_mode & S_IFMT) == S_IFDIR) {
 		if (xflags & XFS_XFLAG_RTINHERIT)
 			di_flags |= XFS_DIFLAG_RTINHERIT;
 		if (xflags & XFS_XFLAG_NOSYMLINKS)
 			di_flags |= XFS_DIFLAG_NOSYMLINKS;
 		if (xflags & XFS_XFLAG_EXTSZINHERIT)
 			di_flags |= XFS_DIFLAG_EXTSZINHERIT;
-	} else if (S_ISREG(ip->i_d.di_mode)) {
+	} else if ((ip->i_d.di_mode & S_IFMT) == S_IFREG) {
 		if (xflags & XFS_XFLAG_REALTIME)
 			di_flags |= XFS_DIFLAG_REALTIME;
 		if (xflags & XFS_XFLAG_EXTSIZE)
@@ -1463,15 +1452,7 @@ xfs_file_ioctl(
 		__uint64_t	   in;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (mp->m_flags & XFS_MOUNT_RDONLY)
 			return -XFS_ERROR(EROFS);
@@ -1494,15 +1475,7 @@ return -EPERM;
 		xfs_fsop_resblks_t out;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		error = xfs_reserve_blocks(mp, NULL, &out);
 		if (error)
@@ -1548,15 +1521,7 @@ return -EPERM;
 		__uint32_t in;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (get_user(in, (__uint32_t __user *)arg))
 			return -XFS_ERROR(EFAULT);
@@ -1569,15 +1534,7 @@ return -EPERM;
 		xfs_error_injection_t in;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (copy_from_user(&in, arg, sizeof(in)))
 			return -XFS_ERROR(EFAULT);
@@ -1588,15 +1545,7 @@ return -EPERM;
 
 	case XFS_IOC_ERROR_CLEARALL:
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		error = xfs_errortag_clearall(mp, 1);
 		return -error;

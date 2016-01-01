@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -146,26 +143,28 @@ static int __init configfs_init(void)
 		goto out;
 
 	config_kobj = kobject_create_and_add("config", kernel_kobj);
-	if (!config_kobj)
-		goto out2;
-
-	err = configfs_inode_init();
-	if (err)
-		goto out3;
+	if (!config_kobj) {
+		kmem_cache_destroy(configfs_dir_cachep);
+		configfs_dir_cachep = NULL;
+		goto out;
+	}
 
 	err = register_filesystem(&configfs_fs_type);
-	if (err)
-		goto out4;
+	if (err) {
+		printk(KERN_ERR "configfs: Unable to register filesystem!\n");
+		kobject_put(config_kobj);
+		kmem_cache_destroy(configfs_dir_cachep);
+		configfs_dir_cachep = NULL;
+		goto out;
+	}
 
-	return 0;
-out4:
-;
-	configfs_inode_exit();
-out3:
-	kobject_put(config_kobj);
-out2:
-	kmem_cache_destroy(configfs_dir_cachep);
-	configfs_dir_cachep = NULL;
+	err = configfs_inode_init();
+	if (err) {
+		unregister_filesystem(&configfs_fs_type);
+		kobject_put(config_kobj);
+		kmem_cache_destroy(configfs_dir_cachep);
+		configfs_dir_cachep = NULL;
+	}
 out:
 	return err;
 }

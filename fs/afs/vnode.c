@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* AFS vnode management
  *
  * Copyright (C) 2002, 2007 Red Hat, Inc. All Rights Reserved.
@@ -38,7 +35,7 @@ static noinline bool dump_tree_aux(struct rb_node *node, struct rb_node *parent,
 	       depth, depth, "", lr,
 	       vnode, vnode->cb_expires_at);
 	if (rb_parent(node) != parent) {
-;
+		printk("BAD: %p != %p\n", rb_parent(node), parent);
 		bad = true;
 	}
 

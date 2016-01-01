@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/sysv/inode.c
  *
@@ -47,7 +44,7 @@ enum {
 	JAN_1_1980 = (10*365 + 2) * 24 * 60 * 60
 };
 
-static void detected_xenix(struct sysv_sb_info *sbi, unsigned *max_links)
+static void detected_xenix(struct sysv_sb_info *sbi)
 {
 	struct buffer_head *bh1 = sbi->s_bh1;
 	struct buffer_head *bh2 = sbi->s_bh2;
@@ -62,7 +59,7 @@ static void detected_xenix(struct sysv_sb_info *sbi, unsigned *max_links)
 		sbd2 = (struct xenix_super_block *) (bh2->b_data - 512);
 	}
 
-	*max_links = XENIX_LINK_MAX;
+	sbi->s_link_max = XENIX_LINK_MAX;
 	sbi->s_fic_size = XENIX_NICINOD;
 	sbi->s_flc_size = XENIX_NICFREE;
 	sbi->s_sbd1 = (char *)sbd1;
@@ -78,7 +75,7 @@ static void detected_xenix(struct sysv_sb_info *sbi, unsigned *max_links)
 	sbi->s_nzones = fs32_to_cpu(sbi, sbd1->s_fsize);
 }
 
-static void detected_sysv4(struct sysv_sb_info *sbi, unsigned *max_links)
+static void detected_sysv4(struct sysv_sb_info *sbi)
 {
 	struct sysv4_super_block * sbd;
 	struct buffer_head *bh1 = sbi->s_bh1;
@@ -89,7 +86,7 @@ static void detected_sysv4(struct sysv_sb_info *sbi, unsigned *max_links)
 	else
 		sbd = (struct sysv4_super_block *) bh2->b_data;
 
-	*max_links = SYSV_LINK_MAX;
+	sbi->s_link_max = SYSV_LINK_MAX;
 	sbi->s_fic_size = SYSV_NICINOD;
 	sbi->s_flc_size = SYSV_NICFREE;
 	sbi->s_sbd1 = (char *)sbd;
@@ -106,7 +103,7 @@ static void detected_sysv4(struct sysv_sb_info *sbi, unsigned *max_links)
 	sbi->s_nzones = fs32_to_cpu(sbi, sbd->s_fsize);
 }
 
-static void detected_sysv2(struct sysv_sb_info *sbi, unsigned *max_links)
+static void detected_sysv2(struct sysv_sb_info *sbi)
 {
 	struct sysv2_super_block *sbd;
 	struct buffer_head *bh1 = sbi->s_bh1;
@@ -117,7 +114,7 @@ static void detected_sysv2(struct sysv_sb_info *sbi, unsigned *max_links)
 	else
 		sbd = (struct sysv2_super_block *) bh2->b_data;
 
-	*max_links = SYSV_LINK_MAX;
+	sbi->s_link_max = SYSV_LINK_MAX;
 	sbi->s_fic_size = SYSV_NICINOD;
 	sbi->s_flc_size = SYSV_NICFREE;
 	sbi->s_sbd1 = (char *)sbd;
@@ -134,14 +131,14 @@ static void detected_sysv2(struct sysv_sb_info *sbi, unsigned *max_links)
 	sbi->s_nzones = fs32_to_cpu(sbi, sbd->s_fsize);
 }
 
-static void detected_coherent(struct sysv_sb_info *sbi, unsigned *max_links)
+static void detected_coherent(struct sysv_sb_info *sbi)
 {
 	struct coh_super_block * sbd;
 	struct buffer_head *bh1 = sbi->s_bh1;
 
 	sbd = (struct coh_super_block *) bh1->b_data;
 
-	*max_links = COH_LINK_MAX;
+	sbi->s_link_max = COH_LINK_MAX;
 	sbi->s_fic_size = COH_NICINOD;
 	sbi->s_flc_size = COH_NICFREE;
 	sbi->s_sbd1 = (char *)sbd;
@@ -157,12 +154,12 @@ static void detected_coherent(struct sysv_sb_info *sbi, unsigned *max_links)
 	sbi->s_nzones = fs32_to_cpu(sbi, sbd->s_fsize);
 }
 
-static void detected_v7(struct sysv_sb_info *sbi, unsigned *max_links)
+static void detected_v7(struct sysv_sb_info *sbi)
 {
 	struct buffer_head *bh2 = sbi->s_bh2;
 	struct v7_super_block *sbd = (struct v7_super_block *)bh2->b_data;
 
-	*max_links = V7_LINK_MAX;
+	sbi->s_link_max = V7_LINK_MAX;
 	sbi->s_fic_size = V7_NICINOD;
 	sbi->s_flc_size = V7_NICFREE;
 	sbi->s_sbd1 = (char *)sbd;
@@ -220,9 +217,9 @@ static int detect_sysv(struct sysv_sb_info *sbi, struct buffer_head *bh)
  		sbi->s_type = FSTYPE_AFS;
 		sbi->s_forced_ro = 1;
  		if (!(sb->s_flags & MS_RDONLY)) {
-// 			printk("SysV FS: SCO EAFS on %s detected, " 
-// 				"forcing read-only mode.\n", 
-;
+ 			printk("SysV FS: SCO EAFS on %s detected, " 
+ 				"forcing read-only mode.\n", 
+ 				sb->s_id);
  		}
  		return type;
  	}
@@ -243,8 +240,8 @@ static int detect_sysv(struct sysv_sb_info *sbi, struct buffer_head *bh)
            feature read-only mode seems to be a reasonable approach... -KGB */
 
 	if (type >= 0x10) {
-//		printk("SysV FS: can't handle long file names on %s, "
-;
+		printk("SysV FS: can't handle long file names on %s, "
+		       "forcing read-only mode.\n", sb->s_id);
 		sbi->s_forced_ro = 1;
 	}
 
@@ -293,7 +290,7 @@ static char *flavour_names[] = {
 	[FSTYPE_AFS]	= "AFS",
 };
 
-static void (*flavour_setup[])(struct sysv_sb_info *, unsigned *) = {
+static void (*flavour_setup[])(struct sysv_sb_info *) = {
 	[FSTYPE_XENIX]	= detected_xenix,
 	[FSTYPE_SYSV4]	= detected_sysv4,
 	[FSTYPE_SYSV2]	= detected_sysv2,
@@ -313,7 +310,7 @@ static int complete_read_super(struct super_block *sb, int silent, int size)
 
 	sbi->s_firstinodezone = 2;
 
-	flavour_setup[sbi->s_type](sbi, &sb->s_max_links);
+	flavour_setup[sbi->s_type](sbi);
 	
 	sbi->s_truncate = 1;
 	sbi->s_ndatazones = sbi->s_nzones - sbi->s_firstdatazone;
@@ -329,8 +326,8 @@ static int complete_read_super(struct super_block *sb, int silent, int size)
 		<< sbi->s_inodes_per_block_bits;
 
 	if (!silent)
-//		printk("VFS: Found a %s FS (block size = %ld) on device %s\n",
-;
+		printk("VFS: Found a %s FS (block size = %ld) on device %s\n",
+		       found, sb->s_blocksize, sb->s_id);
 
 	sb->s_magic = SYSV_MAGIC_BASE + sbi->s_type;
 	/* set up enough so that it can read an inode */
@@ -341,13 +338,13 @@ static int complete_read_super(struct super_block *sb, int silent, int size)
 		sb->s_d_op = &sysv_dentry_operations;
 	root_inode = sysv_iget(sb, SYSV_ROOT_INO);
 	if (IS_ERR(root_inode)) {
-;
+		printk("SysV FS: get root inode failed\n");
 		return 0;
 	}
 	sb->s_root = d_alloc_root(root_inode);
 	if (!sb->s_root) {
 		iput(root_inode);
-;
+		printk("SysV FS: get root dentry failed\n");
 		return 0;
 	}
 	return 1;
@@ -418,7 +415,7 @@ static int sysv_fill_super(struct super_block *sb, void *data, int silent)
 	brelse(bh1);
 	brelse(bh);
 	sb_set_blocksize(sb, BLOCK_SIZE);
-;
+	printk("oldfs: cannot read superblock\n");
 failed:
 	kfree(sbi);
 	return -EINVAL;
@@ -426,14 +423,14 @@ failed:
 Eunknown:
 	brelse(bh);
 	if (!silent)
-//		printk("VFS: unable to find oldfs superblock on device %s\n",
-;
+		printk("VFS: unable to find oldfs superblock on device %s\n",
+			sb->s_id);
 	goto failed;
 Ebadsize:
 	brelse(bh);
 	if (!silent)
-//		printk("VFS: oldfs: unsupported block size (%dKb)\n",
-;
+		printk("VFS: oldfs: unsupported block size (%dKb)\n",
+			1<<(size-2));
 	goto failed;
 }
 
@@ -496,8 +493,8 @@ static int v7_fill_super(struct super_block *sb, void *data, int silent)
 
 	if ((bh = sb_bread(sb, 1)) == NULL) {
 		if (!silent)
-//			printk("VFS: unable to read V7 FS superblock on "
-;
+			printk("VFS: unable to read V7 FS superblock on "
+			       "device %s.\n", sb->s_id);
 		goto failed;
 	}
 
@@ -520,8 +517,8 @@ detected:
 		return 0;
 
 failed:
-//	printk(KERN_ERR "VFS: could not find a valid V7 on %s.\n",
-;
+	printk(KERN_ERR "VFS: could not find a valid V7 on %s.\n",
+		sb->s_id);
 	brelse(bh);
 	kfree(sbi);
 	return -EINVAL;

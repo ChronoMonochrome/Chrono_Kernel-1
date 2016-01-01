@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/namespace.c
  *
@@ -419,12 +416,6 @@ void mnt_drop_write(struct vfsmount *mnt)
 	preempt_enable();
 }
 EXPORT_SYMBOL_GPL(mnt_drop_write);
-
-void mnt_drop_write_file(struct file *file)
-{
-	mnt_drop_write(file->f_path.mnt);
-}
-EXPORT_SYMBOL(mnt_drop_write_file);
 
 static int mnt_make_readonly(struct vfsmount *mnt)
 {
@@ -943,8 +934,8 @@ int mnt_had_events(struct proc_mounts *p)
 	int res = 0;
 
 	br_read_lock(vfsmount_lock);
-	if (p->event != ns->event) {
-		p->event = ns->event;
+	if (p->m.poll_event != ns->event) {
+		p->m.poll_event = ns->event;
 		res = 1;
 	}
 	br_read_unlock(vfsmount_lock);
@@ -1216,7 +1207,7 @@ void release_mounts(struct list_head *head)
 	while (!list_empty(head)) {
 		mnt = list_first_entry(head, struct vfsmount, mnt_hash);
 		list_del_init(&mnt->mnt_hash);
-		if (mnt->mnt_parent != mnt) {
+		if (mnt_has_parent(mnt)) {
 			struct dentry *dentry;
 			struct vfsmount *m;
 
@@ -1257,7 +1248,7 @@ void umount_tree(struct vfsmount *mnt, int propagate, struct list_head *kill)
 			__mnt_make_shortterm(p);
 		p->mnt_ns = NULL;
 		list_del_init(&p->mnt_child);
-		if (p->mnt_parent != p) {
+		if (mnt_has_parent(p)) {
 			p->mnt_parent->mnt_ghosts++;
 			dentry_reset_mounted(p->mnt_parent, p->mnt_mountpoint);
 		}
@@ -1387,15 +1378,9 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
 	if (!check_mnt(path.mnt))
 		goto dput_and_out;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	retval = -EPERM;
 	if (!capable(CAP_SYS_ADMIN))
 		goto dput_and_out;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 	retval = do_umount(path.mnt, flags);
 dput_and_out:
@@ -1422,48 +1407,16 @@ static int mount_is_safe(struct path *path)
 {
 	if (capable(CAP_SYS_ADMIN))
 		return 0;
-	
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+	return -EPERM;
 #ifdef notyet
 	if (S_ISLNK(path->dentry->d_inode->i_mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (path->dentry->d_inode->i_mode & S_ISVTX) {
 		if (current_uid() != path->dentry->d_inode->i_uid)
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 	}
 	if (inode_permission(path->dentry->d_inode, MAY_WRITE))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	return 0;
 #endif
 }
@@ -1763,15 +1716,7 @@ static int do_change_type(struct path *path, int flag)
 	int err = 0;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (path->dentry != path->mnt->mnt_root)
 		return -EINVAL;
@@ -1878,15 +1823,7 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
 	struct super_block *sb = path->mnt->mnt_sb;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (!check_mnt(path->mnt))
 		return -EINVAL;
@@ -1905,7 +1842,7 @@ return -EPERM;
 		err = do_remount_sb(sb, flags, data, 0);
 	if (!err) {
 		br_write_lock(vfsmount_lock);
-		mnt_flags |= path->mnt->mnt_flags & ~MNT_USER_SETTABLE_MASK;
+		mnt_flags |= path->mnt->mnt_flags & MNT_PROPAGATION_MASK;
 		path->mnt->mnt_flags = mnt_flags;
 		br_write_unlock(vfsmount_lock);
 	}
@@ -1934,15 +1871,7 @@ static int do_move_mount(struct path *path, char *old_name)
 	struct vfsmount *p;
 	int err = 0;
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (!old_name || !*old_name)
 		return -EINVAL;
 	err = kern_path(old_name, LOOKUP_FOLLOW, &old_path);
@@ -1964,7 +1893,7 @@ return -EPERM;
 	if (old_path.dentry != old_path.mnt->mnt_root)
 		goto out1;
 
-	if (old_path.mnt == old_path.mnt->mnt_parent)
+	if (!mnt_has_parent(old_path.mnt))
 		goto out1;
 
 	if (S_ISDIR(path->dentry->d_inode->i_mode) !=
@@ -1973,8 +1902,7 @@ return -EPERM;
 	/*
 	 * Don't move a mount residing in a shared parent.
 	 */
-	if (old_path.mnt->mnt_parent &&
-	    IS_MNT_SHARED(old_path.mnt->mnt_parent))
+	if (IS_MNT_SHARED(old_path.mnt->mnt_parent))
 		goto out1;
 	/*
 	 * Don't move a mount tree containing unbindable mounts to a destination
@@ -1984,7 +1912,7 @@ return -EPERM;
 	    tree_contains_unbindable(old_path.mnt))
 		goto out1;
 	err = -ELOOP;
-	for (p = path->mnt; p->mnt_parent != p; p = p->mnt_parent)
+	for (p = path->mnt; mnt_has_parent(p); p = p->mnt_parent)
 		if (p == old_path.mnt)
 			goto out1;
 
@@ -2093,15 +2021,7 @@ static int do_new_mount(struct path *path, char *type, int flags,
 
 	/* we need capabilities... */
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	mnt = do_kern_mount(type, flags, name, data);
 	if (IS_ERR(mnt))
@@ -2110,6 +2030,13 @@ return -EPERM;
 	err = do_add_mount(mnt, path, mnt_flags);
 	if (err)
 		mntput(mnt);
+#ifdef CONFIG_ASYNC_FSYNC
+	if (!err && ((!strcmp(type, "ext4") &&
+	    !strcmp(path->dentry->d_name.name, "data")) ||
+	    (!strcmp(type, "fuse") &&
+	    !strcmp(path->dentry->d_name.name, "emulated"))))
+                mnt->mnt_sb->fsync_flags |= FLAG_ASYNC_FSYNC;
+#endif
 	return err;
 }
 
@@ -2560,50 +2487,18 @@ struct mnt_namespace *create_mnt_ns(struct vfsmount *mnt)
 		__mnt_make_longterm(mnt);
 		new_ns->root = mnt;
 		list_add(&new_ns->list, &new_ns->root->mnt_list);
-	} else {
-		mntput(mnt);
 	}
 	return new_ns;
 }
 EXPORT_SYMBOL(create_mnt_ns);
 
-struct dentry *mount_subtree(struct vfsmount *mnt, const char *name)
-{
-	struct mnt_namespace *ns;
-	struct super_block *s;
-	struct path path;
-	int err;
-
-	ns = create_mnt_ns(mnt);
-	if (IS_ERR(ns))
-		return ERR_CAST(ns);
-
-	err = vfs_path_lookup(mnt->mnt_root, mnt,
-			name, LOOKUP_FOLLOW|LOOKUP_AUTOMOUNT, &path);
-
-	put_mnt_ns(ns);
-
-	if (err)
-		return ERR_PTR(err);
-
-	/* trade a vfsmount reference for active sb one */
-	s = path.mnt->mnt_sb;
-	atomic_inc(&s->s_active);
-	mntput(path.mnt);
-	/* lock the sucker */
-	down_write(&s->s_umount);
-	/* ... and return the root of (sub)tree on it */
-	return path.dentry;
-}
-EXPORT_SYMBOL(mount_subtree);
-
 SYSCALL_DEFINE5(mount, char __user *, dev_name, char __user *, dir_name,
 		char __user *, type, unsigned long, flags, void __user *, data)
 {
 	int ret;
-	char *kernel_type = NULL;
+	char *kernel_type;
 	char *kernel_dir;
-	char *kernel_dev = NULL;
+	char *kernel_dev;
 	unsigned long data_page;
 
 	ret = copy_mount_string(type, &kernel_type);
@@ -2639,6 +2534,31 @@ out_type:
 }
 
 /*
+ * Return true if path is reachable from root
+ *
+ * namespace_sem or vfsmount_lock is held
+ */
+bool is_path_reachable(struct vfsmount *mnt, struct dentry *dentry,
+			 const struct path *root)
+{
+	while (mnt != root->mnt && mnt_has_parent(mnt)) {
+		dentry = mnt->mnt_mountpoint;
+		mnt = mnt->mnt_parent;
+	}
+	return mnt == root->mnt && is_subdir(dentry, root->dentry);
+}
+
+int path_is_under(struct path *path1, struct path *path2)
+{
+	int res;
+	br_read_lock(vfsmount_lock);
+	res = is_path_reachable(path1->mnt, path1->dentry, path2);
+	br_read_unlock(vfsmount_lock);
+	return res;
+}
+EXPORT_SYMBOL(path_is_under);
+
+/*
  * pivot_root Semantics:
  * Moves the root file system of the current process to the directory put_old,
  * makes new_root as the new root file system of the current process, and sets
@@ -2666,20 +2586,11 @@ out_type:
 SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
 		const char __user *, put_old)
 {
-	struct vfsmount *tmp;
 	struct path new, old, parent_path, root_parent, root;
 	int error;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	error = user_path_dir(new_root, &new);
 	if (error)
@@ -2717,25 +2628,14 @@ return -EPERM;
 	error = -EINVAL;
 	if (root.mnt->mnt_root != root.dentry)
 		goto out4; /* not a mountpoint */
-	if (root.mnt->mnt_parent == root.mnt)
+	if (!mnt_has_parent(root.mnt))
 		goto out4; /* not attached */
 	if (new.mnt->mnt_root != new.dentry)
 		goto out4; /* not a mountpoint */
-	if (new.mnt->mnt_parent == new.mnt)
+	if (!mnt_has_parent(new.mnt))
 		goto out4; /* not attached */
 	/* make sure we can reach put_old from new_root */
-	tmp = old.mnt;
-	if (tmp != new.mnt) {
-		for (;;) {
-			if (tmp->mnt_parent == tmp)
-				goto out4; /* already mounted on put_old */
-			if (tmp->mnt_parent == new.mnt)
-				break;
-			tmp = tmp->mnt_parent;
-		}
-		if (!is_subdir(tmp->mnt_mountpoint, new.dentry))
-			goto out4;
-	} else if (!is_subdir(old.dentry, new.dentry))
+	if (!is_path_reachable(old.mnt, old.dentry, &new))
 		goto out4;
 	br_write_lock(vfsmount_lock);
 	detach_mnt(new.mnt, &parent_path);
@@ -2803,7 +2703,7 @@ void __init mnt_init(void)
 	if (!mount_hashtable)
 		panic("Failed to allocate mount hash table\n");
 
-;
+	printk(KERN_INFO "Mount-cache hash table entries: %lu\n", HASH_SIZE);
 
 	for (u = 0; u < HASH_SIZE; u++)
 		INIT_LIST_HEAD(&mount_hashtable[u]);
@@ -2812,11 +2712,11 @@ void __init mnt_init(void)
 
 	err = sysfs_init();
 	if (err)
-//		printk(KERN_WARNING "%s: sysfs_init error: %d\n",
-;
+		printk(KERN_WARNING "%s: sysfs_init error: %d\n",
+			__func__, err);
 	fs_kobj = kobject_create_and_add("fs", NULL);
 	if (!fs_kobj)
-;
+		printk(KERN_WARNING "%s: kobj create error\n", __func__);
 	init_rootfs();
 	init_mount_tree();
 }

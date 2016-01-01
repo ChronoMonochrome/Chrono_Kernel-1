@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * quota.h - Defines for NTFS kernel quota ($Quota) handling.  Part of the
  *	     Linux-NTFS project.

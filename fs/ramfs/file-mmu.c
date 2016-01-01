@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* file-mmu.c: ramfs MMU-based file operations
  *
  * Resizable simple ram filesystem for Linux.

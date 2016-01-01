@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Maintain an RxRPC server socket to do AFS communications through
  *
  * Copyright (C) 2007 Red Hat, Inc. All Rights Reserved.

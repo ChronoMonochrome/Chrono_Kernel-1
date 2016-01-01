@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * JFFS2 -- Journalling Flash File System, Version 2.
  *
@@ -36,7 +33,7 @@ static int __init alloc_workspace(void)
 	lzo_compress_buf = vmalloc(lzo1x_worst_compress(PAGE_SIZE));
 
 	if (!lzo_mem || !lzo_compress_buf) {
-;
+		printk(KERN_WARNING "Failed to allocate lzo deflate workspace\n");
 		free_workspace();
 		return -ENOMEM;
 	}

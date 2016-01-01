@@ -2,8 +2,6 @@
 # Makefile for the linux lock manager stuff
 #
 
-CFLAGS_MODULE += $(DISABLE_LTO)
-
 obj-$(CONFIG_LOCKD) += lockd.o
 
 lockd-objs-y := clntlock.o clntproc.o clntxdr.o host.o svc.o svclock.o \

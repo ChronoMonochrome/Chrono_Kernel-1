@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/adfs/map.c
  *
@@ -109,8 +106,8 @@ again:
 	return -1;
 
 error:
-//	printk(KERN_ERR "adfs: oversized fragment 0x%x at 0x%x-0x%x\n",
-;
+	printk(KERN_ERR "adfs: oversized fragment 0x%x at 0x%x-0x%x\n",
+		frag, start, mapptr);
 	return -1;
 
 found:
@@ -183,11 +180,11 @@ scan_free_map(struct adfs_sb_info *asb, struct adfs_discmap *dm)
 	} while (frag >= idlen + 1);
 
 	if (frag != 0)
-;
+		printk(KERN_ERR "adfs: undersized free fragment\n");
 
 	return total;
 error:
-;
+	printk(KERN_ERR "adfs: oversized free fragment\n");
 	return 0;
 }
 

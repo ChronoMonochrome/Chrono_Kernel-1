@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2008 Red Hat, Inc.  All rights reserved.
@@ -479,7 +476,7 @@ retry:
 			do_xmote(gl, gh, LM_ST_UNLOCKED);
 			break;
 		default: /* Everything else */
-;
+			printk(KERN_ERR "GFS2: wanted %u got %u\n", gl->gl_target, state);
 			GLOCK_BUG_ON(gl, 1);
 		}
 		spin_unlock(&gl->gl_spin);
@@ -923,7 +920,7 @@ void gfs2_print_dbg(struct seq_file *seq, const char *fmt, ...)
 		vaf.fmt = fmt;
 		vaf.va = &args;
 
-;
+		printk(KERN_ERR " %pV", &vaf);
 	}
 
 	va_end(args);
@@ -998,13 +995,13 @@ do_cancel:
 
 trap_recursive:
 	print_symbol(KERN_ERR "original: %s\n", gh2->gh_ip);
-;
-//	printk(KERN_ERR "lock type: %d req lock state : %d\n",
-;
+	printk(KERN_ERR "pid: %d\n", pid_nr(gh2->gh_owner_pid));
+	printk(KERN_ERR "lock type: %d req lock state : %d\n",
+	       gh2->gh_gl->gl_name.ln_type, gh2->gh_state);
 	print_symbol(KERN_ERR "new: %s\n", gh->gh_ip);
-;
-//	printk(KERN_ERR "lock type: %d req lock state : %d\n",
-;
+	printk(KERN_ERR "pid: %d\n", pid_nr(gh->gh_owner_pid));
+	printk(KERN_ERR "lock type: %d req lock state : %d\n",
+	       gh->gh_gl->gl_name.ln_type, gh->gh_state);
 	__dump_glock(NULL, gl);
 	BUG();
 }

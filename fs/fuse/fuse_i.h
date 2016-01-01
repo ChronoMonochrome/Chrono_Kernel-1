@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2008  Miklos Szeredi <miklos@szeredi.hu>
@@ -46,11 +43,6 @@
 /** If the FUSE_ALLOW_OTHER flag is given, then not only the user
     doing the mount will be allowed to access the filesystem */
 #define FUSE_ALLOW_OTHER         (1 << 1)
-
-/** If the FUSE_HANDLE_RT_CLASS flag is given,
-    then fuse handle RT class I/O in different request queue  */
-#define FUSE_HANDLE_RT_CLASS   (1 << 2)
-
 
 /** List of active connections */
 extern struct list_head fuse_conn_list;
@@ -364,10 +356,10 @@ struct fuse_conn {
 	unsigned max_write;
 
 	/** Readers of the connection are waiting on this */
-	wait_queue_head_t waitq[2];
+	wait_queue_head_t waitq;
 
 	/** The list of pending requests */
-	struct list_head pending[2];
+	struct list_head pending;
 
 	/** The list of requests being processed */
 	struct list_head processing;
@@ -397,7 +389,7 @@ struct fuse_conn {
 	struct list_head bg_queue;
 
 	/** Pending interrupts */
-	struct list_head interrupts[2];
+	struct list_head interrupts;
 
 	/** Queue of pending forgets */
 	struct fuse_forget_link forget_list_head;
@@ -614,7 +606,8 @@ void fuse_release_common(struct file *file, int opcode);
 /**
  * Send FSYNC or FSYNCDIR request
  */
-int fuse_fsync_common(struct file *file, int datasync, int isdir);
+int fuse_fsync_common(struct file *file, loff_t start, loff_t end,
+		      int datasync, int isdir);
 
 /**
  * Notify poll wakeup

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2008 Oracle.  All rights reserved.
  *
@@ -128,12 +125,12 @@ static int check_compressed_csum(struct inode *inode,
 		kunmap_atomic(kaddr, KM_USER0);
 
 		if (csum != *cb_sum) {
-//			printk(KERN_INFO "btrfs csum failed ino %llu "
-//			       "extent %llu csum %u "
-//			       "wanted %u mirror %d\n",
-//			       (unsigned long long)btrfs_ino(inode),
-//			       (unsigned long long)disk_start,
-;
+			printk(KERN_INFO "btrfs csum failed ino %llu "
+			       "extent %llu csum %u "
+			       "wanted %u mirror %d\n",
+			       (unsigned long long)btrfs_ino(inode),
+			       (unsigned long long)disk_start,
+			       csum, *cb_sum, cb->mirror_num);
 			ret = -EIO;
 			goto fail;
 		}
@@ -341,6 +338,7 @@ int btrfs_submit_compressed_write(struct inode *inode, u64 start,
 	u64 first_byte = disk_start;
 	struct block_device *bdev;
 	int ret;
+	int skip_sum = BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM;
 
 	WARN_ON(start & ((u64)PAGE_CACHE_SIZE - 1));
 	cb = kmalloc(compressed_bio_size(root, compressed_len), GFP_NOFS);
@@ -395,8 +393,11 @@ int btrfs_submit_compressed_write(struct inode *inode, u64 start,
 			ret = btrfs_bio_wq_end_io(root->fs_info, bio, 0);
 			BUG_ON(ret);
 
-			ret = btrfs_csum_one_bio(root, inode, bio, start, 1);
-			BUG_ON(ret);
+			if (!skip_sum) {
+				ret = btrfs_csum_one_bio(root, inode, bio,
+							 start, 1);
+				BUG_ON(ret);
+			}
 
 			ret = btrfs_map_bio(root, WRITE, bio, 0, 1);
 			BUG_ON(ret);
@@ -409,8 +410,8 @@ int btrfs_submit_compressed_write(struct inode *inode, u64 start,
 			bio_add_page(bio, page, PAGE_CACHE_SIZE, 0);
 		}
 		if (bytes_left < PAGE_CACHE_SIZE) {
-//			printk("bytes left %lu compress len %lu nr %lu\n",
-;
+			printk("bytes left %lu compress len %lu nr %lu\n",
+			       bytes_left, cb->compressed_len, cb->nr_pages);
 		}
 		bytes_left -= PAGE_CACHE_SIZE;
 		first_byte += PAGE_CACHE_SIZE;
@@ -421,8 +422,10 @@ int btrfs_submit_compressed_write(struct inode *inode, u64 start,
 	ret = btrfs_bio_wq_end_io(root->fs_info, bio, 0);
 	BUG_ON(ret);
 
-	ret = btrfs_csum_one_bio(root, inode, bio, start, 1);
-	BUG_ON(ret);
+	if (!skip_sum) {
+		ret = btrfs_csum_one_bio(root, inode, bio, start, 1);
+		BUG_ON(ret);
+	}
 
 	ret = btrfs_map_bio(root, WRITE, bio, 0, 1);
 	BUG_ON(ret);

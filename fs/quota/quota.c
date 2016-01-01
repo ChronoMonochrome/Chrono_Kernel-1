@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Quota code necessary even when VFS quota support is not compiled
  * into the kernel.  The interesting stuff is over in dquot.c, here
@@ -42,15 +39,7 @@ static int check_quotactl_permission(struct super_block *sb, int type, int cmd,
 		/*FALLTHROUGH*/
 	default:
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 	}
 
 	return security_quotactl(cmd, type, id, sb);

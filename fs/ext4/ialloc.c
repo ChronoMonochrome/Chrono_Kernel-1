@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext4/ialloc.c
  *
@@ -25,7 +22,6 @@
 #include <linux/random.h>
 #include <linux/bitops.h>
 #include <linux/blkdev.h>
-#include <linux/math64.h>
 #include <asm/byteorder.h>
 
 #include "ext4.h"
@@ -199,18 +195,18 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
 	int fatal = 0, err, count, cleared;
 
 	if (atomic_read(&inode->i_count) > 1) {
-//		printk(KERN_ERR "ext4_free_inode: inode has count=%d\n",
-;
+		printk(KERN_ERR "ext4_free_inode: inode has count=%d\n",
+		       atomic_read(&inode->i_count));
 		return;
 	}
 	if (inode->i_nlink) {
-//		printk(KERN_ERR "ext4_free_inode: inode has nlink=%d\n",
-;
+		printk(KERN_ERR "ext4_free_inode: inode has nlink=%d\n",
+		       inode->i_nlink);
 		return;
 	}
 	if (!sb) {
-//		printk(KERN_ERR "ext4_free_inode: inode on "
-;
+		printk(KERN_ERR "ext4_free_inode: inode on "
+		       "nonexistent device\n");
 		return;
 	}
 	sbi = EXT4_SB(sb);
@@ -1016,17 +1012,17 @@ iget_failed:
 	inode = NULL;
 bad_orphan:
 	ext4_warning(sb, "bad orphan inode %lu!  e2fsck was run?", ino);
-//	printk(KERN_NOTICE "ext4_test_bit(bit=%d, block=%llu) = %d\n",
-//	       bit, (unsigned long long)bitmap_bh->b_blocknr,
-;
-;
+	printk(KERN_NOTICE "ext4_test_bit(bit=%d, block=%llu) = %d\n",
+	       bit, (unsigned long long)bitmap_bh->b_blocknr,
+	       ext4_test_bit(bit, bitmap_bh->b_data));
+	printk(KERN_NOTICE "inode=%p\n", inode);
 	if (inode) {
-//		printk(KERN_NOTICE "is_bad_inode(inode)=%d\n",
-;
-//		printk(KERN_NOTICE "NEXT_ORPHAN(inode)=%u\n",
-;
-;
-;
+		printk(KERN_NOTICE "is_bad_inode(inode)=%d\n",
+		       is_bad_inode(inode));
+		printk(KERN_NOTICE "NEXT_ORPHAN(inode)=%u\n",
+		       NEXT_ORPHAN(inode));
+		printk(KERN_NOTICE "max_ino=%lu\n", max_ino);
+		printk(KERN_NOTICE "i_nlink=%u\n", inode->i_nlink);
 		/* Avoid freeing blocks if we got a bad deleted inode */
 		if (inode->i_nlink == 0)
 			inode->i_blocks = 0;
@@ -1063,14 +1059,14 @@ unsigned long ext4_count_free_inodes(struct super_block *sb)
 
 		x = ext4_count_free(bitmap_bh->b_data,
 				    EXT4_INODES_PER_GROUP(sb) / 8);
-//		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
-;
+		printk(KERN_DEBUG "group %lu: stored = %d, counted = %lu\n",
+			(unsigned long) i, ext4_free_inodes_count(sb, gdp), x);
 		bitmap_count += x;
 	}
 	brelse(bitmap_bh);
-//	printk(KERN_DEBUG "ext4_count_free_inodes: "
-//	       "stored = %u, computed = %lu, %lu\n",
-;
+	printk(KERN_DEBUG "ext4_count_free_inodes: "
+	       "stored = %u, computed = %lu, %lu\n",
+	       le32_to_cpu(es->s_free_inodes_count), desc_count, bitmap_count);
 	return desc_count;
 #else
 	desc_count = 0;

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * time.h - NTFS time conversion functions.  Part of the Linux-NTFS project.
  *

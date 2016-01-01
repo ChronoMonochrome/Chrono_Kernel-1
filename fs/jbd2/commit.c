@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/jbd2/commit.c
  *
@@ -666,9 +663,9 @@ start_journal_io:
 
 	err = journal_finish_inode_data_buffers(journal, commit_transaction);
 	if (err) {
-//		printk(KERN_WARNING
-//			"JBD2: Detected IO errors while flushing file data "
-;
+		printk(KERN_WARNING
+			"JBD2: Detected IO errors while flushing file data "
+		       "on %s\n", journal->j_devname);
 		if (journal->j_flags & JBD2_ABORT_ON_SYNCDATA_ERR)
 			jbd2_journal_abort(journal, err);
 		err = 0;

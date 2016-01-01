@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* inode.c: /proc/openprom handling routines
  *
  * Copyright (C) 1996-1999 Jakub Jelinek  (jakub@redhat.com)
@@ -420,7 +417,7 @@ out_no_root_dentry:
 	iput(root_inode);
 	ret = -ENOMEM;
 out_no_root:
-;
+	printk("openprom_fill_super: get root inode failed\n");
 	return ret;
 }
 

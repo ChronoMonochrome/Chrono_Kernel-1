@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2007 Red Hat, Inc.  All rights reserved.
@@ -712,7 +709,7 @@ get_a_page:
 		set_buffer_uptodate(bh);
 
 	if (!buffer_uptodate(bh)) {
-		ll_rw_block(READ_META, 1, &bh);
+		ll_rw_block(READ | REQ_META | REQ_PRIO, 1, &bh);
 		wait_on_buffer(bh);
 		if (!buffer_uptodate(bh))
 			goto unlock_out;
@@ -1044,10 +1041,10 @@ static int print_message(struct gfs2_quota_data *qd, char *type)
 {
 	struct gfs2_sbd *sdp = qd->qd_gl->gl_sbd;
 
-//	printk(KERN_INFO "GFS2: fsid=%s: quota %s for %s %u\n",
-//	       sdp->sd_fsname, type,
-//	       (test_bit(QDF_USER, &qd->qd_flags)) ? "user" : "group",
-;
+	printk(KERN_INFO "GFS2: fsid=%s: quota %s for %s %u\n",
+	       sdp->sd_fsname, type,
+	       (test_bit(QDF_USER, &qd->qd_flags)) ? "user" : "group",
+	       qd->qd_id);
 
 	return 0;
 }

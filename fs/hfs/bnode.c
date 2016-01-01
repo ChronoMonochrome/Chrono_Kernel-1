@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/hfs/bnode.c
  *
@@ -202,7 +199,7 @@ void hfs_bnode_unlink(struct hfs_bnode *node)
 
 	// move down?
 	if (!node->prev && !node->next) {
-;
+		printk(KERN_DEBUG "hfs_btree_del_level\n");
 	}
 	if (!node->parent) {
 		tree->root = 0;

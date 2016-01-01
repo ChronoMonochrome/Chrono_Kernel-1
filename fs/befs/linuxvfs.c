@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/befs/linuxvfs.c
  *
@@ -140,15 +137,7 @@ befs_get_block(struct inode *inode, sector_t block,
 	if (create) {
 		befs_error(sb, "befs_get_block() was asked to write to "
 			   "block %ld in inode %lu", block, inode->i_ino);
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	res = befs_fblock2brun(sb, ds, block, &run);
@@ -450,8 +439,8 @@ befs_init_inodecache(void)
 						SLAB_MEM_SPREAD),
 					      init_once);
 	if (befs_inode_cachep == NULL) {
-//		printk(KERN_ERR "befs_init_inodecache: "
-;
+		printk(KERN_ERR "befs_init_inodecache: "
+		       "Couldn't initialize inode slabcache\n");
 		return -ENOMEM;
 	}
 
@@ -708,8 +697,8 @@ parse_options(char *options, befs_mount_options * opts)
 			if (match_int(&args[0], &option))
 				return 0;
 			if (option < 0) {
-//				printk(KERN_ERR "BeFS: Invalid uid %d, "
-;
+				printk(KERN_ERR "BeFS: Invalid uid %d, "
+						"using default\n", option);
 				break;
 			}
 			opts->uid = option;
@@ -719,8 +708,8 @@ parse_options(char *options, befs_mount_options * opts)
 			if (match_int(&args[0], &option))
 				return 0;
 			if (option < 0) {
-//				printk(KERN_ERR "BeFS: Invalid gid %d, "
-;
+				printk(KERN_ERR "BeFS: Invalid gid %d, "
+						"using default\n", option);
 				break;
 			}
 			opts->gid = option;
@@ -730,8 +719,8 @@ parse_options(char *options, befs_mount_options * opts)
 			kfree(opts->iocharset);
 			opts->iocharset = match_strdup(&args[0]);
 			if (!opts->iocharset) {
-//				printk(KERN_ERR "BeFS: allocation failure for "
-;
+				printk(KERN_ERR "BeFS: allocation failure for "
+						"iocharset string\n");
 				return 0;
 			}
 			break;
@@ -739,8 +728,8 @@ parse_options(char *options, befs_mount_options * opts)
 			opts->debug = 1;
 			break;
 		default:
-//			printk(KERN_ERR "BeFS: Unrecognized mount option \"%s\" "
-;
+			printk(KERN_ERR "BeFS: Unrecognized mount option \"%s\" "
+					"or missing value\n", p);
 			return 0;
 		}
 	}
@@ -783,9 +772,9 @@ befs_fill_super(struct super_block *sb, void *data, int silent)
 
 	sb->s_fs_info = kmalloc(sizeof (*befs_sb), GFP_KERNEL);
 	if (sb->s_fs_info == NULL) {
-//		printk(KERN_ERR
-//		       "BeFS(%s): Unable to allocate memory for private "
-;
+		printk(KERN_ERR
+		       "BeFS(%s): Unable to allocate memory for private "
+		       "portion of superblock. Bailing.\n", sb->s_id);
 		goto unacquire_none;
 	}
 	befs_sb = BEFS_SB(sb);
@@ -953,7 +942,7 @@ init_befs_fs(void)
 {
 	int err;
 
-;
+	printk(KERN_INFO "BeFS version: %s\n", BEFS_VERSION);
 
 	err = befs_init_inodecache();
 	if (err)

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /******************************************************************************
 *******************************************************************************
 **
@@ -159,7 +156,7 @@ static void make_member_array(struct dlm_ls *ls)
 		else
 			w = memb->weight;
 
-;
+		DLM_ASSERT(x < total, printk("total %d x %d\n", total, x););
 
 		for (i = 0; i < w; i++)
 			array[x++] = memb->nodeid;

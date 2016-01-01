@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * file.c
  *
@@ -25,10 +22,10 @@ int efs_get_block(struct inode *inode, sector_t iblock,
 		/*
 		 * i have no idea why this happens as often as it does
 		 */
-//		printk(KERN_WARNING "EFS: bmap(): block %d >= %ld (filesize %ld)\n",
-//			block,
-//			inode->i_blocks,
-;
+		printk(KERN_WARNING "EFS: bmap(): block %d >= %ld (filesize %ld)\n",
+			block,
+			inode->i_blocks,
+			inode->i_size);
 #endif
 		return 0;
 	}
@@ -41,7 +38,7 @@ int efs_get_block(struct inode *inode, sector_t iblock,
 int efs_bmap(struct inode *inode, efs_block_t block) {
 
 	if (block < 0) {
-;
+		printk(KERN_WARNING "EFS: bmap(): block < 0\n");
 		return 0;
 	}
 
@@ -51,10 +48,10 @@ int efs_bmap(struct inode *inode, efs_block_t block) {
 		/*
 		 * i have no idea why this happens as often as it does
 		 */
-//		printk(KERN_WARNING "EFS: bmap(): block %d >= %ld (filesize %ld)\n",
-//			block,
-//			inode->i_blocks,
-;
+		printk(KERN_WARNING "EFS: bmap(): block %d >= %ld (filesize %ld)\n",
+			block,
+			inode->i_blocks,
+			inode->i_size);
 #endif
 		return 0;
 	}

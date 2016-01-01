@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2007 Red Hat, Inc.  All rights reserved.
@@ -627,9 +624,9 @@ static void log_write_header(struct gfs2_sbd *sdp, u32 flags, int pull)
 	bh->b_end_io = end_buffer_write_sync;
 	get_bh(bh);
 	if (test_bit(SDF_NOBARRIERS, &sdp->sd_flags))
-		submit_bh(WRITE_SYNC | REQ_META, bh);
+		submit_bh(WRITE_SYNC | REQ_META | REQ_PRIO, bh);
 	else
-		submit_bh(WRITE_FLUSH_FUA | REQ_META, bh);
+		submit_bh(WRITE_FLUSH_FUA | REQ_META | REQ_PRIO, bh);
 	wait_on_buffer(bh);
 
 	if (!buffer_uptodate(bh))
@@ -738,13 +735,13 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl)
 	INIT_LIST_HEAD(&ai->ai_ail2_list);
 
 	if (sdp->sd_log_num_buf != sdp->sd_log_commited_buf) {
-//		printk(KERN_INFO "GFS2: log buf %u %u\n", sdp->sd_log_num_buf,
-;
+		printk(KERN_INFO "GFS2: log buf %u %u\n", sdp->sd_log_num_buf,
+		       sdp->sd_log_commited_buf);
 		gfs2_assert_withdraw(sdp, 0);
 	}
 	if (sdp->sd_log_num_databuf != sdp->sd_log_commited_databuf) {
-//		printk(KERN_INFO "GFS2: log databuf %u %u\n",
-;
+		printk(KERN_INFO "GFS2: log databuf %u %u\n",
+		       sdp->sd_log_num_databuf, sdp->sd_log_commited_databuf);
 		gfs2_assert_withdraw(sdp, 0);
 	}
 	gfs2_assert_withdraw(sdp,

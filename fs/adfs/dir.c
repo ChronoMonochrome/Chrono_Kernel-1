@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/adfs/dir.c
  *
@@ -81,8 +78,8 @@ adfs_dir_update(struct super_block *sb, struct object_info *obj, int wait)
 	struct adfs_dir_ops *ops = ADFS_SB(sb)->s_dir;
 	struct adfs_dir dir;
 
-//	printk(KERN_INFO "adfs_dir_update: object %06X in dir %06X\n",
-;
+	printk(KERN_INFO "adfs_dir_update: object %06X in dir %06X\n",
+		 obj->file_id, obj->parent_id);
 
 	if (!ops->update) {
 		ret = -EINVAL;

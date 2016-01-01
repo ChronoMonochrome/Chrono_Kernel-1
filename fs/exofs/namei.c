@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2005, 2006
  * Avishay Traeger (avishay@gmail.com)
@@ -146,6 +143,9 @@ static int exofs_link(struct dentry *old_dentry, struct inode *dir,
 {
 	struct inode *inode = old_dentry->d_inode;
 
+	if (inode->i_nlink >= EXOFS_LINK_MAX)
+		return -EMLINK;
+
 	inode->i_ctime = CURRENT_TIME;
 	inode_inc_link_count(inode);
 	ihold(inode);
@@ -156,7 +156,10 @@ static int exofs_link(struct dentry *old_dentry, struct inode *dir,
 static int exofs_mkdir(struct inode *dir, struct dentry *dentry, int mode)
 {
 	struct inode *inode;
-	int err;
+	int err = -EMLINK;
+
+	if (dir->i_nlink >= EXOFS_LINK_MAX)
+		goto out;
 
 	inode_inc_link_count(dir);
 
@@ -272,6 +275,11 @@ static int exofs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		if (err)
 			goto out_dir;
 	} else {
+		if (dir_de) {
+			err = -EMLINK;
+			if (new_dir->i_nlink >= EXOFS_LINK_MAX)
+				goto out_dir;
+		}
 		err = exofs_add_link(new_dentry, old_inode);
 		if (err)
 			goto out_dir;

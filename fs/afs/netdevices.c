@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* AFS network device helpers
  *
  * Copyright (c) 2007 Patrick McHardy <kaber@trash.net>

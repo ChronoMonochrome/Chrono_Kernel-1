@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2000-2003,2005 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -119,7 +116,18 @@ xfs_rename(
 	trace_xfs_rename(src_dp, target_dp, src_name, target_name);
 
 	new_parent = (src_dp != target_dp);
-	src_is_directory = S_ISDIR(src_ip->i_d.di_mode);
+	src_is_directory = ((src_ip->i_d.di_mode & S_IFMT) == S_IFDIR);
+
+	if (src_is_directory) {
+		/*
+		 * Check for link count overflow on target_dp
+		 */
+		if (target_ip == NULL && new_parent &&
+		    target_dp->i_d.di_nlink >= XFS_MAXLINK) {
+			error = XFS_ERROR(EMLINK);
+			goto std_return;
+		}
+	}
 
 	xfs_sort_for_rename(src_dp, target_dp, src_ip, target_ip,
 				inodes, &num_inodes);
@@ -218,7 +226,7 @@ xfs_rename(
 		 * target and source are directories and that target can be
 		 * destroyed, or that neither is a directory.
 		 */
-		if (S_ISDIR(target_ip->i_d.di_mode)) {
+		if ((target_ip->i_d.di_mode & S_IFMT) == S_IFDIR) {
 			/*
 			 * Make sure target dir is empty.
 			 */

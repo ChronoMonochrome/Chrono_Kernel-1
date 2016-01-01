@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Copyright (C) 1995, 1996, 1997 Olaf Kirch <okir@monad.swb.de> */
 
 #ifndef _LINUX_NFSD_FH_INT_H

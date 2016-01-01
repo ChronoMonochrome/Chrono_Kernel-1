@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * gcinode.c - dummy inodes to buffer blocks for garbage collection
  *

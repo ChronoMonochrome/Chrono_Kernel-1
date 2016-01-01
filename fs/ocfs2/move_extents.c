@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -1149,7 +1146,7 @@ out:
 
 	kfree(context);
 
-	mnt_drop_write_file(filp);
+	mnt_drop_write(filp->f_path.mnt);
 
 	return status;
 }

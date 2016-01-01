@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #ifndef _OMFS_FS_H
 #define _OMFS_FS_H
 

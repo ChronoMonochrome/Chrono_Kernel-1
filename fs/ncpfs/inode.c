@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  inode.c
  *
@@ -256,7 +253,7 @@ ncp_iget(struct super_block *sb, struct ncp_entry_info *info)
 	struct inode *inode;
 
 	if (info == NULL) {
-;
+		printk(KERN_ERR "ncp_iget: info is NULL\n");
 		return NULL;
 	}
 
@@ -288,7 +285,7 @@ ncp_iget(struct super_block *sb, struct ncp_entry_info *info)
 		}
 		insert_inode_hash(inode);
 	} else
-;
+		printk(KERN_ERR "ncp_iget: iget failed!\n");
 	return inode;
 }
 
@@ -304,7 +301,7 @@ ncp_evict_inode(struct inode *inode)
 
 	if (ncp_make_closed(inode) != 0) {
 		/* We can't do anything but complain. */
-;
+		printk(KERN_ERR "ncp_evict_inode: could not close\n");
 	}
 }
 
@@ -550,7 +547,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
 
 	error = bdi_setup_and_register(&server->bdi, "ncpfs", BDI_CAP_MAP_COPY);
 	if (error)
-		goto out_fput;
+		goto out_bdi;
 
 	server->ncp_filp = ncp_filp;
 	server->ncp_sock = sock;
@@ -561,7 +558,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
 		error = -EBADF;
 		server->info_filp = fget(data.info_fd);
 		if (!server->info_filp)
-			goto out_bdi;
+			goto out_fput;
 		error = -ENOTSOCK;
 		sock_inode = server->info_filp->f_path.dentry->d_inode;
 		if (!S_ISSOCK(sock_inode->i_mode))
@@ -600,7 +597,7 @@ static int ncp_fill_super(struct super_block *sb, void *raw_data, int silent)
 	   now because of PATH_MAX changes.. */
 	if (server->m.time_out < 1) {
 		server->m.time_out = 10;
-;
+		printk(KERN_INFO "You need to recompile your ncpfs utils..\n");
 	}
 	server->m.time_out = server->m.time_out * HZ / 100;
 	server->m.file_mode = (server->m.file_mode & S_IRWXUGO) | S_IFREG;
@@ -748,9 +745,9 @@ out_nls:
 out_fput2:
 	if (server->info_filp)
 		fput(server->info_filp);
-out_bdi:
-	bdi_destroy(&server->bdi);
 out_fput:
+	bdi_destroy(&server->bdi);
+out_bdi:
 	/* 23/12/1998 Marcin Dalecki <dalecki@cs.net.pl>:
 	 * 
 	 * The previously used put_filp(ncp_filp); was bogus, since

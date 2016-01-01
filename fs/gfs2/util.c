@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2006 Red Hat, Inc.  All rights reserved.
@@ -31,8 +28,8 @@ struct kmem_cache *gfs2_quotad_cachep __read_mostly;
 
 void gfs2_assert_i(struct gfs2_sbd *sdp)
 {
-//	printk(KERN_EMERG "GFS2: fsid=%s: fatal assertion failed\n",
-;
+	printk(KERN_EMERG "GFS2: fsid=%s: fatal assertion failed\n",
+	       sdp->sd_fsname);
 }
 
 int gfs2_lm_withdraw(struct gfs2_sbd *sdp, char *fmt, ...)
@@ -46,7 +43,7 @@ int gfs2_lm_withdraw(struct gfs2_sbd *sdp, char *fmt, ...)
 		return 0;
 
 	va_start(args, fmt);
-;
+	vprintk(fmt, args);
 	va_end(args);
 
 	if (sdp->sd_args.ar_errors == GFS2_ERRORS_WITHDRAW) {
@@ -103,11 +100,11 @@ int gfs2_assert_warn_i(struct gfs2_sbd *sdp, char *assertion,
 		return -2;
 
 	if (sdp->sd_args.ar_errors == GFS2_ERRORS_WITHDRAW)
-//		printk(KERN_WARNING
-//		       "GFS2: fsid=%s: warning: assertion \"%s\" failed\n"
-//		       "GFS2: fsid=%s:   function = %s, file = %s, line = %u\n",
-//		       sdp->sd_fsname, assertion,
-;
+		printk(KERN_WARNING
+		       "GFS2: fsid=%s: warning: assertion \"%s\" failed\n"
+		       "GFS2: fsid=%s:   function = %s, file = %s, line = %u\n",
+		       sdp->sd_fsname, assertion,
+		       sdp->sd_fsname, function, file, line);
 
 	if (sdp->sd_args.ar_debug)
 		BUG();

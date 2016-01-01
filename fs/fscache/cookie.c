@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* netfs cookie management
  *
  * Copyright (C) 2004-2007 Red Hat, Inc. All Rights Reserved.
@@ -431,8 +428,8 @@ void __fscache_relinquish_cookie(struct fscache_cookie *cookie, int retire)
 	       cookie, cookie->def->name, cookie->netfs_data, retire);
 
 	if (atomic_read(&cookie->n_children) != 0) {
-//		printk(KERN_ERR "FS-Cache: Cookie '%s' still has children\n",
-;
+		printk(KERN_ERR "FS-Cache: Cookie '%s' still has children\n",
+		       cookie->def->name);
 		BUG();
 	}
 

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  ncplib_kernel.c
  *
@@ -428,7 +425,7 @@ int ncp_obtain_info(struct ncp_server *server, struct inode *dir, const char *pa
 	int result;
 
 	if (target == NULL) {
-;
+		printk(KERN_ERR "ncp_obtain_info: invalid call\n");
 		return -EINVAL;
 	}
 	ncp_init_request(server);

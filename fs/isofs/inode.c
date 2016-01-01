@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/isofs/inode.c
  *
@@ -121,8 +118,8 @@ static void destroy_inodecache(void)
 
 static int isofs_remount(struct super_block *sb, int *flags, char *data)
 {
-	if (!(*flags & MS_RDONLY))
-		return -EROFS;
+	/* we probably want a lot more here */
+	*flags |= MS_RDONLY;
 	return 0;
 }
 
@@ -535,23 +532,23 @@ static unsigned int isofs_get_last_session(struct super_block *sb, s32 session)
 		Te.cdte_format=CDROM_LBA;
 		i = ioctl_by_bdev(bdev, CDROMREADTOCENTRY, (unsigned long) &Te);
 		if (!i) {
-//			printk(KERN_DEBUG "ISOFS: Session %d start %d type %d\n",
-//				session, Te.cdte_addr.lba,
-;
+			printk(KERN_DEBUG "ISOFS: Session %d start %d type %d\n",
+				session, Te.cdte_addr.lba,
+				Te.cdte_ctrl&CDROM_DATA_TRACK);
 			if ((Te.cdte_ctrl&CDROM_DATA_TRACK) == 4)
 				return Te.cdte_addr.lba;
 		}
 
-;
+		printk(KERN_ERR "ISOFS: Invalid session number or type of track\n");
 	}
 	i = ioctl_by_bdev(bdev, CDROMMULTISESSION, (unsigned long) &ms_info);
 	if (session > 0)
-;
+		printk(KERN_ERR "ISOFS: Invalid session number\n");
 #if 0
-;
+	printk(KERN_DEBUG "isofs.inode: CDROMMULTISESSION: rc=%d\n",i);
 	if (i==0) {
-;
-;
+		printk(KERN_DEBUG "isofs.inode: XA disk: %s\n",ms_info.xa_flag?"yes":"no");
+		printk(KERN_DEBUG "isofs.inode: vol_desc_start = %d\n", ms_info.addr.lba);
 	}
 #endif
 	if (i==0)
@@ -679,9 +676,9 @@ static int isofs_fill_super(struct super_block *s, void *data, int silent)
 						else if (sec->escape[2] == 0x45)
 							joliet_level = 3;
 
-//						printk(KERN_DEBUG "ISO 9660 Extensions: "
-//							"Microsoft Joliet Level %d\n",
-;
+						printk(KERN_DEBUG "ISO 9660 Extensions: "
+							"Microsoft Joliet Level %d\n",
+							joliet_level);
 					}
 					goto root_found;
 				} else {
@@ -771,6 +768,15 @@ root_found:
 	 */
 	s->s_maxbytes = 0x80000000000LL;
 
+	/*
+	 * The CDROM is read-only, has no nodes (devices) on it, and since
+	 * all of the files appear to be owned by root, we really do not want
+	 * to allow suid.  (suid or devices will not show up unless we have
+	 * Rock Ridge extensions)
+	 */
+
+	s->s_flags |= MS_RDONLY /* | MS_NODEV | MS_NOSUID */;
+
 	/* Set this for reference. Its not currently used except on write
 	   which we don't have .. */
 
@@ -778,11 +784,11 @@ root_found:
 			  isonum_711(rootp->ext_attr_length);
 	sbi->s_firstdatazone = first_data_zone;
 #ifndef BEQUIET
-//	printk(KERN_DEBUG "ISOFS: Max size:%ld   Log zone size:%ld\n",
-;
-;
+	printk(KERN_DEBUG "ISOFS: Max size:%ld   Log zone size:%ld\n",
+		sbi->s_max_size, 1UL << sbi->s_log_zone_size);
+	printk(KERN_DEBUG "ISOFS: First datazone:%ld\n", sbi->s_firstdatazone);
 	if(sbi->s_high_sierra)
-;
+		printk(KERN_DEBUG "ISOFS: Disc in High Sierra format.\n");
 #endif
 
 	/*
@@ -886,9 +892,9 @@ root_found:
 	 */
 	if (sbi->s_rock == 1 && joliet_level &&
 				rootdir_empty(s, sbi->s_firstdatazone)) {
-//		printk(KERN_NOTICE
-//			"ISOFS: primary root directory is empty. "
-;
+		printk(KERN_NOTICE
+			"ISOFS: primary root directory is empty. "
+			"Disabling Rock Ridge and switching to Joliet.");
 		sbi->s_rock = 0;
 	}
 
@@ -906,8 +912,8 @@ root_found:
 		sbi->s_rock = 0;
 		if (sbi->s_firstdatazone != first_data_zone) {
 			sbi->s_firstdatazone = first_data_zone;
-//			printk(KERN_DEBUG
-;
+			printk(KERN_DEBUG
+				"ISOFS: changing to secondary root\n");
 			iput(inode);
 			inode = isofs_iget(s, sbi->s_firstdatazone, 0);
 			if (IS_ERR(inode))
@@ -926,9 +932,9 @@ root_found:
 
 	/* Make sure the root inode is a directory */
 	if (!S_ISDIR(inode->i_mode)) {
-//		printk(KERN_WARNING
-//			"isofs_fill_super: root inode is not a directory. "
-;
+		printk(KERN_WARNING
+			"isofs_fill_super: root inode is not a directory. "
+			"Corrupted media?\n");
 		goto out_iput;
 	}
 
@@ -958,27 +964,27 @@ out_iput:
 out_no_root:
 	error = PTR_ERR(inode);
 	if (error != -ENOMEM)
-;
+		printk(KERN_WARNING "%s: get root inode failed\n", __func__);
 out_no_inode:
 #ifdef CONFIG_JOLIET
 	unload_nls(sbi->s_nls_iocharset);
 #endif
 	goto out_freesbi;
 out_no_read:
-//	printk(KERN_WARNING "%s: bread failed, dev=%s, iso_blknum=%d, block=%d\n",
-;
+	printk(KERN_WARNING "%s: bread failed, dev=%s, iso_blknum=%d, block=%d\n",
+		__func__, s->s_id, iso_blknum, block);
 	goto out_freebh;
 out_bad_zone_size:
-//	printk(KERN_WARNING "ISOFS: Bad logical zone size %ld\n",
-;
+	printk(KERN_WARNING "ISOFS: Bad logical zone size %ld\n",
+		sbi->s_log_zone_size);
 	goto out_freebh;
 out_bad_size:
-//	printk(KERN_WARNING "ISOFS: Logical zone size(%d) < hardware blocksize(%u)\n",
-;
+	printk(KERN_WARNING "ISOFS: Logical zone size(%d) < hardware blocksize(%u)\n",
+		orig_zonesize, opt.blocksize);
 	goto out_freebh;
 out_unknown_format:
 	if (!silent)
-;
+		printk(KERN_WARNING "ISOFS: Unable to identify CD-ROM format.\n");
 
 out_freebh:
 	brelse(bh);
@@ -1027,7 +1033,7 @@ int isofs_get_blocks(struct inode *inode, sector_t iblock,
 	error = -EIO;
 	rv = 0;
 	if (iblock != b_off) {
-;
+		printk(KERN_DEBUG "%s: block number too large\n", __func__);
 		goto abort;
 	}
 
@@ -1048,9 +1054,9 @@ int isofs_get_blocks(struct inode *inode, sector_t iblock,
 		 * I/O errors.
 		 */
 		if (b_off > ((inode->i_size + PAGE_CACHE_SIZE - 1) >> ISOFS_BUFFER_BITS(inode))) {
-//			printk(KERN_DEBUG "%s: block >= EOF (%lu, %llu)\n",
-//				__func__, b_off,
-;
+			printk(KERN_DEBUG "%s: block >= EOF (%lu, %llu)\n",
+				__func__, b_off,
+				(unsigned long long)inode->i_size);
 			goto abort;
 		}
 
@@ -1074,12 +1080,12 @@ int isofs_get_blocks(struct inode *inode, sector_t iblock,
 			iput(ninode);
 
 			if (++section > 100) {
-//				printk(KERN_DEBUG "%s: More than 100 file sections ?!?"
-;
-//				printk(KERN_DEBUG "%s: block=%lu firstext=%u sect_size=%u "
-//					"nextblk=%lu nextoff=%lu\n", __func__,
-//					b_off, firstext, (unsigned) sect_size,
-;
+				printk(KERN_DEBUG "%s: More than 100 file sections ?!?"
+					" aborting...\n", __func__);
+				printk(KERN_DEBUG "%s: block=%lu firstext=%u sect_size=%u "
+					"nextblk=%lu nextoff=%lu\n", __func__,
+					b_off, firstext, (unsigned) sect_size,
+					nextblk, nextoff);
 				goto abort;
 			}
 		}
@@ -1111,7 +1117,7 @@ static int isofs_get_block(struct inode *inode, sector_t iblock,
 	int ret;
 
 	if (create) {
-;
+		printk(KERN_DEBUG "%s: Kernel tries to allocate a block\n", __func__);
 		return -EROFS;
 	}
 
@@ -1247,14 +1253,14 @@ out_nomem:
 	return -ENOMEM;
 
 out_noread:
-;
+	printk(KERN_INFO "ISOFS: unable to read i-node block %lu\n", block);
 	kfree(tmpde);
 	return -EIO;
 
 out_toomany:
-//	printk(KERN_INFO "%s: More than 100 file sections ?!?, aborting...\n"
-//		"isofs_read_level3_size: inode=%lu\n",
-;
+	printk(KERN_INFO "%s: More than 100 file sections ?!?, aborting...\n"
+		"isofs_read_level3_size: inode=%lu\n",
+		__func__, inode->i_ino);
 	goto out;
 }
 
@@ -1288,7 +1294,7 @@ static int isofs_read_inode(struct inode *inode)
 
 		tmpde = kmalloc(de_len, GFP_KERNEL);
 		if (tmpde == NULL) {
-;
+			printk(KERN_INFO "%s: out of memory\n", __func__);
 			ret = -ENOMEM;
 			goto fail;
 		}
@@ -1363,24 +1369,24 @@ static int isofs_read_inode(struct inode *inode)
 		inode->i_size &= 0x00ffffff;
 
 	if (de->interleave[0]) {
-;
+		printk(KERN_DEBUG "ISOFS: Interleaved files not (yet) supported.\n");
 		inode->i_size = 0;
 	}
 
 	/* I have no idea what file_unit_size is used for, so
 	   we will flag it for now */
 	if (de->file_unit_size[0] != 0) {
-//		printk(KERN_DEBUG "ISOFS: File unit size != 0 for ISO file (%ld).\n",
-;
+		printk(KERN_DEBUG "ISOFS: File unit size != 0 for ISO file (%ld).\n",
+			inode->i_ino);
 	}
 
 	/* I have no idea what other flag bits are used for, so
 	   we will flag it for now */
 #ifdef DEBUG
 	if((de->flags[-high_sierra] & ~2)!= 0){
-//		printk(KERN_DEBUG "ISOFS: Unusual flag settings for ISO file "
-//				"(%ld %x).\n",
-;
+		printk(KERN_DEBUG "ISOFS: Unusual flag settings for ISO file "
+				"(%ld %x).\n",
+			inode->i_ino, de->flags[-high_sierra]);
 	}
 #endif
 
@@ -1449,7 +1455,7 @@ out:
 	return ret;
 
 out_badread:
-;
+	printk(KERN_WARNING "ISOFS: unable to read i-node block\n");
 fail:
 	goto out;
 }
@@ -1521,9 +1527,6 @@ struct inode *isofs_iget(struct super_block *sb,
 static struct dentry *isofs_mount(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *data)
 {
-	/* We don't support read-write mounts */
-	if (!(flags & MS_RDONLY))
-		return ERR_PTR(-EACCES);
 	return mount_bdev(fs_type, flags, dev_name, data, isofs_fill_super);
 }
 

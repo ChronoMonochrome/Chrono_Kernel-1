@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -171,9 +168,9 @@ static void configfs_set_inode_lock_class(struct configfs_dirent *sd,
 			 * In practice the maximum level of locking depth is
 			 * already reached. Just inform about possible reasons.
 			 */
-//			printk(KERN_INFO "configfs: Too many levels of inodes"
-;
-;
+			printk(KERN_INFO "configfs: Too many levels of inodes"
+			       " for the locking correctness validator.\n");
+			printk(KERN_INFO "Spurious warnings may appear.\n");
 		}
 	}
 }
@@ -294,7 +291,7 @@ int __init configfs_inode_init(void)
 	return bdi_init(&configfs_backing_dev_info);
 }
 
-void configfs_inode_exit(void)
+void __exit configfs_inode_exit(void)
 {
 	bdi_destroy(&configfs_backing_dev_info);
 }

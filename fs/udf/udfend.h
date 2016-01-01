@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #ifndef __UDF_ENDIAN_H
 #define __UDF_ENDIAN_H
 

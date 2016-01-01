@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * JFFS2 -- Journalling Flash File System, Version 2.
  *
@@ -31,11 +28,6 @@
 #define JFFS2_SB_FLAG_BUILDING 4 /* File system building is in progress */
 
 struct jffs2_inodirty;
-
-struct jffs2_mount_opts {
-	bool override_compr;
-	unsigned int compr;
-};
 
 /* A struct for the overall file system control.  Pointers to
    jffs2_sb_info structs are named `c' in the source code.
@@ -134,7 +126,6 @@ struct jffs2_sb_info {
 #endif
 
 	struct jffs2_summary *summary;		/* Summary information */
-	struct jffs2_mount_opts mount_opts;
 
 #ifdef CONFIG_JFFS2_FS_XATTR
 #define XATTRINDEX_HASHSIZE	(57)

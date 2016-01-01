@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   fs/cifs/cifsproto.h
  *
@@ -72,9 +69,8 @@ extern struct mid_q_entry *AllocMidQEntry(const struct smb_hdr *smb_buffer,
 					struct TCP_Server_Info *server);
 extern void DeleteMidQEntry(struct mid_q_entry *midEntry);
 extern int cifs_call_async(struct TCP_Server_Info *server, struct kvec *iov,
-			   unsigned int nvec, mid_receive_t *receive,
-			   mid_callback_t *callback, void *cbdata,
-			   bool ignore_pend);
+			   unsigned int nvec, mid_callback_t *callback,
+			   void *cbdata, bool ignore_pend);
 extern int SendReceive(const unsigned int /* xid */ , struct cifs_ses *,
 			struct smb_hdr * /* input */ ,
 			struct smb_hdr * /* out */ ,
@@ -94,7 +90,6 @@ extern int SendReceiveBlockingLock(const unsigned int xid,
 extern int checkSMB(struct smb_hdr *smb, __u16 mid, unsigned int length);
 extern bool is_valid_oplock_break(struct smb_hdr *smb,
 				  struct TCP_Server_Info *);
-extern bool backup_cred(struct cifs_sb_info *);
 extern bool is_size_safe_to_change(struct cifsInodeInfo *, __u64 eof);
 extern void cifs_update_eof(struct cifsInodeInfo *cifsi, loff_t offset,
 			    unsigned int bytes_written);
@@ -150,19 +145,12 @@ extern int cifs_get_inode_info_unix(struct inode **pinode,
 extern int cifs_acl_to_fattr(struct cifs_sb_info *cifs_sb,
 			      struct cifs_fattr *fattr, struct inode *inode,
 			      const char *path, const __u16 *pfid);
-extern int id_mode_to_cifs_acl(struct inode *inode, const char *path, __u64,
-					uid_t, gid_t);
+extern int mode_to_cifs_acl(struct inode *inode, const char *path, __u64);
 extern struct cifs_ntsd *get_cifs_acl(struct cifs_sb_info *, struct inode *,
 					const char *, u32 *);
 extern int set_cifs_acl(struct cifs_ntsd *, __u32, struct inode *,
-				const char *, int);
+				const char *);
 
-extern void dequeue_mid(struct mid_q_entry *mid, bool malformed);
-extern int cifs_read_from_socket(struct TCP_Server_Info *server, char *buf,
-		     unsigned int to_read);
-extern int cifs_readv_from_socket(struct TCP_Server_Info *server,
-		struct kvec *iov_orig, unsigned int nr_segs,
-		unsigned int to_read);
 extern void cifs_setup_cifs_sb(struct smb_vol *pvolume_info,
 			       struct cifs_sb_info *cifs_sb);
 extern int cifs_match_super(struct super_block *, void *);
@@ -371,17 +359,14 @@ extern int CIFSGetSrvInodeNumber(const int xid, struct cifs_tcon *tcon,
 			const struct nls_table *nls_codepage,
 			int remap_special_chars);
 
-extern int cifs_lockv(const int xid, struct cifs_tcon *tcon, const __u16 netfid,
-		      const __u8 lock_type, const __u32 num_unlock,
-		      const __u32 num_lock, LOCKING_ANDX_RANGE *buf);
 extern int CIFSSMBLock(const int xid, struct cifs_tcon *tcon,
-			const __u16 netfid, const __u32 netpid, const __u64 len,
+			const __u16 netfid, const __u64 len,
 			const __u64 offset, const __u32 numUnlock,
 			const __u32 numLock, const __u8 lockType,
 			const bool waitFlag, const __u8 oplock_level);
 extern int CIFSSMBPosixLock(const int xid, struct cifs_tcon *tcon,
-			const __u16 smb_file_id, const __u32 netpid,
-			const int get_flag, const __u64 len, struct file_lock *,
+			const __u16 smb_file_id, const int get_flag,
+			const __u64 len, struct file_lock *,
 			const __u16 lock_type, const bool waitFlag);
 extern int CIFSSMBTDis(const int xid, struct cifs_tcon *tcon);
 extern int CIFSSMBEcho(struct TCP_Server_Info *server);
@@ -395,12 +380,11 @@ extern void tconInfoFree(struct cifs_tcon *);
 extern int cifs_sign_smb(struct smb_hdr *, struct TCP_Server_Info *, __u32 *);
 extern int cifs_sign_smb2(struct kvec *iov, int n_vec, struct TCP_Server_Info *,
 			  __u32 *);
-extern int cifs_verify_signature(struct kvec *iov, unsigned int nr_iov,
+extern int cifs_verify_signature(struct smb_hdr *,
 				 struct TCP_Server_Info *server,
 				__u32 expected_sequence_number);
-extern int SMBNTencrypt(unsigned char *, unsigned char *, unsigned char *,
-			const struct nls_table *);
-extern int setup_ntlm_response(struct cifs_ses *, const struct nls_table *);
+extern int SMBNTencrypt(unsigned char *, unsigned char *, unsigned char *);
+extern int setup_ntlm_response(struct cifs_ses *);
 extern int setup_ntlmv2_rsp(struct cifs_ses *, const struct nls_table *);
 extern int cifs_crypto_shash_allocate(struct TCP_Server_Info *);
 extern void cifs_crypto_shash_release(struct TCP_Server_Info *);
@@ -435,7 +419,7 @@ extern int CIFSSMBSetEA(const int xid, struct cifs_tcon *tcon,
 extern int CIFSSMBGetCIFSACL(const int xid, struct cifs_tcon *tcon,
 			__u16 fid, struct cifs_ntsd **acl_inf, __u32 *buflen);
 extern int CIFSSMBSetCIFSACL(const int, struct cifs_tcon *, __u16,
-			struct cifs_ntsd *, __u32, int);
+			struct cifs_ntsd *, __u32);
 extern int CIFSSMBGetPosixACL(const int xid, struct cifs_tcon *tcon,
 		const unsigned char *searchName,
 		char *acl_inf, const int buflen, const int acl_type,
@@ -452,28 +436,9 @@ extern int CIFSCheckMFSymlink(struct cifs_fattr *fattr,
 		const unsigned char *path,
 		struct cifs_sb_info *cifs_sb, int xid);
 extern int mdfour(unsigned char *, unsigned char *, int);
-extern int E_md4hash(const unsigned char *passwd, unsigned char *p16,
-			const struct nls_table *codepage);
+extern int E_md4hash(const unsigned char *passwd, unsigned char *p16);
 extern int SMBencrypt(unsigned char *passwd, const unsigned char *c8,
 			unsigned char *p24);
-
-/* asynchronous read support */
-struct cifs_readdata {
-	struct cifsFileInfo		*cfile;
-	struct address_space		*mapping;
-	__u64				offset;
-	unsigned int			bytes;
-	pid_t				pid;
-	int				result;
-	struct list_head		pages;
-	struct work_struct		work;
-	unsigned int			nr_iov;
-	struct kvec			iov[1];
-};
-
-struct cifs_readdata *cifs_readdata_alloc(unsigned int nr_pages);
-void cifs_readdata_free(struct cifs_readdata *rdata);
-int cifs_async_readv(struct cifs_readdata *rdata);
 
 /* asynchronous write support */
 struct cifs_writedata {

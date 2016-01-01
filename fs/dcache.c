@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * fs/dcache.c
  *
@@ -41,6 +38,7 @@
 #include <linux/prefetch.h>
 #include <linux/ratelimit.h>
 #include "internal.h"
+#include "mount.h"
 
 /*
  * Usage:
@@ -80,7 +78,7 @@
  *   dentry1->d_lock
  *     dentry2->d_lock
  */
-int sysctl_vfs_cache_pressure __read_mostly = 50;
+int sysctl_vfs_cache_pressure __read_mostly = 100;
 EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
 
 static __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_lru_lock);
@@ -591,6 +589,10 @@ repeat:
 	 */
 	rcu_read_lock();
 	ret = dentry->d_parent;
+	if (!ret) {
+		rcu_read_unlock();
+		goto out;
+	}
 	spin_lock(&ret->d_lock);
 	if (unlikely(ret != dentry->d_parent)) {
 		spin_unlock(&ret->d_lock);
@@ -601,6 +603,7 @@ repeat:
 	BUG_ON(!ret->d_count);
 	ret->d_count++;
 	spin_unlock(&ret->d_lock);
+out:
 	return ret;
 }
 EXPORT_SYMBOL(dget_parent);
@@ -894,17 +897,17 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
 			__d_shrink(dentry);
 
 			if (dentry->d_count != 0) {
-//				printk(KERN_ERR
-//				       "BUG: Dentry %p{i=%lx,n=%s}"
-//				       " still in use (%d)"
-//				       " [unmount of %s %s]\n",
-//				       dentry,
-//				       dentry->d_inode ?
-//				       dentry->d_inode->i_ino : 0UL,
-//				       dentry->d_name.name,
-//				       dentry->d_count,
-//				       dentry->d_sb->s_type->name,
-;
+				printk(KERN_ERR
+				       "BUG: Dentry %p{i=%lx,n=%s}"
+				       " still in use (%d)"
+				       " [unmount of %s %s]\n",
+				       dentry,
+				       dentry->d_inode ?
+				       dentry->d_inode->i_ino : 0UL,
+				       dentry->d_name.name,
+				       dentry->d_count,
+				       dentry->d_sb->s_type->name,
+				       dentry->d_sb->s_id);
 				BUG();
 			}
 
@@ -1472,23 +1475,6 @@ struct dentry * d_alloc_root(struct inode * root_inode)
 }
 EXPORT_SYMBOL(d_alloc_root);
 
-struct dentry *d_make_root(struct inode *root_inode)
-{
-	struct dentry *res = NULL;
-
-	if (root_inode) {
-		static const struct qstr name = { .name = "/", .len = 1 };
-
-		res = __d_alloc(root_inode->i_sb, &name);
-		if (res)
-			d_instantiate(res, root_inode);
-		else
-			iput(root_inode);
-	}
-	return res;
-}
-EXPORT_SYMBOL(d_make_root);
-
 static struct dentry * __d_find_any_alias(struct inode *inode)
 {
 	struct dentry *alias;
@@ -1500,14 +1486,7 @@ static struct dentry * __d_find_any_alias(struct inode *inode)
 	return alias;
 }
 
-/**
- * d_find_any_alias - find any alias for a given inode
- * @inode: inode to find an alias for
- *
- * If any aliases exist for the given inode, take and return a
- * reference for one of them.  If no aliases exist, return %NULL.
- */
-struct dentry *d_find_any_alias(struct inode *inode)
+static struct dentry * d_find_any_alias(struct inode *inode)
 {
 	struct dentry *de;
 
@@ -1516,7 +1495,7 @@ struct dentry *d_find_any_alias(struct inode *inode)
 	spin_unlock(&inode->i_lock);
 	return de;
 }
-EXPORT_SYMBOL(d_find_any_alias);
+
 
 /**
  * d_obtain_alias - find or allocate a dentry for a given inode
@@ -1702,12 +1681,26 @@ struct dentry *d_add_ci(struct dentry *dentry, struct inode *inode,
 	 * Negative dentry: instantiate it unless the inode is a directory and
 	 * already has a dentry.
 	 */
-	new = d_splice_alias(inode, found);
-	if (new) {
-		dput(found);
-		found = new;
+	spin_lock(&inode->i_lock);
+	if (!S_ISDIR(inode->i_mode) || list_empty(&inode->i_dentry)) {
+		__d_instantiate(found, inode);
+		spin_unlock(&inode->i_lock);
+		security_d_instantiate(found, inode);
+		return found;
 	}
-	return found;
+
+	/*
+	 * In case a directory already has a (disconnected) entry grab a
+	 * reference to it, move it in place and use it.
+	 */
+	new = list_entry(inode->i_dentry.next, struct dentry, d_alias);
+	__dget(new);
+	spin_unlock(&inode->i_lock);
+	security_d_instantiate(found, inode);
+	d_move(new, found);
+	iput(inode);
+	dput(found);
+	return new;
 
 err_out:
 	iput(inode);
@@ -2200,7 +2193,7 @@ static void dentry_unlock_parents_for_move(struct dentry *dentry,
 static void __d_move(struct dentry * dentry, struct dentry * target)
 {
 	if (!dentry->d_inode)
-;
+		printk(KERN_WARNING "VFS: moving negative dcache entry\n");
 
 	BUG_ON(d_ancestor(dentry, target));
 	BUG_ON(d_ancestor(target, dentry));
@@ -2497,9 +2490,8 @@ static int prepend_path(const struct path *path,
 
 		if (dentry == vfsmnt->mnt_root || IS_ROOT(dentry)) {
 			/* Global root? */
-			if (vfsmnt->mnt_parent == vfsmnt) {
+			if (!mnt_has_parent(vfsmnt))
 				goto global_root;
-			}
 			dentry = vfsmnt->mnt_mountpoint;
 			vfsmnt = vfsmnt->mnt_parent;
 			continue;
@@ -2890,31 +2882,6 @@ int is_subdir(struct dentry *new_dentry, struct dentry *old_dentry)
 	return result;
 }
 
-int path_is_under(struct path *path1, struct path *path2)
-{
-	struct vfsmount *mnt = path1->mnt;
-	struct dentry *dentry = path1->dentry;
-	int res;
-
-	br_read_lock(vfsmount_lock);
-	if (mnt != path2->mnt) {
-		for (;;) {
-			if (mnt->mnt_parent == mnt) {
-				br_read_unlock(vfsmount_lock);
-				return 0;
-			}
-			if (mnt->mnt_parent == path2->mnt)
-				break;
-			mnt = mnt->mnt_parent;
-		}
-		dentry = mnt->mnt_mountpoint;
-	}
-	res = is_subdir(dentry, path2->dentry);
-	br_read_unlock(vfsmount_lock);
-	return res;
-}
-EXPORT_SYMBOL(path_is_under);
-
 void d_genocide(struct dentry *root)
 {
 	struct dentry *this_parent;
@@ -3036,7 +3003,6 @@ static void __init dcache_init_early(void)
 					HASH_EARLY,
 					&d_hash_shift,
 					&d_hash_mask,
-					0,
 					0);
 
 	for (loop = 0; loop < (1 << d_hash_shift); loop++)
@@ -3067,7 +3033,6 @@ static void __init dcache_init(void)
 					0,
 					&d_hash_shift,
 					&d_hash_mask,
-					0,
 					0);
 
 	for (loop = 0; loop < (1 << d_hash_shift); loop++)

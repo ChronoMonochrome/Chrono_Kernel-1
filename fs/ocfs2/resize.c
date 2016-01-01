@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -258,10 +255,10 @@ static void ocfs2_update_super_and_backups(struct inode *inode,
 out:
 	brelse(super_bh);
 	if (ret)
-//		printk(KERN_WARNING "ocfs2: Failed to update super blocks on %s"
-//			" during fs resize. This condition is not fatal,"
-//			" but fsck.ocfs2 should be run to fix it\n",
-;
+		printk(KERN_WARNING "ocfs2: Failed to update super blocks on %s"
+			" during fs resize. This condition is not fatal,"
+			" but fsck.ocfs2 should be run to fix it\n",
+			osb->dev_str);
 	return;
 }
 

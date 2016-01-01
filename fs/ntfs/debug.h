@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * debug.h - NTFS kernel debug support. Part of the Linux-NTFS project.
  *

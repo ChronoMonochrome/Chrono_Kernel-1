@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext2/dir.c
  *
@@ -697,7 +694,7 @@ int ext2_empty_dir (struct inode * inode)
 			if (de->rec_len == 0) {
 				ext2_error(inode->i_sb, __func__,
 					"zero-length directory entry");
-;
+				printk("kaddr=%p, de=%p\n", kaddr, de);
 				goto not_empty;
 			}
 			if (de->inode != 0) {

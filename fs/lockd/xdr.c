@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/lockd/xdr.c
  *
@@ -63,9 +60,9 @@ static __be32 *nlm_decode_cookie(__be32 *p, struct nlm_cookie *c)
 	}
 	else 
 	{
-//		dprintk("lockd: bad cookie size %d (only cookies under "
-//			"%d bytes are supported.)\n",
-;
+		dprintk("lockd: bad cookie size %d (only cookies under "
+			"%d bytes are supported.)\n",
+				len, NLM_MAXCOOKIELEN);
 		return NULL;
 	}
 	return p;
@@ -86,8 +83,8 @@ nlm_decode_fh(__be32 *p, struct nfs_fh *f)
 	unsigned int	len;
 
 	if ((len = ntohl(*p++)) != NFS2_FHSIZE) {
-//		dprintk("lockd: bad fhandle size %d (should be %d)\n",
-;
+		dprintk("lockd: bad fhandle size %d (should be %d)\n",
+			len, NFS2_FHSIZE);
 		return NULL;
 	}
 	f->size = NFS2_FHSIZE;

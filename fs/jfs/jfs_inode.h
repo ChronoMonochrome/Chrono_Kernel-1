@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   Copyright (C) International Business Machines Corp., 2000-2001
  *
@@ -24,7 +21,7 @@
 struct fid;
 
 extern struct inode *ialloc(struct inode *, umode_t);
-extern int jfs_fsync(struct file *, int);
+extern int jfs_fsync(struct file *, loff_t, loff_t, int);
 extern long jfs_ioctl(struct file *, unsigned int, unsigned long);
 extern long jfs_compat_ioctl(struct file *, unsigned int, unsigned long);
 extern struct inode *jfs_iget(struct super_block *, unsigned long);

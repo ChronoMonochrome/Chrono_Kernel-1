@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- linux-c -*- --------------------------------------------------------- *
  *
  * linux/fs/devpts/inode.c
@@ -157,7 +154,7 @@ static int parse_mount_options(char *data, int op, struct pts_mount_opts *opts)
 			break;
 #endif
 		default:
-;
+			printk(KERN_ERR "devpts: called with bogus options\n");
 			return -EINVAL;
 		}
 	}
@@ -186,7 +183,7 @@ static int mknod_ptmx(struct super_block *sb)
 
 	dentry = d_alloc_name(root, "ptmx");
 	if (!dentry) {
-;
+		printk(KERN_NOTICE "Unable to alloc dentry for ptmx node\n");
 		goto out;
 	}
 
@@ -195,7 +192,7 @@ static int mknod_ptmx(struct super_block *sb)
 	 */
 	inode = new_inode(sb);
 	if (!inode) {
-;
+		printk(KERN_ERR "Unable to alloc inode for ptmx node\n");
 		dput(dentry);
 		goto out;
 	}
@@ -316,7 +313,7 @@ devpts_fill_super(struct super_block *s, void *data, int silent)
 	if (s->s_root)
 		return 0;
 
-;
+	printk(KERN_ERR "devpts: get root dentry failed\n");
 	iput(inode);
 
 free_fsi:

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/fcntl.c
  *
@@ -35,20 +32,20 @@ void set_close_on_exec(unsigned int fd, int flag)
 	spin_lock(&files->file_lock);
 	fdt = files_fdtable(files);
 	if (flag)
-		__set_close_on_exec(fd, fdt);
+		FD_SET(fd, fdt->close_on_exec);
 	else
-		__clear_close_on_exec(fd, fdt);
+		FD_CLR(fd, fdt->close_on_exec);
 	spin_unlock(&files->file_lock);
 }
 
-static bool get_close_on_exec(unsigned int fd)
+static int get_close_on_exec(unsigned int fd)
 {
 	struct files_struct *files = current->files;
 	struct fdtable *fdt;
-	bool res;
+	int res;
 	rcu_read_lock();
 	fdt = files_fdtable(files);
-	res = close_on_exec(fd, fdt);
+	res = FD_ISSET(fd, fdt->close_on_exec);
 	rcu_read_unlock();
 	return res;
 }
@@ -93,15 +90,15 @@ SYSCALL_DEFINE3(dup3, unsigned int, oldfd, unsigned int, newfd, int, flags)
 	err = -EBUSY;
 	fdt = files_fdtable(files);
 	tofree = fdt->fd[newfd];
-	if (!tofree && fd_is_open(newfd, fdt))
+	if (!tofree && FD_ISSET(newfd, fdt->open_fds))
 		goto out_unlock;
 	get_file(file);
 	rcu_assign_pointer(fdt->fd[newfd], file);
-	__set_open_fd(newfd, fdt);
+	FD_SET(newfd, fdt->open_fds);
 	if (flags & O_CLOEXEC)
-		__set_close_on_exec(newfd, fdt);
+		FD_SET(newfd, fdt->close_on_exec);
 	else
-		__clear_close_on_exec(newfd, fdt);
+		FD_CLR(newfd, fdt->close_on_exec);
 	spin_unlock(&files->file_lock);
 
 	if (tofree)
@@ -158,28 +155,12 @@ static int setfl(int fd, struct file * filp, unsigned long arg)
 	 * and the file is open for write.
 	 */
 	if (((arg ^ filp->f_flags) & O_APPEND) && IS_APPEND(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/* O_NOATIME can only be set by the owner or superuser */
 	if ((arg & O_NOATIME) && !(filp->f_flags & O_NOATIME))
 		if (!inode_owner_or_capable(inode))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 	/* required for strict SunOS emulation */
 	if (O_NONBLOCK != O_NDELAY)
@@ -816,8 +797,8 @@ static void kill_fasync_rcu(struct fasync_struct *fa, int sig, int band)
 		unsigned long flags;
 
 		if (fa->magic != FASYNC_MAGIC) {
-//			printk(KERN_ERR "kill_fasync: bad magic number in "
-;
+			printk(KERN_ERR "kill_fasync: bad magic number in "
+			       "fasync_struct!\n");
 			return;
 		}
 		spin_lock_irqsave(&fa->fa_lock, flags);

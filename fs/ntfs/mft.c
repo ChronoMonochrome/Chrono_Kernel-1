@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /**
  * mft.c - NTFS kernel mft record operations. Part of the Linux-NTFS project.
  *

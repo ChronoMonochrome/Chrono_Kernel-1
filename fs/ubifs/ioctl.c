@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * This file is part of UBIFS.
  *
@@ -181,7 +178,7 @@ long ubifs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			return err;
 		dbg_gen("set flags: %#x, i_flags %#x", flags, inode->i_flags);
 		err = setflags(inode, flags);
-		mnt_drop_write_file(file);
+		mnt_drop_write(file->f_path.mnt);
 		return err;
 	}
 

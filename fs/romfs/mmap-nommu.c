@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* NOMMU mmap support for RomFS on MTD devices
  *
  * Copyright © 2007 Red Hat, Inc. All Rights Reserved.

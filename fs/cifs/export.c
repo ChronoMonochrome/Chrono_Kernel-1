@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   fs/cifs/export.c
  *
@@ -48,7 +45,7 @@
 #include "cifs_debug.h"
 #include "cifsfs.h"
 
-#ifdef CONFIG_CIFS_NFSD_EXPORT
+#ifdef CIFS_NFSD_EXPORT
 static struct dentry *cifs_get_parent(struct dentry *dentry)
 {
 	/* BB need to add code here eventually to enable export via NFSD */
@@ -66,5 +63,5 @@ const struct export_operations cifs_export_ops = {
 	.encode_fs =  */
 };
 
-#endif /* CONFIG_CIFS_NFSD_EXPORT */
+#endif /* CIFS_NFSD_EXPORT */
 

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * directory.c
  *
@@ -204,7 +201,7 @@ struct short_ad *udf_get_fileshortad(uint8_t *ptr, int maxoffset, uint32_t *offs
 	struct short_ad *sa;
 
 	if ((!ptr) || (!offset)) {
-;
+		printk(KERN_ERR "udf: udf_get_fileshortad() invalidparms\n");
 		return NULL;
 	}
 
@@ -226,7 +223,7 @@ struct long_ad *udf_get_filelongad(uint8_t *ptr, int maxoffset, uint32_t *offset
 	struct long_ad *la;
 
 	if ((!ptr) || (!offset)) {
-;
+		printk(KERN_ERR "udf: udf_get_filelongad() invalidparms\n");
 		return NULL;
 	}
 

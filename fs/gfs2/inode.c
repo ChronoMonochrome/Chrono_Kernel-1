@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) Sistina Software, Inc.  1997-2003 All rights reserved.
  * Copyright (C) 2004-2011 Red Hat, Inc.  All rights reserved.
@@ -793,8 +790,13 @@ static int gfs2_create(struct inode *dir, struct dentry *dentry,
 static struct dentry *gfs2_lookup(struct inode *dir, struct dentry *dentry,
 				  struct nameidata *nd)
 {
-	struct inode *inode = gfs2_lookupi(dir, &dentry->d_name, 0);
-	if (inode && !IS_ERR(inode)) {
+	struct inode *inode = NULL;
+
+	inode = gfs2_lookupi(dir, &dentry->d_name, 0);
+	if (inode && IS_ERR(inode))
+		return ERR_CAST(inode);
+
+	if (inode) {
 		struct gfs2_glock *gl = GFS2_I(inode)->i_gl;
 		struct gfs2_holder gh;
 		int error;
@@ -804,8 +806,11 @@ static struct dentry *gfs2_lookup(struct inode *dir, struct dentry *dentry,
 			return ERR_PTR(error);
 		}
 		gfs2_glock_dq_uninit(&gh);
+		return d_splice_alias(inode, dentry);
 	}
-	return d_splice_alias(inode, dentry);
+	d_add(dentry, inode);
+
+	return NULL;
 }
 
 /**
@@ -833,15 +838,7 @@ static int gfs2_link(struct dentry *old_dentry, struct inode *dir,
 	int error;
 
 	if (S_ISDIR(inode->i_mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	gfs2_holder_init(dip->i_gl, LM_ST_EXCLUSIVE, 0, ghs);
 	gfs2_holder_init(ip->i_gl, LM_ST_EXCLUSIVE, 0, ghs + 1);
@@ -981,39 +978,15 @@ static int gfs2_unlink_ok(struct gfs2_inode *dip, const struct qstr *name,
 	int error;
 
 	if (IS_IMMUTABLE(&ip->i_inode) || IS_APPEND(&ip->i_inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if ((dip->i_inode.i_mode & S_ISVTX) &&
 	    dip->i_inode.i_uid != current_fsuid() &&
 	    ip->i_inode.i_uid != current_fsuid() && !capable(CAP_FOWNER))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (IS_APPEND(&dip->i_inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	error = gfs2_permission(&dip->i_inode, MAY_WRITE | MAY_EXEC);
 	if (error)

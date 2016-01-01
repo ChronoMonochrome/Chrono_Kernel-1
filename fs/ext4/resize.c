@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext4/resize.c
  *
@@ -24,15 +21,7 @@ int ext4_resize_begin(struct super_block *sb)
 	int ret = 0;
 
 	if (!capable(CAP_SYS_RESOURCE))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/*
 	 * We are not allowed to do online-resizing on a filesystem mounted
@@ -41,15 +30,7 @@ return -EPERM;
 	if (EXT4_SB(sb)->s_mount_state & EXT4_ERROR_FS) {
 		ext4_warning(sb, "There are errors in the filesystem, "
 			     "so online resizing is not allowed\n");
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	if (test_and_set_bit_lock(EXT4_RESIZING, &EXT4_SB(sb)->s_resize_flags))
@@ -88,11 +69,11 @@ static int verify_group_input(struct super_block *sb,
 		input->blocks_count - 2 - overhead - sbi->s_itb_per_group;
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT4-fs: adding %s group %u: %u blocks "
-//		       "(%d free, %u reserved)\n",
-//		       ext4_bg_has_super(sb, input->group) ? "normal" :
-//		       "no-super", input->group, input->blocks_count,
-;
+		printk(KERN_DEBUG "EXT4-fs: adding %s group %u: %u blocks "
+		       "(%d free, %u reserved)\n",
+		       ext4_bg_has_super(sb, input->group) ? "normal" :
+		       "no-super", input->group, input->blocks_count,
+		       free_blocks_count, input->reserved_blocks);
 
 	ext4_get_group_no_and_offset(sb, start, NULL, &offset);
 	if (group != sbi->s_groups_count)
@@ -428,9 +409,9 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
 	int err;
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG
-//		       "EXT4-fs: ext4_add_new_gdb: adding group block %lu\n",
-;
+		printk(KERN_DEBUG
+		       "EXT4-fs: ext4_add_new_gdb: adding group block %lu\n",
+		       gdb_num);
 
 	/*
 	 * If we are not using the primary superblock/GDT copy don't resize,
@@ -441,15 +422,7 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
 	    le32_to_cpu(EXT4_SB(sb)->s_es->s_first_data_block)) {
 		ext4_warning(sb, "won't resize using backup superblock at %llu",
 			(unsigned long long)EXT4_SB(sb)->s_sbh->b_blocknr);
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	gdb_bh = sb_bread(sb, gdblock);
@@ -794,15 +767,7 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
 	if (gdb_off == 0 && !EXT4_HAS_RO_COMPAT_FEATURE(sb,
 					EXT4_FEATURE_RO_COMPAT_SPARSE_SUPER)) {
 		ext4_warning(sb, "Can't resize non-sparse filesystem further");
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	if (ext4_blocks_count(es) + input->blocks_count <
@@ -823,15 +788,7 @@ return -EPERM;
 		    || !le16_to_cpu(es->s_reserved_gdt_blocks)) {
 			ext4_warning(sb,
 				     "No reserved GDT blocks, can't resize");
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 		}
 		inode = ext4_iget(sb, EXT4_RESIZE_INO);
 		if (IS_ERR(inode)) {
@@ -1035,16 +992,16 @@ int ext4_group_extend(struct super_block *sb, struct ext4_super_block *es,
 	o_blocks_count = ext4_blocks_count(es);
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT4-fs: extending last group from %llu to %llu blocks\n",
-;
+		printk(KERN_DEBUG "EXT4-fs: extending last group from %llu to %llu blocks\n",
+		       o_blocks_count, n_blocks_count);
 
 	if (n_blocks_count == 0 || n_blocks_count == o_blocks_count)
 		return 0;
 
 	if (n_blocks_count > (sector_t)(~0ULL) >> (sb->s_blocksize_bits - 9)) {
-//		printk(KERN_ERR "EXT4-fs: filesystem on %s:"
-//			" too large to resize to %llu blocks safely\n",
-;
+		printk(KERN_ERR "EXT4-fs: filesystem on %s:"
+			" too large to resize to %llu blocks safely\n",
+			sb->s_id, n_blocks_count);
 		if (sizeof(sector_t) < 8)
 			ext4_warning(sb, "CONFIG_LBDAF not enabled");
 		return -EINVAL;
@@ -1060,15 +1017,7 @@ int ext4_group_extend(struct super_block *sb, struct ext4_super_block *es,
 
 	if (last == 0) {
 		ext4_warning(sb, "need to use ext2online to resize further");
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	add = EXT4_BLOCKS_PER_GROUP(sb) - last;
@@ -1125,8 +1074,8 @@ return -EPERM;
 		goto exit_put;
 
 	if (test_opt(sb, DEBUG))
-//		printk(KERN_DEBUG "EXT4-fs: extended group to %llu blocks\n",
-;
+		printk(KERN_DEBUG "EXT4-fs: extended group to %llu blocks\n",
+		       ext4_blocks_count(es));
 	update_backups(sb, EXT4_SB(sb)->s_sbh->b_blocknr, (char *)es,
 		       sizeof(struct ext4_super_block));
 exit_put:

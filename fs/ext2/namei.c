@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ext2/namei.c
  *
@@ -198,6 +195,9 @@ static int ext2_link (struct dentry * old_dentry, struct inode * dir,
 	struct inode *inode = old_dentry->d_inode;
 	int err;
 
+	if (inode->i_nlink >= EXT2_LINK_MAX)
+		return -EMLINK;
+
 	dquot_initialize(dir);
 
 	inode->i_ctime = CURRENT_TIME_SEC;
@@ -217,7 +217,10 @@ static int ext2_link (struct dentry * old_dentry, struct inode * dir,
 static int ext2_mkdir(struct inode * dir, struct dentry * dentry, int mode)
 {
 	struct inode * inode;
-	int err;
+	int err = -EMLINK;
+
+	if (dir->i_nlink >= EXT2_LINK_MAX)
+		goto out;
 
 	dquot_initialize(dir);
 
@@ -343,6 +346,11 @@ static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
 			drop_nlink(new_inode);
 		inode_dec_link_count(new_inode);
 	} else {
+		if (dir_de) {
+			err = -EMLINK;
+			if (new_dir->i_nlink >= EXT2_LINK_MAX)
+				goto out_dir;
+		}
 		err = ext2_add_link(new_dentry, old_inode);
 		if (err)
 			goto out_dir;

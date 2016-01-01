@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
  *
@@ -256,7 +253,7 @@ static int btrfs_ioctl_setflags(struct file *file, void __user *arg)
 	inode->i_ctime = CURRENT_TIME;
 	btrfs_end_transaction(trans, root);
 
-	mnt_drop_write_file(file);
+	mnt_drop_write(file->f_path.mnt);
 
 	ret = 0;
  out_unlock:
@@ -283,15 +280,7 @@ static noinline int btrfs_ioctl_fitrim(struct file *file, void __user *arg)
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	rcu_read_lock();
 	list_for_each_entry_rcu(device, &fs_info->fs_devices->devices,
@@ -581,27 +570,11 @@ static int btrfs_may_delete(struct inode *dir,struct dentry *victim,int isdir)
 	if (error)
 		return error;
 	if (IS_APPEND(dir))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (btrfs_check_sticky(dir, victim->d_inode)||
 		IS_APPEND(victim->d_inode)||
 	    IS_IMMUTABLE(victim->d_inode) || IS_SWAPFILE(victim->d_inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (isdir) {
 		if (!S_ISDIR(victim->d_inode->i_mode))
 			return -ENOTDIR;
@@ -894,8 +867,8 @@ again:
 	/* step one, lock all the pages */
 	for (i = 0; i < num_pages; i++) {
 		struct page *page;
-		page = grab_cache_page(inode->i_mapping,
-					    start_index + i);
+		page = find_or_create_page(inode->i_mapping,
+					    start_index + i, GFP_NOFS);
 		if (!page)
 			break;
 
@@ -965,7 +938,9 @@ again:
 			  GFP_NOFS);
 
 	if (i_done != num_pages) {
-		atomic_inc(&BTRFS_I(inode)->outstanding_extents);
+		spin_lock(&BTRFS_I(inode)->lock);
+		BTRFS_I(inode)->outstanding_extents++;
+		spin_unlock(&BTRFS_I(inode)->lock);
 		btrfs_delalloc_release_space(inode,
 				     (num_pages - i_done) << PAGE_CACHE_SHIFT);
 	}
@@ -1080,7 +1055,16 @@ int btrfs_defrag_file(struct inode *inode, struct file *file,
 	if (!max_to_defrag)
 		max_to_defrag = last_index - 1;
 
-	while (i <= last_index && defrag_count < max_to_defrag) {
+	/*
+	 * make writeback starts from i, so the defrag range can be
+	 * written sequentially.
+	 */
+	if (i < inode->i_mapping->writeback_index)
+		inode->i_mapping->writeback_index = i;
+
+	while (i <= last_index && defrag_count < max_to_defrag &&
+	       (i < (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
+		PAGE_CACHE_SHIFT)) {
 		/*
 		 * make sure we stop running if someone unmounts
 		 * the FS
@@ -1196,15 +1180,7 @@ static noinline int btrfs_ioctl_resize(struct btrfs_root *root,
 		return -EROFS;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	vol_args = memdup_user(arg, sizeof(*vol_args));
 	if (IS_ERR(vol_args))
@@ -1221,13 +1197,13 @@ return -EPERM;
 		*devstr = '\0';
 		devstr = vol_args->name;
 		devid = simple_strtoull(devstr, &end, 10);
-//		printk(KERN_INFO "resizing devid %llu\n",
-;
+		printk(KERN_INFO "resizing devid %llu\n",
+		       (unsigned long long)devid);
 	}
 	device = btrfs_find_device(root, devid, NULL, NULL);
 	if (!device) {
-//		printk(KERN_INFO "resizer unable to find device %llu\n",
-;
+		printk(KERN_INFO "resizer unable to find device %llu\n",
+		       (unsigned long long)devid);
 		ret = -EINVAL;
 		goto out_unlock;
 	}
@@ -1272,8 +1248,8 @@ return -EPERM;
 	do_div(new_size, root->sectorsize);
 	new_size *= root->sectorsize;
 
-//	printk(KERN_INFO "new size for %s is %llu\n",
-;
+	printk(KERN_INFO "new size for %s is %llu\n",
+		device->name, (unsigned long long)new_size);
 
 	if (new_size > old_size) {
 		trans = btrfs_start_transaction(root, 0);
@@ -1327,8 +1303,8 @@ static noinline int btrfs_ioctl_snap_create_transid(struct file *file,
 
 		src_inode = src_file->f_path.dentry->d_inode;
 		if (src_inode->i_sb != file->f_path.dentry->d_inode->i_sb) {
-//			printk(KERN_INFO "btrfs: Snapshot src from "
-;
+			printk(KERN_INFO "btrfs: Snapshot src from "
+			       "another FS\n");
 			ret = -EINVAL;
 			fput(src_file);
 			goto out;
@@ -1652,8 +1628,8 @@ static noinline int search_ioctl(struct inode *inode,
 		key.offset = (u64)-1;
 		root = btrfs_read_fs_root_no_name(info, &key);
 		if (IS_ERR(root)) {
-//			printk(KERN_ERR "could not find root %llu\n",
-;
+			printk(KERN_ERR "could not find root %llu\n",
+			       sk->tree_id);
 			btrfs_free_path(path);
 			return -ENOENT;
 		}
@@ -1699,15 +1675,7 @@ static noinline int btrfs_ioctl_tree_search(struct file *file,
 	 int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	args = memdup_user(argp, sizeof(*args));
 	if (IS_ERR(args))
@@ -1755,7 +1723,7 @@ static noinline int btrfs_search_path_in_tree(struct btrfs_fs_info *info,
 	key.offset = (u64)-1;
 	root = btrfs_read_fs_root_no_name(info, &key);
 	if (IS_ERR(root)) {
-;
+		printk(KERN_ERR "could not find root %llu\n", tree_id);
 		ret = -ENOENT;
 		goto out;
 	}
@@ -1798,11 +1766,10 @@ static noinline int btrfs_search_path_in_tree(struct btrfs_fs_info *info,
 		key.objectid = key.offset;
 		key.offset = (u64)-1;
 		dirid = key.objectid;
-
 	}
 	if (ptr < name)
 		goto out;
-	memcpy(name, ptr, total_len);
+	memmove(name, ptr, total_len);
 	name[total_len]='\0';
 	ret = 0;
 out:
@@ -1818,15 +1785,7 @@ static noinline int btrfs_ioctl_ino_lookup(struct file *file,
 	 int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	args = memdup_user(argp, sizeof(*args));
 	if (IS_ERR(args))
@@ -1991,7 +1950,7 @@ out_dput:
 	dput(dentry);
 out_unlock_dir:
 	mutex_unlock(&dir->i_mutex);
-	mnt_drop_write_file(file);
+	mnt_drop_write(file->f_path.mnt);
 out:
 	kfree(vol_args);
 	return err;
@@ -2060,7 +2019,7 @@ static int btrfs_ioctl_defrag(struct file *file, void __user *argp)
 		ret = -EINVAL;
 	}
 out:
-	mnt_drop_write_file(file);
+	mnt_drop_write(file->f_path.mnt);
 	return ret;
 }
 
@@ -2070,15 +2029,7 @@ static long btrfs_ioctl_add_dev(struct btrfs_root *root, void __user *arg)
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	vol_args = memdup_user(arg, sizeof(*vol_args));
 	if (IS_ERR(vol_args))
@@ -2097,15 +2048,7 @@ static long btrfs_ioctl_rm_dev(struct btrfs_root *root, void __user *arg)
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (root->fs_info->sb->s_flags & MS_RDONLY)
 		return -EROFS;
@@ -2130,15 +2073,7 @@ static long btrfs_ioctl_fs_info(struct btrfs_root *root, void __user *arg)
 	int ret = 0;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	fi_args = kzalloc(sizeof(*fi_args), GFP_KERNEL);
 	if (!fi_args)
@@ -2171,15 +2106,7 @@ static long btrfs_ioctl_dev_info(struct btrfs_root *root, void __user *arg)
 	char empty_uuid[BTRFS_UUID_SIZE] = {0};
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	di_args = memdup_user(arg, sizeof(*di_args));
 	if (IS_ERR(di_args))
@@ -2267,6 +2194,11 @@ static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
 	if (!(src_file->f_mode & FMODE_READ))
 		goto out_fput;
 
+	/* don't make the dst file partly checksummed */
+	if ((BTRFS_I(src)->flags & BTRFS_INODE_NODATASUM) !=
+	    (BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM))
+		goto out_fput;
+
 	ret = -EISDIR;
 	if (S_ISDIR(src->i_mode) || S_ISDIR(inode->i_mode))
 		goto out_fput;
@@ -2309,6 +2241,16 @@ static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
 	if (!IS_ALIGNED(off, bs) || !IS_ALIGNED(off + len, bs) ||
 	    !IS_ALIGNED(destoff, bs))
 		goto out_unlock;
+
+	if (destoff > inode->i_size) {
+		ret = btrfs_cont_expand(inode, inode->i_size, destoff);
+		if (ret)
+			goto out_unlock;
+	}
+
+	/* truncate page cache pages from target inode range */
+	truncate_inode_pages_range(&inode->i_data, destoff,
+				   PAGE_CACHE_ALIGN(destoff + len) - 1);
 
 	/* do any pending delalloc/csum calc on src, one way or
 	   another, and lock file content */
@@ -2403,7 +2345,12 @@ static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
 			else
 				new_key.offset = destoff;
 
-			trans = btrfs_start_transaction(root, 1);
+			/*
+			 * 1 - adjusting old extent (we may have to split it)
+			 * 1 - add new extent
+			 * 1 - inode update
+			 */
+			trans = btrfs_start_transaction(root, 3);
 			if (IS_ERR(trans)) {
 				ret = PTR_ERR(trans);
 				goto out;
@@ -2411,13 +2358,20 @@ static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
 
 			if (type == BTRFS_FILE_EXTENT_REG ||
 			    type == BTRFS_FILE_EXTENT_PREALLOC) {
+				/*
+				 *    a  | --- range to clone ---|  b
+				 * | ------------- extent ------------- |
+				 */
+
+				/* substract range b */
+				if (key.offset + datal > off + len)
+					datal = off + len - key.offset;
+
+				/* substract range a */
 				if (off > key.offset) {
 					datao += off - key.offset;
 					datal -= off - key.offset;
 				}
-
-				if (key.offset + datal > off + len)
-					datal = off + len - key.offset;
 
 				ret = btrfs_drop_extents(trans, inode,
 							 new_key.offset,
@@ -2515,7 +2469,6 @@ static noinline long btrfs_ioctl_clone(struct file *file, unsigned long srcfd,
 			if (endoff > inode->i_size)
 				btrfs_i_size_write(inode, endoff);
 
-			BTRFS_I(inode)->flags = BTRFS_I(src)->flags;
 			ret = btrfs_update_inode(trans, root, inode);
 			BUG_ON(ret);
 			btrfs_end_transaction(trans, root);
@@ -2536,7 +2489,7 @@ out_unlock:
 out_fput:
 	fput(src_file);
 out_drop_write:
-	mnt_drop_write_file(file);
+	mnt_drop_write(file->f_path.mnt);
 	return ret;
 }
 
@@ -2591,7 +2544,7 @@ static long btrfs_ioctl_trans_start(struct file *file)
 
 out_drop:
 	atomic_dec(&root->fs_info->open_ioctl_trans);
-	mnt_drop_write_file(file);
+	mnt_drop_write(file->f_path.mnt);
 out:
 	return ret;
 }
@@ -2612,15 +2565,7 @@ static long btrfs_ioctl_default_subvol(struct file *file, void __user *argp)
 	u64 dir_id;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (copy_from_user(&objectid, argp, sizeof(objectid)))
 		return -EFAULT;
@@ -2656,8 +2601,8 @@ return -EPERM;
 	if (IS_ERR_OR_NULL(di)) {
 		btrfs_free_path(path);
 		btrfs_end_transaction(trans, root);
-//		printk(KERN_ERR "Umm, you don't have the default dir item, "
-;
+		printk(KERN_ERR "Umm, you don't have the default dir item, "
+		       "this isn't going to work\n");
 		return -ENOENT;
 	}
 
@@ -2834,7 +2779,7 @@ long btrfs_ioctl_trans_end(struct file *file)
 
 	atomic_dec(&root->fs_info->open_ioctl_trans);
 
-	mnt_drop_write_file(file);
+	mnt_drop_write(file->f_path.mnt);
 	return 0;
 }
 
@@ -2881,15 +2826,7 @@ static long btrfs_ioctl_scrub(struct btrfs_root *root, void __user *arg)
 	struct btrfs_ioctl_scrub_args *sa;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	sa = memdup_user(arg, sizeof(*sa));
 	if (IS_ERR(sa))
@@ -2908,15 +2845,7 @@ return -EPERM;
 static long btrfs_ioctl_scrub_cancel(struct btrfs_root *root, void __user *arg)
 {
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	return btrfs_scrub_cancel(root);
 }
@@ -2928,15 +2857,7 @@ static long btrfs_ioctl_scrub_progress(struct btrfs_root *root,
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	sa = memdup_user(arg, sizeof(*sa));
 	if (IS_ERR(sa))

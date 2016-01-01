@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   Copyright (C) International Business Machines Corp., 2000-2004
  *   Portions Copyright (C) Christoph Hellwig, 2001-2002
@@ -1617,7 +1614,7 @@ void jfs_flush_journal(struct jfs_log *log, int wait)
 	if (!list_empty(&log->synclist)) {
 		struct logsyncblk *lp;
 
-;
+		printk(KERN_ERR "jfs_flush_journal: synclist not empty\n");
 		list_for_each_entry(lp, &log->synclist, synclist) {
 			if (lp->xflag & COMMIT_PAGE) {
 				struct metapage *mp = (struct metapage *)lp;

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2007 Red Hat.  All rights reserved.
  *
@@ -33,7 +30,7 @@
 
 #ifdef CONFIG_BTRFS_FS_POSIX_ACL
 
-static struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
+struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
 {
 	int size;
 	const char *name;
@@ -114,7 +111,6 @@ static int btrfs_set_acl(struct btrfs_trans_handle *trans,
 	int ret, size = 0;
 	const char *name;
 	char *value = NULL;
-	mode_t mode;
 
 	if (acl) {
 		ret = posix_acl_valid(acl);
@@ -125,13 +121,11 @@ static int btrfs_set_acl(struct btrfs_trans_handle *trans,
 
 	switch (type) {
 	case ACL_TYPE_ACCESS:
-		mode = inode->i_mode;
 		name = POSIX_ACL_XATTR_ACCESS;
 		if (acl) {
-			ret = posix_acl_equiv_mode(acl, &mode);
+			ret = posix_acl_equiv_mode(acl, &inode->i_mode);
 			if (ret < 0)
 				return ret;
-			inode->i_mode = mode;
 		}
 		ret = 0;
 		break;
@@ -174,15 +168,7 @@ static int btrfs_xattr_acl_set(struct dentry *dentry, const char *name,
 	struct posix_acl *acl = NULL;
 
 	if (!inode_owner_or_capable(dentry->d_inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (!IS_POSIXACL(dentry->d_inode))
 		return -EOPNOTSUPP;
@@ -204,28 +190,6 @@ out:
 	posix_acl_release(acl);
 
 	return ret;
-}
-
-int btrfs_check_acl(struct inode *inode, int mask, unsigned int flags)
-{
-	int error = -EAGAIN;
-
-	if (flags & IPERM_FLAG_RCU) {
-		if (!negative_cached_acl(inode, ACL_TYPE_ACCESS))
-			error = -ECHILD;
-
-	} else {
-		struct posix_acl *acl;
-		acl = btrfs_get_acl(inode, ACL_TYPE_ACCESS);
-		if (IS_ERR(acl))
-			return PTR_ERR(acl);
-		if (acl) {
-			error = posix_acl_permission(inode, acl, mask);
-			posix_acl_release(acl);
-		}
-	}
-
-	return error;
 }
 
 /*
@@ -255,31 +219,20 @@ int btrfs_init_acl(struct btrfs_trans_handle *trans,
 	}
 
 	if (IS_POSIXACL(dir) && acl) {
-		struct posix_acl *clone;
-		mode_t mode;
-
 		if (S_ISDIR(inode->i_mode)) {
 			ret = btrfs_set_acl(trans, inode, acl,
 					    ACL_TYPE_DEFAULT);
 			if (ret)
 				goto failed;
 		}
-		clone = posix_acl_clone(acl, GFP_NOFS);
-		ret = -ENOMEM;
-		if (!clone)
-			goto failed;
+		ret = posix_acl_create(&acl, GFP_NOFS, &inode->i_mode);
+		if (ret < 0)
+			return ret;
 
-		mode = inode->i_mode;
-		ret = posix_acl_create_masq(clone, &mode);
-		if (ret >= 0) {
-			inode->i_mode = mode;
-			if (ret > 0) {
-				/* we need an acl */
-				ret = btrfs_set_acl(trans, inode, clone,
-						    ACL_TYPE_ACCESS);
-			}
+		if (ret > 0) {
+			/* we need an acl */
+			ret = btrfs_set_acl(trans, inode, acl, ACL_TYPE_ACCESS);
 		}
-		posix_acl_release(clone);
 	}
 failed:
 	posix_acl_release(acl);
@@ -289,7 +242,7 @@ failed:
 
 int btrfs_acl_chmod(struct inode *inode)
 {
-	struct posix_acl *acl, *clone;
+	struct posix_acl *acl;
 	int ret = 0;
 
 	if (S_ISLNK(inode->i_mode))
@@ -302,17 +255,11 @@ int btrfs_acl_chmod(struct inode *inode)
 	if (IS_ERR_OR_NULL(acl))
 		return PTR_ERR(acl);
 
-	clone = posix_acl_clone(acl, GFP_KERNEL);
+	ret = posix_acl_chmod(&acl, GFP_KERNEL, inode->i_mode);
+	if (ret)
+		return ret;
+	ret = btrfs_set_acl(NULL, inode, acl, ACL_TYPE_ACCESS);
 	posix_acl_release(acl);
-	if (!clone)
-		return -ENOMEM;
-
-	ret = posix_acl_chmod_masq(clone, inode->i_mode);
-	if (!ret)
-		ret = btrfs_set_acl(NULL, inode, clone, ACL_TYPE_ACCESS);
-
-	posix_acl_release(clone);
-
 	return ret;
 }
 

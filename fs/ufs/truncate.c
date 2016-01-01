@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ufs/truncate.c
  *
@@ -458,15 +455,7 @@ int ufs_truncate(struct inode *inode, loff_t old_i_size)
 	      S_ISLNK(inode->i_mode)))
 		return -EINVAL;
 	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	err = ufs_alloc_lastblock(inode);
 

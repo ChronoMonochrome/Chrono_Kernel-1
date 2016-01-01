@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * JFFS2 -- Journalling Flash File System, Version 2.
  *
@@ -82,7 +79,7 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
 	uint32_t ino = 0;
 	struct inode *inode = NULL;
 
-;
+	D1(printk(KERN_DEBUG "jffs2_lookup()\n"));
 
 	if (target->d_name.len > JFFS2_MAX_NAME_LEN)
 		return ERR_PTR(-ENAMETOOLONG);
@@ -106,7 +103,7 @@ static struct dentry *jffs2_lookup(struct inode *dir_i, struct dentry *target,
 	if (ino) {
 		inode = jffs2_iget(dir_i->i_sb, ino);
 		if (IS_ERR(inode))
-;
+			printk(KERN_WARNING "iget() failed for ino #%u\n", ino);
 	}
 
 	return d_splice_alias(inode, target);
@@ -122,21 +119,21 @@ static int jffs2_readdir(struct file *filp, void *dirent, filldir_t filldir)
 	struct jffs2_full_dirent *fd;
 	unsigned long offset, curofs;
 
-;
+	D1(printk(KERN_DEBUG "jffs2_readdir() for dir_i #%lu\n", filp->f_path.dentry->d_inode->i_ino));
 
 	f = JFFS2_INODE_INFO(inode);
 
 	offset = filp->f_pos;
 
 	if (offset == 0) {
-;
+		D1(printk(KERN_DEBUG "Dirent 0: \".\", ino #%lu\n", inode->i_ino));
 		if (filldir(dirent, ".", 1, 0, inode->i_ino, DT_DIR) < 0)
 			goto out;
 		offset++;
 	}
 	if (offset == 1) {
 		unsigned long pino = parent_ino(filp->f_path.dentry);
-;
+		D1(printk(KERN_DEBUG "Dirent 1: \"..\", ino #%lu\n", pino));
 		if (filldir(dirent, "..", 2, 1, pino, DT_DIR) < 0)
 			goto out;
 		offset++;
@@ -149,16 +146,16 @@ static int jffs2_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		curofs++;
 		/* First loop: curofs = 2; offset = 2 */
 		if (curofs < offset) {
-//			D2(printk(KERN_DEBUG "Skipping dirent: \"%s\", ino #%u, type %d, because curofs %ld < offset %ld\n",
-;
+			D2(printk(KERN_DEBUG "Skipping dirent: \"%s\", ino #%u, type %d, because curofs %ld < offset %ld\n",
+				  fd->name, fd->ino, fd->type, curofs, offset));
 			continue;
 		}
 		if (!fd->ino) {
-;
+			D2(printk(KERN_DEBUG "Skipping deletion dirent \"%s\"\n", fd->name));
 			offset++;
 			continue;
 		}
-;
+		D2(printk(KERN_DEBUG "Dirent %ld: \"%s\", ino #%u, type %d\n", offset, fd->name, fd->ino, fd->type));
 		if (filldir(dirent, fd->name, strlen(fd->name), offset, fd->ino, fd->type) < 0)
 			break;
 		offset++;
@@ -187,12 +184,12 @@ static int jffs2_create(struct inode *dir_i, struct dentry *dentry,
 
 	c = JFFS2_SB_INFO(dir_i->i_sb);
 
-;
+	D1(printk(KERN_DEBUG "jffs2_create()\n"));
 
 	inode = jffs2_new_inode(dir_i, mode, ri);
 
 	if (IS_ERR(inode)) {
-;
+		D1(printk(KERN_DEBUG "jffs2_new_inode() failed\n"));
 		jffs2_free_raw_inode(ri);
 		return PTR_ERR(inode);
 	}
@@ -220,9 +217,9 @@ static int jffs2_create(struct inode *dir_i, struct dentry *dentry,
 
 	jffs2_free_raw_inode(ri);
 
-//	D1(printk(KERN_DEBUG "jffs2_create: Created ino #%lu with mode %o, nlink %d(%d). nrpages %ld\n",
-//		  inode->i_ino, inode->i_mode, inode->i_nlink,
-;
+	D1(printk(KERN_DEBUG "jffs2_create: Created ino #%lu with mode %o, nlink %d(%d). nrpages %ld\n",
+		  inode->i_ino, inode->i_mode, inode->i_nlink,
+		  f->inocache->pino_nlink, inode->i_mapping->nrpages));
 
 	d_instantiate(dentry, inode);
 	unlock_new_inode(inode);
@@ -270,15 +267,7 @@ static int jffs2_link (struct dentry *old_dentry, struct inode *dir_i, struct de
 		return -EIO;
 
 	if (S_ISDIR(old_dentry->d_inode->i_mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/* XXX: This is ugly */
 	type = (old_dentry->d_inode->i_mode & S_IFMT) >> 12;
@@ -373,7 +362,7 @@ static int jffs2_symlink (struct inode *dir_i, struct dentry *dentry, const char
 	/* We use f->target field to store the target path. */
 	f->target = kmemdup(target, targetlen + 1, GFP_KERNEL);
 	if (!f->target) {
-;
+		printk(KERN_WARNING "Can't allocate %d bytes of memory\n", targetlen + 1);
 		mutex_unlock(&f->sem);
 		jffs2_complete_reservation(c);
 		ret = -ENOMEM;
@@ -831,10 +820,7 @@ static int jffs2_rename (struct inode *old_dir_i, struct dentry *old_dentry,
 
 	if (victim_f) {
 		/* There was a victim. Kill it off nicely */
-		if (S_ISDIR(new_dentry->d_inode->i_mode))
-			clear_nlink(new_dentry->d_inode);
-		else
-			drop_nlink(new_dentry->d_inode);
+		drop_nlink(new_dentry->d_inode);
 		/* Don't oops if the victim was a dirent pointing to an
 		   inode which didn't exist. */
 		if (victim_f->inocache) {
@@ -867,7 +853,7 @@ static int jffs2_rename (struct inode *old_dir_i, struct dentry *old_dentry,
 			f->inocache->pino_nlink++;
 		mutex_unlock(&f->sem);
 
-;
+		printk(KERN_NOTICE "jffs2_rename(): Link succeeded, unlink failed (err %d). You now have a hard link\n", ret);
 		/* Might as well let the VFS know */
 		d_instantiate(new_dentry, old_dentry->d_inode);
 		ihold(old_dentry->d_inode);

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Persistent Storage - platform driver interface parts.
  *
@@ -179,8 +176,8 @@ out:
 	mutex_unlock(&psinfo->buf_mutex);
 
 	if (failed)
-//		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
-;
+		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
+		       failed, psi->name);
 }
 
 /*

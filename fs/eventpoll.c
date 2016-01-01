@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  fs/eventpoll.c (Efficient event retrieval implementation)
  *  Copyright (C) 2001,...,2009	 Davide Libenzi
@@ -1033,8 +1030,8 @@ static int reverse_path_check_proc(void *priv, void *cookie, int call_nests)
 			if (error != 0)
 				break;
 		} else {
-//			printk(KERN_ERR "reverse_path_check_proc: "
-;
+			printk(KERN_ERR "reverse_path_check_proc: "
+				"file is not an ep!\n");
 		}
 	}
 	return error;
@@ -1404,7 +1401,7 @@ fetch_events:
 			}
 
 			spin_unlock_irqrestore(&ep->lock, flags);
-			if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS))
+			if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS, NULL))
 				timed_out = 1;
 
 			spin_lock_irqsave(&ep->lock, flags);
@@ -1613,16 +1610,10 @@ SYSCALL_DEFINE4(epoll_ctl, int, epfd, int, op, int, fd,
 	if (!tfile)
 		goto error_fput;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	/* The target file descriptor must support poll */
 	error = -EPERM;
 	if (!tfile->f_op || !tfile->f_op->poll)
 		goto error_tgt_fput;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 	/*
 	 * We have to check that the file structure underneath the file descriptor

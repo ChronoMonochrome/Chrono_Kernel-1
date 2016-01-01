@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/mm.h>
 #include <linux/hugetlb.h>
 #include <linux/huge_mm.h>
@@ -410,6 +407,9 @@ static int smaps_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
 	} else {
 		spin_unlock(&walk->mm->page_table_lock);
 	}
+
+	if (pmd_trans_unstable(pmd))
+		return 0;
 	/*
 	 * The mmap_sem held all the way back in m_start() is what
 	 * keeps khugepaged out of here and from collapsing things
@@ -508,6 +508,8 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
 	struct page *page;
 
 	split_huge_page_pmd(walk->mm, pmd);
+	if (pmd_trans_unstable(pmd))
+		return 0;
 
 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
 	for (; addr != end; pte++, addr += PAGE_SIZE) {
@@ -517,6 +519,9 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
 
 		page = vm_normal_page(vma, addr, ptent);
 		if (!page)
+			continue;
+
+		if (PageReserved(page))
 			continue;
 
 		/* Clear accessed and referenced bits. */
@@ -531,7 +536,6 @@ static int clear_refs_pte_range(pmd_t *pmd, unsigned long addr,
 #define CLEAR_REFS_ALL 1
 #define CLEAR_REFS_ANON 2
 #define CLEAR_REFS_MAPPED 3
-#define CLEAR_REFS_MM_HIWATER_RSS 5
 
 static ssize_t clear_refs_write(struct file *file, const char __user *buf,
 				size_t count, loff_t *ppos)
@@ -551,8 +555,7 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
 	rv = kstrtoint(strstrip(buffer), 10, &type);
 	if (rv < 0)
 		return rv;
-	if ((type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED) &&
-	    type != CLEAR_REFS_MM_HIWATER_RSS)
+	if (type < CLEAR_REFS_ALL || type > CLEAR_REFS_MAPPED)
 		return -EINVAL;
 	task = get_proc_task(file->f_path.dentry->d_inode);
 	if (!task)
@@ -563,18 +566,6 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
 			.pmd_entry = clear_refs_pte_range,
 			.mm = mm,
 		};
-
-		if (type == CLEAR_REFS_MM_HIWATER_RSS) {
-			/*
-			 * Writing 5 to /proc/pid/clear_refs resets the peak
-			 * resident set size to this mm's current rss value.
-			 */
-			down_write(&mm->mmap_sem);
-			reset_mm_hiwater_rss(mm);
-			up_write(&mm->mmap_sem);
-			goto out_mm;
-		}
-
 		down_read(&mm->mmap_sem);
 		for (vma = mm->mmap; vma; vma = vma->vm_next) {
 			clear_refs_walk.private = vma;
@@ -598,7 +589,6 @@ static ssize_t clear_refs_write(struct file *file, const char __user *buf,
 		}
 		flush_tlb_mm(mm);
 		up_read(&mm->mmap_sem);
-out_mm:
 		mmput(mm);
 	}
 	put_task_struct(task);
@@ -683,6 +673,8 @@ static int pagemap_pte_range(pmd_t *pmd, unsigned long addr, unsigned long end,
 	int err = 0;
 
 	split_huge_page_pmd(walk->mm, pmd);
+	if (pmd_trans_unstable(pmd))
+		return 0;
 
 	/* find the first VMA at or above 'addr' */
 	vma = find_vma(walk->mm, addr);
@@ -870,18 +862,9 @@ out:
 	return ret;
 }
 
-static int pagemap_open(struct inode *inode, struct file *file)
-{
-	/* do not disclose physical addresses: attack vector */
-	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
-	return 0;
-}
-
 const struct file_operations proc_pagemap_operations = {
 	.llseek		= mem_lseek, /* borrow this */
 	.read		= pagemap_read,
-	.open		= pagemap_open,
 };
 #endif /* CONFIG_PROC_PAGE_MONITOR */
 
@@ -983,6 +966,8 @@ static int gather_pte_stats(pmd_t *pmd, unsigned long addr,
 		spin_unlock(&walk->mm->page_table_lock);
 	}
 
+	if (pmd_trans_unstable(pmd))
+		return 0;
 	orig_pte = pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
 	do {
 		struct page *page = can_gather_numa_stats(*pte, md->vma, addr);
@@ -1065,6 +1050,9 @@ static int show_numa_map(struct seq_file *m, void *v)
 			vma->vm_end >= mm->start_stack) {
 		seq_printf(m, " stack");
 	}
+
+	if (is_vm_hugetlb_page(vma))
+		seq_printf(m, " huge");
 
 	walk_page_range(vma->vm_start, vma->vm_end, &walk);
 

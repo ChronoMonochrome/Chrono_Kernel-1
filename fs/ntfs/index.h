@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * index.h - Defines for NTFS kernel index handling.  Part of the Linux-NTFS
  *	     project.

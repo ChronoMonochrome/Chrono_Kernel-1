@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
  *
@@ -145,6 +142,7 @@ static noinline int run_scheduled_bios(struct btrfs_device *device)
 	unsigned long limit;
 	unsigned long last_waited = 0;
 	int force_reg = 0;
+	int sync_pending = 0;
 	struct blk_plug plug;
 
 	/*
@@ -231,6 +229,22 @@ loop_lock:
 			wake_up(&fs_info->async_submit_wait);
 
 		BUG_ON(atomic_read(&cur->bi_cnt) == 0);
+
+		/*
+		 * if we're doing the sync list, record that our
+		 * plug has some sync requests on it
+		 *
+		 * If we're doing the regular list and there are
+		 * sync requests sitting around, unplug before
+		 * we add more
+		 */
+		if (pending_bios == &device->pending_sync_bios) {
+			sync_pending = 1;
+		} else if (sync_pending) {
+			blk_finish_plug(&plug);
+			blk_start_plug(&plug);
+			sync_pending = 0;
+		}
 
 		submit_bio(cur->bi_rw, cur);
 		num_run++;
@@ -584,7 +598,7 @@ static int __btrfs_open_devices(struct btrfs_fs_devices *fs_devices,
 
 		bdev = blkdev_get_by_path(device->name, flags, holder);
 		if (IS_ERR(bdev)) {
-;
+			printk(KERN_INFO "open %s failed\n", device->name);
 			goto error;
 		}
 		set_blocksize(bdev, 4096);
@@ -709,11 +723,11 @@ int btrfs_scan_one_device(const char *path, fmode_t flags, void *holder,
 	devid = btrfs_stack_device_id(&disk_super->dev_item);
 	transid = btrfs_super_generation(disk_super);
 	if (disk_super->label[0])
-;
+		printk(KERN_INFO "device label %s ", disk_super->label);
 	else
-;
-//	printk(KERN_CONT "devid %llu transid %llu %s\n",
-;
+		printk(KERN_INFO "device fsid %pU ", disk_super->fsid);
+	printk(KERN_CONT "devid %llu transid %llu %s\n",
+	       (unsigned long long)devid, (unsigned long long)transid, path);
 	ret = device_list_add(path, disk_super, devid, fs_devices_ret);
 
 	brelse(bh);
@@ -856,6 +870,7 @@ int find_free_dev_extent(struct btrfs_trans_handle *trans,
 
 	max_hole_start = search_start;
 	max_hole_size = 0;
+	hole_size = 0;
 
 	if (search_start >= search_end) {
 		ret = -ENOSPC;
@@ -938,7 +953,14 @@ next:
 		cond_resched();
 	}
 
-	hole_size = search_end- search_start;
+	/*
+	 * At this point, search_start should be the end of
+	 * allocated dev extents, and when shrinking the device,
+	 * search_end may be smaller than search_start.
+	 */
+	if (search_end > search_start)
+		hole_size = search_end - search_start;
+
 	if (hole_size > max_hole_size) {
 		max_hole_start = search_start;
 		max_hole_size = hole_size;
@@ -998,13 +1020,8 @@ static int btrfs_free_dev_extent(struct btrfs_trans_handle *trans,
 	}
 	BUG_ON(ret);
 
-	if (device->bytes_used > 0) {
-		u64 len = btrfs_dev_extent_length(leaf, extent);
-		device->bytes_used -= len;
-		spin_lock(&root->fs_info->free_chunk_lock);
-		root->fs_info->free_chunk_space += len;
-		spin_unlock(&root->fs_info->free_chunk_lock);
-	}
+	if (device->bytes_used > 0)
+		device->bytes_used -= btrfs_dev_extent_length(leaf, extent);
 	ret = btrfs_del_item(trans, root, path);
 
 out:
@@ -1259,16 +1276,16 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
 
 	if ((all_avail & BTRFS_BLOCK_GROUP_RAID10) &&
 	    root->fs_info->fs_devices->num_devices <= 4) {
-//		printk(KERN_ERR "btrfs: unable to go below four devices "
-;
+		printk(KERN_ERR "btrfs: unable to go below four devices "
+		       "on raid10\n");
 		ret = -EINVAL;
 		goto out;
 	}
 
 	if ((all_avail & BTRFS_BLOCK_GROUP_RAID1) &&
 	    root->fs_info->fs_devices->num_devices <= 2) {
-//		printk(KERN_ERR "btrfs: unable to go below two "
-;
+		printk(KERN_ERR "btrfs: unable to go below two "
+		       "devices on raid1\n");
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1293,8 +1310,8 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
 		bh = NULL;
 		disk_super = NULL;
 		if (!device) {
-//			printk(KERN_ERR "btrfs: no missing devices found to "
-;
+			printk(KERN_ERR "btrfs: no missing devices found to "
+			       "remove\n");
 			goto out;
 		}
 	} else {
@@ -1323,8 +1340,8 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
 	}
 
 	if (device->writeable && root->fs_info->fs_devices->rw_devices == 1) {
-//		printk(KERN_ERR "btrfs: unable to remove the only writeable "
-;
+		printk(KERN_ERR "btrfs: unable to remove the only writeable "
+		       "device\n");
 		ret = -EINVAL;
 		goto error_brelse;
 	}
@@ -1344,11 +1361,6 @@ int btrfs_rm_device(struct btrfs_root *root, char *device_path)
 	ret = btrfs_rm_dev_item(root->fs_info->chunk_root, device);
 	if (ret)
 		goto error_undo;
-
-	spin_lock(&root->fs_info->free_chunk_lock);
-	root->fs_info->free_chunk_space = device->total_bytes -
-		device->bytes_used;
-	spin_unlock(&root->fs_info->free_chunk_lock);
 
 	device->in_fs_metadata = 0;
 	btrfs_scrub_cancel_dev(root, device);
@@ -1684,10 +1696,6 @@ int btrfs_init_new_device(struct btrfs_root *root, char *device_path)
 	if (device->can_discard)
 		root->fs_info->fs_devices->num_can_discard++;
 	root->fs_info->fs_devices->total_rw_bytes += device->total_bytes;
-
-	spin_lock(&root->fs_info->free_chunk_lock);
-	root->fs_info->free_chunk_space += device->total_bytes;
-	spin_unlock(&root->fs_info->free_chunk_lock);
 
 	if (!blk_queue_nonrot(bdev_get_queue(bdev)))
 		root->fs_info->fs_devices->rotating = 1;
@@ -2072,15 +2080,7 @@ int btrfs_balance(struct btrfs_root *dev_root)
 		return -EROFS;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	mutex_lock(&dev_root->fs_info->volume_mutex);
 	dev_root = dev_root->fs_info->dev_root;
@@ -2196,12 +2196,8 @@ int btrfs_shrink_device(struct btrfs_device *device, u64 new_size)
 	lock_chunks(root);
 
 	device->total_bytes = new_size;
-	if (device->writeable) {
+	if (device->writeable)
 		device->fs_devices->total_rw_bytes -= diff;
-		spin_lock(&root->fs_info->free_chunk_lock);
-		root->fs_info->free_chunk_space -= diff;
-		spin_unlock(&root->fs_info->free_chunk_lock);
-	}
 	unlock_chunks(root);
 
 again:
@@ -2265,9 +2261,6 @@ again:
 		device->total_bytes = old_size;
 		if (device->writeable)
 			device->fs_devices->total_rw_bytes += diff;
-		spin_lock(&root->fs_info->free_chunk_lock);
-		root->fs_info->free_chunk_space += diff;
-		spin_unlock(&root->fs_info->free_chunk_lock);
 		unlock_chunks(root);
 		goto done;
 	}
@@ -2422,8 +2415,8 @@ static int __btrfs_alloc_chunk(struct btrfs_trans_handle *trans,
 		max_stripe_size = 8 * 1024 * 1024;
 		max_chunk_size = 2 * max_stripe_size;
 	} else {
-//		printk(KERN_ERR "btrfs: invalid chunk type 0x%llx requested\n",
-;
+		printk(KERN_ERR "btrfs: invalid chunk type 0x%llx requested\n",
+		       type);
 		BUG_ON(1);
 	}
 
@@ -2453,8 +2446,8 @@ static int __btrfs_alloc_chunk(struct btrfs_trans_handle *trans,
 		cur = cur->next;
 
 		if (!device->writeable) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+			       "btrfs: read-only device in alloc_list\n");
 			WARN_ON(1);
 			continue;
 		}
@@ -2466,9 +2459,10 @@ static int __btrfs_alloc_chunk(struct btrfs_trans_handle *trans,
 			total_avail = device->total_bytes - device->bytes_used;
 		else
 			total_avail = 0;
-		/* avail is off by max(alloc_start, 1MB), but that is the same
-		 * for all devices, so it doesn't hurt the sorting later on
-		 */
+
+		/* If there is no space on this device, skip it. */
+		if (total_avail == 0)
+			continue;
 
 		ret = find_free_dev_extent(trans, device,
 					   max_stripe_size * dev_stripes,
@@ -2624,11 +2618,6 @@ static int __finish_chunk_alloc(struct btrfs_trans_handle *trans,
 		BUG_ON(ret);
 		index++;
 	}
-
-	spin_lock(&extent_root->fs_info->free_chunk_lock);
-	extent_root->fs_info->free_chunk_space -= (stripe_size *
-						   map->num_stripes);
-	spin_unlock(&extent_root->fs_info->free_chunk_lock);
 
 	index = 0;
 	stripe = &chunk->stripe;
@@ -2899,9 +2888,9 @@ again:
 	read_unlock(&em_tree->lock);
 
 	if (!em) {
-//		printk(KERN_CRIT "unable to find logical %llu len %llu\n",
-//		       (unsigned long long)logical,
-;
+		printk(KERN_CRIT "unable to find logical %llu len %llu\n",
+		       (unsigned long long)logical,
+		       (unsigned long long)*length);
 		BUG();
 	}
 
@@ -3331,10 +3320,10 @@ int btrfs_map_bio(struct btrfs_root *root, int rw, struct bio *bio,
 
 	total_devs = multi->num_stripes;
 	if (map_length < length) {
-//		printk(KERN_CRIT "mapping failed logical %llu bio len %llu "
-//		       "len %llu\n", (unsigned long long)logical,
-//		       (unsigned long long)length,
-;
+		printk(KERN_CRIT "mapping failed logical %llu bio len %llu "
+		       "len %llu\n", (unsigned long long)logical,
+		       (unsigned long long)length,
+		       (unsigned long long)map_length);
 		BUG();
 	}
 	multi->end_io = first_bio->bi_end_io;
@@ -3603,8 +3592,8 @@ static int read_one_dev(struct btrfs_root *root,
 			return -EIO;
 
 		if (!device) {
-//			printk(KERN_WARNING "warning devid %llu missing\n",
-;
+			printk(KERN_WARNING "warning devid %llu missing\n",
+			       (unsigned long long)devid);
 			device = add_missing_dev(root, devid, dev_uuid);
 			if (!device)
 				return -ENOMEM;
@@ -3630,13 +3619,8 @@ static int read_one_dev(struct btrfs_root *root,
 	fill_device_from_item(leaf, dev_item, device);
 	device->dev_root = root->fs_info->dev_root;
 	device->in_fs_metadata = 1;
-	if (device->writeable) {
+	if (device->writeable)
 		device->fs_devices->total_rw_bytes += device->total_bytes;
-		spin_lock(&root->fs_info->free_chunk_lock);
-		root->fs_info->free_chunk_space += device->total_bytes -
-			device->bytes_used;
-		spin_unlock(&root->fs_info->free_chunk_lock);
-	}
 	ret = 0;
 	return ret;
 }
@@ -3661,7 +3645,7 @@ int btrfs_read_sys_array(struct btrfs_root *root)
 	if (!sb)
 		return -ENOMEM;
 	btrfs_set_buffer_uptodate(sb);
-	btrfs_set_buffer_lockdep_class(sb, 0);
+	btrfs_set_buffer_lockdep_class(root->root_key.objectid, sb, 0);
 
 	write_extent_buffer(sb, super_copy, 0, BTRFS_SUPER_INFO_SIZE);
 	array_size = btrfs_super_sys_array_size(super_copy);

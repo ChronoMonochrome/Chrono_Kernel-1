@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- c -*- --------------------------------------------------------------- *
  *
  * linux/fs/autofs/root.c
@@ -839,15 +836,7 @@ static int autofs4_root_ioctl_unlocked(struct inode *inode, struct file *filp,
 		return -ENOTTY;
 	
 	if (!autofs4_oz_mode(sbi) && !capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	
 	switch(cmd) {
 	case AUTOFS_IOC_READY:	/* Wait queue: go ahead and retry */

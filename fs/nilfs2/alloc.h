@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * alloc.h - persistent object (dat entry/disk inode) allocator/deallocator
  *

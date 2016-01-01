@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Mostly platform independent upcall operations to Venus:
  *  -- upcalls
@@ -522,8 +519,8 @@ int venus_pioctl(struct super_block *sb, struct CodaFid *fid,
 			    &outsize, inp);
 
         if (error) {
-//	        printk("coda_pioctl: Venus returns: %d for %s\n", 
-;
+	        printk("coda_pioctl: Venus returns: %d for %s\n", 
+		       error, coda_f2s(fid));
 		goto exit; 
 	}
 
@@ -679,7 +676,7 @@ static int coda_upcall(struct venus_comm *vcp,
 	mutex_lock(&vcp->vc_mutex);
 
 	if (!vcp->vc_inuse) {
-;
+		printk(KERN_NOTICE "coda: Venus dead, not sending upcall\n");
 		error = -ENXIO;
 		goto exit;
 	}
@@ -729,7 +726,7 @@ static int coda_upcall(struct venus_comm *vcp,
 
 	error = -EINTR;
 	if ((req->uc_flags & CODA_REQ_ABORT) || !signal_pending(current)) {
-;
+		printk(KERN_WARNING "coda: Unexpected interruption.\n");
 		goto exit;
 	}
 
@@ -739,7 +736,7 @@ static int coda_upcall(struct venus_comm *vcp,
 
 	/* Venus saw the upcall, make sure we can send interrupt signal */
 	if (!vcp->vc_inuse) {
-;
+		printk(KERN_INFO "coda: Venus dead, not sending signal.\n");
 		goto exit;
 	}
 

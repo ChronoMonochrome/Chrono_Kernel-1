@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Cache page management and data I/O routines
  *
  * Copyright (C) 2004-2008 Red Hat, Inc. All Rights Reserved.
@@ -943,10 +940,10 @@ void fscache_mark_pages_cached(struct fscache_retrieval *op,
 			static bool once_only;
 			if (!once_only) {
 				once_only = true;
-//				printk(KERN_WARNING "FS-Cache:"
-//				       " Cookie type %s marked page %lx"
-//				       " multiple times\n",
-;
+				printk(KERN_WARNING "FS-Cache:"
+				       " Cookie type %s marked page %lx"
+				       " multiple times\n",
+				       cookie->def->name, page->index);
 			}
 		}
 	}

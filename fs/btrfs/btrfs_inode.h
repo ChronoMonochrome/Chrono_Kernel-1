@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
  *
@@ -36,6 +33,9 @@ struct btrfs_inode {
 	 * to read in roots of subvolumes
 	 */
 	struct btrfs_key location;
+
+	/* Lock for counters */
+	spinlock_t lock;
 
 	/* the extent_tree has caches of all the extent mappings to disk */
 	struct extent_map_tree extent_tree;
@@ -137,8 +137,8 @@ struct btrfs_inode {
 	 * items we think we'll end up using, and reserved_extents is the number
 	 * of extent items we've reserved metadata for.
 	 */
-	atomic_t outstanding_extents;
-	atomic_t reserved_extents;
+	unsigned outstanding_extents;
+	unsigned reserved_extents;
 
 	/*
 	 * ordered_data_close is set by truncate when a file that used
@@ -176,7 +176,11 @@ static inline u64 btrfs_ino(struct inode *inode)
 {
 	u64 ino = BTRFS_I(inode)->location.objectid;
 
-	if (ino <= BTRFS_FIRST_FREE_OBJECTID)
+	/*
+	 * !ino: btree_inode
+	 * type == BTRFS_ROOT_ITEM_KEY: subvol dir
+	 */
+	if (!ino || BTRFS_I(inode)->location.type == BTRFS_ROOT_ITEM_KEY)
 		ino = inode->i_ino;
 	return ino;
 }
@@ -185,6 +189,15 @@ static inline void btrfs_i_size_write(struct inode *inode, u64 size)
 {
 	i_size_write(inode, size);
 	BTRFS_I(inode)->disk_i_size = size;
+}
+
+static inline bool btrfs_is_free_space_inode(struct btrfs_root *root,
+				       struct inode *inode)
+{
+	if (root == root->fs_info->tree_root ||
+	    BTRFS_I(inode)->location.objectid == BTRFS_FREE_INO_OBJECTID)
+		return true;
+	return false;
 }
 
 #endif

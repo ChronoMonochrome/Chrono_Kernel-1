@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* FS-Cache netfs (client) registration
  *
  * Copyright (C) 2008 Red Hat, Inc. All Rights Reserved.
@@ -66,8 +63,8 @@ int __fscache_register_netfs(struct fscache_netfs *netfs)
 	list_add(&netfs->link, &fscache_netfs_list);
 	ret = 0;
 
-//	printk(KERN_NOTICE "FS-Cache: Netfs '%s' registered for caching\n",
-;
+	printk(KERN_NOTICE "FS-Cache: Netfs '%s' registered for caching\n",
+	       netfs->name);
 
 already_registered:
 	up_write(&fscache_addremove_sem);
@@ -98,8 +95,8 @@ void __fscache_unregister_netfs(struct fscache_netfs *netfs)
 
 	up_write(&fscache_addremove_sem);
 
-//	printk(KERN_NOTICE "FS-Cache: Netfs '%s' unregistered from caching\n",
-;
+	printk(KERN_NOTICE "FS-Cache: Netfs '%s' unregistered from caching\n",
+	       netfs->name);
 
 	_leave("");
 }

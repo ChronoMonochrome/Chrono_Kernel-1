@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * This file is only for sharing some helpers from read_write.c with compat.c.
  * Don't use anywhere else.

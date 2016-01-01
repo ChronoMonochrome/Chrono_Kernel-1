@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * fs/logfs/super.c
  *
@@ -34,12 +31,12 @@ struct page *emergency_read_begin(struct address_space *mapping, pgoff_t index)
 		return page;
 
 	/* No more pages available, switch to emergency page */
-;
+	printk(KERN_INFO"Logfs: Using emergency page\n");
 	mutex_lock(&emergency_mutex);
 	err = filler(NULL, emergency_page);
 	if (err) {
 		mutex_unlock(&emergency_mutex);
-;
+		printk(KERN_EMERG"Logfs: Error reading emergency page\n");
 		return ERR_PTR(err);
 	}
 	return emergency_page;
@@ -61,24 +58,24 @@ static void dump_segfile(struct super_block *sb)
 
 	for (segno = 0; segno < super->s_no_segs; segno++) {
 		logfs_get_segment_entry(sb, segno, &se);
-//		printk("%3x: %6x %8x", segno, be32_to_cpu(se.ec_level),
-;
+		printk("%3x: %6x %8x", segno, be32_to_cpu(se.ec_level),
+				be32_to_cpu(se.valid));
 		if (++segno < super->s_no_segs) {
 			logfs_get_segment_entry(sb, segno, &se);
-//			printk(" %6x %8x", be32_to_cpu(se.ec_level),
-;
+			printk(" %6x %8x", be32_to_cpu(se.ec_level),
+					be32_to_cpu(se.valid));
 		}
 		if (++segno < super->s_no_segs) {
 			logfs_get_segment_entry(sb, segno, &se);
-//			printk(" %6x %8x", be32_to_cpu(se.ec_level),
-;
+			printk(" %6x %8x", be32_to_cpu(se.ec_level),
+					be32_to_cpu(se.valid));
 		}
 		if (++segno < super->s_no_segs) {
 			logfs_get_segment_entry(sb, segno, &se);
-//			printk(" %6x %8x", be32_to_cpu(se.ec_level),
-;
+			printk(" %6x %8x", be32_to_cpu(se.ec_level),
+					be32_to_cpu(se.valid));
 		}
-;
+		printk("\n");
 	}
 }
 
@@ -91,28 +88,6 @@ static void dump_segfile(struct super_block *sb)
 void logfs_crash_dump(struct super_block *sb)
 {
 	dump_segfile(sb);
-}
-
-/*
- * TODO: move to lib/string.c
- */
-/**
- * memchr_inv - Find a character in an area of memory.
- * @s: The memory area
- * @c: The byte to search for
- * @n: The size of the area.
- *
- * returns the address of the first character other than @c, or %NULL
- * if the whole buffer contains just @c.
- */
-void *memchr_inv(const void *s, int c, size_t n)
-{
-	const unsigned char *p = s;
-	while (n-- != 0)
-		if ((unsigned char)c != *p++)
-			return (void *)(p - 1);
-
-	return NULL;
 }
 
 /*
@@ -281,15 +256,15 @@ static int logfs_recover_sb(struct super_block *sb)
 	valid1 = logfs_check_ds(ds1) == 0;
 
 	if (!valid0 && valid1) {
-;
+		printk(KERN_INFO"First superblock is invalid - fixing.\n");
 		return write_one_sb(sb, super->s_devops->find_first_sb);
 	}
 	if (valid0 && !valid1) {
-;
+		printk(KERN_INFO"Last superblock is invalid - fixing.\n");
 		return write_one_sb(sb, super->s_devops->find_last_sb);
 	}
 	if (valid0 && valid1 && ds_cmp(ds0, ds1)) {
-;
+		printk(KERN_INFO"Superblocks don't match - fixing.\n");
 		return logfs_write_sb(sb);
 	}
 	/* If neither is valid now, something's wrong.  Didn't we properly
@@ -565,7 +540,6 @@ static struct dentry *logfs_get_sb_device(struct logfs_super *super,
 	 * the filesystem incompatible with 32bit systems.
 	 */
 	sb->s_maxbytes	= (1ull << 43) - 1;
-	sb->s_max_links = LOGFS_LINK_MAX;
 	sb->s_op	= &logfs_super_operations;
 	sb->s_flags	= flags | MS_NOATIME;
 

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #ifndef BTRFS_EXPORT_H
 #define BTRFS_EXPORT_H
 

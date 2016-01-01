@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  dir.c
  *
@@ -1212,15 +1209,7 @@ static int ncp_mknod(struct inode * dir, struct dentry *dentry,
 		DPRINTK(KERN_DEBUG "ncp_mknod: mode = 0%ho\n", mode);
 		return ncp_create_new(dir, dentry, mode, rdev, 0);
 	}
-	
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif /* Strange, but true */
+	return -EPERM; /* Strange, but true */
 }
 
 /* The following routines are taken directly from msdos-fs */

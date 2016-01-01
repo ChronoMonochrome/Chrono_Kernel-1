@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * fs/inotify_user.c - inotify support for userspace
  *
@@ -494,9 +491,9 @@ static void inotify_remove_from_idr(struct fsnotify_group *group,
 	 * one ref grabbed by inotify_idr_find
 	 */
 	if (unlikely(atomic_read(&i_mark->fsn_mark.refcnt) < 3)) {
-//		printk(KERN_ERR "%s: i_mark=%p i_mark->wd=%d i_mark->group=%p"
-//			" i_mark->inode=%p\n", __func__, i_mark, i_mark->wd,
-;
+		printk(KERN_ERR "%s: i_mark=%p i_mark->wd=%d i_mark->group=%p"
+			" i_mark->inode=%p\n", __func__, i_mark, i_mark->wd,
+			i_mark->fsn_mark.group, i_mark->fsn_mark.i.inode);
 		/* we can't really recover with bad ref cnting.. */
 		BUG();
 	}

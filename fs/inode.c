@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * (C) 1997 Linus Torvalds
  * (C) 1999 Andrea Arcangeli <andrea@suse.de> (dynamic inode allocation)
@@ -68,6 +65,17 @@ static struct hlist_head *inode_hashtable __read_mostly;
 static __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_hash_lock);
 
 __cacheline_aligned_in_smp DEFINE_SPINLOCK(inode_sb_list_lock);
+
+/*
+ * iprune_sem provides exclusion between the icache shrinking and the
+ * umount path.
+ *
+ * We don't actually need it to protect anything in the umount path,
+ * but only need to cycle through it to make sure any inode that
+ * prune_icache_sb took off the LRU list has been fully torn down by the
+ * time we are past evict_inodes.
+ */
+static DECLARE_RWSEM(iprune_sem);
 
 /*
  * Empty aops. Can be used for the cases where the user does not
@@ -401,12 +409,12 @@ void __insert_inode_hash(struct inode *inode, unsigned long hashval)
 EXPORT_SYMBOL(__insert_inode_hash);
 
 /**
- *	__remove_inode_hash - remove an inode from the hash
+ *	remove_inode_hash - remove an inode from the hash
  *	@inode: inode to unhash
  *
  *	Remove an inode from the superblock.
  */
-void __remove_inode_hash(struct inode *inode)
+void remove_inode_hash(struct inode *inode)
 {
 	spin_lock(&inode_hash_lock);
 	spin_lock(&inode->i_lock);
@@ -414,7 +422,7 @@ void __remove_inode_hash(struct inode *inode)
 	spin_unlock(&inode->i_lock);
 	spin_unlock(&inode_hash_lock);
 }
-EXPORT_SYMBOL(__remove_inode_hash);
+EXPORT_SYMBOL(remove_inode_hash);
 
 void end_writeback(struct inode *inode)
 {
@@ -456,9 +464,7 @@ static void evict(struct inode *inode)
 	BUG_ON(!(inode->i_state & I_FREEING));
 	BUG_ON(!list_empty(&inode->i_lru));
 
-	if (!list_empty(&inode->i_wb_list))
-		inode_wb_list_del(inode);
-
+	inode_wb_list_del(inode);
 	inode_sb_list_del(inode);
 
 	if (op->evict_inode) {
@@ -535,6 +541,14 @@ void evict_inodes(struct super_block *sb)
 	spin_unlock(&inode_sb_list_lock);
 
 	dispose_list(&dispose);
+
+	/*
+	 * Cycle through iprune_sem to make sure any inode that prune_icache_sb
+	 * moved off the list before we took the lock has been fully torn
+	 * down.
+	 */
+	down_write(&iprune_sem);
+	up_write(&iprune_sem);
 }
 
 /**
@@ -620,6 +634,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
 	int nr_scanned;
 	unsigned long reap = 0;
 
+	down_read(&iprune_sem);
 	spin_lock(&sb->s_inode_lru_lock);
 	for (nr_scanned = nr_to_scan; nr_scanned >= 0; nr_scanned--) {
 		struct inode *inode;
@@ -695,6 +710,7 @@ void prune_icache_sb(struct super_block *sb, int nr_to_scan)
 	spin_unlock(&sb->s_inode_lru_lock);
 
 	dispose_list(&freeable);
+	up_read(&iprune_sem);
 }
 
 static void __wait_on_freeing_inode(struct inode *inode);
@@ -1332,8 +1348,7 @@ static void iput_final(struct inode *inode)
 	}
 
 	inode->i_state |= I_FREEING;
-	if (!list_empty(&inode->i_lru))
-		inode_lru_list_del(inode);
+	inode_lru_list_del(inode);
 	spin_unlock(&inode->i_lock);
 
 	evict(inode);
@@ -1503,7 +1518,7 @@ void file_update_time(struct file *file)
 	if (sync_it & S_MTIME)
 		inode->i_mtime = now;
 	mark_inode_dirty_sync(inode);
-	mnt_drop_write_file(file);
+	mnt_drop_write(file->f_path.mnt);
 }
 EXPORT_SYMBOL(file_update_time);
 
@@ -1579,7 +1594,6 @@ void __init inode_init_early(void)
 					HASH_EARLY,
 					&i_hash_shift,
 					&i_hash_mask,
-					0,
 					0);
 
 	for (loop = 0; loop < (1 << i_hash_shift); loop++)
@@ -1610,7 +1624,6 @@ void __init inode_init(void)
 					0,
 					&i_hash_shift,
 					&i_hash_mask,
-					0,
 					0);
 
 	for (loop = 0; loop < (1 << i_hash_shift); loop++)
@@ -1631,9 +1644,9 @@ void init_special_inode(struct inode *inode, umode_t mode, dev_t rdev)
 	else if (S_ISSOCK(mode))
 		inode->i_fop = &bad_sock_fops;
 	else
-//		printk(KERN_DEBUG "init_special_inode: bogus i_mode (%o) for"
-//				  " inode %s:%lu\n", mode, inode->i_sb->s_id,
-;
+		printk(KERN_DEBUG "init_special_inode: bogus i_mode (%o) for"
+				  " inode %s:%lu\n", mode, inode->i_sb->s_id,
+				  inode->i_ino);
 }
 EXPORT_SYMBOL(init_special_inode);
 

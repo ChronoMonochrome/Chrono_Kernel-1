@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext4/block_validity.c
  *
@@ -129,16 +126,16 @@ static void debug_print_tree(struct ext4_sb_info *sbi)
 	struct ext4_system_zone *entry;
 	int first = 1;
 
-;
+	printk(KERN_INFO "System zones: ");
 	node = rb_first(&sbi->system_blks);
 	while (node) {
 		entry = rb_entry(node, struct ext4_system_zone, node);
-//		printk("%s%llu-%llu", first ? "" : ", ",
-;
+		printk("%s%llu-%llu", first ? "" : ", ",
+		       entry->start_blk, entry->start_blk + entry->count - 1);
 		first = 0;
 		node = rb_next(node);
 	}
-;
+	printk("\n");
 }
 
 int ext4_setup_system_zone(struct super_block *sb)

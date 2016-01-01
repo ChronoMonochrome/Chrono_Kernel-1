@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2000-2006 Silicon Graphics, Inc.
  * All Rights Reserved.
@@ -163,7 +160,7 @@ xfs_qm_newmount(
 void __init
 xfs_qm_init(void)
 {
-;
+	printk(KERN_INFO "SGI XFS Quota Management subsystem\n");
 	mutex_init(&xfs_Gqm_lock);
 	xfs_qm_init_procfs();
 }

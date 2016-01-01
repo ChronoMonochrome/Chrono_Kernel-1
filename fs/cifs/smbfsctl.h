@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   fs/cifs/smbfsctl.h: SMB, CIFS, SMB2 FSCTL definitions
  *

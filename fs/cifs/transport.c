@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   fs/cifs/transport.c
  *
@@ -29,7 +26,6 @@
 #include <linux/wait.h>
 #include <linux/net.h>
 #include <linux/delay.h>
-#include <linux/freezer.h>
 #include <asm/uaccess.h>
 #include <asm/processor.h>
 #include <linux/mempool.h>
@@ -101,12 +97,12 @@ DeleteMidQEntry(struct mid_q_entry *midEntry)
 	if ((now - midEntry->when_alloc) > HZ) {
 		if ((cifsFYI & CIFS_TIMER) &&
 		   (midEntry->command != SMB_COM_LOCKING_ANDX)) {
-//			printk(KERN_DEBUG " CIFS slow rsp: cmd %d mid %d",
-;
-//			printk(" A: 0x%lx S: 0x%lx R: 0x%lx\n",
-//			       now - midEntry->when_alloc,
-//			       now - midEntry->when_sent,
-;
+			printk(KERN_DEBUG " CIFS slow rsp: cmd %d mid %d",
+			       midEntry->command, midEntry->mid);
+			printk(" A: 0x%lx S: 0x%lx R: 0x%lx\n",
+			       now - midEntry->when_alloc,
+			       now - midEntry->when_sent,
+			       now - midEntry->when_received);
 		}
 	}
 #endif
@@ -270,11 +266,15 @@ static int wait_for_free_request(struct TCP_Server_Info *server,
 	while (1) {
 		if (atomic_read(&server->inFlight) >= cifs_max_pending) {
 			spin_unlock(&GlobalMid_Lock);
-			cifs_num_waiters_inc(server);
+#ifdef CONFIG_CIFS_STATS2
+			atomic_inc(&server->num_waiters);
+#endif
 			wait_event(server->request_q,
 				   atomic_read(&server->inFlight)
 				     < cifs_max_pending);
-			cifs_num_waiters_dec(server);
+#ifdef CONFIG_CIFS_STATS2
+			atomic_dec(&server->num_waiters);
+#endif
 			spin_lock(&GlobalMid_Lock);
 		} else {
 			if (server->tcpStatus == CifsExiting) {
@@ -329,7 +329,7 @@ wait_for_response(struct TCP_Server_Info *server, struct mid_q_entry *midQ)
 	int error;
 
 	error = wait_event_killable(server->response_q,
-			midQ->midState != MID_REQUEST_SUBMITTED);
+				    midQ->midState != MID_REQUEST_SUBMITTED);
 	if (error < 0)
 		return -ERESTARTSYS;
 
@@ -343,8 +343,8 @@ wait_for_response(struct TCP_Server_Info *server, struct mid_q_entry *midQ)
  */
 int
 cifs_call_async(struct TCP_Server_Info *server, struct kvec *iov,
-		unsigned int nvec, mid_receive_t *receive,
-		mid_callback_t *callback, void *cbdata, bool ignore_pend)
+		unsigned int nvec, mid_callback_t *callback, void *cbdata,
+		bool ignore_pend)
 {
 	int rc;
 	struct mid_q_entry *mid;
@@ -378,17 +378,18 @@ cifs_call_async(struct TCP_Server_Info *server, struct kvec *iov,
 		goto out_err;
 	}
 
-	mid->receive = receive;
 	mid->callback = callback;
 	mid->callback_data = cbdata;
 	mid->midState = MID_REQUEST_SUBMITTED;
-
-	cifs_in_send_inc(server);
+#ifdef CONFIG_CIFS_STATS2
+	atomic_inc(&server->inSend);
+#endif
 	rc = smb_sendv(server, iov, nvec);
-	cifs_in_send_dec(server);
-	cifs_save_when_sent(mid);
+#ifdef CONFIG_CIFS_STATS2
+	atomic_dec(&server->inSend);
+	mid->when_sent = jiffies;
+#endif
 	mutex_unlock(&server->srv_mutex);
-
 	if (rc)
 		goto out_err;
 
@@ -501,18 +502,13 @@ int
 cifs_check_receive(struct mid_q_entry *mid, struct TCP_Server_Info *server,
 		   bool log_error)
 {
-	unsigned int len = be32_to_cpu(mid->resp_buf->smb_buf_length) + 4;
-
-	dump_smb(mid->resp_buf, min_t(u32, 92, len));
+	dump_smb(mid->resp_buf,
+		 min_t(u32, 92, be32_to_cpu(mid->resp_buf->smb_buf_length)));
 
 	/* convert the length into a more usable form */
 	if (server->sec_mode & (SECMODE_SIGN_REQUIRED | SECMODE_SIGN_ENABLED)) {
-		struct kvec iov;
-
-		iov.iov_base = mid->resp_buf;
-		iov.iov_len = len;
 		/* FIXME: add code to kill session */
-		if (cifs_verify_signature(&iov, 1, server,
+		if (cifs_verify_signature(mid->resp_buf, server,
 					  mid->sequence_number + 1) != 0)
 			cERROR(1, "Unexpected SMB signature");
 	}
@@ -579,10 +575,14 @@ SendReceive2(const unsigned int xid, struct cifs_ses *ses,
 	}
 
 	midQ->midState = MID_REQUEST_SUBMITTED;
-	cifs_in_send_inc(ses->server);
+#ifdef CONFIG_CIFS_STATS2
+	atomic_inc(&ses->server->inSend);
+#endif
 	rc = smb_sendv(ses->server, iov, n_vec);
-	cifs_in_send_dec(ses->server);
-	cifs_save_when_sent(midQ);
+#ifdef CONFIG_CIFS_STATS2
+	atomic_dec(&ses->server->inSend);
+	midQ->when_sent = jiffies;
+#endif
 
 	mutex_unlock(&ses->server->srv_mutex);
 
@@ -703,11 +703,14 @@ SendReceive(const unsigned int xid, struct cifs_ses *ses,
 	}
 
 	midQ->midState = MID_REQUEST_SUBMITTED;
-
-	cifs_in_send_inc(ses->server);
+#ifdef CONFIG_CIFS_STATS2
+	atomic_inc(&ses->server->inSend);
+#endif
 	rc = smb_send(ses->server, in_buf, be32_to_cpu(in_buf->smb_buf_length));
-	cifs_in_send_dec(ses->server);
-	cifs_save_when_sent(midQ);
+#ifdef CONFIG_CIFS_STATS2
+	atomic_dec(&ses->server->inSend);
+	midQ->when_sent = jiffies;
+#endif
 	mutex_unlock(&ses->server->srv_mutex);
 
 	if (rc < 0)
@@ -840,10 +843,14 @@ SendReceiveBlockingLock(const unsigned int xid, struct cifs_tcon *tcon,
 	}
 
 	midQ->midState = MID_REQUEST_SUBMITTED;
-	cifs_in_send_inc(ses->server);
+#ifdef CONFIG_CIFS_STATS2
+	atomic_inc(&ses->server->inSend);
+#endif
 	rc = smb_send(ses->server, in_buf, be32_to_cpu(in_buf->smb_buf_length));
-	cifs_in_send_dec(ses->server);
-	cifs_save_when_sent(midQ);
+#ifdef CONFIG_CIFS_STATS2
+	atomic_dec(&ses->server->inSend);
+	midQ->when_sent = jiffies;
+#endif
 	mutex_unlock(&ses->server->srv_mutex);
 
 	if (rc < 0) {

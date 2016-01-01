@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- c -*- --------------------------------------------------------------- *
  *
  * linux/fs/autofs/waitq.c
@@ -165,7 +162,7 @@ static void autofs4_notify_daemon(struct autofs_sb_info *sbi,
 		break;
 	}
 	default:
-;
+		printk("autofs4_notify_daemon: bad type %d!\n", type);
 		return;
 	}
 

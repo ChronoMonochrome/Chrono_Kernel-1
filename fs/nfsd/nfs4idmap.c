@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  Mapping of UID/GIDs to name and vice versa.
  *
@@ -171,8 +168,8 @@ idtoname_show(struct seq_file *m, struct cache_detail *cd, struct cache_head *h)
 static void
 warn_no_idmapd(struct cache_detail *detail, int has_died)
 {
-//	printk("nfsd: nfsv4 idmapping failing: has idmapd %s?\n",
-;
+	printk("nfsd: nfsv4 idmapping failing: has idmapd %s?\n",
+			has_died ? "died" : "not been started");
 }
 
 

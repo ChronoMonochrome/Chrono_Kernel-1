@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/jbd/checkpoint.c
  *
@@ -159,11 +156,11 @@ void __log_wait_for_space(journal_t *journal)
 			} else if (tid) {
 				log_wait_commit(journal, tid);
 			} else {
-//				printk(KERN_ERR "%s: needed %d blocks and "
-//				       "only had %d space available\n",
-;
-//				printk(KERN_ERR "%s: no way to get more "
-;
+				printk(KERN_ERR "%s: needed %d blocks and "
+				       "only had %d space available\n",
+				       __func__, nblocks, space_left);
+				printk(KERN_ERR "%s: no way to get more "
+				       "journal space\n", __func__);
 				WARN_ON(1);
 				journal_abort(journal, 0);
 			}

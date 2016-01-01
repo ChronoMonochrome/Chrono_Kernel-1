@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ext3/super.c
  *
@@ -138,8 +135,8 @@ void ext3_journal_abort_handle(const char *caller, const char *err_fn,
 	if (is_handle_aborted(handle))
 		return;
 
-//	printk(KERN_ERR "EXT3-fs: %s: aborting transaction: %s in %s\n",
-;
+	printk(KERN_ERR "EXT3-fs: %s: aborting transaction: %s in %s\n",
+		caller, errstr, err_fn);
 
 	journal_abort_handle(handle);
 }
@@ -155,7 +152,7 @@ void ext3_msg(struct super_block *sb, const char *prefix,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-;
+	printk("%sEXT3-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
 
 	va_end(args);
 }
@@ -214,8 +211,8 @@ void ext3_error(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-//	printk(KERN_CRIT "EXT3-fs error (device %s): %s: %pV\n",
-;
+	printk(KERN_CRIT "EXT3-fs error (device %s): %s: %pV\n",
+	       sb->s_id, function, &vaf);
 
 	va_end(args);
 
@@ -298,8 +295,8 @@ void ext3_abort(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-//	printk(KERN_CRIT "EXT3-fs (%s): error: %s: %pV\n",
-;
+	printk(KERN_CRIT "EXT3-fs (%s): error: %s: %pV\n",
+	       sb->s_id, function, &vaf);
 
 	va_end(args);
 
@@ -329,8 +326,8 @@ void ext3_warning(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-//	printk(KERN_WARNING "EXT3-fs (%s): warning: %s: %pV\n",
-;
+	printk(KERN_WARNING "EXT3-fs (%s): warning: %s: %pV\n",
+	       sb->s_id, function, &vaf);
 
 	va_end(args);
 }
@@ -509,8 +506,8 @@ static void ext3_i_callback(struct rcu_head *head)
 static void ext3_destroy_inode(struct inode *inode)
 {
 	if (!list_empty(&(EXT3_I(inode)->i_orphan))) {
-//		printk("EXT3 Inode %p: orphan list check failed!\n",
-;
+		printk("EXT3 Inode %p: orphan list check failed!\n",
+			EXT3_I(inode));
 		print_hex_dump(KERN_INFO, "", DUMP_PREFIX_ADDRESS, 16, 4,
 				EXT3_I(inode), sizeof(struct ext3_inode_info),
 				false);
@@ -643,6 +640,8 @@ static int ext3_show_options(struct seq_file *seq, struct vfsmount *vfs)
 		seq_puts(seq, ",nouid32");
 	if (test_opt(sb, DEBUG))
 		seq_puts(seq, ",debug");
+	if (test_opt(sb, OLDALLOC))
+		seq_puts(seq, ",oldalloc");
 #ifdef CONFIG_EXT3_FS_XATTR
 	if (test_opt(sb, XATTR_USER))
 		seq_puts(seq, ",user_xattr");
@@ -1037,12 +1036,10 @@ static int parse_options (char *options, struct super_block *sb,
 			set_opt (sbi->s_mount_opt, DEBUG);
 			break;
 		case Opt_oldalloc:
-			ext3_msg(sb, KERN_WARNING,
-				"Ignoring deprecated oldalloc option");
+			set_opt (sbi->s_mount_opt, OLDALLOC);
 			break;
 		case Opt_orlov:
-			ext3_msg(sb, KERN_WARNING,
-				"Ignoring deprecated orlov option");
+			clear_opt (sbi->s_mount_opt, OLDALLOC);
 			break;
 #ifdef CONFIG_EXT3_FS_XATTR
 		case Opt_user_xattr:
@@ -1515,17 +1512,17 @@ static void ext3_orphan_cleanup (struct super_block * sb,
 		list_add(&EXT3_I(inode)->i_orphan, &EXT3_SB(sb)->s_orphan);
 		dquot_initialize(inode);
 		if (inode->i_nlink) {
-//			printk(KERN_DEBUG
-//				"%s: truncating inode %lu to %Ld bytes\n",
-;
+			printk(KERN_DEBUG
+				"%s: truncating inode %lu to %Ld bytes\n",
+				__func__, inode->i_ino, inode->i_size);
 			jbd_debug(2, "truncating inode %lu to %Ld bytes\n",
 				  inode->i_ino, inode->i_size);
 			ext3_truncate(inode);
 			nr_truncates++;
 		} else {
-//			printk(KERN_DEBUG
-//				"%s: deleting unreferenced inode %lu\n",
-;
+			printk(KERN_DEBUG
+				"%s: deleting unreferenced inode %lu\n",
+				__func__, inode->i_ino);
 			jbd_debug(2, "deleting unreferenced inode %lu\n",
 				  inode->i_ino);
 			nr_orphans++;
@@ -2218,11 +2215,11 @@ static journal_t *ext3_get_dev_journal(struct super_block *sb,
 		goto out_bdev;
 	}
 	journal->j_private = sb;
-	ll_rw_block(READ, 1, &journal->j_sb_buffer);
-	wait_on_buffer(journal->j_sb_buffer);
-	if (!buffer_uptodate(journal->j_sb_buffer)) {
-		ext3_msg(sb, KERN_ERR, "I/O error on journal device");
-		goto out_journal;
+	if (!bh_uptodate_or_lock(journal->j_sb_buffer)) {
+		if (bh_submit_read(journal->j_sb_buffer)) {
+			ext3_msg(sb, KERN_ERR, "I/O error on journal device");
+			goto out_journal;
+		}
 	}
 	if (be32_to_cpu(journal->j_superblock->s_nr_users) != 1) {
 		ext3_msg(sb, KERN_ERR,
@@ -2296,7 +2293,7 @@ static int ext3_load_journal(struct super_block *sb,
 	}
 
 	if (!(journal->j_flags & JFS_BARRIER))
-;
+		printk(KERN_INFO "EXT3-fs: barriers not enabled\n");
 
 	if (!really_read_only && test_opt(sb, UPDATE_JOURNAL)) {
 		err = journal_update_format(journal);
@@ -2897,7 +2894,7 @@ static int ext3_quota_on(struct super_block *sb, int type, int format_id,
 		return -EINVAL;
 
 	/* Quotafile not on the same filesystem? */
-	if (path->mnt->mnt_sb != sb)
+	if (path->dentry->d_sb != sb)
 		return -EXDEV;
 	/* Journaling quota? */
 	if (EXT3_SB(sb)->s_qf_names[type]) {

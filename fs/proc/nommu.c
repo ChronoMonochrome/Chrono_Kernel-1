@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* nommu.c: mmu-less memory info files
  *
  * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.

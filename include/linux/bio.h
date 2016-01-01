@@ -246,11 +246,6 @@ extern struct bio *bio_copy_kern(struct request_queue *, void *, unsigned int,
 extern void bio_set_pages_dirty(struct bio *bio);
 extern void bio_check_pages_dirty(struct bio *bio);
 
-void generic_start_io_acct(int rw, unsigned long sectors,
-			   struct hd_struct *part);
-void generic_end_io_acct(int rw, struct hd_struct *part,
-			 unsigned long start_time);
-
 #ifndef ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE
 # error	"You should define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE for your platform"
 #endif
@@ -279,14 +274,6 @@ static inline ssize_t bvec_length(const struct bio_vec *bvec, unsigned long nr)
 	while (nr--)
 		bytes += (bvec++)->bv_len;
 	return bytes;
-}
-
-/*
- * Allow queuer to specify a completion CPU for this bio
- */
-static inline void bio_set_completion_cpu(struct bio *bio, unsigned int cpu)
-{
-	bio->bi_comp_cpu = cpu;
 }
 
 /*
@@ -540,11 +527,7 @@ extern void bio_integrity_init(void);
 #define bioset_integrity_create(a, b)	(0)
 #define bio_integrity_prep(a)		(0)
 #define bio_integrity_enabled(a)	(0)
-static inline int bio_integrity_clone(struct bio *bio, struct bio *bio_src,
-				      gfp_t gfp_mask, struct bio_set *bs)
-{
-	return 0;
-}
+#define bio_integrity_clone(a, b, c, d)	(0)
 #define bioset_integrity_free(a)	do { } while (0)
 #define bio_integrity_free(a, b)	do { } while (0)
 #define bio_integrity_endio(a, b)	do { } while (0)

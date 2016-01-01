@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Global fscache object list maintainer and viewer
  *
  * Copyright (C) 2009 Red Hat, Inc. All Rights Reserved.

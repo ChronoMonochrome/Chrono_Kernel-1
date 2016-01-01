@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   Copyright (C) International Business Machines Corp., 2000-2004
  *
@@ -2937,7 +2934,7 @@ static void add_missing_indices(struct inode *inode, s64 bn)
 	DT_GETPAGE(inode, bn, mp, PSIZE, p, rc);
 
 	if (rc) {
-;
+		printk(KERN_ERR "DT_GETPAGE failed!\n");
 		goto end;
 	}
 	BT_MARK_DIRTY(mp, inode);

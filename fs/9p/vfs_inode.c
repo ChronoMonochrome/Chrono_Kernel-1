@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/9p/vfs_inode.c
  *
@@ -388,7 +385,7 @@ v9fs_clone_walk(struct v9fs_session_info *v9ses, u32 fid, struct dentry *dentry)
 
 	nfid = v9fs_get_idpool(&v9ses->fidpool);
 	if (nfid < 0) {
-;
+		eprintk(KERN_WARNING, "no free fids available\n");
 		return ERR_PTR(-ENOSPC);
 	}
 
@@ -696,8 +693,8 @@ v9fs_vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 	fid = NULL;
 	v9ses = v9fs_inode2v9ses(dir);
 	perm = unixmode2p9mode(v9ses, mode);
-	if (nd)
-		flags = nd->intent.open.flags;
+	if (nd && nd->flags & LOOKUP_OPEN)
+		flags = nd->intent.open.flags - 1;
 	else
 		flags = O_RDWR;
 
@@ -712,7 +709,7 @@ v9fs_vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 
 	v9fs_invalidate_inode_attr(dir);
 	/* if we are opening a file, assign the open fid to the file */
-	if (nd) {
+	if (nd && nd->flags & LOOKUP_OPEN) {
 		v9inode = V9FS_I(dentry->d_inode);
 		mutex_lock(&v9inode->v_mutex);
 		if (v9ses->cache && !v9inode->writeback_fid &&
@@ -1293,15 +1290,7 @@ static int v9fs_vfs_mkspecial(struct inode *dir, struct dentry *dentry,
 	v9ses = v9fs_inode2v9ses(dir);
 	if (!v9fs_proto_dotu(v9ses)) {
 		P9_DPRINTK(P9_DEBUG_ERROR, "not extended\n");
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	perm = unixmode2p9mode(v9ses, mode);

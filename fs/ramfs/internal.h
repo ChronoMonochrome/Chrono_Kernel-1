@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* internal.h: ramfs internal definitions
  *
  * Copyright (C) 2005 Red Hat, Inc. All Rights Reserved.

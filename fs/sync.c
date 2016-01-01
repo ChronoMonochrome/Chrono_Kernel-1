@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * High-level sync()-related operations
  */
@@ -20,15 +17,26 @@
 #include <linux/buffer_head.h>
 #include <linux/backing-dev.h>
 #include "internal.h"
+#ifdef CONFIG_ASYNC_FSYNC
+#include <linux/statfs.h>
+#endif
 
 #ifdef CONFIG_DYNAMIC_FSYNC
 extern bool early_suspend_active;
 extern bool dyn_fsync_active;
-extern bool dyn_fdatasync_active;
 #endif
 
 #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
 			SYNC_FILE_RANGE_WAIT_AFTER)
+
+#ifdef CONFIG_ASYNC_FSYNC
+#define FLAG_ASYNC_FSYNC        0x1
+static struct workqueue_struct *fsync_workqueue = NULL;
+struct fsync_work {
+	struct work_struct work;
+	char pathname[256];
+};
+#endif
 
 /*
  * Do the filesystem syncing work. For simple filesystems
@@ -177,7 +185,7 @@ static void do_sync_work(struct work_struct *work)
 	 */
 	sync_filesystems(0);
 	sync_filesystems(0);
-;
+	printk("Emergency Sync complete\n");
 	kfree(work);
 }
 
@@ -233,29 +241,9 @@ int vfs_fsync_range(struct file *file, loff_t start, loff_t end, int datasync)
 		return 0;
 	else {
 #endif
-
-	struct address_space *mapping = file->f_mapping;
-	int err, ret;
-
-	if (!file->f_op || !file->f_op->fsync) {
-		ret = -EINVAL;
-		goto out;
-	}
-
-	ret = filemap_write_and_wait_range(mapping, start, end);
-
-	/*
-	 * We need to protect against concurrent writers, which could cause
-	 * livelocks in fsync_buffers_list().
-	 */
-	mutex_lock(&mapping->host->i_mutex);
-	err = file->f_op->fsync(file, datasync);
-	if (!ret)
-		ret = err;
-	mutex_unlock(&mapping->host->i_mutex);
-
-out:
-	return ret;
+	if (!file->f_op || !file->f_op->fsync)
+		return -EINVAL;
+	return file->f_op->fsync(file, start, end, datasync);
 #ifdef CONFIG_DYNAMIC_FSYNC
 	}
 #endif
@@ -276,16 +264,111 @@ int vfs_fsync(struct file *file, int datasync)
 }
 EXPORT_SYMBOL(vfs_fsync);
 
+#ifdef CONFIG_ASYNC_FSYNC
+extern int emmc_perf_degr(void);
+#define LOW_STORAGE_THRESHOLD   786432
+int async_fsync(struct file *file, int fd)
+{
+	struct inode *inode = file->f_mapping->host;
+	struct super_block *sb = inode->i_sb;
+	struct kstatfs st;
+
+	if ((sb->fsync_flags & FLAG_ASYNC_FSYNC) == 0)
+		return 0;
+
+	if (!emmc_perf_degr())
+		return 0;
+
+	if (fd_statfs(fd, &st))
+		return 0;
+
+	if (st.f_bfree > LOW_STORAGE_THRESHOLD)
+		return 0;
+
+	return 1;
+}
+
+static int do_async_fsync(char *pathname)
+{
+	struct file *file;
+	int ret;
+	file = filp_open(pathname, O_RDWR, 0);
+	if (IS_ERR(file)) {
+		pr_debug("%s: can't open %s\n", __func__, pathname);
+		return -EBADF;
+	}
+	ret = vfs_fsync(file, 0);
+
+	filp_close(file, NULL);
+	return ret;
+}
+
+static void do_afsync_work(struct work_struct *work)
+{
+	struct fsync_work *fwork =
+		container_of(work, struct fsync_work, work);
+	int ret = -EBADF;
+
+	pr_debug("afsync: %s\n", fwork->pathname);
+	ret = do_async_fsync(fwork->pathname);
+	if (ret != 0 && ret != -EBADF)
+		pr_info("afsync return %d\n", ret);
+	else
+		pr_debug("afsync: %s done\n", fwork->pathname);
+	kfree(fwork);
+}
+#endif
+
 static int do_fsync(unsigned int fd, int datasync)
 {
 	struct file *file;
 	int ret = -EBADF;
 	int fput_needed;
+#ifdef CONFIG_ASYNC_FSYNC
+	struct fsync_work *fwork;
+#endif
 
 	file = fget_light(fd, &fput_needed);
 	if (file) {
+		ktime_t fsync_t, fsync_diff;
+		char pathname[256], *path;
+		path = d_path(&(file->f_path), pathname, sizeof(pathname));
+		if (IS_ERR(path))
+			path = "(unknown)";
+#ifdef CONFIG_ASYNC_FSYNC
+		else if (async_fsync(file, fd)) {
+			if (!fsync_workqueue)
+				fsync_workqueue =
+					create_singlethread_workqueue("fsync");
+			if (!fsync_workqueue)
+				goto no_async;
+
+			if (IS_ERR(path))
+				goto no_async;
+
+			fwork = kmalloc(sizeof(*fwork), GFP_KERNEL);
+			if (fwork) {
+				strncpy(fwork->pathname, path,
+					sizeof(fwork->pathname) - 1);
+				INIT_WORK(&fwork->work, do_afsync_work);
+				queue_work(fsync_workqueue, &fwork->work);
+				fput(file);
+				return 0;
+			}
+		}
+no_async:
+#endif
+		fsync_t = ktime_get();
 		ret = vfs_fsync(file, datasync);
 		fput_light(file, fput_needed);
+		fsync_diff = ktime_sub(ktime_get(), fsync_t);
+		if (ktime_to_ms(fsync_diff) >= 5000) {
+                        pr_info("VFS: %s pid:%d(%s)(parent:%d/%s)\
+				takes %lld ms to fsync %s.\n", __func__,
+				current->pid, current->comm,
+				current->parent->pid, current->parent->comm,
+				ktime_to_ms(fsync_diff), path);
+		}
 	}
 	return ret;
 }
@@ -302,10 +385,12 @@ SYSCALL_DEFINE1(fsync, unsigned int, fd)
 
 SYSCALL_DEFINE1(fdatasync, unsigned int, fd)
 {
-	if (likely(dyn_fsync_active && dyn_fdatasync_active && !early_suspend_active))
+#if 0
+	if (likely(dyn_fsync_active && !early_suspend_active))
 		return 0;
 	else
-		return do_fsync(fd, 1);
+#endif
+	return do_fsync(fd, 1);
 }
 
 /**

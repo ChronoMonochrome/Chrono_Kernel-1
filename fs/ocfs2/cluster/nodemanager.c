@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -613,8 +610,8 @@ static ssize_t o2nm_cluster_attr_fence_method_write(
 		if (strncasecmp(page, o2nm_fence_method_desc[i], count - 1))
 			continue;
 		if (cluster->cl_fence_method != i) {
-//			printk(KERN_INFO "ocfs2: Changing fence method to %s\n",
-;
+			printk(KERN_INFO "ocfs2: Changing fence method to %s\n",
+			       o2nm_fence_method_desc[i]);
 			cluster->cl_fence_method = i;
 		}
 		return count;
@@ -966,7 +963,7 @@ static int __init init_o2nm(void)
 	mutex_init(&o2nm_cluster_group.cs_subsys.su_mutex);
 	ret = configfs_register_subsystem(&o2nm_cluster_group.cs_subsys);
 	if (ret) {
-;
+		printk(KERN_ERR "nodemanager: Registration returned %d\n", ret);
 		goto out_callbacks;
 	}
 

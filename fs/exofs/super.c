@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2005, 2006
  * Avishay Traeger (avishay@gmail.com)
@@ -380,8 +377,8 @@ static void _exofs_print_device(const char *msg, const char *dev_path,
 {
 	const struct osd_dev_info *odi = osduld_device_info(od);
 
-//	printk(KERN_NOTICE "exofs: %s %s osd_name-%s pid-0x%llx\n",
-;
+	printk(KERN_NOTICE "exofs: %s %s osd_name-%s pid-0x%llx\n",
+		msg, dev_path ?: "", odi->osdname, _LLU(pid));
 }
 
 void exofs_free_sbi(struct exofs_sb_info *sbi)
@@ -412,9 +409,9 @@ static void exofs_put_super(struct super_block *sb)
 	     num_pend = atomic_read(&sbi->s_curr_pending)) {
 		wait_queue_head_t wq;
 
-//		printk(KERN_NOTICE "%s: !!Pending operations in flight. "
-//		       "This is a BUG. please report to osd-dev@open-osd.org\n",
-;
+		printk(KERN_NOTICE "%s: !!Pending operations in flight. "
+		       "This is a BUG. please report to osd-dev@open-osd.org\n",
+		       __func__);
 		init_waitqueue_head(&wq);
 		wait_event_timeout(wq,
 				  (atomic_read(&sbi->s_curr_pending) == 0),
@@ -485,9 +482,9 @@ static int _read_and_match_data_map(struct exofs_sb_info *sbi, unsigned numdevs,
 						sbi->data_map.odm_group_width;
 	} else {
 		if (sbi->data_map.odm_group_depth) {
-//			printk(KERN_NOTICE "Warning: group_depth ignored "
-//				"group_width == 0 && group_depth == %d\n",
-;
+			printk(KERN_NOTICE "Warning: group_depth ignored "
+				"group_width == 0 && group_depth == %d\n",
+				sbi->data_map.odm_group_depth);
 			sbi->data_map.odm_group_depth = 0;
 		}
 		sbi->layout.group_width = sbi->data_map.odm_num_comps /
@@ -613,8 +610,8 @@ static int exofs_read_lookup_dev_table(struct exofs_sb_info **psbi,
 			goto out;
 		}
 
-//		printk(KERN_NOTICE "Add device[%d]: osd_name-%s\n",
-;
+		printk(KERN_NOTICE "Add device[%d]: osd_name-%s\n",
+		       i, odi.osdname);
 
 		/* On all devices the device table is identical. The user can
 		 * specify any one of the participating devices on the command
@@ -722,7 +719,6 @@ static int exofs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_blocksize = EXOFS_BLKSIZE;
 	sb->s_blocksize_bits = EXOFS_BLKSHIFT;
 	sb->s_maxbytes = MAX_LFS_FILESIZE;
-	sb->s_max_links = EXOFS_LINK_MAX;
 	atomic_set(&sbi->s_curr_pending, 0);
 	sb->s_bdev = NULL;
 	sb->s_dev = 0;

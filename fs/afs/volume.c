@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* AFS volume management
  *
  * Copyright (C) 2002, 2007 Red Hat, Inc. All Rights Reserved.
@@ -378,7 +375,7 @@ int afs_volume_release_fileserver(struct afs_vnode *vnode,
 		if (!server->fs_state) {
 			server->fs_dead_jif = jiffies + HZ * 10;
 			server->fs_state = result;
-;
+			printk("kAFS: SERVER DEAD state=%d\n", result);
 		}
 		spin_unlock(&server->fs_lock);
 		goto try_next_server;

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2003-2006, Cluster File Systems, Inc, info@clusterfs.com
  * Written by Alex Tomas <alex@clusterfs.com>
@@ -530,9 +527,9 @@ static inline void mb_cmp_bitmaps(struct ext4_buddy *e4b, void *bitmap)
 #define MB_CHECK_ASSERT(assert)						\
 do {									\
 	if (!(assert)) {						\
-//		printk(KERN_EMERG					\
-//			"Assertion failure in %s() at %s:%d: \"%s\"\n",	\
-;
+		printk(KERN_EMERG					\
+			"Assertion failure in %s() at %s:%d: \"%s\"\n",	\
+			function, file, line, # assert);		\
 		BUG();							\
 	}								\
 } while (0)
@@ -2087,7 +2084,7 @@ repeat:
 			 * Someone more lucky has already allocated it.
 			 * The only thing we can do is just take first
 			 * found block(s)
-;
+			printk(KERN_DEBUG "EXT4-fs: someone won our chunk\n");
 			 */
 			ac->ac_b_ex.fe_group = 0;
 			ac->ac_b_ex.fe_start = 0;
@@ -2421,8 +2418,8 @@ static int ext4_groupinfo_create_slab(size_t size)
 
 	mutex_unlock(&ext4_grpinfo_slab_create_mutex);
 	if (!cachep) {
-//		printk(KERN_EMERG
-;
+		printk(KERN_EMERG
+		       "EXT4-fs: no memory for groupinfo slab cache\n");
 		return -ENOMEM;
 	}
 
@@ -2874,7 +2871,7 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
 		ext4_group_t flex_group = ext4_flex_group(sbi,
 							  ac->ac_b_ex.fe_group);
 		atomic_sub(ac->ac_b_ex.fe_len,
-			     &sbi->s_flex_groups[flex_group].free_clusters);
+			   &sbi->s_flex_groups[flex_group].free_clusters);
 	}
 
 	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
@@ -3961,17 +3958,17 @@ static void ext4_mb_show_ac(struct ext4_allocation_context *ac)
 			ext4_get_group_no_and_offset(sb, pa->pa_pstart,
 						     NULL, &start);
 			spin_unlock(&pa->pa_lock);
-//			printk(KERN_ERR "PA:%u:%d:%u \n", i,
-;
+			printk(KERN_ERR "PA:%u:%d:%u \n", i,
+			       start, pa->pa_len);
 		}
 		ext4_unlock_group(sb, i);
 
 		if (grp->bb_free == 0)
 			continue;
-//		printk(KERN_ERR "%u: %d/%d \n",
-;
+		printk(KERN_ERR "%u: %d/%d \n",
+		       i, grp->bb_free, grp->bb_fragments);
 	}
-;
+	printk(KERN_ERR "\n");
 }
 #else
 static inline void ext4_mb_show_ac(struct ext4_allocation_context *ac)

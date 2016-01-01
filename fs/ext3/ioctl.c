@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ext3/ioctl.c
  *
@@ -113,7 +110,7 @@ flags_err:
 			err = ext3_change_inode_journal_flag(inode, jflag);
 flags_out:
 		mutex_unlock(&inode->i_mutex);
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 	case EXT3_IOC_GETVERSION:
@@ -127,15 +124,7 @@ flags_out:
 		int err;
 
 		if (!inode_owner_or_capable(inode))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		err = mnt_want_write(filp->f_path.mnt);
 		if (err)
@@ -158,7 +147,7 @@ return -EPERM;
 		}
 		ext3_journal_stop(handle);
 setversion_out:
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 #ifdef CONFIG_JBD_DEBUG
@@ -230,7 +219,7 @@ setversion_out:
 		}
 		mutex_unlock(&ei->truncate_mutex);
 setrsvsz_out:
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 	case EXT3_IOC_GROUP_EXTEND: {
@@ -239,15 +228,7 @@ setrsvsz_out:
 		int err, err2;
 
 		if (!capable(CAP_SYS_RESOURCE))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		err = mnt_want_write(filp->f_path.mnt);
 		if (err)
@@ -264,7 +245,7 @@ return -EPERM;
 		if (err == 0)
 			err = err2;
 group_extend_out:
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 	case EXT3_IOC_GROUP_ADD: {
@@ -273,15 +254,7 @@ group_extend_out:
 		int err, err2;
 
 		if (!capable(CAP_SYS_RESOURCE))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		err = mnt_want_write(filp->f_path.mnt);
 		if (err)
@@ -300,7 +273,7 @@ return -EPERM;
 		if (err == 0)
 			err = err2;
 group_add_out:
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		return err;
 	}
 	case FITRIM: {
@@ -310,15 +283,7 @@ group_add_out:
 		int ret = 0;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (copy_from_user(&range, (struct fstrim_range *)arg,
 				   sizeof(range)))

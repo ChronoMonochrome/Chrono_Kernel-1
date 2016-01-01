@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* internal AFS stuff
  *
  * Copyright (C) 2002, 2007 Red Hat, Inc. All Rights Reserved.
@@ -753,7 +750,7 @@ extern void afs_pages_written_back(struct afs_vnode *, struct afs_call *);
 extern ssize_t afs_file_write(struct kiocb *, const struct iovec *,
 			      unsigned long, loff_t);
 extern int afs_writeback_all(struct afs_vnode *);
-extern int afs_fsync(struct file *, int);
+extern int afs_fsync(struct file *, loff_t, loff_t, int);
 
 
 /*****************************************************************************/

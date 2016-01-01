@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/hfsplus/wrapper.c
  *
@@ -159,7 +156,7 @@ static int hfsplus_get_last_session(struct super_block *sb,
 			*start = (sector_t)te.cdte_addr.lba << 2;
 			return 0;
 		}
-;
+		printk(KERN_ERR "hfs: invalid session number or type of track\n");
 		return -EINVAL;
 	}
 	ms_info.addr_format = CDROM_LBA;
@@ -187,6 +184,10 @@ int hfsplus_read_wrapper(struct super_block *sb)
 
 	if (hfsplus_get_last_session(sb, &part_start, &part_size))
 		goto out;
+	if ((u64)part_start + part_size > 0x100000000ULL) {
+		pr_err("hfs: volumes larger than 2TB are not supported yet\n");
+		goto out;
+	}
 
 	error = -ENOMEM;
 	sbi->s_vhdr_buf = kmalloc(hfsplus_min_io_size(sb), GFP_KERNEL);
@@ -236,8 +237,8 @@ reread:
 
 	error = -EINVAL;
 	if (sbi->s_backup_vhdr->signature != sbi->s_vhdr->signature) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+			"hfs: invalid secondary volume header\n");
 		goto out_free_backup_vhdr;
 	}
 
@@ -261,8 +262,8 @@ reread:
 		blocksize >>= 1;
 
 	if (sb_set_blocksize(sb, blocksize) != blocksize) {
-//		printk(KERN_ERR "hfs: unable to set blocksize to %u!\n",
-;
+		printk(KERN_ERR "hfs: unable to set blocksize to %u!\n",
+			blocksize);
 		goto out_free_backup_vhdr;
 	}
 

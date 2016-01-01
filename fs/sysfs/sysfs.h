@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * fs/sysfs/sysfs.h - sysfs internal header file
  *
@@ -22,8 +19,6 @@ struct sysfs_elem_dir {
 	struct kobject		*kobj;
 	/* children list starts here and goes through sd->s_sibling */
 	struct sysfs_dirent	*children;
-
-	unsigned long		subdirs;
 };
 
 struct sysfs_elem_symlink {

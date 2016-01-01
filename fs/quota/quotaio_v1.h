@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #ifndef _LINUX_QUOTAIO_V1_H
 #define _LINUX_QUOTAIO_V1_H
 

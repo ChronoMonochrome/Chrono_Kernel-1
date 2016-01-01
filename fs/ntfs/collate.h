@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * collate.h - Defines for NTFS kernel collation handling.  Part of the
  *	       Linux-NTFS project.

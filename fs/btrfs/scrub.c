@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2011 STRATO.  All rights reserved.
  *
@@ -274,9 +271,9 @@ static void scrub_fixup(struct scrub_bio *sbio, int ix)
 	ret = btrfs_map_block(map_tree, REQ_WRITE, logical, &length,
 			      &multi, 0);
 	if (ret || !multi || length < PAGE_SIZE) {
-//		printk(KERN_ERR
-//		       "scrub_fixup: btrfs_map_block failed us for %llu\n",
-;
+		printk(KERN_ERR
+		       "scrub_fixup: btrfs_map_block failed us for %llu\n",
+		       (unsigned long long)logical);
 		WARN_ON(1);
 		return;
 	}
@@ -323,8 +320,8 @@ static void scrub_fixup(struct scrub_bio *sbio, int ix)
 	spin_unlock(&sdev->stat_lock);
 
 	if (printk_ratelimit())
-//		printk(KERN_ERR "btrfs: fixed up at %llu\n",
-;
+		printk(KERN_ERR "btrfs: fixed up at %llu\n",
+		       (unsigned long long)logical);
 	return;
 
 uncorrectable:
@@ -334,8 +331,8 @@ uncorrectable:
 	spin_unlock(&sdev->stat_lock);
 
 	if (printk_ratelimit())
-//		printk(KERN_ERR "btrfs: unable to fixup at %llu\n",
-;
+		printk(KERN_ERR "btrfs: unable to fixup at %llu\n",
+			 (unsigned long long)logical);
 }
 
 static int scrub_fixup_io(int rw, struct block_device *bdev, sector_t sector,
@@ -943,11 +940,11 @@ again:
 
 			if (key.objectid < logical &&
 			    (flags & BTRFS_EXTENT_FLAG_TREE_BLOCK)) {
-//				printk(KERN_ERR
-//				       "btrfs scrub: tree block %llu spanning "
-//				       "stripes, ignored. logical=%llu\n",
-//				       (unsigned long long)key.objectid,
-;
+				printk(KERN_ERR
+				       "btrfs scrub: tree block %llu spanning "
+				       "stripes, ignored. logical=%llu\n",
+				       (unsigned long long)key.objectid,
+				       (unsigned long long)logical);
 				goto next;
 			}
 
@@ -1204,7 +1201,7 @@ int btrfs_scrub_dev(struct btrfs_root *root, u64 devid, u64 start, u64 end,
 	if (root->sectorsize != PAGE_SIZE ||
 	    root->sectorsize != root->leafsize ||
 	    root->sectorsize != root->nodesize) {
-;
+		printk(KERN_ERR "btrfs_scrub: size assumptions fail\n");
 		return -EINVAL;
 	}
 

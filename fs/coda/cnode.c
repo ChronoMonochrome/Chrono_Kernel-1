@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* cnode related routines for the coda kernel code
    (C) 1996 Peter Braam
    */
@@ -105,7 +102,7 @@ int coda_cnode_make(struct inode **inode, struct CodaFid *fid, struct super_bloc
 
 	*inode = coda_iget(sb, fid, &attr);
 	if ( IS_ERR(*inode) ) {
-;
+		printk("coda_cnode_make: coda_iget failed\n");
                 return PTR_ERR(*inode);
         }
 	return 0;
@@ -143,7 +140,7 @@ struct inode *coda_fid_to_inode(struct CodaFid *fid, struct super_block *sb)
 	unsigned long hash = coda_f2i(fid);
 
 	if ( !sb ) {
-;
+		printk("coda_fid_to_inode: no sb!\n");
 		return NULL;
 	}
 

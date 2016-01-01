@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * QNX4 file system, Linux implementation.
  *
@@ -48,7 +45,7 @@ unsigned long qnx4_count_free_blocks(struct super_block *sb)
 
 	while (total < size) {
 		if ((bh = sb_bread(sb, start + offset)) == NULL) {
-;
+			printk(KERN_ERR "qnx4: I/O error in counting free blocks\n");
 			break;
 		}
 		count_bits(bh->b_data, size - total, &total_free);

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -94,7 +91,7 @@ struct workqueue_struct *user_dlm_worker;
 static int param_set_dlmfs_capabilities(const char *val,
 					struct kernel_param *kp)
 {
-;
+	printk(KERN_ERR "%s: readonly parameter\n", kp->name);
 	return -EINVAL;
 }
 static int param_get_dlmfs_capabilities(char *buffer,
@@ -704,7 +701,7 @@ bail:
 			destroy_workqueue(user_dlm_worker);
 		bdi_destroy(&dlmfs_backing_dev_info);
 	} else
-;
+		printk("OCFS2 User DLM kernel interface loaded\n");
 	return status;
 }
 

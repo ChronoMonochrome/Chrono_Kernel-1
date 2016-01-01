@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * YAFFS: Yet Another Flash File System. A NAND-flash specific file system.
  *
@@ -230,15 +227,7 @@ static int yaffs_mknod(struct inode *dir, struct dentry *dentry, int mode,
 	} else {
 		yaffs_trace(YAFFS_TRACE_OS,
 			"yaffs_mknod: could not get parent object");
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 
 	yaffs_trace(YAFFS_TRACE_OS,
@@ -341,15 +330,7 @@ static int yaffs_link(struct dentry *old_dentry, struct inode *dir,
 		return 0;
 	}
 
-	
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+	return -EPERM;
 }
 
 static int yaffs_symlink(struct inode *dir, struct dentry *dentry,
@@ -1840,8 +1821,8 @@ static int yaffs_parse_options(struct yaffs_options *options,
 			options->skip_checkpoint_read = 1;
 			options->skip_checkpoint_write = 1;
 		} else {
-//			printk(KERN_INFO "yaffs: Bad mount option \"%s\"\n",
-;
+			printk(KERN_INFO "yaffs: Bad mount option \"%s\"\n",
+			       cur_opt);
 			error = 1;
 		}
 	}
@@ -2058,20 +2039,20 @@ static struct super_block *yaffs_internal_read_super(int yaffs_version,
 	sb->s_export_op = &yaffs_export_ops;
 
 	if (!sb)
-;
+		printk(KERN_INFO "yaffs: sb is NULL\n");
 	else if (!sb->s_dev)
-;
+		printk(KERN_INFO "yaffs: sb->s_dev is NULL\n");
 	else if (!yaffs_devname(sb, devname_buf))
-;
+		printk(KERN_INFO "yaffs: devname is NULL\n");
 	else
-//		printk(KERN_INFO "yaffs: dev is %d name is \"%s\" %s\n",
-//		       sb->s_dev,
-;
+		printk(KERN_INFO "yaffs: dev is %d name is \"%s\" %s\n",
+		       sb->s_dev,
+		       yaffs_devname(sb, devname_buf), read_only ? "ro" : "rw");
 
 	if (!data_str)
 		data_str = "";
 
-;
+	printk(KERN_INFO "yaffs: passed flags \"%s\"\n", data_str);
 
 	memset(&options, 0, sizeof(options));
 
@@ -2184,8 +2165,8 @@ static struct super_block *yaffs_internal_read_super(int yaffs_version,
 
 	if (!read_only && !(mtd->flags & MTD_WRITEABLE)) {
 		read_only = 1;
-//		printk(KERN_INFO
-;
+		printk(KERN_INFO
+		       "yaffs: mtd is read only, setting superblock read only");
 		sb->s_flags |= MS_RDONLY;
 	}
 
@@ -2694,15 +2675,15 @@ static int yaffs_proc_write_trace_options(struct file *file, const char *buf,
 
 	yaffs_trace_mask = rg | YAFFS_TRACE_ALWAYS;
 
-;
+	printk(KERN_DEBUG "new trace = 0x%08X\n", yaffs_trace_mask);
 
 	if (rg & YAFFS_TRACE_ALWAYS) {
 		for (i = 0; mask_flags[i].mask_name != NULL; i++) {
 			char flag;
 			flag = ((rg & mask_flags[i].mask_bitfield) ==
 				mask_flags[i].mask_bitfield) ? '+' : '-';
-//			printk(KERN_DEBUG "%c%s\n", flag,
-;
+			printk(KERN_DEBUG "%c%s\n", flag,
+			       mask_flags[i].mask_name);
 		}
 	}
 

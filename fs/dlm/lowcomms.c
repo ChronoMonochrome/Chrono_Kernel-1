@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /******************************************************************************
 *******************************************************************************
 **
@@ -519,8 +516,8 @@ static void process_sctp_notification(struct connection *con,
 				unsigned char *b=(unsigned char *)&prim.ssp_addr;
 				log_print("reject connect from unknown addr");
 				for (i=0; i<sizeof(struct sockaddr_storage);i++)
-;
-;
+					printk("%02x ", b[i]);
+				printk("\n");
 				sctp_send_shutdown(prim.ssp_assoc_id);
 				return;
 			}
@@ -796,7 +793,7 @@ static int tcp_accept_from_sock(struct connection *con)
 			addcon = othercon;
 		}
 		else {
-;
+			printk("Extra connection from node %d attempted\n", nodeid);
 			result = -EAGAIN;
 			mutex_unlock(&newcon->sock_mutex);
 			goto accept_err;

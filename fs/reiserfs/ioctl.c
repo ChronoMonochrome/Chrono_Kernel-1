@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright 2000 by Hans Reiser, licensing governed by reiserfs/README
  */
@@ -99,7 +96,7 @@ long reiserfs_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			inode->i_ctime = CURRENT_TIME_SEC;
 			mark_inode_dirty(inode);
 setflags_out:
-			mnt_drop_write_file(filp);
+			mnt_drop_write(filp->f_path.mnt);
 			break;
 		}
 	case REISERFS_IOC_GETVERSION:
@@ -120,7 +117,7 @@ setflags_out:
 		inode->i_ctime = CURRENT_TIME_SEC;
 		mark_inode_dirty(inode);
 setversion_out:
-		mnt_drop_write_file(filp);
+		mnt_drop_write(filp->f_path.mnt);
 		break;
 	default:
 		err = -ENOTTY;

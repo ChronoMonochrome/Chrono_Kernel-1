@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (c) 2011 Red Hat, Inc.  All Rights Reserved.
  *
@@ -32,16 +29,16 @@
  * XFS logging functions
  */
 static void
-//__xfs_printk(
-//	const char		*level,
-//	const struct xfs_mount	*mp,
-//	struct va_format	*vaf)
-//{
-//	if (mp && mp->m_fsname) {
-;
+__xfs_printk(
+	const char		*level,
+	const struct xfs_mount	*mp,
+	struct va_format	*vaf)
+{
+	if (mp && mp->m_fsname) {
+		printk("%sXFS (%s): %pV\n", level, mp->m_fsname, vaf);
 		return;
 	}
-;
+	printk("%sXFS: %pV\n", level, vaf);
 }
 
 #define define_xfs_printk_level(func, kern_level)		\
@@ -55,7 +52,7 @@ void func(const struct xfs_mount *mp, const char *fmt, ...)	\
 	vaf.fmt = fmt;						\
 	vaf.va = &args;						\
 								\
-;
+	__xfs_printk(kern_level, mp, &vaf);			\
 	va_end(args);						\
 }								\
 
@@ -90,7 +87,7 @@ xfs_alert_tag(
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-;
+	__xfs_printk(KERN_ALERT, mp, &vaf);
 	va_end(args);
 
 	BUG_ON(do_panic);

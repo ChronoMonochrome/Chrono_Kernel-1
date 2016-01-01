@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2009 Oracle.  All rights reserved.
  *
@@ -673,7 +670,6 @@ struct backref_node *build_backref_tree(struct reloc_control *rc,
 	int cowonly;
 	int ret;
 	int err = 0;
-	bool need_check = true;
 
 	path1 = btrfs_alloc_path();
 	path2 = btrfs_alloc_path();
@@ -896,7 +892,6 @@ again:
 			cur->bytenr);
 
 		lower = cur;
-		need_check = true;
 		for (; level < BTRFS_MAX_LEVEL; level++) {
 			if (!path2->nodes[level]) {
 				BUG_ON(btrfs_root_bytenr(&root->root_item) !=
@@ -940,12 +935,14 @@ again:
 
 				/*
 				 * add the block to pending list if we
-				 * need check its backrefs, we only do this once
-				 * while walking up a tree as we will catch
-				 * anything else later on.
+				 * need check its backrefs. only block
+				 * at 'cur->level + 1' is added to the
+				 * tail of pending list. this guarantees
+				 * we check backrefs from lower level
+				 * blocks to upper level blocks.
 				 */
-				if (!upper->checked && need_check) {
-					need_check = false;
+				if (!upper->checked &&
+				    level == cur->level + 1) {
 					list_add_tail(&edge->list[UPPER],
 						      &list);
 				} else
@@ -2958,7 +2955,8 @@ static int relocate_file_extent_cluster(struct inode *inode,
 			page_cache_sync_readahead(inode->i_mapping,
 						  ra, NULL, index,
 						  last_index + 1 - index);
-			page = grab_cache_page(inode->i_mapping, index);
+			page = find_or_create_page(inode->i_mapping, index,
+						   GFP_NOFS);
 			if (!page) {
 				btrfs_delalloc_release_metadata(inode,
 							PAGE_CACHE_SIZE);
@@ -4020,9 +4018,9 @@ int btrfs_relocate_block_group(struct btrfs_root *extent_root, u64 group_start)
 		goto out;
 	}
 
-//	printk(KERN_INFO "btrfs: relocating block group %llu flags %llu\n",
-//	       (unsigned long long)rc->block_group->key.objectid,
-;
+	printk(KERN_INFO "btrfs: relocating block group %llu flags %llu\n",
+	       (unsigned long long)rc->block_group->key.objectid,
+	       (unsigned long long)rc->block_group->flags);
 
 	btrfs_start_delalloc_inodes(fs_info->tree_root, 0);
 	btrfs_wait_ordered_extents(fs_info->tree_root, 0, 0);
@@ -4042,8 +4040,8 @@ int btrfs_relocate_block_group(struct btrfs_root *extent_root, u64 group_start)
 		if (rc->extents_found == 0)
 			break;
 
-//		printk(KERN_INFO "btrfs: found %llu extents\n",
-;
+		printk(KERN_INFO "btrfs: found %llu extents\n",
+			(unsigned long long)rc->extents_found);
 
 		if (rc->stage == MOVE_DATA_EXTENTS && rc->found_file_extent) {
 			btrfs_wait_ordered_range(rc->data_inode, 0, (u64)-1);

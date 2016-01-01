@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2007 Red Hat, Inc.  All rights reserved.
  *
@@ -73,7 +70,7 @@ static int send_data(struct sk_buff *skb)
 static int user_cmd(struct sk_buff *skb, struct genl_info *info)
 {
 	listener_nlpid = info->snd_pid;
-;
+	printk("user_cmd nlpid %u\n", listener_nlpid);
 	return 0;
 }
 

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/bootmem.h>
 #include <linux/compiler.h>
 #include <linux/fs.h>

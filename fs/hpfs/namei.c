@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/hpfs/namei.c
  *
@@ -216,15 +213,7 @@ static int hpfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, de
 	struct inode *result = NULL;
 	int err;
 	if ((err = hpfs_chk_name(name, &len))) return err==-ENOENT ? -EINVAL : err;
-	if (hpfs_sb(dir->i_sb)->sb_eas < 2) 
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+	if (hpfs_sb(dir->i_sb)->sb_eas < 2) return -EPERM;
 	if (!new_valid_dev(rdev))
 		return -EINVAL;
 	hpfs_lock(dir->i_sb);
@@ -302,15 +291,7 @@ static int hpfs_symlink(struct inode *dir, struct dentry *dentry, const char *sy
 	hpfs_lock(dir->i_sb);
 	if (hpfs_sb(dir->i_sb)->sb_eas < 2) {
 		hpfs_unlock(dir->i_sb);
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	}
 	err = -ENOSPC;
 	fnode = hpfs_alloc_fnode(dir->i_sb, hpfs_i(dir)->i_dno, &fno, &bh);

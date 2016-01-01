@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2007 Oracle.  All rights reserved.
  *
@@ -74,13 +71,12 @@ out:
 	return ret;
 }
 
-int btrfs_set_root_node(struct btrfs_root_item *item,
-			struct extent_buffer *node)
+void btrfs_set_root_node(struct btrfs_root_item *item,
+			 struct extent_buffer *node)
 {
 	btrfs_set_root_bytenr(item, node->start);
 	btrfs_set_root_level(item, btrfs_header_level(node));
 	btrfs_set_root_generation(item, btrfs_header_generation(node));
-	return 0;
 }
 
 /*
@@ -104,9 +100,9 @@ int btrfs_update_root(struct btrfs_trans_handle *trans, struct btrfs_root
 
 	if (ret != 0) {
 		btrfs_print_leaf(root, path->nodes[0]);
-//		printk(KERN_CRIT "unable to update root key %llu %u %llu\n",
-//		       (unsigned long long)key->objectid, key->type,
-;
+		printk(KERN_CRIT "unable to update root key %llu %u %llu\n",
+		       (unsigned long long)key->objectid, key->type,
+		       (unsigned long long)key->offset);
 		BUG_ON(1);
 	}
 

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/pnode.c
  *
@@ -29,21 +26,6 @@ static inline struct vfsmount *first_slave(struct vfsmount *p)
 static inline struct vfsmount *next_slave(struct vfsmount *p)
 {
 	return list_entry(p->mnt_slave.next, struct vfsmount, mnt_slave);
-}
-
-/*
- * Return true if path is reachable from root
- *
- * namespace_sem is held, and mnt is attached
- */
-static bool is_path_reachable(struct vfsmount *mnt, struct dentry *dentry,
-			 const struct path *root)
-{
-	while (mnt != root->mnt && mnt->mnt_parent != mnt) {
-		dentry = mnt->mnt_mountpoint;
-		mnt = mnt->mnt_parent;
-	}
-	return mnt == root->mnt && is_subdir(dentry, root->dentry);
 }
 
 static struct vfsmount *get_peer_under_root(struct vfsmount *mnt,

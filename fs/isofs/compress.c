@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- linux-c -*- ------------------------------------------------------- *
  *   
  *   Copyright 2001 H. Peter Anvin - All Rights Reserved
@@ -113,8 +110,8 @@ static loff_t zisofs_uncompress_block(struct inode *inode, loff_t block_start,
 			*errp = -ENOMEM;
 		else
 			*errp = -EIO;
-//		printk(KERN_DEBUG "zisofs: zisofs_inflateInit returned %d\n",
-;
+		printk(KERN_DEBUG "zisofs: zisofs_inflateInit returned %d\n",
+			       zerr);
 		goto z_eio;
 	}
 
@@ -157,15 +154,15 @@ static loff_t zisofs_uncompress_block(struct inode *inode, loff_t block_start,
 				if (zerr == Z_MEM_ERROR)
 					*errp = -ENOMEM;
 				else {
-//					printk(KERN_DEBUG
-//					       "zisofs: zisofs_inflate returned"
-//					       " %d, inode = %lu,"
-//					       " page idx = %d, bh idx = %d,"
-//					       " avail_in = %d,"
-//					       " avail_out = %d\n",
-//					       zerr, inode->i_ino, curpage,
-//					       curbh, stream.avail_in,
-;
+					printk(KERN_DEBUG
+					       "zisofs: zisofs_inflate returned"
+					       " %d, inode = %lu,"
+					       " page idx = %d, bh idx = %d,"
+					       " avail_in = %d,"
+					       " avail_out = %d\n",
+					       zerr, inode->i_ino, curpage,
+					       curbh, stream.avail_in,
+					       stream.avail_out);
 					*errp = -EIO;
 				}
 				goto inflate_out;

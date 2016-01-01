@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * fs/inotify_user.c - inotify support for userspace
  *
@@ -190,8 +187,8 @@ static int idr_callback(int id, void *p, void *data)
 	 * BUG() that was here.
 	 */
 	if (fsn_mark)
-//		printk(KERN_WARNING "fsn_mark->group=%p inode=%p wd=%d\n",
-;
+		printk(KERN_WARNING "fsn_mark->group=%p inode=%p wd=%d\n",
+			fsn_mark->group, fsn_mark->i.inode, i_mark->wd);
 	return 0;
 }
 
