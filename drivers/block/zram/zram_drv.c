@@ -35,6 +35,8 @@
 
 #include <linux/err.h>
 
+// FIXME: move the line below to include/linux/pagemap.h  
+void page_endio(struct page *page, int rw, int err);
 
 #include <linux/device.h>
 #include <linux/stat.h>
