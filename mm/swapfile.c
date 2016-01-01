@@ -496,16 +496,16 @@ static struct swap_info_struct *swap_info_get(swp_entry_t entry)
 	return p;
 
 bad_free:
-;
+	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_offset, entry.val);
 	goto out;
 bad_offset:
-;
+	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_offset, entry.val);
 	goto out;
 bad_device:
-;
+	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_file, entry.val);
 	goto out;
 bad_nofile:
-;
+	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_file, entry.val);
 out:
 	return NULL;
 }
@@ -670,10 +670,10 @@ int try_to_free_swap(struct page *page)
 	 * original page might be freed under memory pressure, then
 	 * later read back in from swap, now with the wrong data.
 	 *
-	 * Hibration suspends storage while it is writing the image
-	 * to disk so check that here.
+	 * Hibernation clears bits from gfp_allowed_mask to prevent
+	 * memory reclaim from writing to disk, so check that here.
 	 */
-	if (pm_suspended_storage())
+	if (!(gfp_allowed_mask & __GFP_IO))
 		return 0;
 
 	delete_from_swap_cache(page);
@@ -1019,7 +1019,8 @@ static int unuse_mm(struct mm_struct *mm,
 }
 
 /*
- * Scan swap_map from current position to next entry still in use.
+ * Scan swap_map (or frontswap_map if frontswap parameter is true)
+ * from current position to next entry still in use.
  * Recycle to start on reaching the end, returning 0 when empty.
  */
 static unsigned int find_next_to_unuse(struct swap_info_struct *si,
@@ -1049,12 +1050,12 @@ static unsigned int find_next_to_unuse(struct swap_info_struct *si,
 			prev = 0;
 			i = 1;
 		}
-if (frontswap) {
-      if (frontswap_test(si, i))
-        break;
-      else
-        continue;
-    } 
+		if (frontswap) {
+			if (frontswap_test(si, i))
+				break;
+			else
+				continue;
+		}
 		count = si->swap_map[i];
 		if (count && swap_count(count) != SWAP_MAP_BAD)
 			break;
@@ -1066,8 +1067,12 @@ if (frontswap) {
  * We completely avoid races by reading each swap page in advance,
  * and then search for the process using it.  All the necessary
  * page table adjustments can then be made atomically.
+ *
+ * if the boolean frontswap is true, only unuse pages_to_unuse pages;
+ * pages_to_unuse==0 means all pages; ignored if frontswap is false
  */
-int try_to_unuse(unsigned int type, bool frontswap, unsigned long pages_to_unuse) 
+int try_to_unuse(unsigned int type, bool frontswap,
+		 unsigned long pages_to_unuse)
 {
 	struct swap_info_struct *si = swap_info[type];
 	struct mm_struct *start_mm;
@@ -1100,7 +1105,7 @@ int try_to_unuse(unsigned int type, bool frontswap, unsigned long pages_to_unuse
 	 * one pass through swap_map is enough, but not necessarily:
 	 * there are races when an instance of an entry might be missed.
 	 */
-	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) { 
+	while ((i = find_next_to_unuse(si, i, frontswap)) != 0) {
 		if (signal_pending(current)) {
 			retval = -EINTR;
 			break;
@@ -1267,10 +1272,10 @@ int try_to_unuse(unsigned int type, bool frontswap, unsigned long pages_to_unuse
 		 * interactive performance.
 		 */
 		cond_resched();
-if (frontswap && pages_to_unuse > 0) {
-      if (!--pages_to_unuse)
-        break;
-   } 
+		if (frontswap && pages_to_unuse > 0) {
+			if (!--pages_to_unuse)
+				break;
+		}
 	}
 
 	mmput(start_mm);
@@ -1524,13 +1529,14 @@ reprobe:
 out:
 	return ret;
 bad_bmap:
-;
+	printk(KERN_ERR "swapon: swapfile has holes\n");
 	ret = -EINVAL;
 	goto out;
 }
 
 static void enable_swap_info(struct swap_info_struct *p, int prio,
-				unsigned char *swap_map, unsigned long *frontswap_map)
+				unsigned char *swap_map,
+				unsigned long *frontswap_map)
 {
 	int i, prev;
 
@@ -1557,7 +1563,7 @@ static void enable_swap_info(struct swap_info_struct *p, int prio,
 		swap_list.head = swap_list.next = p->type;
 	else
 		swap_info[prev]->next = p->type;
-		frontswap_init(p->type, frontswap_map);
+	frontswap_init(p->type);
 	spin_unlock(&swap_lock);
 }
 
@@ -1630,7 +1636,7 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
 
 	oom_score_adj = test_set_oom_score_adj(OOM_SCORE_ADJ_MAX);
 	err = try_to_unuse(type, false, 0); /* force all pages to be unused */
-	test_set_oom_score_adj(oom_score_adj);
+	compare_swap_oom_score_adj(OOM_SCORE_ADJ_MAX, oom_score_adj);
 
 	if (err) {
 		/*
@@ -1696,19 +1702,14 @@ out:
 }
 
 #ifdef CONFIG_PROC_FS
-struct proc_swaps {
-	struct seq_file seq;
-	int event;
-};
-
 static unsigned swaps_poll(struct file *file, poll_table *wait)
 {
-	struct proc_swaps *s = file->private_data;
+	struct seq_file *seq = file->private_data;
 
 	poll_wait(file, &proc_poll_wait, wait);
 
-	if (s->event != atomic_read(&proc_poll_event)) {
-		s->event = atomic_read(&proc_poll_event);
+	if (seq->poll_event != atomic_read(&proc_poll_event)) {
+		seq->poll_event = atomic_read(&proc_poll_event);
 		return POLLIN | POLLRDNORM | POLLERR | POLLPRI;
 	}
 
@@ -1798,24 +1799,16 @@ static const struct seq_operations swaps_op = {
 
 static int swaps_open(struct inode *inode, struct file *file)
 {
-	struct proc_swaps *s;
+	struct seq_file *seq;
 	int ret;
 
-	s = kmalloc(sizeof(struct proc_swaps), GFP_KERNEL);
-	if (!s)
-		return -ENOMEM;
-
-	file->private_data = s;
-
 	ret = seq_open(file, &swaps_op);
-	if (ret) {
-		kfree(s);
+	if (ret)
 		return ret;
-	}
 
-	s->seq.private = s;
-	s->event = atomic_read(&proc_poll_event);
-	return ret;
+	seq = file->private_data;
+	seq->poll_event = atomic_read(&proc_poll_event);
+	return 0;
 }
 
 static const struct file_operations proc_swaps_operations = {
@@ -1926,7 +1919,7 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
 	unsigned long swapfilepages;
 
 	if (memcmp("SWAPSPACE2", swap_header->magic.magic, 10)) {
-;
+		printk(KERN_ERR "Unable to find swap-space signature\n");
 		return 0;
 	}
 
@@ -1940,9 +1933,9 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
 	}
 	/* Check the swap header's sub-version */
 	if (swap_header->info.version != 1) {
-//		printk(KERN_WARNING
-//		       "Unable to handle swap header version %d\n",
-;
+		printk(KERN_WARNING
+		       "Unable to handle swap header version %d\n",
+		       swap_header->info.version);
 		return 0;
 	}
 
@@ -1982,8 +1975,8 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
 		return 0;
 	swapfilepages = i_size_read(inode) >> PAGE_SHIFT;
 	if (swapfilepages && maxpages > swapfilepages) {
-//		printk(KERN_WARNING
-;
+		printk(KERN_WARNING
+		       "Swap area shorter than signature indicates\n");
 		return 0;
 	}
 	if (swap_header->info.nr_badpages && S_ISREG(inode->i_mode))
@@ -2026,167 +2019,12 @@ static int setup_swap_map_and_extents(struct swap_info_struct *p,
 		nr_good_pages = p->pages;
 	}
 	if (!nr_good_pages) {
-;
+		printk(KERN_WARNING "Empty swap-file\n");
 		return -EINVAL;
 	}
 
 	return nr_extents;
 }
-
-
-#ifdef CONFIG_ZRAM_FOR_ANDROID
-int swapon(char *name, int swap_flags)
-{
-	struct swap_info_struct *p;
-
-	struct file *swap_file = NULL;
-	struct address_space *mapping;
-	int i;
-	int prio;
-	int error;
-	union swap_header *swap_header;
-	int nr_extents;
-	sector_t span;
-	unsigned long maxpages;
-	unsigned char *swap_map = NULL;
-	struct page *page = NULL;
-	struct inode *inode = NULL;
-
-	p = alloc_swap_info();
-	if (IS_ERR(p))
-		return PTR_ERR(p);
-
-	swap_file = filp_open(name, O_RDWR|O_LARGEFILE, 0);
-	if (IS_ERR(swap_file)) {
-		error = PTR_ERR(swap_file);
-		swap_file = NULL;
-;
-		goto bad_swap;
-	}
-
-;
-	p->swap_file = swap_file;
-	mapping = swap_file->f_mapping;
-
-	for (i = 0; i < nr_swapfiles; i++) {
-		struct swap_info_struct *q = swap_info[i];
-
-		if (q == p || !q->swap_file)
-			continue;
-		if (mapping == q->swap_file->f_mapping) {
-			error = -EBUSY;
-			goto bad_swap;
-		}
-	}
-
-	inode = mapping->host;
-	/* If S_ISREG(inode->i_mode) will do mutex_lock(&inode->i_mutex); */
-	error = claim_swapfile(p, inode);
-	if (unlikely(error))
-		goto bad_swap;
-
-	/*
-	 * Read the swap header.
-	 */
-	if (!mapping->a_ops->readpage) {
-		error = -EINVAL;
-		goto bad_swap;
-	}
-	page = read_mapping_page(mapping, 0, swap_file);
-	if (IS_ERR(page)) {
-		error = PTR_ERR(page);
-		goto bad_swap;
-	}
-	swap_header = kmap(page);
-
-	maxpages = read_swap_header(p, swap_header, inode);
-	if (unlikely(!maxpages)) {
-		error = -EINVAL;
-		goto bad_swap;
-	}
-
-	/* OK, set up the swap map and apply the bad block list */
-	swap_map = vzalloc(maxpages);
-	if (!swap_map) {
-		error = -ENOMEM;
-		goto bad_swap;
-	}
-
-	error = swap_cgroup_swapon(p->type, maxpages);
-	if (error)
-		goto bad_swap;
-
-	nr_extents = setup_swap_map_and_extents(p, swap_header, swap_map,
-		maxpages, &span);
-	if (unlikely(nr_extents < 0)) {
-		error = nr_extents;
-		goto bad_swap;
-	}
-
-	if (p->bdev) {
-		if (blk_queue_nonrot(bdev_get_queue(p->bdev))) {
-			p->flags |= SWP_SOLIDSTATE;
-			p->cluster_next = 1 + (random32() % p->highest_bit);
-		}
-		if (discard_swap(p) == 0 && (swap_flags & SWAP_FLAG_DISCARD))
-			p->flags |= SWP_DISCARDABLE;
-	}
-
-	mutex_lock(&swapon_mutex);
-	prio = -1;
-	if (swap_flags & SWAP_FLAG_PREFER)
-		prio =
-		  (swap_flags & SWAP_FLAG_PRIO_MASK) >> SWAP_FLAG_PRIO_SHIFT;
-	enable_swap_info(p, prio, swap_map);
-
-//	printk(KERN_INFO "Adding %uk swap on %s.  "
-//			"Priority:%d extents:%d across:%lluk %s%s\n",
-//		p->pages<<(PAGE_SHIFT-10), name, p->prio,
-//		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
-//		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
-;
-
-	mutex_unlock(&swapon_mutex);
-	atomic_inc(&proc_poll_event);
-	wake_up_interruptible(&proc_poll_wait);
-
-	if (S_ISREG(inode->i_mode))
-		inode->i_flags |= S_SWAPFILE;
-	error = 0;
-	goto out;
-bad_swap:
-	if (inode && S_ISBLK(inode->i_mode) && p->bdev) {
-		set_blocksize(p->bdev, p->old_block_size);
-		blkdev_put(p->bdev, FMODE_READ | FMODE_WRITE | FMODE_EXCL);
-	}
-	destroy_swap_extents(p);
-	swap_cgroup_swapoff(p->type);
-	spin_lock(&swap_lock);
-	p->swap_file = NULL;
-	p->flags = 0;
-	spin_unlock(&swap_lock);
-	vfree(swap_map);
-	if (swap_file) {
-		if (inode && S_ISREG(inode->i_mode)) {
-			mutex_unlock(&inode->i_mutex);
-			inode = NULL;
-		}
-		filp_close(swap_file, NULL);
-	}
-out:
-	if (page && !IS_ERR(page)) {
-		kunmap(page);
-		page_cache_release(page);
-	}
-
-
-	if (inode && S_ISREG(inode->i_mode))
-		mutex_unlock(&inode->i_mutex);
-	return error;
-}
-
-EXPORT_SYMBOL(swapon);
-#endif /* CONFIG_ZRAM_FOR_ANDROID */
 
 SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 {
@@ -2283,7 +2121,6 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 		error = nr_extents;
 		goto bad_swap;
 	}
-
 	/* frontswap enabled? set up bit-per-page map for frontswap */
 	if (frontswap_enabled)
 		frontswap_map = vzalloc(maxpages / sizeof(long));
@@ -2305,11 +2142,12 @@ SYSCALL_DEFINE2(swapon, const char __user *, specialfile, int, swap_flags)
 	enable_swap_info(p, prio, swap_map, frontswap_map);
 
 	printk(KERN_INFO "Adding %uk swap on %s.  "
-			"Priority:%d extents:%d across:%lluk %s%s%s\n", 
+			"Priority:%d extents:%d across:%lluk %s%s%s\n",
 		p->pages<<(PAGE_SHIFT-10), name, p->prio,
 		nr_extents, (unsigned long long)span<<(PAGE_SHIFT-10),
 		(p->flags & SWP_SOLIDSTATE) ? "SS" : "",
-		(p->flags & SWP_DISCARDABLE) ? "D" : "", (frontswap_map) ? "FS" : "");
+		(p->flags & SWP_DISCARDABLE) ? "D" : "",
+		(frontswap_map) ? "FS" : "");
 
 	mutex_unlock(&swapon_mutex);
 	atomic_inc(&proc_poll_event);
@@ -2343,7 +2181,6 @@ out:
 		kunmap(page);
 		page_cache_release(page);
 	}
-
 	if (name)
 		putname(name);
 	if (inode && S_ISREG(inode->i_mode))
@@ -2436,7 +2273,7 @@ out:
 	return err;
 
 bad_file:
-;
+	printk(KERN_ERR "swap_dup: %s%08lx\n", Bad_file, entry.val);
 	goto out;
 }
 

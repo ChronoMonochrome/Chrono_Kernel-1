@@ -678,7 +678,7 @@ void lru_add_page_tail(struct zone* zone,
 		if (likely(PageLRU(page)))
 			list_add(&page_tail->lru, page->lru.prev);
 		else
-			list_add(&page_tail->lru, &lruvec->lists[lru]);
+			list_add(&page_tail->lru, lruvec->lists[lru].prev);
 		__mod_zone_page_state(zone, NR_LRU_BASE + lru,
 				      hpage_nr_pages(page_tail));
 	} else {
@@ -761,8 +761,11 @@ void __init swap_setup(void)
 	bdi_init(swapper_space.backing_dev_info);
 #endif
 
-	page_cluster = 1;
-	
+	/* Use a smaller cluster for small-memory machines */
+	if (megs < 16)
+		page_cluster = 2;
+	else
+		page_cluster = 3;
 	/*
 	 * Right now other parts of the system means that we
 	 * _really_ don't want to cluster much more

@@ -76,29 +76,13 @@ void __init page_cgroup_init_flatmem(void)
 		if (fail)
 			goto fail;
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
 	" don't want memory cgroups\n");
-#else
-	;
-#endif
 	return;
 fail:
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "allocation of page_cgroup failed.\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "please try 'cgroup_disable=memory' boot option\n");
-#else
-	;
-#endif
 	panic("Out of memory");
 }
 
@@ -314,24 +298,12 @@ void __init page_cgroup_init(void)
 		}
 	}
 	hotplug_memory_notifier(page_cgroup_callback, 0);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you "
 			 "don't want memory cgroups\n");
-#else
-	;
-#endif
 	return;
 oom:
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "try 'cgroup_disable=memory' boot option\n");
-#else
-	;
-#endif
 	panic("Out of memory");
 }
 
@@ -405,13 +377,15 @@ static struct swap_cgroup *lookup_swap_cgroup(swp_entry_t ent,
 	pgoff_t offset = swp_offset(ent);
 	struct swap_cgroup_ctrl *ctrl;
 	struct page *mappage;
+	struct swap_cgroup *sc;
 
 	ctrl = &swap_cgroup_ctrl[swp_type(ent)];
 	if (ctrlp)
 		*ctrlp = ctrl;
 
 	mappage = ctrl->map[offset / SC_PER_PAGE];
-	return page_address(mappage) + offset % SC_PER_PAGE;
+	sc = page_address(mappage);
+	return sc + offset % SC_PER_PAGE;
 }
 
 /**
@@ -514,17 +488,9 @@ int swap_cgroup_swapon(int type, unsigned long max_pages)
 
 	return 0;
 nomem:
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "couldn't allocate enough memory for swap_cgroup.\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
-		"swap_cgroup can be disabled by noswapaccount boot option\n");
-#else
-	;
-#endif
+		"swap_cgroup can be disabled by swapaccount=0 boot option\n");
 	return -ENOMEM;
 }
 

@@ -238,8 +238,8 @@ static size_t __iovec_copy_from_user_inatomic(char *vaddr,
 
 /*
  * Copy as much as we can into the page and return the number of bytes which
- * were successfully copied.  If a fault is encountered then return the number of
- * bytes which were copied.
+ * were successfully copied.  If a fault is encountered then return the number
+ * of bytes which were copied.
  */
 size_t ii_iovec_copy_from_user_atomic(struct page *page,
 		struct iov_iter *i, unsigned long offset, size_t bytes)
@@ -302,6 +302,7 @@ void ii_iovec_advance(struct iov_iter *i, size_t bytes)
 	} else {
 		struct iovec *iov = (struct iovec *)i->data;
 		size_t base = i->iov_offset;
+		unsigned long nr_segs = i->nr_segs;
 
 		/*
 		 * The !iov->iov_len check ensures we skip over unlikely
@@ -317,11 +318,13 @@ void ii_iovec_advance(struct iov_iter *i, size_t bytes)
 			base += copy;
 			if (iov->iov_len == base) {
 				iov++;
+				nr_segs--;
 				base = 0;
 			}
 		}
 		i->data = (unsigned long)iov;
 		i->iov_offset = base;
+		i->nr_segs = nr_segs;
 	}
 }
 

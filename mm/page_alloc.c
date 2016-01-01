@@ -78,8 +78,6 @@ DEFINE_PER_CPU(int, _numa_mem_);		/* Kernel "local memory" node */
 EXPORT_PER_CPU_SYMBOL(_numa_mem_);
 #endif
 
-struct rw_semaphore page_alloc_slow_rwsem;
-
 /*
  * Array of node states.
  */
@@ -98,16 +96,16 @@ EXPORT_SYMBOL(node_states);
 
 unsigned long totalram_pages __read_mostly;
 unsigned long totalreserve_pages __read_mostly;
+/*
+ * When calculating the number of globally allowed dirty pages, there
+ * is a certain number of per-zone reserves that should not be
+ * considered dirtyable memory.  This is the sum of those reserves
+ * over all existing zones that contribute dirtyable memory.
+ */
+unsigned long dirty_balance_reserve __read_mostly;
+
 int percpu_pagelist_fraction;
 gfp_t gfp_allowed_mask __read_mostly = GFP_BOOT_MASK;
-
-#ifdef CONFIG_COMPACTION_RETRY_DEBUG
-static inline void show_buddy_info(void);
-#else
-static inline void show_buddy_info(void)
-{
-}
-#endif
 
 #ifdef CONFIG_PM_SLEEP
 /*
@@ -138,11 +136,18 @@ void pm_restrict_gfp_mask(void)
 	gfp_allowed_mask &= ~GFP_IOFS;
 }
 
-bool pm_suspended_storage(void)
+static bool pm_suspending(void)
 {
 	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
 		return false;
 	return true;
+}
+
+#else
+
+static bool pm_suspending(void)
+{
+	return false;
 }
 #endif /* CONFIG_PM_SLEEP */
 
@@ -192,20 +197,8 @@ static char * const zone_names[MAX_NR_ZONES] = {
 	 "Movable",
 };
 
-/*
- * Try to keep at least this much lowmem free.  Do not allow normal
- * allocations below this point, only high priority ones. Automatically
- * tuned according to the amount of memory in the system.
- */
 int min_free_kbytes = 1024;
 int min_free_order_shift = 1;
-
-/*
- * Extra memory for the system to try freeing. Used to temporarily
- * free memory, to make space for new workloads. Anyone can allocate
- * down to the min watermarks controlled by min_free_kbytes above.
- */
-int extra_free_kbytes = 2048;
 
 static unsigned long __meminitdata nr_kernel_pages;
 static unsigned long __meminitdata nr_all_pages;
@@ -337,13 +330,9 @@ static void bad_page(struct page *page)
 			goto out;
 		}
 		if (nr_unshown) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_ALERT
 			      "BUG: Bad page state: %lu messages suppressed\n",
 				nr_unshown);
-#else
-			;
-#endif
 			nr_unshown = 0;
 		}
 		nr_shown = 0;
@@ -351,12 +340,8 @@ static void bad_page(struct page *page)
 	if (nr_shown++ == 0)
 		resume = jiffies + 60 * HZ;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "BUG: Bad page state in process %s  pfn:%05lx\n",
 		current->comm, page_to_pfn(page));
-#else
-	;
-#endif
 	dump_page(page);
 
 	dump_stack();
@@ -1738,6 +1723,35 @@ zonelist_scan:
 		if ((alloc_flags & ALLOC_CPUSET) &&
 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
 				continue;
+		/*
+		 * When allocating a page cache page for writing, we
+		 * want to get it from a zone that is within its dirty
+		 * limit, such that no single zone holds more than its
+		 * proportional share of globally allowed dirty pages.
+		 * The dirty limits take into account the zone's
+		 * lowmem reserves and high watermark so that kswapd
+		 * should be able to balance it without having to
+		 * write pages from its LRU list.
+		 *
+		 * This may look like it could increase pressure on
+		 * lower zones by failing allocations in higher zones
+		 * before they are full.  But the pages that do spill
+		 * over are limited as the lower zones are protected
+		 * by this very same mechanism.  It should not become
+		 * a practical burden to them.
+		 *
+		 * XXX: For now, allow allocations to potentially
+		 * exceed the per-zone dirty limit in the slowpath
+		 * (ALLOC_WMARK_LOW unset) before going into reclaim,
+		 * which is important when on a NUMA setup the allowed
+		 * zones are together not big enough to reach the
+		 * global limit.  The proper fix for these situations
+		 * will require awareness of zones in the
+		 * dirty-throttling and the flusher threads.
+		 */
+		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+		    (gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
+			goto this_zone_full;
 
 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
 		if (!(alloc_flags & ALLOC_NO_WATERMARKS)) {
@@ -1866,23 +1880,10 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
 
 static inline int
 should_alloc_retry(gfp_t gfp_mask, unsigned int order,
-				unsigned long did_some_progress,
 				unsigned long pages_reclaimed)
 {
 	/* Do not loop if specifically requested */
 	if (gfp_mask & __GFP_NORETRY)
-		return 0;
-
-	/* Always retry if specifically requested */
-	if (gfp_mask & __GFP_NOFAIL)
-		return 1;
-
-	/*
-	 * Suspend converts GFP_KERNEL to __GFP_WAIT which can prevent reclaim
-	 * making forward progress without invoking OOM. Suspend also disables
-	 * storage devices so kswapd will not help. Bail if we are suspending.
-	 */
-	if (!did_some_progress && pm_suspended_storage())
 		return 0;
 
 	/*
@@ -1903,6 +1904,13 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
 	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
 		return 1;
 
+	/*
+	 * Don't let big-order allocations loop unless the caller
+	 * explicitly requests that.
+	 */
+	if (gfp_mask & __GFP_NOFAIL)
+		return 1;
+
 	return 0;
 }
 
@@ -1913,10 +1921,6 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
 	int migratetype)
 {
 	struct page *page;
-#ifdef CONFIG_COMPACTION_RETRY
-	struct zoneref *z;
-	struct zone *zone;
-#endif
 
 	/* Acquire the OOM killer lock for the zones in zonelist */
 	if (!try_set_zonelist_oom(zonelist, gfp_mask)) {
@@ -1935,32 +1939,6 @@ __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
 		preferred_zone, migratetype);
 	if (page)
 		goto out;
-
-#ifdef CONFIG_COMPACTION_RETRY
-	/*
-	 * When we reach here, we already tried direct reclaim.
-	 * Therefore it might be possible that we have enough
-	 * free memory but extremely fragmented.
-	 * So we give it a last chance to try memory compaction and get pages.
-	 */
-	if (order) {
-		pr_info("reclaim before oom : retry compaction.\n");
-		show_buddy_info();
-
-		for_each_zone_zonelist_nodemask(zone, z, zonelist,
-					high_zoneidx, nodemask)
-			compact_zone_order(zone, -1, gfp_mask, true);
-
-		show_buddy_info();
-		pr_info("reclaim :end\n");
-		page = get_page_from_freelist(gfp_mask|__GFP_HARDWALL,
-			nodemask, order, zonelist, high_zoneidx,
-			ALLOC_WMARK_HIGH|ALLOC_CPUSET,
-			preferred_zone, migratetype);
-		if (page)
-			goto out;
-	}
-#endif
 
 	if (!(gfp_mask & __GFP_NOFAIL)) {
 		/* The OOM killer will not help higher order allocs */
@@ -2002,7 +1980,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 	if (!order)
 		return NULL;
 
-	if (compaction_deferred(preferred_zone)) {
+	if (compaction_deferred(preferred_zone, order)) {
 		*deferred_compaction = true;
 		return NULL;
 	}
@@ -2024,6 +2002,8 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 		if (page) {
 			preferred_zone->compact_considered = 0;
 			preferred_zone->compact_defer_shift = 0;
+			if (order >= preferred_zone->compact_order_failed)
+				preferred_zone->compact_order_failed = order + 1;
 			count_vm_event(COMPACTSUCCESS);
 			return page;
 		}
@@ -2040,7 +2020,7 @@ __alloc_pages_direct_compact(gfp_t gfp_mask, unsigned int order,
 		 * defer if the failure was a sync compaction failure.
 		 */
 		if (sync_migration)
-			defer_compaction(preferred_zone);
+			defer_compaction(preferred_zone, order);
 
 		cond_resched();
 	}
@@ -2204,9 +2184,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	unsigned long pages_reclaimed = 0;
 	unsigned long did_some_progress;
 	bool sync_migration = false;
-#ifdef CONFIG_ANDROID_WIP
-	unsigned long start_tick = jiffies;
-#endif
 	bool deferred_compaction = false;
 
 	/*
@@ -2219,9 +2196,6 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 		WARN_ON_ONCE(!(gfp_mask & __GFP_NOWARN));
 		return NULL;
 	}
-
-	if (gfp_mask & __GFP_WAIT)
-		down_read(&page_alloc_slow_rwsem);
 
 	/*
 	 * GFP_THISNODE (meaning __GFP_THISNODE, __GFP_NORETRY and
@@ -2319,22 +2293,11 @@ rebalance:
 	/*
 	 * If we failed to make any progress reclaiming, then we are
 	 * running out of options and have to consider going OOM
-	 * ANDROID_WIP: If we are looping more than 1 second, consider OOM
 	 */
-#ifdef CONFIG_ANDROID_WIP
-#define SHOULD_CONSIDER_OOM !did_some_progress || time_after(jiffies, start_tick + HZ)
-#else
-#define SHOULD_CONSIDER_OOM !did_some_progress
-#endif
-	if (SHOULD_CONSIDER_OOM) {
+	if (!did_some_progress) {
 		if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
 			if (oom_killer_disabled)
 				goto nopage;
-#ifdef CONFIG_ANDROID_WIP
-			if (did_some_progress)
-				pr_info("time's up : calling "
-						"__alloc_pages_may_oom\n");
-#endif
 			page = __alloc_pages_may_oom(gfp_mask, order,
 					zonelist, high_zoneidx,
 					nodemask, preferred_zone,
@@ -2368,14 +2331,13 @@ rebalance:
 		 * prevent reclaim making forward progress without
 		 * invoking OOM. Bail if we are suspending
 		 */
-		if (pm_suspended_storage())
+		if (pm_suspending())
 			goto nopage;
 	}
 
 	/* Check if we should retry the allocation */
 	pages_reclaimed += did_some_progress;
-	if (should_alloc_retry(gfp_mask, order, did_some_progress,
-						pages_reclaimed)) {
+	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
 		/* Wait for some write requests to complete then retry */
 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
 		goto rebalance;
@@ -2398,14 +2360,10 @@ rebalance:
 
 nopage:
 	warn_alloc_failed(gfp_mask, order, NULL);
-	if (gfp_mask & __GFP_WAIT)
-		up_read(&page_alloc_slow_rwsem);
 	return page;
 got_pg:
 	if (kmemcheck_enabled)
 		kmemcheck_pagealloc_alloc(page, order, gfp_mask);
-	if (gfp_mask & __GFP_WAIT)
-		up_read(&page_alloc_slow_rwsem);
 	return page;
 
 }
@@ -2642,11 +2600,7 @@ unsigned int nr_free_pagecache_pages(void)
 static inline void show_node(struct zone *zone)
 {
 	if (NUMA_BUILD)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Node %d ", zone_to_nid(zone));
-#else
-		;
-#endif
 }
 
 void si_meminfo(struct sysinfo *val)
@@ -2719,28 +2673,19 @@ void show_free_areas(unsigned int filter)
 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
 			continue;
 		show_node(zone);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s per-cpu:\n", zone->name);
-#else
-		;
-#endif
 
 		for_each_online_cpu(cpu) {
 			struct per_cpu_pageset *pageset;
 
 			pageset = per_cpu_ptr(zone->pageset, cpu);
 
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("CPU %4d: hi:%5d, btch:%4d usd:%4d\n",
 			       cpu, pageset->pcp.high,
 			       pageset->pcp.batch, pageset->pcp.count);
-#else
-			;
-#endif
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("active_anon:%lu inactive_anon:%lu isolated_anon:%lu\n"
 		" active_file:%lu inactive_file:%lu isolated_file:%lu\n"
 		" unevictable:%lu"
@@ -2764,9 +2709,6 @@ void show_free_areas(unsigned int filter)
 		global_page_state(NR_SHMEM),
 		global_page_state(NR_PAGETABLE),
 		global_page_state(NR_BOUNCE));
-#else
-	;
-#endif
 
 	for_each_populated_zone(zone) {
 		int i;
@@ -2774,7 +2716,6 @@ void show_free_areas(unsigned int filter)
 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
 			continue;
 		show_node(zone);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s"
 			" free:%lukB"
 			" min:%lukB"
@@ -2832,25 +2773,10 @@ void show_free_areas(unsigned int filter)
 			zone->pages_scanned,
 			(zone->all_unreclaimable ? "yes" : "no")
 			);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("lowmem_reserve[]:");
-#else
-		;
-#endif
 		for (i = 0; i < MAX_NR_ZONES; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %lu", zone->lowmem_reserve[i]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	}
 
 	for_each_populated_zone(zone) {
@@ -2859,11 +2785,7 @@ void show_free_areas(unsigned int filter)
 		if (skip_free_areas_node(filter, zone_to_nid(zone)))
 			continue;
 		show_node(zone);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: ", zone->name);
-#else
-		;
-#endif
 
 		spin_lock_irqsave(&zone->lock, flags);
 		for (order = 0; order < MAX_ORDER; order++) {
@@ -2872,57 +2794,14 @@ void show_free_areas(unsigned int filter)
 		}
 		spin_unlock_irqrestore(&zone->lock, flags);
 		for (order = 0; order < MAX_ORDER; order++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%lu*%lukB ", nr[order], K(1UL) << order);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("= %lukB\n", K(total));
-#else
-		;
-#endif
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%ld total pagecache pages\n", global_page_state(NR_FILE_PAGES));
-#else
-	;
-#endif
 
 	show_swap_cache_info();
 }
-
-#ifdef CONFIG_COMPACTION_RETRY_DEBUG
-void show_buddy_info(void)
-{
-	struct zone *zone;
-	unsigned long nr[MAX_ORDER], flags, order, total = 0;
-	char buf[256];
-	int len;
-
-	for_each_populated_zone(zone) {
-
-		if (skip_free_areas_node(SHOW_MEM_FILTER_NODES,
-					zone_to_nid(zone)))
-			continue;
-		show_node(zone);
-		len = sprintf(buf, "%s: ", zone->name);
-
-		spin_lock_irqsave(&zone->lock, flags);
-		for (order = 0; order < MAX_ORDER; order++) {
-			nr[order] = zone->free_area[order].nr_free;
-			total += nr[order] << order;
-		}
-		spin_unlock_irqrestore(&zone->lock, flags);
-		for (order = 0; order < MAX_ORDER; order++)
-			len += sprintf(buf + len, "%lu*%lukB ",
-					nr[order], K(1UL) << order);
-		len += sprintf(buf + len, "= %lukB", K(total));
-		pr_err("%s\n", buf);
-	}
-}
-#endif
 
 static void zoneref_set_zone(struct zone *zone, struct zoneref *zoneref)
 {
@@ -3001,13 +2880,9 @@ static int __parse_numa_zonelist_order(char *s)
 	} else if (*s == 'z' || *s == 'Z') {
 		user_zonelist_order = ZONELIST_ORDER_ZONE;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Ignoring invalid numa_zonelist_order value:  "
 			"%s\n", s);
-#else
-		;
-#endif
 		return -EINVAL;
 	}
 	return 0;
@@ -3518,22 +3393,14 @@ void __ref build_all_zonelists(void *data)
 	else
 		page_group_by_mobility_disabled = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Built %i zonelists in %s order, mobility grouping %s.  "
 		"Total pages: %ld\n",
 			nr_online_nodes,
 			zonelist_order_name[current_zonelist_order],
 			page_group_by_mobility_disabled ? "off" : "on",
 			vm_total_pages);
-#else
-	;
-#endif
 #ifdef CONFIG_NUMA
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Policy zone: %s\n", zone_names[policy_zone]);
-#else
-	;
-#endif
 #endif
 }
 
@@ -3663,33 +3530,25 @@ static void setup_zone_migrate_reserve(struct zone *zone)
 		if (page_to_nid(page) != zone_to_nid(zone))
 			continue;
 
+		/* Blocks with reserved pages will never free, skip them. */
+		block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
+		if (pageblock_is_reserved(pfn, block_end_pfn))
+			continue;
+
 		block_migratetype = get_pageblock_migratetype(page);
 
-		/* Only test what is necessary when the reserves are not met */
-		if (reserve > 0) {
-			/*
-			 * Blocks with reserved pages will never free, skip
-			 * them.
-			 */
-			block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
-			if (pageblock_is_reserved(pfn, block_end_pfn))
-				continue;
+		/* If this block is reserved, account for it */
+		if (reserve > 0 && block_migratetype == MIGRATE_RESERVE) {
+			reserve--;
+			continue;
+		}
 
-			/* If this block is reserved, account for it */
-			if (block_migratetype == MIGRATE_RESERVE) {
-				reserve--;
-				continue;
-			}
-
-			/* Suitable for reserving if this block is movable */
-			if (block_migratetype == MIGRATE_MOVABLE) {
-				set_pageblock_migratetype(page,
-							MIGRATE_RESERVE);
-				move_freepages_block(zone, page,
-							MIGRATE_RESERVE);
-				reserve--;
-				continue;
-			}
+		/* Suitable for reserving if this block is movable */
+		if (reserve > 0 && block_migratetype == MIGRATE_MOVABLE) {
+			set_pageblock_migratetype(page, MIGRATE_RESERVE);
+			move_freepages_block(zone, page, MIGRATE_RESERVE);
+			reserve--;
+			continue;
 		}
 
 		/*
@@ -3971,13 +3830,9 @@ static __meminit void zone_pcp_init(struct zone *zone)
 	zone->pageset = &boot_pageset;
 
 	if (zone->present_pages)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "  %s zone: %lu pages, LIFO batch:%u\n",
 			zone->name, zone->present_pages,
 					 zone_batchsize(zone));
-#else
-		;
-#endif
 }
 
 __meminit int init_currently_empty_zone(struct zone *zone,
@@ -3994,15 +3849,11 @@ __meminit int init_currently_empty_zone(struct zone *zone,
 
 	zone->zone_start_pfn = zone_start_pfn;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "memmap_init",
 			"Initialising map node %d zone %lu pfns %lu -> %lu\n",
 			pgdat->node_id,
 			(unsigned long)zone_idx(zone),
 			zone_start_pfn, (zone_start_pfn + size));
-#else
-	;
-#endif
 
 	zone_init_free_lists(zone);
 
@@ -4467,12 +4318,8 @@ static void __meminit calculate_node_totalpages(struct pglist_data *pgdat,
 			zone_absent_pages_in_node(pgdat->node_id, i,
 								zholes_size);
 	pgdat->node_present_pages = realtotalpages;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "On node %d totalpages: %lu\n", pgdat->node_id,
 							realtotalpages);
-#else
-	;
-#endif
 }
 
 #ifndef CONFIG_SPARSEMEM
@@ -4591,31 +4438,19 @@ static void __paginginit free_area_init_core(struct pglist_data *pgdat,
 		if (realsize >= memmap_pages) {
 			realsize -= memmap_pages;
 			if (memmap_pages)
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "  %s zone: %lu pages used for memmap\n",
 				       zone_names[j], memmap_pages);
-#else
-				;
-#endif
 		} else
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"  %s zone: %lu pages exceeds realsize %lu\n",
 				zone_names[j], memmap_pages, realsize);
-#else
-			;
-#endif
 
 		/* Account for reserved pages */
 		if (j == 0 && realsize > dma_reserve) {
 			realsize -= dma_reserve;
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "  %s zone: %lu pages reserved\n",
 					zone_names[0], dma_reserve);
-#else
-			;
-#endif
 		}
 
 		if (!is_highmem_idx(j))
@@ -4710,13 +4545,9 @@ void __paginginit free_area_init_node(int nid, unsigned long *zones_size,
 
 	alloc_node_mem_map(pgdat);
 #ifdef CONFIG_FLAT_NODE_MEM_MAP
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "free_area_init_node: node %d, pgdat %08lx, node_mem_map %08lx\n",
 		nid, (unsigned long)pgdat,
 		(unsigned long)pgdat->node_mem_map);
-#else
-	;
-#endif
 #endif
 
 	free_area_init_core(pgdat, zones_size, zholes_size);
@@ -4761,15 +4592,11 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
 {
 	int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "memory_register",
 			"Entering add_active_range(%d, %#lx, %#lx) "
 			"%d entries of %d used\n",
 			nid, start_pfn, end_pfn,
 			nr_nodemap_entries, MAX_ACTIVE_REGIONS);
-#else
-	mminit_d;
-#endif
 
 	mminit_validate_memmodel_limits(&start_pfn, &end_pfn);
 
@@ -4800,12 +4627,8 @@ void __init add_active_range(unsigned int nid, unsigned long start_pfn,
 
 	/* Check that early_node_map is large enough */
 	if (i >= MAX_ACTIVE_REGIONS) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "More than %d memory regions, truncating\n",
 							MAX_ACTIVE_REGIONS);
-#else
-		;
-#endif
 		return;
 	}
 
@@ -4832,12 +4655,8 @@ void __init remove_active_range(unsigned int nid, unsigned long start_pfn,
 	int i, j;
 	int removed = 0;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "remove_active_range (%d, %lu, %lu)\n",
 			  nid, start_pfn, end_pfn);
-#else
-	;
-#endif
 
 	/* Find the old active region end and shrink */
 	for_each_active_range_index_in_nid(i, nid) {
@@ -4936,12 +4755,8 @@ static unsigned long __init find_min_pfn_for_node(int nid)
 		min_pfn = min(min_pfn, early_node_map[i].start_pfn);
 
 	if (min_pfn == ULONG_MAX) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"Could not find start_pfn for node %d\n", nid);
-#else
-		;
-#endif
 		return 0;
 	}
 
@@ -5184,65 +4999,33 @@ void __init free_area_init_nodes(unsigned long *max_zone_pfn)
 	find_zone_movable_pfns_for_nodes(zone_movable_pfn);
 
 	/* Print out the zone ranges */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Zone PFN ranges:\n");
-#else
-	;
-#endif
 	for (i = 0; i < MAX_NR_ZONES; i++) {
 		if (i == ZONE_MOVABLE)
 			continue;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("  %-8s ", zone_names[i]);
-#else
-		;
-#endif
 		if (arch_zone_lowest_possible_pfn[i] ==
 				arch_zone_highest_possible_pfn[i])
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("empty\n");
-#else
-			;
-#endif
 		else
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%0#10lx -> %0#10lx\n",
 				arch_zone_lowest_possible_pfn[i],
 				arch_zone_highest_possible_pfn[i]);
-#else
-			;
-#endif
 	}
 
 	/* Print out the PFNs ZONE_MOVABLE begins at in each node */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Movable zone start PFN for each node\n");
-#else
-	;
-#endif
 	for (i = 0; i < MAX_NUMNODES; i++) {
 		if (zone_movable_pfn[i])
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("  Node %d: %lu\n", i, zone_movable_pfn[i]);
-#else
-			;
-#endif
 	}
 
 	/* Print out the early_node_map[] */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("early_node_map[%d] active PFN ranges\n", nr_nodemap_entries);
-#else
-	;
-#endif
 	for (i = 0; i < nr_nodemap_entries; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("  %3d: %0#10lx -> %0#10lx\n", early_node_map[i].nid,
 						early_node_map[i].start_pfn,
 						early_node_map[i].end_pfn);
-#else
-		;
-#endif
 
 	/* Initialise every node */
 	mminit_verify_pageflags_layout();
@@ -5350,7 +5133,6 @@ static int page_alloc_cpu_notify(struct notifier_block *self,
 void __init page_alloc_init(void)
 {
 	hotcpu_notifier(page_alloc_cpu_notify, 0);
-	init_rwsem(&page_alloc_slow_rwsem);
 }
 
 /*
@@ -5380,8 +5162,19 @@ static void calculate_totalreserve_pages(void)
 			if (max > zone->present_pages)
 				max = zone->present_pages;
 			reserve_pages += max;
+			/*
+			 * Lowmem reserves are not available to
+			 * GFP_HIGHUSER page cache allocations and
+			 * kswapd tries to balance zones to their high
+			 * watermark.  As a result, neither should be
+			 * regarded as dirtyable memory, to prevent a
+			 * situation where reclaim has to clean pages
+			 * in order to balance the zones.
+			 */
+			zone->dirty_balance_reserve = max;
 		}
 	}
+	dirty_balance_reserve = reserve_pages;
 	totalreserve_pages = reserve_pages;
 }
 
@@ -5434,7 +5227,6 @@ static void setup_per_zone_lowmem_reserve(void)
 void setup_per_zone_wmarks(void)
 {
 	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
-	unsigned long pages_low = extra_free_kbytes >> (PAGE_SHIFT - 10);
 	unsigned long lowmem_pages = 0;
 	struct zone *zone;
 	unsigned long flags;
@@ -5446,14 +5238,11 @@ void setup_per_zone_wmarks(void)
 	}
 
 	for_each_zone(zone) {
-		u64 min, low;
+		u64 tmp;
 
 		spin_lock_irqsave(&zone->lock, flags);
-		min = (u64)pages_min * zone->present_pages;
-		do_div(min, lowmem_pages);
-		low = (u64)pages_low * zone->present_pages;
-		do_div(low, vm_total_pages);
-
+		tmp = (u64)pages_min * zone->present_pages;
+		do_div(tmp, lowmem_pages);
 		if (is_highmem(zone)) {
 			/*
 			 * __GFP_HIGH and PF_MEMALLOC allocations usually don't
@@ -5477,13 +5266,11 @@ void setup_per_zone_wmarks(void)
 			 * If it's a lowmem zone, reserve a number of pages
 			 * proportionate to the zone's size.
 			 */
-			zone->watermark[WMARK_MIN] = min;
+			zone->watermark[WMARK_MIN] = tmp;
 		}
 
-		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) +
-					low + (min >> 2);
-		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) +
-					low + (min >> 1);
+		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
+		zone->watermark[WMARK_HIGH] = min_wmark_pages(zone) + (tmp >> 1);
 		setup_zone_migrate_reserve(zone);
 		spin_unlock_irqrestore(&zone->lock, flags);
 	}
@@ -5570,7 +5357,6 @@ int __meminit init_per_zone_wmark_min(void)
 		min_free_kbytes = 128;
 	if (min_free_kbytes > 65536)
 		min_free_kbytes = 65536;
-
 	setup_per_zone_wmarks();
 	refresh_zone_stat_thresholds();
 	setup_per_zone_lowmem_reserve();
@@ -5582,7 +5368,7 @@ module_init(init_per_zone_wmark_min)
 /*
  * min_free_kbytes_sysctl_handler - just a wrapper around proc_dointvec() so 
  *	that we can call two helper functions whenever min_free_kbytes
- *	or extra_free_kbytes changes.
+ *	changes.
  */
 int min_free_kbytes_sysctl_handler(ctl_table *table, int write, 
 	void __user *buffer, size_t *length, loff_t *ppos)
@@ -5697,10 +5483,9 @@ void *__init alloc_large_system_hash(const char *tablename,
 				     int flags,
 				     unsigned int *_hash_shift,
 				     unsigned int *_hash_mask,
-				     unsigned long low_limit,
-				     unsigned long high_limit)
+				     unsigned long limit)
 {
-	unsigned long long max = high_limit;
+	unsigned long long max = limit;
 	unsigned long log2qty, size;
 	void *table = NULL;
 
@@ -5737,8 +5522,6 @@ void *__init alloc_large_system_hash(const char *tablename,
 		do_div(max, bucketsize);
 	}
 
-	if (numentries < low_limit)
-		numentries = low_limit;
 	if (numentries > max)
 		numentries = max;
 
@@ -5766,15 +5549,11 @@ void *__init alloc_large_system_hash(const char *tablename,
 	if (!table)
 		panic("Failed to allocate %s hash table\n", tablename);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s hash table entries: %ld (order: %d, %lu bytes)\n",
 	       tablename,
 	       (1UL << log2qty),
 	       ilog2(size) - PAGE_SHIFT,
 	       size);
-#else
-	;
-#endif
 
 	if (_hash_shift)
 		*_hash_shift = log2qty;
@@ -6042,12 +5821,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
 		BUG_ON(!PageBuddy(page));
 		order = page_order(page);
 #ifdef CONFIG_DEBUG_VM
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "remove from free list %lx %d %lx\n",
 		       pfn, 1 << order, end_pfn);
-#else
-		;
-#endif
 #endif
 		list_del(&page->lru);
 		rmv_page_order(page);
@@ -6122,6 +5897,7 @@ static struct trace_print_flags pageflag_names[] = {
 #ifdef CONFIG_MEMORY_FAILURE
 	{1UL << PG_hwpoison,		"hwpoison"	},
 #endif
+	{1UL << PG_readahead,           "PG_readahead"  },
 	{-1UL,				NULL		},
 };
 
@@ -6131,11 +5907,7 @@ static void dump_page_flags(unsigned long flags)
 	unsigned long mask;
 	int i;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "page flags: %#lx(", flags);
-#else
-	;
-#endif
 
 	/* remove zone id */
 	flags &= (1UL << NR_PAGEFLAGS) - 1;
@@ -6147,39 +5919,23 @@ static void dump_page_flags(unsigned long flags)
 			continue;
 
 		flags &= ~mask;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s%s", delim, pageflag_names[i].name);
-#else
-		;
-#endif
 		delim = "|";
 	}
 
 	/* check for left over flags */
 	if (flags)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s%#lx", delim, flags);
-#else
-		;
-#endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(")\n");
-#else
-	;
-#endif
 }
 
 void dump_page(struct page *page)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT
 	       "page:%p count:%d mapcount:%d mapping:%p index:%#lx\n",
 		page, atomic_read(&page->_count), page_mapcount(page),
 		page->mapping, page->index);
-#else
-	;
-#endif
 	dump_page_flags(page->flags);
 	mem_cgroup_print_bad_page(page);
 }

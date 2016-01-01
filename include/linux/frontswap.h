@@ -7,34 +7,45 @@
 
 struct frontswap_ops {
 	void (*init)(unsigned);
-	int (*store)(unsigned, pgoff_t, struct page *);
-	int (*load)(unsigned, pgoff_t, struct page *);
+	int (*put_page)(unsigned, pgoff_t, struct page *);
+	int (*get_page)(unsigned, pgoff_t, struct page *);
 	void (*invalidate_page)(unsigned, pgoff_t);
 	void (*invalidate_area)(unsigned);
 };
 
-extern bool frontswap_enabled;
-extern struct frontswap_ops *
+extern int frontswap_enabled;
+extern struct frontswap_ops
 	frontswap_register_ops(struct frontswap_ops *ops);
 extern void frontswap_shrink(unsigned long);
 extern unsigned long frontswap_curr_pages(void);
-extern void frontswap_writethrough(bool);
-#define FRONTSWAP_HAS_EXCLUSIVE_GETS
-extern void frontswap_tmem_exclusive_gets(bool);
 
-extern bool __frontswap_test(struct swap_info_struct *, pgoff_t);
-extern void __frontswap_init(unsigned type, unsigned long *map);
-extern int __frontswap_store(struct page *page);
-extern int __frontswap_load(struct page *page);
+extern void __frontswap_init(unsigned type);
+extern int __frontswap_put_page(struct page *page);
+extern int __frontswap_get_page(struct page *page);
 extern void __frontswap_invalidate_page(unsigned, pgoff_t);
 extern void __frontswap_invalidate_area(unsigned);
 
 #ifdef CONFIG_FRONTSWAP
-#define frontswap_enabled (1)
 
-static inline bool frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
+static inline int frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
 {
-	return __frontswap_test(sis, offset);
+	int ret = 0;
+
+	if (frontswap_enabled && sis->frontswap_map)
+		ret = test_bit(offset, sis->frontswap_map);
+	return ret;
+}
+
+static inline void frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
+{
+	if (frontswap_enabled && sis->frontswap_map)
+		set_bit(offset, sis->frontswap_map);
+}
+
+static inline void frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
+{
+	if (frontswap_enabled && sis->frontswap_map)
+		clear_bit(offset, sis->frontswap_map);
 }
 
 static inline void frontswap_map_set(struct swap_info_struct *p,
@@ -52,9 +63,17 @@ static inline unsigned long *frontswap_map_get(struct swap_info_struct *p)
 
 #define frontswap_enabled (0)
 
-static inline bool frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
+static inline int frontswap_test(struct swap_info_struct *sis, pgoff_t offset)
 {
-	return false;
+	return 0;
+}
+
+static inline void frontswap_set(struct swap_info_struct *sis, pgoff_t offset)
+{
+}
+
+static inline void frontswap_clear(struct swap_info_struct *sis, pgoff_t offset)
+{
 }
 
 static inline void frontswap_map_set(struct swap_info_struct *p,
@@ -68,21 +87,21 @@ static inline unsigned long *frontswap_map_get(struct swap_info_struct *p)
 }
 #endif
 
-static inline int frontswap_store(struct page *page)
+static inline int frontswap_put_page(struct page *page)
 {
 	int ret = -1;
 
 	if (frontswap_enabled)
-		ret = __frontswap_store(page);
+		ret = __frontswap_put_page(page);
 	return ret;
 }
 
-static inline int frontswap_load(struct page *page)
+static inline int frontswap_get_page(struct page *page)
 {
 	int ret = -1;
 
 	if (frontswap_enabled)
-		ret = __frontswap_load(page);
+		ret = __frontswap_get_page(page);
 	return ret;
 }
 
@@ -98,10 +117,10 @@ static inline void frontswap_invalidate_area(unsigned type)
 		__frontswap_invalidate_area(type);
 }
 
-static inline void frontswap_init(unsigned type, unsigned long *map)
+static inline void frontswap_init(unsigned type)
 {
 	if (frontswap_enabled)
-		__frontswap_init(type, map);
+		__frontswap_init(type);
 }
 
 #endif /* _LINUX_FRONTSWAP_H */
