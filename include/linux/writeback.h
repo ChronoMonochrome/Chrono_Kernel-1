@@ -7,19 +7,12 @@
 #include <linux/sched.h>
 #include <linux/fs.h>
 
+DECLARE_PER_CPU(int, dirty_throttle_leaks);
+
 /*
  * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
  *
  *	(thresh - thresh/DIRTY_FULL_SCOPE, thresh)
- *
- * The 1/16 region above the global dirty limit will be put to maximum pauses:
- *
- *	(limit, limit + limit/DIRTY_MAXPAUSE_AREA)
- *
- * The 1/16 region above the max-pause region, dirty exceeded bdi's will be put
- * to loops:
- *
- *	(limit + limit/DIRTY_MAXPAUSE_AREA, limit + limit/DIRTY_PASSGOOD_AREA)
  *
  * Further beyond, all dirtier tasks will enter a loop waiting (possibly long
  * time) for the dirty pages to drop, unless written enough pages.
@@ -31,13 +24,6 @@
  */
 #define DIRTY_SCOPE		8
 #define DIRTY_FULL_SCOPE	(DIRTY_SCOPE / 2)
-#define DIRTY_MAXPAUSE_AREA		16
-#define DIRTY_PASSGOOD_AREA		8
-
-/*
- * 4MB minimal write chunk size
- */
-#define MIN_WRITEBACK_PAGES	(4096UL >> (PAGE_CACHE_SHIFT - 10))
 
 struct backing_dev_info;
 
@@ -85,13 +71,13 @@ struct writeback_control {
 	loff_t range_start;
 	loff_t range_end;
 
+	unsigned nonblocking:1;		/* Don't get stuck on request queues */
+	unsigned encountered_congestion:1; /* An output: a queue is full */
 	unsigned for_kupdate:1;		/* A kupdate writeback */
 	unsigned for_background:1;	/* A background writeback */
 	unsigned tagged_writepages:1;	/* tag-and-write to avoid livelock */
 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
 	unsigned range_cyclic:1;	/* range_start is cyclic */
-	unsigned for_sync:1;		/* sync(2) WB_SYNC_ALL writeback */
-	unsigned more_io:1;		/* more io to be dispatched */
 };
 
 /*
@@ -104,8 +90,7 @@ void writeback_inodes_sb_nr(struct super_block *, unsigned long nr,
 							enum wb_reason reason);
 int writeback_inodes_sb_if_idle(struct super_block *, enum wb_reason reason);
 int writeback_inodes_sb_nr_if_idle(struct super_block *, unsigned long nr,
-				   enum wb_reason reason);
- 
+							enum wb_reason reason);
 void sync_inodes_sb(struct super_block *);
 long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
 				enum wb_reason reason);
@@ -138,6 +123,7 @@ void laptop_mode_timer_fn(unsigned long data);
 static inline void laptop_sync_completion(void) { }
 #endif
 void throttle_vm_writeout(gfp_t gfp_mask);
+bool zone_dirty_ok(struct zone *zone);
 
 extern unsigned long global_dirty_limit;
 
@@ -151,13 +137,6 @@ extern unsigned int dirty_expire_interval;
 extern int vm_highmem_is_dirtyable;
 extern int block_dump;
 extern int laptop_mode;
-#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
-extern int dyn_dirty_writeback_enabled;
-extern unsigned int dirty_writeback_active_interval;
-extern unsigned int dirty_writeback_suspend_interval;
-#endif
-
-extern unsigned long determine_dirtyable_memory(void);
 
 extern int dirty_background_ratio_handler(struct ctl_table *table, int write,
 		void __user *buffer, size_t *lenp,
@@ -175,15 +154,6 @@ extern int dirty_bytes_handler(struct ctl_table *table, int write,
 struct ctl_table;
 int dirty_writeback_centisecs_handler(struct ctl_table *, int,
 				      void __user *, size_t *, loff_t *);
-
-#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
-int dynamic_dirty_writeback_handler(struct ctl_table *, int,
-				      void __user *, size_t *, loff_t *);
-int dirty_writeback_active_centisecs_handler(struct ctl_table *, int,
-				      void __user *, size_t *, loff_t *);
-int dirty_writeback_suspend_centisecs_handler(struct ctl_table *, int,
-				      void __user *, size_t *, loff_t *);
-#endif
 
 void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
 unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
@@ -222,6 +192,8 @@ void set_page_dirty_balance(struct page *page, int page_mkwrite);
 void writeback_set_ratelimit(void);
 void tag_pages_for_writeback(struct address_space *mapping,
 			     pgoff_t start, pgoff_t end);
+
+void account_page_redirty(struct page *page);
 
 /* pdflush.c */
 extern int nr_pdflush_threads;	/* Global so it can be exported to sysctl

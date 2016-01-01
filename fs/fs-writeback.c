@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * fs/fs-writeback.c
  *
@@ -23,6 +20,7 @@
 #include <linux/sched.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
+#include <linux/pagemap.h>
 #include <linux/kthread.h>
 #include <linux/freezer.h>
 #include <linux/writeback.h>
@@ -31,6 +29,11 @@
 #include <linux/buffer_head.h>
 #include <linux/tracepoint.h>
 #include "internal.h"
+
+/*
+ * 4MB minimal write chunk size
+ */
+#define MIN_WRITEBACK_PAGES	(4096UL >> (PAGE_CACHE_SHIFT - 10))
 
 /*
  * Passed into wb_writeback(), essentially a subset of writeback_control
@@ -258,7 +261,7 @@ static bool inode_dirtied_after(struct inode *inode, unsigned long t)
  */
 static int move_expired_inodes(struct list_head *delaying_queue,
 			       struct list_head *dispatch_queue,
-			       struct wb_writeback_work *work)
+			       unsigned long *older_than_this)
 {
 	LIST_HEAD(tmp);
 	struct list_head *pos, *node;
@@ -269,8 +272,8 @@ static int move_expired_inodes(struct list_head *delaying_queue,
 
 	while (!list_empty(delaying_queue)) {
 		inode = wb_inode(delaying_queue->prev);
-		if (work->older_than_this &&
-		    inode_dirtied_after(inode, *work->older_than_this))
+		if (older_than_this &&
+		    inode_dirtied_after(inode, *older_than_this))
 			break;
 		if (sb && sb != inode->i_sb)
 			do_sb_sort = 1;
@@ -309,13 +312,13 @@ out:
  *                                           |
  *                                           +--> dequeue for IO
  */
-static void queue_io(struct bdi_writeback *wb, struct wb_writeback_work *work)
+static void queue_io(struct bdi_writeback *wb, unsigned long *older_than_this)
 {
 	int moved;
 	assert_spin_locked(&wb->list_lock);
 	list_splice_init(&wb->b_more_io, &wb->b_io);
-	moved = move_expired_inodes(&wb->b_dirty, &wb->b_io, work);
-	trace_writeback_queue_io(wb, work, moved);
+	moved = move_expired_inodes(&wb->b_dirty, &wb->b_io, older_than_this);
+	//trace_writeback_queue_io(wb, older_than_this, moved);
 }
 
 static int write_inode(struct inode *inode, struct writeback_control *wbc)
@@ -660,7 +663,7 @@ long writeback_inodes_wb(struct bdi_writeback *wb, long nr_pages,
 
 	spin_lock(&wb->list_lock);
 	if (list_empty(&wb->b_io))
-		queue_io(wb, &work);
+		queue_io(wb, NULL);
 	__writeback_inodes_wb(wb, &work);
 	spin_unlock(&wb->list_lock);
 
@@ -672,6 +675,10 @@ static bool over_bground_thresh(struct backing_dev_info *bdi)
 	unsigned long background_thresh, dirty_thresh;
 
 	global_dirty_limits(&background_thresh, &dirty_thresh);
+
+	if (global_page_state(NR_FILE_DIRTY) +
+	    global_page_state(NR_UNSTABLE_NFS) > background_thresh)
+		return true;
 
 	if (bdi_stat(bdi, BDI_RECLAIMABLE) >
 				bdi_dirty_limit(bdi, background_thresh))
@@ -742,15 +749,21 @@ static long wb_writeback(struct bdi_writeback *wb,
 		if (work->for_background && !over_bground_thresh(wb->bdi))
 			break;
 
+		/*
+		 * Kupdate and background works are special and we want to
+		 * include all inodes that need writing. Livelock avoidance is
+		 * handled by these works yielding to any other work so we are
+		 * safe.
+		 */
 		if (work->for_kupdate) {
 			oldest_jif = jiffies -
 				msecs_to_jiffies(dirty_expire_interval * 10);
-			work->older_than_this = &oldest_jif;
-		}
+		} else if (work->for_background)
+			oldest_jif = jiffies;
 
 		trace_writeback_start(wb->bdi, work);
 		if (list_empty(&wb->b_io))
-			queue_io(wb, work);
+			queue_io(wb, work->older_than_this);
 		if (work->sb)
 			progress = writeback_sb_inodes(work->sb, wb, work);
 		else
@@ -987,8 +1000,10 @@ void wakeup_flusher_threads(long nr_pages, enum wb_reason reason)
 {
 	struct backing_dev_info *bdi;
 
-	if (!nr_pages)
-		nr_pages = get_nr_dirty_pages();
+	if (!nr_pages) {
+		nr_pages = global_page_state(NR_FILE_DIRTY) +
+				global_page_state(NR_UNSTABLE_NFS);
+	}
 
 	rcu_read_lock();
 	list_for_each_entry_rcu(bdi, &bdi_list, bdi_list) {
@@ -1010,10 +1025,10 @@ static noinline void block_dump___mark_inode_dirty(struct inode *inode)
 			spin_lock(&dentry->d_lock);
 			name = (const char *) dentry->d_name.name;
 		}
-//		printk(KERN_DEBUG
-//		       "%s(%d): dirtied inode %lu (%s) on %s\n",
-//		       current->comm, task_pid_nr(current), inode->i_ino,
-;
+		printk(KERN_DEBUG
+		       "%s(%d): dirtied inode %lu (%s) on %s\n",
+		       current->comm, task_pid_nr(current), inode->i_ino,
+		       name, inode->i_sb->s_id);
 		if (dentry) {
 			spin_unlock(&dentry->d_lock);
 			dput(dentry);
@@ -1069,7 +1084,7 @@ void __mark_inode_dirty(struct inode *inode, int flags)
 	if ((inode->i_state & flags) == flags)
 		return;
 
-	if (unlikely(block_dump))
+	if (unlikely(block_dump > 1))
 		block_dump___mark_inode_dirty(inode);
 
 	spin_lock(&inode->i_lock);

@@ -47,7 +47,10 @@ DECLARE_EVENT_CLASS(writeback_work_class,
 		__field(int, reason)
 	),
 	TP_fast_assign(
-		strncpy(__entry->name, dev_name(bdi->dev), 32);
+		struct device *dev = bdi->dev;
+		if (!dev)
+			dev = default_backing_dev_info.dev;
+		strncpy(__entry->name, dev_name(dev), 32);
 		__entry->nr_pages = work->nr_pages;
 		__entry->sb_dev = work->sb ? work->sb->s_dev : 0;
 		__entry->sync_mode = work->sync_mode;
@@ -168,11 +171,12 @@ DEFINE_EVENT(wbc_class, name, \
 	TP_ARGS(wbc, bdi))
 DEFINE_WBC_EVENT(wbc_writepage);
 
+#if 0
 TRACE_EVENT(writeback_queue_io,
 	TP_PROTO(struct bdi_writeback *wb,
-		 struct wb_writeback_work *work,
+		 unsigned long *older_than_this,
 		 int moved),
-	TP_ARGS(wb, work, moved),
+	TP_ARGS(wb, older_than_this, moved),
 	TP_STRUCT__entry(
 		__array(char,		name, 32)
 		__field(unsigned long,	older)
@@ -181,7 +185,6 @@ TRACE_EVENT(writeback_queue_io,
 		__field(int,		reason)
 	),
 	TP_fast_assign(
-		unsigned long *older_than_this = work->older_than_this;
 		strncpy(__entry->name, dev_name(wb->bdi->dev), 32);
 		__entry->older	= older_than_this ?  *older_than_this : 0;
 		__entry->age	= older_than_this ?
@@ -197,6 +200,7 @@ TRACE_EVENT(writeback_queue_io,
 		__print_symbolic(__entry->reason, WB_WORK_REASON)
 	)
 );
+#endif
 
 TRACE_EVENT(global_dirty_state,
 
@@ -300,12 +304,13 @@ TRACE_EVENT(balance_dirty_pages,
 		 unsigned long dirty_ratelimit,
 		 unsigned long task_ratelimit,
 		 unsigned long dirtied,
+		 unsigned long period,
 		 long pause,
 		 unsigned long start_time),
 
 	TP_ARGS(bdi, thresh, bg_thresh, dirty, bdi_thresh, bdi_dirty,
 		dirty_ratelimit, task_ratelimit,
-		dirtied, pause, start_time),
+		dirtied, period, pause, start_time),
 
 	TP_STRUCT__entry(
 		__array(	 char,	bdi, 32)
@@ -320,6 +325,8 @@ TRACE_EVENT(balance_dirty_pages,
 		__field(unsigned int,	dirtied_pause)
 		__field(unsigned long,	paused)
 		__field(	 long,	pause)
+		__field(unsigned long,	period)
+		__field(	 long,	think)
 	),
 
 	TP_fast_assign(
@@ -336,6 +343,9 @@ TRACE_EVENT(balance_dirty_pages,
 		__entry->task_ratelimit	= KBps(task_ratelimit);
 		__entry->dirtied	= dirtied;
 		__entry->dirtied_pause	= current->nr_dirtied_pause;
+		__entry->think		= current->dirty_paused_when == 0 ? 0 :
+			 (long)(jiffies - current->dirty_paused_when) * 1000/HZ;
+		__entry->period		= period * 1000 / HZ;
 		__entry->pause		= pause * 1000 / HZ;
 		__entry->paused		= (jiffies - start_time) * 1000 / HZ;
 	),
@@ -346,7 +356,7 @@ TRACE_EVENT(balance_dirty_pages,
 		  "bdi_setpoint=%lu bdi_dirty=%lu "
 		  "dirty_ratelimit=%lu task_ratelimit=%lu "
 		  "dirtied=%u dirtied_pause=%u "
-		  "paused=%lu pause=%ld",
+		  "paused=%lu pause=%ld period=%lu think=%ld",
 		  __entry->bdi,
 		  __entry->limit,
 		  __entry->setpoint,
@@ -358,7 +368,9 @@ TRACE_EVENT(balance_dirty_pages,
 		  __entry->dirtied,
 		  __entry->dirtied_pause,
 		  __entry->paused,	/* ms */
-		  __entry->pause	/* ms */
+		  __entry->pause,	/* ms */
+		  __entry->period,	/* ms */
+		  __entry->think	/* ms */
 	  )
 );
 
@@ -410,7 +422,7 @@ DECLARE_EVENT_CLASS(writeback_single_inode_template,
 		__array(char, name, 32)
 		__field(unsigned long, ino)
 		__field(unsigned long, state)
-		__field(unsigned long, dirtied_when)
+		__field(unsigned long, age)
 		__field(unsigned long, writeback_index)
 		__field(long, nr_to_write)
 		__field(unsigned long, wrote)
@@ -421,19 +433,19 @@ DECLARE_EVENT_CLASS(writeback_single_inode_template,
 			dev_name(inode->i_mapping->backing_dev_info->dev), 32);
 		__entry->ino		= inode->i_ino;
 		__entry->state		= inode->i_state;
-		__entry->dirtied_when	= inode->dirtied_when;
+		__entry->age		= (jiffies - inode->dirtied_when) *
+								1000 / HZ;
 		__entry->writeback_index = inode->i_mapping->writeback_index;
 		__entry->nr_to_write	= nr_to_write;
 		__entry->wrote		= nr_to_write - wbc->nr_to_write;
 	),
 
-	TP_printk("bdi %s: ino=%lu state=%s dirtied_when=%lu age=%lu "
+	TP_printk("bdi %s: ino=%lu state=%s age=%lu "
 		  "index=%lu to_write=%ld wrote=%lu",
 		  __entry->name,
 		  __entry->ino,
 		  show_inode_state(__entry->state),
-		  __entry->dirtied_when,
-		  (jiffies - __entry->dirtied_when) / HZ,
+		  __entry->age,
 		  __entry->writeback_index,
 		  __entry->nr_to_write,
 		  __entry->wrote

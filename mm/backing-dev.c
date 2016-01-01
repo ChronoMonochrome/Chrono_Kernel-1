@@ -110,7 +110,7 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
 		   K(bdi_thresh),
 		   K(dirty_thresh),
 		   K(background_thresh),
-                   (unsigned long) K(bdi_stat(bdi, BDI_DIRTIED)),
+		   (unsigned long) K(bdi_stat(bdi, BDI_DIRTIED)),
 		   (unsigned long) K(bdi_stat(bdi, BDI_WRITTEN)),
 		   (unsigned long) K(bdi->write_bandwidth),
 		   nr_dirty,
@@ -224,6 +224,8 @@ static ssize_t max_ratio_store(struct device *dev,
 	return ret;
 }
 BDI_SHOW(max_ratio, bdi->max_ratio)
+
+#define __ATTR_RW(attr) __ATTR(attr, 0644, attr##_show, attr##_store)
 
 static struct device_attribute bdi_dev_attrs[] = {
 	__ATTR_RW(read_ahead_kb),
@@ -401,6 +403,13 @@ static int bdi_forker_thread(void *ptr)
 		}
 
 		spin_lock_bh(&bdi_lock);
+		/*
+		 * In the following loop we are going to check whether we have
+		 * some work to do without any synchronization with tasks
+		 * waking us up to do work for them. So we have to set task
+		 * state already here so that we don't miss wakeups coming
+		 * after we verify some condition.
+		 */
 		set_current_state(TASK_INTERRUPTIBLE);
 
 		list_for_each_entry(bdi, &bdi_list, bdi_list) {
@@ -468,8 +477,7 @@ static int bdi_forker_thread(void *ptr)
 				 * large enough for efficient IO.
 				 */
 				writeback_inodes_wb(&bdi->wb, 1024,
-						   WB_REASON_FORKER_THREAD);
-
+						    WB_REASON_FORKER_THREAD);
 			} else {
 				/*
 				 * The spinlock makes sure we do not lose
@@ -520,7 +528,7 @@ static void bdi_remove_from_list(struct backing_dev_info *bdi)
 	list_del_rcu(&bdi->bdi_list);
 	spin_unlock_bh(&bdi_lock);
 
-	synchronize_rcu();
+	synchronize_rcu_expedited();
 }
 
 int bdi_register(struct backing_dev_info *bdi, struct device *parent,
