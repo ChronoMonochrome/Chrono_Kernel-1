@@ -120,11 +120,11 @@ static const struct pipe_buf_operations sock_pipe_buf_ops = {
  */
 static void skb_over_panic(struct sk_buff *skb, int sz, void *here)
 {
-//	printk(KERN_EMERG "skb_over_panic: text:%p len:%d put:%d head:%p "
-//			  "data:%p tail:%#lx end:%#lx dev:%s\n",
-//	       here, skb->len, sz, skb->head, skb->data,
-//	       (unsigned long)skb->tail, (unsigned long)skb->end,
-;
+	printk(KERN_EMERG "skb_over_panic: text:%p len:%d put:%d head:%p "
+			  "data:%p tail:%#lx end:%#lx dev:%s\n",
+	       here, skb->len, sz, skb->head, skb->data,
+	       (unsigned long)skb->tail, (unsigned long)skb->end,
+	       skb->dev ? skb->dev->name : "<NULL>");
 	BUG();
 }
 
@@ -139,11 +139,11 @@ static void skb_over_panic(struct sk_buff *skb, int sz, void *here)
 
 static void skb_under_panic(struct sk_buff *skb, int sz, void *here)
 {
-//	printk(KERN_EMERG "skb_under_panic: text:%p len:%d put:%d head:%p "
-//			  "data:%p tail:%#lx end:%#lx dev:%s\n",
-//	       here, skb->len, sz, skb->head, skb->data,
-//	       (unsigned long)skb->tail, (unsigned long)skb->end,
-;
+	printk(KERN_EMERG "skb_under_panic: text:%p len:%d put:%d head:%p "
+			  "data:%p tail:%#lx end:%#lx dev:%s\n",
+	       here, skb->len, sz, skb->head, skb->data,
+	       (unsigned long)skb->tail, (unsigned long)skb->end,
+	       skb->dev ? skb->dev->name : "<NULL>");
 	BUG();
 }
 
@@ -1535,7 +1535,6 @@ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
 	struct splice_pipe_desc spd = {
 		.pages = pages,
 		.partial = partial,
-		.nr_pages_max = MAX_SKB_FRAGS,
 		.flags = flags,
 		.ops = &sock_pipe_buf_ops,
 		.spd_release = sock_spd_release,
@@ -1582,7 +1581,7 @@ done:
 		lock_sock(sk);
 	}
 
-	splice_shrink_spd(&spd);
+	splice_shrink_spd(pipe, &spd);
 	return ret;
 }
 
@@ -3064,9 +3063,9 @@ bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off)
 	if (unlikely(start > skb_headlen(skb)) ||
 	    unlikely((int)start + off > skb_headlen(skb) - 2)) {
 		if (net_ratelimit())
-//			printk(KERN_WARNING
-//			       "bad partial csum: csum=%u/%u len=%u\n",
-;
+			printk(KERN_WARNING
+			       "bad partial csum: csum=%u/%u len=%u\n",
+			       start, off, skb_headlen(skb));
 		return false;
 	}
 	skb->ip_summed = CHECKSUM_PARTIAL;
