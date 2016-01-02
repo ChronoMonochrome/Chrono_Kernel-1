@@ -44,6 +44,9 @@
 #include <linux/oom.h>
 #include <linux/prefetch.h>
 #include <linux/debugfs.h>
+#include <linux/seq_file.h>
+int single_open(struct file *, int (*)(struct seq_file *, void *), void *);
+__printf(2, 3) int seq_printf(struct seq_file *, const char *, ...);
 
 #include <asm/tlbflush.h>
 #include <asm/div64.h>
