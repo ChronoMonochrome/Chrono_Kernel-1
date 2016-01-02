@@ -658,14 +658,6 @@ static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
 	return ktime_get_update_offsets(offs_real, offs_boot);
 }
 
-static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-{
-	ktime_t *offs_real = &base->clock_base[HRTIMER_BASE_REALTIME].offset;
-	ktime_t *offs_boot = &base->clock_base[HRTIMER_BASE_BOOTTIME].offset;
-
-	return ktime_get_update_offsets(offs_real, offs_boot);
-}
-
 /*
  * Retrigger next event is called after clock was set
  *
@@ -700,12 +692,8 @@ static int hrtimer_switch_to_hres(void)
 
 	if (tick_init_highres()) {
 		local_irq_restore(flags);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Could not switch to high resolution "
 				    "mode on CPU %d\n", cpu);
-#else
-		;
-#endif
 		return 0;
 	}
 	base->hres_active = 1;
