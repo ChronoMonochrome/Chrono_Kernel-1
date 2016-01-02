@@ -515,20 +515,19 @@ int __ref online_pages(unsigned long pfn, unsigned long nr_pages)
 
 	zone->present_pages += onlined_pages;
 	zone->zone_pgdat->node_present_pages += onlined_pages;
-	if (onlined_pages) {
-		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
-		if (need_zonelists_rebuild)
-			build_all_zonelists(zone);
-		else
-			zone_pcp_update(zone);
-	}
+	if (need_zonelists_rebuild)
+		build_all_zonelists(zone);
+	else
+		zone_pcp_update(zone);
 
 	mutex_unlock(&zonelists_mutex);
 
 	init_per_zone_wmark_min();
 
-	if (onlined_pages)
+	if (onlined_pages) {
 		kswapd_run(zone_to_nid(zone));
+		node_set_state(zone_to_nid(zone), N_HIGH_MEMORY);
+	}
 
 	vm_total_pages = nr_free_pagecache_pages();
 
@@ -759,8 +758,7 @@ static struct page *
 hotremove_migrate_alloc(struct page *page, unsigned long private, int **x)
 {
 	/* This should be improooooved!! */
-	return alloc_page(GFP_HIGHUSER_MOVABLE | __GFP_NORETRY | __GFP_NOWARN |
-				__GFP_NOMEMALLOC);
+	return alloc_page(GFP_HIGHUSER_MOVABLE);
 }
 
 #define NR_OFFLINE_AT_ONCE_PAGES	(256)
@@ -964,10 +962,7 @@ repeat:
 	/* reset pagetype flags and makes migrate type to be MOVABLE */
 	undo_isolate_page_range(start_pfn, end_pfn);
 	/* removal success */
-	if (offlined_pages > zone->present_pages)
-		zone->present_pages = 0;
-	else
-		zone->present_pages -= offlined_pages;
+	zone->present_pages -= offlined_pages;
 	zone->zone_pgdat->node_present_pages -= offlined_pages;
 	totalram_pages -= offlined_pages;
 
