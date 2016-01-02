@@ -1812,8 +1812,11 @@ static inline void rfcomm_process_dlcs(struct rfcomm_session *s)
 			__rfcomm_dlc_close(d, ETIMEDOUT);
 			continue;
 		}
-
+#ifdef CONFIG_BT_MGMT
 		if (test_bit(RFCOMM_ENC_DROP, &d->flags)) {
+#else
+		if (test_bit(RFCOMM_TIMED_OUT, &d->flags)) {
+#endif
 			__rfcomm_dlc_close(d, ECONNREFUSED);
 			continue;
 		}
@@ -2090,7 +2093,11 @@ static void rfcomm_security_cfm(struct hci_conn *conn, u8 status, u8 encrypt)
 		if (test_and_clear_bit(RFCOMM_SEC_PENDING, &d->flags)) {
 			rfcomm_dlc_clear_timer(d);
 			if (status || encrypt == 0x00) {
+#ifdef CONFIG_BT_MGMT
 				set_bit(RFCOMM_ENC_DROP, &d->flags);
+#else
+				__rfcomm_dlc_close(d, ECONNREFUSED);
+#endif 
 				continue;
 			}
 		}
@@ -2101,7 +2108,11 @@ static void rfcomm_security_cfm(struct hci_conn *conn, u8 status, u8 encrypt)
 				rfcomm_dlc_set_timer(d, RFCOMM_AUTH_TIMEOUT);
 				continue;
 			} else if (d->sec_level == BT_SECURITY_HIGH) {
+#ifdef CONFIG_BT_MGMT
 				set_bit(RFCOMM_ENC_DROP, &d->flags);
+#else
+				__rfcomm_dlc_close(d, ECONNREFUSED);
+#endif
 				continue;
 			}
 		}
