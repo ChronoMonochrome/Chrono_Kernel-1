@@ -40,9 +40,6 @@
 #include <linux/syscore_ops.h>
 #include <linux/version.h>
 #include <linux/ctype.h>
-#include <linux/sched.h>
-#include <linux/kthread.h>
-#include <linux/delay.h>
 
 #include <linux/compat.h>
 #include <linux/syscalls.h>
@@ -339,17 +336,9 @@ void kernel_restart(char *cmd)
 	disable_nonboot_cpus();
 	syscore_shutdown();
 	if (!cmd)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Restarting system.\n");
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
-#else
-		;
-#endif
 	kmsg_dump(KMSG_DUMP_RESTART);
 	machine_restart(cmd);
 }
@@ -373,11 +362,7 @@ void kernel_halt(void)
 	kernel_shutdown_prepare(SYSTEM_HALT);
 	disable_nonboot_cpus();
 	syscore_shutdown();
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "System halted.\n");
-#else
-	;
-#endif
 	kmsg_dump(KMSG_DUMP_HALT);
 	machine_halt();
 }
@@ -396,57 +381,13 @@ void kernel_power_off(void)
 		pm_power_off_prepare();
 	disable_nonboot_cpus();
 	syscore_shutdown();
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "Power down.\n");
-#else
-	;
-#endif
 	kmsg_dump(KMSG_DUMP_POWEROFF);
 	machine_power_off();
 }
 EXPORT_SYMBOL_GPL(kernel_power_off);
 
 static DEFINE_MUTEX(reboot_mutex);
-
-#define REBOOT_TIMEOUT 5
-
-static int reboot_timer_expired(void *data)
-{
-	static DEFINE_MUTEX(lock);
-	unsigned long cmd = (unsigned long) data;
-	msleep(REBOOT_TIMEOUT * 1000);
-
-	mutex_lock(&lock);
-
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_EMERG "Timer expired forcing power %s.\n",
-	       cmd == LINUX_REBOOT_CMD_POWER_OFF ? "off" : "reboot");
-#else
-	;
-#endif
-
-	if (cmd == LINUX_REBOOT_CMD_POWER_OFF)
-	  machine_power_off();
-	else
-	  machine_restart(NULL);
-
-	mutex_unlock(&lock);
-	return 0;
-}
-
-static int reboot_timer_setup(unsigned long cmd)
-{
-	struct task_struct *task;
-
-	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue0");
-	kthread_bind(task, 0);
-	wake_up_process(task);
-	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue1");
-	kthread_bind(task, 1);
-	wake_up_process(task);
-	
-	return 0;
-}
 
 /*
  * Reboot system call: for obvious reasons only root may call it,
@@ -1313,7 +1254,6 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
 		memset(u->nodename + len, 0, sizeof(u->nodename) - len);
 		errno = 0;
 	}
-	uts_proc_notify(UTS_PROC_HOSTNAME);
 	up_write(&uts_sem);
 	return errno;
 }
@@ -1364,7 +1304,6 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
 		memset(u->domainname + len, 0, sizeof(u->domainname) - len);
 		errno = 0;
 	}
-	uts_proc_notify(UTS_PROC_DOMAINNAME);
 	up_write(&uts_sem);
 	return errno;
 }
@@ -1722,7 +1661,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
 		unsigned long, arg4, unsigned long, arg5)
 {
 	struct task_struct *me = current;
-	struct task_struct *tsk;
 	unsigned char comm[sizeof(me->comm)];
 	long error;
 
@@ -1789,7 +1727,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
 					      sizeof(me->comm) - 1) < 0)
 				return -EFAULT;
 			set_task_comm(me, comm);
-			proc_comm_connector(me);
 			return 0;
 		case PR_GET_NAME:
 			get_task_comm(comm, me);
@@ -1868,26 +1805,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
 			else
 				error = PR_MCE_KILL_DEFAULT;
 			break;
-		case PR_SET_TIMERSLACK_PID:
-			if (task_pid_vnr(current) != (pid_t)arg3 &&
-					!capable(CAP_SYS_NICE))
-				return -EPERM;
-			rcu_read_lock();
-			tsk = find_task_by_vpid((pid_t)arg3);
-			if (tsk == NULL) {
-				rcu_read_unlock();
-				return -EINVAL;
-			}
-			get_task_struct(tsk);
-			rcu_read_unlock();
-			if (arg2 <= 0)
-				tsk->timer_slack_ns =
-					tsk->default_timer_slack_ns;
-			else
-				tsk->timer_slack_ns = arg2;
-			put_task_struct(tsk);
-			error = 0;
-			break;
 		default:
 			error = -EINVAL;
 			break;
@@ -1934,12 +1851,8 @@ int orderly_poweroff(bool force)
 	struct subprocess_info *info;
 
 	if (argv == NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
 		       __func__, poweroff_cmd);
-#else
-		;
-#endif
 		goto out;
 	}
 
@@ -1955,12 +1868,8 @@ int orderly_poweroff(bool force)
 
   out:
 	if (ret && force) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to start orderly shutdown: "
 		       "forcing the issue\n");
-#else
-		;
-#endif
 
 		/* I guess this should try to kick off some daemon to
 		   sync and poweroff asap.  Or not even bother syncing
