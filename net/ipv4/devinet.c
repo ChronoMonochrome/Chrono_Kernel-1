@@ -1180,7 +1180,7 @@ static int inetdev_event(struct notifier_block *this, unsigned long event,
 
 	switch (event) {
 	case NETDEV_REGISTER:
-;
+		printk(KERN_DEBUG "inetdev_event: bug\n");
 		rcu_assign_pointer(dev->ip_ptr, NULL);
 		break;
 	case NETDEV_UP:

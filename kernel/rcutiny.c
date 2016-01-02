@@ -37,12 +37,6 @@
 #include <linux/cpu.h>
 #include <linux/prefetch.h>
 
-#ifdef CONFIG_RCU_TRACE
-#include <trace/events/rcu.h>
-#endif /* #else #ifdef CONFIG_RCU_TRACE */
-
-#include "rcu.h"
-
 /* Controls for rcu_kthread() kthread, replacing RCU_SOFTIRQ used previously. */
 static struct task_struct *rcu_kthread_task;
 static DECLARE_WAIT_QUEUE_HEAD(rcu_kthread_wq);
@@ -59,137 +53,31 @@ static void __call_rcu(struct rcu_head *head,
 
 #include "rcutiny_plugin.h"
 
-static long long rcu_dynticks_nesting = DYNTICK_TASK_NESTING;
+#ifdef CONFIG_NO_HZ
 
-/* Common code for rcu_idle_enter() and rcu_irq_exit(), see kernel/rcutree.c. */
-static void rcu_idle_enter_common(long long oldval)
+static long rcu_dynticks_nesting = 1;
+
+/*
+ * Enter dynticks-idle mode, which is an extended quiescent state
+ * if we have fully entered that mode (i.e., if the new value of
+ * dynticks_nesting is zero).
+ */
+void rcu_enter_nohz(void)
 {
-	if (rcu_dynticks_nesting) {
-		RCU_TRACE(trace_rcu_dyntick("--=",
-					    oldval, rcu_dynticks_nesting));
-		return;
-	}
-	RCU_TRACE(trace_rcu_dyntick("Start", oldval, rcu_dynticks_nesting));
-	if (!is_idle_task(current)) {
-		struct task_struct *idle = idle_task(smp_processor_id());
-
-		RCU_TRACE(trace_rcu_dyntick("Error on entry: not idle task",
-					    oldval, rcu_dynticks_nesting));
-		ftrace_dump(DUMP_ALL);
-		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-			  current->pid, current->comm,
-			  idle->pid, idle->comm); /* must be idle task! */
-	}
-	rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
+	if (--rcu_dynticks_nesting == 0)
+		rcu_sched_qs(0); /* implies rcu_bh_qsctr_inc(0) */
 }
 
 /*
- * Enter idle, which is an extended quiescent state if we have fully
- * entered that mode (i.e., if the new value of dynticks_nesting is zero).
+ * Exit dynticks-idle mode, so that we are no longer in an extended
+ * quiescent state.
  */
-void rcu_idle_enter(void)
+void rcu_exit_nohz(void)
 {
-	unsigned long flags;
-	long long oldval;
-
-	local_irq_save(flags);
-	oldval = rcu_dynticks_nesting;
-	rcu_dynticks_nesting = 0;
-	rcu_idle_enter_common(oldval);
-	local_irq_restore(flags);
-}
-
-/*
- * Exit an interrupt handler towards idle.
- */
-void rcu_irq_exit(void)
-{
-	unsigned long flags;
-	long long oldval;
-
-	local_irq_save(flags);
-	oldval = rcu_dynticks_nesting;
-	rcu_dynticks_nesting--;
-	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
-	rcu_idle_enter_common(oldval);
-	local_irq_restore(flags);
-}
-
-/* Common code for rcu_idle_exit() and rcu_irq_enter(), see kernel/rcutree.c. */
-static void rcu_idle_exit_common(long long oldval)
-{
-	if (oldval) {
-		RCU_TRACE(trace_rcu_dyntick("++=",
-					    oldval, rcu_dynticks_nesting));
-		return;
-	}
-	RCU_TRACE(trace_rcu_dyntick("End", oldval, rcu_dynticks_nesting));
-	if (!is_idle_task(current)) {
-		struct task_struct *idle = idle_task(smp_processor_id());
-
-		RCU_TRACE(trace_rcu_dyntick("Error on exit: not idle task",
-			  oldval, rcu_dynticks_nesting));
-		ftrace_dump(DUMP_ALL);
-		WARN_ONCE(1, "Current pid: %d comm: %s / Idle pid: %d comm: %s",
-			  current->pid, current->comm,
-			  idle->pid, idle->comm); /* must be idle task! */
-	}
-}
-
-/*
- * Exit idle, so that we are no longer in an extended quiescent state.
- */
-void rcu_idle_exit(void)
-{
-	unsigned long flags;
-	long long oldval;
-
-	local_irq_save(flags);
-	oldval = rcu_dynticks_nesting;
-	WARN_ON_ONCE(oldval != 0);
-	rcu_dynticks_nesting = DYNTICK_TASK_NESTING;
-	rcu_idle_exit_common(oldval);
-	local_irq_restore(flags);
-}
-
-/*
- * Enter an interrupt handler, moving away from idle.
- */
-void rcu_irq_enter(void)
-{
-	unsigned long flags;
-	long long oldval;
-
-	local_irq_save(flags);
-	oldval = rcu_dynticks_nesting;
 	rcu_dynticks_nesting++;
-	WARN_ON_ONCE(rcu_dynticks_nesting == 0);
-	rcu_idle_exit_common(oldval);
-	local_irq_restore(flags);
 }
 
-#ifdef CONFIG_PROVE_RCU
-
-/*
- * Test whether RCU thinks that the current CPU is idle.
- */
-int rcu_is_cpu_idle(void)
-{
-	return !rcu_dynticks_nesting;
-}
-EXPORT_SYMBOL(rcu_is_cpu_idle);
-
-#endif /* #ifdef CONFIG_PROVE_RCU */
-
-/*
- * Test whether the current CPU was interrupted from idle.  Nested
- * interrupts don't count, we must be running at the first interrupt
- * level.
- */
-int rcu_is_cpu_rrupt_from_idle(void)
-{
-	return rcu_dynticks_nesting <= 0;
-}
+#endif /* #ifdef CONFIG_NO_HZ */
 
 /*
  * Helper function for rcu_sched_qs() and rcu_bh_qs().
@@ -248,13 +136,14 @@ void rcu_bh_qs(int cpu)
 
 /*
  * Check to see if the scheduling-clock interrupt came from an extended
- * quiescent state, and, if so, tell RCU about it.  This function must
- * be called from hardirq context.  It is normally called from the
- * scheduling-clock interrupt.
+ * quiescent state, and, if so, tell RCU about it.
  */
 void rcu_check_callbacks(int cpu, int user)
 {
-	if (user || rcu_is_cpu_rrupt_from_idle())
+	if (user ||
+	    (idle_cpu(cpu) &&
+	     !in_softirq() &&
+	     hardirq_count() <= (1 << HARDIRQ_SHIFT)))
 		rcu_sched_qs(cpu);
 	else if (!in_softirq())
 		rcu_bh_qs(cpu);
@@ -267,21 +156,16 @@ void rcu_check_callbacks(int cpu, int user)
  */
 static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 {
-	char *rn = NULL;
 	struct rcu_head *next, *list;
 	unsigned long flags;
 	RCU_TRACE(int cb_count = 0);
 
 	/* If no RCU callbacks ready to invoke, just return. */
-	if (&rcp->rcucblist == rcp->donetail) {
-		RCU_TRACE(trace_rcu_batch_start(rcp->name, 0, -1));
-		RCU_TRACE(trace_rcu_batch_end(rcp->name, 0));
+	if (&rcp->rcucblist == rcp->donetail)
 		return;
-	}
 
 	/* Move the ready-to-invoke callbacks to a local list. */
 	local_irq_save(flags);
-	RCU_TRACE(trace_rcu_batch_start(rcp->name, 0, -1));
 	list = rcp->rcucblist;
 	rcp->rcucblist = *rcp->donetail;
 	*rcp->donetail = NULL;
@@ -292,19 +176,17 @@ static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
 	local_irq_restore(flags);
 
 	/* Invoke the callbacks on the local list. */
-	RCU_TRACE(rn = rcp->name);
 	while (list) {
 		next = list->next;
 		prefetch(next);
 		debug_rcu_head_unqueue(list);
 		local_bh_disable();
-		__rcu_reclaim(rn, list);
+		__rcu_reclaim(list);
 		local_bh_enable();
 		list = next;
 		RCU_TRACE(cb_count++);
 	}
 	RCU_TRACE(rcu_trace_sub_qlen(rcp, cb_count));
-	RCU_TRACE(trace_rcu_batch_end(rcp->name, cb_count));
 }
 
 /*
