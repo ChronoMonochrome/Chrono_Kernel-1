@@ -11,6 +11,8 @@ enum bug_trap_type {
 
 struct pt_regs;
 
+#define BUILD_BUG() while(0) {}
+
 #ifdef CONFIG_GENERIC_BUG
 #include <asm-generic/bug.h>
 
