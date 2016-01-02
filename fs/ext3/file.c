@@ -18,12 +18,8 @@
  *	(jj@sunsite.ms.mff.cuni.cz)
  */
 
-#include <linux/time.h>
-#include <linux/fs.h>
-#include <linux/jbd.h>
 #include <linux/quotaops.h>
-#include <linux/ext3_fs.h>
-#include <linux/ext3_jbd.h>
+#include "ext3.h"
 #include "xattr.h"
 #include "acl.h"
 
@@ -58,8 +54,6 @@ const struct file_operations ext3_file_operations = {
 	.write		= do_sync_write,
 	.aio_read	= generic_file_aio_read,
 	.aio_write	= generic_file_aio_write,
-	.read_iter	= generic_file_read_iter,
-	.write_iter	= generic_file_write_iter,
 	.unlocked_ioctl	= ext3_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl	= ext3_compat_ioctl,

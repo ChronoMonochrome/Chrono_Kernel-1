@@ -30,7 +30,7 @@
 #include <linux/types.h>
 #include <asm/byteorder.h>
 
-typedef unsigned long	aio_context_t;
+typedef __kernel_ulong_t aio_context_t;
 
 enum {
 	IOCB_CMD_PREAD = 0,
@@ -44,8 +44,6 @@ enum {
 	IOCB_CMD_NOOP = 6,
 	IOCB_CMD_PREADV = 7,
 	IOCB_CMD_PWRITEV = 8,
-	IOCB_CMD_READ_ITER = 9,
-	IOCB_CMD_WRITE_ITER = 10,
 };
 
 /*

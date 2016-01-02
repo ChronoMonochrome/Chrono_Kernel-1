@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ocfs2/ioctl.c
  *
@@ -123,7 +120,7 @@ static int ocfs2_set_inode_attr(struct inode *inode, unsigned flags,
 	if ((oldflags & OCFS2_IMMUTABLE_FL) || ((flags ^ oldflags) &
 		(OCFS2_APPEND_FL | OCFS2_IMMUTABLE_FL))) {
 		if (!capable(CAP_LINUX_IMMUTABLE))
-			goto bail_unlock;
+			goto bail_commit;
 	}
 
 	ocfs2_inode->ip_attr = flags;
@@ -133,6 +130,7 @@ static int ocfs2_set_inode_attr(struct inode *inode, unsigned flags,
 	if (status < 0)
 		mlog_errno(status);
 
+bail_commit:
 	ocfs2_commit_trans(osb, handle);
 bail_unlock:
 	ocfs2_inode_unlock(inode, 1);
@@ -382,7 +380,7 @@ int ocfs2_info_handle_freeinode(struct inode *inode,
 	if (!oifi) {
 		status = -ENOMEM;
 		mlog_errno(status);
-		goto bail;
+		goto out_err;
 	}
 
 	if (o2info_from_user(*oifi, req))
@@ -432,7 +430,7 @@ bail:
 		o2info_set_request_error(&oifi->ifi_req, req);
 
 	kfree(oifi);
-
+out_err:
 	return status;
 }
 
@@ -667,7 +665,7 @@ int ocfs2_info_handle_freefrag(struct inode *inode,
 	if (!oiff) {
 		status = -ENOMEM;
 		mlog_errno(status);
-		goto bail;
+		goto out_err;
 	}
 
 	if (o2info_from_user(*oiff, req))
@@ -717,7 +715,7 @@ bail:
 		o2info_set_request_error(&oiff->iff_req, req);
 
 	kfree(oiff);
-
+out_err:
 	return status;
 }
 
@@ -923,15 +921,7 @@ long ocfs2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		return ocfs2_change_file_space(filp, cmd, &sr);
 	case OCFS2_IOC_GROUP_EXTEND:
 		if (!capable(CAP_SYS_RESOURCE))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (get_user(new_clusters, (int __user *)arg))
 			return -EFAULT;
@@ -940,15 +930,7 @@ return -EPERM;
 	case OCFS2_IOC_GROUP_ADD:
 	case OCFS2_IOC_GROUP_ADD64:
 		if (!capable(CAP_SYS_RESOURCE))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (copy_from_user(&input, (int __user *) arg, sizeof(input)))
 			return -EFAULT;
@@ -976,15 +958,7 @@ return -EPERM;
 		int ret = 0;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (copy_from_user(&range, (struct fstrim_range *)arg,
 		    sizeof(range)))

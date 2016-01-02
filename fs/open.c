@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/open.c
  *
@@ -96,15 +93,9 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
 	if (error)
 		goto mnt_drop_write_and_out;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	error = -EPERM;
 	if (IS_APPEND(inode))
 		goto mnt_drop_write_and_out;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 	error = get_write_access(inode);
 	if (error)
@@ -169,15 +160,9 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
 	if (small && length > MAX_NON_LFS)
 		goto out_putf;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	error = -EPERM;
 	if (IS_APPEND(inode))
 		goto out_putf;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 	error = locks_verify_truncate(inode, file, length);
 	if (!error)
@@ -251,26 +236,10 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
 
 	/* It's not possible punch hole on append only file */
 	if (mode & FALLOC_FL_PUNCH_HOLE && IS_APPEND(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (IS_IMMUTABLE(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/*
 	 * Revalidate the write permissions, in case security policy has
@@ -367,9 +336,6 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
 		 * MAY_EXEC on regular files is denied if the fs is mounted
 		 * with the "noexec" flag.
 		 */
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled)
-#endif
 		res = -EACCES;
 		if (path.mnt->mnt_flags & MNT_NOEXEC)
 			goto out_path_release;
@@ -465,16 +431,9 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
 	if (error)
 		goto dput_and_out;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	error = -EPERM;
 	if (!capable(CAP_SYS_CHROOT))
 		goto dput_and_out;
-
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 	error = security_path_chroot(&path);
 	if (error)
 		goto dput_and_out;
@@ -487,78 +446,56 @@ out:
 	return error;
 }
 
-SYSCALL_DEFINE2(fchmod, unsigned int, fd, mode_t, mode)
+static int chmod_common(struct path *path, umode_t mode)
 {
-	struct inode * inode;
-	struct dentry * dentry;
-	struct file * file;
-	int err = -EBADF;
+	struct inode *inode = path->dentry->d_inode;
 	struct iattr newattrs;
-
-	file = fget(fd);
-	if (!file)
-		goto out;
-
-	dentry = file->f_path.dentry;
-	inode = dentry->d_inode;
-
-	audit_inode(NULL, dentry);
-
-	err = mnt_want_write_file(file);
-	if (err)
-		goto out_putf;
-	mutex_lock(&inode->i_mutex);
-	err = security_path_chmod(dentry, file->f_vfsmnt, mode);
-	if (err)
-		goto out_unlock;
-	if (mode == (mode_t) -1)
-		mode = inode->i_mode;
-	newattrs.ia_mode = (mode & S_IALLUGO) | (inode->i_mode & ~S_IALLUGO);
-	newattrs.ia_valid = ATTR_MODE | ATTR_CTIME;
-	err = notify_change(dentry, &newattrs);
-out_unlock:
-	mutex_unlock(&inode->i_mutex);
-	mnt_drop_write(file->f_path.mnt);
-out_putf:
-	fput(file);
-out:
-	return err;
-}
-
-SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, mode_t, mode)
-{
-	struct path path;
-	struct inode *inode;
 	int error;
-	struct iattr newattrs;
 
-	error = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
+	error = mnt_want_write(path->mnt);
 	if (error)
-		goto out;
-	inode = path.dentry->d_inode;
-
-	error = mnt_want_write(path.mnt);
-	if (error)
-		goto dput_and_out;
+		return error;
 	mutex_lock(&inode->i_mutex);
-	error = security_path_chmod(path.dentry, path.mnt, mode);
+	error = security_path_chmod(path, mode);
 	if (error)
 		goto out_unlock;
-	if (mode == (mode_t) -1)
-		mode = inode->i_mode;
 	newattrs.ia_mode = (mode & S_IALLUGO) | (inode->i_mode & ~S_IALLUGO);
 	newattrs.ia_valid = ATTR_MODE | ATTR_CTIME;
-	error = notify_change(path.dentry, &newattrs);
+	error = notify_change(path->dentry, &newattrs);
 out_unlock:
 	mutex_unlock(&inode->i_mutex);
-	mnt_drop_write(path.mnt);
-dput_and_out:
-	path_put(&path);
-out:
+	mnt_drop_write(path->mnt);
 	return error;
 }
 
-SYSCALL_DEFINE2(chmod, const char __user *, filename, mode_t, mode)
+SYSCALL_DEFINE2(fchmod, unsigned int, fd, umode_t, mode)
+{
+	struct file * file;
+	int err = -EBADF;
+
+	file = fget(fd);
+	if (file) {
+		audit_inode(NULL, file->f_path.dentry);
+		err = chmod_common(&file->f_path, mode);
+		fput(file);
+	}
+	return err;
+}
+
+SYSCALL_DEFINE3(fchmodat, int, dfd, const char __user *, filename, umode_t, mode)
+{
+	struct path path;
+	int error;
+
+	error = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
+	if (!error) {
+		error = chmod_common(&path, mode);
+		path_put(&path);
+	}
+	return error;
+}
+
+SYSCALL_DEFINE2(chmod, const char __user *, filename, umode_t, mode)
 {
 	return sys_fchmodat(AT_FDCWD, filename, mode);
 }
@@ -748,6 +685,10 @@ static struct file *__dentry_open(struct dentry *dentry, struct vfsmount *mnt,
 	if (error)
 		goto cleanup_all;
 
+	error = break_lease(inode, f->f_flags);
+	if (error)
+		goto cleanup_all;
+
 	if (!open && f->f_op)
 		open = f->f_op->open;
 	if (open) {
@@ -834,7 +775,7 @@ out:
 	return nd->intent.open.file;
 out_err:
 	release_open_intent(nd);
-	nd->intent.open.file = (struct file *)dentry;
+	nd->intent.open.file = ERR_CAST(dentry);
 	goto out;
 }
 EXPORT_SYMBOL_GPL(lookup_instantiate_filp);
@@ -936,7 +877,7 @@ void fd_install(unsigned int fd, struct file *file)
 
 EXPORT_SYMBOL(fd_install);
 
-static inline int build_open_flags(int flags, int mode, struct open_flags *op)
+static inline int build_open_flags(int flags, umode_t mode, struct open_flags *op)
 {
 	int lookup_flags = 0;
 	int acc_mode;
@@ -1008,7 +949,7 @@ static inline int build_open_flags(int flags, int mode, struct open_flags *op)
  * have to.  But in generally you should not do this, so please move
  * along, nothing to see here..
  */
-struct file *filp_open(const char *filename, int flags, int mode)
+struct file *filp_open(const char *filename, int flags, umode_t mode)
 {
 	struct open_flags op;
 	int lookup = build_open_flags(flags, mode, &op);
@@ -1030,7 +971,7 @@ struct file *file_open_root(struct dentry *dentry, struct vfsmount *mnt,
 }
 EXPORT_SYMBOL(file_open_root);
 
-long do_sys_open(int dfd, const char __user *filename, int flags, int mode)
+long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 {
 	struct open_flags op;
 	int lookup = build_open_flags(flags, mode, &op);
@@ -1054,7 +995,7 @@ long do_sys_open(int dfd, const char __user *filename, int flags, int mode)
 	return fd;
 }
 
-SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, int, mode)
+SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, umode_t, mode)
 {
 	long ret;
 
@@ -1068,7 +1009,7 @@ SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, int, mode)
 }
 
 SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, flags,
-		int, mode)
+		umode_t, mode)
 {
 	long ret;
 
@@ -1087,7 +1028,7 @@ SYSCALL_DEFINE4(openat, int, dfd, const char __user *, filename, int, flags,
  * For backward compatibility?  Maybe this should be moved
  * into arch/i386 instead?
  */
-SYSCALL_DEFINE2(creat, const char __user *, pathname, int, mode)
+SYSCALL_DEFINE2(creat, const char __user *, pathname, umode_t, mode)
 {
 	return sys_open(pathname, O_CREAT | O_WRONLY | O_TRUNC, mode);
 }
@@ -1170,15 +1111,7 @@ SYSCALL_DEFINE0(vhangup)
 		tty_vhangup_self();
 		return 0;
 	}
-	
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+	return -EPERM;
 }
 
 /*

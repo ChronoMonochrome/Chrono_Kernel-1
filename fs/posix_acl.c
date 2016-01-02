@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/posix_acl.c
  *
@@ -17,11 +14,11 @@
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #include <linux/fs.h>
 #include <linux/sched.h>
 #include <linux/posix_acl.h>
-#include <linux/module.h>
+#include <linux/export.h>
 
 #include <linux/errno.h>
 
@@ -191,7 +188,7 @@ posix_acl_equiv_mode(const struct posix_acl *acl, umode_t *mode_p)
  * Create an ACL representing the file mode permission bits of an inode.
  */
 struct posix_acl *
-posix_acl_from_mode(mode_t mode, gfp_t flags)
+posix_acl_from_mode(umode_t mode, gfp_t flags)
 {
 	struct posix_acl *acl = posix_acl_alloc(3, flags);
 	if (!acl)
@@ -219,11 +216,9 @@ int
 posix_acl_permission(struct inode *inode, const struct posix_acl *acl, int want)
 {
 	const struct posix_acl_entry *pa, *pe, *mask_obj;
-#ifdef CONFIG_GOD_MODE
-if (god_mode_enabled)
-        return 0;
-#endif
 	int found = 0;
+
+	want &= MAY_READ | MAY_WRITE | MAY_EXEC | MAY_NOT_BLOCK;
 
 	FOREACH_ACL_ENTRY(pa, acl, pe) {
                 switch(pa->e_tag) {
@@ -253,9 +248,9 @@ if (god_mode_enabled)
                         case ACL_MASK:
                                 break;
                         case ACL_OTHER:
-				if (found) {
+				if (found)
 					return -EACCES;
-				} else
+				else
 					goto check_perm;
 			default:
 				return -EIO;
@@ -343,7 +338,7 @@ static int posix_acl_create_masq(struct posix_acl *acl, umode_t *mode_p)
 /*
  * Modify the ACL for the chmod syscall.
  */
-static int posix_acl_chmod_masq(struct posix_acl *acl, mode_t mode)
+static int posix_acl_chmod_masq(struct posix_acl *acl, umode_t mode)
 {
 	struct posix_acl_entry *group_obj = NULL, *mask_obj = NULL;
 	struct posix_acl_entry *pa, *pe;
@@ -407,7 +402,7 @@ posix_acl_create(struct posix_acl **acl, gfp_t gfp, umode_t *mode_p)
 EXPORT_SYMBOL(posix_acl_create);
 
 int
-posix_acl_chmod(struct posix_acl **acl, gfp_t gfp, mode_t mode)
+posix_acl_chmod(struct posix_acl **acl, gfp_t gfp, umode_t mode)
 {
 	struct posix_acl *clone = posix_acl_clone(*acl, gfp);
 	int err = -ENOMEM;

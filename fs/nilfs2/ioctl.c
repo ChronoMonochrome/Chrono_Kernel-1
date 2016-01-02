@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * ioctl.c - NILFS ioctl operations.
  *
@@ -175,15 +172,7 @@ static int nilfs_ioctl_change_cpmode(struct inode *inode, struct file *filp,
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	ret = mnt_want_write_file(filp);
 	if (ret)
@@ -219,15 +208,7 @@ nilfs_ioctl_delete_checkpoint(struct inode *inode, struct file *filp,
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	ret = mnt_want_write_file(filp);
 	if (ret)
@@ -608,15 +589,7 @@ static int nilfs_ioctl_clean_segments(struct inode *inode, struct file *filp,
 	int n, ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	ret = mnt_want_write_file(filp);
 	if (ret)
@@ -629,6 +602,8 @@ return -EPERM;
 	ret = -EINVAL;
 	nsegs = argv[4].v_nmembs;
 	if (argv[4].v_size != argsz[4])
+		goto out;
+	if (nsegs > UINT_MAX / sizeof(__u64))
 		goto out;
 
 	/*
@@ -650,6 +625,9 @@ return -EPERM;
 			goto out_free;
 
 		if (argv[n].v_nmembs > nsegs * nilfs->ns_blocks_per_segment)
+			goto out_free;
+
+		if (argv[n].v_nmembs >= UINT_MAX / argv[n].v_size)
 			goto out_free;
 
 		len = argv[n].v_size * argv[n].v_nmembs;

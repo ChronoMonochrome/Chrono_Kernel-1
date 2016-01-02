@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/syscalls.h>
 #include <linux/slab.h>
 #include <linux/fs.h>
@@ -13,6 +10,7 @@
 #include <linux/personality.h>
 #include <asm/uaccess.h>
 #include "internal.h"
+#include "mount.h"
 
 static long do_sys_name_to_handle(struct path *path,
 				  struct file_handle __user *ufh,
@@ -69,7 +67,8 @@ static long do_sys_name_to_handle(struct path *path,
 	} else
 		retval = 0;
 	/* copy the mount id */
-	if (copy_to_user(mnt_id, &path->mnt->mnt_id, sizeof(*mnt_id)) ||
+	if (copy_to_user(mnt_id, &real_mount(path->mnt)->mnt_id,
+			 sizeof(*mnt_id)) ||
 	    copy_to_user(ufh, handle,
 			 sizeof(struct file_handle) + handle_bytes))
 		retval = -EFAULT;
@@ -174,9 +173,6 @@ static int handle_to_path(int mountdirfd, struct file_handle __user *ufh,
 	struct file_handle f_handle;
 	struct file_handle *handle = NULL;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	/*
 	 * With handle we don't look at the execute bit on the
 	 * the directory. Ideally we would like CAP_DAC_SEARCH.
@@ -186,9 +182,6 @@ if (!god_mode_enabled) {
 		retval = -EPERM;
 		goto out_err;
 	}
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
 		retval = -EFAULT;
 		goto out_err;
@@ -205,9 +198,8 @@ if (!god_mode_enabled) {
 		goto out_err;
 	}
 	/* copy the full handle */
-	*handle = f_handle;
-	if (copy_from_user(&handle->f_handle,
-			   &ufh->f_handle,
+	if (copy_from_user(handle, ufh,
+			   sizeof(struct file_handle) +
 			   f_handle.handle_bytes)) {
 		retval = -EFAULT;
 		goto out_handle;

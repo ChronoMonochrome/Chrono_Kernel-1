@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2008  Miklos Szeredi <miklos@szeredi.hu>
@@ -845,10 +842,10 @@ static int fuse_copy_page(struct fuse_copy_state *cs, struct page **pagep,
 			}
 		}
 		if (page) {
-			void *mapaddr = kmap_atomic(page, KM_USER0);
+			void *mapaddr = kmap_atomic(page);
 			void *buf = mapaddr + offset;
 			offset += fuse_copy_do(cs, &buf, &count);
-			kunmap_atomic(mapaddr, KM_USER0);
+			kunmap_atomic(mapaddr);
 		} else
 			offset += fuse_copy_do(cs, NULL, &count);
 	}
@@ -857,9 +854,9 @@ static int fuse_copy_page(struct fuse_copy_state *cs, struct page **pagep,
 	return 0;
 }
 
-/* Start from addr(pages[0]) + page_offset. No holes in the middle. */
-static int fuse_copy_pages_for_buf(struct fuse_copy_state *cs, unsigned nbytes,
-				   int zeroing)
+/* Copy pages in the request to/from userspace buffer */
+static int fuse_copy_pages(struct fuse_copy_state *cs, unsigned nbytes,
+			   int zeroing)
 {
 	unsigned i;
 	struct fuse_req *req = cs->req;
@@ -879,52 +876,6 @@ static int fuse_copy_pages_for_buf(struct fuse_copy_state *cs, unsigned nbytes,
 		offset = 0;
 	}
 	return 0;
-}
-
-/* Take iov_offset as offset in iovec[0]. Iterate based on iovec[].iov_len */
-static int fuse_copy_pages_for_iovec(struct fuse_copy_state *cs,
-				     unsigned nbytes, int zeroing)
-{
-	unsigned i;
-	struct fuse_req *req = cs->req;
-	const struct iovec *iov = req->iovec;
-	unsigned iov_offset = req->iov_offset;
-
-	for (i = 0; i < req->num_pages && (nbytes || zeroing); i++) {
-		int err;
-		unsigned long user_addr = (unsigned long)iov->iov_base +
-					  iov_offset;
-		unsigned offset = user_addr & ~PAGE_MASK;
-		unsigned count = min_t(size_t, PAGE_SIZE - offset,
-				       iov->iov_len - iov_offset);
-		count = min(nbytes, count);
-
-		err = fuse_copy_page(cs, &req->pages[i], offset, count,
-				     zeroing);
-		if (err)
-			return err;
-
-		nbytes -= count;
-
-		if (count < iov->iov_len - iov_offset) {
-			iov_offset += count;
-		} else {
-			iov++;
-			iov_offset = 0;
-		}
-	}
-
-	return 0;
-}
-
-/* Copy pages in the request to/from userspace buffer */
-static int fuse_copy_pages(struct fuse_copy_state *cs, unsigned nbytes,
-			   int zeroing)
-{
-	if (cs->req->iovec)
-		return fuse_copy_pages_for_iovec(cs, nbytes, zeroing);
-	else
-		return fuse_copy_pages_for_buf(cs, nbytes, zeroing);
 }
 
 /* Copy a single argument in the request to/from userspace buffer */
@@ -1245,15 +1196,7 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
 	struct file *file = iocb->ki_filp;
 	struct fuse_conn *fc = fuse_get_conn(file);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	fuse_copy_init(&cs, fc, 1, iov, nr_segs);
 
@@ -1287,15 +1230,7 @@ static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
 	struct fuse_copy_state cs;
 	struct fuse_conn *fc = fuse_get_conn(in);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	bufs = kmalloc(pipe->buffers * sizeof(struct pipe_buffer), GFP_KERNEL);
 	if (!bufs)
@@ -1871,15 +1806,7 @@ static ssize_t fuse_dev_write(struct kiocb *iocb, const struct iovec *iov,
 	struct fuse_copy_state cs;
 	struct fuse_conn *fc = fuse_get_conn(iocb->ki_filp);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	fuse_copy_init(&cs, fc, 0, iov, nr_segs);
 
@@ -1900,15 +1827,7 @@ static ssize_t fuse_dev_splice_write(struct pipe_inode_info *pipe,
 
 	fc = fuse_get_conn(out);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	bufs = kmalloc(pipe->buffers * sizeof(struct pipe_buffer), GFP_KERNEL);
 	if (!bufs)
@@ -2131,15 +2050,7 @@ static int fuse_dev_fasync(int fd, struct file *file, int on)
 {
 	struct fuse_conn *fc = fuse_get_conn(file);
 	if (!fc)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/* No locking - fasync_helper does its own locking */
 	return fasync_helper(fd, file, on, &fc->fasync);

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright (C) 2007 Red Hat.  All rights reserved.
  *
@@ -30,8 +27,6 @@
 #include "ctree.h"
 #include "btrfs_inode.h"
 #include "xattr.h"
-
-#ifdef CONFIG_BTRFS_FS_POSIX_ACL
 
 struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
 {
@@ -64,22 +59,19 @@ struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
 		if (!value)
 			return ERR_PTR(-ENOMEM);
 		size = __btrfs_getxattr(inode, name, value, size);
-		if (size > 0) {
-			acl = posix_acl_from_xattr(value, size);
-			if (IS_ERR(acl)) {
-				kfree(value);
-				return acl;
-			}
-			set_cached_acl(inode, type, acl);
-		}
-		kfree(value);
+	}
+	if (size > 0) {
+		acl = posix_acl_from_xattr(value, size);
 	} else if (size == -ENOENT || size == -ENODATA || size == 0) {
 		/* FIXME, who returns -ENOENT?  I think nobody */
 		acl = NULL;
-		set_cached_acl(inode, type, acl);
 	} else {
 		acl = ERR_PTR(-EIO);
 	}
+	kfree(value);
+
+	if (!IS_ERR(acl))
+		set_cached_acl(inode, type, acl);
 
 	return acl;
 }
@@ -171,15 +163,7 @@ static int btrfs_xattr_acl_set(struct dentry *dentry, const char *name,
 	struct posix_acl *acl = NULL;
 
 	if (!inode_owner_or_capable(dentry->d_inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (!IS_POSIXACL(dentry->d_inode))
 		return -EOPNOTSUPP;
@@ -287,18 +271,3 @@ const struct xattr_handler btrfs_xattr_acl_access_handler = {
 	.get	= btrfs_xattr_acl_get,
 	.set	= btrfs_xattr_acl_set,
 };
-
-#else /* CONFIG_BTRFS_FS_POSIX_ACL */
-
-int btrfs_acl_chmod(struct inode *inode)
-{
-	return 0;
-}
-
-int btrfs_init_acl(struct btrfs_trans_handle *trans,
-		   struct inode *inode, struct inode *dir)
-{
-	return 0;
-}
-
-#endif /* CONFIG_BTRFS_FS_POSIX_ACL */

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Copyright IBM Corporation, 2010
  * Author Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
@@ -101,7 +98,6 @@ static struct posix_acl *v9fs_get_cached_acl(struct inode *inode, int type)
 
 struct posix_acl *v9fs_iop_get_acl(struct inode *inode, int type)
 {
-	struct posix_acl *acl;
 	struct v9fs_session_info *v9ses;
 
 	v9ses = v9fs_inode2v9ses(inode);
@@ -305,15 +301,7 @@ static int v9fs_xattr_set_acl(struct dentry *dentry, const char *name,
 	if (S_ISLNK(inode->i_mode))
 		return -EOPNOTSUPP;
 	if (!inode_owner_or_capable(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (value) {
 		/* update the cached acl value */
 		acl = posix_acl_from_xattr(value, size);

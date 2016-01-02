@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ufs/super.c
  *
@@ -76,7 +73,6 @@
 #include <stdarg.h>
 
 #include <asm/uaccess.h>
-#include <asm/system.h>
 
 #include <linux/errno.h>
 #include <linux/fs.h>
@@ -1167,10 +1163,10 @@ magic_found:
 		ret = PTR_ERR(inode);
 		goto failed;
 	}
-	sb->s_root = d_alloc_root(inode);
+	sb->s_root = d_make_root(inode);
 	if (!sb->s_root) {
 		ret = -ENOMEM;
-		goto dalloc_failed;
+		goto failed;
 	}
 
 	ufs_setup_cstotal(sb);
@@ -1184,8 +1180,6 @@ magic_found:
 	UFSD("EXIT\n");
 	return 0;
 
-dalloc_failed:
-	iput(inode);
 failed:
 	if (ubh)
 		ubh_brelse_uspi (uspi);
@@ -1344,15 +1338,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
 			printk("failed during remounting\n");
 			unlock_super(sb);
 			unlock_ufs(sb);
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 		}
 		sb->s_flags &= ~MS_RDONLY;
 #endif
@@ -1363,9 +1349,9 @@ return -EPERM;
 	return 0;
 }
 
-static int ufs_show_options(struct seq_file *seq, struct vfsmount *vfs)
+static int ufs_show_options(struct seq_file *seq, struct dentry *root)
 {
-	struct ufs_sb_info *sbi = UFS_SB(vfs->mnt_sb);
+	struct ufs_sb_info *sbi = UFS_SB(root->d_sb);
 	unsigned mval = sbi->s_mount_opt & UFS_MOUNT_UFSTYPE;
 	const struct match_token *tp = tokens;
 

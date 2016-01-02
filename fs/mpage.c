@@ -13,7 +13,7 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/mm.h>
 #include <linux/kdev_t.h>
 #include <linux/gfp.h>
@@ -286,11 +286,6 @@ do_mpage_readpage(struct bio *bio, struct page *page, unsigned nr_pages,
 
 alloc_new:
 	if (bio == NULL) {
-		if (first_hole == blocks_per_page) {
-			if (!bdev_read_page(bdev, blocks[0] << (blkbits - 9),
-								page))
-				goto out;
-		}
 		bio = mpage_alloc(bdev, blocks[0] << (blkbits - 9),
 			  	min_t(int, nr_pages, bio_get_nr_vecs(bdev)),
 				GFP_KERNEL);
@@ -376,9 +371,6 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
 	sector_t last_block_in_bio = 0;
 	struct buffer_head map_bh;
 	unsigned long first_logical_block = 0;
-	struct blk_plug plug;
-
-	blk_start_plug(&plug);
 
 	map_bh.b_state = 0;
 	map_bh.b_size = 0;
@@ -400,7 +392,6 @@ mpage_readpages(struct address_space *mapping, struct list_head *pages,
 	BUG_ON(!list_empty(pages));
 	if (bio)
 		mpage_bio_submit(READ, bio);
-	blk_finish_plug(&plug);
 	return 0;
 }
 EXPORT_SYMBOL(mpage_readpages);
@@ -448,35 +439,6 @@ struct mpage_data {
 	get_block_t *get_block;
 	unsigned use_writepage;
 };
-
-/*
- * We have our BIO, so we can now mark the buffers clean.  Make
- * sure to only clean buffers which we know we'll be writing.
- */
-static void clean_buffers(struct page *page, unsigned first_unmapped)
-{
-	unsigned buffer_counter = 0;
-	struct buffer_head *bh, *head;
-	if (!page_has_buffers(page))
-		return;
-	head = page_buffers(page);
-	bh = head;
-
-	do {
-		if (buffer_counter++ == first_unmapped)
-			break;
-		clear_buffer_dirty(bh);
-		bh = bh->b_this_page;
-	} while (bh != head);
-
-	/*
-	 * we cannot drop the bh if the page is not uptodate or a concurrent
-	 * readpage would fail to serialize with the bh and it would read from
-	 * disk before we reach the platter.
-	 */
-	if (buffer_heads_over_limit && PageUptodate(page))
-		try_to_free_buffers(page);
-}
 
 static int __mpage_writepage(struct page *page, struct writeback_control *wbc,
 		      void *data)
@@ -613,13 +575,6 @@ page_is_mapped:
 
 alloc_new:
 	if (bio == NULL) {
-		if (first_unmapped == blocks_per_page) {
-			if (!bdev_write_page(bdev, blocks[0] << (blkbits - 9),
-								page, wbc)) {
-				clean_buffers(page, first_unmapped);
-				goto out;
-			}
-		}
 		bio = mpage_alloc(bdev, blocks[0] << (blkbits - 9),
 				bio_get_nr_vecs(bdev), GFP_NOFS|__GFP_HIGH);
 		if (bio == NULL)
@@ -637,7 +592,30 @@ alloc_new:
 		goto alloc_new;
 	}
 
-	clean_buffers(page, first_unmapped);
+	/*
+	 * OK, we have our BIO, so we can now mark the buffers clean.  Make
+	 * sure to only clean buffers which we know we'll be writing.
+	 */
+	if (page_has_buffers(page)) {
+		struct buffer_head *head = page_buffers(page);
+		struct buffer_head *bh = head;
+		unsigned buffer_counter = 0;
+
+		do {
+			if (buffer_counter++ == first_unmapped)
+				break;
+			clear_buffer_dirty(bh);
+			bh = bh->b_this_page;
+		} while (bh != head);
+
+		/*
+		 * we cannot drop the bh if the page is not uptodate
+		 * or a concurrent readpage would fail to serialize with the bh
+		 * and it would read from disk before we reach the platter.
+		 */
+		if (buffer_heads_over_limit && PageUptodate(page))
+			try_to_free_buffers(page);
+	}
 
 	BUG_ON(PageWriteback(page));
 	set_page_writeback(page);

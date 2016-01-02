@@ -512,9 +512,10 @@ static int parse_fuse_opt(char *opt, struct fuse_mount_data *d, int is_bdev)
 	return 1;
 }
 
-static int fuse_show_options(struct seq_file *m, struct vfsmount *mnt)
+static int fuse_show_options(struct seq_file *m, struct dentry *root)
 {
-	struct fuse_conn *fc = get_fuse_conn_super(mnt->mnt_sb);
+	struct super_block *sb = root->d_sb;
+	struct fuse_conn *fc = get_fuse_conn_super(sb);
 
 	seq_printf(m, ",user_id=%u", fc->user_id);
 	seq_printf(m, ",group_id=%u", fc->group_id);
@@ -524,9 +525,8 @@ static int fuse_show_options(struct seq_file *m, struct vfsmount *mnt)
 		seq_puts(m, ",allow_other");
 	if (fc->max_read != ~0)
 		seq_printf(m, ",max_read=%u", fc->max_read);
-	if (mnt->mnt_sb->s_bdev &&
-	    mnt->mnt_sb->s_blocksize != FUSE_DEFAULT_BLKSIZE)
-		seq_printf(m, ",blksize=%lu", mnt->mnt_sb->s_blocksize);
+	if (sb->s_bdev && sb->s_blocksize != FUSE_DEFAULT_BLKSIZE)
+		seq_printf(m, ",blksize=%lu", sb->s_blocksize);
 	return 0;
 }
 
@@ -892,7 +892,7 @@ static int fuse_bdi_init(struct fuse_conn *fc, struct super_block *sb)
 	int err;
 
 	fc->bdi.name = "fuse";
-	fc->bdi.ra_pages = max_readahead_pages;
+	fc->bdi.ra_pages = (VM_MAX_READAHEAD * 1024) / PAGE_CACHE_SIZE;
 	/* fuse does it's own writeback accounting */
 	fc->bdi.capabilities = BDI_CAP_NO_ACCT_WB;
 
@@ -962,6 +962,7 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_magic = FUSE_SUPER_MAGIC;
 	sb->s_op = &fuse_super_operations;
 	sb->s_maxbytes = MAX_LFS_FILESIZE;
+	sb->s_time_gran = 1;
 	sb->s_export_op = &fuse_export_operations;
 
 	file = fget(d.fd);
@@ -1003,14 +1004,9 @@ static int fuse_fill_super(struct super_block *sb, void *data, int silent)
 
 	err = -ENOMEM;
 	root = fuse_get_root_inode(sb, d.rootmode);
-	if (!root)
+	root_dentry = d_make_root(root);
+	if (!root_dentry)
 		goto err_put_conn;
-
-	root_dentry = d_alloc_root(root);
-	if (!root_dentry) {
-		iput(root);
-		goto err_put_conn;
-	}
 	/* only now - we want root dentry with NULL ->d_op */
 	sb->s_d_op = &fuse_dentry_operations;
 

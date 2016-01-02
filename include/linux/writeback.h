@@ -64,15 +64,13 @@ struct writeback_control {
 	long pages_skipped;		/* Pages which were not written */
 
 	/*
-	 * For a_ops->writepages(): is start or end are non-zero then this is
+	 * For a_ops->writepages(): if start or end are non-zero then this is
 	 * a hint that the filesystem need only write out the pages inside that
 	 * byterange.  The byte at `end' is included in the writeout request.
 	 */
 	loff_t range_start;
 	loff_t range_end;
 
-	unsigned nonblocking:1;		/* Don't get stuck on request queues */
-	unsigned encountered_congestion:1; /* An output: a queue is full */
 	unsigned for_kupdate:1;		/* A kupdate writeback */
 	unsigned for_background:1;	/* A background writeback */
 	unsigned tagged_writepages:1;	/* tag-and-write to avoid livelock */
@@ -137,11 +135,6 @@ extern unsigned int dirty_expire_interval;
 extern int vm_highmem_is_dirtyable;
 extern int block_dump;
 extern int laptop_mode;
-#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
-extern int dyn_dirty_writeback_enabled;
-extern unsigned int dirty_writeback_active_interval;
-extern unsigned int dirty_writeback_suspend_interval;
-#endif
 
 extern int dirty_background_ratio_handler(struct ctl_table *table, int write,
 		void __user *buffer, size_t *lenp,
@@ -159,15 +152,6 @@ extern int dirty_bytes_handler(struct ctl_table *table, int write,
 struct ctl_table;
 int dirty_writeback_centisecs_handler(struct ctl_table *, int,
 				      void __user *, size_t *, loff_t *);
-
-#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
-int dynamic_dirty_writeback_handler(struct ctl_table *, int,
-				      void __user *, size_t *, loff_t *);
-int dirty_writeback_active_centisecs_handler(struct ctl_table *, int,
-				      void __user *, size_t *, loff_t *);
-int dirty_writeback_suspend_centisecs_handler(struct ctl_table *, int,
-				      void __user *, size_t *, loff_t *);
-#endif
 
 void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty);
 unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,

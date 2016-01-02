@@ -350,37 +350,39 @@ static DEFINE_SPINLOCK(proc_inum_lock); /* protects the above */
  * Return an inode number between PROC_DYNAMIC_FIRST and
  * 0xffffffff, or zero on failure.
  */
-static unsigned int get_inode_number(void)
+int proc_alloc_inum(unsigned int *inum)
 {
 	unsigned int i;
 	int error;
 
 retry:
-	if (ida_pre_get(&proc_inum_ida, GFP_KERNEL) == 0)
-		return 0;
+	if (!ida_pre_get(&proc_inum_ida, GFP_KERNEL))
+		return -ENOMEM;
 
-	spin_lock(&proc_inum_lock);
+	spin_lock_irq(&proc_inum_lock);
 	error = ida_get_new(&proc_inum_ida, &i);
-	spin_unlock(&proc_inum_lock);
+	spin_unlock_irq(&proc_inum_lock);
 	if (error == -EAGAIN)
 		goto retry;
 	else if (error)
-		return 0;
+		return error;
 
 	if (i > UINT_MAX - PROC_DYNAMIC_FIRST) {
-		spin_lock(&proc_inum_lock);
+		spin_lock_irq(&proc_inum_lock);
 		ida_remove(&proc_inum_ida, i);
-		spin_unlock(&proc_inum_lock);
-		return 0;
+		spin_unlock_irq(&proc_inum_lock);
+		return -ENOSPC;
 	}
-	return PROC_DYNAMIC_FIRST + i;
+	*inum = PROC_DYNAMIC_FIRST + i;
+	return 0;
 }
 
-static void release_inode_number(unsigned int inum)
+void proc_free_inum(unsigned int inum)
 {
-	spin_lock(&proc_inum_lock);
+	unsigned long flags;
+	spin_lock_irqsave(&proc_inum_lock, flags);
 	ida_remove(&proc_inum_ida, inum - PROC_DYNAMIC_FIRST);
-	spin_unlock(&proc_inum_lock);
+	spin_unlock_irqrestore(&proc_inum_lock, flags);
 }
 
 static void *proc_follow_link(struct dentry *dentry, struct nameidata *nd)
@@ -554,13 +556,12 @@ static const struct inode_operations proc_dir_inode_operations = {
 
 static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp)
 {
-	unsigned int i;
 	struct proc_dir_entry *tmp;
+	int ret;
 	
-	i = get_inode_number();
-	if (i == 0)
-		return -EAGAIN;
-	dp->low_ino = i;
+	ret = proc_alloc_inum(&dp->low_ino);
+	if (ret)
+		return ret;
 
 	if (S_ISDIR(dp->mode)) {
 		if (dp->proc_iops == NULL) {
@@ -597,7 +598,7 @@ static int proc_register(struct proc_dir_entry * dir, struct proc_dir_entry * dp
 
 static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
 					  const char *name,
-					  mode_t mode,
+					  umode_t mode,
 					  nlink_t nlink)
 {
 	struct proc_dir_entry *ent = NULL;
@@ -620,8 +621,7 @@ static struct proc_dir_entry *__proc_create(struct proc_dir_entry **parent,
 	if (!ent) goto out;
 
 	memset(ent, 0, sizeof(struct proc_dir_entry));
-	memcpy(((char *) ent) + sizeof(struct proc_dir_entry), fn, len + 1);
-	ent->name = ((char *) ent) + sizeof(*ent);
+	memcpy(ent->name, fn, len + 1);
 	ent->namelen = len;
 	ent->mode = mode;
 	ent->nlink = nlink;
@@ -660,7 +660,7 @@ struct proc_dir_entry *proc_symlink(const char *name,
 }
 EXPORT_SYMBOL(proc_symlink);
 
-struct proc_dir_entry *proc_mkdir_mode(const char *name, mode_t mode,
+struct proc_dir_entry *proc_mkdir_mode(const char *name, umode_t mode,
 		struct proc_dir_entry *parent)
 {
 	struct proc_dir_entry *ent;
@@ -700,7 +700,7 @@ struct proc_dir_entry *proc_mkdir(const char *name,
 }
 EXPORT_SYMBOL(proc_mkdir);
 
-struct proc_dir_entry *create_proc_entry(const char *name, mode_t mode,
+struct proc_dir_entry *create_proc_entry(const char *name, umode_t mode,
 					 struct proc_dir_entry *parent)
 {
 	struct proc_dir_entry *ent;
@@ -729,7 +729,7 @@ struct proc_dir_entry *create_proc_entry(const char *name, mode_t mode,
 }
 EXPORT_SYMBOL(create_proc_entry);
 
-struct proc_dir_entry *proc_create_data(const char *name, mode_t mode,
+struct proc_dir_entry *proc_create_data(const char *name, umode_t mode,
 					struct proc_dir_entry *parent,
 					const struct file_operations *proc_fops,
 					void *data)
@@ -766,7 +766,7 @@ EXPORT_SYMBOL(proc_create_data);
 
 static void free_proc_entry(struct proc_dir_entry *de)
 {
-	release_inode_number(de->low_ino);
+	proc_free_inum(de->low_ino);
 
 	if (S_ISLNK(de->mode))
 		kfree(de->data);

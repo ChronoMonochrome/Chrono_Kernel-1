@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* -*- mode: c; c-basic-offset: 8; -*-
  * vim: noexpandtab sw=8 ts=8 sts=0:
  *
@@ -188,7 +185,7 @@ bail:
 	return ret;
 }
 
-static struct inode *ocfs2_get_init_inode(struct inode *dir, int mode)
+static struct inode *ocfs2_get_init_inode(struct inode *dir, umode_t mode)
 {
 	struct inode *inode;
 
@@ -605,7 +602,7 @@ static int ocfs2_mknod_locked(struct ocfs2_super *osb,
 
 static int ocfs2_mkdir(struct inode *dir,
 		       struct dentry *dentry,
-		       int mode)
+		       umode_t mode)
 {
 	int ret;
 
@@ -653,15 +650,7 @@ static int ocfs2_link(struct dentry *old_dentry,
 			 dentry->d_name.len, dentry->d_name.name);
 
 	if (S_ISDIR(inode->i_mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	dquot_initialize(dir);
 
@@ -824,15 +813,7 @@ static int ocfs2_unlink(struct inode *dir,
 	BUG_ON(dentry->d_parent->d_inode != dir);
 
 	if (inode == osb->root_inode)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	status = ocfs2_inode_lock_nested(dir, &parent_node_bh, 1,
 					 OI_LS_PARENT);
@@ -1072,7 +1053,7 @@ static int ocfs2_rename(struct inode *old_dir,
 	handle_t *handle = NULL;
 	struct buffer_head *old_dir_bh = NULL;
 	struct buffer_head *new_dir_bh = NULL;
-	nlink_t old_dir_nlink = old_dir->i_nlink;
+	u32 old_dir_nlink = old_dir->i_nlink;
 	struct ocfs2_dinode *old_di;
 	struct ocfs2_dir_lookup_result old_inode_dot_dot_res = { NULL, };
 	struct ocfs2_dir_lookup_result target_lookup_res = { NULL, };
