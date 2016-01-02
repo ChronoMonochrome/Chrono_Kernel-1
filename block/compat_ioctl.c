@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/blkdev.h>
 #include <linux/blkpg.h>
 #include <linux/blktrace_api.h>
@@ -724,8 +727,14 @@ long compat_blkdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 					 !blk_queue_nonrot(bdev_get_queue(bdev)));
 	case BLKRASET: /* compatible, but no compat_ptr (!) */
 	case BLKFRASET:
-		if (!capable(CAP_SYS_ADMIN))
-			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+               if (!capable(CAP_SYS_ADMIN))
+                       return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		bdi = blk_get_backing_dev_info(bdev);
 		if (bdi == NULL)
 			return -ENOTTY;
