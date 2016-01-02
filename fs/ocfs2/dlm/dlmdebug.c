@@ -30,7 +30,7 @@
 #include <linux/sysctl.h>
 #include <linux/spinlock.h>
 #include <linux/debugfs.h>
-#include <linux/export.h>
+#include <linux/module.h>
 
 #include "cluster/heartbeat.h"
 #include "cluster/nodemanager.h"

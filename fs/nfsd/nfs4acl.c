@@ -36,7 +36,7 @@
 
 #include <linux/slab.h>
 #include <linux/nfs_fs.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include "acl.h"
 
 

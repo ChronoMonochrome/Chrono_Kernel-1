@@ -31,7 +31,7 @@
  *  such damages.
  */
 
-#include <linux/export.h>
+#include <linux/module.h>
 #include "pnfs.h"
 
 #define NFSDBG_FACILITY		NFSDBG_PNFS
