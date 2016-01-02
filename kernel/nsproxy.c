@@ -271,8 +271,10 @@ out:
 	return err;
 }
 
-int __init nsproxy_cache_init(void)
+static int __init nsproxy_cache_init(void)
 {
 	nsproxy_cachep = KMEM_CACHE(nsproxy, SLAB_PANIC);
 	return 0;
 }
+
+module_init(nsproxy_cache_init);
