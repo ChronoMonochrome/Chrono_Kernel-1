@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * AppArmor security module
  *
@@ -119,6 +116,9 @@ unsigned int aa_dfa_match_len(struct aa_dfa *dfa, unsigned int start,
 			      const char *str, int len);
 unsigned int aa_dfa_match(struct aa_dfa *dfa, unsigned int start,
 			  const char *str);
+unsigned int aa_dfa_next(struct aa_dfa *dfa, unsigned int state,
+			 const char c);
+
 void aa_dfa_free_kref(struct kref *kref);
 
 /**

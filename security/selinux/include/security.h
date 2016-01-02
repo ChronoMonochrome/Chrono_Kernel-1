@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Security server interface.
  *
@@ -58,6 +55,7 @@
 #define SE_SBINITIALIZED	0x10
 #define SE_SBPROC		0x20
 #define SE_SBLABELSUPP	0x40
+#define SE_SBGENFS	0x80
 
 #define CONTEXT_STR	"context="
 #define FSCONTEXT_STR	"fscontext="

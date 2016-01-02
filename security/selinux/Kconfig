@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 config SECURITY_SELINUX
 	bool "NSA SELinux Support"
 	depends on SECURITY_NETWORK && AUDIT && NET && INET

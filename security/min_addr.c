@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/init.h>
 #include <linux/mm.h>
 #include <linux/security.h>
@@ -37,15 +34,7 @@ int mmap_min_addr_handler(struct ctl_table *table, int write,
 	int ret;
 
 	if (write && !capable(CAP_SYS_RAWIO))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
 

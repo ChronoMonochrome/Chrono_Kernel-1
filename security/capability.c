@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  Capabilities Linux Security Module
  *
@@ -97,8 +94,8 @@ static int cap_sb_statfs(struct dentry *dentry)
 	return 0;
 }
 
-static int cap_sb_mount(char *dev_name, struct path *path, char *type,
-			unsigned long flags, void *data)
+static int cap_sb_mount(const char *dev_name, struct path *path,
+			const char *type, unsigned long flags, void *data)
 {
 	return 0;
 }
@@ -171,7 +168,7 @@ static int cap_inode_symlink(struct inode *inode, struct dentry *dentry,
 }
 
 static int cap_inode_mkdir(struct inode *inode, struct dentry *dentry,
-			   int mask)
+			   umode_t mask)
 {
 	return 0;
 }
@@ -258,13 +255,13 @@ static void cap_inode_getsecid(const struct inode *inode, u32 *secid)
 }
 
 #ifdef CONFIG_SECURITY_PATH
-static int cap_path_mknod(struct path *dir, struct dentry *dentry, int mode,
+static int cap_path_mknod(struct path *dir, struct dentry *dentry, umode_t mode,
 			  unsigned int dev)
 {
 	return 0;
 }
 
-static int cap_path_mkdir(struct path *dir, struct dentry *dentry, int mode)
+static int cap_path_mkdir(struct path *dir, struct dentry *dentry, umode_t mode)
 {
 	return 0;
 }
@@ -302,8 +299,7 @@ static int cap_path_truncate(struct path *path)
 	return 0;
 }
 
-static int cap_path_chmod(struct dentry *dentry, struct vfsmount *mnt,
-			  mode_t mode)
+static int cap_path_chmod(struct path *path, umode_t mode)
 {
 	return 0;
 }
@@ -380,6 +376,10 @@ static int cap_dentry_open(struct file *file, const struct cred *cred)
 static int cap_task_create(unsigned long clone_flags)
 {
 	return 0;
+}
+
+static void cap_task_free(struct task_struct *task)
+{
 }
 
 static int cap_cred_alloc_blank(struct cred *cred, gfp_t gfp)
@@ -982,6 +982,7 @@ void __init security_fixup_ops(struct security_operations *ops)
 	set_to_cap_if_null(ops, file_receive);
 	set_to_cap_if_null(ops, dentry_open);
 	set_to_cap_if_null(ops, task_create);
+	set_to_cap_if_null(ops, task_free);
 	set_to_cap_if_null(ops, cred_alloc_blank);
 	set_to_cap_if_null(ops, cred_free);
 	set_to_cap_if_null(ops, cred_prepare);
@@ -1026,7 +1027,6 @@ void __init security_fixup_ops(struct security_operations *ops)
 	set_to_cap_if_null(ops, sem_semctl);
 	set_to_cap_if_null(ops, sem_semop);
 	set_to_cap_if_null(ops, netlink_send);
-	set_to_cap_if_null(ops, netlink_recv);
 	set_to_cap_if_null(ops, d_instantiate);
 	set_to_cap_if_null(ops, getprocattr);
 	set_to_cap_if_null(ops, setprocattr);

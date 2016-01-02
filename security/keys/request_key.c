@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Request a key from userspace
  *
  * Copyright (C) 2004-2007 Red Hat, Inc. All Rights Reserved.
@@ -94,7 +91,7 @@ static void umh_keys_cleanup(struct subprocess_info *info)
  * Call a usermode helper with a specific session keyring.
  */
 static int call_usermodehelper_keys(char *path, char **argv, char **envp,
-			 struct key *session_keyring, enum umh_wait wait)
+					struct key *session_keyring, int wait)
 {
 	gfp_t gfp_mask = (wait == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
 	struct subprocess_info *info =

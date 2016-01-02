@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * AppArmor security module
  *
@@ -19,6 +16,7 @@
 #include "include/context.h"
 #include "include/policy.h"
 #include "include/domain.h"
+#include "include/procattr.h"
 
 
 /**

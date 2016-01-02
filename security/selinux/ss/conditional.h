@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Authors: Karl MacMillan <kmacmillan@tresys.com>
  *          Frank Mayer <mayerf@tresys.com>
  *

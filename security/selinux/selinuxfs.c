@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Updated: Karl MacMillan <kmacmillan@tresys.com>
  *
  *	Added conditional policy language extensions
@@ -255,15 +252,7 @@ static int sel_mmap_handle_status(struct file *filp,
 		return -EIO;
 	/* disallow writable mapping */
 	if (vma->vm_flags & VM_WRITE)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	/* disallow mprotect() turns it into writable */
 	vma->vm_flags &= ~VM_MAYWRITE;
 

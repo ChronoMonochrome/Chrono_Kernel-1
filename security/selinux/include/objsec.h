@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  NSA Security-Enhanced Linux (SELinux) security module
  *

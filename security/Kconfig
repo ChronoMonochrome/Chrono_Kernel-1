@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #
 # Security configuration
 #
@@ -41,7 +38,9 @@ config TRUSTED_KEYS
 
 config ENCRYPTED_KEYS
 	tristate "ENCRYPTED KEYS"
-	depends on KEYS && TRUSTED_KEYS
+	depends on KEYS
+	select CRYPTO
+	select CRYPTO_HMAC
 	select CRYPTO_AES
 	select CRYPTO_CBC
 	select CRYPTO_SHA256
@@ -72,6 +71,18 @@ config KEYS_DEBUG_PROC_KEYS
 	  the resulting table.
 
 	  If you are unsure as to whether this is required, answer N.
+
+config SECURITY_DMESG_RESTRICT
+	bool "Restrict unprivileged access to the kernel syslog"
+	default n
+	help
+	  This enforces restrictions on unprivileged users reading the kernel
+	  syslog via dmesg(8).
+
+	  If this option is not selected, no restrictions will be enforced
+	  unless the dmesg_restrict sysctl is explicitly set to (1).
+
+	  If you are unsure how to answer this question, answer N.
 
 config SECURITY
 	bool "Enable different security models"
@@ -176,8 +187,9 @@ source security/selinux/Kconfig
 source security/smack/Kconfig
 source security/tomoyo/Kconfig
 source security/apparmor/Kconfig
+source security/yama/Kconfig
 
-source security/integrity/ima/Kconfig
+source security/integrity/Kconfig
 
 choice
 	prompt "Default security module"
@@ -185,6 +197,7 @@ choice
 	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
 	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
 	default DEFAULT_SECURITY_APPARMOR if SECURITY_APPARMOR
+	default DEFAULT_SECURITY_YAMA if SECURITY_YAMA
 	default DEFAULT_SECURITY_DAC
 
 	help
@@ -203,6 +216,9 @@ choice
 	config DEFAULT_SECURITY_APPARMOR
 		bool "AppArmor" if SECURITY_APPARMOR=y
 
+	config DEFAULT_SECURITY_YAMA
+		bool "Yama" if SECURITY_YAMA=y
+
 	config DEFAULT_SECURITY_DAC
 		bool "Unix Discretionary Access Controls"
 
@@ -214,6 +230,7 @@ config DEFAULT_SECURITY
 	default "smack" if DEFAULT_SECURITY_SMACK
 	default "tomoyo" if DEFAULT_SECURITY_TOMOYO
 	default "apparmor" if DEFAULT_SECURITY_APPARMOR
+	default "yama" if DEFAULT_SECURITY_YAMA
 	default "" if DEFAULT_SECURITY_DAC
 
 endmenu

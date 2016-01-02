@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * Network node table
  *
@@ -224,7 +221,7 @@ static int sel_netnode_sid_slow(void *addr, u16 family, u32 *sid)
 	case PF_INET6:
 		ret = security_node_sid(PF_INET6,
 					addr, sizeof(struct in6_addr), sid);
-		ipv6_addr_copy(&new->nsec.addr.ipv6, addr);
+		new->nsec.addr.ipv6 = *(struct in6_addr *)addr;
 		break;
 	default:
 		BUG();
@@ -239,13 +236,9 @@ static int sel_netnode_sid_slow(void *addr, u16 family, u32 *sid)
 out:
 	spin_unlock_bh(&sel_netnode_lock);
 	if (unlikely(ret)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "SELinux: failure in sel_netnode_sid_slow(),"
 		       " unable to determine network node label\n");
-#else
-		;
-#endif
 		kfree(new);
 	}
 	return ret;
