@@ -93,37 +93,13 @@ struct plist_node {
 	struct list_head	node_list;
 };
 
-#ifdef CONFIG_DEBUG_PI_LIST
-# define PLIST_HEAD_LOCK_INIT(_lock)		.spinlock = _lock
-# define PLIST_HEAD_LOCK_INIT_RAW(_lock)	.rawlock = _lock
-#else
-# define PLIST_HEAD_LOCK_INIT(_lock)
-# define PLIST_HEAD_LOCK_INIT_RAW(_lock)
-#endif
-
-#define _PLIST_HEAD_INIT(head)				\
-	.node_list = LIST_HEAD_INIT((head).node_list)
-
 /**
  * PLIST_HEAD_INIT - static struct plist_head initializer
  * @head:	struct plist_head variable name
- * @_lock:	lock to initialize for this list
  */
-#define PLIST_HEAD_INIT(head, _lock)			\
+#define PLIST_HEAD_INIT(head)				\
 {							\
-	_PLIST_HEAD_INIT(head),				\
-	PLIST_HEAD_LOCK_INIT(&(_lock))			\
-}
-
-/**
- * PLIST_HEAD_INIT_RAW - static struct plist_head initializer
- * @head:	struct plist_head variable name
- * @_lock:	lock to initialize for this list
- */
-#define PLIST_HEAD_INIT_RAW(head, _lock)		\
-{							\
-	_PLIST_HEAD_INIT(head),				\
-	PLIST_HEAD_LOCK_INIT_RAW(&(_lock))		\
+	.node_list = LIST_HEAD_INIT((head).node_list)	\
 }
 
 /**
