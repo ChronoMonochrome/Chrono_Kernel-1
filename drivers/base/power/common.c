@@ -8,7 +8,8 @@
 
 #include <linux/init.h>
 #include <linux/kernel.h>
-#include <linux/module.h>
+#include <linux/device.h>
+#include <linux/export.h>
 #include <linux/slab.h>
 #include <linux/pm_clock.h>
 
