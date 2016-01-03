@@ -1057,7 +1057,7 @@ NORET_TYPE void do_exit(long code)
 	 * Release threadgroup and make sure we are holding no locks.
 	 */
 	threadgroup_change_done(tsk);
-	debug_check_no_locks_held(tsk);
+	debug_check_no_locks_held();
 
 	/*
 	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed
