@@ -4,7 +4,7 @@
 
 #include <linux/device.h>
 #include <linux/string.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/pm_qos.h>
 #include <linux/pm_runtime.h>
 #include <linux/atomic.h>
