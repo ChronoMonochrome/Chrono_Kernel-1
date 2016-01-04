@@ -1786,8 +1786,15 @@ static int min_cpufreq_ddr_opp = 25;
 
 static DEFINE_MUTEX(requirements_update_mutex);
 
-extern int get_min_cpufreq(void);
-extern int get_max_cpufreq(void);
+static int get_min_cpufreq(void)
+{
+	return 200000;
+}
+
+static int get_max_cpufreq(void)
+{
+	return 1200000;
+}
 
 // when ape100_mali_threshold is enabled, only GPU can boost APE. 
 // It can save power at the cost of I/O throughput and RAM performance.
