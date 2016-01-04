@@ -9,7 +9,10 @@
 #include <linux/poll.h>
 #include <linux/proc_fs.h>
 #include <linux/security.h>
+#include <linux/sched.h>
 #include <linux/namei.h>
+#include <linux/mm.h>
+#include <linux/module.h>
 #include "internal.h"
 
 static const struct dentry_operations proc_sys_dentry_operations;
