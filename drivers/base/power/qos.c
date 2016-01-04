@@ -128,7 +128,7 @@ static int dev_pm_qos_constraints_allocate(struct device *dev)
 	}
 	BLOCKING_INIT_NOTIFIER_HEAD(n);
 
-	plist_head_init(&c->list, &dev->power.lock);
+	plist_head_init(&c->list);
 	c->target_value = PM_QOS_DEV_LAT_DEFAULT_VALUE;
 	c->default_value = PM_QOS_DEV_LAT_DEFAULT_VALUE;
 	c->type = PM_QOS_MIN;

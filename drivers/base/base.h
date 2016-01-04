@@ -93,7 +93,7 @@ extern int hypervisor_init(void);
 static inline int hypervisor_init(void) { return 0; }
 #endif
 extern int platform_bus_init(void);
-extern int cpu_dev_init(void);
+extern void __init cpu_dev_init(void);
 
 extern int bus_add_device(struct device *dev);
 extern void bus_probe_device(struct device *dev);
