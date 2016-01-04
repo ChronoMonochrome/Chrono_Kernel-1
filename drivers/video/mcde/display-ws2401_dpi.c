@@ -462,7 +462,7 @@ static int ws2401_display_update(struct mcde_display_device *ddev,
 		}
 	}
 
-	ret = mcde_chnl_update(ddev->chnl_state, tripple_buffer);
+	ret = mcde_chnl_update(ddev->chnl_state, &ddev->update_area, tripple_buffer);
 	if (ret < 0) {
 		dev_warn(&ddev->dev, "%s:Failed to update channel\n", __func__);
 		return ret;

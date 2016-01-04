@@ -275,8 +275,8 @@ static struct mcde_display_device generic_display0 = {
 	.chnl_id = MCDE_CHNL_A,
 	.fifo = MCDE_FIFO_A,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-	.x_res_padding = 0,
-	.y_res_padding = 0,
+	//.x_res_padding = 0,
+	//.y_res_padding = 0,
 	.native_x_res = 480,
 	.native_y_res = 800,
 
@@ -354,6 +354,7 @@ static struct notifier_block display_nb = {
 static void update_mcde_opp(struct device *dev,
 					struct mcde_opp_requirements *reqs)
 {
+#if 0
 	static s32 requested_qos;
 	s32 req_ape = PRCMU_QOS_DEFAULT_VALUE;
 	static bool update_first = true;
@@ -399,7 +400,7 @@ if ((reqs->num_rot_channels && reqs->num_overlays > 1) ||
 			update_first = false;
 		}
 	}
-	
+#endif	
 }
 
 int lcdclk_usr = 0;
@@ -448,16 +449,16 @@ int __init init_codina_display_devices(void)
 	 * The pixel fetcher FIFO is 128*64bit = 8192bits = 1024bytes.
 	 * Overlay 0 is assumed 32bpp and overlay 1 is assumed 16bpp
 	 */
-    pdata->pixelfetchwtrmrk[0] = 160; /* 160 -> 160px*32bpp/8=640bytes */
-	pdata->pixelfetchwtrmrk[1] = 192; /* 192 -> 192px*16bpp/8=384bytes */
+    	//pdata->pixelfetchwtrmrk[0] = 160; /* 160 -> 160px*32bpp/8=640bytes */
+	//pdata->pixelfetchwtrmrk[1] = 192; /* 192 -> 192px*16bpp/8=384bytes */
 #else /* 24 bit overlay */
-	u32 fifo = (1024*8 - 8 * BITS_PER_WORD) / 7;
-	fifo &= ~(BITS_PER_WORD - 1);
-	pdata->pixelfetchwtrmrk[0] = fifo * 4 / 32;	/* LCD 32bpp */
-	pdata->pixelfetchwtrmrk[1] = fifo * 3 / 24;	/* LCD 24bpp */
+	//u32 fifo = (1024*8 - 8 * BITS_PER_WORD) / 7;
+	//fifo &= ~(BITS_PER_WORD - 1);
+	//pdata->pixelfetchwtrmrk[0] = fifo * 4 / 32;	/* LCD 32bpp */
+	//pdata->pixelfetchwtrmrk[1] = fifo * 3 / 24;	/* LCD 24bpp */
 #endif
 	}
-	pdata->update_opp = update_mcde_opp;
+	//pdata->update_opp = update_mcde_opp;
 
 	if (lcd_type == LCD_PANEL_TYPE_SMD){
 		generic_display0.name = LCD_DRIVER_NAME_WS2401;
