@@ -291,25 +291,6 @@ static void alarmtimer_freezerset(ktime_t absexp, enum alarmtimer_type type)
 	spin_unlock_irqrestore(&freezer_delta_lock, flags);
 }
 
-
-/**
- * alarm_init - Initialize an alarm structure
- * @alarm: ptr to alarm to be initialized
- * @type: the type of the alarm
- * @function: callback that is run when the alarm fires
- */
-void alarm_init(struct alarm *alarm, enum alarmtimer_type type,
-		enum alarmtimer_restart (*function)(struct alarm *, ktime_t))
-{
-	timerqueue_init(&alarm->node);
-	hrtimer_init(&alarm->timer, alarm_bases[type].base_clockid,
-			HRTIMER_MODE_ABS);
-	alarm->timer.function = alarmtimer_fired;
-	alarm->function = function;
-	alarm->type = type;
-	alarm->state = ALARMTIMER_STATE_INACTIVE;
-}
-
 /**
  * alarm_start - Sets an absolute alarm to fire
  * @alarm: ptr to alarm to set
@@ -354,45 +335,6 @@ void alarm_restart(struct alarm *alarm)
 	alarmtimer_enqueue(base, alarm);
 	spin_unlock_irqrestore(&base->lock, flags);
 }
-
-/**
- * alarm_try_to_cancel - Tries to cancel an alarm timer
- * @alarm: ptr to alarm to be canceled
- *
- * Returns 1 if the timer was canceled, 0 if it was not running,
- * and -1 if the callback was running
- */
-int alarm_try_to_cancel(struct alarm *alarm)
-{
-	struct alarm_base *base = &alarm_bases[alarm->type];
-	unsigned long flags;
-	int ret;
-
-	spin_lock_irqsave(&base->lock, flags);
-	ret = hrtimer_try_to_cancel(&alarm->timer);
-	if (ret >= 0)
-		alarmtimer_remove(base, alarm);
-	spin_unlock_irqrestore(&base->lock, flags);
-	return ret;
-}
-
-
-/**
- * alarm_cancel - Spins trying to cancel an alarm timer until it is done
- * @alarm: ptr to alarm to be canceled
- *
- * Returns 1 if the timer was canceled, 0 if it was not active.
- */
-int alarm_cancel(struct alarm *alarm)
-{
-	for (;;) {
-		int ret = alarm_try_to_cancel(alarm);
-		if (ret >= 0)
-			return ret;
-		cpu_relax();
-	}
-}
-
 
 u64 alarm_forward(struct alarm *alarm, ktime_t now, ktime_t interval)
 {
