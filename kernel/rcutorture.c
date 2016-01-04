@@ -33,7 +33,7 @@
 #include <linux/rcupdate.h>
 #include <linux/interrupt.h>
 #include <linux/sched.h>
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 #include <linux/bitops.h>
 #include <linux/completion.h>
 #include <linux/moduleparam.h>
@@ -1409,7 +1409,7 @@ rcu_torture_shutdown(void *arg)
  * Execute random CPU-hotplug operations at the interval specified
  * by the onoff_interval.
  */
-static int
+static int __cpuinit
 rcu_torture_onoff(void *arg)
 {
 	int cpu;
@@ -1462,7 +1462,7 @@ rcu_torture_onoff(void *arg)
 	return 0;
 }
 
-static int
+static int __cpuinit
 rcu_torture_onoff_init(void)
 {
 	int ret;
@@ -1534,12 +1534,15 @@ static int __cpuinit rcu_torture_stall(void *args)
 /* Spawn CPU-stall kthread, if stall_cpu specified. */
 static int __init rcu_torture_stall_init(void)
 {
+	int ret;
+
 	if (stall_cpu <= 0)
 		return 0;
 	stall_task = kthread_run(rcu_torture_stall, NULL, "rcu_torture_stall");
 	if (IS_ERR(stall_task)) {
+		ret = PTR_ERR(stall_task);
 		stall_task = NULL;
-		return PTR_ERR(stall_task);
+		return ret;
 	}
 	return 0;
 }

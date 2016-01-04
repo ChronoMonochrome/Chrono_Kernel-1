@@ -22,7 +22,6 @@
  * For detailed explanation of Read-Copy Update mechanism see -
  *		Documentation/RCU
  */
-#include <linux/moduleparam.h>
 #include <linux/completion.h>
 #include <linux/interrupt.h>
 #include <linux/notifier.h>
@@ -89,12 +88,12 @@ void rcu_idle_enter(void)
 
 	local_irq_save(flags);
 	oldval = rcu_dynticks_nesting;
-	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NESTING_MASK) == 0);
-	if ((rcu_dynticks_nesting & DYNTICK_TASK_NESTING_MASK) ==
-	    DYNTICK_TASK_NESTING_VALUE)
+	WARN_ON_ONCE((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) == 0);
+	if ((rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK) ==
+	    DYNTICK_TASK_NEST_VALUE)
 		rcu_dynticks_nesting = 0;
 	else
-		rcu_dynticks_nesting  -= DYNTICK_TASK_NESTING_VALUE;
+		rcu_dynticks_nesting  -= DYNTICK_TASK_NEST_VALUE;
 	rcu_idle_enter_common(oldval);
 	local_irq_restore(flags);
 }
@@ -148,8 +147,8 @@ void rcu_idle_exit(void)
 	local_irq_save(flags);
 	oldval = rcu_dynticks_nesting;
 	WARN_ON_ONCE(rcu_dynticks_nesting < 0);
-	if (rcu_dynticks_nesting & DYNTICK_TASK_NESTING_MASK)
-		rcu_dynticks_nesting += DYNTICK_TASK_NESTING_VALUE;
+	if (rcu_dynticks_nesting & DYNTICK_TASK_NEST_MASK)
+		rcu_dynticks_nesting += DYNTICK_TASK_NEST_VALUE;
 	else
 		rcu_dynticks_nesting = DYNTICK_TASK_EXIT_IDLE;
 	rcu_idle_exit_common(oldval);
@@ -330,9 +329,10 @@ static void rcu_process_callbacks(struct softirq_action *unused)
  */
 void synchronize_sched(void)
 {
-	rcu_lockdep_assert(!lock_is_held(&rcu_sched_lock_map),
-			   "Illegal grace period in RCU read-side "
-			   "critical section");
+	rcu_lockdep_assert(!lock_is_held(&rcu_bh_lock_map) &&
+			   !lock_is_held(&rcu_lock_map) &&
+			   !lock_is_held(&rcu_sched_lock_map),
+			   "Illegal synchronize_sched() in RCU read-side critical section");
 	cond_resched();
 }
 EXPORT_SYMBOL_GPL(synchronize_sched);

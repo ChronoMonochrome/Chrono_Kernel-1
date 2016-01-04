@@ -44,6 +44,7 @@
 #include <linux/stringify.h>
 #include <linux/bitops.h>
 #include <linux/gfp.h>
+#include <linux/kmemcheck.h>
 
 #include <asm/sections.h>
 
@@ -96,8 +97,13 @@ static int graph_lock(void)
 
 static inline int graph_unlock(void)
 {
-	if (debug_locks && !arch_spin_is_locked(&lockdep_lock))
+	if (debug_locks && !arch_spin_is_locked(&lockdep_lock)) {
+		/*
+		 * The lockdep graph lock isn't locked while we expect it to
+		 * be, we're confused now, bye!
+		 */
 		return DEBUG_LOCKS_WARN_ON(1);
+	}
 
 	current->lockdep_recursion--;
 	arch_spin_unlock(&lockdep_lock);
@@ -134,6 +140,9 @@ static struct lock_class lock_classes[MAX_LOCKDEP_KEYS];
 static inline struct lock_class *hlock_class(struct held_lock *hlock)
 {
 	if (!hlock->class_idx) {
+		/*
+		 * Someone passed in garbage, we give up.
+		 */
 		DEBUG_LOCKS_WARN_ON(1);
 		return NULL;
 	}
@@ -491,36 +500,32 @@ void get_usage_chars(struct lock_class *class, char usage[LOCK_USAGE_CHARS])
 	usage[i] = '\0';
 }
 
-static int __print_lock_name(struct lock_class *class)
+static void __print_lock_name(struct lock_class *class)
 {
 	char str[KSYM_NAME_LEN];
 	const char *name;
 
 	name = class->name;
-	if (!name)
-		name = __get_key_name(class->key, str);
-
-	return printk("%s", name);
-}
-
-static void print_lock_name(struct lock_class *class)
-{
-	char str[KSYM_NAME_LEN], usage[LOCK_USAGE_CHARS];
-	const char *name;
-
-	get_usage_chars(class, usage);
-
-	name = class->name;
 	if (!name) {
 		name = __get_key_name(class->key, str);
-		printk(" (%s", name);
+		printk("%s", name);
 	} else {
-		printk(" (%s", name);
+		printk("%s", name);
 		if (class->name_version > 1)
 			printk("#%d", class->name_version);
 		if (class->subclass)
 			printk("/%d", class->subclass);
 	}
+}
+
+static void print_lock_name(struct lock_class *class)
+{
+	char usage[LOCK_USAGE_CHARS];
+
+	get_usage_chars(class, usage);
+
+	printk(" (");
+	__print_lock_name(class);
 	printk("){%s}", usage);
 }
 
@@ -560,11 +565,12 @@ static void lockdep_print_held_locks(struct task_struct *curr)
 	}
 }
 
-static void print_kernel_version(void)
+static void print_kernel_ident(void)
 {
-	printk("%s %.*s\n", init_utsname()->release,
+	printk("%s %.*s %s\n", init_utsname()->release,
 		(int)strcspn(init_utsname()->version, " "),
-		init_utsname()->version);
+		init_utsname()->version,
+		print_tainted());
 }
 
 static int very_verbose(struct lock_class *class)
@@ -689,6 +695,10 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
 	 */
 	list_for_each_entry(class, hash_head, hash_entry) {
 		if (class->key == key) {
+			/*
+			 * Huh! same key, different name? Did someone trample
+			 * on some memory? We're most confused.
+			 */
 			WARN_ON_ONCE(class->name != lock->name);
 			return class;
 		}
@@ -712,7 +722,7 @@ register_lock_class(struct lockdep_map *lock, unsigned int subclass, int force)
 
 	class = look_up_lock_class(lock, subclass);
 	if (likely(class))
-		return class;
+		goto out_set_class_cache;
 
 	/*
 	 * Debug-check: all keys must be persistent!
@@ -797,11 +807,16 @@ out_unlock_set:
 	graph_unlock();
 	raw_local_irq_restore(flags);
 
+out_set_class_cache:
 	if (!subclass || force)
 		lock->class_cache[0] = class;
 	else if (subclass < NR_LOCKDEP_CACHING_CLASSES)
 		lock->class_cache[subclass] = class;
 
+	/*
+	 * Hash collision, did we smoke some? We found a class with a matching
+	 * hash but the subclass -- which is hashed in -- didn't match.
+	 */
 	if (DEBUG_LOCKS_WARN_ON(class->subclass != subclass))
 		return NULL;
 
@@ -928,7 +943,7 @@ static inline void mark_lock_accessed(struct lock_list *lock,
 	unsigned long nr;
 
 	nr = lock - list_entries;
-	WARN_ON(nr >= nr_list_entries);
+	WARN_ON(nr >= nr_list_entries); /* Out-of-bounds, input fail */
 	lock->parent = parent;
 	lock->class->dep_gen_id = lockdep_dependency_gen_id;
 }
@@ -938,7 +953,7 @@ static inline unsigned long lock_accessed(struct lock_list *lock)
 	unsigned long nr;
 
 	nr = lock - list_entries;
-	WARN_ON(nr >= nr_list_entries);
+	WARN_ON(nr >= nr_list_entries); /* Out-of-bounds, input fail */
 	return lock->class->dep_gen_id == lockdep_dependency_gen_id;
 }
 
@@ -1134,7 +1149,7 @@ print_circular_bug_header(struct lock_list *entry, unsigned int depth,
 	printk("\n");
 	printk("======================================================\n");
 	printk("[ INFO: possible circular locking dependency detected ]\n");
-	print_kernel_version();
+	print_kernel_ident();
 	printk("-------------------------------------------------------\n");
 	printk("%s/%d is trying to acquire lock:\n",
 		curr->comm, task_pid_nr(curr));
@@ -1199,6 +1214,9 @@ static noinline int print_bfs_bug(int ret)
 	if (!debug_locks_off_graph_unlock())
 		return 0;
 
+	/*
+	 * Breadth-first-search failed, graph got corrupted?
+	 */
 	WARN(1, "lockdep bfs error:%d\n", ret);
 
 	return 0;
@@ -1470,7 +1488,7 @@ print_bad_irq_dependency(struct task_struct *curr,
 	printk("======================================================\n");
 	printk("[ INFO: %s-safe -> %s-unsafe lock order detected ]\n",
 		irqclass, irqclass);
-	print_kernel_version();
+	print_kernel_ident();
 	printk("------------------------------------------------------\n");
 	printk("%s/%d [HC%u[%lu]:SC%u[%lu]:HE%u:SE%u] is trying to acquire:\n",
 		curr->comm, task_pid_nr(curr),
@@ -1699,7 +1717,7 @@ print_deadlock_bug(struct task_struct *curr, struct held_lock *prev,
 	printk("\n");
 	printk("=============================================\n");
 	printk("[ INFO: possible recursive locking detected ]\n");
-	print_kernel_version();
+	print_kernel_ident();
 	printk("---------------------------------------------\n");
 	printk("%s/%d is trying to acquire lock:\n",
 		curr->comm, task_pid_nr(curr));
@@ -1949,6 +1967,11 @@ out_bug:
 	if (!debug_locks_off_graph_unlock())
 		return 0;
 
+	/*
+	 * Clearly we all shouldn't be here, but since we made it we
+	 * can reliable say we messed up our state. See the above two
+	 * gotos for reasons why we could possibly end up here.
+	 */
 	WARN_ON(1);
 
 	return 0;
@@ -1980,6 +2003,11 @@ static inline int lookup_chain_cache(struct task_struct *curr,
 	struct held_lock *hlock_curr, *hlock_next;
 	int i, j;
 
+	/*
+	 * We might need to take the graph lock, ensure we've got IRQs
+	 * disabled to make this an IRQ-safe lock.. for recursion reasons
+	 * lockdep won't complain about its own locking errors.
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
 		return 0;
 	/*
@@ -2131,6 +2159,10 @@ static void check_chain_key(struct task_struct *curr)
 		hlock = curr->held_locks + i;
 		if (chain_key != hlock->prev_chain_key) {
 			debug_locks_off();
+			/*
+			 * We got mighty confused, our chain keys don't match
+			 * with what we expect, someone trample on our task state?
+			 */
 			WARN(1, "hm#1, depth: %u [%u], %016Lx != %016Lx\n",
 				curr->lockdep_depth, i,
 				(unsigned long long)chain_key,
@@ -2138,6 +2170,9 @@ static void check_chain_key(struct task_struct *curr)
 			return;
 		}
 		id = hlock->class_idx - 1;
+		/*
+		 * Whoops ran out of static storage again?
+		 */
 		if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
 			return;
 
@@ -2149,6 +2184,10 @@ static void check_chain_key(struct task_struct *curr)
 	}
 	if (chain_key != curr->curr_chain_key) {
 		debug_locks_off();
+		/*
+		 * More smoking hash instead of calculating it, damn see these
+		 * numbers float.. I bet that a pink elephant stepped on my memory.
+		 */
 		WARN(1, "hm#2, depth: %u [%u], %016Lx != %016Lx\n",
 			curr->lockdep_depth, i,
 			(unsigned long long)chain_key,
@@ -2185,7 +2224,7 @@ print_usage_bug(struct task_struct *curr, struct held_lock *this,
 	printk("\n");
 	printk("=================================\n");
 	printk("[ INFO: inconsistent lock state ]\n");
-	print_kernel_version();
+	print_kernel_ident();
 	printk("---------------------------------\n");
 
 	printk("inconsistent {%s} -> {%s} usage.\n",
@@ -2250,7 +2289,7 @@ print_irq_inversion_bug(struct task_struct *curr,
 	printk("\n");
 	printk("=========================================================\n");
 	printk("[ INFO: possible irq lock inversion dependency detected ]\n");
-	print_kernel_version();
+	print_kernel_ident();
 	printk("---------------------------------------------------------\n");
 	printk("%s/%d just changed the state of lock:\n",
 		curr->comm, task_pid_nr(curr));
@@ -2475,6 +2514,9 @@ mark_held_locks(struct task_struct *curr, enum mark_type mark)
 
 		BUG_ON(usage_bit >= LOCK_USAGE_STATES);
 
+		if (hlock_class(hlock)->key == __lockdep_no_validate__.subkeys)
+			continue;
+
 		if (!mark_lock(curr, hlock, usage_bit))
 			return 0;
 	}
@@ -2485,34 +2527,13 @@ mark_held_locks(struct task_struct *curr, enum mark_type mark)
 /*
  * Hardirqs will be enabled:
  */
-void trace_hardirqs_on_caller(unsigned long ip)
+static void __trace_hardirqs_on_caller(unsigned long ip)
 {
 	struct task_struct *curr = current;
 
-	time_hardirqs_on(CALLER_ADDR0, ip);
-
-	if (unlikely(!debug_locks || current->lockdep_recursion))
-		return;
-
-	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
-		return;
-
-	if (unlikely(curr->hardirqs_enabled)) {
-		/*
-		 * Neither irq nor preemption are disabled here
-		 * so this is racy by nature but losing one hit
-		 * in a stat is not a big deal.
-		 */
-		__debug_atomic_inc(redundant_hardirqs_on);
-		return;
-	}
 	/* we'll do an OFF -> ON transition: */
 	curr->hardirqs_enabled = 1;
 
-	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
-		return;
-	if (DEBUG_LOCKS_WARN_ON(current->hardirq_context))
-		return;
 	/*
 	 * We are going to turn hardirqs on, so set the
 	 * usage bit for all held locks:
@@ -2531,6 +2552,49 @@ void trace_hardirqs_on_caller(unsigned long ip)
 	curr->hardirq_enable_ip = ip;
 	curr->hardirq_enable_event = ++curr->irq_events;
 	debug_atomic_inc(hardirqs_on_events);
+}
+
+void trace_hardirqs_on_caller(unsigned long ip)
+{
+	time_hardirqs_on(CALLER_ADDR0, ip);
+
+	if (unlikely(!debug_locks || current->lockdep_recursion))
+		return;
+
+	if (unlikely(current->hardirqs_enabled)) {
+		/*
+		 * Neither irq nor preemption are disabled here
+		 * so this is racy by nature but losing one hit
+		 * in a stat is not a big deal.
+		 */
+		__debug_atomic_inc(redundant_hardirqs_on);
+		return;
+	}
+
+	/*
+	 * We're enabling irqs and according to our state above irqs weren't
+	 * already enabled, yet we find the hardware thinks they are in fact
+	 * enabled.. someone messed up their IRQ state tracing.
+	 */
+	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
+		return;
+
+	/*
+	 * See the fine text that goes along with this variable definition.
+	 */
+	if (DEBUG_LOCKS_WARN_ON(unlikely(early_boot_irqs_disabled)))
+		return;
+
+	/*
+	 * Can't allow enabling interrupts while in an interrupt handler,
+	 * that's general bad form and such. Recursion, limited stack etc..
+	 */
+	if (DEBUG_LOCKS_WARN_ON(current->hardirq_context))
+		return;
+
+	current->lockdep_recursion = 1;
+	__trace_hardirqs_on_caller(ip);
+	current->lockdep_recursion = 0;
 }
 EXPORT_SYMBOL(trace_hardirqs_on_caller);
 
@@ -2552,6 +2616,10 @@ void trace_hardirqs_off_caller(unsigned long ip)
 	if (unlikely(!debug_locks || current->lockdep_recursion))
 		return;
 
+	/*
+	 * So we're supposed to get called after you mask local IRQs, but for
+	 * some reason the hardware doesn't quite think you did a proper job.
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
 		return;
 
@@ -2581,9 +2649,13 @@ void trace_softirqs_on(unsigned long ip)
 {
 	struct task_struct *curr = current;
 
-	if (unlikely(!debug_locks))
+	if (unlikely(!debug_locks || current->lockdep_recursion))
 		return;
 
+	/*
+	 * We fancy IRQs being disabled here, see softirq.c, avoids
+	 * funny state and nesting things.
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
 		return;
 
@@ -2592,6 +2664,7 @@ void trace_softirqs_on(unsigned long ip)
 		return;
 	}
 
+	current->lockdep_recursion = 1;
 	/*
 	 * We'll do an OFF -> ON transition:
 	 */
@@ -2606,6 +2679,7 @@ void trace_softirqs_on(unsigned long ip)
 	 */
 	if (curr->hardirqs_enabled)
 		mark_held_locks(curr, SOFTIRQ);
+	current->lockdep_recursion = 0;
 }
 
 /*
@@ -2615,9 +2689,12 @@ void trace_softirqs_off(unsigned long ip)
 {
 	struct task_struct *curr = current;
 
-	if (unlikely(!debug_locks))
+	if (unlikely(!debug_locks || current->lockdep_recursion))
 		return;
 
+	/*
+	 * We fancy IRQs being disabled here, see softirq.c
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
 		return;
 
@@ -2629,6 +2706,9 @@ void trace_softirqs_off(unsigned long ip)
 		curr->softirq_disable_ip = ip;
 		curr->softirq_disable_event = ++curr->irq_events;
 		debug_atomic_inc(softirqs_off_events);
+		/*
+		 * Whoops, we wanted softirqs off, so why aren't they?
+		 */
 		DEBUG_LOCKS_WARN_ON(!softirq_count());
 	} else
 		debug_atomic_inc(redundant_softirqs_off);
@@ -2653,6 +2733,9 @@ static void __lockdep_trace_alloc(gfp_t gfp_mask, unsigned long flags)
 	if (!(gfp_mask & __GFP_FS))
 		return;
 
+	/*
+	 * Oi! Can't be having __GFP_FS allocations with IRQs disabled.
+	 */
 	if (DEBUG_LOCKS_WARN_ON(irqs_disabled_flags(flags)))
 		return;
 
@@ -2765,13 +2848,13 @@ static int separate_irq_context(struct task_struct *curr,
 	return 0;
 }
 
-#else
+#else /* defined(CONFIG_TRACE_IRQFLAGS) && defined(CONFIG_PROVE_LOCKING) */
 
 static inline
 int mark_lock_irq(struct task_struct *curr, struct held_lock *this,
 		enum lock_usage_bit new_bit)
 {
-	WARN_ON(1);
+	WARN_ON(1); /* Impossible innit? when we don't have TRACE_IRQFLAG */
 	return 1;
 }
 
@@ -2791,7 +2874,7 @@ void lockdep_trace_alloc(gfp_t gfp_mask)
 {
 }
 
-#endif
+#endif /* defined(CONFIG_TRACE_IRQFLAGS) && defined(CONFIG_PROVE_LOCKING) */
 
 /*
  * Mark a lock with a usage bit, and validate the state transition:
@@ -2868,6 +2951,8 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
 {
 	int i;
 
+	kmemcheck_mark_initialized(lock, sizeof(*lock));
+
 	for (i = 0; i < NR_LOCKDEP_CACHING_CLASSES; i++)
 		lock->class_cache[i] = NULL;
 
@@ -2875,6 +2960,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
 	lock->cpu = raw_smp_processor_id();
 #endif
 
+	/*
+	 * Can't be having no nameless bastards around this place!
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!name)) {
 		lock->name = "NULL";
 		return;
@@ -2882,6 +2970,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
 
 	lock->name = name;
 
+	/*
+	 * No key, no joy, we need to hash something.
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!key))
 		return;
 	/*
@@ -2889,6 +2980,9 @@ void lockdep_init_map(struct lockdep_map *lock, const char *name,
 	 */
 	if (!static_obj(key)) {
 		printk("BUG: key %p not in .data!\n", key);
+		/*
+		 * What it says above ^^^^^, I suggest you read it.
+		 */
 		DEBUG_LOCKS_WARN_ON(1);
 		return;
 	}
@@ -2927,6 +3021,11 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
 	if (unlikely(!debug_locks))
 		return 0;
 
+	/*
+	 * Lockdep should run with IRQs disabled, otherwise we could
+	 * get an interrupt which would want to take locks, which would
+	 * end up in lockdep and have you got a head-ache already?
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
 		return 0;
 
@@ -2958,6 +3057,9 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
 	 * dependency checks are done)
 	 */
 	depth = curr->lockdep_depth;
+	/*
+	 * Ran out of static storage for our per-task lock stack again have we?
+	 */
 	if (DEBUG_LOCKS_WARN_ON(depth >= MAX_LOCK_DEPTH))
 		return 0;
 
@@ -2976,6 +3078,10 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
 	}
 
 	hlock = curr->held_locks + depth;
+	/*
+	 * Plain impossible, we just registered it and checked it weren't no
+	 * NULL like.. I bet this mushroom I ate was good!
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!class))
 		return 0;
 	hlock->class_idx = class_idx;
@@ -3010,11 +3116,17 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
 	 * the hash, not class->key.
 	 */
 	id = class - lock_classes;
+	/*
+	 * Whoops, we did it again.. ran straight out of our static allocation.
+	 */
 	if (DEBUG_LOCKS_WARN_ON(id >= MAX_LOCKDEP_KEYS))
 		return 0;
 
 	chain_key = curr->curr_chain_key;
 	if (!depth) {
+		/*
+		 * How can we have a chain hash when we ain't got no keys?!
+		 */
 		if (DEBUG_LOCKS_WARN_ON(chain_key != 0))
 			return 0;
 		chain_head = 1;
@@ -3063,6 +3175,7 @@ print_unlock_inbalance_bug(struct task_struct *curr, struct lockdep_map *lock,
 	printk("\n");
 	printk("=====================================\n");
 	printk("[ BUG: bad unlock balance detected! ]\n");
+	print_kernel_ident();
 	printk("-------------------------------------\n");
 	printk("%s/%d is trying to release lock (",
 		curr->comm, task_pid_nr(curr));
@@ -3087,6 +3200,9 @@ static int check_unlock(struct task_struct *curr, struct lockdep_map *lock,
 {
 	if (unlikely(!debug_locks))
 		return 0;
+	/*
+	 * Lockdep should run with IRQs disabled, recursion, head-ache, etc..
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!irqs_disabled()))
 		return 0;
 
@@ -3107,9 +3223,20 @@ static int match_held_lock(struct held_lock *hlock, struct lockdep_map *lock)
 		if (!class)
 			class = look_up_lock_class(lock, 0);
 
-		if (DEBUG_LOCKS_WARN_ON(!class))
+		/*
+		 * If look_up_lock_class() failed to find a class, we're trying
+		 * to test if we hold a lock that has never yet been acquired.
+		 * Clearly if the lock hasn't been acquired _ever_, we're not
+		 * holding it either, so report failure.
+		 */
+		if (!class)
 			return 0;
 
+		/*
+		 * References, but not a lock we're actually ref-counting?
+		 * State got messed up, follow the sites that change ->references
+		 * and try to make sense of it.
+		 */
 		if (DEBUG_LOCKS_WARN_ON(!hlock->nest_lock))
 			return 0;
 
@@ -3132,6 +3259,10 @@ __lock_set_class(struct lockdep_map *lock, const char *name,
 	int i;
 
 	depth = curr->lockdep_depth;
+	/*
+	 * This function is about (re)setting the class of a held lock,
+	 * yet we're not actually holding any locks. Naughty user!
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!depth))
 		return 0;
 
@@ -3167,6 +3298,10 @@ found_it:
 			return 0;
 	}
 
+	/*
+	 * I took it apart and put it back together again, except now I have
+	 * these 'spare' parts.. where shall I put them.
+	 */
 	if (DEBUG_LOCKS_WARN_ON(curr->lockdep_depth != depth))
 		return 0;
 	return 1;
@@ -3191,6 +3326,10 @@ lock_release_non_nested(struct task_struct *curr,
 	 * of held locks:
 	 */
 	depth = curr->lockdep_depth;
+	/*
+	 * So we're all set to release this lock.. wait what lock? We don't
+	 * own any locks, you've been drinking again?
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!depth))
 		return 0;
 
@@ -3243,6 +3382,10 @@ found_it:
 			return 0;
 	}
 
+	/*
+	 * We had N bottles of beer on the wall, we drank one, but now
+	 * there's not N-1 bottles of beer left on the wall...
+	 */
 	if (DEBUG_LOCKS_WARN_ON(curr->lockdep_depth != depth - 1))
 		return 0;
 	return 1;
@@ -3273,6 +3416,9 @@ static int lock_release_nested(struct task_struct *curr,
 		return lock_release_non_nested(curr, lock, ip);
 	curr->lockdep_depth--;
 
+	/*
+	 * No more locks, but somehow we've got hash left over, who left it?
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!depth && (hlock->prev_chain_key != 0)))
 		return 0;
 
@@ -3355,10 +3501,13 @@ static void check_flags(unsigned long flags)
 	 * check if not in hardirq contexts:
 	 */
 	if (!hardirq_count()) {
-		if (softirq_count())
+		if (softirq_count()) {
+			/* like the above, but with softirqs */
 			DEBUG_LOCKS_WARN_ON(current->softirqs_enabled);
-		else
+		} else {
+			/* lick the above, does it taste good? */
 			DEBUG_LOCKS_WARN_ON(!current->softirqs_enabled);
+		}
 	}
 
 	if (!debug_locks)
@@ -3471,6 +3620,7 @@ print_lock_contention_bug(struct task_struct *curr, struct lockdep_map *lock,
 	printk("\n");
 	printk("=================================\n");
 	printk("[ BUG: bad contention detected! ]\n");
+	print_kernel_ident();
 	printk("---------------------------------\n");
 	printk("%s/%d is trying to contend lock (",
 		curr->comm, task_pid_nr(curr));
@@ -3497,6 +3647,10 @@ __lock_contended(struct lockdep_map *lock, unsigned long ip)
 	int i, contention_point, contending_point;
 
 	depth = curr->lockdep_depth;
+	/*
+	 * Whee, we contended on this lock, except it seems we're not
+	 * actually trying to acquire anything much at all..
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!depth))
 		return;
 
@@ -3546,6 +3700,10 @@ __lock_acquired(struct lockdep_map *lock, unsigned long ip)
 	int i, cpu;
 
 	depth = curr->lockdep_depth;
+	/*
+	 * Yay, we acquired ownership of this lock we didn't try to
+	 * acquire, how the heck did that happen?
+	 */
 	if (DEBUG_LOCKS_WARN_ON(!depth))
 		return;
 
@@ -3750,8 +3908,12 @@ void lockdep_reset_lock(struct lockdep_map *lock)
 				match |= class == lock->class_cache[j];
 
 			if (unlikely(match)) {
-				if (debug_locks_off_graph_unlock())
+				if (debug_locks_off_graph_unlock()) {
+					/*
+					 * We all just reset everything, how did it match?
+					 */
 					WARN_ON(1);
+				}
 				goto out_restore;
 			}
 		}
@@ -3834,6 +3996,7 @@ print_freed_lock_bug(struct task_struct *curr, const void *mem_from,
 	printk("\n");
 	printk("=========================\n");
 	printk("[ BUG: held lock freed! ]\n");
+	print_kernel_ident();
 	printk("-------------------------\n");
 	printk("%s/%d is freeing memory %p-%p, with a lock still held there!\n",
 		curr->comm, task_pid_nr(curr), mem_from, mem_to-1);
@@ -3988,6 +4151,7 @@ void lockdep_sys_exit(void)
 		printk("\n");
 		printk("================================================\n");
 		printk("[ BUG: lock held when returning to user space! ]\n");
+		print_kernel_ident();
 		printk("------------------------------------------------\n");
 		printk("%s/%d is leaving the kernel with locks still held!\n",
 				curr->comm, curr->pid);
@@ -4007,10 +4171,17 @@ void lockdep_rcu_suspicious(const char *file, const int line, const char *s)
 	printk("\n");
 	printk("===============================\n");
 	printk("[ INFO: suspicious RCU usage. ]\n");
+	print_kernel_ident();
 	printk("-------------------------------\n");
 	printk("%s:%d %s!\n", file, line, s);
 	printk("\nother info that might help us debug this:\n\n");
-	printk("\nrcu_scheduler_active = %d, debug_locks = %d\n", rcu_scheduler_active, debug_locks);
+	printk("\n%srcu_scheduler_active = %d, debug_locks = %d\n",
+	       !rcu_lockdep_current_cpu_online()
+			? "RCU used illegally from offline CPU!\n"
+			: rcu_is_cpu_idle()
+				? "RCU used illegally from idle CPU!\n"
+				: "",
+	       rcu_scheduler_active, debug_locks);
 
 	/*
 	 * If a CPU is in the RCU-free window in idle (ie: in the section
