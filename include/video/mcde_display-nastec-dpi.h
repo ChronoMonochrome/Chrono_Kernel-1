@@ -1,5 +1,5 @@
 /*
- * Copyright (C) ST-Ericsson AB 2010
+ * Copyright (C) ST-Ericsson SA 2010
  *
  * ST-Ericsson MCDE DPI display driver
  *
@@ -16,7 +16,8 @@
 
 #include "mcde_display.h"
 
-// TODO:
+#define NASTECH_DISP_NUM_SUPPLIES 4
+
 struct mcde_display_dpi_platform_data {
 	/* Platform info */
 	int reset_gpio;
@@ -28,6 +29,6 @@ struct mcde_display_dpi_platform_data {
 	struct regulator *regulator;
 	int max_supply_voltage;
 	int min_supply_voltage;
- };
+	struct regulator_bulk_data supplies[NASTECH_DISP_NUM_SUPPLIES];
+};
 #endif /* __MCDE_DISPLAY_DPI__H__ */
-

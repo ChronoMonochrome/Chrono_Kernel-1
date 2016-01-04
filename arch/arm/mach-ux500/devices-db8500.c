@@ -282,13 +282,16 @@ static struct mcde_platform_data mcde_pdata = {
 	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x2000,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x11000,
 	.rotbufsize = 0xF000,
+/*
 	.pixelfetchwtrmrk = {MCDE_PIXFETCH_WTRMRKLVL_OVL0,
 				MCDE_PIXFETCH_WTRMRKLVL_OVL1,
 				MCDE_PIXFETCH_WTRMRKLVL_OVL2,
 				MCDE_PIXFETCH_WTRMRKLVL_OVL3,
 				MCDE_PIXFETCH_WTRMRKLVL_OVL4,
 				MCDE_PIXFETCH_WTRMRKLVL_OVL5},
-};
+*/
+}
+;
 
 struct platform_device ux500_mcde_device = {
 	.name = "mcde",
