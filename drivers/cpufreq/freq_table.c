@@ -13,7 +13,6 @@
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/cpufreq.h>
-#include <linux/err.h>
 
 /*********************************************************************
  *                     FREQUENCY TABLE HELPERS                       *
@@ -55,8 +54,9 @@ EXPORT_SYMBOL_GPL(cpufreq_frequency_table_cpuinfo);
 int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
 				   struct cpufreq_frequency_table *table)
 {
-	unsigned int next_larger = ~0, freq, i = 0;
-	bool found = false;
+	unsigned int next_larger = ~0;
+	unsigned int i;
+	unsigned int count = 0;
 
 	pr_debug("request for verification of policy (%u - %u kHz) for cpu %u\n",
 					policy->min, policy->max, policy->cpu);
@@ -67,23 +67,21 @@ int cpufreq_frequency_table_verify(struct cpufreq_policy *policy,
 	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
 				     policy->cpuinfo.max_freq);
 
-	for (; freq = table[i].frequency, freq != CPUFREQ_TABLE_END; i++) {
+	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+		unsigned int freq = table[i].frequency;
 		if (freq == CPUFREQ_ENTRY_INVALID)
 			continue;
-		if ((freq >= policy->min) && (freq <= policy->max)) {
-			found = true;
-			break;
-		}
-
-		if ((next_larger > freq) && (freq > policy->max))
+		if ((freq >= policy->min) && (freq <= policy->max))
+			count++;
+		else if ((next_larger > freq) && (freq > policy->max))
 			next_larger = freq;
 	}
 
-	if (!found) {
+	if (!count)
 		policy->max = next_larger;
-		cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
-				policy->cpuinfo.max_freq);
-	}
+
+	cpufreq_verify_within_limits(policy, policy->cpuinfo.min_freq,
+				     policy->cpuinfo.max_freq);
 
 	pr_debug("verification lead to (%u - %u kHz) for cpu %u\n",
 				policy->min, policy->max, policy->cpu);
@@ -107,7 +105,7 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 		.index = ~0,
 		.frequency = 0,
 	};
-	unsigned int i, diff;
+	unsigned int i;
 
 	pr_debug("request for target %u kHz (relation: %u) for cpu %u\n",
 					target_freq, relation, policy->cpu);
@@ -117,7 +115,6 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 		suboptimal.frequency = ~0;
 		break;
 	case CPUFREQ_RELATION_L:
-	case CPUFREQ_RELATION_C:
 		optimal.frequency = ~0;
 		break;
 	}
@@ -131,13 +128,9 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 			continue;
 		if ((freq < policy->min) || (freq > policy->max))
 			continue;
-		if (freq == target_freq) {
-			optimal.index = i;
-			break;
-		}
 		switch (relation) {
 		case CPUFREQ_RELATION_H:
-			if (freq < target_freq) {
+			if (freq <= target_freq) {
 				if (freq >= optimal.frequency) {
 					optimal.frequency = freq;
 					optimal.index = i;
@@ -150,7 +143,7 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 			}
 			break;
 		case CPUFREQ_RELATION_L:
-			if (freq > target_freq) {
+			if (freq >= target_freq) {
 				if (freq <= optimal.frequency) {
 					optimal.frequency = freq;
 					optimal.index = i;
@@ -160,15 +153,6 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 					suboptimal.frequency = freq;
 					suboptimal.index = i;
 				}
-			}
-			break;
-		case CPUFREQ_RELATION_C:
-			diff = abs(freq - target_freq);
-			if (diff < optimal.frequency ||
-			    (diff == optimal.frequency &&
-			     freq > table[optimal.index].frequency)) {
-				optimal.frequency = diff;
-				optimal.index = i;
 			}
 			break;
 		}
@@ -186,78 +170,6 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(cpufreq_frequency_table_target);
-
-int cpufreq_frequency_table_next_lowest(struct cpufreq_policy *policy,
-		struct cpufreq_frequency_table *table, int *index)
-{
-	unsigned int cur_freq;
-	unsigned int next_lowest_freq;
-	int optimal_index = -1;
-	int i = 0;
-
-	if (!policy || IS_ERR(policy) || !table || IS_ERR(table) ||
-			!index || IS_ERR(index))
-		return -ENOMEM;
-
-	cur_freq = policy->cur;
-	next_lowest_freq = policy->min;
-
-	/* we're at the lowest frequency in the table already, bail out */
-	if (cur_freq == policy->min)
-		return -EINVAL;
-
-	/* walk the list, find closest freq to cur_freq that is below it */
-	while(table[i].frequency != CPUFREQ_TABLE_END) {
-		if (table[i].frequency < cur_freq &&
-				table[i].frequency >= next_lowest_freq) {
-			next_lowest_freq = table[i].frequency;
-			optimal_index = table[i].index;
-		}
-
-		i++;
-	}
-
-	*index = optimal_index;
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(cpufreq_frequency_table_next_lowest);
-
-int cpufreq_frequency_table_next_highest(struct cpufreq_policy *policy,
-		struct cpufreq_frequency_table *table, int *index)
-{
-	unsigned int cur_freq;
-	unsigned int next_higher_freq;
-	int optimal_index = -1;
-	int i = 0;
-
-	if (!policy || IS_ERR(policy) || !table || IS_ERR(table) ||
-			!index || IS_ERR(index))
-		return -ENOMEM;
-
-	cur_freq = policy->cur;
-	next_higher_freq = policy->max;
-
-	/* we're at the highest frequency in the table already, bail out */
-	if (cur_freq == policy->max)
-		return -EINVAL;
-
-	/* walk the list, find closest freq to cur_freq that is above it */
-	while(table[i].frequency != CPUFREQ_TABLE_END) {
-		if (table[i].frequency > cur_freq &&
-				table[i].frequency <= next_higher_freq) {
-			next_higher_freq = table[i].frequency;
-			optimal_index = table[i].index;
-		}
-
-		i++;
-	}
-
-	*index = optimal_index;
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(cpufreq_frequency_table_next_highest);
 
 static DEFINE_PER_CPU(struct cpufreq_frequency_table *, cpufreq_show_table);
 /**
