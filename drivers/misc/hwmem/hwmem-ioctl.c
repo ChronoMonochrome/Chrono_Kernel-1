@@ -185,6 +185,8 @@ static int pin(struct hwmem_file *hwfile, struct hwmem_pin_request *req)
 		return PTR_ERR(alloc);
 
 	hwmem_get_info(alloc, NULL, &mem_type, NULL);
+	if (mem_type != HWMEM_MEM_CONTIGUOUS_SYS)
+		return -EINVAL;
 
 	ret = hwmem_pin(alloc, &mem_chunk, &mem_chunk_length);
 	if (ret < 0)

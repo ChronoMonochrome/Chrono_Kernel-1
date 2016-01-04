@@ -330,7 +330,7 @@ static int display_postregistered_callback(struct notifier_block *nb,
 #ifdef CONFIG_COMPDEV
 	mfb = to_mcde_fb(fbi);
 	/* Create a compdev overlay for this display */
-	if (compdev_create(ddev, mfb->ovlys[0], true,	NULL) < 0) {
+	if (compdev_create(ddev, mfb->ovlys[0], true) < 0) {
 		dev_warn(&ddev->dev,
 			"Failed to create compdev for display %s\n",
 					ddev->name);

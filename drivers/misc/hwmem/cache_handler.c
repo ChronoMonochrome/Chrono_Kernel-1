@@ -68,15 +68,13 @@ static u32 align_down(u32 value, u32 alignment);
 /*
  * Exported functions
  */
-void cach_init_buf(struct cach_buf *buf,
-		   enum hwmem_mem_type mem_type,
-		   enum hwmem_alloc_flags cache_settings,
-		   u32 size)
+
+void cach_init_buf(struct cach_buf *buf, enum hwmem_alloc_flags cache_settings,
+								u32 size)
 {
 	buf->vstart = NULL;
 	buf->pstart = 0;
 	buf->size = size;
-	buf->mem_type = mem_type;
 
 	buf->cache_settings = cachi_get_cache_settings(cache_settings);
 }
@@ -341,9 +339,6 @@ static void clean_cpu_cache(struct cach_buf *buf, struct cach_range *range)
 		else
 			shrink_range(&buf->range_dirty_in_cpu_cache,
 								&intersection);
-
-		if (buf->mem_type == HWMEM_MEM_SCATTERED_SYS)
-			outer_flush_all();
 	}
 }
 
