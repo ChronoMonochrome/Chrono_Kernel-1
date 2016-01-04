@@ -516,10 +516,6 @@ static int genl_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
 	if (ops == NULL)
 		return -EOPNOTSUPP;
 
-	if ((ops->flags & GENL_ADMIN_PERM) &&
-	    security_netlink_recv(skb, CAP_NET_ADMIN))
-		return -EPERM;
-
 	if (nlh->nlmsg_flags & NLM_F_DUMP) {
 		if (ops->dumpit == NULL)
 			return -EOPNOTSUPP;
