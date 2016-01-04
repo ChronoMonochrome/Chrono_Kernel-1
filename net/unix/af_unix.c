@@ -851,9 +851,9 @@ static int unix_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 		if (err)
 			goto out_mknod_parent;
 
-		dentry = lookup_create(&nd, 0);
-		err = PTR_ERR(dentry);
-		if (IS_ERR(dentry))
+		//dentry = lookup_create(&nd, 0);
+		//err = PTR_ERR(dentry);
+		//if (IS_ERR(dentry))
 			goto out_mknod_unlock;
 
 		/*
