@@ -53,6 +53,10 @@ struct mcde_display_device {
 	/* Display driver internal */
 	u16 native_x_res;
 	u16 native_y_res;
+       /* +445681 display padding */
+       u16 x_res_padding;
+       u16 y_res_padding;
+       /* -445681 display padding */
 	u16 physical_width;
 	u16 physical_height;
 	enum mcde_display_power_mode power_mode;

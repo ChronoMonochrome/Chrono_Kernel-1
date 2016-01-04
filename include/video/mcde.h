@@ -11,6 +11,8 @@
 #ifndef __MCDE__H__
 #define __MCDE__H__
 
+#include "nova_dsilink.h"
+
 /* Physical interface types */
 enum mcde_port_type {
 	MCDE_PORTTYPE_DSI = 0,
@@ -178,6 +180,14 @@ enum mcde_display_power_mode {
 	MCDE_DISPLAY_PM_ON      = 2, /* DCS normal mode, display on */
 };
 
+/* MCDE channel rotation */
+enum mcde_hw_rotation {
+       MCDE_HW_ROT_0 = 0,
+       MCDE_HW_ROT_90_CCW,
+       MCDE_HW_ROT_90_CW,
+       MCDE_HW_ROT_VERT_MIRROR
+};
+
 /* Display rotation */
 enum mcde_display_rotation {
 	MCDE_DISPLAY_ROT_0       = 0,
@@ -220,6 +230,11 @@ struct mcde_video_mode {
 	u32 vbp;	/* vertical back porch: upper margin (excl. vsync) */
 	u32 vfp;	/* vertical front porch: lower margin (excl. vsync) */
 	u32 vsw;	/* vertical sync width*/
+       /* +445681 display padding */
+       u32 xres_padding;
+       u32 yres_padding;
+       /* -445681 display padding */
+
 	bool interlaced;
 	bool force_update; /* when switching between hdmi and sdtv */
 };
@@ -370,6 +385,27 @@ int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl);
 /* Driver data */
 #define MCDE_IRQ     "MCDE IRQ"
 #define MCDE_IO_AREA "MCDE I/O Area"
+
+/*
+ * Default pixelfetch watermark levels per overlay.
+ * Values are in pixels and 2 basic rules should be followed:
+ * 1. The value should be at least 256 bits.
+ * 2. The sum of all active overlays pixelfetch watermark level multiplied with
+ *    bits per pixel, should be lower than the size of input_fifo_size in bits.
+ * 3. The value should be a multiple of a line (256 bits).
+ */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL0 48                /* LCD 32 bpp */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL1 64                /* LCD 16 bpp */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL2 128       /* HDMI 32 bpp */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL3 192       /* HDMI 16 bpp */
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL4 16
+#define MCDE_PIXFETCH_WTRMRKLVL_OVL5 16
+
+struct mcde_opp_requirements {
+       u8 num_rot_channels;
+       u8 num_overlays;
+       u32 total_bw;
+};
 
 struct mcde_platform_data {
 	/* DPI */

@@ -402,7 +402,7 @@ static int ws2401_set_rotation(struct mcde_display_device *ddev,
 
 	final = (360 + rotation - ddev->orientation) % 360;
 	switch (final) {
-	case MCDE_DISPLAY_ROT_180:	/* handled by LDI */
+	case MCDE_DISPLAY_ROT_180_CCW:	/* handled by LDI */
 	case MCDE_DISPLAY_ROT_0:
 		final_hw_rot = MCDE_HW_ROT_0;
 		break;
@@ -417,7 +417,7 @@ static int ws2401_set_rotation(struct mcde_display_device *ddev,
 	}
 
 	if (rotation != ddev->rotation) {
-		if (final == MCDE_DISPLAY_ROT_180) {
+		if (final == MCDE_DISPLAY_ROT_180_CCW) {
 			if (final != lcd->rotation) {
 				ret = ws2401_write_dcs_sequence(lcd,
 						DCS_CMD_SEQ_WS2401_ORIENT_180);

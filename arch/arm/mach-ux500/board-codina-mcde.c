@@ -275,8 +275,8 @@ static struct mcde_display_device generic_display0 = {
 	.chnl_id = MCDE_CHNL_A,
 	.fifo = MCDE_FIFO_A,
 	.default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
-	//.x_res_padding = 0,
-	//.y_res_padding = 0,
+	.x_res_padding = 0,
+	.y_res_padding = 0,
 	.native_x_res = 480,
 	.native_y_res = 800,
 
