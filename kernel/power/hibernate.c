@@ -25,9 +25,6 @@
 #include <linux/gfp.h>
 #include <linux/syscore_ops.h>
 #include <scsi/scsi_scan.h>
-#ifdef CONFIG_PM_SYNC_CTRL
-#include <linux/pm_sync_ctrl.h>
-#endif /* CONFIG_PM_SYNC_CTRL */
 
 #include "power.h"
 
@@ -89,11 +86,7 @@ EXPORT_SYMBOL(system_entering_hibernation);
 #ifdef CONFIG_PM_DEBUG
 static void hibernation_debug_sleep(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hibernation debug: Waiting for 5 seconds.\n");
-#else
-	;
-#endif
 	mdelay(5000);
 }
 
@@ -248,14 +241,10 @@ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
 		centisecs = 1;	/* avoid div-by-zero */
 	k = nr_pages * (PAGE_SIZE / 1024);
 	kps = (k * 100) / centisecs;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: %s %d kbytes in %d.%02d seconds (%d.%02d MB/s)\n",
 			msg, k,
 			centisecs / 100, centisecs % 100,
 			kps / 1000, (kps % 1000) / 10);
-#else
-	;
-#endif
 }
 
 /**
@@ -355,7 +344,6 @@ int hibernation_snapshot(int platform_mode)
 		goto Complete_devices;
 
 	suspend_console();
-	ftrace_stop();
 	pm_restrict_gfp_mask();
 	error = dpm_suspend(PMSG_FREEZE);
 	if (error)
@@ -381,7 +369,6 @@ int hibernation_snapshot(int platform_mode)
 	if (error || !in_suspend)
 		pm_restore_gfp_mask();
 
-	ftrace_start();
 	resume_console();
 
  Complete_devices:
@@ -484,7 +471,6 @@ int hibernation_restore(int platform_mode)
 
 	pm_prepare_console();
 	suspend_console();
-	ftrace_stop();
 	pm_restrict_gfp_mask();
 	error = dpm_suspend_start(PMSG_QUIESCE);
 	if (!error) {
@@ -492,7 +478,6 @@ int hibernation_restore(int platform_mode)
 		dpm_resume_end(PMSG_RECOVER);
 	}
 	pm_restore_gfp_mask();
-	ftrace_start();
 	resume_console();
 	pm_restore_console();
 	return error;
@@ -519,7 +504,6 @@ int hibernation_platform_enter(void)
 
 	entering_platform_hibernation = true;
 	suspend_console();
-	ftrace_stop();
 	error = dpm_suspend_start(PMSG_HIBERNATE);
 	if (error) {
 		if (hibernation_ops->recover)
@@ -563,7 +547,6 @@ int hibernation_platform_enter(void)
  Resume_devices:
 	entering_platform_hibernation = false;
 	dpm_resume_end(PMSG_RESTORE);
-	ftrace_start();
 	resume_console();
 
  Close:
@@ -599,11 +582,7 @@ static void power_down(void)
 	 * Valid image is on the disk, if we continue we risk serious data
 	 * corruption after resume.
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "PM: Please power down manually\n");
-#else
-	;
-#endif
 	while(1);
 }
 
@@ -644,18 +623,15 @@ int hibernate(void)
 	/* Allocate memory management structures */
 	error = create_basic_memory_bitmaps();
 	if (error)
-		goto Enable_umh;
+		goto Exit;
 
-#ifdef CONFIG_PM_SYNC_CTRL
-	if (pm_sync_active)
-		sys_sync();
-#else
+	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	sys_sync();
-#endif
+	printk("done.\n");
 
 	error = prepare_processes();
 	if (error)
-		goto Free_bitmaps;
+		goto Finish;
 
 	if (hibernation_test(TEST_FREEZER))
 		goto Thaw;
@@ -687,9 +663,8 @@ int hibernate(void)
 
  Thaw:
 	thaw_processes();
- Free_bitmaps:
+ Finish:
 	free_basic_memory_bitmaps();
- Enable_umh:
 	usermodehelper_enable();
  Exit:
 	pm_notifier_call_chain(PM_POST_HIBERNATION);
@@ -973,11 +948,7 @@ static ssize_t resume_store(struct kobject *kobj, struct kobj_attribute *attr,
 	mutex_lock(&pm_mutex);
 	swsusp_resume_device = res;
 	mutex_unlock(&pm_mutex);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Starting manual resume from disk\n");
-#else
-	;
-#endif
 	noresume = 0;
 	software_resume();
 	ret = n;
