@@ -207,7 +207,7 @@ static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
  */
 void register_shrinker(struct shrinker *shrinker)
 {
-	shrinker->nr = 0;
+	atomic_long_set(&shrinker->nr_in_batch, 0);
 	down_write(&shrinker_rwsem);
 	list_add_tail(&shrinker->list, &shrinker_list);
 	up_write(&shrinker_rwsem);
@@ -288,9 +288,7 @@ unsigned long shrink_slab(struct shrink_control *shrink,
 		 * and zero it so that other concurrent shrinker invocations
 		 * don't also do this scanning work.
 		 */
-		do {
-			nr = shrinker->nr;
-		} while (cmpxchg(&shrinker->nr, nr, 0) != nr);
+		nr = atomic_long_xchg(&shrinker->nr_in_batch, 0);
 
 		total_scan = nr;
 		delta = (4 * nr_pages_scanned) / shrinker->seeks;
@@ -352,12 +350,11 @@ unsigned long shrink_slab(struct shrink_control *shrink,
 		 * manner that handles concurrent updates. If we exhausted the
 		 * scan, there is no need to do an update.
 		 */
-		do {
-			nr = shrinker->nr;
-			new_nr = total_scan + nr;
-			if (total_scan <= 0)
-				break;
-		} while (cmpxchg(&shrinker->nr, nr, new_nr) != nr);
+		if (total_scan > 0)
+			new_nr = atomic_long_add_return(total_scan,
+					&shrinker->nr_in_batch);
+		else
+			new_nr = atomic_long_read(&shrinker->nr_in_batch);
 
 		trace_mm_shrink_slab_end(shrinker, shrink_ret, nr, new_nr);
 	}
@@ -639,10 +636,6 @@ void putback_lru_page(struct page *page)
 	int was_unevictable = PageUnevictable(page);
 
 	VM_BUG_ON(PageLRU(page));
-#ifdef CONFIG_CLEANCACHE
-	if (active)
-		SetPageWasActive(page);
-#endif
 
 redo:
 	ClearPageUnevictable(page);
@@ -729,7 +722,7 @@ static enum page_references page_check_references(struct page *page,
 		return PAGEREF_RECLAIM;
 
 	if (referenced_ptes) {
-		if (PageSwapBacked(page))
+		if (PageAnon(page))
 			return PAGEREF_ACTIVATE;
 		/*
 		 * All mapped pages start out with page table
@@ -1048,7 +1041,7 @@ keep_lumpy:
  *
  * returns 0 on success, -ve errno on failure.
  */
-int __isolate_lru_page(struct page *page, int mode, int file)
+int __isolate_lru_page(struct page *page, isolate_mode_t mode, int file)
 {
 	bool all_lru_mode;
 	int ret = -EINVAL;
@@ -1115,6 +1108,9 @@ int __isolate_lru_page(struct page *page, int mode, int file)
 		}
 	}
 
+	if ((mode & ISOLATE_UNMAPPED) && page_mapped(page))
+		return ret;
+
 	if (likely(get_page_unless_zero(page))) {
 		/*
 		 * Be careful not to clear PageLRU until after we're
@@ -1176,7 +1172,6 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 		unsigned long end_pfn;
 		unsigned long page_pfn;
 		int zone_id;
-		unsigned int isolated_pages = 1;
 
 		page = lru_to_page(src);
 		prefetchw_prev_lru_page(page, src, flags);
@@ -1187,8 +1182,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 		case 0:
 			mem_cgroup_lru_del(page);
 			list_move(&page->lru, dst);
-			isolated_pages = hpage_nr_pages(page);
-			nr_taken += isolated_pages;
+			nr_taken += hpage_nr_pages(page);
 			break;
 
 		case -EBUSY:
@@ -1201,14 +1195,6 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 		}
 
 		if (!order)
-			continue;
-
-		/*
-		 * To save a few cycles, the following pfn-based isolation
-		 * could be bypassed if the newly isolated page is no less
-		 * than the order aligned region.
-		 */
-		if (isolated_pages >= (1 << order))
 			continue;
 
 		/*
@@ -1293,7 +1279,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 			nr_to_scan, scan,
 			nr_taken,
 			nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
-			mode);
+			mode, file);
 	return nr_taken;
 }
 
@@ -1769,9 +1755,6 @@ static void shrink_active_list(unsigned long nr_to_scan,
 		}
 
 		ClearPageActive(page);	/* we are de-activating */
-#ifdef CONFIG_CLEANCACHE
-		SetPageWasActive(page);
-#endif
 		list_add(&page->lru, &l_inactive);
 	}
 
@@ -2212,7 +2195,7 @@ static inline bool compaction_ready(struct zone *zone, struct scan_control *sc)
 	 * If compaction is deferred, reclaim up to a point where
 	 * compaction will have a chance of success when re-enabled
 	 */
-	if (compaction_deferred(zone, sc->order))
+	if (compaction_deferred(zone))
 		return watermark_ok;
 
 	/* If compaction is not ready to start, keep reclaiming */
@@ -2354,6 +2337,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 	unsigned long writeback_threshold;
 	bool aborted_reclaim;
 
+	get_mems_allowed();
 	delayacct_freepages_start();
 
 	if (global_reclaim(sc))
@@ -2417,6 +2401,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
 
 out:
 	delayacct_freepages_end();
+	put_mems_allowed();
 
 	if (sc->nr_reclaimed)
 		return sc->nr_reclaimed;
@@ -2614,10 +2599,6 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
 	int i;
 	unsigned long balanced = 0;
 	bool all_zones_ok = true;
-
-	/* If kswapd has been running too long, just sleep */
-	if (need_resched())
-		return false;
 
 	/* If a direct reclaimer woke kswapd within HZ/10, it's premature */
 	if (remaining)
@@ -2922,8 +2903,6 @@ out:
 	 * and it is potentially going to sleep here.
 	 */
 	if (order) {
-		int zones_need_compaction = 1;
-
 		for (i = 0; i <= end_zone; i++) {
 			struct zone *zone = pgdat->node_zones + i;
 
@@ -2940,19 +2919,11 @@ out:
 				goto loop_again;
 			}
 
-			/* Check if the memory needs to be defragmented. */
-			if (zone_watermark_ok(zone, order,
-				    low_wmark_pages(zone), *classzone_idx, 0))
-				zones_need_compaction = 0;
-
 			/* If balanced, clear the congested flag */
 			zone_clear_flag(zone, ZONE_CONGESTED);
 			if (i <= *classzone_idx)
 				balanced += zone->present_pages;
 		}
-
-		if (zones_need_compaction)
-			compact_pgdat(pgdat, order);
 	}
 
 	/*
@@ -2998,10 +2969,7 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
 		 * them before going back to sleep.
 		 */
 		set_pgdat_percpu_threshold(pgdat, calculate_normal_threshold);
-
-		if (!kthread_should_stop())
-			schedule();
-
+		schedule();
 		set_pgdat_percpu_threshold(pgdat, calculate_pressure_threshold);
 	} else {
 		if (remaining)
@@ -3113,8 +3081,6 @@ static int kswapd(void *p)
 						&balanced_classzone_idx);
 		}
 	}
-
-	current->reclaim_state = NULL;
 	return 0;
 }
 
@@ -3269,17 +3235,14 @@ int kswapd_run(int nid)
 }
 
 /*
- * Called by memory hotplug when all memory in a node is offlined.  Caller must
- * hold lock_memory_hotplug().
+ * Called by memory hotplug when all memory in a node is offlined.
  */
 void kswapd_stop(int nid)
 {
 	struct task_struct *kswapd = NODE_DATA(nid)->kswapd;
 
-	if (kswapd) {
+	if (kswapd)
 		kthread_stop(kswapd);
-		NODE_DATA(nid)->kswapd = NULL;
-	}
 }
 
 static int __init kswapd_init(void)

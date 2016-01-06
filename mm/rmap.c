@@ -56,7 +56,6 @@
 #include <linux/mmu_notifier.h>
 #include <linux/migrate.h>
 #include <linux/hugetlb.h>
-#include <linux/backing-dev.h>
 
 #include <asm/tlbflush.h>
 
@@ -270,6 +269,51 @@ int anon_vma_clone(struct vm_area_struct *dst, struct vm_area_struct *src)
  enomem_failure:
 	unlink_anon_vmas(dst);
 	return -ENOMEM;
+}
+
+/*
+ * Some rmap walk that needs to find all ptes/hugepmds without false
+ * negatives (like migrate and split_huge_page) running concurrent
+ * with operations that copy or move pagetables (like mremap() and
+ * fork()) to be safe. They depend on the anon_vma "same_anon_vma"
+ * list to be in a certain order: the dst_vma must be placed after the
+ * src_vma in the list. This is always guaranteed by fork() but
+ * mremap() needs to call this function to enforce it in case the
+ * dst_vma isn't newly allocated and chained with the anon_vma_clone()
+ * function but just an extension of a pre-existing vma through
+ * vma_merge.
+ *
+ * NOTE: the same_anon_vma list can still be changed by other
+ * processes while mremap runs because mremap doesn't hold the
+ * anon_vma mutex to prevent modifications to the list while it
+ * runs. All we need to enforce is that the relative order of this
+ * process vmas isn't changing (we don't care about other vmas
+ * order). Each vma corresponds to an anon_vma_chain structure so
+ * there's no risk that other processes calling anon_vma_moveto_tail()
+ * and changing the same_anon_vma list under mremap() will screw with
+ * the relative order of this process vmas in the list, because we
+ * they can't alter the order of any vma that belongs to this
+ * process. And there can't be another anon_vma_moveto_tail() running
+ * concurrently with mremap() coming from this process because we hold
+ * the mmap_sem for the whole mremap(). fork() ordering dependency
+ * also shouldn't be affected because fork() only cares that the
+ * parent vmas are placed in the list before the child vmas and
+ * anon_vma_moveto_tail() won't reorder vmas from either the fork()
+ * parent or child.
+ */
+void anon_vma_moveto_tail(struct vm_area_struct *dst)
+{
+	struct anon_vma_chain *pavc;
+	struct anon_vma *root = NULL;
+
+	list_for_each_entry_reverse(pavc, &dst->anon_vma_chain, same_vma) {
+		struct anon_vma *anon_vma = pavc->anon_vma;
+		VM_BUG_ON(pavc->vma != dst);
+		root = lock_anon_vma_root(root, anon_vma);
+		list_del(&pavc->same_anon_vma);
+		list_add_tail(&pavc->same_anon_vma, &anon_vma->head);
+	}
+	unlock_anon_vma_root(root);
 }
 
 /*
@@ -870,11 +914,11 @@ int page_referenced(struct page *page,
 								vm_flags);
 		if (we_locked)
 			unlock_page(page);
+
+		if (page_test_and_clear_young(page_to_pfn(page)))
+			referenced++;
 	}
 out:
-	if (page_test_and_clear_young(page_to_pfn(page)))
-		referenced++;
-
 	return referenced;
 }
 
@@ -936,8 +980,11 @@ int page_mkclean(struct page *page)
 
 	if (page_mapped(page)) {
 		struct address_space *mapping = page_mapping(page);
-		if (mapping)
+		if (mapping) {
 			ret = page_mkclean_file(mapping, page);
+			if (page_test_and_clear_dirty(page_to_pfn(page), 1))
+				ret = 1;
+		}
 	}
 
 	return ret;
@@ -1118,8 +1165,6 @@ void page_add_file_rmap(struct page *page)
  */
 void page_remove_rmap(struct page *page)
 {
-	struct address_space *mapping = page_mapping(page);
-
 	/* page still mapped by someone else? */
 	if (!atomic_add_negative(-1, &page->_mapcount))
 		return;
@@ -1130,19 +1175,8 @@ void page_remove_rmap(struct page *page)
 	 * this if the page is anon, so about to be freed; but perhaps
 	 * not if it's in swapcache - there might be another pte slot
 	 * containing the swap entry, but page not yet written to swap.
-	 *
-	 * And we can skip it on file pages, so long as the filesystem
-	 * participates in dirty tracking; but need to catch shm and tmpfs
-	 * and ramfs pages which have been modified since creation by read
-	 * fault.
-	 *
-	 * Note that mapping must be decided above, before decrementing
-	 * mapcount (which luckily provides a barrier): once page is unmapped,
-	 * it could be truncated and page->mapping reset to NULL at any moment.
-	 * Note also that we are relying on page_mapping(page) to set mapping
-	 * to &swapper_space when PageSwapCache(page).
 	 */
-	if (mapping && !mapping_cap_account_dirty(mapping) &&
+	if ((!PageAnon(page) || PageSwapCache(page)) &&
 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
 		set_page_dirty(page);
 	/*
@@ -1175,7 +1209,7 @@ void page_remove_rmap(struct page *page)
 
 /*
  * Subfunctions of try_to_unmap: try_to_unmap_one called
- * repeatedly from either try_to_unmap_anon or try_to_unmap_file.
+ * repeatedly from try_to_unmap_ksm, try_to_unmap_anon or try_to_unmap_file.
  */
 int try_to_unmap_one(struct page *page, struct vm_area_struct *vma,
 		     unsigned long address, enum ttu_flags flags)

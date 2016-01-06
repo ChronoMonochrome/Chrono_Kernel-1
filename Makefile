@@ -5,7 +5,7 @@ EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
 ifeq ("$(CROSS_COMPILE)", "")
-   CROSS_COMPILE=$(HOME)/.armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
+   CROSS_COMPILE=/media/kurono/build/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
 endif
 
 # *DOCUMENTATION*

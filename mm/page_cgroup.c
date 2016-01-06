@@ -110,9 +110,11 @@ static void *__meminit alloc_page_cgroup(size_t size, int nid)
 	gfp_t flags = GFP_KERNEL | __GFP_ZERO | __GFP_NOWARN;
 	void *addr = NULL;
 
-	addr = alloc_pages_exact_nid(nid, size, GFP_KERNEL | __GFP_NOWARN);
-	if (addr)
+	addr = alloc_pages_exact_nid(nid, size, flags);
+	if (addr) {
+		kmemleak_alloc(addr, size, 1, flags);
 		return addr;
+	}
 
 	if (node_state(nid, N_HIGH_MEMORY))
 		addr = vzalloc_node(size, nid);
@@ -192,8 +194,8 @@ int __meminit online_page_cgroup(unsigned long start_pfn,
 	unsigned long start, end, pfn;
 	int fail = 0;
 
-	start = start_pfn & ~(PAGES_PER_SECTION - 1);
-	end = ALIGN(start_pfn + nr_pages, PAGES_PER_SECTION);
+	start = SECTION_ALIGN_DOWN(start_pfn);
+	end = SECTION_ALIGN_UP(start_pfn + nr_pages);
 
 	if (nid == -1) {
 		/*
@@ -225,8 +227,8 @@ int __meminit offline_page_cgroup(unsigned long start_pfn,
 {
 	unsigned long start, end, pfn;
 
-	start = start_pfn & ~(PAGES_PER_SECTION - 1);
-	end = ALIGN(start_pfn + nr_pages, PAGES_PER_SECTION);
+	start = SECTION_ALIGN_DOWN(start_pfn);
+	end = SECTION_ALIGN_UP(start_pfn + nr_pages);
 
 	for (pfn = start; pfn < end; pfn += PAGES_PER_SECTION)
 		__free_page_cgroup(pfn);
@@ -324,7 +326,7 @@ struct swap_cgroup_ctrl {
 	spinlock_t	lock;
 };
 
-struct swap_cgroup_ctrl swap_cgroup_ctrl[MAX_SWAPFILES];
+static struct swap_cgroup_ctrl swap_cgroup_ctrl[MAX_SWAPFILES];
 
 struct swap_cgroup {
 	unsigned short		id;
@@ -377,15 +379,13 @@ static struct swap_cgroup *lookup_swap_cgroup(swp_entry_t ent,
 	pgoff_t offset = swp_offset(ent);
 	struct swap_cgroup_ctrl *ctrl;
 	struct page *mappage;
-	struct swap_cgroup *sc;
 
 	ctrl = &swap_cgroup_ctrl[swp_type(ent)];
 	if (ctrlp)
 		*ctrlp = ctrl;
 
 	mappage = ctrl->map[offset / SC_PER_PAGE];
-	sc = page_address(mappage);
-	return sc + offset % SC_PER_PAGE;
+	return page_address(mappage) + offset % SC_PER_PAGE;
 }
 
 /**
@@ -466,11 +466,10 @@ int swap_cgroup_swapon(int type, unsigned long max_pages)
 	length = DIV_ROUND_UP(max_pages, SC_PER_PAGE);
 	array_size = length * sizeof(void *);
 
-	array = vmalloc(array_size);
+	array = vzalloc(array_size);
 	if (!array)
 		goto nomem;
 
-	memset(array, 0, array_size);
 	ctrl = &swap_cgroup_ctrl[type];
 	mutex_lock(&swap_cgroup_mutex);
 	ctrl->length = length;

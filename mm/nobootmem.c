@@ -41,8 +41,7 @@ static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
 	if (limit > memblock.current_limit)
 		limit = memblock.current_limit;
 
-	addr = find_memory_core_early(nid, size, align, goal, limit);
-
+	addr = memblock_find_in_range_node(goal, limit, size, align, nid);
 	if (!addr)
 		return NULL;
 
@@ -83,7 +82,8 @@ void __init free_bootmem_late(unsigned long addr, unsigned long size)
 
 static void __init __free_pages_memory(unsigned long start, unsigned long end)
 {
-	unsigned long i, start_aligned, end_aligned;
+	int i;
+	unsigned long start_aligned, end_aligned;
 	int order = ilog2(BITS_PER_LONG);
 
 	start_aligned = (start + (BITS_PER_LONG - 1)) & ~(BITS_PER_LONG - 1);
@@ -106,23 +106,27 @@ static void __init __free_pages_memory(unsigned long start, unsigned long end)
 		__free_pages_bootmem(pfn_to_page(i), 0);
 }
 
-unsigned long __init free_all_memory_core_early(int nodeid)
+unsigned long __init free_low_memory_core_early(int nodeid)
 {
-	int i;
-	u64 start, end;
 	unsigned long count = 0;
-	struct range *range = NULL;
-	int nr_range;
+	phys_addr_t start, end;
+	u64 i;
 
-	nr_range = get_free_all_memory_range(&range, nodeid);
+	/* free reserved array temporarily so that it's treated as free area */
+	memblock_free_reserved_regions();
 
-	for (i = 0; i < nr_range; i++) {
-		start = range[i].start;
-		end = range[i].end;
-		count += end - start;
-		__free_pages_memory(start, end);
+	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL) {
+		unsigned long start_pfn = PFN_UP(start);
+		unsigned long end_pfn = min_t(unsigned long,
+					      PFN_DOWN(end), max_low_pfn);
+		if (start_pfn < end_pfn) {
+			__free_pages_memory(start_pfn, end_pfn);
+			count += end_pfn - start_pfn;
+		}
 	}
 
+	/* put region array back? */
+	memblock_reserve_reserved_regions();
 	return count;
 }
 
@@ -136,7 +140,7 @@ unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
 {
 	register_page_bootmem_info_node(pgdat);
 
-	/* free_all_memory_core_early(MAX_NUMNODES) will be called later */
+	/* free_low_memory_core_early(MAX_NUMNODES) will be called later */
 	return 0;
 }
 
@@ -154,7 +158,7 @@ unsigned long __init free_all_bootmem(void)
 	 * Use MAX_NUMNODES will make sure all ranges in early_node_map[]
 	 *  will be used instead of only Node0 related
 	 */
-	return free_all_memory_core_early(MAX_NUMNODES);
+	return free_low_memory_core_early(MAX_NUMNODES);
 }
 
 /**
