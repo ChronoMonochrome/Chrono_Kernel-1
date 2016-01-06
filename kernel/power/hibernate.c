@@ -359,28 +359,6 @@ int hibernation_snapshot(int platform_mode)
 		goto Cleanup;
 	}
 
-	if (hibernation_test(TEST_FREEZER) ||
-		hibernation_testmode(HIBERNATION_TESTPROC)) {
-
-		/*
-		 * Indicate to the caller that we are returning due to a
-		 * successful freezer test.
-		 */
-		freezer_test_done = true;
-		goto Close;
-	}
-
-	if (hibernation_test(TEST_FREEZER) ||
-		hibernation_testmode(HIBERNATION_TESTPROC)) {
-
-		/*
-		 * Indicate to the caller that we are returning due to a
-		 * successful freezer test.
-		 */
-		freezer_test_done = true;
-		goto Close;
-	}
-
 	error = dpm_prepare(PMSG_FREEZE);
 	if (error) {
 		dpm_complete(msg);
