@@ -366,8 +366,6 @@ extern struct dev_pm_ops generic_subsys_pm_ops;
 #define PMSG_AUTO_RESUME	((struct pm_message) \
 					{ .event = PM_EVENT_AUTO_RESUME, })
 
-#define PMSG_IS_AUTO(msg)	(((msg).event & PM_EVENT_AUTO) != 0)
-
 /**
  * Device run-time power management status.
  *
@@ -555,17 +553,11 @@ extern void __suspend_report_result(const char *function, void *fn, int ret);
 extern int device_pm_wait_for_dev(struct device *sub, struct device *dev);
 
 extern int pm_generic_prepare(struct device *dev);
-extern int pm_generic_suspend_noirq(struct device *dev);
 extern int pm_generic_suspend(struct device *dev);
-extern int pm_generic_resume_noirq(struct device *dev);
 extern int pm_generic_resume(struct device *dev);
-extern int pm_generic_freeze_noirq(struct device *dev);
 extern int pm_generic_freeze(struct device *dev);
-extern int pm_generic_thaw_noirq(struct device *dev);
 extern int pm_generic_thaw(struct device *dev);
-extern int pm_generic_restore_noirq(struct device *dev);
 extern int pm_generic_restore(struct device *dev);
-extern int pm_generic_poweroff_noirq(struct device *dev);
 extern int pm_generic_poweroff(struct device *dev);
 extern void pm_generic_complete(struct device *dev);
 

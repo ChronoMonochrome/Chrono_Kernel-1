@@ -16,7 +16,6 @@
 #include <linux/freezer.h>
 #include <linux/delay.h>
 #include <linux/workqueue.h>
-#include <linux/wakelock.h>
 
 /* 
  * Timeout for stopping processes
@@ -83,10 +82,6 @@ static int try_to_freeze_tasks(bool sig_only)
 			todo += wq_busy;
 		}
 
-		if (todo && has_wake_lock(WAKE_LOCK_SUSPEND)) {
-			wakeup = 1;
-			break;
-		}
 		if (!todo || time_after(jiffies, end_time))
 			break;
 
@@ -113,56 +108,31 @@ static int try_to_freeze_tasks(bool sig_only)
 		 * and caller must call thaw_processes() if something fails),
 		 * but it cleans up leftover PF_FREEZE requests.
 		 */
-		if(wakeup) {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\n");
-#else
-			;
-#endif
-			printk(KERN_ERR "Freezing of %s aborted\n",
-					sig_only ? "user space " : "tasks ");
-		}
-		else {
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("\n");
-#else
-			;
-#endif
-			printk(KERN_ERR "Freezing of tasks failed after %d.%02d seconds "
-			       "(%d tasks refusing to freeze, wq_busy=%d):\n",
-			       elapsed_csecs / 100, elapsed_csecs % 100,
-			       todo - wq_busy, wq_busy);
-		}
+		printk("\n");
+		printk(KERN_ERR "Freezing of tasks %s after %d.%02d seconds "
+		       "(%d tasks refusing to freeze, wq_busy=%d):\n",
+		       wakeup ? "aborted" : "failed",
+		       elapsed_csecs / 100, elapsed_csecs % 100,
+		       todo - wq_busy, wq_busy);
+
 		thaw_workqueues();
 
 		read_lock(&tasklist_lock);
 		do_each_thread(g, p) {
 			task_lock(p);
-			if (freezing(p) && !freezer_should_skip(p) &&
-				elapsed_csecs > 100)
+			if (!wakeup && freezing(p) && !freezer_should_skip(p))
 				sched_show_task(p);
 			cancel_freezing(p);
 			task_unlock(p);
 		} while_each_thread(g, p);
 		read_unlock(&tasklist_lock);
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("(elapsed %d.%02d seconds) ", elapsed_csecs / 100,
 			elapsed_csecs % 100);
-#else
-		;
-#endif
 	}
 
 	return todo ? -EBUSY : 0;
 }
-
-extern bool is_volkey_press_skip_track(void);
-extern void unmap_keys(void);
-extern void volkey_reset_variables(void);
-extern bool homekey_reset_variables(void);
-
-extern unsigned int is_suspend;
 
 /**
  *	freeze_processes - tell processes to enter the refrigerator
@@ -170,52 +140,23 @@ extern unsigned int is_suspend;
 int freeze_processes(void)
 {
 	int error;
-	
-	is_suspend = 1;
-	volkey_reset_variables();
-	homekey_reset_variables();
 
-	if (is_volkey_press_skip_track()) {
-		unmap_keys();
-		pr_err("%s: power key unmapped\n", __func__);
-	}
-
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Freezing user space processes ... ");
-#else
-	;
-#endif
 	error = try_to_freeze_tasks(true);
 	if (error)
 		goto Exit;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.\n");
-#else
-	;
-#endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Freezing remaining freezable tasks ... ");
-#else
-	;
-#endif
 	error = try_to_freeze_tasks(false);
 	if (error)
 		goto Exit;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.");
-#else
-	;
-#endif
 
 	oom_killer_disable();
  Exit:
 	BUG_ON(in_atomic());
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
-#else
-	;
-#endif
 
 	return error;
 }
@@ -235,7 +176,7 @@ static void thaw_tasks(bool nosig_only)
 		if (cgroup_freezing_or_frozen(p))
 			continue;
 
-		__thaw_task(p);
+		thaw_process(p);
 	} while_each_thread(g, p);
 	read_unlock(&tasklist_lock);
 }
@@ -244,19 +185,11 @@ void thaw_processes(void)
 {
 	oom_killer_enable();
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Restarting tasks ... ");
-#else
-	;
-#endif
 	thaw_workqueues();
 	thaw_tasks(true);
 	thaw_tasks(false);
 	schedule();
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.\n");
-#else
-	;
-#endif
 }
 

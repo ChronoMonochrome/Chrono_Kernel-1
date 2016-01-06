@@ -22,29 +22,17 @@
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/suspend.h>
-#include <linux/kthread.h>
 #include <linux/syscore_ops.h>
-#include <linux/ftrace.h>
 #include <trace/events/power.h>
-#ifdef CONFIG_PM_SYNC_CTRL
-#include <linux/pm_sync_ctrl.h>
-#endif
 
 #include "power.h"
 
 const char *const pm_states[PM_SUSPEND_MAX] = {
-#ifdef CONFIG_EARLYSUSPEND
-	[PM_SUSPEND_ON]		= "on",
-#endif
 	[PM_SUSPEND_STANDBY]	= "standby",
 	[PM_SUSPEND_MEM]	= "mem",
 };
 
 static const struct platform_suspend_ops *suspend_ops;
-
-static struct completion second_cpu_complete = {1,
-	__WAIT_QUEUE_HEAD_INITIALIZER((second_cpu_complete).wait)
-};
 
 /**
  *	suspend_set_ops - Set the global suspend method table.
@@ -82,11 +70,7 @@ static int suspend_test(int level)
 {
 #ifdef CONFIG_PM_DEBUG
 	if (pm_test_level == level) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "suspend debug: Waiting for 5 seconds.\n");
-#else
-		;
-#endif
 		mdelay(5000);
 		return 1;
 	}
@@ -172,10 +156,9 @@ static int suspend_enter(suspend_state_t state)
 	if (suspend_test(TEST_PLATFORM))
 		goto Platform_wake;
 
-
 	error = disable_nonboot_cpus();
 	if (error || suspend_test(TEST_CPUS))
-		goto Platform_wake;
+		goto Enable_cpus;
 
 	arch_suspend_disable_irqs();
 	BUG_ON(!irqs_disabled());
@@ -191,6 +174,9 @@ static int suspend_enter(suspend_state_t state)
 
 	arch_suspend_enable_irqs();
 	BUG_ON(irqs_disabled());
+
+ Enable_cpus:
+	enable_nonboot_cpus();
 
  Platform_wake:
 	if (suspend_ops->wake)
@@ -224,7 +210,6 @@ int suspend_devices_and_enter(suspend_state_t state)
 			goto Close;
 	}
 	suspend_console();
-	ftrace_stop();
 	suspend_test_start();
 	error = dpm_suspend_start(PMSG_SUSPEND);
 	if (error) {
@@ -241,7 +226,6 @@ int suspend_devices_and_enter(suspend_state_t state)
 	suspend_test_start();
 	dpm_resume_end(PMSG_RESUME);
 	suspend_test_finish("resume devices");
-	ftrace_start();
 	resume_console();
  Close:
 	if (suspend_ops->end)
@@ -269,18 +253,6 @@ static void suspend_finish(void)
 	pm_restore_console();
 }
 
-static int plug_secondary_cpus(void *data)
-{
-	if (!(suspend_test(TEST_FREEZER) ||
-	      suspend_test(TEST_DEVICES) ||
-	      suspend_test(TEST_PLATFORM)))
-		enable_nonboot_cpus();
-
-	complete(&second_cpu_complete);
-
-	return 0;
-}
-
 /**
  *	enter_state - Do common work of entering low-power state.
  *	@state:		pm_state structure for state we're entering.
@@ -294,7 +266,6 @@ static int plug_secondary_cpus(void *data)
 int enter_state(suspend_state_t state)
 {
 	int error;
-	struct task_struct *cpu_task;
 
 	if (!valid_state(state))
 		return -ENODEV;
@@ -302,40 +273,9 @@ int enter_state(suspend_state_t state)
 	if (!mutex_trylock(&pm_mutex))
 		return -EBUSY;
 
-	/*
-	 * Assure that previous started thread is completed before
-	 * attempting to suspend again.
-	 */
-	error = wait_for_completion_timeout(&second_cpu_complete,
-					    msecs_to_jiffies(500));
-	WARN_ON(error == 0);
-#ifdef CONFIG_PM_SYNC_CTRL
-	if (pm_sync_active) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "PM: Syncing filesystems ... ");
-#else
-		;
-#endif
-		sys_sync();
-#ifdef CONFIG_DEBUG_PRINTK
-		printk("done.\n");
-#else
-		;
-#endif
-	}
-#else
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
-#else
-	;
-#endif
 	sys_sync();
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("done.\n");
-#else
-	;
-#endif
-#endif
 
 	pr_debug("PM: Preparing system for %s sleep\n", pm_states[state]);
 	error = suspend_prepare();
@@ -354,11 +294,6 @@ int enter_state(suspend_state_t state)
 	pr_debug("PM: Finishing wakeup.\n");
 	suspend_finish();
  Unlock:
-
-	cpu_task = kthread_run(plug_secondary_cpus,
-			       NULL, "cpu-plug");
-	BUG_ON(IS_ERR(cpu_task));
-
 	mutex_unlock(&pm_mutex);
 	return error;
 }
@@ -372,7 +307,7 @@ int enter_state(suspend_state_t state)
  */
 int pm_suspend(suspend_state_t state)
 {
-	if (state > PM_SUSPEND_ON && state < PM_SUSPEND_MAX)
+	if (state > PM_SUSPEND_ON && state <= PM_SUSPEND_MAX)
 		return enter_state(state);
 	return -EINVAL;
 }
