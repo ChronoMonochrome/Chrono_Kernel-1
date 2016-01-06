@@ -18,6 +18,8 @@
 #include <linux/pagevec.h>
 #include <linux/pagemap.h>
 
+unsigned long max_readahead_pages = VM_MAX_READAHEAD * 1024 / PAGE_CACHE_SIZE;
+
 /*
  * Initialise a struct file's readahead state.  Assumes that the caller has
  * memset *ra to zero.
