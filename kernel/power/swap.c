@@ -347,17 +347,9 @@ static int swap_writer_finish(struct swap_map_handle *handle,
 {
 	if (!error) {
 		flush_swap_writer(handle);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "PM: S");
-#else
-		;
-#endif
 		error = mark_swapfiles(handle, flags);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("|\n");
-#else
-		;
-#endif
 	}
 
 	if (error)
@@ -396,12 +388,8 @@ static int save_image(struct swap_map_handle *handle,
 	struct timeval start;
 	struct timeval stop;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
 		nr_to_write);
-#else
-	;
-#endif
 	m = nr_to_write / 100;
 	if (!m)
 		m = 1;
@@ -416,11 +404,7 @@ static int save_image(struct swap_map_handle *handle,
 		if (ret)
 			break;
 		if (!(nr_pages % m))
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
-#else
-			;
-#endif
 		nr_pages++;
 	}
 	err2 = hib_wait_on_bio_chain(&bio);
@@ -428,17 +412,9 @@ static int save_image(struct swap_map_handle *handle,
 	if (!ret)
 		ret = err2;
 	if (!ret)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "\b\b\b\bdone\n");
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "\n");
-#else
-		;
-#endif
 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
 	return ret;
 }
@@ -494,13 +470,9 @@ static int save_image_lzo(struct swap_map_handle *handle,
 		return -ENOMEM;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"PM: Compressing and saving image data (%u pages) ...     ",
 		nr_to_write);
-#else
-	;
-#endif
 	m = nr_to_write / 100;
 	if (!m)
 		m = 1;
@@ -519,11 +491,7 @@ static int save_image_lzo(struct swap_map_handle *handle,
 			memcpy(unc + off, data_of(*snapshot), PAGE_SIZE);
 
 			if (!(nr_pages % m))
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
-#else
-				;
-#endif
 			nr_pages++;
 		}
 
@@ -569,17 +537,9 @@ out_finish:
 	if (!ret)
 		ret = err2;
 	if (!ret)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "\b\b\b\bdone\n");
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "\n");
-#else
-		;
-#endif
 	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
 
 	vfree(cmp);
@@ -744,12 +704,8 @@ static int load_image(struct swap_map_handle *handle,
 	int err2;
 	unsigned nr_pages;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
 		nr_to_read);
-#else
-	;
-#endif
 	m = nr_to_read / 100;
 	if (!m)
 		m = 1;
@@ -768,11 +724,7 @@ static int load_image(struct swap_map_handle *handle,
 		if (error)
 			break;
 		if (!(nr_pages % m))
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("\b\b\b\b%3d%%", nr_pages / m);
-#else
-			;
-#endif
 		nr_pages++;
 	}
 	err2 = hib_wait_on_bio_chain(&bio);
@@ -780,20 +732,12 @@ static int load_image(struct swap_map_handle *handle,
 	if (!error)
 		error = err2;
 	if (!error) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\b\b\b\bdone\n");
-#else
-		;
-#endif
 		snapshot_write_finalize(snapshot);
 		if (!snapshot_image_loaded(snapshot))
 			error = -ENODATA;
 	} else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
 	return error;
 }
@@ -850,13 +794,9 @@ static int load_image_lzo(struct swap_map_handle *handle,
 		return -ENOMEM;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"PM: Loading and decompressing image data (%u pages) ...     ",
 		nr_to_read);
-#else
-	;
-#endif
 	m = nr_to_read / 100;
 	if (!m)
 		m = 1;
@@ -917,11 +857,7 @@ static int load_image_lzo(struct swap_map_handle *handle,
 			memcpy(data_of(*snapshot), unc + off, PAGE_SIZE);
 
 			if (!(nr_pages % m))
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("\b\b\b\b%3d%%", nr_pages / m);
-#else
-				;
-#endif
 			nr_pages++;
 
 			error = snapshot_write_next(snapshot);
@@ -933,20 +869,12 @@ static int load_image_lzo(struct swap_map_handle *handle,
 out_finish:
 	do_gettimeofday(&stop);
 	if (!error) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\b\b\b\bdone\n");
-#else
-		;
-#endif
 		snapshot_write_finalize(snapshot);
 		if (!snapshot_image_loaded(snapshot))
 			error = -ENODATA;
 	} else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
 
 	vfree(cmp);
