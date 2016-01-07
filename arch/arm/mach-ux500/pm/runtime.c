@@ -23,6 +23,14 @@
 
 #include "../pins.h"
 
+extern int pm_generic_suspend_noirq(struct device *dev);
+extern int pm_generic_resume_noirq(struct device *dev);
+extern int pm_generic_freeze_noirq(struct device *dev);
+extern int pm_generic_thaw_noirq(struct device *dev);
+extern int pm_generic_restore_noirq(struct device *dev);
+extern int pm_generic_poweroff_noirq(struct device *dev);
+
+
 #ifdef CONFIG_PM_RUNTIME
 #define BIT_ONCE		0
 #define BIT_ACTIVE		1
@@ -153,6 +161,12 @@ static int ux500_pd_runtime_resume(struct device *dev)
 
 	return pm_generic_runtime_resume(dev);
 }
+
+static inline bool pm_runtime_status_suspended(struct device *dev)
+{
+       return dev->power.runtime_status == RPM_SUSPENDED;
+}
+
 
 static int ux500_pd_suspend_noirq(struct device *dev)
 {
