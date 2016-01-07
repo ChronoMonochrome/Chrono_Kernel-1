@@ -431,6 +431,12 @@ static int timer_fixup_init(void *addr, enum debug_obj_state state)
 	}
 }
 
+/* Stub timer callback for improperly used timers. */
+static void stub_timer(unsigned long data)
+{
+	WARN_ON(1);
+}
+
 /*
  * fixup_activate is called when:
  * - an active object is activated
@@ -454,7 +460,8 @@ static int timer_fixup_activate(void *addr, enum debug_obj_state state)
 			debug_object_activate(timer, &timer_debug_descr);
 			return 0;
 		} else {
-			WARN_ON_ONCE(1);
+			setup_timer(timer, stub_timer, 0);
+			return 1;
 		}
 		return 0;
 
@@ -484,12 +491,40 @@ static int timer_fixup_free(void *addr, enum debug_obj_state state)
 	}
 }
 
+/*
+ * fixup_assert_init is called when:
+ * - an untracked/uninit-ed object is found
+ */
+static int timer_fixup_assert_init(void *addr, enum debug_obj_state state)
+{
+	struct timer_list *timer = addr;
+
+	switch (state) {
+	case ODEBUG_STATE_NOTAVAILABLE:
+		if (timer->entry.prev == TIMER_ENTRY_STATIC) {
+			/*
+			 * This is not really a fixup. The timer was
+			 * statically initialized. We just make sure that it
+			 * is tracked in the object tracker.
+			 */
+			debug_object_init(timer, &timer_debug_descr);
+			return 0;
+		} else {
+			setup_timer(timer, stub_timer, 0);
+			return 1;
+		}
+	default:
+		return 0;
+	}
+}
+
 static struct debug_obj_descr timer_debug_descr = {
-	.name		= "timer_list",
-	.debug_hint	= timer_debug_hint,
-	.fixup_init	= timer_fixup_init,
-	.fixup_activate	= timer_fixup_activate,
-	.fixup_free	= timer_fixup_free,
+	.name			= "timer_list",
+	.debug_hint		= timer_debug_hint,
+	.fixup_init		= timer_fixup_init,
+	.fixup_activate		= timer_fixup_activate,
+	.fixup_free		= timer_fixup_free,
+	.fixup_assert_init	= timer_fixup_assert_init,
 };
 
 static inline void debug_timer_init(struct timer_list *timer)
@@ -510,6 +545,11 @@ static inline void debug_timer_deactivate(struct timer_list *timer)
 static inline void debug_timer_free(struct timer_list *timer)
 {
 	debug_object_free(timer, &timer_debug_descr);
+}
+
+static inline void debug_timer_assert_init(struct timer_list *timer)
+{
+	debug_object_assert_init(timer, &timer_debug_descr);
 }
 
 static void __init_timer(struct timer_list *timer,
@@ -535,6 +575,7 @@ EXPORT_SYMBOL_GPL(destroy_timer_on_stack);
 static inline void debug_timer_init(struct timer_list *timer) { }
 static inline void debug_timer_activate(struct timer_list *timer) { }
 static inline void debug_timer_deactivate(struct timer_list *timer) { }
+static inline void debug_timer_assert_init(struct timer_list *timer) { }
 #endif
 
 static inline void debug_init(struct timer_list *timer)
@@ -554,6 +595,11 @@ static inline void debug_deactivate(struct timer_list *timer)
 {
 	debug_timer_deactivate(timer);
 	trace_timer_cancel(timer);
+}
+
+static inline void debug_assert_init(struct timer_list *timer)
+{
+	debug_timer_assert_init(timer);
 }
 
 static void __init_timer(struct timer_list *timer,
@@ -683,23 +729,23 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
 
 	debug_activate(timer, expires);
 
-	/*
-	 * Should we try to migrate timer?
-	 * However we can't change timer's base while it is running, otherwise
-	 * del_timer_sync() can't detect that the timer's handler yet has not
-	 * finished. This also guarantees that the timer is serialized wrt
-	 * itself.
-	 */
-	if (likely(base->running_timer != timer)) {
-		cpu = smp_processor_id();
+	cpu = smp_processor_id();
 
 #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
-		if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
-			cpu = get_nohz_timer_target();
+	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
+		cpu = get_nohz_timer_target();
 #endif
-		new_base = per_cpu(tvec_bases, cpu);
+	new_base = per_cpu(tvec_bases, cpu);
 
-		if (base != new_base) {
+	if (base != new_base) {
+		/*
+		 * We are trying to schedule the timer on the local CPU.
+		 * However we can't change timer's base while it is running,
+		 * otherwise del_timer_sync() can't detect that the timer's
+		 * handler yet has not finished. This also guarantees that
+		 * the timer is serialized wrt itself.
+		 */
+		if (likely(base->running_timer != timer)) {
 			/* See the comment in lock_timer_base() */
 			timer_set_base(timer, NULL);
 			spin_unlock(&base->lock);
@@ -743,7 +789,9 @@ EXPORT_SYMBOL(mod_timer_pending);
  * Algorithm:
  *   1) calculate the maximum (absolute) time
  *   2) calculate the highest bit where the expires and new max are different
- *   3) round down the maximum time, so that all the lower bits are zeros
+ *   3) use this bit to make a mask
+ *   4) use the bitmask to round down the maximum time, so that all last
+ *      bits are zeros
  */
 static inline
 unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
@@ -765,9 +813,11 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
 	if (mask == 0)
 		return expires;
 
-	bit = __fls(mask);
+	bit = find_last_bit(&mask, BITS_PER_LONG);
 
-	expires_limit = (expires_limit >> bit) << bit;
+	mask = (1 << bit) - 1;
+
+	expires_limit = expires_limit & ~(mask);
 
 	return expires_limit;
 }
@@ -902,6 +952,8 @@ int del_timer(struct timer_list *timer)
 	unsigned long flags;
 	int ret = 0;
 
+	debug_assert_init(timer);
+
 	timer_stats_timer_clear_start_info(timer);
 	if (timer_pending(timer)) {
 		base = lock_timer_base(timer, &flags);
@@ -931,6 +983,8 @@ int try_to_del_timer_sync(struct timer_list *timer)
 	struct tvec_base *base;
 	unsigned long flags;
 	int ret = -1;
+
+	debug_assert_init(timer);
 
 	base = lock_timer_base(timer, &flags);
 
@@ -1368,7 +1422,7 @@ SYSCALL_DEFINE0(getppid)
 	int pid;
 
 	rcu_read_lock();
-	pid = task_tgid_vnr(current->real_parent);
+	pid = task_tgid_vnr(rcu_dereference(current->real_parent));
 	rcu_read_unlock();
 
 	return pid;
@@ -1769,15 +1823,14 @@ unsigned long msleep_interruptible(unsigned int msecs)
 
 EXPORT_SYMBOL(msleep_interruptible);
 
-static unsigned long __sched do_usleep_range(unsigned long min, unsigned long max)
+static int __sched do_usleep_range(unsigned long min, unsigned long max)
 {
 	ktime_t kmin;
-	unsigned long elapsed, delta;
+	unsigned long delta;
 
 	kmin = ktime_set(0, min * NSEC_PER_USEC);
 	delta = (max - min) * NSEC_PER_USEC;
-	return schedule_hrtimeout_range(&kmin, delta, HRTIMER_MODE_REL,
-					&elapsed) ? 0 : elapsed;
+	return schedule_hrtimeout_range(&kmin, delta, HRTIMER_MODE_REL);
 }
 
 /**
@@ -1785,9 +1838,9 @@ static unsigned long __sched do_usleep_range(unsigned long min, unsigned long ma
  * @min: Minimum time in usecs to sleep
  * @max: Maximum time in usecs to sleep
  */
-unsigned long usleep_range(unsigned long min, unsigned long max)
+void usleep_range(unsigned long min, unsigned long max)
 {
 	__set_current_state(TASK_UNINTERRUPTIBLE);
-	return do_usleep_range(min, max);
+	do_usleep_range(min, max);
 }
 EXPORT_SYMBOL(usleep_range);
