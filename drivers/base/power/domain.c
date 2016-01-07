@@ -182,9 +182,10 @@ static int pm_genpd_runtime_suspend(struct device *dev)
 
 	dev_dbg(dev, "%s()\n", __func__);
 
-	genpd = dev_to_genpd(dev);
-	if (IS_ERR(genpd))
+	if (IS_ERR_OR_NULL(dev->pm_domain))
 		return -EINVAL;
+
+	genpd = container_of(dev->pm_domain, struct generic_pm_domain, domain);
 
 	if (genpd->parent)
 		mutex_lock(&genpd->parent->lock);
@@ -292,9 +293,10 @@ static int pm_genpd_runtime_resume(struct device *dev)
 
 	dev_dbg(dev, "%s()\n", __func__);
 
-	genpd = dev_to_genpd(dev);
-	if (IS_ERR(genpd))
+	if (IS_ERR_OR_NULL(dev->pm_domain))
 		return -EINVAL;
+
+	genpd = container_of(dev->pm_domain, struct generic_pm_domain, domain);
 
 	ret = pm_genpd_poweron(genpd);
 	if (ret)
@@ -567,6 +569,14 @@ static int pm_genpd_freeze_noirq(struct device *dev)
 	ret = pm_generic_freeze_noirq(dev);
 	if (ret)
 		return ret;
+
+	if (device_may_wakeup(dev)
+	    && genpd->active_wakeup && genpd->active_wakeup(dev))
+		return 0;
+
+	if (device_may_wakeup(dev)
+	    && genpd->active_wakeup && genpd->active_wakeup(dev))
+		return 0;
 
 	if (genpd->stop_device)
 		genpd->stop_device(dev);
