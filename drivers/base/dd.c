@@ -32,8 +32,12 @@
 static void driver_bound(struct device *dev)
 {
 	if (klist_node_attached(&dev->p->knode_driver)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: device %s already bound\n",
 			__func__, kobject_name(&dev->kobj));
+#else
+		;
+#endif
 		return;
 	}
 
@@ -144,9 +148,13 @@ probe_failed:
 
 	if (ret != -ENODEV && ret != -ENXIO) {
 		/* driver matched but the probe failed */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: probe of %s failed with error %d\n",
 		       drv->name, dev_name(dev), ret);
+#else
+		;
+#endif
 	}
 	/*
 	 * Ignore errors returned by ->probe so that the next driver can try

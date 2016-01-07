@@ -356,9 +356,13 @@ static int pm_noirq_op(struct device *dev,
 	if (initcall_debug) {
 		rettime = ktime_get();
 		delta = ktime_sub(rettime, calltime);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("initcall %s_i+ returned %d after %Ld usecs\n",
 			dev_name(dev), error,
 			(unsigned long long)ktime_to_ns(delta) >> 10);
+#else
+		;
+#endif
 	}
 
 	return error;
@@ -621,10 +625,18 @@ static void dpm_drv_timeout(unsigned long data)
 	struct device *dev = wd_data->dev;
 	struct task_struct *tsk = wd_data->tsk;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "**** DPM device timeout: %s (%s)\n", dev_name(dev),
 	       (dev->driver ? dev->driver->name : "no driver"));
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "dpm suspend stack:\n");
+#else
+	;
+#endif
 	show_stack(tsk, NULL);
 
 	BUG();
@@ -1139,9 +1151,13 @@ int dpm_prepare(pm_message_t state)
 				error = 0;
 				continue;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "PM: Device %s not prepared "
 				"for power transition: code %d\n",
 				dev_name(dev), error);
+#else
+			;
+#endif
 			put_device(dev);
 			break;
 		}
