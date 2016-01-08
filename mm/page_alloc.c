@@ -1905,6 +1905,13 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
 	return 0;
 }
 
+#ifdef CONFIG_COMPACTION_RETRY
+extern unsigned long compact_zone_order(struct zone *zone,
+                                 int order, gfp_t gfp_mask,
+                                 bool sync);
+
+#endif
+
 static inline struct page *
 __alloc_pages_may_oom(gfp_t gfp_mask, unsigned int order,
 	struct zonelist *zonelist, enum zone_type high_zoneidx,

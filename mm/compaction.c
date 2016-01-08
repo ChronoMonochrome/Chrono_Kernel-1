@@ -724,7 +724,10 @@ out:
 	return ret;
 }
 
-static unsigned long compact_zone_order(struct zone *zone,
+#ifndef CONFIG_COMPACTION_RETRY
+static
+#endif
+unsigned long compact_zone_order(struct zone *zone,
 				 int order, gfp_t gfp_mask,
 				 bool sync)
 {
