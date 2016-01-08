@@ -618,9 +618,9 @@ static int rtc_alarm_add_device(struct device *dev,
 	}
 #endif
 
-#if defined(CONFIG_RTC_ALARM_DEV_NAME)
-	if (strlen(CONFIG_RTC_ALARM_DEV_NAME) > 0) {
-		if (strcmp(rtc->name, CONFIG_RTC_ALARM_DEV_NAME)) {
+#if defined(CONFIG_ANDROID_RTC_ALARM_DEV_NAME)
+	if (strlen(CONFIG_ANDROID_RTC_ALARM_DEV_NAME) > 0) {
+		if (strcmp(rtc->name, CONFIG_ANDROID_RTC_ALARM_DEV_NAME)) {
 			err = -EINVAL;
 			goto err1;
 		}

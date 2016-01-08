@@ -148,6 +148,16 @@ config ANDROID_INTF_ALARM_DEV
 	help
 	  Exports the alarm interface to user-space.
 
+config ANDROID_RTC_ALARM_DEV_NAME
+	string "RTC used to set the wakeup alarm"
+	depends on ANDROID_INTF_ALARM
+	help
+	  The RTC you specify here will be used to set the android
+	  wakeup alarm.
+
+	  If unsure, leave it blank. The RTC which is registered first
+	  will get the priority.
+
 config ANDROID_ALARM_OLDDRV_COMPAT
 	bool "Android Alarm compatability with old drivers"
 	depends on ANDROID_INTF_ALARM
