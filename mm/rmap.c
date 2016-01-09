@@ -1160,8 +1160,6 @@ void page_add_file_rmap(struct page *page)
  */
 void page_remove_rmap(struct page *page)
 {
-	struct address_space *mapping = page_mapping(page);
-
 	/* page still mapped by someone else? */
 	if (!atomic_add_negative(-1, &page->_mapcount))
 		return;
@@ -1172,19 +1170,8 @@ void page_remove_rmap(struct page *page)
 	 * this if the page is anon, so about to be freed; but perhaps
 	 * not if it's in swapcache - there might be another pte slot
 	 * containing the swap entry, but page not yet written to swap.
-	 *
-	 * And we can skip it on file pages, so long as the filesystem
-	 * participates in dirty tracking; but need to catch shm and tmpfs
-	 * and ramfs pages which have been modified since creation by read
-	 * fault.
-	 *
-	 * Note that mapping must be decided above, before decrementing
-	 * mapcount (which luckily provides a barrier): once page is unmapped,
-	 * it could be truncated and page->mapping reset to NULL at any moment.
-	 * Note also that we are relying on page_mapping(page) to set mapping
-	 * to &swapper_space when PageSwapCache(page).
 	 */
-	if (mapping && !mapping_cap_account_dirty(mapping) &&
+	if ((!PageAnon(page) || PageSwapCache(page)) &&
 	    page_test_and_clear_dirty(page_to_pfn(page), 1))
 		set_page_dirty(page);
 	/*
