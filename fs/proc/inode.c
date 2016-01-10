@@ -476,18 +476,11 @@ int proc_fill_super(struct super_block *s)
 	s->s_time_gran = 1;
 	
 	pde_get(&proc_root);
-	root_inode = proc_get_inode(s, &proc_root);
-	if (!root_inode)
-		goto out_no_root;
-	root_inode->i_uid = 0;
-	root_inode->i_gid = 0;
-	s->s_root = d_make_root(root_inode);
-	if (!s->s_root)
-		goto out_no_root;
-	return 0;
+	s->s_root = d_make_root(proc_get_inode(s, &proc_root));
+	if (s->s_root)
+		return 0;
 
 	printk("proc_read_super: get root inode failed\n");
-	iput(root_inode);
 	pde_put(&proc_root);
 	return -ENOMEM;
 }
