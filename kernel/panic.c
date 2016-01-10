@@ -27,6 +27,9 @@
 #define PANIC_TIMER_STEP 100
 #define PANIC_BLINK_SPD 18
 
+/* Machine specific panic information string */
+char *mach_panic_string;
+
 int panic_on_oops;
 static unsigned long tainted_mask;
 static int pause_on_oops;
