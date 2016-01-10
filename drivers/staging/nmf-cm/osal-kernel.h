@@ -11,7 +11,7 @@
 #include <linux/interrupt.h>
 #include <linux/hwmem.h>
 #include <linux/regulator/consumer.h>
-#include <linux/plist_old.h>
+#include <linux/plist.h>
 #include <linux/version.h>
 #ifdef CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>

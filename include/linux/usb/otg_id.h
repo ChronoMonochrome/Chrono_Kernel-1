@@ -19,7 +19,7 @@
 #define __LINUX_USB_OTG_ID_H
 
 #include <linux/notifier.h>
-#include <linux/plist_old.h>
+#include <linux/plist.h>
 
 /**
  * otg_id_notifier_block

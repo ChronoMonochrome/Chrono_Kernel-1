@@ -13,7 +13,6 @@
 #include <linux/cdev.h>
 #include <linux/io.h>
 #include <linux/mm.h>
-#include <linux/plist_old.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
