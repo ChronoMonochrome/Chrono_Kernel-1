@@ -283,11 +283,11 @@ void thread_group_cputimer(struct task_struct *tsk, struct task_cputime *times)
 		 * it.
 		 */
 		thread_group_cputime(tsk, &sum);
-		spin_lock_irqsave(&cputimer->lock, flags);
+		raw_spin_lock_irqsave(&cputimer->lock, flags);
 		cputimer->running = 1;
 		update_gt_cputime(&cputimer->cputime, &sum);
 	} else
-		spin_lock_irqsave(&cputimer->lock, flags);
+		raw_spin_lock_irqsave(&cputimer->lock, flags);
 	*times = cputimer->cputime;
 	raw_spin_unlock_irqrestore(&cputimer->lock, flags);
 }
