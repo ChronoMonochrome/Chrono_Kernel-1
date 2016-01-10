@@ -252,23 +252,6 @@ void prcmu_qos_set_cpufreq_opp_delay(unsigned long n)
 #ifdef CONFIG_CPU_FREQ
 static void update_cpu_limits(s32 min_freq)
 {
-	int cpu;
-	struct cpufreq_policy policy;
-	int ret;
-
-	for_each_online_cpu(cpu) {
-		ret = cpufreq_get_policy(&policy, cpu);
-		if (ret) {
-			pr_err("prcmu qos: get cpufreq policy failed (cpu%d)\n",
-			       cpu);
-			continue;
-		}
-
-		ret = cpufreq_update_freq(cpu, min_freq, policy.max);
-		if (ret)
-			pr_err("prcmu qos: update cpufreq "
-			       "frequency limits failed\n");
-	}
 }
 #else
 static inline void update_cpu_limits(s32 min_freq) { }
