@@ -2108,6 +2108,7 @@ unsigned long nr_running(void)
 
 	return sum;
 }
+EXPORT_SYMBOL_GPL(nr_running);
 
 unsigned long nr_uninterruptible(void)
 {
@@ -3207,6 +3208,7 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
 }
 #endif
 
+EXPORT_SYMBOL_GPL(thread_group_times);
 /*
  * This function gets called by the timer code, with HZ frequency.
  * We call it with interrupts disabled.
@@ -4161,6 +4163,7 @@ int task_prio(const struct task_struct *p)
 {
 	return p->prio - MAX_RT_PRIO;
 }
+EXPORT_SYMBOL(task_prio);
 
 /**
  * task_nice - return the nice value of a given task.
@@ -4428,6 +4431,7 @@ int sched_setscheduler_nocheck(struct task_struct *p, int policy,
 {
 	return __sched_setscheduler(p, policy, param, false);
 }
+EXPORT_SYMBOL_GPL(sched_setscheduler_nocheck);
 
 static int
 do_sched_setscheduler(pid_t pid, int policy, struct sched_param __user *param)
