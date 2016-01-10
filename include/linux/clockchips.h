@@ -140,9 +140,11 @@ extern void clockevents_set_mode(struct clock_event_device *dev,
 				 enum clock_event_mode mode);
 extern int clockevents_register_notifier(struct notifier_block *nb);
 extern int clockevents_program_event(struct clock_event_device *dev,
-				     ktime_t expires, ktime_t now);
+				     ktime_t expires, bool force);
 
 extern void clockevents_handle_noop(struct clock_event_device *dev);
+
+extern int clockevents_reconfigure(struct clock_event_device *ce, u32 freq, u32 minsec);
 
 static inline void
 clockevents_calc_mult_shift(struct clock_event_device *ce, u32 freq, u32 minsec)

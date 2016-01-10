@@ -712,8 +712,12 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
 		 * the max trace buffer (no one writes directly to it)
 		 * and flag that it failed.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		trace_array_printk(&max_tr, _THIS_IP_,
 			"Failed to swap buffers due to commit in progress\n");
+#else
+		trace_array_;
+#endif
 	}
 
 	ftrace_enable_cpu();
@@ -799,7 +803,11 @@ __acquires(kernel_lock)
 		/* the test is responsible for resetting too */
 		current_trace = saved_tracer;
 		if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "FAILED!\n");
+#else
+			;
+#endif
 			goto out;
 		}
 		/* Only reset on passing, to avoid touching corrupted buffers */
@@ -809,7 +817,11 @@ __acquires(kernel_lock)
 		if (ring_buffer_expanded && type->use_max_tr)
 			ring_buffer_resize(max_tr.buffer, 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "PASSED\n");
+#else
+		;
+#endif
 	}
 #endif
 
@@ -826,15 +838,23 @@ __acquires(kernel_lock)
 	if (strncmp(default_bootup_tracer, type->name, MAX_TRACER_SIZE))
 		goto out_unlock;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Starting tracer '%s'\n", type->name);
+#else
+	;
+#endif
 	/* Do we want this tracer to start on bootup? */
 	tracing_set_tracer(type->name);
 	default_bootup_tracer = NULL;
 	/* disable other selftests, since this will break it. */
 	tracing_selftest_disabled = 1;
 #ifdef CONFIG_FTRACE_STARTUP_TEST
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Disabling FTRACE selftests due to running tracer '%s'\n",
 	       type->name);
+#else
+	;
+#endif
 #endif
 
  out_unlock:
@@ -1367,10 +1387,14 @@ static void __trace_userstack(struct trace_array *tr, unsigned long flags)
  * trace_vbprintk - write binary msg to tracing buffer
  *
  */
+#ifdef CONFIG_DEBUG_PRINTK
 int trace_vbprintk(unsigned long ip, const char *fmt, va_list args)
 {
 	static arch_spinlock_t trace_buf_lock =
 		(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
+#else
+int trace_vb;
+#endif
 	static u32 trace_buf[TRACE_BUF_SIZE];
 
 	struct ftrace_event_call *call = &event_bprint;
@@ -1435,25 +1459,37 @@ out:
 }
 EXPORT_SYMBOL_GPL(trace_vbprintk);
 
+#ifdef CONFIG_DEBUG_PRINTK
 int trace_array_printk(struct trace_array *tr,
 		       unsigned long ip, const char *fmt, ...)
 {
 	int ret;
+#else
+int trace_array_;
+#endif
 	va_list ap;
 
 	if (!(trace_flags & TRACE_ITER_PRINTK))
 		return 0;
 
 	va_start(ap, fmt);
+#ifdef CONFIG_DEBUG_PRINTK
 	ret = trace_array_vprintk(tr, ip, fmt, ap);
+#else
+	ret = trace_array_v;
+#endif
 	va_end(ap);
 	return ret;
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 int trace_array_vprintk(struct trace_array *tr,
 			unsigned long ip, const char *fmt, va_list args)
 {
 	static arch_spinlock_t trace_buf_lock = __ARCH_SPIN_LOCK_UNLOCKED;
+#else
+int trace_array_v;
+#endif
 	static char trace_buf[TRACE_BUF_SIZE];
 
 	struct ftrace_event_call *call = &event_print;
@@ -1509,9 +1545,13 @@ int trace_array_vprintk(struct trace_array *tr,
 	return len;
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 int trace_vprintk(unsigned long ip, const char *fmt, va_list args)
 {
 	return trace_array_vprintk(&global_trace, ip, fmt, args);
+#else
+int trace_v;
+#endif
 }
 EXPORT_SYMBOL_GPL(trace_vprintk);
 
@@ -3530,12 +3570,20 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
 	return cnt;
 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 static int mark_printk(const char *fmt, ...)
 {
 	int ret;
+#else
+static int mark_;
+#endif
 	va_list args;
 	va_start(args, fmt);
+#ifdef CONFIG_DEBUG_PRINTK
 	ret = trace_vprintk(0, fmt, args);
+#else
+	ret = trace_v;
+#endif
 	va_end(args);
 	return ret;
 }
@@ -3567,7 +3615,11 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
 	} else
 		buf[cnt] = '\0';
 
+#ifdef CONFIG_DEBUG_PRINTK
 	written = mark_printk("%s", buf);
+#else
+	written = mark_;
+#endif
 	kfree(buf);
 	*fpos += written;
 
@@ -4488,7 +4540,11 @@ trace_printk_seq(struct trace_seq *s)
 	/* should be zero ended, but we are paranoid. */
 	s->buffer[s->len] = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_TRACE "%s", s->buffer);
+#else
+	;
+#endif
 
 	trace_seq_init(s);
 }
@@ -4552,11 +4608,19 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
 	case DUMP_NONE:
 		goto out_enable;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_TRACE "Bad dumping mode, switching to all CPUs dump\n");
+#else
+		;
+#endif
 		iter.cpu_file = TRACE_PIPE_ALL_CPU;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_TRACE "Dumping ftrace buffer:\n");
+#else
+	;
+#endif
 
 	/*
 	 * We need to stop all tracing on all CPUS to read the
@@ -4568,7 +4632,11 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
 	while (!trace_empty(&iter)) {
 
 		if (!cnt)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_TRACE "---------------------------------\n");
+#else
+			;
+#endif
 
 		cnt++;
 
@@ -4591,9 +4659,17 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
 	}
 
 	if (!cnt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_TRACE "   (ftrace buffer empty)\n");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_TRACE "---------------------------------\n");
+#else
+		;
+#endif
 
  out_enable:
 	trace_flags |= old_userobj;
@@ -4603,12 +4679,6 @@ void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
 	}
  	atomic_dec(&dump_running);
 	local_irq_restore(flags);
-}
-
-/* By default: disable tracing after the dump */
-void ftrace_dump(enum ftrace_dump_mode oops_dump_mode)
-{
-	__ftrace_dump(true, oops_dump_mode);
 }
 EXPORT_SYMBOL_GPL(ftrace_dump);
 
@@ -4698,8 +4768,12 @@ __init static int clear_boot_tracer(void)
 	if (!default_bootup_tracer)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ftrace bootup tracer '%s' not registered.\n",
 	       default_bootup_tracer);
+#else
+	;
+#endif
 	default_bootup_tracer = NULL;
 
 	return 0;

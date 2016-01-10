@@ -23,13 +23,9 @@
 #include <linux/init.h>
 #include <linux/nmi.h>
 #include <linux/dmi.h>
-#include <linux/console.h>
 
 #define PANIC_TIMER_STEP 100
 #define PANIC_BLINK_SPD 18
-
-/* Machine specific panic information string */
-char *mach_panic_string;
 
 int panic_on_oops;
 static unsigned long tainted_mask;
@@ -37,10 +33,7 @@ static int pause_on_oops;
 static int pause_on_oops_flag;
 static DEFINE_SPINLOCK(pause_on_oops_lock);
 
-#ifndef CONFIG_PANIC_TIMEOUT
-#define CONFIG_PANIC_TIMEOUT 0
-#endif
-int panic_timeout = CONFIG_PANIC_TIMEOUT;
+int panic_timeout;
 EXPORT_SYMBOL_GPL(panic_timeout);
 
 ATOMIC_NOTIFIER_HEAD(panic_notifier_list);
@@ -72,14 +65,6 @@ NORET_TYPE void panic(const char * fmt, ...)
 	int state = 0;
 
 	/*
-	 * Disable local interrupts. This will prevent panic_smp_self_stop
-	 * from deadlocking the first cpu that invokes the panic, since
-	 * there is nothing to prevent an interrupt handler (that runs
-	 * after the panic_lock is acquired) from invoking panic again.
-	 */
-	local_irq_disable();
-
-	/*
 	 * It's possible to come here directly from a panic-assertion and
 	 * not have preempt disabled. Some functions called from here want
 	 * preempt to be disabled. No point enabling it later though...
@@ -91,7 +76,7 @@ NORET_TYPE void panic(const char * fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
-	printk(KERN_EMERG "Kernel panic - not syncing: %s\n",buf);
+;
 #ifdef CONFIG_DEBUG_BUGVERBOSE
 	dump_stack();
 #endif
@@ -114,13 +99,6 @@ NORET_TYPE void panic(const char * fmt, ...)
 
 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
 
-	/*
-	 * Unlock the console anyway here, in case it's occupied by another
-	 * one which has no chance to unlock the console thus prevents the
-	 * panic log prints on the console.
-	 */
-	console_unlock();
-
 	bust_spinlocks(0);
 
 	if (!panic_blink)
@@ -131,7 +109,7 @@ NORET_TYPE void panic(const char * fmt, ...)
 		 * Delay timeout seconds before rebooting the machine.
 		 * We can't use the "normal" timers since we just panicked.
 		 */
-		printk(KERN_EMERG "Rebooting in %d seconds..", panic_timeout);
+;
 
 		for (i = 0; i < panic_timeout * 1000; i += PANIC_TIMER_STEP) {
 			touch_nmi_watchdog();
@@ -153,7 +131,7 @@ NORET_TYPE void panic(const char * fmt, ...)
 		extern int stop_a_enabled;
 		/* Make sure the user can actually press Stop-A (L1-A) */
 		stop_a_enabled = 1;
-		printk(KERN_EMERG "Press Stop-A (L1-A) to return to the boot prom\n");
+;
 	}
 #endif
 #if defined(CONFIG_S390)
@@ -266,7 +244,7 @@ void add_taint(unsigned flag)
 
 	default:
 		if (__debug_locks_off())
-			printk(KERN_WARNING "Disabling lock debugging due to kernel taint\n");
+;
 	}
 
 	set_bit(flag, &tainted_mask);
@@ -372,13 +350,12 @@ late_initcall(init_oops_id);
 void print_oops_end_marker(void)
 {
 	init_oops_id();
-
-	if (mach_panic_string)
-		printk(KERN_WARNING "Board Information: %s\n",
-		       mach_panic_string);
-
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "---[ end trace %016llx ]---\n",
 		(unsigned long long)oops_id);
+#else
+	;
+#endif
 }
 
 /*
@@ -403,14 +380,14 @@ static void warn_slowpath_common(const char *file, int line, void *caller,
 {
 	const char *board;
 
-	printk(KERN_WARNING "------------[ cut here ]------------\n");
-	printk(KERN_WARNING "WARNING: at %s:%d %pS()\n", file, line, caller);
+;
+;
 	board = dmi_get_system_info(DMI_PRODUCT_NAME);
 	if (board)
-		printk(KERN_WARNING "Hardware name: %s\n", board);
+;
 
 	if (args)
-		vprintk(args->fmt, args->args);
+;
 
 	print_modules();
 	dump_stack();

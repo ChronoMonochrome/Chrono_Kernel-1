@@ -96,6 +96,7 @@ extern char core_pattern[];
 extern unsigned int core_pipe_limit;
 extern int pid_max;
 extern int min_free_kbytes;
+extern int extra_free_kbytes;
 extern int min_free_order_shift;
 extern int pid_max_min, pid_max_max;
 extern int sysctl_drop_caches;
@@ -169,7 +170,7 @@ extern int unaligned_dump_stack;
 static int proc_do_cad_pid(struct ctl_table *table, int write,
 		  void __user *buffer, size_t *lenp, loff_t *ppos);
 static int proc_taint(struct ctl_table *table, int write,
-			       void __user *buffer, size_t *lenp, loff_t *ppos);
+				void __user *buffer, size_t *lenp, loff_t *ppos);
 #endif
 
 #ifdef CONFIG_PRINTK
@@ -375,19 +376,9 @@ static struct ctl_table kern_table[] = {
 		.data		= &sysctl_sched_autogroup_enabled,
 		.maxlen		= sizeof(unsigned int),
 		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
+		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 		.extra2		= &one,
-	},
-#endif
-#ifdef CONFIG_CFS_BANDWIDTH
-	{
-		.procname	= "sched_cfs_bandwidth_slice_us",
-		.data		= &sysctl_sched_cfs_bandwidth_slice,
-		.maxlen		= sizeof(unsigned int),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec_minmax,
-		.extra1		= &one,
 	},
 #endif
 #ifdef CONFIG_PROVE_LOCKING
@@ -734,10 +725,10 @@ static struct ctl_table kern_table[] = {
 	},
 #if defined(CONFIG_LOCKUP_DETECTOR)
 	{
-		.procname       = "watchdog",
-		.data           = &watchdog_enabled,
-		.maxlen         = sizeof (int),
-		.mode           = 0644,
+		.procname	= "watchdog",
+		.data	    = &watchdog_enabled,
+		.maxlen	  = sizeof (int),
+		.mode	    = 0644,
 		.proc_handler   = proc_dowatchdog,
 		.extra1		= &zero,
 		.extra2		= &one,
@@ -761,10 +752,10 @@ static struct ctl_table kern_table[] = {
 		.extra2		= &one,
 	},
 	{
-		.procname       = "nmi_watchdog",
-		.data           = &watchdog_enabled,
-		.maxlen         = sizeof (int),
-		.mode           = 0644,
+		.procname	= "nmi_watchdog",
+		.data	    = &watchdog_enabled,
+		.maxlen	  = sizeof (int),
+		.mode	    = 0644,
 		.proc_handler   = proc_dowatchdog,
 		.extra1		= &zero,
 		.extra2		= &one,
@@ -772,10 +763,10 @@ static struct ctl_table kern_table[] = {
 #endif
 #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86)
 	{
-		.procname       = "unknown_nmi_panic",
-		.data           = &unknown_nmi_panic,
-		.maxlen         = sizeof (int),
-		.mode           = 0644,
+		.procname	= "unknown_nmi_panic",
+		.data	    = &unknown_nmi_panic,
+		.maxlen	  = sizeof (int),
+		.mode	    = 0644,
 		.proc_handler   = proc_dointvec,
 	},
 #endif
@@ -932,10 +923,10 @@ static struct ctl_table kern_table[] = {
 #endif
 #ifdef CONFIG_RCU_TORTURE_TEST
 	{
-		.procname       = "rcutorture_runnable",
-		.data           = &rcutorture_runnable,
-		.maxlen         = sizeof(int),
-		.mode           = 0644,
+		.procname	= "rcutorture_runnable",
+		.data	    = &rcutorture_runnable,
+		.maxlen	  = sizeof(int),
+		.mode	    = 0644,
 		.proc_handler	= proc_dointvec,
 	},
 #endif
@@ -984,6 +975,17 @@ static struct ctl_table kern_table[] = {
 		.maxlen		= sizeof(int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
+	},
+#endif
+#ifdef CONFIG_ARCH_MMAP_RND_BITS
+	{
+		.procname	= "mmap_rnd_bits",
+		.data		= &mmap_rnd_bits,
+		.maxlen		= sizeof(mmap_rnd_bits),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &mmap_rnd_bits_min,
+		.extra2		= &mmap_rnd_bits_max,
 	},
 #endif
 	{ }
@@ -1078,6 +1080,33 @@ static struct ctl_table vm_table[] = {
 		.mode		= 0644,
 		.proc_handler	= dirty_writeback_centisecs_handler,
 	},
+#ifdef CONFIG_DYNAMIC_PAGE_WRITEBACK
+	{
+	        .procname       = "dynamic_dirty_writeback",
+	        .data           = &dyn_dirty_writeback_enabled,
+	        .maxlen         = sizeof(dyn_dirty_writeback_enabled),
+	        .mode           = 0644,
+	        .proc_handler   = dynamic_dirty_writeback_handler,
+	        .extra1         = &zero,
+	        .extra2         = &one,
+	},
+	{
+	        .procname       = "dirty_writeback_active_centisecs",
+	        .data           = &dirty_writeback_active_interval,
+	        .maxlen         = sizeof(dirty_writeback_active_interval),
+	        .mode           = 0644,
+	        .proc_handler   = dirty_writeback_active_centisecs_handler,
+	        .extra1         = &zero,
+	},
+	{
+	        .procname       = "dirty_writeback_suspend_centisecs",
+	        .data           = &dirty_writeback_suspend_interval,
+	        .maxlen         = sizeof(dirty_writeback_suspend_interval),
+	        .mode           = 0644,
+	        .proc_handler   = dirty_writeback_suspend_centisecs_handler,
+	        .extra1         = &zero,
+	},
+#endif
 	{
 		.procname	= "dirty_expire_centisecs",
 		.data		= &dirty_expire_interval,
@@ -1114,10 +1143,10 @@ static struct ctl_table vm_table[] = {
 	},
 #ifdef CONFIG_NUMA
 	{
-		.procname       = "nr_hugepages_mempolicy",
-		.data           = NULL,
-		.maxlen         = sizeof(unsigned long),
-		.mode           = 0644,
+		.procname	= "nr_hugepages_mempolicy",
+		.data	    = NULL,
+		.maxlen	  = sizeof(unsigned long),
+		.mode	    = 0644,
 		.proc_handler   = &hugetlb_mempolicy_sysctl_handler,
 		.extra1		= (void *)&hugetlb_zero,
 		.extra2		= (void *)&hugetlb_infinity,
@@ -1186,6 +1215,14 @@ static struct ctl_table vm_table[] = {
 		.procname	= "min_free_kbytes",
 		.data		= &min_free_kbytes,
 		.maxlen		= sizeof(min_free_kbytes),
+		.mode		= 0644,
+		.proc_handler	= min_free_kbytes_sysctl_handler,
+		.extra1		= &zero,
+	},
+	{
+		.procname	= "extra_free_kbytes",
+		.data		= &extra_free_kbytes,
+		.maxlen		= sizeof(extra_free_kbytes),
 		.mode		= 0644,
 		.proc_handler	= min_free_kbytes_sysctl_handler,
 		.extra1		= &zero,
@@ -1813,7 +1850,7 @@ static void try_attach(struct ctl_table_header *p, struct ctl_table_header *q)
  * The members of the &struct ctl_table structure are used as follows:
  *
  * procname - the name of the sysctl file under /proc/sys. Set to %NULL to not
- *            enter a sysctl file
+ *	     enter a sysctl file
  *
  * data - a pointer to data for use by proc_handler
  *
@@ -1822,7 +1859,7 @@ static void try_attach(struct ctl_table_header *p, struct ctl_table_header *q)
  * mode - the file permissions for the /proc/sys file, and for sysctl(2)
  *
  * child - a pointer to the child sysctl table if this entry is a directory, or
- *         %NULL.
+ *	  %NULL.
  *
  * proc_handler - the text handler routine (described below)
  *
@@ -2124,13 +2161,16 @@ int proc_dostring(struct ctl_table *table, int write,
 		  void __user *buffer, size_t *lenp, loff_t *ppos)
 {
 	return _proc_do_string(table->data, table->maxlen, write,
-			       buffer, lenp, ppos);
+				buffer, lenp, ppos);
 }
 
 static size_t proc_skip_spaces(char **buf)
 {
 	size_t ret;
-	char *tmp = skip_spaces(*buf);
+	char *tmp;
+	if (!buf)
+		buf = 0;
+	tmp = skip_spaces(*buf);
 	ret = tmp - *buf;
 	*buf = tmp;
 	return ret;
@@ -2283,7 +2323,7 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
 	int *i, vleft, first = 1, err = 0;
 	unsigned long page = 0;
 	size_t left;
-	char *kbuf;
+	char *kbuf = 0;
 	
 	if (!tbl_data || !table->maxlen || !*lenp || (*ppos && !write)) {
 		*lenp = 0;
@@ -2394,7 +2434,7 @@ int proc_dointvec(struct ctl_table *table, int write,
  * This means we can safely use a temporary.
  */
 static int proc_taint(struct ctl_table *table, int write,
-			       void __user *buffer, size_t *lenp, loff_t *ppos)
+				void __user *buffer, size_t *lenp, loff_t *ppos)
 {
 	struct ctl_table t;
 	unsigned long tmptaint = get_taint();
@@ -2501,7 +2541,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int 
 	int vleft, first = 1, err = 0;
 	unsigned long page = 0;
 	size_t left;
-	char *kbuf;
+	char *kbuf = NULL;
 
 	if (!data || !table->maxlen || !*lenp || (*ppos && !write)) {
 		*lenp = 0;
@@ -2773,7 +2813,7 @@ static int proc_do_cad_pid(struct ctl_table *table, int write,
 	tmp = pid_vnr(cad_pid);
 
 	r = __do_proc_dointvec(&tmp, table, write, buffer,
-			       lenp, ppos, NULL, NULL);
+				lenp, ppos, NULL, NULL);
 	if (r || !write)
 		return r;
 
@@ -2832,7 +2872,7 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
 		if (copy_from_user(kbuf, buffer, left)) {
 			free_page(page);
 			return -EFAULT;
-                }
+	         }
 		kbuf[left] = 0;
 
 		tmp_bitmap = kzalloc(BITS_TO_LONGS(bitmap_len) * sizeof(unsigned long),

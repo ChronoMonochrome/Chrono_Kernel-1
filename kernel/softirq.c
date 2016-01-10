@@ -347,12 +347,12 @@ void irq_exit(void)
 	if (!in_interrupt() && local_softirq_pending())
 		invoke_softirq();
 
+	rcu_irq_exit();
 #ifdef CONFIG_NO_HZ
 	/* Make sure that timer wheel updates are propagated */
 	if (idle_cpu(smp_processor_id()) && !in_interrupt() && !need_resched())
 		tick_nohz_stop_sched_tick(0);
 #endif
-	rcu_irq_exit();
 	preempt_enable_no_resched();
 }
 
@@ -527,7 +527,11 @@ EXPORT_SYMBOL(tasklet_init);
 void tasklet_kill(struct tasklet_struct *t)
 {
 	if (in_interrupt())
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Attempt to kill tasklet from interrupt\n");
+#else
+		;
+#endif
 
 	while (test_and_set_bit(TASKLET_STATE_SCHED, &t->state)) {
 		do {
@@ -858,7 +862,11 @@ static int __cpuinit cpu_callback(struct notifier_block *nfb,
 					   cpu_to_node(hotcpu),
 					   "ksoftirqd/%d", hotcpu);
 		if (IS_ERR(p)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ksoftirqd for %i failed\n", hotcpu);
+#else
+			;
+#endif
 			return notifier_from_errno(PTR_ERR(p));
 		}
 		kthread_bind(p, hotcpu);

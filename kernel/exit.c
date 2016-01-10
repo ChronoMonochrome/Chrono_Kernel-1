@@ -86,6 +86,7 @@ static void __exit_signal(struct task_struct *tsk)
 	struct tty_struct *uninitialized_var(tty);
 
 	sighand = rcu_dereference_check(tsk->sighand,
+					rcu_read_lock_held() ||
 					lockdep_tasklist_lock_is_held());
 	spin_lock(&sighand->siglock);
 
@@ -943,12 +944,6 @@ NORET_TYPE void do_exit(long code)
 		schedule();
 	}
 
-	/*
-	 * @tsk's threadgroup is going through changes - lock out users
-	 * which expect stable threadgroup.
-	 */
-	threadgroup_change_begin(tsk);
-
 	exit_irq_thread();
 
 	exit_signals(tsk);  /* sets PF_EXITING */
@@ -1052,12 +1047,6 @@ NORET_TYPE void do_exit(long code)
 	if (tsk->nr_dirtied)
 		__this_cpu_add(dirty_throttle_leaks, tsk->nr_dirtied);
 	exit_rcu();
-
-	/*
-	 * Release threadgroup and make sure we are holding no locks.
-	 */
-	threadgroup_change_done(tsk);
-	debug_check_no_locks_held();
 
 	/*
 	 * The setting of TASK_RUNNING by try_to_wake_up() may be delayed

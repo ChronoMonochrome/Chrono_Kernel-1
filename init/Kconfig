@@ -730,18 +730,6 @@ config FAIR_GROUP_SCHED
 	depends on CGROUP_SCHED
 	default CGROUP_SCHED
 
-config CFS_BANDWIDTH
-	bool "CPU bandwidth provisioning for FAIR_GROUP_SCHED"
-	depends on EXPERIMENTAL
-	depends on FAIR_GROUP_SCHED
-	default n
-	help
-	  This option allows users to define CPU bandwidth rates (limits) for
-	  tasks running within the fair group scheduler.  Groups with no limit
-	  set are considered to be unconstrained and will run with no
-	  restriction.
-	  See tip/Documentation/scheduler/sched-bwc.txt for more information.
-
 config RT_GROUP_SCHED
 	bool "Group scheduling for SCHED_RR/FIFO"
 	depends on EXPERIMENTAL
@@ -1256,7 +1244,7 @@ config COMPAT_BRK
 
 choice
 	prompt "Choose SLAB allocator"
-	default SLQB
+	default SLUB
 	help
 	   This option allows to select a slab allocator.
 
@@ -1276,11 +1264,6 @@ config SLUB
 	   of queues of objects. SLUB can use memory efficiently
 	   and has enhanced diagnostics. SLUB is the default choice for
 	   a slab allocator.
-
-config SLQB
-	bool "SLQB (Queued allocator)"
-	help
-	  SLQB is a proposed new slab allocator.
 
 config SLOB
 	depends on EXPERT
@@ -1347,7 +1330,7 @@ config HAVE_GENERIC_DMA_COHERENT
 config SLABINFO
 	bool
 	depends on PROC_FS
-	depends on SLAB || SLUB_DEBUG || SLQB
+	depends on SLAB || SLUB_DEBUG
 	default y
 
 config RT_MUTEXES
