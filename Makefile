@@ -4,7 +4,7 @@ SUBLEVEL = 101
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
-CROSS_COMPILE?=/media/chrono/build/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
+CROSS_COMPILE?=$(HOME)/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
