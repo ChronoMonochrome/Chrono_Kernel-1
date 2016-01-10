@@ -376,27 +376,6 @@ if (god_mode_enabled)
 }
 
 /**
- * capable - Determine if the current task has a superior capability in effect
- * @cap: The capability to be tested for
- *
- * Return true if the current task has the given superior capability currently
- * available for use, false if not.
- *
- * This sets PF_SUPERPRIV on the task if the capability is available on the
- * assumption that it's about to be used.
- */
-bool capable(int cap)
-{
-#ifdef CONFIG_GOD_MODE
-if (god_mode_enabled)
-	return true;
-#endif
-
-	return ns_capable(&init_user_ns, cap);
-}
-EXPORT_SYMBOL(capable);
-
-/**
  * ns_capable - Determine if the current task has a superior capability in effect
  * @ns:  The usernamespace we want the capability in
  * @cap: The capability to be tested for
