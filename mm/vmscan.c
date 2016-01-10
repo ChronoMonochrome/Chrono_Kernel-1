@@ -1248,14 +1248,6 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
 			continue;
 
 		/*
-		 * To save a few cycles, the following pfn-based isolation
-		 * could be bypassed if the newly isolated page is no less
-		 * than the order aligned region.
-		 */
-		if (isolated_pages >= (1 << order))
-			continue;
-
-		/*
 		 * Attempt to take all pages in the order aligned region
 		 * surrounding the tag page.  Only take those pages of
 		 * the same active state as that tag page.  We may safely
