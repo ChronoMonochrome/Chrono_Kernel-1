@@ -11,6 +11,7 @@
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
+#include <linux/sysdev.h>
 #include <linux/cpu.h>
 #include <linux/sysfs.h>
 #include <linux/cpufreq.h>
