@@ -13,7 +13,6 @@
 #include <linux/swapops.h>
 #include <linux/init.h>
 #include <linux/pagemap.h>
-#include <linux/buffer_head.h>
 #include <linux/backing-dev.h>
 #include <linux/pagevec.h>
 #include <linux/migrate.h>
@@ -393,11 +392,16 @@ struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
 {
 	struct page *page;
 	unsigned long offset = swp_offset(entry);
-	unsigned long end_offset;
+	unsigned long start_offset, end_offset;
+	unsigned long mask = (1UL << page_cluster) - 1;
 
-	get_swap_cluster(entry, &offset, &end_offset);
+	/* Read a page_cluster sized and aligned cluster around offset. */
+	start_offset = offset & ~mask;
+	end_offset = offset | mask;
+	if (!start_offset)	/* First page is swap header. */
+		start_offset++;
 
-	for (; offset <= end_offset ; offset++) {
+	for (offset = start_offset; offset <= end_offset ; offset++) {
 		/* Ok, do the async read-ahead now */
 		page = read_swap_cache_async(swp_entry(swp_type(entry), offset),
 						gfp_mask, vma, addr);
