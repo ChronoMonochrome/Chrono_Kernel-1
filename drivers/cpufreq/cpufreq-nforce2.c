@@ -328,12 +328,8 @@ static int nforce2_cpu_init(struct cpufreq_policy *policy)
 	/* FIX: Get FID from CPU */
 	if (!fid) {
 		if (!cpu_khz) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX
 			"cpu_khz not set, can't calculate multiplier!\n");
-#else
-			;
-#endif
 			return -ENODEV;
 		}
 
@@ -348,12 +344,8 @@ static int nforce2_cpu_init(struct cpufreq_policy *policy)
 		}
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "FSB currently at %i MHz, FID %d.%d\n", fsb,
 	       fid / 10, fid % 10);
-#else
-	;
-#endif
 
 	/* Set maximum FSB to FSB at boot time */
 	max_fsb = nforce2_fsb_read(1);
@@ -393,6 +385,14 @@ static struct cpufreq_driver nforce2_driver = {
 	.owner = THIS_MODULE,
 };
 
+#ifdef MODULE
+static DEFINE_PCI_DEVICE_TABLE(nforce2_ids) = {
+	{ PCI_VENDOR_ID_NVIDIA, PCI_DEVICE_ID_NVIDIA_NFORCE2 },
+	{}
+};
+MODULE_DEVICE_TABLE(pci, nforce2_ids);
+#endif
+
 /**
  * nforce2_detect_chipset - detect the Southbridge which contains FSB PLL logic
  *
@@ -408,19 +408,11 @@ static int nforce2_detect_chipset(void)
 	if (nforce2_dev == NULL)
 		return -ENODEV;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Detected nForce2 chipset revision %X\n",
 	       nforce2_dev->revision);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 	       "FSB changing is maybe unstable and can lead to "
 	       "crashes and data loss.\n");
-#else
-	;
-#endif
 
 	return 0;
 }
@@ -438,11 +430,7 @@ static int __init nforce2_init(void)
 
 	/* detect chipset */
 	if (nforce2_detect_chipset()) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "No nForce2 chipset.\n");
-#else
-		;
-#endif
 		return -ENODEV;
 	}
 

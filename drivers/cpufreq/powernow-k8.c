@@ -1,10 +1,11 @@
 /*
- *   (c) 2003-2010 Advanced Micro Devices, Inc.
+ *   (c) 2003-2012 Advanced Micro Devices, Inc.
  *  Your use of this code is subject to the terms and conditions of the
  *  GNU general public license version 2. See "COPYING" or
  *  http://www.gnu.org/licenses/gpl.html
  *
- *  Support : mark.langsdorf@amd.com
+ *  Maintainer:
+ *  Andreas Herrmann <andreas.herrmann3@amd.com>
  *
  *  Based on the powernow-k7.c module written by Dave Jones.
  *  (C) 2003 Dave Jones on behalf of SuSE Labs
@@ -16,12 +17,14 @@
  *  Valuable input gratefully received from Dave Jones, Pavel Machek,
  *  Dominik Brodowski, Jacob Shin, and others.
  *  Originally developed by Paul Devriendt.
- *  Processor information obtained from Chapter 9 (Power and Thermal Management)
- *  of the "BIOS and Kernel Developer's Guide for the AMD Athlon 64 and AMD
- *  Opteron Processors" available for download from www.amd.com
  *
- *  Tables for specific CPUs can be inferred from
- *     http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/30430.pdf
+ *  Processor information obtained from Chapter 9 (Power and Thermal
+ *  Management) of the "BIOS and Kernel Developer's Guide (BKDG) for
+ *  the AMD Athlon 64 and AMD Opteron Processors" and section "2.x
+ *  Power Management" in BKDGs for newer AMD CPU families.
+ *
+ *  Tables for specific CPUs can be inferred from AMD's processor
+ *  power and thermal data sheets, (e.g. 30417.pdf, 30430.pdf, 43375.pdf)
  */
 
 #include <linux/kernel.h>
@@ -36,6 +39,7 @@
 #include <linux/delay.h>
 
 #include <asm/msr.h>
+#include <asm/cpu_device_id.h>
 
 #include <linux/acpi.h>
 #include <linux/mutex.h>
@@ -516,6 +520,15 @@ static int core_voltage_post_transition(struct powernow_k8_data *data,
 	return 0;
 }
 
+static const struct x86_cpu_id powernow_k8_ids[] = {
+	/* IO based frequency switching */
+	{ X86_VENDOR_AMD, 0xf },
+	/* MSR based frequency switching supported */
+	X86_FEATURE_MATCH(X86_FEATURE_HW_PSTATE),
+	{}
+};
+MODULE_DEVICE_TABLE(x86cpu, powernow_k8_ids);
+
 static void check_supported_cpu(void *_rc)
 {
 	u32 eax, ebx, ecx, edx;
@@ -523,46 +536,28 @@ static void check_supported_cpu(void *_rc)
 
 	*rc = -ENODEV;
 
-	if (__this_cpu_read(cpu_info.x86_vendor) != X86_VENDOR_AMD)
-		return;
-
 	eax = cpuid_eax(CPUID_PROCESSOR_SIGNATURE);
-	if (((eax & CPUID_XFAM) != CPUID_XFAM_K8) &&
-	    ((eax & CPUID_XFAM) < CPUID_XFAM_10H))
-		return;
 
 	if ((eax & CPUID_XFAM) == CPUID_XFAM_K8) {
 		if (((eax & CPUID_USE_XFAM_XMOD) != CPUID_USE_XFAM_XMOD) ||
 		    ((eax & CPUID_XMOD) > CPUID_XMOD_REV_MASK)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 				"Processor cpuid %x not supported\n", eax);
-#else
-			;
-#endif
 			return;
 		}
 
 		eax = cpuid_eax(CPUID_GET_MAX_CAPABILITIES);
 		if (eax < CPUID_FREQ_VOLT_CAPABILITIES) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 			       "No frequency change capabilities detected\n");
-#else
-			;
-#endif
 			return;
 		}
 
 		cpuid(CPUID_FREQ_VOLT_CAPABILITIES, &eax, &ebx, &ecx, &edx);
 		if ((edx & P_STATE_TRANSITION_CAPABLE)
 			!= P_STATE_TRANSITION_CAPABLE) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 				"Power state transitions not supported\n");
-#else
-			;
-#endif
 			return;
 		}
 	} else { /* must be a HW Pstate capable processor */
@@ -619,12 +614,8 @@ static int check_pst_table(struct powernow_k8_data *data, struct pst_s *pst,
 		return -EINVAL;
 	}
 	if (lastfid > LO_FID_TABLE_TOP)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO FW_BUG PFX
 			"first fid not from lo freq table\n");
-#else
-		;
-#endif
 
 	return 0;
 }
@@ -642,34 +633,22 @@ static void print_basics(struct powernow_k8_data *data)
 		if (data->powernow_table[j].frequency !=
 				CPUFREQ_ENTRY_INVALID) {
 			if (cpu_family == CPU_HW_PSTATE) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PFX
 					"   %d : pstate %d (%d MHz)\n", j,
 					data->powernow_table[j].index,
 					data->powernow_table[j].frequency/1000);
-#else
-				;
-#endif
 			} else {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PFX
 					"fid 0x%x (%d MHz), vid 0x%x\n",
 					data->powernow_table[j].index & 0xff,
 					data->powernow_table[j].frequency/1000,
 					data->powernow_table[j].index >> 8);
-#else
-				;
-#endif
 			}
 		}
 	}
 	if (data->batps)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Only %d pstates on battery\n",
 				data->batps);
-#else
-		;
-#endif
 }
 
 static u32 freq_from_fid_did(u32 fid, u32 did)
@@ -694,13 +673,9 @@ static int fill_powernow_table(struct powernow_k8_data *data,
 
 	if (data->batps) {
 		/* use ACPI support to get full speed on mains power */
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 			"Only %d pstates usable (use ACPI driver for full "
 			"range\n", data->batps);
-#else
-		;
-#endif
 		data->numps = data->batps;
 	}
 
@@ -1030,15 +1005,11 @@ static int fill_powernow_table_fidvid(struct powernow_k8_data *data,
 		}
 
 		if (freq != (data->acpi_data.states[i].core_frequency * 1000)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "invalid freq entries "
 				"%u kHz vs. %u kHz\n", freq,
 				(unsigned int)
 				(data->acpi_data.states[i].core_frequency
 				 * 1000));
-#else
-			;
-#endif
 			invalidate_entry(powernow_table, i);
 			continue;
 		}
@@ -1208,15 +1179,11 @@ static long powernowk8_target_fn(void *arg)
 
 		if ((checkvid != data->currvid) ||
 		    (checkfid != data->currfid)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 				"error - out of sync, fix 0x%x 0x%x, "
 				"vid 0x%x 0x%x\n",
 				checkfid, data->currfid,
 				checkvid, data->currvid);
-#else
-			;
-#endif
 		}
 	}
 
@@ -1489,19 +1456,11 @@ static void cpb_toggle(bool t)
 	if (t && !cpb_enabled) {
 		cpb_enabled = true;
 		_cpb_toggle_msrs(t);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Core Boosting enabled.\n");
-#else
-		;
-#endif
 	} else if (!t && cpb_enabled) {
 		cpb_enabled = false;
 		_cpb_toggle_msrs(t);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Core Boosting disabled.\n");
-#else
-		;
-#endif
 	}
 }
 
@@ -1596,6 +1555,9 @@ static int __cpuinit powernowk8_init(void)
 	unsigned int i, supported_cpus = 0, cpu;
 	int rv;
 
+	if (!x86_match_cpu(powernow_k8_ids))
+		return -ENODEV;
+
 	for_each_online_cpu(i) {
 		int rc;
 		smp_call_function_single(i, check_supported_cpu, &rc, 1);
@@ -1606,12 +1568,8 @@ static int __cpuinit powernowk8_init(void)
 	if (supported_cpus != num_online_cpus())
 		return -ENODEV;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Found %d %s (%d cpu cores) (" VERSION ")\n",
 		num_online_nodes(), boot_cpu_data.x86_model_id, supported_cpus);
-#else
-	;
-#endif
 
 	if (boot_cpu_has(X86_FEATURE_CPB)) {
 
@@ -1632,12 +1590,8 @@ static int __cpuinit powernowk8_init(void)
 			cpb_enabled |= !(!!(reg->l & BIT(25)));
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Core Performance Boosting: %s.\n",
 			(cpb_enabled ? "on" : "off"));
-#else
-		;
-#endif
 	}
 
 	rv = cpufreq_register_driver(&cpufreq_amd64_driver);
