@@ -25,12 +25,6 @@
 #include <linux/hw_breakpoint.h>
 
 
-static int ptrace_trapping_sleep_fn(void *flags)
-{
-	schedule();
-	return 0;
-}
-
 /*
  * ptrace a task: make the debugger its new parent and
  * move it to the ptrace list.
@@ -113,13 +107,13 @@ void __ptrace_unlink(struct task_struct *child)
 	spin_lock(&child->sighand->siglock);
 
 	/*
-	 * Reinstate JOBCTL_STOP_PENDING if group stop is in effect and
+	 * Reinstate GROUP_STOP_PENDING if group stop is in effect and
 	 * @child isn't dead.
 	 */
 	if (!(child->flags & PF_EXITING) &&
 	    (child->signal->flags & SIGNAL_STOP_STOPPED ||
 	     child->signal->group_stop_count))
-		child->jobctl |= JOBCTL_STOP_PENDING;
+		child->group_stop |= GROUP_STOP_PENDING;
 
 	/*
 	 * If transition to TASK_STOPPED is pending or in TASK_TRACED, kick
@@ -127,30 +121,16 @@ void __ptrace_unlink(struct task_struct *child)
 	 * is in TASK_TRACED; otherwise, we might unduly disrupt
 	 * TASK_KILLABLE sleeps.
 	 */
-	if (child->jobctl & JOBCTL_STOP_PENDING || task_is_traced(child))
+	if (child->group_stop & GROUP_STOP_PENDING || task_is_traced(child))
 		ptrace_signal_wake_up(child, true);
 
 	spin_unlock(&child->sighand->siglock);
 }
 
-/**
- * ptrace_check_attach - check whether ptracee is ready for ptrace operation
- * @child: ptracee to check for
- * @ignore_state: don't check whether @child is currently %TASK_TRACED
- *
- * Check whether @child is being ptraced by %current and ready for further
- * ptrace operations.  If @ignore_state is %false, @child also should be in
- * %TASK_TRACED state and on return the child is guaranteed to be traced
- * and not executing.  If @ignore_state is %true, @child can be in any
- * state.
- *
- * CONTEXT:
- * Grabs and releases tasklist_lock and @child->sighand->siglock.
- *
- * RETURNS:
- * 0 on success, -ESRCH if %child is not ready.
+/*
+ * Check that we have indeed attached to the thing..
  */
-int ptrace_check_attach(struct task_struct *child, bool ignore_state)
+int ptrace_check_attach(struct task_struct *child, int kill)
 {
 	int ret = -ESRCH;
 
@@ -168,12 +148,12 @@ int ptrace_check_attach(struct task_struct *child, bool ignore_state)
 		 * child->sighand can't be NULL, release_task()
 		 * does ptrace_unlink() before __exit_signal().
 		 */
-		if (ignore_state || ptrace_freeze_traced(child))
+		if (kill || ptrace_freeze_traced(child))
 			ret = 0;
 	}
 	read_unlock(&tasklist_lock);
 
-	if (!ret && !ignore_state) {
+	if (!ret && !kill) {
 		if (!wait_task_inactive(child, __TASK_TRACED)) {
 			/*
 			 * This can only happen if may_ptrace_stop() fails and
@@ -240,6 +220,7 @@ bool ptrace_may_access(struct task_struct *task, unsigned int mode)
 
 static int ptrace_attach(struct task_struct *task)
 {
+	bool wait_trap = false;
 	int retval;
 
 	audit_ptrace(task);
@@ -282,7 +263,7 @@ static int ptrace_attach(struct task_struct *task)
 	spin_lock(&task->sighand->siglock);
 
 	/*
-	 * If the task is already STOPPED, set JOBCTL_STOP_PENDING and
+	 * If the task is already STOPPED, set GROUP_STOP_PENDING and
 	 * TRAPPING, and kick it so that it transits to TRACED.  TRAPPING
 	 * will be cleared if the child completes the transition or any
 	 * event which clears the group stop states happens.  We'll wait
@@ -298,11 +279,10 @@ static int ptrace_attach(struct task_struct *task)
 	 * The following task_is_stopped() test is safe as both transitions
 	 * in and out of STOPPED are protected by siglock.
 	 */
-	if (task_is_stopped(task) &&
-		task_set_jobctl_pending(task,
-					JOBCTL_STOP_PENDING | JOBCTL_TRAPPING)) {
-		task->jobctl |= JOBCTL_STOP_PENDING | JOBCTL_TRAPPING;
+	if (task_is_stopped(task)) {
+		task->group_stop |= GROUP_STOP_PENDING | GROUP_STOP_TRAPPING;
 		signal_wake_up_state(task, __TASK_STOPPED);
+		wait_trap = true;
 	}
 
 	spin_unlock(&task->sighand->siglock);
@@ -313,9 +293,9 @@ unlock_tasklist:
 unlock_creds:
 	mutex_unlock(&task->signal->cred_guard_mutex);
 out:
-	if (!retval)
-		wait_on_bit(&task->jobctl, JOBCTL_TRAPPING_BIT,
-			    ptrace_trapping_sleep_fn, TASK_UNINTERRUPTIBLE);
+	if (wait_trap)
+		wait_event(current->signal->wait_chldexit,
+			   !(task->group_stop & GROUP_STOP_TRAPPING));
 	return retval;
 }
 
