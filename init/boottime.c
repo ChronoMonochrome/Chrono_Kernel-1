@@ -44,7 +44,7 @@ struct boottime_list {
 	/* Time in us since power on, possible including boot loader. */
 	unsigned long time;
 	bool cpu_load;
-	struct cpu_usage_stat cpu_usage[NR_CPUS];
+	struct kernel_cpustat cpu_usage[NR_CPUS];
 };
 
 enum boottime_filter_type {
@@ -124,10 +124,14 @@ static void __init boottime_mark_core(char *name,
 
 	if (cpu_load == BOOTTIME_CPU_LOAD && system_up)
 		for_each_possible_cpu(i) {
-			b->cpu_usage[i].system = kstat_cpu(i).cpustat.system;
-			b->cpu_usage[i].idle = kstat_cpu(i).cpustat.idle;
-			b->cpu_usage[i].iowait = kstat_cpu(i).cpustat.iowait;
-			b->cpu_usage[i].irq = kstat_cpu(i).cpustat.irq;
+			b->cpu_usage[i].cpustat[CPUTIME_SYSTEM] =
+				kcpustat_cpu(i).cpustat[CPUTIME_SYSTEM];
+			b->cpu_usage[i].cpustat[CPUTIME_IDLE] =
+				kcpustat_cpu(i).cpustat[CPUTIME_IDLE];
+			b->cpu_usage[i].cpustat[CPUTIME_IOWAIT] =
+				kcpustat_cpu(i).cpustat[CPUTIME_IOWAIT];
+			b->cpu_usage[i].cpustat[CPUTIME_IRQ] =
+				kcpustat_cpu(i).cpustat[CPUTIME_IRQ];
 			/*
 			 * TODO: Make sure that user, nice, softirq, steal
 			 * and guest are not used during boot
@@ -253,23 +257,27 @@ static void boottime_debugfs_load(struct seq_file *s,
 	unsigned long system_load, idle_load, irq_load, iowait_load;
 
 	for_each_possible_cpu(i) {
-		total_b = (b->cpu_usage[i].system +
-			   b->cpu_usage[i].idle +
-			   b->cpu_usage[i].iowait +
-			   b->cpu_usage[i].irq);
+		total_b = (b->cpu_usage[i].cpustat[CPUTIME_SYSTEM] +
+			   b->cpu_usage[i].cpustat[CPUTIME_IDLE] +
+			   b->cpu_usage[i].cpustat[CPUTIME_IOWAIT] +
+			   b->cpu_usage[i].cpustat[CPUTIME_IRQ]);
 
-		total_p = (p->cpu_usage[i].system +
-			   p->cpu_usage[i].idle +
-			   p->cpu_usage[i].iowait +
-			   p->cpu_usage[i].irq);
+		total_p = (p->cpu_usage[i].cpustat[CPUTIME_SYSTEM] +
+			   p->cpu_usage[i].cpustat[CPUTIME_IDLE] +
+			   p->cpu_usage[i].cpustat[CPUTIME_IOWAIT] +
+			   p->cpu_usage[i].cpustat[CPUTIME_IRQ]);
 
 		if (total_b == total_p)
 			continue;
 
-		system_total = b->cpu_usage[i].system - p->cpu_usage[i].system;
-		idle_total = b->cpu_usage[i].idle - p->cpu_usage[i].idle;
-		irq_total = b->cpu_usage[i].irq - p->cpu_usage[i].irq;
-		iowait_total = b->cpu_usage[i].iowait - p->cpu_usage[i].iowait;
+		system_total = b->cpu_usage[i].cpustat[CPUTIME_SYSTEM]
+			- p->cpu_usage[i].cpustat[CPUTIME_SYSTEM];
+		idle_total = b->cpu_usage[i].cpustat[CPUTIME_IDLE]
+			- p->cpu_usage[i].cpustat[CPUTIME_IDLE];
+		irq_total = b->cpu_usage[i].cpustat[CPUTIME_IRQ]
+			- p->cpu_usage[i].cpustat[CPUTIME_IRQ];
+		iowait_total = b->cpu_usage[i].cpustat[CPUTIME_IOWAIT]
+			- p->cpu_usage[i].cpustat[CPUTIME_IOWAIT];
 
 		system_load = (100 * system_total / (total_b - total_p));
 		idle_load = (100 * idle_total / (total_b - total_p));
