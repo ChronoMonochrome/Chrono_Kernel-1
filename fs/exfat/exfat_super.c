@@ -939,11 +939,7 @@ out:
 	return err;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0)
 static int exfat_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
-#else
-static int exfat_mkdir(struct inode *dir, struct dentry *dentry, int mode)
-#endif
 {
 	struct super_block *sb = dir->i_sb;
 	struct inode *inode;
