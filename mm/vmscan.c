@@ -171,9 +171,11 @@ unsigned long zone_reclaimable_pages(struct zone *zone)
 	nr = zone_page_state(zone, NR_ACTIVE_FILE) +
 	     zone_page_state(zone, NR_INACTIVE_FILE);
 
-	if (get_nr_swap_pages() > 0)
+#ifndef CONFIG_ZRAM_FOR_ANDROID
+	if (nr_swap_pages > 0)
 		nr += zone_page_state(zone, NR_ACTIVE_ANON) +
 		      zone_page_state(zone, NR_INACTIVE_ANON);
+#endif
 
 	return nr;
 }
@@ -202,7 +204,7 @@ static unsigned long zone_nr_lru_pages(struct mem_cgroup_zone *mz,
  */
 void register_shrinker(struct shrinker *shrinker)
 {
-	shrinker->nr = 0;
+	atomic_long_set(&shrinker->nr_in_batch, 0);
 	down_write(&shrinker_rwsem);
 	list_add_tail(&shrinker->list, &shrinker_list);
 	up_write(&shrinker_rwsem);
@@ -2999,22 +3001,6 @@ unsigned long global_reclaimable_pages(void)
 	if (nr_swap_pages > 0)
 		nr += global_page_state(NR_ACTIVE_ANON) +
 		      global_page_state(NR_INACTIVE_ANON);
-
-	return nr;
-}
-
-unsigned long zone_reclaimable_pages(struct zone *zone)
-{
-	int nr;
-
-	nr = zone_page_state(zone, NR_ACTIVE_FILE) +
-	     zone_page_state(zone, NR_INACTIVE_FILE);
-
-#ifndef CONFIG_ZRAM_FOR_ANDROID
-	if (nr_swap_pages > 0)
-		nr += zone_page_state(zone, NR_ACTIVE_ANON) +
-		      zone_page_state(zone, NR_INACTIVE_ANON);
-#endif
 
 	return nr;
 }

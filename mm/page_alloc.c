@@ -668,6 +668,7 @@ static void free_pcppages_bulk(struct zone *zone, int count,
 	int to_free = count;
 	int free = 0;
 	int cma_free = 0;
+	int mt = 0;
 
 	spin_lock(&zone->lock);
 	zone->pages_scanned = 0;
