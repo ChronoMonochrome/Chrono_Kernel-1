@@ -2519,25 +2519,16 @@ static int check_modinfo(struct module *mod, struct load_info *info)
 		if (err)
 			return err;
 	} else if (!same_magic(modmagic, vermagic, info->index.vers)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING "%s: version magic '%s' should be '%s'\n",
+		printk(KERN_ERR "%s: version magic '%s' should be '%s'\n",
 		       mod->name, modmagic, vermagic);
-#else
-		;
-#endif
+		return -ENOEXEC;
 	}
 
 	if (get_modinfo(info, "staging")) {
 		add_taint_module(mod, TAINT_CRAP);
-/*
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: module is from the staging directory,"
 		       " the quality is unknown, you have been warned.\n",
 		       mod->name);
-#else
-		;
-#endif
-*/
 	}
 
 	/* Set up license info based on the info section */
