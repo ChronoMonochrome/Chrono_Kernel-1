@@ -57,9 +57,9 @@ enum {
 	 */
 	MIGRATE_CMA,
 #endif
-	MIGRATE_ISOLATE,       /* can't allocate from here */
+	MIGRATE_ISOLATE,	/* can't allocate from here */
 	MIGRATE_TYPES
-}
+};
 
 /*
  * Returns a list which contains the migrate types on to which
@@ -150,7 +150,7 @@ enum zone_stat_item {
 	NUMA_OTHER,		/* allocation from other node */
 #endif
 	NR_ANON_TRANSPARENT_HUGEPAGES,
-	NR_SWAPCACHE,
+	NR_FREE_CMA_PAGES,
 	NR_VM_ZONE_STAT_ITEMS };
 
 /*
@@ -1162,7 +1162,10 @@ static inline int pfn_present(unsigned long pfn)
 #define pfn_to_nid(pfn)		(0)
 #endif
 
+#ifndef early_pfn_valid
 #define early_pfn_valid(pfn)	pfn_valid(pfn)
+#endif
+
 void sparse_init(void);
 #else
 #define sparse_init()	do {} while (0)
