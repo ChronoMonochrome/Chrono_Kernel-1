@@ -85,6 +85,8 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 
+EXPORT_SYMBOL(tasklist_lock);
+
 void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
 {
 	unsigned long delta;
@@ -3129,6 +3131,8 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
 	*ut = p->prev_utime;
 	*st = p->prev_stime;
 }
+EXPORT_SYMBOL(task_times);
+
 
 /*
  * Must be called with siglock held.
