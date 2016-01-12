@@ -4,6 +4,7 @@
 #####################
 
 CFLAGS_MODULE += $(DISABLE_LTO)
+CFLAGS_MODULE += -fno-strict-aliasing
 
 DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DLINUX -DBCMDRIVER             \
         -DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
