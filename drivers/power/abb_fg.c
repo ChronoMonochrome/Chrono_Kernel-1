@@ -1614,6 +1614,15 @@ static int ab8500_fg_calc_cap_discharge_fg(struct ab8500_fg *di)
 	return di->bat_cap.mah;
 }
 
+static unsigned int __read_mostly cap_levels_critical = 2;
+static unsigned int __read_mostly cap_levels_low = 17;
+static unsigned int __read_mostly cap_levels_normal = 40;
+static unsigned int __read_mostly cap_levels_high = 85;
+module_param(cap_levels_critical, uint, 0644);
+module_param(cap_levels_low, uint, 0644);
+module_param(cap_levels_normal, uint, 0644);
+module_param(cap_levels_high, uint, 0644);
+
 /**
  * ab8500_fg_capacity_level() - Get the battery capacity level
  * @di:		pointer to the ab8500_fg structure
@@ -1626,14 +1635,14 @@ static int ab8500_fg_capacity_level(struct ab8500_fg *di)
 
 	percent = DIV_ROUND_CLOSEST(di->bat_cap.permille, 10);
 
-	if (percent <= di->bat->cap_levels->critical ||
+	if (percent <= cap_levels_critical ||
 		di->flags.low_bat)
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_CRITICAL;
-	else if (percent <= di->bat->cap_levels->low)
+	else if (percent <= cap_levels_low)
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_LOW;
-	else if (percent <= di->bat->cap_levels->normal)
+	else if (percent <= cap_levels_normal)
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_NORMAL;
-	else if (percent <= di->bat->cap_levels->high)
+	else if (percent <= cap_levels_high)
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_HIGH;
 	else
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_FULL;
