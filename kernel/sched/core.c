@@ -1548,6 +1548,15 @@ static void __sched_fork(struct task_struct *p)
 	p->se.vruntime			= 0;
 	INIT_LIST_HEAD(&p->se.group_node);
 
+/*
+ * Load-tracking only depends on SMP, FAIR_GROUP_SCHED dependency below may be
+ * removed when useful for applications beyond shares distribution (e.g.
+ * load-balance).
+ */
+#if defined(CONFIG_SMP) && defined(CONFIG_FAIR_GROUP_SCHED)
+	p->se.avg.runnable_avg_period = 0;
+	p->se.avg.runnable_avg_sum = 0;
+#endif
 #ifdef CONFIG_SCHEDSTATS
 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
 #endif
@@ -1557,7 +1566,40 @@ static void __sched_fork(struct task_struct *p)
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	INIT_HLIST_HEAD(&p->preempt_notifiers);
 #endif
+
+#ifdef CONFIG_NUMA_BALANCING
+	if (p->mm && atomic_read(&p->mm->mm_users) == 1) {
+		p->mm->numa_next_scan = jiffies;
+		p->mm->numa_next_reset = jiffies;
+		p->mm->numa_scan_seq = 0;
+	}
+
+	p->node_stamp = 0ULL;
+	p->numa_scan_seq = p->mm ? p->mm->numa_scan_seq : 0;
+	p->numa_migrate_seq = p->mm ? p->mm->numa_scan_seq - 1 : 0;
+	p->numa_scan_period = sysctl_numa_balancing_scan_delay;
+	p->numa_work.next = &p->numa_work;
+#endif /* CONFIG_NUMA_BALANCING */
 }
+
+#ifdef CONFIG_NUMA_BALANCING
+#ifdef CONFIG_SCHED_DEBUG
+void set_numabalancing_state(bool enabled)
+{
+	if (enabled)
+		sched_feat_set("NUMA");
+	else
+		sched_feat_set("NO_NUMA");
+}
+#else
+__read_mostly bool numabalancing_enabled;
+
+void set_numabalancing_state(bool enabled)
+{
+	numabalancing_enabled = enabled;
+}
+#endif /* CONFIG_SCHED_DEBUG */
+#endif /* CONFIG_NUMA_BALANCING */
 
 /*
  * fork()/clone()-time setup:
@@ -1910,8 +1952,8 @@ context_switch(struct rq *rq, struct task_struct *prev,
 	spin_release(&rq->lock.dep_map, 1, _THIS_IP_);
 #endif
 
+	context_tracking_task_switch(prev, next);
 	/* Here we just switch the register state and the stack. */
-	rcu_user_hooks_switch(prev, next);
 	switch_to(prev, next, prev);
 
 	barrier();
@@ -2918,7 +2960,7 @@ asmlinkage void __sched schedule(void)
 }
 EXPORT_SYMBOL(schedule);
 
-#ifdef CONFIG_RCU_USER_QS
+#ifdef CONFIG_CONTEXT_TRACKING
 asmlinkage void __sched schedule_user(void)
 {
 	/*
@@ -2927,9 +2969,9 @@ asmlinkage void __sched schedule_user(void)
 	 * we haven't yet exited the RCU idle mode. Do it here manually until
 	 * we find a better solution.
 	 */
-	rcu_user_exit();
+	user_exit();
 	schedule();
-	rcu_user_enter();
+	user_enter();
 }
 #endif
 
@@ -3034,7 +3076,7 @@ asmlinkage void __sched preempt_schedule_irq(void)
 	/* Catch callers which need to be fixed */
 	BUG_ON(ti->preempt_count || !irqs_disabled());
 
-	rcu_user_exit();
+	user_exit();
 	do {
 		add_preempt_count(PREEMPT_ACTIVE);
 		local_irq_enable();
@@ -4085,8 +4127,14 @@ long sched_setaffinity(pid_t pid, const struct cpumask *in_mask)
 		goto out_free_cpus_allowed;
 	}
 	retval = -EPERM;
-	if (!check_same_owner(p) && !ns_capable(task_user_ns(p), CAP_SYS_NICE))
-		goto out_unlock;
+	if (!check_same_owner(p)) {
+		rcu_read_lock();
+		if (!ns_capable(__task_cred(p)->user_ns, CAP_SYS_NICE)) {
+			rcu_read_unlock();
+			goto out_unlock;
+		}
+		rcu_read_unlock();
+	}
 
 	retval = security_task_setscheduler(p);
 	if (retval)
@@ -4661,6 +4709,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
 	 */
 	idle->sched_class = &idle_sched_class;
 	ftrace_graph_init_idle_task(idle, cpu);
+	vtime_init_idle(idle);
 #if defined(CONFIG_SMP)
 	sprintf(idle->comm, "%s/%d", INIT_TASK_COMM, cpu);
 #endif
