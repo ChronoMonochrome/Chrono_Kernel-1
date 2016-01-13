@@ -50,27 +50,6 @@ config HIDRAW
 
 	If unsure, say Y.
 
-config UHID
-	tristate "User-space I/O driver support for HID subsystem"
-	depends on HID
-	default n
-	---help---
-	Say Y here if you want to provide HID I/O Drivers from user-space.
-	This allows to write I/O drivers in user-space and feed the data from
-	the device into the kernel. The kernel parses the HID reports, loads the
-	corresponding HID Device Driver or provides input devices on top of your
-	user-space device.
-
-	This driver cannot be used to parse HID-reports in user-space and write
-	special HID-drivers. You should use hidraw for that.
-	Instead, this driver allows to write the transport-layer driver in
-	user-space like USB-HID and Bluetooth-HID do in kernel-space.
-
-	If unsure, say N.
-
-	To compile this driver as a module, choose M here: the
-	module will be called uhid.
-
 source "drivers/hid/usbhid/Kconfig"
 
 menu "Special HID drivers"
@@ -90,7 +69,7 @@ config HID_ACRUX
 	Say Y here if you want to enable support for ACRUX game controllers.
 
 config HID_ACRUX_FF
-	bool "ACRUX force feedback support"
+	tristate "ACRUX force feedback support"
 	depends on HID_ACRUX
 	select INPUT_FF_MEMLESS
 	---help---
@@ -193,20 +172,6 @@ config HID_EZKEY
 	---help---
 	Support for Ezkey BTC 8193 keyboard.
 
-config HID_HOLTEK
-	tristate "Holtek On Line Grip based game controller support"
-	depends on USB_HID
-	---help---
-	  Say Y here if you have a Holtek On Line Grip based game controller.
-
-config HOLTEK_FF
-	bool "Holtek On Line Grip force feedback support"
-	depends on HID_HOLTEK
-	select INPUT_FF_MEMLESS
-	---help---
-	  Say Y here if you have a Holtek On Line Grip based game controller
-	  and want to have force feedback support for it.
-
 config HID_KEYTOUCH
 	tristate "Keytouch HID devices"
 	depends on USB_HID
@@ -265,15 +230,6 @@ config HID_LOGITECH
 	default !EXPERT
 	---help---
 	Support for Logitech devices that are not fully compliant with HID standard.
-
-config HID_LOGITECH_DJ
-	tristate "Logitech Unifying receivers full support"
-	depends on HID_LOGITECH
-	default m
-	---help---
-	Say Y if you want support for Logitech Unifying receivers and devices.
-	Unifying receivers are capable of pairing up to 6 Logitech compliant
-	devices to the same receiver.
 
 config LOGITECH_FF
 	bool "Logitech force feedback support"
@@ -358,7 +314,6 @@ config HID_MULTITOUCH
 	  - Hanvon dual touch panels
 	  - Ilitek dual touch panels
 	  - IrTouch Infrared USB panels
-	  - LG Display panels (Dell ST2220Tc)
 	  - Lumio CrystalTouch panels
 	  - MosArt dual-touch panels
 	  - PenMount dual touch panels
@@ -471,14 +426,6 @@ config HID_PICOLCD_LEDS
 	---help---
 	  Provide access to PicoLCD's GPO pins via leds class.
 
-config HID_PRIMAX
-	tristate "Primax non-fully HID-compliant devices" if EXPERT
-	depends on USB_HID
-	default !EXPERT
-	---help---
-	Support for Primax devices that are not fully compliant with the
-	HID standard.
-
 config HID_QUANTA
 	tristate "Quanta Optical Touch panels"
 	depends on USB_HID
@@ -547,12 +494,6 @@ config HID_SONY
 	depends on USB_HID
 	---help---
 	Support for Sony PS3 controller.
-
-config HID_SPEEDLINK
-	tristate "Speedlink VAD Cezanne mouse support"
-	depends on USB_HID
-	---help---
-	Support for Speedlink Vicious and Divine Cezanne mouse.
 
 config HID_SUNPLUS
 	tristate "Sunplus wireless desktop"
@@ -626,12 +567,6 @@ config HID_WACOM_POWER_SUPPLY
 	---help---
 	  Say Y here if you want to enable power supply status monitoring for
 	  Wacom Bluetooth devices.
-
-config HID_WIIMOTE
-	tristate "Nintendo Wii Remote support"
-	depends on BT_HIDP
-	---help---
-	Support for the Nintendo Wii Remote bluetooth device.
 
 config HID_ZEROPLUS
 	tristate "Zeroplus based game controller support"

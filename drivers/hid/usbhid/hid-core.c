@@ -1019,12 +1019,8 @@ static int usbhid_start(struct hid_device *hid)
 		if (hid->quirks & HID_QUIRK_FULLSPEED_INTERVAL &&
 		    dev->speed == USB_SPEED_HIGH) {
 			interval = fls(endpoint->bInterval*8);
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: Fixing fullspeed to highspeed interval: %d -> %d\n",
 			       hid->name, endpoint->bInterval, interval);
-#else
-			;
-#endif
 		}
 
 		/* Change the polling interval of mice. */
@@ -1334,7 +1330,7 @@ static int hid_suspend(struct usb_interface *intf, pm_message_t message)
 	struct usbhid_device *usbhid = hid->driver_data;
 	int status;
 
-	if (PMSG_IS_AUTO(message)) {
+	if (message.event & PM_EVENT_AUTO) {
 		spin_lock_irq(&usbhid->lock);	/* Sync with error handler */
 		if (!test_bit(HID_RESET_PENDING, &usbhid->iofl)
 		    && !test_bit(HID_CLEAR_HALT, &usbhid->iofl)
@@ -1369,7 +1365,7 @@ static int hid_suspend(struct usb_interface *intf, pm_message_t message)
 			return -EIO;
 	}
 
-	if (!ignoreled && PMSG_IS_AUTO(message)) {
+	if (!ignoreled && (message.event & PM_EVENT_AUTO)) {
 		spin_lock_irq(&usbhid->lock);
 		if (test_bit(HID_LED_ON, &usbhid->iofl)) {
 			spin_unlock_irq(&usbhid->lock);
@@ -1382,7 +1378,8 @@ static int hid_suspend(struct usb_interface *intf, pm_message_t message)
 	hid_cancel_delayed_stuff(usbhid);
 	hid_cease_io(usbhid);
 
-	if (PMSG_IS_AUTO(message) && test_bit(HID_KEYS_PRESSED, &usbhid->iofl)) {
+	if ((message.event & PM_EVENT_AUTO) &&
+			test_bit(HID_KEYS_PRESSED, &usbhid->iofl)) {
 		/* lost race against keypresses */
 		status = hid_start_in(hid);
 		if (status < 0)
@@ -1493,11 +1490,7 @@ static int __init hid_init(void)
 	retval = usb_register(&hid_driver);
 	if (retval)
 		goto usb_register_fail;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC "\n");
-#else
-	;
-#endif
 
 	return 0;
 usb_register_fail:
