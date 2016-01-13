@@ -834,7 +834,7 @@ static int dspload_monitor(void *idx)
 }
 
 static int enable_auto_pm = 1;
-module_param(enable_auto_pm, bool, S_IWUSR|S_IRUGO);
+module_param(enable_auto_pm, int, S_IWUSR|S_IRUGO);
 
 /** \ingroup OSAL_IMPLEMENTATION
  *     Used by CM to disable a power resource
