@@ -30,7 +30,6 @@
 #include <linux/jump_label.h>
 #include <linux/hardirq.h>
 #include <linux/sched.h>
-#include <linux/device.h>
 
 extern struct _ddebug __start___verbose[];
 extern struct _ddebug __stop___verbose[];
@@ -160,26 +159,18 @@ static void ddebug_change(const struct ddebug_query *query,
 			else
 				dp->enabled = 0;
 			if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 					"ddebug: changed %s:%d [%s]%s %s\n",
 					dp->filename, dp->lineno,
 					dt->mod_name, dp->function,
 					ddebug_describe_flags(dp, flagbuf,
 							sizeof(flagbuf)));
-#else
-				;
-#endif
 		}
 	}
 	mutex_unlock(&ddebug_lock);
 
 	if (!nfound && verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ddebug: no matches for query\n");
-#else
-		;
-#endif
 }
 
 /*
@@ -224,22 +215,10 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
 
 	if (verbose) {
 		int i;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: split into words:", __func__);
-#else
-		;
-#endif
 		for (i = 0 ; i < nwords ; i++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(" \"%s\"", words[i]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	}
 
 	return nwords;
@@ -358,15 +337,11 @@ static int ddebug_parse_query(char *words[], int nwords,
 	}
 
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: q->function=\"%s\" q->filename=\"%s\" "
 		       "q->module=\"%s\" q->format=\"%s\" q->lineno=%u-%u\n",
 			__func__, query->function, query->filename,
 			query->module, query->format, query->first_lineno,
 			query->last_lineno);
-#else
-		;
-#endif
 
 	return 0;
 }
@@ -393,11 +368,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
 		return -EINVAL;
 	}
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: op='%c'\n", __func__, op);
-#else
-		;
-#endif
 
 	for ( ; *str ; ++str) {
 		for (i = ARRAY_SIZE(opt_array) - 1; i >= 0; i--) {
@@ -412,11 +383,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
 	if (flags == 0)
 		return -EINVAL;
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: flags=0x%x\n", __func__, flags);
-#else
-		;
-#endif
 
 	/* calculate final *flagsp, *maskp according to mask and op */
 	switch (op) {
@@ -434,12 +401,8 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
 		break;
 	}
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: *flagsp=0x%x *maskp=0x%x\n",
 			__func__, *flagsp, *maskp);
-#else
-		;
-#endif
 	return 0;
 }
 
@@ -473,90 +436,25 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
 	BUG_ON(!fmt);
 
 	va_start(args, fmt);
-#ifdef CONFIG_DEBUG_PRINTK
 	res = printk(KERN_DEBUG);
-#else
-	res = ;
-#endif
 	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
 		if (in_interrupt())
-#ifdef CONFIG_DEBUG_PRINTK
 			res += printk(KERN_CONT "<intr> ");
-#else
-			res += ;
-#endif
 		else
-#ifdef CONFIG_DEBUG_PRINTK
 			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
-#else
-			res += ;
-#endif
 	}
 	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
-#ifdef CONFIG_DEBUG_PRINTK
 		res += printk(KERN_CONT "%s:", descriptor->modname);
-#else
-		res += ;
-#endif
 	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
-#ifdef CONFIG_DEBUG_PRINTK
 		res += printk(KERN_CONT "%s:", descriptor->function);
-#else
-		res += ;
-#endif
 	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
-#ifdef CONFIG_DEBUG_PRINTK
 		res += printk(KERN_CONT "%d ", descriptor->lineno);
-#else
-		res += ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	res += vprintk(fmt, args);
-#else
-	res += v;
-#endif
 	va_end(args);
 
 	return res;
 }
 EXPORT_SYMBOL(__dynamic_pr_debug);
-
-int __dynamic_dev_dbg(struct _ddebug *descriptor,
-		      const struct device *dev, const char *fmt, ...)
-{
-	struct va_format vaf;
-	va_list args;
-	int res;
-
-	BUG_ON(!descriptor);
-	BUG_ON(!fmt);
-
-	va_start(args, fmt);
-
-	vaf.fmt = fmt;
-	vaf.va = &args;
-
-	res = printk(KERN_DEBUG);
-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
-		if (in_interrupt())
-			res += printk(KERN_CONT "<intr> ");
-		else
-			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
-	}
-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
-		res += printk(KERN_CONT "%s:", descriptor->modname);
-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
-		res += printk(KERN_CONT "%s:", descriptor->function);
-	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
-		res += printk(KERN_CONT "%d ", descriptor->lineno);
-
-	res += __dev_printk(KERN_CONT, dev, &vaf);
-
-	va_end(args);
-
-	return res;
-}
-EXPORT_SYMBOL(__dynamic_dev_dbg);
 
 static __initdata char ddebug_setup_string[1024];
 static __init int ddebug_setup_query(char *str)
@@ -590,12 +488,8 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
 		return -EFAULT;
 	tmpbuf[len] = '\0';
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: read %d bytes from userspace\n",
 			__func__, (int)len);
-#else
-		;
-#endif
 
 	ret = ddebug_exec_query(tmpbuf);
 	if (ret)
@@ -658,12 +552,8 @@ static void *ddebug_proc_start(struct seq_file *m, loff_t *pos)
 	int n = *pos;
 
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: called m=%p *pos=%lld\n",
 			__func__, m, (unsigned long long)*pos);
-#else
-		;
-#endif
 
 	mutex_lock(&ddebug_lock);
 
@@ -688,12 +578,8 @@ static void *ddebug_proc_next(struct seq_file *m, void *p, loff_t *pos)
 	struct _ddebug *dp;
 
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: called m=%p p=%p *pos=%lld\n",
 			__func__, m, p, (unsigned long long)*pos);
-#else
-		;
-#endif
 
 	if (p == SEQ_START_TOKEN)
 		dp = ddebug_iter_first(iter);
@@ -716,12 +602,8 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
 	char flagsbuf[8];
 
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: called m=%p p=%p\n",
 			__func__, m, p);
-#else
-		;
-#endif
 
 	if (p == SEQ_START_TOKEN) {
 		seq_puts(m,
@@ -746,12 +628,8 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
 static void ddebug_proc_stop(struct seq_file *m, void *p)
 {
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: called m=%p p=%p\n",
 			__func__, m, p);
-#else
-		;
-#endif
 	mutex_unlock(&ddebug_lock);
 }
 
@@ -774,11 +652,7 @@ static int ddebug_proc_open(struct inode *inode, struct file *file)
 	int err;
 
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: called\n", __func__);
-#else
-		;
-#endif
 
 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
 	if (iter == NULL)
@@ -830,12 +704,8 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
 	mutex_unlock(&ddebug_lock);
 
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%u debug prints in module %s\n",
 				 n, dt->mod_name);
-#else
-		;
-#endif
 	return 0;
 }
 EXPORT_SYMBOL_GPL(ddebug_add_module);
@@ -857,12 +727,8 @@ int ddebug_remove_module(const char *mod_name)
 	int ret = -ENOENT;
 
 	if (verbose)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: removing module \"%s\"\n",
 				__func__, mod_name);
-#else
-		;
-#endif
 
 	mutex_lock(&ddebug_lock);
 	list_for_each_entry_safe(dt, nextdt, &ddebug_tables, link) {
