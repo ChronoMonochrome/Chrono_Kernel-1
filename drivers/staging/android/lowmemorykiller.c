@@ -588,17 +588,17 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			msleep_interruptible(20);
 			trace_almk_shrink(selected_tasksize, ret,
 				other_free, other_file, selected_oom_score_adj);
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
 			} else {
 				trace_almk_shrink(1, ret, other_free, other_file, 0);
 				lowmem_print(1, "[lmk] the process '%s' is inside the donotkill_proc_names\n", selected->comm);
 				lowmem_print(2, "[lmk] set oom_score_adj from %d to %d for (%s)\n", selected->signal->oom_score_adj, 0, selected->comm);
 				selected->signal->oom_score_adj = 0;
 				rcu_read_unlock();
-
 			}
- 		} else
-			rcu_read_unlock();
-	}
+#endif
+ 	} else
+		rcu_read_unlock();
 
 	lowmem_print(4, "lowmem_shrink %lu, %x, return %d\n",
 		     nr_to_scan, sc->gfp_mask, rem);
