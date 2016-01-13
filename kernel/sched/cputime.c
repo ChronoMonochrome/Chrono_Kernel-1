@@ -475,6 +475,7 @@ void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
 	*ut = p->prev_utime;
 	*st = p->prev_stime;
 }
+EXPORT_SYMBOL(task_times);
 
 /*
  * Must be called with siglock held.
@@ -501,4 +502,5 @@ void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st)
 	*ut = sig->prev_utime;
 	*st = sig->prev_stime;
 }
+EXPORT_SYMBOL_GPL(thread_group_times);
 #endif
