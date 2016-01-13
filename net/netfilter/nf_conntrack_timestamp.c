@@ -17,7 +17,7 @@
 
 static int nf_ct_tstamp __read_mostly;
 
-module_param_named(tstamp, nf_ct_tstamp, bool, 0644);
+module_param_named(tstamp, nf_ct_tstamp, int, 0644);
 MODULE_PARM_DESC(tstamp, "Enable connection tracking flow timestamping.");
 
 #ifdef CONFIG_SYSCTL

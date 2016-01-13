@@ -4433,5 +4433,5 @@ void l2cap_exit(void)
 	l2cap_cleanup_sockets();
 }
 
-module_param(disable_ertm, bool, 0644);
+module_param(disable_ertm, int, 0644);
 MODULE_PARM_DESC(disable_ertm, "Disable enhanced retransmission mode");

@@ -743,10 +743,10 @@ static void __exit bnep_exit(void)
 module_init(bnep_init);
 module_exit(bnep_exit);
 
-module_param(compress_src, bool, 0644);
+module_param(compress_src, int, 0644);
 MODULE_PARM_DESC(compress_src, "Compress sources headers");
 
-module_param(compress_dst, bool, 0644);
+module_param(compress_dst, int, 0644);
 MODULE_PARM_DESC(compress_dst, "Compress destination headers");
 
 MODULE_AUTHOR("Marcel Holtmann <marcel@holtmann.org>");

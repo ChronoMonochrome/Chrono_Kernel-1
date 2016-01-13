@@ -1104,5 +1104,5 @@ void __exit sco_exit(void)
 	proto_unregister(&sco_proto);
 }
 
-module_param(disable_esco, bool, 0644);
+module_param(disable_esco, int, 0644);
 MODULE_PARM_DESC(disable_esco, "Disable eSCO connection creation");
