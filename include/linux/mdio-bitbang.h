@@ -2,8 +2,7 @@
 #define __LINUX_MDIO_BITBANG_H
 
 #include <linux/phy.h>
-
-struct module;
+#include <linux/module.h>
 
 struct mdiobb_ctrl;
 
