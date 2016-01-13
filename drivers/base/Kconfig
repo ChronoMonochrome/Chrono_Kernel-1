@@ -175,8 +175,6 @@ config GENERIC_CPU_DEVICES
 	bool
 	default n
 
-source "drivers/base/regmap/Kconfig"
-
 config CMA
 	bool "Contiguous Memory Allocator (EXPERIMENTAL)"
 	depends on HAVE_DMA_CONTIGUOUS && HAVE_MEMBLOCK && EXPERIMENTAL
