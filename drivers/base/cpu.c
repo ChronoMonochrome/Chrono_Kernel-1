@@ -244,10 +244,10 @@ int __cpuinit register_cpu(struct cpu *cpu, int num)
 	memset(&cpu->dev, 0x00, sizeof(struct device));
 	cpu->dev.id = num;
 	cpu->dev.bus = &cpu_subsys;
+	cpu->dev.release = cpu_device_release;
 #ifdef CONFIG_ARCH_HAS_CPU_AUTOPROBE
 	cpu->dev.bus->uevent = arch_cpu_uevent;
 #endif
-	cpu->dev.release = cpu_device_release;
 	error = device_register(&cpu->dev);
 	if (!error && cpu->hotpluggable)
 		register_cpu_control(cpu);
@@ -303,8 +303,8 @@ static const struct attribute_group *cpu_root_attr_groups[] = {
 
 bool cpu_is_hotpluggable(unsigned cpu)
 {
-	struct sys_device *dev = get_cpu_sysdev(cpu);
-	return dev && container_of(dev, struct cpu, sysdev)->hotpluggable;
+	struct device *dev = get_cpu_device(cpu);
+	return dev && container_of(dev, struct cpu, dev)->hotpluggable;
 }
 EXPORT_SYMBOL_GPL(cpu_is_hotpluggable);
 
