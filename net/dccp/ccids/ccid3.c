@@ -862,6 +862,6 @@ struct ccid_operations ccid3_ops = {
 };
 
 #ifdef CONFIG_IP_DCCP_CCID3_DEBUG
-module_param(ccid3_debug, bool, 0644);
+module_param(ccid3_debug, int, 0644);
 MODULE_PARM_DESC(ccid3_debug, "Enable CCID-3 debug messages");
 #endif

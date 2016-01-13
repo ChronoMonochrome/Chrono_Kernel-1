@@ -5,6 +5,9 @@
 # Rewritten to use lists instead of if-statements.
 #
 
+# TODO: move this to global CFLAGS
+KBUILD_CFLAGS += -Werror=incompatible-pointer-types
+
 obj-y	:= nonet.o
 
 obj-$(CONFIG_NET)		:= socket.o core/

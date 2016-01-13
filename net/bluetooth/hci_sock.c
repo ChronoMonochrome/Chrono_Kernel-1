@@ -815,5 +815,5 @@ void hci_sock_cleanup(void)
 	proto_unregister(&hci_sk_proto);
 }
 
-module_param(enable_mgmt, bool, 0644);
+module_param(enable_mgmt, int, 0644);
 MODULE_PARM_DESC(enable_mgmt, "Enable Management interface");

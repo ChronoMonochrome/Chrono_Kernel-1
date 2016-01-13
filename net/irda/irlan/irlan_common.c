@@ -1204,7 +1204,7 @@ MODULE_AUTHOR("Dag Brattli <dagb@cs.uit.no>");
 MODULE_DESCRIPTION("The Linux IrDA LAN protocol");
 MODULE_LICENSE("GPL");
 
-module_param(eth, bool, 0);
+module_param(eth, int, 0);
 MODULE_PARM_DESC(eth, "Name devices ethX (0) or irlanX (1)");
 module_param(access, int, 0);
 MODULE_PARM_DESC(access, "Access type DIRECT=1, PEER=2, HOSTED=3");

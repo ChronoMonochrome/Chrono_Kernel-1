@@ -66,7 +66,7 @@ module_param(flushtimeout, uint, 0600);
 MODULE_PARM_DESC(flushtimeout, "buffer flush timeout (hundredths of a second)");
 
 static int nflog = 1;
-module_param(nflog, bool, 0400);
+module_param(nflog, int, 0400);
 MODULE_PARM_DESC(nflog, "register as internal netfilter logging module");
 
 /* global data structures */

@@ -2236,7 +2236,7 @@ static void __exit rfcomm_exit(void)
 module_init(rfcomm_init);
 module_exit(rfcomm_exit);
 
-module_param(disable_cfc, bool, 0644);
+module_param(disable_cfc, int, 0644);
 MODULE_PARM_DESC(disable_cfc, "Disable credit based flow control");
 
 module_param(channel_mtu, int, 0644);
@@ -2245,7 +2245,7 @@ MODULE_PARM_DESC(channel_mtu, "Default MTU for the RFCOMM channel");
 module_param(l2cap_mtu, uint, 0644);
 MODULE_PARM_DESC(l2cap_mtu, "Default MTU for the L2CAP connection");
 
-module_param(l2cap_ertm, bool, 0644);
+module_param(l2cap_ertm, int, 0644);
 MODULE_PARM_DESC(l2cap_ertm, "Use L2CAP ERTM mode for connection");
 
 MODULE_AUTHOR("Marcel Holtmann <marcel@holtmann.org>");
