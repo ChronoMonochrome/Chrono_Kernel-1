@@ -510,11 +510,11 @@ EXPORT_SYMBOL_GPL(vtime_account);
 # define nsecs_to_cputime(__nsecs)	nsecs_to_jiffies(__nsecs)
 #endif
 
-static cputime_t scale_stime(cputime_t stime, cputime_t rtime, cputime_t total)
+static cputime_t scale_utime(cputime_t utime, cputime_t rtime, cputime_t total)
 {
 	u64 temp = (__force u64) rtime;
 
-	temp *= (__force u64) stime;
+	temp *= (__force u64) utime;
 
 	if (sizeof(cputime_t) == 4)
 		temp = div_u64(temp, (__force u32) total);
@@ -532,10 +532,10 @@ static void cputime_adjust(struct task_cputime *curr,
 			   struct cputime *prev,
 			   cputime_t *ut, cputime_t *st)
 {
-	cputime_t rtime, stime, total;
+	cputime_t rtime, utime, total;
 
-	stime = curr->stime;
-	total = stime + curr->utime;
+	utime = curr->utime;
+	total = utime + curr->stime;
 
 	/*
 	 * Tick based cputime accounting depend on random scheduling
@@ -550,17 +550,17 @@ static void cputime_adjust(struct task_cputime *curr,
 	rtime = nsecs_to_cputime(curr->sum_exec_runtime);
 
 	if (total)
-		stime = scale_stime(stime, rtime, total);
+		utime = scale_utime(utime, rtime, total);
 	else
-		stime = rtime;
+		utime = rtime;
 
 	/*
 	 * If the tick based count grows faster than the scheduler one,
 	 * the result of the scaling may go backward.
 	 * Let's enforce monotonicity.
 	 */
-	prev->stime = max(prev->stime, stime);
-	prev->utime = max(prev->utime, rtime - prev->stime);
+	prev->utime = max(prev->utime, utime);
+	prev->stime = max(prev->stime, rtime - prev->utime);
 
 	*ut = prev->utime;
 	*st = prev->stime;
