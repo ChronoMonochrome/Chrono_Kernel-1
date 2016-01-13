@@ -31,6 +31,7 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/sched.h>
+#include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/poll.h>

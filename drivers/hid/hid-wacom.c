@@ -498,6 +498,8 @@ static int wacom_input_mapped(struct hid_device *hdev, struct hid_input *hi,
 {
 	struct input_dev *input = hi->input;
 
+	__set_bit(INPUT_PROP_POINTER, input->propbit);
+
 	/* Basics */
 	input->evbit[0] |= BIT(EV_KEY) | BIT(EV_ABS) | BIT(EV_REL);
 
@@ -628,7 +630,6 @@ static int wacom_probe(struct hid_device *hdev,
 
 	power_supply_powers(&wdata->ac, &hdev->dev);
 #endif
-
 	return 0;
 
 #ifdef CONFIG_HID_WACOM_POWER_SUPPLY
