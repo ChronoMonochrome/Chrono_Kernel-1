@@ -40,7 +40,7 @@ config SCHED_BFS
           TEST so these options are disabled.
 
           Say Y here.
-	default y
+	default n
 
 config EXPERIMENTAL
 	bool "Prompt for development and/or incomplete code/drivers"
