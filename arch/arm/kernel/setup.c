@@ -696,16 +696,28 @@ EXPORT_SYMBOL(lcdtype);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
-#if defined(CONFIG_CMDLINE_EXTEND)
+	bool need_fallback = false;
+#if defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS) && defined(CONFIG_CMDLINE_OVERRIDE_HWMEM)
+	char *tmp;
+	long int idx;
+	int default_cmdline_size = strlen(default_command_line);
+#endif
+
+#if defined(CONFIG_CMDLINE_EXTEND) && !defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
 	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
 	strlcat(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
+#elif defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
+	default_cmdline_size++;
+
 #elif defined(CONFIG_CMDLINE_FORCE)
 	pr_warning("Ignoring tag cmdline (using the default kernel command line)\n");
 #else
 	strlcpy(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
 #endif
+
 	if (unlikely(setup_debug > 0))
 		pr_err("setup: parsing %s\n", tag->u.cmdline.cmdline);
 	if (unlikely(!is_lpm && (strstr(default_command_line, "lpm_boot=1") != NULL)) == true) {
@@ -714,34 +726,132 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 			pr_err("setup: is_lpm=1");
 	}
 
-	pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
-	//strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
 
-	if (strstr(tag->u.cmdline.cmdline, "lpm_boot=1") != NULL) {
+#if defined(CONFIG_CMDLINE_OVERRIDE_HWMEM) && defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+	if (strstr(default_command_line, "dont_override_hwmem_size") || 
+			strstr(tag->u.cmdline.cmdline, "dont_override_hwmem_size") ) {
+		pr_err("setup: not overriding HWMEM size, because tag dont_override_hwmem_size is set.\n");
+		need_fallback = true;
+		goto fallback;
+	}
+
+	tmp = strstr(tag->u.cmdline.cmdline, "hwmem");
+
+	if (!tmp) {
+		need_fallback = true;
+		goto fallback;
+	}
+
+	idx = tmp - (tag->u.cmdline.cmdline -  default_cmdline_size);
+
+	if (setup_debug) {
+		pr_err("idx = %ld\n", idx);
+		pr_err("default=%s\n", default_command_line);
+	}
+
+	// copy to kernel cmdline from the bootloader one everything before "hwmem=84M"
+	strlcat(default_command_line, tag->u.cmdline.cmdline, idx);
+	if (setup_debug) 
+		pr_err("default=%s\n", default_command_line);
+
+	// extend kernel cmdline with our custom parameters
+	strlcat(default_command_line, " hwmem=72M@256M mem=55M@328M", COMMAND_LINE_SIZE);
+	if (setup_debug) 
+		pr_err("default=%s\n", default_command_line);
+
+	// find the first count of " mem=" after "hwmem"
+	tmp = strstr(tmp, " mem=");
+	if (!tmp) {
+		need_fallback = true;
+		goto fallback;
+	}
+
+	if (setup_debug) 
+		pr_err("tmp=%s\n", tmp);
+
+	// assuming that after " mem=" we have "xxxM@xxxM". Skip this too.
+	tmp = strstr(tmp, "M");
+	if (!tmp) {
+		need_fallback = true;
+		goto fallback;
+	}
+	tmp++;
+
+	if (setup_debug) 
+		pr_err("tmp=%s\n", tmp);
+
+	tmp = strstr(tmp, "M");
+	if (!tmp) {
+		need_fallback = true;
+		goto fallback;
+	}
+	tmp++;
+
+	if (setup_debug) 
+		pr_err("tmp=%s\n", tmp);
+
+	// extend kernel cmdline with the remaining part of a bootloader cmdline
+	strlcat(default_command_line, tmp, COMMAND_LINE_SIZE);
+
+	if (setup_debug) 
+		pr_err("default=%s\n", default_command_line);
+#endif
+
+fallback:
+	if (unlikely(need_fallback)) {
+		pr_err("setup: using default + bootloader cmdline as fallback!\n");
+
+		default_command_line[default_cmdline_size] = 0;
+		strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
+		strlcat(default_command_line, tag->u.cmdline.cmdline,
+			COMMAND_LINE_SIZE);
+	}
+
+	// parse bootloader command line and save the needed parameters
+	pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
+
+	if (strstr(tag->u.cmdline.cmdline, " lpm_boot=1") != NULL) {
 		pr_err("LPM boot from bootloader\n");
-		//strlcat(default_command_line, "lpm_boot=1 ", COMMAND_LINE_SIZE);
-	} else
-		;//strlcat(default_command_line, "lpm_boot=0 ", COMMAND_LINE_SIZE);
+#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+		strlcat(default_command_line, " lpm_boot=1 ", COMMAND_LINE_SIZE);
+#endif
+	}
+#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+	else
+		strlcat(default_command_line, " lpm_boot=0 ", COMMAND_LINE_SIZE);
+#endif
 
 	if (strstr(tag->u.cmdline.cmdline, "bootmode=2") != NULL) {
 		pr_err("Recovery boot from bootloader\n");
-		//strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
-	}
+#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+		strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
+#endif
+	} 
+#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+	else
+		strlcat(default_command_line, "bootmode=1 ", COMMAND_LINE_SIZE);
 
-	//strlcat(default_command_line, "logo.  ", COMMAND_LINE_SIZE);
+	strlcat(default_command_line, "logo.  ", COMMAND_LINE_SIZE);
+#endif
 
 	if (strstr(tag->u.cmdline.cmdline, "lcdtype=4") != NULL) {
 		pr_err("LCD type WS2401 from bootloader\n");
 		lcdtype = 4;
-		//strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
+#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+		strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
+#endif
 	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=8") != NULL) { 
 		pr_err("LCD type S6D from bootloader\n");
 		lcdtype = 8;
-		//strlcat(default_command_line, "lcdtype=8 ", COMMAND_LINE_SIZE);
+#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+		strlcat(default_command_line, "lcdtype=8 ", COMMAND_LINE_SIZE);
+#endif
 	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
 		pr_err("LCD type S6D from bootloader\n");
 		lcdtype = 13;
-		//strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);
+#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+		strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);
+#endif
 	}
 
 	return 0;
