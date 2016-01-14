@@ -1065,7 +1065,7 @@ void set_task_comm(struct task_struct *tsk, char *buf)
 {
 	task_lock(tsk);
 
-	trace_task_rename(tsk, buf);
+	//trace_task_rename(tsk, buf);
 
 	/*
 	 * Threads may access current->comm without holding
