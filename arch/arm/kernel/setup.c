@@ -812,22 +812,22 @@ fallback:
 
 	if (strstr(tag->u.cmdline.cmdline, " lpm_boot=1") != NULL) {
 		pr_err("LPM boot from bootloader\n");
-#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+#if defined(CMDLINE_FORCE)
 		strlcat(default_command_line, " lpm_boot=1 ", COMMAND_LINE_SIZE);
 #endif
 	}
-#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+#if defined(CMDLINE_FORCE)
 	else
 		strlcat(default_command_line, " lpm_boot=0 ", COMMAND_LINE_SIZE);
 #endif
 
 	if (strstr(tag->u.cmdline.cmdline, "bootmode=2") != NULL) {
 		pr_err("Recovery boot from bootloader\n");
-#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+#if defined(CMDLINE_FORCE)
 		strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
 #endif
-	} 
-#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+	}
+#if defined(CMDLINE_FORCE)
 	else
 		strlcat(default_command_line, "bootmode=1 ", COMMAND_LINE_SIZE);
 
@@ -837,19 +837,19 @@ fallback:
 	if (strstr(tag->u.cmdline.cmdline, "lcdtype=4") != NULL) {
 		pr_err("LCD type WS2401 from bootloader\n");
 		lcdtype = 4;
-#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+#if defined(CMDLINE_FORCE)
 		strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
 #endif
 	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=8") != NULL) { 
 		pr_err("LCD type S6D from bootloader\n");
 		lcdtype = 8;
-#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+#if defined(CMDLINE_FORCE)
 		strlcat(default_command_line, "lcdtype=8 ", COMMAND_LINE_SIZE);
 #endif
 	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
 		pr_err("LCD type S6D from bootloader\n");
 		lcdtype = 13;
-#if defined(CMDLINE_FORCE) || defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+#if defined(CMDLINE_FORCE)
 		strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);
 #endif
 	}
