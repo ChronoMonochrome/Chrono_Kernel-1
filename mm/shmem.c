@@ -1678,9 +1678,9 @@ static int shmem_symlink(struct inode *dir, struct dentry *dentry, const char *s
 		}
 		inode->i_mapping->a_ops = &shmem_aops;
 		inode->i_op = &shmem_symlink_inode_operations;
-		kaddr = kmap_atomic(page);
+		kaddr = kmap_atomic(page, KM_USER0);
 		memcpy(kaddr, symname, len);
-		kunmap_atomic(kaddr);
+		kunmap_atomic(kaddr, KM_USER0);
 		set_page_dirty(page);
 		unlock_page(page);
 		page_cache_release(page);
