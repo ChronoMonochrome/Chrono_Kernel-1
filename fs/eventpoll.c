@@ -296,7 +296,6 @@ ctl_table epoll_table[] = {
 
 static const struct file_operations eventpoll_fops;
 
-/* Fast test to see if the file is an eventpoll file */
 static inline int is_file_epoll(struct file *f)
 {
 	return f->f_op == &eventpoll_fops;
@@ -431,31 +430,6 @@ out_unlock:
 	return error;
 }
 
-/*
- * As described in commit 0ccf831cb lockdep: annotate epoll
- * the use of wait queues used by epoll is done in a very controlled
- * manner. Wake ups can nest inside each other, but are never done
- * with the same locking. For example:
- *
- *   dfd = socket(...);
- *   efd1 = epoll_create();
- *   efd2 = epoll_create();
- *   epoll_ctl(efd1, EPOLL_CTL_ADD, dfd, ...);
- *   epoll_ctl(efd2, EPOLL_CTL_ADD, efd1, ...);
- *
- * When a packet arrives to the device underneath "dfd", the net code will
- * issue a wake_up() on its poll wake list. Epoll (efd1) has installed a
- * callback wakeup entry on that queue, and the wake_up() performed by the
- * "dfd" net code will end up in ep_poll_callback(). At this point epoll
- * (efd1) notices that it may have some event ready, so it needs to wake up
- * the waiters on its poll wait list (efd2). So it calls ep_poll_safewake()
- * that ends up in another wake_up(), after having checked about the
- * recursion constraints. That are, no more than EP_MAX_POLLWAKE_NESTS, to
- * avoid stack blasting.
- *
- * When CONFIG_DEBUG_LOCK_ALLOC is enabled, make sure lockdep can handle
- * this special case of epoll.
- */
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
 static inline void ep_wake_up_nested(wait_queue_head_t *wqueue,
 				     unsigned long events, int subclass)
@@ -1078,11 +1052,13 @@ static int reverse_path_check_proc(void *priv, void *cookie, int call_nests)
  */
 static int reverse_path_check(void)
 {
+	int length = 0;
 	int error = 0;
 	struct file *current_file;
 
 	/* let's call this for all tfiles */
 	list_for_each_entry(current_file, &tfile_check_list, f_tfile_llink) {
+		length++;
 		path_count_init();
 		error = ep_call_nested(&poll_loop_ncalls, EP_MAX_NESTS,
 					reverse_path_check_proc, current_file,
@@ -1224,28 +1200,8 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
 	 * otherwise we might miss an event that happens between the
 	 * f_op->poll() call and the new event set registering.
 	 */
-	epi->event.events = event->events; /* need barrier below */
+	epi->event.events = event->events;
 	epi->event.data = event->data; /* protected by mtx */
-
-	/*
-	 * The following barrier has two effects:
-	 *
-	 * 1) Flush epi changes above to other CPUs.  This ensures
-	 *    we do not miss events from ep_poll_callback if an
-	 *    event occurs immediately after we call f_op->poll().
-	 *    We need this because we did not take ep->lock while
-	 *    changing epi above (but ep_poll_callback does take
-	 *    ep->lock).
-	 *
-	 * 2) We also need to ensure we do not miss _past_ events
-	 *    when calling f_op->poll().  This barrier also
-	 *    pairs with the barrier in wq_has_sleeper (see
-	 *    comments for wq_has_sleeper).
-	 *
-	 * This barrier will now guarantee ep_poll_callback or f_op->poll
-	 * (or both) will notice the readiness of an item.
-	 */
-	smp_mb();
 
 	/*
 	 * Get current event bits. We can safely use the file* here because
