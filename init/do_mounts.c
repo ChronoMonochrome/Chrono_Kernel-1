@@ -331,15 +331,11 @@ static int __init do_mount_root(char *name, char *fs, int flags, void *data)
 
 	sys_chdir((const char __user __force *)"/root");
 	ROOT_DEV = current->fs->pwd.mnt->mnt_sb->s_dev;
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "VFS: Mounted root (%s filesystem)%s on device %u:%u.\n",
 	       current->fs->pwd.mnt->mnt_sb->s_type->name,
 	       current->fs->pwd.mnt->mnt_sb->s_flags & MS_RDONLY ?
 	       " readonly" : "", MAJOR(ROOT_DEV), MINOR(ROOT_DEV));
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -375,52 +371,24 @@ retry:
 #ifdef CONFIG_BLOCK
 		__bdevname(ROOT_DEV, b);
 #endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("VFS: Cannot open root device \"%s\" or %s\n",
 				root_device_name, b);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Please append a correct \"root=\" boot option; here are the available partitions:\n");
-#else
-		;
-#endif
 
 		printk_all_partitions();
 #ifdef CONFIG_DEBUG_BLOCK_EXT_DEVT
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("DEBUG_BLOCK_EXT_DEVT is enabled, you need to specify "
 		       "explicit textual name for \"root=\" boot option.\n");
-#else
-		;
-#endif
 #endif
 		panic("VFS: Unable to mount root fs on %s", b);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("List of all partitions:\n");
-#else
-	;
-#endif
 	printk_all_partitions();
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("No filesystem could mount root, tried: ");
-#else
-	;
-#endif
 	for (p = fs_names; *p; p += strlen(p)+1)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %s", p);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
-#else
-	;
-#endif
 #ifdef CONFIG_BLOCK
 	__bdevname(ROOT_DEV, b);
 #endif
@@ -485,11 +453,7 @@ void __init change_floppy(char *fmt, ...)
 		sys_ioctl(fd, FDEJECT, 0);
 		sys_close(fd);
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "VFS: Insert %s and press ENTER\n", buf);
-#else
-	;
-#endif
 	fd = sys_open("/dev/console", O_RDWR, 0);
 	if (fd >= 0) {
 		sys_ioctl(fd, TCGETS, (long)&termios);
@@ -540,12 +504,8 @@ void __init prepare_namespace(void)
 	int is_floppy;
 
 	if (root_delay) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Waiting %dsec before mounting root device...\n",
 		       root_delay);
-#else
-		;
-#endif
 		ssleep(root_delay);
 	}
 
@@ -577,12 +537,8 @@ void __init prepare_namespace(void)
 
 	/* wait for any asynchronous scanning to complete */
 	if ((ROOT_DEV == 0) && root_wait) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Waiting for root device %s...\n",
 			saved_root_name);
-#else
-		;
-#endif
 		while (driver_probe_done() != 0 ||
 			(ROOT_DEV = name_to_dev_t(saved_root_name)) == 0)
 			msleep(100);
