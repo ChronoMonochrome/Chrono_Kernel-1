@@ -139,7 +139,7 @@ static int do_getname(const char __user *filename, char *page)
 	return retval;
 }
 
-static char *getname_flags(const char __user *filename, int flags, int *empty)
+static char *getname_flags(const char __user * filename, int flags)
 {
 	char *tmp, *result;
 
@@ -150,8 +150,6 @@ static char *getname_flags(const char __user *filename, int flags, int *empty)
 
 		result = tmp;
 		if (retval < 0) {
-			if (retval == -ENOENT && empty)
-				*empty = 1;
 			if (retval != -ENOENT || !(flags & LOOKUP_EMPTY)) {
 				__putname(tmp);
 				result = ERR_PTR(retval);
@@ -164,7 +162,7 @@ static char *getname_flags(const char __user *filename, int flags, int *empty)
 
 char *getname(const char __user * filename)
 {
-	return getname_flags(filename, 0, 0);
+	return getname_flags(filename, 0);
 }
 
 #ifdef CONFIG_AUDITSYSCALL
@@ -680,20 +678,17 @@ static int follow_automount(struct path *path, unsigned flags,
 	if ((flags & LOOKUP_NO_AUTOMOUNT) && !(flags & LOOKUP_CONTINUE))
 		return -EISDIR; /* we actually want to stop here */
 
-	/* We don't want to mount if someone's just doing a stat -
-	 * unless they're stat'ing a directory and appended a '/' to
-	 * the name.
+	/* We want to mount if someone is trying to open/create a file of any
+	 * type under the mountpoint, wants to traverse through the mountpoint
+	 * or wants to open the mounted directory.
 	 *
-	 * We do, however, want to mount if someone wants to open or
-	 * create a file of any type under the mountpoint, wants to
-	 * traverse through the mountpoint or wants to open the
-	 * mounted directory.  Also, autofs may mark negative dentries
-	 * as being automount points.  These will need the attentions
-	 * of the daemon to instantiate them before they can be used.
+	 * We don't want to mount if someone's just doing a stat and they've
+	 * set AT_SYMLINK_NOFOLLOW - unless they're stat'ing a directory and
+	 * appended a '/' to the name.
 	 */
-	if (!(flags & (LOOKUP_CONTINUE | LOOKUP_DIRECTORY |
-		     LOOKUP_OPEN | LOOKUP_CREATE | LOOKUP_AUTOMOUNT)) &&
-	    path->dentry->d_inode)
+	if (!(flags & LOOKUP_FOLLOW) &&
+	    !(flags & (LOOKUP_CONTINUE | LOOKUP_DIRECTORY |
+		       LOOKUP_OPEN | LOOKUP_CREATE)))
 		return -EISDIR;
 
 	current->total_link_count++;
@@ -809,7 +804,7 @@ static int follow_managed(struct path *path, unsigned flags)
 		mntput(path->mnt);
 	if (ret == -EISDIR)
 		ret = 0;
-	return ret < 0 ? ret : need_mntput;
+	return ret;
 }
 
 int follow_down_one(struct path *path)
