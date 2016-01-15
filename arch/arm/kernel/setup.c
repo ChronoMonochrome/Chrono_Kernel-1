@@ -696,8 +696,8 @@ EXPORT_SYMBOL(lcdtype);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
-	bool need_fallback = false;
 #if defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS) && defined(CONFIG_CMDLINE_OVERRIDE_HWMEM)
+	bool need_fallback = false;
 	char *tmp;
 	long int idx;
 	int default_cmdline_size = strlen(default_command_line);
@@ -795,7 +795,6 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 
 	if (setup_debug) 
 		pr_err("default=%s\n", default_command_line);
-#endif
 
 fallback:
 	if (unlikely(need_fallback)) {
@@ -806,6 +805,7 @@ fallback:
 		strlcat(default_command_line, tag->u.cmdline.cmdline,
 			COMMAND_LINE_SIZE);
 	}
+#endif
 
 	// parse bootloader command line and save the needed parameters
 	pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
