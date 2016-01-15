@@ -845,7 +845,7 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 		pr_err("default=%s\n", default_command_line);
 
 	goto parse;
-#endif
+#endif /* CONFIG_CMDLINE_OVERRIDE_RAMCONSOLE */
 skip_override_ramconsole_cmdline:
 	// extend kernel cmdline with the remaining part of a bootloader cmdline
 	strlcat(default_command_line, tmp, COMMAND_LINE_SIZE);
@@ -862,9 +862,10 @@ fallback:
 		strlcat(default_command_line, tag->u.cmdline.cmdline,
 			COMMAND_LINE_SIZE);
 	}
-#endif
 
 parse:
+#endif /* CONFIG_CMDLINE_OVERRIDE_HWMEM */
+
 	// parse bootloader command line and save the needed parameters
 	pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
 
