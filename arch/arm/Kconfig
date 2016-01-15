@@ -1182,26 +1182,25 @@ config CMDLINE_FORCE
 endchoice
 
 config CMDLINE_CUSTOM_PARAMETERS
-	bool
+	bool "CMDLINE_CUSTOM_PARAMETERS"
 	depends on CMDLINE_EXTEND
 	default y if CMDLINE_OVERRIDE_HWMEM || CMDLINE_OVERRIDE_RAMCONSOLE
 
 config CMDLINE_OVERRIDE_HWMEM
-	bool
-	default y if OVERRIDE_HWMEM_STRING != ""
+	bool "CMDLINE_OVERRIDE_HWMEM"
 	depends on ARCH_U8500
 
 config CMDLINE_OVERRIDE_HWMEM_STRING
+	depends on CMDLINE_OVERRIDE_HWMEM
 	string "Override the HWMEM size passed by bootloader"
 	default ""
 
 config CMDLINE_OVERRIDE_RAMCONSOLE
-	bool
-	default y if OVERRIDE_HWMEM_RAMCONSOLE_STRING != ""
-	depends on ARCH_U8500
+	bool "CMDLINE_OVERRIDE_RAMCONSOLE"
 
 config CMDLINE_OVERRIDE_RAMCONSOLE_STRING
 	string "Override the cmdline parameters to disable the RAM console"
+	depends on CMDLINE_OVERRIDE_RAMCONSOLE
 	default ""
 	help
 	  Say "mem=383M@384M" here to disable RAM console and free up its resources.
