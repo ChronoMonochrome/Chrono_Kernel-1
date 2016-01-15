@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  Copyright (C) 2012-2013 Samsung Electronics Co., Ltd.
  *
@@ -197,7 +194,7 @@
 #define UTBL_ROW_COUNT (1<<LOW_INDEX_BIT)
 #define UTBL_COL_COUNT (1<<HIGH_INDEX_BIT)
 
-#if CONFIG_EXFAT_DEBUG_MSG
+#ifdef CONFIG_EXFAT_DEBUG_MSG
 #define DPRINTK(...)			\
 	do {								\
 		printk("[EXFAT] " __VA_ARGS__);	\
