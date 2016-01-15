@@ -1,19 +1,10 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  * linux/fs/ext3/acl.c
  *
  * Copyright (C) 2001-2003 Andreas Gruenbacher, <agruen@suse.de>
  */
 
-#include <linux/init.h>
-#include <linux/sched.h>
-#include <linux/slab.h>
-#include <linux/capability.h>
-#include <linux/fs.h>
-#include <linux/ext3_jbd.h>
-#include <linux/ext3_fs.h>
+#include "ext3.h"
 #include "xattr.h"
 #include "acl.h"
 
@@ -398,15 +389,7 @@ ext3_xattr_set_acl(struct dentry *dentry, const char *name, const void *value,
 	if (!test_opt(inode->i_sb, POSIX_ACL))
 		return -EOPNOTSUPP;
 	if (!inode_owner_or_capable(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (value) {
 		acl = posix_acl_from_xattr(value, size);

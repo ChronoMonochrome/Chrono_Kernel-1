@@ -21,6 +21,8 @@
 #include "ext4_jbd2.h"
 #include "ext4.h"
 
+#define MAX_32_NUM ((((unsigned long long) 1) << 32) - 1)
+
 long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct inode *inode = filp->f_dentry->d_inode;
@@ -54,17 +56,11 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		flags = ext4_mask_flags(inode->i_mode, flags);
 
-		mutex_lock(&inode->i_mutex);
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 		err = -EPERM;
+		mutex_lock(&inode->i_mutex);
 		/* Is it quota file? Do not allow user to mess with it */
 		if (IS_NOQUOTA(inode))
 			goto flags_out;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 		oldflags = ei->i_flags;
 
@@ -162,15 +158,7 @@ flags_out:
 		int err;
 
 		if (!inode_owner_or_capable(inode))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		err = mnt_want_write_file(filp);
 		if (err)
@@ -180,10 +168,11 @@ return -EPERM;
 			goto setversion_out;
 		}
 
+		mutex_lock(&inode->i_mutex);
 		handle = ext4_journal_start(inode, 1);
 		if (IS_ERR(handle)) {
 			err = PTR_ERR(handle);
-			goto setversion_out;
+			goto unlock_out;
 		}
 		err = ext4_reserve_inode_write(handle, inode, &iloc);
 		if (err == 0) {
@@ -192,6 +181,9 @@ return -EPERM;
 			err = ext4_mark_iloc_dirty(handle, inode, &iloc);
 		}
 		ext4_journal_stop(handle);
+
+unlock_out:
+		mutex_unlock(&inode->i_mutex);
 setversion_out:
 		mnt_drop_write_file(filp);
 		return err;
@@ -204,19 +196,22 @@ setversion_out:
 		if (err)
 			return err;
 
-		if (get_user(n_blocks_count, (__u32 __user *)arg))
-			return -EFAULT;
+		if (get_user(n_blocks_count, (__u32 __user *)arg)) {
+			err = -EFAULT;
+			goto group_extend_out;
+		}
 
 		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
 			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
 			ext4_msg(sb, KERN_ERR,
 				 "Online resizing not supported with bigalloc");
-			return -EOPNOTSUPP;
+			err = -EOPNOTSUPP;
+			goto group_extend_out;
 		}
 
 		err = mnt_want_write_file(filp);
 		if (err)
-			return err;
+			goto group_extend_out;
 
 		err = ext4_group_extend(sb, EXT4_SB(sb)->s_es, n_blocks_count);
 		if (EXT4_SB(sb)->s_journal) {
@@ -227,8 +222,8 @@ setversion_out:
 		if (err == 0)
 			err = err2;
 		mnt_drop_write_file(filp);
+group_extend_out:
 		ext4_resize_end(sb);
-
 		return err;
 	}
 
@@ -287,19 +282,22 @@ mext_out:
 			return err;
 
 		if (copy_from_user(&input, (struct ext4_new_group_input __user *)arg,
-				sizeof(input)))
-			return -EFAULT;
+				sizeof(input))) {
+			err = -EFAULT;
+			goto group_add_out;
+		}
 
 		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
 			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
 			ext4_msg(sb, KERN_ERR,
 				 "Online resizing not supported with bigalloc");
-			return -EOPNOTSUPP;
+			err = -EOPNOTSUPP;
+			goto group_add_out;
 		}
 
 		err = mnt_want_write_file(filp);
 		if (err)
-			return err;
+			goto group_add_out;
 
 		err = ext4_group_add(sb, &input);
 		if (EXT4_SB(sb)->s_journal) {
@@ -310,8 +308,8 @@ mext_out:
 		if (err == 0)
 			err = err2;
 		mnt_drop_write_file(filp);
+group_add_out:
 		ext4_resize_end(sb);
-
 		return err;
 	}
 
@@ -351,22 +349,70 @@ mext_out:
 		return err;
 	}
 
+	case EXT4_IOC_RESIZE_FS: {
+		ext4_fsblk_t n_blocks_count;
+		struct super_block *sb = inode->i_sb;
+		int err = 0, err2 = 0;
+
+		if (EXT4_HAS_RO_COMPAT_FEATURE(sb,
+			       EXT4_FEATURE_RO_COMPAT_BIGALLOC)) {
+			ext4_msg(sb, KERN_ERR,
+				 "Online resizing not (yet) supported with bigalloc");
+			return -EOPNOTSUPP;
+		}
+
+		if (EXT4_HAS_INCOMPAT_FEATURE(sb,
+			       EXT4_FEATURE_INCOMPAT_META_BG)) {
+			ext4_msg(sb, KERN_ERR,
+				 "Online resizing not (yet) supported with meta_bg");
+			return -EOPNOTSUPP;
+		}
+
+		if (copy_from_user(&n_blocks_count, (__u64 __user *)arg,
+				   sizeof(__u64))) {
+			return -EFAULT;
+		}
+
+		if (n_blocks_count > MAX_32_NUM &&
+		    !EXT4_HAS_INCOMPAT_FEATURE(sb,
+					       EXT4_FEATURE_INCOMPAT_64BIT)) {
+			ext4_msg(sb, KERN_ERR,
+				 "File system only supports 32-bit block numbers");
+			return -EOPNOTSUPP;
+		}
+
+		err = ext4_resize_begin(sb);
+		if (err)
+			return err;
+
+		err = mnt_want_write(filp->f_path.mnt);
+		if (err)
+			goto resizefs_out;
+
+		err = ext4_resize_fs(sb, n_blocks_count);
+		if (EXT4_SB(sb)->s_journal) {
+			jbd2_journal_lock_updates(EXT4_SB(sb)->s_journal);
+			err2 = jbd2_journal_flush(EXT4_SB(sb)->s_journal);
+			jbd2_journal_unlock_updates(EXT4_SB(sb)->s_journal);
+		}
+		if (err == 0)
+			err = err2;
+		mnt_drop_write(filp->f_path.mnt);
+resizefs_out:
+		ext4_resize_end(sb);
+		return err;
+	}
+
+	case FIDTRIM:
 	case FITRIM:
 	{
 		struct request_queue *q = bdev_get_queue(sb->s_bdev);
 		struct fstrim_range range;
 		int ret = 0;
+		int flags  = cmd == FIDTRIM ? BLKDEV_DISCARD_SECURE : 0;
 
 		if (!capable(CAP_SYS_ADMIN))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		if (!blk_queue_discard(q))
 			return -EOPNOTSUPP;
@@ -378,13 +424,15 @@ return -EPERM;
 			return -EOPNOTSUPP;
 		}
 
+		if ((flags & BLKDEV_DISCARD_SECURE) && !blk_queue_secdiscard(q))
+			return -EOPNOTSUPP;
 		if (copy_from_user(&range, (struct fstrim_range __user *)arg,
 		    sizeof(range)))
 			return -EFAULT;
 
 		range.minlen = max((unsigned int)range.minlen,
 				   q->limits.discard_granularity);
-		ret = ext4_trim_fs(sb, &range);
+		ret = ext4_trim_fs(sb, &range, flags);
 		if (ret < 0)
 			return ret;
 
@@ -457,6 +505,7 @@ long ext4_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 	case EXT4_IOC_MOVE_EXT:
 	case FITRIM:
+	case EXT4_IOC_RESIZE_FS:
 		break;
 	default:
 		return -ENOIOCTLCMD;
