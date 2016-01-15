@@ -106,9 +106,7 @@ struct exfat_inode_info {
 	loff_t mmu_private;         /* physically allocated size */
 	loff_t i_pos;               /* on-disk position of directory entry or 0 */
 	struct hlist_node i_hash_fat;	/* hash by i_location */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,00)
 	struct rw_semaphore truncate_lock;
-#endif
 	struct inode vfs_inode;
 	struct rw_semaphore i_alloc_sem; /* protect bmap against truncate */
 };

@@ -1756,11 +1756,7 @@ static int exfat_fill_inode(struct inode *inode, FILE_ID_T *fid)
 
 		i_size_write(inode, info.Size);
 		EXFAT_I(inode)->mmu_private = i_size_read(inode);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,00)
 		set_nlink(inode, info.NumSubdirs);
-#else
-		inode->i_nlink = info.NumSubdirs;
-#endif
 	} else if (info.Attr & ATTR_SYMLINK) { /* symbolic link */
 		inode->i_generation |= 1;
 		inode->i_mode = exfat_make_mode(sbi, info.Attr, S_IRWXUGO);
@@ -1831,9 +1827,7 @@ static struct inode *exfat_alloc_inode(struct super_block *sb)
 	if (!ei)
 		return NULL;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,00)
 	init_rwsem(&ei->truncate_lock);
-#endif
 
 	return &ei->vfs_inode;
 }
@@ -1992,15 +1986,9 @@ static int exfat_remount(struct super_block *sb, int *flags, char *data)
 	return 0;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0)
 static int exfat_show_options(struct seq_file *m, struct dentry *root)
 {
 	struct exfat_sb_info *sbi = EXFAT_SB(root->d_sb);
-#else
-static int exfat_show_options(struct seq_file *m, struct vfsmount *mnt)
-{
-	struct exfat_sb_info *sbi = EXFAT_SB(mnt->mnt_sb);
-#endif
 	struct exfat_mount_options *opts = &sbi->options;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,5,0)
 	if (__kuid_val(opts->fs_uid))
@@ -2265,11 +2253,7 @@ static int exfat_read_root(struct inode *inode)
 
 	exfat_save_attr(inode, ATTR_SUBDIR);
 	inode->i_mtime = inode->i_atime = inode->i_ctime = ts;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,00)
 	set_nlink(inode, info.NumSubdirs + 2);
-#else
-	inode->i_nlink = info.NumSubdirs + 2;
-#endif
 
 	return 0;
 }
@@ -2361,11 +2345,7 @@ static int exfat_fill_super(struct super_block *sb, void *data, int silent)
 	error = -ENOMEM;
 	exfat_attach(root_inode, EXFAT_I(root_inode)->i_pos);
 	insert_inode_hash(root_inode);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,00)
 	sb->s_root = d_make_root(root_inode);
-#else
-	sb->s_root = d_alloc_root(root_inode);
-#endif
 	if (!sb->s_root) {
 ;
 		goto out_fail2;
