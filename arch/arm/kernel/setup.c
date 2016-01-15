@@ -791,6 +791,14 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 		pr_err("tmp=%s\n", tmp);
 
 #if defined(CONFIG_CMDLINE_OVERRIDE_RAMCONSOLE)
+	if (strstr(default_command_line, "dont_override_ramconsole") || 
+			strstr(tag->u.cmdline.cmdline, "dont_override_ramconsole") ) {
+		pr_err("setup: not overriding RAM console cmdline parameter\n,\
+				 because tag dont_override_ramconsole is set.\n");
+
+		goto skip_override_ramconsole_cmdline;
+	}
+
 	tmp = strstr(tmp, "mem_ram_console");
 	if (!tmp) {
 		need_fallback = true;
@@ -835,13 +843,15 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 
 	if (setup_debug)
 		pr_err("default=%s\n", default_command_line);
-#else
+
+	goto parse;
+#endif
+skip_override_ramconsole_cmdline:
 	// extend kernel cmdline with the remaining part of a bootloader cmdline
 	strlcat(default_command_line, tmp, COMMAND_LINE_SIZE);
 
 	if (setup_debug)
 		pr_err("default=%s\n", default_command_line);
-#endif
 
 fallback:
 	if (unlikely(need_fallback)) {
@@ -854,6 +864,7 @@ fallback:
 	}
 #endif
 
+parse:
 	// parse bootloader command line and save the needed parameters
 	pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
 
