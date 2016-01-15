@@ -33,7 +33,7 @@
 
 #ifdef CONFIG_BTRFS_FS_POSIX_ACL
 
-struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
+static struct posix_acl *btrfs_get_acl(struct inode *inode, int type)
 {
 	int size;
 	const char *name;
@@ -201,6 +201,22 @@ out:
 	posix_acl_release(acl);
 
 	return ret;
+}
+
+int btrfs_check_acl(struct inode *inode, int mask)
+{
+	int error = -EAGAIN;
+	struct posix_acl *acl;
+
+	acl = btrfs_get_acl(inode, ACL_TYPE_ACCESS);
+	if (IS_ERR(acl))
+		return PTR_ERR(acl);
+	if (acl) {
+		error = posix_acl_permission(inode, acl, mask);
+		posix_acl_release(acl);
+	}
+
+	return error;
 }
 
 /*
