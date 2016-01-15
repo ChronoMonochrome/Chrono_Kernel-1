@@ -696,9 +696,9 @@ EXPORT_SYMBOL(lcdtype);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
-#if defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS) && defined(CONFIG_CMDLINE_OVERRIDE_HWMEM)
+#if defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
 	bool need_fallback = false;
-	char *tmp;
+	char *tmp, *tmp1;
 	long int idx;
 	int default_cmdline_size = strlen(default_command_line);
 #endif
@@ -727,7 +727,7 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	}
 
 
-#if defined(CONFIG_CMDLINE_OVERRIDE_HWMEM) && defined(CONFIG_CMDLINE_CUSTOM_PARAMETERS)
+#if defined(CONFIG_CMDLINE_OVERRIDE_HWMEM)
 	if (strstr(default_command_line, "dont_override_hwmem_size") || 
 			strstr(tag->u.cmdline.cmdline, "dont_override_hwmem_size") ) {
 		pr_err("setup: not overriding HWMEM size, because tag dont_override_hwmem_size is set.\n");
@@ -742,7 +742,7 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 		goto fallback;
 	}
 
-	idx = tmp - (tag->u.cmdline.cmdline -  default_cmdline_size);
+	idx = tmp - (tag->u.cmdline.cmdline - default_cmdline_size);
 
 	if (setup_debug) {
 		pr_err("idx = %ld\n", idx);
@@ -755,7 +755,7 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 		pr_err("default=%s\n", default_command_line);
 
 	// extend kernel cmdline with our custom parameters
-	strlcat(default_command_line, " hwmem=72M@256M mem=55M@328M", COMMAND_LINE_SIZE);
+	strlcat(default_command_line, CONFIG_CMDLINE_OVERRIDE_HWMEM_STRING, COMMAND_LINE_SIZE);
 	if (setup_debug) 
 		pr_err("default=%s\n", default_command_line);
 
@@ -766,7 +766,7 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 		goto fallback;
 	}
 
-	if (setup_debug) 
+	if (setup_debug)
 		pr_err("tmp=%s\n", tmp);
 
 	// assuming that after " mem=" we have "xxxM@xxxM". Skip this too.
@@ -777,7 +777,7 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	}
 	tmp++;
 
-	if (setup_debug) 
+	if (setup_debug)
 		pr_err("tmp=%s\n", tmp);
 
 	tmp = strstr(tmp, "M");
@@ -787,14 +787,61 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	}
 	tmp++;
 
-	if (setup_debug) 
+	if (setup_debug)
 		pr_err("tmp=%s\n", tmp);
 
+#if defined(CONFIG_CMDLINE_OVERRIDE_RAMCONSOLE)
+	tmp = strstr(tmp, "mem_ram_console");
+	if (!tmp) {
+		need_fallback = true;
+		goto fallback;
+	}
+
+	strlcat(default_command_line, " mem_issw=1M@383M ", COMMAND_LINE_SIZE);
+	if (setup_debug) 
+		pr_err("default=%s\n", default_command_line);
+
+	strlcat(default_command_line, CONFIG_CMDLINE_OVERRIDE_RAMCONSOLE_STRING, COMMAND_LINE_SIZE);
+	if (setup_debug) 
+		pr_err("default=%s\n", default_command_line);
+
+	tmp = strstr(tmp, " mem=");
+	if (!tmp) {
+		need_fallback = true;
+		goto fallback;
+	}
+
+	tmp = strstr(tmp, "M");
+	if (!tmp) {
+		need_fallback = true;
+		goto fallback;
+	}
+	tmp++;
+
+	if (setup_debug)
+		pr_err("tmp=%s\n", tmp);
+
+	tmp = strstr(tmp, "M");
+	if (!tmp) {
+		need_fallback = true;
+		goto fallback;
+	}
+	tmp++;
+
+	if (setup_debug)
+		pr_err("tmp=%s\n", tmp);
+
+	strlcat(default_command_line, tmp, COMMAND_LINE_SIZE);
+
+	if (setup_debug)
+		pr_err("default=%s\n", default_command_line);
+#else
 	// extend kernel cmdline with the remaining part of a bootloader cmdline
 	strlcat(default_command_line, tmp, COMMAND_LINE_SIZE);
 
-	if (setup_debug) 
+	if (setup_debug)
 		pr_err("default=%s\n", default_command_line);
+#endif
 
 fallback:
 	if (unlikely(need_fallback)) {
