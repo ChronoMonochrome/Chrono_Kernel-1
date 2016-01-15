@@ -54,18 +54,17 @@ extern struct dentry_stat_t dentry_stat;
 static inline int dentry_cmp(const unsigned char *cs, size_t scount,
 				const unsigned char *ct, size_t tcount)
 {
-	int ret;
 	if (scount != tcount)
 		return 1;
+
 	do {
-		ret = (*cs != *ct);
-		if (ret)
-			break;
+		if (*cs != *ct)
+			return 1;
 		cs++;
 		ct++;
 		tcount--;
 	} while (tcount);
-	return ret;
+	return 0;
 }
 
 /* Name hashing routines. Initial hash value */
@@ -211,8 +210,6 @@ struct dentry_operations {
 #define DCACHE_NEED_LOOKUP	0x80000 /* dentry requires i_op->lookup */
 #define DCACHE_MANAGED_DENTRY \
 	(DCACHE_MOUNTED|DCACHE_NEED_AUTOMOUNT|DCACHE_MANAGE_TRANSIT)
-
-#define DCACHE_DENTRY_KILLED	0x100000
 
 extern seqlock_t rename_lock;
 
