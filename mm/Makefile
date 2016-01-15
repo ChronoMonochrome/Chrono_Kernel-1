@@ -13,7 +13,7 @@ obj-y			:= filemap.o mempool.o oom_kill.o fadvise.o \
 			   readahead.o swap.o truncate.o vmscan.o shmem.o \
 			   prio_tree.o util.o mmzone.o vmstat.o backing-dev.o \
 			   page_isolation.o mm_init.o mmu_context.o percpu.o \
-			   iov-iter.o $(mmu-y) \
+			   $(mmu-y) \
 		  	   showmem.o vmpressure.o
 obj-y += init-mm.o
 
