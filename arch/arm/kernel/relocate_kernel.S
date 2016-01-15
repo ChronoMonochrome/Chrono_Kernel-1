@@ -114,7 +114,6 @@ hardboot:
 	STMFD	SP!, {LR}
 
 loc_5124:
-	BL	__gnu_mcount_nc
 	CPSID	I
 	CPSID	F
 	LDR	R4, =outer_cache
