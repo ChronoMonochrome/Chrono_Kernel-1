@@ -33,10 +33,9 @@ static size_t __iovec_copy_to_user_inatomic(char *vaddr,
  * were sucessfully copied.  If a fault is encountered then return the number of
  * bytes which were copied.
  */
-size_t ii_iovec_copy_to_user_atomic(struct page *page,
+size_t iov_iter_copy_to_user_atomic(struct page *page,
 		struct iov_iter *i, unsigned long offset, size_t bytes)
 {
-	struct iovec *iov = (struct iovec *)i->data;
 	char *kaddr;
 	size_t copied;
 
@@ -44,44 +43,45 @@ size_t ii_iovec_copy_to_user_atomic(struct page *page,
 	kaddr = kmap_atomic(page, KM_USER0);
 	if (likely(i->nr_segs == 1)) {
 		int left;
-		char __user *buf = iov->iov_base + i->iov_offset;
+		char __user *buf = i->iov->iov_base + i->iov_offset;
 		left = __copy_to_user_inatomic(buf, kaddr + offset, bytes);
 		copied = bytes - left;
 	} else {
 		copied = __iovec_copy_to_user_inatomic(kaddr + offset,
-						iov, i->iov_offset, bytes);
+						i->iov, i->iov_offset, bytes);
 	}
 	kunmap_atomic(kaddr, KM_USER0);
 
 	return copied;
 }
+EXPORT_SYMBOL(iov_iter_copy_to_user_atomic);
 
 /*
  * This has the same sideeffects and return value as
- * ii_iovec_copy_to_user_atomic().
+ * iov_iter_copy_to_user_atomic().
  * The difference is that it attempts to resolve faults.
  * Page must not be locked.
  */
-size_t ii_iovec_copy_to_user(struct page *page,
+size_t iov_iter_copy_to_user(struct page *page,
 		struct iov_iter *i, unsigned long offset, size_t bytes)
 {
-	struct iovec *iov = (struct iovec *)i->data;
 	char *kaddr;
 	size_t copied;
 
 	kaddr = kmap(page);
 	if (likely(i->nr_segs == 1)) {
 		int left;
-		char __user *buf = iov->iov_base + i->iov_offset;
+		char __user *buf = i->iov->iov_base + i->iov_offset;
 		left = copy_to_user(buf, kaddr + offset, bytes);
 		copied = bytes - left;
 	} else {
 		copied = __iovec_copy_to_user_inatomic(kaddr + offset,
-						iov, i->iov_offset, bytes);
+						i->iov, i->iov_offset, bytes);
 	}
 	kunmap(page);
 	return copied;
 }
+EXPORT_SYMBOL(iov_iter_copy_to_user);
 
 
 static size_t __iovec_copy_from_user_inatomic(char *vaddr,
@@ -111,10 +111,9 @@ static size_t __iovec_copy_from_user_inatomic(char *vaddr,
  * were successfully copied.  If a fault is encountered then return the number
  * of bytes which were copied.
  */
-size_t ii_iovec_copy_from_user_atomic(struct page *page,
+size_t iov_iter_copy_from_user_atomic(struct page *page,
 		struct iov_iter *i, unsigned long offset, size_t bytes)
 {
-	struct iovec *iov = (struct iovec *)i->data;
 	char *kaddr;
 	size_t copied;
 
@@ -122,12 +121,12 @@ size_t ii_iovec_copy_from_user_atomic(struct page *page,
 	kaddr = kmap_atomic(page, KM_USER0);
 	if (likely(i->nr_segs == 1)) {
 		int left;
-		char __user *buf = iov->iov_base + i->iov_offset;
+		char __user *buf = i->iov->iov_base + i->iov_offset;
 		left = __copy_from_user_inatomic(kaddr + offset, buf, bytes);
 		copied = bytes - left;
 	} else {
 		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
-						iov, i->iov_offset, bytes);
+						i->iov, i->iov_offset, bytes);
 	}
 	kunmap_atomic(kaddr, KM_USER0);
 
@@ -137,32 +136,32 @@ EXPORT_SYMBOL(iov_iter_copy_from_user_atomic);
 
 /*
  * This has the same sideeffects and return value as
- * ii_iovec_copy_from_user_atomic().
+ * iov_iter_copy_from_user_atomic().
  * The difference is that it attempts to resolve faults.
  * Page must not be locked.
  */
-size_t ii_iovec_copy_from_user(struct page *page,
+size_t iov_iter_copy_from_user(struct page *page,
 		struct iov_iter *i, unsigned long offset, size_t bytes)
 {
-	struct iovec *iov = (struct iovec *)i->data;
 	char *kaddr;
 	size_t copied;
 
 	kaddr = kmap(page);
 	if (likely(i->nr_segs == 1)) {
 		int left;
-		char __user *buf = iov->iov_base + i->iov_offset;
+		char __user *buf = i->iov->iov_base + i->iov_offset;
 		left = __copy_from_user(kaddr + offset, buf, bytes);
 		copied = bytes - left;
 	} else {
 		copied = __iovec_copy_from_user_inatomic(kaddr + offset,
-						iov, i->iov_offset, bytes);
+						i->iov, i->iov_offset, bytes);
 	}
 	kunmap(page);
 	return copied;
 }
+EXPORT_SYMBOL(iov_iter_copy_from_user);
 
-void ii_iovec_advance(struct iov_iter *i, size_t bytes)
+void iov_iter_advance(struct iov_iter *i, size_t bytes)
 {
 	BUG_ON(i->count < bytes);
 
@@ -170,7 +169,7 @@ void ii_iovec_advance(struct iov_iter *i, size_t bytes)
 		i->iov_offset += bytes;
 		i->count -= bytes;
 	} else {
-		struct iovec *iov = (struct iovec *)i->data;
+		const struct iovec *iov = i->iov;
 		size_t base = i->iov_offset;
 		unsigned long nr_segs = i->nr_segs;
 
@@ -192,11 +191,12 @@ void ii_iovec_advance(struct iov_iter *i, size_t bytes)
 				base = 0;
 			}
 		}
-		i->data = (unsigned long)iov;
+		i->iov = iov;
 		i->iov_offset = base;
 		i->nr_segs = nr_segs;
 	}
 }
+EXPORT_SYMBOL(iov_iter_advance);
 
 /*
  * Fault in the first iovec of the given iov_iter, to a maximum length
@@ -207,33 +207,23 @@ void ii_iovec_advance(struct iov_iter *i, size_t bytes)
  * would be possible (callers must not rely on the fact that _only_ the
  * first iovec will be faulted with the current implementation).
  */
-int ii_iovec_fault_in_readable(struct iov_iter *i, size_t bytes)
+int iov_iter_fault_in_readable(struct iov_iter *i, size_t bytes)
 {
-	struct iovec *iov = (struct iovec *)i->data;
-	char __user *buf = iov->iov_base + i->iov_offset;
-	bytes = min(bytes, iov->iov_len - i->iov_offset);
+	char __user *buf = i->iov->iov_base + i->iov_offset;
+	bytes = min(bytes, i->iov->iov_len - i->iov_offset);
 	return fault_in_pages_readable(buf, bytes);
 }
+EXPORT_SYMBOL(iov_iter_fault_in_readable);
 
 /*
  * Return the count of just the current iov_iter segment.
  */
-size_t ii_iovec_single_seg_count(struct iov_iter *i)
+size_t iov_iter_single_seg_count(struct iov_iter *i)
 {
-	struct iovec *iov = (struct iovec *)i->data;
+	const struct iovec *iov = i->iov;
 	if (i->nr_segs == 1)
 		return i->count;
 	else
 		return min(i->count, iov->iov_len - i->iov_offset);
 }
-
-struct iov_iter_ops ii_iovec_ops = {
-	.ii_copy_to_user_atomic = ii_iovec_copy_to_user_atomic,
-	.ii_copy_to_user = ii_iovec_copy_to_user,
-	.ii_copy_from_user_atomic = ii_iovec_copy_from_user_atomic,
-	.ii_copy_from_user = ii_iovec_copy_from_user,
-	.ii_advance = ii_iovec_advance,
-	.ii_fault_in_readable = ii_iovec_fault_in_readable,
-	.ii_single_seg_count = ii_iovec_single_seg_count,
-};
-EXPORT_SYMBOL(ii_iovec_ops);
+EXPORT_SYMBOL(iov_iter_single_seg_count);
