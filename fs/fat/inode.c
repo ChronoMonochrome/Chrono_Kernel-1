@@ -1561,14 +1561,18 @@ static int writeback_inode(struct inode *inode)
 {
 
 	int ret;
-
-	/* if we used wait=1, sync_inode_metadata waits for the io for the
-	* inode to finish.  So wait=0 is sent down to sync_inode_metadata
+	struct address_space *mapping = inode->i_mapping;
+	struct writeback_control wbc = {
+	       .sync_mode = WB_SYNC_NONE,
+	      .nr_to_write = 0,
+	};
+	/* if we used WB_SYNC_ALL, sync_inode waits for the io for the
+	* inode to finish.  So WB_SYNC_NONE is sent down to sync_inode
 	* and filemap_fdatawrite is used for the data blocks
 	*/
-	ret = sync_inode_metadata(inode, 0);
+	ret = sync_inode(inode, &wbc);
 	if (!ret)
-	       ret = filemap_fdatawrite(inode->i_mapping);
+	       ret = filemap_fdatawrite(mapping);
 	return ret;
 }
 
