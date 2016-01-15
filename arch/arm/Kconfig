@@ -1183,12 +1183,28 @@ endchoice
 
 config CMDLINE_CUSTOM_PARAMETERS
 	bool
-	default y if CMDLINE_OVERRIDE_HWMEM != ""
+	depends on CMDLINE_EXTEND
+	default y if CMDLINE_OVERRIDE_HWMEM || CMDLINE_OVERRIDE_RAMCONSOLE
 
 config CMDLINE_OVERRIDE_HWMEM
+	bool
+	default y if OVERRIDE_HWMEM_STRING != ""
+	depends on ARCH_U8500
+
+config CMDLINE_OVERRIDE_HWMEM_STRING
 	string "Override the HWMEM size passed by bootloader"
-	depends on CMDLINE_EXTEND && ARCH_U8500
 	default ""
+
+config CMDLINE_OVERRIDE_RAMCONSOLE
+	bool
+	default y if OVERRIDE_HWMEM_RAMCONSOLE_STRING != ""
+	depends on ARCH_U8500
+
+config CMDLINE_OVERRIDE_RAMCONSOLE_STRING
+	string "Override the cmdline parameters to disable the RAM console"
+	default ""
+	help
+	  Say "mem=383M@384M" here to disable RAM console and free up its resources.
 
 config XIP_KERNEL
 	bool "Kernel Execute-In-Place from ROM"
