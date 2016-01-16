@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext4/file.c
  *
@@ -234,6 +237,8 @@ const struct file_operations ext4_file_operations = {
 	.write		= do_sync_write,
 	.aio_read	= generic_file_aio_read,
 	.aio_write	= ext4_file_write,
+	.read_iter	= generic_file_read_iter,
+	.write_iter	= generic_file_write_iter,
 	.unlocked_ioctl = ext4_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl	= ext4_compat_ioctl,

@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/ext4/xattr_trusted.c
  * Handler for trusted extended attributes.

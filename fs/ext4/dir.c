@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext4/dir.c
  *
@@ -425,8 +428,8 @@ static int call_filldir(struct file *filp, void *dirent,
 	sb = inode->i_sb;
 
 	if (!fname) {
-		printk(KERN_ERR "EXT4-fs: call_filldir: called with "
-		       "null fname?!?\n");
+//		printk(KERN_ERR "EXT4-fs: call_filldir: called with "
+;
 		return 0;
 	}
 	curr_pos = hash2pos(fname->hash, fname->minor_hash);
