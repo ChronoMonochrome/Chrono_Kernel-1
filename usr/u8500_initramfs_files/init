@@ -7,6 +7,11 @@ busybox rm /ramdisk/last_boot.txt
 busybox date >>/ramdisk/last_boot.txt
 exec >>/ramdisk/last_boot.txt 2>&1
 
+
+busybox mkdir -p /sbin
+busybox cp /stage1/busybox /sbin/busybox
+busybox chmod 755 /sbin/busybox
+
 busybox cd /
 busybox rm init
 busybox mount -t proc proc /proc
