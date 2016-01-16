@@ -22,7 +22,7 @@
 */
 
 #include <linux/rbtree_augmented.h>
-#include <linux/export.h>
+#include <linux/module.h>
 
 /*
  * red-black trees properties:  http://en.wikipedia.org/wiki/Rbtree
