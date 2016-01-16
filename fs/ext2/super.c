@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ext2/super.c
  *
@@ -64,8 +67,8 @@ void ext2_error(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_CRIT "EXT2-fs (%s): error: %s: %pV\n",
-	       sb->s_id, function, &vaf);
+//	printk(KERN_CRIT "EXT2-fs (%s): error: %s: %pV\n",
+;
 
 	va_end(args);
 
@@ -89,7 +92,7 @@ void ext2_msg(struct super_block *sb, const char *prefix,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk("%sEXT2-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
+;
 
 	va_end(args);
 }
@@ -210,9 +213,9 @@ static void destroy_inodecache(void)
 	kmem_cache_destroy(ext2_inode_cachep);
 }
 
-static int ext2_show_options(struct seq_file *seq, struct dentry *root)
+static int ext2_show_options(struct seq_file *seq, struct vfsmount *vfs)
 {
-	struct super_block *sb = root->d_sb;
+	struct super_block *sb = vfs->mnt_sb;
 	struct ext2_sb_info *sbi = EXT2_SB(sb);
 	struct ext2_super_block *es = sbi->s_es;
 	unsigned long def_mount_opts;
@@ -377,8 +380,8 @@ static unsigned long get_sb_block(void **data)
 	options += 3;
 	sb_block = simple_strtoul(options, &options, 0);
 	if (*options && *options != ',') {
-		printk("EXT2-fs: Invalid sb specification: %s\n",
-		       (char *) *data);
+//		printk("EXT2-fs: Invalid sb specification: %s\n",
+;
 		return 1;
 	}
 	if (*options == ',')
@@ -1088,8 +1091,9 @@ static int ext2_fill_super(struct super_block *sb, void *data, int silent)
 		goto failed_mount3;
 	}
 
-	sb->s_root = d_make_root(root);
+	sb->s_root = d_alloc_root(root);
 	if (!sb->s_root) {
+		iput(root);
 		ext2_msg(sb, KERN_ERR, "error: get root inode failed");
 		ret = -ENOMEM;
 		goto failed_mount3;

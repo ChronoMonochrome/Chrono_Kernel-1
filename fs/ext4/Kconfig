@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 config EXT4_FS
 	tristate "The Extended 4 (ext4) filesystem"
 	select JBD2

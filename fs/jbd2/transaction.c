@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/jbd2/transaction.c
  *
@@ -124,9 +127,9 @@ static int start_this_handle(journal_t *journal, handle_t *handle,
 	unsigned long ts = jiffies;
 
 	if (nblocks > journal->j_max_transaction_buffers) {
-		printk(KERN_ERR "JBD: %s wants too many credits (%d > %d)\n",
-		       current->comm, nblocks,
-		       journal->j_max_transaction_buffers);
+//		printk(KERN_ERR "JBD: %s wants too many credits (%d > %d)\n",
+//		       current->comm, nblocks,
+;
 		return -ENOSPC;
 	}
 
@@ -178,6 +181,15 @@ repeat:
 		if (!new_transaction)
 			goto alloc_transaction;
 		write_lock(&journal->j_state_lock);
+
+		/* add to bug fix code, j.gap.lee@samsung.com, 2012.04.23 */
+		/* barrier check */
+		if (journal->j_barrier_count) {
+			write_unlock(&journal->j_state_lock);
+			goto repeat;
+		}
+		/* end */
+
 		if (!journal->j_running_transaction &&
 		    !journal->j_barrier_count) {
 			jbd2_get_transaction(journal, new_transaction);
@@ -517,12 +529,13 @@ void jbd2_journal_lock_updates(journal_t *journal)
 			break;
 
 		spin_lock(&transaction->t_handle_lock);
-		if (!atomic_read(&transaction->t_updates)) {
-			spin_unlock(&transaction->t_handle_lock);
-			break;
-		}
 		prepare_to_wait(&journal->j_wait_updates, &wait,
 				TASK_UNINTERRUPTIBLE);
+		if (!atomic_read(&transaction->t_updates)) {
+			spin_unlock(&transaction->t_handle_lock);
+			finish_wait(&journal->j_wait_updates, &wait);
+			break;
+		}
 		spin_unlock(&transaction->t_handle_lock);
 		write_unlock(&journal->j_state_lock);
 		schedule();
@@ -563,11 +576,11 @@ static void warn_dirty_buffer(struct buffer_head *bh)
 {
 	char b[BDEVNAME_SIZE];
 
-	printk(KERN_WARNING
-	       "JBD: Spotted dirty metadata buffer (dev = %s, blocknr = %llu). "
-	       "There's a risk of filesystem corruption in case of system "
-	       "crash.\n",
-	       bdevname(bh->b_bdev, b), (unsigned long long)bh->b_blocknr);
+//	printk(KERN_WARNING
+//	       "JBD: Spotted dirty metadata buffer (dev = %s, blocknr = %llu). "
+//	       "There's a risk of filesystem corruption in case of system "
+//	       "crash.\n",
+;
 }
 
 /*
@@ -740,9 +753,9 @@ repeat:
 					jbd2_alloc(jh2bh(jh)->b_size,
 							 GFP_NOFS);
 				if (!frozen_buffer) {
-					printk(KERN_EMERG
-					       "%s: OOM for frozen_buffer\n",
-					       __func__);
+//					printk(KERN_EMERG
+//					       "%s: OOM for frozen_buffer\n",
+;
 					JBUFFER_TRACE(jh, "oom!");
 					error = -ENOMEM;
 					jbd_lock_bh_state(bh);
@@ -972,8 +985,8 @@ repeat:
 	if (!jh->b_committed_data) {
 		committed_data = jbd2_alloc(jh2bh(jh)->b_size, GFP_NOFS);
 		if (!committed_data) {
-			printk(KERN_EMERG "%s: No memory for committed data\n",
-				__func__);
+//			printk(KERN_EMERG "%s: No memory for committed data\n",
+;
 			err = -ENOMEM;
 			goto out;
 		}
@@ -1419,29 +1432,6 @@ int jbd2_journal_stop(handle_t *handle)
 	return err;
 }
 
-/**
- * int jbd2_journal_force_commit() - force any uncommitted transactions
- * @journal: journal to force
- *
- * For synchronous operations: force any uncommitted transactions
- * to disk.  May seem kludgy, but it reuses all the handle batching
- * code in a very simple manner.
- */
-int jbd2_journal_force_commit(journal_t *journal)
-{
-	handle_t *handle;
-	int ret;
-
-	handle = jbd2_journal_start(journal, 1);
-	if (IS_ERR(handle)) {
-		ret = PTR_ERR(handle);
-	} else {
-		handle->h_sync = 1;
-		ret = jbd2_journal_stop(handle);
-	}
-	return ret;
-}
-
 /*
  *
  * List management code snippets: various functions for manipulating the
@@ -1675,8 +1665,20 @@ int jbd2_journal_try_to_free_buffers(journal_t *journal,
 		__journal_try_to_free_buffer(journal, bh);
 		jbd2_journal_put_journal_head(jh);
 		jbd_unlock_bh_state(bh);
+#ifndef CONFIG_DMA_CMA
 		if (buffer_jbd(bh))
 			goto busy;
+#else
+		if (buffer_jbd(bh)) {
+			/*
+			 * Workaround: In case of CMA page, just commit journal.
+			 */
+			if (is_cma_pageblock(page))
+				jbd2_journal_force_commit(journal);
+			else
+				goto busy;
+		}
+#endif
 	} while ((bh = bh->b_this_page) != head);
 
 	ret = try_to_free_buffers(page);
