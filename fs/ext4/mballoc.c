@@ -584,7 +584,7 @@ static int __mb_check_buddy(struct ext4_buddy *e4b, char *file,
 				continue;
 			}
 
-			/* both bits in buddy2 must be 1 */
+			/* both bits in buddy2 must be 0 */
 			MB_CHECK_ASSERT(mb_test_bit(i << 1, buddy2));
 			MB_CHECK_ASSERT(mb_test_bit((i << 1) + 1, buddy2));
 
@@ -1394,6 +1394,7 @@ static int mb_find_extent(struct ext4_buddy *e4b, int order, int block,
 {
 	int next = block;
 	int max;
+	int ord;
 	void *buddy;
 
 	assert_spin_locked(ext4_group_lock_ptr(e4b->bd_sb, e4b->bd_group));
@@ -1435,8 +1436,9 @@ static int mb_find_extent(struct ext4_buddy *e4b, int order, int block,
 		if (mb_test_bit(next, EXT4_MB_BITMAP(e4b)))
 			break;
 
-		order = mb_find_order_for_block(e4b, next);
+		ord = mb_find_order_for_block(e4b, next);
 
+		order = ord;
 		block = next >> order;
 		ex->fe_len += 1 << order;
 	}
@@ -3351,6 +3353,7 @@ void ext4_mb_generate_from_pa(struct super_block *sb, void *bitmap,
 	ext4_group_t groupnr;
 	ext4_grpblk_t start;
 	int preallocated = 0;
+	int count = 0;
 	int len;
 
 	/* all form of preallocation discards first load group,
@@ -3373,6 +3376,7 @@ void ext4_mb_generate_from_pa(struct super_block *sb, void *bitmap,
 		BUG_ON(groupnr != group);
 		ext4_set_bits(bitmap, start, len);
 		preallocated += len;
+		count++;
 	}
 	mb_debug(1, "prellocated %u for group %u\n", preallocated, group);
 }
@@ -3679,7 +3683,7 @@ ext4_mb_release_group_pa(struct ext4_buddy *e4b,
 	ext4_group_t group;
 	ext4_grpblk_t bit;
 
-	trace_ext4_mb_release_group_pa(sb, pa);
+	trace_ext4_mb_release_group_pa(pa);
 	BUG_ON(pa->pa_deleted == 0);
 	ext4_get_group_no_and_offset(sb, pa->pa_pstart, &group, &bit);
 	BUG_ON(group != e4b->bd_group && pa->pa_len != 0);
@@ -4007,11 +4011,6 @@ static void ext4_mb_group_or_file(struct ext4_allocation_context *ac)
 	    !ext4_fs_is_busy(sbi) &&
 	    (atomic_read(&ac->ac_inode->i_writecount) == 0)) {
 		ac->ac_flags |= EXT4_MB_HINT_NOPREALLOC;
-		return;
-	}
-
-	if (sbi->s_mb_group_prealloc <= 0) {
-		ac->ac_flags |= EXT4_MB_STREAM_ALLOC;
 		return;
 	}
 
