@@ -24,8 +24,19 @@
  *	Theodore Ts'o, 2002
  */
 
+#include <linux/fs.h>
+#include <linux/pagemap.h>
+#include <linux/jbd.h>
+#include <linux/time.h>
+#include <linux/ext3_fs.h>
+#include <linux/ext3_jbd.h>
+#include <linux/fcntl.h>
+#include <linux/stat.h>
+#include <linux/string.h>
 #include <linux/quotaops.h>
-#include "ext3.h"
+#include <linux/buffer_head.h>
+#include <linux/bio.h>
+
 #include "namei.h"
 #include "xattr.h"
 #include "acl.h"
@@ -276,7 +287,7 @@ static struct stats dx_show_leaf(struct dx_hash_info *hinfo, struct ext3_dir_ent
 				while (len--) printk("%c", *name++);
 				ext3fs_dirhash(de->name, de->name_len, &h);
 				printk(":%x.%u ", h.hash,
-				       (unsigned) ((char *) de - base));
+				       ((char *) de - base));
 			}
 			space += EXT3_DIR_REC_LEN(de->name_len);
 			names++;
@@ -1003,7 +1014,7 @@ static struct buffer_head * ext3_dx_find_entry(struct inode *dir,
 
 	*err = -ENOENT;
 errout:
-	dxtrace(printk("%s not found\n", entry->name));
+	dxtrace(printk("%s not found\n", name));
 	dx_release (frames);
 	return NULL;
 }
@@ -2130,7 +2141,6 @@ static int ext3_unlink(struct inode * dir, struct dentry *dentry)
 	struct ext3_dir_entry_2 * de;
 	handle_t *handle;
 
-	trace_ext3_unlink_enter(dir, dentry);
 	/* Initialize quotas before so that eventual writes go
 	 * in separate transaction */
 	dquot_initialize(dir);
@@ -2176,7 +2186,6 @@ static int ext3_unlink(struct inode * dir, struct dentry *dentry)
 end_unlink:
 	ext3_journal_stop(handle);
 	brelse (bh);
-	trace_ext3_unlink_exit(dentry, retval);
 	return retval;
 }
 
@@ -2260,7 +2269,7 @@ retry:
 			err = PTR_ERR(handle);
 			goto err_drop_inode;
 		}
-		set_nlink(inode, 1);
+		inc_nlink(inode);
 		err = ext3_orphan_del(handle, inode);
 		if (err) {
 			ext3_journal_stop(handle);

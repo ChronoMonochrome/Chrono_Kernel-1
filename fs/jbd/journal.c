@@ -38,9 +38,6 @@
 #include <linux/debugfs.h>
 #include <linux/ratelimit.h>
 
-#define CREATE_TRACE_POINTS
-#include <trace/events/jbd.h>
-
 #include <asm/uaccess.h>
 #include <asm/page.h>
 
@@ -128,8 +125,6 @@ static int kjournald(void *arg)
 	 */
 	setup_timer(&journal->j_commit_timer, commit_timeout,
 			(unsigned long)current);
-
-	set_freezable();
 
 	/* Record that the journal thread is running */
 	journal->j_task = current;
@@ -330,7 +325,7 @@ repeat:
 		new_offset = offset_in_page(jh2bh(jh_in)->b_data);
 	}
 
-	mapped_data = kmap_atomic(new_page);
+	mapped_data = kmap_atomic(new_page, KM_USER0);
 	/*
 	 * Check for escaping
 	 */
@@ -339,7 +334,7 @@ repeat:
 		need_copy_out = 1;
 		do_escape = 1;
 	}
-	kunmap_atomic(mapped_data);
+	kunmap_atomic(mapped_data, KM_USER0);
 
 	/*
 	 * Do we need to do a data copy?
@@ -356,9 +351,9 @@ repeat:
 		}
 
 		jh_in->b_frozen_data = tmp;
-		mapped_data = kmap_atomic(new_page);
+		mapped_data = kmap_atomic(new_page, KM_USER0);
 		memcpy(tmp, mapped_data + new_offset, jh2bh(jh_in)->b_size);
-		kunmap_atomic(mapped_data);
+		kunmap_atomic(mapped_data, KM_USER0);
 
 		new_page = virt_to_page(tmp);
 		new_offset = offset_in_page(tmp);
@@ -370,9 +365,9 @@ repeat:
 	 * copying, we can finally do so.
 	 */
 	if (do_escape) {
-		mapped_data = kmap_atomic(new_page);
+		mapped_data = kmap_atomic(new_page, KM_USER0);
 		*((unsigned int *)(mapped_data + new_offset)) = 0;
-		kunmap_atomic(mapped_data);
+		kunmap_atomic(mapped_data, KM_USER0);
 	}
 
 	set_bh_page(new_bh, new_page, new_offset);
@@ -723,6 +718,7 @@ static journal_t * journal_init_common (void)
 	init_waitqueue_head(&journal->j_wait_checkpoint);
 	init_waitqueue_head(&journal->j_wait_commit);
 	init_waitqueue_head(&journal->j_wait_updates);
+	mutex_init(&journal->j_barrier);
 	mutex_init(&journal->j_checkpoint_mutex);
 	spin_lock_init(&journal->j_revoke_lock);
 	spin_lock_init(&journal->j_list_lock);
@@ -1069,7 +1065,6 @@ void journal_update_superblock(journal_t *journal, int wait)
 	} else
 		write_dirty_buffer(bh, WRITE);
 
-	trace_jbd_update_superblock_end(journal, wait);
 out:
 	/* If we have just flushed the log (by marking s_start==0), then
 	 * any future commit will have to be careful to update the
@@ -1812,9 +1807,10 @@ static void journal_free_journal_head(struct journal_head *jh)
  * When a buffer has its BH_JBD bit set it is immune from being released by
  * core kernel code, mainly via ->b_count.
  *
- * A journal_head is detached from its buffer_head when the journal_head's
- * b_jcount reaches zero. Running transaction (b_transaction) and checkpoint
- * transaction (b_cp_transaction) hold their references to b_jcount.
+ * A journal_head may be detached from its buffer_head when the journal_head's
+ * b_transaction, b_cp_transaction and b_next_transaction pointers are NULL.
+ * Various places in JBD call journal_remove_journal_head() to indicate that the
+ * journal_head can be dropped if needed.
  *
  * Various places in the kernel want to attach a journal_head to a buffer_head
  * _before_ attaching the journal_head to a transaction.  To protect the
@@ -1827,16 +1823,17 @@ static void journal_free_journal_head(struct journal_head *jh)
  *	(Attach a journal_head if needed.  Increments b_jcount)
  *	struct journal_head *jh = journal_add_journal_head(bh);
  *	...
- *      (Get another reference for transaction)
- *      journal_grab_journal_head(bh);
- *      jh->b_transaction = xxx;
- *      (Put original reference)
- *      journal_put_journal_head(jh);
+ *	jh->b_transaction = xxx;
+ *	journal_put_journal_head(jh);
+ *
+ * Now, the journal_head's b_jcount is zero, but it is safe from being released
+ * because it has a non-zero b_transaction.
  */
 
 /*
  * Give a buffer_head a journal_head.
  *
+ * Doesn't need the journal lock.
  * May sleep.
  */
 struct journal_head *journal_add_journal_head(struct buffer_head *bh)
@@ -1900,29 +1897,61 @@ static void __journal_remove_journal_head(struct buffer_head *bh)
 	struct journal_head *jh = bh2jh(bh);
 
 	J_ASSERT_JH(jh, jh->b_jcount >= 0);
-	J_ASSERT_JH(jh, jh->b_transaction == NULL);
-	J_ASSERT_JH(jh, jh->b_next_transaction == NULL);
-	J_ASSERT_JH(jh, jh->b_cp_transaction == NULL);
-	J_ASSERT_JH(jh, jh->b_jlist == BJ_None);
-	J_ASSERT_BH(bh, buffer_jbd(bh));
-	J_ASSERT_BH(bh, jh2bh(jh) == bh);
-	BUFFER_TRACE(bh, "remove journal_head");
-	if (jh->b_frozen_data) {
-		printk(KERN_WARNING "%s: freeing b_frozen_data\n", __func__);
-		jbd_free(jh->b_frozen_data, bh->b_size);
+
+	get_bh(bh);
+	if (jh->b_jcount == 0) {
+		if (jh->b_transaction == NULL &&
+				jh->b_next_transaction == NULL &&
+				jh->b_cp_transaction == NULL) {
+			J_ASSERT_JH(jh, jh->b_jlist == BJ_None);
+			J_ASSERT_BH(bh, buffer_jbd(bh));
+			J_ASSERT_BH(bh, jh2bh(jh) == bh);
+			BUFFER_TRACE(bh, "remove journal_head");
+			if (jh->b_frozen_data) {
+				printk(KERN_WARNING "%s: freeing "
+						"b_frozen_data\n",
+						__func__);
+				jbd_free(jh->b_frozen_data, bh->b_size);
+			}
+			if (jh->b_committed_data) {
+				printk(KERN_WARNING "%s: freeing "
+						"b_committed_data\n",
+						__func__);
+				jbd_free(jh->b_committed_data, bh->b_size);
+			}
+			bh->b_private = NULL;
+			jh->b_bh = NULL;	/* debug, really */
+			clear_buffer_jbd(bh);
+			__brelse(bh);
+			journal_free_journal_head(jh);
+		} else {
+			BUFFER_TRACE(bh, "journal_head was locked");
+		}
 	}
-	if (jh->b_committed_data) {
-		printk(KERN_WARNING "%s: freeing b_committed_data\n", __func__);
-		jbd_free(jh->b_committed_data, bh->b_size);
-	}
-	bh->b_private = NULL;
-	jh->b_bh = NULL;	/* debug, really */
-	clear_buffer_jbd(bh);
-	journal_free_journal_head(jh);
 }
 
 /*
- * Drop a reference on the passed journal_head.  If it fell to zero then
+ * journal_remove_journal_head(): if the buffer isn't attached to a transaction
+ * and has a zero b_jcount then remove and release its journal_head.   If we did
+ * see that the buffer is not used by any transaction we also "logically"
+ * decrement ->b_count.
+ *
+ * We in fact take an additional increment on ->b_count as a convenience,
+ * because the caller usually wants to do additional things with the bh
+ * after calling here.
+ * The caller of journal_remove_journal_head() *must* run __brelse(bh) at some
+ * time.  Once the caller has run __brelse(), the buffer is eligible for
+ * reaping by try_to_free_buffers().
+ */
+void journal_remove_journal_head(struct buffer_head *bh)
+{
+	jbd_lock_bh_journal_head(bh);
+	__journal_remove_journal_head(bh);
+	jbd_unlock_bh_journal_head(bh);
+}
+
+/*
+ * Drop a reference on the passed journal_head.  If it fell to zero then try to
  * release the journal_head from the buffer_head.
  */
 void journal_put_journal_head(struct journal_head *jh)
@@ -1932,12 +1961,11 @@ void journal_put_journal_head(struct journal_head *jh)
 	jbd_lock_bh_journal_head(bh);
 	J_ASSERT_JH(jh, jh->b_jcount > 0);
 	--jh->b_jcount;
-	if (!jh->b_jcount) {
+	if (!jh->b_jcount && !jh->b_transaction) {
 		__journal_remove_journal_head(bh);
-		jbd_unlock_bh_journal_head(bh);
 		__brelse(bh);
-	} else
-		jbd_unlock_bh_journal_head(bh);
+	}
+	jbd_unlock_bh_journal_head(bh);
 }
 
 /*

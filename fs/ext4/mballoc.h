@@ -96,23 +96,21 @@ extern u8 mb_enable_debug;
 
 
 struct ext4_free_data {
-	/* MUST be the first member */
-	struct ext4_journal_cb_entry	efd_jce;
-
-	/* ext4_free_data private data starts from here */
-
 	/* this links the free block information from group_info */
-	struct rb_node			efd_node;
+	struct rb_node node;
+
+	/* this links the free block information from ext4_sb_info */
+	struct list_head list;
 
 	/* group which free block extent belongs */
-	ext4_group_t			efd_group;
+	ext4_group_t group;
 
 	/* free block extent */
-	ext4_grpblk_t			efd_start_cluster;
-	ext4_grpblk_t			efd_count;
+	ext4_grpblk_t start_cluster;
+	ext4_grpblk_t count;
 
 	/* transaction which freed this extent */
-	tid_t				efd_tid;
+	tid_t	t_tid;
 };
 
 struct ext4_prealloc_space {
@@ -212,6 +210,8 @@ struct ext4_buddy {
 	__u16 bd_blkbits;
 	ext4_group_t bd_group;
 };
+#define EXT4_MB_BITMAP(e4b)	((e4b)->bd_bitmap)
+#define EXT4_MB_BUDDY(e4b)	((e4b)->bd_buddy)
 
 static inline ext4_fsblk_t ext4_grp_offs_to_block(struct super_block *sb,
 					struct ext4_free_extent *fex)
