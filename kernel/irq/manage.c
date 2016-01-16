@@ -786,7 +786,7 @@ static int irq_thread(void *data)
 		handler_fn = irq_thread_fn;
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
-	current->irq_thread = 1;
+	current->irqaction = action;
 
 	while (!irq_wait_for_interrupt(action)) {
 
@@ -824,10 +824,10 @@ static int irq_thread(void *data)
 	irq_finalize_oneshot(desc, action, true);
 
 	/*
-	 * Clear irq_thread. Otherwise exit_irq_thread() would make
+	 * Clear irqaction. Otherwise exit_irq_thread() would make
 	 * fuzz about an active irq thread going into nirvana.
 	 */
-	current->irq_thread = 0;
+	current->irqaction = NULL;
 	return 0;
 }
 
@@ -838,30 +838,27 @@ void exit_irq_thread(void)
 {
 	struct task_struct *tsk = current;
 	struct irq_desc *desc;
-	struct irqaction *action;
 
-	if (!tsk->irq_thread)
+	if (!tsk->irqaction)
 		return;
-
-	action = kthread_data(tsk);
 
 	printk(KERN_ERR
 	       "exiting task \"%s\" (%d) is an active IRQ thread (irq %d)\n",
-	       tsk->comm ? tsk->comm : "", tsk->pid, action->irq);
+	       tsk->comm ? tsk->comm : "", tsk->pid, tsk->irqaction->irq);
 
-	desc = irq_to_desc(action->irq);
+	desc = irq_to_desc(tsk->irqaction->irq);
 
 	/*
 	 * Prevent a stale desc->threads_oneshot. Must be called
 	 * before setting the IRQTF_DIED flag.
 	 */
-	irq_finalize_oneshot(desc, action, true);
+	irq_finalize_oneshot(desc, tsk->irqaction, true);
 
 	/*
 	 * Set the THREAD DIED flag to prevent further wakeups of the
 	 * soon to be gone threaded handler.
 	 */
-	set_bit(IRQTF_DIED, &action->flags);
+	set_bit(IRQTF_DIED, &tsk->irqaction->flags);
 }
 
 static void irq_setup_forced_threading(struct irqaction *new)
