@@ -7,11 +7,6 @@ busybox rm /ramdisk/last_boot.txt
 busybox date >>/ramdisk/last_boot.txt
 exec >>/ramdisk/last_boot.txt 2>&1
 
-
-busybox mkdir -p /sbin
-busybox cp /stage1/busybox /sbin/busybox
-busybox chmod 755 /sbin/busybox
-
 busybox cd /
 busybox rm init
 busybox mount -t proc proc /proc
@@ -75,15 +70,6 @@ fi
 
 if test -f ${lvm}.gz ; then
 	busybox zcat ${lvm}.gz | cpio -i -u
-fi
-
-# replace FUSE with SDcard FS
-if ! busybox grep -q bootmode=2 /proc/cmdline ; then
-	busybox sed -ie "s#/system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard1 /storage/sdcard1#/sbin/busybox mount -t sdcardfs -o rw,nosuid,nodev,noatime,nodiratime,uid=1023,gid=1023,wgid=1023,derive=unified,lower_fs=fat /mnt/media_rw/sdcard1 /storage/sdcard1#" /init.u8500.rc
-	busybox sed -ie "s#/system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard0 /storage/sdcard1#/sbin/busybox mount -t sdcardfs -o rw,nosuid,nodev,noatime,nodiratime,uid=1023,gid=1023,wgid=1023,derive=unified,lower_fs=fat /mnt/media_rw/sdcard0 /storage/sdcard0#" /init.u8500.rc
-
-	busybox sed -ie "s#/system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard1 /storage/sdcard1#/sbin/busybox mount -t sdcardfs -o rw,nosuid,nodev,noatime,nodiratime,uid=1023,gid=1023,wgid=1023,derive=unified,lower_fs=fat /mnt/media_rw/sdcard1 /storage/sdcard1#" /init.samsungcodina.rc
-	busybox sed -ie "s#/system/bin/sdcard -u 1023 -g 1023 -d /mnt/media_rw/sdcard0 /storage/sdcard1#/sbin/busybox mount -t sdcardfs -o rw,nosuid,nodev,noatime,nodiratime,uid=1023,gid=1023,wgid=1023,derive=unified,lower_fs=fat /mnt/media_rw/sdcard0 /storage/sdcard0#" /init.samsungcodina.rc
 fi
 
 if test -f /ramdisk/init.kernel.rc ; then
