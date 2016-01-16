@@ -73,6 +73,10 @@ typedef unsigned __bitwise__ reclaim_mode_t;
 #define RECLAIM_MODE_LUMPYRECLAIM	((__force reclaim_mode_t)0x08u)
 #define RECLAIM_MODE_COMPACTION		((__force reclaim_mode_t)0x10u)
 
+#ifdef CONFIG_ZSWAP
+int max_swappiness = 200;
+#endif
+
 struct scan_control {
 	/* Incremented by the number of inactive pages that were scanned */
 	unsigned long nr_scanned;
@@ -2015,6 +2019,11 @@ static void get_scan_count(struct mem_cgroup_zone *mz, struct scan_control *sc,
 	 */
 	anon_prio = vmscan_swappiness(mz, sc);
 	file_prio = 200 - vmscan_swappiness(mz, sc);
+#ifdef CONFIG_ZSWAP
+	file_prio = max_swappiness - vmscan_swappiness(sc);
+#else
+	file_prio = 200 - vmscan_swappiness(sc);
+#endif
 
 	/*
 	 * OK, so we have swap space and a fair amount of page cache
