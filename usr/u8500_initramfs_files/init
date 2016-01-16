@@ -82,13 +82,8 @@ if test -f /ramdisk/init.kernel.rc ; then
 	busybox chmod 750 /ramdisk/init.kernel.rc
 fi
 
-busybox cp /init.rc /stage1/
-
-busybox echo "import /init.kernel.rc" > /init.rc
-busybox echo "" >> /init.rc
-
-busybox cat /stage1/init.rc >> /init.rc
-
+# make some changes in *.rc files
+busybox sh /ramdisk/10monkey_patch
 
 busybox umount /sys
 busybox umount /proc
