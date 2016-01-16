@@ -2355,7 +2355,6 @@ static inline void i_readcount_inc(struct inode *inode)
 {
 	atomic_inc(&inode->i_readcount);
 }
-
 #else
 static inline void i_readcount_dec(struct inode *inode)
 {
