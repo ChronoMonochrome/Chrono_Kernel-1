@@ -3,8 +3,13 @@
  * Handler for storing security labels as extended attributes.
  */
 
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/string.h>
+#include <linux/fs.h>
+#include <linux/ext3_jbd.h>
+#include <linux/ext3_fs.h>
 #include <linux/security.h>
-#include "ext3.h"
 #include "xattr.h"
 
 static size_t
