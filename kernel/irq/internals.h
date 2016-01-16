@@ -15,7 +15,7 @@
 
 #define istate core_internal_state__do_not_mess_with_it
 
-extern bool noirqdebug;
+extern int noirqdebug;
 
 /*
  * Bits used by threaded handlers:
