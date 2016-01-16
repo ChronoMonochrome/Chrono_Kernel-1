@@ -47,7 +47,7 @@ long ext3_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (get_user(flags, (int __user *) arg))
 			return -EFAULT;
 
-		err = mnt_want_write(filp->f_path.mnt);
+		err = mnt_want_write_file(filp);
 		if (err)
 			return err;
 
@@ -137,7 +137,7 @@ return -EPERM;
 }
 #endif
 
-		err = mnt_want_write(filp->f_path.mnt);
+		err = mnt_want_write_file(filp);
 		if (err)
 			return err;
 		if (get_user(generation, (int __user *) arg)) {
@@ -199,7 +199,7 @@ setversion_out:
 		if (!test_opt(inode->i_sb, RESERVATION) ||!S_ISREG(inode->i_mode))
 			return -ENOTTY;
 
-		err = mnt_want_write(filp->f_path.mnt);
+		err = mnt_want_write_file(filp);
 		if (err)
 			return err;
 
@@ -249,7 +249,7 @@ return -EPERM;
 }
 #endif
 
-		err = mnt_want_write(filp->f_path.mnt);
+		err = mnt_want_write_file(filp);
 		if (err)
 			return err;
 
@@ -283,7 +283,7 @@ return -EPERM;
 }
 #endif
 
-		err = mnt_want_write(filp->f_path.mnt);
+		err = mnt_want_write_file(filp);
 		if (err)
 			return err;
 
