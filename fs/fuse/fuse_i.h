@@ -80,7 +80,7 @@ struct fuse_inode {
 
 	/** The sticky bit in inode->i_mode may have been removed, so
 	    preserve the original mode */
-	mode_t orig_i_mode;
+	umode_t orig_i_mode;
 
 	/** 64 bit inode number */
 	u64 orig_ino;
@@ -103,6 +103,15 @@ struct fuse_inode {
 
 	/** List of writepage requestst (pending or sent) */
 	struct list_head writepages;
+
+	/** Miscellaneous bits describing inode state */
+	unsigned long state;
+};
+
+/** FUSE inode state bits */
+enum {
+	/** An operation changing file size is in progress  */
+	FUSE_I_SIZE_UNSTABLE,
 };
 
 struct fuse_conn;
@@ -296,16 +305,8 @@ struct fuse_req {
 	/** number of pages in vector */
 	unsigned num_pages;
 
-	/** If set, it describes layout of user-data in pages[] */
-	const struct iovec *iovec;
-
-	union {
-		/** offset of data on first page */
-		unsigned page_offset;
-
-		/** or in first iovec */
-		unsigned iov_offset;
-	};
+	/** offset of data on first page */
+	unsigned page_offset;
 
 	/** File used in the request (or NULL) */
 	struct fuse_file *ff;
