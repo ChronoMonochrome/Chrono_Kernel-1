@@ -22,6 +22,8 @@ lvm=/ramdisk/lvm.cpio
 
 busybox insmod /ramdisk/modules/startup_reason.ko
 busybox insmod /ramdisk/modules/exfat.ko
+busybox insmod /ramdisk/modules/fuse.ko
+busybox insmod /ramdisk/modules/sdcardfs.ko
 busybox insmod /ramdisk/modules/f2fs.ko
 busybox insmod /ramdisk/modules/snd-soc-ab8500_audio.ko
 
