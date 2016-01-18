@@ -70,11 +70,6 @@
 
 #include "audit.h"
 
-/* flags stating the success for a syscall */
-#define AUDITSC_INVALID 0
-#define AUDITSC_SUCCESS 1
-#define AUDITSC_FAILURE 2
-
 /* AUDIT_NAMES is the number of slots we reserve in the audit_context
  * for saving names from getname(). */
 #define AUDIT_NAMES    20
@@ -726,37 +721,7 @@ static enum audit_state audit_filter_syscall(struct task_struct *tsk,
 	return AUDIT_BUILD_CONTEXT;
 }
 
-/*
- * Given an audit_name check the inode hash table to see if they match.
- * Called holding the rcu read lock to protect the use of audit_inode_hash
- */
-static int audit_filter_inode_name(struct task_struct *tsk,
-				   struct audit_names *n,
-				   struct audit_context *ctx) {
-	int word, bit;
-	int h = audit_hash_ino((u32)n->ino);
-	struct list_head *list = &audit_inode_hash[h];
-	struct audit_entry *e;
-	enum audit_state state = 0;
-
-	word = AUDIT_WORD(ctx->major);
-	bit  = AUDIT_BIT(ctx->major);
-
-	if (list_empty(list))
-		return 0;
-
-	list_for_each_entry_rcu(e, list, list) {
-		if ((e->rule.mask[word] & bit) == bit &&
-		    audit_filter_rules(tsk, &e->rule, ctx, n, &state, false)) {
-			ctx->current_state = state;
-			return 1;
-		}
-	}
-
-	return 0;
-}
-
-/* At syscall exit time, this filter is called if any audit_names have been
+/* At syscall exit time, this filter is called if any audit_names[] have been
  * collected during syscall processing.  We only check rules in sublists at hash
  * buckets applicable to the inode numbers in audit_names[].
  * Regarding audit_state, same rules apply as for audit_filter_syscall().
@@ -1692,9 +1657,30 @@ void audit_syscall_entry(int arch, int major,
 	context->ppid       = 0;
 }
 
+void audit_finish_fork(struct task_struct *child)
+{
+	struct audit_context *ctx = current->audit_context;
+	struct audit_context *p = child->audit_context;
+	if (!p || !ctx)
+		return;
+	if (!ctx->in_syscall || ctx->current_state != AUDIT_RECORD_CONTEXT)
+		return;
+	p->arch = ctx->arch;
+	p->major = ctx->major;
+	memcpy(p->argv, ctx->argv, sizeof(ctx->argv));
+	p->ctime = ctx->ctime;
+	p->dummy = ctx->dummy;
+	p->in_syscall = ctx->in_syscall;
+	p->filterkey = kstrdup(ctx->filterkey, GFP_KERNEL);
+	p->ppid = current->pid;
+	p->prio = ctx->prio;
+	p->current_state = ctx->current_state;
+}
+
 /**
  * audit_syscall_exit - deallocate audit context after a system call
- * @pt_regs: syscall registers
+ * @valid: success/failure flag
+ * @return_code: syscall return value
  *
  * Tear down after system call.  If the audit context has been marked as
  * auditable (either because of the AUDIT_RECORD_CONTEXT state from
@@ -1702,17 +1688,13 @@ void audit_syscall_entry(int arch, int major,
  * message), then write out the syscall information.  In call cases,
  * free the names stored from getname().
  */
-void __audit_syscall_exit(int success, long return_code)
+void audit_syscall_exit(int valid, long return_code)
 {
 	struct task_struct *tsk = current;
 	struct audit_context *context;
 
-	if (success)
-		success = AUDITSC_SUCCESS;
-	else
-		success = AUDITSC_FAILURE;
+	context = audit_get_context(tsk, valid, return_code);
 
-	context = audit_get_context(tsk, success, return_code);
 	if (likely(!context))
 		return;
 
@@ -1769,11 +1751,7 @@ static inline void handle_one(const struct inode *inode)
 	if (likely(put_tree_ref(context, chunk)))
 		return;
 	if (unlikely(!grow_tree_refs(context))) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "out of memory, audit has lost a tree reference\n");
-#else
-		;
-#endif
 		audit_set_auditable(context);
 		audit_put_chunk(chunk);
 		unroll_tree_refs(context, p, count);
@@ -1832,12 +1810,8 @@ retry:
 			goto retry;
 		}
 		/* too bad */
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"out of memory, audit has lost a tree reference\n");
-#else
-		;
-#endif
 		unroll_tree_refs(context, p, count);
 		audit_set_auditable(context);
 		return;
@@ -1856,6 +1830,9 @@ retry:
 void __audit_getname(const char *name)
 {
 	struct audit_context *context = current->audit_context;
+
+	if (IS_ERR(name) || !name)
+		return;
 
 	if (!context->in_syscall) {
 #if AUDIT_DEBUG == 2
@@ -1924,22 +1901,14 @@ static int audit_inc_name_count(struct audit_context *context,
 {
 	if (context->name_count >= AUDIT_NAMES) {
 		if (inode)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "audit: name_count maxed, losing inode data: "
 			       "dev=%02x:%02x, inode=%lu\n",
 			       MAJOR(inode->i_sb->s_dev),
 			       MINOR(inode->i_sb->s_dev),
 			       inode->i_ino);
-#else
-			;
-#endif
 
 		else
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "name_count maxed, losing inode data\n");
-#else
-			;
-#endif
 		return 1;
 	}
 	context->name_count++;
