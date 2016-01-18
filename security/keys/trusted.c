@@ -412,15 +412,7 @@ static int pcrlock(const int pcrnum)
 	int ret;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	ret = my_get_random(hash, SHA1_DIGEST_SIZE);
 	if (ret < 0)
 		return ret;
@@ -1017,15 +1009,7 @@ static int trusted_update(struct key *key, const void *data, size_t datalen)
 	int ret = 0;
 
 	if (!p->migratable)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (datalen <= 0 || datalen > 32767 || !data)
 		return -EINVAL;
 
@@ -1103,7 +1087,7 @@ static long trusted_read(const struct key *key, char __user *buffer,
 
 	bufp = ascii_buf;
 	for (i = 0; i < p->blob_len; i++)
-		bufp = hex_byte_pack(bufp, p->blob[i]);
+		bufp = pack_hex_byte(bufp, p->blob[i]);
 	if ((copy_to_user(buffer, ascii_buf, 2 * p->blob_len)) != 0) {
 		kfree(ascii_buf);
 		return -EFAULT;

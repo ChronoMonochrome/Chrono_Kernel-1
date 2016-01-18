@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Basic authentication token and access key management
  *
  * Copyright (C) 2004-2008 Red Hat, Inc. All Rights Reserved.
@@ -53,12 +50,8 @@ static struct key_type key_type_dead = {
 #ifdef KEY_DEBUGGING
 void __key_check(const struct key *key)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("__key_check: key %p {%08x} should be {%08x}\n",
 	       key, key->magic, KEY_DEBUG_MAGIC);
-#else
-	;
-#endif
 	BUG();
 }
 #endif
@@ -646,11 +639,11 @@ found_dead_key:
 	if (test_bit(KEY_FLAG_INSTANTIATED, &key->flags))
 		atomic_dec(&key->user->nikeys);
 
+	key_user_put(key->user);
+
 	/* now throw away the key memory */
 	if (key->type->destroy)
 		key->type->destroy(key);
-
-	key_user_put(key->user);
 
 	kfree(key->description);
 
