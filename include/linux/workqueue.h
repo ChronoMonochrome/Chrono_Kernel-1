@@ -255,35 +255,8 @@ enum {
 	WQ_HIGHPRI		= 1 << 4, /* high priority */
 	WQ_CPU_INTENSIVE	= 1 << 5, /* cpu instensive workqueue */
 
-	/*
-	 * Per-cpu workqueues are generally preferred because they tend to
-	 * show better performance thanks to cache locality.  Per-cpu
-	 * workqueues exclude the scheduler from choosing the CPU to
-	 * execute the worker threads, which has an unfortunate side effect
-	 * of increasing power consumption.
-	 *
-	 * The scheduler considers a CPU idle if it doesn't have any task
-	 * to execute and tries to keep idle cores idle to conserve power;
-	 * however, for example, a per-cpu work item scheduled from an
-	 * interrupt handler on an idle CPU will force the scheduler to
-	 * excute the work item on that CPU breaking the idleness, which in
-	 * turn may lead to more scheduling choices which are sub-optimal
-	 * in terms of power consumption.
-	 *
-	 * Workqueues marked with WQ_POWER_EFFICIENT are per-cpu by default
-	 * but become unbound if workqueue.power_efficient kernel param is
-	 * specified.  Per-cpu workqueues which are identified to
-	 * contribute significantly to power-consumption are identified and
-	 * marked with this flag and enabling the power_efficient mode
-	 * leads to noticeable power saving at the cost of small
-	 * performance disadvantage.
-	 *
-	 * http://thread.gmane.org/gmane.linux.kernel/1480396
-	 */
-	WQ_POWER_EFFICIENT	= 1 << 6,
-
-	WQ_DYING		= 1 << 7, /* internal: workqueue is draining */
-	WQ_RESCUER		= 1 << 8, /* internal: workqueue has rescuer */
+	WQ_DYING		= 1 << 6, /* internal: workqueue is dying */
+	WQ_RESCUER		= 1 << 7, /* internal: workqueue has rescuer */
 
 	WQ_MAX_ACTIVE		= 512,	  /* I like 512, better ideas? */
 	WQ_MAX_UNBOUND_PER_CPU	= 4,	  /* 4 * #cpus for unbound wq */
@@ -316,70 +289,40 @@ enum {
  *
  * system_freezable_wq is equivalent to system_wq except that it's
  * freezable.
- *
- * system_nrt_freezable_wq is equivalent to system_nrt_wq except that
- * it's freezable.
- *
- * *_power_efficient_wq are inclined towards saving power and converted
- * into WQ_UNBOUND variants if 'wq_power_efficient' is enabled; otherwise,
- * they are same as their non-power-efficient counterparts - e.g.
- * system_power_efficient_wq is identical to system_wq if
- * 'wq_power_efficient' is disabled.  See WQ_POWER_EFFICIENT for more info.
  */
 extern struct workqueue_struct *system_wq;
 extern struct workqueue_struct *system_long_wq;
 extern struct workqueue_struct *system_nrt_wq;
 extern struct workqueue_struct *system_unbound_wq;
 extern struct workqueue_struct *system_freezable_wq;
-extern struct workqueue_struct *system_nrt_freezable_wq;
-extern struct workqueue_struct *system_power_efficient_wq;
-extern struct workqueue_struct *system_freezable_power_efficient_wq;
 
 extern struct workqueue_struct *
-__alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
-	struct lock_class_key *key, const char *lock_name, ...) __printf(1, 6);
+__alloc_workqueue_key(const char *name, unsigned int flags, int max_active,
+		      struct lock_class_key *key, const char *lock_name);
 
-/**
- * alloc_workqueue - allocate a workqueue
- * @fmt: printf format for the name of the workqueue
- * @flags: WQ_* flags
- * @max_active: max in-flight work items, 0 for default
- * @args: args for @fmt
- *
- * Allocate a workqueue with the specified parameters.  For detailed
- * information on WQ_* flags, please refer to Documentation/workqueue.txt.
- *
- * The __lock_name macro dance is to guarantee that single lock_class_key
- * doesn't end up with different namesm, which isn't allowed by lockdep.
- *
- * RETURNS:
- * Pointer to the allocated workqueue on success, %NULL on failure.
- */
 #ifdef CONFIG_LOCKDEP
-#define alloc_workqueue(fmt, flags, max_active, args...)	\
+#define alloc_workqueue(name, flags, max_active)		\
 ({								\
 	static struct lock_class_key __key;			\
 	const char *__lock_name;				\
 								\
-	if (__builtin_constant_p(fmt))				\
-		__lock_name = (fmt);				\
+	if (__builtin_constant_p(name))				\
+		__lock_name = (name);				\
 	else							\
-		__lock_name = #fmt;				\
+		__lock_name = #name;				\
 								\
-	__alloc_workqueue_key((fmt), (flags), (max_active),	\
-			      &__key, __lock_name, ##args);	\
+	__alloc_workqueue_key((name), (flags), (max_active),	\
+			      &__key, __lock_name);		\
 })
 #else
-#define alloc_workqueue(fmt, flags, max_active, args...)	\
-	__alloc_workqueue_key((fmt), (flags), (max_active),	\
-			      NULL, NULL, ##args)
+#define alloc_workqueue(name, flags, max_active)		\
+	__alloc_workqueue_key((name), (flags), (max_active), NULL, NULL)
 #endif
 
 /**
  * alloc_ordered_workqueue - allocate an ordered workqueue
- * @fmt: printf format for the name of the workqueue
+ * @name: name of the workqueue
  * @flags: WQ_* flags (only WQ_FREEZABLE and WQ_MEM_RECLAIM are meaningful)
- * @args: args for @fmt
  *
  * Allocate an ordered workqueue.  An ordered workqueue executes at
  * most one work item at any given time in the queued order.  They are
@@ -388,8 +331,11 @@ __alloc_workqueue_key(const char *fmt, unsigned int flags, int max_active,
  * RETURNS:
  * Pointer to the allocated workqueue on success, %NULL on failure.
  */
-#define alloc_ordered_workqueue(fmt, flags, args...)		\
-	alloc_workqueue(fmt, WQ_UNBOUND | (flags), 1, ##args)
+static inline struct workqueue_struct *
+alloc_ordered_workqueue(const char *name, unsigned int flags)
+{
+	return alloc_workqueue(name, WQ_UNBOUND | flags, 1);
+}
 
 #define create_workqueue(name)					\
 	alloc_workqueue((name), WQ_MEM_RECLAIM, 1)
