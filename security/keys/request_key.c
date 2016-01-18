@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Request a key from userspace
  *
  * Copyright (C) 2004-2007 Red Hat, Inc. All Rights Reserved.
@@ -74,8 +71,9 @@ EXPORT_SYMBOL(complete_request_key);
  * This is called in context of freshly forked kthread before kernel_execve(),
  * so we can simply install the desired session_keyring at this point.
  */
-static int umh_keys_init(struct subprocess_info *info, struct cred *cred)
+static int umh_keys_init(struct subprocess_info *info)
 {
+	struct cred *cred = (struct cred*)current_cred();
 	struct key *keyring = info->data;
 
 	return install_session_keyring_to_cred(cred, keyring);
@@ -472,7 +470,7 @@ static struct key *construct_key_and_link(struct key_type *type,
 	} else if (ret == -EINPROGRESS) {
 		ret = 0;
 	} else {
-		goto couldnt_alloc_key;
+		key = ERR_PTR(ret);
 	}
 
 	key_put(dest_keyring);
@@ -482,7 +480,6 @@ static struct key *construct_key_and_link(struct key_type *type,
 construction_failed:
 	key_negate_and_link(key, key_negative_timeout, NULL, NULL);
 	key_put(key);
-couldnt_alloc_key:
 	key_put(dest_keyring);
 	kleave(" = %d", ret);
 	return ERR_PTR(ret);

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* user_defined.c: user defined key type
  *
  * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.
@@ -105,8 +102,7 @@ int user_update(struct key *key, const void *data, size_t datalen)
 		key->expiry = 0;
 	}
 
-	if (zap)
-		kfree_rcu(zap, rcu);
+	kfree_rcu(zap, rcu);
 
 error:
 	return ret;
