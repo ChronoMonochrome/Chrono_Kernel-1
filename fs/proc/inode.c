@@ -32,7 +32,6 @@ static void proc_evict_inode(struct inode *inode)
 	struct proc_dir_entry *de;
 	struct ctl_table_header *head;
 	const struct proc_ns_operations *ns_ops;
-	void *ns;
 
 	truncate_inode_pages(&inode->i_data, 0);
 	end_writeback(inode);
@@ -51,9 +50,8 @@ static void proc_evict_inode(struct inode *inode)
 	}
 	/* Release any associated namespace */
 	ns_ops = PROC_I(inode)->ns_ops;
-	ns = PROC_I(inode)->ns;
-	if (ns_ops && ns)
-		ns_ops->put(ns);
+	if (ns_ops && ns_ops->put)
+		ns_ops->put(PROC_I(inode)->ns);
 }
 
 static struct kmem_cache * proc_inode_cachep;
@@ -488,6 +486,8 @@ struct inode *proc_get_inode(struct super_block *sb, struct proc_dir_entry *de)
 
 int proc_fill_super(struct super_block *s)
 {
+	struct inode * root_inode;
+
 	s->s_flags |= MS_NODIRATIME | MS_NOSUID | MS_NOEXEC;
 	s->s_blocksize = 1024;
 	s->s_blocksize_bits = 10;
@@ -496,11 +496,19 @@ int proc_fill_super(struct super_block *s)
 	s->s_time_gran = 1;
 	
 	pde_get(&proc_root);
-	s->s_root = d_make_root(proc_get_inode(s, &proc_root));
-	if (s->s_root)
-		return 0;
+	root_inode = proc_get_inode(s, &proc_root);
+	if (!root_inode)
+		goto out_no_root;
+	root_inode->i_uid = 0;
+	root_inode->i_gid = 0;
+	s->s_root = d_alloc_root(root_inode);
+	if (!s->s_root)
+		goto out_no_root;
+	return 0;
 
+out_no_root:
 	printk("proc_read_super: get root inode failed\n");
+	iput(root_inode);
 	pde_put(&proc_root);
 	return -ENOMEM;
 }
