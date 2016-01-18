@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 #include <linux/proc_fs.h>
 #include <linux/nsproxy.h>
 #include <linux/sched.h>
@@ -92,15 +89,9 @@ static int proc_ns_dir_readdir(struct file *filp, void *dirent,
 	if (!task)
 		goto out_no_task;
 
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	ret = -EPERM;
 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
 		goto out;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 	ret = 0;
 	i = filp->f_pos;
@@ -165,15 +156,15 @@ static struct dentry *proc_ns_dir_lookup(struct inode *dir,
 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
 		goto out;
 
-	last = &ns_entries[ARRAY_SIZE(ns_entries) - 1];
-	for (entry = ns_entries; entry <= last; entry++) {
+	last = &ns_entries[ARRAY_SIZE(ns_entries)];
+	for (entry = ns_entries; entry < last; entry++) {
 		if (strlen((*entry)->name) != len)
 			continue;
 		if (!memcmp(dentry->d_name.name, (*entry)->name, len))
 			break;
 	}
 	error = ERR_PTR(-ENOENT);
-	if (entry > last)
+	if (entry == last)
 		goto out;
 
 	error = proc_ns_instantiate(dir, dentry, task, *entry);
