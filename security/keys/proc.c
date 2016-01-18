@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* procfs files for key database enumeration
  *
  * Copyright (C) 2004 Red Hat, Inc. All Rights Reserved.

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /* Request key authorisation token key definition.
  *
  * Copyright (C) 2005 Red Hat, Inc. All Rights Reserved.
@@ -254,6 +251,8 @@ struct key *key_get_instantiation_authkey(key_serial_t target_id)
 
 	if (IS_ERR(authkey_ref)) {
 		authkey = ERR_CAST(authkey_ref);
+		if (authkey == ERR_PTR(-EAGAIN))
+			authkey = ERR_PTR(-ENOKEY);
 		goto error;
 	}
 
