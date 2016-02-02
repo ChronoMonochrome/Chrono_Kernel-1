@@ -4,8 +4,7 @@ SUBLEVEL = 101
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
-CROSS_COMPILE?=$(HOME)/armv7a-linux-gnueabihf-gcc-5.2.0_with_isl_x86/bin/armv7a-linux-gnueabihf-
-
+CROSS_COMPILE?=$(HOME)/armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
@@ -377,7 +376,7 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-strict-prototypes \
+KBUILD_CFLAGS := -Wunused -fno-strict-aliasing -Wno-missing-prototypes -Wno-strict-prototypes \
 		  -fno-common \
 		  -Werror-implicit-function-declaration \
 		  -Wno-format-security \
