@@ -40,46 +40,8 @@
 #define MIGRATE_MOVABLE       2
 #define MIGRATE_PCPTYPES      3 /* the number of types on the pcp lists */
 #define MIGRATE_RESERVE       3
-#ifdef CONFIG_CMA
-	/*
-	 * MIGRATE_CMA migration type is designed to mimic the way
-	 * ZONE_MOVABLE works.  Only movable pages can be allocated
-	 * from MIGRATE_CMA pageblocks and page allocator never
-	 * implicitly change migration type of MIGRATE_CMA pageblock.
-	 *
-	 * The way to use it is to change migratetype of a range of
-	 * pageblocks to MIGRATE_CMA which can be done by
-	 * __free_pageblock_cma() function.  What is important though
-	 * is that a range of pageblocks must be aligned to
-	 * MAX_ORDER_NR_PAGES should biggest page be bigger then
-	 * a single pageblock.
-	 */
-	#define	MIGRATE_CMA	      4
-	#define MIGRATE_ISOLATE       5 /* can't allocate from here */
-	#define MIGRATE_TYPES         6
-#else
-	#define MIGRATE_ISOLATE       4 /* can't allocate from here */
-	#define MIGRATE_TYPES         5
-#endif
-
-
-/*
- * Returns a list which contains the migrate types on to which
- * an allocation falls back when the free list for the migrate
- * type mtype is depleted.
- * The end of the list is delimited by the type MIGRATE_RESERVE.
- */
-extern int *get_migratetype_fallbacks(int mtype);
-
-#ifdef CONFIG_CMA
-bool is_cma_pageblock(struct page *page);
-#  define is_migrate_cma(migratetype) unlikely((migratetype) == MIGRATE_CMA)
-#  define cma_wmark_pages(zone)	zone->min_cma_pages
-#else
-#  define is_cma_pageblock(page) false
-#  define is_migrate_cma(migratetype) false
-#  define cma_wmark_pages(zone) 0
-#endif
+#define MIGRATE_ISOLATE       4 /* can't allocate from here */
+#define MIGRATE_TYPES         5
 
 #define for_each_migratetype_order(order, type) \
 	for (order = 0; order < MAX_ORDER; order++) \
