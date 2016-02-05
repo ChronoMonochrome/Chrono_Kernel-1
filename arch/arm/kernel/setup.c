@@ -685,6 +685,9 @@ static int __init parse_tag_revision(const struct tag *tag)
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
+unsigned int bootmode = 0;
+EXPORT_SYMBOL(bootmode);
+
 unsigned int is_lpm = 0;
 EXPORT_SYMBOL(is_lpm);
 static unsigned int setup_debug = 0;
@@ -724,6 +727,12 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 		is_lpm = 1;
 		if (unlikely(setup_debug > 0))
 			pr_err("setup: is_lpm=1");
+	}
+
+	if (unlikely(!bootmode && (strstr(default_command_line, "bootmode=2") != NULL)) == true) {
+		bootmode = 2;
+		if (unlikely(setup_debug > 0))
+			pr_err("setup: bootmode=2");
 	}
 
 
