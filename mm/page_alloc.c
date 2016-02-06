@@ -137,18 +137,11 @@ void pm_restrict_gfp_mask(void)
 	gfp_allowed_mask &= ~GFP_IOFS;
 }
 
-static bool pm_suspending(void)
+bool pm_suspended_storage(void)
 {
 	if ((gfp_allowed_mask & GFP_IOFS) == GFP_IOFS)
 		return false;
 	return true;
-}
-
-#else
-
-static bool pm_suspending(void)
-{
-	return false;
 }
 #endif /* CONFIG_PM_SLEEP */
 
@@ -1782,6 +1775,35 @@ zonelist_scan:
 		if ((alloc_flags & ALLOC_CPUSET) &&
 			!cpuset_zone_allowed_softwall(zone, gfp_mask))
 				continue;
+		/*
+		 * When allocating a page cache page for writing, we
+		 * want to get it from a zone that is within its dirty
+		 * limit, such that no single zone holds more than its
+		 * proportional share of globally allowed dirty pages.
+		 * The dirty limits take into account the zone's
+		 * lowmem reserves and high watermark so that kswapd
+		 * should be able to balance it without having to
+		 * write pages from its LRU list.
+		 *
+		 * This may look like it could increase pressure on
+		 * lower zones by failing allocations in higher zones
+		 * before they are full.  But the pages that do spill
+		 * over are limited as the lower zones are protected
+		 * by this very same mechanism.  It should not become
+		 * a practical burden to them.
+		 *
+		 * XXX: For now, allow allocations to potentially
+		 * exceed the per-zone dirty limit in the slowpath
+		 * (ALLOC_WMARK_LOW unset) before going into reclaim,
+		 * which is important when on a NUMA setup the allowed
+		 * zones are together not big enough to reach the
+		 * global limit.  The proper fix for these situations
+		 * will require awareness of zones in the
+		 * dirty-throttling and the flusher threads.
+		 */
+		if ((alloc_flags & ALLOC_WMARK_LOW) &&
+		    (gfp_mask & __GFP_WRITE) && !zone_dirty_ok(zone))
+			goto this_zone_full;
 
 		BUILD_BUG_ON(ALLOC_NO_WATERMARKS < NR_WMARK);
 		if (!(alloc_flags & ALLOC_NO_WATERMARKS)) {
@@ -1918,10 +1940,23 @@ void warn_alloc_failed(gfp_t gfp_mask, int order, const char *fmt, ...)
 
 static inline int
 should_alloc_retry(gfp_t gfp_mask, unsigned int order,
+				unsigned long did_some_progress,
 				unsigned long pages_reclaimed)
 {
 	/* Do not loop if specifically requested */
 	if (gfp_mask & __GFP_NORETRY)
+		return 0;
+
+	/* Always retry if specifically requested */
+	if (gfp_mask & __GFP_NOFAIL)
+		return 1;
+
+	/*
+	 * Suspend converts GFP_KERNEL to __GFP_WAIT which can prevent reclaim
+	 * making forward progress without invoking OOM. Suspend also disables
+	 * storage devices so kswapd will not help. Bail if we are suspending.
+	 */
+	if (!did_some_progress && pm_suspended_storage())
 		return 0;
 
 	/*
@@ -1940,13 +1975,6 @@ should_alloc_retry(gfp_t gfp_mask, unsigned int order,
 	 * allocation still fails, we stop retrying.
 	 */
 	if (gfp_mask & __GFP_REPEAT && pages_reclaimed < (1 << order))
-		return 1;
-
-	/*
-	 * Don't let big-order allocations loop unless the caller
-	 * explicitly requests that.
-	 */
-	if (gfp_mask & __GFP_NOFAIL)
 		return 1;
 
 	return 0;
@@ -2295,7 +2323,6 @@ rebalance:
 	if (test_thread_flag(TIF_MEMDIE) && !(gfp_mask & __GFP_NOFAIL))
 		goto nopage;
 
-#ifdef CONFIG_DIRECT_RECLAIM_ALLOW_COMPACTION
 	/*
 	 * Try direct compaction. The first pass is asynchronous. Subsequent
 	 * attempts after direct reclaim are synchronous
@@ -2309,7 +2336,6 @@ rebalance:
 					&did_some_progress);
 	if (page)
 		goto got_pg;
-#endif /* CONFIG_DIRECT_RECLAIM_ALLOW_COMPACTION */
 	sync_migration = true;
 
 	/*
@@ -2338,6 +2364,10 @@ rebalance:
 		if ((gfp_mask & __GFP_FS) && !(gfp_mask & __GFP_NORETRY)) {
 			if (oom_killer_disabled)
 				goto nopage;
+			/* Coredumps can quickly deplete all memory reserves */
+			if ((current->flags & PF_DUMPCORE) &&
+			    !(gfp_mask & __GFP_NOFAIL))
+				goto nopage;
 			page = __alloc_pages_may_oom(gfp_mask, order,
 					zonelist, high_zoneidx,
 					nodemask, preferred_zone,
@@ -2365,19 +2395,12 @@ rebalance:
 
 			goto restart;
 		}
-
-		/*
-		 * Suspend converts GFP_KERNEL to __GFP_WAIT which can
-		 * prevent reclaim making forward progress without
-		 * invoking OOM. Bail if we are suspending
-		 */
-		if (pm_suspending())
-			goto nopage;
 	}
 
 	/* Check if we should retry the allocation */
 	pages_reclaimed += did_some_progress;
-	if (should_alloc_retry(gfp_mask, order, pages_reclaimed)) {
+	if (should_alloc_retry(gfp_mask, order, did_some_progress,
+						pages_reclaimed)) {
 		/* Wait for some write requests to complete then retry */
 		wait_iff_congested(preferred_zone, BLK_RW_ASYNC, HZ/50);
 		goto rebalance;
@@ -3570,25 +3593,33 @@ static void setup_zone_migrate_reserve(struct zone *zone)
 		if (page_to_nid(page) != zone_to_nid(zone))
 			continue;
 
-		/* Blocks with reserved pages will never free, skip them. */
-		block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
-		if (pageblock_is_reserved(pfn, block_end_pfn))
-			continue;
-
 		block_migratetype = get_pageblock_migratetype(page);
 
-		/* If this block is reserved, account for it */
-		if (reserve > 0 && block_migratetype == MIGRATE_RESERVE) {
-			reserve--;
-			continue;
-		}
+		/* Only test what is necessary when the reserves are not met */
+		if (reserve > 0) {
+			/*
+			 * Blocks with reserved pages will never free, skip
+			 * them.
+			 */
+			block_end_pfn = min(pfn + pageblock_nr_pages, end_pfn);
+			if (pageblock_is_reserved(pfn, block_end_pfn))
+				continue;
 
-		/* Suitable for reserving if this block is movable */
-		if (reserve > 0 && block_migratetype == MIGRATE_MOVABLE) {
-			set_pageblock_migratetype(page, MIGRATE_RESERVE);
-			move_freepages_block(zone, page, MIGRATE_RESERVE);
-			reserve--;
-			continue;
+			/* If this block is reserved, account for it */
+			if (block_migratetype == MIGRATE_RESERVE) {
+				reserve--;
+				continue;
+			}
+
+			/* Suitable for reserving if this block is movable */
+			if (block_migratetype == MIGRATE_MOVABLE) {
+				set_pageblock_migratetype(page,
+							MIGRATE_RESERVE);
+				move_freepages_block(zone, page,
+							MIGRATE_RESERVE);
+				reserve--;
+				continue;
+			}
 		}
 
 		/*
