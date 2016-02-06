@@ -609,10 +609,7 @@ out:
 	return ret;
 }
 
-#ifndef CONFIG_COMPACTION_RETRY
-static
-#endif
-unsigned long compact_zone_order(struct zone *zone,
+static unsigned long compact_zone_order(struct zone *zone,
 				 int order, gfp_t gfp_mask,
 				 bool sync)
 {
