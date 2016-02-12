@@ -351,6 +351,16 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			    tasksize <= selected_tasksize)
 				continue;
 		}
+
+#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
+		if (is_in_donotkill_proc_list(p->comm)) {
+			lowmem_print(2, "[lmk] the process '%s' is inside the donotkill_proc_names\n", p->comm);
+			lowmem_print(2, "[lmk] set oom_score_adj from %d to %d for (%s)\n", p->signal->oom_score_adj, 0, p->comm);
+			p->signal->oom_score_adj = 0;
+			continue;
+		}
+#endif
+
 		selected = p;
 		selected_tasksize = tasksize;
 		selected_oom_score_adj = oom_score_adj;
@@ -358,36 +368,25 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 			     p->comm, p->pid, oom_score_adj, tasksize);
 	}
 	if (selected) {
-#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
-		if (!is_in_donotkill_proc_list(selected->comm)) {
-#endif
-			lowmem_print(1, "Killing '%s' (%d), adj %d,\n" \
-					"   to free %ldkB on behalf of '%s' (%d) because\n" \
-					"   cache %ldkB is below limit %ldkB for oom_score_adj %d\n" \
-					"   Free memory is %ldkB above reserved\n",
-				     selected->comm, selected->pid,
-				     selected_oom_score_adj,
-				     selected_tasksize * (long)(PAGE_SIZE / 1024),
-				     current->comm, current->pid,
-				     other_file * (long)(PAGE_SIZE / 1024),
-				     minfree * (long)(PAGE_SIZE / 1024),
-				     min_score_adj,
-				     other_free * (long)(PAGE_SIZE / 1024));
-			lowmem_deathpending_timeout = jiffies + HZ;
-			send_sig(SIGKILL, selected, 0);
-			set_tsk_thread_flag(selected, TIF_MEMDIE);
-			rem -= selected_tasksize;
-			rcu_read_unlock();
-			/* give the system time to free up the memory */
-			msleep_interruptible(20);
-#ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
-		} else {
-			lowmem_print(1, "[lmk] the process '%s' is inside the donotkill_proc_names\n", selected->comm);
-			lowmem_print(2, "[lmk] set oom_score_adj from %d to %d for (%s)\n", selected->signal->oom_score_adj, 0, selected->comm);
-			selected->signal->oom_score_adj = 0;
-			rcu_read_unlock();
-		}
-#endif
+		lowmem_print(1, "Killing '%s' (%d), adj %d,\n" \
+				"   to free %ldkB on behalf of '%s' (%d) because\n" \
+				"   cache %ldkB is below limit %ldkB for oom_score_adj %d\n" \
+				"   Free memory is %ldkB above reserved\n",
+			     selected->comm, selected->pid,
+			     selected_oom_score_adj,
+			     selected_tasksize * (long)(PAGE_SIZE / 1024),
+			     current->comm, current->pid,
+			     other_file * (long)(PAGE_SIZE / 1024),
+			     minfree * (long)(PAGE_SIZE / 1024),
+			     min_score_adj,
+			     other_free * (long)(PAGE_SIZE / 1024));
+		lowmem_deathpending_timeout = jiffies + HZ;
+		send_sig(SIGKILL, selected, 0);
+		set_tsk_thread_flag(selected, TIF_MEMDIE);
+		rem -= selected_tasksize;
+		rcu_read_unlock();
+		/* give the system time to free up the memory */
+		msleep_interruptible(20);
 	} else
 		rcu_read_unlock();
 
