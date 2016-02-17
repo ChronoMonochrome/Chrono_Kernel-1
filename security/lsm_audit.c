@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * common LSM auditing functions
  *
@@ -114,20 +117,19 @@ int ipv6_skb_to_auditdata(struct sk_buff *skb,
 	int offset, ret = 0;
 	struct ipv6hdr *ip6;
 	u8 nexthdr;
-	__be16 frag_off;
 
 	ip6 = ipv6_hdr(skb);
 	if (ip6 == NULL)
 		return -EINVAL;
-	ad->u.net->v6info.saddr = ip6->saddr;
-	ad->u.net->v6info.daddr = ip6->daddr;
+	ipv6_addr_copy(&ad->u.net->v6info.saddr, &ip6->saddr);
+	ipv6_addr_copy(&ad->u.net->v6info.daddr, &ip6->daddr);
 	ret = 0;
 	/* IPv6 can have several extension header before the Transport header
 	 * skip them */
 	offset = skb_network_offset(skb);
 	offset += sizeof(*ip6);
 	nexthdr = ip6->nexthdr;
-	offset = ipv6_skip_exthdr(skb, offset, &nexthdr, &frag_off);
+	offset = ipv6_skip_exthdr(skb, offset, &nexthdr);
 	if (offset < 0)
 		return 0;
 	if (proto)
@@ -328,8 +330,12 @@ static void dump_common_audit_data(struct audit_buffer *ab,
 			}
 			case AF_UNIX:
 				u = unix_sk(sk);
-				if (u->path.dentry) {
-					audit_log_d_path(ab, " path=", &u->path);
+				if (u->dentry) {
+					struct path path = {
+						.dentry = u->dentry,
+						.mnt = u->mnt
+					};
+					audit_log_d_path(ab, " path=", &path);
 					break;
 				}
 				if (!u->addr)

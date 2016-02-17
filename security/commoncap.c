@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /* Common capabilities, needed by capability.o.
  *
  *	This program is free software; you can redistribute it and/or modify
@@ -28,8 +31,11 @@
 #include <linux/prctl.h>
 #include <linux/securebits.h>
 #include <linux/user_namespace.h>
-#include <linux/binfmts.h>
 #include <linux/personality.h>
+
+#ifdef CONFIG_ANDROID_PARANOID_NETWORK
+#include <linux/android_aid.h>
+#endif
 
 #ifdef CONFIG_ANDROID_PARANOID_NETWORK
 #include <linux/android_aid.h>
@@ -50,9 +56,13 @@ static void warn_setuid_and_fcaps_mixed(const char *fname)
 {
 	static int warned;
 	if (!warned) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "warning: `%s' has both setuid-root and"
 			" effective capabilities. Therefore not raising all"
 			" capabilities.\n", fname);
+#else
+		;
+#endif
 		warned = 1;
 	}
 }
@@ -98,7 +108,15 @@ int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
 
 		/* Have we tried all of the parent namespaces? */
 		if (targ_ns == &init_user_ns)
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		/*
 		 *If you have a capability in a parent user ns, then you have
@@ -121,7 +139,15 @@ int cap_capable(const struct cred *cred, struct user_namespace *targ_ns,
 int cap_settime(const struct timespec *ts, const struct timezone *tz)
 {
 	if (!capable(CAP_SYS_TIME))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	return 0;
 }
 
@@ -154,6 +180,7 @@ int cap_ptrace_access_check(struct task_struct *child, unsigned int mode)
 	if (ns_capable(child_cred->user->user_ns, CAP_SYS_PTRACE))
 		goto out;
 	ret = -EPERM;
+
 out:
 	rcu_read_unlock();
 	return ret;
@@ -255,21 +282,53 @@ int cap_capset(struct cred *new,
 			  cap_combine(old->cap_inheritable,
 				      old->cap_permitted)))
 		/* incapable of using this inheritable set */
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (!cap_issubset(*inheritable,
 			  cap_combine(old->cap_inheritable,
 				      old->cap_bset)))
 		/* no new pI capabilities outside bounding set */
-		return -EPERM;
-
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	/* verify restrictions on target's new Permitted set */
 	if (!cap_issubset(*permitted, old->cap_permitted))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/* verify the _new_Effective_ is a subset of the _new_Permitted_ */
 	if (!cap_issubset(*effective, *permitted))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 
 	new->cap_effective   = *effective;
 	new->cap_inheritable = *inheritable;
@@ -362,6 +421,7 @@ static inline int bprm_caps_from_vfs_caps(struct cpu_vfs_cap_data *caps,
 		if (permitted & ~new->cap_permitted.cap[i])
 			/* insufficient to execute correctly */
 			ret = -EPERM;
+
 	}
 
 	/*
@@ -450,8 +510,12 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
 	rc = get_vfs_caps_from_disk(dentry, &vcaps);
 	if (rc < 0) {
 		if (rc == -EINVAL)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s: get_vfs_caps_from_disk returned %d for %s\n",
 				__func__, rc, bprm->filename);
+#else
+			;
+#endif
 		else if (rc == -ENODATA)
 			rc = 0;
 		goto out;
@@ -459,8 +523,12 @@ static int get_file_caps(struct linux_binprm *bprm, bool *effective, bool *has_c
 
 	rc = bprm_caps_from_vfs_caps(&vcaps, bprm, effective, has_cap);
 	if (rc == -EINVAL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: cap_from_disk returned %d for %s\n",
 		       __func__, rc, bprm->filename);
+#else
+		;
+#endif
 
 out:
 	dput(dentry);
@@ -523,17 +591,14 @@ skip:
 
 
 	/* Don't let someone trace a set[ug]id/setpcap binary with the revised
-	 * credentials unless they have the appropriate permit.
-	 *
-	 * In addition, if NO_NEW_PRIVS, then ensure we get no new privs.
+	 * credentials unless they have the appropriate permit
 	 */
 	if ((new->euid != old->uid ||
 	     new->egid != old->gid ||
 	     !cap_issubset(new->cap_permitted, old->cap_permitted)) &&
 	    bprm->unsafe & ~LSM_UNSAFE_PTRACE_CAP) {
 		/* downgrade; they get no more than they had, and maybe less */
-		if (!capable(CAP_SETUID) ||
-		    (bprm->unsafe & LSM_UNSAFE_NO_NEW_PRIVS)) {
+		if (!capable(CAP_SETUID)) {
 			new->euid = new->uid;
 			new->egid = new->gid;
 		}
@@ -620,14 +685,30 @@ int cap_inode_setxattr(struct dentry *dentry, const char *name,
 {
 	if (!strcmp(name, XATTR_NAME_CAPS)) {
 		if (!capable(CAP_SETFCAP))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		return 0;
 	}
 
 	if (!strncmp(name, XATTR_SECURITY_PREFIX,
 		     sizeof(XATTR_SECURITY_PREFIX) - 1) &&
 	    !capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	return 0;
 }
 
@@ -646,14 +727,30 @@ int cap_inode_removexattr(struct dentry *dentry, const char *name)
 {
 	if (!strcmp(name, XATTR_NAME_CAPS)) {
 		if (!capable(CAP_SETFCAP))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		return 0;
 	}
 
 	if (!strncmp(name, XATTR_SECURITY_PREFIX,
 		     sizeof(XATTR_SECURITY_PREFIX) - 1) &&
 	    !capable(CAP_SYS_ADMIN))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	return 0;
 }
 
@@ -767,7 +864,15 @@ static int cap_safe_nice(struct task_struct *p)
 	rcu_read_unlock();
 
 	if (!is_subset && !capable(CAP_SYS_NICE))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	return 0;
 }
 
@@ -816,7 +921,15 @@ int cap_task_setnice(struct task_struct *p, int nice)
 static long cap_prctl_drop(struct cred *new, unsigned long cap)
 {
 	if (!capable(CAP_SETPCAP))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (!cap_valid(cap))
 		return -EINVAL;
 
@@ -881,6 +994,7 @@ int cap_task_prctl(int option, unsigned long arg2, unsigned long arg3,
 	 */
 	case PR_SET_SECUREBITS:
 		error = -EPERM;
+
 		if ((((new->securebits & SECURE_ALL_LOCKS) >> 1)
 		     & (new->securebits ^ arg2))			/*[1]*/
 		    || ((new->securebits & SECURE_ALL_LOCKS & ~arg2))	/*[2]*/

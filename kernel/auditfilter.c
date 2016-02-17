@@ -487,8 +487,12 @@ static struct audit_entry *audit_data_to_entry(struct audit_rule_data *data,
 			/* Keep currently invalid fields around in case they
 			 * become valid after a policy reload. */
 			if (err == -EINVAL) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "audit rule for LSM "
 				       "\'%s\' is invalid\n",  str);
+#else
+				;
+#endif
 				err = 0;
 			}
 			if (err) {
@@ -740,8 +744,12 @@ static inline int audit_dupe_lsm_field(struct audit_field *df,
 	/* Keep currently invalid fields around in case they
 	 * become valid after a policy reload. */
 	if (ret == -EINVAL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "audit rule for LSM \'%s\' is "
 		       "invalid\n", df->lsm_str);
+#else
+		;
+#endif
 		ret = 0;
 	}
 
