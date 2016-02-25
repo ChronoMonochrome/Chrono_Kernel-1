@@ -34,8 +34,8 @@ static void ieee80211_send_refuse_measurement_request(struct ieee80211_sub_if_da
 				sizeof(struct ieee80211_msrment_ie));
 
 	if (!skb) {
-//		printk(KERN_ERR "%s: failed to allocate buffer for "
-;
+		printk(KERN_ERR "%s: failed to allocate buffer for "
+				"measurement report frame\n", sdata->name);
 		return;
 	}
 
