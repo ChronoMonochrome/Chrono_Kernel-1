@@ -60,6 +60,7 @@ struct rtnl_link {
 };
 
 static DEFINE_MUTEX(rtnl_mutex);
+static u16 min_ifinfo_dump_size;
 
 void rtnl_lock(void)
 {
