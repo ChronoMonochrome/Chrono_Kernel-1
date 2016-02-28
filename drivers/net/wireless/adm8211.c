@@ -149,8 +149,8 @@ static int adm8211_read_eeprom(struct ieee80211_hw *dev)
 		else
 			priv->rf_type = ADM8211_TYPE_AIROHA;
 
-//		printk(KERN_WARNING "%s (adm8211): Unknown RFtype %d\n",
-;
+		printk(KERN_WARNING "%s (adm8211): Unknown RFtype %d\n",
+		       pci_name(priv->pdev), (cr49 >> 3) & 0x7);
 	}
 
 	priv->bbp_type = cr49 & 0x7;
@@ -167,20 +167,20 @@ static int adm8211_read_eeprom(struct ieee80211_hw *dev)
 		else
 			priv->bbp_type = ADM8211_TYPE_ADMTEK;
 
-//		printk(KERN_WARNING "%s (adm8211): Unknown BBPtype: %d\n",
-;
+		printk(KERN_WARNING "%s (adm8211): Unknown BBPtype: %d\n",
+		       pci_name(priv->pdev), cr49 >> 3);
 	}
 
 	if (priv->eeprom->country_code >= ARRAY_SIZE(cranges)) {
-//		printk(KERN_WARNING "%s (adm8211): Invalid country code (%d)\n",
-;
+		printk(KERN_WARNING "%s (adm8211): Invalid country code (%d)\n",
+		       pci_name(priv->pdev), priv->eeprom->country_code);
 
 		chan_range = cranges[2];
 	} else
 		chan_range = cranges[priv->eeprom->country_code];
 
-//	printk(KERN_DEBUG "%s (adm8211): Channel range: %d - %d\n",
-;
+	printk(KERN_DEBUG "%s (adm8211): Channel range: %d - %d\n",
+	       pci_name(priv->pdev), (int)chan_range.min, (int)chan_range.max);
 
 	BUILD_BUG_ON(sizeof(priv->channels) != sizeof(adm8211_channels));
 
@@ -207,8 +207,8 @@ static int adm8211_read_eeprom(struct ieee80211_hw *dev)
 		else
 			priv->specific_bbptype = ADM8211_BBP_ADM8011;
 
-//		printk(KERN_WARNING "%s (adm8211): Unknown specific BBP: %d\n",
-;
+		printk(KERN_WARNING "%s (adm8211): Unknown specific BBP: %d\n",
+		       pci_name(priv->pdev), priv->eeprom->specific_bbptype);
 	}
 
 	switch (priv->eeprom->specific_rftype) {
@@ -228,15 +228,15 @@ static int adm8211_read_eeprom(struct ieee80211_hw *dev)
 		else if (priv->pdev->revision == ADM8211_REV_AB)
 			priv->transceiver_type = ADM8211_RFMD2948;
 
-//		printk(KERN_WARNING "%s (adm8211): Unknown transceiver: %d\n",
-;
+		printk(KERN_WARNING "%s (adm8211): Unknown transceiver: %d\n",
+		       pci_name(priv->pdev), priv->eeprom->specific_rftype);
 
 		break;
 	}
 
-//	printk(KERN_DEBUG "%s (adm8211): RFtype=%d BBPtype=%d Specific BBP=%d "
-//               "Transceiver=%d\n", pci_name(priv->pdev), priv->rf_type,
-;
+	printk(KERN_DEBUG "%s (adm8211): RFtype=%d BBPtype=%d Specific BBP=%d "
+               "Transceiver=%d\n", pci_name(priv->pdev), priv->rf_type,
+	       priv->bbp_type, priv->specific_bbptype, priv->transceiver_type);
 
 	return 0;
 }
@@ -1770,8 +1770,8 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err) {
-//		printk(KERN_ERR "%s (adm8211): Cannot enable new PCI device\n",
-;
+		printk(KERN_ERR "%s (adm8211): Cannot enable new PCI device\n",
+		       pci_name(pdev));
 		return err;
 	}
 
@@ -1780,8 +1780,8 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 	mem_addr = pci_resource_start(pdev, 1);
 	mem_len = pci_resource_len(pdev, 1);
 	if (io_len < 256 || mem_len < 1024) {
-//		printk(KERN_ERR "%s (adm8211): Too short PCI resources\n",
-;
+		printk(KERN_ERR "%s (adm8211): Too short PCI resources\n",
+		       pci_name(pdev));
 		goto err_disable_pdev;
 	}
 
@@ -1789,22 +1789,22 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 	/* check signature */
 	pci_read_config_dword(pdev, 0x80 /* CR32 */, &reg);
 	if (reg != ADM8211_SIG1 && reg != ADM8211_SIG2) {
-//		printk(KERN_ERR "%s (adm8211): Invalid signature (0x%x)\n",
-;
+		printk(KERN_ERR "%s (adm8211): Invalid signature (0x%x)\n",
+		       pci_name(pdev), reg);
 		goto err_disable_pdev;
 	}
 
 	err = pci_request_regions(pdev, "adm8211");
 	if (err) {
-//		printk(KERN_ERR "%s (adm8211): Cannot obtain PCI resources\n",
-;
+		printk(KERN_ERR "%s (adm8211): Cannot obtain PCI resources\n",
+		       pci_name(pdev));
 		return err; /* someone else grabbed it? don't disable it */
 	}
 
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) ||
 	    pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32))) {
-//		printk(KERN_ERR "%s (adm8211): No suitable DMA available\n",
-;
+		printk(KERN_ERR "%s (adm8211): No suitable DMA available\n",
+		       pci_name(pdev));
 		goto err_free_reg;
 	}
 
@@ -1812,8 +1812,8 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 
 	dev = ieee80211_alloc_hw(sizeof(*priv), &adm8211_ops);
 	if (!dev) {
-//		printk(KERN_ERR "%s (adm8211): ieee80211 alloc failed\n",
-;
+		printk(KERN_ERR "%s (adm8211): ieee80211 alloc failed\n",
+		       pci_name(pdev));
 		err = -ENOMEM;
 		goto err_free_reg;
 	}
@@ -1831,8 +1831,8 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 		priv->map = pci_iomap(pdev, 0, io_len);
 
 	if (!priv->map) {
-//		printk(KERN_ERR "%s (adm8211): Cannot map device memory\n",
-;
+		printk(KERN_ERR "%s (adm8211): Cannot map device memory\n",
+		       pci_name(pdev));
 		goto err_free_dev;
 	}
 
@@ -1840,8 +1840,8 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 	priv->tx_ring_size = tx_ring_size;
 
 	if (adm8211_alloc_rings(dev)) {
-//		printk(KERN_ERR "%s (adm8211): Cannot allocate TX/RX ring\n",
-;
+		printk(KERN_ERR "%s (adm8211): Cannot allocate TX/RX ring\n",
+		       pci_name(pdev));
 		goto err_iounmap;
 	}
 
@@ -1850,8 +1850,8 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 		cpu_to_le16(ADM8211_CSR_READ(PAR1) & 0xFFFF);
 
 	if (!is_valid_ether_addr(perm_addr)) {
-//		printk(KERN_WARNING "%s (adm8211): Invalid hwaddr in EEPROM!\n",
-;
+		printk(KERN_WARNING "%s (adm8211): Invalid hwaddr in EEPROM!\n",
+		       pci_name(pdev));
 		random_ether_addr(perm_addr);
 	}
 	SET_IEEE80211_PERM_ADDR(dev, perm_addr);
@@ -1884,8 +1884,8 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 
 	err = adm8211_read_eeprom(dev);
 	if (err) {
-//		printk(KERN_ERR "%s (adm8211): Can't alloc eeprom buffer\n",
-;
+		printk(KERN_ERR "%s (adm8211): Can't alloc eeprom buffer\n",
+		       pci_name(pdev));
 		goto err_free_desc;
 	}
 
@@ -1895,8 +1895,8 @@ static int __devinit adm8211_probe(struct pci_dev *pdev,
 
 	err = ieee80211_register_hw(dev);
 	if (err) {
-//		printk(KERN_ERR "%s (adm8211): Cannot register device\n",
-;
+		printk(KERN_ERR "%s (adm8211): Cannot register device\n",
+		       pci_name(pdev));
 		goto err_free_eeprom;
 	}
 
