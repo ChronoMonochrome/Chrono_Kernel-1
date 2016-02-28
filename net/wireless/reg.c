@@ -51,7 +51,7 @@
 #ifdef CONFIG_CFG80211_REG_DEBUG
 #define REG_DBG_PRINT(format, args...) \
 	do { \
-;
+		printk(KERN_DEBUG pr_fmt(format), ##args);	\
 	} while (0)
 #else
 #define REG_DBG_PRINT(args...)
@@ -1671,19 +1671,6 @@ void regulatory_hint_11d(struct wiphy *wiphy,
 	enum environment_cap env = ENVIRON_ANY;
 	struct regulatory_request *request;
 
-	/*
-	* SAMSUNG FIX : Regulatory Configuration was update
-	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
-	* Regulation should not updated even if device found other country Access Point Beacon once
-	* since device should find around other Access Points.
-	* 2011.11.19 Convergence Wi-Fi Core
-	*/
-
-#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
-;
-	return;
-#endif
-
 	mutex_lock(&reg_mutex);
 
 	if (unlikely(!last_request))
@@ -1799,6 +1786,7 @@ static void restore_alpha2(char *alpha2, bool reset_user)
 static void restore_regulatory_settings(bool reset_user)
 {
 	char alpha2[2];
+	char world_alpha2[2];
 	struct reg_beacon *reg_beacon, *btmp;
 	struct regulatory_request *reg_request, *tmp;
 	LIST_HEAD(tmp_reg_req_list);
@@ -1849,11 +1837,13 @@ static void restore_regulatory_settings(bool reset_user)
 
 	/* First restore to the basic regulatory settings */
 	cfg80211_regdomain = cfg80211_world_regdom;
+	world_alpha2[0] = cfg80211_regdomain->alpha2[0];
+	world_alpha2[1] = cfg80211_regdomain->alpha2[1];
 
 	mutex_unlock(&reg_mutex);
 	mutex_unlock(&cfg80211_mutex);
 
-	regulatory_hint_core(cfg80211_regdomain->alpha2);
+	regulatory_hint_core(world_alpha2);
 
 	/*
 	 * This restores the ieee80211_regdom module parameter
@@ -1890,19 +1880,6 @@ static void restore_regulatory_settings(bool reset_user)
 
 void regulatory_hint_disconnect(void)
 {
-	/*
-	* SAMSUNG FIX : Regulatory Configuration was update
-	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
-	* Regulation should not updated even if device found other country Access Point Beacon once
-	* since device should find around other Access Points.
-	* 2011.11.19 Convergence Wi-Fi Core
-	*/
-
-#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
-;
-	return;
-#endif
-
 	REG_DBG_PRINT("All devices are disconnected, going to "
 		      "restore regulatory settings\n");
 	restore_regulatory_settings(false);
@@ -1922,19 +1899,6 @@ int regulatory_hint_found_beacon(struct wiphy *wiphy,
 				 gfp_t gfp)
 {
 	struct reg_beacon *reg_beacon;
-
-	/*
-	* SAMSUNG FIX : Regulatory Configuration was update
-	* via WIPHY_FLAG_CUSTOM_REGULATORY of Wi-Fi Driver.
-	* Regulation should not updated even if device found other country Access Point Beacon once
-	* since device should find around other Access Points.
-	* 2011.11.19 Convergence Wi-Fi Core
-	*/
-
-#ifdef CONFIG_CFG80211_REG_NOT_UPDATED
-	REG_DBG_PRINT("regulatory is not upadted via %s.\n",__func__);
-	return 0;
-#endif
 
 	if (likely((beacon_chan->beacon_found ||
 	    (beacon_chan->flags & IEEE80211_CHAN_RADAR) ||
@@ -2000,6 +1964,21 @@ static void print_rd_rules(const struct ieee80211_regdomain *rd)
 				freq_range->end_freq_khz,
 				freq_range->max_bandwidth_khz,
 				power_rule->max_eirp);
+	}
+}
+
+bool reg_supported_dfs_region(u8 dfs_region)
+{
+	switch (dfs_region) {
+	case NL80211_DFS_UNSET:
+	case NL80211_DFS_FCC:
+	case NL80211_DFS_ETSI:
+	case NL80211_DFS_JP:
+		return true;
+	default:
+		REG_DBG_PRINT("Ignoring uknown DFS master region: %d\n",
+			      dfs_region);
+		return false;
 	}
 }
 
@@ -2142,15 +2121,10 @@ static int __set_regdom(const struct ieee80211_regdomain *rd)
 		 * However if a driver requested this specific regulatory
 		 * domain we keep it for its private use
 		 */
-		if (last_request->initiator == NL80211_REGDOM_SET_BY_DRIVER) {
-			const struct ieee80211_regdomain *tmp;
-
-			tmp = request_wiphy->regd;
+		if (last_request->initiator == NL80211_REGDOM_SET_BY_DRIVER)
 			request_wiphy->regd = rd;
-			kfree(tmp);
-		} else {
+		else
 			kfree(rd);
-		}
 
 		rd = NULL;
 
@@ -2331,9 +2305,6 @@ void /* __init_or_exit */ regulatory_exit(void)
 
 	reset_regdomains(true);
 
-	dev_set_uevent_suppress(&reg_pdev->dev, true);
-
-	last_request = NULL;
 	dev_set_uevent_suppress(&reg_pdev->dev, true);
 
 	platform_device_unregister(reg_pdev);

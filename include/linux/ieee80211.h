@@ -141,12 +141,6 @@
 
 #define IEEE80211_HT_CTL_LEN		4
 
-#ifdef CONFIG_TARGET_LOCALE_CHN
-#define WLAN_CIPHER_SUITE_SMS4          0x000FAC07
-#define WLAN_AKM_SUITE_WAPI_PSK	0x000FAC04
-#define WLAN_AKM_SUITE_WAPI_CERT	0x000FAC12
-#endif
-
 struct ieee80211_hdr {
 	__le16 frame_control;
 	__le16 duration_id;
@@ -1311,6 +1305,7 @@ enum ieee80211_key_len {
 	WLAN_KEY_LEN_CCMP = 16,
 	WLAN_KEY_LEN_TKIP = 32,
 	WLAN_KEY_LEN_AES_CMAC = 16,
+	WLAN_KEY_LEN_WAPI_SMS4 = 32,
 };
 
 /**
@@ -1440,6 +1435,7 @@ enum ieee80211_sa_query_action {
 #define WLAN_CIPHER_SUITE_CCMP		0x000FAC04
 #define WLAN_CIPHER_SUITE_WEP104	0x000FAC05
 #define WLAN_CIPHER_SUITE_AES_CMAC	0x000FAC06
+#define WLAN_CIPHER_SUITE_SMS4		0x00147201
 
 /* AKM suite selectors */
 #define WLAN_AKM_SUITE_8021X		0x000FAC01
