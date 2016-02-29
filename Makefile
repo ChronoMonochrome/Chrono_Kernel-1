@@ -389,6 +389,9 @@ KBUILD_CFLAGS := -Wunused -fno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -mfpu=vfpv3 \
 		  -mfloat-abi=hard \
 		  -fno-tree-vectorize \
+		  -fgcse-after-reload \
+		  -frerun-cse-after-loop \
+		  -frename-registers \
 		  -funsafe-loop-optimizations \
 		  -ftree-parallelize-loops=2 \
 		  -fcx-limited-range \
