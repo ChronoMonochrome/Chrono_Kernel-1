@@ -126,6 +126,7 @@ config HAVE_DMA_ATTRS
 
 config HAVE_DMA_CONTIGUOUS
 	bool
+	default y
 
 config USE_GENERIC_SMP_HELPERS
 	bool

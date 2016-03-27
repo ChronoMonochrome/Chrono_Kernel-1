@@ -175,9 +175,9 @@ config GENERIC_CPU_DEVICES
 	bool
 	default n
 
-config CMA
+config DMA_CMA
 	bool "Contiguous Memory Allocator (EXPERIMENTAL)"
-	depends on HAVE_DMA_CONTIGUOUS && HAVE_MEMBLOCK && EXPERIMENTAL
+	default n
 	select MIGRATION
 	help
 	  This enables the Contiguous Memory Allocator which allows drivers
@@ -187,7 +187,7 @@ config CMA
 	  For more information see <include/linux/dma-contiguous.h>.
 	  If unsure, say "n".
 
-if CMA
+if DMA_CMA
 
 config CMA_DEBUG
 	bool "CMA debug messages (DEVELOPMENT)"

@@ -2,7 +2,7 @@
 #define ASM_DMA_CONTIGUOUS_H
 
 #ifdef __KERNEL__
-#ifdef CONFIG_CMA
+#ifdef CONFIG_DMA_CMA
 
 #include <linux/device.h>
 #include <linux/dma-contiguous.h>
