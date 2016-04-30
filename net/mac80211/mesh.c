@@ -194,7 +194,7 @@ int mesh_rmc_check(u8 *sa, struct ieee80211s_hdr *mesh_hdr,
 
 	p = kmem_cache_alloc(rm_cache, GFP_ATOMIC);
 	if (!p) {
-		printk(KERN_DEBUG "o11s: could not allocate RMC entry\n");
+;
 		return 0;
 	}
 	p->seqnum = seqnum;
@@ -404,8 +404,8 @@ static void ieee80211_mesh_housekeeping(struct ieee80211_sub_if_data *sdata,
 	bool free_plinks;
 
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
-	printk(KERN_DEBUG "%s: running mesh housekeeping\n",
-	       sdata->name);
+//	printk(KERN_DEBUG "%s: running mesh housekeeping\n",
+;
 #endif
 
 	ieee80211_sta_expire(sdata, IEEE80211_MESH_PEER_INACTIVITY_LIMIT);

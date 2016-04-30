@@ -874,8 +874,8 @@ void ieee80211_send_auth(struct ieee80211_sub_if_data *sdata,
 	skb = dev_alloc_skb(local->hw.extra_tx_headroom +
 			    sizeof(*mgmt) + 6 + extra_len);
 	if (!skb) {
-		printk(KERN_DEBUG "%s: failed to allocate buffer for auth "
-		       "frame\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to allocate buffer for auth "
+;
 		return;
 	}
 	skb_reserve(skb, local->hw.extra_tx_headroom);
@@ -1030,8 +1030,8 @@ struct sk_buff *ieee80211_build_probe_req(struct ieee80211_sub_if_data *sdata,
 	/* FIXME: come up with a proper value */
 	buf = kmalloc(200 + ie_len, GFP_KERNEL);
 	if (!buf) {
-		printk(KERN_DEBUG "%s: failed to allocate temporary IE "
-		       "buffer\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to allocate temporary IE "
+;
 		return NULL;
 	}
 

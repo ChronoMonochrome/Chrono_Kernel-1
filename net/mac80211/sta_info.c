@@ -97,7 +97,6 @@ struct sta_info *sta_info_get(struct ieee80211_sub_if_data *sdata,
 	struct sta_info *sta;
 
 	sta = rcu_dereference_check(local->sta_hash[STA_HASH(addr)],
-				    rcu_read_lock_held() ||
 				    lockdep_is_held(&local->sta_lock) ||
 				    lockdep_is_held(&local->sta_mtx));
 	while (sta) {
@@ -105,7 +104,6 @@ struct sta_info *sta_info_get(struct ieee80211_sub_if_data *sdata,
 		    memcmp(sta->sta.addr, addr, ETH_ALEN) == 0)
 			break;
 		sta = rcu_dereference_check(sta->hnext,
-					    rcu_read_lock_held() ||
 					    lockdep_is_held(&local->sta_lock) ||
 					    lockdep_is_held(&local->sta_mtx));
 	}
@@ -123,7 +121,6 @@ struct sta_info *sta_info_get_bss(struct ieee80211_sub_if_data *sdata,
 	struct sta_info *sta;
 
 	sta = rcu_dereference_check(local->sta_hash[STA_HASH(addr)],
-				    rcu_read_lock_held() ||
 				    lockdep_is_held(&local->sta_lock) ||
 				    lockdep_is_held(&local->sta_mtx));
 	while (sta) {
@@ -132,7 +129,6 @@ struct sta_info *sta_info_get_bss(struct ieee80211_sub_if_data *sdata,
 		    memcmp(sta->sta.addr, addr, ETH_ALEN) == 0)
 			break;
 		sta = rcu_dereference_check(sta->hnext,
-					    rcu_read_lock_held() ||
 					    lockdep_is_held(&local->sta_lock) ||
 					    lockdep_is_held(&local->sta_mtx));
 	}
@@ -303,9 +299,9 @@ static int sta_info_finish_insert(struct sta_info *sta, bool async)
 	if (err) {
 		if (!async)
 			return err;
-		printk(KERN_DEBUG "%s: failed to add IBSS STA %pM to driver (%d)"
-				  " - keeping it anyway.\n",
-		       sdata->name, sta->sta.addr, err);
+//		printk(KERN_DEBUG "%s: failed to add IBSS STA %pM to driver (%d)"
+//				  " - keeping it anyway.\n",
+;
 	} else {
 		sta->uploaded = true;
 #ifdef CONFIG_MAC80211_VERBOSE_DEBUG
@@ -334,7 +330,6 @@ static int sta_info_finish_insert(struct sta_info *sta, bool async)
 	ieee80211_sta_debugfs_add(sta);
 	rate_control_add_sta_debugfs(sta);
 
-	memset(&sinfo, 0, sizeof(sinfo));
 	sinfo.filled = 0;
 	sinfo.generation = local->sta_generation;
 	cfg80211_new_sta(sdata->dev, sta->sta.addr, &sinfo, GFP_KERNEL);
@@ -609,8 +604,8 @@ static bool sta_info_cleanup_expire_buffered(struct ieee80211_local *local,
 
 		local->total_ps_buffered--;
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
-		printk(KERN_DEBUG "Buffered frame expired (STA %pM)\n",
-		       sta->sta.addr);
+//		printk(KERN_DEBUG "Buffered frame expired (STA %pM)\n",
+;
 #endif
 		dev_kfree_skb(skb);
 
@@ -837,8 +832,8 @@ void ieee80211_sta_expire(struct ieee80211_sub_if_data *sdata,
 	list_for_each_entry_safe(sta, tmp, &local->sta_list, list)
 		if (time_after(jiffies, sta->last_rx + exp_time)) {
 #ifdef CONFIG_MAC80211_IBSS_DEBUG
-			printk(KERN_DEBUG "%s: expiring inactive STA %pM\n",
-			       sdata->name, sta->sta.addr);
+//			printk(KERN_DEBUG "%s: expiring inactive STA %pM\n",
+;
 #endif
 			WARN_ON(__sta_info_destroy(sta));
 		}
@@ -916,9 +911,9 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
 	local->total_ps_buffered -= buffered;
 
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
-	printk(KERN_DEBUG "%s: STA %pM aid %d sending %d filtered/%d PS frames "
-	       "since STA not sleeping anymore\n", sdata->name,
-	       sta->sta.addr, sta->sta.aid, sent - buffered, buffered);
+//	printk(KERN_DEBUG "%s: STA %pM aid %d sending %d filtered/%d PS frames "
+//	       "since STA not sleeping anymore\n", sdata->name,
+;
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 }
 
@@ -950,9 +945,9 @@ void ieee80211_sta_ps_deliver_poll_response(struct sta_info *sta)
 		info->flags |= IEEE80211_TX_CTL_PSPOLL_RESPONSE;
 
 #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
-		printk(KERN_DEBUG "STA %pM aid %d: PS Poll (entries after %d)\n",
-		       sta->sta.addr, sta->sta.aid,
-		       skb_queue_len(&sta->ps_tx_buf));
+//		printk(KERN_DEBUG "STA %pM aid %d: PS Poll (entries after %d)\n",
+//		       sta->sta.addr, sta->sta.aid,
+;
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 
 		/* Use MoreData flag to indicate whether there are more
@@ -974,9 +969,9 @@ void ieee80211_sta_ps_deliver_poll_response(struct sta_info *sta)
 		 *	  Should we send it a null-func frame indicating we
 		 *	  have nothing buffered for it?
 		 */
-		printk(KERN_DEBUG "%s: STA %pM sent PS Poll even "
-		       "though there are no buffered frames for it\n",
-		       sdata->name, sta->sta.addr);
+//		printk(KERN_DEBUG "%s: STA %pM sent PS Poll even "
+//		       "though there are no buffered frames for it\n",
+;
 #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
 	}
 }

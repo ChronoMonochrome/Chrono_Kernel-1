@@ -163,8 +163,8 @@ static void mcs7830_async_cmd_callback(struct urb *urb)
 	int status = urb->status;
 
 	if (status < 0)
-		printk(KERN_DEBUG "%s() failed with %d\n",
-		       __func__, status);
+//		printk(KERN_DEBUG "%s() failed with %d\n",
+;
 
 	kfree(req);
 	usb_free_urb(urb);

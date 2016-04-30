@@ -212,7 +212,7 @@ static int skfp_init_one(struct pci_dev *pdev,
 	pr_debug("entering skfp_init_one\n");
 
 	if (num_boards == 0) 
-		printk("%s\n", boot_msg);
+;
 
 	err = pci_enable_device(pdev);
 	if (err)
@@ -226,7 +226,7 @@ static int skfp_init_one(struct pci_dev *pdev,
 
 #ifdef MEM_MAPPED_IO
 	if (!(pci_resource_flags(pdev, 0) & IORESOURCE_MEM)) {
-		printk(KERN_ERR "skfp: region is not an MMIO resource\n");
+;
 		err = -EIO;
 		goto err_out2;
 	}
@@ -234,7 +234,7 @@ static int skfp_init_one(struct pci_dev *pdev,
 	mem = ioremap(pci_resource_start(pdev, 0), 0x4000);
 #else
 	if (!(pci_resource_flags(pdev, 1) & IO_RESOURCE_IO)) {
-		printk(KERN_ERR "skfp: region is not PIO resource\n");
+;
 		err = -EIO;
 		goto err_out2;
 	}
@@ -242,16 +242,16 @@ static int skfp_init_one(struct pci_dev *pdev,
 	mem = ioport_map(pci_resource_start(pdev, 1), FP_IO_LEN);
 #endif
 	if (!mem) {
-		printk(KERN_ERR "skfp:  Unable to map register, "
-				"FDDI adapter will be disabled.\n");
+//		printk(KERN_ERR "skfp:  Unable to map register, "
+;
 		err = -EIO;
 		goto err_out2;
 	}
 
 	dev = alloc_fddidev(sizeof(struct s_smc));
 	if (!dev) {
-		printk(KERN_ERR "skfp: Unable to allocate fddi device, "
-				"FDDI adapter will be disabled.\n");
+//		printk(KERN_ERR "skfp: Unable to allocate fddi device, "
+;
 		err = -ENOMEM;
 		goto err_out3;
 	}
@@ -289,11 +289,11 @@ static int skfp_init_one(struct pci_dev *pdev,
 
 	if ((pdev->subsystem_device & 0xff00) == 0x5500 ||
 	    (pdev->subsystem_device & 0xff00) == 0x5800) 
-		printk("%s: SysKonnect FDDI PCI adapter"
-		       " found (SK-%04X)\n", dev->name,	
-		       pdev->subsystem_device);
+//		printk("%s: SysKonnect FDDI PCI adapter"
+//		       " found (SK-%04X)\n", dev->name,	
+;
 	else
-		printk("%s: FDDI PCI adapter found\n", dev->name);
+;
 
 	return 0;
 err_out5:
@@ -398,8 +398,8 @@ static  int skfp_driver_init(struct net_device *dev)
 	// Allocate invalid frame
 	bp->LocalRxBuffer = pci_alloc_consistent(&bp->pdev, MAX_FRAME_SIZE, &bp->LocalRxBufferDMA);
 	if (!bp->LocalRxBuffer) {
-		printk("could not allocate mem for ");
-		printk("LocalRxBuffer: %d byte\n", MAX_FRAME_SIZE);
+;
+;
 		goto fail;
 	}
 
@@ -413,9 +413,9 @@ static  int skfp_driver_init(struct net_device *dev)
 							 bp->SharedMemSize,
 							 &bp->SharedMemDMA);
 		if (!bp->SharedMemAddr) {
-			printk("could not allocate mem for ");
-			printk("hardware module: %ld byte\n",
-			       bp->SharedMemSize);
+;
+//			printk("hardware module: %ld byte\n",
+;
 			goto fail;
 		}
 		bp->SharedMemHeap = 0;	// Nothing used yet.
@@ -983,7 +983,7 @@ static int skfp_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 		}
 		break;
 	default:
-		printk("ioctl for %s: unknown cmd: %04x\n", dev->name, ioc.cmd);
+;
 		status = -EOPNOTSUPP;
 
 	}			// switch
@@ -1312,7 +1312,7 @@ void *mac_drv_get_space(struct s_smc *smc, unsigned int size)
 	virt = (void *) (smc->os.SharedMemAddr + smc->os.SharedMemHeap);
 
 	if ((smc->os.SharedMemHeap + size) > smc->os.SharedMemSize) {
-		printk("Unexpected SMT memory size requested: %d\n", size);
+;
 		return NULL;
 	}
 	smc->os.SharedMemHeap += size;	// Move heap pointer.
@@ -1362,7 +1362,7 @@ void *mac_drv_get_desc_mem(struct s_smc *smc, unsigned int size)
 	pr_debug("for descriptor memory.\n");
 
 	if (!mac_drv_get_space(smc, size)) {
-		printk("fddi: Unable to align descriptor memory.\n");
+;
 		return NULL;
 	}
 	return virt + size;
@@ -1530,18 +1530,18 @@ void dump_data(unsigned char *Data, int length)
 	if (length > 64) {
 		length = 64;
 	}
-	printk(KERN_INFO "---Packet start---\n");
+;
 	for (i = 0, j = 0; i < length / 8; i++, j += 8)
-		printk(KERN_INFO "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-		       Data[j + 0], Data[j + 1], Data[j + 2], Data[j + 3],
-		       Data[j + 4], Data[j + 5], Data[j + 6], Data[j + 7]);
+//		printk(KERN_INFO "%02x %02x %02x %02x %02x %02x %02x %02x\n",
+//		       Data[j + 0], Data[j + 1], Data[j + 2], Data[j + 3],
+;
 	strcpy(s, "");
 	for (i = 0; i < length % 8; i++) {
 		sprintf(sh, "%02x ", Data[j + i]);
 		strcat(s, sh);
 	}
-	printk(KERN_INFO "%s\n", s);
-	printk(KERN_INFO "------------------\n");
+;
+;
 }				// dump_data
 #else
 #define dump_data(data,len)
@@ -1583,7 +1583,7 @@ void mac_drv_rx_complete(struct s_smc *smc, volatile struct s_smt_fp_rxd *rxd,
 	pr_debug("entering mac_drv_rx_complete (len=%d)\n", len);
 	if (frag_count != 1) {	// This is not allowed to happen.
 
-		printk("fddi: Multi-fragment receive!\n");
+;
 		goto RequeueRxd;	// Re-use the given RXD(s).
 
 	}
@@ -1626,7 +1626,7 @@ void mac_drv_rx_complete(struct s_smc *smc, volatile struct s_smt_fp_rxd *rxd,
 		ri = ntohs(*((__be16 *) cp));
 		RifLength = ri & FDDI_RCF_LEN_MASK;
 		if (len < (int) (FDDI_MAC_HDR_LEN + RifLength)) {
-			printk("fddi: Invalid RIF.\n");
+;
 			goto RequeueRxd;	// Discard the frame.
 
 		}
@@ -1702,7 +1702,7 @@ void mac_drv_requeue_rxd(struct s_smc *smc, volatile struct s_smt_fp_rxd *rxd,
 
 	if (frag_count != 1)	// This is not allowed to happen.
 
-		printk("fddi: Multi-fragment requeue!\n");
+;
 
 	MaxFrameSize = smc->os.MaxFrameSize;
 	src_rxd = rxd;
@@ -1844,7 +1844,7 @@ void mac_drv_clear_rxd(struct s_smc *smc, volatile struct s_smt_fp_rxd *rxd,
 
 	if (frag_count != 1)	// This is not allowed to happen.
 
-		printk("fddi: Multi-fragment clear!\n");
+;
 
 	for (; frag_count > 0; frag_count--) {
 		skb = rxd->rxd_os.skb;

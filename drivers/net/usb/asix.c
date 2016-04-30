@@ -251,8 +251,8 @@ static void asix_async_cmd_callback(struct urb *urb)
 	int status = urb->status;
 
 	if (status < 0)
-		printk(KERN_DEBUG "asix_async_cmd_callback() failed with %d",
-			status);
+//		printk(KERN_DEBUG "asix_async_cmd_callback() failed with %d",
+;
 
 	kfree(req);
 	usb_free_urb(urb);

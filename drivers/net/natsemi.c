@@ -758,23 +758,23 @@ static void __devinit natsemi_init_media (struct net_device *dev)
 
 	if ((np->advertising & ADVERTISE_ALL) != ADVERTISE_ALL &&
 	    netif_msg_probe(np)) {
-		printk(KERN_INFO "natsemi %s: Transceiver default autonegotiation %s "
-			"10%s %s duplex.\n",
-			pci_name(np->pci_dev),
-			(mdio_read(dev, MII_BMCR) & BMCR_ANENABLE)?
-			  "enabled, advertise" : "disabled, force",
-			(np->advertising &
-			  (ADVERTISE_100FULL|ADVERTISE_100HALF))?
-			    "0" : "",
-			(np->advertising &
-			  (ADVERTISE_100FULL|ADVERTISE_10FULL))?
-			    "full" : "half");
+//		printk(KERN_INFO "natsemi %s: Transceiver default autonegotiation %s "
+//			"10%s %s duplex.\n",
+//			pci_name(np->pci_dev),
+//			(mdio_read(dev, MII_BMCR) & BMCR_ANENABLE)?
+//			  "enabled, advertise" : "disabled, force",
+//			(np->advertising &
+//			  (ADVERTISE_100FULL|ADVERTISE_100HALF))?
+//			    "0" : "",
+//			(np->advertising &
+//			  (ADVERTISE_100FULL|ADVERTISE_10FULL))?
+;
 	}
 	if (netif_msg_probe(np))
-		printk(KERN_INFO
-			"natsemi %s: Transceiver status %#04x advertising %#04x.\n",
-			pci_name(np->pci_dev), mdio_read(dev, MII_BMSR),
-			np->advertising);
+//		printk(KERN_INFO
+//			"natsemi %s: Transceiver status %#04x advertising %#04x.\n",
+//			pci_name(np->pci_dev), mdio_read(dev, MII_BMSR),
+;
 
 }
 
@@ -812,7 +812,7 @@ static int __devinit natsemi_probe1 (struct pci_dev *pdev,
 #ifndef MODULE
 	static int printed_version;
 	if (!printed_version++)
-		printk(version);
+;
 #endif
 
 	i = pci_enable_device(pdev);
@@ -922,9 +922,9 @@ static int __devinit natsemi_probe1 (struct pci_dev *pdev,
 		if (option & 0x200)
 			np->full_duplex = 1;
 		if (option & 15)
-			printk(KERN_INFO
-				"natsemi %s: ignoring user supplied media type %d",
-				pci_name(np->pci_dev), option & 15);
+//			printk(KERN_INFO
+//				"natsemi %s: ignoring user supplied media type %d",
+;
 	}
 	if (find_cnt < MAX_UNITS  &&  full_duplex[find_cnt])
 		np->full_duplex = 1;
@@ -942,8 +942,8 @@ static int __devinit natsemi_probe1 (struct pci_dev *pdev,
 	/* save the silicon revision for later querying */
 	np->srr = readl(ioaddr + SiliconRev);
 	if (netif_msg_hw(np))
-		printk(KERN_INFO "natsemi %s: silicon revision %#04x.\n",
-				pci_name(np->pci_dev), np->srr);
+//		printk(KERN_INFO "natsemi %s: silicon revision %#04x.\n",
+;
 
 	i = register_netdev(dev);
 	if (i)
@@ -953,17 +953,17 @@ static int __devinit natsemi_probe1 (struct pci_dev *pdev,
 		goto err_create_file;
 
 	if (netif_msg_drv(np)) {
-		printk(KERN_INFO "natsemi %s: %s at %#08llx "
-		       "(%s), %pM, IRQ %d",
-		       dev->name, natsemi_pci_info[chip_idx].name,
-		       (unsigned long long)iostart, pci_name(np->pci_dev),
-		       dev->dev_addr, irq);
+//		printk(KERN_INFO "natsemi %s: %s at %#08llx "
+//		       "(%s), %pM, IRQ %d",
+//		       dev->name, natsemi_pci_info[chip_idx].name,
+//		       (unsigned long long)iostart, pci_name(np->pci_dev),
+;
 		if (dev->if_port == PORT_TP)
-			printk(", port TP.\n");
+;
 		else if (np->ignore_phy)
-			printk(", port MII, ignoring PHY\n");
+;
 		else
-			printk(", port MII, phy ad %d.\n", np->phy_addr_external);
+;
 	}
 	return 0;
 
@@ -1238,13 +1238,13 @@ static void init_phy_fixup(struct net_device *dev)
 
 	if (netif_msg_link(np)) {
 		if (i==NATSEMI_HW_TIMEOUT) {
-			printk(KERN_INFO
-				"%s: DSPCFG mismatch after retrying for %d usec.\n",
-				dev->name, i*10);
+//			printk(KERN_INFO
+//				"%s: DSPCFG mismatch after retrying for %d usec.\n",
+;
 		} else {
-			printk(KERN_INFO
-				"%s: DSPCFG accepted after %d usec.\n",
-				dev->name, i*10);
+//			printk(KERN_INFO
+//				"%s: DSPCFG accepted after %d usec.\n",
+;
 		}
 	}
 	/*
@@ -1267,8 +1267,8 @@ static int switch_port_external(struct net_device *dev)
 		return 0;
 
 	if (netif_msg_link(np)) {
-		printk(KERN_INFO "%s: switching to external transceiver.\n",
-				dev->name);
+//		printk(KERN_INFO "%s: switching to external transceiver.\n",
+;
 	}
 
 	/* 1) switch back to external phy */
@@ -1302,8 +1302,8 @@ static int switch_port_internal(struct net_device *dev)
 		return 0;
 
 	if (netif_msg_link(np)) {
-		printk(KERN_INFO "%s: switching to internal transceiver.\n",
-				dev->name);
+//		printk(KERN_INFO "%s: switching to internal transceiver.\n",
+;
 	}
 	/* 1) switch back to internal phy: */
 	cfg = cfg & ~(CfgExtPhy | CfgPhyDis);
@@ -1323,9 +1323,9 @@ static int switch_port_internal(struct net_device *dev)
 		udelay(10);
 	}
 	if (i==NATSEMI_HW_TIMEOUT && netif_msg_link(np)) {
-		printk(KERN_INFO
-			"%s: phy reset did not complete in %d usec.\n",
-			dev->name, i*10);
+//		printk(KERN_INFO
+//			"%s: phy reset did not complete in %d usec.\n",
+;
 	}
 	/* 3) reinit the phy fixup, it got lost during power down. */
 	init_phy_fixup(dev);
@@ -1365,8 +1365,8 @@ static int find_mii(struct net_device *dev)
 			np->mii = (mdio_read(dev, MII_PHYSID1) << 16)
 					+ mdio_read(dev, MII_PHYSID2);
 	 		if (netif_msg_probe(np)) {
-				printk(KERN_INFO "natsemi %s: found external phy %08x at address %d.\n",
-						pci_name(np->pci_dev), np->mii, i);
+//				printk(KERN_INFO "natsemi %s: found external phy %08x at address %d.\n",
+;
 			}
 			break;
 		}
@@ -1428,11 +1428,11 @@ static void natsemi_reset(struct net_device *dev)
 		udelay(5);
 	}
 	if (i==NATSEMI_HW_TIMEOUT) {
-		printk(KERN_WARNING "%s: reset did not complete in %d usec.\n",
-			dev->name, i*5);
+//		printk(KERN_WARNING "%s: reset did not complete in %d usec.\n",
+;
 	} else if (netif_msg_hw(np)) {
-		printk(KERN_DEBUG "%s: reset completed in %d usec.\n",
-			dev->name, i*5);
+//		printk(KERN_DEBUG "%s: reset completed in %d usec.\n",
+;
 	}
 
 	/* restore CFG */
@@ -1478,11 +1478,11 @@ static void reset_rx(struct net_device *dev)
 		udelay(15);
 	}
 	if (i==NATSEMI_HW_TIMEOUT) {
-		printk(KERN_WARNING "%s: RX reset did not complete in %d usec.\n",
-		       dev->name, i*15);
+//		printk(KERN_WARNING "%s: RX reset did not complete in %d usec.\n",
+;
 	} else if (netif_msg_hw(np)) {
-		printk(KERN_WARNING "%s: RX reset took %d usec.\n",
-		       dev->name, i*15);
+//		printk(KERN_WARNING "%s: RX reset took %d usec.\n",
+;
 	}
 }
 
@@ -1499,11 +1499,11 @@ static void natsemi_reload_eeprom(struct net_device *dev)
 			break;
 	}
 	if (i==NATSEMI_HW_TIMEOUT) {
-		printk(KERN_WARNING "natsemi %s: EEPROM did not reload in %d usec.\n",
-			pci_name(np->pci_dev), i*50);
+//		printk(KERN_WARNING "natsemi %s: EEPROM did not reload in %d usec.\n",
+;
 	} else if (netif_msg_hw(np)) {
-		printk(KERN_DEBUG "natsemi %s: EEPROM reloaded in %d usec.\n",
-			pci_name(np->pci_dev), i*50);
+//		printk(KERN_DEBUG "natsemi %s: EEPROM reloaded in %d usec.\n",
+;
 	}
 }
 
@@ -1520,11 +1520,11 @@ static void natsemi_stop_rxtx(struct net_device *dev)
 		udelay(5);
 	}
 	if (i==NATSEMI_HW_TIMEOUT) {
-		printk(KERN_WARNING "%s: Tx/Rx process did not stop in %d usec.\n",
-			dev->name, i*5);
+//		printk(KERN_WARNING "%s: Tx/Rx process did not stop in %d usec.\n",
+;
 	} else if (netif_msg_hw(np)) {
-		printk(KERN_DEBUG "%s: Tx/Rx process stopped in %d usec.\n",
-			dev->name, i*5);
+//		printk(KERN_DEBUG "%s: Tx/Rx process stopped in %d usec.\n",
+;
 	}
 }
 
@@ -1541,8 +1541,8 @@ static int netdev_open(struct net_device *dev)
 	if (i) return i;
 
 	if (netif_msg_ifup(np))
-		printk(KERN_DEBUG "%s: netdev_open() irq %d.\n",
-			dev->name, dev->irq);
+//		printk(KERN_DEBUG "%s: netdev_open() irq %d.\n",
+;
 	i = alloc_ring(dev);
 	if (i < 0) {
 		free_irq(dev->irq, dev);
@@ -1566,8 +1566,8 @@ static int netdev_open(struct net_device *dev)
 	netif_start_queue(dev);
 
 	if (netif_msg_ifup(np))
-		printk(KERN_DEBUG "%s: Done netdev_open(), status: %#08x.\n",
-			dev->name, (int)readl(ioaddr + ChipCmd));
+//		printk(KERN_DEBUG "%s: Done netdev_open(), status: %#08x.\n",
+;
 
 	/* Set the timer to check for link beat. */
 	init_timer(&np->timer);
@@ -1664,8 +1664,8 @@ static void check_link(struct net_device *dev)
 	if (!(bmsr & BMSR_LSTATUS)) {
 		if (netif_carrier_ok(dev)) {
 			if (netif_msg_link(np))
-				printk(KERN_NOTICE "%s: link down.\n",
-				       dev->name);
+//				printk(KERN_NOTICE "%s: link down.\n",
+;
 			netif_carrier_off(dev);
 			undo_cable_magic(dev);
 		}
@@ -1673,7 +1673,7 @@ static void check_link(struct net_device *dev)
 	}
 	if (!netif_carrier_ok(dev)) {
 		if (netif_msg_link(np))
-			printk(KERN_NOTICE "%s: link up.\n", dev->name);
+;
 		netif_carrier_on(dev);
 		do_cable_magic(dev);
 	}
@@ -1693,10 +1693,10 @@ propagate_state:
 	/* if duplex is set then bit 28 must be set, too */
 	if (duplex ^ !!(np->rx_config & RxAcceptTx)) {
 		if (netif_msg_link(np))
-			printk(KERN_INFO
-				"%s: Setting %s-duplex based on negotiated "
-				"link capability.\n", dev->name,
-				duplex ? "full" : "half");
+//			printk(KERN_INFO
+//				"%s: Setting %s-duplex based on negotiated "
+//				"link capability.\n", dev->name,
+;
 		if (duplex) {
 			np->rx_config |= RxAcceptTx;
 			np->tx_config |= TxCarrierIgn | TxHeartIgn;
@@ -1760,8 +1760,8 @@ static void init_registers(struct net_device *dev)
 	np->SavedClkRun = readl(ioaddr + ClkRun);
 	writel(np->SavedClkRun & ~PMEEnable, ioaddr + ClkRun);
 	if (np->SavedClkRun & PMEStatus && netif_msg_wol(np)) {
-		printk(KERN_NOTICE "%s: Wake-up event %#08x\n",
-			dev->name, readl(ioaddr + WOLCmd));
+//		printk(KERN_NOTICE "%s: Wake-up event %#08x\n",
+;
 	}
 
 	check_link(dev);
@@ -1799,8 +1799,8 @@ static void netdev_timer(unsigned long data)
 		/* DO NOT read the IntrStatus register,
 		 * a read clears any pending interrupts.
 		 */
-		printk(KERN_DEBUG "%s: Media selection timer tick.\n",
-			dev->name);
+//		printk(KERN_DEBUG "%s: Media selection timer tick.\n",
+;
 	}
 
 	if (dev->if_port == PORT_TP) {
@@ -1815,8 +1815,8 @@ static void netdev_timer(unsigned long data)
 			if (!netif_queue_stopped(dev)) {
 				spin_unlock_irq(&np->lock);
 				if (netif_msg_drv(np))
-					printk(KERN_NOTICE "%s: possible phy reset: "
-						"re-initializing\n", dev->name);
+//					printk(KERN_NOTICE "%s: possible phy reset: "
+;
 				disable_irq(dev->irq);
 				spin_lock_irq(&np->lock);
 				natsemi_stop_rxtx(dev);
@@ -1864,19 +1864,19 @@ static void dump_ring(struct net_device *dev)
 
 	if (netif_msg_pktdata(np)) {
 		int i;
-		printk(KERN_DEBUG "  Tx ring at %p:\n", np->tx_ring);
+;
 		for (i = 0; i < TX_RING_SIZE; i++) {
-			printk(KERN_DEBUG " #%d desc. %#08x %#08x %#08x.\n",
-				i, np->tx_ring[i].next_desc,
-				np->tx_ring[i].cmd_status,
-				np->tx_ring[i].addr);
+//			printk(KERN_DEBUG " #%d desc. %#08x %#08x %#08x.\n",
+//				i, np->tx_ring[i].next_desc,
+//				np->tx_ring[i].cmd_status,
+;
 		}
-		printk(KERN_DEBUG "  Rx ring %p:\n", np->rx_ring);
+;
 		for (i = 0; i < RX_RING_SIZE; i++) {
-			printk(KERN_DEBUG " #%d desc. %#08x %#08x %#08x.\n",
-				i, np->rx_ring[i].next_desc,
-				np->rx_ring[i].cmd_status,
-				np->rx_ring[i].addr);
+//			printk(KERN_DEBUG " #%d desc. %#08x %#08x %#08x.\n",
+//				i, np->rx_ring[i].next_desc,
+//				np->rx_ring[i].cmd_status,
+;
 		}
 	}
 }
@@ -1890,19 +1890,19 @@ static void ns_tx_timeout(struct net_device *dev)
 	spin_lock_irq(&np->lock);
 	if (!np->hands_off) {
 		if (netif_msg_tx_err(np))
-			printk(KERN_WARNING
-				"%s: Transmit timed out, status %#08x,"
-				" resetting...\n",
-				dev->name, readl(ioaddr + IntrStatus));
+//			printk(KERN_WARNING
+//				"%s: Transmit timed out, status %#08x,"
+//				" resetting...\n",
+;
 		dump_ring(dev);
 
 		natsemi_reset(dev);
 		reinit_ring(dev);
 		init_registers(dev);
 	} else {
-		printk(KERN_WARNING
-			"%s: tx_timeout while in hands_off state?\n",
-			dev->name);
+//		printk(KERN_WARNING
+//			"%s: tx_timeout while in hands_off state?\n",
+;
 	}
 	spin_unlock_irq(&np->lock);
 	enable_irq(dev->irq);
@@ -1947,7 +1947,7 @@ static void refill_rx(struct net_device *dev)
 	}
 	if (np->cur_rx - np->dirty_rx == RX_RING_SIZE) {
 		if (netif_msg_rx_err(np))
-			printk(KERN_WARNING "%s: going OOM.\n", dev->name);
+;
 		np->oom = 1;
 	}
 }
@@ -2122,8 +2122,8 @@ static netdev_tx_t start_tx(struct sk_buff *skb, struct net_device *dev)
 	spin_unlock_irqrestore(&np->lock, flags);
 
 	if (netif_msg_tx_queued(np)) {
-		printk(KERN_DEBUG "%s: Transmit frame #%d queued in slot %d.\n",
-			dev->name, np->cur_tx, entry);
+//		printk(KERN_DEBUG "%s: Transmit frame #%d queued in slot %d.\n",
+;
 	}
 	return NETDEV_TX_OK;
 }
@@ -2137,10 +2137,10 @@ static void netdev_tx_done(struct net_device *dev)
 		if (np->tx_ring[entry].cmd_status & cpu_to_le32(DescOwn))
 			break;
 		if (netif_msg_tx_done(np))
-			printk(KERN_DEBUG
-				"%s: tx frame #%d finished, status %#08x.\n",
-					dev->name, np->dirty_tx,
-					le32_to_cpu(np->tx_ring[entry].cmd_status));
+//			printk(KERN_DEBUG
+//				"%s: tx frame #%d finished, status %#08x.\n",
+//					dev->name, np->dirty_tx,
+;
 		if (np->tx_ring[entry].cmd_status & cpu_to_le32(DescPktOK)) {
 			dev->stats.tx_packets++;
 			dev->stats.tx_bytes += np->tx_skbuff[entry]->len;
@@ -2191,10 +2191,10 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 		return IRQ_NONE;
 
 	if (netif_msg_intr(np))
-		printk(KERN_DEBUG
-		       "%s: Interrupt, status %#08x, mask %#08x.\n",
-		       dev->name, np->intr_status,
-		       readl(ioaddr + IntrMask));
+//		printk(KERN_DEBUG
+//		       "%s: Interrupt, status %#08x, mask %#08x.\n",
+//		       dev->name, np->intr_status,
+;
 
 	prefetch(&np->rx_skbuff[np->cur_rx % RX_RING_SIZE]);
 
@@ -2203,10 +2203,10 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 		natsemi_irq_disable(dev);
 		__napi_schedule(&np->napi);
 	} else
-		printk(KERN_WARNING
-	       	       "%s: Ignoring interrupt, status %#08x, mask %#08x.\n",
-		       dev->name, np->intr_status,
-		       readl(ioaddr + IntrMask));
+//		printk(KERN_WARNING
+//	       	       "%s: Ignoring interrupt, status %#08x, mask %#08x.\n",
+//		       dev->name, np->intr_status,
+;
 
 	return IRQ_HANDLED;
 }
@@ -2223,10 +2223,10 @@ static int natsemi_poll(struct napi_struct *napi, int budget)
 
 	do {
 		if (netif_msg_intr(np))
-			printk(KERN_DEBUG
-			       "%s: Poll, status %#08x, mask %#08x.\n",
-			       dev->name, np->intr_status,
-			       readl(ioaddr + IntrMask));
+//			printk(KERN_DEBUG
+//			       "%s: Poll, status %#08x, mask %#08x.\n",
+//			       dev->name, np->intr_status,
+;
 
 		/* netdev_rx() may read IntrStatus again if the RX state
 		 * machine falls over so do it first. */
@@ -2280,9 +2280,9 @@ static void netdev_rx(struct net_device *dev, int *work_done, int work_to_do)
 	while (desc_status < 0) { /* e.g. & DescOwn */
 		int pkt_len;
 		if (netif_msg_rx_status(np))
-			printk(KERN_DEBUG
-				"  netdev_rx() entry %d status was %#08x.\n",
-				entry, desc_status);
+//			printk(KERN_DEBUG
+//				"  netdev_rx() entry %d status was %#08x.\n",
+;
 		if (--boguscnt < 0)
 			break;
 
@@ -2297,12 +2297,12 @@ static void netdev_rx(struct net_device *dev, int *work_done, int work_to_do)
 				unsigned long flags;
 
 				if (netif_msg_rx_err(np))
-					printk(KERN_WARNING
-						"%s: Oversized(?) Ethernet "
-						"frame spanned multiple "
-						"buffers, entry %#08x "
-						"status %#08x.\n", dev->name,
-						np->cur_rx, desc_status);
+//					printk(KERN_WARNING
+//						"%s: Oversized(?) Ethernet "
+//						"frame spanned multiple "
+//						"buffers, entry %#08x "
+//						"status %#08x.\n", dev->name,
+;
 				dev->stats.rx_length_errors++;
 
 				/* The RX state machine has probably
@@ -2393,10 +2393,10 @@ static void netdev_error(struct net_device *dev, int intr_status)
 		u16 lpa = mdio_read(dev, MII_LPA);
 		if (mdio_read(dev, MII_BMCR) & BMCR_ANENABLE &&
 		    netif_msg_link(np)) {
-			printk(KERN_INFO
-				"%s: Autonegotiation advertising"
-				" %#04x  partner %#04x.\n", dev->name,
-				np->advertising, lpa);
+//			printk(KERN_INFO
+//				"%s: Autonegotiation advertising"
+//				" %#04x  partner %#04x.\n", dev->name,
+;
 		}
 
 		/* read MII int status to clear the flag */
@@ -2410,34 +2410,34 @@ static void netdev_error(struct net_device *dev, int intr_status)
 		if ((np->tx_config & TxDrthMask) < TX_DRTH_VAL_LIMIT) {
 			np->tx_config += TX_DRTH_VAL_INC;
 			if (netif_msg_tx_err(np))
-				printk(KERN_NOTICE
-					"%s: increased tx threshold, txcfg %#08x.\n",
-					dev->name, np->tx_config);
+//				printk(KERN_NOTICE
+//					"%s: increased tx threshold, txcfg %#08x.\n",
+;
 		} else {
 			if (netif_msg_tx_err(np))
-				printk(KERN_NOTICE
-					"%s: tx underrun with maximum tx threshold, txcfg %#08x.\n",
-					dev->name, np->tx_config);
+//				printk(KERN_NOTICE
+//					"%s: tx underrun with maximum tx threshold, txcfg %#08x.\n",
+;
 		}
 		writel(np->tx_config, ioaddr + TxConfig);
 	}
 	if (intr_status & WOLPkt && netif_msg_wol(np)) {
 		int wol_status = readl(ioaddr + WOLCmd);
-		printk(KERN_NOTICE "%s: Link wake-up event %#08x\n",
-			dev->name, wol_status);
+//		printk(KERN_NOTICE "%s: Link wake-up event %#08x\n",
+;
 	}
 	if (intr_status & RxStatusFIFOOver) {
 		if (netif_msg_rx_err(np) && netif_msg_intr(np)) {
-			printk(KERN_NOTICE "%s: Rx status FIFO overrun\n",
-				dev->name);
+//			printk(KERN_NOTICE "%s: Rx status FIFO overrun\n",
+;
 		}
 		dev->stats.rx_fifo_errors++;
 		dev->stats.rx_errors++;
 	}
 	/* Hmmmmm, it's not clear how to recover from PCI faults. */
 	if (intr_status & IntrPCIErr) {
-		printk(KERN_NOTICE "%s: PCI error %#08x\n", dev->name,
-			intr_status & IntrPCIErr);
+//		printk(KERN_NOTICE "%s: PCI error %#08x\n", dev->name,
+;
 		dev->stats.tx_fifo_errors++;
 		dev->stats.tx_errors++;
 		dev->stats.rx_fifo_errors++;
@@ -3012,9 +3012,9 @@ static int netdev_get_regs(struct net_device *dev, u8 *buf)
 
 	/* the interrupt status is clear-on-read - see if we missed any */
 	if (rbuf[4] & rbuf[5]) {
-		printk(KERN_WARNING
-			"%s: shoot, we dropped an interrupt (%#08x)\n",
-			dev->name, rbuf[4] & rbuf[5]);
+//		printk(KERN_WARNING
+//			"%s: shoot, we dropped an interrupt (%#08x)\n",
+;
 	}
 
 	return 0;
@@ -3105,8 +3105,8 @@ static void enable_wol_mode(struct net_device *dev, int enable_intr)
 	struct netdev_private *np = netdev_priv(dev);
 
 	if (netif_msg_wol(np))
-		printk(KERN_INFO "%s: remaining active for wake-on-lan\n",
-			dev->name);
+//		printk(KERN_INFO "%s: remaining active for wake-on-lan\n",
+;
 
 	/* For WOL we must restart the rx process in silent mode.
 	 * Write NULL to the RxRingPtr. Only possible if
@@ -3138,14 +3138,14 @@ static int netdev_close(struct net_device *dev)
 	struct netdev_private *np = netdev_priv(dev);
 
 	if (netif_msg_ifdown(np))
-		printk(KERN_DEBUG
-			"%s: Shutting down ethercard, status was %#04x.\n",
-			dev->name, (int)readl(ioaddr + ChipCmd));
+//		printk(KERN_DEBUG
+//			"%s: Shutting down ethercard, status was %#04x.\n",
+;
 	if (netif_msg_pktdata(np))
-		printk(KERN_DEBUG
-			"%s: Queue pointers were Tx %d / %d,  Rx %d / %d.\n",
-			dev->name, np->cur_tx, np->dirty_tx,
-			np->cur_rx, np->dirty_rx);
+//		printk(KERN_DEBUG
+//			"%s: Queue pointers were Tx %d / %d,  Rx %d / %d.\n",
+//			dev->name, np->cur_tx, np->dirty_tx,
+;
 
 	napi_disable(&np->napi);
 
@@ -3354,7 +3354,7 @@ static int __init natsemi_init_mod (void)
 {
 /* when a module, this is printed whether or not devices are found in probe */
 #ifdef MODULE
-	printk(version);
+;
 #endif
 
 	return pci_register_driver(&natsemi_driver);

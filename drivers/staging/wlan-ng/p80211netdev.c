@@ -386,8 +386,8 @@ static int p80211knetdev_hard_start_xmit(struct sk_buff *skb,
 		 */
 		if (skb->protocol != ETH_P_80211_RAW) {
 			netif_start_queue(wlandev->netdev);
-			printk(KERN_NOTICE
-			       "Tx attempt prior to association, frame dropped.\n");
+//			printk(KERN_NOTICE
+;
 			wlandev->linux_stats.tx_dropped++;
 			result = 0;
 			goto failed;
@@ -686,8 +686,8 @@ static int p80211knetdev_set_mac_address(netdevice_t *dev, void *addr)
 	 * change the netdev address
 	 */
 	if (result != 0 || resultcode->data != P80211ENUM_resultcode_success) {
-		printk(KERN_ERR
-		       "Low-level driver failed dot11req_mibset(dot11MACAddress).\n");
+//		printk(KERN_ERR
+;
 		result = -EADDRNOTAVAIL;
 	} else {
 		/* everything's ok, change the addr in netdev */
@@ -766,7 +766,7 @@ int wlan_setup(wlandevice_t *wlandev, struct device *physdev)
 	/* Allocate and initialize the wiphy struct */
 	wiphy = wlan_create_wiphy(physdev, wlandev);
 	if (wiphy == NULL) {
-		printk(KERN_ERR "Failed to alloc wiphy.\n");
+;
 		return 1;
 	}
 
@@ -774,7 +774,7 @@ int wlan_setup(wlandevice_t *wlandev, struct device *physdev)
 	netdev = alloc_netdev(sizeof(struct wireless_dev), "wlan%d",
 				ether_setup);
 	if (netdev == NULL) {
-		printk(KERN_ERR "Failed to alloc netdev.\n");
+;
 		wlan_free_wiphy(wiphy);
 		result = 1;
 	} else {
@@ -1116,8 +1116,8 @@ static void p80211knetdev_tx_timeout(netdevice_t *netdev)
 	if (wlandev->tx_timeout) {
 		wlandev->tx_timeout(wlandev);
 	} else {
-		printk(KERN_WARNING "Implement tx_timeout for %s\n",
-		       wlandev->nsdname);
+//		printk(KERN_WARNING "Implement tx_timeout for %s\n",
+;
 		netif_wake_queue(wlandev->netdev);
 	}
 }

@@ -125,8 +125,8 @@ static int rtl8180_resume(struct pci_dev *pdev)
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
-				dev->name);
+//		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
+;
 
 		return err;
 	}
@@ -306,7 +306,7 @@ static int proc_get_stats_tx(char *page, char **start,
 void rtl8180_proc_module_init(void)
 {
 	DMESG("Initializing proc filesystem");
-	rtl8180_proc = create_proc_entry(RTL8180_MODULE_NAME, S_IFDIR, init_net.proc_net);
+	rtl8180_proc = proc_mkdir(RTL8180_MODULE_NAME, init_net.proc_net);
 }
 
 void rtl8180_proc_module_remove(void)
@@ -449,17 +449,17 @@ void print_buffer(u32 *buffer, int len)
 	int i;
 	u8 *buf = (u8 *)buffer;
 
-	printk("ASCII BUFFER DUMP (len: %x):\n", len);
+;
 
 	for (i = 0; i < len; i++)
-		printk("%c", buf[i]);
+;
 
-	printk("\nBINARY BUFFER DUMP (len: %x):\n", len);
+;
 
 	for (i = 0; i < len; i++)
-		printk("%02x", buf[i]);
+;
 
-	printk("\n");
+;
 }
 
 int get_curr_tx_free_desc(struct net_device *dev, int priority)
@@ -763,7 +763,7 @@ void rtl8180_set_chan(struct net_device *dev, short ch)
 	struct r8180_priv *priv = (struct r8180_priv *)ieee80211_priv(dev);
 
 	if ((ch > 14) || (ch < 1)) {
-		printk("In %s: Invalid chnanel %d\n", __func__, ch);
+;
 		return;
 	}
 
@@ -2316,7 +2316,7 @@ void rtl8180_hw_sleep(struct net_device *dev, u32 th, u32 tl)
 	if (((tl >= rb) && (tl-rb) <= MSECS(MIN_SLEEP_TIME))
 		|| ((rb > tl) && (rb-tl) < MSECS(MIN_SLEEP_TIME))) {
 		spin_unlock_irqrestore(&priv->ps_lock, flags);
-		printk("too short to sleep\n");
+;
 		return;
 	}
 
@@ -2387,7 +2387,7 @@ void rtl8180_wmm_param_update(struct work_struct *work)
 					write_nic_dword(dev, AC_VO_PARAM, u4bAcParam);
 					break;
 				default:
-					printk(KERN_WARNING "SetHwReg8185():invalid ACI: %d!\n", eACI);
+;
 					break;
 				}
 			}
@@ -2426,7 +2426,7 @@ void rtl8180_wmm_param_update(struct work_struct *work)
 				write_nic_dword(dev, AC_VO_PARAM, u4bAcParam);
 				break;
 			default:
-				printk(KERN_WARNING "SetHwReg8185(): invalid ACI: %d !\n", eACI);
+;
 				break;
 			}
 		}
@@ -2606,7 +2606,7 @@ short rtl8180_init(struct net_device *dev)
 	eeprom_93cx6_read(&eeprom, EEPROM_COUNTRY_CODE>>1, &eeprom_val);
 	priv->channel_plan = eeprom_val & 0xFF;
 	if (priv->channel_plan > COUNTRY_CODE_GLOBAL_DOMAIN) {
-		printk("rtl8180_init:Error channel plan! Set to default.\n");
+;
 		priv->channel_plan = 0;
 	}
 
@@ -3706,27 +3706,27 @@ static int __init rtl8180_pci_module_init(void)
 
 	ret = ieee80211_crypto_init();
 	if (ret) {
-		printk(KERN_ERR "ieee80211_crypto_init() failed %d\n", ret);
+;
 		return ret;
 	}
 	ret = ieee80211_crypto_tkip_init();
 	if (ret) {
-		printk(KERN_ERR "ieee80211_crypto_tkip_init() failed %d\n", ret);
+;
 		return ret;
 	}
 	ret = ieee80211_crypto_ccmp_init();
 	if (ret) {
-		printk(KERN_ERR "ieee80211_crypto_ccmp_init() failed %d\n", ret);
+;
 		return ret;
 	}
 	ret = ieee80211_crypto_wep_init();
 	if (ret) {
-		printk(KERN_ERR "ieee80211_crypto_wep_init() failed %d\n", ret);
+;
 		return ret;
 	}
 
-	printk(KERN_INFO "\nLinux kernel driver for RTL8180 / RTL8185 based WLAN cards\n");
-	printk(KERN_INFO "Copyright (c) 2004-2005, Andrea Merello\n");
+;
+;
 	DMESG("Initializing module");
 	DMESG("Wireless extensions version %d", WIRELESS_EXT);
 	rtl8180_proc_module_init();

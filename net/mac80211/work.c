@@ -229,8 +229,8 @@ static void ieee80211_send_assoc(struct ieee80211_sub_if_data *sdata,
 			9, /* WMM */
 			GFP_KERNEL);
 	if (!skb) {
-		printk(KERN_DEBUG "%s: failed to allocate buffer for assoc "
-		       "frame\n", sdata->name);
+//		printk(KERN_DEBUG "%s: failed to allocate buffer for assoc "
+;
 		return;
 	}
 	skb_reserve(skb, local->hw.extra_tx_headroom);
@@ -429,8 +429,8 @@ ieee80211_direct_probe(struct ieee80211_work *wk)
 
 	wk->probe_auth.tries++;
 	if (wk->probe_auth.tries > IEEE80211_AUTH_MAX_TRIES) {
-		printk(KERN_DEBUG "%s: direct probe to %pM timed out\n",
-		       sdata->name, wk->filter_ta);
+//		printk(KERN_DEBUG "%s: direct probe to %pM timed out\n",
+;
 
 		/*
 		 * Most likely AP is not in the range so remove the
@@ -441,9 +441,9 @@ ieee80211_direct_probe(struct ieee80211_work *wk)
 		return WORK_ACT_TIMEOUT;
 	}
 
-	printk(KERN_DEBUG "%s: direct probe to %pM (try %d/%i)\n",
-	       sdata->name, wk->filter_ta, wk->probe_auth.tries,
-	       IEEE80211_AUTH_MAX_TRIES);
+//	printk(KERN_DEBUG "%s: direct probe to %pM (try %d/%i)\n",
+//	       sdata->name, wk->filter_ta, wk->probe_auth.tries,
+;
 
 	/*
 	 * Direct probe is sent to broadcast address as some APs
@@ -467,8 +467,8 @@ ieee80211_authenticate(struct ieee80211_work *wk)
 
 	wk->probe_auth.tries++;
 	if (wk->probe_auth.tries > IEEE80211_AUTH_MAX_TRIES) {
-		printk(KERN_DEBUG "%s: authentication with %pM"
-		       " timed out\n", sdata->name, wk->filter_ta);
+//		printk(KERN_DEBUG "%s: authentication with %pM"
+;
 
 		/*
 		 * Most likely AP is not in the range so remove the
@@ -479,8 +479,8 @@ ieee80211_authenticate(struct ieee80211_work *wk)
 		return WORK_ACT_TIMEOUT;
 	}
 
-	printk(KERN_DEBUG "%s: authenticate with %pM (try %d)\n",
-	       sdata->name, wk->filter_ta, wk->probe_auth.tries);
+//	printk(KERN_DEBUG "%s: authenticate with %pM (try %d)\n",
+;
 
 	ieee80211_send_auth(sdata, 1, wk->probe_auth.algorithm, wk->ie,
 			    wk->ie_len, wk->filter_ta, NULL, 0, 0);
@@ -500,9 +500,9 @@ ieee80211_associate(struct ieee80211_work *wk)
 
 	wk->assoc.tries++;
 	if (wk->assoc.tries > IEEE80211_ASSOC_MAX_TRIES) {
-		printk(KERN_DEBUG "%s: association with %pM"
-		       " timed out\n",
-		       sdata->name, wk->filter_ta);
+//		printk(KERN_DEBUG "%s: association with %pM"
+//		       " timed out\n",
+;
 
 		/*
 		 * Most likely AP is not in the range so remove the
@@ -514,8 +514,8 @@ ieee80211_associate(struct ieee80211_work *wk)
 		return WORK_ACT_TIMEOUT;
 	}
 
-	printk(KERN_DEBUG "%s: associate with %pM (try %d)\n",
-	       sdata->name, wk->filter_ta, wk->assoc.tries);
+//	printk(KERN_DEBUG "%s: associate with %pM (try %d)\n",
+;
 	ieee80211_send_assoc(sdata, wk);
 
 	wk->timeout = jiffies + IEEE80211_ASSOC_TIMEOUT;
@@ -573,8 +573,8 @@ ieee80211_assoc_beacon_wait(struct ieee80211_work *wk)
 	 * Wait up to one beacon interval ...
 	 * should this be more if we miss one?
 	 */
-	printk(KERN_DEBUG "%s: waiting for beacon from %pM\n",
-	       wk->sdata->name, wk->filter_ta);
+//	printk(KERN_DEBUG "%s: waiting for beacon from %pM\n",
+;
 	wk->timeout = TU_TO_EXP_TIME(wk->assoc.bss->beacon_interval);
 	return WORK_ACT_NONE;
 }
@@ -619,8 +619,8 @@ ieee80211_rx_mgmt_auth(struct ieee80211_work *wk,
 		return WORK_ACT_NONE;
 
 	if (status_code != WLAN_STATUS_SUCCESS) {
-		printk(KERN_DEBUG "%s: %pM denied authentication (status %d)\n",
-		       wk->sdata->name, mgmt->sa, status_code);
+//		printk(KERN_DEBUG "%s: %pM denied authentication (status %d)\n",
+;
 		return WORK_ACT_DONE;
 	}
 
@@ -641,7 +641,7 @@ ieee80211_rx_mgmt_auth(struct ieee80211_work *wk,
 		return WORK_ACT_NONE;
 	}
 
-	printk(KERN_DEBUG "%s: authenticated\n", wk->sdata->name);
+;
 	return WORK_ACT_DONE;
 }
 
@@ -671,10 +671,10 @@ ieee80211_rx_mgmt_assoc_resp(struct ieee80211_work *wk,
 	status_code = le16_to_cpu(mgmt->u.assoc_resp.status_code);
 	aid = le16_to_cpu(mgmt->u.assoc_resp.aid);
 
-	printk(KERN_DEBUG "%s: RX %sssocResp from %pM (capab=0x%x "
-	       "status=%d aid=%d)\n",
-	       sdata->name, reassoc ? "Rea" : "A", mgmt->sa,
-	       capab_info, status_code, (u16)(aid & ~(BIT(15) | BIT(14))));
+//	printk(KERN_DEBUG "%s: RX %sssocResp from %pM (capab=0x%x "
+//	       "status=%d aid=%d)\n",
+//	       sdata->name, reassoc ? "Rea" : "A", mgmt->sa,
+;
 
 	pos = mgmt->u.assoc_resp.variable;
 	ieee802_11_parse_elems(pos, len - (pos - (u8 *) mgmt), &elems);
@@ -685,7 +685,7 @@ ieee80211_rx_mgmt_assoc_resp(struct ieee80211_work *wk,
 		u32 tu, ms;
 		tu = get_unaligned_le32(elems.timeout_int + 1);
 		ms = tu * 1024 / 1000;
-		printk(KERN_DEBUG "%s: %pM rejected association temporarily; "
+;
 		       "comeback duration %u TU (%u ms)\n",
 		       sdata->name, mgmt->sa, tu, ms);
 		wk->timeout = jiffies + msecs_to_jiffies(ms);
@@ -695,10 +695,10 @@ ieee80211_rx_mgmt_assoc_resp(struct ieee80211_work *wk,
 	}
 
 	if (status_code != WLAN_STATUS_SUCCESS)
-		printk(KERN_DEBUG "%s: %pM denied association (code=%d)\n",
-		       sdata->name, mgmt->sa, status_code);
+//		printk(KERN_DEBUG "%s: %pM denied association (code=%d)\n",
+;
 	else
-		printk(KERN_DEBUG "%s: associated\n", sdata->name);
+;
 
 	return WORK_ACT_DONE;
 }
@@ -724,7 +724,7 @@ ieee80211_rx_mgmt_probe_resp(struct ieee80211_work *wk,
 	if (baselen > len)
 		return WORK_ACT_NONE;
 
-	printk(KERN_DEBUG "%s: direct probe responded\n", sdata->name);
+;
 	return WORK_ACT_DONE;
 }
 
@@ -743,7 +743,7 @@ ieee80211_rx_mgmt_beacon(struct ieee80211_work *wk,
 	if (len < 24 + 12)
 		return WORK_ACT_NONE;
 
-	printk(KERN_DEBUG "%s: beacon received\n", sdata->name);
+;
 	return WORK_ACT_DONE;
 }
 

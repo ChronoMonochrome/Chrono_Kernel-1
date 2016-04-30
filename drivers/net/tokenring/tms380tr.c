@@ -269,8 +269,8 @@ int tms380tr_open(struct net_device *dev)
 	err = tms380tr_chipset_init(dev);
   	if(err)
 	{
-		printk(KERN_INFO "%s: Chipset initialization error\n", 
-			dev->name);
+//		printk(KERN_INFO "%s: Chipset initialization error\n", 
+;
 		return -1;
 	}
 
@@ -279,8 +279,8 @@ int tms380tr_open(struct net_device *dev)
 	tp->timer.data		= (unsigned long)dev;
 	add_timer(&tp->timer);
 
-	printk(KERN_DEBUG "%s: Adapter RAM size: %dK\n", 
-	       dev->name, tms380tr_read_ptr(dev));
+//	printk(KERN_DEBUG "%s: Adapter RAM size: %dK\n", 
+;
 
 	tms380tr_enable_interrupts(dev);
 	tms380tr_open_adapter(dev);
@@ -340,25 +340,25 @@ static int tms380tr_chipset_init(struct net_device *dev)
 	tms380tr_init_net_local(dev);
 
 	if(tms380tr_debug > 3)
-		printk(KERN_DEBUG "%s: Resetting adapter...\n", dev->name);
+;
 	err = tms380tr_reset_adapter(dev);
 	if(err < 0)
 		return -1;
 
 	if(tms380tr_debug > 3)
-		printk(KERN_DEBUG "%s: Bringup diags...\n", dev->name);
+;
 	err = tms380tr_bringup_diags(dev);
 	if(err < 0)
 		return -1;
 
 	if(tms380tr_debug > 3)
-		printk(KERN_DEBUG "%s: Init adapter...\n", dev->name);
+;
 	err = tms380tr_init_adapter(dev);
 	if(err < 0)
 		return -1;
 
 	if(tms380tr_debug > 3)
-		printk(KERN_DEBUG "%s: Done!\n", dev->name);
+;
 	return 0;
 }
 
@@ -617,7 +617,7 @@ static netdev_tx_t tms380tr_hardware_send_packet(struct sk_buff *skb,
 	spin_lock_irqsave(&tp->lock, flags);
 	if(tp->TplFree->NextTPLPtr->BusyFlag)  { /* No free TPL */
 		if (tms380tr_debug > 0)
-			printk(KERN_DEBUG "%s: No free TPL\n", dev->name);
+;
 		spin_unlock_irqrestore(&tp->lock, flags);
 		return NETDEV_TX_BUSY;
 	}
@@ -746,7 +746,7 @@ irqreturn_t tms380tr_interrupt(int irq, void *dev_id)
 		irq_type &= STS_IRQ_MASK;
 
 		if(!tms380tr_chk_ssb(tp, irq_type)) {
-			printk(KERN_DEBUG "%s: DATA LATE occurred\n", dev->name);
+;
 			break;
 		}
 
@@ -792,19 +792,19 @@ irqreturn_t tms380tr_interrupt(int irq, void *dev_id)
 			break;
 
 		case STS_IRQ_LLC_STATUS:
-			printk(KERN_DEBUG "tms380tr: unexpected LLC status IRQ\n");
+;
 			break;
 			
 		case STS_IRQ_TIMER:
-			printk(KERN_DEBUG "tms380tr: unexpected Timer IRQ\n");
+;
 			break;
 			
 		case STS_IRQ_RECEIVE_PENDING:
-			printk(KERN_DEBUG "tms380tr: unexpected Receive Pending IRQ\n");
+;
 			break;
 			
 		default:
-			printk(KERN_DEBUG "Unknown Token Ring IRQ (0x%04x)\n", irq_type);
+;
 			break;
 		}
 
@@ -947,20 +947,20 @@ static void tms380tr_cmd_status_irq(struct net_device *dev)
 		else 	/* The adapter did not open. */
 		{
 	    		if(ssb_parm_0 & NODE_ADDR_ERROR)
-				printk(KERN_INFO "%s: Node address error\n",
-					dev->name);
+//				printk(KERN_INFO "%s: Node address error\n",
+;
 	    		if(ssb_parm_0 & LIST_SIZE_ERROR)
-				printk(KERN_INFO "%s: List size error\n",
-					dev->name);
+//				printk(KERN_INFO "%s: List size error\n",
+;
 	    		if(ssb_parm_0 & BUF_SIZE_ERROR)
-				printk(KERN_INFO "%s: Buffer size error\n",
-					dev->name);
+//				printk(KERN_INFO "%s: Buffer size error\n",
+;
 	    		if(ssb_parm_0 & TX_BUF_COUNT_ERROR)
-				printk(KERN_INFO "%s: Tx buffer count error\n",
-					dev->name);
+//				printk(KERN_INFO "%s: Tx buffer count error\n",
+;
 	    		if(ssb_parm_0 & INVALID_OPEN_OPTION)
-				printk(KERN_INFO "%s: Invalid open option\n",
-					dev->name);
+//				printk(KERN_INFO "%s: Invalid open option\n",
+;
 	    		if(ssb_parm_0 & OPEN_ERROR)
 			{
 				/* Show the open phase. */
@@ -970,7 +970,7 @@ static void tms380tr_cmd_status_irq(struct net_device *dev)
 						if(!tp->LobeWireFaultLogged)
 						{
 							tp->LobeWireFaultLogged = 1;
-							printk(KERN_INFO "%s: %s Lobe wire fault (check cable !).\n", dev->name, open_err);
+;
 		    				}
 						tp->ReOpenInProgress	= 1;
 						tp->AdapterOpenFlag 	= 0;
@@ -979,27 +979,27 @@ static void tms380tr_cmd_status_irq(struct net_device *dev)
 						return;
 
 					case PHYSICAL_INSERTION:
-						printk(KERN_INFO "%s: %s Physical insertion.\n", dev->name, open_err);
+;
 						break;
 
 					case ADDRESS_VERIFICATION:
-						printk(KERN_INFO "%s: %s Address verification.\n", dev->name, open_err);
+;
 						break;
 
 					case PARTICIPATION_IN_RING_POLL:
-						printk(KERN_INFO "%s: %s Participation in ring poll.\n", dev->name, open_err);
+;
 						break;
 
 					case REQUEST_INITIALISATION:
-						printk(KERN_INFO "%s: %s Request initialisation.\n", dev->name, open_err);
+;
 						break;
 
 					case FULLDUPLEX_CHECK:
-						printk(KERN_INFO "%s: %s Full duplex check.\n", dev->name, open_err);
+;
 						break;
 
 					default:
-						printk(KERN_INFO "%s: %s Unknown open phase\n", dev->name, open_err);
+;
 						break;
 				}
 
@@ -1007,61 +1007,61 @@ static void tms380tr_cmd_status_irq(struct net_device *dev)
 				switch(ssb_parm_0 & OPEN_ERROR_CODES_MASK)
 				{
 					case OPEN_FUNCTION_FAILURE:
-						printk(KERN_INFO "%s: %s OPEN_FUNCTION_FAILURE", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_FUNCTION_FAILURE;
 						break;
 
 					case OPEN_SIGNAL_LOSS:
-						printk(KERN_INFO "%s: %s OPEN_SIGNAL_LOSS\n", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_SIGNAL_LOSS;
 						break;
 
 					case OPEN_TIMEOUT:
-						printk(KERN_INFO "%s: %s OPEN_TIMEOUT\n", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_TIMEOUT;
 						break;
 
 					case OPEN_RING_FAILURE:
-						printk(KERN_INFO "%s: %s OPEN_RING_FAILURE\n", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_RING_FAILURE;
 						break;
 
 					case OPEN_RING_BEACONING:
-						printk(KERN_INFO "%s: %s OPEN_RING_BEACONING\n", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_RING_BEACONING;
 						break;
 
 					case OPEN_DUPLICATE_NODEADDR:
-						printk(KERN_INFO "%s: %s OPEN_DUPLICATE_NODEADDR\n", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_DUPLICATE_NODEADDR;
 						break;
 
 					case OPEN_REQUEST_INIT:
-						printk(KERN_INFO "%s: %s OPEN_REQUEST_INIT\n", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_REQUEST_INIT;
 						break;
 
 					case OPEN_REMOVE_RECEIVED:
-						printk(KERN_INFO "%s: %s OPEN_REMOVE_RECEIVED", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_REMOVE_RECEIVED;
 						break;
 
 					case OPEN_FULLDUPLEX_SET:
-						printk(KERN_INFO "%s: %s OPEN_FULLDUPLEX_SET\n", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_FULLDUPLEX_SET;
 						break;
 
 					default:
-						printk(KERN_INFO "%s: %s Unknown open err code", dev->name, code_err);
+;
 						tp->LastOpenStatus =
 							OPEN_FUNCTION_FAILURE;
 						break;
@@ -1254,8 +1254,8 @@ static int tms380tr_reset_adapter(struct net_device *dev)
 	const struct firmware *fw_entry = NULL;
 
 	if (request_firmware(&fw_entry, "tms380tr.bin", tp->pdev) != 0) {
-		printk(KERN_ALERT "%s: firmware %s is missing, cannot start.\n",
-			dev->name, "tms380tr.bin");
+//		printk(KERN_ALERT "%s: firmware %s is missing, cannot start.\n",
+;
 		return -1;
 	}
 
@@ -1327,7 +1327,7 @@ static int tms380tr_reset_adapter(struct net_device *dev)
 	} while(count == 0);
 
 	release_firmware(fw_entry);
-	printk(KERN_INFO "%s: Adapter Download Failed\n", dev->name);
+;
 	return -1;
 }
 
@@ -1351,7 +1351,7 @@ static int tms380tr_bringup_diags(struct net_device *dev)
 	do {
 		retry_cnt--;
 		if(tms380tr_debug > 3)
-			printk(KERN_DEBUG "BUD-Status: ");
+;
 		loop_cnt = BUD_MAX_LOOPCNT;	/* maximum: three seconds*/
 		do {			/* Inspect BUD results */
 			loop_cnt--;
@@ -1360,7 +1360,7 @@ static int tms380tr_bringup_diags(struct net_device *dev)
 			Status &= STS_MASK;
 
 			if(tms380tr_debug > 3)
-				printk(KERN_DEBUG " %04X\n", Status);
+;
 			/* BUD successfully completed */
 			if(Status == STS_INITIALIZE)
 				return 1;
@@ -1371,8 +1371,8 @@ static int tms380tr_bringup_diags(struct net_device *dev)
 		/* Error preventing completion of BUD */
 		if(retry_cnt > 0)
 		{
-			printk(KERN_INFO "%s: Adapter Software Reset.\n", 
-				dev->name);
+//			printk(KERN_INFO "%s: Adapter Software Reset.\n", 
+;
 			tms380tr_exec_sifcmd(dev, EXEC_SOFT_RESET);
 			tms380tr_wait(HALF_SECOND);
 		}
@@ -1380,15 +1380,15 @@ static int tms380tr_bringup_diags(struct net_device *dev)
 
 	Status = SIFREADW(SIFSTS);
 	
-	printk(KERN_INFO "%s: Hardware error\n", dev->name);
+;
 	/* Hardware error occurred! */
 	Status &= 0x001f;
 	if (Status & 0x0010)
-		printk(KERN_INFO "%s: BUD Error: Timeout\n", dev->name);
+;
 	else if ((Status & 0x000f) > 6)
-		printk(KERN_INFO "%s: BUD Error: Illegal Failure\n", dev->name);
+;
 	else
-		printk(KERN_INFO "%s: Bring Up Diagnostics Error (%04X) occurred\n", dev->name, Status & 0x000f);
+;
 
 	return -1;
 }
@@ -1417,10 +1417,10 @@ static int tms380tr_init_adapter(struct net_device *dev)
 
 	if(tms380tr_debug > 3)
 	{
-		printk(KERN_DEBUG "%s: buffer (real): %lx\n", dev->name, (long) &tp->scb);
+;
 		printk(KERN_DEBUG "%s: buffer (virt): %lx\n", dev->name, (long) ((char *)&tp->scb - (char *)tp) + (long) tp->dmabuffer);
-		printk(KERN_DEBUG "%s: buffer (DMA) : %lx\n", dev->name, (long) tp->dmabuffer);
-		printk(KERN_DEBUG "%s: buffer (tp)  : %lx\n", dev->name, (long) tp);
+;
+;
 	}
 	/* Maximum: three initialization retries */
 	retry_cnt = INIT_MAX_RETRIES;
@@ -1462,7 +1462,7 @@ static int tms380tr_init_adapter(struct net_device *dev)
 			do {	/* Test if contents of SCB is valid */
 				if(SCB_Test[i] != *(cb_ptr + i))
 				{
-					printk(KERN_INFO "%s: DMA failed\n", dev->name);
+;
 					/* DMA data error: wrong data in SCB */
 					return -1;
 				}
@@ -1487,7 +1487,7 @@ static int tms380tr_init_adapter(struct net_device *dev)
 				Status = SIFREADW(SIFSTS);
 				Status &= STS_ERROR_MASK;
 				/* ShowInitialisationErrorCode(Status); */
-				printk(KERN_INFO "%s: Status error: %d\n", dev->name, Status);
+;
 				return -1; /* Unrecoverable error */
 			}
 			else
@@ -1502,7 +1502,7 @@ static int tms380tr_init_adapter(struct net_device *dev)
 		}
 	} while(retry_cnt > 0);
 
-	printk(KERN_INFO "%s: Retry exceeded\n", dev->name);
+;
 	return -1;
 }
 
@@ -1653,7 +1653,7 @@ static void tms380tr_chk_outstanding_cmds(struct net_device *dev)
 									}
 									else
 									{
-										printk(KERN_WARNING "CheckForOutstandingCommand: unknown Command\n");
+;
 										tp->CMDqueue = 0;
 										return;
 									}
@@ -1689,56 +1689,56 @@ static void tms380tr_ring_status_irq(struct net_device *dev)
 	/* First: fill up statistics */
 	if(tp->ssb.Parm[0] & SIGNAL_LOSS)
 	{
-		printk(KERN_INFO "%s: Signal Loss\n", dev->name);
+;
 		tp->MacStat.line_errors++;
 	}
 
 	/* Adapter is closed, but initialized */
 	if(tp->ssb.Parm[0] & LOBE_WIRE_FAULT)
 	{
-		printk(KERN_INFO "%s: Lobe Wire Fault, Reopen Adapter\n", 
-			dev->name);
+//		printk(KERN_INFO "%s: Lobe Wire Fault, Reopen Adapter\n", 
+;
 		tp->MacStat.line_errors++;
 	}
 
 	if(tp->ssb.Parm[0] & RING_RECOVERY)
-		printk(KERN_INFO "%s: Ring Recovery\n", dev->name);
+;
 
 	/* Counter overflow: read error log */
 	if(tp->ssb.Parm[0] & COUNTER_OVERFLOW)
 	{
-		printk(KERN_INFO "%s: Counter Overflow\n", dev->name);
+;
 		tms380tr_exec_cmd(dev, OC_READ_ERROR_LOG);
 	}
 
 	/* Adapter is closed, but initialized */
 	if(tp->ssb.Parm[0] & REMOVE_RECEIVED)
-		printk(KERN_INFO "%s: Remove Received, Reopen Adapter\n", 
-			dev->name);
+//		printk(KERN_INFO "%s: Remove Received, Reopen Adapter\n", 
+;
 
 	/* Adapter is closed, but initialized */
 	if(tp->ssb.Parm[0] & AUTO_REMOVAL_ERROR)
-		printk(KERN_INFO "%s: Auto Removal Error, Reopen Adapter\n", 
-			dev->name);
+//		printk(KERN_INFO "%s: Auto Removal Error, Reopen Adapter\n", 
+;
 
 	if(tp->ssb.Parm[0] & HARD_ERROR)
-		printk(KERN_INFO "%s: Hard Error\n", dev->name);
+;
 
 	if(tp->ssb.Parm[0] & SOFT_ERROR)
-		printk(KERN_INFO "%s: Soft Error\n", dev->name);
+;
 
 	if(tp->ssb.Parm[0] & TRANSMIT_BEACON)
-		printk(KERN_INFO "%s: Transmit Beacon\n", dev->name);
+;
 
 	if(tp->ssb.Parm[0] & SINGLE_STATION)
-		printk(KERN_INFO "%s: Single Station\n", dev->name);
+;
 
 	/* Check if adapter has been closed */
 	if(tp->ssb.Parm[0] & ADAPTER_CLOSED)
 	{
-		printk(KERN_INFO "%s: Adapter closed (Reopening)," 
-			"CurrentRingStat %x\n",
-			dev->name, tp->CurrentRingStatus);
+//		printk(KERN_INFO "%s: Adapter closed (Reopening)," 
+//			"CurrentRingStat %x\n",
+;
 		tp->AdapterOpenFlag = 0;
 		tms380tr_open_adapter(dev);
 	}
@@ -1767,129 +1767,129 @@ static void tms380tr_chk_irq(struct net_device *dev)
 
 	if(tms380tr_debug > 3)
 	{
-		printk(KERN_DEBUG "%s: AdapterCheckBlock: ", dev->name);
+;
 		for (i = 0; i < 4; i++)
-			printk("%04X", AdapterCheckBlock[i]);
-		printk("\n");
+;
+;
 	}
 
 	switch(AdapterCheckBlock[0])
 	{
 		case DIO_PARITY:
-			printk(KERN_INFO "%s: DIO parity error\n", dev->name);
+;
 			break;
 
 		case DMA_READ_ABORT:
-			printk(KERN_INFO "%s DMA read operation aborted:\n",
-				dev->name);
+//			printk(KERN_INFO "%s DMA read operation aborted:\n",
+;
 			switch (AdapterCheckBlock[1])
 			{
 				case 0:
-					printk(KERN_INFO "Timeout\n");
-					printk(KERN_INFO "Address: %04X %04X\n",
-						AdapterCheckBlock[2],
-						AdapterCheckBlock[3]);
+;
+//					printk(KERN_INFO "Address: %04X %04X\n",
+//						AdapterCheckBlock[2],
+;
 					break;
 
 				case 1:
-					printk(KERN_INFO "Parity error\n");
-					printk(KERN_INFO "Address: %04X %04X\n",
-						AdapterCheckBlock[2], 
-						AdapterCheckBlock[3]);
+;
+//					printk(KERN_INFO "Address: %04X %04X\n",
+//						AdapterCheckBlock[2], 
+;
 					break;
 
 				case 2: 
-					printk(KERN_INFO "Bus error\n");
-					printk(KERN_INFO "Address: %04X %04X\n",
-						AdapterCheckBlock[2], 
-						AdapterCheckBlock[3]);
+;
+//					printk(KERN_INFO "Address: %04X %04X\n",
+//						AdapterCheckBlock[2], 
+;
 					break;
 
 				default:
-					printk(KERN_INFO "Unknown error.\n");
+;
 					break;
 			}
 			break;
 
 		case DMA_WRITE_ABORT:
-			printk(KERN_INFO "%s: DMA write operation aborted:\n",
-				dev->name);
+//			printk(KERN_INFO "%s: DMA write operation aborted:\n",
+;
 			switch (AdapterCheckBlock[1])
 			{
 				case 0: 
-					printk(KERN_INFO "Timeout\n");
-					printk(KERN_INFO "Address: %04X %04X\n",
-						AdapterCheckBlock[2], 
-						AdapterCheckBlock[3]);
+;
+//					printk(KERN_INFO "Address: %04X %04X\n",
+//						AdapterCheckBlock[2], 
+;
 					break;
 
 				case 1: 
-					printk(KERN_INFO "Parity error\n");
-					printk(KERN_INFO "Address: %04X %04X\n",
-						AdapterCheckBlock[2], 
-						AdapterCheckBlock[3]);
+;
+//					printk(KERN_INFO "Address: %04X %04X\n",
+//						AdapterCheckBlock[2], 
+;
 					break;
 
 				case 2: 
-					printk(KERN_INFO "Bus error\n");
-					printk(KERN_INFO "Address: %04X %04X\n",
-						AdapterCheckBlock[2], 
-						AdapterCheckBlock[3]);
+;
+//					printk(KERN_INFO "Address: %04X %04X\n",
+//						AdapterCheckBlock[2], 
+;
 					break;
 
 				default:
-					printk(KERN_INFO "Unknown error.\n");
+;
 					break;
 			}
 			break;
 
 		case ILLEGAL_OP_CODE:
-			printk(KERN_INFO "%s: Illegal operation code in firmware\n",
-				dev->name);
+//			printk(KERN_INFO "%s: Illegal operation code in firmware\n",
+;
 			/* Parm[0-3]: adapter internal register R13-R15 */
 			break;
 
 		case PARITY_ERRORS:
-			printk(KERN_INFO "%s: Adapter internal bus parity error\n",
-				dev->name);
+//			printk(KERN_INFO "%s: Adapter internal bus parity error\n",
+;
 			/* Parm[0-3]: adapter internal register R13-R15 */
 			break;
 
 		case RAM_DATA_ERROR:
-			printk(KERN_INFO "%s: RAM data error\n", dev->name);
+;
 			/* Parm[0-1]: MSW/LSW address of RAM location. */
 			break;
 
 		case RAM_PARITY_ERROR:
-			printk(KERN_INFO "%s: RAM parity error\n", dev->name);
+;
 			/* Parm[0-1]: MSW/LSW address of RAM location. */
 			break;
 
 		case RING_UNDERRUN:
-			printk(KERN_INFO "%s: Internal DMA underrun detected\n",
-				dev->name);
+//			printk(KERN_INFO "%s: Internal DMA underrun detected\n",
+;
 			break;
 
 		case INVALID_IRQ:
-			printk(KERN_INFO "%s: Unrecognized interrupt detected\n",
-				dev->name);
+//			printk(KERN_INFO "%s: Unrecognized interrupt detected\n",
+;
 			/* Parm[0-3]: adapter internal register R13-R15 */
 			break;
 
 		case INVALID_ERROR_IRQ:
-			printk(KERN_INFO "%s: Unrecognized error interrupt detected\n",
-				dev->name);
+//			printk(KERN_INFO "%s: Unrecognized error interrupt detected\n",
+;
 			/* Parm[0-3]: adapter internal register R13-R15 */
 			break;
 
 		case INVALID_XOP:
-			printk(KERN_INFO "%s: Unrecognized XOP request detected\n",
-				dev->name);
+//			printk(KERN_INFO "%s: Unrecognized XOP request detected\n",
+;
 			/* Parm[0-3]: adapter internal register R13-R15 */
 			break;
 
 		default:
-			printk(KERN_INFO "%s: Unknown status", dev->name);
+;
 			break;
 	}
 
@@ -1978,7 +1978,7 @@ static void tms380tr_cancel_tx_queue(struct net_local* tp)
 		tms380tr_write_tpl_status(tpl, 0);	/* Clear VALID bit */
 		tpl->BusyFlag = 0;		/* "free" TPL */
 
-		printk(KERN_INFO "Cancel tx (%08lXh).\n", (unsigned long)tpl);
+;
 		if (tpl->DMABuff)
 			dma_unmap_single(tp->pdev, tpl->DMABuff, tpl->Skb->len, DMA_TO_DEVICE);
 		dev_kfree_skb_any(tpl->Skb);
@@ -2024,15 +2024,15 @@ static void tms380tr_tx_status_irq(struct net_device *dev)
 
 			if((HighAc != LowAc) || (HighAc == AC_NOT_RECOGNIZED))
 			{
-				printk(KERN_DEBUG "%s: (DA=%08lX not recognized)\n",
-					dev->name,
-					*(unsigned long *)&tpl->MData[2+2]);
+//				printk(KERN_DEBUG "%s: (DA=%08lX not recognized)\n",
+//					dev->name,
+;
 			}
 			else
 			{
 				if(tms380tr_debug > 3)
-					printk(KERN_DEBUG "%s: Directed frame tx'd\n", 
-						dev->name);
+//					printk(KERN_DEBUG "%s: Directed frame tx'd\n", 
+;
 			}
 		}
 		else
@@ -2040,8 +2040,8 @@ static void tms380tr_tx_status_irq(struct net_device *dev)
 			if(!DIRECTED_FRAME(tpl))
 			{
 				if(tms380tr_debug > 3)
-					printk(KERN_DEBUG "%s: Broadcast frame tx'd\n",
-						dev->name);
+//					printk(KERN_DEBUG "%s: Broadcast frame tx'd\n",
+;
 			}
 		}
 
@@ -2115,8 +2115,8 @@ static void tms380tr_rcv_status_irq(struct net_device *dev)
 			tms380tr_update_rcv_stats(tp,ReceiveDataPtr,Length);
 			  
 			if(tms380tr_debug > 3)
-				printk(KERN_DEBUG "%s: Packet Length %04X (%d)\n",
-					dev->name, Length, Length);
+//				printk(KERN_DEBUG "%s: Packet Length %04X (%d)\n",
+;
 			  
 			/* Indicate the received frame to system the
 			 * adapter does the Source-Routing padding for 
@@ -2250,7 +2250,7 @@ static int tms380tr_set_mac_address(struct net_device *dev, void *addr)
 	struct sockaddr *saddr = addr;
 	
 	if (tp->AdapterOpenFlag || tp->AdapterVirtOpenFlag) {
-		printk(KERN_WARNING "%s: Cannot set MAC/LAA address while card is open\n", dev->name);
+;
 		return -EIO;
 	}
 	memcpy(dev->dev_addr, saddr->sa_data, dev->addr_len);
@@ -2267,9 +2267,9 @@ static void tms380tr_dump(unsigned char *Data, int length)
 
 	for (i = 0, j = 0; i < length / 8; i++, j += 8)
 	{
-		printk(KERN_DEBUG "%02x %02x %02x %02x %02x %02x %02x %02x\n",
-		       Data[j+0],Data[j+1],Data[j+2],Data[j+3],
-		       Data[j+4],Data[j+5],Data[j+6],Data[j+7]);
+//		printk(KERN_DEBUG "%02x %02x %02x %02x %02x %02x %02x %02x\n",
+//		       Data[j+0],Data[j+1],Data[j+2],Data[j+3],
+;
 	}
 }
 #endif
@@ -2311,8 +2311,8 @@ int tmsdev_init(struct net_device *dev, struct device *pdev)
 	if (tms_local->dmabuffer + sizeof(struct net_local) > 
 			tms_local->dmalimit)
 	{
-		printk(KERN_INFO "%s: Memory not accessible for DMA\n",
-			dev->name);
+//		printk(KERN_INFO "%s: Memory not accessible for DMA\n",
+;
 		tmsdev_term(dev);
 		return -ENOMEM;
 	}
@@ -2336,7 +2336,7 @@ static struct module *TMS380_module = NULL;
 
 int init_module(void)
 {
-	printk(KERN_DEBUG "%s", version);
+;
 	
 	TMS380_module = &__this_module;
 	return 0;

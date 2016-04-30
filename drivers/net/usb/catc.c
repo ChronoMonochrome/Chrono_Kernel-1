@@ -896,9 +896,9 @@ static int catc_probe(struct usb_interface *intf, const struct usb_device_id *id
 		f5u011_rxmode(catc, catc->rxmode);
 	}
 	dbg("Init done.");
-	printk(KERN_INFO "%s: %s USB Ethernet at usb-%s-%s, %pM.\n",
-	       netdev->name, (catc->is_f5u011) ? "Belkin F5U011" : "CATC EL1210A NetMate",
-	       usbdev->bus->bus_name, usbdev->devpath, netdev->dev_addr);
+//	printk(KERN_INFO "%s: %s USB Ethernet at usb-%s-%s, %pM.\n",
+//	       netdev->name, (catc->is_f5u011) ? "Belkin F5U011" : "CATC EL1210A NetMate",
+;
 	usb_set_intfdata(intf, catc);
 
 	SET_NETDEV_DEV(netdev, &intf->dev);
@@ -953,8 +953,8 @@ static int __init catc_init(void)
 {
 	int result = usb_register(&catc_driver);
 	if (result == 0)
-		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-		       DRIVER_DESC "\n");
+//		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return result;
 }
 
