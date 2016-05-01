@@ -660,6 +660,9 @@ static int __init parse_tag_revision(const struct tag *tag)
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
+unsigned int bootmode = 0;
+EXPORT_SYMBOL(bootmode);
+
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
 	char buf[50];
@@ -686,6 +689,10 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	sprintf(tmp, " vmalloc=%d", CONFIG_VMALLOC_SIZE_MB);
 	strlcat(default_command_line, tmp, COMMAND_LINE_SIZE);
 #endif /* CONFIG_VMALLOC_SIZE_MB */
+
+        if (unlikely(!bootmode &&
+		 (strstr(default_command_line, "bootmode=2") != NULL)) == true)
+               		bootmode = 2;
 
 	return 0;
 }
