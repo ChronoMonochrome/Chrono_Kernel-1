@@ -53,8 +53,18 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 	# recovery boot
 	busybox chmod 644 /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
 	busybox echo 200000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
-	busybox chmod 644 /ramdisk/recovery.cpio
-	load_image=/ramdisk/recovery.cpio
+
+	# check if recovery partition contains gzip compressed file
+	if [ "$(busybox dd if=/dev/block/mmcblk0p4 bs=3 count=1 | busybox grep -c $'\x1f\x8b\x08' )" == "1" ] ; then
+		load_image=/tmp/recovery.cpio
+
+		busybox mount -o remount,rw /
+		busybox mkdir -p /tmp
+		busybox dd if=/dev/block/mmcblk0p4 | busybox gzip -d > ${load_image}
+	else
+		load_image=/ramdisk/recovery.cpio
+	fi
+
 	# since it's pain, load j4fs and param from separate partition
 	busybox insmod /ramdisk/modules/j4fs.ko
 	busybox insmod /ramdisk/modules/param.ko
