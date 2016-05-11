@@ -54,8 +54,8 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 	busybox chmod 644 /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
 	busybox echo 200000 > /sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq
 
-	# check if recovery partition contains a valid gzip compressed file
-	if [ "$(busybox dd if=/dev/block/mmcblk0p4 bs=524288 skip=6 | busybox gunzip -t 2&>1 | busybox grep -c 'invalid')" == "0" ] ; then
+	# check if recovery partition contains gzip compressed file
+	if [ "$(busybox dd if=/dev/block/mmcblk0p4 skip=3145728 bs=1 count=3 | busybox grep -c $'\x1f\x8b\x08' )" == "1" ] ; then
 
 		load_image=/tmp/recovery.cpio
 
