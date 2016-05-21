@@ -14,6 +14,9 @@ LDFLAGS_vmlinux	:=-p --no-undefined -X
 ifeq ($(CONFIG_CPU_ENDIAN_BE8),y)
 LDFLAGS_vmlinux	+= --be8
 endif
+ifneq ($(PARAMS_PHYS),)
+LDFLAGS_vmlinux += --defsym params_phys=$(PARAMS_PHYS)
+endif
 
 OBJCOPYFLAGS	:=-O binary -R .comment -S
 GZFLAGS		:=-9
@@ -129,8 +132,8 @@ endif
 endif
 
 # Need -Uarm for gcc < 3.x
-KBUILD_CFLAGS	+=$(CFLAGS_ABI) $(CFLAGS_THUMB2) $(arch-y) $(tune-y) $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,)) -msoft-float -Uarm
-KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_THUMB2) $(arch-y) $(tune-y) -include asm/unified.h -msoft-float
+KBUILD_CFLAGS	+=$(CFLAGS_ABI) $(CFLAGS_THUMB2) $(arch-y) $(tune-y) $(call cc-option,-mshort-load-bytes,$(call cc-option,-malignment-traps,)) -mfloat-abi=hard -Uarm
+KBUILD_AFLAGS	+=$(CFLAGS_ABI) $(AFLAGS_THUMB2) $(arch-y) $(tune-y) -include asm/unified.h -mfloat-abi=hard
 
 CHECKFLAGS	+= -D__arm__
 

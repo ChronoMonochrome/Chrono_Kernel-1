@@ -4,6 +4,8 @@ SUBLEVEL = 101
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
+CROSS_COMPILE?=$(HOME)/armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
+
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
 # More info can be located in ./README
@@ -246,8 +248,14 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -Ofast -fno-tree-vectorize  -fomit-frame-pointer -pipe
-HOSTCXXFLAGS = -Ofast -fno-tree-vectorize -pipe
+HOSTCFLAGS  := -Wno-missing-prototypes -Wno-strict-prototypes -O2 -fomit-frame-pointer -std=gnu89 -pipe
+
+HOSTCXXFLAGS := -O2 -pipe
+
+ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
+HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
+		-Wno-missing-field-initializers -fno-delete-null-pointer-checks
+endif
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -329,12 +337,16 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 
-AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld
-CC		= $(CROSS_COMPILE)gcc
-CPP		= $(CC) -E
-AR		= $(CROSS_COMPILE)ar
-NM		= $(CROSS_COMPILE)nm
+ifneq ("$(USE_CCACHE)", "")
+  CCACHE=ccache
+endif
+
+AS		= $(CCACHE) $(CROSS_COMPILE)as
+LD		= $(CCACHE) $(CROSS_COMPILE)ld
+CC		= $(CCACHE) $(CROSS_COMPILE)gcc
+CPP		= $(CCACHE) $(CC) -E
+AR		= $(CCACHE) $(CROSS_COMPILE)ar
+NM		= $(CCACHE) $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
 OBJDUMP		= $(CROSS_COMPILE)objdump
@@ -348,12 +360,12 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = -fno-pic
+CFLAGS_MODULE   = -pipe -fno-lto
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -D__linux__
+CFLAGS_KERNEL	=
 AFLAGS_KERNEL	=
-CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
+CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -pipe
 
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
@@ -361,72 +373,51 @@ CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
 LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
                    -Iarch/$(hdr-arch)/include/generated -Iinclude \
                    $(if $(KBUILD_SRC), -I$(srctree)/include) \
-                   -include include/generated/autoconf.h
+                   -include $(srctree)/include/linux/kconfig.h
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing \
-                   -fno-common \
-		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
-		   -funsafe-math-optimizations \
-		   -fno-tree-vectorize \
-		   -fno-inline-functions \
-                   -pipe \
-                   -mthumb \
-		   -march=armv7-a \
-		   -mtune=cortex-a9 \
-		   -mfloat-abi=softfp \
-		   -mfpu=neon-fp16 \
-		   -mvectorize-with-neon-double \
-		   -DNDEBUG \
-		   -fsection-anchors \
-		   -funsafe-loop-optimizations \
-		   -fivopts \
-		   -fvect-cost-model=unlimited \
-		   -fuse-linker-plugin \
-		   -ffat-lto-objects \
-		   -fuse-ld=gold \
-		   -funroll-loops \
-		   -funswitch-loops \
-		   -frename-registers \
-		   -fgcse-sm \
-		   -fgcse-las \
-		   -fgcse-after-reload \
-		   -fdevirtualize-speculatively \
-		   -fira-region=all \
-                   -fsched-pressure \
-		   -fsched-spec-load \
- 		   -fsched-spec-load-dangerous \
-		   -fweb \
-		   -ftracer \
-		   -fipa-pta \
-                   -fno-check-data-deps \
-                   -ftree-loop-distribution \
-		   -ftree-loop-if-convert \
-		   -fmodulo-sched \
-		   -fmodulo-sched-allow-regmoves \
-                   -ffunction-sections \
-                   -fdata-sections \
-                   -fomit-frame-pointer \
-                   -Wno-error=unused-parameter \
-                   -Wno-error=unused-but-set-variable \
-                   -Wno-error=maybe-uninitialized \
-		   -fno-keep-static-consts \
-		   -fmerge-all-constants \
-		  --param ggc-min-expand=70 \
- 		  --param ggc-min-heapsize=524288 \
- 		  --param max-reload-search-insns=200 \
- 		  --param max-cselib-memory-locations=1000 \
- 		  --param max-sched-ready-insns=200 \
- 		  --param loop-invariant-max-bbs-in-loop="50000"
+KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-strict-prototypes \
+		  -fno-common \
+		  -Werror-implicit-function-declaration \
+		  -Wno-format-security \
+		  -fno-delete-null-pointer-checks \
+		  -marm \
+		  -march=armv7-a \
+		  -mtune=cortex-a9 \
+		  -mcpu=cortex-a9 \
+		  -mfpu=vfpv3 \
+		  -mfloat-abi=hard \
+		  -fno-tree-vectorize \
+		  -fgcse-after-reload \
+		  -frerun-cse-after-loop \
+		  -frename-registers \
+		  -funsafe-loop-optimizations \
+		  -ftree-parallelize-loops=2 \
+		  -fcx-limited-range \
+		  -fno-signed-zeros \
+                  -fgraphite \
+                  -fgraphite-identity \
+                  -floop-block \
+                  -floop-interchange \
+                  -floop-nest-optimize \
+                  -floop-strip-mine \
+                  -floop-parallelize-all \
+		  -flto \
+		  -ffat-lto-objects \
+		  -fuse-linker-plugin \
+		  -fno-toplevel-reorder \
+		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
+		  -pipe \
+		  --param l1-cache-size=32 \
+		  --param l1-cache-line-size=32 \
+		  --param l2-cache-size=512 \
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_AFLAGS_MODULE  := -DMODULE
-KBUILD_CFLAGS_MODULE  := -DMODULE
+KBUILD_AFLAGS_MODULE  := -DMODULE -pipe
+KBUILD_CFLAGS_MODULE := -DMODULE -pipe
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
@@ -614,10 +605,10 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -Ofast
+KBUILD_CFLAGS	+= -O2
 endif
 
-LDFLAGS += -Ofast --as-needed --sort-common
+LDFLAGS += -O2 --as-needed --sort-common
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
@@ -1022,11 +1013,6 @@ PHONY += prepare archprepare prepare0 prepare1 prepare2 prepare3
 prepare3: include/config/kernel.release
 ifneq ($(KBUILD_SRC),)
 	@$(kecho) '  Using $(srctree) as source for kernel'
-	$(Q)if [ -f $(srctree)/.config -o -d $(srctree)/include/config ]; then \
-		echo "  $(srctree) is not clean, please run 'make mrproper'";\
-		echo "  in the '$(srctree)' directory.";\
-		/bin/false; \
-	fi;
 endif
 
 # prepare2 creates a makefile if using a separate output directory
