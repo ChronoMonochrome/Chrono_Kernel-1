@@ -21,7 +21,7 @@ USING_MMU = 1
 USING_PMM = 1
 USING_MALI_RUN_TIME_PM = 0
 USING_UMP = 1
-USING_HWMEM = 0
+USING_HWMEM = 1
 USING_OS_MEMORY = 1
 USING_GPU_UTILIZATION = 1
 USING_PROFILING = 0
@@ -132,6 +132,10 @@ endif
 DEFINES += -DUSING_OS_MEMORY=$(USING_OS_MEMORY)
 DEFINES += -DUSING_MMU=1
 DEFINES += -DUSING_UMP=$(USING_UMP)
+ifeq ($(USING_HWMEM),1)
+        # HWMEM used as backend for UMP api
+        DEFINES += -DUSING_HWMEM
+endif
 DEFINES += -D_MALI_OSK_SPECIFIC_INDIRECT_MMAP
 DEFINES += -DMALI_INTERNAL_TIMELINE_PROFILING_ENABLED=$(USING_INTERNAL_PROFILING)
 DEFINES += -DDISABLE_PP0=$(DISABLE_PP0)
@@ -266,12 +270,6 @@ endif
 
 # Always build in support for Mali L2 cache
 SRC += common/mali_l2_cache.c
-
-ifeq ($(USING_HWMEM),1)
-	# HWMEM used as backend for UMP api
-	EXTRA_CFLAGS += -I$(DRIVER_DIR)/../ump/common
-	SRC += platform/ux500/ump_kernel_api_hwmem.c
-endif
 
 # Tell the Linux build system to enable building of our .c files
 mali-y += $(SRC:.c=.o)
