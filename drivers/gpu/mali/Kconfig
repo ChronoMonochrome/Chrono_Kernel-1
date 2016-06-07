@@ -35,3 +35,20 @@ config MALI400_GPU_UTILIZATION
 	---help---
 	  This enables gathering and processing of the utilization of Mali GPU.
 	  This data can be used as a basis to change GPU operating frequency.
+
+config UMP
+	tristate "UMP support"
+	depends on ARM
+	---help---
+	  This enables support for the UMP memory allocation and sharing API.
+
+	  To compile this driver as a module, choose M here: the module will be
+	  called ump.
+
+config UMP_DEBUG
+	bool "Enable extra debug in UMP"
+	depends on UMP
+	default y
+	---help---
+	  This enabled extra debug checks and messages in UMP.
+
