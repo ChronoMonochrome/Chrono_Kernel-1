@@ -79,6 +79,10 @@ static unsigned int partnumber(unsigned int asicid)
 	return (asicid >> 8) & 0xffff;
 }
 
+#ifdef CONFIG_ION_EXYNOS
+extern void __init exynos4_reserve_mem(void);
+#endif
+
 /*
  * SOC		MIDR		ASICID ADDRESS		ASICID VALUE
  * DB8500ed	0x410fc090	0x9001FFF4		0x00850001
@@ -132,6 +136,10 @@ void __init ux500_map_io(void)
 	dbx500_id.process = asicid >> 24;
 	dbx500_id.partnumber = partnumber(asicid);
 	dbx500_id.revision = asicid & 0xff;
+
+#ifdef CONFIG_ION_EXYNOS
+	exynos4_reserve_mem();
+#endif
 
 	ux500_print_soc_info(asicid);
 }

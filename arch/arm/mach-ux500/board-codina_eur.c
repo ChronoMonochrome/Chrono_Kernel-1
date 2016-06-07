@@ -71,6 +71,8 @@
 #include <mach/tmd2672.h>
 #endif
 #include <mach/crypto-ux500.h>
+#include <linux/cma.h>
+#include <mach/exynos-ion.h>
 #include <mach/pm.h>
 #include <mach/reboot_reasons.h>
 #include <linux/yas.h>
@@ -2274,6 +2276,9 @@ static struct platform_device *platform_devs[] __initdata = {
 #ifdef CONFIG_KEXEC_HARDBOOT
 	&kexec_hardboot_device,
 #endif
+#ifdef CONFIG_ION_EXYNOS
+	&exynos_device_ion,
+#endif
 	&db8500_cpuidle_device,
 #ifdef CONFIG_USB_ANDROID
 	&android_usb_device,
@@ -2420,6 +2425,95 @@ static void __init u8500_cryp1_hash1_init(void)
 	db8500_add_hash1(&u8500_hash1_platform_data);
 }
 
+extern void __init s5p_cma_region_reserve(struct cma_region *regions_normal,
+                                      struct cma_region *regions_secure,
+                                      size_t align_secure, const char *map);
+
+void __init exynos4_reserve_mem(void)
+{
+	static struct cma_region regions[] = {
+#if !defined(CONFIG_EXYNOS_CONTENT_PATH_PROTECTION) && \
+	defined(CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE)
+		{
+			.name	= "ion",
+			.size	= CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE * SZ_1K,
+		},
+#endif
+		{
+			.size = 0
+		},
+	};
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
+	static struct cma_region regions_secure[] = {
+#ifdef CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE
+		{
+			.name	= "ion",
+			.size	= CONFIG_ION_EXYNOS_CONTIGHEAP_SIZE * SZ_1K,
+		},
+#endif
+		{
+			.size = 0
+		},
+	};
+#else /* !CONFIG_EXYNOS_CONTENT_PATH_PROTECTION */
+	struct cma_region *regions_secure = NULL;
+#endif
+
+	static const char map[] __initconst =
+#if 0
+		"s3cfb.0=fimd;exynos4-fb.0=fimd;"
+		"s3c-fimc.0=fimc0;s3c-fimc.1=fimc1;s3c-fimc.2=fimc2;s3c-fimc.3=fimc3;"
+		"exynos4210-fimc.0=fimc0;exynos4210-fimc.1=fimc1;exynos4210-fimc.2=fimc2;exynos4210-fimc.3=fimc3;"
+#endif
+#ifdef CONFIG_ION_EXYNOS
+		"ion-exynos=ion;"
+#endif
+#ifdef CONFIG_VIDEO_MFC5X
+		"s3c-mfc/A=mfc0,mfc-secure;"
+		"s3c-mfc/B=mfc1,mfc-normal;"
+		"s3c-mfc/AB=mfc;"
+#endif
+#ifdef CONFIG_VIDEO_SAMSUNG_S5P_MFC
+		"s5p-mfc/f=fw;"
+		"s5p-mfc/a=b1;"
+		"s5p-mfc/b=b2;"
+#endif
+#if 0
+		"samsung-rp=srp;"
+#endif
+#ifdef CONFIG_VIDEO_EXYNOS_FIMC_IS
+		"exynos4-fimc-is=fimc_is;"
+#endif
+#if 0
+		"s5p-fimg2d=fimg2d;"
+#endif
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
+		"s5p-smem/sectbl=sectbl;"
+#endif
+#if 0
+		"s5p-smem/mfc=mfc-secure;"
+		"s5p-smem/fimc=ion;"
+		"s5p-smem/mfc-shm=mfc-normal;"
+		"s5p-smem/fimd=fimd;"
+#endif
+;
+
+	s5p_cma_region_reserve(regions, regions_secure, 0, map);
+#if 0
+	if (!(fbmem_start && fbmem_size))
+		return;
+
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(regions); i++) {
+		if (regions[i].name && !strcmp(regions[i].name, "fimd")) {
+			memcpy(phys_to_virt(regions[i].start), phys_to_virt(fbmem_start), fbmem_size * SZ_1K);
+			printk(KERN_INFO "Bootloader sent 'fbmem' : %08X\n", (u32)fbmem_start);
+			break;
+		}
+	}
+#endif
+}
 
 static void __init codina_init_machine(void)
 {
@@ -2429,6 +2523,10 @@ static void __init codina_init_machine(void)
 	
 #if defined(CONFIG_KEXEC_HARDBOOT)
 	kexec_hardboot_reserve();
+#endif
+
+#ifdef CONFIG_ION_EXYNOS
+	exynos_ion_set_platdata();
 #endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE

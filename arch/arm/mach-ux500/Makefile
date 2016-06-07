@@ -140,3 +140,5 @@ endif
 obj-$(CONFIG_MACH_SAMSUNG_UX500)	+= sec_common.o
 obj-$(CONFIG_ARCH_RANDOM) += early_random.o
 
+obj-$(CONFIG_ION_EXYNOS)		+= dev-ion.o
+obj-$(CONFIG_ION_EXYNOS)		+= reserve_mem.o
