@@ -96,11 +96,6 @@ static struct inode *sdcardfs_iget(struct super_block *sb,
 			     sdcardfs_inode_test,	/* inode comparison function */
 			     sdcardfs_inode_set, /* inode init function */
 			     lower_inode); /* data passed to test+set fxns */
-	if (!inode) {
-		err = -EACCES;
-		iput(lower_inode);
-		return ERR_PTR(err);
-	}
 	/* if found a cached inode, then just return it */
 	if (!(inode->i_state & I_NEW))
 		return inode;
@@ -335,14 +330,6 @@ struct dentry *sdcardfs_lookup(struct inode *dir, struct dentry *dentry,
 
 	parent = dget_parent(dentry);
 
-	if(!check_caller_access_to_name(parent->d_inode, dentry->d_name.name,
-						sbi->options.derive, 0, 0)) {
-		ret = ERR_PTR(-EACCES);
-		printk(KERN_INFO "%s: need to check the caller's gid in packages.list\n"
-                         "	dentry: %s, task:%s\n",
-						 __func__, dentry->d_name.name, current->comm);
-		goto out_err;
-        }
 
 	/* save current_cred and override it */
 	OVERRIDE_CRED_PTR(SDCARDFS_SB(dir->i_sb), saved_cred);

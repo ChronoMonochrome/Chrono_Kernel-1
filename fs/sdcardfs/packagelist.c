@@ -76,23 +76,12 @@ static int contain_appid_key(struct packagelist_data *pkgl_dat, void *appid) {
 	return 0;
 }
 
+#if 0
 /* Return if the calling UID holds sdcard_rw. */
 int get_caller_has_rw_locked(void *pkgl_id, derive_t derive) {
-	struct packagelist_data *pkgl_dat = (struct packagelist_data *)pkgl_id;
-	appid_t appid;
-	int ret;
-
-	/* No additional permissions enforcement */
-	if (derive == DERIVE_NONE) {
-		return 1;
-	}
-
-	appid = multiuser_get_app_id(current_fsuid());
-	mutex_lock(&pkgl_dat->hashtable_lock);
-	ret = contain_appid_key(pkgl_dat, (void *)(uintptr_t)appid);
-	mutex_unlock(&pkgl_dat->hashtable_lock);
-	return ret;
+	return 1;
 }
+#endif
 
 appid_t get_appid(void *pkgl_id, const char *app_name)
 {
@@ -118,45 +107,16 @@ appid_t get_appid(void *pkgl_id, const char *app_name)
 	return 0;
 }
 
+#if 0
 /* Kernel has already enforced everything we returned through
  * derive_permissions_locked(), so this is used to lock down access
  * even further, such as enforcing that apps hold sdcard_rw. */
 int check_caller_access_to_name(struct inode *parent_node, const char* name,
 					derive_t derive, int w_ok, int has_rw) {
 
-	/* Always block security-sensitive files at root */
-	if (parent_node && SDCARDFS_I(parent_node)->perm == PERM_ROOT) {
-		if (!strcasecmp(name, "autorun.inf")
-			|| !strcasecmp(name, ".android_secure")
-			|| !strcasecmp(name, "android_secure")) {
-			return 0;
-		}
-	}
-
-	/* No additional permissions enforcement */
-	if (derive == DERIVE_NONE) {
-		return 1;
-	}
-
-	/* Root always has access; access for any other UIDs should always
-	 * be controlled through packages.list. */
-	if (current_fsuid() == 0) {
-		return 1;
-	}
-
-	/* If asking to write, verify that caller either owns the
-	 * parent or holds sdcard_rw. */
-	if (w_ok) {
-		if (parent_node &&
-			(current_fsuid() == SDCARDFS_I(parent_node)->d_uid)) {
-			return 1;
-		}
-		return has_rw;
-	}
-
-	/* No extra permissions to enforce */
 	return 1;
 }
+#endif
 
 /* This function is used when file opening. The open flags must be
  * checked before calling check_caller_access_to_name() */
