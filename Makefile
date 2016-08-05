@@ -386,9 +386,9 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -march=armv7-a \
 		  -mtune=cortex-a9 \
 		  -mcpu=cortex-a9 \
-		  -mfpu=vfpv3 \
+		  -mfpu=vfpv3-fp16 \
 		  -mfloat-abi=hard \
-		  -fno-tree-vectorize \
+		  -mhard-float \
 		  -funsafe-loop-optimizations \
 		  -ftree-parallelize-loops=2 \
 		  -fcx-limited-range \
