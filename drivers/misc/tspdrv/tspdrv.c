@@ -51,6 +51,7 @@
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 #include <asm/uaccess.h>
+#include <asm/mach-types.h>
 #include <linux/interrupt.h>	/* request_irq(), free_irq(),
 							enable_irq(), disable_irq(), */
 #include "tspdrv.h"
@@ -86,7 +87,6 @@ unsigned long pwm_val = 10;
 
 #ifdef IMMVIBE_DEBUG
 #define	vibdbg(_fmt, ...)	\
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IMMVIBE DEBUG: " _fmt "\n", ## __VA_ARGS__)
 #else
 #define	vibdbg(_fmt, ...)
@@ -107,9 +107,6 @@ unsigned long pwm_val = 10;
 #define VERSION_STR_LEN 16                          /* account extra space for future extra digits in version number */
 static char g_szDeviceName[(VIBE_MAX_DEVICE_NAME_LENGTH
 				+ VERSION_STR_LEN) * NUM_ACTUATORS];       /* initialized in init_module */
-#else
-	;
-#endif
 static size_t g_cchDeviceName;                      /* initialized in init_module */
 
 /* Flag indicating whether the driver is in use */
@@ -685,18 +682,12 @@ static int __devinit immvibe_i2c_probe(struct i2c_client* client, const struct i
 	isa_data->client = client;
 	isa_data->pdata = pdata;
 
-#ifdef CONFIG_MACH_JANICE
+RUN_ON_JANICE_ONLY
 	if (system_rev >= JANICE_R0_3)
 		isa_data->mot_clk  = clk_get_sys("mot-pwm0", NULL);
 	else
 		isa_data->mot_clk  = clk_get_sys("mot-pwm1", NULL);
-#elif defined(CONFIG_MACH_GAVINI)
-	if (system_rev > GAVINI_R0_0_B)
-		isa_data->mot_clk  = clk_get_sys("mot-pwm0", NULL);
-	else
-		isa_data->mot_clk  = clk_get_sys("mot-pwm1", NULL);
-#endif
-
+}
 	if (pdata->hw_setup) {
 		ret = pdata->hw_setup();
 		if (ret < 0) {
@@ -786,6 +777,7 @@ static struct i2c_driver immvibe_i2c_driver = {
 
 static int __init immvibe_init(void)
 {
+RUN_ON_JANICE_ONLY
 	int ret = 0;
 	printk(KERN_ERR "%s\n", __func__);
 	ret = i2c_add_driver(&immvibe_i2c_driver);
@@ -813,9 +805,11 @@ err_to_dev_reg:
 
 	return ret;
 }
+}
 
 static void __exit immvibe_exit(void)
 {
+RUN_ON_JANICE_ONLY
 #ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s\n", __func__);
 #else
@@ -824,6 +818,7 @@ static void __exit immvibe_exit(void)
 	i2c_del_driver(&immvibe_i2c_driver);
 	timed_output_dev_unregister(&to_dev);
 	cleanup_tspdrv_module();
+}
 }
 
 module_init(immvibe_init);

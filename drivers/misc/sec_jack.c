@@ -34,9 +34,10 @@
 #ifdef CONFIG_MACH_SEC_ACC_CONTROL //KSND
 #include <linux/mfd/abx500.h>
 #endif
+#include <asm/mach-types.h>
 
 #define MAX_ZONE_LIMIT		10
-#ifdef CONFIG_MACH_CODINA
+#ifdef CONFIG_BOARD_CODINA
 #define DET_CHECK_TIME_MS	170		/* 170ms */
 #define BUTTONS_CHECK_TIME_MS   48              /* 45ms */
 #else

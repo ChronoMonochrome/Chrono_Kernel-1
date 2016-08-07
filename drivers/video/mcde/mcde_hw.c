@@ -29,6 +29,7 @@
 #include <linux/atomic.h>
 
 #include <linux/mfd/dbx500-prcmu.h>
+#include <asm/mach-types.h>
 
 #include <video/mcde.h>
 #include <video/nova_dsilink.h>
@@ -4244,10 +4245,16 @@ static void mcde_underflow_function(struct work_struct *ptr)
 	/* +438879 MCDE underflow */
 	struct fb_info *fbi;
 	struct mcde_fb *mfb;
-	extern struct fb_info* get_primary_display_fb_info(void);
+	extern struct fb_info* codina_get_primary_display_fb_info(void);
+	extern struct fb_info* janice_get_primary_display_fb_info(void);
+
 
 	dev_info(dev, "%s: mcde recovery\n", __func__);
-	fbi = get_primary_display_fb_info();
+	if (__machine_arch_type == MACH_TYPE_CODINA)
+		fbi = codina_get_primary_display_fb_info();
+	else
+		fbi = janice_get_primary_display_fb_info();
+
 	mfb = to_mcde_fb(fbi);
 
 #ifdef CONFIG_HAS_EARLYSUSPEND

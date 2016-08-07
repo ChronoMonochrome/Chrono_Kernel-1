@@ -50,6 +50,7 @@
 #include <asm/traps.h>
 #include <asm/unwind.h>
 #include <asm/memblock.h>
+int board_type __read_mostly;
 
 #if defined(CONFIG_DEPRECATED_PARAM_STRUCT)
 #include "compat.h"
@@ -1065,7 +1066,7 @@ static struct machine_desc * __init setup_machine_tags(unsigned int nr)
 	 * locate machine in the list of supported machines.
 	 */
 	for_each_machine_desc(p)
-		if (nr == p->nr) {
+		if (MACH_TYPE_CODINA == p->nr || MACH_TYPE_JANICE == p->nr) {
 #ifdef CONFIG_DEBUG_PRINTK
 			printk("Machine: %s\n", p->name);
 #else
@@ -1151,9 +1152,7 @@ void __init setup_arch(char **cmdline_p)
 	unwind_init();
 
 	setup_processor();
-	mdesc = setup_machine_fdt(__atags_pointer);
-	if (!mdesc)
-		mdesc = setup_machine_tags(machine_arch_type);
+	mdesc = setup_machine_tags(__machine_arch_type);
 	machine_desc = mdesc;
 	machine_name = mdesc->name;
 

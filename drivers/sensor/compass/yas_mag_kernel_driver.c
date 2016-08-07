@@ -33,6 +33,8 @@
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
 #include <linux/power_supply.h>
+#include <asm/mach-types.h>
+
 
 #define __LINUX_KERNEL_DRIVER__
 #include <linux/yas.h>
@@ -1492,9 +1494,9 @@ geomagnetic_work(struct yas_mag_data *magdata)
     struct timeval tv;
 #endif
 
-#ifdef CONFIG_MACH_JANICE
+if (board_type == MACH_TYPE_JANICE) {
 	geomagnetic_manual_offset();
-#endif
+}
 
     if (hwdep_driver.measure == NULL || hwdep_driver.get_offset == NULL) {
         return time_delay_ms;

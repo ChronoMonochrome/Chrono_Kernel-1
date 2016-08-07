@@ -120,8 +120,8 @@
 #ifndef SSG_CAMERA_ENABLE
 #define SSG_CAMERA_ENABLE
 #endif
-
-unsigned int board_id;
+unsigned int codina_board_id;
+//extern int board_type __read_mostly;
 
 unsigned int sec_debug_settings;
 int jig_smd = 1;
@@ -199,9 +199,7 @@ static void kexec_hardboot_reserve(void)
 
 
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
-struct yas_platform_data yas_data = {
-	.hw_rev = 0,	/* hw gpio value */
-};
+extern struct yas_platform_data yas_data;
 #endif
 
 
@@ -220,6 +218,7 @@ static struct gp2a_platform_data gp2a_plat_data __initdata = {
 
 static int __init gp2a_setup(void)
 {
+if (strstr(CONFIG_CMDLINE, "codina")){
 	int err;
 
 	/* Configure the GPIO for the interrupt */
@@ -247,6 +246,7 @@ err2:
 err1:
 	return err;
 }
+}
 
 #endif
 #if defined(CONFIG_PROXIMITY_TMD2672)
@@ -264,6 +264,7 @@ static struct tmd2672_platform_data tmd2672_plat_data __initdata = {
 
 static int __init tmd2672_setup(void)
 {
+if (strstr(CONFIG_CMDLINE, "codina")){
 	int err;
 
 	/* Configure the GPIO for the interrupt */
@@ -290,6 +291,7 @@ err2:
 	gpio_free(tmd2672_plat_data.ps_vout_gpio);
 err1:
 	return err;
+}
 }
 
 #endif
@@ -836,6 +838,7 @@ static struct bt404_ts_platform_data bt404_ts_pdata = {
 
 static int __init bt404_ts_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "codina")) {
 	int ret;
 
 	if (system_rev != CODINA_TMO_R0_0_A) {
@@ -859,7 +862,7 @@ static int __init bt404_ts_init(void)
 	}
 	gpio_direction_input(TSP_INT_CODINA_R0_0);
 
-	bt404_ts_pdata.panel_type = (board_id >= 12) ?
+	bt404_ts_pdata.panel_type = (codina_board_id >= 12) ?
 						GFF_PANEL : EX_CLEAR_PANEL;
 
 #ifdef CONFIG_DEBUG_PRINTK
@@ -869,6 +872,7 @@ static int __init bt404_ts_init(void)
 #endif
 
 	return 0;
+}
 }
 #endif
 
@@ -1814,22 +1818,6 @@ static void sec_jack_mach_init(struct platform_device *pdev)
 		pr_err("%s: ab8500 write failed\n", __func__);
 }
 
-int sec_jack_get_det_level(struct platform_device *pdev)
-{
-	u8 value = 0;
-	int ret = 0;
-
-	ret = abx500_get_register_interruptible(&pdev->dev, AB8500_INTERRUPT, 0x4,
-		&value);
-	if (ret < 0)
-		return ret;
-
-	ret = (value & 0x04) >> 2;
-	pr_info("%s: ret=%x\n", __func__, ret);
-
-	return ret;
-}
-
 struct sec_jack_platform_data sec_jack_pdata = {
 	.get_adc_value = sec_jack_get_adc_value,
 	.mach_init = sec_jack_mach_init,
@@ -1898,11 +1886,11 @@ static struct ab8500_platform_data ab8500_platdata = {
 #ifdef CONFIG_BATTERY_SAMSUNG
 	.sec_bat	= &sec_battery_pdata,
 #else
-	.battery	= &ab8500_bm_data,
-	.charger	= &ab8500_charger_plat_data,
-	.btemp		= &ab8500_btemp_plat_data,
-	.fg		= &ab8500_fg_plat_data,
-	.chargalg	= &ab8500_chargalg_plat_data,
+	.battery	= &codina_ab8500_bm_data,
+	.charger	= &codina_ab8500_charger_plat_data,
+	.btemp		= &codina_ab8500_btemp_plat_data,
+	.fg		= &codina_ab8500_fg_plat_data,
+	.chargalg	= &codina_ab8500_chargalg_plat_data,
 #endif
 	.gpio		= &ab8500_gpio_pdata,
 	.sysctrl	= &ab8500_sysctrl_pdata,
@@ -1945,11 +1933,11 @@ static struct ab8500_platform_data ab8505_platdata = {
 #ifdef CONFIG_BATTERY_SAMSUNG
 	.sec_bat = &sec_battery_pdata,
 #else
-	.battery	= &ab8500_bm_data,
-	.charger	= &ab8500_charger_plat_data,
-	.btemp		= &ab8500_btemp_plat_data,
-	.fg		= &ab8500_fg_plat_data,
-	.chargalg	= &ab8500_chargalg_plat_data,
+	.battery	= &codina_ab8500_bm_data,
+	.charger	= &codina_ab8500_charger_plat_data,
+	.btemp		= &codina_ab8500_btemp_plat_data,
+	.fg		= &codina_ab8500_fg_plat_data,
+	.chargalg	= &codina_ab8500_chargalg_plat_data,
 #endif
 	.gpio		= &ab8505_gpio_pdata,
 	.sysctrl	= &ab8500_sysctrl_pdata,
@@ -2322,6 +2310,7 @@ void codina_backlight_on_off(bool on)
 
 static void __init codina_i2c_init(void)
 {
+RUN_ON_CODINA_ONLY
 	db8500_add_i2c0(&codina_i2c0_data);
 	db8500_add_i2c1(&codina_i2c1_data);
 	db8500_add_i2c2(&codina_i2c2_data);
@@ -2366,6 +2355,7 @@ static void __init codina_i2c_init(void)
 	i2c_register_board_info(4,
 		ARRAY_AND_SIZE(codina_r0_0_gpio_i2c4_devices_r0));
 	}
+END_RUN
 }
 
 #ifdef CONFIG_USB_ANDROID
@@ -2401,28 +2391,38 @@ static void fetch_usb_serial_no(int len)
 #endif
 
 
-static void __init codina_spi_init(void)
+static __init codina_spi_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "codina")) {
 	db8500_add_spi0(&codina_spi0_data);
 	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
 }
+}
 
-static void __init codina_uart_init(void)
+static __init codina_uart_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "codina")) {
 	db8500_add_uart0(&uart0_plat);
 	db8500_add_uart1(&uart1_plat);
 	db8500_add_uart2(&uart2_plat);
 }
+}
 
-static void __init u8500_cryp1_hash1_init(void)
+static __init u8500_cryp1_hash1_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "codina")) {
 	db8500_add_cryp1(&u8500_cryp1_platform_data);
 	db8500_add_hash1(&u8500_hash1_platform_data);
 }
+}
 
+int board_run_once = 0;
 
-static void __init codina_init_machine(void)
+static void __init codina_init_machine_real(void)
 {
+if (strstr(CONFIG_CMDLINE, "codina") && !board_run_once) {
+	board_run_once++;
+	board_type = MACH_TYPE_CODINA;
 	sec_common_init();
 
 	sec_common_init_early();
@@ -2476,7 +2476,7 @@ static void __init codina_init_machine(void)
 
 	platform_add_devices(platform_devs, ARRAY_SIZE(platform_devs));
 
-	ssg_pins_init();
+	codina_ssg_pins_init();
 
 #ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
 	bt404_ts_init();
@@ -2513,6 +2513,7 @@ static void __init codina_init_machine(void)
 
 	nmk_gpio_clocks_disable();
 }
+}
 
 static int __init jig_smd_status(char *str)
 {
@@ -2533,17 +2534,25 @@ static int __init sec_debug_setup(char *str)
 }
 __setup("debug=", sec_debug_setup);
 
+void __init codina_init_machine(void)
+{
+	codina_init_machine_real();
+}
+
+
+
 /* we have equally similar boards with very minimal
  * changes, so we detect the platform during boot
  */
-static int __init board_id_setup(char *str)
+int __init board_id_setup(char *str)
 {
-	if (get_option(&str, &board_id) != 1)
-		board_id = 0;
+RUN_ON_CODINA_ONLY
+	if (get_option(&str, &codina_board_id) != 1)
+		codina_board_id = 0;
 
-	use_ab8505_iddet = (board_id >= CODINA_TMO_AB8505_IDDET_VER) ? 1 : 0;
+	use_ab8505_iddet = (codina_board_id >= CODINA_TMO_AB8505_IDDET_VER) ? 1 : 0;
 
-	switch (board_id) {
+	switch (codina_board_id) {
 	case 7:
 #ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GT-I8160 Board Rev 0.0\n");
@@ -2658,15 +2667,59 @@ static int __init board_id_setup(char *str)
 	};
 
 	return 1;
+END_RUN
+else
+RUN_ON_JANICE_ONLY
+	if (get_option(&str, &codina_board_id) != 1)
+		codina_board_id = 0;
+
+	switch (codina_board_id) {
+	case 7:
+		printk(KERN_INFO "JANICE Board Rev 0.0\n");
+		system_rev = JANICE_R0_0;
+		break;
+	case 8:
+		printk(KERN_INFO "JANICE Board Rev 0.1\n");
+		system_rev = JANICE_R0_1;
+		break;
+	case 9:
+		printk(KERN_INFO "JANICE Board Rev 0.2\n");
+		system_rev = JANICE_R0_2;
+		break;
+	case 10:
+		printk(KERN_INFO "JANICE Board Rev 0.3\n");
+		system_rev = JANICE_R0_3;
+		break;
+	case 11:
+		printk(KERN_INFO "JANICE Board Rev 0.4\n");
+		system_rev = JANICE_R0_4;
+		break;
+	case 12:
+		printk(KERN_INFO "JANICE Board Rev 0.5\n");
+		system_rev = JANICE_R0_5;
+		break;
+	case 13:
+		printk(KERN_INFO "JANICE Board Rev 0.6\n");
+		system_rev = JANICE_R0_6;
+		break;
+	default:
+		printk(KERN_INFO "Unknown board_id=%c\n", *str);
+		break;
+	};
+
+	return 1;
+END_RUN
 }
 __setup("board_id=", board_id_setup);
 
-MACHINE_START(CODINA, "SAMSUNG CODINA")
+#if 0
+MACHINE_START(CODINA, "SAMSUNG JANICE")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
 	.boot_params	= 0x100,
 	.map_io		= u8500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
-	.init_machine	= codina_init_machine,
+	.init_machine	= codina_init_machine_real,
 	.restart	= ux500_restart,
 MACHINE_END
+#endif

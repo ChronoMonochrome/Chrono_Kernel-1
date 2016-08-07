@@ -33,19 +33,11 @@
 #define HREFV60_MMIO_XENON_CHARGE 170
 #define HREFV60_XSHUTDOWN_SECONDARY_SENSOR 140
 
-#if defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_SKOMER) || defined(CONFIG_MACH_GAVINI) \
+#if defined(CONFIG_BOARD_CODINA) || defined(CONFIG_BOARD_JANICE) || defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_SKOMER) || defined(CONFIG_MACH_GAVINI) \
 	||defined(CONFIG_MACH_SEC_HENDRIX)
 #define XSHUTDOWN_PRIMARY_SENSOR 142
 #define XSHUTDOWN_SECONDARY_SENSOR 64
-
-#ifdef RESET_PRIMARY_SENSOR
-#undef RESET_PRIMARY_SENSOR
-#endif
 #define RESET_PRIMARY_SENSOR	149
-
-#ifdef RESET_SECONDARY_SENSOR
-#undef RESET_SECONDARY_SENSOR
-#endif
 #define RESET_SECONDARY_SENSOR	65
 #define CAM_FLASH_EN	140
 #define CAM_FLASH_MODE	      141
@@ -58,7 +50,6 @@
 #error "Unknown machine type"
 #endif
 
-/*
 static pin_cfg_t i2c2_pins[] = {
 	GPIO8_I2C2_SDA,
 	GPIO9_I2C2_SCL
@@ -71,7 +62,6 @@ static pin_cfg_t i2c_disable_pins[] = {
 	GPIO8_GPIO | PIN_INPUT_NOPULL,
 	GPIO9_GPIO | PIN_INPUT_NOPULL,
 };
-*/
 
 #if 0
 static pin_cfg_t xshutdown_host[] = {
@@ -120,7 +110,7 @@ static char *regulator_names[] = {"vddcsi1v2"};
 static char *regulator_names[] = {"vddcsi1v2", "v_sensor_3v" , "v_sensor_1v8"};
 #endif
 
-#if 0
+
 /* This function is used to translate the physical GPIO used for reset GPIO
  * to logical IPGPIO that needs to be communicated to Firmware. so that
  * firmware can control reset GPIO of a RAW Bayer sensor */
@@ -171,7 +161,6 @@ static int mmio_get_ipgpio(struct mmio_platform_data *pdata, int gpio,
 	}
 	return err;
 }
-#endif
 
 static int mmio_clock_init(struct mmio_platform_data *pdata)
 {
@@ -192,7 +181,7 @@ static int mmio_clock_init(struct mmio_platform_data *pdata)
 		goto err_ipi2c_clk;
 	}
 
-#ifdef CONFIG_MACH_JANICE
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	if (system_rev < JANICE_R0_3) {
 		extra->clk_ptr_ext[PRIMARY_CAMERA] =
 			clk_get_sys("pri-cam", NULL);
@@ -212,27 +201,7 @@ static int mmio_clock_init(struct mmio_platform_data *pdata)
 			goto err_sec_ext_clk;
 		}
 	}
-#elif defined(CONFIG_MACH_GAVINI)
-	if (system_rev <= GAVINI_R0_0_B) {
-		extra->clk_ptr_ext[PRIMARY_CAMERA] =
-			clk_get_sys("pri-cam", NULL);
-		if (IS_ERR(extra->clk_ptr_ext[PRIMARY_CAMERA])) {
-			err = PTR_ERR(extra->clk_ptr_ext[PRIMARY_CAMERA]);
-			dev_err(pdata->dev,
-			"Error %d getting clock 'pri-cam'\n", err);
-			goto err_pri_ext_clk;
-		}
-	} else{
-		extra->clk_ptr_ext[SECONDARY_CAMERA] =
-			clk_get_sys("sec-cam", NULL);
-		if (IS_ERR(extra->clk_ptr_ext[SECONDARY_CAMERA])) {
-			err = PTR_ERR(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-			dev_err(pdata->dev,
-			"Error %d getting clock 'sec-cam'\n", err);
-			goto err_sec_ext_clk;
-		}
-	}
-#else  /* CONFIG_MACH_CODINA */
+} else { /* CONFIG_BOARD_CODINA */
 	extra->clk_ptr_ext[SECONDARY_CAMERA] = clk_get_sys("sec-cam", NULL);
 	if (IS_ERR(extra->clk_ptr_ext[SECONDARY_CAMERA])) {
 		err = PTR_ERR(extra->clk_ptr_ext[SECONDARY_CAMERA]);
@@ -240,13 +209,12 @@ static int mmio_clock_init(struct mmio_platform_data *pdata)
 			"Error %d getting clock 'sec-cam'\n", err);
 		goto err_sec_ext_clk;
 	}
-#endif
-
+}
 	dev_dbg(pdata->dev , "Board %s() Exit\n", __func__);
 	return 0;
 err_sec_ext_clk:
 	/*clk_put(extra->clk_ptr_ext[PRIMARY_CAMERA]);*/
-//err_pri_ext_clk:
+err_pri_ext_clk:
 	clk_put(extra->clk_ptr_ipi2c);
 err_ipi2c_clk:
 	clk_put(extra->clk_ptr_bml);
@@ -259,19 +227,19 @@ static void mmio_clock_exit(struct mmio_platform_data *pdata)
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 	clk_put(extra->clk_ptr_bml);
 	clk_put(extra->clk_ptr_ipi2c);
-#ifdef CONFIG_MACH_JANICE
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	if (system_rev < JANICE_R0_3)
 		clk_put(extra->clk_ptr_ext[PRIMARY_CAMERA]);
 	else
 		clk_put(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#elif defined(CONFIG_MACH_GAVINI)
+} else if (strstr(CONFIG_CMDLINE, "gavini")) {
 	if (system_rev <= GAVINI_R0_0_B)
 		clk_put(extra->clk_ptr_ext[PRIMARY_CAMERA]);
 	else
 		clk_put(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#else  /*CONFIG_MACH_CODINA */
+} else {
 	clk_put(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#endif
+}
 	/*clk_put(extra->clk_ptr_ext[pdata->camera_slot]);*/
 }
 
@@ -308,8 +276,8 @@ static int mmio_pin_cfg_init(struct mmio_platform_data *pdata)
 
 static void mmio_pin_cfg_exit(struct mmio_platform_data *pdata)
 {
-	//struct mmio_board_data *extra = pdata->extra;
-	//dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
+	struct mmio_board_data *extra = pdata->extra;
+	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 #if 0
 gpio_free(extra->xenon_charge);
 #endif
@@ -474,25 +442,18 @@ static int mmio_clock_enable(struct mmio_platform_data *pdata)
 {
 	int err = 0;
 	struct mmio_board_data *extra = pdata->extra;
-	//dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
+	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 
-#ifdef CONFIG_MACH_JANICE
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	/* Enable appropriate external clock */
 	if (system_rev < JANICE_R0_3)
 		err = clk_enable(extra->clk_ptr_ext[PRIMARY_CAMERA]);
 	else
 		err = clk_enable(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#elif defined(CONFIG_MACH_GAVINI)
-	/* Enable appropriate external clock */
-	if (system_rev <= GAVINI_R0_0_B)
-		err = clk_enable(extra->clk_ptr_ext[PRIMARY_CAMERA]);
-	else
-		err = clk_enable(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#else  /*CONFIG_MACH_CODINA*/
+} else {  /*CONFIG_BOARD_CODINA*/
 	err = clk_enable(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#endif
 	/*err = clk_enable(extra->clk_ptr_ext[pdata->camera_slot]);*/
-
+}
 
 
 	if (err) {
@@ -512,19 +473,13 @@ static void mmio_clock_disable(struct mmio_platform_data *pdata)
 	struct mmio_board_data *extra = pdata->extra;
 	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 
-#ifdef CONFIG_MACH_JANICE
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	if (system_rev < JANICE_R0_3)
 		clk_disable(extra->clk_ptr_ext[PRIMARY_CAMERA]);
 	else
 		clk_disable(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#elif defined(CONFIG_MACH_GAVINI)
-	if (system_rev <= GAVINI_R0_0_B)
-		clk_disable(extra->clk_ptr_ext[PRIMARY_CAMERA]);
-	else
-		clk_disable(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#else  /*CONFIG_MACH_CODINA*/
+} else
 	clk_disable(extra->clk_ptr_ext[SECONDARY_CAMERA]);
-#endif
 	/*clk_disable(extra->clk_ptr_ext[pdata->camera_slot]);*/
 
 }
@@ -558,8 +513,8 @@ static int mmio_config_xshutdown_pins(struct mmio_platform_data *pdata,
 }
 static void mmio_set_xshutdown(struct mmio_platform_data *pdata)
 {
-	//struct mmio_board_data *extra = pdata->extra;
-	//dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
+	struct mmio_board_data *extra = pdata->extra;
+	dev_dbg(pdata->dev , "Board %s() Enter\n", __func__);
 #if 0
 	gpio_set_value(extra->xshutdown_pins[pdata->camera_slot].gpio ,
 		(extra->xshutdown_pins[pdata->camera_slot].active_high ? 1 :

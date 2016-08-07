@@ -68,7 +68,7 @@
 #define READ_MACADDR
 #endif
 
-#ifdef CONFIG_MACH_CODINA
+#ifdef CONFIG_BOARD_CODINA
 #undef USE_CID_CHECK
 #define READ_MACADDR
 #endif
@@ -83,7 +83,7 @@
 #define READ_MACADDR
 #endif
 
-#ifdef CONFIG_MACH_JANICE
+#ifdef CONFIG_BOARD_JANICE
 #undef USE_CID_CHECK
 #define READ_MACADDR
 #endif

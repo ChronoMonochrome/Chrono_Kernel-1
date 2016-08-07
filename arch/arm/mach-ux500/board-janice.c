@@ -109,14 +109,15 @@
 #define SSG_CAMERA_ENABLE
 #endif
 
-unsigned int sec_debug_settings;
-int jig_smd = 1;
-EXPORT_SYMBOL(jig_smd);
-int is_cable_attached=0;
-EXPORT_SYMBOL(is_cable_attached);
+#if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
+struct yas_platform_data yas_data = {
+       .hw_rev=0,      /* hw gpio value */
+};
+#endif
 
-struct device *gps_dev = NULL;
-EXPORT_SYMBOL(gps_dev);
+extern unsigned int sec_debug_settings;
+extern int jig_smd;
+extern int is_cable_attached;
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 static struct resource ram_console_resource = {
@@ -133,6 +134,7 @@ static struct platform_device ram_console_device = {
 
 static int __init ram_console_setup(char *p)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	resource_size_t ram_console_size = memparse(p, &p);
 
 	if ((ram_console_size > 0) && (*p == '@')){
@@ -143,12 +145,13 @@ static int __init ram_console_setup(char *p)
 
 	return 1;
 }
+}
 
-__setup("mem_ram_console=", ram_console_setup);
+//__setup("mem_ram_console=", ram_console_setup);
 
 #endif // CONFIG_ANDROID_RAM_CONSOLE
 #if defined(CONFIG_KEYBOARD_CYPRESS_TOUCH)
-static struct cypress_touchkey_platform_data  cypress_touchkey_pdata = {
+static struct cypress_touchkey_platform_data cypress_touchkey_pdata = {
 	.gpio_scl = TOUCHKEY_SCL_JANICE_R0_0,
 	.gpio_sda = TOUCHKEY_SDA_JANICE_R0_0,
 	.gpio_int = TOUCHKEY_INT_JANICE_R0_0,
@@ -158,12 +161,6 @@ static struct cypress_touchkey_platform_data  cypress_touchkey_pdata = {
 };
 #endif
 
-
-#if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
-struct yas_platform_data yas_data = {
-	.hw_rev=0,	/* hw gpio value */
-};
-#endif
 
 #if defined(CONFIG_MPU_SENSORS_MPU3050)
 
@@ -321,6 +318,7 @@ static struct gp2a_platform_data gp2a_plat_data __initdata = {
 
 static int __init gp2a_setup( struct device * dev)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	int err;
 
 	/* Configure the GPIO for the interrupt */
@@ -367,6 +365,7 @@ err2:
 err1:
 	return err;
 }
+}
 
 static void gp2a_pwr(bool on)
 {
@@ -402,6 +401,7 @@ static struct isa1200_platform_data isa1200_plat_data __refdata = {
 
 static int __init immvibe_setup( void )
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	int ret;
 
 	ret = gpio_request(isa1200_plat_data.mot_hen_gpio, "MOT_HWEN_GPIO");
@@ -438,6 +438,7 @@ hwen_gpio_failed:
 	return ret;
 hwen_gpio_req_failed:
 	return ret;
+}
 
 }
 #endif
@@ -487,11 +488,7 @@ static void mxt224_power_con(bool on)
 		gpio_direction_output(TSP_LDO_ON1_JANICE_R0_0, 0);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "[TSP] GPIO output (%s)\n", (on) ? "on" : "off");
-#else
-	;
-#endif
 }
 
 #ifdef CONFIG_USB_SWITCHER
@@ -514,11 +511,7 @@ static int mxt224_usb_switcher_notify(struct notifier_block *self, unsigned long
 static void mxt224_register_callback(void *function)
 {
 /*
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mxt224_register_callback\n");
-#else
-	;
-#endif
 
 	charging_cbs.tsp_set_charging_cable = function;
 */
@@ -875,7 +868,6 @@ static struct i2c_board_info __initdata janice_r0_0_gpio_i2c6_devices[] = {
 	},
 
 };
-
 
 static struct i2c_gpio_platform_data janice_gpio_i2c7_data = {
 	.sda_pin = NFC_SDA_JANICE_R0_0,
@@ -1652,20 +1644,7 @@ static void sec_jack_mach_init(struct platform_device *pdev)
 		pr_err("%s: ab8500 write failed\n",__func__);
 }
 
-int sec_jack_get_det_level(struct platform_device *pdev)
-{
-	u8 value = 0;
-	int ret = 0;
-
-	abx500_get_register_interruptible(&pdev->dev, AB8500_INTERRUPT, 0x4,
-		&value);
-	ret = (value & 0x04) >> 2;
-	pr_info("%s: ret=%x\n", __func__, ret);
-
-	return ret;
-}
-
-struct sec_jack_platform_data sec_jack_pdata = {
+struct sec_jack_platform_data janice_sec_jack_pdata = {
 	.get_adc_value = sec_jack_get_adc_value,
 	.mach_init = sec_jack_mach_init,
 	.get_det_level = sec_jack_get_det_level,
@@ -1693,43 +1672,22 @@ static struct platform_device u8500_modem_dev = {
 #endif
 
 
-static struct dbx500_cpuidle_platform_data db8500_cpuidle_platform_data = {
-	.wakeups = PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) | PRCMU_WAKEUP(ABB),
-};
 
-struct platform_device db8500_cpuidle_device = {
-	.name	= "dbx500-cpuidle",
-	.id	= -1,
-	.dev	= {
-		.platform_data = &db8500_cpuidle_platform_data,
-	},
-};
-
-static struct dbx500_cpuidle_platform_data db9500_cpuidle_platform_data = {
-	.wakeups = PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) | PRCMU_WAKEUP(ABB) \
-		   | PRCMU_WAKEUP(HSI0),
-};
-
-struct platform_device db9500_cpuidle_device = {
-	.name	= "dbx500-cpuidle",
-	.id	= -1,
-	.dev	= {
-		.platform_data = &db9500_cpuidle_platform_data,
-	},
-};
+extern struct platform_device db8500_cpuidle_device;
+extern struct platform_device db9500_cpuidle_device;
 
 static struct ab8500_platform_data ab8500_platdata = {
 	.irq_base	= MOP500_AB8500_IRQ_BASE,
 	.regulator	= &janice_regulator_plat_data,
-	.battery	= &ab8500_bm_data,
-	.charger	= &ab8500_charger_plat_data,
-	.btemp		= &ab8500_btemp_plat_data,
-	.fg		= &ab8500_fg_plat_data,
-	.chargalg	= &ab8500_chargalg_plat_data,
+	.battery	= &janice_ab8500_bm_data,
+	.charger	= &janice_ab8500_charger_plat_data,
+	.btemp		= &janice_ab8500_btemp_plat_data,
+	.fg		= &janice_ab8500_fg_plat_data,
+	.chargalg	= &janice_ab8500_chargalg_plat_data,
 	.gpio		= &ab8500_gpio_pdata,
 	.sysctrl	= &ab8500_sysctrl_pdata,
 #ifdef CONFIG_SAMSUNG_JACK
-       .accdet = &sec_jack_pdata,
+       .accdet = &janice_sec_jack_pdata,
 #endif
 #ifdef CONFIG_PM
 	.pm_power_off = true,
@@ -1807,11 +1765,7 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("@@@@ BT WAKE_PEER\n");
-#else
-	;
-#endif
 	return;
 }
 
@@ -1945,15 +1899,18 @@ static struct platform_device *platform_devs[] __initdata = {
 #if defined(CONFIG_MPU_SENSORS_MPU3050)
 static void janice_mpl_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	int intrpt_gpio = SENSOR_INT_JANICE_R0_0;
 
 	gpio_request(intrpt_gpio,"MPUIRQ");
 	gpio_direction_input(intrpt_gpio);
 }
+}
 #endif
 
 static void __init janice_i2c_init (void)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	db8500_add_i2c0(&janice_i2c0_data);
 	db8500_add_i2c1(&janice_i2c1_data);
 	db8500_add_i2c2(&janice_i2c2_data);
@@ -1997,11 +1954,7 @@ static void __init janice_i2c_init (void)
 	}
 	else if(system_rev == JANICE_R0_2) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s\n", __func__);
-#else
-		;
-#endif
 		i2c_register_board_info(0, ARRAY_AND_SIZE(janice_r0_0_i2c0_devices));
 		i2c_register_board_info(1, ARRAY_AND_SIZE(janice_r0_0_i2c1_devices));
 		i2c_register_board_info(2, ARRAY_AND_SIZE(janice_r0_2_i2c2_devices));
@@ -2020,11 +1973,7 @@ static void __init janice_i2c_init (void)
 	}
 	else if(system_rev >= JANICE_R0_3) {
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s\n", __func__);
-#else
-		;
-#endif
 		i2c_register_board_info(0, ARRAY_AND_SIZE(janice_r0_0_i2c0_devices));
 		i2c_register_board_info(1, ARRAY_AND_SIZE(janice_r0_0_i2c1_devices));
 		i2c_register_board_info(2, ARRAY_AND_SIZE(janice_r0_2_i2c2_devices));
@@ -2041,6 +1990,7 @@ static void __init janice_i2c_init (void)
 		platform_device_register(&janice_gpio_i2c8_pdata);
 		i2c_register_board_info(8, ARRAY_AND_SIZE(janice_r0_2_gpio_i2c8_devices));
 	}
+}
 }
 
 #ifdef CONFIG_USB_ANDROID
@@ -2078,43 +2028,54 @@ static void fetch_usb_serial_no(int len)
 
 static void __init janice_spi_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	db8500_add_spi0(&janice_spi0_data);
 	spi_register_board_info(spi_board_info, ARRAY_SIZE(spi_board_info));
+}
 }
 
 static void __init janice_uart_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	db8500_add_uart0(&uart0_plat);
 	db8500_add_uart1(&uart1_plat);
 	db8500_add_uart2(&uart2_plat);
 }
+}
 
 static void __init u8500_cryp1_hash1_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	db8500_add_cryp1(&u8500_cryp1_platform_data);
 	db8500_add_hash1(&u8500_hash1_platform_data);
+}
 }
 
 static void __init janice_mxt_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	gpio_request(TSP_INT_JANICE_R0_0,"TSP_INT");
 	gpio_request(TSP_LDO_ON1_JANICE_R0_0,"TSP_LDO");
+}
 }
 
 static void __init janice_touchkey_init(void)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	gpio_request(TOUCHKEY_INT_JANICE_R0_0, "TOUCHKEY_INT");
 	gpio_request(TSP_LDO_ON2_JANICE_R0_0, "TOUCHKEY_LDO");
 	gpio_request(EN_LED_LDO_JANICE_R0_0, "TOUCHKEY_LED");
 	gpio_request(TSP_TEST_JANICE_R0_0, "TOUCHKEY_TEST");
 	gpio_request(TSP_RST_JANICE_R0_0, "TOUCHKEY_RESET");
 }
+}
 
 
 void godin_cam_init(void);
-
+extern void __init codina_init_machine(void);
 static void __init janice_init_machine(void)
 {
+	if (strstr(CONFIG_CMDLINE, "janice")) {
 	sec_common_init() ;
 
 	sec_common_init_early() ;
@@ -2125,7 +2086,6 @@ static void __init janice_init_machine(void)
 #endif
 
 	platform_device_register(&db8500_prcmu_device);
-	platform_device_register(&u8500_usecase_gov_device);
 
 	u8500_init_devices();
 
@@ -2136,7 +2096,7 @@ static void __init janice_init_machine(void)
 
 	platform_add_devices(platform_devs, ARRAY_SIZE(platform_devs));
 
-	ssg_pins_init();
+	janice_ssg_pins_init();
 
 	u8500_cryp1_hash1_init();
 	janice_mxt_init();
@@ -2162,108 +2122,43 @@ static void __init janice_init_machine(void)
 	sec_common_init_post() ;
 
 	nmk_gpio_clocks_disable();
+	} else {
+		codina_init_machine();
+	}
 }
 
 static int __init  jig_smd_status(char *str)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	if (get_option(&str, &jig_smd) != 1)
 		jig_smd = 0;
 
 	return 1;
-
 }
-__setup("jig_smd=",jig_smd_status);
+}
+//__setup("jig_smd=",jig_smd_status);
 
-static int __init sec_debug_setup(char *str)
+static int __init  sec_debug_setup(char *str)
 {
+if (strstr(CONFIG_CMDLINE, "janice")) {
 	if (get_option(&str, &sec_debug_settings) != 1)
 		sec_debug_settings = 0;
 
 	return 1;
 }
-__setup("debug=",sec_debug_setup);
+}
+//__setup("debug=",sec_debug_setup);
 
 /* we have equally similar boards with very minimal
  * changes, so we detect the platform during boot
  */
-static int __init board_id_setup(char *str)
+static int __init  board_id_setup(char *str)
 {
-	unsigned int board_id;
-
-	if (get_option(&str, &board_id) != 1)
-		board_id = 0;
-
-	switch (board_id) {
-	case 7:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "JANICE Board Rev 0.0\n");
-#else
-		;
-#endif
-		system_rev = JANICE_R0_0;
-		break;
-	case 8:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "JANICE Board Rev 0.1\n");
-#else
-		;
-#endif
-		system_rev = JANICE_R0_1;
-		break;
-	case 9:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "JANICE Board Rev 0.2\n");
-#else
-		;
-#endif
-		system_rev = JANICE_R0_2;
-		break;
-	case 10:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "JANICE Board Rev 0.3\n");
-#else
-		;
-#endif
-		system_rev = JANICE_R0_3;
-		break;
-	case 11:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "JANICE Board Rev 0.4\n");
-#else
-		;
-#endif
-		system_rev = JANICE_R0_4;
-		break;
-	case 12:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "JANICE Board Rev 0.5\n");
-#else
-		;
-#endif
-		system_rev = JANICE_R0_5;
-		break;
-	case 13:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "JANICE Board Rev 0.6\n");
-#else
-		;
-#endif
-		system_rev = JANICE_R0_6;
-		break;
-	default:
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_INFO "Unknown board_id=%c\n", *str);
-#else
-		;
-#endif
-		break;
-	};
-
-	return 1;
+	unsigned int board_id = 12;
 }
-__setup("board_id=", board_id_setup);
+//__setup("board_id=", board_id_setup);
 
-MACHINE_START(JANICE, "SAMSUNG JANICE")
+MACHINE_START(CODINA, "SAMSUNG JANICE")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
 	.boot_params	= 0x00000100,
 	.map_io		= u8500_map_io,
