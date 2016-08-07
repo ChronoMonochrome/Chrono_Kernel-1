@@ -70,6 +70,7 @@
 #include <asm/cacheflush.h>
 #include <asm/processor.h>
 #include <asm/system.h>
+#include <asm/mach-types.h>
 #include <asm/thread_notify.h>
 #include <asm/stacktrace.h>
 #include <asm/mach/time.h>
@@ -99,6 +100,7 @@
 #include <linux/proc_fs.h>
 
 int lcdclk_usr;
+int display_initialized_during_boot = (int)true;
 
 #ifdef CONFIG_SAMSUNG_LOG_BUF
 
@@ -1459,4 +1461,18 @@ int pins_for_u9500(void) {
 	/* required by STE code */
 	return 0;
 }
+
+static int __init startup_graphics_setup(char *str)
+{
+	if (get_option(&str, &display_initialized_during_boot) != 1)
+		display_initialized_during_boot = false;
+
+	if (display_initialized_during_boot)
+		pr_info("Startup graphics support\n");
+	else
+		pr_info("No startup graphics supported\n");
+
+	return 1;
+}
+__setup("startup_graphics=", startup_graphics_setup);
 

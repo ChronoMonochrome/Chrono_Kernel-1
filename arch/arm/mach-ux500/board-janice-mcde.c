@@ -28,8 +28,10 @@
 #include "pins.h"
 #include <asm/mach-types.h>
 #include <mach/db8500-regs.h>
+#include <mach/sec_common.h>
 	 
 extern int lcdclk_usr;
+
 
 #define PRCMU_DPI_CLK_FREQ	66560000
 	 
@@ -43,32 +45,12 @@ enum {
 	MCDE_NR_OF_DISPLAYS
 };
 
-static int display_initialized_during_boot = (int)false;
-
 #ifndef CONFIG_HAS_EARLYSUSPEND
 static struct ux500_pins *dpi_pins;
 #endif
 
 static struct fb_info *primary_fbi;
 
-static int __init janice_startup_graphics_setup(char *str)
-{
-RUN_ON_JANICE_ONLY
-	if (get_option(&str, &display_initialized_during_boot) != 1)
-		display_initialized_during_boot = false;
-
-	if (display_initialized_during_boot) {
-		pr_info("Startup graphics support\n");
-	} else {
-		pr_info("No startup graphics supported\n");
-	};
-
-	return 1;
-}
-
-}	 
-__setup("startup_graphics=", janice_startup_graphics_setup);
-	 
 static struct mcde_port port0 = {
 	.type = MCDE_PORTTYPE_DPI,
 	.pixel_format = MCDE_PORTPIXFMT_DPI_24BPP,
