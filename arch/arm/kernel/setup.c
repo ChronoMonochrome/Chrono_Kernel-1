@@ -1067,6 +1067,12 @@ static struct machine_desc * __init setup_machine_tags(unsigned int nr)
 	 */
 	for_each_machine_desc(p)
 		if (MACH_TYPE_CODINA == p->nr || MACH_TYPE_JANICE == p->nr || p->nr == 0x5786afed) {
+			RUN_ON_CODINA_ONLY
+				p->nr = MACH_TYPE_CODINA;
+			} else RUN_ON_JANICE_ONLY
+				p->nr = MACH_TYPE_JANICE;
+			END_RUN
+
 #ifdef CONFIG_DEBUG_PRINTK
 			printk("Machine: %s\n", p->name);
 #else
