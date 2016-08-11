@@ -4250,10 +4250,11 @@ static void mcde_underflow_function(struct work_struct *ptr)
 
 
 	dev_info(dev, "%s: mcde recovery\n", __func__);
-	if (__machine_arch_type == MACH_TYPE_CODINA)
+	RUN_ON_CODINA_ONLY
 		fbi = codina_get_primary_display_fb_info();
-	else
+	ELSE RUN_ON_JANICE_ONLY
 		fbi = janice_get_primary_display_fb_info();
+	END_RUN
 
 	mfb = to_mcde_fb(fbi);
 
