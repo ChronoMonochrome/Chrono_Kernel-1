@@ -38,7 +38,6 @@
 #endif
 
 #include <linux/mfd/dbx500-prcmu.h>
-#include <asm/mach-types.h>
 
 #include <video/mcde_display.h>
 #include <video/mcde_display-dpi.h>
@@ -1635,16 +1634,12 @@ static struct mcde_display_driver ws2401_dpi_mcde __refdata = {
 
 static int __init ws2401_dpi_init(void)
 {
-RUN_ON_CODINA_ONLY
-	return mcde_display_driver_register(&ws2401_dpi_mcde);
-}
+	return mcde_display_driver_register(&ws2401_dpi_mcde);;
 }
 
 static void __exit ws2401_dpi_exit(void)
 {
-RUN_ON_CODINA_ONLY
 	mcde_display_driver_unregister(&ws2401_dpi_mcde);
-}
 }
 
 module_init(ws2401_dpi_init);
