@@ -54,27 +54,27 @@
 
 extern void log_this(u8 pc, char* a, u32 extra1, char* b, u32 extra2);
 
-static u8 boot_state = BOOT_INIT;
+u8 boot_state = BOOT_INIT;
 static u8 recieve_common_msg[8*1024];
 static u8 recieve_audio_msg[8*1024];
 static received_msg_handler rx_common_handler;
 static received_msg_handler rx_audio_handler;
-static struct hrtimer timer;
+struct hrtimer timer;
 static struct hrtimer mod_stuck_timer_0;
 static struct hrtimer mod_stuck_timer_1;
 static struct hrtimer fifo_full_timer;
 struct sock *shrm_nl_sk;
 
-static char shrm_common_tx_state = SHRM_SLEEP_STATE;
-static char shrm_common_rx_state = SHRM_SLEEP_STATE;
-static char shrm_audio_tx_state = SHRM_SLEEP_STATE;
-static char shrm_audio_rx_state = SHRM_SLEEP_STATE;
+char shrm_common_tx_state = SHRM_SLEEP_STATE;
+char shrm_common_rx_state = SHRM_SLEEP_STATE;
+char shrm_audio_tx_state = SHRM_SLEEP_STATE;
+char shrm_audio_rx_state = SHRM_SLEEP_STATE;
 
-static atomic_t ac_sleep_disable_count = ATOMIC_INIT(0);
+atomic_t ac_sleep_disable_count = ATOMIC_INIT(0);
 static atomic_t ac_msg_pend_1 = ATOMIC_INIT(0);
 static atomic_t mod_stuck = ATOMIC_INIT(0);
 static atomic_t fifo_full = ATOMIC_INIT(0);
-static struct shrm_dev *shm_dev;
+struct shrm_dev *shm_dev;
 
 /* Spin lock and tasklet declaration */
 DECLARE_TASKLET(shm_ca_0_tasklet, shm_ca_msgpending_0_tasklet, 0);
@@ -144,7 +144,7 @@ static void shm_ac_wake_req_work(struct kthread_work *work)
 	mutex_unlock(&ac_state_mutex);
 }
 
-static u32 get_host_accessport_val(void)
+u32 get_host_accessport_val(void)
 {
 	u32 prcm_hostaccess;
 	u32 status;
@@ -550,48 +550,7 @@ void shm_ac_read_notif_1_tasklet(unsigned long tasklet_data)
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 }
 
-void shm_ca_sleep_req_work(struct kthread_work *work)
-{
-	unsigned long flags;
-
-	dev_dbg(shm_dev->dev, "%s:IRQ_PRCMU_CA_SLEEP\n", __func__);
-
-	local_irq_save(flags);
-	preempt_disable();
-	if ((boot_state != BOOT_DONE) ||
-			(readl(shm_dev->ca_reset_status_rptr))) {
-		dev_err(shm_dev->dev, "%s:Modem state reset or unknown\n",
-				__func__);
-		preempt_enable();
-		local_irq_restore(flags);
-		return;
-	}
-	shrm_common_rx_state = SHRM_IDLE;
-	shrm_audio_rx_state =  SHRM_IDLE;
-
-	if (!get_host_accessport_val()) {
-		dev_err(shm_dev->dev, "%s: host_accessport is low\n", __func__);
-		queue_kthread_work(&shm_dev->shm_mod_stuck_kw,
-				&shm_dev->shm_mod_reset_req);
-		preempt_enable();
-		local_irq_restore(flags);
-		return;
-	}
-
-	log_this(40, NULL, 0, NULL, 0);
-	trace_printk("CA_WAKE_ACK\n");
-	writel((1<<GOP_CA_WAKE_ACK_BIT),
-		shm_dev->intr_base + GOP_SET_REGISTER_BASE);
-	preempt_enable();
-	local_irq_restore(flags);
-
-	hrtimer_start(&timer, ktime_set(0, 10*NSEC_PER_MSEC),
-			HRTIMER_MODE_REL);
-	if (suspend_sleep_is_blocked()) {
-		suspend_unblock_sleep();
-	}
-	atomic_dec(&ac_sleep_disable_count);
-}
+extern void shm_ca_sleep_req_work(struct kthread_work *work);
 
 void shm_ca_wake_req_work(struct kthread_work *work)
 {

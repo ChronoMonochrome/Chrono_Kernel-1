@@ -3,7 +3,7 @@
 #
 
 ifdef CONFIG_PHONET
-u8500_shrm-objs := 	modem_shrm_driver.o shrm_fifo.o shrm_protocol.o
+u8500_shrm-objs := 	modem_shrm_driver.o shrm_fifo.o shrm_protocol.o test.o
 else
 u8500_shrm-objs := 	shrm_driver.o shrm_fifo.o shrm_protocol.o
 endif
