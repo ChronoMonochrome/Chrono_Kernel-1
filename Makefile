@@ -382,7 +382,7 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -Werror-implicit-function-declaration \
 		  -Wno-format-security \
 		  -fno-delete-null-pointer-checks \
-		  -marm \
+		  -mthumb \
 		  -march=armv7-a \
 		  -mtune=cortex-a9 \
 		  -mcpu=cortex-a9 \
