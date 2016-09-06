@@ -48,12 +48,10 @@ ENTRY(context_save_arm_registers)
 	stmfd sp!, {r1, r2, r3, lr}		@ Save on stack
 	ldr r1, [r0]				@ Read backup stack pointer
 
-ARM(	stmia r1, {sp, lr}^	)		@ Store user mode sp and lr
+	stmia r1, {sp, lr}^			@ Store user mode sp and lr
 	                                        @ registers
-ARM(	add r1, r1, #8		)		@ Update backup pointer (not
+	add r1, r1, #8				@ Update backup pointer (not
 	                                        @ done in previous instruction)
-THUMB(	str sp, [r1], #+4	)
-THUMB(	str lr, [r1], #+4	)
 
 	mrs r2, cpsr				@ Get CPSR
 	SAVE_AND_INCREMENT r2 r1		@ Save CPSR register
@@ -71,32 +69,23 @@ THUMB(	str lr, [r1], #+4	)
 	orr r3, r2, #0x11			@ Save FIQ mode registers
 	msr cpsr_cxsf, r3
 	mrs r3, spsr
-ARM(	stmia r1!, {r3, r8-r14}		)
-THUMB(	stmia r1!, {r3, r8-r12, r14}	)
-THUMB(	str r13, [r1], #+4		)
-
+	stmia r1!, {r3, r8-r14}
 
 	orr r3, r2, #0x12			@ Save IRQ mode registers
 	msr cpsr_cxsf, r3
 	mrs r3, spsr
-ARM(	stmia r1!, {r3, r13, r14}	)
-THUMB(	stmia r1!, {r3, r14}		)
-THUMB(	str r13, [r1], #+4		)
+	stmia r1!, {r3, r13, r14}
 
 	orr r3, r2, #0x17			@ Save abort mode registers +
 	                                        @ common mode registers
 	msr cpsr_cxsf, r3
 	mrs r3, spsr
-ARM(	stmia r1!, {r3, r13, r14}	)
-THUMB(	stmia r1!, {r3, r14}		)
-THUMB(	str r13, [r1], #+4		)
+	stmia r1!, {r3, r13, r14}
 
 	orr r3, r2, #0x1B			@ Save undef mode registers
 	msr cpsr_cxsf, r3
 	mrs r3, spsr
-ARM(	stmia r1!, {r3, r13, r14}	)
-THUMB(	stmia r1!, {r3, r14}		)
-THUMB(	str r13, [r1], #+4		)
+	stmia r1!, {r3, r13, r14}
 
 	orr r3, r2, #0x13			@ Return to supervisor mode
 	msr cpsr_cxsf, r3
@@ -133,41 +122,30 @@ ENTRY(context_restore_arm_registers)
 
 	orr r3, r2, #0x1b			@ Restore undef mode registers
 	msr cpsr_cxsf, r3
-ARM(	ldmdb r1!, {r3, r13, r14}	)
-THUMB(	ldr r13, [r1], #-4		)
-THUMB(	ldmdb r1!, {r3, r14}		)
+	ldmdb r1!, {r3, r13, r14}
 	msr spsr_cxsf, r3
 
 	orr r3, r2, #0x17			@ Restore abort mode registers
 	msr cpsr_cxsf, r3
-ARM(	ldmdb r1!, {r3, r13, r14}	)
-THUMB(	ldr r13, [r1], #-4		)
-THUMB(	ldmdb r1!, {r3, r14}		)
+	ldmdb r1!, {r3, r13, r14}
 	msr spsr_cxsf, r3
 
 	orr r3, r2, #0x12			@ Restore IRQ mode registers
 	msr cpsr_cxsf, r3
-ARM(	ldmdb r1!, {r3, r13, r14}	)
-THUMB(	ldr r13, [r1], #-4		)
-THUMB(	ldmdb r1!, {r3, r14}		)
+	ldmdb r1!, {r3, r13, r14}
 	msr spsr_cxsf, r3
 
 	orr r3, r2, #0x11			@ Restore FIQ mode registers
 	msr cpsr_cxsf, r3
-ARM(	ldmdb r1!, {r3, r8-r14}		)
-THUMB(	ldr r13, [r1], #-4		)
-THUMB(	ldmdb r1!, {r3, r8-r12, r14}	)
-
+	ldmdb r1!, {r3, r8-r14}
 	msr spsr_cxsf, r3
 
 	DECREMENT_AND_RESTORE r1 r3		@ Restore cpsr register
 	msr cpsr_cxsf, r3
 
-ARM(	ldmdb r1, {sp, lr}^		)	@ Restore sp and lr registers
-ARM(	sub r1, r1, #8			)	@ Update backup pointer (not
+	ldmdb r1, {sp, lr}^			@ Restore sp and lr registers
+	sub r1, r1, #8				@ Update backup pointer (not
 	                                        @ done in previous instruction)
-THUMB(	ldr lr, [r1], #-4		)
-THUMB(	ldr sp, [r1], #-4		)
 
 	str r1, [r0]				@ Write backup stack pointer
 	ldmfd sp!, {r1, r2, r3, pc}		@ Restore registers and return
@@ -336,9 +314,7 @@ wayLoopL1clean:
 lineLoopL1clean:
 	mov     r2, r1, lsl #30			@ TODO: OK to hard-code
 	                                        @ SoC-specific L1 cache details?
-	mov     r3, r0, lsl #5
-	add     r2, r3
-@	add     r2, r0, lsl #5
+	add     r2, r0, lsl #5
 	mcr     p15, 0, r2, c7, c10, 2		@ Clean cache by set/way
 	add     r0, r0, #1
 	cmp     r0, #256			@ TODO: Ok with hard-coded
