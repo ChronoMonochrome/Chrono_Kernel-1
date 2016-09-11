@@ -1211,12 +1211,14 @@ static int ipx_proto(const struct sk_buff *skb,
 	int thoff = 0, tproto;
 
 	switch (par->family) {
+#ifdef CONFIG_IPV6
 	case NFPROTO_IPV6:
 		tproto = ipv6_find_hdr(skb, &thoff, -1, NULL);
 		if (tproto < 0)
 			MT_DEBUG("%s(): transport header not found in ipv6"
 				 " skb=%p\n", __func__, skb);
 		break;
+#endif
 	case NFPROTO_IPV4:
 		tproto = ip_hdr(skb)->protocol;
 		break;
