@@ -104,14 +104,21 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 
 	if (fp == NULL)
 	{
-	    pr_info("\n %s open failed", path);
+	    pr_err("%s open failed\n", path);
+	    return -EFAULT;
 	}
 
 	readline = (char*)kmalloc(4096, GFP_KERNEL);
 
-	read_byte = fp->f_op->read(fp, readline, 4096, &fp->f_pos);
+	if (fp->f_op != NULL)
+		read_byte = fp->f_op->read(fp, readline, 4096, &fp->f_pos);
+	else
+		goto err_cleanup;
 
-;
+	if (readline <= 0) {
+		pr_err("portlist: readline=%d\n", readline);
+		goto err_cleanup;
+	}
 
 #ifdef DEBUG_PORT_INFO
 	for ( index = 0; index < read_byte ; index++) {
@@ -139,12 +146,13 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 			//clear line buffer
 			memset(eachline, 0 , sizeof(eachline));
 			eachline_offset = 0;
-			}
+		}
 		eachline[eachline_offset++] = *(readline+readline_offset);
 		readline_offset++;
 	}
 
-	kfree(readline);
+	if (readline > 0)
+		kfree(readline);
 
 	if( fp != NULL ) {
 		filp_close(fp, NULL);
@@ -158,8 +166,8 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 
 	if (fp == NULL)
 	{
-	    pr_info("\n %s open failed", path);
-	    return 0;
+	    pr_err("%s open failed\n", path);
+	    return -EFAULT;
 	}
 
 	readline_offset = 0;
@@ -168,9 +176,15 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 
 	readline = (char*)kmalloc(4096, GFP_KERNEL);
 
-	read_byte = fp->f_op->read(fp, readline, 4096, &fp->f_pos);
+	if (fp->f_op != NULL)
+		read_byte = fp->f_op->read(fp, readline, 4096, &fp->f_pos);
+	else
+		goto err_cleanup;
 
-;
+	if (readline <= 0) {
+		pr_err("portlist: readline=%d\n", readline);
+		goto err_cleanup;
+	}
 
 #ifdef DEBUG_PORT_INFO
 	for ( index = 0; index < read_byte ; index++) {
@@ -185,7 +199,6 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 			{
 			sscanf(eachline,"%d: %32x:%x",&lineNum, &ip, &port);
 			//sscanf(readLine,"%*d: %*64[0-9a-fA-F]:%X", &port);
-;
 
 			if ( port != 0  && ip != 0x00000000)
 			{
@@ -198,12 +211,14 @@ static int readPortFromFile(const char* path,unsigned short* portList)
 			//clear line buffer
 			memset(eachline, 0 , sizeof(eachline));
 			eachline_offset = 0;
-			}
+		}
 		eachline[eachline_offset++] = *(readline+readline_offset);
 		readline_offset++;
 	}
 
-	kfree(readline);
+err_cleanup:
+	if (readline > 0)
+		kfree(readline);
 
 	if( fp != NULL ) {
 		filp_close(fp, NULL);
