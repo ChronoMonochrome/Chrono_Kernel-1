@@ -78,9 +78,7 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
 		Elf32_Sym *sym;
 		const char *symname;
 		s32 offset;
-#ifdef CONFIG_THUMB2_KERNEL
 		u32 upper, lower, sign, j1, j2;
-#endif
 
 		offset = ELF32_R_SYM(rel->r_info);
 		if (offset < 0 || offset > (symsec->sh_size / sizeof(Elf32_Sym))) {
@@ -163,7 +161,6 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
 					(offset & 0x0fff);
 			break;
 
-#ifdef CONFIG_THUMB2_KERNEL
 		case R_ARM_THM_CALL:
 		case R_ARM_THM_JUMP24:
 			upper = *(u16 *)loc;
@@ -203,9 +200,7 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
 			 * that interworking is not required.
 			 */
 			if ((ELF32_ST_TYPE(sym->st_info) == STT_FUNC &&
-				!(offset & 1)) ||
-			    offset <= (s32)0xff000000 ||
-			    offset >= (s32)0x01000000) {
+				!(offset & 1))) {
 				pr_err("%s: section %u reloc %u sym '%s': relocation %u out of range (%#lx -> %#x)\n",
 				       module->name, relindex, i, symname,
 				       ELF32_R_TYPE(rel->r_info), loc,
@@ -254,7 +249,6 @@ apply_relocate(Elf32_Shdr *sechdrs, const char *strtab, unsigned int symindex,
 						  ((offset & 0x0700) << 4) |
 						  (offset & 0x00ff));
 			break;
-#endif
 
 		default:
 			printk(KERN_ERR "%s: unknown relocation: %u\n",

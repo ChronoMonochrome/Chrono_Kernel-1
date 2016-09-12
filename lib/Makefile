@@ -1,8 +1,10 @@
 #
-# Makefile for some libs needed in the kernel.
+# Makefile for some objs needed in the kernel.
 #
 
 #CFLAGS_bench.o += -fno-lto
+
+lib-y := string.o
 
 CFLAGS_libcrc32c.o += -fno-strict-aliasing
 CFLAGS_kobject_uevent.o += -fno-strict-aliasing
@@ -14,7 +16,7 @@ ORIG_CFLAGS := $(KBUILD_CFLAGS)
 KBUILD_CFLAGS = $(subst -pg,,$(ORIG_CFLAGS))
 endif
 
-lib-y := md5.o int_sqrt.o sha1.o ctype.o string.o vsprintf.o cmdline.o \
+obj-y := md5.o int_sqrt.o sha1.o ctype.o vsprintf.o cmdline.o \
 	 rbtree.o radix-tree.o dump_stack.o timerqueue.o\
 	 idr.o extable.o prio_tree.o \
 	 irq_regs.o reciprocal_div.o argv_split.o \
@@ -22,10 +24,10 @@ lib-y := md5.o int_sqrt.o sha1.o ctype.o string.o vsprintf.o cmdline.o \
 	 is_single_threaded.o plist.o decompress.o find_next_bit.o \
 	 memcopy.o
 
-lib-$(CONFIG_MMU) += ioremap.o
-lib-$(CONFIG_SMP) += cpumask.o
+obj-$(CONFIG_MMU) += ioremap.o
+obj-$(CONFIG_SMP) += cpumask.o
 
-lib-y	+= kobject.o kref.o klist.o
+obj-y	+= kobject.o kref.o klist.o
 
 obj-y += bcd.o div64.o sort.o parser.o halfmd4.o debug_locks.o random32.o \
 	 bust_spinlocks.o hexdump.o kasprintf.o bitmap.o scatterlist.o \
@@ -39,14 +41,14 @@ CFLAGS_kobject.o += -DDEBUG
 CFLAGS_kobject_uevent.o += -DDEBUG
 endif
 
-lib-$(CONFIG_HOTPLUG) += kobject_uevent.o
+obj-$(CONFIG_HOTPLUG) += kobject_uevent.o
 obj-$(CONFIG_GENERIC_IOMAP) += iomap.o
 obj-$(CONFIG_HAS_IOMEM) += iomap_copy.o devres.o
 obj-$(CONFIG_CHECK_SIGNATURE) += check_signature.o
 obj-$(CONFIG_DEBUG_LOCKING_API_SELFTESTS) += locking-selftest.o
 obj-$(CONFIG_DEBUG_SPINLOCK) += spinlock_debug.o
-lib-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
-lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
+obj-$(CONFIG_RWSEM_GENERIC_SPINLOCK) += rwsem-spinlock.o
+obj-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
 
 CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
 obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
@@ -57,7 +59,7 @@ obj-$(CONFIG_DEBUG_LIST) += list_debug.o
 obj-$(CONFIG_DEBUG_OBJECTS) += debugobjects.o
 
 ifneq ($(CONFIG_HAVE_DEC_LOCK),y)
-  lib-y += dec_and_lock.o
+  obj-y += dec_and_lock.o
 endif
 
 obj-$(CONFIG_BITREVERSE) += bitrev.o
@@ -84,12 +86,12 @@ obj-$(CONFIG_LZ4_DECOMPRESS) += lz4/
 obj-$(CONFIG_XZ_DEC) += xz/
 obj-$(CONFIG_RAID6_PQ) += raid6/
 
-lib-$(CONFIG_DECOMPRESS_GZIP) += decompress_inflate.o
-lib-$(CONFIG_DECOMPRESS_BZIP2) += decompress_bunzip2.o
-lib-$(CONFIG_DECOMPRESS_LZMA) += decompress_unlzma.o
-lib-$(CONFIG_DECOMPRESS_XZ) += decompress_unxz.o
-lib-$(CONFIG_DECOMPRESS_LZO) += decompress_unlzo.o
-lib-$(CONFIG_DECOMPRESS_LZ4) += decompress_unlz4.o
+obj-$(CONFIG_DECOMPRESS_GZIP) += decompress_inflate.o
+obj-$(CONFIG_DECOMPRESS_BZIP2) += decompress_bunzip2.o
+obj-$(CONFIG_DECOMPRESS_LZMA) += decompress_unlzma.o
+obj-$(CONFIG_DECOMPRESS_XZ) += decompress_unxz.o
+obj-$(CONFIG_DECOMPRESS_LZO) += decompress_unlzo.o
+obj-$(CONFIG_DECOMPRESS_LZ4) += decompress_unlz4.o
 
 obj-$(CONFIG_TEXTSEARCH) += textsearch.o
 obj-$(CONFIG_TEXTSEARCH_KMP) += ts_kmp.o
@@ -103,7 +105,7 @@ obj-$(CONFIG_IOMMU_HELPER) += iommu-helper.o
 obj-$(CONFIG_FAULT_INJECTION) += fault-inject.o
 obj-$(CONFIG_CPU_NOTIFIER_ERROR_INJECT) += cpu-notifier-error-inject.o
 
-lib-$(CONFIG_GENERIC_BUG) += bug.o
+obj-$(CONFIG_GENERIC_BUG) += bug.o
 
 obj-$(CONFIG_HAVE_ARCH_TRACEHOOK) += syscall.o
 
