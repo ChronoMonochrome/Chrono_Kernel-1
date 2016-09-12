@@ -67,7 +67,7 @@ ipc_hdr_type hdr;
 struct ipc_pwr_ape_state_evt_type ape_state_evt;
 } __attribute__((__packed__));
 
-unsigned char get_control_infoid( void )
+static unsigned char get_control_infoid( void )
 {
 	unsigned char s_infoid = 0;
 
@@ -246,7 +246,7 @@ static int activePortGet(int portType, unsigned short* portList)
 static ipc_pda_gprs_port_list_set_type port_list_packet;
 char* hdlc_frame = NULL;
 
-int TxGPRS_SetPortList( void )
+static int TxGPRS_SetPortList( void )
 {
 	int hdlc_size;
 	char *rawdata = NULL;

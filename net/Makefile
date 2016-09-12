@@ -10,7 +10,8 @@ KBUILD_CFLAGS += -Werror=incompatible-pointer-types
 
 obj-y	:= nonet.o
 
-obj-$(CONFIG_NET)		:= socket.o dummy.o core/
+obj-$(CONFIG_NET)		:= dummy.o
+obj-$(CONFIG_NET)		+= socket.o core/
 
 tmp-$(CONFIG_COMPAT) 		:= compat.o
 obj-$(CONFIG_NET)		+= $(tmp-y)
