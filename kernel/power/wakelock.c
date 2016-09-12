@@ -28,9 +28,11 @@
 #include "power.h"
 
 
+#ifdef CONFIG_SVNET_WHITELIST
 #include <linux/delay.h>
 #include "portlist.h"
 extern int jig_smd; /* [Modem] 1 == local mode, 0 == normal mode */
+#endif /* CONFIG_SVNET_WHITELIST */
 
 enum {
 	DEBUG_EXIT_SUSPEND = 1U << 0,
@@ -305,17 +307,30 @@ static void suspend(struct work_struct *work)
 	}
 
 
-	pr_err("[%s] jig_smd: %d\n", __func__, jig_smd);
+#ifdef CONFIG_SVNET_WHITELIST
+	pr_info("[%s] jig_smd: %d\n", __func__, jig_smd);
 	if (jig_smd == 0) { /* modem == normal mode */
-		if (has_wake_lock(WAKE_LOCK_SUSPEND)) {
+		ret = process_whilte_list();
+		pr_info("[%s]-process_whilte_list(): %d\n", __func__, ret);
+
+		if (unlikely(ret != 0)) {
+			pr_info("fail to send whitelist\n");
+			return;
+		} else {
+			if (has_wake_lock(WAKE_LOCK_SUSPEND)) {
+				if (debug_mask & DEBUG_SUSPEND)
+					pr_info("suspend: abort suspend after processing white list\n");
+				return;
+			}
 			ret1 = tx_ap_state(AP_STATE_SLEEP);
-			pr_err("tx_ap_state(SLEEP): %d\n", ret1);
+			pr_info("tx_ap_state(SLEEP): %d\n", ret1);
 			if (unlikely(ret1 != 0)) {
-				pr_err("fail to send SLEEP IPC\n");
+				pr_info("fail to send SLEEP IPC\n");
 				return;
 			}
 		}
 	}
+#endif
 
 	entry_event_num = current_event_num;
 #ifdef CONFIG_PM_SYNC_CTRL
@@ -329,14 +344,16 @@ static void suspend(struct work_struct *work)
 	getnstimeofday(&ts_entry);
 	ret = pm_suspend(requested_suspend_state);
 
+#ifdef CONFIG_SVNET_WHITELIST
 	if (jig_smd == 0) { /* modem == normal mode */
 		ret1 = tx_ap_state(AP_STATE_WAKEUP);
-		pr_err("tx_ap_state(WAKEUP): %d\n", ret1);
+		pr_info("tx_ap_state(WAKEUP): %d\n", ret1);
 		if (unlikely(ret1 != 0)) {
-			pr_err("fail to send WAKEUP IPC\n");
+			pr_info("fail to send WAKEUP IPC\n");
 			return;
 		}
 	}
+#endif
 
 	getnstimeofday(&ts_exit);
 

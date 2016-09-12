@@ -351,7 +351,7 @@ int writePacketToFile(char *abuf, int length)
 	return ret;
 }
 
-static int process_whilte_list(void)
+int process_whilte_list(void)
 {
 	int length = 0;
 	int ret = 0;
