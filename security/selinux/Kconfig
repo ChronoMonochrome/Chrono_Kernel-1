@@ -3,7 +3,8 @@
 #endif
 config SECURITY_SELINUX
 	bool "NSA SELinux Support"
-	depends on NET && INET
+	depends on SECURITY_NETWORK && AUDIT && NET && INET
+	select NETWORK_SECMARK
 	default n
 	help
 	  This selects NSA Security-Enhanced Linux (SELinux).
