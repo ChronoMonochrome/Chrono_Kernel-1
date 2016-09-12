@@ -78,11 +78,3 @@ obj-$(CONFIG_U8500_CM)		+= nmf-cm/
 obj-$(CONFIG_AB5500_SIM)	+= ab5500_sim/
 obj-$(CONFIG_CWXXXX_ETF)	+= etf_drivers/
 obj-$(CONFIG_VNSWAP)		+= vnswap/
-AFLAGS_AUTOIT   :=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
-AFLAGS_NOWARN   :=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
-CFLAGS_THUMB2   :=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
-AFLAGS_THUMB2   :=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
-
-KBUILD_AFLAGS += $(AFLAGS_THUMB2)
-KBUILD_CFLAGS += $(CFLAGS_THUMB2)
-
