@@ -41,7 +41,11 @@ struct mod_arch_specific {
 #endif
 
 /* Add instruction set architecture tag to distinguish ARM/Thumb kernels */
+#ifdef CONFIG_THUMB2_KERNEL
 #define MODULE_ARCH_VERMAGIC_ARMTHUMB "thumb2 "
+#else
+#define MODULE_ARCH_VERMAGIC_ARMTHUMB ""
+#endif
 
 #define MODULE_ARCH_VERMAGIC \
 	MODULE_ARCH_VERMAGIC_ARMVSN \

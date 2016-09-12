@@ -1,21 +1,19 @@
 #
-# linux/arch/arm/obj/Makefile
+# linux/arch/arm/lib/Makefile
 #
 # Copyright (C) 1995-2000 Russell King
 #
-lib-y := dummy.o
-# memcpy-lib.o memmove-lib.o
 
-obj-y		:= backtrace.o changebit.o csumipv6.o csumpartial.o   \
+lib-y		:= backtrace.o changebit.o csumipv6.o csumpartial.o   \
 		   csumpartialcopy.o csumpartialcopyuser.o clearbit.o \
 		   delay.o findbit.o memchr.o
 
-# Build memcpy and memmove only if GLIBC versions are not used
-#ifneq ($(CONFIG_ARM_USE_GLIBC_MEMCOPY),y)
-#  obj-y		+= memcpy.o memmove.o
-#endif
+# Build memcpy and memmove only if GLibC versions are not used
+ifneq ($(CONFIG_ARM_USE_GLIBC_MEMCOPY),y)
+  lib-y		+= memcpy.o memmove.o
+endif
 
-obj-y		+= memset.o memzero.o setbit.o                        \
+lib-y		+= memset.o memzero.o setbit.o                        \
 		   strchr.o strrchr.o                                 \
 		   testchangebit.o testclearbit.o testsetbit.o        \
 		   ashldi3.o ashrdi3.o lshrdi3.o muldi3.o             \
@@ -36,19 +34,19 @@ else
 endif
 endif
 
-# using obj_ here won't override already available weak symbols
+# using lib_ here won't override already available weak symbols
 obj-$(CONFIG_UACCESS_WITH_MEMCPY) += uaccess_with_memcpy.o
 
-obj-$(CONFIG_MMU) += $(mmu-y)
+lib-$(CONFIG_MMU) += $(mmu-y)
 
 ifeq ($(CONFIG_CPU_32v3),y)
-  obj-y	+= io-readsw-armv3.o io-writesw-armv3.o
+  lib-y	+= io-readsw-armv3.o io-writesw-armv3.o
 else
-  obj-y	+= io-readsw-armv4.o io-writesw-armv4.o
+  lib-y	+= io-readsw-armv4.o io-writesw-armv4.o
 endif
 
-obj-$(CONFIG_ARCH_RPC)		+= ecard.o io-acorn.o floppydma.o
-obj-$(CONFIG_ARCH_SHARK)	+= io-shark.o
+lib-$(CONFIG_ARCH_RPC)		+= ecard.o io-acorn.o floppydma.o
+lib-$(CONFIG_ARCH_SHARK)	+= io-shark.o
 
 $(obj)/csumpartialcopy.o:	$(obj)/csumpartialcopygeneric.S
 $(obj)/csumpartialcopyuser.o:	$(obj)/csumpartialcopygeneric.S

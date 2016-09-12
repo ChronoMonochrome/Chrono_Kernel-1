@@ -1,4 +1,3 @@
-#if 0
 /*
  * Provide a default dump_stack() function for architectures
  * which don't implement their own.
@@ -18,4 +17,3 @@ void dump_stack(void)
 }
 
 EXPORT_SYMBOL(dump_stack);
-#endif

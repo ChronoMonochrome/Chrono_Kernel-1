@@ -1,4 +1,3 @@
-#if 0
 /*
  * Generic show_mem() implementation
  *
@@ -93,4 +92,3 @@ void show_mem(unsigned int filter)
 #endif
 #endif
 }
-#endif
