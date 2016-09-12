@@ -3,4 +3,4 @@ config INTEGRITY
 	def_bool y
 	depends on IMA
 
-source security/integrity/ima/Kconfig
+source security/thumbintegrity/ima/Kconfig
