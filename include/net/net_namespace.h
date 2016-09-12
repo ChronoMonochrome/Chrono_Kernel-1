@@ -14,7 +14,7 @@
 #include <net/netns/unix.h>
 #include <net/netns/packet.h>
 #include <net/netns/ipv4.h>
-#ifdef CONFIG_IPV6
+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 #include <net/netns/ipv6.h>
 #endif
 #include <net/netns/dccp.h>

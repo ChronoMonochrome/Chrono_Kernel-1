@@ -510,7 +510,7 @@ int inet6_killaddr_ioctl(struct net *net, void __user *arg) {
 
 	sin6.sin6_family = AF_INET6;
 	ipv6_addr_copy(&sin6.sin6_addr, &ireq.ifr6_addr);
-	return tcp_nuke_addr(net, (struct sockaddr *) &sin6);
+	return 0; // tcp_nuke_addr(net, (struct sockaddr *) &sin6);
 }
 
 int inet6_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)

@@ -173,7 +173,7 @@ u32 addrconf_rt_table(const struct net_device *dev, u32 default_table);
 
 
 /* Device notifier */
-#ifdef CONFIG_IPV6
+#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 extern int register_inet6addr_notifier(struct notifier_block *nb);
 extern int unregister_inet6addr_notifier(struct notifier_block *nb);
 #endif
