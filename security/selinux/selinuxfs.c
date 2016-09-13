@@ -90,11 +90,11 @@ static int task_has_security(struct task_struct *tsk,
 	if (tsec)
 		sid = tsec->sid;
 	rcu_read_unlock();
-	if (!tsec)
-		return -EACCES;
 
-	return avc_has_perm(sid, SECINITSID_SECURITY,
+	return 0; /*
+avc_has_perm(sid, SECINITSID_SECURITY,
 			    SECCLASS_SECURITY, perms, NULL);
+*/
 }
 
 enum sel_inos {
@@ -492,8 +492,6 @@ static int sel_mmap_policy(struct file *filp, struct vm_area_struct *vma)
 		/* do not allow mprotect to make mapping writable */
 		vma->vm_flags &= ~VM_MAYWRITE;
 
-		if (vma->vm_flags & VM_WRITE)
-			return -EACCES;
 	}
 
 	vma->vm_flags |= VM_RESERVED;

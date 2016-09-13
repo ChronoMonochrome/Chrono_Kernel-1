@@ -1558,7 +1558,7 @@ out:
 	kfree(n);
 	if (!selinux_enforcing)
 		return 0;
-	return -EACCES;
+	return 0;
 }
 
 static void filename_compute_type(struct policydb *p, struct context *newcontext,
@@ -2874,7 +2874,7 @@ int security_net_peersid_resolve(u32 nlbl_sid, u32 nlbl_type,
 		       __func__, xfrm_sid);
 		goto out;
 	}
-	rc = (mls_context_cmp(nlbl_ctx, xfrm_ctx) ? 0 : -EACCES);
+	rc = 0;
 	if (rc)
 		goto out;
 

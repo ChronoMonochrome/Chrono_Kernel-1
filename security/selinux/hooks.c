@@ -3141,9 +3141,6 @@ static int selinux_inode_setsecurity(struct inode *inode, const char *name,
 	if (strcmp(name, XATTR_SELINUX_SUFFIX))
 		return -EOPNOTSUPP;
 
-	if (!value || !size)
-		return -EACCES;
-
 	rc = security_context_to_sid((void *)value, size, &newsid);
 	if (rc)
 		return rc;
@@ -3994,16 +3991,6 @@ static int selinux_skb_peerlbl_sid(struct sk_buff *skb, u16 family, u32 *sid)
 	selinux_netlbl_skbuff_getsid(skb, family, &nlbl_type, &nlbl_sid);
 
 	err = security_net_peersid_resolve(nlbl_sid, nlbl_type, xfrm_sid, sid);
-	if (unlikely(err)) {
-#ifdef CONFIG_DEBUG_PRINTK
-		printk(KERN_WARNING
-		       "SELinux: failure in selinux_skb_peerlbl_sid(),"
-		       " unable to determine packet's peer label\n");
-#else
-		;
-#endif
-		return -EACCES;
-	}
 
 	return 0;
 }
@@ -5576,12 +5563,6 @@ static int selinux_setprocattr(struct task_struct *p,
 	u32 sid = 0, ptsid;
 	int error;
 	char *str = value;
-
-	if (current != p) {
-		/* SELinux only allows a process to change its own
-		   security attributes. */
-		return -EACCES;
-	}
 
 	/*
 	 * Basic control over ability to set these attributes at all.

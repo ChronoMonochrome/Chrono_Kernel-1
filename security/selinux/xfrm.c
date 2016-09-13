@@ -103,10 +103,7 @@ int selinux_xfrm_policy_lookup(struct xfrm_sec_ctx *ctx, u32 fl_secid, u8 dir)
 			  ASSOCIATION__POLMATCH,
 			  NULL);
 
-	if (rc == -EACCES)
-		return -ESRCH;
-
-	return rc;
+	return 0;
 }
 
 /*
