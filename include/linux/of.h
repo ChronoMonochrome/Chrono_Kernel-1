@@ -63,7 +63,7 @@ struct device_node {
 #endif
 };
 
-#ifdef CONFIG_OF
+#if defined(CONFIG_OF) || defined(CONFIG_CPU_FREQ_STAT)
 
 /* Pointer for first entry in chain of all nodes. */
 extern struct device_node *allnodes;
