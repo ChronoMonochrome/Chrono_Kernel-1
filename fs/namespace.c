@@ -747,9 +747,9 @@ static struct mount *clone_mnt(struct mount *old, struct dentry *root,
 	mnt->mnt.mnt_root = dget(root);
 	mnt->mnt_mountpoint = mnt->mnt.mnt_root;
 	mnt->mnt_parent = mnt;
-	br_write_lock(&vfsmount_lock);
+	br_write_lock(vfsmount_lock);
 	list_add_tail(&mnt->mnt_instance, &sb->s_mounts);
-	br_write_unlock(&vfsmount_lock);
+	br_write_unlock(vfsmount_lock);
 
 	if (flag & CL_SLAVE) {
 		list_add(&mnt->mnt_slave, &old->mnt_slave_list);
@@ -2669,9 +2669,9 @@ void kern_unmount(struct vfsmount *mnt)
 {
 	/* release long term mount so mount point can be released */
 	if (!IS_ERR_OR_NULL(mnt)) {
-		br_write_lock(&vfsmount_lock);
+		br_write_lock(vfsmount_lock);
 		real_mount(mnt)->mnt_ns = NULL;
-		br_write_unlock(&vfsmount_lock);
+		br_write_unlock(vfsmount_lock);
 		mntput(mnt);
 	}
 }
