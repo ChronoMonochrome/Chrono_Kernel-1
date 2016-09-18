@@ -83,30 +83,6 @@ appid_t get_appid(void *pkgl_id, const char *app_name)
 	return 0;
 }
 
-/* Kernel has already enforced everything we returned through
- * derive_permissions_locked(), so this is used to lock down access
- * even further, such as enforcing that apps hold sdcard_rw. */
-int check_caller_access_to_name(struct inode *parent_node, const char* name) {
-
-	/* Always block security-sensitive files at root */
-	if (parent_node && SDCARDFS_I(parent_node)->perm == PERM_ROOT) {
-		if (!strcasecmp(name, "autorun.inf")
-			|| !strcasecmp(name, ".android_secure")
-			|| !strcasecmp(name, "android_secure")) {
-			return 0;
-		}
-	}
-
-	/* Root always has access; access for any other UIDs should always
-	 * be controlled through packages.list. */
-	if (current_fsuid() == 0) {
-		return 1;
-	}
-
-	/* No extra permissions to enforce */
-	return 1;
-}
-
 /* This function is used when file opening. The open flags must be
  * checked before calling check_caller_access_to_name() */
 int open_flags_to_access_mode(int open_flags) {
