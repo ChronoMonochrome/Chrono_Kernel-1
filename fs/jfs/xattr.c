@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *   Copyright (C) International Business Machines  Corp., 2000-2004
  *   Copyright (C) Christoph Hellwig, 2002
@@ -175,15 +172,7 @@ static int ea_write_inline(struct inode *ip, struct jfs_ea_list *ealist,
 		 * used for an inline EA.
 		 */
 		if (!(ji->mode2 & INLINEEA) && !(ji->ea.flag & DXD_INLINE))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 
 		DXDsize(ea, size);
 		DXDlength(ea, 0);
@@ -581,7 +570,7 @@ static int ea_get(struct inode *inode, struct ea_buffer *ea_buf, int min_size)
 
       size_check:
 	if (EALIST_SIZE(ea_buf->xattr) != ea_size) {
-;
+		printk(KERN_ERR "ea_get: invalid extended attribute\n");
 		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 16, 1,
 				     ea_buf->xattr, ea_size, 1);
 		ea_release(inode, ea_buf);
@@ -690,15 +679,7 @@ static int can_set_system_xattr(struct inode *inode, const char *name,
 	int rc;
 
 	if (!inode_owner_or_capable(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/*
 	 * POSIX_ACL_XATTR_ACCESS is tied to i_mode
@@ -707,17 +688,17 @@ return -EPERM;
 		acl = posix_acl_from_xattr(&init_user_ns, value, value_len);
 		if (IS_ERR(acl)) {
 			rc = PTR_ERR(acl);
-//			printk(KERN_ERR "posix_acl_from_xattr returned %d\n",
-;
+			printk(KERN_ERR "posix_acl_from_xattr returned %d\n",
+			       rc);
 			return rc;
 		}
 		if (acl) {
-			rc = posix_acl_equiv_mode(acl, &inode->i_mode);
+			rc = posix_acl_update_mode(inode, &inode->i_mode, &acl);
 			posix_acl_release(acl);
-			if (rc < 0) {
-//				printk(KERN_ERR
-//				       "posix_acl_equiv_mode returned %d\n",
-;
+			if (rc) {
+				printk(KERN_ERR
+				       "posix_acl_update_mode returned %d\n",
+				       rc);
 				return rc;
 			}
 			mark_inode_dirty(inode);
@@ -732,8 +713,8 @@ return -EPERM;
 		acl = posix_acl_from_xattr(&init_user_ns, value, value_len);
 		if (IS_ERR(acl)) {
 			rc = PTR_ERR(acl);
-//			printk(KERN_ERR "posix_acl_from_xattr returned %d\n",
-;
+			printk(KERN_ERR "posix_acl_from_xattr returned %d\n",
+			       rc);
 			return rc;
 		}
 		posix_acl_release(acl);
@@ -892,9 +873,9 @@ int __jfs_setxattr(tid_t tid, struct inode *inode, const char *name,
 
 	/* DEBUG - If we did this right, these number match */
 	if (xattr_size != new_size) {
-//		printk(KERN_ERR
-//		       "jfs_xsetattr: xattr_size = %d, new_size = %d\n",
-;
+		printk(KERN_ERR
+		       "jfs_xsetattr: xattr_size = %d, new_size = %d\n",
+		       xattr_size, new_size);
 
 		rc = -EINVAL;
 		goto release;

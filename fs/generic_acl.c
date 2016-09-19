@@ -98,14 +98,10 @@ return -EPERM;
 			goto failed;
 		switch (type) {
 		case ACL_TYPE_ACCESS:
-			error = posix_acl_equiv_mode(acl, &inode->i_mode);
-			if (error < 0)
+			error = posix_acl_update_mode(inode, &inode->i_mode, &acl);
+			if (error)
 				goto failed;
 			inode->i_ctime = CURRENT_TIME;
-			if (error == 0) {
-				posix_acl_release(acl);
-				acl = NULL;
-			}
 			break;
 		case ACL_TYPE_DEFAULT:
 			if (!S_ISDIR(inode->i_mode)) {
