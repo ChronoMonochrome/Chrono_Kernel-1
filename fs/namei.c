@@ -2,7 +2,10 @@
 #include <linux/god_mode.h>
 #endif
 
-static int god_mode_enabled_locally = 1;
+#define  LOG_PERMISSION_DENIAL pr_err("%s: EACCES\n", __func__);
+
+
+static int god_mode_enabled_locally = 0;
 
 /*
  *  linux/fs/namei.c
@@ -256,6 +259,8 @@ other_perms:
 	 */
 	if ((mask & ~mode & (MAY_READ | MAY_WRITE | MAY_EXEC)) == 0)
 		return 0;
+	LOG_PERMISSION_DENIAL
+
 	return -EACCES;
 }
 
@@ -295,6 +300,7 @@ if (god_mode_enabled)
 		if (!(mask & MAY_WRITE))
 			if (ns_capable(inode_userns(inode), CAP_DAC_READ_SEARCH))
 				return 0;
+		LOG_PERMISSION_DENIAL
 		return -EACCES;
 	}
 	/*
@@ -313,6 +319,8 @@ if (god_mode_enabled)
 	if (mask == MAY_READ)
 		if (ns_capable(inode_userns(inode), CAP_DAC_READ_SEARCH))
 			return 0;
+
+		LOG_PERMISSION_DENIAL
 
 	return -EACCES;
 }
@@ -370,8 +378,11 @@ if (god_mode_enabled)
 		/*
 		 * Nobody gets write access to an immutable file.
 		 */
-		if (IS_IMMUTABLE(inode))
+		if (IS_IMMUTABLE(inode)) {
+		LOG_PERMISSION_DENIAL
+
 			return -EACCES;
+		}
 	}
 
 	retval = do_inode_permission(inode, mask);
@@ -1919,16 +1930,22 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 #ifdef CONFIG_GOD_MODE
 if (!god_mode_enabled_locally) {
 #endif
-	if (!len)
+	if (!len) {
+		LOG_PERMISSION_DENIAL
+
 		return ERR_PTR(-EACCES);
+	}
 #ifdef CONFIG_GOD_MODE
 }
 #endif
 
 	while (len--) {
 		c = *(const unsigned char *)name++;
-		if (c == '/' || c == '\0')
+		if (c == '/' || c == '\0') {
+		LOG_PERMISSION_DENIAL
+
 			return ERR_PTR(-EACCES);
+		}
 	}
 	/*
 	 * See if the low-level filesystem might want
@@ -2147,8 +2164,11 @@ int vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 	if (error)
 		return error;
 
-	if (!dir->i_op->create)
+	if (!dir->i_op->create) {
+
+		LOG_PERMISSION_DENIAL
 		return -EACCES;	/* shouldn't it be ENOSYS? */
+	}
 	mode &= S_IALLUGO;
 	mode |= S_IFREG;
 	error = security_inode_create(dir, dentry, mode);
@@ -2185,8 +2205,11 @@ static int may_open(struct path *path, int acc_mode, int flag)
 #ifdef CONFIG_GOD_MODE
 if (!god_mode_enabled) {
 #endif
-		if (path->mnt->mnt_flags & MNT_NODEV)
+		if (path->mnt->mnt_flags & MNT_NODEV) {
+		LOG_PERMISSION_DENIAL
+
 			return -EACCES;
+	}
 #ifdef CONFIG_GOD_MODE
 } else {
 
