@@ -379,13 +379,13 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
 		 * with the "noexec" flag.
 		 */
 #ifdef CONFIG_GOD_MODE
-//if (!god_mode_enabled)
+if (!god_mode_enabled)
 #endif
-		//res = -EACCES;
-		//if (path.mnt->mnt_flags & MNT_NOEXEC)
-		//	goto out_path_release;
+		res = -EACCES;
+		if (path.mnt->mnt_flags & MNT_NOEXEC)
+			goto out_path_release;
 	}
-	//res = inode_permission(inode, mode | MAY_ACCESS);
+	res = inode_permission(inode, mode | MAY_ACCESS);
 	/* SuS v2 requires we report a read only fs too */
 	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
 		goto out_path_release;
