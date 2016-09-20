@@ -2,8 +2,6 @@
 #include <linux/god_mode.h>
 #endif
 
-static int god_mode_enabled_locally = 0;
-
 /*
  *  linux/fs/namei.c
  *
@@ -1275,7 +1273,7 @@ need_lookup:
 static inline int may_lookup(struct nameidata *nd)
 {
 #ifdef CONFIG_GOD_MODE
-if (god_mode_enabled_locally)
+if (god_mode_enabled)
 	return 0;
 #endif
 	if (nd->flags & LOOKUP_RCU) {
@@ -1933,7 +1931,7 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 	this.len = len;
 	this.hash = full_name_hash(name, len);
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled_locally) {
+if (!god_mode_enabled) {
 #endif
 	if (!len) {
 		LOG_PERMISSION_DENIAL
@@ -2069,7 +2067,7 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled_locally)
+ if (!god_mode_enabled)
 #endif
 pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
@@ -2081,7 +2079,7 @@ return -EPERM;
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled_locally)
+ if (!god_mode_enabled)
 #endif
 pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
