@@ -2,9 +2,6 @@
 #include <linux/god_mode.h>
 #endif
 
-#define  LOG_PERMISSION_DENIAL pr_err("%s: EACCES\n", __func__);
-
-
 static int god_mode_enabled_locally = 0;
 
 /*
@@ -46,6 +43,14 @@ static int god_mode_enabled_locally = 0;
 
 #include "internal.h"
 #include "mount.h"
+
+static unsigned int debug = 0;
+module_param(debug, uint, 0644);
+
+#define  LOG_PERMISSION_DENIAL 			 	 \
+		if (unlikely(debug != 0))	 	 \
+			pr_err("%s: EACCES\n", __func__);\
+
 
 /* [Feb-1997 T. Schoebel-Theuer]
  * Fundamental changes in the pathname lookup mechanisms (namei)
