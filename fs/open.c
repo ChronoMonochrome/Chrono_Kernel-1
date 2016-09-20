@@ -1,6 +1,9 @@
 #ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
+//#include <linux/god_mode.h>
 #endif
+
+
+static int god_mode_enabled_locally=1;
 /*
  *  linux/fs/open.c
  *
@@ -97,7 +100,7 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
 		goto mnt_drop_write_and_out;
 
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
+if (!god_mode_enabled_locally) {
 #endif
 	error = -EPERM;
 	if (IS_APPEND(inode))
@@ -170,7 +173,7 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
 		goto out_putf;
 
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
+if (!god_mode_enabled_locally) {
 #endif
 	error = -EPERM;
 	if (IS_APPEND(inode))
@@ -254,7 +257,7 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -265,7 +268,7 @@ return -EPERM;
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -368,7 +371,7 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
 		 * with the "noexec" flag.
 		 */
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled)
+if (!god_mode_enabled_locally)
 #endif
 		res = -EACCES;
 		if (path.mnt->mnt_flags & MNT_NOEXEC)
@@ -466,7 +469,7 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
 		goto dput_and_out;
 
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
+if (!god_mode_enabled_locally) {
 #endif
 	error = -EPERM;
 	if (!capable(CAP_SYS_CHROOT))
@@ -1151,7 +1154,7 @@ SYSCALL_DEFINE0(vhangup)
 	
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE

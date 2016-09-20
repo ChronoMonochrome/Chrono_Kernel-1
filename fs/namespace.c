@@ -1,6 +1,7 @@
 #ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
+//#include <linux/god_mode.h>
 #endif
+static int god_mode_enabled_locally=1;
 /*
  *  linux/fs/namespace.c
  *
@@ -1212,7 +1213,7 @@ SYSCALL_DEFINE2(umount, char __user *, name, int, flags)
 		goto dput_and_out;
 
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
+if (!god_mode_enabled_locally) {
 #endif
 	retval = -EPERM;
 	if (!capable(CAP_SYS_ADMIN))
@@ -1245,7 +1246,7 @@ SYSCALL_DEFINE1(oldumount, char __user *, name)
 static int mount_is_safe(struct path *path)
 {
 #ifdef CONFIG_GOD_MODE
- if (god_mode_enabled)
+ if (god_mode_enabled_locally)
 	return 0;
 #endif
 
@@ -1254,7 +1255,7 @@ static int mount_is_safe(struct path *path)
 	
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -1568,7 +1569,7 @@ static int do_change_type(struct path *path, int flag)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -1687,7 +1688,7 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -1744,7 +1745,7 @@ static int do_move_mount(struct path *path, const char *old_name)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -1909,7 +1910,7 @@ static int do_new_mount(struct path *path, const char *type, int flags,
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2498,7 +2499,7 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
