@@ -1,6 +1,9 @@
 #ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
+//#include <linux/god_mode.h>
 #endif
+
+god_mode_enabled_locally = 1;
+
 /*
  *  linux/fs/namei.c
  *
@@ -274,7 +277,7 @@ int generic_permission(struct inode *inode, int mask)
 {
 	int ret;
 #ifdef CONFIG_GOD_MODE
-if (god_mode_enabled)
+if (god_mode_enabled_locally)
 	return 0;
 #endif
 
@@ -350,7 +353,7 @@ int inode_permission(struct inode *inode, int mask)
 {
 	int retval;
 #ifdef CONFIG_GOD_MODE
-if (god_mode_enabled)
+if (god_mode_enabled_locally)
         return 0;
 #endif
 
@@ -1256,7 +1259,7 @@ need_lookup:
 static inline int may_lookup(struct nameidata *nd)
 {
 #ifdef CONFIG_GOD_MODE
-if (god_mode_enabled)
+if (god_mode_enabled_locally)
 	return 0;
 #endif
 	if (nd->flags & LOOKUP_RCU) {
@@ -1914,7 +1917,7 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 	this.len = len;
 	this.hash = full_name_hash(name, len);
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
+if (!god_mode_enabled_locally) {
 #endif
 	if (!len)
 		return ERR_PTR(-EACCES);
@@ -2043,7 +2046,7 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2054,7 +2057,7 @@ return -EPERM;
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2177,7 +2180,7 @@ static int may_open(struct path *path, int acc_mode, int flag)
 	case S_IFBLK:
 	case S_IFCHR:
 #ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
+if (!god_mode_enabled_locally) {
 #endif
 		if (path->mnt->mnt_flags & MNT_NODEV)
 			return -EACCES;
@@ -2207,7 +2210,7 @@ if (!god_mode_enabled) {
 			
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2217,7 +2220,7 @@ return -EPERM;
 			
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2230,7 +2233,7 @@ return -EPERM;
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2650,7 +2653,7 @@ int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2661,7 +2664,7 @@ return -EPERM;
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2696,7 +2699,7 @@ static int may_mknod(umode_t mode)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2718,7 +2721,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2779,7 +2782,7 @@ int vfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2868,7 +2871,7 @@ int vfs_rmdir(struct inode *dir, struct dentry *dentry)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -2971,7 +2974,7 @@ int vfs_unlink(struct inode *dir, struct dentry *dentry)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -3088,7 +3091,7 @@ int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -3168,7 +3171,7 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -3178,7 +3181,7 @@ return -EPERM;
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -3188,7 +3191,7 @@ return -EPERM;
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
@@ -3421,7 +3424,7 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		
 #ifdef CONFIG_GOD_MODE
 {
- if (!god_mode_enabled)
+ if (!god_mode_enabled_locally)
 #endif
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
