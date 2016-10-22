@@ -193,6 +193,7 @@ static int sdcardfs_mmap(struct file *file, struct vm_area_struct *vma)
 	vma->vm_ops = &sdcardfs_vm_ops;
 	vma->vm_flags |= VM_CAN_NONLINEAR;
 
+	file->f_mapping->a_ops = &sdcardfs_aops; /* set our aops */
 	if (!SDCARDFS_F(file)->lower_vm_ops) /* save for our ->fault */
 		SDCARDFS_F(file)->lower_vm_ops = saved_vm_ops;
 
@@ -209,6 +210,7 @@ static int sdcardfs_open(struct inode *inode, struct file *file)
 	struct dentry *parent = dget_parent(dentry);
 	struct sdcardfs_sb_info *sbi = SDCARDFS_SB(dentry->d_sb);
 	const struct cred *saved_cred = NULL;
+	int has_rw;
 
 	/* don't open unhashed/deleted files */
 	if (d_unhashed(dentry)) {
@@ -219,7 +221,6 @@ static int sdcardfs_open(struct inode *inode, struct file *file)
 	/* save current_cred and override it */
 	OVERRIDE_CRED(sbi, saved_cred);
 
-	file->f_mode |= FMODE_NONMAPPABLE;
 	file->private_data =
 		kzalloc(sizeof(struct sdcardfs_file_info), GFP_KERNEL);
 	if (!SDCARDFS_F(file)) {
@@ -245,10 +246,8 @@ static int sdcardfs_open(struct inode *inode, struct file *file)
 	if (err)
 		kfree(SDCARDFS_F(file));
 	else {
-		mutex_lock(&inode->i_mutex);
-		sdcardfs_copy_inode_attr(inode, sdcardfs_lower_inode(inode));
+		fsstack_copy_attr_all(inode, sdcardfs_lower_inode(inode));
 		fix_derived_permission(inode);
-		mutex_unlock(&inode->i_mutex);
 	}
 
 out_revert_cred:
@@ -285,19 +284,24 @@ static int sdcardfs_file_release(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static int
-sdcardfs_fsync(struct file *file, loff_t start, loff_t end, int datasync)
+static int sdcardfs_fsync(struct file *file, loff_t start, loff_t end,
+			int datasync)
 {
 	int err;
 	struct file *lower_file;
 	struct path lower_path;
 	struct dentry *dentry = file->f_path.dentry;
 
+	err = generic_file_fsync(file, start, end, datasync);
+	if (err)
+		goto out;
+
 	lower_file = sdcardfs_lower_file(file);
 	sdcardfs_get_lower_path(dentry, &lower_path);
 	err = vfs_fsync_range(lower_file, start, end, datasync);
 	sdcardfs_put_lower_path(dentry, &lower_path);
 
+out:
 	return err;
 }
 
@@ -311,11 +315,6 @@ static int sdcardfs_fasync(int fd, struct file *file, int flag)
 		err = lower_file->f_op->fasync(fd, lower_file, flag);
 
 	return err;
-}
-
-static struct file *sdcardfs_get_lower_file(struct file *f)
-{
-	return sdcardfs_lower_file(f);
 }
 
 const struct file_operations sdcardfs_main_fops = {
@@ -332,7 +331,6 @@ const struct file_operations sdcardfs_main_fops = {
 	.release	= sdcardfs_file_release,
 	.fsync		= sdcardfs_fsync,
 	.fasync		= sdcardfs_fasync,
-	.get_lower_file = sdcardfs_get_lower_file,
 };
 
 /* trimmed directory options */
@@ -349,5 +347,4 @@ const struct file_operations sdcardfs_dir_fops = {
 	.flush		= sdcardfs_flush,
 	.fsync		= sdcardfs_fsync,
 	.fasync		= sdcardfs_fasync,
-	.get_lower_file = sdcardfs_get_lower_file,
 };

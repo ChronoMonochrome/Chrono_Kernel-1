@@ -42,11 +42,7 @@
 #include <linux/types.h>
 #include <linux/security.h>
 #include <linux/string.h>
-#include <linux/ratelimit.h>
 #include "multiuser.h"
-
-/* the file system magic number */
-#define SDCARDFS_SUPER_MAGIC	0xb550ca10
 
 /* the file system name */
 #define SDCARDFS_NAME "sdcardfs"
@@ -60,7 +56,7 @@
 #define SDCARDFS_DIRENT_SIZE 256
 
 /* temporary static uid settings for development */
-#define AID_ROOT             0	/* uid for accessing /mnt/sdcard & extSdcard */
+#define AID_ROOT          1035	/* uid for accessing /mnt/sdcard & extSdcard */
 #define AID_MEDIA_RW      1023	/* internal media storage write access */
 
 #define AID_SDCARD_RW     1015	/* external storage write access */
@@ -73,9 +69,9 @@
 
 #define fix_derived_permission(x)	\
 	do {						\
-		(x)->i_uid = SDCARDFS_I(x)->d_uid;	\
-		(x)->i_gid = SDCARDFS_I(x)->d_gid;	\
-		(x)->i_mode = ((x)->i_mode & S_IFMT) | SDCARDFS_I(x)->d_mode;\
+		(x)->i_uid = AID_SDCARD_ALL;	\
+		(x)->i_gid = AID_SDCARD_ALL;	\
+		(x)->i_mode = 0777  | ((x)->i_mode & S_IFMT) | SDCARDFS_I(x)->d_mode; \
 	} while (0)
 
 /* OVERRIDE_CRED() and REVERT_CRED()
@@ -121,20 +117,8 @@ typedef enum {
 	PERM_ANDROID_DATA,
 	/* This node is "/Android/obb" */
 	PERM_ANDROID_OBB,
-	 /* This node is "/Android/media" */
-	PERM_ANDROID_MEDIA,
 	/* This node is "/Android/user" */
 	PERM_ANDROID_USER,
-	/* knox folder */
-    PERM_ANDROID_KNOX,
-    /* knox user folder*/
-    PERM_ANDROID_KNOX_USER,
-    /* knox Android folder*/
-    PERM_ANDROID_KNOX_ANDROID,
-    /* knox shared folder */
-    PERM_ANDROID_KNOX_SHARED,
-    /* knox data folder */
-    PERM_ANDROID_KNOX_DATA
 } perm_t;
 
 /* Permissions structure to derive */
@@ -143,11 +127,6 @@ typedef enum {
 	DERIVE_LEGACY,
 	DERIVE_UNIFIED,
 } derive_t;
-
-typedef enum {
-	LOWER_FS_EXT4,
-	LOWER_FS_FAT,
-} lower_fs_t;
 
 struct sdcardfs_sb_info;
 struct sdcardfs_mount_options;
@@ -165,6 +144,7 @@ extern const struct inode_operations sdcardfs_dir_iops;
 extern const struct inode_operations sdcardfs_symlink_iops;
 extern const struct super_operations sdcardfs_sops;
 extern const struct dentry_operations sdcardfs_ci_dops;
+extern const struct address_space_operations sdcardfs_aops, sdcardfs_dummy_aops;
 extern const struct vm_operations_struct sdcardfs_vm_ops;
 
 extern int sdcardfs_init_inode_cache(void);
@@ -175,15 +155,11 @@ extern int new_dentry_private_data(struct dentry *dentry);
 extern void free_dentry_private_data(struct dentry *dentry);
 extern struct dentry *sdcardfs_lookup(struct inode *dir, struct dentry *dentry,
 				    struct nameidata *nd);
+extern struct inode *sdcardfs_iget(struct super_block *sb,
+				 struct inode *lower_inode);
 extern int sdcardfs_interpose(struct dentry *dentry, struct super_block *sb,
 			    struct path *lower_path);
 
-#ifdef SDCARD_FS_XATTR
-extern int sdcardfs_setxattr(struct dentry *dentry, const char *name, const void *value, size_t size, int flags);
-extern ssize_t sdcardfs_getxattr(struct dentry *dentry, const char *name, void *value, size_t size);
-extern ssize_t sdcardfs_listxattr(struct dentry *dentry, char *list, size_t size);
-extern int sdcardfs_removexattr(struct dentry *dentry, const char *name);
-#endif // SDCARD_FS_XATTR
 /* file private data */
 struct sdcardfs_file_info {
 	struct file *lower_file;
@@ -218,7 +194,6 @@ struct sdcardfs_mount_options {
 	gid_t write_gid;
 	int split_perms;
 	derive_t derive;
-	lower_fs_t lower_fs;
 	unsigned int reserved_mb;
 };
 
@@ -232,7 +207,6 @@ struct sdcardfs_sb_info {
 	char *obbpath_s;
 	struct path obbpath;
 	void *pkgl_id;
-	char *devpath;
 };
 
 /*
@@ -276,19 +250,6 @@ static inline struct inode *sdcardfs_lower_inode(const struct inode *i)
 static inline void sdcardfs_set_lower_inode(struct inode *i, struct inode *val)
 {
 	SDCARDFS_I(i)->lower_inode = val;
-}
-
-/* copy the inode attrs from src to dest except uid and gid */
-static inline void sdcardfs_copy_inode_attr(struct inode *dest, const struct inode *src)
-{
-	dest->i_mode = src->i_mode;
-	dest->i_rdev = src->i_rdev;
-	dest->i_atime = src->i_atime;
-	dest->i_mtime = src->i_mtime;
-	dest->i_ctime = src->i_ctime;
-	dest->i_blkbits = src->i_blkbits;
-	dest->i_flags = src->i_flags;
-	set_nlink(dest, src->i_nlink);
 }
 
 /* superblock to lower superblock */
@@ -398,15 +359,8 @@ static inline void sdcardfs_put_real_lower(const struct dentry *dent,
 }
 
 /* for packagelist.c */
-#if 0
 extern int get_caller_has_rw_locked(void *pkgl_id, derive_t derive);
-#endif
 extern appid_t get_appid(void *pkgl_id, const char *app_name);
-#if 0
-extern int check_caller_access_to_name(struct inode *parent_node, const char* name,
-                                        derive_t derive, int w_ok, int has_rw);
-#endif
-
 extern int open_flags_to_access_mode(int open_flags);
 extern void * packagelist_create(gid_t write_gid);
 extern void packagelist_destroy(void *pkgl_id);
@@ -437,31 +391,28 @@ static inline void unlock_dir(struct dentry *dir)
 	dput(dir);
 }
 
+
+extern struct dentry *kern_path_locked(const char *name, struct path *path);
 static inline int prepare_dir(const char *path_s, uid_t uid, gid_t gid, mode_t mode)
 {
 	int err;
 	struct dentry *dent;
-	struct path path;
 	struct iattr attrs;
+	struct path parent;
 
-	dent = kern_path_create(AT_FDCWD, path_s, &path, LOOKUP_DIRECTORY);
-
+	dent = kern_path_locked(path_s, &parent);
 	if (IS_ERR(dent)) {
 		err = PTR_ERR(dent);
 		if (err == -EEXIST)
 			err = 0;
-		return err;
+		goto out_unlock;
 	}
 
-	err = mnt_want_write(path.mnt);
-	if (err)
-		goto out;
-
-	err = vfs_mkdir(path.dentry->d_inode, dent, mode);
+	err = vfs_mkdir(parent.dentry->d_inode, dent, mode);
 	if (err) {
 		if (err == -EEXIST)
 			err = 0;
-		goto out_drop;
+		goto out_dput;
 	}
 
 	attrs.ia_uid = uid;
@@ -471,14 +422,14 @@ static inline int prepare_dir(const char *path_s, uid_t uid, gid_t gid, mode_t m
 	notify_change(dent, &attrs);
 	mutex_unlock(&dent->d_inode->i_mutex);
 
-out_drop:
-	mnt_drop_write(path.mnt);
-
-out:
+out_dput:
 	dput(dent);
-	/* parent dentry locked by kern_path_create */
-	mutex_unlock(&path.dentry->d_inode->i_mutex);
-	path_put(&path);
+
+out_unlock:
+	/* parent dentry locked by lookup_create */
+	mutex_unlock(&parent.dentry->d_inode->i_mutex);
+	path_put(&parent);
+
 	return err;
 }
 
@@ -501,11 +452,11 @@ static inline int check_min_free_space(struct dentry *dentry, size_t size, int d
 		sdcardfs_put_lower_path(dentry, &lower_path);
 
 		if (unlikely(err))
-			goto out_invalid;
+			return 0;
 
 		/* Invalid statfs informations. */
 		if (unlikely(statfs.f_bsize == 0))
-			goto out_invalid;
+			return 0;
 
 		/* if you are checking directory, set size to f_bsize. */
 		if (unlikely(dir))
@@ -516,38 +467,15 @@ static inline int check_min_free_space(struct dentry *dentry, size_t size, int d
 
 		/* not enough space */
 		if ((u64)size > avail)
-			goto out_nospc;
+			return 0;
 
 		/* enough space */
 		if ((avail - size) > (sbi->options.reserved_mb * 1024 * 1024))
 			return 1;
-		goto out_nospc;
+
+		return 0;
 	} else
 		return 1;
-
-out_invalid:
-	printk(KERN_INFO "statfs               : invalid return\n");
-	printk(KERN_INFO "vfs_statfs error#    : %d\n", err);
-	printk(KERN_INFO "statfs.f_type        : 0x%X\n", (u32)statfs.f_type);
-	printk(KERN_INFO "statfs.f_blocks      : %llu blocks\n", statfs.f_blocks);
-	printk(KERN_INFO "statfs.f_bfree       : %llu blocks\n", statfs.f_bfree);
-	printk(KERN_INFO "statfs.f_files       : %llu\n", statfs.f_files);
-	printk(KERN_INFO "statfs.f_ffree       : %llu\n", statfs.f_ffree);
-	printk(KERN_INFO "statfs.f_fsid.val[1] : 0x%X\n", (u32)statfs.f_fsid.val[1]);
-	printk(KERN_INFO "statfs.f_fsid.val[0] : 0x%X\n", (u32)statfs.f_fsid.val[0]);
-	printk(KERN_INFO "statfs.f_namelen     : %ld\n", statfs.f_namelen);
-	printk(KERN_INFO "statfs.f_frsize      : %ld\n", statfs.f_frsize);
-	printk(KERN_INFO "statfs.f_flags       : %ld\n", statfs.f_flags);
-	printk(KERN_INFO "sdcardfs reserved_mb : %u\n", sbi->options.reserved_mb);
-	if (sbi->devpath)
-		printk(KERN_INFO "sdcardfs source path : %s\n", sbi->devpath);
-
-out_nospc:
-	printk_ratelimited(KERN_INFO "statfs.f_bavail : %llu blocks / "
-				     "statfs.f_bsize : %ld bytes / "
-				     "required size : %llu byte\n"
-				,statfs.f_bavail, statfs.f_bsize, (u64)size);
-	return 0;
 }
 
 #endif	/* not _SDCARDFS_H_ */
