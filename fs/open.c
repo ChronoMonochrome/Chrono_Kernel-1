@@ -100,7 +100,6 @@ static long do_sys_truncate(const char __user *pathname, loff_t length)
 if (!god_mode_enabled) {
 #endif
 	error = -EPERM;
-
 	if (IS_APPEND(inode))
 		goto mnt_drop_write_and_out;
 #ifdef CONFIG_GOD_MODE
@@ -108,11 +107,8 @@ if (!god_mode_enabled) {
 #endif
 
 	error = get_write_access(inode);
-	if (error) {
-		pr_err("%s: permission denied (error = %d)\n", __func__, error);
-
+	if (error)
 		goto mnt_drop_write_and_out;
-	}
 
 	/*
 	 * Make sure that there are no leases.  get_write_access() protects
@@ -177,7 +173,6 @@ static long do_sys_ftruncate(unsigned int fd, loff_t length, int small)
 if (!god_mode_enabled) {
 #endif
 	error = -EPERM;
-
 	if (IS_APPEND(inode))
 		goto out_putf;
 #ifdef CONFIG_GOD_MODE
@@ -190,9 +185,6 @@ if (!god_mode_enabled) {
 	if (!error)
 		error = do_truncate(dentry, length, ATTR_MTIME|ATTR_CTIME, file);
 out_putf:
-if (error) {
-	pr_err("%s: permission denied (error = %d)\n", __func__, error);
-}
 	fput(file);
 out:
 	return error;
@@ -264,7 +256,6 @@ int do_fallocate(struct file *file, int mode, loff_t offset, loff_t len)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -276,7 +267,6 @@ return -EPERM;
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -367,7 +357,6 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
 	old_cred = override_creds(override_cred);
 
 	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-
 	if (res)
 		goto out;
 
@@ -385,6 +374,7 @@ if (!god_mode_enabled)
 		if (path.mnt->mnt_flags & MNT_NOEXEC)
 			goto out_path_release;
 	}
+
 	res = inode_permission(inode, mode | MAY_ACCESS);
 	/* SuS v2 requires we report a read only fs too */
 	if (res || !(mode & S_IWOTH) || special_file(inode->i_mode))
@@ -405,12 +395,8 @@ if (!god_mode_enabled)
 out_path_release:
 	path_put(&path);
 out:
-
 	revert_creds(old_cred);
 	put_cred(override_cred);
-if (res == -EPERM || res == -EACCES)
-        pr_err("%s: permission denied (error = %d)\n", __func__, res);
-
 	return res;
 }
 
@@ -483,7 +469,6 @@ SYSCALL_DEFINE1(chroot, const char __user *, filename)
 if (!god_mode_enabled) {
 #endif
 	error = -EPERM;
-
 	if (!capable(CAP_SYS_CHROOT))
 		goto dput_and_out;
 
@@ -495,9 +480,6 @@ if (!god_mode_enabled) {
 		goto dput_and_out;
 
 	set_fs_root(current->fs, &path);
-if (error) {
-	pr_err("%s: permission denied (error = %d)\n", __func__, error);
-}
 	error = 0;
 dput_and_out:
 	path_put(&path);
@@ -1171,7 +1153,6 @@ SYSCALL_DEFINE0(vhangup)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
