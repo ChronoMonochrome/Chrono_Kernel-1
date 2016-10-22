@@ -1,7 +1,6 @@
 #ifdef CONFIG_GOD_MODE
 #include <linux/god_mode.h>
 #endif
-
 /*
  *  linux/fs/namei.c
  *
@@ -41,14 +40,6 @@
 
 #include "internal.h"
 #include "mount.h"
-
-static unsigned int debug = 0;
-module_param(debug, uint, 0644);
-
-#define  LOG_PERMISSION_DENIAL 			 	 \
-		if (unlikely(debug != 0))	 	 \
-			pr_err("%s: EACCES\n", __func__);\
-
 
 /* [Feb-1997 T. Schoebel-Theuer]
  * Fundamental changes in the pathname lookup mechanisms (namei)
@@ -262,8 +253,6 @@ other_perms:
 	 */
 	if ((mask & ~mode & (MAY_READ | MAY_WRITE | MAY_EXEC)) == 0)
 		return 0;
-	LOG_PERMISSION_DENIAL
-
 	return -EACCES;
 }
 
@@ -303,7 +292,6 @@ if (god_mode_enabled)
 		if (!(mask & MAY_WRITE))
 			if (ns_capable(inode_userns(inode), CAP_DAC_READ_SEARCH))
 				return 0;
-		LOG_PERMISSION_DENIAL
 		return -EACCES;
 	}
 	/*
@@ -322,8 +310,6 @@ if (god_mode_enabled)
 	if (mask == MAY_READ)
 		if (ns_capable(inode_userns(inode), CAP_DAC_READ_SEARCH))
 			return 0;
-
-		LOG_PERMISSION_DENIAL
 
 	return -EACCES;
 }
@@ -381,11 +367,8 @@ if (god_mode_enabled)
 		/*
 		 * Nobody gets write access to an immutable file.
 		 */
-		if (IS_IMMUTABLE(inode)) {
-		LOG_PERMISSION_DENIAL
-
+		if (IS_IMMUTABLE(inode))
 			return -EACCES;
-		}
 	}
 
 	retval = do_inode_permission(inode, mask);
@@ -1933,22 +1916,16 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 #ifdef CONFIG_GOD_MODE
 if (!god_mode_enabled) {
 #endif
-	if (!len) {
-		LOG_PERMISSION_DENIAL
-
+	if (!len)
 		return ERR_PTR(-EACCES);
-	}
 #ifdef CONFIG_GOD_MODE
 }
 #endif
 
 	while (len--) {
 		c = *(const unsigned char *)name++;
-		if (c == '/' || c == '\0') {
-		LOG_PERMISSION_DENIAL
-
+		if (c == '/' || c == '\0')
 			return ERR_PTR(-EACCES);
-		}
 	}
 	/*
 	 * See if the low-level filesystem might want
@@ -1982,7 +1959,6 @@ int user_path_at_empty(int dfd, const char __user *name, unsigned flags,
 		if (!err)
 			*path = nd.path;
 	}
-
 	return err;
 }
 
@@ -2069,7 +2045,6 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2081,7 +2056,6 @@ return -EPERM;
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2167,11 +2141,8 @@ int vfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 	if (error)
 		return error;
 
-	if (!dir->i_op->create) {
-
-		LOG_PERMISSION_DENIAL
+	if (!dir->i_op->create)
 		return -EACCES;	/* shouldn't it be ENOSYS? */
-	}
 	mode &= S_IALLUGO;
 	mode |= S_IFREG;
 	error = security_inode_create(dir, dentry, mode);
@@ -2208,11 +2179,8 @@ static int may_open(struct path *path, int acc_mode, int flag)
 #ifdef CONFIG_GOD_MODE
 if (!god_mode_enabled) {
 #endif
-		if (path->mnt->mnt_flags & MNT_NODEV) {
-		LOG_PERMISSION_DENIAL
-
+		if (path->mnt->mnt_flags & MNT_NODEV)
 			return -EACCES;
-	}
 #ifdef CONFIG_GOD_MODE
 } else {
 
@@ -2241,7 +2209,6 @@ if (!god_mode_enabled) {
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2252,7 +2219,6 @@ return -EPERM;
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2266,7 +2232,6 @@ return -EPERM;
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2687,7 +2652,6 @@ int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2699,7 +2663,6 @@ return -EPERM;
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2735,7 +2698,6 @@ static int may_mknod(umode_t mode)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2758,7 +2720,6 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2820,7 +2781,6 @@ int vfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2910,7 +2870,6 @@ int vfs_rmdir(struct inode *dir, struct dentry *dentry)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -3014,7 +2973,6 @@ int vfs_unlink(struct inode *dir, struct dentry *dentry)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -3132,7 +3090,6 @@ int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -3213,7 +3170,6 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -3224,7 +3180,6 @@ return -EPERM;
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -3235,7 +3190,6 @@ return -EPERM;
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -3469,7 +3423,6 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }

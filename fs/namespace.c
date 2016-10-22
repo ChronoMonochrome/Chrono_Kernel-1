@@ -1,7 +1,6 @@
 #ifdef CONFIG_GOD_MODE
 #include <linux/god_mode.h>
 #endif
-
 /*
  *  linux/fs/namespace.c
  *
@@ -1228,9 +1227,6 @@ dput_and_out:
 	dput(path.dentry);
 	mntput_no_expire(mnt);
 out:
-if (retval)
-	pr_err("%s: permission denied (error = %d)\n", __func__, retval);
-
 	return retval;
 }
 
@@ -1260,7 +1256,6 @@ static int mount_is_safe(struct path *path)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -1575,7 +1570,6 @@ static int do_change_type(struct path *path, int flag)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -1695,7 +1689,6 @@ static int do_remount(struct path *path, int flags, int mnt_flags,
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -1753,7 +1746,6 @@ static int do_move_mount(struct path *path, const char *old_name)
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -1919,7 +1911,6 @@ static int do_new_mount(struct path *path, const char *type, int flags,
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
@@ -2509,7 +2500,6 @@ SYSCALL_DEFINE2(pivot_root, const char __user *, new_root,
 {
  if (!god_mode_enabled)
 #endif
-pr_err("%s: permission denied (error = -EPERM)\n", __func__);
 return -EPERM;
 #ifdef CONFIG_GOD_MODE
 }
