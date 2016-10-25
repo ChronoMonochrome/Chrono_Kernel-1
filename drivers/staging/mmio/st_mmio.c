@@ -2128,7 +2128,7 @@ rear_flash_burning_show(struct device *dev,
 static inline void
 rear_flash_burning_toggle(bool on)
 {
-	if (on) {
+	if (!on) {
 		if (assistive_mode) {
 			assistive_mode = 0;
 			mmio_cam_flash_on_off(info, 3, 0);
@@ -2155,7 +2155,7 @@ static ssize_t
 rear_flash_burning_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
-	rear_flash_burning_toggle(buf[0] == 1);
+	rear_flash_burning_toggle(buf[0] == "1");
 
 	return size;
 }
