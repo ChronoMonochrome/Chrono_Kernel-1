@@ -2049,7 +2049,7 @@ out_err:
 
 /*godin +*/
 
-	static ssize_t
+static ssize_t
 front_camera_type_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -2062,7 +2062,7 @@ else
 	return sprintf(buf, "%s", camType);
 }
 
-	static ssize_t
+static ssize_t
 rear_camera_type_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -2075,15 +2075,18 @@ rear_camera_type_show(struct device *dev,
 	return sprintf(buf, "%s", camType);
 }
 
-	static ssize_t
+static ssize_t
 rear_flash_enable_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	return sprintf(buf, "%d\n", assistive_mode);
 }
 
-static void toggle_rearcam_flash(bool on)
+static inline void
+rear_flash_enable_toggle(bool on)
 {
+	/* Enable/Disable camera rear flash gpio directly */
+
 	if (!on) {
 		if (burning_mode) {
 			burning_mode = 0;
@@ -2092,9 +2095,6 @@ static void toggle_rearcam_flash(bool on)
 
 		assistive_mode = 0;
 		mmio_cam_flash_on_off(info, 3, 0);
-		#if defined(CONFIG_MACH_SEC_SKOMER)
-;
-		#endif
 	} else {
 		if (burning_mode) {
 			burning_mode = 0;
@@ -2105,14 +2105,7 @@ static void toggle_rearcam_flash(bool on)
 		}
 
 		assistive_mode = 1;
-#if defined CONFIG_MACH_GAVINI
-		mmio_cam_flash_on_off(info, 2, (100+5));
-#else
-		mmio_cam_flash_on_off(info, 3, (100+3));
-		#if defined(CONFIG_MACH_SEC_SKOMER)
-;
-		#endif
-#endif
+		mmio_cam_flash_on_off(info, 3, 0);
 	}
 }
 
@@ -2120,7 +2113,7 @@ static ssize_t
 rear_flash_enable_store(struct device *dev,
 		struct device_attribute *attr, char *buf, size_t size)
 {
-	toggle_rearcam_flash(buf[0] == '1');
+	rear_flash_enable_toggle(buf[0] == '1');
 
 	return size;
 }
@@ -2132,13 +2125,10 @@ rear_flash_burning_show(struct device *dev,
 	return sprintf(buf, "%d\n", burning_mode);
 }
 
-static ssize_t
-rear_flash_burning_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t size)
+static inline void
+rear_flash_burning_toggle(bool on)
 {
-	/* Enable/Disable camera rear flash gpio directly */
-
-	if (buf[0] == '0') {
+	if (on) {
 		if (assistive_mode) {
 			assistive_mode = 0;
 			mmio_cam_flash_on_off(info, 3, 0);
@@ -2149,8 +2139,8 @@ rear_flash_burning_store(struct device *dev,
 	} else {
 		if (assistive_mode) {
 			assistive_mode = 0;
-			mmio_cam_flash_on_off(info, 3, 0);
-			
+			mmio_cam_flash_on_off(info, 3, (100+3));
+
 			/* For safety */
 			msleep(1000);
 		}
@@ -2159,8 +2149,15 @@ rear_flash_burning_store(struct device *dev,
 		gpio_set_value(140, 1);
 	}
 
-	return size;
+}
 
+static ssize_t
+rear_flash_burning_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	rear_flash_burning_toggle(buf[0] == 1);
+
+	return size;
 }
 
 static enum led_brightness st_mmio_led_get_brightness(struct led_classdev *led_cdev)
@@ -2171,13 +2168,17 @@ static enum led_brightness st_mmio_led_get_brightness(struct led_classdev *led_c
 
 static void st_mmio_led_set_brightness(struct led_classdev *led_cdev, enum led_brightness brightness)
 {
+	/*
+	 * chrono: we want here to use the maximum brightness, so use
+	 * rear_flash_burning_toggle instead of rear_flash_enable_toggle.
+	 */
 	if((int)brightness)
 	{
-		toggle_rearcam_flash(true);
+		rear_flash_burning_toggle(true);
 	}
 	else
 	{
-		toggle_rearcam_flash(false);
+		rear_flash_burning_toggle(false);
 	}
 }
 
