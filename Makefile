@@ -390,7 +390,6 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -mfloat-abi=hard \
 		  -mhard-float \
 		  -funsafe-loop-optimizations \
-		  -ftree-parallelize-loops=2 \
 		  -fcx-limited-range \
 		  -fno-signed-zeros \
                   -fgraphite \
