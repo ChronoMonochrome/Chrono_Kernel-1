@@ -5,14 +5,14 @@
 
 #include <linux/mm.h>
 
-inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
+static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
 {
 	return !!(vma->vm_flags & VM_HUGETLB);
 }
 
 #else
 
-inline  __cold int is_vm_hugetlb_page(struct vm_area_struct *vma)
+static __cold inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
 {
 	return 0;
 }
