@@ -21,7 +21,7 @@ unsigned long int_sqrt(unsigned long x)
 	if (x <= 1)
 		return x;
 
-	m = 1UL << (BITS_PER_LONG - 2);
+	m = 1UL << ((__builtin_clzl(x) ^ (BITS_PER_LONG - 1)) & 0xfe);
 	while (m != 0) {
 		b = y + m;
         y >>= 1;
