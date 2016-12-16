@@ -721,6 +721,9 @@ bsg_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
 	d;
 #endif
 
+	if (unlikely(segment_eq(get_fs(), KERNEL_DS)))
+		return -EINVAL;
+
 	bsg_set_block(bd, file);
 
 	bytes_written = 0;
