@@ -30,8 +30,6 @@
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/ktime.h>
 
-#include <mach/sec_common.h>
-
 #if defined (CONFIG_SAMSUNG_USE_GETLOG)
 #include <mach/sec_getlog.h>
 #endif
@@ -50,9 +48,26 @@ enum {
 };
 
 extern unsigned int system_rev;
+static int display_initialized_during_boot = (int)false;
 static struct ux500_pins *dpi_pins;
 
 static struct fb_info *primary_fbi;
+
+static int __init codina_startup_graphics_setup(char *str)
+{
+RUN_ON_CODINA_ONLY
+	if (get_option(&str, &display_initialized_during_boot) != 1)
+		display_initialized_during_boot = false;
+
+	if (display_initialized_during_boot)
+		pr_info("Startup graphics support\n");
+	else
+		pr_info("No startup graphics supported\n");
+
+	return 1;
+}
+}
+__setup("startup_graphics=", codina_startup_graphics_setup);
 
 unsigned int lcd_type;
 static int __init lcdtype_setup(char *str)

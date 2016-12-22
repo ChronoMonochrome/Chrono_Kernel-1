@@ -75,6 +75,4 @@ unsigned short sec_common_update_reboot_reason(char mode, const char *cmd);
 extern int sec_get_debug_enable(void);
 extern int sec_get_debug_enable_user(void);
 
-extern int display_initialized_during_boot;
-
 #endif /* __SEC_COMMON_H__ */
