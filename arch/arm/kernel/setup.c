@@ -700,9 +700,6 @@ EXPORT_SYMBOL(lcdtype);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
-	char *serialno;
-	char serialno_buf[38];
-	memset(serialno_buf, 0, strlen(serialno_buf));
 #if defined(CONFIG_CMDLINE_EXTEND)
 	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
 	strlcat(default_command_line, tag->u.cmdline.cmdline,
@@ -716,13 +713,6 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 
        pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
        strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
-
-	serialno = strstr(tag->u.cmdline.cmdline, "androidboot.serialno=");
-        if (serialno) {
-                strlcpy(serialno_buf, serialno, 38 /* "androidboot.serialno=<16_symbols>" */);
-                strlcat(default_command_line, serialno_buf, COMMAND_LINE_SIZE );
-                strlcat(default_command_line, " ", COMMAND_LINE_SIZE );
-        }
 
        if (strstr(tag->u.cmdline.cmdline, "lpm_boot=1") != NULL) {
                pr_err("LPM boot from bootloader\n");
