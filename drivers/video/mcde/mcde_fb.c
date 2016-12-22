@@ -576,7 +576,7 @@ int mcde_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 	dev_vdbg(fbi->dev, "%s\n", __func__);
 
 	if (!ddev) {
-		printk(KERN_ERR "mcde_fb_check_var failed !ddev\n");
+;
 		return -ENODEV;
 	}
 
@@ -592,9 +592,9 @@ int mcde_fb_set_par(struct fb_info *fbi)
 
 	if (mfb->ovlys[0]->state == NULL &&
 		ddev->fictive == false) {
-		printk(KERN_INFO "%s() - Enable fb %p\n",
-			__func__,
-			mfb->ovlys[0]);
+//		printk(KERN_INFO "%s() - Enable fb %p\n",
+//			__func__,
+;
 		mcde_dss_enable_overlay(mfb->ovlys[0]);
 	}
 
