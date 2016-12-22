@@ -25,7 +25,6 @@
 #include <plat/pincfg.h>
 #include "pins-db8500.h"
 #include "pins.h"
-#include <asm/mach-types.h>
 #include <mach/db8500-regs.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/ktime.h>
@@ -53,9 +52,8 @@ static struct ux500_pins *dpi_pins;
 
 static struct fb_info *primary_fbi;
 
-static int __init codina_startup_graphics_setup(char *str)
+static int __init startup_graphics_setup(char *str)
 {
-RUN_ON_CODINA_ONLY
 	if (get_option(&str, &display_initialized_during_boot) != 1)
 		display_initialized_during_boot = false;
 
@@ -66,17 +64,14 @@ RUN_ON_CODINA_ONLY
 
 	return 1;
 }
-}
-__setup("startup_graphics=", codina_startup_graphics_setup);
+__setup("startup_graphics=", startup_graphics_setup);
 
 unsigned int lcd_type;
 static int __init lcdtype_setup(char *str)
 {
-RUN_ON_CODINA_ONLY
 	get_option(&str, &lcd_type);
 
 	return 1;
-}
 }
 __setup("lcdtype=", lcdtype_setup);
 
@@ -413,15 +408,13 @@ if ((reqs->num_rot_channels && reqs->num_overlays > 1) ||
 	
 }
 
-extern int lcdclk_usr;
+int lcdclk_usr = 0;
 extern unsigned int is_lpm;
 
 int __init init_codina_display_devices(void)
 {
-RUN_ON_CODINA_ONLY
 	int ret;
 	struct mcde_platform_data *pdata = ux500_mcde_device.dev.platform_data;
-	lcdclk_usr = 0;
 
 	ret = mcde_dss_register_notifier(&display_nb);
 	if (ret)
@@ -517,9 +510,8 @@ RUN_ON_CODINA_ONLY
 //error:
 	return ret;
 }
-}
 
-struct fb_info *codina_get_primary_display_fb_info(void)
+struct fb_info *get_primary_display_fb_info(void)
 {
 	return primary_fbi;
 }

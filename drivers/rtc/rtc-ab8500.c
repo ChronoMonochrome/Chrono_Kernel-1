@@ -21,7 +21,7 @@
 #include <linux/jiffies.h>
 #include <linux/mutex.h>
 
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
 #include <mach/sec_param.h>
 #include <mach/sec_common.h>
 #include <linux/reboot.h>
@@ -328,7 +328,7 @@ void check_alarm_boot_lpm(void)
 	}
 }
 #endif
-#if defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
+#if defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
 void check_alarm_boot_lpm(void)
 {
 	pr_info("[AB8500 rtc] %s\n", __func__);
@@ -484,7 +484,7 @@ static irqreturn_t rtc_alarm_handler(int irq, void *data)
 #if defined(CONFIG_MACH_SEC_GOLDEN_CHN)
 	if (battpwroff_charging)
 		check_alarm_boot_lpm();
-#elif defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
+#elif defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
 	if (sec_lpm_bootmode)
 		check_alarm_boot_lpm();
 #endif
@@ -560,7 +560,7 @@ static int __devinit ab8500_rtc_probe(struct platform_device *pdev)
 
 	_rtc = rtc;
 
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
 	{
 		u8 rtc_status = 0;
 		struct rtc_wkalrm alarm_time;
@@ -576,7 +576,7 @@ static int __devinit ab8500_rtc_probe(struct platform_device *pdev)
 		pr_info("[AB8500 rtc] turn on status : 0x%x\n", rtc_status);
 #if   defined(CONFIG_MACH_SEC_GOLDEN_CHN)
 		pr_info("[AB8500 rtc] lpm mode : %d\n", battpwroff_charging);
-		#elif defined(CONFIG_BOARD_JANICE_CHN)
+		#elif defined(CONFIG_MACH_JANICE_CHN)
 		pr_info("[AB8500 rtc] lpm mode : %d\n", sec_lpm_bootmode);
 #endif
 
@@ -606,7 +606,7 @@ static int __devexit ab8500_rtc_remove(struct platform_device *pdev)
 	int irq = platform_get_irq_byname(pdev, "ALARM");
 	int irq_60s = platform_get_irq_byname(pdev, "60S");
 
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
 	int temp_param;
 	if (alarm_en_exit == 1) {
 		

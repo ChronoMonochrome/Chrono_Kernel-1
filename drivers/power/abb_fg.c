@@ -45,7 +45,6 @@
 #include <linux/kobject.h>
 #include <mach/board-sec-u8500.h>
 #include <mach/sec_param.h>
-#include <asm/mach-types.h>
 #include <linux/kernel.h>
 
 /* fg_res parameter should be re-calculated
@@ -53,29 +52,24 @@
 
 #define INS_CURR_TIMEOUT		(3 * HZ)
 
-#if defined(CONFIG_BOARD_JANICE)
-
+#if defined(CONFIG_MACH_JANICE)
 #define USE_COMPENSATING_VOLTAGE_SAMPLE_FOR_CHARGING
-static unsigned short FGRES_HWREV_02, FGRES_HWREV_02_CH, FGRES_HWREV_03, FGRES_HWREV_03_CH;
-
-#elif defined(CONFIG_BOARD_CODINA) || defined(CONFIG_MACH_GAVINI)
+#define FGRES_HWREV_02			133
+#define FGRES_HWREV_02_CH		133
+#define FGRES_HWREV_03			121
+#define FGRES_HWREV_03_CH		120
+#elif defined(CONFIG_MACH_CODINA)
 #define USE_COMPENSATING_VOLTAGE_SAMPLE_FOR_CHARGING
+#define FGRES				130
+#define FGRES_CH			125
+#elif defined(CONFIG_MACH_GAVINI)
+#define USE_COMPENSATING_VOLTAGE_SAMPLE_FOR_CHARGING
+#define FGRES				130
+#define FGRES_CH			112
+#else
+#define FGRES				130
+#define FGRES_CH			120
 #endif
-
-static unsigned short FGRES = 130, FGRES_CH = 120;
-
-static void /*__init*/ preset()
-{
-	if (board_type == MACH_TYPE_JANICE) {
-		FGRES_HWREV_02 = 133;
-		FGRES_HWREV_02_CH = 133;
-		FGRES_HWREV_03 = 121;
-		FGRES_HWREV_03_CH = 120;
-	} else if (board_type == MACH_TYPE_CODINA) {
-		FGRES = 130;
-		FGRES_CH = 125;
-	}
-}
 
 #define MAGIC_CODE			0x29
 #define MAGIC_CODE_RESET		0x2F
@@ -475,7 +469,7 @@ static enum power_supply_property ab8500_fg_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_NOW,
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
-	#if defined(CONFIG_BOARD_JANICE) || 	defined(CONFIG_BOARD_CODINA) || 	defined(CONFIG_MACH_GAVINI)
+	#if defined(CONFIG_MACH_JANICE) || 	defined(CONFIG_MACH_CODINA) || 	defined(CONFIG_MACH_GAVINI)
 	POWER_SUPPLY_PROP_CAPACITY_RAW, 
 	#endif
 	POWER_SUPPLY_PROP_VOLTAGE_MAX,
@@ -1159,10 +1153,10 @@ static int ab8500_fg_bat_voltage(struct ab8500_fg *di,
 	di->vbat_adc = raw_adc;
 	di->vbat_adc_compensated = ad_value;
 
-if (board_type == MACH_TYPE_JANICE) {
+#ifdef CONFIG_MACH_JANICE
 	if (di->smd_on)
 		vbat += 150;
-}
+#endif
 	prev = vbat;
 	return vbat;
 }
@@ -1278,8 +1272,8 @@ static int ab8500_comp_fg_bat_voltage(struct ab8500_fg *di,
 
 	di->vbat = vbat / i;
 
-#if defined(CONFIG_BOARD_JANICE) || \
-	defined(CONFIG_BOARD_CODINA) || \
+#if defined(CONFIG_MACH_JANICE) || \
+	defined(CONFIG_MACH_CODINA) || \
 	defined(CONFIG_MACH_GAVINI)
 	bat_res_comp = ab8500_fg_volt_to_resistance(di, di->vbat);
 #else
@@ -1582,11 +1576,15 @@ static int ab8500_fg_calc_cap_discharge_fg(struct ab8500_fg *di)
 	} else if (di->bat_cap.permille <= 200 &&
 		di->bat_cap.permille > 100) {
 		di->n_skip_add_sample = 3;
-	} else if ((di->bat_cap.permille <= 120) && (board_type == MACH_TYPE_CODINA)) {
+#if defined(CONFIG_MACH_CODINA)
+	} else if (di->bat_cap.permille <= 120) {
 		di->n_skip_add_sample = 1;
+	}
+#else
 	} else if (di->bat_cap.permille <= 100) {
 		di->n_skip_add_sample = 2;
 	}
+#endif
 	dev_dbg(di->dev, "Using every %d Vbat sample Now on %d loop\n",
 		di->n_skip_add_sample, di->skip_add_sample);
 
@@ -2101,13 +2099,13 @@ static void ab8500_fg_algorithm_discharging(struct ab8500_fg *di)
 
 		ab8500_fg_check_capacity_limits(di, false);
 
-if (board_type == MACH_TYPE_CODINA) {
+#if defined(CONFIG_MACH_CODINA)
 		if (DIV_ROUND_CLOSEST(di->bat_cap.permille, 10) <= 10) {
 			queue_delayed_work(di->fg_wq,
 				&di->fg_periodic_work,
 				10 * HZ);
 		}
-}
+#endif
 		break;
 
 	case AB8500_FG_DISCHARGE_WAKEUP:
@@ -2725,7 +2723,7 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 		else
 			val->intval = di->bat_cap.prev_level;
 		break;
-#if defined(CONFIG_BOARD_JANICE) || 	defined(CONFIG_BOARD_CODINA) || 	defined(CONFIG_MACH_GAVINI)
+#if defined(CONFIG_MACH_JANICE) || 	defined(CONFIG_MACH_CODINA) || 	defined(CONFIG_MACH_GAVINI)
 	case POWER_SUPPLY_PROP_CAPACITY_RAW:
 
 		val->intval = (di->bat_cap.mah  * 1000) / di->bat_cap.max_mah ;
@@ -3630,19 +3628,19 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
 	di->gpadc_vbat_ideal = (VBAT_ADC_CAL*1000 - di->gpadc_vbat_offset)
 				/ di->gpadc_vbat_gain;
 
-if (board_type == MACH_TYPE_JANICE) {
+#ifdef CONFIG_MACH_JANICE
 	if (system_rev >= JANICE_R0_2) {
 		if (!gpio_get_value(SMD_ON_JANICE_R0_2))
 			di->smd_on = 1;
 	}
-}
+#endif
+
 	di->init_capacity = true;
 	di->reinit_capacity = true;
 
 	/* fg_res parameter should be re-calculated
 	   according to the HW revision. */
-#ifdef CONFIG_BOARD_JANICE
-if (board_type == MACH_TYPE_JANICE) {
+#if defined(CONFIG_MACH_JANICE)
 	if (system_rev < JANICE_R0_3) {
 		di->fg_res_chg = FGRES_HWREV_02_CH;
 		di->fg_res_dischg = FGRES_HWREV_02;
@@ -3650,12 +3648,9 @@ if (board_type == MACH_TYPE_JANICE) {
 		di->fg_res_chg = FGRES_HWREV_03_CH;
 		di->fg_res_dischg = FGRES_HWREV_03;
 	}
-} else {
-#endif
+#else
 	di->fg_res_chg = FGRES_CH;
 	di->fg_res_dischg = FGRES;
-#ifdef CONFIG_BOARD_JANICE
-}
 #endif
 
 	di->bat->fg_res = di->fg_res_dischg;
@@ -3808,7 +3803,6 @@ static struct platform_driver ab8500_fg_driver = {
 
 static int __init ab8500_fg_init(void)
 {
-	preset();
 	return platform_driver_register(&ab8500_fg_driver);
 }
 

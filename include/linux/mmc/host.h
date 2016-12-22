@@ -8,7 +8,7 @@
  *  Host driver specific definitions.
  */
 
-#if defined(CONFIG_BOARD_JANICE) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_BOARD_CODINA)|| defined(CONFIG_MACH_GAVINI)
+#if defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_CODINA)|| defined(CONFIG_MACH_GAVINI)
 #define _MMC_SAFE_ACCESS_
 #endif
 

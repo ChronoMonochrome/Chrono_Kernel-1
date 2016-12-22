@@ -26,10 +26,8 @@
 #include <plat/pincfg.h>
 #include "pins-db8500.h"
 #include "pins.h"
-#include <asm/mach-types.h>
 #include <mach/db8500-regs.h>
 	 
-extern int lcdclk_usr;
 
 #define PRCMU_DPI_CLK_FREQ	66560000
 	 
@@ -51,9 +49,8 @@ static struct ux500_pins *dpi_pins;
 
 static struct fb_info *primary_fbi;
 
-static int __init janice_startup_graphics_setup(char *str)
+static int __init startup_graphics_setup(char *str)
 {
-RUN_ON_JANICE_ONLY
 	if (get_option(&str, &display_initialized_during_boot) != 1)
 		display_initialized_during_boot = false;
 
@@ -64,10 +61,9 @@ RUN_ON_JANICE_ONLY
 	};
 
 	return 1;
-}
 
 }	 
-__setup("startup_graphics=", janice_startup_graphics_setup);
+__setup("startup_graphics=", startup_graphics_setup);
 	 
 static struct mcde_port port0 = {
 	.type = MCDE_PORTTYPE_DPI,
@@ -335,12 +331,9 @@ static void update_mcde_opp(struct device *dev,
 
 int __init init_janice_display_devices(void)
 {
-RUN_ON_JANICE_ONLY
 	struct mcde_platform_data *pdata = ux500_mcde_device.dev.platform_data;
 
 	int ret;
-
-	lcdclk_usr = 1;
 
 	ret = mcde_dss_register_notifier(&display_nb);
 	if (ret)
@@ -388,10 +381,9 @@ RUN_ON_JANICE_ONLY
 
 	return ret;
 }
-}
 
 
-struct fb_info* janice_get_primary_display_fb_info(void)
+struct fb_info* get_primary_display_fb_info(void)
 {
 	return primary_fbi;
 }

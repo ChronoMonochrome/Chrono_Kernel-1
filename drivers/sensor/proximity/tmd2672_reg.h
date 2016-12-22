@@ -21,8 +21,6 @@
 
 #ifndef __TAOS_H__
 #define __TAOS_H__
-#include <asm/mach-types.h>
-
 
 /* power control */
 #define ON		1
@@ -82,7 +80,7 @@
 #define GAIN_TRIM_PARAM   512
 #define GAIN_PARAM   1
 
-#ifdef CONFIG_BOARD_CODINA
+#ifdef CONFIG_MACH_CODINA
    #define PRX_THRSH_HI_PARAM	 640
    #define PRX_THRSH_LO_PARAM	 460
 #else
@@ -98,7 +96,7 @@
 #define INTR_FILTER_PARAM  0x30
 #define PRX_CONFIG_PARAM  0x00
 
-#ifdef CONFIG_BOARD_CODINA
+#ifdef CONFIG_MACH_CODINA
     #define PRX_PULSE_CNT_PARAM  0x06
 #else
     #define PRX_PULSE_CNT_PARAM  0x08

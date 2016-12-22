@@ -681,7 +681,7 @@ int db8500_prcmu_set_display_clocks(void)
 
 	return 0;
 }
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_CHN) 
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 static u32 db8500_prcmu_tcdm_read(unsigned int reg)
 {
 	return readl(tcdm_base + reg);
@@ -5220,7 +5220,7 @@ static struct prcmu_early_data db8500_early_fops = {
 	.request_clock = db8500_prcmu_request_clock,
 
 	/*  direct register access */
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_CHN) 
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
 	.tcdm_read = db8500_prcmu_tcdm_read,
 #endif
 	.read = db8500_prcmu_read,

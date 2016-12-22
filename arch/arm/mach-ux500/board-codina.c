@@ -2413,7 +2413,7 @@ static void __init codina_init_machine(void)
 
 	platform_add_devices(platform_devs, ARRAY_SIZE(platform_devs));
 
-	codina_ssg_pins_init();
+	ssg_pins_init();
 
 #ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
 	bt404_ts_init();

@@ -1268,11 +1268,11 @@ void mcde_recovery_fb(struct s6e63m0_dsi_lcd *lcd)
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct fb_info *fbi;
 	struct mcde_fb *mfb;
-	extern struct fb_info* janice_get_primary_display_fb_info(void);
+	extern struct fb_info* get_primary_display_fb_info(void);
         u32 rot;
         int i;
 
-	fbi = janice_get_primary_display_fb_info();
+	fbi = get_primary_display_fb_info();
 	mfb = to_mcde_fb(fbi);
 ;
 	if (mfb->early_suspend.suspend) {

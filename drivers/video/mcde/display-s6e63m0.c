@@ -55,8 +55,6 @@
 #include <mach/../../pins-db8500.h>
 #include <mach/../../pins.h>
 
-#include <asm/mach-types.h>
-
 #define SMART_DIMMING
 #define SPI_3WIRE_IF
 #define DYNAMIC_ELVSS
@@ -3386,7 +3384,6 @@ static struct mcde_display_driver s6e63m0_mcde __refdata = {
 
 static int __init s6e63m0_init(void)
 {
-RUN_ON_JANICE_ONLY
 	int ret = 0;
 	ret =  mcde_display_driver_register(&s6e63m0_mcde);
 
@@ -3402,13 +3399,10 @@ RUN_ON_JANICE_ONLY
 
         return ret;
 }
-}
 
 static void __exit s6e63m0_exit(void)
 {
-RUN_ON_JANICE_ONLY
 	mcde_display_driver_unregister(&s6e63m0_mcde);
-}
 }
 
 module_init(s6e63m0_init);
