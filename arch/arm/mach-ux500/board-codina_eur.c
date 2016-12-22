@@ -2712,8 +2712,8 @@ END_RUN
 }
 __setup("board_id=", board_id_setup);
 
-#if !defined(CONFIG_BOARD_JANICE) && defined(CONFIG_BOARD_CODINA)
-MACHINE_START(CODINA, "SAMSUNG CODINA")
+#if 0
+MACHINE_START(CODINA, "SAMSUNG JANICE")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
 	.boot_params	= 0x100,
 	.map_io		= u8500_map_io,

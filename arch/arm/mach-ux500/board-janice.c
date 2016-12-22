@@ -2158,7 +2158,6 @@ static int __init  board_id_setup(char *str)
 }
 //__setup("board_id=", board_id_setup);
 
-#if defined(CONFIG_BOARD_JANICE) && defined(CONFIG_BOARD_CODINA)
 MACHINE_START(CODINA, "SAMSUNG JANICE")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
 	.boot_params	= 0x00000100,
@@ -2168,4 +2167,3 @@ MACHINE_START(CODINA, "SAMSUNG JANICE")
 	.init_machine	= janice_init_machine,
 	.restart	= ux500_restart,
 MACHINE_END 
-#endif

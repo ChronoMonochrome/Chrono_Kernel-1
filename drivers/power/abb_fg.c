@@ -66,19 +66,15 @@ static unsigned short FGRES = 130, FGRES_CH = 120;
 
 static void /*__init*/ preset()
 {
-#if defined(CONFIG_BOARD_JANICE)
 	if (board_type == MACH_TYPE_JANICE) {
 		FGRES_HWREV_02 = 133;
 		FGRES_HWREV_02_CH = 133;
 		FGRES_HWREV_03 = 121;
 		FGRES_HWREV_03_CH = 120;
 	} else if (board_type == MACH_TYPE_CODINA) {
-#endif
 		FGRES = 130;
 		FGRES_CH = 125;
-#if defined(CONFIG_BOARD_JANICE)
 	}
-#endif
 }
 
 #define MAGIC_CODE			0x29

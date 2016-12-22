@@ -291,9 +291,9 @@ CONFIG_MACH_SAMSUNG_UX500=y
 CONFIG_KEYLAYOUT_LAYOUT1=y
 # CONFIG_KEYLAYOUT_LAYOUT2 is not set
 # CONFIG_MACH_GAVINI is not set
-# CONFIG_BOARD_JANICE is not set
-# CONFIG_BOARD_JANICE_KOR is not set
-CONFIG_BOARD_CODINA=y
+# CONFIG_MACH_JANICE is not set
+# CONFIG_MACH_JANICE_KOR is not set
+CONFIG_MACH_CODINA=y
 # CONFIG_MACH_SEC_KYLE is not set
 # CONFIG_MACH_SEC_GOLDEN is not set
 # CONFIG_MACH_SEC_SKOMER is not set
@@ -324,7 +324,7 @@ CONFIG_BT_MGMT=y
 CONFIG_ANDROID_WIP=y
 # CONFIG_AB8505_SMPL is not set
 # CONFIG_TARGET_LOCALE_CHN is not set
-CONFIG_BOARD_CODINA_EURO=y
+CONFIG_MACH_CODINA_EURO=y
 # CONFIG_U8500_SECURE is not set
 
 #
@@ -449,7 +449,7 @@ CONFIG_COMPACTION_RETRY=y
 CONFIG_MIGRATION=y
 # CONFIG_PHYS_ADDR_T_64BIT is not set
 CONFIG_ZONE_DMA_FLAG=0
-# CONFIG_BOUNCE is not set
+CONFIG_BOUNCE=y
 CONFIG_VIRT_TO_BUS=y
 # CONFIG_KSM is not set
 CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
@@ -477,10 +477,12 @@ CONFIG_ARM_USE_GLIBC_MEMCOPY=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="androidboot.hardware=samsungcodina androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=84M@256M mem=43M@340M mem_issw=1M@383M mem_ram_console=1M@384M mem=383M@385M vmalloc=192M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 board_id=12 startup_graphics=1 sbl_copy=1                                           "
+# CONFIG_ARM_APPENDED_DTB is not set
+CONFIG_CMDLINE="androidboot.hardware=samsungcodina log_buf_len=64K"
 # CONFIG_CMDLINE_FROM_BOOTLOADER is not set
-# CONFIG_CMDLINE_EXTEND is not set
-CONFIG_CMDLINE_FORCE=y
+CONFIG_CMDLINE_EXTEND=y
+# CONFIG_CMDLINE_FORCE is not set
+# CONFIG_CMDLINE_OVERRIDE_HWMEM is not set
 # CONFIG_XIP_KERNEL is not set
 CONFIG_KEXEC=y
 # CONFIG_CRASH_SWRESET is not set
@@ -640,7 +642,7 @@ CONFIG_DEFAULT_CUBIC=y
 # CONFIG_DEFAULT_RENO is not set
 CONFIG_DEFAULT_TCP_CONG="cubic"
 # CONFIG_TCP_MD5SIG is not set
-CONFIG_IPV6=y
+CONFIG_IPV6=m
 CONFIG_IPV6_PRIVACY=y
 CONFIG_IPV6_ROUTER_PREF=y
 # CONFIG_IPV6_ROUTE_INFO is not set
@@ -981,7 +983,7 @@ CONFIG_BLK_DEV_RAM_SIZE=8192
 # CONFIG_MG_DISK is not set
 # CONFIG_BLK_DEV_RBD is not set
 # CONFIG_SENSORS_LIS3LV02D is not set
-# CONFIG_BOARD_CODINA_CHN is not set
+# CONFIG_MACH_CODINA_CHN is not set
 CONFIG_MISC_DEVICES=y
 # CONFIG_AD525X_DPOT is not set
 CONFIG_AB8500_PWM=y
@@ -2551,9 +2553,9 @@ CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
 # CONFIG_ENABLE_WARN_DEPRECATED is not set
 CONFIG_ENABLE_MUST_CHECK=y
 CONFIG_FRAME_WARN=1024
-# CONFIG_MAGIC_SYSRQ is not set
-# CONFIG_STRIP_ASM_SYMS is not set
-# CONFIG_UNUSED_SYMBOLS is not set
+CONFIG_MAGIC_SYSRQ=y
+CONFIG_STRIP_ASM_SYMS=y
+CONFIG_UNUSED_SYMBOLS=y
 CONFIG_DEBUG_FS=y
 # CONFIG_HEADERS_CHECK is not set
 # CONFIG_DEBUG_SECTION_MISMATCH is not set
