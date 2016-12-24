@@ -227,7 +227,7 @@ typedef enum {
 static const struct {
 	const char *name;
 	u32 hw_flags;
-} board_info[] __devinitconst = {
+} board_info[] __devinitdata = {
 	{ "RealTek RTL8139", RTL8139_CAPS },
 	{ "RealTek RTL8129", RTL8129_CAPS },
 };

@@ -534,7 +534,7 @@ static acpi_handle ec_handle;
 
 #define TPACPI_HANDLE(object, parent, paths...)			\
 	static acpi_handle  object##_handle;			\
-	static const acpi_handle * const object##_parent __initconst =	\
+	static const acpi_handle *object##_parent __initdata =	\
 						&parent##_handle; \
 	static char *object##_paths[] __initdata = { paths }
 

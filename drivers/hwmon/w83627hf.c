@@ -1129,7 +1129,7 @@ static int __init w83627hf_find(int sioaddr, unsigned short *addr,
 	int err = -ENODEV;
 	u16 val;
 
-	static __initconst char *const names[] = {
+	static const __initdata char *names[] = {
 		"W83627HF",
 		"W83627THF",
 		"W83697HF",

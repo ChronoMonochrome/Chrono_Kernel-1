@@ -801,7 +801,7 @@ struct ab_family_id {
 	char	*name;
 };
 
-static const struct ab_family_id ids[] __devinitconst = {
+static const struct ab_family_id ids[] __devinitdata = {
 	/* AB3100 */
 	{
 		.id = 0xc0,
