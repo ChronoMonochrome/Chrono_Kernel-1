@@ -51,12 +51,12 @@
 
 #define INS_CURR_TIMEOUT		(3 * HZ)
 
-#if defined(CONFIG_BOARD_JANICE)
+#if defined(CONFIG_MACH_JANICE)
 #define FGRES_HWREV_02			133
 #define FGRES_HWREV_02_CH		133
 #define FGRES_HWREV_03			121
 #define FGRES_HWREV_03_CH		120
-#elif defined(CONFIG_BOARD_CODINA) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN)  || defined(CONFIG_MACH_SEC_SKOMER)
+#elif defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN)  || defined(CONFIG_MACH_SEC_SKOMER)
 #define USE_COMPENSATING_VOLTAGE_SAMPLE_FOR_CHARGING
 #define FGRES				130
 #define FGRES_CH			125
@@ -1203,7 +1203,7 @@ static int ab8500_fg_bat_voltage(struct ab8500_fg *di
 		return prev;
 	}
 
-#ifdef CONFIG_BOARD_JANICE
+#ifdef CONFIG_MACH_JANICE
 	if (di->smd_on)
 		vbat += 150;
 #endif
@@ -1324,8 +1324,8 @@ static int ab8500_comp_fg_bat_voltage(struct ab8500_fg *di,
 
 	vbat = vbat / i;
 
-#if defined(CONFIG_BOARD_JANICE) || \
-	defined(CONFIG_BOARD_CODINA) || \
+#if defined(CONFIG_MACH_JANICE) || \
+	defined(CONFIG_MACH_CODINA) || \
 	defined(CONFIG_MACH_GAVINI) || \
 	defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN) || \
 	defined(CONFIG_MACH_VENUS)  || defined(CONFIG_MACH_SEC_SKOMER)
@@ -1729,7 +1729,7 @@ static int ab8500_fg_calc_cap_discharge_fg(struct ab8500_fg *di)
 	} else if (di->bat_cap.permille <= 200 &&
 		di->bat_cap.permille > 100) {
 		di->n_skip_add_sample = 3;
-#if defined(CONFIG_BOARD_CODINA) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN)  || defined(CONFIG_MACH_SEC_SKOMER)
+#if defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN)  || defined(CONFIG_MACH_SEC_SKOMER)
 	} else if (di->bat_cap.permille <= 120) {
 		di->n_skip_add_sample = 1;
 	}
@@ -2502,7 +2502,7 @@ static void ab8500_fg_algorithm_discharging(struct ab8500_fg *di)
 
 		ab8500_fg_check_capacity_limits(di, false);
 
-#if defined(CONFIG_BOARD_CODINA) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_SKOMER)
+#if defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_SEC_KYLE) || defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_SKOMER)
 		if (DIV_ROUND_CLOSEST(di->bat_cap.permille, 10) <= 10) {
 			queue_delayed_work(di->fg_wq,
 				&di->fg_periodic_work,
@@ -4210,7 +4210,7 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
 	di->gpadc_vbat_ideal = (VBAT_ADC_CAL*1000 - di->gpadc_vbat_offset)
 				/ di->gpadc_vbat_gain;
 
-#ifdef CONFIG_BOARD_JANICE
+#ifdef CONFIG_MACH_JANICE
 	if (system_rev >= JANICE_R0_2) {
 		if (!gpio_get_value(SMD_ON_JANICE_R0_2))
 			di->smd_on = 1;
@@ -4225,7 +4225,7 @@ static int __devinit ab8500_fg_probe(struct platform_device *pdev)
 #if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
 	/* fg_res parameter should be re-calculated
 	   according to the HW revision. */
-#if defined(CONFIG_BOARD_JANICE)
+#if defined(CONFIG_MACH_JANICE)
 	if (system_rev < JANICE_R0_3) {
 		di->fg_res_chg = FGRES_HWREV_02_CH;
 		di->fg_res_dischg = FGRES_HWREV_02;

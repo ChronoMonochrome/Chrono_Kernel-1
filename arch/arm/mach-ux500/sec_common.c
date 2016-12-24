@@ -65,12 +65,10 @@
 #include <mach/board-sec-ux500.h>
 #include <asm/io.h>
 #elif defined(CONFIG_MACH_SAMSUNG_UX500)
-#include <linux/mfd/abx500.h>
 #include <mach/sec_common.h>
 #include <asm/cacheflush.h>
 #include <asm/processor.h>
 #include <asm/system.h>
-#include <asm/mach-types.h>
 #include <asm/thread_notify.h>
 #include <asm/stacktrace.h>
 #include <asm/mach/time.h>
@@ -99,8 +97,6 @@
 #include <linux/kernel_stat.h>
 #include <linux/proc_fs.h>
 
-int lcdclk_usr;
-int display_initialized_during_boot = (int)true;
 
 #ifdef CONFIG_SAMSUNG_LOG_BUF
 
@@ -127,7 +123,6 @@ static DEFINE_SPINLOCK(sec_common_input_log_event_lock);
 
 #define SEC_MOUNT_PATH_SIZE 32
 #define SEC_MOUNT_LOG_SIZE 10
-
 
 struct sec_key_log_entry {
 	unsigned int event_type;
@@ -228,7 +223,7 @@ static __init int setup_boot_mode(char *opt)
 
 __setup("bootmode=", setup_boot_mode);
 
-#if defined(CONFIG_BOARD_JANICE_CHN) || defined (CONFIG_MACH_GAVINI) || defined (CONFIG_BOARD_CODINA_CHN) || defined (CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_EURO) || defined(CONFIG_BOARD_CODINA) || defined(CONFIG_BOARD_JANICE)
+#if defined(CONFIG_MACH_JANICE_CHN) || defined (CONFIG_MACH_GAVINI) || defined (CONFIG_MACH_CODINA_CHN) || defined (CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_EURO) || defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_JANICE)
 u32 sec_lpm_bootmode;
 EXPORT_SYMBOL(sec_lpm_bootmode);
 
@@ -1182,15 +1177,41 @@ enum {SEC_NO_KEY_PRESSED, SEC_VOL_UP_PRESSED, SEC_VOL_DOWN_PRESSED};
 static inline int wait_for_key_press(void)
 {
 	int key = SEC_NO_KEY_PRESSED;
-	int is_janice = !!strstr(CONFIG_CMDLINE, "janice");
-	int up = is_janice ? VOL_UP_JANICE_R0_0 : VOL_UP_CODINA_R0_0;
-	int down = is_janice ? VOL_DOWN_JANICE_R0_0 : VOL_DOWN_CODINA_R0_0;
 
 	do {
-		if (!gpio_get_value(down))
+#if defined(CONFIG_MACH_JANICE)
+		if (!gpio_get_value(VOL_DOWN_JANICE_R0_0))
 			key = SEC_VOL_DOWN_PRESSED;
-		else if (!gpio_get_value(up))
+		else if (!gpio_get_value(VOL_UP_JANICE_R0_0))
 			key = SEC_VOL_UP_PRESSED;
+#elif defined(CONFIG_MACH_GAVINI)
+		if (!gpio_get_value(VOL_DOWN_GAVINI_R0_0))
+			key = SEC_VOL_DOWN_PRESSED;
+		else if (!gpio_get_value(VOL_UP_GAVINI_R0_0))
+			key = SEC_VOL_UP_PRESSED;
+#elif defined(CONFIG_MACH_CODINA)
+		if (!gpio_get_value(VOL_DOWN_CODINA_R0_0))
+			key = SEC_VOL_DOWN_PRESSED;
+		else if (!gpio_get_value(VOL_UP_CODINA_R0_0))
+			key = SEC_VOL_UP_PRESSED;
+#elif defined(CONFIG_MACH_SEC_GOLDEN)
+		if (!gpio_get_value(VOL_DOWN_GOLDEN_BRINGUP))
+			key = SEC_VOL_DOWN_PRESSED;
+		else if (!gpio_get_value(VOL_UP_GOLDEN_BRINGUP))
+			key = SEC_VOL_UP_PRESSED;
+#elif defined(CONFIG_MACH_SEC_SKOMER)
+		if (!gpio_get_value(VOL_DOWN_GOLDEN_BRINGUP))
+			key = SEC_VOL_DOWN_PRESSED;
+		else if (!gpio_get_value(VOL_UP_GOLDEN_BRINGUP))
+			key = SEC_VOL_UP_PRESSED;		
+#elif defined(CONFIG_MACH_SEC_KYLE)
+		if (!gpio_get_value(KYLE_GPIO_VOL_DOWN_KEY))
+			key = SEC_VOL_DOWN_PRESSED;
+		else if (!gpio_get_value(KYLE_GPIO_VOL_UP_KEY))
+			key = SEC_VOL_UP_PRESSED;
+#else
+		key = SEC_VOL_UP_PRESSED; /* unknown board, so straight to upload */
+#endif
 	} while (key == SEC_NO_KEY_PRESSED);
 	return key;
 }
@@ -1440,39 +1461,3 @@ void dump_cpu_stat(void)
 }
 EXPORT_SYMBOL(dump_cpu_stat);
 #endif	/* CONFIG_SAMSUNG_LOG_BUF */
-
-int sec_jack_get_det_level(struct platform_device *pdev)
-{
-        u8 value = 0;
-        int ret = 0;
-
-        ret = abx500_get_register_interruptible(&pdev->dev, AB8500_INTERRUPT, 0x4,
-                &value);
-        if (ret < 0)
-                return ret;
-
-        ret = (value & 0x04) >> 2;
-        pr_info("%s: ret=%x\n", __func__, ret);
-
-        return ret;
-}
-
-int pins_for_u9500(void) {
-	/* required by STE code */
-	return 0;
-}
-
-static int __init startup_graphics_setup(char *str)
-{
-	if (get_option(&str, &display_initialized_during_boot) != 1)
-		display_initialized_during_boot = false;
-
-	if (display_initialized_during_boot)
-		pr_info("Startup graphics support\n");
-	else
-		pr_info("No startup graphics supported\n");
-
-	return 1;
-}
-__setup("startup_graphics=", startup_graphics_setup);
-

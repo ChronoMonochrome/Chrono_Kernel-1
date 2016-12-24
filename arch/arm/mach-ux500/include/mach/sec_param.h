@@ -81,9 +81,9 @@
 #define FORCED_REBOOT_MODE		8	/* Forced Reboot Mode */
 #define CMDLINE_PROD			"product"
 
-#if defined(CONFIG_BOARD_JANICE)
+#if defined(CONFIG_MACH_JANICE)
 #define VERSION_LINE			"I9070XXLXXX"
-#elif defined(CONFIG_BOARD_CODINA)
+#elif defined(CONFIG_MACH_CODINA)
 #define VERSION_LINE			"I8160XXLXXX"
 #elif defined(CONFIG_MACH_GAVINI)
 #define VERSION_LINE			"I8530XXLXXX"
@@ -166,7 +166,7 @@ typedef struct {
 extern void (*sec_set_param_value) (int idx, void *value);
 extern void (*sec_get_param_value) (int idx, void *value);
 
-#if defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined (CONFIG_MACH_GAVINI_CHN)
+#if defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined (CONFIG_MACH_GAVINI_CHN)
 extern int alarm_en_exit;
 #endif
 

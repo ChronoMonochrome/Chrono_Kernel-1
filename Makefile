@@ -4,7 +4,7 @@ SUBLEVEL = 101
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
-CROSS_COMPILE?=../armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
+CROSS_COMPILE?=$(HOME)/armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
@@ -345,7 +345,7 @@ AS		= $(CCACHE) $(CROSS_COMPILE)as
 LD		= $(CCACHE) $(CROSS_COMPILE)ld
 CC		= $(CCACHE) $(CROSS_COMPILE)gcc
 CPP		= $(CCACHE) $(CC) -E
-AR		= $(CCACHE) $(CROSS_COMPILE)ar
+AR		= $(CCACHE) $(CROSS_COMPILE)gcc-ar
 NM		= $(CCACHE) $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
@@ -390,7 +390,6 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
 		  -mfloat-abi=hard \
 		  -mhard-float \
 		  -funsafe-loop-optimizations \
-		  -ftree-parallelize-loops=2 \
 		  -fcx-limited-range \
 		  -fno-signed-zeros \
                   -fgraphite \
@@ -419,7 +418,7 @@ KERNELVERSION = $(VERSION)$(if $(PATCHLEVEL),.$(PATCHLEVEL)$(if $(SUBLEVEL),.$(S
 
 export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
 export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
-export CPP AR NM STRIP OBJCOPY OBJDUMP
+export CPP AR NM STRIP OBJCOPY OBJDUMP LDFINAL
 export MAKE AWK GENKSYMS INSTALLKERNEL PERL UTS_MACHINE
 export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
 
@@ -679,6 +678,8 @@ ifeq ($(shell $(CONFIG_SHELL) $(srctree)/scripts/gcc-goto.sh $(CC)), y)
 	KBUILD_CFLAGS += -DCC_HAVE_ASM_GOTO
 endif
 
+include ${srctree}/scripts/Makefile.lto
+
 # Add user supplied CPPFLAGS, AFLAGS and CFLAGS as the last assignments
 # But warn user when we do so
 warn-assign = \
@@ -803,8 +804,8 @@ export KBUILD_VMLINUX_OBJS := $(vmlinux-all)
 
 # Rule to link vmlinux - also used during CONFIG_KALLSYMS
 # May be overridden by arch/$(ARCH)/Makefile
-quiet_cmd_vmlinux__ ?= LD      $@
-      cmd_vmlinux__ ?= $(LD) $(LDFLAGS) $(LDFLAGS_vmlinux) -o $@ \
+quiet_cmd_vmlinux__ ?= LDFINAL  $@
+      cmd_vmlinux__ ?= $(LDFINAL) $(LDFLAGS) $(LDFLAGS_vmlinux) -o $@ \
       -T $(vmlinux-lds) $(vmlinux-init)                          \
       --start-group $(vmlinux-main) --end-group                  \
       $(filter-out $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o FORCE ,$^)
@@ -832,9 +833,9 @@ quiet_cmd_sysmap = SYSMAP
 # First command is ':' to allow us to use + in front of the rule
 define rule_vmlinux__
 	:
-	$(if $(CONFIG_KALLSYMS),,+$(call cmd,vmlinux_version))
+	+$(if $(CONFIG_KALLSYMS),,+$(call cmd,vmlinux_version))
 
-	$(call cmd,vmlinux__)
+	+$(call cmd,vmlinux__)
 	$(Q)echo 'cmd_$@ := $(cmd_vmlinux__)' > $(@D)/.$(@F).cmd
 
 	$(Q)$(if $($(quiet)cmd_sysmap),                                      \
@@ -958,8 +959,8 @@ endif
 ifdef CONFIG_BUILD_DOCSRC
 	$(Q)$(MAKE) $(build)=Documentation
 endif
-	$(call vmlinux-modpost)
-	$(call if_changed_rule,vmlinux__)
+	+$(call vmlinux-modpost)
+	+$(call if_changed_rule,vmlinux__)
 	$(Q)rm -f .old_version
 
 # build vmlinux.o first to catch section mismatch errors early

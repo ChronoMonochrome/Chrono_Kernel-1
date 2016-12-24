@@ -113,26 +113,28 @@ config KEYLAYOUT_LAYOUT2
 	  enter keys and special character "."(dot)
 
 endchoice
-
+if MACH_SAMSUNG_U8500
+choice
+	prompt "Samsung U8500 HW"
 config MACH_GAVINI
 	bool "Gavini"
 	help
 	  Supports Gavini boards
-config BOARD_JANICE
+config MACH_JANICE
 	bool "Janice"
 	help
 	  Supports Janice boards
-config BOARD_JANICE_KOR
+config MACH_JANICE_KOR
 	bool "Janice_kor"
 	help
 	  Supports Janice_kor boards
-# config BOARD_JANICE_CHN
+# config MACH_JANICE_CHN
 #	bool "Janice_chn"
 #	help
 #	  Supports Chinese features of Janice_chn boards. This features
 #	  will be used in Power off alarm and OVP UI concept for Chinese
 #	  models.
-config BOARD_CODINA
+config MACH_CODINA
 	bool "Codina"
 	help
 	  Supports Codina boards
@@ -152,7 +154,7 @@ config MACH_SEC_HENDRIX
 	bool "Hendrix"
 	help
 	  Supports Hendrix boards
-
+endchoice
 menu "Samsung Product Features"
 config SAMSUNG_PRODUCT_SHIP
         bool "set up for product for shipping"
@@ -341,7 +343,7 @@ config TARGET_LOCALE_CHN
 	help
           This enables 'Wlan CHN' feature.
 
-config BOARD_CODINA_EURO
+config MACH_CODINA_EURO
 	bool "Codina Euro device"
 	default n
 	help
@@ -349,3 +351,5 @@ config BOARD_CODINA_EURO
 source "arch/arm/mach-ux500/Kconfig-arch"
 source "arch/arm/mach-ux500/pm/Kconfig"
 source "arch/arm/mach-ux500/test/Kconfig"
+
+endif

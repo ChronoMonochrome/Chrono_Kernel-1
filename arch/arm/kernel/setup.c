@@ -50,7 +50,6 @@
 #include <asm/traps.h>
 #include <asm/unwind.h>
 #include <asm/memblock.h>
-int board_type __read_mostly = 0;
 
 #if defined(CONFIG_DEPRECATED_PARAM_STRUCT)
 #include "compat.h"
@@ -700,9 +699,6 @@ EXPORT_SYMBOL(lcdtype);
 
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
-	char *serialno;
-	char serialno_buf[38];
-	memset(serialno_buf, 0, strlen(serialno_buf));
 #if defined(CONFIG_CMDLINE_EXTEND)
 	strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
 	strlcat(default_command_line, tag->u.cmdline.cmdline,
@@ -713,46 +709,49 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	strlcpy(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
 #endif
-
-       pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
-       strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
-
-	serialno = strstr(tag->u.cmdline.cmdline, "androidboot.serialno=");
-        if (serialno) {
-                strlcpy(serialno_buf, serialno, 38 /* "androidboot.serialno=<16_symbols>" */);
-                strlcat(default_command_line, serialno_buf, COMMAND_LINE_SIZE );
-                strlcat(default_command_line, " ", COMMAND_LINE_SIZE );
-        }
-
-       if (strstr(tag->u.cmdline.cmdline, "lpm_boot=1") != NULL) {
-               pr_err("LPM boot from bootloader\n");
-
+	if (unlikely(setup_debug > 0))
+		pr_err("setup: parsing %s\n", tag->u.cmdline.cmdline);
+	if (unlikely(!is_lpm && (strstr(default_command_line, "lpm_boot=1") != NULL)) == true) {
 		is_lpm = 1;
-               strlcat(default_command_line, "lpm_boot=1 ", COMMAND_LINE_SIZE);
-       } else {
-               strlcat(default_command_line, "lpm_boot=0 ", COMMAND_LINE_SIZE);
-       }
+		if (unlikely(setup_debug > 0))
+			pr_err("setup: is_lpm=1");
+	}
 
-       if (strstr(tag->u.cmdline.cmdline, "bootmode=2") != NULL) {
-               pr_err("Recovery boot from bootloader\n");
-               strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
-       }
+	if (unlikely(!bootmode && (strstr(default_command_line, "bootmode=2") != NULL)) == true) {
+		bootmode = 2;
+		if (unlikely(setup_debug > 0))
+			pr_err("setup: bootmode=2");
+	}
 
-	 strlcat(default_command_line, "logo.  ", COMMAND_LINE_SIZE);
+	pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
+	//strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
+
+	if (strstr(tag->u.cmdline.cmdline, "lpm_boot=1") != NULL) {
+		pr_err("LPM boot from bootloader\n");
+		//strlcat(default_command_line, "lpm_boot=1 ", COMMAND_LINE_SIZE);
+	} else
+		;//strlcat(default_command_line, "lpm_boot=0 ", COMMAND_LINE_SIZE);
+
+	if (strstr(tag->u.cmdline.cmdline, "bootmode=2") != NULL) {
+		pr_err("Recovery boot from bootloader\n");
+		//strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
+	}
+
+	//strlcat(default_command_line, "logo.  ", COMMAND_LINE_SIZE);
 
 	if (strstr(tag->u.cmdline.cmdline, "lcdtype=4") != NULL) {
-               pr_err("LCD type WS2401 from bootloader\n");
-	       lcdtype = 4;
-               strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
+		pr_err("LCD type WS2401 from bootloader\n");
+		lcdtype = 4;
+		//strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
 	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=8") != NULL) { 
-               pr_err("LCD type S6D from bootloader\n");
-               lcdtype = 8;
-               strlcat(default_command_line, "lcdtype=8 ", COMMAND_LINE_SIZE);
-        } else if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
-               pr_err("LCD type S6D from bootloader\n");
-               lcdtype = 13;
-               strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);
-        }
+		pr_err("LCD type S6D from bootloader\n");
+		lcdtype = 8;
+		//strlcat(default_command_line, "lcdtype=8 ", COMMAND_LINE_SIZE);
+	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
+		pr_err("LCD type S6D from bootloader\n");
+		lcdtype = 13;
+		//strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);
+	}
 
 	return 0;
 }
@@ -897,13 +896,7 @@ static struct machine_desc * __init setup_machine_tags(unsigned int nr)
 	 * locate machine in the list of supported machines.
 	 */
 	for_each_machine_desc(p)
-		if (MACH_TYPE_CODINA == p->nr || MACH_TYPE_JANICE == p->nr || p->nr == 0x5786afed) {
-			RUN_ON_CODINA_ONLY
-				p->nr = MACH_TYPE_CODINA;
-			} else RUN_ON_JANICE_ONLY
-				p->nr = MACH_TYPE_JANICE;
-			END_RUN
-
+		if (nr == p->nr) {
 #ifdef CONFIG_DEBUG_PRINTK
 			printk("Machine: %s\n", p->name);
 #else
@@ -989,7 +982,9 @@ void __init setup_arch(char **cmdline_p)
 	unwind_init();
 
 	setup_processor();
-	mdesc = setup_machine_tags(__machine_arch_type);
+	mdesc = setup_machine_fdt(__atags_pointer);
+	if (!mdesc)
+		mdesc = setup_machine_tags(machine_arch_type);
 	machine_desc = mdesc;
 	machine_name = mdesc->name;
 

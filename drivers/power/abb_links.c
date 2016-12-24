@@ -23,7 +23,7 @@
 extern struct class *power_supply_class;
 extern struct class *sec_class;
 
-#if defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_EURO) || defined(CONFIG_BOARD_CODINA) || defined(CONFIG_BOARD_JANICE)
+#if defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_EURO) || defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_JANICE)
 extern u32 sec_lpm_bootmode;
 #endif
 
@@ -602,7 +602,7 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	
 	case POWER_SUPPLY_PROP_LPM_MODE:    /* LPM mode */
-#if defined(CONFIG_BOARD_JANICE_CHN) || defined(CONFIG_BOARD_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_BOARD_CODINA_EURO) || defined(CONFIG_BOARD_CODINA) || defined(CONFIG_BOARD_JANICE)
+#if defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_EURO) || defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_JANICE)
 		val->intval = sec_lpm_bootmode;
 #else
 		val->intval = charger_extra_sysfs.batt_lp_charging; /* 0 or 1 */

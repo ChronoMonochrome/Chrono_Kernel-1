@@ -597,7 +597,8 @@ static void handle_modversions(struct module *mod, struct elf_info *info,
 
 	switch (sym->st_shndx) {
 	case SHN_COMMON:
-		if (!strncmp(symname, "__gnu_lto_", sizeof("__gnu_lto_")-1)) {
+		if (!strncmp(symname,
+			     "__gnu_lto_", sizeof("__gnu_lto_") - 1)) {
 			/* Should warn here, but modpost runs before the linker */
 		} else
 			warn("\"%s\" [%s] is COMMON symbol\n", symname, mod->name);
@@ -1462,7 +1463,7 @@ static void check_section_mismatch(const char *modname, struct elf_info *elf,
 		tosym = sym_name(elf, to);
 
 		if (!strncmp(fromsym, "reference___initcall",
-				sizeof("reference___initcall")-1))
+				sizeof("reference___initcall") - 1))
 			return;
 
 		/* check whitelist - we may ignore it */

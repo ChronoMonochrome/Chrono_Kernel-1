@@ -24,7 +24,6 @@
 
 #include "board-pins-sleep-force.h"
 
-#include <asm/mach-types.h>
 #include <linux/workqueue.h>
 #include <mach/board-sec-ux500.h>
 #include "board-codina-regulators.h"
@@ -379,7 +378,7 @@ static void __init gps_pins_init(void)
         	gpio_export(GPS_RST_N_CODINA_BRINGUP_R0_5, 1);
         	gpio_export_link(gps_dev, "GPS_nRST", GPS_RST_N_CODINA_BRINGUP_R0_5);
 	}
-#if defined(CONFIG_BOARD_CODINA_EURO)
+#if defined(CONFIG_MACH_CODINA_EURO)
     else if(system_rev == CODINA_R0_4) {
             gpio_request(GPS_RST_N_CODINA_BRINGUP_R0_4, "GPS_nRST");
             gpio_direction_output(GPS_RST_N_CODINA_BRINGUP_R0_4, 1);
@@ -682,7 +681,7 @@ static pin_cfg_t codina_common_sleep_table[] = {
 	GPIO207_GPIO | PIN_INPUT_PULLDOWN,  /* NC */
 	GPIO208_GPIO | PIN_OUTPUT_LOW,  /* WLAN_SDIO_CLK */
 /*	GPIO209_GPIO | PIN_OUTPUT_LOW, */ /* BT_RST_N */
-#if defined(CONFIG_BOARD_CODINA_CHN)||defined(CONFIG_BOARD_CODINA_EURO)
+#if defined(CONFIG_MACH_CODINA_CHN)||defined(CONFIG_MACH_CODINA_EURO)
 /*	GPIO209_GPIO | PIN_OUTPUT_HIGH,  */  /* BT_RST_N */ /* jine.wang */
 
 #else
@@ -839,9 +838,8 @@ static void codina_pins_suspend_force_mux(void)
 }
 
 
-void __init codina_ssg_pins_init(void)
+void __init ssg_pins_init(void)
 {
-RUN_ON_CODINA_ONLY
 	nmk_config_pins(codina_common_pins,
 		ARRAY_SIZE(codina_common_pins));
 
@@ -864,4 +862,9 @@ RUN_ON_CODINA_ONLY
 		breakpoint_iora_init();
 	#endif
 }
+
+int pins_for_u9500(void)
+{
+	/* required by STE code */
+	return 0;
 }

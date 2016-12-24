@@ -21,8 +21,6 @@
 #include <linux/mutex.h>
 #endif
 
-#include <asm/mach-types.h>
-
 #define CHIP_DEV_NAME		"BMA254"
 #define CHIP_DEV_VENDOR		"BOSCH"
 
@@ -729,13 +727,15 @@ static ssize_t raw_data_read(struct device *dev,
 #endif
 	accsns_get_acceleration_data(xyz);
 
-if (board_type == MACH_TYPE_CODINA) {
+#if defined(CONFIG_MACH_CODINA)
 	return snprintf(buf, PAGE_SIZE, "%d,%d,%d\n",
 			-(xyz[1]), xyz[0] , xyz[2]);
-} else {
+
+#else
 	return snprintf(buf, PAGE_SIZE, "%d,%d,%d\n",
 			xyz[0], xyz[1], xyz[2]);
-}
+#endif
+
 }
 
 static ssize_t raw_data_write(struct device *dev,
