@@ -400,6 +400,7 @@ KBUILD_CFLAGS := -Wunused -Wno-strict-aliasing -Wno-missing-prototypes -Wno-stri
                   -floop-nest-optimize \
                   -floop-strip-mine \
                   -floop-parallelize-all \
+		  -ftree-parallelize-loops=2 \
 		  -ffast-math -fno-finite-math-only -ftrapping-math -fno-associative-math \
 		  -pipe \
 		  --param l1-cache-size=32 \
