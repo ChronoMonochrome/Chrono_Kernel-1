@@ -34,6 +34,8 @@
 #define AB8500_VAPESEL1_REG 0x0E   /* APE OPP 100 voltage */
 #define AB8500_VAPESEL2_REG 0x0F   /* APE OPP 50 voltage  */
 
+#define DEBUG 1
+
 static int qos_delayed_cpufreq_notifier(struct notifier_block *,
 					unsigned long, void *);
 
@@ -754,8 +756,10 @@ module_param(ignore_sva_requirements, uint, 0644);
 int prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 		s32 val)
 {
+#if DEBUG
 	if (prcmu_qos_class == PRCMU_QOS_ARM_KHZ)
 		pr_err("QOS: ARM_KHZ: set %d on behalf of %s\n", val, name);
+#endif
 
 	if ((prcmu_qos_class == PRCMU_QOS_APE_OPP) &&
 	    (ignore_usb_requirements) &&
@@ -1053,18 +1057,49 @@ arch_initcall(prcmu_qos_power_preinit);
 
 #define QOS_ARM_KHZ_NORMAL 200000
 #define QOS_ARM_KHZ_BOOST_DUR_MS_DEF 8000
-unsigned int qos_ddr_opp = 25;
-unsigned int qos_ape_opp = 25;
-unsigned int qos_arm_khz = QOS_ARM_KHZ_NORMAL;
-unsigned int qos_arm_khz_boost_dur_ms = QOS_ARM_KHZ_BOOST_DUR_MS_DEF;
-module_param_named(qos_arm_khz_boost_dur_ms, qos_arm_khz_boost_dur_ms, uint, 0666);
+#define QOS_APE_OPP_NORMAL 25
+#define QOS_APE_OPP_BOOST_DUR_MS_DEF -1
+#define QOS_DDR_OPP_NORMAL 25
+#define QOS_DDR_OPP_BOOST_DUR_MS_DEF -1
+static unsigned int qos_ddr_opp = QOS_APE_OPP_NORMAL;
+static unsigned int qos_ape_opp = QOS_DDR_OPP_NORMAL;
+static unsigned int qos_arm_khz = QOS_ARM_KHZ_NORMAL;
 
-bool arm_khz_boosted = 0;
+static int qos_arm_khz_boost_dur_ms = QOS_ARM_KHZ_BOOST_DUR_MS_DEF;
+module_param_named(qos_arm_khz_boost_dur_ms, qos_arm_khz_boost_dur_ms, int, 0666);
+
+static int qos_ape_opp_boost_dur_ms = QOS_APE_OPP_BOOST_DUR_MS_DEF;
+module_param_named(qos_ape_opp_boost_dur_ms, qos_ape_opp_boost_dur_ms, int, 0666);
+
+static int qos_ddr_opp_boost_dur_ms = QOS_DDR_OPP_BOOST_DUR_MS_DEF;
+module_param_named(qos_ddr_opp_boost_dur_ms, qos_ddr_opp_boost_dur_ms, int, 0666);
+
+static bool arm_khz_boosted = 0;
+static bool ape_opp_boosted = 0;
+static bool ddr_opp_boosted = 0;
+
+static void restore_ddr_opp_fn(struct work_struct *work)
+{
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "power HAL", QOS_DDR_OPP_NORMAL);
+	ddr_opp_boosted = 0;
+}
+static DECLARE_DELAYED_WORK(restore_ddr_opp_delayedwork, restore_ddr_opp_fn);
+
+extern bool is_suspended_get(void);
 
 static int set_qos_ddr_opp(const char *val, struct kernel_param *kp)
 {
 	unsigned int ddr_opp = 0;
-	unsigned int err = sscanf(val, "%d", &ddr_opp) == 1 ? 0 : -EINVAL;
+	unsigned int err = 0;
+
+	if (is_suspended_get()) {
+#if DEBUG
+		pr_err("QoS: not changing DDR_OPP on behalf of PowerHAL in suspend\n");
+#endif
+		return -EINVAL;
+	}
+
+	err = sscanf(val, "%d", &ddr_opp) == 1 ? 0 : -EINVAL;
 
 	if (err)
 		goto out;
@@ -1074,7 +1109,18 @@ static int set_qos_ddr_opp(const char *val, struct kernel_param *kp)
 	    case 50:
 	    case 100:
 		qos_ddr_opp = ddr_opp;
-		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "power HAL", ddr_opp);
+		if (ddr_opp_boosted)
+			cancel_delayed_work(&restore_ddr_opp_delayedwork);
+
+		if (qos_ddr_opp_boost_dur_ms != 0)
+			prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "power HAL", ddr_opp);
+
+		if (qos_ddr_opp_boost_dur_ms > 0) {
+			schedule_delayed_work(&restore_ddr_opp_delayedwork,
+				msecs_to_jiffies(qos_ddr_opp_boost_dur_ms));
+			ddr_opp_boosted = 1;
+		}
+
 		break;
 	    default:
 		err = -EINVAL;
@@ -1082,16 +1128,32 @@ static int set_qos_ddr_opp(const char *val, struct kernel_param *kp)
 
 out:
 	if (err)
-		pr_err("QOS: invalid input '%s' for '%s'; use either 100, 50 or 25\n", val, __func__);
+		pr_err("QOS: invalid input '%s' for '%s'; use either 100, 50 or 25\n", val /* buf */, __func__);
 
         return err;
 }
 module_param_call(qos_ddr_opp, set_qos_ddr_opp, param_get_uint, &qos_ddr_opp, 0666);
 
+static void restore_ape_opp_fn(struct work_struct *work)
+{
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "power HAL", QOS_APE_OPP_NORMAL);
+	ape_opp_boosted = 0;
+}
+static DECLARE_DELAYED_WORK(restore_ape_opp_delayedwork, restore_ape_opp_fn);
+
 static int set_qos_ape_opp(const char *val, struct kernel_param *kp)
 {
 	unsigned int ape_opp = 0;
-	unsigned int err = sscanf(val, "%d", &ape_opp) == 1 ? 0 : -EINVAL;
+	unsigned int err = 0;
+
+	if (is_suspended_get()) {
+#if DEBUG
+		pr_err("QoS: not changing APE_OPP on behalf of PowerHAL in suspend\n");
+#endif
+		return -EINVAL;
+	}
+
+	err = sscanf(val, "%d", &ape_opp) == 1 ? 0 : -EINVAL;
 
 	if (err)
 		goto out;
@@ -1101,7 +1163,18 @@ static int set_qos_ape_opp(const char *val, struct kernel_param *kp)
 	    case 50:
 	    case 100:
 		qos_ape_opp = ape_opp;
-		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "power HAL", ape_opp);
+		if (ape_opp_boosted)
+			cancel_delayed_work(&restore_ape_opp_delayedwork);
+
+		if (qos_ape_opp_boost_dur_ms != 0)
+			prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "power HAL", ape_opp);
+
+		if (qos_ape_opp_boost_dur_ms > 0) {
+			schedule_delayed_work(&restore_ape_opp_delayedwork,
+				msecs_to_jiffies(qos_ape_opp_boost_dur_ms));
+			ape_opp_boosted = 1;
+		}
+
 		break;
 	    default:
 		err = -EINVAL;
@@ -1132,16 +1205,17 @@ static int set_qos_arm_khz(const char *val, struct kernel_param *kp)
 
 	qos_arm_khz = arm_khz;
 
-	if (arm_khz_boosted) {
+	if (arm_khz_boosted)
 		cancel_delayed_work(&restore_arm_khz_delayedwork);
-		arm_khz_boosted = 0;
+
+	if (qos_arm_khz_boost_dur_ms != 0)
+		prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ, "power HAL", arm_khz);
+
+	if (qos_arm_khz_boost_dur_ms > 0) {
+		schedule_delayed_work(&restore_arm_khz_delayedwork,
+			msecs_to_jiffies(qos_arm_khz_boost_dur_ms));
+		arm_khz_boosted = 1;
 	}
-
-	prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ, "power HAL", arm_khz);
-	arm_khz_boosted = 1;
-
-	schedule_delayed_work(&restore_arm_khz_delayedwork,
-		msecs_to_jiffies(qos_arm_khz_boost_dur_ms));
 
 out:
 	if (err)
