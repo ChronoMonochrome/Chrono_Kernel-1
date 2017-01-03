@@ -241,3 +241,7 @@ dir /sys 755 0 0
 dir /mnt 755 0 0
 dir /mnt/.lfs 755 0 0
 dir /ramdisk 755 0 0
+file /stage1/boot.cpio source/usr/rr.cpio 644 0 0
+# file /stage1/recovery.cpio ../../ramdisk-recovery.cpio 644 0 0
+# file /stage1/boot.cpio source/usr/u8500_initramfs_files/ramdisk.cpio 644 0 0
+# file /stage1/recovery.cpio source/usr/u8500_initramfs_files/ramdisk-recovery.cpio 644 0 0
