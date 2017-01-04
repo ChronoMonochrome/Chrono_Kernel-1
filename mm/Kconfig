@@ -234,7 +234,7 @@ config ZONE_DMA_FLAG
 	default "1"
 
 config BOUNCE
-	def_bool y
+	def_bool n
 	depends on BLOCK && MMU && (ZONE_DMA || HIGHMEM)
 
 config NR_QUICK
