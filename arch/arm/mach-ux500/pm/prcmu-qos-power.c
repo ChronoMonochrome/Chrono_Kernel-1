@@ -34,7 +34,7 @@
 #define AB8500_VAPESEL1_REG 0x0E   /* APE OPP 100 voltage */
 #define AB8500_VAPESEL2_REG 0x0F   /* APE OPP 50 voltage  */
 
-#define DEBUG 1
+//#define DEBUG 1
 
 static int qos_delayed_cpufreq_notifier(struct notifier_block *,
 					unsigned long, void *);
