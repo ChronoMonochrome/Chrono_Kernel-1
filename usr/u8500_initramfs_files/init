@@ -17,17 +17,7 @@ busybox rm init
 busybox mount -t proc proc /proc
 busybox mount -t sysfs sysfs /sys
 
-if test -f /stage1/boot.cpio.gz ; then
-	load_image=/stage1/boot.cpio
-fi
-
-if test -f /stage1/boot.cpio ; then
-	load_image=/stage1/boot.cpio
-fi
-
-if test -f /ramdisk/boot.cpio ; then
-	load_image=/ramdisk/boot.cpio
-fi
+load_image=/ramdisk/boot.cpio
 lvm=/ramdisk/lvm.cpio
 
 busybox insmod /ramdisk/modules/startup_reason.ko
@@ -78,18 +68,7 @@ if busybox grep -q bootmode=2 /proc/cmdline ; then
 		# if there are errors while unpacking recovery, fallback to /ramdisk/recovery.cpio
 		if [ "$(busybox cat /ramdisk/recovery.check | busybox grep -c 'gzip')" != 0 ] ; then
 			busybox echo "recovery on /dev/block/mmcblk0p15 appears to be corrupted, falling back to ramdisk"
-                        if test -f /stage1/recovery.cpio; then
-				load_image=/stage1/recovery.cpio
-			fi
-                        if test -f /stage1/recovery.cpio.gz ; then
-				load_image=/stage1/recovery.cpio
-			fi
-			if test -f /ramdisk/recovery.cpio ; then
-				load_image=/ramdisk/recovery.cpio
-			fi
-			if test -f /ramdisk/recovery.cpio.gz ; then
-				load_image=/ramdisk/recovery.cpio
-			fi
+			load_image=/ramdisk/recovery.cpio
 		fi
 	else
 		busybox echo "recovery not found on /dev/block/mmcblk0p15, loading from ramdisk"
