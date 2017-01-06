@@ -390,6 +390,7 @@ static void audit_printk_skb(struct sk_buff *skb)
 	struct nlmsghdr *nlh = nlmsg_hdr(skb);
 	char *data = NLMSG_DATA(nlh);
 
+#if 0
 	if (nlh->nlmsg_type != AUDIT_EOE) {
 		if (printk_ratelimit())
 #ifdef CONFIG_DEBUG_PRINTK
@@ -400,6 +401,7 @@ static void audit_printk_skb(struct sk_buff *skb)
 		else
 			audit_log_lost("printk limit exceeded\n");
 	}
+#endif
 
 	audit_hold_skb(skb);
 }
