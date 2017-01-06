@@ -3265,15 +3265,10 @@ out:
 	return match;
 }
 
-static int (*aurule_callback)(void) = audit_update_lsm_rules;
-
 static int aurule_avc_callback(u32 event, u32 ssid, u32 tsid,
 			       u16 class, u32 perms, u32 *retained)
 {
 	int err = 0;
-
-	if (event == AVC_CALLBACK_RESET && aurule_callback)
-		err = aurule_callback();
 	return err;
 }
 
