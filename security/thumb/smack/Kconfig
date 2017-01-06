@@ -1,0 +1,13 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
+config SECURITY_SMACK
+	bool "Simplified Mandatory Access Control Kernel Support"
+	depends on NETLABEL && SECURITY_NETWORK
+	default n
+	help
+	  This selects the Simplified Mandatory Access Control Kernel.
+	  Smack is useful for sensitivity, integrity, and a variety
+	  of other mandatory security schemes.
+	  If you are unsure how to answer this question, answer N.
+
