@@ -7,7 +7,8 @@
 
 obj-$(CONFIG_SECURITY_SELINUX) := selinux.o
 
-selinux-y := avc.o hooks.o selinuxfs.o exports.o
+selinux-y := hooks.o exports.o
+## selinuxfs.o
 
 selinux-$(CONFIG_SECURITY_NETWORK_XFRM) += xfrm.o
 
