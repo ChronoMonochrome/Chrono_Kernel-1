@@ -4,7 +4,7 @@ SUBLEVEL = 101
 EXTRAVERSION =
 NAME = Saber-toothed Squirrel
 
-CROSS_COMPILE?=$(HOME)/armv7a-linux-gnueabihf-5.2/bin/armv7a-linux-gnueabihf-
+CROSS_COMPILE?=$(HOME)/x-tools/arm-cortexa9_neon-linux-gnueabihf/bin/arm-cortexa9_neon-linux-gnueabihf-
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
