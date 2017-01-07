@@ -365,7 +365,7 @@ static ssize_t sel_read_mls(struct file *filp, char __user *buf,
 			   security_mls_enabled());
 	return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static const struct file_operations sel_mls_ops = {
@@ -426,7 +426,7 @@ err:
 	kfree(plm);
 	return rc;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static int sel_release_policy(struct inode *inode, struct file *filp)
@@ -462,7 +462,7 @@ out:
 	mutex_unlock(&sel_mutex);
 	return ret;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static int sel_mmap_policy_fault(struct vm_area_struct *vma,
@@ -577,7 +577,7 @@ out:
 	vfree(data);
 	return length;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static const struct file_operations sel_load_ops = {
@@ -617,7 +617,7 @@ out:
 	kfree(canon);
 	return length;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static ssize_t sel_read_checkreqprot(struct file *filp, char __user *buf,
@@ -776,7 +776,7 @@ out:
 	kfree(scon);
 	return length;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static ssize_t sel_write_create(struct file *file, char *buf, size_t size)
@@ -878,7 +878,7 @@ out:
 	kfree(scon);
 	return length;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static ssize_t sel_write_relabel(struct file *file, char *buf, size_t size)
@@ -937,7 +937,7 @@ out:
 	kfree(scon);
 	return length;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static ssize_t sel_write_user(struct file *file, char *buf, size_t size)
@@ -1000,7 +1000,7 @@ out:
 	kfree(con);
 	return length;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static ssize_t sel_write_member(struct file *file, char *buf, size_t size)
@@ -1062,7 +1062,7 @@ out:
 	kfree(scon);
 	return length;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static struct inode *sel_make_inode(struct super_block *sb, int mode)
@@ -1356,7 +1356,7 @@ static ssize_t sel_read_avc_cache_threshold(struct file *filp, char __user *buf,
 	length = scnprintf(tmpbuf, TMPBUFLEN, "%u", avc_cache_threshold);
 	return simple_read_from_buffer(buf, count, ppos, tmpbuf, length);
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static ssize_t sel_write_avc_cache_threshold(struct file *file,
@@ -1402,7 +1402,7 @@ out:
 	free_page((unsigned long)page);
 	return ret;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static ssize_t sel_read_avc_hash_stats(struct file *filp, char __user *buf,
@@ -1423,7 +1423,7 @@ static ssize_t sel_read_avc_hash_stats(struct file *filp, char __user *buf,
 
 	return length;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static const struct file_operations sel_avc_cache_threshold_ops = {
@@ -1558,7 +1558,7 @@ static ssize_t sel_read_initcon(struct file *file, char __user *buf,
 	kfree(con);
 	return ret;
 #endif
-	return -ENOTSUPP;
+	return 0;
 }
 
 static const struct file_operations sel_initcon_ops = {
@@ -1566,7 +1566,6 @@ static const struct file_operations sel_initcon_ops = {
 	.llseek		= generic_file_llseek,
 };
 
-#if 0
 static int sel_make_initcon_files(struct dentry *dir)
 {
 	int i;
@@ -1589,7 +1588,6 @@ static int sel_make_initcon_files(struct dentry *dir)
 
 	return 0;
 }
-#endif
 
 static inline unsigned int sel_div(unsigned long a, unsigned long b)
 {
@@ -1874,11 +1872,8 @@ static int sel_fill_super(struct super_block *sb, void *data, int silent)
 	struct inode_security_struct *isec;
 
 	static struct tree_descr selinux_files[] = {
-#if 0
 		[SEL_LOAD] = {"load", &sel_load_ops, S_IRUSR|S_IWUSR},
-#endif
 		[SEL_ENFORCE] = {"enforce", &sel_enforce_ops, S_IRUGO|S_IWUSR},
-#if 0
 		[SEL_CONTEXT] = {"context", &transaction_ops, S_IRUGO|S_IWUGO},
 		[SEL_ACCESS] = {"access", &transaction_ops, S_IRUGO|S_IWUGO},
 		[SEL_CREATE] = {"create", &transaction_ops, S_IRUGO|S_IWUGO},
@@ -1894,7 +1889,6 @@ static int sel_fill_super(struct super_block *sb, void *data, int silent)
 		[SEL_DENY_UNKNOWN] = {"deny_unknown", &sel_handle_unknown_ops, S_IRUGO},
 		[SEL_STATUS] = {"status", &sel_handle_status_ops, S_IRUGO},
 		[SEL_POLICY] = {"policy", &sel_policy_ops, S_IRUSR},
-#endif
 		/* last one */ {""}
 	};
 
@@ -1947,7 +1941,7 @@ static int sel_fill_super(struct super_block *sb, void *data, int silent)
 	ret = sel_make_avc_files(dentry);
 	if (ret)
 		goto err;
-#if 0
+#if 1
 	dentry = sel_make_dir(sb->s_root, "initial_contexts", &sel_last_ino);
 	if (IS_ERR(dentry)) {
 		ret = PTR_ERR(dentry);

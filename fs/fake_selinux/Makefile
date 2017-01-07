@@ -3,7 +3,7 @@
 #
 
 obj-y += fake_selinux.o
-fake_selinux-y :=  selinuxfs.o status.o
+fake_selinux-y :=  selinuxfs.o status.o services.o
 
 #obj-$(CONFIG_VFAT_FS) += vfat.o
 #obj-$(CONFIG_MSDOS_FS) += msdos.o
