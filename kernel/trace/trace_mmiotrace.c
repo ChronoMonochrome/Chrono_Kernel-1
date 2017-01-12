@@ -12,7 +12,7 @@
 #include <linux/slab.h>
 #include <linux/time.h>
 
-#include <asm/atomic.h>
+#include <linux/atomic.h>
 
 #include "trace.h"
 #include "trace_output.h"
@@ -368,11 +368,7 @@ void mmio_trace_mapping(struct mmiotrace_map *map)
 	preempt_enable();
 }
 
-#ifdef CONFIG_DEBUG_PRINTK
 int mmio_trace_printk(const char *fmt, va_list args)
 {
 	return trace_vprintk(0, fmt, args);
-#else
-int mmio_trace_;
-#endif
 }
