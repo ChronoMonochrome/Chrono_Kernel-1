@@ -2,7 +2,7 @@
 # Makefile for the Linux fat filesystem support.
 #
 
-obj-y += fake_selinux.o
+obj-m += fake_selinux.o
 fake_selinux-y :=  selinuxfs.o status.o services.o
 
 #obj-$(CONFIG_VFAT_FS) += vfat.o
@@ -11,5 +11,5 @@ fake_selinux-y :=  selinuxfs.o status.o services.o
 #vfat-y := namei_vfat.o
 #msdos-y := namei_msdos.o
 
-ccflags-m := -Ifs/fake_selinux/selinux
+ccflags-m := -Ifs/fake_selinux/selinux -DSELINUX_MODULE
 ccflags-y := -Ifs/fake_selinux/selinux

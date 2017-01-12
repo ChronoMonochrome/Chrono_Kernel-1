@@ -324,7 +324,7 @@ void note_interrupt(unsigned int irq, struct irq_desc *desc,
 	desc->irqs_unhandled = 0;
 }
 
-int noirqdebug __read_mostly;
+bool noirqdebug __read_mostly;
 
 int noirqdebug_setup(char *str)
 {
@@ -335,7 +335,7 @@ int noirqdebug_setup(char *str)
 }
 
 __setup("noirqdebug", noirqdebug_setup);
-module_param(noirqdebug, int, 0644);
+module_param(noirqdebug, bool, 0644);
 MODULE_PARM_DESC(noirqdebug, "Disable irq lockup detection when true");
 
 static int __init irqfixup_setup(char *str)

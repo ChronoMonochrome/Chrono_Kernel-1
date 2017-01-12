@@ -44,6 +44,14 @@
 #include "objsec.h"
 #include "conditional.h"
 
+#define SELINUX_MODULE
+
+#define USED \
+	pr_err("%s is used! \n", __func__)
+
+#define IMPLEMENT \
+	pr_err("%s is used, implement! \n", __func__)
+
 #define SECURITY__SETBOOL 0
 #define SECURITY__SETSECPARAM 1
 
@@ -127,6 +135,7 @@ int selinux_enforcing = 0;
 static ssize_t sel_read_enforce(struct file *filp, char __user *buf,
 				size_t count, loff_t *ppos)
 {
+USED;
 	char tmpbuf[TMPBUFLEN];
 	ssize_t length;
 
@@ -138,6 +147,7 @@ static ssize_t sel_write_enforce(struct file *file, const char __user *buf,
 				 size_t count, loff_t *ppos)
 
 {
+USED;
 	char *page = NULL;
 	ssize_t length;
 	int new_value;
@@ -199,6 +209,7 @@ static unsigned int global_handle_unknown = 0;
 static ssize_t sel_read_handle_unknown(struct file *filp, char __user *buf,
 					size_t count, loff_t *ppos)
 {
+	USED;
 	char tmpbuf[TMPBUFLEN];
 	ssize_t length;
 	ino_t ino = filp->f_path.dentry->d_inode->i_ino;
@@ -216,6 +227,7 @@ static const struct file_operations sel_handle_unknown_ops = {
 
 static int sel_open_handle_status(struct inode *inode, struct file *filp)
 {
+	USED;
 	struct page    *status = selinux_kernel_status_page();
 
 	if (!status)
@@ -229,6 +241,7 @@ static int sel_open_handle_status(struct inode *inode, struct file *filp)
 static ssize_t sel_read_handle_status(struct file *filp, char __user *buf,
 				      size_t count, loff_t *ppos)
 {
+	USED;
 	struct page    *status = filp->private_data;
 
 	BUG_ON(!status);
@@ -241,6 +254,8 @@ static ssize_t sel_read_handle_status(struct file *filp, char __user *buf,
 static int sel_mmap_handle_status(struct file *filp,
 				  struct vm_area_struct *vma)
 {
+	USED;
+
 	struct page    *status = filp->private_data;
 	unsigned long	size = vma->vm_end - vma->vm_start;
 
@@ -280,6 +295,8 @@ static ssize_t sel_write_disable(struct file *file, const char __user *buf,
 				 size_t count, loff_t *ppos)
 
 {
+	USED;
+
 	char *page = NULL;
 	ssize_t length;
 	int new_value;
@@ -333,6 +350,8 @@ static const struct file_operations sel_disable_ops = {
 static ssize_t sel_read_policyvers(struct file *filp, char __user *buf,
 				   size_t count, loff_t *ppos)
 {
+	USED;
+
 	char tmpbuf[TMPBUFLEN];
 	ssize_t length;
 
@@ -357,6 +376,7 @@ static struct dentry *sel_make_dir(struct dentry *dir, const char *name,
 static ssize_t sel_read_mls(struct file *filp, char __user *buf,
 				size_t count, loff_t *ppos)
 {
+IMPLEMENT;
 #if 0
 	char tmpbuf[TMPBUFLEN];
 	ssize_t length;
@@ -380,6 +400,7 @@ struct policy_load_memory {
 
 static int sel_open_policy(struct inode *inode, struct file *filp)
 {
+IMPLEMENT;
 #if 0
 	struct policy_load_memory *plm = NULL;
 	int rc;
@@ -431,6 +452,7 @@ err:
 
 static int sel_release_policy(struct inode *inode, struct file *filp)
 {
+IMPLEMENT;
 #if 0
 	struct policy_load_memory *plm = filp->private_data;
 
@@ -447,6 +469,7 @@ static int sel_release_policy(struct inode *inode, struct file *filp)
 static ssize_t sel_read_policy(struct file *filp, char __user *buf,
 			       size_t count, loff_t *ppos)
 {
+IMPLEMENT;
 #if 0
 	struct policy_load_memory *plm = filp->private_data;
 	int ret;
@@ -468,6 +491,7 @@ out:
 static int sel_mmap_policy_fault(struct vm_area_struct *vma,
 				 struct vm_fault *vmf)
 {
+IMPLEMENT;
 #if 0
 	struct policy_load_memory *plm = vma->vm_file->private_data;
 	unsigned long offset;
@@ -495,6 +519,7 @@ static struct vm_operations_struct sel_mmap_policy_ops = {
 
 static int sel_mmap_policy(struct file *filp, struct vm_area_struct *vma)
 {
+IMPLEMENT;
 #if 0
 	if (vma->vm_flags & VM_SHARED) {
 		/* do not allow mprotect to make mapping writable */
@@ -521,6 +546,7 @@ static ssize_t sel_write_load(struct file *file, const char __user *buf,
 			      size_t count, loff_t *ppos)
 
 {
+IMPLEMENT;
 #if 0
 	ssize_t length;
 	void *data = NULL;
@@ -587,6 +613,7 @@ static const struct file_operations sel_load_ops = {
 
 static ssize_t sel_write_context(struct file *file, char *buf, size_t size)
 {
+IMPLEMENT;
 #if 0
 	char *canon = NULL;
 	u32 sid, len;
@@ -623,6 +650,7 @@ out:
 static ssize_t sel_read_checkreqprot(struct file *filp, char __user *buf,
 				     size_t count, loff_t *ppos)
 {
+USED;
 	char tmpbuf[TMPBUFLEN];
 	ssize_t length;
 
@@ -633,6 +661,7 @@ static ssize_t sel_read_checkreqprot(struct file *filp, char __user *buf,
 static ssize_t sel_write_checkreqprot(struct file *file, const char __user *buf,
 				      size_t count, loff_t *ppos)
 {
+USED;
 	char *page = NULL;
 	ssize_t length;
 	unsigned int new_value;
@@ -697,7 +726,9 @@ static ssize_t (*write_op[])(struct file *, char *, size_t) = {
 
 static ssize_t selinux_transaction_write(struct file *file, const char __user *buf, size_t size, loff_t *pos)
 {
+USED;
 	ino_t ino = file->f_path.dentry->d_inode->i_ino;
+pr_err("%s: ino=%d\n", ino);
 	char *data;
 	ssize_t rv;
 
@@ -731,6 +762,7 @@ static const struct file_operations transaction_ops = {
 
 static ssize_t sel_write_access(struct file *file, char *buf, size_t size)
 {
+IMPLEMENT;
 #if 0
 	char *scon = NULL, *tcon = NULL;
 	u32 ssid, tsid;
@@ -781,6 +813,7 @@ out:
 
 static ssize_t sel_write_create(struct file *file, char *buf, size_t size)
 {
+IMPLEMENT;
 #if 0
 	char *scon = NULL, *tcon = NULL;
 	char *namebuf = NULL, *objname = NULL;
@@ -883,6 +916,7 @@ out:
 
 static ssize_t sel_write_relabel(struct file *file, char *buf, size_t size)
 {
+IMPLEMENT;
 #if 0
 	char *scon = NULL, *tcon = NULL;
 	u32 ssid, tsid, newsid;
@@ -942,6 +976,7 @@ out:
 
 static ssize_t sel_write_user(struct file *file, char *buf, size_t size)
 {
+IMPLEMENT;
 #if 0
 	char *con = NULL, *user = NULL, *ptr;
 	u32 sid, *sids = NULL;
@@ -1005,6 +1040,7 @@ out:
 
 static ssize_t sel_write_member(struct file *file, char *buf, size_t size)
 {
+IMPLEMENT;
 #if 0
 	char *scon = NULL, *tcon = NULL;
 	u32 ssid, tsid, newsid;
@@ -1079,6 +1115,7 @@ static struct inode *sel_make_inode(struct super_block *sb, int mode)
 static ssize_t sel_read_bool(struct file *filep, char __user *buf,
 			     size_t count, loff_t *ppos)
 {
+USED;
 	char *page = NULL;
 	ssize_t length;
 	ssize_t ret;
@@ -1115,6 +1152,7 @@ out:
 static ssize_t sel_write_bool(struct file *filep, const char __user *buf,
 			      size_t count, loff_t *ppos)
 {
+USED;
 	char *page = NULL;
 	ssize_t length;
 	int new_value;
@@ -1176,6 +1214,7 @@ static ssize_t sel_commit_bools_write(struct file *filep,
 				      const char __user *buf,
 				      size_t count, loff_t *ppos)
 {
+USED;
 	char *page = NULL;
 	ssize_t length;
 	int new_value;
@@ -1228,6 +1267,7 @@ static const struct file_operations sel_commit_bools_ops = {
 
 static void sel_remove_entries(struct dentry *de)
 {
+USED;
 	struct list_head *node;
 
 	spin_lock(&de->d_lock);
@@ -1349,6 +1389,7 @@ struct dentry *selinux_null;
 static ssize_t sel_read_avc_cache_threshold(struct file *filp, char __user *buf,
 					    size_t count, loff_t *ppos)
 {
+IMPLEMENT;
 #if 0
 	char tmpbuf[TMPBUFLEN];
 	ssize_t length;
@@ -1364,6 +1405,7 @@ static ssize_t sel_write_avc_cache_threshold(struct file *file,
 					     size_t count, loff_t *ppos)
 
 {
+IMPLEMENT;
 #if 0
 	char *page = NULL;
 	ssize_t ret;
@@ -1408,6 +1450,7 @@ out:
 static ssize_t sel_read_avc_hash_stats(struct file *filp, char __user *buf,
 				       size_t count, loff_t *ppos)
 {
+IMPLEMENT;
 #if 0
 	char *page;
 	ssize_t length;
@@ -1509,6 +1552,7 @@ static const struct file_operations sel_avc_cache_stats_ops = {
 
 static int sel_make_avc_files(struct dentry *dir)
 {
+USED;
 	int i;
 	static struct tree_descr files[] = {
 		{ "cache_threshold",
@@ -1542,6 +1586,7 @@ static int sel_make_avc_files(struct dentry *dir)
 static ssize_t sel_read_initcon(struct file *file, char __user *buf,
 				size_t count, loff_t *ppos)
 {
+IMPLEMENT;
 #if 0
 	struct inode *inode;
 	char *con;
@@ -1568,6 +1613,7 @@ static const struct file_operations sel_initcon_ops = {
 
 static int sel_make_initcon_files(struct dentry *dir)
 {
+IMPLEMENT;
 	int i;
 
 	for (i = 1; i <= SECINITSID_NUM; i++) {
