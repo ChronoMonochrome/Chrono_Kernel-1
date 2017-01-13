@@ -23,7 +23,6 @@
 #include <linux/user.h>
 #include <linux/proc_fs.h>
 
-#include <asm/cp15.h>
 #include <asm/cputype.h>
 #include <asm/thread_notify.h>
 #include <asm/vfp.h>

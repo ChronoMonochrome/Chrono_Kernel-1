@@ -16,7 +16,6 @@
 
 #include <linux/init.h>
 #include <asm/cacheflush.h>
-#include <asm/cp15.h>
 #include <asm/hardware/cache-tauros2.h>
 
 
