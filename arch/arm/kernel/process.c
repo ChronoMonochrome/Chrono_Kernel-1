@@ -103,18 +103,10 @@ static int __init hlt_setup(char *__unused)
 __setup("nohlt", nohlt_setup);
 __setup("hlt", hlt_setup);
 
-#ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
-unsigned int unhandled_reset_count = 0;
-#endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
-
 #ifdef CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART
 void arm_machine_flush_console(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
-#else
-	;
-#endif
 	pr_emerg("Restarting %s\n", linux_banner);
 	if (console_trylock()) {
 		console_unlock();
@@ -138,23 +130,6 @@ void arm_machine_flush_console(void)
 
 void soft_restart(unsigned long addr)
 {
-
-#ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
-	int i;
-
-#ifdef CONFIG_DEBUG_PRINTK
-	printk( "arm_machine_restart: mode: %c, cmd: %s\n", mode, cmd ) ;
-#else
-	;
-#endif
-	/* reboot mode = Lockup */
-	if( 'L' == mode || 'U' == mode)	{
-		for(i=0; i<100; i++) {
-			arch_reset(mode, NULL);
-			unhandled_reset_count++;
-		}
-	}
-#endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
 
 	/* Flush the console to make sure all the relevant messages make it
 	 * out to the console drivers */
@@ -328,31 +303,7 @@ void machine_power_off(void)
 
 void machine_restart(char *cmd)
 {
-#ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
-#ifdef CONFIG_DEBUG_PRINTK
-	printk( "machine_restart: cmd: %s\n", cmd ) ;
-#else
-	;
-#endif
-	/*reboot_mode = cmd[0];//kernel will crash at reboot-time. d.moskvitin */
-	if (cmd) 
-		reboot_mode = cmd[0];
-
-#ifdef CONFIG_DEBUG_PRINTK
-	printk( "machine_restart: reboot_mode: %c\n", reboot_mode );
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
-	printk( "machine_restart: arm_pm_restart: 0x%x\n", arm_pm_restart ) ;
-#else
-	;
-#endif
-#endif /* CONFIG_SAMSUNG_KERNEL_DEBUG */
-
-#ifndef CONFIG_SAMSUNG_KERNEL_DEBUG
 	machine_shutdown();
-#endif
 	arm_pm_restart(reboot_mode, cmd);
 
 	/* Give a grace period for failure to restart of 1s */
@@ -376,11 +327,7 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 	if (addr < PAGE_OFFSET || addr >= (unsigned long)high_memory)
 		return;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n%s: %#lx:\n", name, addr);
-#else
-	;
-#endif
 
 	/*
 	 * round address down to a 32 bit boundary
@@ -396,33 +343,17 @@ static void show_data(unsigned long addr, int nbytes, const char *name)
 		 * just display low 16 bits of address to keep
 		 * each line of the dump < 80 characters
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%04lx ", (unsigned long)p & 0xffff);
-#else
-		;
-#endif
 		for (j = 0; j < 8; j++) {
 			u32	data;
 			if (probe_kernel_address(p, data)) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(" ********");
-#else
-				;
-#endif
 			} else {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(" %08x", data);
-#else
-				;
-#endif
 			}
 			++p;
 		}
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 	}
 }
 
@@ -456,46 +387,26 @@ void __show_regs(struct pt_regs *regs)
 	unsigned long flags;
 	char buf[64];
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("CPU: %d    %s  (%s %.*s)\n",
 		raw_smp_processor_id(), print_tainted(),
 		init_utsname()->release,
 		(int)strcspn(init_utsname()->version, " "),
 		init_utsname()->version);
-#else
-	;
-#endif
 	print_symbol("PC is at %s\n", instruction_pointer(regs));
 	print_symbol("LR is at %s\n", regs->ARM_lr);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("pc : [<%08lx>]    lr : [<%08lx>]    psr: %08lx\n"
 	       "sp : %08lx  ip : %08lx  fp : %08lx\n",
 		regs->ARM_pc, regs->ARM_lr, regs->ARM_cpsr,
 		regs->ARM_sp, regs->ARM_ip, regs->ARM_fp);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("r10: %08lx  r9 : %08lx  r8 : %08lx\n",
 		regs->ARM_r10, regs->ARM_r9,
 		regs->ARM_r8);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("r7 : %08lx  r6 : %08lx  r5 : %08lx  r4 : %08lx\n",
 		regs->ARM_r7, regs->ARM_r6,
 		regs->ARM_r5, regs->ARM_r4);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("r3 : %08lx  r2 : %08lx  r1 : %08lx  r0 : %08lx\n",
 		regs->ARM_r3, regs->ARM_r2,
 		regs->ARM_r1, regs->ARM_r0);
-#else
-	;
-#endif
 
 	flags = regs->ARM_cpsr;
 	buf[0] = flags & PSR_N_BIT ? 'N' : 'n';
@@ -504,16 +415,12 @@ void __show_regs(struct pt_regs *regs)
 	buf[3] = flags & PSR_V_BIT ? 'V' : 'v';
 	buf[4] = '\0';
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Flags: %s  IRQs o%s  FIQs o%s  Mode %s  ISA %s  Segment %s\n",
 		buf, interrupts_enabled(regs) ? "n" : "ff",
 		fast_interrupts_enabled(regs) ? "n" : "ff",
 		processor_modes[processor_mode(regs)],
 		isa_modes[isa_mode(regs)],
 		get_fs() == get_ds() ? "kernel" : "user");
-#else
-	;
-#endif
 #ifdef CONFIG_CPU_CP15
 	{
 		unsigned int ctrl;
@@ -531,11 +438,7 @@ void __show_regs(struct pt_regs *regs)
 #endif
 		asm("mrc p15, 0, %0, c1, c0\n" : "=r" (ctrl));
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("Control: %08x%s\n", ctrl, buf);
-#else
-		;
-#endif
 	}
 #endif
 
@@ -544,16 +447,8 @@ void __show_regs(struct pt_regs *regs)
 
 void show_regs(struct pt_regs * regs)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Pid: %d, comm: %20s\n", task_pid_nr(current), current->comm);
-#else
-	;
-#endif
 	__show_regs(regs);
 	__backtrace();
 }
