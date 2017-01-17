@@ -217,12 +217,16 @@ void cpu_idle_wait(void)
 EXPORT_SYMBOL_GPL(cpu_idle_wait);
 
 /*
- * This is our default idle handler.  We need to disable
- * interrupts here to ensure we don't miss a wakeup call.
+ * This is our default idle handler.
  */
+
+void (*arm_pm_idle)(void);
+
 static void default_idle(void)
 {
-	if (!need_resched())
+	if (arm_pm_idle)
+		arm_pm_idle();
+	else
 		arch_idle();
 	local_irq_enable();
 }

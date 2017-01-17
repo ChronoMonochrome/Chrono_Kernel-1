@@ -110,6 +110,7 @@ extern void cpu_init(void);
 
 void soft_restart(unsigned long);
 extern void (*arm_pm_restart)(char str, const char *cmd);
+extern void (*arm_pm_idle)(void);
 
 void cpu_idle_wait(void);
 
