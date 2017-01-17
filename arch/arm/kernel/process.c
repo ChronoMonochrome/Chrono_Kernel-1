@@ -576,7 +576,6 @@ extern void kernel_thread_helper(void);
 asm(	".pushsection .text\n"
 "	.align\n"
 "	.type	kernel_thread_helper, #function\n"
-"	.global kernel_thread_helper\n"
 "kernel_thread_helper:\n"
 #ifdef CONFIG_TRACE_IRQFLAGS
 "	bl	trace_hardirqs_on\n"
@@ -593,7 +592,6 @@ extern void kernel_thread_exit(long code);
 asm(	".pushsection .text\n"
 "	.align\n"
 "	.type	kernel_thread_exit, #function\n"
-"	.global kernel_thread_exit\n"
 "kernel_thread_exit:\n"
 "	.fnstart\n"
 "	.cantunwind\n"
