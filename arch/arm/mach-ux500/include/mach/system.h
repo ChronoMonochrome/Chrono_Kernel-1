@@ -22,20 +22,4 @@ static inline void arch_idle(void)
 	cpu_do_idle();
 }
 
-static inline void arch_reset(char mode, const char *cmd)
-{
-#ifdef CONFIG_UX500_SOC_DB8500
-	unsigned short reason;
-
-	reason = sec_common_update_reboot_reason(mode, cmd);
-
-	if (mode == 'L' || mode == 'U' || 'K' == mode || 'F' == mode)
-	/* Call the PRCMU reset API (w/o reset reason code) */
-	prcmu_system_reset(reason);
-	else
-		ab8500_restart( reason );
-
-#endif
-}
-
 #endif
