@@ -15,6 +15,8 @@
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/irq.h>
 
+
+#include <asm/cacheflush.h>
 #include <asm/hardware/cache-l2x0.h>
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
@@ -34,6 +36,10 @@
 #endif
 
 void __iomem *_PRCMU_BASE;
+
+#ifdef CONFIG_CACHE_L2X0
+static void __iomem *l2x0_base;
+#endif
 
 void __init ux500_init_devices(void)
 {
@@ -127,6 +133,84 @@ void __init ux500_init_irq(void)
 		arm_pm_restart = ux500_restart;
 	clk_init();
 }
+
+#ifdef CONFIG_CACHE_L2X0
+static inline void ux500_cache_wait_way(void __iomem *reg, unsigned long mask)
+{
+	/* wait for the operation to complete */
+	while (readl_relaxed(reg) & mask)
+		cpu_relax();
+}
+
+static inline void ux500_cache_sync(void)
+{
+	void __iomem *base = l2x0_base;
+
+#ifdef CONFIG_ARM_ERRATA_753970
+	/* write to an unmmapped register */
+	writel_relaxed(0, base + L2X0_DUMMY_REG);
+#else
+	writel_relaxed(0, base + L2X0_CACHE_SYNC);
+#endif
+	/* cache operations by line are atomic in PL310 */
+}
+
+/*
+ * The L2 cache cannot be turned off in the non-secure world.
+ * Dummy until a secure service is in place.
+ */
+static void ux500_l2x0_disable(void)
+{
+}
+
+/*
+ * This is only called when doing a kexec, just after turning off the L2
+ * and L1 cache, and it is surrounded by a spinlock in the generic version.
+ * However, we're not really turning off the L2 cache right now and the
+ * PL310 does not support exclusive accesses (used to implement the spinlock).
+ * So, the invalidation needs to be done without the spinlock.
+ */
+static void ux500_l2x0_inv_all(void)
+{
+	void __iomem *base = l2x0_base;
+	uint32_t l2x0_way_mask = (1<<16) - 1;	/* Bitmask of active ways */
+
+	/* invalidate all ways */
+	writel_relaxed(l2x0_way_mask, base + L2X0_INV_WAY);
+	ux500_cache_wait_way(base + L2X0_INV_WAY, l2x0_way_mask);
+	ux500_cache_sync();
+}
+
+static int ux500_l2x0_init(void)
+{
+	uint32_t aux_val = 0x3e000000;
+
+	if (cpu_is_u5500())
+		l2x0_base = __io_address(U5500_L2CC_BASE);
+	else if (cpu_is_u8500() || cpu_is_u9540())
+		l2x0_base = __io_address(U8500_L2CC_BASE);
+	else
+		ux500_unknown_soc();
+
+	/* u9540's L2 has 128KB way size */
+	if (cpu_is_u9540())
+		aux_val |=
+		(0x4 << L2X0_AUX_CTRL_WAY_SIZE_SHIFT); /* 128KB way size */
+	else
+		aux_val |=
+		(0x3 << L2X0_AUX_CTRL_WAY_SIZE_SHIFT); /* 64KB way size */
+
+	/* 8 way associativity, force WA */
+	l2x0_init(l2x0_base, aux_val, 0xc0000fff);
+
+	/* Override invalidate function */
+	outer_cache.disable = ux500_l2x0_disable;
+	outer_cache.inv_all = ux500_l2x0_inv_all;
+
+	return 0;
+}
+early_initcall(ux500_l2x0_init);
+#endif
 
 #ifdef CONFIG_SYS_SOC
 #define U8500_BB_UID_BASE (U8500_BACKUPRAM1_BASE + 0xFC0)
