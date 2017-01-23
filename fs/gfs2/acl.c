@@ -284,8 +284,11 @@ return -EPERM;
 
 	if (type == ACL_TYPE_ACCESS) {
 		umode_t mode = inode->i_mode;
+		struct posix_acl *old_acl = acl;
 		error = posix_acl_update_mode(inode, &inode->i_mode, &acl);
 
+		if (!acl)
+			posix_acl_release(old_acl);
 		if (error)
 			goto out_release;
 
