@@ -324,6 +324,7 @@ void twd_restore(void)
 	__raw_writel(per_cpu(twd_load, this_cpu),
 		     twd_base + TWD_TIMER_LOAD);
 }
+#endif
 
 int __init twd_local_timer_register(struct twd_local_timer *tlt)
 {
