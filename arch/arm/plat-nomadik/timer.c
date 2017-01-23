@@ -69,11 +69,10 @@
 #define MTU_PCELL2	0xff8
 #define MTU_PCELL3	0xffC
 
+static void __iomem *mtu_base;
 static bool clkevt_periodic;
 static u32 clk_prescale;
 static u32 nmdk_cycle;		/* write-once */
-
-void __iomem *mtu_base; /* Assigned by machine code */
 
 #ifdef CONFIG_NOMADIK_MTU_SCHED_CLOCK
 /*
