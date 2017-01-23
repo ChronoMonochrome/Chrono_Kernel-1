@@ -15,14 +15,13 @@
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/irq.h>
 
-
+#include <asm/hardware/cache-l2x0.h>
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
 
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/devices.h>
-#include <mach/reboot_reasons.h>
 #include <mach/sec_common.h>
 #include <mach/reboot_reasons.h>
 #include <mach/system.h>
