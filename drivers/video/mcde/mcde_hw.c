@@ -1223,7 +1223,7 @@ static struct lcdclk_prop lcdclk_prop[] = {
 };
 
 static int lcdclk_usr = -1; /* Default LCDCLK */
-static unsigned int custom_lcdclk = 0; /* assume default lcdclk a non-custom */
+static unsigned int custom_lcdclk = 57051428;
 
 static void lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
 {
@@ -1253,7 +1253,7 @@ static ssize_t mcde_lcdclk_show(struct kobject *kobj, struct kobj_attribute *att
 	int i;
 
 	sprintf(buf, "%s[-2][%s] Custom\n", buf, lcdclk_usr == -2 ? "*" : " ");
-	sprintf(buf, "%s[-1][%s] Default\n", buf, lcdclk_usr == -1 ? "*" : " ");
+	sprintf(buf, "%s[-1][%s] Default (60+ Hz)\n", buf, lcdclk_usr == -1 ? "*" : " ");
 	
 	for (i = 0; i < ARRAY_SIZE(lcdclk_prop); i++) {
 		sprintf(buf, "%s[%d][%s] %s\n", buf, i, i == lcdclk_usr ? "*" : " ", lcdclk_prop[i].name);
@@ -1270,8 +1270,8 @@ static ssize_t mcde_lcdclk_store(struct kobject *kobj, struct kobj_attribute *at
 	
 	if (sscanf(buf, "lcdclk=%d", &tmp)) {
 		custom_lcdclk = tmp;
-
-		return count;
+		lcdclk_usr = -2;
+		goto out;
 	}
 
 	ret = sscanf(buf, "%d", &tmp);
@@ -1281,7 +1281,7 @@ static ssize_t mcde_lcdclk_store(struct kobject *kobj, struct kobj_attribute *at
 	}
 
 	lcdclk_usr = tmp;
-
+out:
 	schedule_work(&lcdclk_work);
 
 	return count;
