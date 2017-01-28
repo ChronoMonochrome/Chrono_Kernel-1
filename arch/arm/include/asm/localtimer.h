@@ -25,12 +25,16 @@ void percpu_timer_setup(void);
 
 #include "smp_twd.h"
 
-#endif
+#define local_timer_stop(c)	twd_timer_stop((c))
+
+#else
 
 /*
  * Stop the local timer
  */
 void local_timer_stop(struct clock_event_device *);
+
+#endif
 
 /*
  * Setup a local timer interrupt for a CPU.
