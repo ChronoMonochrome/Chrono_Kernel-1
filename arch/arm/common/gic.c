@@ -41,6 +41,7 @@
 
 #include <asm/irq.h>
 #include <asm/exception.h>
+#include <asm/smp_plat.h>
 #include <asm/mach/irq.h>
 #include <asm/hardware/gic.h>
 
@@ -348,11 +349,7 @@ static void __init gic_dist_init(struct gic_chip_data *gic)
 	u32 cpumask;
 	unsigned int gic_irqs = gic->gic_irqs;
 	void __iomem *base = gic_data_dist_base(gic);
-	u32 cpu = 0;
-
-#ifdef CONFIG_SMP
-	cpu = cpu_logical_map(smp_processor_id());
-#endif
+	u32 cpu = cpu_logical_map(smp_processor_id());
 
 	cpumask = 1 << cpu;
 	cpumask |= cpumask << 8;
@@ -690,11 +687,11 @@ void __init gic_init_bases(unsigned int gic_nr, int irq_start,
 	 * For secondary GICs, skip over PPIs, too.
 	 */
 	if (gic_nr == 0 && (irq_start & 31) > 0) {
-		domain->hwirq_base = 16;
+		hwirq_base = 16;
 		if (irq_start != -1)
 			irq_start = (irq_start & ~31) + 16;
 	} else {
-		domain->hwirq_base = 32;
+		hwirq_base = 32;
 	}
 
 	/*
