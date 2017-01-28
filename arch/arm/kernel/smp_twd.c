@@ -20,8 +20,6 @@
 #include <linux/clockchips.h>
 #include <linux/irq.h>
 #include <linux/io.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
 
 #include <asm/smp_twd.h>
 #include <asm/localtimer.h>
@@ -294,86 +292,37 @@ static struct local_timer_ops twd_lt_ops __cpuinitdata = {
 	.stop	= twd_timer_stop,
 };
 
-static int __init twd_local_timer_common_register(void)
+int __init twd_local_timer_register(struct twd_local_timer *tlt)
 {
 	int err;
 
-	twd_evt = alloc_percpu(struct clock_event_device *);
-	if (!twd_evt) {
-		err = -ENOMEM;
-		goto out_free;
-	}
-
-	err = request_percpu_irq(twd_ppi, twd_handler, "twd", twd_evt);
-	if (err) {
-		pr_err("twd: can't register interrupt %d (%d)\n", twd_ppi, err);
-		goto out_free;
-	}
-
-	err = local_timer_register(&twd_lt_ops);
-	if (err)
-		goto out_irq;
-
-	return 0;
-
-out_irq:
-	free_percpu_irq(twd_ppi, twd_evt);
-out_free:
-	iounmap(twd_base);
-	twd_base = NULL;
-	free_percpu(twd_evt);
-
-	return err;
-}
-
-int __init twd_local_timer_register(struct twd_local_timer *tlt)
-{
 	if (twd_base || twd_evt)
 		return -EBUSY;
 
 	twd_ppi	= tlt->res[1].start;
 
+	twd_evt = alloc_percpu(struct clock_event_device *);
 	twd_base = ioremap(tlt->res[0].start, resource_size(&tlt->res[0]));
-	if (!twd_base)
-		return -ENOMEM;
-
-	return twd_local_timer_common_register();
-}
-
-#ifdef CONFIG_OF
-const static struct of_device_id twd_of_match[] __initconst = {
-	{ .compatible = "arm,cortex-a9-twd-timer",	},
-	{ .compatible = "arm,cortex-a5-twd-timer",	},
-	{ .compatible = "arm,arm11mp-twd-timer",	},
-	{ },
-};
-
-void __init twd_local_timer_of_register(void)
-{
-	struct device_node *np;
-	int err;
-
-	np = of_find_matching_node(NULL, twd_of_match);
-	if (!np) {
-		err = -ENODEV;
-		goto out;
-	}
-
-	twd_ppi = irq_of_parse_and_map(np, 0);
-	if (!twd_ppi) {
-		err = -EINVAL;
-		goto out;
-	}
-
-	twd_base = of_iomap(np, 0);
-	if (!twd_base) {
+	if (!twd_base || !twd_evt) {
 		err = -ENOMEM;
 		goto out;
 	}
 
-	err = twd_local_timer_common_register();
+	err = request_percpu_irq(twd_ppi, twd_handler, "twd", twd_evt);
+	if (err) {
+		pr_err("twd: can't register interrupt %d (%d)\n", twd_ppi, err);
+		goto out;
+	}
+
+	err = local_timer_register(&twd_lt_ops);
+	if (err)
+		goto out;
+
+	return 0;
 
 out:
-	WARN(err, "twd_local_timer_of_register failed (%d)\n", err);
+	iounmap(twd_base);
+	free_percpu(twd_evt);
+	twd_base = twd_evt = NULL;
+	return err;
 }
-#endif
