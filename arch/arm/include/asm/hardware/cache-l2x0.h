@@ -97,12 +97,13 @@
 #define L2X0_AUX_CTRL_INSTR_PREFETCH_SHIFT	29
 #define L2X0_AUX_CTRL_EARLY_BRESP_SHIFT		30
 
-#define REV_PL310_R2P0				4
 #define L2X0_LATENCY_CTRL_SETUP_SHIFT	0
 #define L2X0_LATENCY_CTRL_RD_SHIFT	4
 #define L2X0_LATENCY_CTRL_WR_SHIFT	8
 
 #define L2X0_ADDR_FILTER_EN		1
+
+#define REV_PL310_R2P0				4
 
 #ifndef __ASSEMBLY__
 extern void __init l2x0_init(void __iomem *base, u32 aux_val, u32 aux_mask);
