@@ -255,7 +255,6 @@ ENTRY(cpu_v7_do_resume)
 	mcr	p15, 0, r4, c10, c2, 0	@ write PRRR
 	mcr	p15, 0, r5, c10, c2, 1	@ write NMRR
 	isb
-	dsb
 	mov	r0, r9			@ control register
 	b	cpu_resume_mmu
 ENDPROC(cpu_v7_do_resume)
