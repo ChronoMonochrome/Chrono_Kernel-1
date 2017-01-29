@@ -1,11 +1,12 @@
 #include <linux/init.h>
 
-#include <asm/idmap.h>
 #include <asm/pgalloc.h>
 #include <asm/pgtable.h>
 #include <asm/memory.h>
 #include <asm/suspend.h>
 #include <asm/tlbflush.h>
+
+static pgd_t *suspend_pgd;
 
 extern int __cpu_suspend(unsigned long, int (*)(unsigned long));
 extern void cpu_resume_mmu(void);
@@ -20,7 +21,7 @@ void __cpu_suspend_save(u32 *ptr, u32 ptrsz, u32 sp, u32 *save_ptr)
 	*save_ptr = virt_to_phys(ptr);
 
 	/* This must correspond to the LDM in cpu_resume() assembly */
-	*ptr++ = virt_to_phys(idmap_pgd);
+	*ptr++ = virt_to_phys(suspend_pgd);
 	*ptr++ = sp;
 	*ptr++ = virt_to_phys(cpu_do_resume);
 
@@ -38,7 +39,7 @@ int cpu_suspend(unsigned long arg, int (*fn)(unsigned long))
 	struct mm_struct *mm = current->active_mm;
 	int ret;
 
-	if (!idmap_pgd)
+	if (!suspend_pgd)
 		return -EINVAL;
 
 	/*
@@ -55,3 +56,14 @@ int cpu_suspend(unsigned long arg, int (*fn)(unsigned long))
 
 	return ret;
 }
+
+static int __init cpu_suspend_init(void)
+{
+	suspend_pgd = pgd_alloc(&init_mm);
+	if (suspend_pgd) {
+		unsigned long addr = virt_to_phys(cpu_resume_mmu);
+		identity_mapping_add(suspend_pgd, addr, addr + SECTION_SIZE);
+	}
+	return suspend_pgd ? 0 : -ENOMEM;
+}
+core_initcall(cpu_suspend_init);
