@@ -26,6 +26,7 @@
 
 #include <linux/kernel.h>
 #include <linux/crypto.h>
+#include <linux/err.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/hardirq.h>
