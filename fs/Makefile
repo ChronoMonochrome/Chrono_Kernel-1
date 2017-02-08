@@ -131,6 +131,5 @@ obj-$(CONFIG_PSTORE)		+= pstore/
 obj-$(CONFIG_YAFFS_FS)		+= yaffs2/
 
 obj-$(CONFIG_DYNAMIC_FSYNC)	+= dyn_sync_cntrl.o
-obj-y		+= fake_selinux/
 
 KBUILD_CFLAGS += -Werror=incompatible-pointer-types
