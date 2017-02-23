@@ -2187,6 +2187,7 @@ static void do_oc_ddr_fn(struct work_struct *work)
 		sdmmc_is_calibrated = false;
 		pllddr_is_calibrated = false;
 		pending_pllddr_val = 0;
+		pending_pllddr_freq = 0;
 	
 		if (ddr_oc_on_suspend) {
 			if (wake_lock_active(&pllddr_oc_lock))
@@ -2244,24 +2245,31 @@ ATTR_RW(varm_delay);
 static ssize_t pllddr_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	u32 val, count;
-	val = readl(prcmu_base + PRCMU_PLLDDR_REG);
-	count = sprintf(buf, "PLLDDR: %#010x (%d kHz)\n", val,  pllarm_freq(val));
 
-	if (pending_pllddr_val)
-		count += sprintf(buf, "pending_pllddr_val: %#010x (%d kHz)\n", pending_pllddr_val,
+	val = readl(prcmu_base + PRCMU_PLLDDR_REG);
+
+	if (unlikely(pending_pllddr_val > 0)) {
+		char tmp[75];
+		count = sprintf(tmp, "pending_pllddr_val: %#010x (%d kHz)\n", pending_pllddr_val,
 							pending_pllddr_freq);
+		count += sprintf(buf, "PLLDDR: %#010x (%d kHz)\n%s", val,  pllarm_freq(val), tmp);
+	} else {
+		count += sprintf(buf, "PLLDDR: %#010x (%d kHz)\n", val,  pllarm_freq(val));
+	}
+
+
 	return count;
 }
 
 static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	u32 new_val, old_val;
-	int freq, div, mul;
+	int freq = 0, div, mul;
 	int ret = 0;
 
 	ret = sscanf(buf, "%d", &freq);
 
-	if (!ret) {
+	if (!ret || !freq) {
 		pr_err("[PLLDDR] invalid_input\n");
 		return -EINVAL;
 	}
@@ -2276,7 +2284,6 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	pending_pllddr_freq = freq;
 
 	ddr_oc_on_suspend = true;
-	//schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
 
 	return count;
 }
