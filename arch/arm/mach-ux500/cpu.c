@@ -11,10 +11,8 @@
 #include <linux/delay.h>
 #include <linux/sys_soc.h>
 #include <linux/clksrc-dbx500-prcmu.h>
-#include <linux/mfd/abx500/ux500_sysctrl.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/irq.h>
-
 
 #include <asm/cacheflush.h>
 #include <asm/hardware/cache-l2x0.h>
@@ -59,24 +57,32 @@ void __init ux500_init_devices(void)
 #endif
 }
 
+#ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
+extern unsigned int unhandled_reset_count ;
+#endif /*CONFIG_SAMSUNG_KERNEL_DEBUG*/
 void ux500_restart(char mode, const char *cmd)
 {
-#ifdef CONFIG_UX500_SOC_DB8500
-	unsigned short reason;
-
+#if 0
+	unsigned short reset_code;
+	int i ;
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ux500_restart: Call arch_reset(), mode: %c, cmd: %s\n", mode, cmd );
-
-
-#ifdef CONFIG_UX500_SOC_DB8500
-	reason = sec_common_update_reboot_reason(mode, cmd);
-
-	if (mode == 'L' || mode == 'U' || 'K' == mode || 'F' == mode)
-	/* Call the PRCMU reset API (w/o reset reason code) */
-	prcmu_system_reset(reason);
-	else
-		ab8500_restart( reason );
+#else
+	;
 #endif
+
+#ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
+        if( 'L' == mode || 'U' == mode || 'K' == mode)
+        {
+        	for( i = 0 ; i < 100 ; i++ ) {
+        		arch_reset( mode, NULL ) ;
+        		unhandled_reset_count++ ;
+                }
+        }
+#endif /*CONFIG_SAMSUNG_KERNEL_DEBUG*/
+
+        arch_reset( mode, cmd ) ;
 
 	mdelay(1000);
 
