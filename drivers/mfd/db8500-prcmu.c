@@ -1221,6 +1221,7 @@ static int liveopp_start = 0;
 static bool ddr_oc_on_suspend = false; // set true if needed to schedule DDR OC on suspend
 
 static u32 pending_pllddr_val; // scheduled PLLDDR value
+static int pending_pllddr_freq; // scheduled PLLDDR freq
 static int pllddr_oc_delay_us = 100; // delay between graduate PLLDDR changing
 static bool is_suspend = false;
 static bool sdmmc_is_calibrated = false, 
@@ -1437,8 +1438,17 @@ static void do_oc_ddr(int new_val_)
 		preempt_disable();
 		local_irq_disable();
 		local_fiq_disable();
+
+		pr_err("[pllddr] (mcdeclk_is_enabled || sdmmcclk_is_enabled) = %d", (mcdeclk_is_enabled || sdmmcclk_is_enabled));
+		for (int i = 0; i < 20 && (mcdeclk_is_enabled || sdmmcclk_is_enabled); i++) {
+			udelay(100);
+			mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
+			sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
+		}
+		udelay(200);
+
 		for (val = (tmp_val ? tmp_val : old_val_);
-		    (new_val_ > old_val_) ? (val <= new_val_) : (val >= new_val_); 
+		    (new_val_ > old_val_) ? (val <= new_val_) : (val >= new_val_);
 		    (new_val_ > old_val_) ? val++ : val--) {
 			if (val == 0x50180) {
 				mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
@@ -2233,78 +2243,44 @@ ATTR_RW(varm_delay);
 
 static ssize_t pllddr_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	u32 val;
+	u32 val, count;
 	val = readl(prcmu_base + PRCMU_PLLDDR_REG);
-	
-	return sprintf(buf, "PLLDDR: %#010x (%d kHz)\n", val,  pllarm_freq(val));
+	count = sprintf(buf, "PLLDDR: %#010x (%d kHz)\n", val,  pllarm_freq(val));
+
+	if (pending_pllddr_val)
+		count += sprintf(buf, "pending_pllddr_val: %#010x (%d kHz)\n", pending_pllddr_val,
+							pending_pllddr_freq);
+	return count;
 }
 
 static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	u32 new_val, old_val;
-	int old_divider, new_divider;
+	int freq, div, mul;
 	int ret = 0;
-	
-	ret = sscanf(buf, "%x", &new_val);
-		
+
+	ret = sscanf(buf, "%d", &freq);
+
 	if (!ret) {
 		pr_err("[PLLDDR] invalid_input\n");
 		return -EINVAL;
 	}
-	
-	old_val = readl(prcmu_base + PRCMU_PLLDDR_REG);
-	
-	old_divider = (old_val & 0x00FF0000) >> 16;
-	new_divider = (new_val & 0x00FF0000) >> 16;
-	
-	if (new_divider != old_divider) {
-		pr_err("[PLLDDR] invalid divider\n");
-		return -EINVAL;
-	}
-	
-	pending_pllddr_val = new_val;
 
-	schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
-	
+	old_val = readl(prcmu_base + PRCMU_PLLDDR_REG);
+	mul = (old_val & 0x000000FF);
+	div = (old_val & 0x00FF0000) >> 16;
+
+	new_val = 0x0050100 + (freq * 5 / 38400);
+
+	pending_pllddr_val = new_val;
+	pending_pllddr_freq = freq;
+
+	ddr_oc_on_suspend = true;
+	//schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
+
 	return count;
 }
 ATTR_RW(pllddr);
-
-static ssize_t pllddr_oc_on_suspend_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
- 
-	if (pending_pllddr_val)
-		sprintf(buf, "pending_pllddr_val: %#010x (%d kHz)\n", pending_pllddr_val,
-							pllarm_freq(pending_pllddr_val));
-	return strlen(buf);
-}
-
-static ssize_t pllddr_oc_on_suspend_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	u32 old_val, tmp_val;
-	int old_divider, new_divider;
-	int ret = 0;
-	ret = sscanf(buf, "%x", &tmp_val);
-		
-	if (!ret)
-		return -EINVAL;
-	
-	old_val = readl(prcmu_base + PRCMU_PLLDDR_REG);
-	
-	old_divider = (old_val & 0x00FF0000) >> 16;
-	new_divider = (tmp_val & 0x00FF0000) >> 16;
-	
-	if (new_divider != old_divider)
-		return -EINVAL;
-	
-	ddr_oc_on_suspend = true;
-	pending_pllddr_val = tmp_val;
-
-	pr_err("[PLLDDR] pending_pllddr_val = %#010x \n", pending_pllddr_val);
-	
-	return count;
-}
-ATTR_RW(pllddr_oc_on_suspend);
 
 static ssize_t pllddr_oc_delay_us_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -2435,7 +2411,6 @@ static struct attribute *liveopp_attrs[] = {
 	&pllddr_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
-	&pllddr_oc_on_suspend_interface.attr,
 	NULL,
 };
 
