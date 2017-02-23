@@ -2269,8 +2269,21 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 
 	ret = sscanf(buf, "%d", &freq);
 
+	// check for bogus values - retry with hexademical input
+	if ((!freq) || ((freq >= 50101) && (freq <= 50199))) {
+		ret = sscanf(buf, "%x", &freq);
+
+		if ((freq >= 0x50101) && (freq <= 0x501ff)) {
+			new_val = freq;
+			freq = pllarm_freq(freq);
+			goto schedule;
+		} else
+			goto inval_input;
+	}
+
 	if (!ret || !freq) {
-		pr_err("[PLLDDR] invalid_input\n");
+inval_input:
+		pr_err("[PLLDDR] invalid input\n");
 		return -EINVAL;
 	}
 
@@ -2280,6 +2293,7 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 
 	new_val = 0x0050100 + (freq * 5 / 38400);
 
+schedule:
 	pending_pllddr_val = new_val;
 	pending_pllddr_freq = freq;
 
