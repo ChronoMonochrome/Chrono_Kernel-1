@@ -1434,6 +1434,9 @@ static void do_oc_ddr(int new_val_)
 		}
 		
 		pr_err("[PLLDDR] changing PLLDDR %#010x -> %#010x\n", old_val_, new_val_);
+		preempt_disable();
+		local_irq_disable();
+		local_fiq_disable();
 		for (val = (tmp_val ? tmp_val : old_val_);
 		    (new_val_ > old_val_) ? (val <= new_val_) : (val >= new_val_); 
 		    (new_val_ > old_val_) ? val++ : val--) {
@@ -1450,6 +1453,9 @@ static void do_oc_ddr(int new_val_)
 			writel_relaxed(val, prcmu_base + PRCMU_PLLDDR_REG);
 			udelay(pllddr_oc_delay_us);
 		}
+		local_fiq_enable();
+		local_irq_enable();
+		preempt_enable();
 			
 		pllddr_is_calibrated = true;
 		tmp_val = 0;
