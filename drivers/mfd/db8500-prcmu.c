@@ -2350,6 +2350,12 @@ schedule:
 }
 ATTR_RW(pllddr);
 
+static ssize_t prcmu_mcdeclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
+{
+	return sprintf(buf, "%d\n", prcmu_is_mcdeclk_on());
+}
+ATTR_RO(prcmu_mcdeclk);
+
 static ssize_t pllddr_oc_delay_us_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	return sprintf(buf, "%d\n", pllddr_oc_delay_us);
@@ -2479,6 +2485,7 @@ static struct attribute *liveopp_attrs[] = {
 	&pllddr_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
+	&prcmu_mcdeclk_interface.attr,
 	NULL,
 };
 
