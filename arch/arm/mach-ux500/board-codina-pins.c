@@ -338,6 +338,17 @@ static UX500_PINS(codina_pins_usb,
 	GPIO267_USB_DAT0,
 );
 
+static UX500_PINS(codina_pins_uart0,
+       GPIO0_U0_CTSn   | PIN_INPUT_PULLUP |
+               PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
+       GPIO1_U0_RTSn   | PIN_OUTPUT_HIGH |
+               PIN_SLPM_GPIO | PIN_SLPM_OUTPUT_HIGH,
+       GPIO2_U0_RXD    | PIN_INPUT_PULLUP |
+               PIN_SLPM_GPIO | PIN_SLPM_INPUT_NOPULL,
+       GPIO3_U0_TXD    | PIN_OUTPUT_HIGH |
+               PIN_SLPM_GPIO | PIN_SLPM_OUTPUT_HIGH,
+);
+
 static struct ux500_pin_lookup codina_r0_0_lookup_pins[] = {
 	PIN_LOOKUP("mcde-dpi", &codina_r0_0_mcde_dpi),
 	PIN_LOOKUP("nmk-i2c.0", &codina_r0_0_i2c0),
@@ -346,6 +357,7 @@ static struct ux500_pin_lookup codina_r0_0_lookup_pins[] = {
 	PIN_LOOKUP("nmk-i2c.3", &codina_r0_0_i2c3),
 	PIN_LOOKUP("musb-ux500.0", &codina_pins_usb),
 	PIN_LOOKUP("ab-iddet.0", &codina_pins_usb),
+        PIN_LOOKUP("uart0", &codina_pins_uart0),
 };
 
 static pin_cfg_t codina_gps_uart_pins[] = {
