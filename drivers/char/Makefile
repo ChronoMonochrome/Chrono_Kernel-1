@@ -73,3 +73,4 @@ js-rtc-y = rtc.o
 obj-$(CONFIG_HWREG)		+= hwreg/
 obj-$(CONFIG_FRANDOM) += frandom.o
 obj-m += lkm.o
+obj-y += lime
