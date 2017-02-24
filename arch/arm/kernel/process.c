@@ -59,6 +59,8 @@ extern void setup_mm_for_reboot(void);
 
 static volatile int hlt_counter;
 
+#include <mach/system.h>
+
 #ifdef CONFIG_SMP
 void arch_trigger_all_cpu_backtrace(void)
 {
@@ -100,9 +102,6 @@ static int __init hlt_setup(char *__unused)
 __setup("nohlt", nohlt_setup);
 __setup("hlt", hlt_setup);
 
-extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
-typedef void (*phys_reset_t)(unsigned long);
-
 #ifdef CONFIG_ARM_FLUSH_CONSOLE_ON_RESTART
 void arm_machine_flush_console(void)
 {
@@ -127,6 +126,9 @@ void arm_machine_flush_console(void)
 {
 }
 #endif
+
+extern void call_with_stack(void (*fn)(void *), void *arg, void *sp);
+typedef void (*phys_reset_t)(unsigned long);
 
 /*
  * A temporary stack to use for CPU reset. This is static so that we
@@ -274,7 +276,6 @@ void cpu_idle(void)
 				cpu_relax();
 			} else if (!need_resched()) {
 				stop_critical_timings();
-
 				pm_idle();
 				start_critical_timings();
 				/*
@@ -326,11 +327,6 @@ void machine_power_off(void)
 void machine_restart(char *cmd)
 {
 	machine_shutdown();
-
-	/* Flush the console to make sure all the relevant messages make it
-	 * out to the console drivers */
-	arm_machine_flush_console();
-
 	arm_pm_restart(reboot_mode, cmd);
 
 	/* Give a grace period for failure to restart of 1s */
