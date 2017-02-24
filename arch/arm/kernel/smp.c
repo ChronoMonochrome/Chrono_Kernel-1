@@ -183,10 +183,18 @@ void __cpu_die(unsigned int cpu)
 		pr_err("CPU%u: cpu didn't die\n", cpu);
 		return;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
+#else
+	;
+#endif
 
 	if (!platform_cpu_kill(cpu))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("CPU%u: unable to kill\n", cpu);
+#else
+		;
+#endif
 }
 
 /*
@@ -269,7 +277,11 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	current->active_mm = mm;
 	cpumask_set_cpu(cpu, mm_cpumask(mm));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("CPU%u: Booted secondary processor\n", cpu);
+#else
+	;
+#endif
 
 	cpu_init();
 	preempt_disable();
@@ -314,11 +326,15 @@ void __init smp_cpus_done(unsigned int max_cpus)
 	for_each_online_cpu(cpu)
 		bogosum += per_cpu(cpu_data, cpu).loops_per_jiffy;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "SMP: Total of %d processors activated "
 	       "(%lu.%02lu BogoMIPS).\n",
 	       num_online_cpus(),
 	       bogosum / (500000/HZ),
 	       (bogosum / (5000/HZ)) % 100);
+#else
+	;
+#endif
 }
 
 void __init smp_prepare_boot_cpu(void)
@@ -516,6 +532,9 @@ static void ipi_cpu_stop(unsigned int cpu)
 	local_fiq_disable();
 	local_irq_disable();
 
+	flush_cache_all();
+	local_flush_tlb_all();
+
 	while (1)
 		cpu_relax();
 }
@@ -622,8 +641,12 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "CPU%u: Unknown IPI message 0x%x\n",
 		       cpu, ipinr);
+#else
+		;
+#endif
 		break;
 	}
 	set_irq_regs(old_regs);
