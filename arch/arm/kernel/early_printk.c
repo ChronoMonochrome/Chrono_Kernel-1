@@ -36,13 +36,9 @@ static struct console early_console = {
 	.index =	-1,
 };
 
-#ifdef CONFIG_DEBUG_PRINTK
 asmlinkage void early_printk(const char *fmt, ...)
 {
 	char buf[512];
-#else
-asmlinkage void early_;
-#endif
 	int n;
 	va_list ap;
 
@@ -52,13 +48,9 @@ asmlinkage void early_;
 	va_end(ap);
 }
 
-#ifdef CONFIG_DEBUG_PRINTK
 static int __init setup_early_printk(char *buf)
 {
 	register_console(&early_console);
-#else
-static int __init setup_early_;
-#endif
 	return 0;
 }
 

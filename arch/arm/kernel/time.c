@@ -11,7 +11,7 @@
  *  This file contains the ARM-specific time handling details:
  *  reading the RTC at bootup, etc...
  */
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
 #include <linux/time.h>
@@ -24,8 +24,6 @@
 #include <linux/syscore_ops.h>
 #include <linux/timer.h>
 #include <linux/irq.h>
-
-#include <linux/mc146818rtc.h>
 
 #include <asm/leds.h>
 #include <asm/thread_info.h>

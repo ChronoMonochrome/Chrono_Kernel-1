@@ -408,7 +408,7 @@ ENDPROC(__pabt_svc)
 	@ perform a quick test inline since it should be false
 	@ 99.9999% of the time.  The rest is done out of line.
 	cmp	r4, #TASK_SIZE
-	blhs	kuser_cmpxchg_fixup
+	blhs	kuser_cmpxchg64_fixup
 #endif
 #endif
 	.endm
@@ -770,31 +770,12 @@ ENDPROC(__switch_to)
 /*
  * User helpers.
  *
- * These are segment of kernel provided user code reachable from user space
- * at a fixed address in kernel memory.  This is used to provide user space
- * with some operations which require kernel help because of unimplemented
- * native feature and/or instructions in many ARM CPUs. The idea is for
- * this code to be executed directly in user mode for best efficiency but
- * which is too intimate with the kernel counter part to be left to user
- * libraries.  In fact this code might even differ from one CPU to another
- * depending on the available  instruction set and restrictions like on
- * SMP systems.  In other words, the kernel reserves the right to change
- * this code as needed without warning. Only the entry points and their
- * results are guaranteed to be stable.
- *
  * Each segment is 32-byte aligned and will be moved to the top of the high
  * vector page.  New segments (if ever needed) must be added in front of
  * existing ones.  This mechanism should be used only for things that are
  * really small and justified, and not be abused freely.
  *
- * User space is expected to implement those things inline when optimizing
- * for a processor that has the necessary native support, but only if such
- * resulting binaries are already to be incompatible with earlier ARM
- * processors due to the use of unsupported instructions other than what
- * is provided here.  In other words don't make binaries unable to run on
- * earlier processors just for the sake of not using these kernel helpers
- * if your compiled code is not going to use the new instructions for other
- * purpose.
+ * See Documentation/arm/kernel_user_helpers.txt for formal definitions.
  */
  THUMB(	.arm	)
 
@@ -817,6 +798,7 @@ ENDPROC(__switch_to)
 	.endr
 	.endm
 
+#ifdef CONFIG_KUSER_HELPERS
 	.align	5
 	.globl	__kuser_helper_start
 __kuser_helper_start:
@@ -881,13 +863,13 @@ __kuser_cmpxchg64:				@ 0xffff0f60
 	.text
 kuser_cmpxchg64_fixup:
 	@ Called from kuser_cmpxchg_fixup.
-	@ r2 = address of interrupted insn (must be preserved).
+	@ r4 = address of interrupted insn (must be preserved).
 	@ sp = saved regs. r7 and r8 are clobbered.
 	@ 1b = first critical insn, 2b = last critical insn.
-	@ If r2 >= 1b and r2 <= 2b then saved pc_usr is set to 1b.
+	@ If r4 >= 1b and r4 <= 2b then saved pc_usr is set to 1b.
 	mov	r7, #0xffff0fff
 	sub	r7, r7, #(0xffff0fff - (0xffff0f60 + (1b - __kuser_cmpxchg64)))
-	subs	r8, r2, r7
+	subs	r8, r4, r7
 	rsbcss	r8, r8, #(2b - 1b)
 	strcs	r7, [sp, #S_PC]
 #if __LINUX_ARM_ARCH__ < 6
@@ -914,60 +896,6 @@ __kuser_memory_barrier:				@ 0xffff0fa0
 	usr_ret	lr
 
 	kuser_pad __kuser_memory_barrier, 32
-
-/*
- * Reference prototype:
- *
- *	int __kernel_cmpxchg(int oldval, int newval, int *ptr)
- *
- * Input:
- *
- *	r0 = oldval
- *	r1 = newval
- *	r2 = ptr
- *	lr = return address
- *
- * Output:
- *
- *	r0 = returned value (zero or non-zero)
- *	C flag = set if r0 == 0, clear if r0 != 0
- *
- * Clobbered:
- *
- *	r3, ip, flags
- *
- * Definition and user space usage example:
- *
- *	typedef int (__kernel_cmpxchg_t)(int oldval, int newval, int *ptr);
- *	#define __kernel_cmpxchg (*(__kernel_cmpxchg_t *)0xffff0fc0)
- *
- * Atomically store newval in *ptr if *ptr is equal to oldval for user space.
- * Return zero if *ptr was changed or non-zero if no exchange happened.
- * The C flag is also set if *ptr was changed to allow for assembly
- * optimization in the calling code.
- *
- * Notes:
- *
- *    - This routine already includes memory barriers as needed.
- *
- * For example, a user space atomic_add implementation could look like this:
- *
- * #define atomic_add(ptr, val) \
- *	({ register unsigned int *__ptr asm("r2") = (ptr); \
- *	   register unsigned int __result asm("r1"); \
- *	   asm volatile ( \
- *	       "1: @ atomic_add\n\t" \
- *	       "ldr	r0, [r2]\n\t" \
- *	       "mov	r3, #0xffff0fff\n\t" \
- *	       "add	lr, pc, #4\n\t" \
- *	       "add	r1, r0, %2\n\t" \
- *	       "add	pc, r3, #(0xffff0fc0 - 0xffff0fff)\n\t" \
- *	       "bcc	1b" \
- *	       : "=&r" (__result) \
- *	       : "r" (__ptr), "rIL" (val) \
- *	       : "r0","r3","ip","lr","cc","memory" ); \
- *	   __result; })
- */
 
 __kuser_cmpxchg:				@ 0xffff0fc0
 
@@ -1042,39 +970,6 @@ kuser_cmpxchg32_fixup:
 
 	kuser_pad __kuser_cmpxchg, 32
 
-/*
- * Reference prototype:
- *
- *	int __kernel_get_tls(void)
- *
- * Input:
- *
- *	lr = return address
- *
- * Output:
- *
- *	r0 = TLS value
- *
- * Clobbered:
- *
- *	none
- *
- * Definition and user space usage example:
- *
- *	typedef int (__kernel_get_tls_t)(void);
- *	#define __kernel_get_tls (*(__kernel_get_tls_t *)0xffff0fe0)
- *
- * Get the TLS value as previously set via the __ARM_NR_set_tls syscall.
- *
- * This could be used as follows:
- *
- * #define __kernel_get_tls() \
- *	({ register unsigned int __val asm("r0"); \
- *         asm( "mov r0, #0xffff0fff; mov lr, pc; sub pc, r0, #31" \
- *	        : "=r" (__val) : : "lr","cc" ); \
- *	   __val; })
- */
-
 __kuser_get_tls:				@ 0xffff0fe0
 	ldr	r0, [pc, #(16 - 8)]	@ read TLS, set in kuser_get_tls_init
 	usr_ret	lr
@@ -1084,33 +979,22 @@ __kuser_get_tls:				@ 0xffff0fe0
 	.word	0			@ 0xffff0ff0 software TLS value, then
 	.endr				@ pad up to __kuser_helper_version
 
-/*
- * Reference declaration:
- *
- *	extern unsigned int __kernel_helper_version;
- *
- * Definition and user space usage example:
- *
- *	#define __kernel_helper_version (*(unsigned int *)0xffff0ffc)
- *
- * User space may read this to determine the curent number of helpers
- * available.
- */
-
 __kuser_helper_version:				@ 0xffff0ffc
 	.word	((__kuser_helper_end - __kuser_helper_start) >> 5)
 
 	.globl	__kuser_helper_end
 __kuser_helper_end:
 
+#endif
+
  THUMB(	.thumb	)
 
 /*
  * Vector stubs.
  *
- * This code is copied to 0xffff0200 so we can use branches in the
- * vectors, rather than ldr's.  Note that this code must not
- * exceed 0x300 bytes.
+ * This code is copied to 0xffff1000 so we can use branches in the
+ * vectors, rather than ldr's.  Note that this code must not exceed
+ * a page size.
  *
  * Common stub entry macro:
  *   Enter in IRQ mode, spsr = SVC/USR CPSR, lr = SVC/USR PC
@@ -1157,8 +1041,17 @@ ENDPROC(vector_\name)
 1:
 	.endm
 
-	.globl	__stubs_start
+	.section .stubs, "ax", %progbits
 __stubs_start:
+	@ This must be the first word
+	.word	vector_swi
+
+vector_rst:
+ ARM(	swi	SYS_ERROR0	)
+ THUMB(	svc	#0		)
+ THUMB(	nop			)
+	b	vector_und
+
 /*
  * Interrupt dispatcher
  */
@@ -1253,6 +1146,16 @@ __stubs_start:
 	.align	5
 
 /*=============================================================================
+ * Address exception handler
+ *-----------------------------------------------------------------------------
+ * These aren't too critical.
+ * (they're not supposed to happen, and won't happen in 32-bit data mode).
+ */
+
+vector_addrexcptn:
+	b	vector_addrexcptn
+
+/*=============================================================================
  * Undefined FIQs
  *-----------------------------------------------------------------------------
  * Enter in FIQ mode, spsr = ANY CPSR, lr = ANY PC
@@ -1265,45 +1168,19 @@ __stubs_start:
 vector_fiq:
 	subs	pc, lr, #4
 
-/*=============================================================================
- * Address exception handler
- *-----------------------------------------------------------------------------
- * These aren't too critical.
- * (they're not supposed to happen, and won't happen in 32-bit data mode).
- */
+	.globl	vector_fiq_offset
+	.equ	vector_fiq_offset, vector_fiq
 
-vector_addrexcptn:
-	b	vector_addrexcptn
-
-/*
- * We group all the following data together to optimise
- * for CPUs with separate I & D caches.
- */
-	.align	5
-
-.LCvswi:
-	.word	vector_swi
-
-	.globl	__stubs_end
-__stubs_end:
-
-	.equ	stubs_offset, __vectors_start + 0x200 - __stubs_start
-
-	.globl	__vectors_start
+	.section .vectors, "ax", %progbits
 __vectors_start:
- ARM(	swi	SYS_ERROR0	)
- THUMB(	svc	#0		)
- THUMB(	nop			)
-	W(b)	vector_und + stubs_offset
-	W(ldr)	pc, .LCvswi + stubs_offset
-	W(b)	vector_pabt + stubs_offset
-	W(b)	vector_dabt + stubs_offset
-	W(b)	vector_addrexcptn + stubs_offset
-	W(b)	vector_irq + stubs_offset
-	W(b)	vector_fiq + stubs_offset
-
-	.globl	__vectors_end
-__vectors_end:
+	W(b)	vector_rst
+	W(b)	vector_und
+	W(ldr)	pc, __vectors_start + 0x1000
+	W(b)	vector_pabt
+	W(b)	vector_dabt
+	W(b)	vector_addrexcptn
+	W(b)	vector_irq
+	W(b)	vector_fiq
 
 	.data
 

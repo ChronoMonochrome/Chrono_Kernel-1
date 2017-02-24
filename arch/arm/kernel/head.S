@@ -81,8 +81,16 @@
  * crap here - that's what the boot loader (or in extreme, well justified
  * circumstances, zImage) is for.
  */
+	.arm
+
 	__HEAD
 ENTRY(stext)
+
+ THUMB(	adr	r9, BSYM(1f)	)	@ Kernel is always entered in ARM.
+ THUMB(	bx	r9		)	@ If this is a Thumb-2 kernel,
+ THUMB(	.thumb			)	@ switch to Thumb now.
+ THUMB(1:			)
+
 	setmode	PSR_F_BIT | PSR_I_BIT | SVC_MODE, r9 @ ensure svc mode
 						@ and irqs disabled
 	mrc	p15, 0, r9, c0, c0		@ get processor id
@@ -90,6 +98,14 @@ ENTRY(stext)
 	movs	r10, r5				@ invalid processor (r5=0)?
  THUMB( it	eq )		@ force fixup-able long branch encoding
 	beq	__error_p			@ yes, error 'p'
+
+#ifdef CONFIG_ARM_LPAE
+	mrc	p15, 0, r3, c0, c1, 4		@ read ID_MMFR0
+	and	r3, r3, #0xf			@ extract VMSA support
+	cmp	r3, #5				@ long-descriptor translation table format?
+ THUMB( it	lo )				@ force fixup-able long branch encoding
+	blo	__error_p			@ only classic page table format
+#endif
 
 #ifndef CONFIG_XIP_KERNEL
 	adr	r3, 2f
@@ -187,11 +203,11 @@ __create_page_tables:
 	 * Create identity mapping to cater for __enable_mmu.
 	 * This identity mapping will be removed by paging_init().
 	 */
-	adr	r0, __enable_mmu_loc
+	adr	r0, __turn_mmu_on_loc
 	ldmia	r0, {r3, r5, r6}
 	sub	r0, r0, r3			@ virt->phys offset
-	add	r5, r5, r0			@ phys __enable_mmu
-	add	r6, r6, r0			@ phys __enable_mmu_end
+	add	r5, r5, r0			@ phys __turn_mmu_on
+	add	r6, r6, r0			@ phys __turn_mmu_on_end
 	mov	r5, r5, lsr #SECTION_SHIFT
 	mov	r6, r6, lsr #SECTION_SHIFT
 
@@ -255,7 +271,7 @@ __create_page_tables:
 	 * This allows debug messages to be output
 	 * via a serial console before paging_init.
 	 */
-	addruart r7, r3
+	addruart r7, r3, r0
 
 	mov	r3, r3, lsr #SECTION_SHIFT
 	mov	r3, r3, lsl #PMD_ORDER
@@ -315,10 +331,10 @@ __create_page_tables:
 ENDPROC(__create_page_tables)
 	.ltorg
 	.align
-__enable_mmu_loc:
+__turn_mmu_on_loc:
 	.long	.
-	.long	__enable_mmu
-	.long	__enable_mmu_end
+	.long	__turn_mmu_on
+	.long	__turn_mmu_on_end
 
 #if defined(CONFIG_SMP)
 	__CPUINIT
@@ -441,7 +457,7 @@ ENTRY(__turn_mmu_on)
 	mov	r3, r3
 	mov	r3, r13
 	mov	pc, r3
-__enable_mmu_end:
+__turn_mmu_on_end:
 ENDPROC(__turn_mmu_on)
 	.popsection
 

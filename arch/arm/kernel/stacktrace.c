@@ -1,10 +1,10 @@
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/sched.h>
 #include <linux/stacktrace.h>
 
 #include <asm/stacktrace.h>
 
-#if !defined(CONFIG_ARM_UNWIND)
+#if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
 /*
  * Unwind the current stack frame and store the new register values in the
  * structure passed as argument. Unwinding is equivalent to a function return,

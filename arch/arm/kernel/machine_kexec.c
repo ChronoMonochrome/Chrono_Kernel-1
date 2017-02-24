@@ -18,16 +18,10 @@
 extern const unsigned char relocate_new_kernel[];
 extern const unsigned int relocate_new_kernel_size;
 
-extern void setup_mm_for_reboot(void);
-
 extern unsigned long kexec_start_address;
 extern unsigned long kexec_indirection_page;
 extern unsigned long kexec_mach_type;
 extern unsigned long kexec_boot_atags;
-#ifdef CONFIG_KEXEC_HARDBOOT
-extern unsigned long kexec_hardboot;
-extern void kexec_hardboot_hook(void);
-#endif
 
 static atomic_t waiting_for_crash_ipi;
 
@@ -50,14 +44,9 @@ void machine_crash_nonpanic_core(void *unused)
 	struct pt_regs regs;
 
 	crash_setup_regs(&regs, NULL);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "CPU %u will stop doing anything useful since another CPU has crashed\n",
 	       smp_processor_id());
-#else
-	;
-#endif
 	crash_save_cpu(&regs, smp_processor_id());
-	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
 	flush_cache_all();
 
 	atomic_dec(&waiting_for_crash_ipi);
@@ -94,8 +83,6 @@ void machine_crash_shutdown(struct pt_regs *regs)
 
 	local_irq_disable();
 
-	atomic_notifier_call_chain(&crash_percpu_notifier_list, 0, NULL);
-
 	atomic_set(&waiting_for_crash_ipi, num_online_cpus() - 1);
 	smp_call_function(machine_crash_nonpanic_core, NULL, false);
 	msecs = 1000; /* Wait at most a second for the other cpus to stop */
@@ -104,20 +91,12 @@ void machine_crash_shutdown(struct pt_regs *regs)
 		msecs--;
 	}
 	if (atomic_read(&waiting_for_crash_ipi) > 0)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Non-crashing CPUs did not react to IPI\n");
-#else
-		;
-#endif
 
 	crash_save_cpu(regs, smp_processor_id());
 	machine_kexec_mask_interrupts();
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Loading crashdump kernel...\n");
-#else
-	;
-#endif
 }
 
 /*
@@ -144,9 +123,6 @@ void machine_kexec(struct kimage *image)
 	kexec_indirection_page = page_list;
 	kexec_mach_type = machine_arch_type;
 	kexec_boot_atags = image->start - KEXEC_ARM_ZIMAGE_OFFSET + KEXEC_ARM_ATAGS_OFFSET;
-#ifdef CONFIG_KEXEC_HARDBOOT
-	kexec_hardboot = image->hardboot;
-#endif
 
 	/* copy our kernel relocation code to the control code page */
 	memcpy(reboot_code_buffer,
@@ -155,51 +131,10 @@ void machine_kexec(struct kimage *image)
 
 	flush_icache_range((unsigned long) reboot_code_buffer,
 			   (unsigned long) reboot_code_buffer + KEXEC_CONTROL_PAGE_SIZE);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Bye!\n");
-#else
-	;
-#endif
 
 	if (kexec_reinit)
 		kexec_reinit();
-	local_irq_disable();
-	local_fiq_disable();
-	setup_mm_for_reboot();
 
-/* Munjeni: kexec not working by now using kexec_hardboot_hook function! */
-//#ifdef CONFIG_KEXEC_HARDBOOT
-//	/* Run any final machine-specific shutdown code. */
-//	if (image->hardboot)
-//		kexec_hardboot_hook();
-//#endif
-
-	flush_cache_all();
-	outer_flush_all();
-	outer_disable();
-	cpu_proc_fin();
-
-	// Freezes Xperia
-/*	outer_inv_all();
-	flush_cache_all();
-	cpu_reset(reboot_code_buffer_phys);
-*/
-	/* Must call cpu_reset via physical address since ARMv7 (& v6) stalls the
-	 * pipeline after disabling the MMU.
-	 */
-	((typeof(cpu_reset) *)virt_to_phys(cpu_reset))(reboot_code_buffer_phys);
-}
-
-void machine_crash_swreset(void)
-{
-#ifdef CONFIG_DEBUG_PRINTK
-	printk(KERN_INFO "Software reset on panic!\n");
-#else
-	;
-#endif
-
-	flush_cache_all();
-	outer_flush_all();
-	outer_disable();
-	arm_pm_restart(0, NULL);
+	soft_restart(reboot_code_buffer_phys);
 }

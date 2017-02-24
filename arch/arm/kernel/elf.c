@@ -1,17 +1,15 @@
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/sched.h>
 #include <linux/personality.h>
 #include <linux/binfmts.h>
 #include <linux/elf.h>
 #include <asm/system_info.h>
 
-int arm_elf_check_arch(const struct elf32_hdr *x)
+int elf_check_arch(const struct elf32_hdr *x)
 {
 	unsigned int eflags;
 
 	/* Make sure it's an ARM executable */
-	if (x->e_ident[EI_CLASS] != ELF_CLASS)
-		return 0;
 	if (x->e_machine != EM_ARM)
 		return 0;
 
@@ -38,7 +36,7 @@ int arm_elf_check_arch(const struct elf32_hdr *x)
 	}
 	return 1;
 }
-EXPORT_SYMBOL(arm_elf_check_arch);
+EXPORT_SYMBOL(elf_check_arch);
 
 void elf_set_personality(const struct elf32_hdr *x)
 {
