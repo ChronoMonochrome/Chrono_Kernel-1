@@ -16,11 +16,10 @@
 #include <linux/interrupt.h>
 #include <linux/bitops.h>
 #include <linux/mutex.h>
-#include <linux/workqueue.h>
+#include <linux/kthread.h>
 #include <linux/highmem.h>
 #include <linux/firmware.h>
 #include <linux/slab.h>
-#include <linux/sched.h>
 
 #define to_dev(obj) container_of(obj, struct device, kobj)
 
@@ -631,15 +630,19 @@ struct firmware_work {
 	bool uevent;
 };
 
-static void request_firmware_work_func(struct work_struct *work)
+static int request_firmware_work_func(void *arg)
 {
-	struct firmware_work *fw_work;
+	struct firmware_work *fw_work = arg;
 	const struct firmware *fw;
 	struct firmware_priv *fw_priv;
 	long timeout;
 	int ret;
 
-	fw_work = container_of(work, struct firmware_work, work);
+	if (!arg) {
+		WARN_ON(1);
+		return 0;
+	}
+
 	fw_priv = _request_firmware_prepare(&fw, fw_work->name, fw_work->device,
 			fw_work->uevent, true);
 	if (IS_ERR_OR_NULL(fw_priv)) {
@@ -664,6 +667,8 @@ static void request_firmware_work_func(struct work_struct *work)
 
 	module_put(fw_work->module);
 	kfree(fw_work);
+
+	return ret;
 }
 
 /**
@@ -689,6 +694,7 @@ request_firmware_nowait(
 	const char *name, struct device *device, gfp_t gfp, void *context,
 	void (*cont)(const struct firmware *fw, void *context))
 {
+	struct task_struct *task;
 	struct firmware_work *fw_work;
 
 	fw_work = kzalloc(sizeof (struct firmware_work), gfp);
@@ -707,8 +713,15 @@ request_firmware_nowait(
 		return -EFAULT;
 	}
 
-	INIT_WORK(&fw_work->work, request_firmware_work_func);
-	schedule_work(&fw_work->work);
+	task = kthread_run(request_firmware_work_func, fw_work,
+			    "firmware/%s", name);
+	if (IS_ERR(task)) {
+		fw_work->cont(NULL, fw_work->context);
+		module_put(fw_work->module);
+		kfree(fw_work);
+		return PTR_ERR(task);
+	}
+
 	return 0;
 }
 
