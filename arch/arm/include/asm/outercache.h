@@ -77,6 +77,18 @@ static inline void outer_disable(void)
 		outer_cache.disable();
 }
 
+static inline void outer_prefetch_enable(void)
+{
+	if (outer_cache.prefetch_enable)
+		outer_cache.prefetch_enable();
+}
+
+static inline void outer_prefetch_disable(void)
+{
+	if (outer_cache.prefetch_disable)
+		outer_cache.prefetch_disable();
+}
+
 static inline void outer_resume(void)
 {
 	if (outer_cache.resume)
