@@ -10,6 +10,7 @@
 
 #include <linux/kobject.h>
 #include <linux/device.h>
+#include <linux/module.h>
 #include "base.h"
 
 struct kobject *hypervisor_kobj;
