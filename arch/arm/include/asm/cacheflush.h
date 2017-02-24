@@ -16,6 +16,7 @@
 #include <asm/shmparam.h>
 #include <asm/cachetype.h>
 #include <asm/outercache.h>
+#include <asm/rodata.h>
 
 #define CACHE_COLOUR(vaddr)	((vaddr & (SHMLBA - 1)) >> PAGE_SHIFT)
 
@@ -84,14 +85,6 @@
  *		- kaddr  - page address
  *		- size   - region size
  *
- *	clean_dcache_all()
- *
- *		Cleans the entire d-cache.
- *
- *	flush_dcache_all()
- *
- *		Flushes the entire d-cache.
- *
  *	DMA Cache Coherency
  *	===================
  *
@@ -111,9 +104,6 @@ struct cpu_cache_fns {
 	void (*coherent_kern_range)(unsigned long, unsigned long);
 	void (*coherent_user_range)(unsigned long, unsigned long);
 	void (*flush_kern_dcache_area)(void *, size_t);
-
-	void (*clean_dcache_all)(void);
-	void (*flush_dcache_all)(void);
 
 	void (*dma_map_area)(const void *, size_t, int);
 	void (*dma_unmap_area)(const void *, size_t, int);
@@ -135,8 +125,6 @@ extern struct cpu_cache_fns cpu_cache;
 #define __cpuc_coherent_kern_range	cpu_cache.coherent_kern_range
 #define __cpuc_coherent_user_range	cpu_cache.coherent_user_range
 #define __cpuc_flush_dcache_area	cpu_cache.flush_kern_dcache_area
-#define __cpuc_clean_dcache_all		cpu_cache.clean_dcache_all
-#define __cpuc_flush_dcache_all		cpu_cache.flush_dcache_all
 
 /*
  * These are private to the dma-mapping API.  Do not use directly.
@@ -157,8 +145,6 @@ extern void __cpuc_flush_user_range(unsigned long, unsigned long, unsigned int);
 extern void __cpuc_coherent_kern_range(unsigned long, unsigned long);
 extern void __cpuc_coherent_user_range(unsigned long, unsigned long);
 extern void __cpuc_flush_dcache_area(void *, size_t);
-extern void __cpuc_clean_dcache_all(void);
-extern void __cpuc_flush_dcache_all(void);
 
 /*
  * These are private to the dma-mapping API.  Do not use directly.

@@ -428,7 +428,8 @@
 /*
  * The following syscalls are obsolete and no longer available for EABI.
  */
-#if defined(__ARM_EABI__) && !defined(__KERNEL__)
+#if !defined(__KERNEL__)
+#if defined(__ARM_EABI__)
 #undef __NR_time
 #undef __NR_umount
 #undef __NR_stime
@@ -441,6 +442,7 @@
 #undef __NR_socketcall
 #undef __NR_syscall
 #undef __NR_ipc
+#endif
 #endif
 
 #ifdef __KERNEL__
@@ -481,8 +483,8 @@
 /*
  * Unimplemented (or alternatively implemented) syscalls
  */
-#define __IGNORE_fadvise64_64		1
-#define __IGNORE_migrate_pages		1
+#define __IGNORE_fadvise64_64
+#define __IGNORE_migrate_pages
 
 #endif /* __KERNEL__ */
 #endif /* __ASM_ARM_UNISTD_H */
