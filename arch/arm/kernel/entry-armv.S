@@ -862,13 +862,13 @@ __kuser_cmpxchg64:				@ 0xffff0f60
 	.text
 kuser_cmpxchg64_fixup:
 	@ Called from kuser_cmpxchg_fixup.
-	@ r2 = address of interrupted insn (must be preserved).
+	@ r4 = address of interrupted insn (must be preserved).
 	@ sp = saved regs. r7 and r8 are clobbered.
 	@ 1b = first critical insn, 2b = last critical insn.
-	@ If r2 >= 1b and r2 <= 2b then saved pc_usr is set to 1b.
+	@ If r4 >= 1b and r4 <= 2b then saved pc_usr is set to 1b.
 	mov	r7, #0xffff0fff
 	sub	r7, r7, #(0xffff0fff - (0xffff0f60 + (1b - __kuser_cmpxchg64)))
-	subs	r8, r2, r7
+	subs	r8, r4, r7
 	rsbcss	r8, r8, #(2b - 1b)
 	strcs	r7, [sp, #S_PC]
 #if __LINUX_ARM_ARCH__ < 6
