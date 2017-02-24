@@ -143,23 +143,6 @@ struct tag_memclk {
 	__u32 fmemclk;
 };
 
-/* for automatic boot timing testcases */
-#define ATAG_BOOTTIME  0x41000403
-#define BOOTTIME_MAX_NAME_LEN 64
-#define BOOTTIME_MAX 10
-
-struct boottime_entry {
-	u32 time; /* in us */
-	u8  name[BOOTTIME_MAX_NAME_LEN];
-};
-
-struct tag_boottime {
-	struct boottime_entry entry[BOOTTIME_MAX];
-	u32 idle;  /* in us */
-	u32 total; /* in us */
-	u8 num;
-};
-
 struct tag {
 	struct tag_header hdr;
 	union {
@@ -182,10 +165,6 @@ struct tag {
 		 * DC21285 specific
 		 */
 		struct tag_memclk	memclk;
-		/*
-		 * Boot time
-		 */
-		struct tag_boottime	boottime;
 	} u;
 };
 
@@ -208,12 +187,12 @@ struct tagtable {
 
 #define __tag __used __attribute__((__section__(".taglist.init")))
 #define __tagtable(tag, fn) \
-static struct tagtable __tagtable_##fn __tag = { tag, fn }
+static const struct tagtable __tagtable_##fn __tag = { tag, fn }
 
 /*
  * Memory map description
  */
-#define NR_BANKS 8
+#define NR_BANKS	CONFIG_ARM_NR_BANKS
 
 struct membank {
 	phys_addr_t start;

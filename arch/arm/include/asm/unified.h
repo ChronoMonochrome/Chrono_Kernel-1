@@ -37,8 +37,8 @@
 #define THUMB(x...)	x
 #ifdef __ASSEMBLY__
 #define W(instr)	instr.w
-#endif
 #define BSYM(sym)	sym + 1
+#endif
 
 #else	/* !CONFIG_THUMB2_KERNEL */
 
@@ -49,8 +49,8 @@
 #define THUMB(x...)
 #ifdef __ASSEMBLY__
 #define W(instr)	instr
-#endif
 #define BSYM(sym)	sym
+#endif
 
 #endif	/* CONFIG_THUMB2_KERNEL */
 
@@ -92,7 +92,6 @@
 	.macro	iteee, cond
 	.endm
 #else	/* !__ASSEMBLY__ */
-#ifndef CONFIG_LTO
 __asm__(
 "	.macro	it, cond\n"
 "	.endm\n"
@@ -124,7 +123,6 @@ __asm__(
 "	.endm\n"
 "	.macro	iteee, cond\n"
 "	.endm\n");
-#endif  /* ! CONFIG_LTO */
 #endif	/* __ASSEMBLY__ */
 
 #endif	/* CONFIG_ARM_ASM_UNIFIED */

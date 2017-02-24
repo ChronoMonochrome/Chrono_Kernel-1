@@ -96,8 +96,8 @@ struct elf32_hdr;
 /*
  * This is used to ensure we don't load something for the wrong architecture.
  */
-extern int arm_elf_check_arch(const struct elf32_hdr *);
-#define elf_check_arch(x) arm_elf_check_arch((const struct elf32_hdr *)(x))
+extern int elf_check_arch(const struct elf32_hdr *);
+#define elf_check_arch elf_check_arch
 
 #define vmcore_elf64_check_arch(x) (0)
 
@@ -129,5 +129,9 @@ extern void elf_set_personality(const struct elf32_hdr *);
 struct mm_struct;
 extern unsigned long arch_randomize_brk(struct mm_struct *mm);
 #define arch_randomize_brk arch_randomize_brk
+
+#define ARCH_HAS_SETUP_ADDITIONAL_PAGES 1
+struct linux_binprm;
+int arch_setup_additional_pages(struct linux_binprm *, int);
 
 #endif
