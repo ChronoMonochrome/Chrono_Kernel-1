@@ -29,9 +29,9 @@
 #include <linux/fs.h>
 #include <linux/proc_fs.h>
 #include <linux/memblock.h>
+#include <linux/sort.h>
 #include <linux/bug.h>
 #include <linux/compiler.h>
-#include <linux/sort.h>
 
 #include <asm/unified.h>
 #include <asm/cp15.h>
@@ -329,6 +329,7 @@ static void __init cacheid_init(void)
 		cacheid = CACHEID_VIVT;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("CPU: %s data cache, %s instruction cache\n",
 		cache_is_vivt() ? "VIVT" :
 		cache_is_vipt_aliasing() ? "VIPT aliasing" :
@@ -338,6 +339,9 @@ static void __init cacheid_init(void)
 		icache_is_vipt_aliasing() ? "VIPT aliasing" :
 		icache_is_pipt() ? "PIPT" :
 		cache_is_vipt_nonaliasing() ? "VIPT nonaliasing" : "unknown");
+#else
+	;
+#endif
 }
 
 /*
@@ -359,7 +363,11 @@ void __init early_print(const char *str, ...)
 #ifdef CONFIG_DEBUG_LL
 	printascii(buf);
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s", buf);
+#else
+	;
+#endif
 }
 
 static void __init feat_v6_fixup(void)
@@ -388,7 +396,11 @@ void cpu_init(void)
 	struct stack *stk = &stacks[cpu];
 
 	if (cpu >= NR_CPUS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "CPU%u: bad primary CPU number\n", cpu);
+#else
+		;
+#endif
 		BUG();
 	}
 
@@ -514,8 +526,12 @@ int __init arm_add_memory(phys_addr_t start, unsigned long size)
 	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
 
 	if (meminfo.nr_banks >= NR_BANKS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "NR_BANKS too low, "
 			"ignoring memory at 0x%08llx\n", (long long)start);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -727,6 +743,18 @@ static int __init parse_tag_revision(const struct tag *tag)
 
 __tagtable(ATAG_REVISION, parse_tag_revision);
 
+unsigned int bootmode = 0;
+EXPORT_SYMBOL(bootmode);
+
+unsigned int is_lpm = 0;
+EXPORT_SYMBOL(is_lpm);
+static unsigned int setup_debug = 0;
+module_param_named(is_lpm, is_lpm, uint, 0444);
+module_param_named(setup_debug, setup_debug, uint, 0644);
+
+int lcdtype = 0;
+EXPORT_SYMBOL(lcdtype);
+
 static int __init parse_tag_cmdline(const struct tag *tag)
 {
 #if defined(CONFIG_CMDLINE_EXTEND)
@@ -739,6 +767,40 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 	strlcpy(default_command_line, tag->u.cmdline.cmdline,
 		COMMAND_LINE_SIZE);
 #endif
+
+       pr_err("Bootloader command line: %s\n", tag->u.cmdline.cmdline);
+       strlcat(default_command_line, " ", COMMAND_LINE_SIZE);
+
+       if (strstr(tag->u.cmdline.cmdline, "lpm_boot=1") != NULL) {
+               pr_err("LPM boot from bootloader\n");
+
+		is_lpm = 1;
+               strlcat(default_command_line, "lpm_boot=1 ", COMMAND_LINE_SIZE);
+       } else {
+               strlcat(default_command_line, "lpm_boot=0 ", COMMAND_LINE_SIZE);
+       }
+
+       if (strstr(tag->u.cmdline.cmdline, "bootmode=2") != NULL) {
+               pr_err("Recovery boot from bootloader\n");
+               strlcat(default_command_line, "bootmode=2 ", COMMAND_LINE_SIZE);
+       }
+
+	 strlcat(default_command_line, "logo.  ", COMMAND_LINE_SIZE);
+
+	if (strstr(tag->u.cmdline.cmdline, "lcdtype=4") != NULL) {
+               pr_err("LCD type WS2401 from bootloader\n");
+	       lcdtype = 4;
+               strlcat(default_command_line, "lcdtype=4 ", COMMAND_LINE_SIZE);
+	} else if (strstr(tag->u.cmdline.cmdline, "lcdtype=8") != NULL) { 
+               pr_err("LCD type S6D from bootloader\n");
+               lcdtype = 8;
+               strlcat(default_command_line, "lcdtype=8 ", COMMAND_LINE_SIZE);
+        } else if (strstr(tag->u.cmdline.cmdline, "lcdtype=13") != NULL) {
+               pr_err("LCD type S6D from bootloader\n");
+               lcdtype = 13;
+               strlcat(default_command_line, "lcdtype=13 ", COMMAND_LINE_SIZE);
+        }
+
 	return 0;
 }
 
@@ -771,9 +833,13 @@ static void __init parse_tags(const struct tag *t)
 {
 	for (; t->hdr.size; t = tag_next(t))
 		if (!parse_tag(t))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"Ignoring unrecognised tag 0x%08x\n",
 				t->hdr.tag);
+#else
+			;
+#endif
 }
 
 /*
@@ -832,16 +898,24 @@ static void __init reserve_crashkernel(void)
 
 	ret = reserve_bootmem(crash_base, crash_size, BOOTMEM_EXCLUSIVE);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "crashkernel reservation failed - "
 		       "memory is in use (0x%lx)\n", (unsigned long)crash_base);
+#else
+		;
+#endif
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Reserving %ldMB of memory at %ldMB "
 	       "for crashkernel (System RAM: %ldMB)\n",
 	       (unsigned long)(crash_size >> 20),
 	       (unsigned long)(crash_base >> 20),
 	       (unsigned long)(total_mem >> 20));
+#else
+	;
+#endif
 
 	crashk_res.start = crash_base;
 	crashk_res.end = crash_base + crash_size - 1;
@@ -871,7 +945,11 @@ static struct machine_desc * __init setup_machine_tags(unsigned int nr)
 	 */
 	for_each_machine_desc(p)
 		if (nr == p->nr) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Machine: %s\n", p->name);
+#else
+			;
+#endif
 			mdesc = p;
 			break;
 		}
