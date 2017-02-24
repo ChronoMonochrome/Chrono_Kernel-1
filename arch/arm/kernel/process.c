@@ -651,7 +651,6 @@ unsigned long arch_randomize_brk(struct mm_struct *mm)
 }
 
 #ifdef CONFIG_MMU
-#ifdef CONFIG_KUSER_HELPERS
 /*
  * The vectors page is always readable from user space for the
  * atomic helpers and the signal restart code. Insert it into the
@@ -665,8 +664,7 @@ static int __init gate_vma_init(void)
 	gate_vma.vm_end		= 0xffff0000 + PAGE_SIZE;
 	gate_vma.vm_page_prot	= PAGE_READONLY_EXEC;
 	gate_vma.vm_flags	= VM_READ | VM_EXEC |
-				  VM_MAYREAD | VM_MAYEXEC |
-				  VM_ALWAYSDUMP;
+				  VM_MAYREAD | VM_MAYEXEC;
 	return 0;
 }
 arch_initcall(gate_vma_init);
@@ -685,10 +683,6 @@ int in_gate_area_no_mm(unsigned long addr)
 {
 	return in_gate_area(NULL, addr);
 }
-#define is_gate_vma(vma)	((vma) = &gate_vma)
-#else
-#define is_gate_vma(vma)	0
-#endif
 
 const char *arch_vma_name(struct vm_area_struct *vma)
 {
