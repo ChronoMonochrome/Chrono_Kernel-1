@@ -10,7 +10,6 @@
  * published by the Free Software Foundation.
  */
 
-#include <linux/module.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/signal.h>
@@ -84,11 +83,7 @@ static int __init pj4_cp0_init(void)
 	cp_access = pj4_cp_access_read() & ~0xf;
 	pj4_cp_access_write(cp_access);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PJ4 iWMMXt coprocessor enabled.\n");
-#else
-	;
-#endif
 	elf_hwcap |= HWCAP_IWMMXT;
 	thread_register_notifier(&iwmmxt_notifier_block);
 

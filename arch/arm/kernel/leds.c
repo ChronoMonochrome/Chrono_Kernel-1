@@ -7,12 +7,13 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/init.h>
+#include <linux/device.h>
 #include <linux/notifier.h>
 #include <linux/cpu.h>
-#include <linux/device.h>
 #include <linux/syscore_ops.h>
+#include <linux/string.h>
 
 #include <asm/leds.h>
 
@@ -131,7 +132,7 @@ static int __init leds_init(void)
 		ret = device_register(&leds_device);
 	if (ret == 0)
 		ret = device_create_file(&leds_device, &dev_attr_event);
-	if (ret == 0)
+	if (ret == 0) {
 		register_syscore_ops(&leds_syscore_ops);
 		idle_notifier_register(&leds_idle_nb);
 	}

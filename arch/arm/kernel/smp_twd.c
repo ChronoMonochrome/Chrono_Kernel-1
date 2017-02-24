@@ -33,9 +33,6 @@ static void __iomem *twd_base;
 static struct clk *twd_clk;
 static unsigned long twd_timer_rate;
 
-static DEFINE_PER_CPU(u32, twd_ctrl);
-static DEFINE_PER_CPU(u32, twd_load);
-
 static struct clock_event_device __percpu **twd_evt;
 static int twd_ppi;
 
@@ -155,11 +152,7 @@ static void __cpuinit twd_calibrate_rate(void)
 	 * the timer ticks
 	 */
 	if (twd_timer_rate == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Calibrating local timer... ");
-#else
-		;
-#endif
 
 		/* Wait for a tick to start */
 		waitjiffies = get_jiffies_64() + 1;
@@ -183,12 +176,8 @@ static void __cpuinit twd_calibrate_rate(void)
 
 		twd_timer_rate = (0xFFFFFFFFU - count) * (HZ / 5);
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%lu.%02luMHz.\n", twd_timer_rate / 1000000,
 			(twd_timer_rate / 10000) % 100);
-#else
-		;
-#endif
 	}
 }
 
@@ -304,27 +293,6 @@ out_free:
 
 	return err;
 }
-
-#if defined(CONFIG_HOTPLUG) || defined(CONFIG_CPU_IDLE)
-void twd_save(void)
-{
-	int this_cpu = smp_processor_id();
-
-	per_cpu(twd_ctrl, this_cpu) = __raw_readl(twd_base + TWD_TIMER_CONTROL);
-	per_cpu(twd_load, this_cpu) = __raw_readl(twd_base + TWD_TIMER_LOAD);
-
-}
-
-void twd_restore(void)
-{
-	int this_cpu = smp_processor_id();
-
-	__raw_writel(per_cpu(twd_ctrl, this_cpu),
-		     twd_base + TWD_TIMER_CONTROL);
-	__raw_writel(per_cpu(twd_load, this_cpu),
-		     twd_base + TWD_TIMER_LOAD);
-}
-#endif
 
 int __init twd_local_timer_register(struct twd_local_timer *tlt)
 {

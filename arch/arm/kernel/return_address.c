@@ -8,7 +8,7 @@
  * under the terms of the GNU General Public License version 2 as published by
  * the Free Software Foundation.
  */
-#include <linux/module.h>
+#include <linux/export.h>
 #include <linux/ftrace.h>
 
 #if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND)
@@ -61,6 +61,11 @@ void *return_address(unsigned int level)
 #if defined(CONFIG_ARM_UNWIND)
 #warning "TODO: return_address should use unwind tables"
 #endif
+
+void *return_address(unsigned int level)
+{
+	return NULL;
+}
 
 #endif /* if defined(CONFIG_FRAME_POINTER) && !defined(CONFIG_ARM_UNWIND) / else */
 

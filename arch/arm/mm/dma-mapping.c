@@ -122,7 +122,6 @@ static void __dma_free_buffer(struct page *page, size_t size)
 
 #define CONSISTENT_OFFSET(x)	(((unsigned long)(x) - consistent_base) >> PAGE_SHIFT)
 #define CONSISTENT_PTE_INDEX(x) (((unsigned long)(x) - consistent_base) >> PMD_SHIFT)
-#define NUM_CONSISTENT_PTES (CONSISTENT_DMA_SIZE >> PMD_SHIFT)
 
 /*
  * These are the page tables (2MB each) covering uncached, DMA consistent allocations
@@ -311,12 +310,8 @@ static void __dma_free_remap(void *cpu_addr, size_t size)
 		}
 
 		if (pte_none(pte) || !pte_present(pte))
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "%s: bad page in kernel page table\n",
 			       __func__);
-#else
-			;
-#endif
 	} while (size -= PAGE_SIZE);
 
 	flush_tlb_kernel_range(c->vm_start, c->vm_end);
@@ -338,11 +333,13 @@ __dma_alloc(struct device *dev, size_t size, dma_addr_t *handle, gfp_t gfp,
 	struct page *page;
 	void *addr;
 
-	/* Following is a work-around (a.k.a. hack) to prevent pages
+	/*
+	 * Following is a work-around (a.k.a. hack) to prevent pages
 	 * with __GFP_COMP being passed to split_page() which cannot
 	 * handle them.  The real problem is that this flag probably
 	 * should be 0 on ARM as it is not supported on this
-	 * platform--see CONFIG_HUGETLB_PAGE. */
+	 * platform; see CONFIG_HUGETLBFS.
+	 */
 	gfp &= ~(__GFP_COMP);
 
 	*handle = ~0;

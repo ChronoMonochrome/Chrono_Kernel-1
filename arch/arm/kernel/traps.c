@@ -25,9 +25,7 @@
 #include <linux/delay.h>
 #include <linux/init.h>
 #include <linux/sched.h>
-#ifdef CONFIG_SAMSUNG_LOG_BUF
-#include <linux/mfd/ux500_wdt.h>
-#endif
+
 #include <linux/atomic.h>
 #include <asm/cacheflush.h>
 #include <asm/exception.h>
@@ -36,8 +34,6 @@
 #include <asm/unwind.h>
 #include <asm/tls.h>
 #include <asm/system_misc.h>
-
-#include "signal.h"
 
 static const char *handler[]= { "prefetch abort", "data abort", "address exception", "interrupt" };
 
@@ -59,17 +55,9 @@ static void dump_mem(const char *, const char *, unsigned long, unsigned long);
 void dump_backtrace_entry(unsigned long where, unsigned long from, unsigned long frame)
 {
 #ifdef CONFIG_KALLSYMS
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("[<%08lx>] (%pS) from [<%08lx>] (%pS)\n", where, (void *)where, from, (void *)from);
 #else
-	;
-#endif
-#else
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Function entered at [<%08lx>] from [<%08lx>]\n", where, from);
-#else
-	;
-#endif
 #endif
 
 	if (in_exception_text(where))
@@ -110,11 +98,7 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
 	fs = get_fs();
 	set_fs(KERNEL_DS);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s%s(0x%08lx to 0x%08lx)\n", lvl, str, bottom, top);
-#else
-	;
-#endif
 
 	for (first = bottom & ~31; first < top; first += 32) {
 		unsigned long p;
@@ -132,11 +116,7 @@ static void dump_mem(const char *lvl, const char *str, unsigned long bottom,
 					sprintf(str + i * 9, " ????????");
 			}
 		}
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s%04lx:%s\n", lvl, first & 0xffff, str);
-#else
-		;
-#endif
 	}
 
 	set_fs(fs);
@@ -175,11 +155,7 @@ static void dump_instr(const char *lvl, struct pt_regs *regs)
 			break;
 		}
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%sCode: %s\n", lvl, str);
-#else
-	;
-#endif
 
 	set_fs(fs);
 }
@@ -195,11 +171,7 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 	unsigned int fp, mode;
 	int ok = 1;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Backtrace: ");
-#else
-	;
-#endif
 
 	if (!tsk)
 		tsk = current;
@@ -216,30 +188,14 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 	}
 
 	if (!fp) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("no frame pointer");
-#else
-		;
-#endif
 		ok = 0;
 	} else if (verify_stack(fp)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("invalid frame pointer 0x%08x", fp);
-#else
-		;
-#endif
 		ok = 0;
 	} else if (fp < (unsigned long)end_of_stack(tsk))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("frame pointer underflow");
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
-#else
-	;
-#endif
 
 	if (ok)
 		c_backtrace(fp, mode);
@@ -291,12 +247,8 @@ static int __die(const char *str, int err, struct thread_info *thread, struct pt
 
 	print_modules();
 	__show_regs(regs);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "Process %.*s (pid: %d, stack limit = 0x%p)\n",
 		TASK_COMM_LEN, tsk->comm, task_pid_nr(tsk), thread + 1);
-#else
-	;
-#endif
 
 	if (!user_mode(regs) || in_interrupt()) {
 		dump_mem(KERN_EMERG, "Stack: ", regs->ARM_sp,
@@ -305,17 +257,6 @@ static int __die(const char *str, int err, struct thread_info *thread, struct pt
 		dump_instr(KERN_EMERG, regs);
 	}
 
-#ifdef CONFIG_SAMSUNG_LOG_BUF
-#ifdef CONFIG_SAMSUNG_EXTRA_DIE_ACTION
-	{
-		extern void sec_extra_die_actions(const char * str);
-#if 0
-		wdog_disable();
-#endif
-		sec_extra_die_actions(str);
-	}
-#endif
-#endif
 	return ret;
 }
 
@@ -327,7 +268,6 @@ static DEFINE_RAW_SPINLOCK(die_lock);
 void die(const char *str, struct pt_regs *regs, int err)
 {
 	struct thread_info *thread = current_thread_info();
-	unsigned long flags;
 	int ret;
 	enum bug_trap_type bug_type = BUG_TRAP_TYPE_NONE;
 
@@ -462,28 +402,11 @@ asmlinkage void __exception do_undefinstr(struct pt_regs *regs)
 	if (call_undef_hook(regs, instr) == 0)
 		return;
 
-	/* STARGO: hack for DIV emulation */
-	if ((processor_mode(regs) != SVC_MODE) && thumb_mode(regs)) {
-		if ((instr & 0x0310) == 0x0310) { /* Retry for division */
-			unsigned int instr2;
-			get_user(instr2, (u16 __user *)pc + 1);
-			instr <<= 16;
-			instr |= instr2;
-			if (call_undef_hook(regs, instr) == 0)
-				return;
-		}
-	}
-	/* END: STARGO: hack for DIV emulation */
-
 die_sig:
 #ifdef CONFIG_DEBUG_USER
 	if (user_debug & UDBG_UNDEFINED) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s (%d): undefined instruction: pc=%p\n",
 			current->comm, task_pid_nr(current), pc);
-#else
-		;
-#endif
 		dump_instr(KERN_INFO, regs);
 	}
 #endif
@@ -498,16 +421,8 @@ die_sig:
 
 asmlinkage void do_unexp_fiq (struct pt_regs *regs)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Hmm.  Unexpected FIQ received, but trying to continue\n");
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("You may have a hardware problem...\n");
-#else
-	;
-#endif
 }
 
 /*
@@ -520,11 +435,7 @@ asmlinkage void bad_mode(struct pt_regs *regs, int reason)
 {
 	console_verbose();
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT "Bad mode in %s handler detected\n", handler[reason]);
-#else
-	;
-#endif
 
 	die("Oops - bad mode", regs, 0);
 	local_irq_disable();
@@ -732,12 +643,8 @@ asmlinkage int arm_syscall(int no, struct pt_regs *regs)
 	 * something catastrophic has happened
 	 */
 	if (user_debug & UDBG_SYSCALL) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("[%d] %s: arm syscall %d\n",
 		       task_pid_nr(current), current->comm, no);
-#else
-		;
-#endif
 		dump_instr("", regs);
 		if (user_mode(regs)) {
 			__show_regs(regs);
@@ -795,12 +702,8 @@ late_initcall(arm_mrc_hook_init);
 
 void __bad_xchg(volatile void *ptr, int size)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("xchg: bad data size: pc 0x%p, ptr 0x%p, size %d\n",
 		__builtin_return_address(0), ptr, size);
-#else
-	;
-#endif
 	BUG();
 }
 EXPORT_SYMBOL(__bad_xchg);
@@ -834,49 +737,29 @@ baddataabort(int code, unsigned long instr, struct pt_regs *regs)
 
 void __readwrite_bug(const char *fn)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s called, but not implemented\n", fn);
-#else
-	;
-#endif
 	BUG();
 }
 EXPORT_SYMBOL(__readwrite_bug);
 
 void __pte_error(const char *file, int line, pte_t pte)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s:%d: bad pte %08llx.\n", file, line, (long long)pte_val(pte));
-#else
-	;
-#endif
 }
 
 void __pmd_error(const char *file, int line, pmd_t pmd)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s:%d: bad pmd %08llx.\n", file, line, (long long)pmd_val(pmd));
-#else
-	;
-#endif
 }
 
 void __pgd_error(const char *file, int line, pgd_t pgd)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s:%d: bad pgd %08llx.\n", file, line, (long long)pgd_val(pgd));
-#else
-	;
-#endif
 }
 
 asmlinkage void __div0(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Division by zero in kernel.\n");
-#else
-	;
-#endif
 	dump_stack();
 }
 EXPORT_SYMBOL(__div0);
@@ -895,23 +778,32 @@ void __init trap_init(void)
 	return;
 }
 
-static void __init kuser_get_tls_init(unsigned long vectors)
+#ifdef CONFIG_KUSER_HELPERS
+static void __init kuser_init(void *vectors)
 {
+	extern char __kuser_helper_start[], __kuser_helper_end[];
+	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
+
+	memcpy(vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
+
 	/*
 	 * vectors + 0xfe0 = __kuser_get_tls
 	 * vectors + 0xfe8 = hardware TLS instruction at 0xffff0fe8
 	 */
 	if (tls_emu || has_tls_reg)
-		memcpy((void *)vectors + 0xfe0, (void *)vectors + 0xfe8, 4);
+		memcpy(vectors + 0xfe0, vectors + 0xfe8, 4);
 }
+#else
+static void __init kuser_init(void *vectors)
+{
+}
+#endif
 
 void __init early_trap_init(void *vectors_base)
 {
 	unsigned long vectors = (unsigned long)vectors_base;
 	extern char __stubs_start[], __stubs_end[];
 	extern char __vectors_start[], __vectors_end[];
-	extern char __kuser_helper_start[], __kuser_helper_end[];
-	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
 	unsigned i;
 
 	vectors_page = vectors_base;
@@ -925,29 +817,16 @@ void __init early_trap_init(void *vectors_base)
 	for (i = 0; i < PAGE_SIZE / sizeof(u32); i++)
 		((u32 *)vectors_base)[i] = 0xe7fddef1;
 
-	vectors_page = vectors_base;
-
 	/*
 	 * Copy the vectors, stubs and kuser helpers (in entry-armv.S)
 	 * into the vector page, mapped at 0xffff0000, and ensure these
 	 * are visible to the instruction stream.
 	 */
 	memcpy((void *)vectors, __vectors_start, __vectors_end - __vectors_start);
-	memcpy((void *)vectors + 0x200, __stubs_start, __stubs_end - __stubs_start);
-	memcpy((void *)vectors + 0x1000 - kuser_sz, __kuser_helper_start, kuser_sz);
+	memcpy((void *)vectors + 0x1000, __stubs_start, __stubs_end - __stubs_start);
 
-	/*
-	 * Do processor specific fixups for the kuser helpers
-	 */
-	kuser_get_tls_init(vectors);
+	kuser_init(vectors_base);
 
-	/*
-	 * Copy signal return handlers into the vector page, and
-	 * set sigreturn to be a pointer to these.
-	 */
-	memcpy((void *)(vectors + KERN_SIGRETURN_CODE - CONFIG_VECTORS_BASE),
-	       sigreturn_codes, sizeof(sigreturn_codes));
-
-	flush_icache_range(vectors, vectors + PAGE_SIZE);
+	flush_icache_range(vectors, vectors + PAGE_SIZE * 2);
 	modify_domain(DOMAIN_USER, DOMAIN_CLIENT);
 }
