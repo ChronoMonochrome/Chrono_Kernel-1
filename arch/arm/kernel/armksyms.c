@@ -48,10 +48,6 @@ extern void __aeabi_ulcmp(void);
 
 extern void fpundefinstr(void);
 
-	/* platform dependent support */
-EXPORT_SYMBOL(__udelay);
-EXPORT_SYMBOL(__const_udelay);
-
 	/* networking */
 EXPORT_SYMBOL(csum_partial);
 EXPORT_SYMBOL(csum_partial_copy_from_user);
@@ -82,14 +78,12 @@ EXPORT_SYMBOL(__raw_writesl);
 EXPORT_SYMBOL(strchr);
 EXPORT_SYMBOL(strrchr);
 EXPORT_SYMBOL(memset);
+#ifndef CONFIG_ARM_USE_GLIBC_MEMCOPY
 EXPORT_SYMBOL(memcpy);
 EXPORT_SYMBOL(memmove);
+#endif
 EXPORT_SYMBOL(memchr);
 EXPORT_SYMBOL(__memzero);
-
-	/* user mem (segment) */
-EXPORT_SYMBOL(__strnlen_user);
-EXPORT_SYMBOL(__strncpy_from_user);
 
 #ifdef CONFIG_MMU
 EXPORT_SYMBOL(copy_page);
