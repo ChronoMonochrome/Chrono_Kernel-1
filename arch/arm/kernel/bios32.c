@@ -5,7 +5,7 @@
  *
  *  Bits taken from various places.
  */
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/pci.h>
 #include <linux/slab.h>
