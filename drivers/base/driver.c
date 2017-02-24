@@ -123,34 +123,6 @@ void driver_remove_file(struct device_driver *drv,
 }
 EXPORT_SYMBOL_GPL(driver_remove_file);
 
-/**
- * get_driver - increment driver reference count.
- * @drv: driver.
- */
-struct device_driver *get_driver(struct device_driver *drv)
-{
-	if (drv) {
-		struct driver_private *priv;
-		struct kobject *kobj;
-
-		kobj = kobject_get(&drv->p->kobj);
-		priv = to_driver(kobj);
-		return priv->driver;
-	}
-	return NULL;
-}
-EXPORT_SYMBOL_GPL(get_driver);
-
-/**
- * put_driver - decrement driver's refcount.
- * @drv: driver.
- */
-void put_driver(struct device_driver *drv)
-{
-	kobject_put(&drv->p->kobj);
-}
-EXPORT_SYMBOL_GPL(put_driver);
-
 static int driver_add_groups(struct device_driver *drv,
 			     const struct attribute_group **groups)
 {
@@ -199,12 +171,8 @@ int driver_register(struct device_driver *drv)
 	if ((drv->bus->probe && drv->probe) ||
 	    (drv->bus->remove && drv->remove) ||
 	    (drv->bus->shutdown && drv->shutdown))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Driver '%s' needs updating - please use "
 			"bus_type methods\n", drv->name);
-#else
-		;
-#endif
 
 	other = driver_find(drv->name, drv->bus);
 	if (other) {
