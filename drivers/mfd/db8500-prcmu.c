@@ -1445,7 +1445,6 @@ static void do_oc_ddr(int new_val_)
 			mcdeclk_is_enabled = readl(prcmu_base + PRCMU_MCDECLK_REG) & 0x100; 
 			sdmmcclk_is_enabled = readl(prcmu_base + PRCMU_SDMMCCLK_REG) & 0x100;  
 		}
-		udelay(200);
 
 		for (val = (tmp_val ? tmp_val : old_val_);
 		    (new_val_ > old_val_) ? (val <= new_val_) : (val >= new_val_);
@@ -2297,7 +2296,7 @@ schedule:
 	pending_pllddr_val = new_val;
 	pending_pllddr_freq = freq;
 
-	ddr_oc_on_suspend = true;
+	schedule_delayed_work(&do_oc_ddr_delayedwork, 0);
 
 	return count;
 }
