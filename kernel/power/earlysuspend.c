@@ -17,13 +17,14 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/rtc.h>
-#include <linux/syscalls.h> /* sys_sync */
 #include <linux/wakelock.h>
 #include <linux/workqueue.h>
 
 #include "power.h"
 #include <linux/delay.h>
 
+
+standby_level_e standby_level;
 static struct kobject *earlysuspend_kobj;
 
 enum {
@@ -36,15 +37,10 @@ module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 static int debug_mask_delay_ms = 0;
 module_param_named(debug_mask_delay_ms, debug_mask_delay_ms, int, S_IRUGO | S_IWUSR | S_IWGRP);
 
-extern struct wake_lock sync_wake_lock;
-extern struct workqueue_struct *sync_work_queue;
-
-static void sync_system(struct work_struct *work);
 static DEFINE_MUTEX(early_suspend_lock);
 static LIST_HEAD(early_suspend_handlers);
 static void early_suspend(struct work_struct *work);
 static void late_resume(struct work_struct *work);
-static DECLARE_WORK(sync_system_work, sync_system);
 static DECLARE_WORK(early_suspend_work, early_suspend);
 static DECLARE_WORK(late_resume_work, late_resume);
 static DEFINE_SPINLOCK(state_lock);
@@ -58,13 +54,6 @@ static int state;
 #ifdef CONFIG_EARLYSUSPEND_DELAY
 extern struct wake_lock ealysuspend_delay_work;
 #endif
-
-static void sync_system(struct work_struct *work)
-{
-        wake_lock(&sync_wake_lock);
-        sys_sync();
-        wake_unlock(&sync_wake_lock);
-}
 
 static struct hrtimer earlysuspend_timer;
 static void (*earlysuspend_func)(struct early_suspend *h);
@@ -163,10 +152,6 @@ static void early_suspend(struct work_struct *work)
 	standby_level = STANDBY_WITH_POWER;
 	mutex_unlock(&early_suspend_lock);
 
-	if (debug_mask & DEBUG_SUSPEND)
-		pr_info("early_suspend: sync\n");
-
-       queue_work(sync_work_queue, &sync_system_work);
 abort:
 	spin_lock_irqsave(&state_lock, irqflags);
 	if (state == SUSPEND_REQUESTED_AND_SUSPENDED)
