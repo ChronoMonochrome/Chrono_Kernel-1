@@ -322,35 +322,85 @@ static void __call_usermodehelper(struct work_struct *work)
  * land has been frozen during a system-wide hibernation or suspend operation).
  * Should always be manipulated under umhelper_sem acquired for write.
  */
-static int usermodehelper_disabled = 1;
+static enum umh_disable_depth usermodehelper_disabled = UMH_DISABLED;
 
 /* Number of helpers running */
 static atomic_t running_helpers = ATOMIC_INIT(0);
 
 /*
- * Wait queue head used by usermodehelper_pm_callback() to wait for all running
+ * Wait queue head used by usermodehelper_disable() to wait for all running
  * helpers to finish.
  */
 static DECLARE_WAIT_QUEUE_HEAD(running_helpers_waitq);
 
 /*
+ * Used by usermodehelper_read_lock_wait() to wait for usermodehelper_disabled
+ * to become 'false'.
+ */
+static DECLARE_WAIT_QUEUE_HEAD(usermodehelper_disabled_waitq);
+
+/*
  * Time to wait for running_helpers to become zero before the setting of
- * usermodehelper_disabled in usermodehelper_pm_callback() fails
+ * usermodehelper_disabled in usermodehelper_disable() fails
  */
 #define RUNNING_HELPERS_TIMEOUT	(5 * HZ)
 
 int usermodehelper_read_trylock(void)
 {
+	DEFINE_WAIT(wait);
 	int ret = 0;
 
 	down_read(&umhelper_sem);
-	if (usermodehelper_disabled) {
+	for (;;) {
+		prepare_to_wait(&usermodehelper_disabled_waitq, &wait,
+				TASK_INTERRUPTIBLE);
+		if (!usermodehelper_disabled)
+			break;
+
+		if (usermodehelper_disabled == UMH_DISABLED)
+			ret = -EAGAIN;
+
 		up_read(&umhelper_sem);
-		ret = -EAGAIN;
+
+		if (ret)
+			break;
+
+		schedule();
+		try_to_freeze();
+
+		down_read(&umhelper_sem);
 	}
+	finish_wait(&usermodehelper_disabled_waitq, &wait);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(usermodehelper_read_trylock);
+
+long usermodehelper_read_lock_wait(long timeout)
+{
+	DEFINE_WAIT(wait);
+
+	if (timeout < 0)
+		return -EINVAL;
+
+	down_read(&umhelper_sem);
+	for (;;) {
+		prepare_to_wait(&usermodehelper_disabled_waitq, &wait,
+				TASK_UNINTERRUPTIBLE);
+		if (!usermodehelper_disabled)
+			break;
+
+		up_read(&umhelper_sem);
+
+		timeout = schedule_timeout(timeout);
+		if (!timeout)
+			break;
+
+		down_read(&umhelper_sem);
+	}
+	finish_wait(&usermodehelper_disabled_waitq, &wait);
+	return timeout;
+}
+EXPORT_SYMBOL_GPL(usermodehelper_read_lock_wait);
 
 void usermodehelper_read_unlock(void)
 {
@@ -359,14 +409,35 @@ void usermodehelper_read_unlock(void)
 EXPORT_SYMBOL_GPL(usermodehelper_read_unlock);
 
 /**
- * usermodehelper_disable - prevent new helpers from being started
+ * __usermodehelper_set_disable_depth - Modify usermodehelper_disabled.
+ * depth: New value to assign to usermodehelper_disabled.
+ *
+ * Change the value of usermodehelper_disabled (under umhelper_sem locked for
+ * writing) and wakeup tasks waiting for it to change.
  */
-int usermodehelper_disable(void)
+void __usermodehelper_set_disable_depth(enum umh_disable_depth depth)
+{
+	down_write(&umhelper_sem);
+	usermodehelper_disabled = depth;
+	wake_up(&usermodehelper_disabled_waitq);
+	up_write(&umhelper_sem);
+}
+
+/**
+ * __usermodehelper_disable - Prevent new helpers from being started.
+ * @depth: New value to assign to usermodehelper_disabled.
+ *
+ * Set usermodehelper_disabled to @depth and wait for running helpers to exit.
+ */
+int __usermodehelper_disable(enum umh_disable_depth depth)
 {
 	long retval;
 
+	if (!depth)
+		return -EINVAL;
+
 	down_write(&umhelper_sem);
-	usermodehelper_disabled = 1;
+	usermodehelper_disabled = depth;
 	up_write(&umhelper_sem);
 
 	/*
@@ -381,20 +452,8 @@ int usermodehelper_disable(void)
 	if (retval)
 		return 0;
 
-	down_write(&umhelper_sem);
-	usermodehelper_disabled = 0;
-	up_write(&umhelper_sem);
+	__usermodehelper_set_disable_depth(UMH_ENABLED);
 	return -EAGAIN;
-}
-
-/**
- * usermodehelper_enable - allow new helpers to be started again
- */
-void usermodehelper_enable(void)
-{
-	down_write(&umhelper_sem);
-	usermodehelper_disabled = 0;
-	up_write(&umhelper_sem);
 }
 
 static void helper_lock(void)
