@@ -30,6 +30,9 @@
 #include "power.h"
 
 const char *const pm_states[PM_SUSPEND_MAX] = {
+#ifdef CONFIG_EARLYSUSPEND
+	[PM_SUSPEND_ON]		= "on",
+#endif
 	[PM_SUSPEND_STANDBY]	= "standby",
 	[PM_SUSPEND_MEM]	= "mem",
 };
@@ -280,7 +283,7 @@ static int plug_secondary_cpus(void *data)
  * Fail if that's not the case.  Otherwise, prepare for system suspend, make the
  * system enter the given sleep state and clean up after wakeup.
  */
-static int enter_state(suspend_state_t state)
+int enter_state(suspend_state_t state)
 {
 	int error;
 	struct task_struct *cpu_task;
