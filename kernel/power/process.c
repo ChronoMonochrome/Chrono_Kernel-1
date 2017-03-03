@@ -119,13 +119,6 @@ static int try_to_freeze_tasks(bool user_only)
 	return todo ? -EBUSY : 0;
 }
 
-extern bool is_volkey_press_skip_track(void);
-extern void unmap_keys(void);
-extern void volkey_reset_variables(void);
-extern bool homekey_reset_variables(void);
-
-extern unsigned int is_suspend;
-
 /**
  * freeze_processes - Signal user space processes to enter the refrigerator.
  *
@@ -134,17 +127,8 @@ extern unsigned int is_suspend;
 int freeze_processes(void)
 {
 	int error;
-	
-	is_suspend = 1;
-	volkey_reset_variables();
-	homekey_reset_variables();
 
-	if (is_volkey_press_skip_track()) {
-		unmap_keys();
-		pr_err("%s: power key unmapped\n", __func__);
-	}
-
-	error = usermodehelper_disable();
+	error = __usermodehelper_disable(UMH_FREEZING);
 	if (error)
 		return error;
 
@@ -156,6 +140,7 @@ int freeze_processes(void)
 	error = try_to_freeze_tasks(true);
 	if (!error) {
 		printk("done.");
+		__usermodehelper_set_disable_depth(UMH_DISABLED);
 		oom_killer_disable();
 	}
 	printk("\n");
