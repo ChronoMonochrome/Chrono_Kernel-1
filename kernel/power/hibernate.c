@@ -9,6 +9,7 @@
  * This file is released under the GPLv2.
  */
 
+#include <linux/module.h>
 #include <linux/suspend.h>
 #include <linux/syscalls.h>
 #include <linux/reboot.h>
@@ -27,9 +28,6 @@
 #include <linux/ctype.h>
 #include <linux/genhd.h>
 #include <scsi/scsi_scan.h>
-#ifdef CONFIG_PM_SYNC_CTRL
-#include <linux/pm_sync_ctrl.h>
-#endif /* CONFIG_PM_SYNC_CTRL */
 
 #include "power.h"
 
@@ -625,12 +623,9 @@ int hibernate(void)
 	if (error)
 		goto Exit;
 
-#ifdef CONFIG_PM_SYNC_CTRL
-	if (pm_sync_active)
-		sys_sync();
-#else
+	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	sys_sync();
-#endif
+	printk("done.\n");
 
 	error = freeze_processes();
 	if (error)
