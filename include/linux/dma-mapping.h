@@ -5,16 +5,8 @@
 #include <linux/device.h>
 #include <linux/err.h>
 #include <linux/dma-attrs.h>
+#include <linux/dma-direction.h>
 #include <linux/scatterlist.h>
-
-/* These definitions mirror those in pci.h, so they can be used
- * interchangeably with their PCI_ counterparts */
-enum dma_data_direction {
-	DMA_BIDIRECTIONAL = 0,
-	DMA_TO_DEVICE = 1,
-	DMA_FROM_DEVICE = 2,
-	DMA_NONE = 3,
-};
 
 /*
  * A dma_addr_t can hold any valid DMA or bus address for the platform.
@@ -64,31 +56,13 @@ struct dma_map_ops {
 	int (*mapping_error)(struct device *dev, dma_addr_t dma_addr);
 	int (*dma_supported)(struct device *dev, u64 mask);
 	int (*set_dma_mask)(struct device *dev, u64 mask);
+#ifdef ARCH_HAS_DMA_GET_REQUIRED_MASK
+	u64 (*get_required_mask)(struct device *dev);
+#endif
 	int is_phys;
 };
 
 #define DMA_BIT_MASK(n)	(((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
-
-typedef u64 DMA_nnBIT_MASK __deprecated;
-
-/*
- * NOTE: do not use the below macros in new code and do not add new definitions
- * here.
- *
- * Instead, just open-code DMA_BIT_MASK(n) within your driver
- */
-#define DMA_64BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(64)
-#define DMA_48BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(48)
-#define DMA_47BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(47)
-#define DMA_40BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(40)
-#define DMA_39BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(39)
-#define DMA_35BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(35)
-#define DMA_32BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(32)
-#define DMA_31BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(31)
-#define DMA_30BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(30)
-#define DMA_29BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(29)
-#define DMA_28BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(28)
-#define DMA_24BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(24)
 
 #define DMA_MASK_NONE	0x0ULL
 
@@ -154,6 +128,13 @@ static inline int dma_coerce_mask_and_coherent(struct device *dev, u64 mask)
 }
 
 extern u64 dma_get_required_mask(struct device *dev);
+
+#ifndef set_arch_dma_coherent_ops
+static inline int set_arch_dma_coherent_ops(struct device *dev)
+{
+	return 0;
+}
+#endif
 
 static inline unsigned int dma_get_max_seg_size(struct device *dev)
 {

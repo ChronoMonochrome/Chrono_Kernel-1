@@ -25,12 +25,12 @@
 #include <linux/iommu.h>
 #include <linux/io.h>
 #include <linux/vmalloc.h>
+#include <linux/sizes.h>
 
 #include <asm/memory.h>
 #include <asm/highmem.h>
 #include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
-#include <asm/sizes.h>
 #include <asm/mach/arch.h>
 #include <asm/dma-iommu.h>
 #include <asm/mach/map.h>
@@ -496,7 +496,6 @@ static void __dma_remap(struct page *page, size_t size, pgprot_t prot)
 	unsigned end = start + size;
 
 	apply_to_page_range(&init_mm, start, size, __dma_update_pte, &prot);
-	dsb();
 	flush_tlb_kernel_range(start, end);
 }
 
@@ -864,16 +863,17 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
 		if (PageHighMem(page)) {
 			if (len + offset > PAGE_SIZE)
 				len = PAGE_SIZE - offset;
-			vaddr = kmap_high_get(page);
-			if (vaddr) {
-				vaddr += offset;
-				op(vaddr, len, dir);
-				kunmap_high(page);
-			} else if (cache_is_vipt()) {
-				/* unmapped pages might still be cached */
+
+			if (cache_is_vipt_nonaliasing()) {
 				vaddr = kmap_atomic(page);
 				op(vaddr + offset, len, dir);
 				kunmap_atomic(vaddr);
+			} else {
+				vaddr = kmap_high_get(page);
+				if (vaddr) {
+					op(vaddr + offset, len, dir);
+					kunmap_high(page);
+				}
 			}
 		} else {
 			vaddr = page_address(page) + offset;
@@ -1209,7 +1209,7 @@ static struct page **__iommu_alloc_buffer(struct device *dev, size_t size,
 	gfp |= __GFP_NOWARN | __GFP_HIGHMEM;
 
 	while (count) {
-		int j, order = __ffs(count);
+		int j, order = __fls(count);
 
 		pages[i] = alloc_pages(gfp, order);
 		while (!pages[i] && order)

@@ -249,10 +249,10 @@ the case would look like this:
 		goto ignore_this_device;
 	}
 
-The coherent coherent mask will always be able to set the same or a
-smaller mask as the streaming mask. However for the rare case that a
-device driver only uses consistent allocations, one would have to
-check the return value from dma_set_coherent_mask().
+The coherent mask will always be able to set the same or a smaller mask as
+the streaming mask. However for the rare case that a device driver only
+uses consistent allocations, one would have to check the return value from
+dma_set_coherent_mask().
 
 Finally, if your device can only drive the low 24-bits of
 address you might do something like:
@@ -429,13 +429,13 @@ Create a dma_pool like this:
 
 	struct dma_pool *pool;
 
-	pool = dma_pool_create(name, dev, size, align, alloc);
+	pool = dma_pool_create(name, dev, size, align, boundary);
 
 The "name" is for diagnostics (like a kmem_cache name); dev and size
 are as above.  The device's hardware alignment requirement for this
 type of data is "align" (which is expressed in bytes, and must be a
 power of two).  If your device has no boundary crossing restrictions,
-pass 0 for alloc; passing 4096 says memory allocated from this pool
+pass 0 for boundary; passing 4096 says memory allocated from this pool
 must not cross 4KByte boundaries (but at that time it may be better to
 use dma_alloc_coherent() directly instead).
 
@@ -443,8 +443,8 @@ Allocate memory from a DMA pool like this:
 
 	cpu_addr = dma_pool_alloc(pool, flags, &dma_handle);
 
-flags are SLAB_KERNEL if blocking is permitted (not in_interrupt nor
-holding SMP locks), SLAB_ATOMIC otherwise.  Like dma_alloc_coherent(),
+flags are GFP_KERNEL if blocking is permitted (not in_interrupt nor
+holding SMP locks), GFP_ATOMIC otherwise.  Like dma_alloc_coherent(),
 this returns two values, cpu_addr and dma_handle.
 
 Free memory that was allocated from a dma_pool like this:
@@ -575,10 +575,10 @@ Incorrect example 2:
 You should call dma_unmap_single() when the DMA activity is finished, e.g.,
 from the interrupt which told you that the DMA transfer is done.
 
-Using cpu pointers like this for single mappings has a disadvantage:
+Using CPU pointers like this for single mappings has a disadvantage:
 you cannot reference HIGHMEM memory in this way.  Thus, there is a
 map/unmap interface pair akin to dma_{map,unmap}_single().  These
-interfaces deal with page/offset pairs instead of cpu pointers.
+interfaces deal with page/offset pairs instead of CPU pointers.
 Specifically:
 
 	struct device *dev = &my_dev->dev;
@@ -650,7 +650,7 @@ you could render the machine unusable by consuming all bus addresses.
 
 If you need to use the same streaming DMA region multiple times and touch
 the data in between the DMA transfers, the buffer needs to be synced
-properly in order for the cpu and device to see the most up-to-date and
+properly in order for the CPU and device to see the most up-to-date and
 correct copy of the DMA buffer.
 
 So, firstly, just map it with dma_map_{single,sg}(), and after each DMA
@@ -665,7 +665,7 @@ or:
 as appropriate.
 
 Then, if you wish to let the device get at the DMA area again,
-finish accessing the data with the cpu, and then before actually
+finish accessing the data with the CPU, and then before actually
 giving the buffer to the hardware call either:
 
 	dma_sync_single_for_device(dev, dma_handle, size, direction);
