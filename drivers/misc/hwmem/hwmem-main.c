@@ -70,6 +70,14 @@ struct hwmem_alloc {
 	void *creator;
 	pid_t creator_tgid;
 #endif /* #ifdef CONFIG_DEBUG_FS */
+	/*
+	 * memory will be dynamically allocated using CMA
+	 */
+	int use_cma;
+	/*
+	 * private data
+	 */
+	void *private_data;
 };
 
 static struct platform_device *hwdev;
@@ -164,19 +172,66 @@ static void destroy_alloc(struct hwmem_alloc *alloc)
 	kfree(alloc);
 }
 
+static void *request_dma_memory(struct hwmem_alloc *alloc)
+{
+	unsigned char *vaddr;
+	dma_addr_t handle;
+	bool flag_cached, flag_writecombine;
+
+	pr_err("[hwmem] request dma memory name %d, size %d\n", alloc->name, alloc->size);
+
+	vaddr = NULL;
+
+	flag_cached = alloc->cach_buf.cache_settings & HWMEM_ALLOC_HINT_CACHED;
+	flag_writecombine = alloc->cach_buf.cache_settings & HWMEM_ALLOC_HINT_WRITE_COMBINE;
+
+	if (flag_writecombine)
+		vaddr = dma_alloc_writecombine(alloc->private_data,
+					alloc->size, &handle, GFP_KERNEL);
+	else if (flag_cached)
+		vaddr = dma_alloc_nonconsistent(alloc->private_data,
+					alloc->size, &handle, GFP_KERNEL);
+	else
+		vaddr = dma_alloc_writecombine(alloc->private_data,
+					alloc->size, &handle, GFP_KERNEL);
+
+
+	if (!vaddr) {
+		pr_err("[hwmem] dma alloc failed for name=%d size=%ld\n",
+			alloc->name,
+			alloc->size);
+		return NULL;
+	}
+
+	alloc->paddr = handle;
+	alloc->kaddr = (void *)vaddr;
+
+	return alloc->kaddr;
+}
+
+static void release_dma_memory(struct hwmem_alloc *alloc)
+{
+	pr_err("[hwmem] release dma memory (name=%d, size %ld)\n", alloc->name, alloc->size);
+
+	if (alloc->kaddr != NULL) {
+		dma_free_coherent(alloc->private_data, alloc->size,
+				alloc->kaddr, alloc->paddr);
+		alloc->kaddr = NULL;
+	}
+}
+
+#define INIT_ALLOCS 70
+int alloc_count = 0;
+int init_allocs = INIT_ALLOCS;
+module_param(init_allocs, uint, 0644);
+
 static int kmap_alloc(struct hwmem_alloc *alloc)
 {
 	int ret;
 	pgprot_t pgprot;
-	void *alloc_kaddr = NULL;
-	void *vmap_addr;
-
-	if (alloc->mem_type->id != HWMEM_MEM_SCATTERED_SYS) {
-		alloc_kaddr = alloc->mem_type->allocator_api.get_alloc_kaddr(
-			alloc->mem_type->allocator_instance, alloc->allocator_hndl);
-		if (IS_ERR(alloc_kaddr))
-			return PTR_ERR(alloc_kaddr);
-	}
+	void *alloc_kaddr;
+	void *vmap_addr = NULL;
+	//alloc->use_cma = 1;
 
 	pgprot = PAGE_KERNEL;
 	cach_set_pgprot_cache_options(&alloc->cach_buf, &pgprot);
@@ -190,15 +245,34 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 		}
 		alloc->kaddr = vmap_addr;
 	} else { /* contiguous or protected */
-		ret = ioremap_page_range((unsigned long)alloc_kaddr,
-			(unsigned long)alloc_kaddr + alloc->size, alloc->paddr, pgprot);
-		if (ret < 0) {
-			dev_warn(&hwdev->dev, "Failed to map %#x - %#x", alloc->paddr,
-							alloc->paddr + alloc->size);
-			return ret;
+		alloc_count++;
+		if (alloc_count > INIT_ALLOCS) {
+			//vmap_addr = kzalloc(alloc->size, GFP_ATOMIC);
+			vmap_addr = request_dma_memory(alloc);
 		}
+		if (!vmap_addr) {
+			if (alloc_count > INIT_ALLOCS)
+				pr_err("[cma] failed to allocate %d bytes\n", alloc->size);
+			else
+				pr_err("[cma] skipped allocation (count = %d)\n", alloc_count);
+			alloc_kaddr = alloc->mem_type->allocator_api.get_alloc_kaddr(
+				alloc->mem_type->allocator_instance, alloc->allocator_hndl);
+			if (IS_ERR(alloc_kaddr))
+				return PTR_ERR(alloc_kaddr);
 
-		alloc->kaddr = alloc_kaddr;
+			ret = ioremap_page_range((unsigned long)alloc_kaddr,
+				(unsigned long)alloc_kaddr + alloc->size, alloc->paddr, pgprot);
+			if (ret < 0) {
+				dev_warn(&hwdev->dev, "Failed to map %#x - %#x", alloc->paddr,
+								alloc->paddr + alloc->size);
+				return ret;
+			}
+
+			alloc->kaddr = alloc_kaddr;
+		} else if (vmap_addr) {
+			pr_err("[cma] allocated %d bytes\n", alloc->size);
+			alloc->use_cma = 1;
+		}
 	}
 
 	return 0;
@@ -211,10 +285,14 @@ static void kunmap_alloc(struct hwmem_alloc *alloc)
 
 	if (alloc->mem_type->id == HWMEM_MEM_SCATTERED_SYS)
 		vunmap(alloc->kaddr); /* release virtual mapping obtained by vmap() */
-	else /* contiguous or protected */
-		unmap_kernel_range((unsigned long)alloc->kaddr, alloc->size);
-
-	alloc->kaddr = NULL;
+	else { /* contiguous or protected */
+		if (!alloc->use_cma) {
+			unmap_kernel_range((unsigned long)alloc->kaddr, alloc->size);
+			alloc->kaddr = NULL;
+		} else {
+			release_dma_memory(alloc);
+		}
+	}
 }
 
 static struct hwmem_mem_type_struct *resolve_mem_type(
@@ -742,7 +820,7 @@ static void init_debugfs(void)
 
 extern int hwmem_ioctl_init(void);
 
-static int hwmem_probe(struct platform_device *pdev)
+static int __devinit hwmem_probe(struct platform_device *pdev)
 {
 	int ret;
 
