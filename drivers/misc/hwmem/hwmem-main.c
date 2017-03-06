@@ -172,10 +172,14 @@ static void destroy_alloc(struct hwmem_alloc *alloc)
 	kfree(alloc);
 }
 
-static void *request_dma_memory(struct hwmem_alloc *alloc)
+#define DMA_ALLOC_RETRY		10
+#define DMA_ALLOC_MIN_SIZE 4 * PAGE_SIZE
+
+static int request_dma_memory(struct hwmem_alloc *alloc)
 {
 	unsigned char *vaddr;
 	dma_addr_t handle;
+	unsigned int retry = 0;
 	bool flag_cached, flag_writecombine;
 
 	pr_err("[hwmem] request dma memory name %d, size %d\n", alloc->name, alloc->size);
@@ -185,28 +189,31 @@ static void *request_dma_memory(struct hwmem_alloc *alloc)
 	flag_cached = alloc->cach_buf.cache_settings & HWMEM_ALLOC_HINT_CACHED;
 	flag_writecombine = alloc->cach_buf.cache_settings & HWMEM_ALLOC_HINT_WRITE_COMBINE;
 
-	if (flag_writecombine)
-		vaddr = dma_alloc_writecombine(alloc->private_data,
-					alloc->size, &handle, GFP_KERNEL);
-	else if (flag_cached)
-		vaddr = dma_alloc_nonconsistent(alloc->private_data,
-					alloc->size, &handle, GFP_KERNEL);
-	else
-		vaddr = dma_alloc_writecombine(alloc->private_data,
-					alloc->size, &handle, GFP_KERNEL);
+	do {
+		if (flag_writecombine)
+			vaddr = dma_alloc_writecombine(alloc->private_data,
+						alloc->size, &handle, GFP_KERNEL);
+		else if (flag_cached)
+			vaddr = dma_alloc_nonconsistent(alloc->private_data,
+						alloc->size, &handle, GFP_KERNEL);
+		else
+			vaddr = dma_alloc_writecombine(alloc->private_data,
+						alloc->size, &handle, GFP_KERNEL);
+		retry++;
+	} while (!vaddr && retry < DMA_ALLOC_RETRY);
 
 
 	if (!vaddr) {
 		pr_err("[hwmem] dma alloc failed for name=%d size=%ld\n",
 			alloc->name,
 			alloc->size);
-		return NULL;
+		return -1;
 	}
 
 	alloc->paddr = handle;
 	alloc->kaddr = (void *)vaddr;
 
-	return alloc->kaddr;
+	return retry;
 }
 
 static void release_dma_memory(struct hwmem_alloc *alloc)
@@ -227,7 +234,7 @@ module_param(init_allocs, uint, 0644);
 
 static int kmap_alloc(struct hwmem_alloc *alloc)
 {
-	int ret;
+	int ret, skipped;
 	pgprot_t pgprot;
 	void *alloc_kaddr;
 	void *vmap_addr = NULL;
@@ -246,12 +253,23 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 		alloc->kaddr = vmap_addr;
 	} else { /* contiguous or protected */
 		alloc_count++;
-		if (alloc_count > INIT_ALLOCS) {
-			//vmap_addr = kzalloc(alloc->size, GFP_ATOMIC);
-			vmap_addr = request_dma_memory(alloc);
-		}
-		if (!vmap_addr) {
+		ret = -1;
+
+		if (alloc->size > DMA_ALLOC_MIN_SIZE) {
 			if (alloc_count > INIT_ALLOCS)
+				ret = request_dma_memory(alloc);
+			else skipped = 1;
+		} else {
+			/*
+			 * Consider too small allocations to be requested by RIL or anyway
+			 * too dangerous to be processed by DMA.
+			 */
+			pr_err("[cma] skipped alloc size %d\n", alloc->size);
+			skipped = 1;
+		}
+
+		if (ret < 0) {
+			if (!skipped)
 				pr_err("[cma] failed to allocate %d bytes\n", alloc->size);
 			else
 				pr_err("[cma] skipped allocation (count = %d)\n", alloc_count);
@@ -269,8 +287,8 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 			}
 
 			alloc->kaddr = alloc_kaddr;
-		} else if (vmap_addr) {
-			pr_err("[cma] allocated %d bytes\n", alloc->size);
+		} else {
+			pr_err("[cma] succeed to allocate %d bytes after %d retries\n", alloc->size, ret);
 			alloc->use_cma = 1;
 		}
 	}
