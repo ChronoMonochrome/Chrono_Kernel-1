@@ -10,17 +10,27 @@
 
 #include <asm-generic/dma-coherent.h>
 #include <asm/memory.h>
-#include <asm/cacheflush.h>
+
+#include <xen/xen.h>
+#include <asm/xen/hypervisor.h>
 
 #define DMA_ERROR_CODE	(~0)
 extern struct dma_map_ops arm_dma_ops;
 extern struct dma_map_ops arm_coherent_dma_ops;
 
-static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+static inline struct dma_map_ops *__generic_dma_ops(struct device *dev)
 {
 	if (dev && dev->archdata.dma_ops)
 		return dev->archdata.dma_ops;
 	return &arm_dma_ops;
+}
+
+static inline struct dma_map_ops *get_dma_ops(struct device *dev)
+{
+	if (xen_initial_domain())
+		return xen_dma_ops;
+	else
+		return __generic_dma_ops(dev);
 }
 
 static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
@@ -133,14 +143,11 @@ static inline phys_addr_t dma_to_phys(struct device *dev, dma_addr_t dev_addr)
 static inline bool dma_capable(struct device *dev, dma_addr_t addr, size_t size)
 {
 	u64 limit, mask;
-	
-	if (dev->dma_mask)
-		mask = *dev->dma_mask;
-	else 
-		mask = dev->coherent_dma_mask;
 
-	if (mask == 0)
+	if (!dev->dma_mask)
 		return 0;
+
+	mask = *dev->dma_mask;
 
 	limit = (mask + 1) & ~mask;
 	if (limit && size > limit)
