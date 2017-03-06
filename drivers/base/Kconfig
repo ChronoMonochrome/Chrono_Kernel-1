@@ -281,12 +281,6 @@ config CMA_ALIGNMENT
 
 	  If unsure, leave the default value "8".
 
-config CMA_AREAS
-	int "Maximum count of the CMA device-private areas"
-	default 7
-	help
-	  This option enables the framework for synchronization between multiple
-	  drivers.  Sync implementations can take advantage of hardware
-	  synchronization built into devices like GPUs.
+endif
 
 endmenu
