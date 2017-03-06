@@ -5,7 +5,9 @@
  * License terms: GNU General Public License (GPL) version 2
  */
 #include <linux/platform_device.h>
+#include <linux/dma-mapping.h>
 #include <linux/usb/musb.h>
+
 #include <plat/ste_dma40.h>
 #include <mach/hardware.h>
 #include <mach/usb.h>
