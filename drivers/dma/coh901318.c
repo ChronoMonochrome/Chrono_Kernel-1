@@ -12,6 +12,7 @@
 #ifdef CONFIG_DEBUG_PRINTK
 #include <linux/kernel.h> /* printk() */
 #include <linux/fs.h> /* everything... */
+#include <linux/scatterlist.h>
 #include <linux/slab.h> /* kmalloc() */
 #include <linux/dmaengine.h>
 #include <linux/platform_device.h>
