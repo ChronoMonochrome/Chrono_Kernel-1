@@ -1150,6 +1150,7 @@ config DEPRECATED_PARAM_STRUCT
 	  Some old boot loaders still use this way.
 
 config SWIOTLB
+	select NEED_SG_DMA_LENGTH
 	def_bool y
 
 config IOMMU_HELPER
