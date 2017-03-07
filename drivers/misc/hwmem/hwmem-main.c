@@ -175,14 +175,14 @@ static void destroy_alloc(struct hwmem_alloc *alloc)
 #define DMA_ALLOC_RETRY		10
 #define DMA_ALLOC_MIN_SIZE 4 * PAGE_SIZE
 
-static int request_dma_memory(struct hwmem_alloc *alloc)
+static int request_dma_memory(struct hwmem_alloc *alloc, char * creator)
 {
 	unsigned char *vaddr;
 	dma_addr_t handle;
 	unsigned int retry = 0;
 	bool flag_cached, flag_writecombine;
 
-	pr_err("[hwmem] request dma memory name %d, size %d\n", alloc->name, alloc->size);
+	pr_err("[hwmem] request dma memory creator %s, size %d\n", creator, alloc->size);
 
 	vaddr = NULL;
 
@@ -204,8 +204,8 @@ static int request_dma_memory(struct hwmem_alloc *alloc)
 
 
 	if (!vaddr) {
-		pr_err("[hwmem] dma alloc failed for name=%d size=%ld\n",
-			alloc->name,
+		pr_err("[hwmem] dma alloc failed for creator=%s size=%ld\n",
+			creator,
 			alloc->size);
 		return -1;
 	}
@@ -218,7 +218,7 @@ static int request_dma_memory(struct hwmem_alloc *alloc)
 
 static void release_dma_memory(struct hwmem_alloc *alloc)
 {
-	pr_err("[hwmem] release dma memory (name=%d, size %ld)\n", alloc->name, alloc->size);
+	pr_err("[hwmem] release dma memory (creator=%s, size %ld)\n", alloc->creator, alloc->size);
 
 	if (alloc->kaddr != NULL) {
 		dma_free_coherent(alloc->private_data, alloc->size,
@@ -238,7 +238,11 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 	pgprot_t pgprot;
 	void *alloc_kaddr;
 	void *vmap_addr = NULL;
-	//alloc->use_cma = 1;
+        char creator[KSYM_SYMBOL_LEN];
+
+        if (sprint_symbol(creator, (unsigned long)alloc->creator) < 0)
+                creator[0] = '\0';
+
 
 	pgprot = PAGE_KERNEL;
 	cach_set_pgprot_cache_options(&alloc->cach_buf, &pgprot);
@@ -255,22 +259,24 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 		alloc_count++;
 		ret = -1;
 
-		if (alloc->size > DMA_ALLOC_MIN_SIZE) {
-			if (alloc_count > INIT_ALLOCS)
-				ret = request_dma_memory(alloc);
-			else skipped = 1;
+		if (alloc->size > DMA_ALLOC_MIN_SIZE && alloc_count > INIT_ALLOCS) {
+			ret = request_dma_memory(alloc, creator);
+			if (ret >= 0) {
+				alloc->use_cma = 1;
+				pr_err("[cma] succeed to allocate %d bytes after %d attempts\n", alloc->size, ret);
+			}
 		} else {
 			/*
 			 * Consider too small allocations to be requested by RIL or anyway
 			 * too dangerous to be processed by DMA.
 			 */
-			pr_err("[cma] skipped alloc size %d\n", alloc->size);
+			pr_err("[cma] skipped alloc, creator %s, size %d\n", creator, alloc->size);
 			skipped = 1;
 		}
 
 		if (ret < 0) {
 			if (!skipped)
-				pr_err("[cma] failed to allocate %d bytes\n", alloc->size);
+				pr_err("[cma] failed to allocate %d bytes (creator %s)\n", alloc->size, creator);
 			else
 				pr_err("[cma] skipped allocation (count = %d)\n", alloc_count);
 			alloc_kaddr = alloc->mem_type->allocator_api.get_alloc_kaddr(
@@ -287,9 +293,6 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 			}
 
 			alloc->kaddr = alloc_kaddr;
-		} else {
-			pr_err("[cma] succeed to allocate %d bytes after %d retries\n", alloc->size, ret);
-			alloc->use_cma = 1;
 		}
 	}
 
