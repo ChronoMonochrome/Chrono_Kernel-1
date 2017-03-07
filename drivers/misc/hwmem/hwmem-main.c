@@ -173,7 +173,6 @@ static void destroy_alloc(struct hwmem_alloc *alloc)
 }
 
 #define DMA_ALLOC_RETRY		10
-#define DMA_ALLOC_MIN_SIZE 4 * PAGE_SIZE
 
 static int request_dma_memory(struct hwmem_alloc *alloc, char * creator)
 {
@@ -227,14 +226,9 @@ static void release_dma_memory(struct hwmem_alloc *alloc)
 	}
 }
 
-#define INIT_ALLOCS 70
-int alloc_count = 0;
-int init_allocs = INIT_ALLOCS;
-module_param(init_allocs, uint, 0644);
-
 static int kmap_alloc(struct hwmem_alloc *alloc)
 {
-	int ret, skipped;
+	int ret = -1, skipped;
 	pgprot_t pgprot;
 	void *alloc_kaddr;
 	void *vmap_addr = NULL;
@@ -243,6 +237,12 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
         if (sprint_symbol(creator, (unsigned long)alloc->creator) < 0)
                 creator[0] = '\0';
 
+	/*
+	 * Don't use CMA for allocations by U8500's Trusted Execution Engine -
+	 * it doesn't seem to like it.
+	 */
+	if (strstr(creator, "tee"))
+		skipped = 1;
 
 	pgprot = PAGE_KERNEL;
 	cach_set_pgprot_cache_options(&alloc->cach_buf, &pgprot);
@@ -256,29 +256,19 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 		}
 		alloc->kaddr = vmap_addr;
 	} else { /* contiguous or protected */
-		alloc_count++;
-		ret = -1;
-
-		if (alloc->size > DMA_ALLOC_MIN_SIZE && alloc_count > INIT_ALLOCS) {
+		if (!skipped) {
 			ret = request_dma_memory(alloc, creator);
 			if (ret >= 0) {
 				alloc->use_cma = 1;
 				pr_err("[cma] succeed to allocate %d bytes after %d attempts\n", alloc->size, ret);
 			}
-		} else {
-			/*
-			 * Consider too small allocations to be requested by RIL or anyway
-			 * too dangerous to be processed by DMA.
-			 */
-			pr_err("[cma] skipped alloc, creator %s, size %d\n", creator, alloc->size);
-			skipped = 1;
 		}
 
 		if (ret < 0) {
 			if (!skipped)
 				pr_err("[cma] failed to allocate %d bytes (creator %s)\n", alloc->size, creator);
 			else
-				pr_err("[cma] skipped allocation (count = %d)\n", alloc_count);
+				pr_err("[cma] skipped allocation (creator=%s, size = %d)\n", creator, alloc->size);
 			alloc_kaddr = alloc->mem_type->allocator_api.get_alloc_kaddr(
 				alloc->mem_type->allocator_instance, alloc->allocator_hndl);
 			if (IS_ERR(alloc_kaddr))
