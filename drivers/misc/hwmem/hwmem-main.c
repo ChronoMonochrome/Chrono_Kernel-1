@@ -171,23 +171,27 @@ static void destroy_alloc(struct hwmem_alloc *alloc)
 }
 
 #define DMA_ALLOC_RETRY		10
+static unsigned int cma_total_alloc_size = 0;
 
 static int request_dma_memory(struct hwmem_alloc *alloc, char * creator)
 {
+	void* (*dma_alloc_func)(struct device *, size_t size, dma_addr_t*, gfp_t) =
+			&dma_alloc_writecombine;
 	void *vaddr;
 	dma_addr_t handle;
 	unsigned int retry = 0;
-	bool flag_cached, flag_writecombine;
 
 	pr_err("[hwmem] request dma memory creator %s, size %d\n", creator, alloc->size);
 
 	vaddr = NULL;
 
-	flag_cached = alloc->cach_buf.cache_settings & HWMEM_ALLOC_HINT_CACHED;
-	flag_writecombine = alloc->cach_buf.cache_settings & HWMEM_ALLOC_HINT_WRITE_COMBINE;
+#if 0
+	if (alloc->cach_buf.cache_settings & HWMEM_ALLOC_HINT_CACHED)
+		dma_alloc_func = &dma_alloc_nonconsistent;
+#endif
 
 	do {
-		vaddr = dma_alloc_writecombine(&ux500_hwmem_device.dev,
+		vaddr = dma_alloc_func(&ux500_hwmem_device.dev,
 					alloc->size, &handle, GFP_KERNEL);
 		retry++;
 	} while (!vaddr && retry < DMA_ALLOC_RETRY);
@@ -207,8 +211,6 @@ static int request_dma_memory(struct hwmem_alloc *alloc, char * creator)
 
 static void release_dma_memory(struct hwmem_alloc *alloc)
 {
-	pr_err("[hwmem] release dma memory (size %ld)\n", alloc->size);
-
 	if (alloc->kaddr != NULL) {
 		dma_free_coherent(&ux500_hwmem_device.dev, alloc->size,
 				alloc->kaddr, alloc->paddr);
@@ -218,7 +220,7 @@ static void release_dma_memory(struct hwmem_alloc *alloc)
 
 static int kmap_alloc(struct hwmem_alloc *alloc)
 {
-	int ret = -1, skipped;
+	int ret = -1, skipped = 0;
 	pgprot_t pgprot;
 	void *alloc_kaddr;
 	void *vmap_addr = NULL;
@@ -251,6 +253,9 @@ static int kmap_alloc(struct hwmem_alloc *alloc)
 			if (ret >= 0) {
 				alloc->use_cma = 1;
 				pr_err("[cma] succeed to allocate %d bytes after %d attempts\n", alloc->size, ret);
+				cma_total_alloc_size += alloc->size;
+				pr_err("[hwmem] release dma memory (size %d)\n", alloc->size, alloc->size);
+				pr_err("[hwmem] cma_total_alloc_size = %d\n", cma_total_alloc_size);
 			}
 		}
 
@@ -287,10 +292,15 @@ static void kunmap_alloc(struct hwmem_alloc *alloc)
 	if (alloc->mem_type->id == HWMEM_MEM_SCATTERED_SYS)
 		vunmap(alloc->kaddr); /* release virtual mapping obtained by vmap() */
 	else { /* contiguous or protected */
+
 		if (!alloc->use_cma) {
 			unmap_kernel_range((unsigned long)alloc->kaddr, alloc->size);
 			alloc->kaddr = NULL;
 		} else {
+			cma_total_alloc_size -= alloc->size;
+			pr_err("[hwmem] release dma memory (size %d)\n", alloc->size);
+			pr_err("[hwmem] cma_total_alloc_size = %d\n", cma_total_alloc_size);
+
 			release_dma_memory(alloc);
 		}
 	}
