@@ -207,7 +207,7 @@ static int request_dma_memory(struct hwmem_alloc *alloc, char * creator)
 
 static void release_dma_memory(struct hwmem_alloc *alloc)
 {
-	pr_err("[hwmem] release dma memory (creator=%s, size %ld)\n", alloc->creator, alloc->size);
+	pr_err("[hwmem] release dma memory (size %ld)\n", alloc->size);
 
 	if (alloc->kaddr != NULL) {
 		dma_free_coherent(&ux500_hwmem_device.dev, alloc->size,
