@@ -856,7 +856,7 @@ config PAGE_OFFSET
 	hex
 	default 0x40000000 if VMSPLIT_1G
 	default 0x80000000 if VMSPLIT_2G
-	default 0xC0000000
+	default 0xb9000000
 
 config NR_CPUS
 	int "Maximum number of CPUs (2-32)"
@@ -1017,7 +1017,7 @@ config FORCE_MAX_ZONEORDER
 	range 11 64 if ARCH_SHMOBILE
 	depends on SA1111 || UX500_SOC_DB8500
 	default "9" if SA1111
-	default "14" if UX500_SOC_DB8500
+	default "12" if UX500_SOC_DB8500
 	default "11"
 	help
 	  The kernel memory allocator divides physically contiguous memory
