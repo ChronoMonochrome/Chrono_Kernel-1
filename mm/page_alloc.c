@@ -2269,8 +2269,8 @@ gfp_to_alloc_flags(gfp_t gfp_mask)
 static inline struct page *
 __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
 	struct zonelist *zonelist, enum zone_type high_zoneidx,
-	nodemask_t *nodemask, struct zone *preferred_zone,
-	int migratetype)
+	int alloc_flags_, nodemask_t *nodemask,
+	struct zone *preferred_zone, int migratetype)
 {
 	const gfp_t wait = gfp_mask & __GFP_WAIT;
 	struct page *page = NULL;
@@ -2452,7 +2452,8 @@ rebalance:
 	}
 
 nopage:
-	warn_alloc_failed(gfp_mask, order, NULL);
+	if (!(alloc_flags_ & ALLOC_CMA))
+		warn_alloc_failed(gfp_mask, order, NULL);
 	return page;
 got_pg:
 	if (kmemcheck_enabled)
@@ -2507,7 +2508,7 @@ retry_cpuset:
 			preferred_zone, migratetype);
 	if (unlikely(!page))
 		page = __alloc_pages_slowpath(gfp_mask, order,
-				zonelist, high_zoneidx, nodemask,
+				zonelist, high_zoneidx, alloc_flags, nodemask,
 				preferred_zone, migratetype);
 
 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
