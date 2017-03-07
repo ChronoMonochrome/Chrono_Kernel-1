@@ -425,7 +425,7 @@ CONFIG_HAVE_ARM_TWD=y
 CONFIG_VMSPLIT_3G=y
 # CONFIG_VMSPLIT_2G is not set
 # CONFIG_VMSPLIT_1G is not set
-CONFIG_PAGE_OFFSET=0xC0000000
+CONFIG_PAGE_OFFSET=0xb9000000
 CONFIG_NR_CPUS=2
 CONFIG_HOTPLUG_CPU=y
 CONFIG_LOCAL_TIMERS=y
@@ -489,7 +489,7 @@ CONFIG_ARM_USE_GLIBC_MEMCOPY=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="androidboot.hardware=samsungcodina log_buf_len=64K androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=67M@256M mem=60M@323M mem_issw=1M@383M mem_ram_console=1M@384M mem=383M@385M vmalloc=240M coherent_pool=4M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 sbl_copy=1                         "
+CONFIG_CMDLINE="androidboot.hardware=samsungcodina log_buf_len=64K androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=67M@256M mem=60M@323M mem_issw=1M@383M mem_ram_console=1M@384M mem=383M@385M vmalloc=240M coherent_pool=4M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 sbl_copy=1                  "
 # CONFIG_CMDLINE_FROM_BOOTLOADER is not set
 # CONFIG_CMDLINE_EXTEND is not set
 CONFIG_CMDLINE_FORCE=y
