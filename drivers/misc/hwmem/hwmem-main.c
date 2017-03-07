@@ -191,13 +191,13 @@ static int request_dma_memory(struct hwmem_alloc *alloc, char * creator)
 	do {
 		if (flag_writecombine)
 			vaddr = dma_alloc_writecombine(alloc->private_data,
-						alloc->size, &handle, GFP_KERNEL);
+						alloc->size, &handle, GFP_KERNEL | __GFP_NOWARN);
 		else if (flag_cached)
 			vaddr = dma_alloc_nonconsistent(alloc->private_data,
-						alloc->size, &handle, GFP_KERNEL);
+						alloc->size, &handle, GFP_KERNEL | __GFP_NOWARN);
 		else
 			vaddr = dma_alloc_writecombine(alloc->private_data,
-						alloc->size, &handle, GFP_KERNEL);
+						alloc->size, &handle, GFP_KERNEL | __GFP_NOWARN);
 		retry++;
 	} while (!vaddr && retry < DMA_ALLOC_RETRY);
 
