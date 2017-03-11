@@ -22,6 +22,7 @@
 
 #include <linux/blkdev.h>
 #include <linux/mempool.h>
+#include <linux/module.h>
 #include <linux/bio.h>
 #include <linux/workqueue.h>
 #include <linux/slab.h>

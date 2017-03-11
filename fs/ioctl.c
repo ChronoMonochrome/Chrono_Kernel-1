@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/ioctl.c
  *
@@ -59,15 +56,7 @@ static int ioctl_fibmap(struct file *filp, int __user *p)
 	if (!mapping->a_ops->bmap)
 		return -EINVAL;
 	if (!capable(CAP_SYS_RAWIO))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	res = get_user(block, p);
 	if (res)
 		return res;
@@ -526,15 +515,7 @@ static int ioctl_fsfreeze(struct file *filp)
 	struct super_block *sb = filp->f_path.dentry->d_inode->i_sb;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/* If filesystem doesn't support freeze feature, return. */
 	if (sb->s_op->freeze_fs == NULL)
@@ -549,15 +530,7 @@ static int ioctl_fsthaw(struct file *filp)
 	struct super_block *sb = filp->f_path.dentry->d_inode->i_sb;
 
 	if (!capable(CAP_SYS_ADMIN))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	/* Thaw */
 	return thaw_super(sb);

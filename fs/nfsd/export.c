@@ -735,7 +735,7 @@ struct cache_detail svc_export_cache = {
 };
 
 static int
-svc_export_hash(struct svc_export *exp)
+svc_module.hash(struct svc_export *exp)
 {
 	int hash;
 
@@ -749,7 +749,7 @@ static struct svc_export *
 svc_export_lookup(struct svc_export *exp)
 {
 	struct cache_head *ch;
-	int hash = svc_export_hash(exp);
+	int hash = svc_module.hash(exp);
 
 	ch = sunrpc_cache_lookup(&svc_export_cache, &exp->h,
 				 hash);
@@ -763,7 +763,7 @@ static struct svc_export *
 svc_export_update(struct svc_export *new, struct svc_export *old)
 {
 	struct cache_head *ch;
-	int hash = svc_export_hash(old);
+	int hash = svc_module.hash(old);
 
 	ch = sunrpc_cache_update(&svc_export_cache, &new->h,
 				 &old->h,

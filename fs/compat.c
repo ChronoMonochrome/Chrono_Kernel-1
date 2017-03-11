@@ -33,11 +33,9 @@
 #include <linux/nfs4_mount.h>
 #include <linux/syscalls.h>
 #include <linux/ctype.h>
-#include <linux/module.h>
 #include <linux/dirent.h>
 #include <linux/fsnotify.h>
 #include <linux/highuid.h>
-#include <linux/nfsd/syscall.h>
 #include <linux/personality.h>
 #include <linux/rwsem.h>
 #include <linux/tsacct_kern.h>
@@ -1108,12 +1106,10 @@ static ssize_t compat_do_readv_writev(int type, struct file *file,
 	fnv = NULL;
 	if (type == READ) {
 		fn = file->f_op->read;
-		if (file->f_op->aio_read || file->f_op->read_iter)
-			fnv = do_aio_read;
+		fnv = file->f_op->aio_read;
 	} else {
 		fn = (io_fn_t)file->f_op->write;
-		if (file->f_op->aio_write || file->f_op->write_iter)
-			fnv = do_aio_write;
+		fnv = file->f_op->aio_write;
 	}
 
 	if (fnv)

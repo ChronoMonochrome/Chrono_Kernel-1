@@ -45,7 +45,7 @@
 #include "xfs_discard.h"
 #include "xfs_quota.h"
 #include "xfs_inode_item.h"
-#include "xfs_export.h"
+#include "xfs_module.h"
 #include "xfs_trace.h"
 
 #include <linux/capability.h>

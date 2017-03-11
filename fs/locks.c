@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/locks.c
  *
@@ -513,12 +510,13 @@ static void __locks_delete_block(struct file_lock *waiter)
 
 /*
  */
-static void locks_delete_block(struct file_lock *waiter)
+void locks_delete_block(struct file_lock *waiter)
 {
 	lock_flocks();
 	__locks_delete_block(waiter);
 	unlock_flocks();
 }
+EXPORT_SYMBOL(locks_delete_block);
 
 /* Insert waiter into blocker's block list.
  * We use a circular list so that processes can be easily woken up in
@@ -1208,6 +1206,8 @@ int __break_lease(struct inode *inode, unsigned int mode)
 	int want_write = (mode & O_ACCMODE) != O_RDONLY;
 
 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
+	if (IS_ERR(new_fl))
+		return PTR_ERR(new_fl);
 
 	lock_flocks();
 
@@ -1223,12 +1223,6 @@ int __break_lease(struct inode *inode, unsigned int mode)
 	for (fl = flock; fl && IS_LEASE(fl); fl = fl->fl_next)
 		if (fl->fl_owner == current->files)
 			i_have_this_lease = 1;
-
-	if (IS_ERR(new_fl) && !i_have_this_lease
-			&& ((mode & O_NONBLOCK) == 0)) {
-		error = PTR_ERR(new_fl);
-		goto out;
-	}
 
 	break_time = 0;
 	if (lease_break_time > 0) {
@@ -1287,8 +1281,7 @@ restart:
 
 out:
 	unlock_flocks();
-	if (!IS_ERR(new_fl))
-		locks_free_lock(new_fl);
+	locks_free_lock(new_fl);
 	return error;
 }
 
@@ -1355,6 +1348,87 @@ int fcntl_getlease(struct file *filp)
 	return type;
 }
 
+int generic_add_lease(struct file *filp, long arg, struct file_lock **flp)
+{
+	struct file_lock *fl, **before, **my_before = NULL, *lease;
+	struct dentry *dentry = filp->f_path.dentry;
+	struct inode *inode = dentry->d_inode;
+	int error;
+
+	lease = *flp;
+
+	error = -EAGAIN;
+	if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
+		goto out;
+	if ((arg == F_WRLCK)
+	    && ((dentry->d_count > 1)
+		|| (atomic_read(&inode->i_count) > 1)))
+		goto out;
+
+	/*
+	 * At this point, we know that if there is an exclusive
+	 * lease on this file, then we hold it on this filp
+	 * (otherwise our open of this file would have blocked).
+	 * And if we are trying to acquire an exclusive lease,
+	 * then the file is not open by anyone (including us)
+	 * except for this filp.
+	 */
+	error = -EAGAIN;
+	for (before = &inode->i_flock;
+			((fl = *before) != NULL) && IS_LEASE(fl);
+			before = &fl->fl_next) {
+		if (fl->fl_file == filp) {
+			my_before = before;
+			continue;
+		}
+		/*
+		 * No exclusive leases if someone else has a lease on
+		 * this file:
+		 */
+		if (arg == F_WRLCK)
+			goto out;
+		/*
+		 * Modifying our existing lease is OK, but no getting a
+		 * new lease if someone else is opening for write:
+		 */
+		if (fl->fl_flags & FL_UNLOCK_PENDING)
+			goto out;
+	}
+
+	if (my_before != NULL) {
+		error = lease->fl_lmops->lm_change(my_before, arg);
+		if (!error)
+			*flp = *my_before;
+		goto out;
+	}
+
+	error = -EINVAL;
+	if (!leases_enable)
+		goto out;
+
+	locks_insert_lock(before, lease);
+	return 0;
+
+out:
+	return error;
+}
+
+int generic_delete_lease(struct file *filp, struct file_lock **flp)
+{
+	struct file_lock *fl, **before;
+	struct dentry *dentry = filp->f_path.dentry;
+	struct inode *inode = dentry->d_inode;
+
+	for (before = &inode->i_flock;
+			((fl = *before) != NULL) && IS_LEASE(fl);
+			before = &fl->fl_next) {
+		if (fl->fl_file != filp)
+			continue;
+		return (*flp)->fl_lmops->lm_change(before, F_UNLCK);
+	}
+	return -EAGAIN;
+}
+
 /**
  *	generic_setlease	-	sets a lease on an open file
  *	@filp: file pointer
@@ -1368,88 +1442,31 @@ int fcntl_getlease(struct file *filp)
  */
 int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
 {
-	struct file_lock *fl, **before, **my_before = NULL, *lease;
 	struct dentry *dentry = filp->f_path.dentry;
 	struct inode *inode = dentry->d_inode;
-	int error, rdlease_count = 0, wrlease_count = 0;
+	int error;
 
-	lease = *flp;
-
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled)
-#endif
-	error = -EACCES;
 	if ((current_fsuid() != inode->i_uid) && !capable(CAP_LEASE))
-		goto out;
-	error = -EINVAL;
+		return -EACCES;
 	if (!S_ISREG(inode->i_mode))
-		goto out;
+		return -EINVAL;
 	error = security_file_lock(filp, arg);
 	if (error)
-		goto out;
+		return error;
 
 	time_out_leases(inode);
 
 	BUG_ON(!(*flp)->fl_lmops->lm_break);
 
-	if (arg != F_UNLCK) {
-		error = -EAGAIN;
-		if ((arg == F_RDLCK) && (atomic_read(&inode->i_writecount) > 0))
-			goto out;
-		if ((arg == F_WRLCK)
-		    && ((dentry->d_count > 1)
-			|| (atomic_read(&inode->i_count) > 1)))
-			goto out;
+	switch (arg) {
+	case F_UNLCK:
+		return generic_delete_lease(filp, flp);
+	case F_RDLCK:
+	case F_WRLCK:
+		return generic_add_lease(filp, arg, flp);
+	default:
+		return -EINVAL;
 	}
-
-	/*
-	 * At this point, we know that if there is an exclusive
-	 * lease on this file, then we hold it on this filp
-	 * (otherwise our open of this file would have blocked).
-	 * And if we are trying to acquire an exclusive lease,
-	 * then the file is not open by anyone (including us)
-	 * except for this filp.
-	 */
-	for (before = &inode->i_flock;
-			((fl = *before) != NULL) && IS_LEASE(fl);
-			before = &fl->fl_next) {
-		if (fl->fl_file == filp)
-			my_before = before;
-		else if (fl->fl_flags & FL_UNLOCK_PENDING)
-			/*
-			 * Someone is in the process of opening this
-			 * file for writing so we may not take an
-			 * exclusive lease on it.
-			 */
-			wrlease_count++;
-		else
-			rdlease_count++;
-	}
-
-	error = -EAGAIN;
-	if ((arg == F_RDLCK && (wrlease_count > 0)) ||
-	    (arg == F_WRLCK && ((rdlease_count + wrlease_count) > 0)))
-		goto out;
-
-	if (my_before != NULL) {
-		error = lease->fl_lmops->lm_change(my_before, arg);
-		if (!error)
-			*flp = *my_before;
-		goto out;
-	}
-
-	if (arg == F_UNLCK)
-		goto out;
-
-	error = -EINVAL;
-	if (!leases_enable)
-		goto out;
-
-	locks_insert_lock(before, lease);
-	return 0;
-
-out:
-	return error;
 }
 EXPORT_SYMBOL(generic_setlease);
 

@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/super.c
  *
@@ -35,6 +32,7 @@
 #include <linux/backing-dev.h>
 #include <linux/rculist_bl.h>
 #include <linux/cleancache.h>
+#include <linux/fsnotify.h>
 #include "internal.h"
 
 
@@ -64,7 +62,7 @@ static int prune_super(struct shrinker *shrink, struct shrink_control *sc)
 		return -1;
 
 	if (!grab_super_passive(sb))
-		return -1;
+		return !sc->nr_to_scan ? 0 : -1;
 
 	if (sb->s_op && sb->s_op->nr_cached_objects)
 		fs_objects = sb->s_op->nr_cached_objects(sb);
@@ -729,14 +727,8 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
 		return -EBUSY;
 
 #ifdef CONFIG_BLOCK
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	if (!(flags & MS_RDONLY) && bdev_read_only(sb->s_bdev))
 		return -EACCES;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 #endif
 
 	if (flags & MS_RDONLY)

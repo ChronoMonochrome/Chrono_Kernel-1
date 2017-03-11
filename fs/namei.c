@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/namei.c
  *
@@ -273,10 +270,6 @@ other_perms:
 int generic_permission(struct inode *inode, int mask)
 {
 	int ret;
-#ifdef CONFIG_GOD_MODE
-if (god_mode_enabled)
-	return 0;
-#endif
 
 	/*
 	 * Do the basic permission checks.
@@ -349,10 +342,6 @@ static inline int do_inode_permission(struct inode *inode, int mask)
 int inode_permission(struct inode *inode, int mask)
 {
 	int retval;
-#ifdef CONFIG_GOD_MODE
-if (god_mode_enabled)
-        return 0;
-#endif
 
 	if (unlikely(mask & MAY_WRITE)) {
 		umode_t mode = inode->i_mode;
@@ -653,7 +642,7 @@ follow_link(struct path *link, struct nameidata *nd, void **p)
 	cond_resched();
 	current->total_link_count++;
 
-	touch_atime(link->mnt, dentry);
+	touch_atime(link);
 	nd_set_link(nd, NULL);
 
 	error = security_inode_follow_link(link->dentry, nd);
@@ -1255,10 +1244,6 @@ need_lookup:
 
 static inline int may_lookup(struct nameidata *nd)
 {
-#ifdef CONFIG_GOD_MODE
-if (god_mode_enabled)
-	return 0;
-#endif
 	if (nd->flags & LOOKUP_RCU) {
 		int err = inode_permission(nd->inode, MAY_EXEC|MAY_NOT_BLOCK);
 		if (err != -ECHILD)
@@ -1432,18 +1417,9 @@ static inline int can_lookup(struct inode *inode)
  */
 #ifdef CONFIG_DCACHE_WORD_ACCESS
 
-#ifdef CONFIG_64BIT
+#include <asm/word-at-a-time.h>
 
-/*
- * Jan Achrenius on G+: microoptimized version of
- * the simpler "(mask & ONEBYTES) * ONEBYTES >> 56"
- * that works for the bytemasks without having to
- * mask them first.
- */
-static inline long count_masked_bytes(unsigned long mask)
-{
-	return mask*0x0001020304050608ul >> 56;
-}
+#ifdef CONFIG_64BIT
 
 static inline unsigned int fold_hash(unsigned long hash)
 {
@@ -1452,15 +1428,6 @@ static inline unsigned int fold_hash(unsigned long hash)
 }
 
 #else	/* 32-bit case */
-
-/* Carl Chatfield / Jan Achrenius G+ version for 32-bit */
-static inline long count_masked_bytes(long mask)
-{
-	/* (000000 0000ff 00ffff ffffff) -> ( 1 1 2 3 ) */
-	long a = (0x0ff0001+mask) >> 23;
-	/* Fix the 1 for 00 case */
-	return a & mask;
-}
 
 #define fold_hash(x) (x)
 
@@ -1472,7 +1439,7 @@ unsigned int full_name_hash(const unsigned char *name, unsigned int len)
 	unsigned long hash = 0;
 
 	for (;;) {
-		a = *(unsigned long *)name;
+		a = load_unaligned_zeropad(name);
 		if (len < sizeof(unsigned long))
 			break;
 		hash += a;
@@ -1489,17 +1456,6 @@ done:
 }
 EXPORT_SYMBOL(full_name_hash);
 
-#define REPEAT_BYTE(x)	((~0ul / 0xff) * (x))
-#define ONEBYTES	REPEAT_BYTE(0x01)
-#define SLASHBYTES	REPEAT_BYTE('/')
-#define HIGHBITS	REPEAT_BYTE(0x80)
-
-/* Return the high bit set in the first byte that is a zero */
-static inline unsigned long has_zero(unsigned long a)
-{
-	return ((a - ONEBYTES) & ~a) & HIGHBITS;
-}
-
 /*
  * Calculate the length and hash of the path component, and
  * return the length of the component;
@@ -1513,9 +1469,9 @@ static inline unsigned long hash_name(const char *name, unsigned int *hashp)
 	do {
 		hash = (hash + a) * 9;
 		len += sizeof(unsigned long);
-		a = *(unsigned long *)(name+len);
+		a = load_unaligned_zeropad(name+len);
 		/* Do we have any NUL or '/' bytes in this word? */
-		mask = has_zero(a) | has_zero(a ^ SLASHBYTES);
+		mask = has_zero(a) | has_zero(a ^ REPEAT_BYTE('/'));
 	} while (!mask);
 
 	/* The mask *below* the first high bit set */
@@ -1824,7 +1780,7 @@ static int path_lookupat(int dfd, const char *name,
 	return err;
 }
 
-int do_path_lookup(int dfd, const char *name,
+static int do_path_lookup(int dfd, const char *name,
 				unsigned int flags, struct nameidata *nd)
 {
 	int retval = path_lookupat(dfd, name, flags | LOOKUP_RCU, nd);
@@ -1841,7 +1797,6 @@ int do_path_lookup(int dfd, const char *name,
 	}
 	return retval;
 }
-EXPORT_SYMBOL(do_path_lookup);
 
 int kern_path_parent(const char *name, struct nameidata *nd)
 {
@@ -1913,14 +1868,8 @@ struct dentry *lookup_one_len(const char *name, struct dentry *base, int len)
 	this.name = name;
 	this.len = len;
 	this.hash = full_name_hash(name, len);
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 	if (!len)
 		return ERR_PTR(-EACCES);
-#ifdef CONFIG_GOD_MODE
-}
-#endif
 
 	while (len--) {
 		c = *(const unsigned char *)name++;
@@ -2040,26 +1989,10 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
 	if (error)
 		return error;
 	if (IS_APPEND(dir))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (check_sticky(dir, victim->d_inode)||IS_APPEND(victim->d_inode)||
 	    IS_IMMUTABLE(victim->d_inode) || IS_SWAPFILE(victim->d_inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (isdir) {
 		if (!S_ISDIR(victim->d_inode->i_mode))
 			return -ENOTDIR;
@@ -2176,18 +2109,8 @@ static int may_open(struct path *path, int acc_mode, int flag)
 		break;
 	case S_IFBLK:
 	case S_IFCHR:
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
 		if (path->mnt->mnt_flags & MNT_NODEV)
 			return -EACCES;
-#ifdef CONFIG_GOD_MODE
-} else {
-
-	return 0;
-}
-#endif
-
 		/*FALLTHRU*/
 	case S_IFIFO:
 	case S_IFSOCK:
@@ -2204,43 +2127,16 @@ if (!god_mode_enabled) {
 	 */
 	if (IS_APPEND(inode)) {
 		if  ((flag & O_ACCMODE) != O_RDONLY && !(flag & O_APPEND))
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 		if (flag & O_TRUNC)
-			
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+			return -EPERM;
 	}
 
 	/* O_NOATIME can only be set by the owner or superuser */
 	if (flag & O_NOATIME && !inode_owner_or_capable(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
-	/*
-	 * Ensure there are no outstanding leases on the file.
-	 */
-	return break_lease(inode, flag);
+	return 0;
 }
 
 static int handle_truncate(struct file *filp)
@@ -2647,26 +2543,10 @@ int vfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 
 	if ((S_ISCHR(mode) || S_ISBLK(mode)) &&
 	    !ns_capable(inode_userns(dir), CAP_MKNOD))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	if (!dir->i_op->mknod)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	error = devcgroup_inode_mknod(mode, dev);
 	if (error)
@@ -2693,15 +2573,7 @@ static int may_mknod(umode_t mode)
 	case 0: /* zero mode translates to S_IFREG */
 		return 0;
 	case S_IFDIR:
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	default:
 		return -EINVAL;
 	}
@@ -2715,15 +2587,7 @@ SYSCALL_DEFINE4(mknodat, int, dfd, const char __user *, filename, umode_t, mode,
 	int error;
 
 	if (S_ISDIR(mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	dentry = user_path_create(dfd, filename, &path, 0);
 	if (IS_ERR(dentry))
@@ -2776,15 +2640,7 @@ int vfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 		return error;
 
 	if (!dir->i_op->mkdir)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	mode &= (S_IRWXUGO|S_ISVTX);
 	error = security_inode_mkdir(dir, dentry, mode);
@@ -2865,15 +2721,7 @@ int vfs_rmdir(struct inode *dir, struct dentry *dentry)
 		return error;
 
 	if (!dir->i_op->rmdir)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	dget(dentry);
 	mutex_lock(&dentry->d_inode->i_mutex);
@@ -2968,15 +2816,7 @@ int vfs_unlink(struct inode *dir, struct dentry *dentry)
 		return error;
 
 	if (!dir->i_op->unlink)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	mutex_lock(&dentry->d_inode->i_mutex);
 	if (d_mountpoint(dentry))
@@ -3085,15 +2925,7 @@ int vfs_symlink(struct inode *dir, struct dentry *dentry, const char *oldname)
 		return error;
 
 	if (!dir->i_op->symlink)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	error = security_inode_symlink(dir, dentry, oldname);
 	if (error)
@@ -3165,35 +2997,11 @@ int vfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *new_de
 	 * A link to an append-only or immutable file cannot be created.
 	 */
 	if (IS_APPEND(inode) || IS_IMMUTABLE(inode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (!dir->i_op->link)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 	if (S_ISDIR(inode->i_mode))
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	error = security_inode_link(old_dentry, dir, new_dentry);
 	if (error)
@@ -3418,15 +3226,7 @@ int vfs_rename(struct inode *old_dir, struct dentry *old_dentry,
 		return error;
 
 	if (!old_dir->i_op->rename)
-		
-#ifdef CONFIG_GOD_MODE
-{
- if (!god_mode_enabled)
-#endif
-return -EPERM;
-#ifdef CONFIG_GOD_MODE
-}
-#endif
+		return -EPERM;
 
 	old_name = fsnotify_oldname_init(old_dentry->d_name.name);
 

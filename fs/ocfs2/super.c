@@ -56,7 +56,7 @@
 #include "alloc.h"
 #include "blockcheck.h"
 #include "dlmglue.h"
-#include "export.h"
+#include "module.h"
 #include "extent_map.h"
 #include "heartbeat.h"
 #include "inode.h"

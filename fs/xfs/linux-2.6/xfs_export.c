@@ -24,7 +24,7 @@
 #include "xfs_ag.h"
 #include "xfs_dir2.h"
 #include "xfs_mount.h"
-#include "xfs_export.h"
+#include "xfs_module.h"
 #include "xfs_vnodeops.h"
 #include "xfs_bmap_btree.h"
 #include "xfs_inode.h"

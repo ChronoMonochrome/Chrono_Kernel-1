@@ -141,18 +141,29 @@ int proc_nr_dentry(ctl_table *table, int write, void __user *buffer,
  * Compare 2 name strings, return 0 if they match, otherwise non-zero.
  * The strings are both count bytes long, and count is non-zero.
  */
+#ifdef CONFIG_DCACHE_WORD_ACCESS
+
+#include <asm/word-at-a-time.h>
+/*
+ * NOTE! 'cs' and 'scount' come from a dentry, so it has a
+ * aligned allocation for this particular component. We don't
+ * strictly need the load_unaligned_zeropad() safety, but it
+ * doesn't hurt either.
+ *
+ * In contrast, 'ct' and 'tcount' can be from a pathname, and do
+ * need the careful unaligned handling.
+ */
 static inline int dentry_cmp(const unsigned char *cs, size_t scount,
 				const unsigned char *ct, size_t tcount)
 {
-#ifdef CONFIG_DCACHE_WORD_ACCESS
 	unsigned long a,b,mask;
 
 	if (unlikely(scount != tcount))
 		return 1;
 
 	for (;;) {
-		a = *(unsigned long *)cs;
-		b = *(unsigned long *)ct;
+		a = load_unaligned_zeropad(cs);
+		b = load_unaligned_zeropad(ct);
 		if (tcount < sizeof(unsigned long))
 			break;
 		if (unlikely(a != b))
@@ -165,7 +176,13 @@ static inline int dentry_cmp(const unsigned char *cs, size_t scount,
 	}
 	mask = ~(~0ul << tcount*8);
 	return unlikely(!!((a ^ b) & mask));
+}
+
 #else
+
+static inline int dentry_cmp(const unsigned char *cs, size_t scount,
+				const unsigned char *ct, size_t tcount)
+{
 	if (scount != tcount)
 		return 1;
 
@@ -177,8 +194,9 @@ static inline int dentry_cmp(const unsigned char *cs, size_t scount,
 		tcount--;
 	} while (tcount);
 	return 0;
-#endif
 }
+
+#endif
 
 static void __d_free(struct rcu_head *head)
 {
@@ -1282,7 +1300,6 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
 
 	return dentry;
 }
-EXPORT_SYMBOL(__d_alloc);
 
 /**
  * d_alloc	-	allocate a dcache entry
@@ -2600,7 +2617,6 @@ char *d_absolute_path(const struct path *path,
 		return ERR_PTR(error);
 	return res;
 }
-EXPORT_SYMBOL(d_absolute_path);
 
 /*
  * same as __d_path but appends "(deleted)" for unlinked files.

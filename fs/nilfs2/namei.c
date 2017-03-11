@@ -40,7 +40,7 @@
 
 #include <linux/pagemap.h>
 #include "nilfs.h"
-#include "export.h"
+#include "module.h"
 
 #define NILFS_FID_SIZE_NON_CONNECTABLE \
 	(offsetof(struct nilfs_fid, parent_gen) / 4)

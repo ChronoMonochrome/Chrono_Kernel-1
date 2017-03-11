@@ -12,7 +12,7 @@
 #include <linux/mount.h>
 
 #include <linux/nfsd/debug.h>
-#include <linux/nfsd/export.h>
+#include <linux/nfsd/module.h>
 #include <linux/nfsd/stats.h>
 /*
  * nfsd version

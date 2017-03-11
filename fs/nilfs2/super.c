@@ -49,7 +49,7 @@
 #include <linux/seq_file.h>
 #include <linux/mount.h>
 #include "nilfs.h"
-#include "export.h"
+#include "module.h"
 #include "mdt.h"
 #include "alloc.h"
 #include "btree.h"

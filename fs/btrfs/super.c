@@ -54,7 +54,7 @@
 #include "xattr.h"
 #include "volumes.h"
 #include "version.h"
-#include "export.h"
+#include "module.h"
 #include "compression.h"
 
 #define CREATE_TRACE_POINTS

@@ -34,7 +34,7 @@
 #include "dir.h"
 #include "dlmglue.h"
 #include "dcache.h"
-#include "export.h"
+#include "module.h"
 #include "inode.h"
 
 #include "buffer_head_io.h"

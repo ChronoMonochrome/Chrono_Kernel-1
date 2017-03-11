@@ -15,7 +15,7 @@
 #include <linux/sunrpc/svc.h>
 #include <linux/sunrpc/clnt.h>
 #include <linux/nfsd/nfsfh.h>
-#include <linux/nfsd/export.h>
+#include <linux/nfsd/module.h>
 #include <linux/lockd/lockd.h>
 #include <linux/lockd/share.h>
 #include <linux/module.h>
