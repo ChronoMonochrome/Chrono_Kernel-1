@@ -133,24 +133,6 @@
 #define __REFCONST       .section       ".ref.rodata", "a"
 
 #ifndef __ASSEMBLY__
-#ifdef CONFIG_LTO
-/* Work around a LTO gcc problem: when there is no reference to a variable
- * in a module it will be moved to the end of the program. This causes
- * reordering of initcalls which the kernel does not like.
- * Add a dummy reference function to avoid this. The function is
- * deleted by the linker.
- */
-#define LTO_REFERENCE_INITCALL(x) \
-       ; /* yes this is needed */                      \
-       static __used __exit void *reference_##x(void)  \
-       {                                               \
-               return &x;                              \
-       }
-#else
-#define LTO_REFERENCE_INITCALL(x)
-#endif
-
-
 /*
  * Used for initialization calls..
  */

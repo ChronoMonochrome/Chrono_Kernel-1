@@ -6,7 +6,7 @@ menu "Samsung Kernel Modules"
 
 config SAMSUNG_MODULES
 	tristate "Samsung Kernel Modules"
-	default m
+	default y
 	help
 	  Say Y to enable Samsung kernel modules. j4fs and param
 	  modules are included.
