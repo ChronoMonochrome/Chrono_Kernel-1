@@ -238,10 +238,7 @@ static int param_run_test(void)
 {
 #if 1  /* For the purpose of testing... */
 	int val=3;
-	if (!sec_set_param_value)
-		return -1;
-
-	sec_set_param_value(__SWITCH_SEL, &val);
+	set_param_value(__SWITCH_SEL, &val);
 #endif
 	return 0;
 }
@@ -361,9 +358,6 @@ static int param_init(void)
 
 	/* set the kernel default reboot mode to FORCED_REBOOT_MODE */
 	/* param_status.param_list[9].value = FORCED_REBOOT_MODE; */
-
-	sec_set_param_value = set_param_value;
-	sec_get_param_value = get_param_value;
 
 	return 0;
 
