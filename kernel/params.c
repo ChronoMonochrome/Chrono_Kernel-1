@@ -15,7 +15,6 @@
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-#include <linux/moduleparam.h>
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/errno.h>
@@ -24,12 +23,6 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/ctype.h>
-
-#if 0
-#define DEBUGP printk
-#else
-#define DEBUGP(fmt, a...)
-#endif
 
 /* Protects all parameters, and incidentally kmalloced_param list. */
 static DEFINE_MUTEX(param_lock);
@@ -108,9 +101,10 @@ static int parse_one(char *param,
 			    || params[i].level > max_level)
 				return 0;
 			/* No one handled NULL, so do it here. */
-			if (!val && params[i].ops->set != param_set_bool)
+			if (!val && params[i].ops->set != param_set_bool
+			    && params[i].ops->set != param_set_bint)
 				return -EINVAL;
-			DEBUGP("They are equal!  Calling %p\n",
+			pr_debug("They are equal!  Calling %p\n",
 			       params[i].ops->set);
 			mutex_lock(&param_lock);
 			err = params[i].ops->set(val, &params[i]);
@@ -120,11 +114,11 @@ static int parse_one(char *param,
 	}
 
 	if (handle_unknown) {
-		DEBUGP("Unknown argument: calling %p\n", handle_unknown);
+		pr_debug("Unknown argument: calling %p\n", handle_unknown);
 		return handle_unknown(param, val);
 	}
 
-	DEBUGP("Unknown argument `%s'\n", param);
+	pr_debug("Unknown argument `%s'\n", param);
 	return -ENOENT;
 }
 
@@ -191,7 +185,7 @@ int parse_args(const char *name,
 {
 	char *param, *val;
 
-	DEBUGP("Parsing ARGS: %s\n", args);
+	pr_debug("Parsing ARGS: %s\n", args);
 
 	/* Chew leading spaces */
 	args = skip_spaces(args);
@@ -205,12 +199,8 @@ int parse_args(const char *name,
 		ret = parse_one(param, val, params, num,
 				min_level, max_level, unknown);
 		if (irq_was_disabled && !irqs_disabled()) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "parse_args(): option '%s' enabled "
 					"irq's!\n", param);
-#else
-			;
-#endif
 		}
 		switch (ret) {
 		case -ENOENT:
@@ -244,8 +234,8 @@ int parse_args(const char *name,
 		int ret;						\
 									\
 		ret = strtolfn(val, 0, &l);				\
-		if (ret == -EINVAL || ((type)l != l))			\
-			return -EINVAL;					\
+		if (ret < 0 || ((type)l != l))				\
+			return ret < 0 ? ret : -EINVAL;			\
 		*((type *)kp->arg) = l;					\
 		return 0;						\
 	}								\
@@ -936,12 +926,8 @@ static int __init param_sysfs_init(void)
 {
 	module_kset = kset_create_and_add("module", &module_uevent_ops, NULL);
 	if (!module_kset) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s (%d): error creating kset\n",
 			__FILE__, __LINE__);
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 	module_sysfs_initialized = 1;

@@ -52,6 +52,7 @@
 #include <linux/hw_breakpoint.h>
 #include <linux/oom.h>
 #include <linux/writeback.h>
+#include <linux/shm.h>
 
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
@@ -639,7 +640,6 @@ static void exit_mm(struct task_struct * tsk)
 {
 	struct mm_struct *mm = tsk->mm;
 	struct core_state *core_state;
-	int mm_released;
 
 	mm_release(tsk, mm);
 	if (!mm)
@@ -685,10 +685,7 @@ static void exit_mm(struct task_struct * tsk)
 	enter_lazy_tlb(mm, current);
 	task_unlock(tsk);
 	mm_update_next_owner(mm);
-
-	mm_released = mmput(mm);
-	if (mm_released)
-		set_tsk_thread_flag(tsk, TIF_MM_RELEASED);
+	mmput(mm);
 }
 
 /*
@@ -989,6 +986,7 @@ void do_exit(long code)
 	trace_sched_process_exit(tsk);
 
 	exit_sem(tsk);
+	exit_shm(tsk);
 	exit_files(tsk);
 	exit_fs(tsk);
 	check_stack_usage();
@@ -1619,8 +1617,7 @@ static int wait_consider_task(struct wait_opts *wo, int ptrace,
 		 * own children, it should create a separate process which
 		 * takes the role of real parent.
 		 */
-		if (likely(!ptrace) && p->ptrace &&
-		    same_thread_group(p->parent, p->real_parent))
+		if (likely(!ptrace) && p->ptrace && !ptrace_reparented(p))
 			return 0;
 
 		/*

@@ -75,8 +75,11 @@ EXPORT_SYMBOL_GPL(static_key_slow_inc);
 static void __static_key_slow_dec(struct static_key *key,
 		unsigned long rate_limit, struct delayed_work *work)
 {
-	if (!atomic_dec_and_mutex_lock(&key->enabled, &jump_label_mutex))
+	if (!atomic_dec_and_mutex_lock(&key->enabled, &jump_label_mutex)) {
+		WARN(atomic_read(&key->enabled) < 0,
+		     "jump label: negative count!\n");
 		return;
+	}
 
 	if (rate_limit) {
 		atomic_inc(&key->enabled);
@@ -146,7 +149,7 @@ static int __jump_label_text_reserved(struct jump_entry *iter_start,
  * running code can override this to make the non-live update case
  * cheaper.
  */
-void __weak arch_jump_label_transform_static(struct jump_entry *entry,
+void __weak __init_or_module arch_jump_label_transform_static(struct jump_entry *entry,
 					    enum jump_label_type type)
 {
 	arch_jump_label_transform(entry, type);	
@@ -435,7 +438,7 @@ static void jump_label_update(struct static_key *key, int enable)
 	struct jump_entry *entry = jump_label_get_entries(key);
 
 #ifdef CONFIG_MODULES
-	struct module *mod = __module_address((jump_label_t)key);
+	struct module *mod = __module_address((unsigned long)key);
 
 	__jump_label_mod_update(key, enable);
 

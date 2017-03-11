@@ -689,11 +689,7 @@ void __init smp_init(void)
 	}
 
 	/* Any cleanup work */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Brought up %ld CPUs\n", (long)num_online_cpus());
-#else
-	;
-#endif
 	smp_cpus_done(setup_max_cpus);
 }
 

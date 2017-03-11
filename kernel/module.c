@@ -329,46 +329,26 @@ static bool check_symbol(const struct symsearch *syms,
 		if (syms->licence == GPL_ONLY)
 			return false;
 		if (syms->licence == WILL_BE_GPL_ONLY && fsa->warn) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Symbol %s is being used "
 			       "by a non-GPL module, which will not "
 			       "be allowed in the future\n", fsa->name);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Please see the file "
 			       "Documentation/feature-removal-schedule.txt "
 			       "in the kernel source tree for more details.\n");
-#else
-			;
-#endif
 		}
 	}
 
 #ifdef CONFIG_UNUSED_SYMBOLS
 	if (syms->unused && fsa->warn) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Symbol %s is marked as UNUSED, "
 		       "however this module is using it.\n", fsa->name);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "This symbol will go away in the future.\n");
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "Please evalute if this is the right api to use and if "
 		       "it really is, submit a report the linux kernel "
 		       "mailinglist together with submitting your code for "
 		       "inclusion.\n");
-#else
-		;
-#endif
 	}
 #endif
 
@@ -453,24 +433,16 @@ static int percpu_modalloc(struct module *mod,
 			   unsigned long size, unsigned long align)
 {
 	if (align > PAGE_SIZE) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: per-cpu alignment %li > %li\n",
 		       mod->name, align, PAGE_SIZE);
-#else
-		;
-#endif
 		align = PAGE_SIZE;
 	}
 
 	mod->percpu = __alloc_reserved_percpu(size, align);
 	if (!mod->percpu) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Could not allocate %lu bytes percpu data\n",
 		       mod->name, size);
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 	mod->percpu_size = size;
@@ -644,11 +616,7 @@ static int add_module_usage(struct module *a, struct module *b)
 	pr_debug("Allocating new usage for %s.\n", a->name);
 	use = kmalloc(sizeof(*use), GFP_ATOMIC);
 	if (!use) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: out of memory loading\n", a->name);
-#else
-		;
-#endif
 		return -ENOMEM;
 	}
 
@@ -1112,12 +1080,8 @@ static int try_to_force_load(struct module *mod, const char *reason)
 {
 #ifdef CONFIG_MODULE_FORCE_LOAD
 	if (!test_taint(TAINT_FORCED_MODULE))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: %s: kernel tainted.\n",
 		       mod->name, reason);
-#else
-		;
-#endif
 	add_taint_module(mod, TAINT_FORCED_MODULE);
 	return 0;
 #else
@@ -1170,21 +1134,13 @@ static int check_version(Elf_Shdr *sechdrs,
 		goto bad_version;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s: no symbol version for %s\n",
 	       mod->name, symname);
-#else
-	;
-#endif
 	return 0;
 
 bad_version:
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: disagrees about version of symbol %s\n",
 	       mod->name, symname);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -1287,12 +1243,8 @@ resolve_symbol_wait(struct module *mod,
 			!IS_ERR(ksym = resolve_symbol(mod, info, name, owner))
 			|| PTR_ERR(ksym) != -EBUSY,
 					     30 * HZ) <= 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: gave up waiting for init of module %s.\n",
 		       mod->name, owner);
-#else
-		;
-#endif
 	}
 	return ksym;
 }
@@ -1952,22 +1904,11 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
 
 		switch (sym[i].st_shndx) {
 		case SHN_COMMON:
-                        /* Ignore common symbols */
-                        if (!strncmp(name, "__gnu_lto", 9)) {
-                                pr_info("%s: module not link time optimized\n",
-                                       mod->name);
-                                break;
-                        }
-
 			/* We compiled with -fno-common.  These are not
 			   supposed to happen.  */
-#ifdef CONFIG_DEBUG_PRINTK
 			pr_debug("Common symbol: %s\n", name);
 			printk("%s: please compile with -fno-common\n",
 			       mod->name);
-#else
-			;
-#endif
 			ret = -ENOEXEC;
 			break;
 
@@ -1989,12 +1930,8 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
 			if (!ksym && ELF_ST_BIND(sym[i].st_info) == STB_WEAK)
 				break;
 
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Unknown symbol %s (err %li)\n",
 			       mod->name, name, PTR_ERR(ksym));
-#else
-			;
-#endif
 			ret = PTR_ERR(ksym) ?: -ENOENT;
 			break;
 
@@ -2168,12 +2105,8 @@ static void set_license(struct module *mod, const char *license)
 
 	if (!license_is_gpl_compatible(license)) {
 		if (!test_taint(TAINT_PROPRIETARY_MODULE))
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: module license '%s' taints "
 				"kernel.\n", mod->name, license);
-#else
-			;
-#endif
 		add_taint_module(mod, TAINT_PROPRIETARY_MODULE);
 	}
 }
@@ -2591,23 +2524,15 @@ static struct module *setup_load_info(struct load_info *info)
 
 	info->index.mod = find_sec(info, ".gnu.linkonce.this_module");
 	if (!info->index.mod) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "No module found in object\n");
-#else
-		;
-#endif
 		return ERR_PTR(-ENOEXEC);
 	}
 	/* This is temporary: point mod into copy of data. */
 	mod = (void *)info->sechdrs[info->index.mod].sh_addr;
 
 	if (info->index.sym == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: module has no symbols (stripped?)\n",
 		       mod->name);
-#else
-		;
-#endif
 		return ERR_PTR(-ENOEXEC);
 	}
 
@@ -2728,12 +2653,8 @@ static void find_module_sections(struct module *mod, struct load_info *info)
 				    sizeof(*mod->extable), &mod->num_exentries);
 
 	if (section_addr(info, "__obsparm"))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Ignoring obsolete parameters\n",
 		       mod->name);
-#else
-		;
-#endif
 
 	info->debug = section_objs(info, "__verbose",
 				   sizeof(*info->debug), &info->num_debug);
@@ -3141,15 +3062,11 @@ SYSCALL_DEFINE3(init_module, void __user *, umod,
 		return ret;
 	}
 	if (ret > 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 "%s: '%s'->init suspiciously returned %d, it should follow 0/-E convention\n"
 "%s: loading module anyway...\n",
 		       __func__, mod->name, ret,
 		       __func__);
-#else
-		;
-#endif
 		dump_stack();
 	}
 
@@ -3605,31 +3522,15 @@ void print_modules(void)
 	struct module *mod;
 	char buf[8];
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEFAULT "Modules linked in:");
-#else
-	;
-#endif
 	/* Most callers should already have preempt disabled, but make sure */
 	preempt_disable();
 	list_for_each_entry_rcu(mod, &modules, list)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %s%s", mod->name, module_flags(mod, buf));
-#else
-		;
-#endif
 	preempt_enable();
 	if (last_unloaded_module[0])
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(" [last unloaded: %s]", last_unloaded_module);
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
-#else
-	;
-#endif
 }
 
 #ifdef CONFIG_MODVERSIONS

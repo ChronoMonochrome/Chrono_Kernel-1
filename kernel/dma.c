@@ -18,7 +18,6 @@
 #include <linux/proc_fs.h>
 #include <linux/init.h>
 #include <asm/dma.h>
-#include <asm/system.h>
 
 
 
@@ -88,20 +87,12 @@ int request_dma(unsigned int dmanr, const char * device_id)
 void free_dma(unsigned int dmanr)
 {
 	if (dmanr >= MAX_DMA_CHANNELS) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Trying to free DMA%d\n", dmanr);
-#else
-		;
-#endif
 		return;
 	}
 
 	if (xchg(&dma_chan_busy[dmanr].lock, 0) == 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Trying to free free DMA%d\n", dmanr);
-#else
-		;
-#endif
 		return;
 	}
 

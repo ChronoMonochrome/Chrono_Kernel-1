@@ -16,6 +16,7 @@
 #include <linux/keyctl.h>
 #include <linux/init_task.h>
 #include <linux/security.h>
+#include <linux/binfmts.h>
 #include <linux/cn_proc.h>
 
 #if 0
@@ -646,12 +647,23 @@ void __init cred_init(void)
  */
 struct cred *prepare_kernel_cred(struct task_struct *daemon)
 {
+#ifdef CONFIG_KEYS
+	struct thread_group_cred *tgcred;
+#endif
 	const struct cred *old;
 	struct cred *new;
 
 	new = kmem_cache_alloc(cred_jar, GFP_KERNEL);
 	if (!new)
 		return NULL;
+
+#ifdef CONFIG_KEYS
+	tgcred = kmalloc(sizeof(*tgcred), GFP_KERNEL);
+	if (!tgcred) {
+		kmem_cache_free(cred_jar, new);
+		return NULL;
+	}
+#endif
 
 	kdebug("prepare_kernel_cred() alloc %p", new);
 
@@ -669,8 +681,11 @@ struct cred *prepare_kernel_cred(struct task_struct *daemon)
 	get_group_info(new->group_info);
 
 #ifdef CONFIG_KEYS
-	atomic_inc(&init_tgcred.usage);
-	new->tgcred = &init_tgcred;
+	atomic_set(&tgcred->usage, 1);
+	spin_lock_init(&tgcred->lock);
+	tgcred->process_keyring = NULL;
+	tgcred->session_keyring = NULL;
+	new->tgcred = tgcred;
 	new->request_key_auth = NULL;
 	new->thread_keyring = NULL;
 	new->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;

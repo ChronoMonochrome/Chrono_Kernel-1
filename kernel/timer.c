@@ -50,7 +50,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/timer.h>
 
-__visible u64 jiffies_64 __cacheline_aligned_in_smp = INITIAL_JIFFIES;
+u64 jiffies_64 __cacheline_aligned_in_smp = INITIAL_JIFFIES;
 
 EXPORT_SYMBOL(jiffies_64);
 
@@ -1106,9 +1106,7 @@ static void call_timer_fn(struct timer_list *timer, void (*fn)(unsigned long),
 	 * warnings as well as problems when looking into
 	 * timer->lockdep_map, make a copy and use that here.
 	 */
-	struct lockdep_map lockdep_map;
-
-	lockdep_copy_map(&lockdep_map, &timer->lockdep_map);
+	struct lockdep_map lockdep_map = timer->lockdep_map;
 #endif
 	/*
 	 * Couple the lock chain with the lock chain at

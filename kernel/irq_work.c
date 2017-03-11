@@ -5,10 +5,14 @@
  * context. The enqueueing is NMI-safe.
  */
 
+#include <linux/bug.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/irq_work.h>
+#include <linux/percpu.h>
 #include <linux/hardirq.h>
+#include <linux/irqflags.h>
+#include <asm/processor.h>
 
 /*
  * An entry can be in one of four states:
@@ -110,7 +114,7 @@ void irq_work_run(void)
 	while (llnode != NULL) {
 		work = llist_entry(llnode, struct irq_work, llnode);
 
-		llnode = llnode->next;
+		llnode = llist_next(llnode);
 
 		/*
 		 * Clear the PENDING bit, after this point the @work
