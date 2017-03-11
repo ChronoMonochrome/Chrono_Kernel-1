@@ -45,8 +45,6 @@
 #include <linux/syscalls.h>
 #include <linux/kprobes.h>
 #include <linux/user_namespace.h>
-#include <linux/kthread.h>
-#include <linux/delay.h>
 
 #include <linux/kmsg_dump.h>
 /* Move somewhere else to avoid recompiling? */
@@ -322,7 +320,7 @@ void kernel_restart_prepare(char *cmd)
 	system_state = SYSTEM_RESTART;
 	usermodehelper_disable();
 	device_shutdown();
-	disable_nonboot_cpus();
+	syscore_shutdown();
 }
 
 /**
@@ -336,8 +334,6 @@ void kernel_restart_prepare(char *cmd)
 void kernel_restart(char *cmd)
 {
 	kernel_restart_prepare(cmd);
-	disable_nonboot_cpus();
-	syscore_shutdown();
 	if (!cmd)
 		printk(KERN_EMERG "Restarting system.\n");
 	else
@@ -363,7 +359,6 @@ static void kernel_shutdown_prepare(enum system_states state)
 void kernel_halt(void)
 {
 	kernel_shutdown_prepare(SYSTEM_HALT);
-	disable_nonboot_cpus();
 	syscore_shutdown();
 	printk(KERN_EMERG "System halted.\n");
 	kmsg_dump(KMSG_DUMP_HALT);
@@ -391,42 +386,6 @@ void kernel_power_off(void)
 EXPORT_SYMBOL_GPL(kernel_power_off);
 
 static DEFINE_MUTEX(reboot_mutex);
-
-#define REBOOT_TIMEOUT 5
-
-static int reboot_timer_expired(void *data)
-{
-	static DEFINE_MUTEX(lock);
-	unsigned long cmd = (unsigned long) data;
-	msleep(REBOOT_TIMEOUT * 1000);
-
-	mutex_lock(&lock);
-
-	printk(KERN_EMERG "Timer expired forcing power %s.\n",
-	       cmd == LINUX_REBOOT_CMD_POWER_OFF ? "off" : "reboot");
-
-	if (cmd == LINUX_REBOOT_CMD_POWER_OFF)
-	  machine_power_off();
-	else
-	  machine_restart(NULL);
-
-	mutex_unlock(&lock);
-	return 0;
-}
-
-static int reboot_timer_setup(unsigned long cmd)
-{
-	struct task_struct *task;
-
-	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue0");
-	kthread_bind(task, 0);
-	wake_up_process(task);
-	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue1");
-	kthread_bind(task, 1);
-	wake_up_process(task);
-	
-	return 0;
-}
 
 /*
  * Reboot system call: for obvious reasons only root may call it,
@@ -463,8 +422,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 	mutex_lock(&reboot_mutex);
 	switch (cmd) {
 	case LINUX_REBOOT_CMD_RESTART:
-		/* register the timer */
-		reboot_timer_setup(cmd);
 		kernel_restart(NULL);
 		break;
 
@@ -482,8 +439,6 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 		panic("cannot halt");
 
 	case LINUX_REBOOT_CMD_POWER_OFF:
-		/* register the timer */
-		reboot_timer_setup(cmd);
 		kernel_power_off();
 		do_exit(0);
 		break;
@@ -1196,7 +1151,7 @@ static int override_release(char __user *release, size_t len)
 			rest++;
 		}
 		v = ((LINUX_VERSION_CODE >> 8) & 0xff) + 40;
-		copy = clamp_t(size_t, len, 1, sizeof(buf));
+		copy = min(sizeof(buf), max_t(size_t, 1, len));
 		copy = scnprintf(buf, copy, "2.6.%u%s", v, rest);
 		ret = copy_to_user(release, buf, copy + 1);
 	}
@@ -1296,7 +1251,6 @@ SYSCALL_DEFINE2(sethostname, char __user *, name, int, len)
 		memset(u->nodename + len, 0, sizeof(u->nodename) - len);
 		errno = 0;
 	}
-	uts_proc_notify(UTS_PROC_HOSTNAME);
 	up_write(&uts_sem);
 	return errno;
 }
@@ -1347,7 +1301,6 @@ SYSCALL_DEFINE2(setdomainname, char __user *, name, int, len)
 		memset(u->domainname + len, 0, sizeof(u->domainname) - len);
 		errno = 0;
 	}
-	uts_proc_notify(UTS_PROC_DOMAINNAME);
 	up_write(&uts_sem);
 	return errno;
 }
@@ -1771,7 +1724,6 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
 					      sizeof(me->comm) - 1) < 0)
 				return -EFAULT;
 			set_task_comm(me, comm);
-			proc_comm_connector(me);
 			return 0;
 		case PR_GET_NAME:
 			get_task_comm(comm, me);
