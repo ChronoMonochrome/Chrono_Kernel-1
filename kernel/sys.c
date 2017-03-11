@@ -47,6 +47,8 @@
 #include <linux/syscalls.h>
 #include <linux/kprobes.h>
 #include <linux/user_namespace.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
 
 #include <linux/kmsg_dump.h>
 /* Move somewhere else to avoid recompiling? */
@@ -322,7 +324,7 @@ void kernel_restart_prepare(char *cmd)
 	system_state = SYSTEM_RESTART;
 	usermodehelper_disable();
 	device_shutdown();
-	syscore_shutdown();
+	disable_nonboot_cpus();
 }
 
 /**
@@ -367,6 +369,8 @@ EXPORT_SYMBOL(unregister_reboot_notifier);
 void kernel_restart(char *cmd)
 {
 	kernel_restart_prepare(cmd);
+	disable_nonboot_cpus();
+	syscore_shutdown();
 	if (!cmd)
 		printk(KERN_EMERG "Restarting system.\n");
 	else
@@ -392,6 +396,7 @@ static void kernel_shutdown_prepare(enum system_states state)
 void kernel_halt(void)
 {
 	kernel_shutdown_prepare(SYSTEM_HALT);
+	disable_nonboot_cpus();
 	syscore_shutdown();
 	printk(KERN_EMERG "System halted.\n");
 	kmsg_dump(KMSG_DUMP_HALT);
@@ -419,6 +424,42 @@ void kernel_power_off(void)
 EXPORT_SYMBOL_GPL(kernel_power_off);
 
 static DEFINE_MUTEX(reboot_mutex);
+
+#define REBOOT_TIMEOUT 5
+
+static int reboot_timer_expired(void *data)
+{
+	static DEFINE_MUTEX(lock);
+	unsigned long cmd = (unsigned long) data;
+	msleep(REBOOT_TIMEOUT * 1000);
+
+	mutex_lock(&lock);
+
+	printk(KERN_EMERG "Timer expired forcing power %s.\n",
+	       cmd == LINUX_REBOOT_CMD_POWER_OFF ? "off" : "reboot");
+
+	if (cmd == LINUX_REBOOT_CMD_POWER_OFF)
+	  machine_power_off();
+	else
+	  machine_restart(NULL);
+
+	mutex_unlock(&lock);
+	return 0;
+}
+
+static int reboot_timer_setup(unsigned long cmd)
+{
+	struct task_struct *task;
+
+	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue0");
+	kthread_bind(task, 0);
+	wake_up_process(task);
+	task = kthread_create(reboot_timer_expired,(void*) cmd, "reboot_rescue1");
+	kthread_bind(task, 1);
+	wake_up_process(task);
+	
+	return 0;
+}
 
 /*
  * Reboot system call: for obvious reasons only root may call it,
@@ -455,6 +496,8 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 	mutex_lock(&reboot_mutex);
 	switch (cmd) {
 	case LINUX_REBOOT_CMD_RESTART:
+		/* register the timer */
+		reboot_timer_setup(cmd);
 		kernel_restart(NULL);
 		break;
 
@@ -472,6 +515,8 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 		panic("cannot halt");
 
 	case LINUX_REBOOT_CMD_POWER_OFF:
+		/* register the timer */
+		reboot_timer_setup(cmd);
 		kernel_power_off();
 		do_exit(0);
 		break;
