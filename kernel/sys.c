@@ -41,13 +41,13 @@
 #include <linux/version.h>
 #include <linux/ctype.h>
 #include <linux/sched.h>
-#include <linux/kthread.h>
-#include <linux/delay.h>
 
 #include <linux/compat.h>
 #include <linux/syscalls.h>
 #include <linux/kprobes.h>
 #include <linux/user_namespace.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
 
 #include <linux/kmsg_dump.h>
 /* Move somewhere else to avoid recompiling? */
@@ -323,6 +323,7 @@ void kernel_restart_prepare(char *cmd)
 	system_state = SYSTEM_RESTART;
 	usermodehelper_disable();
 	device_shutdown();
+	disable_nonboot_cpus();
 }
 
 /**
@@ -339,17 +340,9 @@ void kernel_restart(char *cmd)
 	disable_nonboot_cpus();
 	syscore_shutdown();
 	if (!cmd)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Restarting system.\n");
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Restarting system with command '%s'.\n", cmd);
-#else
-		;
-#endif
 	kmsg_dump(KMSG_DUMP_RESTART);
 	machine_restart(cmd);
 }
@@ -373,11 +366,7 @@ void kernel_halt(void)
 	kernel_shutdown_prepare(SYSTEM_HALT);
 	disable_nonboot_cpus();
 	syscore_shutdown();
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "System halted.\n");
-#else
-	;
-#endif
 	kmsg_dump(KMSG_DUMP_HALT);
 	machine_halt();
 }
@@ -396,11 +385,7 @@ void kernel_power_off(void)
 		pm_power_off_prepare();
 	disable_nonboot_cpus();
 	syscore_shutdown();
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "Power down.\n");
-#else
-	;
-#endif
 	kmsg_dump(KMSG_DUMP_POWEROFF);
 	machine_power_off();
 }
@@ -418,12 +403,8 @@ static int reboot_timer_expired(void *data)
 
 	mutex_lock(&lock);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_EMERG "Timer expired forcing power %s.\n",
 	       cmd == LINUX_REBOOT_CMD_POWER_OFF ? "off" : "reboot");
-#else
-	;
-#endif
 
 	if (cmd == LINUX_REBOOT_CMD_POWER_OFF)
 	  machine_power_off();
@@ -483,6 +464,8 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 	mutex_lock(&reboot_mutex);
 	switch (cmd) {
 	case LINUX_REBOOT_CMD_RESTART:
+		/* register the timer */
+		reboot_timer_setup(cmd);
 		kernel_restart(NULL);
 		break;
 
@@ -500,6 +483,8 @@ SYSCALL_DEFINE4(reboot, int, magic1, int, magic2, unsigned int, cmd,
 		panic("cannot halt");
 
 	case LINUX_REBOOT_CMD_POWER_OFF:
+		/* register the timer */
+		reboot_timer_setup(cmd);
 		kernel_power_off();
 		do_exit(0);
 		break;
@@ -1933,12 +1918,8 @@ int orderly_poweroff(bool force)
 	struct subprocess_info *info;
 
 	if (argv == NULL) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s failed to allocate memory for \"%s\"\n",
 		       __func__, poweroff_cmd);
-#else
-		;
-#endif
 		goto out;
 	}
 
@@ -1954,12 +1935,8 @@ int orderly_poweroff(bool force)
 
   out:
 	if (ret && force) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Failed to start orderly shutdown: "
 		       "forcing the issue\n");
-#else
-		;
-#endif
 
 		/* I guess this should try to kick off some daemon to
 		   sync and poweroff asap.  Or not even bother syncing
