@@ -1497,6 +1497,13 @@ static int addend_386_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
 	return 0;
 }
 
+#ifndef R_ARM_CALL
+#define R_ARM_CALL	28
+#endif
+#ifndef R_ARM_JUMP24
+#define R_ARM_JUMP24	29
+#endif
+
 static int addend_arm_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
 {
 	unsigned int r_typ = ELF_R_TYPE(r->r_info);
@@ -1508,6 +1515,8 @@ static int addend_arm_rel(struct elf_info *elf, Elf_Shdr *sechdr, Elf_Rela *r)
 		              (elf->symtab_start + ELF_R_SYM(r->r_info));
 		break;
 	case R_ARM_PC24:
+	case R_ARM_CALL:
+	case R_ARM_JUMP24:
 		/* From ARM ABI: ((S + A) | T) - P */
 		r->r_addend = (int)(long)(elf->hdr +
 		              sechdr->sh_offset +
@@ -1772,6 +1781,18 @@ static void check_for_gpl_usage(enum export exp, const char *m, const char *s)
 	const char *e = is_vmlinux(m) ?"":".ko";
 
 	switch (exp) {
+	case export_gpl:
+		fatal("modpost: GPL-incompatible module %s%s "
+		      "uses GPL-only symbol '%s'\n", m, e, s);
+		break;
+	case export_unused_gpl:
+		fatal("modpost: GPL-incompatible module %s%s "
+		      "uses GPL-only symbol marked UNUSED '%s'\n", m, e, s);
+		break;
+	case export_gpl_future:
+		warn("modpost: GPL-incompatible module %s%s "
+		      "uses future GPL-only symbol '%s'\n", m, e, s);
+		break;
 	case export_plain:
 	case export_unused:
 	case export_unknown:
