@@ -511,8 +511,10 @@ int commit_creds(struct cred *new)
 		key_fsgid_changed(task);
 
 	/* do it
-	 * RLIMIT_NPROC limits on user->processes have already been checked
-	 * in set_user().
+	 * - What if a process setreuid()'s and this brings the
+	 *   new uid over his NPROC rlimit?  We can check this now
+	 *   cheaply with the new uid cache, so if it matters
+	 *   we should be checking for it.  -DaveM
 	 */
 	alter_cred_subscribers(new, 2);
 	if (new->user != old->user)
