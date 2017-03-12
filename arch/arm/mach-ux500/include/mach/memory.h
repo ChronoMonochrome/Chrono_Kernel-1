@@ -16,12 +16,12 @@
 #define BUS_OFFSET	UL(0x00000000)
 
 #if defined(CONFIG_MACH_CODINA)
-#define END_MEM		            UL(0x2FDFFFFF)
+#define END_MEM		            UL(0x2FEFFFFF)
 #endif
 
 #if defined(CONFIG_KEXEC_HARDBOOT)
 #if defined(CONFIG_MACH_CODINA)
-#define KEXEC_HB_PAGE_ADDR		UL(0x2FE00000)
+#define KEXEC_HB_PAGE_ADDR		UL(0x2fff6000)
 #else
 #error "Address for kexec hardboot page not defined"
 #endif
