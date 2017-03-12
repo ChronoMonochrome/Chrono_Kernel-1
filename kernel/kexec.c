@@ -32,11 +32,13 @@
 #include <linux/console.h>
 #include <linux/vmalloc.h>
 #include <linux/swap.h>
+#include <linux/kmsg_dump.h>
 #include <linux/syscore_ops.h>
 
 #include <asm/page.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
+#include <asm/system.h>
 #include <asm/sections.h>
 
 /* Per cpu memory for storing cpu states in case of system crash. */
@@ -47,6 +49,8 @@ static unsigned char vmcoreinfo_data[VMCOREINFO_BYTES];
 u32 vmcoreinfo_note[VMCOREINFO_NOTE_SIZE/4];
 size_t vmcoreinfo_size;
 size_t vmcoreinfo_max_size = sizeof(vmcoreinfo_data);
+
+ATOMIC_NOTIFIER_HEAD(crash_percpu_notifier_list);
 
 /* Location of the reserved area for the crash kernel */
 struct resource crashk_res = {
@@ -496,7 +500,7 @@ static struct page *kimage_alloc_crash_control_pages(struct kimage *image,
 	while (hole_end <= crashk_res.end) {
 		unsigned long i;
 
-		if (hole_end > KEXEC_CRASH_CONTROL_MEMORY_LIMIT)
+		if (hole_end > KEXEC_CONTROL_MEMORY_LIMIT)
 			break;
 		if (hole_end > crashk_res.end)
 			break;
@@ -997,13 +1001,16 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
 			kimage_free(xchg(&kexec_crash_image, NULL));
 			result = kimage_crash_alloc(&image, entry,
 						     nr_segments, segments);
-			crash_map_reserved_pages();
 		}
 		if (result)
 			goto out;
 
 		if (flags & KEXEC_PRESERVE_CONTEXT)
 			image->preserve_context = 1;
+#ifdef CONFIG_KEXEC_HARDBOOT
+		if (flags & KEXEC_HARDBOOT)
+			image->hardboot = 1;
+#endif
 		result = machine_kexec_prepare(image);
 		if (result)
 			goto out;
@@ -1014,8 +1021,6 @@ SYSCALL_DEFINE4(kexec_load, unsigned long, entry, unsigned long, nr_segments,
 				goto out;
 		}
 		kimage_terminate(image);
-		if (flags & KEXEC_ON_CRASH)
-			crash_unmap_reserved_pages();
 	}
 	/* Install the new kernel, and  Uninstall the old */
 	image = xchg(dest_image, image);
@@ -1026,18 +1031,6 @@ out:
 
 	return result;
 }
-
-/*
- * Add and remove page tables for crashkernel memory
- *
- * Provide an empty default implementation here -- architecture
- * code may override this
- */
-void __weak crash_map_reserved_pages(void)
-{}
-
-void __weak crash_unmap_reserved_pages(void)
-{}
 
 #ifdef CONFIG_COMPAT
 asmlinkage long compat_sys_kexec_load(unsigned long entry,
@@ -1080,6 +1073,7 @@ asmlinkage long compat_sys_kexec_load(unsigned long entry,
 
 void crash_kexec(struct pt_regs *regs)
 {
+	struct pt_regs fixed_regs;
 	/* Take the kexec_mutex here to prevent sys_kexec_load
 	 * running on one cpu from replacing the crash kernel
 	 * we are using after a panic on a different cpu.
@@ -1090,13 +1084,22 @@ void crash_kexec(struct pt_regs *regs)
 	 */
 	if (mutex_trylock(&kexec_mutex)) {
 		if (kexec_crash_image) {
-			struct pt_regs fixed_regs;
+
+			kmsg_dump(KMSG_DUMP_KEXEC);
 
 			crash_setup_regs(&fixed_regs, regs);
 			crash_save_vmcoreinfo();
 			machine_crash_shutdown(&fixed_regs);
 			machine_kexec(kexec_crash_image);
 		}
+#ifdef CONFIG_CRASH_SWRESET
+		else {
+			crash_setup_regs(&fixed_regs, regs);
+			crash_save_vmcoreinfo();
+			machine_crash_shutdown(&fixed_regs);
+			machine_crash_swreset();
+		}
+#endif
 		mutex_unlock(&kexec_mutex);
 	}
 }
@@ -1106,7 +1109,7 @@ size_t crash_get_memory_size(void)
 	size_t size = 0;
 	mutex_lock(&kexec_mutex);
 	if (crashk_res.end != crashk_res.start)
-		size = resource_size(&crashk_res);
+		size = crashk_res.end - crashk_res.start + 1;
 	mutex_unlock(&kexec_mutex);
 	return size;
 }
@@ -1128,8 +1131,6 @@ int crash_shrink_memory(unsigned long new_size)
 {
 	int ret = 0;
 	unsigned long start, end;
-	unsigned long old_size;
-	struct resource *ram_res;
 
 	mutex_lock(&kexec_mutex);
 
@@ -1139,36 +1140,22 @@ int crash_shrink_memory(unsigned long new_size)
 	}
 	start = crashk_res.start;
 	end = crashk_res.end;
-	old_size = (end == 0) ? 0 : end - start + 1;
-	if (new_size >= old_size) {
-		ret = (new_size == old_size) ? 0 : -EINVAL;
+
+	if (new_size >= end - start + 1) {
+		ret = -EINVAL;
+		if (new_size == end - start + 1)
+			ret = 0;
 		goto unlock;
 	}
 
-	ram_res = kzalloc(sizeof(*ram_res), GFP_KERNEL);
-	if (!ram_res) {
-		ret = -ENOMEM;
-		goto unlock;
-	}
+	start = roundup(start, PAGE_SIZE);
+	end = roundup(start + new_size, PAGE_SIZE);
 
-	start = roundup(start, KEXEC_CRASH_MEM_ALIGN);
-	end = roundup(start + new_size, KEXEC_CRASH_MEM_ALIGN);
-
-	crash_map_reserved_pages();
 	crash_free_reserved_phys_range(end, crashk_res.end);
 
 	if ((start == end) && (crashk_res.parent != NULL))
 		release_resource(&crashk_res);
-
-	ram_res->start = end;
-	ram_res->end = crashk_res.end;
-	ram_res->flags = IORESOURCE_BUSY | IORESOURCE_MEM;
-	ram_res->name = "System RAM";
-
 	crashk_res.end = end - 1;
-
-	insert_resource(&iomem_resource, ram_res);
-	crash_unmap_reserved_pages();
 
 unlock:
 	mutex_unlock(&kexec_mutex);
@@ -1234,8 +1221,12 @@ static int __init crash_notes_memory_init(void)
 	/* Allocate memory for saving cpu registers. */
 	crash_notes = alloc_percpu(note_buf_t);
 	if (!crash_notes) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Kexec: Memory allocation for saving cpu register"
 		" states failed\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 	return 0;
@@ -1358,10 +1349,6 @@ static int __init parse_crashkernel_simple(char 		*cmdline,
 
 	if (*cur == '@')
 		*crash_base = memparse(cur+1, &cur);
-	else if (*cur != ' ' && *cur != '\0') {
-		pr_warning("crashkernel: unrecognized char\n");
-		return -EINVAL;
-	}
 
 	return 0;
 }
@@ -1411,21 +1398,22 @@ int __init parse_crashkernel(char 		 *cmdline,
 }
 
 
-static void update_vmcoreinfo_note(void)
-{
-	u32 *buf = vmcoreinfo_note;
-
-	if (!vmcoreinfo_size)
-		return;
-	buf = append_elf_note(buf, VMCOREINFO_NOTE_NAME, 0, vmcoreinfo_data,
-			      vmcoreinfo_size);
-	final_note(buf);
-}
 
 void crash_save_vmcoreinfo(void)
 {
+	u32 *buf;
+
+	if (!vmcoreinfo_size)
+		return;
+
 	vmcoreinfo_append_str("CRASHTIME=%ld", get_seconds());
-	update_vmcoreinfo_note();
+
+	buf = (u32 *)vmcoreinfo_note;
+
+	buf = append_elf_note(buf, VMCOREINFO_NOTE_NAME, 0, vmcoreinfo_data,
+			      vmcoreinfo_size);
+
+	final_note(buf);
 }
 
 void vmcoreinfo_append_str(const char *fmt, ...)
@@ -1465,9 +1453,7 @@ static int __init crash_save_vmcoreinfo_init(void)
 
 	VMCOREINFO_SYMBOL(init_uts_ns);
 	VMCOREINFO_SYMBOL(node_online_map);
-#ifdef CONFIG_MMU
 	VMCOREINFO_SYMBOL(swapper_pg_dir);
-#endif
 	VMCOREINFO_SYMBOL(_stext);
 	VMCOREINFO_SYMBOL(vmlist);
 
@@ -1515,7 +1501,6 @@ static int __init crash_save_vmcoreinfo_init(void)
 	VMCOREINFO_NUMBER(PG_swapcache);
 
 	arch_crash_save_vmcoreinfo();
-	update_vmcoreinfo_note();
 
 	return 0;
 }
@@ -1571,7 +1556,11 @@ int kernel_kexec(void)
 #endif
 	{
 		kernel_restart_prepare(NULL);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Starting new kernel\n");
+#else
+		;
+#endif
 		machine_shutdown();
 	}
 
