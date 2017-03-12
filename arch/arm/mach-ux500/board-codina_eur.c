@@ -114,7 +114,7 @@
 #endif
 
 #ifdef CONFIG_KEXEC_HARDBOOT
-#define KEXEC_HARDBOOT_SIZE (SZ_1M)
+#define KEXEC_HARDBOOT_SIZE (PAGE_SIZE)
 #define KEXEC_HARDBOOT_START 0x2FE00000
 #endif
 
@@ -167,7 +167,7 @@ __setup("mem_ram_console=", ram_console_setup);
 
 #endif /* CONFIG_ANDROID_RAM_CONSOLE */
 
-#ifdef CONFIG_KEXEC_HARDBOOT
+#if 0
 static struct resource kexec_hardboot_resources[] = {
 	[0] = {
 		.start  = KEXEC_HARDBOOT_START,
@@ -179,7 +179,9 @@ static struct resource kexec_hardboot_resources[] = {
 
 static struct platform_device kexec_hardboot_device = {
 	.name           = "kexec_hardboot",
+	.num_resources  =  1,
 	.id             = -1,
+	.resource = kexec_hardboot_resources,
 };
 
 static void kexec_hardboot_reserve(void)
@@ -197,7 +199,6 @@ static void kexec_hardboot_reserve(void)
 	kexec_hardboot_device.resource       = kexec_hardboot_resources;
 }
 #endif
-
 
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
 struct yas_platform_data yas_data = {
@@ -2272,7 +2273,7 @@ static struct platform_device *platform_devs[] __initdata = {
 #ifdef CONFIG_MODEM_U8500
 	&u8500_modem_dev,
 #endif
-#ifdef CONFIG_KEXEC_HARDBOOT
+#if 0
 	&kexec_hardboot_device,
 #endif
 	&db8500_cpuidle_device,
@@ -2427,9 +2428,11 @@ static void __init codina_init_machine(void)
 	sec_common_init();
 
 	sec_common_init_early();
-	
+
+#if 0
 #if defined(CONFIG_KEXEC_HARDBOOT)
 	kexec_hardboot_reserve();
+#endif
 #endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
