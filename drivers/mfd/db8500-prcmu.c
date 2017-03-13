@@ -2317,7 +2317,7 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	ret = sscanf(buf, "%d", &freq);
 
 	// check for bogus values - retry with hexademical input
-	if ((!freq) || ((freq >= 50101) && (freq <= 50199))) {
+	if ((!freq) || (freq <= 50199)) {
 		ret = sscanf(buf, "%x", &freq);
 
 		if ((freq >= 0x50101) && (freq <= 0x501ff)) {
