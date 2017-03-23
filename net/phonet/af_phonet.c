@@ -68,7 +68,7 @@ static int pn_socket_create(struct net *net, struct socket *sock, int protocol,
 	struct phonet_protocol *pnp;
 	int err;
 
-	if (!capable(CAP_SYS_ADMIN))
+	if (!capable(CAP_SYS_ADMIN)&&!capable(CAP_NET_ADMIN))
 		return -EPERM;
 
 	if (protocol == 0) {
@@ -410,13 +410,29 @@ static int phonet_rcv(struct sk_buff *skb, struct net_device *dev,
 	if (phonet_address_lookup(net, pn_sockaddr_get_addr(&sa)) == 0) {
 		/* Phonet packet input */
 		struct sock *sk = pn_find_sock_by_sa(net, &sa);
+		u16 valueCheck = 0;
 
 		if (sk)
 			return sk_receive_skb(sk, skb, 0);
 
 		if (can_respond(skb)) {
-			send_obj_unreachable(skb);
-			send_reset_indications(skb);
+			/*
+			Gavini issue WR code: [P120507-3743]
+			For preventing the garbage data go into SVNET.
+
+			Janice issue WR code: [P120208-3952]
+			For preventing the situation that some
+			ISI message go into FMT channel.
+			*/
+			valueCheck = pn_object(ph->pn_sdev, 0x00);
+			if ((pn_dev(valueCheck) != 0x60) &&
+				(pn_dev(valueCheck) != 0x64))
+				pr_info("[Phonet] Unreachable dst: 0x%x\n",
+					pn_dev(valueCheck));
+			else {
+				send_obj_unreachable(skb);
+				send_reset_indications(skb);
+			}
 		}
 	} else if (unlikely(skb->pkt_type == PACKET_LOOPBACK))
 		goto out; /* Race between address deletion and loopback */
