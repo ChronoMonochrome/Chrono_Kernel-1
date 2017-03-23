@@ -69,7 +69,6 @@ static void disconnect_work(struct work_struct *work)
 {
 	if (!cfg80211_is_all_idle())
 		return;
-
 	regulatory_hint_disconnect();
 }
 
