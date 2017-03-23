@@ -9,6 +9,7 @@
  */
 #include <linux/platform_device.h>
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/clk.h>
 #include <linux/cpufreq.h>
 #include <linux/delay.h>

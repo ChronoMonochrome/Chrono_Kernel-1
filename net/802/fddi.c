@@ -27,7 +27,6 @@
  */
 
 #include <linux/module.h>
-#include <asm/system.h>
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/string.h>
@@ -106,8 +105,8 @@ static int fddi_rebuild_header(struct sk_buff	*skb)
 	else
 #endif
 	{
-//		printk("%s: Don't know how to resolve type %04X addresses.\n",
-;
+		printk("%s: Don't know how to resolve type %04X addresses.\n",
+		       skb->dev->name, ntohs(fddi->hdr.llc_snap.ethertype));
 		return 0;
 	}
 }

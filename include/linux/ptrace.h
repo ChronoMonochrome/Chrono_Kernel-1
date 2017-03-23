@@ -1,8 +1,5 @@
 #ifndef _LINUX_PTRACE_H
 #define _LINUX_PTRACE_H
-
-#include <linux/bug.h>			/* For BUG_ON.  */
-
 /* ptrace.h */
 /* structs and defines to help the user use the ptrace system call. */
 
@@ -114,6 +111,7 @@
 #include <linux/compiler.h>		/* For unlikely.  */
 #include <linux/sched.h>		/* For struct task_struct.  */
 #include <linux/err.h>			/* for IS_ERR_VALUE */
+#include <linux/bug.h>			/* For BUG_ON.  */
 
 
 extern long arch_ptrace(struct task_struct *child, long request,

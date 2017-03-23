@@ -4,6 +4,7 @@
  * License terms: GNU General Public License (GPL) version 2
  */
 
+#include <linux/module.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/pm.h>

@@ -18,7 +18,6 @@
 
 #include <linux/kmemcheck.h>
 #include <linux/list.h>
-#include <linux/module.h>
 #include <linux/timer.h>
 #include <linux/types.h>
 #include <linux/workqueue.h>
@@ -134,6 +133,7 @@ struct inet_timewait_sock {
 	struct inet_bind_bucket	*tw_tb;
 	struct hlist_node	tw_death_node;
 };
+#define tw_tclass tw_tos
 
 static inline void inet_twsk_add_node_rcu(struct inet_timewait_sock *tw,
 				      struct hlist_nulls_head *list)
@@ -218,20 +218,12 @@ extern void inet_twsk_purge(struct inet_hashinfo *hashinfo,
 static inline
 struct net *twsk_net(const struct inet_timewait_sock *twsk)
 {
-#ifdef CONFIG_NET_NS
-	return rcu_dereference_raw(twsk->tw_net); /* protected by locking, */
-						  /* reference counting, */
-						  /* initialization, or RCU. */
-#else
-	return &init_net;
-#endif
+	return read_pnet(&twsk->tw_net);
 }
 
 static inline
 void twsk_net_set(struct inet_timewait_sock *twsk, struct net *net)
 {
-#ifdef CONFIG_NET_NS
-	rcu_assign_pointer(twsk->tw_net, net);
-#endif
+	write_pnet(&twsk->tw_net, net);
 }
 #endif	/* _INET_TIMEWAIT_SOCK_ */

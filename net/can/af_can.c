@@ -38,8 +38,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
  *
- * Send feedback to <socketcan-users@lists.berlios.de>
- *
  */
 
 #include <linux/module.h>
@@ -58,12 +56,13 @@
 #include <linux/skbuff.h>
 #include <linux/can.h>
 #include <linux/can/core.h>
+#include <linux/ratelimit.h>
 #include <net/net_namespace.h>
 #include <net/sock.h>
 
 #include "af_can.h"
 
-static __initconst const char banner[] = KERN_INFO
+static __initdata const char banner[] = KERN_INFO
 	"can: controller area network core (" CAN_VERSION_STRING ")\n";
 
 MODULE_DESCRIPTION("Controller Area Network PF_CAN core");
@@ -161,9 +160,9 @@ static int can_create(struct net *net, struct socket *sock, int protocol,
 		 * return the error code immediately.  Below we will
 		 * return -EPROTONOSUPPORT
 		 */
-		if (err && printk_ratelimit())
-//			printk(KERN_ERR "can: request_module "
-;
+		if (err)
+			printk_ratelimited(KERN_ERR "can: request_module "
+			       "(can-proto-%d) failed.\n", protocol);
 
 		cp = can_get_proto(protocol);
 	}
@@ -506,9 +505,9 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
 
 	d = find_dev_rcv_lists(dev);
 	if (!d) {
-//		printk(KERN_ERR "BUG: receive list not found for "
-//		       "dev %s, id %03X, mask %03X\n",
-;
+		printk(KERN_ERR "BUG: receive list not found for "
+		       "dev %s, id %03X, mask %03X\n",
+		       DNAME(dev), can_id, mask);
 		goto out;
 	}
 
@@ -533,9 +532,9 @@ void can_rx_unregister(struct net_device *dev, canid_t can_id, canid_t mask,
 	 */
 
 	if (!next) {
-//		printk(KERN_ERR "BUG: receive list entry not found for "
-//		       "dev %s, id %03X, mask %03X\n",
-;
+		printk(KERN_ERR "BUG: receive list entry not found for "
+		       "dev %s, id %03X, mask %03X\n",
+		       DNAME(dev), can_id, mask);
 		r = NULL;
 		goto out;
 	}
@@ -702,8 +701,8 @@ int can_proto_register(const struct can_proto *cp)
 	int err = 0;
 
 	if (proto < 0 || proto >= CAN_NPROTO) {
-//		printk(KERN_ERR "can: protocol number %d out of range\n",
-;
+		printk(KERN_ERR "can: protocol number %d out of range\n",
+		       proto);
 		return -EINVAL;
 	}
 
@@ -714,11 +713,11 @@ int can_proto_register(const struct can_proto *cp)
 	mutex_lock(&proto_tab_lock);
 
 	if (proto_tab[proto]) {
-//		printk(KERN_ERR "can: protocol %d already registered\n",
-;
+		printk(KERN_ERR "can: protocol %d already registered\n",
+		       proto);
 		err = -EBUSY;
 	} else
-		rcu_assign_pointer(proto_tab[proto], cp);
+		RCU_INIT_POINTER(proto_tab[proto], cp);
 
 	mutex_unlock(&proto_tab_lock);
 
@@ -739,7 +738,7 @@ void can_proto_unregister(const struct can_proto *cp)
 
 	mutex_lock(&proto_tab_lock);
 	BUG_ON(proto_tab[proto] != cp);
-	rcu_assign_pointer(proto_tab[proto], NULL);
+	RCU_INIT_POINTER(proto_tab[proto], NULL);
 	mutex_unlock(&proto_tab_lock);
 
 	synchronize_rcu();
@@ -770,8 +769,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
 		/* create new dev_rcv_lists for this device */
 		d = kzalloc(sizeof(*d), GFP_KERNEL);
 		if (!d) {
-//			printk(KERN_ERR
-;
+			printk(KERN_ERR
+			       "can: allocation of receive list failed\n");
 			return NOTIFY_DONE;
 		}
 		BUG_ON(dev->ml_priv);
@@ -791,8 +790,8 @@ static int can_notifier(struct notifier_block *nb, unsigned long msg,
 				dev->ml_priv = NULL;
 			}
 		} else
-//			printk(KERN_ERR "can: notifier: receive list not "
-;
+			printk(KERN_ERR "can: notifier: receive list not "
+			       "found for dev %s\n", dev->name);
 
 		spin_unlock(&can_rcvlists_lock);
 
@@ -825,7 +824,7 @@ static struct notifier_block can_netdev_notifier __read_mostly = {
 
 static __init int can_init(void)
 {
-;
+	printk(banner);
 
 	memset(&can_rx_alldev_list, 0, sizeof(can_rx_alldev_list));
 
@@ -856,7 +855,7 @@ static __exit void can_exit(void)
 	struct net_device *dev;
 
 	if (stats_timer)
-		del_timer(&can_stattimer);
+		del_timer_sync(&can_stattimer);
 
 	can_remove_proc();
 

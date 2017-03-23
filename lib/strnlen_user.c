@@ -4,6 +4,8 @@
 
 #include <asm/word-at-a-time.h>
 
+#define REPEAT_BYTE(x) ((~0ul / 0xff) * (x))
+
 /* Set bits in the first 'n' bytes when loaded from memory */
 #ifdef __LITTLE_ENDIAN
 #  define aligned_byte_mask(n) ((1ul << 8*(n))-1)

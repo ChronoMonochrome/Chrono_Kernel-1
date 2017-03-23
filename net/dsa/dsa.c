@@ -12,6 +12,7 @@
 #include <linux/netdevice.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include <linux/module.h>
 #include <net/dsa.h>
 #include "dsa_priv.h"
 
@@ -28,6 +29,7 @@ void register_switch_driver(struct dsa_switch_driver *drv)
 	list_add_tail(&drv->list, &dsa_switch_drivers);
 	mutex_unlock(&dsa_switch_drivers_mutex);
 }
+EXPORT_SYMBOL_GPL(register_switch_driver);
 
 void unregister_switch_driver(struct dsa_switch_driver *drv)
 {
@@ -35,6 +37,7 @@ void unregister_switch_driver(struct dsa_switch_driver *drv)
 	list_del_init(&drv->list);
 	mutex_unlock(&dsa_switch_drivers_mutex);
 }
+EXPORT_SYMBOL_GPL(unregister_switch_driver);
 
 static struct dsa_switch_driver *
 dsa_switch_probe(struct mii_bus *bus, int sw_addr, char **_name)
@@ -83,12 +86,12 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
 	 */
 	drv = dsa_switch_probe(bus, pd->sw_addr, &name);
 	if (drv == NULL) {
-//		printk(KERN_ERR "%s[%d]: could not detect attached switch\n",
-;
+		printk(KERN_ERR "%s[%d]: could not detect attached switch\n",
+		       dst->master_netdev->name, index);
 		return ERR_PTR(-EINVAL);
 	}
-//	printk(KERN_INFO "%s[%d]: detected a %s switch\n",
-;
+	printk(KERN_INFO "%s[%d]: detected a %s switch\n",
+		dst->master_netdev->name, index, name);
 
 
 	/*
@@ -117,7 +120,7 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
 
 		if (!strcmp(name, "cpu")) {
 			if (dst->cpu_switch != -1) {
-;
+				printk(KERN_ERR "multiple cpu ports?!\n");
 				ret = -EINVAL;
 				goto out;
 			}
@@ -174,10 +177,10 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
 
 		slave_dev = dsa_slave_create(ds, parent, i, pd->port_names[i]);
 		if (slave_dev == NULL) {
-//			printk(KERN_ERR "%s[%d]: can't create dsa "
-//			       "slave device for port %d(%s)\n",
-//			       dst->master_netdev->name,
-;
+			printk(KERN_ERR "%s[%d]: can't create dsa "
+			       "slave device for port %d(%s)\n",
+			       dst->master_netdev->name,
+			       index, i, pd->port_names[i]);
 			continue;
 		}
 
@@ -195,29 +198,6 @@ out:
 
 static void dsa_switch_destroy(struct dsa_switch *ds)
 {
-}
-
-
-/* hooks for ethertype-less tagging formats *********************************/
-/*
- * The original DSA tag format and some other tag formats have no
- * ethertype, which means that we need to add a little hack to the
- * networking receive path to make sure that received frames get
- * the right ->protocol assigned to them when one of those tag
- * formats is in use.
- */
-bool dsa_uses_dsa_tags(void *dsa_ptr)
-{
-	struct dsa_switch_tree *dst = dsa_ptr;
-
-	return !!(dst->tag_protocol == htons(ETH_P_DSA));
-}
-
-bool dsa_uses_trailer_tags(void *dsa_ptr)
-{
-	struct dsa_switch_tree *dst = dsa_ptr;
-
-	return !!(dst->tag_protocol == htons(ETH_P_TRAILER));
 }
 
 
@@ -310,8 +290,8 @@ static int dsa_probe(struct platform_device *pdev)
 	int i;
 
 	if (!dsa_version_printed++)
-//		printk(KERN_NOTICE "Distributed Switch Architecture "
-;
+		printk(KERN_NOTICE "Distributed Switch Architecture "
+			"driver version %s\n", dsa_driver_version);
 
 	if (pd == NULL || pd->netdev == NULL)
 		return -EINVAL;
@@ -344,16 +324,16 @@ static int dsa_probe(struct platform_device *pdev)
 
 		bus = dev_to_mii_bus(pd->chip[i].mii_bus);
 		if (bus == NULL) {
-//			printk(KERN_ERR "%s[%d]: no mii bus found for "
-;
+			printk(KERN_ERR "%s[%d]: no mii bus found for "
+				"dsa switch\n", dev->name, i);
 			continue;
 		}
 
 		ds = dsa_switch_setup(dst, i, &pdev->dev, bus);
 		if (IS_ERR(ds)) {
-//			printk(KERN_ERR "%s[%d]: couldn't create dsa switch "
-//				"instance (error %ld)\n", dev->name, i,
-;
+			printk(KERN_ERR "%s[%d]: couldn't create dsa switch "
+				"instance (error %ld)\n", dev->name, i,
+				PTR_ERR(ds));
 			continue;
 		}
 
@@ -418,12 +398,36 @@ static struct platform_driver dsa_driver = {
 
 static int __init dsa_init_module(void)
 {
-	return platform_driver_register(&dsa_driver);
+	int rc;
+
+	rc = platform_driver_register(&dsa_driver);
+	if (rc)
+		return rc;
+
+#ifdef CONFIG_NET_DSA_TAG_DSA
+	dev_add_pack(&dsa_packet_type);
+#endif
+#ifdef CONFIG_NET_DSA_TAG_EDSA
+	dev_add_pack(&edsa_packet_type);
+#endif
+#ifdef CONFIG_NET_DSA_TAG_TRAILER
+	dev_add_pack(&trailer_packet_type);
+#endif
+	return 0;
 }
 module_init(dsa_init_module);
 
 static void __exit dsa_cleanup_module(void)
 {
+#ifdef CONFIG_NET_DSA_TAG_TRAILER
+	dev_remove_pack(&trailer_packet_type);
+#endif
+#ifdef CONFIG_NET_DSA_TAG_EDSA
+	dev_remove_pack(&edsa_packet_type);
+#endif
+#ifdef CONFIG_NET_DSA_TAG_DSA
+	dev_remove_pack(&dsa_packet_type);
+#endif
 	platform_driver_unregister(&dsa_driver);
 }
 module_exit(dsa_cleanup_module);

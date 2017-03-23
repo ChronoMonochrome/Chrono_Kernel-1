@@ -30,6 +30,7 @@
 #include <net/sock.h>
 
 #include <linux/phonet.h>
+#include <linux/export.h>
 #include <net/phonet/phonet.h>
 
 static int pn_backlog_rcv(struct sock *sk, struct sk_buff *skb);
@@ -164,13 +165,6 @@ static int pn_recvmsg(struct kiocb *iocb, struct sock *sk,
 	if (msg->msg_name != NULL)
 		memcpy(msg->msg_name, &sa, sizeof(struct sockaddr_pn));
 
-#ifdef CONFIG_SAMSUNG_PHONE_SVNET
-	/* svent RX debugging */
-	if (sk->sk_receive_queue.qlen > 30)
-//		printk(KERN_DEBUG "svn %s, sk = %p, qlen = %d\n", __func__, sk,
-;
-#endif
-
 out:
 	skb_free_datagram(sk, skb);
 
@@ -182,12 +176,7 @@ out_nofree:
 static int pn_backlog_rcv(struct sock *sk, struct sk_buff *skb)
 {
 	int err = sock_queue_rcv_skb(sk, skb);
-#ifdef CONFIG_SAMSUNG_PHONE_SVNET
-	/* svent RX debugging */
-	if (sk->sk_receive_queue.qlen > 30)
-//		printk(KERN_DEBUG "svn %s, sk = %p, qlen = %d\n", __func__, sk,
-;
-#endif
+
 	if (err < 0)
 		kfree_skb(skb);
 	return err ? NET_RX_DROP : NET_RX_SUCCESS;

@@ -13,6 +13,7 @@
 #include <linux/modem/modem.h>
 #include <linux/modem/modem_client.h>
 #include <linux/slab.h>
+#include <linux/module.h>
 #include <linux/err.h>
 
 static DEFINE_MUTEX(modem_list_mutex);

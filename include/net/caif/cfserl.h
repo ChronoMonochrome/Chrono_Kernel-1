@@ -8,6 +8,5 @@
 #define CFSERL_H_
 #include <net/caif/caif_layer.h>
 
-struct cflayer *cfserl_create(int type, int instance, bool use_stx);
-void cfserl_destroy(struct cflayer *layer);
-#endif				/* CFSERL_H_ */
+struct cflayer *cfserl_create(int instance, bool use_stx);
+#endif

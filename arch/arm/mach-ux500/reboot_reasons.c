@@ -10,6 +10,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/bug.h>
 #include <linux/string.h>
 #include <mach/reboot_reasons.h>
 

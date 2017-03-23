@@ -81,11 +81,6 @@ struct module;
 
 #ifdef HAVE_JUMP_LABEL
 
-#ifdef CONFIG_MODULES
-#define JUMP_LABEL_INIT {{ 0 }, NULL, NULL}
-#else
-#define JUMP_LABEL_INIT {{ 0 }, NULL}
-#endif
 #define JUMP_LABEL_TRUE_BRANCH 1UL
 
 static
@@ -142,6 +137,7 @@ jump_label_rate_limit(struct static_key_deferred *key, unsigned long rl);
 	{ .enabled = ATOMIC_INIT(0), .entries = (void *)0 })
 
 #else  /* !HAVE_JUMP_LABEL */
+
 #include <linux/atomic.h>
 
 struct static_key {

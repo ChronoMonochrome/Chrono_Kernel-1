@@ -1994,7 +1994,10 @@ int bond_release(struct net_device *bond_dev, struct net_device *slave_dev)
 	struct bonding *bond = netdev_priv(bond_dev);
 	struct slave *slave, *oldcurrent;
 	struct sockaddr addr;
+<<<<<<< HEAD
 	int old_flags = bond_dev->flags;
+=======
+>>>>>>> parent of c8f44af... net: introduce and use netdev_features_t for device features sets
 	u32 old_features = bond_dev->features;
 
 	/* slave is not a slave or master is not master of this slave */

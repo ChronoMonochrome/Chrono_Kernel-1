@@ -37,12 +37,11 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
  *
- * Send feedback to <socketcan-users@lists.berlios.de>
- *
  */
 
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/interrupt.h>
 #include <linux/hrtimer.h>
 #include <linux/list.h>
 #include <linux/proc_fs.h>
@@ -78,7 +77,7 @@
 		     (CAN_SFF_MASK | CAN_EFF_FLAG | CAN_RTR_FLAG))
 
 #define CAN_BCM_VERSION CAN_VERSION
-static __initconst const char banner[] = KERN_INFO
+static __initdata const char banner[] = KERN_INFO
 	"can: broadcast manager protocol (rev " CAN_BCM_VERSION " t)\n";
 
 MODULE_DESCRIPTION("PF_CAN broadcast manager protocol");
@@ -730,8 +729,8 @@ static void bcm_rx_unreg(struct net_device *dev, struct bcm_op *op)
 		/* mark as removed subscription */
 		op->rx_reg_dev = NULL;
 	} else
-//		printk(KERN_ERR "can-bcm: bcm_rx_unreg: registered device "
-;
+		printk(KERN_ERR "can-bcm: bcm_rx_unreg: registered device "
+		       "mismatch %p %p\n", op->rx_reg_dev, dev);
 }
 
 /*
@@ -1610,11 +1609,11 @@ static int __init bcm_module_init(void)
 {
 	int err;
 
-;
+	printk(banner);
 
 	err = can_proto_register(&bcm_can_proto);
 	if (err < 0) {
-;
+		printk(KERN_ERR "can: registration of bcm protocol failed\n");
 		return err;
 	}
 

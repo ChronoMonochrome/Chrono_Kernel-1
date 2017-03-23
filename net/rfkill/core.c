@@ -29,6 +29,7 @@
 #include <linux/rfkill.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
+#include <linux/device.h>
 #include <linux/miscdevice.h>
 #include <linux/wait.h>
 #include <linux/poll.h>
@@ -235,7 +236,7 @@ static bool __rfkill_set_hw_state(struct rfkill *rfkill,
 	else
 		rfkill->state &= ~RFKILL_BLOCK_HW;
 	*change = prev != blocked;
-	any = rfkill->state & RFKILL_BLOCK_ANY;
+	any = !!(rfkill->state & RFKILL_BLOCK_ANY);
 	spin_unlock_irqrestore(&rfkill->lock, flags);
 
 	rfkill_led_trigger_event(rfkill);
@@ -644,7 +645,7 @@ static ssize_t rfkill_soft_store(struct device *dev,
 	if (!capable(CAP_NET_ADMIN))
 		return -EPERM;
 
-	err = strict_strtoul(buf, 0, &state);
+	err = kstrtoul(buf, 0, &state);
 	if (err)
 		return err;
 
@@ -688,7 +689,7 @@ static ssize_t rfkill_state_store(struct device *dev,
 	if (!capable(CAP_NET_ADMIN))
 		return -EPERM;
 
-	err = strict_strtoul(buf, 0, &state);
+	err = kstrtoul(buf, 0, &state);
 	if (err)
 		return err;
 
@@ -1186,7 +1187,7 @@ static int rfkill_fop_release(struct inode *inode, struct file *file)
 #ifdef CONFIG_RFKILL_INPUT
 	if (data->input_handler)
 		if (atomic_dec_return(&rfkill_input_disabled) == 0)
-;
+			printk(KERN_DEBUG "rfkill: input handler enabled\n");
 #endif
 
 	kfree(data);
@@ -1210,7 +1211,7 @@ static long rfkill_fop_ioctl(struct file *file, unsigned int cmd,
 
 	if (!data->input_handler) {
 		if (atomic_inc_return(&rfkill_input_disabled) == 1)
-;
+			printk(KERN_DEBUG "rfkill: input handler disabled\n");
 		data->input_handler = true;
 	}
 

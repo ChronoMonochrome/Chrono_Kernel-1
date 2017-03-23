@@ -10,6 +10,7 @@
  *
  */
 
+#include <linux/bug.h>
 #include <linux/power_supply.h>
 #include "board-sec-bm.h"
 

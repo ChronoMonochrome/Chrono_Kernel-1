@@ -18,10 +18,6 @@
 #include <linux/suspend.h>
 #include <net/net_namespace.h>
 
-#ifdef CONFIG_IPV6
-#include <net/ipv6.h>
-#endif
-
 /*
  * Track transmission rates in buckets (power of 2).
  * 1,2,4,8...512 seconds.

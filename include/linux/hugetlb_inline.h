@@ -12,7 +12,7 @@ static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
 
 #else
 
-static __cold inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
+static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
 {
 	return 0;
 }

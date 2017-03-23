@@ -24,7 +24,6 @@
 #include <linux/skbuff.h>
 #include <net/sock.h>
 #include <asm/uaccess.h>
-#include <asm/system.h>
 #include <linux/fcntl.h>
 #include <linux/termios.h>	/* For TIOCINQ/OUTQ */
 #include <linux/mm.h>
@@ -90,7 +89,7 @@ int ax25_hard_header(struct sk_buff *skb, struct net_device *dev,
 		*buff++ = AX25_P_ARP;
 		break;
 	default:
-;
+		printk(KERN_ERR "AX.25: ax25_hard_header - wrong protocol type 0x%2.2x\n", type);
 		*buff++ = 0;
 		break;
 	}

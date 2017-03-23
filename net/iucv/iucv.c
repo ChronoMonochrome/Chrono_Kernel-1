@@ -1800,7 +1800,7 @@ static void iucv_work_fn(struct work_struct *work)
  * Handles external interrupts coming in from CP.
  * Places the interrupt buffer on a queue and schedules iucv_tasklet_fn().
  */
-static void iucv_external_interrupt(unsigned int ext_int_code,
+static void iucv_external_interrupt(struct ext_code ext_code,
 				    unsigned int param32, unsigned long param64)
 {
 	struct iucv_irq_data *p;
@@ -1838,7 +1838,7 @@ static int iucv_pm_prepare(struct device *dev)
 	int rc = 0;
 
 #ifdef CONFIG_PM_DEBUG
-;
+	printk(KERN_INFO "iucv_pm_prepare\n");
 #endif
 	if (dev->driver && dev->driver->pm && dev->driver->pm->prepare)
 		rc = dev->driver->pm->prepare(dev);
@@ -1848,7 +1848,7 @@ static int iucv_pm_prepare(struct device *dev)
 static void iucv_pm_complete(struct device *dev)
 {
 #ifdef CONFIG_PM_DEBUG
-;
+	printk(KERN_INFO "iucv_pm_complete\n");
 #endif
 	if (dev->driver && dev->driver->pm && dev->driver->pm->complete)
 		dev->driver->pm->complete(dev);
@@ -1886,7 +1886,7 @@ static int iucv_pm_freeze(struct device *dev)
 	int rc = 0;
 
 #ifdef CONFIG_PM_DEBUG
-;
+	printk(KERN_WARNING "iucv_pm_freeze\n");
 #endif
 	if (iucv_pm_state != IUCV_PM_FREEZING) {
 		for_each_cpu(cpu, &iucv_irq_cpumask)
@@ -1921,7 +1921,7 @@ static int iucv_pm_thaw(struct device *dev)
 	int rc = 0;
 
 #ifdef CONFIG_PM_DEBUG
-;
+	printk(KERN_WARNING "iucv_pm_thaw\n");
 #endif
 	iucv_pm_state = IUCV_PM_THAWING;
 	if (!iucv_path_table) {
@@ -1956,7 +1956,7 @@ static int iucv_pm_restore(struct device *dev)
 	int rc = 0;
 
 #ifdef CONFIG_PM_DEBUG
-;
+	printk(KERN_WARNING "iucv_pm_restore %p\n", iucv_path_table);
 #endif
 	if ((iucv_pm_state != IUCV_PM_RESTORING) && iucv_path_table)
 		pr_warning("Suspending Linux did not completely close all IUCV "
@@ -1974,6 +1974,27 @@ out:
 	return rc;
 }
 
+struct iucv_interface iucv_if = {
+	.message_receive = iucv_message_receive,
+	.__message_receive = __iucv_message_receive,
+	.message_reply = iucv_message_reply,
+	.message_reject = iucv_message_reject,
+	.message_send = iucv_message_send,
+	.__message_send = __iucv_message_send,
+	.message_send2way = iucv_message_send2way,
+	.message_purge = iucv_message_purge,
+	.path_accept = iucv_path_accept,
+	.path_connect = iucv_path_connect,
+	.path_quiesce = iucv_path_quiesce,
+	.path_resume = iucv_path_resume,
+	.path_sever = iucv_path_sever,
+	.iucv_register = iucv_register,
+	.iucv_unregister = iucv_unregister,
+	.bus = NULL,
+	.root = NULL,
+};
+EXPORT_SYMBOL(iucv_if);
+
 /**
  * iucv_init
  *
@@ -1988,12 +2009,13 @@ static int __init iucv_init(void)
 		rc = -EPROTONOSUPPORT;
 		goto out;
 	}
+	ctl_set_bit(0, 1);
 	rc = iucv_query_maxconn();
 	if (rc)
-		goto out;
+		goto out_ctl;
 	rc = register_external_interrupt(0x4000, iucv_external_interrupt);
 	if (rc)
-		goto out;
+		goto out_ctl;
 	iucv_root = root_device_register("iucv");
 	if (IS_ERR(iucv_root)) {
 		rc = PTR_ERR(iucv_root);
@@ -2037,6 +2059,8 @@ static int __init iucv_init(void)
 	rc = bus_register(&iucv_bus);
 	if (rc)
 		goto out_reboot;
+	iucv_if.root = iucv_root;
+	iucv_if.bus = &iucv_bus;
 	return 0;
 
 out_reboot:
@@ -2055,6 +2079,8 @@ out_free:
 	root_device_unregister(iucv_root);
 out_int:
 	unregister_external_interrupt(0x4000, iucv_external_interrupt);
+out_ctl:
+	ctl_clear_bit(0, 1);
 out:
 	return rc;
 }

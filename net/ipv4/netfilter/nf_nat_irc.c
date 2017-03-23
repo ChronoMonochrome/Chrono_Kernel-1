@@ -75,22 +75,22 @@ static unsigned int help(struct sk_buff *skb,
 
 static void __exit nf_nat_irc_fini(void)
 {
-	rcu_assign_pointer(nf_nat_irc_hook, NULL);
+	RCU_INIT_POINTER(nf_nat_irc_hook, NULL);
 	synchronize_rcu();
 }
 
 static int __init nf_nat_irc_init(void)
 {
 	BUG_ON(nf_nat_irc_hook != NULL);
-	rcu_assign_pointer(nf_nat_irc_hook, help);
+	RCU_INIT_POINTER(nf_nat_irc_hook, help);
 	return 0;
 }
 
 /* Prior to 2.6.11, we had a ports param.  No longer, but don't break users. */
 static int warn_set(const char *val, struct kernel_param *kp)
 {
-//	printk(KERN_INFO KBUILD_MODNAME
-;
+	printk(KERN_INFO KBUILD_MODNAME
+	       ": kernel >= 2.6.10 only uses 'ports' for conntrack modules\n");
 	return 0;
 }
 module_param_call(ports, warn_set, NULL, NULL, 0);

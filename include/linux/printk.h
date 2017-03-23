@@ -82,22 +82,22 @@ struct va_format {
  * Dummy printk for disabled debugging statements to use whilst maintaining
  * gcc's format and side-effect checking.
  */
-static inline __attribute__ ((format (printf, 1, 2)))
+static inline __printf(1, 2)
 int no_printk(const char *fmt, ...)
 {
 	return 0;
 }
 
-extern asmlinkage __attribute__ ((format (printf, 1, 2)))
+extern asmlinkage __printf(1, 2)
 void early_printk(const char *fmt, ...);
 
 extern int printk_needs_cpu(int cpu);
 extern void printk_tick(void);
 
 #ifdef CONFIG_PRINTK
-asmlinkage __attribute__ ((format (printf, 1, 0)))
+asmlinkage __printf(1, 0)
 int vprintk(const char *fmt, va_list args);
-asmlinkage __attribute__ ((format (printf, 1, 2))) __cold
+asmlinkage __printf(1, 2) __cold
 int printk(const char *fmt, ...);
 
 /*
@@ -122,12 +122,12 @@ extern int kptr_restrict;
 void log_buf_kexec_setup(void);
 void __init setup_log_buf(int early);
 #else
-static inline __attribute__ ((format (printf, 1, 0)))
+static inline __printf(1, 0)
 int vprintk(const char *s, va_list args)
 {
 	return 0;
 }
-static inline __attribute__ ((format (printf, 1, 2))) __cold
+static inline __printf(1, 2) __cold
 int printk(const char *s, ...)
 {
 	return 0;
@@ -162,29 +162,23 @@ extern void dump_stack(void) __cold;
 #define pr_fmt(fmt) fmt
 #endif
 
-static inline __attribute__ ((format (printf, 1, 2))) __cold
-int noop_print(const char *s, ...)
-{
-        return 0;
-}
-
 #define pr_emerg(fmt, ...) \
-	noop_print(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
+	printk(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_alert(fmt, ...) \
-	noop_print(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
+	printk(KERN_ALERT pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_crit(fmt, ...) \
 	printk(KERN_CRIT pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_err(fmt, ...) \
 	printk(KERN_ERR pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_warning(fmt, ...) \
-	noop_print(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
+	printk(KERN_WARNING pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_warn pr_warning
 #define pr_notice(fmt, ...) \
-	noop_print(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
+	printk(KERN_NOTICE pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_info(fmt, ...) \
-	noop_print(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+	printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
 #define pr_cont(fmt, ...) \
-	noop_print(KERN_CONT fmt, ##__VA_ARGS__)
+	printk(KERN_CONT fmt, ##__VA_ARGS__)
 
 /* pr_devel() should produce zero code unless DEBUG is defined */
 #ifdef DEBUG

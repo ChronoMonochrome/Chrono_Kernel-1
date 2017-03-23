@@ -22,7 +22,6 @@
 #include <linux/skbuff.h>
 #include <net/sock.h>
 #include <net/tcp_states.h>
-#include <asm/system.h>
 #include <linux/fcntl.h>
 #include <linux/mm.h>
 #include <linux/interrupt.h>
@@ -191,7 +190,7 @@ void rose_write_internal(struct sock *sk, int frametype)
 		break;
 
 	default:
-;
+		printk(KERN_ERR "ROSE: rose_write_internal - invalid frametype %02X\n", frametype);
 		kfree_skb(skb);
 		return;
 	}

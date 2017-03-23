@@ -4,6 +4,7 @@
 #include <linux/init.h>
 #include <linux/stringify.h>
 #include <linux/kernel.h>
+#include <linux/stat.h>
 
 /* You can override this manually, but generally this should match the
    module name. */

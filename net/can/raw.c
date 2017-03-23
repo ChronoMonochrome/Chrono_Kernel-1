@@ -37,8 +37,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
  * DAMAGE.
  *
- * Send feedback to <socketcan-users@lists.berlios.de>
- *
  */
 
 #include <linux/module.h>
@@ -57,7 +55,7 @@
 #include <net/net_namespace.h>
 
 #define CAN_RAW_VERSION CAN_VERSION
-static __initconst const char banner[] =
+static __initdata const char banner[] =
 	KERN_INFO "can: raw protocol (rev " CAN_RAW_VERSION ")\n";
 
 MODULE_DESCRIPTION("PF_CAN raw protocol");
@@ -683,9 +681,6 @@ static int raw_sendmsg(struct kiocb *iocb, struct socket *sock,
 	if (err < 0)
 		goto free_skb;
 
-	/* to be able to check the received tx sock reference in raw_rcv() */
-	skb_shinfo(skb)->tx_flags |= SKBTX_DRV_NEEDS_SK_REF;
-
 	skb->dev = dev;
 	skb->sk  = sk;
 
@@ -785,11 +780,11 @@ static __init int raw_module_init(void)
 {
 	int err;
 
-;
+	printk(banner);
 
 	err = can_proto_register(&raw_can_proto);
 	if (err < 0)
-;
+		printk(KERN_ERR "can: registration of raw protocol failed\n");
 
 	return err;
 }

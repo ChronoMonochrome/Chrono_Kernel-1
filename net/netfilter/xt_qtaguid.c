@@ -2,7 +2,6 @@
  * Kernel iptables module to track stats for packets based on user tags.
  *
  * (C) 2011 Google, Inc
- * Copyright (C) 2012 Sony Mobile Communications AB.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -1208,7 +1207,7 @@ static struct sock_tag *get_sock_stat(const struct sock *sk)
 static int ipx_proto(const struct sk_buff *skb,
 		     struct xt_action_param *par)
 {
-	int thoff = 0, tproto;
+	int thoff, tproto;
 
 	switch (par->family) {
 	case NFPROTO_IPV6:
@@ -1425,15 +1424,12 @@ static void if_tag_stat_update(const char *ifname, uid_t uid,
 		 ifname, uid, sk, direction, proto, bytes);
 
 
-	spin_lock_bh(&iface_stat_list_lock);
 	iface_entry = get_iface_entry(ifname);
 	if (!iface_entry) {
-		spin_unlock_bh(&iface_stat_list_lock);
 		pr_err_ratelimited("qtaguid: tag_stat: stat_update() "
 				   "%s not found\n", ifname);
 		return;
 	}
-	spin_unlock_bh(&iface_stat_list_lock);
 	/* It is ok to process data when an iface_entry is inactive */
 
 	MT_DEBUG("qtaguid: tag_stat: stat_update() dev=%s entry=%p\n",
@@ -1658,20 +1654,16 @@ static int __init iface_stat_init(struct proc_dir_entry *parent_procdir)
 		goto err_unreg_nd;
 	}
 
-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 	err = register_inet6addr_notifier(&iface_inet6addr_notifier_blk);
 	if (err) {
 		pr_err("qtaguid: iface_stat: init "
 		       "failed to register ipv6 dev event handler\n");
 		goto err_unreg_ip4_addr;
 	}
-#endif
 	return 0;
 
-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 err_unreg_ip4_addr:
 	unregister_inetaddr_notifier(&iface_inetaddr_notifier_blk);
-#endif
 err_unreg_nd:
 	unregister_netdevice_notifier(&iface_netdev_notifier_blk);
 err_zap_all_stats_entries:
@@ -1701,11 +1693,9 @@ static struct sock *qtaguid_find_sk(const struct sk_buff *skb,
 		return NULL;
 
 	switch (par->family) {
-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
 	case NFPROTO_IPV6:
 		sk = xt_socket_get6_sk(skb, par);
 		break;
-#endif
 	case NFPROTO_IPV4:
 		sk = xt_socket_get4_sk(skb, par);
 		break;
@@ -1791,8 +1781,6 @@ static bool qtaguid_mt(const struct sk_buff *skb, struct xt_action_param *par)
 	}
 
 	sk = skb->sk;
-	if (sk && sk->sk_state == TCP_TIME_WAIT)
-		sk = NULL;
 	if (sk == NULL) {
 		/*
 		 * A missing sk->sk_socket happens when packets are in-flight

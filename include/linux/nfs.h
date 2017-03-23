@@ -29,7 +29,7 @@
 #define NFS_MNT_VERSION		1
 #define NFS_MNT3_VERSION	3
 
-#define NFS_PIPE_DIRNAME "/nfs"
+#define NFS_PIPE_DIRNAME "nfs"
 
 /*
  * NFS stats. The good thing with these values is that NFSv3 errors are
@@ -141,7 +141,6 @@ struct nfs_fh {
 	unsigned char		data[NFS_MAXFHSIZE];
 };
 
-extern int memcmp(const void *cs, const void *ct, size_t count);
 /*
  * Returns a zero iff the size and data fields match.
  * Checks only "size" bytes in the data field.

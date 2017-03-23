@@ -19,7 +19,6 @@
 
 #include <linux/atomic.h>
 #include <asm/ptrace.h>
-#include <asm/system.h>
 
 /*
  * These correspond to the IORESOURCE_IRQ_* defines in
@@ -274,6 +273,11 @@ struct irq_affinity_notify {
 
 extern int
 irq_set_affinity_notifier(unsigned int irq, struct irq_affinity_notify *notify);
+
+static inline void irq_run_affinity_notifiers(void)
+{
+	flush_scheduled_work();
+}
 
 #else /* CONFIG_SMP */
 

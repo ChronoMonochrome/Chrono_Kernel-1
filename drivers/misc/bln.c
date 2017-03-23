@@ -17,6 +17,7 @@
  */
 
 #include <linux/platform_device.h>
+#include <linux/stat.h>
 #include <linux/init.h>
 #include <linux/earlysuspend.h>
 #include <linux/device.h>

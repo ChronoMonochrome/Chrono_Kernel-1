@@ -3,6 +3,8 @@
 #include <scsi/scsi_cmnd.h>
 #include <scsi/scsi_device.h>
 #include <linux/usb.h>
+#include <linux/stat.h>
+#include <linux/module.h>
 #include <linux/slab.h>
 
 #include "usb.h"

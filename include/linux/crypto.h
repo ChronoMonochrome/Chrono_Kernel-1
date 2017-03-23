@@ -18,7 +18,6 @@
 #define _LINUX_CRYPTO_H
 
 #include <linux/atomic.h>
-#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/bug.h>
@@ -71,6 +70,16 @@
  */
 
 #define CRYPTO_ALG_TESTED		0x00000400
+
+/*
+ * Set if the algorithm is an instance that is build from templates.
+ */
+#define CRYPTO_ALG_INSTANCE		0x00000800
+
+/* Set this bit if the algorithm provided is hardware accelerated but
+ * not available to userspace via instruction set or so.
+ */
+#define CRYPTO_ALG_KERN_DRIVER_ONLY	0x00001000
 
 /*
  * Transform masks and values (for crt_flags).
@@ -506,11 +515,6 @@ static inline const char *crypto_tfm_alg_driver_name(struct crypto_tfm *tfm)
 static inline int crypto_tfm_alg_priority(struct crypto_tfm *tfm)
 {
 	return tfm->__crt_alg->cra_priority;
-}
-
-static inline const char *crypto_tfm_alg_modname(struct crypto_tfm *tfm)
-{
-	return module_name(tfm->__crt_alg->cra_module);
 }
 
 static inline u32 crypto_tfm_alg_type(struct crypto_tfm *tfm)

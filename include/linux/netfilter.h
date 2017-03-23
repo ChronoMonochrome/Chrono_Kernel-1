@@ -197,11 +197,9 @@ static inline int nf_hook_thresh(u_int8_t pf, unsigned int hook,
 				 struct net_device *outdev,
 				 int (*okfn)(struct sk_buff *), int thresh)
 {
-#ifndef CONFIG_NETFILTER_DEBUG
-	if (list_empty(&nf_hooks[pf][hook]))
-		return 1;
-#endif
-	return nf_hook_slow(pf, hook, skb, indev, outdev, okfn, thresh);
+	if (nf_hooks_active(pf, hook))
+		return nf_hook_slow(pf, hook, skb, indev, outdev, okfn, thresh);
+	return 1;
 }
 
 static inline int nf_hook(u_int8_t pf, unsigned int hook, struct sk_buff *skb,

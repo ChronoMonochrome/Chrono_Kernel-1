@@ -59,7 +59,6 @@ struct cfspi_xfer {
 	dma_addr_t pa_tx[2];
 	void *va_rx;
 	dma_addr_t pa_rx;
-	int idx_tx;
 };
 
 /* Structure implemented by the SPI interface. */

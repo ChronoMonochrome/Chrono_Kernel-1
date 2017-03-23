@@ -25,7 +25,6 @@
 #include <linux/skbuff.h>
 #include <net/sock.h>
 #include <net/tcp_states.h>
-#include <asm/system.h>
 #include <asm/uaccess.h>
 #include <linux/fcntl.h>
 #include <linux/termios.h>	/* For TIOCINQ/OUTQ */
@@ -36,6 +35,7 @@
 #include <linux/init.h>
 #include <net/rose.h>
 #include <linux/seq_file.h>
+#include <linux/export.h>
 
 static unsigned int rose_neigh_no = 1;
 
@@ -864,11 +864,6 @@ int rose_route_frame(struct sk_buff *skb, ax25_cb *ax25)
 	int res = 0;
 	char buf[11];
 
-#if 0
-	if (call_in_firewall(PF_ROSE, skb->dev, skb->data, NULL, &skb) != FW_ACCEPT)
-		return res;
-#endif
-
 	if (skb->len < ROSE_MIN_LEN)
 		return res;
 	frametype = skb->data[2];
@@ -893,8 +888,8 @@ int rose_route_frame(struct sk_buff *skb, ax25_cb *ax25)
 	}
 
 	if (rose_neigh == NULL) {
-//		printk("rose_route : unknown neighbour or device %s\n",
-;
+		printk("rose_route : unknown neighbour or device %s\n",
+		       ax2asc(buf, &ax25->dest_addr));
 		goto out;
 	}
 

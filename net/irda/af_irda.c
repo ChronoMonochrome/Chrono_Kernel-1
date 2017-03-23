@@ -369,7 +369,7 @@ static void irda_getvalue_confirm(int result, __u16 obj_id,
 {
 	struct irda_sock *self;
 
-	self = (struct irda_sock *) priv;
+	self = priv;
 	if (!self) {
 		IRDA_WARNING("%s: lost myself!\n", __func__);
 		return;
@@ -418,7 +418,7 @@ static void irda_selective_discovery_indication(discinfo_t *discovery,
 
 	IRDA_DEBUG(2, "%s()\n", __func__);
 
-	self = (struct irda_sock *) priv;
+	self = priv;
 	if (!self) {
 		IRDA_WARNING("%s: lost myself!\n", __func__);
 		return;
@@ -1103,9 +1103,6 @@ static int irda_create(struct net *net, struct socket *sock, int protocol,
 {
 	struct sock *sk;
 	struct irda_sock *self;
-
-	if (protocol < 0 || protocol > SK_PROTOCOL_MAX)
-		return -EINVAL;
 
 	IRDA_DEBUG(2, "%s()\n", __func__);
 
@@ -2563,8 +2560,8 @@ bed:
 			self->errno = 0;
 			setup_timer(&self->watchdog, irda_discovery_timeout,
 					(unsigned long)self);
-			self->watchdog.expires = jiffies + (val * HZ/1000);
-			add_timer(&(self->watchdog));
+			mod_timer(&self->watchdog,
+				  jiffies + msecs_to_jiffies(val));
 
 			/* Wait for IR-LMP to call us back */
 			__wait_event_interruptible(self->query_wait,

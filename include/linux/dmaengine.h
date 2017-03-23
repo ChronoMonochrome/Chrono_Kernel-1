@@ -22,9 +22,11 @@
 #define DMAENGINE_H
 
 #include <linux/device.h>
+#include <linux/bitmap.h>
 #include <linux/uio.h>
 #include <linux/bug.h>
 #include <linux/dma-direction.h>
+#include <asm/page.h>
 
 struct scatterlist;
 /**

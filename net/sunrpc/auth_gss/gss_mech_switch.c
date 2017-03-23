@@ -113,7 +113,7 @@ gss_mech_register(struct gss_api_mech *gm)
 	spin_lock(&registered_mechs_lock);
 	list_add(&gm->gm_list, &registered_mechs);
 	spin_unlock(&registered_mechs_lock);
-;
+	dprintk("RPC:       registered gss mechanism %s\n", gm->gm_name);
 	return 0;
 }
 
@@ -125,7 +125,7 @@ gss_mech_unregister(struct gss_api_mech *gm)
 	spin_lock(&registered_mechs_lock);
 	list_del(&gm->gm_list);
 	spin_unlock(&registered_mechs_lock);
-;
+	dprintk("RPC:       unregistered gss mechanism %s\n", gm->gm_name);
 	gss_mech_free(gm);
 }
 
@@ -141,7 +141,7 @@ gss_mech_get(struct gss_api_mech *gm)
 EXPORT_SYMBOL_GPL(gss_mech_get);
 
 struct gss_api_mech *
-gss_mech_get_by_name(const char *name)
+_gss_mech_get_by_name(const char *name)
 {
 	struct gss_api_mech	*pos, *gm = NULL;
 
@@ -158,6 +158,17 @@ gss_mech_get_by_name(const char *name)
 
 }
 
+struct gss_api_mech * gss_mech_get_by_name(const char *name)
+{
+	struct gss_api_mech *gm = NULL;
+
+	gm = _gss_mech_get_by_name(name);
+	if (!gm) {
+		request_module("rpc-auth-gss-%s", name);
+		gm = _gss_mech_get_by_name(name);
+	}
+	return gm;
+}
 EXPORT_SYMBOL_GPL(gss_mech_get_by_name);
 
 struct gss_api_mech *
@@ -194,10 +205,9 @@ mech_supports_pseudoflavor(struct gss_api_mech *gm, u32 pseudoflavor)
 	return 0;
 }
 
-struct gss_api_mech *
-gss_mech_get_by_pseudoflavor(u32 pseudoflavor)
+struct gss_api_mech *_gss_mech_get_by_pseudoflavor(u32 pseudoflavor)
 {
-	struct gss_api_mech *pos, *gm = NULL;
+	struct gss_api_mech *gm = NULL, *pos;
 
 	spin_lock(&registered_mechs_lock);
 	list_for_each_entry(pos, &registered_mechs, gm_list) {
@@ -213,17 +223,32 @@ gss_mech_get_by_pseudoflavor(u32 pseudoflavor)
 	return gm;
 }
 
+struct gss_api_mech *
+gss_mech_get_by_pseudoflavor(u32 pseudoflavor)
+{
+	struct gss_api_mech *gm;
+
+	gm = _gss_mech_get_by_pseudoflavor(pseudoflavor);
+
+	if (!gm) {
+		request_module("rpc-auth-gss-%u", pseudoflavor);
+		gm = _gss_mech_get_by_pseudoflavor(pseudoflavor);
+	}
+	return gm;
+}
+
 EXPORT_SYMBOL_GPL(gss_mech_get_by_pseudoflavor);
 
 int gss_mech_list_pseudoflavors(rpc_authflavor_t *array_ptr)
 {
 	struct gss_api_mech *pos = NULL;
-	int i = 0;
+	int j, i = 0;
 
 	spin_lock(&registered_mechs_lock);
 	list_for_each_entry(pos, &registered_mechs, gm_list) {
-		array_ptr[i] = pos->gm_pfs->pseudoflavor;
-		i++;
+		for (j=0; j < pos->gm_pf_num; j++) {
+			array_ptr[i++] = pos->gm_pfs[j].pseudoflavor;
+		}
 	}
 	spin_unlock(&registered_mechs_lock);
 	return i;
@@ -365,8 +390,8 @@ gss_unwrap(struct gss_ctx	*ctx_id,
 u32
 gss_delete_sec_context(struct gss_ctx	**context_handle)
 {
-//	dprintk("RPC:       gss_delete_sec_context deleting %p\n",
-;
+	dprintk("RPC:       gss_delete_sec_context deleting %p\n",
+			*context_handle);
 
 	if (!*context_handle)
 		return GSS_S_NO_CONTEXT;

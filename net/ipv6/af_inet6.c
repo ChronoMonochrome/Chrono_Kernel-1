@@ -61,7 +61,6 @@
 #endif
 
 #include <asm/uaccess.h>
-#include <asm/system.h>
 #include <linux/mroute6.h>
 
 #ifdef CONFIG_ANDROID_PARANOID_NETWORK
@@ -123,9 +122,6 @@ static int inet6_create(struct net *net, struct socket *sock, int protocol,
 	char answer_no_check;
 	int try_loading_module = 0;
 	int err;
-
-	if (protocol < 0 || protocol >= IPPROTO_MAX)
-		return -EINVAL;
 
 	if (!current_has_network())
 		return -EACCES;
@@ -235,6 +231,7 @@ lookup_protocol:
 	inet->mc_ttl	= 1;
 	inet->mc_index	= 0;
 	inet->mc_list	= NULL;
+	inet->rcv_tos	= 0;
 
 	if (ipv4_config.no_pmtu_disc)
 		inet->pmtudisc = IP_PMTUDISC_DONT;
@@ -368,7 +365,7 @@ int inet6_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 			 */
 			v4addr = LOOPBACK4_IPV6;
 			if (!(addr_type & IPV6_ADDR_MULTICAST))	{
-				if (!inet->transparent &&
+				if (!(inet->freebind || inet->transparent) &&
 				    !ipv6_chk_addr(net, &addr->sin6_addr,
 						   dev, 0)) {
 					err = -EADDRNOTAVAIL;
@@ -382,10 +379,10 @@ int inet6_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
 	inet->inet_rcv_saddr = v4addr;
 	inet->inet_saddr = v4addr;
 
-	ipv6_addr_copy(&np->rcv_saddr, &addr->sin6_addr);
+	np->rcv_saddr = addr->sin6_addr;
 
 	if (!(addr_type & IPV6_ADDR_MULTICAST))
-		ipv6_addr_copy(&np->saddr, &addr->sin6_addr);
+		np->saddr = addr->sin6_addr;
 
 	/* Make sure we are allowed to bind here. */
 	if (sk->sk_prot->get_port(sk, snum)) {
@@ -451,8 +448,11 @@ void inet6_destroy_sock(struct sock *sk)
 
 	/* Free tx options */
 
-	if ((opt = xchg(&np->opt, NULL)) != NULL)
-		sock_kfree_s(sk, opt, opt->tot_len);
+	opt = xchg((__force struct ipv6_txoptions **)&np->opt, NULL);
+	if (opt) {
+		atomic_sub(opt->tot_len, &sk->sk_omem_alloc);
+		txopt_put(opt);
+	}
 }
 
 EXPORT_SYMBOL_GPL(inet6_destroy_sock);
@@ -479,14 +479,14 @@ int inet6_getname(struct socket *sock, struct sockaddr *uaddr,
 		    peer == 1)
 			return -ENOTCONN;
 		sin->sin6_port = inet->inet_dport;
-		ipv6_addr_copy(&sin->sin6_addr, &np->daddr);
+		sin->sin6_addr = np->daddr;
 		if (np->sndflow)
 			sin->sin6_flowinfo = np->flow_label;
 	} else {
 		if (ipv6_addr_any(&np->rcv_saddr))
-			ipv6_addr_copy(&sin->sin6_addr, &np->saddr);
+			sin->sin6_addr = np->saddr;
 		else
-			ipv6_addr_copy(&sin->sin6_addr, &np->rcv_saddr);
+			sin->sin6_addr = np->rcv_saddr;
 
 		sin->sin6_port = inet->inet_sport;
 	}
@@ -509,7 +509,7 @@ int inet6_killaddr_ioctl(struct net *net, void __user *arg) {
 		return -EFAULT;
 
 	sin6.sin6_family = AF_INET6;
-	ipv6_addr_copy(&sin6.sin6_addr, &ireq.ifr6_addr);
+	sin6.sin6_addr = ireq.ifr6_addr;
 	return tcp_nuke_addr(net, (struct sockaddr *) &sin6);
 }
 
@@ -653,14 +653,14 @@ out:
 	return ret;
 
 out_permanent:
-//	printk(KERN_ERR "Attempt to override permanent protocol %d.\n",
-;
+	printk(KERN_ERR "Attempt to override permanent protocol %d.\n",
+	       protocol);
 	goto out;
 
 out_illegal:
-//	printk(KERN_ERR
-//	       "Ignoring attempt to register invalid socket type %d.\n",
-;
+	printk(KERN_ERR
+	       "Ignoring attempt to register invalid socket type %d.\n",
+	       p->type);
 	goto out;
 }
 
@@ -670,9 +670,9 @@ void
 inet6_unregister_protosw(struct inet_protosw *p)
 {
 	if (INET_PROTOSW_PERMANENT & p->flags) {
-//		printk(KERN_ERR
-//		       "Attempt to unregister permanent protocol %d.\n",
-;
+		printk(KERN_ERR
+		       "Attempt to unregister permanent protocol %d.\n",
+		       p->protocol);
 	} else {
 		spin_lock_bh(&inetsw6_lock);
 		list_del_rcu(&p->list);
@@ -698,8 +698,8 @@ int inet6_sk_rebuild_header(struct sock *sk)
 
 		memset(&fl6, 0, sizeof(fl6));
 		fl6.flowi6_proto = sk->sk_protocol;
-		ipv6_addr_copy(&fl6.daddr, &np->daddr);
-		ipv6_addr_copy(&fl6.saddr, &np->saddr);
+		fl6.daddr = np->daddr;
+		fl6.saddr = np->saddr;
 		fl6.flowlabel = np->flow_label;
 		fl6.flowi6_oif = sk->sk_bound_dev_if;
 		fl6.flowi6_mark = sk->sk_mark;
@@ -708,7 +708,10 @@ int inet6_sk_rebuild_header(struct sock *sk)
 		fl6.flowi6_uid = sock_i_uid(sk);
 		security_sk_classify_flow(sk, flowi6_to_flowi(&fl6));
 
-		final_p = fl6_update_dst(&fl6, np->opt, &final);
+		rcu_read_lock();
+		final_p = fl6_update_dst(&fl6, rcu_dereference(np->opt),
+					 &final);
+		rcu_read_unlock();
 
 		dst = ip6_dst_lookup_flow(sk, &fl6, final_p, false);
 		if (IS_ERR(dst)) {
@@ -914,6 +917,7 @@ static struct sk_buff **ipv6_gro_receive(struct sk_buff **head,
 		skb_reset_transport_header(skb);
 		__skb_push(skb, skb_gro_offset(skb));
 
+		ops = rcu_dereference(inet6_protos[proto]);
 		if (!ops || !ops->gro_receive)
 			goto out_unlock;
 
@@ -1023,9 +1027,9 @@ static int __net_init ipv6_init_mibs(struct net *net)
 			  sizeof(struct icmpv6_mib),
 			  __alignof__(struct icmpv6_mib)) < 0)
 		goto err_icmp_mib;
-	if (snmp_mib_init((void __percpu **)net->mib.icmpv6msg_statistics,
-			  sizeof(struct icmpv6msg_mib),
-			  __alignof__(struct icmpv6msg_mib)) < 0)
+	net->mib.icmpv6msg_statistics = kzalloc(sizeof(struct icmpv6msg_mib),
+						GFP_KERNEL);
+	if (!net->mib.icmpv6msg_statistics)
 		goto err_icmpmsg_mib;
 	return 0;
 
@@ -1046,7 +1050,7 @@ static void ipv6_cleanup_mibs(struct net *net)
 	snmp_mib_free((void __percpu **)net->mib.udplite_stats_in6);
 	snmp_mib_free((void __percpu **)net->mib.ipv6_statistics);
 	snmp_mib_free((void __percpu **)net->mib.icmpv6_statistics);
-	snmp_mib_free((void __percpu **)net->mib.icmpv6msg_statistics);
+	kfree(net->mib.icmpv6msg_statistics);
 }
 
 static int __net_init inet6_net_init(struct net *net)
@@ -1111,13 +1115,11 @@ static int __init inet6_init(void)
 		INIT_LIST_HEAD(r);
 
 	if (disable_ipv6_mod) {
-//		printk(KERN_INFO
-//		       "IPv6: Loaded, but administratively disabled, "
-;
+		printk(KERN_INFO
+		       "IPv6: Loaded, but administratively disabled, "
+		       "reboot required to enable\n");
 		goto out;
 	}
-
-	initialize_hashidentrnd();
 
 	err = proto_register(&tcpv6_prot, 1);
 	if (err)
@@ -1158,6 +1160,8 @@ static int __init inet6_init(void)
 	if (err)
 		goto static_sysctl_fail;
 #endif
+	tcpv6_prot.sysctl_mem = init_net.ipv4.sysctl_tcp_mem;
+
 	/*
 	 *	ipngwg API draft makes clear that the correct semantics
 	 *	for TCP and UDP is to consider one TCP and UDP instance

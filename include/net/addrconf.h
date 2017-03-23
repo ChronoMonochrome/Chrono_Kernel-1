@@ -154,7 +154,8 @@ extern int ipv6_chk_mcast_addr(struct net_device *dev,
 			       const struct in6_addr *src_addr);
 extern int ipv6_is_mld(struct sk_buff *skb, int nexthdr);
 
-extern void addrconf_prefix_rcv(struct net_device *dev, u8 *opt, int len);
+extern void addrconf_prefix_rcv(struct net_device *dev,
+				u8 *opt, int len, bool sllao);
 
 /*
  *	anycast prototypes (anycast.c)
@@ -162,21 +163,19 @@ extern void addrconf_prefix_rcv(struct net_device *dev, u8 *opt, int len);
 extern int ipv6_sock_ac_join(struct sock *sk,int ifindex, const struct in6_addr *addr);
 extern int ipv6_sock_ac_drop(struct sock *sk,int ifindex, const struct in6_addr *addr);
 extern void ipv6_sock_ac_close(struct sock *sk);
-extern int inet6_ac_check(struct sock *sk, const struct in6_addr *addr, int ifindex);
 
 extern int ipv6_dev_ac_inc(struct net_device *dev, const struct in6_addr *addr);
 extern int __ipv6_dev_ac_dec(struct inet6_dev *idev, const struct in6_addr *addr);
 extern int ipv6_chk_acast_addr(struct net *net, struct net_device *dev,
 			       const struct in6_addr *addr);
+extern void ipv6_ac_destroy_dev(struct inet6_dev *idev);
 
 u32 addrconf_rt_table(const struct net_device *dev, u32 default_table);
 
 
 /* Device notifier */
-#ifdef CONFIG_IPV6
 extern int register_inet6addr_notifier(struct notifier_block *nb);
 extern int unregister_inet6addr_notifier(struct notifier_block *nb);
-#endif
 
 /**
  * __in6_dev_get - get inet6_dev pointer from netdevice

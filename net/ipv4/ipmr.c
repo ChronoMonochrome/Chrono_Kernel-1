@@ -26,7 +26,6 @@
  *
  */
 
-#include <asm/system.h>
 #include <asm/uaccess.h>
 #include <linux/types.h>
 #include <linux/capability.h>
@@ -61,6 +60,7 @@
 #include <linux/if_arp.h>
 #include <linux/netfilter_ipv4.h>
 #include <linux/compat.h>
+#include <linux/export.h>
 #include <net/ipip.h>
 #include <net/checksum.h>
 #include <net/netlink.h>
@@ -221,7 +221,7 @@ static int ipmr_rule_fill(struct fib_rule *rule, struct sk_buff *skb,
 	return 0;
 }
 
-static const struct fib_rules_ops __net_initconst ipmr_rules_ops_template = {
+static const struct fib_rules_ops __net_initdata ipmr_rules_ops_template = {
 	.family		= RTNL_FAMILY_IPMR,
 	.rule_size	= sizeof(struct ipmr_rule),
 	.addr_size	= sizeof(u32),
@@ -960,7 +960,7 @@ static int ipmr_cache_report(struct mr_table *mrt,
 	rcu_read_unlock();
 	if (ret < 0) {
 		if (net_ratelimit())
-;
+			pr_warn("mroute: pending queue full, dropping entries\n");
 		kfree_skb(skb);
 	}
 
@@ -1186,7 +1186,7 @@ static void mrtsock_destruct(struct sock *sk)
 	ipmr_for_each_table(mrt, net) {
 		if (sk == rtnl_dereference(mrt->mroute_sk)) {
 			IPV4_DEVCONF_ALL(net, MC_FORWARDING)--;
-			rcu_assign_pointer(mrt->mroute_sk, NULL);
+			RCU_INIT_POINTER(mrt->mroute_sk, NULL);
 			mroute_clean_tables(mrt);
 		}
 	}
@@ -1213,7 +1213,7 @@ int ip_mroute_setsockopt(struct sock *sk, int optname, char __user *optval, unsi
 		return -ENOENT;
 
 	if (optname != MRT_INIT) {
-		if (sk != rcu_dereference_raw(mrt->mroute_sk) &&
+		if (sk != rcu_access_pointer(mrt->mroute_sk) &&
 		    !capable(CAP_NET_ADMIN))
 			return -EACCES;
 	}
@@ -1240,7 +1240,7 @@ int ip_mroute_setsockopt(struct sock *sk, int optname, char __user *optval, unsi
 		rtnl_unlock();
 		return ret;
 	case MRT_DONE:
-		if (sk != rcu_dereference_raw(mrt->mroute_sk))
+		if (sk != rcu_access_pointer(mrt->mroute_sk))
 			return -EACCES;
 		return ip_ra_control(sk, 0, NULL);
 	case MRT_ADD_VIF:
@@ -1529,7 +1529,6 @@ static int ipmr_device_event(struct notifier_block *this, unsigned long event, v
 	struct mr_table *mrt;
 	struct vif_device *v;
 	int ct;
-	LIST_HEAD(list);
 
 	if (event != NETDEV_UNREGISTER)
 		return NOTIFY_DONE;
@@ -1538,10 +1537,9 @@ static int ipmr_device_event(struct notifier_block *this, unsigned long event, v
 		v = &mrt->vif_table[0];
 		for (ct = 0; ct < mrt->maxvif; ct++, v++) {
 			if (v->dev == dev)
-				vif_delete(mrt, ct, 1, &list);
+				vif_delete(mrt, ct, 1, NULL);
 		}
 	}
-	unregister_netdevice_many(&list);
 	return NOTIFY_DONE;
 }
 
@@ -2549,7 +2547,7 @@ int __init ip_mr_init(void)
 		goto reg_notif_fail;
 #ifdef CONFIG_IP_PIMSM_V2
 	if (inet_add_protocol(&pim_protocol, IPPROTO_PIM) < 0) {
-;
+		pr_err("%s: can't add PIM protocol\n", __func__);
 		err = -EAGAIN;
 		goto add_proto_fail;
 	}

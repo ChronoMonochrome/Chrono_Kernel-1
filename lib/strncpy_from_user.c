@@ -6,6 +6,8 @@
 #include <asm/byteorder.h>
 #include <asm/word-at-a-time.h>
 
+#define REPEAT_BYTE(x) ((~0ul / 0xff) * (x))
+
 #ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
 #define IS_UNALIGNED(src, dst)	0
 #else

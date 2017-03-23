@@ -58,12 +58,6 @@
 #define LM3530_ALS_IMPD_700Ohm		(0x0E)
 #define LM3530_ALS_IMPD_667Ohm		(0x0F)
 
-/*
- * If lm3530 does not use a gpio for HWEN, set LM3530_NO_HWEN_GPIO
- * for hw_en_gpio in lm3530_platform data member
- */
-#define LM3530_NO_HWEN_GPIO			-1
-
 enum lm3530_mode {
 	LM3530_BL_MODE_MANUAL = 0,	/* "man" */
 	LM3530_BL_MODE_ALS,		/* "als" */
@@ -76,6 +70,12 @@ enum lm3530_als_mode {
 	LM3530_INPUT_ALS1,	/* ALS1 Input */
 	LM3530_INPUT_ALS2,	/* ALS2 Input */
 	LM3530_INPUT_CEIL,	/* Max of ALS1 and ALS2 */
+};
+
+/* PWM Platform Specific Data */
+struct lm3530_pwm_data {
+	void (*pwm_set_intensity) (int brightness, int max_brightness);
+	int (*pwm_get_intensity) (int max_brightness);
 };
 
 /**
@@ -93,7 +93,7 @@ enum lm3530_als_mode {
  * @als_vmin: als input voltage calibrated for max brightness in mV
  * @als_vmax: als input voltage calibrated for min brightness in mV
  * @brt_val: brightness value (0-255)
- * @hw_en_gpio: GPIO line for LM3530 HWEN
+ * @pwm_data: PWM control functions (only valid when the mode is PWM)
  */
 struct lm3530_platform_data {
 	enum lm3530_mode mode;
@@ -115,7 +115,7 @@ struct lm3530_platform_data {
 
 	u8 brt_val;
 
-	int hw_en_gpio;
+	struct lm3530_pwm_data pwm_data;
 };
 
 #endif	/* _LINUX_LED_LM3530_H__ */

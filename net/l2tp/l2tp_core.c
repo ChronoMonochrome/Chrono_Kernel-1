@@ -85,7 +85,7 @@
 #define PRINTK(_mask, _type, _lvl, _fmt, args...)			\
 	do {								\
 		if ((_mask) & (_type))					\
-;
+			printk(_lvl "L2TP: " _fmt, ##args);		\
 	} while (0)
 
 /* Private data stored for received packets in the skb.
@@ -138,11 +138,11 @@ static inline void l2tp_tunnel_dec_refcount_1(struct l2tp_tunnel *tunnel)
 }
 #ifdef L2TP_REFCNT_DEBUG
 #define l2tp_tunnel_inc_refcount(_t) do { \
-;
+		printk(KERN_DEBUG "l2tp_tunnel_inc_refcount: %s:%d %s: cnt=%d\n", __func__, __LINE__, (_t)->name, atomic_read(&_t->ref_count)); \
 		l2tp_tunnel_inc_refcount_1(_t);				\
 	} while (0)
 #define l2tp_tunnel_dec_refcount(_t) do { \
-;
+		printk(KERN_DEBUG "l2tp_tunnel_dec_refcount: %s:%d %s: cnt=%d\n", __func__, __LINE__, (_t)->name, atomic_read(&_t->ref_count)); \
 		l2tp_tunnel_dec_refcount_1(_t);				\
 	} while (0)
 #else
@@ -397,6 +397,7 @@ static void l2tp_recv_dequeue(struct l2tp_session *session)
 	 * expect to send up next, dequeue it and any other
 	 * in-sequence packets behind it.
 	 */
+start:
 	spin_lock_bh(&session->reorder_q.lock);
 	skb_queue_walk_safe(&session->reorder_q, skb, tmp) {
 		if (time_after(jiffies, L2TP_SKB_CB(skb)->expires)) {
@@ -433,7 +434,7 @@ static void l2tp_recv_dequeue(struct l2tp_session *session)
 		 */
 		spin_unlock_bh(&session->reorder_q.lock);
 		l2tp_recv_dequeue_skb(session, skb);
-		spin_lock_bh(&session->reorder_q.lock);
+		goto start;
 	}
 
 out:
@@ -755,24 +756,24 @@ static int l2tp_udp_recv_core(struct l2tp_tunnel *tunnel, struct sk_buff *skb,
 		goto error;
 	}
 
-	/* Point to L2TP header */
-	optr = ptr = skb->data;
-
 	/* Trace packet contents, if enabled */
 	if (tunnel->debug & L2TP_MSG_DATA) {
 		length = min(32u, skb->len);
 		if (!pskb_may_pull(skb, length))
 			goto error;
 
-;
+		printk(KERN_DEBUG "%s: recv: ", tunnel->name);
 
 		offset = 0;
 		do {
-;
+			printk(" %02X", skb->data[offset]);
 		} while (++offset < length);
 
-;
+		printk("\n");
 	}
+
+	/* Point to L2TP header */
+	optr = ptr = skb->data;
 
 	/* Get L2TP header flags */
 	hdrflags = ntohs(*(__be16 *) ptr);
@@ -974,15 +975,15 @@ static int l2tp_xmit_core(struct l2tp_session *session, struct sk_buff *skb,
 		int uhlen = (tunnel->encap == L2TP_ENCAPTYPE_UDP) ? sizeof(struct udphdr) : 0;
 		unsigned char *datap = skb->data + uhlen;
 
-;
+		printk(KERN_DEBUG "%s: xmit:", session->name);
 		for (i = 0; i < (len - uhlen); i++) {
 			printk(" %02X", *datap++);
 			if (i == 31) {
-;
+				printk(" ...");
 				break;
 			}
 		}
-;
+		printk("\n");
 	}
 
 	/* Queue the packet to IP for output */
@@ -1071,7 +1072,7 @@ int l2tp_xmit_skb(struct l2tp_session *session, struct sk_buff *skb, int hdr_len
 
 	/* Get routing info from the tunnel socket */
 	skb_dst_drop(skb);
-	skb_dst_set(skb, dst_clone(__sk_dst_get(sk)));
+	skb_dst_set(skb, dst_clone(__sk_dst_check(sk, 0)));
 
 	inet = inet_sk(sk);
 	fl = &inet->cork.fl;
@@ -1355,8 +1356,8 @@ int l2tp_tunnel_create(struct net *net, int fd, int version, u32 tunnel_id, u32 
 		err = -EBADF;
 		sock = sockfd_lookup(fd, &err);
 		if (!sock) {
-//			printk(KERN_ERR "tunl %hu: sockfd_lookup(fd=%d) returned %d\n",
-;
+			printk(KERN_ERR "tunl %hu: sockfd_lookup(fd=%d) returned %d\n",
+			       tunnel_id, fd, err);
 			goto err;
 		}
 	}
@@ -1371,16 +1372,16 @@ int l2tp_tunnel_create(struct net *net, int fd, int version, u32 tunnel_id, u32 
 	case L2TP_ENCAPTYPE_UDP:
 		err = -EPROTONOSUPPORT;
 		if (sk->sk_protocol != IPPROTO_UDP) {
-//			printk(KERN_ERR "tunl %hu: fd %d wrong protocol, got %d, expected %d\n",
-;
+			printk(KERN_ERR "tunl %hu: fd %d wrong protocol, got %d, expected %d\n",
+			       tunnel_id, fd, sk->sk_protocol, IPPROTO_UDP);
 			goto err;
 		}
 		break;
 	case L2TP_ENCAPTYPE_IP:
 		err = -EPROTONOSUPPORT;
 		if (sk->sk_protocol != IPPROTO_L2TP) {
-//			printk(KERN_ERR "tunl %hu: fd %d wrong protocol, got %d, expected %d\n",
-;
+			printk(KERN_ERR "tunl %hu: fd %d wrong protocol, got %d, expected %d\n",
+			       tunnel_id, fd, sk->sk_protocol, IPPROTO_L2TP);
 			goto err;
 		}
 		break;
@@ -1681,7 +1682,7 @@ static int __init l2tp_init(void)
 	if (rc)
 		goto out;
 
-;
+	printk(KERN_INFO "L2TP core driver, %s\n", L2TP_DRV_VERSION);
 
 out:
 	return rc;

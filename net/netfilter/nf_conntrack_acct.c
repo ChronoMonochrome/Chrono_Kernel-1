@@ -12,14 +12,15 @@
 #include <linux/slab.h>
 #include <linux/kernel.h>
 #include <linux/moduleparam.h>
+#include <linux/export.h>
 
 #include <net/netfilter/nf_conntrack.h>
 #include <net/netfilter/nf_conntrack_extend.h>
 #include <net/netfilter/nf_conntrack_acct.h>
 
-static int nf_ct_acct __read_mostly;
+static bool nf_ct_acct __read_mostly;
 
-module_param_named(acct, nf_ct_acct, int, 0644);
+module_param_named(acct, nf_ct_acct, bool, 0644);
 MODULE_PARM_DESC(acct, "Enable connection tracking flow accounting.");
 
 #ifdef CONFIG_SYSCTL
@@ -45,8 +46,8 @@ seq_print_acct(struct seq_file *s, const struct nf_conn *ct, int dir)
 		return 0;
 
 	return seq_printf(s, "packets=%llu bytes=%llu ",
-			  (unsigned long long)acct[dir].packets,
-			  (unsigned long long)acct[dir].bytes);
+			  (unsigned long long)atomic64_read(&acct[dir].packets),
+			  (unsigned long long)atomic64_read(&acct[dir].bytes));
 };
 EXPORT_SYMBOL_GPL(seq_print_acct);
 
@@ -71,7 +72,7 @@ static int nf_conntrack_acct_init_sysctl(struct net *net)
 	net->ct.acct_sysctl_header = register_net_sysctl_table(net,
 			nf_net_netfilter_sysctl_path, table);
 	if (!net->ct.acct_sysctl_header) {
-;
+		printk(KERN_ERR "nf_conntrack_acct: can't register to sysctl.\n");
 		goto out_register;
 	}
 	return 0;
@@ -110,7 +111,7 @@ int nf_conntrack_acct_init(struct net *net)
 	if (net_eq(net, &init_net)) {
 		ret = nf_ct_extend_register(&acct_extend);
 		if (ret < 0) {
-;
+			printk(KERN_ERR "nf_conntrack_acct: Unable to register extension\n");
 			goto out_extend_register;
 		}
 	}

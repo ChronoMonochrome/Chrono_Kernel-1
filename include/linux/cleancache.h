@@ -28,17 +28,12 @@ struct cleancache_ops {
 			pgoff_t, struct page *);
 	void (*put_page)(int, struct cleancache_filekey,
 			pgoff_t, struct page *);
-	/*
-	 * NOTE: per akpm, flush_page, flush_inode and flush_fs will be
-	 * renamed to invalidate_* in a later commit in which all
-	 * dependencies (i.e Xen, zcache) will be renamed simultaneously
-	 */
-	void (*flush_page)(int, struct cleancache_filekey, pgoff_t);
-	void (*flush_inode)(int, struct cleancache_filekey);
-	void (*flush_fs)(int);
+	void (*invalidate_page)(int, struct cleancache_filekey, pgoff_t);
+	void (*invalidate_inode)(int, struct cleancache_filekey);
+	void (*invalidate_fs)(int);
 };
 
-extern struct cleancache_ops *
+extern struct cleancache_ops
 	cleancache_register_ops(struct cleancache_ops *ops);
 extern void __cleancache_init_fs(struct super_block *);
 extern void __cleancache_init_shared_fs(char *, struct super_block *);
@@ -47,9 +42,9 @@ extern void __cleancache_put_page(struct page *);
 extern void __cleancache_invalidate_page(struct address_space *, struct page *);
 extern void __cleancache_invalidate_inode(struct address_space *);
 extern void __cleancache_invalidate_fs(struct super_block *);
+extern int cleancache_enabled;
 
 #ifdef CONFIG_CLEANCACHE
-#define cleancache_enabled (1)
 static inline bool cleancache_fs_enabled(struct page *page)
 {
 	return page->mapping->host->i_sb->cleancache_poolid >= 0;
@@ -125,4 +120,3 @@ static inline void cleancache_invalidate_fs(struct super_block *sb)
 }
 
 #endif /* _LINUX_CLEANCACHE_H */
-

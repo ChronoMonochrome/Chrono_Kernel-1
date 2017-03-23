@@ -6,6 +6,7 @@
  */
 
 #include <linux/platform_device.h>
+#include <linux/stat.h>
 #include <linux/io.h>
 #include <linux/clk.h>
 #include <linux/delay.h>

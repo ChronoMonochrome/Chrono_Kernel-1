@@ -1,6 +1,4 @@
 /*
- * hsi_char.h
- *
  * Part of the HSI character device driver.
  *
  * Copyright (C) 2010 Nokia Corporation. All rights reserved.
@@ -60,7 +58,6 @@ struct hsc_tx_config {
 	uint32_t channels;
 	uint32_t speed;
 	uint32_t arb_mode;
-	uint32_t priority;
 };
 
 #endif /* __HSI_CHAR_H */

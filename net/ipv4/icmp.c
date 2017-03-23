@@ -62,6 +62,8 @@
  *
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/module.h>
 #include <linux/types.h>
 #include <linux/jiffies.h>
@@ -89,7 +91,6 @@
 #include <linux/errno.h>
 #include <linux/timer.h>
 #include <linux/init.h>
-#include <asm/system.h>
 #include <asm/uaccess.h>
 #include <net/checksum.h>
 #include <net/xfrm.h>
@@ -677,7 +678,7 @@ static void icmp_unreach(struct sk_buff *skb)
 			break;
 		case ICMP_FRAG_NEEDED:
 			if (ipv4_config.no_pmtu_disc) {
-				LIMIT_NETDEBUG(KERN_INFO "ICMP: %pI4: fragmentation needed and DF set.\n",
+				LIMIT_NETDEBUG(KERN_INFO pr_fmt("%pI4: fragmentation needed and DF set\n"),
 					       &iph->daddr);
 			} else {
 				info = ip_rt_frag_needed(net, iph,
@@ -688,7 +689,7 @@ static void icmp_unreach(struct sk_buff *skb)
 			}
 			break;
 		case ICMP_SR_FAILED:
-			LIMIT_NETDEBUG(KERN_INFO "ICMP: %pI4: Source Route Failed.\n",
+			LIMIT_NETDEBUG(KERN_INFO pr_fmt("%pI4: Source Route Failed\n"),
 				       &iph->daddr);
 			break;
 		default:
@@ -720,13 +721,10 @@ static void icmp_unreach(struct sk_buff *skb)
 	if (!net->ipv4.sysctl_icmp_ignore_bogus_error_responses &&
 	    inet_addr_type(net, iph->daddr) == RTN_BROADCAST) {
 		if (net_ratelimit())
-//			printk(KERN_WARNING "%pI4 sent an invalid ICMP "
-//					    "type %u, code %u "
-//					    "error to a broadcast: %pI4 on %s\n",
-//			       &ip_hdr(skb)->saddr,
-//			       icmph->type, icmph->code,
-//			       &iph->daddr,
-;
+			pr_warn("%pI4 sent an invalid ICMP type %u, code %u error to a broadcast: %pI4 on %s\n",
+				&ip_hdr(skb)->saddr,
+				icmph->type, icmph->code,
+				&iph->daddr, skb->dev->name);
 		goto out;
 	}
 
@@ -916,7 +914,7 @@ static void icmp_address(struct sk_buff *skb)
 {
 #if 0
 	if (net_ratelimit())
-;
+		printk(KERN_DEBUG "a guy asks for address mask. Who is it?\n");
 #endif
 }
 
@@ -953,8 +951,8 @@ static void icmp_address_reply(struct sk_buff *skb)
 				break;
 		}
 		if (!ifa && net_ratelimit()) {
-//			printk(KERN_INFO "Wrong address mask %pI4 from %s/%pI4\n",
-;
+			pr_info("Wrong address mask %pI4 from %s/%pI4\n",
+				mp, dev->name, &ip_hdr(skb)->saddr);
 		}
 	}
 }
@@ -1159,10 +1157,9 @@ static int __net_init icmp_sk_init(struct net *net)
 		net->ipv4.icmp_sk[i] = sk;
 
 		/* Enough space for 2 64K ICMP packets, including
-		 * sk_buff struct overhead.
+		 * sk_buff/skb_shared_info struct overhead.
 		 */
-		sk->sk_sndbuf =
-			(2 * ((64 * 1024) + sizeof(struct sk_buff)));
+		sk->sk_sndbuf =	2 * SKB_TRUESIZE(64 * 1024);
 
 		/*
 		 * Speedup sock_wfree()

@@ -15,12 +15,13 @@
 
 #include <linux/ioport.h>
 #include <linux/kobject.h>
+#include <linux/export.h>
 #include <linux/klist.h>
 #include <linux/list.h>
 #include <linux/lockdep.h>
 #include <linux/compiler.h>
 #include <linux/types.h>
-#include <linux/module.h>
+#include <linux/mutex.h>
 #include <linux/pm.h>
 #include <linux/atomic.h>
 #include <asm/device.h>
@@ -29,10 +30,12 @@ struct device;
 struct device_private;
 struct device_driver;
 struct driver_private;
+struct module;
 struct class;
 struct subsys_private;
 struct bus_type;
 struct device_node;
+struct iommu_ops;
 
 struct bus_attribute {
 	struct attribute	attr;
@@ -41,11 +44,7 @@ struct bus_attribute {
 };
 
 #define BUS_ATTR(_name, _mode, _show, _store)	\
-	struct bus_attribute bus_attr_##_name = __ATTR(_name, _mode, _show, _store)
-#define BUS_ATTR_RW(_name) \
-	struct bus_attribute bus_attr_##_name = __ATTR_RW(_name)
-#define BUS_ATTR_RO(_name) \
-	struct bus_attribute bus_attr_##_name = __ATTR_RO(_name)
+struct bus_attribute bus_attr_##_name = __ATTR(_name, _mode, _show, _store)
 
 extern int __must_check bus_create_file(struct bus_type *,
 					struct bus_attribute *);
@@ -106,6 +105,8 @@ struct bus_type {
 	int (*resume)(struct device *dev);
 
 	const struct dev_pm_ops *pm;
+
+	struct iommu_ops *iommu_ops;
 
 	struct subsys_private *p;
 };
@@ -253,14 +254,9 @@ struct driver_attribute {
 			 size_t count);
 };
 
-#define DRIVER_ATTR(_name, _mode, _show, _store) \
-	struct driver_attribute driver_attr_##_name = __ATTR(_name, _mode, _show, _store)
-#define DRIVER_ATTR_RW(_name) \
-	struct driver_attribute driver_attr_##_name = __ATTR_RW(_name)
-#define DRIVER_ATTR_RO(_name) \
-	struct driver_attribute driver_attr_##_name = __ATTR_RO(_name)
-#define DRIVER_ATTR_WO(_name) \
-	struct driver_attribute driver_attr_##_name = __ATTR_WO(_name)
+#define DRIVER_ATTR(_name, _mode, _show, _store)	\
+struct driver_attribute driver_attr_##_name =		\
+	__ATTR(_name, _mode, _show, _store)
 
 extern int __must_check driver_create_file(struct device_driver *driver,
 					const struct driver_attribute *attr);
@@ -409,12 +405,8 @@ struct class_attribute {
 				 const struct class_attribute *attr);
 };
 
-#define CLASS_ATTR(_name, _mode, _show, _store) \
-	struct class_attribute class_attr_##_name = __ATTR(_name, _mode, _show, _store)
-#define CLASS_ATTR_RW(_name) \
-	struct class_attribute class_attr_##_name = __ATTR_RW(_name)
-#define CLASS_ATTR_RO(_name) \
-	struct class_attribute class_attr_##_name = __ATTR_RO(_name)
+#define CLASS_ATTR(_name, _mode, _show, _store)			\
+struct class_attribute class_attr_##_name = __ATTR(_name, _mode, _show, _store)
 
 extern int __must_check class_create_file(struct class *class,
 					  const struct class_attribute *attr);
@@ -422,6 +414,7 @@ extern void class_remove_file(struct class *class,
 			      const struct class_attribute *attr);
 
 /* Simple class attribute that is just a static string */
+
 struct class_attribute_string {
 	struct class_attribute attr;
 	char *str;
@@ -505,12 +498,6 @@ ssize_t device_store_int(struct device *dev, struct device_attribute *attr,
 
 #define DEVICE_ATTR(_name, _mode, _show, _store) \
 	struct device_attribute dev_attr_##_name = __ATTR(_name, _mode, _show, _store)
-#define DEVICE_ATTR_RW(_name) \
-	struct device_attribute dev_attr_##_name = __ATTR_RW(_name)
-#define DEVICE_ATTR_RO(_name) \
-	struct device_attribute dev_attr_##_name = __ATTR_RO(_name)
-#define DEVICE_ATTR_WO(_name) \
-	struct device_attribute dev_attr_##_name = __ATTR_WO(_name)
 #define DEVICE_ULONG_ATTR(_name, _mode, _var) \
 	struct dev_ext_attribute dev_attr_##_name = \
 		{ __ATTR(_name, _mode, device_show_ulong, device_store_ulong), &(_var) }
@@ -709,8 +696,8 @@ static inline const char *dev_name(const struct device *dev)
 	return kobject_name(&dev->kobj);
 }
 
-extern int dev_set_name(struct device *dev, const char *name, ...)
-			__attribute__((format(printf, 2, 3)));
+extern __printf(2, 3)
+int dev_set_name(struct device *dev, const char *name, ...);
 
 #ifdef CONFIG_NUMA
 static inline int dev_to_node(struct device *dev)
@@ -849,10 +836,10 @@ extern struct device *device_create_vargs(struct class *cls,
 					  void *drvdata,
 					  const char *fmt,
 					  va_list vargs);
-extern struct device *device_create(struct class *cls, struct device *parent,
-				    dev_t devt, void *drvdata,
-				    const char *fmt, ...)
-				    __attribute__((format(printf, 5, 6)));
+extern __printf(5, 6)
+struct device *device_create(struct class *cls, struct device *parent,
+			     dev_t devt, void *drvdata,
+			     const char *fmt, ...);
 extern void device_destroy(struct class *cls, dev_t devt);
 
 /*
@@ -896,71 +883,59 @@ extern const char *dev_driver_string(const struct device *dev);
 
 extern int __dev_printk(const char *level, const struct device *dev,
 			struct va_format *vaf);
-extern int dev_printk(const char *level, const struct device *dev,
-		      const char *fmt, ...)
-	__attribute__ ((format (printf, 3, 4)));
-extern int dev_emerg(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-extern int dev_alert(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-extern int dev_crit(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-extern int dev_err(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-extern int dev_warn(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-extern int dev_notice(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-extern int _dev_info(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
+extern __printf(3, 4)
+int dev_printk(const char *level, const struct device *dev,
+	       const char *fmt, ...)
+	;
+extern __printf(2, 3)
+int dev_emerg(const struct device *dev, const char *fmt, ...);
+extern __printf(2, 3)
+int dev_alert(const struct device *dev, const char *fmt, ...);
+extern __printf(2, 3)
+int dev_crit(const struct device *dev, const char *fmt, ...);
+extern __printf(2, 3)
+int dev_err(const struct device *dev, const char *fmt, ...);
+extern __printf(2, 3)
+int dev_warn(const struct device *dev, const char *fmt, ...);
+extern __printf(2, 3)
+int dev_notice(const struct device *dev, const char *fmt, ...);
+extern __printf(2, 3)
+int _dev_info(const struct device *dev, const char *fmt, ...);
 
 #else
 
 static inline int __dev_printk(const char *level, const struct device *dev,
 			       struct va_format *vaf)
-	 { return 0; }
-static inline int dev_printk(const char *level, const struct device *dev,
-		      const char *fmt, ...)
-	__attribute__ ((format (printf, 3, 4)));
-static inline int dev_printk(const char *level, const struct device *dev,
-		      const char *fmt, ...)
-	 { return 0; }
+{ return 0; }
+static inline __printf(3, 4)
+int dev_printk(const char *level, const struct device *dev,
+	       const char *fmt, ...)
+{ return 0; }
 
-static inline int dev_emerg(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-static inline int dev_emerg(const struct device *dev, const char *fmt, ...)
-	{ return 0; }
-static inline int dev_crit(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-static inline int dev_crit(const struct device *dev, const char *fmt, ...)
-	{ return 0; }
-static inline int dev_alert(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-static inline int dev_alert(const struct device *dev, const char *fmt, ...)
-	{ return 0; }
-static inline int dev_err(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-static inline int dev_err(const struct device *dev, const char *fmt, ...)
-	{ return 0; }
-static inline int dev_warn(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-static inline int dev_warn(const struct device *dev, const char *fmt, ...)
-	{ return 0; }
-static inline int dev_notice(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-static inline int dev_notice(const struct device *dev, const char *fmt, ...)
-	{ return 0; }
-static inline int _dev_info(const struct device *dev, const char *fmt, ...)
-	__attribute__ ((format (printf, 2, 3)));
-static inline int _dev_info(const struct device *dev, const char *fmt, ...)
-	{ return 0; }
+static inline __printf(2, 3)
+int dev_emerg(const struct device *dev, const char *fmt, ...)
+{ return 0; }
+static inline __printf(2, 3)
+int dev_crit(const struct device *dev, const char *fmt, ...)
+{ return 0; }
+static inline __printf(2, 3)
+int dev_alert(const struct device *dev, const char *fmt, ...)
+{ return 0; }
+static inline __printf(2, 3)
+int dev_err(const struct device *dev, const char *fmt, ...)
+{ return 0; }
+static inline __printf(2, 3)
+int dev_warn(const struct device *dev, const char *fmt, ...)
+{ return 0; }
+static inline __printf(2, 3)
+int dev_notice(const struct device *dev, const char *fmt, ...)
+{ return 0; }
+static inline __printf(2, 3)
+int _dev_info(const struct device *dev, const char *fmt, ...)
+{ return 0; }
 
 #endif
 
-#if (defined(CONFIG_SAMSUNG_LOG_BUF) || defined(DEBUG))
-#define dev_samsung_dbg(dev, format, arg...)		\
-	dev_printk(KERN_DEBUG , dev , format , ## arg)
-#endif
 /*
  * Stupid hackaround for existing uses of non-printk uses dev_info
  *

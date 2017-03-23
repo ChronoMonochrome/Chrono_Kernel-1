@@ -40,7 +40,6 @@
 #include <linux/moduleparam.h>
 #include <linux/bitops.h>
 
-#include <asm/system.h>
 #include <asm/byteorder.h>
 
 #include <net/irda/irda.h>
@@ -67,7 +66,7 @@ static void *ckey;
 static void *skey;
 
 /* Module parameters */
-static int eth;   /* Use "eth" or "irlan" name for devices */
+static bool eth;   /* Use "eth" or "irlan" name for devices */
 static int access = ACCESS_PEER; /* PEER, DIRECT or HOSTED */
 
 #ifdef CONFIG_PROC_FS
@@ -125,7 +124,7 @@ static int __init irlan_init(void)
 	{ struct proc_dir_entry *proc;
 	proc = proc_create("irlan", 0, proc_irda, &irlan_fops);
 	if (!proc) {
-;
+		printk(KERN_ERR "irlan_init: can't create /proc entry!\n");
 		return -ENODEV;
 	}
 	}
@@ -317,8 +316,8 @@ static void irlan_connect_indication(void *instance, void *sap,
 
 	IRDA_DEBUG(2, "%s()\n", __func__ );
 
-	self = (struct irlan_cb *) instance;
-	tsap = (struct tsap_cb *) sap;
+	self = instance;
+	tsap = sap;
 
 	IRDA_ASSERT(self != NULL, return;);
 	IRDA_ASSERT(self->magic == IRLAN_MAGIC, return;);
@@ -361,7 +360,7 @@ static void irlan_connect_confirm(void *instance, void *sap,
 {
 	struct irlan_cb *self;
 
-	self = (struct irlan_cb *) instance;
+	self = instance;
 
 	IRDA_ASSERT(self != NULL, return;);
 	IRDA_ASSERT(self->magic == IRLAN_MAGIC, return;);
@@ -406,8 +405,8 @@ static void irlan_disconnect_indication(void *instance,
 
 	IRDA_DEBUG(0, "%s(), reason=%d\n", __func__ , reason);
 
-	self = (struct irlan_cb *) instance;
-	tsap = (struct tsap_cb *) sap;
+	self = instance;
+	tsap = sap;
 
 	IRDA_ASSERT(self != NULL, return;);
 	IRDA_ASSERT(self->magic == IRLAN_MAGIC, return;);
@@ -1204,7 +1203,7 @@ MODULE_AUTHOR("Dag Brattli <dagb@cs.uit.no>");
 MODULE_DESCRIPTION("The Linux IrDA LAN protocol");
 MODULE_LICENSE("GPL");
 
-module_param(eth, int, 0);
+module_param(eth, bool, 0);
 MODULE_PARM_DESC(eth, "Name devices ethX (0) or irlanX (1)");
 module_param(access, int, 0);
 MODULE_PARM_DESC(access, "Access type DIRECT=1, PEER=2, HOSTED=3");

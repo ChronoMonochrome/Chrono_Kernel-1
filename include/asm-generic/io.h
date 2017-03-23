@@ -307,7 +307,11 @@ static inline void *phys_to_virt(unsigned long address)
 
 /*
  * Change "struct page" to physical address.
+ *
+ * This implementation is for the no-MMU case only... if you have an MMU
+ * you'll need to provide your own definitions.
  */
+#ifndef CONFIG_MMU
 static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
 {
 	return (void __iomem*) (unsigned long)offset;
@@ -323,9 +327,10 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
 #define ioremap_wc ioremap_nocache
 #endif
 
-static inline void iounmap(void *addr)
+static inline void iounmap(void __iomem *addr)
 {
 }
+#endif /* CONFIG_MMU */
 
 #ifdef CONFIG_HAS_IOPORT
 #ifndef CONFIG_GENERIC_IOMAP
@@ -344,7 +349,7 @@ extern void ioport_unmap(void __iomem *p);
 #endif /* CONFIG_HAS_IOPORT */
 
 #define xlate_dev_kmem_ptr(p)	p
-#define xlate_dev_mem_ptr(p)	((void *) (p))
+#define xlate_dev_mem_ptr(p)	__va(p)
 
 #ifndef virt_to_bus
 static inline unsigned long virt_to_bus(volatile void *address)

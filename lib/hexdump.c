@@ -10,7 +10,7 @@
 #include <linux/types.h>
 #include <linux/ctype.h>
 #include <linux/kernel.h>
-#include <linux/module.h>
+#include <linux/export.h>
 
 const char hex_asc[] = "0123456789abcdef";
 EXPORT_SYMBOL(hex_asc);
@@ -38,14 +38,21 @@ EXPORT_SYMBOL(hex_to_bin);
  * @dst: binary result
  * @src: ascii hexadecimal string
  * @count: result length
+ *
+ * Return 0 on success, -1 in case of bad input.
  */
-void hex2bin(u8 *dst, const char *src, size_t count)
+int hex2bin(u8 *dst, const char *src, size_t count)
 {
 	while (count--) {
-		*dst = hex_to_bin(*src++) << 4;
-		*dst += hex_to_bin(*src++);
-		dst++;
+		int hi = hex_to_bin(*src++);
+		int lo = hex_to_bin(*src++);
+
+		if ((hi < 0) || (lo < 0))
+			return -1;
+
+		*dst++ = (hi << 4) | lo;
 	}
+	return 0;
 }
 EXPORT_SYMBOL(hex2bin);
 
@@ -206,26 +213,14 @@ void print_hex_dump(const char *level, const char *prefix_str, int prefix_type,
 
 		switch (prefix_type) {
 		case DUMP_PREFIX_ADDRESS:
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%s%p: %s\n",
 			       level, prefix_str, ptr + i, linebuf);
-#else
-			;
-#endif
 			break;
 		case DUMP_PREFIX_OFFSET:
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%s%.8x: %s\n", level, prefix_str, i, linebuf);
-#else
-			;
-#endif
 			break;
 		default:
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%s%s\n", level, prefix_str, linebuf);
-#else
-			;
-#endif
 			break;
 		}
 	}

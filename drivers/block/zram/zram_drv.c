@@ -32,7 +32,24 @@
 #include <linux/string.h>
 #include <linux/vmalloc.h>
 #include <linux/ratelimit.h>
+
 #include <linux/err.h>
+
+
+#include <linux/device.h>
+#include <linux/stat.h>
+
+#define __ATTR_WO(_name) {                                             \
+	.attr   = { .name = __stringify(_name), .mode = S_IWUSR },      \
+	.store  = _name##_store,                                        \
+}
+#define __ATTR_RW(_name) __ATTR(_name, 0644, _name##_show, _name##_store)
+#define DEVICE_ATTR_RW(_name) \
+	struct device_attribute dev_attr_##_name = __ATTR_RW(_name)
+#define DEVICE_ATTR_RO(_name) \
+	struct device_attribute dev_attr_##_name = __ATTR_RO(_name)
+#define DEVICE_ATTR_WO(_name) \
+	struct device_attribute dev_attr_##_name = __ATTR_WO(_name)
 
 // FIXME: move the line below to include/linux/pagemap.h  
 void page_endio(struct page *page, int rw, int err);

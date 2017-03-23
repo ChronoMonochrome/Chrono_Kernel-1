@@ -40,7 +40,6 @@
 
 struct led_regulator_platform_data {
 	char *name;                     /* LED name as expected by LED class */
-	char *reg_id;			/* Regulator name as expected by regulator framework */
 	enum led_brightness brightness; /* initial brightness value */
 };
 

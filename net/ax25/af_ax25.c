@@ -33,7 +33,6 @@
 #include <linux/skbuff.h>
 #include <net/sock.h>
 #include <asm/uaccess.h>
-#include <asm/system.h>
 #include <linux/fcntl.h>
 #include <linux/termios.h>	/* For TIOCINQ/OUTQ */
 #include <linux/mm.h>
@@ -402,14 +401,14 @@ static int ax25_ctl_ioctl(const unsigned int cmd, void __user *arg)
 		break;
 
 	case AX25_T1:
-		if (ax25_ctl.arg < 1)
+		if (ax25_ctl.arg < 1 || ax25_ctl.arg > ULONG_MAX / HZ)
 			goto einval_put;
 		ax25->rtt = (ax25_ctl.arg * HZ) / 2;
 		ax25->t1  = ax25_ctl.arg * HZ;
 		break;
 
 	case AX25_T2:
-		if (ax25_ctl.arg < 1)
+		if (ax25_ctl.arg < 1 || ax25_ctl.arg > ULONG_MAX / HZ)
 			goto einval_put;
 		ax25->t2 = ax25_ctl.arg * HZ;
 		break;
@@ -422,10 +421,15 @@ static int ax25_ctl_ioctl(const unsigned int cmd, void __user *arg)
 		break;
 
 	case AX25_T3:
+		if (ax25_ctl.arg > ULONG_MAX / HZ)
+			goto einval_put;
 		ax25->t3 = ax25_ctl.arg * HZ;
 		break;
 
 	case AX25_IDLE:
+		if (ax25_ctl.arg > ULONG_MAX / (60 * HZ))
+			goto einval_put;
+
 		ax25->idle = ax25_ctl.arg * 60 * HZ;
 		break;
 
@@ -540,15 +544,16 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
 	ax25_cb *ax25;
 	struct net_device *dev;
 	char devname[IFNAMSIZ];
-	int opt, res = 0;
+	unsigned long opt;
+	int res = 0;
 
 	if (level != SOL_AX25)
 		return -ENOPROTOOPT;
 
-	if (optlen < sizeof(int))
+	if (optlen < sizeof(unsigned int))
 		return -EINVAL;
 
-	if (get_user(opt, (int __user *)optval))
+	if (get_user(opt, (unsigned int __user *)optval))
 		return -EFAULT;
 
 	lock_sock(sk);
@@ -571,7 +576,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
 		break;
 
 	case AX25_T1:
-		if (opt < 1) {
+		if (opt < 1 || opt > ULONG_MAX / HZ) {
 			res = -EINVAL;
 			break;
 		}
@@ -580,7 +585,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
 		break;
 
 	case AX25_T2:
-		if (opt < 1) {
+		if (opt < 1 || opt > ULONG_MAX / HZ) {
 			res = -EINVAL;
 			break;
 		}
@@ -596,7 +601,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
 		break;
 
 	case AX25_T3:
-		if (opt < 1) {
+		if (opt < 1 || opt > ULONG_MAX / HZ) {
 			res = -EINVAL;
 			break;
 		}
@@ -604,7 +609,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
 		break;
 
 	case AX25_IDLE:
-		if (opt < 0) {
+		if (opt > ULONG_MAX / (60 * HZ)) {
 			res = -EINVAL;
 			break;
 		}
@@ -612,7 +617,7 @@ static int ax25_setsockopt(struct socket *sock, int level, int optname,
 		break;
 
 	case AX25_BACKOFF:
-		if (opt < 0 || opt > 2) {
+		if (opt > 2) {
 			res = -EINVAL;
 			break;
 		}
@@ -805,9 +810,6 @@ static int ax25_create(struct net *net, struct socket *sock, int protocol,
 {
 	struct sock *sk;
 	ax25_cb *ax25;
-
-	if (protocol < 0 || protocol > SK_PROTOCOL_MAX)
-		return -EINVAL;
 
 	if (!net_eq(net, &init_net))
 		return -EAFNOSUPPORT;
@@ -1212,8 +1214,8 @@ static int __must_check ax25_connect(struct socket *sock,
 	 */
 	if (sock_flag(sk, SOCK_ZAPPED)) {
 		/* check if we can remove this feature. It is broken. */
-//		printk(KERN_WARNING "ax25_connect(): %s uses autobind, please contact jreuter@yaina.de\n",
-;
+		printk(KERN_WARNING "ax25_connect(): %s uses autobind, please contact jreuter@yaina.de\n",
+			current->comm);
 		if ((err = ax25_rt_autobind(ax25, &fsa->fsa_ax25.sax25_call)) < 0) {
 			kfree(digi);
 			goto out_release;
@@ -1793,8 +1795,8 @@ static int ax25_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
 		if (cmd == SIOCAX25GETINFOOLD) {
 			static int warned = 0;
 			if (!warned) {
-//				printk(KERN_INFO "%s uses old SIOCAX25GETINFO\n",
-;
+				printk(KERN_INFO "%s uses old SIOCAX25GETINFO\n",
+					current->comm);
 				warned=1;
 			}
 

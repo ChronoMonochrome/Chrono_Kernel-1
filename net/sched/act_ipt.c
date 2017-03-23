@@ -195,7 +195,7 @@ static int tcf_ipt_cleanup(struct tc_action *a, int bind)
 	return tcf_ipt_release(ipt, bind);
 }
 
-static int tcf_ipt(struct sk_buff *skb, struct tc_action *a,
+static int tcf_ipt(struct sk_buff *skb, const struct tc_action *a,
 		   struct tcf_result *res)
 {
 	int ret = 0, result = 0;
@@ -323,10 +323,10 @@ static int __init ipt_init_module(void)
 	int ret1, ret2;
 	ret1 = tcf_register_action(&act_xt_ops);
 	if (ret1 < 0)
-;
+		printk("Failed to load xt action\n");
 	ret2 = tcf_register_action(&act_ipt_ops);
 	if (ret2 < 0)
-;
+		printk("Failed to load ipt action\n");
 
 	if (ret1 < 0 && ret2 < 0)
 		return ret1;

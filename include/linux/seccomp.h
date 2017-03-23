@@ -66,11 +66,11 @@ struct seccomp_filter;
  *
  * @mode:  indicates one of the valid values above for controlled
  *         system calls available to a process.
- * @filter: The metadata and ruleset for determining what system calls
- *          are allowed for a task.
+ * @filter: must always point to a valid seccomp-filter or NULL as it is
+ *          accessed without locking during system call entry.
  *
  *          @filter must only be accessed from the context of current as there
- *          is no locking.
+ *          is no read locking.
  */
 struct seccomp {
 	int mode;
@@ -83,6 +83,12 @@ static inline int secure_computing(int this_syscall)
 	if (unlikely(test_thread_flag(TIF_SECCOMP)))
 		return  __secure_computing(this_syscall);
 	return 0;
+}
+
+/* A wrapper for architectures supporting only SECCOMP_MODE_STRICT. */
+static inline void secure_computing_strict(int this_syscall)
+{
+	BUG_ON(secure_computing(this_syscall) != 0);
 }
 
 extern long prctl_get_seccomp(void);
@@ -100,7 +106,8 @@ static inline int seccomp_mode(struct seccomp *s)
 struct seccomp { };
 struct seccomp_filter { };
 
-#define secure_computing(x) 0
+static inline int secure_computing(int this_syscall) { return 0; }
+static inline void secure_computing_strict(int this_syscall) { return; }
 
 static inline long prctl_get_seccomp(void)
 {

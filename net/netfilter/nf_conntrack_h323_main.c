@@ -42,8 +42,8 @@ static int gkrouted_only __read_mostly = 1;
 module_param(gkrouted_only, int, 0600);
 MODULE_PARM_DESC(gkrouted_only, "only accept calls from gatekeeper");
 
-static int callforward_filter __read_mostly = 1;
-module_param(callforward_filter, int, 0600);
+static bool callforward_filter __read_mostly = true;
+module_param(callforward_filter, bool, 0600);
 MODULE_PARM_DESC(callforward_filter, "only create call forwarding expectations "
 				     "if both endpoints are on different sides "
 				     "(determined by routing information)");
@@ -566,8 +566,8 @@ static int h245_help(struct sk_buff *skb, unsigned int protoff,
 {
 	static MultimediaSystemControlMessage mscm;
 	unsigned char *data = NULL;
-	int datalen = 0;
-	int dataoff = 0;
+	int datalen;
+	int dataoff;
 	int ret;
 
 	/* Until there's been traffic both ways, don't look in packets. */
@@ -743,17 +743,16 @@ static int callforward_do_filter(const union nf_inet_addr *src,
 		}
 		break;
 	}
-#if defined(CONFIG_NF_CONNTRACK_IPV6) || \
-    defined(CONFIG_NF_CONNTRACK_IPV6_MODULE)
+#if IS_ENABLED(CONFIG_NF_CONNTRACK_IPV6)
 	case AF_INET6: {
 		struct flowi6 fl1, fl2;
 		struct rt6_info *rt1, *rt2;
 
 		memset(&fl1, 0, sizeof(fl1));
-		ipv6_addr_copy(&fl1.daddr, &src->in6);
+		fl1.daddr = src->in6;
 
 		memset(&fl2, 0, sizeof(fl2));
-		ipv6_addr_copy(&fl2.daddr, &dst->in6);
+		fl2.daddr = dst->in6;
 		if (!afinfo->route(&init_net, (struct dst_entry **)&rt1,
 				   flowi6_to_flowi(&fl1), false)) {
 			if (!afinfo->route(&init_net, (struct dst_entry **)&rt2,
@@ -1119,8 +1118,8 @@ static int q931_help(struct sk_buff *skb, unsigned int protoff,
 {
 	static Q931 q931;
 	unsigned char *data = NULL;
-	int datalen = 0;
-	int dataoff = 0;
+	int datalen;
+	int dataoff;
 	int ret;
 
 	/* Until there's been traffic both ways, don't look in packets. */

@@ -34,6 +34,7 @@
 #include <linux/in.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
+#include <linux/ratelimit.h>
 
 #include "rds.h"
 #include "iw.h"
@@ -86,7 +87,7 @@ void rds_iw_cm_connect_complete(struct rds_connection *conn, struct rdma_cm_even
 	rds_iwdev = ib_get_client_data(ic->i_cm_id->device, &rds_iw_client);
 	err = rds_iw_update_cm_id(rds_iwdev, ic->i_cm_id);
 	if (err)
-;
+		printk(KERN_ERR "rds_iw_update_ipaddr failed (%d)\n", err);
 	rds_iw_add_conn(rds_iwdev, conn);
 
 	/* If the peer gave us the last packet it saw, process this as if
@@ -94,11 +95,11 @@ void rds_iw_cm_connect_complete(struct rds_connection *conn, struct rdma_cm_even
 	if (dp && dp->dp_ack_seq)
 		rds_send_drop_acked(conn, be64_to_cpu(dp->dp_ack_seq), NULL);
 
-//	printk(KERN_NOTICE "RDS/IW: connected to %pI4<->%pI4 version %u.%u%s\n",
-//			&conn->c_laddr, &conn->c_faddr,
-//			RDS_PROTOCOL_MAJOR(conn->c_version),
-//			RDS_PROTOCOL_MINOR(conn->c_version),
-;
+	printk(KERN_NOTICE "RDS/IW: connected to %pI4<->%pI4 version %u.%u%s\n",
+			&conn->c_laddr, &conn->c_faddr,
+			RDS_PROTOCOL_MAJOR(conn->c_version),
+			RDS_PROTOCOL_MINOR(conn->c_version),
+			ic->i_flowctl ? ", flow control" : "");
 
 	rds_connect_complete(conn);
 }
@@ -258,9 +259,8 @@ static int rds_iw_setup_qp(struct rds_connection *conn)
 	 */
 	rds_iwdev = ib_get_client_data(dev, &rds_iw_client);
 	if (!rds_iwdev) {
-		if (printk_ratelimit())
-//			printk(KERN_NOTICE "RDS/IW: No client_data for device %s\n",
-;
+		printk_ratelimited(KERN_NOTICE "RDS/IW: No client_data for device %s\n",
+					dev->name);
 		return -EOPNOTSUPP;
 	}
 
@@ -365,13 +365,12 @@ static u32 rds_iw_protocol_compatible(const struct rds_iw_connect_private *dp)
 		version = RDS_PROTOCOL_3_0;
 		while ((common >>= 1) != 0)
 			version++;
-	} else if (printk_ratelimit()) {
-//		printk(KERN_NOTICE "RDS: Connection from %pI4 using "
-//			"incompatible protocol version %u.%u\n",
-//			&dp->dp_saddr,
-//			dp->dp_protocol_major,
-;
 	}
+	printk_ratelimited(KERN_NOTICE "RDS: Connection from %pI4 using "
+			"incompatible protocol version %u.%u\n",
+			&dp->dp_saddr,
+			dp->dp_protocol_major,
+			dp->dp_protocol_minor);
 	return version;
 }
 
@@ -695,7 +694,7 @@ int rds_iw_conn_alloc(struct rds_connection *conn, gfp_t gfp)
 	unsigned long flags;
 
 	/* XXX too lazy? */
-	ic = kzalloc(sizeof(struct rds_iw_connection), GFP_KERNEL);
+	ic = kzalloc(sizeof(struct rds_iw_connection), gfp);
 	if (!ic)
 		return -ENOMEM;
 
@@ -761,6 +760,6 @@ __rds_iw_conn_error(struct rds_connection *conn, const char *fmt, ...)
 	rds_conn_drop(conn);
 
 	va_start(ap, fmt);
-;
+	vprintk(fmt, ap);
 	va_end(ap);
 }

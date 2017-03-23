@@ -32,12 +32,12 @@
 #include <linux/spinlock.h>
 #include <net/sock.h>
 #include <asm/uaccess.h>
-#include <asm/system.h>
 #include <linux/fcntl.h>
 #include <linux/mm.h>
 #include <linux/interrupt.h>
 #include <linux/init.h>
 #include <linux/seq_file.h>
+#include <linux/export.h>
 
 static ax25_route *ax25_route_list;
 static DEFINE_RWLOCK(ax25_route_lock);
@@ -467,7 +467,7 @@ struct sk_buff *ax25_rt_build_path(struct sk_buff *skb, ax25_address *src,
 
 	if (skb_headroom(skb) < len) {
 		if ((skbn = skb_realloc_headroom(skb, len)) == NULL) {
-;
+			printk(KERN_CRIT "AX.25: ax25_dg_build_path - out of memory\n");
 			return NULL;
 		}
 

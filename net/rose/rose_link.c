@@ -22,7 +22,6 @@
 #include <linux/netdevice.h>
 #include <linux/skbuff.h>
 #include <net/sock.h>
-#include <asm/system.h>
 #include <linux/fcntl.h>
 #include <linux/mm.h>
 #include <linux/interrupt.h>
@@ -161,11 +160,11 @@ void rose_link_rx_restart(struct sk_buff *skb, struct rose_neigh *neigh, unsigne
 		break;
 
 	case ROSE_DIAGNOSTIC:
-;
+		printk(KERN_WARNING "ROSE: received diagnostic #%d - %02X %02X %02X\n", skb->data[3], skb->data[4], skb->data[5], skb->data[6]);
 		break;
 
 	default:
-;
+		printk(KERN_WARNING "ROSE: received unknown %02X with LCI 000\n", frametype);
 		break;
 	}
 
@@ -265,13 +264,6 @@ void rose_transmit_clear_request(struct rose_neigh *neigh, unsigned int lci, uns
 void rose_transmit_link(struct sk_buff *skb, struct rose_neigh *neigh)
 {
 	unsigned char *dptr;
-
-#if 0
-	if (call_fw_firewall(PF_ROSE, skb->dev, skb->data, NULL, &skb) != FW_ACCEPT) {
-		kfree_skb(skb);
-		return;
-	}
-#endif
 
 	if (neigh->loopback) {
 		rose_loopback_queue(skb, neigh);

@@ -8,6 +8,7 @@
 
 #include <linux/dma-mapping.h>
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/slab.h>
 #include <linux/dmaengine.h>
 #include <linux/platform_device.h>

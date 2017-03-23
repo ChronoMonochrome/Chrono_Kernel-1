@@ -21,7 +21,6 @@
 #include <linux/path.h>
 #include <linux/key.h>
 #include <linux/skbuff.h>
-#include <asm/system.h>
 
 struct lsm_network_audit {
 	int netif;

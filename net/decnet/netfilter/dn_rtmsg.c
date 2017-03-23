@@ -58,7 +58,7 @@ nlmsg_failure:
 		kfree_skb(skb);
 	*errp = -ENOMEM;
 	if (net_ratelimit())
-;
+		printk(KERN_ERR "dn_rtmsg: error creating netlink message\n");
 	return NULL;
 }
 
@@ -69,15 +69,15 @@ static void dnrmg_send_peer(struct sk_buff *skb)
 	int group = 0;
 	unsigned char flags = *skb->data;
 
-	switch(flags & DN_RT_CNTL_MSK) {
-		case DN_RT_PKT_L1RT:
-			group = DNRNG_NLGRP_L1;
-			break;
-		case DN_RT_PKT_L2RT:
-			group = DNRNG_NLGRP_L2;
-			break;
-		default:
-			return;
+	switch (flags & DN_RT_CNTL_MSK) {
+	case DN_RT_PKT_L1RT:
+		group = DNRNG_NLGRP_L1;
+		break;
+	case DN_RT_PKT_L2RT:
+		group = DNRNG_NLGRP_L2;
+		break;
+	default:
+		return;
 	}
 
 	skb2 = dnrmg_build_message(skb, &status);
@@ -132,7 +132,7 @@ static int __init dn_rtmsg_init(void)
 				      dnrmg_receive_user_skb,
 				      NULL, THIS_MODULE);
 	if (dnrmg == NULL) {
-;
+		printk(KERN_ERR "dn_rtmsg: Cannot create netlink socket");
 		return -ENOMEM;
 	}
 

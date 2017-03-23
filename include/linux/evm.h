@@ -33,6 +33,14 @@ extern void evm_inode_post_removexattr(struct dentry *dentry,
 extern int evm_inode_init_security(struct inode *inode,
 				   const struct xattr *xattr_array,
 				   struct xattr *evm);
+#ifdef CONFIG_FS_POSIX_ACL
+extern int posix_xattr_acl(const char *xattrname);
+#else
+static inline int posix_xattr_acl(const char *xattrname)
+{
+	return 0;
+}
+#endif
 #else
 #ifdef CONFIG_INTEGRITY
 static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
@@ -85,7 +93,7 @@ static inline int evm_inode_init_security(struct inode *inode,
 					  const struct xattr *xattr_array,
 					  struct xattr *evm)
 {
-	return -EOPNOTSUPP;
+	return 0;
 }
 
 #endif /* CONFIG_EVM_H */

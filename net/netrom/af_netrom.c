@@ -31,7 +31,6 @@
 #include <net/net_namespace.h>
 #include <net/sock.h>
 #include <asm/uaccess.h>
-#include <asm/system.h>
 #include <linux/fcntl.h>
 #include <linux/termios.h>	/* For TIOCINQ/OUTQ */
 #include <linux/mm.h>
@@ -306,26 +305,26 @@ static int nr_setsockopt(struct socket *sock, int level, int optname,
 {
 	struct sock *sk = sock->sk;
 	struct nr_sock *nr = nr_sk(sk);
-	int opt;
+	unsigned long opt;
 
 	if (level != SOL_NETROM)
 		return -ENOPROTOOPT;
 
-	if (optlen < sizeof(int))
+	if (optlen < sizeof(unsigned int))
 		return -EINVAL;
 
-	if (get_user(opt, (int __user *)optval))
+	if (get_user(opt, (unsigned int __user *)optval))
 		return -EFAULT;
 
 	switch (optname) {
 	case NETROM_T1:
-		if (opt < 1)
+		if (opt < 1 || opt > ULONG_MAX / HZ)
 			return -EINVAL;
 		nr->t1 = opt * HZ;
 		return 0;
 
 	case NETROM_T2:
-		if (opt < 1)
+		if (opt < 1 || opt > ULONG_MAX / HZ)
 			return -EINVAL;
 		nr->t2 = opt * HZ;
 		return 0;
@@ -337,13 +336,13 @@ static int nr_setsockopt(struct socket *sock, int level, int optname,
 		return 0;
 
 	case NETROM_T4:
-		if (opt < 1)
+		if (opt < 1 || opt > ULONG_MAX / HZ)
 			return -EINVAL;
 		nr->t4 = opt * HZ;
 		return 0;
 
 	case NETROM_IDLE:
-		if (opt < 0)
+		if (opt > ULONG_MAX / (60 * HZ))
 			return -EINVAL;
 		nr->idle = opt * 60 * HZ;
 		return 0;
@@ -1250,7 +1249,8 @@ static int nr_ioctl(struct socket *sock, unsigned int cmd, unsigned long arg)
 	case SIOCADDRT:
 	case SIOCDELRT:
 	case SIOCNRDECOBS:
-		if (!capable(CAP_NET_ADMIN)) return -EPERM;
+		if (!capable(CAP_NET_ADMIN))
+			return -EPERM;
 		return nr_rt_ioctl(cmd, argp);
 
 	default:
@@ -1406,13 +1406,13 @@ static int __init nr_proto_init(void)
 		goto out;
 
 	if (nr_ndevs > 0x7fffffff/sizeof(struct net_device *)) {
-;
+		printk(KERN_ERR "NET/ROM: nr_proto_init - nr_ndevs parameter to large\n");
 		return -1;
 	}
 
 	dev_nr = kzalloc(nr_ndevs * sizeof(struct net_device *), GFP_KERNEL);
 	if (dev_nr == NULL) {
-;
+		printk(KERN_ERR "NET/ROM: nr_proto_init - unable to allocate device array\n");
 		return -1;
 	}
 
@@ -1423,13 +1423,13 @@ static int __init nr_proto_init(void)
 		sprintf(name, "nr%d", i);
 		dev = alloc_netdev(0, name, nr_setup);
 		if (!dev) {
-;
+			printk(KERN_ERR "NET/ROM: nr_proto_init - unable to allocate device structure\n");
 			goto fail;
 		}
 
 		dev->base_addr = i;
 		if (register_netdev(dev)) {
-;
+			printk(KERN_ERR "NET/ROM: nr_proto_init - unable to register network device\n");
 			free_netdev(dev);
 			goto fail;
 		}
@@ -1438,7 +1438,7 @@ static int __init nr_proto_init(void)
 	}
 
 	if (sock_register(&nr_family_ops)) {
-;
+		printk(KERN_ERR "NET/ROM: nr_proto_init - unable to register socket family\n");
 		goto fail;
 	}
 

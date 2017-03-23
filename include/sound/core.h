@@ -29,6 +29,7 @@
 #include <linux/pm.h>			/* pm_message_t */
 #include <linux/device.h>
 #include <linux/stringify.h>
+#include <linux/pci.h>
 
 /* number of supported soundcards */
 #ifdef CONFIG_SND_DYNAMIC_MINORS

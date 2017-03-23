@@ -33,6 +33,7 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/slab.h>
+#include <linux/export.h>
 #include <net/inet_hashtables.h>
 
 #include "rds.h"
@@ -566,7 +567,7 @@ __rds_conn_error(struct rds_connection *conn, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-;
+	vprintk(fmt, ap);
 	va_end(ap);
 
 	rds_conn_drop(conn);

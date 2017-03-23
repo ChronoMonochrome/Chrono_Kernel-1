@@ -26,6 +26,7 @@
 #include <linux/init.h>
 #include <linux/list.h>
 #include <linux/rcupdate.h>
+#include <linux/export.h>
 #include <net/ip.h>
 #include <net/route.h>
 #include <net/tcp.h>
@@ -66,6 +67,7 @@ int fib_lookup(struct net *net, struct flowi4 *flp, struct fib_result *res)
 
 	return err;
 }
+EXPORT_SYMBOL_GPL(fib_lookup);
 
 static int fib4_rule_action(struct fib_rule *rule, struct flowi *flp,
 			    int flags, struct fib_lookup_arg *arg)
@@ -247,7 +249,7 @@ static void fib4_rule_flush_cache(struct fib_rules_ops *ops)
 	rt_cache_flush(ops->fro_net, -1);
 }
 
-static const struct fib_rules_ops __net_initconst fib4_rules_ops_template = {
+static const struct fib_rules_ops __net_initdata fib4_rules_ops_template = {
 	.family		= AF_INET,
 	.rule_size	= sizeof(struct fib4_rule),
 	.addr_size	= sizeof(u32),

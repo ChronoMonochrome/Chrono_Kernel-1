@@ -21,7 +21,6 @@
 #include <linux/if_ether.h>
 #include <linux/slab.h>
 
-#include <asm/system.h>
 #include <asm/io.h>
 
 #include <linux/inet.h>
@@ -137,7 +136,7 @@ static netdev_tx_t rose_xmit(struct sk_buff *skb, struct net_device *dev)
 	struct net_device_stats *stats = &dev->stats;
 
 	if (!netif_running(dev)) {
-;
+		printk(KERN_ERR "ROSE: rose_xmit - called when iface is down\n");
 		return NETDEV_TX_BUSY;
 	}
 	dev_kfree_skb(skb);

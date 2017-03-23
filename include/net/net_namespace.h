@@ -14,9 +14,7 @@
 #include <net/netns/unix.h>
 #include <net/netns/packet.h>
 #include <net/netns/ipv4.h>
-#ifdef CONFIG_IPV6
 #include <net/netns/ipv6.h>
-#endif
 #include <net/netns/dccp.h>
 #include <net/netns/x_tables.h>
 #if defined(CONFIG_NF_CONNTRACK) || defined(CONFIG_NF_CONNTRACK_MODULE)
@@ -54,6 +52,8 @@ struct net {
 	struct list_head	cleanup_list;	/* namespaces on death row */
 	struct list_head	exit_list;	/* Use only net_mutex */
 
+	unsigned int		proc_inum;
+
 	struct proc_dir_entry 	*proc_net;
 	struct proc_dir_entry 	*proc_net_stat;
 
@@ -67,6 +67,7 @@ struct net {
 	struct list_head 	dev_base_head;
 	struct hlist_head 	*dev_name_head;
 	struct hlist_head	*dev_index_head;
+	unsigned int		dev_base_seq;	/* protected by rtnl_mutex */
 
 	/* core fib_rules */
 	struct list_head	rules_ops;
@@ -78,7 +79,7 @@ struct net {
 	struct netns_packet	packet;
 	struct netns_unix	unx;
 	struct netns_ipv4	ipv4;
-#if defined(CONFIG_IPV6) || defined(CONFIG_IPV6_MODULE)
+#if IS_ENABLED(CONFIG_IPV6)
 	struct netns_ipv6	ipv6;
 #endif
 #if defined(CONFIG_IP_DCCP) || defined(CONFIG_IP_DCCP_MODULE)
@@ -241,12 +242,10 @@ static inline struct net *read_pnet(struct net * const *pnet)
 #define __net_init
 #define __net_exit
 #define __net_initdata
-#define __net_initconst
 #else
 #define __net_init	__init
 #define __net_exit	__exit_refok
 #define __net_initdata	__initdata
-#define __net_initconst	__initconst
 #endif
 
 struct pernet_operations {

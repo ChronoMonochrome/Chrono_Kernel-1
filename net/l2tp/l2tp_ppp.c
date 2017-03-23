@@ -82,7 +82,7 @@
 #include <net/sock.h>
 #include <linux/ppp_channel.h>
 #include <linux/ppp_defs.h>
-#include <linux/if_ppp.h>
+#include <linux/ppp-ioctl.h>
 #include <linux/file.h>
 #include <linux/hash.h>
 #include <linux/sort.h>
@@ -109,7 +109,7 @@
 #define PRINTK(_mask, _type, _lvl, _fmt, args...)			\
 	do {								\
 		if ((_mask) & (_type))					\
-;
+			printk(_lvl "PPPOL2TP: " _fmt, ##args);		\
 	} while (0)
 
 /* Number of bytes to build transmit L2TP headers.
@@ -396,6 +396,7 @@ static int pppol2tp_xmit(struct ppp_channel *chan, struct sk_buff *skb)
 	struct pppol2tp_session *ps;
 	int old_headroom;
 	int new_headroom;
+	int uhlen, headroom;
 
 	if (sock_flag(sk, SOCK_DEAD) || !(sk->sk_state & PPPOX_CONNECTED))
 		goto abort;
@@ -414,7 +415,13 @@ static int pppol2tp_xmit(struct ppp_channel *chan, struct sk_buff *skb)
 		goto abort_put_sess;
 
 	old_headroom = skb_headroom(skb);
-	if (skb_cow_head(skb, sizeof(ppph)))
+	uhlen = (tunnel->encap == L2TP_ENCAPTYPE_UDP) ? sizeof(struct udphdr) : 0;
+	headroom = NET_SKB_PAD +
+		   sizeof(struct iphdr) + /* IP header */
+		   uhlen +		/* UDP header (if L2TP_ENCAPTYPE_UDP) */
+		   session->hdr_len +	/* L2TP header */
+		   sizeof(ppph);	/* PPP header */
+	if (skb_cow_head(skb, headroom))
 		goto abort_put_sess_tun;
 
 	new_headroom = skb_headroom(skb);
@@ -1342,7 +1349,7 @@ static int pppol2tp_setsockopt(struct socket *sock, int level, int optname,
 	int err;
 
 	if (level != SOL_PPPOL2TP)
-		return -EINVAL;
+		return udp_prot.setsockopt(sk, level, optname, optval, optlen);
 
 	if (optlen < sizeof(int))
 		return -EINVAL;
@@ -1468,7 +1475,7 @@ static int pppol2tp_getsockopt(struct socket *sock, int level,
 	struct pppol2tp_session *ps;
 
 	if (level != SOL_PPPOL2TP)
-		return -EINVAL;
+		return udp_prot.getsockopt(sk, level, optname, optval, optlen);
 
 	if (get_user(len, (int __user *) optlen))
 		return -EFAULT;
@@ -1806,8 +1813,8 @@ static int __init pppol2tp_init(void)
 		goto out_unregister_pppox;
 #endif
 
-//	printk(KERN_INFO "PPPoL2TP kernel driver, %s\n",
-;
+	printk(KERN_INFO "PPPoL2TP kernel driver, %s\n",
+	       PPPOL2TP_DRV_VERSION);
 
 out:
 	return err;
@@ -1840,3 +1847,4 @@ MODULE_AUTHOR("James Chapman <jchapman@katalix.com>");
 MODULE_DESCRIPTION("PPP over L2TP over UDP");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(PPPOL2TP_DRV_VERSION);
+MODULE_ALIAS("pppox-proto-" __stringify(PX_PROTO_OL2TP));

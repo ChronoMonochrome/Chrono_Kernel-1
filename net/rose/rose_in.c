@@ -26,7 +26,6 @@
 #include <linux/skbuff.h>
 #include <net/sock.h>
 #include <net/tcp_states.h>
-#include <asm/system.h>
 #include <linux/fcntl.h>
 #include <linux/mm.h>
 #include <linux/interrupt.h>
@@ -200,7 +199,7 @@ static int rose_state3_machine(struct sock *sk, struct sk_buff *skb, int framety
 		break;
 
 	default:
-;
+		printk(KERN_WARNING "ROSE: unknown %02X in state 3\n", frametype);
 		break;
 	}
 

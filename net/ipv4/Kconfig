@@ -163,8 +163,6 @@ config IP_PNP_RARP
 	  operating on your network. Read
 	  <file:Documentation/filesystems/nfs/nfsroot.txt> for details.
 
-# not yet ready..
-#   bool '    IP: ARP support' CONFIG_IP_PNP_ARP
 config NET_IPIP
 	tristate "IP: tunneling"
 	select INET_TUNNEL
@@ -408,6 +406,27 @@ config INET_DIAG
 config INET_TCP_DIAG
 	depends on INET_DIAG
 	def_tristate INET_DIAG
+
+config INET_UDP_DIAG
+	tristate "UDP: socket monitoring interface"
+	depends on INET_DIAG && (IPV6 || IPV6=n)
+	default n
+	---help---
+	  Support for UDP socket monitoring interface used by the ss tool.
+	  If unsure, say Y.
+
+config INET_DIAG_DESTROY
+	bool "INET: allow privileged process to administratively close sockets"
+	depends on INET_DIAG
+	default n
+	---help---
+	  Provides a SOCK_DESTROY_BACKPORT operation that allows privileged processes
+	  (e.g., a connection manager or a network administration tool such as
+	  ss) to close sockets opened by other processes. Closing a socket in
+	  this way interrupts any blocking read/write/connect operations on
+	  the socket and causes future socket calls to behave as if the socket
+	  had been disconnected.
+	  If unsure, say N.
 
 menuconfig TCP_CONG_ADVANCED
 	bool "TCP: advanced congestion control"
