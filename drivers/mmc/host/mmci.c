@@ -537,7 +537,7 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
 
 	dmaengine_slave_config(chan, &conf);
 	desc = device->device_prep_slave_sg(chan, data->sg, nr_sg,
-					    conf.direction, DMA_CTRL_ACK);
+					    conf.direction, DMA_CTRL_ACK, NULL);
 	if (!desc)
 		goto unmap_exit;
 
