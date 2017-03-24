@@ -139,7 +139,7 @@ ux500_pcm_dma_start(
 		dma_addr,
 		period_cnt * period_len,
 		period_len,
-		direction);
+		direction, NULL);
 
 	if (IS_ERR(cdesc)) {
 		pr_err("%s: ERROR: device_prep_dma_cyclic failed (%ld)!\n",
