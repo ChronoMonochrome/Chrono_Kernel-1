@@ -181,7 +181,7 @@ static bool ux500_configure_channel(struct dma_channel *channel,
 
 	dma_desc = dma_chan->device->
 			device_prep_slave_sg(dma_chan, &sg, 1, direction,
-					     DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+					     DMA_PREP_INTERRUPT | DMA_CTRL_ACK, NULL);
 	if (!dma_desc)
 		return false;
 
