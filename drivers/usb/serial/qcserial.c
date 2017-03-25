@@ -13,7 +13,6 @@
 
 #include <linux/tty.h>
 #include <linux/tty_flip.h>
-#include <linux/module.h>
 #include <linux/usb.h>
 #include <linux/usb/serial.h>
 #include <linux/slab.h>
@@ -22,7 +21,7 @@
 #define DRIVER_AUTHOR "Qualcomm Inc"
 #define DRIVER_DESC "Qualcomm USB Serial driver"
 
-static bool debug;
+static int debug;
 
 #define DEVICE_G1K(v, p) \
 	USB_DEVICE(v, p), .driver_info = 1
@@ -37,13 +36,7 @@ static const struct usb_device_id id_table[] = {
 	{DEVICE_G1K(0x04da, 0x250c)},	/* Panasonic Gobi QDL device */
 	{DEVICE_G1K(0x413c, 0x8172)},	/* Dell Gobi Modem device */
 	{DEVICE_G1K(0x413c, 0x8171)},	/* Dell Gobi QDL device */
-	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel/Verizon USB-1000 */
-	{DEVICE_G1K(0x1410, 0xa002)},	/* Novatel Gobi Modem device */
-	{DEVICE_G1K(0x1410, 0xa003)},	/* Novatel Gobi Modem device */
-	{DEVICE_G1K(0x1410, 0xa004)},	/* Novatel Gobi Modem device */
-	{DEVICE_G1K(0x1410, 0xa005)},	/* Novatel Gobi Modem device */
-	{DEVICE_G1K(0x1410, 0xa006)},	/* Novatel Gobi Modem device */
-	{DEVICE_G1K(0x1410, 0xa007)},	/* Novatel Gobi Modem device */
+	{DEVICE_G1K(0x1410, 0xa001)},	/* Novatel Gobi Modem device */
 	{DEVICE_G1K(0x1410, 0xa008)},	/* Novatel Gobi QDL device */
 	{DEVICE_G1K(0x0b05, 0x1776)},	/* Asus Gobi Modem device */
 	{DEVICE_G1K(0x0b05, 0x1774)},	/* Asus Gobi QDL device */
@@ -61,7 +54,6 @@ static const struct usb_device_id id_table[] = {
 	{DEVICE_G1K(0x05c6, 0x9221)},	/* Generic Gobi QDL device */
 	{DEVICE_G1K(0x05c6, 0x9231)},	/* Generic Gobi QDL device */
 	{DEVICE_G1K(0x1f45, 0x0001)},	/* Unknown Gobi QDL device */
-	{DEVICE_G1K(0x1bc7, 0x900e)},	/* Telit Gobi QDL device */
 
 	/* Gobi 2000 devices */
 	{USB_DEVICE(0x1410, 0xa010)},	/* Novatel Gobi 2000 QDL device */
@@ -112,13 +104,7 @@ static const struct usb_device_id id_table[] = {
 	{USB_DEVICE(0x1410, 0xa021)},	/* Novatel Gobi 3000 Composite */
 	{USB_DEVICE(0x413c, 0x8193)},	/* Dell Gobi 3000 QDL */
 	{USB_DEVICE(0x413c, 0x8194)},	/* Dell Gobi 3000 Composite */
-	{USB_DEVICE(0x1199, 0x9010)},	/* Sierra Wireless Gobi 3000 QDL */
-	{USB_DEVICE(0x1199, 0x9012)},	/* Sierra Wireless Gobi 3000 QDL */
 	{USB_DEVICE(0x1199, 0x9013)},	/* Sierra Wireless Gobi 3000 Modem device (MC8355) */
-	{USB_DEVICE(0x1199, 0x9014)},	/* Sierra Wireless Gobi 3000 QDL */
-	{USB_DEVICE(0x1199, 0x9015)},	/* Sierra Wireless Gobi 3000 Modem device */
-	{USB_DEVICE(0x1199, 0x9018)},	/* Sierra Wireless Gobi 3000 QDL */
-	{USB_DEVICE(0x1199, 0x9019)},	/* Sierra Wireless Gobi 3000 Modem device */
 	{USB_DEVICE(0x12D1, 0x14F0)},	/* Sony Gobi 3000 QDL */
 	{USB_DEVICE(0x12D1, 0x14F1)},	/* Sony Gobi 3000 Composite */
 	{ }				/* Terminating entry */
@@ -158,6 +144,8 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
 		return -ENOMEM;
 
 	spin_lock_init(&data->susp_lock);
+
+	usb_enable_autosuspend(serial->dev);
 
 	switch (nintf) {
 	case 1:
@@ -278,6 +266,7 @@ static struct usb_serial_driver qcdevice = {
 	},
 	.description         = "Qualcomm USB modem",
 	.id_table            = id_table,
+	.usb_driver          = &qcdriver,
 	.num_ports           = 1,
 	.probe               = qcprobe,
 	.open		     = usb_wwan_open,
@@ -294,11 +283,31 @@ static struct usb_serial_driver qcdevice = {
 #endif
 };
 
-static struct usb_serial_driver * const serial_drivers[] = {
-	&qcdevice, NULL
-};
+static int __init qcinit(void)
+{
+	int retval;
 
-module_usb_serial_driver(qcdriver, serial_drivers);
+	retval = usb_serial_register(&qcdevice);
+	if (retval)
+		return retval;
+
+	retval = usb_register(&qcdriver);
+	if (retval) {
+		usb_serial_deregister(&qcdevice);
+		return retval;
+	}
+
+	return 0;
+}
+
+static void __exit qcexit(void)
+{
+	usb_deregister(&qcdriver);
+	usb_serial_deregister(&qcdevice);
+}
+
+module_init(qcinit);
+module_exit(qcexit);
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
