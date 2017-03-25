@@ -2,7 +2,7 @@
 
     bt8xx GPIO abuser
 
-    Copyright (C) 2008 Michael Buesch <m@bues.ch>
+    Copyright (C) 2008 Michael Buesch <mb@bu3sch.de>
 
     Please do _only_ contact the people listed _above_ with issues related to this driver.
     All the other people listed below are not related to this driver. Their names
@@ -222,6 +222,9 @@ static int bt8xxgpio_probe(struct pci_dev *dev,
 		printk(KERN_ERR "bt8xxgpio: Failed to register GPIOs\n");
 		goto err_release_mem;
 	}
+
+	printk(KERN_INFO "bt8xxgpio: Abusing BT8xx card for GPIOs %d to %d\n",
+	       bg->gpio.base, bg->gpio.base + BT8XXGPIO_NR_GPIOS - 1);
 
 	return 0;
 

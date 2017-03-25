@@ -116,7 +116,7 @@ static void timbgpio_irq_disable(struct irq_data *d)
 	unsigned long flags;
 
 	spin_lock_irqsave(&tgpio->lock, flags);
-	tgpio->last_ier &= ~(1UL << offset);
+	tgpio->last_ier &= ~(1 << offset);
 	iowrite32(tgpio->last_ier, tgpio->membase + TGPIO_IER);
 	spin_unlock_irqrestore(&tgpio->lock, flags);
 }
@@ -128,7 +128,7 @@ static void timbgpio_irq_enable(struct irq_data *d)
 	unsigned long flags;
 
 	spin_lock_irqsave(&tgpio->lock, flags);
-	tgpio->last_ier |= 1UL << offset;
+	tgpio->last_ier |= 1 << offset;
 	iowrite32(tgpio->last_ier, tgpio->membase + TGPIO_IER);
 	spin_unlock_irqrestore(&tgpio->lock, flags);
 }
@@ -359,10 +359,20 @@ static struct platform_driver timbgpio_platform_driver = {
 
 /*--------------------------------------------------------------------------*/
 
-module_platform_driver(timbgpio_platform_driver);
+static int __init timbgpio_init(void)
+{
+	return platform_driver_register(&timbgpio_platform_driver);
+}
+
+static void __exit timbgpio_exit(void)
+{
+	platform_driver_unregister(&timbgpio_platform_driver);
+}
+
+module_init(timbgpio_init);
+module_exit(timbgpio_exit);
 
 MODULE_DESCRIPTION("Timberdale GPIO driver");
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Mocean Laboratories");
 MODULE_ALIAS("platform:"DRIVER_NAME);
-
