@@ -6,7 +6,6 @@
  * published by the Free Software Foundation.
  */
 
-#include <linux/export.h>
 #include <linux/mfd/tmio.h>
 
 int tmio_core_mmc_enable(void __iomem *cnf, int shift, unsigned long base)
