@@ -913,9 +913,9 @@ request_done:
 }
 
 static void s3cmci_dma_setup(struct s3cmci_host *host,
-			     enum dma_data_direction source)
+			     enum s3c2410_dmasrc source)
 {
-	static enum dma_data_direction last_source = -1;
+	static enum s3c2410_dmasrc last_source = -1;
 	static int setup_ok;
 
 	if (last_source == source)
@@ -1087,7 +1087,7 @@ static int s3cmci_prepare_dma(struct s3cmci_host *host, struct mmc_data *data)
 
 	BUG_ON((data->flags & BOTH_DIR) == BOTH_DIR);
 
-	s3cmci_dma_setup(host, rw ? DMA_TO_DEVICE : DMA_FROM_DEVICE);
+	s3cmci_dma_setup(host, rw ? S3C2410_DMASRC_MEM : S3C2410_DMASRC_HW);
 	s3c2410_dma_ctrl(host->dma, S3C2410_DMAOP_FLUSH);
 
 	dma_len = dma_map_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
@@ -1606,7 +1606,7 @@ static int __devinit s3cmci_probe(struct platform_device *pdev)
 	host->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!host->mem) {
 		dev_err(&pdev->dev,
-			"failed to get io memory region resource.\n");
+			"failed to get io memory region resouce.\n");
 
 		ret = -ENOENT;
 		goto probe_free_gpio;
@@ -1630,7 +1630,7 @@ static int __devinit s3cmci_probe(struct platform_device *pdev)
 
 	host->irq = platform_get_irq(pdev, 0);
 	if (host->irq == 0) {
-		dev_err(&pdev->dev, "failed to get interrupt resource.\n");
+		dev_err(&pdev->dev, "failed to get interrupt resouce.\n");
 		ret = -EINVAL;
 		goto probe_iounmap;
 	}
@@ -1914,7 +1914,18 @@ static struct platform_driver s3cmci_driver = {
 	.shutdown	= s3cmci_shutdown,
 };
 
-module_platform_driver(s3cmci_driver);
+static int __init s3cmci_init(void)
+{
+	return platform_driver_register(&s3cmci_driver);
+}
+
+static void __exit s3cmci_exit(void)
+{
+	platform_driver_unregister(&s3cmci_driver);
+}
+
+module_init(s3cmci_init);
+module_exit(s3cmci_exit);
 
 MODULE_DESCRIPTION("Samsung S3C MMC/SD Card Interface driver");
 MODULE_LICENSE("GPL v2");

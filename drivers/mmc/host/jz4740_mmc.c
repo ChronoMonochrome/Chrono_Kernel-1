@@ -1012,7 +1012,17 @@ static struct platform_driver jz4740_mmc_driver = {
 	},
 };
 
-module_platform_driver(jz4740_mmc_driver);
+static int __init jz4740_mmc_init(void)
+{
+	return platform_driver_register(&jz4740_mmc_driver);
+}
+module_init(jz4740_mmc_init);
+
+static void __exit jz4740_mmc_exit(void)
+{
+	platform_driver_unregister(&jz4740_mmc_driver);
+}
+module_exit(jz4740_mmc_exit);
 
 MODULE_DESCRIPTION("JZ4740 SD/MMC controller driver");
 MODULE_LICENSE("GPL");
