@@ -31,6 +31,7 @@ struct ste_hsi_hw_context {
 	unsigned int tx_mode;
 	unsigned int tx_divisor;
 	unsigned int tx_channels;
+	unsigned int tx_priority;
 	unsigned int rx_mode;
 	unsigned int rx_channels;
 };
@@ -191,6 +192,8 @@ static void ste_hsi_setup_registers(struct ste_hsi_controller *ste_hsi)
 	writel(pcontext->tx_mode, ste_hsi->tx_base + STE_HSI_TX_MODE);
 	writel(pcontext->tx_divisor, ste_hsi->tx_base + STE_HSI_TX_DIVISOR);
 	writel(pcontext->tx_channels, ste_hsi->tx_base + STE_HSI_TX_CHANNELS);
+	writel(pcontext->tx_priority, ste_hsi->tx_base + STE_HSI_TX_PRIORITY);
+
 	/* Calculate buffers number per channel */
 	buffers = STE_HSI_MAX_BUFFERS / pcontext->tx_channels;
 	for (i = 0; i < pcontext->tx_channels; i++) {
@@ -1347,6 +1350,7 @@ static int ste_hsi_setup(struct hsi_client *cl)
 	struct ste_hsi_controller *ste_hsi = hsi_controller_drvdata(hsi);
 	int err;
 	u32 div = 0;
+	int ch;
 
 	if (ste_hsi->regulator)
 		regulator_enable(ste_hsi->regulator);
@@ -1372,6 +1376,12 @@ static int ste_hsi_setup(struct hsi_client *cl)
 		ste_hsi->context->tx_mode = cl->tx_cfg.mode;
 		ste_hsi->context->tx_divisor = div;
 		ste_hsi->context->tx_channels = cl->tx_cfg.channels;
+		ste_hsi->context->tx_priority = 0;
+		if (HSI_ARB_PRIO == cl->tx_cfg.arb_mode)
+			for (ch = 0; ch < STE_HSI_MAX_CHANNELS; ch++)
+				if (cl->tx_cfg.ch_prio[ch])
+					ste_hsi->context->tx_priority |=
+								(1 << ch);
 
 		if ((HSI_FLOW_PIPE == cl->rx_cfg.flow) &&
 			(HSI_MODE_FRAME == cl->rx_cfg.mode))
