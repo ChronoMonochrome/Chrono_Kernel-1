@@ -6,7 +6,6 @@
  * tree.
  */
 
-#include <linux/module.h>
 #include <linux/of.h>
 #include <linux/device.h>
 #include <linux/spi/spi.h>
