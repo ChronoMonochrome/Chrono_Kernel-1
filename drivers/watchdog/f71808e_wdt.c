@@ -19,8 +19,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #include <linux/err.h>
 #include <linux/fs.h>
 #include <linux/init.h>
@@ -102,7 +100,7 @@ MODULE_PARM_DESC(f71862fg_pin,
 	"Watchdog f71862fg reset output pin configuration. Choose pin 56 or 63"
 			" (default=" __MODULE_STRING(WATCHDOG_F71862FG_PIN)")");
 
-static bool nowayout = WATCHDOG_NOWAYOUT;
+static int nowayout = WATCHDOG_NOWAYOUT;
 module_param(nowayout, bool, 0444);
 MODULE_PARM_DESC(nowayout, "Disable watchdog shutdown on close");
 
@@ -191,7 +189,8 @@ static inline int superio_enter(int base)
 {
 	/* Don't step on other drivers' I/O space by accident */
 	if (!request_muxed_region(base, 2, DRVNAME)) {
-		pr_err("I/O address 0x%04x already in use\n", (int)base);
+		printk(KERN_ERR DRVNAME ": I/O address 0x%04x already in use\n",
+				(int)base);
 		return -EBUSY;
 	}
 
@@ -218,7 +217,7 @@ static int watchdog_set_timeout(int timeout)
 {
 	if (timeout <= 0
 	 || timeout >  max_timeout) {
-		pr_err("watchdog timeout out of range\n");
+		printk(KERN_ERR DRVNAME ": watchdog timeout out of range\n");
 		return -EINVAL;
 	}
 
@@ -253,7 +252,7 @@ static int watchdog_set_pulse_width(unsigned int pw)
 	} else if (pw <= 5000) {
 		watchdog.pulse_val = 3;
 	} else {
-		pr_err("pulse width out of range\n");
+		printk(KERN_ERR DRVNAME ": pulse width out of range\n");
 		err = -EINVAL;
 		goto exit_unlock;
 	}
@@ -310,7 +309,8 @@ static int f71862fg_pin_configure(unsigned short ioaddr)
 		if (ioaddr)
 			superio_set_bit(ioaddr, SIO_REG_MFUNCT1, 1);
 	} else {
-		pr_err("Invalid argument f71862fg_pin=%d\n", f71862fg_pin);
+		printk(KERN_ERR DRVNAME ": Invalid argument f71862fg_pin=%d\n",
+				f71862fg_pin);
 		return -EINVAL;
 	}
 	return 0;
@@ -487,7 +487,8 @@ static int watchdog_release(struct inode *inode, struct file *file)
 
 	if (!watchdog.expect_close) {
 		watchdog_keepalive();
-		pr_crit("Unexpected close, not stopping watchdog!\n");
+		printk(KERN_CRIT DRVNAME
+			": Unexpected close, not stopping watchdog!\n");
 	} else if (!nowayout) {
 		watchdog_stop();
 	}
@@ -671,22 +672,25 @@ static int __init watchdog_init(int sioaddr)
 
 	err = misc_register(&watchdog_miscdev);
 	if (err) {
-		pr_err("cannot register miscdev on minor=%d\n",
-		       watchdog_miscdev.minor);
+		printk(KERN_ERR DRVNAME
+			": cannot register miscdev on minor=%d\n",
+				watchdog_miscdev.minor);
 		goto exit_reboot;
 	}
 
 	if (start_withtimeout) {
 		if (start_withtimeout <= 0
 		 || start_withtimeout >  max_timeout) {
-			pr_err("starting timeout out of range\n");
+			printk(KERN_ERR DRVNAME
+				": starting timeout out of range\n");
 			err = -EINVAL;
 			goto exit_miscdev;
 		}
 
 		err = watchdog_start();
 		if (err) {
-			pr_err("cannot start watchdog timer\n");
+			printk(KERN_ERR DRVNAME
+				": cannot start watchdog timer\n");
 			goto exit_miscdev;
 		}
 
@@ -716,7 +720,8 @@ static int __init watchdog_init(int sioaddr)
 		if (nowayout)
 			__module_get(THIS_MODULE);
 
-		pr_info("watchdog started with initial timeout of %u sec\n",
+		printk(KERN_INFO DRVNAME
+			": watchdog started with initial timeout of %u sec\n",
 			start_withtimeout);
 	}
 
@@ -741,7 +746,7 @@ static int __init f71808e_find(int sioaddr)
 
 	devid = superio_inw(sioaddr, SIO_REG_MANID);
 	if (devid != SIO_FINTEK_ID) {
-		pr_debug("Not a Fintek device\n");
+		pr_debug(DRVNAME ": Not a Fintek device\n");
 		err = -ENODEV;
 		goto exit;
 	}
@@ -769,13 +774,13 @@ static int __init f71808e_find(int sioaddr)
 		err = -ENODEV;
 		goto exit;
 	default:
-		pr_info("Unrecognized Fintek device: %04x\n",
-			(unsigned int)devid);
+		printk(KERN_INFO DRVNAME ": Unrecognized Fintek device: %04x\n",
+		       (unsigned int)devid);
 		err = -ENODEV;
 		goto exit;
 	}
 
-	pr_info("Found %s watchdog chip, revision %d\n",
+	printk(KERN_INFO DRVNAME ": Found %s watchdog chip, revision %d\n",
 		f71808e_names[watchdog.type],
 		(int)superio_inb(sioaddr, SIO_REG_DEVREV));
 exit:
@@ -803,7 +808,8 @@ static int __init f71808e_init(void)
 static void __exit f71808e_exit(void)
 {
 	if (watchdog_is_running()) {
-		pr_warn("Watchdog timer still running, stopping it\n");
+		printk(KERN_WARNING DRVNAME
+			": Watchdog timer still running, stopping it\n");
 		watchdog_stop();
 	}
 	misc_deregister(&watchdog_miscdev);
