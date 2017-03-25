@@ -2,7 +2,7 @@
  *  BCMSDH interface glue
  *  implement bcmsdh API for SDIOH driver
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
+ * Copyright (C) 1999-2012, Broadcom Corporation
  * 
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
@@ -22,7 +22,7 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmsdh.c 373331 2012-12-07 04:46:22Z $
+ * $Id: bcmsdh.c 373329 2012-12-07 04:46:09Z $
  */
 
 /**
@@ -157,9 +157,17 @@ bcmsdh_intr_enable(void *sdh)
 {
 	bcmsdh_info_t *bcmsdh = (bcmsdh_info_t *)sdh;
 	SDIOH_API_RC status;
+#ifdef BCMSPI_ANDROID
+	uint32 data;
+#endif /* BCMSPI_ANDROID */
 	ASSERT(bcmsdh);
 
 	status = sdioh_interrupt_set(bcmsdh->sdioh, TRUE);
+#ifdef BCMSPI_ANDROID
+	data = bcmsdh_cfg_read_word(sdh, 0, 4, NULL);
+	data |= 0xE0E70000;
+	bcmsdh_cfg_write_word(sdh, 0, 4, data, NULL);
+#endif /* BCMSPI_ANDROID */
 	return (SDIOH_API_SUCCESS(status) ? 0 : BCME_ERROR);
 }
 
@@ -168,9 +176,17 @@ bcmsdh_intr_disable(void *sdh)
 {
 	bcmsdh_info_t *bcmsdh = (bcmsdh_info_t *)sdh;
 	SDIOH_API_RC status;
+#ifdef BCMSPI_ANDROID
+	uint32 data;
+#endif /* BCMSPI_ANDROID */
 	ASSERT(bcmsdh);
 
 	status = sdioh_interrupt_set(bcmsdh->sdioh, FALSE);
+#ifdef BCMSPI_ANDROID
+	data = bcmsdh_cfg_read_word(sdh, 0, 4, NULL);
+	data &= ~0xE0E70000;
+	bcmsdh_cfg_write_word(sdh, 0, 4, data, NULL);
+#endif /* BCMSPI_ANDROID */
 	return (SDIOH_API_SUCCESS(status) ? 0 : BCME_ERROR);
 }
 
@@ -620,6 +636,17 @@ bcmsdh_waitlockfree(void *sdh)
 }
 
 
+#ifdef BCMSPI     /* 4329 gSPI won't have CIS reads. */
+int
+bcmsdh_query_device(void *sdh)
+{
+	bcmsdh_info_t *bcmsdh = (bcmsdh_info_t *)sdh;
+
+	bcmsdh->vendevid = (VENDOR_BROADCOM << 16) | BCM4321_D11N2G_ID;
+
+	return (bcmsdh->vendevid);
+}
+#else
 int
 bcmsdh_query_device(void *sdh)
 {
@@ -627,6 +654,7 @@ bcmsdh_query_device(void *sdh)
 	bcmsdh->vendevid = (VENDOR_BROADCOM << 16) | 0;
 	return (bcmsdh->vendevid);
 }
+#endif /* else BCMSPI */
 
 uint
 bcmsdh_query_iofnum(void *sdh)
@@ -657,7 +685,13 @@ void *bcmsdh_get_sdioh(bcmsdh_info_t *sdh)
 uint32
 bcmsdh_get_dstatus(void *sdh)
 {
+#ifdef BCMSPI
+	bcmsdh_info_t *p = (bcmsdh_info_t *)sdh;
+	sdioh_info_t *sd = (sdioh_info_t *)(p->sdioh);
+	return sdioh_get_dstatus(sd);
+#else
 	return 0;
+#endif /* BCMSPI */
 }
 uint32
 bcmsdh_cur_sbwad(void *sdh)
@@ -673,9 +707,25 @@ bcmsdh_cur_sbwad(void *sdh)
 void
 bcmsdh_chipinfo(void *sdh, uint32 chip, uint32 chiprev)
 {
+#ifdef BCMSPI
+	bcmsdh_info_t *p = (bcmsdh_info_t *)sdh;
+	sdioh_info_t *sd = (sdioh_info_t *)(p->sdioh);
+	sdioh_chipinfo(sd, chip, chiprev);
+#else
 	return;
+#endif /* BCMSPI */
 }
 
+#ifdef BCMSPI
+void
+bcmsdh_dwordmode(void *sdh, bool set)
+{
+	bcmsdh_info_t *p = (bcmsdh_info_t *)sdh;
+	sdioh_info_t *sd = (sdioh_info_t *)(p->sdioh);
+	sdioh_dwordmode(sd, set);
+	return;
+}
+#endif /* BCMSPI */
 
 int
 bcmsdh_sleep(void *sdh, bool enab)
@@ -728,10 +778,10 @@ bcmsdh_gpioout(void *sdh, uint32 gpio, bool enab)
 
 #ifdef BCMSDIOH_TXGLOM
 void
-bcmsdh_glom_post(void *sdh, uint8 *frame, void *pkt, uint len)
+bcmsdh_glom_post(void *sdh, uint8 *frame, uint len)
 {
 	bcmsdh_info_t *bcmsdh = (bcmsdh_info_t *)sdh;
-	sdioh_glom_post(bcmsdh->sdioh, frame, pkt, len);
+	sdioh_glom_post(bcmsdh->sdioh, frame, len);
 }
 
 void

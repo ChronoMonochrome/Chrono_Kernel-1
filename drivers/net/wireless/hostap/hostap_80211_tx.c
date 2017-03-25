@@ -1,5 +1,4 @@
 #include <linux/slab.h>
-#include <linux/export.h>
 
 #include "hostap_80211.h"
 #include "hostap_common.h"
