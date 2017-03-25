@@ -77,8 +77,7 @@
 
 #include <mach/board.h>
 #include <mach/cpu.h>
-
-#include "at91_mci.h"
+#include <mach/at91_mci.h>
 
 #define DRIVER_NAME "at91_mci"
 
@@ -86,6 +85,7 @@ static inline int at91mci_is_mci1rev2xx(void)
 {
 	return (   cpu_is_at91sam9260()
 		|| cpu_is_at91sam9263()
+		|| cpu_is_at91cap9()
 		|| cpu_is_at91sam9rl()
 		|| cpu_is_at91sam9g10()
 		|| cpu_is_at91sam9g20()
@@ -235,7 +235,7 @@ static inline void at91_mci_sg_to_dma(struct at91mci_host *host, struct mmc_data
 
 		sg = &data->sg[i];
 
-		sgbuffer = kmap_atomic(sg_page(sg)) + sg->offset;
+		sgbuffer = kmap_atomic(sg_page(sg), KM_BIO_SRC_IRQ) + sg->offset;
 		amount = min(size, sg->length);
 		size -= amount;
 
@@ -251,7 +251,7 @@ static inline void at91_mci_sg_to_dma(struct at91mci_host *host, struct mmc_data
 			dmabuf = (unsigned *)tmpv;
 		}
 
-		kunmap_atomic(sgbuffer);
+		kunmap_atomic(sgbuffer, KM_BIO_SRC_IRQ);
 
 		if (size == 0)
 			break;
@@ -301,7 +301,7 @@ static void at91_mci_post_dma_read(struct at91mci_host *host)
 
 		sg = &data->sg[i];
 
-		sgbuffer = kmap_atomic(sg_page(sg)) + sg->offset;
+		sgbuffer = kmap_atomic(sg_page(sg), KM_BIO_SRC_IRQ) + sg->offset;
 		amount = min(size, sg->length);
 		size -= amount;
 
@@ -317,7 +317,7 @@ static void at91_mci_post_dma_read(struct at91mci_host *host)
 		}
 
 		flush_kernel_dcache_page(sg_page(sg));
-		kunmap_atomic(sgbuffer);
+		kunmap_atomic(sgbuffer, KM_BIO_SRC_IRQ);
 		data->bytes_xfered += amount;
 		if (size == 0)
 			break;
@@ -740,7 +740,7 @@ static void at91_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	at91_mci_write(host, AT91_MCI_MR, (at91_mci_read(host, AT91_MCI_MR) & ~AT91_MCI_CLKDIV) | clkdiv);
 
 	/* maybe switch power to the card */
-	if (gpio_is_valid(host->board->vcc_pin)) {
+	if (host->board->vcc_pin) {
 		switch (ios->power_mode) {
 			case MMC_POWER_OFF:
 				gpio_set_value(host->board->vcc_pin, 0);
@@ -868,11 +868,7 @@ static irqreturn_t at91_mci_irq(int irq, void *devid)
 static irqreturn_t at91_mmc_det_irq(int irq, void *_host)
 {
 	struct at91mci_host *host = _host;
-	int present;
-
-	/* entering this ISR means that we have configured det_pin:
-	 * we can use its value in board structure */
-	present = !gpio_get_value(host->board->det_pin);
+	int present = !gpio_get_value(irq_to_gpio(irq));
 
 	/*
 	 * we expect this irq on both insert and remove,
@@ -896,7 +892,7 @@ static int at91_mci_get_ro(struct mmc_host *mmc)
 {
 	struct at91mci_host *host = mmc_priv(mmc);
 
-	if (gpio_is_valid(host->board->wp_pin))
+	if (host->board->wp_pin)
 		return !!gpio_get_value(host->board->wp_pin);
 	/*
 	 * Board doesn't support read only detection; let the mmc core
@@ -990,21 +986,21 @@ static int __init at91_mci_probe(struct platform_device *pdev)
 	 * Reserve GPIOs ... board init code makes sure these pins are set
 	 * up as GPIOs with the right direction (input, except for vcc)
 	 */
-	if (gpio_is_valid(host->board->det_pin)) {
+	if (host->board->det_pin) {
 		ret = gpio_request(host->board->det_pin, "mmc_detect");
 		if (ret < 0) {
 			dev_dbg(&pdev->dev, "couldn't claim card detect pin\n");
 			goto fail4b;
 		}
 	}
-	if (gpio_is_valid(host->board->wp_pin)) {
+	if (host->board->wp_pin) {
 		ret = gpio_request(host->board->wp_pin, "mmc_wp");
 		if (ret < 0) {
 			dev_dbg(&pdev->dev, "couldn't claim wp sense pin\n");
 			goto fail4;
 		}
 	}
-	if (gpio_is_valid(host->board->vcc_pin)) {
+	if (host->board->vcc_pin) {
 		ret = gpio_request(host->board->vcc_pin, "mmc_vcc");
 		if (ret < 0) {
 			dev_dbg(&pdev->dev, "couldn't claim vcc switch pin\n");
@@ -1056,7 +1052,7 @@ static int __init at91_mci_probe(struct platform_device *pdev)
 	/*
 	 * Add host to MMC layer
 	 */
-	if (gpio_is_valid(host->board->det_pin)) {
+	if (host->board->det_pin) {
 		host->present = !gpio_get_value(host->board->det_pin);
 	}
 	else
@@ -1067,7 +1063,7 @@ static int __init at91_mci_probe(struct platform_device *pdev)
 	/*
 	 * monitor card insertion/removal if we can
 	 */
-	if (gpio_is_valid(host->board->det_pin)) {
+	if (host->board->det_pin) {
 		ret = request_irq(gpio_to_irq(host->board->det_pin),
 				at91_mmc_det_irq, 0, mmc_hostname(mmc), host);
 		if (ret)
@@ -1086,13 +1082,13 @@ fail0:
 fail1:
 	clk_put(host->mci_clk);
 fail2:
-	if (gpio_is_valid(host->board->vcc_pin))
+	if (host->board->vcc_pin)
 		gpio_free(host->board->vcc_pin);
 fail3:
-	if (gpio_is_valid(host->board->wp_pin))
+	if (host->board->wp_pin)
 		gpio_free(host->board->wp_pin);
 fail4:
-	if (gpio_is_valid(host->board->det_pin))
+	if (host->board->det_pin)
 		gpio_free(host->board->det_pin);
 fail4b:
 	if (host->buffer)
@@ -1124,7 +1120,7 @@ static int __exit at91_mci_remove(struct platform_device *pdev)
 		dma_free_coherent(&pdev->dev, MCI_BUFSIZE,
 				host->buffer, host->physical_address);
 
-	if (gpio_is_valid(host->board->det_pin)) {
+	if (host->board->det_pin) {
 		if (device_can_wakeup(&pdev->dev))
 			free_irq(gpio_to_irq(host->board->det_pin), host);
 		device_init_wakeup(&pdev->dev, 0);
@@ -1139,9 +1135,9 @@ static int __exit at91_mci_remove(struct platform_device *pdev)
 	clk_disable(host->mci_clk);			/* Disable the peripheral clock */
 	clk_put(host->mci_clk);
 
-	if (gpio_is_valid(host->board->vcc_pin))
+	if (host->board->vcc_pin)
 		gpio_free(host->board->vcc_pin);
-	if (gpio_is_valid(host->board->wp_pin))
+	if (host->board->wp_pin)
 		gpio_free(host->board->wp_pin);
 
 	iounmap(host->baseaddr);
@@ -1162,7 +1158,7 @@ static int at91_mci_suspend(struct platform_device *pdev, pm_message_t state)
 	struct at91mci_host *host = mmc_priv(mmc);
 	int ret = 0;
 
-	if (gpio_is_valid(host->board->det_pin) && device_may_wakeup(&pdev->dev))
+	if (host->board->det_pin && device_may_wakeup(&pdev->dev))
 		enable_irq_wake(host->board->det_pin);
 
 	if (mmc)
@@ -1177,7 +1173,7 @@ static int at91_mci_resume(struct platform_device *pdev)
 	struct at91mci_host *host = mmc_priv(mmc);
 	int ret = 0;
 
-	if (gpio_is_valid(host->board->det_pin) && device_may_wakeup(&pdev->dev))
+	if (host->board->det_pin && device_may_wakeup(&pdev->dev))
 		disable_irq_wake(host->board->det_pin);
 
 	if (mmc)

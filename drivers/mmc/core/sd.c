@@ -12,7 +12,6 @@
 
 #include <linux/err.h>
 #include <linux/slab.h>
-#include <linux/stat.h>
 
 #include <linux/mmc/host.h>
 #include <linux/mmc/card.h>
@@ -1070,20 +1069,26 @@ static void mmc_sd_detect(struct mmc_host *host)
 {
 	int err = 0;
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
-        int retries = 5;
+	int retries = 5;
+#endif
+
+#ifdef _MMC_SAFE_ACCESS_
+    int  slowcount = 100;
 #endif
 
 	BUG_ON(!host);
 	BUG_ON(!host->card);
-       
+
 	mmc_claim_host(host);
 
-	/*
-	 * Just check if our card has been removed.
-	 */
+/*
+ * Just check if our card has been removed.
+ */
+
+send_again:
 #ifdef CONFIG_MMC_PARANOID_SD_INIT
-	while(retries) {
-		err = mmc_send_status(host->card, NULL);
+	while (retries) {
+		err = _mmc_detect_card_removed(host);
 		if (err) {
 			retries--;
 			udelay(5);
@@ -1094,13 +1099,32 @@ static void mmc_sd_detect(struct mmc_host *host)
 	if (!retries) {
 		printk(KERN_ERR "%s(%s): Unable to re-detect card (%d)\n",
 		       __func__, mmc_hostname(host), err);
+	} else {
+#ifdef _MMC_SAFE_ACCESS_
+		slowcount = slowcount-4;
+#endif
 	}
 #else
 	err = _mmc_detect_card_removed(host);
 #endif
+
+#ifdef _MMC_SAFE_ACCESS_
+	slowcount--;
+	if ((mmc_is_available == 0) && (err == 0) && (slowcount != 0)) {
+/*wait 1s until sd card perfectly removed*/
+		mdelay(10);
+		goto send_again;
+		retries = 5;
+	}
+#endif
+
 	mmc_release_host(host);
 
+#ifdef _MMC_SAFE_ACCESS_
+    if (err || (slowcount == 0 && mmc_is_available == 0)) {
+#else
 	if (err) {
+#endif
 		mmc_sd_remove(host);
 
 		mmc_claim_host(host);
