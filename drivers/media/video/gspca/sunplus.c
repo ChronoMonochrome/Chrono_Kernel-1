@@ -19,8 +19,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #define MODULE_NAME "sunplus"
 
 #include "gspca.h"
@@ -249,6 +247,7 @@ static const struct cmd spca504A_clicksmart420_init_data[] = {
 	{0x30, 0x0004, 0x000a},
 	{0xb0, 0x0001, 0x0000},
 
+
 	{0xa1, 0x0080, 0x0001},
 	{0x30, 0x0049, 0x0000},
 	{0x30, 0x0060, 0x0005},
@@ -257,6 +256,8 @@ static const struct cmd spca504A_clicksmart420_init_data[] = {
 	{0x00, 0x0000, 0x2000},
 	{0x00, 0x0013, 0x2301},
 	{0x00, 0x0003, 0x2000},
+	{0x00, 0x0000, 0x2000},
+
 };
 
 /* clicksmart 420 open data ? */
@@ -327,7 +328,7 @@ static void reg_r(struct gspca_dev *gspca_dev,
 
 #ifdef GSPCA_DEBUG
 	if (len > USB_BUF_SZ) {
-		pr_err("reg_r: buffer overflow\n");
+		err("reg_r: buffer overflow");
 		return;
 	}
 #endif
@@ -342,7 +343,7 @@ static void reg_r(struct gspca_dev *gspca_dev,
 			len ? gspca_dev->usb_buf : NULL, len,
 			500);
 	if (ret < 0) {
-		pr_err("reg_r err %d\n", ret);
+		err("reg_r err %d", ret);
 		gspca_dev->usb_err = ret;
 	}
 }
@@ -367,7 +368,7 @@ static void reg_w_1(struct gspca_dev *gspca_dev,
 			gspca_dev->usb_buf, 1,
 			500);
 	if (ret < 0) {
-		pr_err("reg_w_1 err %d\n", ret);
+		err("reg_w_1 err %d", ret);
 		gspca_dev->usb_err = ret;
 	}
 }
@@ -387,7 +388,7 @@ static void reg_w_riv(struct gspca_dev *gspca_dev,
 			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
 			value, index, NULL, 0, 500);
 	if (ret < 0) {
-		pr_err("reg_w_riv err %d\n", ret);
+		err("reg_w_riv err %d", ret);
 		gspca_dev->usb_err = ret;
 		return;
 	}
@@ -1211,4 +1212,15 @@ static struct usb_driver sd_driver = {
 #endif
 };
 
-module_usb_driver(sd_driver);
+/* -- module insert / remove -- */
+static int __init sd_mod_init(void)
+{
+	return usb_register(&sd_driver);
+}
+static void __exit sd_mod_exit(void)
+{
+	usb_deregister(&sd_driver);
+}
+
+module_init(sd_mod_init);
+module_exit(sd_mod_exit);

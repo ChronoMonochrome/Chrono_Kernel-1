@@ -28,7 +28,6 @@
 
 #include "cx88.h"
 #include "tea5767.h"
-#include "xc4000.h"
 
 static unsigned int tuner[] = {[0 ... (CX88_MAXBOARDS - 1)] = UNSET };
 static unsigned int radio[] = {[0 ... (CX88_MAXBOARDS - 1)] = UNSET };
@@ -1306,7 +1305,7 @@ static const struct cx88_board cx88_boards[] = {
 	},
 	[CX88_BOARD_WINFAST_DTV2000H_J] = {
 		.name           = "WinFast DTV2000 H rev. J",
-		.tuner_type     = TUNER_PHILIPS_FMD1216MEX_MK3,
+		.tuner_type     = TUNER_PHILIPS_FMD1216ME_MK3,
 		.radio_type     = UNSET,
 		.tuner_addr     = ADDR_UNSET,
 		.radio_addr     = ADDR_UNSET,
@@ -1573,8 +1572,8 @@ static const struct cx88_board cx88_boards[] = {
 		.name           = "Pinnacle Hybrid PCTV",
 		.tuner_type     = TUNER_XC2028,
 		.tuner_addr     = 0x61,
-		.radio_type     = UNSET,
-		.radio_addr     = ADDR_UNSET,
+		.radio_type     = TUNER_XC2028,
+		.radio_addr     = 0x61,
 		.input          = { {
 			.type   = CX88_VMUX_TELEVISION,
 			.vmux   = 0,
@@ -1611,8 +1610,8 @@ static const struct cx88_board cx88_boards[] = {
 		.name           = "Leadtek TV2000 XP Global",
 		.tuner_type     = TUNER_XC2028,
 		.tuner_addr     = 0x61,
-		.radio_type     = UNSET,
-		.radio_addr     = ADDR_UNSET,
+		.radio_type     = TUNER_XC2028,
+		.radio_addr     = 0x61,
 		.input          = { {
 			.type   = CX88_VMUX_TELEVISION,
 			.vmux   = 0,
@@ -1640,78 +1639,6 @@ static const struct cx88_board cx88_boards[] = {
 			.gpio0  = 0x0400,        /* pin 2 = 0 */
 			.gpio1  = 0x0000,
 			.gpio2  = 0x0C00,       /* pin 18 = 0, pin 19 = 0 */
-			.gpio3  = 0x0000,
-		},
-	},
-	[CX88_BOARD_WINFAST_TV2000_XP_GLOBAL_6F36] = {
-		.name           = "Leadtek TV2000 XP Global (SC4100)",
-		.tuner_type     = TUNER_XC4000,
-		.tuner_addr     = 0x61,
-		.radio_type     = UNSET,
-		.radio_addr     = ADDR_UNSET,
-		.input          = { {
-			.type   = CX88_VMUX_TELEVISION,
-			.vmux   = 0,
-			.gpio0  = 0x0400,       /* pin 2 = 0 */
-			.gpio1  = 0x0000,
-			.gpio2  = 0x0C04,       /* pin 18 = 1, pin 19 = 0 */
-			.gpio3  = 0x0000,
-		}, {
-			.type   = CX88_VMUX_COMPOSITE1,
-			.vmux   = 1,
-			.gpio0  = 0x0400,       /* pin 2 = 0 */
-			.gpio1  = 0x0000,
-			.gpio2  = 0x0C0C,       /* pin 18 = 1, pin 19 = 1 */
-			.gpio3  = 0x0000,
-		}, {
-			.type   = CX88_VMUX_SVIDEO,
-			.vmux   = 2,
-			.gpio0  = 0x0400,       /* pin 2 = 0 */
-			.gpio1  = 0x0000,
-			.gpio2  = 0x0C0C,       /* pin 18 = 1, pin 19 = 1 */
-			.gpio3  = 0x0000,
-		} },
-		.radio = {
-			.type   = CX88_RADIO,
-			.gpio0  = 0x0400,        /* pin 2 = 0 */
-			.gpio1  = 0x0000,
-			.gpio2  = 0x0C00,       /* pin 18 = 0, pin 19 = 0 */
-			.gpio3  = 0x0000,
-		},
-	},
-	[CX88_BOARD_WINFAST_TV2000_XP_GLOBAL_6F43] = {
-		.name           = "Leadtek TV2000 XP Global (XC4100)",
-		.tuner_type     = TUNER_XC4000,
-		.tuner_addr     = 0x61,
-		.radio_type     = UNSET,
-		.radio_addr     = ADDR_UNSET,
-		.input          = { {
-			.type   = CX88_VMUX_TELEVISION,
-			.vmux   = 0,
-			.gpio0  = 0x0400,       /* pin 2 = 0 */
-			.gpio1  = 0x6040,       /* pin 14 = 1, pin 13 = 0 */
-			.gpio2  = 0x0000,
-			.gpio3  = 0x0000,
-		}, {
-			.type   = CX88_VMUX_COMPOSITE1,
-			.vmux   = 1,
-			.gpio0  = 0x0400,       /* pin 2 = 0 */
-			.gpio1  = 0x6060,       /* pin 14 = 1, pin 13 = 1 */
-			.gpio2  = 0x0000,
-			.gpio3  = 0x0000,
-		}, {
-			.type   = CX88_VMUX_SVIDEO,
-			.vmux   = 2,
-			.gpio0  = 0x0400,       /* pin 2 = 0 */
-			.gpio1  = 0x6060,       /* pin 14 = 1, pin 13 = 1 */
-			.gpio2  = 0x0000,
-			.gpio3  = 0x0000,
-		} },
-		.radio = {
-			.type   = CX88_RADIO,
-			.gpio0  = 0x0400,        /* pin 2 = 0 */
-			.gpio1  = 0x6000,        /* pin 14 = 1, pin 13 = 0 */
-			.gpio2  = 0x0000,
 			.gpio3  = 0x0000,
 		},
 	},
@@ -2115,8 +2042,8 @@ static const struct cx88_board cx88_boards[] = {
 		.name           = "Terratec Cinergy HT PCI MKII",
 		.tuner_type     = TUNER_XC2028,
 		.tuner_addr     = 0x61,
-		.radio_type     = UNSET,
-		.radio_addr     = ADDR_UNSET,
+		.radio_type     = TUNER_XC2028,
+		.radio_addr     = 0x61,
 		.input          = { {
 			.type   = CX88_VMUX_TELEVISION,
 			.vmux   = 0,
@@ -2154,9 +2081,9 @@ static const struct cx88_board cx88_boards[] = {
 	[CX88_BOARD_WINFAST_DTV1800H] = {
 		.name           = "Leadtek WinFast DTV1800 Hybrid",
 		.tuner_type     = TUNER_XC2028,
-		.radio_type     = UNSET,
+		.radio_type     = TUNER_XC2028,
 		.tuner_addr     = 0x61,
-		.radio_addr     = ADDR_UNSET,
+		.radio_addr     = 0x61,
 		/*
 		 * GPIO setting
 		 *
@@ -2191,99 +2118,6 @@ static const struct cx88_board cx88_boards[] = {
 			.gpio2  = 0x0000,
 		},
 		.mpeg           = CX88_MPEG_DVB,
-	},
-	[CX88_BOARD_WINFAST_DTV1800H_XC4000] = {
-		.name		= "Leadtek WinFast DTV1800 H (XC4000)",
-		.tuner_type	= TUNER_XC4000,
-		.radio_type	= UNSET,
-		.tuner_addr	= 0x61,
-		.radio_addr	= ADDR_UNSET,
-		/*
-		 * GPIO setting
-		 *
-		 *  2: mute (0=off,1=on)
-		 * 12: tuner reset pin
-		 * 13: audio source (0=tuner audio,1=line in)
-		 * 14: FM (0=on,1=off ???)
-		 */
-		.input		= {{
-			.type	= CX88_VMUX_TELEVISION,
-			.vmux	= 0,
-			.gpio0	= 0x0400,	/* pin 2 = 0 */
-			.gpio1	= 0x6040,	/* pin 13 = 0, pin 14 = 1 */
-			.gpio2	= 0x0000,
-		}, {
-			.type	= CX88_VMUX_COMPOSITE1,
-			.vmux	= 1,
-			.gpio0	= 0x0400,	/* pin 2 = 0 */
-			.gpio1	= 0x6060,	/* pin 13 = 1, pin 14 = 1 */
-			.gpio2	= 0x0000,
-		}, {
-			.type	= CX88_VMUX_SVIDEO,
-			.vmux	= 2,
-			.gpio0	= 0x0400,	/* pin 2 = 0 */
-			.gpio1	= 0x6060,	/* pin 13 = 1, pin 14 = 1 */
-			.gpio2	= 0x0000,
-		}},
-		.radio = {
-			.type	= CX88_RADIO,
-			.gpio0	= 0x0400,	/* pin 2 = 0 */
-			.gpio1	= 0x6000,	/* pin 13 = 0, pin 14 = 0 */
-			.gpio2	= 0x0000,
-		},
-		.mpeg		= CX88_MPEG_DVB,
-	},
-	[CX88_BOARD_WINFAST_DTV2000H_PLUS] = {
-		.name		= "Leadtek WinFast DTV2000 H PLUS",
-		.tuner_type	= TUNER_XC4000,
-		.radio_type	= UNSET,
-		.tuner_addr	= 0x61,
-		.radio_addr	= ADDR_UNSET,
-		/*
-		 * GPIO
-		 *   2: 1: mute audio
-		 *  12: 0: reset XC4000
-		 *  13: 1: audio input is line in (0: tuner)
-		 *  14: 0: FM radio
-		 *  16: 0: RF input is cable
-		 */
-		.input		= {{
-			.type	= CX88_VMUX_TELEVISION,
-			.vmux	= 0,
-			.gpio0	= 0x0403,
-			.gpio1	= 0xF0D7,
-			.gpio2	= 0x0101,
-			.gpio3	= 0x0000,
-		}, {
-			.type	= CX88_VMUX_CABLE,
-			.vmux	= 0,
-			.gpio0	= 0x0403,
-			.gpio1	= 0xF0D7,
-			.gpio2	= 0x0100,
-			.gpio3	= 0x0000,
-		}, {
-			.type	= CX88_VMUX_COMPOSITE1,
-			.vmux	= 1,
-			.gpio0	= 0x0403,	/* was 0x0407 */
-			.gpio1	= 0xF0F7,
-			.gpio2	= 0x0101,
-			.gpio3	= 0x0000,
-		}, {
-			.type	= CX88_VMUX_SVIDEO,
-			.vmux	= 2,
-			.gpio0	= 0x0403,	/* was 0x0407 */
-			.gpio1	= 0xF0F7,
-			.gpio2	= 0x0101,
-			.gpio3	= 0x0000,
-		}},
-		.radio = {
-			.type	= CX88_RADIO,
-			.gpio0	= 0x0403,
-			.gpio1	= 0xF097,
-			.gpio2	= 0x0100,
-			.gpio3	= 0x0000,
-		},
-		.mpeg		= CX88_MPEG_DVB,
 	},
 	[CX88_BOARD_PROF_7301] = {
 		.name           = "Prof 7301 DVB-S/S2",
@@ -2747,15 +2581,6 @@ static const struct cx88_subid cx88_subids[] = {
 		.subdevice = 0x6654,
 		.card      = CX88_BOARD_WINFAST_DTV1800H,
 	}, {
-		/* WinFast DTV1800 H with XC4000 tuner */
-		.subvendor = 0x107d,
-		.subdevice = 0x6f38,
-		.card      = CX88_BOARD_WINFAST_DTV1800H_XC4000,
-	}, {
-		.subvendor = 0x107d,
-		.subdevice = 0x6f42,
-		.card      = CX88_BOARD_WINFAST_DTV2000H_PLUS,
-	}, {
 		/* PVR2000 PAL Model [107d:6630] */
 		.subvendor = 0x107d,
 		.subdevice = 0x6630,
@@ -2790,21 +2615,6 @@ static const struct cx88_subid cx88_subids[] = {
 		.subvendor = 0x107d,
 		.subdevice = 0x6618,
 		.card      = CX88_BOARD_WINFAST_TV2000_XP_GLOBAL,
-	}, {
-		/* TV2000 XP Global [107d:6618] */
-		.subvendor = 0x107d,
-		.subdevice = 0x6619,
-		.card      = CX88_BOARD_WINFAST_TV2000_XP_GLOBAL,
-	}, {
-		/* WinFast TV2000 XP Global with XC4000 tuner */
-		.subvendor = 0x107d,
-		.subdevice = 0x6f36,
-		.card      = CX88_BOARD_WINFAST_TV2000_XP_GLOBAL_6F36,
-	}, {
-		/* WinFast TV2000 XP Global with XC4000 tuner and different GPIOs */
-		.subvendor = 0x107d,
-		.subdevice = 0x6f43,
-		.card      = CX88_BOARD_WINFAST_TV2000_XP_GLOBAL_6F43,
 	}, {
 		.subvendor = 0xb034,
 		.subdevice = 0x3034,
@@ -3036,23 +2846,6 @@ static int cx88_xc3028_winfast1800h_callback(struct cx88_core *core,
 	return -EINVAL;
 }
 
-static int cx88_xc4000_winfast2000h_plus_callback(struct cx88_core *core,
-						  int command, int arg)
-{
-	switch (command) {
-	case XC4000_TUNER_RESET:
-		/* GPIO 12 (xc4000 tuner reset) */
-		cx_set(MO_GP1_IO, 0x1010);
-		mdelay(50);
-		cx_clear(MO_GP1_IO, 0x10);
-		mdelay(75);
-		cx_set(MO_GP1_IO, 0x10);
-		mdelay(75);
-		return 0;
-	}
-	return -EINVAL;
-}
-
 /* ------------------------------------------------------------------- */
 /* some Divco specific stuff                                           */
 static int cx88_pv_8000gt_callback(struct cx88_core *core,
@@ -3155,21 +2948,6 @@ static int cx88_xc2028_tuner_callback(struct cx88_core *core,
 	return -EINVAL;
 }
 
-static int cx88_xc4000_tuner_callback(struct cx88_core *core,
-				      int command, int arg)
-{
-	/* Board-specific callbacks */
-	switch (core->boardnr) {
-	case CX88_BOARD_WINFAST_DTV1800H_XC4000:
-	case CX88_BOARD_WINFAST_DTV2000H_PLUS:
-	case CX88_BOARD_WINFAST_TV2000_XP_GLOBAL_6F36:
-	case CX88_BOARD_WINFAST_TV2000_XP_GLOBAL_6F43:
-		return cx88_xc4000_winfast2000h_plus_callback(core,
-							      command, arg);
-	}
-	return -EINVAL;
-}
-
 /* ----------------------------------------------------------------------- */
 /* Tuner callback function. Currently only needed for the Pinnacle 	   *
  * PCTV HD 800i with an xc5000 sillicon tuner. This is used for both	   *
@@ -3244,9 +3022,6 @@ int cx88_tuner_callback(void *priv, int component, int command, int arg)
 		case TUNER_XC2028:
 			info_printk(core, "Calling XC2028/3028 callback\n");
 			return cx88_xc2028_tuner_callback(core, command, arg);
-		case TUNER_XC4000:
-			info_printk(core, "Calling XC4000 callback\n");
-			return cx88_xc4000_tuner_callback(core, command, arg);
 		case TUNER_XC5000:
 			info_printk(core, "Calling XC5000 callback\n");
 			return cx88_xc5000_tuner_callback(core, command, arg);
@@ -3321,7 +3096,6 @@ static void cx88_card_setup_pre_i2c(struct cx88_core *core)
 		cx_set(MO_GP0_IO, 0x00001010);
 		break;
 
-	case CX88_BOARD_WINFAST_DTV2000H_J:
 	case CX88_BOARD_HAUPPAUGE_HVR3000:
 	case CX88_BOARD_HAUPPAUGE_HVR4000:
 		/* Init GPIO */
@@ -3335,15 +3109,13 @@ static void cx88_card_setup_pre_i2c(struct cx88_core *core)
 
 	case CX88_BOARD_WINFAST_TV2000_XP_GLOBAL:
 	case CX88_BOARD_WINFAST_DTV1800H:
-		cx88_xc3028_winfast1800h_callback(core, XC2028_TUNER_RESET, 0);
-		break;
-
-	case CX88_BOARD_WINFAST_DTV1800H_XC4000:
-	case CX88_BOARD_WINFAST_DTV2000H_PLUS:
-	case CX88_BOARD_WINFAST_TV2000_XP_GLOBAL_6F36:
-	case CX88_BOARD_WINFAST_TV2000_XP_GLOBAL_6F43:
-		cx88_xc4000_winfast2000h_plus_callback(core,
-						       XC4000_TUNER_RESET, 0);
+		/* GPIO 12 (xc3028 tuner reset) */
+		cx_set(MO_GP1_IO, 0x1010);
+		mdelay(50);
+		cx_clear(MO_GP1_IO, 0x10);
+		mdelay(50);
+		cx_set(MO_GP1_IO, 0x10);
+		mdelay(50);
 		break;
 
 	case CX88_BOARD_TWINHAN_VP1027_DVBS:

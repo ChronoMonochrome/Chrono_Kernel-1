@@ -17,7 +17,6 @@
 
 #include <linux/i2c.h>
 #include <linux/slab.h>
-#include <linux/export.h>
 
 #include "hdpvr.h"
 
