@@ -841,8 +841,12 @@ static int __init ati_remote_init(void)
 		printk(KERN_ERR KBUILD_MODNAME
 		       ": usb_register error #%d\n", result);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
 		       DRIVER_DESC "\n");
+#else
+		;
+#endif
 
 	return result;
 }

@@ -248,7 +248,11 @@ static int hilse_match(hil_mlc *mlc, int unused)
 			goto err;
 
 #ifdef HIL_MLC_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PREFIX "new in slot %i\n", rc);
+#else
+		;
+#endif
 #endif
 		hil_mlc_copy_di_scratch(mlc, rc);
 		mlc->di_map[mlc->ddi] = rc;
@@ -260,7 +264,11 @@ static int hilse_match(hil_mlc *mlc, int unused)
 
 	mlc->di_map[mlc->ddi] = rc;
 #ifdef HIL_MLC_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG PREFIX "same in slot %i\n", rc);
+#else
+	;
+#endif
 #endif
 	mlc->serio_map[rc].di_revmap = mlc->ddi;
 	hil_mlc_clean_serio_map(mlc);
@@ -419,8 +427,12 @@ static int hilse_take_rnm(hil_mlc *mlc, int unused)
 		mlc->di_scratch.rnm[i] =
 			mlc->ipacket[i] & HIL_PKT_DATA_MASK;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "Device name gotten: %16s\n",
 			mlc->di_scratch.rnm);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -626,7 +638,11 @@ static int hilse_donode(hil_mlc *mlc)
 #ifdef HIL_MLC_DEBUG
 	if (mlc->seidx && mlc->seidx != seidx &&
 	    mlc->seidx != 41 && mlc->seidx != 42 && mlc->seidx != 43) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PREFIX "z%i \n {%i}", doze, mlc->seidx);
+#else
+		;
+#endif
 		doze = 0;
 	}
 
@@ -776,7 +792,11 @@ static void hil_mlcs_process(unsigned long unused)
 			if (mlc->seidx != 41 &&
 			    mlc->seidx != 42 &&
 			    mlc->seidx != 43)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG PREFIX " + ");
+#else
+				;
+#endif
 #endif
 		}
 	}
