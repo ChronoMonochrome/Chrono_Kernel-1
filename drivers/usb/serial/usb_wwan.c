@@ -37,7 +37,7 @@
 #include <linux/serial.h>
 #include "usb-wwan.h"
 
-static bool debug;
+static int debug;
 
 void usb_wwan_dtr_rts(struct usb_serial_port *port, int on)
 {
@@ -651,7 +651,7 @@ int usb_wwan_suspend(struct usb_serial *serial, pm_message_t message)
 
 	dbg("%s entered", __func__);
 
-	if (PMSG_IS_AUTO(message)) {
+	if (message.event & PM_EVENT_AUTO) {
 		spin_lock_irq(&intfdata->susp_lock);
 		b = intfdata->in_flight;
 		spin_unlock_irq(&intfdata->susp_lock);

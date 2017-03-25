@@ -26,12 +26,12 @@
 #include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
+#include <linux/wakelock.h>
 #include <mach/id.h>
 #include <mach/usb.h>
 
 #include "musb_core.h"
 
-#define DEFAULT_DEVCTL 0x81
 static void ux500_musb_set_vbus(struct musb *musb, int is_on);
 
 struct ux500_glue {
@@ -45,6 +45,7 @@ static struct timer_list notify_timer;
 static struct musb_context_registers context;
 static bool context_stored;
 struct musb *_musb;
+static struct wake_lock ux500_usb_wakelock;
 
 static void ux500_store_context(struct musb *musb)
 {
@@ -67,12 +68,11 @@ static void ux500_store_context(struct musb *musb)
 		context.testmode = musb_readb(musb_base, MUSB_TESTMODE);
 		context.busctl = musb_read_ulpi_buscontrol(musb->mregs);
 	}
-	context.power = musb_readb(musb_base, MUSB_POWER);
 	context.intrtxe = musb_readw(musb_base, MUSB_INTRTXE);
 	context.intrrxe = musb_readw(musb_base, MUSB_INTRRXE);
-	context.intrusbe = musb_readb(musb_base, MUSB_INTRUSBE);
 	context.index = musb_readb(musb_base, MUSB_INDEX);
-	context.devctl = DEFAULT_DEVCTL;
+	context.intrusbe = musb_readb(musb_base, MUSB_INTRUSBE);
+
 
 	for (i = 0; i < musb->config->num_eps; ++i) {
 		struct musb_hw_ep       *hw_ep;
@@ -153,16 +153,23 @@ void ux500_restore_context(struct musb *musb)
 	}
 
 	musb_base = musb->mregs;
+	/*
+	 * Controller reset needs to be done before the context is
+	 * restored to ensure incorrect values are not  present.
+	 */
+	musb_writeb(musb_base, MUSB_SOFT_RST, MUSB_SOFT_RST_NRST
+			| MUSB_SOFT_RST_NRSTX);
 	if (is_host_enabled(musb)) {
 		musb_writew(musb_base, MUSB_FRAME, context.frame);
 		musb_writeb(musb_base, MUSB_TESTMODE, context.testmode);
 		musb_write_ulpi_buscontrol(musb->mregs, context.busctl);
 	 }
-	musb_writeb(musb_base, MUSB_POWER, context.power);
+
+	musb_writeb(musb_base, MUSB_POWER, MUSB_POWER_SOFTCONN
+						| MUSB_POWER_HSENAB);
 	musb_writew(musb_base, MUSB_INTRTXE, context.intrtxe);
 	musb_writew(musb_base, MUSB_INTRRXE, context.intrrxe);
 	musb_writeb(musb_base, MUSB_INTRUSBE, context.intrusbe);
-	musb_writeb(musb_base, MUSB_DEVCTL, context.devctl);
 
 	for (i = 0; i < musb->config->num_eps; ++i) {
 		struct musb_hw_ep       *hw_ep;
@@ -234,13 +241,13 @@ static void musb_notify_idle(unsigned long _musb)
 	unsigned long	flags;
 
 	u8	devctl;
-	dev_dbg(musb->controller, "musb_notify_idle %s",
+	dev_dbg(musb->controller, "musb_notify_idle %s\n",
 				otg_state_string(musb->xceiv->state));
 	spin_lock_irqsave(&musb->lock, flags);
-	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
 
 	switch (musb->xceiv->state) {
 	case OTG_STATE_A_WAIT_BCON:
+		devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
 		if (devctl & MUSB_DEVCTL_BDEVICE) {
 			musb->xceiv->state = OTG_STATE_B_IDLE;
 			MUSB_DEV_MODE(musb);
@@ -248,10 +255,11 @@ static void musb_notify_idle(unsigned long _musb)
 			musb->xceiv->state = OTG_STATE_A_IDLE;
 			MUSB_HST_MODE(musb);
 		}
-		if (cpu_is_u8500()) {
+		if (cpu_is_u8500() && !((devctl & MUSB_DEVCTL_SESSION) == 1)) {
 			pm_runtime_mark_last_busy(musb->controller);
 			pm_runtime_put_autosuspend(musb->controller);
 		}
+		wake_unlock(&ux500_usb_wakelock);
 		break;
 
 	case OTG_STATE_A_SUSPEND:
@@ -266,12 +274,14 @@ static int musb_otg_notifications(struct notifier_block *nb,
 		unsigned long event, void *unused)
 {
 	struct musb	*musb = container_of(nb, struct musb, nb);
+	unsigned long	flags;
 
 	dev_dbg(musb->controller, "musb_otg_notifications %ld %s\n",
 				event, otg_state_string(musb->xceiv->state));
 	switch (event) {
 
 	case USB_EVENT_PREPARE:
+		wake_lock(&ux500_usb_wakelock);
 		pm_runtime_get_sync(musb->controller);
 		ux500_restore_context(musb);
 		break;
@@ -287,17 +297,22 @@ static int musb_otg_notifications(struct notifier_block *nb,
 		dev_dbg(musb->controller, "VBUS Connect\n");
 
 		break;
-/* 	case USB_EVENT_RIDB: FIXME, not yet managed */
+	case USB_EVENT_RIDB:
 	case USB_EVENT_NONE:
 		dev_dbg(musb->controller, "VBUS Disconnect\n");
 		if (is_otg_enabled(musb) && musb->is_host)
 			ux500_musb_set_vbus(musb, 0);
-		else
+		else {
+			spin_lock_irqsave(&musb->lock, flags);
+			musb_g_disconnect(musb);
+			spin_unlock_irqrestore(&musb->lock, flags);
 			musb->xceiv->state = OTG_STATE_B_IDLE;
+		}
 		break;
 	case USB_EVENT_CLEAN:
 		pm_runtime_mark_last_busy(musb->controller);
 		pm_runtime_put_autosuspend(musb->controller);
+		wake_unlock(&ux500_usb_wakelock);
 		break;
 	default:
 		dev_dbg(musb->controller, "ID float\n");
@@ -311,7 +326,6 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 	u8		devctl;
 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
 	int ret = 1;
-	struct musb_hdrc_platform_data *plat = musb->controller->platform_data;
 #ifdef	CONFIG_USB_OTG_20
 	int val = 0;
 #endif
@@ -324,21 +338,29 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 	val |= 0x1C;
 	musb_writeb(musb->mregs, MUSB_MISC, val);
 #endif
-
-	/* Use EXTVBUS */
-	u8 busctl = musb_read_ulpi_buscontrol(musb->mregs);
-	if (plat->extvbus) {
-		busctl |= MUSB_ULPI_USE_EXTVBUS;
-		musb_write_ulpi_buscontrol(musb->mregs, busctl);
-	} else {
-		busctl &= ~MUSB_ULPI_USE_EXTVBUS;
-		musb_write_ulpi_buscontrol(musb->mregs, busctl);
-	}
-
 	devctl = musb_readb(musb->mregs, MUSB_DEVCTL);
 
 	if (is_on) {
+#ifdef CONFIG_USB_OTG_20
+		/*
+		 * OTG 2.0 Compliance
+		 * When the ID is grounded, device should go into the A
+		 * mode. This is applicable when the device is in B_IDLE
+		 * state also. When the UUT is in B_PERIPHERAL mode, the
+		 * ID grounding should transition it back to B_IDLE and
+		 * then to A_IDLE. Since the RID_A interrupt occurs only
+		 * once, OTG state is set to A_IDLE skipping the B_IDLE
+		 * state inbetween.
+		 * OTG 2.0 - 7.2/Fig 7.3
+		 */
+		if (musb->xceiv->state == OTG_STATE_A_IDLE ||
+				musb->xceiv->state == OTG_STATE_B_IDLE ||
+				musb->xceiv->state == OTG_STATE_B_PERIPHERAL) {
+#else
 		if (musb->xceiv->state == OTG_STATE_A_IDLE) {
+#endif
+			/* put the state back to A_IDLE */
+			musb->xceiv->state = OTG_STATE_A_IDLE;
 			/* start the session */
 			devctl |= MUSB_DEVCTL_SESSION;
 			musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
@@ -358,7 +380,7 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 
 		} else {
 			musb->is_active = 1;
-			musb->xceiv->otg->default_a = 1;
+			musb->xceiv->default_a = 1;
 			musb->xceiv->state = OTG_STATE_A_WAIT_VRISE;
 			devctl |= MUSB_DEVCTL_SESSION;
 			MUSB_HST_MODE(musb);
@@ -369,12 +391,22 @@ static void ux500_musb_set_vbus(struct musb *musb, int is_on)
 		/* NOTE:  we're skipping A_WAIT_VFALL -> A_IDLE and
 		 * jumping right to B_IDLE...
 		 */
-		musb->xceiv->otg->default_a = 0;
+		musb->xceiv->default_a = 0;
 		devctl &= ~MUSB_DEVCTL_SESSION;
 		MUSB_DEV_MODE(musb);
 	}
 	musb_writeb(musb->mregs, MUSB_DEVCTL, devctl);
 
+	/*
+	 * Devctl values will be updated after vbus goes below
+	 * session_valid. The time taken depends on the capacitance
+	 * on VBUS line. The max discharge time can be upto 1 sec
+	 * as per the spec. Typically on our platform, it is 200ms
+	 */
+
+	/* TODO: Check discharge time values for other platforms */
+	if (!is_on)
+		mdelay(200);
 	dev_dbg(musb->controller, "VBUS %s, devctl %02x "
 		/* otg %3x conf %08x prcm %08x */ "\n",
 		otg_state_string(musb->xceiv->state),
@@ -446,14 +478,18 @@ static int ux500_musb_init(struct musb *musb)
 {
 	int status;
 
-	musb->xceiv = usb_get_transceiver();
+	musb->xceiv = otg_get_transceiver();
 	if (!musb->xceiv) {
 		pr_err("HS USB OTG: no transceiver configured\n");
 		return -ENODEV;
 	}
-	pm_runtime_get_noresume(musb->controller);
+	status = pm_runtime_get_sync(musb->controller);
+	if (status < 0) {
+		dev_err(musb->controller, "pm_runtime_get_sync FAILED");
+		goto err1;
+	}
 	musb->nb.notifier_call = musb_otg_notifications;
-	status = usb_register_notifier(musb->xceiv, &musb->nb);
+	status = otg_register_notifier(musb->xceiv, &musb->nb);
 
 	if (status < 0) {
 		dev_dbg(musb->controller, "notification register failed\n");
@@ -476,7 +512,7 @@ err1:
  */
 static int ux500_musb_exit(struct musb *musb)
 {
-	usb_put_transceiver(musb->xceiv);
+	otg_put_transceiver(musb->xceiv);
 
 	return 0;
 }
@@ -499,13 +535,12 @@ static const struct musb_platform_ops ux500_ops = {
  * This function allocates the required memory for the
  * structures and initialize interrupts.
  */
-static int __devinit ux500_probe(struct platform_device *pdev)
+static int __init ux500_probe(struct platform_device *pdev)
 {
 	struct musb_hdrc_platform_data	*pdata = pdev->dev.platform_data;
 	struct platform_device		*musb;
 	struct ux500_glue		*glue;
 	struct clk			*clk;
-
 	int				ret = -ENOMEM;
 
 	glue = kzalloc(sizeof(*glue), GFP_KERNEL);
@@ -527,11 +562,7 @@ static int __devinit ux500_probe(struct platform_device *pdev)
 		goto err2;
 	}
 
-	ret = clk_enable(clk);
-	if (ret) {
-		dev_err(&pdev->dev, "failed to enable clock\n");
-		goto err3;
-	}
+	wake_lock_init(&ux500_usb_wakelock, WAKE_LOCK_SUSPEND, "ux500-usb");
 
 	musb->dev.parent		= &pdev->dev;
 	musb->dev.dma_mask		= pdev->dev.dma_mask;
@@ -549,27 +580,39 @@ static int __devinit ux500_probe(struct platform_device *pdev)
 			pdev->num_resources);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to add resources\n");
-		goto err4;
+		goto err3;
 	}
 
 	ret = platform_device_add_data(musb, pdata, sizeof(*pdata));
 	if (ret) {
 		dev_err(&pdev->dev, "failed to add platform_data\n");
-		goto err4;
+		goto err3;
 	}
 
 	ret = platform_device_add(musb);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register musb device\n");
+		goto err3;
+	}
+
+	/*
+	 * Ensure we suspend (resume) along with the other on-chip devices and
+	 * therefore after (before) our external transceiver.
+	 */
+	ret = device_move(&musb->dev, &pdev->dev, DPM_ORDER_DEV_AFTER_PARENT);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to alter musb device DPM order\n");
 		goto err4;
 	}
+
 	pm_runtime_enable(&pdev->dev);
 
 	return 0;
 err4:
+	platform_device_del(musb);
+err3:
 	if (cpu_is_u5500())
 		clk_disable(clk);
-err3:
 	clk_put(clk);
 
 err2:
@@ -582,7 +625,7 @@ err0:
 	return ret;
 }
 
-static int __devexit ux500_remove(struct platform_device *pdev)
+static int __exit ux500_remove(struct platform_device *pdev)
 {
 	struct ux500_glue	*glue = platform_get_drvdata(pdev);
 
@@ -612,7 +655,7 @@ static int ux500_suspend(struct device *dev)
 	struct ux500_glue	*glue = dev_get_drvdata(dev);
 	struct musb		*musb = glue_to_musb(glue);
 
-	usb_phy_set_suspend(musb->xceiv, 1);
+	otg_set_suspend(musb->xceiv, 1);
 
 	if (cpu_is_u5500())
 		/*
@@ -621,6 +664,7 @@ static int ux500_suspend(struct device *dev)
 		 * (And enabled on resume automatically.)
 		 */
 		clk_disable(glue->clk);
+
 	dev_dbg(dev, "ux500_suspend\n");
 	return 0;
 }
@@ -635,15 +679,11 @@ static int ux500_suspend(struct device *dev)
 static int ux500_resume(struct device *dev)
 {
 	struct ux500_glue	*glue = dev_get_drvdata(dev);
-	struct musb		*musb = glue_to_musb(glue);
 
 	if (cpu_is_u5500())
 		/* No point in propagating errors on resume */
 		(void) clk_enable(glue->clk);
 	dev_dbg(dev, "ux500_resume\n");
-
-	usb_phy_set_suspend(musb->xceiv, 0);
-
 	return 0;
 }
 #ifdef CONFIG_UX500_SOC_DB8500
@@ -691,8 +731,7 @@ static const struct dev_pm_ops ux500_pm_ops = {
 #endif
 
 static struct platform_driver ux500_driver = {
-	.probe		= ux500_probe,
-	.remove		= __devexit_p(ux500_remove),
+	.remove		= __exit_p(ux500_remove),
 	.driver		= {
 		.name	= "musb-ux500",
 		.pm	= DEV_PM_OPS,
@@ -705,9 +744,9 @@ MODULE_LICENSE("GPL v2");
 
 static int __init ux500_init(void)
 {
-	return platform_driver_register(&ux500_driver);
+	return platform_driver_probe(&ux500_driver, ux500_probe);
 }
-module_init(ux500_init);
+subsys_initcall(ux500_init);
 
 static void __exit ux500_exit(void)
 {

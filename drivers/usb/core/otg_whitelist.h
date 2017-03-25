@@ -73,11 +73,15 @@ static struct usb_device_id whitelist_table [] = {
 #define USB_OTG_TEST_HS_HOST_PORT_SUSPEND_RESUME_PID   0x0106
 #define USB_OTG_TEST_SINGLE_STEP_GET_DEV_DESC_PID      0x0107
 #define USB_OTG_TEST_SINGLE_STEP_GET_DEV_DESC_DATA_PID 0x0108
-
 #define USB_OTG_TEST_SE0_NAK                           0x01
 #define USB_OTG_TEST_J		                       0x02
 #define USB_OTG_TEST_K		                       0x03
 #define USB_OTG_TEST_PACKET	                       0x04
+/* For A_HNP and B_HNP test cases PET identifies itself
+ * with a PID of 0x0200
+ */
+#define USB_OTG_PET_TEST_HNP			       0x0200
+
 #endif
 
 static int is_targeted(struct usb_device *dev)
