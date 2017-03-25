@@ -24,6 +24,8 @@
 #include <linux/regulator/db5500-prcmu.h>
 #include <linux/regulator/machine.h>
 #include <linux/interrupt.h>
+#include <linux/mfd/ux500_wdt.h>
+#include <linux/mfd/dbx500_temp.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <mach/hardware.h>
 #include <mach/irqs.h>
@@ -1126,7 +1128,7 @@ int db5500_prcmu_get_hotdog(void)
 	return readw(PRCM_SHARE_INFO_HOTDOG);
 }
 
-int db5500_prcmu_config_hotdog(u8 threshold)
+static int config_hotdog(u8 threshold)
 {
 	int r = 0;
 
@@ -1143,7 +1145,7 @@ int db5500_prcmu_config_hotdog(u8 threshold)
 	return r;
 }
 
-int db5500_prcmu_config_hotmon(u8 low, u8 high)
+static int config_hotmon(u8 low, u8 high)
 {
 	int r = 0;
 
@@ -1182,7 +1184,7 @@ static int config_hot_period(u16 val)
 /*
  * period in milli seconds
  */
-int db5500_prcmu_start_temp_sense(u16 period)
+static int start_temp_sense(u16 period)
 {
 	if (period == 0xFFFF)
 		return -EINVAL;
@@ -1190,7 +1192,7 @@ int db5500_prcmu_start_temp_sense(u16 period)
 	return config_hot_period(period);
 }
 
-int db5500_prcmu_stop_temp_sense(void)
+static int stop_temp_sense(void)
 {
 	return config_hot_period(0xFFFF);
 }
@@ -1231,7 +1233,7 @@ static void prcmu_a9wdog_set_timeout(u32 timeout)
 	writel(comp_timeout, mtimer_base + PRCM_TIMER0_RTOS_COMP1_OFFSET);
 }
 
-int db5500_prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
+static int config_a9wdog(u8 num, bool sleep_auto_off)
 {
 	/*
 	 * Sleep auto off feature is not supported. Resume and
@@ -1240,7 +1242,7 @@ int db5500_prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
 	return 0;
 }
 
-int db5500_prcmu_enable_a9wdog(u8 id)
+static int enable_a9wdog(u8 id)
 {
 	int r = 0;
 
@@ -1259,7 +1261,7 @@ int db5500_prcmu_enable_a9wdog(u8 id)
 	return r;
 }
 
-int db5500_prcmu_disable_a9wdog(u8 id)
+static int disable_a9wdog(u8 id)
 {
 	if (!a9wdog_timer.enabled)
 		return -EPERM;
@@ -1272,7 +1274,7 @@ int db5500_prcmu_disable_a9wdog(u8 id)
 			MB4H_ACK_CGF_A9WDOG_DIS);
 }
 
-int db5500_prcmu_kick_a9wdog(u8 id)
+static int kick_a9wdog(u8 id)
 {
 	int r = 0;
 
@@ -1284,7 +1286,7 @@ int db5500_prcmu_kick_a9wdog(u8 id)
 	return r;
 }
 
-int db5500_prcmu_load_a9wdog(u8 id, u32 timeout)
+static int load_a9wdog(u8 id, u32 timeout)
 {
 	if (a9wdog_timer.enabled)
 		return -EPERM;
@@ -1826,7 +1828,7 @@ static void ack_dbb_wakeup(void)
 	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
 }
 
-int db5500_prcmu_set_epod(u16 epod, u8 epod_state)
+static int set_epod(u16 epod, u8 epod_state)
 {
 	int r = 0;
 	bool ram_retention = false;
@@ -2298,6 +2300,8 @@ static struct regulator_consumer_supply db5500_disp_consumers[] = {
 	REGULATOR_SUPPLY("debug", "reg-virt-consumer.3"),
 	REGULATOR_SUPPLY("vsupply", "b2r2_bus"),
 	REGULATOR_SUPPLY("vsupply", "mcde"),
+	REGULATOR_SUPPLY("vsupply", "dsilink.0"),
+	REGULATOR_SUPPLY("vsupply", "dsilink.1"),
 };
 
 static struct regulator_consumer_supply db5500_esram12_consumers[] = {
@@ -2343,12 +2347,64 @@ static struct regulator_init_data db5500_regulators[DB5500_NUM_REGULATORS] = {
 	 */
 	DB5500_REGULATOR_SWITCH(esram12, ESRAM12),
 };
+static struct db5500_regulator_init_data db5500_regulators_pdata = {
+	.set_epod = set_epod,
+	.regulators = db5500_regulators,
+	.reg_num = DB5500_NUM_REGULATORS
+};
+
+static struct ux500_wdt_ops db5500_wdt_ops = {
+	.enable = enable_a9wdog,
+	.disable = disable_a9wdog,
+	.kick = kick_a9wdog,
+	.load = load_a9wdog,
+	.config = config_a9wdog,
+};
+
+/*
+ * Thermal Sensor
+ */
+static struct dbx500_temp_ops db5500_temp_ops = {
+	.config_hotdog = config_hotdog,
+	.config_hotmon = config_hotmon,
+	.start_temp_sense = start_temp_sense,
+	.stop_temp_sense = stop_temp_sense,
+};
+
+static struct resource u5500_thsens_resources[] = {
+	[0] = {
+		.name	= "IRQ_HOTMON_LOW",
+		.start  = IRQ_DB5500_PRCMU_TEMP_SENSOR_LOW,
+		.end    = IRQ_DB5500_PRCMU_TEMP_SENSOR_LOW,
+		.flags  = IORESOURCE_IRQ,
+	},
+	[1] = {
+		.name	= "IRQ_HOTMON_HIGH",
+		.start  = IRQ_DB5500_PRCMU_TEMP_SENSOR_HIGH,
+		.end    = IRQ_DB5500_PRCMU_TEMP_SENSOR_HIGH,
+		.flags  = IORESOURCE_IRQ,
+	},
+};
 
 static struct mfd_cell db5500_prcmu_devs[] = {
 	{
 		.name = "db5500-prcmu-regulators",
-		.platform_data = &db5500_regulators,
-		.pdata_size = sizeof(db5500_regulators),
+		.platform_data = &db5500_regulators_pdata,
+		.pdata_size = sizeof(db5500_regulators_pdata),
+	},
+	{
+		.name = "ux500_wdt",
+		.id = -1,
+		.platform_data = &db5500_wdt_ops,
+		.pdata_size = sizeof(db5500_wdt_ops),
+	},
+	{
+		.name = "dbx500_temp",
+		.platform_data = &db5500_temp_ops,
+		.pdata_size = sizeof(db5500_temp_ops),
+		.resources       = u5500_thsens_resources,
+		.num_resources  = ARRAY_SIZE(u8500_thsens_resources),
+
 	},
 	{
 		.name = "cpufreq-u5500",

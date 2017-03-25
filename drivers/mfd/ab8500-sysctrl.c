@@ -5,19 +5,38 @@
  */
 
 #include <linux/err.h>
-#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/pm.h>
 #include <linux/reboot.h>
 #include <linux/signal.h>
 #include <linux/power_supply.h>
+#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
-#include <linux/mfd/abx500/ab8500.h>
-#include <linux/mfd/abx500/ab8500-sysctrl.h>
+#include <linux/mfd/abx500/ab8500-bm.h>
+#include <linux/mfd/abx500/ux500_sysctrl.h>
 #include <linux/time.h>
 #include <linux/hwmon.h>
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
+#include <linux/mfd/dbx500-prcmu.h>
+#include <linux/delay.h>
+#endif
 
+/* RtcCtrl bits */
+#define AB8500_ALARM_MIN_LOW  0x08
+#define AB8500_ALARM_MIN_MID 0x09
+#define RTC_CTRL 0x0B
+#define RTC_ALARM_ENABLE 0x4
+
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
+#define AB8500_RTC_CALIBRATION 0x0E
+#define AB8500_RTC_PCUT_FLAG_TIME 0x15
+#define PCUT_CTR_AND_STATUS 0x12
+#define PRCM_USE_PCUT 0x0DC0
+#endif
 static struct device *sysctrl_dev;
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
+static bool use_pcut_registers = false;
+#endif
 
 void ab8500_power_off(void)
 {
@@ -25,12 +44,22 @@ void ab8500_power_off(void)
 	struct timespec ts;
 	sigset_t old;
 	sigset_t all;
+#ifdef CONFIG_BATTERY_SAMSUNG
+	static char *pss[] = {"battery"};
+#else
 	static char *pss[] = {"ab8500_ac", "ab8500_usb"};
+#endif
 	int i;
 	bool charger_present = false;
 	union power_supply_propval val;
 	struct power_supply *psy;
 	int ret;
+	u8 data;
+
+	if (sysctrl_dev == NULL) {
+		pr_err("%s: sysctrl not initialized\n", __func__);
+		return;
+	}
 
 	/*
 	 * If we have a charger connected and we're powering off,
@@ -44,28 +73,36 @@ void ab8500_power_off(void)
 
 		ret = psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &val);
 
+#ifdef CONFIG_BATTERY_SAMSUNG
+		if (!ret && (val.intval != POWER_SUPPLY_TYPE_BATTERY)) {
+#else
 		if (!ret && val.intval) {
+#endif
 			charger_present = true;
 			break;
 		}
 	}
 
-	if (!charger_present)
+        abx500_get_register_interruptible(sysctrl_dev, AB8500_CHARGER,
+                                          AB8500_CH_STATUS1_REG, &data);
+
+	if (!charger_present && !(data & 0x01))
 		goto shutdown;
 
+
+#ifdef CONFIG_BATTERY_SAMSUNG
+	machine_restart("ta");
+#else
 	/* Check if battery is known */
 	psy = power_supply_get_by_name("ab8500_btemp");
 	if (psy) {
 		ret = psy->get_property(psy, POWER_SUPPLY_PROP_TECHNOLOGY,
 					&val);
 		if (!ret && val.intval != POWER_SUPPLY_TECHNOLOGY_UNKNOWN) {
-			printk(KERN_INFO
-			       "Charger \"%s\" is connected with known battery."
-			       " Rebooting.\n",
-			       pss[i]);
-			machine_restart("charging");
+				machine_restart("ta");
 		}
 	}
+#endif
 
 shutdown:
 	sigfillset(&all);
@@ -89,6 +126,132 @@ shutdown:
 			(void)sigprocmask(SIG_SETMASK, &old, NULL);
 		}
 	}
+}
+
+/*
+ * Use the AB WD to reset the platform. It will perform a hard
+ * reset instead of a soft reset. Write the reset reason to
+ * the AB before reset, which can be read upon restart.
+ */
+void ab8500_restart(u16 reset_code)
+{
+	struct ab8500_platform_data *plat;
+	struct ab8500_sysctrl_platform_data *pdata;
+	u16 reason = 0;
+	u8 val;
+
+	if (sysctrl_dev == NULL) {
+		pr_err("%s: sysctrl not initialized\n", __func__);
+		return;
+	}
+
+#if 0
+	plat = dev_get_platdata(sysctrl_dev->parent);
+	pdata = plat->sysctrl;
+	if (pdata->reboot_reason_code)
+		reason = pdata->reboot_reason_code(cmd);
+	else
+		pr_warn("[%s] No reboot reason set. Default reason %d\n",
+			__func__, reason);
+#else
+	reason = reset_code;
+#endif
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
+	/*
+	 * RTC Pcut Flag time register can only hold 7 bits so u16 reason can
+     * only contain 15 bits. Warn if MSB bit is used since it will
+	 * be ignored by HW.
+ 	 */
+	WARN_ON(reason & 0x08000);
+	/* Pcut needs to be turned off to restart via wdog */
+ 	abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+    	PCUT_CTR_AND_STATUS, 0);
+
+	if (use_pcut_registers) {
+		/*
+		 * Android is not using the RTC calibration register and the
+		 * Pcut Flag Time register during reboot
+		 * so we borrow them for writing the reason of reset
+		 */
+
+		/* reason[8 LSB] */
+		val = reason & 0xFF;
+		abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+			AB8500_RTC_CALIBRATION, val);
+
+		/* reason[8 MSB] Note. MSB is reserved and can not be used */
+		val = (reason >> 8) & 0xFF;
+		abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+			AB8500_RTC_PCUT_FLAG_TIME, val);
+	} else {
+		/*
+		 * Disable RTC alarm, just a precaution so that no alarm
+		 * is running when WD reset is executed.
+		 */
+		abx500_get_register_interruptible(sysctrl_dev, AB8500_RTC,
+			RTC_CTRL , &val);
+		abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+			RTC_CTRL , (val & ~RTC_ALARM_ENABLE));
+
+		/*
+		 * Android is not using the RTC alarm registers during reboot
+		 * so we borrow them for writing the reason of reset
+		 */
+
+		/* reason[8 LSB] */
+		val = reason & 0xFF;
+		abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+			AB8500_ALARM_MIN_LOW , val);
+
+		/* reason[8 MSB] */
+		val = (reason>>8) & 0xFF;
+		abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+			AB8500_ALARM_MIN_MID , val);
+	}
+#else
+	/*
+	 * Disable RTC alarm, just a precaution so that no alarm
+	 * is running when WD reset is executed.
+	 */
+	abx500_get_register_interruptible(sysctrl_dev, AB8500_RTC,
+		RTC_CTRL , &val);
+	abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+		RTC_CTRL , (val & ~RTC_ALARM_ENABLE));
+
+	/* SMPL disabled for AB WatchDog */
+	
+		abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+			0x12 , 0);
+		
+
+	/*
+	 * Android is not using the RTC alarm registers during reboot
+	 * so we borrow them for writing the reason of reset
+	 */
+
+	/* reason[8 LSB] */
+	val = reason & 0xFF;
+	abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+		AB8500_ALARM_MIN_LOW , val);
+
+	/* reason[8 MSB] */
+	val = (reason>>8) & 0xFF;
+	abx500_set_register_interruptible(sysctrl_dev, AB8500_RTC,
+		AB8500_ALARM_MIN_MID , val);
+#endif
+
+	/* Setting WD timeout to 0 */
+	ab8500_sysctrl_write(AB8500_MAINWDOGTIMER, 0xFF, 0x0);
+
+	/* Setting the parameters to AB8500 WD*/
+	ab8500_sysctrl_write(AB8500_MAINWDOGCTRL, 0xFF, (AB8500_ENABLE_WD |
+		AB8500_WD_RESTART_ON_EXPIRE | AB8500_KICK_WD));
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
+
+	mdelay(1000);
+	printk(KERN_ERR "Restart via WD expiry failed -- System halted\n");
+	while(1);
+#endif
 }
 
 static int ab8500_notifier_call(struct notifier_block *this,
@@ -126,7 +289,7 @@ int ab8500_sysctrl_read(u16 reg, u8 *value)
 	u8 bank;
 
 	if (sysctrl_dev == NULL)
-		return -EAGAIN;
+		return -EINVAL;
 
 	bank = (reg >> 8);
 	if (!valid_bank(bank))
@@ -142,7 +305,7 @@ int ab8500_sysctrl_write(u16 reg, u8 mask, u8 value)
 	u8 bank;
 
 	if (sysctrl_dev == NULL)
-		return -EAGAIN;
+		return -EINVAL;
 
 	bank = (reg >> 8);
 	if (!valid_bank(bank))
@@ -155,11 +318,16 @@ EXPORT_SYMBOL(ab8500_sysctrl_write);
 
 static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
 {
+	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
 	struct ab8500_platform_data *plat;
 	struct ab8500_sysctrl_platform_data *pdata;
+	int ret, i, j;
 
-	sysctrl_dev = &pdev->dev;
 	plat = dev_get_platdata(pdev->dev.parent);
+
+	if (!(plat && plat->sysctrl))
+		return -EINVAL;
+
 	if (plat->pm_power_off)
 		pm_power_off = ab8500_power_off;
 	hwmon_notifier_register(&ab8500_notifier);
@@ -167,11 +335,14 @@ static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
 	pdata = plat->sysctrl;
 
 	if (pdata) {
-		int ret;
-		int i;
-		int j;
-		for (i = AB8500_SYSCLKREQ1RFCLKBUF;
-				i <= AB8500_SYSCLKREQ8RFCLKBUF; i++) {
+		int last;
+
+		if (is_ab8505(ab8500))
+			last = AB8500_SYSCLKREQ4RFCLKBUF;
+		else
+			last = AB8500_SYSCLKREQ8RFCLKBUF;
+
+		for (i = AB8500_SYSCLKREQ1RFCLKBUF; i <= last; i++) {
 			j = i - AB8500_SYSCLKREQ1RFCLKBUF;
 			ret = ab8500_sysctrl_write(i, 0xff,
 					pdata->initial_req_buf_config[j]);
@@ -186,7 +357,19 @@ static int __devinit ab8500_sysctrl_probe(struct platform_device *pdev)
 			}
 		}
 	}
+	
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
+	use_pcut_registers = (prcmu_tcdm_read(PRCM_USE_PCUT) & 0x01);
+	if (use_pcut_registers) {
+		/* Clear the registers being used for reset reason */
+		abx500_set_register_interruptible(&pdev->dev, AB8500_RTC,
+			AB8500_RTC_CALIBRATION, 0);
 
+		abx500_set_register_interruptible(&pdev->dev, AB8500_RTC,
+			AB8500_RTC_PCUT_FLAG_TIME, 0);
+	}
+#endif
+	sysctrl_dev = &pdev->dev;
 	return 0;
 }
 
