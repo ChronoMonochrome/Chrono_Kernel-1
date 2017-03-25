@@ -10,7 +10,6 @@
  * Also, exposes APIs for gettng/releasing the access and even
  * query the access status, and the modem usage status.
  */
-#include <linux/module.h>
 #include <linux/modem/modem.h>
 #include <linux/modem/modem_client.h>
 #include <linux/slab.h>
