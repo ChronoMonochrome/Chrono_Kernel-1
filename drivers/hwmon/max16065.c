@@ -137,10 +137,10 @@ static int max16065_read_adc(struct i2c_client *client, int reg)
 {
 	int rv;
 
-	rv = i2c_smbus_read_word_swapped(client, reg);
+	rv = i2c_smbus_read_word_data(client, reg);
 	if (unlikely(rv < 0))
 		return rv;
-	return rv >> 6;
+	return ((rv & 0xff) << 2) | ((rv >> 14) & 0x03);
 }
 
 static struct max16065_data *max16065_update_device(struct device *dev)
@@ -230,7 +230,7 @@ static ssize_t max16065_set_limit(struct device *dev,
 	int err;
 	int limit;
 
-	err = kstrtoul(buf, 10, &val);
+	err = strict_strtoul(buf, 10, &val);
 	if (unlikely(err < 0))
 		return err;
 
@@ -554,7 +554,7 @@ static int max16065_probe(struct i2c_client *client,
 				     | I2C_FUNC_SMBUS_READ_WORD_DATA))
 		return -ENODEV;
 
-	data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (unlikely(!data))
 		return -ENOMEM;
 
@@ -567,16 +567,20 @@ static int max16065_probe(struct i2c_client *client,
 
 	if (have_secondary) {
 		val = i2c_smbus_read_byte_data(client, MAX16065_SW_ENABLE);
-		if (unlikely(val < 0))
-			return val;
+		if (unlikely(val < 0)) {
+			ret = val;
+			goto out_free;
+		}
 		secondary_is_max = val & MAX16065_WARNING_OV;
 	}
 
 	/* Read scale registers, convert to range */
 	for (i = 0; i < DIV_ROUND_UP(data->num_adc, 4); i++) {
 		val = i2c_smbus_read_byte_data(client, MAX16065_SCALE(i));
-		if (unlikely(val < 0))
-			return val;
+		if (unlikely(val < 0)) {
+			ret = val;
+			goto out_free;
+		}
 		for (j = 0; j < 4 && i * 4 + j < data->num_adc; j++) {
 			data->range[i * 4 + j] =
 			  max16065_adc_range[(val >> (j * 2)) & 0x3];
@@ -591,8 +595,10 @@ static int max16065_probe(struct i2c_client *client,
 		for (j = 0; j < data->num_adc; j++) {
 			val = i2c_smbus_read_byte_data(client,
 						       MAX16065_LIMIT(i, j));
-			if (unlikely(val < 0))
-				return val;
+			if (unlikely(val < 0)) {
+				ret = val;
+				goto out_free;
+			}
 			data->limit[i][j] = LIMIT_TO_MV(val, data->range[j]);
 		}
 	}
@@ -655,6 +661,8 @@ static int max16065_probe(struct i2c_client *client,
 
 out:
 	max16065_cleanup(client);
+out_free:
+	kfree(data);
 	return ret;
 }
 
@@ -664,6 +672,7 @@ static int max16065_remove(struct i2c_client *client)
 
 	hwmon_device_unregister(data->hwmon_dev);
 	max16065_cleanup(client);
+	kfree(data);
 
 	return 0;
 }
@@ -690,8 +699,19 @@ static struct i2c_driver max16065_driver = {
 	.id_table = max16065_id,
 };
 
-module_i2c_driver(max16065_driver);
+static int __init max16065_init(void)
+{
+	return i2c_add_driver(&max16065_driver);
+}
+
+static void __exit max16065_exit(void)
+{
+	i2c_del_driver(&max16065_driver);
+}
 
 MODULE_AUTHOR("Guenter Roeck <guenter.roeck@ericsson.com>");
 MODULE_DESCRIPTION("MAX16065 driver");
 MODULE_LICENSE("GPL");
+
+module_init(max16065_init);
+module_exit(max16065_exit);

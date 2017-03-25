@@ -114,6 +114,7 @@ struct i5k_amb_data {
 	void __iomem *amb_mmio;
 	struct i5k_device_attribute *attrs;
 	unsigned int num_attrs;
+	unsigned long chipset_id;
 };
 
 static ssize_t show_name(struct device *dev, struct device_attribute *devattr,
@@ -159,12 +160,8 @@ static ssize_t store_amb_min(struct device *dev,
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	struct i5k_amb_data *data = dev_get_drvdata(dev);
-	unsigned long temp;
-	int ret = kstrtoul(buf, 10, &temp);
-	if (ret < 0)
-		return ret;
+	unsigned long temp = simple_strtoul(buf, NULL, 10) / 500;
 
-	temp = temp / 500;
 	if (temp > 255)
 		temp = 255;
 
@@ -179,12 +176,8 @@ static ssize_t store_amb_mid(struct device *dev,
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	struct i5k_amb_data *data = dev_get_drvdata(dev);
-	unsigned long temp;
-	int ret = kstrtoul(buf, 10, &temp);
-	if (ret < 0)
-		return ret;
+	unsigned long temp = simple_strtoul(buf, NULL, 10) / 500;
 
-	temp = temp / 500;
 	if (temp > 255)
 		temp = 255;
 
@@ -199,12 +192,8 @@ static ssize_t store_amb_max(struct device *dev,
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
 	struct i5k_amb_data *data = dev_get_drvdata(dev);
-	unsigned long temp;
-	int ret = kstrtoul(buf, 10, &temp);
-	if (ret < 0)
-		return ret;
+	unsigned long temp = simple_strtoul(buf, NULL, 10) / 500;
 
-	temp = temp / 500;
 	if (temp > 255)
 		temp = 255;
 
@@ -455,6 +444,8 @@ static int __devinit i5k_find_amb_registers(struct i5k_amb_data *data,
 		goto out;
 	}
 
+	data->chipset_id = devid;
+
 	res = 0;
 out:
 	pci_dev_put(pcidev);
@@ -487,13 +478,23 @@ out:
 	return res;
 }
 
-static struct {
-	unsigned long err;
-	unsigned long fbd0;
-} chipset_ids[] __devinitdata  = {
-	{ PCI_DEVICE_ID_INTEL_5000_ERR, PCI_DEVICE_ID_INTEL_5000_FBD0 },
-	{ PCI_DEVICE_ID_INTEL_5400_ERR, PCI_DEVICE_ID_INTEL_5400_FBD0 },
-	{ 0, 0 }
+static unsigned long i5k_channel_pci_id(struct i5k_amb_data *data,
+					unsigned long channel)
+{
+	switch (data->chipset_id) {
+	case PCI_DEVICE_ID_INTEL_5000_ERR:
+		return PCI_DEVICE_ID_INTEL_5000_FBD0 + channel;
+	case PCI_DEVICE_ID_INTEL_5400_ERR:
+		return PCI_DEVICE_ID_INTEL_5400_FBD0 + channel;
+	default:
+		BUG();
+	}
+}
+
+static unsigned long chipset_ids[] = {
+	PCI_DEVICE_ID_INTEL_5000_ERR,
+	PCI_DEVICE_ID_INTEL_5400_ERR,
+	0
 };
 
 #ifdef MODULE
@@ -509,7 +510,8 @@ static int __devinit i5k_amb_probe(struct platform_device *pdev)
 {
 	struct i5k_amb_data *data;
 	struct resource *reso;
-	int i, res;
+	int i;
+	int res = -ENODEV;
 
 	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (!data)
@@ -518,22 +520,22 @@ static int __devinit i5k_amb_probe(struct platform_device *pdev)
 	/* Figure out where the AMB registers live */
 	i = 0;
 	do {
-		res = i5k_find_amb_registers(data, chipset_ids[i].err);
-		if (res == 0)
-			break;
+		res = i5k_find_amb_registers(data, chipset_ids[i]);
 		i++;
-	} while (chipset_ids[i].err);
+	} while (res && chipset_ids[i]);
 
 	if (res)
 		goto err;
 
 	/* Copy the DIMM presence map for the first two channels */
-	res = i5k_channel_probe(&data->amb_present[0], chipset_ids[i].fbd0);
+	res = i5k_channel_probe(&data->amb_present[0],
+				i5k_channel_pci_id(data, 0));
 	if (res)
 		goto err;
 
 	/* Copy the DIMM presence map for the optional second two channels */
-	i5k_channel_probe(&data->amb_present[2], chipset_ids[i].fbd0 + 1);
+	i5k_channel_probe(&data->amb_present[2],
+			  i5k_channel_pci_id(data, 1));
 
 	/* Set up resource regions */
 	reso = request_mem_region(data->amb_base, data->amb_len, DRVNAME);
