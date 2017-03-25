@@ -32,12 +32,12 @@
 
 #include <linux/module.h>
 #include <linux/tty.h>
-#include <linux/tty_flip.h>
 #include <linux/ioport.h>
 #include <linux/init.h>
 #include <linux/console.h>
 #include <linux/sysrq.h>
 #include <linux/serial.h>
+#include <linux/serialP.h>
 #include <linux/delay.h>
 
 #include <asm/m32r.h>
@@ -68,6 +68,13 @@
 #endif
 
 #define PASS_LIMIT	256
+
+/*
+ * We default to IRQ0 for the "no irq" hack.   Some
+ * machine types want others as well - they're free
+ * to redefine this in their header file.
+ */
+#define is_real_interrupt(irq)	((irq) != 0)
 
 #define BASE_BAUD	115200
 
@@ -632,7 +639,7 @@ static int m32r_sio_startup(struct uart_port *port)
 	 * hardware interrupt, we use a timer-based system.  The original
 	 * driver used to do this with IRQ0.
 	 */
-	if (!up->port.irq) {
+	if (!is_real_interrupt(up->port.irq)) {
 		unsigned int timeout = up->port.timeout;
 
 		timeout = timeout > 6 ? (timeout / 2 - 2) : 1;
@@ -679,7 +686,7 @@ static void m32r_sio_shutdown(struct uart_port *port)
 
 	sio_init();
 
-	if (!up->port.irq)
+	if (!is_real_interrupt(up->port.irq))
 		del_timer_sync(&up->timer);
 	else
 		serial_unlink_irq_chain(up);
@@ -885,7 +892,7 @@ static int m32r_sio_request_port(struct uart_port *port)
 	 * If we have a mapbase, then request that as well.
 	 */
 	if (ret == 0 && up->port.flags & UPF_IOREMAP) {
-		int size = resource_size(res);
+		int size = res->end - res->start + 1;
 
 		up->port.membase = ioremap(up->port.mapbase, size);
 		if (!up->port.membase)
@@ -992,8 +999,11 @@ static void __init m32r_sio_register_ports(struct uart_driver *drv)
 		init_timer(&up->timer);
 		up->timer.function = m32r_sio_timeout;
 
-		up->mcr_mask = ~0;
-		up->mcr_force = 0;
+		/*
+		 * ALPHA_KLUDGE_MCR needs to be killed.
+		 */
+		up->mcr_mask = ~ALPHA_KLUDGE_MCR;
+		up->mcr_force = ALPHA_KLUDGE_MCR;
 
 		uart_add_one_port(drv, &up->port);
 	}

@@ -20,10 +20,8 @@
 
 #include <linux/module.h>
 #include <linux/serial.h>
-#include <linux/serial_core.h>
 #include <linux/slab.h>
-#include <linux/tty.h>
-#include <linux/tty_flip.h>
+#include <linux/serial_core.h>
 #include <linux/io.h>
 #include <linux/of_platform.h>
 #include <linux/dma-mapping.h>
@@ -237,7 +235,7 @@ static inline void *qe2cpu_addr(dma_addr_t addr, struct uart_qe_port *qe_port)
 		return qe_port->bd_virt + (addr - qe_port->bd_dma_addr);
 
 	/* something nasty happened */
-	printk(KERN_ERR "%s: addr=%llx\n", __func__, (u64)addr);
+	printk(KERN_ERR "%s: addr=%x\n", __func__, addr);
 	BUG();
 	return NULL;
 }
@@ -963,9 +961,6 @@ static void qe_uart_set_termios(struct uart_port *port,
 	/* Do we really need a spinlock here? */
 	spin_lock_irqsave(&port->lock, flags);
 
-	/* Update the per-port timeout. */
-	uart_update_timeout(port, termios->c_cflag, baud);
-
 	out_be16(&uccp->upsmr, upsmr);
 	if (soft_uart) {
 		out_be16(&uccup->supsmr, supsmr);
@@ -1360,7 +1355,7 @@ static int ucc_uart_probe(struct platform_device *ofdev)
 	}
 
 	qe_port->port.irq = irq_of_parse_and_map(np, 0);
-	if (qe_port->port.irq == 0) {
+	if (qe_port->port.irq == NO_IRQ) {
 		dev_err(&ofdev->dev, "could not map IRQ for UCC%u\n",
 		       qe_port->ucc_num + 1);
 		ret = -EINVAL;
