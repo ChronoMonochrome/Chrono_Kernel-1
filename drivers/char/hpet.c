@@ -36,6 +36,7 @@
 #include <linux/io.h>
 
 #include <asm/current.h>
+#include <asm/system.h>
 #include <asm/irq.h>
 #include <asm/div64.h>
 
@@ -906,8 +907,8 @@ int hpet_alloc(struct hpet_data *hdp)
 		hpetp->hp_which, hdp->hd_phys_address,
 		hpetp->hp_ntimer > 1 ? "s" : "");
 	for (i = 0; i < hpetp->hp_ntimer; i++)
-		printk(KERN_CONT "%s %d", i > 0 ? "," : "", hdp->hd_irq[i]);
-	printk(KERN_CONT "\n");
+		printk("%s %d", i > 0 ? "," : "", hdp->hd_irq[i]);
+	printk("\n");
 
 	temp = hpetp->hp_tick_freq;
 	remainder = do_div(temp, 1000000);
@@ -951,7 +952,7 @@ int hpet_alloc(struct hpet_data *hdp)
 #ifdef CONFIG_IA64
 	if (!hpet_clocksource) {
 		hpet_mctr = (void __iomem *)&hpetp->hp_hpet->hpet_mc;
-		clocksource_hpet.archdata.fsys_mmio = hpet_mctr;
+		CLKSRC_FSYS_MMIO_SET(clocksource_hpet.fsys_mmio, hpet_mctr);
 		clocksource_register_hz(&clocksource_hpet, hpetp->hp_tick_freq);
 		hpetp->hp_clocksource = &clocksource_hpet;
 		hpet_clocksource = &clocksource_hpet;

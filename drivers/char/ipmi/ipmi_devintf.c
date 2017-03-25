@@ -34,6 +34,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/errno.h>
+#include <asm/system.h>
 #include <linux/poll.h>
 #include <linux/sched.h>
 #include <linux/spinlock.h>
