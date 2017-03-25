@@ -51,11 +51,11 @@
 MODULE_DESCRIPTION("IBM IIC driver v" DRIVER_VERSION);
 MODULE_LICENSE("GPL");
 
-static bool iic_force_poll;
+static int iic_force_poll;
 module_param(iic_force_poll, bool, 0);
 MODULE_PARM_DESC(iic_force_poll, "Force polling mode");
 
-static bool iic_force_fast;
+static int iic_force_fast;
 module_param(iic_force_fast, bool, 0);
 MODULE_PARM_DESC(iic_force_fast, "Force fast mode (400 kHz)");
 
@@ -815,4 +815,15 @@ static struct platform_driver ibm_iic_driver = {
 	.remove	= __devexit_p(iic_remove),
 };
 
-module_platform_driver(ibm_iic_driver);
+static int __init iic_init(void)
+{
+	return platform_driver_register(&ibm_iic_driver);
+}
+
+static void __exit iic_exit(void)
+{
+	platform_driver_unregister(&ibm_iic_driver);
+}
+
+module_init(iic_init);
+module_exit(iic_exit);
