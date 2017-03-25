@@ -22,7 +22,6 @@
 #include <linux/slab.h>
 #include <linux/kobject.h>
 #include <linux/dm-ioctl.h>
-#include <linux/export.h>
 
 #include "dm.h"
 #include "dm-uevent.h"

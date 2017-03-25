@@ -128,24 +128,6 @@ static struct hash_cell *__get_uuid_cell(const char *str)
 	return NULL;
 }
 
-static struct hash_cell *__get_dev_cell(uint64_t dev)
-{
-	struct mapped_device *md;
-	struct hash_cell *hc;
-
-	md = dm_get_md(huge_decode_dev(dev));
-	if (!md)
-		return NULL;
-
-	hc = dm_get_mdptr(md);
-	if (!hc) {
-		dm_put(md);
-		return NULL;
-	}
-
-	return hc;
-}
-
 /*-----------------------------------------------------------------
  * Inserting, removing and renaming a device.
  *---------------------------------------------------------------*/
@@ -736,45 +718,25 @@ static int dev_create(struct dm_ioctl *param, size_t param_size)
  */
 static struct hash_cell *__find_device_hash_cell(struct dm_ioctl *param)
 {
-	struct hash_cell *hc = NULL;
+	struct mapped_device *md;
+	void *mdptr = NULL;
 
-	if (*param->uuid) {
-		if (*param->name || param->dev)
-			return NULL;
+	if (*param->uuid)
+		return __get_uuid_cell(param->uuid);
 
-		hc = __get_uuid_cell(param->uuid);
-		if (!hc)
-			return NULL;
-	} else if (*param->name) {
-		if (param->dev)
-			return NULL;
+	if (*param->name)
+		return __get_name_cell(param->name);
 
-		hc = __get_name_cell(param->name);
-		if (!hc)
-			return NULL;
-	} else if (param->dev) {
-		hc = __get_dev_cell(param->dev);
-		if (!hc)
-			return NULL;
-	} else
-		return NULL;
+	md = dm_get_md(huge_decode_dev(param->dev));
+	if (!md)
+		goto out;
 
-	/*
-	 * Sneakily write in both the name and the uuid
-	 * while we have the cell.
-	 */
-	strlcpy(param->name, hc->name, sizeof(param->name));
-	if (hc->uuid)
-		strlcpy(param->uuid, hc->uuid, sizeof(param->uuid));
-	else
-		param->uuid[0] = '\0';
+	mdptr = dm_get_mdptr(md);
+	if (!mdptr)
+		dm_put(md);
 
-	if (hc->new_map)
-		param->flags |= DM_INACTIVE_PRESENT_FLAG;
-	else
-		param->flags &= ~DM_INACTIVE_PRESENT_FLAG;
-
-	return hc;
+out:
+	return mdptr;
 }
 
 static struct mapped_device *find_device(struct dm_ioctl *param)
@@ -784,8 +746,24 @@ static struct mapped_device *find_device(struct dm_ioctl *param)
 
 	down_read(&_hash_lock);
 	hc = __find_device_hash_cell(param);
-	if (hc)
+	if (hc) {
 		md = hc->md;
+
+		/*
+		 * Sneakily write in both the name and the uuid
+		 * while we have the cell.
+		 */
+		strlcpy(param->name, hc->name, sizeof(param->name));
+		if (hc->uuid)
+			strlcpy(param->uuid, hc->uuid, sizeof(param->uuid));
+		else
+			param->uuid[0] = '\0';
+
+		if (hc->new_map)
+			param->flags |= DM_INACTIVE_PRESENT_FLAG;
+		else
+			param->flags &= ~DM_INACTIVE_PRESENT_FLAG;
+	}
 	up_read(&_hash_lock);
 
 	return md;
@@ -880,7 +858,6 @@ static int dev_set_geometry(struct dm_ioctl *param, size_t param_size)
 	struct hd_geometry geometry;
 	unsigned long indata[4];
 	char *geostr = (char *) param + param->data_start;
-	char dummy;
 
 	md = find_device(param);
 	if (!md)
@@ -892,8 +869,8 @@ static int dev_set_geometry(struct dm_ioctl *param, size_t param_size)
 		goto out;
 	}
 
-	x = sscanf(geostr, "%lu %lu %lu %lu%c", indata,
-		   indata + 1, indata + 2, indata + 3, &dummy);
+	x = sscanf(geostr, "%lu %lu %lu %lu", indata,
+		   indata + 1, indata + 2, indata + 3);
 
 	if (x != 4) {
 		DMWARN("Unable to interpret geometry settings.");
@@ -1216,7 +1193,6 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
 	struct hash_cell *hc;
 	struct dm_table *t;
 	struct mapped_device *md;
-	struct target_type *immutable_target_type;
 
 	md = find_device(param);
 	if (!md)
@@ -1229,16 +1205,6 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
 	r = populate_table(t, param, param_size);
 	if (r) {
 		dm_table_destroy(t);
-		goto out;
-	}
-
-	immutable_target_type = dm_get_immutable_target_type(md);
-	if (immutable_target_type &&
-	    (immutable_target_type != dm_table_get_immutable_target_type(t))) {
-		DMWARN("can't replace immutable target type %s",
-		       immutable_target_type->name);
-		dm_table_destroy(t);
-		r = -EINVAL;
 		goto out;
 	}
 
@@ -1436,11 +1402,6 @@ static int target_message(struct dm_ioctl *param, size_t param_size)
 		goto out;
 	}
 
-	if (!argc) {
-		DMWARN("Empty message received.");
-		goto out_argv;
-	}
-
 	table = dm_get_live_table(md);
 	if (!table)
 		goto out_argv;
@@ -1562,14 +1523,6 @@ static int copy_params(struct dm_ioctl __user *user, struct dm_ioctl **param)
 
 	if (copy_from_user(dmi, user, tmp.data_size))
 		goto bad;
-
-	/*
-	 * Abort if something changed the ioctl data while it was being copied.
-	 */
-	if (dmi->data_size != tmp.data_size) {
-		DMERR("rejecting ioctl: data size modified while processing parameters");
-		goto bad;
-	}
 
 	/* Wipe the user buffer so we do not return it to userspace */
 	if (secure_data && clear_user(user, tmp.data_size))
