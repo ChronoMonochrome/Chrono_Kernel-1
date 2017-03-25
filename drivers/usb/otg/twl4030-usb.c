@@ -144,7 +144,7 @@
 #define GPIO_USB_4PIN_ULPI_2430C	(3 << 0)
 
 struct twl4030_usb {
-	struct usb_phy		phy;
+	struct otg_transceiver	otg;
 	struct device		*dev;
 
 	/* TWL4030 internal USB regulator supplies */
@@ -166,7 +166,7 @@ struct twl4030_usb {
 };
 
 /* internal define on top of container_of */
-#define phy_to_twl(x)		container_of((x), struct twl4030_usb, phy)
+#define xceiv_to_twl(x)		container_of((x), struct twl4030_usb, otg);
 
 /*-------------------------------------------------------------------------*/
 
@@ -246,11 +246,10 @@ twl4030_usb_clear_bits(struct twl4030_usb *twl, u8 reg, u8 bits)
 
 /*-------------------------------------------------------------------------*/
 
-static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
+static enum usb_xceiv_events twl4030_usb_linkstat(struct twl4030_usb *twl)
 {
 	int	status;
 	int	linkstat = USB_EVENT_NONE;
-	struct usb_otg *otg = twl->phy.otg;
 
 	twl->vbus_supplied = false;
 
@@ -282,7 +281,7 @@ static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
 	dev_dbg(twl->dev, "HW_CONDITIONS 0x%02x/%d; link %d\n",
 			status, status, linkstat);
 
-	twl->phy.last_event = linkstat;
+	twl->otg.last_event = linkstat;
 
 	/* REVISIT this assumes host and peripheral controllers
 	 * are registered, and that both are active...
@@ -291,11 +290,11 @@ static enum usb_phy_events twl4030_usb_linkstat(struct twl4030_usb *twl)
 	spin_lock_irq(&twl->lock);
 	twl->linkstat = linkstat;
 	if (linkstat == USB_EVENT_ID) {
-		otg->default_a = true;
-		twl->phy.state = OTG_STATE_A_IDLE;
+		twl->otg.default_a = true;
+		twl->otg.state = OTG_STATE_A_IDLE;
 	} else {
-		otg->default_a = false;
-		twl->phy.state = OTG_STATE_B_IDLE;
+		twl->otg.default_a = false;
+		twl->otg.state = OTG_STATE_B_IDLE;
 	}
 	spin_unlock_irq(&twl->lock);
 
@@ -521,8 +520,8 @@ static irqreturn_t twl4030_usb_irq(int irq, void *_twl)
 		else
 			twl4030_phy_resume(twl);
 
-		atomic_notifier_call_chain(&twl->phy.notifier, status,
-				twl->phy.otg->gadget);
+		atomic_notifier_call_chain(&twl->otg.notifier, status,
+				twl->otg.gadget);
 	}
 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
 
@@ -543,15 +542,15 @@ static void twl4030_usb_phy_init(struct twl4030_usb *twl)
 			twl->asleep = 0;
 		}
 
-		atomic_notifier_call_chain(&twl->phy.notifier, status,
-				twl->phy.otg->gadget);
+		atomic_notifier_call_chain(&twl->otg.notifier, status,
+				twl->otg.gadget);
 	}
 	sysfs_notify(&twl->dev->kobj, NULL, "vbus");
 }
 
-static int twl4030_set_suspend(struct usb_phy *x, int suspend)
+static int twl4030_set_suspend(struct otg_transceiver *x, int suspend)
 {
-	struct twl4030_usb *twl = phy_to_twl(x);
+	struct twl4030_usb *twl = xceiv_to_twl(x);
 
 	if (suspend)
 		twl4030_phy_suspend(twl, 1);
@@ -561,27 +560,33 @@ static int twl4030_set_suspend(struct usb_phy *x, int suspend)
 	return 0;
 }
 
-static int twl4030_set_peripheral(struct usb_otg *otg,
-					struct usb_gadget *gadget)
+static int twl4030_set_peripheral(struct otg_transceiver *x,
+		struct usb_gadget *gadget)
 {
-	if (!otg)
+	struct twl4030_usb *twl;
+
+	if (!x)
 		return -ENODEV;
 
-	otg->gadget = gadget;
+	twl = xceiv_to_twl(x);
+	twl->otg.gadget = gadget;
 	if (!gadget)
-		otg->phy->state = OTG_STATE_UNDEFINED;
+		twl->otg.state = OTG_STATE_UNDEFINED;
 
 	return 0;
 }
 
-static int twl4030_set_host(struct usb_otg *otg, struct usb_bus *host)
+static int twl4030_set_host(struct otg_transceiver *x, struct usb_bus *host)
 {
-	if (!otg)
+	struct twl4030_usb *twl;
+
+	if (!x)
 		return -ENODEV;
 
-	otg->host = host;
+	twl = xceiv_to_twl(x);
+	twl->otg.host = host;
 	if (!host)
-		otg->phy->state = OTG_STATE_UNDEFINED;
+		twl->otg.state = OTG_STATE_UNDEFINED;
 
 	return 0;
 }
@@ -591,7 +596,6 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
 	struct twl4030_usb_data *pdata = pdev->dev.platform_data;
 	struct twl4030_usb	*twl;
 	int			status, err;
-	struct usb_otg		*otg;
 
 	if (!pdata) {
 		dev_dbg(&pdev->dev, "platform_data not available\n");
@@ -602,26 +606,16 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
 	if (!twl)
 		return -ENOMEM;
 
-	otg = kzalloc(sizeof *otg, GFP_KERNEL);
-	if (!otg) {
-		kfree(twl);
-		return -ENOMEM;
-	}
-
 	twl->dev		= &pdev->dev;
 	twl->irq		= platform_get_irq(pdev, 0);
+	twl->otg.dev		= twl->dev;
+	twl->otg.label		= "twl4030";
+	twl->otg.set_host	= twl4030_set_host;
+	twl->otg.set_peripheral	= twl4030_set_peripheral;
+	twl->otg.set_suspend	= twl4030_set_suspend;
 	twl->usb_mode		= pdata->usb_mode;
 	twl->vbus_supplied	= false;
-	twl->asleep		= 1;
-
-	twl->phy.dev		= twl->dev;
-	twl->phy.label		= "twl4030";
-	twl->phy.otg		= otg;
-	twl->phy.set_suspend	= twl4030_set_suspend;
-
-	otg->phy		= &twl->phy;
-	otg->set_host		= twl4030_set_host;
-	otg->set_peripheral	= twl4030_set_peripheral;
+	twl->asleep = 1;
 
 	/* init spinlock for workqueue */
 	spin_lock_init(&twl->lock);
@@ -629,17 +623,16 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
 	err = twl4030_usb_ldo_init(twl);
 	if (err) {
 		dev_err(&pdev->dev, "ldo init failed\n");
-		kfree(otg);
 		kfree(twl);
 		return err;
 	}
-	usb_set_transceiver(&twl->phy);
+	otg_set_transceiver(&twl->otg);
 
 	platform_set_drvdata(pdev, twl);
 	if (device_create_file(&pdev->dev, &dev_attr_vbus))
 		dev_warn(&pdev->dev, "could not create sysfs file\n");
 
-	ATOMIC_INIT_NOTIFIER_HEAD(&twl->phy.notifier);
+	ATOMIC_INIT_NOTIFIER_HEAD(&twl->otg.notifier);
 
 	/* Our job is to use irqs and status from the power module
 	 * to keep the transceiver disabled when nothing's connected.
@@ -656,7 +649,6 @@ static int __devinit twl4030_usb_probe(struct platform_device *pdev)
 	if (status < 0) {
 		dev_dbg(&pdev->dev, "can't get IRQ %d, err %d\n",
 			twl->irq, status);
-		kfree(otg);
 		kfree(twl);
 		return status;
 	}
@@ -701,7 +693,6 @@ static int __exit twl4030_usb_remove(struct platform_device *pdev)
 	regulator_put(twl->usb1v8);
 	regulator_put(twl->usb3v1);
 
-	kfree(twl->phy.otg);
 	kfree(twl);
 
 	return 0;
