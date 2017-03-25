@@ -7,17 +7,18 @@
 #include <linux/kernel.h>
 #include <linux/spi/spi.h>
 #include <linux/gpio.h>
-#include <linux/input/cyttsp.h>
+#include <linux/cyttsp.h>
 #include <linux/delay.h>
-#include <linux/gpio/nomadik.h>
 #include <linux/i2c.h>
-#ifdef CONFIG_U8500_FLASH
-#include <../drivers/staging/camera_flash/adp1653_plat.h>
-#endif
+#include <linux/i2c/adp1653_plat.h>
 #include <linux/input/matrix_keypad.h>
+#include <linux/input/lps001wp.h>
 #include <linux/mfd/tc3589x.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/amba/pl022.h>
+#include <linux/lsm303dlh.h>
+#include <linux/l3g4200d.h>
+#include <plat/gpio-nomadik.h>
 #include <plat/pincfg.h>
 #include <mach/hardware.h>
 #include <mach/irqs.h>
@@ -29,23 +30,69 @@
 
 #define NUM_SSP_CLIENTS 10
 
-#ifdef CONFIG_U8500_FLASH
+/*
+ * LSM303DLH accelerometer + magnetometer & L3G4200D Gyroscope sensors
+ */
+static struct lsm303dlh_platform_data lsm303dlh_pdata_u8500_r3 = {
+	.axis_map_x = 1,
+	.axis_map_y = 0,
+	.axis_map_z = 2,
+	.negative_x = 0,
+	.negative_y = 0,
+	.negative_z = 1,
+};
+
+static struct l3g4200d_gyr_platform_data l3g4200d_pdata_u8500_r3 = {
+	.axis_map_x = 0,
+	.axis_map_y = 1,
+	.axis_map_z = 2,
+	.negative_x = 1,
+	.negative_y = 0,
+	.negative_z = 1,
+};
+
 static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
 	.irq_no = CAMERA_FLASH_INT_PIN
 };
-#endif
+
+/*
+ * Platform data for pressure sensor,
+ * poll interval and min interval in millseconds.
+ */
+static struct lps001wp_prs_platform_data lps001wp_pdata_r3 = {
+	.poll_interval = 1000,
+	.min_interval = 10,
+};
 
 static struct i2c_board_info __initdata mop500_i2c2_devices_u8500_r3[] = {
-#ifdef CONFIG_U8500_FLASH
+	{
+		/* LSM303DLH Accelerometer */
+		I2C_BOARD_INFO("lsm303dlhc_a", 0x19),
+		.platform_data = &lsm303dlh_pdata_u8500_r3,
+	},
+	{
+		/* LSM303DLH Magnetometer */
+		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
+		.platform_data = &lsm303dlh_pdata_u8500_r3,
+	},
+	{
+		/* L3G4200D Gyroscope */
+		I2C_BOARD_INFO("l3g4200d", 0x68),
+		.platform_data = &l3g4200d_pdata_u8500_r3,
+	},
+	{
+		/* LSP001WM Barometer */
+		I2C_BOARD_INFO("lps001wp_prs", 0x5C),
+		.platform_data = &lps001wp_pdata_r3,
+	},
 	{
 		I2C_BOARD_INFO("adp1653", 0x30),
 		.platform_data = &adp1653_pdata_u8500_uib
 	}
-#endif
 };
 
 /* cyttsp_gpio_board_init : configures the touch panel. */
-static int cyttsp_plat_init(void)
+static int cyttsp_plat_init(int on)
 {
 	int ret;
 
@@ -56,12 +103,6 @@ static int cyttsp_plat_init(void)
 		return ret;
 	}
 	return 0;
-}
-
-/* cyttsp_gpio_board_exit : deconfigures the touch panel. */
-static void cyttsp_plat_exit(void)
-{
-	gpio_direction_output(CYPRESS_SLAVE_SELECT_GPIO, 0);
 }
 
 static struct pl022_ssp_controller mop500_spi2_data = {
@@ -106,17 +147,30 @@ out:
 struct cyttsp_platform_data cyttsp_platdata = {
 	.maxx = 480,
 	.maxy = 854,
+	.flags = 0,
+	.gen = CY_GEN3,
+	.use_st = 0,
+	.use_mt = 1,
+	.use_trk_id = 0,
 	.use_hndshk = 0,
-	/* set active distance */
-	.act_dist = CY_ACT_DIST_DFLT,
+	.use_sleep = 1,
+	.use_gestures = 0,
+	.use_load_file = 0,
+	.use_force_fw_update = 0,
+	.use_virtual_keys = 0,
+	/* activate up to 4 groups and set active distance */
+	.gest_set = CY_GEST_GRP_NONE | CY_ACT_DIST,
+	/* change scn_type to enable finger and/or stylus detection */
+	.scn_typ = 0xA5, /* autodetect finger+stylus; balanced mutual scan */
 	.act_intrvl = CY_ACT_INTRVL_DFLT,  /* Active refresh interval; ms */
 	.tch_tmout = CY_TCH_TMOUT_DFLT,   /* Active touch timeout; ms */
 	.lp_intrvl = CY_LP_INTRVL_DFLT,   /* Low power refresh interval; ms */
 	.init = cyttsp_plat_init,
-	.exit = cyttsp_plat_exit,
+	.mt_sync = input_mt_sync,
+	.wakeup = cyttsp_wakeup,
 	.name = CY_SPI_NAME,
 	.irq_gpio = CYPRESS_TOUCH_INT_PIN,
-/*	.rst_gpio = CYPRESS_TOUCH_RST_GPIO, Notavailable in mainline */
+	.rst_gpio = CYPRESS_TOUCH_RST_GPIO,
 };
 
 static void cyttsp_spi_cs_control(u32 command)
@@ -210,7 +264,7 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_u8500[] = {
 	},
 };
 
-static void mop500_cyttsp_init(void)
+void mop500_cyttsp_init(void)
 {
 	int ret = 0;
 
@@ -226,25 +280,35 @@ static void mop500_cyttsp_init(void)
 			ARRAY_SIZE(cypress_spi_devices));
 }
 
-void __init mop500_u8500uib_r3_init()
+void __init mop500_u8500uib_r3_init(void)
 {
+	int ret;
 	mop500_cyttsp_init();
-	db8500_add_spi2(NULL, &mop500_spi2_data);
+	db8500_add_spi2(&mop500_spi2_data);
 	nmk_config_pin((GPIO64_GPIO     | PIN_INPUT_PULLUP), false);
-
-#ifdef CONFIG_U8500_FLASH
 	if (machine_is_hrefv60() || machine_is_u8520()) {
+		lsm303dlh_pdata_u8500_r3.irq_a1 = HREFV60_ACCEL_INT1_GPIO;
+		lsm303dlh_pdata_u8500_r3.irq_a2 = HREFV60_ACCEL_INT2_GPIO;
+		lsm303dlh_pdata_u8500_r3.irq_m = HREFV60_MAGNET_DRDY_GPIO;
 		adp1653_pdata_u8500_uib.enable_gpio =
 					HREFV60_CAMERA_FLASH_ENABLE;
 	} else {
+		lsm303dlh_pdata_u8500_r3.irq_a1 = GPIO_ACCEL_INT1;
+		lsm303dlh_pdata_u8500_r3.irq_a2 = GPIO_ACCEL_INT2;
+		lsm303dlh_pdata_u8500_r3.irq_m = GPIO_MAGNET_DRDY;
 		adp1653_pdata_u8500_uib.enable_gpio =
 					GPIO_CAMERA_FLASH_ENABLE;
 	}
-#endif
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_u8500,
 			ARRAY_SIZE(mop500_i2c0_devices_u8500));
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_u8500,
 			ARRAY_SIZE(mop500_i2c0_devices_u8500));
+
+	ret = mop500_get_acc_id();
+	if (ret < 0)
+		printk(KERN_ERR " Failed to get Accelerometr chip ID\n");
+	else
+		lsm303dlh_pdata_u8500_r3.chip_id = ret;
 	mop500_uib_i2c_add(2, mop500_i2c2_devices_u8500_r3,
 			ARRAY_SIZE(mop500_i2c2_devices_u8500_r3));
 }

@@ -8,12 +8,13 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
+#include <linux/cpufreq.h>
 #include <linux/io.h>
 #include <linux/gpio.h>
-#include <linux/gpio/nomadik.h>
 #include <linux/amba/bus.h>
 #include <linux/amba/pl022.h>
 #include <plat/pincfg.h>
+#include <plat/gpio-nomadik.h>
 
 #include <plat/ste_dma40.h>
 
@@ -21,17 +22,13 @@
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/pm.h>
-#ifdef CONFIG_FB_MCDE
+#include <mach/usecase_gov.h>
 #include <video/mcde.h>
-#endif
+#include <video/nova_dsilink.h>
 #include <linux/mfd/dbx500-prcmu.h>
-#ifdef CONFIG_HSI
 #include <mach/hsi.h>
-#endif
 #include <mach/ste-dma40-db8500.h>
-#ifdef CONFIG_FB_B2R2
 #include <video/b2r2_blt.h>
-#endif
 
 #include "pins-db8500.h"
 
@@ -161,7 +158,48 @@ struct platform_device u8500_shrm_device = {
 	.resource = u8500_shrm_resources
 };
 
-#ifdef CONFIG_FB_MCDE
+static struct resource u8500_dsilink_resources[] = {
+	[0] = {
+		.name  = DSI_IO_AREA,
+		.start = U8500_DSI_LINK1_BASE,
+		.end   = U8500_DSI_LINK1_BASE + U8500_DSI_LINK_SIZE - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.name  = DSI_IO_AREA,
+		.start = U8500_DSI_LINK2_BASE,
+		.end   = U8500_DSI_LINK2_BASE + U8500_DSI_LINK_SIZE - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[2] = {
+		.name  = DSI_IO_AREA,
+		.start = U8500_DSI_LINK3_BASE,
+		.end   = U8500_DSI_LINK3_BASE + U8500_DSI_LINK_SIZE - 1,
+		.flags = IORESOURCE_MEM,
+	},
+};
+
+struct platform_device u8500_dsilink_device[] = {
+	[0] = {
+		.name = "dsilink",
+		.id = 0,
+		.num_resources = 1,
+		.resource = &u8500_dsilink_resources[0],
+	},
+	[1] = {
+		.name = "dsilink",
+		.id = 1,
+		.num_resources = 1,
+		.resource = &u8500_dsilink_resources[1],
+	},
+	[2] = {
+		.name = "dsilink",
+		.id = 2,
+		.num_resources = 1,
+		.resource = &u8500_dsilink_resources[2],
+	},
+};
+
 static struct resource mcde_resources[] = {
 	[0] = {
 		.name  = MCDE_IO_AREA,
@@ -210,18 +248,22 @@ static int mcde_platform_set_display_clocks(void)
 	return prcmu_set_display_clocks();
 }
 
-static struct mcde_platform_data mcde_u8500_pdata = {
+static struct mcde_platform_data mcde_pdata = {
 	/*
-	 * [0] = 5: 24 bits DPI: connect MSB Ch B to D[0:7]
-	 * [3] = 4: 24 bits DPI: connect MID Ch B to D[15:8]
-	 * [4] = 3: 24 bits DPI: connect LSB Ch B to D[31:24]
+	 * [0] = 3: 24 bits DPI: connect LSB Ch B to D[0:7]
+	 * [3] = 4: 24 bits DPI: connect MID Ch B to D[24:31]
+	 * [4] = 5: 24 bits DPI: connect MSB Ch B to D[32:39]
 	 *
 	 * [1] = 3: TV out     : connect LSB Ch B to D[8:15]
 	 */
 #define DONT_CARE 0
-	.outmux = { 5, 4, DONT_CARE, 3, DONT_CARE },
+#if defined(CONFIG_MACH_SAMSUNG_U8500)
+	.outmux = { 0, 1, DONT_CARE, DONT_CARE, 2 },
+#else
+	.outmux = { 3, 3, DONT_CARE, 4, 5 },
+#endif
 #undef DONT_CARE
-	.syncmux = 0x40,
+	.syncmux = 0x00,  /* DPI channel A and B on output pins A and B resp */
 #ifdef CONFIG_MCDE_DISPLAY_DSI
 	.regulator_vana_id = "vdddsi1v2",
 #endif
@@ -240,21 +282,25 @@ static struct mcde_platform_data mcde_u8500_pdata = {
 	.rotbuf1 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x2000,
 	.rotbuf2 = U8500_ESRAM_BASE + 0x20000 * 4 + 0x11000,
 	.rotbufsize = 0xF000,
+	.pixelfetchwtrmrk = {MCDE_PIXFETCH_WTRMRKLVL_OVL0,
+				MCDE_PIXFETCH_WTRMRKLVL_OVL1,
+				MCDE_PIXFETCH_WTRMRKLVL_OVL2,
+				MCDE_PIXFETCH_WTRMRKLVL_OVL3,
+				MCDE_PIXFETCH_WTRMRKLVL_OVL4,
+				MCDE_PIXFETCH_WTRMRKLVL_OVL5},
 };
 
-struct platform_device u8500_mcde_device = {
+struct platform_device ux500_mcde_device = {
 	.name = "mcde",
 	.id = -1,
 	.dev = {
-		.platform_data = &mcde_u8500_pdata,
+		.platform_data = &mcde_pdata,
 	},
 	.num_resources = ARRAY_SIZE(mcde_resources),
 	.resource = mcde_resources,
 };
-#endif /*  CONFIG_FB_MCDE */
 
-#ifdef CONFIG_FB_B2R2
-struct platform_device u8500_b2r2_blt_device = {
+struct platform_device ux500_b2r2_blt_device = {
 	.name	= "b2r2_blt",
 	.id	= 0,
 	.dev	= {
@@ -283,7 +329,7 @@ static struct resource b2r2_resources[] = {
 	},
 };
 
-struct platform_device u8500_b2r2_device = {
+struct platform_device ux500_b2r2_device = {
 	.name	= "b2r2",
 	.id	= 0,
 	.dev	= {
@@ -294,18 +340,35 @@ struct platform_device u8500_b2r2_device = {
 	.num_resources	= ARRAY_SIZE(b2r2_resources),
 	.resource	= b2r2_resources,
 };
-#endif /* CONFIG_FB_B2R2 */
 
-/*
- * WATCHDOG
- */
 
-struct platform_device u8500_wdt_device = {
-	.name		= "ux500_wdt",
-	.id		= -1,
+static struct resource b2r2_1_resources[] = {
+	[0] = {
+		.start	= U9540_B2R2_1_BASE,
+		.end	= U9540_B2R2_1_BASE + SZ_4K - 1,
+		.name	= "b2r2_1_base",
+		.flags	= IORESOURCE_MEM,
+	},
+	[1] = {
+		.name  = "B2R2_IRQ",
+		.start = IRQ_DB8500_B2R2,
+		.end   = IRQ_DB8500_B2R2,
+		.flags = IORESOURCE_IRQ,
+	},
 };
 
-#ifdef CONFIG_HSI
+struct platform_device ux500_b2r2_1_device = {
+	.name	= "b2r2",
+	.id	= 1,
+	.dev	= {
+		.init_name = "b2r2_1_core",
+		.platform_data = &b2r2_platform_data,
+		.coherent_dma_mask = ~0,
+	},
+	.num_resources	= ARRAY_SIZE(b2r2_1_resources),
+	.resource	= b2r2_1_resources,
+};
+
 /*
  * HSI
  */
@@ -438,32 +501,101 @@ struct platform_device u8500_hsi_device = {
 	.resource = u8500_hsi_resources,
 	.num_resources = ARRAY_SIZE(u8500_hsi_resources)
 };
-#endif /* CONFIG_HSI */
+
+/*
+ * C2C
+ */
+
+#define C2C_RESS_GENO_IRQ(num) { \
+	.start  = IRQ_AP9540_C2C_GENO##num , \
+	.end    = IRQ_AP9540_C2C_GENO##num , \
+	.flags  = IORESOURCE_IRQ, \
+	.name   = "C2C_GENO"#num  \
+}
+
+static struct resource c2c_resources[] = {
+	{
+		.name = "C2C_REGS",
+		.start = U8500_C2C_BASE,
+		.end   = U8500_C2C_BASE + SZ_4K - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.name = "PRCMU_REGS",
+		.start = U8500_PRCMU_BASE,
+		.end   = U8500_PRCMU_BASE + SZ_8K + SZ_4K - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.name = "WU_MOD",
+		.start = 226,
+		.end   = 226,
+		.flags = IORESOURCE_IO,
+	},
+	{
+		.name = "C2C_IRQ0",
+		.start = IRQ_AP9540_C2C_IRQ0,
+		.end   = IRQ_AP9540_C2C_IRQ0,
+		.flags = IORESOURCE_IRQ,
+	},
+	{
+		.name = "C2C_IRQ1",
+		.start = IRQ_AP9540_C2C_IRQ1,
+		.end   = IRQ_AP9540_C2C_IRQ1,
+		.flags = IORESOURCE_IRQ,
+	},
+	C2C_RESS_GENO_IRQ(0),
+	C2C_RESS_GENO_IRQ(1),
+	C2C_RESS_GENO_IRQ(2),
+	C2C_RESS_GENO_IRQ(3),
+	C2C_RESS_GENO_IRQ(4),
+	C2C_RESS_GENO_IRQ(5),
+	C2C_RESS_GENO_IRQ(6),
+	C2C_RESS_GENO_IRQ(7),
+	C2C_RESS_GENO_IRQ(8),
+	C2C_RESS_GENO_IRQ(9),
+	C2C_RESS_GENO_IRQ(10),
+	C2C_RESS_GENO_IRQ(11),
+	C2C_RESS_GENO_IRQ(12),
+	C2C_RESS_GENO_IRQ(13),
+	C2C_RESS_GENO_IRQ(14),
+	C2C_RESS_GENO_IRQ(15),
+	C2C_RESS_GENO_IRQ(16),
+	C2C_RESS_GENO_IRQ(17),
+	C2C_RESS_GENO_IRQ(18),
+	C2C_RESS_GENO_IRQ(19),
+	C2C_RESS_GENO_IRQ(20),
+	C2C_RESS_GENO_IRQ(21),
+	C2C_RESS_GENO_IRQ(22),
+	C2C_RESS_GENO_IRQ(23),
+	C2C_RESS_GENO_IRQ(24),
+	C2C_RESS_GENO_IRQ(25),
+	C2C_RESS_GENO_IRQ(26),
+	C2C_RESS_GENO_IRQ(27),
+	C2C_RESS_GENO_IRQ(28),
+	C2C_RESS_GENO_IRQ(29),
+	C2C_RESS_GENO_IRQ(30),
+	C2C_RESS_GENO_IRQ(31),
+};
+
+/* Mali GPU platform device */
+struct platform_device db8500_mali_gpu_device = {
+	.name = "mali",
+	.id = 0,
+};
+
+struct platform_device ux500_c2c_device = {
+	.name = "c2c",
+	.id = 0,
+	.num_resources = ARRAY_SIZE(c2c_resources),
+	.resource = c2c_resources,
+};
 
 /*
  * Thermal Sensor
  */
 
-static struct resource u8500_thsens_resources[] = {
-	{
-		.name = "IRQ_HOTMON_LOW",
-		.start  = IRQ_PRCMU_HOTMON_LOW,
-		.end    = IRQ_PRCMU_HOTMON_LOW,
-		.flags  = IORESOURCE_IRQ,
-	},
-	{
-		.name = "IRQ_HOTMON_HIGH",
-		.start  = IRQ_PRCMU_HOTMON_HIGH,
-		.end    = IRQ_PRCMU_HOTMON_HIGH,
-		.flags  = IORESOURCE_IRQ,
-	},
-};
 
-struct platform_device u8500_thsens_device = {
-	.name           = "dbx500_temp",
-	.resource       = u8500_thsens_resources,
-	.num_resources  = ARRAY_SIZE(u8500_thsens_resources),
-};
 
 struct resource keypad_resources[] = {
 	[0] = {
@@ -484,3 +616,195 @@ struct platform_device u8500_ske_keypad_device = {
 	.num_resources = ARRAY_SIZE(keypad_resources),
 	.resource = keypad_resources,
 };
+
+static struct cpufreq_frequency_table db8500_freq_table[] = {
+	[0] = {
+		.index = 0,
+		.frequency = 200000,
+	},
+	[1] = {
+		.index = 1,
+		.frequency = 400000,
+	},
+	[2] = {
+		.index = 2,
+		.frequency = 800000,
+	},
+	#if defined(CONFIG_MACH_GAVINI)
+	[3] = {
+		/* Used for MAX_OPP, if available */
+		.index = 3,
+		.frequency = 1000000,
+	},
+	#else
+	[3] = {
+		.index = 3,
+		.frequency = CPUFREQ_TABLE_END,
+	},
+	#endif
+	[4] = {
+		.index = 4,
+		.frequency = CPUFREQ_TABLE_END,
+	},
+};
+struct platform_device db8500_prcmu_device = {
+	.name			= "db8500-prcmu",
+	.dev = {
+		.platform_data = db8500_freq_table,
+	},
+};
+
+static struct cpufreq_frequency_table dbx540_freq_table[] = {
+	[0] = {
+		.index = 0,
+		.frequency = 266000,
+	},
+	[1] = {
+		.index = 1,
+		.frequency = 400000,
+	},
+	[2] = {
+		.index = 2,
+		.frequency = 800000,
+	},
+	[3] = {
+		.index = 3,
+		.frequency = 1200000,
+	},
+	[4] = {
+		.index = 4,
+		.frequency = 1500000,
+	},
+	[5] = {
+		/* Used for speed-binned maximum OPP, if available */
+		.index = 5,
+		.frequency = CPUFREQ_TABLE_END,
+	},
+	[6] = {
+		.index = 6,
+		.frequency = CPUFREQ_TABLE_END,
+	},
+};
+
+struct platform_device dbx540_prcmu_device = {
+	.name			= "dbx540-prcmu",
+	.dev = {
+		.platform_data = dbx540_freq_table,
+	},
+};
+
+static struct usecase_config u8500_usecase_conf[UX500_UC_MAX] = {
+	[UX500_UC_NORMAL] = {
+		.name			= "normal",
+		.cpuidle_multiplier	= 1024,
+		.second_cpu_online	= true,
+		.l2_prefetch_en		= true,
+		.enable			= true,
+		.forced_state		= 0,
+		.vc_override		= false,
+		.force_usecase		= false,
+	},
+	[UX500_UC_AUTO] = {
+		.name			= "auto",
+		.cpuidle_multiplier	= 0,
+		.second_cpu_online	= false,
+		.l2_prefetch_en		= true,
+		.enable			= false,
+		.forced_state		= 0,
+		.vc_override		= false,
+		.force_usecase		= false,
+	},
+	[UX500_UC_VC] = {
+		.name			= "voice-call",
+		.min_arm		= 400000,
+		.cpuidle_multiplier	= 0,
+		.second_cpu_online	= true,
+		.l2_prefetch_en		= false,
+		.enable			= false,
+		.forced_state		= 0,
+		.vc_override		= true,
+		.force_usecase		= false,
+	},
+	[UX500_UC_LPA] = {
+		.name			= "low-power-audio",
+		.min_arm		= 400000,
+		.cpuidle_multiplier	= 0,
+		.second_cpu_online	= false,
+		.l2_prefetch_en		= false,
+		.enable			= false,
+	/* TODO: Fetch forced_state dynamically from cpuidle configuration */
+		.forced_state		= 3,
+		.vc_override		= false,
+		.force_usecase		= false,
+	},
+	[UX500_UC_EXT] = {
+		.name			= "external",
+		.min_arm		= 200000,
+		.cpuidle_multiplier = 0,
+		.second_cpu_online	= true,
+		.l2_prefetch_en		= true,
+		.enable			= false,
+		.forced_state		= 0,
+		.vc_override		= false,
+		.force_usecase		= true,
+	},
+};
+
+struct platform_device u8500_usecase_gov_device = {
+		.name = "dbx500-usecase-gov",
+		.dev = {
+			 .platform_data = u8500_usecase_conf,
+		}
+};
+
+/* U9540 Support */
+static struct usecase_config u9540_usecase_conf[UX500_UC_MAX] = {
+	[UX500_UC_NORMAL] = {
+		.name			= "normal",
+		.min_arm		= 266000,
+		.cpuidle_multiplier	= 1024,
+		.second_cpu_online	= true,
+		.l2_prefetch_en		= true,
+		.enable			= true,
+		.forced_state		= 0,
+		.vc_override		= false,
+	},
+	[UX500_UC_AUTO] = {
+		.name			= "auto",
+		.min_arm		= 266000,
+		.cpuidle_multiplier	= 0,
+		.second_cpu_online	= false,
+		.l2_prefetch_en		= true,
+		.enable			= false,
+		.forced_state		= 0,
+		.vc_override		= false,
+	},
+	[UX500_UC_VC] = {
+		.name			= "voice-call",
+		.min_arm		= 400000,
+		.cpuidle_multiplier	= 0,
+		.second_cpu_online	= false,
+		.l2_prefetch_en		= false,
+		.enable			= false,
+		.forced_state		= 0,
+		.vc_override		= true,
+	},
+	[UX500_UC_LPA] = {
+		.name			= "low-power-audio",
+		.min_arm		= 400000,
+		.cpuidle_multiplier	= 0,
+		.second_cpu_online	= false,
+		.l2_prefetch_en		= false,
+		.enable			= false,
+		.forced_state		= 0,
+		.vc_override		= false,
+	},
+};
+
+struct platform_device u9540_usecase_gov_device = {
+		.name = "db9540-usecase-gov",
+		.dev = {
+			 .platform_data = u9540_usecase_conf,
+		}
+};
+

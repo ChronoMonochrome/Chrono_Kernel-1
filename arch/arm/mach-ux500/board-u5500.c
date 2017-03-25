@@ -7,30 +7,23 @@
 #include <linux/init.h>
 #include <linux/platform_device.h>
 #include <linux/amba/bus.h>
-#include <linux/irq.h>
-#include <linux/gpio/nomadik.h>
-#include <linux/i2c.h>
-#include <linux/mfd/abx500/ab5500.h>
-#include <linux/ab5500-vibra.h>
 #include <linux/amba/pl022.h>
+#include <linux/gpio.h>
+#include <linux/irq.h>
+#include <linux/i2c.h>
 #include <linux/delay.h>
+#include <linux/mfd/abx500.h>
+#include <linux/ab5500-vibra.h>
 #include <linux/led-lm3530.h>
 #include <../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
 #include <linux/input/matrix_keypad.h>
-#ifdef CONFIG_SENSORS_LSM303DLH
 #include <linux/lsm303dlh.h>
-#endif
 #include <linux/leds-ab5500.h>
-#ifdef CONFIG_TOUCHSCREEN_CYTTSP_SPI
 #include <linux/cyttsp.h>
-#endif
 #include <linux/input/abx500-accdet.h>
 
-#ifdef CONFIG_AV8100
 #include <video/av8100.h>
-#endif
 
-#include <asm/hardware/gic.h>
 #include <asm/mach/arch.h>
 #include <asm/mach-types.h>
 
@@ -39,9 +32,7 @@
 
 #include <mach/hardware.h>
 #include <mach/ste-dma40-db5500.h>
-#ifdef CONFIG_UX500_SOC_DBX500
 #include <mach/msp.h>
-#endif
 #include <mach/devices.h>
 #include <mach/setup.h>
 #include <mach/db5500-keypad.h>
@@ -56,14 +47,11 @@
 #include "board-u5500-wlan.h"
 #include "board-ux500-usb.h"
 
-#ifdef CONFIG_SENSORS_LSM303DLH
 /*
  * LSM303DLH
  */
 
-static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
-	.name_a = "lsm303dlh.0",
-	.name_m = "lsm303dlh.1",
+static struct lsm303dlh_platform_data lsm303dlh_pdata = {
 	.axis_map_x = 1,
 	.axis_map_y = 0,
 	.axis_map_z = 2,
@@ -72,7 +60,6 @@ static struct lsm303dlh_platform_data __initdata lsm303dlh_pdata = {
 	.negative_y = 1,
 	.negative_z = 1,
 };
-#endif
 
 /*
  * Touchscreen
@@ -202,7 +189,6 @@ U5500_I2C_CONTROLLER(2,	0xe, 1, 10, 400000, 200, I2C_FREQ_MODE_FAST);
 U5500_I2C_CONTROLLER(3,	0xe, 1, 10, 400000, 200, I2C_FREQ_MODE_FAST);
 
 static struct i2c_board_info __initdata u5500_i2c2_sensor_devices[] = {
-#ifdef CONFIG_SENSORS_LSM303DLH
 	{
 		/* LSM303DLHC Accelerometer */
 		I2C_BOARD_INFO("lsm303dlhc_a", 0x19),
@@ -213,7 +199,6 @@ static struct i2c_board_info __initdata u5500_i2c2_sensor_devices[] = {
 		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
 		.platform_data = &lsm303dlh_pdata,
 	},
-#endif
 };
 
 static struct i2c_board_info __initdata u5500_i2c2_devices[] = {
@@ -337,7 +322,6 @@ static struct db5500_keypad_platform_data u5500_keypad_board = {
 	.switch_delay	= 200, /* in jiffies */
 };
 
-#ifdef CONFIG_UX500_SOC_DBX500
 /*
  * MSP
  */
@@ -389,11 +373,6 @@ static void __init u5500_msp_init(void)
 	db5500_add_msp1_i2s(&u5500_msp1_data);
 	db5500_add_msp2_i2s(&u5500_msp2_data);
 }
-#else
-static void __init u5500_msp_init(void)
-{
-}
-#endif
 
 /*
  * SPI
@@ -603,17 +582,16 @@ struct platform_device u5500_mcdd_device = {
 
 static struct platform_device *u5500_platform_devices[] __initdata = {
 	&u5500_ab5500_device,
-#ifdef CONFIG_FB_MCDE
-	&u5500_mcde_device,
-#endif
+	&ux500_mcde_device,
+	&u5500_dsilink_device[0],
+	&u5500_dsilink_device[1],
 	&ux500_hwmem_device,
-	&u5500_b2r2_device,
-	&u5500_b2r2_blt_device,
+	&ux500_b2r2_device,
+	&ux500_b2r2_blt_device,
 	&u5500_mloader_device,
 #ifdef CONFIG_U5500_MMIO
 	&u5500_mmio_device,
 #endif
-	&u5500_thsens_device,
 	&u5500_mcdd_device,
 };
 
@@ -729,22 +707,22 @@ static struct amba_pl011_data uart3_plat = {
 	.reset = ux500_uart3_reset,
 };
 
-static void __init u5500_i2c_init(struct device *parent)
+static void __init u5500_i2c_init(void)
 {
-	db5500_add_i2c1(pareent, &u5500_i2c1_data);
-	db5500_add_i2c2(pareent, &u5500_i2c2_data);
-	db5500_add_i2c3(pareent, &u5500_i2c3_data);
+	db5500_add_i2c1(&u5500_i2c1_data);
+	db5500_add_i2c2(&u5500_i2c2_data);
+	db5500_add_i2c3(&u5500_i2c3_data);
 
 	i2c_register_board_info(2, ARRAY_AND_SIZE(u5500_i2c2_devices));
 	i2c_register_board_info(2, ARRAY_AND_SIZE(u5500_i2c2_sensor_devices));
 }
 
-static void __init u5500_uart_init(struct device *parent)
+static void __init u5500_uart_init(void)
 {
-	db5500_add_uart0(parent, NULL);
-	db5500_add_uart1(parent, NULL);
-	db5500_add_uart2(parent, NULL);
-	db5500_add_uart3(parent, &uart3_plat);
+	db5500_add_uart0(NULL);
+	db5500_add_uart1(NULL);
+	db5500_add_uart2(NULL);
+	db5500_add_uart3(&uart3_plat);
 }
 
 static void __init u5500_cryp1_hash1_init(void)
@@ -780,22 +758,16 @@ module_init(u5500_accel_sensor_init);
 
 static void __init u5500_init_machine(void)
 {
-	struct device *parent = NULL;
-	int i;
-
-	parent = u5500_init_devices();
+	u5500_init_devices();
 	u5500_regulators_init();
 	u5500_pins_init();
 
-	u5500_i2c_init(parent);
+	u5500_i2c_init();
 	u5500_msp_init();
 	u5500_spi_init();
 
-	u5500_sdi_init(parent);
-	u5500_uart_init(parent);
-
-	for (i = 0; i < ARRAY_SIZE(u5500_platform_devices); i++)
-		u5500_platform_devices[i]->dev.parent = parent;
+	u5500_sdi_init();
+	u5500_uart_init();
 
 	u5500_wlan_init();
 
@@ -807,7 +779,7 @@ static void __init u5500_init_machine(void)
 #endif
 
 	platform_add_devices(u5500_platform_devices,
-		ARRAY_SIZE(u5500_platform_devices));
+			     ARRAY_SIZE(u5500_platform_devices));
 
 	if (!gpio_request_one(GPIO_SW_CRASH_INDICATOR, GPIOF_OUT_INIT_LOW,
 			      "SW_CRASH_INDICATOR"))
@@ -815,20 +787,17 @@ static void __init u5500_init_machine(void)
 }
 
 MACHINE_START(U5500, "ST-Ericsson U5500 Platform")
-	.atag_offset	= 0x100,
+	.boot_params	= 0x00000100,
 	.map_io		= u5500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
-	.handle_irq	= gic_handle_irq,
 	.init_machine	= u5500_init_machine,
-	.restart	= ux500_restart,
 MACHINE_END
 
 MACHINE_START(B5500, "ST-Ericsson U5500 Big Board")
-	.atag_offset	= 0x00000100,
+	.boot_params	= 0x00000100,
 	.map_io		= u5500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
 	.init_machine	= u5500_init_machine,
-	.restart	= ux500_restart,
 MACHINE_END

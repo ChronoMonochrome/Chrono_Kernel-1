@@ -21,17 +21,21 @@
 #include <linux/uaccess.h>
 #include <linux/cpufreq.h>
 #include <linux/mfd/dbx500-prcmu.h>
-#include <linux/cpufreq-dbx500.h>
 
 #include <mach/prcmu-debug.h>
 
-#define ARM_THRESHOLD_FREQ (400000)
+#define ARM_THRESHOLD_FREQ 400000
+
+#define AB8500_VAPESEL1_REG 0x0E   /* APE OPP 100 voltage */
+#define AB8500_VAPESEL2_REG 0x0F   /* APE OPP 50 voltage  */
 
 static int qos_delayed_cpufreq_notifier(struct notifier_block *,
 					unsigned long, void *);
 
 static s32 cpufreq_requirement_queued;
 static s32 cpufreq_requirement_set;
+
+static int update_target_max_recur = 1;
 
 /*
  * locking rule: all changes to requirements or prcmu_qos_object list
@@ -50,12 +54,16 @@ struct requirement_list {
 
 static s32 max_compare(s32 v1, s32 v2);
 
+static int __prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
+		s32 new_value, bool sem);
+
 struct prcmu_qos_object {
 	struct requirement_list requirements;
 	struct blocking_notifier_head *notifiers;
 	struct miscdevice prcmu_qos_power_miscdev;
 	char *name;
 	s32 default_value;
+	s32 max_value;
 	s32 force_value;
 	atomic_t target_value;
 	s32 (*comparitor)(s32, s32);
@@ -64,6 +72,7 @@ struct prcmu_qos_object {
 static struct prcmu_qos_object null_qos;
 static BLOCKING_NOTIFIER_HEAD(prcmu_ape_opp_notifier);
 static BLOCKING_NOTIFIER_HEAD(prcmu_ddr_opp_notifier);
+static BLOCKING_NOTIFIER_HEAD(prcmu_vsafe_opp_notifier);
 
 static struct prcmu_qos_object ape_opp_qos = {
 	.requirements =	{
@@ -73,8 +82,9 @@ static struct prcmu_qos_object ape_opp_qos = {
 	.name = "ape_opp",
 	/* Target value in % APE OPP */
 	.default_value = 50,
+	.max_value = 100,
 	.force_value = 0,
-	.target_value = ATOMIC_INIT(50),
+	.target_value = ATOMIC_INIT(100),
 	.comparitor = max_compare
 };
 
@@ -86,24 +96,36 @@ static struct prcmu_qos_object ddr_opp_qos = {
 	.name = "ddr_opp",
 	/* Target value in % DDR OPP */
 	.default_value = 25,
+	.max_value = 100,
 	.force_value = 0,
-	.target_value = ATOMIC_INIT(25),
+	.target_value = ATOMIC_INIT(100),
 	.comparitor = max_compare
 };
 
-static struct prcmu_qos_object arm_opp_qos = {
+static struct prcmu_qos_object vsafe_opp_qos = {
 	.requirements =	{
-		LIST_HEAD_INIT(arm_opp_qos.requirements.list)
+		LIST_HEAD_INIT(vsafe_opp_qos.requirements.list)
+	},
+	.notifiers = &prcmu_vsafe_opp_notifier,
+	.name = "vsafe_opp",
+	/* Target value in % VSAFE OPP */
+	.default_value = 50,
+	.force_value = 0,
+	.target_value = ATOMIC_INIT(50),
+	.comparitor = max_compare
+};
+
+static struct prcmu_qos_object arm_khz_qos = {
+	.requirements =	{
+		LIST_HEAD_INIT(arm_khz_qos.requirements.list)
 	},
 	/*
-	 * No notifier on ARM opp qos request, since this won't actually
+	 * No notifier on ARM kHz qos request, since this won't actually
 	 * do anything, except changing limits for cpufreq
 	 */
-	.name = "arm_opp",
-	/* Target value in % ARM OPP, note can be 125% */
-	.default_value = 25,
+	.name = "arm_khz",
+	/* Notice that arm is in kHz, not in % */
 	.force_value = 0,
-	.target_value = ATOMIC_INIT(25),
 	.comparitor = max_compare
 };
 
@@ -111,7 +133,8 @@ static struct prcmu_qos_object *prcmu_qos_array[] = {
 	&null_qos,
 	&ape_opp_qos,
 	&ddr_opp_qos,
-	&arm_opp_qos,
+	&arm_khz_qos,
+	&vsafe_opp_qos,
 };
 
 static DEFINE_MUTEX(prcmu_qos_mutex);
@@ -119,7 +142,14 @@ static DEFINE_SPINLOCK(prcmu_qos_lock);
 
 static bool ape_opp_50_partly_25_enabled;
 
-static unsigned long cpufreq_opp_delay = HZ / 5;
+#define CPUFREQ_OPP_DELAY (HZ/5)
+#define CPUFREQ_OPP_DELAY_VOICECALL HZ
+static unsigned long cpufreq_opp_delay = CPUFREQ_OPP_DELAY;
+
+static bool prcmu_qos_cpufreq_init_done;
+
+static bool lpa_override_enabled;
+static u8 opp50_voltage_val;
 
 unsigned long prcmu_qos_get_cpufreq_opp_delay(void)
 {
@@ -148,12 +178,11 @@ void prcmu_qos_set_cpufreq_opp_delay(unsigned long n)
 	cpufreq_opp_delay = n;
 }
 #ifdef CONFIG_CPU_FREQ
-static void update_cpu_limits(s32 extreme_value)
+static void update_cpu_limits(s32 min_freq)
 {
 	int cpu;
 	struct cpufreq_policy policy;
 	int ret;
-	int min_freq, max_freq;
 
 	for_each_online_cpu(cpu) {
 		ret = cpufreq_get_policy(&policy, cpu);
@@ -163,35 +192,14 @@ static void update_cpu_limits(s32 extreme_value)
 			continue;
 		}
 
-		ret = dbx500_cpufreq_get_limits(cpu, extreme_value,
-					       &min_freq, &max_freq);
+		ret = cpufreq_update_freq(cpu, min_freq, policy.max);
 		if (ret)
-			continue;
-		/*
-		 * cpufreq fw does not allow frequency change if
-		 * "current min freq" > "new max freq" or
-		 * "current max freq" < "new min freq".
-		 * Thus the intermediate steps below.
-		 */
-		if (policy.min > max_freq) {
-			ret = cpufreq_update_freq(cpu, min_freq, policy.max);
-			if (ret)
-				pr_err("prcmu qos: update min cpufreq failed (1)\n");
-		}
-		if (policy.max < min_freq) {
-			ret = cpufreq_update_freq(cpu, policy.min, max_freq);
-			if (ret)
-				pr_err("prcmu qos: update max cpufreq failed (2)\n");
-		}
-
-		ret = cpufreq_update_freq(cpu, min_freq, max_freq);
-		if (ret)
-			pr_err("prcmu qos: update max cpufreq failed (3)\n");
+			pr_err("prcmu qos: update cpufreq "
+			       "frequency limits failed\n");
 	}
-
 }
 #else
-static inline void update_cpu_limits(s32 extreme_value) { }
+static inline void update_cpu_limits(s32 min_freq) { }
 #endif
 /* static helper function */
 static s32 max_compare(s32 v1, s32 v2)
@@ -199,15 +207,31 @@ static s32 max_compare(s32 v1, s32 v2)
 	return max(v1, v2);
 }
 
-static void update_target(int target)
+static inline void __prcmu_qos_update_ddr_opp(s32 arm_kz_new_value,
+		s32 vsafe_new_value)
 {
+	if (cpu_is_u9540()) {
+		__prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
+				"cross_opp_ddr", arm_kz_new_value, false);
+		__prcmu_qos_update_requirement(PRCMU_QOS_VSAFE_OPP,
+				"cross_opp_ddr", vsafe_new_value, false);
+	}
+}
+
+
+static void update_target(int target, bool sem)
+{
+	static int recursivity;
 	s32 extreme_value;
 	struct requirement_list *node;
 	unsigned long flags;
 	bool update = false;
 	u8 op;
 
-	mutex_lock(&prcmu_qos_mutex);
+	if (sem)
+		mutex_lock(&prcmu_qos_mutex);
+
+	BUG_ON(recursivity++ == update_target_max_recur);
 
 	spin_lock_irqsave(&prcmu_qos_lock, flags);
 	extreme_value = prcmu_qos_array[target]->default_value;
@@ -248,27 +272,66 @@ static void update_target(int target)
 		switch (extreme_value) {
 		case 50:
 			op = DDR_50_OPP;
+			prcmu_set_ddr_opp(op);
 			pr_debug("prcmu qos: set ddr opp to 50%%\n");
+			/*
+			 * 9540 cross table matrix :
+			 * release ARM & vsafe constraint
+			 */
+			__prcmu_qos_update_ddr_opp(PRCMU_QOS_DEFAULT_VALUE,
+					PRCMU_QOS_DEFAULT_VALUE);
 			break;
 		case 100:
+			/*
+			 * 9540 cross table matrix:set vsafe to 100% and
+			 * ARM  freq min to 400000
+			 */
+			__prcmu_qos_update_ddr_opp(400000, 100);
 			op = DDR_100_OPP;
+			prcmu_set_ddr_opp(op);
 			pr_debug("prcmu qos: set ddr opp to 100%%\n");
 			break;
 		case 25:
 			/* 25% DDR OPP is not supported on 5500 */
 			if (!cpu_is_u5500()) {
 				op = DDR_25_OPP;
+				prcmu_set_ddr_opp(op);
 				pr_debug("prcmu qos: set ddr opp to 25%%\n");
+				/*
+				 * 9540 cross table matrix :
+				 * release ARM constraint
+				 * and set vsafe opp to 50%
+				 */
+				__prcmu_qos_update_ddr_opp
+					(PRCMU_QOS_DEFAULT_VALUE,
+						PRCMU_QOS_DEFAULT_VALUE);
+				}
 				break;
-			}
 		default:
 			pr_err("prcmu qos: Incorrect ddr target value (%d)",
 			       extreme_value);
 			goto unlock_and_return;
 		}
-		prcmu_set_ddr_opp(op);
 		prcmu_debug_ddr_opp_log(op);
 		break;
+	case PRCMU_QOS_VSAFE_OPP:
+			switch (extreme_value) {
+			case 50:
+				op = VSAFE_50_OPP;
+				pr_debug("prcmu qos: set vsafe opp to 50%%\n");
+				break;
+			case 100:
+				op = VSAFE_100_OPP;
+				pr_debug("prcmu qos: set vsafe opp to 100%%\n");
+				break;
+			default:
+			  pr_err("prcmu qos: Incorrect vsafe target value (%d)",
+				       extreme_value);
+				goto unlock_and_return;
+			}
+			prcmu_set_vsafe_opp(op);
+			prcmu_debug_vsafe_opp_log(op);
+			break;
 	case PRCMU_QOS_APE_OPP:
 		switch (extreme_value) {
 		case 50:
@@ -277,8 +340,21 @@ static void update_target(int target)
 			else
 				op = APE_50_OPP;
 			pr_debug("prcmu qos: set ape opp to 50%%\n");
+
+			/* 9540 cross table matrix : release ARM constraint */
+			if (cpu_is_u9540()) {
+				__prcmu_qos_update_requirement(
+					PRCMU_QOS_ARM_KHZ, "cross_opp_ape",
+					PRCMU_QOS_DEFAULT_VALUE, false);
+			}
 			break;
 		case 100:
+			/* 9540 cross table matrix: set ARM min freq to 400000 */
+			if (cpu_is_u9540()) {
+				__prcmu_qos_update_requirement(
+					PRCMU_QOS_ARM_KHZ, "cross_opp_ape",
+					400000, false);
+			}
 			op = APE_100_OPP;
 			pr_debug("prcmu qos: set ape opp to 100%%\n");
 			break;
@@ -290,9 +366,10 @@ static void update_target(int target)
 		(void)prcmu_set_ape_opp(op);
 		prcmu_debug_ape_opp_log(op);
 		break;
-	case PRCMU_QOS_ARM_OPP:
-	{
-		mutex_unlock(&prcmu_qos_mutex);
+	case PRCMU_QOS_ARM_KHZ:
+		recursivity--;
+		if (sem)
+			mutex_unlock(&prcmu_qos_mutex);
 		/*
 		 * We can't hold the mutex since changing cpufreq
 		 * will trigger an prcmu fw callback.
@@ -300,22 +377,74 @@ static void update_target(int target)
 		update_cpu_limits(extreme_value);
 		/* Return since the lock is unlocked */
 		return;
-
 		break;
-	}
 	default:
 		pr_err("prcmu qos: Incorrect target\n");
 		break;
 	}
 
 unlock_and_return:
-	mutex_unlock(&prcmu_qos_mutex);
+	recursivity--;
+	if (sem)
+		mutex_unlock(&prcmu_qos_mutex);
 }
 
 void prcmu_qos_force_opp(int prcmu_qos_class, s32 i)
 {
 	prcmu_qos_array[prcmu_qos_class]->force_value = i;
-	update_target(prcmu_qos_class);
+	update_target(prcmu_qos_class, true);
+}
+
+#define LPA_OVERRIDE_VOLTAGE_SETTING 0x22 /* 1.125V */
+
+int prcmu_qos_lpa_override(bool enable)
+{
+	int ret = 0;
+
+	mutex_lock(&prcmu_qos_mutex);
+
+	if (enable) {
+		if (!lpa_override_enabled) {
+			u8 opp100_voltage_val;
+			u8 override_voltage_val;
+
+			/* Get the APE OPP 100% setting. */
+			ret = prcmu_abb_read(AB8500_REGU_CTRL2,
+					     AB8500_VAPESEL1_REG,
+					     &opp100_voltage_val, 1);
+			if (ret)
+				goto out;
+
+			/* Save the APE OPP 50% setting. */
+			ret = prcmu_abb_read(AB8500_REGU_CTRL2,
+					     AB8500_VAPESEL2_REG,
+					     &opp50_voltage_val, 1);
+			if (ret)
+				goto out;
+
+			override_voltage_val = min(opp100_voltage_val,
+						(u8)LPA_OVERRIDE_VOLTAGE_SETTING);
+
+			/* Use the APE OPP 100% setting also for APE OPP 50%. */
+			ret = prcmu_abb_write(AB8500_REGU_CTRL2,
+					      AB8500_VAPESEL2_REG,
+					      &override_voltage_val, 1);
+
+			lpa_override_enabled = true;
+		}
+	} else {
+		if (lpa_override_enabled) {
+			/* Restore the original APE OPP 50% setting. */
+			ret = prcmu_abb_write(AB8500_REGU_CTRL2,
+					      AB8500_VAPESEL2_REG,
+					      &opp50_voltage_val, 1);
+
+			lpa_override_enabled = false;
+		}
+	}
+out:
+	mutex_unlock(&prcmu_qos_mutex);
+	return ret;
 }
 
 void prcmu_qos_voice_call_override(bool enable)
@@ -323,6 +452,15 @@ void prcmu_qos_voice_call_override(bool enable)
 	int ape_opp;
 
 	mutex_lock(&prcmu_qos_mutex);
+
+	/*
+	 * All changes done through debugfs will be lost when voice-call is
+	 * enabled.
+	 */
+	if (enable)
+		cpufreq_opp_delay = CPUFREQ_OPP_DELAY_VOICECALL;
+	else
+		cpufreq_opp_delay = CPUFREQ_OPP_DELAY;
 
 	ape_opp_50_partly_25_enabled = enable;
 
@@ -355,12 +493,14 @@ EXPORT_SYMBOL_GPL(prcmu_qos_requirement);
  * @prcmu_qos_class: identifies which list of qos request to us
  * @name: identifies the request
  * @value: defines the qos request
+ * @sem: manage update_target recursivity
  *
  * This function inserts a new entry in the prcmu_qos_class list of requested
  * qos performance characteristics.  It recomputes the aggregate QoS
  * expectations for the prcmu_qos_class of parameters.
  */
-int prcmu_qos_add_requirement(int prcmu_qos_class, char *name, s32 value)
+static int __prcmu_qos_add_requirement(int prcmu_qos_class, char *name,
+		s32 value, bool sem)
 {
 	struct requirement_list *dep;
 	unsigned long flags;
@@ -371,6 +511,8 @@ int prcmu_qos_add_requirement(int prcmu_qos_class, char *name, s32 value)
 
 	if (value == PRCMU_QOS_DEFAULT_VALUE)
 		dep->value = prcmu_qos_array[prcmu_qos_class]->default_value;
+	else if (value == PRCMU_QOS_MAX_VALUE)
+		dep->value = prcmu_qos_array[prcmu_qos_class]->max_value;
 	else
 		dep->value = value;
 	dep->name = kstrdup(name, GFP_KERNEL);
@@ -381,7 +523,16 @@ int prcmu_qos_add_requirement(int prcmu_qos_class, char *name, s32 value)
 	list_add(&dep->list,
 		 &prcmu_qos_array[prcmu_qos_class]->requirements.list);
 	spin_unlock_irqrestore(&prcmu_qos_lock, flags);
-	update_target(prcmu_qos_class);
+
+	if (!prcmu_qos_cpufreq_init_done && prcmu_qos_class == PRCMU_QOS_ARM_KHZ) {
+		if (value != PRCMU_QOS_DEFAULT_VALUE) {
+			pr_err("prcmu-qos: ERROR: Not possible to request any "
+				"other kHz than DEFAULT during boot!\n");
+			dump_stack();
+		}
+	} else {
+		update_target(prcmu_qos_class, sem);
+	}
 
 	return 0;
 
@@ -389,20 +540,28 @@ cleanup:
 	kfree(dep);
 	return -ENOMEM;
 }
+
+int prcmu_qos_add_requirement(int prcmu_qos_class, char *name, s32 val)
+{
+	return __prcmu_qos_add_requirement(prcmu_qos_class, name, val, true);
+}
 EXPORT_SYMBOL_GPL(prcmu_qos_add_requirement);
+
 
 /**
  * prcmu_qos_update_requirement - modifies an existing qos request
  * @prcmu_qos_class: identifies which list of qos request to us
  * @name: identifies the request
  * @value: defines the qos request
+ * @sem: manage update_target recursivity
  *
  * Updates an existing qos requirement for the prcmu_qos_class of parameters
  * along with updating the target prcmu_qos_class value.
  *
  * If the named request isn't in the list then no change is made.
  */
-int prcmu_qos_update_requirement(int prcmu_qos_class, char *name, s32 new_value)
+static int __prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
+		s32 new_value, bool sem)
 {
 	unsigned long flags;
 	struct requirement_list *node;
@@ -411,33 +570,58 @@ int prcmu_qos_update_requirement(int prcmu_qos_class, char *name, s32 new_value)
 	spin_lock_irqsave(&prcmu_qos_lock, flags);
 	list_for_each_entry(node,
 		&prcmu_qos_array[prcmu_qos_class]->requirements.list, list) {
-		if (strcmp(node->name, name) == 0) {
-			if (new_value == PRCMU_QOS_DEFAULT_VALUE)
-				node->value =
+		if (strcmp(node->name, name))
+			continue;
+
+		if (new_value == PRCMU_QOS_DEFAULT_VALUE)
+			node->value =
 				prcmu_qos_array[prcmu_qos_class]->default_value;
-			else
-				node->value = new_value;
-			pending_update = 1;
-			break;
-		}
+		else if (new_value == PRCMU_QOS_MAX_VALUE)
+			node->value =
+				prcmu_qos_array[prcmu_qos_class]->max_value;
+		else
+			node->value = new_value;
+		pending_update = 1;
+		break;
 	}
 	spin_unlock_irqrestore(&prcmu_qos_lock, flags);
-	if (pending_update)
-		update_target(prcmu_qos_class);
+
+	if (pending_update) {
+		if (!prcmu_qos_cpufreq_init_done && prcmu_qos_class == PRCMU_QOS_ARM_KHZ) {
+			if (new_value != PRCMU_QOS_DEFAULT_VALUE) {
+				pr_err("prcmu-qos: ERROR: Not possible to request any "
+					"other kHz than DEFAULT during boot!\n");
+				dump_stack();
+			}
+		} else {
+			update_target(prcmu_qos_class, sem);
+		}
+	}
 
 	return 0;
 }
+
+int prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
+		s32 val)
+{
+
+	return __prcmu_qos_update_requirement(prcmu_qos_class, name,
+			val, true);
+}
 EXPORT_SYMBOL_GPL(prcmu_qos_update_requirement);
+
 
 /**
  * prcmu_qos_remove_requirement - modifies an existing qos request
  * @prcmu_qos_class: identifies which list of qos request to us
  * @name: identifies the request
+ * @sem: manage update_target recursivity
  *
  * Will remove named qos request from prcmu_qos_class list of parameters and
  * recompute the current target value for the prcmu_qos_class.
  */
-void prcmu_qos_remove_requirement(int prcmu_qos_class, char *name)
+static void __prcmu_qos_remove_requirement(int prcmu_qos_class, char *name,
+		bool sem)
 {
 	unsigned long flags;
 	struct requirement_list *node;
@@ -455,9 +639,18 @@ void prcmu_qos_remove_requirement(int prcmu_qos_class, char *name)
 		}
 	}
 	spin_unlock_irqrestore(&prcmu_qos_lock, flags);
-	if (pending_update)
-		update_target(prcmu_qos_class);
+
+	if (pending_update &&
+		((prcmu_qos_cpufreq_init_done && prcmu_qos_class == PRCMU_QOS_ARM_KHZ) ||
+		prcmu_qos_class != PRCMU_QOS_ARM_KHZ) )
+		update_target(prcmu_qos_class, sem);
 }
+
+void prcmu_qos_remove_requirement(int prcmu_qos_class, char *name)
+{
+	__prcmu_qos_remove_requirement(prcmu_qos_class, name, true);
+}
+
 EXPORT_SYMBOL_GPL(prcmu_qos_remove_requirement);
 
 /**
@@ -510,6 +703,7 @@ static int prcmu_qos_power_open(struct inode *inode, struct file *filp,
 
 	filp->private_data = (void *)prcmu_qos_class;
 	snprintf(name, USER_QOS_NAME_LEN, "file_%08x", (unsigned int)filp);
+
 	ret = prcmu_qos_add_requirement(prcmu_qos_class, name,
 					PRCMU_QOS_DEFAULT_VALUE);
 	if (ret >= 0)
@@ -529,9 +723,14 @@ static int prcmu_qos_ddr_power_open(struct inode *inode, struct file *filp)
 	return prcmu_qos_power_open(inode, filp, PRCMU_QOS_DDR_OPP);
 }
 
+static int prcmu_qos_vsafe_power_open(struct inode *inode, struct file *filp)
+{
+	return prcmu_qos_power_open(inode, filp, PRCMU_QOS_VSAFE_OPP);
+}
+
 static int prcmu_qos_arm_power_open(struct inode *inode, struct file *filp)
 {
-	return prcmu_qos_power_open(inode, filp, PRCMU_QOS_ARM_OPP);
+	return prcmu_qos_power_open(inode, filp, PRCMU_QOS_ARM_KHZ);
 }
 
 static int prcmu_qos_power_release(struct inode *inode, struct file *filp)
@@ -559,6 +758,7 @@ static ssize_t prcmu_qos_power_write(struct file *filp, const char __user *buf,
 	if (copy_from_user(&value, buf, sizeof(s32)))
 		return -EFAULT;
 	snprintf(name, USER_QOS_NAME_LEN, "file_%08x", (unsigned int)filp);
+
 	prcmu_qos_update_requirement(prcmu_qos_class, name, value);
 
 	return  sizeof(s32);
@@ -575,6 +775,13 @@ static const struct file_operations prcmu_qos_ape_power_fops = {
 static const struct file_operations prcmu_qos_ddr_power_fops = {
 	.write = prcmu_qos_power_write,
 	.open = prcmu_qos_ddr_power_open,
+	.release = prcmu_qos_power_release,
+};
+
+/* Functions to provide QoS to user space */
+static const struct file_operations prcmu_qos_vsafe_power_fops = {
+	.write = prcmu_qos_power_write,
+	.open = prcmu_qos_vsafe_power_open,
 	.release = prcmu_qos_power_release,
 };
 
@@ -596,9 +803,11 @@ static int register_prcmu_qos_misc(struct prcmu_qos_object *qos,
 
 static void qos_delayed_work_up_fn(struct work_struct *work)
 {
-	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "cpufreq", 100);
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "cpufreq", 100);
-	cpufreq_requirement_set = 100;
+	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "cpufreq",
+				     PRCMU_QOS_DDR_OPP_MAX);
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "cpufreq",
+				     PRCMU_QOS_APE_OPP_MAX);
+	cpufreq_requirement_set = PRCMU_QOS_MAX_VALUE;
 }
 
 static void qos_delayed_work_down_fn(struct work_struct *work)
@@ -630,7 +839,7 @@ static int qos_delayed_cpufreq_notifier(struct notifier_block *nb,
 
 	/* Which DDR OPP are we aiming for? */
 	if (freq->new > ARM_THRESHOLD_FREQ)
-		new_ddr_target = 100;
+		new_ddr_target = PRCMU_QOS_DDR_OPP_MAX;
 	else
 		new_ddr_target = PRCMU_QOS_DEFAULT_VALUE;
 
@@ -667,15 +876,42 @@ static int qos_delayed_cpufreq_notifier(struct notifier_block *nb,
 	return 0;
 }
 
+static int __init prcmu_qos_power_preinit(void)
+{
+	/* 25% DDR OPP is not supported on u5500 */
+	if (cpu_is_u5500())
+		ddr_opp_qos.default_value = 50;
+	return 0;
+
+}
+arch_initcall(prcmu_qos_power_preinit);
+
 static int __init prcmu_qos_power_init(void)
 {
 	int ret;
+	struct cpufreq_frequency_table *table;
+	unsigned int min_freq = UINT_MAX;
+	unsigned int max_freq = 0;
+	int i;
 
-	/* 25% DDR OPP is not supported on u5500 */
-	if (cpu_is_u5500()) {
-		ddr_opp_qos.default_value = 50;
-		atomic_set(&ddr_opp_qos.target_value, 50);
+	if (cpu_is_u9540())
+		update_target_max_recur = 2;
+
+	table = cpufreq_frequency_get_table(0);
+
+	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+		if (min_freq > table[i].frequency)
+			min_freq = table[i].frequency;
+		if (max_freq < table[i].frequency)
+			max_freq = table[i].frequency;
 	}
+
+	arm_khz_qos.max_value = max_freq;
+	arm_khz_qos.default_value = min_freq;
+	/* CPUs start at max */
+	atomic_set(&arm_khz_qos.target_value, arm_khz_qos.max_value);
+
+	prcmu_qos_cpufreq_init_done = true;
 
 	ret = register_prcmu_qos_misc(&ape_opp_qos, &prcmu_qos_ape_power_fops);
 	if (ret < 0) {
@@ -686,26 +922,53 @@ static int __init prcmu_qos_power_init(void)
 	ret = register_prcmu_qos_misc(&ddr_opp_qos, &prcmu_qos_ddr_power_fops);
 	if (ret < 0) {
 		pr_err("prcmu ddr qos: setup failed\n");
-		return ret;
+		goto ddr_opp_qos_error;
 	}
 
-	ret = register_prcmu_qos_misc(&arm_opp_qos, &prcmu_qos_arm_power_fops);
+	ret = register_prcmu_qos_misc(&arm_khz_qos, &prcmu_qos_arm_power_fops);
 	if (ret < 0) {
 		pr_err("prcmu arm qos: setup failed\n");
-		return ret;
+		goto arm_khz_qos_error;
+	}
+
+	if (cpu_is_u9540()) {
+		ret = register_prcmu_qos_misc(&vsafe_opp_qos,
+				&prcmu_qos_vsafe_power_fops);
+		if (ret < 0) {
+			pr_err("prcmu vsafe qos: setup failed\n");
+			goto vsafe_opp_qos_error;
+		}
 	}
 
 	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "cpufreq",
-				  PRCMU_QOS_DEFAULT_VALUE);
+			PRCMU_QOS_DEFAULT_VALUE);
 	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "cpufreq",
-				  PRCMU_QOS_DEFAULT_VALUE);
+			PRCMU_QOS_DEFAULT_VALUE);
 	cpufreq_requirement_set = PRCMU_QOS_DEFAULT_VALUE;
 	cpufreq_requirement_queued = PRCMU_QOS_DEFAULT_VALUE;
-
 	cpufreq_register_notifier(&qos_delayed_cpufreq_notifier_block,
-				  CPUFREQ_TRANSITION_NOTIFIER);
+			CPUFREQ_TRANSITION_NOTIFIER);
+	if (cpu_is_u9540()) {
+		prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "cpufreq",
+				PRCMU_QOS_DEFAULT_VALUE);
+		prcmu_qos_add_requirement(PRCMU_QOS_VSAFE_OPP, "cross_opp_ddr",
+				PRCMU_QOS_DEFAULT_VALUE);
+		prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "cross_opp_ddr",
+				PRCMU_QOS_DEFAULT_VALUE);
+		prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "cross_opp_ape",
+				PRCMU_QOS_DEFAULT_VALUE);
+		prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "cross_opp_arm",
+				PRCMU_QOS_DEFAULT_VALUE);
+	}
 
 	return ret;
-}
 
+vsafe_opp_qos_error: 
+	misc_deregister(&arm_khz_qos.prcmu_qos_power_miscdev); 
+arm_khz_qos_error: 
+	misc_deregister(&ddr_opp_qos.prcmu_qos_power_miscdev); 
+ddr_opp_qos_error: 
+	misc_deregister(&ape_opp_qos.prcmu_qos_power_miscdev); 
+	return ret;
+}
 late_initcall(prcmu_qos_power_init);

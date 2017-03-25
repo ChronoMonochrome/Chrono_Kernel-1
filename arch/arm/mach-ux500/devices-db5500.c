@@ -17,11 +17,10 @@
 #include <mach/hardware.h>
 #include <mach/devices.h>
 
-#ifdef CONFIG_FB_MCDE
 #include <video/mcde.h>
-#endif
+#include <video/nova_dsilink.h>
 #include <mach/db5500-regs.h>
-
+#include <linux/cpufreq.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <mach/pm.h>
 
@@ -161,7 +160,36 @@ struct platform_device u5500_pwm3_device = {
 	.num_resources = ARRAY_SIZE(u5500_pwm3_resource),
 };
 
-#ifdef CONFIG_FB_MCDE
+static struct resource u5500_dsilink_resources[] = {
+	[0] = {
+		.name  = DSI_IO_AREA,
+		.start = U5500_DSI_LINK1_BASE,
+		.end   = U5500_DSI_LINK1_BASE + U5500_DSI_LINK_SIZE - 1,
+		.flags = IORESOURCE_MEM,
+	},
+	[1] = {
+		.name  = DSI_IO_AREA,
+		.start = U5500_DSI_LINK2_BASE,
+		.end   = U5500_DSI_LINK2_BASE + U5500_DSI_LINK_SIZE - 1,
+		.flags = IORESOURCE_MEM,
+	},
+};
+
+struct platform_device u5500_dsilink_device[] = {
+	[0] = {
+		.name = "dsilink",
+		.id = 0,
+		.num_resources = 1,
+		.resource = &u5500_dsilink_resources[0],
+	},
+	[1] = {
+		.name = "dsilink",
+		.id = 1,
+		.num_resources = 1,
+		.resource = &u5500_dsilink_resources[1],
+	},
+};
+
 static struct resource mcde_resources[] = {
 	[0] = {
 		.name  = MCDE_IO_AREA,
@@ -222,7 +250,7 @@ static struct mcde_platform_data mcde_pdata = {
 	.rotbufsize = 0xF000,
 };
 
-struct platform_device u5500_mcde_device = {
+struct platform_device ux500_mcde_device = {
 	.name = "mcde",
 	.id = -1,
 	.dev = {
@@ -231,9 +259,8 @@ struct platform_device u5500_mcde_device = {
 	.num_resources = ARRAY_SIZE(mcde_resources),
 	.resource = mcde_resources,
 };
-#endif
 
-struct platform_device u5500_b2r2_blt_device = {
+struct platform_device ux500_b2r2_blt_device = {
 	.name	= "b2r2_blt",
 	.id	= 0,
 	.dev	= {
@@ -262,7 +289,7 @@ static struct resource b2r2_resources[] = {
 	},
 };
 
-struct platform_device u5500_b2r2_device = {
+struct platform_device ux500_b2r2_device = {
 	.name	= "b2r2",
 	.id	= 0,
 	.dev	= {
@@ -274,28 +301,29 @@ struct platform_device u5500_b2r2_device = {
 	.resource	= b2r2_resources,
 };
 
-static struct resource u5500_thsens_resources[] = {
+static struct cpufreq_frequency_table db5500_freq_table[] = {
 	[0] = {
-		.name	= "IRQ_HOTMON_LOW",
-		.start  = IRQ_DB5500_PRCMU_TEMP_SENSOR_LOW,
-		.end    = IRQ_DB5500_PRCMU_TEMP_SENSOR_LOW,
-		.flags  = IORESOURCE_IRQ,
+		.index = 0,
+		.frequency = 200000,
 	},
 	[1] = {
-		.name	= "IRQ_HOTMON_HIGH",
-		.start  = IRQ_DB5500_PRCMU_TEMP_SENSOR_HIGH,
-		.end    = IRQ_DB5500_PRCMU_TEMP_SENSOR_HIGH,
-		.flags  = IORESOURCE_IRQ,
+		.index = 1,
+		.frequency = 396500,
+	},
+	[2] = {
+		.index = 2,
+		.frequency = 793000,
+	},
+	[3] = {
+		.index = 3,
+		.frequency = CPUFREQ_TABLE_END,
 	},
 };
 
-struct platform_device u5500_thsens_device = {
-	.name           = "db5500_temp",
-	.resource       = u5500_thsens_resources,
-	.num_resources  = ARRAY_SIZE(u5500_thsens_resources),
+struct platform_device db5500_prcmu_device = {
+	.name			= "db8500-prcmu",
+	.dev = {
+		.platform_data = db5500_freq_table,
+	},
 };
 
-struct platform_device u5500_wdt_device = {
-	.name		= "ux500_wdt",
-	.id		= -1,
-};

@@ -16,11 +16,10 @@
 #include <linux/uaccess.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
+#include <linux/cpufreq.h>
 #include <linux/mfd/dbx500-prcmu.h>
 
-#include <mach/hardware.h>
-
-#define MAX_STATES 5
+#define MAX_STATES 6
 #define MAX_NAMELEN 16
 #define U8500_PRCMU_TCDM_SIZE 4096
 
@@ -34,12 +33,12 @@ struct state_history {
 	bool reqs[MAX_STATES];
 	ktime_t time[MAX_STATES];
 	int state_names[MAX_STATES];
-	char prefix[MAX_NAMELEN];
+	char name[MAX_NAMELEN];
 	spinlock_t lock;
 };
 
 static struct state_history ape_sh = {
-	.prefix = "APE",
+	.name = "APE OPP",
 	.req = PRCMU_QOS_APE_OPP,
 	.opps = {APE_50_OPP, APE_100_OPP},
 	.state_names = {50, 100},
@@ -47,18 +46,25 @@ static struct state_history ape_sh = {
 };
 
 static struct state_history ddr_sh = {
-	.prefix = "DDR",
+	.name = "DDR OPP",
 	.req = PRCMU_QOS_DDR_OPP,
 	.opps = {DDR_25_OPP, DDR_50_OPP, DDR_100_OPP},
 	.state_names = {25, 50, 100},
 	.max_states = 3,
 };
 
+static struct state_history vsafe_sh = {
+	.name = "VSAFE",
+	.req = PRCMU_QOS_VSAFE_OPP,
+	.opps = {VSAFE_50_OPP, VSAFE_100_OPP},
+	.state_names = {50, 100},
+	.max_states = 2,
+};
+
 static struct state_history arm_sh = {
-	.prefix = "ARM",
-	.req = PRCMU_QOS_ARM_OPP,
+	.name = "ARM KHZ",
+	.req = PRCMU_QOS_ARM_KHZ,
 	.opps = {ARM_EXTCLK, ARM_50_OPP, ARM_100_OPP, ARM_MAX_OPP},
-	.state_names = {25, 50, 100, 125},
 	.max_states = 4,
 };
 
@@ -214,9 +220,19 @@ void prcmu_debug_ddr_opp_log(u8 opp)
 	log_set(&ddr_sh, opp);
 }
 
-void prcmu_debug_arm_opp_log(u8 opp)
+
+void prcmu_debug_vsafe_opp_log(u8 opp)
 {
-	log_set(&arm_sh, opp);
+	log_set(&vsafe_sh, opp);
+}
+
+/*
+ * value will be a u8 enum if logging U8500 ARM OPPs
+ * value will be a u32 freq (kHz) if logging U9540 ARM OPPs
+ */
+void prcmu_debug_arm_opp_log(u32 value)
+{
+	log_set(&arm_sh, value);
 }
 
 static void log_reset(struct state_history *sh)
@@ -250,6 +266,14 @@ static ssize_t ddr_stats_write(struct file *file,
 			   size_t count, loff_t *ppos)
 {
 	log_reset(&ddr_sh);
+	return count;
+}
+
+static ssize_t vsafe_stats_write(struct file *file,
+			   const char __user *user_buf,
+			   size_t count, loff_t *ppos)
+{
+	log_reset(&vsafe_sh);
 	return count;
 }
 
@@ -290,8 +314,8 @@ static int log_print(struct seq_file *s, struct state_history *sh)
 		perc = 100 * t_ms;
 		do_div(perc, total_ms);
 
-		seq_printf(s, "%s OPP %d: # %u in %lld ms %d%%\n",
-			   sh->prefix, sh->state_names[i],
+		seq_printf(s, "%s %d: # %u in %lld ms %d%%\n",
+			   sh->name, sh->state_names[i],
 			   sh->counter[i] + (int)(sh->state == i),
 			   t_ms, (u32)perc);
 
@@ -312,6 +336,12 @@ static int ddr_stats_print(struct seq_file *s, void *p)
 	return 0;
 }
 
+static int vsafe_stats_print(struct seq_file *s, void *p)
+{
+	log_print(s, &vsafe_sh);
+	return 0;
+}
+
 static int arm_stats_print(struct seq_file *s, void *p)
 {
 	log_print(s, &arm_sh);
@@ -321,7 +351,6 @@ static int arm_stats_print(struct seq_file *s, void *p)
 static int opp_read(struct seq_file *s, void *p)
 {
 	int opp;
-
 	struct state_history *sh = (struct state_history *)s->private;
 
 	switch (sh->req) {
@@ -340,9 +369,16 @@ static int opp_read(struct seq_file *s, void *p)
 			   (opp == APE_50_OPP) ? "50%" :
 			   "unknown", opp);
 		break;
-	case PRCMU_QOS_ARM_OPP:
-		opp = prcmu_get_arm_opp();
+	case PRCMU_QOS_VSAFE_OPP:
+		opp = prcmu_get_vsafe_opp();
 		seq_printf(s, "%s (%d)\n",
+			   (opp == VSAFE_100_OPP) ? "100%" :
+			   (opp == VSAFE_50_OPP) ? "50%" :
+			   "unknown", opp);
+		break;
+	case PRCMU_QOS_ARM_KHZ:
+		opp = prcmu_get_arm_opp();
+		seq_printf(s, "%d kHz (OPP %s %d)\n", cpufreq_get(0),
 			   (opp == ARM_MAX_OPP) ? "max" :
 			   (opp == ARM_MAX_FREQ100OPP) ? "max-freq100" :
 			   (opp == ARM_100_OPP) ? "100%" :
@@ -373,7 +409,8 @@ static ssize_t opp_write(struct file *file,
 
 	prcmu_qos_force_opp(sh->req, i);
 
-	pr_info("prcmu debug: forced OPP for %s to %d\n", sh->prefix, (int)i);
+	pr_info("prcmu debug: forced %s to %d\n",
+		sh->name, (int)i);
 
 	return count;
 }
@@ -772,6 +809,21 @@ static int interrupt_read(struct seq_file *s, void *p)
 	return 0;
 }
 
+/* FIXME: generic prcmu driver interface for fw version is missing */
+#include <linux/mfd/db8500-prcmu.h>
+static int version_read(struct seq_file *s, void *p)
+{
+	/* FIXME: generic prcmu driver interface for fw version is missing */
+	struct prcmu_fw_version *fw_version = prcmu_get_fw_version();
+
+	seq_printf(s, "PRCMU firmware: %s, version %d.%d.%d\n",
+		   fw_version->project_name,
+		   fw_version->api_version,
+		   fw_version->func_version,
+		   fw_version->errata);
+	return 0;
+}
+
 static int opp_open_file(struct inode *inode, struct file *file)
 {
 	return single_open(file, opp_read, inode->i_private);
@@ -785,6 +837,11 @@ static int ape_stats_open_file(struct inode *inode, struct file *file)
 static int ddr_stats_open_file(struct inode *inode, struct file *file)
 {
 	return single_open(file, ddr_stats_print, inode->i_private);
+}
+
+static int vsafe_stats_open_file(struct inode *inode, struct file *file)
+{
+	return single_open(file, vsafe_stats_print, inode->i_private);
 }
 
 static int arm_stats_open_file(struct inode *inode, struct file *file)
@@ -850,6 +907,11 @@ static int interrupt_open_file(struct inode *inode, struct file *file)
 	return single_open(file, interrupt_read, inode->i_private);
 }
 
+static int version_open_file(struct inode *inode, struct file *file)
+{
+	return single_open(file, version_read, inode->i_private);
+}
+
 static const struct file_operations opp_fops = {
 	.open = opp_open_file,
 	.write = opp_write,
@@ -871,6 +933,15 @@ static const struct file_operations ape_stats_fops = {
 static const struct file_operations ddr_stats_fops = {
 	.open = ddr_stats_open_file,
 	.write = ddr_stats_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+	.owner = THIS_MODULE,
+};
+
+static const struct file_operations vsafe_stats_fops = {
+	.open = vsafe_stats_open_file,
+	.write = vsafe_stats_write,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
@@ -936,6 +1007,14 @@ static const struct file_operations interrupts_fops = {
 	.owner = THIS_MODULE,
 };
 
+static const struct file_operations version_fops = {
+	.open = version_open_file,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+	.owner = THIS_MODULE,
+};
+
 static int setup_debugfs(void)
 {
 	struct dentry *dir;
@@ -945,17 +1024,24 @@ static int setup_debugfs(void)
 	if (IS_ERR_OR_NULL(dir))
 		goto fail;
 
-	file = debugfs_create_file("ape_stats", (S_IRUGO | S_IWUGO),
+	file = debugfs_create_file("ape_stats", (S_IRUGO | S_IWUSR | S_IWGRP),
 				   dir, NULL, &ape_stats_fops);
 	if (IS_ERR_OR_NULL(file))
 		goto fail;
 
-	file = debugfs_create_file("ddr_stats", (S_IRUGO | S_IWUGO),
+	file = debugfs_create_file("ddr_stats", (S_IRUGO | S_IWUSR | S_IWGRP),
 				   dir, NULL, &ddr_stats_fops);
 	if (IS_ERR_OR_NULL(file))
 		goto fail;
 
-	file = debugfs_create_file("arm_stats", (S_IRUGO | S_IWUGO),
+	if (cpu_is_u9540()) {
+		file = debugfs_create_file("vsafe_stats", (S_IRUGO | S_IWUSR | S_IWGRP),
+				dir, NULL, &vsafe_stats_fops);
+		if (IS_ERR_OR_NULL(file))
+			goto fail;
+	}
+
+	file = debugfs_create_file("arm_stats", (S_IRUGO | S_IWUSR | S_IWGRP),
 				   dir, NULL, &arm_stats_fops);
 	if (IS_ERR_OR_NULL(file))
 		goto fail;
@@ -972,11 +1058,19 @@ static int setup_debugfs(void)
 	if (IS_ERR_OR_NULL(file))
 		goto fail;
 
-	file = debugfs_create_file("arm_opp", (S_IRUGO),
+	file = debugfs_create_file("arm_khz", (S_IRUGO),
 				   dir, (void *)&arm_sh,
 				   &opp_fops);
 	if (IS_ERR_OR_NULL(file))
 		goto fail;
+
+	if (cpu_is_u9540()) {
+		file = debugfs_create_file("vsafe_opp", (S_IRUGO),
+				dir, (void *)&vsafe_sh,
+				&opp_fops);
+		if (IS_ERR_OR_NULL(file))
+			goto fail;
+	}
 
 	file = debugfs_create_file("opp_cpufreq_delay", (S_IRUGO),
 				   dir, NULL, &cpufreq_delay_fops);
@@ -1012,6 +1106,12 @@ static int setup_debugfs(void)
 	if (IS_ERR_OR_NULL(file))
 		goto fail;
 
+	file = debugfs_create_file("version",
+				   (S_IRUGO),
+				   dir, NULL, &version_fops);
+	if (IS_ERR_OR_NULL(file))
+		goto fail;
+
 	return 0;
 fail:
 	if (!IS_ERR_OR_NULL(dir))
@@ -1025,9 +1125,11 @@ static __init int prcmu_debug_init(void)
 {
 	spin_lock_init(&ape_sh.lock);
 	spin_lock_init(&ddr_sh.lock);
+	spin_lock_init(&vsafe_sh.lock);
 	spin_lock_init(&arm_sh.lock);
 	ape_sh.start = ktime_get();
 	ddr_sh.start = ktime_get();
+	vsafe_sh.start = ktime_get();
 	arm_sh.start = ktime_get();
 	return 0;
 }
@@ -1035,7 +1137,17 @@ arch_initcall(prcmu_debug_init);
 
 static __init int prcmu_debug_debugfs_init(void)
 {
-	setup_debugfs();
-	return 0;
+	struct cpufreq_frequency_table *table;
+	int i, ret;
+
+	table = cpufreq_frequency_get_table(0);
+
+	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++)
+		arm_sh.state_names[i] = table[i].frequency;
+
+	arm_sh.max_states = i;
+
+	ret = setup_debugfs();
+	return ret;
 }
 late_initcall(prcmu_debug_debugfs_init);
