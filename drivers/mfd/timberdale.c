@@ -287,8 +287,12 @@ static __devinitdata struct i2c_board_info timberdale_saa7706_i2c_board_info = {
 static __devinitdata struct timb_radio_platform_data
 	timberdale_radio_platform_data = {
 	.i2c_adapter = 0,
-	.tuner = &timberdale_tef6868_i2c_board_info,
-	.dsp = &timberdale_saa7706_i2c_board_info
+	.tuner = {
+		.info = &timberdale_tef6868_i2c_board_info
+	},
+	.dsp = {
+		.info = &timberdale_saa7706_i2c_board_info
+	}
 };
 
 static const __devinitconst struct resource timberdale_video_resources[] = {
@@ -697,7 +701,7 @@ static int __devinit timb_probe(struct pci_dev *dev,
 		dev_err(&dev->dev, "The driver supports an older "
 			"version of the FPGA, please update the driver to "
 			"support %d.%d\n", priv->fw.major, priv->fw.minor);
-		goto err_config;
+		goto err_ioremap;
 	}
 	if (priv->fw.major < TIMB_SUPPORTED_MAJOR ||
 		priv->fw.minor < TIMB_REQUIRED_MINOR) {
@@ -705,13 +709,13 @@ static int __devinit timb_probe(struct pci_dev *dev,
 			"please upgrade the FPGA to at least: %d.%d\n",
 			priv->fw.major, priv->fw.minor,
 			TIMB_SUPPORTED_MAJOR, TIMB_REQUIRED_MINOR);
-		goto err_config;
+		goto err_ioremap;
 	}
 
 	msix_entries = kzalloc(TIMBERDALE_NR_IRQS * sizeof(*msix_entries),
 		GFP_KERNEL);
 	if (!msix_entries)
-		goto err_config;
+		goto err_ioremap;
 
 	for (i = 0; i < TIMBERDALE_NR_IRQS; i++)
 		msix_entries[i].entry = i;
@@ -825,8 +829,6 @@ err_mfd:
 err_create_file:
 	pci_disable_msix(dev);
 err_msix:
-	kfree(msix_entries);
-err_config:
 	iounmap(priv->ctl_membase);
 err_ioremap:
 	release_mem_region(priv->ctl_mapbase, CHIPCTLSIZE);
@@ -835,6 +837,7 @@ err_request:
 err_start:
 	pci_disable_device(dev);
 err_enable:
+	kfree(msix_entries);
 	kfree(priv);
 	pci_set_drvdata(dev, NULL);
 	return -ENODEV;
@@ -857,7 +860,7 @@ static void __devexit timb_remove(struct pci_dev *dev)
 	kfree(priv);
 }
 
-static DEFINE_PCI_DEVICE_TABLE(timberdale_pci_tbl) = {
+static struct pci_device_id timberdale_pci_tbl[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_TIMB, PCI_DEVICE_ID_TIMB) },
 	{ 0 }
 };

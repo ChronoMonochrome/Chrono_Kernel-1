@@ -8,7 +8,6 @@
  */
 
 #include <linux/gpio.h>
-#include <linux/export.h>
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
@@ -772,7 +771,7 @@ static irqreturn_t stmpe_irq(int irq, void *data)
 	ret = stmpe_block_read(stmpe, israddr, num, isr);
 	if (ret < 0)
 		return IRQ_NONE;
-
+back:
 	for (i = 0; i < num; i++) {
 		int bank = num - i - 1;
 		u8 status = isr[i];
@@ -792,6 +791,22 @@ static irqreturn_t stmpe_irq(int irq, void *data)
 		}
 
 		stmpe_reg_write(stmpe, israddr + i, clear);
+	}
+
+	/*
+	   It may happen that on the first status read interrupt
+	   sources may not showup, so read one more time.
+	 */
+	ret = stmpe_block_read(stmpe, israddr, num, isr);
+	if (ret >= 0) {
+		for (i = 0; i < num; i++) {
+			int bank = num - i - 1;
+			u8 status = isr[i];
+
+			status &= stmpe->ier[bank];
+			if (status)
+				goto back;
+		}
 	}
 
 	return IRQ_HANDLED;
@@ -993,7 +1008,7 @@ static int __devinit stmpe_devices_init(struct stmpe *stmpe)
 }
 
 /* Called from client specific probe routines */
-int __devinit stmpe_probe(struct stmpe_client_info *ci, int partnum)
+int stmpe_probe(struct stmpe_client_info *ci, int partnum)
 {
 	struct stmpe_platform_data *pdata = dev_get_platdata(ci->dev);
 	struct stmpe *stmpe;

@@ -10,6 +10,7 @@
  * U8500 PRCM Unit interface driver
  *
  */
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/delay.h>
@@ -18,6 +19,8 @@
 #include <linux/spinlock.h>
 #include <linux/io.h>
 #include <linux/slab.h>
+#include <linux/cpufreq.h>
+#include <linux/clk.h>
 #include <linux/mutex.h>
 #include <linux/completion.h>
 #include <linux/irq.h>
@@ -28,14 +31,32 @@
 #include <linux/uaccess.h>
 #include <linux/mfd/core.h>
 #include <linux/mfd/dbx500-prcmu.h>
+#include <linux/mfd/ux500_wdt.h>
+#include <linux/mfd/dbx500_temp.h>
 #include <linux/regulator/db8500-prcmu.h>
 #include <linux/regulator/machine.h>
-#include <asm/hardware/gic.h>
+#include <linux/mfd/abx500.h>
+#include <linux/wakelock.h>
 #include <mach/hardware.h>
 #include <mach/irqs.h>
 #include <mach/db8500-regs.h>
-#include <mach/id.h>
+#include <mach/hardware.h>
+#include <mach/prcmu-debug.h>
 #include "dbx500-prcmu-regs.h"
+
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+#define PRCMU_I2C_TIMEOUT	0x0F000000
+#endif //CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+
+#define CREATE_TRACE_POINTS
+#include "dbx500-prcmu-trace.h"
+
+#include <linux/ftrace_event.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
+void log_this(u8 pc, char* a, u32 extra1, char* b, u32 extra2);
+
+static char *fw_project_name(u8 project);
 
 /* Offset for the firmware version within the TCPM */
 #define PRCMU_FW_VERSION_OFFSET 0xA4
@@ -69,6 +90,8 @@
 #define PRCM_XP70_CUR_PWR_STATE 0xFFC      /* 4 BYTES */
 
 #define PRCM_SW_RST_REASON 0xFF8 /* 2 bytes */
+
+#define PRCM_TCDM_VOICE_CALL_FLAG 0xDD4 /* 4 bytes */
 
 #define _PRCM_MBOX_HEADER		0xFE8 /* 16 bytes */
 #define PRCM_MBOX_HEADER_REQ_MB0	(_PRCM_MBOX_HEADER + 0x0)
@@ -178,6 +201,13 @@
 #define PRCM_REQ_MB3_SIDETONE_FIR_COEFF	(PRCM_REQ_MB3 + 0x6C)
 #define PRCM_REQ_MB3_SYSCLK_MGT		(PRCM_REQ_MB3 + 0x16C)
 
+/* Mailbox 3 ACKs */
+#define PRCM_ACK_MB3_TRACE_MSG	(PRCM_ACK_MB3 + 0x00)
+#define PRCM_ACK_MB3_LOG_REQ	(PRCM_ACK_MB3 + 0x01)
+#define MB3_LOG_REQ_PRCMU_REGS	(1 << 0)
+#define MB3_LOG_REQ_TCDM	(1 << 1)
+#define MB3_LOG_REQ_AB_REGS	(1 << 2)
+
 /* Mailbox 4 headers */
 #define MB4H_DDR_INIT	0x0
 #define MB4H_MEM_ST	0x1
@@ -214,10 +244,8 @@
 #define PRCM_REQ_MB5_I2C_HW_BITS	(PRCM_REQ_MB5 + 0x1)
 #define PRCM_REQ_MB5_I2C_REG		(PRCM_REQ_MB5 + 0x2)
 #define PRCM_REQ_MB5_I2C_VAL		(PRCM_REQ_MB5 + 0x3)
-#define PRCMU_I2C_WRITE(slave) \
-	(((slave) << 1) | (cpu_is_u8500v2() ? BIT(6) : 0))
-#define PRCMU_I2C_READ(slave) \
-	(((slave) << 1) | BIT(0) | (cpu_is_u8500v2() ? BIT(6) : 0))
+#define PRCMU_I2C_WRITE(slave) (((slave) << 1) | BIT(6))
+#define PRCMU_I2C_READ(slave) (((slave) << 1) | BIT(0) | BIT(6))
 #define PRCMU_I2C_STOP_EN		BIT(3)
 
 /* Mailbox 5 ACKs */
@@ -388,6 +416,9 @@ static struct {
 	spinlock_t lock;
 	struct mutex sysclk_lock;
 	struct completion sysclk_work;
+	spinlock_t fw_log_lock;
+	struct work_struct fw_log_work;
+	u8 fw_log_req;
 } mb3_transfer;
 
 /*
@@ -417,12 +448,22 @@ static struct {
 
 static atomic_t ac_wake_req_state = ATOMIC_INIT(0);
 
+/* Functions definition */
+static void compute_armss_rate(void);
+
 /* Spinlocks */
 static DEFINE_SPINLOCK(prcmu_lock);
 static DEFINE_SPINLOCK(clkout_lock);
 
 /* Global var to runtime determine TCDM base for v2 or v1 */
 static __iomem void *tcdm_base;
+
+/*
+ * Copies of the startup values of the reset status register and the SW reset
+ * code.
+ */
+static u32 reset_status_copy;
+static u16 reset_code_copy;
 
 struct clk_mgt {
 	void __iomem *reg;
@@ -516,6 +557,7 @@ static struct dsiescclk dsiescclk[3] = {
 	}
 };
 
+
 /*
 * Used by MCDE to setup all necessary PRCMU registers
 */
@@ -534,7 +576,8 @@ static struct dsiescclk dsiescclk[3] = {
 /* DPI 50000000 Hz */
 #define PRCMU_DPI_CLOCK_SETTING		((1 << PRCMU_CLK_PLL_SW_SHIFT) | \
 					  (16 << PRCMU_CLK_PLL_DIV_SHIFT))
-#define PRCMU_DSI_LP_CLOCK_SETTING	0x00000E00
+#define PRCMU_DSI_LP_CLOCK_SETTING_ULPPLL_ON	0x00000E00
+#define PRCMU_DSI_LP_CLOCK_SETTING_ULPPLL_OFF	0x00000A00
 
 /* D=101, N=1, R=4, SELDIV2=0 */
 #define PRCMU_PLLDSI_FREQ_SETTING	0x00040165
@@ -549,6 +592,9 @@ static struct dsiescclk dsiescclk[3] = {
 #define PRCMU_DSI_RESET_SW		0x00000007
 
 #define PRCMU_PLLDSI_LOCKP_LOCKED	0x3
+
+struct wake_lock prcmu_uart_wake_lock;
+extern void ux500_ci_dbg_console(void);
 
 int db8500_prcmu_enable_dsipll(void)
 {
@@ -600,7 +646,12 @@ int db8500_prcmu_set_display_clocks(void)
 		cpu_relax();
 
 	writel(PRCMU_DSI_CLOCK_SETTING, PRCM_HDMICLK_MGT);
-	writel(PRCMU_DSI_LP_CLOCK_SETTING, PRCM_TVCLK_MGT);
+
+	if (prcmu_is_ulppll_disabled())
+		writel(PRCMU_DSI_LP_CLOCK_SETTING_ULPPLL_OFF, PRCM_TVCLK_MGT);
+	else
+		writel(PRCMU_DSI_LP_CLOCK_SETTING_ULPPLL_ON, PRCM_TVCLK_MGT);
+
 	writel(PRCMU_DPI_CLOCK_SETTING, PRCM_LCDCLK_MGT);
 
 	/* Release the HW semaphore. */
@@ -610,13 +661,19 @@ int db8500_prcmu_set_display_clocks(void)
 
 	return 0;
 }
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
+static u32 db8500_prcmu_tcdm_read(unsigned int reg)
+{
+	return readl(tcdm_base + reg);
+}
+#endif
 
-u32 db8500_prcmu_read(unsigned int reg)
+static u32 db8500_prcmu_read(unsigned int reg)
 {
 	return readl(_PRCMU_BASE + reg);
 }
 
-void db8500_prcmu_write(unsigned int reg, u32 value)
+static void db8500_prcmu_write(unsigned int reg, u32 value)
 {
 	unsigned long flags;
 
@@ -625,7 +682,7 @@ void db8500_prcmu_write(unsigned int reg, u32 value)
 	spin_unlock_irqrestore(&prcmu_lock, flags);
 }
 
-void db8500_prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
+static void db8500_prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
 {
 	u32 val;
 	unsigned long flags;
@@ -637,15 +694,106 @@ void db8500_prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
 	spin_unlock_irqrestore(&prcmu_lock, flags);
 }
 
-struct prcmu_fw_version *prcmu_get_fw_version(void)
+/*
+ * Dump AB8500 registers, PRCMU registers and PRCMU data memory
+ * on critical errors.
+ */
+static void db8500_prcmu_debug_dump(bool dump_abb)
 {
-	return fw_info.valid ? &fw_info.version : NULL;
+	dump_stack();
+
+	/* Dump prcmu registers and data memory */
+	prcmu_debug_dump_regs();
+	prcmu_debug_dump_data_mem();
+
+	/*
+	 * Dump AB8500 registers last since i2c transfer will
+	 * cause changes in the prcmu registers and data.
+	 */
+	if (dump_abb)
+		abx500_dump_all_banks();
 }
 
-bool prcmu_has_arm_maxopp(void)
+static void db8500_init_prcmu_fw_version(void)
+{
+	void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
+
+	if (tcpm_base != NULL) {
+		u32 version;
+		version = readl(tcpm_base + PRCMU_FW_VERSION_OFFSET);
+		fw_info.version.project = version & 0xFF;
+		fw_info.version.api_version = (version >> 8) & 0xFF;
+		fw_info.version.func_version = (version >> 16) & 0xFF;
+		fw_info.version.errata = (version >> 24) & 0xFF;
+
+		strncpy(fw_info.version.project_name,
+			fw_project_name(fw_info.version.project),
+			PRCMU_FW_PROJECT_NAME_LEN);
+
+		fw_info.valid = true;
+
+		iounmap(tcpm_base);
+	}
+}
+
+static struct prcmu_fw_version *db8500_prcmu_get_fw_version(void)
+{
+	struct prcmu_fw_version *ver;
+
+	if (fw_info.valid)
+		ver = &fw_info.version;
+	else
+		db8500_init_prcmu_fw_version();
+
+	return fw_info.valid ? ver : NULL;
+}
+
+/*
+ * it's really redundant job to see this value for ApSleep
+ * however, there's a suspicious problem(ER416165) which seems to be related to ApSleep.
+ * The same suspicion goes for ER472557.
+ * @dedicated usage only on cpuidle
+ */
+bool prcmu_is_mcdeclk_on(void)
+{
+	volatile unsigned int reg_value;
+	reg_value = readl(PRCM_MCDECLK_MGT);
+	return (reg_value & 0x100 /* MCDECLKEN */);
+}
+EXPORT_SYMBOL(prcmu_is_mcdeclk_on);
+
+bool prcmu_is_mmcclk_on(void)
+{
+	volatile unsigned int reg_value;
+	reg_value = readl(PRCM_SDMMCCLK_MGT);
+	return (reg_value & 0x100 /* SDMMCCLKEN */);
+}
+EXPORT_SYMBOL(prcmu_is_mmcclk_on);
+
+bool prcmu_is_ulppll_disabled(void)
+{
+	struct prcmu_fw_version *ver;
+
+	ver = db8500_prcmu_get_fw_version();
+
+	if (ver)
+		return (ver->project == PRCMU_FW_PROJECT_U8420_SYSCLK);
+	else
+		return false;
+}
+
+/*  frequency available  */
+static struct cpufreq_frequency_table *freq_table;
+
+static bool db8500_prcmu_has_arm_maxopp(void)
 {
 	return (readb(tcdm_base + PRCM_AVS_VARM_MAX_OPP) &
 		PRCM_AVS_ISMODEENABLE_MASK) == PRCM_AVS_ISMODEENABLE_MASK;
+}
+
+static void db8500_prcmu_vc(bool enable)
+{
+	writel((enable ? 0xF : 0), (tcdm_base + PRCM_TCDM_VOICE_CALL_FLAG));
 }
 
 /**
@@ -696,7 +844,7 @@ enum ap_pwrst prcmu_get_xp70_current_state(void)
 }
 
 /**
- * prcmu_config_clkout - Configure one of the programmable clock outputs.
+ * db8500_prcmu_config_clkout - Configure one of the programmable clock outputs.
  * @clkout:	The CLKOUT number (0 or 1).
  * @source:	The clock to be used (one of the PRCMU_CLKSRC_*).
  * @div:	The divider to be applied.
@@ -705,7 +853,7 @@ enum ap_pwrst prcmu_get_xp70_current_state(void)
  * @div should be in the range [1,63] to request a configuration, or 0 to
  * inform that the configuration is no longer requested.
  */
-int prcmu_config_clkout(u8 clkout, u8 source, u8 div)
+static int db8500_prcmu_config_clkout(u8 clkout, u8 source, u8 div)
 {
 	static int requests[2];
 	int r = 0;
@@ -764,146 +912,48 @@ unlock_and_return:
 	return r;
 }
 
+static u8 fw_trans[] = {
+	0x00,/* PRCMU_AP_NO_CHANGE */
+	0x01,/* PRCMU_AP_SLEEP */
+	0x04,/*	PRCMU_AP_DEEP_SLEEP */
+	0x05,/*	PRCMU_AP_IDLE */
+	0x07,/*	PRCMU_AP_DEEP_IDLE*/
+};
+
 int db8500_prcmu_set_power_state(u8 state, bool keep_ulp_clk, bool keep_ap_pll)
 {
 	unsigned long flags;
 
-	BUG_ON((state < PRCMU_AP_SLEEP) || (PRCMU_AP_DEEP_IDLE < state));
-
+	BUG_ON((state == PRCMU_AP_NO_CHANGE) ||
+			(state >= ARRAY_SIZE(fw_trans)));
 	spin_lock_irqsave(&mb0_transfer.lock, flags);
 
 	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))
 		cpu_relax();
 
 	writeb(MB0H_POWER_STATE_TRANS, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB0));
-	writeb(state, (tcdm_base + PRCM_REQ_MB0_AP_POWER_STATE));
+	writeb(fw_trans[state],
+			(tcdm_base + PRCM_REQ_MB0_AP_POWER_STATE));
 	writeb((keep_ap_pll ? 1 : 0), (tcdm_base + PRCM_REQ_MB0_AP_PLL_STATE));
 	writeb((keep_ulp_clk ? 1 : 0),
 		(tcdm_base + PRCM_REQ_MB0_ULP_CLOCK_STATE));
 	writeb(0, (tcdm_base + PRCM_REQ_MB0_DO_NOT_WFI));
+	log_this(100, "state", state, NULL, 0);
 	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
 
 	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
 
+	trace_u8500_set_power_state(
+			fw_trans[state], keep_ulp_clk, keep_ap_pll);
 	return 0;
 }
 
-u8 db8500_prcmu_get_power_state_result(void)
+static u8 db8500_prcmu_get_power_state_result(void)
 {
-	return readb(tcdm_base + PRCM_ACK_MB0_AP_PWRSTTR_STATUS);
-}
-
-/* This function decouple the gic from the prcmu */
-int db8500_prcmu_gic_decouple(void)
-{
-	u32 val = readl(PRCM_A9_MASK_REQ);
-
-	/* Set bit 0 register value to 1 */
-	writel(val | PRCM_A9_MASK_REQ_PRCM_A9_MASK_REQ,
-	       PRCM_A9_MASK_REQ);
-
-	/* Make sure the register is updated */
-	readl(PRCM_A9_MASK_REQ);
-
-	/* Wait a few cycles for the gic mask completion */
-	udelay(1);
-
-	return 0;
-}
-
-/* This function recouple the gic with the prcmu */
-int db8500_prcmu_gic_recouple(void)
-{
-	u32 val = readl(PRCM_A9_MASK_REQ);
-
-	/* Set bit 0 register value to 0 */
-	writel(val & ~PRCM_A9_MASK_REQ_PRCM_A9_MASK_REQ, PRCM_A9_MASK_REQ);
-
-	return 0;
-}
-
-#define PRCMU_GIC_NUMBER_REGS 5
-
-/*
- * This function checks if there are pending irq on the gic. It only
- * makes sense if the gic has been decoupled before with the
- * db8500_prcmu_gic_decouple function. Disabling an interrupt only
- * disables the forwarding of the interrupt to any CPU interface. It
- * does not prevent the interrupt from changing state, for example
- * becoming pending, or active and pending if it is already
- * active. Hence, we have to check the interrupt is pending *and* is
- * active.
- */
-bool db8500_prcmu_gic_pending_irq(void)
-{
-	u32 pr; /* Pending register */
-	u32 er; /* Enable register */
-	void __iomem *dist_base = __io_address(U8500_GIC_DIST_BASE);
-	int i;
-
-        /* 5 registers. STI & PPI not skipped */
-	for (i = 0; i < PRCMU_GIC_NUMBER_REGS; i++) {
-
-		pr = readl_relaxed(dist_base + GIC_DIST_PENDING_SET + i * 4);
-		er = readl_relaxed(dist_base + GIC_DIST_ENABLE_SET + i * 4);
-
-		if (pr & er)
-			return true; /* There is a pending interrupt */
-	}
-
-	return false;
-}
-
-/*
- * This function checks if there are pending interrupt on the
- * prcmu which has been delegated to monitor the irqs with the
- * db8500_prcmu_copy_gic_settings function.
- */
-bool db8500_prcmu_pending_irq(void)
-{
-	u32 it, im;
-	int i;
-
-	for (i = 0; i < PRCMU_GIC_NUMBER_REGS - 1; i++) {
-		it = readl(PRCM_ARMITVAL31TO0 + i * 4);
-		im = readl(PRCM_ARMITMSK31TO0 + i * 4);
-		if (it & im)
-			return true; /* There is a pending interrupt */
-	}
-
-	return false;
-}
-
-/*
- * This function checks if the specified cpu is in in WFI. It's usage
- * makes sense only if the gic is decoupled with the db8500_prcmu_gic_decouple
- * function. Of course passing smp_processor_id() to this function will
- * always return false...
- */
-bool db8500_prcmu_is_cpu_in_wfi(int cpu)
-{
-	return readl(PRCM_ARM_WFI_STANDBY) & cpu ? PRCM_ARM_WFI_STANDBY_WFI1 :
-		     PRCM_ARM_WFI_STANDBY_WFI0;
-}
-
-/*
- * This function copies the gic SPI settings to the prcmu in order to
- * monitor them and abort/finish the retention/off sequence or state.
- */
-int db8500_prcmu_copy_gic_settings(void)
-{
-	u32 er; /* Enable register */
-	void __iomem *dist_base = __io_address(U8500_GIC_DIST_BASE);
-	int i;
-
-        /* We skip the STI and PPI */
-	for (i = 0; i < PRCMU_GIC_NUMBER_REGS - 1; i++) {
-		er = readl_relaxed(dist_base +
-				   GIC_DIST_ENABLE_SET + (i + 1) * 4);
-		writel(er, PRCM_ARMITMSK31TO0 + i * 4);
-	}
-
-	return 0;
+	u8 status;
+	status = readb(tcdm_base + PRCM_ACK_MB0_AP_PWRSTTR_STATUS);
+	trace_u8500_get_power_state_result(status);
+	return status;
 }
 
 /* This function should only be called while mb0_transfer.lock is held. */
@@ -933,13 +983,18 @@ static void config_wakeups(void)
 		writel(dbb_events, (tcdm_base + PRCM_REQ_MB0_WAKEUP_8500));
 		writel(abb_events, (tcdm_base + PRCM_REQ_MB0_WAKEUP_4500));
 		writeb(header[i], (tcdm_base + PRCM_MBOX_HEADER_REQ_MB0));
+		if (i == 0)
+			log_this(110, "dbb", dbb_events, "abb", abb_events);
+		else
+			log_this(111, "ddb", dbb_events, "abb", abb_events);
 		writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
 	}
 	last_dbb_events = dbb_events;
 	last_abb_events = abb_events;
+	trace_u8500_config_wakeups(dbb_events, abb_events);
 }
 
-void db8500_prcmu_enable_wakeups(u32 wakeups)
+static void db8500_prcmu_enable_wakeups(u32 wakeups)
 {
 	unsigned long flags;
 	u32 bits;
@@ -960,7 +1015,7 @@ void db8500_prcmu_enable_wakeups(u32 wakeups)
 	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
 }
 
-void db8500_prcmu_config_abb_event_readout(u32 abb_events)
+static void db8500_prcmu_config_abb_event_readout(u32 abb_events)
 {
 	unsigned long flags;
 
@@ -972,13 +1027,23 @@ void db8500_prcmu_config_abb_event_readout(u32 abb_events)
 	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
 }
 
-void db8500_prcmu_get_abb_event_buffer(void __iomem **buf)
+static void db8500_prcmu_get_abb_event_buffer(void __iomem **buf)
 {
 	if (readb(tcdm_base + PRCM_ACK_MB0_READ_POINTER) & 1)
 		*buf = (tcdm_base + PRCM_ACK_MB0_WAKEUP_1_4500);
 	else
 		*buf = (tcdm_base + PRCM_ACK_MB0_WAKEUP_0_4500);
 }
+
+/* db8500-prcmu : hard coded conversion */
+static enum arm_opp db8500_idx2opp[] = {
+	ARM_EXTCLK,
+	ARM_50_OPP,
+	ARM_100_OPP,
+	ARM_MAX_OPP
+};
+
+#define SET_ARM_OPP_TIMEOUT HZ
 
 /**
  * db8500_prcmu_set_arm_opp - set the appropriate ARM OPP
@@ -987,13 +1052,15 @@ void db8500_prcmu_get_abb_event_buffer(void __iomem **buf)
  *
  * This function sets the the operating point of the ARM.
  */
-int db8500_prcmu_set_arm_opp(u8 opp)
+
+static int db8500_prcmu_set_arm_opp(u8 opp)
 {
 	int r;
 
 	if (opp < ARM_NO_CHANGE || opp > ARM_EXTCLK)
 		return -EINVAL;
 
+	trace_u8500_set_arm_opp(opp);
 	r = 0;
 
 	mutex_lock(&mb1_transfer.lock);
@@ -1005,14 +1072,20 @@ int db8500_prcmu_set_arm_opp(u8 opp)
 	writeb(opp, (tcdm_base + PRCM_REQ_MB1_ARM_OPP));
 	writeb(APE_NO_CHANGE, (tcdm_base + PRCM_REQ_MB1_APE_OPP));
 
+	log_this(120, "OPP", opp, NULL, 0);
 	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
-	wait_for_completion(&mb1_transfer.work);
+	wait_for_completion_timeout(&mb1_transfer.work, SET_ARM_OPP_TIMEOUT);
 
 	if ((mb1_transfer.ack.header != MB1H_ARM_APE_OPP) ||
-		(mb1_transfer.ack.arm_opp != opp))
+	    (mb1_transfer.ack.arm_opp != opp)) {
+		pr_err("%s: error: timed out (%ds)\n", __func__,
+		       SET_ARM_OPP_TIMEOUT / HZ);
 		r = -EIO;
-
+	}
+	compute_armss_rate();
 	mutex_unlock(&mb1_transfer.lock);
+
+	prcmu_debug_arm_opp_log(opp);
 
 	return r;
 }
@@ -1022,9 +1095,49 @@ int db8500_prcmu_set_arm_opp(u8 opp)
  *
  * Returns: the current ARM OPP
  */
-int db8500_prcmu_get_arm_opp(void)
+static int db8500_prcmu_get_arm_opp(void)
 {
 	return readb(tcdm_base + PRCM_ACK_MB1_CURRENT_ARM_OPP);
+}
+
+static unsigned long arm_get_rate(void)
+{
+	unsigned long rate;
+	int i, opp;
+	int found = -1;
+	opp = db8500_prcmu_get_arm_opp();
+	for (i = 0; i < ARRAY_SIZE(db8500_idx2opp); i++)
+		if (opp == db8500_idx2opp[i]) {
+			found = i;
+			break;
+		}
+	if (found == -1) {
+		pr_err("prcmu: Failed to convert arm clk\n");
+		found = ARRAY_SIZE(db8500_idx2opp)-1;
+	}
+	/*  catch early access */
+	BUG_ON(!freq_table);
+	rate =  freq_table[found].frequency;
+	return rate * 1000;
+}
+unsigned long (*toto)(void);
+
+static int arm_set_rate(unsigned long rate)
+{
+	unsigned long frequency = rate / 1000;
+	int found = -1, i;
+	/*  catch early access */
+	BUG_ON(!freq_table);
+	for (i = 0; i < ARRAY_SIZE(db8500_idx2opp); i++)
+		if (frequency == freq_table[i].frequency) {
+			found = i;
+			break;
+		}
+	if (found == -1)
+		pr_err("prcmu: Failed to convert arm clk in opp\n");
+	else
+		return db8500_prcmu_set_arm_opp(db8500_idx2opp[found]);
+	return -1;
 }
 
 /**
@@ -1032,7 +1145,7 @@ int db8500_prcmu_get_arm_opp(void)
  *
  * Returns: the current DDR OPP
  */
-int db8500_prcmu_get_ddr_opp(void)
+static int db8500_prcmu_get_ddr_opp(void)
 {
 	return readb(PRCM_DDR_SUBSYS_APE_MINBW);
 }
@@ -1044,14 +1157,15 @@ int db8500_prcmu_get_ddr_opp(void)
  *
  * This function sets the operating point of the DDR.
  */
-int db8500_prcmu_set_ddr_opp(u8 opp)
+static int db8500_prcmu_set_ddr_opp(u8 opp)
 {
 	if (opp < DDR_100_OPP || opp > DDR_25_OPP)
 		return -EINVAL;
 	/* Changing the DDR OPP can hang the hardware pre-v21 */
-	if (cpu_is_u8500v20_or_later() && !cpu_is_u8500v20())
+	if (!cpu_is_u8500v20())
 		writeb(opp, PRCM_DDR_SUBSYS_APE_MINBW);
 
+	trace_u8500_set_ddr_opp(opp);
 	return 0;
 }
 
@@ -1108,15 +1222,18 @@ unlock_and_return:
  *
  * This function sets the operating point of the APE.
  */
-int db8500_prcmu_set_ape_opp(u8 opp)
+static int db8500_prcmu_set_ape_opp(u8 opp)
 {
 	int r = 0;
+	u8 prcmu_opp_req;
 
+	trace_u8500_set_ape_opp(opp);
 	if (opp == mb1_transfer.ape_opp)
 		return 0;
 
 	mutex_lock(&mb1_transfer.lock);
 
+	/* Exit APE_50_PARTLY_25_OPP */
 	if (mb1_transfer.ape_opp == APE_50_PARTLY_25_OPP)
 		request_even_slower_clocks(false);
 
@@ -1126,20 +1243,23 @@ int db8500_prcmu_set_ape_opp(u8 opp)
 	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(1))
 		cpu_relax();
 
+	prcmu_opp_req  = (opp == APE_50_PARTLY_25_OPP) ? APE_50_OPP : opp;
+
 	writeb(MB1H_ARM_APE_OPP, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB1));
 	writeb(ARM_NO_CHANGE, (tcdm_base + PRCM_REQ_MB1_ARM_OPP));
-	writeb(((opp == APE_50_PARTLY_25_OPP) ? APE_50_OPP : opp),
-		(tcdm_base + PRCM_REQ_MB1_APE_OPP));
+	writeb(prcmu_opp_req, (tcdm_base + PRCM_REQ_MB1_APE_OPP));
 
+	log_this(130, "OPP", opp, NULL, 0);
 	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb1_transfer.work);
 
 	if ((mb1_transfer.ack.header != MB1H_ARM_APE_OPP) ||
-		(mb1_transfer.ack.ape_opp != opp))
+		(mb1_transfer.ack.ape_opp != prcmu_opp_req))
 		r = -EIO;
 
 skip_message:
 	if ((!r && (opp == APE_50_PARTLY_25_OPP)) ||
+		/* Set APE_50_PARTLY_25_OPP back in case new opp failed */
 		(r && (mb1_transfer.ape_opp == APE_50_PARTLY_25_OPP)))
 		request_even_slower_clocks(true);
 	if (!r)
@@ -1155,18 +1275,18 @@ skip_message:
  *
  * Returns: the current APE OPP
  */
-int db8500_prcmu_get_ape_opp(void)
+static int db8500_prcmu_get_ape_opp(void)
 {
 	return readb(tcdm_base + PRCM_ACK_MB1_CURRENT_APE_OPP);
 }
 
 /**
- * prcmu_request_ape_opp_100_voltage - Request APE OPP 100% voltage
+ * db8500_prcmu_request_ape_opp_100_voltage - Request APE OPP 100% voltage
  * @enable: true to request the higher voltage, false to drop a request.
  *
  * Calls to this function to enable and disable requests must be balanced.
  */
-int prcmu_request_ape_opp_100_voltage(bool enable)
+static int db8500_prcmu_request_ape_opp_100_voltage(bool enable)
 {
 	int r = 0;
 	u8 header;
@@ -1193,6 +1313,7 @@ int prcmu_request_ape_opp_100_voltage(bool enable)
 
 	writeb(header, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB1));
 
+	log_this(140, "enable", enable, NULL, 0);
 	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb1_transfer.work);
 
@@ -1223,6 +1344,7 @@ int prcmu_release_usb_wakeup_state(void)
 	writeb(MB1H_RELEASE_USB_WAKEUP,
 		(tcdm_base + PRCM_MBOX_HEADER_REQ_MB1));
 
+	log_this(150, NULL, 0, NULL, 0);
 	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb1_transfer.work);
 
@@ -1254,6 +1376,7 @@ static int request_pll(u8 clock, bool enable)
 	writeb(MB1H_PLL_ON_OFF, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB1));
 	writeb(clock, (tcdm_base + PRCM_REQ_MB1_PLL_ON_OFF));
 
+	log_this(160, "clock", clock, "enable", enable);
 	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb1_transfer.work);
 
@@ -1266,14 +1389,14 @@ static int request_pll(u8 clock, bool enable)
 }
 
 /**
- * db8500_prcmu_set_epod - set the state of a EPOD (power domain)
+ * set_epod - set the state of a EPOD (power domain)
  * @epod_id: The EPOD to set
  * @epod_state: The new EPOD state
  *
  * This function sets the state of a EPOD (power domain). It may not be called
  * from interrupt context.
  */
-int db8500_prcmu_set_epod(u16 epod_id, u8 epod_state)
+static int set_epod(u16 epod_id, u8 epod_state)
 {
 	int r = 0;
 	bool ram_retention = false;
@@ -1296,6 +1419,7 @@ int db8500_prcmu_set_epod(u16 epod_id, u8 epod_state)
 	BUG_ON(epod_state > EPOD_STATE_ON);
 	BUG_ON(epod_state == EPOD_STATE_RAMRET && !ram_retention);
 
+	trace_u8500_set_epod(epod_id, epod_state);
 	/* get lock */
 	mutex_lock(&mb2_transfer.lock);
 
@@ -1310,6 +1434,7 @@ int db8500_prcmu_set_epod(u16 epod_id, u8 epod_state)
 
 	writeb(MB2H_DPS, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB2));
 
+	log_this(170, "epod_id", epod_id, "state", epod_state);
 	writel(MBOX_BIT(2), PRCM_MBOX_CPU_SET);
 
 	/*
@@ -1322,6 +1447,7 @@ int db8500_prcmu_set_epod(u16 epod_id, u8 epod_state)
 		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
 			__func__);
 		r = -EIO;
+		db8500_prcmu_debug_dump(true);
 		goto unlock_and_return;
 	}
 
@@ -1332,13 +1458,95 @@ unlock_and_return:
 	mutex_unlock(&mb2_transfer.lock);
 	return r;
 }
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+/**
+ * prcmu_set_epod - set the state of a EPOD (power domain) called in Kernel Panic state.
+ * @epod_id: The EPOD to set
+ * @epod_state: The new EPOD state
+ *
+ * This function sets the state of a EPOD (power domain). It may not be called
+ * from interrupt context.
+ */
+int prcmu_panic_set_epod(u16 epod_id, u8 epod_state)
+{
+	int r = 0;
+	bool ram_retention = false;
+	int i;
+	u32 timeout = PRCMU_I2C_TIMEOUT;
+	u8 status;
+
+	/* check argument */
+	BUG_ON(epod_id >= NUM_EPOD_ID);
+
+	/* set flag if retention is possible */
+	switch (epod_id) {
+	case EPOD_ID_SVAMMDSP:
+	case EPOD_ID_SIAMMDSP:
+	case EPOD_ID_ESRAM12:
+	case EPOD_ID_ESRAM34:
+		ram_retention = true;
+		break;
+	}
+
+	/* check argument */
+	BUG_ON(epod_state > EPOD_STATE_ON);
+	BUG_ON(epod_state == EPOD_STATE_RAMRET && !ram_retention);
+
+	if (readl(PRCM_ARM_IT1_VAL) & MBOX_BIT(2)) {
+		/* clear mailbox 2 ack irq */
+		writel(MBOX_BIT(2), PRCM_ARM_IT1_CLR);
+	}
+
+	while ((readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(2)) && timeout--)
+		cpu_relax();
+
+	if ( timeout == 0 ){
+		pr_emerg("%s: timed out waiting for MBOX2 to be free.\n",__func__);
+		return -EIO;
+	}
+
+	/* fill in mailbox */
+	for (i = 0; i < NUM_EPOD_ID; i++)
+		writeb(EPOD_STATE_NO_CHANGE, (tcdm_base + PRCM_REQ_MB2 + i));
+	writeb(epod_state, (tcdm_base + PRCM_REQ_MB2 + epod_id));
+
+	writeb(MB2H_DPS, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB2));
+
+	writel(MBOX_BIT(2), (PRCM_MBOX_CPU_SET));
+
+	/*
+	 * The current firmware version does not handle errors correctly,
+	 * and we cannot recover if there is an error.
+	 * This is expected to change when the firmware is updated.
+	 */
+	timeout = PRCMU_I2C_TIMEOUT;
+
+	while (!(readl(PRCM_ARM_IT1_VAL) & MBOX_BIT(2)) && timeout--)
+		cpu_relax();
+
+	if (!timeout) {
+		pr_emerg("%s timed out waiting for a reply.\n",__func__);
+		return -EIO;
+	}
+
+	status = readb(tcdm_base + PRCM_ACK_MB2_DPS_STATUS);
+
+	/* clear mailbox 2 ack irq */
+	writel(MBOX_BIT(2), PRCM_ARM_IT1_CLR);
+
+	r = ((status == HWACC_PWR_ST_OK) ? 0 : -EIO);
+
+	return r;
+}
+#endif
 
 /**
- * prcmu_configure_auto_pm - Configure autonomous power management.
+ * db8500_prcmu_configure_auto_pm
+ * - Configure autonomous power management.
  * @sleep: Configuration for ApSleep.
  * @idle:  Configuration for ApIdle.
  */
-void prcmu_configure_auto_pm(struct prcmu_auto_pm_config *sleep,
+static void db8500_prcmu_configure_auto_pm(struct prcmu_auto_pm_config *sleep,
 	struct prcmu_auto_pm_config *idle)
 {
 	u32 sleep_cfg;
@@ -1379,7 +1587,6 @@ void prcmu_configure_auto_pm(struct prcmu_auto_pm_config *sleep,
 
 	spin_unlock_irqrestore(&mb2_transfer.auto_pm_lock, flags);
 }
-EXPORT_SYMBOL(prcmu_configure_auto_pm);
 
 bool prcmu_is_auto_pm_enabled(void)
 {
@@ -1403,6 +1610,7 @@ static int request_sysclk(bool enable)
 	writeb((enable ? ON : OFF), (tcdm_base + PRCM_REQ_MB3_SYSCLK_MGT));
 
 	writeb(MB3H_SYSCLK, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB3));
+	log_this(180, "enable", enable, NULL, 0);
 	writel(MBOX_BIT(3), PRCM_MBOX_CPU_SET);
 
 	spin_unlock_irqrestore(&mb3_transfer.lock, flags);
@@ -1416,6 +1624,7 @@ static int request_sysclk(bool enable)
 		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
 			__func__);
 		r = -EIO;
+		db8500_prcmu_debug_dump(true);
 	}
 
 	mutex_unlock(&mb3_transfer.sysclk_lock);
@@ -1423,12 +1632,28 @@ static int request_sysclk(bool enable)
 	return r;
 }
 
+#define TIMCLK_CLOCK_RATE_ULPPLL_OFF 32768
+#define TIMCLK_CLOCK_RATE_ULPPLL_ON (ROOT_CLOCK_RATE / 16)
+
 static int request_timclk(bool enable)
 {
-	u32 val = (PRCM_TCR_DOZE_MODE | PRCM_TCR_TENSEL_MASK);
+	/* Use 32KHz clock to generate timer clken */
+	u32 val;
+
+	if (prcmu_is_ulppll_disabled())
+		val = 0;
+	else
+		val = (PRCM_TCR_DOZE_MODE | PRCM_TCR_TENSEL_MASK);
 
 	if (!enable)
-		val |= PRCM_TCR_STOP_TIMERS;
+		/*
+		* Use TIMCLK but mask it with STOP_TIMER to disable the
+		* timer clken.
+		*/
+		val |= PRCM_TCR_STOP_TIMERS |
+			PRCM_TCR_DOZE_MODE |
+			PRCM_TCR_TENSEL_MASK;
+
 	writel(val, PRCM_TCR);
 
 	return 0;
@@ -1516,6 +1741,8 @@ static int request_plldsi(bool enable)
 			locked = plldsi_locked();
 		}
 		if (locked) {
+			/* Wait an extra 40 us after the pll is locked */
+			udelay(40);
 			writel(PRCM_APE_RESETN_DSIPLL_RESETN,
 				PRCM_APE_RESETN_SET);
 		} else {
@@ -1528,6 +1755,8 @@ static int request_plldsi(bool enable)
 		}
 	} else {
 		writel(PRCM_APE_RESETN_DSIPLL_RESETN, PRCM_APE_RESETN_CLR);
+		/* Wait an extra 10 us after the pll is disabled */
+		udelay(10);
 	}
 	return r;
 }
@@ -1554,6 +1783,25 @@ static int request_dsiescclk(u8 n, bool enable)
 	return 0;
 }
 
+/*
+ * This is a workaround for prcmu firmware bug. While settings EPODs, prcmu
+ * firmware enables/disables B2R2 clock. However, this is done without taking
+ * PRCM_SEM. Concurrent accesses from APE side to change state of EPODs and
+ * B2R2 clock can result in B2R2 clock in unwanted state.
+ */
+static int request_b2r2_clock(u8 clock, bool enable)
+{
+	int ret;
+
+	mutex_lock(&mb2_transfer.lock);
+
+	ret = request_clock(clock, enable);
+
+	mutex_unlock(&mb2_transfer.lock);
+
+	return ret;
+}
+
 /**
  * db8500_prcmu_request_clock() - Request for a clock to be enabled or disabled.
  * @clock:      The clock for which the request is made.
@@ -1564,8 +1812,11 @@ static int request_dsiescclk(u8 n, bool enable)
  */
 int db8500_prcmu_request_clock(u8 clock, bool enable)
 {
+	trace_u8500_request_clock(clock, enable);
 	if (clock == PRCMU_SGACLK)
 		return request_sga_clock(clock, enable);
+	else if (clock == PRCMU_B2R2CLK)
+		return request_b2r2_clock(clock, enable);
 	else if (clock < PRCMU_NUM_REG_CLOCKS)
 		return request_clock(clock, enable);
 	else if (clock == PRCMU_TIMCLK)
@@ -1583,6 +1834,140 @@ int db8500_prcmu_request_clock(u8 clock, bool enable)
 	else
 		return -EINVAL;
 }
+
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+static int request_panic_pll(u8 clock, bool enable)
+{
+	int r = 0;
+
+	if (clock == PRCMU_PLLSOC0)
+		clock = (enable ? PLL_SOC0_ON : PLL_SOC0_OFF);
+	else if (clock == PRCMU_PLLSOC1)
+		clock = (enable ? PLL_SOC1_ON : PLL_SOC1_OFF);
+	else
+		return -EINVAL;
+
+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(1))
+		cpu_relax();
+
+	writeb(MB1H_PLL_ON_OFF, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB1));
+	writeb(clock, (tcdm_base + PRCM_REQ_MB1_PLL_ON_OFF));
+
+	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
+	wait_for_completion(&mb1_transfer.work);
+
+	if (mb1_transfer.ack.header != MB1H_PLL_ON_OFF)
+		r = -EIO;
+
+	return r;
+}
+
+static int request_panic_sysclk(bool enable)
+{
+	int r;
+	unsigned long flags;
+
+	r = 0;
+
+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(3))
+		cpu_relax();
+
+	writeb((enable ? ON : OFF), (tcdm_base + PRCM_REQ_MB3_SYSCLK_MGT));
+
+	writeb(MB3H_SYSCLK, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB3));
+	writel(MBOX_BIT(3), PRCM_MBOX_CPU_SET);
+
+	/*
+	 * The firmware only sends an ACK if we want to enable the
+	 * SysClk, and it succeeds.
+	 */
+	if (enable && !wait_for_completion_timeout(&mb3_transfer.sysclk_work,
+			msecs_to_jiffies(20000))) {
+		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
+			__func__);
+		r = -EIO;
+		db8500_prcmu_debug_dump(true);
+	}
+
+	return r;
+}
+
+static int request_panic_clock(u8 clock, bool enable)
+{
+	u32 val;
+	unsigned long flags;
+
+	/* Grab the HW semaphore. */
+	while ((readl(PRCM_SEM) & PRCM_SEM_PRCM_SEM) != 0)
+		cpu_relax();
+
+	val = readl(clk_mgt[clock].reg);
+	if (enable) {
+		val |= (PRCM_CLK_MGT_CLKEN | clk_mgt[clock].pllsw);
+	} else {
+		clk_mgt[clock].pllsw = (val & PRCM_CLK_MGT_CLKPLLSW_MASK);
+		val &= ~(PRCM_CLK_MGT_CLKEN | PRCM_CLK_MGT_CLKPLLSW_MASK);
+	}
+	writel(val, clk_mgt[clock].reg);
+
+	/* Release the HW semaphore. */
+	writel(0, PRCM_SEM);
+	return 0;
+}
+
+static int request_panic_sga_clock(u8 clock, bool enable)
+{
+	u32 val;
+	int ret;
+
+	if (enable) {
+		val = readl(PRCM_CGATING_BYPASS);
+		writel(val | PRCM_CGATING_BYPASS_ICN2, PRCM_CGATING_BYPASS);
+	}
+
+	ret = request_panic_clock(clock, enable);
+
+	if (!ret && !enable) {
+		val = readl(PRCM_CGATING_BYPASS);
+		writel(val & ~PRCM_CGATING_BYPASS_ICN2, PRCM_CGATING_BYPASS);
+	}
+
+	return ret;
+}
+
+/**
+ * prcmu_request_clock() - Request for a clock to be enabled or disabled.
+ * @clock:      The clock for which the request is made.
+ * @enable:     Whether the clock should be enabled (true) or disabled (false).
+ *
+ * This function should only be used by the clock implementation.
+ * Do not use it from any other place!
+ */
+int prcmu_panic_request_clock(u8 clock, bool enable)
+{
+	if (clock == PRCMU_SGACLK)
+		return request_panic_sga_clock(clock, enable);
+	else if (clock == PRCMU_B2R2CLK)
+		return request_panic_clock(clock, enable);
+	else if (clock < PRCMU_NUM_REG_CLOCKS)
+		return request_panic_clock(clock, enable);
+	else if (clock == PRCMU_TIMCLK)
+		return request_timclk(enable);
+	else if ((clock == PRCMU_DSI0CLK) || (clock == PRCMU_DSI1CLK))
+		return request_dsiclk((clock - PRCMU_DSI0CLK), enable);
+	else if ((PRCMU_DSI0ESCCLK <= clock) && (clock <= PRCMU_DSI2ESCCLK))
+		return request_dsiescclk((clock - PRCMU_DSI0ESCCLK), enable);
+	else if (clock == PRCMU_PLLDSI)
+		return request_plldsi(enable);
+	else if (clock == PRCMU_SYSCLK)
+		return request_panic_sysclk(enable);
+	else if ((clock == PRCMU_PLLSOC0) || (clock == PRCMU_PLLSOC1))
+		return request_panic_pll(clock, enable);
+	else
+		return -EINVAL;
+}
+#endif
+
 
 static unsigned long pll_rate(void __iomem *reg, unsigned long src_rate,
 	int branch)
@@ -1611,6 +1996,7 @@ static unsigned long pll_rate(void __iomem *reg, unsigned long src_rate,
 	if ((branch == PLL_FIX) || ((branch == PLL_DIV) &&
 		(val & PRCM_PLL_FREQ_DIV2EN) &&
 		((reg == PRCM_PLLSOC0_FREQ) ||
+		 (reg == PRCM_PLLARM_FREQ) ||
 		 (reg == PRCM_PLLDDR_FREQ))))
 		div *= 2;
 
@@ -1661,6 +2047,41 @@ static unsigned long clock_rate(u8 clock)
 		return 0;
 }
 
+static unsigned long latest_armss_rate = 0;
+
+static unsigned long armss_rate(void)
+{
+	return latest_armss_rate;
+}
+
+static void compute_armss_rate(void)
+{
+	u32 r;
+	unsigned long rate;
+
+	r = readl(PRCM_ARM_CHGCLKREQ);
+
+	if (r & PRCM_ARM_CHGCLKREQ_PRCM_ARM_CHGCLKREQ) {
+		/* External ARMCLKFIX clock */
+
+		rate = pll_rate(PRCM_PLLDDR_FREQ, ROOT_CLOCK_RATE, PLL_FIX);
+
+		/* Check PRCM_ARM_CHGCLKREQ divider */
+		if (!(r & PRCM_ARM_CHGCLKREQ_PRCM_ARM_DIVSEL))
+			rate /= 2;
+
+		/* Check PRCM_ARMCLKFIX_MGT divider */
+		r = readl(PRCM_ARMCLKFIX_MGT);
+		r &= PRCM_CLK_MGT_CLKPLLDIV_MASK;
+		rate /= r;
+
+	} else { /* ARM PLL */
+		rate = pll_rate(PRCM_PLLARM_FREQ, ROOT_CLOCK_RATE, PLL_DIV);
+	}
+
+	latest_armss_rate = rate;
+}
+
 static unsigned long dsiclk_rate(u8 n)
 {
 	u32 divsel;
@@ -1694,18 +2115,24 @@ static unsigned long dsiescclk_rate(u8 n)
 	return clock_rate(PRCMU_TVCLK) / max((u32)1, div);
 }
 
-unsigned long prcmu_clock_rate(u8 clock)
+static unsigned long db8500_prcmu_clock_rate(u8 clock)
 {
 	if (clock < PRCMU_NUM_REG_CLOCKS)
 		return clock_rate(clock);
 	else if (clock == PRCMU_TIMCLK)
-		return ROOT_CLOCK_RATE / 16;
+		return prcmu_is_ulppll_disabled()?
+			TIMCLK_CLOCK_RATE_ULPPLL_OFF :
+			TIMCLK_CLOCK_RATE_ULPPLL_ON;
 	else if (clock == PRCMU_SYSCLK)
 		return ROOT_CLOCK_RATE;
 	else if (clock == PRCMU_PLLSOC0)
 		return pll_rate(PRCM_PLLSOC0_FREQ, ROOT_CLOCK_RATE, PLL_RAW);
 	else if (clock == PRCMU_PLLSOC1)
 		return pll_rate(PRCM_PLLSOC1_FREQ, ROOT_CLOCK_RATE, PLL_RAW);
+	else if (clock == PRCMU_ARMSS)
+		return armss_rate();
+	else if (clock == PRCMU_ARMCLK)
+		return arm_get_rate();
 	else if (clock == PRCMU_PLLDDR)
 		return pll_rate(PRCM_PLLDDR_FREQ, ROOT_CLOCK_RATE, PLL_RAW);
 	else if (clock == PRCMU_PLLDSI)
@@ -1716,6 +2143,7 @@ unsigned long prcmu_clock_rate(u8 clock)
 	else if ((PRCMU_DSI0ESCCLK <= clock) && (clock <= PRCMU_DSI2ESCCLK))
 		return dsiescclk_rate(clock - PRCMU_DSI0ESCCLK);
 	else
+		BUG_ON(0);
 		return 0;
 }
 
@@ -1843,7 +2271,7 @@ static long round_dsiescclk_rate(unsigned long rate)
 	return rounded_rate;
 }
 
-long prcmu_round_clock_rate(u8 clock, unsigned long rate)
+static long db8500_prcmu_round_clock_rate(u8 clock, unsigned long rate)
 {
 	if (clock < PRCMU_NUM_REG_CLOCKS)
 		return round_clock_rate(clock, rate);
@@ -1854,7 +2282,7 @@ long prcmu_round_clock_rate(u8 clock, unsigned long rate)
 	else if ((PRCMU_DSI0ESCCLK <= clock) && (clock <= PRCMU_DSI2ESCCLK))
 		return round_dsiescclk_rate(rate);
 	else
-		return (long)prcmu_clock_rate(clock);
+		return (long)db8500_prcmu_clock_rate(clock);
 }
 
 static void set_clock_rate(u8 clock, unsigned long rate)
@@ -1982,20 +2410,23 @@ static void set_dsiescclk_rate(u8 n, unsigned long rate)
 	writel(val, PRCM_DSITVCLK_DIV);
 }
 
-int prcmu_set_clock_rate(u8 clock, unsigned long rate)
+static int db8500_prcmu_set_clock_rate(u8 clock, unsigned long rate)
 {
 	if (clock < PRCMU_NUM_REG_CLOCKS)
 		set_clock_rate(clock, rate);
 	else if (clock == PRCMU_PLLDSI)
 		return set_plldsi_rate(rate);
+	else if (clock == PRCMU_ARMCLK)
+		return arm_set_rate(rate);
 	else if ((clock == PRCMU_DSI0CLK) || (clock == PRCMU_DSI1CLK))
 		set_dsiclk_rate((clock - PRCMU_DSI0CLK), rate);
 	else if ((PRCMU_DSI0ESCCLK <= clock) && (clock <= PRCMU_DSI2ESCCLK))
 		set_dsiescclk_rate((clock - PRCMU_DSI0ESCCLK), rate);
+	trace_u8500_set_clock_rate(clock, rate);
 	return 0;
 }
 
-int db8500_prcmu_config_esram0_deep_sleep(u8 state)
+static int db8500_prcmu_config_esram0_deep_sleep(u8 state)
 {
 	if ((state > ESRAM0_DEEP_SLEEP_STATE_RET) ||
 	    (state < ESRAM0_DEEP_SLEEP_STATE_OFF))
@@ -2013,86 +2444,18 @@ int db8500_prcmu_config_esram0_deep_sleep(u8 state)
 	       (tcdm_base + PRCM_REQ_MB4_DDR_ST_AP_DEEP_IDLE));
 	writeb(state, (tcdm_base + PRCM_REQ_MB4_ESRAM0_ST));
 
+	log_this(190, "state", state, NULL, 0);
 	writel(MBOX_BIT(4), PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb4_transfer.work);
 
 	mutex_unlock(&mb4_transfer.lock);
 
 	return 0;
-}
-
-int db8500_prcmu_config_hotdog(u8 threshold)
-{
-	mutex_lock(&mb4_transfer.lock);
-
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(4))
-		cpu_relax();
-
-	writeb(threshold, (tcdm_base + PRCM_REQ_MB4_HOTDOG_THRESHOLD));
-	writeb(MB4H_HOTDOG, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB4));
-
-	writel(MBOX_BIT(4), PRCM_MBOX_CPU_SET);
-	wait_for_completion(&mb4_transfer.work);
-
-	mutex_unlock(&mb4_transfer.lock);
-
-	return 0;
-}
-
-int db8500_prcmu_config_hotmon(u8 low, u8 high)
-{
-	mutex_lock(&mb4_transfer.lock);
-
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(4))
-		cpu_relax();
-
-	writeb(low, (tcdm_base + PRCM_REQ_MB4_HOTMON_LOW));
-	writeb(high, (tcdm_base + PRCM_REQ_MB4_HOTMON_HIGH));
-	writeb((HOTMON_CONFIG_LOW | HOTMON_CONFIG_HIGH),
-		(tcdm_base + PRCM_REQ_MB4_HOTMON_CONFIG));
-	writeb(MB4H_HOTMON, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB4));
-
-	writel(MBOX_BIT(4), PRCM_MBOX_CPU_SET);
-	wait_for_completion(&mb4_transfer.work);
-
-	mutex_unlock(&mb4_transfer.lock);
-
-	return 0;
-}
-
-static int config_hot_period(u16 val)
-{
-	mutex_lock(&mb4_transfer.lock);
-
-	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(4))
-		cpu_relax();
-
-	writew(val, (tcdm_base + PRCM_REQ_MB4_HOT_PERIOD));
-	writeb(MB4H_HOT_PERIOD, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB4));
-
-	writel(MBOX_BIT(4), PRCM_MBOX_CPU_SET);
-	wait_for_completion(&mb4_transfer.work);
-
-	mutex_unlock(&mb4_transfer.lock);
-
-	return 0;
-}
-
-int db8500_prcmu_start_temp_sense(u16 cycles32k)
-{
-	if (cycles32k == 0xFFFF)
-		return -EINVAL;
-
-	return config_hot_period(cycles32k);
-}
-
-int db8500_prcmu_stop_temp_sense(void)
-{
-	return config_hot_period(0xFFFF);
 }
 
 static int prcmu_a9wdog(u8 cmd, u8 d0, u8 d1, u8 d2, u8 d3)
 {
+	trace_u8500_a9_wdog(cmd, d0, d1, d2, d3);
 
 	mutex_lock(&mb4_transfer.lock);
 
@@ -2106,6 +2469,7 @@ static int prcmu_a9wdog(u8 cmd, u8 d0, u8 d1, u8 d2, u8 d3)
 
 	writeb(cmd, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB4));
 
+	log_this(247, "cmd", cmd, "value", d3 << 24 | d2 << 16 | d1 << 8 | d0);
 	writel(MBOX_BIT(4), PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb4_transfer.work);
 
@@ -2115,7 +2479,7 @@ static int prcmu_a9wdog(u8 cmd, u8 d0, u8 d1, u8 d2, u8 d3)
 
 }
 
-int db8500_prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
+static int config_a9wdog(u8 num, bool sleep_auto_off)
 {
 	BUG_ON(num == 0 || num > 0xf);
 	return prcmu_a9wdog(MB4H_A9WDOG_CONF, num, 0, 0,
@@ -2123,17 +2487,17 @@ int db8500_prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
 			    A9WDOG_AUTO_OFF_DIS);
 }
 
-int db8500_prcmu_enable_a9wdog(u8 id)
+static int enable_a9wdog(u8 id)
 {
 	return prcmu_a9wdog(MB4H_A9WDOG_EN, id, 0, 0, 0);
 }
 
-int db8500_prcmu_disable_a9wdog(u8 id)
+static int disable_a9wdog(u8 id)
 {
 	return prcmu_a9wdog(MB4H_A9WDOG_DIS, id, 0, 0, 0);
 }
 
-int db8500_prcmu_kick_a9wdog(u8 id)
+static int kick_a9wdog(u8 id)
 {
 	return prcmu_a9wdog(MB4H_A9WDOG_KICK, id, 0, 0, 0);
 }
@@ -2141,7 +2505,7 @@ int db8500_prcmu_kick_a9wdog(u8 id)
 /*
  * timeout is 28 bit, in ms.
  */
-int db8500_prcmu_load_a9wdog(u8 id, u32 timeout)
+static int load_a9wdog(u8 id, u32 timeout)
 {
 	return prcmu_a9wdog(MB4H_A9WDOG_LOAD,
 			    (id & A9WDOG_ID_MASK) |
@@ -2156,7 +2520,7 @@ int db8500_prcmu_load_a9wdog(u8 id, u32 timeout)
 }
 
 /**
- * prcmu_abb_read() - Read register value(s) from the ABB.
+ * db8500_prcmu_abb_read() - Read register value(s) from the ABB.
  * @slave:	The I2C slave address.
  * @reg:	The (start) register address.
  * @value:	The read out value(s).
@@ -2165,7 +2529,7 @@ int db8500_prcmu_load_a9wdog(u8 id, u32 timeout)
  * Reads register value(s) from the ABB.
  * @size has to be 1 for the current firmware version.
  */
-int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
+static int db8500_prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
 {
 	int r;
 
@@ -2190,20 +2554,135 @@ int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
 		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
 			__func__);
 		r = -EIO;
+		db8500_prcmu_debug_dump(false);
 	} else {
 		r = ((mb5_transfer.ack.status == I2C_RD_OK) ? 0 : -EIO);
 	}
 
-	if (!r)
+	if (!r) {
 		*value = mb5_transfer.ack.value;
+		if (!(*value == 0 && slave == 0x0E && (reg >= 0x20 && reg < 0x40))) {
+			log_this(230, "reg", slave << 8 | reg, "value", *value);
+			trace_printk("%02X@%04Xh\n", *value, (slave << 8 | reg));
+		}
+	} else {
+		log_this(230, "reg", slave << 8 | reg, "error", mb5_transfer.ack.status);
+		trace_printk("error(%02X)@%04Xh\n", *value, mb5_transfer.ack.status);
+	}
 
 	mutex_unlock(&mb5_transfer.lock);
 
 	return r;
 }
 
+#define POLLING_TIMEOUT 1000 /* Becomes ~0.1s timeout */
+#define TRANSFER_TIMEOUT 30000 /* Becomes ~3s timeout */
+
+/* Only to be used at panic! */
+static int db8500_prcmu_abb_read_no_irq(u8 slave, u8 reg, u8 *value, u8 size)
+{
+	u32 s;
+	int r;
+	int count = 0;
+
+	if (size != 1)
+		return -EINVAL;
+
+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5)) {
+		udelay(100);
+		cpu_relax();
+		count++;
+		if (count > POLLING_TIMEOUT) {
+			pr_err("%s: Error: mailbox 5 busy\n", __func__);
+			return -EINVAL;
+		}
+	}
+
+	writeb(0, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB5));
+	writeb(PRCMU_I2C_READ(slave), (tcdm_base + PRCM_REQ_MB5_I2C_SLAVE_OP));
+	writeb(PRCMU_I2C_STOP_EN, (tcdm_base + PRCM_REQ_MB5_I2C_HW_BITS));
+	writeb(reg, (tcdm_base + PRCM_REQ_MB5_I2C_REG));
+	writeb(0, (tcdm_base + PRCM_REQ_MB5_I2C_VAL));
+
+	writel(MBOX_BIT(5), PRCM_MBOX_CPU_SET);
+
+	count = 0;
+	do {
+		s = (readl(PRCM_ARM_IT1_VAL) & MBOX_BIT(5));
+		udelay(100);
+		cpu_relax();
+		count++;
+		if (count > TRANSFER_TIMEOUT) {
+			pr_err("%s: Error: i2c transfer timed out\n", __func__);
+			return -EINVAL;
+		}
+	} while(!s);
+
+	mb5_transfer.ack.status = readb(tcdm_base + PRCM_ACK_MB5_I2C_STATUS);
+	mb5_transfer.ack.value = readb(tcdm_base + PRCM_ACK_MB5_I2C_VAL);
+
+	writel(MBOX_BIT(5), PRCM_ARM_IT1_CLR);
+
+	r = ((mb5_transfer.ack.status == I2C_RD_OK) ? 0 : -EIO);
+
+	if (!r)
+		*value = mb5_transfer.ack.value;
+
+	return r;
+}
+
+/* Only to be used before restart! */
+static int db8500_prcmu_abb_write_no_irq(u8 slave, u8 reg, u8 *value, u8 size)
+{
+	int r;
+	int count = 0;
+
+	if (size != 1)
+		return -EINVAL;
+
+	WARN_ON(!irqs_disabled());
+
+	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5)) {
+		udelay(100);
+		cpu_relax();
+		count++;
+		if (count > POLLING_TIMEOUT) {
+			pr_err("%s: Error: mailbox 5 busy\n", __func__);
+			return -EINVAL;
+		}
+	}
+
+	writeb(0, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB5));
+	writeb(PRCMU_I2C_WRITE(slave), (tcdm_base + PRCM_REQ_MB5_I2C_SLAVE_OP));
+	writeb(PRCMU_I2C_STOP_EN, (tcdm_base + PRCM_REQ_MB5_I2C_HW_BITS));
+	writeb(reg, (tcdm_base + PRCM_REQ_MB5_I2C_REG));
+	writeb(*value, (tcdm_base + PRCM_REQ_MB5_I2C_VAL));
+
+	writel(MBOX_BIT(5), PRCM_MBOX_CPU_SET);
+
+	count = 0;
+	while (!(readl(PRCM_ARM_IT1_VAL) & MBOX_BIT(5))) {
+		udelay(100);
+		cpu_relax();
+		count++;
+		if (count > TRANSFER_TIMEOUT) {
+			pr_err("%s: Error: i2c transfer timed out\n", __func__);
+			return -EINVAL;
+		}
+	}
+
+	mb5_transfer.ack.status = readb(tcdm_base + PRCM_ACK_MB5_I2C_STATUS);
+	mb5_transfer.ack.value = readb(tcdm_base + PRCM_ACK_MB5_I2C_VAL);
+
+	writel(MBOX_BIT(5), PRCM_ARM_IT1_CLR);
+
+	r = ((mb5_transfer.ack.status == I2C_WR_OK) ? 0 : -EIO);
+
+	return r;
+}
+
 /**
- * prcmu_abb_write_masked() - Write masked register value(s) to the ABB.
+ * db8500_prcmu_abb_write_masked() - Write masked register value(s) to the ABB.
  * @slave:	The I2C slave address.
  * @reg:	The (start) register address.
  * @value:	The value(s) to write.
@@ -2215,7 +2694,8 @@ int prcmu_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
  * will be written. The other bits are not changed.
  * @size has to be 1 for the current firmware version.
  */
-int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size)
+static int db8500_prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask,
+		u8 size)
 {
 	int r;
 
@@ -2240,8 +2720,17 @@ int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size)
 		pr_err("prcmu: %s timed out (20 s) waiting for a reply.\n",
 			__func__);
 		r = -EIO;
+		db8500_prcmu_debug_dump(false);
 	} else {
 		r = ((mb5_transfer.ack.status == I2C_WR_OK) ? 0 : -EIO);
+	}
+
+	if (!r) {
+		log_this(240, "reg", slave << 8 | reg, "mask|write", *mask << 16 | *value);
+		trace_printk("(%02X&%02X)@%04Xh\n", *value, *mask, (slave << 8 | reg));
+	} else {
+		log_this(240, "reg", slave << 8 | reg, "error", mb5_transfer.ack.status);
+		trace_printk("error(%02X)@%04Xh\n", mb5_transfer.ack.status, (slave << 8 | reg));
 	}
 
 	mutex_unlock(&mb5_transfer.lock);
@@ -2249,8 +2738,200 @@ int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size)
 	return r;
 }
 
+struct log_entry {
+	u64 cpu_clk;
+	u32 extra1;
+	u32 extra2;
+	u8 pc;
+	char* a;
+	char* b;
+};
+
+/* log on non-cacheable buffer */
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+#include <mach/board-sec-ux500.h>
+static DEFINE_SPINLOCK(log_lock);
+#define A_LOG_SIZE (6398)
+static int log_idx = -1;
+static int log_active = 1;
+static struct log_entry *a_log;
+
+void* log_buf_prcmu;
+EXPORT_SYMBOL(log_buf_prcmu);
+const int log_buf_prcmu_entry_size = sizeof(struct log_entry);
+EXPORT_SYMBOL(log_buf_prcmu_entry_size);
+const int log_buf_prcmu_entry_count = A_LOG_SIZE; 
+EXPORT_SYMBOL(log_buf_prcmu_entry_count);
+#endif
+
+void log_stop(void)
+{
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+        log_active = 0;
+#endif
+}
+EXPORT_SYMBOL(log_stop);
+
+void log_this(u8 pc, char* a, u32 extra1, char* b, u32 extra2)
+{
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+	u64 cpu_clk = cpu_clock(0);
+	unsigned long flags;
+
+	if (!log_active)
+		return;
+
+	spin_lock_irqsave(&log_lock, flags);
+
+	if (a_log) {
+		log_idx++;
+
+		if ((unsigned int)log_idx >= A_LOG_SIZE)
+			log_idx = 0;
+
+		a_log[log_idx].cpu_clk = cpu_clk;
+		a_log[log_idx].pc = pc;
+		a_log[log_idx].a = a;
+		a_log[log_idx].b = b;
+		a_log[log_idx].extra1 = extra1;
+		a_log[log_idx].extra2 = extra2;
+
+	} else if (log_buf_prcmu) {
+		a_log = (struct log_entry *)log_buf_prcmu;
+	}
+
+	spin_unlock_irqrestore(&log_lock, flags);
+#endif
+}
+EXPORT_SYMBOL(log_this);
+
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
 /**
- * prcmu_abb_write() - Write register value(s) to the ABB.
+ * prcmu_panic_abb_read() - Read register value(s) from the ABB under Kernel Panic.
+ * @slave:	The I2C slave address.
+ * @reg:	The (start) register address.
+ * @value:	The read out value(s).
+ * @size:	The number of registers to read.
+ *
+ * Reads register value(s) from the ABB.
+ * @size has to be 1 for the current firmware version.
+ */
+int prcmu_panic_abb_read(u8 slave, u8 reg, u8 *value, u8 size)
+{
+	int r;
+	u32 timeout = PRCMU_I2C_TIMEOUT;
+	u8 status;
+
+	if (size != 1)
+		return -EINVAL;
+
+	if (readl(PRCM_ARM_IT1_VAL) & MBOX_BIT(5)) {
+		/* clear mailbox 5 ack irq */
+		writel(MBOX_BIT(5), PRCM_ARM_IT1_CLR);
+	}
+
+	while ((readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5)) && timeout--)
+		cpu_relax();
+
+	if ( timeout == 0 ){
+		pr_emerg("%s: timed out waiting for MBOX5 to be free.\n",__func__);
+		return -EIO;
+	}
+
+	writeb(PRCMU_I2C_READ(slave), (tcdm_base + PRCM_REQ_MB5_I2C_SLAVE_OP));
+	writeb(PRCMU_I2C_STOP_EN, (tcdm_base + PRCM_REQ_MB5_I2C_HW_BITS));
+	writeb(reg, (tcdm_base + PRCM_REQ_MB5_I2C_REG));
+	writeb(0, (tcdm_base + PRCM_REQ_MB5_I2C_VAL));
+
+	writel(MBOX_BIT(5), (PRCM_MBOX_CPU_SET));
+
+	timeout = PRCMU_I2C_TIMEOUT;
+
+	while (!(readl(PRCM_ARM_IT1_VAL) & MBOX_BIT(5)) && timeout--)
+		cpu_relax();
+
+	if (!timeout) {
+		pr_emerg("%s timed out waiting for a reply.\n",__func__);
+		return -EIO;
+	}
+
+	status = readb(tcdm_base + PRCM_ACK_MB5_I2C_STATUS);
+	*value = readb(tcdm_base + PRCM_ACK_MB5_I2C_VAL);
+
+	/* clear mailbox 5 ack irq */
+	writel(MBOX_BIT(5), PRCM_ARM_IT1_CLR);
+
+	r = ((status == I2C_RD_OK) ? 0 : -EIO);
+
+	if (r) {
+		pr_emerg("%s I2C RD NAK.\n",__func__);
+	}
+
+	return r;
+}
+
+/**
+ * prcmu_panic_abb_write() - Write register value(s) to the ABB under Kernel Panic.
+ * @slave:	The I2C slave address.
+ * @reg:	The (start) register address.
+ * @value:	The value(s) to write.
+ * @size:	The number of registers to write.
+ *
+ * Reads register value(s) from the ABB.
+ * @size has to be 1 for the current firmware version.
+ */
+int prcmu_panic_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
+{
+	int r;
+	u32 timeout = PRCMU_I2C_TIMEOUT;
+	u8 status;
+
+	if (size != 1)
+		return -EINVAL;
+
+	if (readl(PRCM_ARM_IT1_VAL) & MBOX_BIT(5)) {
+		/* clear mailbox 5 ack irq */
+		writel(MBOX_BIT(5), PRCM_ARM_IT1_CLR);
+	}
+
+	while ((readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(5)) && timeout--)
+		cpu_relax();
+
+	if ( timeout == 0 ){
+		pr_emerg("%s: timed out waiting for MBOX5 to be free.\n",__func__);
+		return -EIO;
+	}
+
+	writeb(PRCMU_I2C_WRITE(slave), (tcdm_base + PRCM_REQ_MB5_I2C_SLAVE_OP));
+	writeb(PRCMU_I2C_STOP_EN, (tcdm_base + PRCM_REQ_MB5_I2C_HW_BITS));
+	writeb(reg, (tcdm_base + PRCM_REQ_MB5_I2C_REG));
+	writeb(*value, (tcdm_base + PRCM_REQ_MB5_I2C_VAL));
+
+	writel(MBOX_BIT(5), (PRCM_MBOX_CPU_SET));
+
+	timeout = PRCMU_I2C_TIMEOUT;
+
+	while (!(readl(PRCM_ARM_IT1_VAL) & MBOX_BIT(5)) && timeout--)
+		cpu_relax();
+
+	if (!timeout) {
+		pr_emerg("%s: timed out waiting for a reply.\n",__func__);
+		return -EIO;
+	}
+
+	status = readb(tcdm_base + PRCM_ACK_MB5_I2C_STATUS);
+
+	/* clear mailbox 5 ack irq */
+	writel(MBOX_BIT(5), PRCM_ARM_IT1_CLR);
+
+	r = ((status == I2C_RD_OK) ? 0 : -EIO);
+
+	return r;
+}
+#endif
+
+/*
+ * db8500_prcmu_abb_write() - Write register value(s) to the ABB.
  * @slave:	The I2C slave address.
  * @reg:	The (start) register address.
  * @value:	The value(s) to write.
@@ -2259,7 +2940,7 @@ int prcmu_abb_write_masked(u8 slave, u8 reg, u8 *value, u8 *mask, u8 size)
  * Writes register value(s) to the ABB.
  * @size has to be 1 for the current firmware version.
  */
-int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
+static int db8500_prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
 {
 	u8 mask = ~0;
 
@@ -2271,46 +2952,92 @@ int prcmu_abb_write(u8 slave, u8 reg, u8 *value, u8 size)
  */
 void prcmu_ac_wake_req(void)
 {
+	bool bitsetretried = false;
 	u32 val;
 	u32 status;
 
 	mutex_lock(&mb0_transfer.ac_wake_lock);
 
 	val = readl(PRCM_HOSTACCESS_REQ);
+	trace_u8500_ac_wake_req(val);
 	if (val & PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ)
 		goto unlock_and_return;
+
+	if (mb0_transfer.ac_wake_work.done) {
+		pr_crit("%s: ac_wake_work was non-zero (%d) on entry!\n",  __func__,
+			mb0_transfer.ac_wake_work.done);
+
+		INIT_COMPLETION(mb0_transfer.ac_wake_work);
+	}
 
 	atomic_set(&ac_wake_req_state, 1);
 
 retry:
-	writel((val | PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ), PRCM_HOSTACCESS_REQ);
+	log_this(20, NULL, 0, NULL, 0);
+	/*
+	 * Force Modem Wake-up before hostaccess_req ping-pong.
+	 * It prevents Modem to enter in Sleep while acking the hostaccess
+	 * request. The 31us delay has been calculated by HWI.
+	 */
+	val |= PRCM_HOSTACCESS_REQ_WAKE_REQ;
+	writel(val, PRCM_HOSTACCESS_REQ);
 
+	udelay(31);
+
+	val |= PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ;
+	writel(val, PRCM_HOSTACCESS_REQ);
 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
 			msecs_to_jiffies(5000))) {
-		pr_crit("prcmu: %s timed out (5 s) waiting for a reply.\n",
-			__func__);
-		goto unlock_and_return;
+		if (!bitsetretried &&
+		    !(readl_relaxed(PRCM_HOSTACCESS_REQ) & PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ)) {
+			bitsetretried = true;
+			pr_crit("prcmu: PRCM_HOSTACCESS_REQ bit didn't get set (%#x)?!, try again\n",
+				readl_relaxed(PRCM_HOSTACCESS_REQ));
+			goto retry;
+		}
+		db8500_prcmu_debug_dump(true);
+		pr_crit("PRCM_HOSTACCESS_REQ %#x bitsetretried %d\n", readl_relaxed(PRCM_HOSTACCESS_REQ), bitsetretried);
+		panic("prcmu: %s timed out (5 s) waiting for a reply.\n",
+				__func__);
 	}
 
-	/*
-	 * The modem can generate an AC_WAKE_ACK, and then still go to sleep.
+	/* The modem can generate an AC_WAKE_ACK, and then still go to sleep.
 	 * As a workaround, we wait, and then check that the modem is indeed
 	 * awake (in terms of the value of the PRCM_MOD_AWAKE_STATUS
 	 * register, which may not be the whole truth).
-	 */
+	*/
+
 	udelay(400);
-	status = (readl(PRCM_MOD_AWAKE_STATUS) & BITS(0, 2));
+	status = readl(PRCM_MOD_AWAKE_STATUS) & BITS(0, 1);
 	if (status != (PRCM_MOD_AWAKE_STATUS_PRCM_MOD_AAPD_AWAKE |
 			PRCM_MOD_AWAKE_STATUS_PRCM_MOD_COREPD_AWAKE)) {
 		pr_err("prcmu: %s received ack, but modem not awake (0x%X).\n",
 			__func__, status);
 		udelay(1200);
-		writel(val, PRCM_HOSTACCESS_REQ);
-		if (wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
-				msecs_to_jiffies(5000)))
-			goto retry;
-		pr_crit("prcmu: %s timed out (5 s) waiting for AC_SLEEP_ACK.\n",
-			__func__);
+
+		status = readl(PRCM_MOD_AWAKE_STATUS) & BITS(0, 1);
+		if (status != (PRCM_MOD_AWAKE_STATUS_PRCM_MOD_AAPD_AWAKE |
+				PRCM_MOD_AWAKE_STATUS_PRCM_MOD_COREPD_AWAKE)) {
+			pr_err("prcmu: %s waited, but modem still not awake (0x%X).\n",
+			        __func__, status);
+
+			/* Do an ac sleep req first and then retry */
+			val &= ~PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ;
+
+			writel(val, (PRCM_HOSTACCESS_REQ));
+			if (wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
+					msecs_to_jiffies(5000))) {
+				goto retry;
+
+			} else {
+				db8500_prcmu_debug_dump(true);
+				panic("prcmu: %s timed out again (5 s) waiting for a reply.\n",
+					__func__);
+			}
+		} else {
+			pr_err("prcmu: %s modem awake after waiting (0x%X)\n",
+			       __func__, status);
+		}
 	}
 
 unlock_and_return:
@@ -2327,15 +3054,26 @@ void prcmu_ac_sleep_req()
 	mutex_lock(&mb0_transfer.ac_wake_lock);
 
 	val = readl(PRCM_HOSTACCESS_REQ);
+	trace_u8500_ac_sleep_req(val);
 	if (!(val & PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ))
 		goto unlock_and_return;
 
-	writel((val & ~PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ),
-		PRCM_HOSTACCESS_REQ);
+	if (mb0_transfer.ac_wake_work.done) {
+		pr_crit("%s: ac_wake_work was non-zero (%d) on entry!\n",  __func__,
+			mb0_transfer.ac_wake_work.done);
+
+		INIT_COMPLETION(mb0_transfer.ac_wake_work);
+	}
+
+	log_this(60, NULL, 0, NULL, 0);
+	val &= ~(PRCM_HOSTACCESS_REQ_HOSTACCESS_REQ |
+			PRCM_HOSTACCESS_REQ_WAKE_REQ);
+	writel(val, PRCM_HOSTACCESS_REQ);
 
 	if (!wait_for_completion_timeout(&mb0_transfer.ac_wake_work,
 			msecs_to_jiffies(5000))) {
-		pr_crit("prcmu: %s timed out (5 s) waiting for a reply.\n",
+		db8500_prcmu_debug_dump(true);
+		panic("prcmu: %s timed out (5 s) waiting for a reply.\n",
 			__func__);
 	}
 
@@ -2345,7 +3083,7 @@ unlock_and_return:
 	mutex_unlock(&mb0_transfer.ac_wake_lock);
 }
 
-bool db8500_prcmu_is_ac_wake_requested(void)
+static bool db8500_prcmu_is_ac_wake_requested(void)
 {
 	return (atomic_read(&ac_wake_req_state) != 0);
 }
@@ -2356,10 +3094,23 @@ bool db8500_prcmu_is_ac_wake_requested(void)
  * Saves the reset reason code and then sets the APE_SOFTRST register which
  * fires interrupt to fw
  */
-void db8500_prcmu_system_reset(u16 reset_code)
+#define	PCUT_CTR_AND_STATUS	0x12
+
+static void db8500_prcmu_system_reset(u16 reset_code)
 {
-	writew(reset_code, (tcdm_base + PRCM_SW_RST_REASON));
-	writel(1, PRCM_APE_SOFTRST);
+	u8 power_cut_reset = 0;
+	trace_u8500_system_reset(reset_code);
+
+	/* Disable power-cut feature */
+	(void)db8500_prcmu_abb_write_no_irq(AB8500_RTC, PCUT_CTR_AND_STATUS,
+						&power_cut_reset, 1);
+
+	writew_relaxed(reset_code, (tcdm_base + PRCM_SW_RST_REASON));
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+	__write_log(PRCM_APE_SOFTRST);
+#endif
+	writel_relaxed(1, PRCM_APE_SOFTRST);
+	smp_wmb();
 }
 
 /**
@@ -2368,22 +3119,34 @@ void db8500_prcmu_system_reset(u16 reset_code)
  * Retrieves the reset reason code stored by prcmu_system_reset() before
  * last restart.
  */
-u16 db8500_prcmu_get_reset_code(void)
+static u16 db8500_prcmu_get_reset_code(void)
 {
-	return readw(tcdm_base + PRCM_SW_RST_REASON);
+	return reset_code_copy;
+}
+
+/**
+ * db8500_prcmu_get_reset_status - Retrieve reset status
+ *
+ * Retrieves the value of the reset status register as read at startup.
+ */
+static u32 db8500_prcmu_get_reset_status(void)
+{
+	return reset_status_copy;
 }
 
 /**
  * db8500_prcmu_reset_modem - ask the PRCMU to reset modem
  */
-void db8500_prcmu_modem_reset(void)
+static void db8500_prcmu_modem_reset(void)
 {
+	trace_u8500_modem_reset(0);
 	mutex_lock(&mb1_transfer.lock);
 
 	while (readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(1))
 		cpu_relax();
 
 	writeb(MB1H_RESET_MODEM, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB1));
+	log_this(250, NULL, 0, NULL, 0);
 	writel(MBOX_BIT(1), PRCM_MBOX_CPU_SET);
 	wait_for_completion(&mb1_transfer.work);
 
@@ -2405,6 +3168,7 @@ static void ack_dbb_wakeup(void)
 		cpu_relax();
 
 	writeb(MB0H_READ_WAKEUP_ACK, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB0));
+	log_this(30, NULL, 0, NULL, 0);
 	writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
 
 	spin_unlock_irqrestore(&mb0_transfer.lock, flags);
@@ -2416,10 +3180,19 @@ static inline void print_unknown_header_warning(u8 n, u8 header)
 		header, n);
 }
 
+void uart_wakeunlock(void)
+{
+        pr_info("UART wakelock is unlocked.\n");
+        wake_unlock(&prcmu_uart_wake_lock);
+}
+EXPORT_SYMBOL(uart_wakeunlock);
+
 static bool read_mailbox_0(void)
 {
 	bool r;
-	u32 ev;
+	u32 ev = 0;
+	u32 mask = 0;
+	u32 dbb_irqs;
 	unsigned int n;
 	u8 header;
 
@@ -2437,11 +3210,33 @@ static bool read_mailbox_0(void)
 		if (ev & WAKEUP_BIT_SYSCLK_OK)
 			complete(&mb3_transfer.sysclk_work);
 
-		ev &= mb0_transfer.req.dbb_irqs;
+		log_this(10, "ev", ev, "header", header);
+//+ WAKEUP CHECK
+		if ((header == MB0H_WAKEUP_SLEEP) && (ev) && (ev != 1)) {
+			pr_info("Wakeup Status: 0x%08x\n", ev);
+                        if(ev == 0x00800000) {
+                                pr_info("Wakeup Status: UART\n");
+                                wake_lock_timeout(&prcmu_uart_wake_lock, 20*HZ);
+                                ux500_ci_dbg_console();
+                        } 			
+		}
+//- WAKEUP CHECK
+
+		prcmu_debug_register_mbox0_event(ev,
+						 (mb0_transfer.req.dbb_irqs |
+						  mb0_transfer.req.dbb_wakeups |
+						  WAKEUP_BIT_AC_WAKE_ACK |
+						  WAKEUP_BIT_AC_SLEEP_ACK |
+						  WAKEUP_BIT_SYSCLK_OK));
+
+		mask = mb0_transfer.req.dbb_irqs;
+		dbb_irqs = ev & mask;
 
 		for (n = 0; n < NUM_PRCMU_WAKEUPS; n++) {
-			if (ev & prcmu_irq_bit[n])
+			if (dbb_irqs & prcmu_irq_bit[n]) {
+				log_this(11, "IRQ", IRQ_PRCMU_BASE + n, NULL, 0);
 				generic_handle_irq(IRQ_PRCMU_BASE + n);
+			}
 		}
 		r = true;
 		break;
@@ -2451,6 +3246,25 @@ static bool read_mailbox_0(void)
 		break;
 	}
 	writel(MBOX_BIT(0), PRCM_ARM_IT1_CLR);
+	trace_u8500_irq_mailbox_0(header, ev, mask);
+
+	if (r) {
+		unsigned long flags;
+
+		spin_lock_irqsave(&mb0_transfer.lock, flags);
+
+		/* Do not send the ack if MB0 is busy */
+		if (!(readl(PRCM_MBOX_CPU_VAL) & MBOX_BIT(0))) {
+			/* Send ack */
+			writeb(MB0H_READ_WAKEUP_ACK, (tcdm_base + PRCM_MBOX_HEADER_REQ_MB0));
+			log_this(30, NULL, 0, NULL, 0);
+			writel(MBOX_BIT(0), PRCM_MBOX_CPU_SET);
+			r = false;
+		}
+		
+		spin_unlock_irqrestore(&mb0_transfer.lock, flags);
+	}
+
 	return r;
 }
 
@@ -2464,6 +3278,9 @@ static bool read_mailbox_1(void)
 	mb1_transfer.ack.ape_voltage_status = readb(tcdm_base +
 		PRCM_ACK_MB1_APE_VOLTAGE_STATUS);
 	writel(MBOX_BIT(1), PRCM_ARM_IT1_CLR);
+	trace_u8500_irq_mailbox_1(mb1_transfer.ack.header,
+		mb1_transfer.ack.arm_opp, mb1_transfer.ack.ape_opp,
+		mb1_transfer.ack.ape_voltage_status);
 	complete(&mb1_transfer.work);
 	return false;
 }
@@ -2472,13 +3289,53 @@ static bool read_mailbox_2(void)
 {
 	mb2_transfer.ack.status = readb(tcdm_base + PRCM_ACK_MB2_DPS_STATUS);
 	writel(MBOX_BIT(2), PRCM_ARM_IT1_CLR);
+	trace_u8500_irq_mailbox_2(mb2_transfer.ack.status);
 	complete(&mb2_transfer.work);
 	return false;
 }
 
+static void db8500_prcmu_mb3_fw_log_work(struct work_struct *work)
+{
+	unsigned long flags;
+	u8 log_req;
+
+	spin_lock_irqsave(&mb3_transfer.fw_log_lock, flags);
+	log_req = mb3_transfer.fw_log_req;
+	mb3_transfer.fw_log_req = 0;
+	spin_unlock_irqrestore(&mb3_transfer.fw_log_lock, flags);
+
+	if (log_req & MB3_LOG_REQ_PRCMU_REGS)
+		prcmu_debug_dump_regs();
+
+	if (log_req & MB3_LOG_REQ_TCDM)
+		prcmu_debug_dump_data_mem();
+
+	if (log_req & MB3_LOG_REQ_AB_REGS)
+		abx500_dump_all_banks();
+}
+
 static bool read_mailbox_3(void)
 {
+	u8 msg;
+	u8 log_req;
+	unsigned long flags;
+
+	msg = readb(tcdm_base + PRCM_ACK_MB3_TRACE_MSG);
+	printk(KERN_INFO"PRCMU Firmware: msg = 0x%02x\n", msg);
+
+	log_req = readb(tcdm_base + PRCM_ACK_MB3_LOG_REQ);
+
 	writel(MBOX_BIT(3), PRCM_ARM_IT1_CLR);
+	trace_u8500_irq_mailbox_3(0);
+
+	if (log_req) {
+		spin_lock_irqsave(&mb3_transfer.fw_log_lock, flags);
+		mb3_transfer.fw_log_req |= log_req;
+		spin_unlock_irqrestore(&mb3_transfer.fw_log_lock, flags);
+
+		schedule_work(&mb3_transfer.fw_log_work);
+	}
+
 	return false;
 }
 
@@ -2506,7 +3363,7 @@ static bool read_mailbox_4(void)
 	}
 
 	writel(MBOX_BIT(4), PRCM_ARM_IT1_CLR);
-
+	trace_u8500_irq_mailbox_4(header);
 	if (do_complete)
 		complete(&mb4_transfer.work);
 
@@ -2518,6 +3375,8 @@ static bool read_mailbox_5(void)
 	mb5_transfer.ack.status = readb(tcdm_base + PRCM_ACK_MB5_I2C_STATUS);
 	mb5_transfer.ack.value = readb(tcdm_base + PRCM_ACK_MB5_I2C_VAL);
 	writel(MBOX_BIT(5), PRCM_ARM_IT1_CLR);
+	//trace_u8500_irq_mailbox_5(mb5_transfer.ack.status,
+	//	mb5_transfer.ack.value);
 	complete(&mb5_transfer.work);
 	return false;
 }
@@ -2525,12 +3384,14 @@ static bool read_mailbox_5(void)
 static bool read_mailbox_6(void)
 {
 	writel(MBOX_BIT(6), PRCM_ARM_IT1_CLR);
+	trace_u8500_irq_mailbox_6(0);
 	return false;
 }
 
 static bool read_mailbox_7(void)
 {
 	writel(MBOX_BIT(7), PRCM_ARM_IT1_CLR);
+	trace_u8500_irq_mailbox_7(0);
 	return false;
 }
 
@@ -2561,6 +3422,7 @@ static irqreturn_t prcmu_irq_handler(int irq, void *data)
 			bits -= MBOX_BIT(n);
 			if (read_mailbox[n]())
 				r = IRQ_WAKE_THREAD;
+			prcmu_debug_register_interrupt(n);
 		}
 	}
 	return r;
@@ -2626,49 +3488,301 @@ static struct irq_chip prcmu_irq_chip = {
 static char *fw_project_name(u8 project)
 {
 	switch (project) {
+
 	case PRCMU_FW_PROJECT_U8500:
 		return "U8500";
-	case PRCMU_FW_PROJECT_U8500_C2:
-		return "U8500 C2";
+	case PRCMU_FW_PROJECT_U8400:
+		return "U8400";
 	case PRCMU_FW_PROJECT_U9500:
 		return "U9500";
-	case PRCMU_FW_PROJECT_U9500_C2:
-		return "U9500 C2";
+	case PRCMU_FW_PROJECT_U8500_MBB:
+		return "U8500 MBB";
+	case PRCMU_FW_PROJECT_U8500_C1:
+		return "U8500 C1";
+	case PRCMU_FW_PROJECT_U8500_C2:
+		return "U8500 C2";
+	case PRCMU_FW_PROJECT_U8500_C3:
+		return "U8500 C3";
+	case PRCMU_FW_PROJECT_U8500_C4:
+		return "U8500 C4";
+	case PRCMU_FW_PROJECT_U9500_MBL:
+		return "U9500 MBL";
+	case PRCMU_FW_PROJECT_U8500_MBL:
+		return "U8500 MBL";
+	case PRCMU_FW_PROJECT_U8500_MBL2:
+		return "U8500 MBL2";
 	case PRCMU_FW_PROJECT_U8520:
-		return "U8520";
+		return "U8520 MBL";
 	case PRCMU_FW_PROJECT_U8420:
 		return "U8420";
+	case PRCMU_FW_PROJECT_U8420_SYSCLK:
+		return "U8420-sysclk";
+	case PRCMU_FW_PROJECT_A9420:
+		return "A9420";
 	default:
 		return "Unknown";
 	}
 }
 
-void __init db8500_prcmu_early_init(void)
+static inline void db8500_prcmu_set(unsigned int reg, u32 bits)
+{
+	db8500_prcmu_write_masked(reg, bits, bits);
+}
+
+static inline void db8500_prcmu_clear(unsigned int reg, u32 bits)
+{
+	db8500_prcmu_write_masked(reg, bits, 0);
+}
+
+
+static int db8500_prcmu_enable_spi2(void)
+{
+	db8500_prcmu_set(DB8500_PRCM_GPIOCR, DB8500_PRCM_GPIOCR_SPI2_SELECT);
+	return 0;
+}
+
+/**
+ * prcmu_disable_spi2 - Disables pin muxing for SPI2 on OtherAlternateC1.
+ */
+static int db8500_prcmu_disable_spi2(void)
+{
+	db8500_prcmu_clear(DB8500_PRCM_GPIOCR, DB8500_PRCM_GPIOCR_SPI2_SELECT);
+	return 0;
+}
+
+/**
+ * prcmu_enable_stm_mod_uart - Enables pin muxing for STMMOD
+ * and UARTMOD on OtherAlternateC3.
+ */
+static int db8500_prcmu_enable_stm_mod_uart(void)
+{
+	db8500_prcmu_set(DB8500_PRCM_GPIOCR,
+			(DB8500_PRCM_GPIOCR_DBG_STM_MOD_CMD1 |
+			 DB8500_PRCM_GPIOCR_DBG_UARTMOD_CMD0));
+	return 0;
+}
+
+/**
+ * prcmu_disable_stm_mod_uart - Disables pin muxing for STMMOD
+ * and UARTMOD on OtherAlternateC3.
+ */
+static int db8500_prcmu_disable_stm_mod_uart(void)
+{
+	db8500_prcmu_clear(DB8500_PRCM_GPIOCR,
+			(DB8500_PRCM_GPIOCR_DBG_STM_MOD_CMD1 |
+			 DB8500_PRCM_GPIOCR_DBG_UARTMOD_CMD0));
+	return 0;
+}
+
+/**
+ * prcmu_enable_stm_ape - Enables pin muxing for STM APE on OtherAlternateC1.
+ */
+static int db8500_prcmu_enable_stm_ape(void)
+{
+	db8500_prcmu_set(DB8500_PRCM_GPIOCR,
+			DB8500_PRCM_GPIOCR_DBG_STM_APE_CMD);
+	return 0;
+}
+
+/**
+ * prcmu_disable_stm_ape - Disables pin muxing for STM APE on OtherAlternateC1.
+ */
+static int db8500_prcmu_disable_stm_ape(void)
+{
+	db8500_prcmu_clear(DB8500_PRCM_GPIOCR,
+			DB8500_PRCM_GPIOCR_DBG_STM_APE_CMD);
+	return 0;
+}
+
+static  struct prcmu_val_data db8500_val_tab[] = {
+	{
+		.val = APE_OPP,
+		.set_val = db8500_prcmu_set_ape_opp,
+		.get_val = db8500_prcmu_get_ape_opp,
+	},
+	{
+		.val = DDR_OPP,
+		.set_val = db8500_prcmu_set_ddr_opp,
+		.get_val = db8500_prcmu_get_ddr_opp,
+	},
+	{
+		.val = ARM_OPP,
+		.set_val = db8500_prcmu_set_arm_opp,
+		.get_val = db8500_prcmu_get_arm_opp,
+	}
+};
+static struct prcmu_out_data db8500_out_tab[] = {
+	{
+		.out = SPI2_MUX,
+		.enable =  db8500_prcmu_enable_spi2,
+		.disable = db8500_prcmu_disable_spi2,
+	},
+	{
+		.out = STM_APE_MUX,
+		.enable = db8500_prcmu_enable_stm_ape,
+		.disable = db8500_prcmu_disable_stm_ape,
+	},
+	{
+		.out = STM_MOD_UART_MUX,
+		.enable = db8500_prcmu_enable_stm_mod_uart,
+		.disable = db8500_prcmu_disable_stm_mod_uart,
+	}
+};
+
+static struct prcmu_early_data db8500_early_fops = {
+	/*  system reset  */
+	.system_reset = db8500_prcmu_system_reset,
+
+	/*  clock service */
+	.config_clkout = db8500_prcmu_config_clkout,
+	.request_clock = db8500_prcmu_request_clock,
+
+	/*  direct register access */
+#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_GAVINI_CHN) || defined(CONFIG_MACH_CODINA_CHN) 
+	.tcdm_read = db8500_prcmu_tcdm_read,
+#endif
+	.read = db8500_prcmu_read,
+	.write =  db8500_prcmu_write,
+	.write_masked = db8500_prcmu_write_masked,
+	/* others */
+	.round_clock_rate = db8500_prcmu_round_clock_rate,
+	.set_clock_rate = db8500_prcmu_set_clock_rate,
+	.clock_rate = db8500_prcmu_clock_rate,
+	.get_fw_version = db8500_prcmu_get_fw_version,
+	.vc = db8500_prcmu_vc,
+};
+
+static struct prcmu_fops_register db8500_early_tab[] = {
+	{
+		.fops = PRCMU_EARLY,
+		.data.pearly = &db8500_early_fops
+	},
+	{
+		.fops = PRCMU_VAL,
+		.size = ARRAY_SIZE(db8500_val_tab),
+		.data.pval = db8500_val_tab
+	},
+	{
+		.fops = PRCMU_OUT,
+		.size = ARRAY_SIZE(db8500_out_tab),
+		.data.pout = db8500_out_tab
+	}
+};
+
+static struct prcmu_fops_register_data db8500_early_data = {
+	.size = ARRAY_SIZE(db8500_early_tab),
+	.tab = db8500_early_tab
+};
+
+struct prcmu_probe_data db8500_probe_fops = {
+	/* sysfs soc inf */
+	.get_reset_code = db8500_prcmu_get_reset_code,
+
+	/* pm/suspend.c/cpu freq */
+	.config_esram0_deep_sleep = db8500_prcmu_config_esram0_deep_sleep,
+	.set_power_state = db8500_prcmu_set_power_state,
+	.get_power_state_result = db8500_prcmu_get_power_state_result,
+	.enable_wakeups = db8500_prcmu_enable_wakeups,
+	.is_ac_wake_requested = db8500_prcmu_is_ac_wake_requested,
+
+	/* modem */
+	.modem_reset = db8500_prcmu_modem_reset,
+
+	/* no used at all */
+	.config_abb_event_readout = db8500_prcmu_config_abb_event_readout,
+	.get_abb_event_buffer = db8500_prcmu_get_abb_event_buffer,
+
+	/* abb access */
+	.abb_read = db8500_prcmu_abb_read,
+	.abb_write = db8500_prcmu_abb_write,
+	.get_reset_status = db8500_prcmu_get_reset_status,
+	/*  other u8500 specific */
+	.request_ape_opp_100_voltage = db8500_prcmu_request_ape_opp_100_voltage,
+	.configure_auto_pm = db8500_prcmu_configure_auto_pm,
+
+	/* abb specific access */
+	.abb_write_masked = db8500_prcmu_abb_write_masked,
+
+};
+
+static struct prcmu_fops_register db8500_probe_tab[] = {
+	{
+		.fops = PRCMU_PROBE,
+		.data.pprobe = &db8500_probe_fops,
+	},
+};
+
+struct prcmu_fops_register_data db8500_probe_data = {
+	.size = ARRAY_SIZE(db8500_probe_tab),
+	.tab = db8500_probe_tab,
+};
+
+/*
+ * default event tracing
+ * ENABLE_FTRACE_BY_DEFAULT
+ *  : it should be enabled only if needed,
+ *	it will highly impact on system behavior
+ */
+static int __init late(void)
+{
+	extern int tracing_update_buffers(void);
+#ifdef ENABLE_FTRACE_BY_DEFAULT
+	extern int tracing_set_tracer(const char *buf);
+	int err;
+#endif
+	tracing_update_buffers();
+
+	trace_set_clr_event("irq", "irq_handler_entry", 1);
+	trace_set_clr_event("irq", "irq_handler_exit", 1);
+	//trace_set_clr_event("irq", "softirq_entry", 1);
+	//trace_set_clr_event("irq", "softirq_exit", 1);
+	trace_set_clr_event("sched", "sched_switch", 1);
+	// trace_set_clr_event("sched", "sched_wakeup", 1);
+	trace_set_clr_event("workqueue", "workqueue_execute_start", 1);
+	trace_set_clr_event("workqueue", "workqueue_execute_end", 1);
+	trace_set_clr_event("power", "cpu_frequency", 1);
+	trace_set_clr_event("prcmu", NULL, 1);
+
+#ifdef ENABLE_FTRACE_BY_DEFAULT
+	err = tracing_set_tracer("function");
+	if (err)
+		pr_info("prcmu : unable to enable function trace\n");
+#endif
+
+	return 0;
+}
+late_initcall(late);
+
+struct prcmu_fops_register_data *__init db8500_prcmu_early_init(void)
 {
 	unsigned int i;
-	if (cpu_is_u8500v2()) {
-		void *tcpm_base = ioremap_nocache(U8500_PRCMU_TCPM_BASE, SZ_4K);
+	void __iomem *sec_base;
 
-		if (tcpm_base != NULL) {
-			u32 version;
-			version = readl(tcpm_base + PRCMU_FW_VERSION_OFFSET);
-			fw_info.version.project = version & 0xFF;
-			fw_info.version.api_version = (version >> 8) & 0xFF;
-			fw_info.version.func_version = (version >> 16) & 0xFF;
-			fw_info.version.errata = (version >> 24) & 0xFF;
-			fw_info.valid = true;
-			pr_info("PRCMU firmware: %s, version %d.%d.%d\n",
-				fw_project_name(fw_info.version.project),
-				(version >> 8) & 0xFF, (version >> 16) & 0xFF,
-				(version >> 24) & 0xFF);
-			iounmap(tcpm_base);
-		}
+	struct prcmu_fw_version *fw_ver;
 
-		tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
-	} else {
-		pr_err("prcmu: Unsupported chip version\n");
-		BUG();
+	fw_ver = db8500_prcmu_get_fw_version();
+
+	if (fw_ver)
+		pr_info("PRCMU firmware: %s(%d), version %d.%d.%d\n",
+			fw_ver->project_name,
+			fw_ver->project,
+			fw_ver->api_version, fw_ver->func_version,
+			fw_ver->errata);
+
+	tcdm_base = __io_address(U8500_PRCMU_TCDM_BASE);
+
+	/*
+	 * Copy the value of the reset status register and if needed also
+	 * the software reset code.
+	 */
+	sec_base = ioremap_nocache(U8500_PRCMU_SEC_BASE, SZ_4K);
+	if (sec_base != NULL) {
+		reset_status_copy = readl(sec_base +
+			DB8500_SEC_PRCM_RESET_STATUS);
+		iounmap(sec_base);
 	}
+	if (reset_status_copy & DB8500_SEC_PRCM_RESET_STATUS_APE_SOFTWARE_RESET)
+		reset_code_copy = readw(tcdm_base + PRCM_SW_RST_REASON);
 
 	spin_lock_init(&mb0_transfer.lock);
 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);
@@ -2683,6 +3797,8 @@ void __init db8500_prcmu_early_init(void)
 	spin_lock_init(&mb3_transfer.lock);
 	mutex_init(&mb3_transfer.sysclk_lock);
 	init_completion(&mb3_transfer.sysclk_work);
+	INIT_WORK(&mb3_transfer.fw_log_work, db8500_prcmu_mb3_fw_log_work);
+	spin_lock_init(&mb3_transfer.fw_log_lock);
 	mutex_init(&mb4_transfer.lock);
 	init_completion(&mb4_transfer.work);
 	mutex_init(&mb5_transfer.lock);
@@ -2699,6 +3815,12 @@ void __init db8500_prcmu_early_init(void)
 					 handle_simple_irq);
 		set_irq_flags(irq, IRQF_VALID);
 	}
+	compute_armss_rate();
+	
+	wake_lock_init(&prcmu_uart_wake_lock, WAKE_LOCK_SUSPEND, "prcmu_uart_wake_lock");
+
+	/*  early init of dbx500-prcmu */
+	return &db8500_early_data;
 }
 
 static void __init init_prcm_registers(void)
@@ -2709,6 +3831,11 @@ static void __init init_prcm_registers(void)
 	val &= ~(PRCM_A9PL_FORCE_CLKEN_PRCM_A9PL_FORCE_CLKEN |
 		PRCM_A9PL_FORCE_CLKEN_PRCM_A9AXI_FORCE_CLKEN);
 	writel(val, (PRCM_A9PL_FORCE_CLKEN));
+}
+
+void db8500_prcmu_in_panic_mode(void)
+{
+	db8500_probe_fops.abb_read = db8500_prcmu_abb_read_no_irq;
 }
 
 /*
@@ -2728,10 +3855,9 @@ static struct regulator_consumer_supply db8500_vape_consumers[] = {
 	REGULATOR_SUPPLY("vcore", "sdi4"),
 	REGULATOR_SUPPLY("v-dma", "dma40.0"),
 	REGULATOR_SUPPLY("v-ape", "ab8500-usb.0"),
-	/* "v-uart" changed to "vcore" in the mainline kernel */
-	REGULATOR_SUPPLY("vcore", "uart0"),
-	REGULATOR_SUPPLY("vcore", "uart1"),
-	REGULATOR_SUPPLY("vcore", "uart2"),
+	REGULATOR_SUPPLY("v-uart", "uart0"),
+	REGULATOR_SUPPLY("v-uart", "uart1"),
+	REGULATOR_SUPPLY("v-uart", "uart2"),
 	REGULATOR_SUPPLY("v-ape", "nmk-ske-keypad.0"),
 	REGULATOR_SUPPLY("v-hsi", "ste_hsi.0"),
 };
@@ -2743,8 +3869,11 @@ static struct regulator_consumer_supply db8500_vsmps2_consumers[] = {
 };
 
 static struct regulator_consumer_supply db8500_b2r2_mcde_consumers[] = {
-	REGULATOR_SUPPLY("vsupply", "b2r2_bus"),
+	REGULATOR_SUPPLY("vsupply", "b2r2_core"),
 	REGULATOR_SUPPLY("vsupply", "mcde"),
+	REGULATOR_SUPPLY("vsupply", "dsilink.0"),
+	REGULATOR_SUPPLY("vsupply", "dsilink.1"),
+	REGULATOR_SUPPLY("vsupply", "dsilink.2"),
 };
 
 /* SVA MMDSP regulator switch */
@@ -2788,7 +3917,6 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
 		.constraints = {
 			.name = "db8500-vape",
 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
-			.always_on = true,
 		},
 		.consumer_supplies = db8500_vape_consumers,
 		.num_consumer_supplies = ARRAY_SIZE(db8500_vape_consumers),
@@ -2943,16 +4071,97 @@ static struct regulator_init_data db8500_regulators[DB8500_NUM_REGULATORS] = {
 	},
 };
 
-static struct mfd_cell db8500_prcmu_devs[] = {
+static struct db8500_regulator_init_data db8500_regulators_pdata = {
+	.set_epod = set_epod,
+	.regulators = db8500_regulators,
+	.reg_num = DB8500_NUM_REGULATORS
+};
+
+static struct ux500_wdt_ops db8500_wdt_ops = {
+	.enable = enable_a9wdog,
+	.disable = disable_a9wdog,
+	.kick = kick_a9wdog,
+	.load = load_a9wdog,
+	.config = config_a9wdog,
+};
+
+static struct dbx500_temp_pdata db8500_temp_pdata = {
+	.ops = NULL,
+};
+
+static struct resource u8500_thsens_resources[] = {
 	{
-		.name = "db8500-prcmu-regulators",
-		.platform_data = &db8500_regulators,
-		.pdata_size = sizeof(db8500_regulators),
+		.name = "IRQ_HOTMON_LOW",
+		.start  = IRQ_PRCMU_HOTMON_LOW,
+		.end    = IRQ_PRCMU_HOTMON_LOW,
+		.flags  = IORESOURCE_IRQ,
 	},
 	{
-		.name = "cpufreq-u8500",
+		.name = "IRQ_HOTMON_HIGH",
+		.start  = IRQ_PRCMU_HOTMON_HIGH,
+		.end    = IRQ_PRCMU_HOTMON_HIGH,
+		.flags  = IORESOURCE_IRQ,
 	},
 };
+
+
+static struct mfd_cell db8500_prcmu_devs[] = {
+	{
+		.name = "cpufreq-ux500",
+		.id = -1,
+	},
+	{
+		.name = "db8500-prcmu-regulators",
+		.platform_data = &db8500_regulators_pdata,
+		.pdata_size = sizeof(db8500_regulators_pdata),
+	},
+	{
+		.name = "ux500_wdt",
+		.id = -1,
+		.platform_data = &db8500_wdt_ops,
+		.pdata_size = sizeof(db8500_wdt_ops),
+	},
+	{
+		.name = "dbx500_temp",
+		.platform_data = &db8500_temp_pdata,
+		.pdata_size = sizeof(db8500_temp_pdata),
+		.resources       = u8500_thsens_resources,
+		.num_resources  = ARRAY_SIZE(u8500_thsens_resources),
+	},
+	{
+		.name = "dbx500-prcmu",
+		.platform_data = &db8500_probe_data,
+		.pdata_size = sizeof(db8500_probe_data),
+	},
+};
+static struct cpufreq_frequency_table *freq_table;
+
+
+static void  db8500_prcmu_update_freq(void *pdata)
+{
+	freq_table =
+		(struct cpufreq_frequency_table *)pdata;
+	if  (!db8500_prcmu_has_arm_maxopp())
+		return;
+	switch (fw_info.version.project) {
+	case PRCMU_FW_PROJECT_U8500:
+	case PRCMU_FW_PROJECT_U9500:
+	case PRCMU_FW_PROJECT_U8420:
+	case PRCMU_FW_PROJECT_U8420_SYSCLK:
+	case PRCMU_FW_PROJECT_A9420:
+	case PRCMU_FW_PROJECT_U8500_MBL:
+		freq_table[3].frequency = 1000000;
+		break;
+	case PRCMU_FW_PROJECT_U8500_C2:
+	case PRCMU_FW_PROJECT_U8520:
+		freq_table[3].frequency = 1150000;
+		break;
+	default:
+		break;
+	}
+
+}
+
 
 /**
  * prcmu_fw_init - arch init call for the Linux PRCMU fw init logic
@@ -2961,9 +4170,6 @@ static struct mfd_cell db8500_prcmu_devs[] = {
 static int __init db8500_prcmu_probe(struct platform_device *pdev)
 {
 	int err = 0;
-
-	if (ux500_is_svp())
-		return -ENODEV;
 
 	init_prcm_registers();
 
@@ -2978,9 +4184,11 @@ static int __init db8500_prcmu_probe(struct platform_device *pdev)
 		goto no_irq_return;
 	}
 
-	if (cpu_is_u8500v20_or_later())
-		prcmu_config_esram0_deep_sleep(ESRAM0_DEEP_SLEEP_STATE_RET);
 
+	db8500_prcmu_config_esram0_deep_sleep(ESRAM0_DEEP_SLEEP_STATE_RET);
+	db8500_prcmu_update_freq(dev_get_platdata(&pdev->dev));
+
+	/*  register mfd devices */
 	err = mfd_add_devices(&pdev->dev, 0, db8500_prcmu_devs,
 			      ARRAY_SIZE(db8500_prcmu_devs), NULL,
 			      0);

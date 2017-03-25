@@ -15,11 +15,15 @@
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/mutex.h>
-#include <linux/export.h>
 #include <linux/slab.h>
 
 #include <linux/mfd/pcf50633/core.h>
-#include <linux/mfd/pcf50633/mbc.h>
+
+/* Two MBCS registers used during cold start */
+#define PCF50633_REG_MBCS1		0x4b
+#define PCF50633_REG_MBCS2		0x4c
+#define PCF50633_MBCS1_USBPRES 		0x01
+#define PCF50633_MBCS1_ADAPTPRES	0x01
 
 int pcf50633_register_irq(struct pcf50633 *pcf, int irq,
 			void (*handler) (int, void *), void *data)
