@@ -11,7 +11,6 @@
 #include <linux/module.h>
 #include <linux/kernel.h> /* printk() */
 #include <linux/fs.h> /* everything... */
-#include <linux/scatterlist.h>
 #include <linux/slab.h> /* kmalloc() */
 #include <linux/dmaengine.h>
 #include <linux/platform_device.h>
@@ -24,7 +23,6 @@
 #include <mach/coh901318.h>
 
 #include "coh901318_lli.h"
-#include "dmaengine.h"
 
 #define COHC_2_DEV(cohc) (&cohc->chan.dev->device)
 
@@ -40,10 +38,8 @@ struct coh901318_desc {
 	struct scatterlist *sg;
 	unsigned int sg_len;
 	struct coh901318_lli *lli;
-	enum dma_transfer_direction dir;
+	enum dma_data_direction dir;
 	unsigned long flags;
-	u32 head_config;
-	u32 head_ctrl;
 };
 
 struct coh901318_base {
@@ -60,6 +56,7 @@ struct coh901318_base {
 struct coh901318_chan {
 	spinlock_t lock;
 	int allocated;
+	int completed;
 	int id;
 	int stopped;
 
@@ -103,6 +100,13 @@ static void coh901318_list_print(struct coh901318_chan *cohc,
 
 static struct coh901318_base *debugfs_dma_base;
 static struct dentry *dma_dentry;
+
+static int coh901318_debugfs_open(struct inode *inode, struct file *file)
+{
+
+	file->private_data = inode->i_private;
+	return 0;
+}
 
 static int coh901318_debugfs_read(struct file *file, char __user *buf,
 				  size_t count, loff_t *f_pos)
@@ -151,7 +155,7 @@ static int coh901318_debugfs_read(struct file *file, char __user *buf,
 
 static const struct file_operations coh901318_debugfs_status_operations = {
 	.owner		= THIS_MODULE,
-	.open		= simple_open,
+	.open		= coh901318_debugfs_open,
 	.read		= coh901318_debugfs_read,
 	.llseek		= default_llseek,
 };
@@ -310,6 +314,20 @@ static int coh901318_prep_linked_list(struct coh901318_chan *cohc,
 	       COH901318_CX_CTRL_SPACING * channel);
 
 	return 0;
+}
+static dma_cookie_t
+coh901318_assign_cookie(struct coh901318_chan *cohc,
+			struct coh901318_desc *cohd)
+{
+	dma_cookie_t cookie = cohc->chan.cookie;
+
+	if (++cookie < 0)
+		cookie = 1;
+
+	cohc->chan.cookie = cookie;
+	cohd->desc.cookie = cookie;
+
+	return cookie;
 }
 
 static struct coh901318_desc *
@@ -642,9 +660,6 @@ static struct coh901318_desc *coh901318_queue_start(struct coh901318_chan *cohc)
 
 		coh901318_desc_submit(cohc, cohd);
 
-		/* Program the transaction head */
-		coh901318_set_conf(cohc, cohd->head_config);
-		coh901318_set_ctrl(cohc, cohd->head_ctrl);
 		coh901318_prep_linked_list(cohc, cohd->lli);
 
 		/* start dma job on this channel */
@@ -684,7 +699,7 @@ static void dma_tasklet(unsigned long data)
 	callback_param = cohd_fin->desc.callback_param;
 
 	/* sign this job as completed on the channel */
-	dma_cookie_complete(&cohd_fin->desc);
+	cohc->completed = cohd_fin->desc.cookie;
 
 	/* release the lli allocation and remove the descriptor */
 	coh901318_lli_free(&cohc->base->pool, &cohd_fin->lli);
@@ -908,7 +923,7 @@ static int coh901318_alloc_chan_resources(struct dma_chan *chan)
 	coh901318_config(cohc, NULL);
 
 	cohc->allocated = 1;
-	dma_cookie_init(chan);
+	cohc->completed = chan->cookie = 1;
 
 	spin_unlock_irqrestore(&cohc->lock, flags);
 
@@ -945,16 +960,16 @@ coh901318_tx_submit(struct dma_async_tx_descriptor *tx)
 						   desc);
 	struct coh901318_chan *cohc = to_coh901318_chan(tx->chan);
 	unsigned long flags;
-	dma_cookie_t cookie;
 
 	spin_lock_irqsave(&cohc->lock, flags);
-	cookie = dma_cookie_assign(tx);
+
+	tx->cookie = coh901318_assign_cookie(cohc, cohd);
 
 	coh901318_desc_queue(cohc, cohd);
 
 	spin_unlock_irqrestore(&cohc->lock, flags);
 
-	return cookie;
+	return tx->cookie;
 }
 
 static struct dma_async_tx_descriptor *
@@ -1013,8 +1028,8 @@ coh901318_prep_memcpy(struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
 
 static struct dma_async_tx_descriptor *
 coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
-			unsigned int sg_len, enum dma_transfer_direction direction,
-			unsigned long flags, void *context)
+			unsigned int sg_len, enum dma_data_direction direction,
+			unsigned long flags)
 {
 	struct coh901318_chan *cohc = to_coh901318_chan(chan);
 	struct coh901318_lli *lli;
@@ -1056,7 +1071,7 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
 	ctrl_last |= cohc->runtime_ctrl;
 	ctrl |= cohc->runtime_ctrl;
 
-	if (direction == DMA_MEM_TO_DEV) {
+	if (direction == DMA_TO_DEVICE) {
 		u32 tx_flags = COH901318_CX_CTRL_PRDD_SOURCE |
 			COH901318_CX_CTRL_SRC_ADDR_INC_ENABLE;
 
@@ -1064,7 +1079,7 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
 		ctrl_chained |= tx_flags;
 		ctrl_last |= tx_flags;
 		ctrl |= tx_flags;
-	} else if (direction == DMA_DEV_TO_MEM) {
+	} else if (direction == DMA_FROM_DEVICE) {
 		u32 rx_flags = COH901318_CX_CTRL_PRDD_DEST |
 			COH901318_CX_CTRL_DST_ADDR_INC_ENABLE;
 
@@ -1074,6 +1089,8 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
 		ctrl |= rx_flags;
 	} else
 		goto err_direction;
+
+	coh901318_set_conf(cohc, config);
 
 	/* The dma only supports transmitting packages up to
 	 * MAX_DMA_PACKET_SIZE. Calculate to total number of
@@ -1111,18 +1128,16 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
 	if (ret)
 		goto err_lli_fill;
 
+	/*
+	 * Set the default ctrl for the channel to the one from the lli,
+	 * things may have changed due to odd buffer alignment etc.
+	 */
+	coh901318_set_ctrl(cohc, lli->control);
 
 	COH_DBG(coh901318_list_print(cohc, lli));
 
 	/* Pick a descriptor to handle this transfer */
 	cohd = coh901318_desc_get(cohc);
-	cohd->head_config = config;
-	/*
-	 * Set the default head ctrl for the channel to the one from the
-	 * lli, things may have changed due to odd buffer alignment
-	 * etc.
-	 */
-	cohd->head_ctrl = lli->control;
 	cohd->dir = direction;
 	cohd->flags = flags;
 	cohd->desc.tx_submit = coh901318_tx_submit;
@@ -1144,12 +1159,17 @@ coh901318_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
 		 struct dma_tx_state *txstate)
 {
 	struct coh901318_chan *cohc = to_coh901318_chan(chan);
-	enum dma_status ret;
+	dma_cookie_t last_used;
+	dma_cookie_t last_complete;
+	int ret;
 
-	ret = dma_cookie_status(chan, cookie, txstate);
-	/* FIXME: should be conditional on ret != DMA_SUCCESS? */
-	dma_set_residue(txstate, coh901318_get_bytes_left(chan));
+	last_complete = cohc->completed;
+	last_used = chan->cookie;
 
+	ret = dma_async_is_complete(cookie, last_complete, last_used);
+
+	dma_set_tx_state(txstate, last_complete, last_used,
+			 coh901318_get_bytes_left(chan));
 	if (ret == DMA_IN_PROGRESS && cohc->stopped)
 		ret = DMA_PAUSED;
 
@@ -1248,11 +1268,11 @@ static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
 	int i = 0;
 
 	/* We only support mem to per or per to mem transfers */
-	if (config->direction == DMA_DEV_TO_MEM) {
+	if (config->direction == DMA_FROM_DEVICE) {
 		addr = config->src_addr;
 		addr_width = config->src_addr_width;
 		maxburst = config->src_maxburst;
-	} else if (config->direction == DMA_MEM_TO_DEV) {
+	} else if (config->direction == DMA_TO_DEVICE) {
 		addr = config->dst_addr;
 		addr_width = config->dst_addr_width;
 		maxburst = config->dst_maxburst;
