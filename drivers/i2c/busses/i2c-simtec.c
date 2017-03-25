@@ -156,7 +156,11 @@ static int simtec_i2c_remove(struct platform_device *dev)
 	return 0;
 }
 
+
 /* device driver */
+
+/* work with hotplug and coldplug */
+MODULE_ALIAS("platform:simtec-i2c");
 
 static struct platform_driver simtec_i2c_driver = {
 	.driver		= {
@@ -167,9 +171,19 @@ static struct platform_driver simtec_i2c_driver = {
 	.remove		= simtec_i2c_remove,
 };
 
-module_platform_driver(simtec_i2c_driver);
+static int __init i2c_adap_simtec_init(void)
+{
+	return platform_driver_register(&simtec_i2c_driver);
+}
+
+static void __exit i2c_adap_simtec_exit(void)
+{
+	platform_driver_unregister(&simtec_i2c_driver);
+}
+
+module_init(i2c_adap_simtec_init);
+module_exit(i2c_adap_simtec_exit);
 
 MODULE_DESCRIPTION("Simtec Generic I2C Bus driver");
 MODULE_AUTHOR("Ben Dooks <ben@simtec.co.uk>");
 MODULE_LICENSE("GPL");
-MODULE_ALIAS("platform:simtec-i2c");
