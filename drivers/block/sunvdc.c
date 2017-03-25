@@ -839,7 +839,10 @@ static struct vio_driver vdc_port_driver = {
 	.id_table	= vdc_port_match,
 	.probe		= vdc_port_probe,
 	.remove		= vdc_port_remove,
-	.name		= "vdc_port",
+	.driver		= {
+		.name	= "vdc_port",
+		.owner	= THIS_MODULE,
+	}
 };
 
 static int __init vdc_init(void)
