@@ -21,7 +21,6 @@
 #include <linux/ion.h>
 #include <linux/list.h>
 #include <linux/miscdevice.h>
-#include <linux/export.h>
 #include <linux/mm.h>
 #include <linux/mm_types.h>
 #include <linux/rbtree.h>
@@ -52,6 +51,7 @@ struct ion_device {
 	struct rb_root user_clients;
 	struct rb_root kernel_clients;
 	struct dentry *debug_root;
+	struct dentry *debug_detailed;
 };
 
 /**
@@ -80,6 +80,7 @@ struct ion_client {
 	struct task_struct *task;
 	pid_t pid;
 	struct dentry *debug_root;
+	struct dentry *debug_detailed;
 };
 
 /**
@@ -597,11 +598,12 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 	}
 	mutex_unlock(&client->lock);
 
-	seq_printf(s, "%16.16s: %16.16s\n", "heap_name", "size_in_bytes");
+	seq_printf(s, "%16.16s: %16.16s %16.16s\n",
+			"heap_name", "size_in_bytes", "refcount");
 	for (i = 0; i < ION_NUM_HEAPS; i++) {
 		if (!names[i])
 			continue;
-		seq_printf(s, "%16.16s: %16u %d\n", names[i], sizes[i],
+		seq_printf(s, "%16.16s: %16u %16d\n", names[i], sizes[i],
 			   atomic_read(&client->ref.refcount));
 	}
 	return 0;
@@ -614,6 +616,40 @@ static int ion_debug_client_open(struct inode *inode, struct file *file)
 
 static const struct file_operations debug_client_fops = {
 	.open = ion_debug_client_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static int ion_debug_detailed_client_show(struct seq_file *s, void *unused)
+{
+	struct ion_client *client = s->private;
+	struct rb_node *n;
+
+	seq_printf(s, "%16.16s: %16.16s %16.16s\n", "heap_name", "buffer size",
+		   "refcount");
+	mutex_lock(&client->lock);
+	for (n = rb_first(&client->handles); n; n = rb_next(n)) {
+		struct ion_handle *handle = rb_entry(n, struct ion_handle,
+						     node);
+		seq_printf(s, "%16.16s %16u %16d\n", handle->buffer->heap->name,
+			   handle->buffer->size,
+			   atomic_read(&handle->buffer->ref.refcount));
+	}
+	mutex_unlock(&client->lock);
+
+	return 0;
+}
+
+static int ion_debug_detailed_client_open(struct inode *inode,
+					  struct file *file)
+{
+	return single_open(file, ion_debug_detailed_client_show,
+			   inode->i_private);
+}
+
+static const struct file_operations debug_detailed_client_fops = {
+	.open = ion_debug_detailed_client_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
@@ -725,6 +761,13 @@ struct ion_client *ion_client_create(struct ion_device *dev,
 	client->debug_root = debugfs_create_file(debug_name, 0664,
 						 dev->debug_root, client,
 						 &debug_client_fops);
+
+	client->debug_detailed =
+		debugfs_create_file(debug_name, 0664,
+				    dev->debug_detailed,
+				    client,
+				    &debug_detailed_client_fops);
+
 	mutex_unlock(&dev->lock);
 
 	return client;
@@ -750,6 +793,7 @@ static void _ion_client_destroy(struct kref *kref)
 		rb_erase(&client->node, &dev->kernel_clients);
 	}
 	debugfs_remove_recursive(client->debug_root);
+	debugfs_remove_recursive(client->debug_detailed);
 	mutex_unlock(&dev->lock);
 
 	kfree(client);
@@ -1113,6 +1157,57 @@ static const struct file_operations debug_heap_fops = {
 	.release = single_release,
 };
 
+static void ion_debug_detailed_show(struct ion_client *client,
+				    struct ion_heap *heap, struct seq_file *s)
+{
+	struct rb_node *n;
+
+	mutex_lock(&client->lock);
+	for (n = rb_first(&client->handles); n; n = rb_next(n)) {
+		struct ion_handle *handle = rb_entry(n,
+						     struct ion_handle,
+						     node);
+		if (handle->buffer->heap == heap)
+			seq_printf(s, "%16u %16d\n", handle->buffer->size,
+				   atomic_read(&handle->buffer->ref.refcount));
+	}
+	mutex_unlock(&client->lock);
+}
+
+static int ion_debug_detailed_heap_show(struct seq_file *s, void *unused)
+{
+	struct ion_heap *heap = s->private;
+	struct ion_device *dev = heap->dev;
+	struct rb_node *n;
+
+	seq_printf(s, "%16.s %16.s\n", "buffer size", "refcount");
+	for (n = rb_first(&dev->user_clients); n; n = rb_next(n)) {
+		struct ion_client *client = rb_entry(n, struct ion_client,
+						     node);
+		ion_debug_detailed_show(client, heap, s);
+	}
+
+	for (n = rb_first(&dev->kernel_clients); n; n = rb_next(n)) {
+		struct ion_client *client = rb_entry(n, struct ion_client,
+						     node);
+		ion_debug_detailed_show(client, heap, s);
+	}
+	return 0;
+}
+
+static int ion_debug_detailed_heap_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, ion_debug_detailed_heap_show,
+			   inode->i_private);
+}
+
+static const struct file_operations debug_detailed_heap_fops = {
+	.open = ion_debug_detailed_heap_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 {
 	struct rb_node **p = &dev->heaps.rb_node;
@@ -1127,11 +1222,11 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 
 		if (heap->id < entry->id) {
 			p = &(*p)->rb_left;
-		} else if (heap->id > entry->id ) {
+		} else if (heap->id > entry->id) {
 			p = &(*p)->rb_right;
 		} else {
 			pr_err("%s: can not insert multiple heaps with "
-				"id %d\n", __func__, heap->id);
+			       "id %d\n", __func__, heap->id);
 			goto end;
 		}
 	}
@@ -1140,14 +1235,16 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 	rb_insert_color(&heap->node, &dev->heaps);
 	debugfs_create_file(heap->name, 0664, dev->debug_root, heap,
 			    &debug_heap_fops);
+
+	debugfs_create_file(heap->name, 0664, dev->debug_detailed, heap,
+			    &debug_detailed_heap_fops);
 end:
 	mutex_unlock(&dev->lock);
 }
 
 struct ion_device *ion_device_create(long (*custom_ioctl)
-				     (struct ion_client *client,
-				      unsigned int cmd,
-				      unsigned long arg))
+				      (struct ion_client *client,
+				       unsigned int cmd, unsigned long arg))
 {
 	struct ion_device *idev;
 	int ret;
@@ -1169,6 +1266,10 @@ struct ion_device *ion_device_create(long (*custom_ioctl)
 	idev->debug_root = debugfs_create_dir("ion", NULL);
 	if (IS_ERR_OR_NULL(idev->debug_root))
 		pr_err("ion: failed to create debug files.\n");
+
+	idev->debug_detailed = debugfs_create_dir("detailed", idev->debug_root);
+	if (IS_ERR_OR_NULL(idev->debug_detailed))
+		pr_err("ion: failed to create detailed debug files.\n");
 
 	idev->custom_ioctl = custom_ioctl;
 	idev->buffers = RB_ROOT;
