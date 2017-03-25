@@ -141,12 +141,28 @@ static int fdtv_read_uncorrected_blocks(struct dvb_frontend *fe, u32 *ucblocks)
 	return -EOPNOTSUPP;
 }
 
-static int fdtv_set_frontend(struct dvb_frontend *fe)
+static int fdtv_set_frontend(struct dvb_frontend *fe,
+			     struct dvb_frontend_parameters *params)
 {
-	struct dtv_frontend_properties *p = &fe->dtv_property_cache;
 	struct firedtv *fdtv = fe->sec_priv;
 
-	return avc_tuner_dsd(fdtv, p);
+	return avc_tuner_dsd(fdtv, params);
+}
+
+static int fdtv_get_frontend(struct dvb_frontend *fe,
+			     struct dvb_frontend_parameters *params)
+{
+	return -EOPNOTSUPP;
+}
+
+static int fdtv_get_property(struct dvb_frontend *fe, struct dtv_property *tvp)
+{
+	return 0;
+}
+
+static int fdtv_set_property(struct dvb_frontend *fe, struct dtv_property *tvp)
+{
+	return 0;
 }
 
 void fdtv_frontend_init(struct firedtv *fdtv, const char *name)
@@ -158,6 +174,10 @@ void fdtv_frontend_init(struct firedtv *fdtv, const char *name)
 	ops->sleep			= fdtv_sleep;
 
 	ops->set_frontend		= fdtv_set_frontend;
+	ops->get_frontend		= fdtv_get_frontend;
+
+	ops->get_property		= fdtv_get_property;
+	ops->set_property		= fdtv_set_property;
 
 	ops->read_status		= fdtv_read_status;
 	ops->read_ber			= fdtv_read_ber;
@@ -172,7 +192,7 @@ void fdtv_frontend_init(struct firedtv *fdtv, const char *name)
 
 	switch (fdtv->type) {
 	case FIREDTV_DVB_S:
-		ops->delsys[0]		= SYS_DVBS;
+		fi->type		= FE_QPSK;
 
 		fi->frequency_min	= 950000;
 		fi->frequency_max	= 2150000;
@@ -191,8 +211,7 @@ void fdtv_frontend_init(struct firedtv *fdtv, const char *name)
 		break;
 
 	case FIREDTV_DVB_S2:
-		ops->delsys[0]		= SYS_DVBS;
-		ops->delsys[1]		= SYS_DVBS2;
+		fi->type		= FE_QPSK;
 
 		fi->frequency_min	= 950000;
 		fi->frequency_max	= 2150000;
@@ -212,7 +231,7 @@ void fdtv_frontend_init(struct firedtv *fdtv, const char *name)
 		break;
 
 	case FIREDTV_DVB_C:
-		ops->delsys[0]		= SYS_DVBC_ANNEX_A;
+		fi->type		= FE_QAM;
 
 		fi->frequency_min	= 47000000;
 		fi->frequency_max	= 866000000;
@@ -230,7 +249,7 @@ void fdtv_frontend_init(struct firedtv *fdtv, const char *name)
 		break;
 
 	case FIREDTV_DVB_T:
-		ops->delsys[0]		= SYS_DVBT;
+		fi->type		= FE_OFDM;
 
 		fi->frequency_min	= 49000000;
 		fi->frequency_max	= 861000000;

@@ -34,7 +34,6 @@
 #include <linux/videodev2.h>
 #include <linux/clk.h>
 #include <linux/err.h>
-#include <linux/module.h>
 
 #include <mach/mux.h>
 
@@ -1157,6 +1156,17 @@ static struct platform_driver isif_driver = {
 	.probe = isif_probe,
 };
 
-module_platform_driver(isif_driver);
+static int __init isif_init(void)
+{
+	return platform_driver_register(&isif_driver);
+}
+
+static void isif_exit(void)
+{
+	platform_driver_unregister(&isif_driver);
+}
+
+module_init(isif_init);
+module_exit(isif_exit);
 
 MODULE_LICENSE("GPL");

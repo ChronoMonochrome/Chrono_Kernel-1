@@ -26,8 +26,6 @@
  *
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #include "stv06xx_st6422.h"
 
 static struct v4l2_pix_format st6422_mode[] = {
@@ -120,7 +118,7 @@ static int st6422_probe(struct sd *sd)
 	if (sd->bridge != BRIDGE_ST6422)
 		return -ENODEV;
 
-	pr_info("st6422 sensor detected\n");
+	info("st6422 sensor detected");
 
 	sd->gspca_dev.cam.cam_mode = st6422_mode;
 	sd->gspca_dev.cam.nmodes = ARRAY_SIZE(st6422_mode);

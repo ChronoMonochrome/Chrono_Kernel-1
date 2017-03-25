@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #define MODULE_NAME "stk014"
 
 #include "gspca.h"
@@ -67,7 +65,7 @@ static u8 reg_r(struct gspca_dev *gspca_dev,
 			gspca_dev->usb_buf, 1,
 			500);
 	if (ret < 0) {
-		pr_err("reg_r err %d\n", ret);
+		err("reg_r err %d", ret);
 		gspca_dev->usb_err = ret;
 		return 0;
 	}
@@ -92,7 +90,7 @@ static void reg_w(struct gspca_dev *gspca_dev,
 			0,
 			500);
 	if (ret < 0) {
-		pr_err("reg_w err %d\n", ret);
+		err("reg_w err %d", ret);
 		gspca_dev->usb_err = ret;
 	}
 }
@@ -122,7 +120,7 @@ static void rcv_val(struct gspca_dev *gspca_dev,
 			&alen,
 			500);		/* timeout in milliseconds */
 	if (ret < 0) {
-		pr_err("rcv_val err %d\n", ret);
+		err("rcv_val err %d", ret);
 		gspca_dev->usb_err = ret;
 	}
 }
@@ -165,7 +163,7 @@ static void snd_val(struct gspca_dev *gspca_dev,
 			&alen,
 			500);	/* timeout in milliseconds */
 	if (ret < 0) {
-		pr_err("snd_val err %d\n", ret);
+		err("snd_val err %d", ret);
 		gspca_dev->usb_err = ret;
 	} else {
 		if (ads == 0x003f08) {
@@ -236,7 +234,7 @@ static int sd_init(struct gspca_dev *gspca_dev)
 	ret = reg_r(gspca_dev, 0x0740);
 	if (gspca_dev->usb_err >= 0) {
 		if (ret != 0xff) {
-			pr_err("init reg: 0x%02x\n", ret);
+			err("init reg: 0x%02x", ret);
 			gspca_dev->usb_err = -EIO;
 		}
 	}
@@ -270,8 +268,8 @@ static int sd_start(struct gspca_dev *gspca_dev)
 					gspca_dev->iface,
 					gspca_dev->alt);
 	if (ret < 0) {
-		pr_err("set intf %d %d failed\n",
-		       gspca_dev->iface, gspca_dev->alt);
+		err("set intf %d %d failed",
+			gspca_dev->iface, gspca_dev->alt);
 		gspca_dev->usb_err = ret;
 		goto out;
 	}
@@ -443,4 +441,15 @@ static struct usb_driver sd_driver = {
 #endif
 };
 
-module_usb_driver(sd_driver);
+/* -- module insert / remove -- */
+static int __init sd_mod_init(void)
+{
+	return usb_register(&sd_driver);
+}
+static void __exit sd_mod_exit(void)
+{
+	usb_deregister(&sd_driver);
+}
+
+module_init(sd_mod_init);
+module_exit(sd_mod_exit);

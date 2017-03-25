@@ -135,6 +135,7 @@ void ivtv_set_osd_alpha(struct ivtv *itv)
 int ivtv_set_speed(struct ivtv *itv, int speed)
 {
 	u32 data[CX2341X_MBOX_MAX_DATA];
+	struct ivtv_stream *s;
 	int single_step = (speed == 1 || speed == -1);
 	DEFINE_WAIT(wait);
 
@@ -143,6 +144,8 @@ int ivtv_set_speed(struct ivtv *itv, int speed)
 	/* No change? */
 	if (speed == itv->speed && !single_step)
 		return 0;
+
+	s = &itv->streams[IVTV_DEC_STREAM_TYPE_MPG];
 
 	if (single_step && (speed < 0) == (itv->speed < 0)) {
 		/* Single step video and no need to change direction */
@@ -176,7 +179,6 @@ int ivtv_set_speed(struct ivtv *itv, int speed)
 		ivtv_vapi(itv, CX2341X_DEC_PAUSE_PLAYBACK, 1, 0);
 
 		/* Wait for any DMA to finish */
-		mutex_unlock(&itv->serialize_lock);
 		prepare_to_wait(&itv->dma_waitq, &wait, TASK_INTERRUPTIBLE);
 		while (test_bit(IVTV_F_I_DMA, &itv->i_flags)) {
 			got_sig = signal_pending(current);
@@ -186,7 +188,6 @@ int ivtv_set_speed(struct ivtv *itv, int speed)
 			schedule();
 		}
 		finish_wait(&itv->dma_waitq, &wait);
-		mutex_lock(&itv->serialize_lock);
 		if (got_sig)
 			return -EINTR;
 
@@ -243,40 +244,34 @@ static int ivtv_validate_speed(int cur_speed, int new_speed)
 }
 
 static int ivtv_video_command(struct ivtv *itv, struct ivtv_open_id *id,
-		struct v4l2_decoder_cmd *dc, int try)
+		struct video_command *vc, int try)
 {
 	struct ivtv_stream *s = &itv->streams[IVTV_DEC_STREAM_TYPE_MPG];
 
 	if (!(itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT))
 		return -EINVAL;
 
-	switch (dc->cmd) {
-	case V4L2_DEC_CMD_START: {
-		dc->flags &= V4L2_DEC_CMD_START_MUTE_AUDIO;
-		dc->start.speed = ivtv_validate_speed(itv->speed, dc->start.speed);
-		if (dc->start.speed < 0)
-			dc->start.format = V4L2_DEC_START_FMT_GOP;
-		else
-			dc->start.format = V4L2_DEC_START_FMT_NONE;
-		if (dc->start.speed != 500 && dc->start.speed != 1500)
-			dc->flags = dc->start.speed == 1000 ? 0 :
-					V4L2_DEC_CMD_START_MUTE_AUDIO;
+	switch (vc->cmd) {
+	case VIDEO_CMD_PLAY: {
+		vc->flags = 0;
+		vc->play.speed = ivtv_validate_speed(itv->speed, vc->play.speed);
+		if (vc->play.speed < 0)
+			vc->play.format = VIDEO_PLAY_FMT_GOP;
 		if (try) break;
 
-		itv->speed_mute_audio = dc->flags & V4L2_DEC_CMD_START_MUTE_AUDIO;
 		if (ivtv_set_output_mode(itv, OUT_MPG) != OUT_MPG)
 			return -EBUSY;
 		if (test_and_clear_bit(IVTV_F_I_DEC_PAUSED, &itv->i_flags)) {
 			/* forces ivtv_set_speed to be called */
 			itv->speed = 0;
 		}
-		return ivtv_start_decoding(id, dc->start.speed);
+		return ivtv_start_decoding(id, vc->play.speed);
 	}
 
-	case V4L2_DEC_CMD_STOP:
-		dc->flags &= V4L2_DEC_CMD_STOP_IMMEDIATELY | V4L2_DEC_CMD_STOP_TO_BLACK;
-		if (dc->flags & V4L2_DEC_CMD_STOP_IMMEDIATELY)
-			dc->stop.pts = 0;
+	case VIDEO_CMD_STOP:
+		vc->flags &= VIDEO_CMD_STOP_IMMEDIATELY|VIDEO_CMD_STOP_TO_BLACK;
+		if (vc->flags & VIDEO_CMD_STOP_IMMEDIATELY)
+			vc->stop.pts = 0;
 		if (try) break;
 		if (atomic_read(&itv->decoding) == 0)
 			return 0;
@@ -284,22 +279,22 @@ static int ivtv_video_command(struct ivtv *itv, struct ivtv_open_id *id,
 			return -EBUSY;
 
 		itv->output_mode = OUT_NONE;
-		return ivtv_stop_v4l2_decode_stream(s, dc->flags, dc->stop.pts);
+		return ivtv_stop_v4l2_decode_stream(s, vc->flags, vc->stop.pts);
 
-	case V4L2_DEC_CMD_PAUSE:
-		dc->flags &= V4L2_DEC_CMD_PAUSE_TO_BLACK;
+	case VIDEO_CMD_FREEZE:
+		vc->flags &= VIDEO_CMD_FREEZE_TO_BLACK;
 		if (try) break;
 		if (itv->output_mode != OUT_MPG)
 			return -EBUSY;
 		if (atomic_read(&itv->decoding) > 0) {
 			ivtv_vapi(itv, CX2341X_DEC_PAUSE_PLAYBACK, 1,
-				(dc->flags & V4L2_DEC_CMD_PAUSE_TO_BLACK) ? 1 : 0);
+				(vc->flags & VIDEO_CMD_FREEZE_TO_BLACK) ? 1 : 0);
 			set_bit(IVTV_F_I_DEC_PAUSED, &itv->i_flags);
 		}
 		break;
 
-	case V4L2_DEC_CMD_RESUME:
-		dc->flags = 0;
+	case VIDEO_CMD_CONTINUE:
+		vc->flags = 0;
 		if (try) break;
 		if (itv->output_mode != OUT_MPG)
 			return -EBUSY;
@@ -757,15 +752,13 @@ static int ivtv_s_register(struct file *file, void *fh, struct v4l2_dbg_register
 
 static int ivtv_querycap(struct file *file, void *fh, struct v4l2_capability *vcap)
 {
-	struct ivtv_open_id *id = fh2id(file->private_data);
-	struct ivtv *itv = id->itv;
-	struct ivtv_stream *s = &itv->streams[id->type];
+	struct ivtv *itv = fh2id(fh)->itv;
 
 	strlcpy(vcap->driver, IVTV_DRIVER_NAME, sizeof(vcap->driver));
 	strlcpy(vcap->card, itv->card_name, sizeof(vcap->card));
 	snprintf(vcap->bus_info, sizeof(vcap->bus_info), "PCI:%s", pci_name(itv->pdev));
-	vcap->capabilities = itv->v4l2_cap | V4L2_CAP_DEVICE_CAPS;
-	vcap->device_caps = s->caps;
+	vcap->version = IVTV_DRIVER_VERSION; 	    /* version */
+	vcap->capabilities = itv->v4l2_cap; 	    /* capabilities */
 	return 0;
 }
 
@@ -1115,7 +1108,6 @@ void ivtv_s_std_dec(struct ivtv *itv, v4l2_std_id *std)
 	 * happens within the first 100 lines of the top field.
 	 * Make 4 attempts to sync to the decoder before giving up.
 	 */
-	mutex_unlock(&itv->serialize_lock);
 	for (f = 0; f < 4; f++) {
 		prepare_to_wait(&itv->vsync_waitq, &wait,
 				TASK_UNINTERRUPTIBLE);
@@ -1124,7 +1116,6 @@ void ivtv_s_std_dec(struct ivtv *itv, v4l2_std_id *std)
 		schedule_timeout(msecs_to_jiffies(25));
 	}
 	finish_wait(&itv->vsync_waitq, &wait);
-	mutex_lock(&itv->serialize_lock);
 
 	if (f == 4)
 		IVTV_WARN("Mode change failed to sync to decoder\n");
@@ -1213,7 +1204,9 @@ static int ivtv_g_sliced_vbi_cap(struct file *file, void *fh, struct v4l2_sliced
 					cap->service_lines[f][l] = set;
 			}
 		}
-	} else if (cap->type == V4L2_BUF_TYPE_SLICED_VBI_OUTPUT) {
+		return 0;
+	}
+	if (cap->type == V4L2_BUF_TYPE_SLICED_VBI_OUTPUT) {
 		if (!(itv->v4l2_cap & V4L2_CAP_SLICED_VBI_OUTPUT))
 			return -EINVAL;
 		if (itv->is_60hz) {
@@ -1223,16 +1216,9 @@ static int ivtv_g_sliced_vbi_cap(struct file *file, void *fh, struct v4l2_sliced
 			cap->service_lines[0][23] = V4L2_SLICED_WSS_625;
 			cap->service_lines[0][16] = V4L2_SLICED_VPS;
 		}
-	} else {
-		return -EINVAL;
+		return 0;
 	}
-
-	set = 0;
-	for (f = 0; f < 2; f++)
-		for (l = 0; l < 24; l++)
-			set |= cap->service_lines[f][l];
-	cap->service_set = set;
-	return 0;
+	return -EINVAL;
 }
 
 static int ivtv_g_enc_index(struct file *file, void *fh, struct v4l2_enc_idx *idx)
@@ -1465,12 +1451,11 @@ static int ivtv_subscribe_event(struct v4l2_fh *fh, struct v4l2_event_subscripti
 	switch (sub->type) {
 	case V4L2_EVENT_VSYNC:
 	case V4L2_EVENT_EOS:
-		return v4l2_event_subscribe(fh, sub, 0, NULL);
-	case V4L2_EVENT_CTRL:
-		return v4l2_event_subscribe(fh, sub, 0, &v4l2_ctrl_sub_ev_ops);
+		break;
 	default:
 		return -EINVAL;
 	}
+	return v4l2_event_subscribe(fh, sub);
 }
 
 static int ivtv_log_status(struct file *file, void *fh)
@@ -1483,6 +1468,8 @@ static int ivtv_log_status(struct file *file, void *fh)
 	struct v4l2_audio audin;
 	int i;
 
+	IVTV_INFO("=================  START STATUS CARD #%d  =================\n",
+		       itv->instance);
 	IVTV_INFO("Version: %s Card: %s\n", IVTV_VERSION, itv->card_name);
 	if (itv->hw_flags & IVTV_HW_TVEEPROM) {
 		struct tveeprom tv;
@@ -1505,6 +1492,13 @@ static int ivtv_log_status(struct file *file, void *fh)
 			"YUV Streaming",
 			"YUV Frames",
 			"Passthrough",
+		};
+		static const char * const audio_modes[5] = {
+			"Stereo",
+			"Left",
+			"Right",
+			"Mono",
+			"Swapped"
 		};
 		static const char * const alpha_mode[4] = {
 			"None",
@@ -1534,6 +1528,9 @@ static int ivtv_log_status(struct file *file, void *fh)
 		ivtv_get_output(itv, itv->active_output, &vidout);
 		ivtv_get_audio_output(itv, 0, &audout);
 		IVTV_INFO("Video Output: %s\n", vidout.name);
+		IVTV_INFO("Audio Output: %s (Stereo/Bilingual: %s/%s)\n", audout.name,
+			audio_modes[itv->audio_stereo_mode],
+			audio_modes[itv->audio_bilingual_mode]);
 		if (mode < 0 || mode > OUT_PASSTHROUGH)
 			mode = OUT_NONE;
 		IVTV_INFO("Output Mode:  %s\n", output_modes[mode]);
@@ -1561,25 +1558,10 @@ static int ivtv_log_status(struct file *file, void *fh)
 	IVTV_INFO("Read MPG/VBI: %lld/%lld bytes\n",
 			(long long)itv->mpg_data_received,
 			(long long)itv->vbi_data_inserted);
+	IVTV_INFO("==================  END STATUS CARD #%d  ==================\n",
+			itv->instance);
+
 	return 0;
-}
-
-static int ivtv_decoder_cmd(struct file *file, void *fh, struct v4l2_decoder_cmd *dec)
-{
-	struct ivtv_open_id *id = fh2id(file->private_data);
-	struct ivtv *itv = id->itv;
-
-	IVTV_DEBUG_IOCTL("VIDIOC_DECODER_CMD %d\n", dec->cmd);
-	return ivtv_video_command(itv, id, dec, false);
-}
-
-static int ivtv_try_decoder_cmd(struct file *file, void *fh, struct v4l2_decoder_cmd *dec)
-{
-	struct ivtv_open_id *id = fh2id(file->private_data);
-	struct ivtv *itv = id->itv;
-
-	IVTV_DEBUG_IOCTL("VIDIOC_TRY_DECODER_CMD %d\n", dec->cmd);
-	return ivtv_video_command(itv, id, dec, true);
 }
 
 static int ivtv_decoder_ioctls(struct file *filp, unsigned int cmd, void *arg)
@@ -1615,15 +1597,9 @@ static int ivtv_decoder_ioctls(struct file *filp, unsigned int cmd, void *arg)
 		return ivtv_yuv_prep_frame(itv, args);
 	}
 
-	case IVTV_IOC_PASSTHROUGH_MODE:
-		IVTV_DEBUG_IOCTL("IVTV_IOC_PASSTHROUGH_MODE\n");
-		if (!(itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT))
-			return -EINVAL;
-		return ivtv_passthrough_mode(itv, *(int *)arg != 0);
-
 	case VIDEO_GET_PTS: {
-		s64 *pts = arg;
-		s64 frame;
+		u32 data[CX2341X_MBOX_MAX_DATA];
+		u64 *pts = arg;
 
 		IVTV_DEBUG_IOCTL("VIDEO_GET_PTS\n");
 		if (s->type < IVTV_DEC_STREAM_TYPE_MPG) {
@@ -1632,12 +1608,29 @@ static int ivtv_decoder_ioctls(struct file *filp, unsigned int cmd, void *arg)
 		}
 		if (!(itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT))
 			return -EINVAL;
-		return ivtv_g_pts_frame(itv, pts, &frame);
+
+		if (test_bit(IVTV_F_I_VALID_DEC_TIMINGS, &itv->i_flags)) {
+			*pts = (u64) ((u64)itv->last_dec_timing[2] << 32) |
+					(u64)itv->last_dec_timing[1];
+			break;
+		}
+		*pts = 0;
+		if (atomic_read(&itv->decoding)) {
+			if (ivtv_api(itv, CX2341X_DEC_GET_TIMING_INFO, 5, data)) {
+				IVTV_DEBUG_WARN("GET_TIMING: couldn't read clock\n");
+				return -EIO;
+			}
+			memcpy(itv->last_dec_timing, data, sizeof(itv->last_dec_timing));
+			set_bit(IVTV_F_I_VALID_DEC_TIMINGS, &itv->i_flags);
+			*pts = (u64) ((u64) data[2] << 32) | (u64) data[1];
+			/*timing->scr = (u64) (((u64) data[4] << 32) | (u64) (data[3]));*/
+		}
+		break;
 	}
 
 	case VIDEO_GET_FRAME_COUNT: {
-		s64 *frame = arg;
-		s64 pts;
+		u32 data[CX2341X_MBOX_MAX_DATA];
+		u64 *frame = arg;
 
 		IVTV_DEBUG_IOCTL("VIDEO_GET_FRAME_COUNT\n");
 		if (s->type < IVTV_DEC_STREAM_TYPE_MPG) {
@@ -1646,58 +1639,71 @@ static int ivtv_decoder_ioctls(struct file *filp, unsigned int cmd, void *arg)
 		}
 		if (!(itv->v4l2_cap & V4L2_CAP_VIDEO_OUTPUT))
 			return -EINVAL;
-		return ivtv_g_pts_frame(itv, &pts, frame);
+
+		if (test_bit(IVTV_F_I_VALID_DEC_TIMINGS, &itv->i_flags)) {
+			*frame = itv->last_dec_timing[0];
+			break;
+		}
+		*frame = 0;
+		if (atomic_read(&itv->decoding)) {
+			if (ivtv_api(itv, CX2341X_DEC_GET_TIMING_INFO, 5, data)) {
+				IVTV_DEBUG_WARN("GET_TIMING: couldn't read clock\n");
+				return -EIO;
+			}
+			memcpy(itv->last_dec_timing, data, sizeof(itv->last_dec_timing));
+			set_bit(IVTV_F_I_VALID_DEC_TIMINGS, &itv->i_flags);
+			*frame = data[0];
+		}
+		break;
 	}
 
 	case VIDEO_PLAY: {
-		struct v4l2_decoder_cmd dc;
+		struct video_command vc;
 
 		IVTV_DEBUG_IOCTL("VIDEO_PLAY\n");
-		memset(&dc, 0, sizeof(dc));
-		dc.cmd = V4L2_DEC_CMD_START;
-		return ivtv_video_command(itv, id, &dc, 0);
+		memset(&vc, 0, sizeof(vc));
+		vc.cmd = VIDEO_CMD_PLAY;
+		return ivtv_video_command(itv, id, &vc, 0);
 	}
 
 	case VIDEO_STOP: {
-		struct v4l2_decoder_cmd dc;
+		struct video_command vc;
 
 		IVTV_DEBUG_IOCTL("VIDEO_STOP\n");
-		memset(&dc, 0, sizeof(dc));
-		dc.cmd = V4L2_DEC_CMD_STOP;
-		dc.flags = V4L2_DEC_CMD_STOP_TO_BLACK | V4L2_DEC_CMD_STOP_IMMEDIATELY;
-		return ivtv_video_command(itv, id, &dc, 0);
+		memset(&vc, 0, sizeof(vc));
+		vc.cmd = VIDEO_CMD_STOP;
+		vc.flags = VIDEO_CMD_STOP_TO_BLACK | VIDEO_CMD_STOP_IMMEDIATELY;
+		return ivtv_video_command(itv, id, &vc, 0);
 	}
 
 	case VIDEO_FREEZE: {
-		struct v4l2_decoder_cmd dc;
+		struct video_command vc;
 
 		IVTV_DEBUG_IOCTL("VIDEO_FREEZE\n");
-		memset(&dc, 0, sizeof(dc));
-		dc.cmd = V4L2_DEC_CMD_PAUSE;
-		return ivtv_video_command(itv, id, &dc, 0);
+		memset(&vc, 0, sizeof(vc));
+		vc.cmd = VIDEO_CMD_FREEZE;
+		return ivtv_video_command(itv, id, &vc, 0);
 	}
 
 	case VIDEO_CONTINUE: {
-		struct v4l2_decoder_cmd dc;
+		struct video_command vc;
 
 		IVTV_DEBUG_IOCTL("VIDEO_CONTINUE\n");
-		memset(&dc, 0, sizeof(dc));
-		dc.cmd = V4L2_DEC_CMD_RESUME;
-		return ivtv_video_command(itv, id, &dc, 0);
+		memset(&vc, 0, sizeof(vc));
+		vc.cmd = VIDEO_CMD_CONTINUE;
+		return ivtv_video_command(itv, id, &vc, 0);
 	}
 
 	case VIDEO_COMMAND:
 	case VIDEO_TRY_COMMAND: {
-		/* Note: struct v4l2_decoder_cmd has the same layout as
-		   struct video_command */
-		struct v4l2_decoder_cmd *dc = arg;
+		struct video_command *vc = arg;
 		int try = (cmd == VIDEO_TRY_COMMAND);
 
 		if (try)
-			IVTV_DEBUG_IOCTL("VIDEO_TRY_COMMAND %d\n", dc->cmd);
+			IVTV_DEBUG_IOCTL("VIDEO_TRY_COMMAND %d\n", vc->cmd);
 		else
-			IVTV_DEBUG_IOCTL("VIDEO_COMMAND %d\n", dc->cmd);
-		return ivtv_video_command(itv, id, dc, try);
+			IVTV_DEBUG_IOCTL("VIDEO_COMMAND %d\n", vc->cmd);
+		return ivtv_video_command(itv, id, vc, try);
 	}
 
 	case VIDEO_GET_EVENT: {
@@ -1761,13 +1767,17 @@ static int ivtv_decoder_ioctls(struct file *filp, unsigned int cmd, void *arg)
 		IVTV_DEBUG_IOCTL("AUDIO_CHANNEL_SELECT\n");
 		if (iarg > AUDIO_STEREO_SWAPPED)
 			return -EINVAL;
-		return v4l2_ctrl_s_ctrl(itv->ctrl_audio_playback, iarg + 1);
+		itv->audio_stereo_mode = iarg;
+		ivtv_vapi(itv, CX2341X_DEC_SET_AUDIO_MODE, 2, itv->audio_bilingual_mode, itv->audio_stereo_mode);
+		return 0;
 
 	case AUDIO_BILINGUAL_CHANNEL_SELECT:
 		IVTV_DEBUG_IOCTL("AUDIO_BILINGUAL_CHANNEL_SELECT\n");
 		if (iarg > AUDIO_STEREO_SWAPPED)
 			return -EINVAL;
-		return v4l2_ctrl_s_ctrl(itv->ctrl_audio_multilingual_playback, iarg + 1);
+		itv->audio_bilingual_mode = iarg;
+		ivtv_vapi(itv, CX2341X_DEC_SET_AUDIO_MODE, 2, itv->audio_bilingual_mode, itv->audio_stereo_mode);
+		return 0;
 
 	default:
 		return -EINVAL;
@@ -1782,7 +1792,6 @@ static long ivtv_default(struct file *file, void *fh, bool valid_prio,
 
 	if (!valid_prio) {
 		switch (cmd) {
-		case IVTV_IOC_PASSTHROUGH_MODE:
 		case VIDEO_PLAY:
 		case VIDEO_STOP:
 		case VIDEO_FREEZE:
@@ -1808,7 +1817,6 @@ static long ivtv_default(struct file *file, void *fh, bool valid_prio,
 	}
 
 	case IVTV_IOC_DMA_FRAME:
-	case IVTV_IOC_PASSTHROUGH_MODE:
 	case VIDEO_GET_PTS:
 	case VIDEO_GET_FRAME_COUNT:
 	case VIDEO_GET_EVENT:
@@ -1825,9 +1833,37 @@ static long ivtv_default(struct file *file, void *fh, bool valid_prio,
 		return ivtv_decoder_ioctls(file, cmd, (void *)arg);
 
 	default:
-		return -ENOTTY;
+		return -EINVAL;
 	}
 	return 0;
+}
+
+static long ivtv_serialized_ioctl(struct ivtv *itv, struct file *filp,
+		unsigned int cmd, unsigned long arg)
+{
+	struct video_device *vfd = video_devdata(filp);
+	long ret;
+
+	if (ivtv_debug & IVTV_DBGFLG_IOCTL)
+		vfd->debug = V4L2_DEBUG_IOCTL | V4L2_DEBUG_IOCTL_ARG;
+	ret = video_ioctl2(filp, cmd, arg);
+	vfd->debug = 0;
+	return ret;
+}
+
+long ivtv_v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	struct ivtv_open_id *id = fh2id(filp->private_data);
+	struct ivtv *itv = id->itv;
+	long res;
+
+	/* DQEVENT can block, so this should not run with the serialize lock */
+	if (cmd == VIDIOC_DQEVENT)
+		return ivtv_serialized_ioctl(itv, filp, cmd, arg);
+	mutex_lock(&itv->serialize_lock);
+	res = ivtv_serialized_ioctl(itv, filp, cmd, arg);
+	mutex_unlock(&itv->serialize_lock);
+	return res;
 }
 
 static const struct v4l2_ioctl_ops ivtv_ioctl_ops = {
@@ -1861,8 +1897,6 @@ static const struct v4l2_ioctl_ops ivtv_ioctl_ops = {
 	.vidioc_enum_fmt_vid_cap 	    = ivtv_enum_fmt_vid_cap,
 	.vidioc_encoder_cmd  		    = ivtv_encoder_cmd,
 	.vidioc_try_encoder_cmd 	    = ivtv_try_encoder_cmd,
-	.vidioc_decoder_cmd		    = ivtv_decoder_cmd,
-	.vidioc_try_decoder_cmd		    = ivtv_try_decoder_cmd,
 	.vidioc_enum_fmt_vid_out 	    = ivtv_enum_fmt_vid_out,
 	.vidioc_g_fmt_vid_cap 		    = ivtv_g_fmt_vid_cap,
 	.vidioc_g_fmt_vbi_cap		    = ivtv_g_fmt_vbi_cap,

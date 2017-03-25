@@ -28,8 +28,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #define MODULE_NAME "konica"
 
 #include <linux/input.h>
@@ -50,8 +48,107 @@ struct sd {
 	struct gspca_dev gspca_dev;	/* !! must be the first item */
 	struct urb *last_data_urb;
 	u8 snapshot_pressed;
+	u8 brightness;
+	u8 contrast;
+	u8 saturation;
+	u8 whitebal;
+	u8 sharpness;
 };
 
+/* V4L2 controls supported by the driver */
+static int sd_setbrightness(struct gspca_dev *gspca_dev, __s32 val);
+static int sd_getbrightness(struct gspca_dev *gspca_dev, __s32 *val);
+static int sd_setcontrast(struct gspca_dev *gspca_dev, __s32 val);
+static int sd_getcontrast(struct gspca_dev *gspca_dev, __s32 *val);
+static int sd_setsaturation(struct gspca_dev *gspca_dev, __s32 val);
+static int sd_getsaturation(struct gspca_dev *gspca_dev, __s32 *val);
+static int sd_setwhitebal(struct gspca_dev *gspca_dev, __s32 val);
+static int sd_getwhitebal(struct gspca_dev *gspca_dev, __s32 *val);
+static int sd_setsharpness(struct gspca_dev *gspca_dev, __s32 val);
+static int sd_getsharpness(struct gspca_dev *gspca_dev, __s32 *val);
+
+static const struct ctrl sd_ctrls[] = {
+#define SD_BRIGHTNESS 0
+	{
+	    {
+		.id      = V4L2_CID_BRIGHTNESS,
+		.type    = V4L2_CTRL_TYPE_INTEGER,
+		.name    = "Brightness",
+		.minimum = 0,
+		.maximum = 9,
+		.step = 1,
+#define BRIGHTNESS_DEFAULT 4
+		.default_value = BRIGHTNESS_DEFAULT,
+		.flags = 0,
+	    },
+	    .set = sd_setbrightness,
+	    .get = sd_getbrightness,
+	},
+#define SD_CONTRAST 1
+	{
+	    {
+		.id = V4L2_CID_CONTRAST,
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.name = "Contrast",
+		.minimum = 0,
+		.maximum = 9,
+		.step = 4,
+#define CONTRAST_DEFAULT 10
+		.default_value = CONTRAST_DEFAULT,
+		.flags = 0,
+	    },
+	    .set = sd_setcontrast,
+	    .get = sd_getcontrast,
+	},
+#define SD_SATURATION 2
+	{
+	    {
+		.id	= V4L2_CID_SATURATION,
+		.type	= V4L2_CTRL_TYPE_INTEGER,
+		.name	= "Saturation",
+		.minimum = 0,
+		.maximum = 9,
+		.step	= 1,
+#define SATURATION_DEFAULT 4
+		.default_value = SATURATION_DEFAULT,
+		.flags = 0,
+	    },
+	    .set = sd_setsaturation,
+	    .get = sd_getsaturation,
+	},
+#define SD_WHITEBAL 3
+	{
+	    {
+		.id = V4L2_CID_WHITE_BALANCE_TEMPERATURE,
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.name = "White Balance",
+		.minimum = 0,
+		.maximum = 33,
+		.step = 1,
+#define WHITEBAL_DEFAULT 25
+		.default_value = WHITEBAL_DEFAULT,
+		.flags = 0,
+	    },
+	    .set = sd_setwhitebal,
+	    .get = sd_getwhitebal,
+	},
+#define SD_SHARPNESS 4
+	{
+	    {
+		.id = V4L2_CID_SHARPNESS,
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.name = "Sharpness",
+		.minimum = 0,
+		.maximum = 9,
+		.step = 1,
+#define SHARPNESS_DEFAULT 4
+		.default_value = SHARPNESS_DEFAULT,
+		.flags = 0,
+	    },
+	    .set = sd_setsharpness,
+	    .get = sd_getsharpness,
+	},
+};
 
 /* .priv is what goes to register 8 for this mode, known working values:
    0x00 -> 176x144, cropped
@@ -103,8 +200,7 @@ static void reg_w(struct gspca_dev *gspca_dev, u16 value, u16 index)
 			0,
 			1000);
 	if (ret < 0) {
-		pr_err("reg_w err writing %02x to %02x: %d\n",
-		       value, index, ret);
+		err("reg_w err %d", ret);
 		gspca_dev->usb_err = ret;
 	}
 }
@@ -125,7 +221,7 @@ static void reg_r(struct gspca_dev *gspca_dev, u16 value, u16 index)
 			2,
 			1000);
 	if (ret < 0) {
-		pr_err("reg_r err %d\n", ret);
+		err("reg_w err %d", ret);
 		gspca_dev->usb_err = ret;
 	}
 }
@@ -144,9 +240,20 @@ static void konica_stream_off(struct gspca_dev *gspca_dev)
 static int sd_config(struct gspca_dev *gspca_dev,
 			const struct usb_device_id *id)
 {
+	struct sd *sd = (struct sd *) gspca_dev;
+
 	gspca_dev->cam.cam_mode = vga_mode;
 	gspca_dev->cam.nmodes = ARRAY_SIZE(vga_mode);
 	gspca_dev->cam.no_urb_create = 1;
+	/* The highest alt setting has an isoc packetsize of 0, so we
+	   don't want to use it */
+	gspca_dev->nbalt--;
+
+	sd->brightness  = BRIGHTNESS_DEFAULT;
+	sd->contrast    = CONTRAST_DEFAULT;
+	sd->saturation  = SATURATION_DEFAULT;
+	sd->whitebal    = WHITEBAL_DEFAULT;
+	sd->sharpness   = SHARPNESS_DEFAULT;
 
 	return 0;
 }
@@ -154,23 +261,16 @@ static int sd_config(struct gspca_dev *gspca_dev,
 /* this function is called at probe and resume time */
 static int sd_init(struct gspca_dev *gspca_dev)
 {
-	int i;
-
-	/*
-	 * The konica needs a freaking large time to "boot" (approx 6.5 sec.),
-	 * and does not want to be bothered while doing so :|
-	 * Register 0x10 counts from 1 - 3, with 3 being "ready"
-	 */
-	msleep(6000);
-	for (i = 0; i < 20; i++) {
-		reg_r(gspca_dev, 0, 0x10);
-		if (gspca_dev->usb_buf[0] == 3)
-			break;
-		msleep(100);
-	}
+	/* HDG not sure if these 2 reads are needed */
+	reg_r(gspca_dev, 0, 0x10);
+	PDEBUG(D_PROBE, "Reg 0x10 reads: %02x %02x",
+	       gspca_dev->usb_buf[0], gspca_dev->usb_buf[1]);
+	reg_r(gspca_dev, 0, 0x10);
+	PDEBUG(D_PROBE, "Reg 0x10 reads: %02x %02x",
+	       gspca_dev->usb_buf[0], gspca_dev->usb_buf[1]);
 	reg_w(gspca_dev, 0, 0x0d);
 
-	return gspca_dev->usb_err;
+	return 0;
 }
 
 static int sd_start(struct gspca_dev *gspca_dev)
@@ -184,11 +284,17 @@ static int sd_start(struct gspca_dev *gspca_dev)
 	intf = usb_ifnum_to_if(sd->gspca_dev.dev, sd->gspca_dev.iface);
 	alt = usb_altnum_to_altsetting(intf, sd->gspca_dev.alt);
 	if (!alt) {
-		pr_err("Couldn't get altsetting\n");
+		err("Couldn't get altsetting");
 		return -EIO;
 	}
 
 	packet_size = le16_to_cpu(alt->endpoint[0].desc.wMaxPacketSize);
+
+	reg_w(gspca_dev, sd->brightness, BRIGHTNESS_REG);
+	reg_w(gspca_dev, sd->whitebal, WHITEBAL_REG);
+	reg_w(gspca_dev, sd->contrast, CONTRAST_REG);
+	reg_w(gspca_dev, sd->saturation, SATURATION_REG);
+	reg_w(gspca_dev, sd->sharpness, SHARPNESS_REG);
 
 	n = gspca_dev->cam.cam_mode[gspca_dev->curr_mode].priv;
 	reg_w(gspca_dev, n, 0x08);
@@ -209,7 +315,7 @@ static int sd_start(struct gspca_dev *gspca_dev)
 			le16_to_cpu(alt->endpoint[i].desc.wMaxPacketSize);
 		urb = usb_alloc_urb(SD_NPKT, GFP_KERNEL);
 		if (!urb) {
-			pr_err("usb_alloc_urb failed\n");
+			err("usb_alloc_urb failed");
 			return -ENOMEM;
 		}
 		gspca_dev->urb[n] = urb;
@@ -218,7 +324,7 @@ static int sd_start(struct gspca_dev *gspca_dev)
 						GFP_KERNEL,
 						&urb->transfer_dma);
 		if (urb->transfer_buffer == NULL) {
-			pr_err("usb_buffer_alloc failed\n");
+			err("usb_buffer_alloc failed");
 			return -ENOMEM;
 		}
 
@@ -280,7 +386,7 @@ static void sd_isoc_irq(struct urb *urb)
 		PDEBUG(D_ERR, "urb status: %d", urb->status);
 		st = usb_submit_urb(urb, GFP_ATOMIC);
 		if (st < 0)
-			pr_err("resubmit urb error %d\n", st);
+			err("resubmit urb error %d", st);
 		return;
 	}
 
@@ -371,85 +477,128 @@ resubmit:
 	}
 	st = usb_submit_urb(status_urb, GFP_ATOMIC);
 	if (st < 0)
-		pr_err("usb_submit_urb(status_urb) ret %d\n", st);
+		err("usb_submit_urb(status_urb) ret %d", st);
 }
 
-static int sd_s_ctrl(struct v4l2_ctrl *ctrl)
+static int sd_setbrightness(struct gspca_dev *gspca_dev, __s32 val)
 {
-	struct gspca_dev *gspca_dev =
-		container_of(ctrl->handler, struct gspca_dev, ctrl_handler);
+	struct sd *sd = (struct sd *) gspca_dev;
 
-	gspca_dev->usb_err = 0;
-
-	if (!gspca_dev->streaming)
-		return 0;
-
-	switch (ctrl->id) {
-	case V4L2_CID_BRIGHTNESS:
+	sd->brightness = val;
+	if (gspca_dev->streaming) {
 		konica_stream_off(gspca_dev);
-		reg_w(gspca_dev, ctrl->val, BRIGHTNESS_REG);
+		reg_w(gspca_dev, sd->brightness, BRIGHTNESS_REG);
 		konica_stream_on(gspca_dev);
-		break;
-	case V4L2_CID_CONTRAST:
-		konica_stream_off(gspca_dev);
-		reg_w(gspca_dev, ctrl->val, CONTRAST_REG);
-		konica_stream_on(gspca_dev);
-		break;
-	case V4L2_CID_SATURATION:
-		konica_stream_off(gspca_dev);
-		reg_w(gspca_dev, ctrl->val, SATURATION_REG);
-		konica_stream_on(gspca_dev);
-		break;
-	case V4L2_CID_WHITE_BALANCE_TEMPERATURE:
-		konica_stream_off(gspca_dev);
-		reg_w(gspca_dev, ctrl->val, WHITEBAL_REG);
-		konica_stream_on(gspca_dev);
-		break;
-	case V4L2_CID_SHARPNESS:
-		konica_stream_off(gspca_dev);
-		reg_w(gspca_dev, ctrl->val, SHARPNESS_REG);
-		konica_stream_on(gspca_dev);
-		break;
 	}
-	return gspca_dev->usb_err;
+
+	return 0;
 }
 
-static const struct v4l2_ctrl_ops sd_ctrl_ops = {
-	.s_ctrl = sd_s_ctrl,
-};
-
-static int sd_init_controls(struct gspca_dev *gspca_dev)
+static int sd_getbrightness(struct gspca_dev *gspca_dev, __s32 *val)
 {
-	struct v4l2_ctrl_handler *hdl = &gspca_dev->ctrl_handler;
+	struct sd *sd = (struct sd *) gspca_dev;
 
-	gspca_dev->vdev.ctrl_handler = hdl;
-	v4l2_ctrl_handler_init(hdl, 5);
-	v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
-			V4L2_CID_BRIGHTNESS, 0, 9, 1, 4);
-	/* Needs to be verified */
-	v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
-			V4L2_CID_CONTRAST, 0, 9, 1, 4);
-	v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
-			V4L2_CID_SATURATION, 0, 9, 1, 4);
-	v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
-			V4L2_CID_WHITE_BALANCE_TEMPERATURE,
-			0, 33, 1, 25);
-	v4l2_ctrl_new_std(hdl, &sd_ctrl_ops,
-			V4L2_CID_SHARPNESS, 0, 9, 1, 4);
+	*val = sd->brightness;
 
-	if (hdl->error) {
-		pr_err("Could not initialize controls\n");
-		return hdl->error;
+	return 0;
+}
+
+static int sd_setcontrast(struct gspca_dev *gspca_dev, __s32 val)
+{
+	struct sd *sd = (struct sd *) gspca_dev;
+
+	sd->contrast = val;
+	if (gspca_dev->streaming) {
+		konica_stream_off(gspca_dev);
+		reg_w(gspca_dev, sd->contrast, CONTRAST_REG);
+		konica_stream_on(gspca_dev);
 	}
+
+	return 0;
+}
+
+static int sd_getcontrast(struct gspca_dev *gspca_dev, __s32 *val)
+{
+	struct sd *sd = (struct sd *) gspca_dev;
+
+	*val = sd->contrast;
+
+	return 0;
+}
+
+static int sd_setsaturation(struct gspca_dev *gspca_dev, __s32 val)
+{
+	struct sd *sd = (struct sd *) gspca_dev;
+
+	sd->saturation = val;
+	if (gspca_dev->streaming) {
+		konica_stream_off(gspca_dev);
+		reg_w(gspca_dev, sd->saturation, SATURATION_REG);
+		konica_stream_on(gspca_dev);
+	}
+	return 0;
+}
+
+static int sd_getsaturation(struct gspca_dev *gspca_dev, __s32 *val)
+{
+	struct sd *sd = (struct sd *) gspca_dev;
+
+	*val = sd->saturation;
+
+	return 0;
+}
+
+static int sd_setwhitebal(struct gspca_dev *gspca_dev, __s32 val)
+{
+	struct sd *sd = (struct sd *) gspca_dev;
+
+	sd->whitebal = val;
+	if (gspca_dev->streaming) {
+		konica_stream_off(gspca_dev);
+		reg_w(gspca_dev, sd->whitebal, WHITEBAL_REG);
+		konica_stream_on(gspca_dev);
+	}
+	return 0;
+}
+
+static int sd_getwhitebal(struct gspca_dev *gspca_dev, __s32 *val)
+{
+	struct sd *sd = (struct sd *) gspca_dev;
+
+	*val = sd->whitebal;
+
+	return 0;
+}
+
+static int sd_setsharpness(struct gspca_dev *gspca_dev, __s32 val)
+{
+	struct sd *sd = (struct sd *) gspca_dev;
+
+	sd->sharpness = val;
+	if (gspca_dev->streaming) {
+		konica_stream_off(gspca_dev);
+		reg_w(gspca_dev, sd->sharpness, SHARPNESS_REG);
+		konica_stream_on(gspca_dev);
+	}
+	return 0;
+}
+
+static int sd_getsharpness(struct gspca_dev *gspca_dev, __s32 *val)
+{
+	struct sd *sd = (struct sd *) gspca_dev;
+
+	*val = sd->sharpness;
+
 	return 0;
 }
 
 /* sub-driver description */
 static const struct sd_desc sd_desc = {
 	.name = MODULE_NAME,
+	.ctrls = sd_ctrls,
+	.nctrls = ARRAY_SIZE(sd_ctrls),
 	.config = sd_config,
 	.init = sd_init,
-	.init_controls = sd_init_controls,
 	.start = sd_start,
 	.stopN = sd_stopN,
 #if defined(CONFIG_INPUT) || defined(CONFIG_INPUT_MODULE)
@@ -480,8 +629,18 @@ static struct usb_driver sd_driver = {
 #ifdef CONFIG_PM
 	.suspend = gspca_suspend,
 	.resume = gspca_resume,
-	.reset_resume = gspca_resume,
 #endif
 };
 
-module_usb_driver(sd_driver);
+/* -- module insert / remove -- */
+static int __init sd_mod_init(void)
+{
+	return usb_register(&sd_driver);
+}
+static void __exit sd_mod_exit(void)
+{
+	usb_deregister(&sd_driver);
+}
+
+module_init(sd_mod_init);
+module_exit(sd_mod_exit);

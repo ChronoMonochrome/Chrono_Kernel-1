@@ -26,8 +26,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #define MODULE_NAME "vicam"
 #define HEADER_SIZE 64
 
@@ -37,17 +35,21 @@
 #include <linux/ihex.h>
 #include "gspca.h"
 
-#define VICAM_FIRMWARE "vicam/firmware.fw"
-
 MODULE_AUTHOR("Hans de Goede <hdegoede@redhat.com>");
 MODULE_DESCRIPTION("GSPCA ViCam USB Camera Driver");
 MODULE_LICENSE("GPL");
-MODULE_FIRMWARE(VICAM_FIRMWARE);
+
+enum e_ctrl {
+	GAIN,
+	EXPOSURE,
+	NCTRL		/* number of controls */
+};
 
 struct sd {
 	struct gspca_dev gspca_dev;	/* !! must be the first item */
 	struct work_struct work_struct;
 	struct workqueue_struct *work_thread;
+	struct gspca_ctrl ctrls[NCTRL];
 };
 
 /* The vicam sensor has a resolution of 512 x 244, with I believe square
@@ -79,6 +81,31 @@ static struct v4l2_pix_format vicam_mode[] = {
 		.colorspace = V4L2_COLORSPACE_SRGB,},
 };
 
+static const struct ctrl sd_ctrls[] = {
+[GAIN] = {
+	    {
+		.id      = V4L2_CID_GAIN,
+		.type    = V4L2_CTRL_TYPE_INTEGER,
+		.name    = "Gain",
+		.minimum = 0,
+		.maximum = 255,
+		.step    = 1,
+		.default_value = 200,
+	    },
+	},
+[EXPOSURE] = {
+	    {
+		.id      = V4L2_CID_EXPOSURE,
+		.type    = V4L2_CTRL_TYPE_INTEGER,
+		.name    = "Exposure",
+		.minimum = 0,
+		.maximum = 2047,
+		.step    = 1,
+		.default_value = 256,
+	    },
+	},
+};
+
 static int vicam_control_msg(struct gspca_dev *gspca_dev, u8 request,
 	u16 value, u16 index, u8 *data, u16 len)
 {
@@ -90,7 +117,7 @@ static int vicam_control_msg(struct gspca_dev *gspca_dev, u8 request,
 			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
 			      value, index, data, len, 1000);
 	if (ret < 0)
-		pr_err("control msg req %02X error %d\n", request, ret);
+		err("control msg req %02X error %d", request, ret);
 
 	return ret;
 }
@@ -114,13 +141,12 @@ static int vicam_set_camera_power(struct gspca_dev *gspca_dev, int state)
  */
 static int vicam_read_frame(struct gspca_dev *gspca_dev, u8 *data, int size)
 {
+	struct sd *sd = (struct sd *)gspca_dev;
 	int ret, unscaled_height, act_len = 0;
 	u8 *req_data = gspca_dev->usb_buf;
-	s32 expo = v4l2_ctrl_g_ctrl(gspca_dev->exposure);
-	s32 gain = v4l2_ctrl_g_ctrl(gspca_dev->gain);
 
 	memset(req_data, 0, 16);
-	req_data[0] = gain;
+	req_data[0] = sd->ctrls[GAIN].val;
 	if (gspca_dev->width == 256)
 		req_data[1] |= 0x01; /* low nibble x-scale */
 	if (gspca_dev->height <= 122) {
@@ -136,9 +162,9 @@ static int vicam_read_frame(struct gspca_dev *gspca_dev, u8 *data, int size)
 	else /* Up to 244 lines with req_data[3] == 0x08 */
 		req_data[3] = 0x08; /* vend? */
 
-	if (expo < 256) {
+	if (sd->ctrls[EXPOSURE].val < 256) {
 		/* Frame rate maxed out, use partial frame expo time */
-		req_data[4] = 255 - expo;
+		req_data[4] = 255 - sd->ctrls[EXPOSURE].val;
 		req_data[5] = 0x00;
 		req_data[6] = 0x00;
 		req_data[7] = 0x01;
@@ -146,8 +172,8 @@ static int vicam_read_frame(struct gspca_dev *gspca_dev, u8 *data, int size)
 		/* Modify frame rate */
 		req_data[4] = 0x00;
 		req_data[5] = 0x00;
-		req_data[6] = expo & 0xFF;
-		req_data[7] = expo >> 8;
+		req_data[6] = sd->ctrls[EXPOSURE].val & 0xFF;
+		req_data[7] = sd->ctrls[EXPOSURE].val >> 8;
 	}
 	req_data[8] = ((244 - unscaled_height) / 2) & ~0x01; /* vstart */
 	/* bytes 9-15 do not seem to affect exposure or image quality */
@@ -163,8 +189,8 @@ static int vicam_read_frame(struct gspca_dev *gspca_dev, u8 *data, int size)
 			   data, size, &act_len, 10000);
 	/* successful, it returns 0, otherwise  negative */
 	if (ret < 0 || act_len != size) {
-		pr_err("bulk read fail (%d) len %d/%d\n",
-		       ret, act_len, size);
+		err("bulk read fail (%d) len %d/%d",
+			ret, act_len, size);
 		return -EIO;
 	}
 	return 0;
@@ -190,15 +216,11 @@ static void vicam_dostream(struct work_struct *work)
 		   HEADER_SIZE;
 	buffer = kmalloc(frame_sz, GFP_KERNEL | GFP_DMA);
 	if (!buffer) {
-		pr_err("Couldn't allocate USB buffer\n");
+		err("Couldn't allocate USB buffer");
 		goto exit;
 	}
 
-	while (gspca_dev->dev && gspca_dev->streaming) {
-#ifdef CONFIG_PM
-		if (gspca_dev->frozen)
-			break;
-#endif
+	while (gspca_dev->present && gspca_dev->streaming) {
 		ret = vicam_read_frame(gspca_dev, buffer, frame_sz);
 		if (ret < 0)
 			break;
@@ -229,6 +251,7 @@ static int sd_config(struct gspca_dev *gspca_dev,
 	cam->bulk_size = 64;
 	cam->cam_mode = vicam_mode;
 	cam->nmodes = ARRAY_SIZE(vicam_mode);
+	cam->ctrls = sd->ctrls;
 
 	INIT_WORK(&sd->work_struct, vicam_dostream);
 
@@ -243,10 +266,10 @@ static int sd_init(struct gspca_dev *gspca_dev)
 	const struct firmware *uninitialized_var(fw);
 	u8 *firmware_buf;
 
-	ret = request_ihex_firmware(&fw, VICAM_FIRMWARE,
+	ret = request_ihex_firmware(&fw, "vicam/firmware.fw",
 				    &gspca_dev->dev->dev);
 	if (ret) {
-		pr_err("Failed to load \"vicam/firmware.fw\": %d\n", ret);
+		err("Failed to load \"vicam/firmware.fw\": %d\n", ret);
 		return ret;
 	}
 
@@ -299,26 +322,7 @@ static void sd_stop0(struct gspca_dev *gspca_dev)
 	dev->work_thread = NULL;
 	mutex_lock(&gspca_dev->usb_lock);
 
-	if (gspca_dev->dev)
-		vicam_set_camera_power(gspca_dev, 0);
-}
-
-static int sd_init_controls(struct gspca_dev *gspca_dev)
-{
-	struct v4l2_ctrl_handler *hdl = &gspca_dev->ctrl_handler;
-
-	gspca_dev->vdev.ctrl_handler = hdl;
-	v4l2_ctrl_handler_init(hdl, 2);
-	gspca_dev->exposure = v4l2_ctrl_new_std(hdl, NULL,
-			V4L2_CID_EXPOSURE, 0, 2047, 1, 256);
-	gspca_dev->gain = v4l2_ctrl_new_std(hdl, NULL,
-			V4L2_CID_GAIN, 0, 255, 1, 200);
-
-	if (hdl->error) {
-		pr_err("Could not initialize controls\n");
-		return hdl->error;
-	}
-	return 0;
+	vicam_set_camera_power(gspca_dev, 0);
 }
 
 /* Table of supported USB devices */
@@ -333,9 +337,10 @@ MODULE_DEVICE_TABLE(usb, device_table);
 /* sub-driver description */
 static const struct sd_desc sd_desc = {
 	.name   = MODULE_NAME,
+	.ctrls  = sd_ctrls,
+	.nctrls = ARRAY_SIZE(sd_ctrls),
 	.config = sd_config,
 	.init   = sd_init,
-	.init_controls = sd_init_controls,
 	.start  = sd_start,
 	.stop0  = sd_stop0,
 };
@@ -358,8 +363,19 @@ static struct usb_driver sd_driver = {
 #ifdef CONFIG_PM
 	.suspend = gspca_suspend,
 	.resume  = gspca_resume,
-	.reset_resume = gspca_resume,
 #endif
 };
 
-module_usb_driver(sd_driver);
+/* -- module insert / remove -- */
+static int __init sd_mod_init(void)
+{
+	return usb_register(&sd_driver);
+}
+
+static void __exit sd_mod_exit(void)
+{
+	usb_deregister(&sd_driver);
+}
+
+module_init(sd_mod_init);
+module_exit(sd_mod_exit);

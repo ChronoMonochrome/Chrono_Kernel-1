@@ -166,4 +166,15 @@ static struct i2c_driver tea6420_driver = {
 	.id_table	= tea6420_id,
 };
 
-module_i2c_driver(tea6420_driver);
+static __init int init_tea6420(void)
+{
+	return i2c_add_driver(&tea6420_driver);
+}
+
+static __exit void exit_tea6420(void)
+{
+	i2c_del_driver(&tea6420_driver);
+}
+
+module_init(init_tea6420);
+module_exit(exit_tea6420);

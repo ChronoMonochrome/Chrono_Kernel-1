@@ -16,9 +16,7 @@ obj-$(CONFIG_MEDIA_TUNER_TDA9887) += tda9887.o
 obj-$(CONFIG_MEDIA_TUNER_TDA827X) += tda827x.o
 obj-$(CONFIG_MEDIA_TUNER_TDA18271) += tda18271.o
 obj-$(CONFIG_MEDIA_TUNER_XC5000) += xc5000.o
-obj-$(CONFIG_MEDIA_TUNER_XC4000) += xc4000.o
 obj-$(CONFIG_MEDIA_TUNER_MT2060) += mt2060.o
-obj-$(CONFIG_MEDIA_TUNER_MT2063) += mt2063.o
 obj-$(CONFIG_MEDIA_TUNER_MT2266) += mt2266.o
 obj-$(CONFIG_MEDIA_TUNER_QT1010) += qt1010.o
 obj-$(CONFIG_MEDIA_TUNER_MT2131) += mt2131.o
@@ -33,5 +31,5 @@ obj-$(CONFIG_MEDIA_TUNER_FC0011) += fc0011.o
 obj-$(CONFIG_MEDIA_TUNER_FC0012) += fc0012.o
 obj-$(CONFIG_MEDIA_TUNER_FC0013) += fc0013.o
 
-ccflags-y += -I$(srctree)/drivers/media/dvb/dvb-core
-ccflags-y += -I$(srctree)/drivers/media/dvb/frontends
+EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core
+EXTRA_CFLAGS += -Idrivers/media/dvb/frontends

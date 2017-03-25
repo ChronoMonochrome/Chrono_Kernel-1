@@ -23,16 +23,21 @@
 
 /* Header files */
 #include <linux/videodev2.h>
+#include <linux/version.h>
 #include <media/v4l2-common.h>
 #include <media/v4l2-device.h>
 #include <media/videobuf-core.h>
-#include <media/videobuf2-dma-contig.h>
-#include <media/davinci/vpif_types.h>
+#include <media/videobuf-dma-contig.h>
+#include <mach/dm646x.h>
 
 #include "vpif.h"
 
 /* Macros */
-#define VPIF_CAPTURE_VERSION		"0.0.2"
+#define VPIF_MAJOR_RELEASE		0
+#define VPIF_MINOR_RELEASE		0
+#define VPIF_BUILD			1
+#define VPIF_CAPTURE_VERSION_CODE	((VPIF_MAJOR_RELEASE << 16) | \
+	(VPIF_MINOR_RELEASE << 8) | VPIF_BUILD)
 
 #define VPIF_VALID_FIELD(field)		(((V4L2_FIELD_ANY == field) || \
 	(V4L2_FIELD_NONE == field)) || \
@@ -60,16 +65,11 @@ struct video_obj {
 	u32 input_idx;
 };
 
-struct vpif_cap_buffer {
-	struct vb2_buffer vb;
-	struct list_head list;
-};
-
 struct common_obj {
 	/* Pointer pointing to current v4l2_buffer */
-	struct vpif_cap_buffer *cur_frm;
+	struct videobuf_buffer *cur_frm;
 	/* Pointer pointing to current v4l2_buffer */
-	struct vpif_cap_buffer *next_frm;
+	struct videobuf_buffer *next_frm;
 	/*
 	 * This field keeps track of type of buffer exchange mechanism
 	 * user has selected
@@ -78,9 +78,7 @@ struct common_obj {
 	/* Used to store pixel format */
 	struct v4l2_format fmt;
 	/* Buffer queue used in video-buf */
-	struct vb2_queue buffer_queue;
-	/* allocator-specific contexts for each plane */
-	struct vb2_alloc_ctx *alloc_ctx;
+	struct videobuf_queue buffer_queue;
 	/* Queue of filled frames */
 	struct list_head dma_queue;
 	/* Used in video-buf */
@@ -158,7 +156,6 @@ struct vpif_config_params {
 	u32 min_bufsize[VPIF_CAPTURE_NUM_CHANNELS];
 	u32 channel_bufsize[VPIF_CAPTURE_NUM_CHANNELS];
 	u8 default_device[VPIF_CAPTURE_NUM_CHANNELS];
-	u32 video_limit[VPIF_CAPTURE_NUM_CHANNELS];
 	u8 max_device_type;
 };
 /* Struct which keeps track of the line numbers for the sliced vbi service */

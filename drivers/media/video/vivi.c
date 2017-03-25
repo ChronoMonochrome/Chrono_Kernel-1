@@ -22,6 +22,7 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/font.h>
+#include <linux/version.h>
 #include <linux/mutex.h>
 #include <linux/videodev2.h>
 #include <linux/kthread.h>
@@ -31,7 +32,6 @@
 #include <media/v4l2-ioctl.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-fh.h>
-#include <media/v4l2-event.h>
 #include <media/v4l2-common.h>
 
 #define VIVI_MODULE_NAME "vivi"
@@ -44,12 +44,15 @@
 #define MAX_WIDTH 1920
 #define MAX_HEIGHT 1200
 
-#define VIVI_VERSION "0.8.1"
+#define VIVI_MAJOR_VERSION 0
+#define VIVI_MINOR_VERSION 8
+#define VIVI_RELEASE 0
+#define VIVI_VERSION \
+	KERNEL_VERSION(VIVI_MAJOR_VERSION, VIVI_MINOR_VERSION, VIVI_RELEASE)
 
 MODULE_DESCRIPTION("Video Technology Magazine Virtual Video Capture Board");
 MODULE_AUTHOR("Mauro Carvalho Chehab, Ted Walther and John Sokol");
 MODULE_LICENSE("Dual BSD/GPL");
-MODULE_VERSION(VIVI_VERSION);
 
 static unsigned video_nr = -1;
 module_param(video_nr, uint, 0644);
@@ -95,16 +98,6 @@ static struct vivi_fmt formats[] = {
 		.depth    = 16,
 	},
 	{
-		.name     = "4:2:2, packed, YVYU",
-		.fourcc   = V4L2_PIX_FMT_YVYU,
-		.depth    = 16,
-	},
-	{
-		.name     = "4:2:2, packed, VYUY",
-		.fourcc   = V4L2_PIX_FMT_VYUY,
-		.depth    = 16,
-	},
-	{
 		.name     = "RGB565 (LE)",
 		.fourcc   = V4L2_PIX_FMT_RGB565, /* gggbbbbb rrrrrggg */
 		.depth    = 16,
@@ -123,26 +116,6 @@ static struct vivi_fmt formats[] = {
 		.name     = "RGB555 (BE)",
 		.fourcc   = V4L2_PIX_FMT_RGB555X, /* arrrrrgg gggbbbbb */
 		.depth    = 16,
-	},
-	{
-		.name     = "RGB24 (LE)",
-		.fourcc   = V4L2_PIX_FMT_RGB24, /* rgb */
-		.depth    = 24,
-	},
-	{
-		.name     = "RGB24 (BE)",
-		.fourcc   = V4L2_PIX_FMT_BGR24, /* bgr */
-		.depth    = 24,
-	},
-	{
-		.name     = "RGB32 (LE)",
-		.fourcc   = V4L2_PIX_FMT_RGB32, /* argb */
-		.depth    = 32,
-	},
-	{
-		.name     = "RGB32 (BE)",
-		.fourcc   = V4L2_PIX_FMT_BGR32, /* bgra */
-		.depth    = 32,
 	},
 };
 
@@ -188,31 +161,25 @@ struct vivi_dev {
 	struct list_head           vivi_devlist;
 	struct v4l2_device 	   v4l2_dev;
 	struct v4l2_ctrl_handler   ctrl_handler;
-	struct video_device	   vdev;
 
 	/* controls */
 	struct v4l2_ctrl	   *brightness;
 	struct v4l2_ctrl	   *contrast;
 	struct v4l2_ctrl	   *saturation;
 	struct v4l2_ctrl	   *hue;
-	struct {
-		/* autogain/gain cluster */
-		struct v4l2_ctrl	   *autogain;
-		struct v4l2_ctrl	   *gain;
-	};
 	struct v4l2_ctrl	   *volume;
-	struct v4l2_ctrl	   *alpha;
 	struct v4l2_ctrl	   *button;
 	struct v4l2_ctrl	   *boolean;
 	struct v4l2_ctrl	   *int32;
 	struct v4l2_ctrl	   *int64;
 	struct v4l2_ctrl	   *menu;
 	struct v4l2_ctrl	   *string;
-	struct v4l2_ctrl	   *bitmask;
-	struct v4l2_ctrl	   *int_menu;
 
 	spinlock_t                 slock;
 	struct mutex		   mutex;
+
+	/* various device info */
+	struct video_device        *vfd;
 
 	struct vivi_dmaqueue       vidq;
 
@@ -230,12 +197,11 @@ struct vivi_dev {
 	struct vivi_fmt            *fmt;
 	unsigned int               width, height;
 	struct vb2_queue	   vb_vidq;
+	enum v4l2_field		   field;
 	unsigned int		   field_count;
 
-	u8			   bars[9][3];
-	u8			   line[MAX_WIDTH * 8];
-	unsigned int		   pixelsize;
-	u8			   alpha_component;
+	u8 			   bars[9][3];
+	u8 			   line[MAX_WIDTH * 4];
 };
 
 /* ------------------------------------------------------------------
@@ -314,8 +280,6 @@ static void precalculate_bars(struct vivi_dev *dev)
 		switch (dev->fmt->fourcc) {
 		case V4L2_PIX_FMT_YUYV:
 		case V4L2_PIX_FMT_UYVY:
-		case V4L2_PIX_FMT_YVYU:
-		case V4L2_PIX_FMT_VYUY:
 			is_yuv = 1;
 			break;
 		case V4L2_PIX_FMT_RGB565:
@@ -329,11 +293,6 @@ static void precalculate_bars(struct vivi_dev *dev)
 			r >>= 3;
 			g >>= 3;
 			b >>= 3;
-			break;
-		case V4L2_PIX_FMT_RGB24:
-		case V4L2_PIX_FMT_BGR24:
-		case V4L2_PIX_FMT_RGB32:
-		case V4L2_PIX_FMT_BGR32:
 			break;
 		}
 
@@ -354,11 +313,9 @@ static void precalculate_bars(struct vivi_dev *dev)
 #define TSTAMP_INPUT_X	10
 #define TSTAMP_MIN_X	(54 + TSTAMP_INPUT_X)
 
-/* 'odd' is true for pixels 1, 3, 5, etc. and false for pixels 0, 2, 4, etc. */
-static void gen_twopix(struct vivi_dev *dev, u8 *buf, int colorpos, bool odd)
+static void gen_twopix(struct vivi_dev *dev, u8 *buf, int colorpos)
 {
 	u8 r_y, g_u, b_v;
-	u8 alpha = dev->alpha_component;
 	int color;
 	u8 *p;
 
@@ -366,56 +323,46 @@ static void gen_twopix(struct vivi_dev *dev, u8 *buf, int colorpos, bool odd)
 	g_u = dev->bars[colorpos][1]; /* G or precalculated U */
 	b_v = dev->bars[colorpos][2]; /* B or precalculated V */
 
-	for (color = 0; color < dev->pixelsize; color++) {
+	for (color = 0; color < 4; color++) {
 		p = buf + color;
 
 		switch (dev->fmt->fourcc) {
 		case V4L2_PIX_FMT_YUYV:
 			switch (color) {
 			case 0:
+			case 2:
 				*p = r_y;
 				break;
 			case 1:
-				*p = odd ? b_v : g_u;
+				*p = g_u;
+				break;
+			case 3:
+				*p = b_v;
 				break;
 			}
 			break;
 		case V4L2_PIX_FMT_UYVY:
 			switch (color) {
-			case 0:
-				*p = odd ? b_v : g_u;
-				break;
 			case 1:
+			case 3:
 				*p = r_y;
 				break;
-			}
-			break;
-		case V4L2_PIX_FMT_YVYU:
-			switch (color) {
 			case 0:
-				*p = r_y;
+				*p = g_u;
 				break;
-			case 1:
-				*p = odd ? g_u : b_v;
-				break;
-			}
-			break;
-		case V4L2_PIX_FMT_VYUY:
-			switch (color) {
-			case 0:
-				*p = odd ? g_u : b_v;
-				break;
-			case 1:
-				*p = r_y;
+			case 2:
+				*p = b_v;
 				break;
 			}
 			break;
 		case V4L2_PIX_FMT_RGB565:
 			switch (color) {
 			case 0:
+			case 2:
 				*p = (g_u << 5) | b_v;
 				break;
 			case 1:
+			case 3:
 				*p = (r_y << 3) | (g_u >> 3);
 				break;
 			}
@@ -423,9 +370,11 @@ static void gen_twopix(struct vivi_dev *dev, u8 *buf, int colorpos, bool odd)
 		case V4L2_PIX_FMT_RGB565X:
 			switch (color) {
 			case 0:
+			case 2:
 				*p = (r_y << 3) | (g_u >> 3);
 				break;
 			case 1:
+			case 3:
 				*p = (g_u << 5) | b_v;
 				break;
 			}
@@ -433,78 +382,24 @@ static void gen_twopix(struct vivi_dev *dev, u8 *buf, int colorpos, bool odd)
 		case V4L2_PIX_FMT_RGB555:
 			switch (color) {
 			case 0:
+			case 2:
 				*p = (g_u << 5) | b_v;
 				break;
 			case 1:
-				*p = (alpha & 0x80) | (r_y << 2) | (g_u >> 3);
+			case 3:
+				*p = (r_y << 2) | (g_u >> 3);
 				break;
 			}
 			break;
 		case V4L2_PIX_FMT_RGB555X:
 			switch (color) {
 			case 0:
-				*p = (alpha & 0x80) | (r_y << 2) | (g_u >> 3);
+			case 2:
+				*p = (r_y << 2) | (g_u >> 3);
 				break;
 			case 1:
+			case 3:
 				*p = (g_u << 5) | b_v;
-				break;
-			}
-			break;
-		case V4L2_PIX_FMT_RGB24:
-			switch (color) {
-			case 0:
-				*p = r_y;
-				break;
-			case 1:
-				*p = g_u;
-				break;
-			case 2:
-				*p = b_v;
-				break;
-			}
-			break;
-		case V4L2_PIX_FMT_BGR24:
-			switch (color) {
-			case 0:
-				*p = b_v;
-				break;
-			case 1:
-				*p = g_u;
-				break;
-			case 2:
-				*p = r_y;
-				break;
-			}
-			break;
-		case V4L2_PIX_FMT_RGB32:
-			switch (color) {
-			case 0:
-				*p = alpha;
-				break;
-			case 1:
-				*p = r_y;
-				break;
-			case 2:
-				*p = g_u;
-				break;
-			case 3:
-				*p = b_v;
-				break;
-			}
-			break;
-		case V4L2_PIX_FMT_BGR32:
-			switch (color) {
-			case 0:
-				*p = b_v;
-				break;
-			case 1:
-				*p = g_u;
-				break;
-			case 2:
-				*p = r_y;
-				break;
-			case 3:
-				*p = alpha;
 				break;
 			}
 			break;
@@ -516,10 +411,10 @@ static void precalculate_line(struct vivi_dev *dev)
 {
 	int w;
 
-	for (w = 0; w < dev->width * 2; w++) {
-		int colorpos = w / (dev->width / 8) % 8;
+	for (w = 0; w < dev->width * 2; w += 2) {
+		int colorpos = (w / (dev->width / 8) % 8);
 
-		gen_twopix(dev, dev->line + w * dev->pixelsize, colorpos, w & 1);
+		gen_twopix(dev, dev->line + w * 2, colorpos);
 	}
 }
 
@@ -535,7 +430,7 @@ static void gen_text(struct vivi_dev *dev, char *basep,
 	/* Print stream time */
 	for (line = y; line < y + 16; line++) {
 		int j = 0;
-		char *pos = basep + line * dev->width * dev->pixelsize + x * dev->pixelsize;
+		char *pos = basep + line * dev->width * 2 + x * 2;
 		char *s;
 
 		for (s = text; *s; s++) {
@@ -545,9 +440,9 @@ static void gen_text(struct vivi_dev *dev, char *basep,
 			for (i = 0; i < 7; i++, j++) {
 				/* Draw white font on black background */
 				if (chr & (1 << (7 - i)))
-					gen_twopix(dev, pos + j * dev->pixelsize, WHITE, (x+y) & 1);
+					gen_twopix(dev, pos + j * 2, WHITE);
 				else
-					gen_twopix(dev, pos + j * dev->pixelsize, TEXT_BLACK, (x+y) & 1);
+					gen_twopix(dev, pos + j * 2, TEXT_BLACK);
 			}
 		}
 	}
@@ -562,15 +457,12 @@ static void vivi_fillbuff(struct vivi_dev *dev, struct vivi_buffer *buf)
 	unsigned ms;
 	char str[100];
 	int h, line = 1;
-	s32 gain;
 
 	if (!vbuf)
 		return;
 
 	for (h = 0; h < hmax; h++)
-		memcpy(vbuf + h * wmax * dev->pixelsize,
-		       dev->line + (dev->mv_count % wmax) * dev->pixelsize,
-		       wmax * dev->pixelsize);
+		memcpy(vbuf + h * wmax * 2, dev->line + (dev->mv_count % wmax) * 2, wmax * 2);
 
 	/* Updates stream time */
 
@@ -587,33 +479,25 @@ static void vivi_fillbuff(struct vivi_dev *dev, struct vivi_buffer *buf)
 			dev->width, dev->height, dev->input);
 	gen_text(dev, vbuf, line++ * 16, 16, str);
 
-	gain = v4l2_ctrl_g_ctrl(dev->gain);
-	mutex_lock(dev->ctrl_handler.lock);
+	mutex_lock(&dev->ctrl_handler.lock);
 	snprintf(str, sizeof(str), " brightness %3d, contrast %3d, saturation %3d, hue %d ",
 			dev->brightness->cur.val,
 			dev->contrast->cur.val,
 			dev->saturation->cur.val,
 			dev->hue->cur.val);
 	gen_text(dev, vbuf, line++ * 16, 16, str);
-	snprintf(str, sizeof(str), " autogain %d, gain %3d, volume %3d, alpha 0x%02x ",
-			dev->autogain->cur.val, gain, dev->volume->cur.val,
-			dev->alpha->cur.val);
+	snprintf(str, sizeof(str), " volume %3d ", dev->volume->cur.val);
 	gen_text(dev, vbuf, line++ * 16, 16, str);
-	snprintf(str, sizeof(str), " int32 %d, int64 %lld, bitmask %08x ",
+	snprintf(str, sizeof(str), " int32 %d, int64 %lld ",
 			dev->int32->cur.val,
-			dev->int64->cur.val64,
-			dev->bitmask->cur.val);
+			dev->int64->cur.val64);
 	gen_text(dev, vbuf, line++ * 16, 16, str);
 	snprintf(str, sizeof(str), " boolean %d, menu %s, string \"%s\" ",
 			dev->boolean->cur.val,
 			dev->menu->qmenu[dev->menu->cur.val],
 			dev->string->cur.string);
+	mutex_unlock(&dev->ctrl_handler.lock);
 	gen_text(dev, vbuf, line++ * 16, 16, str);
-	snprintf(str, sizeof(str), " integer_menu %lld, value %d ",
-			dev->int_menu->qmenu_int[dev->int_menu->cur.val],
-			dev->int_menu->cur.val);
-	gen_text(dev, vbuf, line++ * 16, 16, str);
-	mutex_unlock(dev->ctrl_handler.lock);
 	if (dev->button_pressed) {
 		dev->button_pressed--;
 		snprintf(str, sizeof(str), " button pressed!");
@@ -622,7 +506,7 @@ static void vivi_fillbuff(struct vivi_dev *dev, struct vivi_buffer *buf)
 
 	dev->mv_count += 2;
 
-	buf->vb.v4l2_buf.field = V4L2_FIELD_INTERLACED;
+	buf->vb.v4l2_buf.field = dev->field;
 	dev->field_count++;
 	buf->vb.v4l2_buf.sequence = dev->field_count >> 1;
 	do_gettimeofday(&ts);
@@ -640,13 +524,11 @@ static void vivi_thread_tick(struct vivi_dev *dev)
 	spin_lock_irqsave(&dev->slock, flags);
 	if (list_empty(&dma_q->active)) {
 		dprintk(dev, 1, "No active queue to serve\n");
-		spin_unlock_irqrestore(&dev->slock, flags);
-		return;
+		goto unlock;
 	}
 
 	buf = list_entry(dma_q->active.next, struct vivi_buffer, list);
 	list_del(&buf->list);
-	spin_unlock_irqrestore(&dev->slock, flags);
 
 	do_gettimeofday(&buf->vb.v4l2_buf.timestamp);
 
@@ -656,6 +538,8 @@ static void vivi_thread_tick(struct vivi_dev *dev)
 
 	vb2_buffer_done(&buf->vb, VB2_BUF_STATE_DONE);
 	dprintk(dev, 2, "[%p/%d] done\n", buf, buf->vb.v4l2_buf.index);
+unlock:
+	spin_unlock_irqrestore(&dev->slock, flags);
 }
 
 #define frames_to_ms(frames)					\
@@ -759,20 +643,14 @@ static void vivi_stop_generating(struct vivi_dev *dev)
 /* ------------------------------------------------------------------
 	Videobuf operations
    ------------------------------------------------------------------*/
-static int queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
-				unsigned int *nbuffers, unsigned int *nplanes,
-				unsigned int sizes[], void *alloc_ctxs[])
+static int queue_setup(struct vb2_queue *vq, unsigned int *nbuffers,
+				unsigned int *nplanes, unsigned long sizes[],
+				void *alloc_ctxs[])
 {
 	struct vivi_dev *dev = vb2_get_drv_priv(vq);
 	unsigned long size;
 
-	if (fmt)
-		size = fmt->fmt.pix.sizeimage;
-	else
-		size = dev->width * dev->height * dev->pixelsize;
-
-	if (size == 0)
-		return -EINVAL;
+	size = dev->width * dev->height * 2;
 
 	if (0 == *nbuffers)
 		*nbuffers = 32;
@@ -791,6 +669,27 @@ static int queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
 
 	dprintk(dev, 1, "%s, count=%d, size=%ld\n", __func__,
 		*nbuffers, size);
+
+	return 0;
+}
+
+static int buffer_init(struct vb2_buffer *vb)
+{
+	struct vivi_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
+
+	BUG_ON(NULL == dev->fmt);
+
+	/*
+	 * This callback is called once per buffer, after its allocation.
+	 *
+	 * Vivi does not allow changing format during streaming, but it is
+	 * possible to do so when streaming is paused (i.e. in streamoff state).
+	 * Buffers however are not freed when going into streamoff and so
+	 * buffer size verification has to be done in buffer_prepare, on each
+	 * qbuf.
+	 * It would be best to move verification code here to buf_init and
+	 * s_fmt though.
+	 */
 
 	return 0;
 }
@@ -815,7 +714,7 @@ static int buffer_prepare(struct vb2_buffer *vb)
 	    dev->height < 32 || dev->height > MAX_HEIGHT)
 		return -EINVAL;
 
-	size = dev->width * dev->height * dev->pixelsize;
+	size = dev->width * dev->height * 2;
 	if (vb2_plane_size(vb, 0) < size) {
 		dprintk(dev, 1, "%s data will not fit into plane (%lu < %lu)\n",
 				__func__, vb2_plane_size(vb, 0), size);
@@ -832,6 +731,20 @@ static int buffer_prepare(struct vb2_buffer *vb)
 	return 0;
 }
 
+static int buffer_finish(struct vb2_buffer *vb)
+{
+	struct vivi_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
+	dprintk(dev, 1, "%s\n", __func__);
+	return 0;
+}
+
+static void buffer_cleanup(struct vb2_buffer *vb)
+{
+	struct vivi_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
+	dprintk(dev, 1, "%s\n", __func__);
+
+}
+
 static void buffer_queue(struct vb2_buffer *vb)
 {
 	struct vivi_dev *dev = vb2_get_drv_priv(vb->vb2_queue);
@@ -846,7 +759,7 @@ static void buffer_queue(struct vb2_buffer *vb)
 	spin_unlock_irqrestore(&dev->slock, flags);
 }
 
-static int start_streaming(struct vb2_queue *vq, unsigned int count)
+static int start_streaming(struct vb2_queue *vq)
 {
 	struct vivi_dev *dev = vb2_get_drv_priv(vq);
 	dprintk(dev, 1, "%s\n", __func__);
@@ -877,7 +790,10 @@ static void vivi_unlock(struct vb2_queue *vq)
 
 static struct vb2_ops vivi_video_qops = {
 	.queue_setup		= queue_setup,
+	.buf_init		= buffer_init,
 	.buf_prepare		= buffer_prepare,
+	.buf_finish		= buffer_finish,
+	.buf_cleanup		= buffer_cleanup,
 	.buf_queue		= buffer_queue,
 	.start_streaming	= start_streaming,
 	.stop_streaming		= stop_streaming,
@@ -896,9 +812,9 @@ static int vidioc_querycap(struct file *file, void  *priv,
 	strcpy(cap->driver, "vivi");
 	strcpy(cap->card, "vivi");
 	strlcpy(cap->bus_info, dev->v4l2_dev.name, sizeof(cap->bus_info));
-	cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING |
+	cap->version = VIVI_VERSION;
+	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING | \
 			    V4L2_CAP_READWRITE;
-	cap->capabilities = cap->device_caps | V4L2_CAP_DEVICE_CAPS;
 	return 0;
 }
 
@@ -924,17 +840,12 @@ static int vidioc_g_fmt_vid_cap(struct file *file, void *priv,
 
 	f->fmt.pix.width        = dev->width;
 	f->fmt.pix.height       = dev->height;
-	f->fmt.pix.field        = V4L2_FIELD_INTERLACED;
+	f->fmt.pix.field        = dev->field;
 	f->fmt.pix.pixelformat  = dev->fmt->fourcc;
 	f->fmt.pix.bytesperline =
 		(f->fmt.pix.width * dev->fmt->depth) >> 3;
 	f->fmt.pix.sizeimage =
 		f->fmt.pix.height * f->fmt.pix.bytesperline;
-	if (dev->fmt->fourcc == V4L2_PIX_FMT_YUYV ||
-	    dev->fmt->fourcc == V4L2_PIX_FMT_UYVY)
-		f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
-	else
-		f->fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
 	return 0;
 }
 
@@ -943,27 +854,31 @@ static int vidioc_try_fmt_vid_cap(struct file *file, void *priv,
 {
 	struct vivi_dev *dev = video_drvdata(file);
 	struct vivi_fmt *fmt;
+	enum v4l2_field field;
 
 	fmt = get_format(f);
 	if (!fmt) {
-		dprintk(dev, 1, "Fourcc format (0x%08x) unknown.\n",
+		dprintk(dev, 1, "Fourcc format (0x%08x) invalid.\n",
 			f->fmt.pix.pixelformat);
-		f->fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
-		fmt = get_format(f);
+		return -EINVAL;
 	}
 
-	f->fmt.pix.field = V4L2_FIELD_INTERLACED;
+	field = f->fmt.pix.field;
+
+	if (field == V4L2_FIELD_ANY) {
+		field = V4L2_FIELD_INTERLACED;
+	} else if (V4L2_FIELD_INTERLACED != field) {
+		dprintk(dev, 1, "Field type invalid.\n");
+		return -EINVAL;
+	}
+
+	f->fmt.pix.field = field;
 	v4l_bound_align_image(&f->fmt.pix.width, 48, MAX_WIDTH, 2,
 			      &f->fmt.pix.height, 32, MAX_HEIGHT, 0, 0);
 	f->fmt.pix.bytesperline =
 		(f->fmt.pix.width * fmt->depth) >> 3;
 	f->fmt.pix.sizeimage =
 		f->fmt.pix.height * f->fmt.pix.bytesperline;
-	if (fmt->fourcc == V4L2_PIX_FMT_YUYV ||
-	    fmt->fourcc == V4L2_PIX_FMT_UYVY)
-		f->fmt.pix.colorspace = V4L2_COLORSPACE_SMPTE170M;
-	else
-		f->fmt.pix.colorspace = V4L2_COLORSPACE_SRGB;
 	return 0;
 }
 
@@ -977,16 +892,58 @@ static int vidioc_s_fmt_vid_cap(struct file *file, void *priv,
 	if (ret < 0)
 		return ret;
 
-	if (vb2_is_busy(q)) {
+	if (vb2_is_streaming(q)) {
 		dprintk(dev, 1, "%s device busy\n", __func__);
 		return -EBUSY;
 	}
 
 	dev->fmt = get_format(f);
-	dev->pixelsize = dev->fmt->depth / 8;
 	dev->width = f->fmt.pix.width;
 	dev->height = f->fmt.pix.height;
+	dev->field = f->fmt.pix.field;
 
+	return 0;
+}
+
+static int vidioc_reqbufs(struct file *file, void *priv,
+			  struct v4l2_requestbuffers *p)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+	return vb2_reqbufs(&dev->vb_vidq, p);
+}
+
+static int vidioc_querybuf(struct file *file, void *priv, struct v4l2_buffer *p)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+	return vb2_querybuf(&dev->vb_vidq, p);
+}
+
+static int vidioc_qbuf(struct file *file, void *priv, struct v4l2_buffer *p)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+	return vb2_qbuf(&dev->vb_vidq, p);
+}
+
+static int vidioc_dqbuf(struct file *file, void *priv, struct v4l2_buffer *p)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+	return vb2_dqbuf(&dev->vb_vidq, p, file->f_flags & O_NONBLOCK);
+}
+
+static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+	return vb2_streamon(&dev->vb_vidq, i);
+}
+
+static int vidioc_streamoff(struct file *file, void *priv, enum v4l2_buf_type i)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+	return vb2_streamoff(&dev->vb_vidq, i);
+}
+
+static int vidioc_s_std(struct file *file, void *priv, v4l2_std_id *i)
+{
 	return 0;
 }
 
@@ -998,6 +955,7 @@ static int vidioc_enum_input(struct file *file, void *priv,
 		return -EINVAL;
 
 	inp->type = V4L2_INPUT_TYPE_CAMERA;
+	inp->std = V4L2_STD_525_60;
 	sprintf(inp->name, "Camera %u", inp->index);
 	return 0;
 }
@@ -1017,9 +975,6 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
 	if (i >= NUM_INPUTS)
 		return -EINVAL;
 
-	if (i == dev->input)
-		return 0;
-
 	dev->input = i;
 	precalculate_bars(dev);
 	precalculate_line(dev);
@@ -1028,28 +983,12 @@ static int vidioc_s_input(struct file *file, void *priv, unsigned int i)
 
 /* --- controls ---------------------------------------------- */
 
-static int vivi_g_volatile_ctrl(struct v4l2_ctrl *ctrl)
-{
-	struct vivi_dev *dev = container_of(ctrl->handler, struct vivi_dev, ctrl_handler);
-
-	if (ctrl == dev->autogain)
-		dev->gain->val = jiffies & 0xff;
-	return 0;
-}
-
 static int vivi_s_ctrl(struct v4l2_ctrl *ctrl)
 {
 	struct vivi_dev *dev = container_of(ctrl->handler, struct vivi_dev, ctrl_handler);
 
-	switch (ctrl->id) {
-	case V4L2_CID_ALPHA_COMPONENT:
-		dev->alpha_component = ctrl->val;
-		break;
-	default:
-		if (ctrl == dev->button)
-			dev->button_pressed = 30;
-		break;
-	}
+	if (ctrl == dev->button)
+		dev->button_pressed = 30;
 	return 0;
 }
 
@@ -1057,8 +996,55 @@ static int vivi_s_ctrl(struct v4l2_ctrl *ctrl)
 	File operations for the device
    ------------------------------------------------------------------*/
 
+static ssize_t
+vivi_read(struct file *file, char __user *data, size_t count, loff_t *ppos)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+
+	dprintk(dev, 1, "read called\n");
+	return vb2_read(&dev->vb_vidq, data, count, ppos,
+		       file->f_flags & O_NONBLOCK);
+}
+
+static unsigned int
+vivi_poll(struct file *file, struct poll_table_struct *wait)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+	struct vb2_queue *q = &dev->vb_vidq;
+
+	dprintk(dev, 1, "%s\n", __func__);
+	return vb2_poll(q, file, wait);
+}
+
+static int vivi_close(struct file *file)
+{
+	struct video_device  *vdev = video_devdata(file);
+	struct vivi_dev *dev = video_drvdata(file);
+
+	dprintk(dev, 1, "close called (dev=%s), file %p\n",
+		video_device_node_name(vdev), file);
+
+	if (v4l2_fh_is_singular_file(file))
+		vb2_queue_release(&dev->vb_vidq);
+	return v4l2_fh_release(file);
+}
+
+static int vivi_mmap(struct file *file, struct vm_area_struct *vma)
+{
+	struct vivi_dev *dev = video_drvdata(file);
+	int ret;
+
+	dprintk(dev, 1, "mmap called, vma=0x%08lx\n", (unsigned long)vma);
+
+	ret = vb2_mmap(&dev->vb_vidq, vma);
+	dprintk(dev, 1, "vma start=0x%08lx, size=%ld, ret=%d\n",
+		(unsigned long)vma->vm_start,
+		(unsigned long)vma->vm_end - (unsigned long)vma->vm_start,
+		ret);
+	return ret;
+}
+
 static const struct v4l2_ctrl_ops vivi_ctrl_ops = {
-	.g_volatile_ctrl = vivi_g_volatile_ctrl,
 	.s_ctrl = vivi_s_ctrl,
 };
 
@@ -1131,41 +1117,14 @@ static const struct v4l2_ctrl_config vivi_ctrl_string = {
 	.step = 1,
 };
 
-static const struct v4l2_ctrl_config vivi_ctrl_bitmask = {
-	.ops = &vivi_ctrl_ops,
-	.id = VIVI_CID_CUSTOM_BASE + 6,
-	.name = "Bitmask",
-	.type = V4L2_CTRL_TYPE_BITMASK,
-	.def = 0x80002000,
-	.min = 0,
-	.max = 0x80402010,
-	.step = 0,
-};
-
-static const s64 vivi_ctrl_int_menu_values[] = {
-	1, 1, 2, 3, 5, 8, 13, 21, 42,
-};
-
-static const struct v4l2_ctrl_config vivi_ctrl_int_menu = {
-	.ops = &vivi_ctrl_ops,
-	.id = VIVI_CID_CUSTOM_BASE + 7,
-	.name = "Integer menu",
-	.type = V4L2_CTRL_TYPE_INTEGER_MENU,
-	.min = 1,
-	.max = 8,
-	.def = 4,
-	.menu_skip_mask = 0x02,
-	.qmenu_int = vivi_ctrl_int_menu_values,
-};
-
 static const struct v4l2_file_operations vivi_fops = {
 	.owner		= THIS_MODULE,
-	.open           = v4l2_fh_open,
-	.release        = vb2_fop_release,
-	.read           = vb2_fop_read,
-	.poll		= vb2_fop_poll,
+	.open		= v4l2_fh_open,
+	.release        = vivi_close,
+	.read           = vivi_read,
+	.poll		= vivi_poll,
 	.unlocked_ioctl = video_ioctl2, /* V4L2 ioctl handler */
-	.mmap           = vb2_fop_mmap,
+	.mmap           = vivi_mmap,
 };
 
 static const struct v4l2_ioctl_ops vivi_ioctl_ops = {
@@ -1174,27 +1133,26 @@ static const struct v4l2_ioctl_ops vivi_ioctl_ops = {
 	.vidioc_g_fmt_vid_cap     = vidioc_g_fmt_vid_cap,
 	.vidioc_try_fmt_vid_cap   = vidioc_try_fmt_vid_cap,
 	.vidioc_s_fmt_vid_cap     = vidioc_s_fmt_vid_cap,
-	.vidioc_reqbufs       = vb2_ioctl_reqbufs,
-	.vidioc_create_bufs   = vb2_ioctl_create_bufs,
-	.vidioc_prepare_buf   = vb2_ioctl_prepare_buf,
-	.vidioc_querybuf      = vb2_ioctl_querybuf,
-	.vidioc_qbuf          = vb2_ioctl_qbuf,
-	.vidioc_dqbuf         = vb2_ioctl_dqbuf,
+	.vidioc_reqbufs       = vidioc_reqbufs,
+	.vidioc_querybuf      = vidioc_querybuf,
+	.vidioc_qbuf          = vidioc_qbuf,
+	.vidioc_dqbuf         = vidioc_dqbuf,
+	.vidioc_s_std         = vidioc_s_std,
 	.vidioc_enum_input    = vidioc_enum_input,
 	.vidioc_g_input       = vidioc_g_input,
 	.vidioc_s_input       = vidioc_s_input,
-	.vidioc_streamon      = vb2_ioctl_streamon,
-	.vidioc_streamoff     = vb2_ioctl_streamoff,
-	.vidioc_log_status    = v4l2_ctrl_log_status,
-	.vidioc_subscribe_event = v4l2_ctrl_subscribe_event,
-	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,
+	.vidioc_streamon      = vidioc_streamon,
+	.vidioc_streamoff     = vidioc_streamoff,
 };
 
 static struct video_device vivi_template = {
 	.name		= "vivi",
 	.fops           = &vivi_fops,
 	.ioctl_ops 	= &vivi_ioctl_ops,
-	.release	= video_device_release_empty,
+	.release	= video_device_release,
+
+	.tvnorms              = V4L2_STD_525_60,
+	.current_norm         = V4L2_STD_NTSC_M,
 };
 
 /* -----------------------------------------------------------------
@@ -1212,8 +1170,8 @@ static int vivi_release(void)
 		dev = list_entry(list, struct vivi_dev, vivi_devlist);
 
 		v4l2_info(&dev->v4l2_dev, "unregistering %s\n",
-			video_device_node_name(&dev->vdev));
-		video_unregister_device(&dev->vdev);
+			video_device_node_name(dev->vfd));
+		video_unregister_device(dev->vfd);
 		v4l2_device_unregister(&dev->v4l2_dev);
 		v4l2_ctrl_handler_free(&dev->ctrl_handler);
 		kfree(dev);
@@ -1243,7 +1201,6 @@ static int __init vivi_create_instance(int inst)
 	dev->fmt = &formats[0];
 	dev->width = 640;
 	dev->height = 480;
-	dev->pixelsize = dev->fmt->depth / 8;
 	hdl = &dev->ctrl_handler;
 	v4l2_ctrl_handler_init(hdl, 11);
 	dev->volume = v4l2_ctrl_new_std(hdl, &vivi_ctrl_ops,
@@ -1256,25 +1213,16 @@ static int __init vivi_create_instance(int inst)
 			V4L2_CID_SATURATION, 0, 255, 1, 127);
 	dev->hue = v4l2_ctrl_new_std(hdl, &vivi_ctrl_ops,
 			V4L2_CID_HUE, -128, 127, 1, 0);
-	dev->autogain = v4l2_ctrl_new_std(hdl, &vivi_ctrl_ops,
-			V4L2_CID_AUTOGAIN, 0, 1, 1, 1);
-	dev->gain = v4l2_ctrl_new_std(hdl, &vivi_ctrl_ops,
-			V4L2_CID_GAIN, 0, 255, 1, 100);
-	dev->alpha = v4l2_ctrl_new_std(hdl, &vivi_ctrl_ops,
-			V4L2_CID_ALPHA_COMPONENT, 0, 255, 1, 0);
 	dev->button = v4l2_ctrl_new_custom(hdl, &vivi_ctrl_button, NULL);
 	dev->int32 = v4l2_ctrl_new_custom(hdl, &vivi_ctrl_int32, NULL);
 	dev->int64 = v4l2_ctrl_new_custom(hdl, &vivi_ctrl_int64, NULL);
 	dev->boolean = v4l2_ctrl_new_custom(hdl, &vivi_ctrl_boolean, NULL);
 	dev->menu = v4l2_ctrl_new_custom(hdl, &vivi_ctrl_menu, NULL);
 	dev->string = v4l2_ctrl_new_custom(hdl, &vivi_ctrl_string, NULL);
-	dev->bitmask = v4l2_ctrl_new_custom(hdl, &vivi_ctrl_bitmask, NULL);
-	dev->int_menu = v4l2_ctrl_new_custom(hdl, &vivi_ctrl_int_menu, NULL);
 	if (hdl->error) {
 		ret = hdl->error;
 		goto unreg_dev;
 	}
-	v4l2_ctrl_auto_cluster(2, &dev->autogain, 0, true);
 	dev->v4l2_dev.ctrl_handler = hdl;
 
 	/* initialize locks */
@@ -1298,11 +1246,14 @@ static int __init vivi_create_instance(int inst)
 	INIT_LIST_HEAD(&dev->vidq.active);
 	init_waitqueue_head(&dev->vidq.wq);
 
-	vfd = &dev->vdev;
+	ret = -ENOMEM;
+	vfd = video_device_alloc();
+	if (!vfd)
+		goto unreg_dev;
+
 	*vfd = vivi_template;
 	vfd->debug = debug;
 	vfd->v4l2_dev = &dev->v4l2_dev;
-	vfd->queue = q;
 	set_bit(V4L2_FL_USE_FH_PRIO, &vfd->flags);
 
 	/*
@@ -1310,19 +1261,26 @@ static int __init vivi_create_instance(int inst)
 	 * all fops and v4l2 ioctls.
 	 */
 	vfd->lock = &dev->mutex;
-	video_set_drvdata(vfd, dev);
 
 	ret = video_register_device(vfd, VFL_TYPE_GRABBER, video_nr);
 	if (ret < 0)
-		goto unreg_dev;
+		goto rel_vdev;
+
+	video_set_drvdata(vfd, dev);
 
 	/* Now that everything is fine, let's add it to device list */
 	list_add_tail(&dev->vivi_devlist, &vivi_devlist);
 
+	if (video_nr != -1)
+		video_nr++;
+
+	dev->vfd = vfd;
 	v4l2_info(&dev->v4l2_dev, "V4L2 device registered as %s\n",
 		  video_device_node_name(vfd));
 	return 0;
 
+rel_vdev:
+	video_device_release(vfd);
 unreg_dev:
 	v4l2_ctrl_handler_free(hdl);
 	v4l2_device_unregister(&dev->v4l2_dev);
@@ -1367,8 +1325,9 @@ static int __init vivi_init(void)
 	}
 
 	printk(KERN_INFO "Video Technology Magazine Virtual Video "
-			"Capture Board ver %s successfully loaded.\n",
-			VIVI_VERSION);
+			"Capture Board ver %u.%u.%u successfully loaded.\n",
+			(VIVI_VERSION >> 16) & 0xFF, (VIVI_VERSION >> 8) & 0xFF,
+			VIVI_VERSION & 0xFF);
 
 	/* n_devs will reflect the actual number of allocated devices */
 	n_devs = i;
