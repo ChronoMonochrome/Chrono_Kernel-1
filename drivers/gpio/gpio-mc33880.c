@@ -26,7 +26,6 @@
 #include <linux/spi/mc33880.h>
 #include <linux/gpio.h>
 #include <linux/slab.h>
-#include <linux/module.h>
 
 #define DRIVER_NAME "mc33880"
 
@@ -195,4 +194,3 @@ module_exit(mc33880_exit);
 
 MODULE_AUTHOR("Mocean Laboratories <info@mocean-labs.com>");
 MODULE_LICENSE("GPL v2");
-
