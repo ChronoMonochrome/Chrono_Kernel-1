@@ -84,11 +84,6 @@ enum {
 	MLX4_IB_CACHE_LINE_SIZE	= 64,
 };
 
-enum {
-	MLX4_RAW_QP_MTU		= 7,
-	MLX4_RAW_QP_MSGMAX	= 31,
-};
-
 static const __be32 mlx4_ib_opcode[] = {
 	[IB_WR_SEND]				= cpu_to_be32(MLX4_OPCODE_SEND),
 	[IB_WR_LSO]				= cpu_to_be32(MLX4_OPCODE_LSO),
@@ -261,7 +256,7 @@ static void mlx4_ib_qp_event(struct mlx4_qp *qp, enum mlx4_event type)
 			event.event = IB_EVENT_QP_ACCESS_ERR;
 			break;
 		default:
-			pr_warn("Unexpected event type %d "
+			printk(KERN_WARNING "mlx4_ib: Unexpected event type %d "
 			       "on QP %06x\n", type, qp->qpn);
 			return;
 		}
@@ -310,8 +305,8 @@ static int set_rq_size(struct mlx4_ib_dev *dev, struct ib_qp_cap *cap,
 		       int is_user, int has_srq, struct mlx4_ib_qp *qp)
 {
 	/* Sanity check RQ size before proceeding */
-	if (cap->max_recv_wr > dev->dev->caps.max_wqes - MLX4_IB_SQ_MAX_SPARE ||
-	    cap->max_recv_sge > min(dev->dev->caps.max_sq_sg, dev->dev->caps.max_rq_sg))
+	if (cap->max_recv_wr  > dev->dev->caps.max_wqes  ||
+	    cap->max_recv_sge > dev->dev->caps.max_rq_sg)
 		return -EINVAL;
 
 	if (has_srq) {
@@ -330,17 +325,8 @@ static int set_rq_size(struct mlx4_ib_dev *dev, struct ib_qp_cap *cap,
 		qp->rq.wqe_shift = ilog2(qp->rq.max_gs * sizeof (struct mlx4_wqe_data_seg));
 	}
 
-	/* leave userspace return values as they were, so as not to break ABI */
-	if (is_user) {
-		cap->max_recv_wr  = qp->rq.max_post = qp->rq.wqe_cnt;
-		cap->max_recv_sge = qp->rq.max_gs;
-	} else {
-		cap->max_recv_wr  = qp->rq.max_post =
-			min(dev->dev->caps.max_wqes - MLX4_IB_SQ_MAX_SPARE, qp->rq.wqe_cnt);
-		cap->max_recv_sge = min(qp->rq.max_gs,
-					min(dev->dev->caps.max_sq_sg,
-					    dev->dev->caps.max_rq_sg));
-	}
+	cap->max_recv_wr  = qp->rq.max_post = qp->rq.wqe_cnt;
+	cap->max_recv_sge = qp->rq.max_gs;
 
 	return 0;
 }
@@ -351,8 +337,8 @@ static int set_kernel_sq_size(struct mlx4_ib_dev *dev, struct ib_qp_cap *cap,
 	int s;
 
 	/* Sanity check SQ size before proceeding */
-	if (cap->max_send_wr  > (dev->dev->caps.max_wqes - MLX4_IB_SQ_MAX_SPARE) ||
-	    cap->max_send_sge > min(dev->dev->caps.max_sq_sg, dev->dev->caps.max_rq_sg) ||
+	if (cap->max_send_wr	 > dev->dev->caps.max_wqes  ||
+	    cap->max_send_sge	 > dev->dev->caps.max_sq_sg ||
 	    cap->max_inline_data + send_wqe_overhead(type, qp->flags) +
 	    sizeof (struct mlx4_wqe_inline_seg) > dev->dev->caps.max_sq_desc_sz)
 		return -EINVAL;
@@ -488,7 +474,6 @@ static int create_qp_common(struct mlx4_ib_dev *dev, struct ib_pd *pd,
 	spin_lock_init(&qp->sq.lock);
 	spin_lock_init(&qp->rq.lock);
 	INIT_LIST_HEAD(&qp->gid_list);
-	INIT_LIST_HEAD(&qp->steering_rules);
 
 	qp->state	 = IB_QPS_RESET;
 	if (init_attr->sq_sig_type == IB_SIGNAL_ALL_WR)
@@ -581,12 +566,7 @@ static int create_qp_common(struct mlx4_ib_dev *dev, struct ib_pd *pd,
 	if (sqpn) {
 		qpn = sqpn;
 	} else {
-		/* Raw packet QPNs must be aligned to 8 bits. If not, the WQE
-		 * BlueFlame setup flow wrongly causes VLAN insertion. */
-		if (init_attr->qp_type == IB_QPT_RAW_PACKET)
-			err = mlx4_qp_reserve_range(dev->dev, 1, 1 << 8, &qpn);
-		else
-			err = mlx4_qp_reserve_range(dev->dev, 1, 1, &qpn);
+		err = mlx4_qp_reserve_range(dev->dev, 1, 1, &qpn);
 		if (err)
 			goto err_wrid;
 	}
@@ -699,7 +679,7 @@ static void destroy_qp_common(struct mlx4_ib_dev *dev, struct mlx4_ib_qp *qp,
 	if (qp->state != IB_QPS_RESET)
 		if (mlx4_qp_modify(dev->dev, NULL, to_mlx4_state(qp->state),
 				   MLX4_QP_STATE_RST, NULL, 0, 0, &qp->mqp))
-			pr_warn("modify QP %06x to RESET failed.\n",
+			printk(KERN_WARNING "mlx4_ib: modify QP %06x to RESET failed.\n",
 			       qp->mqp.qpn);
 
 	send_cq = to_mcq(qp->ibqp.send_cq);
@@ -766,7 +746,6 @@ struct ib_qp *mlx4_ib_create_qp(struct ib_pd *pd,
 	case IB_QPT_RC:
 	case IB_QPT_UC:
 	case IB_QPT_UD:
-	case IB_QPT_RAW_PACKET:
 	{
 		qp = kzalloc(sizeof *qp, GFP_KERNEL);
 		if (!qp)
@@ -843,8 +822,7 @@ static int to_mlx4_st(enum ib_qp_type type)
 	case IB_QPT_UC:		return MLX4_QP_ST_UC;
 	case IB_QPT_UD:		return MLX4_QP_ST_UD;
 	case IB_QPT_SMI:
-	case IB_QPT_GSI:
-	case IB_QPT_RAW_PACKET:	return MLX4_QP_ST_MLX;
+	case IB_QPT_GSI:	return MLX4_QP_ST_MLX;
 	default:		return -1;
 	}
 }
@@ -919,7 +897,7 @@ static int mlx4_set_path(struct mlx4_ib_dev *dev, const struct ib_ah_attr *ah,
 
 	if (ah->ah_flags & IB_AH_GRH) {
 		if (ah->grh.sgid_index >= dev->dev->caps.gid_table_len[port]) {
-			pr_err("sgid_index (%u) too large. max is %d\n",
+			printk(KERN_ERR "sgid_index (%u) too large. max is %d\n",
 			       ah->grh.sgid_index, dev->dev->caps.gid_table_len[port] - 1);
 			return -1;
 		}
@@ -1013,8 +991,6 @@ static int __mlx4_ib_modify_qp(struct ib_qp *ibqp,
 
 	if (ibqp->qp_type == IB_QPT_GSI || ibqp->qp_type == IB_QPT_SMI)
 		context->mtu_msgmax = (IB_MTU_4096 << 5) | 11;
-	else if (ibqp->qp_type == IB_QPT_RAW_PACKET)
-		context->mtu_msgmax = (MLX4_RAW_QP_MTU << 5) | MLX4_RAW_QP_MSGMAX;
 	else if (ibqp->qp_type == IB_QPT_UD) {
 		if (qp->flags & MLX4_IB_QP_LSO)
 			context->mtu_msgmax = (IB_MTU_4096 << 5) |
@@ -1023,7 +999,7 @@ static int __mlx4_ib_modify_qp(struct ib_qp *ibqp,
 			context->mtu_msgmax = (IB_MTU_4096 << 5) | 12;
 	} else if (attr_mask & IB_QP_PATH_MTU) {
 		if (attr->path_mtu < IB_MTU_256 || attr->path_mtu > IB_MTU_4096) {
-			pr_err("path MTU (%u) is invalid\n",
+			printk(KERN_ERR "path MTU (%u) is invalid\n",
 			       attr->path_mtu);
 			goto out;
 		}
@@ -1162,8 +1138,7 @@ static int __mlx4_ib_modify_qp(struct ib_qp *ibqp,
 	if (cur_state == IB_QPS_INIT &&
 	    new_state == IB_QPS_RTR  &&
 	    (ibqp->qp_type == IB_QPT_GSI || ibqp->qp_type == IB_QPT_SMI ||
-	     ibqp->qp_type == IB_QPT_UD ||
-	     ibqp->qp_type == IB_QPT_RAW_PACKET)) {
+	     ibqp->qp_type == IB_QPT_UD)) {
 		context->pri_path.sched_queue = (qp->port - 1) << 6;
 		if (is_qp0(dev, qp))
 			context->pri_path.sched_queue |= MLX4_IB_DEFAULT_QP0_SCHED_QUEUE;
@@ -1229,7 +1204,7 @@ static int __mlx4_ib_modify_qp(struct ib_qp *ibqp,
 	if (is_qp0(dev, qp)) {
 		if (cur_state != IB_QPS_RTR && new_state == IB_QPS_RTR)
 			if (mlx4_INIT_PORT(dev->dev, qp->port))
-				pr_warn("INIT_PORT failed for port %d\n",
+				printk(KERN_WARNING "INIT_PORT failed for port %d\n",
 				       qp->port);
 
 		if (cur_state != IB_QPS_RESET && cur_state != IB_QPS_ERR &&
@@ -1274,55 +1249,27 @@ int mlx4_ib_modify_qp(struct ib_qp *ibqp, struct ib_qp_attr *attr,
 	cur_state = attr_mask & IB_QP_CUR_STATE ? attr->cur_qp_state : qp->state;
 	new_state = attr_mask & IB_QP_STATE ? attr->qp_state : cur_state;
 
-	if (!ib_modify_qp_is_ok(cur_state, new_state, ibqp->qp_type, attr_mask)) {
-		pr_debug("qpn 0x%x: invalid attribute mask specified "
-			 "for transition %d to %d. qp_type %d,"
-			 " attr_mask 0x%x\n",
-			 ibqp->qp_num, cur_state, new_state,
-			 ibqp->qp_type, attr_mask);
+	if (!ib_modify_qp_is_ok(cur_state, new_state, ibqp->qp_type, attr_mask))
 		goto out;
-	}
 
 	if ((attr_mask & IB_QP_PORT) &&
 	    (attr->port_num == 0 || attr->port_num > dev->dev->caps.num_ports)) {
-		pr_debug("qpn 0x%x: invalid port number (%d) specified "
-			 "for transition %d to %d. qp_type %d\n",
-			 ibqp->qp_num, attr->port_num, cur_state,
-			 new_state, ibqp->qp_type);
 		goto out;
 	}
 
-	if ((attr_mask & IB_QP_PORT) && (ibqp->qp_type == IB_QPT_RAW_PACKET) &&
-	    (rdma_port_get_link_layer(&dev->ib_dev, attr->port_num) !=
-	     IB_LINK_LAYER_ETHERNET))
-		goto out;
-
 	if (attr_mask & IB_QP_PKEY_INDEX) {
 		int p = attr_mask & IB_QP_PORT ? attr->port_num : qp->port;
-		if (attr->pkey_index >= dev->dev->caps.pkey_table_len[p]) {
-			pr_debug("qpn 0x%x: invalid pkey index (%d) specified "
-				 "for transition %d to %d. qp_type %d\n",
-				 ibqp->qp_num, attr->pkey_index, cur_state,
-				 new_state, ibqp->qp_type);
+		if (attr->pkey_index >= dev->dev->caps.pkey_table_len[p])
 			goto out;
-		}
 	}
 
 	if (attr_mask & IB_QP_MAX_QP_RD_ATOMIC &&
 	    attr->max_rd_atomic > dev->dev->caps.max_qp_init_rdma) {
-		pr_debug("qpn 0x%x: max_rd_atomic (%d) too large. "
-			 "Transition %d to %d. qp_type %d\n",
-			 ibqp->qp_num, attr->max_rd_atomic, cur_state,
-			 new_state, ibqp->qp_type);
 		goto out;
 	}
 
 	if (attr_mask & IB_QP_MAX_DEST_RD_ATOMIC &&
 	    attr->max_dest_rd_atomic > dev->dev->caps.max_qp_dest_rdma) {
-		pr_debug("qpn 0x%x: max_dest_rd_atomic (%d) too large. "
-			 "Transition %d to %d. qp_type %d\n",
-			 ibqp->qp_num, attr->max_dest_rd_atomic, cur_state,
-			 new_state, ibqp->qp_type);
 		goto out;
 	}
 
@@ -1345,7 +1292,6 @@ static int build_mlx_header(struct mlx4_ib_sqp *sqp, struct ib_send_wr *wr,
 	struct mlx4_wqe_mlx_seg *mlx = wqe;
 	struct mlx4_wqe_inline_seg *inl = wqe + sizeof *mlx;
 	struct mlx4_ib_ah *ah = to_mah(wr->wr.ud.ah);
-	struct net_device *ndev;
 	union ib_gid sgid;
 	u16 pkey;
 	int send_size;
@@ -1416,27 +1362,20 @@ static int build_mlx_header(struct mlx4_ib_sqp *sqp, struct ib_send_wr *wr,
 
 	if (is_eth) {
 		u8 *smac;
-		u16 pcp = (be32_to_cpu(ah->av.ib.sl_tclass_flowlabel) >> 29) << 13;
-
-		mlx->sched_prio = cpu_to_be16(pcp);
 
 		memcpy(sqp->ud_header.eth.dmac_h, ah->av.eth.mac, 6);
 		/* FIXME: cache smac value? */
-		ndev = to_mdev(sqp->qp.ibqp.device)->iboe.netdevs[sqp->qp.port - 1];
-		if (!ndev)
-			return -ENODEV;
-		smac = ndev->dev_addr;
+		smac = to_mdev(sqp->qp.ibqp.device)->iboe.netdevs[sqp->qp.port - 1]->dev_addr;
 		memcpy(sqp->ud_header.eth.smac_h, smac, 6);
 		if (!memcmp(sqp->ud_header.eth.smac_h, sqp->ud_header.eth.dmac_h, 6))
 			mlx->flags |= cpu_to_be32(MLX4_WQE_CTRL_FORCE_LOOPBACK);
 		if (!is_vlan) {
 			sqp->ud_header.eth.type = cpu_to_be16(MLX4_IB_IBOE_ETHERTYPE);
 		} else {
+			u16 pcp;
+
 			sqp->ud_header.vlan.type = cpu_to_be16(MLX4_IB_IBOE_ETHERTYPE);
-<<<<<<< HEAD
 			pcp = (be32_to_cpu(ah->av.ib.sl_tclass_flowlabel) >> 27 & 3) << 13;
-=======
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 			sqp->ud_header.vlan.tag = cpu_to_be16(vlan | pcp);
 		}
 	} else {
@@ -1459,16 +1398,16 @@ static int build_mlx_header(struct mlx4_ib_sqp *sqp, struct ib_send_wr *wr,
 	header_size = ib_ud_header_pack(&sqp->ud_header, sqp->header_buf);
 
 	if (0) {
-		pr_err("built UD header of size %d:\n", header_size);
+		printk(KERN_ERR "built UD header of size %d:\n", header_size);
 		for (i = 0; i < header_size / 4; ++i) {
 			if (i % 8 == 0)
-				pr_err("  [%02x] ", i * 4);
-			pr_cont(" %08x",
-				be32_to_cpu(((__be32 *) sqp->header_buf)[i]));
+				printk("  [%02x] ", i * 4);
+			printk(" %08x",
+			       be32_to_cpu(((__be32 *) sqp->header_buf)[i]));
 			if ((i + 1) % 8 == 0)
-				pr_cont("\n");
+				printk("\n");
 		}
-		pr_err("\n");
+		printk("\n");
 	}
 
 	/*

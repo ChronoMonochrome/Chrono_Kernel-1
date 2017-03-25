@@ -132,23 +132,6 @@ acpi_tb_add_table(struct acpi_table_desc *table_desc, u32 *table_index)
 	 * given up on validating the signature, since it seems to be a waste
 	 * of code. The original code was removed (05/2008).
 	 */
-<<<<<<< HEAD
-=======
-	if ((table_desc->pointer->signature[0] != 0x00) &&
-	    (!ACPI_COMPARE_NAME(table_desc->pointer->signature, ACPI_SIG_SSDT))
-	    && (ACPI_STRNCMP(table_desc->pointer->signature, "OEM", 3))) {
-		ACPI_BIOS_ERROR((AE_INFO,
-				 "Table has invalid signature [%4.4s] (0x%8.8X), "
-				 "must be SSDT or OEMx",
-				 acpi_ut_valid_acpi_name(*(u32 *)table_desc->
-							 pointer->
-							 signature) ?
-				 table_desc->pointer->signature : "????",
-				 *(u32 *)table_desc->pointer->signature));
-
-		return_ACPI_STATUS(AE_BAD_SIGNATURE);
-	}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	(void)acpi_ut_acquire_mutex(ACPI_MTX_TABLES);
 
@@ -323,10 +306,10 @@ acpi_status acpi_tb_resize_root_table_list(void)
  *
  * FUNCTION:    acpi_tb_store_table
  *
- * PARAMETERS:  address             - Table address
- *              table               - Table header
- *              length              - Table length
- *              flags               - flags
+ * PARAMETERS:  Address             - Table address
+ *              Table               - Table header
+ *              Length              - Table length
+ *              Flags               - flags
  *
  * RETURN:      Status and table index.
  *

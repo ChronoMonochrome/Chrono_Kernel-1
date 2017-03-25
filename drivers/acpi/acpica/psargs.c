@@ -210,7 +210,7 @@ char *acpi_ps_get_next_namestring(struct acpi_parse_state *parser_state)
  * FUNCTION:    acpi_ps_get_next_namepath
  *
  * PARAMETERS:  parser_state        - Current parser state object
- *              arg                 - Where the namepath will be stored
+ *              Arg                 - Where the namepath will be stored
  *              arg_count           - If the namepath points to a control method
  *                                    the method's argument is returned here.
  *              possible_method_call - Whether the namepath can possibly be the
@@ -379,7 +379,7 @@ acpi_ps_get_next_namepath(struct acpi_walk_state *walk_state,
  *
  * PARAMETERS:  parser_state        - Current parser state object
  *              arg_type            - The argument type (AML_*_ARG)
- *              arg                 - Where the argument is returned
+ *              Arg                 - Where the argument is returned
  *
  * RETURN:      None
  *
@@ -559,102 +559,6 @@ static union acpi_parse_object *acpi_ps_get_next_field(struct acpi_parse_state
 		parser_state->aml++;
 		field->common.value.integer |= ACPI_GET8(parser_state->aml);
 		parser_state->aml++;
-<<<<<<< HEAD
-=======
-
-		field->common.value.integer = (u8)access_type;
-		field->common.value.integer |= (u16)(access_attribute << 8);
-
-		/* This opcode has a third byte, access_length */
-
-		if (opcode == AML_INT_EXTACCESSFIELD_OP) {
-			access_length = ACPI_GET8(parser_state->aml);
-			parser_state->aml++;
-
-			field->common.value.integer |=
-			    (u32)(access_length << 16);
-		}
-		break;
-
-	case AML_INT_CONNECTION_OP:
-
-		/*
-		 * Argument for Connection operator can be either a Buffer
-		 * (resource descriptor), or a name_string.
-		 */
-		if (ACPI_GET8(parser_state->aml) == AML_BUFFER_OP) {
-			parser_state->aml++;
-
-			pkg_end = parser_state->aml;
-			pkg_length =
-			    acpi_ps_get_next_package_length(parser_state);
-			pkg_end += pkg_length;
-
-			if (parser_state->aml < pkg_end) {
-
-				/* Non-empty list */
-
-				arg = acpi_ps_alloc_op(AML_INT_BYTELIST_OP);
-				if (!arg) {
-					acpi_ps_free_op(field);
-					return_PTR(NULL);
-				}
-
-				/* Get the actual buffer length argument */
-
-				opcode = ACPI_GET8(parser_state->aml);
-				parser_state->aml++;
-
-				switch (opcode) {
-				case AML_BYTE_OP:	/* AML_BYTEDATA_ARG */
-					buffer_length =
-					    ACPI_GET8(parser_state->aml);
-					parser_state->aml += 1;
-					break;
-
-				case AML_WORD_OP:	/* AML_WORDDATA_ARG */
-					buffer_length =
-					    ACPI_GET16(parser_state->aml);
-					parser_state->aml += 2;
-					break;
-
-				case AML_DWORD_OP:	/* AML_DWORDATA_ARG */
-					buffer_length =
-					    ACPI_GET32(parser_state->aml);
-					parser_state->aml += 4;
-					break;
-
-				default:
-					buffer_length = 0;
-					break;
-				}
-
-				/* Fill in bytelist data */
-
-				arg->named.value.size = buffer_length;
-				arg->named.data = parser_state->aml;
-			}
-
-			/* Skip to End of byte data */
-
-			parser_state->aml = pkg_end;
-		} else {
-			arg = acpi_ps_alloc_op(AML_INT_NAMEPATH_OP);
-			if (!arg) {
-				acpi_ps_free_op(field);
-				return_PTR(NULL);
-			}
-
-			/* Get the Namestring argument */
-
-			arg->common.value.name =
-			    acpi_ps_get_next_namestring(parser_state);
-		}
-
-		/* Link the buffer/namestring to parent (CONNECTION_OP) */
-
-		acpi_ps_append_arg(field, arg);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		break;
 
 	default:

@@ -559,8 +559,6 @@ acpi_video_bus_DOS(struct acpi_video_bus *video, int bios_flag, int lcd_flag)
 	union acpi_object arg0 = { ACPI_TYPE_INTEGER };
 	struct acpi_object_list args = { 1, &arg0 };
 
-	if (!video->cap._DOS)
-		return 0;
 
 	if (bios_flag < 0 || bios_flag > 3 || lcd_flag < 0 || lcd_flag > 1) {
 		status = -1;
@@ -1681,13 +1679,10 @@ static int acpi_video_bus_add(struct acpi_device *device)
 	set_bit(KEY_BRIGHTNESS_ZERO, input->keybit);
 	set_bit(KEY_DISPLAY_OFF, input->keybit);
 
-<<<<<<< HEAD
 	error = input_register_device(input);
 	if (error)
 		goto err_free_input_dev;
 
-=======
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	printk(KERN_INFO PREFIX "%s [%s] (multi-head: %s  rom: %s  post: %s)\n",
 	       ACPI_VIDEO_DEVICE_NAME, acpi_device_bid(device),
 	       video->flags.multihead ? "yes" : "no",
@@ -1696,27 +1691,10 @@ static int acpi_video_bus_add(struct acpi_device *device)
 
 	video->pm_nb.notifier_call = acpi_video_resume;
 	video->pm_nb.priority = 0;
-<<<<<<< HEAD
 	register_pm_notifier(&video->pm_nb);
 
 	return 0;
 
-=======
-	error = register_pm_notifier(&video->pm_nb);
-	if (error)
-		goto err_stop_video;
-
-	error = input_register_device(input);
-	if (error)
-		goto err_unregister_pm_notifier;
-
-	return 0;
-
- err_unregister_pm_notifier:
-	unregister_pm_notifier(&video->pm_nb);
- err_stop_video:
-	acpi_video_bus_stop_devices(video);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
  err_free_input_dev:
 	input_free_device(input);
  err_stop_video:
@@ -1752,18 +1730,9 @@ static int acpi_video_bus_remove(struct acpi_device *device, int type)
 	return 0;
 }
 
-static int __init is_i740(struct pci_dev *dev)
-{
-	if (dev->device == 0x00D1)
-		return 1;
-	if (dev->device == 0x7000)
-		return 1;
-	return 0;
-}
-
 static int __init intel_opregion_present(void)
 {
-	int opregion = 0;
+#if defined(CONFIG_DRM_I915) || defined(CONFIG_DRM_I915_MODULE)
 	struct pci_dev *dev = NULL;
 	u32 address;
 
@@ -1772,15 +1741,13 @@ static int __init intel_opregion_present(void)
 			continue;
 		if (dev->vendor != PCI_VENDOR_ID_INTEL)
 			continue;
-		/* We don't want to poke around undefined i740 registers */
-		if (is_i740(dev))
-			continue;
 		pci_read_config_dword(dev, 0xfc, &address);
 		if (!address)
 			continue;
-		opregion = 1;
+		return 1;
 	}
-	return opregion;
+#endif
+	return 0;
 }
 
 int acpi_video_register(void)

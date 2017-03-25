@@ -74,7 +74,7 @@ MODULE_PARM_DESC(limit, "Maximum number of grants that may be allocated by "
 		"the gntalloc device");
 
 static LIST_HEAD(gref_list);
-static DEFINE_MUTEX(gref_mutex);
+static DEFINE_SPINLOCK(gref_lock);
 static int gref_size;
 
 struct notify_info {
@@ -97,12 +97,6 @@ struct gntalloc_gref {
 struct gntalloc_file_private_data {
 	struct list_head list;
 	uint64_t index;
-};
-
-struct gntalloc_vma_private_data {
-	struct gntalloc_gref *gref;
-	int users;
-	int count;
 };
 
 static void __del_gref(struct gntalloc_gref *gref);
@@ -149,15 +143,15 @@ static int add_grefs(struct ioctl_gntalloc_alloc_gref *op,
 	}
 
 	/* Add to gref lists. */
-	mutex_lock(&gref_mutex);
+	spin_lock(&gref_lock);
 	list_splice_tail(&queue_gref, &gref_list);
 	list_splice_tail(&queue_file, &priv->list);
-	mutex_unlock(&gref_mutex);
+	spin_unlock(&gref_lock);
 
 	return 0;
 
 undo:
-	mutex_lock(&gref_mutex);
+	spin_lock(&gref_lock);
 	gref_size -= (op->count - i);
 
 	list_for_each_entry(gref, &queue_file, next_file) {
@@ -173,7 +167,7 @@ undo:
 	 */
 	if (unlikely(!list_empty(&queue_gref)))
 		list_splice_tail(&queue_gref, &gref_list);
-	mutex_unlock(&gref_mutex);
+	spin_unlock(&gref_lock);
 	return rc;
 }
 
@@ -184,10 +178,8 @@ static void __del_gref(struct gntalloc_gref *gref)
 		tmp[gref->notify.pgoff] = 0;
 		kunmap(gref->page);
 	}
-	if (gref->notify.flags & UNMAP_NOTIFY_SEND_EVENT) {
+	if (gref->notify.flags & UNMAP_NOTIFY_SEND_EVENT)
 		notify_remote_via_evtchn(gref->notify.event);
-		evtchn_put(gref->notify.event);
-	}
 
 	gref->notify.flags = 0;
 
@@ -197,8 +189,6 @@ static void __del_gref(struct gntalloc_gref *gref)
 
 		if (!gnttab_end_foreign_access_ref(gref->gref_id, 0))
 			return;
-
-		gnttab_free_grant_reference(gref->gref_id);
 	}
 
 	gref_size--;
@@ -261,7 +251,7 @@ static int gntalloc_release(struct inode *inode, struct file *filp)
 
 	pr_debug("%s: priv %p\n", __func__, priv);
 
-	mutex_lock(&gref_mutex);
+	spin_lock(&gref_lock);
 	while (!list_empty(&priv->list)) {
 		gref = list_entry(priv->list.next,
 			struct gntalloc_gref, next_file);
@@ -271,7 +261,7 @@ static int gntalloc_release(struct inode *inode, struct file *filp)
 			__del_gref(gref);
 	}
 	kfree(priv);
-	mutex_unlock(&gref_mutex);
+	spin_unlock(&gref_lock);
 
 	return 0;
 }
@@ -296,21 +286,21 @@ static long gntalloc_ioctl_alloc(struct gntalloc_file_private_data *priv,
 		goto out;
 	}
 
-	mutex_lock(&gref_mutex);
+	spin_lock(&gref_lock);
 	/* Clean up pages that were at zero (local) users but were still mapped
 	 * by remote domains. Since those pages count towards the limit that we
 	 * are about to enforce, removing them here is a good idea.
 	 */
 	do_cleanup();
 	if (gref_size + op.count > limit) {
-		mutex_unlock(&gref_mutex);
+		spin_unlock(&gref_lock);
 		rc = -ENOSPC;
 		goto out_free;
 	}
 	gref_size += op.count;
 	op.index = priv->index;
 	priv->index += op.count * PAGE_SIZE;
-	mutex_unlock(&gref_mutex);
+	spin_unlock(&gref_lock);
 
 	rc = add_grefs(&op, gref_ids, priv);
 	if (rc < 0)
@@ -353,7 +343,7 @@ static long gntalloc_ioctl_dealloc(struct gntalloc_file_private_data *priv,
 		goto dealloc_grant_out;
 	}
 
-	mutex_lock(&gref_mutex);
+	spin_lock(&gref_lock);
 	gref = find_grefs(priv, op.index, op.count);
 	if (gref) {
 		/* Remove from the file list only, and decrease reference count.
@@ -373,7 +363,7 @@ static long gntalloc_ioctl_dealloc(struct gntalloc_file_private_data *priv,
 
 	do_cleanup();
 
-	mutex_unlock(&gref_mutex);
+	spin_unlock(&gref_lock);
 dealloc_grant_out:
 	return rc;
 }
@@ -393,7 +383,7 @@ static long gntalloc_ioctl_unmap_notify(struct gntalloc_file_private_data *priv,
 	index = op.index & ~(PAGE_SIZE - 1);
 	pgoff = op.index & (PAGE_SIZE - 1);
 
-	mutex_lock(&gref_mutex);
+	spin_lock(&gref_lock);
 
 	gref = find_grefs(priv, index, 1);
 	if (!gref) {
@@ -406,30 +396,12 @@ static long gntalloc_ioctl_unmap_notify(struct gntalloc_file_private_data *priv,
 		goto unlock_out;
 	}
 
-	/* We need to grab a reference to the event channel we are going to use
-	 * to send the notify before releasing the reference we may already have
-	 * (if someone has called this ioctl twice). This is required so that
-	 * it is possible to change the clear_byte part of the notification
-	 * without disturbing the event channel part, which may now be the last
-	 * reference to that event channel.
-	 */
-	if (op.action & UNMAP_NOTIFY_SEND_EVENT) {
-		if (evtchn_get(op.event_channel_port)) {
-			rc = -EINVAL;
-			goto unlock_out;
-		}
-	}
-
-	if (gref->notify.flags & UNMAP_NOTIFY_SEND_EVENT)
-		evtchn_put(gref->notify.event);
-
 	gref->notify.flags = op.action;
 	gref->notify.pgoff = pgoff;
 	gref->notify.event = op.event_channel_port;
 	rc = 0;
-
  unlock_out:
-	mutex_unlock(&gref_mutex);
+	spin_unlock(&gref_lock);
 	return rc;
 }
 
@@ -457,40 +429,26 @@ static long gntalloc_ioctl(struct file *filp, unsigned int cmd,
 
 static void gntalloc_vma_open(struct vm_area_struct *vma)
 {
-	struct gntalloc_vma_private_data *priv = vma->vm_private_data;
-
-	if (!priv)
+	struct gntalloc_gref *gref = vma->vm_private_data;
+	if (!gref)
 		return;
 
-	mutex_lock(&gref_mutex);
-	priv->users++;
-	mutex_unlock(&gref_mutex);
+	spin_lock(&gref_lock);
+	gref->users++;
+	spin_unlock(&gref_lock);
 }
 
 static void gntalloc_vma_close(struct vm_area_struct *vma)
 {
-	struct gntalloc_vma_private_data *priv = vma->vm_private_data;
-	struct gntalloc_gref *gref, *next;
-	int i;
-
-	if (!priv)
+	struct gntalloc_gref *gref = vma->vm_private_data;
+	if (!gref)
 		return;
 
-	mutex_lock(&gref_mutex);
-	priv->users--;
-	if (priv->users == 0) {
-		gref = priv->gref;
-		for (i = 0; i < priv->count; i++) {
-			gref->users--;
-			next = list_entry(gref->next_gref.next,
-					  struct gntalloc_gref, next_gref);
-			if (gref->users == 0)
-				__del_gref(gref);
-			gref = next;
-		}
-		kfree(priv);
-	}
-	mutex_unlock(&gref_mutex);
+	spin_lock(&gref_lock);
+	gref->users--;
+	if (gref->users == 0)
+		__del_gref(gref);
+	spin_unlock(&gref_lock);
 }
 
 static struct vm_operations_struct gntalloc_vmops = {
@@ -501,41 +459,30 @@ static struct vm_operations_struct gntalloc_vmops = {
 static int gntalloc_mmap(struct file *filp, struct vm_area_struct *vma)
 {
 	struct gntalloc_file_private_data *priv = filp->private_data;
-	struct gntalloc_vma_private_data *vm_priv;
 	struct gntalloc_gref *gref;
 	int count = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
 	int rv, i;
+
+	pr_debug("%s: priv %p, page %lu+%d\n", __func__,
+		       priv, vma->vm_pgoff, count);
 
 	if (!(vma->vm_flags & VM_SHARED)) {
 		printk(KERN_ERR "%s: Mapping must be shared.\n", __func__);
 		return -EINVAL;
 	}
 
-	vm_priv = kmalloc(sizeof(*vm_priv), GFP_KERNEL);
-	if (!vm_priv)
-		return -ENOMEM;
-
-	mutex_lock(&gref_mutex);
-
-	pr_debug("%s: priv %p,%p, page %lu+%d\n", __func__,
-		       priv, vm_priv, vma->vm_pgoff, count);
-
+	spin_lock(&gref_lock);
 	gref = find_grefs(priv, vma->vm_pgoff << PAGE_SHIFT, count);
 	if (gref == NULL) {
 		rv = -ENOENT;
 		pr_debug("%s: Could not find grant reference",
 				__func__);
-		kfree(vm_priv);
 		goto out_unlock;
 	}
 
-	vm_priv->gref = gref;
-	vm_priv->users = 1;
-	vm_priv->count = count;
+	vma->vm_private_data = gref;
 
-	vma->vm_private_data = vm_priv;
-
-	vma->vm_flags |= VM_RESERVED | VM_DONTEXPAND;
+	vma->vm_flags |= VM_RESERVED;
 
 	vma->vm_ops = &gntalloc_vmops;
 
@@ -552,7 +499,7 @@ static int gntalloc_mmap(struct file *filp, struct vm_area_struct *vma)
 	rv = 0;
 
 out_unlock:
-	mutex_unlock(&gref_mutex);
+	spin_unlock(&gref_lock);
 	return rv;
 }
 

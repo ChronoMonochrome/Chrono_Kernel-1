@@ -1593,15 +1593,9 @@ static int capidrv_command(isdn_ctrl * c, capidrv_contr * card)
 		return capidrv_ioctl(c, card);
 
 	switch (c->command) {
-<<<<<<< HEAD
 	case ISDN_CMD_DIAL:{
 			u8 calling[ISDN_MSNLEN + 3];
 			u8 called[ISDN_MSNLEN + 2];
-=======
-	case ISDN_CMD_DIAL: {
-		u8 calling[ISDN_MSNLEN + 3];
-		u8 called[ISDN_MSNLEN + 2];
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 			if (debugmode)
 				printk(KERN_DEBUG "capidrv-%d: ISDN_CMD_DIAL(ch=%ld,\"%s,%d,%d,%s\")\n",
@@ -2078,7 +2072,6 @@ static int capidrv_addcontr(u16 contr, struct capi_profile *profp)
 	card->interface.writebuf_skb = if_sendbuf;
 	card->interface.writecmd = NULL;
 	card->interface.readstat = if_readstat;
-<<<<<<< HEAD
 	card->interface.features = ISDN_FEATURE_L2_HDLC |
 	    			   ISDN_FEATURE_L2_TRANS |
 	    			   ISDN_FEATURE_L3_TRANS |
@@ -2091,22 +2084,6 @@ static int capidrv_addcontr(u16 contr, struct capi_profile *profp)
 	    				    ISDN_FEATURE_L2_V11019 |
 	    				    ISDN_FEATURE_L2_V11038;
 	if (profp->support1 & (1<<8))
-=======
-	card->interface.features =
-		ISDN_FEATURE_L2_HDLC |
-		ISDN_FEATURE_L2_TRANS |
-		ISDN_FEATURE_L3_TRANS |
-		ISDN_FEATURE_P_UNKNOWN |
-		ISDN_FEATURE_L2_X75I |
-		ISDN_FEATURE_L2_X75UI |
-		ISDN_FEATURE_L2_X75BUI;
-	if (profp->support1 & (1 << 2))
-		card->interface.features |=
-			ISDN_FEATURE_L2_V11096 |
-			ISDN_FEATURE_L2_V11019 |
-			ISDN_FEATURE_L2_V11038;
-	if (profp->support1 & (1 << 8))
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		card->interface.features |= ISDN_FEATURE_L2_MODEM;
 	card->interface.hl_hdrlen = 22; /* len of DATA_B3_REQ */
 	strncpy(card->interface.id, id, sizeof(card->interface.id) - 1);

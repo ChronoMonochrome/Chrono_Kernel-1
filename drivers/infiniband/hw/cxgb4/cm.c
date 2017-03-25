@@ -535,33 +535,7 @@ static void send_mpa_req(struct c4iw_ep *ep, struct sk_buff *skb)
 	mpa->flags = (crc_enabled ? MPA_CRC : 0) |
 		     (markers_enabled ? MPA_MARKERS : 0);
 	mpa->private_data_size = htons(ep->plen);
-<<<<<<< HEAD
 	mpa->revision = mpa_rev;
-=======
-	mpa->revision = mpa_rev_to_use;
-	if (mpa_rev_to_use == 1) {
-		ep->tried_with_mpa_v1 = 1;
-		ep->retry_with_mpa_v1 = 0;
-	}
-
-	if (mpa_rev_to_use == 2) {
-		mpa->private_data_size = htons(ntohs(mpa->private_data_size) +
-					       sizeof (struct mpa_v2_conn_params));
-		mpa_v2_params.ird = htons((u16)ep->ird);
-		mpa_v2_params.ord = htons((u16)ep->ord);
-
-		if (peer2peer) {
-			mpa_v2_params.ird |= htons(MPA_V2_PEER2PEER_MODEL);
-			if (p2p_type == FW_RI_INIT_P2PTYPE_RDMA_WRITE)
-				mpa_v2_params.ord |=
-					htons(MPA_V2_RDMA_WRITE_RTR);
-			else if (p2p_type == FW_RI_INIT_P2PTYPE_READ_REQ)
-				mpa_v2_params.ord |=
-					htons(MPA_V2_RDMA_READ_RTR);
-		}
-		memcpy(mpa->private_data, &mpa_v2_params,
-		       sizeof(struct mpa_v2_conn_params));
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	if (ep->plen)
 		memcpy(mpa->private_data, ep->mpa_pkt + sizeof(*mpa), ep->plen);
@@ -621,34 +595,8 @@ static int send_mpa_reject(struct c4iw_ep *ep, const void *pdata, u8 plen)
 	mpa->flags = MPA_REJECT;
 	mpa->revision = mpa_rev;
 	mpa->private_data_size = htons(plen);
-<<<<<<< HEAD
 	if (plen)
 		memcpy(mpa->private_data, pdata, plen);
-=======
-
-	if (ep->mpa_attr.version == 2 && ep->mpa_attr.enhanced_rdma_conn) {
-		mpa->flags |= MPA_ENHANCED_RDMA_CONN;
-		mpa->private_data_size = htons(ntohs(mpa->private_data_size) +
-					       sizeof (struct mpa_v2_conn_params));
-		mpa_v2_params.ird = htons(((u16)ep->ird) |
-					  (peer2peer ? MPA_V2_PEER2PEER_MODEL :
-					   0));
-		mpa_v2_params.ord = htons(((u16)ep->ord) | (peer2peer ?
-					  (p2p_type ==
-					   FW_RI_INIT_P2PTYPE_RDMA_WRITE ?
-					   MPA_V2_RDMA_WRITE_RTR : p2p_type ==
-					   FW_RI_INIT_P2PTYPE_READ_REQ ?
-					   MPA_V2_RDMA_READ_RTR : 0) : 0));
-		memcpy(mpa->private_data, &mpa_v2_params,
-		       sizeof(struct mpa_v2_conn_params));
-
-		if (ep->plen)
-			memcpy(mpa->private_data +
-			       sizeof(struct mpa_v2_conn_params), pdata, plen);
-	} else
-		if (plen)
-			memcpy(mpa->private_data, pdata, plen);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	/*
 	 * Reference the mpa skb again.  This ensures the data area
@@ -703,39 +651,8 @@ static int send_mpa_reply(struct c4iw_ep *ep, const void *pdata, u8 plen)
 		     (markers_enabled ? MPA_MARKERS : 0);
 	mpa->revision = mpa_rev;
 	mpa->private_data_size = htons(plen);
-<<<<<<< HEAD
 	if (plen)
 		memcpy(mpa->private_data, pdata, plen);
-=======
-
-	if (ep->mpa_attr.version == 2 && ep->mpa_attr.enhanced_rdma_conn) {
-		mpa->flags |= MPA_ENHANCED_RDMA_CONN;
-		mpa->private_data_size = htons(ntohs(mpa->private_data_size) +
-					       sizeof (struct mpa_v2_conn_params));
-		mpa_v2_params.ird = htons((u16)ep->ird);
-		mpa_v2_params.ord = htons((u16)ep->ord);
-		if (peer2peer && (ep->mpa_attr.p2p_type !=
-					FW_RI_INIT_P2PTYPE_DISABLED)) {
-			mpa_v2_params.ird |= htons(MPA_V2_PEER2PEER_MODEL);
-
-			if (p2p_type == FW_RI_INIT_P2PTYPE_RDMA_WRITE)
-				mpa_v2_params.ord |=
-					htons(MPA_V2_RDMA_WRITE_RTR);
-			else if (p2p_type == FW_RI_INIT_P2PTYPE_READ_REQ)
-				mpa_v2_params.ord |=
-					htons(MPA_V2_RDMA_READ_RTR);
-		}
-
-		memcpy(mpa->private_data, &mpa_v2_params,
-		       sizeof(struct mpa_v2_conn_params));
-
-		if (ep->plen)
-			memcpy(mpa->private_data +
-			       sizeof(struct mpa_v2_conn_params), pdata, plen);
-	} else
-		if (plen)
-			memcpy(mpa->private_data, pdata, plen);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	/*
 	 * Reference the mpa skb.  This ensures the data area
@@ -1206,11 +1123,8 @@ static int abort_rpl(struct c4iw_dev *dev, struct sk_buff *skb)
 	struct tid_info *t = dev->rdev.lldi.tids;
 
 	ep = lookup_tid(t, tid);
-	if (!ep) {
-		printk(KERN_WARNING MOD "Abort rpl to freed endpoint\n");
-		return 0;
-	}
 	PDBG("%s ep %p tid %u\n", __func__, ep, ep->hwtid);
+	BUG_ON(!ep);
 	mutex_lock(&ep->com.mutex);
 	switch (ep->com.state) {
 	case ABORTING:
@@ -1256,24 +1170,6 @@ static int act_open_rpl(struct c4iw_dev *dev, struct sk_buff *skb)
 		printk(KERN_WARNING MOD "Connection problems for atid %u\n",
 			atid);
 		return 0;
-	}
-
-	/*
-	 * Log interesting failures.
-	 */
-	switch (status) {
-	case CPL_ERR_CONN_RESET:
-	case CPL_ERR_CONN_TIMEDOUT:
-		break;
-	default:
-		printk(KERN_INFO MOD "Active open failure - "
-		       "atid %u status %u errno %d %pI4:%u->%pI4:%u\n",
-		       atid, status, status2errno(status),
-		       &ep->com.local_addr.sin_addr.s_addr,
-		       ntohs(ep->com.local_addr.sin_port),
-		       &ep->com.remote_addr.sin_addr.s_addr,
-		       ntohs(ep->com.remote_addr.sin_port));
-		break;
 	}
 
 	connect_reply_upcall(ep, status2errno(status));
@@ -1422,76 +1318,6 @@ static void get_4tuple(struct cpl_pass_accept_req *req,
 	return;
 }
 
-<<<<<<< HEAD
-=======
-static int import_ep(struct c4iw_ep *ep, __be32 peer_ip, struct dst_entry *dst,
-		     struct c4iw_dev *cdev, bool clear_mpa_v1)
-{
-	struct neighbour *n;
-	int err, step;
-
-	n = dst_neigh_lookup(dst, &peer_ip);
-	if (!n)
-		return -ENODEV;
-
-	rcu_read_lock();
-	err = -ENOMEM;
-	if (n->dev->flags & IFF_LOOPBACK) {
-		struct net_device *pdev;
-
-		pdev = ip_dev_find(&init_net, peer_ip);
-		if (!pdev) {
-			err = -ENODEV;
-			goto out;
-		}
-		ep->l2t = cxgb4_l2t_get(cdev->rdev.lldi.l2t,
-					n, pdev, 0);
-		if (!ep->l2t)
-			goto out;
-		ep->mtu = pdev->mtu;
-		ep->tx_chan = cxgb4_port_chan(pdev);
-		ep->smac_idx = (cxgb4_port_viid(pdev) & 0x7F) << 1;
-		step = cdev->rdev.lldi.ntxq /
-			cdev->rdev.lldi.nchan;
-		ep->txq_idx = cxgb4_port_idx(pdev) * step;
-		step = cdev->rdev.lldi.nrxq /
-			cdev->rdev.lldi.nchan;
-		ep->ctrlq_idx = cxgb4_port_idx(pdev);
-		ep->rss_qid = cdev->rdev.lldi.rxq_ids[
-			cxgb4_port_idx(pdev) * step];
-		dev_put(pdev);
-	} else {
-		ep->l2t = cxgb4_l2t_get(cdev->rdev.lldi.l2t,
-					n, n->dev, 0);
-		if (!ep->l2t)
-			goto out;
-		ep->mtu = dst_mtu(dst);
-		ep->tx_chan = cxgb4_port_chan(n->dev);
-		ep->smac_idx = (cxgb4_port_viid(n->dev) & 0x7F) << 1;
-		step = cdev->rdev.lldi.ntxq /
-			cdev->rdev.lldi.nchan;
-		ep->txq_idx = cxgb4_port_idx(n->dev) * step;
-		ep->ctrlq_idx = cxgb4_port_idx(n->dev);
-		step = cdev->rdev.lldi.nrxq /
-			cdev->rdev.lldi.nchan;
-		ep->rss_qid = cdev->rdev.lldi.rxq_ids[
-			cxgb4_port_idx(n->dev) * step];
-
-		if (clear_mpa_v1) {
-			ep->retry_with_mpa_v1 = 0;
-			ep->tried_with_mpa_v1 = 0;
-		}
-	}
-	err = 0;
-out:
-	rcu_read_unlock();
-
-	neigh_release(n);
-
-	return err;
-}
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 static int pass_accept_req(struct c4iw_dev *dev, struct sk_buff *skb)
 {
 	struct c4iw_ep *child_ep, *parent_ep;
@@ -2490,12 +2316,6 @@ static int peer_abort_intr(struct c4iw_dev *dev, struct sk_buff *skb)
 	unsigned int tid = GET_TID(req);
 
 	ep = lookup_tid(t, tid);
-	if (!ep) {
-		printk(KERN_WARNING MOD
-		       "Abort on non-existent endpoint, tid %d\n", tid);
-		kfree_skb(skb);
-		return 0;
-	}
 	if (is_neg_adv_abort(req->status)) {
 		PDBG("%s neg_adv_abort ep %p tid %u\n", __func__, ep,
 		     ep->hwtid);

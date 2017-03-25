@@ -242,11 +242,7 @@ static int pre_map_gar_callback(struct apei_exec_context *ctx,
 	u8 ins = entry->instruction;
 
 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
-<<<<<<< HEAD
 		return acpi_pre_map_gar(&entry->register_region);
-=======
-		return apei_map_generic_address(&entry->register_region);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	return 0;
 }
@@ -279,11 +275,7 @@ static int post_unmap_gar_callback(struct apei_exec_context *ctx,
 	u8 ins = entry->instruction;
 
 	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
-<<<<<<< HEAD
 		acpi_post_unmap_gar(&entry->register_region);
-=======
-		apei_unmap_generic_address(&entry->register_region);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	return 0;
 }
@@ -544,88 +536,16 @@ static int apei_check_gar(struct acpi_generic_address *reg, u64 *paddr)
 
 	if ((width != 8) && (width != 16) && (width != 32) && (width != 64)) {
 		pr_warning(FW_BUG APEI_PFX
-<<<<<<< HEAD
 			   "Invalid bit width in GAR [0x%llx/%u/%u]\n",
 			   *paddr, width, space_id);
-=======
-			   "Invalid access size code in GAR [0x%llx/%u/%u/%u/%u]\n",
-			   *paddr, bit_width, bit_offset, access_size_code,
-			   space_id);
-		return -EINVAL;
-	}
-	*access_bit_width = 1UL << (access_size_code + 2);
-
-	/* Fixup common BIOS bug */
-	if (bit_width == 32 && bit_offset == 0 && (*paddr & 0x03) == 0 &&
-	    *access_bit_width < 32)
-		*access_bit_width = 32;
-
-	if ((bit_width + bit_offset) > *access_bit_width) {
-		pr_warning(FW_BUG APEI_PFX
-			   "Invalid bit width + offset in GAR [0x%llx/%u/%u/%u/%u]\n",
-			   *paddr, bit_width, bit_offset, access_size_code,
-			   space_id);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		return -EINVAL;
 	}
 
 	if (space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY &&
 	    space_id != ACPI_ADR_SPACE_SYSTEM_IO) {
 		pr_warning(FW_BUG APEI_PFX
-<<<<<<< HEAD
 			   "Invalid address space type in GAR [0x%llx/%u/%u]\n",
 			   *paddr, width, space_id);
-=======
-			   "Invalid address space type in GAR [0x%llx/%u/%u/%u/%u]\n",
-			   *paddr, bit_width, bit_offset, access_size_code,
-			   space_id);
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-int apei_map_generic_address(struct acpi_generic_address *reg)
-{
-	int rc;
-	u32 access_bit_width;
-	u64 address;
-
-	rc = apei_check_gar(reg, &address, &access_bit_width);
-	if (rc)
-		return rc;
-	return acpi_os_map_generic_address(reg);
-}
-EXPORT_SYMBOL_GPL(apei_map_generic_address);
-
-/* read GAR in interrupt (including NMI) or process context */
-int apei_read(u64 *val, struct acpi_generic_address *reg)
-{
-	int rc;
-	u32 access_bit_width;
-	u64 address;
-	acpi_status status;
-
-	rc = apei_check_gar(reg, &address, &access_bit_width);
-	if (rc)
-		return rc;
-
-	*val = 0;
-	switch(reg->space_id) {
-	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
-		status = acpi_os_read_memory((acpi_physical_address) address,
-					       val, access_bit_width);
-		if (ACPI_FAILURE(status))
-			return -EIO;
-		break;
-	case ACPI_ADR_SPACE_SYSTEM_IO:
-		status = acpi_os_read_port(address, (u32 *)val,
-					   access_bit_width);
-		if (ACPI_FAILURE(status))
-			return -EIO;
-		break;
-	default:
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		return -EINVAL;
 	}
 

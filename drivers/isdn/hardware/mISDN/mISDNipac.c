@@ -602,11 +602,10 @@ isac_l1hw(struct mISDNchannel *ch, struct sk_buff *skb)
 }
 
 static int
-isac_ctrl(struct isac_hw *isac, u32 cmd, unsigned long para)
+isac_ctrl(struct isac_hw *isac, u32 cmd, u_long para)
 {
 	u8 tl = 0;
-	unsigned long flags;
-	int ret = 0;
+	u_long flags;
 
 	switch (cmd) {
 	case HW_TESTLOOP:
@@ -626,20 +625,12 @@ isac_ctrl(struct isac_hw *isac, u32 cmd, unsigned long para)
 		}
 		spin_unlock_irqrestore(isac->hwlock, flags);
 		break;
-	case HW_TIMER3_VALUE:
-		ret = l1_event(isac->dch.l1, HW_TIMER3_VALUE | (para & 0xff));
-		break;
 	default:
 		pr_debug("%s: %s unknown command %x %lx\n", isac->name,
-<<<<<<< HEAD
 			__func__, cmd, para);
 		return -1;
-=======
-			 __func__, cmd, para);
-		ret = -1;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	}
-	return ret;
+	return 0;
 }
 
 static int
@@ -937,28 +928,22 @@ static void
 hscx_empty_fifo(struct hscx_hw *hscx, u8 count)
 {
 	u8 *p;
-	int maxlen;
 
 	pr_debug("%s: B%1d %d\n", hscx->ip->name, hscx->bch.nr, count);
-	if (test_bit(FLG_RX_OFF, &hscx->bch.Flags)) {
-		hscx->bch.dropcnt += count;
-		hscx_cmdr(hscx, 0x80); /* RMC */
-		return;
+	if (!hscx->bch.rx_skb) {
+		hscx->bch.rx_skb = mI_alloc_skb(hscx->bch.maxlen, GFP_ATOMIC);
+		if (!hscx->bch.rx_skb) {
+			pr_info("%s: B receive out of memory\n",
+				hscx->ip->name);
+			hscx_cmdr(hscx, 0x80); /* RMC */
+			return;
+		}
 	}
-<<<<<<< HEAD
 	if ((hscx->bch.rx_skb->len + count) > hscx->bch.maxlen) {
 		pr_debug("%s: overrun %d\n", hscx->ip->name,
 			hscx->bch.rx_skb->len + count);
 		skb_trim(hscx->bch.rx_skb, 0);
-=======
-	maxlen = bchannel_get_rxbuf(&hscx->bch, count);
-	if (maxlen < 0) {
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		hscx_cmdr(hscx, 0x80); /* RMC */
-		if (hscx->bch.rx_skb)
-			skb_trim(hscx->bch.rx_skb, 0);
-		pr_warning("%s.B%d: No bufferspace for %d bytes\n",
-			   hscx->ip->name, hscx->bch.nr, count);
 		return;
 	}
 	p = skb_put(hscx->bch.rx_skb, count);
@@ -985,35 +970,22 @@ hscx_fill_fifo(struct hscx_hw *hscx)
 	int count, more;
 	u8 *p;
 
-	if (!hscx->bch.tx_skb) {
-		if (!test_bit(FLG_TX_EMPTY, &hscx->bch.Flags))
-			return;
+	if (!hscx->bch.tx_skb)
+		return;
+	count = hscx->bch.tx_skb->len - hscx->bch.tx_idx;
+	if (count <= 0)
+		return;
+	p = hscx->bch.tx_skb->data + hscx->bch.tx_idx;
+
+	more = test_bit(FLG_TRANSPARENT, &hscx->bch.Flags) ? 1 : 0;
+	if (count > hscx->fifo_size) {
 		count = hscx->fifo_size;
 		more = 1;
-<<<<<<< HEAD
 	}
 	pr_debug("%s: B%1d %d/%d/%d\n", hscx->ip->name, hscx->bch.nr, count,
 		hscx->bch.tx_idx, hscx->bch.tx_skb->len);
 	hscx->bch.tx_idx += count;
-=======
-		p = hscx->log;
-		memset(p, hscx->bch.fill[0], count);
-	} else {
-		count = hscx->bch.tx_skb->len - hscx->bch.tx_idx;
-		if (count <= 0)
-			return;
-		p = hscx->bch.tx_skb->data + hscx->bch.tx_idx;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
-		more = test_bit(FLG_TRANSPARENT, &hscx->bch.Flags) ? 1 : 0;
-		if (count > hscx->fifo_size) {
-			count = hscx->fifo_size;
-			more = 1;
-		}
-		pr_debug("%s: B%1d %d/%d/%d\n", hscx->ip->name, hscx->bch.nr,
-			 count, hscx->bch.tx_idx, hscx->bch.tx_skb->len);
-		hscx->bch.tx_idx += count;
-	}
 	if (hscx->ip->type & IPAC_TYPE_IPACX)
 		hscx->ip->write_fifo(hscx->ip->hw,
 			hscx->off + IPACX_XFIFOB, p, count);
@@ -1024,7 +996,7 @@ hscx_fill_fifo(struct hscx_hw *hscx)
 	}
 	hscx_cmdr(hscx, more ? 0x08 : 0x0a);
 
-	if (hscx->bch.tx_skb && (hscx->bch.debug & DEBUG_HW_BFIFO)) {
+	if (hscx->bch.debug & DEBUG_HW_BFIFO) {
 		snprintf(hscx->log, 64, "B%1d-send %s %d ",
 			hscx->bch.nr, hscx->ip->name, count);
 		print_hex_dump_bytes(hscx->log, DUMP_PREFIX_OFFSET, p, count);
@@ -1034,17 +1006,17 @@ hscx_fill_fifo(struct hscx_hw *hscx)
 static void
 hscx_xpr(struct hscx_hw *hx)
 {
-	if (hx->bch.tx_skb && hx->bch.tx_idx < hx->bch.tx_skb->len) {
+	if (hx->bch.tx_skb && hx->bch.tx_idx < hx->bch.tx_skb->len)
 		hscx_fill_fifo(hx);
-	} else {
-		if (hx->bch.tx_skb)
+	else {
+		if (hx->bch.tx_skb) {
+			/* send confirm, on trans, free on hdlc. */
+			if (test_bit(FLG_TRANSPARENT, &hx->bch.Flags))
+				confirm_Bsend(&hx->bch);
 			dev_kfree_skb(hx->bch.tx_skb);
-		if (get_next_bframe(&hx->bch)) {
-			hscx_fill_fifo(hx);
-			test_and_clear_bit(FLG_TX_EMPTY, &hx->bch.Flags);
-		} else if (test_bit(FLG_TX_EMPTY, &hx->bch.Flags)) {
-			hscx_fill_fifo(hx);
 		}
+		if (get_next_bframe(&hx->bch))
+			hscx_fill_fifo(hx);
 	}
 }
 
@@ -1096,7 +1068,7 @@ ipac_rme(struct hscx_hw *hx)
 		skb_trim(hx->bch.rx_skb, 0);
 	} else {
 		skb_trim(hx->bch.rx_skb, hx->bch.rx_skb->len - 1);
-		recv_Bchannel(&hx->bch, 0, false);
+		recv_Bchannel(&hx->bch, 0);
 	}
 }
 
@@ -1147,8 +1119,11 @@ ipac_irq(struct hscx_hw *hx, u8 ista)
 
 	if (istab & IPACX_B_RPF) {
 		hscx_empty_fifo(hx, hx->fifo_size);
-		if (test_bit(FLG_TRANSPARENT, &hx->bch.Flags))
-			recv_Bchannel(&hx->bch, 0, false);
+		if (test_bit(FLG_TRANSPARENT, &hx->bch.Flags)) {
+			/* receive transparent audio data */
+			if (hx->bch.rx_skb)
+				recv_Bchannel(&hx->bch, 0);
+		}
 	}
 
 	if (istab & IPACX_B_RFO) {
@@ -1161,9 +1136,7 @@ ipac_irq(struct hscx_hw *hx, u8 ista)
 
 	if (istab & IPACX_B_XDU) {
 		if (test_bit(FLG_TRANSPARENT, &hx->bch.Flags)) {
-			if (test_bit(FLG_FILLEMPTY, &hx->bch.Flags))
-				test_and_set_bit(FLG_TX_EMPTY, &hx->bch.Flags);
-			hscx_xpr(hx);
+			hscx_fill_fifo(hx);
 			return;
 		}
 		pr_debug("%s: B%1d XDU error at len %d\n", hx->ip->name,
@@ -1364,17 +1337,22 @@ hscx_l2l1(struct mISDNchannel *ch, struct sk_buff *skb)
 	struct hscx_hw	*hx = container_of(bch, struct hscx_hw, bch);
 	int ret = -EINVAL;
 	struct mISDNhead *hh = mISDN_HEAD_P(skb);
-	unsigned long flags;
+	u32 id;
+	u_long flags;
 
 	switch (hh->prim) {
 	case PH_DATA_REQ:
 		spin_lock_irqsave(hx->ip->hwlock, flags);
 		ret = bchannel_senddata(bch, skb);
 		if (ret > 0) { /* direct TX */
+			id = hh->id; /* skb can be freed */
 			ret = 0;
 			hscx_fill_fifo(hx);
-		}
-		spin_unlock_irqrestore(hx->ip->hwlock, flags);
+			spin_unlock_irqrestore(hx->ip->hwlock, flags);
+			if (!test_bit(FLG_TRANSPARENT, &bch->Flags))
+				queue_ch_frame(ch, PH_DATA_CNF, id, NULL);
+		} else
+			spin_unlock_irqrestore(hx->ip->hwlock, flags);
 		return ret;
 	case PH_ACTIVATE_REQ:
 		spin_lock_irqsave(hx->ip->hwlock, flags);
@@ -1409,7 +1387,6 @@ hscx_l2l1(struct mISDNchannel *ch, struct sk_buff *skb)
 static int
 channel_bctrl(struct bchannel *bch, struct mISDN_ctrl_req *cq)
 {
-<<<<<<< HEAD
 	int	ret = 0;
 
 	switch (cq->op) {
@@ -1424,9 +1401,6 @@ channel_bctrl(struct bchannel *bch, struct mISDN_ctrl_req *cq)
 		break;
 	}
 	return ret;
-=======
-	return mISDN_ctrl_bchannel(bch, cq);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 static int
@@ -1441,11 +1415,15 @@ hscx_bctrl(struct mISDNchannel *ch, u32 cmd, void *arg)
 	switch (cmd) {
 	case CLOSE_CHANNEL:
 		test_and_clear_bit(FLG_OPEN, &bch->Flags);
-		cancel_work_sync(&bch->workq);
-		spin_lock_irqsave(hx->ip->hwlock, flags);
-		mISDN_clear_bchannel(bch);
-		hscx_mode(hx, ISDN_P_NONE);
-		spin_unlock_irqrestore(hx->ip->hwlock, flags);
+		if (test_bit(FLG_ACTIVE, &bch->Flags)) {
+			spin_lock_irqsave(hx->ip->hwlock, flags);
+			mISDN_freebchannel(bch);
+			hscx_mode(hx, ISDN_P_NONE);
+			spin_unlock_irqrestore(hx->ip->hwlock, flags);
+		} else {
+			skb_queue_purge(&bch->rqueue);
+			bch->rcount = 0;
+		}
 		ch->protocol = ISDN_P_NONE;
 		ch->peer = NULL;
 		module_put(hx->ip->owner);
@@ -1547,7 +1525,7 @@ channel_ctrl(struct ipac_hw *ipac, struct mISDN_ctrl_req *cq)
 
 	switch (cq->op) {
 	case MISDN_CTRL_GETOP:
-		cq->op = MISDN_CTRL_LOOP | MISDN_CTRL_L1_TIMER3;
+		cq->op = MISDN_CTRL_LOOP;
 		break;
 	case MISDN_CTRL_LOOP:
 		/* cq->channel: 0 disable, 1 B1 loop 2 B2 loop, 3 both */
@@ -1556,9 +1534,6 @@ channel_ctrl(struct ipac_hw *ipac, struct mISDN_ctrl_req *cq)
 			break;
 		}
 		ret = ipac->ctrl(ipac, HW_TESTLOOP, cq->channel);
-		break;
-	case MISDN_CTRL_L1_TIMER3:
-		ret = ipac->isac.ctrl(&ipac->isac, HW_TIMER3_VALUE, cq->p1);
 		break;
 	default:
 		pr_info("%s: unknown CTRL OP %x\n", ipac->name, cq->op);
@@ -1644,14 +1619,8 @@ mISDNipac_init(struct ipac_hw *ipac, void *hw)
 		ipac->hscx[i].bch.nr = i + 1;
 		set_channelmap(i + 1, ipac->isac.dch.dev.channelmap);
 		list_add(&ipac->hscx[i].bch.ch.list,
-<<<<<<< HEAD
 			&ipac->isac.dch.dev.bchannels);
 		mISDN_initbchannel(&ipac->hscx[i].bch, MAX_DATA_MEM);
-=======
-			 &ipac->isac.dch.dev.bchannels);
-		mISDN_initbchannel(&ipac->hscx[i].bch, MAX_DATA_MEM,
-				   ipac->hscx[i].fifo_size);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		ipac->hscx[i].bch.ch.nr = i + 1;
 		ipac->hscx[i].bch.ch.send = &hscx_l2l1;
 		ipac->hscx[i].bch.ch.ctrl = hscx_bctrl;

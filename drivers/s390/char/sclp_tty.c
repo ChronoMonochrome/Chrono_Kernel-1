@@ -555,6 +555,7 @@ sclp_tty_init(void)
 		return rc;
 	}
 
+	driver->owner = THIS_MODULE;
 	driver->driver_name = "sclp_line";
 	driver->name = "sclp_line";
 	driver->major = TTY_MAJOR;

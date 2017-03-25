@@ -38,7 +38,7 @@ struct virtio_balloon
 	struct task_struct *thread;
 
 	/* Waiting for host to ack the pages we released. */
-	wait_queue_head_t acked;
+	struct completion acked;
 
 	/* The pages we've told the Host we're not using. */
 	unsigned int num_pages;
@@ -69,17 +69,21 @@ static u32 page_to_balloon_pfn(struct page *page)
 
 static void balloon_ack(struct virtqueue *vq)
 {
-	struct virtio_balloon *vb = vq->vdev->priv;
+	struct virtio_balloon *vb;
+	unsigned int len;
 
-	wake_up(&vb->acked);
+	vb = virtqueue_get_buf(vq, &len);
+	if (vb)
+		complete(&vb->acked);
 }
 
 static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
 {
 	struct scatterlist sg;
-	unsigned int len;
 
 	sg_init_one(&sg, vb->pfns, sizeof(vb->pfns[0]) * vb->num_pfns);
+
+	init_completion(&vb->acked);
 
 	/* We should always be able to add one buffer to an empty queue. */
 	if (virtqueue_add_buf(vq, &sg, 1, 0, vb) < 0)
@@ -87,7 +91,7 @@ static void tell_host(struct virtio_balloon *vb, struct virtqueue *vq)
 	virtqueue_kick(vq);
 
 	/* When host has read buffer, this completes via balloon_ack */
-	wait_event(vb->acked, virtqueue_get_buf(vq, &len));
+	wait_for_completion(&vb->acked);
 }
 
 static void fill_balloon(struct virtio_balloon *vb, size_t num)
@@ -195,8 +199,12 @@ static void update_balloon_stats(struct virtio_balloon *vb)
  */
 static void stats_request(struct virtqueue *vq)
 {
-	struct virtio_balloon *vb = vq->vdev->priv;
+	struct virtio_balloon *vb;
+	unsigned int len;
 
+	vb = virtqueue_get_buf(vq, &len);
+	if (!vb)
+		return;
 	vb->need_stats_update = 1;
 	wake_up(&vb->config_change);
 }
@@ -205,14 +213,11 @@ static void stats_handle_request(struct virtio_balloon *vb)
 {
 	struct virtqueue *vq;
 	struct scatterlist sg;
-	unsigned int len;
 
 	vb->need_stats_update = 0;
 	update_balloon_stats(vb);
 
 	vq = vb->stats_vq;
-	if (!virtqueue_get_buf(vq, &len))
-		return;
 	sg_init_one(&sg, vb->stats, sizeof(vb->stats));
 	if (virtqueue_add_buf(vq, &sg, 1, 0, vb) < 0)
 		BUG();
@@ -311,33 +316,6 @@ static int virtballoon_probe(struct virtio_device *vdev)
 			BUG();
 		virtqueue_kick(vb->stats_vq);
 	}
-<<<<<<< HEAD
-=======
-	return 0;
-}
-
-static int virtballoon_probe(struct virtio_device *vdev)
-{
-	struct virtio_balloon *vb;
-	int err;
-
-	vdev->priv = vb = kmalloc(sizeof(*vb), GFP_KERNEL);
-	if (!vb) {
-		err = -ENOMEM;
-		goto out;
-	}
-
-	INIT_LIST_HEAD(&vb->pages);
-	vb->num_pages = 0;
-	init_waitqueue_head(&vb->config_change);
-	init_waitqueue_head(&vb->acked);
-	vb->vdev = vdev;
-	vb->need_stats_update = 0;
-
-	err = init_vqs(vb);
-	if (err)
-		goto out_free_vb;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	vb->thread = kthread_run(balloon, vb, "vballoon");
 	if (IS_ERR(vb->thread)) {
@@ -355,59 +333,23 @@ out:
 	return err;
 }
 
-static void remove_common(struct virtio_balloon *vb)
-{
-	/* There might be pages left in the balloon: free them. */
-	while (vb->num_pages)
-		leak_balloon(vb, vb->num_pages);
-
-	/* Now we reset the device so we can clean up the queues. */
-	vb->vdev->config->reset(vb->vdev);
-
-	vb->vdev->config->del_vqs(vb->vdev);
-}
-
 static void __devexit virtballoon_remove(struct virtio_device *vdev)
 {
 	struct virtio_balloon *vb = vdev->priv;
 
 	kthread_stop(vb->thread);
-	remove_common(vb);
+
+	/* There might be pages left in the balloon: free them. */
+	while (vb->num_pages)
+		leak_balloon(vb, vb->num_pages);
+
+	/* Now we reset the device so we can clean up the queues. */
+	vdev->config->reset(vdev);
+
+	vdev->config->del_vqs(vdev);
 	kfree(vb);
 }
 
-<<<<<<< HEAD
-=======
-#ifdef CONFIG_PM
-static int virtballoon_freeze(struct virtio_device *vdev)
-{
-	struct virtio_balloon *vb = vdev->priv;
-
-	/*
-	 * The kthread is already frozen by the PM core before this
-	 * function is called.
-	 */
-
-	remove_common(vb);
-	return 0;
-}
-
-static int virtballoon_restore(struct virtio_device *vdev)
-{
-	struct virtio_balloon *vb = vdev->priv;
-	int ret;
-
-	ret = init_vqs(vdev->priv);
-	if (ret)
-		return ret;
-
-	fill_balloon(vb, towards_target(vb));
-	update_balloon_size(vb);
-	return 0;
-}
-#endif
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 static unsigned int features[] = {
 	VIRTIO_BALLOON_F_MUST_TELL_HOST,
 	VIRTIO_BALLOON_F_STATS_VQ,

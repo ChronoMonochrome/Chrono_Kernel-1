@@ -129,7 +129,7 @@ acpi_status __init acpi_initialize_subsystem(void)
  *
  * FUNCTION:    acpi_enable_subsystem
  *
- * PARAMETERS:  flags           - Init/enable Options
+ * PARAMETERS:  Flags           - Init/enable Options
  *
  * RETURN:      Status
  *
@@ -228,7 +228,7 @@ ACPI_EXPORT_SYMBOL(acpi_enable_subsystem)
  *
  * FUNCTION:    acpi_initialize_objects
  *
- * PARAMETERS:  flags           - Init/enable Options
+ * PARAMETERS:  Flags           - Init/enable Options
  *
  * RETURN:      Status
  *
@@ -403,7 +403,7 @@ ACPI_EXPORT_SYMBOL(acpi_subsystem_status)
  * PARAMETERS:  out_buffer      - A buffer to receive the resources for the
  *                                device
  *
- * RETURN:      status          - the status of the call
+ * RETURN:      Status          - the status of the call
  *
  * DESCRIPTION: This function is called to get information about the current
  *              state of the ACPI subsystem.  It will return system information
@@ -474,8 +474,8 @@ ACPI_EXPORT_SYMBOL(acpi_get_system_info)
  *
  * FUNCTION:    acpi_install_initialization_handler
  *
- * PARAMETERS:  handler             - Callback procedure
- *              function            - Not (currently) used, see below
+ * PARAMETERS:  Handler             - Callback procedure
+ *              Function            - Not (currently) used, see below
  *
  * RETURN:      Status
  *
@@ -612,7 +612,7 @@ ACPI_EXPORT_SYMBOL(acpi_remove_interface)
  *
  * FUNCTION:    acpi_install_interface_handler
  *
- * PARAMETERS:  handler             - The _OSI interface handler to install
+ * PARAMETERS:  Handler             - The _OSI interface handler to install
  *                                    NULL means "remove existing handler"
  *
  * RETURN:      Status
@@ -639,44 +639,4 @@ acpi_status acpi_install_interface_handler(acpi_interface_handler handler)
 }
 
 ACPI_EXPORT_SYMBOL(acpi_install_interface_handler)
-<<<<<<< HEAD
-=======
-
-/*****************************************************************************
- *
- * FUNCTION:    acpi_check_address_range
- *
- * PARAMETERS:  space_id            - Address space ID
- *              address             - Start address
- *              length              - Length
- *              warn                - TRUE if warning on overlap desired
- *
- * RETURN:      Count of the number of conflicts detected.
- *
- * DESCRIPTION: Check if the input address range overlaps any of the
- *              ASL operation region address ranges.
- *
- ****************************************************************************/
-u32
-acpi_check_address_range(acpi_adr_space_type space_id,
-			 acpi_physical_address address,
-			 acpi_size length, u8 warn)
-{
-	u32 overlaps;
-	acpi_status status;
-
-	status = acpi_ut_acquire_mutex(ACPI_MTX_NAMESPACE);
-	if (ACPI_FAILURE(status)) {
-		return (0);
-	}
-
-	overlaps = acpi_ut_check_address_range(space_id, address,
-					       (u32)length, warn);
-
-	(void)acpi_ut_release_mutex(ACPI_MTX_NAMESPACE);
-	return (overlaps);
-}
-
-ACPI_EXPORT_SYMBOL(acpi_check_address_range)
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 #endif				/* !ACPI_ASL_COMPILER */

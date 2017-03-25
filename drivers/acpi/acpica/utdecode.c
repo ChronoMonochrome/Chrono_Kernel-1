@@ -48,6 +48,41 @@
 #define _COMPONENT          ACPI_UTILITIES
 ACPI_MODULE_NAME("utdecode")
 
+/*******************************************************************************
+ *
+ * FUNCTION:    acpi_format_exception
+ *
+ * PARAMETERS:  Status       - The acpi_status code to be formatted
+ *
+ * RETURN:      A string containing the exception text. A valid pointer is
+ *              always returned.
+ *
+ * DESCRIPTION: This function translates an ACPI exception into an ASCII string
+ *              It is here instead of utxface.c so it is always present.
+ *
+ ******************************************************************************/
+const char *acpi_format_exception(acpi_status status)
+{
+	const char *exception = NULL;
+
+	ACPI_FUNCTION_ENTRY();
+
+	exception = acpi_ut_validate_exception(status);
+	if (!exception) {
+
+		/* Exception code was not recognized */
+
+		ACPI_ERROR((AE_INFO,
+			    "Unknown exception code: 0x%8.8X", status));
+
+		exception = "UNKNOWN_STATUS_CODE";
+	}
+
+	return (ACPI_CAST_PTR(const char, exception));
+}
+
+ACPI_EXPORT_SYMBOL(acpi_format_exception)
+
 /*
  * Properties of the ACPI Object Types, both internal and external.
  * The table is indexed by values of acpi_object_type
@@ -90,8 +125,8 @@ const u8 acpi_gbl_ns_properties[ACPI_NUM_NS_TYPES] = {
  *
  * FUNCTION:    acpi_ut_hex_to_ascii_char
  *
- * PARAMETERS:  integer             - Contains the hex digit
- *              position            - bit position of the digit within the
+ * PARAMETERS:  Integer             - Contains the hex digit
+ *              Position            - bit position of the digit within the
  *                                    integer (multiple of 4)
  *
  * RETURN:      The converted Ascii character
@@ -128,7 +163,6 @@ char acpi_ut_hex_to_ascii_char(u64 integer, u32 position)
 /* Region type decoding */
 
 const char *acpi_gbl_region_types[ACPI_NUM_PREDEFINED_REGIONS] = {
-<<<<<<< HEAD
 	"SystemMemory",
 	"SystemIO",
 	"PCI_Config",
@@ -137,19 +171,6 @@ const char *acpi_gbl_region_types[ACPI_NUM_PREDEFINED_REGIONS] = {
 	"SystemCMOS",
 	"PCIBARTarget",
 	"IPMI"
-=======
-	"SystemMemory",		/* 0x00 */
-	"SystemIO",		/* 0x01 */
-	"PCI_Config",		/* 0x02 */
-	"EmbeddedControl",	/* 0x03 */
-	"SMBus",		/* 0x04 */
-	"SystemCMOS",		/* 0x05 */
-	"PCIBARTarget",		/* 0x06 */
-	"IPMI",			/* 0x07 */
-	"GeneralPurposeIo",	/* 0x08 */
-	"GenericSerialBus",	/* 0x09 */
-	"PCC"			/* 0x0A */
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 };
 
 char *acpi_ut_get_region_name(u8 space_id)
@@ -204,7 +225,7 @@ char *acpi_ut_get_event_name(u32 event_id)
  *
  * FUNCTION:    acpi_ut_get_type_name
  *
- * PARAMETERS:  type                - An ACPI object type
+ * PARAMETERS:  Type                - An ACPI object type
  *
  * RETURN:      Decoded ACPI object type name
  *
@@ -282,7 +303,7 @@ char *acpi_ut_get_object_type_name(union acpi_operand_object *obj_desc)
  *
  * FUNCTION:    acpi_ut_get_node_name
  *
- * PARAMETERS:  object               - A namespace node
+ * PARAMETERS:  Object               - A namespace node
  *
  * RETURN:      ASCII name of the node
  *
@@ -327,7 +348,7 @@ char *acpi_ut_get_node_name(void *object)
  *
  * FUNCTION:    acpi_ut_get_descriptor_name
  *
- * PARAMETERS:  object               - An ACPI object
+ * PARAMETERS:  Object               - An ACPI object
  *
  * RETURN:      Decoded name of the descriptor type
  *
@@ -377,7 +398,7 @@ char *acpi_ut_get_descriptor_name(void *object)
  *
  * FUNCTION:    acpi_ut_get_reference_name
  *
- * PARAMETERS:  object               - An ACPI reference object
+ * PARAMETERS:  Object               - An ACPI reference object
  *
  * RETURN:      Decoded name of the type of reference
  *
@@ -506,7 +527,7 @@ const char *acpi_ut_get_notify_name(u32 notify_value)
  *
  * FUNCTION:    acpi_ut_valid_object_type
  *
- * PARAMETERS:  type            - Object type to be validated
+ * PARAMETERS:  Type            - Object type to be validated
  *
  * RETURN:      TRUE if valid object type, FALSE otherwise
  *

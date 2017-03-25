@@ -10,6 +10,8 @@
 #ifndef	__EDAC_MODULE_H__
 #define	__EDAC_MODULE_H__
 
+#include <linux/sysdev.h>
+
 #include "edac_core.h"
 
 /*

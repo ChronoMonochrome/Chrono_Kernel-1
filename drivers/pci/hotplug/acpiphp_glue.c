@@ -99,11 +99,11 @@ static int post_dock_fixups(struct notifier_block *nb, unsigned long val,
 			PCI_PRIMARY_BUS,
 			&buses);
 
-	if (((buses >> 8) & 0xff) != bus->busn_res.start) {
+	if (((buses >> 8) & 0xff) != bus->secondary) {
 		buses = (buses & 0xff000000)
 			| ((unsigned int)(bus->primary)     <<  0)
-			| ((unsigned int)(bus->busn_res.start)   <<  8)
-			| ((unsigned int)(bus->busn_res.end) << 16);
+			| ((unsigned int)(bus->secondary)   <<  8)
+			| ((unsigned int)(bus->subordinate) << 16);
 		pci_write_config_dword(bus->self, PCI_PRIMARY_BUS, buses);
 	}
 	return NOTIFY_OK;
@@ -131,34 +131,10 @@ register_slot(acpi_handle handle, u32 lvl, void *context, void **rv)
 	if (!acpi_pci_check_ejectable(pbus, handle) && !is_dock_device(handle))
 		return AE_OK;
 
-<<<<<<< HEAD
 	acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
 	device = (adr >> 16) & 0xffff;
 	function = adr & 0xffff;
 
-=======
-	status = acpi_evaluate_integer(handle, "_ADR", NULL, &adr);
-	if (ACPI_FAILURE(status)) {
-		warn("can't evaluate _ADR (%#x)\n", status);
-		return AE_OK;
-	}
-
-	device = (adr >> 16) & 0xffff;
-	function = adr & 0xffff;
-
-	pdev = pbus->self;
-	if (pdev && pci_is_pcie(pdev)) {
-		tmp = acpi_find_root_bridge_handle(pdev);
-		if (tmp) {
-			struct acpi_pci_root *root = acpi_pci_find_root(tmp);
-
-			if (root && (root->osc_control_set &
-					OSC_PCI_EXPRESS_NATIVE_HP_CONTROL))
-				return AE_OK;
-		}
-	}
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	newfunc = kzalloc(sizeof(struct acpiphp_func), GFP_KERNEL);
 	if (!newfunc)
 		return AE_NO_MEMORY;
@@ -403,6 +379,8 @@ static void add_host_bridge(acpi_handle *handle)
 
 	bridge->pci_bus = root->bus;
 
+	spin_lock_init(&bridge->res_lock);
+
 	init_bridge_misc(bridge);
 }
 
@@ -435,6 +413,7 @@ static void add_p2p_bridge(acpi_handle *handle)
 	 * (which we access during module unload).
 	 */
 	get_device(&bridge->pci_bus->dev);
+	spin_lock_init(&bridge->res_lock);
 
 	init_bridge_misc(bridge);
 	return;
@@ -701,7 +680,7 @@ static unsigned char acpiphp_max_busnr(struct pci_bus *bus)
 	 * bus->subordinate value because it could have
 	 * padding in it.
 	 */
-	max = bus->busn_res.start;
+	max = bus->secondary;
 
 	list_for_each(tmp, &bus->children) {
 		n = pci_bus_max_busnr(pci_bus_b(tmp));
@@ -893,24 +872,6 @@ static void disable_bridges(struct pci_bus *bus)
 	}
 }
 
-/* return first device in slot, acquiring a reference on it */
-static struct pci_dev *dev_in_slot(struct acpiphp_slot *slot)
-{
-	struct pci_bus *bus = slot->bridge->pci_bus;
-	struct pci_dev *dev;
-	struct pci_dev *ret = NULL;
-
-	down_read(&pci_bus_sem);
-	list_for_each_entry(dev, &bus->devices, bus_list)
-		if (PCI_SLOT(dev->devfn) == slot->device) {
-			ret = pci_dev_get(dev);
-			break;
-		}
-	up_read(&pci_bus_sem);
-
-	return ret;
-}
-
 /**
  * disable_device - disable a slot
  * @slot: ACPI PHP slot
@@ -923,7 +884,6 @@ static int disable_device(struct acpiphp_slot *slot)
 	/* is this slot already disabled? */
 	if (!(slot->flags & SLOT_ENABLED))
 		goto err_exit;
-	pci_dev_put(pdev);
 
 	list_for_each_entry(func, &slot->funcs, sibling) {
 		if (func->bridge) {
@@ -932,9 +892,7 @@ static int disable_device(struct acpiphp_slot *slot)
 						(u32)1, NULL, NULL);
 			func->bridge = NULL;
 		}
-	}
 
-<<<<<<< HEAD
 		pdev = pci_get_slot(slot->bridge->pci_bus,
 				    PCI_DEVFN(slot->device, func->function));
 		if (pdev) {
@@ -945,22 +903,7 @@ static int disable_device(struct acpiphp_slot *slot)
 			}
 			pci_remove_bus_device(pdev);
 			pci_dev_put(pdev);
-=======
-	/*
-	 * enable_device() enumerates all functions in this device via
-	 * pci_scan_slot(), whether they have associated ACPI hotplug
-	 * methods (_EJ0, etc.) or not.  Therefore, we remove all functions
-	 * here.
-	 */
-	while ((pdev = dev_in_slot(slot))) {
-		pci_stop_bus_device(pdev);
-		if (pdev->subordinate) {
-			disable_bridges(pdev->subordinate);
-			pci_disable_device(pdev);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		}
-		__pci_remove_bus_device(pdev);
-		pci_dev_put(pdev);
 	}
 
 	list_for_each_entry(func, &slot->funcs, sibling) {

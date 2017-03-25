@@ -452,7 +452,7 @@ hfcpci_empty_bfifo(struct bchannel *bch, struct bzfifo *bz,
 		}
 		bz->za[new_f2].z2 = cpu_to_le16(new_z2);
 		bz->f2 = new_f2;	/* next buffer */
-		recv_Bchannel(bch, MISDN_ID_ANY, false);
+		recv_Bchannel(bch, MISDN_ID_ANY);
 	}
 }
 
@@ -564,6 +564,11 @@ hfcpci_empty_fifo_trans(struct bchannel *bch, struct bzfifo *rxbz,
 	if (new_z2 >= (B_FIFO_SIZE + B_SUB_VAL))
 		new_z2 -= B_FIFO_SIZE;	/* buffer wrap */
 
+	if (fcnt_rx > MAX_DATA_SIZE) {	/* flush, if oversized */
+		*z2r = cpu_to_le16(new_z2);		/* new position */
+		return;
+	}
+
 	fcnt_tx = le16_to_cpu(*z2t) - le16_to_cpu(*z1t);
 	if (fcnt_tx <= 0)
 		fcnt_tx += B_FIFO_SIZE;
@@ -571,16 +576,8 @@ hfcpci_empty_fifo_trans(struct bchannel *bch, struct bzfifo *rxbz,
 	fcnt_tx = B_FIFO_SIZE - fcnt_tx;
 		    /* remaining bytes to send (bytes in tx-fifo) */
 
-	if (test_bit(FLG_RX_OFF, &bch->Flags)) {
-		bch->dropcnt += fcnt_rx;
-		*z2r = cpu_to_le16(new_z2);
-		return;
-	}
-	maxlen = bchannel_get_rxbuf(bch, fcnt_rx);
-	if (maxlen < 0) {
-		pr_warning("B%d: No bufferspace for %d bytes\n",
-			   bch->nr, fcnt_rx);
-	} else {
+	bch->rx_skb = mI_alloc_skb(fcnt_rx, GFP_ATOMIC);
+	if (bch->rx_skb) {
 		ptr = skb_put(bch->rx_skb, fcnt_rx);
 		if (le16_to_cpu(*z2r) + fcnt_rx <= B_FIFO_SIZE + B_SUB_VAL)
 			maxlen = fcnt_rx;	/* complete transfer */
@@ -598,8 +595,10 @@ hfcpci_empty_fifo_trans(struct bchannel *bch, struct bzfifo *rxbz,
 			ptr1 = bdata;	/* start of buffer */
 			memcpy(ptr, ptr1, fcnt_rx);	/* rest */
 		}
-		recv_Bchannel(bch, fcnt_tx, false); /* bch, id, !force */
-	}
+		recv_Bchannel(bch, fcnt_tx); /* bch, id */
+	} else
+		printk(KERN_WARNING "HFCPCI: receive out of memory\n");
+
 	*z2r = cpu_to_le16(new_z2);		/* new position */
 }
 
@@ -760,14 +759,9 @@ hfcpci_fill_fifo(struct bchannel *bch)
 
 	if ((bch->debug & DEBUG_HW_BCHANNEL) && !(bch->debug & DEBUG_HW_BFIFO))
 		printk(KERN_DEBUG "%s\n", __func__);
-	if ((!bch->tx_skb) || bch->tx_skb->len == 0) {
-		if (!test_bit(FLG_FILLEMPTY, &bch->Flags) &&
-		    !test_bit(FLG_TRANSPARENT, &bch->Flags))
-			return;
-		count = HFCPCI_FILLEMPTY;
-	} else {
-		count = bch->tx_skb->len - bch->tx_idx;
-	}
+	if ((!bch->tx_skb) || bch->tx_skb->len <= 0)
+		return;
+	count = bch->tx_skb->len - bch->tx_idx;
 	if ((bch->nr & 2) && (!hc->hw.bswapped)) {
 		bz = &((union fifo_area *)(hc->hw.fifos))->b_chans.txbz_b2;
 		bdata = ((union fifo_area *)(hc->hw.fifos))->b_chans.txdat_b2;
@@ -786,7 +780,6 @@ hfcpci_fill_fifo(struct bchannel *bch)
 		fcnt = le16_to_cpu(*z2t) - le16_to_cpu(*z1t);
 		if (fcnt <= 0)
 			fcnt += B_FIFO_SIZE;
-<<<<<<< HEAD
 			    /* fcnt contains available bytes in fifo */
 		fcnt = B_FIFO_SIZE - fcnt;
 		    /* remaining bytes to send (bytes in fifo) */
@@ -797,12 +790,6 @@ hfcpci_fill_fifo(struct bchannel *bch)
 				"underrun\n", __func__); */
 			/* fill buffer, to prevent future underrun */
 			count = HFCPCI_FILLEMPTY;
-=======
-		if (test_bit(FLG_FILLEMPTY, &bch->Flags)) {
-			/* fcnt contains available bytes in fifo */
-			if (count > fcnt)
-				count = fcnt;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 			new_z1 = le16_to_cpu(*z1t) + count;
 			   /* new buffer Position */
 			if (new_z1 >= (B_FIFO_SIZE + B_SUB_VAL))
@@ -812,31 +799,19 @@ hfcpci_fill_fifo(struct bchannel *bch)
 			    /* end of fifo */
 			if (bch->debug & DEBUG_HW_BFIFO)
 				printk(KERN_DEBUG "hfcpci_FFt fillempty "
-<<<<<<< HEAD
 				    "fcnt(%d) maxl(%d) nz1(%x) dst(%p)\n",
 				    fcnt, maxlen, new_z1, dst);
 			fcnt += count;
 			if (maxlen > count)
 				maxlen = count; 	/* limit size */
 			memset(dst, 0x2a, maxlen);	/* first copy */
-=======
-				       "fcnt(%d) maxl(%d) nz1(%x) dst(%p)\n",
-				       fcnt, maxlen, new_z1, dst);
-			if (maxlen > count)
-				maxlen = count;		/* limit size */
-			memset(dst, bch->fill[0], maxlen); /* first copy */
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 			count -= maxlen;		/* remaining bytes */
 			if (count) {
 				dst = bdata;		/* start of buffer */
-				memset(dst, bch->fill[0], count);
+				memset(dst, 0x2a, count);
 			}
 			*z1t = cpu_to_le16(new_z1);	/* now send data */
-			return;
 		}
-		/* fcnt contains available bytes in fifo */
-		fcnt = B_FIFO_SIZE - fcnt;
-		/* remaining bytes to send (bytes in fifo) */
 
 next_t_frame:
 		count = bch->tx_skb->len - bch->tx_idx;
@@ -873,6 +848,9 @@ next_t_frame:
 		*z1t = cpu_to_le16(new_z1);	/* now send data */
 		if (bch->tx_idx < bch->tx_skb->len)
 			return;
+		/* send confirm, on trans, free on hdlc. */
+		if (test_bit(FLG_TRANSPARENT, &bch->Flags))
+			confirm_Bsend(bch);
 		dev_kfree_skb(bch->tx_skb);
 		if (get_next_bframe(bch))
 			goto next_t_frame;
@@ -1554,7 +1532,6 @@ deactivate_bchannel(struct bchannel *bch)
 static int
 channel_bctrl(struct bchannel *bch, struct mISDN_ctrl_req *cq)
 {
-<<<<<<< HEAD
 	int	ret = 0;
 
 	switch (cq->op) {
@@ -1573,9 +1550,6 @@ channel_bctrl(struct bchannel *bch, struct mISDN_ctrl_req *cq)
 		break;
 	}
 	return ret;
-=======
-	return mISDN_ctrl_bchannel(bch, cq);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 static int
 hfc_bctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
@@ -1606,7 +1580,8 @@ hfc_bctrl(struct mISDNchannel *ch, u_int cmd, void *arg)
 		break;
 	case CLOSE_CHANNEL:
 		test_and_clear_bit(FLG_OPEN, &bch->Flags);
-		deactivate_bchannel(bch);
+		if (test_bit(FLG_ACTIVE, &bch->Flags))
+			deactivate_bchannel(bch);
 		ch->protocol = ISDN_P_NONE;
 		ch->peer = NULL;
 		module_put(THIS_MODULE);
@@ -1716,17 +1691,22 @@ hfcpci_l2l1B(struct mISDNchannel *ch, struct sk_buff *skb)
 	struct hfc_pci		*hc = bch->hw;
 	int			ret = -EINVAL;
 	struct mISDNhead	*hh = mISDN_HEAD_P(skb);
-	unsigned long		flags;
+	unsigned int		id;
+	u_long			flags;
 
 	switch (hh->prim) {
 	case PH_DATA_REQ:
 		spin_lock_irqsave(&hc->lock, flags);
 		ret = bchannel_senddata(bch, skb);
 		if (ret > 0) { /* direct TX */
+			id = hh->id; /* skb can be freed */
 			hfcpci_fill_fifo(bch);
 			ret = 0;
-		}
-		spin_unlock_irqrestore(&hc->lock, flags);
+			spin_unlock_irqrestore(&hc->lock, flags);
+			if (!test_bit(FLG_TRANSPARENT, &bch->Flags))
+				queue_ch_frame(ch, PH_DATA_CNF, id, NULL);
+		} else
+			spin_unlock_irqrestore(&hc->lock, flags);
 		return ret;
 	case PH_ACTIVATE_REQ:
 		spin_lock_irqsave(&hc->lock, flags);
@@ -1838,11 +1818,7 @@ channel_ctrl(struct hfc_pci *hc, struct mISDN_ctrl_req *cq)
 	switch (cq->op) {
 	case MISDN_CTRL_GETOP:
 		cq->op = MISDN_CTRL_LOOP | MISDN_CTRL_CONNECT |
-<<<<<<< HEAD
 		    MISDN_CTRL_DISCONNECT;
-=======
-			 MISDN_CTRL_DISCONNECT | MISDN_CTRL_L1_TIMER3;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		break;
 	case MISDN_CTRL_LOOP:
 		/* channel 0 disabled loop */
@@ -1919,9 +1895,6 @@ channel_ctrl(struct hfc_pci *hc, struct mISDN_ctrl_req *cq)
 		Write_hfc(hc, HFCPCI_CONNECT, hc->hw.conn);
 		hc->hw.trm &= 0x7f;	/* disable IOM-loop */
 		break;
-	case MISDN_CTRL_L1_TIMER3:
-		ret = l1_event(hc->dch.l1, HW_TIMER3_VALUE | (cq->p1 & 0xff));
-		break;
 	default:
 		printk(KERN_WARNING "%s: unknown Op %x\n",
 		    __func__, cq->op);
@@ -1995,6 +1968,7 @@ open_bchannel(struct hfc_pci *hc, struct channel_req *rq)
 	bch = &hc->bch[rq->adr.channel - 1];
 	if (test_and_set_bit(FLG_OPEN, &bch->Flags))
 		return -EBUSY; /* b-channel can be only open once */
+	test_and_clear_bit(FLG_FILLEMPTY, &bch->Flags);
 	bch->ch.protocol = rq->protocol;
 	rq->ch = &bch->ch; /* TODO: E-channel */
 	if (!try_module_get(THIS_MODULE))
@@ -2146,7 +2120,7 @@ setup_card(struct hfc_pci *card)
 		card->bch[i].nr = i + 1;
 		set_channelmap(i + 1, card->dch.dev.channelmap);
 		card->bch[i].debug = debug;
-		mISDN_initbchannel(&card->bch[i], MAX_DATA_MEM, poll >> 1);
+		mISDN_initbchannel(&card->bch[i], MAX_DATA_MEM);
 		card->bch[i].hw = card;
 		card->bch[i].ch.send = hfcpci_l2l1B;
 		card->bch[i].ch.ctrl = hfc_bctrl;

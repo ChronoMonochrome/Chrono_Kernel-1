@@ -163,13 +163,8 @@ void gigaset_dbg_buffer(enum debuglevel level, const unsigned char *msg,
 #define BAS_LOWFRAME	5	/* "    "    with negative flow control */
 #define BAS_CORRFRAMES	4	/* flow control multiplicator */
 
-<<<<<<< HEAD
 #define BAS_INBUFSIZE	(BAS_MAXFRAME * BAS_NUMFRAMES)
 					/* size of isoc in buf per URB */
-=======
-#define BAS_INBUFSIZE	(BAS_MAXFRAME * BAS_NUMFRAMES)	/* size of isoc in buf
-							 * per URB */
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 #define BAS_OUTBUFSIZE	4096		/* size of common isoc out buffer */
 #define BAS_OUTBUFPAD	BAS_MAXFRAME	/* size of pad area for isoc out buf */
 
@@ -477,13 +472,8 @@ struct cardstate {
 					   for */
 	int commands_pending;		/* flag(s) in xxx.commands_pending have
 					   been set */
-<<<<<<< HEAD
 	struct tasklet_struct event_tasklet;
 					/* tasklet for serializing AT commands.
-=======
-	struct tasklet_struct
-		event_tasklet;		/* tasklet for serializing AT commands.
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 					 * Scheduled
 					 *   -> for modem reponses (and
 					 *      incoming data for M10x)
@@ -491,13 +481,8 @@ struct cardstate {
 					 *   -> after setting bits in
 					 *      xxx.at_state.pending_command
 					 *      (e.g. command from LL) */
-<<<<<<< HEAD
 	struct tasklet_struct write_tasklet;
 					/* tasklet for serial output
-=======
-	struct tasklet_struct
-		write_tasklet;		/* tasklet for serial output
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 					 * (not used in base driver) */
 
 	/* event queue */
@@ -599,7 +584,7 @@ struct gigaset_ops {
 	int (*initbcshw)(struct bc_state *bcs);
 
 	/* Called by gigaset_freecs() for freeing bcs->hw.xxx */
-	void (*freebcshw)(struct bc_state *bcs);
+	int (*freebcshw)(struct bc_state *bcs);
 
 	/* Called by gigaset_bchannel_down() for resetting bcs->hw.xxx */
 	void (*reinitbcshw)(struct bc_state *bcs);

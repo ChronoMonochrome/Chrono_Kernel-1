@@ -178,7 +178,7 @@ out:
  * assign_requested_resources_sorted() - satisfy resource requests
  *
  * @head : head of the list tracking requests for resources
- * @fail_head : head of the list tracking requests that could
+ * @failed_list : head of the list tracking requests that could
  *		not be allocated
  *
  * Satisfy resource requests of each element in the list. Add
@@ -213,69 +213,6 @@ static void __assign_resources_sorted(struct resource_list *head,
 				 struct resource_list_x *add_head,
 				 struct resource_list_x *fail_head)
 {
-<<<<<<< HEAD
-=======
-	/*
-	 * Should not assign requested resources at first.
-	 *   they could be adjacent, so later reassign can not reallocate
-	 *   them one by one in parent resource window.
-	 * Try to assign requested + add_size at beginning
-	 *  if could do that, could get out early.
-	 *  if could not do that, we still try to assign requested at first,
-	 *    then try to reassign add_size for some resources.
-	 */
-	LIST_HEAD(save_head);
-	LIST_HEAD(local_fail_head);
-	struct pci_dev_resource *save_res;
-	struct pci_dev_resource *dev_res;
-
-	/* Check if optional add_size is there */
-	if (!realloc_head || list_empty(realloc_head))
-		goto requested_and_reassign;
-
-	/* Save original start, end, flags etc at first */
-	list_for_each_entry(dev_res, head, list) {
-		if (add_to_list(&save_head, dev_res->dev, dev_res->res, 0, 0)) {
-			free_list(&save_head);
-			goto requested_and_reassign;
-		}
-	}
-
-	/* Update res in head list with add_size in realloc_head list */
-	list_for_each_entry(dev_res, head, list)
-		dev_res->res->end += get_res_add_size(realloc_head,
-							dev_res->res);
-
-	/* Try updated head list with add_size added */
-	assign_requested_resources_sorted(head, &local_fail_head);
-
-	/* all assigned with add_size ? */
-	if (list_empty(&local_fail_head)) {
-		/* Remove head list from realloc_head list */
-		list_for_each_entry(dev_res, head, list)
-			remove_from_list(realloc_head, dev_res->res);
-		free_list(&save_head);
-		free_list(head);
-		return;
-	}
-
-	free_list(&local_fail_head);
-	/* Release assigned resource */
-	list_for_each_entry(dev_res, head, list)
-		if (dev_res->res->parent)
-			release_resource(dev_res->res);
-	/* Restore start/end/flags from saved list */
-	list_for_each_entry(save_res, &save_head, list) {
-		struct resource *res = save_res->res;
-
-		res->start = save_res->start;
-		res->end = save_res->end;
-		res->flags = save_res->flags;
-	}
-	free_list(&save_head);
-
-requested_and_reassign:
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	/* Satisfy the must-have resource requests */
 	assign_requested_resources_sorted(head, fail_head);
 
@@ -317,8 +254,8 @@ void pci_setup_cardbus(struct pci_bus *bus)
 	struct resource *res;
 	struct pci_bus_region region;
 
-	dev_info(&bridge->dev, "CardBus bridge to %pR\n",
-		 &bus->busn_res);
+	dev_info(&bridge->dev, "CardBus bridge to [bus %02x-%02x]\n",
+		 bus->secondary, bus->subordinate);
 
 	res = bus->resource[0];
 	pcibios_resource_to_bus(bridge, &region, res);
@@ -382,13 +319,7 @@ static void pci_setup_bridge_io(struct pci_bus *bus)
 	struct pci_dev *bridge = bus->self;
 	struct resource *res;
 	struct pci_bus_region region;
-	unsigned long io_mask;
-	u8 io_base_lo, io_limit_lo;
 	u32 l, io_upper16;
-
-	io_mask = PCI_IO_RANGE_MASK;
-	if (bridge->io_window_1k)
-		io_mask = PCI_IO_1K_RANGE_MASK;
 
 	/* Set up the top and bottom of the PCI I/O segment for this bus. */
 	res = bus->resource[0];
@@ -396,9 +327,8 @@ static void pci_setup_bridge_io(struct pci_bus *bus)
 	if (res->flags & IORESOURCE_IO) {
 		pci_read_config_dword(bridge, PCI_IO_BASE, &l);
 		l &= 0xffff0000;
-		io_base_lo = (region.start >> 8) & io_mask;
-		io_limit_lo = (region.end >> 8) & io_mask;
-		l |= ((u32) io_limit_lo << 8) | io_base_lo;
+		l |= (region.start >> 8) & 0x00f0;
+		l |= region.end & 0xf000;
 		/* Set up upper 16 bits of I/O base/limit. */
 		io_upper16 = (region.end & 0xffff0000) | (region.start >> 16);
 		dev_info(&bridge->dev, "  bridge window %pR\n", res);
@@ -476,8 +406,8 @@ static void __pci_setup_bridge(struct pci_bus *bus, unsigned long type)
 {
 	struct pci_dev *bridge = bus->self;
 
-	dev_info(&bridge->dev, "PCI bridge to %pR\n",
-		 &bus->busn_res);
+	dev_info(&bridge->dev, "PCI bridge to [bus %02x-%02x]\n",
+		 bus->secondary, bus->subordinate);
 
 	if (type & IORESOURCE_IO)
 		pci_setup_bridge_io(bus);
@@ -622,7 +552,7 @@ static resource_size_t calculate_memsize(resource_size_t size,
  * @add_head : track the additional io window on this list
  *
  * Sizing the IO windows of the PCI-PCI bridge is trivial,
- * since these windows have 1K or 4K granularity and the IO ranges
+ * since these windows have 4K granularity and the IO ranges
  * of non-bridge PCI devices are limited to 256 bytes.
  * We must be careful with the ISA aliasing though.
  */
@@ -632,21 +562,10 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
 	struct pci_dev *dev;
 	struct resource *b_res = find_free_bus_resource(bus, IORESOURCE_IO);
 	unsigned long size = 0, size0 = 0, size1 = 0;
-<<<<<<< HEAD
-=======
-	resource_size_t children_add_size = 0;
-	resource_size_t min_align = 4096, align;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	if (!b_res)
  		return;
 
-	/*
-	 * Per spec, I/O windows are 4K-aligned, but some bridges have an
-	 * extension to support 1K alignment.
-	 */
-	if (bus->self->io_window_1k)
-		min_align = 1024;
 	list_for_each_entry(dev, &bus->devices, bus_list) {
 		int i;
 
@@ -663,60 +582,27 @@ static void pbus_size_io(struct pci_bus *bus, resource_size_t min_size,
 				size += r_size;
 			else
 				size1 += r_size;
-<<<<<<< HEAD
-=======
-
-			align = pci_resource_alignment(dev, r);
-			if (align > min_align)
-				min_align = align;
-
-			if (realloc_head)
-				children_add_size += get_res_add_size(realloc_head, r);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		}
 	}
-
-	if (min_align > 4096)
-		min_align = 4096;
-
 	size0 = calculate_iosize(size, min_size, size1,
-<<<<<<< HEAD
 			resource_size(b_res), 4096);
 	size1 = (!add_head || (add_head && !add_size)) ? size0 :
 		calculate_iosize(size, min_size+add_size, size1,
 			resource_size(b_res), 4096);
-=======
-			resource_size(b_res), min_align);
-	if (children_add_size > add_size)
-		add_size = children_add_size;
-	size1 = (!realloc_head || (realloc_head && !add_size)) ? size0 :
-		calculate_iosize(size, min_size, add_size + size1,
-			resource_size(b_res), min_align);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	if (!size0 && !size1) {
 		if (b_res->start || b_res->end)
 			dev_info(&bus->self->dev, "disabling bridge window "
-				 "%pR to %pR (unused)\n", b_res,
-				 &bus->busn_res);
+				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
+				 bus->secondary, bus->subordinate);
 		b_res->flags = 0;
 		return;
 	}
-
-	b_res->start = min_align;
+	/* Alignment of the IO window is always 4K */
+	b_res->start = 4096;
 	b_res->end = b_res->start + size0 - 1;
 	b_res->flags |= IORESOURCE_STARTALIGN;
-<<<<<<< HEAD
 	if (size1 > size0 && add_head)
 		add_to_list(add_head, bus->self, b_res, size1-size0);
-=======
-	if (size1 > size0 && realloc_head) {
-		add_to_list(realloc_head, bus->self, b_res, size1-size0,
-			    min_align);
-		dev_printk(KERN_DEBUG, &bus->self->dev, "bridge window "
-				 "%pR to %pR add_size %lx\n", b_res,
-				 &bus->busn_res, size1-size0);
-	}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 /**
@@ -804,25 +690,16 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
 	if (!size0 && !size1) {
 		if (b_res->start || b_res->end)
 			dev_info(&bus->self->dev, "disabling bridge window "
-				 "%pR to %pR (unused)\n", b_res,
-				 &bus->busn_res);
+				 "%pR to [bus %02x-%02x] (unused)\n", b_res,
+				 bus->secondary, bus->subordinate);
 		b_res->flags = 0;
 		return 1;
 	}
 	b_res->start = min_align;
 	b_res->end = size0 + min_align - 1;
 	b_res->flags |= IORESOURCE_STARTALIGN | mem64_mask;
-<<<<<<< HEAD
 	if (size1 > size0 && add_head)
 		add_to_list(add_head, bus->self, b_res, size1-size0);
-=======
-	if (size1 > size0 && realloc_head) {
-		add_to_list(realloc_head, bus->self, b_res, size1-size0, min_align);
-		dev_printk(KERN_DEBUG, &bus->self->dev, "bridge window "
-				 "%pR to %pR add_size %llx\n", b_res,
-				 &bus->busn_res, (unsigned long long)size1-size0);
-	}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	return 1;
 }
 

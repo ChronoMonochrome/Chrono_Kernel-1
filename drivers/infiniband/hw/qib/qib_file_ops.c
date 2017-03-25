@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2012 Intel Corporation. All rights reserved.
- * Copyright (c) 2006 - 2012 QLogic Corporation. All rights reserved.
+ * Copyright (c) 2006, 2007, 2008, 2009, 2010 QLogic Corporation.
+ * All rights reserved.
  * Copyright (c) 2003, 2004, 2005, 2006 PathScale, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -47,9 +47,6 @@
 #include "qib.h"
 #include "qib_common.h"
 #include "qib_user_sdma.h"
-
-#undef pr_fmt
-#define pr_fmt(fmt) QIB_DRV_NAME ": " fmt
 
 static int qib_open(struct inode *, struct file *);
 static int qib_close(struct inode *, struct file *);
@@ -317,9 +314,8 @@ static int qib_tid_update(struct qib_ctxtdata *rcd, struct file *fp,
 	}
 	if (cnt > tidcnt) {
 		/* make sure it all fits in tid_pg_list */
-		qib_devinfo(dd->pcidev,
-			"Process tried to allocate %u TIDs, only trying max (%u)\n",
-			cnt, tidcnt);
+		qib_devinfo(dd->pcidev, "Process tried to allocate %u "
+			 "TIDs, only trying max (%u)\n", cnt, tidcnt);
 		cnt = tidcnt;
 	}
 	pagep = (struct page **) rcd->tid_pg_list;
@@ -753,9 +749,9 @@ static int qib_mmap_mem(struct vm_area_struct *vma, struct qib_ctxtdata *rcd,
 	ret = remap_pfn_range(vma, vma->vm_start, pfn,
 			      len, vma->vm_page_prot);
 	if (ret)
-		qib_devinfo(dd->pcidev,
-			"%s ctxt%u mmap of %lx, %x bytes failed: %d\n",
-			what, rcd->ctxt, pfn, len, ret);
+		qib_devinfo(dd->pcidev, "%s ctxt%u mmap of %lx, %x "
+			 "bytes failed: %d\n", what, rcd->ctxt,
+			 pfn, len, ret);
 bail:
 	return ret;
 }
@@ -774,9 +770,8 @@ static int mmap_ureg(struct vm_area_struct *vma, struct qib_devdata *dd,
 	 */
 	sz = dd->flags & QIB_HAS_HDRSUPP ? 2 * PAGE_SIZE : PAGE_SIZE;
 	if ((vma->vm_end - vma->vm_start) > sz) {
-		qib_devinfo(dd->pcidev,
-			"FAIL mmap userreg: reqlen %lx > PAGE\n",
-			vma->vm_end - vma->vm_start);
+		qib_devinfo(dd->pcidev, "FAIL mmap userreg: reqlen "
+			 "%lx > PAGE\n", vma->vm_end - vma->vm_start);
 		ret = -EFAULT;
 	} else {
 		phys = dd->physaddr + ureg;
@@ -806,8 +801,8 @@ static int mmap_piobufs(struct vm_area_struct *vma,
 	 * for it.
 	 */
 	if ((vma->vm_end - vma->vm_start) > (piocnt * dd->palign)) {
-		qib_devinfo(dd->pcidev,
-			"FAIL mmap piobufs: reqlen %lx > PAGE\n",
+		qib_devinfo(dd->pcidev, "FAIL mmap piobufs: "
+			 "reqlen %lx > PAGE\n",
 			 vma->vm_end - vma->vm_start);
 		ret = -EINVAL;
 		goto bail;
@@ -851,8 +846,8 @@ static int mmap_rcvegrbufs(struct vm_area_struct *vma,
 	size = rcd->rcvegrbuf_size;
 	total_size = rcd->rcvegrbuf_chunks * size;
 	if ((vma->vm_end - vma->vm_start) > total_size) {
-		qib_devinfo(dd->pcidev,
-			"FAIL on egr bufs: reqlen %lx > actual %lx\n",
+		qib_devinfo(dd->pcidev, "FAIL on egr bufs: "
+			 "reqlen %lx > actual %lx\n",
 			 vma->vm_end - vma->vm_start,
 			 (unsigned long) total_size);
 		ret = -EINVAL;
@@ -860,9 +855,8 @@ static int mmap_rcvegrbufs(struct vm_area_struct *vma,
 	}
 
 	if (vma->vm_flags & VM_WRITE) {
-		qib_devinfo(dd->pcidev,
-			"Can't map eager buffers as writable (flags=%lx)\n",
-			vma->vm_flags);
+		qib_devinfo(dd->pcidev, "Can't map eager buffers as "
+			 "writable (flags=%lx)\n", vma->vm_flags);
 		ret = -EPERM;
 		goto bail;
 	}
@@ -1275,8 +1269,8 @@ static int setup_ctxt(struct qib_pportdata *ppd, int ctxt,
 			       GFP_KERNEL);
 
 	if (!rcd || !ptmp) {
-		qib_dev_err(dd,
-			"Unable to allocate ctxtdata memory, failing open\n");
+		qib_dev_err(dd, "Unable to allocate ctxtdata "
+			    "memory, failing open\n");
 		ret = -ENOMEM;
 		goto bailerr;
 	}
@@ -1563,17 +1557,10 @@ done_chk_sdma:
 		} else if (cpus_weight(current->cpus_allowed) == 1 &&
 			test_bit(first_cpu(current->cpus_allowed),
 				 qib_cpulist))
-<<<<<<< HEAD
 			qib_devinfo(dd->pcidev, "%s PID %u affinity "
 				    "set to cpu %d; already allocated\n",
 				    current->comm, current->pid,
 				    first_cpu(current->cpus_allowed));
-=======
-			qib_devinfo(dd->pcidev,
-				"%s PID %u affinity set to cpu %d; already allocated\n",
-				current->comm, current->pid,
-				cpumask_first(tsk_cpus_allowed(current)));
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	}
 
 	mutex_unlock(&qib_mutex);
@@ -2193,7 +2180,8 @@ int qib_cdev_init(int minor, const char *name,
 
 	cdev = cdev_alloc();
 	if (!cdev) {
-		pr_err("Could not allocate cdev for minor %d, %s\n",
+		printk(KERN_ERR QIB_DRV_NAME
+		       ": Could not allocate cdev for minor %d, %s\n",
 		       minor, name);
 		ret = -ENOMEM;
 		goto done;
@@ -2205,7 +2193,8 @@ int qib_cdev_init(int minor, const char *name,
 
 	ret = cdev_add(cdev, dev, 1);
 	if (ret < 0) {
-		pr_err("Could not add cdev for minor %d, %s (err %d)\n",
+		printk(KERN_ERR QIB_DRV_NAME
+		       ": Could not add cdev for minor %d, %s (err %d)\n",
 		       minor, name, -ret);
 		goto err_cdev;
 	}
@@ -2215,7 +2204,8 @@ int qib_cdev_init(int minor, const char *name,
 		goto done;
 	ret = PTR_ERR(device);
 	device = NULL;
-	pr_err("Could not create device for minor %d, %s (err %d)\n",
+	printk(KERN_ERR QIB_DRV_NAME ": Could not create "
+	       "device for minor %d, %s (err %d)\n",
 	       minor, name, -ret);
 err_cdev:
 	cdev_del(cdev);
@@ -2250,14 +2240,16 @@ int __init qib_dev_init(void)
 
 	ret = alloc_chrdev_region(&qib_dev, 0, QIB_NMINORS, QIB_DRV_NAME);
 	if (ret < 0) {
-		pr_err("Could not allocate chrdev region (err %d)\n", -ret);
+		printk(KERN_ERR QIB_DRV_NAME ": Could not allocate "
+		       "chrdev region (err %d)\n", -ret);
 		goto done;
 	}
 
 	qib_class = class_create(THIS_MODULE, "ipath");
 	if (IS_ERR(qib_class)) {
 		ret = PTR_ERR(qib_class);
-		pr_err("Could not create device class (err %d)\n", -ret);
+		printk(KERN_ERR QIB_DRV_NAME ": Could not create "
+		       "device class (err %d)\n", -ret);
 		unregister_chrdev_region(qib_dev, QIB_NMINORS);
 	}
 

@@ -40,44 +40,9 @@ acpi-y += rsaddr.o rscreate.o rsinfo.o rsio.o rslist.o rsmisc.o rsxface.o \
 
 acpi-$(ACPI_FUTURE_USAGE) += rsdump.o
 
-<<<<<<< HEAD
 acpi-y += tbxface.o tbinstal.o tbutils.o tbfind.o tbfadt.o tbxfroot.o
 
 acpi-y += utalloc.o utdebug.o uteval.o utinit.o utmisc.o utxface.o \
 		utcopy.o utdelete.o utglobal.o utmath.o utobject.o \
 		utstate.o utmutex.o utobject.o utresrc.o utlock.o utids.o \
 		utosi.o utxferror.o utdecode.o
-=======
-acpi-y +=		\
-	tbfadt.o	\
-	tbfind.o	\
-	tbinstal.o	\
-	tbutils.o	\
-	tbxface.o	\
-	tbxfload.o	\
-	tbxfroot.o
-
-acpi-y +=		\
-	utaddress.o	\
-	utalloc.o	\
-	utcopy.o	\
-	utexcep.o	\
-	utdebug.o	\
-	utdecode.o	\
-	utdelete.o	\
-	uteval.o	\
-	utglobal.o	\
-	utids.o		\
-	utinit.o	\
-	utlock.o	\
-	utmath.o	\
-	utmisc.o	\
-	utmutex.o	\
-	utobject.o	\
-	utosi.o		\
-	utresrc.o	\
-	utstate.o	\
-	utxface.o	\
-	utxferror.o	\
-	utxfmutex.o
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD

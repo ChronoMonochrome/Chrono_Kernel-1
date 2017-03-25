@@ -433,11 +433,11 @@ static int __init ibft_check_device(void)
  * Helper routiners to check to determine if the entry is valid
  * in the proper iBFT structure.
  */
-static umode_t ibft_check_nic_for(void *data, int type)
+static mode_t ibft_check_nic_for(void *data, int type)
 {
 	struct ibft_kobject *entry = data;
 	struct ibft_nic *nic = entry->nic;
-	umode_t rc = 0;
+	mode_t rc = 0;
 
 	switch (type) {
 	case ISCSI_BOOT_ETH_INDEX:
@@ -488,11 +488,11 @@ static umode_t ibft_check_nic_for(void *data, int type)
 	return rc;
 }
 
-static umode_t __init ibft_check_tgt_for(void *data, int type)
+static mode_t __init ibft_check_tgt_for(void *data, int type)
 {
 	struct ibft_kobject *entry = data;
 	struct ibft_tgt *tgt = entry->tgt;
-	umode_t rc = 0;
+	mode_t rc = 0;
 
 	switch (type) {
 	case ISCSI_BOOT_TGT_INDEX:
@@ -524,11 +524,11 @@ static umode_t __init ibft_check_tgt_for(void *data, int type)
 	return rc;
 }
 
-static umode_t __init ibft_check_initiator_for(void *data, int type)
+static mode_t __init ibft_check_initiator_for(void *data, int type)
 {
 	struct ibft_kobject *entry = data;
 	struct ibft_initiator *init = entry->initiator;
-	umode_t rc = 0;
+	mode_t rc = 0;
 
 	switch (type) {
 	case ISCSI_BOOT_INI_INDEX:
@@ -566,11 +566,6 @@ static umode_t __init ibft_check_initiator_for(void *data, int type)
 	return rc;
 }
 
-static void ibft_kobj_release(void *data)
-{
-	kfree(data);
-}
-
 /*
  * Helper function for ibft_register_kobjects.
  */
@@ -600,8 +595,7 @@ static int __init ibft_create_kobject(struct acpi_table_ibft *header,
 		boot_kobj = iscsi_boot_create_initiator(boot_kset, hdr->index,
 						ibft_kobj,
 						ibft_attr_show_initiator,
-						ibft_check_initiator_for,
-						ibft_kobj_release);
+						ibft_check_initiator_for);
 		if (!boot_kobj) {
 			rc = -ENOMEM;
 			goto free_ibft_obj;
@@ -616,8 +610,7 @@ static int __init ibft_create_kobject(struct acpi_table_ibft *header,
 		boot_kobj = iscsi_boot_create_ethernet(boot_kset, hdr->index,
 						       ibft_kobj,
 						       ibft_attr_show_nic,
-						       ibft_check_nic_for,
-						       ibft_kobj_release);
+						       ibft_check_nic_for);
 		if (!boot_kobj) {
 			rc = -ENOMEM;
 			goto free_ibft_obj;
@@ -632,8 +625,7 @@ static int __init ibft_create_kobject(struct acpi_table_ibft *header,
 		boot_kobj = iscsi_boot_create_target(boot_kset, hdr->index,
 						     ibft_kobj,
 						     ibft_attr_show_target,
-						     ibft_check_tgt_for,
-						     ibft_kobj_release);
+						     ibft_check_tgt_for);
 		if (!boot_kobj) {
 			rc = -ENOMEM;
 			goto free_ibft_obj;

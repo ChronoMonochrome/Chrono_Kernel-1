@@ -93,9 +93,6 @@ static const struct acpi_device_id processor_device_ids[] = {
 };
 MODULE_DEVICE_TABLE(acpi, processor_device_ids);
 
-static SIMPLE_DEV_PM_OPS(acpi_processor_pm,
-			 acpi_processor_suspend, acpi_processor_resume);
-
 static struct acpi_driver acpi_processor_driver = {
 	.name = "processor",
 	.class = ACPI_PROCESSOR_CLASS,
@@ -103,9 +100,10 @@ static struct acpi_driver acpi_processor_driver = {
 	.ops = {
 		.add = acpi_processor_add,
 		.remove = acpi_processor_remove,
+		.suspend = acpi_processor_suspend,
+		.resume = acpi_processor_resume,
 		.notify = acpi_processor_notify,
 		},
-	.drv.pm = &acpi_processor_pm,
 };
 
 #define INSTALL_NOTIFY_HANDLER		1
@@ -427,29 +425,10 @@ static int acpi_cpu_soft_notify(struct notifier_block *nfb,
 	struct acpi_processor *pr = per_cpu(processors, cpu);
 
 	if (action == CPU_ONLINE && pr) {
-<<<<<<< HEAD
 		acpi_processor_ppc_has_changed(pr, 0);
 		acpi_processor_cst_has_changed(pr);
 		acpi_processor_reevaluate_tstate(pr, action);
 		acpi_processor_tstate_has_changed(pr);
-=======
-		/* CPU got physically hotplugged and onlined the first time:
-		 * Initialize missing things
-		 */
-		if (pr->flags.need_hotplug_init) {
-			printk(KERN_INFO "Will online and init hotplugged "
-			       "CPU: %d\n", pr->id);
-			WARN(acpi_processor_start(pr), "Failed to start CPU:"
-				" %d\n", pr->id);
-			pr->flags.need_hotplug_init = 0;
-		/* Normal CPU soft online event */
-		} else {
-			acpi_processor_ppc_has_changed(pr, 0);
-			acpi_processor_hotplug(pr);
-			acpi_processor_reevaluate_tstate(pr, action);
-			acpi_processor_tstate_has_changed(pr);
-		}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	}
 	if (action == CPU_DEAD && pr) {
 		/* invalidate the flag.throttling after one CPU is offline */
@@ -661,8 +640,8 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
 {
 	struct acpi_processor *pr;
 	struct acpi_device *device = NULL;
-	u32 ost_code = ACPI_OST_SC_NON_SPECIFIC_FAILURE; /* default */
 	int result;
+
 
 	switch (event) {
 	case ACPI_NOTIFY_BUS_CHECK:
@@ -675,18 +654,14 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
 		if (!is_processor_present(handle))
 			break;
 
-		if (!acpi_bus_get_device(handle, &device))
-			break;
-
-		result = acpi_processor_device_add(handle, &device);
-		if (result) {
-			printk(KERN_ERR PREFIX "Unable to add the device\n");
+		if (acpi_bus_get_device(handle, &device)) {
+			result = acpi_processor_device_add(handle, &device);
+			if (result)
+				printk(KERN_ERR PREFIX
+					    "Unable to add the device\n");
 			break;
 		}
-
-		ost_code = ACPI_OST_SC_SUCCESS;
 		break;
-
 	case ACPI_NOTIFY_EJECT_REQUEST:
 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 				  "received ACPI_NOTIFY_EJECT_REQUEST\n"));
@@ -700,23 +675,15 @@ static void acpi_processor_hotplug_notify(acpi_handle handle,
 		if (!pr) {
 			printk(KERN_ERR PREFIX
 				    "Driver data is NULL, dropping EJECT\n");
-			break;
+			return;
 		}
-
-		/* REVISIT: update when eject is supported */
-		ost_code = ACPI_OST_SC_EJECT_NOT_SUPPORTED;
 		break;
-
 	default:
 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
 				  "Unsupported event [0x%x]\n", event));
-
-		/* non-hotplug event; possibly handled by other handler */
-		return;
+		break;
 	}
 
-	/* Inform firmware that the hotplug operation has completed */
-	(void) acpi_evaluate_hotplug_ost(handle, event, ost_code, NULL);
 	return;
 }
 

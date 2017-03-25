@@ -733,7 +733,6 @@ conf_software:
 				/* all members have same slot */
 				if (dsp_debug & DEBUG_DSP_CMX)
 					printk(KERN_DEBUG
-<<<<<<< HEAD
 					    "%s dsp %s & %s stay joined on "
 					    "PCM slot %d bank %d (TX) bank %d "
 					    "(RX) (on different chips)\n",
@@ -745,19 +744,6 @@ conf_software:
 					    member->dsp->pcm_bank_rx);
 				conf->hardware = 0;
 				conf->software = 1;
-=======
-					       "%s dsp %s & %s stay joined on "
-					       "PCM slot %d bank %d (TX) bank %d "
-					       "(RX) (on different chips)\n",
-					       __func__,
-					       member->dsp->name,
-					       nextm->dsp->name,
-					       member->dsp->pcm_slot_tx,
-					       member->dsp->pcm_bank_tx,
-					       member->dsp->pcm_bank_rx);
-				conf->hardware = 1;
-				conf->software = tx_data;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 				return;
 			}
 			/* find a new slot */
@@ -841,7 +827,6 @@ conf_software:
 				/* all members have same slot */
 				if (dsp_debug & DEBUG_DSP_CMX)
 					printk(KERN_DEBUG
-<<<<<<< HEAD
 					    "%s dsp %s & %s stay joined on PCM "
 					    "slot %d (TX) %d (RX) on same chip "
 					    "or one bank PCM)\n", __func__,
@@ -851,17 +836,6 @@ conf_software:
 					    member->dsp->pcm_slot_rx);
 				conf->hardware = 0;
 				conf->software = 1;
-=======
-					       "%s dsp %s & %s stay joined on PCM "
-					       "slot %d (TX) %d (RX) on same chip "
-					       "or one bank PCM)\n", __func__,
-					       member->dsp->name,
-					       nextm->dsp->name,
-					       member->dsp->pcm_slot_tx,
-					       member->dsp->pcm_slot_rx);
-				conf->hardware = 1;
-				conf->software = tx_data;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 				return;
 			}
 			/* find two new slot */
@@ -965,11 +939,8 @@ conf_software:
 	/* for more than two members.. */
 
 	/* if all members already have the same conference */
-	if (all_conf) {
-		conf->hardware = 1;
-		conf->software = tx_data;
+	if (all_conf)
 		return;
-	}
 
 	/*
 	 * if there is an existing conference, but not all members have joined
@@ -1042,8 +1013,6 @@ join_members:
 			dsp_cmx_hw_message(member->dsp,
 			    MISDN_CTRL_HFC_CONF_JOIN, current_conf, 0, 0, 0);
 		}
-		conf->hardware = 1;
-		conf->software = tx_data;
 		return;
 	}
 
@@ -1359,7 +1328,7 @@ dsp_cmx_send_member(struct dsp *dsp, int len, s32 *c, int members)
 		}
 		if (dsp->conf && dsp->conf->software && dsp->conf->hardware)
 			tx_data_only = 1;
-		if (dsp->echo.software && dsp->echo.hardware)
+		if (dsp->conf->software && dsp->echo.hardware)
 			tx_data_only = 1;
 	}
 
@@ -1650,7 +1619,7 @@ send_packet:
 
 static u32	jittercount; /* counter for jitter check */
 struct timer_list dsp_spl_tl;
-unsigned long	dsp_spl_jiffies; /* calculate the next time to fire */
+u32	dsp_spl_jiffies; /* calculate the next time to fire */
 static u16	dsp_count; /* last sample count */
 static int	dsp_count_valid ; /* if we have last sample count */
 

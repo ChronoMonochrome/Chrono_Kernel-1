@@ -336,6 +336,11 @@ static inline void
 capincci_alloc_minor(struct capidev *cdev, struct capincci *np) { }
 static inline void capincci_free_minor(struct capincci *np) { }
 
+static inline unsigned int capincci_minor_opencount(struct capincci *np)
+{
+	return 0;
+}
+
 #endif /* !CONFIG_ISDN_CAPI_MIDDLEWARE */
 
 static struct capincci *capincci_alloc(struct capidev *cdev, u32 ncci)
@@ -367,7 +372,6 @@ static void capincci_free(struct capidev *cdev, u32 ncci)
 		}
 }
 
-#ifdef CONFIG_ISDN_CAPI_MIDDLEWARE
 static struct capincci *capincci_find(struct capidev *cdev, u32 ncci)
 {
 	struct capincci *np;
@@ -378,6 +382,7 @@ static struct capincci *capincci_find(struct capidev *cdev, u32 ncci)
 	return NULL;
 }
 
+#ifdef CONFIG_ISDN_CAPI_MIDDLEWARE
 /* -------- handle data queue --------------------------------------- */
 
 static struct sk_buff *
@@ -573,8 +578,8 @@ static void capi_recv_message(struct capi20_appl *ap, struct sk_buff *skb)
 	struct tty_struct *tty;
 	struct capiminor *mp;
 	u16 datahandle;
-	struct capincci *np;
 #endif /* CONFIG_ISDN_CAPI_MIDDLEWARE */
+	struct capincci *np;
 
 	mutex_lock(&cdev->lock);
 
@@ -592,12 +597,6 @@ static void capi_recv_message(struct capi20_appl *ap, struct sk_buff *skb)
 		goto unlock_out;
 	}
 
-#ifndef CONFIG_ISDN_CAPI_MIDDLEWARE
-	skb_queue_tail(&cdev->recvqueue, skb);
-	wake_up_interruptible(&cdev->recvwait);
-
-#else /* CONFIG_ISDN_CAPI_MIDDLEWARE */
-
 	np = capincci_find(cdev, CAPIMSG_CONTROL(skb->data));
 	if (!np) {
 		printk(KERN_ERR "BUG: capi_signal: ncci not found\n");
@@ -605,6 +604,12 @@ static void capi_recv_message(struct capi20_appl *ap, struct sk_buff *skb)
 		wake_up_interruptible(&cdev->recvwait);
 		goto unlock_out;
 	}
+
+#ifndef CONFIG_ISDN_CAPI_MIDDLEWARE
+	skb_queue_tail(&cdev->recvqueue, skb);
+	wake_up_interruptible(&cdev->recvwait);
+
+#else /* CONFIG_ISDN_CAPI_MIDDLEWARE */
 
 	mp = np->minorp;
 	if (!mp) {
@@ -781,7 +786,6 @@ register_out:
 		return retval;
 
 	case CAPI_GET_VERSION:
-<<<<<<< HEAD
 		{
 			if (copy_from_user(&data.contr, argp,
 						sizeof(data.contr)))
@@ -801,38 +805,6 @@ register_out:
 					   sizeof(data.contr)))
 				return -EFAULT;
 			cdev->errcode = capi20_get_serial (data.contr, data.serial);
-=======
-		if (copy_from_user(&data.contr, argp,
-				   sizeof(data.contr)))
-			return -EFAULT;
-		cdev->errcode = capi20_get_version(data.contr, &data.version);
-		if (cdev->errcode)
-			return -EIO;
-		if (copy_to_user(argp, &data.version,
-				 sizeof(data.version)))
-			return -EFAULT;
-		return 0;
-
-	case CAPI_GET_SERIAL:
-		if (copy_from_user(&data.contr, argp,
-				   sizeof(data.contr)))
-			return -EFAULT;
-		cdev->errcode = capi20_get_serial(data.contr, data.serial);
-		if (cdev->errcode)
-			return -EIO;
-		if (copy_to_user(argp, data.serial,
-				 sizeof(data.serial)))
-			return -EFAULT;
-		return 0;
-
-	case CAPI_GET_PROFILE:
-		if (copy_from_user(&data.contr, argp,
-				   sizeof(data.contr)))
-			return -EFAULT;
-
-		if (data.contr == 0) {
-			cdev->errcode = capi20_get_profile(data.contr, &data.profile);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 			if (cdev->errcode)
 				return -EIO;
 			if (copy_to_user(argp, data.serial,
@@ -866,7 +838,6 @@ register_out:
 			if (retval)
 				return -EFAULT;
 		}
-<<<<<<< HEAD
 		return 0;
 
 	case CAPI_GET_MANUFACTURER:
@@ -877,31 +848,13 @@ register_out:
 			cdev->errcode = capi20_get_manufacturer(data.contr, data.manufacturer);
 			if (cdev->errcode)
 				return -EIO;
-=======
-		if (retval)
-			return -EFAULT;
-		return 0;
-
-	case CAPI_GET_MANUFACTURER:
-		if (copy_from_user(&data.contr, argp,
-				   sizeof(data.contr)))
-			return -EFAULT;
-		cdev->errcode = capi20_get_manufacturer(data.contr, data.manufacturer);
-		if (cdev->errcode)
-			return -EIO;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 			if (copy_to_user(argp, data.manufacturer,
 					 sizeof(data.manufacturer)))
 				return -EFAULT;
 
-<<<<<<< HEAD
 		}
 		return 0;
-=======
-		return 0;
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	case CAPI_GET_ERRCODE:
 		data.errcode = cdev->errcode;
 		cdev->errcode = CAPI_NOERROR;
@@ -917,7 +870,6 @@ register_out:
 			return 0;
 		return -ENXIO;
 
-<<<<<<< HEAD
 	case CAPI_MANUFACTURER_CMD:
 		{
 			struct capi_manufacturer_cmd mcmd;
@@ -929,16 +881,6 @@ register_out:
 		}
 		return 0;
 
-=======
-	case CAPI_MANUFACTURER_CMD: {
-		struct capi_manufacturer_cmd mcmd;
-		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
-		if (copy_from_user(&mcmd, argp, sizeof(mcmd)))
-			return -EFAULT;
-		return capi20_manufacturer(mcmd.cmd, mcmd.data);
-	}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	case CAPI_SET_FLAGS:
 	case CAPI_CLR_FLAGS: {
 		unsigned userflags;
@@ -960,11 +902,6 @@ register_out:
 			return -EFAULT;
 		return 0;
 
-#ifndef CONFIG_ISDN_CAPI_MIDDLEWARE
-	case CAPI_NCCI_OPENCOUNT:
-		return 0;
-
-#else /* CONFIG_ISDN_CAPI_MIDDLEWARE */
 	case CAPI_NCCI_OPENCOUNT: {
 		struct capincci *nccip;
 		unsigned ncci;
@@ -981,6 +918,7 @@ register_out:
 		return count;
 	}
 
+#ifdef CONFIG_ISDN_CAPI_MIDDLEWARE
 	case CAPI_NCCI_GETUNIT: {
 		struct capincci *nccip;
 		struct capiminor *mp;

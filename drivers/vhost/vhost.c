@@ -62,7 +62,7 @@ static int vhost_poll_wakeup(wait_queue_t *wait, unsigned mode, int sync,
 	return 0;
 }
 
-void vhost_work_init(struct vhost_work *work, vhost_work_fn_t fn)
+static void vhost_work_init(struct vhost_work *work, vhost_work_fn_t fn)
 {
 	INIT_LIST_HEAD(&work->node);
 	work->fn = fn;
@@ -135,7 +135,8 @@ void vhost_poll_flush(struct vhost_poll *poll)
 	vhost_work_flush(poll->dev, &poll->work);
 }
 
-void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work)
+static inline void vhost_work_queue(struct vhost_dev *dev,
+				    struct vhost_work *work)
 {
 	unsigned long flags;
 
@@ -185,9 +186,7 @@ static int vhost_worker(void *data)
 	struct vhost_dev *dev = data;
 	struct vhost_work *work = NULL;
 	unsigned uninitialized_var(seq);
-	mm_segment_t oldfs = get_fs();
 
-	set_fs(USER_DS);
 	use_mm(dev->mm);
 
 	for (;;) {
@@ -223,7 +222,6 @@ static int vhost_worker(void *data)
 
 	}
 	unuse_mm(dev->mm);
-	set_fs(oldfs);
 	return 0;
 }
 
@@ -1488,52 +1486,3 @@ void vhost_disable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
 			       &vq->used->flags, r);
 	}
 }
-<<<<<<< HEAD
-=======
-
-static void vhost_zerocopy_done_signal(struct kref *kref)
-{
-	struct vhost_ubuf_ref *ubufs = container_of(kref, struct vhost_ubuf_ref,
-						    kref);
-	wake_up(&ubufs->wait);
-}
-
-struct vhost_ubuf_ref *vhost_ubuf_alloc(struct vhost_virtqueue *vq,
-					bool zcopy)
-{
-	struct vhost_ubuf_ref *ubufs;
-	/* No zero copy backend? Nothing to count. */
-	if (!zcopy)
-		return NULL;
-	ubufs = kmalloc(sizeof *ubufs, GFP_KERNEL);
-	if (!ubufs)
-		return ERR_PTR(-ENOMEM);
-	kref_init(&ubufs->kref);
-	init_waitqueue_head(&ubufs->wait);
-	ubufs->vq = vq;
-	return ubufs;
-}
-
-void vhost_ubuf_put(struct vhost_ubuf_ref *ubufs)
-{
-	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
-}
-
-void vhost_ubuf_put_and_wait(struct vhost_ubuf_ref *ubufs)
-{
-	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
-	wait_event(ubufs->wait, !atomic_read(&ubufs->kref.refcount));
-	kfree(ubufs);
-}
-
-void vhost_zerocopy_callback(struct ubuf_info *ubuf)
-{
-	struct vhost_ubuf_ref *ubufs = ubuf->ctx;
-	struct vhost_virtqueue *vq = ubufs->vq;
-
-	vhost_poll_queue(&vq->poll);
-	/* set len = 1 to mark this desc buffers done DMA */
-	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
-	kref_put(&ubufs->kref, vhost_zerocopy_done_signal);
-}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD

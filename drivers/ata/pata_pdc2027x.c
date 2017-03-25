@@ -756,7 +756,6 @@ static int __devinit pdc2027x_init_one(struct pci_dev *pdev, const struct pci_de
 				 IRQF_SHARED, &pdc2027x_sht);
 }
 
-<<<<<<< HEAD
 /**
  * pdc2027x_init - Called after this module is loaded into the kernel.
  */
@@ -775,31 +774,3 @@ static void __exit pdc2027x_exit(void)
 
 module_init(pdc2027x_init);
 module_exit(pdc2027x_exit);
-=======
-#ifdef CONFIG_PM
-static int pdc2027x_reinit_one(struct pci_dev *pdev)
-{
-	struct ata_host *host = dev_get_drvdata(&pdev->dev);
-	unsigned int board_idx;
-	int rc;
-
-	rc = ata_pci_device_do_resume(pdev);
-	if (rc)
-		return rc;
-
-	if (pdev->device == PCI_DEVICE_ID_PROMISE_20268 ||
-	    pdev->device == PCI_DEVICE_ID_PROMISE_20270)
-		board_idx = PDC_UDMA_100;
-	else
-		board_idx = PDC_UDMA_133;
-
-	if (pdc_hardware_init(host, board_idx))
-		return -EIO;
-
-	ata_host_resume(host);
-	return 0;
-}
-#endif
-
-module_pci_driver(pdc2027x_pci_driver);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD

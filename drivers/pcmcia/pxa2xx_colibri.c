@@ -53,6 +53,13 @@ static struct gpio colibri_pcmcia_gpios[] = {
 	{ 0,	GPIOF_INIT_HIGH,"PCMCIA Reset" },
 };
 
+static struct pcmcia_irqs colibri_irqs[] = {
+	{
+		.sock = 0,
+		.str  = "PCMCIA CD"
+	},
+};
+
 static int colibri_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
 {
 	int ret;
@@ -62,10 +69,19 @@ static int colibri_pcmcia_hw_init(struct soc_pcmcia_socket *skt)
 	if (ret)
 		goto err1;
 
+	colibri_irqs[0].irq = gpio_to_irq(colibri_pcmcia_gpios[DETECT].gpio);
 	skt->socket.pci_irq = gpio_to_irq(colibri_pcmcia_gpios[READY].gpio);
-	skt->stat[SOC_STAT_CD].irq = gpio_to_irq(colibri_pcmcia_gpios[DETECT].gpio);
-	skt->stat[SOC_STAT_CD].name = "PCMCIA CD";
 
+	ret = soc_pcmcia_request_irqs(skt, colibri_irqs,
+					ARRAY_SIZE(colibri_irqs));
+	if (ret)
+		goto err2;
+
+	return ret;
+
+err2:
+	gpio_free_array(colibri_pcmcia_gpios,
+			ARRAY_SIZE(colibri_pcmcia_gpios));
 err1:
 	return ret;
 }
@@ -84,6 +100,7 @@ static void colibri_pcmcia_socket_state(struct soc_pcmcia_socket *skt,
 	state->ready  = !!gpio_get_value(colibri_pcmcia_gpios[READY].gpio);
 	state->bvd1   = !!gpio_get_value(colibri_pcmcia_gpios[BVD1].gpio);
 	state->bvd2   = !!gpio_get_value(colibri_pcmcia_gpios[BVD2].gpio);
+	state->wrprot = 0;
 	state->vs_3v  = 1;
 	state->vs_Xv  = 0;
 }
@@ -99,6 +116,14 @@ colibri_pcmcia_configure_socket(struct soc_pcmcia_socket *skt,
 	return 0;
 }
 
+static void colibri_pcmcia_socket_init(struct soc_pcmcia_socket *skt)
+{
+}
+
+static void colibri_pcmcia_socket_suspend(struct soc_pcmcia_socket *skt)
+{
+}
+
 static struct pcmcia_low_level colibri_pcmcia_ops = {
 	.owner			= THIS_MODULE,
 
@@ -110,6 +135,9 @@ static struct pcmcia_low_level colibri_pcmcia_ops = {
 
 	.socket_state		= colibri_pcmcia_socket_state,
 	.configure_socket	= colibri_pcmcia_configure_socket,
+
+	.socket_init		= colibri_pcmcia_socket_init,
+	.socket_suspend		= colibri_pcmcia_socket_suspend,
 };
 
 static struct platform_device *colibri_pcmcia_device;

@@ -273,8 +273,9 @@ static irqreturn_t vsc_sata_interrupt(int irq, void *dev_instance)
 
 	if (unlikely(status == 0xffffffff || status == 0)) {
 		if (status)
-			dev_err(host->dev,
-				": IRQ status == 0xffffffff, PCI fault or device removal?\n");
+			dev_printk(KERN_ERR, host->dev,
+				": IRQ status == 0xffffffff, "
+				"PCI fault or device removal?\n");
 		goto out;
 	}
 
@@ -346,12 +347,14 @@ static int __devinit vsc_sata_init_one(struct pci_dev *pdev,
 		.port_ops	= &vsc_sata_ops,
 	};
 	const struct ata_port_info *ppi[] = { &pi, NULL };
+	static int printed_version;
 	struct ata_host *host;
 	void __iomem *mmio_base;
 	int i, rc;
 	u8 cls;
 
-	ata_print_version_once(&pdev->dev, DRV_VERSION);
+	if (!printed_version++)
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	/* allocate host */
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, 4);

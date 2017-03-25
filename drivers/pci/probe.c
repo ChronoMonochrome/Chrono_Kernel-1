@@ -10,55 +10,15 @@
 #include <linux/module.h>
 #include <linux/cpumask.h>
 #include <linux/pci-aspm.h>
-#include <asm-generic/pci-bridge.h>
 #include "pci.h"
 
 #define CARDBUS_LATENCY_TIMER	176	/* secondary latency timer */
 #define CARDBUS_RESERVE_BUSNR	3
 
-<<<<<<< HEAD
-=======
-struct resource busn_resource = {
-	.name	= "PCI busn",
-	.start	= 0,
-	.end	= 255,
-	.flags	= IORESOURCE_BUS,
-};
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 /* Ugh.  Need to stop exporting this to modules. */
 LIST_HEAD(pci_root_buses);
 EXPORT_SYMBOL(pci_root_buses);
 
-static LIST_HEAD(pci_domain_busn_res_list);
-
-struct pci_domain_busn_res {
-	struct list_head list;
-	struct resource res;
-	int domain_nr;
-};
-
-static struct resource *get_pci_domain_busn_res(int domain_nr)
-{
-	struct pci_domain_busn_res *r;
-
-	list_for_each_entry(r, &pci_domain_busn_res_list, list)
-		if (r->domain_nr == domain_nr)
-			return &r->res;
-
-	r = kzalloc(sizeof(*r), GFP_KERNEL);
-	if (!r)
-		return NULL;
-
-	r->domain_nr = domain_nr;
-	r->res.start = 0;
-	r->res.end = 0xff;
-	r->res.flags = IORESOURCE_BUS | IORESOURCE_PCI_FIXED;
-
-	list_add_tail(&r->list, &pci_domain_busn_res_list);
-
-	return &r->res;
-}
 
 static int find_anything(struct device *dev, void *data)
 {
@@ -149,27 +109,9 @@ static inline enum pci_bar_type decode_bar(struct resource *res, u32 bar)
 
 	res->flags = bar & ~PCI_BASE_ADDRESS_MEM_MASK;
 
-<<<<<<< HEAD
 	if (res->flags & PCI_BASE_ADDRESS_MEM_TYPE_64)
 		return pci_bar_mem64;
 	return pci_bar_mem32;
-=======
-	mem_type = bar & PCI_BASE_ADDRESS_MEM_TYPE_MASK;
-	switch (mem_type) {
-	case PCI_BASE_ADDRESS_MEM_TYPE_32:
-		break;
-	case PCI_BASE_ADDRESS_MEM_TYPE_1M:
-		/* 1M mem BAR treated as 32-bit BAR */
-		break;
-	case PCI_BASE_ADDRESS_MEM_TYPE_64:
-		flags |= IORESOURCE_MEM_64;
-		break;
-	default:
-		/* mem unknown type treated as 32-bit BAR */
-		break;
-	}
-	return flags;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 /**
@@ -186,15 +128,9 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 {
 	u32 l, sz, mask;
 	u16 orig_cmd;
-<<<<<<< HEAD
-=======
-	struct pci_bus_region region;
-	bool bar_too_big = false, bar_disabled = false;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	mask = type ? PCI_ROM_ADDRESS_MASK : ~0;
 
-	/* No printks while decoding is disabled! */
 	if (!dev->mmio_always_on) {
 		pci_read_config_word(dev, PCI_COMMAND, &orig_cmd);
 		pci_write_config_word(dev, PCI_COMMAND,
@@ -207,6 +143,9 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 	pci_write_config_dword(dev, pos, l | mask);
 	pci_read_config_dword(dev, pos, &sz);
 	pci_write_config_dword(dev, pos, l);
+
+	if (!dev->mmio_always_on)
+		pci_write_config_word(dev, PCI_COMMAND, orig_cmd);
 
 	/*
 	 * All bits set in sz means the device isn't working properly.
@@ -259,7 +198,8 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 			goto fail;
 
 		if ((sizeof(resource_size_t) < 8) && (sz64 > 0x100000000ULL)) {
-			bar_too_big = true;
+			dev_err(&dev->dev, "reg %x: can't handle 64-bit BAR\n",
+				pos);
 			goto fail;
 		}
 
@@ -268,7 +208,6 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 			/* Address above 32-bit boundary; disable the BAR */
 			pci_write_config_dword(dev, pos, 0);
 			pci_write_config_dword(dev, pos + 4, 0);
-<<<<<<< HEAD
 			res->start = 0;
 			res->end = sz64;
 		} else {
@@ -276,16 +215,6 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 			res->end = l64 + sz64;
 			dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n",
 				   pos, res);
-=======
-			region.start = 0;
-			region.end = sz64;
-			pcibios_bus_to_resource(dev, res, &region);
-			bar_disabled = true;
-		} else {
-			region.start = l64;
-			region.end = l64 + sz64;
-			pcibios_bus_to_resource(dev, res, &region);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		}
 	} else {
 		sz = pci_size(l, sz, mask);
@@ -293,39 +222,17 @@ int __pci_read_base(struct pci_dev *dev, enum pci_bar_type type,
 		if (!sz)
 			goto fail;
 
-<<<<<<< HEAD
 		res->start = l;
 		res->end = l + sz;
-=======
-		region.start = l;
-		region.end = l + sz;
-		pcibios_bus_to_resource(dev, res, &region);
+
+		dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n", pos, res);
 	}
 
-	goto out;
-
-
-fail:
-	res->flags = 0;
-out:
-	if (!dev->mmio_always_on)
-		pci_write_config_word(dev, PCI_COMMAND, orig_cmd);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
-
-	if (bar_too_big)
-		dev_err(&dev->dev, "reg %x: can't handle 64-bit BAR\n", pos);
-	if (res->flags && !bar_disabled)
-		dev_printk(KERN_DEBUG, &dev->dev, "reg %x: %pR\n", pos, res);
-
-<<<<<<< HEAD
  out:
 	return (type == pci_bar_mem64) ? 1 : 0;
  fail:
 	res->flags = 0;
 	goto out;
-=======
-	return (res->flags & IORESOURCE_MEM_64) ? 1 : 0;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 static void pci_read_bases(struct pci_dev *dev, unsigned int howmany, int rom)
@@ -352,50 +259,29 @@ static void __devinit pci_read_bridge_io(struct pci_bus *child)
 {
 	struct pci_dev *dev = child->self;
 	u8 io_base_lo, io_limit_lo;
-<<<<<<< HEAD
 	unsigned long base, limit;
 	struct resource *res;
-=======
-	unsigned long io_mask, io_granularity, base, limit;
-	struct pci_bus_region region;
-	struct resource *res;
-
-	io_mask = PCI_IO_RANGE_MASK;
-	io_granularity = 0x1000;
-	if (dev->io_window_1k) {
-		/* Support 1K I/O space granularity */
-		io_mask = PCI_IO_1K_RANGE_MASK;
-		io_granularity = 0x400;
-	}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	res = child->resource[0];
 	pci_read_config_byte(dev, PCI_IO_BASE, &io_base_lo);
 	pci_read_config_byte(dev, PCI_IO_LIMIT, &io_limit_lo);
-	base = (io_base_lo & io_mask) << 8;
-	limit = (io_limit_lo & io_mask) << 8;
+	base = (io_base_lo & PCI_IO_RANGE_MASK) << 8;
+	limit = (io_limit_lo & PCI_IO_RANGE_MASK) << 8;
 
 	if ((io_base_lo & PCI_IO_RANGE_TYPE_MASK) == PCI_IO_RANGE_TYPE_32) {
 		u16 io_base_hi, io_limit_hi;
-
 		pci_read_config_word(dev, PCI_IO_BASE_UPPER16, &io_base_hi);
 		pci_read_config_word(dev, PCI_IO_LIMIT_UPPER16, &io_limit_hi);
-		base |= ((unsigned long) io_base_hi << 16);
-		limit |= ((unsigned long) io_limit_hi << 16);
+		base |= (io_base_hi << 16);
+		limit |= (io_limit_hi << 16);
 	}
 
-	if (base <= limit) {
+	if (base && base <= limit) {
 		res->flags = (io_base_lo & PCI_IO_RANGE_TYPE_MASK) | IORESOURCE_IO;
-<<<<<<< HEAD
 		if (!res->start)
 			res->start = base;
 		if (!res->end)
 			res->end = limit + 0xfff;
-=======
-		region.start = base;
-		region.end = limit + io_granularity - 1;
-		pcibios_bus_to_resource(dev, res, &region);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		dev_printk(KERN_DEBUG, &dev->dev, "  bridge window %pR\n", res);
 	} else {
 		dev_printk(KERN_DEBUG, &dev->dev,
@@ -414,9 +300,9 @@ static void __devinit pci_read_bridge_mmio(struct pci_bus *child)
 	res = child->resource[1];
 	pci_read_config_word(dev, PCI_MEMORY_BASE, &mem_base_lo);
 	pci_read_config_word(dev, PCI_MEMORY_LIMIT, &mem_limit_lo);
-	base = ((unsigned long) mem_base_lo & PCI_MEMORY_RANGE_MASK) << 16;
-	limit = ((unsigned long) mem_limit_lo & PCI_MEMORY_RANGE_MASK) << 16;
-	if (base <= limit) {
+	base = (mem_base_lo & PCI_MEMORY_RANGE_MASK) << 16;
+	limit = (mem_limit_lo & PCI_MEMORY_RANGE_MASK) << 16;
+	if (base && base <= limit) {
 		res->flags = (mem_base_lo & PCI_MEMORY_RANGE_TYPE_MASK) | IORESOURCE_MEM;
 		res->start = base;
 		res->end = limit + 0xfffff;
@@ -438,12 +324,11 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
 	res = child->resource[2];
 	pci_read_config_word(dev, PCI_PREF_MEMORY_BASE, &mem_base_lo);
 	pci_read_config_word(dev, PCI_PREF_MEMORY_LIMIT, &mem_limit_lo);
-	base = ((unsigned long) mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
-	limit = ((unsigned long) mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
+	base = (mem_base_lo & PCI_PREF_RANGE_MASK) << 16;
+	limit = (mem_limit_lo & PCI_PREF_RANGE_MASK) << 16;
 
 	if ((mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) == PCI_PREF_RANGE_TYPE_64) {
 		u32 mem_base_hi, mem_limit_hi;
-
 		pci_read_config_dword(dev, PCI_PREF_BASE_UPPER32, &mem_base_hi);
 		pci_read_config_dword(dev, PCI_PREF_LIMIT_UPPER32, &mem_limit_hi);
 
@@ -454,8 +339,8 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
 		 */
 		if (mem_base_hi <= mem_limit_hi) {
 #if BITS_PER_LONG == 64
-			base |= ((unsigned long) mem_base_hi) << 32;
-			limit |= ((unsigned long) mem_limit_hi) << 32;
+			base |= ((long) mem_base_hi) << 32;
+			limit |= ((long) mem_limit_hi) << 32;
 #else
 			if (mem_base_hi || mem_limit_hi) {
 				dev_err(&dev->dev, "can't handle 64-bit "
@@ -465,7 +350,7 @@ static void __devinit pci_read_bridge_mmio_pref(struct pci_bus *child)
 #endif
 		}
 	}
-	if (base <= limit) {
+	if (base && base <= limit) {
 		res->flags = (mem_base_lo & PCI_PREF_RANGE_TYPE_MASK) |
 					 IORESOURCE_MEM | IORESOURCE_PREFETCH;
 		if (res->flags & PCI_PREF_RANGE_TYPE_64)
@@ -489,8 +374,8 @@ void __devinit pci_read_bridge_bases(struct pci_bus *child)
 	if (pci_is_root_bus(child))	/* It's a host bus, nothing to read */
 		return;
 
-	dev_info(&dev->dev, "PCI bridge to %pR%s\n",
-		 &child->busn_res,
+	dev_info(&dev->dev, "PCI bridge to [bus %02x-%02x]%s\n",
+		 child->secondary, child->subordinate,
 		 dev->transparent ? " (subtractive decode)" : "");
 
 	pci_bus_remove_resources(child);
@@ -529,19 +414,6 @@ static struct pci_bus * pci_alloc_bus(void)
 		b->cur_bus_speed = PCI_SPEED_UNKNOWN;
 	}
 	return b;
-}
-
-static struct pci_host_bridge *pci_alloc_host_bridge(struct pci_bus *b)
-{
-	struct pci_host_bridge *bridge;
-
-	bridge = kzalloc(sizeof(*bridge), GFP_KERNEL);
-	if (bridge) {
-		INIT_LIST_HEAD(&bridge->windows);
-		bridge->bus = b;
-	}
-
-	return bridge;
 }
 
 static unsigned char pcix_bus_speed[] = {
@@ -707,9 +579,9 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
 	 * Set up the primary, secondary and subordinate
 	 * bus numbers.
 	 */
-	child->number = child->busn_res.start = busnr;
-	child->primary = parent->busn_res.start;
-	child->busn_res.end = 0xff;
+	child->number = child->secondary = busnr;
+	child->primary = parent->secondary;
+	child->subordinate = 0xff;
 
 	if (!bridge)
 		return child;
@@ -751,8 +623,8 @@ static void pci_fixup_parent_subordinate_busnr(struct pci_bus *child, int max)
 	if (!pcibios_assign_all_busses())
 		return;
 
-	while (parent->parent && parent->busn_res.end < max) {
-		parent->busn_res.end = max;
+	while (parent->parent && parent->subordinate < max) {
+		parent->subordinate = max;
 		pci_write_config_byte(parent->self, PCI_SUBORDINATE_BUS, max);
 		parent = parent->parent;
 	}
@@ -826,15 +698,15 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
 			if (!child)
 				goto out;
 			child->primary = primary;
-			pci_bus_insert_busn_res(child, secondary, subordinate);
+			child->subordinate = subordinate;
 			child->bridge_ctl = bctl;
 		}
 
 		cmax = pci_scan_child_bus(child);
 		if (cmax > max)
 			max = cmax;
-		if (child->busn_res.end > max)
-			max = child->busn_res.end;
+		if (child->subordinate > max)
+			max = child->subordinate;
 	} else {
 		/*
 		 * We need to assign a number to this bus which we always
@@ -857,28 +729,16 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
 		pci_write_config_word(dev, PCI_STATUS, 0xffff);
 
 		/* Prevent assigning a bus number that already exists.
-<<<<<<< HEAD
 		 * This can happen when a bridge is hot-plugged */
 		if (pci_find_bus(pci_domain_nr(bus), max+1))
 			goto out;
 		child = pci_add_new_bus(bus, dev, ++max);
 		if (!child)
 			goto out;
-=======
-		 * This can happen when a bridge is hot-plugged, so in
-		 * this case we only re-scan this bus. */
-		child = pci_find_bus(pci_domain_nr(bus), max+1);
-		if (!child) {
-			child = pci_add_new_bus(bus, dev, ++max);
-			if (!child)
-				goto out;
-			pci_bus_insert_busn_res(child, max, 0xff);
-		}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		buses = (buses & 0xff000000)
 		      | ((unsigned int)(child->primary)     <<  0)
-		      | ((unsigned int)(child->busn_res.start)   <<  8)
-		      | ((unsigned int)(child->busn_res.end) << 16);
+		      | ((unsigned int)(child->secondary)   <<  8)
+		      | ((unsigned int)(child->subordinate) << 16);
 
 		/*
 		 * yenta.c forces a secondary latency timer of 176.
@@ -923,8 +783,8 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
 					break;
 				while (parent->parent) {
 					if ((!pcibios_assign_all_busses()) &&
-					    (parent->busn_res.end > max) &&
-					    (parent->busn_res.end <= max+i)) {
+					    (parent->subordinate > max) &&
+					    (parent->subordinate <= max+i)) {
 						j = 1;
 					}
 					parent = parent->parent;
@@ -945,7 +805,7 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
 		/*
 		 * Set the subordinate bus number to its real value.
 		 */
-		pci_bus_update_busn_res_end(child, max);
+		child->subordinate = max;
 		pci_write_config_byte(dev, PCI_SUBORDINATE_BUS, max);
 	}
 
@@ -955,19 +815,19 @@ int __devinit pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
 
 	/* Has only triggered on CardBus, fixup is in yenta_socket */
 	while (bus->parent) {
-		if ((child->busn_res.end > bus->busn_res.end) ||
-		    (child->number > bus->busn_res.end) ||
+		if ((child->subordinate > bus->subordinate) ||
+		    (child->number > bus->subordinate) ||
 		    (child->number < bus->number) ||
-		    (child->busn_res.end < bus->number)) {
-			dev_info(&child->dev, "%pR %s "
-				"hidden behind%s bridge %s %pR\n",
-				&child->busn_res,
-				(bus->number > child->busn_res.end &&
-				 bus->busn_res.end < child->number) ?
+		    (child->subordinate < bus->number)) {
+			dev_info(&child->dev, "[bus %02x-%02x] %s "
+				"hidden behind%s bridge %s [bus %02x-%02x]\n",
+				child->number, child->subordinate,
+				(bus->number > child->subordinate &&
+				 bus->subordinate < child->number) ?
 					"wholly" : "partially",
 				bus->self->transparent ? " transparent" : "",
 				dev_name(&bus->dev),
-				&bus->busn_res);
+				bus->number, bus->subordinate);
 		}
 		bus = bus->parent;
 	}
@@ -1242,14 +1102,7 @@ int pci_cfg_space_size(struct pci_dev *dev)
 
 static void pci_release_bus_bridge_dev(struct device *dev)
 {
-	struct pci_host_bridge *bridge = to_pci_host_bridge(dev);
-
-	if (bridge->release_fn)
-		bridge->release_fn(bridge);
-
-	pci_free_resource_list(&bridge->windows);
-
-	kfree(bridge);
+	kfree(dev);
 }
 
 struct pci_dev *alloc_pci_dev(void)
@@ -1424,13 +1277,10 @@ static unsigned no_next_fn(struct pci_dev *dev, unsigned fn)
 static int only_one_child(struct pci_bus *bus)
 {
 	struct pci_dev *parent = bus->self;
-
 	if (!parent || !pci_is_pcie(parent))
 		return 0;
-	if (parent->pcie_type == PCI_EXP_TYPE_ROOT_PORT)
-		return 1;
-	if (parent->pcie_type == PCI_EXP_TYPE_DOWNSTREAM &&
-	    !pci_has_flag(PCI_SCAN_ALL_PCIE_DEVS))
+	if (parent->pcie_type == PCI_EXP_TYPE_ROOT_PORT ||
+	    parent->pcie_type == PCI_EXP_TYPE_DOWNSTREAM)
 		return 1;
 	return 0;
 }
@@ -1484,7 +1334,7 @@ int pci_scan_slot(struct pci_bus *bus, int devfn)
 
 unsigned int __devinit pci_scan_child_bus(struct pci_bus *bus)
 {
-	unsigned int devfn, pass, max = bus->busn_res.start;
+	unsigned int devfn, pass, max = bus->secondary;
 	struct pci_dev *dev;
 
 	dev_dbg(&bus->dev, "scanning bus\n");
@@ -1530,32 +1380,21 @@ struct pci_bus * pci_create_bus(struct device *parent,
 {
 	int error;
 	struct pci_bus *b, *b2;
-<<<<<<< HEAD
 	struct device *dev;
-=======
-	struct pci_host_bridge_window *window, *n;
-	struct resource *res;
-	resource_size_t offset;
-	char bus_addr[64];
-	char *fmt;
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	b = pci_alloc_bus();
 	if (!b)
 		return NULL;
-<<<<<<< HEAD
 
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (!dev){
 		kfree(b);
 		return NULL;
 	}
-=======
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	b->sysdata = sysdata;
 	b->ops = ops;
+
 	b2 = pci_find_bus(pci_domain_nr(b), bus);
 	if (b2) {
 		/* If we already got to this bus through a different bridge, ignore it */
@@ -1563,7 +1402,6 @@ struct pci_bus * pci_create_bus(struct device *parent,
 		goto err_out;
 	}
 
-<<<<<<< HEAD
 	down_write(&pci_bus_sem);
 	list_add_tail(&b->node, &pci_root_buses);
 	up_write(&pci_bus_sem);
@@ -1572,19 +1410,9 @@ struct pci_bus * pci_create_bus(struct device *parent,
 	dev->release = pci_release_bus_bridge_dev;
 	dev_set_name(dev, "pci%04x:%02x", pci_domain_nr(b), bus);
 	error = device_register(dev);
-=======
-	bridge = pci_alloc_host_bridge(b);
-	if (!bridge)
-		goto err_out;
-
-	bridge->dev.parent = parent;
-	bridge->dev.release = pci_release_bus_bridge_dev;
-	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
-	error = device_register(&bridge->dev);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	if (error)
-		goto bridge_dev_reg_err;
-	b->bridge = get_device(&bridge->dev);
+		goto dev_reg_err;
+	b->bridge = get_device(dev);
 	device_enable_async_suspend(b->bridge);
 
 	if (!parent)
@@ -1600,49 +1428,13 @@ struct pci_bus * pci_create_bus(struct device *parent,
 	/* Create legacy_io and legacy_mem files for this bus */
 	pci_create_legacy_files(b);
 
-<<<<<<< HEAD
 	b->number = b->secondary = bus;
 	b->resource[0] = &ioport_resource;
 	b->resource[1] = &iomem_resource;
-=======
-	b->number = b->busn_res.start = bus;
-
-	if (parent)
-		dev_info(parent, "PCI host bridge to bus %s\n", dev_name(&b->dev));
-	else
-		printk(KERN_INFO "PCI host bridge to bus %s\n", dev_name(&b->dev));
-
-	/* Add initial resources to the bus */
-	list_for_each_entry_safe(window, n, resources, list) {
-		list_move_tail(&window->list, &bridge->windows);
-		res = window->res;
-		offset = window->offset;
-		if (res->flags & IORESOURCE_BUS)
-			pci_bus_insert_busn_res(b, bus, res->end);
-		else
-			pci_bus_add_resource(b, res, 0);
-		if (offset) {
-			if (resource_type(res) == IORESOURCE_IO)
-				fmt = " (bus address [%#06llx-%#06llx])";
-			else
-				fmt = " (bus address [%#010llx-%#010llx])";
-			snprintf(bus_addr, sizeof(bus_addr), fmt,
-				 (unsigned long long) (res->start - offset),
-				 (unsigned long long) (res->end - offset));
-		} else
-			bus_addr[0] = '\0';
-		dev_info(&b->dev, "root bus resource %pR%s\n", res, bus_addr);
-	}
-
-	down_write(&pci_bus_sem);
-	list_add_tail(&b->node, &pci_root_buses);
-	up_write(&pci_bus_sem);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	return b;
 
 class_dev_reg_err:
-<<<<<<< HEAD
 	device_unregister(dev);
 dev_reg_err:
 	down_write(&pci_bus_sem);
@@ -1650,170 +1442,22 @@ dev_reg_err:
 	up_write(&pci_bus_sem);
 err_out:
 	kfree(dev);
-=======
-	put_device(&bridge->dev);
-	device_unregister(&bridge->dev);
-bridge_dev_reg_err:
-	kfree(bridge);
-err_out:
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	kfree(b);
 	return NULL;
 }
 
-<<<<<<< HEAD
-=======
-int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
-{
-	struct resource *res = &b->busn_res;
-	struct resource *parent_res, *conflict;
-
-	res->start = bus;
-	res->end = bus_max;
-	res->flags = IORESOURCE_BUS;
-
-	if (!pci_is_root_bus(b))
-		parent_res = &b->parent->busn_res;
-	else {
-		parent_res = get_pci_domain_busn_res(pci_domain_nr(b));
-		res->flags |= IORESOURCE_PCI_FIXED;
-	}
-
-	conflict = insert_resource_conflict(parent_res, res);
-
-	if (conflict)
-		dev_printk(KERN_DEBUG, &b->dev,
-			   "busn_res: can not insert %pR under %s%pR (conflicts with %s %pR)\n",
-			    res, pci_is_root_bus(b) ? "domain " : "",
-			    parent_res, conflict->name, conflict);
-	else
-		dev_printk(KERN_DEBUG, &b->dev,
-			   "busn_res: %pR is inserted under %s%pR\n",
-			   res, pci_is_root_bus(b) ? "domain " : "",
-			   parent_res);
-
-	return conflict == NULL;
-}
-
-int pci_bus_update_busn_res_end(struct pci_bus *b, int bus_max)
-{
-	struct resource *res = &b->busn_res;
-	struct resource old_res = *res;
-	resource_size_t size;
-	int ret;
-
-	if (res->start > bus_max)
-		return -EINVAL;
-
-	size = bus_max - res->start + 1;
-	ret = adjust_resource(res, res->start, size);
-	dev_printk(KERN_DEBUG, &b->dev,
-			"busn_res: %pR end %s updated to %02x\n",
-			&old_res, ret ? "can not be" : "is", bus_max);
-
-	if (!ret && !res->parent)
-		pci_bus_insert_busn_res(b, res->start, res->end);
-
-	return ret;
-}
-
-void pci_bus_release_busn_res(struct pci_bus *b)
-{
-	struct resource *res = &b->busn_res;
-	int ret;
-
-	if (!res->flags || !res->parent)
-		return;
-
-	ret = release_resource(res);
-	dev_printk(KERN_DEBUG, &b->dev,
-			"busn_res: %pR %s released\n",
-			res, ret ? "can not be" : "is");
-}
-
-struct pci_bus * __devinit pci_scan_root_bus(struct device *parent, int bus,
-		struct pci_ops *ops, void *sysdata, struct list_head *resources)
-{
-	struct pci_host_bridge_window *window;
-	bool found = false;
-	struct pci_bus *b;
-	int max;
-
-	list_for_each_entry(window, resources, list)
-		if (window->res->flags & IORESOURCE_BUS) {
-			found = true;
-			break;
-		}
-
-	b = pci_create_root_bus(parent, bus, ops, sysdata, resources);
-	if (!b)
-		return NULL;
-
-	if (!found) {
-		dev_info(&b->dev,
-		 "No busn resource found for root bus, will use [bus %02x-ff]\n",
-			bus);
-		pci_bus_insert_busn_res(b, bus, 255);
-	}
-
-	max = pci_scan_child_bus(b);
-
-	if (!found)
-		pci_bus_update_busn_res_end(b, max);
-
-	pci_bus_add_devices(b);
-	return b;
-}
-EXPORT_SYMBOL(pci_scan_root_bus);
-
-/* Deprecated; use pci_scan_root_bus() instead */
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 struct pci_bus * __devinit pci_scan_bus_parented(struct device *parent,
 		int bus, struct pci_ops *ops, void *sysdata)
 {
 	struct pci_bus *b;
 
-<<<<<<< HEAD
 	b = pci_create_bus(parent, bus, ops, sysdata);
 	if (b)
 		b->subordinate = pci_scan_child_bus(b);
-=======
-	pci_add_resource(&resources, &ioport_resource);
-	pci_add_resource(&resources, &iomem_resource);
-	pci_add_resource(&resources, &busn_resource);
-	b = pci_create_root_bus(parent, bus, ops, sysdata, &resources);
-	if (b)
-		pci_scan_child_bus(b);
-	else
-		pci_free_resource_list(&resources);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	return b;
 }
 EXPORT_SYMBOL(pci_scan_bus_parented);
 
-<<<<<<< HEAD
-=======
-struct pci_bus * __devinit pci_scan_bus(int bus, struct pci_ops *ops,
-					void *sysdata)
-{
-	LIST_HEAD(resources);
-	struct pci_bus *b;
-
-	pci_add_resource(&resources, &ioport_resource);
-	pci_add_resource(&resources, &iomem_resource);
-	pci_add_resource(&resources, &busn_resource);
-	b = pci_create_root_bus(NULL, bus, ops, sysdata, &resources);
-	if (b) {
-		pci_scan_child_bus(b);
-		pci_bus_add_devices(b);
-	} else {
-		pci_free_resource_list(&resources);
-	}
-	return b;
-}
-EXPORT_SYMBOL(pci_scan_bus);
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 #ifdef CONFIG_HOTPLUG
 /**
  * pci_rescan_bus - scan a PCI bus for devices.

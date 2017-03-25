@@ -190,11 +190,7 @@ static struct ghes *ghes_new(struct acpi_hest_generic *generic)
 	if (!ghes)
 		return ERR_PTR(-ENOMEM);
 	ghes->generic = generic;
-<<<<<<< HEAD
 	rc = acpi_pre_map_gar(&generic->error_status_address);
-=======
-	rc = apei_map_generic_address(&generic->error_status_address);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	if (rc)
 		goto err_free;
 	error_block_length = generic->error_block_length;
@@ -214,11 +210,7 @@ static struct ghes *ghes_new(struct acpi_hest_generic *generic)
 	return ghes;
 
 err_unmap:
-<<<<<<< HEAD
 	acpi_post_unmap_gar(&generic->error_status_address);
-=======
-	apei_unmap_generic_address(&generic->error_status_address);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 err_free:
 	kfree(ghes);
 	return ERR_PTR(rc);
@@ -227,11 +219,7 @@ err_free:
 static void ghes_fini(struct ghes *ghes)
 {
 	kfree(ghes->estatus);
-<<<<<<< HEAD
 	acpi_post_unmap_gar(&ghes->generic->error_status_address);
-=======
-	apei_unmap_generic_address(&ghes->generic->error_status_address);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 enum {

@@ -613,11 +613,7 @@ nomatch:
 		db->n_bits++;
 
 	/* If output length is too large then this is an incompressible frame. */
-<<<<<<< HEAD
 	if (!skb_out || (skb_out && skb_out->len >= skb_in->len) ) {
-=======
-	if (!skb_out || skb_out->len >= skb_in->len) {
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		++db->incomp_count;
 		db->incomp_bytes += isize;
 		return 0;

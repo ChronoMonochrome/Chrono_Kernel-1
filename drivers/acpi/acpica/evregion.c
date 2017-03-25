@@ -150,7 +150,7 @@ acpi_status acpi_ev_install_region_handlers(void)
  *
  * FUNCTION:    acpi_ev_has_default_handler
  *
- * PARAMETERS:  node                - Namespace node for the device
+ * PARAMETERS:  Node                - Namespace node for the device
  *              space_id            - The address space ID
  *
  * RETURN:      TRUE if default handler is installed, FALSE otherwise
@@ -244,7 +244,7 @@ acpi_status acpi_ev_initialize_op_regions(void)
  * FUNCTION:    acpi_ev_execute_reg_method
  *
  * PARAMETERS:  region_obj          - Region object
- *              function            - Passed to _REG: On (1) or Off (0)
+ *              Function            - Passed to _REG: On (1) or Off (0)
  *
  * RETURN:      Status
  *
@@ -286,10 +286,10 @@ acpi_ev_execute_reg_method(union acpi_operand_object *region_obj, u32 function)
 	/*
 	 * The _REG method has two arguments:
 	 *
-	 * arg0 - Integer:
+	 * Arg0 - Integer:
 	 *  Operation region space ID Same value as region_obj->Region.space_id
 	 *
-	 * arg1 - Integer:
+	 * Arg1 - Integer:
 	 *  connection status 1 for connecting the handler, 0 for disconnecting
 	 *  the handler (Passed as a parameter)
 	 */
@@ -329,15 +329,10 @@ acpi_ev_execute_reg_method(union acpi_operand_object *region_obj, u32 function)
  * FUNCTION:    acpi_ev_address_space_dispatch
  *
  * PARAMETERS:  region_obj          - Internal region object
-<<<<<<< HEAD
  *              Function            - Read or Write operation
-=======
- *              field_obj           - Corresponding field. Can be NULL.
- *              function            - Read or Write operation
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
  *              region_offset       - Where in the region to read or write
  *              bit_width           - Field width in bits (8, 16, 32, or 64)
- *              value               - Pointer to in or out value, must be
+ *              Value               - Pointer to in or out value, must be
  *                                    a full 64-bit integer
  *
  * RETURN:      Status
@@ -822,11 +817,11 @@ acpi_ev_install_handler(acpi_handle obj_handle,
  *
  * FUNCTION:    acpi_ev_install_space_handler
  *
- * PARAMETERS:  node            - Namespace node for the device
+ * PARAMETERS:  Node            - Namespace node for the device
  *              space_id        - The address space ID
- *              handler         - Address of the handler
- *              setup           - Address of the setup function
- *              context         - Value passed to the handler on each access
+ *              Handler         - Address of the handler
+ *              Setup           - Address of the setup function
+ *              Context         - Value passed to the handler on each access
  *
  * RETURN:      Status
  *
@@ -1043,7 +1038,7 @@ acpi_ev_install_space_handler(struct acpi_namespace_node * node,
  *
  * FUNCTION:    acpi_ev_execute_reg_methods
  *
- * PARAMETERS:  node            - Namespace node for the device
+ * PARAMETERS:  Node            - Namespace node for the device
  *              space_id        - The address space ID
  *
  * RETURN:      Status
@@ -1086,7 +1081,7 @@ acpi_ev_execute_reg_methods(struct acpi_namespace_node *node,
  *
  * PARAMETERS:  walk_namespace callback
  *
- * DESCRIPTION: Run _REG method for region objects of the requested spaceID
+ * DESCRIPTION: Run _REG method for region objects of the requested space_iD
  *
  ******************************************************************************/
 

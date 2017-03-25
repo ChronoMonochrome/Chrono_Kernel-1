@@ -81,29 +81,6 @@ acpi_status acpi_hw_register_write(u32 register_id, u32 value);
 acpi_status acpi_hw_clear_acpi_status(void);
 
 /*
-<<<<<<< HEAD
-=======
- * hwsleep - sleep/wake support (Legacy sleep registers)
- */
-acpi_status acpi_hw_legacy_sleep(u8 sleep_state);
-
-acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state);
-
-acpi_status acpi_hw_legacy_wake(u8 sleep_state);
-
-/*
- * hwesleep - sleep/wake support (Extended FADT-V5 sleep registers)
- */
-void acpi_hw_execute_sleep_method(char *method_name, u32 integer_argument);
-
-acpi_status acpi_hw_extended_sleep(u8 sleep_state);
-
-acpi_status acpi_hw_extended_wake_prep(u8 sleep_state);
-
-acpi_status acpi_hw_extended_wake(u8 sleep_state);
-
-/*
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
  * hwvalid - Port I/O with validation
  */
 acpi_status acpi_hw_read_port(acpi_io_address address, u32 *value, u32 width);

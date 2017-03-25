@@ -1591,6 +1591,7 @@ mpt_mapresources(MPT_ADAPTER *ioc)
 	unsigned long	 port;
 	u32		 msize;
 	u32		 psize;
+	u8		 revision;
 	int		 r = -ENODEV;
 	struct pci_dev *pdev;
 
@@ -1606,6 +1607,8 @@ mpt_mapresources(MPT_ADAPTER *ioc)
 		    "MEM failed\n", ioc->name);
 		return r;
 	}
+
+	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
 
 	if (sizeof(dma_addr_t) > 4) {
 		const uint64_t required_mask = dma_get_required_mask
@@ -1714,6 +1717,7 @@ mpt_attach(struct pci_dev *pdev, const struct pci_device_id *id)
 	MPT_ADAPTER	*ioc;
 	u8		 cb_idx;
 	int		 r = -ENODEV;
+	u8		 revision;
 	u8		 pcixcmd;
 	static int	 mpt_ids = 0;
 #ifdef CONFIG_PROC_FS
@@ -1821,8 +1825,8 @@ mpt_attach(struct pci_dev *pdev, const struct pci_device_id *id)
 	dinitprintk(ioc, printk(MYIOC_s_INFO_FMT "facts @ %p, pfacts[0] @ %p\n",
 	    ioc->name, &ioc->facts, &ioc->pfacts[0]));
 
-	mpt_get_product_name(pdev->vendor, pdev->device, pdev->revision,
-			     ioc->prod_name);
+	pci_read_config_byte(pdev, PCI_CLASS_REVISION, &revision);
+	mpt_get_product_name(pdev->vendor, pdev->device, revision, ioc->prod_name);
 
 	switch (pdev->device)
 	{
@@ -1837,7 +1841,7 @@ mpt_attach(struct pci_dev *pdev, const struct pci_device_id *id)
 		break;
 
 	case MPI_MANUFACTPAGE_DEVICEID_FC929X:
-		if (pdev->revision < XL_929) {
+		if (revision < XL_929) {
 			/* 929X Chip Fix. Set Split transactions level
 		 	* for PCIX. Set MOST bits to zero.
 		 	*/
@@ -1868,7 +1872,7 @@ mpt_attach(struct pci_dev *pdev, const struct pci_device_id *id)
 		/* 1030 Chip Fix. Disable Split transactions
 		 * for PCIX. Set MOST bits to zero if Rev < C0( = 8).
 		 */
-		if (pdev->revision < C0_1030) {
+		if (revision < C0_1030) {
 			pci_read_config_byte(pdev, 0x6a, &pcixcmd);
 			pcixcmd &= 0x8F;
 			pci_write_config_byte(pdev, 0x6a, pcixcmd);
@@ -6409,22 +6413,7 @@ mpt_config(MPT_ADAPTER *ioc, CONFIGPARMS *pCfg)
 			pReq->Action, ioc->mptbase_cmds.status, timeleft));
 		if (ioc->mptbase_cmds.status & MPT_MGMT_STATUS_DID_IOCRESET)
 			goto out;
-<<<<<<< HEAD
 		if (!timeleft)
-=======
-		if (!timeleft) {
-			spin_lock_irqsave(&ioc->taskmgmt_lock, flags);
-			if (ioc->ioc_reset_in_progress) {
-				spin_unlock_irqrestore(&ioc->taskmgmt_lock,
-					flags);
-				printk(MYIOC_s_INFO_FMT "%s: host reset in"
-					" progress mpt_config timed out.!!\n",
-					__func__, ioc->name);
-				mutex_unlock(&ioc->mptbase_cmds.mutex);
-				return -EFAULT;
-			}
-			spin_unlock_irqrestore(&ioc->taskmgmt_lock, flags);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 			issue_hard_reset = 1;
 		goto out;
 	}

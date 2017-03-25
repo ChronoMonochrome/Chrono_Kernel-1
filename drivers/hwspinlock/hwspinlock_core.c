@@ -335,91 +335,6 @@ out:
 	mutex_unlock(&hwspinlock_tree_lock);
 	return hwlock;
 }
-<<<<<<< HEAD
-=======
-
-/**
- * hwspin_lock_register() - register a new hw spinlock device
- * @bank: the hwspinlock device, which usually provides numerous hw locks
- * @dev: the backing device
- * @ops: hwspinlock handlers for this device
- * @base_id: id of the first hardware spinlock in this bank
- * @num_locks: number of hwspinlocks provided by this device
- *
- * This function should be called from the underlying platform-specific
- * implementation, to register a new hwspinlock device instance.
- *
- * Should be called from a process context (might sleep)
- *
- * Returns 0 on success, or an appropriate error code on failure
- */
-int hwspin_lock_register(struct hwspinlock_device *bank, struct device *dev,
-		const struct hwspinlock_ops *ops, int base_id, int num_locks)
-{
-	struct hwspinlock *hwlock;
-	int ret = 0, i;
-
-	if (!bank || !ops || !dev || !num_locks || !ops->trylock ||
-							!ops->unlock) {
-		pr_err("invalid parameters\n");
-		return -EINVAL;
-	}
-
-	bank->dev = dev;
-	bank->ops = ops;
-	bank->base_id = base_id;
-	bank->num_locks = num_locks;
-
-	for (i = 0; i < num_locks; i++) {
-		hwlock = &bank->lock[i];
-
-		spin_lock_init(&hwlock->lock);
-		hwlock->bank = bank;
-
-		ret = hwspin_lock_register_single(hwlock, base_id + i);
-		if (ret)
-			goto reg_failed;
-	}
-
-	return 0;
-
-reg_failed:
-	while (--i >= 0)
-		hwspin_lock_unregister_single(base_id + i);
-	return ret;
-}
-EXPORT_SYMBOL_GPL(hwspin_lock_register);
-
-/**
- * hwspin_lock_unregister() - unregister an hw spinlock device
- * @bank: the hwspinlock device, which usually provides numerous hw locks
- *
- * This function should be called from the underlying platform-specific
- * implementation, to unregister an existing (and unused) hwspinlock.
- *
- * Should be called from a process context (might sleep)
- *
- * Returns 0 on success, or an appropriate error code on failure
- */
-int hwspin_lock_unregister(struct hwspinlock_device *bank)
-{
-	struct hwspinlock *hwlock, *tmp;
-	int i;
-
-	for (i = 0; i < bank->num_locks; i++) {
-		hwlock = &bank->lock[i];
-
-		tmp = hwspin_lock_unregister_single(bank->base_id + i);
-		if (!tmp)
-			return -EBUSY;
-
-		/* self-sanity check that should never fail */
-		WARN_ON(tmp != hwlock);
-	}
-
-	return 0;
-}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 EXPORT_SYMBOL_GPL(hwspin_lock_unregister);
 
 /**
@@ -583,10 +498,6 @@ EXPORT_SYMBOL_GPL(hwspin_lock_request_specific);
  */
 int hwspin_lock_free(struct hwspinlock *hwlock)
 {
-<<<<<<< HEAD
-=======
-	struct device *dev;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	struct hwspinlock *tmp;
 	int ret;
 
@@ -595,7 +506,6 @@ int hwspin_lock_free(struct hwspinlock *hwlock)
 		return -EINVAL;
 	}
 
-	dev = hwlock->bank->dev;
 	mutex_lock(&hwspinlock_tree_lock);
 
 	/* make sure the hwspinlock is used */

@@ -51,7 +51,7 @@
 
 
 /* local variables */
-static bool debug;
+static int debug;
 
 #define DRIVER_VERSION	"0.5"
 #define DRIVER_AUTHOR	"Greg Kroah-Hartman <greg@kroah.com>, Scott Murray <scottm@somanetworks.com>"

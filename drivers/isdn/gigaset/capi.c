@@ -14,7 +14,6 @@
 #include "gigaset.h"
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/ratelimit.h>
 #include <linux/isdn/capilli.h>
 #include <linux/isdn/capicmd.h>
 #include <linux/isdn/capiutil.h>
@@ -108,7 +107,6 @@ static struct {
 	u8 *bc;
 	u8 *hlc;
 } cip2bchlc[] = {
-<<<<<<< HEAD
 	[1] = { "8090A3", NULL },
 		/* Speech (A-law) */
 	[2] = { "8890", NULL },
@@ -154,37 +152,6 @@ static struct {
 		/* Video telephony, first connection */
 	[28] = { "8890", "916002" },
 		/* Video telephony, second connection */
-=======
-	[1] = { "8090A3", NULL },	/* Speech (A-law) */
-	[2] = { "8890", NULL },		/* Unrestricted digital information */
-	[3] = { "8990", NULL },		/* Restricted digital information */
-	[4] = { "9090A3", NULL },	/* 3,1 kHz audio (A-law) */
-	[5] = { "9190", NULL },		/* 7 kHz audio */
-	[6] = { "9890", NULL },		/* Video */
-	[7] = { "88C0C6E6", NULL },	/* Packet mode */
-	[8] = { "8890218F", NULL },	/* 56 kbit/s rate adaptation */
-	[9] = { "9190A5", NULL },	/* Unrestricted digital information
-					 * with tones/announcements */
-	[16] = { "8090A3", "9181" },	/* Telephony */
-	[17] = { "9090A3", "9184" },	/* Group 2/3 facsimile */
-	[18] = { "8890", "91A1" },	/* Group 4 facsimile Class 1 */
-	[19] = { "8890", "91A4" },	/* Teletex service basic and mixed mode
-					 * and Group 4 facsimile service
-					 * Classes II and III */
-	[20] = { "8890", "91A8" },	/* Teletex service basic and
-					 * processable mode */
-	[21] = { "8890", "91B1" },	/* Teletex service basic mode */
-	[22] = { "8890", "91B2" },	/* International interworking for
-					 * Videotex */
-	[23] = { "8890", "91B5" },	/* Telex */
-	[24] = { "8890", "91B8" },	/* Message Handling Systems
-					 * in accordance with X.400 */
-	[25] = { "8890", "91C1" },	/* OSI application
-					 * in accordance with X.200 */
-	[26] = { "9190A5", "9181" },	/* 7 kHz telephony */
-	[27] = { "9190A5", "916001" },	/* Video telephony, first connection */
-	[28] = { "8890", "916002" },	/* Video telephony, second connection */
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 };
 
 /*
@@ -255,13 +222,9 @@ get_appl(struct gigaset_capi_ctr *iif, u16 appl)
 static inline void dump_cmsg(enum debuglevel level, const char *tag, _cmsg *p)
 {
 #ifdef CONFIG_GIGASET_DEBUG
-	/* dump at most 20 messages in 20 secs */
-	static DEFINE_RATELIMIT_STATE(msg_dump_ratelimit, 20 * HZ, 20);
 	_cdebbuf *cdb;
 
 	if (!(gigaset_debuglevel & level))
-		return;
-	if (!___ratelimit(&msg_dump_ratelimit, tag))
 		return;
 
 	cdb = capi_cmsg2str(p);
@@ -335,7 +298,6 @@ static inline void dump_rawmsg(enum debuglevel level, const char *tag,
  * format CAPI IE as string
  */
 
-#ifdef CONFIG_GIGASET_DEBUG
 static const char *format_ie(const char *ie)
 {
 	static char result[3*MAX_FMT_IE_LEN];
@@ -361,7 +323,6 @@ static const char *format_ie(const char *ie)
 	*--pout = 0;
 	return result;
 }
-#endif
 
 /*
  * emit DATA_B3_CONF message
@@ -1230,13 +1191,7 @@ static void do_facility_req(struct gigaset_capi_ctr *iif,
 			confparam[3] = 2;	/* length */
 			capimsg_setu16(confparam, 4, CapiSuccess);
 			break;
-<<<<<<< HEAD
 		/* ToDo: add supported services */
-=======
-
-		/* ToDo: add supported services */
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		default:
 			dev_notice(cs->dev,
 		"%s: unsupported supplementary service function 0x%04x\n",
@@ -1810,14 +1765,8 @@ static void do_connect_b3_req(struct gigaset_capi_ctr *iif,
 
 	/* NCPI parameter: not applicable for B3 Transparent */
 	ignore_cstruct_param(cs, cmsg->NCPI, "CONNECT_B3_REQ", "NCPI");
-<<<<<<< HEAD
 	send_conf(iif, ap, skb, (cmsg->NCPI && cmsg->NCPI[0]) ?
 				CapiNcpiNotSupportedByProtocol : CapiSuccess);
-=======
-	send_conf(iif, ap, skb,
-		  (cmsg->NCPI && cmsg->NCPI[0]) ?
-		  CapiNcpiNotSupportedByProtocol : CapiSuccess);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 /*
@@ -1932,9 +1881,6 @@ static void do_disconnect_req(struct gigaset_capi_ctr *iif,
 
 	/* check for active logical connection */
 	if (bcs->apconnstate >= APCONN_ACTIVE) {
-		/* clear it */
-		bcs->apconnstate = APCONN_SETUP;
-
 		/*
 		 * emit DISCONNECT_B3_IND with cause 0x3301
 		 * use separate cmsg structure, as the content of iif->acmsg
@@ -1958,12 +1904,7 @@ static void do_disconnect_req(struct gigaset_capi_ctr *iif,
 			return;
 		}
 		capi_cmsg2message(b3cmsg,
-<<<<<<< HEAD
 			__skb_put(b3skb, CAPI_DISCONNECT_B3_IND_BASELEN));
-=======
-				  __skb_put(b3skb, CAPI_DISCONNECT_B3_IND_BASELEN));
-		dump_cmsg(DEBUG_CMD, __func__, b3cmsg);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		kfree(b3cmsg);
 		capi_ctr_handle_message(&iif->ctr, ap->id, b3skb);
 	}
@@ -2023,16 +1964,9 @@ static void do_disconnect_b3_req(struct gigaset_capi_ctr *iif,
 
 	/* NCPI parameter: not applicable for B3 Transparent */
 	ignore_cstruct_param(cs, cmsg->NCPI,
-<<<<<<< HEAD
 				"DISCONNECT_B3_REQ", "NCPI");
 	send_conf(iif, ap, skb, (cmsg->NCPI && cmsg->NCPI[0]) ?
 				CapiNcpiNotSupportedByProtocol : CapiSuccess);
-=======
-			     "DISCONNECT_B3_REQ", "NCPI");
-	send_conf(iif, ap, skb,
-		  (cmsg->NCPI && cmsg->NCPI[0]) ?
-		  CapiNcpiNotSupportedByProtocol : CapiSuccess);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 /*
@@ -2124,6 +2058,12 @@ static void do_reset_b3_req(struct gigaset_capi_ctr *iif,
 }
 
 /*
+ * dump unsupported/ignored messages at most twice per minute,
+ * some apps send those very frequently
+ */
+static unsigned long ignored_msg_dump_time;
+
+/*
  * unsupported CAPI message handler
  */
 static void do_unsupported(struct gigaset_capi_ctr *iif,
@@ -2132,7 +2072,8 @@ static void do_unsupported(struct gigaset_capi_ctr *iif,
 {
 	/* decode message */
 	capi_message2cmsg(&iif->acmsg, skb->data);
-	dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
+	if (printk_timed_ratelimit(&ignored_msg_dump_time, 30 * 1000))
+		dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
 	send_conf(iif, ap, skb, CapiMessageNotSupportedInCurrentState);
 }
 
@@ -2143,9 +2084,11 @@ static void do_nothing(struct gigaset_capi_ctr *iif,
 		       struct gigaset_capi_appl *ap,
 		       struct sk_buff *skb)
 {
-	/* decode message */
-	capi_message2cmsg(&iif->acmsg, skb->data);
-	dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
+	if (printk_timed_ratelimit(&ignored_msg_dump_time, 30 * 1000)) {
+		/* decode message */
+		capi_message2cmsg(&iif->acmsg, skb->data);
+		dump_cmsg(DEBUG_CMD, __func__, &iif->acmsg);
+	}
 	dev_kfree_skb_any(skb);
 }
 
@@ -2414,7 +2357,7 @@ static const struct file_operations gigaset_proc_fops = {
  * @cs:		device descriptor structure.
  * @isdnid:	device name.
  *
- * Return value: 0 on success, error code < 0 on failure
+ * Return value: 1 for success, 0 for failure
  */
 int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
 {
@@ -2424,7 +2367,7 @@ int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
 	iif = kmalloc(sizeof(*iif), GFP_KERNEL);
 	if (!iif) {
 		pr_err("%s: out of memory\n", __func__);
-		return -ENOMEM;
+		return 0;
 	}
 
 	/* prepare controller structure */
@@ -2448,12 +2391,12 @@ int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
 	if (rc) {
 		pr_err("attach_capi_ctr failed (%d)\n", rc);
 		kfree(iif);
-		return rc;
+		return 0;
 	}
 
 	cs->iif = iif;
 	cs->hw_hdr_len = CAPI_DATA_B3_REQ_LEN;
-	return 0;
+	return 1;
 }
 
 /**

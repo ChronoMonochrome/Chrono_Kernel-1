@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2012 Intel Corporation.  All rights reserved.
- * Copyright (c) 2006 - 2012 QLogic Corporation.  * All rights reserved.
+ * Copyright (c) 2006, 2007, 2008, 2009, 2010 QLogic Corporation.
+ * All rights reserved.
  * Copyright (c) 2005, 2006 PathScale, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -243,7 +243,6 @@ static void remove_qp(struct qib_ibdev *dev, struct qib_qp *qp)
 
 	spin_lock_irqsave(&dev->qpt_lock, flags);
 
-<<<<<<< HEAD
 	if (ibp->qp0 == qp) {
 		ibp->qp0 = NULL;
 		atomic_dec(&qp->refcount);
@@ -258,36 +257,6 @@ static void remove_qp(struct qib_ibdev *dev, struct qib_qp *qp)
 				atomic_dec(&qp->refcount);
 				break;
 			}
-=======
-	if (rcu_dereference_protected(ibp->qp0,
-			lockdep_is_held(&dev->qpt_lock)) == qp) {
-		atomic_dec(&qp->refcount);
-		rcu_assign_pointer(ibp->qp0, NULL);
-	} else if (rcu_dereference_protected(ibp->qp1,
-			lockdep_is_held(&dev->qpt_lock)) == qp) {
-		atomic_dec(&qp->refcount);
-		rcu_assign_pointer(ibp->qp1, NULL);
-	} else {
-		struct qib_qp *q;
-		struct qib_qp __rcu **qpp;
-
-		qpp = &dev->qp_table[n];
-		q = rcu_dereference_protected(*qpp,
-			lockdep_is_held(&dev->qpt_lock));
-		for (; q; qpp = &q->next) {
-			if (q == qp) {
-				atomic_dec(&qp->refcount);
-				*qpp = qp->next;
-				rcu_assign_pointer(qp->next, NULL);
-				q = rcu_dereference_protected(*qpp,
-					lockdep_is_held(&dev->qpt_lock));
-				break;
-			}
-			q = rcu_dereference_protected(*qpp,
-				lockdep_is_held(&dev->qpt_lock));
-		}
-	}
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	spin_unlock_irqrestore(&dev->qpt_lock, flags);
 }
@@ -319,17 +288,10 @@ unsigned qib_free_all_qps(struct qib_devdata *dd)
 
 	spin_lock_irqsave(&dev->qpt_lock, flags);
 	for (n = 0; n < dev->qp_table_size; n++) {
-<<<<<<< HEAD
 		qp = dev->qp_table[n];
 		dev->qp_table[n] = NULL;
-=======
-		qp = rcu_dereference_protected(dev->qp_table[n],
-			lockdep_is_held(&dev->qpt_lock));
-		rcu_assign_pointer(dev->qp_table[n], NULL);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
-		for (; qp; qp = rcu_dereference_protected(qp->next,
-					lockdep_is_held(&dev->qpt_lock)))
+		for (; qp; qp = qp->next)
 			qp_inuse++;
 	}
 	spin_unlock_irqrestore(&dev->qpt_lock, flags);
@@ -353,7 +315,6 @@ struct qib_qp *qib_lookup_qpn(struct qib_ibport *ibp, u32 qpn)
 
 	spin_lock_irqsave(&dev->qpt_lock, flags);
 
-<<<<<<< HEAD
 	if (qpn == 0)
 		qp = ibp->qp0;
 	else if (qpn == 1)
@@ -361,11 +322,6 @@ struct qib_qp *qib_lookup_qpn(struct qib_ibport *ibp, u32 qpn)
 	else
 		for (qp = dev->qp_table[qpn % dev->qp_table_size]; qp;
 		     qp = qp->next)
-=======
-		rcu_read_lock();
-		for (qp = rcu_dereference(dev->qp_table[n]); qp;
-			qp = rcu_dereference(qp->next))
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 			if (qp->ibqp.qp_num == qpn)
 				break;
 	if (qp)
@@ -432,9 +388,18 @@ static void clear_mr_refs(struct qib_qp *qp, int clr_sends)
 	unsigned n;
 
 	if (test_and_clear_bit(QIB_R_REWIND_SGE, &qp->r_aflags))
-		qib_put_ss(&qp->s_rdma_read_sge);
+		while (qp->s_rdma_read_sge.num_sge) {
+			atomic_dec(&qp->s_rdma_read_sge.sge.mr->refcount);
+			if (--qp->s_rdma_read_sge.num_sge)
+				qp->s_rdma_read_sge.sge =
+					*qp->s_rdma_read_sge.sg_list++;
+		}
 
-	qib_put_ss(&qp->r_sge);
+	while (qp->r_sge.num_sge) {
+		atomic_dec(&qp->r_sge.sge.mr->refcount);
+		if (--qp->r_sge.num_sge)
+			qp->r_sge.sge = *qp->r_sge.sg_list++;
+	}
 
 	if (clr_sends) {
 		while (qp->s_last != qp->s_head) {
@@ -444,7 +409,7 @@ static void clear_mr_refs(struct qib_qp *qp, int clr_sends)
 			for (i = 0; i < wqe->wr.num_sge; i++) {
 				struct qib_sge *sge = &wqe->sg_list[i];
 
-				qib_put_mr(sge->mr);
+				atomic_dec(&sge->mr->refcount);
 			}
 			if (qp->ibqp.qp_type == IB_QPT_UD ||
 			    qp->ibqp.qp_type == IB_QPT_SMI ||
@@ -454,7 +419,7 @@ static void clear_mr_refs(struct qib_qp *qp, int clr_sends)
 				qp->s_last = 0;
 		}
 		if (qp->s_rdma_mr) {
-			qib_put_mr(qp->s_rdma_mr);
+			atomic_dec(&qp->s_rdma_mr->refcount);
 			qp->s_rdma_mr = NULL;
 		}
 	}
@@ -467,7 +432,7 @@ static void clear_mr_refs(struct qib_qp *qp, int clr_sends)
 
 		if (e->opcode == IB_OPCODE_RC_RDMA_READ_REQUEST &&
 		    e->rdma_sge.mr) {
-			qib_put_mr(e->rdma_sge.mr);
+			atomic_dec(&e->rdma_sge.mr->refcount);
 			e->rdma_sge.mr = NULL;
 		}
 	}
@@ -512,7 +477,7 @@ int qib_error_qp(struct qib_qp *qp, enum ib_wc_status err)
 	if (!(qp->s_flags & QIB_S_BUSY)) {
 		qp->s_hdrwords = 0;
 		if (qp->s_rdma_mr) {
-			qib_put_mr(qp->s_rdma_mr);
+			atomic_dec(&qp->s_rdma_mr->refcount);
 			qp->s_rdma_mr = NULL;
 		}
 		if (qp->s_tx) {
@@ -1048,18 +1013,6 @@ struct ib_qp *qib_create_qp(struct ib_pd *ibpd,
 			ret = ERR_PTR(-ENOMEM);
 			goto bail_swq;
 		}
-<<<<<<< HEAD
-=======
-		RCU_INIT_POINTER(qp->next, NULL);
-		qp->s_hdr = kzalloc(sizeof(*qp->s_hdr), GFP_KERNEL);
-		if (!qp->s_hdr) {
-			ret = ERR_PTR(-ENOMEM);
-			goto bail_qp;
-		}
-		qp->timeout_jiffies =
-			usecs_to_jiffies((4096UL * (1UL << qp->timeout)) /
-				1000UL);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		if (init_attr->srq)
 			sz = 0;
 		else {
@@ -1178,7 +1131,6 @@ bail_ip:
 		vfree(qp->r_rq.wq);
 	free_qpn(&dev->qpn_table, qp->ibqp.qp_num);
 bail_qp:
-	kfree(qp->s_hdr);
 	kfree(qp);
 bail_swq:
 	vfree(swq);
@@ -1234,7 +1186,6 @@ int qib_destroy_qp(struct ib_qp *ibqp)
 	else
 		vfree(qp->r_rq.wq);
 	vfree(qp->s_wq);
-	kfree(qp->s_hdr);
 	kfree(qp);
 	return 0;
 }

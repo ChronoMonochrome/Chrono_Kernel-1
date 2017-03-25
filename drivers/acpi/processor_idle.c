@@ -221,13 +221,10 @@ static void lapic_timer_state_broadcast(struct acpi_processor *pr,
 
 #endif
 
-<<<<<<< HEAD
 /*
  * Suspend / resume control
  */
 static int acpi_idle_suspend;
-=======
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 static u32 saved_bm_rld;
 
 static void acpi_idle_bm_rld_save(void)
@@ -244,7 +241,7 @@ static void acpi_idle_bm_rld_restore(void)
 		acpi_write_bit_register(ACPI_BITREG_BUS_MASTER_RLD, saved_bm_rld);
 }
 
-int acpi_processor_suspend(struct device *dev)
+int acpi_processor_suspend(struct acpi_device * device, pm_message_t state)
 {
 	if (acpi_idle_suspend == 1)
 		return 0;
@@ -254,7 +251,7 @@ int acpi_processor_suspend(struct device *dev)
 	return 0;
 }
 
-int acpi_processor_resume(struct device *dev)
+int acpi_processor_resume(struct acpi_device * device)
 {
 	if (acpi_idle_suspend == 0)
 		return 0;
@@ -316,16 +313,16 @@ static int acpi_processor_get_power_info_fadt(struct acpi_processor *pr)
 	pr->power.states[ACPI_STATE_C3].address = pr->pblk + 5;
 
 	/* determine latencies from FADT */
-	pr->power.states[ACPI_STATE_C2].latency = acpi_gbl_FADT.c2_latency;
-	pr->power.states[ACPI_STATE_C3].latency = acpi_gbl_FADT.c3_latency;
+	pr->power.states[ACPI_STATE_C2].latency = acpi_gbl_FADT.C2latency;
+	pr->power.states[ACPI_STATE_C3].latency = acpi_gbl_FADT.C3latency;
 
 	/*
 	 * FADT specified C2 latency must be less than or equal to
 	 * 100 microseconds.
 	 */
-	if (acpi_gbl_FADT.c2_latency > ACPI_PROCESSOR_MAX_C2_LATENCY) {
+	if (acpi_gbl_FADT.C2latency > ACPI_PROCESSOR_MAX_C2_LATENCY) {
 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-			"C2 latency too large [%d]\n", acpi_gbl_FADT.c2_latency));
+			"C2 latency too large [%d]\n", acpi_gbl_FADT.C2latency));
 		/* invalidate C2 */
 		pr->power.states[ACPI_STATE_C2].address = 0;
 	}
@@ -334,9 +331,9 @@ static int acpi_processor_get_power_info_fadt(struct acpi_processor *pr)
 	 * FADT supplied C3 latency must be less than or equal to
 	 * 1000 microseconds.
 	 */
-	if (acpi_gbl_FADT.c3_latency > ACPI_PROCESSOR_MAX_C3_LATENCY) {
+	if (acpi_gbl_FADT.C3latency > ACPI_PROCESSOR_MAX_C3_LATENCY) {
 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
-			"C3 latency too large [%d]\n", acpi_gbl_FADT.c3_latency));
+			"C3 latency too large [%d]\n", acpi_gbl_FADT.C3latency));
 		/* invalidate C3 */
 		pr->power.states[ACPI_STATE_C3].address = 0;
 	}
@@ -598,6 +595,7 @@ static void acpi_processor_power_verify_c3(struct acpi_processor *pr,
 	 */
 	cx->valid = 1;
 
+	cx->latency_ticks = cx->latency;
 	/*
 	 * On older chipsets, BM_RLD needs to be set
 	 * in order for Bus Master activity to wake the
@@ -630,6 +628,7 @@ static int acpi_processor_power_verify(struct acpi_processor *pr)
 			if (!cx->address)
 				break;
 			cx->valid = 1; 
+			cx->latency_ticks = cx->latency; /* Normalize latency */
 			break;
 
 		case ACPI_STATE_C3:
@@ -761,15 +760,12 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
 
 	local_irq_disable();
 
-<<<<<<< HEAD
 	/* Do not access any ACPI IO ports in suspend path */
 	if (acpi_idle_suspend) {
 		local_irq_enable();
 		cpu_relax();
 		return 0;
 	}
-=======
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 	lapic_timer_state_broadcast(pr, cx, 1);
 	kt1 = ktime_get_real();
@@ -778,6 +774,7 @@ static int acpi_idle_enter_c1(struct cpuidle_device *dev,
 	idle_time =  ktime_to_us(ktime_sub(kt2, kt1));
 
 	local_irq_enable();
+	cx->usage++;
 	lapic_timer_state_broadcast(pr, cx, 0);
 
 	return idle_time;
@@ -806,7 +803,6 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
 		return(acpi_idle_enter_c1(dev, state));
 
 	local_irq_disable();
-
 
 	if (cx->entry_method != ACPI_CSTATE_FFH) {
 		current_thread_info()->status &= ~TS_POLLING;
@@ -848,13 +844,11 @@ static int acpi_idle_enter_simple(struct cpuidle_device *dev,
 	if (cx->entry_method != ACPI_CSTATE_FFH)
 		current_thread_info()->status |= TS_POLLING;
 
+	cx->usage++;
+
 	lapic_timer_state_broadcast(pr, cx, 0);
-<<<<<<< HEAD
 	cx->time += idle_time;
 	return idle_time;
-=======
-	return index;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 static int c3_cpu_count;
@@ -893,16 +887,11 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
 			local_irq_disable();
 			acpi_safe_halt();
 			local_irq_enable();
-<<<<<<< HEAD
 			return 0;
-=======
-			return -EBUSY;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 		}
 	}
 
 	local_irq_disable();
-
 
 	if (cx->entry_method != ACPI_CSTATE_FFH) {
 		current_thread_info()->status &= ~TS_POLLING;
@@ -972,13 +961,11 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
 	if (cx->entry_method != ACPI_CSTATE_FFH)
 		current_thread_info()->status |= TS_POLLING;
 
+	cx->usage++;
+
 	lapic_timer_state_broadcast(pr, cx, 0);
-<<<<<<< HEAD
 	cx->time += idle_time;
 	return idle_time;
-=======
-	return index;
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 }
 
 struct cpuidle_driver acpi_idle_driver = {

@@ -230,11 +230,7 @@ MODULE_PARM_DESC(bfs, "Enable evaluation of _BFS on resume".);
  *              THIS FUNCTION MUST BE CALLED WITH INTERRUPTS DISABLED
  *
  ******************************************************************************/
-<<<<<<< HEAD
 acpi_status asmlinkage acpi_enter_sleep_state(u8 sleep_state)
-=======
-acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 {
 	u32 pm1a_control;
 	u32 pm1b_control;
@@ -289,7 +285,6 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
 		return_ACPI_STATUS(status);
 	}
 
-<<<<<<< HEAD
 	if (gts) {
 		/* Execute the _GTS method */
 
@@ -304,8 +299,6 @@ acpi_status acpi_hw_legacy_sleep(u8 sleep_state)
 		}
 	}
 
-=======
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	/* Get current value of PM1A control */
 
 	status = acpi_hw_register_read(ACPI_REGISTER_PM1_CONTROL,
@@ -469,11 +462,7 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state_s4bios)
  *
  * FUNCTION:    acpi_leave_sleep_state_prep
  *
-<<<<<<< HEAD
  * PARAMETERS:  sleep_state         - Which sleep state we are exiting
-=======
- * PARAMETERS:  sleep_state         - Which sleep state we just exited
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
  *
  * RETURN:      Status
  *
@@ -482,12 +471,7 @@ ACPI_EXPORT_SYMBOL(acpi_enter_sleep_state_s4bios)
  *              Called with interrupts DISABLED.
  *
  ******************************************************************************/
-<<<<<<< HEAD
 acpi_status acpi_leave_sleep_state_prep(u8 sleep_state)
-=======
-
-acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 {
 	struct acpi_object_list arg_list;
 	union acpi_object arg;
@@ -540,7 +524,6 @@ acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
 		}
 	}
 
-<<<<<<< HEAD
 	if (bfs) {
 		/* Execute the _BFS method */
 
@@ -554,8 +537,6 @@ acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
 			ACPI_EXCEPTION((AE_INFO, status, "During Method _BFS"));
 		}
 	}
-=======
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	return_ACPI_STATUS(status);
 }
 
@@ -571,12 +552,7 @@ acpi_status acpi_hw_legacy_wake_prep(u8 sleep_state)
  *              Called with interrupts ENABLED.
  *
  ******************************************************************************/
-<<<<<<< HEAD
 acpi_status acpi_leave_sleep_state(u8 sleep_state)
-=======
-
-acpi_status acpi_hw_legacy_wake(u8 sleep_state)
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 {
 	struct acpi_object_list arg_list;
 	union acpi_object arg;
@@ -647,16 +623,12 @@ acpi_status acpi_hw_legacy_wake(u8 sleep_state)
 			      [ACPI_EVENT_POWER_BUTTON].
 			      status_register_id, ACPI_CLEAR_STATUS);
 
-<<<<<<< HEAD
 	arg.integer.value = ACPI_SST_WORKING;
 	status = acpi_evaluate_object(NULL, METHOD_NAME__SST, &arg_list, NULL);
 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
 		ACPI_EXCEPTION((AE_INFO, status, "During Method _SST"));
 	}
 
-=======
-	acpi_hw_execute_sleep_method(METHOD_PATHNAME__SST, ACPI_SST_WORKING);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	return_ACPI_STATUS(status);
 }
 

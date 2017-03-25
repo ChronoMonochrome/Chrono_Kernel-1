@@ -135,13 +135,8 @@ send_layer2(struct mISDNstack *st, struct sk_buff *skb)
 			skb = NULL;
 		else if (*debug & DEBUG_SEND_ERR)
 			printk(KERN_DEBUG
-<<<<<<< HEAD
 			    "%s ch%d mgr prim(%x) addr(%x) err %d\n",
 			    __func__, ch->nr, hh->prim, ch->addr, ret);
-=======
-			       "%s mgr prim(%x) err %d\n",
-			       __func__, hh->prim, ret);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	}
 out:
 	mutex_unlock(&st->lmutex);

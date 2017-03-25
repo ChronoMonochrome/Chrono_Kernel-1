@@ -144,9 +144,9 @@ static void dtl1_write_wakeup(dtl1_info_t *info)
 	}
 
 	do {
-		unsigned int iobase = info->p_dev->resource[0]->start;
+		register unsigned int iobase = info->p_dev->resource[0]->start;
 		register struct sk_buff *skb;
-		int len;
+		register int len;
 
 		clear_bit(XMIT_WAKEUP, &(info->tx_state));
 
@@ -586,31 +586,29 @@ static int dtl1_confcheck(struct pcmcia_device *p_dev, void *priv_data)
 static int dtl1_config(struct pcmcia_device *link)
 {
 	dtl1_info_t *info = link->priv;
-	int ret;
+	int i;
 
 	/* Look for a generic full-sized window */
 	link->resource[0]->end = 8;
-	ret = pcmcia_loop_config(link, dtl1_confcheck, NULL);
-	if (ret)
+	if (pcmcia_loop_config(link, dtl1_confcheck, NULL) < 0)
 		goto failed;
 
-	ret = pcmcia_request_irq(link, dtl1_interrupt);
-	if (ret)
+	i = pcmcia_request_irq(link, dtl1_interrupt);
+	if (i != 0)
 		goto failed;
 
-	ret = pcmcia_enable_device(link);
-	if (ret)
+	i = pcmcia_enable_device(link);
+	if (i != 0)
 		goto failed;
 
-	ret = dtl1_open(info);
-	if (ret)
+	if (dtl1_open(info) != 0)
 		goto failed;
 
 	return 0;
 
 failed:
 	dtl1_detach(link);
-	return ret;
+	return -ENODEV;
 }
 
 static const struct pcmcia_device_id dtl1_ids[] = {

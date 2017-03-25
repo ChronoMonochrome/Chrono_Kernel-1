@@ -15,7 +15,6 @@
 #include <linux/kernel.h>
 #include <linux/gfp.h>
 #include <linux/module.h>
-#include <linux/pm.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/device.h>
@@ -172,88 +171,11 @@ static int __devexit ahci_remove(struct platform_device *pdev)
 	return 0;
 }
 
-<<<<<<< HEAD
-=======
-#ifdef CONFIG_PM
-static int ahci_suspend(struct device *dev)
-{
-	struct ahci_platform_data *pdata = dev_get_platdata(dev);
-	struct ata_host *host = dev_get_drvdata(dev);
-	struct ahci_host_priv *hpriv = host->private_data;
-	void __iomem *mmio = hpriv->mmio;
-	u32 ctl;
-	int rc;
-
-	if (hpriv->flags & AHCI_HFLAG_NO_SUSPEND) {
-		dev_err(dev, "firmware update required for suspend/resume\n");
-		return -EIO;
-	}
-
-	/*
-	 * AHCI spec rev1.1 section 8.3.3:
-	 * Software must disable interrupts prior to requesting a
-	 * transition of the HBA to D3 state.
-	 */
-	ctl = readl(mmio + HOST_CTL);
-	ctl &= ~HOST_IRQ_EN;
-	writel(ctl, mmio + HOST_CTL);
-	readl(mmio + HOST_CTL); /* flush */
-
-	rc = ata_host_suspend(host, PMSG_SUSPEND);
-	if (rc)
-		return rc;
-
-	if (pdata && pdata->suspend)
-		return pdata->suspend(dev);
-	return 0;
-}
-
-static int ahci_resume(struct device *dev)
-{
-	struct ahci_platform_data *pdata = dev_get_platdata(dev);
-	struct ata_host *host = dev_get_drvdata(dev);
-	int rc;
-
-	if (pdata && pdata->resume) {
-		rc = pdata->resume(dev);
-		if (rc)
-			return rc;
-	}
-
-	if (dev->power.power_state.event == PM_EVENT_SUSPEND) {
-		rc = ahci_reset_controller(host);
-		if (rc)
-			return rc;
-
-		ahci_init_controller(host);
-	}
-
-	ata_host_resume(host);
-
-	return 0;
-}
-#endif
-
-SIMPLE_DEV_PM_OPS(ahci_pm_ops, ahci_suspend, ahci_resume);
-
-static const struct of_device_id ahci_of_match[] = {
-	{ .compatible = "calxeda,hb-ahci", },
-	{ .compatible = "snps,spear-ahci", },
-	{},
-};
-MODULE_DEVICE_TABLE(of, ahci_of_match);
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 static struct platform_driver ahci_driver = {
 	.remove = __devexit_p(ahci_remove),
 	.driver = {
 		.name = "ahci",
 		.owner = THIS_MODULE,
-<<<<<<< HEAD
-=======
-		.of_match_table = ahci_of_match,
-		.pm = &ahci_pm_ops,
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 	},
 };
 

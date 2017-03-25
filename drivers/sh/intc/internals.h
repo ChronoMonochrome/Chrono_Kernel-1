@@ -5,7 +5,7 @@
 #include <linux/kernel.h>
 #include <linux/types.h>
 #include <linux/radix-tree.h>
-#include <linux/device.h>
+#include <linux/sysdev.h>
 
 #define _INTC_MK(fn, mode, addr_e, addr_d, width, shift) \
 	((shift) | ((width) << 5) | ((fn) << 9) | ((mode) << 13) | \
@@ -52,7 +52,7 @@ struct intc_subgroup_entry {
 
 struct intc_desc_int {
 	struct list_head list;
-	struct device dev;
+	struct sys_device sysdev;
 	struct radix_tree_root tree;
 	raw_spinlock_t lock;
 	unsigned int index;
@@ -69,7 +69,6 @@ struct intc_desc_int {
 	unsigned int nr_windows;
 	struct irq_domain *domain;
 	struct irq_chip chip;
-	bool skip_suspend;
 };
 
 
@@ -108,14 +107,6 @@ static inline void activate_irq(int irq)
 	/* same effect on other architectures */
 	irq_set_noprobe(irq);
 #endif
-}
-
-static inline int intc_handle_int_cmp(const void *a, const void *b)
-{
-	const struct intc_handle_int *_a = a;
-	const struct intc_handle_int *_b = b;
-
-	return _a->irq - _b->irq;
 }
 
 /* access.c */
@@ -167,7 +158,8 @@ void _intc_enable(struct irq_data *data, unsigned long handle);
 /* core.c */
 extern struct list_head intc_list;
 extern raw_spinlock_t intc_big_lock;
-extern struct bus_type intc_subsys;
+extern unsigned int nr_intc_controllers;
+extern struct sysdev_class intc_sysdev_class;
 
 unsigned int intc_get_dfl_prio_level(void);
 unsigned int intc_get_prio_level(unsigned int irq);

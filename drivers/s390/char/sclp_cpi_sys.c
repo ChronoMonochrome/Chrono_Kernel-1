@@ -20,7 +20,6 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/completion.h>
-#include <linux/export.h>
 #include <asm/ebcdic.h>
 #include <asm/sclp.h>
 

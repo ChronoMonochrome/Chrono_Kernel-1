@@ -46,7 +46,6 @@
 #include <linux/mutex.h>
 #include <linux/io.h>
 #include <linux/slab.h>
-#include <linux/module.h>
 
 #include <asm/page.h>
 #include <asm/pgtable.h>
@@ -257,11 +256,10 @@ int xenbus_dev_remove(struct device *_dev)
 	DPRINTK("%s", dev->nodename);
 
 	free_otherend_watch(dev);
+	free_otherend_details(dev);
 
 	if (drv->remove)
 		drv->remove(dev);
-
-	free_otherend_details(dev);
 
 	xenbus_switch_state(dev, XenbusStateClosed);
 	return 0;
@@ -292,9 +290,14 @@ void xenbus_dev_shutdown(struct device *_dev)
 EXPORT_SYMBOL_GPL(xenbus_dev_shutdown);
 
 int xenbus_register_driver_common(struct xenbus_driver *drv,
-				  struct xen_bus_type *bus)
+				  struct xen_bus_type *bus,
+				  struct module *owner,
+				  const char *mod_name)
 {
+	drv->driver.name = drv->name;
 	drv->driver.bus = &bus->bus;
+	drv->driver.owner = owner;
+	drv->driver.mod_name = mod_name;
 
 	return driver_register(&drv->driver);
 }
@@ -306,7 +309,8 @@ void xenbus_unregister_driver(struct xenbus_driver *drv)
 }
 EXPORT_SYMBOL_GPL(xenbus_unregister_driver);
 
-struct xb_find_info {
+struct xb_find_info
+{
 	struct xenbus_device *dev;
 	const char *nodename;
 };
@@ -374,32 +378,26 @@ static void xenbus_dev_release(struct device *dev)
 		kfree(to_xenbus_device(dev));
 }
 
-static ssize_t nodename_show(struct device *dev,
-			     struct device_attribute *attr, char *buf)
+static ssize_t xendev_show_nodename(struct device *dev,
+				    struct device_attribute *attr, char *buf)
 {
 	return sprintf(buf, "%s\n", to_xenbus_device(dev)->nodename);
 }
+static DEVICE_ATTR(nodename, S_IRUSR | S_IRGRP | S_IROTH, xendev_show_nodename, NULL);
 
-static ssize_t devtype_show(struct device *dev,
-			    struct device_attribute *attr, char *buf)
+static ssize_t xendev_show_devtype(struct device *dev,
+				   struct device_attribute *attr, char *buf)
 {
 	return sprintf(buf, "%s\n", to_xenbus_device(dev)->devicetype);
 }
+static DEVICE_ATTR(devtype, S_IRUSR | S_IRGRP | S_IROTH, xendev_show_devtype, NULL);
 
-static ssize_t modalias_show(struct device *dev,
-			     struct device_attribute *attr, char *buf)
+static ssize_t xendev_show_modalias(struct device *dev,
+				    struct device_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%s:%s\n", dev->bus->name,
-		       to_xenbus_device(dev)->devicetype);
+	return sprintf(buf, "xen:%s\n", to_xenbus_device(dev)->devicetype);
 }
-
-struct device_attribute xenbus_dev_attrs[] = {
-	__ATTR_RO(nodename),
-	__ATTR_RO(devtype),
-	__ATTR_RO(modalias),
-	__ATTR_NULL
-};
-EXPORT_SYMBOL_GPL(xenbus_dev_attrs);
+static DEVICE_ATTR(modalias, S_IRUSR | S_IRGRP | S_IROTH, xendev_show_modalias, NULL);
 
 int xenbus_probe_node(struct xen_bus_type *bus,
 		      const char *type,
@@ -451,7 +449,25 @@ int xenbus_probe_node(struct xen_bus_type *bus,
 	if (err)
 		goto fail;
 
+	err = device_create_file(&xendev->dev, &dev_attr_nodename);
+	if (err)
+		goto fail_unregister;
+
+	err = device_create_file(&xendev->dev, &dev_attr_devtype);
+	if (err)
+		goto fail_remove_nodename;
+
+	err = device_create_file(&xendev->dev, &dev_attr_modalias);
+	if (err)
+		goto fail_remove_devtype;
+
 	return 0;
+fail_remove_devtype:
+	device_remove_file(&xendev->dev, &dev_attr_devtype);
+fail_remove_nodename:
+	device_remove_file(&xendev->dev, &dev_attr_nodename);
+fail_unregister:
+	device_unregister(&xendev->dev);
 fail:
 	kfree(xendev);
 	return err;
@@ -635,7 +651,7 @@ int xenbus_dev_cancel(struct device *dev)
 EXPORT_SYMBOL_GPL(xenbus_dev_cancel);
 
 /* A flag to determine if xenstored is 'ready' (i.e. has started) */
-int xenstored_ready;
+int xenstored_ready = 0;
 
 
 int register_xenstore_notifier(struct notifier_block *nb)
@@ -680,76 +696,64 @@ static int __init xenbus_probe_initcall(void)
 
 device_initcall(xenbus_probe_initcall);
 
-/* Set up event channel for xenstored which is run as a local process
- * (this is normally used only in dom0)
- */
-static int __init xenstored_local_init(void)
-{
-	int err = 0;
-	unsigned long page = 0;
-	struct evtchn_alloc_unbound alloc_unbound;
-
-	/* Allocate Xenstore page */
-	page = get_zeroed_page(GFP_KERNEL);
-	if (!page)
-		goto out_err;
-
-	xen_store_mfn = xen_start_info->store_mfn =
-		pfn_to_mfn(virt_to_phys((void *)page) >>
-			   PAGE_SHIFT);
-
-	/* Next allocate a local port which xenstored can bind to */
-	alloc_unbound.dom        = DOMID_SELF;
-	alloc_unbound.remote_dom = DOMID_SELF;
-
-	err = HYPERVISOR_event_channel_op(EVTCHNOP_alloc_unbound,
-					  &alloc_unbound);
-	if (err == -ENOSYS)
-		goto out_err;
-
-	BUG_ON(err);
-	xen_store_evtchn = xen_start_info->store_evtchn =
-		alloc_unbound.port;
-
-	return 0;
-
- out_err:
-	if (page != 0)
-		free_page(page);
-	return err;
-}
-
 static int __init xenbus_init(void)
 {
 	int err = 0;
+	unsigned long page = 0;
 
+	DPRINTK("");
+
+	err = -ENODEV;
 	if (!xen_domain())
-		return -ENODEV;
+		return err;
 
-	xenbus_ring_ops_init();
+	/*
+	 * Domain0 doesn't have a store_evtchn or store_mfn yet.
+	 */
+	if (xen_initial_domain()) {
+		struct evtchn_alloc_unbound alloc_unbound;
 
-	if (xen_hvm_domain()) {
-		uint64_t v = 0;
-		err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
-		if (err)
+		/* Allocate Xenstore page */
+		page = get_zeroed_page(GFP_KERNEL);
+		if (!page)
 			goto out_error;
-		xen_store_evtchn = (int)v;
-		err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
-		if (err)
+
+		xen_store_mfn = xen_start_info->store_mfn =
+			pfn_to_mfn(virt_to_phys((void *)page) >>
+				   PAGE_SHIFT);
+
+		/* Next allocate a local port which xenstored can bind to */
+		alloc_unbound.dom        = DOMID_SELF;
+		alloc_unbound.remote_dom = 0;
+
+		err = HYPERVISOR_event_channel_op(EVTCHNOP_alloc_unbound,
+						  &alloc_unbound);
+		if (err == -ENOSYS)
 			goto out_error;
-		xen_store_mfn = (unsigned long)v;
-		xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
+
+		BUG_ON(err);
+		xen_store_evtchn = xen_start_info->store_evtchn =
+			alloc_unbound.port;
+
+		xen_store_interface = mfn_to_virt(xen_store_mfn);
 	} else {
-		xen_store_evtchn = xen_start_info->store_evtchn;
-		xen_store_mfn = xen_start_info->store_mfn;
-		if (xen_store_evtchn)
-			xenstored_ready = 1;
-		else {
-			err = xenstored_local_init();
+		if (xen_hvm_domain()) {
+			uint64_t v = 0;
+			err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
 			if (err)
 				goto out_error;
+			xen_store_evtchn = (int)v;
+			err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
+			if (err)
+				goto out_error;
+			xen_store_mfn = (unsigned long)v;
+			xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
+		} else {
+			xen_store_evtchn = xen_start_info->store_evtchn;
+			xen_store_mfn = xen_start_info->store_mfn;
+			xen_store_interface = mfn_to_virt(xen_store_mfn);
+			xenstored_ready = 1;
 		}
-		xen_store_interface = mfn_to_virt(xen_store_mfn);
 	}
 
 	/* Initialize the interface to xenstore. */
@@ -768,7 +772,12 @@ static int __init xenbus_init(void)
 	proc_mkdir("xen", NULL);
 #endif
 
-out_error:
+	return 0;
+
+  out_error:
+	if (page != 0)
+		free_page(page);
+
 	return err;
 }
 

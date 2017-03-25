@@ -81,13 +81,7 @@ static unsigned int mwait_substates;
 static unsigned int lapic_timer_reliable_states = (1 << 1);	 /* Default to only C1 */
 
 static struct cpuidle_device __percpu *intel_idle_cpuidle_devices;
-<<<<<<< HEAD
 static int intel_idle(struct cpuidle_device *dev, struct cpuidle_state *state);
-=======
-static int intel_idle(struct cpuidle_device *dev,
-			struct cpuidle_driver *drv, int index);
-static int intel_idle_cpu_init(int cpu);
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 static struct cpuidle_state *cpuidle_state_table;
 
@@ -171,38 +165,6 @@ static struct cpuidle_state snb_cstates[MWAIT_MAX_NUM_CSTATES] = {
 		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
 		.exit_latency = 109,
 		.target_residency = 345,
-		.enter = &intel_idle },
-};
-
-static struct cpuidle_state ivb_cstates[MWAIT_MAX_NUM_CSTATES] = {
-	{ /* MWAIT C0 */ },
-	{ /* MWAIT C1 */
-		.name = "C1-IVB",
-		.desc = "MWAIT 0x00",
-		.flags = CPUIDLE_FLAG_TIME_VALID,
-		.exit_latency = 1,
-		.target_residency = 1,
-		.enter = &intel_idle },
-	{ /* MWAIT C2 */
-		.name = "C3-IVB",
-		.desc = "MWAIT 0x10",
-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-		.exit_latency = 59,
-		.target_residency = 156,
-		.enter = &intel_idle },
-	{ /* MWAIT C3 */
-		.name = "C6-IVB",
-		.desc = "MWAIT 0x20",
-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-		.exit_latency = 80,
-		.target_residency = 300,
-		.enter = &intel_idle },
-	{ /* MWAIT C4 */
-		.name = "C7-IVB",
-		.desc = "MWAIT 0x30",
-		.flags = CPUIDLE_FLAG_TIME_VALID | CPUIDLE_FLAG_TLB_FLUSHED,
-		.exit_latency = 87,
-		.target_residency = 300,
 		.enter = &intel_idle },
 };
 
@@ -308,35 +270,22 @@ static void __setup_broadcast_timer(void *arg)
 	clockevents_notify(reason, &cpu);
 }
 
-static int cpu_hotplug_notify(struct notifier_block *n,
-			      unsigned long action, void *hcpu)
+static int setup_broadcast_cpuhp_notify(struct notifier_block *n,
+		unsigned long action, void *hcpu)
 {
 	int hotcpu = (unsigned long)hcpu;
-	struct cpuidle_device *dev;
 
 	switch (action & 0xf) {
 	case CPU_ONLINE:
-
-		if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
-			smp_call_function_single(hotcpu, __setup_broadcast_timer,
-						 (void *)true, 1);
-
-		/*
-		 * Some systems can hotplug a cpu at runtime after
-		 * the kernel has booted, we have to initialize the
-		 * driver in this case
-		 */
-		dev = per_cpu_ptr(intel_idle_cpuidle_devices, hotcpu);
-		if (!dev->registered)
-			intel_idle_cpu_init(hotcpu);
-
+		smp_call_function_single(hotcpu, __setup_broadcast_timer,
+			(void *)true, 1);
 		break;
 	}
 	return NOTIFY_OK;
 }
 
-static struct notifier_block cpu_hotplug_notifier = {
-	.notifier_call = cpu_hotplug_notify,
+static struct notifier_block setup_broadcast_notifier = {
+	.notifier_call = setup_broadcast_cpuhp_notify,
 };
 
 static void auto_demotion_disable(void *dummy)
@@ -348,51 +297,6 @@ static void auto_demotion_disable(void *dummy)
 	wrmsrl(MSR_NHM_SNB_PKG_CST_CFG_CTL, msr_bits);
 }
 
-<<<<<<< HEAD
-=======
-static const struct idle_cpu idle_cpu_nehalem = {
-	.state_table = nehalem_cstates,
-	.auto_demotion_disable_flags = NHM_C1_AUTO_DEMOTE | NHM_C3_AUTO_DEMOTE,
-};
-
-static const struct idle_cpu idle_cpu_atom = {
-	.state_table = atom_cstates,
-};
-
-static const struct idle_cpu idle_cpu_lincroft = {
-	.state_table = atom_cstates,
-	.auto_demotion_disable_flags = ATM_LNC_C6_AUTO_DEMOTE,
-};
-
-static const struct idle_cpu idle_cpu_snb = {
-	.state_table = snb_cstates,
-};
-
-static const struct idle_cpu idle_cpu_ivb = {
-	.state_table = ivb_cstates,
-};
-
-#define ICPU(model, cpu) \
-	{ X86_VENDOR_INTEL, 6, model, X86_FEATURE_MWAIT, (unsigned long)&cpu }
-
-static const struct x86_cpu_id intel_idle_ids[] = {
-	ICPU(0x1a, idle_cpu_nehalem),
-	ICPU(0x1e, idle_cpu_nehalem),
-	ICPU(0x1f, idle_cpu_nehalem),
-	ICPU(0x25, idle_cpu_nehalem),
-	ICPU(0x2c, idle_cpu_nehalem),
-	ICPU(0x2e, idle_cpu_nehalem),
-	ICPU(0x1c, idle_cpu_atom),
-	ICPU(0x26, idle_cpu_lincroft),
-	ICPU(0x2f, idle_cpu_nehalem),
-	ICPU(0x2a, idle_cpu_snb),
-	ICPU(0x2d, idle_cpu_snb),
-	ICPU(0x3a, idle_cpu_ivb),
-	{}
-};
-MODULE_DEVICE_TABLE(x86cpu, intel_idle_ids);
-
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 /*
  * intel_idle_probe()
  */
@@ -463,10 +367,10 @@ static int intel_idle_probe(void)
 
 	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
 		lapic_timer_reliable_states = LAPIC_TIMER_ALWAYS_RELIABLE;
-	else
+	else {
 		on_each_cpu(__setup_broadcast_timer, (void *)true, 1);
-
-	register_cpu_notifier(&cpu_hotplug_notifier);
+		register_cpu_notifier(&setup_broadcast_notifier);
+	}
 
 	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
 		" model 0x%X\n", boot_cpu_data.x86_model);
@@ -497,11 +401,7 @@ static void intel_idle_cpuidle_devices_uninit(void)
  * intel_idle_cpuidle_devices_init()
  * allocate, initialize, register cpuidle_devices
  */
-<<<<<<< HEAD
 static int intel_idle_cpuidle_devices_init(void)
-=======
-static int intel_idle_cpu_init(int cpu)
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 {
 	int i, cstate;
 	struct cpuidle_device *dev;
@@ -564,10 +464,7 @@ static int intel_idle_cpu_init(int cpu)
 
 	return 0;
 }
-<<<<<<< HEAD
 
-=======
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 static int __init intel_idle_init(void)
 {
@@ -583,9 +480,8 @@ static int __init intel_idle_init(void)
 
 	retval = cpuidle_register_driver(&intel_idle_driver);
 	if (retval) {
-		struct cpuidle_driver *drv = cpuidle_get_driver();
 		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
-			drv ? drv->name : "none");
+			cpuidle_get_driver()->name);
 		return retval;
 	}
 
@@ -603,10 +499,10 @@ static void __exit intel_idle_exit(void)
 	intel_idle_cpuidle_devices_uninit();
 	cpuidle_unregister_driver(&intel_idle_driver);
 
-
-	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE)
+	if (lapic_timer_reliable_states != LAPIC_TIMER_ALWAYS_RELIABLE) {
 		on_each_cpu(__setup_broadcast_timer, (void *)false, 1);
-	unregister_cpu_notifier(&cpu_hotplug_notifier);
+		unregister_cpu_notifier(&setup_broadcast_notifier);
+	}
 
 	return;
 }

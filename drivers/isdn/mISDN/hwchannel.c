@@ -265,7 +265,7 @@ recv_Bchannel(struct bchannel *bch, unsigned int id, bool force)
 	hh->id = id;
 	if (bch->rcount >= 64) {
 		printk(KERN_WARNING "B-channel %p receive queue overflow, "
-		       "flushing!\n", bch);
+			"flushing!\n", bch);
 		skb_queue_purge(&bch->rqueue);
 		bch->rcount = 0;
 =======
@@ -313,7 +313,7 @@ recv_Bchannel_skb(struct bchannel *bch, struct sk_buff *skb)
 {
 	if (bch->rcount >= 64) {
 		printk(KERN_WARNING "B-channel %p receive queue overflow, "
-		       "flushing!\n", bch);
+			"flushing!\n", bch);
 		skb_queue_purge(&bch->rqueue);
 		bch->rcount = 0;
 	}
@@ -329,10 +329,10 @@ confirm_Dsend(struct dchannel *dch)
 	struct sk_buff	*skb;
 
 	skb = _alloc_mISDN_skb(PH_DATA_CNF, mISDN_HEAD_ID(dch->tx_skb),
-			       0, NULL, GFP_ATOMIC);
+	    0, NULL, GFP_ATOMIC);
 	if (!skb) {
 		printk(KERN_ERR "%s: no skb id %x\n", __func__,
-		       mISDN_HEAD_ID(dch->tx_skb));
+		    mISDN_HEAD_ID(dch->tx_skb));
 		return;
 	}
 	skb_queue_tail(&dch->rqueue, skb);
@@ -361,15 +361,15 @@ confirm_Bsend(struct bchannel *bch)
 
 	if (bch->rcount >= 64) {
 		printk(KERN_WARNING "B-channel %p receive queue overflow, "
-		       "flushing!\n", bch);
+			"flushing!\n", bch);
 		skb_queue_purge(&bch->rqueue);
 		bch->rcount = 0;
 	}
 	skb = _alloc_mISDN_skb(PH_DATA_CNF, mISDN_HEAD_ID(bch->tx_skb),
-			       0, NULL, GFP_ATOMIC);
+	    0, NULL, GFP_ATOMIC);
 	if (!skb) {
 		printk(KERN_ERR "%s: no skb id %x\n", __func__,
-		       mISDN_HEAD_ID(bch->tx_skb));
+		    mISDN_HEAD_ID(bch->tx_skb));
 		return;
 	}
 	bch->rcount++;
@@ -430,7 +430,7 @@ dchannel_senddata(struct dchannel *ch, struct sk_buff *skb)
 	}
 	if (skb->len > ch->maxlen) {
 		printk(KERN_WARNING "%s: skb too large(%d/%d)\n",
-		       __func__, skb->len, ch->maxlen);
+			__func__, skb->len, ch->maxlen);
 		return -EINVAL;
 	}
 	/* HW lock must be obtained */
@@ -457,15 +457,15 @@ bchannel_senddata(struct bchannel *ch, struct sk_buff *skb)
 	}
 	if (skb->len > ch->maxlen) {
 		printk(KERN_WARNING "%s: skb too large(%d/%d)\n",
-		       __func__, skb->len, ch->maxlen);
+			__func__, skb->len, ch->maxlen);
 		return -EINVAL;
 	}
 	/* HW lock must be obtained */
 	/* check for pending next_skb */
 	if (ch->next_skb) {
 		printk(KERN_WARNING
-		       "%s: next_skb exist ERROR (skb->len=%d next_skb->len=%d)\n",
-		       __func__, skb->len, ch->next_skb->len);
+		    "%s: next_skb exist ERROR (skb->len=%d next_skb->len=%d)\n",
+		    __func__, skb->len, ch->next_skb->len);
 		return -EBUSY;
 	}
 	if (test_and_set_bit(FLG_TX_BUSY, &ch->Flags)) {

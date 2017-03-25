@@ -80,12 +80,7 @@
 #define ACPI_RESTAG_TRANSLATION                 "_TRA"
 #define ACPI_RESTAG_TRANSTYPE                   "_TRS"	/* Sparse(1), Dense(0) */
 #define ACPI_RESTAG_TYPE                        "_TTP"	/* Translation(1), Static (0) */
-<<<<<<< HEAD
 #define ACPI_RESTAG_XFERTYPE                    "_SIZ"	/* 8(0), 8_and16(1), 16(2) */
-=======
-#define ACPI_RESTAG_XFERTYPE                    "_SIZ"	/* 8(0), 8And16(1), 16(2) */
-#define ACPI_RESTAG_VENDORDATA                  "_VEN"
->>>>>>> fe93601... Merge branch 'lk-3.6' into HEAD
 
 /* Default sizes for "small" resource descriptors */
 
@@ -214,7 +209,7 @@ AML_RESOURCE_LARGE_HEADER_COMMON AML_RESOURCE_ADDRESS_COMMON};
 
 struct aml_resource_extended_address64 {
 	AML_RESOURCE_LARGE_HEADER_COMMON
-	    AML_RESOURCE_ADDRESS_COMMON u8 revision_ID;
+	    AML_RESOURCE_ADDRESS_COMMON u8 revision_iD;
 	u8 reserved;
 	u64 granularity;
 	u64 minimum;
