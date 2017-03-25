@@ -4,7 +4,7 @@
 
 menuconfig SND_SOC_UX500
 	bool "SoC Audio support for Ux500 platform"
-	depends on SND_SOC && STM_MSP_SPI
+	depends on SND_SOC
 	default n
 	help
 		Say Y if you want to add support for the Ux500 platform.
@@ -65,3 +65,10 @@ config SND_SOC_UX500_DEBUG
 	default n
 	help
 		Say Y if you want to add debug level prints for Ux500 code-files.
+
+config SND_SOC_UX500_AB8500_MID_WIDGET
+	bool "Codec - AB8500 - Extended Widgets by MID"
+	depends on SND_SOC_UX500 && UX500_SOC_DB8500 && AB8500_CORE && AB8500_GPADC
+	default n
+	help
+		Say Y if you want to include extended Audio widget.
