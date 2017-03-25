@@ -31,7 +31,6 @@
 #include <linux/interrupt.h>
 #include <linux/uaccess.h>
 #include <linux/delay.h>
-#include <linux/export.h>
 #include <asm/io_apic.h>
 #include "gru.h"
 #include "grulib.h"
