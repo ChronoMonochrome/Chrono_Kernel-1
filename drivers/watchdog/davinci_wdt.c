@@ -271,7 +271,18 @@ static struct platform_driver platform_wdt_driver = {
 	.remove = __devexit_p(davinci_wdt_remove),
 };
 
-module_platform_driver(platform_wdt_driver);
+static int __init davinci_wdt_init(void)
+{
+	return platform_driver_register(&platform_wdt_driver);
+}
+
+static void __exit davinci_wdt_exit(void)
+{
+	platform_driver_unregister(&platform_wdt_driver);
+}
+
+module_init(davinci_wdt_init);
+module_exit(davinci_wdt_exit);
 
 MODULE_AUTHOR("Texas Instruments");
 MODULE_DESCRIPTION("DaVinci Watchdog Driver");

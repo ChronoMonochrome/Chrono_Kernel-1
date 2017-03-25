@@ -17,14 +17,26 @@
 #include <linux/miscdevice.h>
 #include <linux/watchdog.h>
 #include <linux/platform_device.h>
+#include <linux/mfd/ux500_wdt.h>
+#include <mach/id.h>
+#include <linux/hrtimer.h>
 #include <linux/mfd/dbx500-prcmu.h>
 
-#define WATCHDOG_TIMEOUT 600 /* 10 minutes */
+#define WATCHDOG_TIMEOUT 23
+#define WDOG_REFRESH_TIME 13
 
 #define WDT_FLAGS_OPEN 1
 #define WDT_FLAGS_ORPHAN 2
 
+#define DEBUG_LEVEL_LOW	(0x4f4c)
+
 static unsigned long wdt_flags;
+
+static int refresh_time = WDOG_REFRESH_TIME;
+module_param(refresh_time, int, 0);
+MODULE_PARM_DESC(refresh_time,
+	"Watchdog refresh time in seconds. default="
+		 __MODULE_STRING(WDOG_REFRESH_TIME) ".");
 
 static int timeout = WATCHDOG_TIMEOUT;
 module_param(timeout, int, 0);
@@ -41,6 +53,7 @@ static u8 wdog_id;
 static bool wdt_en;
 static bool wdt_auto_off = false;
 static bool safe_close;
+static struct ux500_wdt_ops *ux500_wdt_ops;
 
 static int ux500_wdt_open(struct inode *inode, struct file *file)
 {
@@ -53,7 +66,7 @@ static int ux500_wdt_open(struct inode *inode, struct file *file)
 	if (!test_and_clear_bit(WDT_FLAGS_ORPHAN, &wdt_flags))
 		__module_get(THIS_MODULE);
 
-	prcmu_enable_a9wdog(wdog_id);
+	ux500_wdt_ops->enable(wdog_id);
 	wdt_en = true;
 
 	return nonseekable_open(inode, file);
@@ -62,11 +75,11 @@ static int ux500_wdt_open(struct inode *inode, struct file *file)
 static int ux500_wdt_release(struct inode *inode, struct file *file)
 {
 	if (safe_close) {
-		prcmu_disable_a9wdog(wdog_id);
+		ux500_wdt_ops->disable(wdog_id);
 		module_put(THIS_MODULE);
 	} else {
 		pr_crit("Unexpected close - watchdog is not stopping.\n");
-		prcmu_kick_a9wdog(wdog_id);
+		ux500_wdt_ops->kick(wdog_id);
 
 		set_bit(WDT_FLAGS_ORPHAN, &wdt_flags);
 	}
@@ -97,7 +110,7 @@ static ssize_t ux500_wdt_write(struct file *file, const char __user *data,
 		}
 	}
 
-	prcmu_kick_a9wdog(wdog_id);
+	ux500_wdt_ops->kick(wdog_id);
 
 	return len;
 }
@@ -135,13 +148,13 @@ static long ux500_wdt_ioctl(struct file *file, unsigned int cmd,
 			return -EFAULT;
 
 		if (options & WDIOS_DISABLECARD) {
-			prcmu_disable_a9wdog(wdog_id);
+			ux500_wdt_ops->disable(wdog_id);
 			wdt_en = false;
 			ret = 0;
 		}
 
 		if (options & WDIOS_ENABLECARD) {
-			prcmu_enable_a9wdog(wdog_id);
+			ux500_wdt_ops->enable(wdog_id);
 			wdt_en = true;
 			ret = 0;
 		}
@@ -149,7 +162,7 @@ static long ux500_wdt_ioctl(struct file *file, unsigned int cmd,
 		return ret;
 	}
 	case WDIOC_KEEPALIVE:
-		return prcmu_kick_a9wdog(wdog_id);
+		return ux500_wdt_ops->kick(wdog_id);
 
 	case WDIOC_SETTIMEOUT:
 		if (get_user(interval, p))
@@ -167,9 +180,9 @@ static long ux500_wdt_ioctl(struct file *file, unsigned int cmd,
 			return -EINVAL;
 
 		timeout = interval;
-		prcmu_disable_a9wdog(wdog_id);
-		prcmu_load_a9wdog(wdog_id, timeout * 1000);
-		prcmu_enable_a9wdog(wdog_id);
+		ux500_wdt_ops->disable(wdog_id);
+		ux500_wdt_ops->load(wdog_id, timeout * 1000);
+		ux500_wdt_ops->enable(wdog_id);
 
 	/* Fall through */
 	case WDIOC_GETTIMEOUT:
@@ -182,6 +195,13 @@ static long ux500_wdt_ioctl(struct file *file, unsigned int cmd,
 	return 0;
 }
 
+#ifdef CONFIG_SAMSUNG_LOG_BUF
+void wdog_disable()
+{
+	ux500_wdt_ops->disable(wdog_id);
+	wdt_en = false;
+}
+#endif
 static const struct file_operations ux500_wdt_fops = {
 	.owner		= THIS_MODULE,
 	.llseek		= no_llseek,
@@ -221,8 +241,7 @@ static ssize_t wdog_dbg_write(struct file *file,
 
 		if (!err) {
 			wdt_auto_off = val != 0;
-			(void) prcmu_config_a9wdog(1,
-						 wdt_auto_off);
+			(void) ux500_wdt_ops->config(1, wdt_auto_off);
 		}
 		else {
 			pr_err("ux500_wdt:dbg: unknown value\n");
@@ -234,24 +253,24 @@ static ssize_t wdog_dbg_write(struct file *file,
 		if (!err) {
 			timeout = val;
 			/* Convert seconds to ms */
-			prcmu_disable_a9wdog(wdog_id);
-			prcmu_load_a9wdog(wdog_id, timeout * 1000);
-			prcmu_enable_a9wdog(wdog_id);
+			ux500_wdt_ops->disable(wdog_id);
+			ux500_wdt_ops->load(wdog_id, timeout * 1000);
+			ux500_wdt_ops->enable(wdog_id);
 		}
 		else {
 			pr_err("ux500_wdt:dbg: unknown value\n");
 		}
 		break;
 	case WDOG_DBG_KICK:
-		(void) prcmu_kick_a9wdog(wdog_id);
+		(void) ux500_wdt_ops->kick(wdog_id);
 		break;
 	case WDOG_DBG_EN:
 		wdt_en = true;
-		(void) prcmu_enable_a9wdog(wdog_id);
+		(void) ux500_wdt_ops->enable(wdog_id);
 		break;
 	case WDOG_DBG_DIS:
 		wdt_en = false;
-		(void) prcmu_disable_a9wdog(wdog_id);
+		(void) ux500_wdt_ops->disable(wdog_id);
 		break;
 	}
 
@@ -308,36 +327,36 @@ static int __init wdog_dbg_init(void)
 		goto fail;
 
 	if (IS_ERR_OR_NULL(debugfs_create_u8("id",
-					     S_IWUGO | S_IRUGO, wdog_dir,
+					     S_IWUSR | S_IWGRP | S_IRUGO, wdog_dir,
 					     &wdog_id)))
 		goto fail;
 
 	if (IS_ERR_OR_NULL(debugfs_create_file("config",
-					       S_IWUGO | S_IRUGO, wdog_dir,
+					       S_IWUSR | S_IWGRP | S_IRUGO, wdog_dir,
 					       (void *)WDOG_DBG_CONFIG,
 					       &wdog_dbg_fops)))
 		goto fail;
 
 	if (IS_ERR_OR_NULL(debugfs_create_file("load",
-					       S_IWUGO | S_IRUGO, wdog_dir,
+					       S_IWUSR | S_IWGRP | S_IRUGO, wdog_dir,
 					       (void *)WDOG_DBG_LOAD,
 					       &wdog_dbg_fops)))
 		goto fail;
 
 	if (IS_ERR_OR_NULL(debugfs_create_file("kick",
-					       S_IWUGO, wdog_dir,
+					       S_IWUSR | S_IWGRP, wdog_dir,
 					       (void *)WDOG_DBG_KICK,
 					       &wdog_dbg_fops)))
 		goto fail;
 
 	if (IS_ERR_OR_NULL(debugfs_create_file("enable",
-					       S_IWUGO | S_IRUGO, wdog_dir,
+					       S_IWUSR | S_IWGRP | S_IRUGO, wdog_dir,
 					       (void *)WDOG_DBG_EN,
 					       &wdog_dbg_fops)))
 		goto fail;
 
 	if (IS_ERR_OR_NULL(debugfs_create_file("disable",
-					       S_IWUGO | S_IRUGO, wdog_dir,
+					       S_IWUSR | S_IWGRP | S_IRUGO, wdog_dir,
 					       (void *)WDOG_DBG_DIS,
 					       &wdog_dbg_fops)))
 		goto fail;
@@ -357,37 +376,97 @@ static inline int __init wdog_dbg_init(void)
 }
 #endif
 
+#ifdef CONFIG_UX500_WATCHDOG_KERNEL_KICKER
+static struct hrtimer wdog_auto_timer;
+struct work_struct wdog_kick_work;
+struct workqueue_struct *wdog_kick_wq;
+
+static void wdog_kick_req_work(struct work_struct *work)
+{
+	ux500_wdt_ops->kick(wdog_id);
+	pr_info("ux500_wdt : reloaded by kernel kicker\n");
+}
+
+
+static enum hrtimer_restart wdog_kick_timer(struct hrtimer *timer)
+{
+	queue_work(wdog_kick_wq, &wdog_kick_work);
+	hrtimer_forward_now( timer, ktime_set(refresh_time, 0));
+	return HRTIMER_RESTART;
+}
+
+static inline int wdog_init(struct platform_device *pdev)
+{
+	/*
+	 * Ensure no user-space daemon access the watchdog
+	 * if kernel kicker is enabled
+	 */
+
+	wdog_kick_wq = create_workqueue("ux500_wdog");
+	if (!wdog_kick_wq) {
+		dev_err(&pdev->dev, "%s: err create workqueue\n", __func__);
+		return -EINVAL;
+	}
+
+	INIT_WORK(&wdog_kick_work, wdog_kick_req_work);
+
+	hrtimer_init(&wdog_auto_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	wdog_auto_timer.function = wdog_kick_timer;
+	hrtimer_start(&wdog_auto_timer, ktime_set(refresh_time, 0),
+		      HRTIMER_MODE_REL);
+
+	ux500_wdt_ops->enable(wdog_id);
+	wdt_en = true;
+	dev_info(&pdev->dev, "%s: kernel kicker enabled\n", __func__);
+
+	return 0;
+}
+
+#else
+static inline int wdog_init(struct platform_device *pdev)
+{
+	int ret = misc_register(&ux500_wdt_miscdev);
+	if (ret < 0)
+		dev_err(&pdev->dev, "failed to register misc.\n");
+
+	return ret;
+}
+#endif
+
+
 static int __init ux500_wdt_probe(struct platform_device *pdev)
 {
 	int ret;
 
-	/* Number of watch dogs */
-	prcmu_config_a9wdog(1, wdt_auto_off);
-	/* convert to ms */
-	prcmu_load_a9wdog(wdog_id, timeout * 1000);
+	/* retrieve prcmu fops from plat data */
+	ux500_wdt_ops = dev_get_platdata(&pdev->dev);
 
-	ret = misc_register(&ux500_wdt_miscdev);
-	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to register misc\n");
-		return ret;
+	if (!ux500_wdt_ops) {
+		dev_err(&pdev->dev, "plat dat incorrect\n");
+		return -EIO;
 	}
+	/* Number of watch dogs */
+	ux500_wdt_ops->config(1, wdt_auto_off);
+	/* convert to ms */
+	ux500_wdt_ops->load(wdog_id, timeout * 1000);
 
-	ret = wdog_dbg_init();
+	ret = wdog_init(pdev);
 	if (ret < 0)
-		goto fail;
+		return ret;
+
+	/* no cause for alarm if dbg_init fails, just continue */
+	wdog_dbg_init();
 
 	dev_info(&pdev->dev, "initialized\n");
 
 	return 0;
-fail:
-	misc_deregister(&ux500_wdt_miscdev);
-	return ret;
 }
 
 static int __exit ux500_wdt_remove(struct platform_device *dev)
 {
-	prcmu_disable_a9wdog(wdog_id);
+	ux500_wdt_ops->disable(wdog_id);
 	wdt_en = false;
+	ux500_wdt_ops = NULL;
 	misc_deregister(&ux500_wdt_miscdev);
 	return 0;
 }
@@ -396,16 +475,16 @@ static int ux500_wdt_suspend(struct platform_device *pdev,
 			     pm_message_t state)
 {
 	if (wdt_en && cpu_is_u5500()) {
-		prcmu_disable_a9wdog(wdog_id);
+		ux500_wdt_ops->disable(wdog_id);
 		return 0;
 	}
 
 	if (wdt_en && !wdt_auto_off) {
-		prcmu_disable_a9wdog(wdog_id);
-		prcmu_config_a9wdog(1, true);
+		ux500_wdt_ops->disable(wdog_id);
+		ux500_wdt_ops->config(1, true);
 
-		prcmu_load_a9wdog(wdog_id, timeout * 1000);
-		prcmu_enable_a9wdog(wdog_id);
+		ux500_wdt_ops->load(wdog_id, timeout * 1000);
+		ux500_wdt_ops->enable(wdog_id);
 	}
 	return 0;
 }
@@ -413,17 +492,17 @@ static int ux500_wdt_suspend(struct platform_device *pdev,
 static int ux500_wdt_resume(struct platform_device *pdev)
 {
 	if (wdt_en && cpu_is_u5500()) {
-		prcmu_load_a9wdog(wdog_id, timeout * 1000);
-		prcmu_enable_a9wdog(wdog_id);
+		ux500_wdt_ops->load(wdog_id, timeout * 1000);
+		ux500_wdt_ops->enable(wdog_id);
 		return 0;
 	}
 
 	if (wdt_en && !wdt_auto_off) {
-		prcmu_disable_a9wdog(wdog_id);
-		prcmu_config_a9wdog(1, wdt_auto_off);
+		ux500_wdt_ops->disable(wdog_id);
+		ux500_wdt_ops->config(1, wdt_auto_off);
 
-		prcmu_load_a9wdog(wdog_id, timeout * 1000);
-		prcmu_enable_a9wdog(wdog_id);
+		ux500_wdt_ops->load(wdog_id, timeout * 1000);
+		ux500_wdt_ops->enable(wdog_id);
 	}
 	return 0;
 }

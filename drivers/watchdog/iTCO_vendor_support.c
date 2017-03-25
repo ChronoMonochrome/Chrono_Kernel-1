@@ -17,11 +17,10 @@
  *	Includes, defines, variables, module parameters, ...
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 /* Module and version information */
 #define DRV_NAME	"iTCO_vendor_support"
 #define DRV_VERSION	"1.04"
+#define PFX		DRV_NAME ": "
 
 /* Includes */
 #include <linux/module.h>		/* For module specific items */
@@ -356,13 +355,13 @@ EXPORT_SYMBOL(iTCO_vendor_check_noreboot_on);
 
 static int __init iTCO_vendor_init_module(void)
 {
-	pr_info("vendor-support=%d\n", vendorsupport);
+	printk(KERN_INFO PFX "vendor-support=%d\n", vendorsupport);
 	return 0;
 }
 
 static void __exit iTCO_vendor_exit_module(void)
 {
-	pr_info("Module Unloaded\n");
+	printk(KERN_INFO PFX "Module Unloaded\n");
 }
 
 module_init(iTCO_vendor_init_module);

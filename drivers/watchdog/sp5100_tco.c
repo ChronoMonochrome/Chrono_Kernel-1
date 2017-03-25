@@ -20,8 +20,6 @@
  *	Includes, defines, variables, module parameters, ...
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/types.h>
@@ -41,6 +39,7 @@
 #define TCO_VERSION "0.01"
 #define TCO_MODULE_NAME "SP5100 TCO timer"
 #define TCO_DRIVER_NAME   TCO_MODULE_NAME ", v" TCO_VERSION
+#define PFX TCO_MODULE_NAME ": "
 
 /* internal variables */
 static u32 tcobase_phys;
@@ -62,8 +61,8 @@ module_param(heartbeat, int, 0);
 MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds. (default="
 		 __MODULE_STRING(WATCHDOG_HEARTBEAT) ")");
 
-static bool nowayout = WATCHDOG_NOWAYOUT;
-module_param(nowayout, bool, 0);
+static int nowayout = WATCHDOG_NOWAYOUT;
+module_param(nowayout, int, 0);
 MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started"
 		" (default=" __MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
 
@@ -144,7 +143,8 @@ static int sp5100_tco_release(struct inode *inode, struct file *file)
 	if (tco_expect_close == 42) {
 		tco_timer_stop();
 	} else {
-		pr_crit("Unexpected close, not stopping watchdog!\n");
+		printk(KERN_CRIT PFX
+			"Unexpected close, not stopping watchdog!\n");
 		tco_timer_keepalive();
 	}
 	clear_bit(0, &timer_alive);
@@ -290,7 +290,8 @@ static unsigned char __devinit sp5100_tco_setupdevice(void)
 	/* Request the IO ports used by this driver */
 	pm_iobase = SP5100_IO_PM_INDEX_REG;
 	if (!request_region(pm_iobase, SP5100_PM_IOPORTS_SIZE, "SP5100 TCO")) {
-		pr_err("I/O address 0x%04x already in use\n", pm_iobase);
+		printk(KERN_ERR PFX "I/O address 0x%04x already in use\n",
+			pm_iobase);
 		goto exit;
 	}
 
@@ -307,14 +308,15 @@ static unsigned char __devinit sp5100_tco_setupdevice(void)
 
 	if (!request_mem_region_exclusive(val, SP5100_WDT_MEM_MAP_SIZE,
 								"SP5100 TCO")) {
-		pr_err("mmio address 0x%04x already in use\n", val);
+		printk(KERN_ERR PFX "mmio address 0x%04x already in use\n",
+			val);
 		goto unreg_region;
 	}
 	tcobase_phys = val;
 
 	tcobase = ioremap(val, SP5100_WDT_MEM_MAP_SIZE);
 	if (tcobase == 0) {
-		pr_err("failed to get tcobase address\n");
+		printk(KERN_ERR PFX "failed to get tcobase address\n");
 		goto unreg_mem_region;
 	}
 
@@ -373,9 +375,9 @@ static int __devinit sp5100_tco_init(struct platform_device *dev)
 		return -ENODEV;
 
 	/* Check to see if last reboot was due to watchdog timeout */
-	pr_info("Watchdog reboot %sdetected\n",
-		readl(SP5100_WDT_CONTROL(tcobase)) & SP5100_PM_WATCHDOG_FIRED ?
-		"" : "not ");
+	printk(KERN_INFO PFX "Watchdog reboot %sdetected.\n",
+	       readl(SP5100_WDT_CONTROL(tcobase)) & SP5100_PM_WATCHDOG_FIRED ?
+		      "" : "not ");
 
 	/* Clear out the old status */
 	val = readl(SP5100_WDT_CONTROL(tcobase));
@@ -393,14 +395,16 @@ static int __devinit sp5100_tco_init(struct platform_device *dev)
 
 	ret = misc_register(&sp5100_tco_miscdev);
 	if (ret != 0) {
-		pr_err("cannot register miscdev on minor=%d (err=%d)\n",
+		printk(KERN_ERR PFX "cannot register miscdev on minor="
+		       "%d (err=%d)\n",
 		       WATCHDOG_MINOR, ret);
 		goto exit;
 	}
 
 	clear_bit(0, &timer_alive);
 
-	pr_info("initialized (0x%p). heartbeat=%d sec (nowayout=%d)\n",
+	printk(KERN_INFO PFX "initialized (0x%p). heartbeat=%d sec"
+		" (nowayout=%d)\n",
 		tcobase, heartbeat, nowayout);
 
 	return 0;
@@ -451,7 +455,8 @@ static int __init sp5100_tco_init_module(void)
 {
 	int err;
 
-	pr_info("SP5100 TCO WatchDog Timer Driver v%s\n", TCO_VERSION);
+	printk(KERN_INFO PFX "SP5100 TCO WatchDog Timer Driver v%s\n",
+	       TCO_VERSION);
 
 	err = platform_driver_register(&sp5100_tco_driver);
 	if (err)
@@ -475,7 +480,7 @@ static void __exit sp5100_tco_cleanup_module(void)
 {
 	platform_device_unregister(sp5100_tco_platform_device);
 	platform_driver_unregister(&sp5100_tco_driver);
-	pr_info("SP5100 TCO Watchdog Module Unloaded\n");
+	printk(KERN_INFO PFX "SP5100 TCO Watchdog Module Unloaded.\n");
 }
 
 module_init(sp5100_tco_init_module);

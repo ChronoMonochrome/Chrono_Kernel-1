@@ -16,8 +16,6 @@
  * warranty of any kind, whether express or implied.
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/types.h>
@@ -34,7 +32,7 @@
 #include <asm/m54xxsim.h>
 #include <asm/m54xxgpt.h>
 
-static bool nowayout = WATCHDOG_NOWAYOUT;
+static int nowayout = WATCHDOG_NOWAYOUT;
 static unsigned int heartbeat = 30;	/* (secs) Default is 0.5 minute */
 static unsigned long wdt_status;
 
@@ -168,7 +166,8 @@ static int m54xx_wdt_release(struct inode *inode, struct file *file)
 	if (test_bit(WDT_OK_TO_CLOSE, &wdt_status))
 		wdt_disable();
 	else {
-		pr_crit("Device closed unexpectedly - timer will not stop\n");
+		printk(KERN_CRIT "WATCHDOG: Device closed unexpectedly - "
+					"timer will not stop\n");
 		wdt_keepalive();
 	}
 	clear_bit(WDT_IN_USE, &wdt_status);
@@ -197,10 +196,11 @@ static int __init m54xx_wdt_init(void)
 {
 	if (!request_mem_region(MCF_MBAR + MCF_GPT_GCIR0, 4,
 						"Coldfire M54xx Watchdog")) {
-		pr_warn("I/O region busy\n");
+		printk(KERN_WARNING
+				"Coldfire M54xx Watchdog : I/O region busy\n");
 		return -EBUSY;
 	}
-	pr_info("driver is loaded\n");
+	printk(KERN_INFO "ColdFire watchdog driver is loaded.\n");
 
 	return misc_register(&m54xx_wdt_miscdev);
 }
@@ -220,7 +220,7 @@ MODULE_DESCRIPTION("Coldfire M54xx Watchdog");
 module_param(heartbeat, int, 0);
 MODULE_PARM_DESC(heartbeat, "Watchdog heartbeat in seconds (default 30s)");
 
-module_param(nowayout, bool, 0);
+module_param(nowayout, int, 0);
 MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started");
 
 MODULE_LICENSE("GPL");
