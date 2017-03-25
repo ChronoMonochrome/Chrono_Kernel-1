@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #define MODULE_NAME "finepix"
 
 #include "gspca.h"
@@ -184,7 +182,7 @@ static int sd_start(struct gspca_dev *gspca_dev)
 	/* Init the device */
 	ret = command(gspca_dev, 0);
 	if (ret < 0) {
-		pr_err("init failed %d\n", ret);
+		err("init failed %d", ret);
 		return ret;
 	}
 
@@ -196,14 +194,14 @@ static int sd_start(struct gspca_dev *gspca_dev)
 			FPIX_MAX_TRANSFER, &len,
 			FPIX_TIMEOUT);
 	if (ret < 0) {
-		pr_err("usb_bulk_msg failed %d\n", ret);
+		err("usb_bulk_msg failed %d", ret);
 		return ret;
 	}
 
 	/* Request a frame, but don't read it */
 	ret = command(gspca_dev, 1);
 	if (ret < 0) {
-		pr_err("frame request failed %d\n", ret);
+		err("frame request failed %d", ret);
 		return ret;
 	}
 
@@ -290,4 +288,16 @@ static struct usb_driver sd_driver = {
 #endif
 };
 
-module_usb_driver(sd_driver);
+/* -- module insert / remove -- */
+static int __init sd_mod_init(void)
+{
+	return usb_register(&sd_driver);
+}
+
+static void __exit sd_mod_exit(void)
+{
+	usb_deregister(&sd_driver);
+}
+
+module_init(sd_mod_init);
+module_exit(sd_mod_exit);

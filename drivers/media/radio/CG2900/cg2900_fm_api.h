@@ -3,6 +3,7 @@
  *
  * Linux FM Host API's for ST-Ericsson FM Chip.
  *
+ * Author: Anupam Roy <anupam.roy@stericsson.com> for ST-Ericsson.
  * Author: Hemant Gupta <hemant.gupta@stericsson.com> for ST-Ericsson.
  *
  * License terms: GNU General Public License (GPL), version 2
@@ -14,8 +15,13 @@
 #include <linux/device.h>
 #include <linux/skbuff.h>
 
+/* Flag for using Volume table - Samsung specific customization */
+#define USE_FM_VOLUME_TABLE
+
 /* Callback function to receive RDS Data. */
 typedef void  (*cg2900_fm_rds_cb)(void);
+
+static struct cg2900_version_info version_info;
 
 extern struct sk_buff_head		fm_interrupt_queue;
 
@@ -191,11 +197,17 @@ enum cg2900_fm_stereo_mode {
 	CG2900_MODE_STEREO
 };
 
-#define CG2900_FM_DEFAULT_RSSI_THRESHOLD			100
+#define CG2900_FM_DEFAULT_RSSI_THRESHOLD			138
+#define CG2900_FM_DEFAULT_RSSI_SNR_THRESHOLD        18
 #define MAX_RDS_BUFFER					10
 #define MAX_RDS_GROUPS					22
 #define MIN_ANALOG_VOLUME				0
-#define MAX_ANALOG_VOLUME				20
+#define MAX_ANALOG_VOLUME				15
+#if defined(USE_FM_VOLUME_TABLE)
+#define MAX_VOLUME_TABLE				0x7FFF   /*USE_FM_VOLUME_TABLE*/
+#define MIN_VOLUME_TABLE				0x0000   /*USE_FM_VOLUME_TABLE*/
+#endif
+
 #define NUM_OF_RDS_BLOCKS				4
 #define RDS_BLOCK_MASK					0x1C
 #define RDS_ERROR_STATUS_MASK				0x03
@@ -723,6 +735,37 @@ int cg2900_fm_set_audio_balance(
 			);
 
 /**
+ * cg2900_fm_set_aup_bt_setvolume()- Sets the Digital Out Gain of FM Chip.
+ *
+ * @vol_level: Volume Level to be set on Tuner (0-20).
+ *
+ * Returns:
+ *   0,  if operation completed successfully.
+ *   -EINVAL, otherwise.
+ */
+int cg2900_fm_set_aup_bt_setvolume(
+            u8 vol_level
+            );
+
+
+#if defined(USE_FM_VOLUME_TABLE)
+/**
+ * cg2900_fm_set_aup_bt_setvolume_table()- Sets the Digital Out Gain of FM Chip directly.
+ * 
+ * @vol_level: Volume Level to be set on Tuner (0-0x7FF).
+ * 
+ * Returns:
+ *   0,  if operation completed successfully.
+ *   -EINVAL, otherwise.
+ */
+
+int cg2900_fm_set_aup_bt_setvolume_table (
+        u16 vol_table
+        );
+
+#endif
+
+/**
  * cg2900_fm_set_volume()- Sets the Analog Out Gain of FM Chip.
  *
  * @vol_level: Volume Level to be set on Tuner (0-20).
@@ -736,7 +779,7 @@ int cg2900_fm_set_volume(
 			);
 
 /**
- * cg2900_fm_get_volume()- Gets the currently set Analog Out Gain of FM Chip.
+ * cg2900_fm_get_volume()- Gets the currently set Digital\Analog Out Gain of FM Chip.
  *
  * @vol_level: (out)Volume Level set on Tuner (0-20).
  *
@@ -796,6 +839,36 @@ int cg2900_fm_mute(void);
  *	 -EINVAL, otherwise.
  */
 int cg2900_fm_unmute(void);
+
+/**
+ * cg2900_fm_softmute_enable()- Enables SoftMute
+ *
+ * Returns:
+ *	 0,  if operation completed successfully.
+ *	 -EINVAL, otherwise.
+ */
+int cg2900_fm_softmute_enable(void);
+
+/**
+ * cg2900_fm_softmute_disable()- Disables SoftMute
+ *
+ * Returns:
+ *	 0,  if operation completed successfully.
+ *	 -EINVAL, otherwise.
+ */
+int cg2900_fm_softmute_disable(void);
+
+/**
+ * cg2900_fm_softmute_setcontrol()- Controls SoftMute parameters
+ *
+ * Returns:
+ *   0,  if operation completed successfully.
+ *   -EINVAL, otherwise.
+ */
+int cg2900_fm_softmute_setcontrol(
+        u16 min_rssi,
+        u16 max_rssi,
+        u16 max_attenuation);
 
 /**
  * cg2900_fm_get_frequency()- Gets the Curently tuned Frequency on FM Radio
@@ -891,7 +964,8 @@ int cg2900_fm_af_switch_get_result(
  */
 int cg2900_fm_af_switch_start(
 			u32 af_switch_freq,
-			u16 af_switch_pi
+			u16 af_switch_pi,
+			u16 af_switch_min_rssi
 			);
 
 /**
@@ -975,6 +1049,21 @@ int cg2900_fm_get_rssi_threshold(
 int cg2900_fm_set_rssi_threshold(
 			u16 rssi_thresold
 			);
+
+
+/**
+ * cg2900_fm_set_rssi_snr_threshold()- Sets the noise threshold final parameter
+ *
+ * Band Scan and seek Stations
+ * @rssi_thresold: noise threshold final to be set.
+ *
+ * Returns:
+ *   0,  if operation completed successfully.
+ *   -EINVAL, otherwise.
+ */
+int cg2900_fm_set_rssi_snr_threshold(
+            u16 rssi_snr_thresold
+            );
 
 /**
  * cg2900_handle_device_reset()- Handle The reset of Device
