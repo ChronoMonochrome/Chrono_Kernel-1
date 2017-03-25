@@ -796,7 +796,26 @@ static struct usb_driver irda_driver = {
 #endif
 };
 
-module_usb_driver(irda_driver);
+/*
+ * Module insertion
+ */
+static int __init ksdazzle_init(void)
+{
+	return usb_register(&irda_driver);
+}
+
+module_init(ksdazzle_init);
+
+/*
+ * Module removal
+ */
+static void __exit ksdazzle_cleanup(void)
+{
+	/* Deregister the driver and remove all pending instances */
+	usb_deregister(&irda_driver);
+}
+
+module_exit(ksdazzle_cleanup);
 
 MODULE_AUTHOR("Alex Villacís Lasso <a_villacis@palosanto.com>");
 MODULE_DESCRIPTION("IrDA-USB Dongle Driver for KingSun Dazzle");

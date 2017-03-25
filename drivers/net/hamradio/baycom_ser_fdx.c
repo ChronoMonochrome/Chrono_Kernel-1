@@ -76,7 +76,6 @@
 #include <linux/ioport.h>
 #include <linux/string.h>
 #include <linux/init.h>
-#include <linux/interrupt.h>
 #include <linux/hdlcdrv.h>
 #include <linux/baycom.h>
 #include <linux/jiffies.h>

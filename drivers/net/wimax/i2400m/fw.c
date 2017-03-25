@@ -158,7 +158,6 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/usb.h>
-#include <linux/export.h>
 #include "i2400m.h"
 
 

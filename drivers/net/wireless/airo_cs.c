@@ -37,6 +37,7 @@
 #include <pcmcia/ds.h>
 
 #include <linux/io.h>
+#include <asm/system.h>
 
 #include "airo.h"
 

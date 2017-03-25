@@ -125,7 +125,6 @@
 #include <linux/if.h>
 #include <linux/if_arp.h>
 #include <linux/if_eql.h>
-#include <linux/pkt_sched.h>
 
 #include <asm/uaccess.h>
 
@@ -144,7 +143,7 @@ static void eql_timer(unsigned long param)
 	equalizer_t *eql = (equalizer_t *) param;
 	struct list_head *this, *tmp, *head;
 
-	spin_lock(&eql->queue.lock);
+	spin_lock_bh(&eql->queue.lock);
 	head = &eql->queue.all_slaves;
 	list_for_each_safe(this, tmp, head) {
 		slave_t *slave = list_entry(this, slave_t, list);
@@ -158,7 +157,7 @@ static void eql_timer(unsigned long param)
 		}
 
 	}
-	spin_unlock(&eql->queue.lock);
+	spin_unlock_bh(&eql->queue.lock);
 
 	eql->timer.expires = jiffies + EQL_DEFAULT_RESCHED_IVAL;
 	add_timer(&eql->timer);
@@ -342,7 +341,7 @@ static netdev_tx_t eql_slave_xmit(struct sk_buff *skb, struct net_device *dev)
 		struct net_device *slave_dev = slave->dev;
 
 		skb->dev = slave_dev;
-		skb->priority = TC_PRIO_FILLER;
+		skb->priority = 1;
 		slave->bytes_queued += skb->len;
 		dev_queue_xmit(skb);
 		dev->stats.tx_packets++;

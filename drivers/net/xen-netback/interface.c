@@ -132,7 +132,6 @@ static void xenvif_up(struct xenvif *vif)
 static void xenvif_down(struct xenvif *vif)
 {
 	disable_irq(vif->irq);
-	del_timer_sync(&vif->credit_timeout);
 	xen_netbk_deschedule_xenvif(vif);
 	xen_netbk_remove_xenvif(vif);
 }
@@ -166,8 +165,7 @@ static int xenvif_change_mtu(struct net_device *dev, int mtu)
 	return 0;
 }
 
-static netdev_features_t xenvif_fix_features(struct net_device *dev,
-	netdev_features_t features)
+static u32 xenvif_fix_features(struct net_device *dev, u32 features)
 {
 	struct xenvif *vif = netdev_priv(dev);
 
@@ -224,7 +222,7 @@ static void xenvif_get_strings(struct net_device *dev, u32 stringset, u8 * data)
 	}
 }
 
-static const struct ethtool_ops xenvif_ethtool_ops = {
+static struct ethtool_ops xenvif_ethtool_ops = {
 	.get_link	= ethtool_op_get_link,
 
 	.get_sset_count = xenvif_get_sset_count,
@@ -232,7 +230,7 @@ static const struct ethtool_ops xenvif_ethtool_ops = {
 	.get_strings = xenvif_get_strings,
 };
 
-static const struct net_device_ops xenvif_netdev_ops = {
+static struct net_device_ops xenvif_netdev_ops = {
 	.ndo_start_xmit	= xenvif_start_xmit,
 	.ndo_get_stats	= xenvif_get_stats,
 	.ndo_open	= xenvif_open,
@@ -344,25 +342,22 @@ err:
 	return err;
 }
 
-void xenvif_carrier_off(struct xenvif *vif)
-{
-	struct net_device *dev = vif->dev;
-
-	rtnl_lock();
-	netif_carrier_off(dev); /* discard queued packets */
-	if (netif_running(dev))
-		xenvif_down(vif);
-	rtnl_unlock();
-	xenvif_put(vif);
-}
-
 void xenvif_disconnect(struct xenvif *vif)
 {
-	if (netif_carrier_ok(vif->dev))
-		xenvif_carrier_off(vif);
+	struct net_device *dev = vif->dev;
+	if (netif_carrier_ok(dev)) {
+		rtnl_lock();
+		netif_carrier_off(dev); /* discard queued packets */
+		if (netif_running(dev))
+			xenvif_down(vif);
+		rtnl_unlock();
+		xenvif_put(vif);
+	}
 
 	atomic_dec(&vif->refcnt);
 	wait_event(vif->waiting_to_free, atomic_read(&vif->refcnt) == 0);
+
+	del_timer_sync(&vif->credit_timeout);
 
 	if (vif->irq)
 		unbind_from_irqhandler(vif->irq, vif);

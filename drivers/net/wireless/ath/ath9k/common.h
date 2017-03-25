@@ -35,7 +35,7 @@
 #define WME_AC_BK   3
 #define WME_NUM_AC  4
 
-#define ATH_RSSI_DUMMY_MARKER   127
+#define ATH_RSSI_DUMMY_MARKER   0x127
 #define ATH_RSSI_LPF_LEN 		10
 #define RSSI_LPF_THRESHOLD		-20
 #define ATH_RSSI_EP_MULTIPLIER     (1<<7)
@@ -62,4 +62,3 @@ void ath9k_cmn_btcoex_bt_stomp(struct ath_common *common,
 				  enum ath_stomp_type stomp_type);
 void ath9k_cmn_update_txpow(struct ath_hw *ah, u16 cur_txpow,
 			    u16 new_txpow, u16 *txpower);
-void ath9k_cmn_init_crypto(struct ath_hw *ah);
