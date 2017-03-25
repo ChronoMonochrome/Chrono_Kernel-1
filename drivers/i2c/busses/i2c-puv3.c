@@ -274,6 +274,8 @@ static SIMPLE_DEV_PM_OPS(puv3_i2c_pm, puv3_i2c_suspend, NULL);
 #define PUV3_I2C_PM	NULL
 #endif
 
+MODULE_ALIAS("platform:puv3_i2c");
+
 static struct platform_driver puv3_i2c_driver = {
 	.probe		= puv3_i2c_probe,
 	.remove		= __devexit_p(puv3_i2c_remove),
@@ -284,8 +286,18 @@ static struct platform_driver puv3_i2c_driver = {
 	}
 };
 
-module_platform_driver(puv3_i2c_driver);
+static int __init puv3_i2c_init(void)
+{
+	return platform_driver_register(&puv3_i2c_driver);
+}
+
+static void __exit puv3_i2c_exit(void)
+{
+	platform_driver_unregister(&puv3_i2c_driver);
+}
+
+module_init(puv3_i2c_init);
+module_exit(puv3_i2c_exit);
 
 MODULE_DESCRIPTION("PKUnity v3 I2C driver");
 MODULE_LICENSE("GPL v2");
-MODULE_ALIAS("platform:puv3_i2c");

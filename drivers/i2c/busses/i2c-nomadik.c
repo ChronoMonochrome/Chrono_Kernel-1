@@ -276,14 +276,25 @@ exit:
 /**
  * load_i2c_mcr_reg() - load the MCR register
  * @dev: private data of controller
+ * @flags: message flags
  */
-static u32 load_i2c_mcr_reg(struct nmk_i2c_dev *dev)
+static u32 load_i2c_mcr_reg(struct nmk_i2c_dev *dev, u16 flags)
 {
 	u32 mcr = 0;
+	unsigned short slave_adr_3msb_bits;
 
-	/* 7-bit address transaction */
-	mcr |= GEN_MASK(1, I2C_MCR_AM, 12);
 	mcr |= GEN_MASK(dev->cli.slave_adr, I2C_MCR_A7, 1);
+
+	if (unlikely(flags & I2C_M_TEN)) {
+		/* 10-bit address transaction */
+		mcr |= GEN_MASK(2, I2C_MCR_AM, 12);
+		/* Get the top 3 bits */
+		slave_adr_3msb_bits = (dev->cli.slave_adr >> 7) & 0x7;
+		mcr |= GEN_MASK(slave_adr_3msb_bits, I2C_MCR_EA10, 8);
+	} else {
+		/* 7-bit address transaction */
+		mcr |= GEN_MASK(1, I2C_MCR_AM, 12);
+	}
 
 	/* start byte procedure not applied */
 	mcr |= GEN_MASK(0, I2C_MCR_SB, 11);
@@ -381,19 +392,20 @@ static void setup_i2c_controller(struct nmk_i2c_dev *dev)
 /**
  * read_i2c() - Read from I2C client device
  * @dev: private data of I2C Driver
+ * @flags: message flags
  *
  * This function reads from i2c client device when controller is in
  * master mode. There is a completion timeout. If there is no transfer
  * before timeout error is returned.
  */
-static int read_i2c(struct nmk_i2c_dev *dev)
+static int read_i2c(struct nmk_i2c_dev *dev, u16 flags)
 {
 	u32 status = 0;
 	u32 mcr;
 	u32 irq_mask = 0;
 	int timeout;
 
-	mcr = load_i2c_mcr_reg(dev);
+	mcr = load_i2c_mcr_reg(dev, flags);
 	writel(mcr, dev->virtbase + I2C_MCR);
 
 	/* load the current CR value */
@@ -459,17 +471,18 @@ static void fill_tx_fifo(struct nmk_i2c_dev *dev, int no_bytes)
 /**
  * write_i2c() - Write data to I2C client.
  * @dev: private data of I2C Driver
+ * @flags: message flags
  *
  * This function writes data to I2C client
  */
-static int write_i2c(struct nmk_i2c_dev *dev)
+static int write_i2c(struct nmk_i2c_dev *dev, u16 flags)
 {
 	u32 status = 0;
 	u32 mcr;
 	u32 irq_mask = 0;
 	int timeout;
 
-	mcr = load_i2c_mcr_reg(dev);
+	mcr = load_i2c_mcr_reg(dev, flags);
 
 	writel(mcr, dev->virtbase + I2C_MCR);
 
@@ -538,11 +551,11 @@ static int nmk_i2c_xfer_one(struct nmk_i2c_dev *dev, u16 flags)
 	if (flags & I2C_M_RD) {
 		/* read operation */
 		dev->cli.operation = I2C_READ;
-		status = read_i2c(dev);
+		status = read_i2c(dev, flags);
 	} else {
 		/* write operation */
 		dev->cli.operation = I2C_WRITE;
-		status = write_i2c(dev);
+		status = write_i2c(dev, flags);
 	}
 
 	if (status || (dev->result)) {
@@ -640,13 +653,6 @@ static int nmk_i2c_xfer(struct i2c_adapter *i2c_adap,
 		setup_i2c_controller(dev);
 
 		for (i = 0; i < num_msgs; i++) {
-			if (unlikely(msgs[i].flags & I2C_M_TEN)) {
-				dev_err(&dev->pdev->dev,
-					"10 bit addressing not supported\n");
-
-				status = -EINVAL;
-				goto out;
-			}
 			dev->cli.slave_adr	= msgs[i].addr;
 			dev->cli.buffer		= msgs[i].buf;
 			dev->cli.count		= msgs[i].len;
@@ -677,7 +683,7 @@ out:
 /**
  * disable_interrupts() - disable the interrupts
  * @dev: private data of controller
- * @irq: interrupt number
+ * @irq: interrupt number.
  */
 static int disable_interrupts(struct nmk_i2c_dev *dev, u32 irq)
 {
@@ -915,13 +921,26 @@ static const struct dev_pm_ops nmk_i2c_pm = {
 
 static unsigned int nmk_i2c_functionality(struct i2c_adapter *adap)
 {
-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL | I2C_FUNC_10BIT_ADDR;
 }
 
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+static struct i2c_algorithm nmk_i2c_algo = {
+#else
 static const struct i2c_algorithm nmk_i2c_algo = {
+#endif //CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
 	.master_xfer	= nmk_i2c_xfer,
 	.functionality	= nmk_i2c_functionality
 };
+
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+void i2c_remap_fp(struct i2c_algorithm *fp)
+{
+	nmk_i2c_algo.master_xfer = NULL;
+	nmk_i2c_algo.master_panic_xfer = fp->master_panic_xfer;
+	nmk_i2c_algo.functionality = fp->functionality;
+}
+#endif
 
 static int __devinit nmk_i2c_probe(struct platform_device *pdev)
 {
@@ -949,7 +968,7 @@ static int __devinit nmk_i2c_probe(struct platform_device *pdev)
 	}
 
 	if (request_mem_region(res->start, resource_size(res),
-		DRIVER_NAME "I/O region") == NULL) {
+		DRIVER_NAME "I/O region") == NULL)	{
 		ret = -EBUSY;
 		goto err_no_region;
 	}
@@ -961,7 +980,7 @@ static int __devinit nmk_i2c_probe(struct platform_device *pdev)
 	}
 
 	dev->irq = platform_get_irq(pdev, 0);
-	ret = request_irq(dev->irq, i2c_irq_handler, 0,
+	ret = request_irq(dev->irq, i2c_irq_handler, IRQF_DISABLED,
 				DRIVER_NAME, dev);
 	if (ret) {
 		dev_err(&pdev->dev, "cannot claim the irq %d\n", dev->irq);
