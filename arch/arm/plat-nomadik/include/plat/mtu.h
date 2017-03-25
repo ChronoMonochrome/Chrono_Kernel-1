@@ -1,7 +1,9 @@
 #ifndef __PLAT_MTU_H
 #define __PLAT_MTU_H
 
-void nmdk_timer_init(void __iomem *base);
+/* should be set by the platform code */
+extern void __iomem *mtu_base;
+
 void nmdk_clkevt_reset(void);
 void nmdk_clksrc_reset(void);
 
