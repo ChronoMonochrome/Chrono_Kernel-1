@@ -11,7 +11,6 @@
  * by the Free Software Foundation.
  */
 
-#include <linux/module.h>
 #include <linux/delay.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/mfd/abx500/ab5500-gpadc.h>

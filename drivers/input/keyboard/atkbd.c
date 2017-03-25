@@ -1305,7 +1305,7 @@ static ssize_t atkbd_show_extra(struct atkbd *atkbd, char *buf)
 static ssize_t atkbd_set_extra(struct atkbd *atkbd, const char *buf, size_t count)
 {
 	struct input_dev *old_dev, *new_dev;
-	unsigned int value;
+	unsigned long value;
 	int err;
 	bool old_extra;
 	unsigned char old_set;
@@ -1313,11 +1313,7 @@ static ssize_t atkbd_set_extra(struct atkbd *atkbd, const char *buf, size_t coun
 	if (!atkbd->write)
 		return -EIO;
 
-	err = kstrtouint(buf, 10, &value);
-	if (err)
-		return err;
-
-	if (value > 1)
+	if (strict_strtoul(buf, 10, &value) || value > 1)
 		return -EINVAL;
 
 	if (atkbd->extra != value) {
@@ -1393,15 +1389,11 @@ static ssize_t atkbd_show_scroll(struct atkbd *atkbd, char *buf)
 static ssize_t atkbd_set_scroll(struct atkbd *atkbd, const char *buf, size_t count)
 {
 	struct input_dev *old_dev, *new_dev;
-	unsigned int value;
+	unsigned long value;
 	int err;
 	bool old_scroll;
 
-	err = kstrtouint(buf, 10, &value);
-	if (err)
-		return err;
-
-	if (value > 1)
+	if (strict_strtoul(buf, 10, &value) || value > 1)
 		return -EINVAL;
 
 	if (atkbd->scroll != value) {
@@ -1441,7 +1433,7 @@ static ssize_t atkbd_show_set(struct atkbd *atkbd, char *buf)
 static ssize_t atkbd_set_set(struct atkbd *atkbd, const char *buf, size_t count)
 {
 	struct input_dev *old_dev, *new_dev;
-	unsigned int value;
+	unsigned long value;
 	int err;
 	unsigned char old_set;
 	bool old_extra;
@@ -1449,11 +1441,7 @@ static ssize_t atkbd_set_set(struct atkbd *atkbd, const char *buf, size_t count)
 	if (!atkbd->write)
 		return -EIO;
 
-	err = kstrtouint(buf, 10, &value);
-	if (err)
-		return err;
-
-	if (value != 2 && value != 3)
+	if (strict_strtoul(buf, 10, &value) || (value != 2 && value != 3))
 		return -EINVAL;
 
 	if (atkbd->set != value) {
@@ -1496,18 +1484,14 @@ static ssize_t atkbd_show_softrepeat(struct atkbd *atkbd, char *buf)
 static ssize_t atkbd_set_softrepeat(struct atkbd *atkbd, const char *buf, size_t count)
 {
 	struct input_dev *old_dev, *new_dev;
-	unsigned int value;
+	unsigned long value;
 	int err;
 	bool old_softrepeat, old_softraw;
 
 	if (!atkbd->write)
 		return -EIO;
 
-	err = kstrtouint(buf, 10, &value);
-	if (err)
-		return err;
-
-	if (value > 1)
+	if (strict_strtoul(buf, 10, &value) || value > 1)
 		return -EINVAL;
 
 	if (atkbd->softrepeat != value) {
@@ -1550,15 +1534,11 @@ static ssize_t atkbd_show_softraw(struct atkbd *atkbd, char *buf)
 static ssize_t atkbd_set_softraw(struct atkbd *atkbd, const char *buf, size_t count)
 {
 	struct input_dev *old_dev, *new_dev;
-	unsigned int value;
+	unsigned long value;
 	int err;
 	bool old_softraw;
 
-	err = kstrtouint(buf, 10, &value);
-	if (err)
-		return err;
-
-	if (value > 1)
+	if (strict_strtoul(buf, 10, &value) || value > 1)
 		return -EINVAL;
 
 	if (atkbd->softraw != value) {
@@ -1598,14 +1578,14 @@ static int __init atkbd_setup_forced_release(const struct dmi_system_id *id)
 	atkbd_platform_fixup = atkbd_apply_forced_release_keylist;
 	atkbd_platform_fixup_data = id->driver_data;
 
-	return 1;
+	return 0;
 }
 
 static int __init atkbd_setup_scancode_fixup(const struct dmi_system_id *id)
 {
 	atkbd_platform_scancode_fixup = id->driver_data;
 
-	return 1;
+	return 0;
 }
 
 static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
