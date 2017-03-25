@@ -11,7 +11,6 @@
 
 #include <linux/kernel.h>
 #include <linux/limits.h>
-#include <linux/module.h>
 #include <linux/skbuff.h>
 #include <linux/types.h>
 
@@ -91,7 +90,8 @@ EXPORT_SYMBOL_GPL(cg2900_tx_no_user);
  */
 void cg2900_send_bt_cmd(struct cg2900_user_data *user,
 			struct cg2900_user_data *logger,
-			void *data, int length)
+			void *data, int length,
+			u8 h4_channel)
 {
 	struct sk_buff *skb;
 
@@ -104,7 +104,7 @@ void cg2900_send_bt_cmd(struct cg2900_user_data *user,
 
 	memcpy(skb_put(skb, length), data, length);
 	skb_push(skb, HCI_H4_SIZE);
-	skb->data[0] = HCI_BT_CMD_H4_CHANNEL;
+	skb->data[0] = h4_channel;
 
 	cg2900_tx_to_chip(user, logger, skb);
 }
@@ -191,7 +191,9 @@ EXPORT_SYMBOL_GPL(cg2900_create_work_item);
  */
 int cg2900_read_and_send_file_part(struct cg2900_user_data *user,
 				   struct cg2900_user_data *logger,
-				   struct cg2900_file_info *info)
+				   struct cg2900_file_info *info,
+				   const struct firmware *fw_file,
+					u8 h4_channel)
 {
 	int bytes_to_copy;
 	struct sk_buff *skb;
@@ -203,7 +205,7 @@ int cg2900_read_and_send_file_part(struct cg2900_user_data *user,
 	 * either max bytes for HCI packet or number of bytes left in file
 	 */
 	bytes_to_copy = min((int)HCI_BT_SEND_FILE_MAX_CHUNK_SIZE,
-			    (int)(info->fw_file->size - info->file_offset));
+			    (int)(fw_file->size - info->file_offset));
 
 	if (bytes_to_copy <= 0) {
 		/* Nothing more to read in file. */
@@ -231,14 +233,14 @@ int cg2900_read_and_send_file_part(struct cg2900_user_data *user,
 
 	/* Copy the data from offset position */
 	memcpy(cmd->data,
-	       &(info->fw_file->data[info->file_offset]),
+	       &(fw_file->data[info->file_offset]),
 	       bytes_to_copy);
 
 	/* Increase offset with number of bytes copied */
 	info->file_offset += bytes_to_copy;
 
 	skb_push(skb, CG2900_SKB_RESERVE);
-	skb->data[0] = HCI_BT_CMD_H4_CHANNEL;
+	skb->data[0] = h4_channel;
 
 	cg2900_tx_to_chip(user, logger, skb);
 
@@ -259,8 +261,8 @@ void cg2900_send_to_hci_logger(struct cg2900_user_data *logger,
 	 */
 	skb_log = alloc_skb(skb->len + LOGGER_HEADER_SIZE, GFP_NOWAIT);
 	if (!skb_log) {
-		pr_err("cg2900_send_to_hci_logger:\
-				 Couldn't allocate skb_log\n");
+		pr_err("cg2900_send_to_hci_logger:"
+				"Couldn't allocate skb_log\n");
 		return;
 	}
 	/* Reserve 1 byte for direction.*/

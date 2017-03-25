@@ -28,22 +28,13 @@ void cw1200_bss_info_changed(struct ieee80211_hw *dev,
 int cw1200_ampdu_action(struct ieee80211_hw *hw,
 			struct ieee80211_vif *vif,
 			enum ieee80211_ampdu_mlme_action action,
-			struct ieee80211_sta *sta, u16 tid, u16 *ssn,
-			u8 buf_size);
+			struct ieee80211_sta *sta, u16 tid, u16 *ssn);
 
 void cw1200_suspend_resume(struct cw1200_common *priv,
 			  struct wsm_suspend_resume *arg);
 void cw1200_set_tim_work(struct work_struct *work);
-void cw1200_set_cts_work(struct work_struct *work);
 void cw1200_multicast_start_work(struct work_struct *work);
 void cw1200_multicast_stop_work(struct work_struct *work);
-void cw1200_mcast_timeout(unsigned long arg);
-int cw1200_find_link_id(struct cw1200_common *priv, const u8 *mac);
-int cw1200_alloc_link_id(struct cw1200_common *priv, const u8 *mac);
-void cw1200_link_id_work(struct work_struct *work);
-void cw1200_link_id_gc_work(struct work_struct *work);
-#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
-void cw1200_notify_noa(struct cw1200_common *priv, int delay);
-#endif
+
 
 #endif

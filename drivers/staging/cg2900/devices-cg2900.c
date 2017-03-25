@@ -29,6 +29,7 @@
 #include <linux/skbuff.h>
 #include <linux/string.h>
 #include <linux/types.h>
+#include <linux/mfd/ab8500.h>
 #include <linux/regulator/consumer.h>
 #include <mach/id.h>
 #include <plat/pincfg.h>
@@ -200,7 +201,6 @@ err_handling_free_gpios:
 		gpio_free(info->pmuen_gpio);
 	if (info->gbf_gpio != -1)
 		gpio_free(info->gbf_gpio);
- 
 err_handling:
 	kfree(info);
 	return err;
@@ -277,7 +277,6 @@ void dcg2900_init_platdata(struct cg2900_platform_data *data)
 {
 	data->init = dcg2900_init;
 	data->exit = dcg2900_exit;
-
 	if (cpu_is_u5500()) {
 		data->enable_chip = dcg2900_u5500_enable_chip;
 		data->disable_chip = dcg2900_u5500_disable_chip;
