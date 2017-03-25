@@ -182,6 +182,11 @@ static int trace_probe(struct platform_device *pdev)
 	/* retrieve area descriptor from platform device ressource */
 	struct resource *mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
+	if(pdata == NULL || mem == NULL){
+		rv = -EINVAL;
+		goto out;
+	}
+
 	if ((mem->start == 0) && (mem->end == 0)) {
 		rv = -EINVAL;
 		goto out;

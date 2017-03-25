@@ -185,8 +185,6 @@ static int pin(struct hwmem_file *hwfile, struct hwmem_pin_request *req)
 		return PTR_ERR(alloc);
 
 	hwmem_get_info(alloc, NULL, &mem_type, NULL);
-	if (mem_type != HWMEM_MEM_CONTIGUOUS_SYS)
-		return -EINVAL;
 
 	ret = hwmem_pin(alloc, &mem_chunk, &mem_chunk_length);
 	if (ret < 0)
@@ -505,7 +503,7 @@ static unsigned long hwmem_get_unmapped_area(struct file *file,
 	return current->mm->get_unmapped_area(NULL, addr, len, 0, flags);
 }
 
-int __init hwmem_ioctl_init(void)
+int __devinit hwmem_ioctl_init(void)
 {
 	if (PAGE_SHIFT < 1 || PAGE_SHIFT > 30 || sizeof(size_t) != 4 ||
 		sizeof(int) > 4 || sizeof(enum hwmem_alloc_flags) != 4 ||

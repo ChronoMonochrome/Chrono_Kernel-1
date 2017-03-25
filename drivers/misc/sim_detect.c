@@ -92,7 +92,7 @@ static ssize_t write_voltage(struct device *dev, struct device_attribute *attr,
 		/* SIM voltage is unknown, turn on regulator for 3 V SIM */
 	case 3000000:
 		/* Vinvsim supply is used only for 3 V SIM */
-		if (!sim_detect->regulator_enabled) {
+		if (!sim_detect->regulator_enabled && sim_detect->vinvsim_regulator) {
 			ret = regulator_enable(sim_detect->vinvsim_regulator);
 			if (ret) {
 				dev_err(dev, "Failed to enable regulator.\n");
@@ -104,7 +104,7 @@ static ssize_t write_voltage(struct device *dev, struct device_attribute *attr,
 	case 1800000:
 	case -1:
 		/* Vbatvsim is used otherwise */
-		if (sim_detect->regulator_enabled) {
+		if (sim_detect->regulator_enabled && sim_detect->vinvsim_regulator) {
 			regulator_disable(sim_detect->vinvsim_regulator);
 			sim_detect->regulator_enabled = false;
 		}
@@ -117,7 +117,7 @@ out_unlock:
 	return count;
 }
 
-static DEVICE_ATTR(voltage, S_IWUGO | S_IRUGO, show_voltage, write_voltage);
+static DEVICE_ATTR(voltage, S_IWUSR | S_IRUGO, show_voltage, write_voltage);
 
 static struct attribute *sim_attributes[] = {
 	&dev_attr_voltage.attr,
@@ -236,10 +236,9 @@ static int __devinit sim_detect_probe(struct platform_device *pdev)
 							 "vinvsim");
 	if (IS_ERR(sim_detect->vinvsim_regulator)) {
 		dev_err(&pdev->dev,
-			"Failed to get regulator. (dev_name %s).\n",
+			"Failed to get vinvsim regulator, continuing without it (dev_name %s).\n",
 			dev_name(sim_detect->dev));
-		ret = PTR_ERR(sim_detect->vinvsim_regulator);
-		goto out_free_irq;
+		sim_detect->vinvsim_regulator = NULL;
 	}
 
 	/* register sysfs entry */
@@ -253,7 +252,8 @@ static int __devinit sim_detect_probe(struct platform_device *pdev)
 	return 0;
 
 out_free_regulator:
-	regulator_put(sim_detect->vinvsim_regulator);
+	if (sim_detect->vinvsim_regulator)
+		regulator_put(sim_detect->vinvsim_regulator);
 out_free_irq:
 	free_irq(plat->irq_num, sim_detect);
 out_put_modem:
@@ -269,7 +269,8 @@ static int __devexit sim_detect_remove(struct platform_device *pdev)
 	struct sim_detect *sim_detect = platform_get_drvdata(pdev);
 
 	sysfs_remove_group(&pdev->dev.kobj, &sim_attr_group);
-	regulator_put(sim_detect->vinvsim_regulator);
+	if (sim_detect->vinvsim_regulator)
+		regulator_put(sim_detect->vinvsim_regulator);
 	modem_put(sim_detect->modem);
 	platform_set_drvdata(pdev, NULL);
 	kfree(sim_detect);

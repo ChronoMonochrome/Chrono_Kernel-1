@@ -41,8 +41,8 @@
 #include <linux/completion.h>
 #include <linux/workqueue.h>
 #include <linux/hrtimer.h>
-#include <linux/mfd/dbx500-prcmu.h>
 #include <linux/mfd/db5500-prcmu.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <mach/mbox-db5500.h>
 #include <mach/reboot_reasons.h>
 

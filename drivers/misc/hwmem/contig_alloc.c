@@ -18,6 +18,7 @@
 #include <linux/uaccess.h>
 #include <linux/module.h>
 #include <linux/vmalloc.h>
+#include <linux/pasr.h>
 #include <asm/sizes.h>
 
 #define MAX_INSTANCE_NAME_LENGTH 31
@@ -78,7 +79,10 @@ void *cona_create(const char *name, phys_addr_t region_paddr,
 {
 	int ret;
 	struct instance *instance;
-	struct vm_struct *vm_area;
+	struct vm_struct *vm_area = NULL;
+#ifdef CONFIG_FLATMEM
+	phys_addr_t region_end = region_paddr + region_size;
+#endif
 
 	if (region_size == 0)
 		return ERR_PTR(-EINVAL);
@@ -93,14 +97,42 @@ void *cona_create(const char *name, phys_addr_t region_paddr,
 	instance->region_paddr = region_paddr;
 	instance->region_size = region_size;
 
-	vm_area = get_vm_area(region_size, VM_IOREMAP);
-	if (vm_area == NULL) {
-		printk(KERN_WARNING "CONA: Failed to allocate %u bytes"
-					" kernel virtual memory", region_size);
-		ret = -ENOMSG;
-		goto vmem_alloc_failed;
+#ifdef CONFIG_FLATMEM
+	/*
+	 * Map hwmem physical memory to the holes in the kernel LOMEM virtual
+	 * address if LOMEM region is enough to contain the whole HWMEM.
+	 * otherwise map hwmem to VMALLOC region.
+	 */
+	if (region_end > region_paddr
+	    && region_end < virt_to_phys(high_memory)) {
+		instance->region_kaddr = phys_to_virt(region_paddr);
+		pr_info("hwmem: %s map to LOMEM, start: 0x%p, end: 0x%p\n",
+			name,
+			phys_to_virt(region_paddr),
+			phys_to_virt(region_paddr+region_size));
 	}
-	instance->region_kaddr = vm_area->addr;
+#endif
+
+	if (!instance->region_kaddr) {
+		vm_area = get_vm_area(region_size, VM_IOREMAP);
+		if (vm_area == NULL) {
+			pr_err("CONA: Failed to allocate %u bytes kernel virtual memory",
+			       region_size);
+			ret = -ENOMSG;
+			goto vmem_alloc_failed;
+		}
+
+		instance->region_kaddr = vm_area->addr;
+		pr_info("hwmem: %s map to VMALLOC, address: 0x%p\n",
+			name,
+			instance->region_kaddr);
+	}
+
+	/*
+	 * This newly created memory area is unsused.
+	 * Notify the PASR framework it does not need to be refreshed.
+	 */
+	pasr_put(instance->region_paddr, instance->region_size);
 
 	INIT_LIST_HEAD(&instance->alloc_list);
 	ret = init_alloc_list(instance);
@@ -114,10 +146,11 @@ void *cona_create(const char *name, phys_addr_t region_paddr,
 	return instance;
 
 init_alloc_list_failed:
-	vm_area = remove_vm_area(instance->region_kaddr);
-	if (vm_area == NULL)
-		printk(KERN_ERR "CONA: Failed to free kernel virtual memory,"
-							" resource leak!\n");
+	if (vm_area) {
+		vm_area = remove_vm_area(instance->region_kaddr);
+		if (vm_area == NULL)
+			pr_err("CONA: Failed to free kernel virtual memory, resource leak!\n");
+	}
 
 	kfree(vm_area);
 vmem_alloc_failed:
@@ -146,6 +179,9 @@ void *cona_alloc(void *instance, size_t size)
 	} else {
 		alloc->in_use = true;
 	}
+
+	pasr_get(alloc->paddr, alloc->size);
+
 #ifdef CONFIG_DEBUG_FS
 	instance_l->cona_status_max_cont += alloc->size;
 	instance_l->cona_status_max_check =
@@ -168,6 +204,8 @@ void cona_free(void *instance, void *alloc)
 	mutex_lock(&lock);
 
 	alloc_l->in_use = false;
+
+	pasr_put(alloc_l->paddr, alloc_l->size);
 
 #ifdef CONFIG_DEBUG_FS
 	instance_l->cona_status_max_cont -= alloc_l->size;

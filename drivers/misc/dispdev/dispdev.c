@@ -168,8 +168,7 @@ static enum mcde_ovly_pix_fmt get_ovly_fmt(enum dispdev_fmt fmt)
 }
 
 static void get_ovly_info(struct dispdev_config *cfg,
-				struct mcde_video_mode *vmode,
-				struct mcde_overlay_info *info, bool overlay)
+				struct mcde_overlay_info *info)
 {
 	info->paddr = 0;
 	info->stride = cfg->stride;
@@ -181,10 +180,7 @@ static void get_ovly_info(struct dispdev_config *cfg,
 	info->dst_z = cfg->z;
 	info->w = cfg->width;
 	info->h = cfg->height;
-	info->dirty.x = 0;
-	info->dirty.y = 0;
-	info->dirty.w = vmode->xres;
-	info->dirty.h = vmode->yres;
+
 }
 
 static int dispdev_set_config(struct dispdev *dd, struct dispdev_config *cfg)
@@ -210,11 +206,9 @@ static int dispdev_set_config(struct dispdev *dd, struct dispdev_config *cfg)
 			if (buf_index >= 0) {
 				struct mcde_overlay_info info;
 				struct dispdev_buffer *buf;
-				struct mcde_video_mode vmode;
 
 				buf = &dd->buffers[buf_index];
-				mcde_dss_get_video_mode(dd->ddev, &vmode);
-				get_ovly_info(cfg, &vmode, &info, dd->overlay);
+				get_ovly_info(cfg, &info);
 				info.paddr = buf->paddr;
 				ret = mcde_dss_apply_overlay(dd->ovly, &info);
 				if (!ret)
@@ -251,7 +245,7 @@ static int dispdev_register_buffer(struct dispdev *dd, s32 hwmem_name)
 	hwmem_get_info(buf->alloc, &buf->size, &memtype, &access);
 
 	if (!(access & HWMEM_ACCESS_READ) ||
-					memtype != HWMEM_MEM_CONTIGUOUS_SYS) {
+					memtype == HWMEM_MEM_SCATTERED_SYS) {
 		ret = -EACCES;
 		goto invalid_mem;
 	}
@@ -281,10 +275,9 @@ static int dispdev_unregister_buffer(struct dispdev *dd, u32 buf_idx)
 	if (buf->state == BUF_ACTIVATED) {
 		/* Disable the overlay */
 		struct mcde_overlay_info info;
-		struct mcde_video_mode vmode;
+
 		/* TODO Wait for frame done */
-		mcde_dss_get_video_mode(dd->ddev, &vmode);
-		get_ovly_info(&dd->config, &vmode, &info, dd->overlay);
+		get_ovly_info(&dd->config, &info);
 		mcde_dss_apply_overlay(dd->ovly, &info);
 		mcde_dss_update_overlay(dd->ovly, false);
 		hwmem_unpin(dd->buffers[buf_idx].alloc);
@@ -347,7 +340,6 @@ static int dispdev_queue_buffer(struct dispdev *dd,
 	size_t mem_chunk_length = 1;
 	struct hwmem_region rgn = { .offset = 0, .count = 1, .start = 0 };
 	struct hwmem_alloc *alloc;
-	struct mcde_video_mode vmode;
 	u32 buf_idx = buffer->buf_idx;
 
 	if (buf_idx >= ARRAY_SIZE(dd->buffers) ||
@@ -355,8 +347,7 @@ static int dispdev_queue_buffer(struct dispdev *dd,
 		return -EINVAL;
 
 	alloc = dd->buffers[buf_idx].alloc;
-	mcde_dss_get_video_mode(dd->ddev, &vmode);
-	get_ovly_info(&dd->config, &vmode, &info, dd->overlay);
+	get_ovly_info(&dd->config, &info);
 	ret = hwmem_pin(alloc, &mem_chunk, &mem_chunk_length);
 	if (ret) {
 		dev_warn(dd->mdev.this_device, "Pin failed, %d\n", ret);
@@ -402,8 +393,8 @@ static int dispdev_queue_buffer(struct dispdev *dd,
 		if (dd->ddev->check_transparency == 0) {
 			if (is_transparent(info.w, info.h, info.vaddr)) {
 				mcde_dss_disable_overlay(dd->parent_ovly);
-				printk(KERN_INFO "%s Disable overlay\n",
-								__func__);
+				dev_info(dd->mdev.this_device,
+						"Disable overlay\n");
 			}
 		}
 	}
@@ -494,24 +485,12 @@ static const struct file_operations dispdev_fops = {
 static void init_dispdev(struct dispdev *dd, struct mcde_display_device *ddev,
 						const char *name, bool overlay)
 {
-	u16 w, h;
-	int rotation;
-
 	mutex_init(&dd->lock);
 	INIT_LIST_HEAD(&dd->list);
 	dd->ddev = ddev;
 	dd->overlay = overlay;
-	mcde_dss_get_native_resolution(ddev, &w, &h);
-	rotation = mcde_dss_get_rotation(ddev);
-
-	if ((rotation == MCDE_DISPLAY_ROT_90_CCW) ||
-			(rotation == MCDE_DISPLAY_ROT_90_CW)) {
-		dd->config.width = h;
-		dd->config.height = w;
-	} else {
-		dd->config.width  = w;
-		dd->config.height = h;
-	}
+	mcde_dss_get_native_resolution(ddev,
+			&dd->config.width, &dd->config.height);
 	dd->config.format = DISPDEV_FMT_RGB565;
 	dd->config.stride = sizeof(u16) * w;
 	dd->config.x = 0;
@@ -533,7 +512,6 @@ int dispdev_create(struct mcde_display_device *ddev, bool overlay,
 {
 	int ret = 0;
 	struct dispdev *dd;
-	struct mcde_video_mode vmode;
 	struct mcde_overlay_info info = {0};
 
 	static int counter;
@@ -546,20 +524,19 @@ int dispdev_create(struct mcde_display_device *ddev, bool overlay,
 		 DISPDEV_DEFAULT_DEVICE_PREFIX, counter++);
 	init_dispdev(dd, ddev, dd->name, overlay);
 
+	get_ovly_info(&dd->config, &info);
+
 	if (!overlay) {
 		ret = mcde_dss_enable_display(ddev);
 		if (ret)
 			goto fail_enable_display;
-		mcde_dss_get_video_mode(ddev, &vmode);
-		mcde_dss_try_video_mode(ddev, &vmode);
-		ret = mcde_dss_set_video_mode(ddev, &vmode);
+		ret = mcde_dss_set_pixel_format(ddev, info.fmt);
 		if (ret)
-			goto fail_set_video_mode;
-		mcde_dss_set_pixel_format(ddev, info.fmt);
-		mcde_dss_apply_channel(ddev);
-	} else
-		mcde_dss_get_video_mode(ddev, &vmode);
-	get_ovly_info(&dd->config, &vmode, &info, overlay);
+			goto fail_enable_display;
+		ret = mcde_dss_apply_channel(ddev);
+		if (ret)
+			goto fail_enable_display;
+	}
 
 	/* Save the MCDE FB overlay */
 	dd->parent_ovly = parent_ovly;
