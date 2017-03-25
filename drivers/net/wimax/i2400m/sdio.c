@@ -55,7 +55,6 @@
 #include <linux/mmc/sdio_func.h>
 #include "i2400m-sdio.h"
 #include <linux/wimax/i2400m.h>
-#include <linux/module.h>
 
 #define D_SUBMODULE main
 #include "sdio-debug-levels.h"

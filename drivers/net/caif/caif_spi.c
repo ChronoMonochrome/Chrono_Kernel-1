@@ -5,6 +5,7 @@
  * License terms: GNU General Public License (GPL) version 2.
  */
 
+#include <linux/version.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
@@ -35,7 +36,7 @@ MODULE_DESCRIPTION("CAIF SPI driver");
 /* Returns the number of padding bytes for alignment. */
 #define PAD_POW2(x, pow) ((((x)&((pow)-1))==0) ? 0 : (((pow)-((x)&((pow)-1)))))
 
-static bool spi_loop;
+static int spi_loop;
 module_param(spi_loop, bool, S_IRUGO);
 MODULE_PARM_DESC(spi_loop, "SPI running in loopback mode.");
 
@@ -125,6 +126,12 @@ static inline void dev_debugfs_rem(struct cfspi *cfspi)
 	debugfs_remove(cfspi->dbgfs_frame);
 	debugfs_remove(cfspi->dbgfs_state);
 	debugfs_remove(cfspi->dbgfs_dir);
+}
+
+static int dbgfs_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
 }
 
 static ssize_t dbgfs_state(struct file *file, char __user *user_buf,
@@ -237,13 +244,13 @@ static ssize_t dbgfs_frame(struct file *file, char __user *user_buf,
 }
 
 static const struct file_operations dbgfs_state_fops = {
-	.open = simple_open,
+	.open = dbgfs_open,
 	.read = dbgfs_state,
 	.owner = THIS_MODULE
 };
 
 static const struct file_operations dbgfs_frame_fops = {
-	.open = simple_open,
+	.open = dbgfs_open,
 	.read = dbgfs_frame,
 	.owner = THIS_MODULE
 };
@@ -614,8 +621,8 @@ static int cfspi_init(struct net_device *dev)
 	}
 
 	/* Allocate DMA buffers. */
-	cfspi->xfer.va_tx[0] = dma_alloc(&cfspi->xfer.pa_tx[0]);
-	if (!cfspi->xfer.va_tx[0]) {
+	cfspi->xfer.va_tx = dma_alloc(&cfspi->xfer.pa_tx);
+	if (!cfspi->xfer.va_tx) {
 		res = -ENODEV;
 		goto err_dma_alloc_tx_0;
 	}
