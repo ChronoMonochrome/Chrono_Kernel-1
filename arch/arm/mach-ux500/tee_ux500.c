@@ -47,10 +47,9 @@ static u32 call_sec_rom_bridge(u32 service_id, u32 cfg, ...)
 int call_sec_world(struct tee_session *ts, int sec_cmd)
 {
 	/*
-	 * ts->ta and ts->uuid is set to NULL when opening the device,
-	 * hence it should be safe to just do the call here.
+	 * ts->ta and ts->uuid is set to NULL when opening the device, hence it
+	 * should be safe to just do the call here.
 	 */
-
 	switch (sec_cmd) {
 	case TEED_INVOKE:
 	if (!ts->uuid) {
@@ -58,7 +57,7 @@ int call_sec_world(struct tee_session *ts, int sec_cmd)
 				SEC_ROM_NO_FLAG_MASK,
 				virt_to_phys(&ts->id),
 				NULL,
-				virt_to_phys(ts->ta),
+				((struct ta_addr *)ts->ta)->paddr,
 				ts->cmd,
 				virt_to_phys((void *)(ts->op)),
 				virt_to_phys((void *)(&ts->err)),
@@ -68,7 +67,7 @@ int call_sec_world(struct tee_session *ts, int sec_cmd)
 				SEC_ROM_NO_FLAG_MASK,
 				virt_to_phys(&ts->id),
 				virt_to_phys(ts->uuid),
-				virt_to_phys(ts->ta),
+				NULL,
 				ts->cmd,
 				virt_to_phys((void *)(ts->op)),
 				virt_to_phys((void *)(&ts->err)),
@@ -77,20 +76,19 @@ int call_sec_world(struct tee_session *ts, int sec_cmd)
 	break;
 
 	case TEED_CLOSE_SESSION:
-		call_sec_rom_bridge(ISSWAPI_CLOSE_TA,
-				SEC_ROM_NO_FLAG_MASK,
-				ts->id,
-				NULL,
-				virt_to_phys(ts->ta),
-				virt_to_phys((void *)(&ts->err)));
+	call_sec_rom_bridge(ISSWAPI_CLOSE_TA,
+			    SEC_ROM_NO_FLAG_MASK,
+			    ts->id,
+			    NULL,
+			    NULL,
+			    virt_to_phys((void *)(&ts->err)));
 
-		/* Since the TEE Client API does NOT take care of
-		 * the return value, we print a warning here if
-		 * something went wrong in secure world.
-		 */
-		if (ts->err != TEED_SUCCESS)
-				pr_warning("[%s] failed in secure world\n",
-							__func__);
+	/*
+	 * Since the TEE Client API does NOT take care of the return value, we
+	 * print a warning here if something went wrong in secure world.
+	 */
+	if (ts->err != TEED_SUCCESS)
+		pr_warning("[%s] failed in secure world\n", __func__);
 
 	break;
 	}

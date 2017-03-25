@@ -11,9 +11,8 @@
  */
 
 #include <linux/power_supply.h>
-#include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab8500-bm.h>
-#include <linux/mfd/ab8500/pwmleds.h>
+#include <linux/mfd/abx500/ab8500-pwmleds.h>
 #include "board-mop500-bm.h"
 
 #ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
@@ -23,7 +22,7 @@
  * Note that the res_to_temp table must be strictly sorted by falling resistance
  * values to work.
  */
-static struct abx500_res_to_temp temp_tbl_A[] = {
+static struct res_to_temp temp_tbl_A[] = {
 	{-5, 53407},
 	{ 0, 48594},
 	{ 5, 43804},
@@ -40,7 +39,7 @@ static struct abx500_res_to_temp temp_tbl_A[] = {
 	{60, 13437},
 	{65, 12500},
 };
-static struct abx500_res_to_temp temp_tbl_B[] = {
+static struct res_to_temp temp_tbl_B[] = {
 	{-5, 165418},
 	{ 0, 159024},
 	{ 5, 151921},
@@ -57,7 +56,7 @@ static struct abx500_res_to_temp temp_tbl_B[] = {
 	{60,  85461},
 	{65,  82869},
 };
-static struct abx500_v_to_cap cap_tbl_A[] = {
+static struct v_to_cap cap_tbl_A[] = {
 	{4171,	100},
 	{4114,	 95},
 	{4009,	 83},
@@ -79,7 +78,7 @@ static struct abx500_v_to_cap cap_tbl_A[] = {
 	{3408,    1},
 	{3247,	  0},
 };
-static struct abx500_v_to_cap cap_tbl_B[] = {
+static struct v_to_cap cap_tbl_B[] = {
 	{4161,	100},
 	{4124,	 98},
 	{4044,	 90},
@@ -102,7 +101,7 @@ static struct abx500_v_to_cap cap_tbl_B[] = {
 	{3250,	  0},
 };
 #endif
-static struct abx500_v_to_cap cap_tbl[] = {
+static struct v_to_cap cap_tbl[] = {
 	{4186,	100},
 	{4163,	 99},
 	{4114,	 95},
@@ -133,7 +132,7 @@ static struct abx500_v_to_cap cap_tbl[] = {
  * Note that the res_to_temp table must be strictly sorted by falling
  * resistance values to work.
  */
-static struct abx500_res_to_temp temp_tbl[] = {
+static struct res_to_temp temp_tbl[] = {
 	{-5, 214834},
 	{ 0, 162943},
 	{ 5, 124820},
@@ -170,57 +169,37 @@ static struct batres_vs_temp temp_to_batres_tbl[] = {
  * Note that the batres_vs_temp table must be strictly sorted by falling
  * temperature values to work.
  */
-#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
-#define BATRES 		180
-#else
-#define BATRES 		300
-#endif
 static struct batres_vs_temp temp_to_batres_tbl[] = {
-	{ 60, BATRES},
-	{ 30, BATRES},
-	{ 20, BATRES},
-	{ 10, BATRES},
-	{ 00, BATRES},
-	{-10, BATRES},
-	{-20, BATRES},
+	{ 60, 300},
+	{ 30, 300},
+	{ 20, 300},
+	{ 10, 300},
+	{ 00, 300},
+	{-10, 300},
+	{-20, 300},
 };
 #endif
-static const struct abx500_battery_type bat_type[] = {
+static const struct battery_type bat_type[] = {
 	[BATTERY_UNKNOWN] = {
 		/* First element always represent the UNKNOWN battery */
 		.name = POWER_SUPPLY_TECHNOLOGY_UNKNOWN,
 		.resis_high = 0,
 		.resis_low = 0,
-		.battery_resistance = 300,
-#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
-		.charge_full_design = 2600,
-#else
 		.charge_full_design = 612,
-#endif
 		.nominal_voltage = 3700,
-#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
-		.termination_vol = 4150,
-#else
 		.termination_vol = 4050,
-#endif
 		.termination_curr = 200,
-#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
-		.recharge_vol = 4130,
-		.normal_cur_lvl = 520,
+		.recharge_cap = 95,
+		.normal_cur_lvl = 600,
 		.normal_vol_lvl = 4200,
-#else
-		.recharge_vol = 3990,
-		.normal_cur_lvl = 400,
-		.normal_vol_lvl = 4100,
-#endif
 		.maint_a_cur_lvl = 400,
-		.maint_a_vol_lvl = 4050,
+		.maint_a_vol_lvl = 4200,
 		.maint_a_chg_timer_h = 60,
 		.maint_b_cur_lvl = 400,
-		.maint_b_vol_lvl = 4000,
+		.maint_b_vol_lvl = 4200,
 		.maint_b_chg_timer_h = 200,
 		.low_high_cur_lvl = 300,
-		.low_high_vol_lvl = 4000,
+		.low_high_vol_lvl = 4200,
 		.n_temp_tbl_elements = ARRAY_SIZE(temp_tbl),
 		.r_to_t_tbl = temp_tbl,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl),
@@ -234,12 +213,11 @@ static const struct abx500_battery_type bat_type[] = {
 		.name = POWER_SUPPLY_TECHNOLOGY_LIPO,
 		.resis_high = 53407,
 		.resis_low = 12500,
-		.battery_resistance = 300,
 		.charge_full_design = 900,
 		.nominal_voltage = 3600,
 		.termination_vol = 4150,
 		.termination_curr = 80,
-		.recharge_vol = 4130,
+		.recharge_cap = 95,
 		.normal_cur_lvl = 700,
 		.normal_vol_lvl = 4200,
 		.maint_a_cur_lvl = 600,
@@ -262,12 +240,11 @@ static const struct abx500_battery_type bat_type[] = {
 		.name = POWER_SUPPLY_TECHNOLOGY_LIPO,
 		.resis_high = 165418,
 		.resis_low = 82869,
-		.battery_resistance = 300,
 		.charge_full_design = 900,
 		.nominal_voltage = 3600,
 		.termination_vol = 4150,
 		.termination_curr = 80,
-		.recharge_vol = 4130,
+		.recharge_cap = 95,
 		.normal_cur_lvl = 700,
 		.normal_vol_lvl = 4200,
 		.maint_a_cur_lvl = 600,
@@ -295,22 +272,21 @@ static const struct abx500_battery_type bat_type[] = {
 		.name = POWER_SUPPLY_TECHNOLOGY_LIPO,
 		.resis_high = 76000,
 		.resis_low = 53000,
-		.battery_resistance = 300,
 		.charge_full_design = 900,
 		.nominal_voltage = 3700,
 		.termination_vol = 4150,
 		.termination_curr = 100,
-		.recharge_vol = 4130,
-		.normal_cur_lvl = 700,
+		.recharge_cap = 95,
+		.normal_cur_lvl = 600,
 		.normal_vol_lvl = 4200,
 		.maint_a_cur_lvl = 600,
-		.maint_a_vol_lvl = 4150,
+		.maint_a_vol_lvl = 4200,
 		.maint_a_chg_timer_h = 60,
 		.maint_b_cur_lvl = 600,
-		.maint_b_vol_lvl = 4100,
+		.maint_b_vol_lvl = 4200,
 		.maint_b_chg_timer_h = 200,
 		.low_high_cur_lvl = 300,
-		.low_high_vol_lvl = 4000,
+		.low_high_vol_lvl = 4200,
 		.n_temp_tbl_elements = ARRAY_SIZE(temp_tbl),
 		.r_to_t_tbl = temp_tbl,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl),
@@ -322,22 +298,21 @@ static const struct abx500_battery_type bat_type[] = {
 		.name = POWER_SUPPLY_TECHNOLOGY_LION,
 		.resis_high = 30000,
 		.resis_low = 10000,
-		.battery_resistance = 300,
 		.charge_full_design = 950,
 		.nominal_voltage = 3700,
 		.termination_vol = 4150,
 		.termination_curr = 100,
-		.recharge_vol = 4130,
-		.normal_cur_lvl = 700,
+		.recharge_cap = 95,
+		.normal_cur_lvl = 600,
 		.normal_vol_lvl = 4200,
 		.maint_a_cur_lvl = 600,
-		.maint_a_vol_lvl = 4150,
+		.maint_a_vol_lvl = 4200,
 		.maint_a_chg_timer_h = 60,
 		.maint_b_cur_lvl = 600,
-		.maint_b_vol_lvl = 4100,
+		.maint_b_vol_lvl = 4200,
 		.maint_b_chg_timer_h = 200,
 		.low_high_cur_lvl = 300,
-		.low_high_vol_lvl = 4000,
+		.low_high_vol_lvl = 4200,
 		.n_temp_tbl_elements = ARRAY_SIZE(temp_tbl),
 		.r_to_t_tbl = temp_tbl,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl),
@@ -349,22 +324,21 @@ static const struct abx500_battery_type bat_type[] = {
 		.name = POWER_SUPPLY_TECHNOLOGY_LION,
 		.resis_high = 95000,
 		.resis_low = 76001,
-		.battery_resistance = 300,
 		.charge_full_design = 950,
 		.nominal_voltage = 3700,
 		.termination_vol = 4150,
 		.termination_curr = 100,
-		.recharge_vol = 4130,
-		.normal_cur_lvl = 700,
+		.recharge_cap = 95,
+		.normal_cur_lvl = 600,
 		.normal_vol_lvl = 4200,
 		.maint_a_cur_lvl = 600,
-		.maint_a_vol_lvl = 4150,
+		.maint_a_vol_lvl = 4200,
 		.maint_a_chg_timer_h = 60,
 		.maint_b_cur_lvl = 600,
-		.maint_b_vol_lvl = 4100,
+		.maint_b_vol_lvl = 4200,
 		.maint_b_chg_timer_h = 200,
 		.low_high_cur_lvl = 300,
-		.low_high_vol_lvl = 4000,
+		.low_high_vol_lvl = 4200,
 		.n_temp_tbl_elements = ARRAY_SIZE(temp_tbl),
 		.r_to_t_tbl = temp_tbl,
 		.n_v_cap_tbl_elements = ARRAY_SIZE(cap_tbl),
@@ -395,23 +369,25 @@ static char *ab8500_chargalg_supplied_to[] = {
 	"ab8500_fg",
 };
 
-struct abx500_charger_platform_data ab8500_charger_plat_data = {
+struct ab8500_charger_platform_data ab8500_charger_plat_data = {
 	.supplied_to = ab8500_charger_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_charger_supplied_to),
 	.autopower_cfg		= false,
+	.ac_enabled		= true,
+	.usb_enabled		= true,
 };
 
-struct abx500_btemp_platform_data ab8500_btemp_plat_data = {
+struct ab8500_btemp_platform_data ab8500_btemp_plat_data = {
 	.supplied_to = ab8500_btemp_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_btemp_supplied_to),
 };
 
-struct abx500_fg_platform_data ab8500_fg_plat_data = {
+struct ab8500_fg_platform_data ab8500_fg_plat_data = {
 	.supplied_to = ab8500_fg_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_fg_supplied_to),
 };
 
-struct abx500_chargalg_platform_data ab8500_chargalg_plat_data = {
+struct ab8500_chargalg_platform_data ab8500_chargalg_plat_data = {
 	.supplied_to = ab8500_chargalg_supplied_to,
 	.num_supplicants = ARRAY_SIZE(ab8500_chargalg_supplied_to),
 };
@@ -436,7 +412,7 @@ struct ab8500_pwmled_platform_data ab8500_pwmled_plat_data = {
 	.leds = leds_pwm_data,
 };
 
-static const struct abx500_bm_capacity_levels cap_levels = {
+static const struct ab8500_bm_capacity_levels cap_levels = {
 	.critical	= 2,
 	.low		= 10,
 	.normal		= 70,
@@ -444,7 +420,7 @@ static const struct abx500_bm_capacity_levels cap_levels = {
 	.full		= 100,
 };
 
-static const struct abx500_fg_parameters fg = {
+static const struct ab8500_fg_parameters fg = {
 	.recovery_sleep_timer = 10,
 	.recovery_total_time = 100,
 	.init_timer = 1,
@@ -457,50 +433,43 @@ static const struct abx500_fg_parameters fg = {
 	.lowbat_threshold = 3100,
 	.battok_falling_th_sel0 = 2860,
 	.battok_raising_th_sel1 = 2860,
+	.maint_thres = 95,
 	.user_cap_limit = 15,
-	.maint_thres = 97,
 };
 
-static const struct abx500_maxim_parameters maxi_params = {
+static const struct ab8500_maxim_parameters maxi_params = {
 	.ena_maxi = true,
 	.chg_curr = 910,
 	.wait_cycles = 10,
 	.charger_curr_step = 100,
 };
 
-static const struct abx500_bm_charger_parameters chg = {
+static const struct ab8500_bm_charger_parameters chg = {
 	.usb_volt_max		= 5500,
 	.usb_curr_max		= 1500,
 	.ac_volt_max		= 7500,
 	.ac_curr_max		= 1500,
 };
 
-struct abx500_bm_data ab8500_bm_data = {
-	.temp_under		= 3,
-	.temp_low		= 8,
-	.temp_high		= 43,
-	.temp_over		= 48,
+struct ab8500_bm_data ab8500_bm_data = {
+	.temp_under		= 0,
+	.temp_low		= 3,
+	.temp_high		= 62,
+	.temp_over		= 63,
 	.main_safety_tmr_h	= 4,
 	.temp_interval_chg	= 20,
 	.temp_interval_nochg	= 120,
 	.usb_safety_tmr_h	= 4,
 	.bkup_bat_v		= BUP_VCH_SEL_2P6V,
 	.bkup_bat_i		= BUP_ICH_SEL_150UA,
-#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
-	.no_maintenance		= true,
-#else
 	.no_maintenance		= false,
-#endif
+	.capacity_scaling	= false,
 #ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
-	.adc_therm		= ABx500_ADC_THERM_BATCTRL,
+	.adc_therm		= ADC_THERM_BATCTRL,
 #else
-	.adc_therm		= ABx500_ADC_THERM_BATTEMP,
+	.adc_therm		= ADC_THERM_BATTEMP,
 #endif
-#ifdef CONFIG_AB8500_9100_LI_ION_BATTERY
-	.chg_unknown_bat	= true,
-#else
 	.chg_unknown_bat	= false,
-#endif
 	.enable_overshoot	= false,
 	.fg_res			= 100,
 	.cap_levels		= &cap_levels,
