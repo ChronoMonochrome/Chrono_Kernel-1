@@ -185,10 +185,21 @@ static struct platform_driver m48t86_rtc_platform_driver = {
 	.remove		= __devexit_p(m48t86_rtc_remove),
 };
 
-module_platform_driver(m48t86_rtc_platform_driver);
+static int __init m48t86_rtc_init(void)
+{
+	return platform_driver_register(&m48t86_rtc_platform_driver);
+}
+
+static void __exit m48t86_rtc_exit(void)
+{
+	platform_driver_unregister(&m48t86_rtc_platform_driver);
+}
 
 MODULE_AUTHOR("Alessandro Zummo <a.zummo@towertech.it>");
 MODULE_DESCRIPTION("M48T86 RTC driver");
 MODULE_LICENSE("GPL");
 MODULE_VERSION(DRV_VERSION);
 MODULE_ALIAS("platform:rtc-m48t86");
+
+module_init(m48t86_rtc_init);
+module_exit(m48t86_rtc_exit);
