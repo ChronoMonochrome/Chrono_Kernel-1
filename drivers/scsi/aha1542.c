@@ -42,6 +42,7 @@
 #include <linux/slab.h>
 
 #include <asm/dma.h>
+#include <asm/system.h>
 #include <asm/io.h>
 
 #include "scsi.h"
@@ -101,7 +102,7 @@ static int setup_dmaspeed[MAXBOARDS] __initdata = { -1, -1, -1, -1 };
  */
 
 #if defined(MODULE)
-static bool isapnp = 0;
+static int isapnp = 0;
 static int aha1542[] = {0x330, 11, 4, -1};
 module_param_array(aha1542, int, NULL, 0);
 module_param(isapnp, bool, 0);
