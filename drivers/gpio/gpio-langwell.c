@@ -59,7 +59,6 @@ enum GPIO_REG {
 	GRER,		/* rising edge detect */
 	GFER,		/* falling edge detect */
 	GEDR,		/* edge detect result */
-	GAFR,		/* alt function */
 };
 
 struct lnw_gpio {
@@ -80,31 +79,6 @@ static void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
 
 	ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg * 4);
 	return ptr;
-}
-
-static void __iomem *gpio_reg_2bit(struct gpio_chip *chip, unsigned offset,
-				   enum GPIO_REG reg_type)
-{
-	struct lnw_gpio *lnw = container_of(chip, struct lnw_gpio, chip);
-	unsigned nreg = chip->ngpio / 32;
-	u8 reg = offset / 16;
-	void __iomem *ptr;
-
-	ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg * 4);
-	return ptr;
-}
-
-static int lnw_gpio_request(struct gpio_chip *chip, unsigned offset)
-{
-	void __iomem *gafr = gpio_reg_2bit(chip, offset, GAFR);
-	u32 value = readl(gafr);
-	int shift = (offset % 16) << 1, af = (value >> shift) & 3;
-
-	if (af) {
-		value &= ~(3 << shift);
-		writel(value, gafr);
-	}
-	return 0;
 }
 
 static int lnw_gpio_get(struct gpio_chip *chip, unsigned offset)
@@ -251,7 +225,7 @@ static void lnw_irq_handler(unsigned irq, struct irq_desc *desc)
 		gedr = gpio_reg(&lnw->chip, base, GEDR);
 		pending = readl(gedr);
 		while (pending) {
-			gpio = __ffs(pending);
+			gpio = __ffs(pending) - 1;
 			mask = BIT(gpio);
 			pending &= ~mask;
 			/* Clear before handling so we can't lose an edge */
@@ -347,7 +321,6 @@ static int __devinit lnw_gpio_probe(struct pci_dev *pdev,
 	lnw->reg_base = base;
 	lnw->irq_base = irq_base;
 	lnw->chip.label = dev_name(&pdev->dev);
-	lnw->chip.request = lnw_gpio_request;
 	lnw->chip.direction_input = lnw_gpio_direction_input;
 	lnw->chip.direction_output = lnw_gpio_direction_output;
 	lnw->chip.get = lnw_gpio_get;

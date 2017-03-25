@@ -23,12 +23,12 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/slab.h>
-#include <linux/gpio/nomadik.h>
 
 #include <asm/mach/irq.h>
-
+#include <plat/gpio-nomadik.h>
 #include <plat/pincfg.h>
-#include <asm/gpio.h>
+#include <mach/hardware.h>
+#include <mach/gpio.h>
 
 /*
  * The GPIO module in the Nomadik family of Systems-on-Chip is an
@@ -59,7 +59,6 @@ struct nmk_gpio_chip {
 	u32 fwimsc;
 	u32 rimsc;
 	u32 fimsc;
-	u32 slpm;
 	u32 pull_up;
 	u32 lowemi;
 };
@@ -655,10 +654,14 @@ static void __nmk_gpio_irq_modify(struct nmk_gpio_chip *nmk_chip,
 static void __nmk_gpio_set_wake(struct nmk_gpio_chip *nmk_chip,
 				int gpio, bool on)
 {
-	if (nmk_chip->sleepmode) {
+	/*
+	 * Ensure WAKEUP_ENABLE is on.  No need to disable it if wakeup is
+	 * disabled, since setting SLPM to 1 increases power consumption, and
+	 * wakeup is anyhow controlled by the RIMSC and FIMSC registers.
+	 */
+	if (nmk_chip->sleepmode && on) {
 		__nmk_gpio_set_slpm(nmk_chip, gpio - nmk_chip->chip.base,
-				    on ? NMK_GPIO_SLPM_WAKEUP_ENABLE
-				    : NMK_GPIO_SLPM_WAKEUP_DISABLE);
+				    NMK_GPIO_SLPM_WAKEUP_ENABLE);
 	}
 
 	__nmk_gpio_irq_modify(nmk_chip, gpio, WAKE, on);
@@ -1085,13 +1088,6 @@ void nmk_gpio_wakeups_suspend(void)
 		writel(chip->fwimsc & chip->real_wake,
 		       chip->addr + NMK_GPIO_FWIMSC);
 
-		if (chip->sleepmode) {
-			chip->slpm = readl(chip->addr + NMK_GPIO_SLPC);
-
-			/* 0 -> wakeup enable */
-			writel(~chip->real_wake, chip->addr + NMK_GPIO_SLPC);
-		}
-
 		clk_disable(chip->clk);
 	}
 }
@@ -1110,9 +1106,6 @@ void nmk_gpio_wakeups_resume(void)
 
 		writel(chip->rwimsc, chip->addr + NMK_GPIO_RWIMSC);
 		writel(chip->fwimsc, chip->addr + NMK_GPIO_FWIMSC);
-
-		if (chip->sleepmode)
-			writel(chip->slpm, chip->addr + NMK_GPIO_SLPC);
 
 		clk_disable(chip->clk);
 	}
@@ -1145,7 +1138,6 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
 	struct resource *res;
 	struct clk *clk;
 	int secondary_irq;
-	void __iomem *base;
 	int irq;
 	int ret;
 
@@ -1176,16 +1168,10 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
 		goto out;
 	}
 
-	base = ioremap(res->start, resource_size(res));
-	if (!base) {
-		ret = -ENOMEM;
-		goto out_release;
-	}
-
 	clk = clk_get(&dev->dev, NULL);
 	if (IS_ERR(clk)) {
 		ret = PTR_ERR(clk);
-		goto out_unmap;
+		goto out_release;
 	}
 
 	nmk_chip = kzalloc(sizeof(*nmk_chip), GFP_KERNEL);
@@ -1199,7 +1185,7 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
 	 */
 	nmk_chip->bank = dev->id;
 	nmk_chip->clk = clk;
-	nmk_chip->addr = base;
+	nmk_chip->addr = __io(IO_ADDRESS(res->start));
 	nmk_chip->chip = nmk_gpio_template;
 	nmk_chip->parent_irq = irq;
 	nmk_chip->secondary_parent_irq = secondary_irq;
@@ -1230,8 +1216,8 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
 
 	nmk_gpio_init_irq(nmk_chip);
 
-	dev_info(&dev->dev, "at address %p\n",
-		 nmk_chip->addr);
+	dev_info(&dev->dev, "Bits %i-%i at address %p\n",
+		 nmk_chip->chip.base, nmk_chip->chip.base+31, nmk_chip->addr);
 	return 0;
 
 out_free:
@@ -1239,8 +1225,6 @@ out_free:
 out_clk:
 	clk_disable(clk);
 	clk_put(clk);
-out_unmap:
-	iounmap(base);
 out_release:
 	release_mem_region(res->start, resource_size(res));
 out:
