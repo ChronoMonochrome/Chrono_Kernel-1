@@ -32,6 +32,7 @@ static struct hrtimer timer;
 #include <linux/modem/shrm/shrm_config.h>
 #include <linux/modem/shrm/shrm_net.h>
 #include <linux/modem/shrm/shrm.h>
+#include <linux/modem/u8500_client.h>
 
 #include <mach/isa_ioctl.h>
 /* debug functionality */
@@ -40,9 +41,170 @@ static struct hrtimer timer;
 #define PHONET_TASKLET
 #define MAX_RCV_LEN	2048
 
-static void do_phonet_rcv_tasklet(unsigned long unused);
-struct tasklet_struct phonet_rcv_tasklet;
+/*mk it generic*/
+#define IPCCTRLINDX 8
+#define IPCDATAINDX 9
 
+static u8 ph_recv_buf[MAX_RCV_LEN];
+static u8 ipcctrl_buf[MAX_RCV_LEN];
+static u8 ipcdata_buf[MAX_RCV_LEN];
+void do_phonet_rcv_tasklet(unsigned long unused);
+static void do_ipcctrl_rcv_tasklet(unsigned long unused);
+static void do_ipcdata_rcv_tasklet(unsigned long unused);
+struct tasklet_struct phonet_rcv_tasklet;
+struct tasklet_struct ipcctrl_rcv_tasklet;
+struct tasklet_struct ipcdata_rcv_tasklet;
+
+/*tbc for generic*/
+struct l3if_handler {
+	struct list_head list;
+	u8 indx;
+	void *sipc;
+	void (*handler)(u16, u8 *, void *);
+};
+
+struct l3if_handler_head {
+	struct shrm_dev *shrm;
+	struct list_head list;
+};
+static struct l3if_handler_head ipc_list;
+static void shrm_ipc_msg_recv(struct l3if_handler *ch, u8 *buf);
+
+#ifdef CONFIG_U8500_SHRM_SVNET
+
+int shrm_register_msr_handlers(void (*modem_crash_cb)(void *),
+		void (*modem_reinit_cb)(void *), void *cookie)
+{
+	ipc_list.shrm->msr_crash_cb = modem_crash_cb;
+	ipc_list.shrm->msr_reinit_cb = modem_reinit_cb;
+	ipc_list.shrm->msr_cookie = cookie;
+
+	return 0;
+}
+
+/**
+ * shrm_register_handler - register client receive handler
+ * only to be used by ipc-ctrl and data channels
+ */
+int shrm_register_handler (void *sipc, u8 id,
+		void (*rcvhandler)(u16 len, u8 *buf, void *data))
+{
+	struct l3if_handler *l3e;
+
+	if (!rcvhandler)
+		return -EINVAL;
+
+	l3e = kzalloc(sizeof(struct l3if_handler), GFP_KERNEL);
+	if (!l3e)
+		return -ENOMEM;
+
+	l3e->sipc = sipc;
+	l3e->handler = rcvhandler;
+
+	if (id == IPCCTRL)
+		l3e->indx = IPCCTRLINDX;
+	else if (id == IPCDATA)
+		l3e->indx = IPCDATAINDX;
+	else if (id == ISI_MESSAGING)
+		l3e->indx = ISI_MESSAGING;
+	else {
+		kfree(l3e);
+		return -ENODEV;
+	}
+
+	list_add_tail(&l3e->list, &ipc_list.list);
+
+	return 0;
+}
+EXPORT_SYMBOL(shrm_register_handler);
+
+void shrm_unregister_handler(void)
+{
+	ipc_list.shrm->msr_crash_cb = NULL;
+	ipc_list.shrm->msr_reinit_cb = NULL;
+	ipc_list.shrm->msr_cookie = NULL;
+
+	list_del_init(&ipc_list.list);
+}
+EXPORT_SYMBOL(shrm_unregister_handler);
+
+void shrm_init_svnet_if(struct shrm_dev *shrm)
+{
+	INIT_LIST_HEAD(&ipc_list.list);
+	ipc_list.shrm = shrm;
+}
+
+/**
+ * shrm_host_modem_msg_send - function used to write to shrm from ipcctrl and data
+ */
+int shrm_host_modem_msg_send(u8 channel, void *data, u32 len)
+{
+	int err;
+	struct shrm_dev *shrm = ipc_list.shrm;
+
+	spin_lock_bh(&shrm->isa_context->common_tx);
+	err = shm_write_msg(shrm, channel, (void *)data, len);
+	spin_unlock_bh(&shrm->isa_context->common_tx);
+
+	return err;
+}
+EXPORT_SYMBOL(shrm_host_modem_msg_send);
+
+void shrm_ipc_msg_recv(struct l3if_handler *ch, u8 *buf)
+{
+	struct isadev_context *isadev;
+	struct message_queue *q;
+	u32 msgsize;
+	u32 size = 0;
+	u8 *data = buf;
+	unsigned long flags;
+	int getSize;
+
+	struct shrm_dev *shrm = ipc_list.shrm;
+
+	isadev = &shrm->isa_context->isadev[ch->indx];
+	q = &isadev->dl_queue;
+
+	if (ch->handler == NULL)
+		return;
+
+	for (;;) {
+		spin_lock_irqsave(&q->update_lock, flags);
+		if (list_empty(&q->msg_list)) {
+			spin_unlock_irqrestore(&q->update_lock, flags);
+			dev_dbg(shrm->dev, "Empty Shrm queue\n");
+			return;
+		}
+		spin_unlock_irqrestore(&q->update_lock, flags);
+
+		getSize = get_size_of_new_msg(q);
+		if (getSize <= 0)
+			return;
+		else
+			msgsize = getSize;
+
+		if ((q->readptr+msgsize) >= q->size) {
+			size = (q->size-q->readptr);
+			/*Copy First Part of msg*/
+			memcpy(data,
+				(u8 *)(q->fifo_base + q->readptr), size);
+			/*Copy Second Part of msg at the top of fifo*/
+			memcpy(data+size,
+				(u8 *)(q->fifo_base), (msgsize - size));
+		} else {
+			memcpy(data,
+				(u8 *)(q->fifo_base+q->readptr), msgsize);
+		}
+
+		spin_lock_irqsave(&q->update_lock, flags);
+		remove_msg_from_queue(q);
+		spin_unlock_irqrestore(&q->update_lock, flags);
+
+		/*call ipctctrl message handler*/
+		ch->handler(msgsize, (u8 *)data, ch->sipc);
+	}
+}
+#endif //CONFIG_U8500_SHRM_SVNET
 /**
  * audio_receive() - Receive audio channel completion callback
  * @shrm:	pointer to shrm device information structure
@@ -116,6 +278,13 @@ static int common_receive(struct shrm_dev *shrm, void *data,
 	struct isadev_context *isa_dev;
 
 	dev_dbg(shrm->dev, "%s IN\n", __func__);
+#ifdef CONFIG_U8500_KERNEL_CLIENT
+	/* is the msg is for kernel client, call kernel client handler */
+	if (l2_header == SYSCLK3_MESSAGING) {
+		u8500_kernel_client(l2_header, data);
+		goto exit;
+	}
+#endif
 	idx = shrm_get_cdev_index(l2_header);
 	if (idx < 0) {
 		dev_err(shrm->dev, "failed to get index\n");
@@ -139,13 +308,32 @@ static int common_receive(struct shrm_dev *shrm, void *data,
 	}
 	ret = add_msg_to_queue(q, n_bytes);
 	spin_unlock(&q->update_lock);
+	if (l2_header == RPC_MESSAGING) {
+		/* Acquire wake lock so as to not suspend */
+		wake_lock_timeout(&shrm->rpc_wake_lock, 1 * HZ);
+	}
+	if (l2_header == SECURITY_MESSAGING) {
+		/* Acquire wake lock so as to not suspend */
+		wake_lock_timeout(&shrm->sec_wake_lock, 1 * HZ);
+	}
 	if (ret < 0) {
 		dev_err(shrm->dev, "Adding a msg to message queue failed");
 		return ret;
 	}
 
+	if (l2_header == RPC_MESSAGING) {
+		/* Acquire wake lock so as to not suspend */
+		wake_lock_timeout(&shrm->rpc_wake_lock, 1 * HZ);
+	}
+	if (l2_header == SECURITY_MESSAGING) {
+		/* Acquire wake lock so as to not suspend */
+		wake_lock_timeout(&shrm->sec_wake_lock, 1 * HZ);
+	}
 
 	if (l2_header == ISI_MESSAGING) {
+#ifdef CONFIG_U8500_SHRM_SVNET
+		shrm->netdev_flag_up = 1;
+#endif
 		if (shrm->netdev_flag_up) {
 			dev_dbg(shrm->dev,
 				"scheduling the phonet tasklet from %s!\n",
@@ -155,6 +343,18 @@ static int common_receive(struct shrm_dev *shrm, void *data,
 		dev_dbg(shrm->dev,
 				"Out of phonet tasklet %s!!!\n", __func__);
 	}
+
+	if (l2_header == IPCCTRL) {
+		dev_dbg(shrm->dev,
+			"scheduling the ipcctrl tasklet from %s!\n", __func__);
+			tasklet_schedule(&ipcctrl_rcv_tasklet);
+	}
+	if (l2_header == IPCDATA) {
+		dev_dbg(shrm->dev,
+			"scheduling the ipcctrl tasklet from %s!\n", __func__);
+			tasklet_schedule(&ipcdata_rcv_tasklet);
+	}
+
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 	return ret;
 }
@@ -297,6 +497,45 @@ static enum hrtimer_restart callback(struct hrtimer *timer)
 }
 #endif
 
+void do_ipcctrl_rcv_tasklet(unsigned long unused)
+{
+	struct list_head *l, *tmp;
+	struct l3if_handler *entry = NULL;
+
+	list_for_each_safe(l, tmp, &ipc_list.list) {
+		struct l3if_handler *hd =
+			list_entry(l, struct l3if_handler, list);
+
+		if (hd->indx == IPCCTRLINDX)
+			entry = hd;
+	}
+
+	if (!entry)
+		return;
+
+	shrm_ipc_msg_recv(entry, ipcctrl_buf);
+}
+
+void do_ipcdata_rcv_tasklet(unsigned long unused)
+{
+	struct list_head *l, *tmp;
+	struct l3if_handler *entry = NULL;
+
+	list_for_each_safe(l, tmp, &ipc_list.list) {
+		struct l3if_handler *hd =
+			list_entry(l, struct l3if_handler, list);
+
+		if (hd->indx == IPCDATAINDX)
+			entry = hd;
+	}
+
+	if (!entry)
+		return;
+
+	shrm_ipc_msg_recv(entry, ipcdata_buf);
+}
+
+#ifdef CONFIG_U8500_SHRM_DEFAULT_NET
 void do_phonet_rcv_tasklet(unsigned long unused)
 {
 	ssize_t ret;
@@ -314,8 +553,34 @@ void do_phonet_rcv_tasklet(unsigned long unused)
 			break;
 		}
 	}
+#ifdef CONFIG_U8500_KERNEL_CLIENT
+exit:
+#endif
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 }
+#endif
+
+#ifdef CONFIG_U8500_SHRM_SVNET
+void do_phonet_rcv_tasklet(unsigned long unused)
+{
+	struct list_head *l, *tmp;
+	struct l3if_handler *entry = NULL;
+
+	list_for_each_safe(l, tmp, &ipc_list.list) {
+		struct l3if_handler *hd =
+			list_entry(l, struct l3if_handler, list);
+		if (hd->indx == ISI_MESSAGING)
+			entry = hd;
+	}
+
+	if (!entry) {
+		return;
+	}
+
+	shrm_ipc_msg_recv(entry, ph_recv_buf);
+}
+
+#endif
 
 static int shrm_probe(struct platform_device *pdev)
 {
@@ -511,11 +776,20 @@ static int shrm_probe(struct platform_device *pdev)
 		err = -EBUSY;
 		goto rollback_map;
 	}
+	shrm->ca_reset_status_rptr =
+		(void __iomem *)ioremap(SHM_CA_MOD_RESET_STATUS_AMCU, SHM_PTR_SIZE);
+	if (!(shrm->ca_reset_status_rptr)) {
+		dev_err(shrm->dev, "Unable to map register base\n");
+		err = -EBUSY;
+		goto rollback_map;
+	}
 
 	if (isa_init(shrm) != 0) {
 		dev_err(shrm->dev, "Driver Initialization Error\n");
 		err = -EBUSY;
 	}
+	wake_lock_init(&shrm->rpc_wake_lock, WAKE_LOCK_SUSPEND, "u8500-shrm-rpc");
+	wake_lock_init(&shrm->sec_wake_lock, WAKE_LOCK_SUSPEND, "u8500-shrm-sec");
 	/* install handlers and tasklets */
 	if (shm_initialise_irq(shrm)) {
 		dev_err(shrm->dev,
@@ -527,12 +801,28 @@ static int shrm_probe(struct platform_device *pdev)
 	timer.function = callback;
 	hrtimer_start(&timer, ktime_set(0, 2*NSEC_PER_MSEC), HRTIMER_MODE_REL);
 #endif
+
+#ifdef CONFIG_U8500_SHRM_DEFAULT_NET
 	err = shrm_register_netdev(shrm);
 	if (err < 0)
 		goto rollback_irq;
 
 	tasklet_init(&phonet_rcv_tasklet, do_phonet_rcv_tasklet, 0);
 	phonet_rcv_tasklet.data = (unsigned long)shrm;
+#endif
+
+#ifdef CONFIG_U8500_SHRM_SVNET
+	shrm_init_svnet_if(shrm);
+
+	tasklet_init(&phonet_rcv_tasklet, do_phonet_rcv_tasklet, 0);
+	phonet_rcv_tasklet.data = (unsigned long)shrm;
+
+	tasklet_init(&ipcctrl_rcv_tasklet, do_ipcctrl_rcv_tasklet, 0);
+	ipcctrl_rcv_tasklet.data = (unsigned long)shrm;
+
+	tasklet_init(&ipcdata_rcv_tasklet, do_ipcdata_rcv_tasklet, 0);
+	ipcctrl_rcv_tasklet.data = (unsigned long)shrm;
+#endif
 
 	platform_set_drvdata(pdev, shrm);
 
@@ -603,15 +893,61 @@ int u8500_shrm_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct shrm_dev *shrm = platform_get_drvdata(pdev);
-	int err;
+	struct message_queue *q;
+	struct isadev_context *isa_dev;
+ 	int err = 0;
+	int idx;
 
 	dev_dbg(&pdev->dev, "%s called...\n", __func__);
 	dev_dbg(&pdev->dev, "ca_wake_req_state = %x\n",
 						get_ca_wake_req_state());
 
+	/*
+	 * Is there are any messages unread in the IPC queue, dont suspend
+	 * as these are real time and modem expects response within 1sec
+	 * else will end up in a crash.
+	 */
+	idx = shrm_get_cdev_index(IPCCTRL);
+	isa_dev = &shrm->isa_context->isadev[idx];
+	q = &isa_dev->dl_queue;
+	if (!list_empty(&q->msg_list)) {
+		dev_info(shrm->dev, "Some IPC msg unread = %d\n",
+				get_size_of_new_msg(q));
+		return -EBUSY;
+	}
+
+	/*
+	 * Is there are any messages unread in the RPC queue, dont suspend
+	 * as these are real time and modem expects response within 1sec
+	 * else will end up in a crash.
+	 */
+	idx = shrm_get_cdev_index(RPC_MESSAGING);
+	isa_dev = &shrm->isa_context->isadev[idx];
+	q = &isa_dev->dl_queue;
+	if (!list_empty(&q->msg_list)) {
+		dev_info(shrm->dev, "Some RPC msg unread = %d\n",
+				get_size_of_new_msg(q));
+		return -EBUSY;
+	}
+	/*
+	 * Is there are any messages unread in the Security queue, dont suspend
+	 * as these are real time and modem expects response within 1sec
+	 * else will end up in a crash.
+	 */
+	idx = shrm_get_cdev_index(SECURITY_MESSAGING);
+	isa_dev = &shrm->isa_context->isadev[idx];
+	q = &isa_dev->dl_queue;
+	if (!list_empty(&q->msg_list)) {
+		dev_info(shrm->dev, "Some Security msg unread = %d\n",
+				get_size_of_new_msg(q));
+		return -EBUSY;
+	}
+
 	/* if ca_wake_req is high, prevent system suspend */
 	if (!get_ca_wake_req_state()) {
+#ifdef CONFIG_U8500_SHRM_DEFAULT_NET
 		err = shrm_suspend_netdev(shrm->ndev);
+#endif
 		return err;
 	} else
 		return -EBUSY;
@@ -627,10 +963,12 @@ int u8500_shrm_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct shrm_dev *shrm = platform_get_drvdata(pdev);
-	int err;
+	int err = 0;
 
 	dev_dbg(&pdev->dev, "%s called...\n", __func__);
+#ifdef CONFIG_U8500_SHRM_DEFAULT_NET
 	err = shrm_resume_netdev(shrm->ndev);
+#endif
 
 	return err;
 }
