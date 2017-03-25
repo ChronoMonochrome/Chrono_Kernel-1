@@ -92,7 +92,7 @@ struct tc_keypad {
 	bool keypad_stopped;
 };
 
-static int tc3589x_keypad_init_key_hardware(struct tc_keypad *keypad)
+static int __devinit tc3589x_keypad_init_key_hardware(struct tc_keypad *keypad)
 {
 	int ret;
 	struct tc3589x *tc3589x = keypad->tc3589x;
@@ -455,7 +455,18 @@ static struct platform_driver tc3589x_keypad_driver = {
 	.probe	= tc3589x_keypad_probe,
 	.remove	= __devexit_p(tc3589x_keypad_remove),
 };
-module_platform_driver(tc3589x_keypad_driver);
+
+static int __init tc3589x_keypad_init(void)
+{
+	return platform_driver_register(&tc3589x_keypad_driver);
+}
+module_init(tc3589x_keypad_init);
+
+static void __exit tc3589x_keypad_exit(void)
+{
+	return platform_driver_unregister(&tc3589x_keypad_driver);
+}
+module_exit(tc3589x_keypad_exit);
 
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Jayeeta Banerjee/Sundar Iyer");

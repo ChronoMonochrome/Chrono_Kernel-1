@@ -114,50 +114,20 @@ struct input_keymap_entry {
 #define EVIOCGUNIQ(len)		_IOC(_IOC_READ, 'E', 0x08, len)		/* get unique identifier */
 #define EVIOCGPROP(len)		_IOC(_IOC_READ, 'E', 0x09, len)		/* get device properties */
 
-/**
- * EVIOCGMTSLOTS(len) - get MT slot values
- *
- * The ioctl buffer argument should be binary equivalent to
- *
- * struct input_mt_request_layout {
- *	__u32 code;
- *	__s32 values[num_slots];
- * };
- *
- * where num_slots is the (arbitrary) number of MT slots to extract.
- *
- * The ioctl size argument (len) is the size of the buffer, which
- * should satisfy len = (num_slots + 1) * sizeof(__s32).  If len is
- * too small to fit all available slots, the first num_slots are
- * returned.
- *
- * Before the call, code is set to the wanted ABS_MT event type. On
- * return, values[] is filled with the slot values for the specified
- * ABS_MT code.
- *
- * If the request code is not an ABS_MT value, -EINVAL is returned.
- */
-#define EVIOCGMTSLOTS(len)	_IOC(_IOC_READ, 'E', 0x0a, len)
-
 #define EVIOCGKEY(len)		_IOC(_IOC_READ, 'E', 0x18, len)		/* get global key state */
 #define EVIOCGLED(len)		_IOC(_IOC_READ, 'E', 0x19, len)		/* get all LEDs */
 #define EVIOCGSND(len)		_IOC(_IOC_READ, 'E', 0x1a, len)		/* get all sounds status */
 #define EVIOCGSW(len)		_IOC(_IOC_READ, 'E', 0x1b, len)		/* get all switch states */
 
-#define EVIOCGBIT(ev,len)	_IOC(_IOC_READ, 'E', 0x20 + (ev), len)	/* get event bits */
-#define EVIOCGABS(abs)		_IOR('E', 0x40 + (abs), struct input_absinfo)	/* get abs value/limits */
-#define EVIOCSABS(abs)		_IOW('E', 0xc0 + (abs), struct input_absinfo)	/* set abs value/limits */
+#define EVIOCGBIT(ev,len)	_IOC(_IOC_READ, 'E', 0x20 + ev, len)	/* get event bits */
+#define EVIOCGABS(abs)		_IOR('E', 0x40 + abs, struct input_absinfo)	/* get abs value/limits */
+#define EVIOCSABS(abs)		_IOW('E', 0xc0 + abs, struct input_absinfo)	/* set abs value/limits */
 
 #define EVIOCSFF		_IOC(_IOC_WRITE, 'E', 0x80, sizeof(struct ff_effect))	/* send a force effect to a force feedback device */
 #define EVIOCRMFF		_IOW('E', 0x81, int)			/* Erase a force effect */
 #define EVIOCGEFFECTS		_IOR('E', 0x84, int)			/* Report number of effects playable at the same time */
 
 #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
-
-#define EVIOCGSUSPENDBLOCK	_IOR('E', 0x91, int)			/* get suspend block enable */
-#define EVIOCSSUSPENDBLOCK	_IOW('E', 0x91, int)			/* set suspend block enable */
-
-#define EVIOCSCLOCKID		_IOW('E', 0xa0, int)			/* Set clockid to be used for timestamps */
 
 /*
  * Device properties and quirks
@@ -198,8 +168,6 @@ struct input_keymap_entry {
 #define SYN_CONFIG		1
 #define SYN_MT_REPORT		2
 #define SYN_DROPPED		3
-#define SYN_TIME_SEC		4
-#define SYN_TIME_NSEC		5
 
 /*
  * Keys and buttons
@@ -464,17 +432,11 @@ struct input_keymap_entry {
 #define KEY_VIDEO_NEXT		241	/* drive next video source */
 #define KEY_VIDEO_PREV		242	/* drive previous video source */
 #define KEY_BRIGHTNESS_CYCLE	243	/* brightness up, after max is min */
-#define KEY_BRIGHTNESS_AUTO	244	/* Set Auto Brightness: manual
-					  brightness control is off,
-					  rely on ambient */
-#define KEY_BRIGHTNESS_ZERO	KEY_BRIGHTNESS_AUTO
+#define KEY_BRIGHTNESS_ZERO	244	/* brightness off, use ambient */
 #define KEY_DISPLAY_OFF		245	/* display device to off state */
 
-#define KEY_WWAN		246	/* Wireless WAN (LTE, UMTS, GSM, etc.) */
-#define KEY_WIMAX		KEY_WWAN
+#define KEY_WIMAX		246
 #define KEY_RFKILL		247	/* Key that controls all radios */
-
-#define KEY_MICMUTE		248	/* Mute / unmute the microphone */
 
 /* Code 255 is reserved for special needs of AT keyboard driver */
 
@@ -516,15 +478,11 @@ struct input_keymap_entry {
 #define BTN_DEAD		0x12f
 
 #define BTN_GAMEPAD		0x130
-#define BTN_SOUTH		0x130
-#define BTN_A			BTN_SOUTH
-#define BTN_EAST		0x131
-#define BTN_B			BTN_EAST
+#define BTN_A			0x130
+#define BTN_B			0x131
 #define BTN_C			0x132
-#define BTN_NORTH		0x133
-#define BTN_X			BTN_NORTH
-#define BTN_WEST		0x134
-#define BTN_Y			BTN_WEST
+#define BTN_X			0x133
+#define BTN_Y			0x134
 #define BTN_Z			0x135
 #define BTN_TL			0x136
 #define BTN_TR			0x137
@@ -545,7 +503,6 @@ struct input_keymap_entry {
 #define BTN_TOOL_FINGER		0x145
 #define BTN_TOOL_MOUSE		0x146
 #define BTN_TOOL_LENS		0x147
-#define BTN_TOOL_QUINTTAP	0x148	/* Five fingers on trackpad */
 #define BTN_TOUCH		0x14a
 #define BTN_STYLUS		0x14b
 #define BTN_STYLUS2		0x14c
@@ -637,7 +594,6 @@ struct input_keymap_entry {
 #define KEY_ADDRESSBOOK		0x1ad	/* AL Contacts/Address Book */
 #define KEY_MESSENGER		0x1ae	/* AL Instant Messaging */
 #define KEY_DISPLAYTOGGLE	0x1af	/* Turn display (LCD) on and off */
-#define KEY_BRIGHTNESS_TOGGLE	KEY_DISPLAYTOGGLE
 #define KEY_SPELLCHECK		0x1b0   /* AL Spell Check */
 #define KEY_LOGOFF		0x1b1   /* AL Logoff */
 
@@ -716,24 +672,6 @@ struct input_keymap_entry {
 #define KEY_CAMERA_DOWN		0x218
 #define KEY_CAMERA_LEFT		0x219
 #define KEY_CAMERA_RIGHT	0x21a
-
-#define BTN_DPAD_UP		0x220
-#define BTN_DPAD_DOWN		0x221
-#define BTN_DPAD_LEFT		0x222
-#define BTN_DPAD_RIGHT		0x223
-
-#define KEY_ALS_TOGGLE		0x230	/* Ambient light sensor */
-
-#define KEY_BUTTONCONFIG		0x240	/* AL Button Configuration */
-#define KEY_TASKMANAGER		0x241	/* AL Task/Project Manager */
-#define KEY_JOURNAL		0x242	/* AL Log/Journal/Timecard */
-#define KEY_CONTROLPANEL		0x243	/* AL Control Panel */
-#define KEY_APPSELECT		0x244	/* AL Select Task/Application */
-#define KEY_SCREENSAVER		0x245	/* AL Screen Saver */
-#define KEY_VOICECOMMAND		0x246	/* Listening Voice Command */
-
-#define KEY_BRIGHTNESS_MIN		0x250	/* Set Brightness to Minimum */
-#define KEY_BRIGHTNESS_MAX		0x251	/* Set Brightness to Maximum */
 
 #define BTN_TRIGGER_HAPPY		0x2c0
 #define BTN_TRIGGER_HAPPY1		0x2c0
@@ -845,6 +783,10 @@ struct input_keymap_entry {
 #define ABS_MT_TRACKING_ID	0x39	/* Unique ID of initiated contact */
 #define ABS_MT_PRESSURE		0x3a	/* Pressure on contact area */
 #define ABS_MT_DISTANCE		0x3b	/* Contact hover distance */
+#define ABS_MT_ANGLE		0x3c	/* touch angle */
+#define ABS_MT_COMPONENT	0x3c	/* touch component */
+#define ABS_MT_PALM		0x3d	/* palm touch */
+#define ABS_MT_SUMSIZE		0x3d	/* touch sumsize */
 
 #ifdef __KERNEL__
 /* Implementation details, userspace should not care about these */
@@ -874,8 +816,6 @@ struct input_keymap_entry {
 #define SW_KEYPAD_SLIDE		0x0a  /* set = keypad slide out */
 #define SW_FRONT_PROXIMITY	0x0b  /* set = front proximity sensor active */
 #define SW_ROTATE_LOCK		0x0c  /* set = rotate locked/disabled */
-#define SW_LINEIN_INSERT	0x0d  /* set = inserted */
-#define SW_MUTE_DEVICE		0x0e  /* set = device disabled */
 #define SW_MAX			0x0f
 #define SW_CNT			(SW_MAX+1)
 
@@ -1671,7 +1611,7 @@ struct ff_device {
 	struct file *effect_owners[];
 };
 
-int input_ff_create(struct input_dev *dev, unsigned int max_effects);
+int input_ff_create(struct input_dev *dev, int max_effects);
 void input_ff_destroy(struct input_dev *dev);
 
 int input_ff_event(struct input_dev *dev, unsigned int type, unsigned int code, int value);
