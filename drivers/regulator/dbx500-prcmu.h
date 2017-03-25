@@ -13,6 +13,10 @@
 
 #include <linux/platform_device.h>
 
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+extern bool epod_on[NUM_EPOD_ID];
+extern bool epod_ramret[NUM_EPOD_ID];
+#endif
 /**
  * struct dbx500_regulator_info - dbx500 regulator information
  * @dev: device pointer
@@ -49,15 +53,8 @@ int ux500_regulator_debug_exit(void);
 
 static inline int ux500_regulator_debug_init(struct platform_device *pdev,
 			     struct dbx500_regulator_info *regulator_info,
-			     int num_regulators)
-{
-	return 0;
-}
+			     int num_regulators) {}
 
-static inline int ux500_regulator_debug_exit(void)
-{
-	return 0;
-}
-
+static inline int ux500_regulator_debug_exit(void) {}
 #endif
 #endif

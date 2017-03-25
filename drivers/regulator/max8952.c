@@ -26,6 +26,7 @@
 #include <linux/platform_device.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/max8952.h>
+#include <linux/mutex.h>
 #include <linux/gpio.h>
 #include <linux/io.h>
 #include <linux/slab.h>
@@ -46,6 +47,7 @@ enum {
 struct max8952_data {
 	struct i2c_client	*client;
 	struct device		*dev;
+	struct mutex		mutex;
 	struct max8952_platform_data *pdata;
 	struct regulator_dev	*rdev;
 
@@ -206,9 +208,10 @@ static int __devinit max8952_pmic_probe(struct i2c_client *client,
 	max8952->client = client;
 	max8952->dev = &client->dev;
 	max8952->pdata = pdata;
+	mutex_init(&max8952->mutex);
 
 	max8952->rdev = regulator_register(&regulator, max8952->dev,
-			&pdata->reg_data, max8952, NULL);
+			&pdata->reg_data, max8952);
 
 	if (IS_ERR(max8952->rdev)) {
 		ret = PTR_ERR(max8952->rdev);

@@ -14,13 +14,12 @@
  */
 #include <linux/init.h>
 #include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 #include <linux/mfd/abx500.h>
-#include <linux/mfd/abx500/ab8500.h>
+#include <linux/mfd/ab8500.h>
 #include <linux/regulator/ab8500.h>
 
 /**
@@ -298,6 +297,16 @@ static struct regulator_ops ab8500_ext_regulator_ops = {
 	.list_voltage		= ab8500_ext_list_voltage,
 };
 
+static struct regulator_ops ab9540_ext_regulator_ops = {
+	.enable			= ab8500_ext_regulator_enable,
+	.disable		= ab8500_ext_regulator_disable,
+	.is_enabled		= ab8500_ext_regulator_is_enabled,
+	.set_mode		= ab8500_ext_regulator_set_mode,
+	.get_mode		= ab8500_ext_regulator_get_mode,
+	.get_voltage		= ab8500_ext_fixed_get_voltage,
+	.list_voltage		= ab8500_ext_list_voltage,
+};
+
 static struct ab8500_ext_regulator_info
 		ab8500_ext_regulator_info[AB8500_NUM_EXT_REGULATORS] = {
 	[AB8500_EXT_SUPPLY1] = {
@@ -406,9 +415,22 @@ __devinit int ab8500_ext_regulator_init(struct platform_device *pdev)
 		info->cfg = (struct ab8500_ext_regulator_cfg *)
 			pdata->ext_regulator[i].driver_data;
 
+		if (is_ab9540(ab8500)) {
+			if (info->desc.id == AB8500_EXT_SUPPLY1) {
+				info->desc.ops = &ab9540_ext_regulator_ops;
+				info->fixed_uV = 4500000;
+			}
+			if (info->desc.id == AB8500_EXT_SUPPLY2)
+				info->desc.ops = &ab9540_ext_regulator_ops;
+
+			if (info->desc.id == AB8500_EXT_SUPPLY3) {
+				info->desc.ops = &ab9540_ext_regulator_ops;
+				info->fixed_uV = 3300000;
+			}
+		}
 		/* register regulator with framework */
 		info->rdev = regulator_register(&info->desc, &pdev->dev,
-				&pdata->ext_regulator[i], info, NULL);
+				&pdata->ext_regulator[i], info);
 		if (IS_ERR(info->rdev)) {
 			err = PTR_ERR(info->rdev);
 			dev_err(&pdev->dev, "failed to register regulator %s\n",

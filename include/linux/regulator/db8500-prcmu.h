@@ -36,6 +36,16 @@ enum db8500_regulator_id {
 	DB8500_NUM_REGULATORS
 };
 
+/**
+ * struct db8500_regulator_init_data - mfd device prcmu-regulators data
+ *
+ */
+struct db8500_regulator_init_data {
+	int (*set_epod) (u16 epod_id, u8 epod_state);
+	void *regulators;
+	int reg_num;
+};
+
 /*
  * Exported interface for CPUIdle only. This function is called with all
  * interrupts turned off.
