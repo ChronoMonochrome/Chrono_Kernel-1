@@ -141,6 +141,7 @@
 #include <linux/delay.h>
 
 #include <asm/io.h>
+#include <asm/system.h>
 #include <asm/dma.h>
 
 #define ULTRASTOR_PRIVATE	/* Get the private stuff from ultrastor.h */
