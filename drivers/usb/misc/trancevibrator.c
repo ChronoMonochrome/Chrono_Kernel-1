@@ -137,7 +137,26 @@ static struct usb_driver tv_driver = {
 	.id_table =	id_table,
 };
 
-module_usb_driver(tv_driver);
+static int __init tv_init(void)
+{
+	int retval = usb_register(&tv_driver);
+	if (retval) {
+		err("usb_register failed. Error number %d", retval);
+		return retval;
+	}
+
+	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+	       DRIVER_DESC "\n");
+	return 0;
+}
+
+static void __exit tv_exit(void)
+{
+	usb_deregister(&tv_driver);
+}
+
+module_init (tv_init);
+module_exit (tv_exit);
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);

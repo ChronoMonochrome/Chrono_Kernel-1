@@ -1372,7 +1372,18 @@ static struct usb_driver cxacru_usb_driver = {
 	.id_table	= cxacru_usb_ids
 };
 
-module_usb_driver(cxacru_usb_driver);
+static int __init cxacru_init(void)
+{
+	return usb_register(&cxacru_usb_driver);
+}
+
+static void __exit cxacru_cleanup(void)
+{
+	usb_deregister(&cxacru_usb_driver);
+}
+
+module_init(cxacru_init);
+module_exit(cxacru_cleanup);
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);

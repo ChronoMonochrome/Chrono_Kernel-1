@@ -25,7 +25,6 @@
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
-#include <linux/export.h>
 #include <linux/usb.h>
 #include <linux/usb/otg.h>
 #include <linux/usb/ulpi.h>
@@ -49,31 +48,31 @@ static struct ulpi_info ulpi_ids[] = {
 	ULPI_INFO(ULPI_ID(0x0424, 0x0006), "SMSC USB331x"),
 };
 
-static int ulpi_set_otg_flags(struct usb_phy *phy)
+static int ulpi_set_otg_flags(struct otg_transceiver *otg)
 {
 	unsigned int flags = ULPI_OTG_CTRL_DP_PULLDOWN |
 			     ULPI_OTG_CTRL_DM_PULLDOWN;
 
-	if (phy->flags & ULPI_OTG_ID_PULLUP)
+	if (otg->flags & ULPI_OTG_ID_PULLUP)
 		flags |= ULPI_OTG_CTRL_ID_PULLUP;
 
 	/*
 	 * ULPI Specification rev.1.1 default
 	 * for Dp/DmPulldown is enabled.
 	 */
-	if (phy->flags & ULPI_OTG_DP_PULLDOWN_DIS)
+	if (otg->flags & ULPI_OTG_DP_PULLDOWN_DIS)
 		flags &= ~ULPI_OTG_CTRL_DP_PULLDOWN;
 
-	if (phy->flags & ULPI_OTG_DM_PULLDOWN_DIS)
+	if (otg->flags & ULPI_OTG_DM_PULLDOWN_DIS)
 		flags &= ~ULPI_OTG_CTRL_DM_PULLDOWN;
 
-	if (phy->flags & ULPI_OTG_EXTVBUSIND)
+	if (otg->flags & ULPI_OTG_EXTVBUSIND)
 		flags |= ULPI_OTG_CTRL_EXTVBUSIND;
 
-	return usb_phy_io_write(phy, flags, ULPI_OTG_CTRL);
+	return otg_io_write(otg, flags, ULPI_OTG_CTRL);
 }
 
-static int ulpi_set_fc_flags(struct usb_phy *phy)
+static int ulpi_set_fc_flags(struct otg_transceiver *otg)
 {
 	unsigned int flags = 0;
 
@@ -81,27 +80,27 @@ static int ulpi_set_fc_flags(struct usb_phy *phy)
 	 * ULPI Specification rev.1.1 default
 	 * for XcvrSelect is Full Speed.
 	 */
-	if (phy->flags & ULPI_FC_HS)
+	if (otg->flags & ULPI_FC_HS)
 		flags |= ULPI_FUNC_CTRL_HIGH_SPEED;
-	else if (phy->flags & ULPI_FC_LS)
+	else if (otg->flags & ULPI_FC_LS)
 		flags |= ULPI_FUNC_CTRL_LOW_SPEED;
-	else if (phy->flags & ULPI_FC_FS4LS)
+	else if (otg->flags & ULPI_FC_FS4LS)
 		flags |= ULPI_FUNC_CTRL_FS4LS;
 	else
 		flags |= ULPI_FUNC_CTRL_FULL_SPEED;
 
-	if (phy->flags & ULPI_FC_TERMSEL)
+	if (otg->flags & ULPI_FC_TERMSEL)
 		flags |= ULPI_FUNC_CTRL_TERMSELECT;
 
 	/*
 	 * ULPI Specification rev.1.1 default
 	 * for OpMode is Normal Operation.
 	 */
-	if (phy->flags & ULPI_FC_OP_NODRV)
+	if (otg->flags & ULPI_FC_OP_NODRV)
 		flags |= ULPI_FUNC_CTRL_OPMODE_NONDRIVING;
-	else if (phy->flags & ULPI_FC_OP_DIS_NRZI)
+	else if (otg->flags & ULPI_FC_OP_DIS_NRZI)
 		flags |= ULPI_FUNC_CTRL_OPMODE_DISABLE_NRZI;
-	else if (phy->flags & ULPI_FC_OP_NSYNC_NEOP)
+	else if (otg->flags & ULPI_FC_OP_NSYNC_NEOP)
 		flags |= ULPI_FUNC_CTRL_OPMODE_NOSYNC_NOEOP;
 	else
 		flags |= ULPI_FUNC_CTRL_OPMODE_NORMAL;
@@ -112,54 +111,54 @@ static int ulpi_set_fc_flags(struct usb_phy *phy)
 	 */
 	flags |= ULPI_FUNC_CTRL_SUSPENDM;
 
-	return usb_phy_io_write(phy, flags, ULPI_FUNC_CTRL);
+	return otg_io_write(otg, flags, ULPI_FUNC_CTRL);
 }
 
-static int ulpi_set_ic_flags(struct usb_phy *phy)
+static int ulpi_set_ic_flags(struct otg_transceiver *otg)
 {
 	unsigned int flags = 0;
 
-	if (phy->flags & ULPI_IC_AUTORESUME)
+	if (otg->flags & ULPI_IC_AUTORESUME)
 		flags |= ULPI_IFC_CTRL_AUTORESUME;
 
-	if (phy->flags & ULPI_IC_EXTVBUS_INDINV)
+	if (otg->flags & ULPI_IC_EXTVBUS_INDINV)
 		flags |= ULPI_IFC_CTRL_EXTERNAL_VBUS;
 
-	if (phy->flags & ULPI_IC_IND_PASSTHRU)
+	if (otg->flags & ULPI_IC_IND_PASSTHRU)
 		flags |= ULPI_IFC_CTRL_PASSTHRU;
 
-	if (phy->flags & ULPI_IC_PROTECT_DIS)
+	if (otg->flags & ULPI_IC_PROTECT_DIS)
 		flags |= ULPI_IFC_CTRL_PROTECT_IFC_DISABLE;
 
-	return usb_phy_io_write(phy, flags, ULPI_IFC_CTRL);
+	return otg_io_write(otg, flags, ULPI_IFC_CTRL);
 }
 
-static int ulpi_set_flags(struct usb_phy *phy)
+static int ulpi_set_flags(struct otg_transceiver *otg)
 {
 	int ret;
 
-	ret = ulpi_set_otg_flags(phy);
+	ret = ulpi_set_otg_flags(otg);
 	if (ret)
 		return ret;
 
-	ret = ulpi_set_ic_flags(phy);
+	ret = ulpi_set_ic_flags(otg);
 	if (ret)
 		return ret;
 
-	return ulpi_set_fc_flags(phy);
+	return ulpi_set_fc_flags(otg);
 }
 
-static int ulpi_check_integrity(struct usb_phy *phy)
+static int ulpi_check_integrity(struct otg_transceiver *otg)
 {
 	int ret, i;
 	unsigned int val = 0x55;
 
 	for (i = 0; i < 2; i++) {
-		ret = usb_phy_io_write(phy, val, ULPI_SCRATCH);
+		ret = otg_io_write(otg, val, ULPI_SCRATCH);
 		if (ret < 0)
 			return ret;
 
-		ret = usb_phy_io_read(phy, ULPI_SCRATCH);
+		ret = otg_io_read(otg, ULPI_SCRATCH);
 		if (ret < 0)
 			return ret;
 
@@ -175,13 +174,13 @@ static int ulpi_check_integrity(struct usb_phy *phy)
 	return 0;
 }
 
-static int ulpi_init(struct usb_phy *phy)
+static int ulpi_init(struct otg_transceiver *otg)
 {
 	int i, vid, pid, ret;
 	u32 ulpi_id = 0;
 
 	for (i = 0; i < 4; i++) {
-		ret = usb_phy_io_read(phy, ULPI_PRODUCT_ID_HIGH - i);
+		ret = otg_io_read(otg, ULPI_PRODUCT_ID_HIGH - i);
 		if (ret < 0)
 			return ret;
 		ulpi_id = (ulpi_id << 8) | ret;
@@ -199,17 +198,16 @@ static int ulpi_init(struct usb_phy *phy)
 		}
 	}
 
-	ret = ulpi_check_integrity(phy);
+	ret = ulpi_check_integrity(otg);
 	if (ret)
 		return ret;
 
-	return ulpi_set_flags(phy);
+	return ulpi_set_flags(otg);
 }
 
-static int ulpi_set_host(struct usb_otg *otg, struct usb_bus *host)
+static int ulpi_set_host(struct otg_transceiver *otg, struct usb_bus *host)
 {
-	struct usb_phy *phy = otg->phy;
-	unsigned int flags = usb_phy_io_read(phy, ULPI_IFC_CTRL);
+	unsigned int flags = otg_io_read(otg, ULPI_IFC_CTRL);
 
 	if (!host) {
 		otg->host = NULL;
@@ -222,62 +220,51 @@ static int ulpi_set_host(struct usb_otg *otg, struct usb_bus *host)
 		   ULPI_IFC_CTRL_3_PIN_SERIAL_MODE |
 		   ULPI_IFC_CTRL_CARKITMODE);
 
-	if (phy->flags & ULPI_IC_6PIN_SERIAL)
+	if (otg->flags & ULPI_IC_6PIN_SERIAL)
 		flags |= ULPI_IFC_CTRL_6_PIN_SERIAL_MODE;
-	else if (phy->flags & ULPI_IC_3PIN_SERIAL)
+	else if (otg->flags & ULPI_IC_3PIN_SERIAL)
 		flags |= ULPI_IFC_CTRL_3_PIN_SERIAL_MODE;
-	else if (phy->flags & ULPI_IC_CARKIT)
+	else if (otg->flags & ULPI_IC_CARKIT)
 		flags |= ULPI_IFC_CTRL_CARKITMODE;
 
-	return usb_phy_io_write(phy, flags, ULPI_IFC_CTRL);
+	return otg_io_write(otg, flags, ULPI_IFC_CTRL);
 }
 
-static int ulpi_set_vbus(struct usb_otg *otg, bool on)
+static int ulpi_set_vbus(struct otg_transceiver *otg, bool on)
 {
-	struct usb_phy *phy = otg->phy;
-	unsigned int flags = usb_phy_io_read(phy, ULPI_OTG_CTRL);
+	unsigned int flags = otg_io_read(otg, ULPI_OTG_CTRL);
 
 	flags &= ~(ULPI_OTG_CTRL_DRVVBUS | ULPI_OTG_CTRL_DRVVBUS_EXT);
 
 	if (on) {
-		if (phy->flags & ULPI_OTG_DRVVBUS)
+		if (otg->flags & ULPI_OTG_DRVVBUS)
 			flags |= ULPI_OTG_CTRL_DRVVBUS;
 
-		if (phy->flags & ULPI_OTG_DRVVBUS_EXT)
+		if (otg->flags & ULPI_OTG_DRVVBUS_EXT)
 			flags |= ULPI_OTG_CTRL_DRVVBUS_EXT;
 	}
 
-	return usb_phy_io_write(phy, flags, ULPI_OTG_CTRL);
+	return otg_io_write(otg, flags, ULPI_OTG_CTRL);
 }
 
-struct usb_phy *
-otg_ulpi_create(struct usb_phy_io_ops *ops,
+struct otg_transceiver *
+otg_ulpi_create(struct otg_io_access_ops *ops,
 		unsigned int flags)
 {
-	struct usb_phy *phy;
-	struct usb_otg *otg;
-
-	phy = kzalloc(sizeof(*phy), GFP_KERNEL);
-	if (!phy)
-		return NULL;
+	struct otg_transceiver *otg;
 
 	otg = kzalloc(sizeof(*otg), GFP_KERNEL);
-	if (!otg) {
-		kfree(phy);
+	if (!otg)
 		return NULL;
-	}
 
-	phy->label	= "ULPI";
-	phy->flags	= flags;
-	phy->io_ops	= ops;
-	phy->otg	= otg;
-	phy->init	= ulpi_init;
-
-	otg->phy	= phy;
+	otg->label	= "ULPI";
+	otg->flags	= flags;
+	otg->io_ops	= ops;
+	otg->init	= ulpi_init;
 	otg->set_host	= ulpi_set_host;
 	otg->set_vbus	= ulpi_set_vbus;
 
-	return phy;
+	return otg;
 }
 EXPORT_SYMBOL_GPL(otg_ulpi_create);
 

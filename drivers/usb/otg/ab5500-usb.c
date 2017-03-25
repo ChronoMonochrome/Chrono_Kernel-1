@@ -23,7 +23,7 @@
 #include <linux/kernel_stat.h>
 #include <mach/gpio.h>
 #include <mach/reboot_reasons.h>
-#include <linux/pm_qos.h>
+#include <linux/pm_qos_params.h>
 
 #include <linux/wakelock.h>
 static struct wake_lock ab5500_musb_wakelock;
@@ -52,7 +52,7 @@ static struct wake_lock ab5500_musb_wakelock;
 #define USB_PROBE_DELAY 1000 /* 1 seconds */
 #define USB_LIMIT (200) /* If we have more than 200 irqs per second */
 
-static struct pm_qos_request usb_pm_qos_latency;
+static struct pm_qos_request_list usb_pm_qos_latency;
 static bool usb_pm_qos_is_latency_0;
 
 #define PUBLIC_ID_BACKUPRAM1 (U5500_BACKUPRAM1_BASE + 0x0FC0)
@@ -204,7 +204,6 @@ static void ab5500_usb_phy_enable(struct ab5500_usb *ab, bool sel_host)
 	ab->usb_gpio->enable();
 	clk_enable(ab->sysclk);
 	regulator_enable(ab->v_ape);
-
 	/* TODO: Remove ux500_resotore_context and handle similar to ab8500 */
 	ux500_restore_context(NULL);
 	ret = gpio_direction_output(ab->usb_cs_gpio, 0);
