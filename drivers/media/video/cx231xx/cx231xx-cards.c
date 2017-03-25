@@ -387,7 +387,6 @@ struct cx231xx_board cx231xx_boards[] = {
 		.norm = V4L2_STD_NTSC,
 		.no_alt_vanc = 1,
 		.external_av = 1,
-		.dont_use_port_3 = 1,
 		.input = {{
 			.type = CX231XX_VMUX_COMPOSITE1,
 			.vmux = CX231XX_VIN_2_1,
@@ -533,76 +532,6 @@ struct cx231xx_board cx231xx_boards[] = {
 			.gpio = NULL,
 		} },
 	},
-	[CX231XX_BOARD_HAUPPAUGE_USB2_FM_PAL] = {
-		.name = "Hauppauge WinTV USB2 FM (PAL)",
-		.tuner_type = TUNER_NXP_TDA18271,
-		.tuner_addr = 0x60,
-		.tuner_gpio = RDE250_XCV_TUNER,
-		.tuner_sif_gpio = 0x05,
-		.tuner_scl_gpio = 0x1a,
-		.tuner_sda_gpio = 0x1b,
-		.decoder = CX231XX_AVDECODER,
-		.output_mode = OUT_MODE_VIP11,
-		.ctl_pin_status_mask = 0xFFFFFFC4,
-		.agc_analog_digital_select_gpio = 0x0c,
-		.gpio_pin_status_mask = 0x4001000,
-		.tuner_i2c_master = 1,
-		.norm = V4L2_STD_PAL,
-
-		.input = {{
-			.type = CX231XX_VMUX_TELEVISION,
-			.vmux = CX231XX_VIN_3_1,
-			.amux = CX231XX_AMUX_VIDEO,
-			.gpio = NULL,
-		}, {
-			.type = CX231XX_VMUX_COMPOSITE1,
-			.vmux = CX231XX_VIN_2_1,
-			.amux = CX231XX_AMUX_LINE_IN,
-			.gpio = NULL,
-		}, {
-			.type = CX231XX_VMUX_SVIDEO,
-			.vmux = CX231XX_VIN_1_1 |
-				(CX231XX_VIN_1_2 << 8) |
-				CX25840_SVIDEO_ON,
-			.amux = CX231XX_AMUX_LINE_IN,
-			.gpio = NULL,
-		} },
-	},
-	[CX231XX_BOARD_HAUPPAUGE_USB2_FM_NTSC] = {
-		.name = "Hauppauge WinTV USB2 FM (NTSC)",
-		.tuner_type = TUNER_NXP_TDA18271,
-		.tuner_addr = 0x60,
-		.tuner_gpio = RDE250_XCV_TUNER,
-		.tuner_sif_gpio = 0x05,
-		.tuner_scl_gpio = 0x1a,
-		.tuner_sda_gpio = 0x1b,
-		.decoder = CX231XX_AVDECODER,
-		.output_mode = OUT_MODE_VIP11,
-		.ctl_pin_status_mask = 0xFFFFFFC4,
-		.agc_analog_digital_select_gpio = 0x0c,
-		.gpio_pin_status_mask = 0x4001000,
-		.tuner_i2c_master = 1,
-		.norm = V4L2_STD_NTSC,
-
-		.input = {{
-			.type = CX231XX_VMUX_TELEVISION,
-			.vmux = CX231XX_VIN_3_1,
-			.amux = CX231XX_AMUX_VIDEO,
-			.gpio = NULL,
-		}, {
-			.type = CX231XX_VMUX_COMPOSITE1,
-			.vmux = CX231XX_VIN_2_1,
-			.amux = CX231XX_AMUX_LINE_IN,
-			.gpio = NULL,
-		}, {
-			.type = CX231XX_VMUX_SVIDEO,
-			.vmux = CX231XX_VIN_1_1 |
-				(CX231XX_VIN_1_2 << 8) |
-				CX25840_SVIDEO_ON,
-			.amux = CX231XX_AMUX_LINE_IN,
-			.gpio = NULL,
-		} },
-	},
 };
 const unsigned int cx231xx_bcount = ARRAY_SIZE(cx231xx_boards);
 
@@ -624,10 +553,6 @@ struct usb_device_id cx231xx_id_table[] = {
 	 .driver_info = CX231XX_BOARD_CNXT_RDE_250},
 	{USB_DEVICE(0x0572, 0x58A0),
 	 .driver_info = CX231XX_BOARD_CNXT_RDU_250},
-	{USB_DEVICE(0x2040, 0xb110),
-	 .driver_info = CX231XX_BOARD_HAUPPAUGE_USB2_FM_PAL},
-	{USB_DEVICE(0x2040, 0xb111),
-	 .driver_info = CX231XX_BOARD_HAUPPAUGE_USB2_FM_NTSC},
 	{USB_DEVICE(0x2040, 0xb120),
 	 .driver_info = CX231XX_BOARD_HAUPPAUGE_EXETER},
 	{USB_DEVICE(0x2040, 0xb140),
@@ -843,33 +768,25 @@ void cx231xx_release_resources(struct cx231xx *dev)
 
 	cx231xx_remove_from_devlist(dev);
 
-	cx231xx_ir_exit(dev);
-
 	/* Release I2C buses */
 	cx231xx_dev_uninit(dev);
 
-	/* delete v4l2 device */
-	v4l2_device_unregister(&dev->v4l2_dev);
+	cx231xx_ir_exit(dev);
 
 	usb_put_dev(dev->udev);
 
 	/* Mark device as unused */
-	clear_bit(dev->devno, &cx231xx_devused);
-
-	kfree(dev->video_mode.alt_max_pkt_size);
-	kfree(dev->vbi_mode.alt_max_pkt_size);
-	kfree(dev->sliced_cc_mode.alt_max_pkt_size);
-	kfree(dev->ts1_mode.alt_max_pkt_size);
-	kfree(dev);
+	cx231xx_devused &= ~(1 << dev->devno);
 }
 
 /*
  * cx231xx_init_dev()
  * allocates and inits the device structs, registers i2c bus and v4l device
  */
-static int cx231xx_init_dev(struct cx231xx *dev, struct usb_device *udev,
+static int cx231xx_init_dev(struct cx231xx **devhandle, struct usb_device *udev,
 			    int minor)
 {
+	struct cx231xx *dev = *devhandle;
 	int retval = -ENOMEM;
 	int errCode;
 	unsigned int maxh, maxw;
@@ -1024,6 +941,7 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 	int i, isoc_pipe = 0;
 	char *speed;
 	char descr[255] = "";
+	struct usb_interface *lif = NULL;
 	struct usb_interface_assoc_descriptor *assoc_desc;
 
 	udev = usb_get_dev(interface_to_usbdev(interface));
@@ -1037,21 +955,21 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 		return -ENODEV;
 
 	/* Check to see next free device and mark as used */
-	do {
-		nr = find_first_zero_bit(&cx231xx_devused, CX231XX_MAXBOARDS);
-		if (nr >= CX231XX_MAXBOARDS) {
-			/* No free device slots */
-			cx231xx_err(DRIVER_NAME ": Supports only %i devices.\n",
-					CX231XX_MAXBOARDS);
-			return -ENOMEM;
-		}
-	} while (test_and_set_bit(nr, &cx231xx_devused));
+	nr = find_first_zero_bit(&cx231xx_devused, CX231XX_MAXBOARDS);
+	cx231xx_devused |= 1 << nr;
+
+	if (nr >= CX231XX_MAXBOARDS) {
+		cx231xx_err(DRIVER_NAME
+		 ": Supports only %i cx231xx boards.\n", CX231XX_MAXBOARDS);
+		cx231xx_devused &= ~(1 << nr);
+		return -ENOMEM;
+	}
 
 	/* allocate memory for our device state and initialize it */
 	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (dev == NULL) {
 		cx231xx_err(DRIVER_NAME ": out of memory!\n");
-		clear_bit(nr, &cx231xx_devused);
+		cx231xx_devused &= ~(1 << nr);
 		return -ENOMEM;
 	}
 
@@ -1077,6 +995,9 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 	dev->max_iad_interface_count = assoc_desc->bInterfaceCount;
 
 	/* init CIR module TBD */
+
+	/* store the current interface */
+	lif = interface;
 
 	/*mode_tv: digital=1 or analog=0*/
 	dev->mode_tv = 0;
@@ -1117,6 +1038,9 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 	     le16_to_cpu(udev->descriptor.idProduct),
 	     dev->max_iad_interface_count);
 
+	/* store the interface 0 back */
+	lif = udev->actconfig->interface[0];
+
 	/* increment interface count */
 	dev->interface_count++;
 
@@ -1127,16 +1051,13 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 	if (assoc_desc->bFirstInterface != ifnum) {
 		cx231xx_err(DRIVER_NAME ": Not found "
 			    "matching IAD interface\n");
-		clear_bit(dev->devno, &cx231xx_devused);
-		kfree(dev);
-		dev = NULL;
 		return -ENODEV;
 	}
 
 	cx231xx_info("registering interface %d\n", ifnum);
 
 	/* save our data pointer in this interface device */
-	usb_set_intfdata(interface, dev);
+	usb_set_intfdata(lif, dev);
 
 	/*
 	 * AV device initialization - only done at the last interface
@@ -1146,19 +1067,19 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 	retval = v4l2_device_register(&interface->dev, &dev->v4l2_dev);
 	if (retval) {
 		cx231xx_errdev("v4l2_device_register failed\n");
-		clear_bit(dev->devno, &cx231xx_devused);
+		cx231xx_devused &= ~(1 << nr);
 		kfree(dev);
 		dev = NULL;
 		return -EIO;
 	}
 	/* allocate device struct */
-	retval = cx231xx_init_dev(dev, udev, nr);
+	retval = cx231xx_init_dev(&dev, udev, nr);
 	if (retval) {
-		clear_bit(dev->devno, &cx231xx_devused);
+		cx231xx_devused &= ~(1 << dev->devno);
 		v4l2_device_unregister(&dev->v4l2_dev);
 		kfree(dev);
 		dev = NULL;
-		usb_set_intfdata(interface, NULL);
+		usb_set_intfdata(lif, NULL);
 
 		return retval;
 	}
@@ -1179,7 +1100,7 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 
 	if (dev->video_mode.alt_max_pkt_size == NULL) {
 		cx231xx_errdev("out of memory!\n");
-		clear_bit(dev->devno, &cx231xx_devused);
+		cx231xx_devused &= ~(1 << nr);
 		v4l2_device_unregister(&dev->v4l2_dev);
 		kfree(dev);
 		dev = NULL;
@@ -1213,7 +1134,7 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 
 	if (dev->vbi_mode.alt_max_pkt_size == NULL) {
 		cx231xx_errdev("out of memory!\n");
-		clear_bit(dev->devno, &cx231xx_devused);
+		cx231xx_devused &= ~(1 << nr);
 		v4l2_device_unregister(&dev->v4l2_dev);
 		kfree(dev);
 		dev = NULL;
@@ -1248,7 +1169,7 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 
 	if (dev->sliced_cc_mode.alt_max_pkt_size == NULL) {
 		cx231xx_errdev("out of memory!\n");
-		clear_bit(dev->devno, &cx231xx_devused);
+		cx231xx_devused &= ~(1 << nr);
 		v4l2_device_unregister(&dev->v4l2_dev);
 		kfree(dev);
 		dev = NULL;
@@ -1284,7 +1205,7 @@ static int cx231xx_usb_probe(struct usb_interface *interface,
 
 		if (dev->ts1_mode.alt_max_pkt_size == NULL) {
 			cx231xx_errdev("out of memory!\n");
-			clear_bit(dev->devno, &cx231xx_devused);
+			cx231xx_devused &= ~(1 << nr);
 			v4l2_device_unregister(&dev->v4l2_dev);
 			kfree(dev);
 			dev = NULL;
@@ -1335,9 +1256,10 @@ static void cx231xx_usb_disconnect(struct usb_interface *interface)
 	if (!dev->udev)
 		return;
 
-	dev->state |= DEV_DISCONNECTED;
-
 	flush_request_modules(dev);
+
+	/* delete v4l2 device */
+	v4l2_device_unregister(&dev->v4l2_dev);
 
 	/* wait until all current v4l2 io is finished then deallocate
 	   resources */
@@ -1351,24 +1273,31 @@ static void cx231xx_usb_disconnect(struct usb_interface *interface)
 		     "deallocation are deferred on close.\n",
 		     video_device_node_name(dev->vdev));
 
-		/* Even having users, it is safe to remove the RC i2c driver */
-		cx231xx_ir_exit(dev);
-
+		dev->state |= DEV_MISCONFIGURED;
 		if (dev->USE_ISO)
 			cx231xx_uninit_isoc(dev);
 		else
 			cx231xx_uninit_bulk(dev);
+		dev->state |= DEV_DISCONNECTED;
 		wake_up_interruptible(&dev->wait_frame);
 		wake_up_interruptible(&dev->wait_stream);
 	} else {
+		dev->state |= DEV_DISCONNECTED;
+		cx231xx_release_resources(dev);
 	}
 
 	cx231xx_close_extension(dev);
 
 	mutex_unlock(&dev->lock);
 
-	if (!dev->users)
-		cx231xx_release_resources(dev);
+	if (!dev->users) {
+		kfree(dev->video_mode.alt_max_pkt_size);
+		kfree(dev->vbi_mode.alt_max_pkt_size);
+		kfree(dev->sliced_cc_mode.alt_max_pkt_size);
+		kfree(dev->ts1_mode.alt_max_pkt_size);
+		kfree(dev);
+		dev = NULL;
+	}
 }
 
 static struct usb_driver cx231xx_usb_driver = {
@@ -1378,4 +1307,26 @@ static struct usb_driver cx231xx_usb_driver = {
 	.id_table = cx231xx_id_table,
 };
 
-module_usb_driver(cx231xx_usb_driver);
+static int __init cx231xx_module_init(void)
+{
+	int result;
+
+	printk(KERN_INFO DRIVER_NAME " v4l2 driver loaded.\n");
+
+	/* register this driver with the USB subsystem */
+	result = usb_register(&cx231xx_usb_driver);
+	if (result)
+		cx231xx_err(DRIVER_NAME
+			    " usb_register failed. Error number %d.\n", result);
+
+	return result;
+}
+
+static void __exit cx231xx_module_exit(void)
+{
+	/* deregister this driver with the USB subsystem */
+	usb_deregister(&cx231xx_usb_driver);
+}
+
+module_init(cx231xx_module_init);
+module_exit(cx231xx_module_exit);

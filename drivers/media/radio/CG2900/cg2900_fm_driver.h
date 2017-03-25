@@ -3,6 +3,7 @@
  *
  * Linux FM Driver for CG2900 FM Chip
  *
+ * Author: Anupam Roy <anupam.roy@stericsson.com> for ST-Ericsson.
  * Author: Hemant Gupta <hemant.gupta@stericsson.com> for ST-Ericsson.
  *
  * License terms: GNU General Public License (GPL), version 2
@@ -184,6 +185,8 @@ enum fmd_debug_levels {
 #define CMD_AUP_SET_BALANCE				0x0042
 #define CMD_AUP_SET_MUTE				0x0062
 #define CMD_AUP_SET_VOLUME				0x0022
+#define CMD_AUP_BT_SETVOLUME            0x0122
+#define CMD_AUP_BT_SET_MUTE                     0x01A2
 #define CMD_FMR_DP_BUFFER_GET_GROUP			0x0303
 #define CMD_FMR_DP_BUFFER_GET_GROUP_COUNT		0x0323
 #define CMD_FMR_DP_BUFFER_SET_SIZE			0x0343
@@ -194,6 +197,11 @@ enum fmd_debug_levels {
 #define CMD_FMR_RP_GET_STATE				0x0063
 #define CMD_FMR_RP_STEREO_SET_MODE			0x0123
 #define CMD_FMR_RP_STEREO_SET_CONTROL_BLENDING_RSSI		0x0143
+
+/* Soft Mute API */
+#define CMD_FMR_RP_SOFTMUTE_SET_CONTROL         0x0223
+#define CMD_FMR_RP_SOFTMUTE_SET_MODE            0x0203
+
 #define CMD_FMR_SET_ANTENNA				0x0663
 #define CMD_FMR_SP_AF_SWITCH_GET_RESULT			0x0603
 #define CMD_FMR_SP_AF_SWITCH_START			0x04A3
@@ -275,6 +283,11 @@ enum fmd_debug_levels {
 #define CMD_DP_BUFFER_SET_THRESHOLD_PARAM_LEN		1
 #define CMD_DP_SET_CONTROL_PARAM_LEN			1
 #define CMD_DP_SET_GROUP_REJECTION_PARAM_LEN		1
+
+/* Soft Mute */
+#define CMD_RP_SETMODE_SOFTMUTE_PARAM_LEN        1
+#define CMD_RP_SOFTMUTE_SETCONTROL_PARAM_LEN		3
+
 #define CMD_PA_SET_MODE_PARAM_LEN			1
 #define CMD_PA_SET_CONTROL_PARAM_LEN			1
 #define CMD_RP_SET_PREEMPHASIS_PARAM_LEN		1
@@ -284,8 +297,10 @@ enum fmd_debug_levels {
 #define CMD_DP_BUFFER_SET_GROUP_PARAM_LEN		5
 #define CMD_SET_BALANCE_PARAM_LEN			1
 #define CMD_SET_VOLUME_PARAM_LEN			1
+#define CMD_SET_AUP_BT_SETVOLUME_PARAM_LEN            1
 #define CMD_SET_MUTE_PARAM_LEN				2
 #define CMD_EXT_SET_MUTE_PARAM_LEN			1
+#define CMD_BT_SET_MUTE_PARAM_LEN                   1
 #define CMD_POWERUP_PARAM_LEN				0
 #define CMD_GOTO_STANDBY_PARAM_LEN			0
 #define CMD_GOTO_POWERDOWN_PARAM_LEN			0
@@ -552,6 +567,20 @@ enum fmd_rds_mode {
 enum fmd_rds_group_rejection_mode {
 	FMD_RDS_GROUP_REJECTION_ON,
 	FMD_RDS_GROUP_REJECTION_OFF
+};
+
+/**
+ * enum fmd_softmute_mode - Soft Mute On\Off
+ * to be selected for FM Rx.
+ *
+ * @FMD_SOFTMUTE_ON: Enable SoftMute in FM Chip.
+ * @FMD_SOFTMUTE_OFF: Disable SoftMute in FM Chip.
+ *
+ * SoftMute to be enabled or disabled for FM Rx.
+ */
+enum fmd_softmute_mode {
+    FMD_SOFTMUTE_ON,
+    FMD_SOFTMUTE_OFF
 };
 
 /**
@@ -890,6 +919,21 @@ int fmd_rx_set_stop_level(
 			u16 stoplevel
 			);
 
+
+/**
+ * fmd_rx_set_snr_threshold() - Sets the noise threshold final.
+ *
+ * @rssi_threshold: Noise threshold final
+ *
+ *  Returns:
+ *   0,  if no error.
+ *   -ENOEXEC, if preconditions are violated.
+ *   -EBUSY, if FM Driver is not in idle state.
+ */
+int fmd_rx_set_snr_threshold(
+            u16 rssi_threshold
+            );
+
 /**
  * fmd_rx_get_stop_level() - Gets the current FM Rx Seek stop level.
  *
@@ -980,7 +1024,8 @@ int fmd_rx_get_af_update_result(
  */
 int fmd_rx_af_switch_start(
 			u32 freq,
-			u16  picode
+			u16 picode,
+			u16 minrssi
 			);
 
 /**
@@ -1180,6 +1225,41 @@ int fmd_rx_set_rds(
 int fmd_rx_set_rds_group_rejection(
 			u8 on_off_state
 			);
+
+/**
+ * fmd_rx_softmute_setcontrol() - Adjusts the behaviour of softmute
+ *
+ * @minRssi : minimum RSSI
+ * @maxRssi : maximum RSSI
+ * @attenuation: max attenuation level
+ *
+ * Returns:
+ *   0,  if no error.
+ *   -ENOEXEC, if preconditions are violated.
+ *   -EBUSY, if FM Driver is not in idle state.
+ *   -EINVAL, if wrong response received from chip.
+ */
+int fmd_rx_softmute_setcontrol(
+            u16 minRssi,
+			u16 maxRssi,
+			u16 attenuation
+            );
+
+/**
+ * fmd_rx_set_softmute() - Enables or disables SoftMute
+ *
+ * @on_off_state : Rx SoftMute ON /OFF control
+ *
+ * Returns:
+ *   0,  if no error.
+ *   -ENOEXEC, if preconditions are violated.
+ *   -EBUSY, if FM Driver is not in idle state.
+ *   -EINVAL, if wrong response received from chip.
+ */
+
+int fmd_rx_set_softmute(
+            u8 on_off_state
+            );
 
 /**
  * fmd_rx_get_low_level_rds_groups() - Gets Low level RDS group data.
@@ -1539,6 +1619,38 @@ int fmd_tx_buffer_set_size(
 			);
 
 /**
+ * fmd_set_bt_aup_setvolume() - Sets the receive audio volume.
+ *
+ * @volume: Audio volume level
+ *
+ * Returns:
+ *   0,  if no error.
+ *   -ENOEXEC, if preconditions are violated.
+ *   -EBUSY, if FM Driver is not in idle state.
+ *   -EINVAL, if wrong response received from chip.
+ */
+int fmd_set_bt_aup_setvolume(
+            u8 volume
+            );
+
+#if defined(USE_FM_VOLUME_TABLE)
+/**
+ * fmd_set_bt_aup_setvolume_table() - Sets the receive audio volume direct.
+ *
+ * @volume_table: Audio volume table
+ *
+ * Returns:
+ *   0,  if no error.
+ *   -ENOEXEC, if preconditions are violated.
+ *   -EBUSY, if FM Driver is not in idle state.
+ *   -EINVAL, if wrong response received from chip.
+ */
+
+int fmd_set_bt_aup_setvolume_table(
+			u16 volume_table
+			);
+#endif
+/**
  * fmd_set_volume() - Sets the receive audio volume.
  *
  * @volume: Audio volume level
@@ -1597,6 +1709,22 @@ int fmd_set_balance(
 int fmd_set_mute(
 			bool mute_on
 			);
+
+/**
+ * fmd_bt_set_mute() - Enables or disables muting of the audio channel 
+ * with Immediate effect for BT SRC.
+ *
+ * @mute_on: bool to Mute
+ *
+ * Returns:
+ *   0,  if no error.
+ *   -ENOEXEC, if preconditions are violated.
+ *   -EBUSY, if FM Driver is not in idle state.
+ *   -EINVAL, if wrong response received from chip.
+ */
+int fmd_bt_set_mute(
+                   bool mute_on
+                   );
 
 /**
  * fmd_ext_set_mute() - Enables or disables muting of the audio channel.

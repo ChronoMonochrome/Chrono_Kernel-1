@@ -30,10 +30,30 @@ static struct soc_camera_platform_priv *get_priv(struct platform_device *pdev)
 	return container_of(subdev, struct soc_camera_platform_priv, subdev);
 }
 
+static struct soc_camera_platform_info *get_info(struct soc_camera_device *icd)
+{
+	struct platform_device *pdev =
+		to_platform_device(to_soc_camera_control(icd));
+	return pdev->dev.platform_data;
+}
+
 static int soc_camera_platform_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct soc_camera_platform_info *p = v4l2_get_subdevdata(sd);
 	return p->set_capture(p, enable);
+}
+
+static int soc_camera_platform_set_bus_param(struct soc_camera_device *icd,
+					     unsigned long flags)
+{
+	return 0;
+}
+
+static unsigned long
+soc_camera_platform_query_bus_param(struct soc_camera_device *icd)
+{
+	struct soc_camera_platform_info *p = get_info(icd);
+	return p->bus_param;
 }
 
 static int soc_camera_platform_fill_fmt(struct v4l2_subdev *sd,
@@ -95,17 +115,6 @@ static int soc_camera_platform_cropcap(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int soc_camera_platform_g_mbus_config(struct v4l2_subdev *sd,
-					     struct v4l2_mbus_config *cfg)
-{
-	struct soc_camera_platform_info *p = v4l2_get_subdevdata(sd);
-
-	cfg->flags = p->mbus_param;
-	cfg->type = p->mbus_type;
-
-	return 0;
-}
-
 static struct v4l2_subdev_video_ops platform_subdev_video_ops = {
 	.s_stream	= soc_camera_platform_s_stream,
 	.enum_mbus_fmt	= soc_camera_platform_enum_fmt,
@@ -114,12 +123,16 @@ static struct v4l2_subdev_video_ops platform_subdev_video_ops = {
 	.try_mbus_fmt	= soc_camera_platform_fill_fmt,
 	.g_mbus_fmt	= soc_camera_platform_fill_fmt,
 	.s_mbus_fmt	= soc_camera_platform_fill_fmt,
-	.g_mbus_config	= soc_camera_platform_g_mbus_config,
 };
 
 static struct v4l2_subdev_ops platform_subdev_ops = {
 	.core	= &platform_subdev_core_ops,
 	.video	= &platform_subdev_video_ops,
+};
+
+static struct soc_camera_ops soc_camera_platform_ops = {
+	.set_bus_param		= soc_camera_platform_set_bus_param,
+	.query_bus_param	= soc_camera_platform_query_bus_param,
 };
 
 static int soc_camera_platform_probe(struct platform_device *pdev)
@@ -133,7 +146,7 @@ static int soc_camera_platform_probe(struct platform_device *pdev)
 	if (!p)
 		return -EINVAL;
 
-	if (!p->icd) {
+	if (!p->dev) {
 		dev_err(&pdev->dev,
 			"Platform has not set soc_camera_device pointer!\n");
 		return -EINVAL;
@@ -143,14 +156,16 @@ static int soc_camera_platform_probe(struct platform_device *pdev)
 	if (!priv)
 		return -ENOMEM;
 
-	icd = p->icd;
+	icd = to_soc_camera_dev(p->dev);
 
 	/* soc-camera convention: control's drvdata points to the subdev */
 	platform_set_drvdata(pdev, &priv->subdev);
 	/* Set the control device reference */
-	icd->control = &pdev->dev;
+	dev_set_drvdata(&icd->dev, &pdev->dev);
 
-	ici = to_soc_camera_host(icd->parent);
+	icd->ops = &soc_camera_platform_ops;
+
+	ici = to_soc_camera_host(icd->dev.parent);
 
 	v4l2_subdev_init(&priv->subdev, &platform_subdev_ops);
 	v4l2_set_subdevdata(&priv->subdev, p);
@@ -163,6 +178,7 @@ static int soc_camera_platform_probe(struct platform_device *pdev)
 	return ret;
 
 evdrs:
+	icd->ops = NULL;
 	platform_set_drvdata(pdev, NULL);
 	kfree(priv);
 	return ret;
@@ -171,10 +187,11 @@ evdrs:
 static int soc_camera_platform_remove(struct platform_device *pdev)
 {
 	struct soc_camera_platform_priv *priv = get_priv(pdev);
-	struct soc_camera_platform_info *p = v4l2_get_subdevdata(&priv->subdev);
+	struct soc_camera_platform_info *p = pdev->dev.platform_data;
+	struct soc_camera_device *icd = to_soc_camera_dev(p->dev);
 
-	p->icd->control = NULL;
 	v4l2_device_unregister_subdev(&priv->subdev);
+	icd->ops = NULL;
 	platform_set_drvdata(pdev, NULL);
 	kfree(priv);
 	return 0;
@@ -189,7 +206,18 @@ static struct platform_driver soc_camera_platform_driver = {
 	.remove		= soc_camera_platform_remove,
 };
 
-module_platform_driver(soc_camera_platform_driver);
+static int __init soc_camera_platform_module_init(void)
+{
+	return platform_driver_register(&soc_camera_platform_driver);
+}
+
+static void __exit soc_camera_platform_module_exit(void)
+{
+	platform_driver_unregister(&soc_camera_platform_driver);
+}
+
+module_init(soc_camera_platform_module_init);
+module_exit(soc_camera_platform_module_exit);
 
 MODULE_DESCRIPTION("SoC Camera Platform driver");
 MODULE_AUTHOR("Magnus Damm");

@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #define MODULE_NAME "sn9c2028"
 
 #include "gspca.h"
@@ -77,8 +75,8 @@ static int sn9c2028_command(struct gspca_dev *gspca_dev, u8 *command)
 			USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_INTERFACE,
 			2, 0, gspca_dev->usb_buf, 6, 500);
 	if (rc < 0) {
-		pr_err("command write [%02x] error %d\n",
-		       gspca_dev->usb_buf[0], rc);
+		err("command write [%02x] error %d",
+				gspca_dev->usb_buf[0], rc);
 		return rc;
 	}
 
@@ -95,7 +93,7 @@ static int sn9c2028_read1(struct gspca_dev *gspca_dev)
 			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_INTERFACE,
 			1, 0, gspca_dev->usb_buf, 1, 500);
 	if (rc != 1) {
-		pr_err("read1 error %d\n", rc);
+		err("read1 error %d", rc);
 		return (rc < 0) ? rc : -EIO;
 	}
 	PDEBUG(D_USBI, "read1 response %02x", gspca_dev->usb_buf[0]);
@@ -111,7 +109,7 @@ static int sn9c2028_read4(struct gspca_dev *gspca_dev, u8 *reading)
 			USB_DIR_IN | USB_TYPE_VENDOR | USB_RECIP_INTERFACE,
 			4, 0, gspca_dev->usb_buf, 4, 500);
 	if (rc != 4) {
-		pr_err("read4 error %d\n", rc);
+		err("read4 error %d", rc);
 		return (rc < 0) ? rc : -EIO;
 	}
 	memcpy(reading, gspca_dev->usb_buf, 4);
@@ -133,7 +131,7 @@ static int sn9c2028_long_command(struct gspca_dev *gspca_dev, u8 *command)
 	for (i = 0; i < 256 && status < 2; i++)
 		status = sn9c2028_read1(gspca_dev);
 	if (status != 2) {
-		pr_err("long command status read error %d\n", status);
+		err("long command status read error %d", status);
 		return (status < 0) ? status : -EIO;
 	}
 
@@ -640,7 +638,7 @@ static int sd_start(struct gspca_dev *gspca_dev)
 		err_code = start_vivitar_cam(gspca_dev);
 		break;
 	default:
-		pr_err("Starting unknown camera, please report this\n");
+		err("Starting unknown camera, please report this");
 		return -ENXIO;
 	}
 
@@ -737,4 +735,16 @@ static struct usb_driver sd_driver = {
 #endif
 };
 
-module_usb_driver(sd_driver);
+/* -- module insert / remove -- */
+static int __init sd_mod_init(void)
+{
+	return usb_register(&sd_driver);
+}
+
+static void __exit sd_mod_exit(void)
+{
+	usb_deregister(&sd_driver);
+}
+
+module_init(sd_mod_init);
+module_exit(sd_mod_exit);

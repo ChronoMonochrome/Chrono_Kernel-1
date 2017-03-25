@@ -229,7 +229,7 @@ static int bt819_status(struct v4l2_subdev *sd, u32 *pstatus, v4l2_std_id *pstd)
 	if (pstd)
 		*pstd = std;
 	if (pstatus)
-		*pstatus = res;
+		*pstatus = status;
 
 	v4l2_dbg(1, debug, sd, "get status %x\n", status);
 	return 0;
@@ -514,4 +514,15 @@ static struct i2c_driver bt819_driver = {
 	.id_table	= bt819_id,
 };
 
-module_i2c_driver(bt819_driver);
+static __init int init_bt819(void)
+{
+	return i2c_add_driver(&bt819_driver);
+}
+
+static __exit void exit_bt819(void)
+{
+	i2c_del_driver(&bt819_driver);
+}
+
+module_init(init_bt819);
+module_exit(exit_bt819);

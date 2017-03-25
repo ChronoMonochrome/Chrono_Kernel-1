@@ -3,6 +3,7 @@
  *
  * Linux FM Driver for CG2900 FM Chip
  *
+ * Author: Anupam Roy <anupam.roy@stericsson.com> for ST-Ericsson.
  * Author: Hemant Gupta <hemant.gupta@stericsson.com> for ST-Ericsson.
  *
  * License terms: GNU General Public License (GPL), version 2
@@ -209,6 +210,7 @@ struct fmd_states_info {
 	u8			rx_volume;
 	u8			rx_antenna;
 	u16			rx_seek_stop_level;
+	u16         rx_seek_rssi_snr;
 	bool		rx_rds_on;
 	u8			rx_stereo_mode;
 	u8			tx_freq_range;
@@ -477,6 +479,7 @@ static u8 fmd_get_event(
 		event = FMD_EVENT_AF_UPDATE_SWITCH_COMPLETE;
 		break;
 	case FMD_STATE_SEEK_STOP:
+	    printk("fmd_get_event: FMD_STATE_SEEK_STOP is the current command so event name is FMD_EVENT_SEEK_STOPPED\n");
 		event = FMD_EVENT_SEEK_STOPPED;
 		break;
 	default:
@@ -631,9 +634,15 @@ static void fmd_process_interrupt(
 	FM_DEBUG_REPORT("%s", irpt_name);
 	if ((interrupt & IRPT_OPERATION_SUCCEEDED) |
 		(interrupt & IRPT_OPERATION_FAILED)) {
+	    printk("fmd_process_interrupt irq succeed or failed \n");
 		bool event_status = (interrupt & IRPT_OPERATION_SUCCEEDED);
+		printk("fmd_process_interrupt irq succeed or failed event status=%d \n", event_status);
 		u8 event = fmd_get_event(fmd_state_info.gocmd);
-
+        printk("fmd_process_interrupt cmd that is pending and event id=%d \n",fmd_state_info.gocmd, event);
+        
+        if(fmd_state_info.gocmd == FMD_STATE_SEEK_STOP) {
+            printk("fmd_process_interrupt: Scan stop command has been sent!!!\n");
+        }
 		switch (fmd_state_info.gocmd) {
 		case FMD_STATE_MODE:
 			/* Mode has been changed. */
@@ -685,6 +694,7 @@ static void fmd_process_interrupt(
 			 * Set State to None. No need to set the
 			 * semaphore since this is an asyncronous event.
 			 */
+		    printk("current command was Scan or Seek \n");
 			fmd_state_info.gocmd = FMD_STATE_NONE;
 			/* Inform Upper layer. */
 			fmd_callback(event,	event_status);
@@ -1229,6 +1239,7 @@ static int fmd_irq_thread(
 						"Interrupt = %04x",
 						fmd_state_info.
 						interrupt_queue[index]);
+					printk("Process IRQ Now \n");
 					fmd_process_interrupt(
 					fmd_state_info.interrupt_queue[index]);
 					fmd_state_info.interrupt_queue[index]
@@ -1528,8 +1539,11 @@ static int fmd_send_cmd_and_read_resp(
 	/*
 	 * Check that the response belongs to the sent command
 	 */
-	if (read_cmd_id != cmd_id)
-		result = -EINVAL;
+	if (read_cmd_id != cmd_id) {
+		printk(" Alert!!! read_cmd_id =%d cmd_id =%d",read_cmd_id, cmd_id);
+	    result = -EINVAL;
+		
+	}
 
 error:
 	mutex_unlock(&send_cmd_mutex);
@@ -1816,6 +1830,7 @@ int fmd_init(void)
 	fmd_state_info.rx_antenna = FMD_ANTENNA_EMBEDDED;
 	fmd_state_info.rx_rds_on = false;
 	fmd_state_info.rx_seek_stop_level = DEFAULT_RSSI_THRESHOLD;
+	fmd_state_info.rx_seek_rssi_snr = DEFAULT_AVERAGE_NOISE_MAX_VALUE;
 	fmd_state_info.tx_freq_range = FMD_FREQRANGE_EUROAMERICA;
 	fmd_state_info.tx_preemphasis = FMD_EMPHASIS_75US;
 	fmd_state_info.tx_pilot_dev = DEFAULT_PILOT_DEVIATION;
@@ -2474,6 +2489,33 @@ error:
 	return err;
 }
 
+int fmd_rx_set_snr_threshold(
+            u16 rssi_snr
+            )
+{
+    int err;
+    
+    printk("fmd_rx_set_snr_threshold rssi snr value=%d\n", rssi_snr);
+
+    if (fmd_go_cmd_busy()) {
+        err = -EBUSY;
+        goto error;
+    }
+
+    if (!fmd_state_info.fmd_initialized) {
+        err = -ENOEXEC;
+        goto error;
+    }
+
+    fmd_state_info.rx_seek_rssi_snr = rssi_snr;
+    
+    printk("fmd_rx_set_snr_threshold: final noise threshold final value=%d", fmd_state_info.rx_seek_rssi_snr);
+    err = 0;
+
+error:
+    return err;
+}
+
 int fmd_rx_get_stop_level(
 			u16 *stop_level
 			)
@@ -2524,9 +2566,11 @@ int fmd_rx_seek(
 		parameters[0] = 0x0000;
 	else
 		parameters[0] = 0x0001;
+	
+	printk("fmd_rx_seek, snr value=%d \n",fmd_state_info.rx_seek_rssi_snr);
 	parameters[1] = fmd_state_info.rx_seek_stop_level;
 	parameters[2] = DEFAULT_PEAK_NOISE_VALUE;
-	parameters[3] = DEFAULT_AVERAGE_NOISE_MAX_VALUE;
+	parameters[3] = fmd_state_info.rx_seek_rssi_snr;
 	fmd_state_info.gocmd = FMD_STATE_SEEK;
 	io_result = fmd_send_cmd_and_read_resp(
 			CMD_FMR_SP_SEARCH_START,
@@ -2569,11 +2613,13 @@ int fmd_rx_scan_band(
 		err = -EINVAL;
 		goto error;
 	}
+	
+	printk("fmd_rx_scan_band, snr value=%d \n",fmd_state_info.rx_seek_rssi_snr);
 
 	parameters[0] = max_channels_to_scan;
 	parameters[1] = fmd_state_info.rx_seek_stop_level;
 	parameters[2] = DEFAULT_PEAK_NOISE_VALUE;
-	parameters[3] = DEFAULT_AVERAGE_NOISE_MAX_VALUE;
+	parameters[3] = fmd_state_info.rx_seek_rssi_snr;
 
 	fmd_state_info.gocmd = FMD_STATE_SCAN_BAND;
 	fmd_state_info.max_channels_to_scan = max_channels_to_scan;
@@ -2865,12 +2911,15 @@ int fmd_rx_stop_seeking(void)
 	}
 
 	fmd_state_info.gocmd = FMD_STATE_SEEK_STOP;
+	
+	printk("fmd_rx_stop_seeking : Send command!!!\n");
 	io_result = fmd_send_cmd_and_read_resp(
 			CMD_FMR_SP_STOP,
 			CMD_SP_STOP_PARAM_LEN,
 			NULL,
 			NULL,
 			NULL);
+	printk("fmd_rx_stop_seeking : Command Sent!!! io_result=%d \n", io_result);
 
 	if (io_result != 0) {
 		fmd_state_info.gocmd = FMD_STATE_NONE;
@@ -2884,6 +2933,7 @@ int fmd_rx_stop_seeking(void)
 		err = 0;
 
 error:
+    printk("fmd_rx_stop_seeking : return =%d!!!\n", err);
 	return err;
 }
 
@@ -2986,13 +3036,16 @@ error:
 
 int fmd_rx_af_switch_start(
 			u32 freq,
-			u16 picode
+			u16 picode,
+			u16 minrssi
 			)
 {
 
 	int err;
 	int io_result;
 	u16  parameters[CMD_SP_AF_SWITCH_START_PARAM_LEN];
+	
+	printk("fmd_rx_af_switch_start minrssi=%d\n", minrssi);
 
 	if (fmd_go_cmd_busy()) {
 		err = -EBUSY;
@@ -3015,10 +3068,13 @@ int fmd_rx_af_switch_start(
 
 	parameters[1] = picode;
 	parameters[2] = 0xFFFF; /* PI Mask */
-	parameters[3] = fmd_state_info.rx_seek_stop_level;
+	//parameters[3] = fmd_state_info.rx_seek_stop_level;
+	parameters[3] = minrssi;
 	parameters[4] = 0x0000; /* Unmute when AF's PI matches expected PI */
 
 	fmd_state_info.gocmd = FMD_STATE_AF_SWITCH;
+	
+	printk("fmd_rx_af_switch_start: Send command to chip \n");
 	io_result = fmd_send_cmd_and_read_resp(
 			CMD_FMR_SP_AF_SWITCH_START,
 			CMD_SP_AF_SWITCH_START_PARAM_LEN,
@@ -3026,6 +3082,7 @@ int fmd_rx_af_switch_start(
 			NULL,
 			NULL);
 
+	printk("fmd_rx_af_switch_start: Command sent to chip result=%d\n", io_result);
 	if (io_result != 0) {
 		fmd_state_info.gocmd = FMD_STATE_NONE;
 		err = io_result;
@@ -3298,6 +3355,107 @@ int fmd_rx_set_rds_group_rejection(
 
 error:
 	return err;
+}
+
+int fmd_rx_set_softmute(
+            u8 on_off_state
+            )
+{
+    int err;
+    int io_result;
+    u16  parameters[CMD_RP_SETMODE_SOFTMUTE_PARAM_LEN];
+    
+    printk("fmd_rx_set_softmute \n");
+
+    if (fmd_go_cmd_busy()) {
+        err = -EBUSY;
+        goto error;
+    }
+
+    if (!fmd_state_info.fmd_initialized) {
+        err = -ENOEXEC;
+        goto error;
+    }
+
+    if (on_off_state == FMD_SOFTMUTE_ON) {
+        parameters[0] = 0x0001;
+        printk("fmd_rx_set_softmute On \n");
+    }
+    else if (on_off_state == FMD_SOFTMUTE_OFF) {
+        parameters[0] = 0x0000;
+        printk("fmd_rx_set_softmute Off\n");
+    }
+
+    io_result = fmd_send_cmd_and_read_resp(
+            CMD_FMR_RP_SOFTMUTE_SET_MODE,
+            CMD_RP_SETMODE_SOFTMUTE_PARAM_LEN,
+            parameters,
+            NULL,
+            NULL);
+    
+    printk("fmd_rx_set_softmute On-Off io result=%d\n", io_result);
+
+    if (io_result != 0) {
+        err = io_result;
+        goto error;
+    }
+
+    err = 0;
+
+error:
+    return err;
+}
+
+int fmd_rx_softmute_setcontrol(
+            u16 minRssi,
+			u16 maxRssi,
+			u16 maxAttenuation
+            )
+{
+    int err;
+    int io_result;
+    u16  parameters[CMD_RP_SOFTMUTE_SETCONTROL_PARAM_LEN];
+    
+    printk("fmd_rx_softmute_setcontrol "
+            "minRssi %d "
+            "max_Rssi=%d "
+            "max Atten=%d \n", 
+            minRssi, 
+            maxRssi, 
+            maxAttenuation);
+
+    if (fmd_go_cmd_busy()) {
+        err = -EBUSY;
+        goto error;
+    }
+
+    if (!fmd_state_info.fmd_initialized) {
+        err = -ENOEXEC;
+        goto error;
+    }
+
+    parameters[0] = minRssi;
+	parameters[1] = maxRssi;
+	parameters[2] = maxAttenuation;
+
+	printk("fmd_rx_softmute_setcontrol: send command \n");
+    io_result = fmd_send_cmd_and_read_resp(
+            CMD_FMR_RP_SOFTMUTE_SET_CONTROL,
+            CMD_RP_SOFTMUTE_SETCONTROL_PARAM_LEN,
+            parameters,
+            NULL,
+            NULL);
+	printk("fmd_rx_softmute_setcontrol: send command io_result=%d\n", io_result);
+
+    if (io_result != 0) {
+        err = io_result;
+        goto error;
+    }
+
+    err = 0;
+
+error:
+    return err;
 }
 
 int fmd_rx_get_low_level_rds_groups(
@@ -4269,6 +4427,88 @@ error:
 	return err;
 }
 
+int fmd_set_bt_aup_setvolume(
+			u8 volume
+			)
+{
+	int err;
+	int io_result;
+	u16 parameters[CMD_SET_AUP_BT_SETVOLUME_PARAM_LEN];
+
+	if (fmd_go_cmd_busy()) {
+		err = -EBUSY;
+		goto error;
+	}
+
+	if (!fmd_state_info.fmd_initialized) {
+		err = -ENOEXEC;
+		goto error;
+	}
+
+	/* Convert volume from percentage to chip number */
+	parameters[0] = (((u16)volume) * FMD_MAX_VOLUME) / 100;
+
+	io_result = fmd_send_cmd_and_read_resp(
+	        CMD_AUP_BT_SETVOLUME,
+			CMD_SET_AUP_BT_SETVOLUME_PARAM_LEN,
+			parameters,
+			NULL,
+			NULL);
+
+
+	if (io_result != 0) {
+		err = io_result;
+		goto error;
+	}
+
+	fmd_state_info.rx_volume = volume;
+	err = 0;
+
+error:
+  	return err;
+}
+
+#if defined(USE_FM_VOLUME_TABLE)
+int fmd_set_bt_aup_setvolume_table(
+			u16 volume_table
+			)
+{
+	int err;
+	int io_result;
+	u16 parameters[CMD_SET_AUP_BT_SETVOLUME_PARAM_LEN];
+
+	if (fmd_go_cmd_busy()) {
+		err = -EBUSY;
+		goto error;
+	}
+
+	if (!fmd_state_info.fmd_initialized) {
+		err = -ENOEXEC;
+		goto error;
+	}
+
+	parameters[0] = volume_table;
+
+	io_result = fmd_send_cmd_and_read_resp(
+	        CMD_AUP_BT_SETVOLUME,
+			CMD_SET_AUP_BT_SETVOLUME_PARAM_LEN,
+			parameters,
+			NULL,
+			NULL);
+
+
+	if (io_result != 0) {
+		err = io_result;
+		goto error;
+	}
+
+	err = 0;
+
+error:
+  	return err;
+}
+#endif
+
 int fmd_get_volume(
 			u8 *volume
 			)
@@ -4339,6 +4579,47 @@ int fmd_set_mute(
 		err = -ETIME;
 	else
 		err = 0;
+
+error:
+	return err;
+}
+
+int fmd_bt_set_mute(
+                    bool mute_on
+                    )
+{
+	int err;
+	int io_result;
+	u16 parameters[CMD_BT_SET_MUTE_PARAM_LEN];
+
+	if (fmd_go_cmd_busy()) {
+		err = -EBUSY;
+		goto error;
+	}
+
+	if (!fmd_state_info.fmd_initialized) {
+		err = -ENOEXEC;
+		goto error;
+	}
+
+	if (!mute_on)
+		parameters[0] = 0x0000;
+	else
+		parameters[0] = 0x0001;
+
+	io_result = fmd_send_cmd_and_read_resp(
+			CMD_AUP_BT_SET_MUTE,
+			CMD_BT_SET_MUTE_PARAM_LEN,
+			parameters,
+			NULL,
+			NULL);
+	
+	if (io_result != 0) {
+		err = io_result;
+		goto error;
+	}
+
+	err = 0;
 
 error:
 	return err;

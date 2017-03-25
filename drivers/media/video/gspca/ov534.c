@@ -28,8 +28,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #define MODULE_NAME "ov534"
 
 #include "gspca.h"
@@ -777,7 +775,7 @@ static void ov534_reg_write(struct gspca_dev *gspca_dev, u16 reg, u8 val)
 			      USB_DIR_OUT | USB_TYPE_VENDOR | USB_RECIP_DEVICE,
 			      0x00, reg, gspca_dev->usb_buf, 1, CTRL_TIMEOUT);
 	if (ret < 0) {
-		pr_err("write failed %d\n", ret);
+		err("write failed %d", ret);
 		gspca_dev->usb_err = ret;
 	}
 }
@@ -796,7 +794,7 @@ static u8 ov534_reg_read(struct gspca_dev *gspca_dev, u16 reg)
 			      0x00, reg, gspca_dev->usb_buf, 1, CTRL_TIMEOUT);
 	PDEBUG(D_USBI, "GET 01 0000 %04x %02x", reg, gspca_dev->usb_buf[0]);
 	if (ret < 0) {
-		pr_err("read failed %d\n", ret);
+		err("read failed %d", ret);
 		gspca_dev->usb_err = ret;
 	}
 	return gspca_dev->usb_buf[0];
@@ -860,7 +858,7 @@ static void sccb_reg_write(struct gspca_dev *gspca_dev, u8 reg, u8 val)
 	ov534_reg_write(gspca_dev, OV534_REG_OPERATION, OV534_OP_WRITE_3);
 
 	if (!sccb_check_status(gspca_dev)) {
-		pr_err("sccb_reg_write failed\n");
+		err("sccb_reg_write failed");
 		gspca_dev->usb_err = -EIO;
 	}
 }
@@ -870,11 +868,11 @@ static u8 sccb_reg_read(struct gspca_dev *gspca_dev, u16 reg)
 	ov534_reg_write(gspca_dev, OV534_REG_SUBADDR, reg);
 	ov534_reg_write(gspca_dev, OV534_REG_OPERATION, OV534_OP_WRITE_2);
 	if (!sccb_check_status(gspca_dev))
-		pr_err("sccb_reg_read failed 1\n");
+		err("sccb_reg_read failed 1");
 
 	ov534_reg_write(gspca_dev, OV534_REG_OPERATION, OV534_OP_READ_2);
 	if (!sccb_check_status(gspca_dev))
-		pr_err("sccb_reg_read failed 2\n");
+		err("sccb_reg_read failed 2");
 
 	return ov534_reg_read(gspca_dev, OV534_REG_READ);
 }
@@ -1533,4 +1531,16 @@ static struct usb_driver sd_driver = {
 #endif
 };
 
-module_usb_driver(sd_driver);
+/* -- module insert / remove -- */
+static int __init sd_mod_init(void)
+{
+	return usb_register(&sd_driver);
+}
+
+static void __exit sd_mod_exit(void)
+{
+	usb_deregister(&sd_driver);
+}
+
+module_init(sd_mod_init);
+module_exit(sd_mod_exit);

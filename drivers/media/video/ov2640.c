@@ -18,13 +18,11 @@
 #include <linux/i2c.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
-#include <linux/v4l2-mediabus.h>
 #include <linux/videodev2.h>
-
-#include <media/soc_camera.h>
 #include <media/v4l2-chip-ident.h>
 #include <media/v4l2-subdev.h>
-#include <media/v4l2-ctrls.h>
+#include <media/soc_camera.h>
+#include <media/soc_mediabus.h>
 
 #define VAL_SET(x, mask, rshift, lshift)  \
 		((((x) >> rshift) & mask) << lshift)
@@ -301,10 +299,12 @@ struct ov2640_win_size {
 
 struct ov2640_priv {
 	struct v4l2_subdev		subdev;
-	struct v4l2_ctrl_handler	hdl;
+	struct ov2640_camera_info	*info;
 	enum v4l2_mbus_pixelcode	cfmt_code;
 	const struct ov2640_win_size	*win;
 	int				model;
+	u16				flag_vflip:1;
+	u16				flag_hflip:1;
 };
 
 /*
@@ -610,6 +610,29 @@ static enum v4l2_mbus_pixelcode ov2640_codes[] = {
 };
 
 /*
+ * Supported controls
+ */
+static const struct v4l2_queryctrl ov2640_controls[] = {
+	{
+		.id		= V4L2_CID_VFLIP,
+		.type		= V4L2_CTRL_TYPE_BOOLEAN,
+		.name		= "Flip Vertically",
+		.minimum	= 0,
+		.maximum	= 1,
+		.step		= 1,
+		.default_value	= 0,
+	}, {
+		.id		= V4L2_CID_HFLIP,
+		.type		= V4L2_CTRL_TYPE_BOOLEAN,
+		.name		= "Flip Horizontally",
+		.minimum	= 0,
+		.maximum	= 1,
+		.step		= 1,
+		.default_value	= 0,
+	},
+};
+
+/*
  * General functions
  */
 static struct ov2640_priv *to_ov2640(const struct i2c_client *client)
@@ -678,23 +701,81 @@ static int ov2640_s_stream(struct v4l2_subdev *sd, int enable)
 	return 0;
 }
 
-static int ov2640_s_ctrl(struct v4l2_ctrl *ctrl)
+static int ov2640_set_bus_param(struct soc_camera_device *icd,
+				unsigned long flags)
 {
-	struct v4l2_subdev *sd =
-		&container_of(ctrl->handler, struct ov2640_priv, hdl)->subdev;
+	struct soc_camera_link *icl = to_soc_camera_link(icd);
+	unsigned long width_flag = flags & SOCAM_DATAWIDTH_MASK;
+
+	/* Only one width bit may be set */
+	if (!is_power_of_2(width_flag))
+		return -EINVAL;
+
+	if (icl->set_bus_param)
+		return icl->set_bus_param(icl, width_flag);
+
+	/*
+	 * Without board specific bus width settings we support only the
+	 * sensors native bus width witch are tested working
+	 */
+	if (width_flag & (SOCAM_DATAWIDTH_10 | SOCAM_DATAWIDTH_8))
+		return 0;
+
+	return 0;
+}
+
+static unsigned long ov2640_query_bus_param(struct soc_camera_device *icd)
+{
+	struct soc_camera_link *icl = to_soc_camera_link(icd);
+	unsigned long flags = SOCAM_PCLK_SAMPLE_RISING | SOCAM_MASTER |
+		SOCAM_VSYNC_ACTIVE_HIGH | SOCAM_HSYNC_ACTIVE_HIGH |
+		SOCAM_DATA_ACTIVE_HIGH;
+
+	if (icl->query_bus_param)
+		flags |= icl->query_bus_param(icl) & SOCAM_DATAWIDTH_MASK;
+	else
+		flags |= SOCAM_DATAWIDTH_10;
+
+	return soc_camera_apply_sensor_flags(icl, flags);
+}
+
+static int ov2640_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
+{
 	struct i2c_client  *client = v4l2_get_subdevdata(sd);
+	struct ov2640_priv *priv = to_ov2640(client);
+
+	switch (ctrl->id) {
+	case V4L2_CID_VFLIP:
+		ctrl->value = priv->flag_vflip;
+		break;
+	case V4L2_CID_HFLIP:
+		ctrl->value = priv->flag_hflip;
+		break;
+	}
+	return 0;
+}
+
+static int ov2640_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
+{
+	struct i2c_client  *client = v4l2_get_subdevdata(sd);
+	struct ov2640_priv *priv = to_ov2640(client);
+	int ret = 0;
 	u8 val;
 
 	switch (ctrl->id) {
 	case V4L2_CID_VFLIP:
-		val = ctrl->val ? REG04_VFLIP_IMG : 0x00;
-		return ov2640_mask_set(client, REG04, REG04_VFLIP_IMG, val);
+		val = ctrl->value ? REG04_VFLIP_IMG : 0x00;
+		priv->flag_vflip = ctrl->value ? 1 : 0;
+		ret = ov2640_mask_set(client, REG04, REG04_VFLIP_IMG, val);
+		break;
 	case V4L2_CID_HFLIP:
-		val = ctrl->val ? REG04_HFLIP_IMG : 0x00;
-		return ov2640_mask_set(client, REG04, REG04_HFLIP_IMG, val);
+		val = ctrl->value ? REG04_HFLIP_IMG : 0x00;
+		priv->flag_hflip = ctrl->value ? 1 : 0;
+		ret = ov2640_mask_set(client, REG04, REG04_HFLIP_IMG, val);
+		break;
 	}
 
-	return -EINVAL;
+	return ret;
 }
 
 static int ov2640_g_chip_ident(struct v4l2_subdev *sd,
@@ -942,12 +1023,24 @@ static int ov2640_cropcap(struct v4l2_subdev *sd, struct v4l2_cropcap *a)
 	return 0;
 }
 
-static int ov2640_video_probe(struct i2c_client *client)
+static int ov2640_video_probe(struct soc_camera_device *icd,
+			      struct i2c_client *client)
 {
 	struct ov2640_priv *priv = to_ov2640(client);
 	u8 pid, ver, midh, midl;
 	const char *devname;
 	int ret;
+
+	/*
+	 * we must have a parent by now. And it cannot be a wrong one.
+	 * So this entire test is completely redundant.
+	 */
+	if (!icd->dev.parent ||
+	    to_soc_camera_host(icd->dev.parent)->nr != icd->iface) {
+		dev_err(&client->dev, "Parent missing or invalid!\n");
+		ret = -ENODEV;
+		goto err;
+	}
 
 	/*
 	 * check and show product ID and manufacturer ID
@@ -974,38 +1067,28 @@ static int ov2640_video_probe(struct i2c_client *client)
 		 "%s Product ID %0x:%0x Manufacturer ID %x:%x\n",
 		 devname, pid, ver, midh, midl);
 
-	return v4l2_ctrl_handler_setup(&priv->hdl);
+	return 0;
 
 err:
 	return ret;
 }
 
-static const struct v4l2_ctrl_ops ov2640_ctrl_ops = {
-	.s_ctrl = ov2640_s_ctrl,
+static struct soc_camera_ops ov2640_ops = {
+	.set_bus_param		= ov2640_set_bus_param,
+	.query_bus_param	= ov2640_query_bus_param,
+	.controls		= ov2640_controls,
+	.num_controls		= ARRAY_SIZE(ov2640_controls),
 };
 
 static struct v4l2_subdev_core_ops ov2640_subdev_core_ops = {
+	.g_ctrl		= ov2640_g_ctrl,
+	.s_ctrl		= ov2640_s_ctrl,
 	.g_chip_ident	= ov2640_g_chip_ident,
 #ifdef CONFIG_VIDEO_ADV_DEBUG
 	.g_register	= ov2640_g_register,
 	.s_register	= ov2640_s_register,
 #endif
 };
-
-static int ov2640_g_mbus_config(struct v4l2_subdev *sd,
-				struct v4l2_mbus_config *cfg)
-{
-	struct i2c_client *client = v4l2_get_subdevdata(sd);
-	struct soc_camera_link *icl = soc_camera_i2c_to_link(client);
-
-	cfg->flags = V4L2_MBUS_PCLK_SAMPLE_RISING | V4L2_MBUS_MASTER |
-		V4L2_MBUS_VSYNC_ACTIVE_HIGH | V4L2_MBUS_HSYNC_ACTIVE_HIGH |
-		V4L2_MBUS_DATA_ACTIVE_HIGH;
-	cfg->type = V4L2_MBUS_PARALLEL;
-	cfg->flags = soc_camera_apply_board_flags(icl, cfg);
-
-	return 0;
-}
 
 static struct v4l2_subdev_video_ops ov2640_subdev_video_ops = {
 	.s_stream	= ov2640_s_stream,
@@ -1015,7 +1098,6 @@ static struct v4l2_subdev_video_ops ov2640_subdev_video_ops = {
 	.cropcap	= ov2640_cropcap,
 	.g_crop		= ov2640_g_crop,
 	.enum_mbus_fmt	= ov2640_enum_fmt,
-	.g_mbus_config	= ov2640_g_mbus_config,
 };
 
 static struct v4l2_subdev_ops ov2640_subdev_ops = {
@@ -1029,11 +1111,18 @@ static struct v4l2_subdev_ops ov2640_subdev_ops = {
 static int ov2640_probe(struct i2c_client *client,
 			const struct i2c_device_id *did)
 {
-	struct ov2640_priv	*priv;
-	struct soc_camera_link	*icl = soc_camera_i2c_to_link(client);
-	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
-	int			ret;
+	struct ov2640_priv        *priv;
+	struct soc_camera_device  *icd = client->dev.platform_data;
+	struct i2c_adapter        *adapter = to_i2c_adapter(client->dev.parent);
+	struct soc_camera_link    *icl;
+	int                        ret;
 
+	if (!icd) {
+		dev_err(&adapter->dev, "OV2640: missing soc-camera data!\n");
+		return -EINVAL;
+	}
+
+	icl = to_soc_camera_link(icd);
 	if (!icl) {
 		dev_err(&adapter->dev,
 			"OV2640: Missing platform_data for driver\n");
@@ -1053,23 +1142,15 @@ static int ov2640_probe(struct i2c_client *client,
 		return -ENOMEM;
 	}
 
+	priv->info = icl->priv;
+
 	v4l2_i2c_subdev_init(&priv->subdev, client, &ov2640_subdev_ops);
-	v4l2_ctrl_handler_init(&priv->hdl, 2);
-	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
-			V4L2_CID_VFLIP, 0, 1, 1, 0);
-	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
-			V4L2_CID_HFLIP, 0, 1, 1, 0);
-	priv->subdev.ctrl_handler = &priv->hdl;
-	if (priv->hdl.error) {
-		int err = priv->hdl.error;
 
-		kfree(priv);
-		return err;
-	}
+	icd->ops = &ov2640_ops;
 
-	ret = ov2640_video_probe(client);
+	ret = ov2640_video_probe(icd, client);
 	if (ret) {
-		v4l2_ctrl_handler_free(&priv->hdl);
+		icd->ops = NULL;
 		kfree(priv);
 	} else {
 		dev_info(&adapter->dev, "OV2640 Probed\n");
@@ -1081,9 +1162,9 @@ static int ov2640_probe(struct i2c_client *client,
 static int ov2640_remove(struct i2c_client *client)
 {
 	struct ov2640_priv       *priv = to_ov2640(client);
+	struct soc_camera_device *icd = client->dev.platform_data;
 
-	v4l2_device_unregister_subdev(&priv->subdev);
-	v4l2_ctrl_handler_free(&priv->hdl);
+	icd->ops = NULL;
 	kfree(priv);
 	return 0;
 }
@@ -1103,7 +1184,21 @@ static struct i2c_driver ov2640_i2c_driver = {
 	.id_table = ov2640_id,
 };
 
-module_i2c_driver(ov2640_i2c_driver);
+/*
+ * Module functions
+ */
+static int __init ov2640_module_init(void)
+{
+	return i2c_add_driver(&ov2640_i2c_driver);
+}
+
+static void __exit ov2640_module_exit(void)
+{
+	i2c_del_driver(&ov2640_i2c_driver);
+}
+
+module_init(ov2640_module_init);
+module_exit(ov2640_module_exit);
 
 MODULE_DESCRIPTION("SoC Camera driver for Omni Vision 2640 sensor");
 MODULE_AUTHOR("Alberto Panizzo");

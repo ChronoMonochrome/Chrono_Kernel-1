@@ -3,6 +3,7 @@
  *
  * Linux Wrapper for V4l2 FM Driver for CG2900.
  *
+ * Author: Anupam Roy <anupam.roy@stericsson.com> for ST-Ericsson.
  * Author: Hemant Gupta <hemant.gupta@stericsson.com> for ST-Ericsson.
  *
  * License terms: GNU General Public License (GPL), version 2
@@ -33,12 +34,14 @@
 #define FMR_CHINA_GRID_IN_HZ				50000
 #define FMR_EUROPE_GRID_IN_HZ				100000
 #define FMR_USA_GRID_IN_HZ				200000
-#define FMR_AF_SWITCH_DATA_SIZE				2
+#define FMR_AF_SWITCH_DATA_SIZE				3
 #define FMR_BLOCK_SCAN_DATA_SIZE			2
 #define FMR_GET_INTERRUPT_DATA_SIZE			2
 #define FMR_TEST_TONE_CONNECT_DATA_SIZE			2
 #define FMR_TEST_TONE_SET_PARAMS_DATA_SIZE		6
 
+/* SoftMute */
+#define FMR_RP_SOFTMUTE_SETCONTROL_DATA             3
 /* freq in Hz to V4l2 freq (units of 62.5Hz) */
 #define HZ_TO_V4L2(X)  (2*(X)/125)
 /* V4l2 freq (units of 62.5Hz) to freq in Hz */
@@ -161,6 +164,8 @@ static int radio_nr = -1;
 static int grid;
 static int band;
 
+extern struct cg2900_version_info version_info;
+
 /* cg2900_poll_queue - Main Wait Queue for polling (Scan/Seek) */
 static wait_queue_head_t cg2900_poll_queue;
 
@@ -223,6 +228,7 @@ struct cg2900_device {
 	bool tx_stereo_status;
 	int volume;
 	u16 rssi_threshold;
+	u16 rssi_snr_threshold;
 	u32 frequency;
 	u32 audiopath;
 	bool wait_on_read_queue;
@@ -231,6 +237,9 @@ struct cg2900_device {
 
 /* Global Structure to store the maintain FM Driver device info */
 static struct cg2900_device cg2900_device;
+
+/* V4L2 Video Device Structure pointer */
+static struct video_device *cg2900_video_device;
 
 /* V4l2 File Operation Structure */
 static const struct v4l2_file_operations cg2900_fops = {
@@ -261,14 +270,6 @@ static const struct v4l2_ioctl_ops cg2900_ioctl_ops = {
 	.vidioc_s_audio = vidioc_set_audio,
 	.vidioc_g_input = vidioc_get_input,
 	.vidioc_s_input = vidioc_set_input,
-};
-
-/* V4L2 Video Device Structure */
-static struct video_device cg2900_video_device = {
-	.name = "STE CG2900 FM Rx/Tx Radio",
-	.fops = &cg2900_fops,
-	.ioctl_ops = &cg2900_ioctl_ops,
-	.release = video_device_release_empty,
 };
 
 static u16 no_of_scan_freq;
@@ -1156,6 +1157,44 @@ static int vidioc_set_ctrl(
 	FM_INFO_REPORT("vidioc_set_ctrl");
 	/* Check which control is requested */
 	switch (ctrl->id) {
+  
+	case V4L2_CID_CG2900_RADIO_SOFTMUTE_SETMODE:
+		{
+	        printk("Anupam:V4L2_CID_CG2900_RADIO_SOFTMUTE_SETMODE \n");
+	        FM_DEBUG_REPORT("vidioc_set_ctrl: "
+	                        "V4L2_CID_CG2900_RADIO_SOFTMUTE_SETMODE, "
+	                        "value = %d", ctrl->value);
+	        if (ctrl->value > 1 && ctrl->value < 0) {
+	            ret_val =  -ERANGE;
+	            break;
+	        }
+	        if (V4L2_CG2900_RADIO_SOFTMUTE_ON == ctrl->value) {
+	            printk("Anupam:SoftMute is ON \n");
+	            
+	        } else {
+	            printk("Anupam:SoftMute is OFF \n");
+	        }
+	        if (ctrl->value) {
+			       FM_DEBUG_REPORT("vidioc_set_ctrl: Ctrl_Id = "
+					       "V4L2_CID_CG2900_RADIO_SOFTMUTE_SETMODE, "
+					       "Enabling SoftMute");
+			       printk("Anupam:Enabling SoftMute \n");
+			       status = cg2900_fm_softmute_enable();
+			       printk("Anupam:Enabling SoftMute : status=%d\n", status);
+			} else {
+			       FM_DEBUG_REPORT("vidioc_set_ctrl: "
+					       "Ctrl_Id = V4L2_CID_CG2900_RADIO_SOFTMUTE_SETMODE, "
+					       "Disabling SoftMute");
+				   printk("Anupam:Disabling SoftMute \n");
+			       status = cg2900_fm_softmute_disable();
+			       printk("Anupam:Disabling SoftMute : status=%d\n", status);
+			}
+
+		}
+	    if (0 == status) {
+			ret_val =0;
+	    }
+		break;
 	case V4L2_CID_AUDIO_MUTE:
 		FM_DEBUG_REPORT("vidioc_set_ctrl: "
 				"V4L2_CID_AUDIO_MUTE, "
@@ -1185,15 +1224,44 @@ static int vidioc_set_ctrl(
 		FM_DEBUG_REPORT("vidioc_set_ctrl: "
 				"V4L2_CID_AUDIO_VOLUME, "
 				"value = %d", ctrl->value);
-		if (ctrl->value > MAX_ANALOG_VOLUME &&
-				ctrl->value < MIN_ANALOG_VOLUME) {
-			ret_val = -ERANGE;
-			break;
-		}
-		status = cg2900_fm_set_volume(ctrl->value);
-		if (0 == status) {
-			cg2900_device.volume = ctrl->value;
-			ret_val = 0;
+		if(version_info.revision == CG2900_PG1_REV
+				|| version_info.revision == CG2900_PG2_REV
+				|| version_info.revision == CG2900_PG1_SPECIAL_REV) {
+			if (ctrl->value > MAX_ANALOG_VOLUME &&
+					ctrl->value < MIN_ANALOG_VOLUME) {
+				ret_val = -ERANGE;
+				break;
+			}
+			status = cg2900_fm_set_volume(ctrl->value);
+			if (0 == status) {
+				cg2900_device.volume = ctrl->value;
+				ret_val = 0;
+			}
+		} else {
+		    /* CG2905/10 - Use AUP_BT_SetVolume */
+#if ! defined (USE_FM_VOLUME_TABLE)			
+		    if (ctrl->value > MAX_ANALOG_VOLUME &&
+		            ctrl->value < MIN_ANALOG_VOLUME) {
+		        ret_val = -ERANGE;
+		        break;
+		    }
+		    status = cg2900_fm_set_aup_bt_setvolume(ctrl->value);
+		    if (0 == status) {
+		        cg2900_device.volume = ctrl->value;
+		        ret_val = 0;
+		    }
+#else
+			if (ctrl->value > MAX_VOLUME_TABLE &&
+					ctrl->value < MIN_VOLUME_TABLE) {
+				ret_val = -ERANGE;
+				break;
+			}
+			status = cg2900_fm_set_aup_bt_setvolume_table(ctrl->value);
+			if (0 == status) {
+				//cg2900_device.volume = ctrl->value;
+				ret_val = 0;
+			}
+#endif
 		}
 		break;
 	case V4L2_CID_AUDIO_BALANCE:
@@ -1236,13 +1304,17 @@ static int vidioc_set_ctrl(
 		FM_DEBUG_REPORT("vidioc_set_ctrl: "
 				"V4L2_CID_CG2900_RADIO_BANDSCAN, "
 				"value = %d", ctrl->value);
+		printk("Start The bandscan \n");
 		if (V4L2_CG2900_RADIO_BANDSCAN_START == ctrl->value) {
 			cg2900_device.seekstatus = FMR_SEEK_IN_PROGRESS;
 			no_of_scan_freq = 0;
 			status = cg2900_fm_start_band_scan();
 		} else if (V4L2_CG2900_RADIO_BANDSCAN_STOP == ctrl->value) {
+		    printk("Stop The bandscan \n");
 			status = cg2900_fm_stop_scan();
+			printk("Start The bandscan : Returned\n");
 			cg2900_device.seekstatus = FMR_SEEK_NONE;
+			printk("Start SeekStatus set to NONE \n");
 		} else
 			break;
 		if (0 == status)
@@ -1258,6 +1330,19 @@ static int vidioc_set_ctrl(
 			ret_val = 0;
 		}
 		break;
+		
+	case V4L2_CID_CG2900_RADIO_RSSI_SNR_THRESHOLD:
+	    FM_DEBUG_REPORT("vidioc_set_ctrl: "
+	                    "V4L2_CID_CG2900_RADIO_RSSI_SNR_THRESHOLD "
+	                    "= %d", ctrl->value);
+	    printk("V4L2_CID_CG2900_RADIO_RSSI_SNR_THRESHOLD \n snr value=%d", ctrl->value);
+	    status = cg2900_fm_set_rssi_snr_threshold(ctrl->value);
+	    printk("V4L2_CID_CG2900_RADIO_RSSI_SNR_THRESHOLD, status=%d", status);
+	    if (0 == status) {
+	        cg2900_device.rssi_snr_threshold = ctrl->value;
+	        ret_val = 0;
+	    }
+	    break;
 	case V4L2_CID_CG2900_RADIO_RDS_AF_UPDATE_START:
 		FM_DEBUG_REPORT("vidioc_set_ctrl: "
 				"V4L2_CID_CG2900_RADIO_RDS_AF_UPDATE_START "
@@ -1354,6 +1439,8 @@ static int vidioc_get_ext_ctrls(
 	u8 mode;
 	s8 interrupt_success;
 	int *fm_interrupt_buffer;
+	
+	printk("vidioc_get_ext_ctrls Find the cause of wakeup\n");
 
 	FM_INFO_REPORT("vidioc_get_ext_ctrls: Id = %04x,"
 			"ext_ctrl->ctrl_class = %04x",
@@ -1364,6 +1451,7 @@ static int vidioc_get_ext_ctrls(
 	    ext_ctrl->ctrl_class != V4L2_CTRL_CLASS_USER) {
 		FM_ERR_REPORT("vidioc_get_ext_ctrls: Unsupported "
 			      "ctrl_class = %04x", ext_ctrl->ctrl_class);
+		printk("vidioc_get_ext_ctrls error! \n");
 		goto error;
 	}
 
@@ -1374,15 +1462,18 @@ static int vidioc_get_ext_ctrls(
 			"V4L2_CID_CG2900_RADIO_BANDSCAN_GET_RESULTS "
 			"Unsupported ctrl_class = %04x",
 			ext_ctrl->ctrl_class);
+			printk("vidioc_get_ext_ctrls Unsupported! \n");
 			break;
 		}
 		if (cg2900_device.seekstatus ==
 			FMR_SEEK_IN_PROGRESS) {
+		    printk("V4L2_CID_CG2900_RADIO_BANDSCAN_GET_RESULTS seek is in progress \n");
 			spin_lock(&fm_spinlock);
 			skb = skb_dequeue(&fm_interrupt_queue);
 			spin_unlock(&fm_spinlock);
 			if (!skb) {
 				/* No Interrupt, bad case */
+			    printk(" Critical: bad case has occured, hence return ret_value=%d \n", ret_val);
 				FM_ERR_REPORT("No Interrupt to read");
 				fm_event = CG2900_EVENT_NO_EVENT;
 				break;
@@ -1411,6 +1502,7 @@ static int vidioc_get_ext_ctrls(
 				kfree_skb(skb);
 			} else {
 				/* Some other interrupt, Queue it back */
+			    printk("vidioc_get_ext_ctrls Some other irq, q it back! \n");
 				spin_lock(&fm_spinlock);
 				skb_queue_head(&fm_interrupt_queue, skb);
 				spin_unlock(&fm_spinlock);
@@ -1424,10 +1516,12 @@ static int vidioc_get_ext_ctrls(
 
 		if (ext_ctrl->controls->size == 0 &&
 		    ext_ctrl->controls->string == NULL) {
+		    printk("Check again \n");
 			if (cg2900_device.seekstatus ==
 			    FMR_SEEK_IN_PROGRESS &&
 			    CG2900_EVENT_SCAN_CHANNELS_FOUND
 			    == fm_event) {
+			    printk("vidioc_get_ext_ctrls FMR_SEEK_IN_PROGRESS && CG2900_EVENT_SCAN_CHANNELS_FOUND \n");
 				spin_lock(&fm_spinlock);
 				ext_ctrl->controls->size =
 				    no_of_scan_freq;
@@ -1439,6 +1533,7 @@ static int vidioc_get_ext_ctrls(
 				return -ENOSPC;
 			}
 		} else if (ext_ctrl->controls->string != NULL) {
+		    printk("Fill up now \n");
 			dest_buffer =
 			    (u32 *) ext_ctrl->controls->string;
 			while (index < no_of_scan_freq) {
@@ -1644,9 +1739,11 @@ static int vidioc_get_ext_ctrls(
 
 		/* Interrupt success or failed */
 		if (interrupt_success) {
+		    printk("Last IRQ was interrupt Success \n");
 			/* Interrupt Success, return 0 */
 			*(fm_interrupt_buffer + 1) = 0;
 		} else {
+		    printk("Last IRQ was interrupt Failed \n");
 			spin_lock(&fm_spinlock);
 			no_of_scan_freq = 0;
 			no_of_block_scan_freq = 0;
@@ -1671,6 +1768,7 @@ static int vidioc_get_ext_ctrls(
 
 		if (CG2900_EVENT_MONO_STEREO_TRANSITION
 			== fm_event) {
+		    printk("CG2900_EVENT_MONO_STEREO_TRANSITION was the last event, now setting it to NO_EVENT \n");
 			/*
 			 * In case of Mono/Stereo Interrupt,
 			 * get the current value from chip
@@ -1682,6 +1780,7 @@ static int vidioc_get_ext_ctrls(
 			kfree_skb(skb);
 		} else if (CG2900_EVENT_SCAN_CANCELLED ==
 			fm_event) {
+		    printk("CG2900_EVENT_SCAN_CANCELLED was the last event, now setting it to NO_EVENT \n");
 			/* Scan/Search cancelled by User */
 			spin_lock(&fm_spinlock);
 			no_of_scan_freq = 0;
@@ -1712,6 +1811,7 @@ static int vidioc_get_ext_ctrls(
 
 error:
 	FM_DEBUG_REPORT("vidioc_get_ext_ctrls: returning = %d", ret_val);
+	printk("vidioc_get_ext_ctrls: returning = %d \n", ret_val);
 	return ret_val;
 }
 
@@ -1753,10 +1853,61 @@ static int vidioc_set_ext_ctrls(
 	}
 
 	switch (ext_ctrl->controls->id) {
+	
+	case V4L2_CID_CG2900_RADIO_SOFTMUTE_SETCONTROL:
+	    {
+	        u16  min_rssi;
+	        u16  max_rssi;
+	        u16  max_attenuation;
+	        u32* softmute_setcontrol_buf;
+	        
+            if (ext_ctrl->ctrl_class != V4L2_CTRL_CLASS_USER) {
+                            FM_ERR_REPORT("vidioc_set_ext_ctrls:  "
+                            "V4L2_CID_CG2900_RADIO_SOFTMUTE_SETCONTROL "
+                            "Unsupported ctrl_class = %04x",
+                            ext_ctrl->ctrl_class);
+                            break;
+            }
+            
+            if (ext_ctrl->controls->size !=
+                            FMR_RP_SOFTMUTE_SETCONTROL_DATA ||
+                            ext_ctrl->controls->string == NULL) {
+                            FM_ERR_REPORT("vidioc_set_ext_ctrls:  "
+                            "V4L2_CID_CG2900_RADIO_SOFTMUTE_SETCONTROL "
+                            "Unsupported ctrl_class = %04x",
+                            ext_ctrl->ctrl_class);
+                            break;
+            }
+            
+            softmute_setcontrol_buf = (u32 *) ext_ctrl->controls->string;
+            min_rssi = *softmute_setcontrol_buf;
+            max_rssi = *(softmute_setcontrol_buf + 1);
+            max_attenuation = *(softmute_setcontrol_buf + 2);
+
+            FM_DEBUG_REPORT("vidioc_set_ext_ctrls: "
+                    "V4L2_CID_CG2900_RADIO_SOFTMUTE_SETCONTROL: "
+                    "min_rssi =%d  max rssi = %d max attenuation=%d",
+                    min_rssi, max_rssi, max_attenuation);
+            printk("Anupam: vidioc_set_ext_ctrls: "
+                    "V4L2_CID_CG2900_RADIO_SOFTMUTE_SETCONTROL: "
+                    "min_rssi =%d  max rssi = %d max attenuation=%d \n",
+                    min_rssi, max_rssi, max_attenuation);
+            
+            status = cg2900_fm_softmute_setcontrol(
+                    min_rssi,
+                    max_rssi,
+                    max_attenuation);
+            printk("V4L2_CID_CG2900_RADIO_SOFTMUTE_SETCONTROL: status=%d", status);
+
+            if (0 == status)
+                ret_val = 0;
+	    }
+		break;
 	case V4L2_CID_CG2900_RADIO_RDS_AF_SWITCH_START:
 		{
 			u32 af_switch_freq;
 			u16 af_switch_pi;
+			u16 af_switch_min_rssi;
 			u32 *af_switch_buf;
 
 			if (ext_ctrl->ctrl_class != V4L2_CTRL_CLASS_USER) {
@@ -1766,6 +1917,7 @@ static int vidioc_set_ext_ctrls(
 				ext_ctrl->ctrl_class);
 				break;
 			}
+			printk("V4L2_CID_CG2900_RADIO_RDS_AF_SWITCH_START");
 
 			if (ext_ctrl->controls->size !=
 				FMR_AF_SWITCH_DATA_SIZE ||
@@ -1780,10 +1932,17 @@ static int vidioc_set_ext_ctrls(
 			af_switch_buf = (u32 *) ext_ctrl->controls->string;
 			af_switch_freq = V4L2_TO_HZ(*af_switch_buf);
 			af_switch_pi = *(af_switch_buf + 1);
+			af_switch_min_rssi = *(af_switch_buf + 2);
+
 			FM_DEBUG_REPORT("vidioc_set_ext_ctrls: "
 				"V4L2_CID_CG2900_RADIO_RDS_AF_SWITCH_START: "
-				"AF Switch Freq =%d Hz AF Switch PI = %04x",
-				(int)af_switch_freq, af_switch_pi);
+				"AF Switch Freq =%d Hz AF Switch PI = %04x AF Switch min RSSI=%d",
+				(int)af_switch_freq, af_switch_pi, af_switch_min_rssi);
+			
+			printk("vidioc_set_ext_ctrls: "
+			                "V4L2_CID_CG2900_RADIO_RDS_AF_SWITCH_START: "
+			                "AF Switch Freq =%d Hz AF Switch PI = %04x AF Switch min RSSI=%d \n",
+			                (int)af_switch_freq, af_switch_pi, af_switch_min_rssi);
 
 			if (af_switch_freq < (FMR_CHINA_LOW_FREQ_IN_MHZ
 				* FMR_HZ_TO_MHZ_CONVERTER) ||
@@ -1796,7 +1955,8 @@ static int vidioc_set_ext_ctrls(
 
 			status = cg2900_fm_af_switch_start(
 					af_switch_freq,
-					af_switch_pi);
+					af_switch_pi,
+					af_switch_min_rssi);
 
 			if (0 == status)
 				ret_val = 0;
@@ -2564,6 +2724,7 @@ static int cg2900_open(
 	cg2900_device.audiopath = 0;
 	cg2900_device.seekstatus = FMR_SEEK_NONE;
 	cg2900_device.rssi_threshold = CG2900_FM_DEFAULT_RSSI_THRESHOLD;
+	cg2900_device.rssi_snr_threshold = CG2900_FM_DEFAULT_RSSI_SNR_THRESHOLD;
 	fm_event = CG2900_EVENT_NO_EVENT;
 	no_of_scan_freq = 0;
 	cg2900_device.fm_mode = CG2900_FM_IDLE_MODE;
@@ -2898,6 +3059,18 @@ static int __devinit radio_cg2900_probe(
 		return err;
 	}
 
+	cg2900_video_device = video_device_alloc();
+	if (cg2900_video_device == NULL) {
+		FM_ERR_REPORT("Could not create video_device structure");
+		return -ENOMEM;
+	}
+
+	strlcpy(cg2900_video_device->name, "STE CG2900 FM Rx/Tx Radio",
+		sizeof(cg2900_video_device->name));
+	cg2900_video_device->fops = &cg2900_fops;
+	cg2900_video_device->ioctl_ops = &cg2900_ioctl_ops;
+	cg2900_video_device->release = video_device_release;
+
 	radio_nr = 0;
 	grid = CG2900_FM_GRID_100;
 	band = CG2900_FM_BAND_US_EU;
@@ -2905,10 +3078,11 @@ static int __devinit radio_cg2900_probe(
 
 	/* Initialize the parameters */
 	if (video_register_device(
-				&cg2900_video_device,
+				cg2900_video_device,
 				VFL_TYPE_RADIO,
 				radio_nr) == -1) {
 		FM_ERR_REPORT("radio_cg2900_probe: video_register_device err");
+		video_device_release(cg2900_video_device);
 		return -EINVAL;
 	}
 	mutex_init(&fm_mutex);
@@ -2945,7 +3119,7 @@ static int __devexit radio_cg2900_remove(
 	cg2900_fm_deinit();
 	skb_queue_purge(&fm_interrupt_queue);
 	mutex_destroy(&fm_mutex);
-	video_unregister_device(&cg2900_video_device);
+	video_unregister_device(cg2900_video_device);
 	fmd_set_dev(NULL);
 	return 0;
 }

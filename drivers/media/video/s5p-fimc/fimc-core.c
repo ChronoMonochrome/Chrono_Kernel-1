@@ -12,13 +12,13 @@
 
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/version.h>
 #include <linux/types.h>
 #include <linux/errno.h>
 #include <linux/bug.h>
 #include <linux/interrupt.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
-#include <linux/pm_runtime.h>
 #include <linux/list.h>
 #include <linux/io.h>
 #include <linux/slab.h>
@@ -28,10 +28,9 @@
 #include <media/videobuf2-dma-contig.h>
 
 #include "fimc-core.h"
-#include "fimc-mdevice.h"
 
 static char *fimc_clocks[MAX_FIMC_CLOCKS] = {
-	"sclk_fimc", "fimc"
+	"sclk_fimc", "fimc", "sclk_cam"
 };
 
 static struct fimc_fmt fimc_formats[] = {
@@ -52,29 +51,13 @@ static struct fimc_fmt fimc_formats[] = {
 		.colplanes	= 1,
 		.flags		= FMT_FLAGS_M2M,
 	}, {
-		.name		= "ARGB8888, 32 bpp",
+		.name		= "XRGB-8-8-8-8, 32 bpp",
 		.fourcc		= V4L2_PIX_FMT_RGB32,
 		.depth		= { 32 },
 		.color		= S5P_FIMC_RGB888,
 		.memplanes	= 1,
 		.colplanes	= 1,
-		.flags		= FMT_FLAGS_M2M | FMT_HAS_ALPHA,
-	}, {
-		.name		= "ARGB1555",
-		.fourcc		= V4L2_PIX_FMT_RGB555,
-		.depth		= { 16 },
-		.color		= S5P_FIMC_RGB555,
-		.memplanes	= 1,
-		.colplanes	= 1,
-		.flags		= FMT_FLAGS_M2M_OUT | FMT_HAS_ALPHA,
-	}, {
-		.name		= "ARGB4444",
-		.fourcc		= V4L2_PIX_FMT_RGB444,
-		.depth		= { 16 },
-		.color		= S5P_FIMC_RGB444,
-		.memplanes	= 1,
-		.colplanes	= 1,
-		.flags		= FMT_FLAGS_M2M_OUT | FMT_HAS_ALPHA,
+		.flags		= FMT_FLAGS_M2M,
 	}, {
 		.name		= "YUV 4:2:2 packed, YCbYCr",
 		.fourcc		= V4L2_PIX_FMT_YUYV,
@@ -175,36 +158,59 @@ static struct fimc_fmt fimc_formats[] = {
 		.memplanes	= 2,
 		.colplanes	= 2,
 		.flags		= FMT_FLAGS_M2M,
-	}, {
-		.name		= "JPEG encoded data",
-		.fourcc		= V4L2_PIX_FMT_JPEG,
-		.color		= S5P_FIMC_JPEG,
-		.depth		= { 8 },
-		.memplanes	= 1,
-		.colplanes	= 1,
-		.mbus_code	= V4L2_MBUS_FMT_JPEG_1X8,
-		.flags		= FMT_FLAGS_CAM,
 	},
 };
 
-static unsigned int get_m2m_fmt_flags(unsigned int stream_type)
+static struct v4l2_queryctrl fimc_ctrls[] = {
+	{
+		.id		= V4L2_CID_HFLIP,
+		.type		= V4L2_CTRL_TYPE_BOOLEAN,
+		.name		= "Horizontal flip",
+		.minimum	= 0,
+		.maximum	= 1,
+		.default_value	= 0,
+	}, {
+		.id		= V4L2_CID_VFLIP,
+		.type		= V4L2_CTRL_TYPE_BOOLEAN,
+		.name		= "Vertical flip",
+		.minimum	= 0,
+		.maximum	= 1,
+		.default_value	= 0,
+	}, {
+		.id		= V4L2_CID_ROTATE,
+		.type		= V4L2_CTRL_TYPE_INTEGER,
+		.name		= "Rotation (CCW)",
+		.minimum	= 0,
+		.maximum	= 270,
+		.step		= 90,
+		.default_value	= 0,
+	},
+};
+
+
+static struct v4l2_queryctrl *get_ctrl(int id)
 {
-	if (stream_type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE)
-		return FMT_FLAGS_M2M_IN;
-	else
-		return FMT_FLAGS_M2M_OUT;
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(fimc_ctrls); ++i)
+		if (id == fimc_ctrls[i].id)
+			return &fimc_ctrls[i];
+	return NULL;
 }
 
-int fimc_check_scaler_ratio(struct fimc_ctx *ctx, int sw, int sh,
-			    int dw, int dh, int rotation)
+int fimc_check_scaler_ratio(int sw, int sh, int dw, int dh, int rot)
 {
-	if (rotation == 90 || rotation == 270)
-		swap(dw, dh);
+	int tx, ty;
 
-	if (!ctx->scaler.enabled)
-		return (sw == dw && sh == dh) ? 0 : -EINVAL;
+	if (rot == 90 || rot == 270) {
+		ty = dw;
+		tx = dh;
+	} else {
+		tx = dw;
+		ty = dh;
+	}
 
-	if ((sw >= SCALER_MAX_HRATIO * dw) || (sh >= SCALER_MAX_VRATIO * dh))
+	if ((sw >= SCALER_MAX_HRATIO * tx) || (sh >= SCALER_MAX_VRATIO * ty))
 		return -EINVAL;
 
 	return 0;
@@ -230,11 +236,10 @@ static int fimc_get_scaler_factor(u32 src, u32 tar, u32 *ratio, u32 *shift)
 
 int fimc_set_scaler_info(struct fimc_ctx *ctx)
 {
-	struct samsung_fimc_variant *variant = ctx->fimc_dev->variant;
-	struct device *dev = &ctx->fimc_dev->pdev->dev;
 	struct fimc_scaler *sc = &ctx->scaler;
 	struct fimc_frame *s_frame = &ctx->s_frame;
 	struct fimc_frame *d_frame = &ctx->d_frame;
+	struct samsung_fimc_variant *variant = ctx->fimc_dev->variant;
 	int tx, ty, sx, sy;
 	int ret;
 
@@ -246,14 +251,15 @@ int fimc_set_scaler_info(struct fimc_ctx *ctx)
 		ty = d_frame->height;
 	}
 	if (tx <= 0 || ty <= 0) {
-		dev_err(dev, "Invalid target size: %dx%d", tx, ty);
+		v4l2_err(&ctx->fimc_dev->m2m.v4l2_dev,
+			"invalid target size: %d x %d", tx, ty);
 		return -EINVAL;
 	}
 
 	sx = s_frame->width;
 	sy = s_frame->height;
 	if (sx <= 0 || sy <= 0) {
-		dev_err(dev, "Invalid source size: %dx%d", sx, sy);
+		err("invalid source size: %d x %d", sx, sy);
 		return -EINVAL;
 	}
 	sc->real_width = sx;
@@ -296,6 +302,7 @@ int fimc_set_scaler_info(struct fimc_ctx *ctx)
 static void fimc_m2m_job_finish(struct fimc_ctx *ctx, int vb_state)
 {
 	struct vb2_buffer *src_vb, *dst_vb;
+	struct fimc_dev *fimc = ctx->fimc_dev;
 
 	if (!ctx || !ctx->m2m_ctx)
 		return;
@@ -306,68 +313,54 @@ static void fimc_m2m_job_finish(struct fimc_ctx *ctx, int vb_state)
 	if (src_vb && dst_vb) {
 		v4l2_m2m_buf_done(src_vb, vb_state);
 		v4l2_m2m_buf_done(dst_vb, vb_state);
-		v4l2_m2m_job_finish(ctx->fimc_dev->m2m.m2m_dev,
-				    ctx->m2m_ctx);
+		v4l2_m2m_job_finish(fimc->m2m.m2m_dev, ctx->m2m_ctx);
 	}
 }
 
 /* Complete the transaction which has been scheduled for execution. */
-static int fimc_m2m_shutdown(struct fimc_ctx *ctx)
+static void fimc_m2m_shutdown(struct fimc_ctx *ctx)
 {
 	struct fimc_dev *fimc = ctx->fimc_dev;
 	int ret;
 
 	if (!fimc_m2m_pending(fimc))
-		return 0;
+		return;
 
 	fimc_ctx_state_lock_set(FIMC_CTX_SHUT, ctx);
 
 	ret = wait_event_timeout(fimc->irq_queue,
 			   !fimc_ctx_state_is_set(FIMC_CTX_SHUT, ctx),
 			   FIMC_SHUTDOWN_TIMEOUT);
-
-	return ret == 0 ? -ETIMEDOUT : ret;
-}
-
-static int start_streaming(struct vb2_queue *q, unsigned int count)
-{
-	struct fimc_ctx *ctx = q->drv_priv;
-	int ret;
-
-	ret = pm_runtime_get_sync(&ctx->fimc_dev->pdev->dev);
-	return ret > 0 ? 0 : ret;
+	/*
+	 * In case of a timeout the buffers are not released in the interrupt
+	 * handler so return them here with the error flag set, if there are
+	 * any on the queue.
+	 */
+	if (ret == 0)
+		fimc_m2m_job_finish(ctx, VB2_BUF_STATE_ERROR);
 }
 
 static int stop_streaming(struct vb2_queue *q)
 {
 	struct fimc_ctx *ctx = q->drv_priv;
-	int ret;
 
-	ret = fimc_m2m_shutdown(ctx);
-	if (ret == -ETIMEDOUT)
-		fimc_m2m_job_finish(ctx, VB2_BUF_STATE_ERROR);
+	fimc_m2m_shutdown(ctx);
 
-	pm_runtime_put(&ctx->fimc_dev->pdev->dev);
 	return 0;
 }
 
-void fimc_capture_irq_handler(struct fimc_dev *fimc, bool final)
+static void fimc_capture_irq_handler(struct fimc_dev *fimc)
 {
 	struct fimc_vid_cap *cap = &fimc->vid_cap;
 	struct fimc_vid_buffer *v_buf;
 	struct timeval *tv;
 	struct timespec ts;
 
-	if (test_and_clear_bit(ST_CAPT_SHUT, &fimc->state)) {
-		wake_up(&fimc->irq_queue);
-		return;
-	}
-
 	if (!list_empty(&cap->active_buf_q) &&
-	    test_bit(ST_CAPT_RUN, &fimc->state) && final) {
+	    test_bit(ST_CAPT_RUN, &fimc->state)) {
 		ktime_get_real_ts(&ts);
 
-		v_buf = fimc_active_queue_pop(cap);
+		v_buf = active_queue_pop(cap);
 
 		tv = &v_buf->vb.v4l2_buf.timestamp;
 		tv->tv_sec = ts.tv_sec;
@@ -377,14 +370,19 @@ void fimc_capture_irq_handler(struct fimc_dev *fimc, bool final)
 		vb2_buffer_done(&v_buf->vb, VB2_BUF_STATE_DONE);
 	}
 
+	if (test_and_clear_bit(ST_CAPT_SHUT, &fimc->state)) {
+		wake_up(&fimc->irq_queue);
+		return;
+	}
+
 	if (!list_empty(&cap->pending_buf_q)) {
 
-		v_buf = fimc_pending_queue_pop(cap);
+		v_buf = pending_queue_pop(cap);
 		fimc_hw_set_output_addr(fimc, &v_buf->paddr, cap->buf_index);
 		v_buf->index = cap->buf_index;
 
 		/* Move the buffer to the capture active queue */
-		fimc_active_queue_add(cap, v_buf);
+		active_queue_add(cap, v_buf);
 
 		dbg("next frame: %d, done frame: %d",
 		    fimc_hw_get_frame_index(fimc), v_buf->index);
@@ -394,8 +392,7 @@ void fimc_capture_irq_handler(struct fimc_dev *fimc, bool final)
 	}
 
 	if (cap->active_buf_cnt == 0) {
-		if (final)
-			clear_bit(ST_CAPT_RUN, &fimc->state);
+		clear_bit(ST_CAPT_RUN, &fimc->state);
 
 		if (++cap->buf_index >= FIMC_MAX_OUT_BUFS)
 			cap->buf_index = 0;
@@ -403,13 +400,11 @@ void fimc_capture_irq_handler(struct fimc_dev *fimc, bool final)
 		set_bit(ST_CAPT_RUN, &fimc->state);
 	}
 
-	fimc_capture_config_update(cap->ctx);
-
 	dbg("frame: %d, active_buf_cnt: %d",
 	    fimc_hw_get_frame_index(fimc), cap->active_buf_cnt);
 }
 
-static irqreturn_t fimc_irq_handler(int irq, void *priv)
+static irqreturn_t fimc_isr(int irq, void *priv)
 {
 	struct fimc_dev *fimc = priv;
 	struct fimc_vid_cap *cap = &fimc->vid_cap;
@@ -417,17 +412,9 @@ static irqreturn_t fimc_irq_handler(int irq, void *priv)
 
 	fimc_hw_clear_irq(fimc);
 
-	spin_lock(&fimc->slock);
-
 	if (test_and_clear_bit(ST_M2M_PEND, &fimc->state)) {
-		if (test_and_clear_bit(ST_M2M_SUSPENDING, &fimc->state)) {
-			set_bit(ST_M2M_SUSPENDED, &fimc->state);
-			wake_up(&fimc->irq_queue);
-			goto out;
-		}
 		ctx = v4l2_m2m_get_curr_priv(fimc->m2m.m2m_dev);
 		if (ctx != NULL) {
-			spin_unlock(&fimc->slock);
 			fimc_m2m_job_finish(ctx, VB2_BUF_STATE_DONE);
 
 			spin_lock(&ctx->slock);
@@ -437,16 +424,21 @@ static irqreturn_t fimc_irq_handler(int irq, void *priv)
 			}
 			spin_unlock(&ctx->slock);
 		}
+
 		return IRQ_HANDLED;
-	} else if (test_bit(ST_CAPT_PEND, &fimc->state)) {
-		fimc_capture_irq_handler(fimc,
-				 !test_bit(ST_CAPT_JPEG, &fimc->state));
+	}
+
+	spin_lock(&fimc->slock);
+
+	if (test_bit(ST_CAPT_PEND, &fimc->state)) {
+		fimc_capture_irq_handler(fimc);
+
 		if (cap->active_buf_cnt == 1) {
 			fimc_deactivate_capture(fimc);
 			clear_bit(ST_CAPT_STREAM, &fimc->state);
 		}
 	}
-out:
+
 	spin_unlock(&fimc->slock);
 	return IRQ_HANDLED;
 }
@@ -466,7 +458,7 @@ int fimc_prepare_addr(struct fimc_ctx *ctx, struct vb2_buffer *vb,
 	dbg("memplanes= %d, colplanes= %d, pix_size= %d",
 		frame->fmt->memplanes, frame->fmt->colplanes, pix_size);
 
-	paddr->y = vb2_dma_contig_plane_dma_addr(vb, 0);
+	paddr->y = vb2_dma_contig_plane_paddr(vb, 0);
 
 	if (frame->fmt->memplanes == 1) {
 		switch (frame->fmt->colplanes) {
@@ -494,10 +486,10 @@ int fimc_prepare_addr(struct fimc_ctx *ctx, struct vb2_buffer *vb,
 		}
 	} else {
 		if (frame->fmt->memplanes >= 2)
-			paddr->cb = vb2_dma_contig_plane_dma_addr(vb, 1);
+			paddr->cb = vb2_dma_contig_plane_paddr(vb, 1);
 
 		if (frame->fmt->memplanes == 3)
-			paddr->cr = vb2_dma_contig_plane_dma_addr(vb, 2);
+			paddr->cr = vb2_dma_contig_plane_paddr(vb, 2);
 	}
 
 	dbg("PHYS_ADDR: y= 0x%X  cb= 0x%X cr= 0x%X ret= %d",
@@ -507,7 +499,7 @@ int fimc_prepare_addr(struct fimc_ctx *ctx, struct vb2_buffer *vb,
 }
 
 /* Set order for 1 and 2 plane YCBCR 4:2:2 formats. */
-void fimc_set_yuv_order(struct fimc_ctx *ctx)
+static void fimc_set_yuv_order(struct fimc_ctx *ctx)
 {
 	/* The one only mode supported in SoC. */
 	ctx->in_order_2p = S5P_FIMC_LSB_CRCB;
@@ -549,7 +541,7 @@ void fimc_set_yuv_order(struct fimc_ctx *ctx)
 	dbg("ctx->out_order_1p= %d", ctx->out_order_1p);
 }
 
-void fimc_prepare_dma_offset(struct fimc_ctx *ctx, struct fimc_frame *f)
+static void fimc_prepare_dma_offset(struct fimc_ctx *ctx, struct fimc_frame *f)
 {
 	struct samsung_fimc_variant *variant = ctx->fimc_dev->variant;
 	u32 i, depth = 0;
@@ -615,6 +607,9 @@ int fimc_prepare_config(struct fimc_ctx *ctx, u32 flags)
 		fimc_set_yuv_order(ctx);
 	}
 
+	/* Input DMA mode is not allowed when the scaler is disabled. */
+	ctx->scaler.enabled = 1;
+
 	if (flags & FIMC_SRC_ADDR) {
 		vb = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
 		ret = fimc_prepare_addr(ctx, vb, s_frame, &s_frame->paddr);
@@ -641,10 +636,10 @@ static void fimc_dma_run(void *priv)
 		return;
 
 	fimc = ctx->fimc_dev;
-	spin_lock_irqsave(&fimc->slock, flags);
+
+	spin_lock_irqsave(&ctx->slock, flags);
 	set_bit(ST_M2M_PEND, &fimc->state);
 
-	spin_lock(&ctx->slock);
 	ctx->state |= (FIMC_SRC_ADDR | FIMC_DST_ADDR);
 	ret = fimc_prepare_config(ctx, ctx->state);
 	if (ret)
@@ -655,6 +650,8 @@ static void fimc_dma_run(void *priv)
 		ctx->state |= FIMC_PARAMS;
 		fimc->m2m.ctx = ctx;
 	}
+
+	spin_lock(&fimc->slock);
 	fimc_hw_set_input_addr(fimc, &ctx->s_frame.paddr);
 
 	if (ctx->state & FIMC_PARAMS) {
@@ -669,27 +666,25 @@ static void fimc_dma_run(void *priv)
 		fimc_hw_set_mainscaler(ctx);
 		fimc_hw_set_target_format(ctx);
 		fimc_hw_set_rotation(ctx);
-		fimc_hw_set_effect(ctx, false);
+		fimc_hw_set_effect(ctx);
 	}
 
 	fimc_hw_set_output_path(ctx);
 	if (ctx->state & (FIMC_DST_ADDR | FIMC_PARAMS))
 		fimc_hw_set_output_addr(fimc, &ctx->d_frame.paddr, -1);
 
-	if (ctx->state & FIMC_PARAMS) {
+	if (ctx->state & FIMC_PARAMS)
 		fimc_hw_set_out_dma(ctx);
-		if (fimc->variant->has_alpha)
-			fimc_hw_set_rgb_alpha(ctx);
-	}
 
 	fimc_activate_capture(ctx);
 
 	ctx->state &= (FIMC_CTX_M2M | FIMC_CTX_CAP |
 		       FIMC_SRC_FMT | FIMC_DST_FMT);
 	fimc_hw_activate_input_dma(fimc, true);
+	spin_unlock(&fimc->slock);
+
 dma_unlock:
-	spin_unlock(&ctx->slock);
-	spin_unlock_irqrestore(&fimc->slock, flags);
+	spin_unlock_irqrestore(&ctx->slock, flags);
 }
 
 static void fimc_job_abort(void *priv)
@@ -697,9 +692,9 @@ static void fimc_job_abort(void *priv)
 	fimc_m2m_shutdown(priv);
 }
 
-static int fimc_queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
-			    unsigned int *num_buffers, unsigned int *num_planes,
-			    unsigned int sizes[], void *allocators[])
+static int fimc_queue_setup(struct vb2_queue *vq, unsigned int *num_buffers,
+			    unsigned int *num_planes, unsigned long sizes[],
+			    void *allocators[])
 {
 	struct fimc_ctx *ctx = vb2_get_drv_priv(vq);
 	struct fimc_frame *f;
@@ -768,247 +763,168 @@ static struct vb2_ops fimc_qops = {
 	.wait_prepare	 = fimc_unlock,
 	.wait_finish	 = fimc_lock,
 	.stop_streaming	 = stop_streaming,
-	.start_streaming = start_streaming,
 };
 
-/*
- * V4L2 controls handling
- */
-#define ctrl_to_ctx(__ctrl) \
-	container_of((__ctrl)->handler, struct fimc_ctx, ctrl_handler)
-
-static int __fimc_s_ctrl(struct fimc_ctx *ctx, struct v4l2_ctrl *ctrl)
+static int fimc_m2m_querycap(struct file *file, void *priv,
+			   struct v4l2_capability *cap)
 {
-	struct fimc_dev *fimc = ctx->fimc_dev;
-	struct samsung_fimc_variant *variant = fimc->variant;
-	unsigned int flags = FIMC_DST_FMT | FIMC_SRC_FMT;
-	int ret = 0;
-
-	if (ctrl->flags & V4L2_CTRL_FLAG_INACTIVE)
-		return 0;
-
-	switch (ctrl->id) {
-	case V4L2_CID_HFLIP:
-		ctx->hflip = ctrl->val;
-		break;
-
-	case V4L2_CID_VFLIP:
-		ctx->vflip = ctrl->val;
-		break;
-
-	case V4L2_CID_ROTATE:
-		if (fimc_capture_pending(fimc) ||
-		    (ctx->state & flags) == flags) {
-			ret = fimc_check_scaler_ratio(ctx, ctx->s_frame.width,
-					ctx->s_frame.height, ctx->d_frame.width,
-					ctx->d_frame.height, ctrl->val);
-			if (ret)
-				return -EINVAL;
-		}
-		if ((ctrl->val == 90 || ctrl->val == 270) &&
-		    !variant->has_out_rot)
-			return -EINVAL;
-
-		ctx->rotation = ctrl->val;
-		break;
-
-	case V4L2_CID_ALPHA_COMPONENT:
-		ctx->d_frame.alpha = ctrl->val;
-		break;
-	}
-	ctx->state |= FIMC_PARAMS;
-	set_bit(ST_CAPT_APPLY_CFG, &fimc->state);
-	return 0;
-}
-
-static int fimc_s_ctrl(struct v4l2_ctrl *ctrl)
-{
-	struct fimc_ctx *ctx = ctrl_to_ctx(ctrl);
-	unsigned long flags;
-	int ret;
-
-	spin_lock_irqsave(&ctx->slock, flags);
-	ret = __fimc_s_ctrl(ctx, ctrl);
-	spin_unlock_irqrestore(&ctx->slock, flags);
-
-	return ret;
-}
-
-static const struct v4l2_ctrl_ops fimc_ctrl_ops = {
-	.s_ctrl = fimc_s_ctrl,
-};
-
-int fimc_ctrls_create(struct fimc_ctx *ctx)
-{
-	struct samsung_fimc_variant *variant = ctx->fimc_dev->variant;
-	unsigned int max_alpha = fimc_get_alpha_mask(ctx->d_frame.fmt);
-
-	if (ctx->ctrls_rdy)
-		return 0;
-	v4l2_ctrl_handler_init(&ctx->ctrl_handler, 4);
-
-	ctx->ctrl_rotate = v4l2_ctrl_new_std(&ctx->ctrl_handler, &fimc_ctrl_ops,
-					V4L2_CID_ROTATE, 0, 270, 90, 0);
-	ctx->ctrl_hflip = v4l2_ctrl_new_std(&ctx->ctrl_handler, &fimc_ctrl_ops,
-					V4L2_CID_HFLIP, 0, 1, 1, 0);
-	ctx->ctrl_vflip = v4l2_ctrl_new_std(&ctx->ctrl_handler, &fimc_ctrl_ops,
-					V4L2_CID_VFLIP, 0, 1, 1, 0);
-	if (variant->has_alpha)
-		ctx->ctrl_alpha = v4l2_ctrl_new_std(&ctx->ctrl_handler,
-				    &fimc_ctrl_ops, V4L2_CID_ALPHA_COMPONENT,
-				    0, max_alpha, 1, 0);
-	else
-		ctx->ctrl_alpha = NULL;
-
-	ctx->ctrls_rdy = ctx->ctrl_handler.error == 0;
-
-	return ctx->ctrl_handler.error;
-}
-
-void fimc_ctrls_delete(struct fimc_ctx *ctx)
-{
-	if (ctx->ctrls_rdy) {
-		v4l2_ctrl_handler_free(&ctx->ctrl_handler);
-		ctx->ctrls_rdy = false;
-		ctx->ctrl_alpha = NULL;
-	}
-}
-
-void fimc_ctrls_activate(struct fimc_ctx *ctx, bool active)
-{
-	unsigned int has_alpha = ctx->d_frame.fmt->flags & FMT_HAS_ALPHA;
-
-	if (!ctx->ctrls_rdy)
-		return;
-
-	mutex_lock(&ctx->ctrl_handler.lock);
-	v4l2_ctrl_activate(ctx->ctrl_rotate, active);
-	v4l2_ctrl_activate(ctx->ctrl_hflip, active);
-	v4l2_ctrl_activate(ctx->ctrl_vflip, active);
-	if (ctx->ctrl_alpha)
-		v4l2_ctrl_activate(ctx->ctrl_alpha, active && has_alpha);
-
-	if (active) {
-		ctx->rotation = ctx->ctrl_rotate->val;
-		ctx->hflip    = ctx->ctrl_hflip->val;
-		ctx->vflip    = ctx->ctrl_vflip->val;
-	} else {
-		ctx->rotation = 0;
-		ctx->hflip    = 0;
-		ctx->vflip    = 0;
-	}
-	mutex_unlock(&ctx->ctrl_handler.lock);
-}
-
-/* Update maximum value of the alpha color control */
-void fimc_alpha_ctrl_update(struct fimc_ctx *ctx)
-{
-	struct fimc_dev *fimc = ctx->fimc_dev;
-	struct v4l2_ctrl *ctrl = ctx->ctrl_alpha;
-
-	if (ctrl == NULL || !fimc->variant->has_alpha)
-		return;
-
-	v4l2_ctrl_lock(ctrl);
-	ctrl->maximum = fimc_get_alpha_mask(ctx->d_frame.fmt);
-
-	if (ctrl->cur.val > ctrl->maximum)
-		ctrl->cur.val = ctrl->maximum;
-
-	v4l2_ctrl_unlock(ctrl);
-}
-
-/*
- * V4L2 ioctl handlers
- */
-static int fimc_m2m_querycap(struct file *file, void *fh,
-			     struct v4l2_capability *cap)
-{
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
+	struct fimc_ctx *ctx = file->private_data;
 	struct fimc_dev *fimc = ctx->fimc_dev;
 
 	strncpy(cap->driver, fimc->pdev->name, sizeof(cap->driver) - 1);
 	strncpy(cap->card, fimc->pdev->name, sizeof(cap->card) - 1);
 	cap->bus_info[0] = 0;
+	cap->version = KERNEL_VERSION(1, 0, 0);
 	cap->capabilities = V4L2_CAP_STREAMING |
+		V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_VIDEO_OUTPUT |
 		V4L2_CAP_VIDEO_CAPTURE_MPLANE | V4L2_CAP_VIDEO_OUTPUT_MPLANE;
 
 	return 0;
 }
 
-static int fimc_m2m_enum_fmt_mplane(struct file *file, void *priv,
-				    struct v4l2_fmtdesc *f)
+int fimc_vidioc_enum_fmt_mplane(struct file *file, void *priv,
+				struct v4l2_fmtdesc *f)
 {
 	struct fimc_fmt *fmt;
 
-	fmt = fimc_find_format(NULL, NULL, get_m2m_fmt_flags(f->type),
-			       f->index);
-	if (!fmt)
+	if (f->index >= ARRAY_SIZE(fimc_formats))
 		return -EINVAL;
 
+	fmt = &fimc_formats[f->index];
 	strncpy(f->description, fmt->name, sizeof(f->description) - 1);
 	f->pixelformat = fmt->fourcc;
+
 	return 0;
 }
 
-int fimc_fill_format(struct fimc_frame *frame, struct v4l2_format *f)
+int fimc_vidioc_g_fmt_mplane(struct file *file, void *priv,
+			     struct v4l2_format *f)
 {
-	struct v4l2_pix_format_mplane *pixm = &f->fmt.pix_mp;
+	struct fimc_ctx *ctx = priv;
+	struct fimc_frame *frame;
+	struct v4l2_pix_format_mplane *pixm;
 	int i;
 
-	pixm->width = frame->o_width;
-	pixm->height = frame->o_height;
-	pixm->field = V4L2_FIELD_NONE;
-	pixm->pixelformat = frame->fmt->fourcc;
-	pixm->colorspace = V4L2_COLORSPACE_JPEG;
-	pixm->num_planes = frame->fmt->memplanes;
+	frame = ctx_get_frame(ctx, f->type);
+	if (IS_ERR(frame))
+		return PTR_ERR(frame);
+
+	pixm = &f->fmt.pix_mp;
+
+	pixm->width		= frame->width;
+	pixm->height		= frame->height;
+	pixm->field		= V4L2_FIELD_NONE;
+	pixm->pixelformat	= frame->fmt->fourcc;
+	pixm->colorspace	= V4L2_COLORSPACE_JPEG;
+	pixm->num_planes	= frame->fmt->memplanes;
 
 	for (i = 0; i < pixm->num_planes; ++i) {
-		int bpl = frame->f_width;
+		int bpl = frame->o_width;
+
 		if (frame->fmt->colplanes == 1) /* packed formats */
 			bpl = (bpl * frame->fmt->depth[0]) / 8;
+
 		pixm->plane_fmt[i].bytesperline = bpl;
+
 		pixm->plane_fmt[i].sizeimage = (frame->o_width *
 			frame->o_height * frame->fmt->depth[i]) / 8;
 	}
+
 	return 0;
 }
 
-void fimc_fill_frame(struct fimc_frame *frame, struct v4l2_format *f)
+struct fimc_fmt *find_format(struct v4l2_format *f, unsigned int mask)
 {
-	struct v4l2_pix_format_mplane *pixm = &f->fmt.pix_mp;
+	struct fimc_fmt *fmt;
+	unsigned int i;
 
-	frame->f_width  = pixm->plane_fmt[0].bytesperline;
-	if (frame->fmt->colplanes == 1)
-		frame->f_width = (frame->f_width * 8) / frame->fmt->depth[0];
-	frame->f_height	= pixm->height;
-	frame->width    = pixm->width;
-	frame->height   = pixm->height;
-	frame->o_width  = pixm->width;
-	frame->o_height = pixm->height;
-	frame->offs_h   = 0;
-	frame->offs_v   = 0;
+	for (i = 0; i < ARRAY_SIZE(fimc_formats); ++i) {
+		fmt = &fimc_formats[i];
+		if (fmt->fourcc == f->fmt.pix_mp.pixelformat &&
+		   (fmt->flags & mask))
+			break;
+	}
+
+	return (i == ARRAY_SIZE(fimc_formats)) ? NULL : fmt;
 }
 
-/**
- * fimc_adjust_mplane_format - adjust bytesperline/sizeimage for each plane
- * @fmt: fimc pixel format description (input)
- * @width: requested pixel width
- * @height: requested pixel height
- * @pix: multi-plane format to adjust
- */
-void fimc_adjust_mplane_format(struct fimc_fmt *fmt, u32 width, u32 height,
-			       struct v4l2_pix_format_mplane *pix)
+struct fimc_fmt *find_mbus_format(struct v4l2_mbus_framefmt *f,
+				  unsigned int mask)
 {
-	u32 bytesperline = 0;
-	int i;
+	struct fimc_fmt *fmt;
+	unsigned int i;
 
-	pix->colorspace	= V4L2_COLORSPACE_JPEG;
-	pix->field = V4L2_FIELD_NONE;
+	for (i = 0; i < ARRAY_SIZE(fimc_formats); ++i) {
+		fmt = &fimc_formats[i];
+		if (fmt->mbus_code == f->code && (fmt->flags & mask))
+			break;
+	}
+
+	return (i == ARRAY_SIZE(fimc_formats)) ? NULL : fmt;
+}
+
+
+int fimc_vidioc_try_fmt_mplane(struct file *file, void *priv,
+			       struct v4l2_format *f)
+{
+	struct fimc_ctx *ctx = priv;
+	struct fimc_dev *fimc = ctx->fimc_dev;
+	struct samsung_fimc_variant *variant = fimc->variant;
+	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
+	struct fimc_fmt *fmt;
+	u32 max_width, mod_x, mod_y, mask;
+	int i, is_output = 0;
+
+
+	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+		if (fimc_ctx_state_is_set(FIMC_CTX_CAP, ctx))
+			return -EINVAL;
+		is_output = 1;
+	} else if (f->type != V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+		return -EINVAL;
+	}
+
+	dbg("w: %d, h: %d", pix->width, pix->height);
+
+	mask = is_output ? FMT_FLAGS_M2M : FMT_FLAGS_M2M | FMT_FLAGS_CAM;
+	fmt = find_format(f, mask);
+	if (!fmt) {
+		v4l2_err(&fimc->m2m.v4l2_dev, "Fourcc format (0x%X) invalid.\n",
+			 pix->pixelformat);
+		return -EINVAL;
+	}
+
+	if (pix->field == V4L2_FIELD_ANY)
+		pix->field = V4L2_FIELD_NONE;
+	else if (V4L2_FIELD_NONE != pix->field)
+		return -EINVAL;
+
+	if (is_output) {
+		max_width = variant->pix_limit->scaler_dis_w;
+		mod_x = ffs(variant->min_inp_pixsize) - 1;
+	} else {
+		max_width = variant->pix_limit->out_rot_dis_w;
+		mod_x = ffs(variant->min_out_pixsize) - 1;
+	}
+
+	if (tiled_fmt(fmt)) {
+		mod_x = 6; /* 64 x 32 pixels tile */
+		mod_y = 5;
+	} else {
+		if (fimc->id == 1 && variant->pix_hoff)
+			mod_y = fimc_fmt_is_rgb(fmt->color) ? 0 : 1;
+		else
+			mod_y = mod_x;
+	}
+
+	dbg("mod_x: %d, mod_y: %d, max_w: %d", mod_x, mod_y, max_width);
+
+	v4l_bound_align_image(&pix->width, 16, max_width, mod_x,
+		&pix->height, 8, variant->pix_limit->scaler_dis_w, mod_y, 0);
+
 	pix->num_planes = fmt->memplanes;
-	pix->pixelformat = fmt->fourcc;
-	pix->height = height;
-	pix->width = width;
+	pix->colorspace	= V4L2_COLORSPACE_JPEG;
+
 
 	for (i = 0; i < pix->num_planes; ++i) {
 		u32 bpl = pix->plane_fmt[i].bytesperline;
@@ -1022,156 +938,65 @@ void fimc_adjust_mplane_format(struct fimc_fmt *fmt, u32 width, u32 height,
 			bpl = (pix->width * fmt->depth[0]) / 8;
 
 		if (i == 0) /* Same bytesperline for each plane. */
-			bytesperline = bpl;
+			mod_x = bpl;
 
-		pix->plane_fmt[i].bytesperline = bytesperline;
+		pix->plane_fmt[i].bytesperline = mod_x;
 		*sizeimage = (pix->width * pix->height * fmt->depth[i]) / 8;
 	}
-}
 
-static int fimc_m2m_g_fmt_mplane(struct file *file, void *fh,
-				 struct v4l2_format *f)
-{
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
-	struct fimc_frame *frame = ctx_get_frame(ctx, f->type);
-
-	if (IS_ERR(frame))
-		return PTR_ERR(frame);
-
-	return fimc_fill_format(frame, f);
-}
-
-/**
- * fimc_find_format - lookup fimc color format by fourcc or media bus format
- * @pixelformat: fourcc to match, ignored if null
- * @mbus_code: media bus code to match, ignored if null
- * @mask: the color flags to match
- * @index: offset in the fimc_formats array, ignored if negative
- */
-struct fimc_fmt *fimc_find_format(const u32 *pixelformat, const u32 *mbus_code,
-				  unsigned int mask, int index)
-{
-	struct fimc_fmt *fmt, *def_fmt = NULL;
-	unsigned int i;
-	int id = 0;
-
-	if (index >= (int)ARRAY_SIZE(fimc_formats))
-		return NULL;
-
-	for (i = 0; i < ARRAY_SIZE(fimc_formats); ++i) {
-		fmt = &fimc_formats[i];
-		if (!(fmt->flags & mask))
-			continue;
-		if (pixelformat && fmt->fourcc == *pixelformat)
-			return fmt;
-		if (mbus_code && fmt->mbus_code == *mbus_code)
-			return fmt;
-		if (index == id)
-			def_fmt = fmt;
-		id++;
-	}
-	return def_fmt;
-}
-
-static int fimc_try_fmt_mplane(struct fimc_ctx *ctx, struct v4l2_format *f)
-{
-	struct fimc_dev *fimc = ctx->fimc_dev;
-	struct samsung_fimc_variant *variant = fimc->variant;
-	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
-	struct fimc_fmt *fmt;
-	u32 max_w, mod_x, mod_y;
-
-	if (!IS_M2M(f->type))
-		return -EINVAL;
-
-	dbg("w: %d, h: %d", pix->width, pix->height);
-
-	fmt = fimc_find_format(&pix->pixelformat, NULL,
-			       get_m2m_fmt_flags(f->type), 0);
-	if (WARN(fmt == NULL, "Pixel format lookup failed"))
-		return -EINVAL;
-
-	if (pix->field == V4L2_FIELD_ANY)
-		pix->field = V4L2_FIELD_NONE;
-	else if (pix->field != V4L2_FIELD_NONE)
-		return -EINVAL;
-
-	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		max_w = variant->pix_limit->scaler_dis_w;
-		mod_x = ffs(variant->min_inp_pixsize) - 1;
-	} else {
-		max_w = variant->pix_limit->out_rot_dis_w;
-		mod_x = ffs(variant->min_out_pixsize) - 1;
-	}
-
-	if (tiled_fmt(fmt)) {
-		mod_x = 6; /* 64 x 32 pixels tile */
-		mod_y = 5;
-	} else {
-		if (variant->min_vsize_align == 1)
-			mod_y = fimc_fmt_is_rgb(fmt->color) ? 0 : 1;
-		else
-			mod_y = ffs(variant->min_vsize_align) - 1;
-	}
-
-	v4l_bound_align_image(&pix->width, 16, max_w, mod_x,
-		&pix->height, 8, variant->pix_limit->scaler_dis_w, mod_y, 0);
-
-	fimc_adjust_mplane_format(fmt, pix->width, pix->height, &f->fmt.pix_mp);
 	return 0;
 }
 
-static int fimc_m2m_try_fmt_mplane(struct file *file, void *fh,
-				   struct v4l2_format *f)
-{
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
-
-	return fimc_try_fmt_mplane(ctx, f);
-}
-
-static int fimc_m2m_s_fmt_mplane(struct file *file, void *fh,
+static int fimc_m2m_s_fmt_mplane(struct file *file, void *priv,
 				 struct v4l2_format *f)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
+	struct fimc_ctx *ctx = priv;
 	struct fimc_dev *fimc = ctx->fimc_dev;
 	struct vb2_queue *vq;
 	struct fimc_frame *frame;
 	struct v4l2_pix_format_mplane *pix;
 	int i, ret = 0;
 
-	ret = fimc_try_fmt_mplane(ctx, f);
+	ret = fimc_vidioc_try_fmt_mplane(file, priv, f);
 	if (ret)
 		return ret;
 
 	vq = v4l2_m2m_get_vq(ctx->m2m_ctx, f->type);
 
 	if (vb2_is_busy(vq)) {
-		v4l2_err(fimc->m2m.vfd, "queue (%d) busy\n", f->type);
+		v4l2_err(&fimc->m2m.v4l2_dev, "queue (%d) busy\n", f->type);
 		return -EBUSY;
 	}
 
-	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE)
+	if (f->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
 		frame = &ctx->s_frame;
-	else
+	} else if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
 		frame = &ctx->d_frame;
+	} else {
+		v4l2_err(&fimc->m2m.v4l2_dev,
+			 "Wrong buffer/video queue type (%d)\n", f->type);
+		return -EINVAL;
+	}
 
 	pix = &f->fmt.pix_mp;
-	frame->fmt = fimc_find_format(&pix->pixelformat, NULL,
-				      get_m2m_fmt_flags(f->type), 0);
+	frame->fmt = find_format(f, FMT_FLAGS_M2M);
 	if (!frame->fmt)
 		return -EINVAL;
-
-	/* Update RGB Alpha control state and value range */
-	fimc_alpha_ctrl_update(ctx);
 
 	for (i = 0; i < frame->fmt->colplanes; i++) {
 		frame->payload[i] =
 			(pix->width * pix->height * frame->fmt->depth[i]) / 8;
 	}
 
-	fimc_fill_frame(frame, f);
-
-	ctx->scaler.enabled = 1;
+	frame->f_width	= pix->plane_fmt[0].bytesperline * 8 /
+		frame->fmt->depth[0];
+	frame->f_height	= pix->height;
+	frame->width	= pix->width;
+	frame->height	= pix->height;
+	frame->o_width	= pix->width;
+	frame->o_height = pix->height;
+	frame->offs_h	= 0;
+	frame->offs_v	= 0;
 
 	if (f->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
 		fimc_ctx_state_lock_set(FIMC_PARAMS | FIMC_DST_FMT, ctx);
@@ -1183,42 +1008,39 @@ static int fimc_m2m_s_fmt_mplane(struct file *file, void *fh,
 	return 0;
 }
 
-static int fimc_m2m_reqbufs(struct file *file, void *fh,
-			    struct v4l2_requestbuffers *reqbufs)
+static int fimc_m2m_reqbufs(struct file *file, void *priv,
+			  struct v4l2_requestbuffers *reqbufs)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
-
+	struct fimc_ctx *ctx = priv;
 	return v4l2_m2m_reqbufs(file, ctx->m2m_ctx, reqbufs);
 }
 
-static int fimc_m2m_querybuf(struct file *file, void *fh,
-			     struct v4l2_buffer *buf)
+static int fimc_m2m_querybuf(struct file *file, void *priv,
+			   struct v4l2_buffer *buf)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
-
+	struct fimc_ctx *ctx = priv;
 	return v4l2_m2m_querybuf(file, ctx->m2m_ctx, buf);
 }
 
-static int fimc_m2m_qbuf(struct file *file, void *fh,
-			 struct v4l2_buffer *buf)
+static int fimc_m2m_qbuf(struct file *file, void *priv,
+			  struct v4l2_buffer *buf)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
+	struct fimc_ctx *ctx = priv;
 
 	return v4l2_m2m_qbuf(file, ctx->m2m_ctx, buf);
 }
 
-static int fimc_m2m_dqbuf(struct file *file, void *fh,
-			  struct v4l2_buffer *buf)
+static int fimc_m2m_dqbuf(struct file *file, void *priv,
+			   struct v4l2_buffer *buf)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
-
+	struct fimc_ctx *ctx = priv;
 	return v4l2_m2m_dqbuf(file, ctx->m2m_ctx, buf);
 }
 
-static int fimc_m2m_streamon(struct file *file, void *fh,
-			     enum v4l2_buf_type type)
+static int fimc_m2m_streamon(struct file *file, void *priv,
+			   enum v4l2_buf_type type)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
+	struct fimc_ctx *ctx = priv;
 
 	/* The source and target color format need to be set */
 	if (V4L2_TYPE_IS_OUTPUT(type)) {
@@ -1231,19 +1053,149 @@ static int fimc_m2m_streamon(struct file *file, void *fh,
 	return v4l2_m2m_streamon(file, ctx->m2m_ctx, type);
 }
 
-static int fimc_m2m_streamoff(struct file *file, void *fh,
+static int fimc_m2m_streamoff(struct file *file, void *priv,
 			    enum v4l2_buf_type type)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
-
+	struct fimc_ctx *ctx = priv;
 	return v4l2_m2m_streamoff(file, ctx->m2m_ctx, type);
 }
 
-static int fimc_m2m_cropcap(struct file *file, void *fh,
-			    struct v4l2_cropcap *cr)
+int fimc_vidioc_queryctrl(struct file *file, void *priv,
+			    struct v4l2_queryctrl *qc)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
+	struct fimc_ctx *ctx = priv;
+	struct v4l2_queryctrl *c;
+	int ret = -EINVAL;
+
+	c = get_ctrl(qc->id);
+	if (c) {
+		*qc = *c;
+		return 0;
+	}
+
+	if (fimc_ctx_state_is_set(FIMC_CTX_CAP, ctx)) {
+		return v4l2_subdev_call(ctx->fimc_dev->vid_cap.sd,
+					core, queryctrl, qc);
+	}
+	return ret;
+}
+
+int fimc_vidioc_g_ctrl(struct file *file, void *priv,
+			 struct v4l2_control *ctrl)
+{
+	struct fimc_ctx *ctx = priv;
+	struct fimc_dev *fimc = ctx->fimc_dev;
+
+	switch (ctrl->id) {
+	case V4L2_CID_HFLIP:
+		ctrl->value = (FLIP_X_AXIS & ctx->flip) ? 1 : 0;
+		break;
+	case V4L2_CID_VFLIP:
+		ctrl->value = (FLIP_Y_AXIS & ctx->flip) ? 1 : 0;
+		break;
+	case V4L2_CID_ROTATE:
+		ctrl->value = ctx->rotation;
+		break;
+	default:
+		if (fimc_ctx_state_is_set(FIMC_CTX_CAP, ctx)) {
+			return v4l2_subdev_call(fimc->vid_cap.sd, core,
+						g_ctrl, ctrl);
+		} else {
+			v4l2_err(&fimc->m2m.v4l2_dev, "Invalid control\n");
+			return -EINVAL;
+		}
+	}
+	dbg("ctrl->value= %d", ctrl->value);
+
+	return 0;
+}
+
+int check_ctrl_val(struct fimc_ctx *ctx,  struct v4l2_control *ctrl)
+{
+	struct v4l2_queryctrl *c;
+	c = get_ctrl(ctrl->id);
+	if (!c)
+		return -EINVAL;
+
+	if (ctrl->value < c->minimum || ctrl->value > c->maximum
+		|| (c->step != 0 && ctrl->value % c->step != 0)) {
+		v4l2_err(&ctx->fimc_dev->m2m.v4l2_dev,
+		"Invalid control value\n");
+		return -ERANGE;
+	}
+
+	return 0;
+}
+
+int fimc_s_ctrl(struct fimc_ctx *ctx, struct v4l2_control *ctrl)
+{
+	struct samsung_fimc_variant *variant = ctx->fimc_dev->variant;
+	struct fimc_dev *fimc = ctx->fimc_dev;
+	int ret = 0;
+
+	switch (ctrl->id) {
+	case V4L2_CID_HFLIP:
+		if (ctrl->value)
+			ctx->flip |= FLIP_X_AXIS;
+		else
+			ctx->flip &= ~FLIP_X_AXIS;
+		break;
+
+	case V4L2_CID_VFLIP:
+		if (ctrl->value)
+			ctx->flip |= FLIP_Y_AXIS;
+		else
+			ctx->flip &= ~FLIP_Y_AXIS;
+		break;
+
+	case V4L2_CID_ROTATE:
+		if (fimc_ctx_state_is_set(FIMC_DST_FMT | FIMC_SRC_FMT, ctx)) {
+			ret = fimc_check_scaler_ratio(ctx->s_frame.width,
+					ctx->s_frame.height, ctx->d_frame.width,
+					ctx->d_frame.height, ctrl->value);
+		}
+
+		if (ret) {
+			v4l2_err(&fimc->m2m.v4l2_dev, "Out of scaler range\n");
+			return -EINVAL;
+		}
+
+		/* Check for the output rotator availability */
+		if ((ctrl->value == 90 || ctrl->value == 270) &&
+		    (ctx->in_path == FIMC_DMA && !variant->has_out_rot))
+			return -EINVAL;
+		ctx->rotation = ctrl->value;
+		break;
+
+	default:
+		v4l2_err(&fimc->m2m.v4l2_dev, "Invalid control\n");
+		return -EINVAL;
+	}
+
+	fimc_ctx_state_lock_set(FIMC_PARAMS, ctx);
+
+	return 0;
+}
+
+static int fimc_m2m_s_ctrl(struct file *file, void *priv,
+			   struct v4l2_control *ctrl)
+{
+	struct fimc_ctx *ctx = priv;
+	int ret = 0;
+
+	ret = check_ctrl_val(ctx, ctrl);
+	if (ret)
+		return ret;
+
+	ret = fimc_s_ctrl(ctx, ctrl);
+	return 0;
+}
+
+static int fimc_m2m_cropcap(struct file *file, void *fh,
+			struct v4l2_cropcap *cr)
+{
 	struct fimc_frame *frame;
+	struct fimc_ctx *ctx = fh;
 
 	frame = ctx_get_frame(ctx, cr->type);
 	if (IS_ERR(frame))
@@ -1251,8 +1203,8 @@ static int fimc_m2m_cropcap(struct file *file, void *fh,
 
 	cr->bounds.left		= 0;
 	cr->bounds.top		= 0;
-	cr->bounds.width	= frame->o_width;
-	cr->bounds.height	= frame->o_height;
+	cr->bounds.width	= frame->f_width;
+	cr->bounds.height	= frame->f_height;
 	cr->defrect		= cr->bounds;
 
 	return 0;
@@ -1260,8 +1212,8 @@ static int fimc_m2m_cropcap(struct file *file, void *fh,
 
 static int fimc_m2m_g_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
 	struct fimc_frame *frame;
+	struct fimc_ctx *ctx = file->private_data;
 
 	frame = ctx_get_frame(ctx, cr->type);
 	if (IS_ERR(frame))
@@ -1275,21 +1227,26 @@ static int fimc_m2m_g_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 	return 0;
 }
 
-static int fimc_m2m_try_crop(struct fimc_ctx *ctx, struct v4l2_crop *cr)
+int fimc_try_crop(struct fimc_ctx *ctx, struct v4l2_crop *cr)
 {
 	struct fimc_dev *fimc = ctx->fimc_dev;
 	struct fimc_frame *f;
 	u32 min_size, halign, depth = 0;
+	bool is_capture_ctx;
 	int i;
 
 	if (cr->c.top < 0 || cr->c.left < 0) {
-		v4l2_err(fimc->m2m.vfd,
+		v4l2_err(&fimc->m2m.v4l2_dev,
 			"doesn't support negative values for top & left\n");
 		return -EINVAL;
 	}
+
+	is_capture_ctx = fimc_ctx_state_is_set(FIMC_CTX_CAP, ctx);
+
 	if (cr->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE)
-		f = &ctx->d_frame;
-	else if (cr->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE)
+		f = is_capture_ctx ? &ctx->s_frame : &ctx->d_frame;
+	else if (cr->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE &&
+		 !is_capture_ctx)
 		f = &ctx->s_frame;
 	else
 		return -EINVAL;
@@ -1298,10 +1255,15 @@ static int fimc_m2m_try_crop(struct fimc_ctx *ctx, struct v4l2_crop *cr)
 		fimc->variant->min_inp_pixsize : fimc->variant->min_out_pixsize;
 
 	/* Get pixel alignment constraints. */
-	if (fimc->variant->min_vsize_align == 1)
-		halign = fimc_fmt_is_rgb(f->fmt->color) ? 0 : 1;
-	else
-		halign = ffs(fimc->variant->min_vsize_align) - 1;
+	if (is_capture_ctx) {
+		min_size = 16;
+		halign = 4;
+	} else {
+		if (fimc->id == 1 && fimc->variant->pix_hoff)
+			halign = fimc_fmt_is_rgb(f->fmt->color) ? 0 : 1;
+		else
+			halign = ffs(min_size) - 1;
+	}
 
 	for (i = 0; i < f->fmt->colplanes; i++)
 		depth += f->fmt->depth[i];
@@ -1318,7 +1280,7 @@ static int fimc_m2m_try_crop(struct fimc_ctx *ctx, struct v4l2_crop *cr)
 		cr->c.top = f->o_height - cr->c.height;
 
 	cr->c.left = round_down(cr->c.left, min_size);
-	cr->c.top  = round_down(cr->c.top, fimc->variant->hor_offs_align);
+	cr->c.top  = round_down(cr->c.top, is_capture_ctx ? 16 : 8);
 
 	dbg("l:%d, t:%d, w:%d, h:%d, f_w: %d, f_h: %d",
 	    cr->c.left, cr->c.top, cr->c.width, cr->c.height,
@@ -1329,12 +1291,12 @@ static int fimc_m2m_try_crop(struct fimc_ctx *ctx, struct v4l2_crop *cr)
 
 static int fimc_m2m_s_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(fh);
+	struct fimc_ctx *ctx = file->private_data;
 	struct fimc_dev *fimc = ctx->fimc_dev;
 	struct fimc_frame *f;
 	int ret;
 
-	ret = fimc_m2m_try_crop(ctx, cr);
+	ret = fimc_try_crop(ctx, cr);
 	if (ret)
 		return ret;
 
@@ -1344,16 +1306,18 @@ static int fimc_m2m_s_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 	/* Check to see if scaling ratio is within supported range */
 	if (fimc_ctx_state_is_set(FIMC_DST_FMT | FIMC_SRC_FMT, ctx)) {
 		if (cr->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-			ret = fimc_check_scaler_ratio(ctx, cr->c.width,
-					cr->c.height, ctx->d_frame.width,
-					ctx->d_frame.height, ctx->rotation);
+			ret = fimc_check_scaler_ratio(cr->c.width, cr->c.height,
+						      ctx->d_frame.width,
+						      ctx->d_frame.height,
+						      ctx->rotation);
 		} else {
-			ret = fimc_check_scaler_ratio(ctx, ctx->s_frame.width,
-					ctx->s_frame.height, cr->c.width,
-					cr->c.height, ctx->rotation);
+			ret = fimc_check_scaler_ratio(ctx->s_frame.width,
+						      ctx->s_frame.height,
+						      cr->c.width, cr->c.height,
+						      ctx->rotation);
 		}
 		if (ret) {
-			v4l2_err(fimc->m2m.vfd, "Out of scaler range\n");
+			v4l2_err(&fimc->m2m.v4l2_dev, "Out of scaler range\n");
 			return -EINVAL;
 		}
 	}
@@ -1371,14 +1335,14 @@ static int fimc_m2m_s_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 static const struct v4l2_ioctl_ops fimc_m2m_ioctl_ops = {
 	.vidioc_querycap		= fimc_m2m_querycap,
 
-	.vidioc_enum_fmt_vid_cap_mplane	= fimc_m2m_enum_fmt_mplane,
-	.vidioc_enum_fmt_vid_out_mplane	= fimc_m2m_enum_fmt_mplane,
+	.vidioc_enum_fmt_vid_cap_mplane	= fimc_vidioc_enum_fmt_mplane,
+	.vidioc_enum_fmt_vid_out_mplane	= fimc_vidioc_enum_fmt_mplane,
 
-	.vidioc_g_fmt_vid_cap_mplane	= fimc_m2m_g_fmt_mplane,
-	.vidioc_g_fmt_vid_out_mplane	= fimc_m2m_g_fmt_mplane,
+	.vidioc_g_fmt_vid_cap_mplane	= fimc_vidioc_g_fmt_mplane,
+	.vidioc_g_fmt_vid_out_mplane	= fimc_vidioc_g_fmt_mplane,
 
-	.vidioc_try_fmt_vid_cap_mplane	= fimc_m2m_try_fmt_mplane,
-	.vidioc_try_fmt_vid_out_mplane	= fimc_m2m_try_fmt_mplane,
+	.vidioc_try_fmt_vid_cap_mplane	= fimc_vidioc_try_fmt_mplane,
+	.vidioc_try_fmt_vid_out_mplane	= fimc_vidioc_try_fmt_mplane,
 
 	.vidioc_s_fmt_vid_cap_mplane	= fimc_m2m_s_fmt_mplane,
 	.vidioc_s_fmt_vid_out_mplane	= fimc_m2m_s_fmt_mplane,
@@ -1391,6 +1355,10 @@ static const struct v4l2_ioctl_ops fimc_m2m_ioctl_ops = {
 
 	.vidioc_streamon		= fimc_m2m_streamon,
 	.vidioc_streamoff		= fimc_m2m_streamoff,
+
+	.vidioc_queryctrl		= fimc_vidioc_queryctrl,
+	.vidioc_g_ctrl			= fimc_vidioc_g_ctrl,
+	.vidioc_s_ctrl			= fimc_m2m_s_ctrl,
 
 	.vidioc_g_crop			= fimc_m2m_g_crop,
 	.vidioc_s_crop			= fimc_m2m_s_crop,
@@ -1430,8 +1398,7 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
 static int fimc_m2m_open(struct file *file)
 {
 	struct fimc_dev *fimc = video_drvdata(file);
-	struct fimc_ctx *ctx;
-	int ret;
+	struct fimc_ctx *ctx = NULL;
 
 	dbg("pid: %d, state: 0x%lx, refcnt: %d",
 		task_pid_nr(current), fimc->state, fimc->vid_cap.refcnt);
@@ -1443,26 +1410,19 @@ static int fimc_m2m_open(struct file *file)
 	if (fimc->vid_cap.refcnt > 0)
 		return -EBUSY;
 
+	fimc->m2m.refcnt++;
+	set_bit(ST_OUTDMA_RUN, &fimc->state);
+
 	ctx = kzalloc(sizeof *ctx, GFP_KERNEL);
 	if (!ctx)
 		return -ENOMEM;
-	v4l2_fh_init(&ctx->fh, fimc->m2m.vfd);
-	ctx->fimc_dev = fimc;
 
+	file->private_data = ctx;
+	ctx->fimc_dev = fimc;
 	/* Default color format */
 	ctx->s_frame.fmt = &fimc_formats[0];
 	ctx->d_frame.fmt = &fimc_formats[0];
-
-	ret = fimc_ctrls_create(ctx);
-	if (ret)
-		goto error_fh;
-
-	/* Use separate control handler per file handle */
-	ctx->fh.ctrl_handler = &ctx->ctrl_handler;
-	file->private_data = &ctx->fh;
-	v4l2_fh_add(&ctx->fh);
-
-	/* Setup the device context for memory-to-memory mode */
+	/* Setup the device context for mem2mem mode. */
 	ctx->state = FIMC_CTX_M2M;
 	ctx->flags = 0;
 	ctx->in_path = FIMC_DMA;
@@ -1471,46 +1431,34 @@ static int fimc_m2m_open(struct file *file)
 
 	ctx->m2m_ctx = v4l2_m2m_ctx_init(fimc->m2m.m2m_dev, ctx, queue_init);
 	if (IS_ERR(ctx->m2m_ctx)) {
-		ret = PTR_ERR(ctx->m2m_ctx);
-		goto error_c;
+		int err = PTR_ERR(ctx->m2m_ctx);
+		kfree(ctx);
+		return err;
 	}
 
-	if (fimc->m2m.refcnt++ == 0)
-		set_bit(ST_M2M_RUN, &fimc->state);
 	return 0;
-
-error_c:
-	fimc_ctrls_delete(ctx);
-error_fh:
-	v4l2_fh_del(&ctx->fh);
-	v4l2_fh_exit(&ctx->fh);
-	kfree(ctx);
-	return ret;
 }
 
 static int fimc_m2m_release(struct file *file)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(file->private_data);
+	struct fimc_ctx *ctx = file->private_data;
 	struct fimc_dev *fimc = ctx->fimc_dev;
 
 	dbg("pid: %d, state: 0x%lx, refcnt= %d",
 		task_pid_nr(current), fimc->state, fimc->m2m.refcnt);
 
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
-	fimc_ctrls_delete(ctx);
-	v4l2_fh_del(&ctx->fh);
-	v4l2_fh_exit(&ctx->fh);
-
-	if (--fimc->m2m.refcnt <= 0)
-		clear_bit(ST_M2M_RUN, &fimc->state);
 	kfree(ctx);
+	if (--fimc->m2m.refcnt <= 0)
+		clear_bit(ST_OUTDMA_RUN, &fimc->state);
+
 	return 0;
 }
 
 static unsigned int fimc_m2m_poll(struct file *file,
-				  struct poll_table_struct *wait)
+				     struct poll_table_struct *wait)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(file->private_data);
+	struct fimc_ctx *ctx = file->private_data;
 
 	return v4l2_m2m_poll(file, ctx->m2m_ctx, wait);
 }
@@ -1518,7 +1466,7 @@ static unsigned int fimc_m2m_poll(struct file *file,
 
 static int fimc_m2m_mmap(struct file *file, struct vm_area_struct *vma)
 {
-	struct fimc_ctx *ctx = fh_to_ctx(file->private_data);
+	struct fimc_ctx *ctx = file->private_data;
 
 	return v4l2_m2m_mmap(file, ctx->m2m_ctx, vma);
 }
@@ -1537,136 +1485,109 @@ static struct v4l2_m2m_ops m2m_ops = {
 	.job_abort	= fimc_job_abort,
 };
 
-int fimc_register_m2m_device(struct fimc_dev *fimc,
-			     struct v4l2_device *v4l2_dev)
+static int fimc_register_m2m_device(struct fimc_dev *fimc)
 {
 	struct video_device *vfd;
 	struct platform_device *pdev;
+	struct v4l2_device *v4l2_dev;
 	int ret = 0;
 
 	if (!fimc)
 		return -ENODEV;
 
 	pdev = fimc->pdev;
-	fimc->v4l2_dev = v4l2_dev;
+	v4l2_dev = &fimc->m2m.v4l2_dev;
+
+	/* set name if it is empty */
+	if (!v4l2_dev->name[0])
+		snprintf(v4l2_dev->name, sizeof(v4l2_dev->name),
+			 "%s.m2m", dev_name(&pdev->dev));
+
+	ret = v4l2_device_register(&pdev->dev, v4l2_dev);
+	if (ret)
+		goto err_m2m_r1;
 
 	vfd = video_device_alloc();
 	if (!vfd) {
 		v4l2_err(v4l2_dev, "Failed to allocate video device\n");
-		return -ENOMEM;
+		goto err_m2m_r1;
 	}
 
 	vfd->fops	= &fimc_m2m_fops;
 	vfd->ioctl_ops	= &fimc_m2m_ioctl_ops;
-	vfd->v4l2_dev	= v4l2_dev;
 	vfd->minor	= -1;
 	vfd->release	= video_device_release;
 	vfd->lock	= &fimc->lock;
 
-	snprintf(vfd->name, sizeof(vfd->name), "%s.m2m", dev_name(&pdev->dev));
+	snprintf(vfd->name, sizeof(vfd->name), "%s:m2m", dev_name(&pdev->dev));
+
 	video_set_drvdata(vfd, fimc);
+	platform_set_drvdata(pdev, fimc);
 
 	fimc->m2m.vfd = vfd;
 	fimc->m2m.m2m_dev = v4l2_m2m_init(&m2m_ops);
 	if (IS_ERR(fimc->m2m.m2m_dev)) {
 		v4l2_err(v4l2_dev, "failed to initialize v4l2-m2m device\n");
 		ret = PTR_ERR(fimc->m2m.m2m_dev);
-		goto err_init;
+		goto err_m2m_r2;
 	}
 
-	ret = media_entity_init(&vfd->entity, 0, NULL, 0);
-	if (!ret)
-		return 0;
+	ret = video_register_device(vfd, VFL_TYPE_GRABBER, -1);
+	if (ret) {
+		v4l2_err(v4l2_dev,
+			 "%s(): failed to register video device\n", __func__);
+		goto err_m2m_r3;
+	}
+	v4l2_info(v4l2_dev,
+		  "FIMC m2m driver registered as /dev/video%d\n", vfd->num);
 
+	return 0;
+
+err_m2m_r3:
 	v4l2_m2m_release(fimc->m2m.m2m_dev);
-err_init:
+err_m2m_r2:
 	video_device_release(fimc->m2m.vfd);
+err_m2m_r1:
+	v4l2_device_unregister(v4l2_dev);
+
 	return ret;
 }
 
-void fimc_unregister_m2m_device(struct fimc_dev *fimc)
+static void fimc_unregister_m2m_device(struct fimc_dev *fimc)
 {
-	if (!fimc)
-		return;
-
-	if (fimc->m2m.m2m_dev)
+	if (fimc) {
 		v4l2_m2m_release(fimc->m2m.m2m_dev);
-	if (fimc->m2m.vfd) {
-		media_entity_cleanup(&fimc->m2m.vfd->entity);
-		/* Can also be called if video device wasn't registered */
 		video_unregister_device(fimc->m2m.vfd);
+
+		v4l2_device_unregister(&fimc->m2m.v4l2_dev);
 	}
 }
 
-static void fimc_clk_put(struct fimc_dev *fimc)
+static void fimc_clk_release(struct fimc_dev *fimc)
 {
 	int i;
 	for (i = 0; i < fimc->num_clocks; i++) {
-		if (IS_ERR_OR_NULL(fimc->clock[i]))
-			continue;
-		clk_unprepare(fimc->clock[i]);
-		clk_put(fimc->clock[i]);
-		fimc->clock[i] = NULL;
+		if (fimc->clock[i]) {
+			clk_disable(fimc->clock[i]);
+			clk_put(fimc->clock[i]);
+		}
 	}
 }
 
 static int fimc_clk_get(struct fimc_dev *fimc)
 {
-	int i, ret;
-
+	int i;
 	for (i = 0; i < fimc->num_clocks; i++) {
 		fimc->clock[i] = clk_get(&fimc->pdev->dev, fimc_clocks[i]);
-		if (IS_ERR(fimc->clock[i]))
-			goto err;
-		ret = clk_prepare(fimc->clock[i]);
-		if (ret < 0) {
-			clk_put(fimc->clock[i]);
-			fimc->clock[i] = NULL;
-			goto err;
+
+		if (!IS_ERR_OR_NULL(fimc->clock[i])) {
+			clk_enable(fimc->clock[i]);
+			continue;
 		}
+		dev_err(&fimc->pdev->dev, "failed to get fimc clock: %s\n",
+			fimc_clocks[i]);
+		return -ENXIO;
 	}
-	return 0;
-err:
-	fimc_clk_put(fimc);
-	dev_err(&fimc->pdev->dev, "failed to get clock: %s\n",
-		fimc_clocks[i]);
-	return -ENXIO;
-}
-
-static int fimc_m2m_suspend(struct fimc_dev *fimc)
-{
-	unsigned long flags;
-	int timeout;
-
-	spin_lock_irqsave(&fimc->slock, flags);
-	if (!fimc_m2m_pending(fimc)) {
-		spin_unlock_irqrestore(&fimc->slock, flags);
-		return 0;
-	}
-	clear_bit(ST_M2M_SUSPENDED, &fimc->state);
-	set_bit(ST_M2M_SUSPENDING, &fimc->state);
-	spin_unlock_irqrestore(&fimc->slock, flags);
-
-	timeout = wait_event_timeout(fimc->irq_queue,
-			     test_bit(ST_M2M_SUSPENDED, &fimc->state),
-			     FIMC_SHUTDOWN_TIMEOUT);
-
-	clear_bit(ST_M2M_SUSPENDING, &fimc->state);
-	return timeout == 0 ? -EAGAIN : 0;
-}
-
-static int fimc_m2m_resume(struct fimc_dev *fimc)
-{
-	unsigned long flags;
-
-	spin_lock_irqsave(&fimc->slock, flags);
-	/* Clear for full H/W setup in first run after resume */
-	fimc->m2m.ctx = NULL;
-	spin_unlock_irqrestore(&fimc->slock, flags);
-
-	if (test_and_clear_bit(ST_M2M_SUSPENDED, &fimc->state))
-		fimc_m2m_job_finish(fimc->m2m.ctx,
-				    VB2_BUF_STATE_ERROR);
 	return 0;
 }
 
@@ -1677,6 +1598,9 @@ static int fimc_probe(struct platform_device *pdev)
 	struct samsung_fimc_driverdata *drv_data;
 	struct s5p_platform_fimc *pdata;
 	int ret = 0;
+	int cap_input_index = -1;
+
+	dev_dbg(&pdev->dev, "%s():\n", __func__);
 
 	drv_data = (struct samsung_fimc_driverdata *)
 		platform_get_device_id(pdev)->driver_data;
@@ -1687,159 +1611,141 @@ static int fimc_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	fimc = devm_kzalloc(&pdev->dev, sizeof(*fimc), GFP_KERNEL);
+	fimc = kzalloc(sizeof(struct fimc_dev), GFP_KERNEL);
 	if (!fimc)
 		return -ENOMEM;
 
 	fimc->id = pdev->id;
-
 	fimc->variant = drv_data->variant[fimc->id];
 	fimc->pdev = pdev;
 	pdata = pdev->dev.platform_data;
 	fimc->pdata = pdata;
+	fimc->state = ST_IDLE;
 
 	init_waitqueue_head(&fimc->irq_queue);
 	spin_lock_init(&fimc->slock);
+
 	mutex_init(&fimc->lock);
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	fimc->regs = devm_request_and_ioremap(&pdev->dev, res);
-	if (fimc->regs == NULL) {
-		dev_err(&pdev->dev, "Failed to obtain io memory\n");
-		return -ENOENT;
+	if (!res) {
+		dev_err(&pdev->dev, "failed to find the registers\n");
+		ret = -ENOENT;
+		goto err_info;
 	}
 
+	fimc->regs_res = request_mem_region(res->start, resource_size(res),
+			dev_name(&pdev->dev));
+	if (!fimc->regs_res) {
+		dev_err(&pdev->dev, "failed to obtain register region\n");
+		ret = -ENOENT;
+		goto err_info;
+	}
+
+	fimc->regs = ioremap(res->start, resource_size(res));
+	if (!fimc->regs) {
+		dev_err(&pdev->dev, "failed to map registers\n");
+		ret = -ENXIO;
+		goto err_req_region;
+	}
+
+	fimc->num_clocks = MAX_FIMC_CLOCKS - 1;
+
+	/* Check if a video capture node needs to be registered. */
+	if (pdata && pdata->num_clients > 0) {
+		cap_input_index = 0;
+		fimc->num_clocks++;
+	}
+
+	ret = fimc_clk_get(fimc);
+	if (ret)
+		goto err_regs_unmap;
+	clk_set_rate(fimc->clock[CLK_BUS], drv_data->lclk_frequency);
+
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (res == NULL) {
-		dev_err(&pdev->dev, "Failed to get IRQ resource\n");
-		return -ENXIO;
+	if (!res) {
+		dev_err(&pdev->dev, "failed to get IRQ resource\n");
+		ret = -ENXIO;
+		goto err_clk;
 	}
 	fimc->irq = res->start;
 
-	fimc->num_clocks = MAX_FIMC_CLOCKS;
-	ret = fimc_clk_get(fimc);
-	if (ret)
-		return ret;
-	clk_set_rate(fimc->clock[CLK_BUS], drv_data->lclk_frequency);
-	clk_enable(fimc->clock[CLK_BUS]);
+	fimc_hw_reset(fimc);
 
-	platform_set_drvdata(pdev, fimc);
-
-	ret = devm_request_irq(&pdev->dev, fimc->irq, fimc_irq_handler,
-			       0, pdev->name, fimc);
+	ret = request_irq(fimc->irq, fimc_isr, 0, pdev->name, fimc);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to install irq (%d)\n", ret);
 		goto err_clk;
 	}
 
-	pm_runtime_enable(&pdev->dev);
-	ret = pm_runtime_get_sync(&pdev->dev);
-	if (ret < 0)
-		goto err_clk;
 	/* Initialize contiguous memory allocator */
-	fimc->alloc_ctx = vb2_dma_contig_init_ctx(&pdev->dev);
+	fimc->alloc_ctx = vb2_dma_contig_init_ctx(&fimc->pdev->dev);
 	if (IS_ERR(fimc->alloc_ctx)) {
 		ret = PTR_ERR(fimc->alloc_ctx);
-		goto err_pm;
+		goto err_irq;
 	}
 
-	dev_dbg(&pdev->dev, "FIMC.%d registered successfully\n", fimc->id);
+	ret = fimc_register_m2m_device(fimc);
+	if (ret)
+		goto err_irq;
 
-	pm_runtime_put(&pdev->dev);
+	/* At least one camera sensor is required to register capture node */
+	if (cap_input_index >= 0) {
+		ret = fimc_register_capture_device(fimc);
+		if (ret)
+			goto err_m2m;
+		clk_disable(fimc->clock[CLK_CAM]);
+	}
+	/*
+	 * Exclude the additional output DMA address registers by masking
+	 * them out on HW revisions that provide extended capabilites.
+	 */
+	if (fimc->variant->out_buf_count > 4)
+		fimc_hw_set_dma_seq(fimc, 0xF);
+
+	dev_dbg(&pdev->dev, "%s(): fimc-%d registered successfully\n",
+		__func__, fimc->id);
+
 	return 0;
 
-err_pm:
-	pm_runtime_put(&pdev->dev);
+err_m2m:
+	fimc_unregister_m2m_device(fimc);
+err_irq:
+	free_irq(fimc->irq, fimc);
 err_clk:
-	fimc_clk_put(fimc);
+	fimc_clk_release(fimc);
+err_regs_unmap:
+	iounmap(fimc->regs);
+err_req_region:
+	release_resource(fimc->regs_res);
+	kfree(fimc->regs_res);
+err_info:
+	kfree(fimc);
+
 	return ret;
 }
-
-static int fimc_runtime_resume(struct device *dev)
-{
-	struct fimc_dev *fimc =	dev_get_drvdata(dev);
-
-	dbg("fimc%d: state: 0x%lx", fimc->id, fimc->state);
-
-	/* Enable clocks and perform basic initalization */
-	clk_enable(fimc->clock[CLK_GATE]);
-	fimc_hw_reset(fimc);
-
-	/* Resume the capture or mem-to-mem device */
-	if (fimc_capture_busy(fimc))
-		return fimc_capture_resume(fimc);
-
-	return fimc_m2m_resume(fimc);
-}
-
-static int fimc_runtime_suspend(struct device *dev)
-{
-	struct fimc_dev *fimc =	dev_get_drvdata(dev);
-	int ret = 0;
-
-	if (fimc_capture_busy(fimc))
-		ret = fimc_capture_suspend(fimc);
-	else
-		ret = fimc_m2m_suspend(fimc);
-	if (!ret)
-		clk_disable(fimc->clock[CLK_GATE]);
-
-	dbg("fimc%d: state: 0x%lx", fimc->id, fimc->state);
-	return ret;
-}
-
-#ifdef CONFIG_PM_SLEEP
-static int fimc_resume(struct device *dev)
-{
-	struct fimc_dev *fimc =	dev_get_drvdata(dev);
-	unsigned long flags;
-
-	dbg("fimc%d: state: 0x%lx", fimc->id, fimc->state);
-
-	/* Do not resume if the device was idle before system suspend */
-	spin_lock_irqsave(&fimc->slock, flags);
-	if (!test_and_clear_bit(ST_LPM, &fimc->state) ||
-	    (!fimc_m2m_active(fimc) && !fimc_capture_busy(fimc))) {
-		spin_unlock_irqrestore(&fimc->slock, flags);
-		return 0;
-	}
-	fimc_hw_reset(fimc);
-	spin_unlock_irqrestore(&fimc->slock, flags);
-
-	if (fimc_capture_busy(fimc))
-		return fimc_capture_resume(fimc);
-
-	return fimc_m2m_resume(fimc);
-}
-
-static int fimc_suspend(struct device *dev)
-{
-	struct fimc_dev *fimc =	dev_get_drvdata(dev);
-
-	dbg("fimc%d: state: 0x%lx", fimc->id, fimc->state);
-
-	if (test_and_set_bit(ST_LPM, &fimc->state))
-		return 0;
-	if (fimc_capture_busy(fimc))
-		return fimc_capture_suspend(fimc);
-
-	return fimc_m2m_suspend(fimc);
-}
-#endif /* CONFIG_PM_SLEEP */
 
 static int __devexit fimc_remove(struct platform_device *pdev)
 {
-	struct fimc_dev *fimc = platform_get_drvdata(pdev);
+	struct fimc_dev *fimc =
+		(struct fimc_dev *)platform_get_drvdata(pdev);
 
-	pm_runtime_disable(&pdev->dev);
-	pm_runtime_set_suspended(&pdev->dev);
+	free_irq(fimc->irq, fimc);
+	fimc_hw_reset(fimc);
+
+	fimc_unregister_m2m_device(fimc);
+	fimc_unregister_capture_device(fimc);
+
+	fimc_clk_release(fimc);
 
 	vb2_dma_contig_cleanup_ctx(fimc->alloc_ctx);
 
-	clk_disable(fimc->clock[CLK_BUS]);
-	fimc_clk_put(fimc);
+	iounmap(fimc->regs);
+	release_resource(fimc->regs_res);
+	kfree(fimc->regs_res);
+	kfree(fimc);
 
-	dev_info(&pdev->dev, "driver unloaded\n");
+	dev_info(&pdev->dev, "%s driver unloaded\n", pdev->name);
 	return 0;
 }
 
@@ -1882,21 +1788,17 @@ static struct fimc_pix_limit s5p_pix_limit[4] = {
 static struct samsung_fimc_variant fimc0_variant_s5p = {
 	.has_inp_rot	 = 1,
 	.has_out_rot	 = 1,
-	.has_cam_if	 = 1,
 	.min_inp_pixsize = 16,
 	.min_out_pixsize = 16,
 	.hor_offs_align	 = 8,
-	.min_vsize_align = 16,
 	.out_buf_count	 = 4,
 	.pix_limit	 = &s5p_pix_limit[0],
 };
 
 static struct samsung_fimc_variant fimc2_variant_s5p = {
-	.has_cam_if	 = 1,
 	.min_inp_pixsize = 16,
 	.min_out_pixsize = 16,
 	.hor_offs_align	 = 8,
-	.min_vsize_align = 16,
 	.out_buf_count	 = 4,
 	.pix_limit = &s5p_pix_limit[1],
 };
@@ -1905,11 +1807,9 @@ static struct samsung_fimc_variant fimc0_variant_s5pv210 = {
 	.pix_hoff	 = 1,
 	.has_inp_rot	 = 1,
 	.has_out_rot	 = 1,
-	.has_cam_if	 = 1,
 	.min_inp_pixsize = 16,
 	.min_out_pixsize = 16,
 	.hor_offs_align	 = 8,
-	.min_vsize_align = 16,
 	.out_buf_count	 = 4,
 	.pix_limit	 = &s5p_pix_limit[1],
 };
@@ -1918,23 +1818,19 @@ static struct samsung_fimc_variant fimc1_variant_s5pv210 = {
 	.pix_hoff	 = 1,
 	.has_inp_rot	 = 1,
 	.has_out_rot	 = 1,
-	.has_cam_if	 = 1,
 	.has_mainscaler_ext = 1,
 	.min_inp_pixsize = 16,
 	.min_out_pixsize = 16,
 	.hor_offs_align	 = 1,
-	.min_vsize_align = 1,
 	.out_buf_count	 = 4,
 	.pix_limit	 = &s5p_pix_limit[2],
 };
 
 static struct samsung_fimc_variant fimc2_variant_s5pv210 = {
-	.has_cam_if	 = 1,
 	.pix_hoff	 = 1,
 	.min_inp_pixsize = 16,
 	.min_out_pixsize = 16,
 	.hor_offs_align	 = 8,
-	.min_vsize_align = 16,
 	.out_buf_count	 = 4,
 	.pix_limit	 = &s5p_pix_limit[2],
 };
@@ -1943,28 +1839,22 @@ static struct samsung_fimc_variant fimc0_variant_exynos4 = {
 	.pix_hoff	 = 1,
 	.has_inp_rot	 = 1,
 	.has_out_rot	 = 1,
-	.has_cam_if	 = 1,
 	.has_cistatus2	 = 1,
 	.has_mainscaler_ext = 1,
-	.has_alpha	 = 1,
 	.min_inp_pixsize = 16,
 	.min_out_pixsize = 16,
-	.hor_offs_align	 = 2,
-	.min_vsize_align = 1,
+	.hor_offs_align	 = 1,
 	.out_buf_count	 = 32,
 	.pix_limit	 = &s5p_pix_limit[1],
 };
 
-static struct samsung_fimc_variant fimc3_variant_exynos4 = {
+static struct samsung_fimc_variant fimc2_variant_exynos4 = {
 	.pix_hoff	 = 1,
-	.has_cam_if	 = 1,
 	.has_cistatus2	 = 1,
 	.has_mainscaler_ext = 1,
-	.has_alpha	 = 1,
 	.min_inp_pixsize = 16,
 	.min_out_pixsize = 16,
-	.hor_offs_align	 = 2,
-	.min_vsize_align = 1,
+	.hor_offs_align	 = 1,
 	.out_buf_count	 = 32,
 	.pix_limit	 = &s5p_pix_limit[3],
 };
@@ -1997,7 +1887,7 @@ static struct samsung_fimc_driverdata fimc_drvdata_exynos4 = {
 		[0] = &fimc0_variant_exynos4,
 		[1] = &fimc0_variant_exynos4,
 		[2] = &fimc0_variant_exynos4,
-		[3] = &fimc3_variant_exynos4,
+		[3] = &fimc2_variant_exynos4,
 	},
 	.num_entities = 4,
 	.lclk_frequency = 166000000UL,
@@ -2018,28 +1908,32 @@ static struct platform_device_id fimc_driver_ids[] = {
 };
 MODULE_DEVICE_TABLE(platform, fimc_driver_ids);
 
-static const struct dev_pm_ops fimc_pm_ops = {
-	SET_SYSTEM_SLEEP_PM_OPS(fimc_suspend, fimc_resume)
-	SET_RUNTIME_PM_OPS(fimc_runtime_suspend, fimc_runtime_resume, NULL)
-};
-
 static struct platform_driver fimc_driver = {
 	.probe		= fimc_probe,
-	.remove		= __devexit_p(fimc_remove),
+	.remove	= __devexit_p(fimc_remove),
 	.id_table	= fimc_driver_ids,
 	.driver = {
-		.name	= FIMC_MODULE_NAME,
+		.name	= MODULE_NAME,
 		.owner	= THIS_MODULE,
-		.pm     = &fimc_pm_ops,
 	}
 };
 
-int __init fimc_register_driver(void)
+static int __init fimc_init(void)
 {
-	return platform_driver_probe(&fimc_driver, fimc_probe);
+	int ret = platform_driver_register(&fimc_driver);
+	if (ret)
+		err("platform_driver_register failed: %d\n", ret);
+	return ret;
 }
 
-void __exit fimc_unregister_driver(void)
+static void __exit fimc_exit(void)
 {
 	platform_driver_unregister(&fimc_driver);
 }
+
+module_init(fimc_init);
+module_exit(fimc_exit);
+
+MODULE_AUTHOR("Sylwester Nawrocki <s.nawrocki@samsung.com>");
+MODULE_DESCRIPTION("S5P FIMC camera host interface/video postprocessor driver");
+MODULE_LICENSE("GPL");

@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #define MODULE_NAME "etoms"
 
 #include "gspca.h"
@@ -238,7 +236,7 @@ static void reg_r(struct gspca_dev *gspca_dev,
 
 #ifdef GSPCA_DEBUG
 	if (len > USB_BUF_SZ) {
-		pr_err("reg_r: buffer overflow\n");
+		err("reg_r: buffer overflow");
 		return;
 	}
 #endif
@@ -276,7 +274,7 @@ static void reg_w(struct gspca_dev *gspca_dev,
 
 #ifdef GSPCA_DEBUG
 	if (len > USB_BUF_SZ) {
-		pr_err("reg_w: buffer overflow\n");
+		err("reg_w: buffer overflow");
 		return;
 	}
 	PDEBUG(D_USBO, "reg write [%02x] = %02x..", index, *buffer);
@@ -895,4 +893,16 @@ static struct usb_driver sd_driver = {
 #endif
 };
 
-module_usb_driver(sd_driver);
+/* -- module insert / remove -- */
+static int __init sd_mod_init(void)
+{
+	return usb_register(&sd_driver);
+}
+
+static void __exit sd_mod_exit(void)
+{
+	usb_deregister(&sd_driver);
+}
+
+module_init(sd_mod_init);
+module_exit(sd_mod_exit);

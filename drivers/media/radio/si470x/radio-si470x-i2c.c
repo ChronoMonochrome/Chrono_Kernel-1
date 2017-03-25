@@ -24,9 +24,10 @@
 
 /* driver definitions */
 #define DRIVER_AUTHOR "Joonyoung Shim <jy0922.shim@samsung.com>";
+#define DRIVER_KERNEL_VERSION KERNEL_VERSION(1, 0, 1)
 #define DRIVER_CARD "Silicon Labs Si470x FM Radio Receiver"
 #define DRIVER_DESC "I2C radio driver for Si470x FM Radio Receivers"
-#define DRIVER_VERSION "1.0.2"
+#define DRIVER_VERSION "1.0.1"
 
 /* kernel includes */
 #include <linux/i2c.h>
@@ -247,6 +248,7 @@ int si470x_vidioc_querycap(struct file *file, void *priv,
 {
 	strlcpy(capability->driver, DRIVER_NAME, sizeof(capability->driver));
 	strlcpy(capability->card, DRIVER_CARD, sizeof(capability->card));
+	capability->version = DRIVER_KERNEL_VERSION;
 	capability->capabilities = V4L2_CAP_HW_FREQ_SEEK |
 		V4L2_CAP_TUNER | V4L2_CAP_RADIO;
 
@@ -539,7 +541,33 @@ static struct i2c_driver si470x_i2c_driver = {
 	.id_table		= si470x_i2c_id,
 };
 
-module_i2c_driver(si470x_i2c_driver);
+
+
+/**************************************************************************
+ * Module Interface
+ **************************************************************************/
+
+/*
+ * si470x_i2c_init - module init
+ */
+static int __init si470x_i2c_init(void)
+{
+	printk(KERN_INFO DRIVER_DESC ", Version " DRIVER_VERSION "\n");
+	return i2c_add_driver(&si470x_i2c_driver);
+}
+
+
+/*
+ * si470x_i2c_exit - module exit
+ */
+static void __exit si470x_i2c_exit(void)
+{
+	i2c_del_driver(&si470x_i2c_driver);
+}
+
+
+module_init(si470x_i2c_init);
+module_exit(si470x_i2c_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR(DRIVER_AUTHOR);

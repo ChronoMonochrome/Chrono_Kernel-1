@@ -28,8 +28,6 @@
  * P/N 861040-0000: Sensor ST VV6410       ASIC STV0610   - QuickCam Web
  */
 
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-
 #include "stv06xx_hdcs.h"
 
 static const struct ctrl hdcs1x00_ctrl[] = {
@@ -430,7 +428,7 @@ static int hdcs_probe_1x00(struct sd *sd)
 	if (ret < 0 || sensor != 0x08)
 		return -ENODEV;
 
-	pr_info("HDCS-1000/1100 sensor detected\n");
+	info("HDCS-1000/1100 sensor detected");
 
 	sd->gspca_dev.cam.cam_mode = hdcs1x00_mode;
 	sd->gspca_dev.cam.nmodes = ARRAY_SIZE(hdcs1x00_mode);
@@ -489,7 +487,7 @@ static int hdcs_probe_1020(struct sd *sd)
 	if (ret < 0 || sensor != 0x10)
 		return -ENODEV;
 
-	pr_info("HDCS-1020 sensor detected\n");
+	info("HDCS-1020 sensor detected");
 
 	sd->gspca_dev.cam.cam_mode = hdcs1020_mode;
 	sd->gspca_dev.cam.nmodes = ARRAY_SIZE(hdcs1020_mode);
@@ -603,11 +601,11 @@ static int hdcs_dump(struct sd *sd)
 {
 	u16 reg, val;
 
-	pr_info("Dumping sensor registers:\n");
+	info("Dumping sensor registers:");
 
 	for (reg = HDCS_IDENT; reg <= HDCS_ROWEXPH; reg++) {
 		stv06xx_read_sensor(sd, reg, &val);
-		pr_info("reg 0x%02x = 0x%02x\n", reg, val);
+		info("reg 0x%02x = 0x%02x", reg, val);
 	}
 	return 0;
 }

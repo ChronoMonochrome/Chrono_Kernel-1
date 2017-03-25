@@ -38,7 +38,7 @@
 #include <media/lirc.h>
 #include <media/lirc_dev.h>
 
-static bool debug;
+static int debug;
 
 #define IRCTL_DEV_NAME	"BaseRemoteCtl"
 #define NOPLUG		-1

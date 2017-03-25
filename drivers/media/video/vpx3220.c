@@ -331,7 +331,7 @@ static int vpx3220_status(struct v4l2_subdev *sd, u32 *pstatus, v4l2_std_id *pst
 	if (pstd)
 		*pstd = std;
 	if (pstatus)
-		*pstatus = res;
+		*pstatus = status;
 	return 0;
 }
 
@@ -588,4 +588,15 @@ static struct i2c_driver vpx3220_driver = {
 	.id_table	= vpx3220_id,
 };
 
-module_i2c_driver(vpx3220_driver);
+static __init int init_vpx3220(void)
+{
+	return i2c_add_driver(&vpx3220_driver);
+}
+
+static __exit void exit_vpx3220(void)
+{
+	i2c_del_driver(&vpx3220_driver);
+}
+
+module_init(init_vpx3220);
+module_exit(exit_vpx3220);
