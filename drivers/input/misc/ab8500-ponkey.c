@@ -10,10 +10,18 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/input.h>
+#include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/slab.h>
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab5500.h>
+#include <linux/ab8500-ponkey.h>
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+#include <linux/input/sweep2wake.h>
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
 
 /* Ponkey time control bits */
 #define AB5500_MCB		0x2F
@@ -61,10 +69,8 @@ struct ab8500_ponkey_info {
 	u8			pcut_ctrl;
 };
 
-#ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
-extern bool gpio_keys_getstate(int keycode);
-extern int jack_is_detected;
-#endif
+struct ab8500_ponkey_info *p_info;
+
 extern void gpio_keys_setstate(int keycode, bool bState);
 
 static int ab5500_ponkey_hw_init(struct platform_device *pdev)
@@ -145,13 +151,13 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 
 	if (irq == info->irq_dbf) {
 		if (info->pcut_wa)
-			schedule_delayed_work(&info->pcut_work, HZ * 3);
+			schedule_delayed_work(&info->pcut_work, HZ * 1);
 
 		gpio_keys_setstate(KEY_POWER, true);
 		info->key_state = true;
 		input_report_key(info->idev, KEY_POWER, true);
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-		dev_info(info->idev->dev.parent, "Power KEY pressed %d\n", KEY_POWER);
+		pr_info("[ABB-POnKey] Power KEY pressed %d\n", KEY_POWER);
 #endif
 	} else if (irq == info->irq_dbr) {
 		if (info->pcut_wa && !cancel_delayed_work_sync(&info->pcut_work))
@@ -162,7 +168,7 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 		info->key_state = false;
 		input_report_key(info->idev, KEY_POWER, false);
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-		dev_info(info->idev->dev.parent, "Power KEY released %d\n", KEY_POWER);
+		pr_info("[ABB-POnKey] Power KEY released %d\n", KEY_POWER);
 #endif
 
 	}
@@ -171,6 +177,114 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 
 	return IRQ_HANDLED;
 }
+
+
+static bool emu_working = false;
+static unsigned int emu_sleep = 500;
+static unsigned long emu_keycode = KEY_POWER;
+
+void ab8500_ponkey_emulator(unsigned long keycode, bool press)
+{
+	if (press) {
+		gpio_keys_setstate(keycode, true);
+		p_info->key_state = true;
+		input_report_key(p_info->idev, keycode, true);
+		pr_err("[ABB-POnKey] Emulate %d Key PRESS\n", keycode);
+		input_sync(p_info->idev);
+	} else if (!press) {
+		gpio_keys_setstate(keycode, false);
+		p_info->key_state = false;
+		input_report_key(p_info->idev, keycode, false);
+		pr_err("[ABB-POnKey] Emulate %d Key RELEASE\n", keycode);
+		input_sync(p_info->idev);
+	}
+}
+EXPORT_SYMBOL(ab8500_ponkey_emulator);
+
+void abb_ponkey_remap_power_key(unsigned long old_keycode, unsigned long new_keycode)
+{
+	p_info->idev->keybit[BIT_WORD(old_keycode)] = (unsigned long)NULL;
+	p_info->idev->keybit[BIT_WORD(new_keycode)] = BIT_MASK(new_keycode);
+}
+
+void abb_ponkey_unmap_all_keys(unsigned long *keys, unsigned int array_len)
+{
+	int i;	
+
+	for (i = 0; i < array_len; i++){
+		p_info->idev->keybit[BIT_WORD(keys[i])] = (unsigned long)NULL;
+	}
+
+	p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+}
+
+void abb_ponkey_unmap_power_key(unsigned long old_keycode)
+{
+	p_info->idev->keybit[BIT_WORD(old_keycode)] = (unsigned long)NULL;
+	p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+}
+
+static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_work)
+{
+	pr_err("[ABB-POnKey] Emulator thread called, timer = %d\n", emu_sleep);
+
+	emu_working = true;
+
+	ab8500_ponkey_emulator(emu_keycode, 1);
+
+	msleep(emu_sleep);
+
+	ab8500_ponkey_emulator(emu_keycode, 0);
+	
+	if (emu_keycode != KEY_POWER)
+		abb_ponkey_unmap_power_key(emu_keycode);
+
+	emu_working = false;
+}
+static DECLARE_WORK(abb_ponkey_emulator_work, abb_ponkey_emulator_thread);
+
+static ssize_t abb_ponkey_emulator_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "Usage: keycode delay(ms)\n");
+
+	return strlen(buf);
+}
+
+static ssize_t abb_ponkey_emulator_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int slp, keycode, ret;
+
+	ret = sscanf(buf, "%d %d", &keycode, &slp);
+
+	if ((ret < 0) || (slp < 0) || (keycode > 255) || (keycode < 0)) {
+		pr_err("[ABB-POnKey] Invalid inputs\n");
+		return -EINVAL;
+	}
+
+	if (!(emu_working && keycode == emu_keycode)) {
+		abb_ponkey_remap_power_key(emu_keycode, keycode);
+		emu_sleep = slp;
+		emu_keycode = keycode;
+		schedule_work(&abb_ponkey_emulator_work);
+	} else {
+		pr_err("[ABB-POnKey] Emulator thread is working\n");
+	}
+
+	return count;
+}
+
+static struct kobj_attribute abb_ponkey_emulator_interface = __ATTR(emulator, 0644, abb_ponkey_emulator_show, abb_ponkey_emulator_store);
+
+static struct attribute *abb_ponkey_attrs[] = {
+	&abb_ponkey_emulator_interface.attr, 
+	NULL,
+};
+
+static struct attribute_group abb_ponkey_interface_group = {
+	.attrs = abb_ponkey_attrs,
+};
+
+static struct kobject *abb_ponkey_kobject;
 
 static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 {
@@ -266,6 +380,40 @@ static int __devinit ab8500_ponkey_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, info);
 
+	p_info = info;
+
+	abb_ponkey_kobject = kobject_create_and_add("abb-ponkey", kernel_kobj);
+
+	if (!abb_ponkey_kobject) {
+		return -ENOMEM;
+	}
+
+	ret = sysfs_create_group(abb_ponkey_kobject, &abb_ponkey_interface_group);
+
+	if (ret) {
+		kobject_put(abb_ponkey_kobject);
+	}
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+	// This is the input device we need to register
+	// with sweep2wake!
+	sweep2wake_setdev(info->idev);
+#ifdef CONFIG_DEBUG_PRINTK
+	printk("s2w: registered input_dev\n");
+#else
+	;
+#endif
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+	// This is the input device we need to register
+	// with doubletap2wake!
+	doubletap2wake_setdev(info->idev);
+#ifdef CONFIG_DEBUG_PRINTK
+	printk("dt2w: registered input_dev\n");
+#else
+	;
+#endif
+#endif
+
 	return 0;
 
 out_irq_dbf:
@@ -289,6 +437,7 @@ static int __devexit ab8500_ponkey_remove(struct platform_device *pdev)
 	free_irq(info->irq_dbr, info);
 	input_unregister_device(info->idev);
 	kfree(info);
+	kobject_put(abb_ponkey_kobject);
 	return 0;
 }
 
