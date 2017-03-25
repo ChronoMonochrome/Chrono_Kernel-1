@@ -200,7 +200,17 @@ static struct platform_driver of_platform_serial_driver = {
 	.remove = of_platform_serial_remove,
 };
 
-module_platform_driver(of_platform_serial_driver);
+static int __init of_platform_serial_init(void)
+{
+	return platform_driver_register(&of_platform_serial_driver);
+}
+module_init(of_platform_serial_init);
+
+static void __exit of_platform_serial_exit(void)
+{
+	return platform_driver_unregister(&of_platform_serial_driver);
+};
+module_exit(of_platform_serial_exit);
 
 MODULE_AUTHOR("Arnd Bergmann <arnd@arndb.de>");
 MODULE_LICENSE("GPL");
