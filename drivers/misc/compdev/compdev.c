@@ -18,21 +18,28 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/miscdevice.h>
+#include <linux/device.h>
 #include <linux/uaccess.h>
 #include <linux/list.h>
 #include <linux/mutex.h>
 #include <linux/ioctl.h>
 #include <linux/sched.h>
-
 #include <linux/compdev.h>
+#include <linux/compdev_util.h>
 #include <linux/hwmem.h>
 #include <linux/mm.h>
-#include <video/mcde_dss.h>
-#include <video/b2r2_blt.h>
 #include <linux/workqueue.h>
 #include <linux/completion.h>
+#include <linux/kref.h>
+#include <linux/kobject.h>
+#ifdef CONFIG_HAS_EARLYSUSPEND
+#include <linux/earlysuspend.h>
+#endif
 
-#define BUFFER_CACHE_DEPTH 2
+#include <video/mcde_dss.h>
+#include <video/mcde.h>
+#include <video/b2r2_blt.h>
+
 #define NUM_COMPDEV_BUFS 2
 
 static LIST_HEAD(dev_list);
@@ -46,34 +53,17 @@ struct compdev_buffer {
 	u32 paddr; /* if pinned */
 };
 
-struct compdev_img_internal {
-	struct compdev_img img;
-	u32 ref_count;
-};
-
-struct compdev_blt_work {
+struct compdev_display_work {
 	struct work_struct work;
-	struct compdev_img *src_img;
-	struct compdev_img_internal *dst_img;
+	struct dss_context *dss_ctx;
+	int img_count;
+	struct compdev_img img1;
+	struct compdev_img img2;
+	struct hwmem_alloc *img1_alloc;
+	struct hwmem_alloc *img2_alloc;
 	int blt_handle;
-	bool mcde_rotation;
-	struct device *dev;
-};
-
-struct compdev_post_callback_work {
-	struct work_struct work;
-	struct compdev_img *img;
-	post_buffer_callback pb_cb;
-	void *cb_data;
-	struct device *dev;
-};
-
-struct buffer_cache_context {
-	struct compdev_img_internal
-		*img[BUFFER_CACHE_DEPTH];
-	u8 index;
-	u8 unused_counter;
-	struct device *dev;
+	int b2r2_req_id;
+	enum compdev_transform  mcde_transform;
 };
 
 struct dss_context {
@@ -81,40 +71,149 @@ struct dss_context {
 	struct mcde_display_device *ddev;
 	struct mcde_overlay *ovly[NUM_COMPDEV_BUFS];
 	struct compdev_buffer ovly_buffer[NUM_COMPDEV_BUFS];
-	struct compdev_size phy_size;
-	enum mcde_display_rotation display_rotation;
-	enum compdev_rotation current_buffer_rotation;
+	struct compdev_buffer prev_ovly_buffer[NUM_COMPDEV_BUFS];
+	enum compdev_transform current_buffer_transform;
 	int blt_handle;
-	u8 temp_img_count;
-	struct compdev_img_internal *temp_img[NUM_COMPDEV_BUFS];
 	struct buffer_cache_context cache_ctx;
 };
 
 struct compdev {
 	struct mutex lock;
+	struct mutex si_lock;
 	struct miscdevice mdev;
 	struct device *dev;
 	struct list_head list;
 	struct dss_context dss_ctx;
-	u16 ref_count;
-	struct workqueue_struct *worker_thread;
+	struct kref ref_count;
+	struct workqueue_struct *display_worker_thread;
 	int dev_index;
+	char name[10];
 	post_buffer_callback pb_cb;
 	post_scene_info_callback si_cb;
+	size_changed_callback sc_cb;
 	struct compdev_scene_info s_info;
 	u8 sync_count;
 	u8 image_count;
-	struct compdev_img *images[NUM_COMPDEV_BUFS];
+	struct compdev_img images[NUM_COMPDEV_BUFS];
+	struct compdev_img *pimages[NUM_COMPDEV_BUFS];
+	enum compdev_transform  mcde_transform;
+	enum compdev_transform  saved_reuse_fb_transform;
+	struct compdev_display_work *display_work;
 	struct completion fence;
 	void *cb_data;
 	bool mcde_rotation;
+	bool using_fb_overlay;
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct early_suspend early_suspend;
+#endif
+	struct compdev_img fb_image;
+	struct hwmem_alloc *fb_image_alloc;
+	bool blanked;
 };
 
 static struct compdev *compdevs[MAX_NBR_OF_COMPDEVS];
 
-static int compdev_post_buffers_dss(struct dss_context *dss_ctx,
-		struct compdev_img *img1, struct compdev_img *img2);
+static int release_prev_frame(struct dss_context *dss_ctx);
+static int compdev_clear_screen_locked(struct compdev *cd);
 
+/* Parameter used by wait_for_vsync to avoid having to lock
+ * the mutex for this call */
+static struct mcde_display_device *vsync_ddev = NULL;
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void early_suspend(struct early_suspend *data)
+{
+	struct compdev *cd =
+		container_of(data, struct compdev, early_suspend);
+
+	if (cd->dss_ctx.ovly[0] && cd->dss_ctx.ovly[0]->ddev &&
+		(cd->dss_ctx.ovly[0]->ddev->stay_alive == false))
+		mcde_dss_disable_display(cd->dss_ctx.ovly[0]->ddev);
+}
+
+static void late_resume(struct early_suspend *data)
+{
+	struct compdev *cd =
+		container_of(data, struct compdev, early_suspend);
+
+	if (cd->dss_ctx.ovly[0])
+		(void) mcde_dss_enable_display(cd->dss_ctx.ovly[0]->ddev);
+}
+#endif
+
+static void compdev_device_release(struct kref *ref)
+{
+	int i;
+	struct compdev *cd =
+		container_of(ref, struct compdev, ref_count);
+
+	mutex_lock(&cd->lock);
+
+	/* Sync last refresh */
+	if (cd->display_work != NULL) {
+		flush_work_sync(&cd->display_work->work);
+		kfree(cd->display_work);
+		cd->display_work = NULL;
+	}
+	flush_workqueue(cd->display_worker_thread);
+
+#ifdef CONFIG_COMPDEV_JANITOR
+	cancel_delayed_work_sync(&cd->dss_ctx.cache_ctx.free_buffers_work);
+	flush_workqueue(cd->dss_ctx.cache_ctx.janitor_thread);
+#endif
+
+	mcde_dss_disable_display(cd->dss_ctx.ddev);
+
+	if (cd->fb_image_alloc != NULL) {
+		hwmem_release(cd->fb_image_alloc);
+		cd->fb_image_alloc = NULL;
+	}
+
+	if (!cd->using_fb_overlay) {
+		mcde_dss_close_channel(cd->dss_ctx.ddev);
+		i = 0;
+	} else {
+		i = 1;
+	}
+
+	for (; i < NUM_COMPDEV_BUFS; i++)
+		mcde_dss_destroy_overlay(cd->dss_ctx.ovly[i]);
+
+	if (cd->dss_ctx.blt_handle >= 0)
+		b2r2_blt_close(cd->dss_ctx.blt_handle);
+
+	/* Release previous 2 frames that are still reference counted */
+	release_prev_frame(&cd->dss_ctx);
+	release_prev_frame(&cd->dss_ctx);
+
+	/* Free potential temp buffers */
+	for (i = 0; i < BUFFER_CACHE_DEPTH; i++) {
+		if (cd->dss_ctx.cache_ctx.img[i] != NULL) {
+			kref_put(&cd->dss_ctx.cache_ctx.img[i]->ref_count,
+				compdev_image_release);
+			cd->dss_ctx.cache_ctx.img[i] = NULL;
+		}
+	}
+
+#ifdef CONFIG_COMPDEV_JANITOR
+	mutex_destroy(&cd->dss_ctx.cache_ctx.janitor_lock);
+	destroy_workqueue(cd->dss_ctx.cache_ctx.janitor_thread);
+#endif
+	destroy_workqueue(cd->display_worker_thread);
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	unregister_early_suspend(&cd->early_suspend);
+#endif
+
+	compdevs[cd->dev_index] = NULL;
+
+	mutex_unlock(&cd->lock);
+
+	mutex_destroy(&cd->si_lock);
+	mutex_destroy(&cd->lock);
+
+	kfree(cd);
+}
 
 static int compdev_open(struct inode *inode, struct file *file)
 {
@@ -142,6 +241,7 @@ static int disable_overlay(struct mcde_overlay *ovly)
 	if (info.paddr != 0) {
 		/* Set the pointer to zero to disable the overlay */
 		info.paddr = 0;
+		info.kaddr = 0;
 		mcde_dss_apply_overlay(ovly, &info);
 	}
 	return 0;
@@ -161,17 +261,8 @@ static int compdev_release(struct inode *inode, struct file *file)
 	if (&cd->list == &dev_list)
 		return -ENODEV;
 
-	for (i = 0; i < NUM_COMPDEV_BUFS; i++) {
+	for (i = 0; i < NUM_COMPDEV_BUFS; i++)
 		disable_overlay(cd->dss_ctx.ovly[i]);
-		if (cd->dss_ctx.ovly_buffer[i].paddr &&
-				cd->dss_ctx.ovly_buffer[i].type ==
-				COMPDEV_PTR_HWMEM_BUF_NAME_OFFSET)
-			hwmem_unpin(cd->dss_ctx.ovly_buffer[i].alloc);
-
-		cd->dss_ctx.ovly_buffer[i].alloc = NULL;
-		cd->dss_ctx.ovly_buffer[i].size = 0;
-		cd->dss_ctx.ovly_buffer[i].paddr = 0;
-	}
 
 	return 0;
 }
@@ -193,11 +284,85 @@ static enum mcde_ovly_pix_fmt get_ovly_fmt(enum compdev_fmt fmt)
 	}
 }
 
+static int to_degree(enum compdev_transform transform)
+{
+	switch (transform) {
+	case COMPDEV_TRANSFORM_ROT_270_CW:
+		return 270;
+	case COMPDEV_TRANSFORM_ROT_180:
+		return 180;
+	case COMPDEV_TRANSFORM_ROT_90_CW:
+	case COMPDEV_TRANSFORM_ROT_90_CW_FLIP_H:
+	case COMPDEV_TRANSFORM_ROT_90_CW_FLIP_V:
+		return 90;
+	case COMPDEV_TRANSFORM_ROT_0:
+	default:
+		return 0;
+	}
+}
+
+static enum mcde_display_rotation to_mcde_rotation(int degrees)
+{
+	switch (degrees) {
+	case 90:
+		return MCDE_DISPLAY_ROT_90_CW;
+	case 180:
+		return MCDE_DISPLAY_ROT_180;
+	case 270:
+		return MCDE_DISPLAY_ROT_270_CW;
+	default:
+		return MCDE_DISPLAY_ROT_0;
+	}
+}
+
+static enum compdev_transform to_transform(int degrees)
+{
+	switch (degrees) {
+	case 270:
+		return COMPDEV_TRANSFORM_ROT_270_CW;
+	case 180:
+		return COMPDEV_TRANSFORM_ROT_180;
+	case 90:
+		return COMPDEV_TRANSFORM_ROT_90_CW;
+	default:
+		return COMPDEV_TRANSFORM_ROT_0;
+	}
+}
+
+enum compdev_transform extract_rotation(enum compdev_transform transform)
+{
+	switch (transform) {
+	case COMPDEV_TRANSFORM_ROT_90_CW:
+	case COMPDEV_TRANSFORM_ROT_90_CW_FLIP_H:
+	case COMPDEV_TRANSFORM_ROT_90_CW_FLIP_V:
+		return COMPDEV_TRANSFORM_ROT_90_CW;
+	case COMPDEV_TRANSFORM_ROT_90_CCW:
+		return COMPDEV_TRANSFORM_ROT_90_CCW;
+	default:
+		return COMPDEV_TRANSFORM_ROT_0;
+	}
+}
+
+enum compdev_transform extract_transform(enum compdev_transform transform)
+{
+	switch (transform) {
+	case COMPDEV_TRANSFORM_FLIP_H:
+	case COMPDEV_TRANSFORM_ROT_90_CW_FLIP_H:
+		return COMPDEV_TRANSFORM_FLIP_H;
+	case COMPDEV_TRANSFORM_FLIP_V:
+	case COMPDEV_TRANSFORM_ROT_90_CW_FLIP_V:
+		return COMPDEV_TRANSFORM_FLIP_V;
+	default:
+		return COMPDEV_TRANSFORM_ROT_0;
+	}
+}
+
 static int compdev_setup_ovly(struct compdev_img *img,
 		struct compdev_buffer *buffer,
 		struct mcde_overlay *ovly,
 		int z_order,
-		struct dss_context *dss_ctx)
+		struct dss_context *dss_ctx,
+		enum compdev_transform mcde_transform)
 {
 	int ret = 0;
 	enum hwmem_mem_type memtype;
@@ -206,8 +371,10 @@ static int compdev_setup_ovly(struct compdev_img *img,
 	size_t mem_chunk_length = 1;
 	struct hwmem_region rgn = { .offset = 0, .count = 1, .start = 0 };
 	struct mcde_overlay_info info;
+	enum compdev_transform tot_trans;
 
 	if (img->buf.type == COMPDEV_PTR_HWMEM_BUF_NAME_OFFSET) {
+		buffer->paddr = 0;
 		buffer->type = COMPDEV_PTR_HWMEM_BUF_NAME_OFFSET;
 		buffer->alloc = hwmem_resolve_by_name(img->buf.hwmem_buf_name);
 		if (IS_ERR(buffer->alloc)) {
@@ -221,7 +388,7 @@ static int compdev_setup_ovly(struct compdev_img *img,
 				&access);
 
 		if (!(access & HWMEM_ACCESS_READ) ||
-				memtype != HWMEM_MEM_CONTIGUOUS_SYS) {
+				memtype == HWMEM_MEM_SCATTERED_SYS) {
 			ret = -EACCES;
 			dev_warn(dss_ctx->dev,
 				"Invalid_mem overlay, %d\n", ret);
@@ -235,7 +402,7 @@ static int compdev_setup_ovly(struct compdev_img *img,
 		}
 
 		rgn.size = rgn.end = buffer->size;
-		ret = hwmem_set_domain(buffer->alloc, HWMEM_ACCESS_READ,
+		ret = hwmem_set_domain(buffer->alloc, access,
 			HWMEM_DOMAIN_SYNC, &rgn);
 		if (ret)
 			dev_warn(dss_ctx->dev,
@@ -251,24 +418,43 @@ static int compdev_setup_ovly(struct compdev_img *img,
 
 	info.stride = img->pitch;
 	info.fmt = get_ovly_fmt(img->fmt);
+	info.dst_z = z_order;
+
+	tot_trans = to_transform((to_degree(mcde_transform)
+			+ to_degree(img->transform)) % 360);
+
+	if (tot_trans & COMPDEV_TRANSFORM_ROT_90_CW) {
+		info.dst_x = img->dst_rect.y;
+		info.dst_y = img->dst_rect.x;
+		info.w = img->dst_rect.height;
+		info.h = img->dst_rect.width;
+	} else {
+		info.dst_x = img->dst_rect.x;
+		info.dst_y = img->dst_rect.y;
+		info.w = img->dst_rect.width;
+		info.h = img->dst_rect.height;
+	}
+
+	/*
+	 * Start coordinate is always 0,0.
+	 * The paddr is increased accordingly instead.
+	 */
 	info.src_x = 0;
 	info.src_y = 0;
-	info.dst_x = img->dst_rect.x;
-	info.dst_y = img->dst_rect.y;
-	info.dst_z = z_order;
-	info.w = img->dst_rect.width;
-	info.h = img->dst_rect.height;
-	info.dirty.x = 0;
-	info.dirty.y = 0;
-	info.dirty.w = img->dst_rect.width;
-	info.dirty.h = img->dst_rect.height;
-	info.paddr = buffer->paddr;
+	info.paddr = buffer->paddr + img->pitch * img->src_rect.y +
+		img->src_rect.x * (compdev_get_bpp(img->fmt) >> 3);
+
+	if (img->buf.type == COMPDEV_PTR_HWMEM_BUF_NAME_OFFSET)
+		info.kaddr = hwmem_kmap(buffer->alloc);
+	else
+		info.kaddr = 0; /* requires an ioremap at dump time */
 
 	mcde_dss_apply_overlay(ovly, &info);
 	return ret;
 
 pin_failed:
 invalid_mem:
+	hwmem_release(buffer->alloc);
 	buffer->alloc = NULL;
 	buffer->size = 0;
 	buffer->paddr = 0;
@@ -278,32 +464,14 @@ resolve_failed:
 }
 
 static int compdev_update_rotation(struct dss_context *dss_ctx,
-		enum compdev_rotation rotation)
+		enum mcde_display_rotation rotation)
 {
-	/* Set video mode */
-	struct mcde_video_mode vmode;
 	int ret = 0;
 
-	memset(&vmode, 0, sizeof(struct mcde_video_mode));
-	mcde_dss_get_video_mode(dss_ctx->ddev, &vmode);
-	if ((dss_ctx->display_rotation + rotation) % 180) {
-		vmode.xres = dss_ctx->phy_size.height;
-		vmode.yres = dss_ctx->phy_size.width;
-	} else {
-		vmode.xres = dss_ctx->phy_size.width;
-		vmode.yres = dss_ctx->phy_size.height;
-	}
-
 	/* Set rotation */
-	ret = mcde_dss_set_rotation(dss_ctx->ddev,
-			(dss_ctx->display_rotation + rotation) % 360);
+	ret = mcde_dss_set_rotation(dss_ctx->ddev, rotation);
 	if (ret != 0)
 		goto exit;
-
-	ret = mcde_dss_set_video_mode(dss_ctx->ddev, &vmode);
-	if (ret != 0)
-		goto exit;
-
 
 	/* Apply */
 	ret = mcde_dss_apply_channel(dss_ctx->ddev);
@@ -315,15 +483,21 @@ static int release_prev_frame(struct dss_context *dss_ctx)
 {
 	int ret = 0;
 	int i;
+	struct compdev_buffer *prev_frame;
 
 	/* Handle unpin of previous buffers */
 	for (i = 0; i < NUM_COMPDEV_BUFS; i++) {
-		if (dss_ctx->ovly_buffer[i].type ==
-				COMPDEV_PTR_HWMEM_BUF_NAME_OFFSET &&
-				dss_ctx->ovly_buffer[i].paddr != 0) {
-			hwmem_unpin(dss_ctx->ovly_buffer[i].alloc);
-			hwmem_release(dss_ctx->ovly_buffer[i].alloc);
+		prev_frame = &dss_ctx->prev_ovly_buffer[i];
+		if (prev_frame->type ==
+				COMPDEV_PTR_HWMEM_BUF_NAME_OFFSET) {
+			if (!IS_ERR_OR_NULL(prev_frame->alloc)) {
+				hwmem_release(prev_frame->alloc);
+				if (prev_frame->paddr != 0)
+					hwmem_unpin(prev_frame->alloc);
+			}
 		}
+		*prev_frame = dss_ctx->ovly_buffer[i];
+
 		dss_ctx->ovly_buffer[i].alloc = NULL;
 		dss_ctx->ovly_buffer[i].size = 0;
 		dss_ctx->ovly_buffer[i].paddr = 0;
@@ -332,298 +506,16 @@ static int release_prev_frame(struct dss_context *dss_ctx)
 
 }
 
-static enum b2r2_blt_fmt compdev_to_blt_format(enum compdev_fmt fmt)
+static int compdev_blt(struct compdev *cd,
+		int blt_handle,
+		struct compdev_img *src_img,
+		struct compdev_img *dst_img)
 {
-	switch (fmt) {
-	case COMPDEV_FMT_RGBA8888:
-		return B2R2_BLT_FMT_32_BIT_ABGR8888;
-	case COMPDEV_FMT_RGB888:
-		return B2R2_BLT_FMT_24_BIT_RGB888;
-	case COMPDEV_FMT_RGB565:
-		return B2R2_BLT_FMT_16_BIT_RGB565;
-	case COMPDEV_FMT_YUV422:
-		return B2R2_BLT_FMT_CB_Y_CR_Y;
-	case COMPDEV_FMT_YCBCR42XMBN:
-		return B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE;
-	case COMPDEV_FMT_YUV420_SP:
-		return B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR;
-	case COMPDEV_FMT_YVU420_SP:
-		return B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR;
-	case COMPDEV_FMT_YUV420_P:
-		return B2R2_BLT_FMT_YUV420_PACKED_PLANAR;
-	default:
-		return B2R2_BLT_FMT_UNUSED;
-	}
-}
 
-static enum b2r2_blt_transform to_blt_transform
-					(enum compdev_rotation compdev_rot)
-{
-	switch (compdev_rot) {
-	case COMPDEV_ROT_0:
-		return B2R2_BLT_TRANSFORM_NONE;
-	case COMPDEV_ROT_90_CCW:
-		return B2R2_BLT_TRANSFORM_CCW_ROT_90;
-	case COMPDEV_ROT_180:
-		return B2R2_BLT_TRANSFORM_CCW_ROT_180;
-	case COMPDEV_ROT_270_CCW:
-		return B2R2_BLT_TRANSFORM_CCW_ROT_90;
-	default:
-		return B2R2_BLT_TRANSFORM_NONE;
-	}
-}
-
-static u32 get_stride(u32 width, enum compdev_fmt fmt)
-{
-	u32 stride = 0;
-	switch (fmt) {
-	case COMPDEV_FMT_RGB565:
-		stride = width * 2;
-		break;
-	case COMPDEV_FMT_RGB888:
-		stride = width * 3;
-		break;
-	case COMPDEV_FMT_RGBX8888:
-		stride = width * 4;
-		break;
-	case COMPDEV_FMT_RGBA8888:
-		stride = width * 4;
-		break;
-	case COMPDEV_FMT_YUV422:
-		stride = width * 2;
-		break;
-	case COMPDEV_FMT_YCBCR42XMBN:
-	case COMPDEV_FMT_YUV420_SP:
-	case COMPDEV_FMT_YVU420_SP:
-	case COMPDEV_FMT_YUV420_P:
-		stride = width;
-		break;
-	}
-
-	/* The display controller requires 8 byte aligned strides */
-	if (stride % 8)
-		stride += 8 - (stride % 8);
-
-	return stride;
-}
-
-static int alloc_comp_internal_img(enum compdev_fmt fmt,
-		u16 width, u16 height, struct compdev_img_internal **img_pp)
-{
-	struct hwmem_alloc *alloc;
-	int name;
-	u32 size;
-	u32 stride;
-	struct compdev_img_internal *img;
-
-	stride = get_stride(width, fmt);
-	size = stride * height;
-	size = PAGE_ALIGN(size);
-
-	img = kzalloc(sizeof(struct compdev_img_internal), GFP_KERNEL);
-
-	if (!img)
-		return -ENOMEM;
-
-	alloc = hwmem_alloc(size, HWMEM_ALLOC_HINT_WRITE_COMBINE |
-			HWMEM_ALLOC_HINT_UNCACHED,
-			(HWMEM_ACCESS_READ  | HWMEM_ACCESS_WRITE |
-			HWMEM_ACCESS_IMPORT),
-			HWMEM_MEM_CONTIGUOUS_SYS);
-
-	if (IS_ERR(alloc)) {
-		kfree(img);
-		img = NULL;
-		return PTR_ERR(alloc);
-	}
-
-	name = hwmem_get_name(alloc);
-	if (name < 0) {
-		kfree(img);
-		img = NULL;
-		hwmem_release(alloc);
-		return name;
-	}
-
-	img->img.height = height;
-	img->img.width = width;
-	img->img.fmt = fmt;
-	img->img.pitch = stride;
-	img->img.buf.hwmem_buf_name = name;
-	img->img.buf.type = COMPDEV_PTR_HWMEM_BUF_NAME_OFFSET;
-	img->img.buf.offset = 0;
-	img->img.buf.len = size;
-
-	img->ref_count = 1;
-
-	*img_pp = img;
-
-	return 0;
-}
-
-static void free_comp_img_buf(struct compdev_img_internal *img,
-		struct device *dev)
-{
-	dev_dbg(dev, "%s\n", __func__);
-
-	if (img != NULL && img->ref_count) {
-		img->ref_count--;
-		if (img->ref_count == 0) {
-			struct hwmem_alloc *alloc;
-			if (img->img.buf.hwmem_buf_name > 0) {
-				alloc = hwmem_resolve_by_name(
-						img->img.buf.hwmem_buf_name);
-				if (IS_ERR(alloc)) {
-					dev_err(dev, "%s: Error getting Alloc "
-						"from HWMEM\n", __func__);
-					return;
-				}
-				/* Double release needed */
-				hwmem_release(alloc);
-				hwmem_release(alloc);
-			}
-			kfree(img);
-		}
-	}
-}
-
-struct compdev_img_internal *compdev_buffer_cache_get_image(
-		struct buffer_cache_context *cache_ctx, enum compdev_fmt fmt,
-		u16 width, u16 height)
-{
-	int i;
-	struct compdev_img_internal *img = NULL;
-
-	dev_dbg(cache_ctx->dev, "%s\n", __func__);
-
-	/* First check for a cache hit */
-	if (cache_ctx->unused_counter > 0) {
-		u8 active_index = cache_ctx->index;
-		struct compdev_img_internal *temp =
-				cache_ctx->img[active_index];
-		if (temp != NULL && temp->img.fmt == fmt &&
-				temp->img.width == width &&
-				temp->img.height == height) {
-			img = temp;
-			cache_ctx->unused_counter = 0;
-		}
-	}
-	/* Check if there was a cache hit */
-	if (img == NULL) {
-		/* Create new buffers and release old */
-		for (i = 0; i < BUFFER_CACHE_DEPTH; i++) {
-			if (cache_ctx->img[i]) {
-				free_comp_img_buf(cache_ctx->img[i],
-						cache_ctx->dev);
-				cache_ctx->img[i] = NULL;
-			}
-			cache_ctx->index = 0;
-			if (alloc_comp_internal_img(fmt, width, height,
-					&cache_ctx->img[i]))
-				dev_err(cache_ctx->dev,
-						"%s: Allocation error\n",
-						__func__);
-		}
-		img = cache_ctx->img[0];
-	}
-
-	if (img != NULL) {
-		img->ref_count++;
-		cache_ctx->unused_counter = 0;
-		cache_ctx->index++;
-		if (cache_ctx->index >= BUFFER_CACHE_DEPTH)
-			cache_ctx->index = 0;
-	}
-
-	return img;
-}
-
-static void compdev_buffer_cache_mark_frame
-				(struct buffer_cache_context *cache_ctx)
-{
-	if (cache_ctx->unused_counter < 2)
-		cache_ctx->unused_counter++;
-	if (cache_ctx->unused_counter == 2) {
-		int i;
-		for (i = 0; i < BUFFER_CACHE_DEPTH; i++) {
-			if (cache_ctx->img[i]) {
-				free_comp_img_buf(cache_ctx->img[i],
-						cache_ctx->dev);
-				cache_ctx->img[i] = NULL;
-			}
-		}
-	}
-}
-
-static bool check_hw_format(enum compdev_fmt fmt)
-{
-	if (fmt == COMPDEV_FMT_RGB565 ||
-			fmt == COMPDEV_FMT_RGB888 ||
-			fmt == COMPDEV_FMT_RGBA8888 ||
-			fmt == COMPDEV_FMT_RGBX8888 ||
-			fmt == COMPDEV_FMT_YUV422)
-		return true;
-	else
-		return false;
-}
-
-static enum compdev_fmt find_compatible_fmt(enum compdev_fmt fmt, bool rotation)
-{
-	if (!rotation) {
-		switch (fmt) {
-		case COMPDEV_FMT_RGB565:
-		case COMPDEV_FMT_RGB888:
-		case COMPDEV_FMT_RGBA8888:
-		case COMPDEV_FMT_RGBX8888:
-			return fmt;
-		case COMPDEV_FMT_YUV422:
-		case COMPDEV_FMT_YCBCR42XMBN:
-		case COMPDEV_FMT_YUV420_SP:
-		case COMPDEV_FMT_YVU420_SP:
-		case COMPDEV_FMT_YUV420_P:
-			return COMPDEV_FMT_YUV422;
-		default:
-			return COMPDEV_FMT_RGBA8888;
-		}
-	} else {
-		switch (fmt) {
-		case COMPDEV_FMT_RGB565:
-		case COMPDEV_FMT_RGB888:
-		case COMPDEV_FMT_RGBA8888:
-		case COMPDEV_FMT_RGBX8888:
-			return fmt;
-		case COMPDEV_FMT_YUV422:
-		case COMPDEV_FMT_YCBCR42XMBN:
-		case COMPDEV_FMT_YUV420_SP:
-		case COMPDEV_FMT_YVU420_SP:
-		case COMPDEV_FMT_YUV420_P:
-			return COMPDEV_FMT_RGB888;
-		default:
-			return COMPDEV_FMT_RGBA8888;
-		}
-	}
-}
-
-static void compdev_callback_worker_function(struct work_struct *work)
-{
-	struct compdev_post_callback_work *cb_work =
-			(struct compdev_post_callback_work *)work;
-
-	if (cb_work->pb_cb != NULL)
-		cb_work->pb_cb(cb_work->cb_data, cb_work->img);
-}
-static void compdev_blt_worker_function(struct work_struct *work)
-{
-	struct compdev_blt_work *blt_work = (struct compdev_blt_work *)work;
-	struct compdev_img *src_img;
-	struct compdev_img *dst_img;
 	struct b2r2_blt_req req;
 	int req_id;
 
-	dev_dbg(blt_work->dev, "%s\n", __func__);
-
-	src_img = blt_work->src_img;
-	dst_img = &blt_work->dst_img->img;
+	dev_dbg(cd->dev, "%s\n", __func__);
 
 	memset(&req, 0, sizeof(req));
 	req.size = sizeof(req);
@@ -638,14 +530,15 @@ static void compdev_blt_worker_function(struct work_struct *work)
 		req.src_img.buf.hwmem_buf_name = src_img->buf.hwmem_buf_name;
 
 		alloc = hwmem_resolve_by_name(src_img->buf.hwmem_buf_name);
-		if (IS_ERR(alloc)) {
-			dev_warn(blt_work->dev,
+		if (IS_ERR_OR_NULL(alloc)) {
+			dev_warn(cd->dev,
 				"HWMEM resolve failed\n");
+		} else {
+			hwmem_set_access(alloc,
+					HWMEM_ACCESS_READ | HWMEM_ACCESS_IMPORT,
+					task_tgid_nr(current));
+			hwmem_release(alloc);
 		}
-		hwmem_set_access(alloc,
-				HWMEM_ACCESS_READ | HWMEM_ACCESS_IMPORT,
-				task_tgid_nr(current));
-		hwmem_release(alloc);
 	}
 	req.src_img.pitch = src_img->pitch;
 	req.src_img.buf.offset = src_img->buf.offset;
@@ -673,221 +566,67 @@ static void compdev_blt_worker_function(struct work_struct *work)
 	req.dst_img.width = dst_img->width;
 	req.dst_img.height = dst_img->height;
 
-	if (blt_work->mcde_rotation)
-		req.transform = B2R2_BLT_TRANSFORM_NONE;
-	else
-		req.transform = to_blt_transform(src_img->rotation);
+
+	req.transform = compdev_to_blt_transform(src_img->transform);
 	req.dst_rect.x = 0;
 	req.dst_rect.y = 0;
-	req.dst_rect.width = src_img->dst_rect.width;
-	req.dst_rect.height = src_img->dst_rect.height;
+	req.dst_rect.width = dst_img->width;
+	req.dst_rect.height = dst_img->height;
 
 	req.global_alpha = 0xff;
-	req.flags = B2R2_BLT_FLAG_DITHER;
+	req.flags = B2R2_BLT_FLAG_DITHER | B2R2_BLT_FLAG_ASYNCH;
 
-	req_id = b2r2_blt_request(blt_work->blt_handle, &req);
+	dev_dbg(cd->dev, "%s: src_rect: x %d, y %d, w %d h %d\n",
+		__func__, req.src_rect.x, req.src_rect.y,
+		req.src_rect.width, req.src_rect.height);
+	dev_dbg(cd->dev, "%s: dst_rect: x %d, y %d, w %d h %d\n",
+		__func__, req.dst_rect.x, req.dst_rect.y,
+		req.dst_rect.width, req.dst_rect.height);
+	dev_dbg(cd->dev, "%s: img_trans 0x%02x, mcde_trans %d\n",
+		__func__, src_img->transform, cd->mcde_transform);
 
-	if (b2r2_blt_synch(blt_work->blt_handle, req_id) < 0) {
-		dev_err(blt_work->dev,
-				"%s: Could not perform b2r2_blt_synch",
-				__func__);
+	req_id = b2r2_blt_request(blt_handle, &req);
+	if (req_id < 0) {
+		dev_err(cd->dev,
+			"%s: Failed b2r2_blt_request (%d), blt_handle %d\n",
+			__func__, req_id, blt_handle);
 	}
 
-	dst_img->src_rect.x = 0;
-	dst_img->src_rect.x = 0;
-	dst_img->src_rect.width = dst_img->width;
-	dst_img->src_rect.height = dst_img->height;
-
-	dst_img->dst_rect.x = src_img->dst_rect.x;
-	dst_img->dst_rect.y = src_img->dst_rect.y;
-	dst_img->dst_rect.width = src_img->dst_rect.width;
-	dst_img->dst_rect.height = src_img->dst_rect.height;
-
-	dst_img->rotation = src_img->rotation;
-}
-
-static int compdev_post_buffer_locked(struct compdev *cd,
-		struct compdev_img *src_img)
-{
-	int ret = 0;
-	int i;
-	bool transform_needed = false;
-	struct compdev_img *resulting_img;
-	struct compdev_blt_work blt_work;
-	struct compdev_post_callback_work cb_work;
-	bool callback_work = false;
-	bool bypass_case = false;
-
-	dev_dbg(cd->dev, "%s\n", __func__);
-
-	/* Free potential temp buffers */
-	for (i = 0; i < cd->dss_ctx.temp_img_count; i++)
-		free_comp_img_buf(cd->dss_ctx.temp_img[i], cd->dev);
-	cd->dss_ctx.temp_img_count = 0;
-
-	/* Check for bypass images */
-	if (src_img->flags & COMPDEV_BYPASS_FLAG)
-		bypass_case = true;
-
-	/* Handle callback */
-	if (cd->pb_cb != NULL) {
-		callback_work = true;
-		INIT_WORK((struct work_struct *)&cb_work,
-				compdev_callback_worker_function);
-		cb_work.img = src_img;
-		cb_work.pb_cb = cd->pb_cb;
-		cb_work.cb_data = cd->cb_data;
-		cb_work.dev = cd->dev;
-		queue_work(cd->worker_thread, (struct work_struct *)&cb_work);
-	}
-
-	if (!bypass_case) {
-		/* Determine if transform is needed */
-		/* First check scaling */
-		if ((src_img->rotation == COMPDEV_ROT_0 ||
-			src_img->rotation == COMPDEV_ROT_180) &&
-			(src_img->src_rect.width != src_img->dst_rect.width ||
-			src_img->src_rect.height != src_img->dst_rect.height))
-			transform_needed = true;
-		else if ((src_img->rotation == COMPDEV_ROT_90_CCW ||
-			src_img->rotation == COMPDEV_ROT_270_CCW) &&
-			(src_img->src_rect.width != src_img->dst_rect.height ||
-			src_img->src_rect.height != src_img->dst_rect.width))
-			transform_needed = true;
-
-		if (!transform_needed && check_hw_format(src_img->fmt) == false)
-			transform_needed = true;
-
-		if (transform_needed) {
-			u16 width = 0;
-			u16 height = 0;
-			enum compdev_fmt fmt;
-
-			INIT_WORK((struct work_struct *)&blt_work,
-					compdev_blt_worker_function);
-
-			if (cd->dss_ctx.blt_handle == 0) {
-				dev_dbg(cd->dev, "%s: B2R2 opened\n", __func__);
-				cd->dss_ctx.blt_handle = b2r2_blt_open();
-				if (cd->dss_ctx.blt_handle < 0) {
-					dev_warn(cd->dev,
-						"%s(%d): Failed to "
-						"open b2r2 device\n",
-						__func__, __LINE__);
-				}
-			}
-			blt_work.blt_handle = cd->dss_ctx.blt_handle;
-			blt_work.src_img = src_img;
-			blt_work.mcde_rotation = cd->mcde_rotation;
-
-			width = src_img->dst_rect.width;
-			height = src_img->dst_rect.height;
-
-			fmt = find_compatible_fmt(src_img->fmt,
-					(!cd->mcde_rotation) &&
-					(src_img->rotation != COMPDEV_ROT_0));
-
-			blt_work.dst_img = compdev_buffer_cache_get_image
-					(&cd->dss_ctx.cache_ctx,
-							fmt, width, height);
-
-			blt_work.dst_img->img.flags = src_img->flags;
-			blt_work.dev = cd->dev;
-
-			queue_work(cd->worker_thread,
-					(struct work_struct *)&blt_work);
-			flush_work_sync((struct work_struct *)&blt_work);
-
-			resulting_img = &blt_work.dst_img->img;
-
-			cd->dss_ctx.temp_img[cd->dss_ctx.temp_img_count] =
-					blt_work.dst_img;
-			cd->dss_ctx.temp_img_count++;
-
-		} else {
-		    resulting_img = src_img;
-		}
-
-		if (!cd->mcde_rotation)
-			resulting_img->rotation = COMPDEV_ROT_0;
-
-		cd->images[cd->image_count] = resulting_img;
-		cd->image_count++;
-
-		/* make sure that a potential callback has returned */
-		if (callback_work)
-			flush_work_sync((struct work_struct *)&cb_work);
-
-		if (cd->sync_count > 1) {
-			cd->sync_count--;
-			mutex_unlock(&cd->lock);
-			/* Wait for fence */
-			wait_for_completion(&cd->fence);
-			mutex_lock(&cd->lock);
-		} else {
-			struct compdev_img *img1 = NULL;
-			struct compdev_img *img2 = NULL;
-
-			if (cd->sync_count)
-				cd->sync_count--;
-
-			img1 = cd->images[0];
-			if (cd->image_count)
-				img2 = cd->images[1];
-
-			/* Do the refresh */
-			compdev_post_buffers_dss(&cd->dss_ctx, img1, img2);
-			compdev_buffer_cache_mark_frame
-						(&cd->dss_ctx.cache_ctx);
-
-			if (cd->s_info.img_count > 1) {
-				/* Releasing fence */
-				complete(&cd->fence);
-			}
-
-			cd->sync_count = 0;
-			cd->image_count = 0;
-			cd->images[0] = NULL;
-			cd->images[1] = NULL;
-		}
-	} else {
-		/* make sure that a potential callback has returned */
-		if (callback_work)
-			flush_work_sync((struct work_struct *)&cb_work);
-	}
-
-	return ret;
+	return req_id;
 }
 
 static int compdev_post_buffers_dss(struct dss_context *dss_ctx,
-		struct compdev_img *img1, struct compdev_img *img2)
+		struct compdev_img *img1, struct compdev_img *img2,
+		bool tripple_buffer, enum compdev_transform mcde_transform)
 {
 	int ret = 0;
 	int i = 0;
 
 	struct compdev_img *fb_img = NULL;
 	struct compdev_img *ovly_img = NULL;
+	int curr_rot = to_degree(dss_ctx->current_buffer_transform);
+	int img_rot = to_degree(mcde_transform);
+	bool update_ovly[] = {false, false};
 
 	/* Unpin the previous frame */
 	release_prev_frame(dss_ctx);
 
 	/* Set channel rotation */
-	if (img1 != NULL &&
-			(dss_ctx->current_buffer_rotation != img1->rotation)) {
-		if (compdev_update_rotation(dss_ctx, img1->rotation) != 0)
+	if ((curr_rot != img_rot)) {
+		if (compdev_update_rotation(dss_ctx,
+				to_mcde_rotation(img_rot)) == 0)
+			dss_ctx->current_buffer_transform = mcde_transform;
+		else
 			dev_warn(dss_ctx->dev,
 				"Failed to update MCDE rotation "
-				"(img1->rotation = %d), %d\n",
-				img1->rotation, ret);
-		else
-			dss_ctx->current_buffer_rotation = img1->rotation;
+				"(image rotation = %d), %d\n",
+				img_rot, ret);
 	}
 
 	if ((img1 != NULL) && (img1->flags & COMPDEV_OVERLAY_FLAG))
 		ovly_img = img1;
 	else if (img1 != NULL)
 		fb_img = img1;
-
 
 	if ((img2 != NULL) && (img2->flags & COMPDEV_OVERLAY_FLAG))
 		ovly_img = img2;
@@ -896,31 +635,475 @@ static int compdev_post_buffers_dss(struct dss_context *dss_ctx,
 
 	/* Handle buffers */
 	if (fb_img != NULL) {
-		ret = compdev_setup_ovly(fb_img,
-			&dss_ctx->ovly_buffer[i], dss_ctx->ovly[0], 1, dss_ctx);
-		if (ret)
-			dev_warn(dss_ctx->dev,
-				"Failed to setup overlay[%d], %d\n", 0, ret);
-		i++;
+		if ((fb_img->flags & COMPDEV_PROTECTED_FLAG) &&
+			(mcde_dss_secure_output(dss_ctx->ddev) == false)) {
+			disable_overlay(dss_ctx->ovly[i]);
+		} else {
+			ret = compdev_setup_ovly(fb_img,
+					&dss_ctx->ovly_buffer[i],
+					dss_ctx->ovly[i], 1, dss_ctx,
+					mcde_transform);
+			if (ret)
+				dev_warn(dss_ctx->dev,
+					"Failed to setup overlay[%d],"
+					"%d\n", i, ret);
+			else
+				update_ovly[i] = true;
+		}
 	} else {
-		disable_overlay(dss_ctx->ovly[0]);
+		disable_overlay(dss_ctx->ovly[i]);
 	}
-
+	i++;
 
 	if (ovly_img != NULL) {
-		ret = compdev_setup_ovly(ovly_img,
-			&dss_ctx->ovly_buffer[i], dss_ctx->ovly[1], 0, dss_ctx);
-		if (ret)
-			dev_warn(dss_ctx->dev,
-				"Failed to setup overlay[%d], %d\n", 1, ret);
+		if ((ovly_img->flags & COMPDEV_PROTECTED_FLAG) &&
+			(mcde_dss_secure_output(dss_ctx->ddev) == false)) {
+			disable_overlay(dss_ctx->ovly[i]);
+		} else {
+			ret = compdev_setup_ovly(ovly_img,
+					&dss_ctx->ovly_buffer[i],
+					dss_ctx->ovly[i], 0, dss_ctx,
+					mcde_transform);
+			if (ret)
+				dev_warn(dss_ctx->dev,
+						"Failed to setup overlay[%d],"
+						"%d\n", i, ret);
+			else
+				update_ovly[i] = true;
+		}
 	} else {
-		disable_overlay(dss_ctx->ovly[1]);
+		disable_overlay(dss_ctx->ovly[i]);
 	}
 
 	/* Do the display update */
-	mcde_dss_update_overlay(dss_ctx->ovly[0], true);
+	for (i = 0; i < 2; i++) {
+		if (update_ovly[i]) {
+			mcde_dss_update_overlay(dss_ctx->ovly[i],
+					tripple_buffer);
+			break;
+		}
+	}
 
 	return ret;
+}
+
+static void compdev_display_worker_function(struct work_struct *w)
+{
+	struct compdev_display_work *dw =
+		container_of(w, struct compdev_display_work, work);
+
+	if (dw->blt_handle >= 0 && dw->b2r2_req_id >= 0) {
+		if (b2r2_blt_synch(dw->blt_handle,
+				dw->b2r2_req_id) < 0) {
+			dev_err(dw->dss_ctx->dev,
+				"%s: Could not perform b2r2_blt_synch, "
+				"handle %d, req_id %d",
+				__func__, dw->blt_handle,
+				dw->b2r2_req_id);
+		}
+	}
+
+	if (dw->img_count == 1)
+		compdev_post_buffers_dss(dw->dss_ctx,
+				&dw->img1, NULL, false,
+				dw->mcde_transform);
+	else if (dw->img_count == 2)
+		compdev_post_buffers_dss(dw->dss_ctx,
+				&dw->img1, &dw->img2, false,
+				dw->mcde_transform);
+
+	if (dw->img1_alloc != NULL) {
+		hwmem_release(dw->img1_alloc);
+		dw->img1_alloc = NULL;
+	}
+
+	if (dw->img2_alloc != NULL) {
+		hwmem_release(dw->img2_alloc);
+		dw->img2_alloc = NULL;
+	}
+}
+
+int compdev_add_display_work(struct compdev *cd,
+		struct dss_context *dss_ctx,
+		struct compdev_img *img1,
+		struct compdev_img *img2,
+		struct compdev_display_work *dw)
+{
+	INIT_WORK(&dw->work, compdev_display_worker_function);
+
+	if (img1) {
+		dw->img_count++;
+		dw->img1 = *img1;
+		if (img2) {
+			dw->img_count++;
+			dw->img2 = *img2;
+		}
+	}
+
+	dw->img1_alloc = NULL;
+	if (dw->img1.buf.hwmem_buf_name > 0) {
+		/* Hog the img1 buffer */
+		struct hwmem_alloc *alloc = hwmem_resolve_by_name(
+				dw->img1.buf.hwmem_buf_name);
+		if (IS_ERR_OR_NULL(alloc))
+			dev_err(cd->dev,
+				"%s: Failed to resolve hwmem (%d)\n",
+				__func__, (uint32_t) alloc);
+		else
+			dw->img1_alloc = alloc;
+	}
+
+	dw->img2_alloc = NULL;
+	if (dw->img2.buf.hwmem_buf_name > 0) {
+		/* Hog the img2 buffer */
+		struct hwmem_alloc *alloc = hwmem_resolve_by_name(
+				dw->img2.buf.hwmem_buf_name);
+		if (IS_ERR_OR_NULL(alloc))
+			dev_err(cd->dev,
+				"%s: Failed to resolve hwmem (%d)\n",
+				__func__, (uint32_t) alloc);
+		else
+			dw->img2_alloc = alloc;
+	}
+
+	dw->dss_ctx = dss_ctx;
+	dw->mcde_transform = cd->mcde_transform;
+	queue_work(cd->display_worker_thread, &dw->work);
+
+	return 0;
+}
+
+/* Determine if transform is needed */
+static bool transform_needed(struct compdev_img *src_img,
+		enum compdev_transform mcde_transform)
+{
+	/* Any transform left for b2r2? */
+	if (src_img->transform != COMPDEV_TRANSFORM_ROT_0)
+		return true;
+
+	/*
+	 * Check scaling, notice that dst_rect
+	 * is defined after mcde_transform
+	 */
+
+	if ((mcde_transform == COMPDEV_TRANSFORM_ROT_0 ||
+		mcde_transform == COMPDEV_TRANSFORM_ROT_180) &&
+		(src_img->src_rect.width != src_img->dst_rect.width ||
+		src_img->src_rect.height != src_img->dst_rect.height))
+		return true;
+	if ((mcde_transform & COMPDEV_TRANSFORM_ROT_90_CW) &&
+		(src_img->src_rect.width != src_img->dst_rect.height ||
+		src_img->src_rect.height != src_img->dst_rect.width))
+		return true;
+
+	/* Check color conversion */
+	if (check_hw_format(src_img->fmt) == false)
+		return true;
+
+	return false;
+}
+
+/* Remove GPU transform if using MCDE rotation */
+static void update_transform(struct compdev *cd,
+		struct compdev_img *src_img)
+{
+	if (cd->mcde_rotation) {
+		/* Remove the rotation from the src */
+		if (!(src_img->flags & COMPDEV_OVERLAY_FLAG))
+			src_img->transform =
+				extract_transform(src_img->transform);
+	}
+}
+
+static void compdev_set_background_fb(
+	struct compdev *cd,
+	struct compdev_img *image1,
+	struct compdev_img *image2)
+{
+	struct compdev_img *img[2] = {image1, image2};
+	int i;
+
+	for (i = 0; i < 2; i++) {
+
+		int cur = i;
+		int next = (i + 1) & 1;
+
+		if ((img[cur]->flags & COMPDEV_OVERLAY_FLAG) &&
+			(img[next]->flags & COMPDEV_FRAMEBUFFER_FLAG)) {
+			/* Save img[next] as the framebuffer */
+			dev_dbg(cd->dev, "%s: Save img%i=0x%x for reuse\n",
+				__func__, next + 1,
+				(uint32_t)img[next]);
+			/* Make sure memory will remain */
+			if (img[next]->buf.type ==
+					COMPDEV_PTR_HWMEM_BUF_NAME_OFFSET) {
+				cd->fb_image_alloc = hwmem_resolve_by_name(
+					img[next]->buf.hwmem_buf_name);
+				if (IS_ERR_OR_NULL(cd->fb_image_alloc)) {
+					dev_err(cd->dev,
+						"%s: HWMEM resolve failed\n",
+						__func__);
+				}
+			}
+			cd->fb_image = *img[next];
+			break;
+		}
+	}
+}
+
+static int compdev_reuse_fb(struct compdev *cd, struct compdev_img **image1,
+		struct compdev_img **image2)
+{
+	/*
+	 * Both img1 and img2 must be set in order to have a fully
+	 * composited framebuffer together with an overlay
+	 */
+	if (!cd->s_info.reuse_fb_img) {
+
+		if (cd->fb_image_alloc != NULL) {
+			hwmem_release(cd->fb_image_alloc);
+			cd->fb_image_alloc = NULL;
+		}
+
+		if ((*image1 != NULL) && (*image2 != NULL))
+			compdev_set_background_fb(
+				cd,
+				*image1,
+				*image2);
+
+	} else if ((*image1)->flags & COMPDEV_OVERLAY_FLAG) {
+		/* Let's reuse the previously stored image */
+		dev_dbg(cd->dev, "%s: Reuse fb_img\n", __func__);
+		*image2 = &cd->fb_image;
+		if (cd->pb_cb) {
+			/*
+			 * Temporarily reset the transform flag to the original
+			 * image rotation. Clonedev needs this transform.
+			 */
+			enum compdev_transform tmp = cd->fb_image.transform;
+
+			cd->fb_image.transform = cd->saved_reuse_fb_transform;
+			cd->pb_cb(cd->cb_data, &cd->fb_image);
+			cd->fb_image.transform = tmp;
+		}
+	}
+
+	return 0;
+}
+
+static int compdev_post_buffer_locked(struct compdev *cd,
+		struct compdev_img *src_img)
+{
+	int ret = 0;
+	struct compdev_img *resulting_img;
+	struct compdev_img_internal *tmp_img = NULL;
+	bool bypass_case = false;
+	int b2r2_req_id;
+
+	dev_dbg(cd->dev, "%s\n", __func__);
+
+	/* Check for bypass images */
+	if (src_img->flags & COMPDEV_BYPASS_FLAG)
+		bypass_case = true;
+
+	/* Start new callback work */
+	if (cd->pb_cb != NULL)
+		cd->pb_cb(cd->cb_data, src_img);
+
+	if (src_img->flags & COMPDEV_FRAMEBUFFER_FLAG)
+		cd->saved_reuse_fb_transform = src_img->transform;
+
+	update_transform(cd, src_img);
+
+	if (!bypass_case) {
+		if (transform_needed(src_img, cd->mcde_transform)) {
+			u16 width = 0;
+			u16 height = 0;
+			bool protected = false;
+			enum compdev_fmt fmt;
+
+			if (cd->dss_ctx.blt_handle < 0) {
+				dev_dbg(cd->dev, "%s: Opening B2R2\n",
+					__func__);
+				cd->dss_ctx.blt_handle = b2r2_blt_open();
+				if (cd->dss_ctx.blt_handle < 0) {
+					dev_warn(cd->dev,
+						"%s(%d): Failed to "
+						"open b2r2 device\n",
+						__func__, __LINE__);
+				}
+			}
+
+			if (cd->mcde_transform & COMPDEV_TRANSFORM_ROT_90_CW) {
+				width = src_img->dst_rect.height;
+				height = src_img->dst_rect.width;
+			} else {
+				width = src_img->dst_rect.width;
+				height = src_img->dst_rect.height;
+			}
+
+			fmt = find_compatible_fmt(src_img->fmt,
+					src_img->transform &
+					COMPDEV_TRANSFORM_ROT_90_CW);
+
+			if (src_img->flags & COMPDEV_PROTECTED_FLAG)
+				protected = true;
+
+			tmp_img = compdev_buffer_cache_get_image
+					(&cd->dss_ctx.cache_ctx,
+							fmt, width, height,
+							protected);
+
+			if (tmp_img != NULL) {
+				tmp_img->img.flags = src_img->flags |
+						COMPDEV_INTERNAL_TEMP_FLAG;
+				tmp_img->img.dst_rect =
+						src_img->dst_rect;
+				tmp_img->img.src_rect.x = 0;
+				tmp_img->img.src_rect.y = 0;
+				tmp_img->img.src_rect.width =
+						tmp_img->img.width;
+				tmp_img->img.src_rect.height =
+						tmp_img->img.height;
+				tmp_img->img.z_position =
+						src_img->z_position;
+				tmp_img->img.transform =
+						src_img->transform;
+
+				resulting_img = &tmp_img->img;
+
+				b2r2_req_id = compdev_blt(cd,
+						cd->dss_ctx.blt_handle,
+						src_img, resulting_img);
+
+				if (cd->dss_ctx.blt_handle >= 0 &&
+						b2r2_req_id >= 0) {
+					if (b2r2_blt_synch(
+							cd->dss_ctx.blt_handle,
+							b2r2_req_id) < 0) {
+						dev_err(cd->dev,
+							"%s: Could not perform "
+							"b2r2_blt_synch,"
+							"handle %d"
+							", req_id %d",
+							__func__,
+							cd->dss_ctx.blt_handle,
+							b2r2_req_id);
+					}
+				}
+			} else {
+				cd->images[cd->image_count] = *src_img;
+				resulting_img = &cd->images[cd->image_count];
+				dev_err(cd->dev, "%s: Could not allocate hwmem "
+						"temporary buffer\n", __func__);
+			}
+		} else {
+			cd->images[cd->image_count] = *src_img;
+			resulting_img = &cd->images[cd->image_count];
+		}
+
+		/*
+		 * After this point all rotation will be done by mcde
+		 * All B2R2 rotation is already performed
+		 */
+		resulting_img->transform = COMPDEV_TRANSFORM_ROT_0;
+
+		cd->pimages[cd->image_count] = resulting_img;
+		cd->image_count++;
+
+		if ((cd->image_count < NUM_COMPDEV_BUFS) &&
+				(cd->sync_count > 1)) {
+			cd->sync_count--;
+		} else {
+			struct compdev_img *img[2] = {NULL, NULL};
+			int i;
+			struct compdev_img_internal *tmp_handle;
+
+			/* Unblank if blanked */
+			if (cd->blanked)
+				cd->blanked = false;
+
+			if (cd->sync_count)
+				cd->sync_count--;
+
+			img[0] = cd->pimages[0];
+			if (cd->image_count > 1)
+				img[1] = cd->pimages[1];
+
+			compdev_reuse_fb(cd, &img[0], &img[1]);
+
+			/* Do the refresh */
+			compdev_post_buffers_dss(&cd->dss_ctx,
+					img[0], img[1],
+					true, cd->mcde_transform);
+
+			/*
+			 * Free references to the temp buffers,
+			 * dss worker now "owns" the hwmem handles.
+			 */
+			for (i = 0; i < 2; i++)
+				if ((img[i] != NULL) &&
+					(img[i]->flags &
+					COMPDEV_INTERNAL_TEMP_FLAG)) {
+					tmp_handle = container_of(img[i],
+						struct compdev_img_internal,
+						img);
+
+					/* don't free the background image */
+					if ((void *)tmp_handle !=
+						(void *)&cd->fb_image)
+						compdev_free_img(
+							&cd->dss_ctx.cache_ctx,
+							tmp_handle);
+				}
+
+			cd->sync_count = 0;
+			cd->image_count = 0;
+			cd->pimages[0] = NULL;
+			cd->pimages[1] = NULL;
+		}
+	} else {
+		if (cd->sync_count && !cd->s_info.reuse_fb_img)
+			cd->sync_count--;
+		/* Do a blanking of main display But only once to clear */
+		if (!cd->blanked && cd->s_info.img_count == 1) {
+			compdev_clear_screen_locked(cd);
+			cd->blanked = true;
+		}
+	}
+
+	if (cd->sync_count == 0)
+		complete(&cd->fence);
+
+	return ret;
+}
+
+static int compdev_post_single_buffer_asynch_locked(struct compdev *cd,
+		struct compdev_img *src_img, int b2r2_handle,
+		int b2r2_req_id)
+{
+	dev_dbg(cd->dev, "%s\n", __func__);
+
+	/* Add asynch work for b2r2 synch and dss */
+	if (cd->display_work != NULL) {
+		flush_work_sync(&cd->display_work->work);
+		kfree(cd->display_work);
+		cd->display_work = NULL;
+	}
+
+	cd->display_work = kzalloc(sizeof(*cd->display_work),
+			GFP_KERNEL);
+	if (cd->display_work != NULL) {
+		cd->display_work->blt_handle = b2r2_handle;
+		cd->display_work->b2r2_req_id = b2r2_req_id;
+		compdev_add_display_work(cd, &cd->dss_ctx,
+				src_img, NULL, cd->display_work);
+	}
+
+	cd->sync_count = 0;
+	cd->image_count = 0;
+
+	return 0;
 }
 
 static int compdev_post_scene_info_locked(struct compdev *cd,
@@ -930,19 +1113,25 @@ static int compdev_post_scene_info_locked(struct compdev *cd,
 
 	dev_dbg(cd->dev, "%s\n", __func__);
 
+	if (cd->dev_index == 0)	{
+		mutex_unlock(&cd->lock);
+		wait_for_completion_interruptible_timeout(&cd->fence, HZ/10);
+		mutex_lock(&cd->lock);
+		init_completion(&cd->fence);
+	}
+
 	cd->s_info = *s_info;
 	cd->sync_count = cd->s_info.img_count;
 
-	/* always complete the fence in case someone is hanging incorrectly. */
-	complete(&cd->fence);
-	init_completion(&cd->fence);
+	if (cd->mcde_rotation) {
+		if (cd->sync_count >= 1 || cd->s_info.reuse_fb_img) {
+			cd->mcde_transform = s_info->hw_transform;
+		}
+	}
 
 	/* Handle callback */
-	if (cd->si_cb != NULL) {
-		mutex_unlock(&cd->lock);
+	if (cd->si_cb != NULL)
 		cd->si_cb(cd->cb_data, s_info);
-		mutex_lock(&cd->lock);
-	}
 	return ret;
 }
 
@@ -950,16 +1139,63 @@ static int compdev_post_scene_info_locked(struct compdev *cd,
 static int compdev_get_size_locked(struct dss_context *dss_ctx,
 					struct compdev_size *size)
 {
-	int ret = 0;
-	if ((dss_ctx->display_rotation) % 180) {
-		size->height = dss_ctx->phy_size.width;
-		size->width = dss_ctx->phy_size.height;
-	} else {
-		size->height = dss_ctx->phy_size.height;
-		size->width = dss_ctx->phy_size.width;
-	}
+	mcde_dss_get_native_resolution(dss_ctx->ddev,
+			&(size->width), &(size->height));
 
+	return 0;
+}
+
+static int compdev_set_video_mode_locked(struct compdev *cd,
+				struct compdev_video_mode *video_mode)
+{
+	/* Set video mode */
+	struct mcde_video_mode vmode;
+	struct compdev_size size;
+	int ret;
+
+	memset(&vmode, 0, sizeof(struct mcde_video_mode));
+
+	vmode.xres = video_mode->xres;
+	vmode.yres = video_mode->yres;
+	vmode.pixclock = video_mode->pixclock;
+	vmode.hbp = video_mode->hbp;
+	vmode.hfp = video_mode->hfp;
+	vmode.hsw = video_mode->hsw;
+	vmode.vbp = video_mode->vbp;
+	vmode.vfp = video_mode->vfp;
+	vmode.vsw = video_mode->vsw;
+	vmode.interlaced = video_mode->interlaced;
+	vmode.force_update = video_mode->force_update;
+
+	ret = mcde_dss_set_video_mode(cd->dss_ctx.ddev, &vmode);
+	if (ret != 0)
+		goto exit;
+
+	/* Apply */
+	ret = mcde_dss_apply_channel(cd->dss_ctx.ddev);
+	if (ret != 0)
+		goto exit;
+
+	/* Handle callback */
+	if (cd->sc_cb != NULL) {
+		size.width = video_mode->xres;
+		size.height = video_mode->yres;
+		mutex_unlock(&cd->lock);
+		cd->sc_cb(cd->cb_data, &size);
+		mutex_lock(&cd->lock);
+	}
+exit:
 	return ret;
+}
+
+static int compdev_clear_screen_locked(struct compdev *cd)
+{
+	/* disable all overlays and refresh update screen */
+	disable_overlay(cd->dss_ctx.ovly[0]);
+	disable_overlay(cd->dss_ctx.ovly[1]);
+	mcde_dss_update_overlay(cd->dss_ctx.ovly[0], false);
+
+	return 0;
 }
 
 static int compdev_get_listener_state_locked(struct compdev *cd,
@@ -973,6 +1209,15 @@ static int compdev_get_listener_state_locked(struct compdev *cd,
 	return ret;
 }
 
+static int compdev_wait_for_vsync_unlocked(s64 *timestamp)
+{
+	int ret;
+
+	ret = mcde_dss_wait_for_vsync(vsync_ddev, timestamp);
+
+	return ret;
+}
+
 static long compdev_ioctl(struct file *file,
 		unsigned int cmd,
 		unsigned long arg)
@@ -981,32 +1226,42 @@ static long compdev_ioctl(struct file *file,
 	struct compdev *cd = (struct compdev *)file->private_data;
 	struct compdev_img img;
 	struct compdev_scene_info s_info;
-
-	mutex_lock(&cd->lock);
+	struct compdev_video_mode video_mode;
 
 	switch (cmd) {
 	case COMPDEV_GET_SIZE_IOC:
 	{
 		struct compdev_size tmp;
-		compdev_get_size_locked(&cd->dss_ctx, &tmp);
+		mutex_lock(&cd->lock);
+
+		ret = compdev_get_size_locked(&(cd->dss_ctx), &tmp);
+		if (ret) {
+			mutex_unlock(&cd->lock);
+			return -EFAULT;
+		}
 		ret = copy_to_user((void __user *)arg, &tmp,
 							sizeof(tmp));
 		if (ret)
 			ret = -EFAULT;
+
+		mutex_unlock(&cd->lock);
+		break;
 	}
-	break;
 	case COMPDEV_GET_LISTENER_STATE_IOC:
 	{
 		enum compdev_listener_state state;
+		mutex_lock(&cd->lock);
+
 		compdev_get_listener_state_locked(cd, &state);
 		ret = copy_to_user((void __user *)arg, &state,
 				sizeof(state));
 		if (ret)
 			ret = -EFAULT;
+		mutex_unlock(&cd->lock);
+		break;
 	}
-	break;
 	case COMPDEV_POST_BUFFER_IOC:
-		memset(&img, 0, sizeof(img));
+		mutex_lock(&cd->lock);
 		/* Get the user data */
 		if (copy_from_user(&img, (void *)arg, sizeof(img))) {
 			dev_warn(cd->dev,
@@ -1016,10 +1271,10 @@ static long compdev_ioctl(struct file *file,
 			return -EFAULT;
 		}
 		ret = compdev_post_buffer_locked(cd, &img);
-
+		mutex_unlock(&cd->lock);
 		break;
 	case COMPDEV_POST_SCENE_INFO_IOC:
-		memset(&s_info, 0, sizeof(s_info));
+		mutex_lock(&cd->lock);
 		/* Get the user data */
 		if (copy_from_user(&s_info, (void *)arg, sizeof(s_info))) {
 			dev_warn(cd->dev,
@@ -1028,15 +1283,46 @@ static long compdev_ioctl(struct file *file,
 			mutex_unlock(&cd->lock);
 			return -EFAULT;
 		}
+		mutex_lock(&cd->si_lock);
 		ret = compdev_post_scene_info_locked(cd, &s_info);
+		mutex_unlock(&cd->si_lock);
+		mutex_unlock(&cd->lock);
+		break;
+	case COMPDEV_SET_VIDEO_MODE_IOC:
+		mutex_lock(&cd->lock);
+		/* Get the user data */
+		if (copy_from_user(&video_mode, (void *)arg,
+					sizeof(video_mode))) {
+			dev_warn(cd->dev,
+				"%s: copy_from_user failed\n",
+				__func__);
+			mutex_unlock(&cd->lock);
+			return -EFAULT;
+		}
+		ret = compdev_set_video_mode_locked(cd, &video_mode);
+
+		mutex_unlock(&cd->lock);
+		break;
+	case COMPDEV_WAIT_FOR_VSYNC_IOC:
+	{
+		s64 timestamp;
+
+		ret = compdev_wait_for_vsync_unlocked(&timestamp);
+
+		if (copy_to_user((void __user *)arg, &timestamp,
+				sizeof(timestamp))) {
+			dev_warn(cd->dev,
+					"%s: copy_to_user failed\n", __func__);
+			return -EFAULT;
+		}
+		if (ret)
+			ret = -EFAULT;
 
 		break;
-
+	}
 	default:
 		ret = -ENOSYS;
 	}
-
-	mutex_unlock(&cd->lock);
 
 	return ret;
 }
@@ -1047,74 +1333,119 @@ static const struct file_operations compdev_fops = {
 	.unlocked_ioctl = compdev_ioctl,
 };
 
-static void init_compdev(struct compdev *cd, const char *name)
+static void init_compdev(struct compdev *cd)
 {
 	mutex_init(&cd->lock);
+	mutex_init(&cd->si_lock);
+	kref_init(&cd->ref_count);
 	INIT_LIST_HEAD(&cd->list);
 	init_completion(&cd->fence);
 
+	complete(&cd->fence);
+
 	cd->mdev.minor = MISC_DYNAMIC_MINOR;
-	cd->mdev.name = name;
+	cd->mdev.name = cd->name;
 	cd->mdev.fops = &compdev_fops;
 	cd->dev = cd->mdev.this_device;
+	cd->fb_image_alloc = NULL;
+	cd->blanked = false;
 }
 
-static void init_dss_context(struct dss_context *dss_ctx,
-		struct mcde_display_device *ddev, struct compdev *cd)
+static int init_dss_context(struct dss_context *dss_ctx,
+		struct mcde_display_device *ddev, struct compdev *cd,
+		const char *name)
 {
+#ifdef CONFIG_COMPDEV_JANITOR
+	char wq_name[20];
+#endif
+
 	dss_ctx->ddev = ddev;
-	dss_ctx->dev = cd->dev;
-	memset(&dss_ctx->cache_ctx, 0, sizeof(struct buffer_cache_context));
-	dss_ctx->cache_ctx.dev = dss_ctx->dev;
+	vsync_ddev = ddev;
+	memset(&dss_ctx->cache_ctx, 0, sizeof(dss_ctx->cache_ctx));
+	dss_ctx->blt_handle = -1;
+
+#ifdef CONFIG_COMPDEV_JANITOR
+	snprintf(wq_name, sizeof(wq_name), "%s_janitor", name);
+
+	mutex_init(&dss_ctx->cache_ctx.janitor_lock);
+	dss_ctx->cache_ctx.janitor_thread = create_workqueue(wq_name);
+	if (!dss_ctx->cache_ctx.janitor_thread) {
+		mutex_destroy(&dss_ctx->cache_ctx.janitor_lock);
+		return -ENOMEM;
+	}
+
+	INIT_DELAYED_WORK_DEFERRABLE(&dss_ctx->cache_ctx.free_buffers_work,
+		compdev_free_cache_context_buffers);
+#endif
+
+	return 0;
 }
 
 int compdev_create(struct mcde_display_device *ddev,
-		struct mcde_overlay *parent_ovly, bool mcde_rotation)
+		struct mcde_overlay *parent_ovly, bool mcde_rotation,
+		struct compdev **cd_pp)
 {
 	int ret = 0;
 	int i;
 	struct compdev *cd;
-	struct mcde_video_mode vmode;
 	struct mcde_overlay_info info;
 
-	char name[10];
+	if (cd_pp != NULL)
+		*cd_pp = NULL;
+
+	mutex_lock(&dev_list_lock);
 
 	if (dev_counter == 0) {
 		for (i = 0; i < MAX_NBR_OF_COMPDEVS; i++)
 			compdevs[i] = NULL;
 	}
 
-	if (dev_counter > MAX_NBR_OF_COMPDEVS)
+	if (dev_counter > MAX_NBR_OF_COMPDEVS) {
+		mutex_unlock(&dev_list_lock);
 		return -ENOMEM;
+	}
 
 	cd = kzalloc(sizeof(struct compdev), GFP_KERNEL);
-	if (!cd)
+	if (!cd) {
+		mutex_unlock(&dev_list_lock);
 		return -ENOMEM;
+	}
 
-	compdevs[dev_counter] = cd;
-	cd->dev_index = dev_counter;
+	cd->dev_index = dev_counter++;
 
-	snprintf(name, sizeof(name), "%s%d", COMPDEV_DEFAULT_DEVICE_PREFIX,
-			dev_counter++);
-	init_compdev(cd, name);
+	snprintf(cd->name, sizeof(cd->name), "%s%d",
+			COMPDEV_DEFAULT_DEVICE_PREFIX,
+			cd->dev_index);
+	init_compdev(cd);
 
-	init_dss_context(&cd->dss_ctx, ddev, cd);
+	ret = init_dss_context(&cd->dss_ctx, ddev, cd, cd->name);
+	if (ret < 0)
+		goto fail_dss_context;
 
-	mcde_dss_get_video_mode(ddev, &vmode);
-
-	cd->worker_thread = create_workqueue(name);
-	if (!cd->worker_thread) {
+	cd->display_worker_thread = create_workqueue(cd->name);
+	if (!cd->display_worker_thread) {
 		ret = -ENOMEM;
 		goto fail_workqueue;
 	}
 
-	cd->dss_ctx.ovly[0] = parent_ovly;
-	if (!cd->dss_ctx.ovly[0]) {
-		ret = -ENOMEM;
-		goto fail_create_ovly;
+	if (parent_ovly != NULL) {
+		/* Framebuffer is used together with compdev */
+		i = 1;
+		cd->dss_ctx.ovly[0] = parent_ovly;
+		cd->using_fb_overlay = true;
+	} else {
+		/* Compdev is used without framebuffer */
+		cd->using_fb_overlay = false;
+		i = 0;
+		ret = mcde_dss_open_channel(ddev);
+		if (ret)
+			goto fail_open_channel;
+		ret = mcde_dss_enable_display(ddev);
+		if (ret)
+			goto fail_enable_display;
 	}
 
-	for (i = 1; i < NUM_COMPDEV_BUFS; i++) {
+	for (; i < NUM_COMPDEV_BUFS; i++) {
 		cd->dss_ctx.ovly[i] = mcde_dss_create_overlay(ddev, &info);
 		if (!cd->dss_ctx.ovly[i]) {
 			ret = -ENOMEM;
@@ -1125,23 +1456,35 @@ int compdev_create(struct mcde_display_device *ddev,
 		if (disable_overlay(cd->dss_ctx.ovly[i]))
 			goto fail_create_ovly;
 	}
-
-	mcde_dss_get_native_resolution(ddev, &cd->dss_ctx.phy_size.width,
-			&cd->dss_ctx.phy_size.height);
-	cd->dss_ctx.display_rotation = mcde_dss_get_rotation(ddev);
-	cd->dss_ctx.current_buffer_rotation = 0;
-
+	cd->dss_ctx.current_buffer_transform = COMPDEV_TRANSFORM_ROT_0;
 	cd->mcde_rotation = mcde_rotation;
 
 	ret = misc_register(&cd->mdev);
 	if (ret)
 		goto fail_register_misc;
-	mutex_lock(&dev_list_lock);
+	cd->dev = cd->mdev.this_device;
+	cd->dss_ctx.dev = cd->dev;
+	cd->dss_ctx.cache_ctx.dev = cd->dev;
+
+	compdevs[cd->dev_index] = cd;
 	list_add_tail(&cd->list, &dev_list);
 	mutex_unlock(&dev_list_lock);
 
+	if (cd_pp != NULL)
+		*cd_pp = cd;
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	cd->early_suspend.level = EARLY_SUSPEND_LEVEL_DISABLE_FB;
+	cd->early_suspend.suspend = early_suspend;
+	cd->early_suspend.resume = late_resume;
+	register_early_suspend(&cd->early_suspend);
+#endif
+
 	goto out;
 
+fail_enable_display:
+	mcde_dss_close_channel(ddev);
+fail_open_channel:
 fail_register_misc:
 fail_create_ovly:
 	for (i = 0; i < NUM_COMPDEV_BUFS; i++) {
@@ -1149,7 +1492,17 @@ fail_create_ovly:
 			mcde_dss_destroy_overlay(cd->dss_ctx.ovly[i]);
 	}
 fail_workqueue:
+	if (cd->display_worker_thread)
+		destroy_workqueue(cd->display_worker_thread);
+fail_dss_context:
+#ifdef CONFIG_COMPDEV_JANITOR
+	mutex_destroy(&cd->dss_ctx.cache_ctx.janitor_lock);
+	destroy_workqueue(cd->dss_ctx.cache_ctx.janitor_thread);
+#endif
 	kfree(cd);
+
+	dev_counter--;
+	mutex_unlock(&dev_list_lock);
 out:
 	return ret;
 }
@@ -1158,21 +1511,23 @@ out:
 int compdev_get(int dev_idx, struct compdev **cd_pp)
 {
 	struct compdev *cd;
+	int ret;
 	cd = NULL;
 
 	if (dev_idx >= MAX_NBR_OF_COMPDEVS)
 		return -ENOMEM;
 
+	mutex_lock(&dev_list_lock);
 	cd = compdevs[dev_idx];
-	if (cd != NULL) {
-		mutex_lock(&cd->lock);
-		cd->ref_count++;
-		mutex_unlock(&cd->lock);
+	if (cd != NULL && atomic_inc_not_zero(&cd->ref_count.refcount)) {
 		*cd_pp = cd;
-		return 0;
+		ret = 0;
 	} else {
-		return -ENOMEM;
+		ret = -ENOMEM;
 	}
+	mutex_unlock(&dev_list_lock);
+
+	return ret;
 }
 EXPORT_SYMBOL(compdev_get);
 
@@ -1182,12 +1537,7 @@ int compdev_put(struct compdev *cd)
 	if (cd == NULL)
 		return -ENOMEM;
 
-	mutex_lock(&cd->lock);
-	cd->ref_count--;
-	if (cd->ref_count < 0)
-		dev_warn(cd->dev,
-				"%s: Incorrect ref count\n", __func__);
-	mutex_unlock(&cd->lock);
+	kref_put(&cd->ref_count, compdev_device_release);
 	return ret;
 }
 EXPORT_SYMBOL(compdev_put);
@@ -1223,6 +1573,22 @@ int compdev_get_listener_state(struct compdev *cd,
 }
 EXPORT_SYMBOL(compdev_get_listener_state);
 
+int compdev_wait_for_vsync(struct compdev *cd, s64 *timestamp)
+{
+	int ret = 0;
+	if (cd == NULL)
+		return -ENOMEM;
+
+	ret = compdev_wait_for_vsync_unlocked(timestamp);
+	return ret;
+}
+EXPORT_SYMBOL(compdev_wait_for_vsync);
+
+const char *compdev_get_device_name(struct compdev *cd)
+{
+	return dev_name(cd->mdev.this_device);
+}
+EXPORT_SYMBOL(compdev_get_device_name);
 
 int compdev_post_buffer(struct compdev *cd, struct compdev_img *img)
 {
@@ -1239,6 +1605,24 @@ int compdev_post_buffer(struct compdev *cd, struct compdev_img *img)
 }
 EXPORT_SYMBOL(compdev_post_buffer);
 
+int compdev_post_single_buffer_asynch(struct compdev *cd,
+		struct compdev_img *img, int b2r2_handle,
+		int b2r2_req_id)
+{
+	int ret = 0;
+	if (cd == NULL)
+		return -ENOMEM;
+
+	mutex_lock(&cd->lock);
+
+	ret = compdev_post_single_buffer_asynch_locked(cd, img,
+			b2r2_handle, b2r2_req_id);
+
+	mutex_unlock(&cd->lock);
+	return ret;
+}
+EXPORT_SYMBOL(compdev_post_single_buffer_asynch);
+
 int compdev_post_scene_info(struct compdev *cd,
 			struct compdev_scene_info *s_info)
 {
@@ -1248,15 +1632,49 @@ int compdev_post_scene_info(struct compdev *cd,
 
 	mutex_lock(&cd->lock);
 
+	mutex_lock(&cd->si_lock);
 	ret = compdev_post_scene_info_locked(cd, s_info);
+	mutex_unlock(&cd->si_lock);
 
 	mutex_unlock(&cd->lock);
 	return ret;
 }
 EXPORT_SYMBOL(compdev_post_scene_info);
 
+int compdev_set_video_mode(struct compdev *cd,
+		struct compdev_video_mode *video_mode)
+{
+	int ret;
+	if (cd == NULL)
+		return -ENOMEM;
+
+	mutex_lock(&cd->lock);
+
+	ret = compdev_set_video_mode_locked(cd, video_mode);
+
+	mutex_unlock(&cd->lock);
+	return ret;
+}
+EXPORT_SYMBOL(compdev_set_video_mode);
+
+int compdev_clear_screen(struct compdev *cd)
+{
+	int ret;
+	if (cd == NULL)
+		return -ENOMEM;
+
+	mutex_lock(&cd->lock);
+
+	ret = compdev_clear_screen_locked(cd);
+
+	mutex_unlock(&cd->lock);
+	return ret;
+}
+EXPORT_SYMBOL(compdev_clear_screen);
+
 int compdev_register_listener_callbacks(struct compdev *cd, void *data,
-		post_buffer_callback pb_cb, post_scene_info_callback si_cb)
+		post_buffer_callback pb_cb, post_scene_info_callback si_cb,
+		size_changed_callback sc_cb)
 {
 	int ret = 0;
 	if (cd == NULL)
@@ -1265,6 +1683,7 @@ int compdev_register_listener_callbacks(struct compdev *cd, void *data,
 	cd->cb_data = data;
 	cd->pb_cb = pb_cb;
 	cd->si_cb = si_cb;
+	cd->sc_cb = sc_cb;
 	mutex_unlock(&cd->lock);
 	return ret;
 }
@@ -1276,9 +1695,16 @@ int compdev_deregister_callbacks(struct compdev *cd)
 	if (cd == NULL)
 		return -ENOMEM;
 	mutex_lock(&cd->lock);
+	if (cd->display_work != NULL) {
+		flush_work_sync(&cd->display_work->work);
+		kfree(cd->display_work);
+		cd->display_work = NULL;
+	}
+	flush_workqueue(cd->display_worker_thread);
 	cd->cb_data = NULL;
 	cd->pb_cb = NULL;
 	cd->si_cb = NULL;
+	cd->sc_cb = NULL;
 	mutex_unlock(&cd->lock);
 	return ret;
 }
@@ -1288,35 +1714,14 @@ void compdev_destroy(struct mcde_display_device *ddev)
 {
 	struct compdev *cd;
 	struct compdev *tmp;
-	int i;
 
 	mutex_lock(&dev_list_lock);
 	list_for_each_entry_safe(cd, tmp, &dev_list, list) {
 		if (cd->dss_ctx.ddev == ddev) {
 			list_del(&cd->list);
 			misc_deregister(&cd->mdev);
-			for (i = 1; i < NUM_COMPDEV_BUFS; i++)
-				mcde_dss_destroy_overlay(cd->dss_ctx.ovly[i]);
-			b2r2_blt_close(cd->dss_ctx.blt_handle);
-
-			release_prev_frame(&cd->dss_ctx);
-
-			/* Free potential temp buffers */
-			for (i = 0; i < cd->dss_ctx.temp_img_count; i++)
-				free_comp_img_buf(cd->dss_ctx.temp_img[i],
-						cd->dev);
-
-			for (i = 0; i < BUFFER_CACHE_DEPTH; i++) {
-				if (cd->dss_ctx.cache_ctx.img[i]) {
-					free_comp_img_buf
-						(cd->dss_ctx.cache_ctx.img[i],
-							cd->dev);
-					cd->dss_ctx.cache_ctx.img[i] = NULL;
-				}
-			}
-
-			destroy_workqueue(cd->worker_thread);
-			kfree(cd);
+			kref_put(&cd->ref_count,
+				compdev_device_release);
 			break;
 		}
 	}
@@ -1328,30 +1733,12 @@ static void compdev_destroy_all(void)
 {
 	struct compdev *cd;
 	struct compdev *tmp;
-	int i;
 
 	mutex_lock(&dev_list_lock);
 	list_for_each_entry_safe(cd, tmp, &dev_list, list) {
 		list_del(&cd->list);
 		misc_deregister(&cd->mdev);
-		for (i = 0; i < NUM_COMPDEV_BUFS; i++)
-			mcde_dss_destroy_overlay(cd->dss_ctx.ovly[i]);
-
-		release_prev_frame(&cd->dss_ctx);
-		/* Free potential temp buffers */
-		for (i = 0; i < cd->dss_ctx.temp_img_count; i++)
-			free_comp_img_buf(cd->dss_ctx.temp_img[i], cd->dev);
-
-		for (i = 0; i < BUFFER_CACHE_DEPTH; i++) {
-			if (cd->dss_ctx.cache_ctx.img[i]) {
-				free_comp_img_buf
-					(cd->dss_ctx.cache_ctx.img[i],
-						cd->dev);
-				cd->dss_ctx.cache_ctx.img[i] = NULL;
-			}
-		}
-
-		kfree(cd);
+		kref_put(&cd->ref_count, compdev_device_release);
 	}
 	mutex_unlock(&dev_list_lock);
 

@@ -324,7 +324,7 @@ static const struct file_operations gru_fops = {
 
 static struct proc_entry {
 	char *name;
-	umode_t mode;
+	int mode;
 	const struct file_operations *fops;
 	struct proc_dir_entry *entry;
 } proc_files[] = {
