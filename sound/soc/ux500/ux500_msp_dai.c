@@ -12,7 +12,6 @@
  * by the Free Software Foundation.
  */
 
-#include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/bitops.h>
 #include <linux/platform_device.h>
@@ -20,6 +19,8 @@
 #include <mach/hardware.h>
 #include <mach/msp.h>
 
+#include <sound/pcm.h>
+#include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/soc-dai.h>
 
@@ -230,6 +231,7 @@ static void ux500_msp_dai_setup_framing_pcm(struct ux500_platform_drvdata *priva
 					struct msp_protocol_desc *prot_desc)
 {
 	u32 frame_length = MSP_FRAME_LENGTH_1;
+	u32 element_length = MSP_ELEM_LENGTH_16;
 	prot_desc->frame_width = 0;
 
 	switch (private->slots) {
@@ -256,10 +258,23 @@ static void ux500_msp_dai_setup_framing_pcm(struct ux500_platform_drvdata *priva
 	prot_desc->tx_frame_length_2 = frame_length;
 	prot_desc->rx_frame_length_2 = frame_length;
 
-	prot_desc->tx_element_length_1 = MSP_ELEM_LENGTH_16;
-	prot_desc->rx_element_length_1 = MSP_ELEM_LENGTH_16;
-	prot_desc->tx_element_length_2 = MSP_ELEM_LENGTH_16;
-	prot_desc->rx_element_length_2 = MSP_ELEM_LENGTH_16;
+	switch (private->slot_width) {
+	case 32:
+		element_length = MSP_ELEM_LENGTH_32;
+		break;
+	case 20:
+		element_length = MSP_ELEM_LENGTH_20;
+		break;
+	default:
+	case 16:
+		element_length = MSP_ELEM_LENGTH_16;
+		break;
+	}
+
+	prot_desc->tx_element_length_1 = element_length;
+	prot_desc->rx_element_length_1 = element_length;
+	prot_desc->tx_element_length_2 = element_length;
+	prot_desc->rx_element_length_2 = element_length;
 
 	ux500_msp_dai_setup_frameper(private, rate, prot_desc);
 }
@@ -331,7 +346,7 @@ static void ux500_msp_dai_compile_prot_desc_pcm(unsigned int fmt,
 	prot_desc->expansion_mode = MSP_EXPAND_MODE_LINEAR;
 	prot_desc->spi_clk_mode = MSP_SPI_CLOCK_MODE_NON_SPI;
 	prot_desc->spi_burst_mode = MSP_SPI_BURST_MODE_DISABLE;
-	prot_desc->frame_sync_ignore = MSP_FRAME_SYNC_IGNORE;
+	prot_desc->frame_sync_ignore = MSP_FRAME_SYNC_UNIGNORE;
 }
 
 static void ux500_msp_dai_compile_prot_desc_i2s(struct msp_protocol_desc *prot_desc)
@@ -498,6 +513,7 @@ static int ux500_msp_dai_hw_params(struct snd_pcm_substream *substream,
 {
 	unsigned int mask, slots_active;
 	struct ux500_platform_drvdata *drvdata = &platform_drvdata[dai->id];
+	struct ux500_msp_i2s_drvdata *msp_i2s = snd_soc_dai_get_drvdata(dai);
 
 	pr_debug("%s: MSP %d (%s): Enter.\n",
 			__func__,
@@ -513,6 +529,14 @@ static int ux500_msp_dai_hw_params(struct snd_pcm_substream *substream,
 				params_channels(params));
 			return -EINVAL;
 		}
+		if (params_format(params) != SNDRV_PCM_FORMAT_S16_LE) {
+			pr_err("%s: Error: I2S requires SNDRV_PCM_FORMAT_S16_LE\n",
+				__func__);
+			return -EINVAL;
+		}
+
+		msp_i2s->playback_dma_data.data_size = 16;
+		msp_i2s->capture_dma_data.data_size = 16;
 		break;
 	case SND_SOC_DAIFMT_DSP_B:
 	case SND_SOC_DAIFMT_DSP_A:
@@ -534,6 +558,9 @@ static int ux500_msp_dai_hw_params(struct snd_pcm_substream *substream,
 				slots_active);
 			return -EINVAL;
 		}
+
+		msp_i2s->playback_dma_data.data_size = drvdata->slot_width;
+		msp_i2s->capture_dma_data.data_size = drvdata->slot_width;
 		break;
 
 	default:
@@ -629,9 +656,9 @@ static int ux500_msp_dai_set_tdm_slot(struct snd_soc_dai *dai,
 	}
 	drvdata->slots = slots;
 
-	if (!(slot_width == 16)) {
+	if (!((slot_width == 16) || (slot_width == 20) || slot_width == 32)) {
 		pr_err("%s: Error: Unsupported slots_width (%d)!. "
-			"Supported value is 16.\n",
+			"Supported values are 16, 20 or 32.\n",
 			__func__,
 			slot_width);
 		return -EINVAL;

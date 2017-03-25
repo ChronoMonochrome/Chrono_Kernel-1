@@ -23,6 +23,7 @@
 #include <linux/io.h>
 #include <linux/regulator/consumer.h>
 #include <linux/mfd/abx500/ab8500-gpadc.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/pcm.h>
@@ -33,8 +34,12 @@
 #include "ux500_msp_dai.h"
 #include "../codecs/ab8500_audio.h"
 
-#define TX_SLOT_MONO	0x0008
-#define TX_SLOT_STEREO	0x000a
+#ifdef CONFIG_MACH_SEC_HENDRIX
+extern int ab8500_add_mid_widget(struct snd_soc_codec *p_codec);
+#endif /* CONFIG_MACH_SEC_HENDRIX */
+
+#define TX_SLOT_MONO	0x0001
+#define TX_SLOT_STEREO	0x0003
 #define RX_SLOT_MONO	0x0001
 #define RX_SLOT_STEREO	0x0003
 #define TX_SLOT_8CH	0x00FF
@@ -51,7 +56,7 @@ static bool vibra_on;
 
 /* Power-control */
 static DEFINE_MUTEX(power_lock);
-static int ab8500_power_count;
+static int ab850x_power_count;
 
 /* ADCM-control */
 static DEFINE_MUTEX(adcm_lock);
@@ -68,6 +73,10 @@ static struct clk *clk_ptr_intclk;
 static struct clk *clk_ptr_sysclk;
 static struct clk *clk_ptr_ulpclk;
 static struct clk *clk_ptr_gpio1;
+
+#define GPIO_EARSPK_SEL	200
+
+static struct snd_soc_codec *ab850x_codec;
 
 static const char * const enum_mclk[] = {
 	"SYSCLK",
@@ -99,6 +108,11 @@ enum anc_state {
 };
 static enum anc_state anc_status = ANC_UNCONFIGURED;
 
+/* EarSpk Select */
+static const char * const enum_earspk_sel[] = { "Internal", "Desk Dock" };
+static SOC_ENUM_SINGLE_EXT_DECL(soc_enum_earspksel, enum_earspk_sel);
+static int earspk_sel;
+
 /* Regulators */
 enum regulator_idx {
 	REGULATOR_AUDIO,
@@ -125,11 +139,21 @@ struct amic_conf {
 	bool enabled;
 	char *name;
 };
+
+//#ifdef CONFIG_MACH_GAVINI
+/*static struct amic_conf amic_info[3] = {
+        { REGULATOR_AMIC2, false, "amic1a" },
+        { REGULATOR_AMIC1, false, "amic1b" },
+        { REGULATOR_AMIC2, false, "amic2" }
+};*/
+//#else /* default config, valid for Janice */
 static struct amic_conf amic_info[3] = {
-	{ REGULATOR_AMIC1, false, "amic1a" },
-	{ REGULATOR_AMIC1, false, "amic1b" },
-	{ REGULATOR_AMIC2, false, "amic2" }
+        { REGULATOR_AMIC1, false, "amic1a" },
+        { REGULATOR_AMIC1, false, "amic1b" },
+        { REGULATOR_AMIC2, false, "amic2" }
 };
+//#endif
+
 static DEFINE_MUTEX(amic_conf_lock);
 
 static const char *enum_amic_reg_conf[2] = { "v-amic1", "v-amic2" };
@@ -195,7 +219,7 @@ static void disable_regulator(enum regulator_idx idx)
 		(int)reg_enabled[3]);
 }
 
-static int create_regulators(void)
+static int create_regulators(enum ab850x_audio_chipid chipid)
 {
 	int i, status = 0;
 
@@ -205,6 +229,16 @@ static int create_regulators(void)
 		reg_info[i].consumer = NULL;
 
 	for (i = 0; i < ARRAY_SIZE(reg_info); ++i) {
+		/* On AB8505 dmic exist on chip but are not drawn to a pin */
+		switch (chipid) {
+		case AB850X_AUDIO_AB8505_V1:
+		case AB850X_AUDIO_AB8505_V2:
+		case AB850X_AUDIO_AB8505_V3:
+			if (i == REGULATOR_DMIC)
+				continue;
+		default:
+			break;
+		}
 		reg_info[i].consumer = regulator_get(NULL, reg_info[i].supply);
 		if (IS_ERR(reg_info[i].consumer)) {
 			status = PTR_ERR(reg_info[i].consumer);
@@ -267,7 +301,7 @@ static void release_amic_regulator(enum amic_idx amic_id)
 
 /* Power/clock control */
 
-static int ux500_ab8500_power_control_inc(void)
+static int ux500_ab850x_power_control_inc(void)
 {
 	int ret = 0;
 
@@ -275,13 +309,13 @@ static int ux500_ab8500_power_control_inc(void)
 
 	mutex_lock(&power_lock);
 
-	ab8500_power_count++;
-	pr_debug("%s: ab8500_power_count changed from %d to %d",
+	ab850x_power_count++;
+	pr_debug("%s: ab850x_power_count changed from %d to %d",
 		__func__,
-		ab8500_power_count-1,
-		ab8500_power_count);
+		ab850x_power_count-1,
+		ab850x_power_count);
 
-	if (ab8500_power_count == 1) {
+	if (ab850x_power_count == 1) {
 		/* Turn on audio-regulator */
 		ret = enable_regulator(REGULATOR_AUDIO);
 		if (ret < 0)
@@ -305,12 +339,12 @@ static int ux500_ab8500_power_control_inc(void)
 		if (ret != 0) {
 			pr_err("%s: ERROR: clk_enable failed (ret = %d)!", __func__, ret);
 			ret = -EIO;
-			ab8500_power_count = 0;
+			ab850x_power_count = 0;
 			goto clk_err;
 		}
 
-		/* Power on audio-parts of AB8500 */
-		ret = ab8500_audio_power_control(true);
+		/* Power on audio-parts of AB850X */
+		ret = ab850x_audio_power_control(true);
 	}
 
 	goto out;
@@ -326,22 +360,22 @@ out:
 	return ret;
 }
 
-static void ux500_ab8500_power_control_dec(void)
+static void ux500_ab850x_power_control_dec(void)
 {
 	pr_debug("%s: Enter.\n", __func__);
 
 	mutex_lock(&power_lock);
 
-	ab8500_power_count--;
+	ab850x_power_count--;
 
-	pr_debug("%s: ab8500_power_count changed from %d to %d",
+	pr_debug("%s: ab850x_power_count changed from %d to %d",
 		__func__,
-		ab8500_power_count+1,
-		ab8500_power_count);
+		ab850x_power_count+1,
+		ab850x_power_count);
 
-	if (ab8500_power_count == 0) {
-		/* Power off audio-parts of AB8500 */
-		ab8500_audio_power_control(false);
+	if (ab850x_power_count == 0) {
+		/* Power off audio-parts of AB850X */
+		ab850x_audio_power_control(false);
 
 		/* Disable audio-clock */
 		pr_debug("%s: Disabling master-clock (%s).",
@@ -372,14 +406,31 @@ static int mclk_input_control_put(struct snd_kcontrol *kcontrol,
 			   struct snd_ctl_elem_value *ucontrol)
 {
 	unsigned int val;
-
+	int ret = 0;
 	val = (ucontrol->value.enumerated.item[0] != 0);
-	if (master_clock_sel == val)
-		return 0;
 
+	if ((master_clock_sel == val) || prcmu_is_ulppll_disabled())
+		return ret;
+
+	mutex_lock(&power_lock);
 	master_clock_sel = val;
+	if (ab850x_power_count > 0) {
+		ret = clk_set_parent(clk_ptr_intclk,
+			(master_clock_sel == 0) ?
+			clk_ptr_sysclk : clk_ptr_ulpclk);
+		if (ret != 0) {
+			pr_err("%s: ERROR: Setting master-clock to %s failed (ret = %d)!", __func__,
+				(master_clock_sel == 0) ? "SYSCLK" : "ULPCLK", ret);
+			ret = -EIO;
+			goto clk_err;
+		}
+	}
+	ret = 1;
 
-	return 1;
+clk_err:
+	mutex_unlock(&power_lock);
+
+	return ret;
 }
 
 static const struct snd_kcontrol_new mclk_input_control = \
@@ -419,7 +470,7 @@ static int anc_status_control_put(struct snd_kcontrol *kcontrol,
 
 	codec = snd_kcontrol_chip(kcontrol);
 
-	ret = ux500_ab8500_power_control_inc();
+	ret = ux500_ab850x_power_control_inc();
 	if (ret < 0) {
 		pr_err("%s: ERROR: Failed to enable power (ret = %d)!\n",
 			__func__, ret);
@@ -428,7 +479,7 @@ static int anc_status_control_put(struct snd_kcontrol *kcontrol,
 
 	mutex_lock(&codec->mutex);
 
-	ab8500_audio_anc_configure(codec, apply_fir, apply_iir);
+	ab850x_audio_anc_configure(codec, apply_fir, apply_iir);
 
 	if (apply_fir) {
 		if (anc_status == ANC_IIR_CONFIGURED)
@@ -445,7 +496,7 @@ static int anc_status_control_put(struct snd_kcontrol *kcontrol,
 
 	mutex_unlock(&codec->mutex);
 
-	ux500_ab8500_power_control_dec();
+	ux500_ab850x_power_control_dec();
 
 cleanup:
 	if (ret < 0)
@@ -460,6 +511,37 @@ cleanup:
 static const struct snd_kcontrol_new anc_status_control = \
 	SOC_ENUM_EXT("ANC Status", soc_enum_ancstate,
 		anc_status_control_get, anc_status_control_put);
+
+
+static int earspk_sel_control_get(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.enumerated.item[0] = earspk_sel;
+
+	return 0;
+}
+
+static int earspk_sel_control_put(struct snd_kcontrol *kcontrol,
+			   struct snd_ctl_elem_value *ucontrol)
+{
+	int val, ret;
+
+	val = (ucontrol->value.enumerated.item[0] != 0);
+	ret = gpio_direction_output(GPIO_EARSPK_SEL, val);
+	if (ret < 0) {
+		pr_err("%s: ERROR: Failed to set earspk route to '%s'!\n",
+				__func__, enum_earspk_sel[val]);
+		return ret;
+	}
+
+	earspk_sel = val;
+
+	return 1;
+}
+
+static const struct snd_kcontrol_new earspk_sel_control = \
+	SOC_ENUM_EXT("EarSpk Select", soc_enum_earspksel,
+		earspk_sel_control_get, earspk_sel_control_put);
 
 static int amic_reg_control_get(struct snd_ctl_elem_value *ucontrol,
 		enum amic_idx amic_id)
@@ -554,9 +636,9 @@ static int dapm_audioreg_event(struct snd_soc_dapm_widget *w,
 			struct snd_kcontrol *k, int event)
 {
 	if (SND_SOC_DAPM_EVENT_ON(event))
-		ux500_ab8500_power_control_inc();
+		ux500_ab850x_power_control_inc();
 	else
-		ux500_ab8500_power_control_dec();
+		ux500_ab850x_power_control_dec();
 
 	return 0;
 }
@@ -610,7 +692,7 @@ static int dapm_dmicreg_event(struct snd_soc_dapm_widget *w,
 
 /* DAPM-widgets */
 
-static const struct snd_soc_dapm_widget ux500_ab8500_dapm_widgets[] = {
+static const struct snd_soc_dapm_widget ux500_ab850x_dapm_widgets[] = {
 	SND_SOC_DAPM_SUPPLY("AUDIO Regulator",
 			SND_SOC_NOPM, 0, 0, dapm_audioreg_event,
 			SND_SOC_DAPM_PRE_PMU | SND_SOC_DAPM_POST_PMD),
@@ -630,13 +712,13 @@ static const struct snd_soc_dapm_widget ux500_ab8500_dapm_widgets[] = {
 
 /* DAPM-routes */
 
-static const struct snd_soc_dapm_route ux500_ab8500_dapm_intercon[] = {
+static const struct snd_soc_dapm_route ux500_ab850x_dapm_routes[] = {
 
-	/* Power AB8500 audio-block when AD/DA is active */
+	/* Power AB850X audio-block when AD/DA is active */
 	{"DAC", NULL, "AUDIO Regulator"},
 	{"ADC", NULL, "AUDIO Regulator"},
 
-	/* Power AB8500 audio-block when LineIn is active */
+	/* Power AB850X audio-block when LineIn is active */
 	{"LINL Enable", NULL, "AUDIO Regulator"},
 	{"LINR Enable", NULL, "AUDIO Regulator"},
 
@@ -644,6 +726,9 @@ static const struct snd_soc_dapm_route ux500_ab8500_dapm_intercon[] = {
 	{"MIC1A Input", NULL, "AMIC1A Regulator"},
 	{"MIC1B Input", NULL, "AMIC1B Regulator"},
 	{"MIC2 Input", NULL, "AMIC2 Regulator"},
+};
+
+static const struct snd_soc_dapm_route ux500_ab8500_ab9540_dapm_routes[] = {
 
 	/* Power DMIC-regulator when any digital mic is enabled */
 	{"DMic 1", NULL, "DMIC Regulator"},
@@ -654,26 +739,76 @@ static const struct snd_soc_dapm_route ux500_ab8500_dapm_intercon[] = {
 	{"DMic 6", NULL, "DMIC Regulator"},
 };
 
+static const struct snd_soc_dapm_route ux500_ab8505_v2_dapm_routes[] = {
+
+	/* Power AB8505_v2 audio-block when digital FM from i2s is active */
+	{"DA7DA1 Enable", NULL, "AUDIO Regulator"},
+	{"DA7DA3 Enable", NULL, "AUDIO Regulator"},
+	{"DA8DA2 Enable", NULL, "AUDIO Regulator"},
+	{"DA8DA4 Enable", NULL, "AUDIO Regulator"},
+};
+
 static int add_widgets(struct snd_soc_codec *codec)
 {
+	enum ab850x_audio_chipid chipid;
 	int ret;
 
+	pr_debug("%s Enter.\n", __func__);
+
 	ret = snd_soc_dapm_new_controls(&codec->dapm,
-			ux500_ab8500_dapm_widgets,
-			ARRAY_SIZE(ux500_ab8500_dapm_widgets));
+			ux500_ab850x_dapm_widgets,
+			ARRAY_SIZE(ux500_ab850x_dapm_widgets));
 	if (ret < 0) {
-		pr_err("%s: Failed to create DAPM controls (%d).\n",
+		pr_err("%s: Failed to create ab850x DAPM widgets (%d).\n",
 			__func__, ret);
 		return ret;
 	}
 
 	ret = snd_soc_dapm_add_routes(&codec->dapm,
-				ux500_ab8500_dapm_intercon,
-				ARRAY_SIZE(ux500_ab8500_dapm_intercon));
+			ux500_ab850x_dapm_routes,
+			ARRAY_SIZE(ux500_ab850x_dapm_routes));
 	if (ret < 0) {
-		pr_err("%s: Failed to add DAPM routes (%d).\n",
+		pr_err("%s: Failed to add ab850x DAPM routes (%d).\n",
 			__func__, ret);
 		return ret;
+	}
+
+	/* On AB8505 dmic exist on chip but are not drawn to a pin */
+	chipid = ab850x_audio_get_chipid(codec->dev);
+	switch (chipid) {
+	case AB850X_AUDIO_AB8505_V1:
+	case AB850X_AUDIO_AB8505_V2:
+	case AB850X_AUDIO_AB8505_V3:
+		break;
+	default:
+		ret = snd_soc_dapm_add_routes(&codec->dapm,
+				ux500_ab8500_ab9540_dapm_routes,
+				ARRAY_SIZE(ux500_ab8500_ab9540_dapm_routes));
+		if (ret < 0) {
+			pr_err("%s: Failed to add DMIC DAPM routes (%d).\n",
+				__func__, ret);
+			return ret;
+		}
+		break;
+	}
+
+	switch (chipid) {
+	case AB850X_AUDIO_AB8500:
+	case AB850X_AUDIO_AB8505_V1:
+		break;
+	case AB850X_AUDIO_AB8505_V2:
+	case AB850X_AUDIO_AB8505_V3:
+		ret = snd_soc_dapm_add_routes(&codec->dapm,
+				ux500_ab8505_v2_dapm_routes,
+				ARRAY_SIZE(ux500_ab8505_v2_dapm_routes));
+		if (ret < 0) {
+			pr_err("%s: Failed to add ab8505 v2/v3 DAPM routes (%d).\n",
+				__func__, ret);
+			return ret;
+		}
+		break;
+	default:
+		return -EIO;
 	}
 
 	return 0;
@@ -681,7 +816,7 @@ static int add_widgets(struct snd_soc_codec *codec)
 
 /* ASoC */
 
-int ux500_ab8500_startup(struct snd_pcm_substream *substream)
+int ux500_ab850x_startup(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
 
@@ -697,7 +832,7 @@ int ux500_ab8500_startup(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
+void ux500_ab850x_shutdown(struct snd_pcm_substream *substream)
 {
 	pr_debug("%s: Enter\n", __func__);
 
@@ -710,15 +845,16 @@ void ux500_ab8500_shutdown(struct snd_pcm_substream *substream)
 	clk_disable(clk_ptr_gpio1);
 }
 
-int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
+int ux500_ab850x_hw_params(struct snd_pcm_substream *substream,
 			struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-	unsigned int fmt, fmt_if1;
-	int channels, ret = 0, slots, slot_width, driver_mode;
+	int channels, ret = 0, slots, driver_mode;
+	unsigned int codec_slot_width, cpu_slot_width;
 	bool streamIsPlayback;
+	unsigned int fmt;
 
 	pr_debug("%s: Enter\n", __func__);
 
@@ -734,6 +870,17 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 
 	channels = params_channels(params);
 
+	switch (params_format(params)) {
+	case SNDRV_PCM_FORMAT_S32_LE:
+		cpu_slot_width = 32;
+		break;
+
+	default:
+	case SNDRV_PCM_FORMAT_S16_LE:
+		cpu_slot_width = 16;
+		break;
+	}
+
 	/* Setup codec depending on driver-mode */
 	driver_mode = (channels == 8) ?
 		DRIVERMODE_CODEC_ONLY : DRIVERMODE_NORMAL;
@@ -741,16 +888,19 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 		__func__,
 		(driver_mode == DRIVERMODE_NORMAL) ? "NORMAL" : "CODEC_ONLY");
 
-	ab8500_audio_set_bit_delay(codec_dai, 1);
+	ab850x_audio_set_bit_delay(codec_dai, 1);
+	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);
 
 	if (driver_mode == DRIVERMODE_NORMAL) {
-		ab8500_audio_set_word_length(codec_dai, 16);
+		codec_slot_width = cpu_slot_width;
+		ab850x_audio_set_word_length(codec_dai, codec_slot_width);
 		fmt = SND_SOC_DAIFMT_DSP_A |
 			SND_SOC_DAIFMT_CBM_CFM |
 			SND_SOC_DAIFMT_NB_NF |
 			SND_SOC_DAIFMT_CONT;
 	} else {
-		ab8500_audio_set_word_length(codec_dai, 20);
+		codec_slot_width = 20;
+		ab850x_audio_set_word_length(codec_dai, codec_slot_width);
 		fmt = SND_SOC_DAIFMT_DSP_A |
 			SND_SOC_DAIFMT_CBM_CFM |
 			SND_SOC_DAIFMT_NB_NF |
@@ -773,27 +923,21 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
-	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);
-
 	/* Setup TDM-slots */
-
 	streamIsPlayback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
 	switch (channels) {
 	case 1:
-		slots = 16;
-		slot_width = 16;
+		slots = 8;
 		tx_slots = (streamIsPlayback) ? TX_SLOT_MONO : 0;
 		rx_slots = (streamIsPlayback) ? 0 : RX_SLOT_MONO;
 		break;
 	case 2:
-		slots = 16;
-		slot_width = 16;
+		slots = 8;
 		tx_slots = (streamIsPlayback) ? TX_SLOT_STEREO : 0;
 		rx_slots = (streamIsPlayback) ? 0 : RX_SLOT_STEREO;
 		break;
 	case 8:
-		slots = 16;
-		slot_width = 16;
+		slots = 8;
 		tx_slots = (streamIsPlayback) ? TX_SLOT_8CH : 0;
 		rx_slots = (streamIsPlayback) ? 0 : RX_SLOT_8CH;
 		break;
@@ -803,32 +947,24 @@ int ux500_ab8500_hw_params(struct snd_pcm_substream *substream,
 
 	pr_debug("%s: CPU-DAI TDM: TX=0x%04X RX=0x%04x\n",
 		__func__, tx_slots, rx_slots);
-	ret = snd_soc_dai_set_tdm_slot(cpu_dai, tx_slots, rx_slots, slots, slot_width);
+	ret = snd_soc_dai_set_tdm_slot(cpu_dai, tx_slots, rx_slots, slots, cpu_slot_width);
 	if (ret)
 		return ret;
 
 	pr_debug("%s: CODEC-DAI TDM: TX=0x%04X RX=0x%04x\n",
 		__func__, tx_slots, rx_slots);
-	ret = snd_soc_dai_set_tdm_slot(codec_dai, tx_slots, rx_slots, slots, slot_width);
+	ret = snd_soc_dai_set_tdm_slot(codec_dai, tx_slots, rx_slots, slots, codec_slot_width);
 	if (ret)
 		return ret;
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_debug("%s: Setup IF1 for FM-radio.\n", __func__);
-		fmt_if1 = SND_SOC_DAIFMT_CBM_CFM | SND_SOC_DAIFMT_I2S;
-		ret = ab8500_audio_setup_if1(codec_dai->codec, fmt_if1, 16, 1);
-		if (ret)
-			return ret;
-	}
 
 	return 0;
 }
 
 struct snd_soc_ops ux500_ab8500_ops[] = {
 	{
-	.hw_params = ux500_ab8500_hw_params,
-	.startup = ux500_ab8500_startup,
-	.shutdown = ux500_ab8500_shutdown,
+	.hw_params = ux500_ab850x_hw_params,
+	.startup = ux500_ab850x_startup,
+	.shutdown = ux500_ab850x_shutdown,
 	}
 };
 
@@ -838,6 +974,13 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 	int ret;
 
 	pr_debug("%s Enter.\n", __func__);
+
+	ret = create_regulators(ab850x_audio_get_chipid(codec->dev));
+	if (ret < 0) {
+		pr_err("%s: ERROR: Failed to instantiate regulators (ret = %d)!\n",
+			__func__, ret);
+		return ret;
+	}
 
 	ret = snd_soc_jack_new(codec,
 			"AB8500 Hs Status",
@@ -864,6 +1007,12 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		&mic1b_regulator_control, codec));
 	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
 		&mic2_regulator_control, codec));
+	snd_ctl_add(codec->card->snd_card, snd_ctl_new1(
+		&earspk_sel_control, codec));
+
+#ifdef CONFIG_MACH_SEC_HENDRIX
+	ab8500_add_mid_widget(codec);
+#endif	/* CONFIG_MACH_SEC_HENDRIX */
 
 	/* Get references to clock-nodes */
 	clk_ptr_sysclk = NULL;
@@ -877,12 +1026,12 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		return -EFAULT;
 	}
 	clk_ptr_ulpclk = clk_get(codec->dev, "ulpclk");
-	if (IS_ERR(clk_ptr_ulpclk)) {
+	if (IS_ERR(clk_ptr_sysclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
 		return -EFAULT;
 	}
 	clk_ptr_intclk = clk_get(codec->dev, "intclk");
-	if (IS_ERR(clk_ptr_intclk)) {
+	if (IS_ERR(clk_ptr_audioclk)) {
 		pr_err("ERROR: clk_get failed (ret = %d)!", -EFAULT);
 		return -EFAULT;
 	}
@@ -897,8 +1046,15 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		return -EFAULT;
 	}
 
-	/* Set intclk default parent to ulpclk */
-	ret = clk_set_parent(clk_ptr_intclk, clk_ptr_ulpclk);
+	/* Initialize intclk default parent */
+	if (prcmu_is_ulppll_disabled()) {
+		ret = clk_set_parent(clk_ptr_intclk, clk_ptr_sysclk);
+		master_clock_sel = 0;
+	} else {
+		ret = clk_set_parent(clk_ptr_intclk, clk_ptr_ulpclk);
+		master_clock_sel = 1;
+	}
+
 	if (ret) {
 		pr_err("%s: ERROR: Setting intclk parent to ulpclk failed (ret = %d)!",
 			__func__,
@@ -906,9 +1062,8 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		return -EFAULT;
 	}
 
-	master_clock_sel = 1;
-
-	ab8500_power_count = 0;
+	ab850x_power_count = 0;
+	earspk_sel = 0;
 
 	reg_claim[REGULATOR_AMIC1] = 0;
 	reg_claim[REGULATOR_AMIC2] = 0;
@@ -920,21 +1075,14 @@ int ux500_ab8500_machine_codec_init(struct snd_soc_pcm_runtime *rtd)
 		return ret;
 	}
 
+	ab850x_codec = codec;
+
 	return 0;
 }
 
 int ux500_ab8500_soc_machine_drv_init(void)
 {
-	int status = 0;
-
 	pr_debug("%s: Enter.\n", __func__);
-
-	status = create_regulators();
-	if (status < 0) {
-		pr_err("%s: ERROR: Failed to instantiate regulators (ret = %d)!\n",
-			__func__, status);
-		return status;
-	}
 
 	vibra_on = false;
 
@@ -987,32 +1135,40 @@ static int gpadc_convert_stable(struct ab8500_gpadc *gpadc,
 
 /* Extended interface */
 
-void ux500_ab8500_audio_pwm_vibra(unsigned char speed_left_pos,
-			unsigned char speed_left_neg,
-			unsigned char speed_right_pos,
-			unsigned char speed_right_neg)
+void ux500_ab8500_audio_pwm_vibra(unsigned char pdc1, unsigned char ndc1,
+		unsigned char pdc2, unsigned char ndc2)
 {
+	enum ab850x_audio_chipid chipid;
 	bool vibra_on_new;
 
-	vibra_on_new = speed_left_pos | speed_left_neg | speed_right_pos | speed_right_neg;
+	if (ab850x_codec == NULL) {
+		pr_err("%s: ERROR: ab850x ASoC-driver not yet probed!\n",
+			__func__);
+		return;
+	}
+
+	chipid = ab850x_audio_get_chipid(ab850x_codec->dev);
+	if (chipid == AB850X_AUDIO_UNKNOWN) {
+		pr_err("%s: ab850x chipset not yet known!\n", __func__);
+		return;
+	}
+
+	vibra_on_new = pdc1 | ndc1;
+	if (chipid == AB850X_AUDIO_AB8500)
+		vibra_on_new |= pdc2 | ndc2;
+
 	if ((!vibra_on_new) && (vibra_on)) {
 		pr_debug("%s: PWM-vibra off.\n", __func__);
 		vibra_on = false;
-
-		ux500_ab8500_power_control_dec();
+		ux500_ab850x_power_control_dec();
 	}
-
 	if ((vibra_on_new) && (!vibra_on)) {
 		pr_debug("%s: PWM-vibra on.\n", __func__);
 		vibra_on = true;
-
-		ux500_ab8500_power_control_inc();
+		ux500_ab850x_power_control_inc();
 	}
 
-	ab8500_audio_pwm_vibra(speed_left_pos,
-			speed_left_neg,
-			speed_right_pos,
-			speed_right_neg);
+	ab850x_audio_pwm_vibra(pdc1, ndc1, pdc2, ndc2);
 }
 
 int ux500_ab8500_audio_gpadc_measure(struct ab8500_gpadc *gpadc,
@@ -1020,21 +1176,21 @@ int ux500_ab8500_audio_gpadc_measure(struct ab8500_gpadc *gpadc,
 {
 	int ret = 0;
 	int adcm = (mode) ?
-		AB8500_AUDIO_ADCM_FORCE_UP :
-		AB8500_AUDIO_ADCM_FORCE_DOWN;
+		AB850X_AUDIO_ADCM_FORCE_UP :
+		AB850X_AUDIO_ADCM_FORCE_DOWN;
 
 	pr_debug("%s: Enter.\n", __func__);
 
 	mutex_lock(&adcm_lock);
 
-	ret = ux500_ab8500_power_control_inc();
+	ret = ux500_ab850x_power_control_inc();
 	if (ret < 0) {
 		pr_err("%s: ERROR: Failed to enable power (ret = %d)!\n",
 			__func__, ret);
 		goto power_failure;
 	}
 
-	ret = ab8500_audio_set_adcm(adcm);
+	ret = ab850x_audio_set_adcm(adcm);
 	if (ret < 0) {
 		pr_err("%s: ERROR: Failed to force adcm %s (ret = %d)!\n",
 			__func__, (mode) ? "UP" : "DOWN", ret);
@@ -1042,10 +1198,10 @@ int ux500_ab8500_audio_gpadc_measure(struct ab8500_gpadc *gpadc,
 	}
 
 	ret = gpadc_convert_stable(gpadc, channel, value);
-	ret |= ab8500_audio_set_adcm(AB8500_AUDIO_ADCM_NORMAL);
+	ret |= ab850x_audio_set_adcm(AB850X_AUDIO_ADCM_NORMAL);
 
 adcm_failure:
-	ux500_ab8500_power_control_dec();
+	ux500_ab850x_power_control_dec();
 
 power_failure:
 	mutex_unlock(&adcm_lock);

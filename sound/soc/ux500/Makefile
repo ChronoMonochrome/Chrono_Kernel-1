@@ -11,6 +11,10 @@ CFLAGS_ux500_cg29xx.o := -DDEBUG
 CFLAGS_ux500_msp_i2s.o := -DDEBUG
 endif
 
+ifeq ($(CONNECTIVITY_ENABLE_FEATURE_STE_CONNECTIVITY),true)
+CFLAGS_ux500_ab8500.o += -DDIGITAL_FM_ON_IF1_TO_DA78
+endif
+
 ifdef CONFIG_UX500_SOC_DBX500
 snd-soc-ux500-platform-objs := ux500_pcm.o ux500_msp_dai.o ux500_msp_i2s.o
 obj-y += snd-soc-ux500-platform.o
@@ -44,3 +48,6 @@ snd-soc-u5500-objs := u5500.o
 obj-y += snd-soc-u5500.o
 endif
 
+ifdef CONFIG_SND_SOC_UX500_AB8500_MID_WIDGET
+snd-soc-ux500-machine-objs += ux500_ab8500_mid.o
+endif
