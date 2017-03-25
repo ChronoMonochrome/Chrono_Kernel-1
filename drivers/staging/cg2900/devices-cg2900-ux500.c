@@ -19,7 +19,6 @@
 #include <linux/gpio.h>
 #include <linux/ioport.h>
 #include <linux/kernel.h>
-#include <linux/mutex.h>
 #include <linux/mfd/abx500/ab5500.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/platform_device.h>
@@ -37,21 +36,7 @@ void dcg2900_u8500_enable_chip(struct cg2900_chip_dev *dev)
 	if (info->gbf_gpio == -1)
 		return;
 
-	/*
-	 * - SET PMU_EN to high
-	 * - Wait for 300usec
-	 * - Set PDB to high.
-	 */
-
-	if (info->pmuen_gpio != -1) {
-		/*
-		 * We must first set PMU_EN pin high and then wait 300 us before
-		 * setting the GBF_EN high.
-		 */
-		gpio_set_value(info->pmuen_gpio, 1);
-		udelay(CHIP_ENABLE_PMU_EN_TIMEOUT);
-	}
-
+	/* Set PDB to high. */
 	gpio_set_value(info->gbf_gpio, 1);
 }
 
@@ -59,10 +44,12 @@ void dcg2900_u8500_disable_chip(struct cg2900_chip_dev *dev)
 {
 	struct dcg2900_info *info = dev->b_data;
 
+	/* Set PDB to low. */
 	if (info->gbf_gpio != -1)
 		gpio_set_value(info->gbf_gpio, 0);
-	if (info->pmuen_gpio != -1)
-		gpio_set_value(info->pmuen_gpio, 0);
+
+	schedule_timeout_killable(
+			msecs_to_jiffies(CHIP_ENABLE_PDB_LOW_TIMEOUT));
 }
 
 int dcg2900_u8500_setup(struct cg2900_chip_dev *dev,
@@ -203,4 +190,3 @@ int dcg2900_u5500_setup(struct cg2900_chip_dev *dev,
 
 	return 0;
 }
-

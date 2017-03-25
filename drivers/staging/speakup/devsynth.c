@@ -18,14 +18,13 @@ static ssize_t speakup_file_write(struct file *fp, const char *buffer,
 {
 	size_t count = nbytes;
 	const char *ptr = buffer;
-	size_t bytes;
+	int bytes;
 	unsigned long flags;
 	u_char buf[256];
-
 	if (synth == NULL)
 		return -ENODEV;
 	while (count > 0) {
-		bytes = min(count, sizeof(buf));
+		bytes = min_t(size_t, count, sizeof(buf));
 		if (copy_from_user(buf, ptr, bytes))
 			return -EFAULT;
 		count -= bytes;

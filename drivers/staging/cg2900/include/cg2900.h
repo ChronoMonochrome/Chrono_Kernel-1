@@ -24,6 +24,10 @@
 /* Retrieve revision info */
 #define CG2900_CHAR_DEV_IOCTL_GET_REVISION	_IOR('U', 213, \
 						     struct cg2900_rev_data)
+/* Sysclk3 - Clock Enable used for GPS */
+#define CG2900_CHAR_DEV_IOCTL_EXT_CLK_ENABLE    _IOR('U', 214, int)
+/* Sysclk3 - Clock Disable used for GPS */
+#define CG2900_CHAR_DEV_IOCTL_EXT_CLK_DISABLE   _IOR('U', 215, int)
 
 #define CG2900_CHAR_DEV_IOCTL_EVENT_IDLE	0
 #define CG2900_CHAR_DEV_IOCTL_EVENT_RESET	1
@@ -33,7 +37,16 @@
 #define CG2900_PG1_REV			0x0101
 #define CG2900_PG2_REV			0x0200
 #define CG2900_PG1_SPECIAL_REV	0x0700
-#define CG2905_PG1_1_REV		0x1805
+#define CG2905_PG1_05_REV		0x1805
+/*
+ * There is an issue in OTP setting of a single bit for distinction
+ * between CG2905 and CG2910. So Recommendation from the CG2900 Chip
+ * Architects is that CG2910 PG1_05 HCI version has to be
+ * considered as CG2905 PG1_05.
+ */
+#define CG2910_PG1_05_REV		0x1005
+#define CG2905_PG2_REV			0x1806
+#define CG2905_PG2_REV_OTP_NOT_SET	0x1006
 #define CG2910_PG1_REV			0x1004
 #define CG2910_PG2_REV			0x1008
 
@@ -288,12 +301,26 @@ static inline bool check_chip_revision_support(u16 hci_revision)
 	if (hci_revision != CG2900_PG1_SPECIAL_REV &&
 			hci_revision != CG2900_PG1_REV &&
 			hci_revision != CG2900_PG2_REV &&
-			hci_revision != CG2905_PG1_1_REV &&
+			hci_revision != CG2905_PG1_05_REV &&
+			hci_revision != CG2905_PG2_REV &&
 			hci_revision != CG2910_PG1_REV &&
+			hci_revision != CG2910_PG1_05_REV &&
 			hci_revision != CG2910_PG2_REV)
 		return false;
 
 	return true;
+}
+
+static inline bool use_device_channel_for_vs_cmd(u16 hci_revision)
+{
+	if (hci_revision == CG2905_PG1_05_REV ||
+			hci_revision == CG2905_PG2_REV ||
+			hci_revision == CG2910_PG1_REV ||
+			hci_revision == CG2910_PG1_05_REV ||
+			hci_revision == CG2910_PG2_REV)
+		return true;
+
+	return false;
 }
 
 extern int cg2900_register_chip_driver(struct cg2900_id_callbacks *cb);

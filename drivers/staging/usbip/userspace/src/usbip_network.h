@@ -2,20 +2,19 @@
  * Copyright (C) 2005-2007 Takahiro Hirofuchi
  */
 
-#ifndef __USBIP_NETWORK_H
-#define __USBIP_NETWORK_H
+#ifndef _USBIP_NETWORK_H
+#define _USBIP_NETWORK_H
 
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
+#include "usbip.h"
 #include <sys/types.h>
-#include <sysfs/libsysfs.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
 
-#include <stdint.h>
 
-#define USBIP_PORT 3240
-#define USBIP_PORT_STRING "3240"
+/* -------------------------------------------------- */
+/* Define Protocol Format                             */
+/* -------------------------------------------------- */
+
 
 /* ---------------------------------------------------------------------- */
 /* Common header for all the kinds of PDUs. */
@@ -34,10 +33,11 @@ struct op_common {
 } __attribute__((packed));
 
 #define PACK_OP_COMMON(pack, op_common)  do {\
-	usbip_net_pack_uint16_t(pack, &(op_common)->version);\
-	usbip_net_pack_uint16_t(pack, &(op_common)->code   );\
-	usbip_net_pack_uint32_t(pack, &(op_common)->status );\
+	pack_uint16_t(pack, &(op_common)->version);\
+	pack_uint16_t(pack, &(op_common)->code   );\
+	pack_uint32_t(pack, &(op_common)->status );\
 } while (0)
+
 
 /* ---------------------------------------------------------------------- */
 /* Dummy Code */
@@ -56,9 +56,10 @@ struct op_devinfo_request {
 } __attribute__((packed));
 
 struct op_devinfo_reply {
-	struct usbip_usb_device udev;
-	struct usbip_usb_interface uinf[];
+	struct usb_device udev;
+	struct usb_interface uinf[];
 } __attribute__((packed));
+
 
 /* ---------------------------------------------------------------------- */
 /* Import a remote USB device. */
@@ -71,16 +72,18 @@ struct op_import_request {
 } __attribute__((packed));
 
 struct op_import_reply {
-	struct usbip_usb_device udev;
-//	struct usbip_usb_interface uinf[];
+	struct usb_device udev;
+//	struct usb_interface uinf[];
 } __attribute__((packed));
 
 #define PACK_OP_IMPORT_REQUEST(pack, request)  do {\
 } while (0)
 
 #define PACK_OP_IMPORT_REPLY(pack, reply)  do {\
-	usbip_net_pack_usb_device(pack, &(reply)->udev);\
+	pack_usb_device(pack, &(reply)->udev);\
 } while (0)
+
+
 
 /* ---------------------------------------------------------------------- */
 /* Export a USB device to a remote host. */
@@ -89,7 +92,7 @@ struct op_import_reply {
 #define OP_REP_EXPORT	(OP_REPLY   | OP_EXPORT)
 
 struct op_export_request {
-	struct usbip_usb_device udev;
+	struct usb_device udev;
 } __attribute__((packed));
 
 struct op_export_reply {
@@ -98,7 +101,7 @@ struct op_export_reply {
 
 
 #define PACK_OP_EXPORT_REQUEST(pack, request)  do {\
-	usbip_net_pack_usb_device(pack, &(request)->udev);\
+	pack_usb_device(pack, &(request)->udev);\
 } while (0)
 
 #define PACK_OP_EXPORT_REPLY(pack, reply)  do {\
@@ -111,7 +114,7 @@ struct op_export_reply {
 #define OP_REP_UNEXPORT	(OP_REPLY   | OP_UNEXPORT)
 
 struct op_unexport_request {
-	struct usbip_usb_device udev;
+	struct usb_device udev;
 } __attribute__((packed));
 
 struct op_unexport_reply {
@@ -119,11 +122,13 @@ struct op_unexport_reply {
 } __attribute__((packed));
 
 #define PACK_OP_UNEXPORT_REQUEST(pack, request)  do {\
-	usbip_net_pack_usb_device(pack, &(request)->udev);\
+	pack_usb_device(pack, &(request)->udev);\
 } while (0)
 
 #define PACK_OP_UNEXPORT_REPLY(pack, reply)  do {\
 } while (0)
+
+
 
 /* ---------------------------------------------------------------------- */
 /* Negotiate IPSec encryption key. (still not used) */
@@ -156,29 +161,38 @@ struct op_devlist_reply {
 } __attribute__((packed));
 
 struct op_devlist_reply_extra {
-	struct usbip_usb_device    udev;
-	struct usbip_usb_interface uinf[];
+	struct usb_device    udev;
+	struct usb_interface uinf[];
 } __attribute__((packed));
 
 #define PACK_OP_DEVLIST_REQUEST(pack, request)  do {\
 } while (0)
 
 #define PACK_OP_DEVLIST_REPLY(pack, reply)  do {\
-	usbip_net_pack_uint32_t(pack, &(reply)->ndev);\
+	pack_uint32_t(pack, &(reply)->ndev);\
 } while (0)
 
-void usbip_net_pack_uint32_t(int pack, uint32_t *num);
-void usbip_net_pack_uint16_t(int pack, uint16_t *num);
-void usbip_net_pack_usb_device(int pack, struct usbip_usb_device *udev);
-void usbip_net_pack_usb_interface(int pack, struct usbip_usb_interface *uinf);
 
-ssize_t usbip_net_recv(int sockfd, void *buff, size_t bufflen);
-ssize_t usbip_net_send(int sockfd, void *buff, size_t bufflen);
-int usbip_net_send_op_common(int sockfd, uint32_t code, uint32_t status);
-int usbip_net_recv_op_common(int sockfd, uint16_t *code);
-int usbip_net_set_reuseaddr(int sockfd);
-int usbip_net_set_nodelay(int sockfd);
-int usbip_net_set_keepalive(int sockfd);
-int usbip_net_tcp_connect(char *hostname, char *port);
+/* -------------------------------------------------- */
+/* Declare Prototype Function                         */
+/* -------------------------------------------------- */
 
-#endif /* __USBIP_NETWORK_H */
+void pack_uint32_t(int pack, uint32_t *num);
+void pack_uint16_t(int pack, uint16_t *num);
+void pack_usb_device(int pack, struct usb_device *udev);
+void pack_usb_interface(int pack, struct usb_interface *uinf);
+
+ssize_t usbip_recv(int sockfd, void *buff, size_t bufflen);
+ssize_t usbip_send(int sockfd, void *buff, size_t bufflen);
+int usbip_send_op_common(int sockfd, uint32_t code, uint32_t status);
+int usbip_recv_op_common(int sockfd, uint16_t *code);
+int usbip_set_reuseaddr(int sockfd);
+int usbip_set_nodelay(int sockfd);
+int usbip_set_keepalive(int sockfd);
+
+int tcp_connect(char *hostname, char *service);
+
+#define USBIP_PORT 3240
+#define USBIP_PORT_STRING "3240"
+
+#endif

@@ -177,18 +177,13 @@ int cw1200_reg_write(struct cw1200_common *priv, u16 addr,
 static inline int cw1200_reg_read_16(struct cw1200_common *priv,
 				     u16 addr, u16 *val)
 {
-	u32 bigVal;
-	int ret;
-	ret = cw1200_reg_read(priv, addr, &bigVal, sizeof(bigVal));
-	*val = (u16)bigVal;
-	return ret;
+	return cw1200_reg_read(priv, addr, val, sizeof(val));
 }
 
 static inline int cw1200_reg_write_16(struct cw1200_common *priv,
 				      u16 addr, u16 val)
 {
-	u32 bigVal = (u32)val;
-	return cw1200_reg_write(priv, addr, &bigVal, sizeof(bigVal));
+	return cw1200_reg_write(priv, addr, &val, sizeof(val));
 }
 
 static inline int cw1200_reg_read_32(struct cw1200_common *priv,

@@ -438,7 +438,7 @@ int cw1200_load_firmware(struct cw1200_common *priv)
 		ret = cw1200_ahb_read_32(priv, CW1200_CUT2_ID_ADDR + 4, &ar2);
 		if (ret) {
 			cw1200_dbg(CW1200_DBG_ERROR,
-				"%s: (2) HW detection: can't read CUT ID.\n",
+			"%s: (2) HW detection: can't read CUT ID.\n",
 				__func__);
 			goto out;
 		}
@@ -446,7 +446,7 @@ int cw1200_load_firmware(struct cw1200_common *priv)
 		ret = cw1200_ahb_read_32(priv, CW1200_CUT2_ID_ADDR + 8, &ar3);
 		if (ret) {
 			cw1200_dbg(CW1200_DBG_ERROR,
-				"%s: (3) HW detection: can't read CUT ID.\n",
+			"%s: (3) HW detection: can't read CUT ID.\n",
 				__func__);
 			goto out;
 		}

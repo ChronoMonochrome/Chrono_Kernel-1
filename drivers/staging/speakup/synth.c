@@ -22,7 +22,7 @@ static struct spk_synth *synths[MAXSYNTHS];
 struct spk_synth *synth;
 char pitch_buff[32] = "";
 static int module_status;
-bool quiet_boot;
+int quiet_boot;
 
 struct speakup_info_t speakup_info = {
 	.spinlock = __SPIN_LOCK_UNLOCKED(speakup_info.spinlock),
@@ -34,7 +34,7 @@ static int do_synth_init(struct spk_synth *in_synth);
 
 int serial_synth_probe(struct spk_synth *synth)
 {
-	const struct old_serial_port *ser;
+	struct serial_state *ser;
 	int failed = 0;
 
 	if ((synth->ser >= SPK_LO_TTY) && (synth->ser <= SPK_HI_TTY)) {
@@ -342,7 +342,7 @@ int synth_init(char *synth_name)
 
 	mutex_lock(&spk_mutex);
 	/* First, check if we already have it loaded. */
-	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
+	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
 		if (strcmp(synths[i]->name, synth_name) == 0)
 			synth = synths[i];
 
@@ -423,7 +423,7 @@ int synth_add(struct spk_synth *in_synth)
 	int i;
 	int status = 0;
 	mutex_lock(&spk_mutex);
-	for (i = 0; i < MAXSYNTHS && synths[i] != NULL; i++)
+	for (i = 0; synths[i] != NULL && i < MAXSYNTHS; i++)
 		/* synth_remove() is responsible for rotating the array down */
 		if (in_synth == synths[i]) {
 			mutex_unlock(&spk_mutex);

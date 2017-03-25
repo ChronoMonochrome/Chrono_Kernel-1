@@ -16,3 +16,5 @@ obj-$(CONFIG_CG2900_CHIP)	+= cg2900_chip.o
 obj-$(CONFIG_STLC2690_CHIP)	+= stlc2690_chip.o
 
 obj-$(CONFIG_CG2900_AUDIO)	+= cg2900_audio.o
+
+obj-$(CONFIG_CG2900_UART)	+= cg2900_uart.o

@@ -1,3 +1,7 @@
+/*
+ * $Id: ossiRelease.c,v 1.2 2008/05/08 20:14:03 rdobbs PMCC4_3_1B $
+ */
+
 /*-----------------------------------------------------------------------------
  * ossiRelease.c -
  *
@@ -22,7 +26,13 @@
  * One Stop Systems, Inc.  Escondido, California  U.S.A.
  *
  *-----------------------------------------------------------------------------
+ * RCS info:
+ * RCS revision: $Revision: 1.2 $
+ * Last changed on $Date: 2008/05/08 20:14:03 $
+ * Changed by $Author: rdobbs $
+ *-----------------------------------------------------------------------------
  */
+
 
 char pmcc4_OSSI_release[] = "$Release: PMCC4_3_1B,  Copyright (c) 2008 One Stop Systems$";
 
