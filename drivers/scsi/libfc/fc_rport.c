@@ -51,7 +51,6 @@
 #include <linux/rcupdate.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
-#include <linux/export.h>
 #include <asm/unaligned.h>
 
 #include <scsi/libfc.h>
@@ -154,6 +153,18 @@ static struct fc_rport_priv *fc_rport_create(struct fc_lport *lport,
 }
 
 /**
+ * fc_rport_free_rcu() - Free a remote port
+ * @rcu: The rcu_head structure inside the remote port
+ */
+static void fc_rport_free_rcu(struct rcu_head *rcu)
+{
+	struct fc_rport_priv *rdata;
+
+	rdata = container_of(rcu, struct fc_rport_priv, rcu);
+	kfree(rdata);
+}
+
+/**
  * fc_rport_destroy() - Free a remote port after last reference is released
  * @kref: The remote port's kref
  */
@@ -162,7 +173,7 @@ static void fc_rport_destroy(struct kref *kref)
 	struct fc_rport_priv *rdata;
 
 	rdata = container_of(kref, struct fc_rport_priv, kref);
-	kfree_rcu(rdata, rcu);
+	call_rcu(&rdata->rcu, fc_rport_free_rcu);
 }
 
 /**
@@ -391,7 +402,7 @@ static void fc_rport_work(struct work_struct *work)
  * If it appears we are already logged in, ADISC is used to verify
  * the setup.
  */
-static int fc_rport_login(struct fc_rport_priv *rdata)
+int fc_rport_login(struct fc_rport_priv *rdata)
 {
 	mutex_lock(&rdata->rp_mutex);
 
@@ -451,7 +462,7 @@ static void fc_rport_enter_delete(struct fc_rport_priv *rdata,
  * function will hold the rport lock, call an _enter_*
  * function and then unlock the rport.
  */
-static int fc_rport_logoff(struct fc_rport_priv *rdata)
+int fc_rport_logoff(struct fc_rport_priv *rdata)
 {
 	mutex_lock(&rdata->rp_mutex);
 
@@ -653,8 +664,8 @@ static int fc_rport_login_complete(struct fc_rport_priv *rdata,
  * @fp:	    The FLOGI response frame
  * @rp_arg: The remote port that received the FLOGI response
  */
-static void fc_rport_flogi_resp(struct fc_seq *sp, struct fc_frame *fp,
-				void *rp_arg)
+void fc_rport_flogi_resp(struct fc_seq *sp, struct fc_frame *fp,
+			 void *rp_arg)
 {
 	struct fc_rport_priv *rdata = rp_arg;
 	struct fc_lport *lport = rdata->local_port;
@@ -1520,7 +1531,7 @@ reject:
  *
  * Locking Note: Called with the lport lock held.
  */
-static void fc_rport_recv_req(struct fc_lport *lport, struct fc_frame *fp)
+void fc_rport_recv_req(struct fc_lport *lport, struct fc_frame *fp)
 {
 	struct fc_seq_els_data els_data;
 

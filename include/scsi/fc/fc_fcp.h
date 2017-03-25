@@ -20,8 +20,6 @@
 #ifndef _FC_FCP_H_
 #define	_FC_FCP_H_
 
-#include <scsi/scsi.h>
-
 /*
  * Fibre Channel Protocol for SCSI.
  * From T10 FCP-3, T10 project 1560-D Rev 4, Sept. 13, 2005.
@@ -47,7 +45,7 @@
  * FCP_CMND IU Payload.
  */
 struct fcp_cmnd {
-	struct scsi_lun	fc_lun;		/* logical unit number */
+	__u8		fc_lun[8];	/* logical unit number */
 	__u8		fc_cmdref;	/* command reference number */
 	__u8		fc_pri_ta;	/* priority and task attribute */
 	__u8		fc_tm_flags;	/* task management flags */
@@ -59,7 +57,7 @@ struct fcp_cmnd {
 #define	FCP_CMND_LEN	32	/* expected length of structure */
 
 struct fcp_cmnd32 {
-	struct scsi_lun	fc_lun;		/* logical unit number */
+	__u8		fc_lun[8];	/* logical unit number */
 	__u8		fc_cmdref;	/* command reference number */
 	__u8		fc_pri_ta;	/* priority and task attribute */
 	__u8		fc_tm_flags;	/* task management flags */

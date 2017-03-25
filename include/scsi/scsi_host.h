@@ -355,19 +355,6 @@ struct scsi_host_template {
 	 */
 	enum blk_eh_timer_return (*eh_timed_out)(struct scsi_cmnd *);
 
-	/* This is an optional routine that allows transport to initiate
-	 * LLD adapter or firmware reset using sysfs attribute.
-	 *
-	 * Return values: 0 on success, -ve value on failure.
-	 *
-	 * Status: OPTIONAL
-	 */
-
-	int (*host_reset)(struct Scsi_Host *shost, int reset_type);
-#define SCSI_ADAPTER_RESET	1
-#define SCSI_FIRMWARE_RESET	2
-
-
 	/*
 	 * Name of proc directory
 	 */
@@ -669,9 +656,6 @@ struct Scsi_Host {
 	/* Asynchronous scan in progress */
 	unsigned async_scan:1;
 
-	/* Don't resume host in EH */
-	unsigned eh_noresume:1;
-
 	/*
 	 * Optional work queue to be utilized by the transport
 	 */
@@ -807,8 +791,7 @@ static inline struct device *scsi_get_device(struct Scsi_Host *shost)
  **/
 static inline int scsi_host_scan_allowed(struct Scsi_Host *shost)
 {
-	return shost->shost_state == SHOST_RUNNING ||
-	       shost->shost_state == SHOST_RECOVERY;
+	return shost->shost_state == SHOST_RUNNING;
 }
 
 extern void scsi_unblock_requests(struct Scsi_Host *);
