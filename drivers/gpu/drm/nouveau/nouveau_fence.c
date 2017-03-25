@@ -93,17 +93,18 @@ nouveau_fence_update(struct nouveau_channel *chan)
 	}
 
 	list_for_each_entry_safe(fence, tmp, &chan->fence.pending, entry) {
-		if (fence->sequence > chan->fence.sequence_ack)
-			break;
-
+		sequence = fence->sequence;
 		fence->signalled = true;
 		list_del(&fence->entry);
-		if (fence->work)
+
+		if (unlikely(fence->work))
 			fence->work(fence->priv, true);
 
 		kref_put(&fence->refcount, nouveau_fence_del);
-	}
 
+		if (sequence == chan->fence.sequence_ack)
+			break;
+	}
 out:
 	spin_unlock(&chan->fence.lock);
 }
@@ -164,9 +165,9 @@ nouveau_fence_emit(struct nouveau_fence *fence)
 
 	if (USE_REFCNT(dev)) {
 		if (dev_priv->card_type < NV_C0)
-			BEGIN_RING(chan, 0, NV10_SUBCHAN_REF_CNT, 1);
+			BEGIN_RING(chan, NvSubSw, 0x0050, 1);
 		else
-			BEGIN_NVC0(chan, 2, 0, NV10_SUBCHAN_REF_CNT, 1);
+			BEGIN_NVC0(chan, 2, NvSubM2MF, 0x0050, 1);
 	} else {
 		BEGIN_RING(chan, NvSubSw, 0x0150, 1);
 	}
@@ -335,7 +336,6 @@ semaphore_acquire(struct nouveau_channel *chan, struct nouveau_semaphore *sema)
 {
 	struct drm_nouveau_private *dev_priv = chan->dev->dev_private;
 	struct nouveau_fence *fence = NULL;
-	u64 offset = chan->fence.vma.offset + sema->mem->start;
 	int ret;
 
 	if (dev_priv->chipset < 0x84) {
@@ -343,29 +343,35 @@ semaphore_acquire(struct nouveau_channel *chan, struct nouveau_semaphore *sema)
 		if (ret)
 			return ret;
 
-		BEGIN_RING(chan, 0, NV11_SUBCHAN_DMA_SEMAPHORE, 3);
+		BEGIN_RING(chan, NvSubSw, NV_SW_DMA_SEMAPHORE, 3);
 		OUT_RING  (chan, NvSema);
-		OUT_RING  (chan, offset);
+		OUT_RING  (chan, sema->mem->start);
 		OUT_RING  (chan, 1);
 	} else
 	if (dev_priv->chipset < 0xc0) {
+		struct nouveau_vma *vma = &dev_priv->fence.bo->vma;
+		u64 offset = vma->offset + sema->mem->start;
+
 		ret = RING_SPACE(chan, 7);
 		if (ret)
 			return ret;
 
-		BEGIN_RING(chan, 0, NV11_SUBCHAN_DMA_SEMAPHORE, 1);
+		BEGIN_RING(chan, NvSubSw, NV_SW_DMA_SEMAPHORE, 1);
 		OUT_RING  (chan, chan->vram_handle);
-		BEGIN_RING(chan, 0, NV84_SUBCHAN_SEMAPHORE_ADDRESS_HIGH, 4);
+		BEGIN_RING(chan, NvSubSw, 0x0010, 4);
 		OUT_RING  (chan, upper_32_bits(offset));
 		OUT_RING  (chan, lower_32_bits(offset));
 		OUT_RING  (chan, 1);
 		OUT_RING  (chan, 1); /* ACQUIRE_EQ */
 	} else {
+		struct nouveau_vma *vma = &dev_priv->fence.bo->vma;
+		u64 offset = vma->offset + sema->mem->start;
+
 		ret = RING_SPACE(chan, 5);
 		if (ret)
 			return ret;
 
-		BEGIN_NVC0(chan, 2, 0, NV84_SUBCHAN_SEMAPHORE_ADDRESS_HIGH, 4);
+		BEGIN_NVC0(chan, 2, NvSubM2MF, 0x0010, 4);
 		OUT_RING  (chan, upper_32_bits(offset));
 		OUT_RING  (chan, lower_32_bits(offset));
 		OUT_RING  (chan, 1);
@@ -388,7 +394,6 @@ semaphore_release(struct nouveau_channel *chan, struct nouveau_semaphore *sema)
 {
 	struct drm_nouveau_private *dev_priv = chan->dev->dev_private;
 	struct nouveau_fence *fence = NULL;
-	u64 offset = chan->fence.vma.offset + sema->mem->start;
 	int ret;
 
 	if (dev_priv->chipset < 0x84) {
@@ -396,30 +401,36 @@ semaphore_release(struct nouveau_channel *chan, struct nouveau_semaphore *sema)
 		if (ret)
 			return ret;
 
-		BEGIN_RING(chan, 0, NV11_SUBCHAN_DMA_SEMAPHORE, 2);
+		BEGIN_RING(chan, NvSubSw, NV_SW_DMA_SEMAPHORE, 2);
 		OUT_RING  (chan, NvSema);
-		OUT_RING  (chan, offset);
-		BEGIN_RING(chan, 0, NV11_SUBCHAN_SEMAPHORE_RELEASE, 1);
+		OUT_RING  (chan, sema->mem->start);
+		BEGIN_RING(chan, NvSubSw, NV_SW_SEMAPHORE_RELEASE, 1);
 		OUT_RING  (chan, 1);
 	} else
 	if (dev_priv->chipset < 0xc0) {
+		struct nouveau_vma *vma = &dev_priv->fence.bo->vma;
+		u64 offset = vma->offset + sema->mem->start;
+
 		ret = RING_SPACE(chan, 7);
 		if (ret)
 			return ret;
 
-		BEGIN_RING(chan, 0, NV11_SUBCHAN_DMA_SEMAPHORE, 1);
+		BEGIN_RING(chan, NvSubSw, NV_SW_DMA_SEMAPHORE, 1);
 		OUT_RING  (chan, chan->vram_handle);
-		BEGIN_RING(chan, 0, NV84_SUBCHAN_SEMAPHORE_ADDRESS_HIGH, 4);
+		BEGIN_RING(chan, NvSubSw, 0x0010, 4);
 		OUT_RING  (chan, upper_32_bits(offset));
 		OUT_RING  (chan, lower_32_bits(offset));
 		OUT_RING  (chan, 1);
 		OUT_RING  (chan, 2); /* RELEASE */
 	} else {
+		struct nouveau_vma *vma = &dev_priv->fence.bo->vma;
+		u64 offset = vma->offset + sema->mem->start;
+
 		ret = RING_SPACE(chan, 5);
 		if (ret)
 			return ret;
 
-		BEGIN_NVC0(chan, 2, 0, NV84_SUBCHAN_SEMAPHORE_ADDRESS_HIGH, 4);
+		BEGIN_NVC0(chan, 2, NvSubM2MF, 0x0010, 4);
 		OUT_RING  (chan, upper_32_bits(offset));
 		OUT_RING  (chan, lower_32_bits(offset));
 		OUT_RING  (chan, 1);
@@ -509,7 +520,7 @@ nouveau_fence_channel_init(struct nouveau_channel *chan)
 		if (ret)
 			return ret;
 
-		BEGIN_RING(chan, NvSubSw, NV01_SUBCHAN_OBJECT, 1);
+		BEGIN_RING(chan, NvSubSw, 0, 1);
 		OUT_RING  (chan, NvSw);
 		FIRE_RING (chan);
 	}
@@ -518,7 +529,7 @@ nouveau_fence_channel_init(struct nouveau_channel *chan)
 	if (USE_SEMA(dev) && dev_priv->chipset < 0x84) {
 		struct ttm_mem_reg *mem = &dev_priv->fence.bo->bo.mem;
 
-		ret = nouveau_gpuobj_dma_new(chan, NV_CLASS_DMA_FROM_MEMORY,
+		ret = nouveau_gpuobj_dma_new(chan, NV_CLASS_DMA_IN_MEMORY,
 					     mem->start << PAGE_SHIFT,
 					     mem->size, NV_MEM_ACCESS_RW,
 					     NV_MEM_TARGET_VRAM, &obj);
@@ -527,13 +538,6 @@ nouveau_fence_channel_init(struct nouveau_channel *chan)
 
 		ret = nouveau_ramht_insert(chan, NvSema, obj);
 		nouveau_gpuobj_ref(NULL, &obj);
-		if (ret)
-			return ret;
-	} else
-	if (USE_SEMA(dev)) {
-		/* map fence bo into channel's vm */
-		ret = nouveau_bo_vma_add(dev_priv->fence.bo, chan->vm,
-					 &chan->fence.vma);
 		if (ret)
 			return ret;
 	}
@@ -545,10 +549,10 @@ nouveau_fence_channel_init(struct nouveau_channel *chan)
 void
 nouveau_fence_channel_fini(struct nouveau_channel *chan)
 {
-	struct drm_nouveau_private *dev_priv = chan->dev->dev_private;
 	struct nouveau_fence *tmp, *fence;
 
 	spin_lock(&chan->fence.lock);
+
 	list_for_each_entry_safe(fence, tmp, &chan->fence.pending, entry) {
 		fence->signalled = true;
 		list_del(&fence->entry);
@@ -558,9 +562,8 @@ nouveau_fence_channel_fini(struct nouveau_channel *chan)
 
 		kref_put(&fence->refcount, nouveau_fence_del);
 	}
-	spin_unlock(&chan->fence.lock);
 
-	nouveau_bo_vma_del(dev_priv->fence.bo, &chan->fence.vma);
+	spin_unlock(&chan->fence.lock);
 }
 
 int
@@ -572,7 +575,7 @@ nouveau_fence_init(struct drm_device *dev)
 
 	/* Create a shared VRAM heap for cross-channel sync. */
 	if (USE_SEMA(dev)) {
-		ret = nouveau_bo_new(dev, size, 0, TTM_PL_FLAG_VRAM,
+		ret = nouveau_bo_new(dev, NULL, size, 0, TTM_PL_FLAG_VRAM,
 				     0, 0, &dev_priv->fence.bo);
 		if (ret)
 			return ret;
