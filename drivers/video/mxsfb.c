@@ -39,7 +39,6 @@
  * the required value in the imx_fb_videomode structure.
  */
 
-#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/clk.h>
@@ -328,7 +327,7 @@ static void mxsfb_enable_controller(struct fb_info *fb_info)
 
 	dev_dbg(&host->pdev->dev, "%s\n", __func__);
 
-	clk_prepare_enable(host->clk);
+	clk_enable(host->clk);
 	clk_set_rate(host->clk, PICOS2KHZ(fb_info->var.pixclock) * 1000U);
 
 	/* if it was disabled, re-enable the mode again */
@@ -368,7 +367,7 @@ static void mxsfb_disable_controller(struct fb_info *fb_info)
 
 	writel(VDCTRL4_SYNC_SIGNALS_ON, host->base + LCDC_VDCTRL4 + REG_CLR);
 
-	clk_disable_unprepare(host->clk);
+	clk_disable(host->clk);
 
 	host->enabled = 0;
 }
@@ -668,7 +667,7 @@ static int __devinit mxsfb_restore_mode(struct mxsfb_info *host)
 	line_count = fb_info->fix.smem_len / fb_info->fix.line_length;
 	fb_info->fix.ypanstep = 1;
 
-	clk_prepare_enable(host->clk);
+	clk_enable(host->clk);
 	host->enabled = 1;
 
 	return 0;
@@ -841,7 +840,7 @@ static int __devinit mxsfb_probe(struct platform_device *pdev)
 
 error_register:
 	if (host->enabled)
-		clk_disable_unprepare(host->clk);
+		clk_disable(host->clk);
 	fb_destroy_modelist(&fb_info->modelist);
 error_init_fb:
 	kfree(fb_info->pseudo_palette);
@@ -902,7 +901,18 @@ static struct platform_driver mxsfb_driver = {
 	},
 };
 
-module_platform_driver(mxsfb_driver);
+static int __init mxsfb_init(void)
+{
+	return platform_driver_register(&mxsfb_driver);
+}
+
+static void __exit mxsfb_exit(void)
+{
+	platform_driver_unregister(&mxsfb_driver);
+}
+
+module_init(mxsfb_init);
+module_exit(mxsfb_exit);
 
 MODULE_DESCRIPTION("Freescale mxs framebuffer driver");
 MODULE_AUTHOR("Sascha Hauer, Pengutronix");

@@ -28,13 +28,6 @@
 
 #define SWITCH_HELPSTR ", 0=HDMI, 1=SDTV, 2=DVI\n"
 
-/* AVI Infoframe */
-#define AVI_INFOFRAME_DATA_SIZE	13
-#define AVI_INFOFRAME_TYPE	0x82
-#define AVI_INFOFRAME_VERSION	0x02
-#define AVI_INFOFRAME_DB1	0x10	/* Active Information present */
-#define AVI_INFOFRAME_DB2	0x08	/* Active Portion Aspect ratio */
-
 #ifdef CONFIG_DISPLAY_AV8100_TRIPPLE_BUFFER
 #define NUM_FB_BUFFERS 3
 #else
@@ -44,9 +37,14 @@
 #define DSI_HS_FREQ_HZ 840320000
 #define DSI_LP_FREQ_HZ 19200000
 
+#define SIDE_SIDE_3D		0x01
+#define TOP_BOTTOM_3D		0x02
+#define FRAME_PACKING_3D	0x04
+
 struct cea_vesa_video_mode {
 	u32 cea;
 	u32 vesa_cea_nr;
+	u8 threed_format;
 	struct mcde_video_mode *video_mode;
 };
 
@@ -186,7 +184,7 @@ static ssize_t show_disponoff(struct device *dev,
 
 	dev_dbg(dev, "%s\n", __func__);
 
-	if (ddev->fbi && driver_data->fbdevname) {
+	if (driver_data->fbdevname) {
 		dev_dbg(dev, "name:%s\n", driver_data->fbdevname);
 		strcpy(buf, driver_data->fbdevname);
 		return strlen(driver_data->fbdevname) + 1;
@@ -201,9 +199,7 @@ static ssize_t store_disponoff(struct device *dev,
 	bool enable = false;
 	u8 cea = 0;
 	u8 vesa_cea_nr = 0;
-#ifdef CONFIG_COMPDEV
-	struct mcde_fb *mfb;
-#endif
+	struct display_driver_data *driver_data = dev_get_drvdata(dev);
 
 	dev_dbg(dev, "%s\n", __func__);
 
@@ -216,36 +212,34 @@ static ssize_t store_disponoff(struct device *dev,
 	vesa_cea_nr = (hex_to_bin(buf[4]) << 4) + hex_to_bin(buf[5]);
 	dev_dbg(dev, "enable:%d cea:%d nr:%d\n", enable, cea, vesa_cea_nr);
 
-	if (enable && !mdev->fbi) {
-		struct display_driver_data *driver_data = dev_get_drvdata(dev);
+	if (enable && !driver_data->fbdevname) {
 		u16 w = mdev->native_x_res;
-		u16 h = mdev->native_y_res, vh;
-		int buffering = NUM_FB_BUFFERS;
-		struct fb_info *fbi;
+		u16 h = mdev->native_y_res;
+		struct compdev *cd;
+
+		driver_data->video_mode = video_mode_get(mdev, cea,
+								vesa_cea_nr);
+		if (cea)
+			driver_data->cea_nr = vesa_cea_nr;
+		else
+			driver_data->cea_nr = 0;
 
 		ceanr_convert(mdev, cea, vesa_cea_nr, &w, &h);
-		vh = h * buffering;
-		fbi = mcde_fb_create(mdev, w, h, w, vh,
-				mdev->default_pixel_format, FB_ROTATE_UR);
-		if (IS_ERR(fbi))
-			dev_warn(dev, "fb create failed\n");
-		else
-			driver_data->fbdevname = dev_name(fbi->dev);
 
 #ifdef CONFIG_COMPDEV
 		/* TODO need another way for compdev to get actual size */
 		mdev->native_x_res = w;
 		mdev->native_y_res = h;
 
-		mfb = to_mcde_fb(fbi);
 		/* Create a compdev overlay for this display */
-		if (compdev_create(mdev, mfb->ovlys[0], false) < 0) {
+		if (compdev_create(mdev, NULL, false, &cd) < 0) {
 			dev_warn(&mdev->dev,
 				"Failed to create compdev for display %s\n",
 						mdev->name);
 		} else {
 			dev_dbg(&mdev->dev, "compdev created for (%s)\n",
 						mdev->name);
+			driver_data->fbdevname = compdev_get_device_name(cd);
 		}
 #ifdef CONFIG_CLONEDEV
 		if (clonedev_create()) {
@@ -258,16 +252,15 @@ static ssize_t store_disponoff(struct device *dev,
 		}
 #endif
 #endif
-	} else if (!enable && mdev->fbi) {
+	} else if (!enable && driver_data->fbdevname) {
 #ifdef CONFIG_CLONEDEV
 		clonedev_destroy();
 #endif
 #ifdef CONFIG_COMPDEV
 		compdev_destroy(mdev);
 #endif
-		mcde_fb_destroy(mdev);
+		driver_data->fbdevname = NULL;
 	}
-
 	return count;
 }
 
@@ -316,6 +309,10 @@ static ssize_t store_timing(struct device *dev,
 		return -EINVAL;
 
 	driver_data->video_mode = video_mode_get(ddev, *buf, *(buf + 1));
+	if (*buf)
+		driver_data->cea_nr = *(buf + 1);
+	else
+		driver_data->cea_nr = 0;
 
 	return count;
 }
@@ -533,10 +530,10 @@ static struct mcde_video_mode video_modes_supp_hdmi[] = {
 	},
 	/* 23 VESA #81 1366_768_60_P */
 	{
-		.xres = 1366,	.yres = 768,
-		.pixclock = 11662,
-		.hbp = 213,	.hfp = 213,
-		.vbp = 24,	.vfp = 6,
+		.xres = 1360,	.yres = 768,
+		.pixclock = 11764,
+		.hbp = 208,	.hfp = 208,
+		.vbp = 25,	.vfp = 5,
 		.interlaced = false,
 	},
 };
@@ -565,101 +562,121 @@ static struct cea_vesa_video_mode cea_vesa_video_mode[] = {
 		/* 640_480_60_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 1,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[0],
 		},
 		/* 720_480_60_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 2,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[1],
 		},
 		/* 720_480_60_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 3,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[1],
 		},
 		/* 720_576_50_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 17,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[2],
 		},
 		/* 720_576_50_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 18,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[2],
 		},
 		/* 1280_720_60_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 4,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[3],
 		},
 		/* 1280_720_50_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 19,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[4],
 		},
 		/* 1280_720_30_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 62,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[5],
 		},
 		/* 1280_720_24_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 60,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[6],
 		},
 		/* 1280_720_25_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 61,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[7],
 		},
 		/* 1920_1080_30_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 34,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[8],
 		},
 		/* 1920_1080_24_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 32,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[9],
 		},
 		/* 1920_1080_25_P */
 		{
 			.cea = 1,	.vesa_cea_nr = 33,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[10],
 		},
 		/* 720_480_60_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 6,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[11],
 		},
 		/* 720_480_60_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 7,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[11],
 		},
 		/* 720_576_50_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 21,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[12],
 		},
 		/* 720_576_50_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 22,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[12],
 		},
 		/* 1920_1080_50_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 20,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[13],
 		},
 		/* 1920_1080_60_I) */
 		{
 			.cea = 1,	.vesa_cea_nr = 5,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[14],
 		},
 		/* VESA #4 640_480_60_P) */
 		{
 			.cea = 0,	.vesa_cea_nr = 4,
+			.threed_format = SIDE_SIDE_3D | TOP_BOTTOM_3D,
 			.video_mode = &video_modes_supp_hdmi[0],
 		},
 		/* VESA #9 800_600_60_P) */
@@ -717,13 +734,15 @@ static ssize_t show_vesacea(struct device *dev,
 	dev_dbg(dev, "%s\n", __func__);
 
 	for (findex = 0; findex < ARRAY_SIZE(cea_vesa_video_mode); findex++) {
-		*(buf + findex * 2) = cea_vesa_video_mode[findex].cea;
-		*(buf + findex * 2 + 1) =
+		*(buf + findex * 3) = cea_vesa_video_mode[findex].cea;
+		*(buf + findex * 3 + 1) =
 				cea_vesa_video_mode[findex].vesa_cea_nr;
+		*(buf + findex * 3 + 2) =
+				cea_vesa_video_mode[findex].threed_format;
 	}
-	*(buf + findex * 2) = '\0';
+	*(buf + findex * 3) = '\0';
 
-	return findex * 2 + 1;
+	return findex * 3 + 1;
 }
 
 static struct mcde_video_mode *video_mode_get(struct mcde_display_device *ddev,
@@ -742,40 +761,6 @@ static struct mcde_video_mode *video_mode_get(struct mcde_display_device *ddev,
 		}
 
 	return NULL;
-}
-
-static u8 ceanr_get(struct mcde_display_device *ddev)
-{
-	int cnt;
-	int cea;
-	int vesa_cea_nr;
-	struct mcde_video_mode *vmode = &ddev->video_mode;
-	struct mcde_video_mode *vmode_try;
-
-	if (!vmode)
-		return 0;
-
-	dev_dbg(&ddev->dev, "%s\n", __func__);
-
-	for (cnt = 0; cnt < ARRAY_SIZE(cea_vesa_video_mode); cnt++) {
-		vmode_try = cea_vesa_video_mode[cnt].video_mode;
-		cea = cea_vesa_video_mode[cnt].cea;
-		vesa_cea_nr = cea_vesa_video_mode[cnt].vesa_cea_nr;
-
-		if (cea && vmode_try->xres == vmode->xres &&
-				vmode_try->yres == vmode->yres &&
-				vmode_try->pixclock == vmode->pixclock &&
-				vmode_try->hbp == vmode->hbp &&
-				vmode_try->hfp == vmode->hfp &&
-				vmode_try->vbp == vmode->vbp &&
-				vmode_try->vfp == vmode->vfp &&
-				vmode_try->interlaced == vmode->interlaced) {
-			dev_dbg(&ddev->dev, "ceanr:%d\n", vesa_cea_nr);
-			return vesa_cea_nr;
-		}
-	}
-
-	return 0;
 }
 
 #define AV8100_MAX_LEVEL 255
@@ -929,8 +914,7 @@ static int hdmi_set_video_mode(
 		driver_data->update_port_pixel_format = false;
 	}
 
-	memset(&(dev->video_mode), 0, sizeof(struct mcde_video_mode));
-	memcpy(&(dev->video_mode), video_mode, sizeof(struct mcde_video_mode));
+	dev->video_mode = *video_mode;
 
 	if (dev->port->pixel_format == MCDE_PORTPIXFMT_DSI_YCBCR422 &&
 						pdata->rgb_2_yCbCr_transform)
@@ -967,7 +951,7 @@ static int hdmi_set_video_mode(
 				return ret;
 			}
 
-			msleep(10);
+			usleep_range(10000, 15000);
 		}
 	}
 
@@ -981,7 +965,7 @@ static int hdmi_set_video_mode(
 		}
 	}
 
-	if (status.av8100_state <= AV8100_OPMODE_IDLE) {
+	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		ret = av8100_download_firmware(I2C_INTERFACE);
 		if (ret) {
 			dev_err(&dev->dev, "av8100_download_firmware failed\n");
@@ -989,37 +973,48 @@ static int hdmi_set_video_mode(
 		}
 	}
 
-	if (av8100_disable_interrupt())
-		return -EFAULT;
+	av8100_conf_lock();
 
 	/*
 	 * Don't look at dev->port->hdmi_sdtv_switch; it states only which
 	 * one should be started, not which one is currently working
 	 */
-	if (av8100_conf_get(AV8100_COMMAND_HDMI, &av8100_config))
-		return -EFAULT;
+	if (av8100_conf_get(AV8100_COMMAND_HDMI, &av8100_config)) {
+		ret = -EFAULT;
+		goto hdmi_set_video_mode_end;
+	}
 	if (av8100_config.hdmi_format.hdmi_mode == AV8100_HDMI_ON) {
 		/* Set HDMI mode to OFF */
 		av8100_config.hdmi_format.hdmi_mode = AV8100_HDMI_OFF;
 		av8100_config.hdmi_format.dvi_format = AV8100_DVI_CTRL_CTL0;
 		av8100_config.hdmi_format.hdmi_format = AV8100_HDMI;
-		if (av8100_conf_prep(AV8100_COMMAND_HDMI, &av8100_config))
-			return -EFAULT;
+		if (av8100_conf_prep(AV8100_COMMAND_HDMI, &av8100_config)) {
+			ret = -EFAULT;
+			goto hdmi_set_video_mode_end;
+		}
 
 		if (av8100_conf_w(AV8100_COMMAND_HDMI, NULL, NULL,
-								I2C_INTERFACE))
-			return -EFAULT;
+							I2C_INTERFACE)) {
+			ret = -EFAULT;
+			goto hdmi_set_video_mode_end;
+		}
 	}
-	if (av8100_conf_get(AV8100_COMMAND_DENC, &av8100_config))
-		return -EFAULT;
+	if (av8100_conf_get(AV8100_COMMAND_DENC, &av8100_config)) {
+		ret = -EFAULT;
+		goto hdmi_set_video_mode_end;
+	}
 	if (av8100_config.denc_format.enable) {
 		/* Turn off DENC */
 		av8100_config.denc_format.enable = 0;
-		if (av8100_conf_prep(AV8100_COMMAND_DENC, &av8100_config))
-			return -EFAULT;
+		if (av8100_conf_prep(AV8100_COMMAND_DENC, &av8100_config)) {
+			ret = -EFAULT;
+			goto hdmi_set_video_mode_end;
+		}
 		if (av8100_conf_w(AV8100_COMMAND_DENC, NULL, NULL,
-								I2C_INTERFACE))
-			return -EFAULT;
+							I2C_INTERFACE)) {
+			ret = -EFAULT;
+			goto hdmi_set_video_mode_end;
+		}
 	}
 
 	/* Get current av8100 video output format */
@@ -1029,7 +1024,7 @@ static int hdmi_set_video_mode(
 		dev_err(&dev->dev, "%s:av8100_conf_get "
 			"AV8100_COMMAND_VIDEO_OUTPUT_FORMAT failed\n",
 			__func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH)
@@ -1053,7 +1048,7 @@ static int hdmi_set_video_mode(
 		av8100_config.video_output_format.video_output_cea_vesa) {
 		dev_err(&dev->dev, "%s:video output format not found "
 			"\n", __func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	ret = av8100_conf_prep(AV8100_COMMAND_VIDEO_OUTPUT_FORMAT,
@@ -1062,7 +1057,7 @@ static int hdmi_set_video_mode(
 		dev_err(&dev->dev, "%s:av8100_conf_prep "
 			"AV8100_COMMAND_VIDEO_OUTPUT_FORMAT failed\n",
 			__func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	/* Get current av8100 video input format */
@@ -1072,7 +1067,7 @@ static int hdmi_set_video_mode(
 		dev_err(&dev->dev, "%s:av8100_conf_get "
 			"AV8100_COMMAND_VIDEO_INPUT_FORMAT failed\n",
 			__func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	/* Set correct av8100 video input pixel format */
@@ -1127,7 +1122,7 @@ static int hdmi_set_video_mode(
 		dev_err(&dev->dev, "%s:av8100_conf_prep "
 				"AV8100_COMMAND_VIDEO_INPUT_FORMAT failed\n",
 				__func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	ret = av8100_conf_w(AV8100_COMMAND_VIDEO_INPUT_FORMAT,
@@ -1136,7 +1131,7 @@ static int hdmi_set_video_mode(
 		dev_err(&dev->dev, "%s:av8100_conf_w "
 				"AV8100_COMMAND_VIDEO_INPUT_FORMAT failed\n",
 				__func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH) {
@@ -1161,7 +1156,7 @@ static int hdmi_set_video_mode(
 		dev_err(&dev->dev, "%s:av8100_configuration_prepare "
 			"AV8100_COMMAND_COLORSPACECONVERSION failed\n",
 			__func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	ret = av8100_conf_w(
@@ -1171,7 +1166,7 @@ static int hdmi_set_video_mode(
 		dev_err(&dev->dev, "%s:av8100_conf_w "
 			"AV8100_COMMAND_COLORSPACECONVERSION failed\n",
 			__func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	/* Set video output format */
@@ -1179,7 +1174,7 @@ static int hdmi_set_video_mode(
 		NULL, NULL, I2C_INTERFACE);
 	if (ret) {
 		dev_err(&dev->dev, "av8100_conf_w failed\n");
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
 
 	/* Set audio input format */
@@ -1189,13 +1184,18 @@ static int hdmi_set_video_mode(
 		dev_err(&dev->dev, "%s:av8100_conf_w "
 				"AV8100_COMMAND_AUDIO_INPUT_FORMAT failed\n",
 			__func__);
-		return ret;
+		goto hdmi_set_video_mode_end;
 	}
+
+	av8100_video_mode_changed();
 
 	dev->update_flags |= UPDATE_FLAG_VIDEO_MODE;
 	dev->first_update = true;
 
-	return 0;
+hdmi_set_video_mode_end:
+	av8100_conf_unlock();
+
+	return ret;
 }
 
 static u16 rotate_byte_left(u8 c, int nr)
@@ -1275,9 +1275,6 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 {
 	int ret;
 	union av8100_configuration av8100_config;
-	u8 *infofr_data;
-	int infofr_crc;
-	int cnt;
 
 	dev->first_update = false;
 
@@ -1287,10 +1284,13 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 	 * Only one of them should be enabled.
 	 * Note HDMI/DVI and DENC are always turned off in set_video_mode.
 	 */
+	av8100_conf_lock();
 	switch (dev->port->hdmi_sdtv_switch) {
 	case SDTV_SWITCH:
-		if (av8100_conf_get(AV8100_COMMAND_DENC, &av8100_config))
-			return -EFAULT;
+		if (av8100_conf_get(AV8100_COMMAND_DENC, &av8100_config)) {
+			ret = -EFAULT;
+			goto hdmi_on_first_update_end;
+		}
 		av8100_config.denc_format.enable = 1;
 		if (dev->video_mode.yres == NATIVE_YRES_SDTV) {
 			av8100_config.denc_format.standard_selection =
@@ -1323,15 +1323,7 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 	if (ret) {
 		dev_err(&dev->dev, "%s:av8100_conf_prep "
 			"AV8100_COMMAND_HDMI/DENC failed\n", __func__);
-		return ret;
-	}
-
-	/* Enable interrupts */
-	ret = av8100_enable_interrupt();
-	if (ret) {
-		dev_err(&dev->dev, "%s:av8100_enable_interrupt failed\n",
-			__func__);
-		return ret;
+		goto hdmi_on_first_update_end;
 	}
 
 	if (dev->port->hdmi_sdtv_switch == SDTV_SWITCH)
@@ -1343,50 +1335,15 @@ static int hdmi_on_first_update(struct mcde_display_device *dev)
 	if (ret) {
 		dev_err(&dev->dev, "%s:av8100_conf_w "
 			"AV8100_COMMAND_HDMI/DENC failed\n", __func__);
-		return ret;
-	}
-
-	/* AVI Infoframe only if HDMI */
-	if (dev->port->hdmi_sdtv_switch != HDMI_SWITCH)
 		goto hdmi_on_first_update_end;
-
-	/* Create AVI Infoframe */
-	av8100_config.infoframes_format.type = AVI_INFOFRAME_TYPE;
-	av8100_config.infoframes_format.version = AVI_INFOFRAME_VERSION;
-	av8100_config.infoframes_format.length = AVI_INFOFRAME_DATA_SIZE;
-
-	/* AVI Infoframe data */
-	infofr_data = &av8100_config.infoframes_format.data[0];
-	memset(infofr_data, 0, AVI_INFOFRAME_DATA_SIZE);
-	infofr_data[0] = AVI_INFOFRAME_DB1;
-	infofr_data[1] = AVI_INFOFRAME_DB2;
-	infofr_data[3] = ceanr_get(dev);
-
-	/* Calculate AVI Infoframe checksum */
-	infofr_crc = av8100_config.infoframes_format.type +
-			av8100_config.infoframes_format.version +
-			av8100_config.infoframes_format.length;
-	for (cnt = 0; cnt < AVI_INFOFRAME_DATA_SIZE; cnt++)
-		infofr_crc += infofr_data[cnt];
-	infofr_crc &= 0xFF;
-	av8100_config.infoframes_format.crc = 0x100 - infofr_crc;
-
-	/* Send AVI Infoframe */
-	if (av8100_conf_prep(AV8100_COMMAND_INFOFRAMES,
-		&av8100_config) != 0) {
-		dev_err(&dev->dev, "av8100_conf_prep FAIL\n");
-		return -EINVAL;
 	}
-
-	if (av8100_conf_w(AV8100_COMMAND_INFOFRAMES,
-		NULL, NULL, I2C_INTERFACE) != 0) {
-		dev_err(&dev->dev, "av8100_conf_w FAIL\n");
-		return -EINVAL;
-	}
-
 hdmi_on_first_update_end:
+	av8100_conf_unlock();
 	return ret;
 }
+
+#define HDMI_GET_RETRY_TIME	500000
+#define HDMI_GET_RETRY_CNT_MAX	4
 
 static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 	enum mcde_display_power_mode power_mode)
@@ -1397,11 +1354,8 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 	/* OFF -> STANDBY */
 	if (ddev->power_mode == MCDE_DISPLAY_PM_OFF &&
 					power_mode != MCDE_DISPLAY_PM_OFF) {
-		if (ddev->platform_enable) {
-			ret = ddev->platform_enable(ddev);
-			if (ret)
-				return ret;
-		}
+		int cnt;
+		int get_res;
 
 		/*
 		 * the regulator for analog TV out is only enabled here,
@@ -1416,12 +1370,27 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 		}
 		ddev->power_mode = MCDE_DISPLAY_PM_STANDBY;
 
+		/* Get HDMI resource */
+		for (cnt = 0; cnt < HDMI_GET_RETRY_CNT_MAX; cnt++) {
+			get_res = av8100_hdmi_get(AV8100_HDMI_USER_VIDEO);
+			if (get_res >= 0)
+				break;
+			else
+				usleep_range(HDMI_GET_RETRY_TIME,
+						HDMI_GET_RETRY_TIME * 12 / 10);
+		}
+
+		if (get_res < 0)
+			return -EFAULT;
+		else if (get_res > 1)
+			av8100_hdmi_video_on();
+
 		hdmi_set_port_pixel_format(ddev);
 	}
 	/* STANDBY -> ON */
 	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
 				power_mode == MCDE_DISPLAY_PM_ON) {
-
+		av8100_powerwakeup(true);
 		ddev->power_mode = MCDE_DISPLAY_PM_ON;
 		goto set_power_and_exit;
 	}
@@ -1435,15 +1404,13 @@ static int hdmi_set_power_mode(struct mcde_display_device *ddev,
 	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY &&
 				power_mode == MCDE_DISPLAY_PM_OFF) {
 		memset(&(ddev->video_mode), 0, sizeof(struct mcde_video_mode));
-		ret = av8100_powerscan();
-		if (ret)
-			dev_err(&ddev->dev, "%s:av8100_powerscan failed\n"
-								, __func__);
-		if (ddev->platform_disable) {
-			ret = ddev->platform_disable(ddev);
-			if (ret)
-				return ret;
+
+		/* Put HDMI resource */
+		if (av8100_hdmi_put(AV8100_HDMI_USER_VIDEO)) {
+			/* Audio is still used */
+			av8100_hdmi_video_off();
 		}
+
 		if (driver_data->cvbs_regulator_enabled) {
 			ret = regulator_disable(driver_data->cvbs_regulator);
 			if (ret)
@@ -1464,6 +1431,11 @@ static int hdmi_set_rotation(struct mcde_display_device *ddev,
 {
 	/* Not possible to rotate HDMI */
 	return 0;
+}
+
+static bool secure_output(void)
+{
+	return av8100_encryption_ongoing();
 }
 
 static int __devinit hdmi_probe(struct mcde_display_device *dev)
@@ -1503,6 +1475,7 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	dev->set_pixel_format = hdmi_set_pixel_format;
 	dev->set_power_mode = hdmi_set_power_mode;
 	dev->set_rotation = hdmi_set_rotation;
+	dev->secure_output = secure_output;
 
 	port = dev->port;
 
@@ -1510,6 +1483,13 @@ static int __devinit hdmi_probe(struct mcde_display_device *dev)
 	port->phy.dsi.num_data_lanes = 2;
 	port->phy.dsi.hs_freq = DSI_HS_FREQ_HZ;
 	port->phy.dsi.lp_freq = DSI_LP_FREQ_HZ;
+	if (dev->port->sync_src == MCDE_SYNCSRC_TE0 ||
+				dev->port->sync_src == MCDE_SYNCSRC_TE1) {
+		port->vsync_polarity = VSYNC_ACTIVE_HIGH;
+		port->vsync_clock_div = 0;
+		port->vsync_min_duration = 1;
+		port->vsync_max_duration = 255;
+	}
 
 	/* Create sysfs files */
 	if (device_create_file(&dev->dev, &dev_attr_hdmisdtvswitch))
@@ -1592,7 +1572,6 @@ static int hdmi_resume(struct mcde_display_device *ddev)
 	if (ddev->chnl_state == NULL)
 		return 0;
 
-	/* set_power_mode will handle call platform_enable */
 	ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_STANDBY);
 	if (ret < 0)
 		dev_warn(&ddev->dev, "%s:Failed to resume display\n"
@@ -1608,7 +1587,6 @@ static int hdmi_suspend(struct mcde_display_device *ddev, pm_message_t state)
 	if (ddev->chnl_state == NULL)
 		return 0;
 
-	/* set_power_mode will handle call platform_disable */
 	ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);
 	if (ret < 0)
 		dev_warn(&ddev->dev, "%s:Failed to suspend display\n"

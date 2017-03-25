@@ -7,6 +7,7 @@
  */
 
 #include <linux/module.h>
+#include <linux/version.h>
 #include <linux/init.h>
 #include <linux/errno.h>
 #include <linux/pm.h>
@@ -160,7 +161,7 @@ static int adp8870_set_bits(struct i2c_client *client, int reg, uint8_t bit_mask
 
 	ret = adp8870_read(client, reg, &reg_val);
 
-	if (!ret && ((reg_val & bit_mask) != bit_mask)) {
+	if (!ret && ((reg_val & bit_mask) == 0)) {
 		reg_val |= bit_mask;
 		ret = adp8870_write(client, reg, reg_val);
 	}
@@ -931,6 +932,7 @@ out:
 out1:
 	backlight_device_unregister(bl);
 out2:
+	i2c_set_clientdata(client, NULL);
 	kfree(data);
 
 	return ret;
@@ -950,6 +952,7 @@ static int __devexit adp8870_remove(struct i2c_client *client)
 			&adp8870_bl_attr_group);
 
 	backlight_device_unregister(data->bl);
+	i2c_set_clientdata(client, NULL);
 	kfree(data);
 
 	return 0;
@@ -991,9 +994,19 @@ static struct i2c_driver adp8870_driver = {
 	.id_table = adp8870_id,
 };
 
-module_i2c_driver(adp8870_driver);
+static int __init adp8870_init(void)
+{
+	return i2c_add_driver(&adp8870_driver);
+}
+module_init(adp8870_init);
+
+static void __exit adp8870_exit(void)
+{
+	i2c_del_driver(&adp8870_driver);
+}
+module_exit(adp8870_exit);
 
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
 MODULE_DESCRIPTION("ADP8870 Backlight driver");
-MODULE_ALIAS("i2c:adp8870-backlight");
+MODULE_ALIAS("platform:adp8870-backlight");

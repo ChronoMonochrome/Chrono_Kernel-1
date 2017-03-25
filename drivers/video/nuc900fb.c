@@ -39,6 +39,7 @@
 #include <mach/regs-clock.h>
 #include <mach/regs-ldm.h>
 #include <mach/fb.h>
+#include <mach/clkdev.h>
 
 #include "nuc900fb.h"
 
@@ -550,7 +551,7 @@ static int __devinit nuc900fb_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 
-	size = resource_size(res);
+	size = (res->end - res->start) + 1;
 	fbi->mem = request_mem_region(res->start, size, pdev->name);
 	if (fbi->mem == NULL) {
 		dev_err(&pdev->dev, "failed to alloc memory region\n");
@@ -587,7 +588,7 @@ static int __devinit nuc900fb_probe(struct platform_device *pdev)
 	fbinfo->flags			= FBINFO_FLAG_DEFAULT;
 	fbinfo->pseudo_palette		= &fbi->pseudo_pal;
 
-	ret = request_irq(irq, nuc900fb_irqhandler, 0,
+	ret = request_irq(irq, nuc900fb_irqhandler, IRQF_DISABLED,
 			  pdev->name, fbinfo);
 	if (ret) {
 		dev_err(&pdev->dev, "cannot register irq handler %d -err %d\n",
@@ -762,7 +763,18 @@ static struct platform_driver nuc900fb_driver = {
 	},
 };
 
-module_platform_driver(nuc900fb_driver);
+int __devinit nuc900fb_init(void)
+{
+	return platform_driver_register(&nuc900fb_driver);
+}
+
+static void __exit nuc900fb_cleanup(void)
+{
+	platform_driver_unregister(&nuc900fb_driver);
+}
+
+module_init(nuc900fb_init);
+module_exit(nuc900fb_cleanup);
 
 MODULE_DESCRIPTION("Framebuffer driver for the NUC900");
 MODULE_LICENSE("GPL");
