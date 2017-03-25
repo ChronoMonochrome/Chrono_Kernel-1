@@ -35,15 +35,13 @@
 #include <linux/capability.h>
 #include <linux/compat.h>
 
-#define CREATE_TRACE_POINTS
-#include <trace/events/mmc.h>
-
 #include <linux/mmc/ioctl.h>
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/sd.h>
 
+#include <asm/system.h>
 #include <asm/uaccess.h>
 
 #include "queue.h"
@@ -110,6 +108,7 @@ struct mmc_blk_data {
 	unsigned int	part_curr;
 	struct device_attribute force_ro;
 	struct device_attribute power_ro_lock;
+	struct device_attribute power_ro_lock_legacy;
 	int	area_type;
 };
 
@@ -164,6 +163,87 @@ static void mmc_blk_put(struct mmc_blk_data *md)
 		kfree(md);
 	}
 	mutex_unlock(&open_lock);
+}
+
+#define EXT_CSD_BOOT_WP_PWR_WP_TEXT "pwr_ro"
+#define EXT_CSD_BOOT_WP_PERM_WP_TEXT "perm_ro"
+#define EXT_CSD_BOOT_WP_WP_DISABLED_TEXT "rw"
+static ssize_t boot_partition_ro_lock_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int ret;
+	struct mmc_blk_data *md = mmc_blk_get(dev_to_disk(dev));
+	struct mmc_card *card = md->queue.card;
+	const char *out_text;
+
+	if (card->ext_csd.boot_ro_lock
+			& EXT_CSD_BOOT_WP_B_PERM_WP_EN)
+		out_text = EXT_CSD_BOOT_WP_PERM_WP_TEXT;
+	else if (card->ext_csd.boot_ro_lock
+			& EXT_CSD_BOOT_WP_B_PWR_WP_EN)
+		out_text = EXT_CSD_BOOT_WP_PWR_WP_TEXT;
+	else
+		out_text = EXT_CSD_BOOT_WP_WP_DISABLED_TEXT;
+
+	ret = snprintf(buf, PAGE_SIZE, "%s\n", out_text);
+
+	return ret;
+}
+
+static ssize_t boot_partition_ro_lock_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+	struct mmc_blk_data *md, *part_md;
+	struct mmc_card *card;
+	u8 set = 0;
+
+	md = mmc_blk_get(dev_to_disk(dev));
+	card = md->queue.card;
+
+	if (!strncmp(buf, EXT_CSD_BOOT_WP_PWR_WP_TEXT,
+				strlen(EXT_CSD_BOOT_WP_PWR_WP_TEXT)))
+		set = EXT_CSD_BOOT_WP_B_PWR_WP_EN;
+	else if (!strncmp(buf, EXT_CSD_BOOT_WP_PERM_WP_TEXT,
+				strlen(EXT_CSD_BOOT_WP_PERM_WP_TEXT)))
+		set = EXT_CSD_BOOT_WP_B_PERM_WP_EN;
+
+	if (set) {
+		mmc_claim_host(card->host);
+
+		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+				EXT_CSD_BOOT_WP,
+				set,
+				card->ext_csd.part_time);
+		if (ret)
+			pr_err("Boot Partition Lock failed: %d", ret);
+		else
+			card->ext_csd.boot_ro_lock = set;
+
+		mmc_release_host(card->host);
+
+		if (!ret) {
+			pr_info("%s: Locking boot partition "
+					"%s",
+					md->disk->disk_name,
+					buf);
+			set_disk_ro(md->disk, 1);
+
+			list_for_each_entry(part_md, &md->part, part)
+				if (part_md->area_type ==
+						MMC_BLK_DATA_AREA_BOOT) {
+					pr_info("%s: Locking boot partition "
+						"%s",
+						part_md->disk->disk_name,
+						buf);
+					set_disk_ro(part_md->disk, 1);
+				}
+		}
+	}
+	ret = count;
+
+	mmc_blk_put(md);
+	return ret;
 }
 
 static ssize_t power_ro_lock_show(struct device *dev,
@@ -383,7 +463,7 @@ static int mmc_blk_ioctl_cmd(struct block_device *bdev,
 	md = mmc_blk_get(bdev->bd_disk);
 	if (!md) {
 		err = -EINVAL;
-		goto cmd_done;
+		goto cmd_err;
 	}
 
 	card = md->queue.card;
@@ -482,6 +562,7 @@ cmd_rel_host:
 
 cmd_done:
 	mmc_blk_put(md);
+cmd_err:
 	kfree(idata->buf);
 	kfree(idata);
 	return err;
@@ -659,22 +740,18 @@ static int mmc_blk_cmd_error(struct request *req, const char *name, int error,
 			req->rq_disk->disk_name, "timed out", name, status);
 
 		/* If the status cmd initially failed, retry the r/w cmd */
-		if (!status_valid) {
-			pr_err("%s: status not valid, retrying timeout\n", req->rq_disk->disk_name);
+		if (!status_valid)
 			return ERR_RETRY;
-		}
+
 		/*
 		 * If it was a r/w cmd crc error, or illegal command
 		 * (eg, issued in wrong state) then retry - we should
 		 * have corrected the state problem above.
 		 */
-		if (status & (R1_COM_CRC_ERROR | R1_ILLEGAL_COMMAND)) {
-			pr_err("%s: command error, retrying timeout\n", req->rq_disk->disk_name);
+		if (status & (R1_COM_CRC_ERROR | R1_ILLEGAL_COMMAND))
 			return ERR_RETRY;
-		}
 
 		/* Otherwise abort the command */
-		pr_err("%s: not retrying timeout\n", req->rq_disk->disk_name);
 		return ERR_ABORT;
 
 	default:
@@ -939,12 +1016,9 @@ retry:
 			goto out;
 	}
 
-	if (mmc_can_sanitize(card)) {
-		trace_mmc_blk_erase_start(EXT_CSD_SANITIZE_START, 0, 0);
+	if (mmc_can_sanitize(card))
 		err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 				 EXT_CSD_SANITIZE_START, 1, 0);
-		trace_mmc_blk_erase_end(EXT_CSD_SANITIZE_START, 0, 0);
-	}
 out_retry:
 	if (err && !mmc_blk_reset(md, card->host, type))
 		goto retry;
@@ -1112,9 +1186,6 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
 	/*
 	 * Reliable writes are used to implement Forced Unit Access and
 	 * REQ_META accesses, and are supported only on MMCs.
-	 *
-	 * XXX: this really needs a good explanation of why REQ_META
-	 * is treated special.
 	 */
 	bool do_rel_wr = ((req->cmd_flags & REQ_FUA) ||
 			  (req->cmd_flags & REQ_META)) &&
@@ -1411,21 +1482,19 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
 	return 0;
 }
 
-static int
-mmc_blk_set_blksize(struct mmc_blk_data *md, struct mmc_card *card);
-
 static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 {
 	int ret;
 	struct mmc_blk_data *md = mq->data;
 	struct mmc_card *card = md->queue.card;
 
-#ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
-	if (mmc_bus_needs_resume(card->host)) {
-		mmc_resume_bus(card->host);
-		mmc_blk_set_blksize(md, card);
-	}
-#endif
+	/*
+	 * We must make sure we have not claimed the host before
+	 * doing a flush to prevent deadlock, thus we check if
+	 * the host needs a resume first.
+	 */
+	if (mmc_host_needs_resume(card->host))
+		mmc_resume_host_sync(card->host);
 
 	if (req && !mq->mqrq_prev->req)
 		/* claim host only for the first request */
@@ -1446,8 +1515,8 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
 		/* complete ongoing async transfer before issuing discard */
 		if (card->host->areq)
 			mmc_blk_issue_rw_rq(mq, NULL);
-		if (req->cmd_flags & REQ_SECURE &&
-			!(card->quirks & MMC_QUIRK_SEC_ERASE_TRIM_BROKEN))
+		if ((req->cmd_flags & REQ_SECURE)&&
+			(card->host->caps2 & MMC_CAP2_SECURE_ERASE_EN))
 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
 		else
 			ret = mmc_blk_issue_discard_rq(mq, req);
@@ -1672,9 +1741,12 @@ static void mmc_blk_remove_req(struct mmc_blk_data *md)
 		if (md->disk->flags & GENHD_FL_UP) {
 			device_remove_file(disk_to_dev(md->disk), &md->force_ro);
 			if ((md->area_type & MMC_BLK_DATA_AREA_BOOT) &&
-					card->ext_csd.boot_ro_lockable)
+					card->ext_csd.boot_ro_lockable) {
 				device_remove_file(disk_to_dev(md->disk),
 					&md->power_ro_lock);
+				device_remove_file(disk_to_dev(md->disk),
+					&md->power_ro_lock_legacy);
+			}
 
 			/* Stop new requests from getting into the queue */
 			del_gendisk(md->disk);
@@ -1717,7 +1789,7 @@ static int mmc_add_disk(struct mmc_blk_data *md)
 
 	if ((md->area_type & MMC_BLK_DATA_AREA_BOOT) &&
 	     card->ext_csd.boot_ro_lockable) {
-		umode_t mode;
+		mode_t mode;
 
 		if (card->ext_csd.boot_ro_lock & EXT_CSD_BOOT_WP_B_PWR_WP_DIS)
 			mode = S_IRUGO;
@@ -1734,9 +1806,24 @@ static int mmc_add_disk(struct mmc_blk_data *md)
 				&md->power_ro_lock);
 		if (ret)
 			goto power_ro_lock_fail;
+
+		/* Legacy mode */
+		mode = S_IRUGO | S_IWUSR;
+
+		md->power_ro_lock_legacy.show = boot_partition_ro_lock_show;
+		md->power_ro_lock_legacy.store = boot_partition_ro_lock_store;
+		sysfs_attr_init(&md->power_ro_lock_legacy.attr);
+		md->power_ro_lock_legacy.attr.mode = mode;
+		md->power_ro_lock_legacy.attr.name = "ro_lock";
+		ret = device_create_file(disk_to_dev(md->disk),
+				&md->power_ro_lock_legacy);
+		if (ret)
+			goto power_ro_lock_fail_legacy;
 	}
 	return ret;
 
+power_ro_lock_fail_legacy:
+	device_remove_file(disk_to_dev(md->disk), &md->power_ro_lock);
 power_ro_lock_fail:
 	device_remove_file(disk_to_dev(md->disk), &md->force_ro);
 force_ro_fail:
@@ -1748,7 +1835,6 @@ force_ro_fail:
 #define CID_MANFID_SANDISK	0x2
 #define CID_MANFID_TOSHIBA	0x11
 #define CID_MANFID_MICRON	0x13
-#define CID_MANFID_SAMSUNG	0x15
 
 static const struct mmc_fixup blk_fixups[] =
 {
@@ -1785,28 +1871,6 @@ static const struct mmc_fixup blk_fixups[] =
 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_MICRON, 0x200, add_quirk_mmc,
 		  MMC_QUIRK_LONG_READ_TIME),
 
-	/*
-	 * On these Samsung MoviNAND parts, performing secure erase or
-	 * secure trim can result in unrecoverable corruption due to a
-	 * firmware bug.
-	 */
-	MMC_FIXUP("M8G2FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-	MMC_FIXUP("MAG4FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-	MMC_FIXUP("MBG8FA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-	MMC_FIXUP("MCGAFA", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-	MMC_FIXUP("VAL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-	MMC_FIXUP("VYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-	MMC_FIXUP("KYL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-	MMC_FIXUP("VZL00M", CID_MANFID_SAMSUNG, CID_OEMID_ANY, add_quirk_mmc,
-		  MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
-
 	END_FIXUP
 };
 
@@ -1837,9 +1901,6 @@ static int mmc_blk_probe(struct mmc_card *card)
 	mmc_set_drvdata(card, md);
 	mmc_fixup_device(card, blk_fixups);
 
-#ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
-	mmc_set_bus_resume_policy(card->host, 1);
-#endif
 	if (mmc_add_disk(md))
 		goto out;
 
@@ -1865,9 +1926,6 @@ static void mmc_blk_remove(struct mmc_card *card)
 	mmc_release_host(card->host);
 	mmc_blk_remove_req(md);
 	mmc_set_drvdata(card, NULL);
-#ifdef CONFIG_MMC_BLOCK_DEFERRED_RESUME
-	mmc_set_bus_resume_policy(card->host, 0);
-#endif
 }
 
 #ifdef CONFIG_PM

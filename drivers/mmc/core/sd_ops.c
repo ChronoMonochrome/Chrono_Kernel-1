@@ -11,7 +11,6 @@
 
 #include <linux/slab.h>
 #include <linux/types.h>
-#include <linux/export.h>
 #include <linux/scatterlist.h>
 
 #include <linux/mmc/host.h>
