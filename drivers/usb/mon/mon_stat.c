@@ -9,7 +9,6 @@
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
-#include <linux/export.h>
 #include <linux/usb.h>
 #include <linux/fs.h>
 #include <asm/uaccess.h>

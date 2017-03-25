@@ -24,7 +24,7 @@
 #define SAMPLE_RATE 44100
 #define FRAMES_PER_MSEC (SAMPLE_RATE / 1000)
 
-#define IN_EP_MAX_PACKET_SIZE 256
+#define IN_EP_MAX_PACKET_SIZE 384
 
 /* Number of requests to allocate */
 #define IN_EP_REQ_COUNT 4
@@ -243,6 +243,7 @@ struct audio_dev {
 
 	struct list_head		idle_reqs;
 	struct usb_ep			*in_ep;
+	struct usb_endpoint_descriptor	*in_desc;
 
 	spinlock_t			lock;
 
@@ -523,16 +524,9 @@ audio_setup(struct usb_function *f, const struct usb_ctrlrequest *ctrl)
 static int audio_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 {
 	struct audio_dev *audio = func_to_audio(f);
-	struct usb_composite_dev *cdev = f->config->cdev;
-	int ret;
 
 	pr_debug("audio_set_alt intf %d, alt %d\n", intf, alt);
-
-	ret = config_ep_by_speed(cdev->gadget, f, audio->in_ep);
-	if (ret)
-		return ret;
-
-	usb_ep_enable(audio->in_ep);
+	usb_ep_enable(audio->in_ep, audio->in_desc);
 	return 0;
 }
 
@@ -580,17 +574,11 @@ audio_bind(struct usb_configuration *c, struct usb_function *f)
 		goto fail;
 	ac_interface_desc.bInterfaceNumber = status;
 
-	/* AUDIO_AC_INTERFACE */
-	ac_header_desc.baInterfaceNr[0] = status;
-
 	status = usb_interface_id(c, f);
 	if (status < 0)
 		goto fail;
 	as_interface_alt_0_desc.bInterfaceNumber = status;
 	as_interface_alt_1_desc.bInterfaceNumber = status;
-
-	/* AUDIO_AS_INTERFACE */
-	ac_header_desc.baInterfaceNr[1] = status;
 
 	status = -ENODEV;
 
@@ -760,6 +748,7 @@ static struct audio_dev _audio_dev = {
 		.setup = audio_setup,
 		.disable = audio_disable,
 	},
+	.in_desc = &fs_as_in_ep_desc,
 	.lock = __SPIN_LOCK_UNLOCKED(_audio_dev.lock),
 	.idle_reqs = LIST_HEAD_INIT(_audio_dev.idle_reqs),
 };
