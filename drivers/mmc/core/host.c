@@ -16,7 +16,6 @@
 #include <linux/err.h>
 #include <linux/idr.h>
 #include <linux/pagemap.h>
-#include <linux/export.h>
 #include <linux/leds.h>
 #include <linux/slab.h>
 #include <linux/suspend.h>
@@ -329,9 +328,8 @@ struct mmc_host *mmc_alloc_host(int extra, struct device *dev)
 
 	spin_lock_init(&host->lock);
 	init_waitqueue_head(&host->wq);
-	wake_lock_init(&host->detect_wake_lock, WAKE_LOCK_SUSPEND,
-		kasprintf(GFP_KERNEL, "%s_detect", mmc_hostname(host)));
 	INIT_DELAYED_WORK(&host->detect, mmc_rescan);
+	INIT_DELAYED_WORK(&host->resume, mmc_resume_work);
 #ifdef CONFIG_PM
 	host->pm_notify.notifier_call = mmc_pm_notify;
 #endif
@@ -430,7 +428,6 @@ void mmc_free_host(struct mmc_host *host)
 	spin_lock(&mmc_host_lock);
 	idr_remove(&mmc_host_idr, host->index);
 	spin_unlock(&mmc_host_lock);
-	wake_lock_destroy(&host->detect_wake_lock);
 
 	put_device(&host->class_dev);
 }

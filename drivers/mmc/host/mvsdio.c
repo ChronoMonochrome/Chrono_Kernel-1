@@ -679,9 +679,8 @@ static const struct mmc_host_ops mvsd_ops = {
 	.enable_sdio_irq	= mvsd_enable_sdio_irq,
 };
 
-static void __init
-mv_conf_mbus_windows(struct mvsd_host *host,
-		     const struct mbus_dram_target_info *dram)
+static void __init mv_conf_mbus_windows(struct mvsd_host *host,
+					struct mbus_dram_target_info *dram)
 {
 	void __iomem *iobase = host->base;
 	int i;
@@ -692,7 +691,7 @@ mv_conf_mbus_windows(struct mvsd_host *host,
 	}
 
 	for (i = 0; i < dram->num_cs; i++) {
-		const struct mbus_dram_window *cs = dram->cs + i;
+		struct mbus_dram_window *cs = dram->cs + i;
 		writel(((cs->size - 1) & 0xffff0000) |
 		       (cs->mbus_attr << 8) |
 		       (dram->mbus_dram_target_id << 4) | 1,
@@ -706,7 +705,6 @@ static int __init mvsd_probe(struct platform_device *pdev)
 	struct mmc_host *mmc = NULL;
 	struct mvsd_host *host = NULL;
 	const struct mvsdio_platform_data *mvsd_data;
-	const struct mbus_dram_target_info *dram;
 	struct resource *r;
 	int ret, irq;
 
@@ -757,9 +755,8 @@ static int __init mvsd_probe(struct platform_device *pdev)
 	}
 
 	/* (Re-)program MBUS remapping windows if we are asked to. */
-	dram = mv_mbus_dram_info();
-	if (dram)
-		mv_conf_mbus_windows(host, dram);
+	if (mvsd_data->dram != NULL)
+		mv_conf_mbus_windows(host, mvsd_data->dram);
 
 	mvsd_power_down(host);
 

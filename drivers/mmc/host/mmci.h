@@ -60,6 +60,13 @@
 #define MCI_ST_DPSM_RWMOD	(1 << 10)
 #define MCI_ST_DPSM_SDIOEN	(1 << 11)
 /* Control register extensions in the ST Micro Ux500 versions */
+/*
+ * DMA request control is required for write
+ * if transfer size is not 32 byte aligned.
+ * DMA request control is also needed if the total
+ * transfer size is 32 byte aligned but any of the
+ * sg element lengths are not aligned with 32 byte.
+ */
 #define MCI_ST_DPSM_DMAREQCTL	(1 << 12)
 #define MCI_ST_DPSM_DBOOTMODEEN	(1 << 13)
 #define MCI_ST_DPSM_BUSYMODE	(1 << 14)
@@ -92,6 +99,7 @@
 /* Extended status bits for the ST Micro variants */
 #define MCI_ST_SDIOIT		(1 << 22)
 #define MCI_ST_CEATAEND		(1 << 23)
+#define MCI_ST_CARDBUSY		(1 << 24)
 
 #define MMCICLEAR		0x038
 #define MCI_CMDCRCFAILCLR	(1 << 0)
@@ -108,6 +116,7 @@
 /* Extended status bits for the ST Micro variants */
 #define MCI_ST_SDIOITC		(1 << 22)
 #define MCI_ST_CEATAENDC	(1 << 23)
+#define MCI_ST_BUSYENDC		(1 << 24)
 
 #define MMCIMASK0		0x03c
 #define MCI_CMDCRCFAILMASK	(1 << 0)
@@ -179,8 +188,10 @@ struct mmci_host {
 
 	unsigned int		mclk;
 	unsigned int		cclk;
+	unsigned int		cclk_desired;
 	u32			pwr_reg;
 	u32			clk_reg;
+	u32			datactrl_reg;
 	struct mmci_platform_data *plat;
 	struct variant_data	*variant;
 
@@ -202,6 +213,7 @@ struct mmci_host {
 	struct dma_chan		*dma_tx_channel;
 	struct dma_async_tx_descriptor	*dma_desc_current;
 	struct mmci_host_next	next_data;
+	bool			dma_was_disabled;
 
 #define dma_inprogress(host)	((host)->dma_current)
 #else
