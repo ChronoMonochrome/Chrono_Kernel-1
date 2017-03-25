@@ -44,13 +44,12 @@ static ssize_t madc_read(struct device *dev,
 			 struct device_attribute *devattr, char *buf)
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(devattr);
-	struct twl4030_madc_request req = {
-		.channels = 1 << attr->index,
-		.method = TWL4030_MADC_SW2,
-		.type = TWL4030_MADC_WAIT,
-	};
+	struct twl4030_madc_request req;
 	long val;
 
+	req.channels = (1 << attr->index);
+	req.method = TWL4030_MADC_SW2;
+	req.func_cb = NULL;
 	val = twl4030_madc_conversion(&req);
 	if (val < 0)
 		return val;
@@ -137,7 +136,19 @@ static struct platform_driver twl4030_madc_hwmon_driver = {
 		   },
 };
 
-module_platform_driver(twl4030_madc_hwmon_driver);
+static int __init twl4030_madc_hwmon_init(void)
+{
+	return platform_driver_register(&twl4030_madc_hwmon_driver);
+}
+
+module_init(twl4030_madc_hwmon_init);
+
+static void __exit twl4030_madc_hwmon_exit(void)
+{
+	platform_driver_unregister(&twl4030_madc_hwmon_driver);
+}
+
+module_exit(twl4030_madc_hwmon_exit);
 
 MODULE_DESCRIPTION("TWL4030 ADC Hwmon driver");
 MODULE_LICENSE("GPL");
