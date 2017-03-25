@@ -20,6 +20,8 @@
 #include <linux/mfd/dbx500-prcmu.h>
 
 #include "dbx500-prcmu.h"
+static	int (*prcmu_set_epod) (u16 epod_id, u8 epod_state);
+
 static int db5500_regulator_enable(struct regulator_dev *rdev)
 {
 	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
@@ -246,10 +248,13 @@ static struct dbx500_regulator_info
 
 static int __devinit db5500_regulator_probe(struct platform_device *pdev)
 {
-	struct regulator_init_data *db5500_init_data =
-					dev_get_platdata(&pdev->dev);
-	int i, err;
 
+	struct db5500_regulator_init_data *db5500_init_pdata =
+					dev_get_platdata(&pdev->dev);
+	struct regulator_init_data *db5500_init_data =
+		(struct regulator_init_data *) db5500_init_pdata->regulators;
+	int i, err;
+	prcmu_set_epod = db5500_init_pdata->set_epod;
 	/* register all regulators */
 	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
 		struct dbx500_regulator_info *info;
