@@ -41,6 +41,7 @@
 #include <linux/in.h>
 #include <linux/init.h>
 
+#include <asm/system.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
 
@@ -76,11 +77,6 @@ static netdev_tx_t loopback_xmit(struct sk_buff *skb,
 	int len;
 
 	skb_orphan(skb);
-
-	/* Before queueing this packet to netif_rx(),
-	 * make sure dst is refcounted.
-	 */
-	skb_dst_force(skb);
 
 	skb->protocol = eth_type_trans(skb, dev);
 
@@ -173,7 +169,7 @@ static void loopback_setup(struct net_device *dev)
 	dev->features 		= NETIF_F_SG | NETIF_F_FRAGLIST
 		| NETIF_F_ALL_TSO
 		| NETIF_F_UFO
-		| NETIF_F_HW_CSUM
+		| NETIF_F_NO_CSUM
 		| NETIF_F_RXCSUM
 		| NETIF_F_HIGHDMA
 		| NETIF_F_LLTX
