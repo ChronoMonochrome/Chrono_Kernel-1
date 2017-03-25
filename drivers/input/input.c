@@ -180,7 +180,7 @@ static int input_handle_abs_event(struct input_dev *dev,
 		return INPUT_IGNORE_EVENT;
 	}
 
-	is_mt_event = input_is_mt_value(code);
+	is_mt_event = code >= ABS_MT_FIRST && code <= ABS_MT_LAST;
 
 	if (!is_mt_event) {
 		pold = &dev->absinfo[code].value;
@@ -1575,7 +1575,9 @@ void input_reset_device(struct input_dev *dev)
 		 * to be still pressed when we resume.
 		 */
 		spin_lock_irq(&dev->event_lock);
+#if !defined(CONFIG_TORCH_FLASH)    
 		input_dev_release_keys(dev);
+#endif                            
 		spin_unlock_irq(&dev->event_lock);
 	}
 
@@ -1624,7 +1626,7 @@ static struct device_type input_dev_type = {
 #endif
 };
 
-static char *input_devnode(struct device *dev, umode_t *mode)
+static char *input_devnode(struct device *dev, mode_t *mode)
 {
 	return kasprintf(GFP_KERNEL, "input/%s", dev_name(dev));
 }

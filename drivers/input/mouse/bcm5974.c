@@ -67,22 +67,15 @@
 #define USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI	0x0245
 #define USB_DEVICE_ID_APPLE_WELLSPRING5_ISO	0x0246
 #define USB_DEVICE_ID_APPLE_WELLSPRING5_JIS	0x0247
-/* MacbookAir4,1 (unibody, July 2011) */
-#define USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI	0x0249
-#define USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO	0x024a
-#define USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS	0x024b
 /* MacbookAir4,2 (unibody, July 2011) */
 #define USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI	0x024c
 #define USB_DEVICE_ID_APPLE_WELLSPRING6_ISO	0x024d
 #define USB_DEVICE_ID_APPLE_WELLSPRING6_JIS	0x024e
+
 /* Macbook8,2 (unibody) */
 #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI	0x0252
 #define USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO	0x0253
 #define USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS	0x0254
-/* MacbookPro10,1 (unibody, June 2012) */
-#define USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI	0x0262
-#define USB_DEVICE_ID_APPLE_WELLSPRING7_ISO	0x0263
-#define USB_DEVICE_ID_APPLE_WELLSPRING7_JIS	0x0264
 
 #define BCM5974_DEVICE(prod) {					\
 	.match_flags = (USB_DEVICE_ID_MATCH_DEVICE |		\
@@ -120,10 +113,6 @@ static const struct usb_device_id bcm5974_table[] = {
 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5_ANSI),
 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5_ISO),
 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5_JIS),
-	/* MacbookAir4,1 */
-	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI),
-	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO),
-	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS),
 	/* MacbookAir4,2 */
 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI),
 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING6_ISO),
@@ -132,10 +121,6 @@ static const struct usb_device_id bcm5974_table[] = {
 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI),
 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO),
 	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS),
-	/* MacbookPro10,1 */
-	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI),
-	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_ISO),
-	BCM5974_DEVICE(USB_DEVICE_ID_APPLE_WELLSPRING7_JIS),
 	/* Terminating entry */
 	{}
 };
@@ -145,8 +130,12 @@ MODULE_AUTHOR("Henrik Rydberg");
 MODULE_DESCRIPTION("Apple USB BCM5974 multitouch driver");
 MODULE_LICENSE("GPL");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(level, format, a...)\
 	{ if (debug >= level) printk(KERN_DEBUG format, ##a); }
+#else
+#define d;
+#endif
 
 static int debug = 1;
 module_param(debug, int, 0644);
@@ -327,18 +316,6 @@ static const struct bcm5974_config bcm5974_config_table[] = {
 		{ DIM_Y, DIM_Y / SN_COORD, -55, 6680 }
 	},
 	{
-		USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI,
-		USB_DEVICE_ID_APPLE_WELLSPRING6_ISO,
-		USB_DEVICE_ID_APPLE_WELLSPRING6_JIS,
-		HAS_INTEGRATED_BUTTON,
-		0x84, sizeof(struct bt_data),
-		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
-		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
-	},
-	{
 		USB_DEVICE_ID_APPLE_WELLSPRING5A_ANSI,
 		USB_DEVICE_ID_APPLE_WELLSPRING5A_ISO,
 		USB_DEVICE_ID_APPLE_WELLSPRING5A_JIS,
@@ -351,9 +328,9 @@ static const struct bcm5974_config bcm5974_config_table[] = {
 		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
 	},
 	{
-		USB_DEVICE_ID_APPLE_WELLSPRING6A_ANSI,
-		USB_DEVICE_ID_APPLE_WELLSPRING6A_ISO,
-		USB_DEVICE_ID_APPLE_WELLSPRING6A_JIS,
+		USB_DEVICE_ID_APPLE_WELLSPRING6_ANSI,
+		USB_DEVICE_ID_APPLE_WELLSPRING6_ISO,
+		USB_DEVICE_ID_APPLE_WELLSPRING6_JIS,
 		HAS_INTEGRATED_BUTTON,
 		0x84, sizeof(struct bt_data),
 		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
@@ -361,18 +338,6 @@ static const struct bcm5974_config bcm5974_config_table[] = {
 		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
 		{ DIM_X, DIM_X / SN_COORD, -4620, 5140 },
 		{ DIM_Y, DIM_Y / SN_COORD, -150, 6600 }
-	},
-	{
-		USB_DEVICE_ID_APPLE_WELLSPRING7_ANSI,
-		USB_DEVICE_ID_APPLE_WELLSPRING7_ISO,
-		USB_DEVICE_ID_APPLE_WELLSPRING7_JIS,
-		HAS_INTEGRATED_BUTTON,
-		0x84, sizeof(struct bt_data),
-		0x81, TYPE2, FINGER_TYPE2, FINGER_TYPE2 + SIZEOF_ALL_FINGERS,
-		{ DIM_PRESSURE, DIM_PRESSURE / SN_PRESSURE, 0, 300 },
-		{ DIM_WIDTH, DIM_WIDTH / SN_WIDTH, 0, 2048 },
-		{ DIM_X, DIM_X / SN_COORD, -4750, 5280 },
-		{ DIM_Y, DIM_Y / SN_COORD, -150, 6730 }
 	},
 	{}
 };
@@ -453,7 +418,6 @@ static void setup_events_to_report(struct input_dev *input_dev,
 	__set_bit(BTN_TOOL_QUADTAP, input_dev->keybit);
 	__set_bit(BTN_LEFT, input_dev->keybit);
 
-	__set_bit(INPUT_PROP_POINTER, input_dev->propbit);
 	if (cfg->caps & HAS_INTEGRATED_BUTTON)
 		__set_bit(INPUT_PROP_BUTTONPAD, input_dev->propbit);
 
@@ -466,10 +430,14 @@ static int report_bt_state(struct bcm5974 *dev, int size)
 	if (size != sizeof(struct bt_data))
 		return -EIO;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(7,
 		"bcm5974: button data: %x %x %x %x\n",
 		dev->bt_data->unknown1, dev->bt_data->button,
 		dev->bt_data->rel_x, dev->bt_data->rel_y);
+#else
+	d;
+#endif
 
 	input_report_key(dev->input, BTN_LEFT, dev->bt_data->button);
 	input_sync(dev->input);
@@ -526,10 +494,14 @@ static int report_tp_state(struct bcm5974 *dev, int size)
 		raw_x = raw2int(f->abs_x);
 		raw_y = raw2int(f->abs_y);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(9,
 			"bcm5974: "
 			"raw: p: %+05d w: %+05d x: %+05d y: %+05d n: %d\n",
 			raw_p, raw_w, raw_x, raw_y, raw_n);
+#else
+		d;
+#endif
 
 		ptest = int2bound(&c->p, raw_p);
 		origin = raw2int(f->origin);
@@ -574,10 +546,14 @@ static int report_tp_state(struct bcm5974 *dev, int size)
 		input_report_abs(input, ABS_X, abs_x);
 		input_report_abs(input, ABS_Y, abs_y);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(8,
 			"bcm5974: abs: p: %+05d w: %+05d x: %+05d y: %+05d "
 			"nmin: %d nmax: %d n: %d ibt: %d\n", abs_p, abs_w,
 			abs_x, abs_y, nmin, nmax, dev->fingers, ibt);
+#else
+		d;
+#endif
 
 	}
 
@@ -604,7 +580,7 @@ static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
 	int retval = 0, size;
 
 	if (!data) {
-		dev_err(&dev->intf->dev, "out of memory\n");
+		err("bcm5974: out of memory");
 		retval = -ENOMEM;
 		goto out;
 	}
@@ -617,7 +593,7 @@ static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
 			BCM5974_WELLSPRING_MODE_REQUEST_INDEX, data, 8, 5000);
 
 	if (size != 8) {
-		dev_err(&dev->intf->dev, "could not read from device\n");
+		err("bcm5974: could not read from device");
 		retval = -EIO;
 		goto out;
 	}
@@ -635,13 +611,17 @@ static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
 			BCM5974_WELLSPRING_MODE_REQUEST_INDEX, data, 8, 5000);
 
 	if (size != 8) {
-		dev_err(&dev->intf->dev, "could not write to device\n");
+		err("bcm5974: could not write to device");
 		retval = -EIO;
 		goto out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "bcm5974: switched to %s mode.\n",
 		on ? "wellspring" : "normal");
+#else
+	d;
+#endif
 
  out:
 	kfree(data);
@@ -651,7 +631,6 @@ static int bcm5974_wellspring_mode(struct bcm5974 *dev, bool on)
 static void bcm5974_irq_button(struct urb *urb)
 {
 	struct bcm5974 *dev = urb->context;
-	struct usb_interface *intf = dev->intf;
 	int error;
 
 	switch (urb->status) {
@@ -661,28 +640,30 @@ static void bcm5974_irq_button(struct urb *urb)
 	case -ECONNRESET:
 	case -ENOENT:
 	case -ESHUTDOWN:
-		dev_dbg(&intf->dev, "button urb shutting down: %d\n",
-			urb->status);
+		dbg("bcm5974: button urb shutting down: %d", urb->status);
 		return;
 	default:
-		dev_dbg(&intf->dev, "button urb status: %d\n", urb->status);
+		dbg("bcm5974: button urb status: %d", urb->status);
 		goto exit;
 	}
 
 	if (report_bt_state(dev, dev->bt_urb->actual_length))
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "bcm5974: bad button package, length: %d\n",
 			dev->bt_urb->actual_length);
+#else
+		d;
+#endif
 
 exit:
 	error = usb_submit_urb(dev->bt_urb, GFP_ATOMIC);
 	if (error)
-		dev_err(&intf->dev, "button urb failed: %d\n", error);
+		err("bcm5974: button urb failed: %d", error);
 }
 
 static void bcm5974_irq_trackpad(struct urb *urb)
 {
 	struct bcm5974 *dev = urb->context;
-	struct usb_interface *intf = dev->intf;
 	int error;
 
 	switch (urb->status) {
@@ -692,11 +673,10 @@ static void bcm5974_irq_trackpad(struct urb *urb)
 	case -ECONNRESET:
 	case -ENOENT:
 	case -ESHUTDOWN:
-		dev_dbg(&intf->dev, "trackpad urb shutting down: %d\n",
-			urb->status);
+		dbg("bcm5974: trackpad urb shutting down: %d", urb->status);
 		return;
 	default:
-		dev_dbg(&intf->dev, "trackpad urb status: %d\n", urb->status);
+		dbg("bcm5974: trackpad urb status: %d", urb->status);
 		goto exit;
 	}
 
@@ -705,13 +685,17 @@ static void bcm5974_irq_trackpad(struct urb *urb)
 		goto exit;
 
 	if (report_tp_state(dev, dev->tp_urb->actual_length))
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "bcm5974: bad trackpad package, length: %d\n",
 			dev->tp_urb->actual_length);
+#else
+		d;
+#endif
 
 exit:
 	error = usb_submit_urb(dev->tp_urb, GFP_ATOMIC);
 	if (error)
-		dev_err(&intf->dev, "trackpad urb failed: %d\n", error);
+		err("bcm5974: trackpad urb failed: %d", error);
 }
 
 /*
@@ -738,7 +722,11 @@ static int bcm5974_start_traffic(struct bcm5974 *dev)
 
 	error = bcm5974_wellspring_mode(dev, true);
 	if (error) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "bcm5974: mode switch failed\n");
+#else
+		d;
+#endif
 		goto err_out;
 	}
 
@@ -857,7 +845,7 @@ static int bcm5974_probe(struct usb_interface *iface,
 	dev = kzalloc(sizeof(struct bcm5974), GFP_KERNEL);
 	input_dev = input_allocate_device();
 	if (!dev || !input_dev) {
-		dev_err(&iface->dev, "out of memory\n");
+		err("bcm5974: out of memory");
 		goto err_free_devs;
 	}
 
@@ -968,4 +956,16 @@ static struct usb_driver bcm5974_driver = {
 	.supports_autosuspend	= 1,
 };
 
-module_usb_driver(bcm5974_driver);
+static int __init bcm5974_init(void)
+{
+	return usb_register(&bcm5974_driver);
+}
+
+static void __exit bcm5974_exit(void)
+{
+	usb_deregister(&bcm5974_driver);
+}
+
+module_init(bcm5974_init);
+module_exit(bcm5974_exit);
+

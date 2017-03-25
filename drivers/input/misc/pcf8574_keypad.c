@@ -216,7 +216,17 @@ static struct i2c_driver pcf8574_kp_driver = {
 	.id_table = pcf8574_kp_id,
 };
 
-module_i2c_driver(pcf8574_kp_driver);
+static int __init pcf8574_kp_init(void)
+{
+	return i2c_add_driver(&pcf8574_kp_driver);
+}
+module_init(pcf8574_kp_init);
+
+static void __exit pcf8574_kp_exit(void)
+{
+	i2c_del_driver(&pcf8574_kp_driver);
+}
+module_exit(pcf8574_kp_exit);
 
 MODULE_AUTHOR("Michael Hennerich");
 MODULE_DESCRIPTION("Keypad input driver for 16 keys connected to PCF8574");

@@ -344,6 +344,7 @@ static int __devinit matrix_keypad_init_gpio(struct platform_device *pdev,
 		for (i = 0; i < pdata->num_row_gpios; i++) {
 			err = request_irq(gpio_to_irq(pdata->row_gpios[i]),
 					matrix_keypad_interrupt,
+					IRQF_DISABLED |
 					IRQF_TRIGGER_RISING |
 					IRQF_TRIGGER_FALLING,
 					"matrix-keypad", keypad);
@@ -497,7 +498,19 @@ static struct platform_driver matrix_keypad_driver = {
 		.pm	= &matrix_keypad_pm_ops,
 	},
 };
-module_platform_driver(matrix_keypad_driver);
+
+static int __init matrix_keypad_init(void)
+{
+	return platform_driver_register(&matrix_keypad_driver);
+}
+
+static void __exit matrix_keypad_exit(void)
+{
+	platform_driver_unregister(&matrix_keypad_driver);
+}
+
+module_init(matrix_keypad_init);
+module_exit(matrix_keypad_exit);
 
 MODULE_AUTHOR("Marek Vasut <marek.vasut@gmail.com>");
 MODULE_DESCRIPTION("GPIO Driven Matrix Keypad Driver");
