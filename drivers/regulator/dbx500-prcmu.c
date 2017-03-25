@@ -9,12 +9,12 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/err.h>
 #include <linux/regulator/driver.h>
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/slab.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #include "dbx500-prcmu.h"
 
@@ -23,6 +23,8 @@
  */
 static int power_state_active_cnt; /* will initialize to zero */
 static DEFINE_SPINLOCK(power_state_active_lock);
+
+extern int (*prcmu_set_epod) (u16 epod_id, u8 epod_state);
 
 int power_state_active_get(void)
 {
@@ -61,6 +63,15 @@ int power_state_active_disable(void)
 out:
 	spin_unlock_irqrestore(&power_state_active_lock, flags);
 	return ret;
+}
+
+/*
+ * Exported interface for CPUIdle only. This function is called when interrupts
+ * are turned off. Hence, no locking.
+ */
+int power_state_active_is_enabled(void)
+{
+	return (power_state_active_cnt > 0);
 }
 
 struct ux500_regulator {
@@ -295,6 +306,182 @@ int __attribute__((weak)) dbx500_regulator_testcase(
 {
 	return 0;
 }
+
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+static int dbx500_panic_regulator_enable(struct regulator_dev *rdev)
+{
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
+
+	if (info == NULL)
+		return -EINVAL;
+
+	info->is_enabled = 1;
+	if (!info->exclude_from_power_state){
+		power_state_active_cnt++;
+	}
+
+	return 0;
+}
+
+static int dbx500_panic_regulator_disable(struct regulator_dev *rdev)
+{
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
+	int ret = 0;
+
+	if (info == NULL)
+		return -EINVAL;
+
+	info->is_enabled = 0;
+	if (!info->exclude_from_power_state){
+		if (power_state_active_cnt <= 0) {
+			pr_emerg("power state: unbalanced enable/disable calls\n");
+			return -EINVAL;
+		}
+		
+		power_state_active_cnt--;
+	}
+
+	return ret;
+}
+
+static int dbx500_panic_regulator_is_enabled(struct regulator_dev *rdev)
+{
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
+
+	if (info == NULL)
+		return -EINVAL;
+
+	return info->is_enabled;
+}
+
+/* db8500 regulator operations */
+static struct regulator_ops dbx500_regulator_ops = {
+	.enable			= dbx500_panic_regulator_enable,
+	.disable		= dbx500_panic_regulator_disable,
+	.is_enabled		= dbx500_panic_regulator_is_enabled,
+};
+
+static int enable_panic_epod(u16 epod_id, bool ramret)
+{
+	int ret;
+
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+	if (ramret) {
+		if (!epod_on[epod_id]) {
+			ret = prcmu_panic_set_epod(epod_id, EPOD_STATE_RAMRET);
+			if (ret < 0)
+				return ret;
+		}
+		epod_ramret[epod_id] = true;
+	} else {
+		ret = prcmu_panic_set_epod(epod_id, EPOD_STATE_ON);
+		if (ret < 0)
+			return ret;
+		epod_on[epod_id] = true;
+	}
+#endif
+	return 0;
+}
+
+static int disable_panic_epod(u16 epod_id, bool ramret)
+{
+	int ret = -EPERM;
+
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+	if (ramret) {
+		if (!epod_on[epod_id]) {
+			ret = prcmu_panic_set_epod(epod_id, EPOD_STATE_OFF);
+			if (ret < 0)
+				return ret;
+		}
+		epod_ramret[epod_id] = false;
+	} else {
+		if (epod_ramret[epod_id]) {
+			ret = prcmu_panic_set_epod(epod_id, EPOD_STATE_RAMRET);
+			if (ret < 0)
+				return ret;
+		} else {
+			ret = prcmu_set_epod(epod_id, EPOD_STATE_OFF);
+			if (ret < 0)
+				return ret;
+		}
+		epod_on[epod_id] = false;
+	}
+#endif
+	return 0;
+}
+
+/*
+ * Regulator switch
+ */
+static int dbx500_panic_regulator_switch_enable(struct regulator_dev *rdev)
+{
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
+	int ret;
+
+	if (info == NULL)
+		return -EINVAL;
+
+	ret = enable_panic_epod(info->epod_id, info->is_ramret);
+	if (ret < 0) {
+		pr_emerg("regulator-switch-%s-enable: prcmu call failed\n",
+			info->desc.name);
+		goto out;
+	}
+
+	info->is_enabled = 1;
+out:
+	return ret;
+}
+
+static int dbx500_panic_regulator_switch_disable(struct regulator_dev *rdev)
+{
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
+	int ret = -EPERM;
+
+	if (info == NULL)
+		return -EINVAL;
+
+	ret = disable_panic_epod(info->epod_id, info->is_ramret);
+	if (ret < 0) {
+		pr_emerg("regulator_switch-%s-disable: prcmu call failed\n",
+			info->desc.name);
+		goto out;
+	}
+
+	info->is_enabled = 0;
+out:
+	return ret;
+}
+
+static int dbx500_panic_regulator_switch_is_enabled(struct regulator_dev *rdev)
+{
+	struct dbx500_regulator_info *info = rdev_get_drvdata(rdev);
+
+	if (info == NULL)
+		return -EINVAL;
+
+	return info->is_enabled;
+}
+
+static struct regulator_ops dbx500_regulator_switch_ops = {
+	.enable			= dbx500_panic_regulator_switch_enable,
+	.disable		= dbx500_panic_regulator_switch_disable,
+	.is_enabled		= dbx500_panic_regulator_switch_is_enabled,
+};
+
+void db8500_reroute_regulator_fp(void)
+{
+	dbx500_regulator_ops.enable = dbx500_panic_regulator_enable;
+	dbx500_regulator_ops.disable = dbx500_panic_regulator_disable;
+	dbx500_regulator_ops.is_enabled = dbx500_panic_regulator_is_enabled;
+
+	dbx500_regulator_switch_ops.enable = dbx500_panic_regulator_switch_enable;
+	dbx500_regulator_switch_ops.disable = dbx500_panic_regulator_switch_disable;
+	dbx500_regulator_switch_ops.is_enabled = dbx500_panic_regulator_switch_is_enabled;
+
+}
+#endif //CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
 
 int __devinit
 ux500_regulator_debug_init(struct platform_device *pdev,

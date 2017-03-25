@@ -5,25 +5,29 @@
  *
  * Authors: Sundar Iyer <sundar.iyer@stericsson.com> for ST-Ericsson
  *          Bengt Jonsson <bengt.g.jonsson@stericsson.com> for ST-Ericsson
+ *          Daniel Willerud <daniel.willerud@stericsson.com> for ST-Ericsson
  *
  * AB8500 peripheral regulators
  *
  * AB8500 supports the following regulators:
  *   VAUX1/2/3, VINTCORE, VTVOUT, VUSB, VAUDIO, VAMIC1/2, VDMIC, VANA
+ *
+ * AB8505 supports the following regulators:
+ *   VAUX1/2/3/4/5/6, VINTCORE, VADC, VUSB, VAUDIO, VAMIC1/2, VDMIC, VANA
  */
 #include <linux/init.h>
 #include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
+#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
-#include <linux/mfd/abx500/ab8500.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/ab8500.h>
 #include <linux/mfd/abx500/ab8500-gpio.h> /* for sysclkreq pins */
 #include <mach/id.h>
 
+#ifndef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
 /**
  * struct ab8500_regulator_info - ab8500 regulator information
  * @dev: device pointer
@@ -43,6 +47,7 @@
  * @voltage_bank: bank to control regulator voltage
  * @voltage_reg: register to control regulator voltage
  * @voltage_mask: mask to control regulator voltage
+ * @voltage_shift: shift to control regulator voltage
  * @voltages: supported voltage table
  * @voltages_len: number of supported voltages for the regulator
  * @delay: startup/set voltage delay in us
@@ -66,11 +71,15 @@ struct ab8500_regulator_info {
 	u8 voltage_bank;
 	u8 voltage_reg;
 	u8 voltage_mask;
+	u8 voltage_shift;
 	int const *voltages;
 	int voltages_len;
 	unsigned int delay;
-	enum ab8500_pin gpio_pin;
+	int gpio_pin;
 };
+
+#endif //CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+
 
 /* voltage tables for the vauxn/vintcore supplies */
 static const int ldo_vauxn_voltages[] = {
@@ -103,6 +112,17 @@ static const int ldo_vaux3_voltages[] = {
 	2910000,
 };
 
+static const int ldo_vaux56_voltages[] = {
+	1800000,
+	1050000,
+	1100000,
+	1200000,
+	1500000,
+	2200000,
+	2500000,
+	2790000,
+};
+
 static const int ldo_vintcore_voltages[] = {
 	1200000,
 	1225000,
@@ -111,6 +131,28 @@ static const int ldo_vintcore_voltages[] = {
 	1300000,
 	1325000,
 	1350000,
+};
+
+static const int ldo_vana_voltages[] = {
+	1050000,
+	1075000,
+	1100000,
+	1125000,
+	1150000,
+	1175000,
+	1200000,
+	1225000,
+};
+
+static const int ldo_vaudio_voltages[] = {
+	2000000,
+	2100000,
+	2200000,
+	2300000,
+	2400000,
+	2500000,
+	2600000,
+	2600000,	/* Duplicated in Vaudio and IsoUicc Control register. */
 };
 
 static int ab8500_regulator_enable(struct regulator_dev *rdev)
@@ -301,7 +343,7 @@ static int ab8500_list_voltage(struct regulator_dev *rdev, unsigned selector)
 	return info->voltages[selector];
 }
 
-static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
+static int ab8500_regulator_get_voltage(struct regulator_dev *rdev)
 {
 	int ret, val;
 	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
@@ -320,18 +362,18 @@ static int ab8500_regulator_get_voltage_sel(struct regulator_dev *rdev)
 		return ret;
 	}
 
-	dev_vdbg(rdev_get_dev(rdev),
-		"%s-get_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
-		" 0x%x\n",
-		info->desc.name, info->voltage_bank, info->voltage_reg,
-		info->voltage_mask, regval);
+ 	dev_vdbg(rdev_get_dev(rdev),
+		"%s-get_voltage (bank, reg, mask, shift, value): "
+		"0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
+		info->desc.name, info->voltage_bank,
+		info->voltage_reg, info->voltage_mask,
+		info->voltage_shift, regval);
 
 	/* vintcore has a different layout */
 	val = regval & info->voltage_mask;
-	if (info->desc.id == AB8500_LDO_INTCORE)
-		return val >> 0x3;
-	else
-		return val;
+	ret = info->voltages[val >> info->voltage_shift];
+
+	return ret;
 }
 
 static int ab8500_get_best_voltage_index(struct regulator_dev *rdev,
@@ -374,10 +416,7 @@ static int ab8500_regulator_set_voltage(struct regulator_dev *rdev,
 	*selector = ret;
 
 	/* vintcore register has a different layout */
-	if (info->desc.id == AB8500_LDO_INTCORE)
-		regval = ((u8)ret) << 3;
-	else
-		regval = (u8)ret;
+	regval = ((u8)ret) << info->voltage_shift;
 
 	/* set the registers for the request */
 	ret = abx500_mask_and_set_register_interruptible(info->dev,
@@ -388,10 +427,10 @@ static int ab8500_regulator_set_voltage(struct regulator_dev *rdev,
 		"couldn't set voltage reg for regulator\n");
 
 	dev_vdbg(rdev_get_dev(rdev),
-		"%s-set_voltage (bank, reg, mask, value): 0x%x, 0x%x, 0x%x,"
-		" 0x%x\n",
+		"%s-set_voltage (bank, reg, mask, shift, value): "
+		" 0x%x, 0x%x, 0x%x, 0x%x 0x%x\n",
 		info->desc.name, info->voltage_bank, info->voltage_reg,
-		info->voltage_mask, regval);
+		info->voltage_mask, info->voltage_shift, regval);
 
 	return ret;
 }
@@ -426,7 +465,18 @@ static struct regulator_ops ab8500_regulator_volt_mode_ops = {
 	.set_mode	= ab8500_regulator_set_mode,
 	.get_mode	= ab8500_regulator_get_mode,
 	.is_enabled	= ab8500_regulator_is_enabled,
-	.get_voltage_sel = ab8500_regulator_get_voltage_sel,
+	.get_voltage	= ab8500_regulator_get_voltage,
+	.set_voltage	= ab8500_regulator_set_voltage,
+	.list_voltage	= ab8500_list_voltage,
+	.enable_time	= ab8500_regulator_enable_time,
+	.set_voltage_time_sel = ab8500_regulator_set_voltage_time_sel,
+};
+
+static struct regulator_ops ab8500_regulator_volt_ops = {
+	.enable		= ab8500_regulator_enable,
+	.disable	= ab8500_regulator_disable,
+	.is_enabled	= ab8500_regulator_is_enabled,
+	.get_voltage	= ab8500_regulator_get_voltage,
 	.set_voltage	= ab8500_regulator_set_voltage,
 	.list_voltage	= ab8500_list_voltage,
 	.enable_time	= ab8500_regulator_enable_time,
@@ -465,6 +515,25 @@ static struct regulator_ops ab8500_regulator_ops = {
 	.get_voltage		= ab8500_fixed_get_voltage,
 	.list_voltage		= ab8500_list_voltage,
 };
+
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+
+void ab8500_panic_regulator_volt_mode(struct regulator_ops *ops)
+{
+	ab8500_regulator_volt_mode_ops = *ops;
+}
+
+void ab8500_panic_regulator_mode(struct regulator_ops *ops)
+{
+	ab8500_regulator_mode_ops = *ops;
+}
+
+void ab8500_panic_regulator(struct regulator_ops *ops)
+{
+	ab8500_regulator_ops = *ops;
+}
+
+#endif
 
 static int ab8500_sysclkreq_enable(struct regulator_dev *rdev)
 {
@@ -656,6 +725,7 @@ static struct ab8500_regulator_info
 		.voltage_bank		= 0x03,
 		.voltage_reg		= 0x80,
 		.voltage_mask		= 0x38,
+		.voltage_shift		= 3,
 		.voltages		= ldo_vintcore_voltages,
 		.voltages_len		= ARRAY_SIZE(ldo_vintcore_voltages),
 	},
@@ -780,7 +850,7 @@ static struct ab8500_regulator_info
 			.n_voltages	= 1,
 		},
 		.fixed_uV		= 1, /* bogus value */
-		.gpio_pin		= AB8500_PIN_GPIO1,
+		.gpio_pin		= AB8500_PIN_GPIO(1),
 	},
 	[AB8500_SYSCLKREQ_4] = {
 		.desc = {
@@ -792,8 +862,357 @@ static struct ab8500_regulator_info
 			.n_voltages	= 1,
 		},
 		.fixed_uV		= 1, /* bogus value */
-		.gpio_pin		= AB8500_PIN_GPIO3,
+		.gpio_pin		= AB8500_PIN_GPIO(3),
 	},
+};
+
+/* AB8505 regulator information */
+static struct ab8500_regulator_info
+		ab8505_regulator_info[AB8505_NUM_REGULATORS] = {
+	/*
+	 * Variable Voltage Regulators
+	 *   name, min mV, max mV,
+	 *   update bank, reg, mask, enable val
+	 *   volt bank, reg, mask, table, table length
+	 */
+	[AB8505_LDO_AUX1] = {
+		.desc = {
+			.name		= "LDO-AUX1",
+			.ops		= &ab8500_regulator_volt_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_AUX1,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
+		},
+		.min_uV			= 1100000,
+		.max_uV			= 3300000,
+		.load_lp_uA		= 5000,
+		.update_bank		= 0x04,
+		.update_reg		= 0x09,
+		.update_mask		= 0x03,
+		.update_val		= 0x01,
+		.update_val_idle	= 0x03,
+		.update_val_normal	= 0x01,
+		.voltage_bank		= 0x04,
+		.voltage_reg		= 0x1f,
+		.voltage_mask		= 0x0f,
+		.voltages		= ldo_vauxn_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vauxn_voltages),
+	},
+	[AB8505_LDO_AUX2] = {
+		.desc = {
+			.name		= "LDO-AUX2",
+			.ops		= &ab8500_regulator_volt_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_AUX2,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
+		},
+		.min_uV			= 1100000,
+		.max_uV			= 3300000,
+		.load_lp_uA		= 5000,
+		.update_bank		= 0x04,
+		.update_reg		= 0x09,
+		.update_mask		= 0x0c,
+		.update_val		= 0x04,
+		.update_val_idle	= 0x0c,
+		.update_val_normal	= 0x04,
+		.voltage_bank		= 0x04,
+		.voltage_reg		= 0x20,
+		.voltage_mask		= 0x0f,
+		.voltages		= ldo_vauxn_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vauxn_voltages),
+	},
+	[AB8505_LDO_AUX3] = {
+		.desc = {
+			.name		= "LDO-AUX3",
+			.ops		= &ab8500_regulator_volt_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_AUX3,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vaux3_voltages),
+		},
+		.min_uV			= 1100000,
+		.max_uV			= 3300000,
+		.load_lp_uA		= 5000,
+		.update_bank		= 0x04,
+		.update_reg		= 0x0a,
+		.update_mask		= 0x03,
+		.update_val		= 0x01,
+		.update_val_idle	= 0x03,
+		.update_val_normal	= 0x01,
+		.voltage_bank		= 0x04,
+		.voltage_reg		= 0x21,
+		.voltage_mask		= 0x07,
+		.voltages		= ldo_vaux3_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vaux3_voltages),
+	},
+	[AB8505_LDO_AUX4] = {
+		.desc = {
+			.name		= "LDO-AUX4",
+			.ops		= &ab8500_regulator_volt_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_AUX4,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
+		},
+		.min_uV			= 1100000,
+		.max_uV			= 3300000,
+		.load_lp_uA		= 5000,
+		/* values for Vaux4Regu register */
+		.update_bank		= 0x04,
+		.update_reg		= 0x2e,
+		.update_mask		= 0x03,
+		.update_val		= 0x01,
+		.update_val_idle	= 0x03,
+		.update_val_normal	= 0x01,
+		/* values for Vaux4SEL register */
+		.voltage_bank		= 0x04,
+		.voltage_reg		= 0x2f,
+		.voltage_mask		= 0x0f,
+		.voltages		= ldo_vauxn_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vauxn_voltages),
+	},
+	[AB8505_LDO_AUX5] = {
+		.desc = {
+			.name		= "LDO-AUX5",
+			.ops		= &ab8500_regulator_volt_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_AUX5,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vaux56_voltages),
+		},
+		.min_uV			= 1050000,
+		.max_uV			= 2790000,
+		.load_lp_uA		= 2000,
+		/* values for CtrlVaux5 register */
+		.update_bank		= 0x01,
+		.update_reg		= 0x55,
+		.update_mask		= 0x18,
+		.update_val		= 0x10,
+		.update_val_idle	= 0x18,
+		.update_val_normal	= 0x10,
+		.voltage_bank		= 0x01,
+		.voltage_reg		= 0x55,
+		.voltage_mask		= 0x07,
+		.voltages		= ldo_vaux56_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vaux56_voltages),
+	},
+	[AB8505_LDO_AUX6] = {
+		.desc = {
+			.name		= "LDO-AUX6",
+			.ops		= &ab8500_regulator_volt_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_AUX6,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vaux56_voltages),
+		},
+		.min_uV			= 1050000,
+		.max_uV			= 2790000,
+		.load_lp_uA		= 2000,
+		/* values for CtrlVaux6 register */
+		.update_bank		= 0x01,
+		.update_reg		= 0x56,
+		.update_mask		= 0x18,
+		.update_val		= 0x10,
+		.update_val_idle	= 0x18,
+		.update_val_normal	= 0x10,
+		.voltage_bank		= 0x01,
+		.voltage_reg		= 0x56,
+		.voltage_mask		= 0x07,
+		.voltages		= ldo_vaux56_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vaux56_voltages),
+	},
+	[AB8505_LDO_INTCORE] = {
+		.desc = {
+			.name		= "LDO-INTCORE",
+			.ops		= &ab8500_regulator_volt_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_INTCORE,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vintcore_voltages),
+		},
+		.min_uV			= 1100000,
+		.max_uV			= 3300000,
+		.load_lp_uA		= 5000,
+		.update_bank		= 0x03,
+		.update_reg		= 0x80,
+		.update_mask		= 0x44,
+		.update_val		= 0x44,
+		.update_val_idle	= 0x44,
+		.update_val_normal	= 0x04,
+		.voltage_bank		= 0x03,
+		.voltage_reg		= 0x80,
+		.voltage_mask		= 0x38,
+		.voltage_shift		= 3,
+		.voltages		= ldo_vintcore_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vintcore_voltages),
+	},
+
+	/*
+	 * Fixed Voltage Regulators
+	 *   name, fixed mV,
+	 *   update bank, reg, mask, enable val
+	 */
+	[AB8505_LDO_ADC] = {
+		.desc = {
+			.name		= "LDO-ADC",
+			.ops		= &ab8500_regulator_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_ADC,
+			.owner		= THIS_MODULE,
+			.n_voltages	= 1,
+		},
+		.delay			= 10000,
+		.fixed_uV		= 2000000,
+		.load_lp_uA		= 1000,
+		.update_bank		= 0x03,
+		.update_reg		= 0x80,
+		.update_mask		= 0x82,
+		.update_val		= 0x02,
+		.update_val_idle	= 0x82,
+		.update_val_normal	= 0x02,
+	},
+	[AB8505_LDO_USB] = {
+		.desc = {
+			.name           = "LDO-USB",
+			.ops            = &ab8500_regulator_ops,
+			.type           = REGULATOR_VOLTAGE,
+			.id             = AB8505_LDO_USB,
+			.owner          = THIS_MODULE,
+			.n_voltages     = 1,
+		},
+		.fixed_uV               = 3300000,
+		.update_bank            = 0x03,
+		.update_reg             = 0x82,
+		.update_mask            = 0x03,
+		.update_val		= 0x01,
+		.update_val_idle	= 0x03,
+		.update_val_normal	= 0x01,
+	},
+	[AB8505_LDO_AUDIO] = {
+		.desc = {
+			.name		= "LDO-AUDIO",
+			.ops		= &ab8500_regulator_volt_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_AUDIO,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vaudio_voltages),
+		},
+		.min_uV			= 2000000,
+		.max_uV			= 2600000,
+		.update_bank		= 0x03,
+		.update_reg		= 0x83,
+		.update_mask		= 0x02,
+		.update_val		= 0x02,
+		.voltage_bank		= 0x01,
+		.voltage_reg		= 0x57,
+		.voltage_mask		= 0x7,
+		.voltage_shift		= 4,
+		.voltages		= ldo_vaudio_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vaudio_voltages),
+	},
+	[AB8505_LDO_ANAMIC1] = {
+		.desc = {
+			.name		= "LDO-ANAMIC1",
+			.ops		= &ab8500_regulator_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_ANAMIC1,
+			.owner		= THIS_MODULE,
+			.n_voltages	= 1,
+		},
+		.fixed_uV		= 2050000,
+		.update_bank		= 0x03,
+		.update_reg		= 0x83,
+		.update_mask		= 0x08,
+		.update_val		= 0x08,
+	},
+	[AB8505_LDO_ANAMIC2] = {
+		.desc = {
+			.name		= "LDO-ANAMIC2",
+			.ops		= &ab8500_regulator_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_ANAMIC2,
+			.owner		= THIS_MODULE,
+			.n_voltages	= 1,
+		},
+		.fixed_uV		= 2050000,
+		.update_bank		= 0x03,
+		.update_reg		= 0x83,
+		.update_mask		= 0x10,
+		.update_val		= 0x10,
+	},
+	[AB8505_LDO_AUX8] = {
+		.desc = {
+			.name		= "LDO-AUX8",
+			.ops		= &ab8500_regulator_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_AUX8,
+			.owner		= THIS_MODULE,
+			.n_voltages	= 1,
+		},
+		.fixed_uV		= 1800000,
+		.update_bank		= 0x03,
+		.update_reg		= 0x83,
+		.update_mask		= 0x04,
+		.update_val		= 0x04,
+	},
+	/*
+	 * Regulators with fixed voltage and normal/idle modes
+	 */
+	[AB8505_LDO_ANA] = {
+		.desc = {
+			.name		= "LDO-ANA",
+			.ops		= &ab8500_regulator_volt_mode_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_LDO_ANA,
+			.owner		= THIS_MODULE,
+			.n_voltages	= ARRAY_SIZE(ldo_vana_voltages),
+		},
+		.min_uV			= 1050000,
+		.max_uV			= 1225000,
+		.load_lp_uA		= 1000,
+		.update_bank		= 0x04,
+		.update_reg		= 0x06,
+		.update_mask		= 0x0c,
+		.update_val		= 0x04,
+		.update_val_idle	= 0x0c,
+		.update_val_normal	= 0x04,
+		.voltage_bank		= 0x04,
+		.voltage_reg		= 0x29,
+		.voltage_mask		= 0x7,
+		.voltages		= ldo_vana_voltages,
+		.voltages_len		= ARRAY_SIZE(ldo_vana_voltages),
+	},
+
+	/*
+	 * SysClkReq regulators
+	 */
+	[AB8505_SYSCLKREQ_2] = {
+		.desc = {
+			.name		= "SYSCLKREQ-2",
+			.ops		= &ab8500_sysclkreq_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_SYSCLKREQ_2,
+			.owner		= THIS_MODULE,
+			.n_voltages	= 1,
+		},
+		.fixed_uV		= 1, /* bogus value */
+		.gpio_pin		= AB8500_PIN_GPIO(1),
+	},
+	[AB8505_SYSCLKREQ_4] = {
+		.desc = {
+			.name		= "SYSCLKREQ-4",
+			.ops		= &ab8500_sysclkreq_ops,
+			.type		= REGULATOR_VOLTAGE,
+			.id		= AB8505_SYSCLKREQ_4,
+			.owner		= THIS_MODULE,
+			.n_voltages	= 1,
+		},
+		.fixed_uV		= 1, /* bogus value */
+		.gpio_pin		= AB8500_PIN_GPIO(3),
+	},
+
 };
 
 /* AB9540 regulator information */
@@ -810,7 +1229,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-AUX1",
 			.ops		= &ab8500_regulator_volt_mode_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_AUX1,
+			.id		= AB9540_LDO_AUX1,
 			.owner		= THIS_MODULE,
 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
 		},
@@ -834,7 +1253,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-AUX2",
 			.ops		= &ab8500_regulator_volt_mode_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_AUX2,
+			.id		= AB9540_LDO_AUX2,
 			.owner		= THIS_MODULE,
 			.n_voltages	= ARRAY_SIZE(ldo_vauxn_voltages),
 		},
@@ -858,7 +1277,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-AUX3",
 			.ops		= &ab8500_regulator_volt_mode_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_AUX3,
+			.id		= AB9540_LDO_AUX3,
 			.owner		= THIS_MODULE,
 			.n_voltages	= ARRAY_SIZE(ldo_vaux3_voltages),
 		},
@@ -908,7 +1327,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-INTCORE",
 			.ops		= &ab8500_regulator_volt_mode_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_INTCORE,
+			.id		= AB9540_LDO_INTCORE,
 			.owner		= THIS_MODULE,
 			.n_voltages	= ARRAY_SIZE(ldo_vintcore_voltages),
 		},
@@ -924,6 +1343,7 @@ static struct ab8500_regulator_info
 		.voltage_bank		= 0x03,
 		.voltage_reg		= 0x80,
 		.voltage_mask		= 0x38,
+		.voltage_shift		= 3,
 		.voltages		= ldo_vintcore_voltages,
 		.voltages_len		= ARRAY_SIZE(ldo_vintcore_voltages),
 	},
@@ -938,7 +1358,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-TVOUT",
 			.ops		= &ab8500_regulator_mode_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_TVOUT,
+			.id		= AB9540_LDO_TVOUT,
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
@@ -974,7 +1394,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-AUDIO",
 			.ops		= &ab8500_regulator_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_AUDIO,
+			.id		= AB9540_LDO_AUDIO,
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
@@ -989,7 +1409,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-ANAMIC1",
 			.ops		= &ab8500_regulator_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_ANAMIC1,
+			.id		= AB9540_LDO_ANAMIC1,
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
@@ -1004,7 +1424,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-ANAMIC2",
 			.ops		= &ab8500_regulator_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_ANAMIC2,
+			.id		= AB9540_LDO_ANAMIC2,
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
@@ -1019,7 +1439,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-DMIC",
 			.ops		= &ab8500_regulator_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_DMIC,
+			.id		= AB9540_LDO_DMIC,
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
@@ -1038,7 +1458,7 @@ static struct ab8500_regulator_info
 			.name		= "LDO-ANA",
 			.ops		= &ab8500_regulator_mode_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_LDO_ANA,
+			.id		= AB9540_LDO_ANA,
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
@@ -1060,24 +1480,24 @@ static struct ab8500_regulator_info
 			.name		= "SYSCLKREQ-2",
 			.ops		= &ab8500_sysclkreq_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_SYSCLKREQ_2,
+			.id		= AB9540_SYSCLKREQ_2,
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
 		.fixed_uV		= 1, /* bogus value */
-		.gpio_pin		= AB8500_PIN_GPIO1,
+		.gpio_pin		= AB8500_PIN_GPIO(1),
 	},
 	[AB9540_SYSCLKREQ_4] = {
 		.desc = {
 			.name		= "SYSCLKREQ-4",
 			.ops		= &ab8500_sysclkreq_ops,
 			.type		= REGULATOR_VOLTAGE,
-			.id		= AB8500_SYSCLKREQ_4,
+			.id		= AB9540_SYSCLKREQ_4,
 			.owner		= THIS_MODULE,
 			.n_voltages	= 1,
 		},
 		.fixed_uV		= 1, /* bogus value */
-		.gpio_pin		= AB8500_PIN_GPIO3,
+		.gpio_pin		= AB8500_PIN_GPIO(3),
 	},
 };
 
@@ -1206,6 +1626,13 @@ static struct ab8500_reg_init ab8500_reg_init[] = {
 	 */
 	REG_INIT(AB8500_REGUCTRL1VAMIC,		0x03, 0x84, 0x03),
 	/*
+	 * 0x03, Vsmps1Regu
+	 * 0x0c, Vsmps1SelCtrl
+	 * 0x10, Vsmps1AutoMode
+	 * 0x20, Vsmps1PWMMode
+	 */
+	REG_INIT(AB8500_VSMPS1REGU,             0x04, 0x03, 0x3f),
+	/*
 	 * 0x03, VpllRegu (NOTE! PRCMU register bits)
 	 * 0x0c, VanaRegu
 	 */
@@ -1277,6 +1704,276 @@ int __attribute__((weak)) ab8500_regulator_debug_exit(
 {
 	return 0;
 }
+
+/* AB8505 register init */
+static struct ab8500_reg_init ab8505_reg_init[] = {
+	/*
+	 * 0x03, VarmRequestCtrl
+	 * 0x0c, VsmpsCRequestCtrl
+	 * 0x30, VsmpsARequestCtrl
+	 * 0xc0, VsmpsBRequestCtrl
+	 */
+	REG_INIT(AB8505_REGUREQUESTCTRL1,	0x03, 0x03, 0xff),
+	/*
+	 * 0x03, VsafeRequestCtrl
+	 * 0x0c, VpllRequestCtrl
+	 * 0x30, VanaRequestCtrl
+	 */
+	REG_INIT(AB8505_REGUREQUESTCTRL2,	0x03, 0x04, 0x3f),
+	/*
+	 * 0x30, Vaux1RequestCtrl
+	 * 0xc0, Vaux2RequestCtrl
+	 */
+	REG_INIT(AB8505_REGUREQUESTCTRL3,	0x03, 0x05, 0xf0),
+	/*
+	 * 0x03, Vaux3RequestCtrl
+	 * 0x04, SwHPReq
+	 */
+	REG_INIT(AB8505_REGUREQUESTCTRL4,	0x03, 0x06, 0x07),
+	/*
+	 * 0x01, VsmpsASysClkReq1HPValid
+	 * 0x02, VsmpsBSysClkReq1HPValid
+	 * 0x04, VsafeSysClkReq1HPValid
+	 * 0x08, VanaSysClkReq1HPValid
+	 * 0x10, VpllSysClkReq1HPValid
+	 * 0x20, Vaux1SysClkReq1HPValid
+	 * 0x40, Vaux2SysClkReq1HPValid
+	 * 0x80, Vaux3SysClkReq1HPValid
+	 */
+	REG_INIT(AB8505_REGUSYSCLKREQ1HPVALID1,	0x03, 0x07, 0xff),
+	/*
+	 * 0x01, VsmpsCSysClkReq1HPValid
+	 * 0x02, VarmSysClkReq1HPValid
+	 * 0x04, VbbSysClkReq1HPValid
+	 * 0x08, VsmpsMSysClkReq1HPValid
+	 */
+	REG_INIT(AB8505_REGUSYSCLKREQ1HPVALID2,	0x03, 0x08, 0x0f),
+	/*
+	 * 0x01, VsmpsAHwHPReq1Valid
+	 * 0x02, VsmpsBHwHPReq1Valid
+	 * 0x04, VsafeHwHPReq1Valid
+	 * 0x08, VanaHwHPReq1Valid
+	 * 0x10, VpllHwHPReq1Valid
+	 * 0x20, Vaux1HwHPReq1Valid
+	 * 0x40, Vaux2HwHPReq1Valid
+	 * 0x80, Vaux3HwHPReq1Valid
+	 */
+	REG_INIT(AB8505_REGUHWHPREQ1VALID1,	0x03, 0x09, 0xff),
+	/*
+	 * 0x08, VsmpsMHwHPReq1Valid
+	 */
+	REG_INIT(AB8505_REGUHWHPREQ1VALID2,	0x03, 0x0a, 0x08),
+	/*
+	 * 0x01, VsmpsAHwHPReq2Valid
+	 * 0x02, VsmpsBHwHPReq2Valid
+	 * 0x04, VsafeHwHPReq2Valid
+	 * 0x08, VanaHwHPReq2Valid
+	 * 0x10, VpllHwHPReq2Valid
+	 * 0x20, Vaux1HwHPReq2Valid
+	 * 0x40, Vaux2HwHPReq2Valid
+	 * 0x80, Vaux3HwHPReq2Valid
+	 */
+	REG_INIT(AB8505_REGUHWHPREQ2VALID1,	0x03, 0x0b, 0xff),
+	/*
+	 * 0x08, VsmpsMHwHPReq2Valid
+	 */
+	REG_INIT(AB8505_REGUHWHPREQ2VALID2,	0x03, 0x0c, 0x08),
+	/*
+	 * 0x01, VsmpsCSwHPReqValid
+	 * 0x02, VarmSwHPReqValid
+	 * 0x04, VsmpsASwHPReqValid
+	 * 0x08, VsmpsBSwHPReqValid
+	 * 0x10, VsafeSwHPReqValid
+	 * 0x20, VanaSwHPReqValid
+	 * 0x40, VpllSwHPReqValid
+	 * 0x80, Vaux1SwHPReqValid
+	 */
+	REG_INIT(AB8505_REGUSWHPREQVALID1,	0x03, 0x0d, 0xff),
+	/*
+	 * 0x01, Vaux2SwHPReqValid
+	 * 0x02, Vaux3SwHPReqValid
+	 * 0x20, VsmpsMSwHPReqValid
+	 */
+	REG_INIT(AB8505_REGUSWHPREQVALID2,	0x03, 0x0e, 0x23),
+	/*
+	 * 0x02, SysClkReq2Valid1
+	 * 0x04, SysClkReq3Valid1
+	 * 0x08, SysClkReq4Valid1
+	 */
+	REG_INIT(AB8505_REGUSYSCLKREQVALID1,	0x03, 0x0f, 0x0e),
+	/*
+	 * 0x02, SysClkReq2Valid2
+	 * 0x04, SysClkReq3Valid2
+	 * 0x08, SysClkReq4Valid2
+	 */
+	REG_INIT(AB8505_REGUSYSCLKREQVALID2,	0x03, 0x10, 0x0e),
+	/*
+	 * 0x01, Vaux4SwHPReqValid
+	 * 0x02, Vaux4HwHPReq2Valid
+	 * 0x04, Vaux4HwHPReq1Valid
+	 * 0x08, Vaux4SysClkReq1HPValid
+	 */
+	REG_INIT(AB8505_REGUVAUX4REQVALID,	0x03, 0x11, 0x0f),
+	/*
+	 * 0x02, VadcEna
+	 * 0x04, VintCore12Ena
+	 * 0x38, VintCore12Sel
+	 * 0x40, VintCore12LP
+	 * 0x80, VadcLP
+	 */
+	REG_INIT(AB8505_REGUMISC1,		0x03, 0x80, 0xfe),
+	/*
+	 * 0x02, VaudioEna
+	 * 0x04, VdmicEna
+	 * 0x08, Vamic1Ena
+	 * 0x10, Vamic2Ena
+	 */
+	REG_INIT(AB8505_VAUDIOSUPPLY,		0x03, 0x83, 0x1e),
+	/*
+	 * 0x01, Vamic1_dzout
+	 * 0x02, Vamic2_dzout
+	 */
+	REG_INIT(AB8505_REGUCTRL1VAMIC,		0x03, 0x84, 0x03),
+	/*
+	 * 0x03, VsmpsARegu
+	 * 0x0c, VsmpsASelCtrl
+	 * 0x10, VsmpsAAutoMode
+	 * 0x20, VsmpsAPWMMode
+	 */
+	REG_INIT(AB8505_VSMPSAREGU,		0x04, 0x03, 0x3f),
+	/*
+	 * 0x03, VsmpsBRegu
+	 * 0x0c, VsmpsBSelCtrl
+	 * 0x10, VsmpsBAutoMode
+	 * 0x20, VsmpsBPWMMode
+	 */
+	REG_INIT(AB8505_VSMPSBREGU,		0x04, 0x04, 0x3f),
+	/*
+	 * 0x03, VsafeRegu
+	 * 0x0c, VsafeSelCtrl
+	 * 0x10, VsafeAutoMode
+	 * 0x20, VsafePWMMode
+	 */
+	REG_INIT(AB8505_VSAFEREGU,		0x04, 0x05, 0x3f),
+	/*
+	 * 0x03, VpllRegu (NOTE! PRCMU register bits)
+	 * 0x0c, VanaRegu
+	 */
+	REG_INIT(AB8505_VPLLVANAREGU,		0x04, 0x06, 0x0f),
+	/*
+	 * 0x03, VextSupply1Regu
+	 * 0x0c, VextSupply2Regu
+	 * 0x30, VextSupply3Regu
+	 * 0x40, ExtSupply2Bypass
+	 * 0x80, ExtSupply3Bypass
+	 */
+	REG_INIT(AB8505_EXTSUPPLYREGU,		0x04, 0x08, 0xff),
+	/*
+	 * 0x03, Vaux1Regu
+	 * 0x0c, Vaux2Regu
+	 */
+	REG_INIT(AB8505_VAUX12REGU,		0x04, 0x09, 0x0f),
+	/*
+	 * 0x0f, Vaux3Regu
+	 */
+	REG_INIT(AB8505_VRF1VAUX3REGU,		0x04, 0x0a, 0x0f),
+	/*
+	 * 0x3f, VsmpsASel1
+	 */
+	REG_INIT(AB8505_VSMPSASEL1,		0x04, 0x13, 0x3f),
+	/*
+	 * 0x3f, VsmpsASel2
+	 */
+	REG_INIT(AB8505_VSMPSASEL2,		0x04, 0x14, 0x3f),
+	/*
+	 * 0x3f, VsmpsASel3
+	 */
+	REG_INIT(AB8505_VSMPSASEL3,		0x04, 0x15, 0x3f),
+	/*
+	 * 0x3f, VsmpsBSel1
+	 */
+	REG_INIT(AB8505_VSMPSBSEL1,		0x04, 0x17, 0x3f),
+	/*
+	 * 0x3f, VsmpsBSel2
+	 */
+	REG_INIT(AB8505_VSMPSBSEL2,		0x04, 0x18, 0x3f),
+	/*
+	 * 0x3f, VsmpsBSel3
+	 */
+	REG_INIT(AB8505_VSMPSBSEL3,		0x04, 0x19, 0x3f),
+	/*
+	 * 0x7f, VsafeSel1
+	 */
+	REG_INIT(AB8505_VSAFESEL1,		0x04, 0x1b, 0x7f),
+	/*
+	 * 0x3f, VsafeSel2
+	 */
+	REG_INIT(AB8505_VSAFESEL2,		0x04, 0x1c, 0x7f),
+	/*
+	 * 0x3f, VsafeSel3
+	 */
+	REG_INIT(AB8505_VSAFESEL3,		0x04, 0x1d, 0x7f),
+	/*
+	 * 0x0f, Vaux1Sel
+	 */
+	REG_INIT(AB8505_VAUX1SEL,		0x04, 0x1f, 0x0f),
+	/*
+	 * 0x0f, Vaux2Sel
+	 */
+	REG_INIT(AB8505_VAUX2SEL,		0x04, 0x20, 0x0f),
+	/*
+	 * 0x07, Vaux3Sel
+	 * 0x30, VRF1Sel
+	 */
+	REG_INIT(AB8505_VRF1VAUX3SEL,		0x04, 0x21, 0x37),
+	/*
+	 * 0x03, Vaux4RequestCtrl
+	 */
+	REG_INIT(AB8505_VAUX4REQCTRL,		0x04, 0x2d, 0x03),
+	/*
+	 * 0x03, Vaux4Regu
+	 */
+	REG_INIT(AB8505_VAUX4REGU,		0x04, 0x2e, 0x03),
+	/*
+	 * 0x0f, Vaux4Sel
+	 */
+	REG_INIT(AB8505_VAUX4SEL,		0x04, 0x2f, 0x0f),
+	/*
+	 * 0x04, Vaux1Disch
+	 * 0x08, Vaux2Disch
+	 * 0x10, Vaux3Disch
+	 * 0x20, Vintcore12Disch
+	 * 0x40, VTVoutDisch
+	 * 0x80, VaudioDisch
+	 */
+	REG_INIT(AB8505_REGUCTRLDISCH,		0x04, 0x43, 0xfc),
+	/*
+	 * 0x02, VanaDisch
+	 * 0x04, VdmicPullDownEna
+	 * 0x10, VdmicDisch
+	 */
+	REG_INIT(AB8505_REGUCTRLDISCH2,		0x04, 0x44, 0x16),
+	/*
+	 * 0x01, Vaux4Disch
+	 */
+	REG_INIT(AB8505_REGUCTRLDISCH3,		0x04, 0x48, 0x01),
+	/*
+	 * 0x07, Vaux5Sel
+	 * 0x08, Vaux5LP
+	 * 0x10, Vaux5Ena
+	 * 0x20, Vaux5Disch
+	 * 0x40, Vaux5DisSfst
+	 * 0x80, Vaux5DisPulld
+	 */
+	REG_INIT(AB8505_CTRLVAUX5,		0x01, 0x55, 0xff),
+	/*
+	 * 0x07, Vaux6Sel
+	 * 0x08, Vaux6LP
+	 * 0x10, Vaux6Ena
+	 * 0x80, Vaux6DisPulld
+	 */
+	REG_INIT(AB8505_CTRLVAUX6,		0x01, 0x56, 0x9f),
+};
 
 /* AB9540 register init */
 static struct ab8500_reg_init ab9540_reg_init[] = {
@@ -1529,6 +2226,14 @@ static struct ab8500_reg_init ab9540_reg_init[] = {
 	 */
 	REG_INIT(AB9540_VAUX4SEL,		0x04, 0x2f, 0x0f),
 	/*
+	 * 0x00, CtrlVaux5
+	 */
+	REG_INIT(AB9540_VAUX5CTRL,		0x01, 0x55, 0xff),
+	/*
+	 * 0x00, CtrlVaux6
+	 */
+	REG_INIT(AB9540_VAUX6CTRL,		0x01, 0x56, 0xff),
+	/*
 	 * 0x01, VpllDisch
 	 * 0x02, Vrf1Disch
 	 * 0x04, Vaux1Disch
@@ -1587,6 +2292,11 @@ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
 		regulator_info_size = ARRAY_SIZE(ab9540_regulator_info);
 		reg_init = ab9540_reg_init;
 		reg_init_size = AB9540_NUM_REGULATOR_REGISTERS;
+	} else if (is_ab8505(ab8500)) {
+		regulator_info = ab8505_regulator_info;
+		regulator_info_size = ARRAY_SIZE(ab8505_regulator_info);
+		reg_init = ab8505_reg_init;
+		reg_init_size = AB8505_NUM_REGULATOR_REGISTERS;
 	} else {
 		regulator_info = ab8500_regulator_info;
 		regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
@@ -1656,10 +2366,12 @@ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
 		}
 	}
 
-	/* register external regulators (before Vaux1, 2 and 3) */
-	err = ab8500_ext_regulator_init(pdev);
-	if (err)
-		return err;
+	if (!is_ab8505(ab8500)) {
+		/* register external regulators (before Vaux1, 2 and 3) */
+		err = ab8500_ext_regulator_init(pdev);
+		if (err)
+			return err;
+	}
 
 	/* register all regulators */
 	for (i = 0; i < regulator_info_size; i++) {
@@ -1683,7 +2395,7 @@ static __devinit int ab8500_regulator_probe(struct platform_device *pdev)
 
 		/* register regulator with framework */
 		info->regulator = regulator_register(&info->desc, &pdev->dev,
-				&pdata->regulator[i], info, NULL);
+				&pdata->regulator[i], info);
 		if (IS_ERR(info->regulator)) {
 			err = PTR_ERR(info->regulator);
 			dev_err(&pdev->dev, "failed to register regulator %s\n",
@@ -1714,6 +2426,9 @@ static __devexit int ab8500_regulator_remove(struct platform_device *pdev)
 	if (is_ab9540(ab8500)) {
 		regulator_info = ab9540_regulator_info;
 		regulator_info_size = ARRAY_SIZE(ab9540_regulator_info);
+	} else if (is_ab8505(ab8500)) {
+		regulator_info = ab8505_regulator_info;
+		regulator_info_size = ARRAY_SIZE(ab8505_regulator_info);
 	} else {
 		regulator_info = ab8500_regulator_info;
 		regulator_info_size = ARRAY_SIZE(ab8500_regulator_info);
@@ -1729,10 +2444,12 @@ static __devexit int ab8500_regulator_remove(struct platform_device *pdev)
 		regulator_unregister(info->regulator);
 	}
 
-	/* remove external regulators (after Vaux1, 2 and 3) */
-	err = ab8500_ext_regulator_exit(pdev);
-	if (err)
-		return err;
+	if (!is_ab8505(ab8500)) {
+		/* remove external regulators (after Vaux1, 2 and 3) */
+		err = ab8500_ext_regulator_exit(pdev);
+		if (err)
+			return err;
+	}
 
 	/* remove regulator debug */
 	err = ab8500_regulator_debug_exit(pdev);
@@ -1772,5 +2489,6 @@ module_exit(ab8500_regulator_exit);
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Sundar Iyer <sundar.iyer@stericsson.com>");
 MODULE_AUTHOR("Bengt Jonsson <bengt.g.jonsson@stericsson.com>");
+MODULE_AUTHOR("Daniel Willerud <daniel.willerud@stericsson.com>");
 MODULE_DESCRIPTION("Regulator Driver for ST-Ericsson AB8500 Mixed-Sig PMIC");
 MODULE_ALIAS("platform:ab8500-regulator");

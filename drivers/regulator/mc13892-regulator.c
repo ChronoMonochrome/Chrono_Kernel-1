@@ -18,7 +18,6 @@
 #include <linux/slab.h>
 #include <linux/init.h>
 #include <linux/err.h>
-#include <linux/module.h>
 #include "mc13xxx.h"
 
 #define MC13892_REVISION			7
@@ -527,32 +526,23 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
 	struct mc13xxx *mc13892 = dev_get_drvdata(pdev->dev.parent);
 	struct mc13xxx_regulator_platform_data *pdata =
 		dev_get_platdata(&pdev->dev);
-	struct mc13xxx_regulator_init_data *mc13xxx_data;
+	struct mc13xxx_regulator_init_data *init_data;
 	int i, ret;
-	int num_regulators = 0;
 	u32 val;
 
-	num_regulators = mc13xxx_get_num_regulators_dt(pdev);
-	if (num_regulators <= 0 && pdata)
-		num_regulators = pdata->num_regulators;
-	if (num_regulators <= 0)
-		return -EINVAL;
-
-	priv = devm_kzalloc(&pdev->dev, sizeof(*priv) +
-		num_regulators * sizeof(priv->regulators[0]),
+	priv = kzalloc(sizeof(*priv) +
+		pdata->num_regulators * sizeof(priv->regulators[0]),
 		GFP_KERNEL);
 	if (!priv)
 		return -ENOMEM;
 
-	priv->num_regulators = num_regulators;
 	priv->mc13xxx_regulators = mc13892_regulators;
 	priv->mc13xxx = mc13892;
-	platform_set_drvdata(pdev, priv);
 
 	mc13xxx_lock(mc13892);
 	ret = mc13xxx_reg_read(mc13892, MC13892_REVISION, &val);
 	if (ret)
-		goto err_unlock;
+		goto err_free;
 
 	/* enable switch auto mode */
 	if ((val & 0x0000FFFF) == 0x45d0) {
@@ -562,7 +552,7 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
 			MC13892_SWITCHERS4_SW1MODE_AUTO |
 			MC13892_SWITCHERS4_SW2MODE_AUTO);
 		if (ret)
-			goto err_unlock;
+			goto err_free;
 
 		ret = mc13xxx_reg_rmw(mc13892, MC13892_SWITCHERS5,
 			MC13892_SWITCHERS5_SW3MODE_M |
@@ -570,7 +560,7 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
 			MC13892_SWITCHERS5_SW3MODE_AUTO |
 			MC13892_SWITCHERS5_SW4MODE_AUTO);
 		if (ret)
-			goto err_unlock;
+			goto err_free;
 	}
 	mc13xxx_unlock(mc13892);
 
@@ -578,27 +568,11 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
 		= mc13892_vcam_set_mode;
 	mc13892_regulators[MC13892_VCAM].desc.ops->get_mode
 		= mc13892_vcam_get_mode;
-
-	mc13xxx_data = mc13xxx_parse_regulators_dt(pdev, mc13892_regulators,
-					ARRAY_SIZE(mc13892_regulators));
-	for (i = 0; i < num_regulators; i++) {
-		struct regulator_init_data *init_data;
-		struct regulator_desc *desc;
-		struct device_node *node = NULL;
-		int id;
-
-		if (mc13xxx_data) {
-			id = mc13xxx_data[i].id;
-			init_data = mc13xxx_data[i].init_data;
-			node = mc13xxx_data[i].node;
-		} else {
-			id = pdata->regulators[i].id;
-			init_data = pdata->regulators[i].init_data;
-		}
-		desc = &mc13892_regulators[id].desc;
-
+	for (i = 0; i < pdata->num_regulators; i++) {
+		init_data = &pdata->regulators[i];
 		priv->regulators[i] = regulator_register(
-			desc, &pdev->dev, init_data, priv, node);
+			&mc13892_regulators[init_data->id].desc,
+			&pdev->dev, init_data->init_data, priv);
 
 		if (IS_ERR(priv->regulators[i])) {
 			dev_err(&pdev->dev, "failed to register regulator %s\n",
@@ -608,27 +582,33 @@ static int __devinit mc13892_regulator_probe(struct platform_device *pdev)
 		}
 	}
 
+	platform_set_drvdata(pdev, priv);
+
 	return 0;
 err:
 	while (--i >= 0)
 		regulator_unregister(priv->regulators[i]);
-	return ret;
 
-err_unlock:
+err_free:
 	mc13xxx_unlock(mc13892);
+	kfree(priv);
+
 	return ret;
 }
 
 static int __devexit mc13892_regulator_remove(struct platform_device *pdev)
 {
 	struct mc13xxx_regulator_priv *priv = platform_get_drvdata(pdev);
+	struct mc13xxx_regulator_platform_data *pdata =
+		dev_get_platdata(&pdev->dev);
 	int i;
 
 	platform_set_drvdata(pdev, NULL);
 
-	for (i = 0; i < priv->num_regulators; i++)
+	for (i = 0; i < pdata->num_regulators; i++)
 		regulator_unregister(priv->regulators[i]);
 
+	kfree(priv);
 	return 0;
 }
 
