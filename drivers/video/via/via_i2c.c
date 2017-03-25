@@ -51,7 +51,7 @@ static void via_i2c_setscl(void *data, int state)
 		val |= 0x01;
 		break;
 	case VIA_PORT_GPIO:
-		val |= 0x82;
+		val |= 0x80;
 		break;
 	default:
 		printk(KERN_ERR "viafb_i2c: specify wrong i2c type.\n");
@@ -67,9 +67,6 @@ static int via_i2c_getscl(void *data)
 	int ret = 0;
 
 	spin_lock_irqsave(&i2c_vdev->reg_lock, flags);
-	if (adap_data->type == VIA_PORT_GPIO)
-		via_write_reg_mask(adap_data->io_port, adap_data->ioport_index,
-			0, 0x80);
 	if (via_read_reg(adap_data->io_port, adap_data->ioport_index) & 0x08)
 		ret = 1;
 	spin_unlock_irqrestore(&i2c_vdev->reg_lock, flags);
@@ -83,9 +80,6 @@ static int via_i2c_getsda(void *data)
 	int ret = 0;
 
 	spin_lock_irqsave(&i2c_vdev->reg_lock, flags);
-	if (adap_data->type == VIA_PORT_GPIO)
-		via_write_reg_mask(adap_data->io_port, adap_data->ioport_index,
-			0, 0x40);
 	if (via_read_reg(adap_data->io_port, adap_data->ioport_index) & 0x04)
 		ret = 1;
 	spin_unlock_irqrestore(&i2c_vdev->reg_lock, flags);
@@ -109,7 +103,7 @@ static void via_i2c_setsda(void *data, int state)
 		val |= 0x01;
 		break;
 	case VIA_PORT_GPIO:
-		val |= 0x42;
+		val |= 0x40;
 		break;
 	default:
 		printk(KERN_ERR "viafb_i2c: specify wrong i2c type.\n");

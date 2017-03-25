@@ -13,7 +13,6 @@
 #include <linux/i2c.h>
 #include <linux/io.h>
 #include <linux/delay.h>
-#include <linux/export.h>
 
 #include "mb862xxfb.h"
 #include "mb862xx_reg.h"
@@ -24,7 +23,7 @@ static int mb862xx_i2c_wait_event(struct i2c_adapter *adap)
 	u32 reg;
 
 	do {
-		udelay(10);
+		udelay(1);
 		reg = inreg(i2c, GC_I2C_BCR);
 		if (reg & (I2C_INT | I2C_BER))
 			break;

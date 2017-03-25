@@ -23,6 +23,7 @@
 #include <linux/device.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
+#include <linux/version.h>
 #include <linux/errno.h>
 #include <linux/string.h>
 #include <linux/mm.h>
@@ -511,7 +512,25 @@ static struct platform_driver xilinxfb_of_driver = {
 	},
 };
 
-module_platform_driver(xilinxfb_of_driver);
+
+/* ---------------------------------------------------------------------
+ * Module setup and teardown
+ */
+
+static int __init
+xilinxfb_init(void)
+{
+	return platform_driver_register(&xilinxfb_of_driver);
+}
+
+static void __exit
+xilinxfb_cleanup(void)
+{
+	platform_driver_unregister(&xilinxfb_of_driver);
+}
+
+module_init(xilinxfb_init);
+module_exit(xilinxfb_cleanup);
 
 MODULE_AUTHOR("MontaVista Software, Inc. <source@mvista.com>");
 MODULE_DESCRIPTION("Xilinx TFT frame buffer driver");

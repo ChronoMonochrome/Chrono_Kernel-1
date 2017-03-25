@@ -11,7 +11,6 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/platform_device.h>
-#include <linux/module.h>
 #include <linux/fb.h>
 #include <linux/backlight.h>
 #include <linux/slab.h>
@@ -186,7 +185,7 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (data == NULL)
 		return -ENOMEM;
 
@@ -200,6 +199,7 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
 				       &wm831x_backlight_ops, &props);
 	if (IS_ERR(bl)) {
 		dev_err(&pdev->dev, "failed to register backlight\n");
+		kfree(data);
 		return PTR_ERR(bl);
 	}
 
@@ -210,6 +210,7 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
 	/* Disable the DCDC if it was started so we can bootstrap */
 	wm831x_set_bits(wm831x, WM831X_DCDC_ENABLE, WM831X_DC4_ENA, 0);
 
+
 	backlight_update_status(bl);
 
 	return 0;
@@ -218,8 +219,10 @@ static int wm831x_backlight_probe(struct platform_device *pdev)
 static int wm831x_backlight_remove(struct platform_device *pdev)
 {
 	struct backlight_device *bl = platform_get_drvdata(pdev);
+	struct wm831x_backlight_data *data = bl_get_data(bl);
 
 	backlight_device_unregister(bl);
+	kfree(data);
 	return 0;
 }
 
@@ -232,7 +235,17 @@ static struct platform_driver wm831x_backlight_driver = {
 	.remove		= wm831x_backlight_remove,
 };
 
-module_platform_driver(wm831x_backlight_driver);
+static int __init wm831x_backlight_init(void)
+{
+	return platform_driver_register(&wm831x_backlight_driver);
+}
+module_init(wm831x_backlight_init);
+
+static void __exit wm831x_backlight_exit(void)
+{
+	platform_driver_unregister(&wm831x_backlight_driver);
+}
+module_exit(wm831x_backlight_exit);
 
 MODULE_DESCRIPTION("Backlight Driver for WM831x PMICs");
 MODULE_AUTHOR("Mark Brown <broonie@opensource.wolfsonmicro.com");

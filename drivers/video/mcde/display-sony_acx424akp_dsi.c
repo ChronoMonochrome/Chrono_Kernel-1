@@ -16,11 +16,10 @@
 #include <linux/gpio.h>
 #include <linux/err.h>
 #include <linux/slab.h>
-
 #include <linux/regulator/consumer.h>
 
 #include <video/mcde_display.h>
-#include <video/mcde_display-sony_acx424akp_dsi.h>
+#include <mach/hardware.h>
 
 #define RESET_DELAY_MS		11
 #define RESET_LOW_DELAY_US	20
@@ -30,13 +29,40 @@
 #define IO_REGU_MIN		1600000
 #define IO_REGU_MAX		3300000
 
-#define DSI_HS_FREQ_HZ		420160000
+#define VID_MODE_REFRESH_RATE	60
+#define DSI_HS_FREQ_HZ_VID	330000000
+#define DSI_HS_FREQ_HZ_CMD	420160000
 #define DSI_LP_FREQ_HZ		19200000
+
+#define DCS_CMD_SET_MIPI_MDDI		0xAE
+#define DCS_CMD_TURN_ON_PERIPHERIAL	0x32
+
+/* DSI video mode */
+struct mcde_dsi_vid_blanking {
+	u8 vbp_lines;		/* vertical back porch (in lines) */
+	u8 vfp_lines;		/* vertical front porch (in lines) */
+	u8 vsync_lines;		/* vertical sync width (in lines) */
+	u8 hbp_pixels;		/* horizontal back porch (in pixels) */
+	u8 hfp_pixels;		/* horizontal front porch (in pixels) */
+	u8 hsync_pixels;	/* horizontal sync width (in pixels) */
+};
+
+enum display_panel_type {
+	DISPLAY_NONE			= 0,
+	DISPLAY_SONY_ACX424AKP          = 0x1b81,
+	DISPLAY_SONY_ACX424AKP_ID2      = 0x1a81,
+	DISPLAY_SONY_ACX424AKP_ID3      = 0x0080,
+};
+
+/* BACKLIGHT PWM Frequency Config */
+#define DCS_CMD_SET_LED_BRGT			0x51
+#define DCS_CMD_SET_LED_CTRL			0x53
 
 struct device_info {
 	int reset_gpio;
 	struct mcde_port port;
 	struct regulator *regulator;
+	struct mcde_dsi_vid_blanking blanking;
 };
 
 static inline struct device_info *get_drvdata(struct mcde_display_device *ddev)
@@ -81,7 +107,7 @@ read_fail:
 	/* close  MCDE channel */
 	mcde_chnl_put(chnl);
 out:
-	return 0;
+	return ret;
 }
 
 static int power_on(struct mcde_display_device *dev)
@@ -118,6 +144,7 @@ static int display_on(struct mcde_display_device *ddev)
 {
 	int ret;
 	u8 val = 0;
+	u8 mddi_val = 3;
 
 	dev_dbg(&ddev->dev, "Display on sony display\n");
 
@@ -127,13 +154,45 @@ static int display_on(struct mcde_display_device *ddev)
 		dev_warn(&ddev->dev,
 			"%s:Failed to enable synchronized update\n", __func__);
 
+	ret = mcde_dsi_dcs_write(ddev->chnl_state,
+					DCS_CMD_SET_MIPI_MDDI, &mddi_val, 1);
+	if (ret)
+		dev_warn(&ddev->dev, "%s:Failed to set mddi\n", __func__);
+
 	ret = mcde_dsi_dcs_write(ddev->chnl_state, DCS_CMD_EXIT_SLEEP_MODE,
 								NULL, 0);
 	if (ret)
 		return ret;
+
 	msleep(SLEEP_OUT_DELAY_MS);
-	return mcde_dsi_dcs_write(ddev->chnl_state, DCS_CMD_SET_DISPLAY_ON,
+
+	if (ddev->port->mode == MCDE_PORTMODE_VID) {
+		ret = mcde_dsi_dcs_write(ddev->chnl_state,
+					DCS_CMD_TURN_ON_PERIPHERIAL, NULL, 0);
+		if (ret)
+			return ret;
+	}
+
+	mcde_formatter_enable(ddev->chnl_state);
+
+	ret = mcde_dsi_dcs_write(ddev->chnl_state, DCS_CMD_SET_DISPLAY_ON,
 								NULL, 0);
+
+	if (cpu_is_u9540()) {
+		/* PWM Duty cycle configuration */
+		val = 0xFF;
+		ret = mcde_dsi_dcs_write(ddev->chnl_state,
+					DCS_CMD_SET_LED_BRGT, &val, 1);
+		if (ret)
+			return ret;
+
+		/* Backlight enable */
+		val = 0x24;
+		return mcde_dsi_dcs_write(ddev->chnl_state,
+					DCS_CMD_SET_LED_CTRL, &val, 1);
+	} else
+		return ret;
+
 }
 
 static int display_off(struct mcde_display_device *ddev)
@@ -155,54 +214,13 @@ static int display_off(struct mcde_display_device *ddev)
 	return ret;
 }
 
-static int sony_acx424akp_set_scan_mode(struct mcde_display_device *ddev,
-		enum mcde_display_power_mode power_mode)
-{
-	int ret = 0;
-	u8 param[MCDE_MAX_DSI_DIRECT_CMD_WRITE];
-
-	dev_dbg(&ddev->dev, "%s:Set Power mode\n", __func__);
-
-	/* 180 rotation for SONY ACX424AKP display */
-	if (ddev->power_mode == MCDE_DISPLAY_PM_STANDBY) {
-		param[0] = 0xAA;
-		ret = mcde_dsi_dcs_write(ddev->chnl_state, 0xf3, param, 1);
-		if (ret)
-			return ret;
-
-		param[0] = 0x00;
-		param[1] = 0x00;
-		ret = mcde_dsi_generic_write(ddev->chnl_state, param, 3);
-		if (ret)
-			return ret;
-
-		param[0] = 0xC9;
-		param[1] = 0x01;
-		ret = mcde_dsi_generic_write(ddev->chnl_state, param, 3);
-		if (ret)
-			return ret;
-
-		param[0] = 0xA2;
-		param[1] = 0x00;
-		ret = mcde_dsi_generic_write(ddev->chnl_state, param, 3);
-		if (ret)
-			return ret;
-
-		param[0] = 0xFF;
-		param[1] = 0xAA;
-		ret = mcde_dsi_generic_write(ddev->chnl_state, param, 3);
-		if (ret)
-			return ret;
-	}
-	return ret;
-}
-
 static int sony_acx424akp_set_power_mode(struct mcde_display_device *ddev,
 	enum mcde_display_power_mode power_mode)
 {
 	int ret = 0;
 
-	dev_dbg(&ddev->dev, "%s:Set Power mode\n", __func__);
+	dev_dbg(&ddev->dev, "%s:Set Power mode (%d->%d)\n", __func__,
+					(u32)ddev->power_mode, (u32)power_mode);
 
 	/* OFF -> STANDBY */
 	if (ddev->power_mode == MCDE_DISPLAY_PM_OFF &&
@@ -244,14 +262,113 @@ static int sony_acx424akp_set_power_mode(struct mcde_display_device *ddev,
 	return mcde_chnl_set_power_mode(ddev->chnl_state, ddev->power_mode);
 }
 
+static int sony_acx424akp_try_video_mode(struct mcde_display_device *ddev,
+				struct mcde_video_mode *video_mode)
+{
+	struct device_info *di = get_drvdata(ddev);
+	int ret = 0;
+
+	if (!ddev || !video_mode) {
+		dev_warn(&ddev->dev,
+			"%s: dev or video_mode equals NULL, aborting\n",
+			__func__);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (video_mode->xres == ddev->native_x_res &&
+				video_mode->yres == ddev->native_y_res) {
+		u32 pclk;
+
+		video_mode->vfp = di->blanking.vfp_lines;
+		video_mode->vbp = di->blanking.vbp_lines;
+		video_mode->vsw = di->blanking.vsync_lines;
+		video_mode->hfp = di->blanking.hfp_pixels;
+		video_mode->hbp = di->blanking.hbp_pixels;
+		video_mode->hsw = 0;
+		video_mode->interlaced = false;
+		pclk = 1000000000 / VID_MODE_REFRESH_RATE;
+		pclk /= video_mode->xres + video_mode->hsw + video_mode->hbp +
+								video_mode->hfp;
+		pclk *= 1000;
+		pclk /= video_mode->yres + video_mode->vsw + video_mode->vbp +
+								video_mode->vfp;
+		video_mode->pixclock = pclk;
+	} else {
+		dev_warn(&ddev->dev,
+			"%s:Failed to find video mode x=%d, y=%d\n",
+			__func__, video_mode->xres, video_mode->yres);
+		ret = -EINVAL;
+	}
+out:
+	return ret;
+}
+
+static int sony_acx424akp_set_video_mode(struct mcde_display_device *ddev,
+				struct mcde_video_mode *video_mode)
+{
+	int ret = -EINVAL;
+
+	if (!ddev || !video_mode) {
+		dev_warn(&ddev->dev,
+			"%s: dev or video_mode equals NULL, aborting\n",
+			__func__);
+		return ret;
+	}
+
+	ddev->video_mode = *video_mode;
+	if (video_mode->xres == ddev->native_x_res &&
+				video_mode->yres == ddev->native_y_res) {
+		/* Set driver data */
+		ret = 0;
+	}
+
+	ret = mcde_chnl_set_video_mode(ddev->chnl_state, &ddev->video_mode);
+	if (ret < 0) {
+		dev_warn(&ddev->dev,
+			"%s: Failed to set video mode on channel\n",
+			__func__);
+		return ret;
+	}
+
+	ddev->update_flags |= UPDATE_FLAG_VIDEO_MODE;
+	return ret;
+}
+
+static int sony_acx424akp_update(struct mcde_display_device *ddev,
+							bool tripple_buffer)
+{
+	int ret = 0;
+
+	if (ddev->power_mode != MCDE_DISPLAY_PM_ON && ddev->set_power_mode) {
+		ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_ON);
+		if (ret < 0) {
+			dev_warn(&ddev->dev,
+				"%s:Failed to set power mode to on\n",
+				__func__);
+			return ret;
+		}
+	}
+
+	ret = mcde_chnl_update(ddev->chnl_state, tripple_buffer);
+	if (ret < 0) {
+		dev_warn(&ddev->dev,
+			"%s:Failed to update channel\n", __func__);
+		return ret;
+	}
+
+	dev_vdbg(&ddev->dev, "Overlay updated, chnl=%d\n", ddev->chnl_id);
+
+	return 0;
+}
+
 static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 {
 	int ret = 0;
+	int i = 0;
 	u16 id = 0;
 	struct device_info *di;
-	struct mcde_port *port;
-	struct mcde_display_sony_acx424akp_platform_data *pdata =
-		dev->dev.platform_data;
+	struct mcde_display_dsi_platform_data *pdata = dev->dev.platform_data;
 
 	if (pdata == NULL || !pdata->reset_gpio) {
 		dev_err(&dev->dev, "Invalid platform data\n");
@@ -262,20 +379,46 @@ static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 	if (!di)
 		return -ENOMEM;
 
-	port = dev->port;
 	di->reset_gpio = pdata->reset_gpio;
+	if (!dev->default_pixel_format)
+		dev->default_pixel_format = MCDE_OVLYPIXFMT_RGBA8888,
+
+	di->port = *dev->port;
 	di->port.type = MCDE_PORTTYPE_DSI;
-	di->port.mode = MCDE_PORTMODE_CMD;
 	di->port.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP;
-	di->port.sync_src = dev->port->sync_src;
-	di->port.frame_trig = dev->port->frame_trig;
-	di->port.phy.dsi.num_data_lanes = 2;
-	di->port.link = port->link;
 	di->port.phy.dsi.host_eot_gen = true;
-	/* TODO: Move UI to mcde_hw.c when clk_get_rate(dsi) is done */
-	di->port.phy.dsi.ui = 9;
-	di->port.phy.dsi.hs_freq = DSI_HS_FREQ_HZ;
 	di->port.phy.dsi.lp_freq = DSI_LP_FREQ_HZ;
+	di->port.phy.dsi.num_data_lanes =
+			pdata->num_data_lanes ? pdata->num_data_lanes : 2;
+
+	if (dev->port->sync_src == MCDE_SYNCSRC_TE0 ||
+	    dev->port->sync_src == MCDE_SYNCSRC_TE1) {
+		di->port.vsync_polarity = VSYNC_ACTIVE_HIGH;
+		di->port.vsync_clock_div = 0;
+		di->port.vsync_min_duration = 0;
+		di->port.vsync_max_duration = 0;
+	}
+
+	if (di->port.mode == MCDE_PORTMODE_VID) {
+		di->blanking.vsync_lines = 1;
+		di->blanking.vfp_lines = 14;
+		di->blanking.vbp_lines = 11;
+		di->blanking.hsync_pixels = 0;
+		di->blanking.hfp_pixels = 15;
+		di->blanking.hbp_pixels = 15;
+
+		di->port.sync_src = MCDE_SYNCSRC_OFF; /* TODO: FORMATTER */
+		di->port.update_auto_trig = true;
+		di->port.frame_trig = MCDE_TRIG_HW;
+
+		di->port.phy.dsi.vid_mode = BURST_MODE_WITH_SYNC_EVENT;
+		di->port.phy.dsi.vid_wakeup_time = 48;
+		di->port.phy.dsi.hs_freq = DSI_HS_FREQ_HZ_VID;
+		di->port.phy.dsi.ui = 0; /* Auto calc */
+	} else {
+		di->port.phy.dsi.hs_freq = DSI_HS_FREQ_HZ_CMD;
+		di->port.frame_trig = MCDE_TRIG_SW;
+	}
 
 	ret = gpio_request(di->reset_gpio, NULL);
 	if (WARN_ON(ret))
@@ -293,10 +436,17 @@ static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 		goto regulator_voltage_failed;
 
 	dev->set_power_mode = sony_acx424akp_set_power_mode;
+	if (di->port.mode == MCDE_PORTMODE_VID) {
+		dev->try_video_mode = sony_acx424akp_try_video_mode;
+		dev->set_video_mode = sony_acx424akp_set_video_mode;
+		dev->update = sony_acx424akp_update;
+	}
 
 	dev->port = &di->port;
 	dev->native_x_res = 480;
 	dev->native_y_res = 854;
+	dev->physical_width = 48;
+	dev->physical_height = 84;
 	dev_set_drvdata(&dev->dev, di);
 
 	/*
@@ -313,23 +463,30 @@ static int __devinit sony_acx424akp_probe(struct mcde_display_device *dev)
 		dev->power_mode = MCDE_DISPLAY_PM_STANDBY;
 	}
 
-	ret = display_read_deviceid(dev, &id);
+	do {
+		ret = display_read_deviceid(dev, &id);
+		if (ret)
+			goto read_id_failed;
+
+		switch (id) {
+		case DISPLAY_SONY_ACX424AKP:
+		case DISPLAY_SONY_ACX424AKP_ID2:
+		case DISPLAY_SONY_ACX424AKP_ID3:
+			dev_info(&dev->dev,
+				"Sony ACX424AKP display (ID 0x%.4X) (%s mode) probed\n",
+				id, (di->port.mode == MCDE_PORTMODE_VID) ?
+							"VIDEO" : "COMMAND");
+			break;
+		default:
+			dev_info(&dev->dev,
+				"Display not recognized (ID 0x%.4X) probed\n", id);
+			ret = -EINVAL;
+			break;
+		}
+	} while (ret && i++ < 5);
+
 	if (ret)
 		goto read_id_failed;
-
-	switch (id) {
-	case DISPLAY_SONY_ACX424AKP:
-	case DISPLAY_SONY_ACX424AKP_ID2:
-		pdata->disp_panel = id;
-		dev_info(&dev->dev,
-			"Sony ACX424AKP display (ID 0x%.4X) probed\n", id);
-		break;
-	default:
-		pdata->disp_panel = DISPLAY_NONE;
-		dev_info(&dev->dev,
-			"Display not recognized (ID 0x%.4X) probed\n", id);
-		goto read_id_failed;
-	}
 
 	return 0;
 

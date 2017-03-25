@@ -34,6 +34,7 @@
 #include <linux/sched.h>
 #include <linux/err.h>
 #include <linux/hwmem.h>
+#include <linux/ktime.h>
 
 #include "b2r2_internal.h"
 #include "b2r2_control.h"
@@ -50,6 +51,7 @@
 
 #define B2R2_HEAP_SIZE (4 * PAGE_SIZE)
 #define MAX_TMP_BUF_SIZE (128 * PAGE_SIZE)
+#define CHARS_IN_REQ (2048)
 
 /*
  * TODO:
@@ -389,11 +391,11 @@ int b2r2_control_blt(struct b2r2_blt_request *request)
 	struct b2r2_control_instance *instance = request->instance;
 	struct b2r2_control *cont = instance->control;
 
-	u32 thread_runtime_at_start = 0;
+	unsigned long long thread_runtime_at_start = 0;
 
 	if (request->profile) {
-		request->start_time_nsec = b2r2_get_curr_nsec();
-		thread_runtime_at_start = (u32)task_sched_runtime(current);
+		ktime_get_ts(&request->ts_start);
+		thread_runtime_at_start = task_sched_runtime(current);
 	}
 
 	b2r2_log_info(cont->dev, "%s\n", __func__);
@@ -600,8 +602,11 @@ int b2r2_control_blt(struct b2r2_blt_request *request)
 		goto generate_nodes_failed;
 	}
 
-	/* Exit here if dry run */
-	if (request->user_req.flags & B2R2_BLT_FLAG_DRY_RUN)
+	/*
+	 * Exit here if dry run or if we choose to
+	 * omit blit jobs through debugfs
+	 */
+	if (request->user_req.flags & B2R2_BLT_FLAG_DRY_RUN || cont->bypass)
 		goto exit_dry_run;
 
 	/* Configure the request */
@@ -669,7 +674,14 @@ int b2r2_control_blt(struct b2r2_blt_request *request)
 
 #ifdef CONFIG_DEBUG_FS
 	/* Remember latest request for debugfs */
-	cont->debugfs_latest_request = *request;
+	mutex_lock(&cont->last_req_lock);
+	cont->latest_request[cont->buf_index] = *request;
+
+	/* Calculate, buf_index = (buf_index + 1) % last_request_count */
+	cont->buf_index++;
+	if (cont->buf_index >= cont->last_request_count)
+		cont->buf_index = 0;
+	mutex_unlock(&cont->last_req_lock);
 #endif
 
 	/* Submit the job */
@@ -679,7 +691,7 @@ int b2r2_control_blt(struct b2r2_blt_request *request)
 
 	if (request->profile)
 		request->nsec_active_in_cpu =
-			(s32)((u32)task_sched_runtime(current) -
+			(s64)(task_sched_runtime(current) -
 					thread_runtime_at_start);
 
 	mutex_lock(&instance->lock);
@@ -723,7 +735,8 @@ resolve_bg_buf_failed:
 		&request->src_resolved);
 resolve_src_buf_failed:
 synch_interrupted:
-	if ((request->user_req.flags & B2R2_BLT_FLAG_DRY_RUN) == 0 || ret)
+	if (((request->user_req.flags & B2R2_BLT_FLAG_DRY_RUN) == 0 ||
+			cont->bypass) && (ret != 0))
 		b2r2_log_warn(cont->dev, "%s returns with error %d\n",
 			__func__, ret);
 	job_release(&request->job);
@@ -790,6 +803,8 @@ static void job_callback(struct b2r2_core_job *job)
 	/* Local addref / release within this func */
 	b2r2_core_job_addref(job, __func__);
 
+	b2r2_debug_buffers_unresolve(cont, request);
+
 	/* Unresolve the buffers */
 	unresolve_buf(cont, &request->user_req.src_img.buf,
 		&request->src_resolved);
@@ -803,8 +818,10 @@ static void job_callback(struct b2r2_core_job *job)
 
 	/* Move to report list if the job shall be reported */
 	/* FIXME: Use a smaller struct? */
-	/* TODO: In the case of kernel API call, feed an asynch task to the
-	 * instance worker (kthread) instead of polling for a report */
+	/*
+	 * TODO: In the case of kernel API call, feed an asynch task to the
+	 * instance worker (kthread) instead of polling for a report
+	 */
 	mutex_lock(&request->instance->lock);
 	if (request->user_req.flags & B2R2_BLT_FLAG_REPORT_WHEN_DONE) {
 		/* Move job to report list */
@@ -854,8 +871,11 @@ static void job_callback(struct b2r2_core_job *job)
 #endif
 
 	if (request->profile) {
-		request->total_time_nsec =
-			(s32)(b2r2_get_curr_nsec() - request->start_time_nsec);
+		struct timespec ts_stop;
+		struct timespec ts_diff;
+		ktime_get_ts(&ts_stop);
+		ts_diff = timespec_sub(ts_stop, request->ts_start);
+		request->total_time_nsec = timespec_to_ns(&ts_diff);
 		b2r2_call_profiler_blt_done(request);
 	}
 
@@ -1076,6 +1096,8 @@ static void job_callback_gen(struct b2r2_core_job *job)
 	/* Local addref / release within this func */
 	b2r2_core_job_addref(job, __func__);
 
+	b2r2_debug_buffers_unresolve(cont, request);
+
 	/* Unresolve the buffers */
 	unresolve_buf(cont, &request->user_req.src_img.buf,
 		&request->src_resolved);
@@ -1086,8 +1108,10 @@ static void job_callback_gen(struct b2r2_core_job *job)
 
 	/* Move to report list if the job shall be reported */
 	/* FIXME: Use a smaller struct? */
-	/* TODO: In the case of kernel API call, feed an asynch task to the
-	 * instance worker (kthread) instead of polling for a report */
+	/*
+	 * TODO: In the case of kernel API call, feed an asynch task to the
+	 * instance worker (kthread) instead of polling for a report
+	 */
 	mutex_lock(&request->instance->lock);
 	if (request->user_req.flags & B2R2_BLT_FLAG_REPORT_WHEN_DONE) {
 		/* Move job to report list */
@@ -1244,7 +1268,7 @@ int b2r2_generic_blt(struct b2r2_blt_request *request)
 	struct b2r2_control_instance *instance = request->instance;
 	struct b2r2_control *cont = instance->control;
 
-	u32 thread_runtime_at_start = 0;
+	unsigned long long thread_runtime_at_start = 0;
 	s32 nsec_active_in_b2r2 = 0;
 
 	/*
@@ -1267,8 +1291,8 @@ int b2r2_generic_blt(struct b2r2_blt_request *request)
 	}
 
 	if (request->profile) {
-		request->start_time_nsec = b2r2_get_curr_nsec();
-		thread_runtime_at_start = (u32)task_sched_runtime(current);
+		ktime_get_ts(&request->ts_start);
+		thread_runtime_at_start = task_sched_runtime(current);
 	}
 
 	memset(work_bufs, 0, sizeof(work_bufs));
@@ -1454,8 +1478,11 @@ int b2r2_generic_blt(struct b2r2_blt_request *request)
 		goto generic_conf_failed;
 	}
 
-	/* Exit here if dry run */
-	if (flags & B2R2_BLT_FLAG_DRY_RUN)
+	/*
+	 * Exit here if dry run or if we choose to
+	 * omit blit jobs through debugfs
+	 */
+	if (flags & B2R2_BLT_FLAG_DRY_RUN || cont->bypass)
 		goto exit_dry_run;
 
 	/*
@@ -1518,7 +1545,14 @@ int b2r2_generic_blt(struct b2r2_blt_request *request)
 
 #ifdef CONFIG_DEBUG_FS
 	/* Remember latest request */
-	cont->debugfs_latest_request = *request;
+	mutex_lock(&cont->last_req_lock);
+	cont->latest_request[cont->buf_index] = *request;
+
+	/* Calculate, buf_index = (buf_index + 1) % last_request_count */
+	cont->buf_index++;
+	if (cont->buf_index >= cont->last_request_count)
+		cont->buf_index = 0;
+	mutex_unlock(&cont->last_req_lock);
 #endif
 
 	/*
@@ -1827,12 +1861,16 @@ int b2r2_generic_blt(struct b2r2_blt_request *request)
 			 * its core_job.
 			 */
 			if (request->profile) {
+				struct timespec ts_stop;
+				struct timespec ts_diff;
 				request->nsec_active_in_cpu =
-					(s32)((u32)task_sched_runtime(current) -
-					thread_runtime_at_start);
+					(s64)(task_sched_runtime(current) -
+						thread_runtime_at_start);
+				ktime_get_ts(&ts_stop);
+				ts_diff = timespec_sub(ts_stop,
+					request->ts_start);
 				request->total_time_nsec =
-					(s32)(b2r2_get_curr_nsec() -
-					request->start_time_nsec);
+					timespec_to_ns(&ts_diff);
 				request->job.nsec_active_in_hw =
 					nsec_active_in_b2r2;
 
@@ -2033,7 +2071,7 @@ static int resolve_hwmem(struct b2r2_control *cont,
 		goto access_check_failed;
 	}
 
-	if (mem_type != HWMEM_MEM_CONTIGUOUS_SYS) {
+	if (mem_type == HWMEM_MEM_SCATTERED_SYS) {
 		b2r2_log_info(cont->dev, "%s: Hwmem buffer is scattered.\n",
 			__func__);
 		return_value = -EINVAL;
@@ -2072,6 +2110,8 @@ static int resolve_hwmem(struct b2r2_control *cont,
 	resolved_buf->physical_address =
 			resolved_buf->file_physical_start + img->buf.offset;
 
+	resolved_buf->virtual_address = hwmem_kmap(resolved_buf->hwmem_alloc);
+
 	goto out;
 
 set_domain_failed:
@@ -2089,6 +2129,7 @@ out:
 
 static void unresolve_hwmem(struct b2r2_resolved_buf *resolved_buf)
 {
+	hwmem_kunmap(resolved_buf->hwmem_alloc);
 	hwmem_unpin(resolved_buf->hwmem_alloc);
 	hwmem_release(resolved_buf->hwmem_alloc);
 }
@@ -2321,9 +2362,9 @@ static void sync_buf(struct b2r2_control *cont,
 
 		switch (img->fmt) {
 		case B2R2_BLT_FMT_16_BIT_ARGB4444: /* Fall through */
+		case B2R2_BLT_FMT_16_BIT_ABGR4444: /* Fall through */
 		case B2R2_BLT_FMT_16_BIT_ARGB1555: /* Fall through */
 		case B2R2_BLT_FMT_16_BIT_RGB565:   /* Fall through */
-		case B2R2_BLT_FMT_Y_CB_Y_CR:       /* Fall through */
 		case B2R2_BLT_FMT_CB_Y_CR_Y:
 			bpp = 16;
 			break;
@@ -2357,7 +2398,6 @@ static void sync_buf(struct b2r2_control *cont,
 			s32 width;
 
 			switch (img->fmt) {
-			case B2R2_BLT_FMT_Y_CB_Y_CR:       /* Fall through */
 			case B2R2_BLT_FMT_CB_Y_CR_Y:
 				x = (rect->x / 2) * 2;
 				width = ((rect->width + 1) / 2) * 2;
@@ -2477,7 +2517,8 @@ static void dec_stat(struct b2r2_control *cont, unsigned long *stat)
 
 #ifdef CONFIG_DEBUG_FS
 /**
- * debugfs_b2r2_blt_request_read() - Implements debugfs read for B2R2 register
+ * debugfs_b2r2_blt_request_read() - Implements debugfs read for B2R2
+ * previous blits. Number of previous blits set using last_request_count.
  *
  * @filp: File pointer
  * @buf: User space buffer
@@ -2490,17 +2531,52 @@ static int debugfs_b2r2_blt_request_read(struct file *filp, char __user *buf,
 			size_t count, loff_t *f_pos)
 {
 	size_t dev_size = 0;
-	int ret = 0;
-	char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
+	size_t max_size = 0;
+	int i = 0, index = 0, ret = 0;
+	unsigned int last_request_count = 0;
+	char *req_buf = NULL;
+	char tmpbuf[9];
+
 	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
 
-	if (Buf == NULL) {
+	mutex_lock(&cont->last_req_lock);
+	last_request_count = cont->last_request_count;
+
+	/* Buffer size for one blit is below 2048 */
+	max_size = sizeof(char) * last_request_count * CHARS_IN_REQ;
+	req_buf = kmalloc(max_size, GFP_KERNEL);
+
+	if (req_buf == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	dev_size = sprintf_req(&cont->debugfs_latest_request, Buf,
-		sizeof(char) * 4096);
+	/* buf_index is location to store next request */
+	index = cont->buf_index;
+
+	for (i = last_request_count; i > 0; i--) {
+		if (--index < 0)
+			index = last_request_count - 1;
+
+		if (i == last_request_count)
+			snprintf(tmpbuf, sizeof(tmpbuf), "(latest)");
+		else if (i == 1)
+			snprintf(tmpbuf, sizeof(tmpbuf), "(oldest)");
+		else
+			tmpbuf[0] = '\0';
+
+		dev_size += snprintf(req_buf + dev_size,
+			max_size - dev_size,
+			"Details of blit request [%d]%s\n",
+			last_request_count - i, tmpbuf);
+
+		if (dev_size > max_size)
+			goto out;
+
+		dev_size += sprintf_req(&cont->latest_request[index],
+			req_buf + dev_size,
+			max_size - dev_size);
+	}
 
 	/* No more to read if offset != 0 */
 	if (*f_pos > dev_size)
@@ -2509,14 +2585,16 @@ static int debugfs_b2r2_blt_request_read(struct file *filp, char __user *buf,
 	if (*f_pos + count > dev_size)
 		count = dev_size - *f_pos;
 
-	if (copy_to_user(buf, Buf, count))
+	if (copy_to_user(buf, &req_buf[*f_pos], count))
 		ret = -EINVAL;
+
 	*f_pos += count;
 	ret = count;
 
 out:
-	if (Buf != NULL)
-		kfree(Buf);
+	mutex_unlock(&cont->last_req_lock);
+	if (req_buf != NULL)
+		kfree(req_buf);
 	return ret;
 }
 
@@ -2526,6 +2604,105 @@ out:
 static const struct file_operations debugfs_b2r2_blt_request_fops = {
 	.owner = THIS_MODULE,
 	.read  = debugfs_b2r2_blt_request_read,
+};
+
+/**
+ * debugfs_b2r2_req_count_read() - Implements debugfs read for
+ *                             previous request count
+ * @filp: File pointer
+ * @buf: User space buffer
+ * @count: Number of bytes to read
+ * @f_pos: File position
+ *
+ * Returns number of bytes read or negative error code
+ */
+static int debugfs_b2r2_req_count_read(struct file *filp, char __user *buf,
+				   size_t count, loff_t *f_pos)
+{
+	/* 2 characters hex number + newline + string terminator; */
+	char tmpbuf[2+2];
+	size_t dev_size = 0;
+	int ret = 0;
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
+
+	dev_size = snprintf(tmpbuf, sizeof(tmpbuf),
+		"%02X\n", cont->last_request_count);
+	/* No more to read if offset != 0 */
+	if (*f_pos > dev_size)
+		return ret;
+
+	if (*f_pos + count > dev_size)
+		count = dev_size - *f_pos;
+
+	if (copy_to_user(buf, &tmpbuf[*f_pos], count))
+		return -EINVAL;
+	*f_pos += count;
+	ret = count;
+
+	return ret;
+}
+
+/**
+ * debugfs_b2r2_last_count_write() - Implements debugfs write for
+ *                              previous request count
+ * @filp: File pointer
+ * @buf: User space buffer
+ * @count: Number of bytes to write
+ * @f_pos: File position
+ *
+ * Returns number of bytes written or negative error code
+ */
+static int debugfs_b2r2_req_count_write(struct file *filp,
+			const char __user *buf, size_t count, loff_t *f_pos)
+{
+	char tmpbuf[80];
+	unsigned int req_count = 0;
+	int ret = 0;
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
+
+	if (count >= sizeof(tmpbuf))
+		count = sizeof(tmpbuf) - 1;
+	if (copy_from_user(tmpbuf, buf, count))
+		return -EINVAL;
+
+	tmpbuf[count] = 0;
+	if (sscanf(tmpbuf, "%02X", &req_count) != 1)
+		return -EINVAL;
+
+	mutex_lock(&cont->last_req_lock);
+	/* Reset buf_index and request array */
+	cont->buf_index = 0;
+	memset(cont->latest_request, 0,
+		sizeof(cont->latest_request));
+
+	/* Make req_count in [1-MAX_LAST_REQUEST] range */
+	if (req_count < 1) {
+		b2r2_log_warn(cont->dev,
+			"%s: last_request_count is less than MIN\n", __func__);
+		req_count = 1;
+	}
+	if (req_count > MAX_LAST_REQUEST) {
+		b2r2_log_warn(cont->dev,
+			"%s: last_request_count is more than MAX\n", __func__);
+		req_count = MAX_LAST_REQUEST;
+	}
+
+	cont->last_request_count = req_count;
+	mutex_unlock(&cont->last_req_lock);
+
+	*f_pos += count;
+	ret = count;
+
+	return ret;
+}
+
+/**
+ * debugfs_b2r2_req_count_fops() - File operations for previous request count in debugfs
+ */
+static const struct file_operations debugfs_b2r2_req_count_fops = {
+	.owner = THIS_MODULE,
+	.read  = debugfs_b2r2_req_count_read,
+	.write = debugfs_b2r2_req_count_write,
 };
 
 /**
@@ -2706,6 +2883,82 @@ static const struct file_operations debugfs_b2r2_blt_stat_fops = {
 	.owner = THIS_MODULE,
 	.read  = debugfs_b2r2_blt_stat_read,
 };
+
+/**
+ * debugfs_b2r2_bypass_read() - Implements debugfs read for
+ *                             B2R2 Core Enable/Disable
+ * @filp: File pointer
+ * @buf: User space buffer
+ * @count: Number of bytes to read
+ * @f_pos: File position
+ *
+ * Returns number of bytes read or negative error code
+ */
+static int debugfs_b2r2_bypass_read(struct file *filp, char __user *buf,
+				   size_t count, loff_t *f_pos)
+{
+	/* 4 characters hex number + newline + string terminator; */
+	char tmpbuf[4+2];
+	size_t dev_size;
+	int ret = 0;
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
+
+	dev_size = sprintf(tmpbuf, "%02X\n", cont->bypass);
+
+	/* No more to read if offset != 0 */
+	if (*f_pos > dev_size)
+		goto out;
+
+	if (*f_pos + count > dev_size)
+		count = dev_size - *f_pos;
+
+	if (copy_to_user(buf, tmpbuf, count))
+		ret = -EINVAL;
+	*f_pos += count;
+	ret = count;
+out:
+	return ret;
+}
+
+/**
+ * debugfs_b2r2_bypass_write() - Implements debugfs write for
+ *                              B2R2 Core Enable/Disable
+ * @filp: File pointer
+ * @buf: User space buffer
+ * @count: Number of bytes to write
+ * @f_pos: File position
+ *
+ * Returns number of bytes written or negative error code
+ */
+static int debugfs_b2r2_bypass_write(struct file *filp, const char __user *buf,
+				    size_t count, loff_t *f_pos)
+{
+	u8 bypass;
+	int ret = 0;
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
+
+	ret = kstrtou8_from_user(buf, count, 16, &bypass);
+	if (ret < 0)
+		return -EINVAL;
+
+	if (bypass)
+		cont->bypass = true;
+	else
+		cont->bypass = false;
+
+	*f_pos += ret;
+
+	return ret;
+}
+
+/**
+ * debugfs_b2r2_bypass_fops() - File operations for B2R2 Core Enable/Disable debugfs
+ */
+static const struct file_operations debugfs_b2r2_bypass_fops = {
+	.owner = THIS_MODULE,
+	.read  = debugfs_b2r2_bypass_read,
+	.write = debugfs_b2r2_bypass_write,
+};
 #endif
 
 static void init_tmp_bufs(struct b2r2_control *cont)
@@ -2786,14 +3039,24 @@ int b2r2_control_init(struct b2r2_control *cont)
 	}
 
 #ifdef CONFIG_DEBUG_FS
+	/* Initialize last_request_count and lock */
+	cont->last_request_count = 1;
+	mutex_init(&cont->last_req_lock);
+
 	/* Register debug fs */
 	if (!IS_ERR_OR_NULL(cont->debugfs_root_dir)) {
-		debugfs_create_file("last_request", 0666,
+		debugfs_create_file("last_request", 0664,
 			cont->debugfs_root_dir,
 			cont, &debugfs_b2r2_blt_request_fops);
-		debugfs_create_file("stats", 0666,
+		debugfs_create_file("last_request_count", 0664,
+			cont->debugfs_root_dir,
+			cont, &debugfs_b2r2_req_count_fops);
+		debugfs_create_file("stats", 0664,
 			cont->debugfs_root_dir,
 			cont, &debugfs_b2r2_blt_stat_fops);
+		debugfs_create_file("bypass", 0664,
+			cont->debugfs_root_dir,
+			cont, &debugfs_b2r2_bypass_fops);
 	}
 #endif
 

@@ -33,14 +33,18 @@ static int __init mcde_subsystem_init(void)
 	ret = mcde_dss_init();
 	if (ret)
 		goto mcde_dss_failed;
+#ifdef CONFIG_FB_MCDE
 	ret = mcde_fb_init();
 	if (ret)
 		goto mcde_fb_failed;
+#endif
 	pr_info("MCDE subsystem init done\n");
 
 	goto done;
+#ifdef CONFIG_FB_MCDE
 mcde_fb_failed:
 	mcde_dss_exit();
+#endif
 mcde_dss_failed:
 	mcde_display_exit();
 mcde_display_failed:

@@ -16,6 +16,7 @@
 #include "b2r2_utils.h"
 #include "b2r2_debug.h"
 #include "b2r2_internal.h"
+#include "b2r2_hw_convert.h"
 
 const s32 b2r2_s32_max = 2147483647;
 
@@ -323,12 +324,13 @@ int b2r2_get_fmt_bpp(struct device *dev, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YV12:
 		return 12;
 
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 	case B2R2_BLT_FMT_16_BIT_RGB565:
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
@@ -366,7 +368,6 @@ int b2r2_get_fmt_y_bpp(struct device *dev, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
@@ -378,6 +379,7 @@ int b2r2_get_fmt_y_bpp(struct device *dev, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+	case B2R2_BLT_FMT_YV12:
 		return 8;
 
 	default:
@@ -395,6 +397,7 @@ bool b2r2_is_single_plane_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_1_BIT_A1:
 	case B2R2_BLT_FMT_8_BIT_A8:
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 	case B2R2_BLT_FMT_16_BIT_RGB565:
 	case B2R2_BLT_FMT_24_BIT_RGB888:
@@ -405,7 +408,6 @@ bool b2r2_is_single_plane_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 	case B2R2_BLT_FMT_32_BIT_VUYA8888:
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 		return true;
 
@@ -420,6 +422,7 @@ bool b2r2_is_independent_pixel_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_1_BIT_A1:
 	case B2R2_BLT_FMT_8_BIT_A8:
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 	case B2R2_BLT_FMT_16_BIT_RGB565:
 	case B2R2_BLT_FMT_24_BIT_RGB888:
@@ -441,7 +444,6 @@ bool b2r2_is_independent_pixel_fmt(enum b2r2_blt_fmt fmt)
 bool b2r2_is_ycbcri_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_24_BIT_YUV888:
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
@@ -476,6 +478,7 @@ bool b2r2_is_ycbcrp_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YV12:
 		return true;
 
 	default:
@@ -491,6 +494,7 @@ bool b2r2_is_ycbcr420_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YV12:
 		return true;
 
 	default:
@@ -501,7 +505,6 @@ bool b2r2_is_ycbcr420_fmt(enum b2r2_blt_fmt fmt)
 bool b2r2_is_ycbcr422_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
@@ -542,6 +545,20 @@ bool b2r2_is_mb_fmt(enum b2r2_blt_fmt fmt)
 	}
 }
 
+u32 b2r2_get_chroma_pitch(u32 luma_pitch, enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_YV12:
+		return b2r2_align_up(luma_pitch >> 1, 16);
+	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+		return luma_pitch;
+	default:
+		return luma_pitch >> 1;
+	}
+}
+
 u32 b2r2_calc_pitch_from_width(struct device *dev,
 		s32 width, enum b2r2_blt_fmt fmt)
 {
@@ -551,6 +568,9 @@ u32 b2r2_calc_pitch_from_width(struct device *dev,
 	} else if (b2r2_is_ycbcrsp_fmt(fmt) || b2r2_is_ycbcrp_fmt(fmt)) {
 		return (u32)b2r2_div_round_up(width *
 			b2r2_get_fmt_y_bpp(dev, fmt), 8);
+	} else if (b2r2_is_mb_fmt(fmt)) {
+		return b2r2_align_up((u32)b2r2_div_round_up(width *
+			b2r2_get_fmt_y_bpp(dev, fmt), 8), 16);
 	} else {
 		b2r2_log_err(dev, "%s: Internal error! "
 			"Pitchless format supplied.\n",
@@ -665,6 +685,7 @@ u8 b2r2_get_alpha(enum b2r2_blt_fmt fmt, u32 pixel)
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
 		return (pixel & 0xfff) >> 16;
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 		return (((pixel >> 12) & 0xf) * 255) / 15;
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 		return (pixel >> 15) * 255;
@@ -700,6 +721,7 @@ u32 b2r2_set_alpha(enum b2r2_blt_fmt fmt, u8 alpha, u32 color)
 		alpha_mask = alpha << 16;
 		break;
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 		color &= 0x0fff;
 		alpha_mask = (alpha << 8) & 0xF000;
 		break;
@@ -729,6 +751,7 @@ bool b2r2_fmt_has_alpha(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 	case B2R2_BLT_FMT_32_BIT_ARGB8888:
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
@@ -750,6 +773,7 @@ bool b2r2_is_rgb_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 	case B2R2_BLT_FMT_16_BIT_RGB565:
 	case B2R2_BLT_FMT_24_BIT_RGB888:
@@ -768,7 +792,13 @@ bool b2r2_is_rgb_fmt(enum b2r2_blt_fmt fmt)
  */
 bool b2r2_is_bgr_fmt(enum b2r2_blt_fmt fmt)
 {
-	return (fmt == B2R2_BLT_FMT_32_BIT_ABGR8888);
+	switch (fmt) {
+	case B2R2_BLT_FMT_32_BIT_ABGR8888:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
+		return true;
+	default:
+		return false;
+	}
 }
 
 /**
@@ -781,7 +811,6 @@ bool b2r2_is_yuv_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_32_BIT_AYUV8888:
 	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_32_BIT_VUYA8888:
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
@@ -794,6 +823,7 @@ bool b2r2_is_yuv_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YV12:
 		return true;
 	default:
 		return false;
@@ -806,11 +836,11 @@ bool b2r2_is_yuv_fmt(enum b2r2_blt_fmt fmt)
 bool b2r2_is_yvu_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YV12:
 		return true;
 	default:
 		return false;
@@ -825,9 +855,7 @@ bool b2r2_is_yuv420_fmt(enum b2r2_blt_fmt fmt)
 
 	switch (fmt) {
 	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
-	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
-	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 		return true;
 	default:
@@ -838,12 +866,8 @@ bool b2r2_is_yuv420_fmt(enum b2r2_blt_fmt fmt)
 bool b2r2_is_yuv422_fmt(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
-	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
-	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
-	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		return true;
 	default:
@@ -859,6 +883,7 @@ bool b2r2_is_yvu420_fmt(enum b2r2_blt_fmt fmt)
 	switch (fmt) {
 	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YV12:
 		return true;
 	default:
 		return false;
@@ -922,12 +947,13 @@ int b2r2_fmt_byte_pitch(enum b2r2_blt_fmt fmt, u32 width)
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:       /* Fall through */
 	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:       /* Fall through */
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YV12:
 		return width;
 
 	case B2R2_BLT_FMT_16_BIT_ARGB4444: /* Fall through */
+	case B2R2_BLT_FMT_16_BIT_ABGR4444: /* Fall through */
 	case B2R2_BLT_FMT_16_BIT_ARGB1555: /* Fall through */
 	case B2R2_BLT_FMT_16_BIT_RGB565:   /* Fall through */
-	case B2R2_BLT_FMT_Y_CB_Y_CR:       /* Fall through */
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 		return width << 1;
 
@@ -966,6 +992,7 @@ enum b2r2_native_fmt b2r2_to_native_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_16_BIT_RGB565:
 		return B2R2_NATIVE_RGB565;
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 		return B2R2_NATIVE_ARGB4444;
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 		return B2R2_NATIVE_ARGB1555;
@@ -984,8 +1011,6 @@ enum b2r2_native_fmt b2r2_to_native_fmt(enum b2r2_blt_fmt fmt)
 		return B2R2_NATIVE_AYCBCR8888;
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 		return B2R2_NATIVE_YCBCR422R;
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
-		return B2R2_NATIVE_YCBCR422R;
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
@@ -999,6 +1024,7 @@ enum b2r2_native_fmt b2r2_to_native_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YV12:
 		return B2R2_NATIVE_YUV;
 	default:
 		/* Should never ever happen */
@@ -1021,6 +1047,12 @@ u32 b2r2_to_RGB888(u32 color, const enum b2r2_blt_fmt fmt)
 		r = ((color & 0xf00) << 12) | ((color & 0xf00) << 8);
 		g = ((color & 0xf0) << 8) | ((color & 0xf0) << 4);
 		b = ((color & 0xf) << 4) | (color & 0xf);
+		out_color = r | g | b;
+		break;
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
+		b = ((color & 0xf00) << 12) | ((color & 0xf00) << 8);
+		g = ((color & 0xf0) << 8) | ((color & 0xf0) << 4);
+		r = ((color & 0xf) << 4) | (color & 0xf);
 		out_color = r | g | b;
 		break;
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
@@ -1065,11 +1097,11 @@ enum b2r2_fmt_type b2r2_get_fmt_type(enum b2r2_blt_fmt fmt)
 {
 	switch (fmt) {
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 	case B2R2_BLT_FMT_16_BIT_RGB565:
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 	case B2R2_BLT_FMT_32_BIT_ARGB8888:
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_32_BIT_ABGR8888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
@@ -1085,6 +1117,7 @@ enum b2r2_fmt_type b2r2_get_fmt_type(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YV12:
 		return B2R2_FMT_TYPE_PLANAR;
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
@@ -1099,6 +1132,46 @@ enum b2r2_fmt_type b2r2_get_fmt_type(enum b2r2_blt_fmt fmt)
 }
 
 #ifdef CONFIG_DEBUG_FS
+/*
+ * Similar behaviour to vsnprintf.
+ *
+ * parameters:
+ * buf - base address of string
+ * cur_size - current offset into string buffer
+ * max_size - size of string buffer from the base address
+ * (e.g. "char string[16]" -> max_size = 16)
+ * format - format string
+ *
+ * IFF buf == 0, then the return value is the number of characters
+ * (excluding the trailing '\0')
+ * that would have been written were the buffer large enough.
+ *
+ * Otherwise,
+ * the return value is the number of characters written to the buffer,
+ * with the following caveats:
+ *     output was truncated:
+ *         number of characters written INCLUDING trailing '\0'
+ *     otherwise:
+ *         number of characters written EXCLUDING trailing '\0'
+ *
+ */
+static size_t b2r2_snprintf(char *buf, size_t cur_size,
+				size_t max_size, char *format, ...)
+{
+	size_t ret;
+	va_list args;
+	va_start(args, format);
+
+	buf = buf != 0 ? buf + cur_size : 0;
+	max_size = max_size < cur_size ? 0 : max_size - cur_size;
+
+	if (buf) {
+		ret = vsnprintf(buf, max_size, format, args);
+		return ret > max_size ? max_size : ret;
+	} else
+		return vsnprintf(0, 0, format, args);
+}
+
 /**
  * sprintf_req() - Builds a string representing the request, for debug
  *
@@ -1111,39 +1184,62 @@ enum b2r2_fmt_type b2r2_get_fmt_type(enum b2r2_blt_fmt fmt)
 int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
 {
 	size_t dev_size = 0;
+	size_t max_size = (size_t) size;
+	enum b2r2_color_conversion cc = b2r2_get_color_conversion(
+		request->user_req.src_img.fmt,
+		request->user_req.dst_img.fmt,
+		((request->user_req.flags &
+			B2R2_BLT_FLAG_FULL_RANGE_YUV) ==
+				B2R2_BLT_FLAG_FULL_RANGE_YUV));
 
 	/* generic request info */
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"instance      : 0x%08lX\n",
 		(unsigned long) request->instance);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"size          : %d bytes\n", request->user_req.size);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"flags         : 0x%08lX\n",
 		(unsigned long) request->user_req.flags);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"transform     : %d\n",
 		(int) request->user_req.transform);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"prio          : %d\n", request->user_req.transform);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"global_alpha  : %d\n",
 		(int) request->user_req.global_alpha);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"report1       : 0x%08lX\n",
 		(unsigned long) request->user_req.report1);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"report2       : 0x%08lX\n",
 		(unsigned long) request->user_req.report2);
-	dev_size += sprintf(buf + dev_size,
-		"request_id    : 0x%08lX\n\n",
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
+		"request_id    : 0x%08lX\n",
 		(unsigned long) request->request_id);
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
+		"fmt_conv:     : 0x%08lX\n\n",
+		(unsigned long) cc);
 
 	/* src info */
-	dev_size += sprintf(buf + dev_size,
-		"src_img.fmt   : %#010x\n",
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
+		"src_img.fmt   : %s (%#010x)\n",
+		b2r2_fmt_to_string(request->user_req.src_img.fmt),
 		request->user_req.src_img.fmt);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_img.buf   : {type=%d, hwmem_buf_name=%d, fd=%d, "
 		"offset=%d, len=%d}\n",
 		request->user_req.src_img.buf.type,
@@ -1151,15 +1247,19 @@ int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
 		request->user_req.src_img.buf.fd,
 		request->user_req.src_img.buf.offset,
 		request->user_req.src_img.buf.len);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_img       : {width=%d, height=%d, pitch=%d}\n",
 		request->user_req.src_img.width,
 		request->user_req.src_img.height,
 		request->user_req.src_img.pitch);
-	dev_size += sprintf(buf + dev_size,
-		"src_mask.fmt  : %#010x\n",
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
+		"src_mask.fmt  : %s (%#010x)\n",
+		b2r2_fmt_to_string(request->user_req.src_mask.fmt),
 		request->user_req.src_mask.fmt);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_mask.buf  : {type=%d, hwmem_buf_name=%d, fd=%d,"
 		" offset=%d, len=%d}\n",
 		request->user_req.src_mask.buf.type,
@@ -1167,26 +1267,32 @@ int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
 		request->user_req.src_mask.buf.fd,
 		request->user_req.src_mask.buf.offset,
 		request->user_req.src_mask.buf.len);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_mask      : {width=%d, height=%d, pitch=%d}\n",
 		request->user_req.src_mask.width,
 		request->user_req.src_mask.height,
 		request->user_req.src_mask.pitch);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_rect      : {x=%d, y=%d, width=%d, height=%d}\n",
 		request->user_req.src_rect.x,
 		request->user_req.src_rect.y,
 		request->user_req.src_rect.width,
 		request->user_req.src_rect.height);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_color     : 0x%08lX\n\n",
 		(unsigned long) request->user_req.src_color);
 
 	/* bg info */
-	dev_size += sprintf(buf + dev_size,
-		"bg_img.fmt    : %#010x\n",
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
+		"bg_img.fmt    : %s (%#010x)\n",
+		b2r2_fmt_to_string(request->user_req.bg_img.fmt),
 		request->user_req.bg_img.fmt);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"bg_img.buf    : {type=%d, hwmem_buf_name=%d, fd=%d,"
 		" offset=%d, len=%d}\n",
 		request->user_req.bg_img.buf.type,
@@ -1194,12 +1300,14 @@ int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
 		request->user_req.bg_img.buf.fd,
 		request->user_req.bg_img.buf.offset,
 		request->user_req.bg_img.buf.len);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"bg_img        : {width=%d, height=%d, pitch=%d}\n",
 		request->user_req.bg_img.width,
 		request->user_req.bg_img.height,
 		request->user_req.bg_img.pitch);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"bg_rect       : {x=%d, y=%d, width=%d, height=%d}\n\n",
 		request->user_req.bg_rect.x,
 		request->user_req.bg_rect.y,
@@ -1207,10 +1315,13 @@ int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
 		request->user_req.bg_rect.height);
 
 	/* dst info */
-	dev_size += sprintf(buf + dev_size,
-		"dst_img.fmt   : %#010x\n",
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
+		"dst_img.fmt   : %s (%#010x)\n",
+		b2r2_fmt_to_string(request->user_req.dst_img.fmt),
 		request->user_req.dst_img.fmt);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_img.buf   : {type=%d, hwmem_buf_name=%d, fd=%d,"
 		" offset=%d, len=%d}\n",
 		request->user_req.dst_img.buf.type,
@@ -1218,88 +1329,110 @@ int sprintf_req(struct b2r2_blt_request *request, char *buf, int size)
 		request->user_req.dst_img.buf.fd,
 		request->user_req.dst_img.buf.offset,
 		request->user_req.dst_img.buf.len);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_img       : {width=%d, height=%d, pitch=%d}\n",
 		request->user_req.dst_img.width,
 		request->user_req.dst_img.height,
 		request->user_req.dst_img.pitch);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_rect      : {x=%d, y=%d, width=%d, height=%d}\n",
 		request->user_req.dst_rect.x,
 		request->user_req.dst_rect.y,
 		request->user_req.dst_rect.width,
 		request->user_req.dst_rect.height);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_clip_rect : {x=%d, y=%d, width=%d, height=%d}\n",
 		request->user_req.dst_clip_rect.x,
 		request->user_req.dst_clip_rect.y,
 		request->user_req.dst_clip_rect.width,
 		request->user_req.dst_clip_rect.height);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_color     : 0x%08lX\n\n",
 		(unsigned long) request->user_req.dst_color);
 
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_resolved.physical                  : 0x%08lX\n",
 		(unsigned long) request->src_resolved.
 		physical_address);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_resolved.virtual                   : 0x%08lX\n",
 		(unsigned long) request->src_resolved.virtual_address);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_resolved.filep                     : 0x%08lX\n",
 		(unsigned long) request->src_resolved.filep);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_resolved.filep_physical_start      : 0x%08lX\n",
 		(unsigned long) request->src_resolved.
 		file_physical_start);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_resolved.filep_virtual_start       : 0x%08lX\n",
 		(unsigned long) request->src_resolved.file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_resolved.file_len                  : %d\n\n",
 		request->src_resolved.file_len);
 
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_mask_resolved.physical             : 0x%08lX\n",
 		(unsigned long) request->src_mask_resolved.
 		physical_address);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_mask_resolved.virtual              : 0x%08lX\n",
 		(unsigned long) request->src_mask_resolved.virtual_address);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_mask_resolved.filep                : 0x%08lX\n",
 		(unsigned long) request->src_mask_resolved.filep);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_mask_resolved.filep_physical_start : 0x%08lX\n",
 		(unsigned long) request->src_mask_resolved.
 		file_physical_start);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_mask_resolved.filep_virtual_start  : 0x%08lX\n",
 		(unsigned long) request->src_mask_resolved.
 		file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"src_mask_resolved.file_len             : %d\n\n",
 		request->src_mask_resolved.file_len);
 
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_resolved.physical                  : 0x%08lX\n",
 		(unsigned long) request->dst_resolved.
 		physical_address);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_resolved.virtual                   : 0x%08lX\n",
 		(unsigned long) request->dst_resolved.virtual_address);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_resolved.filep                     : 0x%08lX\n",
 		(unsigned long) request->dst_resolved.filep);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_resolved.filep_physical_start      : 0x%08lX\n",
 		(unsigned long) request->dst_resolved.
 		file_physical_start);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_resolved.filep_virtual_start       : 0x%08lX\n",
 		(unsigned long) request->dst_resolved.file_virtual_start);
-	dev_size += sprintf(buf + dev_size,
+	dev_size += b2r2_snprintf(buf, dev_size,
+		max_size,
 		"dst_resolved.file_len                  : %d\n\n",
 		request->dst_resolved.file_len);
 
@@ -1321,4 +1454,104 @@ void b2r2_recalculate_rects(struct device *dev,
 	req->src_rect = new_src_rect;
 	if (req->flags & B2R2_BLT_FLAG_BG_BLEND)
 		req->bg_rect = new_bg_rect;
+}
+
+const char *b2r2_fmt_to_string(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_UNUSED:
+		return "UNUSED";
+	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+		return "ARGB4444";
+	case B2R2_BLT_FMT_16_BIT_ARGB1555:
+		return "ARGB1555";
+	case B2R2_BLT_FMT_16_BIT_RGB565:
+		return "RGB565";
+	case B2R2_BLT_FMT_24_BIT_RGB888:
+		return "RGB888";
+	case B2R2_BLT_FMT_32_BIT_ARGB8888:
+		return "ARGB8888";
+	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+		return "YUV420P";
+	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+		return "YUV422P";
+	case B2R2_BLT_FMT_Y_CB_Y_CR:
+		return "YUV422I";
+	case B2R2_BLT_FMT_CB_Y_CR_Y:
+		return "YUV422R";
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
+		return "YUV420SP";
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMI_PLANAR:
+		return "YUV422SP";
+	case B2R2_BLT_FMT_32_BIT_ABGR8888:
+		return "ABGR8888";
+	case B2R2_BLT_FMT_24_BIT_ARGB8565:
+		return "ARGB8565";
+	case B2R2_BLT_FMT_24_BIT_YUV888:
+		return "YUV888";
+	case B2R2_BLT_FMT_32_BIT_AYUV8888:
+		return "AYUV8888";
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+		return "YUV420MB";
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+		return "YUV422MB";
+	case B2R2_BLT_FMT_1_BIT_A1:
+		return "1_BIT_A1";
+	case B2R2_BLT_FMT_8_BIT_A8:
+		return "8_BIT_A8";
+	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+		return "YUV444P";
+	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+		return "YVU420SP";
+	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
+		return "YVU422SP";
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+		return "YVU420P";
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+		return "YVU422P";
+	case B2R2_BLT_FMT_24_BIT_VUY888:
+		return "VUY888";
+	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+		return "VUYA8888";
+	case B2R2_BLT_FMT_YV12:
+		return "YV12";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+void b2r2_get_cb_cr_addr(u32 phy_base_addr, u32 luma_pitch, u32 height,
+		enum b2r2_blt_fmt fmt, u32 *cb_addr, u32 *cr_addr)
+{
+	u32 chroma_pitch = b2r2_get_chroma_pitch(luma_pitch, fmt);
+	u32 plane1, plane2;
+
+	if (cr_addr == NULL || cb_addr == NULL)
+		return;
+
+	plane1 = phy_base_addr + luma_pitch * height;
+
+	switch (fmt) {
+	case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YV12:
+		plane2 = plane1 + chroma_pitch * (height >> 1);
+		break;
+	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
+	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
+		plane2 = plane1 + chroma_pitch * height;
+		break;
+	default:
+		plane2 = plane1;
+		break;
+	}
+
+	if (b2r2_is_yvu_fmt(fmt)) {
+		*cb_addr = plane2;
+		*cr_addr = plane1;
+	} else {
+		*cb_addr = plane1;
+		*cr_addr = plane2;
+	}
 }

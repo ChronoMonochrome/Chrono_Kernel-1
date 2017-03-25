@@ -19,7 +19,6 @@
 #include <linux/backlight.h>
 #include <linux/mfd/da903x.h>
 #include <linux/slab.h>
-#include <linux/module.h>
 
 #define DA9030_WLED_CONTROL	0x25
 #define DA9030_WLED_CP_EN	(1 << 6)
@@ -110,7 +109,7 @@ static int da903x_backlight_probe(struct platform_device *pdev)
 	struct backlight_properties props;
 	int max_brightness;
 
-	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (data == NULL)
 		return -ENOMEM;
 
@@ -124,6 +123,7 @@ static int da903x_backlight_probe(struct platform_device *pdev)
 	default:
 		dev_err(&pdev->dev, "invalid backlight device ID(%d)\n",
 				pdev->id);
+		kfree(data);
 		return -EINVAL;
 	}
 
@@ -142,6 +142,7 @@ static int da903x_backlight_probe(struct platform_device *pdev)
 				       &da903x_backlight_ops, &props);
 	if (IS_ERR(bl)) {
 		dev_err(&pdev->dev, "failed to register backlight\n");
+		kfree(data);
 		return PTR_ERR(bl);
 	}
 
@@ -155,8 +156,10 @@ static int da903x_backlight_probe(struct platform_device *pdev)
 static int da903x_backlight_remove(struct platform_device *pdev)
 {
 	struct backlight_device *bl = platform_get_drvdata(pdev);
+	struct da903x_backlight_data *data = bl_get_data(bl);
 
 	backlight_device_unregister(bl);
+	kfree(data);
 	return 0;
 }
 
@@ -195,7 +198,17 @@ static struct platform_driver da903x_backlight_driver = {
 	.remove		= da903x_backlight_remove,
 };
 
-module_platform_driver(da903x_backlight_driver);
+static int __init da903x_backlight_init(void)
+{
+	return platform_driver_register(&da903x_backlight_driver);
+}
+module_init(da903x_backlight_init);
+
+static void __exit da903x_backlight_exit(void)
+{
+	platform_driver_unregister(&da903x_backlight_driver);
+}
+module_exit(da903x_backlight_exit);
 
 MODULE_DESCRIPTION("Backlight Driver for Dialog Semiconductor DA9030/DA9034");
 MODULE_AUTHOR("Eric Miao <eric.miao@marvell.com>"

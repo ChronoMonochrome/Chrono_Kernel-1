@@ -15,7 +15,9 @@
 
 #include <linux/device.h>
 #include <linux/miscdevice.h>
+#include <linux/ktime.h>
 #include <video/b2r2_blt.h>
+#include <linux/debugfs.h>
 
 #include "b2r2_global.h"
 #include "b2r2_hw.h"
@@ -33,6 +35,9 @@
 
 /* The defined bits of the Interrupt Status Register */
 #define B2R2_ITS_MASK 0x0FFFF0FF
+
+/* The maximum possible number of blits */
+#define MAX_LAST_REQUEST 5
 
 /**
  * b2r2_op_type - the type of B2R2 operation to configure
@@ -267,9 +272,11 @@ struct b2r2_node_split_buf {
  *
  * @type          - the type of operation
  * @ivmx          - the ivmx matrix to use for color conversion
+ * @ovmx          - the ovmx matrix to use for color conversion
  * @blend         - determines if blending is enabled
  * @clip          - determines if destination clipping is enabled
  * @rotation      - determines if rotation is requested
+ * @scaling       - determines if scaling is needed
  * @fullrange     - determines YUV<->RGB conversion matrix (iVMx)
  * @swap_fg_bg    - determines if FG and BG should be swapped when blending
  * @flags         - the flags passed in the blt request
@@ -278,10 +285,10 @@ struct b2r2_node_split_buf {
  * @transform     - the transforms passed in the blt request
  * @global_alpha  - the global alpha
  * @clip_rect     - the clipping rectangle to use
- * @horiz_rescale - determmines if horizontal rescaling is enabled
- * @horiz_sf      - the horizontal scale factor
- * @vert_rescale  - determines if vertical rescale is enabled
- * @vert_sf       - the vertical scale factor
+ * @h_rescale     - determmines if horizontal rescaling is enabled
+ * @h_rsf         - the horizontal rescale factor
+ * @v_rescale     - determines if vertical rescale is enabled
+ * @v_rsf         - the vertical rescale factor
  * @src           - the incoming source buffer
  * @bg            - the incoming background buffer
  * @dst           - the outgoing destination buffer
@@ -290,17 +297,17 @@ struct b2r2_node_split_buf {
  * @buf_count     - the number of temporary buffers used for the job
  * @node_count    - the number of nodes used for the job
  * @max_buf_size  - the maximum size of temporary buffers
- * @nbr_rows      - the number of tile rows in the blit operation
- * @nbr_cols      - the number of time columns in the blit operation
  */
 struct b2r2_node_split_job {
 	enum b2r2_op_type type;
 
 	const u32 *ivmx;
+	const u32 *ovmx;
 
 	bool blend;
 	bool clip;
 	bool rotation;
+	bool scaling;
 	bool fullrange;
 
 	bool swap_fg_bg;
@@ -336,6 +343,7 @@ struct b2r2_node_split_job {
  * @start_sentinel: Memory overwrite guard
  *
  * @tag: Client value. Used by b2r2_core_job_find_first_with_tag().
+ * @data: Used to store a reference to b2r2_core
  * @prio: Job priority, from -19 up to 20. Mapped to the
  *        B2R2 application queues. Filled in by the client.
  * @first_node_address: Physical address of the first node. Filled
@@ -356,7 +364,7 @@ struct b2r2_node_split_job {
  * @job_id: Unique id for this job, assigned by B2R2 core
  * @job_state: The current state of the job
  * @jiffies: Number of jiffies needed for this request
- *
+ * @ref_count: The number of references to the job
  * @list: List entry element for internal list management
  * @event: Wait queue event to wait for job done
  * @work: Work queue structure, for callback implementation
@@ -365,7 +373,7 @@ struct b2r2_node_split_job {
  * @control: B2R2 Queue control
  * @pace_control: For composition queue only
  * @interrupt_context: Context for interrupt
- * @hw_start_time: The point when the b2r2 HW queue is activated for this job
+ * @hw_ts_start: The point when the b2r2 HW queue is activated for this job
  * @nsec_active_in_hw: Time spent on the b2r2 HW queue for this job
  *
  * @end_sentinel: Memory overwrite guard
@@ -407,9 +415,9 @@ struct b2r2_core_job {
 	u32 pace_control;
 	u32 interrupt_context;
 
-	/* Timing data */
-	u32 hw_start_time;
-	s32 nsec_active_in_hw;
+	/* Profiler timing data */
+	struct timespec hw_ts_start;
+	s64 nsec_active_in_hw;
 
 	u32 end_sentinel;
 };
@@ -417,21 +425,27 @@ struct b2r2_core_job {
 /**
  * struct b2r2_blt_request - Represents one B2R2 blit request
  *
- * @instance: Back pointer to the instance structure
- * @list: List item to keep track of requests per instance
- * @user_req: The request received from userspace
- * @job: The administration structure for the B2R2 job,
- *       consisting of one or more nodes
- * @node_split_job: The administration structure for the B2R2 node split job
- * @first_node: Pointer to the first B2R2 node
- * @request_id: Request id for this job
- * @core_mask: Bit mask with the cores doing part of the job
- * @node_split_handle: Handle of the node split
- * @src_resolved: Calculated info about the source buffer
- * @src_mask_resolved: Calculated info about the source mask buffer
- * @bg_resolved: Calculated info about the background buffer
- * @dst_resolved: Calculated info about the destination buffer
- * @profile: True if the blit shall be profiled, false otherwise
+ * @instance:           Back pointer to the instance structure
+ * @list:               List item to keep track of requests per instance
+ * @user_req:           The request received from userspace
+ * @job:                The administration structure for the B2R2 job
+ *                      consisting of one or more nodes
+ * @node_split_job:     The administration structure for the B2R2
+ *                      node split job
+ * @first_node:         Pointer to the first B2R2 node
+ * @request_id:         Request id for this job
+ * @core_mask:          Bit mask with the cores doing part of the job
+ * @node_split_handle:  Handle of the node split
+ * @src_resolved:       Calculated info about the source buffer
+ * @src_mask_resolved:  Calculated info about the source mask buffer
+ * @bg_resolved:        Calculated info about the background buffer
+ * @dst_resolved:       Calculated info about the destination buffer
+ * @profile:            True if the blit shall be profiled, false otherwise
+ * @ts_start:           Timestamp for start of job processing.
+ * @nsec_active_in_cpu: Time between ts_start and that the hardware starts
+ *                      processing the job.
+ * @total_time_nsec:    Total job execution time including context switches and
+ *                      queue time.
  */
 struct b2r2_blt_request {
 	struct b2r2_control_instance   *instance;
@@ -459,11 +473,9 @@ struct b2r2_blt_request {
 
 	/* Profiling stuff */
 	bool profile;
-
-	s32 nsec_active_in_cpu;
-
-	u32 start_time_nsec;
-	s32 total_time_nsec;
+	struct timespec ts_start;
+	s64 nsec_active_in_cpu;
+	s64 total_time_nsec;
 };
 
 /**
@@ -498,16 +510,45 @@ struct b2r2_mem_heap {
 };
 
 /**
+ * struct b2r2_mem_dump - The b2r2 memory dump parameters
+ *
+ */
+struct b2r2_mem_dump {
+	struct dentry                 *debugfs_root_dir;
+	enum b2r2_blt_fmt             src_filter;
+	enum b2r2_blt_fmt             dst_filter;
+	bool                          capture;
+	struct mutex                  lock;
+	bool                          buffers_valid;
+	size_t                        src_size;
+	unsigned char                 *src_buffer;
+	struct debugfs_blob_wrapper   src_info;
+	struct dentry                 *debugfs_src_file;
+	struct dentry                 *debugfs_src_info;
+	size_t                        dst_size;
+	unsigned char                 *dst_buffer;
+	struct debugfs_blob_wrapper   dst_info;
+	struct dentry                 *debugfs_dst_file;
+	struct dentry                 *debugfs_dst_info;
+};
+
+/**
+ * struct b2r2_control - The b2r2 core control structure
  *
  * @dev: The device handle of the b2r2 instance
- * @id: The id of the b2r2 instance
- * @name: The name of the b2r2 instance
  * @data: Used to store a reference to b2r2_core
+ * @id: The id of the b2r2 instance
+ * @ref: The b2r2 control reference count
+ * @enabled: Indicated if the b2r2 core is enabled
+ * @bypass: Indicates if the blitter operation should be omitted (aka dryrun)
  * @tmp_bufs: Temporary buffers needed in the node splitter
  * @filters_initialized: Indicating of filters has been
  *                       initialized for this b2r2 instance
  * @mem_heap: The b2r2 heap, e.g. used to allocate nodes
- * @debugfs_latest_request: Copy of the latest request issued
+ * @last_req_lock: Lock protecting request array and index
+ * @latest_request: Array with copies of previous requests issued
+ * @latest_request_count: Count of previous requests required
+ * @buf_index: Index were the next request will be stored
  * @debugfs_root_dir: The debugfs root directory, e.g. /debugfs/b2r2
  * @debugfs_debug_root_dir: The b2r2 debug root directory,
  *                          e.g. /debugfs/b2r2/debug
@@ -537,11 +578,15 @@ struct b2r2_control {
 	int                             id;
 	struct kref                     ref;
 	bool                            enabled;
+	bool                            bypass;
 	struct tmp_buf                  tmp_bufs[MAX_TMP_BUFS_NEEDED];
 	int                             filters_initialized;
 	struct b2r2_mem_heap            mem_heap;
 #ifdef CONFIG_DEBUG_FS
-	struct b2r2_blt_request         debugfs_latest_request;
+	struct mutex                    last_req_lock;
+	struct b2r2_blt_request         latest_request[MAX_LAST_REQUEST];
+	unsigned int                    last_request_count;
+	int                             buf_index;
 	struct dentry                   *debugfs_root_dir;
 	struct dentry                   *debugfs_debug_root_dir;
 #endif
@@ -562,6 +607,7 @@ struct b2r2_control {
 	struct b2r2_node                *last_job;
 	char                            *last_job_chars;
 	int                             prev_node_count;
+	struct b2r2_mem_dump            dump;
 };
 
 /* FIXME: The functions below should be removed when we are

@@ -10,7 +10,6 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/export.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
@@ -26,42 +25,29 @@
 #include <linux/slab.h>
 #include <linux/jiffies.h>
 #include <linux/workqueue.h>
+#include <linux/time.h>
+#include <linux/atomic.h>
 
 #include <linux/mfd/dbx500-prcmu.h>
 
 #include <video/mcde.h>
-#include "dsilink_regs.h"
+#include <video/nova_dsilink.h>
+
+#include "../b2r2/b2r2_core.h"
+
 #include "mcde_regs.h"
+#include "mcde_struct.h"
+#include "mcde_hw.h"
+
 #include "mcde_debugfs.h"
+#define CREATE_TRACE_POINTS
+#include "mcde_trace.h"
 
-
-/* MCDE channel states
- *
- * Allowed state transitions:
- *   IDLE <-> SUSPEND
- *   IDLE <-> DSI_READ
- *   IDLE <-> DSI_WRITE
- *   IDLE -> SETUP -> (WAIT_TE ->) RUNNING -> STOPPING1 -> STOPPING2 -> IDLE
- *   WAIT_TE -> STOPPED (for missing TE to allow re-enable)
- */
-enum chnl_state {
-	CHNLSTATE_SUSPEND,   /* HW in suspended mode, initial state */
-	CHNLSTATE_IDLE,      /* Channel aquired, but not running, FLOEN==0 */
-	CHNLSTATE_DSI_READ,  /* Executing DSI read */
-	CHNLSTATE_DSI_WRITE, /* Executing DSI write */
-	CHNLSTATE_SETUP,     /* Channel register setup to prepare for running */
-	CHNLSTATE_WAIT_TE,   /* Waiting for BTA or external TE */
-	CHNLSTATE_RUNNING,   /* Update started, FLOEN=1, FLOEN==1 */
-	CHNLSTATE_STOPPING,  /* Stopping, FLOEN=0, FLOEN==1, awaiting VCMP */
-	CHNLSTATE_STOPPED,   /* Stopped, after VCMP, FLOEN==0|1 */
-};
-
-enum dsi_lane_status {
-	DSI_LANE_STATE_START	= 0x00,
-	DSI_LANE_STATE_IDLE	= 0x01,
-	DSI_LANE_STATE_WRITE	= 0x02,
-	DSI_LANE_STATE_ULPM	= 0x03,
-};
+#define MCDE_DPI_UNDERFLOW
+#ifdef MCDE_DPI_UNDERFLOW
+#include <linux/fb.h>
+#include <video/mcde_fb.h>
+#endif
 
 static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
 							enum chnl_state state);
@@ -70,16 +56,23 @@ static int set_channel_state_sync(struct mcde_chnl_state *chnl,
 static void stop_channel(struct mcde_chnl_state *chnl);
 static int _mcde_chnl_enable(struct mcde_chnl_state *chnl);
 static int _mcde_chnl_apply(struct mcde_chnl_state *chnl);
-static void disable_flow(struct mcde_chnl_state *chnl);
-static void enable_flow(struct mcde_chnl_state *chnl);
+static void disable_flow(struct mcde_chnl_state *chnl, bool setstate);
+static void enable_flow(struct mcde_chnl_state *chnl, bool setstate);
 static void do_softwaretrig(struct mcde_chnl_state *chnl);
-static void dsi_te_poll_req(struct mcde_chnl_state *chnl);
-static void dsi_te_poll_set_timer(struct mcde_chnl_state *chnl,
-		unsigned int timeout);
-static void dsi_te_timer_function(unsigned long value);
 static int wait_for_vcmp(struct mcde_chnl_state *chnl);
 static int probe_hw(struct platform_device *pdev);
 static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
+static int enable_mcde_hw(void);
+//static int enable_mcde_hw_pre(void);
+static int update_channel_static_registers(struct mcde_chnl_state *chnl);
+static void _mcde_chnl_update_color_conversion(struct mcde_chnl_state *chnl);
+static void chnl_update_overlay(struct mcde_chnl_state *chnl,
+						struct mcde_ovly_state *ovly);
+
+#ifdef MCDE_DPI_UNDERFLOW
+static void mcde_underflow_handler(void);
+static void mcde_underflow_function(struct work_struct *ptr);
+#endif
 
 #define OVLY_TIMEOUT 100
 #define CHNL_TIMEOUT 100
@@ -90,14 +83,6 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define DSI_DELAY0_CEA2_ADD 10
 
 #define MCDE_SLEEP_WATCHDOG 500
-#define DSI_TE_NO_ANSWER_TIMEOUT_INIT 2500
-#define DSI_TE_NO_ANSWER_TIMEOUT 250
-#define DSI_WAIT_FOR_ULPM_STATE_MS 1
-#define DSI_ULPM_STATE_NBR_OF_RETRIES 10
-#define DSI_READ_TIMEOUT 200
-#define DSI_WRITE_CMD_TIMEOUT 1000
-#define DSI_READ_DELAY 5
-#define DSI_READ_NBR_OF_RETRIES 2
 #define MCDE_FLOWEN_MAX_TRIAL 60
 
 #define MCDE_VERSION_4_1_3 0x04010300
@@ -109,33 +94,47 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl);
 #define CLK_MCDE	"mcde"
 #define CLK_DPI		"lcd"
 
-static u8 *mcdeio;
-static u8 **dsiio;
-static struct platform_device *mcde_dev;
-static u8 num_dsilinks;
-static u8 num_channels;
-static u8 num_overlays;
-static int mcde_irq;
-static u32 input_fifo_size;
-static u32 output_fifo_ab_size;
-static u32 output_fifo_c0c1_size;
+#define FIFO_EMPTY_POLL_TIMEOUT 500
 
+#ifdef MCDE_DPI_UNDERFLOW
+#define MCDE_UNDERFLOW_WORKQUEUE "mcde_underflow_workqueue"
+static struct workqueue_struct *mcde_underflow_workqueue;
+static struct work_struct mcde_underflow_work;
+static bool regulator_disabled;
+
+struct mcde_rectangle {
+	int x;
+	int y;
+	int w;
+	int h;
+};
+#endif
+
+struct work_struct mcde_restart_work;
+atomic_t force_restart;
+static DECLARE_WAIT_QUEUE_HEAD(regulator_disable_waitq);
+
+u8 *mcdeio;
+u8 num_channels;
+u8 num_overlays;
+int mcde_irq;
+u32 input_fifo_size;
+u32 output_fifo_ab_size;
+u32 output_fifo_c0c1_size;
+u8 mcde_is_enabled;
+u8 dsi_pll_is_enabled;
+u8 dsi_ifc_is_supported;
+u8 dsi_use_clk_framework;
+u32 mcde_clk_rate; /* In Hz */
+
+u8 hw_alignment;
+u8 mcde_dynamic_power_management = true;
+static struct platform_device *mcde_dev;
 static struct regulator *regulator_vana;
 static struct regulator *regulator_mcde_epod;
 static struct regulator *regulator_esram_epod;
 static struct clk *clock_mcde;
-
-/* TODO remove when all platforms support dsilp and dsihs clocks */
-static struct clk *clock_dsi;
-static struct clk *clock_dsi_lp;
-
-static u8 mcde_is_enabled;
 static struct delayed_work hw_timeout_work;
-static u8 dsi_pll_is_enabled;
-static u8 dsi_ifc_is_supported;
-static u8 dsi_use_clk_framework;
-static u32 mcde_clk_rate; /* In Hz */
-
 static struct mutex mcde_hw_lock;
 static inline void mcde_lock(const char *func, int line)
 {
@@ -157,38 +156,11 @@ static inline bool mcde_trylock(const char *func, int line)
 	return locked;
 }
 
-static u8 mcde_dynamic_power_management = true;
-
-static inline u32 dsi_rreg(int i, u32 reg)
-{
-	return readl(dsiio[i] + reg);
-}
-static inline void dsi_wreg(int i, u32 reg, u32 val)
-{
-	writel(val, dsiio[i] + reg);
-}
-
-#define dsi_rfld(__i, __reg, __fld) \
-({ \
-	const u32 mask = __reg##_##__fld##_MASK; \
-	const u32 shift = __reg##_##__fld##_SHIFT; \
-	((dsi_rreg(__i, __reg) & mask) >> shift); \
-})
-
-#define dsi_wfld(__i, __reg, __fld, __val) \
-({ \
-	const u32 mask = __reg##_##__fld##_MASK; \
-	const u32 shift = __reg##_##__fld##_SHIFT; \
-	const u32 oldval = dsi_rreg(__i, __reg); \
-	const u32 newval = ((__val) << shift); \
-	dsi_wreg(__i, __reg, (oldval & ~mask) | (newval & mask)); \
-})
-
-static inline u32 mcde_rreg(u32 reg)
+u32 mcde_rreg(u32 reg)
 {
 	return readl(mcdeio + reg);
 }
-static inline void mcde_wreg(u32 reg, u32 val)
+void mcde_wreg(u32 reg, u32 val)
 {
 	writel(val, mcdeio + reg);
 }
@@ -210,206 +182,63 @@ static inline void mcde_wreg(u32 reg, u32 val)
 	mcde_wreg(__reg, (oldval & ~mask) | (newval & mask)); \
 })
 
-struct ovly_regs {
-	bool enabled;
-	bool dirty;
-	bool dirty_buf;
-
-	u8   ch_id;
-	u32  baseaddress0;
-	u32  baseaddress1;
-	u8   bits_per_pixel;
-	u8   bpp;
-	bool bgr;
-	bool bebo;
-	bool opq;
-	u8   col_conv;
-	u8   alpha_source;
-	u8   alpha_value;
-	u8   pixoff;
-	u16  ppl;
-	u16  lpf;
-	u16  cropx;
-	u16  cropy;
-	u16  xpos;
-	u16  ypos;
-	u8   z;
-};
-
-struct mcde_ovly_state {
-	bool inuse;
-	u8 idx; /* MCDE overlay index */
-	struct mcde_chnl_state *chnl; /* Owner channel */
-	bool dirty;
-	bool dirty_buf;
-
-	/* Staged settings */
-	u32 paddr;
-	u16 stride;
-	enum mcde_ovly_pix_fmt pix_fmt;
-
-	u16 src_x;
-	u16 src_y;
-	u16 dst_x;
-	u16 dst_y;
-	u16 dst_z;
-	u16 w;
-	u16 h;
-
-	u8 alpha_source;
-	u8 alpha_value;
-
-	/* Applied settings */
-	struct ovly_regs regs;
-};
-
 static struct mcde_ovly_state *overlays;
-
-struct chnl_regs {
-	bool dirty;
-
-	bool floen;
-	u16  x;
-	u16  y;
-	u16  ppl;
-	u16  lpf;
-	u8   bpp;
-	bool internal_clk; /* CLKTYPE field */
-	u16  pcd;
-	u8   clksel;
-	u8   cdwin;
-	u16 (*map_r)(u8);
-	u16 (*map_g)(u8);
-	u16 (*map_b)(u8);
-	bool palette_enable;
-	bool bcd;
-	bool roten;
-	u8   rotdir;
-	u32  rotbuf1;
-	u32  rotbuf2;
-	u32  rotbufsize;
-
-	/* Blending */
-	u8 blend_ctrl;
-	bool blend_en;
-	u8 alpha_blend;
-
-	/* DSI */
-	u8 dsipacking;
-};
-
-struct col_regs {
-	bool dirty;
-
-	u16 y_red;
-	u16 y_green;
-	u16 y_blue;
-	u16 cb_red;
-	u16 cb_green;
-	u16 cb_blue;
-	u16 cr_red;
-	u16 cr_green;
-	u16 cr_blue;
-	u16 off_y;
-	u16 off_cb;
-	u16 off_cr;
-};
-
-struct tv_regs {
-	bool dirty;
-
-	u16 dho; /* TV mode: left border width; destination horizontal offset */
-		 /* LCD MODE: horizontal back porch */
-	u16 alw; /* TV mode: right border width */
-		 /* LCD mode: horizontal front porch */
-	u16 hsw; /* horizontal synch width */
-	u16 dvo; /* TV mode: top border width; destination horizontal offset */
-		 /* LCD MODE: vertical back porch */
-	u16 bsl; /* TV mode: bottom border width; blanking start line */
-		 /* LCD MODE: vertical front porch */
-	/* field 1 */
-	u16 bel1; /* TV mode: field total vertical blanking lines */
-		 /* LCD mode: vertical sync width */
-	u16 fsl1; /* field vbp */
-	/* field 2 */
-	u16 bel2;
-	u16 fsl2;
-	u8 tv_mode;
-	bool sel_mode_tv;
-	bool inv_clk;
-	bool interlaced_en;
-	u32 lcdtim1;
-};
-
-struct mcde_chnl_state {
-	bool enabled;
-	bool reserved;
-	enum mcde_chnl id;
-	enum mcde_fifo fifo;
-	struct mcde_port port;
-	struct mcde_ovly_state *ovly0;
-	struct mcde_ovly_state *ovly1;
-	enum chnl_state state;
-	wait_queue_head_t state_waitq;
-	wait_queue_head_t vcmp_waitq;
-	atomic_t vcmp_cnt;
-	struct timer_list dsi_te_timer;
-	struct clk *clk_dsi_lp;
-	struct clk *clk_dsi_hs;
-	struct clk *clk_dpi;
-
-	enum mcde_display_power_mode power_mode;
-
-	/* Staged settings */
-	u16 (*map_r)(u8);
-	u16 (*map_g)(u8);
-	u16 (*map_b)(u8);
-	bool palette_enable;
-	struct mcde_video_mode vmode;
-	enum mcde_display_rotation rotation;
-	u32 rotbuf1;
-	u32 rotbuf2;
-	u32 rotbufsize;
-
-	struct mcde_col_transform rgb_2_ycbcr;
-	struct mcde_col_transform ycbcr_2_rgb;
-	struct mcde_col_transform *transform;
-
-	/* Blending */
-	u8 blend_ctrl;
-	bool blend_en;
-	u8 alpha_blend;
-
-	/* Applied settings */
-	struct chnl_regs regs;
-	struct col_regs  col_regs;
-	struct tv_regs   tv_regs;
-
-	/* an interlaced digital TV signal generates a VCMP per field */
-	bool vcmp_per_field;
-	bool even_vcmp;
-
-	bool formatter_updated;
-	bool esram_is_enabled;
-};
-
 static struct mcde_chnl_state *channels;
-/*
- * Wait for CSM_RUNNING, all data sent for display
- */
-static inline void wait_while_dsi_running(int lnk)
+static inline u32 get_ovly_bw(struct mcde_ovly_state *ovly)
 {
-	u8 counter = DSI_READ_TIMEOUT;
-	while (dsi_rfld(lnk, DSI_CMD_MODE_STS, CSM_RUNNING) && --counter) {
-		dev_vdbg(&mcde_dev->dev,
-			"%s: DSI link %u read running state retry %u times\n"
-			, __func__, lnk, (DSI_READ_TIMEOUT - counter));
-		udelay(DSI_READ_DELAY);
+	if (!ovly || !ovly->regs.enabled)
+		return 0;
+
+	//TODO: Use pixclock for fps
+	return ovly->regs.ppl * ovly->regs.lpf * 60;
+}
+
+static void update_opp_requirements(void)
+{
+	int i;
+	u32 rot = 0;
+	u32 bw = 0;
+	u32 ovly = 0;
+	struct mcde_opp_requirements reqs;
+	struct mcde_platform_data *pdata = mcde_dev->dev.platform_data;
+
+	for (i=0; i<num_channels; i++) {
+		u32 tmp;
+		struct mcde_chnl_state *chnl = &channels[i];
+		if (chnl->regs.roten)
+			rot++;
+		tmp = get_ovly_bw(chnl->ovly0);
+		if (tmp) {
+			ovly++;
+			bw += tmp;
+		}
+		tmp = get_ovly_bw(chnl->ovly1);
+		if (tmp) {
+			ovly++;
+			bw += tmp;
+		}
 	}
-	WARN_ON(!counter);
-	if (!counter)
-		dev_warn(&mcde_dev->dev,
-			"%s: DSI link %u read timeout!\n", __func__, lnk);
+
+	reqs.num_rot_channels = rot;
+	reqs.num_overlays = ovly;
+	reqs.total_bw = bw;
+
+	if (pdata->update_opp)
+		pdata->update_opp(&mcde_dev->dev, &reqs);
+}
+
+static void get_dsi_port(struct mcde_chnl_state *chnl, struct dsilink_port *port)
+{
+	port->link = chnl->port.link;
+	port->phy = chnl->port.phy.dsi;
+	if (chnl->port.mode == MCDE_PORTMODE_CMD)
+		port->mode = DSILINK_MODE_CMD;
+	else
+		port->mode = DSILINK_MODE_VID;
+	if (chnl->port.sync_src == MCDE_SYNCSRC_TE_POLLING)
+		port->sync_src = DSILINK_SYNCSRC_TE_POLLING;
+	else
+		port->sync_src = DSILINK_SYNCSRC_BTA;
 }
 
 static void enable_clocks_and_power(struct platform_device *pdev)
@@ -461,225 +290,48 @@ static void update_mcde_registers(void)
 	mcde_wfld(MCDE_RISPP, VCMPC0RIS, 1);
 	mcde_wfld(MCDE_RISPP, VCMPC1RIS, 1);
 
-	/* Enable channel VCMP interrupts */
+	/*
+	 * Enable VCMP interrupts for all channels
+	 * and VSYNC0 and VSYNC1 capture interrupts
+	 */
 	mcde_wreg(MCDE_IMSCPP,
 		MCDE_IMSCPP_VCMPAIM(true) |
 		MCDE_IMSCPP_VCMPBIM(true) |
+		MCDE_IMSCPP_VSCC0IM(true) |
+		MCDE_IMSCPP_VSCC1IM(true) |
 		MCDE_IMSCPP_VCMPC0IM(true) |
 		MCDE_IMSCPP_VCMPC1IM(true));
 
 	mcde_wreg(MCDE_IMSCCHNL, MCDE_IMSCCHNL_CHNLAIM(0xf));
 	mcde_wreg(MCDE_IMSCERR, 0xFFFF01FF);
-
-	/* Setup sync pulse length
-	 * Setting VSPMAX=0 disables the filter and VSYNC
-	 * is generated after VSPMIN mcde cycles
-	 */
-	mcde_wreg(MCDE_VSCRC0,
-		MCDE_VSCRC0_VSPMIN(0) |
-		MCDE_VSCRC0_VSPMAX(0));
-	mcde_wreg(MCDE_VSCRC1,
-		MCDE_VSCRC1_VSPMIN(1) |
-		MCDE_VSCRC1_VSPMAX(0xff));
 }
 
-static void dsi_link_handle_reset(u8 link, bool release)
+static void disable_dsi_pll(void)
 {
-	u32 value;
-
-	value = prcmu_read(DB8500_PRCM_DSI_SW_RESET);
-	if (release) {
-		switch (link) {
-		case 0:
-			value |= DB8500_PRCM_DSI_SW_RESET_DSI0_SW_RESETN;
-			break;
-		case 1:
-			value |= DB8500_PRCM_DSI_SW_RESET_DSI1_SW_RESETN;
-			break;
-		case 2:
-			value |= DB8500_PRCM_DSI_SW_RESET_DSI2_SW_RESETN;
-			break;
-		default:
-			break;
-		}
-	} else {
-		switch (link) {
-		case 0:
-			value &= ~DB8500_PRCM_DSI_SW_RESET_DSI0_SW_RESETN;
-			break;
-		case 1:
-			value &= ~DB8500_PRCM_DSI_SW_RESET_DSI1_SW_RESETN;
-			break;
-		case 2:
-			value &= ~DB8500_PRCM_DSI_SW_RESET_DSI2_SW_RESETN;
-			break;
-		default:
-			break;
-		}
-	}
-	prcmu_write(DB8500_PRCM_DSI_SW_RESET, value);
-}
-
-static void dsi_link_switch_byte_clk(u8 link, bool to_system_clock)
-{
-	u32 value;
-
-	value = prcmu_read(DB8500_PRCM_DSI_GLITCHFREE_EN);
-	if (to_system_clock) {
-		switch (link) {
-		case 0:
-			value |= DB8500_PRCM_DSI_GLITCHFREE_EN_DSI0_BYTE_CLK;
-			break;
-		case 1:
-			value |= DB8500_PRCM_DSI_GLITCHFREE_EN_DSI1_BYTE_CLK;
-			break;
-		case 2:
-			value |= DB8500_PRCM_DSI_GLITCHFREE_EN_DSI2_BYTE_CLK;
-			break;
-		default:
-			break;
-		}
-	} else {
-		switch (link) {
-		case 0:
-			value &= ~DB8500_PRCM_DSI_GLITCHFREE_EN_DSI0_BYTE_CLK;
-			break;
-		case 1:
-			value &= ~DB8500_PRCM_DSI_GLITCHFREE_EN_DSI1_BYTE_CLK;
-			break;
-		case 2:
-			value &= ~DB8500_PRCM_DSI_GLITCHFREE_EN_DSI2_BYTE_CLK;
-			break;
-		default:
-			break;
-		}
-
-	}
-	prcmu_write(DB8500_PRCM_DSI_GLITCHFREE_EN, value);
-	dsi_wfld(link, DSI_MCTL_PLL_CTL, PLL_OUT_SEL, to_system_clock);
-}
-
-static void dsi_link_handle_ulpm(struct mcde_port *port, bool enter_ulpm)
-{
-	u8 link = port->link;
-	u8 num_data_lanes = port->phy.dsi.num_data_lanes;
-	u8 nbr_of_retries = 0;
-	u8 lane_state;
-
-	/*
-	 * The D-PHY protocol specifies the time to leave the ULP mode
-	 * in ms. It will at least take 1 ms to exit ULPM.
-	 * The ULPOUT time value is using number of system clock ticks
-	 * divided by 1000. The system clock for the DSI link is the MCDE
-	 * clock.
-	 */
-	dsi_wreg(link, DSI_MCTL_ULPOUT_TIME,
-			DSI_MCTL_ULPOUT_TIME_CKLANE_ULPOUT_TIME(0x1FF) |
-			DSI_MCTL_ULPOUT_TIME_DATA_ULPOUT_TIME(0x1FF));
-
-	if (enter_ulpm) {
-		lane_state = DSI_LANE_STATE_ULPM;
-		dsi_link_switch_byte_clk(link, true);
-	}
-
-	dsi_wfld(link, DSI_MCTL_MAIN_EN, DAT1_ULPM_REQ, enter_ulpm);
-	dsi_wfld(link, DSI_MCTL_MAIN_EN, DAT2_ULPM_REQ,
-					enter_ulpm && num_data_lanes == 2);
-	dsi_wfld(link, DSI_MCTL_MAIN_EN, CLKLANE_ULPM_REQ, enter_ulpm);
-
-	if (!enter_ulpm) {
-		lane_state = DSI_LANE_STATE_IDLE;
-		dsi_link_switch_byte_clk(link, false);
-	}
-
-	/* Wait for data lanes to enter ULPM */
-	while (dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE1_STATE)
-						!= lane_state ||
-		(dsi_rfld(link, DSI_MCTL_LANE_STS, DATLANE2_STATE)
-						!= lane_state &&
-							num_data_lanes > 1)) {
-		mdelay(DSI_WAIT_FOR_ULPM_STATE_MS);
-		if (nbr_of_retries++ == DSI_ULPM_STATE_NBR_OF_RETRIES) {
-			dev_dbg(&mcde_dev->dev,
-				"Could not enter correct state=%d (link=%d)!\n",
-							lane_state, link);
-			break;
-		}
-	}
-
-	nbr_of_retries = 0;
-	/* Wait for clock lane to enter ULPM */
-	while (dsi_rfld(link, DSI_MCTL_LANE_STS, CLKLANE_STATE)
-						!= lane_state) {
-		mdelay(DSI_WAIT_FOR_ULPM_STATE_MS);
-		if (nbr_of_retries++ == DSI_ULPM_STATE_NBR_OF_RETRIES) {
-			dev_dbg(&mcde_dev->dev,
-				"Could not enter correct state=%d (link=%d)!\n",
-							lane_state, link);
-			break;
-		}
+	if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
+		struct mcde_platform_data *pdata =
+				mcde_dev->dev.platform_data;
+		dev_dbg(&mcde_dev->dev, "%s disable dsipll\n", __func__);
+		pdata->platform_disable_dsipll();
 	}
 }
 
-static int dsi_link_enable(struct mcde_chnl_state *chnl)
+static void enable_dsi_pll(void)
 {
-	int ret = 0;
-	u8 link = chnl->port.link;
-
-	if (dsi_use_clk_framework) {
-		WARN_ON_ONCE(clk_enable(chnl->clk_dsi_lp));
-		WARN_ON_ONCE(clk_enable(chnl->clk_dsi_hs));
-		dsi_link_handle_reset(link, true);
-	} else {
-		WARN_ON_ONCE(clk_enable(clock_dsi));
-		WARN_ON_ONCE(clk_enable(clock_dsi_lp));
-
-		if (!dsi_pll_is_enabled) {
-			struct mcde_platform_data *pdata =
-					mcde_dev->dev.platform_data;
-			ret = pdata->platform_enable_dsipll();
-			if (ret < 0) {
-				dev_warn(&mcde_dev->dev, "%s: "
-					"enable_dsipll failed ret = %d\n",
-								__func__, ret);
-				goto enable_dsipll_err;
-			}
-			dev_dbg(&mcde_dev->dev, "%s enable dsipll\n",
-								__func__);
+	if (!dsi_pll_is_enabled) {
+		int ret;
+		struct mcde_platform_data *pdata =
+				mcde_dev->dev.platform_data;
+		ret = pdata->platform_enable_dsipll();
+		if (ret < 0) {
+			dev_warn(&mcde_dev->dev, "%s: "
+				"enable_dsipll failed ret = %d\n",
+							__func__, ret);
 		}
-		dsi_pll_is_enabled++;
+		dev_dbg(&mcde_dev->dev, "%s enable dsipll\n",
+							__func__);
 	}
-
-	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, LINK_EN, true);
-
-	dev_dbg(&mcde_dev->dev, "DSI%d LINK_EN\n", link);
-
-	return 0;
-
-enable_dsipll_err:
-	clk_disable(clock_dsi_lp);
-	clk_disable(clock_dsi);
-	return ret;
-}
-
-static void dsi_link_disable(struct mcde_chnl_state *chnl, bool suspend)
-{
-	wait_while_dsi_running(chnl->port.link);
-	dsi_link_handle_ulpm(&chnl->port, true);
-	if (dsi_use_clk_framework) {
-		clk_disable(chnl->clk_dsi_lp);
-		clk_disable(chnl->clk_dsi_hs);
-	} else {
-		if (dsi_pll_is_enabled && (--dsi_pll_is_enabled == 0)) {
-			struct mcde_platform_data *pdata =
-				    mcde_dev->dev.platform_data;
-			dev_dbg(&mcde_dev->dev, "%s disable dsipll\n",
-								__func__);
-			pdata->platform_disable_dsipll();
-		}
-		clk_disable(clock_dsi);
-		clk_disable(clock_dsi_lp);
-	}
+	dsi_pll_is_enabled++;
 }
 
 static void disable_mcde_hw(bool force_disable, bool suspend)
@@ -697,13 +349,20 @@ static void disable_mcde_hw(bool force_disable, bool suspend)
 		if (force_disable || (chnl->enabled &&
 					chnl->state != CHNLSTATE_RUNNING)) {
 			stop_channel(chnl);
-			set_channel_state_sync(chnl, CHNLSTATE_SUSPEND);
-
 			if (chnl->formatter_updated) {
-				if (chnl->port.type == MCDE_PORTTYPE_DSI)
-					dsi_link_disable(chnl, suspend);
-				else if (chnl->port.type == MCDE_PORTTYPE_DPI)
+				if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+					nova_dsilink_wait_while_running(
+								chnl->dsilink);
+					nova_dsilink_set_clk_continous(
+							chnl->dsilink, false);
+					nova_dsilink_enter_ulpm(chnl->dsilink);
+					nova_dsilink_disable(chnl->dsilink);
+					if (!dsi_use_clk_framework)
+						disable_dsi_pll();
+				} else if (chnl->port.type
+							== MCDE_PORTTYPE_DPI) {
 					clk_disable(chnl->clk_dpi);
+				}
 				chnl->formatter_updated = false;
 			}
 			if (chnl->esram_is_enabled) {
@@ -724,6 +383,8 @@ static void disable_mcde_hw(bool force_disable, bool suspend)
 	disable_clocks_and_power(mcde_dev);
 
 	mcde_is_enabled = false;
+
+	mcde_debugfs_hw_disabled();
 }
 
 static void dpi_video_mode_apply(struct mcde_chnl_state *chnl)
@@ -819,6 +480,34 @@ static void update_dpi_registers(enum mcde_chnl chnl_id, struct tv_regs *regs)
 	regs->dirty = false;
 }
 
+static void update_oled_registers(enum mcde_chnl chnl_id,
+							struct oled_regs *regs)
+{
+	u8 idx = chnl_id;
+
+	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+	mcde_wreg(MCDE_OLEDCONV1A + idx * MCDE_OLEDCONV1A_GROUPOFFSET,
+				MCDE_OLEDCONV1A_ALPHA_RED(regs->alfa_red) |
+				MCDE_OLEDCONV1A_ALPHA_GREEN(regs->alfa_green));
+	mcde_wreg(MCDE_OLEDCONV2A + idx * MCDE_OLEDCONV2A_GROUPOFFSET,
+				MCDE_OLEDCONV2A_ALPHA_BLUE(regs->alfa_blue) |
+				MCDE_OLEDCONV2A_BETA_RED(regs->beta_red));
+	mcde_wreg(MCDE_OLEDCONV3A + idx * MCDE_OLEDCONV3A_GROUPOFFSET,
+				MCDE_OLEDCONV3A_BETA_GREEN(regs->beta_green) |
+				MCDE_OLEDCONV3A_BETA_BLUE(regs->beta_blue));
+	mcde_wreg(MCDE_OLEDCONV4A + idx * MCDE_OLEDCONV4A_GROUPOFFSET,
+				MCDE_OLEDCONV4A_GAMMA_RED(regs->gamma_red) |
+				MCDE_OLEDCONV4A_GAMMA_GREEN(regs->gamma_green));
+	mcde_wreg(MCDE_OLEDCONV5A + idx * MCDE_OLEDCONV5A_GROUPOFFSET,
+				MCDE_OLEDCONV5A_GAMMA_BLUE(regs->gamma_blue) |
+				MCDE_OLEDCONV5A_OFF_RED(regs->off_red));
+	mcde_wreg(MCDE_OLEDCONV6A + idx * MCDE_OLEDCONV6A_GROUPOFFSET,
+				MCDE_OLEDCONV6A_OFF_GREEN(regs->off_green) |
+				MCDE_OLEDCONV6A_OFF_BLUE(regs->off_blue));
+	regs->dirty = false;
+}
+
+
 static void update_col_registers(enum mcde_chnl chnl_id, struct col_regs *regs)
 {
 	u8 idx = chnl_id;
@@ -843,6 +532,57 @@ static void update_col_registers(enum mcde_chnl chnl_id, struct col_regs *regs)
 				MCDE_RGBCONV6A_OFF_GREEN(regs->off_y) |
 				MCDE_RGBCONV6A_OFF_BLUE(regs->off_cb));
 	regs->dirty = false;
+}
+
+static void mcde_update_ovly_control(u8 idx, struct ovly_regs *regs)
+{
+	mcde_wreg(MCDE_OVL0CR + idx * MCDE_OVL0CR_GROUPOFFSET,
+		MCDE_OVL0CR_OVLEN(regs->enabled) |
+		MCDE_OVL0CR_COLCCTRL(regs->col_conv) |
+		MCDE_OVL0CR_CKEYGEN(false) |
+		MCDE_OVL0CR_ALPHAPMEN(false) |
+		MCDE_OVL0CR_OVLF(false) |
+		MCDE_OVL0CR_OVLR(false) |
+		MCDE_OVL0CR_OVLB(false) |
+		MCDE_OVL0CR_FETCH_ROPC(0) |
+		MCDE_OVL0CR_STBPRIO(0) |
+		MCDE_OVL0CR_BURSTSIZE_ENUM(8W) |
+		/* TODO: enum, get from ovly */
+		MCDE_OVL0CR_MAXOUTSTANDING_ENUM(8_REQ) |
+		/* TODO: _8W, calculate? */
+		MCDE_OVL0CR_ROTBURSTSIZE_ENUM(8W));
+}
+
+static void mcde_update_non_buffered_color_conversion(struct mcde_chnl_state *chnl)
+{
+	mcde_wfld(MCDE_CRA0, OLEDEN, chnl->regs.oled_enable);
+	chnl->update_color_conversion = false;
+}
+
+static void mcde_update_double_buffered_color_conversion(
+					struct mcde_chnl_state *chnl)
+{
+	u8 red;
+	u8 green;
+	u8 blue;
+
+	/* Change of background */
+	if (chnl->regs.background_yuv) {
+		red = 0x80;
+		green = 0x10;
+		blue = 0x80;
+	} else {
+		red = 0x00;
+		green = 0x00;
+		blue = 0x00;
+	}
+	mcde_wreg(MCDE_CHNL0BCKGNDCOL + chnl->id * MCDE_CHNL0BCKGNDCOL_GROUPOFFSET,
+		MCDE_CHNL0BCKGNDCOL_B(blue) |
+		MCDE_CHNL0BCKGNDCOL_G(green) |
+		MCDE_CHNL0BCKGNDCOL_R(red));
+
+	mcde_update_ovly_control(chnl->ovly0->idx, &chnl->ovly0->regs);
+	mcde_update_ovly_control(chnl->ovly1->idx, &chnl->ovly1->regs);
 }
 
 /* MCDE internal helpers */
@@ -943,109 +683,295 @@ static u32 get_output_fifo_size(enum mcde_fifo fifo)
 static inline u8 get_dsi_formatter_id(const struct mcde_port *port)
 {
 	if (dsi_ifc_is_supported)
-		return 2 * port->link + port->ifc;
+		return 2 * port->link;
 	else
 		return port->link;
 }
 
-static struct mcde_chnl_state *find_channel_by_dsilink(int link)
+static inline void mcde_add_bta_te_oneshot_listener(
+		struct mcde_chnl_state *chnl)
 {
-	struct mcde_chnl_state *chnl = &channels[0];
-	for (; chnl < &channels[num_channels]; chnl++)
-		if (chnl->enabled && chnl->port.link == link &&
-					chnl->port.type == MCDE_PORTTYPE_DSI)
-			return chnl;
-	return NULL;
+	bool need_statechange = false;
+	/*
+	 * Request a BTA TE oneshot event.
+	 * Can only be done in CHNLSTATE_SETUP or
+	 * CHNLSTATE_REQUEST_BTA_TE
+	 */
+	if (chnl->state != CHNLSTATE_SETUP) {
+		need_statechange = true;
+		set_channel_state_sync(chnl, CHNLSTATE_REQ_BTA_TE);
+	}
+	nova_dsilink_te_request(chnl->dsilink);
+
+	if (need_statechange)
+		set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+}
+
+static inline void mcde_add_vsync_capture_listener(struct mcde_chnl_state *chnl)
+{
+	int n_listeners = atomic_inc_return(&chnl->n_vsync_capture_listeners);
+
+	trace_keyvalue((0xF0 | chnl->id), "mcde_add_vsync_capture_listener",
+			n_listeners);
+
+	if (n_listeners == 1) {
+		switch (chnl->port.sync_src) {
+		case MCDE_SYNCSRC_TE0:
+			mcde_wfld(MCDE_CRC, SYCEN0, true);
+			break;
+		case MCDE_SYNCSRC_TE1:
+			mcde_wfld(MCDE_CRC, SYCEN1, true);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+static inline void mcde_remove_vsync_capture_listener(
+		struct mcde_chnl_state *chnl)
+{
+	int n_listeners = atomic_dec_return(&chnl->n_vsync_capture_listeners);
+
+	trace_keyvalue((0xF0 | chnl->id), "mcde_remove_vsync_capture_listener",
+			n_listeners);
+
+	if (n_listeners == 0) {
+		switch (chnl->port.sync_src) {
+		case MCDE_SYNCSRC_TE0:
+			mcde_wfld(MCDE_CRC, SYCEN0, false);
+			break;
+		case MCDE_SYNCSRC_TE1:
+			mcde_wfld(MCDE_CRC, SYCEN1, false);
+			break;
+		default:
+			break;
+		}
+	}
+}
+
+static inline void mcde_handle_vsync(struct mcde_chnl_state *chnl)
+{
+	trace_vsync(chnl->id, chnl->state);
+	atomic_inc(&chnl->vsync_cnt);
+	chnl->vcmp_cnt_wait = atomic_read(&chnl->vcmp_cnt) + 1;
+	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+		if (!chnl->port.update_auto_trig) {
+			if (chnl->state == CHNLSTATE_WAIT_TE) {
+				set_channel_state_atomic(chnl, CHNLSTATE_RUNNING);
+				mcde_remove_vsync_capture_listener(chnl);
+				disable_flow(chnl, true);
+			}
+		} else {
+			if (chnl->state == CHNLSTATE_STOPPING) {
+				mcde_remove_vsync_capture_listener(chnl);
+				disable_flow(chnl, false);
+			}
+		}
+	}
+	wake_up_all(&chnl->vsync_waitq);
+}
+
+static inline void mcde_handle_vcmp_state_stopping(struct mcde_chnl_state *chnl)
+{
+	bool change_state = true;
+	if (chnl->port.update_auto_trig) {
+		switch (chnl->port.sync_src) {
+		case MCDE_SYNCSRC_TE0:
+			change_state = !mcde_rfld(MCDE_CRC, SYCEN0);
+			break;
+		case MCDE_SYNCSRC_TE1:
+			change_state = !mcde_rfld(MCDE_CRC, SYCEN1);
+			break;
+		case MCDE_SYNCSRC_OFF:
+		case MCDE_SYNCSRC_BTA:
+		case MCDE_SYNCSRC_TE_POLLING:
+		default:
+			break;
+		}
+	}
+	if (change_state)
+		set_channel_state_atomic(chnl, CHNLSTATE_STOPPED);
 }
 
 static inline void mcde_handle_vcmp(struct mcde_chnl_state *chnl)
 {
+	trace_vcmp(chnl->id, chnl->state);
 	if (!chnl->vcmp_per_field ||
-				(chnl->vcmp_per_field && chnl->even_vcmp)) {
-		atomic_inc(&chnl->vcmp_cnt);
+			(chnl->vcmp_per_field && chnl->even_vcmp)) {
 		if (chnl->state == CHNLSTATE_STOPPING)
-			set_channel_state_atomic(chnl, CHNLSTATE_STOPPED);
+			mcde_handle_vcmp_state_stopping(chnl);
+
 		wake_up_all(&chnl->vcmp_waitq);
 	}
 	chnl->even_vcmp = !chnl->even_vcmp;
 }
 
-static void handle_dsi_irq(struct mcde_chnl_state *chnl, int i)
+#define NUM_FAST_RESTARTS 2
+#define NUM_FRAMES_WITH_FAST_RESTART 10
+static void handle_dsi_irq(struct mcde_chnl_state *chnl)
 {
-	u32 irq_status = dsi_rfld(i, DSI_DIRECT_CMD_STS_FLAG, TE_RECEIVED_FLAG);
-	if (irq_status) {
-		dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
-				DSI_DIRECT_CMD_STS_CLR_TE_RECEIVED_CLR(true));
-		dev_vdbg(&mcde_dev->dev, "BTA TE DSI%d\n", i);
-		if (chnl->port.frame_trig == MCDE_TRIG_SW)
+	u8 events;
+
+	events = nova_dsilink_handle_irq(chnl->dsilink);
+	if (events & DSILINK_IRQ_BTA_TE) {
+		trace_vsync(chnl->id, chnl->state);
+		atomic_inc(&chnl->vsync_cnt);
+		chnl->vcmp_cnt_wait = atomic_read(&chnl->vcmp_cnt) + 1;
+
+		if (chnl->port.frame_trig == MCDE_TRIG_SW &&
+				chnl->is_bta_te_listening == true) {
 			do_softwaretrig(chnl);
+			chnl->is_bta_te_listening = false;
+		}
+
+		if (chnl->port.frame_trig == MCDE_TRIG_HW) {
+			set_channel_state_atomic(chnl, CHNLSTATE_RUNNING);
+			set_channel_state_atomic(chnl, CHNLSTATE_STOPPING);
+		}
+		wake_up_all(&chnl->vsync_waitq);
 	}
 
-	irq_status = dsi_rfld(i, DSI_CMD_MODE_STS_FLAG, ERR_NO_TE_FLAG);
-	if (irq_status) {
-		dsi_wreg(i, DSI_CMD_MODE_STS_CLR,
-			DSI_CMD_MODE_STS_CLR_ERR_NO_TE_CLR(true));
-		dev_warn(&mcde_dev->dev, "NO_TE DSI%d\n", i);
+	if (events & DSILINK_IRQ_NO_TE)
 		set_channel_state_atomic(chnl, CHNLSTATE_STOPPED);
+	if ((events & DSILINK_IRQ_MISSING_VSYNC) &&
+					chnl->state == CHNLSTATE_RUNNING) {
+		nova_dsilink_enable_video_mode(chnl->dsilink, false);
+		nova_dsilink_enable_video_mode(chnl->dsilink, true);
+		dev_warn(&mcde_dev->dev, "DSI restart - missing VSYNC\n");
 	}
+	if ((events & DSILINK_IRQ_MISSING_DATA) &&
+					chnl->state == CHNLSTATE_RUNNING) {
+		chnl->force_restart_frame_cnt = 0;
+		atomic_set(&force_restart, true);
+		queue_work(system_long_wq, &mcde_restart_work);
+		dev_warn(&mcde_dev->dev, "Force restart - missing DATA\n");
+	}
+}
 
-	irq_status = dsi_rfld(i, DSI_DIRECT_CMD_STS, TRIGGER_RECEIVED);
-	if (irq_status) {
-		/* DSI TE polling answer received */
-		dsi_wreg(i, DSI_DIRECT_CMD_STS_CLR,
-			DSI_DIRECT_CMD_STS_CLR_TRIGGER_RECEIVED_CLR(true));
+static void mcde_register_vcmp(struct mcde_chnl_state *chnl)
+{
+	if (!chnl->vcmp_per_field ||
+			(chnl->vcmp_per_field && chnl->even_vcmp)) {
+		int vcmp_cnt = atomic_add_return(1, &chnl->vcmp_cnt);
+		int vcmp_cnt_since_restart = vcmp_cnt - chnl->force_restart_first_cnt;
+		if (chnl->force_restart_frame_cnt > 0 &&
+		    vcmp_cnt_since_restart > NUM_FRAMES_WITH_FAST_RESTART)
+			chnl->force_restart_frame_cnt = 0;
 
-		/* Reset TE watchdog timer */
-		if (chnl->port.sync_src == MCDE_SYNCSRC_TE_POLLING)
-			dsi_te_poll_set_timer(chnl, DSI_TE_NO_ANSWER_TIMEOUT);
+		chnl->vsync_cnt_wait = atomic_read(&chnl->vsync_cnt) + 1;
 	}
 }
 
 static irqreturn_t mcde_irq_handler(int irq, void *dev)
 {
-	int i;
 	u32 irq_status;
+	u32 active_interrupts;
 
-	irq_status = mcde_rreg(MCDE_MISCHNL);
-	if (irq_status) {
-		dev_err(&mcde_dev->dev, "chnl error=%.8x\n", irq_status);
-		mcde_wreg(MCDE_RISCHNL, irq_status);
+	active_interrupts = mcde_rreg(MCDE_AIS);
+
+	if (active_interrupts & (MCDE_AIS_DSI0AI_MASK |
+				MCDE_AIS_DSI1AI_MASK |
+				MCDE_AIS_DSI2AI_MASK)) {
+		/* Handle dsi link interrupts */
+		struct mcde_chnl_state *chnl;
+		for (chnl = channels; chnl < &channels[num_channels]; chnl++) {
+			if (chnl->port.type == MCDE_PORTTYPE_DSI &&
+						chnl->dsilink != NULL)
+				handle_dsi_irq(chnl);
+		}
 	}
-	irq_status = mcde_rreg(MCDE_MISERR);
-	if (irq_status) {
-		dev_err(&mcde_dev->dev, "error=%.8x\n", irq_status);
-		mcde_wreg(MCDE_RISERR, irq_status);
+
+	if (active_interrupts & MCDE_AIS_MCDECHNLI_MASK) {
+		irq_status = mcde_rreg(MCDE_MISCHNL);
+		if (irq_status) {
+			trace_chnl_err(irq_status);
+			dev_err(&mcde_dev->dev,
+					"chnl error=%.8x\n", irq_status);
+			mcde_wreg(MCDE_RISCHNL, irq_status);
+		}
+	}
+	if (active_interrupts & MCDE_AIS_MCDEERRI_MASK) {
+		irq_status = mcde_rreg(MCDE_MISERR);
+		if (irq_status) {
+			trace_err(irq_status);
+#ifdef MCDE_DPI_UNDERFLOW
+		if (irq_status & MCDE_RISERR_FUARIS_MASK) {
+				dev_warn(&mcde_dev->dev, "FIFO A underflow interrupt detected!!\n");
+				if (MCDE_PORTTYPE_DPI == channels[MCDE_CHNL_A].port.type) {
+					mcde_wfld(MCDE_CRA0, FLOEN, false);
+					dev_warn(&mcde_dev->dev, "FIFO A underflow\n");
+					mcde_wfld(MCDE_IMSCERR, FUAIM, 0);
+					mcde_underflow_handler();
+				}
+			}
+#endif
+			if (irq_status & MCDE_MISERR_SCHBLCKDMIS_MASK) {
+				atomic_set(&force_restart, true);
+				queue_work(system_long_wq, &mcde_restart_work);
+				dev_err(&mcde_dev->dev, "Scheduler blocked\n");
+				mcde_wfld(MCDE_IMSCERR, SCHBLCKDIM, false);
+			}
+			dev_err(&mcde_dev->dev, "error=%.8x\n", irq_status);
+			mcde_wreg(MCDE_RISERR, irq_status);
+		}
 	}
 
-	/* Handle channel irqs */
-	irq_status = mcde_rreg(MCDE_RISPP);
-	if (irq_status & MCDE_RISPP_VCMPARIS_MASK)
-		mcde_handle_vcmp(&channels[MCDE_CHNL_A]);
-	if (irq_status & MCDE_RISPP_VCMPBRIS_MASK)
-		mcde_handle_vcmp(&channels[MCDE_CHNL_B]);
-	if (irq_status & MCDE_RISPP_VCMPC0RIS_MASK)
-		mcde_handle_vcmp(&channels[MCDE_CHNL_C0]);
-	if (irq_status & MCDE_RISPP_VCMPC1RIS_MASK)
-		mcde_handle_vcmp(&channels[MCDE_CHNL_C1]);
-	mcde_wreg(MCDE_RISPP, irq_status);
+	if (active_interrupts & MCDE_AIS_MCDEPPI_MASK) {
+		struct mcde_chnl_state *chnl;
 
-	for (i = 0; i < num_dsilinks; i++) {
-		struct mcde_chnl_state *chnl_from_dsi;
+		/* Get the channel irqs to handle */
+		irq_status = mcde_rreg(MCDE_MISPP);
 
-		chnl_from_dsi = find_channel_by_dsilink(i);
+		/* Register which vcmps that will be handled */
+		if (irq_status & MCDE_MISPP_VCMPAMIS_MASK)
+			mcde_register_vcmp(&channels[MCDE_CHNL_A]);
+		if (irq_status & MCDE_MISPP_VCMPBMIS_MASK)
+			mcde_register_vcmp(&channels[MCDE_CHNL_B]);
+		if (irq_status & MCDE_MISPP_VCMPC0MIS_MASK)
+			mcde_register_vcmp(&channels[MCDE_CHNL_C0]);
+		if (irq_status & MCDE_MISPP_VCMPC1MIS_MASK)
+			mcde_register_vcmp(&channels[MCDE_CHNL_C1]);
 
-		if (chnl_from_dsi == NULL)
-			continue;
+		/* Call the necessary interrupt handlers */
+		if (irq_status & MCDE_MISPP_VSCC0MIS_MASK) {
+			for (chnl = channels; chnl < &channels[num_channels]; chnl++) {
+				if (chnl->port.sync_src == MCDE_SYNCSRC_TE0)
+					mcde_handle_vsync(chnl);
+			}
+		}
+		if (irq_status & MCDE_MISPP_VSCC1MIS_MASK) {
+			for (chnl = channels; chnl < &channels[num_channels]; chnl++) {
+				if (chnl->port.sync_src == MCDE_SYNCSRC_TE1)
+					mcde_handle_vsync(chnl);
+			}
+		}
 
-		handle_dsi_irq(chnl_from_dsi, i);
+		if (irq_status & MCDE_MISPP_VCMPAMIS_MASK)
+			mcde_handle_vcmp(&channels[MCDE_CHNL_A]);
+		if (irq_status & MCDE_MISPP_VCMPBMIS_MASK)
+			mcde_handle_vcmp(&channels[MCDE_CHNL_B]);
+		if (irq_status & MCDE_MISPP_VCMPC0MIS_MASK)
+			mcde_handle_vcmp(&channels[MCDE_CHNL_C0]);
+		if (irq_status & MCDE_MISPP_VCMPC1MIS_MASK)
+			mcde_handle_vcmp(&channels[MCDE_CHNL_C1]);
+
+		mcde_wreg(MCDE_RISPP, irq_status);
 	}
 
 	return IRQ_HANDLED;
 }
 
-/* Transitions allowed: WAIT_TE -> UPDATE -> STOPPING */
+/*
+ * Transitions allowed: SETUP -> (WAIT_TE ->) RUNNING -> STOPPING -> STOPPED
+ *                      WAIT_TE -> STOPPED
+ *                      SUSPEND -> IDLE
+ *                      DSI_READ -> IDLE
+ *                      DSI_WRITE -> IDLE
+ *                      REQUEST_BTA_TE -> IDLE
+ */
 static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
-							enum chnl_state state)
+			enum chnl_state state)
 {
 	enum chnl_state chnl_state = chnl->state;
 
@@ -1058,6 +984,7 @@ static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
 	    (chnl_state == CHNLSTATE_RUNNING && state == CHNLSTATE_STOPPING)) {
 		/* Set wait TE, running, or stopping state */
 		chnl->state = state;
+		trace_state(chnl->id, chnl->state);
 		return 0;
 	} else if ((chnl_state == CHNLSTATE_STOPPING &&
 						state == CHNLSTATE_STOPPED) ||
@@ -1065,14 +992,17 @@ static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
 						state == CHNLSTATE_STOPPED)) {
 		/* Set stopped state */
 		chnl->state = state;
+		trace_state(chnl->id, chnl->state);
 		wake_up_all(&chnl->state_waitq);
 		return 0;
 	} else if (state == CHNLSTATE_IDLE) {
 		/* Set idle state */
 		WARN_ON_ONCE(chnl_state != CHNLSTATE_DSI_READ &&
 			     chnl_state != CHNLSTATE_DSI_WRITE &&
+			     chnl_state != CHNLSTATE_REQ_BTA_TE &&
 			     chnl_state != CHNLSTATE_SUSPEND);
 		chnl->state = state;
+		trace_state(chnl->id, chnl->state);
 		wake_up_all(&chnl->state_waitq);
 		return 0;
 	} else {
@@ -1086,7 +1016,7 @@ static int set_channel_state_atomic(struct mcde_chnl_state *chnl,
 
 /* LOCKING: mcde_hw_lock */
 static int set_channel_state_sync(struct mcde_chnl_state *chnl,
-							enum chnl_state state)
+			enum chnl_state state)
 {
 	int ret = 0;
 	enum chnl_state chnl_state = chnl->state;
@@ -1118,99 +1048,132 @@ static int set_channel_state_sync(struct mcde_chnl_state *chnl,
 
 	/* State is IDLE, do transition to new state */
 	chnl->state = state;
+	trace_state(chnl->id, chnl->state);
 
 	return ret;
+}
+
+/* reentrant compatible*/
+int mcde_chnl_wait_for_next_vsync(struct mcde_chnl_state *chnl,
+		s64 *timestamp)
+{
+	long rem_jiffies;
+	int w;
+
+	mcde_lock(__func__, __LINE__);
+
+	/* Handle the special case if mcde is disabled */
+	if (enable_mcde_hw()) {
+		mcde_unlock(__func__, __LINE__);
+		return -EIO;
+	}
+
+	if (!chnl->formatter_updated)
+		(void)update_channel_static_registers(chnl);
+
+	/*
+	 * Only if sync_src is MCDE_SYNCSRC_TE0, MCDE_SYNCSRC_TE1 or
+	 * MCDE_SYNCSRC_BTA the vsync signal will be generated by
+	 * the HW and handled by the mcde_irq_handler().
+	 */
+	switch (chnl->port.sync_src) {
+	case MCDE_SYNCSRC_TE0:
+		/* Intentional */
+	case MCDE_SYNCSRC_TE1:
+		mcde_add_vsync_capture_listener(chnl);
+		break;
+	case MCDE_SYNCSRC_BTA:
+		mcde_add_bta_te_oneshot_listener(chnl);
+		break;
+	default:
+		return -EIO;
+	}
+
+	w = atomic_read(&chnl->vsync_cnt) + 1;
+
+	mcde_unlock(__func__, __LINE__);
+	/*
+	 * After this there can be context switches and other calls to
+	 * other mcde_hw functions.
+	 */
+	trace_keyvalue((0xF0 | chnl->id), "Wait for next vsync", w);
+	rem_jiffies = wait_event_timeout(chnl->vsync_waitq,
+			atomic_read(&chnl->vsync_cnt) >= w,
+			msecs_to_jiffies(CHNL_TIMEOUT));
+
+	if (timestamp != NULL) {
+		struct timespec ts;
+		ktime_get_ts(&ts);
+		*timestamp = timespec_to_ns(&ts);
+	}
+
+	mcde_lock(__func__, __LINE__);
+
+        _mcde_chnl_enable(chnl);
+        if (enable_mcde_hw()) {
+                mcde_unlock(__func__, __LINE__);
+                return -EIO;
+        }
+
+	switch (chnl->port.sync_src) {
+	case MCDE_SYNCSRC_TE0:
+		/* Intentional */
+	case MCDE_SYNCSRC_TE1:
+		mcde_remove_vsync_capture_listener(chnl);
+		break;
+	case MCDE_SYNCSRC_BTA:
+		break;
+	default:
+		mcde_unlock(__func__, __LINE__);
+		return -2; /* Should never happen */
+	}
+	mcde_unlock(__func__, __LINE__);
+
+	if (rem_jiffies == 0) {
+		trace_keyvalue((0xF0 | chnl->id),
+				"Timeout waiting for next vsync", w);
+		return -1;
+	} else {
+		trace_keyvalue((0xF0 | chnl->id),
+				"Done waiting for vsync", w);
+		return 0;
+	}
 }
 
 static int wait_for_vcmp(struct mcde_chnl_state *chnl)
 {
-	u64 vcmp = atomic_read(&chnl->vcmp_cnt) + 1;
-	int ret = wait_event_timeout(chnl->vcmp_waitq,
-					atomic_read(&chnl->vcmp_cnt) >= vcmp,
-						msecs_to_jiffies(CHNL_TIMEOUT));
-	return ret;
-}
-
-static void get_vid_operating_mode(const struct mcde_port *port,
-		bool *burst_mode, bool *sync_is_pulse, bool *tvg_enable)
-{
-	switch (port->phy.dsi.vid_mode) {
-	case NON_BURST_MODE_WITH_SYNC_EVENT:
-		*burst_mode = false;
-		*sync_is_pulse = false;
-		*tvg_enable = false;
-		break;
-	case NON_BURST_MODE_WITH_SYNC_EVENT_TVG_ENABLED:
-		*burst_mode = false;
-		*sync_is_pulse = false;
-		*tvg_enable = true;
-		break;
-	case BURST_MODE_WITH_SYNC_EVENT:
-		*burst_mode = true;
-		*sync_is_pulse = false;
-		*tvg_enable = false;
-		break;
-	case BURST_MODE_WITH_SYNC_PULSE:
-		*burst_mode = true;
-		*sync_is_pulse = true;
-		*tvg_enable = false;
-		break;
-	default:
-		dev_err(&mcde_dev->dev, "Unsupported video mode");
-		break;
+	int w = chnl->vcmp_cnt_wait;
+	trace_keyvalue((0xF0 | chnl->id), "Wait for vcmp_cnt", w);
+	if (wait_event_timeout(chnl->vcmp_waitq,
+			atomic_read(&chnl->vcmp_cnt) >= w,
+			msecs_to_jiffies(CHNL_TIMEOUT)) == 0) {
+		trace_keyvalue((0xF0 | chnl->id), "Timeout waiting, vcmp_cnt",
+				atomic_read(&chnl->vcmp_cnt));
+		return -1;
+	} else {
+		trace_keyvalue((0xF0 | chnl->id), "Done waiting, vcmp_cnt",
+				atomic_read(&chnl->vcmp_cnt));
+		return 0;
 	}
 }
 
-static void update_vid_static_registers(const struct mcde_port *port)
+static int wait_for_vsync(struct mcde_chnl_state *chnl)
 {
-	u8 link = port->link;
-	bool burst_mode, sync_is_pulse, tvg_enable;
-
-	get_vid_operating_mode(port, &burst_mode, &sync_is_pulse, &tvg_enable);
-
-	/* burst mode or non-burst mode */
-	dsi_wfld(link, DSI_VID_MAIN_CTL, BURST_MODE, burst_mode);
-
-	/* sync is pulse or event */
-	dsi_wfld(link, DSI_VID_MAIN_CTL, SYNC_PULSE_ACTIVE, sync_is_pulse);
-	dsi_wfld(link, DSI_VID_MAIN_CTL, SYNC_PULSE_HORIZONTAL, sync_is_pulse);
-
-	/* disable video stream when using TVG */
-	if (tvg_enable) {
-		dsi_wfld(link, DSI_MCTL_MAIN_EN, IF1_EN, false);
-		dsi_wfld(link, DSI_MCTL_MAIN_EN, IF2_EN, false);
+	int w = chnl->vsync_cnt_wait;
+	trace_keyvalue((0xF0 | chnl->id), "Wait for vsync_cnt", w);
+	if (wait_event_timeout(chnl->vsync_waitq,
+			atomic_read(&chnl->vsync_cnt) >= w,
+			msecs_to_jiffies(CHNL_TIMEOUT)) == 0) {
+		trace_keyvalue((0xF0 | chnl->id), "Timeout waiting, vsync_cnt",
+				atomic_read(&chnl->vsync_cnt));
+		return -1;
+	} else {
+		trace_keyvalue((0xF0 | chnl->id), "Done waiting, vsync_cnt",
+				atomic_read(&chnl->vsync_cnt));
+		return 0;
 	}
-
-	/*
-	 * behavior during blanking time
-	 * 00: NULL packet 1x:LP 01:blanking-packet
-	 */
-	dsi_wfld(link, DSI_VID_MAIN_CTL, REG_BLKLINE_MODE, 1);
-
-	/*
-	 * behavior during eol
-	 * 00: NULL packet 1x:LP 01:blanking-packet
-	 */
-	dsi_wfld(link, DSI_VID_MAIN_CTL, REG_BLKEOL_MODE, 2);
-
-	/* time to perform LP->HS on D-PHY */
-	dsi_wfld(link, DSI_VID_DPHY_TIME, REG_WAKEUP_TIME,
-						port->phy.dsi.vid_wakeup_time);
-
-	/*
-	 * video stream starts on VSYNC packet
-	 * and stops at the end of a frame
-	 */
-	dsi_wfld(link, DSI_VID_MAIN_CTL, VID_ID, port->phy.dsi.virt_id);
-	dsi_wfld(link, DSI_VID_MAIN_CTL, START_MODE, 0);
-	dsi_wfld(link, DSI_VID_MAIN_CTL, STOP_MODE, 0);
-
-	/* 1: if1 in video mode, 0: if1 in command mode */
-	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, IF1_MODE, 1);
-
-	/* 1: enables the link, 0: disables the link */
-	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, VID_EN, 1);
 }
+
 
 static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 {
@@ -1274,76 +1237,22 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 
 	/* Formatter */
 	if (port->type == MCDE_PORTTYPE_DSI) {
-		int i = 0;
 		u8 idx;
-		u8 lnk = port->link;
+		struct dsilink_port dsi_port;
 
 		idx = get_dsi_formatter_id(port);
 
-		if (dsi_link_enable(chnl))
-			goto failed_to_enable_link;
+		get_dsi_port(chnl, &dsi_port);
+		(void)nova_dsilink_setup(chnl->dsilink, &dsi_port);
 
-		if (port->sync_src == MCDE_SYNCSRC_TE_POLLING) {
-			/* Enable DSI TE polling */
-			dsi_te_poll_req(chnl);
+		if (!dsi_use_clk_framework)
+			enable_dsi_pll();
 
-			/* Set timer to detect non TE answer */
-			dsi_te_poll_set_timer(chnl,
-					DSI_TE_NO_ANSWER_TIMEOUT_INIT);
-		} else {
-			dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
-			dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, READ_EN, true);
-			dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, REG_TE_EN, true);
-		}
+		if (nova_dsilink_enable(chnl->dsilink))
+			goto dsi_link_error;
 
-		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, HOST_EOT_GEN,
-						port->phy.dsi.host_eot_gen);
+		nova_dsilink_exit_ulpm(chnl->dsilink);
 
-		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, DLX_REMAP_EN,
-					port->phy.dsi.data_lanes_swap);
-
-		dsi_wreg(lnk, DSI_MCTL_DPHY_STATIC,
-			DSI_MCTL_DPHY_STATIC_UI_X4(port->phy.dsi.ui));
-		dsi_wreg(lnk, DSI_DPHY_LANES_TRIM,
-			DSI_DPHY_LANES_TRIM_DPHY_SPECS_90_81B_ENUM(0_90));
-		dsi_wreg(lnk, DSI_MCTL_DPHY_TIMEOUT,
-			DSI_MCTL_DPHY_TIMEOUT_CLK_DIV(0xf) |
-			DSI_MCTL_DPHY_TIMEOUT_HSTX_TO_VAL(0x3fff) |
-			DSI_MCTL_DPHY_TIMEOUT_LPRX_TO_VAL(0x3fff));
-		dsi_wreg(lnk, DSI_MCTL_MAIN_PHY_CTL,
-			DSI_MCTL_MAIN_PHY_CTL_WAIT_BURST_TIME(0xf) |
-			DSI_MCTL_MAIN_PHY_CTL_CLK_ULPM_EN(true) |
-			DSI_MCTL_MAIN_PHY_CTL_DAT1_ULPM_EN(true) |
-			DSI_MCTL_MAIN_PHY_CTL_DAT2_ULPM_EN(true) |
-			DSI_MCTL_MAIN_PHY_CTL_LANE2_EN(
-				port->phy.dsi.num_data_lanes >= 2) |
-			DSI_MCTL_MAIN_PHY_CTL_CLK_CONTINUOUS(
-				port->phy.dsi.clk_cont));
-		/* TODO: make enum */
-		dsi_wfld(lnk, DSI_CMD_MODE_CTL, ARB_MODE, false);
-		/* TODO: make enum */
-		dsi_wfld(lnk, DSI_CMD_MODE_CTL, ARB_PRI, port->ifc == 1);
-		dsi_wreg(lnk, DSI_MCTL_MAIN_EN,
-			DSI_MCTL_MAIN_EN_PLL_START(true) |
-			DSI_MCTL_MAIN_EN_CKLANE_EN(true) |
-			DSI_MCTL_MAIN_EN_DAT1_EN(true) |
-			DSI_MCTL_MAIN_EN_DAT2_EN(port->phy.dsi.num_data_lanes
-				== 2) |
-			DSI_MCTL_MAIN_EN_IF1_EN(port->ifc == 0) |
-			DSI_MCTL_MAIN_EN_IF2_EN(port->ifc == 1));
-		while (dsi_rfld(lnk, DSI_MCTL_MAIN_STS, CLKLANE_READY) == 0 ||
-			dsi_rfld(lnk, DSI_MCTL_MAIN_STS, DAT1_READY) == 0 ||
-			(dsi_rfld(lnk, DSI_MCTL_MAIN_STS, DAT2_READY) == 0 &&
-					port->phy.dsi.num_data_lanes > 1)) {
-			mdelay(1);
-			if (i++ == 10) {
-				dev_warn(&mcde_dev->dev,
-					"DSI lane not ready (link=%d)!\n", lnk);
-				goto dsi_link_error;
-			}
-		}
-
-		dsi_link_handle_ulpm(&chnl->port, false);
 		mcde_wreg(MCDE_DSIVID0CONF0 +
 			idx * MCDE_DSIVID0CONF0_GROUPOFFSET,
 			MCDE_DSIVID0CONF0_BLANKING(0) |
@@ -1353,17 +1262,6 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 			MCDE_DSIVID0CONF0_BIT_SWAP(false) |
 			MCDE_DSIVID0CONF0_BYTE_SWAP(false) |
 			MCDE_DSIVID0CONF0_DCSVID_NOTGEN(true));
-
-		if (port->mode == MCDE_PORTMODE_VID) {
-			update_vid_static_registers(port);
-		} else {
-			if (port->ifc == 0)
-				dsi_wfld(port->link, DSI_CMD_MODE_CTL, IF1_ID,
-					port->phy.dsi.virt_id);
-			else if (port->ifc == 1)
-				dsi_wfld(port->link, DSI_CMD_MODE_CTL, IF2_ID,
-					port->phy.dsi.virt_id);
-		}
 	}
 
 	if (port->type == MCDE_PORTTYPE_DPI) {
@@ -1383,9 +1281,33 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 
 	return 0;
 dsi_link_error:
-	dsi_link_disable(chnl, true);
-failed_to_enable_link:
 	return -EINVAL;
+}
+
+static void mcde_chnl_oled_convert_apply(struct mcde_chnl_state *chnl,
+					struct mcde_oled_transform *transform)
+{
+	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+
+	if (chnl->oled_transform != transform) {
+		chnl->oled_regs.alfa_red     = transform->matrix[0][0];
+		chnl->oled_regs.alfa_green   = transform->matrix[0][1];
+		chnl->oled_regs.alfa_blue    = transform->matrix[0][2];
+		chnl->oled_regs.beta_red     = transform->matrix[1][0];
+		chnl->oled_regs.beta_green   = transform->matrix[1][1];
+		chnl->oled_regs.beta_blue    = transform->matrix[1][2];
+		chnl->oled_regs.gamma_red    = transform->matrix[2][0];
+		chnl->oled_regs.gamma_green  = transform->matrix[2][1];
+		chnl->oled_regs.gamma_blue   = transform->matrix[2][2];
+		chnl->oled_regs.off_red      = transform->offset[0];
+		chnl->oled_regs.off_green    = transform->offset[1];
+		chnl->oled_regs.off_blue     = transform->offset[2];
+		chnl->oled_regs.dirty = true;
+
+		chnl->oled_transform = transform;
+	}
+
+	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
 
 void mcde_chnl_col_convert_apply(struct mcde_chnl_state *chnl,
@@ -1415,6 +1337,25 @@ void mcde_chnl_col_convert_apply(struct mcde_chnl_state *chnl,
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
 
+static void setup_channel_and_overlay_color_conv(struct mcde_chnl_state *chnl,
+						struct mcde_ovly_state *ovly)
+{
+	struct ovly_regs *regs = &ovly->regs;
+
+	if (chnl->port.update_auto_trig &&
+			chnl->port.type == MCDE_PORTTYPE_DSI) {
+		if (ovly->pix_fmt == MCDE_OVLYPIXFMT_YCbCr422 &&
+				regs->col_conv != MCDE_OVL0CR_COLCCTRL_ENABLED_SAT) {
+			regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_SAT;
+			ovly->chnl->update_color_conversion = true;
+		} else if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422 &&
+				regs->col_conv != MCDE_OVL0CR_COLCCTRL_DISABLED) {
+			regs->col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
+			ovly->chnl->update_color_conversion = true;
+		}
+	}
+}
+
 static void chnl_ovly_pixel_format_apply(struct mcde_chnl_state *chnl,
 						struct mcde_ovly_state *ovly)
 {
@@ -1432,19 +1373,29 @@ static void chnl_ovly_pixel_format_apply(struct mcde_chnl_state *chnl,
 		.offset = {0, 0, 0},
 	};
 
-	if (port->type == MCDE_PORTTYPE_DSI) {
-		if (port->pixel_format != MCDE_PORTPIXFMT_DSI_YCBCR422) {
+
+	if (port->type == MCDE_PORTTYPE_DPI) {
+		if (port->phy.dpi.tv_mode) {
+			regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_NO_SAT;
+			if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422)
+				mcde_chnl_col_convert_apply(chnl, &chnl->rgb_2_ycbcr);
+			else
+				mcde_chnl_col_convert_apply(chnl, &crycb_2_ycbcr);
+		} else { /* DPI LCD mode */
+			/* Note: DPI YUV not handled, assuming it is always RGB */
+			/* Note: YUV is not a supported port pixel format for DPI */
 			if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422) {
-				/* standard case: DSI: RGB -> RGB */
+				/* standard case: DPI: RGB -> RGB */
 				regs->col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
 			} else {
-				/* DSI: YUV -> RGB */
-				/* TODO change matrix */
-				regs->col_conv =
-					MCDE_OVL0CR_COLCCTRL_ENABLED_SAT;
-				mcde_chnl_col_convert_apply(chnl,
-							&chnl->ycbcr_2_rgb);
+				/* DPI: YUV -> RGB */
+				regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_SAT;
+				mcde_chnl_col_convert_apply(chnl, &chnl->ycbcr_2_rgb);
 			}
+		}
+	} else { /* MCDE_PORTTYPE_DSI */
+		if (port->pixel_format != MCDE_PORTPIXFMT_DSI_YCBCR422) {
+			setup_channel_and_overlay_color_conv(chnl, ovly);
 		} else {
 			if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422)
 				/* DSI: RGB -> YUV */
@@ -1456,45 +1407,28 @@ static void chnl_ovly_pixel_format_apply(struct mcde_chnl_state *chnl,
 							&crycb_2_ycbcr);
 			regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_NO_SAT;
 		}
-	} else if (port->type == MCDE_PORTTYPE_DPI && port->phy.dpi.tv_mode) {
-		regs->col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_NO_SAT;
-		if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422)
-			mcde_chnl_col_convert_apply(chnl, &chnl->rgb_2_ycbcr);
-		else
-			mcde_chnl_col_convert_apply(chnl, &crycb_2_ycbcr);
-	} else if (port->type == MCDE_PORTTYPE_DPI) {
-		/* Note: YUV is not support port pixel format for DPI */
-		if (ovly->pix_fmt != MCDE_OVLYPIXFMT_YCbCr422) {
-			/* standard case: DPI: RGB -> RGB */
-			regs->col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
-		} else {
-			/* DPI: YUV -> RGB */
-			regs->col_conv =
-				MCDE_OVL0CR_COLCCTRL_ENABLED_SAT;
-			mcde_chnl_col_convert_apply(chnl,
-						&chnl->ycbcr_2_rgb);
-		}
 	}
 }
 
-/* REVIEW: Make update_* an mcde_rectangle? */
-static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
-			struct mcde_port *port, enum mcde_fifo fifo,
-			u16 update_x, u16 update_y, u16 update_w,
-			u16 update_h, s16 stride, bool interlaced,
-			enum mcde_display_rotation rotation)
+static void update_overlay_registers(struct mcde_ovly_state *ovly,
+		struct ovly_regs *regs,
+		struct mcde_port *port, enum mcde_fifo fifo,
+		s16 stride, bool interlaced,
+		enum mcde_hw_rotation hw_rot)
 {
 	/* TODO: fix clipping for small overlay */
-	u32 lmrgn = (regs->cropx + update_x) * regs->bits_per_pixel;
-	u32 tmrgn = (regs->cropy + update_y) * stride;
-	u32 ppl = regs->ppl - update_x;
-	u32 lpf = regs->lpf - update_y;
+	u8 idx = ovly->idx;
+	u32 lmrgn = regs->cropx * regs->bits_per_pixel;
+	u32 tmrgn = regs->cropy * stride;
+	u32 ppl = regs->ppl;
+	u32 lpf = regs->lpf;
 	s32 ljinc = stride;
 	u32 pixelfetchwtrmrklevel;
 	u8  nr_of_bufs = 1;
 	u32 sel_mod = MCDE_EXTSRC0CR_SEL_MOD_SOFTWARE_SEL;
+	struct mcde_platform_data *pdata = mcde_dev->dev.platform_data;
 
-	if (rotation == MCDE_DISPLAY_ROT_180_CCW) {
+	if (hw_rot == MCDE_HW_ROT_VERT_MIRROR) {
 		ljinc = -ljinc;
 		tmrgn += stride * (regs->lpf - 1) / 8;
 	}
@@ -1509,11 +1443,33 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 		ljinc *= 2;
 	}
 
-	if ((fifo == MCDE_FIFO_A || fifo == MCDE_FIFO_B) &&
-			regs->ppl >= SCREEN_PPL_HIGH)
-		pixelfetchwtrmrklevel = input_fifo_size * 2;
-	else
-		pixelfetchwtrmrklevel = input_fifo_size / 2;
+	pixelfetchwtrmrklevel = pdata->pixelfetchwtrmrk[idx];
+	if (pixelfetchwtrmrklevel == 0) {
+		/* Not set: Use default value */
+		switch (idx) {
+		case 0:
+			pixelfetchwtrmrklevel = MCDE_PIXFETCH_WTRMRKLVL_OVL0;
+			break;
+		case 1:
+			pixelfetchwtrmrklevel = MCDE_PIXFETCH_WTRMRKLVL_OVL1;
+			break;
+		case 2:
+			pixelfetchwtrmrklevel = MCDE_PIXFETCH_WTRMRKLVL_OVL2;
+			break;
+		case 3:
+			pixelfetchwtrmrklevel = MCDE_PIXFETCH_WTRMRKLVL_OVL3;
+			break;
+		case 4:
+			pixelfetchwtrmrklevel = MCDE_PIXFETCH_WTRMRKLVL_OVL4;
+			break;
+		case 5:
+			pixelfetchwtrmrklevel = MCDE_PIXFETCH_WTRMRKLVL_OVL5;
+			break;
+		}
+	}
+	if (regs->enabled)
+		dev_dbg(&mcde_dev->dev, "ovly%d pfwml:%d %dbpp\n", idx,
+				pixelfetchwtrmrklevel, regs->bits_per_pixel);
 
 	if (port->update_auto_trig && port->type == MCDE_PORTTYPE_DSI) {
 		switch (port->sync_src) {
@@ -1543,21 +1499,6 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 		MCDE_EXTSRC0CR_MULTIOVL_CTRL_ENUM(PRIMARY) |
 		MCDE_EXTSRC0CR_FS_DIV_DISABLE(false) |
 		MCDE_EXTSRC0CR_FORCE_FS_DIV(false));
-	mcde_wreg(MCDE_OVL0CR + idx * MCDE_OVL0CR_GROUPOFFSET,
-		MCDE_OVL0CR_OVLEN(regs->enabled) |
-	MCDE_OVL0CR_COLCCTRL(regs->col_conv) |
-		MCDE_OVL0CR_CKEYGEN(false) |
-		MCDE_OVL0CR_ALPHAPMEN(false) |
-		MCDE_OVL0CR_OVLF(false) |
-		MCDE_OVL0CR_OVLR(false) |
-		MCDE_OVL0CR_OVLB(false) |
-		MCDE_OVL0CR_FETCH_ROPC(0) |
-		MCDE_OVL0CR_STBPRIO(0) |
-		MCDE_OVL0CR_BURSTSIZE_ENUM(HW_8W) |
-		/* TODO: enum, get from ovly */
-		MCDE_OVL0CR_MAXOUTSTANDING_ENUM(8_REQ) |
-		/* TODO: _HW_8W, calculate? */
-		MCDE_OVL0CR_ROTBURSTSIZE_ENUM(HW_8W));
 	mcde_wreg(MCDE_OVL0CONF + idx * MCDE_OVL0CONF_GROUPOFFSET,
 		MCDE_OVL0CONF_PPL(ppl) |
 		MCDE_OVL0CONF_EXTSRC_ID(idx) |
@@ -1574,15 +1515,18 @@ static void update_overlay_registers(u8 idx, struct ovly_regs *regs,
 	mcde_wreg(MCDE_OVL0CROP + idx * MCDE_OVL0CROP_GROUPOFFSET,
 		MCDE_OVL0CROP_TMRGN(tmrgn) |
 		MCDE_OVL0CROP_LMRGN(lmrgn >> 6));
+
+	mcde_update_ovly_control(idx, regs);
+
 	regs->dirty = false;
 
 	dev_vdbg(&mcde_dev->dev, "Overlay registers setup, idx=%d\n", idx);
 }
 
-static void update_overlay_registers_on_the_fly(u8 idx, struct ovly_regs *regs)
+static void update_overlay_registers_on_the_fly(u8 idx, struct ovly_regs *regs, u32 xoffset)
 {
 	mcde_wreg(MCDE_OVL0COMP + idx * MCDE_OVL0COMP_GROUPOFFSET,
-		MCDE_OVL0COMP_XPOS(regs->xpos) |
+		MCDE_OVL0COMP_XPOS(regs->xpos + xoffset) |
 		MCDE_OVL0COMP_CH_ID(regs->ch_id) |
 		MCDE_OVL0COMP_YPOS(regs->ypos) |
 		MCDE_OVL0COMP_Z(regs->z));
@@ -1600,23 +1544,20 @@ static void do_softwaretrig(struct mcde_chnl_state *chnl)
 
 	local_irq_save(flags);
 
-	enable_flow(chnl);
+	enable_flow(chnl, true);
 	mcde_wreg(MCDE_CHNL0SYNCHSW +
 		chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
 		MCDE_CHNL0SYNCHSW_SW_TRIG(true));
-	disable_flow(chnl);
+	disable_flow(chnl, true);
 
 	local_irq_restore(flags);
 
 	dev_vdbg(&mcde_dev->dev, "Software TRIG on channel %d\n", chnl->id);
 }
 
-static void disable_flow(struct mcde_chnl_state *chnl)
+static void disable_flow(struct mcde_chnl_state *chnl, bool setstate)
 {
 	unsigned long flags;
-
-	if (WARN_ON_ONCE(chnl->state != CHNLSTATE_RUNNING))
-		return;
 
 	local_irq_save(flags);
 
@@ -1635,7 +1576,8 @@ static void disable_flow(struct mcde_chnl_state *chnl)
 		break;
 	}
 
-	set_channel_state_atomic(chnl, CHNLSTATE_STOPPING);
+	if (setstate)
+		set_channel_state_atomic(chnl, CHNLSTATE_STOPPING);
 
 	local_irq_restore(flags);
 }
@@ -1643,31 +1585,30 @@ static void disable_flow(struct mcde_chnl_state *chnl)
 static void stop_channel(struct mcde_chnl_state *chnl)
 {
 	const struct mcde_port *port = &chnl->port;
-	bool dpi_lcd_mode;
 
-	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+	dev_vdbg(&mcde_dev->dev, "%s %d\n", __func__, chnl->state);
 
-	if (chnl->state != CHNLSTATE_RUNNING)
+	if (!chnl->port.update_auto_trig ||
+				chnl->state != CHNLSTATE_RUNNING) {
+		set_channel_state_sync(chnl, CHNLSTATE_SUSPEND);
 		return;
-
-	if (port->type == MCDE_PORTTYPE_DSI) {
-		dsi_wfld(port->link, DSI_MCTL_MAIN_PHY_CTL, CLK_CONTINUOUS,
-			false);
-		if (port->sync_src == MCDE_SYNCSRC_TE_POLLING)
-			del_timer(&chnl->dsi_te_timer);
 	}
 
-	disable_flow(chnl);
-	/*
-	 * Needs to manually trigger VCOMP after the channel is
-	 * disabled. For all channels using video mode
-	 * except for dpi lcd.
-	*/
-	dpi_lcd_mode = (port->type == MCDE_PORTTYPE_DPI &&
-				!chnl->port.phy.dpi.tv_mode);
+	if (chnl->port.sync_src == MCDE_SYNCSRC_OFF)
+		disable_flow(chnl, true);
+	else
+		set_channel_state_atomic(chnl, CHNLSTATE_STOPPING);
 
-	if (chnl->port.update_auto_trig && !dpi_lcd_mode)
-		mcde_wreg(MCDE_SISPP, 1 << chnl->id);
+	set_channel_state_sync(chnl, CHNLSTATE_SUSPEND);
+
+	if (port->type == MCDE_PORTTYPE_DSI && port->mode == MCDE_PORTMODE_VID) {
+			nova_dsilink_enable_video_mode(chnl->dsilink, false);
+	}
+
+	if (WARN_ON_ONCE(!mcde_rfld(MCDE_CTRLA, FIFOEMPTY)))
+		dev_warn(&mcde_dev->dev, "Fifo no empty chnl=%d\n", chnl->id);
+	if (WARN_ON_ONCE(mcde_rfld(MCDE_CRA0, FLOEN)))
+		dev_warn(&mcde_dev->dev, "FLOEN at stop chnl=%d\n", chnl->id);
 }
 
 static void wait_for_flow_disabled(struct mcde_chnl_state *chnl)
@@ -1682,7 +1623,7 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl)
 					"Flow (A) disable after >= %d ms\n", i);
 				break;
 			}
-			msleep(1);
+			usleep_range(1000, 1500);
 		}
 		break;
 	case MCDE_CHNL_B:
@@ -1692,7 +1633,7 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl)
 				"Flow (B) disable after >= %d ms\n", i);
 				break;
 			}
-			msleep(1);
+			usleep_range(1000, 1500);
 		}
 		break;
 	case MCDE_CHNL_C0:
@@ -1702,7 +1643,7 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl)
 				"Flow (C1) disable after >= %d ms\n", i);
 				break;
 			}
-			msleep(1);
+			usleep_range(1000, 1500);
 		}
 		break;
 	case MCDE_CHNL_C1:
@@ -1712,7 +1653,7 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl)
 				"Flow (C2) disable after >= %d ms\n", i);
 				break;
 			}
-			msleep(1);
+			usleep_range(1000, 1500);
 		}
 		break;
 	}
@@ -1721,15 +1662,15 @@ static void wait_for_flow_disabled(struct mcde_chnl_state *chnl)
 							__func__, chnl->id);
 }
 
-static void enable_flow(struct mcde_chnl_state *chnl)
+static void enable_flow(struct mcde_chnl_state *chnl, bool setstate)
 {
-	const struct mcde_port *port = &chnl->port;
-
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	if (port->type == MCDE_PORTTYPE_DSI)
-		dsi_wfld(port->link, DSI_MCTL_MAIN_PHY_CTL, CLK_CONTINUOUS,
-				port->phy.dsi.clk_cont);
+	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+		nova_dsilink_set_clk_continous(chnl->dsilink, true);
+		if (chnl->port.mode == MCDE_PORTMODE_VID)
+			nova_dsilink_enable_video_mode(chnl->dsilink, true);
+	}
 
 	/*
 	 * When ROTEN is set, the FLOEN bit will also be set but
@@ -1756,17 +1697,8 @@ static void enable_flow(struct mcde_chnl_state *chnl)
 		break;
 	}
 
-	set_channel_state_atomic(chnl, CHNLSTATE_RUNNING);
-}
-
-static void work_sleep_function(struct work_struct *ptr)
-{
-	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
-	if (mcde_trylock(__func__, __LINE__)) {
-		if (mcde_dynamic_power_management)
-			disable_mcde_hw(false, false);
-		mcde_unlock(__func__, __LINE__);
-	}
+	if (setstate)
+		set_channel_state_atomic(chnl, CHNLSTATE_RUNNING);
 }
 
 /* TODO get from register */
@@ -1786,11 +1718,20 @@ static u32 get_pkt_div(u32 disp_ppl,
 	 */
 	switch (port->type) {
 	case MCDE_PORTTYPE_DSI:
-		if (port->mode == MCDE_PORTMODE_CMD)
-			/* Equivalent of ceil(disp_ppl/fifo_size) */
-			return (disp_ppl - 1) / get_output_fifo_size(fifo) + 1;
-		else
+		if (port->mode == MCDE_PORTMODE_CMD) {
+			u32 fifo_size = get_output_fifo_size(fifo);
+			/*
+			 * Only divide into several packets if ppl is a
+			 * multiple of fifo size.
+			 */
+			if ((disp_ppl % fifo_size) == 0)
+				/* Equivalent of ceil(disp_ppl/fifo_size) */
+				return (disp_ppl - 1) / fifo_size + 1;
+			else
+				return 1;
+		} else {
 			return 1;
+		}
 		break;
 	case MCDE_PORTTYPE_DPI:
 		return 1;
@@ -1801,81 +1742,11 @@ static u32 get_pkt_div(u32 disp_ppl,
 	return 1;
 }
 
-static void update_vid_horizontal_blanking(struct mcde_port *port,
-		struct mcde_video_mode *vmode, bool sync_is_pulse, u8 bpp)
-{
-	int hfp, hbp, hsa;
-	u8 link = port->link;
-
-	/*
-	 * vmode->hfp, vmode->hbp and vmode->hsw are given in pixels
-	 * and must be re-calculated into bytes
-	 *
-	 * 6 + 2 is HFP header + checksum
-	 */
-	hfp = vmode->hfp * bpp - 6 - 2;
-	if (sync_is_pulse) {
-		/*
-		 * 6 is HBP header + checksum
-		 * 4 is RGB header + checksum
-		 */
-		hbp = vmode->hbp * bpp - 4 - 6;
-		/*
-		 * 6 is HBP header + checksum
-		 * 4 is HSW packet bytes
-		 * 4 is RGB header + checksum
-		 */
-		hsa = vmode->hsw * bpp - 4 - 4 - 6;
-	} else {
-		/*
-		 * 6 is HBP header + checksum
-		 * 4 is HSW packet bytes
-		 * 4 is RGB header + checksum
-		 */
-		hbp = (vmode->hbp + vmode->hsw) * bpp - 4 - 4 - 6;
-		/* HSA is not considered in this mode and set to 0 */
-		hsa = 0;
-	}
-	if (hfp < 0) {
-		hfp = 0;
-		dev_warn(&mcde_dev->dev,
-			"%s: negative calc for hfp, set to 0\n", __func__);
-	}
-	if (hbp < 0) {
-		hbp = 0;
-		dev_warn(&mcde_dev->dev,
-			"%s: negative calc for hbp, set to 0\n", __func__);
-	}
-	if (hsa < 0) {
-		hsa = 0;
-		dev_warn(&mcde_dev->dev,
-			"%s: negative calc for hsa, set to 0\n", __func__);
-	}
-
-	dsi_wfld(link, DSI_VID_HSIZE1, HFP_LENGTH, hfp);
-	dsi_wfld(link, DSI_VID_HSIZE1, HBP_LENGTH, hbp);
-	dsi_wfld(link, DSI_VID_HSIZE1, HSA_LENGTH, hsa);
-}
-
-static void update_vid_frame_parameters(struct mcde_port *port,
+static void update_vid_frame_parameters(struct mcde_chnl_state *chnl,
 				struct mcde_video_mode *vmode, u8 bpp)
 {
-	u8 link = port->link;
-	bool burst_mode, sync_is_pulse, tvg_enable;
-	u32 hs_byte_clk, pck_len, blkline_pck, line_duration;
-	u32 blkeol_pck, blkeol_duration;
 	u8 pixel_mode;
 	u8 rgb_header;
-
-	get_vid_operating_mode(port, &burst_mode, &sync_is_pulse, &tvg_enable);
-
-	dsi_wfld(link, DSI_VID_VSIZE, VFP_LENGTH, vmode->vfp);
-	dsi_wfld(link, DSI_VID_VSIZE, VBP_LENGTH, vmode->vbp);
-	dsi_wfld(link, DSI_VID_VSIZE, VSA_LENGTH, vmode->vsw);
-	update_vid_horizontal_blanking(port, vmode, sync_is_pulse, bpp);
-
-	dsi_wfld(link, DSI_VID_VSIZE, VACT_LENGTH, vmode->yres);
-	dsi_wfld(link, DSI_VID_HSIZE2, RGB_SIZE, vmode->xres * bpp);
 
 	/*
 	 * The rgb_header identifies the pixel stream format,
@@ -1886,7 +1757,7 @@ static void update_vid_frame_parameters(struct mcde_port *port,
 	 * 0x2E: Loosely Packed pixel stream, 18-bit RGB, 666 format
 	 * 0x3E: Packed pixel stream, 24-bit RGB, 888 format
 	 */
-	switch (port->pixel_format) {
+	switch (chnl->port.pixel_format) {
 	case MCDE_PORTPIXFMT_DSI_16BPP:
 		pixel_mode = 0;
 		rgb_header = 0x0E;
@@ -1908,83 +1779,13 @@ static void update_vid_frame_parameters(struct mcde_port *port,
 		rgb_header = 0x3E;
 		dev_warn(&mcde_dev->dev,
 			"%s: invalid pixel format %d\n",
-			__func__, port->pixel_format);
+			__func__, chnl->port.pixel_format);
 		break;
 	}
 
-	dsi_wfld(link, DSI_VID_MAIN_CTL, VID_PIXEL_MODE, pixel_mode);
-	dsi_wfld(link, DSI_VID_MAIN_CTL, HEADER, rgb_header);
-
-	if (tvg_enable) {
-		/*
-		 * with these settings, expect to see 64 pixels wide
-		 * red and green vertical stripes on the screen when
-		 * tvg_enable = 1
-		 */
-		dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, TVG_SEL, 1);
-
-		dsi_wfld(link, DSI_TVG_CTL, TVG_STRIPE_SIZE, 6);
-		dsi_wfld(link, DSI_TVG_CTL, TVG_MODE, 2);
-		dsi_wfld(link, DSI_TVG_CTL, TVG_STOPMODE, 2);
-		dsi_wfld(link, DSI_TVG_CTL, TVG_RUN, 1);
-
-		dsi_wfld(link, DSI_TVG_IMG_SIZE, TVG_NBLINE, vmode->yres);
-		dsi_wfld(link, DSI_TVG_IMG_SIZE, TVG_LINE_SIZE,
-							vmode->xres * bpp);
-
-		dsi_wfld(link, DSI_TVG_COLOR1, COL1_BLUE, 0);
-		dsi_wfld(link, DSI_TVG_COLOR1, COL1_GREEN, 0);
-		dsi_wfld(link, DSI_TVG_COLOR1, COL1_RED, 0xFF);
-
-		dsi_wfld(link, DSI_TVG_COLOR2, COL2_BLUE, 0);
-		dsi_wfld(link, DSI_TVG_COLOR2, COL2_GREEN, 0xFF);
-		dsi_wfld(link, DSI_TVG_COLOR2, COL2_RED, 0);
-	}
-
-	/*
-	 * vid->pixclock is the time between two pixels (in picoseconds)
-	 *
-	 * hs_byte_clk is the amount of transferred bytes per lane and
-	 * second (in MHz)
-	 */
-	hs_byte_clk = 1000000 / vmode->pixclock / 8;
-	pck_len = 1000000 * hs_byte_clk / port->refresh_rate /
-			(vmode->vsw + vmode->vbp + vmode->yres + vmode->vfp) *
-						port->phy.dsi.num_data_lanes;
-
-	/*
-	 * 6 is header + checksum, header = 4 bytes, checksum = 2 bytes
-	 * 4 is short packet for vsync/hsync
-	 */
-	if (sync_is_pulse)
-		blkline_pck = pck_len - vmode->hsw - 6;
-	else
-		blkline_pck = pck_len - 4 - 6;
-
-	line_duration = (blkline_pck + 6) / port->phy.dsi.num_data_lanes;
-	blkeol_pck = pck_len -
-		(vmode->hsw + vmode->hbp + vmode->xres + vmode->hfp) * bpp - 6;
-	blkeol_duration = (blkeol_pck + 6) / port->phy.dsi.num_data_lanes;
-
-	if (sync_is_pulse)
-		dsi_wfld(link, DSI_VID_BLKSIZE2, BLKLINE_PULSE_PCK,
-								blkline_pck);
-	else
-		dsi_wfld(link, DSI_VID_BLKSIZE1, BLKLINE_EVENT_PCK,
-								blkline_pck);
-	dsi_wfld(link, DSI_VID_DPHY_TIME, REG_LINE_DURATION, line_duration);
-	if (burst_mode) {
-		dsi_wfld(link, DSI_VID_BLKSIZE1, BLKEOL_PCK, blkeol_pck);
-		dsi_wfld(link, DSI_VID_PCK_TIME, BLKEOL_DURATION,
-							blkeol_duration);
-		dsi_wfld(link, DSI_VID_VCA_SETTING1, MAX_BURST_LIMIT,
-							blkeol_pck - 6);
-		dsi_wfld(link, DSI_VID_VCA_SETTING2, EXACT_BURST_LIMIT,
-								blkeol_pck);
-	}
-	if (sync_is_pulse)
-		dsi_wfld(link, DSI_VID_VCA_SETTING2, MAX_LINE_LIMIT,
-							blkline_pck - 6);
+	nova_dsilink_update_frame_parameters(chnl->dsilink,
+					(struct dsilink_video_mode *)vmode, bpp,
+							pixel_mode, rgb_header);
 }
 
 static void set_vsync_method(u8 idx, struct mcde_port *port)
@@ -2076,6 +1877,10 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 {
 	u8 idx = chnl_id;
 	u32 fifo_wtrmrk = 0;
+	u8 red;
+	u8 green;
+	u8 blue;
+	u32 stripwidth = 0;
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
@@ -2085,6 +1890,22 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 	 */
 	fifo_wtrmrk = video_mode->xres /
 		get_pkt_div(video_mode->xres, port, fifo);
+
+	/* Don't set larger than fifo size */
+	switch (chnl_id) {
+	case MCDE_CHNL_A:
+	case MCDE_CHNL_B:
+		if (fifo_wtrmrk > output_fifo_ab_size)
+			fifo_wtrmrk = output_fifo_ab_size;
+		break;
+	case MCDE_CHNL_C0:
+	case MCDE_CHNL_C1:
+		if (fifo_wtrmrk > output_fifo_c0c1_size)
+			fifo_wtrmrk = output_fifo_c0c1_size;
+		break;
+	default:
+		break;
+	}
 
 	dev_vdbg(&mcde_dev->dev, "%s fifo_watermark=%d for chnl_id=%d\n",
 		__func__, fifo_wtrmrk, chnl_id);
@@ -2108,16 +1929,48 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 
 	set_vsync_method(idx, port);
 
-	mcde_wreg(MCDE_CHNL0CONF + idx * MCDE_CHNL0CONF_GROUPOFFSET,
+        /* +445681 display padding */
+	#if 1
+		mcde_wreg(MCDE_CHNL0CONF + idx * MCDE_CHNL0CONF_GROUPOFFSET,
 		MCDE_CHNL0CONF_PPL(regs->ppl-1) |
 		MCDE_CHNL0CONF_LPF(regs->lpf-1));
+	 /*
+	   Because of display distortion issue or no display of DV2.0 patch
+	   +++++++++++++ error when display is abnomal state ++++++++++++++++++
+	    mcde mcde: FLOEN at stop chnl=0                     
+	    mcde mcde: wait_for_flow_disabled: channel 0 timeout
+                 mcde mcde: Fifo no empty chnl=0 
+                ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	 */	
+	#else
+        if (regs->roten) {
+                mcde_wreg(MCDE_CHNL0CONF + idx * MCDE_CHNL0CONF_GROUPOFFSET,
+                        MCDE_CHNL0CONF_PPL(regs->ppl + video_mode->yres_padding - 1) |
+                        MCDE_CHNL0CONF_LPF(regs->lpf + video_mode->xres_padding - 1));
+        }
+        else {
+                mcde_wreg(MCDE_CHNL0CONF + idx * MCDE_CHNL0CONF_GROUPOFFSET,
+                        MCDE_CHNL0CONF_PPL(regs->ppl + video_mode->xres_padding - 1) |
+                        MCDE_CHNL0CONF_LPF(regs->lpf + video_mode->yres_padding - 1));
+        }
+	#endif
+        /* -445681 display padding */
 	mcde_wreg(MCDE_CHNL0STAT + idx * MCDE_CHNL0STAT_GROUPOFFSET,
-		MCDE_CHNL0STAT_CHNLBLBCKGND_EN(false) |
+		MCDE_CHNL0STAT_CHNLBLBCKGND_EN(true) |
 		MCDE_CHNL0STAT_CHNLRD(true));
+	if (regs->background_yuv) {
+		red = 0x80;
+		green = 0x10;
+		blue = 0x80;
+	} else {
+		red = 0x00;
+		green = 0x00;
+		blue = 0x00;
+	}
 	mcde_wreg(MCDE_CHNL0BCKGNDCOL + idx * MCDE_CHNL0BCKGNDCOL_GROUPOFFSET,
-		MCDE_CHNL0BCKGNDCOL_B(0) |
-		MCDE_CHNL0BCKGNDCOL_G(0) |
-		MCDE_CHNL0BCKGNDCOL_R(0));
+		MCDE_CHNL0BCKGNDCOL_B(blue) |
+		MCDE_CHNL0BCKGNDCOL_G(green) |
+		MCDE_CHNL0BCKGNDCOL_R(red));
 
 	if (chnl_id == MCDE_CHNL_A || chnl_id == MCDE_CHNL_B) {
 		u32 mcde_crx1;
@@ -2128,11 +1981,13 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 			mcde_pal0x = MCDE_PAL0A;
 			mcde_pal1x = MCDE_PAL1A;
 			mcde_wfld(MCDE_CRA0, PALEN, regs->palette_enable);
+			mcde_wfld(MCDE_CRA0, OLEDEN, regs->oled_enable);
 		} else {
 			mcde_crx1 = MCDE_CRB1;
 			mcde_pal0x = MCDE_PAL0B;
 			mcde_pal1x = MCDE_PAL1B;
 			mcde_wfld(MCDE_CRB0, PALEN, regs->palette_enable);
+			mcde_wfld(MCDE_CRB0, OLEDEN, regs->oled_enable);
 		}
 		mcde_wreg(mcde_crx1,
 			MCDE_CRA1_PCD(regs->pcd) |
@@ -2165,24 +2020,40 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 
 		fidx = get_dsi_formatter_id(port);
 
+		/* +445681 display padding */
+	 	/*
+	 	Because of display distortion issue or no display of DV2.0 patch
+	   	+++++++++++++ error when display is abnomal state +++++++++++++++
+	   	 mcde mcde: FLOEN at stop chnl=0                     
+		 mcde mcde: wait_for_flow_disabled: channel 0 timeout
+             	 mcde mcde: Fifo no empty chnl=0 
+		++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	 	*/
+	 	#if 1
 		screen_ppl = video_mode->xres;
 		screen_lpf = video_mode->yres;
+		#else
+		screen_ppl = video_mode->xres + video_mode->xres_padding;
+		screen_lpf = video_mode->yres + video_mode->yres_padding;
+		#endif
+		/* -445681 display padding */
 
 		pkt_div = get_pkt_div(screen_ppl, port, fifo);
 
 		if (video_mode->interlaced)
 			screen_lpf /= 2;
 
-		/* pkt_delay_progressive = pixelclock * htot /
-		 * (1E12 / 160E6) / pkt_div */
-		dsi_delay0 = (video_mode->pixclock) *
-			(video_mode->xres + video_mode->hbp +
-				video_mode->hfp) /
-			(100000000 / ((mcde_clk_rate / 10000))) / pkt_div;
+		if (port->mode == MCDE_PORTMODE_CMD && port->update_auto_trig) {
+			/* pkt_delay_progressive = pixelclock * htot /
+			 * (1E12 / 160E6) / pkt_div */
+			dsi_delay0 = (video_mode->pixclock) * (video_mode->xres
+				+ video_mode->hbp + video_mode->hfp) /
+				(100000000 / ((mcde_clk_rate / 10000))) / pkt_div;
 
-		if ((screen_ppl == SCREEN_PPL_CEA2) &&
-				(screen_lpf == SCREEN_LPF_CEA2))
-			dsi_delay0 += DSI_DELAY0_CEA2_ADD;
+			if ((screen_ppl == SCREEN_PPL_CEA2) &&
+			    (screen_lpf == SCREEN_LPF_CEA2))
+				dsi_delay0 += DSI_DELAY0_CEA2_ADD;
+		}
 
 		temp = mcde_rreg(MCDE_DSIVID0CONF0 +
 			fidx * MCDE_DSIVID0CONF0_GROUPOFFSET);
@@ -2216,41 +2087,38 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 			MCDE_DSIVID0DELAY1_TEREQDEL(0) |
 			MCDE_DSIVID0DELAY1_FRAMESTARTDEL(0));
 
-		if (port->mode == MCDE_PORTMODE_VID)
-			update_vid_frame_parameters(port, video_mode,
-								regs->bpp / 8);
-	} else if (port->type == MCDE_PORTTYPE_DPI &&
-						!port->phy.dpi.tv_mode) {
-		/* DPI LCD Mode */
-		if (chnl_id == MCDE_CHNL_A) {
-			mcde_wreg(MCDE_SYNCHCONFA,
-				MCDE_SYNCHCONFA_HWREQVEVENT_ENUM(
-							ACTIVE_VIDEO) |
-				MCDE_SYNCHCONFA_HWREQVCNT(
-							video_mode->yres - 1) |
-				MCDE_SYNCHCONFA_SWINTVEVENT_ENUM(
-							ACTIVE_VIDEO) |
-				MCDE_SYNCHCONFA_SWINTVCNT(
-							video_mode->yres - 1));
-		} else if (chnl_id == MCDE_CHNL_B) {
-			mcde_wreg(MCDE_SYNCHCONFB,
-				MCDE_SYNCHCONFB_HWREQVEVENT_ENUM(
-							ACTIVE_VIDEO) |
-				MCDE_SYNCHCONFB_HWREQVCNT(
-							video_mode->yres - 1) |
-				MCDE_SYNCHCONFB_SWINTVEVENT_ENUM(
-							ACTIVE_VIDEO) |
-				MCDE_SYNCHCONFB_SWINTVCNT(
-							video_mode->yres - 1));
+		/* Setup VSYNC capture */
+		if (port->sync_src == MCDE_SYNCSRC_TE0) {
+			mcde_wreg(MCDE_VSCRC0,
+				MCDE_VSCRC0_VSDBL(0) |
+				MCDE_VSCRC0_VSSEL_ENUM(VSYNC0) |
+				MCDE_VSCRC0_VSPOL(port->vsync_polarity) |
+				MCDE_VSCRC0_VSPDIV(port->vsync_clock_div) |
+				MCDE_VSCRC0_VSPMAX(port->vsync_max_duration) |
+				MCDE_VSCRC0_VSPMIN(port->vsync_min_duration));
+		} else if (port->sync_src == MCDE_SYNCSRC_TE1) {
+			mcde_wreg(MCDE_VSCRC1,
+				MCDE_VSCRC1_VSDBL(0) |
+				MCDE_VSCRC1_VSSEL_ENUM(VSYNC1) |
+				MCDE_VSCRC1_VSPOL(port->vsync_polarity) |
+				MCDE_VSCRC1_VSPDIV(port->vsync_clock_div) |
+				MCDE_VSCRC1_VSPMAX(port->vsync_max_duration) |
+				MCDE_VSCRC1_VSPMIN(port->vsync_min_duration));
 		}
+
+		if (port->mode == MCDE_PORTMODE_VID)
+			update_vid_frame_parameters(&channels[chnl_id],
+						video_mode, regs->bpp / 8);
 	}
 
+	stripwidth = regs->rotbufsize / (video_mode->xres * 4);
+
 	if (regs->roten) {
-		u32 stripwidth;
-		u32 stripwidth_val;
+ 		u32 stripwidth_val;
+
 
 		/* calc strip width, 32 bits used internally */
-		stripwidth = regs->rotbufsize / (video_mode->yres * 4);
+
 		if (stripwidth >= 32)
 			stripwidth_val = MCDE_ROTACONF_STRIP_WIDTH_32PIX;
 		else if (stripwidth >= 16)
@@ -2268,7 +2136,7 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		mcde_wreg(MCDE_ROTADD1A + chnl_id * MCDE_ROTADD1A_GROUPOFFSET,
 			regs->rotbuf2);
 		mcde_wreg(MCDE_ROTACONF + chnl_id * MCDE_ROTACONF_GROUPOFFSET,
-			MCDE_ROTACONF_ROTBURSTSIZE_ENUM(HW_8W) |
+			MCDE_ROTACONF_ROTBURSTSIZE_ENUM(8W) |
 			MCDE_ROTACONF_ROTDIR(regs->rotdir) |
 			MCDE_ROTACONF_STRIP_WIDTH(stripwidth_val) |
 			MCDE_ROTACONF_RD_MAXOUT_ENUM(4_REQ) |
@@ -2286,8 +2154,120 @@ void update_channel_registers(enum mcde_chnl chnl_id, struct chnl_regs *regs,
 		mcde_wfld(MCDE_CRB0, ALPHABLEND, regs->alpha_blend);
 	}
 
+	if (port->type == MCDE_PORTTYPE_DPI && !port->phy.dpi.tv_mode) {
+	/* DPI LCD Mode */
+		if (chnl_id == MCDE_CHNL_A) {
+			mcde_wreg(MCDE_SYNCHCONFA,
+				MCDE_SYNCHCONFA_HWREQVEVENT_ENUM(
+					ACTIVE_VIDEO) |
+				MCDE_SYNCHCONFA_HWREQVCNT(
+					video_mode->yres - 1 - stripwidth) |
+				MCDE_SYNCHCONFA_SWINTVEVENT_ENUM(
+					ACTIVE_VIDEO) |
+				MCDE_SYNCHCONFA_SWINTVCNT(
+					video_mode->yres - 1 - stripwidth));
+		} else if (chnl_id == MCDE_CHNL_B) {
+			mcde_wreg(MCDE_SYNCHCONFB,
+				MCDE_SYNCHCONFB_HWREQVEVENT_ENUM(
+					ACTIVE_VIDEO) |
+				MCDE_SYNCHCONFB_HWREQVCNT(
+					video_mode->yres - 1 - stripwidth) |
+				MCDE_SYNCHCONFB_SWINTVEVENT_ENUM(
+					ACTIVE_VIDEO) |
+				MCDE_SYNCHCONFB_SWINTVCNT(
+					video_mode->yres - 1 - stripwidth));
+		}
+	}
+
 	dev_vdbg(&mcde_dev->dev, "Channel registers setup, chnl=%d\n", chnl_id);
 	regs->dirty = false;
+}
+
+void mcde_invalidate_channel(struct mcde_chnl_state *chnl)
+{
+	chnl->update_color_conversion = true;
+	chnl->regs.dirty = true;
+	chnl->col_regs.dirty = true;
+	chnl->tv_regs.dirty = true;
+	chnl->oled_regs.dirty = true;
+
+	chnl->ovly0->dirty = true;
+	chnl->ovly0->regs.dirty = true;
+	chnl->ovly0->regs.dirty_buf = true;
+
+	if (chnl->ovly1) {
+		chnl->ovly1->dirty = true;
+		chnl->ovly1->regs.dirty = true;
+		chnl->ovly1->regs.dirty_buf = true;
+	}
+}
+
+static int enable_mcde_hw_pre(void)
+{
+	int ret;
+	int i;
+
+	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+
+	cancel_delayed_work(&hw_timeout_work);
+#if 0	/* avoid distrubing video mode splash screen */
+	schedule_delayed_work(&hw_timeout_work,
+					msecs_to_jiffies(MCDE_SLEEP_WATCHDOG));
+#endif
+	for (i = 0; i < num_channels; i++) {
+		struct mcde_chnl_state *chnl = &channels[i];
+		if (chnl->state == CHNLSTATE_SUSPEND) {
+			/* Mark all registers as dirty */
+			set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+
+			if (!mcde_is_enabled)
+				chnl->first_frame_vsync_fix = true;
+
+			mcde_invalidate_channel(chnl);
+
+			atomic_set(&chnl->vcmp_cnt, 0);
+			atomic_set(&chnl->vsync_cnt, 0);
+			chnl->vsync_cnt_wait = 0;
+			chnl->vcmp_cnt_wait = 0;
+			atomic_set(&chnl->n_vsync_capture_listeners, 0);
+			chnl->is_bta_te_listening = false;
+		}
+
+		if (chnl->regs.roten && !chnl->esram_is_enabled) {
+			WARN_ON_ONCE(regulator_enable(regulator_esram_epod));
+			chnl->esram_is_enabled = true;
+		} else if (!chnl->regs.roten && chnl->esram_is_enabled) {
+			WARN_ON_ONCE(regulator_disable(regulator_esram_epod));
+			chnl->esram_is_enabled = false;
+		}
+	}
+
+	if (mcde_is_enabled) {
+		dev_vdbg(&mcde_dev->dev, "%s - already enabled\n", __func__);
+		return 0;
+	}
+
+	enable_clocks_and_power(mcde_dev);
+
+	/* clear underflow irq */
+	mcde_wreg(MCDE_RISERR, MCDE_RISERR_FUARIS_MASK);
+	ret = request_irq(mcde_irq, mcde_irq_handler, 0, "mcde",
+							&mcde_dev->dev);
+	if (ret) {
+		dev_dbg(&mcde_dev->dev, "Failed to request irq (irq=%d)\n",
+								mcde_irq);
+		cancel_delayed_work(&hw_timeout_work);
+		return -EINVAL;
+	}
+
+	mcde_debugfs_hw_enabled();
+
+	update_mcde_registers();
+
+	dev_vdbg(&mcde_dev->dev, "%s - enable done\n", __func__);
+
+	mcde_is_enabled = true;
+	return 0;
 }
 
 static int enable_mcde_hw(void)
@@ -2306,16 +2286,26 @@ static int enable_mcde_hw(void)
 		if (chnl->state == CHNLSTATE_SUSPEND) {
 			/* Mark all registers as dirty */
 			set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
-			chnl->ovly0->regs.dirty = true;
-			chnl->ovly0->regs.dirty_buf = true;
-			if (chnl->ovly1) {
-				chnl->ovly1->regs.dirty = true;
-				chnl->ovly1->regs.dirty_buf = true;
-			}
-			chnl->regs.dirty = true;
-			chnl->col_regs.dirty = true;
-			chnl->tv_regs.dirty = true;
+
+			if (!mcde_is_enabled)
+				chnl->first_frame_vsync_fix = true;
+
+			mcde_invalidate_channel(chnl);
+
 			atomic_set(&chnl->vcmp_cnt, 0);
+			atomic_set(&chnl->vsync_cnt, 0);
+			chnl->vsync_cnt_wait = 0;
+			chnl->vcmp_cnt_wait = 0;
+			atomic_set(&chnl->n_vsync_capture_listeners, 0);
+			chnl->is_bta_te_listening = false;
+		}
+
+		if (chnl->regs.roten && !chnl->esram_is_enabled) {
+			WARN_ON_ONCE(regulator_enable(regulator_esram_epod));
+			chnl->esram_is_enabled = true;
+		} else if (!chnl->regs.roten && chnl->esram_is_enabled) {
+			WARN_ON_ONCE(regulator_disable(regulator_esram_epod));
+			chnl->esram_is_enabled = false;
 		}
 	}
 
@@ -2324,6 +2314,8 @@ static int enable_mcde_hw(void)
 		return 0;
 	}
 
+	/* FIXME: Temp patch for power toggling MCDE */
+	usleep_range(50000, 50000);
 	enable_clocks_and_power(mcde_dev);
 
 	ret = request_irq(mcde_irq, mcde_irq_handler, 0, "mcde",
@@ -2335,6 +2327,8 @@ static int enable_mcde_hw(void)
 		return -EINVAL;
 	}
 
+	mcde_debugfs_hw_enabled();
+
 	update_mcde_registers();
 
 	dev_vdbg(&mcde_dev->dev, "%s - enable done\n", __func__);
@@ -2344,110 +2338,298 @@ static int enable_mcde_hw(void)
 }
 
 /* DSI */
-static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
-			bool dcs, u8 cmd, u8 *data, int len)
-{
-	int i, ret = 0;
-	u32 wrdat[4] = { 0, 0, 0, 0 };
-	u32 settings;
-	u8 link = chnl->port.link;
-	u8 virt_id = chnl->port.phy.dsi.virt_id;
-	u32 counter = DSI_WRITE_CMD_TIMEOUT;
 
-	if (len > MCDE_MAX_DSI_DIRECT_CMD_WRITE ||
-			chnl->port.type != MCDE_PORTTYPE_DSI)
+/**
+ * @brief Send a more than 15-byte data sequence to a DSI display,
+ * using the MCDE_WDATAx functionality (MCDE output fifo).
+ * Note: Call this function only during the LCD init sequence, means not
+ * during normal display refreshes where the MCDE output fifo is used too.
+ *
+ * @param chnl mcde channel
+ * @param cmd  display register number
+ * @param data byte buffer containing the display register parameters
+ * @param len  display reg parameter number (>=MCDE_MAX_DSI_DIRECT_CMD_WRITE)
+ *
+ * @return 0 if ok, -EIO or -EINVAL if error
+ */
+static int mcde_fifo_write_data(struct mcde_chnl_state *chnl,
+				u8 cmd, u8 *data, int len)
+{
+	u8 fidx;
+	u32 val, px;
+	int i, rest, ret = 0;
+	unsigned long flags;
+	enum dsilink_mode old_mode;
+
+	dev_vdbg(&mcde_dev->dev, "%s()-cmd %d, len %d\n", __func__, cmd, len);
+
+	if (len <= DSILINK_MAX_DSI_DIRECT_CMD_WRITE ||
+			chnl->port.type != MCDE_PORTTYPE_DSI ||
+			len > get_output_fifo_size(chnl->fifo) ||
+			chnl->state == CHNLSTATE_RUNNING)
 		return -EINVAL;
+
+	if (chnl->state == CHNLSTATE_RUNNING) {
+		dev_dbg(&mcde_dev->dev, "%s: Channel busy\n", __func__);
+		return -EBUSY;
+	}
 
 	mcde_lock(__func__, __LINE__);
 
+	ret = set_channel_state_sync(chnl, CHNLSTATE_DSI_WRITE);
+	if (ret) {
+		dev_err(&mcde_dev->dev, "%s: Channel state error\n", __func__);
+		goto fail_set_state;
+	}
+
 	_mcde_chnl_enable(chnl);
 	if (enable_mcde_hw()) {
-		mcde_unlock(__func__, __LINE__);
-		return -EINVAL;
+		ret = -EIO;
+		goto fail_enable_mcde;
 	}
+
+	/* Verify initial state */
+	if (!mcde_rfld(MCDE_CTRLA, FIFOEMPTY))
+		dev_warn(&mcde_dev->dev, "%s: FIFO error on entry\n", __func__);
+	if (mcde_rreg(MCDE_RISERR))
+		dev_warn(&mcde_dev->dev, "%s: Error on entry\n", __func__);
+
+	/* Set main MCDE registers to appropriate values */
 	if (!chnl->formatter_updated)
 		(void)update_channel_static_registers(chnl);
+	update_channel_registers(chnl->id, &chnl->regs, &chnl->port,
+			chnl->fifo, &chnl->vmode);
 
-	set_channel_state_sync(chnl, CHNLSTATE_DSI_WRITE);
+	old_mode = chnl->port.mode; //TODO: Real enum convert
+	if (old_mode != DSILINK_MODE_CMD) {
+		struct dsilink_port port;
 
-	if (dcs) {
-		wrdat[0] = cmd;
-		for (i = 1; i <= len; i++)
-			wrdat[i>>2] |= ((u32)data[i-1] << ((i & 3) * 8));
-	} else {
-		/* no explicit cmd byte for generic_write, only params */
-		for (i = 0; i < len; i++)
-			wrdat[i>>2] |= ((u32)data[i] << ((i & 3) * 8));
+		get_dsi_port(chnl, &port);
+		port.mode = DSILINK_MODE_CMD;
+		nova_dsilink_disable(chnl->dsilink);//TODO: Remove
+		nova_dsilink_setup(chnl->dsilink, &port); //TODO: Verify disabled
+		nova_dsilink_enable(chnl->dsilink);
 	}
 
-	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(WRITE) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(len > 1) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_ID(virt_id) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_SIZE(len+1) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LP_EN(true);
-	if (dcs) {
-		if (len == 0)
-			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-				DCS_SHORT_WRITE_0);
-		else if (len == 1)
-			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-				DCS_SHORT_WRITE_1);
-		else
-			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-				DCS_LONG_WRITE);
-	} else {
-		if (len == 0)
-			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-				GENERIC_SHORT_WRITE_0);
-		else if (len == 1)
-			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-				GENERIC_SHORT_WRITE_1);
-		else if (len == 2)
-			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-				GENERIC_SHORT_WRITE_2);
-		else
-			settings |= DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-				GENERIC_LONG_WRITE);
+	/* Data will be sent with 24-bit packets */
+	px = (len + 2) / 3; /* px = ceil(len/3) */
+	mcde_wreg(MCDE_CHNL0CONF + chnl->id * MCDE_CHNL0CONF_GROUPOFFSET,
+			MCDE_CHNL0CONF_PPL(px - 1) |
+			MCDE_CHNL0CONF_LPF(0));
+
+	/* 24bpp pixel formatter, to avoid data modifications */
+	fidx = get_dsi_formatter_id(&chnl->port);
+	mcde_wreg(MCDE_DSIVID0CONF0 + fidx * MCDE_DSIVID0CONF0_GROUPOFFSET,
+			MCDE_DSIVID0CONF0_PACKING_ENUM(RGB888) |
+			MCDE_DSIVID0CONF0_DCSVID_NOTGEN(true) |
+			MCDE_DSIVID0CONF0_CMD8(true) |
+			MCDE_DSIVID0CONF0_VID_MODE(false));
+
+	/* Set packet & frame sizes (cmd + param number) */
+	mcde_wreg(MCDE_DSIVID0CMDW + fidx * MCDE_DSIVID0CMDW_GROUPOFFSET,
+			MCDE_DSIVID0CMDW_CMDW_START(cmd) |
+			MCDE_DSIVID0CMDW_CMDW_CONTINUE(0));
+
+	/* MCDE_DSIxFRAME = MCDE_DSIxPKT = len +1 (data bytes + cmd) */
+	mcde_wreg(MCDE_DSIVID0PKT + fidx * MCDE_DSIVID0PKT_GROUPOFFSET,
+			MCDE_DSIVID0PKT_PACKET(1 + len));
+	mcde_wreg(MCDE_DSIVID0FRAME + fidx * MCDE_DSIVID0FRAME_GROUPOFFSET,
+			MCDE_DSIVID0FRAME_FRAME(1 + len));
+
+	mcde_wreg(MCDE_CR, MCDE_CR_MCDEEN(1));//TODO: Remove?
+
+	mcde_wreg(MCDE_CHNL0SYNCHMOD + chnl->id * MCDE_CHNL0SYNCHMOD_GROUPOFFSET,
+			MCDE_CHNL0SYNCHMOD_SRC_SYNCH_ENUM(SOFTWARE) |
+			MCDE_CHNL0SYNCHMOD_OUT_SYNCH_SRC_ENUM(FORMATTER));
+
+	/* Disable interrupts during send */
+	mcde_wreg(MCDE_IMSCPP, 0); //TODO: Adapt to chnl or even remove?
+	mcde_wreg(MCDE_IMSCOVL, 0);
+	mcde_wreg(MCDE_IMSCCHNL, 0);
+	mcde_wreg(MCDE_IMSCERR, 0);
+
+	mcde_wreg(MCDE_RISERR, 0xFFFFFFFF);
+
+	/* Set fifo watermark level and enable flow */
+	switch (chnl->id) {
+	case MCDE_CHNL_A:
+		mcde_wfld(MCDE_CTRLA, FIFOWTRMRK, px);
+		mcde_wfld(MCDE_CRA0, FLOEN, true);
+		break;
+	case MCDE_CHNL_B:
+		mcde_wfld(MCDE_CTRLB, FIFOWTRMRK, px);
+		mcde_wfld(MCDE_CRB0, FLOEN, true);
+		break;
+	case MCDE_CHNL_C0:
+		mcde_wfld(MCDE_CTRLC0, FIFOWTRMRK, px);
+		mcde_wfld(MCDE_CRC, C1EN, true);
+		break;
+	case MCDE_CHNL_C1:
+		mcde_wfld(MCDE_CTRLC1, FIFOWTRMRK, px);
+		mcde_wfld(MCDE_CRC, C2EN, true);
+		break;
 	}
 
-	dsi_wreg(link, DSI_DIRECT_CMD_MAIN_SETTINGS, settings);
-	dsi_wreg(link, DSI_DIRECT_CMD_WRDAT0, wrdat[0]);
-	if (len >  3)
-		dsi_wreg(link, DSI_DIRECT_CMD_WRDAT1, wrdat[1]);
-	if (len >  7)
-		dsi_wreg(link, DSI_DIRECT_CMD_WRDAT2, wrdat[2]);
-	if (len > 11)
-		dsi_wreg(link, DSI_DIRECT_CMD_WRDAT3, wrdat[3]);
-	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
-	dsi_wreg(link, DSI_CMD_MODE_STS_CLR, ~0);
-	dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
-
-	/* loop will normally run zero or one time until WRITE_COMPLETED */
-	while (!dsi_rfld(link, DSI_DIRECT_CMD_STS, WRITE_COMPLETED)
-			&& --counter)
-		cpu_relax();
-
-	if (!counter) {
-		dev_err(&mcde_dev->dev,
-			"%s: DSI write cmd 0x%x timeout on DSI link %u!\n",
-			__func__, cmd, link);
-		ret = -ETIME;
-	} else {
-		/* inform if >100 loops before command completion */
-		if (counter < (DSI_WRITE_CMD_TIMEOUT-DSI_WRITE_CMD_TIMEOUT/10))
-			dev_vdbg(&mcde_dev->dev,
-				"%s: %u loops for DSI command %x completion\n",
-				__func__, (DSI_WRITE_CMD_TIMEOUT - counter),
-				cmd);
-
-		dev_vdbg(&mcde_dev->dev, "DSI Write ok %x error %x\n",
-			dsi_rreg(link, DSI_DIRECT_CMD_STS_FLAG),
-			dsi_rreg(link, DSI_CMD_MODE_STS_FLAG));
+	/*
+	* A write to MCDE_WDATAx will push a 24-bit value to the fifo
+	* split the input data into chunks of 3 bytes
+	*/
+	rest = len % 3;
+	for (i = 0; i < len/3; i++) {
+		val = (data[i*3] << 16) | (data[i*3 + 1] << 8) | data[i*3 + 2];
+		switch (chnl->id) {
+		case MCDE_CHNL_A:
+			mcde_wreg(MCDE_MCDE_WDATAA, val);
+			break;
+		case MCDE_CHNL_B:
+			mcde_wreg(MCDE_MCDE_WDATAB, val);
+			break;
+		case MCDE_CHNL_C0:
+			mcde_wreg(MCDE_WDATADC0, val);
+			break;
+		case MCDE_CHNL_C1:
+			mcde_wreg(MCDE_WDATADC1, val);
+			break;
+		}
 	}
 
+	if (rest) {
+		if (rest == 2)
+			val = (data[len - 2] << 16) | (data[len - 1] << 8);
+		else /* rest == 1 */
+			val = data[len - 1] << 16;
+
+		switch (chnl->id) {
+		case MCDE_CHNL_A:
+			mcde_wreg(MCDE_MCDE_WDATAA, val);
+			break;
+		case MCDE_CHNL_B:
+			mcde_wreg(MCDE_MCDE_WDATAB, val);
+			break;
+		case MCDE_CHNL_C0:
+			mcde_wreg(MCDE_WDATADC0, val);
+			break;
+		case MCDE_CHNL_C1:
+			mcde_wreg(MCDE_WDATADC1, val);
+			break;
+		}
+	}
+
+	/* Wait for command to complete */
+	nova_dsilink_wait_while_running(chnl->dsilink);
+	mcde_wfld(MCDE_CRA0, FLOEN, false);
+
+	//TODO: Make code generic for other channels
+
+	/* Prepare for dummy update */
+	px = 64;
+	#define rr 64
+	mcde_wfld(MCDE_OVL0CR, OVLEN, false); /* TODO: Deactivate chnl->ovly* */
+	mcde_wreg(MCDE_DSIVID0CMDW + fidx * MCDE_DSIVID0CMDW_GROUPOFFSET,
+			MCDE_DSIVID0CMDW_CMDW_START(0) |
+			MCDE_DSIVID0CMDW_CMDW_CONTINUE(0));
+	mcde_wreg(MCDE_DSIVID0PKT + fidx * MCDE_DSIVID0PKT_GROUPOFFSET,
+			MCDE_DSIVID0PKT_PACKET(1 + px*rr*3));
+	mcde_wreg(MCDE_DSIVID0FRAME + fidx * MCDE_DSIVID0FRAME_GROUPOFFSET,
+			MCDE_DSIVID0FRAME_FRAME(1 + px*rr*3));
+	mcde_wreg(MCDE_CHNL0CONF + chnl->id * MCDE_CHNL0CONF_GROUPOFFSET,
+			MCDE_CHNL0CONF_PPL(px - 1) |
+			MCDE_CHNL0CONF_LPF(rr - 1));
+
+	/* Do dummy update to clean out the FIFO if needed */
+	if (!mcde_rfld(MCDE_CTRLA, FIFOEMPTY)) {
+		mcde_wfld(MCDE_CRA0, FLOEN, true);
+		mcde_wreg(MCDE_CHNL0SYNCHSW +
+				chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
+				MCDE_CHNL0SYNCHSW_SW_TRIG(true));
+		mcde_wfld(MCDE_CRA0, FLOEN, false);
+		nova_dsilink_wait_while_running(chnl->dsilink);
+	}
+
+	/* Do dummy update to trigger vcmp and make FLOEN go to 0.
+	 * This is not vital, but it will prevent warnings in other code. */
+	mcde_wfld(MCDE_CRA0, FLOEN, true);
+	local_irq_save(flags);
+	preempt_disable(); //TODO: Needed?
+	mcde_wreg(MCDE_CHNL0SYNCHSW + chnl->id * MCDE_CHNL0SYNCHSW_GROUPOFFSET,
+			MCDE_CHNL0SYNCHSW_SW_TRIG(true));
+	mcde_wfld(MCDE_CRA0, FLOEN, false);
+	local_irq_restore(flags);
+	preempt_enable(); //TODO: Needed?
+	wait_for_flow_disabled(chnl);
+
+	/* Clear any errors */
+	mcde_wreg(MCDE_RISPP, 0xFFFFFFFF); //TODO: Adapt to chnl
+	mcde_wreg(MCDE_RISOVL, 0xFFFFFFFF);
+	mcde_wreg(MCDE_RISCHNL, 0xFFFFFFFF);
+	mcde_wreg(MCDE_RISERR, 0xFFFFFFFF);
+
+	/* Restore MCDE/DSI state */
+	if (old_mode != DSILINK_MODE_CMD) {
+		struct dsilink_port port;
+
+		get_dsi_port(chnl, &port);
+		port.mode = old_mode;
+		nova_dsilink_disable(chnl->dsilink);
+		nova_dsilink_setup(chnl->dsilink, &port);
+	}
+	update_mcde_registers();
+	update_channel_static_registers(chnl);
+	update_channel_registers(chnl->id, &chnl->regs, &chnl->port,
+			chnl->fifo, &chnl->vmode);
+	mcde_wfld(MCDE_OVL0CR, OVLEN, true); /* TODO: Remove */
+
+fail_enable_mcde:
 	set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
-
+fail_set_state:
 	mcde_unlock(__func__, __LINE__);
+
+	return 0;
+}
+
+static int mcde_dsi_direct_cmd_write(struct mcde_chnl_state *chnl,
+			bool dcs, u8 cmd, u8 *data, int len)
+{
+	int ret;
+
+	if (!chnl || chnl->port.type != MCDE_PORTTYPE_DSI || len < 0)
+		return -EINVAL;
+
+	if ((len <= DSILINK_MAX_DSI_DIRECT_CMD_WRITE && !dcs) ||
+	    (len <  DSILINK_MAX_DSI_DIRECT_CMD_WRITE &&  dcs)) {
+		mcde_lock(__func__, __LINE__);
+
+		_mcde_chnl_enable(chnl);
+		if (enable_mcde_hw()) {
+			mcde_unlock(__func__, __LINE__);
+			return -EINVAL;
+		}
+		if (!chnl->formatter_updated)
+			(void)update_channel_static_registers(chnl);
+
+		/*
+		 * Some panels don't allow commands during update in command mode
+		 * Issue not seen on video mode panels, so we let DSI link do the
+		 * arbitration on packet level.
+		*/
+		if (chnl->port.mode == MCDE_PORTMODE_CMD)
+			set_channel_state_sync(chnl, CHNLSTATE_DSI_WRITE);
+
+		if (dcs)
+			ret = nova_dsilink_dcs_write(chnl->dsilink,
+								cmd, data, len);
+		else
+			ret = nova_dsilink_dsi_write(chnl->dsilink, data, len);
+
+		if (chnl->port.mode == MCDE_PORTMODE_CMD)
+			set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+
+		mcde_unlock(__func__, __LINE__);
+	} else if (len <= MCDE_MAX_DSI_DIRECT_CMD_WRITE) {
+		ret = mcde_fifo_write_data(chnl, cmd, data, len);
+	} else {
+		ret = -EINVAL;
+	}
 
 	return ret;
 }
@@ -2462,16 +2644,9 @@ int mcde_dsi_dcs_write(struct mcde_chnl_state *chnl, u8 cmd, u8* data, int len)
 	return mcde_dsi_direct_cmd_write(chnl, true, cmd, data, len);
 }
 
-int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
-			u8 cmd, u32 *data, int *len)
+int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl, u8 cmd, u32 *data, int *len)
 {
 	int ret = 0;
-	u8 link = chnl->port.link;
-	u8 virt_id = chnl->port.phy.dsi.virt_id;
-	u32 settings;
-	bool ok = false;
-	bool error, ack_with_err;
-	u8 nbr_of_retries = DSI_READ_NBR_OF_RETRIES;
 
 	if (*len > MCDE_MAX_DCS_READ || chnl->port.type != MCDE_PORTTYPE_DSI)
 		return -EINVAL;
@@ -2483,67 +2658,55 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
 		mcde_unlock(__func__, __LINE__);
 		return -EINVAL;
 	}
+
 	if (!chnl->formatter_updated)
 		(void)update_channel_static_registers(chnl);
 
-	set_channel_state_sync(chnl, CHNLSTATE_DSI_READ);
+	if (chnl->port.mode == MCDE_PORTMODE_CMD)
+		set_channel_state_sync(chnl, CHNLSTATE_DSI_READ);
 
-	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
-	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, READ_EN, true);
-	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(READ) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(false) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_ID(virt_id) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_SIZE(1) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LP_EN(true) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(DCS_READ);
-	dsi_wreg(link, DSI_DIRECT_CMD_MAIN_SETTINGS, settings);
-	dsi_wreg(link, DSI_DIRECT_CMD_WRDAT0, cmd);
+	ret = nova_dsilink_dsi_read(chnl->dsilink, cmd, data, len);
 
-	do {
-		u8 wait  = DSI_READ_TIMEOUT;
-		dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
-		dsi_wreg(link, DSI_DIRECT_CMD_RD_STS_CLR, ~0);
-		dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
-
-		while (wait-- && !(error = dsi_rfld(link, DSI_DIRECT_CMD_STS,
-					READ_COMPLETED_WITH_ERR)) &&
-				!(ok = dsi_rfld(link, DSI_DIRECT_CMD_STS,
-							READ_COMPLETED)))
-			udelay(DSI_READ_DELAY);
-
-		ack_with_err = dsi_rfld(link, DSI_DIRECT_CMD_STS,
-						ACKNOWLEDGE_WITH_ERR_RECEIVED);
-		if (ack_with_err)
-			dev_warn(&mcde_dev->dev,
-					"DCS Acknowledge Error Report %.4X\n",
-				dsi_rfld(link, DSI_DIRECT_CMD_STS, ACK_VAL));
-	} while (--nbr_of_retries && ack_with_err);
-
-	if (ok) {
-		int rdsize;
-		u32 rddat;
-
-		rdsize = dsi_rfld(link, DSI_DIRECT_CMD_RD_PROPERTY, RD_SIZE);
-		rddat = dsi_rreg(link, DSI_DIRECT_CMD_RDDAT);
-		if (rdsize < *len)
-			dev_warn(&mcde_dev->dev, "DCS incomplete read %d<%d"
-					" (%.8X)\n", rdsize, *len, rddat);
-		*len = min(*len, rdsize);
-		memcpy(data, &rddat, *len);
-	} else {
-		dev_err(&mcde_dev->dev, "DCS read failed, err=%d, sts=%X\n",
-				error, dsi_rreg(link, DSI_DIRECT_CMD_STS));
-		ret = -EIO;
-	}
-
-	dsi_wreg(link, DSI_CMD_MODE_STS_CLR, ~0);
-	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR, ~0);
-
-	set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+	if (chnl->port.mode == MCDE_PORTMODE_CMD)
+		set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
 
 	mcde_unlock(__func__, __LINE__);
 
 	return ret;
+}
+
+static inline int mcde_dsi_special(struct mcde_chnl_state *chnl,
+						enum dsilink_cmd_datatype dt)
+{
+	if (chnl->port.type != MCDE_PORTTYPE_DSI)
+		return -EINVAL;
+
+	mcde_lock(__func__, __LINE__);
+
+	if (enable_mcde_hw()) {
+		mcde_unlock(__func__, __LINE__);
+		return -EIO;
+	}
+
+	if (!chnl->formatter_updated)
+		(void)update_channel_static_registers(chnl);
+
+	if (chnl->port.mode == MCDE_PORTMODE_CMD)
+		set_channel_state_sync(chnl, CHNLSTATE_DSI_WRITE);
+
+	if (dt == DSILINK_CMD_SET_MAX_PKT_SIZE)
+		nova_dsilink_send_max_read_len(chnl->dsilink);
+	else if (dt == DSILINK_CMD_TURN_ON_PERIPHERAL)
+		nova_dsilink_turn_on_peripheral(chnl->dsilink);
+	else if (dt == DSILINK_CMD_SHUT_DOWN_PERIPHERAL)
+		nova_dsilink_shut_down_peripheral(chnl->dsilink);
+
+	if (chnl->port.mode == MCDE_PORTMODE_CMD)
+		set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
+
+	mcde_unlock(__func__, __LINE__);
+
+	return 0;
 }
 
 /*
@@ -2559,126 +2722,35 @@ int mcde_dsi_dcs_read(struct mcde_chnl_state *chnl,
  */
 int mcde_dsi_set_max_pkt_size(struct mcde_chnl_state *chnl)
 {
-	u32 settings;
-	u8 link = chnl->port.link;
-	u8 virt_id = chnl->port.phy.dsi.virt_id;
-
-	if (chnl->port.type != MCDE_PORTTYPE_DSI)
-		return -EINVAL;
-
-	mcde_lock(__func__, __LINE__);
-
-	if (enable_mcde_hw()) {
-		mcde_unlock(__func__, __LINE__);
-		return -EIO;
-	}
-
-	set_channel_state_sync(chnl, CHNLSTATE_DSI_WRITE);
-
-	/*
-	 * Set Maximum Return Packet Size is a two-byte command packet
-	 * that specifies the maximum size of the payload as u16 value.
-	 * The order of bytes is: MaxSize LSB, MaxSize MSB
-	 */
-	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(WRITE) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(false) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_ID(virt_id) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_SIZE(2) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LP_EN(true) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(
-							SET_MAX_PKT_SIZE);
-	dsi_wreg(link, DSI_DIRECT_CMD_MAIN_SETTINGS, settings);
-	dsi_wreg(link, DSI_DIRECT_CMD_WRDAT0, MCDE_MAX_DCS_READ);
-	dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
-
-	set_channel_state_atomic(chnl, CHNLSTATE_IDLE);
-
-	mcde_unlock(__func__, __LINE__);
-
-	return 0;
+	return mcde_dsi_special(chnl, DSILINK_CMD_SET_MAX_PKT_SIZE);
 }
 
-static void dsi_te_poll_req(struct mcde_chnl_state *chnl)
+int mcde_dsi_turn_on_peripheral(struct mcde_chnl_state *chnl)
 {
-	u8 lnk = chnl->port.link;
-	const struct mcde_port *port = &chnl->port;
-
-	dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, REG_TE_EN, false);
-	if (port->ifc == 0)
-		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, IF1_TE_EN, true);
-	if (port->ifc == 1)
-		dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, IF2_TE_EN, true);
-	dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
-	dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, READ_EN, true);
-	dsi_wfld(lnk, DSI_CMD_MODE_CTL, TE_TIMEOUT, 0x3FF);
-	dsi_wfld(lnk, DSI_MCTL_MAIN_DATA_CTL, TE_POLLING_EN, true);
+	return mcde_dsi_special(chnl, DSILINK_CMD_TURN_ON_PERIPHERAL);
 }
 
-static void dsi_te_poll_set_timer(struct mcde_chnl_state *chnl,
-		unsigned int timeout)
+int mcde_dsi_shut_down_peripheral(struct mcde_chnl_state *chnl)
 {
-	mod_timer(&chnl->dsi_te_timer,
-			jiffies +
-			msecs_to_jiffies(timeout));
-}
-
-static void dsi_te_timer_function(unsigned long arg)
-{
-	struct mcde_chnl_state *chnl;
-	u8 lnk;
-
-	if (arg >= num_channels) {
-		dev_err(&mcde_dev->dev, "%s invalid arg:%ld\n", __func__, arg);
-		return;
-	}
-
-	chnl = &channels[arg];
-
-	if (mcde_is_enabled && chnl->enabled && chnl->formatter_updated) {
-		lnk = chnl->port.link;
-		/* No TE answer; force stop */
-		dsi_wfld(lnk, DSI_MCTL_MAIN_PHY_CTL, FORCE_STOP_MODE, true);
-		udelay(20);
-		dsi_wfld(lnk, DSI_MCTL_MAIN_PHY_CTL, FORCE_STOP_MODE, false);
-		dev_info(&mcde_dev->dev, "DSI%d force stop\n", lnk);
-		dsi_te_poll_set_timer(chnl, DSI_TE_NO_ANSWER_TIMEOUT);
-	} else {
-		dev_info(&mcde_dev->dev, "1:DSI force stop\n");
-	}
-}
-
-static void dsi_te_request(struct mcde_chnl_state *chnl)
-{
-	u8 link = chnl->port.link;
-	u8 virt_id = chnl->port.phy.dsi.virt_id;
-	u32 settings;
-
-	dev_vdbg(&mcde_dev->dev, "Request BTA TE, chnl=%d\n",
-		chnl->id);
-
-	set_channel_state_atomic(chnl, CHNLSTATE_WAIT_TE);
-
-	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, BTA_EN, true);
-	dsi_wfld(link, DSI_MCTL_MAIN_DATA_CTL, REG_TE_EN, true);
-	dsi_wfld(link, DSI_CMD_MODE_CTL, TE_TIMEOUT, 0x3FF);
-	settings = DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_NAT_ENUM(TE_REQ) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LONGNOTSHORT(false) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_ID(virt_id) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_SIZE(2) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_LP_EN(true) |
-		DSI_DIRECT_CMD_MAIN_SETTINGS_CMD_HEAD_ENUM(DCS_SHORT_WRITE_1);
-	dsi_wreg(link, DSI_DIRECT_CMD_MAIN_SETTINGS, settings);
-	dsi_wreg(link, DSI_DIRECT_CMD_WRDAT0, DCS_CMD_SET_TEAR_ON);
-	dsi_wreg(link, DSI_DIRECT_CMD_STS_CLR,
-		DSI_DIRECT_CMD_STS_CLR_TE_RECEIVED_CLR(true));
-	dsi_wfld(link, DSI_DIRECT_CMD_STS_CTL, TE_RECEIVED_EN, true);
-	dsi_wreg(link, DSI_CMD_MODE_STS_CLR,
-		DSI_CMD_MODE_STS_CLR_ERR_NO_TE_CLR(true));
-	dsi_wfld(link, DSI_CMD_MODE_STS_CTL, ERR_NO_TE_EN, true);
-	dsi_wreg(link, DSI_DIRECT_CMD_SEND, true);
+	return mcde_dsi_special(chnl, DSILINK_CMD_SHUT_DOWN_PERIPHERAL);
 }
 
 /* MCDE channels */
+static struct mcde_chnl_state *_mcde_chnl_get_drm(enum mcde_chnl chnl_id)
+{
+	struct mcde_chnl_state *chnl = NULL;
+	int i;
+
+	for (i = 0; i < num_channels; i++) {
+		if (chnl_id == channels[i].id) {
+			chnl = &channels[i];
+			break;
+		}
+	}
+
+	return chnl;
+}
+
 static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 	enum mcde_fifo fifo, const struct mcde_port *port)
 {
@@ -2724,6 +2796,7 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 	chnl->formatter_updated = false;
 	chnl->ycbcr_2_rgb = ycbcr_2_rgb;
 	chnl->rgb_2_ycbcr = rgb_2_ycbcr;
+	chnl->oled_color_conversion = false;
 
 	chnl->blend_en = true;
 	chnl->blend_ctrl = MCDE_CRA0_BLENDCTRL_SOURCE;
@@ -2739,49 +2812,43 @@ static struct mcde_chnl_state *_mcde_chnl_get(enum mcde_chnl chnl_id,
 		chnl->clk_dpi = clk_get(&mcde_dev->dev, CLK_DPI);
 		if (chnl->port.phy.dpi.tv_mode)
 			chnl->vcmp_per_field = true;
-	} else if (chnl->port.type == MCDE_PORTTYPE_DSI &&
-							dsi_use_clk_framework) {
-		char dsihs_name[10];
-		char dsilp_name[10];
-
-		sprintf(dsihs_name, "dsihs%d", port->link);
-		sprintf(dsilp_name, "dsilp%d", port->link);
-
-		chnl->clk_dsi_lp = clk_get(&mcde_dev->dev, dsilp_name);
-		chnl->clk_dsi_hs = clk_get(&mcde_dev->dev, dsihs_name);
-		if (port->phy.dsi.lp_freq != clk_round_rate(chnl->clk_dsi_lp,
-							port->phy.dsi.lp_freq))
-			dev_warn(&mcde_dev->dev, "Could not set dsi lp freq"
-					" to %d\n", port->phy.dsi.lp_freq);
-		WARN_ON_ONCE(clk_set_rate(chnl->clk_dsi_lp,
-							port->phy.dsi.lp_freq));
-		if (port->phy.dsi.hs_freq != clk_round_rate(chnl->clk_dsi_hs,
-							port->phy.dsi.hs_freq))
-			dev_warn(&mcde_dev->dev, "Could not set dsi hs freq"
-					" to %d\n", port->phy.dsi.hs_freq);
-		WARN_ON_ONCE(clk_set_rate(chnl->clk_dsi_hs,
-							port->phy.dsi.hs_freq));
+	} else if (chnl->port.type == MCDE_PORTTYPE_DSI) {
+		chnl->dsilink = nova_dsilink_get(port->link);
+		chnl->dsilink->update_dsi_freq = dsi_use_clk_framework;
 	}
+
 	return chnl;
 }
 
 static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 {
-	bool roten = false;
-	u8 rotdir = 0;
+	bool roten;
+	u8 rotdir;
 
-	if (chnl->rotation == MCDE_DISPLAY_ROT_90_CCW) {
+	if (chnl->hw_rot == MCDE_HW_ROT_90_CCW) {
 		roten = true;
 		rotdir = MCDE_ROTACONF_ROTDIR_CCW;
-	} else if (chnl->rotation == MCDE_DISPLAY_ROT_90_CW) {
+		chnl->regs.ppl = chnl->vmode.yres;
+		chnl->regs.lpf = chnl->vmode.xres;
+	} else if (chnl->hw_rot == MCDE_HW_ROT_90_CW) {
 		roten = true;
 		rotdir = MCDE_ROTACONF_ROTDIR_CW;
+		chnl->regs.ppl = chnl->vmode.yres;
+		chnl->regs.lpf = chnl->vmode.xres;
+	} else {
+		roten = false;
+		rotdir = 0;
+		chnl->regs.ppl = chnl->vmode.xres;
+		chnl->regs.lpf = chnl->vmode.yres;
 	}
-	/* REVIEW: 180 deg? */
 
 	chnl->regs.bpp = portfmt2bpp(chnl->port.pixel_format);
 	chnl->regs.roten = roten;
 	chnl->regs.rotdir = rotdir;
+	if (roten && rotdir == MCDE_ROTACONF_ROTDIR_CCW)
+		chnl->regs.ovly_xoffset = ALIGN(chnl->vmode.yres_padding, 0x10);
+	else
+		chnl->regs.ovly_xoffset = 0;
 	chnl->regs.rotbuf1 = chnl->rotbuf1;
 	chnl->regs.rotbuf2 = chnl->rotbuf2;
 	chnl->regs.rotbufsize = chnl->rotbufsize;
@@ -2818,6 +2885,13 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	chnl->regs.blend_en = chnl->blend_en;
 	chnl->regs.alpha_blend = chnl->alpha_blend;
 
+	/* For now the update area will always be full screen */
+	chnl->regs.x   = 0;
+	chnl->regs.y   = 0;
+
+	/* Set oled and color conversion states if necessary */
+	_mcde_chnl_update_color_conversion(chnl);
+
 	chnl->regs.dirty = true;
 
 	dev_vdbg(&mcde_dev->dev, "Channel applied, chnl=%d\n", chnl->id);
@@ -2826,36 +2900,80 @@ static int _mcde_chnl_apply(struct mcde_chnl_state *chnl)
 
 static void setup_channel(struct mcde_chnl_state *chnl)
 {
-	set_channel_state_sync(chnl, CHNLSTATE_SETUP);
+	static struct mcde_oled_transform yuv240_2_rgb = {
+		/* Note that in MCDE YUV 422 pixels come as VYU pixels */
+		.matrix = {
+			{0x1990, 0x12A0, 0x0000},
+			{0x2D00, 0x12A0, 0x2640},
+			{0x0000, 0x12A0, 0x1FFF},
+		},
+		.offset = {0x2DF0, 0x0870, 0x3150},
+	};
+	static struct mcde_col_transform rgb_2_yuv240 = {
+		/* Note that in MCDE YUV 422 pixels come as VYU pixels */
+		.matrix = {
+			{0x0042, 0x0081, 0x0019},
+			{0xffda, 0xffb5, 0x0071},
+			{0x0070, 0xffa2, 0xffee},
+		},
+		.offset = {0x0010, 0x0080, 0x0080},
+	};
+
+	/*
+	 * If we do channel color conversion we always do
+	 * rgb_2_yuv240.
+	 * And we then always do oled_conversion for yuv240_2_rgb
+	 * back.
+	 */
+	mcde_chnl_col_convert_apply(chnl, &rgb_2_yuv240);
+	mcde_chnl_oled_convert_apply(chnl, &yuv240_2_rgb);
 
 	if (chnl->port.type == MCDE_PORTTYPE_DPI && chnl->tv_regs.dirty)
 		update_dpi_registers(chnl->id, &chnl->tv_regs);
-	if ((chnl->id == MCDE_CHNL_A || chnl->id == MCDE_CHNL_B) &&
-							chnl->col_regs.dirty)
-		update_col_registers(chnl->id, &chnl->col_regs);
+
+	/*
+	 * For command mode displays using external sync (TE0/TE1), the first
+	 * frame need special treatment to avoid garbage on the panel.
+	 * This mechanism is placed here because it needs the chnl_state and
+	 * modifies settings before they are committed to the registers.
+	 */
+	if (!chnl->port.update_auto_trig && chnl->first_frame_vsync_fix) {
+		/* Save requested mode. */
+		chnl->port.requested_sync_src = chnl->port.sync_src;
+		chnl->port.requested_frame_trig = chnl->port.frame_trig;
+		/*
+		 * Temporarily set other mode.
+		 * Requested mode will be set at next frame.
+		 */
+		chnl->port.sync_src = MCDE_SYNCSRC_OFF;
+		chnl->port.frame_trig = MCDE_TRIG_SW;
+	}
+
+	if (chnl->update_color_conversion) {
+		mcde_update_non_buffered_color_conversion(chnl);
+		mcde_update_double_buffered_color_conversion(chnl);
+	}
+
+	if (chnl->id == MCDE_CHNL_A || chnl->id == MCDE_CHNL_B) {
+		if (chnl->col_regs.dirty)
+			update_col_registers(chnl->id, &chnl->col_regs);
+		if (chnl->oled_regs.dirty)
+			update_oled_registers(chnl->id, &chnl->oled_regs);
+	}
+
 	if (chnl->regs.dirty)
 		update_channel_registers(chnl->id, &chnl->regs, &chnl->port,
 						chnl->fifo, &chnl->vmode);
 }
 
-static void chnl_update_continous(struct mcde_chnl_state *chnl,
-						bool tripple_buffer)
+static void chnl_update_continous(struct mcde_chnl_state *chnl)
 {
-	if (chnl->state == CHNLSTATE_RUNNING) {
-		if (!tripple_buffer)
-			wait_for_vcmp(chnl);
+	if (chnl->state == CHNLSTATE_RUNNING)
 		return;
-	}
 
 	setup_channel(chnl);
-	if (chnl->port.sync_src == MCDE_SYNCSRC_TE0) {
-		mcde_wfld(MCDE_CRC, SYCEN0, true);
-	} else if (chnl->port.sync_src == MCDE_SYNCSRC_TE1) {
-		mcde_wfld(MCDE_VSCRC1, VSSEL, 1);
-		mcde_wfld(MCDE_CRC, SYCEN1, true);
-	}
-
-	enable_flow(chnl);
+	mcde_add_vsync_capture_listener(chnl);
+	enable_flow(chnl, true);
 }
 
 static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
@@ -2863,101 +2981,265 @@ static void chnl_update_non_continous(struct mcde_chnl_state *chnl)
 	/* Commit settings to registers */
 	setup_channel(chnl);
 
-	if (chnl->port.type == MCDE_PORTTYPE_DSI) {
-		if (chnl->port.sync_src == MCDE_SYNCSRC_OFF) {
-			if (chnl->port.frame_trig == MCDE_TRIG_SW) {
-				do_softwaretrig(chnl);
-			} else {
-				enable_flow(chnl);
-				disable_flow(chnl);
+	if (chnl->port.type != MCDE_PORTTYPE_DSI)
+		return;
+
+	switch(chnl->port.sync_src) {
+	case MCDE_SYNCSRC_OFF:
+		if (chnl->port.frame_trig == MCDE_TRIG_SW) {
+			do_softwaretrig(chnl);
+			if (chnl->first_frame_vsync_fix) {
+				/* restore requested vsync mode */
+				chnl->port.sync_src =
+					chnl->port.requested_sync_src;
+				chnl->port.frame_trig =
+					chnl->port.requested_frame_trig;
+				chnl->regs.dirty = true;
+				chnl->first_frame_vsync_fix = false;
+				dev_vdbg(&mcde_dev->dev,
+					"SWITCH TO TE0 DSIx\n");
 			}
-			dev_vdbg(&mcde_dev->dev, "Channel update (no sync), "
-							"chnl=%d\n", chnl->id);
-		} else if (chnl->port.sync_src == MCDE_SYNCSRC_BTA) {
-			if (chnl->power_mode == MCDE_DISPLAY_PM_ON) {
-				dsi_te_request(chnl);
-			} else {
-				if (chnl->port.frame_trig == MCDE_TRIG_SW)
-					do_softwaretrig(chnl);
-			}
-			if (chnl->port.frame_trig == MCDE_TRIG_HW) {
-				/*
-				 * During BTA TE the MCDE block will be stalled,
-				 * once the TE is received the DMA trig will
-				 * happen
-				 */
-				enable_flow(chnl);
-				disable_flow(chnl);
-			}
+		} else {
+			enable_flow(chnl, true);
+			disable_flow(chnl, true);
+		}
+		dev_vdbg(&mcde_dev->dev, "Chnl update (no sync), chnl=%d\n",
+				chnl->id);
+		break;
+	case MCDE_SYNCSRC_BTA:
+		mcde_add_bta_te_oneshot_listener(chnl);
+		chnl->is_bta_te_listening = true;
+		set_channel_state_atomic(chnl, CHNLSTATE_WAIT_TE);
+		if (chnl->port.frame_trig == MCDE_TRIG_HW) {
+			/*
+			 * During BTA TE the MCDE block will be stalled,
+			 * once the TE is received the DMA trig will
+			 * happen
+			 */
+			enable_flow(chnl, false);
+			disable_flow(chnl, false);
+		}
+		break;
+	case MCDE_SYNCSRC_TE0:
+	case MCDE_SYNCSRC_TE1:
+		set_channel_state_atomic(chnl, CHNLSTATE_WAIT_TE);
+		mcde_add_vsync_capture_listener(chnl);
+		enable_flow(chnl, false);
+		break;
+	case MCDE_SYNCSRC_TE_POLLING:
+	default:
+		break;
+	}
+}
+
+static void mcde_ovly_update_color_conversion(struct mcde_ovly_state *ovly,
+					bool oled_color_conversion)
+{
+	bool ovly_yuv;
+	bool ovly_valid;
+
+	ovly_valid = ovly != NULL && ovly->paddr != 0 && ovly->inuse;
+	ovly_yuv = ovly_valid &&
+			ovly->pix_fmt == MCDE_OVLYPIXFMT_YCbCr422;
+
+	if (oled_color_conversion) {
+		if (ovly_yuv && (ovly->regs.col_conv !=
+					MCDE_OVL0CR_COLCCTRL_DISABLED)) {
+			ovly->regs.col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
+			ovly->chnl->update_color_conversion = true;
+			trace_keyvalue(ovly->idx, "1. cc", ovly->regs.col_conv);
+		} else if (!ovly_yuv && (ovly->regs.col_conv !=
+				MCDE_OVL0CR_COLCCTRL_ENABLED_SAT)) {
+			ovly->regs.col_conv = MCDE_OVL0CR_COLCCTRL_ENABLED_SAT;
+			ovly->chnl->update_color_conversion = true;
+			trace_keyvalue(ovly->idx, "2. cc", ovly->regs.col_conv);
+		}
+	} else {
+		if (!ovly_yuv && (ovly->regs.col_conv !=
+					MCDE_OVL0CR_COLCCTRL_DISABLED)) {
+			ovly->regs.col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
+			ovly->regs.dirty = true;
+			trace_keyvalue(ovly->idx, "3. cc", ovly->regs.col_conv);
 		}
 	}
+}
+
+static void _mcde_chnl_update_color_conversion(struct mcde_chnl_state *chnl)
+{
+	struct mcde_ovly_state *ovly0 = chnl->ovly0;
+	struct mcde_ovly_state *ovly1 = chnl->ovly1;
+	bool ovly0_yuv;
+	bool ovly1_yuv;
+	bool ovly0_valid;
+	bool ovly1_valid;
+
+	/* Never configure the OLED matrix for these cases */
+	if (chnl->port.type == MCDE_PORTTYPE_DPI &&
+			chnl->port.phy.dpi.tv_mode)
+		return;
+	if (chnl->port.pixel_format == MCDE_PORTPIXFMT_DSI_YCBCR422)
+		return;
+
+	ovly0_valid = ovly0 != NULL &&
+		ovly0->regs.enabled &&
+		ovly0->paddr != 0;
+	ovly0_yuv = ovly0_valid &&
+		ovly0->pix_fmt == MCDE_OVLYPIXFMT_YCbCr422;
+
+	ovly1_valid = ovly1 != NULL &&
+		ovly1->regs.enabled &&
+		ovly1->paddr != 0;
+	ovly1_yuv = ovly1_valid &&
+		ovly1->pix_fmt == MCDE_OVLYPIXFMT_YCbCr422;
+
+	/* Check oled/color conversion state and setup overlays */
+
+	/*
+	 * If one or more overlays are yuv enable the color conversion (
+	 * constant set to rgb_2_yuv240) and enable the channels
+	 * oled conversion (constant set to to yuv240_2_rgb)
+	 *
+	 * We prefer to work in yuv240 format (when one overlay is yuv)
+	 * since then we can transform yuv240 to full range RGB.
+	 */
+	if (!chnl->oled_color_conversion && (ovly0_yuv || ovly1_yuv)) {
+		chnl->oled_color_conversion = true;
+		chnl->regs.oled_enable = true;
+		chnl->regs.background_yuv = true;
+		chnl->regs.dirty = true;
+		chnl->update_color_conversion = true;
+		trace_keyvalue((0xF0 | chnl->id), "oled_enable",
+			chnl->regs.oled_enable);
+	} else if (chnl->oled_color_conversion && !ovly0_yuv && !ovly1_yuv) {
+		/* Turn off if no overlay needs YUV conv */
+		chnl->oled_color_conversion = false;
+		chnl->regs.background_yuv = false;
+		chnl->regs.oled_enable = false;
+		chnl->regs.dirty = true;
+		chnl->update_color_conversion = true;
+		trace_keyvalue((0xF0 | chnl->id), "oled_enable",
+			chnl->regs.oled_enable);
+	}
+
+	if (ovly0_valid)
+		mcde_ovly_update_color_conversion(ovly0,
+					chnl->oled_color_conversion);
+
+	if (ovly1_valid)
+		mcde_ovly_update_color_conversion(ovly1,
+					chnl->oled_color_conversion);
+}
+
+#define TIME_UPDATE_ONE_MAX	15
+#define TIME_UPDATE_CNT		20
+#define TIME_UPDATE_ALL_MAX	(TIME_UPDATE_ONE_MAX * TIME_UPDATE_CNT)
+
+static bool is_update_time_long(struct mcde_chnl_state *chnl,
+				ktime_t *before, ktime_t *after)
+{
+	static u32 sumtime;
+	static u32 cnt;
+	ktime_t diff;
+	bool ret = false;
+
+	diff = ktime_sub(*after, *before);
+	sumtime += (u32)ktime_to_ms(diff);
+	cnt++;
+	if (cnt == TIME_UPDATE_CNT) {
+		trace_keyvalue(chnl->id, "update_time", sumtime);
+		if (sumtime > TIME_UPDATE_ALL_MAX)
+			ret = true;
+		sumtime = 0;
+		cnt = 0;
+	}
+	return ret;
 }
 
 static void chnl_update_overlay(struct mcde_chnl_state *chnl,
 						struct mcde_ovly_state *ovly)
 {
-	if (!ovly)
+	if (!ovly || !ovly->inuse)
 		return;
 
-	if (ovly->regs.dirty_buf) {
-		if (!chnl->port.update_auto_trig)
-			set_channel_state_sync(chnl, CHNLSTATE_SETUP);
-		update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs);
-		mcde_debugfs_overlay_update(chnl->id, ovly != chnl->ovly0);
-	}
+	if (ovly->regs.dirty_buf)
+		update_overlay_registers_on_the_fly(ovly->idx, &ovly->regs, chnl->regs.ovly_xoffset);
+
 	if (ovly->regs.dirty) {
-		if (!chnl->port.update_auto_trig)
-			set_channel_state_sync(chnl, CHNLSTATE_SETUP);
-		chnl_ovly_pixel_format_apply(chnl, ovly);
-		update_overlay_registers(ovly->idx, &ovly->regs, &chnl->port,
-			chnl->fifo, chnl->regs.x, chnl->regs.y,
-			chnl->regs.ppl, chnl->regs.lpf, ovly->stride,
-			chnl->vmode.interlaced, chnl->rotation);
-		if (chnl->id == MCDE_CHNL_A || chnl->id == MCDE_CHNL_B)
-			update_col_registers(chnl->id, &chnl->col_regs);
+		update_overlay_registers(ovly, &ovly->regs, &chnl->port,
+			chnl->fifo, ovly->stride,
+			chnl->vmode.interlaced, chnl->hw_rot);
 	}
 }
 
+static void stop_channel_if_needed(struct mcde_chnl_state *chnl)
+{
+	if (chnl->state == CHNLSTATE_RUNNING && chnl->update_color_conversion)
+		stop_channel(chnl);
+
+}
+
 static int _mcde_chnl_update(struct mcde_chnl_state *chnl,
-					struct mcde_rectangle *update_area,
 					bool tripple_buffer)
 {
+	int curr_vcmp_cnt;
+
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	/* TODO: lock & make wait->trig async */
-	if (!chnl->enabled || !update_area
-			|| (update_area->w == 0 && update_area->h == 0)) {
-		return -EINVAL;
+	stop_channel_if_needed(chnl);
+
+	if (chnl->force_disable) {
+		disable_mcde_hw(true, false);
+		chnl->force_disable = false;
 	}
 
-	if (chnl->port.update_auto_trig && tripple_buffer)
-		wait_for_vcmp(chnl);
+	enable_mcde_hw();
+	if (!chnl->formatter_updated)
+		(void)update_channel_static_registers(chnl);
 
-	chnl->regs.x   = update_area->x;
-	chnl->regs.y   = update_area->y;
-	/* TODO Crop against video_mode.xres and video_mode.yres */
-	chnl->regs.ppl = update_area->w;
-	chnl->regs.lpf = update_area->h;
-	if (chnl->port.type == MCDE_PORTTYPE_DPI &&
-						chnl->port.phy.dpi.tv_mode) {
-		/* subtract border */
-		chnl->regs.ppl -= chnl->tv_regs.dho + chnl->tv_regs.alw;
-		/* subtract double borders, ie. for both fields */
-		chnl->regs.lpf -= 2 * (chnl->tv_regs.dvo + chnl->tv_regs.bsl);
-	} else if (chnl->port.type == MCDE_PORTTYPE_DSI &&
-			chnl->vmode.interlaced)
-		chnl->regs.lpf /= 2;
+	update_opp_requirements();
+
+	/* Syncronize updates with panel vsync */
+	if (!chnl->port.update_auto_trig || chnl->state != CHNLSTATE_RUNNING) {
+		/* Command mode or video mode stopped */
+		set_channel_state_sync(chnl, CHNLSTATE_SETUP);
+		curr_vcmp_cnt = atomic_read(&chnl->vcmp_cnt);
+	} else if (chnl->port.sync_src == MCDE_SYNCSRC_TE0 ||
+		   chnl->port.sync_src == MCDE_SYNCSRC_TE1) {
+		/* Running video mode with vsync */
+		(void)wait_for_vsync(chnl);
+		(void)wait_for_vcmp(chnl);
+		curr_vcmp_cnt = atomic_read(&chnl->vcmp_cnt);
+	} else {
+		/* Running video mode without vsync - simulate it */
+		wait_for_vcmp(chnl);
+		curr_vcmp_cnt = atomic_read(&chnl->vcmp_cnt);
+	}
+	chnl->vcmp_cnt_wait = curr_vcmp_cnt + 1;
+
+	/* No access of HW before this line */
 
 	chnl_update_overlay(chnl, chnl->ovly0);
 	chnl_update_overlay(chnl, chnl->ovly1);
 
 	if (chnl->port.update_auto_trig)
-		chnl_update_continous(chnl, tripple_buffer);
+		chnl_update_continous(chnl);
 	else
 		chnl_update_non_continous(chnl);
 
+	/* All HW is now updated. HW access is not allowed */
+
+	if (chnl->ovly0->regs.dirty || chnl->ovly0->regs.dirty_buf)
+		dev_err(&mcde_dev->dev,
+				"Ovly0 registers dirty after update. %d.%d",
+				chnl->ovly0->regs.dirty,
+				chnl->ovly0->regs.dirty_buf);
+	if (chnl->ovly1->regs.dirty || chnl->ovly1->regs.dirty_buf)
+		dev_err(&mcde_dev->dev,
+				"Ovly1 registers dirty after update. %d.%d",
+				chnl->ovly1->regs.dirty,
+				chnl->ovly1->regs.dirty_buf);
+
 	dev_vdbg(&mcde_dev->dev, "Channel updated, chnl=%d\n", chnl->id);
-	mcde_debugfs_channel_update(chnl->id);
 	return 0;
 }
 
@@ -2965,6 +3247,7 @@ static int _mcde_chnl_enable(struct mcde_chnl_state *chnl)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 	chnl->enabled = true;
+	chnl->first_frame_vsync_fix = true;
 	return 0;
 }
 
@@ -2976,7 +3259,10 @@ struct mcde_chnl_state *mcde_chnl_get(enum mcde_chnl chnl_id,
 	struct mcde_chnl_state *chnl;
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
-	chnl = _mcde_chnl_get(chnl_id, fifo, port);
+	if (port)
+		chnl = _mcde_chnl_get(chnl_id, fifo, port);
+	else
+		chnl = _mcde_chnl_get_drm(chnl_id);
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 
 	return chnl;
@@ -3061,6 +3347,10 @@ int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
 		return -EINVAL;
 
 	chnl->vmode = *vmode;
+        /* +445681 display padding */
+        chnl->vmode.xres += ALIGN(vmode->xres_padding, 0x10);
+        chnl->vmode.yres += ALIGN(vmode->yres_padding, 0x10);
+        /* -445681 display padding */
 
 	chnl->ovly0->dirty = true;
 	if (chnl->ovly1)
@@ -3073,19 +3363,19 @@ int mcde_chnl_set_video_mode(struct mcde_chnl_state *chnl,
 EXPORT_SYMBOL(mcde_chnl_set_video_mode);
 
 int mcde_chnl_set_rotation(struct mcde_chnl_state *chnl,
-					enum mcde_display_rotation rotation)
+					enum mcde_hw_rotation hw_rot)
 {
-	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+	dev_vdbg(&mcde_dev->dev, "%s, hw_rot=%d\n", __func__, hw_rot);
 
 	if (!chnl->reserved)
 		return -EINVAL;
 
-	if ((rotation == MCDE_DISPLAY_ROT_90_CW ||
-			rotation == MCDE_DISPLAY_ROT_90_CCW) &&
+	if ((hw_rot == MCDE_HW_ROT_90_CW ||
+			hw_rot == MCDE_HW_ROT_90_CCW) &&
 			(chnl->id != MCDE_CHNL_A && chnl->id != MCDE_CHNL_B))
 		return -EINVAL;
 
-	chnl->rotation = rotation;
+	chnl->hw_rot = hw_rot;
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 
@@ -3096,6 +3386,9 @@ int mcde_chnl_set_power_mode(struct mcde_chnl_state *chnl,
 				enum mcde_display_power_mode power_mode)
 {
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+
+	if (chnl == NULL)
+		return -EINVAL;
 
 	if (!chnl->reserved)
 		return -EINVAL;
@@ -3121,12 +3414,12 @@ int mcde_chnl_apply(struct mcde_chnl_state *chnl)
 	mcde_unlock(__func__, __LINE__);
 
 	dev_vdbg(&mcde_dev->dev, "%s exit with ret %d\n", __func__, ret);
+	trace_update(chnl->id, false);
 
 	return ret;
 }
 
 int mcde_chnl_update(struct mcde_chnl_state *chnl,
-					struct mcde_rectangle *update_area,
 					bool tripple_buffer)
 {
 	int ret;
@@ -3135,20 +3428,16 @@ int mcde_chnl_update(struct mcde_chnl_state *chnl,
 	if (!chnl->reserved)
 		return -EINVAL;
 
+	trace_update(chnl->id, true);
+
 	mcde_lock(__func__, __LINE__);
-	enable_mcde_hw();
-	if (!chnl->formatter_updated)
-		(void)update_channel_static_registers(chnl);
 
-	if (chnl->regs.roten && !chnl->esram_is_enabled) {
-		WARN_ON_ONCE(regulator_enable(regulator_esram_epod));
-		chnl->esram_is_enabled = true;
-	} else if (!chnl->regs.roten && chnl->esram_is_enabled) {
-		WARN_ON_ONCE(regulator_disable(regulator_esram_epod));
-		chnl->esram_is_enabled = false;
-	}
-
-	ret = _mcde_chnl_update(chnl, update_area, tripple_buffer);
+	ret = _mcde_chnl_update(chnl, tripple_buffer);
+	mcde_debugfs_channel_update(chnl->id);
+	if (chnl->ovly0)
+		mcde_debugfs_overlay_update(chnl->id, chnl->ovly0->idx);
+	if (chnl->ovly1)
+		mcde_debugfs_overlay_update(chnl->id, chnl->ovly1->idx);
 
 	mcde_unlock(__func__, __LINE__);
 
@@ -3176,10 +3465,7 @@ void mcde_chnl_put(struct mcde_chnl_state *chnl)
 			chnl->even_vcmp = false;
 		}
 	} else if (chnl->port.type == MCDE_PORTTYPE_DSI) {
-		if (dsi_use_clk_framework) {
-			clk_put(chnl->clk_dsi_lp);
-			clk_put(chnl->clk_dsi_hs);
-		}
+		nova_dsilink_put(chnl->dsilink);
 	}
 
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
@@ -3223,6 +3509,25 @@ void mcde_chnl_disable(struct mcde_chnl_state *chnl)
 	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
 }
 
+void mcde_formatter_enable(struct mcde_chnl_state *chnl)
+{
+	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+
+	mcde_lock(__func__, __LINE__);
+	_mcde_chnl_enable(chnl);
+	if (enable_mcde_hw()) {
+		mcde_unlock(__func__, __LINE__);
+		dev_err(&mcde_dev->dev, "%s enable failed\n", __func__);
+		return;
+	}
+	if (!chnl->formatter_updated)
+		(void)update_channel_static_registers(chnl);
+	mcde_dynamic_power_management = false;
+	mcde_unlock(__func__, __LINE__);
+
+	dev_vdbg(&mcde_dev->dev, "%s exit\n", __func__);
+}
+
 /* MCDE overlays */
 struct mcde_ovly_state *mcde_ovly_get(struct mcde_chnl_state *chnl)
 {
@@ -3230,8 +3535,7 @@ struct mcde_ovly_state *mcde_ovly_get(struct mcde_chnl_state *chnl)
 
 	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
 
-	if (!chnl->reserved)
-		return ERR_PTR(-EINVAL);
+	/* FIXME: Add reserved check once formatter is split from channel */
 
 	if (!chnl->ovly0->inuse)
 		ovly = chnl->ovly0;
@@ -3243,6 +3547,7 @@ struct mcde_ovly_state *mcde_ovly_get(struct mcde_chnl_state *chnl)
 	if (!IS_ERR(ovly)) {
 		ovly->inuse = true;
 		ovly->paddr = 0;
+		ovly->kaddr = 0;
 		ovly->stride = 0;
 		ovly->pix_fmt = MCDE_OVLYPIXFMT_RGB565;
 		ovly->src_x = 0;
@@ -3275,7 +3580,10 @@ void mcde_ovly_put(struct mcde_ovly_state *ovly)
 	ovly->inuse = false;
 }
 
-void mcde_ovly_set_source_buf(struct mcde_ovly_state *ovly, u32 paddr)
+void mcde_ovly_set_source_buf(
+	struct mcde_ovly_state *ovly,
+	u32 paddr,
+	void *kaddr)
 {
 	if (!ovly->inuse)
 		return;
@@ -3284,6 +3592,7 @@ void mcde_ovly_set_source_buf(struct mcde_ovly_state *ovly, u32 paddr)
 	ovly->dirty_buf = true;
 
 	ovly->paddr = paddr;
+	ovly->kaddr = kaddr;
 }
 
 void mcde_ovly_set_source_info(struct mcde_ovly_state *ovly,
@@ -3403,17 +3712,142 @@ void mcde_ovly_apply(struct mcde_ovly_state *ovly)
 	ovly->regs.xpos = ovly->dst_x;
 	ovly->regs.ypos = ovly->dst_y;
 	ovly->regs.z = ovly->dst_z > 0; /* 0 or 1 */
-	ovly->regs.col_conv = MCDE_OVL0CR_COLCCTRL_DISABLED;
+
 	ovly->regs.alpha_source = ovly->alpha_source;
 	ovly->regs.alpha_value = ovly->alpha_value;
 
 	ovly->regs.dirty = true;
 	ovly->dirty = false;
 
+	chnl_ovly_pixel_format_apply(ovly->chnl, ovly);
+
+	/* Apply channel to reflect any changes in the ovly to the channel */
+
+	/* Sets chnl->oled_color_conversion */
+	_mcde_chnl_update_color_conversion(ovly->chnl);
+
+	mcde_ovly_update_color_conversion(ovly,
+				ovly->chnl->oled_color_conversion);
+
 	mcde_unlock(__func__, __LINE__);
 
 	dev_vdbg(&mcde_dev->dev, "Overlay applied, idx=%d chnl=%d\n",
 						ovly->idx, ovly->chnl->id);
+}
+
+static int regulator_notify(struct notifier_block *self, unsigned long action,
+		void *dev);
+
+static struct notifier_block regulator_nb = {
+	 .notifier_call = regulator_notify,
+};
+
+static int regulator_notify(struct notifier_block *self, unsigned long action,
+		void *dev)
+{
+	switch (action) {
+	case REGULATOR_EVENT_FORCE_DISABLE: /* Intentional */
+	case REGULATOR_EVENT_DISABLE:
+		regulator_disabled = true;
+		wake_up_all(&regulator_disable_waitq);
+		break;
+	default:
+		break;
+	}
+	return NOTIFY_OK;
+}
+
+static void work_mcde_restart(struct work_struct *ptr)
+{
+	if (atomic_cmpxchg(&force_restart, true, false)) {
+		int i;
+		long rem_jiffies;
+		bool chnl_used[16] = {false};
+
+		dev_warn(&mcde_dev->dev, "%s. Restart MCDE + B2R2\n", __func__);
+		mcde_lock(__func__, __LINE__); /* Take the MCDE lock */
+
+		/*
+		 * Take a regulator reference to make sure the power is not
+		 * terminated to early.
+		 */
+		regulator_enable(regulator_mcde_epod);
+		regulator_disabled = false;
+
+		for (i = 0; i < num_channels; i++) {
+			struct mcde_chnl_state *chnl = &channels[i];
+
+			chnl_used[i] = chnl->state != CHNLSTATE_SUSPEND &&
+					chnl->state != CHNLSTATE_IDLE;
+		}
+		disable_mcde_hw(true, false); /* Stops all channels */
+		(void)b2r2_core_reset_hold();
+
+		/*
+		 * Disable own reference. Should be the last one and therefore
+		 * cut the power.
+		 */
+		regulator_disable(regulator_mcde_epod);
+
+		rem_jiffies = wait_event_timeout(regulator_disable_waitq,
+				regulator_disabled, msecs_to_jiffies(3000));
+
+		BUG_ON(!rem_jiffies);
+
+		usleep_range(1000, 1500);
+		/*
+		 * Turn on power again. Take a reference to avoid second
+		 * power down during re-start.
+		 */
+		regulator_enable(regulator_mcde_epod);
+
+		(void)b2r2_core_reset_release();
+		(void)enable_mcde_hw();
+
+		/* Restart the previously stopped channels */
+		for (i = 0; i < num_channels; i++) {
+			struct mcde_chnl_state *chnl = &channels[i];
+
+			if (chnl_used[i]) {
+				if (!chnl->formatter_updated)
+					update_channel_static_registers(chnl);
+				_mcde_chnl_update(chnl, false);
+			}
+		}
+		regulator_disable(regulator_mcde_epod);
+
+		/* Re-enable interrupt */
+		mcde_wfld(MCDE_IMSCERR, SCHBLCKDIM, true);
+
+		mcde_unlock(__func__, __LINE__);
+		dev_warn(&mcde_dev->dev, "%s. Restart done\n", __func__);
+	}
+}
+
+static void work_chnl_restart(struct work_struct *ptr)
+{
+	struct mcde_chnl_state *chnl =
+		container_of(ptr, struct mcde_chnl_state, restart_work);
+
+	if (atomic_cmpxchg(&chnl->force_restart, true, false)) {
+		mcde_lock(__func__, __LINE__);
+		if (chnl->state == CHNLSTATE_RUNNING) {
+			disable_mcde_hw(true, false);
+			_mcde_chnl_update(chnl, true);
+			dev_warn(&mcde_dev->dev, "Forced restart\n");
+		}
+		mcde_unlock(__func__, __LINE__);
+	}
+}
+
+static void work_sleep_function(struct work_struct *ptr)
+{
+	dev_vdbg(&mcde_dev->dev, "%s\n", __func__);
+	if (mcde_trylock(__func__, __LINE__)) {
+		if (mcde_dynamic_power_management)
+			disable_mcde_hw(false, false);
+		mcde_unlock(__func__, __LINE__);
+	}
 }
 
 static int init_clocks_and_power(struct platform_device *pdev)
@@ -3432,6 +3866,8 @@ static int init_clocks_and_power(struct platform_device *pdev)
 			regulator_mcde_epod = NULL;
 			return ret;
 		}
+		(void)regulator_register_notifier(regulator_mcde_epod,
+				&regulator_nb);
 	} else {
 		dev_warn(&pdev->dev, "%s: No mcde regulator id supplied\n",
 								__func__);
@@ -3470,18 +3906,6 @@ static int init_clocks_and_power(struct platform_device *pdev)
 								__func__);
 	}
 
-	if (!dsi_use_clk_framework) {
-		clock_dsi = clk_get(&pdev->dev, pdata->clock_dsi_id);
-		if (IS_ERR(clock_dsi))
-			dev_dbg(&pdev->dev, "%s: Failed to get clock '%s'\n",
-						__func__, pdata->clock_dsi_id);
-
-		clock_dsi_lp = clk_get(&pdev->dev, pdata->clock_dsi_lp_id);
-		if (IS_ERR(clock_dsi_lp))
-			dev_dbg(&pdev->dev, "%s: Failed to get clock '%s'\n",
-					__func__, pdata->clock_dsi_lp_id);
-	}
-
 	clock_mcde = clk_get(&pdev->dev, CLK_MCDE);
 	if (IS_ERR(clock_mcde)) {
 		ret = PTR_ERR(clock_mcde);
@@ -3492,11 +3916,6 @@ static int init_clocks_and_power(struct platform_device *pdev)
 	return ret;
 
 clk_mcde_err:
-	if (!dsi_use_clk_framework) {
-		clk_put(clock_dsi_lp);
-		clk_put(clock_dsi);
-	}
-
 	if (regulator_vana)
 		regulator_put(regulator_vana);
 regulator_vana_err:
@@ -3511,14 +3930,11 @@ static void remove_clocks_and_power(struct platform_device *pdev)
 {
 	/* REVIEW: Release only if exist */
 	/* REVIEW: Remove make sure MCDE is done */
-	if (!dsi_use_clk_framework) {
-		clk_put(clock_dsi_lp);
-		clk_put(clock_dsi);
-	}
 	clk_put(clock_mcde);
 	if (regulator_vana)
 		regulator_put(regulator_vana);
 	regulator_put(regulator_mcde_epod);
+	(void)regulator_unregister_notifier(regulator_mcde_epod, &regulator_nb);
 	regulator_put(regulator_esram_epod);
 }
 
@@ -3527,51 +3943,56 @@ static int probe_hw(struct platform_device *pdev)
 	int i;
 	int ret;
 	u32 pid;
-	struct resource *res;
 
 	dev_info(&mcde_dev->dev, "Probe HW\n");
 
 	/* Get MCDE HW version */
-	regulator_enable(regulator_mcde_epod);
-	clk_enable(clock_mcde);
+	/* don't turn on power if FLOEN is set, and channel A is used.*/
+	if (!mcde_rfld(MCDE_CRA0, FLOEN)){
+		regulator_enable(regulator_mcde_epod);
+		clk_enable(clock_mcde);
+	}
 	pid = mcde_rreg(MCDE_PID);
 
 	dev_info(&mcde_dev->dev, "MCDE HW revision 0x%.8X\n", pid);
 
-	clk_disable(clock_mcde);
-	regulator_disable(regulator_mcde_epod);
+	/* don't turn off power if FLOEN is set, and channel A is used.*/
+	if (!mcde_rfld(MCDE_CRA0, FLOEN)){
+		clk_disable(clock_mcde);
+		regulator_disable(regulator_mcde_epod);
+	}
 
 	switch (pid) {
 	case MCDE_VERSION_3_0_8:
-		num_dsilinks = 3;
 		num_channels = 4;
 		num_overlays = 6;
 		dsi_ifc_is_supported = true;
 		input_fifo_size = 128;
 		output_fifo_ab_size = 640;
 		output_fifo_c0c1_size = 160;
-		dsi_use_clk_framework = false;
+		dsi_use_clk_framework = true;
+		hw_alignment = 8;
 		dev_info(&mcde_dev->dev, "db8500 V2 HW\n");
 		break;
 	case MCDE_VERSION_4_0_4:
-		num_dsilinks = 2;
 		num_channels = 2;
 		num_overlays = 3;
 		input_fifo_size = 80;
 		output_fifo_ab_size = 320;
 		dsi_ifc_is_supported = false;
 		dsi_use_clk_framework = false;
+		hw_alignment = 8;
 		dev_info(&mcde_dev->dev, "db5500 V2 HW\n");
 		break;
 	case MCDE_VERSION_4_1_3:
-		num_dsilinks = 3;
 		num_channels = 4;
 		num_overlays = 6;
 		dsi_ifc_is_supported = true;
 		input_fifo_size = 192;
 		output_fifo_ab_size = 640;
 		output_fifo_c0c1_size = 160;
-		dsi_use_clk_framework = false;
+		dsi_use_clk_framework = true;
+		hw_alignment = 64;
 		dev_info(&mcde_dev->dev, "db9540 V1 HW\n");
 		break;
 	case MCDE_VERSION_3_0_5:
@@ -3599,38 +4020,17 @@ static int probe_hw(struct platform_device *pdev)
 		goto failed_overlays_alloc;
 	}
 
-	dsiio = kzalloc(num_dsilinks * sizeof(*dsiio), GFP_KERNEL);
-	if (!dsiio) {
-		ret = -ENOMEM;
-		goto failed_dsi_alloc;
-	}
-
-	for (i = 0; i < num_dsilinks; i++) {
-		res = platform_get_resource(pdev, IORESOURCE_MEM, 1+i);
-		if (!res) {
-			dev_dbg(&pdev->dev, "No DSI%d io defined\n", i);
-			ret = -EINVAL;
-			goto failed_get_dsi_io;
-		}
-		dsiio[i] = ioremap(res->start, res->end - res->start + 1);
-		if (!dsiio[i]) {
-			dev_dbg(&pdev->dev, "MCDE DSI%d iomap failed\n", i);
-			ret = -EINVAL;
-			goto failed_map_dsi_io;
-		}
-		dev_info(&pdev->dev, "MCDE DSI%d iomap: 0x%.8X->0x%.8X\n",
-			i, (u32)res->start, (u32)dsiio[i]);
-	}
-
 	/* Init MCDE */
-	for (i = 0; i < num_overlays; i++)
+	for (i = 0; i < num_overlays; i++) {
 		overlays[i].idx = i;
+		overlays[i].kaddr = 0;
+	}
 
 	channels[0].ovly0 = &overlays[0];
 	channels[0].ovly1 = &overlays[1];
 	channels[1].ovly0 = &overlays[2];
 
-	if (pid == MCDE_VERSION_3_0_8) {
+	if (pid == MCDE_VERSION_3_0_8 || MCDE_VERSION_4_1_3) {
 		channels[1].ovly1 = &overlays[3];
 		channels[2].ovly0 = &overlays[4];
 		channels[3].ovly0 = &overlays[5];
@@ -3646,44 +4046,120 @@ static int probe_hw(struct platform_device *pdev)
 
 		init_waitqueue_head(&channels[i].state_waitq);
 		init_waitqueue_head(&channels[i].vcmp_waitq);
-		init_timer(&channels[i].dsi_te_timer);
-		channels[i].dsi_te_timer.function =
-					dsi_te_timer_function;
-		channels[i].dsi_te_timer.data = i;
+		init_waitqueue_head(&channels[i].vsync_waitq);
 
 		mcde_debugfs_channel_create(i, &channels[i]);
-		mcde_debugfs_overlay_create(i, 0);
+		mcde_debugfs_overlay_create(i, 0, channels[i].ovly0);
 		if (channels[i].ovly1)
-			mcde_debugfs_overlay_create(i, 1);
+			mcde_debugfs_overlay_create(i, 1, channels[i].ovly1);
+		channels[i].dsilink = NULL;
+		INIT_WORK(&channels[i].restart_work, work_chnl_restart);
 	}
-        (void) prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "mcde", 100);
-        mcde_clk_rate = clk_get_rate(clock_mcde);
-        dev_info(&mcde_dev->dev, "MCDE_CLK is %d MHz\n", mcde_clk_rate);
-        prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "mcde");
+
+	mcde_clk_rate = clk_get_rate(clock_mcde);
+	dev_info(&mcde_dev->dev, "MCDE_CLK is %d Hz\n", mcde_clk_rate);
 
 	return 0;
 
-failed_map_dsi_io:
-	for (i = 0; i < num_dsilinks; i++) {
-		if (dsiio[i])
-			iounmap(dsiio[i]);
-	}
-failed_get_dsi_io:
-	kfree(dsiio);
-	dsiio = NULL;
-failed_dsi_alloc:
-	kfree(overlays);
-	overlays = NULL;
 failed_overlays_alloc:
 	kfree(channels);
 	channels = NULL;
 unsupported_hw:
 failed_channels_alloc:
-	num_dsilinks = 0;
 	num_channels = 0;
 	num_overlays = 0;
 	return ret;
 }
+
+#ifdef MCDE_DPI_UNDERFLOW
+static void mcde_underflow_handler(void)
+{
+	if (!mcde_underflow_workqueue)
+		return;
+	queue_work(mcde_underflow_workqueue, &mcde_underflow_work);
+}
+
+static void mcde_underflow_function(struct work_struct *ptr)
+{
+	struct device *dev = &mcde_dev->dev;
+	struct mcde_chnl_state *chnl = &channels[MCDE_CHNL_A];
+	struct mcde_rectangle update_area;
+	pm_message_t dummy;
+	int ret;
+
+	/* +438879 MCDE underflow */
+	struct fb_info *fbi;
+	struct mcde_fb *mfb;
+	extern struct fb_info* get_primary_display_fb_info(void);
+
+	dev_info(dev, "%s: mcde recovery\n", __func__);
+	fbi = get_primary_display_fb_info();
+	mfb = to_mcde_fb(fbi);
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	if (mfb->early_suspend.suspend) {
+		mfb->early_suspend.suspend(&mfb->early_suspend);
+	}
+
+	if (mfb->early_suspend.resume) {
+		mfb->early_suspend.resume(&mfb->early_suspend);
+	}
+#else
+	dev_vdbg(dev, "%s: suspend b2r2\n", __func__);
+
+	/* args are not used */
+	b2r2_suspend(NULL, dummy);
+
+	dev_vdbg(dev, "%s: suspend mcde\n", __func__);
+
+	/* suspend mcde */
+	ret = mcde_suspend(dev, dummy);
+	if (ret < 0) {
+		dev_err(dev, "mcde_suspend() failed ret=%d\n", ret);
+		printk(KERN_INFO "mcde_suspend() failed ret=%d\n", ret);
+		goto suspend_failed;
+	}
+
+	dev_vdbg(dev, "%s: resume mcde\n", __func__);
+
+	/* resume mcde */
+	ret = mcde_resume(dev);
+	if (ret == 0) {
+		dev_info(dev, "%s: mcde recovered\n", __func__);
+		printk(KERN_INFO "%s: mcde recovered\n", __func__);
+	}
+	else {
+		dev_err(dev, "mcde_resume() failed ret=%d\n", ret);
+		printk(KERN_INFO "mcde_resume() failed ret=%d\n", ret);
+	}
+
+	update_area.x = 0;
+	update_area.y = 0;
+	update_area.w = chnl->regs.ppl;
+	update_area.h = chnl->regs.lpf;
+	ret = mcde_chnl_update(chnl, &update_area, 0 /* tripple_buffer */);
+	if (ret < 0) {
+		dev_err(dev, "mcde_chnl_update() failed ret=%d\n", ret);
+		printk(KERN_INFO "mcde_chnl_update() failed ret=%d\n", ret);
+	}
+
+suspend_failed:
+	dev_vdbg(dev, "%s: resume b2r2\n", __func__);
+	printk(KERN_INFO "%s: resume b2r2\n", __func__);
+	/* args are not used, always returns 0 */
+	b2r2_resume(NULL);
+#endif
+	/* -438879 MCDE underflow */
+
+	return;
+}
+#endif
+
+u8 mcde_get_hw_alignment()
+{
+	return hw_alignment;
+}
+EXPORT_SYMBOL(mcde_get_hw_alignment);
 
 static int __devinit mcde_probe(struct platform_device *pdev)
 {
@@ -3722,6 +4198,15 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "MCDE iomap: 0x%.8X->0x%.8X\n",
 		(u32)res->start, (u32)mcdeio);
 
+#ifdef MCDE_DPI_UNDERFLOW
+	mcde_underflow_workqueue = create_singlethread_workqueue(MCDE_UNDERFLOW_WORKQUEUE);
+	if (mcde_underflow_workqueue == NULL) {
+		dev_err(&pdev->dev, "%s: Failed to setup workqueue %s\n", __func__, MCDE_UNDERFLOW_WORKQUEUE);
+		goto failed_workqueue;
+	}
+	INIT_WORK(&mcde_underflow_work, &mcde_underflow_function);
+#endif
+	INIT_WORK(&mcde_restart_work, work_mcde_restart);
 	ret = init_clocks_and_power(pdev);
 	if (ret < 0) {
 		dev_warn(&pdev->dev, "%s: init_clocks_and_power failed\n"
@@ -3731,11 +4216,19 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK_DEFERRABLE(&hw_timeout_work, work_sleep_function);
 
+	WARN_ON(prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+		dev_name(&pdev->dev), PRCMU_QOS_MAX_VALUE));
+	WARN_ON(prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
+		dev_name(&pdev->dev), PRCMU_QOS_DEFAULT_VALUE));
 	ret = probe_hw(pdev);
 	if (ret)
 		goto failed_probe_hw;
 
-	ret = enable_mcde_hw();
+	/*
+		It is important to avoid the mcde disable (link to this timeout)
+		to preserve the boot DPI splash screen until the 1st channel_update.
+	*/
+	ret = enable_mcde_hw_pre()/*enable_mcde_hw()*/;
 	if (ret)
 		goto failed_mcde_enable;
 
@@ -3744,6 +4237,13 @@ static int __devinit mcde_probe(struct platform_device *pdev)
 failed_mcde_enable:
 failed_probe_hw:
 	remove_clocks_and_power(pdev);
+#ifdef MCDE_DPI_UNDERFLOW
+	if (mcde_underflow_workqueue != NULL) {
+		destroy_workqueue(mcde_underflow_workqueue);
+		mcde_underflow_workqueue = NULL;
+	}
+failed_workqueue:
+#endif
 failed_init_clocks:
 	iounmap(mcdeio);
 failed_map_mcde_io:
@@ -3754,16 +4254,17 @@ failed_irq_get:
 
 static int __devexit mcde_remove(struct platform_device *pdev)
 {
-	struct mcde_chnl_state *chnl = &channels[0];
-
-	for (; chnl < &channels[num_channels]; chnl++) {
-		if (del_timer(&chnl->dsi_te_timer))
-			dev_vdbg(&mcde_dev->dev,
-				"%s dsi timer could not be stopped\n"
-				, __func__);
-	}
-
+	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+		dev_name(&pdev->dev));
+	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
+		dev_name(&pdev->dev));
 	remove_clocks_and_power(pdev);
+#ifdef MCDE_DPI_UNDERFLOW
+	if (mcde_underflow_workqueue != NULL) {
+		destroy_workqueue(mcde_underflow_workqueue);
+		mcde_underflow_workqueue = NULL;
+	}
+#endif
 	return 0;
 }
 

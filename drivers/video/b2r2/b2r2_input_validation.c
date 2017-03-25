@@ -57,9 +57,9 @@ static bool is_valid_format(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 	case B2R2_BLT_FMT_16_BIT_RGB565:
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
@@ -75,6 +75,7 @@ static bool is_valid_format(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YUV444_PACKED_PLANAR:
 	case B2R2_BLT_FMT_24_BIT_VUY888:
 	case B2R2_BLT_FMT_32_BIT_VUYA8888:
+	case B2R2_BLT_FMT_YV12:
 		return true;
 
 	default:
@@ -96,6 +97,7 @@ static bool is_valid_bg_format(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YV12:
 		return false;
 	default:
 		return true;
@@ -119,6 +121,7 @@ static bool is_valid_pitch_for_fmt(struct device *dev,
 
 	switch (fmt) {
 	case B2R2_BLT_FMT_16_BIT_ARGB4444:
+	case B2R2_BLT_FMT_16_BIT_ABGR4444:
 	case B2R2_BLT_FMT_16_BIT_ARGB1555:
 	case B2R2_BLT_FMT_16_BIT_RGB565:
 		if (!b2r2_is_aligned(pitch, 2))
@@ -126,7 +129,6 @@ static bool is_valid_pitch_for_fmt(struct device *dev,
 
 		break;
 
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_24_BIT_RGB888:
 	case B2R2_BLT_FMT_24_BIT_ARGB8565:
@@ -167,7 +169,6 @@ static bool is_aligned_width_for_fmt(s32 width, enum b2r2_blt_fmt fmt)
 
 		break;
 
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 		if (!b2r2_is_aligned(width, 2))
 			return false;
@@ -188,7 +189,6 @@ static s32 width_2_complete_width(s32 width, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
@@ -196,6 +196,7 @@ static s32 width_2_complete_width(s32 width, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 		return b2r2_align_up(width, 2);
 
+	case B2R2_BLT_FMT_YV12:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		return b2r2_align_up(width, 16);
@@ -212,7 +213,6 @@ static bool is_complete_width_for_fmt(s32 width, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
-	case B2R2_BLT_FMT_Y_CB_Y_CR:
 	case B2R2_BLT_FMT_CB_Y_CR_Y:
 	case B2R2_BLT_FMT_YUV422_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YVU422_PACKED_PLANAR:
@@ -223,6 +223,7 @@ static bool is_complete_width_for_fmt(s32 width, enum b2r2_blt_fmt fmt)
 
 		break;
 
+	case B2R2_BLT_FMT_YV12:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
 		if (!b2r2_is_aligned(width, 16))
@@ -244,6 +245,7 @@ static bool is_valid_height_for_fmt(s32 height, enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YVU420_PACKED_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YVU420_PACKED_SEMI_PLANAR:
+	case B2R2_BLT_FMT_YV12:
 		if (!b2r2_is_aligned(height, 2))
 			return false;
 

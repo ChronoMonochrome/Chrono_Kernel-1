@@ -256,12 +256,8 @@ static int edidread(struct hdmi_device *hdev, struct edid_read *edidread,
 	struct av8100_status status;
 
 	status = av8100_status_get();
-	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
-		if (av8100_powerup() != 0) {
-			dev_err(hdev->dev, "av8100_powerup failed\n");
+	if (status.av8100_state < AV8100_OPMODE_STANDBY)
 			return -EINVAL;
-		}
-	}
 
 	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
@@ -303,12 +299,8 @@ static int cecread(struct hdmi_device *hdev, u8 *src, u8 *dest, u8 *data_len,
 	u8 buff[HDMI_CEC_READ_MAXSIZE];
 
 	status = av8100_status_get();
-	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
-		if (av8100_powerup() != 0) {
-			dev_err(hdev->dev, "av8100_powerup failed\n");
-			return -EINVAL;
-		}
-	}
+	if (status.av8100_state < AV8100_OPMODE_STANDBY)
+		return -EINVAL;
 
 	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
@@ -374,12 +366,8 @@ static int cecsend(struct hdmi_device *hdev, u8 src, u8 dest, u8 data_len,
 	int cnt;
 
 	status = av8100_status_get();
-	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
-		if (av8100_powerup() != 0) {
-			dev_err(hdev->dev, "av8100_powerup failed\n");
-			return -EINVAL;
-		}
-	}
+	if (status.av8100_state < AV8100_OPMODE_STANDBY)
+		return -EINVAL;
 
 	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
@@ -396,11 +384,6 @@ static int cecsend(struct hdmi_device *hdev, u8 src, u8 dest, u8 data_len,
 	if (av8100_conf_prep(AV8100_COMMAND_CEC_MESSAGE_WRITE,
 		&config) != 0) {
 		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
-		return -EINVAL;
-	}
-
-	if (av8100_enable_interrupt() != 0) {
-		dev_err(hdev->dev, "av8100_ei FAIL\n");
 		return -EINVAL;
 	}
 
@@ -427,14 +410,11 @@ static int infofrsend(struct hdmi_device *hdev, u8 type, u8 version, u8 crc,
 {
 	union av8100_configuration config;
 	struct av8100_status status;
+	int ret = 0;
 
 	status = av8100_status_get();
-	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
-		if (av8100_powerup() != 0) {
-			dev_err(hdev->dev, "av8100_powerup failed\n");
-			return -EINVAL;
-		}
-	}
+	if (status.av8100_state < AV8100_OPMODE_STANDBY)
+		return -EINVAL;
 
 	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
@@ -451,19 +431,24 @@ static int infofrsend(struct hdmi_device *hdev, u8 type, u8 version, u8 crc,
 	config.infoframes_format.crc = crc;
 	config.infoframes_format.length = data_len;
 	memcpy(&config.infoframes_format.data, data, data_len);
+	av8100_conf_lock();
 	if (av8100_conf_prep(AV8100_COMMAND_INFOFRAMES,
 		&config) != 0) {
 		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto infofrsend_end;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_INFOFRAMES,
 		NULL, NULL, I2C_INTERFACE) != 0) {
 		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto infofrsend_end;
 	}
 
-	return 0;
+infofrsend_end:
+	av8100_conf_unlock();
+	return ret;
 }
 
 static int hdcpchkaesotp(struct hdmi_device *hdev, u8 *crc, u8 *progged)
@@ -474,12 +459,8 @@ static int hdcpchkaesotp(struct hdmi_device *hdev, u8 *crc, u8 *progged)
 	u8 buf[2];
 
 	status = av8100_status_get();
-	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
-		if (av8100_powerup() != 0) {
-			dev_err(hdev->dev, "av8100_powerup failed\n");
-			return -EINVAL;
-		}
-	}
+	if (status.av8100_state < AV8100_OPMODE_STANDBY)
+		return -EINVAL;
 
 	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
@@ -575,12 +556,8 @@ static int hdcploadaes(struct hdmi_device *hdev, u8 block, u8 key_len, u8 *key,
 	dev_dbg(hdev->dev, "%s block:%d\n", __func__, block);
 
 	status = av8100_status_get();
-	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
-		if (av8100_powerup() != 0) {
-			dev_err(hdev->dev, "av8100_powerup failed\n");
-			return -EINVAL;
-		}
-	}
+	if (status.av8100_state < AV8100_OPMODE_STANDBY)
+		return -EINVAL;
 
 	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
@@ -621,12 +598,8 @@ static int hdcpauthencr(struct hdmi_device *hdev, u8 auth_type, u8 encr_type,
 	struct av8100_status status;
 
 	status = av8100_status_get();
-	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
-		if (av8100_powerup() != 0) {
-			dev_err(hdev->dev, "av8100_powerup failed\n");
-			return -EINVAL;
-		}
-	}
+	if (status.av8100_state < AV8100_OPMODE_STANDBY)
+		return -EINVAL;
 
 	if (status.av8100_state <= AV8100_OPMODE_INIT) {
 		if (av8100_download_firmware(I2C_INTERFACE) != 0) {
@@ -730,6 +703,7 @@ static int audiocfg(struct hdmi_device *hdev, struct audio_cfg *cfg)
 {
 	union av8100_configuration config;
 	struct av8100_status status;
+	int ret = 0;
 
 	status = av8100_status_get();
 	if (status.av8100_state < AV8100_OPMODE_STANDBY) {
@@ -754,19 +728,24 @@ static int audiocfg(struct hdmi_device *hdev, struct audio_cfg *cfg)
 	config.audio_input_format.audio_if_mode		= cfg->if_mode;
 	config.audio_input_format.audio_mute		= cfg->mute;
 
+	av8100_conf_lock();
 	if (av8100_conf_prep(AV8100_COMMAND_AUDIO_INPUT_FORMAT,
 		&config) != 0) {
 		dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto audiocfg_end;
 	}
 
 	if (av8100_conf_w(AV8100_COMMAND_AUDIO_INPUT_FORMAT,
 		NULL, NULL, I2C_INTERFACE) != 0) {
 		dev_err(hdev->dev, "av8100_conf_w FAIL\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto audiocfg_end;
 	}
 
-	return 0;
+audiocfg_end:
+	av8100_conf_unlock();
+	return ret;
 }
 
 /* sysfs */
@@ -905,9 +884,6 @@ static ssize_t show_edidread(struct device *dev, struct device_attribute *attr,
 			*(buf + index++) =
 				hdev->sysfs_data.edid_data.buf[cnt];
 
-		dev_dbg(hdev->dev, "%02x ",
-			hdev->sysfs_data.edid_data.buf[cnt]);
-
 		cnt++;
 	}
 
@@ -942,7 +918,7 @@ static ssize_t store_ceceven(struct device *dev,
 	}
 
 	event_enable(hdev, enable, HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR |
-						HDMI_EVENT_CECTX);
+				HDMI_EVENT_CECTX | HDMI_EVENT_CCIERR);
 
 	return count;
 }
@@ -1873,7 +1849,7 @@ static long hdmi_ioctl(struct file *file,
 
 		event_enable(hdev, value != 0,
 					HDMI_EVENT_CEC | HDMI_EVENT_CECTXERR |
-							HDMI_EVENT_CECTX);
+					HDMI_EVENT_CECTX | HDMI_EVENT_CCIERR);
 		break;
 
 	case IOC_CEC_READ:
@@ -2199,15 +2175,19 @@ hdcp_authencr_end:
 		else
 			config.hdmi_format.hdmi_mode = AV8100_HDMI_ON;
 
+		av8100_conf_lock();
 		if (av8100_conf_prep(AV8100_COMMAND_HDMI, &config) != 0) {
 			dev_err(hdev->dev, "av8100_conf_prep FAIL\n");
+			av8100_conf_unlock();
 			return -EINVAL;
 		}
 		if (av8100_conf_w(AV8100_COMMAND_HDMI, NULL, NULL,
 			I2C_INTERFACE) != 0) {
 			dev_err(hdev->dev, "av8100_conf_w FAIL\n");
+			av8100_conf_unlock();
 			return -EINVAL;
 		}
+		av8100_conf_unlock();
 		}
 		break;
 
@@ -2369,6 +2349,10 @@ void hdmi_event(enum av8100_hdmi_event ev)
 	case AV8100_HDMI_EVENT_CECTX:
 		hdev->events |= HDMI_EVENT_CECTX;
 		cec_tx_status(hdev, CEC_TX_SET_FREE);
+		break;
+
+	case AV8100_HDMI_EVENT_CCIERR:
+		hdev->events |= HDMI_EVENT_CCIERR;
 		break;
 
 	default:
