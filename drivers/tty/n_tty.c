@@ -50,6 +50,7 @@
 #include <linux/uaccess.h>
 #include <linux/module.h>
 
+#include <asm/system.h>
 
 /* number of characters left in xmit buffer before select has we have room */
 #define WAKEUP_CHARS 256
@@ -60,7 +61,7 @@
  * controlling the space in the read buffer.
  */
 #define TTY_THRESHOLD_THROTTLE		128 /* now based on remaining room */
-#define TTY_THRESHOLD_UNTHROTTLE	128
+#define TTY_THRESHOLD_UNTHROTTLE 	128
 
 /*
  * Special byte codes used in the echo buffer to represent operations
@@ -184,6 +185,7 @@ static void reset_buffer_flags(struct tty_struct *tty)
 	tty->canon_head = tty->canon_data = tty->erasing = 0;
 	memset(&tty->read_flags, 0, sizeof tty->read_flags);
 	n_tty_set_room(tty);
+	check_unthrottle(tty);
 }
 
 /**
@@ -404,7 +406,7 @@ static ssize_t process_output_block(struct tty_struct *tty,
 				    const unsigned char *buf, unsigned int nr)
 {
 	int	space;
-	int	i;
+	int 	i;
 	const unsigned char *cp;
 
 	mutex_lock(&tty->output_lock);
@@ -1529,14 +1531,6 @@ static void n_tty_set_termios(struct tty_struct *tty, struct ktermios *old)
 			tty->real_raw = 0;
 	}
 	n_tty_set_room(tty);
-	/*
-	 * Fix tty hang when I_IXON(tty) is cleared, but the tty
-	 * been stopped by STOP_CHAR(tty) before it.
-	 */
-	if (!I_IXON(tty) && old && (old->c_iflag & IXON) && !tty->flow_stopped) {
-		start_tty(tty);
-	}
-
 	/* The termios change make the tty ready for I/O */
 	wake_up_interruptible(&tty->write_wait);
 	wake_up_interruptible(&tty->read_wait);
@@ -1593,7 +1587,6 @@ static int n_tty_open(struct tty_struct *tty)
 			return -ENOMEM;
 	}
 	reset_buffer_flags(tty);
-	tty_unthrottle(tty);
 	tty->column = 0;
 	n_tty_set_termios(tty, NULL);
 	tty->minimum_to_wake = 1;
@@ -1614,7 +1607,7 @@ static inline int input_available_p(struct tty_struct *tty, int amt)
 }
 
 /**
- *	copy_from_read_buf	-	copy read data directly
+ * 	copy_from_read_buf	-	copy read data directly
  *	@tty: terminal device
  *	@b: user data
  *	@nr: size of data
@@ -1735,8 +1728,7 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
 
 do_it_again:
 
-	if (WARN_ON(!tty->read_buf))
-		return -EAGAIN;
+	BUG_ON(!tty->read_buf);
 
 	c = job_control(tty, file);
 	if (c < 0)
@@ -1917,7 +1909,7 @@ do_it_again:
 		if (nr)
 			clear_bit(TTY_PUSH, &tty->flags);
 	} else if (test_and_clear_bit(TTY_PUSH, &tty->flags))
-		goto do_it_again;
+		 goto do_it_again;
 
 	n_tty_set_room(tty);
 	return retval;
@@ -1996,9 +1988,7 @@ static ssize_t n_tty_write(struct tty_struct *tty, struct file *file,
 				tty->ops->flush_chars(tty);
 		} else {
 			while (nr > 0) {
-				mutex_lock(&tty->output_lock);
 				c = tty->ops->write(tty, b, nr);
-				mutex_unlock(&tty->output_lock);
 				if (c < 0) {
 					retval = c;
 					goto break_out;

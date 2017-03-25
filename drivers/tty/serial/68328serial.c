@@ -39,6 +39,7 @@
 
 #include <asm/io.h>
 #include <asm/irq.h>
+#include <asm/system.h>
 #include <asm/delay.h>
 #include <asm/uaccess.h>
 
@@ -234,6 +235,22 @@ static void batten_down_hatches(void)
 
 static void status_handle(struct m68k_serial *info, unsigned short status)
 {
+#if 0
+	if(status & DCD) {
+		if((info->port.tty->termios->c_cflag & CRTSCTS) &&
+		   ((info->curregs[3] & AUTO_ENAB)==0)) {
+			info->curregs[3] |= AUTO_ENAB;
+			info->pendregs[3] |= AUTO_ENAB;
+			write_zsreg(info->m68k_channel, 3, info->curregs[3]);
+		}
+	} else {
+		if((info->curregs[3] & AUTO_ENAB)) {
+			info->curregs[3] &= ~AUTO_ENAB;
+			info->pendregs[3] &= ~AUTO_ENAB;
+			write_zsreg(info->m68k_channel, 3, info->curregs[3]);
+		}
+	}
+#endif
 	/* If this is console input and this is a
 	 * 'break asserted' status change interrupt
 	 * see if we can drop into the debugger
@@ -323,6 +340,9 @@ static void transmit_chars(struct m68k_serial *info)
 	info->xmit_tail = info->xmit_tail & (SERIAL_XMIT_SIZE-1);
 	info->xmit_cnt--;
 
+	if (info->xmit_cnt < WAKEUP_CHARS)
+		schedule_work(&info->tqueue);
+
 	if(info->xmit_cnt <= 0) {
 		/* All done for now... TX ints off */
 		uart->ustcnt &= ~USTCNT_TX_INTR_MASK;
@@ -356,6 +376,21 @@ irqreturn_t rs_interrupt(int irq, void *dev_id)
 	receive_chars(info, rx);		
 #endif
 	return IRQ_HANDLED;
+}
+
+static void do_softint(struct work_struct *work)
+{
+	struct m68k_serial	*info = container_of(work, struct m68k_serial, tqueue);
+	struct tty_struct	*tty;
+	
+	tty = info->tty;
+	if (!tty)
+		return;
+#if 0
+	if (clear_bit(RS_EVENT_WRITE_WAKEUP, &info->event)) {
+		tty_wakeup(tty);
+	}
+#endif   
 }
 
 static int startup(struct m68k_serial * info)
@@ -1189,9 +1224,14 @@ static int block_til_ready(struct tty_struct *tty, struct file * filp,
 int rs_open(struct tty_struct *tty, struct file * filp)
 {
 	struct m68k_serial	*info;
-	int retval;
+	int 			retval, line;
 
-	info = &m68k_soft[tty->index];
+	line = tty->index;
+	
+	if (line >= NR_PORTS || line < 0) /* we have exactly one */
+		return -ENODEV;
+
+	info = &m68k_soft[line];
 
 	if (serial_paranoia_check(info, tty->name, "rs_open"))
 		return -ENODEV;
@@ -1284,6 +1324,7 @@ rs68328_init(void)
 	    info->event = 0;
 	    info->count = 0;
 	    info->blocked_open = 0;
+	    INIT_WORK(&info->tqueue, do_softint);
 	    init_waitqueue_head(&info->open_wait);
 	    init_waitqueue_head(&info->close_wait);
 	    info->line = i;
@@ -1300,7 +1341,7 @@ rs68328_init(void)
 
 	    if (request_irq(uart_irqs[i],
 			    rs_interrupt,
-			    0,
+			    IRQF_DISABLED,
 			    "M68328_UART", info))
                 panic("Unable to attach 68328 serial interrupt\n");
 	}

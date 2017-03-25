@@ -19,7 +19,6 @@
 #include <linux/console.h>
 #include <linux/vt_kern.h>
 #include <linux/input.h>
-#include <linux/module.h>
 
 #define MAX_CONFIG_LEN		40
 
