@@ -325,7 +325,8 @@ void ath9k_hw_update_regulatory_maxpower(struct ath_hw *ah)
 		regulatory->max_power_level += POWER_CORRECTION_FOR_THREE_CHAIN;
 		break;
 	default:
-		ath_dbg(common, EEPROM, "Invalid chainmask configuration\n");
+		ath_dbg(common, ATH_DBG_EEPROM,
+			"Invalid chainmask configuration\n");
 		break;
 	}
 }
@@ -475,7 +476,12 @@ void ath9k_hw_get_gain_boundaries_pdadcs(struct ath_hw *ah,
 		pPdGainBoundaries[i] =
 			min((u16)MAX_RATE_POWER, pPdGainBoundaries[i]);
 
-		minDelta = 0;
+		if ((i == 0) && !AR_SREV_5416_20_OR_LATER(ah)) {
+			minDelta = pPdGainBoundaries[0] - 23;
+			pPdGainBoundaries[0] = 23;
+		} else {
+			minDelta = 0;
+		}
 
 		if (i == 0) {
 			if (AR_SREV_9280_20_OR_LATER(ah))

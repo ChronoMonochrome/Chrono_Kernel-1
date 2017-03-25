@@ -371,7 +371,18 @@ static struct usb_driver eem_driver = {
 	.disable_hub_initiated_lpm = 1,
 };
 
-module_usb_driver(eem_driver);
+
+static int __init eem_init(void)
+{
+	return usb_register(&eem_driver);
+}
+module_init(eem_init);
+
+static void __exit eem_exit(void)
+{
+	usb_deregister(&eem_driver);
+}
+module_exit(eem_exit);
 
 MODULE_AUTHOR("Omar Laazimani <omar.oberthur@gmail.com>");
 MODULE_DESCRIPTION("USB CDC EEM");

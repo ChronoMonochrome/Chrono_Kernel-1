@@ -37,7 +37,7 @@
 #include <linux/workqueue.h>
 #include <linux/mdio.h>
 
-#include <linux/atomic.h>
+#include <asm/atomic.h>
 #include <asm/io.h>
 #include <asm/irq.h>
 #include <asm/uaccess.h>

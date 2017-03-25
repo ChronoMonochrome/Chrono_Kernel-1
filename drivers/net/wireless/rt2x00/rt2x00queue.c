@@ -33,7 +33,7 @@
 #include "rt2x00.h"
 #include "rt2x00lib.h"
 
-struct sk_buff *rt2x00queue_alloc_rxskb(struct queue_entry *entry, gfp_t gfp)
+struct sk_buff *rt2x00queue_alloc_rxskb(struct queue_entry *entry)
 {
 	struct rt2x00_dev *rt2x00dev = entry->queue->rt2x00dev;
 	struct sk_buff *skb;
@@ -68,7 +68,7 @@ struct sk_buff *rt2x00queue_alloc_rxskb(struct queue_entry *entry, gfp_t gfp)
 	/*
 	 * Allocate skbuffer.
 	 */
-	skb = __dev_alloc_skb(frame_size + head_size + tail_size, gfp);
+	skb = dev_alloc_skb(frame_size + head_size + tail_size);
 	if (!skb)
 		return NULL;
 
@@ -200,33 +200,21 @@ void rt2x00queue_remove_l2pad(struct sk_buff *skb, unsigned int header_length)
 	skb_pull(skb, l2pad);
 }
 
-static void rt2x00queue_create_tx_descriptor_seq(struct rt2x00_dev *rt2x00dev,
-						 struct sk_buff *skb,
+static void rt2x00queue_create_tx_descriptor_seq(struct queue_entry *entry,
 						 struct txentry_desc *txdesc)
 {
-	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
+	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(entry->skb);
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)entry->skb->data;
 	struct rt2x00_intf *intf = vif_to_intf(tx_info->control.vif);
-	u16 seqno;
+	unsigned long irqflags;
 
 	if (!(tx_info->flags & IEEE80211_TX_CTL_ASSIGN_SEQ))
 		return;
 
 	__set_bit(ENTRY_TXD_GENERATE_SEQ, &txdesc->flags);
 
-	if (!test_bit(REQUIRE_SW_SEQNO, &rt2x00dev->cap_flags)) {
-		/*
-		 * rt2800 has a H/W (or F/W) bug, device incorrectly increase
-		 * seqno on retransmited data (non-QOS) frames. To workaround
-		 * the problem let's generate seqno in software if QOS is
-		 * disabled.
-		 */
-		if (test_bit(CONFIG_QOS_DISABLED, &rt2x00dev->flags))
-			__clear_bit(ENTRY_TXD_GENERATE_SEQ, &txdesc->flags);
-		else
-			/* H/W will generate sequence number */
-			return;
-	}
+	if (!test_bit(REQUIRE_SW_SEQNO, &entry->queue->rt2x00dev->cap_flags))
+		return;
 
 	/*
 	 * The hardware is not able to insert a sequence number. Assign a
@@ -239,21 +227,23 @@ static void rt2x00queue_create_tx_descriptor_seq(struct rt2x00_dev *rt2x00dev,
 	 * sequence counting per-frame, since those will override the
 	 * sequence counter given by mac80211.
 	 */
-	if (test_bit(ENTRY_TXD_FIRST_FRAGMENT, &txdesc->flags))
-		seqno = atomic_add_return(0x10, &intf->seqno);
-	else
-		seqno = atomic_read(&intf->seqno);
+	spin_lock_irqsave(&intf->seqlock, irqflags);
 
+	if (test_bit(ENTRY_TXD_FIRST_FRAGMENT, &txdesc->flags))
+		intf->seqno += 0x10;
 	hdr->seq_ctrl &= cpu_to_le16(IEEE80211_SCTL_FRAG);
-	hdr->seq_ctrl |= cpu_to_le16(seqno);
+	hdr->seq_ctrl |= cpu_to_le16(intf->seqno);
+
+	spin_unlock_irqrestore(&intf->seqlock, irqflags);
+
 }
 
-static void rt2x00queue_create_tx_descriptor_plcp(struct rt2x00_dev *rt2x00dev,
-						  struct sk_buff *skb,
+static void rt2x00queue_create_tx_descriptor_plcp(struct queue_entry *entry,
 						  struct txentry_desc *txdesc,
 						  const struct rt2x00_rate *hwrate)
 {
-	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
+	struct rt2x00_dev *rt2x00dev = entry->queue->rt2x00dev;
+	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(entry->skb);
 	struct ieee80211_tx_rate *txrate = &tx_info->control.rates[0];
 	unsigned int data_length;
 	unsigned int duration;
@@ -270,8 +260,8 @@ static void rt2x00queue_create_tx_descriptor_plcp(struct rt2x00_dev *rt2x00dev,
 		txdesc->u.plcp.ifs = IFS_SIFS;
 
 	/* Data length + CRC + Crypto overhead (IV/EIV/ICV/MIC) */
-	data_length = skb->len + 4;
-	data_length += rt2x00crypto_tx_overhead(rt2x00dev, skb);
+	data_length = entry->skb->len + 4;
+	data_length += rt2x00crypto_tx_overhead(rt2x00dev, entry->skb);
 
 	/*
 	 * PLCP setup
@@ -312,23 +302,25 @@ static void rt2x00queue_create_tx_descriptor_plcp(struct rt2x00_dev *rt2x00dev,
 	}
 }
 
-static void rt2x00queue_create_tx_descriptor_ht(struct rt2x00_dev *rt2x00dev,
-						struct sk_buff *skb,
+static void rt2x00queue_create_tx_descriptor_ht(struct queue_entry *entry,
 						struct txentry_desc *txdesc,
 						const struct rt2x00_rate *hwrate)
 {
-	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
+	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(entry->skb);
 	struct ieee80211_tx_rate *txrate = &tx_info->control.rates[0];
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
-	struct rt2x00_sta *sta_priv = NULL;
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)entry->skb->data;
 
-	if (tx_info->control.sta) {
+	if (tx_info->control.sta)
 		txdesc->u.ht.mpdu_density =
 		    tx_info->control.sta->ht_cap.ampdu_density;
 
-		sta_priv = sta_to_rt2x00_sta(tx_info->control.sta);
-		txdesc->u.ht.wcid = sta_priv->wcid;
-	}
+	txdesc->u.ht.ba_size = 7;	/* FIXME: What value is needed? */
+
+	/*
+	 * Only one STBC stream is supported for now.
+	 */
+	if (tx_info->flags & IEEE80211_TX_CTL_STBC)
+		txdesc->u.ht.stbc = 1;
 
 	/*
 	 * If IEEE80211_TX_RC_MCS is set txrate->idx just contains the
@@ -352,24 +344,6 @@ static void rt2x00queue_create_tx_descriptor_ht(struct rt2x00_dev *rt2x00dev,
 		if (txrate->flags & IEEE80211_TX_RC_USE_SHORT_PREAMBLE)
 			txdesc->u.ht.mcs |= 0x08;
 	}
-
-	if (test_bit(CONFIG_HT_DISABLED, &rt2x00dev->flags)) {
-		if (!(tx_info->flags & IEEE80211_TX_CTL_FIRST_FRAGMENT))
-			txdesc->u.ht.txop = TXOP_SIFS;
-		else
-			txdesc->u.ht.txop = TXOP_BACKOFF;
-
-		/* Left zero on all other settings. */
-		return;
-	}
-
-	txdesc->u.ht.ba_size = 7;	/* FIXME: What value is needed? */
-
-	/*
-	 * Only one STBC stream is supported for now.
-	 */
-	if (tx_info->flags & IEEE80211_TX_CTL_STBC)
-		txdesc->u.ht.stbc = 1;
 
 	/*
 	 * This frame is eligible for an AMPDU, however, don't aggregate
@@ -407,12 +381,12 @@ static void rt2x00queue_create_tx_descriptor_ht(struct rt2x00_dev *rt2x00dev,
 		txdesc->u.ht.txop = TXOP_HTTXOP;
 }
 
-static void rt2x00queue_create_tx_descriptor(struct rt2x00_dev *rt2x00dev,
-					     struct sk_buff *skb,
+static void rt2x00queue_create_tx_descriptor(struct queue_entry *entry,
 					     struct txentry_desc *txdesc)
 {
-	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(skb);
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)skb->data;
+	struct rt2x00_dev *rt2x00dev = entry->queue->rt2x00dev;
+	struct ieee80211_tx_info *tx_info = IEEE80211_SKB_CB(entry->skb);
+	struct ieee80211_hdr *hdr = (struct ieee80211_hdr *)entry->skb->data;
 	struct ieee80211_tx_rate *txrate = &tx_info->control.rates[0];
 	struct ieee80211_rate *rate;
 	const struct rt2x00_rate *hwrate = NULL;
@@ -422,8 +396,8 @@ static void rt2x00queue_create_tx_descriptor(struct rt2x00_dev *rt2x00dev,
 	/*
 	 * Header and frame information.
 	 */
-	txdesc->length = skb->len;
-	txdesc->header_length = ieee80211_get_hdrlen_from_skb(skb);
+	txdesc->length = entry->skb->len;
+	txdesc->header_length = ieee80211_get_hdrlen_from_skb(entry->skb);
 
 	/*
 	 * Check whether this frame is to be acked.
@@ -498,15 +472,13 @@ static void rt2x00queue_create_tx_descriptor(struct rt2x00_dev *rt2x00dev,
 	/*
 	 * Apply TX descriptor handling by components
 	 */
-	rt2x00crypto_create_tx_descriptor(rt2x00dev, skb, txdesc);
-	rt2x00queue_create_tx_descriptor_seq(rt2x00dev, skb, txdesc);
+	rt2x00crypto_create_tx_descriptor(entry, txdesc);
+	rt2x00queue_create_tx_descriptor_seq(entry, txdesc);
 
 	if (test_bit(REQUIRE_HT_TX_DESC, &rt2x00dev->cap_flags))
-		rt2x00queue_create_tx_descriptor_ht(rt2x00dev, skb, txdesc,
-						    hwrate);
+		rt2x00queue_create_tx_descriptor_ht(entry, txdesc, hwrate);
 	else
-		rt2x00queue_create_tx_descriptor_plcp(rt2x00dev, skb, txdesc,
-						      hwrate);
+		rt2x00queue_create_tx_descriptor_plcp(entry, txdesc, hwrate);
 }
 
 static int rt2x00queue_write_tx_data(struct queue_entry *entry,
@@ -591,11 +563,36 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
 	int ret = 0;
 
 	/*
+	 * That function must be called with bh disabled.
+	 */
+	spin_lock(&queue->tx_lock);
+
+	entry = rt2x00queue_get_entry(queue, Q_INDEX);
+
+	if (unlikely(rt2x00queue_full(queue))) {
+		ERROR(queue->rt2x00dev,
+		      "Dropping frame due to full tx queue %d.\n", queue->qid);
+		ret = -ENOBUFS;
+		goto out;
+	}
+
+	if (unlikely(test_and_set_bit(ENTRY_OWNER_DEVICE_DATA,
+				      &entry->flags))) {
+		ERROR(queue->rt2x00dev,
+		      "Arrived at non-free entry in the non-full queue %d.\n"
+		      "Please file bug report to %s.\n",
+		      queue->qid, DRV_PROJECT);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	/*
 	 * Copy all TX descriptor information into txdesc,
 	 * after that we are free to use the skb->cb array
 	 * for our information.
 	 */
-	rt2x00queue_create_tx_descriptor(queue->rt2x00dev, skb, &txdesc);
+	entry->skb = skb;
+	rt2x00queue_create_tx_descriptor(entry, &txdesc);
 
 	/*
 	 * All information is retrieved from the skb->cb array,
@@ -607,6 +604,7 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
 	rate_flags = tx_info->control.rates[0].flags;
 	skbdesc = get_skb_frame_desc(skb);
 	memset(skbdesc, 0, sizeof(*skbdesc));
+	skbdesc->entry = entry;
 	skbdesc->tx_rate_idx = rate_idx;
 	skbdesc->tx_rate_flags = rate_flags;
 
@@ -635,36 +633,9 @@ int rt2x00queue_write_tx_frame(struct data_queue *queue, struct sk_buff *skb,
 	 * for PCI devices.
 	 */
 	if (test_bit(REQUIRE_L2PAD, &queue->rt2x00dev->cap_flags))
-		rt2x00queue_insert_l2pad(skb, txdesc.header_length);
+		rt2x00queue_insert_l2pad(entry->skb, txdesc.header_length);
 	else if (test_bit(REQUIRE_DMA, &queue->rt2x00dev->cap_flags))
-		rt2x00queue_align_frame(skb);
-
-	/*
-	 * That function must be called with bh disabled.
-	 */
-	spin_lock(&queue->tx_lock);
-
-	if (unlikely(rt2x00queue_full(queue))) {
-		ERROR(queue->rt2x00dev,
-		      "Dropping frame due to full tx queue %d.\n", queue->qid);
-		ret = -ENOBUFS;
-		goto out;
-	}
-
-	entry = rt2x00queue_get_entry(queue, Q_INDEX);
-
-	if (unlikely(test_and_set_bit(ENTRY_OWNER_DEVICE_DATA,
-				      &entry->flags))) {
-		ERROR(queue->rt2x00dev,
-		      "Arrived at non-free entry in the non-full queue %d.\n"
-		      "Please file bug report to %s.\n",
-		      queue->qid, DRV_PROJECT);
-		ret = -EINVAL;
-		goto out;
-	}
-
-	skbdesc->entry = entry;
-	entry->skb = skb;
+		rt2x00queue_align_frame(entry->skb);
 
 	/*
 	 * It could be possible that the queue was corrupted and this
@@ -740,7 +711,7 @@ int rt2x00queue_update_beacon_locked(struct rt2x00_dev *rt2x00dev,
 	 * after that we are free to use the skb->cb array
 	 * for our information.
 	 */
-	rt2x00queue_create_tx_descriptor(rt2x00dev, intf->beacon->skb, &txdesc);
+	rt2x00queue_create_tx_descriptor(intf->beacon, &txdesc);
 
 	/*
 	 * Fill in skb descriptor
@@ -774,7 +745,9 @@ int rt2x00queue_update_beacon(struct rt2x00_dev *rt2x00dev,
 bool rt2x00queue_for_each_entry(struct data_queue *queue,
 				enum queue_index start,
 				enum queue_index end,
-				bool (*fn)(struct queue_entry *entry))
+				void *data,
+				bool (*fn)(struct queue_entry *entry,
+					   void *data))
 {
 	unsigned long irqflags;
 	unsigned int index_start;
@@ -805,17 +778,17 @@ bool rt2x00queue_for_each_entry(struct data_queue *queue,
 	 */
 	if (index_start < index_end) {
 		for (i = index_start; i < index_end; i++) {
-			if (fn(&queue->entries[i]))
+			if (fn(&queue->entries[i], data))
 				return true;
 		}
 	} else {
 		for (i = index_start; i < queue->limit; i++) {
-			if (fn(&queue->entries[i]))
+			if (fn(&queue->entries[i], data))
 				return true;
 		}
 
 		for (i = 0; i < index_end; i++) {
-			if (fn(&queue->entries[i]))
+			if (fn(&queue->entries[i], data))
 				return true;
 		}
 	}
@@ -1160,7 +1133,7 @@ static int rt2x00queue_alloc_rxskbs(struct data_queue *queue)
 	struct sk_buff *skb;
 
 	for (i = 0; i < queue->limit; i++) {
-		skb = rt2x00queue_alloc_rxskb(&queue->entries[i], GFP_KERNEL);
+		skb = rt2x00queue_alloc_rxskb(&queue->entries[i]);
 		if (!skb)
 			return -ENOMEM;
 		queue->entries[i].skb = skb;

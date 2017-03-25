@@ -750,7 +750,7 @@ static int stir_transmit_thread(void *arg)
 
 			write_reg(stir, REG_CTRL1, CTRL1_TXPWD|CTRL1_RXPWD);
 
-			try_to_freeze();
+			refrigerator();
 
 			if (change_speed(stir, stir->speed))
 				break;
@@ -1133,4 +1133,21 @@ static struct usb_driver irda_driver = {
 #endif
 };
 
-module_usb_driver(irda_driver);
+/*
+ * Module insertion
+ */
+static int __init stir_init(void)
+{
+	return usb_register(&irda_driver);
+}
+module_init(stir_init);
+
+/*
+ * Module removal
+ */
+static void __exit stir_cleanup(void)
+{
+	/* Deregister the driver and remove all pending instances */
+	usb_deregister(&irda_driver);
+}
+module_exit(stir_cleanup);

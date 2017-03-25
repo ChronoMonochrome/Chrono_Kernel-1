@@ -48,10 +48,15 @@
 #define ADD(buf, off, max, fmt, args...)				\
 	off += snprintf(&buf[off], max - off, fmt, ##args);
 
+static int carl9170_debugfs_open(struct inode *inode, struct file *file)
+{
+	file->private_data = inode->i_private;
+	return 0;
+}
 
 struct carl9170_debugfs_fops {
 	unsigned int read_bufsize;
-	umode_t attr;
+	mode_t attr;
 	char *(*read)(struct ar9170 *ar, char *buf, size_t bufsize,
 		      ssize_t *len);
 	ssize_t (*write)(struct ar9170 *aru, const char *buf, size_t size);
@@ -173,7 +178,7 @@ static const struct carl9170_debugfs_fops carl_debugfs_##name ##_ops = {\
 	.attr = _attr,							\
 	.req_dev_state = _dstate,					\
 	.fops = {							\
-		.open	= simple_open,					\
+		.open	= carl9170_debugfs_open,			\
 		.read	= carl9170_debugfs_read,			\
 		.write	= carl9170_debugfs_write,			\
 		.owner	= THIS_MODULE					\
@@ -690,7 +695,7 @@ static char *carl9170_debugfs_bug_read(struct ar9170 *ar, char *buf,
 }
 __DEBUGFS_DECLARE_RW_FILE(bug, 400, CARL9170_STOPPED);
 
-static const char *const erp_modes[] = {
+static const char *erp_modes[] = {
 	[CARL9170_ERP_INVALID] = "INVALID",
 	[CARL9170_ERP_AUTO] = "Automatic",
 	[CARL9170_ERP_MAC80211] = "Set by MAC80211",

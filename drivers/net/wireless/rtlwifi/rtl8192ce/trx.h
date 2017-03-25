@@ -1,6 +1,6 @@
 /******************************************************************************
  *
- * Copyright(c) 2009-2012  Realtek Corporation.
+ * Copyright(c) 2009-2010  Realtek Corporation.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of version 2 of the GNU General Public License as
@@ -531,6 +531,12 @@
 
 #define CLEAR_PCI_TX_DESC_CONTENT(__pdesc, _size)	\
 	memset(__pdesc, 0, min_t(size_t, _size, TX_DESC_NEXT_DESC_OFFSET))
+
+#define RX_HAL_IS_CCK_RATE(_pdesc)\
+	(_pdesc->rxmcs == DESC92C_RATE1M ||		\
+	 _pdesc->rxmcs == DESC92C_RATE2M ||		\
+	 _pdesc->rxmcs == DESC92C_RATE5_5M ||		\
+	 _pdesc->rxmcs == DESC92C_RATE11M)
 
 struct rx_fwinfo_92c {
 	u8 gain_trsw[4];
