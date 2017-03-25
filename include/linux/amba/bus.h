@@ -16,7 +16,6 @@
 
 #include <linux/clk.h>
 #include <linux/device.h>
-#include <linux/mod_devicetable.h>
 #include <linux/err.h>
 #include <linux/resource.h>
 #include <linux/regulator/consumer.h>
@@ -30,9 +29,16 @@ struct amba_device {
 	struct device		dev;
 	struct resource		res;
 	struct clk		*pclk;
+	struct regulator	*vcore;
 	u64			dma_mask;
 	unsigned int		periphid;
 	unsigned int		irq[AMBA_NR_IRQS];
+};
+
+struct amba_id {
+	unsigned int		id;
+	unsigned int		mask;
+	void			*data;
 };
 
 struct amba_driver {
@@ -59,9 +65,6 @@ extern struct bus_type amba_bustype;
 
 int amba_driver_register(struct amba_driver *);
 void amba_driver_unregister(struct amba_driver *);
-struct amba_device *amba_device_alloc(const char *, resource_size_t, size_t);
-void amba_device_put(struct amba_device *);
-int amba_device_add(struct amba_device *, struct resource *);
 int amba_device_register(struct amba_device *, struct resource *);
 struct amba_device *amba_apb_device_add(struct device *parent, const char *name,
 					resource_size_t base, size_t size,
@@ -82,6 +85,12 @@ void amba_release_regions(struct amba_device *);
 #define amba_pclk_disable(d)	\
 	do { if (!IS_ERR((d)->pclk)) clk_disable((d)->pclk); } while (0)
 
+#define amba_vcore_enable(d)	\
+	(IS_ERR((d)->vcore) ? 0 : regulator_enable((d)->vcore))
+
+#define amba_vcore_disable(d)	\
+	do { if (!IS_ERR((d)->vcore)) regulator_disable((d)->vcore); } while (0)
+
 /* Some drivers don't use the struct amba_device */
 #define AMBA_CONFIG_BITS(a) (((a) >> 24) & 0xff)
 #define AMBA_REV_BITS(a) (((a) >> 20) & 0x0f)
@@ -93,66 +102,64 @@ void amba_release_regions(struct amba_device *);
 #define amba_manf(d)	AMBA_MANF_BITS((d)->periphid)
 #define amba_part(d)	AMBA_PART_BITS((d)->periphid)
 
-#define __AMBA_DEV(busid, data, mask)				\
-	{							\
-		.coherent_dma_mask = mask,			\
-		.init_name = busid,				\
-		.platform_data = data,				\
-	}
-
-/*
- * APB devices do not themselves have the ability to address memory,
- * so DMA masks should be zero (much like USB peripheral devices.)
- * The DMA controller DMA masks should be used instead (much like
- * USB host controllers in conventional PCs.)
- */
-#define AMBA_APB_DEVICE(name, busid, id, base, irqs, data)	\
-struct amba_device name##_device = {				\
-	.dev = __AMBA_DEV(busid, data, 0),			\
-	.res = DEFINE_RES_MEM(base, SZ_4K),			\
-	.irq = irqs,						\
-	.periphid = id,						\
-}
-
-/*
- * AHB devices are DMA capable, so set their DMA masks
- */
-#define AMBA_AHB_DEVICE(name, busid, id, base, irqs, data)	\
-struct amba_device name##_device = {				\
-	.dev = __AMBA_DEV(busid, data, ~0ULL),			\
-	.res = DEFINE_RES_MEM(base, SZ_4K),			\
-	.dma_mask = ~0ULL,					\
-	.irq = irqs,						\
-	.periphid = id,						\
-}
-
-/*
- * module_amba_driver() - Helper macro for drivers that don't do anything
- * special in module init/exit.  This eliminates a lot of boilerplate.  Each
- * module may only use this macro once, and calling it replaces module_init()
- * and module_exit()
- */
-#define module_amba_driver(__amba_drv) \
-	module_driver(__amba_drv, amba_driver_register, amba_driver_unregister)
-
+#ifdef CONFIG_PM_SLEEP
+extern int amba_pm_prepare(struct device *dev);
+extern void amba_pm_complete(struct device *dev);
+#else
+#define amba_pm_prepare	NULL
+#define amba_pm_complete	NULL
 #endif
 
 #ifdef CONFIG_SUSPEND
 extern int amba_pm_suspend(struct device *dev);
+extern int amba_pm_suspend_noirq(struct device *dev);
 extern int amba_pm_resume(struct device *dev);
+extern int amba_pm_resume_noirq(struct device *dev);
 #else
 #define amba_pm_suspend		NULL
 #define amba_pm_resume		NULL
+#define amba_pm_suspend_noirq	NULL
+#define amba_pm_resume_noirq	NULL
 #endif
 
 #ifdef CONFIG_HIBERNATE_CALLBACKS
 extern int amba_pm_freeze(struct device *dev);
+extern int amba_pm_freeze_noirq(struct device *dev);
 extern int amba_pm_thaw(struct device *dev);
+extern int amba_pm_thaw_noirq(struct device *dev);
 extern int amba_pm_poweroff(struct device *dev);
+extern int amba_pm_poweroff_noirq(struct device *dev);
 extern int amba_pm_restore(struct device *dev);
+extern int amba_pm_restore_noirq(struct device *dev);
 #else
 #define amba_pm_freeze		NULL
 #define amba_pm_thaw		NULL
-#define amba_pm_poweroff	NULL
+#define amba_pm_poweroff		NULL
 #define amba_pm_restore		NULL
+#define amba_pm_freeze_noirq	NULL
+#define amba_pm_thaw_noirq		NULL
+#define amba_pm_poweroff_noirq	NULL
+#define amba_pm_restore_noirq	NULL
+#endif
+
+#ifdef CONFIG_PM_SLEEP
+#define USE_AMBA_PM_SLEEP_OPS \
+	.prepare = amba_pm_prepare, \
+	.complete = amba_pm_complete, \
+	.suspend = amba_pm_suspend, \
+	.resume = amba_pm_resume, \
+	.freeze = amba_pm_freeze, \
+	.thaw = amba_pm_thaw, \
+	.poweroff = amba_pm_poweroff, \
+	.restore = amba_pm_restore, \
+	.suspend_noirq = amba_pm_suspend_noirq, \
+	.resume_noirq = amba_pm_resume_noirq, \
+	.freeze_noirq = amba_pm_freeze_noirq, \
+	.thaw_noirq = amba_pm_thaw_noirq, \
+	.poweroff_noirq = amba_pm_poweroff_noirq, \
+	.restore_noirq = amba_pm_restore_noirq,
+#else
+#define USE_AMBA_PM_SLEEP_OPS
+#endif
+
 #endif
