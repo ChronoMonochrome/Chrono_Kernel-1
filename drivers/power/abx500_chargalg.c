@@ -1,5 +1,5 @@
 /*
- * Copyright (C) ST-Ericsson SA 2012
+ * Copyright (C) ST-Ericsson SA 2011
  *
  * Charging algorithm driver for abx500 variants
  *
@@ -7,7 +7,6 @@
  * Authors:
  *	Johan Palsson <johan.palsson@stericsson.com>
  *	Karl Komierowski <karl.komierowski@stericsson.com>
- *	Arun R Murthy <arun.murthy@stericsson.com>
  */
 
 #include <linux/init.h>
@@ -23,7 +22,7 @@
 #include <linux/kobject.h>
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ux500_chargalg.h>
-#include <linux/mfd/abx500/ab8500-bm.h>
+#include <linux/mfd/abx500/ab5500-bm.h>
 
 /* Watchdog kick interval */
 #define CHG_WD_INTERVAL			(6 * HZ)
@@ -1707,7 +1706,7 @@ static struct attribute *abx500_chargalg_chg[] = {
 	NULL
 };
 
-static const struct sysfs_ops abx500_chargalg_sysfs_ops = {
+const struct sysfs_ops abx500_chargalg_sysfs_ops = {
 	.store = abx500_chargalg_sysfs_charger,
 };
 
