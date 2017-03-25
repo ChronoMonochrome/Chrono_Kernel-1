@@ -15,12 +15,13 @@
 #include <linux/module.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
+#include <linux/slab.h>
 #include <linux/gpio.h>
 #include <linux/irq.h>
 #include <linux/interrupt.h>
+#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab8500-gpio.h>
-
 
 /*
  * The AB9540 GPIO support is an extended version of the
@@ -483,7 +484,7 @@ static int __devinit ab8500_gpio_probe(struct platform_device *pdev)
 	ab8500_gpio->irq_base = pdata->irq_base;
 
 	/* Configure GPIO Settings for specific AB devices */
-	if (cpu_is_u9540()) {
+	if (is_ab9540(parent)) {
 		ab8500_gpio->chip.ngpio = AB9540_NUM_GPIO;
 		ab8500_gpio->irq_cluster = ab9540_irq_clusters;
 		ab8500_gpio->irq_cluster_size =
@@ -585,9 +586,9 @@ static int __devexit ab8500_gpio_remove(struct platform_device *pdev)
 }
 
 int ab8500_config_pulldown(struct device *dev,
-				enum ab8500_pin gpio, bool enable)
+				int gpio, bool enable)
 {
-	u8 offset =  gpio - AB8500_PIN_GPIO1;
+	u8 offset =  gpio - AB8500_PIN_GPIO(1);
 	u8 pos = offset % 8;
 	u8 val = enable ? 0 : 1;
 	u8 reg = AB8500_GPIO_PUD1_REG + (offset / 8);
@@ -610,9 +611,9 @@ EXPORT_SYMBOL(ab8500_config_pulldown);
  * @gpio_select: true if the pin should be used as GPIO
  */
 int ab8500_gpio_config_select(struct device *dev,
-				enum ab8500_pin gpio, bool gpio_select)
+				int gpio, bool gpio_select)
 {
-	u8 offset = gpio - AB8500_PIN_GPIO1;
+	u8 offset = gpio - AB8500_PIN_GPIO(1);
 	u8 reg = AB8500_GPIO_SEL1_REG + (offset / 8);
 	u8 pos = offset % 8;
 	u8 val = gpio_select ? 1 : 0;
@@ -638,9 +639,9 @@ int ab8500_gpio_config_select(struct device *dev,
  * @gpio_select: pointer to pin selection status
  */
 int ab8500_gpio_config_get_select(struct device *dev,
-					enum ab8500_pin gpio, bool *gpio_select)
+					int gpio, bool *gpio_select)
 {
-	u8 offset =  gpio - AB8500_PIN_GPIO1;
+	u8 offset =  gpio - AB8500_PIN_GPIO(1);
 	u8 reg = AB8500_GPIO_SEL1_REG + (offset / 8);
 	u8 pos = offset % 8;
 	u8 val;
