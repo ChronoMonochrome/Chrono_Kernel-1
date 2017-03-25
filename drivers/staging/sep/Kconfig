@@ -3,8 +3,7 @@ config DX_SEP
 	depends on PCI
 	help
 	  Discretix SEP driver; used for the security processor subsystem
-	  on board the Intel Mobile Internet Device and adds SEP availability
-	  to the kernel crypto infrastructure
+	  on bard the Intel Mobile Internet Device.
 
 	  The driver's name is sep_driver.
 

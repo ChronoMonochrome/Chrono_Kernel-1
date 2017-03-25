@@ -16,7 +16,6 @@
 #include <linux/kthread.h>
 #include <linux/jiffies.h>
 #include <linux/miscdevice.h>
-#include "camera_flash.h"
 #include "flash_common.h"
 
 #define DEBUG_LOG(...) printk(KERN_DEBUG "Camera Flash driver: " __VA_ARGS__)

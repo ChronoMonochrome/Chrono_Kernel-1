@@ -27,7 +27,6 @@
 				| (((mpf)        & 1) << 6) \
 				| (((rfu)        & 1) << 5) \
 				| (((reg_id_ofs) & 0x1F) << 0))
-#define MAX_RETRY		3
 
 
 static int __cw1200_reg_read(struct cw1200_common *priv, u16 addr,
@@ -114,25 +113,16 @@ int cw1200_reg_write(struct cw1200_common *priv, u16 addr, const void *buf,
 
 int cw1200_data_read(struct cw1200_common *priv, void *buf, size_t buf_len)
 {
-	int ret, retry = 1;
+	int ret;
 	BUG_ON(!priv->sbus_ops);
 	priv->sbus_ops->lock(priv->sbus_priv);
 	{
 		int buf_id_rx = priv->buf_id_rx;
-		while (retry <= MAX_RETRY) {
-			ret = __cw1200_reg_read(priv,
-					ST90TDS_IN_OUT_QUEUE_REG_ID, buf,
-					buf_len, buf_id_rx + 1);
-			if (!ret) {
-				buf_id_rx = (buf_id_rx + 1) & 3;
-				priv->buf_id_rx = buf_id_rx;
-				break;
-			} else {
-				retry++;
-				mdelay(1);
-				cw1200_dbg(CW1200_DBG_ERROR, "%s,error :[%d]\n",
-						__func__, ret);
-			}
+		ret = __cw1200_reg_read(priv, ST90TDS_IN_OUT_QUEUE_REG_ID, buf,
+						buf_len, buf_id_rx + 1);
+		if (!ret) {
+			buf_id_rx = (buf_id_rx + 1) & 3;
+			priv->buf_id_rx = buf_id_rx;
 		}
 	}
 	priv->sbus_ops->unlock(priv->sbus_priv);
@@ -142,25 +132,16 @@ int cw1200_data_read(struct cw1200_common *priv, void *buf, size_t buf_len)
 int cw1200_data_write(struct cw1200_common *priv, const void *buf,
 			size_t buf_len)
 {
-	int ret, retry = 1;
+	int ret;
 	BUG_ON(!priv->sbus_ops);
 	priv->sbus_ops->lock(priv->sbus_priv);
 	{
 		int buf_id_tx = priv->buf_id_tx;
-		while (retry <= MAX_RETRY) {
-			ret = __cw1200_reg_write(priv,
-					ST90TDS_IN_OUT_QUEUE_REG_ID, buf,
-					buf_len, buf_id_tx);
-			if (!ret) {
-				buf_id_tx = (buf_id_tx + 1) & 31;
-				priv->buf_id_tx = buf_id_tx;
-				break;
-			} else {
-				retry++;
-				mdelay(1);
-				cw1200_dbg(CW1200_DBG_ERROR, "%s,error :[%d]\n",
-						__func__, ret);
-			}
+		ret = __cw1200_reg_write(priv, ST90TDS_IN_OUT_QUEUE_REG_ID, buf,
+						buf_len, buf_id_tx);
+		if (!ret) {
+			buf_id_tx = (buf_id_tx + 1) & 31;
+			priv->buf_id_tx = buf_id_tx;
 		}
 	}
 	priv->sbus_ops->unlock(priv->sbus_priv);

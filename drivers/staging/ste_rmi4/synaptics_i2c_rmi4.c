@@ -30,7 +30,7 @@
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
 #include <linux/regulator/consumer.h>
-#include <linux/module.h>
+#include <linux/earlysuspend.h>
 #include "synaptics_i2c_rmi4.h"
 
 /* TODO: for multiple device support will need a per-device mutex */
@@ -169,6 +169,7 @@ struct synaptics_rmi4_device_info {
  * @touch_stopped: flag to stop the thread function
  * @enable: flag to enable/disable the driver event.
  * @resume_wq_handler: work queue for resume the device
+ * @early_suspend: early suspend structure variable
  *
  * This structure gives the device data information.
  */
@@ -191,7 +192,13 @@ struct synaptics_rmi4_data {
 	bool			touch_stopped;
 	bool			enable;
 	struct work_struct	resume_wq_handler;
+	struct early_suspend	early_suspend;
 };
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+static void synaptics_rmi4_early_suspend(struct early_suspend *data);
+static void synaptics_rmi4_late_resume(struct early_suspend *data);
+#endif
 
 /**
  * synaptics_rmi4_set_page() - sets the page
@@ -1190,6 +1197,14 @@ static int __devinit synaptics_rmi4_probe
 		goto err_sysfs;
 	}
 	rmi4_data->enable		= true;
+
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	rmi4_data->early_suspend.level =
+				EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	rmi4_data->early_suspend.suspend = synaptics_rmi4_early_suspend;
+	rmi4_data->early_suspend.resume = synaptics_rmi4_late_resume;
+	register_early_suspend(&rmi4_data->early_suspend);
+#endif
 	return retval;
 
 err_sysfs:
@@ -1239,6 +1254,7 @@ static int __devexit synaptics_rmi4_remove(struct i2c_client *client)
 	return 0;
 }
 
+#ifndef CONFIG_HAS_EARLYSUSPEND
 #ifdef CONFIG_PM
 /**
  * synaptics_rmi4_suspend() - suspend the touch screen controller
@@ -1277,6 +1293,32 @@ static const struct dev_pm_ops synaptics_rmi4_dev_pm_ops = {
 };
 #endif
 
+#else
+static void synaptics_rmi4_early_suspend(struct early_suspend *data)
+{
+	struct synaptics_rmi4_data *rmi4_data =
+		container_of(data, struct synaptics_rmi4_data, early_suspend);
+	struct i2c_client *client = rmi4_data->i2c_client;
+	int retval;
+
+	retval = synaptics_rmi4_disable(rmi4_data);
+	if (retval < 0)
+		dev_err(&client->dev, "rmi4 disable failed\n");
+}
+
+static void synaptics_rmi4_late_resume(struct early_suspend *data)
+{
+	struct synaptics_rmi4_data *rmi4_data =
+		container_of(data, struct synaptics_rmi4_data, early_suspend);
+	struct i2c_client *client = rmi4_data->i2c_client;
+	int retval;
+
+	retval = synaptics_rmi4_enable(rmi4_data);
+	if (retval < 0)
+		dev_err(&client->dev, "rmi4 enable failed\n");
+}
+#endif
+
 static const struct i2c_device_id synaptics_rmi4_id_table[] = {
 	{ DRIVER_NAME, 0 },
 	{ },
@@ -1287,7 +1329,7 @@ static struct i2c_driver synaptics_rmi4_driver = {
 	.driver = {
 		.name	=	DRIVER_NAME,
 		.owner	=	THIS_MODULE,
-#ifdef CONFIG_PM
+#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
 		.pm	=	&synaptics_rmi4_dev_pm_ops,
 #endif
 	},

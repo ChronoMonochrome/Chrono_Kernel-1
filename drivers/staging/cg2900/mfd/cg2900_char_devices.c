@@ -27,6 +27,7 @@
 #include <linux/sched.h>
 #include <linux/skbuff.h>
 #include <linux/mfd/core.h>
+#include <linux/clk.h>
 
 #include "cg2900.h"
 #include "cg2900_core.h"
@@ -168,6 +169,46 @@ static int char_dev_open(struct inode *inode, struct file *filp)
 
 error_handling:
 	mutex_unlock(&char_info->open_mutex);
+	return err;
+}
+
+/**
+ * char_dev_flush() - flushes read queue.
+ * @filp:	Pointer to the file struct.
+ *
+ * The char_dev_flush() function purges read queue
+ * and releases rx and reset wait queue
+ *
+ * Returns:
+ *   0 if there is no error.
+ *   -EBADF if NULL pointer was supplied in private data.
+ */
+static int char_dev_flush(struct file *filp, fl_owner_t id)
+{
+	int err = 0;
+	struct char_dev_user *dev = filp->private_data;
+
+	pr_debug("char_dev_flush");
+
+	if (!dev) {
+		pr_err("char_dev_flush: Calling with NULL pointer");
+		return -EBADF;
+	}
+
+	mutex_lock(&char_info->open_mutex);
+	mutex_lock(&dev->read_mutex);
+	mutex_lock(&dev->write_mutex);
+
+	/* Purge the queue */
+	skb_queue_purge(&dev->rx_queue);
+
+	wake_up_interruptible(&dev->rx_wait_queue);
+	wake_up_interruptible(&dev->reset_wait_queue);
+
+	mutex_unlock(&dev->write_mutex);
+	mutex_unlock(&dev->read_mutex);
+	mutex_unlock(&char_info->open_mutex);
+
 	return err;
 }
 
@@ -392,6 +433,7 @@ static long char_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 	int err = 0;
 	int ret_val;
 	void __user *user_arg = (void __user *)arg;
+	struct clk *clk = NULL;
 
 	if (!dev) {
 		pr_err("char_dev_unlocked_ioctl: Calling with NULL pointer");
@@ -452,6 +494,45 @@ static long char_dev_unlocked_ioctl(struct file *filp, unsigned int cmd,
 		}
 		break;
 
+	case CG2900_CHAR_DEV_IOCTL_EXT_CLK_ENABLE:
+		if (!user->opened)
+			return -EACCES;
+		dev_dbg(MAIN_DEV, "ioctl clk_get enable "
+				"command for device %s\n", dev->name);
+
+		clk = clk_get(dev->dev, "sysclk3");
+		if (IS_ERR(clk)) {
+			dev_dbg(MAIN_DEV, "ioctl clk_get enable "
+					"command for device %s failed\n",
+					dev->name);
+			return -EFAULT;
+		} else {
+			err = clk_enable(clk);
+			if (err) {
+				dev_dbg(MAIN_DEV, "clk_enable failed:%d "
+						"for %s\n", err, dev->name);
+				return err;
+			}
+		}
+		break;
+
+	case CG2900_CHAR_DEV_IOCTL_EXT_CLK_DISABLE:
+		if (!user->opened)
+			return -EACCES;
+		dev_dbg(MAIN_DEV, "ioctl clk_get disable "
+				"command for device %s\n", dev->name);
+
+		clk = clk_get(dev->dev, "sysclk3");
+		if (IS_ERR(clk)) {
+			dev_dbg(MAIN_DEV, "ioctl clk_get disable "
+					"command for device %s failed\n",
+					dev->name);
+			return -EFAULT;
+		} else
+			clk_disable(clk);
+
+		break;
+
 	default:
 		dev_err(MAIN_DEV, "Unknown ioctl command %08X\n", cmd);
 		err = -EINVAL;
@@ -505,6 +586,7 @@ static unsigned int char_dev_poll(struct file *filp, poll_table *wait)
  * @poll:		Function that checks if there are possible operations
  *			with the char device.
  * @open:		Function that opens the char device.
+ * @flush:		Function that flushes rx queue and releases wait queues
  * @release:		Function that release the char device.
  */
 static const struct file_operations char_dev_fops = {
@@ -513,6 +595,7 @@ static const struct file_operations char_dev_fops = {
 	.unlocked_ioctl	= char_dev_unlocked_ioctl,
 	.poll		= char_dev_poll,
 	.open		= char_dev_open,
+	.flush		= char_dev_flush,
 	.release	= char_dev_release
 };
 

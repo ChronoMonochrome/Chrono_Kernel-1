@@ -32,12 +32,12 @@
 
 /**
  * struct ad5624r_chip_info - chip specific information
- * @channels:		channel spec for the DAC
+ * @bits:		accuracy of the DAC in bits
  * @int_vref_mv:	AD5620/40/60: the internal reference voltage
  */
 
 struct ad5624r_chip_info {
-	const struct iio_chan_spec	*channels;
+	u8				bits;
 	u16				int_vref_mv;
 };
 
@@ -53,6 +53,7 @@ struct ad5624r_chip_info {
  */
 
 struct ad5624r_state {
+	struct iio_dev			*indio_dev;
 	struct spi_device		*us;
 	const struct ad5624r_chip_info	*chip_info;
 	struct regulator		*reg;

@@ -2,7 +2,8 @@
  * Copyright (C) ST-Ericsson SA 2012
  * License Terms: GNU General Public License, version 2
  *
- * This code is mostly based on hmc5843 driver
+ * Mostly this magnetometer device is a copy of hmc5843 or
+ * viceversa, so the code is mostly based on hmc5843 driver.
  *
  * Author: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
  */
@@ -12,55 +13,116 @@
 #include <linux/i2c.h>
 #include <linux/err.h>
 #include <linux/mutex.h>
+#include <linux/delay.h>
 #include <linux/regulator/consumer.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
-#endif
 #include <linux/lsm303dlh.h>
 
 #include "../iio.h"
-#include "../sysfs.h"
+#include "magnet.h"
 
 /* configuration register A */
-#define LSM303DLH_M_CRA_REG	0x00
+#define CRA_REG_M	0x00
 /* configuration register B */
-#define LSM303DLH_M_CRB_REG	0x01
+#define CRB_REG_M	0x01
 /* mode register */
-#define LSM303DLH_M_MR_REG	0x02
+#define MR_REG_M	0x02
 /* data output X register */
-#define LSM303DLH_M_OUT_X	0x03
+#define OUT_X_M		0x03
 /* data output Y register */
-#define LSM303DLH_M_OUT_Y	0x05
+#define OUT_Y_M		0x05
 /* data output Z register */
-#define LSM303DLH_M_OUT_Z	0x07
+#define OUT_Z_M		0x07
 /* status register */
-#define LSM303DLH_M_SR_REG	0x09
+#define SR_REG_M	0x09
 /* identification registers */
-#define LSM303DLH_M_IRA_REG	0x0A
-#define LSM303DLH_M_IRB_REG	0x0B
-#define LSM303DLH_M_IRC_REG	0x0C
+#define IRA_REG_M	0x0A
+#define IRB_REG_M	0x0B
+#define IRC_REG_M	0x0C
+
+/* X,Y and Z gain values for LSM303DLH */
+/* XY gain at 1.3G */
+#define XY_GAIN_1_3	1055
+/* XY gain at 1.9G */
+#define XY_GAIN_1_9	 795
+/* XY gain at 2.5G */
+#define XY_GAIN_2_5	 635
+/* XY gain at 4.0G */
+#define XY_GAIN_4_0	 430
+/* XY gain at 4.7G */
+#define XY_GAIN_4_7	 375
+/* XY gain at 5.6G */
+#define XY_GAIN_5_6	 320
+/* XY gain at 8.1G */
+#define XY_GAIN_8_1	 230
+
+/* Z gain at 1.3G */
+#define Z_GAIN_1_3	950
+/* Z gain at 1.9G */
+#define Z_GAIN_1_9	710
+/* Z gain at 2.5G */
+#define Z_GAIN_2_5	570
+/* Z gain at 4.0G */
+#define Z_GAIN_4_0	385
+/* Z gain at 4.7G */
+#define Z_GAIN_4_7	335
+/* Z gain at 5.6G */
+#define Z_GAIN_5_6	285
+/* Z gain at 8.1G */
+#define Z_GAIN_8_1	205
+
+/* X,Y and Z gain values for LSM303DLHC */
+/* XY gain at 1.3G */
+#define XY_GAIN_1_3_HC	1100
+/* XY gain at 1.9G */
+#define XY_GAIN_1_9_HC	 855
+/* XY gain at 2.5G */
+#define XY_GAIN_2_5_HC	 670
+/* XY gain at 4.0G */
+#define XY_GAIN_4_0_HC	 450
+/* XY gain at 4.7G */
+#define XY_GAIN_4_7_HC	 400
+/* XY gain at 5.6G */
+#define XY_GAIN_5_6_HC	 330
+/* XY gain at 8.1G */
+#define XY_GAIN_8_1_HC	 230
+
+/* Z gain at 1.3G */
+#define Z_GAIN_1_3_HC	980
+/* Z gain at 1.9G */
+#define Z_GAIN_1_9_HC	760
+/* Z gain at 2.5G */
+#define Z_GAIN_2_5_HC	600
+/* Z gain at 4.0G */
+#define Z_GAIN_4_0_HC	400
+/* Z gain at 4.7G */
+#define Z_GAIN_4_7_HC	355
+/* Z gain at 5.6G */
+#define Z_GAIN_5_6_HC	295
+/* Z gain at 8.1G */
+#define Z_GAIN_8_1_HC	205
 
 /* control register A, Data Output rate */
-#define LSM303DLH_M_CRA_DO_BIT	2
-#define LSM303DLH_M_CRA_DO_MASK	(0x7 << LSM303DLH_M_CRA_DO_BIT)
+#define CRA_DO_BIT	2
+#define CRA_DO_MASK	(0x7 << CRA_DO_BIT)
 /* control register A, measurement configuration */
-#define LSM303DLH_M_CRA_MS_BIT	0
-#define LSM303DLH_M_CRA_MS_MASK	(0x3 << LSM303DLH_M_CRA_MS_BIT)
+#define CRA_MS_BIT	0
+#define CRA_MS_MASK	(0x3 << CRA_MS_BIT)
 /* control register B, gain configuration */
-#define LSM303DLH_M_CRB_GN_BIT	5
-#define LSM303DLH_M_CRB_GN_MASK	(0x7 << LSM303DLH_M_CRB_GN_BIT)
+#define CRB_GN_BIT	5
+#define CRB_GN_MASK	(0x7 << CRB_GN_BIT)
 /* mode register */
-#define LSM303DLH_M_MR_MD_BIT	0
-#define LSM303DLH_M_MR_MD_MASK	(0x3 << LSM303DLH_M_MR_MD_BIT)
+#define MR_MD_BIT	0
+#define MR_MD_MASK	(0x3 << MR_MD_BIT)
 /* status register, ready  */
-#define LSM303DLH_M_SR_RDY_BIT	0
-#define LSM303DLH_M_SR_RDY_MASK	(0x1 << LSM303DLH_M_SR_RDY_BIT)
+#define SR_RDY_BIT	0
+#define SR_RDY_MASK	(0x1 << SR_RDY_BIT)
 /* status register, data output register lock */
-#define LSM303DLH_M_SR_LOC_BIT	1
-#define LSM303DLH_M_SR_LOC_MASK	(0x1 << LSM303DLH_M_SR_LOC_BIT)
+#define SR_LOC_BIT	1
+#define SR_LOC_MASK	(0x1 << SR_LOC_BIT)
 /* status register, regulator enabled */
-#define LSM303DLH_M_SR_REN_BIT	2
-#define LSM303DLH_M_SR_REN_MASK	(0x1 << LSM303DLH_M_SR_REN_BIT)
+#define SR_REN_BIT	2
+#define SR_REN_MASK	(0x1 << SR_REN_BIT)
 
 /*
  *     Control register gain settings
@@ -75,13 +137,13 @@
  * 1  |  1 |  1 |     +/-8.1 |   230    |   205 |
  *---------------------------------------------
  */
-#define LSM303DLH_M_RANGE_1_3G	0x01
-#define LSM303DLH_M_RANGE_1_9G	0x02
-#define LSM303DLH_M_RANGE_2_5G	0x03
-#define LSM303DLH_M_RANGE_4_0G	0x04
-#define LSM303DLH_M_RANGE_4_7G	0x05
-#define LSM303DLH_M_RANGE_5_6G	0x06
-#define LSM303DLH_M_RANGE_8_1G	0x07
+#define RANGE_1_3G	0x01
+#define RANGE_1_9G	0x02
+#define RANGE_2_5G	0x03
+#define RANGE_4_0G	0x04
+#define RANGE_4_7G	0x05
+#define RANGE_5_6G	0x06
+#define RANGE_8_1G	0x07
 
 /*
  * CRA register data output rate settings
@@ -96,77 +158,71 @@
  * 1    1   0		75
  * 1    1   1		Not used
  */
-#define LSM303DLH_M_RATE_00_75		0x00
-#define LSM303DLH_M_RATE_01_50		0x01
-#define LSM303DLH_M_RATE_03_00		0x02
-#define LSM303DLH_M_RATE_07_50		0x03
-#define LSM303DLH_M_RATE_15_00		0x04
-#define LSM303DLH_M_RATE_30_00		0x05
-#define LSM303DLH_M_RATE_75_00		0x06
-#define LSM303DLH_M_RATE_RESERVED	0x07
+#define RATE_00_75	0x00
+#define RATE_01_50	0x01
+#define RATE_03_00	0x02
+#define RATE_07_50	0x03
+#define RATE_15_00	0x04
+#define RATE_30_00	0x05
+#define RATE_75_00	0x06
+#define RATE_RESERVED	0x07
 
 /* device status defines */
-#define LSM303DLH_M_DEVICE_OFF		0
-#define LSM303DLH_M_DEVICE_ON		1
-#define LSM303DLH_M_DEVICE_SUSPENDED	2
+#define DEVICE_OFF 0
+#define DEVICE_ON 1
+#define DEVICE_SUSPENDED 2
 
-#define	LSM303DLH_M_NORMAL_CFG		0x00
-#define	LSM303DLH_M_POSITIVE_BIAS_CFG	0x01
-#define	LSM303DLH_M_NEGATIVE_BIAS_CFG	0x02
-#define	LSM303DLH_M_NOT_USED_CFG	0x03
+#define	NORMAL_CFG		0x00
+#define	POSITIVE_BIAS_CFG	0x01
+#define	NEGATIVE_BIAS_CFG	0x02
+#define	NOT_USED_CFG		0x03
 
 /* Magnetic sensor operating mode */
-#define LSM303DLH_M_CONTINUOUS_CONVERSION_MODE	0x00
-#define LSM303DLH_M_SINGLE_CONVERSION_MODE	0x01
-#define LSM303DLH_M_UNUSED_MODE			0x02
-#define LSM303DLH_M_SLEEP_MODE			0x03
+#define CONTINUOUS_CONVERSION_MODE	0x00
+#define SINGLE_CONVERSION_MODE		0x01
+#define UNUSED_MODE			0x02
+#define SLEEP_MODE			0x03
 
 /* Multiple byte transfer enable */
-#define LSM303DLH_MULTIPLE_I2C_TR	0x80
-#define LSM303DLH_M_DATA_RDY		0x01
+#define MULTIPLE_I2C_TR 0x80
+#define DATA_RDY		0x01
 
 /* device CHIP ID defines */
-#define LSM303DLHC_CHIP_ID		51
+#define LSM303DLHC_CHIP_ID 51
 
-/*
- * The scaling frequencies are different
- * for LSM303DLH and LSM303DLHC
- * the number of elments of scaling frequency
- * is 50 and hence set this as the array size
- */
-#define XY_LENGTH		50
-#define Z_LENGTH		50
-
-char xy_scale_avail[XY_LENGTH];
-char z_scale_avail[Z_LENGTH];
-
-/*
+/**
  * struct lsm303dlh_m_data - data structure used by lsm303dlh_m driver
  * @client: i2c client
+ * @indio_dev: iio device structure
+ * attr: device attributes
  * @lock: mutex lock for sysfs operations
  * @regulator: regulator
  * @early_suspend: early suspend structure
  * @pdata: lsm303dlh platform data pointer
- * @device_status: device is ON, OFF or SUSPENDED
+ * @gain: x, y and z axes gain
+ * @data: Magnetic field values of x, y and z axes
  * @mode: current mode of operation
  * @rate: current sampling rate
  * @config: device configuration
  * @range: current range value of magnetometer
+ * @device_status: device is ON, OFF or SUSPENDED
  */
-
 struct lsm303dlh_m_data {
 	struct i2c_client	*client;
+	struct iio_dev		*indio_dev;
+	struct attribute_group	attrs;
 	struct mutex		lock;
 	struct regulator	*regulator;
-#ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend early_suspend;
-#endif
 	struct lsm303dlh_platform_data *pdata;
-	int			device_status;
+
+	short			gain[3];
+	short			data[3];
 	u8			mode;
 	u8			rate;
 	u8			config;
 	u8			range;
+	int			device_status;
 };
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -174,99 +230,176 @@ static void lsm303dlh_m_early_suspend(struct early_suspend *data);
 static void lsm303dlh_m_late_resume(struct early_suspend *data);
 #endif
 
-static s32 lsm303dlh_config(struct i2c_client *client, u8 mode)
+/**
+ * To set x,y and z gain for magnetometer device(lsm303dlh)
+ **/
+static void set_gain_dlh(struct lsm303dlh_m_data *data)
 {
-	/* the lower two bits indicates the magnetic sensor mode */
-	return i2c_smbus_write_byte_data(client,
-					LSM303DLH_M_MR_REG, mode & 0x03);
-}
+	short xy_gain;
+	short z_gain;
 
-static inline int is_device_on(struct lsm303dlh_m_data *data)
-{
-	struct i2c_client *client = data->client;
-	/*  Perform read/write operation only when device is active */
-	if (data->device_status != LSM303DLH_M_DEVICE_ON) {
-		dev_err(&client->dev,
-			"device is switched off, make it on using mode");
-		return -EINVAL;
+	switch (data->range) {
+	case RANGE_1_3G:
+		xy_gain = XY_GAIN_1_3;
+		z_gain = Z_GAIN_1_3;
+		break;
+	case RANGE_1_9G:
+		xy_gain = XY_GAIN_1_9;
+		z_gain = Z_GAIN_1_9;
+		break;
+	case RANGE_2_5G:
+		xy_gain = XY_GAIN_2_5;
+		z_gain = Z_GAIN_2_5;
+		break;
+	case RANGE_4_0G:
+		xy_gain = XY_GAIN_4_0;
+		z_gain = Z_GAIN_4_0;
+		break;
+	case RANGE_4_7G:
+		xy_gain = XY_GAIN_4_7;
+		z_gain = Z_GAIN_4_7;
+		break;
+	case RANGE_5_6G:
+		xy_gain = XY_GAIN_5_6;
+		z_gain = Z_GAIN_5_6;
+		break;
+	case RANGE_8_1G:
+		xy_gain = XY_GAIN_8_1;
+		z_gain = Z_GAIN_8_1;
+		break;
+	default:
+		return;
 	}
-
-	return 0;
+	data->gain[data->pdata->axis_map_x] = xy_gain;
+	data->gain[data->pdata->axis_map_y] = xy_gain;
+	data->gain[data->pdata->axis_map_z] = z_gain;
 }
 
-/* disable regulator and update status */
+/**
+ * To set x,y and z gain for magnetometer device(lsm303dlhc)
+ **/
+static void set_gain_dlhc(struct lsm303dlh_m_data *data)
+{
+	short xy_gain;
+	short z_gain;
+
+	switch (data->range) {
+	case RANGE_1_3G:
+		xy_gain = XY_GAIN_1_3_HC;
+		z_gain = Z_GAIN_1_3_HC;
+		break;
+	case RANGE_1_9G:
+		xy_gain = XY_GAIN_1_9_HC;
+		z_gain = Z_GAIN_1_9_HC;
+		break;
+	case RANGE_2_5G:
+		xy_gain = XY_GAIN_2_5_HC;
+		z_gain = Z_GAIN_2_5_HC;
+		break;
+	case RANGE_4_0G:
+		xy_gain = XY_GAIN_4_0_HC;
+		z_gain = Z_GAIN_4_0_HC;
+		break;
+	case RANGE_4_7G:
+		xy_gain = XY_GAIN_4_7_HC;
+		z_gain = Z_GAIN_4_7_HC;
+		break;
+	case RANGE_5_6G:
+		xy_gain = XY_GAIN_5_6_HC;
+		z_gain = Z_GAIN_5_6_HC;
+		break;
+	case RANGE_8_1G:
+		xy_gain = XY_GAIN_8_1_HC;
+		z_gain = Z_GAIN_8_1_HC;
+		break;
+	default:
+		return;
+	}
+	data->gain[data->pdata->axis_map_x] = xy_gain;
+	data->gain[data->pdata->axis_map_y] = xy_gain;
+	data->gain[data->pdata->axis_map_z] = z_gain;
+}
+
+/**
+ * To disable regulator and status
+ **/
 static int lsm303dlh_m_disable(struct lsm303dlh_m_data *data)
 {
-	data->device_status = LSM303DLH_M_DEVICE_OFF;
-
-	regulator_disable(data->regulator);
-
+	data->device_status = DEVICE_OFF;
+	if (data->regulator)
+		regulator_disable(data->regulator);
 	return 0;
 }
 
-/* enable regulator and update status */
+/**
+ * To enable regulator and status
+ **/
 static int lsm303dlh_m_enable(struct lsm303dlh_m_data *data)
 {
-	data->device_status = LSM303DLH_M_DEVICE_ON;
-
-	regulator_enable(data->regulator);
-
+	data->device_status = DEVICE_ON;
+	if (data->regulator)
+		regulator_enable(data->regulator);
 	return 0;
 }
 
-/*
- * To read output x/y/z data register,
- * in this case x,y and z are not
- * mapped w.r.t board orientation.
- * Reading just raw data from device
- */
-static ssize_t lsm303dlh_m_xyz_read(struct iio_dev *indio_dev,
-					int address,
-					int *buf)
+/**
+ * To read output x/y/z data register, in this case x,y and z are not
+ * mapped w.r.t board orientation. Reading just raw data from device
+ **/
+static ssize_t lsm303dlh_m_xyz_read(struct device *dev,
+					struct device_attribute *attr,
+					char *buf)
 {
-	struct lsm303dlh_m_data *data = iio_priv(indio_dev);
+
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
+	struct i2c_client *client = data->client;
+	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
 	int ret;
+	s16 val;
 
-	/* Perform read/write operation, only when device is active */
-	ret = is_device_on(data);
-	if (ret)
+	/*
+	 * Perform read/write operation, only when device is active
+	 */
+	if (data->device_status != DEVICE_ON) {
+		dev_dbg(&client->dev,
+			"device is switched off,make it ON using MODE");
 		return -EINVAL;
-
+	}
 	mutex_lock(&data->lock);
 
-	ret = i2c_smbus_read_byte_data(data->client, LSM303DLH_M_SR_REG);
-
+	ret = i2c_smbus_read_byte_data(client, SR_REG_M);
 	/* wait till data is written to all six registers */
-	while (!(ret & LSM303DLH_M_DATA_RDY))
-		ret = i2c_smbus_read_byte_data(data->client,
-						LSM303DLH_M_SR_REG);
+	while (!(ret & DATA_RDY))
+		ret = i2c_smbus_read_byte_data(client, SR_REG_M);
 
-	ret = i2c_smbus_read_word_swapped(data->client, address);
+	ret = i2c_smbus_read_word_data(client, this_attr->address);
 
 	if (ret < 0) {
-		dev_err(&data->client->dev, "reading xyz failed\n");
+		dev_err(&client->dev, "reading xyz failed\n");
 		mutex_unlock(&data->lock);
 		return -EINVAL;
 	}
 
 	mutex_unlock(&data->lock);
 
-	*buf = (s16)ret;
+	val = (s16)swab16((u16)ret);
 
-	return IIO_VAL_INT;
+	return sprintf(buf, "%d:%lld\n", val, iio_get_time_ns());
 }
 
-/*
- * To read output x,y,z data register.
- * After reading change x,y and z values
+/**
+ * To read output x,y,z data register. After reading change x,y and z values
  * w.r.t the orientation of the device.
- */
+ **/
 static ssize_t lsm303dlh_m_readdata(struct device *dev,
 					struct device_attribute *attr,
 					char *buf)
 {
-	struct lsm303dlh_m_data *data = iio_priv(dev_get_drvdata(dev));
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
 	struct lsm303dlh_platform_data *pdata = data->pdata;
+	struct i2c_client *client = data->client;
 	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
 	u8 map_x = pdata->axis_map_x;
 	u8 map_y = pdata->axis_map_y;
@@ -275,45 +408,49 @@ static ssize_t lsm303dlh_m_readdata(struct device *dev,
 	unsigned char magn_data[6];
 	s16 val[3];
 
-	/* Perform read/write operation, only when device is active */
-	ret = is_device_on(data);
-	if (ret)
+	/*
+	 * Perform read/write operation, only when device is active
+	 */
+	if (data->device_status != DEVICE_ON) {
+		dev_dbg(&client->dev,
+			"device is switched off,make it ON using MODE");
 		return -EINVAL;
-
+	}
 	mutex_lock(&data->lock);
 
-	ret = i2c_smbus_read_byte_data(data->client, LSM303DLH_M_SR_REG);
+	ret = i2c_smbus_read_byte_data(client, SR_REG_M);
 
 	/* wait till data is written to all six registers */
-	while (!(ret & LSM303DLH_M_DATA_RDY))
-		ret = i2c_smbus_read_byte_data(data->client,
-					LSM303DLH_M_SR_REG);
+	while (!(ret & DATA_RDY))
+		ret = i2c_smbus_read_byte_data(client, SR_REG_M);
 
-	ret = i2c_smbus_read_i2c_block_data(data->client,
-				this_attr->address |
-				LSM303DLH_MULTIPLE_I2C_TR,
-				6, magn_data);
+	ret = i2c_smbus_read_i2c_block_data(client,
+		   this_attr->address | MULTIPLE_I2C_TR, 6, magn_data);
 
 	if (ret < 0) {
-		dev_err(&data->client->dev, "reading xyz failed\n");
+		dev_err(&client->dev, "reading xyz failed\n");
 		mutex_unlock(&data->lock);
 		return -EINVAL;
 	}
 
 	/* MSB is at lower address */
 	val[0] = (s16)
-			(((magn_data[0]) << 8) | magn_data[1]);
+		(((magn_data[0]) << 8) | magn_data[1]);
 	val[1] = (s16)
-			(((magn_data[2]) << 8) | magn_data[3]);
+		(((magn_data[2]) << 8) | magn_data[3]);
 	val[2] = (s16)
-			(((magn_data[4]) << 8) | magn_data[5]);
+		(((magn_data[4]) << 8) | magn_data[5]);
 	/* check if chip is DHLC */
-	if (data->pdata->chip_id == LSM303DLHC_CHIP_ID)
+	if (data->pdata->chip_id == LSM303DLHC_CHIP_ID) {
 		/*
 		 * the out registers are in x, z and y order
 		 * so swap y and z values
 		 */
-		swap(val[1], val[2]);
+		short temp = val[1];
+		val[1] = val[2];
+		val[2] = temp;
+	}
+
 	/* modify the x,y and z values w.r.t orientation of device*/
 	if (pdata->negative_x)
 		val[map_x] = -val[map_x];
@@ -321,17 +458,32 @@ static ssize_t lsm303dlh_m_readdata(struct device *dev,
 		val[map_y] = -val[map_y];
 	if (pdata->negative_z)
 		val[map_z] = -val[map_z];
+
 	mutex_unlock(&data->lock);
 
 	return sprintf(buf, "%d:%d:%d:%lld\n", val[map_x], val[map_y],
-				val[map_z], iio_get_time_ns());
+		       val[map_z], iio_get_time_ns());
+}
+
+static ssize_t lsm303dlh_m_gain(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
+
+	return sprintf(buf, "%d:%d:%d\n",
+			data->gain[data->pdata->axis_map_x],
+			data->gain[data->pdata->axis_map_y],
+			data->gain[data->pdata->axis_map_z]);
 }
 
 static ssize_t show_operating_mode(struct device *dev,
 				struct device_attribute *attr,
 				char *buf)
 {
-	struct lsm303dlh_m_data *data = iio_priv(dev_get_drvdata(dev));
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
 
 	return sprintf(buf, "%d\n", data->mode);
 }
@@ -340,7 +492,8 @@ static ssize_t set_operating_mode(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	struct lsm303dlh_m_data *data = iio_priv(dev_get_drvdata(dev));
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
 	struct i2c_client *client = data->client;
 	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
 	int error;
@@ -348,38 +501,37 @@ static ssize_t set_operating_mode(struct device *dev,
 
 	mutex_lock(&data->lock);
 
-	error = kstrtoul(buf, 10, &mode);
+	error = strict_strtoul(buf, 10, &mode);
 	if (error) {
 		count = error;
 		goto exit;
 	}
 
-	if (mode > LSM303DLH_M_SLEEP_MODE) {
+	if (mode > SLEEP_MODE) {
 		dev_err(&client->dev, "trying to set invalid mode\n");
 		count = -EINVAL;
 		goto exit;
 	}
-
 	/*
-	 * If device is driven to sleep mode in suspend, update mode
+	 * If device is drived to sleep mode in suspend, update mode
 	 * and return
 	 */
-	if (data->device_status == LSM303DLH_M_DEVICE_SUSPENDED &&
-			mode == LSM303DLH_M_SLEEP_MODE) {
+	if (data->device_status == DEVICE_SUSPENDED &&
+			mode == SLEEP_MODE) {
 		data->mode = mode;
 		goto exit;
 	}
 
+	 /*  if same mode as existing, return */
 	if (data->mode == mode)
 		goto exit;
 
-	/* Enable the regulator if it is not turned on earlier */
-	if (data->device_status == LSM303DLH_M_DEVICE_OFF ||
-		data->device_status == LSM303DLH_M_DEVICE_SUSPENDED)
+	/* Enable the regulator if it is not turned ON earlier*/
+	if (data->device_status == DEVICE_OFF ||
+		data->device_status == DEVICE_SUSPENDED)
 		lsm303dlh_m_enable(data);
 
 	dev_dbg(dev, "set operating mode to %lu\n", mode);
-
 	error = i2c_smbus_write_byte_data(client, this_attr->address, mode);
 	if (error < 0) {
 		dev_err(&client->dev, "Error in setting the mode\n");
@@ -388,42 +540,76 @@ static ssize_t set_operating_mode(struct device *dev,
 	}
 
 	data->mode = mode;
-	/* if sleep mode, disable the regulator */
-	if (data->mode == LSM303DLH_M_SLEEP_MODE)
+
+	/* If mode is OFF then disable the regulator */
+	if (data->mode == SLEEP_MODE) {
+		data->rate = RATE_00_75;
+		data->range = RANGE_1_3G;
+		data->gain[data->pdata->axis_map_x] = XY_GAIN_1_3;
+		data->gain[data->pdata->axis_map_y] = XY_GAIN_1_3;
+		data->gain[data->pdata->axis_map_z] = Z_GAIN_1_3;
 		lsm303dlh_m_disable(data);
+	}
 exit:
 	mutex_unlock(&data->lock);
 	return count;
 }
 
-/*
- * Magnetic sensor operating mode: CRA_REG
- * ms1 ms0
- * 0	0	Normal measurement configuration
- * 0	1	Positive bias configuration.
- * 1	0	Negative bias configuration.
- * 1	1	This configuration is not used
- */
 static s32 lsm303dlh_set_config(struct i2c_client *client, u8 config)
 {
 	struct lsm303dlh_m_data *data = i2c_get_clientdata(client);
 	u8 reg_val;
 
-	reg_val = (config & LSM303DLH_M_CRA_MS_MASK) |
-			(data->rate << LSM303DLH_M_CRA_DO_BIT);
-	return i2c_smbus_write_byte_data(client, LSM303DLH_M_CRA_REG, reg_val);
+	reg_val = (config & CRA_MS_MASK) | (data->rate << CRA_DO_BIT);
+	return i2c_smbus_write_byte_data(client, CRA_REG_M, reg_val);
 }
 
-
-static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("0.75 1.5 3.0 7.5 15 30 75");
-
-static s32 lsm303dlh_m_set_range(struct i2c_client *client, u8 range)
+static int set_configuration(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
 {
-	u8 reg_val;
 
-	reg_val = range << LSM303DLH_M_CRB_GN_BIT;
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
+	struct i2c_client *client = data->client;
+	unsigned long config = 0;
 
-	return i2c_smbus_write_byte_data(client, LSM303DLH_M_CRB_REG, reg_val);
+	int err = strict_strtoul(buf, 0, &config);
+	if (err)
+		return err;
+
+	/*
+	 * Perform read/write operation, only when device is active
+	 */
+	if (data->device_status != DEVICE_ON) {
+		dev_info(&client->dev,
+			"device is switched off,make it ON using MODE");
+		return -EINVAL;
+	}
+	mutex_lock(&data->lock);
+
+	dev_dbg(dev, "set measurement configuration to %lu\n", config);
+
+	if (lsm303dlh_set_config(client, config)) {
+		count = -EINVAL;
+		dev_err(dev, "set configuration failed\n");
+		goto exit;
+	}
+
+	data->config = config;
+exit:
+	mutex_unlock(&data->lock);
+	return count;
+}
+
+static s32 show_configuration(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
+
+	return sprintf(buf, "%d\n", data->config);
 }
 
 static s32 lsm303dlh_m_set_rate(struct i2c_client *client, u8 rate)
@@ -431,48 +617,54 @@ static s32 lsm303dlh_m_set_rate(struct i2c_client *client, u8 rate)
 	struct lsm303dlh_m_data *data = i2c_get_clientdata(client);
 	u8 reg_val;
 
-	reg_val =  (data->config) | (rate << LSM303DLH_M_CRA_DO_BIT);
-	if (rate >= LSM303DLH_M_RATE_RESERVED) {
+	reg_val =  (data->config) | (rate << CRA_DO_BIT);
+	if (rate >= RATE_RESERVED) {
 		dev_err(&client->dev, "given rate not supported\n");
 		return -EINVAL;
 	}
 
-	return i2c_smbus_write_byte_data(client, LSM303DLH_M_CRA_REG, reg_val);
+	return i2c_smbus_write_byte_data(client, CRA_REG_M, reg_val);
 }
+
+static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("0.75 1.5 3.0 7.5 15 30 75");
 
 static ssize_t set_sampling_frequency(struct device *dev,
 				struct device_attribute *attr,
 				const char *buf, size_t count)
 {
-	struct lsm303dlh_m_data *data = iio_priv(dev_get_drvdata(dev));
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
 	struct i2c_client *client = data->client;
 	unsigned long rate = 0;
-	int err;
 
-	err = is_device_on(data);
-	if (err)
-		return err;
-
+	/*
+	 * Perform read/write operation, only when device is active
+	 */
+	if (data->device_status != DEVICE_ON) {
+		dev_info(&client->dev,
+			"device is switched off,make it ON using MODE");
+		return -EINVAL;
+	}
 	if (strncmp(buf, "0.75" , 4) == 0)
-		rate = LSM303DLH_M_RATE_00_75;
+		rate = RATE_00_75;
 
 	else if (strncmp(buf, "1.5" , 3) == 0)
-		rate = LSM303DLH_M_RATE_01_50;
+		rate = RATE_01_50;
 
 	else if (strncmp(buf, "3.0" , 3) == 0)
-		rate = LSM303DLH_M_RATE_03_00;
+		rate = RATE_03_00;
 
 	else if (strncmp(buf, "7.5" , 3) == 0)
-		rate = LSM303DLH_M_RATE_07_50;
+		rate = RATE_07_50;
 
 	else if (strncmp(buf, "15" , 2) == 0)
-		rate = LSM303DLH_M_RATE_15_00;
+		rate = RATE_15_00;
 
 	else if (strncmp(buf, "30" , 2) == 0)
-		rate = LSM303DLH_M_RATE_30_00;
+		rate = RATE_30_00;
 
 	else if (strncmp(buf, "75" , 2) == 0)
-		rate = LSM303DLH_M_RATE_75_00;
+		rate = RATE_75_00;
 	else
 		return -EINVAL;
 
@@ -502,171 +694,140 @@ static const char * const reg_to_rate[] = {
 	"res",
 };
 
-static int xy_to_nanoscale[] = {
-	947870, 1257860, 1574800, 2325580, 2666670, 3125000, 4347830
-};
-
-static int z_to_nanoscale[] = {
-	1052630, 1408450, 17543820, 2597400, 2985070, 3508770, 4878050
-};
-
-static int xy_to_nanoscale_dlhc[] = {
-	 909090, 1169590, 1492540, 2222220, 2500000, 3030300, 4347830
-};
-
-static int z_to_nanoscale_dlhc[] = {
-	1020410, 1315790, 1666660, 2500000, 2816900, 3389830, 4878050
-};
-
-static const char const scale_to_range[] = {
-	LSM303DLH_M_RANGE_1_3G,
-	LSM303DLH_M_RANGE_1_9G,
-	LSM303DLH_M_RANGE_2_5G,
-	LSM303DLH_M_RANGE_4_0G,
-	LSM303DLH_M_RANGE_4_7G,
-	LSM303DLH_M_RANGE_5_6G,
-	LSM303DLH_M_RANGE_8_1G
-};
 static ssize_t show_sampling_frequency(struct device *dev,
 				struct device_attribute *attr,
 				char *buf)
 {
-	struct lsm303dlh_m_data *data = iio_priv(dev_get_drvdata(dev));
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
 
 	return sprintf(buf, "%s\n", reg_to_rate[data->rate]);
 }
 
-static IIO_DEV_ATTR_SAMP_FREQ(S_IWUSR | S_IRUGO,
-			show_sampling_frequency,
-			set_sampling_frequency);
-
-static IIO_CONST_ATTR(magnet_xy_scale_available, xy_scale_avail);
-
-static IIO_CONST_ATTR(magnet_z_scale_available, z_scale_avail);
-
-static int lsm303dlh_write_raw(struct iio_dev *indio_dev,
-			struct iio_chan_spec const *chan,
-			int val, int val2,
-			long mask)
+static ssize_t set_range(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf,
+				size_t count)
 {
-	struct lsm303dlh_m_data *data = iio_priv(indio_dev);
-	int ret = -EINVAL, i;
-	bool flag = false;
-	char end;
-	int *xy_scale;
-	int *z_scale;
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
+	struct i2c_client *client = data->client;
+	struct iio_dev_attr *this_attr = to_iio_dev_attr(attr);
+	unsigned long range = 0;
+	int error;
 
-	switch (mask) {
-	case IIO_CHAN_INFO_SCALE:
-		ret = is_device_on(data);
-		if (ret)
-			return -EINVAL;
-		mutex_lock(&data->lock);
-
-		if (data->pdata->chip_id == LSM303DLHC_CHIP_ID) {
-			xy_scale = xy_to_nanoscale_dlhc;
-			z_scale = z_to_nanoscale_dlhc;
-		} else {
-			xy_scale = xy_to_nanoscale;
-			z_scale = z_to_nanoscale;
-		}
-		end = ARRAY_SIZE(xy_to_nanoscale);
-		if (chan->address == LSM303DLH_M_OUT_X ||
-				chan->address == LSM303DLH_M_OUT_Y) {
-			for (i = 0; i < end; i++) {
-				if (val == xy_scale[i]) {
-					flag = true;
-					break;
-				}
-			}
-		} else if (chan->address == LSM303DLH_M_OUT_Z) {
-			for (i = 0; i < end; i++) {
-				if (val == z_scale[i]) {
-					flag = true;
-					break;
-				}
-			}
-		}
-		if (flag) {
-			ret = lsm303dlh_m_set_range(data->client,
-						scale_to_range[data->range]);
-			data->range = i;
-		}
-		mutex_unlock(&data->lock);
-		break;
-	default:
-		break;
+	/*
+	 * Perform read/write operation, only when device is active
+	 */
+	if (data->device_status != DEVICE_ON) {
+		dev_info(&client->dev,
+			"device is switched off,make it ON using MODE");
+		return -EINVAL;
 	}
-	return ret;
+	mutex_lock(&data->lock);
+
+	error = strict_strtoul(buf, 10, &range);
+	if (error) {
+		count = error;
+		goto exit;
+	}
+	dev_dbg(dev, "setting range to %lu\n", range);
+
+	if (range > RANGE_8_1G || range < RANGE_1_3G) {
+		dev_err(dev, "wrong range %lu\n", range);
+		count = -EINVAL;
+		goto exit;
+	}
+
+	data->range = range;
+	range <<= CRB_GN_BIT;
+
+	if (i2c_smbus_write_byte_data(client, this_attr->address, range)) {
+		count = -EINVAL;
+		goto exit;
+	}
+
+	/* check if chip is DLH/DLHC */
+	if (data->pdata->chip_id == LSM303DLHC_CHIP_ID)
+		set_gain_dlhc(data);
+	else
+		set_gain_dlh(data);
+exit:
+	mutex_unlock(&data->lock);
+	return count;
 }
 
-static int lsm303dlh_read_raw(struct iio_dev *indio_dev,
-			struct iio_chan_spec const *chan,
-			int *val, int *val2,
-			long mask)
-{
-	struct lsm303dlh_m_data *data = iio_priv(indio_dev);
-
-	switch (mask) {
-	case 0:
-		return lsm303dlh_m_xyz_read(indio_dev,
-					chan->address, val);
-	case IIO_CHAN_INFO_SCALE:
-		/* scale for X/Y and Z are different */
-		if (chan->address == LSM303DLH_M_OUT_X ||
-				chan->address == LSM303DLH_M_OUT_Y){
-			/* check if chip is DHLC */
-			if (data->pdata->chip_id == LSM303DLHC_CHIP_ID)
-				*val2 = xy_to_nanoscale_dlhc[data->range];
-			else
-				*val2 = xy_to_nanoscale[data->range];
-		} else {
-			/* check if chip is DHLC */
-			if (data->pdata->chip_id == LSM303DLHC_CHIP_ID)
-				*val2 = z_to_nanoscale_dlhc[data->range];
-			else
-				*val2 = z_to_nanoscale[data->range];
-		}
-
-		return IIO_VAL_INT_PLUS_NANO;
-	default:
-		break;
-	}
-	return -EINVAL;
-}
-
-#define LSM303DLH_CHANNEL(axis, addr)				\
-	{							\
-		.type = IIO_MAGN,				\
-		.modified = 1,					\
-		.channel2 = IIO_MOD_##axis,			\
-		.info_mask = IIO_CHAN_INFO_SCALE_SEPARATE_BIT,	\
-		.address = addr,				\
-	}
-
-static const struct iio_chan_spec lsmdlh303_channels[] = {
-	LSM303DLH_CHANNEL(X, LSM303DLH_M_OUT_X),
-	LSM303DLH_CHANNEL(Y, LSM303DLH_M_OUT_Y),
-	LSM303DLH_CHANNEL(Z, LSM303DLH_M_OUT_Z),
+/*
+ * array of register bit values to mgauss first element is 0
+ * as register definition starts from 1.
+ */
+static const int reg_to_gauss[] = {
+		0,
+		1300,
+		1900,
+		2500,
+		4000,
+		4700,
+		5600,
+		8100
 };
 
+static ssize_t show_range(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct lsm303dlh_m_data *data = indio_dev->dev_data;
+
+	return sprintf(buf, "%d\n", reg_to_gauss[data->range]);
+}
+
+static IIO_DEV_ATTR_MAGN_X(lsm303dlh_m_xyz_read,
+			OUT_X_M);
+static IIO_DEV_ATTR_MAGN_Y(lsm303dlh_m_xyz_read,
+			OUT_Y_M);
+static IIO_DEV_ATTR_MAGN_Z(lsm303dlh_m_xyz_read,
+			OUT_Z_M);
+
+static IIO_DEVICE_ATTR(sampling_frequency,
+			S_IWUSR | S_IRUGO,
+			show_sampling_frequency,
+			set_sampling_frequency,
+			CRA_REG_M);
+static IIO_DEVICE_ATTR(magn_range,
+			S_IWUSR | S_IRUGO,
+			show_range,
+			set_range,
+			CRB_REG_M);
 static IIO_DEVICE_ATTR(mode,
 			S_IWUSR | S_IRUGO,
 			show_operating_mode,
 			set_operating_mode,
-			LSM303DLH_M_MR_REG);
-static IIO_DEVICE_ATTR(magn_raw, S_IRUGO,
+			MR_REG_M);
+static IIO_DEVICE_ATTR(config, S_IWUSR | S_IRUGO,
+			show_configuration,
+			set_configuration,
+			CRA_REG_M);
+static IIO_DEVICE_ATTR(data, S_IRUGO,
 			lsm303dlh_m_readdata,
 			NULL,
-			LSM303DLH_M_OUT_X);
+			OUT_X_M);
+static IIO_DEVICE_ATTR(magn_gain, S_IRUGO,
+			lsm303dlh_m_gain,
+			NULL,
+			0);
 
 static struct attribute *lsm303dlh_m_attributes[] = {
+	&iio_dev_attr_config.dev_attr.attr,
 	&iio_dev_attr_mode.dev_attr.attr,
+	&iio_dev_attr_magn_range.dev_attr.attr,
 	&iio_dev_attr_sampling_frequency.dev_attr.attr,
-	&iio_dev_attr_magn_raw.dev_attr.attr,
+	&iio_dev_attr_magn_x_raw.dev_attr.attr,
+	&iio_dev_attr_magn_y_raw.dev_attr.attr,
+	&iio_dev_attr_magn_z_raw.dev_attr.attr,
+	&iio_dev_attr_data.dev_attr.attr,
+	&iio_dev_attr_magn_gain.dev_attr.attr,
 	&iio_const_attr_sampling_frequency_available.dev_attr.attr,
-	&iio_const_attr_magnet_xy_scale_available.dev_attr.attr,
-	&iio_const_attr_magnet_z_scale_available.dev_attr.attr,
 	NULL
 };
 
@@ -676,175 +837,190 @@ static const struct attribute_group lsmdlh303m_group = {
 
 static const struct iio_info lsmdlh303m_info = {
 	.attrs = &lsmdlh303m_group,
-	.read_raw = &lsm303dlh_read_raw,
-	.write_raw = &lsm303dlh_write_raw,
 	.driver_module = THIS_MODULE,
 };
 
-static void lsm303dlh_m_setup(struct lsm303dlh_m_data *data)
+static s32 lsm303dlh_config(struct i2c_client *client,	u8 mode)
 {
-	/* set the magnetic sensor operating mode */
-	lsm303dlh_set_config(data->client, data->config);
-	/* set to the default rate */
-	lsm303dlh_m_set_rate(data->client, data->rate);
-	/* set the magnetic sensor mode */
-	lsm303dlh_config(data->client, data->mode);
-	/* set the range */
-	lsm303dlh_m_set_range(data->client, scale_to_range[data->range]);
+	/* the lower two bits indicates the magnetic sensor mode */
+	return i2c_smbus_write_byte_data(client, MR_REG_M, mode & 0x03);
 }
 
-#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
-static int lsm303dlh_m_suspend(struct device *dev)
+static void lsm303dlh_m_setup(struct i2c_client *client)
 {
-	struct lsm303dlh_m_data *data = iio_priv(dev_get_drvdata(dev));
+	struct lsm303dlh_m_data *data = i2c_get_clientdata(client);
+
+	lsm303dlh_set_config(client, data->config);
+	lsm303dlh_m_set_rate(client, data->rate);
+	lsm303dlh_config(client, data->mode);
+	/* set the range */
+	i2c_smbus_write_byte_data(client, CRB_REG_M, data->range);
+}
+
+#if defined(CONFIG_HAS_EARLYSUSPEND) || defined(CONFIG_PM)
+static int lsm303dlh_m_do_suspend(struct lsm303dlh_m_data *data)
+{
 	int ret = 0;
 
-	if (data->mode == LSM303DLH_M_SLEEP_MODE)
+	if (data->mode == SLEEP_MODE)
 		return 0;
 
 	mutex_lock(&data->lock);
 
 	/* Set the device to sleep mode */
-	lsm303dlh_config(data->client, LSM303DLH_M_SLEEP_MODE);
+	lsm303dlh_config(data->client, SLEEP_MODE);
 
 	/* Disable regulator */
 	lsm303dlh_m_disable(data);
 
-	data->device_status = LSM303DLH_M_DEVICE_SUSPENDED;
+	data->device_status = DEVICE_SUSPENDED;
 
 	mutex_unlock(&data->lock);
+
+	return ret;
+}
+
+static int lsm303dlh_m_restore(struct lsm303dlh_m_data *data)
+{
+	int ret = 0;
+
+	if (data->device_status == DEVICE_ON ||
+		data->device_status == DEVICE_OFF) {
+		return 0;
+	}
+	mutex_lock(&data->lock);
+
+	/* Enable regulator */
+	lsm303dlh_m_enable(data);
+
+	/* Setup device parameters */
+	lsm303dlh_m_setup(data->client);
+
+	mutex_unlock(&data->lock);
+	return ret;
+}
+#endif
+
+#ifndef CONFIG_HAS_EARLYSUSPEND
+#ifdef CONFIG_PM
+static int lsm303dlh_m_suspend(struct device *dev)
+{
+	struct lsm303dlh_m_data *data;
+	int ret;
+
+	data = dev_get_drvdata(dev);
+
+	ret = lsm303dlh_m_do_suspend(data);
+	if (ret < 0)
+		dev_err(&data->client->dev,
+				"Error while suspending the device");
 
 	return ret;
 }
 
 static int lsm303dlh_m_resume(struct device *dev)
 {
-	struct lsm303dlh_m_data *data = iio_priv(dev_get_drvdata(dev));
-	int ret = 0;
+	struct lsm303dlh_m_data *data;
+	int ret;
 
-	if (data->device_status == LSM303DLH_M_DEVICE_ON ||
-		data->device_status == LSM303DLH_M_DEVICE_OFF) {
-		return 0;
-	}
-	mutex_lock(&data->lock);
+	data = dev_get_drvdata(dev);
 
-	/* Enable regulator */
-	lsm303dlh_m_enable(data);
+	ret = lsm303dlh_m_restore(data);
 
-	/* Setup device parameters */
-	lsm303dlh_m_setup(data);
+	if (ret < 0)
+		dev_err(&data->client->dev,
+				"Error while resuming the device");
 
-	mutex_unlock(&data->lock);
 	return ret;
 }
-
 static const struct dev_pm_ops lsm303dlh_m_dev_pm_ops = {
 	.suspend = lsm303dlh_m_suspend,
-	.resume = lsm303dlh_m_resume,
+	.resume  = lsm303dlh_m_resume,
 };
 #endif
-#ifdef CONFIG_HAS_EARLYSUSPEND
+#else
 static void lsm303dlh_m_early_suspend(struct early_suspend *data)
 {
 	struct lsm303dlh_m_data *ddata =
 		container_of(data, struct lsm303dlh_m_data, early_suspend);
+	int ret;
 
-	if (ddata->mode == LSM303DLH_M_SLEEP_MODE)
-		return;
-
-	mutex_lock(&ddata->lock);
-
-	/* Set the device to sleep mode */
-	lsm303dlh_config(ddata->client, LSM303DLH_M_SLEEP_MODE);
-
-	/* Disable regulator */
-	lsm303dlh_m_disable(ddata);
-
-	ddata->device_status = LSM303DLH_M_DEVICE_SUSPENDED;
-
-	mutex_unlock(&ddata->lock);
+	ret = lsm303dlh_m_do_suspend(ddata);
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"Error while suspending the device");
 }
 
 static void lsm303dlh_m_late_resume(struct early_suspend *data)
 {
 	struct lsm303dlh_m_data *ddata =
 		container_of(data, struct lsm303dlh_m_data, early_suspend);
+	int ret;
 
-	if (ddata->device_status == LSM303DLH_M_DEVICE_ON ||
-		ddata->device_status == LSM303DLH_M_DEVICE_OFF) {
-		return;
-	}
-	mutex_lock(&ddata->lock);
+	ret = lsm303dlh_m_restore(ddata);
 
-	/* Enable regulator */
-	lsm303dlh_m_enable(ddata);
-
-	/* Setup device parameters */
-	lsm303dlh_m_setup(ddata);
-
-	mutex_unlock(&ddata->lock);
-
+	if (ret < 0)
+		dev_err(&ddata->client->dev,
+				"lsm303dlh_m late resume failed\n");
 }
-#endif
+#endif /* CONFIG_HAS_EARLYSUSPEND */
 
 static int lsm303dlh_m_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
+					const struct i2c_device_id *id)
 {
 	struct lsm303dlh_m_data *data;
-	struct iio_dev *indio_dev;
-	int err;
+	int err = 0;
 
-	indio_dev = iio_allocate_device(sizeof(*data));
-	if (indio_dev == NULL) {
+	data = kzalloc(sizeof(struct lsm303dlh_m_data), GFP_KERNEL);
+	if (!data) {
 		dev_err(&client->dev, "memory allocation failed\n");
 		err = -ENOMEM;
 		goto exit;
 	}
-
-	data = iio_priv(indio_dev);
-
-	data->mode = LSM303DLH_M_SLEEP_MODE;
-	data->config = LSM303DLH_M_NORMAL_CFG;
-	data->range = LSM303DLH_M_RANGE_1_3G;
-	data->rate = LSM303DLH_M_RATE_00_75;
-
-	data->client = client;
-
 	/* check for valid platform data */
 	if (!client->dev.platform_data) {
 		dev_err(&client->dev, "Invalid platform data\n");
 		err = -ENOMEM;
 		goto exit1;
 	}
-
 	data->pdata = client->dev.platform_data;
 
-	i2c_set_clientdata(client, indio_dev);
+	data->mode = SLEEP_MODE;
+	data->config = NORMAL_CFG;
+	data->range = RANGE_1_3G;
+	data->rate = RATE_00_75;
+	data->device_status = DEVICE_OFF;
+	data->client = client;
+
+	i2c_set_clientdata(client, data);
 
 	data->regulator = regulator_get(&client->dev, "vdd");
 	if (IS_ERR(data->regulator)) {
-		dev_err(&client->dev, "failed to get regulator\n");
 		err = PTR_ERR(data->regulator);
+		dev_err(&client->dev, "failed to get regulator = %d\n", err);
 		goto exit1;
 	}
-
-	/* enable regulators */
+	/* Enable regulator */
 	lsm303dlh_m_enable(data);
 
-	lsm303dlh_m_setup(data);
+	lsm303dlh_m_setup(client);
 
 	mutex_init(&data->lock);
 
-	indio_dev->info = &lsmdlh303m_info;
-	indio_dev->name = id->name;
-	indio_dev->dev.parent = &client->dev;
-	indio_dev->channels = lsmdlh303_channels;
-	indio_dev->num_channels = ARRAY_SIZE(lsmdlh303_channels);
-	indio_dev->modes = INDIO_DIRECT_MODE;
-
-	err = iio_device_register(indio_dev);
-	if (err)
+	data->indio_dev = iio_allocate_device(0);
+	if (!data->indio_dev) {
+		dev_err(&client->dev, "iio allocation failed\n");
+		err = -ENOMEM;
 		goto exit2;
+	}
+	data->indio_dev->info = &lsmdlh303m_info;
+	data->indio_dev->dev.parent = &client->dev;
+	data->indio_dev->dev_data = (void *)data;
+	data->indio_dev->modes = INDIO_DIRECT_MODE;
+
+	err = iio_device_register(data->indio_dev);
+	if (err)
+		goto exit3;
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	data->early_suspend.level =
@@ -853,54 +1029,45 @@ static int lsm303dlh_m_probe(struct i2c_client *client,
 	data->early_suspend.resume = lsm303dlh_m_late_resume;
 	register_early_suspend(&data->early_suspend);
 #endif
-
-	/* disable regulator */
+	/* Disable regulator */
 	lsm303dlh_m_disable(data);
-
-	if (data->pdata->chip_id == LSM303DLHC_CHIP_ID)	{
-		strcpy(xy_scale_avail, "909090, 1169590, 1492540, 2222220, 2500000, 3030300, 4347830");
-		strcpy(z_scale_avail, "1020410, 1315790, 1666660, 2500000, 2816900, 3389830, 4878050");
-	} else {
-		strcpy(xy_scale_avail, "947870, 1257860, 1574800, 2325580, 2666670, 3125000, 4347830");
-		strcpy(z_scale_avail, "947870, 1257860, 1574800, 2325580, 2666670, 3125000, 4347830");
-	}
 
 	return 0;
 
+exit3:
+	iio_free_device(data->indio_dev);
 exit2:
-	regulator_disable(data->regulator);
-	mutex_destroy(&data->lock);
+	lsm303dlh_m_disable(data);
 	regulator_put(data->regulator);
 exit1:
-	iio_free_device(indio_dev);
+	kfree(data);
 exit:
 	return err;
 }
 
 static int __devexit lsm303dlh_m_remove(struct i2c_client *client)
 {
-	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-	struct lsm303dlh_m_data *data = iio_priv(indio_dev);
+	struct lsm303dlh_m_data *data = i2c_get_clientdata(client);
 	int ret;
 
-	/* its safe to set the mode to sleep */
-	if (data->mode != LSM303DLH_M_SLEEP_MODE) {
-		ret = lsm303dlh_config(client, LSM303DLH_M_SLEEP_MODE);
+	/* safer to make device off */
+	if (data->mode != SLEEP_MODE) {
+		/* set mode to off */
+		ret = lsm303dlh_config(client, SLEEP_MODE);
 		if (ret < 0) {
-			dev_err(&client->dev,
-				"could not place the device in sleep mode %d",
-				ret);
+			dev_err(&client->dev, "could not turn"
+					"off the device %d", ret);
 			return ret;
 		}
-		if (data->device_status == LSM303DLH_M_DEVICE_ON)
+		if (data->regulator && data->device_status == DEVICE_ON) {
 			regulator_disable(data->regulator);
-		data->device_status = LSM303DLH_M_DEVICE_OFF;
+			data->device_status = DEVICE_OFF;
+		}
 	}
 	regulator_put(data->regulator);
-	mutex_destroy(&data->lock);
-	iio_device_unregister(indio_dev);
-	iio_free_device(indio_dev);
-
+	iio_device_unregister(data->indio_dev);
+	iio_free_device(data->indio_dev);
+	kfree(data);
 	return 0;
 }
 
@@ -908,13 +1075,12 @@ static const struct i2c_device_id lsm303dlh_m_id[] = {
 	{ "lsm303dlh_m", 0 },
 	{ },
 };
-MODULE_DEVICE_TABLE(i2c, lsm303dlh_m_id);
 
 static struct i2c_driver lsm303dlh_m_driver = {
 	.driver = {
 		.name	= "lsm303dlh_m",
 	#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
-		.pm	= &lsm303dlh_m_dev_pm_ops,
+		.pm = &lsm303dlh_m_dev_pm_ops,
 	#endif
 	},
 	.id_table	= lsm303dlh_m_id,
@@ -922,7 +1088,18 @@ static struct i2c_driver lsm303dlh_m_driver = {
 	.remove		= lsm303dlh_m_remove,
 };
 
-module_i2c_driver(lsm303dlh_m_driver);
+static int __init lsm303dlh_m_init(void)
+{
+	return i2c_add_driver(&lsm303dlh_m_driver);
+}
+
+static void __exit lsm303dlh_m_exit(void)
+{
+	i2c_del_driver(&lsm303dlh_m_driver);
+}
+
+module_init(lsm303dlh_m_init);
+module_exit(lsm303dlh_m_exit);
 
 MODULE_DESCRIPTION("lsm303dlh Magnetometer Driver");
 MODULE_LICENSE("GPL");

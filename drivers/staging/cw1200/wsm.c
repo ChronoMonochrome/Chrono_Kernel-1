@@ -15,13 +15,11 @@
 #include <linux/skbuff.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
-#include <linux/random.h>
 
 #include "cw1200.h"
 #include "wsm.h"
 #include "bh.h"
 #include "debug.h"
-#include "itp.h"
 
 #if defined(CONFIG_CW1200_WSM_DEBUG)
 #define wsm_printk(...) printk(__VA_ARGS__)
@@ -29,33 +27,34 @@
 #define wsm_printk(...)
 #endif
 
-#define WSM_CMD_TIMEOUT		(2 * HZ) /* With respect to interrupt loss */
-#define WSM_CMD_JOIN_TIMEOUT	(7 * HZ) /* Join timeout is 5 sec. in FW   */
+#define WSM_CMD_TIMEOUT		(1 * HZ)
+#define WSM_CMD_JOIN_TIMEOUT	(7 * HZ) /* Join timeout is 5 sec. in FW */
 #define WSM_CMD_START_TIMEOUT	(7 * HZ)
-#define WSM_CMD_RESET_TIMEOUT	(3 * HZ) /* 2 sec. timeout was observed.   */
+#define WSM_TX_TIMEOUT		(1 * HZ)
+#define WSM_CMD_LAST_CHANCE_TIMEOUT (10 * HZ)
 
 #define WSM_SKIP(buf, size)						\
 	do {								\
-		if (unlikely((buf)->data + size > (buf)->end))		\
+		if (unlikely(buf->data + size > buf->end))		\
 			goto underflow;					\
-		(buf)->data += size;					\
+		buf->data += size;					\
 	} while (0)
 
 #define WSM_GET(buf, ptr, size)						\
 	do {								\
-		if (unlikely((buf)->data + size > (buf)->end))		\
+		if (unlikely(buf->data + size > buf->end))		\
 			goto underflow;					\
-		memcpy(ptr, (buf)->data, size);				\
-		(buf)->data += size;					\
+		memcpy(ptr, buf->data, size);				\
+		buf->data += size;					\
 	} while (0)
 
 #define __WSM_GET(buf, type, cvt)					\
 	({								\
 		type val;						\
-		if (unlikely((buf)->data + sizeof(type) > (buf)->end))	\
+		if (unlikely(buf->data + sizeof(type) > buf->end))	\
 			goto underflow;					\
-		val = cvt(*(type *)(buf)->data);			\
-		(buf)->data += sizeof(type);				\
+		val = cvt(*(type *)buf->data);				\
+		buf->data += sizeof(type);				\
 		val;							\
 	})
 
@@ -65,20 +64,20 @@
 
 #define WSM_PUT(buf, ptr, size)						\
 	do {								\
-		if (unlikely((buf)->data + size > (buf)->end))		\
-			if (unlikely(wsm_buf_reserve((buf), size)))	\
+		if (unlikely(buf->data + size > buf->end))		\
+			if (unlikely(wsm_buf_reserve(buf, size)))	\
 				goto nomem;				\
-		memcpy((buf)->data, ptr, size);				\
-		(buf)->data += size;					\
+		memcpy(buf->data, ptr, size);				\
+		buf->data += size;					\
 	} while (0)
 
-#define __WSM_PUT(buf, val, type, cvt)					\
-	do {								\
-		if (unlikely((buf)->data + sizeof(type) > (buf)->end))	\
-			if (unlikely(wsm_buf_reserve((buf), sizeof(type)))) \
-				goto nomem;				\
-		*(type *)(buf)->data = cvt(val);			\
-		(buf)->data += sizeof(type);				\
+#define __WSM_PUT(buf, val, type, cvt)					  \
+	do {								  \
+		if (unlikely(buf->data + sizeof(type) > buf->end))	  \
+			if (unlikely(wsm_buf_reserve(buf, sizeof(type)))) \
+				goto nomem;				  \
+		*(type *)buf->data = cvt(val);				  \
+		buf->data += sizeof(type);				  \
 	} while (0)
 
 #define WSM_PUT8(buf, val)  __WSM_PUT(buf, val, u8, (u8))
@@ -180,12 +179,12 @@ int wsm_reset(struct cw1200_common *priv, const struct wsm_reset *arg)
 {
 	int ret;
 	struct wsm_buf *buf = &priv->wsm_cmd_buf;
-	u16 cmd = 0x000A | WSM_TX_LINK_ID(arg->link_id);
+	u16 cmd = 0x000A | ((arg->link_id & 0x0F) << 6);
 
 	wsm_cmd_lock(priv);
 
 	WSM_PUT32(buf, arg->reset_statistics ? 0 : 1);
-	ret = wsm_cmd_send(priv, buf, NULL, cmd, WSM_CMD_RESET_TIMEOUT);
+	ret = wsm_cmd_send(priv, buf, NULL, cmd, WSM_CMD_TIMEOUT);
 	wsm_cmd_unlock(priv);
 	return ret;
 
@@ -362,9 +361,7 @@ int wsm_stop_scan(struct cw1200_common *priv)
 }
 
 
-static int wsm_tx_confirm(struct cw1200_common *priv,
-			  struct wsm_buf *buf,
-			  int link_id)
+static int wsm_tx_confirm(struct cw1200_common *priv, struct wsm_buf *buf)
 {
 	struct wsm_tx_confirm tx_confirm;
 
@@ -375,7 +372,6 @@ static int wsm_tx_confirm(struct cw1200_common *priv,
 	tx_confirm.flags = WSM_GET16(buf);
 	tx_confirm.mediaDelay = WSM_GET32(buf);
 	tx_confirm.txQueueDelay = WSM_GET32(buf);
-	tx_confirm.link_id = link_id;
 
 	if (priv->wsm_cbc.tx_confirm)
 		priv->wsm_cbc.tx_confirm(priv, &tx_confirm);
@@ -387,7 +383,7 @@ underflow:
 }
 
 static int wsm_multi_tx_confirm(struct cw1200_common *priv,
-				struct wsm_buf *buf, int link_id)
+				struct wsm_buf *buf)
 {
 	int ret;
 	int count;
@@ -406,7 +402,7 @@ static int wsm_multi_tx_confirm(struct cw1200_common *priv,
 
 	cw1200_debug_txed_multi(priv, count);
 	for (i = 0; i < count; ++i) {
-		ret = wsm_tx_confirm(priv, buf, link_id);
+		ret = wsm_tx_confirm(priv, buf);
 		if (ret)
 			return ret;
 	}
@@ -423,16 +419,23 @@ static int wsm_join_confirm(struct cw1200_common *priv,
 			    struct wsm_join *arg,
 			    struct wsm_buf *buf)
 {
-	if (WARN_ON(WSM_GET32(buf) != WSM_STATUS_SUCCESS))
+	if (WARN_ON(WSM_GET32(buf) != WSM_STATUS_SUCCESS)) {
+		priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
+		wsm_unlock_tx(priv);
 		return -EINVAL;
+	}
 
 	arg->minPowerLevel = WSM_GET32(buf);
 	arg->maxPowerLevel = WSM_GET32(buf);
 
+	priv->join_status = CW1200_JOIN_STATUS_STA;
+	wsm_unlock_tx(priv);
 	return 0;
 
 underflow:
 	WARN_ON(1);
+	priv->join_status = CW1200_JOIN_STATUS_PASSIVE;
+	wsm_unlock_tx(priv);
 	return -EINVAL;
 }
 
@@ -456,7 +459,6 @@ int wsm_join(struct cw1200_common *priv, struct wsm_join *arg)
 	WSM_PUT32(buf, arg->beaconInterval);
 	WSM_PUT32(buf, arg->basicRateSet);
 
-	priv->tx_burst_idx = -1;
 	ret = wsm_cmd_send(priv, buf, arg, 0x000B, WSM_CMD_JOIN_TIMEOUT);
 	wsm_cmd_unlock(priv);
 	return ret;
@@ -538,15 +540,15 @@ nomem:
 /* ******************************************************************** */
 
 int wsm_set_tx_queue_params(struct cw1200_common *priv,
-		const struct wsm_set_tx_queue_params *arg, u8 id)
+				const struct wsm_set_tx_queue_params *arg)
 {
 	int ret;
 	struct wsm_buf *buf = &priv->wsm_cmd_buf;
-	u8 queue_id_to_wmm_aci[] = {3, 2, 0, 1};
 
 	wsm_cmd_lock(priv);
 
-	WSM_PUT8(buf, queue_id_to_wmm_aci[id]);
+	/* TODO: verify me. */
+	WSM_PUT8(buf, arg->queueId);
 	WSM_PUT8(buf, 0);
 	WSM_PUT8(buf, arg->ackPolicy);
 	WSM_PUT8(buf, 0);
@@ -574,32 +576,34 @@ int wsm_set_edca_params(struct cw1200_common *priv,
 
 	wsm_cmd_lock(priv);
 
-	/* Implemented according to specification. */
+	/* TODO: verify me. */
+	/* Implemented according to specification. Note that there is a
+	 * mismatch in BK and BE mapping. */
 
-	WSM_PUT16(buf, arg->params[3].cwMin);
-	WSM_PUT16(buf, arg->params[2].cwMin);
 	WSM_PUT16(buf, arg->params[1].cwMin);
 	WSM_PUT16(buf, arg->params[0].cwMin);
+	WSM_PUT16(buf, arg->params[2].cwMin);
+	WSM_PUT16(buf, arg->params[3].cwMin);
 
-	WSM_PUT16(buf, arg->params[3].cwMax);
-	WSM_PUT16(buf, arg->params[2].cwMax);
 	WSM_PUT16(buf, arg->params[1].cwMax);
 	WSM_PUT16(buf, arg->params[0].cwMax);
+	WSM_PUT16(buf, arg->params[2].cwMax);
+	WSM_PUT16(buf, arg->params[3].cwMax);
 
-	WSM_PUT8(buf, arg->params[3].aifns);
-	WSM_PUT8(buf, arg->params[2].aifns);
 	WSM_PUT8(buf, arg->params[1].aifns);
 	WSM_PUT8(buf, arg->params[0].aifns);
+	WSM_PUT8(buf, arg->params[2].aifns);
+	WSM_PUT8(buf, arg->params[3].aifns);
 
-	WSM_PUT16(buf, arg->params[3].txOpLimit);
-	WSM_PUT16(buf, arg->params[2].txOpLimit);
 	WSM_PUT16(buf, arg->params[1].txOpLimit);
 	WSM_PUT16(buf, arg->params[0].txOpLimit);
+	WSM_PUT16(buf, arg->params[2].txOpLimit);
+	WSM_PUT16(buf, arg->params[3].txOpLimit);
 
-	WSM_PUT32(buf, arg->params[3].maxReceiveLifetime);
-	WSM_PUT32(buf, arg->params[2].maxReceiveLifetime);
 	WSM_PUT32(buf, arg->params[1].maxReceiveLifetime);
 	WSM_PUT32(buf, arg->params[0].maxReceiveLifetime);
+	WSM_PUT32(buf, arg->params[2].maxReceiveLifetime);
+	WSM_PUT32(buf, arg->params[3].maxReceiveLifetime);
 
 	ret = wsm_cmd_send(priv, buf, NULL, 0x0013, WSM_CMD_TIMEOUT);
 	wsm_cmd_unlock(priv);
@@ -650,10 +654,7 @@ int wsm_set_pm(struct cw1200_common *priv, const struct wsm_set_pm *arg)
 
 	wsm_cmd_lock(priv);
 
-	WSM_PUT8(buf, arg->pmMode);
-	WSM_PUT8(buf, arg->fastPsmIdlePeriod);
-	WSM_PUT8(buf, arg->apPsmChangePeriod);
-	WSM_PUT8(buf, arg->minAutoPsPollPeriod);
+	WSM_PUT32(buf, arg->pmMode);
 
 	ret = wsm_cmd_send(priv, buf, NULL, 0x0010, WSM_CMD_TIMEOUT);
 
@@ -686,7 +687,6 @@ int wsm_start(struct cw1200_common *priv, const struct wsm_start *arg)
 	WSM_PUT(buf, arg->ssid, sizeof(arg->ssid));
 	WSM_PUT32(buf, arg->basicRateSet);
 
-	priv->tx_burst_idx = -1;
 	ret = wsm_cmd_send(priv, buf, NULL, 0x0017, WSM_CMD_START_TIMEOUT);
 
 	wsm_cmd_unlock(priv);
@@ -751,7 +751,7 @@ int wsm_map_link(struct cw1200_common *priv, const struct wsm_map_link *arg)
 {
 	int ret;
 	struct wsm_buf *buf = &priv->wsm_cmd_buf;
-	u16 cmd = 0x001C | WSM_TX_LINK_ID(arg->link_id);
+	u16 cmd = 0x001C | ((arg->link_id & 0x0F) << 6);
 
 	wsm_cmd_lock(priv);
 
@@ -768,30 +768,6 @@ nomem:
 	return -ENOMEM;
 }
 
-/* ******************************************************************** */
-
-int wsm_update_ie(struct cw1200_common *priv,
-		  const struct wsm_update_ie *arg)
-{
-	int ret;
-	struct wsm_buf *buf = &priv->wsm_cmd_buf;
-
-	wsm_cmd_lock(priv);
-
-	WSM_PUT16(buf, arg->what);
-	WSM_PUT16(buf, arg->count);
-	WSM_PUT(buf, arg->ies, arg->length);
-
-	ret = wsm_cmd_send(priv, buf, NULL, 0x001B, WSM_CMD_TIMEOUT);
-
-	wsm_cmd_unlock(priv);
-	return ret;
-
-nomem:
-	wsm_cmd_unlock(priv);
-	return -ENOMEM;
-
-}
 
 /* ******************************************************************** */
 /* WSM indication events implementation					*/
@@ -842,7 +818,7 @@ static int wsm_startup_indication(struct cw1200_common *priv,
 
 	priv->wsm_caps.firmwareReady = 1;
 
-	wake_up(&priv->wsm_startup_done);
+	wake_up_interruptible(&priv->wsm_startup_done);
 	return 0;
 
 underflow:
@@ -851,14 +827,12 @@ underflow:
 }
 
 static int wsm_receive_indication(struct cw1200_common *priv,
-					int link_id,
 					struct wsm_buf *buf,
 					struct sk_buff **skb_p)
 {
 	priv->rx_timestamp = jiffies;
 	if (priv->wsm_cbc.rx) {
 		struct wsm_rx rx;
-		struct ieee80211_hdr *hdr;
 		size_t hdr_len;
 		__le16 fctl;
 
@@ -867,22 +841,6 @@ static int wsm_receive_indication(struct cw1200_common *priv,
 		rx.rxedRate = WSM_GET8(buf);
 		rx.rcpiRssi = WSM_GET8(buf);
 		rx.flags = WSM_GET32(buf);
-
-		/* FW Workaround: Drop probe resp or
-		beacon when RSSI is 0 */
-		hdr = (struct ieee80211_hdr *) (*skb_p)->data;
-
-		if (!rx.rcpiRssi &&
-		    (ieee80211_is_probe_resp(hdr->frame_control) ||
-		    ieee80211_is_beacon(hdr->frame_control)))
-			return 0;
-
-		/* If no RSSI subscription has been made,
-		* convert RCPI to RSSI here */
-		if (!priv->cqm_use_rssi)
-			rx.rcpiRssi = rx.rcpiRssi / 2 - 110;
-
-		rx.link_id = link_id;
 		fctl = *(__le16 *)buf->data;
 		hdr_len = buf->data - buf->begin;
 		skb_pull(*skb_p, hdr_len);
@@ -947,7 +905,7 @@ static int wsm_channel_switch_indication(struct cw1200_common *priv,
 	WARN_ON(WSM_GET32(buf));
 
 	priv->channel_switch_in_progress = 0;
-	wake_up(&priv->channel_switch_done);
+	wake_up_interruptible(&priv->channel_switch_done);
 
 	if (priv->wsm_cbc.channel_switch)
 		priv->wsm_cbc.channel_switch(priv);
@@ -1053,7 +1011,7 @@ int wsm_cmd_send(struct cw1200_common *priv,
 		do {
 			/* It's safe to use unprotected access to
 			 * wsm_cmd.done here */
-			ret = wait_event_timeout(
+			ret = wait_event_interruptible_timeout(
 					priv->wsm_cmd_wq,
 					priv->wsm_cmd.done, tmo);
 			rx_timestamp = jiffies - priv->rx_timestamp;
@@ -1077,14 +1035,10 @@ int wsm_cmd_send(struct cw1200_common *priv,
 			/* If wsm_handle_rx got stuck in _confirm we will hang
 			 * system there. It's better than silently currupt
 			 * stack or heap, isn't it? */
-			BUG_ON(wait_event_timeout(
+			BUG_ON(wait_event_interruptible_timeout(
 					priv->wsm_cmd_wq, priv->wsm_cmd.done,
 					WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
 		}
-
-		/* Kill BH thread to report the error to the top layer. */
-		priv->bh_error = 1;
-		wake_up(&priv->bh_wq);
 		ret = -ETIMEDOUT;
 	} else {
 		spin_lock(&priv->wsm_cmd.lock);
@@ -1103,8 +1057,9 @@ void wsm_lock_tx(struct cw1200_common *priv)
 {
 	wsm_cmd_lock(priv);
 	if (atomic_add_return(1, &priv->tx_lock) == 1) {
-		if (wsm_flush_tx(priv))
-			wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
+		WARN_ON(wait_event_interruptible_timeout(priv->hw_bufs_used_wq,
+			!priv->hw_bufs_used, WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
+		wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
 	}
 	wsm_cmd_unlock(priv);
 }
@@ -1112,68 +1067,25 @@ void wsm_lock_tx(struct cw1200_common *priv)
 void wsm_lock_tx_async(struct cw1200_common *priv)
 {
 	if (atomic_add_return(1, &priv->tx_lock) == 1)
-		wsm_printk(KERN_DEBUG "[WSM] TX is locked (async).\n");
+		wsm_printk(KERN_DEBUG "[WSM] TX is locked.\n");
 }
 
-bool wsm_flush_tx(struct cw1200_common *priv)
+void wsm_flush_tx(struct cw1200_common *priv)
 {
-	unsigned long timestamp = jiffies;
-	bool pending = false;
-	long timeout;
-	int i;
-
-	/* Flush must be called with TX lock held. */
 	BUG_ON(!atomic_read(&priv->tx_lock));
-
-	/* First check if we really need to do something.
-	 * It is safe to use unprotected access, as hw_bufs_used
-	 * can only decrements. */
-	if (!priv->hw_bufs_used)
-		return true;
-
-	if (priv->bh_error) {
-		/* In case of failure do not wait for magic. */
-		wsm_printk(KERN_ERR "[WSM] Fatal error occured, "
-				"will not flush TX.\n");
-		return false;
-	} else {
-		/* Get a timestamp of "oldest" frame */
-		for (i = 0; i < 4; ++i)
-			pending |= cw1200_queue_get_xmit_timestamp(
-					&priv->tx_queue[i],
-					&timestamp);
-		/* It is allowed to lock TX with only a command in the pipe. */
-		if (!pending)
-			return true;
-
-		timeout = timestamp + WSM_CMD_LAST_CHANCE_TIMEOUT - jiffies;
-		if (timeout < 0 || wait_event_timeout(priv->bh_evt_wq,
-				!priv->hw_bufs_used,
-				timeout) <= 0) {
-			/* Hmmm... Not good. Frame had stuck in firmware. */
-			priv->bh_error = 1;
-			wake_up(&priv->bh_wq);
-			return false;
-		}
-
-		/* Ok, everything is flushed. */
-		return true;
-	}
+	WARN_ON(wait_event_interruptible_timeout(priv->hw_bufs_used_wq,
+		!priv->hw_bufs_used, WSM_CMD_LAST_CHANCE_TIMEOUT) <= 0);
 }
 
 void wsm_unlock_tx(struct cw1200_common *priv)
 {
 	int tx_lock;
-	if (priv->bh_error)
-		wsm_printk(KERN_ERR "fatal error occured, unlock is unsafe\n");
-	else {
-		tx_lock = atomic_sub_return(1, &priv->tx_lock);
-		if (tx_lock < 0) {
-			BUG_ON(1);
-		} else if (tx_lock == 0) {
-			cw1200_bh_wakeup(priv);
-			wsm_printk(KERN_DEBUG "[WSM] TX is unlocked.\n");
-		}
+	tx_lock = atomic_sub_return(1, &priv->tx_lock);
+	if (tx_lock < 0) {
+		BUG_ON(1);
+	} else if (tx_lock == 0) {
+		cw1200_bh_wakeup(priv);
+		wsm_printk(KERN_DEBUG "[WSM] TX is unlocked.\n");
 	}
 }
 
@@ -1182,65 +1094,8 @@ void wsm_unlock_tx(struct cw1200_common *priv)
 
 int wsm_handle_exception(struct cw1200_common *priv, u8 *data, size_t len)
 {
-	struct wsm_buf buf;
-	u32 reason;
-	u32 reg[18];
-	char fname[48];
-	size_t i;
-
-	static const char * const reason_str[] = {
-		"undefined instruction",
-		"prefetch abort",
-		"data abort",
-		"unknown error",
-	};
-
-#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
-	/* Send the event upwards on the FW exception */
-	cw1200_pm_stay_awake(&priv->pm_state, 3*HZ);
-	ieee80211_driver_hang_notify(priv->vif, GFP_KERNEL);
-#endif
-
-	buf.begin = buf.data = data;
-	buf.end = &buf.begin[len];
-
-	reason = WSM_GET32(&buf);
-	for (i = 0; i < ARRAY_SIZE(reg); ++i)
-		reg[i] = WSM_GET32(&buf);
-	WSM_GET(&buf, fname, sizeof(fname));
-
-	if (reason < 4)
-		wiphy_err(priv->hw->wiphy,
-			"Firmware exception: %s.\n",
-			reason_str[reason]);
-	else
-		wiphy_err(priv->hw->wiphy,
-			"Firmware assert at %.*s, line %d\n",
-			sizeof(fname), fname, reg[1]);
-
-	for (i = 0; i < 12; i += 4)
-		wiphy_err(priv->hw->wiphy,
-			"R%d: 0x%.8X, R%d: 0x%.8X, R%d: 0x%.8X, R%d: 0x%.8X,\n",
-			i + 0, reg[i + 0], i + 1, reg[i + 1],
-			i + 2, reg[i + 2], i + 3, reg[i + 3]);
-	wiphy_err(priv->hw->wiphy,
-		"R12: 0x%.8X, SP: 0x%.8X, LR: 0x%.8X, PC: 0x%.8X,\n",
-		reg[i + 0], reg[i + 1], reg[i + 2], reg[i + 3]);
-	i += 4;
-	wiphy_err(priv->hw->wiphy,
-		"CPSR: 0x%.8X, SPSR: 0x%.8X\n",
-		reg[i + 0], reg[i + 1]);
-
-	print_hex_dump_bytes("R1: ", DUMP_PREFIX_NONE,
-		fname, sizeof(fname));
+	STUB();
 	return 0;
-
-underflow:
-	wiphy_err(priv->hw->wiphy,
-		"Firmware exception.\n");
-	print_hex_dump_bytes("Exception: ", DUMP_PREFIX_NONE,
-		data, len);
-	return -EINVAL;
 }
 
 int wsm_handle_rx(struct cw1200_common *priv, int id,
@@ -1251,7 +1106,7 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 	int link_id = (id >> 6) & 0x0F;
 
 	/* Strip link id. */
-	id &= ~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX);
+	id &= ~(0x0F << 6);
 
 	wsm_buf.begin = (u8 *)&wsm[0];
 	wsm_buf.data = (u8 *)&wsm[1];
@@ -1261,9 +1116,9 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 			wsm_buf.end - wsm_buf.begin);
 
 	if (id == 0x404) {
-		ret = wsm_tx_confirm(priv, &wsm_buf, link_id);
+		ret = wsm_tx_confirm(priv, &wsm_buf);
 	} else if (id == 0x41E) {
-		ret = wsm_multi_tx_confirm(priv, &wsm_buf, link_id);
+		ret = wsm_multi_tx_confirm(priv, &wsm_buf);
 	} else if (id & 0x0400) {
 		void *wsm_arg;
 		u16 wsm_cmd;
@@ -1272,8 +1127,7 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 		 * response and race condition removal (see above). */
 		spin_lock(&priv->wsm_cmd.lock);
 		wsm_arg = priv->wsm_cmd.arg;
-		wsm_cmd = priv->wsm_cmd.cmd &
-				~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX);
+		wsm_cmd = priv->wsm_cmd.cmd & ~(0x0F << 6);
 		priv->wsm_cmd.cmd = 0xFFFF;
 		spin_unlock(&priv->wsm_cmd.lock);
 
@@ -1319,15 +1173,14 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 		case 0x0418: /* beacon_transmit */
 		case 0x0419: /* start_find */
 		case 0x041A: /* stop_find */
-		case 0x041B: /* update_ie */
 		case 0x041C: /* map_link */
 			WARN_ON(wsm_arg != NULL);
 			ret = wsm_generic_confirm(priv, wsm_arg, &wsm_buf);
 			if (ret)
-				wiphy_warn(priv->hw->wiphy,
-					"wsm_generic_confirm "
+				printk(KERN_ERR
+					"[WSM] wsm_generic_confirm "
 					"failed for request 0x%.4X.\n",
-					id & ~0x0400);
+					id);
 			break;
 		default:
 			BUG_ON(1);
@@ -1339,15 +1192,14 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 		spin_unlock(&priv->wsm_cmd.lock);
 		ret = 0; /* Error response from device should ne stop BH. */
 
-		wake_up(&priv->wsm_cmd_wq);
+		wake_up_interruptible(&priv->wsm_cmd_wq);
 	} else if (id & 0x0800) {
 		switch (id) {
 		case 0x0801:
 			ret = wsm_startup_indication(priv, &wsm_buf);
 			break;
 		case 0x0804:
-			ret = wsm_receive_indication(priv, link_id,
-					&wsm_buf, skb_p);
+			ret = wsm_receive_indication(priv, &wsm_buf, skb_p);
 			break;
 		case 0x0805:
 			ret = wsm_event_indication(priv, &wsm_buf);
@@ -1365,8 +1217,7 @@ int wsm_handle_rx(struct cw1200_common *priv, int id,
 			ret = wsm_find_complete_indication(priv, &wsm_buf);
 			break;
 		case 0x080C:
-			ret = wsm_suspend_resume_indication(priv,
-					link_id, &wsm_buf);
+			ret = wsm_suspend_resume_indication(priv, link_id, &wsm_buf);
 			break;
 		default:
 			STUB();
@@ -1381,72 +1232,34 @@ out:
 
 static bool wsm_handle_tx_data(struct cw1200_common *priv,
 			       const struct wsm_tx *wsm,
-			       const struct ieee80211_tx_info *tx_info,
-			       const struct cw1200_txpriv *txpriv,
-			       struct cw1200_queue *queue)
+			       const struct ieee80211_tx_info *tx_info)
 {
 	bool handled = false;
 	const struct ieee80211_hdr *frame =
-		(struct ieee80211_hdr *) &((u8 *)wsm)[txpriv->offset];
+		(struct ieee80211_hdr *)&wsm[1];
 	__le16 fctl = frame->frame_control;
 	enum {
 		doProbe,
 		doDrop,
 		doJoin,
-		doOffchannel,
 		doWep,
 		doTx,
 	} action = doTx;
 
 	switch (priv->mode) {
 	case NL80211_IFTYPE_STATION:
-		if (unlikely((priv->join_status == CW1200_JOIN_STATUS_STA) &&
-			ieee80211_is_nullfunc(fctl))) {
-			spin_lock(&priv->bss_loss_lock);
-			if (priv->bss_loss_status == CW1200_BSS_LOSS_CHECKING) {
-				priv->bss_loss_status =
-						CW1200_BSS_LOSS_CONFIRMING;
-				priv->bss_loss_confirm_id = wsm->packetID;
-			}
-			spin_unlock(&priv->bss_loss_lock);
-		} else if (unlikely(
-			(priv->join_status <= CW1200_JOIN_STATUS_MONITOR) ||
+		if (unlikely(!priv->join_status ||
 			memcmp(frame->addr1, priv->join_bssid,
 				sizeof(priv->join_bssid)))) {
 			if (ieee80211_is_auth(fctl))
 				action = doJoin;
-			else if (ieee80211_is_probe_req(fctl))
-				action = doTx;
-			else if (priv->join_status >=
-					CW1200_JOIN_STATUS_MONITOR)
-				action = doTx;
 			else
-				action = doOffchannel;
+				action = doDrop;
 		}
 		break;
 	case NL80211_IFTYPE_AP:
 		if (unlikely(!priv->join_status))
 			action = doDrop;
-		else if (unlikely(!(BIT(txpriv->raw_link_id) &
-				(BIT(0) | priv->link_id_map)))) {
-			wiphy_warn(priv->hw->wiphy,
-					"A frame with expired link id "
-					"is dropped.\n");
-			action = doDrop;
-		}
-		if (cw1200_queue_get_generation(wsm->packetID) >
-				CW1200_MAX_REQUEUE_ATTEMPTS) {
-			/* HACK!!! WSM324 firmware has tendency to requeue
-			 * multicast frames in a loop, causing performance
-			 * drop and high power consumption of the driver.
-			 * In this situation it is better just to drop
-			 * the problematic frame. */
-			wiphy_warn(priv->hw->wiphy,
-					"Too many attempts "
-					"to requeue a frame. "
-					"Frame is dropped.\n");
-			action = doDrop;
-		}
 		break;
 	case NL80211_IFTYPE_ADHOC:
 	case NL80211_IFTYPE_MESH_POINT:
@@ -1478,10 +1291,21 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * probe responses.
 		 * The easiest way to get it back is to convert
 		 * probe request into WSM start_scan command. */
+		int rate_id = (wsm->flags >> 4) & 0x07;
+		struct cw1200_queue *queue =
+			&priv->tx_queue[cw1200_queue_get_queue_id(
+				wsm->packetID)];
 		wsm_printk(KERN_DEBUG \
 			"[WSM] Convert probe request to scan.\n");
 		wsm_lock_tx_async(priv);
-		priv->pending_frame_id = __le32_to_cpu(wsm->packetID);
+		BUG_ON(priv->scan.probe_skb);
+		BUG_ON(cw1200_queue_get_skb(queue,
+					wsm->packetID,
+					&priv->scan.probe_skb));
+		BUG_ON(cw1200_queue_remove(queue, priv,
+						wsm->packetID));
+		/* Release used TX rate policy */
+		tx_policy_put(priv, rate_id);
 		queue_delayed_work(priv->workqueue,
 				&priv->scan.probe_work, 0);
 		handled = true;
@@ -1491,9 +1315,19 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	{
 		/* See detailed description of "join" below.
 		 * We are dropping everything except AUTH in non-joined mode. */
-		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X).\n", fctl);
-		BUG_ON(cw1200_queue_remove(queue,
-			__le32_to_cpu(wsm->packetID)));
+		struct sk_buff *skb;
+		int rate_id = (wsm->flags >> 4) & 0x07;
+		struct cw1200_queue *queue =
+			&priv->tx_queue[cw1200_queue_get_queue_id(
+				wsm->packetID)];
+		wsm_printk(KERN_DEBUG "[WSM] Drop frame (0x%.4X):"
+			" not joined.\n", fctl);
+		BUG_ON(cw1200_queue_get_skb(queue, wsm->packetID, &skb));
+		BUG_ON(cw1200_queue_remove(queue, priv, wsm->packetID));
+		/* Release used TX rate policy */
+		tx_policy_put(priv, rate_id);
+		/* Release SKB. TODO: report TX failure. */
+		dev_kfree_skb(skb);
 		handled = true;
 	}
 	break;
@@ -1503,22 +1337,15 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		 * in FW: it can't do RX/TX before "join".
 		 * "Join" here is not an association,
 		 * but just a syncronization between AP and STA.
+		 * BTW that means device can't receive frames
+		 * in monitor mode.
 		 * priv->join_status is used only in bh thread and does
 		 * not require protection */
 		wsm_printk(KERN_DEBUG "[WSM] Issue join command.\n");
 		wsm_lock_tx_async(priv);
-		priv->pending_frame_id = __le32_to_cpu(wsm->packetID);
+		BUG_ON(priv->join_pending_frame);
+		priv->join_pending_frame = wsm;
 		if (queue_work(priv->workqueue, &priv->join_work) <= 0)
-			wsm_unlock_tx(priv);
-		handled = true;
-	}
-	break;
-	case doOffchannel:
-	{
-		wsm_printk(KERN_DEBUG "[WSM] Offchannel TX request.\n");
-		wsm_lock_tx_async(priv);
-		priv->pending_frame_id = __le32_to_cpu(wsm->packetID);
-		if (queue_work(priv->workqueue, &priv->offchannel_work) <= 0)
 			wsm_unlock_tx(priv);
 		handled = true;
 	}
@@ -1528,7 +1355,6 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 		wsm_printk(KERN_DEBUG "[WSM] Issue set_default_wep_key.\n");
 		wsm_lock_tx_async(priv);
 		priv->wep_default_key_id = tx_info->control.hw_key->keyidx;
-		priv->pending_frame_id = __le32_to_cpu(wsm->packetID);
 		if (queue_work(priv->workqueue, &priv->wep_key_work) <= 0)
 			wsm_unlock_tx(priv);
 		handled = true;
@@ -1578,97 +1404,61 @@ static bool wsm_handle_tx_data(struct cw1200_common *priv,
 	return handled;
 }
 
-static int cw1200_get_prio_queue(struct cw1200_common *priv,
-				 u32 link_id_map, int *total)
-{
-	static const int urgent = BIT(CW1200_LINK_ID_AFTER_DTIM) |
-		BIT(CW1200_LINK_ID_UAPSD);
-	struct wsm_edca_queue_params *edca;
-	unsigned score, best = -1;
-	int winner = -1;
-	int queued;
-	int i;
-
-	/* search for a winner using edca params */
-	for (i = 0; i < 4; ++i) {
-		queued = cw1200_queue_get_num_queued(&priv->tx_queue[i],
-				link_id_map);
-		if (!queued)
-			continue;
-		*total += queued;
-		edca = &priv->edca.params[i];
-		score = ((edca->aifns + edca->cwMin) << 16) +
-				(edca->cwMax - edca->cwMin) *
-				(random32() & 0xFFFF);
-		if (score < best && (winner < 0 || i != 3)) {
-			best = score;
-			winner = i;
-		}
-	}
-
-	/* override winner if bursting */
-	if (winner >= 0 && priv->tx_burst_idx >= 0 &&
-			winner != priv->tx_burst_idx &&
-			!cw1200_queue_get_num_queued(
-				&priv->tx_queue[winner],
-				link_id_map & urgent) &&
-			cw1200_queue_get_num_queued(
-				&priv->tx_queue[priv->tx_burst_idx],
-				link_id_map))
-		winner = priv->tx_burst_idx;
-
-	return winner;
-}
-
 static int wsm_get_tx_queue_and_mask(struct cw1200_common *priv,
 				     struct cw1200_queue **queue_p,
-				     u32 *tx_allowed_mask_p,
+				     u32* tx_allowed_mask_p,
 				     bool *more)
 {
-	int idx;
+	int i;
+	struct cw1200_queue *queue = NULL;
 	u32 tx_allowed_mask;
-	int total = 0;
+	int mcasts = 0;
 
 	/* Search for a queue with multicast frames buffered */
-	if (priv->tx_multicast) {
-		tx_allowed_mask = BIT(CW1200_LINK_ID_AFTER_DTIM);
-		idx = cw1200_get_prio_queue(priv,
-				tx_allowed_mask, &total);
-		if (idx >= 0) {
-			*more = total > 1;
-			goto found;
+	if (priv->sta_asleep_mask && !priv->suspend_multicast) {
+		tx_allowed_mask = 1 << CW1200_LINK_ID_AFTER_DTIM;
+		for (i = 0; i < 4; ++i) {
+			mcasts += cw1200_queue_get_num_queued(
+					&priv->tx_queue[i], tx_allowed_mask);
+			if (!queue && mcasts)
+				queue = &priv->tx_queue[i];
+			if (mcasts > 1)
+				break;
 		}
+		if (mcasts)
+			goto found;
 	}
 
 	/* Search for unicast traffic */
-	tx_allowed_mask = ~priv->sta_asleep_mask;
-	tx_allowed_mask |= BIT(CW1200_LINK_ID_UAPSD);
-	if (priv->sta_asleep_mask) {
-		tx_allowed_mask |= priv->pspoll_mask;
-		tx_allowed_mask &= ~BIT(CW1200_LINK_ID_AFTER_DTIM);
-	} else {
-		tx_allowed_mask |= BIT(CW1200_LINK_ID_AFTER_DTIM);
+	for (i = 0; i < 4; ++i) {
+		queue = &priv->tx_queue[i];
+		tx_allowed_mask = ~priv->sta_asleep_mask;
+		if (priv->sta_asleep_mask) {
+			tx_allowed_mask |= ~priv->tx_suspend_mask[i];
+		} else {
+			tx_allowed_mask |= 1 << CW1200_LINK_ID_AFTER_DTIM;
+		}
+		if (cw1200_queue_get_num_queued(
+				queue, tx_allowed_mask))
+			goto found;
 	}
-	idx = cw1200_get_prio_queue(priv,
-			tx_allowed_mask, &total);
-	if (idx < 0)
-		return -ENOENT;
+	return -ENOENT;
 
 found:
-	*queue_p = &priv->tx_queue[idx];
+	*queue_p = queue;
 	*tx_allowed_mask_p = tx_allowed_mask;
+	*more = mcasts > 1;
 	return 0;
 }
 
 int wsm_get_tx(struct cw1200_common *priv, u8 **data,
-	       size_t *tx_len, int *burst)
+	       size_t *tx_len)
 {
 	struct wsm_tx *wsm = NULL;
 	struct ieee80211_tx_info *tx_info;
-	struct cw1200_queue *queue = NULL;
-	int queue_num;
+	struct cw1200_queue *queue;
+	struct cw1200_sta_priv *sta_priv;
 	u32 tx_allowed_mask = 0;
-	const struct cw1200_txpriv *txpriv = NULL;
 	/*
 	 * Count was intended as an input for wsm->more flag.
 	 * During implementation it was found that wsm->more
@@ -1678,11 +1468,7 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 	int count = 0;
 
 	/* More is used only for broadcasts. */
-	bool more = false;
-
-	count = cw1200_itp_get_tx(priv, data, tx_len, burst);
-	if (count)
-		return count;
+	bool more;
 
 	if (priv->wsm_cmd.ptr) {
 		++count;
@@ -1690,79 +1476,48 @@ int wsm_get_tx(struct cw1200_common *priv, u8 **data,
 		BUG_ON(!priv->wsm_cmd.ptr);
 		*data = priv->wsm_cmd.ptr;
 		*tx_len = priv->wsm_cmd.len;
-		*burst = 1;
 		spin_unlock(&priv->wsm_cmd.lock);
 	} else {
 		for (;;) {
-			int ret;
-
 			if (atomic_add_return(0, &priv->tx_lock))
 				break;
 
-			spin_lock_bh(&priv->ps_state_lock);
-
-			ret = wsm_get_tx_queue_and_mask(priv, &queue,
-					&tx_allowed_mask, &more);
-			queue_num = queue - priv->tx_queue;
-
-			if (priv->buffered_multicasts &&
-					(ret || !more) &&
-					(priv->tx_multicast ||
-					 !priv->sta_asleep_mask)) {
-				priv->buffered_multicasts = false;
-				if (priv->tx_multicast) {
-					priv->tx_multicast = false;
-					queue_work(priv->workqueue,
-						&priv->multicast_stop_work);
-				}
-			}
-
-			spin_unlock_bh(&priv->ps_state_lock);
-
-			if (ret)
+			if (wsm_get_tx_queue_and_mask(priv, &queue,
+					&tx_allowed_mask, &more))
 				break;
 
 			if (cw1200_queue_get(queue,
 					tx_allowed_mask,
-					&wsm, &tx_info, &txpriv))
+					&wsm, &tx_info))
 				continue;
 
-			if (wsm_handle_tx_data(priv, wsm,
-					tx_info, txpriv, queue))
+			if (wsm_handle_tx_data(priv, wsm, tx_info))
 				continue;  /* Handled by WSM */
 
-			wsm->hdr.id &= __cpu_to_le16(
-				~WSM_TX_LINK_ID(WSM_TX_LINK_ID_MAX));
-			wsm->hdr.id |= cpu_to_le16(
-				WSM_TX_LINK_ID(txpriv->raw_link_id));
-			priv->pspoll_mask &= ~BIT(txpriv->raw_link_id);
+			if (tx_info->control.sta) {
+				/* Update link id */
+				sta_priv = (struct cw1200_sta_priv *)
+					&tx_info->control.sta->drv_priv;
+				wsm->hdr.id &= __cpu_to_le16(~(0x0F << 6));
+				wsm->hdr.id |=
+					cpu_to_le16(sta_priv->link_id << 6);
+			}
 
 			*data = (u8 *)wsm;
 			*tx_len = __le16_to_cpu(wsm->hdr.len);
-
-			/* allow bursting if txop is set */
-			if (priv->edca.params[queue_num].txOpLimit)
-				*burst = min(*burst,
-					(int)cw1200_queue_get_num_queued(
-						queue, tx_allowed_mask) + 1);
-			else
-				*burst = 1;
-
-			/* store index of bursting queue */
-			if (*burst > 1)
-				priv->tx_burst_idx = queue_num;
-			else
-				priv->tx_burst_idx = -1;
-
 			if (more) {
 				struct ieee80211_hdr *hdr =
-					(struct ieee80211_hdr *)
-					&((u8 *)wsm)[txpriv->offset];
+					(struct ieee80211_hdr *) &wsm[1];
 				/* more buffered multicast/broadcast frames
 				 *  ==> set MoreData flag in IEEE 802.11 header
 				 *  to inform PS STAs */
 				hdr->frame_control |=
 					cpu_to_le16(IEEE80211_FCTL_MOREDATA);
+			} else if (priv->mode == NL80211_IFTYPE_AP &&
+					!priv->suspend_multicast) {
+				priv->suspend_multicast = true;
+				queue_work(priv->workqueue,
+					&priv->multicast_stop_work);
 			}
 
 			wsm_printk(KERN_DEBUG "[WSM] >>> 0x%.4X (%d) %p %c\n",

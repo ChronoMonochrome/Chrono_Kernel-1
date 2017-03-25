@@ -23,6 +23,9 @@
 /*  ----------------------------------- DSP/BIOS Bridge */
 #include <dspbridge/dbdefs.h>
 
+/*  ----------------------------------- Trace & Debug */
+#include <dspbridge/dbc.h>
+
 /*  ----------------------------------- Platform Manager */
 #include <dspbridge/drv.h>
 #include <dspbridge/dev.h>
@@ -99,6 +102,8 @@ func_cont:
 	} else {
 		dev_dbg(bridge, "%s: Failed\n", __func__);
 	}			/* End api_init_complete2 */
+	DBC_ENSURE((!status && drv_obj != NULL) ||
+		   (status && drv_obj == NULL));
 	*init_status = status;
 	/* Return the Driver Object */
 	return (u32) drv_obj;

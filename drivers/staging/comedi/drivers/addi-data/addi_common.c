@@ -58,8 +58,8 @@ You should also find the complete GPL in the COPYING file accompanying this sour
 #include <linux/timer.h>
 #include <linux/pci.h>
 #include <linux/gfp.h>
-#include <linux/io.h>
 #include "../../comedidev.h"
+#include <asm/io.h>
 #if defined(CONFIG_APCI_1710) || defined(CONFIG_APCI_3200) || defined(CONFIG_APCI_3300)
 #include <asm/i387.h>
 #endif
@@ -145,77 +145,78 @@ void fpu_end(void)
 
 static DEFINE_PCI_DEVICE_TABLE(addi_apci_tbl) = {
 #ifdef CONFIG_APCI_3120
-	{PCI_DEVICE(APCI3120_BOARD_VENDOR_ID, 0x818D)},
+	{APCI3120_BOARD_VENDOR_ID, 0x818D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_1032
-	{PCI_DEVICE(APCI1032_BOARD_VENDOR_ID, 0x1003)},
+	{APCI1032_BOARD_VENDOR_ID, 0x1003, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_1516
-	{PCI_DEVICE(APCI1516_BOARD_VENDOR_ID, 0x1001)},
+	{APCI1516_BOARD_VENDOR_ID, 0x1001, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_2016
-	{PCI_DEVICE(APCI2016_BOARD_VENDOR_ID, 0x1002)},
+	{APCI2016_BOARD_VENDOR_ID, 0x1002, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_2032
-	{PCI_DEVICE(APCI2032_BOARD_VENDOR_ID, 0x1004)},
+	{APCI2032_BOARD_VENDOR_ID, 0x1004, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_2200
-	{PCI_DEVICE(APCI2200_BOARD_VENDOR_ID, 0x1005)},
+	{APCI2200_BOARD_VENDOR_ID, 0x1005, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_1564
-	{PCI_DEVICE(APCI1564_BOARD_VENDOR_ID, 0x1006)},
+	{APCI1564_BOARD_VENDOR_ID, 0x1006, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_1500
-	{PCI_DEVICE(APCI1500_BOARD_VENDOR_ID, 0x80fc)},
+	{APCI1500_BOARD_VENDOR_ID, 0x80fc, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_3001
-	{PCI_DEVICE(APCI3120_BOARD_VENDOR_ID, 0x828D)},
+	{APCI3120_BOARD_VENDOR_ID, 0x828D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_3501
-	{PCI_DEVICE(APCI3501_BOARD_VENDOR_ID, 0x3001)},
+	{APCI3501_BOARD_VENDOR_ID, 0x3001, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_035
-	{PCI_DEVICE(APCI035_BOARD_VENDOR_ID,  0x0300)},
+	{APCI035_BOARD_VENDOR_ID, 0x0300, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_3200
-	{PCI_DEVICE(APCI3200_BOARD_VENDOR_ID, 0x3000)},
+	{APCI3200_BOARD_VENDOR_ID, 0x3000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_3300
-	{PCI_DEVICE(APCI3200_BOARD_VENDOR_ID, 0x3007)},
+	{APCI3200_BOARD_VENDOR_ID, 0x3007, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_1710
-	{PCI_DEVICE(APCI1710_BOARD_VENDOR_ID, APCI1710_BOARD_DEVICE_ID)},
+	{APCI1710_BOARD_VENDOR_ID, APCI1710_BOARD_DEVICE_ID,
+		PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_16XX
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x1009)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x100A)},
+	{0x15B8, 0x1009, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x100A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 #ifdef CONFIG_APCI_3XXX
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3010)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x300F)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x300E)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3013)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3014)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3015)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3016)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3017)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3018)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3019)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x301A)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x301B)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x301C)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x301D)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x301E)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x301F)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3020)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3021)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3022)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3023)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x300B)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3002)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3003)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3004)},
-	{PCI_DEVICE(PCI_VENDOR_ID_ADDIDATA, 0x3024)},
+	{0x15B8, 0x3010, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x300F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x300E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3013, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3014, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3015, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3016, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3017, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3018, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3019, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x301A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x301B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x301C, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x301D, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x301E, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x301F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3020, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3021, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3022, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3023, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x300B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3002, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3003, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3004, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+	{0x15B8, 0x3024, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
 #endif
 	{0}
 };
@@ -1018,7 +1019,7 @@ static const struct addi_board boardtypes[] = {
 #endif
 #ifdef CONFIG_APCI_16XX
 	{"apci1648",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x1009,
 			128,
 			0,
@@ -1074,7 +1075,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI16XX_InsnBitsWriteTTLIO},
 
 	{"apci1696",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x100A,
 			128,
 			0,
@@ -1131,7 +1132,7 @@ static const struct addi_board boardtypes[] = {
 #endif
 #ifdef CONFIG_APCI_3XXX
 	{"apci3000-16",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3010,
 			256,
 			256,
@@ -1187,7 +1188,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3000-8",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x300F,
 			256,
 			256,
@@ -1243,7 +1244,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3000-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x300E,
 			256,
 			256,
@@ -1299,7 +1300,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3006-16",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3013,
 			256,
 			256,
@@ -1355,7 +1356,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3006-8",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3014,
 			256,
 			256,
@@ -1411,7 +1412,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3006-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3015,
 			256,
 			256,
@@ -1467,7 +1468,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3010-16",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3016,
 			256,
 			256,
@@ -1523,7 +1524,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3010-8",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3017,
 			256,
 			256,
@@ -1579,7 +1580,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3010-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3018,
 			256,
 			256,
@@ -1635,7 +1636,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3016-16",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3019,
 			256,
 			256,
@@ -1691,7 +1692,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3016-8",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x301A,
 			256,
 			256,
@@ -1747,7 +1748,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3016-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x301B,
 			256,
 			256,
@@ -1803,7 +1804,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3100-16-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x301C,
 			256,
 			256,
@@ -1859,7 +1860,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3100-8-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x301D,
 			256,
 			256,
@@ -1915,7 +1916,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3106-16-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x301E,
 			256,
 			256,
@@ -1971,7 +1972,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3106-8-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x301F,
 			256,
 			256,
@@ -2027,7 +2028,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3110-16-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3020,
 			256,
 			256,
@@ -2083,7 +2084,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3110-8-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3021,
 			256,
 			256,
@@ -2139,7 +2140,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3116-16-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3022,
 			256,
 			256,
@@ -2195,7 +2196,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3116-8-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3023,
 			256,
 			256,
@@ -2251,7 +2252,7 @@ static const struct addi_board boardtypes[] = {
 		i_APCI3XXX_InsnWriteTTLIO},
 
 	{"apci3003",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x300B,
 			256,
 			256,
@@ -2306,7 +2307,7 @@ static const struct addi_board boardtypes[] = {
 		NULL},
 
 	{"apci3002-16",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3002,
 			256,
 			256,
@@ -2361,7 +2362,7 @@ static const struct addi_board boardtypes[] = {
 		NULL},
 
 	{"apci3002-8",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3003,
 			256,
 			256,
@@ -2416,7 +2417,7 @@ static const struct addi_board boardtypes[] = {
 		NULL},
 
 	{"apci3002-4",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3004,
 			256,
 			256,
@@ -2471,7 +2472,7 @@ static const struct addi_board boardtypes[] = {
 		NULL},
 
 	{"apci3500",
-			PCI_VENDOR_ID_ADDIDATA,
+			0x15B8,
 			0x3024,
 			256,
 			256,

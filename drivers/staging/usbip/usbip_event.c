@@ -18,7 +18,6 @@
  */
 
 #include <linux/kthread.h>
-#include <linux/export.h>
 
 #include "usbip_common.h"
 
