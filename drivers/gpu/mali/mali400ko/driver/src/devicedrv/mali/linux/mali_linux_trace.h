@@ -1,18 +1,17 @@
-/**
- * Copyright (C) 2010-2012 ARM Limited. All rights reserved.
+/*
+ * Copyright (C) 2012 ARM Limited. All rights reserved.
  * 
- * This program is free software and is provided to you under the terms of the 
- * GNU General Public License version 2 as published by the Free Software 
- * Foundation, and any use by you of this program is subject to the terms of 
- * such GNU licence.
+ * This program is free software and is provided to you under the terms of the GNU General Public License version 2
+ * as published by the Free Software Foundation, and any use by you of this program is subject to the terms of such GNU licence.
  * 
- * A copy of the licence is included with the program, and can also be obtained
- * from Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor, 
- * Boston, MA  02110-1301, USA.
+ * A copy of the licence is included with the program, and can also be obtained from Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
 #if !defined (MALI_LINUX_TRACE_H) || defined (TRACE_HEADER_MULTI_READ)
 #define MALI_LINUX_TRACE_H
+
+#include <linux/types.h>
 
 #include <linux/stringify.h>
 #include <linux/tracepoint.h>
@@ -87,35 +86,37 @@ TRACE_EVENT(mali_hw_counter,
 
     TP_fast_assign(
         __entry->counter_id = counter_id;
-        __entry->value      = value;
     ),
 
     TP_printk("event %d = %d", __entry->counter_id, __entry->value)
 );
 
 /**
- * Define a tracepoint used to register the value of a software counter.
- * 
- * @param counter_id The counter ID.
- * @param value The value of the counter.
+ * Define a tracepoint used to send a bundle of software counters.
+ *
+ * @param counters The bundle of counters.
  */
-TRACE_EVENT(mali_sw_counter,
+TRACE_EVENT(mali_sw_counters,
 
-    TP_PROTO(unsigned int counter_id, signed long long value),
+    TP_PROTO(pid_t pid, pid_t tid, void * surface_id, unsigned int * counters),
 
-    TP_ARGS(counter_id, value),
+    TP_ARGS(pid, tid, surface_id, counters),
 
     TP_STRUCT__entry(
-        __field(unsigned int, counter_id)
-        __field(signed long long, value)
+            __field(pid_t, pid)
+            __field(pid_t, tid)
+            __field(void *, surface_id)
+            __field(unsigned int *, counters)
     ),
 
     TP_fast_assign(
-        __entry->counter_id = counter_id;
-        __entry->value      = value;
+            __entry->pid = pid;
+			__entry->tid = tid;
+			__entry->surface_id = surface_id;
+			__entry->counters = counters;
     ),
 
-    TP_printk("event %d = %lld", __entry->counter_id, __entry->value)
+    TP_printk("counters were %s", __entry->counters == NULL? "NULL" : "not NULL")
 );
 
 #endif /* MALI_LINUX_TRACE_H */
