@@ -10,7 +10,7 @@
 #include <linux/io.h>
 #include <linux/string.h>
 
-#include <linux/gpio/nomadik.h>
+#include <plat/gpio-nomadik.h>
 #include <mach/hardware.h>
 
 #include "board-pins-sleep-force.h"

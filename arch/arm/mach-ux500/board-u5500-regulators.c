@@ -28,8 +28,8 @@ static struct regulator_consumer_supply ab5500_ldo_h_consumers[] = {
 	REGULATOR_SUPPLY("vin", "2-0036"), /* LM3530 */
 	REGULATOR_SUPPLY("vcpin", "spi1.0"),
 	REGULATOR_SUPPLY("v-ana", "mmio_camera"),
-	REGULATOR_SUPPLY("vdd", "lsm303dlh.0"),
-	REGULATOR_SUPPLY("vdd", "lsm303dlh.1"),
+	REGULATOR_SUPPLY("vdd", "2-0019"),
+	REGULATOR_SUPPLY("vdd", "2-001e"),
 };
 
 static struct regulator_consumer_supply ab5500_ldo_k_consumers[] = {

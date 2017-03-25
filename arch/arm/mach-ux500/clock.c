@@ -10,14 +10,8 @@
 #include <linux/errno.h>
 #include <linux/io.h>
 #include <linux/spinlock.h>
-#include <linux/mfd/abx500/ab8500-sysctrl.h>
+#include <linux/mfd/abx500/ux500_sysctrl.h>
 #include <linux/mfd/dbx500-prcmu.h>
-
-#ifdef CONFIG_DEBUG_FS
-#include <linux/debugfs.h>
-#include <linux/uaccess.h>	/* for copy_from_user */
-static LIST_HEAD(clk_list);
-#endif
 
 #include "clock.h"
 #include "prcc.h"
@@ -26,7 +20,125 @@ DEFINE_MUTEX(clk_opp100_mutex);
 static DEFINE_SPINLOCK(clk_spin_lock);
 #define NO_LOCK &clk_spin_lock
 
-static void __iomem *prcmu_base;
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+void __clk_panic_disable(struct clk *clk, void *current_lock)
+{
+	if (clk == NULL)
+		return;
+
+	if (clk->enabled && (--clk->enabled == 0)) {
+		if ((clk->ops != NULL) && (clk->ops->disable != NULL))
+			clk->ops->disable(clk);
+		__clk_panic_disable(clk->parent, clk->mutex);
+		__clk_panic_disable(clk->bus_parent, clk->mutex);
+	}
+
+	return;
+}
+
+int __clk_panic_enable(struct clk *clk, void *current_lock)
+{
+	int err;
+
+	if (clk == NULL)
+		return 0;
+
+	if (!clk->enabled) {
+		err = __clk_panic_enable(clk->bus_parent, clk->mutex);
+		if (unlikely(err))
+			goto bus_parent_error;
+
+		err = __clk_panic_enable(clk->parent, clk->mutex);
+		if (unlikely(err))
+			goto parent_error;
+
+		if ((clk->ops != NULL) && (clk->ops->enable != NULL)) {
+			err = clk->ops->enable(clk);
+			if (unlikely(err))
+				goto enable_error;
+		}
+	}
+	clk->enabled++;
+
+	return 0;
+
+enable_error:
+	__clk_panic_disable(clk->parent, clk->mutex);
+parent_error:
+	__clk_panic_disable(clk->bus_parent, clk->mutex);
+bus_parent_error:
+
+
+	return err;
+}
+
+unsigned long __clk_panic_get_rate(struct clk *clk, void *current_lock)
+{
+	unsigned long rate;
+
+	if (clk == NULL)
+		return 0;
+
+	if ((clk->ops != NULL) && (clk->ops->get_rate != NULL))
+		rate = clk->ops->get_rate(clk);
+	else if (clk->rate)
+		rate = clk->rate;
+	else
+		rate = __clk_panic_get_rate(clk->parent, clk->mutex);
+
+	return rate;
+}
+
+
+int clk_panic_enable(struct clk *clk)
+{
+	if (clk == NULL)
+		return -EINVAL;
+
+	return __clk_panic_enable(clk, NO_LOCK);
+}
+EXPORT_SYMBOL(clk_panic_enable);
+
+void clk_panic_disable(struct clk *clk)
+{
+
+	if (clk == NULL)
+		return;
+
+	WARN_ON(!clk->enabled);
+	__clk_panic_disable(clk, NO_LOCK);
+}
+EXPORT_SYMBOL(clk_panic_disable);
+
+unsigned long clk_panic_get_rate(struct clk *clk)
+{
+	if (clk == NULL)
+		return 0;
+
+	return __clk_panic_get_rate(clk, NO_LOCK);
+}
+EXPORT_SYMBOL(clk_panic_get_rate);
+
+static int prcmu_panic_clk_enable(struct clk *clk)
+{
+//	return prcmu_panic_request_clock(clk->cg_sel, true);
+}
+
+static void prcmu_panic_clk_disable(struct clk *clk)
+{
+//	if (prcmu_panic_request_clock(clk->cg_sel, false)) {
+//		pr_err("clock: %s failed to disable %s.\n", __func__,
+//			clk->name);
+//	}
+}
+
+void prcmu_reroute_clk_fp(void)
+{
+	prcmu_clk_ops.enable = prcmu_panic_clk_enable;
+	prcmu_clk_ops.disable = prcmu_panic_clk_disable;
+}
+
+#endif
 
 static void __clk_lock(struct clk *clk, void *last_lock, unsigned long *flags)
 {
@@ -486,208 +598,16 @@ struct clkops prcc_kclk_rec_ops = {
 	.set_rate = clk_set_rate_rec,
 };
 
-#ifdef CONFIG_CPU_FREQ
-extern unsigned long dbx500_cpufreq_getfreq(void);
-
-unsigned long clk_smp_twd_get_rate(struct clk *clk)
-{
-	return dbx500_cpufreq_getfreq() / 2;
-}
-
-static struct clkops clk_smp_twd_ops = {
-	.get_rate = clk_smp_twd_get_rate,
-};
-
-static struct clk clk_smp_twd = {
-	.name	= "smp_twd",
-	.ops	= &clk_smp_twd_ops,
-};
-
-static struct clk_lookup clk_smp_twd_lookup = {
-	.clk	= &clk_smp_twd,
-	.dev_id	= "smp_twd",
-};
-#endif
-
-#ifdef CONFIG_DEBUG_FS
-/*
- *	debugfs support to trace clock tree hierarchy and attributes with
- *	powerdebug
- */
-static struct dentry *clk_debugfs_root;
-
-void __init clk_debugfs_add_table(struct clk_lookup *cl, size_t num)
-{
-	while (num--) {
-		/* Check that the clock has not been already registered */
-		if (!(cl->clk->list.prev != cl->clk->list.next))
-			list_add_tail(&cl->clk->list, &clk_list);
-
-		cl++;
-	}
-}
-
-static ssize_t usecount_dbg_read(struct file *file, char __user *buf,
-						  size_t size, loff_t *off)
-{
-	struct clk *clk = file->f_dentry->d_inode->i_private;
-	char cusecount[128];
-	unsigned int len;
-
-	len = sprintf(cusecount, "%u\n", clk->enabled);
-	return simple_read_from_buffer(buf, size, off, cusecount, len);
-}
-
-static ssize_t rate_dbg_read(struct file *file, char __user *buf,
-					  size_t size, loff_t *off)
-{
-	struct clk *clk = file->f_dentry->d_inode->i_private;
-	char crate[128];
-	unsigned int rate;
-	unsigned int len;
-
-	rate = clk_get_rate(clk);
-	len = sprintf(crate, "%u\n", rate);
-	return simple_read_from_buffer(buf, size, off, crate, len);
-}
-
-static const struct file_operations usecount_fops = {
-	.read = usecount_dbg_read,
-};
-
-static const struct file_operations set_rate_fops = {
-	.read = rate_dbg_read,
-};
-
-static struct dentry *clk_debugfs_register_dir(struct clk *c,
-						struct dentry *p_dentry)
-{
-	struct dentry *d, *clk_d;
-	const char *p = c->name;
-
-	if (!p)
-		p = "BUG";
-
-	clk_d = debugfs_create_dir(p, p_dentry);
-	if (!clk_d)
-		return NULL;
-
-	d = debugfs_create_file("usecount", S_IRUGO,
-				clk_d, c, &usecount_fops);
-	if (!d)
-		goto err_out;
-	d = debugfs_create_file("rate", S_IRUGO,
-				clk_d, c, &set_rate_fops);
-	if (!d)
-		goto err_out;
-	/*
-	 * TODO : not currently available in ux500
-	 * d = debugfs_create_x32("flags", S_IRUGO, clk_d, (u32 *)&c->flags);
-	 * if (!d)
-	 *	goto err_out;
-	 */
-
-	return clk_d;
-
-err_out:
-	debugfs_remove_recursive(clk_d);
-	return NULL;
-}
-
-static int clk_debugfs_register_one(struct clk *c)
-{
-	struct clk *pa = c->parent;
-	struct clk *bpa = c->bus_parent;
-
-	if (!(bpa && !pa)) {
-		c->dent = clk_debugfs_register_dir(c,
-				pa ? pa->dent : clk_debugfs_root);
-		if (!c->dent)
-			return -ENOMEM;
-	}
-
-	if (bpa) {
-		c->dent_bus = clk_debugfs_register_dir(c,
-				bpa->dent_bus ? bpa->dent_bus : bpa->dent);
-		if ((!c->dent_bus) &&  (c->dent)) {
-			debugfs_remove_recursive(c->dent);
-			c->dent = NULL;
-			return -ENOMEM;
-		}
-	}
-	return 0;
-}
-
-static int clk_debugfs_register(struct clk *c)
-{
-	int err;
-	struct clk *pa = c->parent;
-	struct clk *bpa = c->bus_parent;
-
-	if (pa && (!pa->dent && !pa->dent_bus)) {
-		err = clk_debugfs_register(pa);
-		if (err)
-			return err;
-	}
-
-	if (bpa && (!bpa->dent && !bpa->dent_bus)) {
-		err = clk_debugfs_register(bpa);
-		if (err)
-			return err;
-	}
-
-	if ((!c->dent) && (!c->dent_bus)) {
-		err = clk_debugfs_register_one(c);
-		if (err)
-			return err;
-	}
-	return 0;
-}
-
-static int __init clk_debugfs_init(void)
-{
-	struct clk *c;
-	struct dentry *d;
-	int err;
-
-	d = debugfs_create_dir("clock", NULL);
-	if (!d)
-		return -ENOMEM;
-	clk_debugfs_root = d;
-
-	list_for_each_entry(c, &clk_list, list) {
-		err = clk_debugfs_register(c);
-		if (err)
-			goto err_out;
-	}
-	return 0;
-err_out:
-	debugfs_remove_recursive(clk_debugfs_root);
-	return err;
-}
-
-late_initcall(clk_debugfs_init);
-#endif /* defined(CONFIG_DEBUG_FS) */
-
 int __init clk_init(void)
 {
-	if (cpu_is_u8500()) {
-		prcmu_base = __io_address(U8500_PRCMU_BASE);
-	} else if (cpu_is_u5500()) {
-		prcmu_base = __io_address(U5500_PRCMU_BASE);
-	} else {
-		pr_err("clock: Unknown DB Asic.\n");
-		return -EIO;
-	}
-
-	if (cpu_is_u8500())
+	if (cpu_is_u8500() || cpu_is_u9540())
 		db8500_clk_init();
 	else if (cpu_is_u5500())
 		db5500_clk_init();
-
-#ifdef CONFIG_CPU_FREQ
-	clkdev_add(&clk_smp_twd_lookup);
-#endif
+	else {
+		pr_err("clock: Unknown DB Asic.\n");
+		return -EIO;
+	}
 
 	return 0;
 }

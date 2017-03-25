@@ -1,12 +1,12 @@
 config DBX500_PRCMU_QOS_POWER
 	bool "DBX500 PRCMU power QoS support"
-	depends on (MFD_DB5500_PRCMU || MFD_DB8500_PRCMU)
+	depends on (MFD_DB5500_PRCMU || MFD_DB8500_PRCMU || MFD_DBX540_PRCMU)
 	default y
 	help
 	  Add support for PRCMU power Quality of Service
 
-config UX500_CONTEXT
-	bool "Context save/restore support for UX500"
+config DBX500_CONTEXT
+	bool "Context save/restore support for DBX500"
 	depends on (UX500_SOC_DB8500 || UX500_SOC_DB5500) && PM
 	help
 	  This is needed for ApSleep and deeper sleep states.
@@ -22,7 +22,7 @@ config UX500_PM_PERFORMANCE
 config UX500_CONSOLE_UART_GPIO_PIN
 	int "The pin number of the console UART GPIO pin"
 	default 29
-	depends on UX500_SUSPEND_DBG_WAKE_ON_UART || UX500_CPUIDLE_DEBUG
+	depends on UX500_SUSPEND_DBG_WAKE_ON_UART || DBX500_CPUIDLE_DEBUG
 	help
 	  GPIO pin number of the GPIO pin connected to the console UART RX line.
 
@@ -31,7 +31,7 @@ config UX500_CONSOLE_UART_GPIO_PIN
 config UX500_SUSPEND
 	bool "Suspend to mem and standby support"
 	depends on (UX500_SOC_DB8500 || UX500_SOC_DB5500) && PM && SUSPEND
-	select UX500_CONTEXT
+	select DBX500_CONTEXT
 	help
 	  Add support for suspend.
 

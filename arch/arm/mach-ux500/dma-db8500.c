@@ -12,9 +12,7 @@
 
 #include <plat/ste_dma40.h>
 
-#ifdef CONFIG_HSI
 #include <mach/hsi.h>
-#endif
 #include <mach/setup.h>
 #include <mach/ste-dma40-db8500.h>
 #include <mach/pm.h>
@@ -22,7 +20,7 @@
 
 
 
-static struct resource dma40_resources[] = {
+static struct resource u8500_dma40_resources[] = {
 	[0] = {
 		.start = U8500_DMA_BASE,
 		.end   = U8500_DMA_BASE + SZ_4K - 1,
@@ -32,6 +30,32 @@ static struct resource dma40_resources[] = {
 	[1] = {
 		.start = U8500_DMA_LCPA_BASE,
 		.end   = U8500_DMA_LCPA_BASE + 2 * SZ_1K - 1,
+		.flags = IORESOURCE_MEM,
+		.name  = "lcpa",
+	},
+	[2] = {
+		.start = IRQ_DB8500_DMA,
+		.end   = IRQ_DB8500_DMA,
+		.flags = IORESOURCE_IRQ
+	},
+	[3] = {
+		.start = U8500_DMA_LCLA_BASE,
+		.end   = U8500_DMA_LCLA_BASE + SZ_8K - 1,
+		.flags = IORESOURCE_MEM,
+		.name  = "lcla_esram",
+	}
+};
+
+static struct resource u9540_dma40_resources[] = {
+	[0] = {
+		.start = U8500_DMA_BASE,
+		.end   = U8500_DMA_BASE + SZ_4K - 1,
+		.flags = IORESOURCE_MEM,
+		.name  = "base",
+	},
+	[1] = {
+		.start = U9540_DMA_LCPA_BASE,
+		.end   = U9540_DMA_LCPA_BASE + 2 * SZ_1K - 1,
 		.flags = IORESOURCE_MEM,
 		.name  = "lcpa",
 	},
@@ -105,12 +129,10 @@ static dma_addr_t dma40_rx_map[DB8500_DMA_NR_DEV] = {
 	[DB8500_DMA_DEV17_USB_OTG_IEP_6_14] = U8500_USBOTG_BASE,
 	[DB8500_DMA_DEV18_USB_OTG_IEP_5_13] = U8500_USBOTG_BASE,
 	[DB8500_DMA_DEV19_USB_OTG_IEP_4_12] = U8500_USBOTG_BASE,
-#ifdef CONFIG_HSI
 	[DB8500_DMA_DEV20_SLIM0_CH0_RX_HSI_RX_CH0] = U8500_HSIR_BASE + 0x0 + STE_HSI_RX_BUFFERX,
 	[DB8500_DMA_DEV21_SLIM0_CH1_RX_HSI_RX_CH1] = U8500_HSIR_BASE + 0x4 + STE_HSI_RX_BUFFERX,
 	[DB8500_DMA_DEV22_SLIM0_CH2_RX_HSI_RX_CH2] = U8500_HSIR_BASE + 0x8 + STE_HSI_RX_BUFFERX,
 	[DB8500_DMA_DEV23_SLIM0_CH3_RX_HSI_RX_CH3] = U8500_HSIR_BASE + 0xC + STE_HSI_RX_BUFFERX,
-#endif
 	[DB8500_DMA_DEV24_SRC_SXA0_RX_TX] = 0,
 	[DB8500_DMA_DEV25_SRC_SXA1_RX_TX] = 0,
 	[DB8500_DMA_DEV26_SRC_SXA2_RX_TX] = 0,
@@ -168,12 +190,10 @@ static const dma_addr_t dma40_tx_map[DB8500_DMA_NR_DEV] = {
 	[DB8500_DMA_DEV17_USB_OTG_OEP_6_14] = U8500_USBOTG_BASE,
 	[DB8500_DMA_DEV18_USB_OTG_OEP_5_13] = U8500_USBOTG_BASE,
 	[DB8500_DMA_DEV19_USB_OTG_OEP_4_12] = U8500_USBOTG_BASE,
-#ifdef CONFIG_HSI
 	[DB8500_DMA_DEV20_SLIM0_CH0_TX_HSI_TX_CH0] = U8500_HSIT_BASE + 0x0 + STE_HSI_TX_BUFFERX,
 	[DB8500_DMA_DEV21_SLIM0_CH1_TX_HSI_TX_CH1] = U8500_HSIT_BASE + 0x4 + STE_HSI_TX_BUFFERX,
 	[DB8500_DMA_DEV22_SLIM0_CH2_TX_HSI_TX_CH2] = U8500_HSIT_BASE + 0x8 + STE_HSI_TX_BUFFERX,
 	[DB8500_DMA_DEV23_SLIM0_CH3_TX_HSI_TX_CH3] = U8500_HSIT_BASE + 0xC + STE_HSI_TX_BUFFERX,
-#endif
 	[DB8500_DMA_DEV24_DST_SXA0_RX_TX] = 0,
 	[DB8500_DMA_DEV25_DST_SXA1_RX_TX] = 0,
 	[DB8500_DMA_DEV26_DST_SXA2_RX_TX] = 0,
@@ -237,9 +257,12 @@ static struct stedma40_platform_data dma40_plat_data = {
 	/* Audio is using physical channel 2 from MMDSP */
 	.disabled_channels = {2, -1},
 	.use_esram_lcla = true,
+	/* Physical channels for which HW LLI should not be used */
+	.soft_lli_chans = NULL,
+	.num_of_soft_lli_chans = 0,
 };
 
-#ifdef CONFIG_UX500_CONTEXT
+#ifdef CONFIG_DBX500_CONTEXT
 #define D40_DREG_GCC		0x000
 #define D40_DREG_LCPA		0x020
 #define D40_DREG_LCLA		0x024
@@ -275,8 +298,12 @@ static struct notifier_block dma_context_notifier = {
 
 static void dma_context_notifier_init(void)
 {
-	base = ioremap(dma40_resources[0].start,
-		       resource_size(&dma40_resources[0]));
+	if (cpu_is_u9540())
+		base = ioremap(u9540_dma40_resources[0].start,
+			resource_size(&u9540_dma40_resources[0]));
+	else
+		base = ioremap(u8500_dma40_resources[0].start,
+			resource_size(&u8500_dma40_resources[0]));
 	if (WARN_ON(!base))
 		return;
 
@@ -288,28 +315,48 @@ static void dma_context_notifier_init(void)
 }
 #endif
 
-static struct platform_device dma40_device = {
+static struct platform_device u8500_dma40_device = {
 	.dev = {
 		.platform_data = &dma40_plat_data,
 #ifdef CONFIG_PM
-		.pm_domain = &ux500_dev_power_domain,
+		.pwr_domain = &ux500_dev_power_domain,
 #endif
 	},
 	.name		= "dma40",
 	.id		= 0,
-	.num_resources	= ARRAY_SIZE(dma40_resources),
-	.resource	= dma40_resources
+	.num_resources	= ARRAY_SIZE(u8500_dma40_resources),
+	.resource	= u8500_dma40_resources
 };
 
-void __init db8500_dma_init(struct device *parent)
+static struct platform_device u9540_dma40_device = {
+	.dev = {
+		.platform_data = &dma40_plat_data,
+#ifdef CONFIG_PM
+		.pwr_domain = &ux500_dev_power_domain,
+#endif
+	},
+	.name		= "dma40",
+	.id		= 0,
+	.num_resources	= ARRAY_SIZE(u9540_dma40_resources),
+	.resource	= u9540_dma40_resources
+};
+
+void __init db8500_dma_init(void)
 {
 	int ret;
 
-	dma40_device.dev.parent = parent;
-	ret = platform_device_register(&dma40_device);
-	if (ret)
-		dev_err(&dma40_device.dev, "unable to register device: %d\n",
-			ret);
+	if (cpu_is_u9540()) {
+		ret = platform_device_register(&u9540_dma40_device);
+		if (ret)
+			dev_err(&u9540_dma40_device.dev, "unable to register device: %d\n",
+				ret);
+	}
+	else {
+		ret = platform_device_register(&u8500_dma40_device);
+		if (ret)
+			dev_err(&u8500_dma40_device.dev, "unable to register device: %d\n",
+				ret);
+	}
 
 	dma_context_notifier_init();
 }

@@ -10,14 +10,72 @@
 #include <linux/input/bu21013.h>
 #include <linux/gpio.h>
 #include <linux/interrupt.h>
+#include <linux/lsm303dlh.h>
+#include <linux/l3g4200d.h>
 #include <linux/i2c.h>
-#ifdef CONFIG_U8500_FLASH
-#include <../drivers/staging/camera_flash/adp1653_plat.h>
-#endif
+#include <linux/i2c/adp1653_plat.h>
 #include <linux/input/matrix_keypad.h>
+#include <linux/input/lps001wp.h>
 #include <asm/mach-types.h>
 
 #include "board-mop500.h"
+
+/*
+ * LSM303DLH accelerometer + magnetometer sensors
+ */
+static struct lsm303dlh_platform_data lsm303dlh_pdata = {
+	.axis_map_x = 0,
+	.axis_map_y = 1,
+	.axis_map_z = 2,
+	.negative_x = 1,
+	.negative_y = 1,
+	.negative_z = 0,
+};
+
+static struct l3g4200d_gyr_platform_data l3g4200d_pdata_u8500 = {
+	.axis_map_x = 1,
+	.axis_map_y = 0,
+	.axis_map_z = 2,
+	.negative_x = 0,
+	.negative_y = 0,
+	.negative_z = 1,
+};
+
+static struct lps001wp_prs_platform_data lps001wp_pdata = {
+	.poll_interval = 500,
+	.min_interval = 10,
+};
+
+static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
+	.irq_no = CAMERA_FLASH_INT_PIN
+};
+
+static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
+	{
+		/* LSM303DLH Accelerometer */
+		I2C_BOARD_INFO("lsm303dlh_a", 0x18),
+		.platform_data = &lsm303dlh_pdata,
+	},
+	{
+		/* LSM303DLH Magnetometer */
+		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
+		.platform_data = &lsm303dlh_pdata,
+	},
+	{
+		/* L3G4200D Gyroscope */
+		I2C_BOARD_INFO("l3g4200d", 0x68),
+		.platform_data = &l3g4200d_pdata_u8500,
+	},
+	{
+		/* LSP001WM Barometer */
+		I2C_BOARD_INFO("lps001wp_prs", 0x5C),
+		.platform_data = &lps001wp_pdata,
+	},
+	{
+		I2C_BOARD_INFO("adp1653", 0x30),
+		.platform_data = &adp1653_pdata_u8500_uib
+	}
+};
 
 /*
  * ux500 keymaps
@@ -108,24 +166,6 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_stuib[] = {
 		.platform_data = &stmpe1601_data,
 		.flags = I2C_CLIENT_WAKE,
 	},
-};
-
-#ifdef CONFIG_U8500_FLASH
-/*
- *  Config data for the flash
- */
-static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
-	.irq_no = CAMERA_FLASH_INT_PIN
-};
-#endif
-
-static struct i2c_board_info __initdata mop500_i2c2_devices_stuib[] = {
-#ifdef CONFIG_U8500_FLASH
-	{
-		I2C_BOARD_INFO("adp1653", 0x30),
-		.platform_data = &adp1653_pdata_u8500_uib
-	}
-#endif
 };
 
 /*
@@ -219,14 +259,8 @@ static struct bu21013_platform_device tsc_plat_device = {
 	.portrait = true,
 	.has_ext_clk = true,
 	.enable_ext_clk = false,
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
-		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
-	.x_flip		= true,
-	.y_flip		= false,
-#else
 	.x_flip		= false,
 	.y_flip		= true,
-#endif
 };
 
 static struct bu21013_platform_device tsc_plat2_device = {
@@ -241,14 +275,8 @@ static struct bu21013_platform_device tsc_plat2_device = {
 	.portrait = true,
 	.has_ext_clk = true,
 	.enable_ext_clk = false,
-#if defined(CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE) &&	\
-		CONFIG_DISPLAY_GENERIC_DSI_PRIMARY_ROTATION_ANGLE == 270
-	.x_flip		= true,
-	.y_flip		= false,
-#else
 	.x_flip		= false,
 	.y_flip		= true,
-#endif
 };
 
 static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
@@ -265,28 +293,43 @@ static struct i2c_board_info __initdata u8500_i2c3_devices_stuib[] = {
 
 void __init mop500_stuib_init(void)
 {
+	int ret;
 	if (machine_is_hrefv60() || machine_is_u8520()) {
 		tsc_plat_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
 		tsc_plat2_device.cs_pin = HREFV60_TOUCH_RST_GPIO;
-#ifdef CONFIG_U8500_FLASH
 		adp1653_pdata_u8500_uib.enable_gpio =
 					HREFV60_CAMERA_FLASH_ENABLE;
-#endif
 	} else {
 		tsc_plat_device.cs_pin = GPIO_BU21013_CS;
 		tsc_plat2_device.cs_pin = GPIO_BU21013_CS;
-#ifdef CONFIG_U8500_FLASH
 		adp1653_pdata_u8500_uib.enable_gpio =
 					GPIO_CAMERA_FLASH_ENABLE;
-#endif
 	}
 
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_stuib,
 			ARRAY_SIZE(mop500_i2c0_devices_stuib));
 
-	mop500_uib_i2c_add(2, mop500_i2c2_devices_stuib,
-			ARRAY_SIZE(mop500_i2c2_devices_stuib));
-
 	mop500_uib_i2c_add(3, u8500_i2c3_devices_stuib,
 			ARRAY_SIZE(u8500_i2c3_devices_stuib));
+
+	if (machine_is_hrefv60() || machine_is_u8520()) {
+		lsm303dlh_pdata.irq_a1 = HREFV60_ACCEL_INT1_GPIO;
+		lsm303dlh_pdata.irq_a2 = HREFV60_ACCEL_INT2_GPIO;
+		lsm303dlh_pdata.irq_m = HREFV60_MAGNET_DRDY_GPIO;
+	} else if (machine_is_snowball()) {
+		lsm303dlh_pdata.irq_a1 = SNOWBALL_ACCEL_INT1_GPIO;
+		lsm303dlh_pdata.irq_a2 = SNOWBALL_ACCEL_INT2_GPIO;
+		lsm303dlh_pdata.irq_m = SNOWBALL_MAGNET_DRDY_GPIO;
+	} else {
+		lsm303dlh_pdata.irq_a1 = GPIO_ACCEL_INT1;
+		lsm303dlh_pdata.irq_a2 = GPIO_ACCEL_INT2;
+		lsm303dlh_pdata.irq_m = GPIO_MAGNET_DRDY;
+	}
+	ret = mop500_get_acc_id();
+	if (ret < 0)
+		printk(KERN_ERR " Failed to get Accelerometr chip ID\n");
+	else
+		lsm303dlh_pdata.chip_id = ret;
+	mop500_uib_i2c_add(2, mop500_i2c2_devices,
+			ARRAY_SIZE(mop500_i2c2_devices));
 }

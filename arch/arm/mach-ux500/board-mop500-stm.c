@@ -12,14 +12,14 @@
 
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
-#include <linux/gpio/nomadik.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/regulator/consumer.h>
 
 #include <asm/mach-types.h>
+#include <plat/gpio-nomadik.h>
 #include <plat/pincfg.h>
 #include <mach/devices.h>
-#include <asm/io.h>
+#include <mach/hsi.h>
 #include <trace/stm.h>
 #include "pins-db8500.h"
 
@@ -29,7 +29,7 @@
 #define U8520_SDMMC_EN_GPIO 78
 #define U8520_SDMMC_1V8_3V_GPIO 5
 
-#define STM_DEVICE (&u8500_stm_device.dev)
+#define STM_DEVICE (&ux500_stm_device.dev)
 #define STM_ERR(msg) dev_err(STM_DEVICE, msg)
 #define STM_WARN(msg) dev_warn(STM_DEVICE, msg)
 
@@ -121,9 +121,7 @@ static int stm_ste_disable_ape_on_mipi60(void)
 	if (retval)
 		STM_ERR("Failed to disable MIPI60\n");
 	else {
-		if (!machine_is_snowball())
-			retval = nmk_config_pins(
-				ARRAY_AND_SIZE(mop500_ske_pins));
+		retval = nmk_config_pins(ARRAY_AND_SIZE(mop500_ske_pins));
 		if (retval)
 			STM_ERR("Failed to enable SKE gpio\n");
 	}
@@ -245,7 +243,7 @@ static int enable_vaux3_for_microsd_cable(void)
 {
 	int error;
 
-	regulator_aux3 = regulator_get(&u8500_stm_device.dev, "v-SD-STM");
+	regulator_aux3 = regulator_get(&ux500_stm_device.dev, "v-SD-STM");
 
 	if (IS_ERR(regulator_aux3)) {
 		error = PTR_ERR(regulator_aux3);
@@ -316,8 +314,7 @@ static int stm_ste_connection(enum stm_connection_type con_type)
 		/* Enable altC3 on GPIO70-74 (STMMOD) and GPIO75-76 (UARTMOD) */
 		prcmu_enable_stm_mod_uart();
 		/* Enable APE on MIPI60 */
-		if (!machine_is_snowball())
-			retval = nmk_config_pins_sleep(ARRAY_AND_SIZE(mop500_ske_pins));
+		retval = nmk_config_pins_sleep(ARRAY_AND_SIZE(mop500_ske_pins));
 		if (retval)
 			STM_ERR("Failed to disable SKE GPIO\n");
 		else {
@@ -441,7 +438,7 @@ static struct stm_platform_data stm_pdata = {
 	.stm_connection       = stm_ste_connection,
 };
 
-struct platform_device u8500_stm_device = {
+struct platform_device ux500_stm_device = {
 	.name = "stm",
 	.id = -1,
 	.dev = {

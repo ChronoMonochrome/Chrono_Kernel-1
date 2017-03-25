@@ -14,12 +14,12 @@
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/gpio.h>
-#include <linux/gpio/nomadik.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/regulator/consumer.h>
 #include <linux/vmalloc.h>
 #include <asm/mach-types.h>
+#include <plat/gpio-nomadik.h>
 #include <plat/pincfg.h>
 #include <mach/gpio.h>
 #include <mach/devices.h>
@@ -28,7 +28,7 @@
 #include "pins-db8500.h"
 #include "pins.h"
 #include "board-mop500.h"
-#include "../drivers/staging/mmio/mmio.h"
+#include <linux/mmio.h>
 
 static pin_cfg_t i2c2_pins[] = {
 	GPIO8_I2C2_SDA,
@@ -299,8 +299,6 @@ static int mmio_platform_init(struct mmio_platform_data *pdata)
 	}
 	/* Hook the data for other callbacks to use */
 	pdata->extra = extra;
-
-	pdata->camera_slot = -1;
 
 	err = mmio_power_init(pdata);
 	if (err)

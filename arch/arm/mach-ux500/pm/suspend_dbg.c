@@ -123,12 +123,6 @@ void ux500_suspend_dbg_test_set_wakeup(void)
 	/* Make sure the rtc writes have been accepted */
 	udelay(120);
 
-	if (cpu_is_u9500())
-		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(RTC) |
-				     PRCMU_WAKEUP(HSI0));
-	else
-		prcmu_enable_wakeups(PRCMU_WAKEUP(ABB) | PRCMU_WAKEUP(RTC));
-
 	/* Program RTC to generate an interrupt 1s later */
 	ux500_rtcrtt_next(1000000);
 }
@@ -155,7 +149,9 @@ void ux500_suspend_dbg_end(void)
 		attempts++;
 		pr_info("Suspend test: %d done\n", attempts);
 		suspend_test_count--;
+#ifdef CONFIG_WAKELOCK
 		wake_lock(&main_wake_lock);
+#endif
 
 		if (suspend_test_current < deepsleeps_done) {
 			suspend_test_current = deepsleeps_done;
@@ -171,7 +167,9 @@ void ux500_suspend_dbg_end(void)
 			       TEST_FAILS);
 		} else if (suspend_test_count > 0) {
 			msleep(100);
+#ifdef CONFIG_WAKELOCK
 			wake_unlock(&main_wake_lock);
+#endif
 		}
 
 		if (suspend_test_count == 0)
@@ -188,19 +186,19 @@ void ux500_suspend_dbg_init(void)
 	if (IS_ERR_OR_NULL(suspend_dir))
 		return;
 
-	file = debugfs_create_bool("sleep", S_IWUGO | S_IRUGO,
+	file = debugfs_create_bool("sleep", S_IWUSR | S_IWGRP | S_IRUGO,
 				   suspend_dir,
 				   &sleep_enabled);
 	if (IS_ERR_OR_NULL(file))
 		goto error;
 
-	file = debugfs_create_bool("deepsleep", S_IWUGO | S_IRUGO,
+	file = debugfs_create_bool("deepsleep", S_IWUSR | S_IWGRP | S_IRUGO,
 				   suspend_dir,
 				   &deepsleep_enabled);
 	if (IS_ERR_OR_NULL(file))
 		goto error;
 
-	file = debugfs_create_bool("enable", S_IWUGO | S_IRUGO,
+	file = debugfs_create_bool("enable", S_IWUSR | S_IWGRP | S_IRUGO,
 				   suspend_dir,
 				   &suspend_enabled);
 	if (IS_ERR_OR_NULL(file))

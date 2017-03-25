@@ -57,9 +57,9 @@ static struct dbx500_dump_info db8500_dump[] = {
 		.size     = 0x90,
 	},
 	{
-		.name	  = "db8500_fuses",
-		.phy_addr = (U8500_BACKUPRAM1_BASE + 0xF70),
-		.size	  = 0xc,
+		.name	  = "public_backup_ram",
+		.phy_addr = (U8500_BACKUPRAM1_BASE + 0xC00),
+		.size	  = 0x400,
 	},
 };
 
@@ -142,7 +142,7 @@ static int crash_notifier(struct notifier_block *nb, unsigned long val,
         */
 	spin_lock_irqsave(&dbx500_dump_lock, flags);
 	if (dbx500_dump_done)
-		return NOTIFY_DONE;
+		goto out;
 
 	pr_info("dbx500_dump notified of crash\n");
 
@@ -152,6 +152,7 @@ static int crash_notifier(struct notifier_block *nb, unsigned long val,
 	}
 
 	dbx500_dump_done = true;
+out:
 	spin_unlock_irqrestore(&dbx500_dump_lock, flags);
 
 	return NOTIFY_DONE;
@@ -176,7 +177,7 @@ static struct notifier_block panic_notifier = {
 
 int __init dbx500_dump_init(void)
 {
-	int err, i;
+	int err, i, j;
 
 	if (cpu_is_u5500()) {
 		dbx500_dump = db5500_dump;
@@ -208,7 +209,7 @@ int __init dbx500_dump_init(void)
 	if (err != 0) {
 		pr_err("dbx500_dump: Unable to register a panic notifier %d\n",
 			err);
-		goto free_mem;
+		goto err_notifier_reg;
 	}
 
 	err = register_die_notifier(&die_notifier);
@@ -224,6 +225,10 @@ free_panic_notifier:
 	atomic_notifier_chain_unregister(&panic_notifier_list,
 					 &panic_notifier);
 
+err_notifier_reg:
+	for (j = 0; j < dbx500_dump_size; j++) 
+		iounmap(dbx500_dump[j].io_addr); 
+ 
 free_mem:
 	for (i = i - 1; i >= 0; i--)
 		kfree(dbx500_dump[i].data);

@@ -386,6 +386,8 @@ enum msp_mode {
 #define RX_FIFO_SYNC_HI       0x00000000
 #define TX_FIFO_SYNC_HI       0x00000000
 #define SPI_CLK_MODE_NORMAL   0x00000000
+#define SCKSEL_MSPSCK		  0x00080000
+#define SCKDIV_64			  0x00000040
 
 /* SPI Clock Modes enumertion
  * SPI clock modes of MSP provides compatibility with

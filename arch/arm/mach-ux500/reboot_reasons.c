@@ -9,7 +9,6 @@
  * modify reasons in reboot_reasons[].
  */
 
-#include <linux/bug.h>
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <mach/reboot_reasons.h>

@@ -8,11 +8,11 @@
  */
 
 #ifndef PM_TIMER_H
-#define  PM_TIMER_H
+#define PM_TIMER_H
 
 #include <linux/ktime.h>
 
-#ifdef CONFIG_UX500_CPUIDLE_DEBUG
+#ifdef CONFIG_DBX500_CPUIDLE_DEBUG
 ktime_t u8500_rtc_exit_latency_get(void);
 void ux500_rtcrtt_measure_latency(bool enable);
 #else

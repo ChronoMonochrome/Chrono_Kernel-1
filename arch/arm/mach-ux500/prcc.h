@@ -16,5 +16,4 @@
 #define PRCC_K_SOFTRST_SET	0x018
 #define PRCC_K_SOFTRST_CLR	0x01C
 #define PRCC_K_RST_STATUS	0x020
-
 #endif

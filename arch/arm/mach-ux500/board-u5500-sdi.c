@@ -233,24 +233,21 @@ static void sdi1_configure(void)
 	gpio_direction_output(pin[1], 0);
 }
 
-void __init u5500_sdi_init(struct device *parent)
+void __init u5500_sdi_init(void)
 {
 	u32 periphid = 0x10480180;
 
 	/*
-	 * Fix me in 5500 v2.1
 	 * Dynamic detection of booting device by reading
 	 * ROM debug register from BACKUP RAM and register the
 	 * corresponding EMMC.
-	 * This is done due to wrong configuration of MMC0 clock
-	 * in ROM code for u5500 v2.
 	 */
 	if (u5500_get_boot_mmc() == 2)
-		db5500_add_sdi2(parent, &u5500_sdi2_data, periphid);
+		db5500_add_sdi2(&u5500_sdi2_data, periphid);
 	else
-		db5500_add_sdi0(parent, &u5500_sdi0_data, periphid);
+		db5500_add_sdi0(&u5500_sdi0_data, periphid);
 
 	sdi1_configure();
-	db5500_add_sdi1(parent, &u5500_sdi1_data, periphid);
-	db5500_add_sdi3(parent, &u5500_sdi3_data, periphid);
+	db5500_add_sdi1(&u5500_sdi1_data, periphid);
+	db5500_add_sdi3(&u5500_sdi3_data, periphid);
 }

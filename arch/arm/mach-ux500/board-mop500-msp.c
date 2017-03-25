@@ -7,8 +7,8 @@
 #include <linux/platform_device.h>
 #include <linux/init.h>
 #include <linux/gpio.h>
-#include <linux/gpio/nomadik.h>
 
+#include <plat/gpio-nomadik.h>
 #include <plat/ste_dma40.h>
 #include <plat/pincfg.h>
 
@@ -184,10 +184,10 @@ static struct msp_i2s_platform_data msp3_platform_data = {
 	.msp_i2s_exit = msp13_i2s_exit,
 };
 
-void __init mop500_msp_init(struct device *parent)
+void __init mop500_msp_init(void)
 {
-	db8500_add_msp0_i2s(parent, &msp0_platform_data);
-	db8500_add_msp1_i2s(parent, &msp1_platform_data);
-	db8500_add_msp2_i2s(parent, &msp2_platform_data);
-	db8500_add_msp3_i2s(parent, &msp3_platform_data);
+	db8500_add_msp0_i2s(&msp0_platform_data);
+	db8500_add_msp1_i2s(&msp1_platform_data);
+	db8500_add_msp2_i2s(&msp2_platform_data);
+	db8500_add_msp3_i2s(&msp3_platform_data);
 }

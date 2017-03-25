@@ -149,7 +149,7 @@ static int create_clk_dirs(struct clk_debug_info *cdi, int size)
 
 	for (i = 0; i < size; i++) {
 		cdi[i].enable = debugfs_create_file("enable",
-						    (S_IRUGO | S_IWUGO),
+						    (S_IRUGO | S_IWUSR | S_IWGRP),
 						    cdi[i].dir, &cdi[i],
 						    &clk_enable_fops);
 		if (!cdi[i].enable)
@@ -225,7 +225,7 @@ no_dir:
 
 static int __init clk_debug_init(void)
 {
-	if (cpu_is_u8500())
+	if (cpu_is_u8500() || cpu_is_u9540())
 		db8500_clk_debug_init();
 	else if (cpu_is_u5500())
 		db5500_clk_debug_init();

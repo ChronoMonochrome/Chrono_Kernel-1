@@ -15,7 +15,6 @@
 #include <linux/tee.h>
 #include <linux/module.h>
 #include <mach/hardware.h>
-#include <asm/mach-types.h>
 
 #define STATIC_TEE_TA_START_LOW	0xBC765EDE
 #define STATIC_TEE_TA_START_MID	0x6724
@@ -33,8 +32,6 @@ bool ux500_jtag_enabled(void)
 #ifdef CONFIG_UX500_DEBUG_NO_LAUTERBACH
 	return false;
 #else
-	if (machine_is_snowball())
-		return true;
 	if (cpu_is_u5500())
 		return readl_relaxed(__io_address(U5500_PRCMU_DBG_PWRCTRL))
 			& PRCMU_DBG_PWRCTRL_A9DBGCLKEN;
@@ -103,8 +100,8 @@ static int __init product_detect(void)
 	case TEE_PRODUCT_ID_8400:
 		pr_info("ux500-product: u8400 detected\n");
 		break;
-	case TEE_PRODUCT_ID_8500:
-		pr_info("ux500-product: u8500 detected\n");
+	case TEE_PRODUCT_ID_8500B:
+		pr_info("ux500-product: u8500B detected\n");
 		break;
 	case TEE_PRODUCT_ID_9500:
 		pr_info("ux500-product: u9500 detected\n");
@@ -117,6 +114,24 @@ static int __init product_detect(void)
 		break;
 	case TEE_PRODUCT_ID_8500C:
 		pr_info("ux500-product: u8500C detected\n");
+		break;
+	case TEE_PRODUCT_ID_8500A:
+		pr_info("ux500-product: u8500A detected\n");
+		break;
+	case TEE_PRODUCT_ID_8500E:
+		pr_info("ux500-product: u8500E detected\n");
+		break;
+	case TEE_PRODUCT_ID_8520F:
+		pr_info("ux500-product: u8520F detected\n");
+		break;
+	case TEE_PRODUCT_ID_8520H:
+		pr_info("ux500-product: u8520H detected\n");
+		break;
+	case TEE_PRODUCT_ID_9540:
+		pr_info("ux500-product: u9540 detected\n");
+		break;
+	case TEE_PRODUCT_ID_9500C:
+		pr_info("ux500-product: u9500C detected\n");
 		break;
 	case TEE_PRODUCT_ID_UNKNOWN:
 	default:

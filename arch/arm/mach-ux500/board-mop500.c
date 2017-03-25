@@ -9,23 +9,19 @@
  *
  */
 #include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/i2c.h>
-#include <linux/input/st-ftk.h>
 #include <linux/gpio.h>
-#include <linux/gpio/nomadik.h>
 #include <linux/amba/bus.h>
 #include <linux/amba/pl022.h>
 #include <linux/amba/serial.h>
 #include <linux/spi/spi.h>
-#ifdef CONFIG_HSI
 #include <linux/hsi/hsi.h>
-#endif
-#include <linux/mfd/abx500/ab8500.h>
+#include <linux/mfd/ab8500.h>
+#include <linux/mfd/abx500.h>
 #include <linux/regulator/ab8500.h>
 #include <linux/mfd/tc3589x.h>
 #include <linux/mfd/abx500/ab8500-gpio.h>
@@ -35,27 +31,20 @@
 #include <linux/smsc911x.h>
 #include <linux/gpio_keys.h>
 #include <linux/delay.h>
-#include <linux/mfd/ab8500/denc.h>
-#ifdef CONFIG_STM_MSP_SPI
+#include <linux/mfd/abx500/ab8500-denc.h>
 #include <linux/spi/stm_msp.h>
-#endif
 #include <linux/leds_pwm.h>
 #include <linux/pwm_backlight.h>
-#include <linux/gpio/nomadik.h>
-
-#include <linux/of.h>
-#include <linux/of_platform.h>
-
 #include <linux/leds.h>
-#include <linux/mfd/abx500/ab8500-sysctrl.h>
-#ifdef CONFIG_INPUT_AB8500_ACCDET
+#include <linux/mfd/abx500/ux500_sysctrl.h>
 #include <linux/input/abx500-accdet.h>
-#endif
+#include <linux/input/ab8505_micro_usb_iddet.h>
+#include <linux/cpuidle-dbx500.h>
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
-#include <asm/hardware/gic.h>
 
+#include <plat/gpio-nomadik.h>
 #include <plat/i2c.h>
 #include <plat/ste_dma40.h>
 #include <plat/pincfg.h>
@@ -68,28 +57,24 @@
 #ifdef CONFIG_U8500_SIM_DETECT
 #include <mach/sim_detect.h>
 #endif
-#ifdef CONFIG_CRYPTO_DEV_UX500
 #include <mach/crypto-ux500.h>
-#endif
 #include <mach/pm.h>
-#ifdef CONFIG_AV8100
+#include <mach/reboot_reasons.h>
+
 #include <video/av8100.h>
-#endif
 
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
 #include <plat/ske.h>
-#include "pins.h"
 #endif
 
+#include "pins.h"
 #include "cpu-db8500.h"
 #include "pins-db8500.h"
 #include "devices-db8500.h"
 #include "board-mop500.h"
 #include "board-mop500-regulators.h"
 #include "board-mop500-bm.h"
-#if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
 #include "board-mop500-wlan.h"
-#endif
 
 #define PRCM_DEBUG_NOPWRDOWN_VAL	0x194
 #define ARM_DEBUG_NOPOWER_DOWN_REQ	1
@@ -104,7 +89,7 @@ static struct ab8500_denc_platform_data ab8500_denc_pdata = {
 static struct gpio_led snowball_led_array[] = {
 	{
 		.name = "user_led",
-		.default_trigger = "heartbeat",
+		.default_trigger = "none",
 		.gpio = 142,
 	},
 };
@@ -122,7 +107,7 @@ static struct platform_device snowball_led_dev = {
 };
 
 static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
-	.gpio_base		= AB8500_PIN_GPIO1,
+	.gpio_base		= AB8500_PIN_GPIO(1),
 	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
 	/*
 	 * config_reg is the initial configuration of ab8500 pins.
@@ -142,18 +127,17 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	 *		      Pin GPIO37 (ApeSpiCSn)
 	 *		      Pin GPIO38 (ApeSpiDout)
 	 *		      Pin GPIO39 (ApeSpiDin) are configured as GPIO
-	 * GpioSel6 = 0x03  => Pin GPIO41 (ModSDA) is configured as GPIO
-			      Pin GPIO42 (SysClkReq5) is configured as GPIO
+	 * GpioSel6 = 0x02 => Pin GPIO42 (SysClkReq5) is configured as GPIO
 	 * AlternaFunction = 0x00 => If Pins GPIO10 to 13 are not configured
-	 * as GPIO then this register selectes the alternate fucntions
+	 * as GPIO then this register selectes the alternate functions
 	 */
-	.config_reg     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x03},
+	.config_reg     = {0x0F, 0x9E, 0x80, 0x01, 0x78, 0x02, 0x00},
 
 	/*
 	 * config_direction allows for the initial GPIO direction to
 	 * be set. For Snowball we set GPIO26 to output.
 	 */
-	.config_direction  = {0xA, 0x00, 0x00, 0x02, 0x00, 0x03},
+	.config_direction  = {0x00, 0x00, 0x00, 0x02, 0x00, 0x00},
 
 	/*
 	 * config_pullups allows for the intial configuration of the
@@ -163,7 +147,7 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 };
 
 static struct ab8500_gpio_platform_data ab8505_gpio_pdata = {
-	.gpio_base		= AB8500_PIN_GPIO1,
+	.gpio_base		= AB8500_PIN_GPIO(1),
 	.irq_base		= MOP500_AB8500_VIR_GPIO_IRQ_BASE,
 	/*
 	 * config_reg is the initial configuration of ab8500 pins.
@@ -201,7 +185,7 @@ static struct ab8500_gpio_platform_data ab8505_gpio_pdata = {
 	 * GPIO pullup/pulldown configuration.
 	 * GPIO13(GpioPud2) = 1 and GPIO50(GpioPud7) = 1.
 	 */
-	.config_pullups    = {0xE0, 0x11, 0x00, 0x00, 0x00, 0x00, 0x02},
+	.config_pullups    = {0xE0, 0x11, 0x00, 0x00, 0x00, 0x00, 0x06},
 };
 
 static struct ab8500_sysctrl_platform_data ab8500_sysctrl_pdata = {
@@ -212,6 +196,7 @@ static struct ab8500_sysctrl_platform_data ab8500_sysctrl_pdata = {
 	 */
 	.initial_req_buf_config
 			= {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},
+	.reboot_reason_code = reboot_reason_code,
 };
 
 #ifdef CONFIG_INPUT_AB8500_ACCDET
@@ -219,7 +204,7 @@ static struct abx500_accdet_platform_data ab8500_accdet_pdata = {
 	.btn_keycode = KEY_MEDIA,
 	.accdet1_dbth = ACCDET1_TH_1200mV | ACCDET1_DB_70ms,
 	.accdet2122_th = ACCDET21_TH_1000mV | ACCDET22_TH_1000mV,
-	.video_ctrl_gpio = AB8500_PIN_GPIO35,
+	.video_ctrl_gpio = AB8500_PIN_GPIO(35),
 };
 #endif
 
@@ -233,7 +218,7 @@ static struct gpio_keys_button snowball_key_array[] = {
 		.debounce_interval = 50,
 		.wakeup		= 1,
 	},
-/*	{
+	{
 		.gpio		= 151,
 		.type		= EV_KEY,
 		.code		= KEY_2,
@@ -251,7 +236,15 @@ static struct gpio_keys_button snowball_key_array[] = {
 		.debounce_interval = 50,
 		.wakeup		= 1,
 	},
-*/
+	{
+		.gpio		= 161,
+		.type		= EV_KEY,
+		.code		= KEY_4,
+		.desc		= "extkb3",
+		.active_low     = 1,
+		.debounce_interval = 50,
+		.wakeup		= 1,
+	},
 	{
 		.gpio		= 162,
 		.type		= EV_KEY,
@@ -273,7 +266,7 @@ static struct platform_device snowball_key_dev = {
 	.id		= -1,
 	.dev		= {
 		.platform_data  = &snowball_key_data,
-		.pm_domain	= &ux500_dev_power_domain,
+		.pwr_domain	= &ux500_dev_power_domain,
 	}
 };
 
@@ -317,6 +310,31 @@ static struct platform_device u8500_modem_dev = {
 };
 #endif
 
+static struct dbx500_cpuidle_platform_data db8500_cpuidle_platform_data = {
+	.wakeups = PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) | PRCMU_WAKEUP(ABB),
+};
+
+struct platform_device db8500_cpuidle_device = {
+	.name	= "dbx500-cpuidle",
+	.id	= -1,
+	.dev	= {
+		.platform_data = &db8500_cpuidle_platform_data,
+	},
+};
+
+static struct dbx500_cpuidle_platform_data db9500_cpuidle_platform_data = {
+	.wakeups = PRCMU_WAKEUP(ARM) | PRCMU_WAKEUP(RTC) | PRCMU_WAKEUP(ABB) \
+		   | PRCMU_WAKEUP(HSI0),
+};
+
+struct platform_device db9500_cpuidle_device = {
+	.name	= "dbx500-cpuidle",
+	.id	= -1,
+	.dev	= {
+		.platform_data = &db9500_cpuidle_platform_data,
+	},
+};
+
 static struct ab8500_platform_data ab8500_platdata = {
 	.irq_base	= MOP500_AB8500_IRQ_BASE,
 	.regulator	= &ab8500_regulator_plat_data,
@@ -338,6 +356,9 @@ static struct ab8500_platform_data ab8500_platdata = {
 	.pm_power_off = true,
 #endif
 	.thermal_time_out = 20, /* seconds */
+#ifdef CONFIG_INPUT_AB8505_MICRO_USB_DETECT
+	.iddet = &iddet_adc_val_list,
+#endif
 };
 
 static struct resource ab8500_resources[] = {
@@ -528,86 +549,47 @@ static struct ske_keypad_platform_data mop500_ske_keypad_data = {
 
 #endif
 
+static int av8100_plat_init(void)
+{
+	struct ux500_pins *pins;
+	int res;
 
-#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
-/*
- * GPIO-regulator wlan vbat data
- */
-static struct fixed_voltage_config snowball_gpio_wlan_vbat_data = {
-	.supply_name		= "WLAN-VBAT",
-	.gpio			= SNOWBALL_EN_3V6_GPIO,
-	.microvolts		= 3600000,
-	.enable_high		= 1,
-	.init_data		= &gpio_wlan_vbat_regulator,
-	.startup_delay		= 3500, /* Startup time */
-};
+	pins = ux500_pins_get("av8100-hdmi");
+	if (!pins) {
+		res = -EINVAL;
+		goto failed;
+	}
 
-/*
- * GPIO-regulator en 3v3 vbat data
- */
+	res = ux500_pins_enable(pins);
+	if (res != 0)
+		goto failed;
 
-static struct fixed_voltage_config snowball_gpio_en_3v3_data = {
-	.supply_name		= "EN-3V3",
-	.gpio			= SNOWBALL_EN_3V3_ETH_GPIO,
-	.microvolts		= 3300000,
-	.enable_high		= 1,
-	.init_data		= &gpio_en_3v3_regulator,
-	.startup_delay		= 5000, /* 1200us according to data sheet */
-};
+	return res;
 
-/*
- * GPIO-regulator en 3.3 volts for snowball LCD
- */
+failed:
+	pr_err("%s failed\n", __func__);
+	return res;
+}
 
-static struct fixed_voltage_config snowball_gpio_en_lcd_3v3_data = {
-	.supply_name		= "LCD-3V3",
-	.gpio			= SNOWBALL_EN_3V3_LCD_GPIO,
-	.microvolts		= 3300000,
-	.enable_high		= 1,
-	.init_data		= &gpio_en_lcd_3v3_regulator,
-	.startup_delay		= 5000,
-};
+static int av8100_plat_exit(void)
+{
+	struct ux500_pins *pins;
+	int res;
 
-/*
- * GPIO-regulator en 1.8 volts for snowball LCD
- */
+	pins = ux500_pins_get("av8100-hdmi");
+	if (!pins) {
+		res = -EINVAL;
+		goto failed;
+	}
+	res = ux500_pins_disable(pins);
+	if (res != 0)
+		goto failed;
+	return res;
 
-static struct fixed_voltage_config snowball_gpio_en_lcd_1v8_data = {
-	.supply_name		= "LCD-1V8",
-	.gpio			= SNOWBALL_EN_1V8_LCD_GPIO,
-	.microvolts		= 1800000,
-	.enable_high		= 1,
-	.init_data		= &gpio_en_lcd_1v8_regulator,
-	.startup_delay		= 5000,
-};
-
-/*
- * GPIO-regulator en 5 volts VLED boost for snowball LCD
- */
-
-static struct fixed_voltage_config snowball_gpio_en_lcd_vled_boost_data = {
-	.supply_name		= "LCD-VLED-BOOST",
-	.gpio			= SNOWBALL_EN_VLED_BOOST_LCD_GPIO,
-	.microvolts		= 5000000,
-	.enable_high		= 1,
-	.init_data		= &gpio_en_lcd_vled_boost_regulator,
-	.startup_delay		= 5000,
-};
-
-/*
- * GPIO-regulator en 5 volts VLED for snowball LCD
- */
-
-static struct fixed_voltage_config snowball_gpio_en_lcd_vled_data = {
-	.supply_name		= "LCD-VLED",
-	.gpio			= SNOWBALL_EN_VLED_LCD_GPIO,
-	.microvolts		= 5000000,
-	.enable_high		= 1,
-	.init_data		= &gpio_en_lcd_vled_regulator,
-	.startup_delay		= 5000,
-};
-
-#endif
+failed:
+	pr_err("%s failed\n", __func__);
+	return res;
+}
 
 /*
  * TC35892
@@ -615,12 +597,7 @@ static struct fixed_voltage_config snowball_gpio_en_lcd_vled_data = {
 
 static void mop500_tc35892_init(struct tc3589x *tc3589x, unsigned int base)
 {
-	struct device *parent = NULL;
-#if 0
-	/* FIXME: Is the sdi actually part of tc3589x? */
-	parent = tc3589x->dev;
-#endif
-	mop500_sdi_tc35892_init(parent);
+	mop500_sdi_tc35892_init();
 }
 
 static struct tc3589x_gpio_platform_data mop500_tc35892_gpio_data = {
@@ -652,16 +629,16 @@ static struct lp5521_led_config lp5521_pri_led[] = {
 	},
 };
 
-#ifdef CONFIG_AV8100
 static struct av8100_platform_data av8100_plat_data = {
+	.init			= av8100_plat_init,
+	.exit			= av8100_plat_exit,
 	.irq			= NOMADIK_GPIO_TO_IRQ(192),
 	.reset			= MOP500_HDMI_RST_GPIO,
 	.inputclk_id		= "sysclk2",
 	.regulator_pwr_id	= "hdmi_1v8",
-	.alt_powerupseq		= true,
+	.alt_powerupseq		= false,
 	.mclk_freq		= 3, /* MCLK_RNG_31_38 */
 };
-#endif
 
 static struct lp5521_platform_data __initdata lp5521_pri_data = {
 	.label		= "lp5521_pri",
@@ -701,49 +678,14 @@ static struct i2c_board_info __initdata mop500_i2c0_devices[] = {
 		.irq		= NOMADIK_GPIO_TO_IRQ(217),
 		.platform_data  = &mop500_tc35892_data,
 	},
-#ifdef CONFIG_AV8100
 	{
 		I2C_BOARD_INFO("av8100", 0x70),
 		.platform_data = &av8100_plat_data,
 	},
-#endif
 	/* I2C0 devices only available prior to HREFv60 */
 };
 
 #define NUM_PRE_V60_I2C0_DEVICES 1
-
-static struct i2c_board_info __initdata snowball_i2c0_devices[] = {
-#ifdef CONFIG_AV8100
-	{
-		I2C_BOARD_INFO("av8100", 0x70),
-		.platform_data = &av8100_plat_data,
-	},
-#endif
-};
-
-#ifdef CONFIG_TOUCHSCREEN_STMT07_MODULE
-struct ftk_platform_data ftk_platdata_snowball = {
-	.gpio_rst = -1,
-	.x_min = 0,
-	.x_max = 1280,
-	.y_min = 0,
-	.y_max = 800,
-	.p_min = 0,
-	.p_max = 256,
-	.portrait = 0,
-	.patch_file = "st-ftkt.bin",
-	.busnum = 1,
-};
-
-static struct i2c_board_info snowball_i2c1_devices[] = {
-	{
-		/* STM TS controller */
-		I2C_BOARD_INFO("ftk", 0x4B),
-		.irq		= NOMADIK_GPIO_TO_IRQ(152),
-		.platform_data = &ftk_platdata_snowball,
-	},
-};
-#endif
 
 static struct i2c_board_info __initdata mop500_i2c2_devices[] = {
 	{
@@ -793,64 +735,13 @@ U8500_I2C_CONTROLLER(1, 0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
 U8500_I2C_CONTROLLER(2,	0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
 U8500_I2C_CONTROLLER(3,	0xe, 1, 8, 400000, 200, I2C_FREQ_MODE_FAST);
 
-static void __init mop500_i2c_init(struct device *parent)
+static void __init mop500_i2c_init(void)
 {
-	db8500_add_i2c0(parent, &u8500_i2c0_data);
-	db8500_add_i2c1(parent, &u8500_i2c1_data);
-	db8500_add_i2c2(parent, &u8500_i2c2_data);
-	db8500_add_i2c3(parent, &u8500_i2c3_data);
+	db8500_add_i2c0(&u8500_i2c0_data);
+	db8500_add_i2c1(&u8500_i2c1_data);
+	db8500_add_i2c2(&u8500_i2c2_data);
+	db8500_add_i2c3(&u8500_i2c3_data);
 }
-
-#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
-static struct platform_device snowball_gpio_wlan_vbat_regulator_device = {
-	.name	= "reg-fixed-voltage",
-	.id	= 0,
-	.dev	= {
-		.platform_data	= &snowball_gpio_wlan_vbat_data,
-	},
-};
-
-static struct platform_device snowball_gpio_en_3v3_regulator_device = {
-	.name	= "reg-fixed-voltage",
-	.id	= 1,
-	.dev	= {
-		.platform_data	= &snowball_gpio_en_3v3_data,
-	},
-};
-
-static struct platform_device snowball_gpio_en_lcd_3v3_regulator_device = {
-	.name	= "reg-fixed-voltage",
-	.id	= 2,
-	.dev	= {
-		.platform_data	= &snowball_gpio_en_lcd_3v3_data,
-	},
-};
-
-static struct platform_device snowball_gpio_en_lcd_1v8_regulator_device = {
-	.name	= "reg-fixed-voltage",
-	.id	= 3,
-	.dev	= {
-		.platform_data	= &snowball_gpio_en_lcd_1v8_data,
-	},
-};
-
-static struct platform_device snowball_gpio_en_lcd_vled_boost_regulator_device = {
-	.name	= "reg-fixed-voltage",
-	.id	= 4,
-	.dev	= {
-		.platform_data	= &snowball_gpio_en_lcd_vled_boost_data,
-	},
-};
-
-static struct platform_device snowball_gpio_en_lcd_vled_regulator_device = {
-	.name	= "reg-fixed-voltage",
-	.id	= 5,
-	.dev	= {
-		.platform_data	= &snowball_gpio_en_lcd_vled_data,
-	},
-};
-
-#endif
 
 #ifdef CONFIG_LEDS_PWM
 static struct led_pwm pwm_leds_data[] = {
@@ -917,22 +808,6 @@ static struct platform_device ux500_backlight_device[] = {
 		.dev = {
 			.platform_data = &u8500_backlight_data[1],
 		},
-	},
-};
-
-static struct platform_pwm_backlight_data snowball_backlight_data = {
-	.pwm_id = 1,
-	.max_brightness = 512,
-	.dft_brightness = 512,
-	.lth_brightness = 0,
-	.pwm_period_ns = 512,
-};
-
-static struct platform_device snowball_backlight_device = {
-	.name = "pwm-backlight",
-	.id = 0,
-	.dev = {
-			.platform_data = &snowball_backlight_data,
 	},
 };
 #endif
@@ -1017,7 +892,6 @@ struct platform_device u8500_sim_detect_device = {
 };
 #endif
 
-#ifdef CONFIG_CRYPTO_DEV_UX500
 static struct cryp_platform_data u8500_cryp1_platform_data = {
 	.mem_to_engine = {
 		.dir = STEDMA40_MEM_TO_PERIPH,
@@ -1056,7 +930,6 @@ static struct hash_platform_data u8500_hash1_platform_data = {
 	.mem_to_engine = &u8500_hash_dma_cfg_tx,
 	.dma_filter = stedma40_filter,
 };
-#endif
 
 /* add any platform devices here - TODO */
 static struct platform_device *mop500_platform_devs[] __initdata = {
@@ -1068,14 +941,14 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 	&ux500_mmio_device,
 #endif
 	&ux500_hwmem_device,
-#ifdef CONFIG_FB_MCDE
-	&u8500_mcde_device,
+	&ux500_mcde_device,
+#ifdef CONFIG_MCDE_DISPLAY_DSI
+	&u8500_dsilink_device[0],
+	&u8500_dsilink_device[1],
+	&u8500_dsilink_device[2],
 #endif
-#ifdef CONFIG_FB_B2R2
-	&u8500_b2r2_device,
-	&u8500_b2r2_blt_device,
-#endif
-	&u8500_thsens_device,
+	&ux500_b2r2_device,
+	&ux500_b2r2_blt_device,
 #ifdef CONFIG_LEDS_PWM
 	&ux500_leds_device,
 #endif
@@ -1089,28 +962,6 @@ static struct platform_device *mop500_platform_devs[] __initdata = {
 #ifdef CONFIG_HSI
 	&u8500_hsi_device,
 #endif
-};
-
-#ifdef CONFIG_TOUCHSCREEN_STMT07_MODULE
-const struct i2c_board_info *snowball_touch_get_plat_data(void)
-{
-	return snowball_i2c1_devices;
-}
-EXPORT_SYMBOL_GPL(snowball_touch_get_plat_data);
-#endif
-
-#ifdef CONFIG_STM_MSP_SPI
-/*
- * MSP-SPI
- */
-
-#define NUM_MSP_CLIENTS 10
-
-static struct stm_msp_controller mop500_msp2_spi_data = {
-	.id		= 2,
-	.num_chipselect	= NUM_MSP_CLIENTS,
-	.base_addr	= U8500_MSP2_BASE,
-	.device_name	= "msp2",
 };
 
 /*
@@ -1139,7 +990,7 @@ static struct stedma40_chan_cfg ssp0_dma_cfg_tx = {
 };
 #endif
 
-static struct pl022_ssp_controller ssp0_plat = {
+static struct pl022_ssp_controller ssp0_platform_data = {
 	.bus_id = 4,
 #ifdef CONFIG_STE_DMA40
 	.enable_dma = 1,
@@ -1153,17 +1004,10 @@ static struct pl022_ssp_controller ssp0_plat = {
 	.num_chipselect = NUM_SSP_CLIENTS,
 };
 
-static void __init mop500_spi_init(struct device *parent)
+static void __init mop500_spi_init(void)
 {
-	db8500_add_ssp0(parent, &ssp0_plat);
-	if (!machine_is_snowball())
-		db8500_add_msp2_spi(parent, &mop500_msp2_spi_data);
+	db8500_add_ssp0(&ssp0_platform_data);
 }
-#else
-static void __init mop500_spi_init(struct device *parent)
-{
-}
-#endif /* CONFIG_STM_MSP_SPI */
 
 #ifdef CONFIG_STE_DMA40_REMOVE
 static struct stedma40_chan_cfg uart0_dma_cfg_rx = {
@@ -1220,7 +1064,6 @@ static struct stedma40_chan_cfg uart2_dma_cfg_tx = {
 	.dst_info.data_width = STEDMA40_BYTE_WIDTH,
 };
 #endif
-
 
 static pin_cfg_t mop500_pins_uart0[] = {
 	GPIO0_U0_CTSn   | PIN_INPUT_PULLUP,
@@ -1296,45 +1139,50 @@ static struct amba_pl011_data uart2_plat = {
 	.reset = u8500_uart2_reset,
 };
 
-static void __init mop500_uart_init(struct device *parent)
+static void __init mop500_uart_init(void)
 {
-	db8500_add_uart0(parent, &uart0_plat);
-	db8500_add_uart1(parent, &uart1_plat);
-	db8500_add_uart2(parent, &uart2_plat);
+	db8500_add_uart0(&uart0_plat);
+	db8500_add_uart1(&uart1_plat);
+	db8500_add_uart2(&uart2_plat);
 }
 
 static void __init u8500_cryp1_hash1_init(void)
 {
-#ifdef CONFIG_CRYPTO_DEV_UX500
 	db8500_add_cryp1(&u8500_cryp1_platform_data);
 	db8500_add_hash1(&u8500_hash1_platform_data);
-#endif
 }
 
 static struct platform_device *snowball_platform_devs[] __initdata = {
 	&ux500_hwmem_device,
 	&snowball_led_dev,
 	&snowball_key_dev,
-#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
-	&snowball_gpio_en_3v3_regulator_device,
-	&snowball_gpio_wlan_vbat_regulator_device,
-	&snowball_gpio_en_lcd_3v3_regulator_device,
-	&snowball_gpio_en_lcd_1v8_regulator_device,
-	&snowball_gpio_en_lcd_vled_boost_regulator_device,
-	&snowball_gpio_en_lcd_vled_regulator_device,
-#endif
 	&snowball_sbnet_dev,
-#ifdef CONFIG_FB_MCDE
-	&u8500_mcde_device,
-#endif
-#ifdef CONFIG_FB_B2R2
-	&u8500_b2r2_device,
-	&u8500_b2r2_blt_device,
-#endif
-#ifdef CONFIG_BACKLIGHT_PWM
-	&snowball_backlight_device,
-#endif
+	&ux500_mcde_device,
+	&u8500_dsilink_device[0],
+	&u8500_dsilink_device[1],
+	&u8500_dsilink_device[2],
+	&ux500_b2r2_device,
+	&ux500_b2r2_blt_device,
 };
+
+/*
+ *  On boards hrefpv60 and later, the accessory insertion/removal,
+ *  button press/release are inverted.
+*/
+static void accessory_detect_config(void)
+{
+#ifdef CONFIG_INPUT_AB8500_ACCDET
+	if (machine_is_hrefv60() || machine_is_u8520() || machine_is_u9540())
+		ab8500_accdet_pdata.is_detection_inverted = true;
+	else
+		ab8500_accdet_pdata.is_detection_inverted = false;
+
+	if (machine_is_u8520()) {
+		ab8500_accdet_pdata.video_ctrl_gpio = AB8500_PIN_GPIO(10);
+		ab8500_accdet_pdata.mic_ctrl = AB8500_PIN_GPIO(34);
+	}
+#endif
+}
 
 static void fixup_ab8505_gpio(void)
 {
@@ -1343,137 +1191,15 @@ static void fixup_ab8505_gpio(void)
 
 static void __init mop500_init_machine(void)
 {
-	struct device *parent = NULL;
-	int i;
+	int i2c0_devs;
 
-	parent = u8500_init_devices();
+	accessory_detect_config();
+
+	u8500_init_devices();
+	platform_device_register(&db8500_prcmu_device);
+	platform_device_register(&u8500_usecase_gov_device);
 
 	mop500_pins_init();
-
-	mop500_regulator_init();
-
-	u8500_cryp1_hash1_init();
-
-#ifdef CONFIG_HSI
-	hsi_register_board_info(u8500_hsi_devices,
-				ARRAY_SIZE(u8500_hsi_devices));
-#endif
-
-	/* FIXME: parent of ab8500 should be prcmu */
-	for (i = 0; i < ARRAY_SIZE(mop500_platform_devs); i++)
-		mop500_platform_devs[i]->dev.parent = parent;
-
-	platform_add_devices(mop500_platform_devs,
-			ARRAY_SIZE(mop500_platform_devs));
-
-	platform_device_register(&u8500_shrm_device);
-#ifdef CONFIG_STE_TRACE_MODEM
-	platform_device_register(&u8500_trace_modem);
-#endif
-#ifdef CONFIG_MODEM_U8500
-	platform_device_register(&u8500_modem_dev);
-#endif
-	mop500_i2c_init(parent);
-	mop500_sdi_init(parent);
-	mop500_spi_init(parent);
-	mop500_uart_init(parent);
-#ifdef CONFIG_STM_MSP_SPI
-	mop500_msp_init(parent);
-#endif
-#if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
-	mop500_wlan_init(parent);
-#endif
-
-#ifdef CONFIG_KEYBOARD_NOMADIK_SKE
-	db8500_add_ske_keypad(parent, &mop500_ske_keypad_data,
-			sizeof(mop500_ske_keypad_data));
-#endif
-
-#ifdef CONFIG_ANDROID_STE_TIMED_VIBRA
-	mop500_vibra_init();
-#endif
-	platform_device_register(&ab8500_device);
-
-	i2c_register_board_info(0, mop500_i2c0_devices,
-			ARRAY_SIZE(mop500_i2c0_devices));
-	i2c_register_board_info(2, mop500_i2c2_devices,
-			ARRAY_SIZE(mop500_i2c2_devices));
-
-	/* This board has full regulator constraints */
-	regulator_has_full_constraints();
-}
-
-static void __init snowball_init_machine(void)
-{
-	struct device *parent = NULL;
-	int i;
-
-	parent = u8500_init_devices();
-
-	snowball_pins_init();
-
-	mop500_regulator_init();
-
-	u8500_cryp1_hash1_init();
-
-#ifdef CONFIG_HSI
-	hsi_register_board_info(u8500_hsi_devices,
-				ARRAY_SIZE(u8500_hsi_devices));
-#endif
-
-	for (i = 0; i < ARRAY_SIZE(snowball_platform_devs); i++)
-		snowball_platform_devs[i]->dev.parent = parent;
-
-	platform_add_devices(snowball_platform_devs,
-			ARRAY_SIZE(snowball_platform_devs));
-
-	mop500_i2c_init(parent);
-	snowball_sdi_init(parent);
-	mop500_spi_init(parent);
-	mop500_uart_init(parent);
-#ifdef CONFIG_STM_MSP_SPI
-	mop500_msp_init(parent);
-#endif
-#if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
-	mop500_wlan_init(parent);
-#endif
-
-	platform_device_register(&ab8500_device);
-
-	i2c_register_board_info(0, snowball_i2c0_devices,
-			ARRAY_SIZE(snowball_i2c0_devices));
-
-	/* This board has full regulator constraints */
-	regulator_has_full_constraints();
-}
-
-static void __init hrefv60_init_machine(void)
-{
-	struct device *parent = NULL;
-	int i;
-
-	/*
-	 * The HREFv60 board removed a GPIO expander and routed
-	 * all these GPIO pins to the internal GPIO controller
-	 * instead.
-	 */
-
-#ifdef CONFIG_INPUT_AB8500_ACCDET
-	/*
-	 *  On boards hrefpv60 and later, the accessory insertion/removal,
-	 *  button press/release are inverted.
-	 */
-	ab8500_accdet_pdata.is_detection_inverted = true;
-
-	if (machine_is_u8520()) {
-		ab8500_accdet_pdata.video_ctrl_gpio = AB8500_PIN_GPIO10;
-		ab8500_accdet_pdata.mic_ctrl = AB8500_PIN_GPIO34;
-	}
-#endif
-
-	parent = u8500_init_devices();
-
-	hrefv60_pins_init();
 
 	mop500_regulator_init();
 
@@ -1487,12 +1213,13 @@ static void __init hrefv60_init_machine(void)
 	if (uib_is_stuib())
 		u8500_leds_data.num_leds = 2;
 #endif
-
-	for (i = 0; i < ARRAY_SIZE(mop500_platform_devs); i++)
-		mop500_platform_devs[i]->dev.parent = parent;
-
-	platform_add_devices(mop500_platform_devs,
-			ARRAY_SIZE(mop500_platform_devs));
+	if (machine_is_snowball()) {
+		platform_add_devices(snowball_platform_devs,
+					ARRAY_SIZE(snowball_platform_devs));
+	} else {
+		platform_add_devices(mop500_platform_devs,
+					ARRAY_SIZE(mop500_platform_devs));
+	}
 
 	if (!cpu_is_u9500()) {
 		platform_device_register(&u8500_shrm_device);
@@ -1502,21 +1229,16 @@ static void __init hrefv60_init_machine(void)
 #ifdef CONFIG_MODEM_U8500
 		platform_device_register(&u8500_modem_dev);
 #endif
-	}
+		platform_device_register(&db8500_cpuidle_device);
+	} else
+		platform_device_register(&db9500_cpuidle_device);
 
-	mop500_i2c_init(parent);
-	if (machine_is_u8520())
-		mach_u8520_sdi_init(parent);
-	else
-		hrefv60_sdi_init(parent);
-	mop500_spi_init(parent);
-	mop500_uart_init(parent);
-#ifdef CONFIG_STM_MSP_SPI
-	mop500_msp_init(parent);
-#endif
-#if defined(CONFIG_CW1200) || defined(CONFIG_CW1200_MODULE)
-	mop500_wlan_init(parent);
-#endif
+	mop500_i2c_init();
+	mop500_sdi_init();
+	mop500_msp_init();
+	mop500_spi_init();
+	mop500_uart_init();
+	mop500_wlan_init();
 
 #ifdef CONFIG_KEYBOARD_NOMADIK_SKE
 	/*
@@ -1525,8 +1247,7 @@ static void __init hrefv60_init_machine(void)
 	 */
 	if (!(prcmu_read(PRCM_DEBUG_NOPWRDOWN_VAL) &
 	      ARM_DEBUG_NOPOWER_DOWN_REQ))
-		db8500_add_ske_keypad(parent, &mop500_ske_keypad_data,
-				sizeof(mop500_ske_keypad_data));
+		db8500_add_ske_keypad(&mop500_ske_keypad_data);
 #endif
 
 #ifdef CONFIG_ANDROID_STE_TIMED_VIBRA
@@ -1534,141 +1255,13 @@ static void __init hrefv60_init_machine(void)
 #endif
 	if (machine_is_u8520()) {
 		fixup_ab8505_gpio();
+		ab8500_platdata.regulator = &ab8505_regulator_plat_data;
 		platform_device_register(&ab8505_device);
 	}
 	else
 		platform_device_register(&ab8500_device);
 
-	i2c_register_board_info(0, mop500_i2c0_devices,
-			ARRAY_SIZE(mop500_i2c0_devices));
-	i2c_register_board_info(2, mop500_i2c2_devices,
-			ARRAY_SIZE(mop500_i2c2_devices));
-
-	/* This board has full regulator constraints */
-	regulator_has_full_constraints();
-}
-
-MACHINE_START(U8500, "ST-Ericsson MOP500 platform")
-	/* Maintainer: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com> */
-	.atag_offset	= 0x100,
-	.map_io		= u8500_map_io,
-	.init_irq	= ux500_init_irq,
-	/* we re-use nomadik timer here */
-	.timer		= &ux500_timer,
-	.handle_irq	= gic_handle_irq,
-	.init_machine	= mop500_init_machine,
-	.restart	= ux500_restart,
-MACHINE_END
-
-/*
- * NOTE! 8520 machine reports as a HREFV60 until user space updates has been
- * done for 8520.
- */
-MACHINE_START(U8520, "ST-Ericsson U8500 Platform HREFv60+")
-	.atag_offset	= 0x100,
-	.map_io		= u8500_map_io,
-	.init_irq	= ux500_init_irq,
-	.timer		= &ux500_timer,
-	.handle_irq	= gic_handle_irq,
-	.init_machine	= hrefv60_init_machine,
-	.restart	= ux500_restart,
-MACHINE_END
-
-MACHINE_START(HREFV60, "ST-Ericsson U8500 Platform HREFv60+")
-	.atag_offset	= 0x100,
-	.map_io		= u8500_map_io,
-	.init_irq	= ux500_init_irq,
-	.timer		= &ux500_timer,
-	.handle_irq	= gic_handle_irq,
-	.init_machine	= hrefv60_init_machine,
-	.restart	= ux500_restart,
-MACHINE_END
-
-MACHINE_START(SNOWBALL, "ST-Ericsson Snowball platform")
-	.atag_offset	= 0x100,
-	.map_io		= u8500_map_io,
-	.init_irq	= ux500_init_irq,
-	/* we re-use nomadik timer here */
-	.timer		= &ux500_timer,
-	.handle_irq	= gic_handle_irq,
-	.init_machine	= snowball_init_machine,
-	.restart	= ux500_restart,
-MACHINE_END
-
-/* Temporary reuse hrefv60 machine */
-MACHINE_START(U9540, "ST-Ericsson 9540 platform")
-	.atag_offset	= 0x100,
-	.map_io		= u8500_map_io,
-	.init_irq	= ux500_init_irq,
-	.timer		= &ux500_timer,
-	.handle_irq	= gic_handle_irq,
-	.init_machine	= hrefv60_init_machine,
-	.restart	= ux500_restart,
-MACHINE_END
-
-#ifdef CONFIG_MACH_UX500_DT
-
-struct of_dev_auxdata u8500_auxdata_lookup[] __initdata = {
-	OF_DEV_AUXDATA("arm,pl011", 0x80120000, "uart0", &uart0_plat),
-	OF_DEV_AUXDATA("arm,pl011", 0x80121000, "uart1", &uart1_plat),
-	OF_DEV_AUXDATA("arm,pl011", 0x80007000, "uart2", &uart2_plat),
-#ifdef CONFIG_STM_MSP_SPI
-	OF_DEV_AUXDATA("arm,pl022", 0x80002000, "ssp0",  &ssp0_plat),
-#endif
-	{},
-};
-
-static const struct of_device_id u8500_soc_node[] = {
-	/* only create devices below soc node */
-	{ .compatible = "stericsson,db8500", },
-	{ },
-};
-
-static void __init u8500_init_machine(void)
-{
-	struct device *parent = NULL;
-	int i2c0_devs;
-	int i;
-
-	parent = u8500_init_devices();
 	i2c0_devs = ARRAY_SIZE(mop500_i2c0_devices);
-
-	for (i = 0; i < ARRAY_SIZE(mop500_platform_devs); i++)
-		mop500_platform_devs[i]->dev.parent = parent;
-	for (i = 0; i < ARRAY_SIZE(snowball_platform_devs); i++)
-		snowball_platform_devs[i]->dev.parent = parent;
-
-	/* automatically probe child nodes of db8500 device */
-	of_platform_populate(NULL, u8500_soc_node, u8500_auxdata_lookup, parent);
-
-	if (of_machine_is_compatible("st-ericsson,mop500")) {
-		mop500_pins_init();
-
-		platform_add_devices(mop500_platform_devs,
-				ARRAY_SIZE(mop500_platform_devs));
-
-		mop500_sdi_init(parent);
-	} else if (of_machine_is_compatible("calaosystems,snowball-a9500")) {
-		snowball_pins_init();
-		platform_add_devices(snowball_platform_devs,
-				ARRAY_SIZE(snowball_platform_devs));
-
-		snowball_sdi_init(parent);
-	} else if (of_machine_is_compatible("st-ericsson,hrefv60+")) {
-		/*
-		 * The HREFv60 board removed a GPIO expander and routed
-		 * all these GPIO pins to the internal GPIO controller
-		 * instead.
-		 */
-		i2c0_devs -= NUM_PRE_V60_I2C0_DEVICES;
-		hrefv60_pins_init();
-		platform_add_devices(mop500_platform_devs,
-				ARRAY_SIZE(mop500_platform_devs));
-
-		hrefv60_sdi_init(parent);
-	}
-	mop500_i2c_init(parent);
-
 	i2c_register_board_info(0, mop500_i2c0_devices, i2c0_devs);
 	i2c_register_board_info(2, mop500_i2c2_devices,
 				ARRAY_SIZE(mop500_i2c2_devices));
@@ -1677,22 +1270,46 @@ static void __init u8500_init_machine(void)
 	regulator_has_full_constraints();
 }
 
-static const char * u8500_dt_board_compat[] = {
-	"calaosystems,snowball-a9500",
-	"st-ericsson,hrefv60+",
-	"st-ericsson,u8500",
-	"st-ericsson,mop500",
-	NULL,
-};
-
-
-DT_MACHINE_START(U8500_DT, "ST-Ericsson U8500 platform (Device Tree Support)")
+MACHINE_START(U8500, "ST-Ericsson MOP500 platform")
+	/* Maintainer: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com> */
+	.boot_params	= 0x100,
 	.map_io		= u8500_map_io,
 	.init_irq	= ux500_init_irq,
 	/* we re-use nomadik timer here */
 	.timer		= &ux500_timer,
-	.handle_irq	= gic_handle_irq,
-	.init_machine	= u8500_init_machine,
-	.dt_compat      = u8500_dt_board_compat,
+	.init_machine	= mop500_init_machine,
+	.restart	= ab8500_restart,
 MACHINE_END
-#endif
+
+/*
+ * NOTE! 8520 machine reports as a HREFV60 until user space updates has been
+ * done for 8520.
+ */
+MACHINE_START(U8520, "ST-Ericsson U8500 Platform HREFv60+")
+	.boot_params	= 0x100,
+	.map_io		= u8500_map_io,
+	.init_irq	= ux500_init_irq,
+	.timer		= &ux500_timer,
+	.init_machine	= mop500_init_machine,
+	.restart	= ab8500_restart,
+MACHINE_END
+
+MACHINE_START(HREFV60, "ST-Ericsson U8500 Platform HREFv60+")
+	.boot_params	= 0x100,
+	.map_io		= u8500_map_io,
+	.init_irq	= ux500_init_irq,
+	.timer		= &ux500_timer,
+	.init_machine	= mop500_init_machine,
+	.restart	= ab8500_restart,
+MACHINE_END
+
+MACHINE_START(SNOWBALL, "ST-Ericsson Snowball platform")
+	.boot_params	= 0x100,
+	.map_io		= u8500_map_io,
+	.init_irq	= ux500_init_irq,
+	/* we re-use nomadik timer here */
+	.timer		= &ux500_timer,
+	.init_machine	= mop500_init_machine,
+	.restart	= ux500_restart,
+MACHINE_END
+

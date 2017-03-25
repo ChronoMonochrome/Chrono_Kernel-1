@@ -12,11 +12,14 @@
 #include <linux/errno.h>
 #include <linux/smp.h>
 #include <linux/completion.h>
+#include <mach/suspend.h>
 
 #include <asm/cacheflush.h>
-#include <asm/smp_plat.h>
 
 #include <mach/context.h>
+
+#include <../../../drivers/cpuidle/cpuidle-dbx500_dbg.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 extern volatile int pen_release;
 
@@ -24,6 +27,8 @@ static DECLARE_COMPLETION(cpu_killed);
 
 static inline void platform_do_lowpower(unsigned int cpu)
 {
+	ux500_ci_dbg_unplug(cpu);
+
 	flush_cache_all();
 
 	for (;;) {
@@ -36,18 +41,30 @@ static inline void platform_do_lowpower(unsigned int cpu)
 		context_restore_cpu_registers();
 		context_varm_restore_core();
 
-		if (pen_release == cpu_logical_map(cpu)) {
+		if (pen_release == cpu) {
 			/*
-			 * OK, proper wakeup, we're done
+			* OK, proper wakeup, we're done
 			 */
 			break;
 		}
 	}
+	ux500_ci_dbg_plug(cpu);
+
 }
 
 int platform_cpu_kill(unsigned int cpu)
 {
-	return wait_for_completion_timeout(&cpu_killed, 5000);
+
+
+	int status;
+
+	status = wait_for_completion_timeout(&cpu_killed, 5000);
+
+	/*  switch off CPU1 in case of x540  */
+	if (!is_suspend_ongoing())
+		status |= prcmu_unplug_cpu1();
+
+	return status;
 }
 
 /*
@@ -67,7 +84,6 @@ void platform_cpu_die(unsigned int cpu)
 	}
 #endif
 
-	printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
 	complete(&cpu_killed);
 
 	/* directly enter low power state, skipping secure registers */
