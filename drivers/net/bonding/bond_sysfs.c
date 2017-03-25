@@ -26,6 +26,7 @@
 #include <linux/module.h>
 #include <linux/device.h>
 #include <linux/sched.h>
+#include <linux/sysdev.h>
 #include <linux/fs.h>
 #include <linux/types.h>
 #include <linux/string.h>
@@ -54,8 +55,8 @@ static ssize_t bonding_show_bonds(struct class *cls,
 				  struct class_attribute *attr,
 				  char *buf)
 {
-	struct bond_net *bn =
-		container_of(attr, struct bond_net, class_attr_bonding_masters);
+	struct net *net = current->nsproxy->net_ns;
+	struct bond_net *bn = net_generic(net, bond_net_id);
 	int res = 0;
 	struct bonding *bond;
 
@@ -78,8 +79,9 @@ static ssize_t bonding_show_bonds(struct class *cls,
 	return res;
 }
 
-static struct net_device *bond_get_by_name(struct bond_net *bn, const char *ifname)
+static struct net_device *bond_get_by_name(struct net *net, const char *ifname)
 {
+	struct bond_net *bn = net_generic(net, bond_net_id);
 	struct bonding *bond;
 
 	list_for_each_entry(bond, &bn->dev_list, bond_list) {
@@ -101,8 +103,7 @@ static ssize_t bonding_store_bonds(struct class *cls,
 				   struct class_attribute *attr,
 				   const char *buffer, size_t count)
 {
-	struct bond_net *bn =
-		container_of(attr, struct bond_net, class_attr_bonding_masters);
+	struct net *net = current->nsproxy->net_ns;
 	char command[IFNAMSIZ + 1] = {0, };
 	char *ifname;
 	int rv, res = count;
@@ -115,7 +116,7 @@ static ssize_t bonding_store_bonds(struct class *cls,
 
 	if (command[0] == '+') {
 		pr_info("%s is being created...\n", ifname);
-		rv = bond_create(bn->net, ifname);
+		rv = bond_create(net, ifname);
 		if (rv) {
 			if (rv == -EEXIST)
 				pr_info("%s already exists.\n", ifname);
@@ -127,7 +128,7 @@ static ssize_t bonding_store_bonds(struct class *cls,
 		struct net_device *bond_dev;
 
 		rtnl_lock();
-		bond_dev = bond_get_by_name(bn, ifname);
+		bond_dev = bond_get_by_name(net, ifname);
 		if (bond_dev) {
 			pr_info("%s is being deleted...\n", ifname);
 			unregister_netdevice(bond_dev);
@@ -149,24 +150,9 @@ err_no_cmd:
 	return -EPERM;
 }
 
-static const void *bonding_namespace(struct class *cls,
-				     const struct class_attribute *attr)
-{
-	const struct bond_net *bn =
-		container_of(attr, struct bond_net, class_attr_bonding_masters);
-	return bn->net;
-}
-
 /* class attribute for bond_masters file.  This ends up in /sys/class/net */
-static const struct class_attribute class_attr_bonding_masters = {
-	.attr = {
-		.name = "bonding_masters",
-		.mode = S_IWUSR | S_IRUGO,
-	},
-	.show = bonding_show_bonds,
-	.store = bonding_store_bonds,
-	.namespace = bonding_namespace,
-};
+static CLASS_ATTR(bonding_masters,  S_IWUSR | S_IRUGO,
+		  bonding_show_bonds, bonding_store_bonds);
 
 int bond_create_slave_symlinks(struct net_device *master,
 			       struct net_device *slave)
@@ -314,13 +300,6 @@ static ssize_t bonding_store_mode(struct device *d,
 	if (bond->dev->flags & IFF_UP) {
 		pr_err("unable to update mode of %s because interface is up.\n",
 		       bond->dev->name);
-		ret = -EPERM;
-		goto out;
-	}
-
-	if (bond->slave_cnt > 0) {
-		pr_err("unable to update mode of %s because it has slaves.\n",
-			bond->dev->name);
 		ret = -EPERM;
 		goto out;
 	}
@@ -825,7 +804,6 @@ static ssize_t bonding_store_lacp(struct device *d,
 
 	if ((new_value == 1) || (new_value == 0)) {
 		bond->params.lacp_fast = new_value;
-		bond_3ad_update_lacp_rate(bond);
 		pr_info("%s: Setting LACP rate to %s (%d).\n",
 			bond->dev->name, bond_lacp_tbl[new_value].modename,
 			new_value);
@@ -839,38 +817,6 @@ out:
 }
 static DEVICE_ATTR(lacp_rate, S_IRUGO | S_IWUSR,
 		   bonding_show_lacp, bonding_store_lacp);
-
-static ssize_t bonding_show_min_links(struct device *d,
-				      struct device_attribute *attr,
-				      char *buf)
-{
-	struct bonding *bond = to_bond(d);
-
-	return sprintf(buf, "%d\n", bond->params.min_links);
-}
-
-static ssize_t bonding_store_min_links(struct device *d,
-				       struct device_attribute *attr,
-				       const char *buf, size_t count)
-{
-	struct bonding *bond = to_bond(d);
-	int ret;
-	unsigned int new_value;
-
-	ret = kstrtouint(buf, 0, &new_value);
-	if (ret < 0) {
-		pr_err("%s: Ignoring invalid min links value %s.\n",
-		       bond->dev->name, buf);
-		return ret;
-	}
-
-	pr_info("%s: Setting min links value to %u\n",
-		bond->dev->name, new_value);
-	bond->params.min_links = new_value;
-	return count;
-}
-static DEVICE_ATTR(min_links, S_IRUGO | S_IWUSR,
-		   bonding_show_min_links, bonding_store_min_links);
 
 static ssize_t bonding_show_ad_select(struct device *d,
 				      struct device_attribute *attr,
@@ -1663,7 +1609,6 @@ static struct attribute *per_bond_attrs[] = {
 	&dev_attr_queue_id.attr,
 	&dev_attr_all_slaves_active.attr,
 	&dev_attr_resend_igmp.attr,
-	&dev_attr_min_links.attr,
 	NULL,
 };
 
@@ -1676,14 +1621,11 @@ static struct attribute_group bonding_group = {
  * Initialize sysfs.  This sets up the bonding_masters file in
  * /sys/class/net.
  */
-int bond_create_sysfs(struct bond_net *bn)
+int bond_create_sysfs(void)
 {
 	int ret;
 
-	bn->class_attr_bonding_masters = class_attr_bonding_masters;
-	sysfs_attr_init(&bn->class_attr_bonding_masters.attr);
-
-	ret = netdev_class_create_file(&bn->class_attr_bonding_masters);
+	ret = netdev_class_create_file(&class_attr_bonding_masters);
 	/*
 	 * Permit multiple loads of the module by ignoring failures to
 	 * create the bonding_masters sysfs file.  Bonding devices
@@ -1697,7 +1639,7 @@ int bond_create_sysfs(struct bond_net *bn)
 	 */
 	if (ret == -EEXIST) {
 		/* Is someone being kinky and naming a device bonding_master? */
-		if (__dev_get_by_name(bn->net,
+		if (__dev_get_by_name(&init_net,
 				      class_attr_bonding_masters.attr.name))
 			pr_err("network device named %s already exists in sysfs",
 			       class_attr_bonding_masters.attr.name);
@@ -1711,9 +1653,9 @@ int bond_create_sysfs(struct bond_net *bn)
 /*
  * Remove /sys/class/net/bonding_masters.
  */
-void bond_destroy_sysfs(struct bond_net *bn)
+void bond_destroy_sysfs(void)
 {
-	netdev_class_remove_file(&bn->class_attr_bonding_masters);
+	netdev_class_remove_file(&class_attr_bonding_masters);
 }
 
 /*

@@ -59,7 +59,7 @@ struct usb_context {
 	struct usbnet *dev;
 };
 
-static bool turbo_mode = true;
+static int turbo_mode = true;
 module_param(turbo_mode, bool, 0644);
 MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
 
@@ -516,8 +516,7 @@ static void smsc95xx_status(struct usbnet *dev, struct urb *urb)
 }
 
 /* Enable or disable Tx & Rx checksum offload engines */
-static int smsc95xx_set_features(struct net_device *netdev,
-	netdev_features_t features)
+static int smsc95xx_set_features(struct net_device *netdev, u32 features)
 {
 	struct usbnet *dev = netdev_priv(netdev);
 	u32 read_buf;
@@ -614,7 +613,7 @@ static void smsc95xx_init_mac_address(struct usbnet *dev)
 	}
 
 	/* no eeprom, or eeprom values are invalid. generate random MAC */
-	eth_hw_addr_random(dev->net);
+	random_ether_addr(dev->net->dev_addr);
 	netif_dbg(dev, ifup, dev->net, "MAC address set to random_ether_addr\n");
 }
 
@@ -973,7 +972,7 @@ static const struct net_device_ops smsc95xx_netdev_ops = {
 	.ndo_set_mac_address 	= eth_mac_addr,
 	.ndo_validate_addr	= eth_validate_addr,
 	.ndo_do_ioctl 		= smsc95xx_ioctl,
-	.ndo_set_rx_mode	= smsc95xx_set_multicast,
+	.ndo_set_multicast_list = smsc95xx_set_multicast,
 	.ndo_set_features	= smsc95xx_set_features,
 };
 
@@ -1017,7 +1016,6 @@ static int smsc95xx_bind(struct usbnet *dev, struct usb_interface *intf)
 	dev->net->ethtool_ops = &smsc95xx_ethtool_ops;
 	dev->net->flags |= IFF_MULTICAST;
 	dev->net->hard_header_len += SMSC95XX_TX_OVERHEAD_CSUM;
-	dev->hard_mtu = dev->net->mtu + dev->net->hard_header_len;
 	return 0;
 }
 
@@ -1192,7 +1190,7 @@ static const struct driver_info smsc95xx_info = {
 	.rx_fixup	= smsc95xx_rx_fixup,
 	.tx_fixup	= smsc95xx_tx_fixup,
 	.status		= smsc95xx_status,
-	.flags		= FLAG_ETHER | FLAG_SEND_ZLP | FLAG_LINK_INTR,
+	.flags		= FLAG_ETHER | FLAG_SEND_ZLP,
 };
 
 static const struct usb_device_id products[] = {
@@ -1299,7 +1297,17 @@ static struct usb_driver smsc95xx_driver = {
 	.disconnect	= usbnet_disconnect,
 };
 
-module_usb_driver(smsc95xx_driver);
+static int __init smsc95xx_init(void)
+{
+	return usb_register(&smsc95xx_driver);
+}
+module_init(smsc95xx_init);
+
+static void __exit smsc95xx_exit(void)
+{
+	usb_deregister(&smsc95xx_driver);
+}
+module_exit(smsc95xx_exit);
 
 MODULE_AUTHOR("Nancy Lin");
 MODULE_AUTHOR("Steve Glendinning <steve.glendinning@smsc.com>");

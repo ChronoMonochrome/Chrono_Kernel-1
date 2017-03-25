@@ -712,7 +712,8 @@ static void mcp251x_error_skb(struct net_device *net, int can_id, int data1)
 		frame->data[1] = data1;
 		netif_rx_ni(skb);
 	} else {
-		netdev_err(net, "cannot allocate error skb\n");
+		dev_err(&net->dev,
+			"cannot allocate error skb\n");
 	}
 }
 
