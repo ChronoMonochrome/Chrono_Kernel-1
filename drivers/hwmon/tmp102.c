@@ -55,6 +55,19 @@ struct tmp102 {
 	int temp[3];
 };
 
+/* SMBus specifies low byte first, but the TMP102 returns high byte first,
+ * so we have to swab16 the values */
+static inline int tmp102_read_reg(struct i2c_client *client, u8 reg)
+{
+	int result = i2c_smbus_read_word_data(client, reg);
+	return result < 0 ? result : swab16(result);
+}
+
+static inline int tmp102_write_reg(struct i2c_client *client, u8 reg, u16 val)
+{
+	return i2c_smbus_write_word_data(client, reg, swab16(val));
+}
+
 /* convert left adjusted 13-bit TMP102 register value to milliCelsius */
 static inline int tmp102_reg_to_mC(s16 val)
 {
@@ -81,8 +94,7 @@ static struct tmp102 *tmp102_update_device(struct i2c_client *client)
 	if (time_after(jiffies, tmp102->last_update + HZ / 3)) {
 		int i;
 		for (i = 0; i < ARRAY_SIZE(tmp102->temp); ++i) {
-			int status = i2c_smbus_read_word_swapped(client,
-								 tmp102_reg[i]);
+			int status = tmp102_read_reg(client, tmp102_reg[i]);
 			if (status > -1)
 				tmp102->temp[i] = tmp102_reg_to_mC(status);
 		}
@@ -112,14 +124,14 @@ static ssize_t tmp102_set_temp(struct device *dev,
 	long val;
 	int status;
 
-	if (kstrtol(buf, 10, &val) < 0)
+	if (strict_strtol(buf, 10, &val) < 0)
 		return -EINVAL;
 	val = SENSORS_LIMIT(val, -256000, 255000);
 
 	mutex_lock(&tmp102->lock);
 	tmp102->temp[sda->index] = val;
-	status = i2c_smbus_write_word_swapped(client, tmp102_reg[sda->index],
-					      tmp102_mC_to_reg(val));
+	status = tmp102_write_reg(client, tmp102_reg[sda->index],
+				  tmp102_mC_to_reg(val));
 	mutex_unlock(&tmp102->lock);
 	return status ? : count;
 }
@@ -166,19 +178,18 @@ static int __devinit tmp102_probe(struct i2c_client *client,
 	}
 	i2c_set_clientdata(client, tmp102);
 
-	status = i2c_smbus_read_word_swapped(client, TMP102_CONF_REG);
+	status = tmp102_read_reg(client, TMP102_CONF_REG);
 	if (status < 0) {
 		dev_err(&client->dev, "error reading config register\n");
 		goto fail_free;
 	}
 	tmp102->config_orig = status;
-	status = i2c_smbus_write_word_swapped(client, TMP102_CONF_REG,
-					      TMP102_CONFIG);
+	status = tmp102_write_reg(client, TMP102_CONF_REG, TMP102_CONFIG);
 	if (status < 0) {
 		dev_err(&client->dev, "error writing config register\n");
 		goto fail_restore_config;
 	}
-	status = i2c_smbus_read_word_swapped(client, TMP102_CONF_REG);
+	status = tmp102_read_reg(client, TMP102_CONF_REG);
 	if (status < 0) {
 		dev_err(&client->dev, "error reading config register\n");
 		goto fail_restore_config;
@@ -211,8 +222,7 @@ static int __devinit tmp102_probe(struct i2c_client *client,
 fail_remove_sysfs:
 	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
 fail_restore_config:
-	i2c_smbus_write_word_swapped(client, TMP102_CONF_REG,
-				     tmp102->config_orig);
+	tmp102_write_reg(client, TMP102_CONF_REG, tmp102->config_orig);
 fail_free:
 	kfree(tmp102);
 
@@ -230,10 +240,10 @@ static int __devexit tmp102_remove(struct i2c_client *client)
 	if (tmp102->config_orig & TMP102_CONF_SD) {
 		int config;
 
-		config = i2c_smbus_read_word_swapped(client, TMP102_CONF_REG);
+		config = tmp102_read_reg(client, TMP102_CONF_REG);
 		if (config >= 0)
-			i2c_smbus_write_word_swapped(client, TMP102_CONF_REG,
-						     config | TMP102_CONF_SD);
+			tmp102_write_reg(client, TMP102_CONF_REG,
+					 config | TMP102_CONF_SD);
 	}
 
 	kfree(tmp102);
@@ -247,12 +257,12 @@ static int tmp102_suspend(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	int config;
 
-	config = i2c_smbus_read_word_swapped(client, TMP102_CONF_REG);
+	config = tmp102_read_reg(client, TMP102_CONF_REG);
 	if (config < 0)
 		return config;
 
 	config |= TMP102_CONF_SD;
-	return i2c_smbus_write_word_swapped(client, TMP102_CONF_REG, config);
+	return tmp102_write_reg(client, TMP102_CONF_REG, config);
 }
 
 static int tmp102_resume(struct device *dev)
@@ -260,12 +270,12 @@ static int tmp102_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	int config;
 
-	config = i2c_smbus_read_word_swapped(client, TMP102_CONF_REG);
+	config = tmp102_read_reg(client, TMP102_CONF_REG);
 	if (config < 0)
 		return config;
 
 	config &= ~TMP102_CONF_SD;
-	return i2c_smbus_write_word_swapped(client, TMP102_CONF_REG, config);
+	return tmp102_write_reg(client, TMP102_CONF_REG, config);
 }
 
 static const struct dev_pm_ops tmp102_dev_pm_ops = {
@@ -292,7 +302,17 @@ static struct i2c_driver tmp102_driver = {
 	.id_table	= tmp102_id,
 };
 
-module_i2c_driver(tmp102_driver);
+static int __init tmp102_init(void)
+{
+	return i2c_add_driver(&tmp102_driver);
+}
+module_init(tmp102_init);
+
+static void __exit tmp102_exit(void)
+{
+	i2c_del_driver(&tmp102_driver);
+}
+module_exit(tmp102_exit);
 
 MODULE_AUTHOR("Steven King <sfking@fdwdc.com>");
 MODULE_DESCRIPTION("Texas Instruments TMP102 temperature sensor driver");

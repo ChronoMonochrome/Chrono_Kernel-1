@@ -59,11 +59,27 @@ struct ads1015_data {
 	struct ads1015_channel_data channel_data[ADS1015_CHANNELS];
 };
 
-static int ads1015_read_adc(struct i2c_client *client, unsigned int channel)
+static s32 ads1015_read_reg(struct i2c_client *client, unsigned int reg)
+{
+	s32 data = i2c_smbus_read_word_data(client, reg);
+
+	return (data < 0) ? data : swab16(data);
+}
+
+static s32 ads1015_write_reg(struct i2c_client *client, unsigned int reg,
+			     u16 val)
+{
+	return i2c_smbus_write_word_data(client, reg, swab16(val));
+}
+
+static int ads1015_read_value(struct i2c_client *client, unsigned int channel,
+			      int *value)
 {
 	u16 config;
+	s16 conversion;
 	struct ads1015_data *data = i2c_get_clientdata(client);
 	unsigned int pga = data->channel_data[channel].pga;
+	int fullscale;
 	unsigned int data_rate = data->channel_data[channel].data_rate;
 	unsigned int conversion_time_ms;
 	int res;
@@ -71,10 +87,11 @@ static int ads1015_read_adc(struct i2c_client *client, unsigned int channel)
 	mutex_lock(&data->update_lock);
 
 	/* get channel parameters */
-	res = i2c_smbus_read_word_swapped(client, ADS1015_CONFIG);
+	res = ads1015_read_reg(client, ADS1015_CONFIG);
 	if (res < 0)
 		goto err_unlock;
 	config = res;
+	fullscale = fullscale_table[pga];
 	conversion_time_ms = DIV_ROUND_UP(1000, data_rate_table[data_rate]);
 
 	/* setup and start single conversion */
@@ -84,13 +101,13 @@ static int ads1015_read_adc(struct i2c_client *client, unsigned int channel)
 	config |= (pga & 0x0007) << 9;
 	config |= (data_rate & 0x0007) << 5;
 
-	res = i2c_smbus_write_word_swapped(client, ADS1015_CONFIG, config);
+	res = ads1015_write_reg(client, ADS1015_CONFIG, config);
 	if (res < 0)
 		goto err_unlock;
 
 	/* wait until conversion finished */
 	msleep(conversion_time_ms);
-	res = i2c_smbus_read_word_swapped(client, ADS1015_CONFIG);
+	res = ads1015_read_reg(client, ADS1015_CONFIG);
 	if (res < 0)
 		goto err_unlock;
 	config = res;
@@ -100,21 +117,20 @@ static int ads1015_read_adc(struct i2c_client *client, unsigned int channel)
 		goto err_unlock;
 	}
 
-	res = i2c_smbus_read_word_swapped(client, ADS1015_CONVERSION);
+	res = ads1015_read_reg(client, ADS1015_CONVERSION);
+	if (res < 0)
+		goto err_unlock;
+	conversion = res;
+
+	mutex_unlock(&data->update_lock);
+
+	*value = DIV_ROUND_CLOSEST(conversion * fullscale, 0x7ff0);
+
+	return 0;
 
 err_unlock:
 	mutex_unlock(&data->update_lock);
 	return res;
-}
-
-static int ads1015_reg_to_mv(struct i2c_client *client, unsigned int channel,
-			     s16 reg)
-{
-	struct ads1015_data *data = i2c_get_clientdata(client);
-	unsigned int pga = data->channel_data[channel].pga;
-	int fullscale = fullscale_table[pga];
-
-	return DIV_ROUND_CLOSEST(reg * fullscale, 0x7ff0);
 }
 
 /* sysfs callback function */
@@ -123,14 +139,12 @@ static ssize_t show_in(struct device *dev, struct device_attribute *da,
 {
 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
 	struct i2c_client *client = to_i2c_client(dev);
+	int in;
 	int res;
-	int index = attr->index;
 
-	res = ads1015_read_adc(client, index);
-	if (res < 0)
-		return res;
+	res = ads1015_read_value(client, attr->index, &in);
 
-	return sprintf(buf, "%d\n", ads1015_reg_to_mv(client, index, res));
+	return (res < 0) ? res : sprintf(buf, "%d\n", in);
 }
 
 static const struct sensor_device_attribute ads1015_in[] = {
@@ -304,8 +318,19 @@ static struct i2c_driver ads1015_driver = {
 	.id_table = ads1015_id,
 };
 
-module_i2c_driver(ads1015_driver);
+static int __init sensors_ads1015_init(void)
+{
+	return i2c_add_driver(&ads1015_driver);
+}
+
+static void __exit sensors_ads1015_exit(void)
+{
+	i2c_del_driver(&ads1015_driver);
+}
 
 MODULE_AUTHOR("Dirk Eibach <eibach@gdsys.de>");
 MODULE_DESCRIPTION("ADS1015 driver");
 MODULE_LICENSE("GPL");
+
+module_init(sensors_ads1015_init);
+module_exit(sensors_ads1015_exit);

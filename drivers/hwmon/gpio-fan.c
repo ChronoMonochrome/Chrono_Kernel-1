@@ -224,7 +224,7 @@ static ssize_t set_pwm(struct device *dev, struct device_attribute *attr,
 	int speed_index;
 	int ret = count;
 
-	if (kstrtoul(buf, 10, &pwm) || pwm > 255)
+	if (strict_strtoul(buf, 10, &pwm) || pwm > 255)
 		return -EINVAL;
 
 	mutex_lock(&fan_data->lock);
@@ -257,7 +257,7 @@ static ssize_t set_pwm_enable(struct device *dev, struct device_attribute *attr,
 	struct gpio_fan_data *fan_data = dev_get_drvdata(dev);
 	unsigned long val;
 
-	if (kstrtoul(buf, 10, &val) || val > 1)
+	if (strict_strtoul(buf, 10, &val) || val > 1)
 		return -EINVAL;
 
 	if (fan_data->pwm_enable == val)
@@ -314,7 +314,7 @@ static ssize_t set_rpm(struct device *dev, struct device_attribute *attr,
 	unsigned long rpm;
 	int ret = count;
 
-	if (kstrtoul(buf, 10, &rpm))
+	if (strict_strtoul(buf, 10, &rpm))
 		return -EINVAL;
 
 	mutex_lock(&fan_data->lock);
@@ -539,7 +539,18 @@ static struct platform_driver gpio_fan_driver = {
 	},
 };
 
-module_platform_driver(gpio_fan_driver);
+static int __init gpio_fan_init(void)
+{
+	return platform_driver_register(&gpio_fan_driver);
+}
+
+static void __exit gpio_fan_exit(void)
+{
+	platform_driver_unregister(&gpio_fan_driver);
+}
+
+module_init(gpio_fan_init);
+module_exit(gpio_fan_exit);
 
 MODULE_AUTHOR("Simon Guinot <sguinot@lacie.com>");
 MODULE_DESCRIPTION("GPIO FAN driver");

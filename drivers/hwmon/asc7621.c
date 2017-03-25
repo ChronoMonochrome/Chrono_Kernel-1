@@ -188,7 +188,7 @@ static ssize_t store_u8(struct device *dev, struct device_attribute *attr,
 	SETUP_STORE_data_param(dev, attr);
 	long reqval;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	reqval = SENSORS_LIMIT(reqval, 0, 255);
@@ -221,7 +221,7 @@ static ssize_t store_bitmask(struct device *dev,
 	long reqval;
 	u8 currval;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	reqval = SENSORS_LIMIT(reqval, 0, param->mask[0]);
@@ -265,14 +265,12 @@ static ssize_t store_fan16(struct device *dev,
 	SETUP_STORE_data_param(dev, attr);
 	long reqval;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
-	/*
-	 * If a minimum RPM of zero is requested, then we set the register to
-	 * 0xffff. This value allows the fan to be stopped completely without
-	 * generating an alarm.
-	 */
+	/* If a minimum RPM of zero is requested, then we set the register to
+	   0xffff. This value allows the fan to be stopped completely without
+	   generating an alarm. */
 	reqval =
 	    (reqval <= 0 ? 0xffff : SENSORS_LIMIT(5400000 / reqval, 0, 0xfffe));
 
@@ -340,7 +338,7 @@ static ssize_t store_in8(struct device *dev, struct device_attribute *attr,
 	long reqval;
 	u8 nr = sda->index;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	reqval = SENSORS_LIMIT(reqval, 0, 0xffff);
@@ -373,7 +371,7 @@ static ssize_t store_temp8(struct device *dev,
 	long reqval;
 	s8 temp;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	reqval = SENSORS_LIMIT(reqval, -127000, 127000);
@@ -429,7 +427,7 @@ static ssize_t store_temp62(struct device *dev,
 	long reqval, i, f;
 	s8 temp;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	reqval = SENSORS_LIMIT(reqval, -32000, 31750);
@@ -484,7 +482,7 @@ static ssize_t store_ap2_temp(struct device *dev,
 	int i;
 	u8 currval, newval = 0;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	mutex_lock(&data->update_lock);
@@ -540,7 +538,7 @@ static ssize_t store_pwm_ac(struct device *dev,
 		0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x03,
 	};
 
-	if (kstrtoul(buf, 10, &reqval))
+	if (strict_strtoul(buf, 10, &reqval))
 		return -EINVAL;
 
 	if (reqval > 31)
@@ -603,7 +601,7 @@ static ssize_t store_pwm_enable(struct device *dev,
 	long reqval;
 	u8 currval, config, altbit, newval, minoff = 255;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	switch (reqval) {
@@ -677,7 +675,7 @@ static ssize_t store_pwm_freq(struct device *dev,
 	u8 currval, newval = 255;
 	int i;
 
-	if (kstrtoul(buf, 10, &reqval))
+	if (strict_strtoul(buf, 10, &reqval))
 		return -EINVAL;
 
 	for (i = 0; i < ARRAY_SIZE(asc7621_pwm_freq_map); i++) {
@@ -726,7 +724,7 @@ static ssize_t store_pwm_ast(struct device *dev,
 	u8 currval, newval = 255;
 	u32 i;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	for (i = 0; i < ARRAY_SIZE(asc7621_pwm_auto_spinup_map); i++) {
@@ -773,7 +771,7 @@ static ssize_t store_temp_st(struct device *dev,
 	u8 currval, newval = 255;
 	u32 i;
 
-	if (kstrtol(buf, 10, &reqval))
+	if (strict_strtol(buf, 10, &reqval))
 		return -EINVAL;
 
 	for (i = 0; i < ARRAY_SIZE(asc7621_temp_smoothing_time_map); i++) {

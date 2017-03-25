@@ -215,7 +215,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
 	int i;
 
 	if (send_command(cmd) || send_argument(key)) {
-		pr_warn("%.4s: read arg fail\n", key);
+		pr_warn("%s: read arg fail\n", key);
 		return -EIO;
 	}
 
@@ -223,7 +223,7 @@ static int read_smc(u8 cmd, const char *key, u8 *buffer, u8 len)
 
 	for (i = 0; i < len; i++) {
 		if (__wait_status(0x05)) {
-			pr_warn("%.4s: read data fail\n", key);
+			pr_warn("%s: read data fail\n", key);
 			return -EIO;
 		}
 		buffer[i] = inb(APPLESMC_DATA_PORT);
@@ -344,10 +344,8 @@ static int applesmc_get_lower_bound(unsigned int *lo, const char *key)
 	while (begin != end) {
 		int middle = begin + (end - begin) / 2;
 		entry = applesmc_get_entry_by_index(middle);
-		if (IS_ERR(entry)) {
-			*lo = 0;
+		if (IS_ERR(entry))
 			return PTR_ERR(entry);
-		}
 		if (strcmp(entry->key, key) < 0)
 			begin = middle + 1;
 		else
@@ -366,10 +364,8 @@ static int applesmc_get_upper_bound(unsigned int *hi, const char *key)
 	while (begin != end) {
 		int middle = begin + (end - begin) / 2;
 		entry = applesmc_get_entry_by_index(middle);
-		if (IS_ERR(entry)) {
-			*hi = smcreg.key_count;
+		if (IS_ERR(entry))
 			return PTR_ERR(entry);
-		}
 		if (strcmp(key, entry->key) < 0)
 			end = middle;
 		else
@@ -489,24 +485,15 @@ static int applesmc_init_smcreg_try(void)
 {
 	struct applesmc_registers *s = &smcreg;
 	bool left_light_sensor, right_light_sensor;
-	unsigned int count;
 	u8 tmp[1];
 	int ret;
 
 	if (s->init_complete)
 		return 0;
 
-	ret = read_register_count(&count);
+	ret = read_register_count(&s->key_count);
 	if (ret)
 		return ret;
-
-	if (s->cache && s->key_count != count) {
-		pr_warn("key count changed from %d to %d\n",
-			s->key_count, count);
-		kfree(s->cache);
-		s->cache = NULL;
-	}
-	s->key_count = count;
 
 	if (!s->cache)
 		s->cache = kcalloc(s->key_count, sizeof(*s->cache), GFP_KERNEL);
@@ -795,7 +782,7 @@ static ssize_t applesmc_store_fan_speed(struct device *dev,
 	char newkey[5];
 	u8 buffer[2];
 
-	if (kstrtoul(sysfsbuf, 10, &speed) < 0 || speed >= 0x4000)
+	if (strict_strtoul(sysfsbuf, 10, &speed) < 0 || speed >= 0x4000)
 		return -EINVAL;		/* Bigger than a 14-bit value */
 
 	sprintf(newkey, fan_speed_fmt[to_option(attr)], to_index(attr));
@@ -835,7 +822,7 @@ static ssize_t applesmc_store_fan_manual(struct device *dev,
 	unsigned long input;
 	u16 val;
 
-	if (kstrtoul(sysfsbuf, 10, &input) < 0)
+	if (strict_strtoul(sysfsbuf, 10, &input) < 0)
 		return -EINVAL;
 
 	ret = applesmc_read_key(FANS_MANUAL, buffer, 2);
@@ -990,7 +977,7 @@ static ssize_t applesmc_key_at_index_store(struct device *dev,
 {
 	unsigned long newkey;
 
-	if (kstrtoul(sysfsbuf, 10, &newkey) < 0
+	if (strict_strtoul(sysfsbuf, 10, &newkey) < 0
 	    || newkey >= smcreg.key_count)
 		return -EINVAL;
 
@@ -1202,10 +1189,8 @@ static int applesmc_dmi_match(const struct dmi_system_id *id)
 	return 1;
 }
 
-/*
- * Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
- * So we need to put "Apple MacBook Pro" before "Apple MacBook".
- */
+/* Note that DMI_MATCH(...,"MacBook") will match "MacBookPro1,1".
+ * So we need to put "Apple MacBook Pro" before "Apple MacBook". */
 static __initdata struct dmi_system_id applesmc_whitelist[] = {
 	{ applesmc_dmi_match, "Apple MacBook Air", {
 	  DMI_MATCH(DMI_BOARD_VENDOR, "Apple"),
