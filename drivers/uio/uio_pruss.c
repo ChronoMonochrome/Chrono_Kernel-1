@@ -227,7 +227,19 @@ static struct platform_driver pruss_driver = {
 		   },
 };
 
-module_platform_driver(pruss_driver);
+static int __init pruss_init_module(void)
+{
+	return platform_driver_register(&pruss_driver);
+}
+
+module_init(pruss_init_module);
+
+static void __exit pruss_exit_module(void)
+{
+	platform_driver_unregister(&pruss_driver);
+}
+
+module_exit(pruss_exit_module);
 
 MODULE_LICENSE("GPL v2");
 MODULE_VERSION(DRV_VERSION);

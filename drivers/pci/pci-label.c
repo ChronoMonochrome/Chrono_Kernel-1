@@ -55,7 +55,7 @@ enum smbios_attr_enum {
 	SMBIOS_ATTR_INSTANCE_SHOW,
 };
 
-static size_t
+static mode_t
 find_smbios_instance_string(struct pci_dev *pdev, char *buf,
 			    enum smbios_attr_enum attribute)
 {
@@ -89,7 +89,7 @@ find_smbios_instance_string(struct pci_dev *pdev, char *buf,
 	return 0;
 }
 
-static umode_t
+static mode_t
 smbios_instance_string_exist(struct kobject *kobj, struct attribute *attr,
 			     int n)
 {
@@ -275,7 +275,7 @@ device_has_dsm(struct device *dev)
 	return FALSE;
 }
 
-static umode_t
+static mode_t
 acpi_index_string_exist(struct kobject *kobj, struct attribute *attr, int n)
 {
 	struct device *dev;

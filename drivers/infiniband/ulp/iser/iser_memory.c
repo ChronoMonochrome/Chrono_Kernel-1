@@ -73,11 +73,11 @@ static int iser_start_rdma_unaligned_sg(struct iscsi_iser_task *iser_task,
 
 		p = mem;
 		for_each_sg(sgl, sg, data->size, i) {
-			from = kmap_atomic(sg_page(sg));
+			from = kmap_atomic(sg_page(sg), KM_USER0);
 			memcpy(p,
 			       from + sg->offset,
 			       sg->length);
-			kunmap_atomic(from);
+			kunmap_atomic(from, KM_USER0);
 			p += sg->length;
 		}
 	}
@@ -133,11 +133,11 @@ void iser_finalize_rdma_unaligned_sg(struct iscsi_iser_task *iser_task,
 
 		p = mem;
 		for_each_sg(sgl, sg, sg_size, i) {
-			to = kmap_atomic(sg_page(sg));
+			to = kmap_atomic(sg_page(sg), KM_SOFTIRQ0);
 			memcpy(to + sg->offset,
 			       p,
 			       sg->length);
-			kunmap_atomic(to);
+			kunmap_atomic(to, KM_SOFTIRQ0);
 			p += sg->length;
 		}
 	}

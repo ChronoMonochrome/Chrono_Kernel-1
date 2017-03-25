@@ -46,7 +46,6 @@
 #include <linux/pci.h>
 #include <linux/poll.h>
 #include <linux/vmalloc.h>
-#include <linux/export.h>
 #include <linux/fs.h>
 #include <linux/uaccess.h>
 

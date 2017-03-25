@@ -16,8 +16,6 @@
 #include <xen/xen.h>
 
 #include "xenfs.h"
-#include "../privcmd.h"
-#include "../xenbus/xenbus_comms.h"
 
 #include <asm/xen/hypervisor.h>
 
@@ -84,9 +82,9 @@ static int xenfs_fill_super(struct super_block *sb, void *data, int silent)
 {
 	static struct tree_descr xenfs_files[] = {
 		[1] = {},
-		{ "xenbus", &xen_xenbus_fops, S_IRUSR|S_IWUSR },
+		{ "xenbus", &xenbus_file_ops, S_IRUSR|S_IWUSR },
 		{ "capabilities", &capabilities_file_ops, S_IRUGO },
-		{ "privcmd", &xen_privcmd_fops, S_IRUSR|S_IWUSR },
+		{ "privcmd", &privcmd_file_ops, S_IRUSR|S_IWUSR },
 		{""},
 	};
 	int rc;

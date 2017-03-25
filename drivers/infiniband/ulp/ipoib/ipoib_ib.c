@@ -34,7 +34,6 @@
  */
 
 #include <linux/delay.h>
-#include <linux/moduleparam.h>
 #include <linux/dma-mapping.h>
 #include <linux/slab.h>
 
@@ -57,24 +56,21 @@ struct ipoib_ah *ipoib_create_ah(struct net_device *dev,
 				 struct ib_pd *pd, struct ib_ah_attr *attr)
 {
 	struct ipoib_ah *ah;
-	struct ib_ah *vah;
 
 	ah = kmalloc(sizeof *ah, GFP_KERNEL);
 	if (!ah)
-		return ERR_PTR(-ENOMEM);
+		return NULL;
 
 	ah->dev       = dev;
 	ah->last_send = 0;
 	kref_init(&ah->ref);
 
-	vah = ib_create_ah(pd, attr);
-	if (IS_ERR(vah)) {
+	ah->ah = ib_create_ah(pd, attr);
+	if (IS_ERR(ah->ah)) {
 		kfree(ah);
-		ah = (struct ipoib_ah *)vah;
-	} else {
-		ah->ah = vah;
+		ah = NULL;
+	} else
 		ipoib_dbg(netdev_priv(dev), "Created ah %p\n", ah->ah);
-	}
 
 	return ah;
 }
@@ -121,7 +117,7 @@ static void ipoib_ud_skb_put_frags(struct ipoib_dev_priv *priv,
 
 		size = length - IPOIB_UD_HEAD_SIZE;
 
-		skb_frag_size_set(frag, size);
+		frag->size     = size;
 		skb->data_len += size;
 		skb->truesize += size;
 	} else
@@ -186,7 +182,7 @@ static struct sk_buff *ipoib_alloc_rx_skb(struct net_device *dev, int id)
 			goto partial_error;
 		skb_fill_page_desc(skb, 0, page, 0, PAGE_SIZE);
 		mapping[1] =
-			ib_dma_map_page(priv->ca, page,
+			ib_dma_map_page(priv->ca, skb_shinfo(skb)->frags[0].page,
 					0, PAGE_SIZE, DMA_FROM_DEVICE);
 		if (unlikely(ib_dma_mapping_error(priv->ca, mapping[1])))
 			goto partial_error;
@@ -296,8 +292,7 @@ static void ipoib_ib_handle_rx_wc(struct net_device *dev, struct ib_wc *wc)
 	dev->stats.rx_bytes += skb->len;
 
 	skb->dev = dev;
-	if ((dev->features & NETIF_F_RXCSUM) &&
-			likely(wc->wc_flags & IB_WC_IP_CSUM_OK))
+	if ((dev->features & NETIF_F_RXCSUM) && likely(wc->csum_ok))
 		skb->ip_summed = CHECKSUM_UNNECESSARY;
 
 	napi_gro_receive(&priv->napi, skb);
@@ -327,10 +322,9 @@ static int ipoib_dma_map_tx(struct ib_device *ca,
 		off = 0;
 
 	for (i = 0; i < skb_shinfo(skb)->nr_frags; ++i) {
-		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
-		mapping[i + off] = ib_dma_map_page(ca,
-						 skb_frag_page(frag),
-						 frag->page_offset, skb_frag_size(frag),
+		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+		mapping[i + off] = ib_dma_map_page(ca, frag->page,
+						 frag->page_offset, frag->size,
 						 DMA_TO_DEVICE);
 		if (unlikely(ib_dma_mapping_error(ca, mapping[i + off])))
 			goto partial_error;
@@ -339,9 +333,8 @@ static int ipoib_dma_map_tx(struct ib_device *ca,
 
 partial_error:
 	for (; i > 0; --i) {
-		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i - 1];
-
-		ib_dma_unmap_page(ca, mapping[i - !off], skb_frag_size(frag), DMA_TO_DEVICE);
+		skb_frag_t *frag = &skb_shinfo(skb)->frags[i - 1];
+		ib_dma_unmap_page(ca, mapping[i - !off], frag->size, DMA_TO_DEVICE);
 	}
 
 	if (off)
@@ -365,9 +358,8 @@ static void ipoib_dma_unmap_tx(struct ib_device *ca,
 		off = 0;
 
 	for (i = 0; i < skb_shinfo(skb)->nr_frags; ++i) {
-		const skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
-
-		ib_dma_unmap_page(ca, mapping[i + off], skb_frag_size(frag),
+		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+		ib_dma_unmap_page(ca, mapping[i + off], frag->size,
 				  DMA_TO_DEVICE);
 	}
 }
@@ -517,7 +509,7 @@ static inline int post_send(struct ipoib_dev_priv *priv,
 
 	for (i = 0; i < nr_frags; ++i) {
 		priv->tx_sge[i + off].addr = mapping[i + off];
-		priv->tx_sge[i + off].length = skb_frag_size(&frags[i]);
+		priv->tx_sge[i + off].length = frags[i].size;
 	}
 	priv->tx_wr.num_sge	     = nr_frags + off;
 	priv->tx_wr.wr_id 	     = wr_id;
