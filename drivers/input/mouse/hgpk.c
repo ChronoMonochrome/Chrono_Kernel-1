@@ -32,7 +32,6 @@
 #define DEBUG
 #include <linux/slab.h>
 #include <linux/input.h>
-#include <linux/module.h>
 #include <linux/serio.h>
 #include <linux/libps2.h>
 #include <linux/delay.h>
@@ -136,10 +135,10 @@ static int hgpk_discard_decay_hack(struct psmouse *psmouse, int x, int y)
 	/* discard if too big, or half that but > 4 times the prev delta */
 	if (avx > recalib_delta ||
 		(avx > recalib_delta / 2 && ((avx / 4) > priv->xlast))) {
-		psmouse_warn(psmouse, "detected %dpx jump in x\n", x);
+		hgpk_err(psmouse, "detected %dpx jump in x\n", x);
 		priv->xbigj = avx;
 	} else if (approx_half(avx, priv->xbigj)) {
-		psmouse_warn(psmouse, "detected secondary %dpx jump in x\n", x);
+		hgpk_err(psmouse, "detected secondary %dpx jump in x\n", x);
 		priv->xbigj = avx;
 		priv->xsaw_secondary++;
 	} else {
@@ -151,10 +150,10 @@ static int hgpk_discard_decay_hack(struct psmouse *psmouse, int x, int y)
 
 	if (avy > recalib_delta ||
 		(avy > recalib_delta / 2 && ((avy / 4) > priv->ylast))) {
-		psmouse_warn(psmouse, "detected %dpx jump in y\n", y);
+		hgpk_err(psmouse, "detected %dpx jump in y\n", y);
 		priv->ybigj = avy;
 	} else if (approx_half(avy, priv->ybigj)) {
-		psmouse_warn(psmouse, "detected secondary %dpx jump in y\n", y);
+		hgpk_err(psmouse, "detected secondary %dpx jump in y\n", y);
 		priv->ybigj = avy;
 		priv->ysaw_secondary++;
 	} else {
@@ -168,7 +167,7 @@ static int hgpk_discard_decay_hack(struct psmouse *psmouse, int x, int y)
 	priv->ylast = avy;
 
 	if (do_recal && jumpy_delay) {
-		psmouse_warn(psmouse, "scheduling recalibration\n");
+		hgpk_err(psmouse, "scheduling recalibration\n");
 		psmouse_queue_work(psmouse, &priv->recalib_wq,
 				msecs_to_jiffies(jumpy_delay));
 	}
@@ -260,8 +259,8 @@ static void hgpk_spewing_hack(struct psmouse *psmouse,
 		 * movement, it is probably a case of the user moving the
 		 * cursor very slowly across the screen. */
 		if (abs(priv->x_tally) < 3 && abs(priv->y_tally) < 3) {
-			psmouse_warn(psmouse, "packet spew detected (%d,%d)\n",
-				     priv->x_tally, priv->y_tally);
+			hgpk_err(psmouse, "packet spew detected (%d,%d)\n",
+				 priv->x_tally, priv->y_tally);
 			priv->spew_flag = RECALIBRATING;
 			psmouse_queue_work(psmouse, &priv->recalib_wq,
 					   msecs_to_jiffies(spew_delay));
@@ -333,12 +332,12 @@ static bool hgpk_is_byte_valid(struct psmouse *psmouse, unsigned char *packet)
 	}
 
 	if (!valid)
-		psmouse_dbg(psmouse,
-			    "bad data, mode %d (%d) %02x %02x %02x %02x %02x %02x\n",
-			    priv->mode, pktcnt,
-			    psmouse->packet[0], psmouse->packet[1],
-			    psmouse->packet[2], psmouse->packet[3],
-			    psmouse->packet[4], psmouse->packet[5]);
+		hgpk_dbg(psmouse,
+			 "bad data, mode %d (%d) %02x %02x %02x %02x %02x %02x\n",
+			 priv->mode, pktcnt,
+			 psmouse->packet[0], psmouse->packet[1],
+			 psmouse->packet[2], psmouse->packet[3],
+			 psmouse->packet[4], psmouse->packet[5]);
 
 	return valid;
 }
@@ -361,20 +360,19 @@ static void hgpk_process_advanced_packet(struct psmouse *psmouse)
 
 		input_report_abs(idev, ABS_PRESSURE, z);
 		if (tpdebug)
-			psmouse_dbg(psmouse, "pd=%d fd=%d z=%d",
-				    pt_down, finger_down, z);
+			hgpk_dbg(psmouse, "pd=%d fd=%d z=%d",
+				 pt_down, finger_down, z);
 	} else {
 		/*
 		 * PenTablet mode does not report pressure, so we don't
 		 * report it here
 		 */
 		if (tpdebug)
-			psmouse_dbg(psmouse, "pd=%d ", down);
+			hgpk_dbg(psmouse, "pd=%d ", down);
 	}
 
 	if (tpdebug)
-		psmouse_dbg(psmouse, "l=%d r=%d x=%d y=%d\n",
-			    left, right, x, y);
+		hgpk_dbg(psmouse, "l=%d r=%d x=%d y=%d\n", left, right, x, y);
 
 	input_report_key(idev, BTN_TOUCH, down);
 	input_report_key(idev, BTN_LEFT, left);
@@ -396,7 +394,7 @@ static void hgpk_process_advanced_packet(struct psmouse *psmouse)
 	if (x == priv->abs_x && y == priv->abs_y) {
 		if (++priv->dupe_count > SPEW_WATCH_COUNT) {
 			if (tpdebug)
-				psmouse_dbg(psmouse, "hard spew detected\n");
+				hgpk_dbg(psmouse, "hard spew detected\n");
 			priv->spew_flag = RECALIBRATING;
 			psmouse_queue_work(psmouse, &priv->recalib_wq,
 					   msecs_to_jiffies(spew_delay));
@@ -413,7 +411,7 @@ static void hgpk_process_advanced_packet(struct psmouse *psmouse)
 		int y_diff = priv->abs_y - y;
 		if (hgpk_discard_decay_hack(psmouse, x_diff, y_diff)) {
 			if (tpdebug)
-				psmouse_dbg(psmouse, "discarding\n");
+				hgpk_dbg(psmouse, "discarding\n");
 			goto done;
 		}
 		hgpk_spewing_hack(psmouse, left, right, x_diff, y_diff);
@@ -438,21 +436,20 @@ static void hgpk_process_simple_packet(struct psmouse *psmouse)
 	int y = ((packet[0] << 3) & 0x100) - packet[2];
 
 	if (packet[0] & 0xc0)
-		psmouse_dbg(psmouse,
-			    "overflow -- 0x%02x 0x%02x 0x%02x\n",
-			    packet[0], packet[1], packet[2]);
+		hgpk_dbg(psmouse,
+			 "overflow -- 0x%02x 0x%02x 0x%02x\n",
+			 packet[0], packet[1], packet[2]);
 
 	if (hgpk_discard_decay_hack(psmouse, x, y)) {
 		if (tpdebug)
-			psmouse_dbg(psmouse, "discarding\n");
+			hgpk_dbg(psmouse, "discarding\n");
 		return;
 	}
 
 	hgpk_spewing_hack(psmouse, left, right, x, y);
 
 	if (tpdebug)
-		psmouse_dbg(psmouse, "l=%d r=%d x=%d y=%d\n",
-			    left, right, x, y);
+		hgpk_dbg(psmouse, "l=%d r=%d x=%d y=%d\n", left, right, x, y);
 
 	input_report_key(dev, BTN_LEFT, left);
 	input_report_key(dev, BTN_RIGHT, right);
@@ -484,8 +481,9 @@ static psmouse_ret_t hgpk_process_byte(struct psmouse *psmouse)
 			 * ugh, got a packet inside our recalibration
 			 * window, schedule another recalibration.
 			 */
-			psmouse_dbg(psmouse,
-				    "packet inside calibration window, queueing another recalibration\n");
+			hgpk_dbg(psmouse,
+				 "packet inside calibration window, "
+				 "queueing another recalibration\n");
 			psmouse_queue_work(psmouse, &priv->recalib_wq,
 					msecs_to_jiffies(post_interrupt_delay));
 		}
@@ -629,7 +627,7 @@ static int hgpk_reset_device(struct psmouse *psmouse, bool recalibrate)
 
 	err = hgpk_select_mode(psmouse);
 	if (err) {
-		psmouse_err(psmouse, "failed to select mode\n");
+		hgpk_err(psmouse, "failed to select mode\n");
 		return err;
 	}
 
@@ -640,6 +638,7 @@ static int hgpk_reset_device(struct psmouse *psmouse, bool recalibrate)
 
 static int hgpk_force_recalibrate(struct psmouse *psmouse)
 {
+	struct ps2dev *ps2dev = &psmouse->ps2dev;
 	struct hgpk_data *priv = psmouse->private;
 	int err;
 
@@ -648,11 +647,11 @@ static int hgpk_force_recalibrate(struct psmouse *psmouse)
 		return 0;
 
 	if (!autorecal) {
-		psmouse_dbg(psmouse, "recalibration disabled, ignoring\n");
+		hgpk_dbg(psmouse, "recalibrations disabled, ignoring\n");
 		return 0;
 	}
 
-	psmouse_dbg(psmouse, "recalibrating touchpad..\n");
+	hgpk_dbg(psmouse, "recalibrating touchpad..\n");
 
 	/* we don't want to race with the irq handler, nor with resyncs */
 	psmouse_set_state(psmouse, PSMOUSE_INITIALIZING);
@@ -668,11 +667,14 @@ static int hgpk_force_recalibrate(struct psmouse *psmouse)
 	 * we don't have a good way to deal with it.  The 2s window stuff
 	 * (below) is our best option for now.
 	 */
-	if (psmouse_activate(psmouse))
+
+	if (ps2_command(ps2dev, NULL, PSMOUSE_CMD_ENABLE))
 		return -1;
 
+	psmouse_set_state(psmouse, PSMOUSE_ACTIVATED);
+
 	if (tpdebug)
-		psmouse_dbg(psmouse, "touchpad reactivated\n");
+		hgpk_dbg(psmouse, "touchpad reactivated\n");
 
 	/*
 	 * If we get packets right away after recalibrating, it's likely
@@ -724,15 +726,16 @@ static int hgpk_toggle_powersave(struct psmouse *psmouse, int enable)
 
 		err = hgpk_reset_device(psmouse, false);
 		if (err) {
-			psmouse_err(psmouse, "Failed to reset device!\n");
+			hgpk_err(psmouse, "Failed to reset device!\n");
 			return err;
 		}
 
 		/* should be all set, enable the touchpad */
-		psmouse_activate(psmouse);
-		psmouse_dbg(psmouse, "Touchpad powered up.\n");
+		ps2_command(&psmouse->ps2dev, NULL, PSMOUSE_CMD_ENABLE);
+		psmouse_set_state(psmouse, PSMOUSE_ACTIVATED);
+		hgpk_dbg(psmouse, "Touchpad powered up.\n");
 	} else {
-		psmouse_dbg(psmouse, "Powering off touchpad.\n");
+		hgpk_dbg(psmouse, "Powering off touchpad.\n");
 
 		if (ps2_command(ps2dev, NULL, 0xec) ||
 		    ps2_command(ps2dev, NULL, 0xec) ||
@@ -784,14 +787,11 @@ static ssize_t hgpk_set_powered(struct psmouse *psmouse, void *data,
 				const char *buf, size_t count)
 {
 	struct hgpk_data *priv = psmouse->private;
-	unsigned int value;
+	unsigned long value;
 	int err;
 
-	err = kstrtouint(buf, 10, &value);
-	if (err)
-		return err;
-
-	if (value > 1)
+	err = strict_strtoul(buf, 10, &value);
+	if (err || value > 1)
 		return -EINVAL;
 
 	if (value != priv->powered) {
@@ -879,14 +879,11 @@ static ssize_t hgpk_trigger_recal(struct psmouse *psmouse, void *data,
 				const char *buf, size_t count)
 {
 	struct hgpk_data *priv = psmouse->private;
-	unsigned int value;
+	unsigned long value;
 	int err;
 
-	err = kstrtouint(buf, 10, &value);
-	if (err)
-		return err;
-
-	if (value != 1)
+	err = strict_strtoul(buf, 10, &value);
+	if (err || value != 1)
 		return -EINVAL;
 
 	/*
@@ -925,7 +922,7 @@ static void hgpk_recalib_work(struct work_struct *work)
 	struct psmouse *psmouse = priv->psmouse;
 
 	if (hgpk_force_recalibrate(psmouse))
-		psmouse_err(psmouse, "recalibration failed!\n");
+		hgpk_err(psmouse, "recalibration failed!\n");
 }
 
 static int hgpk_register(struct psmouse *psmouse)
@@ -949,15 +946,14 @@ static int hgpk_register(struct psmouse *psmouse)
 	err = device_create_file(&psmouse->ps2dev.serio->dev,
 				 &psmouse_attr_powered.dattr);
 	if (err) {
-		psmouse_err(psmouse, "Failed creating 'powered' sysfs node\n");
+		hgpk_err(psmouse, "Failed creating 'powered' sysfs node\n");
 		return err;
 	}
 
 	err = device_create_file(&psmouse->ps2dev.serio->dev,
 				 &psmouse_attr_hgpk_mode.dattr);
 	if (err) {
-		psmouse_err(psmouse,
-			    "Failed creating 'hgpk_mode' sysfs node\n");
+		hgpk_err(psmouse, "Failed creating 'hgpk_mode' sysfs node\n");
 		goto err_remove_powered;
 	}
 
@@ -966,8 +962,8 @@ static int hgpk_register(struct psmouse *psmouse)
 		err = device_create_file(&psmouse->ps2dev.serio->dev,
 					 &psmouse_attr_recalibrate.dattr);
 		if (err) {
-			psmouse_err(psmouse,
-				    "Failed creating 'recalibrate' sysfs node\n");
+			hgpk_err(psmouse,
+				"Failed creating 'recalibrate' sysfs node\n");
 			goto err_remove_mode;
 		}
 	}
@@ -1030,13 +1026,13 @@ static enum hgpk_model_t hgpk_get_model(struct psmouse *psmouse)
 		return -EIO;
 	}
 
-	psmouse_dbg(psmouse, "ID: %02x %02x %02x\n", param[0], param[1], param[2]);
+	hgpk_dbg(psmouse, "ID: %02x %02x %02x\n", param[0], param[1], param[2]);
 
 	/* HGPK signature: 0x67, 0x00, 0x<model> */
 	if (param[0] != 0x67 || param[1] != 0x00)
 		return -ENODEV;
 
-	psmouse_info(psmouse, "OLPC touchpad revision 0x%x\n", param[2]);
+	hgpk_info(psmouse, "OLPC touchpad revision 0x%x\n", param[2]);
 
 	return param[2];
 }

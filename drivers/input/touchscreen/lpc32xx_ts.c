@@ -276,7 +276,7 @@ static int __devinit lpc32xx_ts_probe(struct platform_device *pdev)
 	input_set_drvdata(input, tsc);
 
 	error = request_irq(tsc->irq, lpc32xx_ts_interrupt,
-			    0, pdev->name, tsc);
+			    IRQF_DISABLED, pdev->name, tsc);
 	if (error) {
 		dev_err(&pdev->dev, "failed requesting interrupt\n");
 		goto err_put_clock;
@@ -392,7 +392,18 @@ static struct platform_driver lpc32xx_ts_driver = {
 		.pm	= LPC32XX_TS_PM_OPS,
 	},
 };
-module_platform_driver(lpc32xx_ts_driver);
+
+static int __init lpc32xx_ts_init(void)
+{
+	return platform_driver_register(&lpc32xx_ts_driver);
+}
+module_init(lpc32xx_ts_init);
+
+static void __exit lpc32xx_ts_exit(void)
+{
+	platform_driver_unregister(&lpc32xx_ts_driver);
+}
+module_exit(lpc32xx_ts_exit);
 
 MODULE_AUTHOR("Kevin Wells <kevin.wells@nxp.com");
 MODULE_DESCRIPTION("LPC32XX TSC Driver");

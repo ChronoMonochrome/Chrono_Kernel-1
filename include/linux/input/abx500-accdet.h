@@ -8,6 +8,8 @@
 #ifndef _ABx500_ACCDET_H
 #define _ABx500_ACCDET_H
 
+#include <linux/interrupt.h>
+
 /*
 * Debounce times for AccDet1 input
 * @0x880 [2:0]
@@ -102,6 +104,9 @@
  * @is_detection_inverted	Whether the accessory insert/removal, button
  * press/release irq's are inverted.
  * @mic_ctrl	Gpio to select between CVBS and MIC.
+ * @nahj_ctrl	Gpio to select between NAHJ and OMTP Headset.
+ * @video_ctrl_gpio_inverted	video_ctrl Gpio settings are inverted, as
+ * compared to the previously used settings.
  */
 struct abx500_accdet_platform_data {
 	int btn_keycode;
@@ -110,6 +115,8 @@ struct abx500_accdet_platform_data {
 	unsigned int video_ctrl_gpio;
 	bool is_detection_inverted;
 	unsigned int mic_ctrl;
+	unsigned int nahj_ctrl;
+	bool video_ctrl_gpio_inverted;
 };
 
 /* Enumerations */
@@ -124,7 +131,6 @@ struct abx500_accdet_platform_data {
  * @JACK_TYPE_UNSUPPORTED_HEADSET Unsupported headset of type accessory connected
  * @JACK_TYPE_CARKIT Carkit type of accessory connected
  * @JACK_TYPE_OPENCABLE Open cable connected
- * @JACK_TYPE_CVIDEO CVideo type of accessory connected.
  */
 enum accessory_jack_type {
 	JACK_TYPE_UNSPECIFIED,
@@ -134,8 +140,7 @@ enum accessory_jack_type {
 	JACK_TYPE_HEADSET,
 	JACK_TYPE_UNSUPPORTED_HEADSET,
 	JACK_TYPE_CARKIT,
-	JACK_TYPE_OPENCABLE,
-	JACK_TYPE_CVIDEO
+	JACK_TYPE_OPENCABLE
 };
 
 /**
@@ -231,6 +236,7 @@ struct accessory_regu_descriptor {
  * @maxvol maximum voltage (mV) for decision
  * @alt_minvol minimum alternative voltage (mV) for decision
  * @alt_maxvol maximum alternative voltage (mV) for decision
+ * @nahj_headset is a nahj headset
  */
 struct accessory_detect_task {
 	const char *typename;
@@ -241,6 +247,7 @@ struct accessory_detect_task {
 	int maxvol;
 	int alt_minvol;
 	int alt_maxvol;
+	bool nahj_headset;
 };
 
 /**
@@ -268,8 +275,6 @@ struct accessory_detect_task {
  * @accdet1_th_set: flag to indicate whether accdet1 threshold and debounce
  *	times are configured
  * @accdet2_th_set: flag to indicate whether accdet2 thresholds are configured
- * @gpio35_dir_set: flag to indicate whether GPIO35 (VIDEOCTRL) direction
- *	has been configured.
  * @irq_desc_norm: irq's as specified in the initial versions of ab
  * @irq_desc_inverted: irq's inverted as seen in the latest versions of ab
  * @no_irqs: Total number of irq's
@@ -315,7 +320,6 @@ struct abx500_ad {
 
 	int accdet1_th_set;
 	int accdet2_th_set;
-	int gpio35_dir_set;
 
 	struct accessory_irq_descriptor *irq_desc_norm;
 	struct accessory_irq_descriptor *irq_desc_inverted;
@@ -335,7 +339,7 @@ struct abx500_ad {
 	void* (*accdet_abx500_gpadc_get)(void);
 	void (*config_hw_test_plug_connected)(struct abx500_ad *dd, int enable);
 	void (*set_av_switch)(struct abx500_ad *dd,
-		enum accessory_avcontrol_dir dir);
+		enum accessory_avcontrol_dir dir, bool);
 	struct abx500_accdet_platform_data *
 	(*get_platform_data)(struct platform_device *pdev);
 };
@@ -358,5 +362,6 @@ extern struct abx500_ad ab5500_accessory_det_callbacks;
 #ifdef CONFIG_INPUT_AB8500_ACCDET
 extern struct abx500_ad ab8500_accessory_det_callbacks;
 #endif
+extern void set_android_switch_state(int);
 
 #endif /* _ABx500_ACCDET_H */

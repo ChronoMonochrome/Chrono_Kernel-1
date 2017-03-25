@@ -580,7 +580,26 @@ static struct usb_driver keyspan_driver =
 	.id_table =	keyspan_table
 };
 
-module_usb_driver(keyspan_driver);
+static int __init usb_keyspan_init(void)
+{
+	int result;
+
+	/* register this driver with the USB subsystem */
+	result = usb_register(&keyspan_driver);
+	if (result)
+		err("usb_register failed. Error number %d\n", result);
+
+	return result;
+}
+
+static void __exit usb_keyspan_exit(void)
+{
+	/* deregister this driver with the USB subsystem */
+	usb_deregister(&keyspan_driver);
+}
+
+module_init(usb_keyspan_init);
+module_exit(usb_keyspan_exit);
 
 MODULE_DEVICE_TABLE(usb, keyspan_table);
 MODULE_AUTHOR(DRIVER_AUTHOR);

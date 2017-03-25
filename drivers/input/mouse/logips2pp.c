@@ -82,11 +82,11 @@ static psmouse_ret_t ps2pp_process_byte(struct psmouse *psmouse)
 			packet[0] = packet[2] | 0x08;
 			break;
 
+#ifdef DEBUG
 		default:
-			psmouse_dbg(psmouse,
-				    "Received PS2++ packet #%x, but don't know how to handle.\n",
-				    (packet[1] >> 4) | (packet[0] & 0x30));
-			break;
+			printk(KERN_WARNING "psmouse.c: Received PS2++ packet #%x, but don't know how to handle.\n",
+				(packet[1] >> 4) | (packet[0] & 0x30));
+#endif
 		}
 	} else {
 		/* Standard PS/2 motion data */
@@ -155,14 +155,9 @@ static ssize_t ps2pp_attr_show_smartscroll(struct psmouse *psmouse,
 static ssize_t ps2pp_attr_set_smartscroll(struct psmouse *psmouse, void *data,
 					  const char *buf, size_t count)
 {
-	unsigned int value;
-	int err;
+	unsigned long value;
 
-	err = kstrtouint(buf, 10, &value);
-	if (err)
-		return err;
-
-	if (value > 1)
+	if (strict_strtoul(buf, 10, &value) || value > 1)
 		return -EINVAL;
 
 	ps2pp_set_smartscroll(psmouse, value);
@@ -387,7 +382,7 @@ int ps2pp_init(struct psmouse *psmouse, bool set_properties)
 		}
 
 	} else {
-		psmouse_warn(psmouse, "Detected unknown Logitech mouse model %d\n", model);
+		printk(KERN_WARNING "logips2pp: Detected unknown logitech mouse model %d\n", model);
 	}
 
 	if (set_properties) {
@@ -405,9 +400,9 @@ int ps2pp_init(struct psmouse *psmouse, bool set_properties)
 				error = device_create_file(&psmouse->ps2dev.serio->dev,
 							   &psmouse_attr_smartscroll.dattr);
 				if (error) {
-					psmouse_err(psmouse,
-						    "failed to create smartscroll sysfs attribute, error: %d\n",
-						    error);
+					printk(KERN_ERR
+						"logips2pp.c: failed to create smartscroll "
+						"sysfs attribute, error: %d\n", error);
 					return -1;
 				}
 			}

@@ -16,7 +16,6 @@
 #include <linux/slab.h>
 #include <linux/workqueue.h>
 #include <linux/input/adxl34x.h>
-#include <linux/module.h>
 
 #include "adxl34x.h"
 
@@ -452,10 +451,10 @@ static ssize_t adxl34x_disable_store(struct device *dev,
 				     const char *buf, size_t count)
 {
 	struct adxl34x *ac = dev_get_drvdata(dev);
-	unsigned int val;
+	unsigned long val;
 	int error;
 
-	error = kstrtouint(buf, 10, &val);
+	error = strict_strtoul(buf, 10, &val);
 	if (error)
 		return error;
 
@@ -541,10 +540,10 @@ static ssize_t adxl34x_rate_store(struct device *dev,
 				  const char *buf, size_t count)
 {
 	struct adxl34x *ac = dev_get_drvdata(dev);
-	unsigned char val;
+	unsigned long val;
 	int error;
 
-	error = kstrtou8(buf, 10, &val);
+	error = strict_strtoul(buf, 10, &val);
 	if (error)
 		return error;
 
@@ -576,10 +575,10 @@ static ssize_t adxl34x_autosleep_store(struct device *dev,
 				  const char *buf, size_t count)
 {
 	struct adxl34x *ac = dev_get_drvdata(dev);
-	unsigned int val;
+	unsigned long val;
 	int error;
 
-	error = kstrtouint(buf, 10, &val);
+	error = strict_strtoul(buf, 10, &val);
 	if (error)
 		return error;
 
@@ -623,13 +622,13 @@ static ssize_t adxl34x_write_store(struct device *dev,
 				   const char *buf, size_t count)
 {
 	struct adxl34x *ac = dev_get_drvdata(dev);
-	unsigned int val;
+	unsigned long val;
 	int error;
 
 	/*
 	 * This allows basic ADXL register write access for debug purposes.
 	 */
-	error = kstrtouint(buf, 16, &val);
+	error = strict_strtoul(buf, 16, &val);
 	if (error)
 		return error;
 
