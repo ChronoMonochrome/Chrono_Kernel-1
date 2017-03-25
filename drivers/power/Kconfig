@@ -62,6 +62,18 @@ config TEST_POWER
 	help
 	  This driver is used for testing. It's safe to say M here.
 
+config FAKE_DFMS_DEVICES
+	bool "fake power supply sysfs devices"
+	default n
+	help
+	  Say Y To create fake sysfs entries in order to keep Samsung DFMS happy.
+
+config ABB_FAKE_DFMS_DEVICES
+	bool "fake power supply sysfs devices"
+	default n
+	help
+	  Say Y To create fake sysfs entries in order to keep Samsung DFMS happy.
+
 config BATTERY_DS2760
 	tristate "DS2760 battery driver (HP iPAQ & others)"
 	depends on W1 && W1_SLAVE_DS2760
@@ -70,25 +82,10 @@ config BATTERY_DS2760
 
 config BATTERY_DS2780
 	tristate "DS2780 battery driver"
-	depends on HAS_IOMEM
 	select W1
 	select W1_SLAVE_DS2780
 	help
 	  Say Y here to enable support for batteries with ds2780 chip.
-
-config BATTERY_DS2781
-	tristate "2781 battery driver"
-	depends on HAS_IOMEM
-	select W1
-	select W1_SLAVE_DS2781
-	help
-	  If you enable this you will have the DS2781 battery driver support.
-
-	  The battery monitor chip is used in many batteries/devices
-	  as the one who is responsible for charging/discharging/monitoring
-	  Li+ batteries.
-
-	  If you are unsure, say N.
 
 config BATTERY_DS2782
 	tristate "DS2782/DS2786 standalone gas-gauge"
@@ -130,12 +127,12 @@ config BATTERY_WM97XX
 	help
 	  Say Y to enable support for battery measured by WM97xx aux port.
 
-config BATTERY_SBS
-        tristate "SBS Compliant gas gauge"
+config BATTERY_BQ20Z75
+        tristate "TI BQ20z75 gas gauge"
         depends on I2C
         help
-	  Say Y to include support for SBS battery driver for SBS-compliant
-	  gas gauges.
+         Say Y to include support for TI BQ20z75 SBS-compliant
+         gas gauge and protection IC.
 
 config BATTERY_BQ27x00
 	tristate "BQ27x00 battery driver"
@@ -163,14 +160,6 @@ config BATTERY_DA9030
 	help
 	  Say Y here to enable support for batteries charger integrated into
 	  DA9030 PMIC.
-
-config BATTERY_DA9052
-	tristate "Dialog DA9052 Battery"
-	depends on PMIC_DA9052
-	depends on BROKEN
-	help
-	  Say Y here to enable support for batteries charger integrated into
-	  DA9052 PMIC.
 
 config BATTERY_MAX17040
 	tristate "Maxim MAX17040 Fuel Gauge"
@@ -248,12 +237,6 @@ config CHARGER_TWL4030
 	help
 	  Say Y here to enable support for TWL4030 Battery Charge Interface.
 
-config CHARGER_LP8727
-	tristate "TI/National Semiconductor LP8727 charger driver"
-	depends on I2C
-	help
-	  Say Y here to enable support for LP8727 Charger Driver.
-
 config CHARGER_GPIO
 	tristate "GPIO charger"
 	depends on GPIOLIB
@@ -264,42 +247,16 @@ config CHARGER_GPIO
 	  This driver can be build as a module. If so, the module will be
 	  called gpio-charger.
 
-config CHARGER_MANAGER
-	bool "Battery charger manager for multiple chargers"
-	depends on REGULATOR && RTC_CLASS
+config SAMSUNG_CHARGER_SPEC
+	bool "Samsung Charger specification"
 	help
-          Say Y to enable charger-manager support, which allows multiple
-          chargers attached to a battery and multiple batteries attached to a
-          system. The charger-manager also can monitor charging status in
-          runtime and in suspend-to-RAM by waking up the system periodically
-          with help of suspend_again support.
-
-config CHARGER_MAX8997
-	tristate "Maxim MAX8997/MAX8966 PMIC battery charger driver"
-	depends on MFD_MAX8997 && REGULATOR_MAX8997
-	help
-	  Say Y to enable support for the battery charger control sysfs and
-	  platform data of MAX8997/LP3974 PMICs.
-
-config CHARGER_MAX8998
-	tristate "Maxim MAX8998/LP3974 PMIC battery charger driver"
-	depends on MFD_MAX8998 && REGULATOR_MAX8998
-	help
-	  Say Y to enable support for the battery charger control sysfs and
-	  platform data of MAX8998/LP3974 PMICs.
-
-config CHARGER_SMB347
-	tristate "Summit Microelectronics SMB347 Battery Charger"
-	depends on I2C
-	help
-	  Say Y to include support for Summit Microelectronics SMB347
-	  Battery Charger.
+	  Say Y to include enable the Samsung Charger Spec.
 
 config AB8500_BM
 	bool "AB8500 Battery Management Driver"
-	depends on AB8500_CORE && AB8500_GPADC
+	depends on AB8500_CORE && AB8500_GPADC && ARCH_U8500
 	help
-	  Say Y to include support for AB5500 battery management.
+	  Say Y to include support for AB8500 battery management.
 
 config AB8500_BATTERY_THERM_ON_BATCTRL
 	bool "Thermistor connected on BATCTRL ADC"
@@ -308,11 +265,23 @@ config AB8500_BATTERY_THERM_ON_BATCTRL
 	  Say Y to enable battery temperature measurements using
 	  thermistor connected on BATCTRL ADC.
 
-config AB8500_9100_LI_ION_BATTERY
-	bool "Enable support of the 9100 Li-ion battery charging"
+config AB8XX0_USBCHG_ON_MAIN
+	bool "USB Charging is performed through the Main Charger"
 	depends on AB8500_BM
 	help
-	  Say Y to enable support of the 9100 Li-ion battery charging.
+	  Say Y to enable USB charging though the Main Charger.
+
+config AB8XX0_TACHG_ON_USB
+	bool "TA (AC) Charging is performed through the USB Charger"
+	depends on AB8500_BM
+	help
+	  Say Y to enable TA charging though the USB Charger.
+
+config ABB_BM
+	bool "AB8500 Legacy(GB) Battery Management Driver"
+	depends on AB8500_CORE && AB8500_GPADC && ARCH_U8500
+	help
+	  Say Y to include support for AB8500 Legacy(GB) battery management.
 
 config AB5500_BM
 	bool "AB5500 Battery Management Driver"
@@ -326,4 +295,27 @@ config AB5500_BATTERY_THERM_ON_BATCTRL
 	help
 	  Say Y to enable battery temperature measurements using
 	  thermistor connected on BATCTRL ADC.
+
+config MEASURE_TEMP_BY_ADC_TABLE
+	bool "Temperature measurement by ADC table"
+	default n
+	help
+	  Say Y to include support for measurement by ADC table.	  
+
+config CHARGER_PM2301
+	bool "PM2301 Battery Charger Driver"
+	depends on AB8500_BM
+	help
+	  Say Y to include support for PM2301 charger driver.
+	  Depends on AB8500 battery management core.
+
+config PM2XXX_DEEP_DEBUG
+	bool "PM2XXX Deep Debug"
+	depends on DEEP_DEBUG && CHARGER_PM2301
+	default n
+	help
+	  Deep Debug interface provides an access to all registers.
+	  It allows to read or write directly a register.
+	  Say Y to include support for Deep Debug.
+	  If unsure, say N.
 endif # POWER_SUPPLY

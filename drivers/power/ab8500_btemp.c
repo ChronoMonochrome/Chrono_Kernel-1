@@ -1,13 +1,12 @@
 /*
- * Copyright (C) ST-Ericsson SA 2012
+ * Copyright (C) ST-Ericsson SA 2010
  *
  * Battery temperature driver for AB8500
  *
  * License Terms: GNU General Public License v2
- * Author:
- *	Johan Palsson <johan.palsson@stericsson.com>
- *	Karl Komierowski <karl.komierowski@stericsson.com>
- *	Arun R Murthy <arun.murthy@stericsson.com>
+ * Author: Johan Palsson <johan.palsson@stericsson.com>
+ * Author: Karl Komierowski <karl.komierowski@stericsson.com>
+ * Author: Arun R Murthy <arun.murthy@stericsson.com>
  */
 
 #include <linux/init.h>
@@ -20,10 +19,37 @@
 #include <linux/power_supply.h>
 #include <linux/completion.h>
 #include <linux/workqueue.h>
-#include <linux/mfd/abx500/ab8500.h>
+#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
 #include <linux/mfd/abx500/ab8500-bm.h>
 #include <linux/mfd/abx500/ab8500-gpadc.h>
+//#define MAKE_PROC_BATTERY_ID_ENTRY
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+#define FAST_MONITOR	5
+#define NORMAL_MONITOR	20
+#endif
+
+#define AB8500_BAT_CTRL_CURRENT_SOURCE_DEFAULT 0x14
+
+#define MAIN_WDOG_ENA			0x01
+#define MAIN_WDOG_KICK			0x02
+#define MAIN_WDOG_DIS			0x00
+#define CHARG_WD_KICK			0x01
+#define MAIN_CH_ENA			0x01
+#define MAIN_CH_NO_OVERSHOOT_ENA_N	0x02
+#define USB_CH_ENA			0x01
+#define USB_CHG_NO_OVERSHOOT_ENA_N	0x02
+#define MAIN_CH_DET			0x01
+#define MAIN_CH_CV_ON			0x04
+#define USB_CH_CV_ON			0x08
+#define VBUS_DET_DBNC100		0x02
+#define VBUS_DET_DBNC1			0x01
+#define OTP_ENABLE_WD			0x01
+
+#ifdef MAKE_PROC_BATTERY_ID_ENTRY
+#include <linux/proc_fs.h>
+#endif
+
 #include <linux/jiffies.h>
 
 #define VTVOUT_V			1800
@@ -37,8 +63,20 @@
 #define BTEMP_BATCTRL_CURR_SRC_7UA	7
 #define BTEMP_BATCTRL_CURR_SRC_20UA	20
 
+#define BTEMP_BATCTRL_CURR_SRC_16UA	16
+#define BTEMP_BATCTRL_CURR_SRC_18UA	18
+
 #define to_ab8500_btemp_device_info(x) container_of((x), \
 	struct ab8500_btemp, btemp_psy);
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+enum battery_monitoring_state
+{
+	temperature_monitoring_off = 0 ,
+	temperature_monitoring_no_charging ,
+	temperature_monitoring_with_charging ,
+} ;
+#endif
 
 /**
  * struct ab8500_btemp_interrupts - ab8500 interrupts
@@ -58,6 +96,10 @@ struct ab8500_btemp_events {
 	bool btemp_low;
 	bool ac_conn;
 	bool usb_conn;
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	bool battery_ovv ;
+	unsigned long battery_ovv_time ;
+#endif
 };
 
 struct ab8500_btemp_ranges {
@@ -76,8 +118,8 @@ struct ab8500_btemp_ranges {
  * @parent:		Pointer to the struct ab8500
  * @gpadc:		Pointer to the struct gpadc
  * @fg:			Pointer to the struct fg
- * @pdata:		Pointer to the abx500_btemp platform data
- * @bat:		Pointer to the abx500_bm platform data
+ * @pdata:		Pointer to the ab8500_btemp platform data
+ * @bat:		Pointer to the ab8500_bm platform data
  * @btemp_psy:		Structure for BTEMP specific battery properties
  * @events:		Structure for information about events triggered
  * @btemp_ranges:	Battery temperature range structure
@@ -91,18 +133,33 @@ struct ab8500_btemp {
 	int curr_source;
 	int bat_temp;
 	int prev_bat_temp;
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	int battery_monitoring_state ;
+	int vf_error_cnt;
+	int vf_ok_cnt;
+	int monitor_time;
+	int batt_id;
+	bool initial_vf_check;
+#endif
 	struct ab8500 *parent;
 	struct ab8500_gpadc *gpadc;
 	struct ab8500_fg *fg;
-	struct abx500_btemp_platform_data *pdata;
-	struct abx500_bm_data *bat;
+	struct ab8500_btemp_platform_data *pdata;
+	struct ab8500_bm_data *bat;
 	struct power_supply btemp_psy;
 	struct ab8500_btemp_events events;
 	struct ab8500_btemp_ranges btemp_ranges;
 	struct workqueue_struct *btemp_wq;
 	struct delayed_work btemp_periodic_work;
 	bool initialized;
+#ifdef MAKE_PROC_BATTERY_ID_ENTRY
+	struct proc_dir_entry * battery_proc_entry ;
+#endif //MAKE_PROC_BATTERY_ID_ENTRY
 };
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+static struct ab8500_btemp * battery = NULL ;
+#endif
 
 /* BTEMP power supply properties */
 static enum power_supply_property ab8500_btemp_props[] = {
@@ -113,6 +170,21 @@ static enum power_supply_property ab8500_btemp_props[] = {
 };
 
 static LIST_HEAD(ab8500_btemp_list);
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+struct over_temperature_lookup {
+	int cutoff_temperature ;
+	int reg_value 		;
+
+} ;
+
+static struct over_temperature_lookup over_temperature_lookups[] = {
+	{  62	, 0x3	} ,
+	{  57	, 0x2	} ,
+	{  52	, 0x1	} ,
+	{  57	, 0x0	} ,
+} ;
+#endif
 
 /**
  * ab8500_btemp_get() - returns a reference to the primary AB8500 BTEMP
@@ -126,18 +198,54 @@ struct ab8500_btemp *ab8500_btemp_get(void)
 	return btemp;
 }
 
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+static void ab8500_charger_set_high_temperature_cutoff_temp(struct ab8500_btemp *di)
+{
+	int x ;
+	int i = -1 ;
+	char val ;
+	int ret ;
+	if (di && di->bat) {	/* lookup nearest temperature available */
+		for (x=0;x<ARRAY_SIZE(over_temperature_lookups)-1;x++) {
+			if ( di->bat->temp_over >= over_temperature_lookups[x].cutoff_temperature) {
+				i=x;
+				break ;
+			}
+		}
+		i=(i<0)?0:i ;
+		abx500_set_register_interruptible(di->dev, AB8500_CHARGER,
+		     AB8500_BTEMP_HIGH_TH,over_temperature_lookups[x].reg_value);
+		ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,AB8500_BTEMP_HIGH_TH, &val);
+		if (ret>=0) { /* convert value we set to temperature and sync software and hardware thermal limit*/
+			val &= 0x3 ;
+			for(x=0;ARRAY_SIZE(over_temperature_lookups);x++) {	/* actual register settings temperature*/
+				if (over_temperature_lookups[x].reg_value == val) {
+					di->bat->temp_hysteresis -= (di->bat->temp_over - over_temperature_lookups[x].cutoff_temperature) ;
+					//di->bat->temp_over = over_temperature_lookups[x].cutoff_temperature ;
+					dev_dbg(di->dev, "%s Charging shutdown temp=%d hysteresis=%d restart temp=%d ",__func__
+								,di->bat->temp_over
+								,di->bat->temp_hysteresis ,
+								di->bat->temp_over-di->bat->temp_hysteresis);
+
+					break ;
+				}
+			}
+		}
+	}
+}
+#endif
+
 /**
  * ab8500_btemp_batctrl_volt_to_res() - convert batctrl voltage to resistance
  * @di:		pointer to the ab8500_btemp structure
  * @v_batctrl:	measured batctrl voltage
- * @inst_curr:	measured instant current
  *
  * This function returns the battery resistance that is
  * derived from the BATCTRL voltage.
  * Returns value in Ohms.
  */
 static int ab8500_btemp_batctrl_volt_to_res(struct ab8500_btemp *di,
-	int v_batctrl, int inst_curr)
+	int v_batctrl)
 {
 	int rbs;
 
@@ -146,17 +254,7 @@ static int ab8500_btemp_batctrl_volt_to_res(struct ab8500_btemp *di,
 		 * For ABB cut1.0 and 1.1 BAT_CTRL is internally
 		 * connected to 1.8V through a 450k resistor
 		 */
-		return (450000 * (v_batctrl)) / (1800 - v_batctrl);
-	}
-
-	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL) {
-		/*
-		 * If the battery has internal NTC, we use the current
-		 * source to calculate the resistance, 7uA or 20uA
-		 */
-		rbs = (v_batctrl * 1000
-		       - di->bat->gnd_lift_resistance * inst_curr)
-		      / di->curr_source;
+		rbs = (450000 * (v_batctrl)) / (1800 - v_batctrl);
 	} else {
 		/*
 		 * BAT_CTRL is internally
@@ -167,6 +265,11 @@ static int ab8500_btemp_batctrl_volt_to_res(struct ab8500_btemp *di,
 
 	return rbs;
 }
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+#define SEC_TO_SAMPLE(S)		(S * 4)
+#define PCB_RESISTANCE_ESTIMATE 0 /*fudge factor estimating resistence between battery ground and ground (bar sense resistor) milliohms */
+#endif
 
 /**
  * ab8500_btemp_read_batctrl_voltage() - measure batctrl voltage
@@ -203,6 +306,12 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
 	int curr;
 	int ret = 0;
 
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	if (di->bat->adc_therm == ADC_THERM_BATTEMP) {
+		return 0;
+	}
+#endif
+
 	/*
 	 * BATCTRL current sources are included on AB8500 cut2.0
 	 * and future versions
@@ -211,11 +320,19 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
 		return 0;
 
 	/* Only do this for batteries with internal NTC */
-	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL && enable) {
-		if (di->curr_source == BTEMP_BATCTRL_CURR_SRC_7UA)
-			curr = BAT_CTRL_7U_ENA;
-		else
-			curr = BAT_CTRL_20U_ENA;
+	if (di->bat->adc_therm == ADC_THERM_BATCTRL && enable) {
+
+		if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
+			if (di->curr_source == BTEMP_BATCTRL_CURR_SRC_16UA)
+				curr = BAT_CTRL_16U_ENA;
+			else
+				curr = BAT_CTRL_18U_ENA;
+		} else {
+			if (di->curr_source == BTEMP_BATCTRL_CURR_SRC_7UA)
+				curr = BAT_CTRL_7U_ENA;
+			else
+				curr = BAT_CTRL_20U_ENA;
+		}
 
 		dev_dbg(di->dev, "Set BATCTRL %duA\n", di->curr_source);
 
@@ -243,14 +360,25 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
 				__func__);
 			goto disable_curr_source;
 		}
-	} else if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL && !enable) {
+	} else if (di->bat->adc_therm == ADC_THERM_BATCTRL && !enable) {
 		dev_dbg(di->dev, "Disable BATCTRL curr source\n");
 
-		/* Write 0 to the curr bits */
-		ret = abx500_mask_and_set_register_interruptible(di->dev,
-			AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
-			BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA,
-			~(BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA));
+		if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
+			/* Write 0 to the curr bits */
+			ret = abx500_mask_and_set_register_interruptible(
+				di->dev,
+				AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
+				BAT_CTRL_16U_ENA | BAT_CTRL_18U_ENA,
+				~(BAT_CTRL_16U_ENA | BAT_CTRL_18U_ENA));
+		} else {
+			/* Write 0 to the curr bits */
+			ret = abx500_mask_and_set_register_interruptible(
+				di->dev,
+				AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
+				BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA,
+				~(BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA));
+		}
+
 		if (ret) {
 			dev_err(di->dev, "%s failed disabling current source\n",
 				__func__);
@@ -292,11 +420,20 @@ static int ab8500_btemp_curr_source_enable(struct ab8500_btemp *di,
 	 * if we got an error above
 	 */
 disable_curr_source:
-	/* Write 0 to the curr bits */
-	ret = abx500_mask_and_set_register_interruptible(di->dev,
+	if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
+		/* Write 0 to the curr bits */
+		ret = abx500_mask_and_set_register_interruptible(di->dev,
+			AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
+			BAT_CTRL_16U_ENA | BAT_CTRL_18U_ENA,
+			~(BAT_CTRL_16U_ENA | BAT_CTRL_18U_ENA));
+	} else {
+		/* Write 0 to the curr bits */
+		ret = abx500_mask_and_set_register_interruptible(di->dev,
 			AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
 			BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA,
 			~(BAT_CTRL_7U_ENA | BAT_CTRL_20U_ENA));
+	}
+
 	if (ret) {
 		dev_err(di->dev, "%s failed disabling current source\n",
 			__func__);
@@ -335,6 +472,29 @@ disable_force_comp:
 	return ret;
 }
 
+static bool ab8500_batctrl_nc(struct ab8500_btemp *di)
+{
+	int ret, batctrl;
+	/*
+	 * BATCTRL current sources are included on AB8500 cut2.0
+	 * and future versions
+	 */
+	ret = ab8500_btemp_curr_source_enable(di, true);
+	if (ret) {
+		dev_err(di->dev, "%s curr source enabled failed\n", __func__);
+		return ret;
+	}
+
+	batctrl = ab8500_btemp_read_batctrl_voltage(di);
+	dev_dbg(di->dev, "Read battctrl voltage to: %d\n", batctrl);
+
+	ret = ab8500_btemp_curr_source_enable(di, false);
+
+	if (batctrl > 1300)
+		return true;
+	return false;
+}
+
 /**
  * ab8500_btemp_get_batctrl_res() - get battery resistance
  * @di:		pointer to the ab8500_btemp structure
@@ -360,43 +520,9 @@ static int ab8500_btemp_get_batctrl_res(struct ab8500_btemp *di)
 		return ret;
 	}
 
-	if (!di->fg)
-		di->fg = ab8500_fg_get();
-	if (!di->fg) {
-		dev_err(di->dev, "No fg found\n");
-		return -EINVAL;
-	}
+	batctrl = ab8500_btemp_read_batctrl_voltage(di);
 
-	ret = ab8500_fg_inst_curr_start(di->fg);
-
-	if (ret) {
-		dev_err(di->dev, "Failed to start current measurement\n");
-		return ret;
-	}
-
-	/*
-	 * Since there is no interrupt when current measurement is done,
-	 * loop for over 250ms (250ms is one sample conversion time
-	 * with 32.768 Khz RTC clock). Note that a stop time must be set
-	 * since the ab8500_btemp_read_batctrl_voltage call can block and
-	 * take an unknown amount of time to complete.
-	 */
-	i = 0;
-
-	do {
-		batctrl += ab8500_btemp_read_batctrl_voltage(di);
-		i++;
-		msleep(20);
-	} while (!ab8500_fg_inst_curr_done(di->fg));
-	batctrl /= i;
-
-	ret = ab8500_fg_inst_curr_finalize(di->fg, &inst_curr);
-	if (ret) {
-		dev_err(di->dev, "Failed to finalize current measurement\n");
-		return ret;
-	}
-
-	res = ab8500_btemp_batctrl_volt_to_res(di, batctrl, inst_curr);
+	res = ab8500_btemp_batctrl_volt_to_res(di, batctrl);
 
 	ret = ab8500_btemp_curr_source_enable(di, false);
 	if (ret) {
@@ -404,11 +530,27 @@ static int ab8500_btemp_get_batctrl_res(struct ab8500_btemp *di)
 		return ret;
 	}
 
-	dev_dbg(di->dev, "%s batctrl: %d res: %d inst_curr: %d samples: %d\n",
-		__func__, batctrl, res, inst_curr, i);
+	dev_dbg(di->dev, "%s batctrl: %d res: %d samples: %d\n",
+		__func__, batctrl, res, i);
 
 	return res;
 }
+
+#ifdef MAKE_PROC_BATTERY_ID_ENTRY
+
+static int battery_resistence_readproc(char *page, char **start, off_t off,
+			  int count, int *eof, void *data)
+{
+	struct ab8500_btemp *di = (struct ab8500_btemp *) data ;
+	int len = 0 ;
+	int res = ab8500_btemp_get_batctrl_res(di);
+	len = sprintf(page,"battery resistence = %d ohms\n",res);
+	*eof=-1 ;
+	return len ;
+}
+
+#endif // MAKE_PROC_BATTERY_ID_ENTRY
+
 
 /**
  * ab8500_btemp_res_to_temp() - resistance to temperature
@@ -421,7 +563,7 @@ static int ab8500_btemp_get_batctrl_res(struct ab8500_btemp *di)
  * based on the NTC resistance.
  */
 static int ab8500_btemp_res_to_temp(struct ab8500_btemp *di,
-	const struct abx500_res_to_temp *tbl, int tbl_size, int res)
+	const struct res_to_temp *tbl, int tbl_size, int res)
 {
 	int i, temp;
 	/*
@@ -456,12 +598,33 @@ static int ab8500_btemp_measure_temp(struct ab8500_btemp *di)
 {
 	int temp;
 	static int prev;
+#ifndef CONFIG_MEASURE_TEMP_BY_ADC_TABLE
 	int rbat, rntc, vntc;
+#endif
+	int adc;
 	u8 id;
 
 	id = di->bat->batt_id;
 
-	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL &&
+#ifdef CONFIG_MEASURE_TEMP_BY_ADC_TABLE
+	adc = ab8500_gpadc_read_raw(di->gpadc, BTEMP_BALL, SAMPLE_16, RISING_EDGE, 0, ADC_SW);
+	if (adc < 0) {
+		dev_err(di->dev,
+			"%s gpadc conversion failed,"
+			" using previous value\n", __func__);
+		return prev;
+	}
+
+	temp = ab8500_btemp_res_to_temp(di,
+		di->bat->bat_type[id].r_to_t_tbl,
+		di->bat->bat_type[id].n_temp_tbl_elements, adc);
+	if(temp != prev)
+		pr_info("%s: adc(%d), temp(%d)\n", __func__, adc, temp);
+	prev = temp;
+
+
+#else
+	if (di->bat->adc_therm == ADC_THERM_BATCTRL &&
 			id != BATTERY_UNKNOWN) {
 
 		rbat = ab8500_btemp_get_batctrl_res(di);
@@ -478,6 +641,8 @@ static int ab8500_btemp_measure_temp(struct ab8500_btemp *di)
 		temp = ab8500_btemp_res_to_temp(di,
 			di->bat->bat_type[id].r_to_t_tbl,
 			di->bat->bat_type[id].n_temp_tbl_elements, rbat);
+
+		pr_info("%s: rbat(%d), temp(%d)\n", __func__, rbat, temp);
 	} else {
 		vntc = ab8500_gpadc_convert(di->gpadc, BTEMP_BALL);
 		if (vntc < 0) {
@@ -496,10 +661,27 @@ static int ab8500_btemp_measure_temp(struct ab8500_btemp *di)
 			di->bat->bat_type[id].r_to_t_tbl,
 			di->bat->bat_type[id].n_temp_tbl_elements, rntc);
 		prev = temp;
+
+		pr_info("%s: vntc(%d), rntc(%d), temp(%d)\n", __func__, vntc, rntc, temp);
 	}
+#endif
 	dev_dbg(di->dev, "Battery temperature is %d\n", temp);
 	return temp;
 }
+
+#if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
+
+/* For checking VBUS status */
+
+static int ab8500_vbus_is_detected(struct ab8500_btemp *di)
+{
+	u8 data;
+
+	abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
+					  AB8500_CH_USBCH_STAT1_REG, &data);
+	return data & VBUS_DET_DBNC100;
+}
+#endif
 
 /**
  * ab8500_btemp_id() - Identify the connected battery
@@ -512,10 +694,17 @@ static int ab8500_btemp_measure_temp(struct ab8500_btemp *di)
 static int ab8500_btemp_id(struct ab8500_btemp *di)
 {
 	int res;
+	int batt_id;
 	u8 i;
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	int chg_res_tolerance = 0;
+#endif
+	if (is_ab9540(di->parent) || is_ab8505(di->parent))
+		di->curr_source = BTEMP_BATCTRL_CURR_SRC_16UA;
+	else
+		di->curr_source = BTEMP_BATCTRL_CURR_SRC_7UA;
 
-	di->curr_source = BTEMP_BATCTRL_CURR_SRC_7UA;
-	di->bat->batt_id = BATTERY_UNKNOWN;
+	batt_id = BATTERY_UNKNOWN;
 
 	res =  ab8500_btemp_get_batctrl_res(di);
 	if (res < 0) {
@@ -523,6 +712,35 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
 		return -ENXIO;
 	}
 
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	di->bat->batt_res = res;
+
+	/* res value is changed according to the charging status */
+// TODO not sure about this presence of VBUS != charging active!!!
+	if (ab8500_vbus_is_detected(di))
+		chg_res_tolerance = 7000;
+
+	/* BATTERY_UNKNOWN is defined on position 0, skip it! */
+	for (i = BATTERY_UNKNOWN + 1; i < di->bat->n_btypes; i++) {
+		if ((res <= di->bat->bat_type[i].resis_high
+		     + chg_res_tolerance)
+		    && (res >= di->bat->bat_type[i].resis_low)) {
+			if (di->initial_vf_check) {
+				dev_info(di->dev, "Battery detected on %s"
+					 " low %d < res %d < high: %d"
+					 " index: %d\n",
+					 di->bat->adc_therm ==
+					 ADC_THERM_BATCTRL ?
+					 "BATCTRL" : "BATTEMP",
+					 di->bat->bat_type[i].resis_low, res,
+					 di->bat->bat_type[i].resis_high
+					 + chg_res_tolerance, i);
+			}
+			batt_id = i;
+			break;
+		}
+	}
+#else
 	/* BATTERY_UNKNOWN is defined on position 0, skip it! */
 	for (i = BATTERY_UNKNOWN + 1; i < di->bat->n_btypes; i++) {
 		if ((res <= di->bat->bat_type[i].resis_high) &&
@@ -530,18 +748,21 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
 			dev_dbg(di->dev, "Battery detected on %s"
 				" low %d < res %d < high: %d"
 				" index: %d\n",
-				di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL ?
+				di->bat->adc_therm == ADC_THERM_BATCTRL ?
 				"BATCTRL" : "BATTEMP",
 				di->bat->bat_type[i].resis_low, res,
 				di->bat->bat_type[i].resis_high, i);
 
-			di->bat->batt_id = i;
+			batt_id = i;
 			break;
 		}
 	}
+#endif
+
+	di->bat->batt_id = batt_id;
 
 	if (di->bat->batt_id == BATTERY_UNKNOWN) {
-		dev_warn(di->dev, "Battery identified as unknown"
+		dev_err(di->dev, "Battery identified as unknown"
 			", resistance %d Ohm\n", res);
 		return -ENXIO;
 	}
@@ -550,11 +771,31 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
 	 * We only have to change current source if the
 	 * detected type is Type 1, else we use the 7uA source
 	 */
-	if (di->bat->adc_therm == ABx500_ADC_THERM_BATCTRL &&
-			di->bat->batt_id == 1) {
-		dev_dbg(di->dev, "Set BATCTRL current source to 20uA\n");
-		di->curr_source = BTEMP_BATCTRL_CURR_SRC_20UA;
+	if (di->bat->adc_therm == ADC_THERM_BATCTRL && di->bat->batt_id == 1) {
+		if (is_ab9540(di->parent) || is_ab8505(di->parent)) {
+			dev_dbg(di->dev,
+					"Set BATCTRL current source to 16uA\n");
+			di->curr_source = BTEMP_BATCTRL_CURR_SRC_16UA;
+		} else {
+			dev_dbg(di->dev,
+					"Set BATCTRL current source to 20uA\n");
+			di->curr_source = BTEMP_BATCTRL_CURR_SRC_20UA;
+		}
 	}
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	/* if we saw a battery then */
+	/* re-enable the battery sense comparator */
+	/* for history */
+	/* if (di->bat->adc_therm == ADC_THERM_BATTEMP &&
+	   di->batt_id != BATTERY_UNKNOWN) { */
+
+	if (di->bat->adc_therm == ADC_THERM_BATTEMP) {
+		abx500_set_register_interruptible(di->dev,
+			AB8500_CHARGER, AB8500_BAT_CTRL_CURRENT_SOURCE,
+			AB8500_BAT_CTRL_CURRENT_SOURCE_DEFAULT);
+	}
+#endif
 
 	return di->bat->batt_id;
 }
@@ -567,33 +808,106 @@ static int ab8500_btemp_id(struct ab8500_btemp *di)
  */
 static void ab8500_btemp_periodic_work(struct work_struct *work)
 {
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	int vbat;
+	int batt_id;
+#else
 	int interval;
+#endif
+
 	struct ab8500_btemp *di = container_of(work,
 		struct ab8500_btemp, btemp_periodic_work.work);
 
+	pr_debug("[BTEMP Period] start\n");
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	if (di->events.battery_ovv && time_after(jiffies,di->events.battery_ovv_time+(10*HZ))) {
+		vbat = ab8500_gpadc_convert(di->gpadc, MAIN_BAT_V);
+		dev_dbg(di->dev, "battery overvoltage interrupt seen. Battery voltage =%d flag =%d\n",vbat,di->events.battery_ovv);
+		di->events.battery_ovv = (vbat>=di->bat->bat_type[di->bat->batt_id].over_voltage_threshold);
+	}
+
+	batt_id = ab8500_btemp_id(di);
+
+	if (di->initial_vf_check) {
+		di->vf_error_cnt = 2;
+		di->vf_ok_cnt = 2;
+		di->initial_vf_check = false;
+	}
+
+	if (batt_id < 0) {
+		/* If battery is identified as UNKNOWN */
+		if (!di->events.batt_rem) {
+			di->vf_ok_cnt = 0;
+			di->vf_error_cnt++;
+			if (di->vf_error_cnt > 2) {
+				dev_info(di->dev,
+					 "Invalid battery VF is detected."
+					 "Charging will be disabled\n");
+				di->events.batt_rem = true;
+				power_supply_changed(&di->btemp_psy);
+			}
+		} else {
+			di->vf_ok_cnt = 0;
+			di->vf_error_cnt = 0;
+		}
+	} else {
+		if (di->events.batt_rem) {
+			di->vf_error_cnt = 0;
+			di->vf_ok_cnt++;
+			if (di->vf_ok_cnt > 2) {
+				dev_info(di->dev,
+					 "Normal battery VF is detected."
+					 "Charging will be enabled\n");
+				di->events.batt_rem = false;
+				power_supply_changed(&di->btemp_psy);
+			}
+		} else {
+			di->vf_ok_cnt = 0;
+			di->vf_error_cnt = 0;
+		}
+	}
+
+	if (di->vf_ok_cnt > 0 || di->vf_error_cnt > 0)
+		di->monitor_time = FAST_MONITOR;
+	else
+		di->monitor_time = NORMAL_MONITOR;
+#else
 	if (!di->initialized) {
 		di->initialized = true;
 		/* Identify the battery */
 		if (ab8500_btemp_id(di) < 0)
 			dev_warn(di->dev, "failed to identify the battery\n");
 	}
+#endif
 
 	di->bat_temp = ab8500_btemp_measure_temp(di);
 
 	if (di->bat_temp != di->prev_bat_temp) {
 		di->prev_bat_temp = di->bat_temp;
-		power_supply_changed(&di->btemp_psy);
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+		if (di->battery_monitoring_state==temperature_monitoring_with_charging)
+#endif
+			power_supply_changed(&di->btemp_psy);
 	}
 
+#if !defined( CONFIG_SAMSUNG_CHARGER_SPEC )
 	if (di->events.ac_conn || di->events.usb_conn)
 		interval = di->bat->temp_interval_chg;
 	else
 		interval = di->bat->temp_interval_nochg;
+#endif
 
 	/* Schedule a new measurement */
 	queue_delayed_work(di->btemp_wq,
 		&di->btemp_periodic_work,
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+		round_jiffies(di->monitor_time * HZ));
+#else
 		round_jiffies(interval * HZ));
+#endif
+
+	pr_debug("[BTEMP Period] end\n");
 }
 
 /**
@@ -608,8 +922,13 @@ static irqreturn_t ab8500_btemp_batctrlindb_handler(int irq, void *_di)
 	struct ab8500_btemp *di = _di;
 	dev_err(di->dev, "Battery removal detected!\n");
 
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	/* We will check the battery VF res for deciding whether
+	   battery is valid or invalid */
+#else
 	di->events.batt_rem = true;
 	power_supply_changed(&di->btemp_psy);
+#endif
 
 	return IRQ_HANDLED;
 }
@@ -625,9 +944,9 @@ static irqreturn_t ab8500_btemp_templow_handler(int irq, void *_di)
 {
 	struct ab8500_btemp *di = _di;
 
-	if (is_ab8500_2p0_or_earlier(di->parent)) {
+	if (is_ab8500_3p3_or_earlier(di->parent)) {
 		dev_dbg(di->dev, "Ignore false btemp low irq"
-			" for ABB cut 1.0, 1.1 and 2.0\n");
+			" for ABB cut 1.0, 1.1, 2.0 and 3.3\n");
 	} else {
 		dev_crit(di->dev, "Battery temperature lower than -10deg c\n");
 
@@ -716,10 +1035,33 @@ static irqreturn_t ab8500_btemp_medhigh_handler(int irq, void *_di)
  * should only be done when a charger is connected.
  */
 static void ab8500_btemp_periodic(struct ab8500_btemp *di,
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	int new_state )
+#else
 	bool enable)
+#endif
 {
 	dev_dbg(di->dev, "Enable periodic temperature measurements: %d\n",
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+		new_state);
+#else
 		enable);
+#endif
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	di->battery_monitoring_state=new_state ;
+	if (new_state == temperature_monitoring_off)  {
+		cancel_delayed_work_sync(&di->btemp_periodic_work);
+	}
+	else  {
+		/*
+		 * Make sure a new measurement is done directly by cancelling
+		 * any pending work
+		 */
+		cancel_delayed_work_sync(&di->btemp_periodic_work);
+		queue_delayed_work(di->btemp_wq, &di->btemp_periodic_work, 0);
+	}
+#else
 	/*
 	 * Make sure a new measurement is done directly by cancelling
 	 * any pending work
@@ -728,7 +1070,22 @@ static void ab8500_btemp_periodic(struct ab8500_btemp *di,
 
 	if (enable)
 		queue_delayed_work(di->btemp_wq, &di->btemp_periodic_work, 0);
+#endif
 }
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+#define ABSOLUTE_ZERO (-273)
+
+int measure_battery_temperature(void)
+{
+	int retval= ABSOLUTE_ZERO;
+	if (battery)
+		retval= ab8500_btemp_measure_temp(battery) ;
+	return retval ;
+}
+
+EXPORT_SYMBOL_GPL(measure_battery_temperature);
+#endif
 
 /**
  * ab8500_btemp_get_temp() - get battery temperature
@@ -741,34 +1098,38 @@ static int ab8500_btemp_get_temp(struct ab8500_btemp *di)
 	int temp = 0;
 
 	/*
-	 * The BTEMP events are not reliabe on AB8500 cut2.0
+	 * The BTEMP events are not reliabe on AB8500 cut3.3
 	 * and prior versions
 	 */
-	if (is_ab8500_2p0_or_earlier(di->parent)) {
+	if (is_ab8500_3p3_or_earlier(di->parent)) {
 		temp = di->bat_temp * 10;
 	} else {
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+		temp = di->bat_temp * 10;
+#else
 		if (di->events.btemp_low) {
 			if (temp > di->btemp_ranges.btemp_low_limit)
-				temp = di->btemp_ranges.btemp_low_limit;
+				temp = di->btemp_ranges.btemp_low_limit * 10;
 			else
 				temp = di->bat_temp * 10;
 		} else if (di->events.btemp_high) {
 			if (temp < di->btemp_ranges.btemp_high_limit)
-				temp = di->btemp_ranges.btemp_high_limit;
+				temp = di->btemp_ranges.btemp_high_limit * 10;
 			else
 				temp = di->bat_temp * 10;
 		} else if (di->events.btemp_lowmed) {
 			if (temp > di->btemp_ranges.btemp_med_limit)
-				temp = di->btemp_ranges.btemp_med_limit;
+				temp = di->btemp_ranges.btemp_med_limit * 10;
 			else
 				temp = di->bat_temp * 10;
 		} else if (di->events.btemp_medhigh) {
 			if (temp < di->btemp_ranges.btemp_med_limit)
-				temp = di->btemp_ranges.btemp_med_limit;
+				temp = di->btemp_ranges.btemp_med_limit * 10;
 			else
 				temp = di->bat_temp * 10;
 		} else
 			temp = di->bat_temp * 10;
+#endif
 	}
 	return temp;
 }
@@ -803,7 +1164,7 @@ static int ab8500_btemp_get_property(struct power_supply *psy,
 	union power_supply_propval *val)
 {
 	struct ab8500_btemp *di;
-
+	int ret = 0;
 	di = to_ab8500_btemp_device_info(psy);
 
 	switch (psp) {
@@ -813,17 +1174,19 @@ static int ab8500_btemp_get_property(struct power_supply *psy,
 			val->intval = 0;
 		else
 			val->intval = 1;
+		pr_debug("[BTEMP PROPERTY] %s %d\n", (psp == POWER_SUPPLY_PROP_PRESENT)? "PRESENT":"ONLINE", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_TECHNOLOGY:
 		val->intval = di->bat->bat_type[di->bat->batt_id].name;
+		pr_debug("[BTEMP PROPERTY] Tech %d\n", val->intval);
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = ab8500_btemp_get_temp(di);
 		break;
 	default:
-		return -EINVAL;
+		ret = -EINVAL;
 	}
-	return 0;
+	return ret;
 }
 
 static int ab8500_btemp_get_ext_psy_data(struct device *dev, void *data)
@@ -866,24 +1229,41 @@ static int ab8500_btemp_get_ext_psy_data(struct device *dev, void *data)
 				/* AC disconnected */
 				if (!ret.intval && di->events.ac_conn) {
 					di->events.ac_conn = false;
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+					if (!di->events.usb_conn)
+						ab8500_btemp_periodic(di,temperature_monitoring_no_charging /*false*/);
+#endif
 				}
 				/* AC connected */
 				else if (ret.intval && !di->events.ac_conn) {
 					di->events.ac_conn = true;
 					if (!di->events.usb_conn)
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+						ab8500_btemp_periodic(di, /*true*/temperature_monitoring_with_charging);
+#else
 						ab8500_btemp_periodic(di, true);
+#endif
 				}
 				break;
 			case POWER_SUPPLY_TYPE_USB:
 				/* USB disconnected */
 				if (!ret.intval && di->events.usb_conn) {
 					di->events.usb_conn = false;
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+					if (!di->events.ac_conn)
+						ab8500_btemp_periodic(di,
+							/*false*/temperature_monitoring_no_charging);
+#endif
 				}
 				/* USB connected */
 				else if (ret.intval && !di->events.usb_conn) {
 					di->events.usb_conn = true;
 					if (!di->events.ac_conn)
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+						ab8500_btemp_periodic(di, temperature_monitoring_with_charging /* true*/);
+#else
 						ab8500_btemp_periodic(di, true);
+#endif
 				}
 				break;
 			default:
@@ -928,7 +1308,16 @@ static int ab8500_btemp_resume(struct platform_device *pdev)
 {
 	struct ab8500_btemp *di = platform_get_drvdata(pdev);
 
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	if (di->events.ac_conn || di->events.usb_conn) {
+		ab8500_btemp_periodic(di, temperature_monitoring_with_charging );
+		//ab8500_btemp_periodic(di, true);
+	} else {
+		ab8500_btemp_periodic(di, temperature_monitoring_no_charging );
+	}
+#else
 	ab8500_btemp_periodic(di, true);
+#endif
 
 	return 0;
 }
@@ -938,7 +1327,11 @@ static int ab8500_btemp_suspend(struct platform_device *pdev,
 {
 	struct ab8500_btemp *di = platform_get_drvdata(pdev);
 
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	ab8500_btemp_periodic(di, temperature_monitoring_off );
+#else
 	ab8500_btemp_periodic(di, false);
+#endif
 
 	return 0;
 }
@@ -952,6 +1345,16 @@ static int __devexit ab8500_btemp_remove(struct platform_device *pdev)
 	struct ab8500_btemp *di = platform_get_drvdata(pdev);
 	int i, irq;
 
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	battery=NULL ;
+#endif
+#ifdef MAKE_PROC_BATTERY_ID_ENTRY
+	remove_proc_entry("Battery_Res" ,NULL);
+#endif //MAKE_PROC_BATTERY_ID_ENTRY
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	ab8500_btemp_periodic(di, temperature_monitoring_off );
+#endif
 	/* Disable interrupts */
 	for (i = 0; i < ARRAY_SIZE(ab8500_btemp_irq); i++) {
 		irq = platform_get_irq_byname(pdev, ab8500_btemp_irq[i].name);
@@ -969,40 +1372,107 @@ static int __devexit ab8500_btemp_remove(struct platform_device *pdev)
 	return 0;
 }
 
+//#define CHRG_DEBUG
+#ifdef CHRG_DEBUG
+static int chrg_regs[] = {
+	AB8500_CH_USBCH_STAT1_REG,
+	AB8500_CH_USBCH_STAT2_REG,
+	AB8500_CH_STAT_REG,
+	AB8500_CH_VOLT_LVL_REG,
+	AB8500_CH_VOLT_LVL_MAX_REG,  /*Only in Cut2.0*/
+	AB8500_CH_OPT_CRNTLVL_REG,
+	AB8500_CH_OPT_CRNTLVL_MAX_REG,  /*Only in Cut2.0*/
+	AB8500_CH_WD_TIMER_REG,
+	AB8500_CHARG_WD_CTRL,
+	AB8500_BATT_OVV,
+	AB8500_CHARGER_CTRL,
+	AB8500_USBCH_CTRL1_REG,
+	AB8500_USBCH_CTRL2_REG,
+	AB8500_USBCH_IPT_CRNTLVL_REG,
+	AB8500_USBCH_OPT_CRNTLVL_REG,
+	-1,
+};
+#endif
+
+//#define CHRG_DEBUG
+#ifdef CHRG_DEBUG
+static int chrg_regs[] = {
+	AB8500_CH_USBCH_STAT1_REG,
+	AB8500_CH_USBCH_STAT2_REG,
+	AB8500_CH_STAT_REG,
+	AB8500_CH_VOLT_LVL_REG,
+	AB8500_CH_VOLT_LVL_MAX_REG,  /*Only in Cut2.0*/
+	AB8500_CH_OPT_CRNTLVL_REG,
+	AB8500_CH_OPT_CRNTLVL_MAX_REG,  /*Only in Cut2.0*/
+	AB8500_CH_WD_TIMER_REG,
+	AB8500_CHARG_WD_CTRL,
+	AB8500_BATT_OVV,
+	AB8500_CHARGER_CTRL,
+	AB8500_USBCH_CTRL1_REG,
+	AB8500_USBCH_CTRL2_REG,
+	AB8500_USBCH_IPT_CRNTLVL_REG,
+	AB8500_USBCH_OPT_CRNTLVL_REG,
+	-1,
+};
+#endif
+
 static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
 {
 	int irq, i, ret = 0;
 	u8 val;
-	struct ab8500_platform_data *plat_data;
+	struct ab8500_platform_data *plat;
 
 	struct ab8500_btemp *di =
 		kzalloc(sizeof(struct ab8500_btemp), GFP_KERNEL);
 	if (!di)
 		return -ENOMEM;
 
+	pr_debug("[BTEMP PROBE] start\n");
+
 	/* get parent data */
 	di->dev = &pdev->dev;
 	di->parent = dev_get_drvdata(pdev->dev.parent);
-	di->gpadc = ab8500_gpadc_get("ab8500-gpadc.0");
+	di->gpadc = ab8500_gpadc_get();
 
 	di->initialized = false;
 
+	plat = dev_get_platdata(di->parent->dev);
+
+#ifdef CHRG_DEBUG
+		u8 j = 0;
+		u8 value;
+		while ( chrg_regs[j] != -1 ){
+			abx500_get_register_interruptible(di->dev, AB8500_CHARGER, chrg_regs[j], &value);
+			pr_info("[CHARGER PROBE] Charger reg 0x%x=0x%x\n", chrg_regs[j], value);
+			j++;
+		}
+#endif
+
+#ifdef CHRG_DEBUG
+		u8 j = 0;
+		u8 value;
+		while ( chrg_regs[j] != -1 ){
+			abx500_get_register_interruptible(di->dev, AB8500_CHARGER, chrg_regs[j], &value);
+			pr_info("[BTEMP PROBE] Charger reg 0x%x=0x%x\n", chrg_regs[j], value);
+			j++;
+		}
+#endif
+
 	/* get btemp specific platform data */
-	plat_data = dev_get_platdata(di->parent->dev);
-	di->pdata = plat_data->btemp;
-	if (!di->pdata) {
+	if (!plat->btemp) {
 		dev_err(di->dev, "no btemp platform data supplied\n");
 		ret = -EINVAL;
 		goto free_device_info;
 	}
+	di->pdata = plat->btemp;
 
 	/* get battery specific platform data */
-	di->bat = plat_data->battery;
-	if (!di->bat) {
+	if (!plat->battery) {
 		dev_err(di->dev, "no battery platform data supplied\n");
 		ret = -EINVAL;
 		goto free_device_info;
 	}
+	di->bat = plat->battery;
 
 	/* BTEMP supply */
 	di->btemp_psy.name = "ab8500_btemp";
@@ -1028,9 +1498,23 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
 	INIT_DELAYED_WORK_DEFERRABLE(&di->btemp_periodic_work,
 		ab8500_btemp_periodic_work);
 
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	/* We will only use batt type 1 */
+	di->bat->batt_id = 1;
+	di->initial_vf_check = true;
+#endif
+
+	/* Identify the battery */
+	if (ab8500_btemp_id(di) < 0)
+		dev_warn(di->dev, "failed to identify the battery\n");
+
 	/* Set BTEMP thermal limits. Low and Med are fixed */
 	di->btemp_ranges.btemp_low_limit = BTEMP_THERMAL_LOW_LIMIT;
 	di->btemp_ranges.btemp_med_limit = BTEMP_THERMAL_MED_LIMIT;
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	ab8500_charger_set_high_temperature_cutoff_temp(di) ;
+#endif
 
 	ret = abx500_get_register_interruptible(di->dev, AB8500_CHARGER,
 		AB8500_BTEMP_HIGH_TH, &val);
@@ -1053,6 +1537,11 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
 			BTEMP_THERMAL_HIGH_LIMIT_62;
 		break;
 	}
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	/* Measure temperature once initially */
+	di->bat_temp = ab8500_btemp_measure_temp(di);
+#endif
 
 	/* Register BTEMP power supply class */
 	ret = power_supply_register(di->dev, &di->btemp_psy);
@@ -1077,11 +1566,32 @@ static int __devinit ab8500_btemp_probe(struct platform_device *pdev)
 			ab8500_btemp_irq[i].name, irq, ret);
 	}
 
-	platform_set_drvdata(pdev, di);
+#ifdef MAKE_PROC_BATTERY_ID_ENTRY
 
+	di->battery_proc_entry =create_proc_read_entry("Battery_Res",0444,NULL,battery_resistence_readproc,di);
+#endif //MAKE_PROC_BATTERY_ID_ENTRY
+
+	platform_set_drvdata(pdev, di);
+	if (ab8500_batctrl_nc(di)) {
+		int ret;
+
+		dev_dbg(di->dev, "Batctrl not connected, lower batt ok limit");
+		ret = abx500_mask_and_set_register_interruptible(di->dev,
+			0x02, 0x04, 0xFF, 0x33);
+		dev_dbg(di->dev, "Lowering batt ok sel, ret: %d", ret);
+	}
+
+#if defined( CONFIG_SAMSUNG_CHARGER_SPEC )
+	ab8500_btemp_periodic(di,temperature_monitoring_no_charging /*false*/);
+	battery=di ;
+#else
 	/* Kick off periodic temperature measurements */
 	ab8500_btemp_periodic(di, true);
+#endif
+
 	list_add_tail(&di->node, &ab8500_btemp_list);
+
+	pr_debug("[BTEMP PROBE] end\n");
 
 	return ret;
 
@@ -1098,6 +1608,7 @@ free_btemp_wq:
 free_device_info:
 	kfree(di);
 
+	pr_debug("[BTEMP PROBE] FAIL\n");
 	return ret;
 }
 
