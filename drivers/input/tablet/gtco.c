@@ -1041,7 +1041,11 @@ static int __init gtco_init(void)
 		return error;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("GTCO usb driver version: %s", GTCO_VERSION);
+#else
+	;
+#endif
 	return 0;
 }
 

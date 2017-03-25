@@ -1,5 +1,3 @@
-
-
 /*
  *
  * Zinitix bt404 touchscreen driver
@@ -21,7 +19,8 @@
 /* #define TSP_VERBOSE_DEBUG */
 #define TSP_FACTORY
 
-#define TOUCH_BOOSTER
+/* #define TOUCH_BOOSTER */
+#define DISABLE_TOUCHSCREEN_SPAM
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -1483,11 +1482,11 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 	if (force_clear) {
 		for (i = 0; i < data->cap_info.max_finger; i++) {
 			if (prev->coord[i].sub_status & 0x1) {
-				dev_info(&client->dev,
-						"%4s[%1d]: %3d,%3d (%3d)\n",
-						"up/f", i, cur->coord[i].x,
-						cur->coord[i].x,
-						cur->coord[i].width);
+				// dev_info(&client->dev,
+				// 		"%4s[%1d]: %3d,%3d (%3d)\n",
+				// 		"up/f", i, cur->coord[i].x,
+				// 		cur->coord[i].x,
+				// 		cur->coord[i].width);
 				prev->coord[i].sub_status &= ~(0x01);
 			}
 
@@ -1529,9 +1528,11 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 		if (prev_exist && cur_up) {
 
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifndef DISABLE_TOUCHSCREEN_SPAM
 			dev_info(&client->dev, "%4s[%1d]: %3d,%3d (%3d)\n",
 					"up", i, cur->coord[i].x,
 					cur->coord[i].x, cur->coord[i].width);
+#endif
 #endif
 			prev->coord[i].sub_status &= ~(0x01);
 
@@ -1587,11 +1588,13 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 #endif
 
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifndef DISABLE_TOUCHSCREEN_SPAM
 				dev_info(&client->dev,
 						"%4s[%1d]: %3d,%3d (%3d)\n",
 						"down", i,  cur->coord[i].x,
 						cur->coord[i].y,
 						cur->coord[i].width);
+#endif
 #endif
 			}
 
@@ -1777,9 +1780,11 @@ static irqreturn_t bt404_ts_interrupt(int irq, void *dev_id)
 			input_report_key(data->input_dev_tk,
 				data->pdata->button_map[offset], action);
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifndef DISABLE_TOUCHSCREEN_SPAM
 			dev_info(&client->dev, "key[%3d]:%s\n",
 						data->pdata->button_map[offset],
 						(action) ? "down" : "up");
+#endif
 #endif
 		}
 
@@ -1798,9 +1803,11 @@ static irqreturn_t bt404_ts_interrupt(int irq, void *dev_id)
 			input_report_key(data->input_dev_tk,
 				data->pdata->button_map[offset], action);
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
+#ifndef DISABLE_TOUCHSCREEN_SPAM
 			dev_info(&client->dev, "key[%3d]:%s\n",
 						data->pdata->button_map[offset],
 						(action) ? "down" : "up");
+#endif
 #endif
 		}
 

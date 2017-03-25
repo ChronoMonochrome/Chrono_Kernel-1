@@ -548,7 +548,18 @@ static struct usb_driver synusb_driver = {
 	.supports_autosuspend = 1,
 };
 
-module_usb_driver(synusb_driver);
+static int __init synusb_init(void)
+{
+	return usb_register(&synusb_driver);
+}
+
+static void __exit synusb_exit(void)
+{
+	usb_deregister(&synusb_driver);
+}
+
+module_init(synusb_init);
+module_exit(synusb_exit);
 
 MODULE_AUTHOR("Rob Miller <rob@inpharmatica.co.uk>, "
               "Ron Lee <ron@debian.org>, "

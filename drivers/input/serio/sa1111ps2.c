@@ -204,19 +204,31 @@ static int __devinit ps2_test(struct ps2if *ps2if)
 
 	stat = ps2_test_one(ps2if, PS2CR_FKC);
 	if (stat != PS2STAT_KBD) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PS/2 interface test failed[1]: %02x\n", stat);
+#else
+		;
+#endif
 		ret = -ENODEV;
 	}
 
 	stat = ps2_test_one(ps2if, 0);
 	if (stat != (PS2STAT_KBC | PS2STAT_KBD)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PS/2 interface test failed[2]: %02x\n", stat);
+#else
+		;
+#endif
 		ret = -ENODEV;
 	}
 
 	stat = ps2_test_one(ps2if, PS2CR_FKD);
 	if (stat != PS2STAT_KBC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("PS/2 interface test failed[3]: %02x\n", stat);
+#else
+		;
+#endif
 		ret = -ENODEV;
 	}
 

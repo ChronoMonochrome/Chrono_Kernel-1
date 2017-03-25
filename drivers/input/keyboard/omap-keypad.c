@@ -186,15 +186,23 @@ static void omap_kp_tasklet(unsigned long data)
 			if (!(changed & (1 << row)))
 				continue;
 #ifdef NEW_BOARD_LEARNING_MODE
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "omap-keypad: key %d-%d %s\n", col,
 			       row, (new_state[col] & (1 << row)) ?
 			       "pressed" : "released");
 #else
+			;
+#endif
+#else
 			key = keycodes[MATRIX_SCAN_CODE(row, col, row_shift)];
 			if (key < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				      "omap-keypad: Spurious key event %d-%d\n",
 				       col, row);
+#else
+				;
+#endif
 				/* We scan again after a couple of seconds */
 				spurious = 1;
 				continue;
@@ -476,7 +484,11 @@ static struct platform_driver omap_kp_driver = {
 
 static int __init omap_kp_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "OMAP Keypad Driver\n");
+#else
+	;
+#endif
 	return platform_driver_register(&omap_kp_driver);
 }
 

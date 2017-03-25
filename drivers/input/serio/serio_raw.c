@@ -308,13 +308,21 @@ static int serio_raw_connect(struct serio *serio, struct serio_driver *drv)
 	}
 
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "serio_raw: failed to register raw access device for %s\n",
 			serio->phys);
+#else
+		;
+#endif
 		goto out_close;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "serio_raw: raw access enabled on %s (%s, minor %d)\n",
 		serio->phys, serio_raw->name, serio_raw->dev.minor);
+#else
+	;
+#endif
 	goto out;
 
 out_close:
@@ -334,7 +342,11 @@ static int serio_raw_reconnect(struct serio *serio)
 	struct serio_driver *drv = serio->drv;
 
 	if (!drv || !serio_raw) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "serio_raw: reconnect request, but serio is disconnected, ignoring...\n");
+#else
+		;
+#endif
 		return -1;
 	}
 

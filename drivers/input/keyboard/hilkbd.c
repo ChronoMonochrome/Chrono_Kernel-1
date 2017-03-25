@@ -232,16 +232,28 @@ static int __devinit hil_keyb_init(void)
 
 	wait_event_interruptible_timeout(hil_wait, hil_dev.valid, 3 * HZ);
 	if (!hil_dev.valid)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HIL: timed out, assuming no keyboard present\n");
+#else
+		;
+#endif
 
 	c = hil_dev.c;
 	hil_dev.valid = 0;
 	if (c == 0) {
 		kbid = -1;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HIL: no keyboard present\n");
+#else
+		;
+#endif
 	} else {
 		kbid = ffz(~c);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HIL: keyboard found at id %d\n", kbid);
+#else
+		;
+#endif
 	}
 
 	/* set it to raw mode */
@@ -272,8 +284,12 @@ static int __devinit hil_keyb_init(void)
 		goto err2;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "input: %s, ID %d at 0x%08lx (irq %d) found and attached\n",
 	       hil_dev.dev->name, kbid, HILBASE, HIL_IRQ);
+#else
+	;
+#endif
 
 	return 0;
 
@@ -306,8 +322,12 @@ static int __devinit hil_probe_chip(struct parisc_device *dev)
 		return -ENODEV;
 
 	if (!dev->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HIL: IRQ not found for HIL bus at 0x%p\n",
 			(void *)dev->hpa.start);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -315,7 +335,11 @@ static int __devinit hil_probe_chip(struct parisc_device *dev)
 	hil_irq  = dev->irq;
 	hil_dev.dev_id = dev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Found HIL bus at 0x%08lx, IRQ %d\n", hil_base, hil_irq);
+#else
+	;
+#endif
 
 	return hil_keyb_init();
 }

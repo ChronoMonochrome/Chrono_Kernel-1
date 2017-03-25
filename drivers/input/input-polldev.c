@@ -15,6 +15,7 @@
 #include <linux/mutex.h>
 #include <linux/workqueue.h>
 #include <linux/input-polldev.h>
+#include <linux/module.h>
 
 MODULE_AUTHOR("Dmitry Torokhov <dtor@mail.ru>");
 MODULE_DESCRIPTION("Generic implementation of a polled input device");

@@ -176,7 +176,11 @@ static void powermate_sync_state(struct powermate_device *pm)
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 /*	printk("powermate: %04x %04x\n", pm->configcr->wValue, pm->configcr->wIndex); */
+#else
+/*	;
+#endif
 
 	pm->configcr->bRequestType = 0x41; /* vendor request */
 	pm->configcr->bRequest = 0x01;
@@ -351,8 +355,12 @@ static int powermate_probe(struct usb_interface *intf, const struct usb_device_i
 		break;
 	default:
 		input_dev->name = pm_name_soundknob;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "powermate: unknown product id %04x\n",
 		       le16_to_cpu(udev->descriptor.idProduct));
+#else
+		;
+#endif
 	}
 
 	input_dev->phys = pm->phys;
@@ -374,8 +382,12 @@ static int powermate_probe(struct usb_interface *intf, const struct usb_device_i
 	maxp = usb_maxpacket(udev, pipe, usb_pipeout(pipe));
 
 	if (maxp < POWERMATE_PAYLOAD_SIZE_MIN || maxp > POWERMATE_PAYLOAD_SIZE_MAX) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "powermate: Expected payload of %d--%d bytes, found %d bytes!\n",
 			POWERMATE_PAYLOAD_SIZE_MIN, POWERMATE_PAYLOAD_SIZE_MAX, maxp);
+#else
+		;
+#endif
 		maxp = POWERMATE_PAYLOAD_SIZE_MAX;
 	}
 

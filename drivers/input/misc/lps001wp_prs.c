@@ -1409,16 +1409,24 @@ static struct i2c_driver lps001wp_prs_driver = {
 
 static int __init lps001wp_prs_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s barometer driver: init\n",
 						LPS001WP_PRS_DEV_NAME);
+#else
+	;
+#endif
 	return i2c_add_driver(&lps001wp_prs_driver);
 }
 
 static void __exit lps001wp_prs_exit(void)
 {
 	#if DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s barometer driver exit\n",
 						LPS001WP_PRS_DEV_NAME);
+#else
+	;
+#endif
 	#endif
 	i2c_del_driver(&lps001wp_prs_driver);
 	return;
