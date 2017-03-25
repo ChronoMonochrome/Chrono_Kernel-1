@@ -23,6 +23,13 @@ phys_addr_t cona_get_alloc_paddr(void *alloc);
 void *cona_get_alloc_kaddr(void *instance, void *alloc);
 size_t cona_get_alloc_size(void *alloc);
 
+/* SCATT API */
+void *scatt_create(const char *name);
+void *scatt_alloc(void *instance, size_t size);
+void scatt_free(void *instance, void *alloc);
+size_t scatt_get_alloc_size(void *alloc);
+struct page **scatt_get_alloc_sglist(void *alloc);
+
 struct hwmem_mem_type_struct *hwmem_mem_types;
 unsigned int hwmem_num_mem_types;
 
@@ -31,6 +38,9 @@ static size_t hwmem_size;
 
 static phys_addr_t hwmem_prot_paddr;
 static size_t hwmem_prot_size;
+
+static phys_addr_t hwmem_static_paddr;
+static size_t hwmem_static_size;
 
 static int __init parse_hwmem_prot_param(char *p)
 {
@@ -69,9 +79,26 @@ no_at:
 }
 early_param("hwmem", parse_hwmem_param);
 
+static int __init parse_hwmem_static_param(char *p)
+{
+	hwmem_static_size = memparse(p, &p);
+
+	if (*p != '@')
+		goto no_at;
+
+	hwmem_static_paddr = memparse(p + 1, &p);
+
+	return 0;
+no_at:
+	hwmem_static_size = 0;
+
+	return -EINVAL;
+}
+early_param("hwmem_static", parse_hwmem_static_param);
+
 static int __init setup_hwmem(void)
 {
-	static const unsigned int NUM_MEM_TYPES = 3;
+	static const unsigned int NUM_MEM_TYPES = 4;
 
 	int ret;
 
@@ -89,22 +116,28 @@ static int __init setup_hwmem(void)
 		return -ENOMEM;
 
 	hwmem_mem_types[0].id = HWMEM_MEM_SCATTERED_SYS;
-	hwmem_mem_types[0].allocator_api.alloc = cona_alloc;
-	hwmem_mem_types[0].allocator_api.free = cona_free;
-	hwmem_mem_types[0].allocator_api.get_alloc_paddr =
-							cona_get_alloc_paddr;
-	hwmem_mem_types[0].allocator_api.get_alloc_kaddr =
-							cona_get_alloc_kaddr;
-	hwmem_mem_types[0].allocator_api.get_alloc_size = cona_get_alloc_size;
-	hwmem_mem_types[0].allocator_instance = cona_create("hwmem",
-						hwmem_paddr, hwmem_size);
+	hwmem_mem_types[0].allocator_api.alloc = scatt_alloc;
+	hwmem_mem_types[0].allocator_api.free = scatt_free;
+	hwmem_mem_types[0].allocator_api.get_alloc_size = scatt_get_alloc_size;
+	hwmem_mem_types[0].allocator_api.get_alloc_sglist = scatt_get_alloc_sglist;
+	hwmem_mem_types[0].allocator_instance = scatt_create("hwmem_scatt");
 	if (IS_ERR(hwmem_mem_types[0].allocator_instance)) {
 		ret = PTR_ERR(hwmem_mem_types[0].allocator_instance);
 		goto hwmem_ima_init_failed;
 	}
 
-	hwmem_mem_types[1] = hwmem_mem_types[0];
 	hwmem_mem_types[1].id = HWMEM_MEM_CONTIGUOUS_SYS;
+	hwmem_mem_types[1].allocator_api.alloc = cona_alloc;
+	hwmem_mem_types[1].allocator_api.free = cona_free;
+	hwmem_mem_types[1].allocator_api.get_alloc_paddr = cona_get_alloc_paddr;
+	hwmem_mem_types[1].allocator_api.get_alloc_kaddr = cona_get_alloc_kaddr;
+	hwmem_mem_types[1].allocator_api.get_alloc_size = cona_get_alloc_size;
+	hwmem_mem_types[1].allocator_instance = cona_create("hwmem_cona",
+						hwmem_paddr, hwmem_size);
+	if (IS_ERR(hwmem_mem_types[1].allocator_instance)) {
+		ret = PTR_ERR(hwmem_mem_types[1].allocator_instance);
+		goto hwmem_ima_init_failed;
+	}
 
 	hwmem_mem_types[2] = hwmem_mem_types[1];
 	hwmem_mem_types[2].id = HWMEM_MEM_PROTECTED_SYS;
@@ -114,6 +147,20 @@ static int __init setup_hwmem(void)
 							hwmem_prot_paddr, hwmem_prot_size);
 		if (IS_ERR(hwmem_mem_types[2].allocator_instance)) {
 			ret = PTR_ERR(hwmem_mem_types[2].allocator_instance);
+			goto hwmem_ima_init_failed;
+		}
+	}
+
+	hwmem_mem_types[3] = hwmem_mem_types[1];
+	hwmem_mem_types[3].id = HWMEM_MEM_STATIC_SYS;
+
+	if (hwmem_static_size > 0) {
+		hwmem_mem_types[3].allocator_instance =
+			cona_create("hwmem_static",
+			hwmem_static_paddr, hwmem_static_size);
+
+		if (IS_ERR(hwmem_mem_types[3].allocator_instance)) {
+			ret = PTR_ERR(hwmem_mem_types[3].allocator_instance);
 			goto hwmem_ima_init_failed;
 		}
 	}

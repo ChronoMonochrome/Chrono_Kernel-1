@@ -11,6 +11,7 @@
 #include <linux/io.h>
 #include <linux/amba/bus.h>
 
+#include <mach/crypto-ux500.h>
 #include <mach/hardware.h>
 #include <mach/setup.h>
 
@@ -55,9 +56,11 @@ static int __init early_trace_modem(char *p)
 early_param("mem_mtrace", early_trace_modem);
 #endif
 
+#ifdef CONFIG_HWMEM
 struct platform_device ux500_hwmem_device = {
 	.name = "hwmem",
 };
+#endif
 
 void __init amba_add_devices(struct amba_device *devs[], int num)
 {
