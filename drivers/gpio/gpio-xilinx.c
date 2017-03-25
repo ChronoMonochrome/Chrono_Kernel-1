@@ -14,7 +14,6 @@
 
 #include <linux/init.h>
 #include <linux/errno.h>
-#include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/of_platform.h>
 #include <linux/of_gpio.h>
@@ -206,6 +205,7 @@ static int __devinit xgpio_of_probe(struct device_node *np)
 		       np->full_name, status);
 		return status;
 	}
+	pr_info("XGpio: %s: registered\n", np->full_name);
 	return 0;
 }
 
