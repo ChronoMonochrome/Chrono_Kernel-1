@@ -45,12 +45,11 @@
 #define SPORT_GET_RX32(sport) \
 ({ \
 	unsigned int __ret; \
-	unsigned long flags; \
 	if (ANOMALY_05000473) \
-		local_irq_save(flags); \
+		local_irq_disable(); \
 	__ret = bfin_read32((sport)->port.membase + OFFSET_RX); \
 	if (ANOMALY_05000473) \
-		local_irq_restore(flags); \
+		local_irq_enable(); \
 	__ret; \
 })
 #define SPORT_GET_RCR1(sport)		bfin_read16(((sport)->port.membase + OFFSET_RCR1))

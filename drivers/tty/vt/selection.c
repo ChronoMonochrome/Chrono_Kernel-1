@@ -30,7 +30,6 @@
 
 extern void poke_blanked_console(void);
 
-/* FIXME: all this needs locking */
 /* Variables for selection control. */
 /* Use a dynamic buffer, instead of static (Dec 1994) */
 struct vc_data *sel_cons;		/* must not be deallocated */
@@ -62,14 +61,10 @@ sel_pos(int n)
 				use_unicode);
 }
 
-/**
- *	clear_selection		-	remove current selection
- *
- *	Remove the current selection highlight, if any from the console
- *	holding the selection. The caller must hold the console lock.
- */
-void clear_selection(void)
-{
+/* remove the current selection highlight, if any,
+   from the console holding the selection. */
+void
+clear_selection(void) {
 	highlight_pointer(-1); /* hide the pointer */
 	if (sel_start != -1) {
 		highlight(sel_start, sel_end);
@@ -79,7 +74,7 @@ void clear_selection(void)
 
 /*
  * User settable table: what characters are to be considered alphabetic?
- * 256 bits. Locked by the console lock.
+ * 256 bits
  */
 static u32 inwordLut[8]={
   0x00000000, /* control chars     */
@@ -96,20 +91,10 @@ static inline int inword(const u16 c) {
 	return c > 0xff || (( inwordLut[c>>5] >> (c & 0x1F) ) & 1);
 }
 
-/**
- *	set loadlut		-	load the LUT table
- *	@p: user table
- *
- *	Load the LUT table from user space. The caller must hold the console
- *	lock. Make a temporary copy so a partial update doesn't make a mess.
- */
+/* set inwordLut contents. Invoked by ioctl(). */
 int sel_loadlut(char __user *p)
 {
-	u32 tmplut[8];
-	if (copy_from_user(tmplut, (u32 __user *)(p+4), 32))
-		return -EFAULT;
-	memcpy(inwordLut, tmplut, 32);
-	return 0;
+	return copy_from_user(inwordLut, (u32 __user *)(p+4), 32) ? -EFAULT : 0;
 }
 
 /* does screen address p correspond to character at LH/RH edge of screen? */
@@ -145,16 +130,7 @@ static int store_utf8(u16 c, char *p)
     	}
 }
 
-/**
- *	set_selection		- 	set the current selection.
- *	@sel: user selection info
- *	@tty: the console tty
- *
- *	Invoked by the ioctl handle for the vt layer.
- *
- *	The entire selection process is managed under the console_lock. It's
- *	 a lot under the lock but its hardly a performance path
- */
+/* set the current selection. Invoked by ioctl() or by kernel code. */
 int set_selection(const struct tiocl_selection __user *sel, struct tty_struct *tty)
 {
 	struct vc_data *vc = vc_cons[fg_console].d;
@@ -162,7 +138,7 @@ int set_selection(const struct tiocl_selection __user *sel, struct tty_struct *t
 	char *bp, *obp;
 	int i, ps, pe, multiplier;
 	u16 c;
-	int mode;
+	struct kbd_struct *kbd = kbd_table + fg_console;
 
 	poke_blanked_console();
 
@@ -206,11 +182,7 @@ int set_selection(const struct tiocl_selection __user *sel, struct tty_struct *t
 		clear_selection();
 		sel_cons = vc_cons[fg_console].d;
 	}
-	mode = vt_do_kdgkbmode(fg_console);
-	if (mode == K_UNICODE)
-		use_unicode = 1;
-	else
-		use_unicode = 0;
+	use_unicode = kbd && kbd->kbdmode == VC_UNICODE;
 
 	switch (sel_mode)
 	{
@@ -329,9 +301,6 @@ int set_selection(const struct tiocl_selection __user *sel, struct tty_struct *t
 /* Insert the contents of the selection buffer into the
  * queue of the tty associated with the current console.
  * Invoked by ioctl().
- *
- * Locking: called without locks. Calls the ldisc wrongly with
- * unsafe methods,
  */
 int paste_selection(struct tty_struct *tty)
 {
@@ -341,17 +310,20 @@ int paste_selection(struct tty_struct *tty)
 	struct  tty_ldisc *ld;
 	DECLARE_WAITQUEUE(wait, current);
 
+	/* always called with BTM from vt_ioctl */
+	WARN_ON(!tty_locked());
 
 	console_lock();
 	poke_blanked_console();
 	console_unlock();
 
-	/* FIXME: wtf is this supposed to achieve ? */
 	ld = tty_ldisc_ref(tty);
-	if (!ld)
+	if (!ld) {
+		tty_unlock();
 		ld = tty_ldisc_ref_wait(tty);
+		tty_lock();
+	}
 
-	/* FIXME: this is completely unsafe */
 	add_wait_queue(&vc->paste_wait, &wait);
 	while (sel_buffer && sel_buffer_lth > pasted) {
 		set_current_state(TASK_INTERRUPTIBLE);
