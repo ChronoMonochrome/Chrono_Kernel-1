@@ -25,6 +25,8 @@
 #include <dspbridge/host_os.h>
 
 
+#ifdef CONFIG_TIDSPBRIDGE_WDT3
+
 #define OMAP34XX_WDT3_BASE 		(L4_PER_34XX_BASE + 0x30000)
 
 static struct dsp_wdt_setting dsp_wdt;
@@ -53,10 +55,7 @@ int dsp_wdt_init(void)
 	int ret = 0;
 
 	dsp_wdt.sm_wdt = NULL;
-	dsp_wdt.reg_base = ioremap(OMAP34XX_WDT3_BASE, SZ_4K);
-	if (!dsp_wdt.reg_base)
-		return -ENOMEM;
-
+	dsp_wdt.reg_base = OMAP2_L4_IO_ADDRESS(OMAP34XX_WDT3_BASE);
 	tasklet_init(&dsp_wdt.wdt3_tasklet, dsp_wdt_dpc, 0);
 
 	dsp_wdt.fclk = clk_get(NULL, "wdt3_fck");
@@ -85,7 +84,7 @@ int dsp_wdt_init(void)
 void dsp_wdt_sm_set(void *data)
 {
 	dsp_wdt.sm_wdt = data;
-	dsp_wdt.sm_wdt->wdt_overflow = 5;	/* in seconds */
+	dsp_wdt.sm_wdt->wdt_overflow = CONFIG_TIDSPBRIDGE_WDT_TIMEOUT;
 }
 
 
@@ -102,9 +101,6 @@ void dsp_wdt_exit(void)
 	dsp_wdt.fclk = NULL;
 	dsp_wdt.iclk = NULL;
 	dsp_wdt.sm_wdt = NULL;
-
-	if (dsp_wdt.reg_base)
-		iounmap(dsp_wdt.reg_base);
 	dsp_wdt.reg_base = NULL;
 }
 
@@ -132,3 +128,23 @@ void dsp_wdt_enable(bool enable)
 		clk_disable(dsp_wdt.fclk);
 	}
 }
+
+#else
+void dsp_wdt_enable(bool enable)
+{
+}
+
+void dsp_wdt_sm_set(void *data)
+{
+}
+
+int dsp_wdt_init(void)
+{
+	return 0;
+}
+
+void dsp_wdt_exit(void)
+{
+}
+#endif
+

@@ -135,7 +135,7 @@ static int send_midi_async(struct usb_line6 *line6, unsigned char *data,
 	line6_write_hexdump(line6, 'S', data, length);
 #endif
 
-	transfer_buffer = kmemdup(data, length, GFP_ATOMIC);
+	transfer_buffer = kmalloc(length, GFP_ATOMIC);
 
 	if (transfer_buffer == NULL) {
 		usb_free_urb(urb);
@@ -143,6 +143,7 @@ static int send_midi_async(struct usb_line6 *line6, unsigned char *data,
 		return -ENOMEM;
 	}
 
+	memcpy(transfer_buffer, data, length);
 	usb_fill_int_urb(urb, line6->usbdev,
 			 usb_sndbulkpipe(line6->usbdev,
 					 line6->ep_control_write),
@@ -172,8 +173,6 @@ static int send_midi_async(struct usb_line6 *line6, unsigned char *data,
 		break;
 
 	case LINE6_DEVID_VARIAX:
-	case LINE6_DEVID_PODHD300:
-	case LINE6_DEVID_PODHD500:
 		break;
 
 	default:
@@ -308,10 +307,10 @@ static ssize_t midi_set_midi_mask_transmit(struct device *dev,
 {
 	struct usb_interface *interface = to_usb_interface(dev);
 	struct usb_line6 *line6 = usb_get_intfdata(interface);
-	unsigned short value;
+	unsigned long value;
 	int ret;
 
-	ret = kstrtou16(buf, 10, &value);
+	ret = strict_strtoul(buf, 10, &value);
 	if (ret)
 		return ret;
 
@@ -340,10 +339,10 @@ static ssize_t midi_set_midi_mask_receive(struct device *dev,
 {
 	struct usb_interface *interface = to_usb_interface(dev);
 	struct usb_line6 *line6 = usb_get_intfdata(interface);
-	unsigned short value;
+	unsigned long value;
 	int ret;
 
-	ret = kstrtou16(buf, 10, &value);
+	ret = strict_strtoul(buf, 10, &value);
 	if (ret)
 		return ret;
 
@@ -392,32 +391,16 @@ int line6_init_midi(struct usb_line6 *line6)
 		return -ENOMEM;
 
 	err = line6_midibuf_init(&line6midi->midibuf_in, MIDI_BUFFER_SIZE, 0);
-	if (err < 0) {
-		kfree(line6midi);
+	if (err < 0)
 		return err;
-	}
 
 	err = line6_midibuf_init(&line6midi->midibuf_out, MIDI_BUFFER_SIZE, 1);
-	if (err < 0) {
-		kfree(line6midi->midibuf_in.buf);
-		kfree(line6midi);
+	if (err < 0)
 		return err;
-	}
 
 	line6midi->line6 = line6;
-
-	switch(line6->product) {
-	case LINE6_DEVID_PODHD300:
-	case LINE6_DEVID_PODHD500:
-		line6midi->midi_mask_transmit = 1;
-		line6midi->midi_mask_receive = 1;
-		break;
-
-	default:
-		line6midi->midi_mask_transmit = 1;
-		line6midi->midi_mask_receive = 4;
-	}
-
+	line6midi->midi_mask_transmit = 1;
+	line6midi->midi_mask_receive = 4;
 	line6->line6midi = line6midi;
 
 	err = snd_device_new(line6->card, SNDRV_DEV_RAWMIDI, line6midi,

@@ -21,7 +21,6 @@
 #include <linux/pci_ids.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
-#include <linux/module.h>
 #include <linux/backlight.h>
 #include <linux/device.h>
 #include <linux/uaccess.h>
@@ -34,8 +33,11 @@
 
 /* Module definitions */
 
-static ushort resumeline = 898;
-module_param(resumeline, ushort, 0444);
+static int resumeline = 898;
+module_param(resumeline, int, 0444);
+
+static int noinit;
+module_param(noinit, int, 0444);
 
 /* Default off since it doesn't work on DCON ASIC in B-test OLPC board */
 static int useaa = 1;
@@ -66,10 +68,11 @@ static s32 dcon_read(struct dcon_priv *dcon, u8 reg)
 
 static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
 {
+	struct i2c_client *client = dcon->client;
 	uint16_t ver;
 	int rc = 0;
 
-	ver = dcon_read(dcon, DCON_REG_ID);
+	ver = i2c_smbus_read_word_data(client, DCON_REG_ID);
 	if ((ver >> 8) != 0xDC) {
 		printk(KERN_ERR "olpc-dcon:  DCON ID not 0xDCxx: 0x%04x "
 				"instead.\n", ver);
@@ -87,18 +90,29 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
 		}
 	}
 
-	if (ver < 0xdc02) {
-		dev_err(&dcon->client->dev,
-				"DCON v1 is unsupported, giving up..\n");
-		rc = -ENODEV;
-		goto err;
-	}
+	if (ver < 0xdc02 && !noinit) {
+		/* Initialize the DCON registers */
 
-	/* SDRAM setup/hold time */
-	dcon_write(dcon, 0x3a, 0xc040);
-	dcon_write(dcon, 0x41, 0x0000);
-	dcon_write(dcon, 0x41, 0x0101);
-	dcon_write(dcon, 0x42, 0x0101);
+		/* Start with work-arounds for DCON ASIC */
+		i2c_smbus_write_word_data(client, 0x4b, 0x00cc);
+		i2c_smbus_write_word_data(client, 0x4b, 0x00cc);
+		i2c_smbus_write_word_data(client, 0x4b, 0x00cc);
+		i2c_smbus_write_word_data(client, 0x0b, 0x007a);
+		i2c_smbus_write_word_data(client, 0x36, 0x025c);
+		i2c_smbus_write_word_data(client, 0x37, 0x025e);
+
+		/* Initialise SDRAM */
+
+		i2c_smbus_write_word_data(client, 0x3b, 0x002b);
+		i2c_smbus_write_word_data(client, 0x41, 0x0101);
+		i2c_smbus_write_word_data(client, 0x42, 0x0101);
+	} else if (!noinit) {
+		/* SDRAM setup/hold time */
+		i2c_smbus_write_word_data(client, 0x3a, 0xc040);
+		i2c_smbus_write_word_data(client, 0x41, 0x0000);
+		i2c_smbus_write_word_data(client, 0x41, 0x0101);
+		i2c_smbus_write_word_data(client, 0x42, 0x0101);
+	}
 
 	/* Colour swizzle, AA, no passthrough, backlight */
 	if (is_init) {
@@ -107,11 +121,11 @@ static int dcon_hw_init(struct dcon_priv *dcon, int is_init)
 		if (useaa)
 			dcon->disp_mode |= MODE_COL_AA;
 	}
-	dcon_write(dcon, DCON_REG_MODE, dcon->disp_mode);
+	i2c_smbus_write_word_data(client, DCON_REG_MODE, dcon->disp_mode);
 
 
 	/* Set the scanline to interrupt on during resume */
-	dcon_write(dcon, DCON_REG_SCAN_INT, resumeline);
+	i2c_smbus_write_word_data(client, DCON_REG_SCAN_INT, resumeline);
 
 err:
 	return rc;
@@ -456,7 +470,7 @@ static ssize_t dcon_mono_store(struct device *dev,
 	unsigned long enable_mono;
 	int rc;
 
-	rc = kstrtoul(buf, 10, &enable_mono);
+	rc = strict_strtoul(buf, 10, &enable_mono);
 	if (rc)
 		return rc;
 
@@ -472,7 +486,7 @@ static ssize_t dcon_freeze_store(struct device *dev,
 	unsigned long output;
 	int ret;
 
-	ret = kstrtoul(buf, 10, &output);
+	ret = strict_strtoul(buf, 10, &output);
 	if (ret)
 		return ret;
 
@@ -498,10 +512,10 @@ static ssize_t dcon_freeze_store(struct device *dev,
 static ssize_t dcon_resumeline_store(struct device *dev,
 	struct device_attribute *attr, const char *buf, size_t count)
 {
-	unsigned short rl;
+	unsigned long rl;
 	int rc;
 
-	rc = kstrtou16(buf, 10, &rl);
+	rc = strict_strtoul(buf, 10, &rl);
 	if (rc)
 		return rc;
 
@@ -517,7 +531,7 @@ static ssize_t dcon_sleep_store(struct device *dev,
 	unsigned long output;
 	int ret;
 
-	ret = kstrtoul(buf, 10, &output);
+	ret = strict_strtoul(buf, 10, &output);
 	if (ret)
 		return ret;
 
@@ -698,6 +712,7 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
  eirq:
 	free_irq(DCON_IRQ, dcon);
  einit:
+	i2c_set_clientdata(client, NULL);
 	kfree(dcon);
 	return rc;
 }
@@ -705,6 +720,8 @@ static int dcon_probe(struct i2c_client *client, const struct i2c_device_id *id)
 static int dcon_remove(struct i2c_client *client)
 {
 	struct dcon_priv *dcon = i2c_get_clientdata(client);
+
+	i2c_set_clientdata(client, NULL);
 
 	fb_unregister_client(&dcon->fbevent_nb);
 	unregister_reboot_notifier(&dcon->reboot_nb);
@@ -755,9 +772,9 @@ static int dcon_resume(struct i2c_client *client)
 irqreturn_t dcon_interrupt(int irq, void *id)
 {
 	struct dcon_priv *dcon = id;
-	u8 status;
+	int status = pdata->read_status();
 
-	if (pdata->read_status(&status))
+	if (status == -1)
 		return IRQ_NONE;
 
 	switch (status & 3) {

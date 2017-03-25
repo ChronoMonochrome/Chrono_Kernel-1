@@ -42,6 +42,7 @@ struct synaptics_rmi4_platform_data {
 	int irq_type;
 	bool x_flip;
 	bool y_flip;
+	bool regulator_en;
 };
 
 #endif

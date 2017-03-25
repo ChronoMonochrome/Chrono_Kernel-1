@@ -12,5 +12,4 @@ line6usb-y := 		\
 		playback.o	\
 		pod.o		\
 		toneport.o	\
-		variax.o	\
-		podhd.o
+		variax.o
