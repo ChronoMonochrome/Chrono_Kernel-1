@@ -48,7 +48,8 @@
 
 #endif
 
-#include "crystalhd.h"
+#include "bc_dts_defs.h"
+#include "bcm_70012_regs.h"	/* Link Register defs */
 
 #define CRYSTALHD_API_NAME	"crystalhd"
 #define CRYSTALHD_API_DEV_NAME	"/dev/crystalhd"
@@ -174,7 +175,7 @@ struct BC_DEC_YUV_BUFFS {
 	uint32_t		RefCnt;
 };
 
-enum DECOUT_COMPLETION_FLAGS {
+enum DECOUT_COMPLETION_FLAGS{
 	COMP_FLAG_NO_INFO	= 0x00,
 	COMP_FLAG_FMT_CHANGE	= 0x01,
 	COMP_FLAG_PIB_VALID	= 0x02,
@@ -183,7 +184,7 @@ enum DECOUT_COMPLETION_FLAGS {
 	COMP_FLAG_DATA_BOT	= 0x10,
 };
 
-struct BC_DEC_OUT_BUFF {
+struct BC_DEC_OUT_BUFF{
 	struct BC_DEC_YUV_BUFFS	OutPutBuffs;
 	struct BC_PIC_INFO_BLOCK PibInfo;
 	uint32_t		Flags;
@@ -288,7 +289,7 @@ struct crystalhd_ioctl_data {
 	struct crystalhd_ioctl_data *next;	/* List/Fifo management */
 };
 
-enum crystalhd_kmod_ver {
+enum crystalhd_kmod_ver{
 	crystalhd_kmod_major	= 0,
 	crystalhd_kmod_minor	= 9,
 	crystalhd_kmod_rev	= 27,

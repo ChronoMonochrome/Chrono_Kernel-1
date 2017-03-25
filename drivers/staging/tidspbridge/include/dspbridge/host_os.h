@@ -17,12 +17,14 @@
 #ifndef _HOST_OS_H_
 #define _HOST_OS_H_
 
-#include <linux/atomic.h>
+#include <asm/system.h>
+#include <asm/atomic.h>
 #include <linux/semaphore.h>
 #include <linux/uaccess.h>
 #include <linux/irq.h>
 #include <linux/io.h>
 #include <linux/syscalls.h>
+#include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/string.h>
 #include <linux/stddef.h>

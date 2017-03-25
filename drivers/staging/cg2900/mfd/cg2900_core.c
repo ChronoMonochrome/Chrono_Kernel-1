@@ -205,6 +205,7 @@ handle_read_local_version_info_cmd_complete_evt(struct cg2900_chip_dev *dev,
 {
 	struct hci_rp_read_local_version *evt;
 	struct core_info *info = dev->prv_data;
+	u16 original_hci_revision = 0;
 
 	/* Check we're in the right state */
 	if (info->boot_state != BOOT_READ_LOCAL_VERSION_INFORMATION)
@@ -229,6 +230,12 @@ handle_read_local_version_info_cmd_complete_evt(struct cg2900_chip_dev *dev,
 	dev->chip.lmp_pal_version = evt->lmp_ver;
 	dev->chip.manufacturer = le16_to_cpu(evt->manufacturer);
 	dev->chip.hci_sub_version = le16_to_cpu(evt->lmp_subver);
+
+	if (dev->chip.hci_revision == CG2905_PG2_REV_OTP_NOT_SET) {
+		dev->chip.hci_revision = CG2905_PG2_REV;
+		original_hci_revision = CG2905_PG2_REV_OTP_NOT_SET;
+	}
+
 	dev_info(dev->dev, "Received Read Local Version Information with:\n"
 		 "\thci_version:  0x%02X\n"
 		 "\thci_revision: 0x%04X\n"
@@ -238,7 +245,9 @@ handle_read_local_version_info_cmd_complete_evt(struct cg2900_chip_dev *dev,
 		 dev->chip.hci_version, dev->chip.hci_revision,
 		 dev->chip.lmp_pal_version, dev->chip.manufacturer,
 		 dev->chip.hci_sub_version);
-
+	if (original_hci_revision)
+		dev_info(dev->dev, "Note: Underlying hci revision is 0x%04X though!!\n",
+			original_hci_revision);
 	dev_dbg(dev->dev, "New boot_state: BOOT_READY\n");
 	info->boot_state = BOOT_READY;
 	wake_up_all(&main_info->wq);
@@ -380,7 +389,8 @@ static void work_hw_registered(struct work_struct *work)
 		dev_err(dev->dev,
 			"Could not read out revision from the chip\n");
 		info->boot_state = BOOT_FAILED;
-		dev->t_cb.set_chip_power(dev, false);
+		if (dev->t_cb.set_chip_power)
+			dev->t_cb.set_chip_power(dev, false);
 		return;
 	}
 

@@ -27,40 +27,22 @@ config CW1200_USE_GPIO_IRQ
         Say Y here if you want to include GPIO IRQ support instead of SDIO IRQ.
         If unsure, say N.
 
+config CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE
+      bool "Software keep-alive (DEVELOPMENT)"
+      depends on CW1200
+      help
+        Say Y if your firmware does not support keep-alive functionality
+        or you suspect problems with the implementation.
+        Please finalize software the software keep-alive functionality in
+        that case.
+        If unsure, say N.
+
 config CW1200_5GHZ_SUPPORT
       bool "5GHz band support"
       depends on CW1200
       help
         Say Y if your device supports 5GHz band. Should be disabled for
         CW1100 silicon.
-        If unsure, say N.
-
-config CW1200_WAPI_SUPPORT
-      bool "WAPI support"
-      depends on CW1200
-      help
-        Say Y if your compat-wireless support WAPI.
-        If unsure, say N.
-
-config CW1200_USE_STE_EXTENSIONS
-      bool "STE extensions"
-      depends on CW1200
-      help
-        Say Y if you want to include STE extensions.
-        If unsure, say N.
-
-config CW1200_DISABLE_BEACON_HINTS
-      bool "Disable 11d beacon hints"
-      depends on CW1200
-      help
-        Say Y if you want to disable 11d beacon hints.
-        If unsure, say N.
-
-config CW1200_U5500_SUPPORT
-      bool "Enable U5500 support"
-      depends on CW1200
-      help
-        Say Y if you want to enable wlan on u5500 platform support.
         If unsure, say N.
 
 menu "Driver debug features"
@@ -78,9 +60,6 @@ config CW1200_WSM_DEBUG
 config CW1200_WSM_DUMPS
       bool "Verbose WSM API logging (DEVELOPMENT)"
 
-config CW1200_WSM_DUMPS_SHORT
-      bool "Dump only first x bytes (default 20) (DEVELOPMENT)"
-
 config CW1200_TXRX_DEBUG
       bool "Enable TX/RX debug messages (DEVELOPMENT)"
 
@@ -90,16 +69,6 @@ config CW1200_TX_POLICY_DEBUG
 config CW1200_STA_DEBUG
       bool "Enable STA/AP debug (DEVELOPMENT)"
 
-config CW1200_DUMP_ON_ERROR
-      bool "Dump kernel in case of critical error (DEVELOPMENT)"
-
 endmenu
-
-config CW1200_ITP
-      bool "Enable ITP DebugFS"
-      depends on CW1200
-      help
-        Say Y if you want to include ITP code.
-        If unsure, say N.
 
 endif

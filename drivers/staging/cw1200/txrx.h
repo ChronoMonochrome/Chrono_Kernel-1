@@ -17,9 +17,7 @@
 /* extern */ struct ieee80211_hw;
 /* extern */ struct sk_buff;
 /* extern */ struct wsm_tx;
-/* extern */ struct wsm_rx;
 /* extern */ struct wsm_tx_confirm;
-/* extern */ struct cw1200_txpriv;
 
 struct tx_policy {
 	union {
@@ -54,16 +52,16 @@ struct tx_policy_cache {
  */
 void tx_policy_init(struct cw1200_common *priv);
 void tx_policy_upload_work(struct work_struct *work);
+void tx_policy_put(struct cw1200_common *priv, int idx);
 
 /* ******************************************************************** */
 /* TX implementation							*/
 
 u32 cw1200_rate_mask_to_wsm(struct cw1200_common *priv,
 			       u32 rates);
-void cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb);
-void cw1200_skb_dtor(struct cw1200_common *priv,
-		     struct sk_buff *skb,
-		     const struct cw1200_txpriv *txpriv);
+int cw1200_skb_to_wsm(struct cw1200_common *priv,
+		      struct sk_buff *skb, struct wsm_tx *wsm);
+int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb);
 
 /* ******************************************************************** */
 /* WSM callbacks							*/
@@ -85,11 +83,5 @@ int cw1200_alloc_key(struct cw1200_common *priv);
 void cw1200_free_key(struct cw1200_common *priv, int idx);
 void cw1200_free_keys(struct cw1200_common *priv);
 int cw1200_upload_keys(struct cw1200_common *priv);
-
-/* ******************************************************************** */
-/* Workaround for WFD test case 6.1.10					*/
-#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
-void cw1200_link_id_reset(struct work_struct *work);
-#endif
 
 #endif /* CW1200_TXRX_H */

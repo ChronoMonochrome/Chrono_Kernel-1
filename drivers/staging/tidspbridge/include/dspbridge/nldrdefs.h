@@ -119,6 +119,7 @@ enum nldr_phase {
  *      0:        Success.
  *      -ENOMEM:    Insufficient memory on GPP.
  *  Requires:
+ *      nldr_init(void) called.
  *      Valid nldr_obj.
  *      node_props != NULL.
  *      nldr_nodeobj != NULL.
@@ -147,6 +148,7 @@ typedef int(*nldr_allocatefxn) (struct nldr_object *nldr_obj,
  *      0:        Success;
  *      -ENOMEM:    Insufficient memory for requested resources.
  *  Requires:
+ *      nldr_init(void) called.
  *      nldr != NULL.
  *      hdev_obj != NULL.
  *	pattrs != NULL.
@@ -166,11 +168,26 @@ typedef int(*nldr_createfxn) (struct nldr_object **nldr,
  *      nldr_obj:          Node manager object.
  *  Returns:
  *  Requires:
+ *      nldr_init(void) called.
  *      Valid nldr_obj.
  *  Ensures:
  *	nldr_obj invalid
  */
 typedef void (*nldr_deletefxn) (struct nldr_object *nldr_obj);
+
+/*
+ *  ======== nldr_exit ========
+ *  Discontinue usage of NLDR module.
+ *
+ *  Parameters:
+ *  Returns:
+ *  Requires:
+ *      nldr_init(void) successfully called before.
+ *  Ensures:
+ *      Any resources acquired in nldr_init(void) will be freed when last NLDR
+ *      client calls nldr_exit(void).
+ */
+typedef void (*nldr_exitfxn) (void);
 
 /*
  *  ======== NLDR_Free ========
@@ -180,6 +197,7 @@ typedef void (*nldr_deletefxn) (struct nldr_object *nldr_obj);
  *      nldr_node_obj:      Handle returned from nldr_allocate().
  *  Returns:
  *  Requires:
+ *      nldr_init(void) called.
  *      Valid nldr_node_obj.
  *  Ensures:
  */
@@ -198,6 +216,7 @@ typedef void (*nldr_freefxn) (struct nldr_nodeobject *nldr_node_obj);
  *      0:        Success.
  *      -ESPIPE:    Address of function not found.
  *  Requires:
+ *      nldr_init(void) called.
  *      Valid nldr_node_obj.
  *      addr != NULL;
  *      str_fxn != NULL;
@@ -206,6 +225,17 @@ typedef void (*nldr_freefxn) (struct nldr_nodeobject *nldr_node_obj);
 typedef int(*nldr_getfxnaddrfxn) (struct nldr_nodeobject
 					 * nldr_node_obj,
 					 char *str_fxn, u32 * addr);
+
+/*
+ *  ======== nldr_init ========
+ *  Initialize the NLDR module.
+ *
+ *  Parameters:
+ *  Returns:
+ *      TRUE if initialization succeeded, FALSE otherwise.
+ *  Ensures:
+ */
+typedef bool(*nldr_initfxn) (void);
 
 /*
  *  ======== nldr_load ========
@@ -221,6 +251,7 @@ typedef int(*nldr_getfxnaddrfxn) (struct nldr_nodeobject
  *                              is already in use.
  *      -EILSEQ:           Failure in dynamic loader library.
  *  Requires:
+ *      nldr_init(void) called.
  *      Valid nldr_node_obj.
  *  Ensures:
  */
@@ -238,6 +269,7 @@ typedef int(*nldr_loadfxn) (struct nldr_nodeobject *nldr_node_obj,
  *      0:        Success.
  *      -ENOMEM:    Insufficient memory on GPP.
  *  Requires:
+ *      nldr_init(void) called.
  *      Valid nldr_node_obj.
  *  Ensures:
  */
@@ -251,7 +283,9 @@ struct node_ldr_fxns {
 	nldr_allocatefxn allocate;
 	nldr_createfxn create;
 	nldr_deletefxn delete;
+	nldr_exitfxn exit;
 	nldr_getfxnaddrfxn get_fxn_addr;
+	nldr_initfxn init;
 	nldr_loadfxn load;
 	nldr_unloadfxn unload;
 };

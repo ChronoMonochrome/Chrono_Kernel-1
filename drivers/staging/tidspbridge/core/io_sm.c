@@ -33,6 +33,9 @@
 /*  ----------------------------------- DSP/BIOS Bridge */
 #include <dspbridge/dbdefs.h>
 
+/* Trace & Debug */
+#include <dspbridge/dbc.h>
+
 /* Services Layer */
 #include <dspbridge/ntfy.h>
 #include <dspbridge/sync.h>
@@ -111,7 +114,7 @@ struct io_mgr {
 	struct mgr_processorextinfo ext_proc_info;
 	struct cmm_object *cmm_mgr;	/* Shared Mem Mngr */
 	struct work_struct io_workq;	/* workqueue */
-#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE)
+#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE) || defined(CONFIG_TIDSPBRIDGE_DEBUG)
 	u32 trace_buffer_begin;	/* Trace message start address */
 	u32 trace_buffer_end;	/* Trace message end address */
 	u32 trace_buffer_current;	/* Trace message current address */
@@ -243,7 +246,7 @@ int bridge_io_destroy(struct io_mgr *hio_mgr)
 		/* Free IO DPC object */
 		tasklet_kill(&hio_mgr->dpc_tasklet);
 
-#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE)
+#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE) || defined(CONFIG_TIDSPBRIDGE_DEBUG)
 		kfree(hio_mgr->msg);
 #endif
 		dsp_wdt_exit();
@@ -383,7 +386,7 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
 		status = -EFAULT;
 	}
 	if (!status) {
-#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE)
+#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE) || defined(CONFIG_TIDSPBRIDGE_DEBUG)
 		status =
 		    cod_get_sym_value(cod_man, DSP_TRACESEC_END, &shm0_end);
 #else
@@ -728,7 +731,7 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
 		hmsg_mgr->max_msgs);
 	memset((void *)hio_mgr->shared_mem, 0, sizeof(struct shm));
 
-#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE)
+#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE) || defined(CONFIG_TIDSPBRIDGE_DEBUG)
 	/* Get the start address of trace buffer */
 	status = cod_get_sym_value(cod_man, SYS_PUTCBEG,
 				   &hio_mgr->trace_buffer_begin);
@@ -907,7 +910,7 @@ void io_dpc(unsigned long ref_data)
 		}
 
 #endif
-#ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
+#ifdef CONFIG_TIDSPBRIDGE_DEBUG
 		if (pio_mgr->intr_val & MBX_DBG_SYSPRINTF) {
 			/* Notify DSP Trace message */
 			print_dsp_debug_trace(pio_mgr);
@@ -970,16 +973,29 @@ void io_request_chnl(struct io_mgr *io_manager, struct chnl_object *pchnl,
 	chnl_mgr_obj = io_manager->chnl_mgr;
 	sm = io_manager->shared_mem;
 	if (io_mode == IO_INPUT) {
+		/*
+		 * Assertion fires if CHNL_AddIOReq() called on a stream
+		 * which was cancelled, or attached to a dead board.
+		 */
+		DBC_ASSERT((pchnl->state == CHNL_STATEREADY) ||
+			   (pchnl->state == CHNL_STATEEOS));
 		/* Indicate to the DSP we have a buffer available for input */
 		set_chnl_busy(sm, pchnl->chnl_id);
 		*mbx_val = MBX_PCPY_CLASS;
 	} else if (io_mode == IO_OUTPUT) {
+		/*
+		 * This assertion fails if CHNL_AddIOReq() was called on a
+		 * stream which was cancelled, or attached to a dead board.
+		 */
+		DBC_ASSERT((pchnl->state & ~CHNL_STATEEOS) ==
+			   CHNL_STATEREADY);
 		/*
 		 * Record the fact that we have a buffer available for
 		 * output.
 		 */
 		chnl_mgr_obj->output_mask |= (1 << pchnl->chnl_id);
 	} else {
+		DBC_ASSERT(io_mode);	/* Shouldn't get here. */
 	}
 func_end:
 	return;
@@ -1071,6 +1087,7 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
 	dw_arg = sm->arg;
 	if (chnl_id >= CHNL_MAXCHANNELS) {
 		/* Shouldn't be here: would indicate corrupted shm. */
+		DBC_ASSERT(chnl_id);
 		goto func_end;
 	}
 	pchnl = chnl_mgr_obj->channels[chnl_id];
@@ -1666,7 +1683,7 @@ int bridge_io_get_proc_load(struct io_mgr *hio_mgr,
 }
 
 
-#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE)
+#if defined(CONFIG_TIDSPBRIDGE_BACKTRACE) || defined(CONFIG_TIDSPBRIDGE_DEBUG)
 void print_dsp_debug_trace(struct io_mgr *hio_mgr)
 {
 	u32 ul_new_message_length = 0, ul_gpp_cur_pointer;

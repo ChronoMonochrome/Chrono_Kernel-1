@@ -86,6 +86,7 @@ TODO:
 #include "../comedidev.h"
 #include <linux/delay.h>
 #include <linux/interrupt.h>
+#include <asm/system.h>
 
 #include "comedi_pci.h"
 #include "8253.h"
@@ -1738,6 +1739,8 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	uint32_t local_range, local_decode;
 	int retval;
 
+	printk("comedi%d: cb_pcidas64\n", dev->minor);
+
 /*
  * Allocate the private structure area.
  */
@@ -1778,11 +1781,12 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		return -EIO;
 	}
 
-	dev_dbg(dev->hw_dev, "Found %s on bus %i, slot %i\n", board(dev)->name,
-		pcidev->bus->number, PCI_SLOT(pcidev->devfn));
+	printk("Found %s on bus %i, slot %i\n", board(dev)->name,
+	       pcidev->bus->number, PCI_SLOT(pcidev->devfn));
 
 	if (comedi_pci_enable(pcidev, driver_cb_pcidas.driver_name)) {
-		dev_warn(dev->hw_dev, "failed to enable PCI device and request regions\n");
+		printk(KERN_WARNING
+		       " failed to enable PCI device and request regions\n");
 		return -EIO;
 	}
 	pci_set_master(pcidev);
@@ -1810,7 +1814,7 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	if (!priv(dev)->plx9080_iobase || !priv(dev)->main_iobase
 	    || !priv(dev)->dio_counter_iobase) {
-		dev_warn(dev->hw_dev, "failed to remap io memory\n");
+		printk(" failed to remap io memory\n");
 		return -ENOMEM;
 	}
 
@@ -1846,19 +1850,17 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	priv(dev)->hw_revision =
 	    hw_revision(dev, readw(priv(dev)->main_iobase + HW_STATUS_REG));
-	dev_dbg(dev->hw_dev, "stc hardware revision %i\n",
-		priv(dev)->hw_revision);
+	printk(" stc hardware revision %i\n", priv(dev)->hw_revision);
 	init_plx9080(dev);
 	init_stc_registers(dev);
 	/*  get irq */
 	if (request_irq(pcidev->irq, handle_interrupt, IRQF_SHARED,
 			"cb_pcidas64", dev)) {
-		dev_dbg(dev->hw_dev, "unable to allocate irq %u\n",
-			pcidev->irq);
+		printk(" unable to allocate irq %u\n", pcidev->irq);
 		return -EINVAL;
 	}
 	dev->irq = pcidev->irq;
-	dev_dbg(dev->hw_dev, "irq %u\n", dev->irq);
+	printk(" irq %u\n", dev->irq);
 
 	retval = setup_subdevices(dev);
 	if (retval < 0)
@@ -1879,6 +1881,8 @@ static int attach(struct comedi_device *dev, struct comedi_devconfig *it)
 static int detach(struct comedi_device *dev)
 {
 	unsigned int i;
+
+	printk("comedi%d: cb_pcidas: remove\n", dev->minor);
 
 	if (dev->irq)
 		free_irq(dev->irq, dev);
@@ -2089,8 +2093,7 @@ static int ai_config_calibration_source(struct comedi_device *dev,
 	else
 		num_calibration_sources = 8;
 	if (source >= num_calibration_sources) {
-		dev_dbg(dev->hw_dev, "invalid calibration source: %i\n",
-			source);
+		printk("invalid calibration source: %i\n", source);
 		return -EINVAL;
 	}
 
@@ -2921,7 +2924,7 @@ static void pio_drain_ai_fifo_16(struct comedi_device *dev)
 		}
 
 		if (num_samples < 0) {
-			dev_err(dev->hw_dev, "cb_pcidas64: bug! num_samples < 0\n");
+			printk(" cb_pcidas64: bug! num_samples < 0\n");
 			break;
 		}
 

@@ -23,8 +23,13 @@
 
 #ifndef _IIO_RING_SW_H_
 #define _IIO_RING_SW_H_
-#include "buffer.h"
+#include "ring_generic.h"
 
-struct iio_buffer *iio_sw_rb_allocate(struct iio_dev *indio_dev);
-void iio_sw_rb_free(struct iio_buffer *ring);
+/**
+ * ring_sw_access_funcs - access functions for a software ring buffer
+ **/
+extern const struct iio_ring_access_funcs ring_sw_access_funcs;
+
+struct iio_ring_buffer *iio_sw_rb_allocate(struct iio_dev *indio_dev);
+void iio_sw_rb_free(struct iio_ring_buffer *ring);
 #endif /* _IIO_RING_SW_H_ */

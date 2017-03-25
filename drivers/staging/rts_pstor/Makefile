@@ -1,4 +1,4 @@
-ccflags := -Idrivers/scsi
+EXTRA_CFLAGS	:= -Idrivers/scsi
 
 obj-$(CONFIG_RTS_PSTOR)	:= rts_pstor.o
 

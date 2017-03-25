@@ -282,6 +282,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
 	struct pci_dev *pcidev = NULL;
 	int index;
 
+	printk("comedi%d: cb_pcidda: ", dev->minor);
 
 /*
  * Allocate the private structure area.
@@ -292,6 +293,7 @@ static int cb_pcidda_attach(struct comedi_device *dev,
 /*
  * Probe the device to determine what device in the series it is.
  */
+	printk("\n");
 
 	for_each_pci_dev(pcidev) {
 		if (pcidev->vendor == PCI_VENDOR_ID_CB) {
@@ -310,21 +312,22 @@ static int cb_pcidda_attach(struct comedi_device *dev,
 		}
 	}
 	if (!pcidev) {
-		dev_err(dev->hw_dev, "Not a ComputerBoards/MeasurementComputing card on requested position\n");
+		printk
+		    ("Not a ComputerBoards/MeasurementComputing card on requested position\n");
 		return -EIO;
 	}
 found:
 	devpriv->pci_dev = pcidev;
 	dev->board_ptr = cb_pcidda_boards + index;
 	/*  "thisboard" macro can be used from here. */
-	dev_dbg(dev->hw_dev, "Found %s at requested position\n",
-		thisboard->name);
+	printk("Found %s at requested position\n", thisboard->name);
 
 	/*
 	 * Enable PCI device and request regions.
 	 */
 	if (comedi_pci_enable(pcidev, thisboard->name)) {
-		dev_err(dev->hw_dev, "cb_pcidda: failed to enable PCI device and request regions\n");
+		printk
+		    ("cb_pcidda: failed to enable PCI device and request regions\n");
 		return -EIO;
 	}
 
@@ -374,11 +377,12 @@ found:
 	s = dev->subdevices + 2;
 	subdev_8255_init(dev, s, NULL, devpriv->digitalio + PORT2A);
 
-	dev_dbg(dev->hw_dev, "eeprom:\n");
+	printk(" eeprom:");
 	for (index = 0; index < EEPROM_SIZE; index++) {
 		devpriv->eeprom_data[index] = cb_pcidda_read_eeprom(dev, index);
-		dev_dbg(dev->hw_dev, "%i:0x%x\n", index, devpriv->eeprom_data[index]);
+		printk(" %i:0x%x ", index, devpriv->eeprom_data[index]);
 	}
+	printk("\n");
 
 	/*  set calibrations dacs */
 	for (index = 0; index < thisboard->ao_chans; index++)
@@ -412,6 +416,8 @@ static int cb_pcidda_detach(struct comedi_device *dev)
 		subdev_8255_cleanup(dev, dev->subdevices + 1);
 		subdev_8255_cleanup(dev, dev->subdevices + 2);
 	}
+
+	printk("comedi%d: cb_pcidda: remove\n", dev->minor);
 
 	return 0;
 }

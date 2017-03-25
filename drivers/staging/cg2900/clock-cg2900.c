@@ -15,7 +15,6 @@
 #include <linux/clkdev.h>
 #include <linux/errno.h>
 #include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/skbuff.h>
@@ -60,8 +59,8 @@ static void cg2900_clk_disable(struct clk *clk)
 }
 
 static struct clkops cg2900_clk_ops = {
-	.enable		= cg2900_clk_enable,
-	.disable	= cg2900_clk_disable,
+	.enable  = cg2900_clk_enable,
+	.disable = cg2900_clk_disable,
 };
 
 static struct clk cg2900_clk = {
@@ -125,9 +124,9 @@ static struct platform_driver cg2900_core_ctrl_driver = {
 };
 
 /**
- * clock_cg2900_init() - Register Platform Data
+ * clock_cg2900_init() - Register Platform Driver
  *
- * Registers the platform data.
+ * Registers the platform Driver.
  */
 static int __init clock_cg2900_init(void)
 {
@@ -135,9 +134,9 @@ static int __init clock_cg2900_init(void)
 }
 
 /**
- * clock_cg2900_exit() - Unregister Platform Data
+ * clock_cg2900_exit() - Unregister Platform Driver
  *
- * Unregister Platform Data
+ * Unregister Platform Driver
  */
 static void __exit clock_cg2900_exit(void)
 {

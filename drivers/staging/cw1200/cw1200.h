@@ -29,12 +29,10 @@
 #include "scan.h"
 #include "txrx.h"
 #include "ht.h"
-#include "pm.h"
 
 /* extern */ struct sbus_ops;
 /* extern */ struct task_struct;
 /* extern */ struct cw1200_debug_priv;
-/* extern */ struct firmware;
 
 #if defined(CONFIG_CW1200_TXRX_DEBUG)
 #define txrx_printk(...) printk(__VA_ARGS__)
@@ -46,18 +44,7 @@
 
 #define CW1200_MAX_STA_IN_AP_MODE	(5)
 #define CW1200_LINK_ID_AFTER_DTIM	(CW1200_MAX_STA_IN_AP_MODE + 1)
-#define CW1200_LINK_ID_UAPSD		(CW1200_MAX_STA_IN_AP_MODE + 2)
-#define CW1200_LINK_ID_MAX		(CW1200_MAX_STA_IN_AP_MODE + 3)
-#define CW1200_MAX_REQUEUE_ATTEMPTS	(5)
 
-#define CW1200_MAX_TID			(8)
-
-#define CW1200_BLOCK_ACK_CNT		(30)
-#define CW1200_BLOCK_ACK_THLD		(800)
-#define CW1200_BLOCK_ACK_HIST		(3)
-#define CW1200_BLOCK_ACK_INTERVAL	(1 * HZ / CW1200_BLOCK_ACK_HIST)
-
-/* Please keep order */
 enum cw1200_join_status {
 	CW1200_JOIN_STATUS_PASSIVE = 0,
 	CW1200_JOIN_STATUS_MONITOR,
@@ -65,39 +52,9 @@ enum cw1200_join_status {
 	CW1200_JOIN_STATUS_AP,
 };
 
-enum cw1200_link_status {
-	CW1200_LINK_OFF,
-	CW1200_LINK_RESERVE,
-	CW1200_LINK_SOFT,
-	CW1200_LINK_HARD,
-#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
-	CW1200_LINK_RESET,
-	CW1200_LINK_RESET_REMAP,
-#endif
-};
-
-enum cw1200_bss_loss_status {
-	CW1200_BSS_LOSS_NONE,
-	CW1200_BSS_LOSS_CHECKING,
-	CW1200_BSS_LOSS_CONFIRMING,
-	CW1200_BSS_LOSS_CONFIRMED,
-};
-
-struct cw1200_link_entry {
-	unsigned long			timestamp;
-	enum cw1200_link_status		status;
-#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
-	enum cw1200_link_status		prev_status;
-#endif
-	u8				mac[ETH_ALEN];
-	u8				buffered[CW1200_MAX_TID];
-	struct sk_buff_head		rx_queue;
-};
-
 struct cw1200_common {
 	struct cw1200_queue		tx_queue[4];
 	struct cw1200_queue_stats	tx_queue_stats;
-	int				tx_burst_idx;
 	struct cw1200_debug_priv	*debug;
 
 	struct ieee80211_hw		*hw;
@@ -124,24 +81,20 @@ struct cw1200_common {
 	/* calibration, output power limit and rssi<->dBm conversation data */
 
 	/* BBP/MAC state */
-	const struct firmware		*sdd;
 	struct ieee80211_rate		*rates;
 	struct ieee80211_rate		*mcs_rates;
 	u8 mac_addr[ETH_ALEN];
 	struct ieee80211_channel	*channel;
 	u8 bssid[ETH_ALEN];
 	struct wsm_edca_params		edca;
-	struct wsm_tx_queue_params	tx_queue_params;
 	struct wsm_association_mode	association_mode;
 	struct wsm_set_bss_params	bss_params;
 	struct cw1200_ht_info		ht_info;
 	struct wsm_set_pm		powersave_mode;
-	struct wsm_set_pm		firmware_ps_mode;
 	int				cqm_rssi_thold;
 	unsigned			cqm_rssi_hyst;
 	unsigned			cqm_tx_failure_thold;
 	unsigned			cqm_tx_failure_count;
-	bool				cqm_use_rssi;
 	int				cqm_link_loss_count;
 	int				cqm_beacon_loss_count;
 	int				channel_switch_in_progress;
@@ -150,48 +103,26 @@ struct cw1200_common {
 	u8				short_frame_max_tx_count;
 	int				mode;
 	bool				enable_beacon;
-	int				beacon_int;
 	size_t				ssid_length;
 	u8				ssid[IEEE80211_MAX_SSID_LEN];
 	bool				listening;
 	struct wsm_rx_filter		rx_filter;
-	struct wsm_beacon_filter_table	bf_table;
 	struct wsm_beacon_filter_control bf_control;
-	struct wsm_multicast_filter	multicast_filter;
-	bool				has_multicast_subscription;
-	bool				disable_beacon_filter;
-	struct work_struct		update_filtering_work;
 	u8				ba_tid_mask;
-	int				ba_acc;
-	int				ba_cnt;
-	int				ba_hist;
-	struct timer_list		ba_timer;
-	spinlock_t			ba_lock;
-	bool				ba_ena;
-	struct work_struct              ba_work;
-	struct cw1200_pm_state		pm_state;
-	struct wsm_p2p_ps_modeinfo	p2p_ps_modeinfo;
-	struct wsm_uapsd_info		uapsd_info;
-	bool				setbssparams_done;
-	bool				is_BT_Present;
-	u8				conf_listen_interval;
-	u32				listen_interval;
-	u32				erp_info;
 
 	/* BH */
 	atomic_t			bh_rx;
 	atomic_t			bh_tx;
 	atomic_t			bh_term;
-	atomic_t			bh_suspend;
 	struct task_struct		*bh_thread;
 	int				bh_error;
 	wait_queue_head_t		bh_wq;
-	wait_queue_head_t		bh_evt_wq;
 	int				buf_id_tx;	/* byte */
 	int				buf_id_rx;	/* byte */
 	int				wsm_rx_seq;	/* byte */
 	int				wsm_tx_seq;	/* byte */
 	int				hw_bufs_used;
+	wait_queue_head_t		hw_bufs_used_wq;
 	struct sk_buff			*skb_cache;
 	bool				powersave_enabled;
 	bool				device_can_sleep;
@@ -206,23 +137,17 @@ struct cw1200_common {
 	struct wsm_cbc			wsm_cbc;
 	atomic_t			tx_lock;
 
-	/* WSM debug */
-	int				wsm_enable_wsm_dumps;
-	u32				wsm_dump_max_size;
-
 	/* Scan status */
 	struct cw1200_scan scan;
 
 	/* WSM Join */
 	enum cw1200_join_status	join_status;
 	u8			join_bssid[ETH_ALEN];
-	u32			pending_frame_id;
+	const struct wsm_tx	*join_pending_frame;
 	struct work_struct	join_work;
 	struct delayed_work	join_timeout;
 	struct work_struct	unjoin_work;
-	struct work_struct	offchannel_work;
 	int			join_dtim_period;
-	bool			delayed_unjoin;
 
 	/* TX/RX and security */
 	s8			wep_default_key_id;
@@ -233,20 +158,12 @@ struct cw1200_common {
 
 	/* AP powersave */
 	u32			link_id_map;
-	struct cw1200_link_entry link_id_db[CW1200_MAX_STA_IN_AP_MODE];
-	struct work_struct	link_id_work;
-	struct delayed_work	link_id_gc_work;
+	u32			tx_suspend_mask[4];
 	u32			sta_asleep_mask;
-	u32			pspoll_mask;
-	bool			aid0_bit_set;
-	spinlock_t		ps_state_lock;
-	bool			buffered_multicasts;
-	bool			tx_multicast;
+	bool			suspend_multicast;
 	struct work_struct	set_tim_work;
-	struct delayed_work	set_cts_work;
 	struct work_struct	multicast_start_work;
 	struct work_struct	multicast_stop_work;
-	struct timer_list	mcast_timeout;
 
 
 	/* WSM events and CQM implementation */
@@ -255,11 +172,12 @@ struct cw1200_common {
 	struct work_struct	event_handler;
 	struct delayed_work	bss_loss_work;
 	struct delayed_work	connection_loss_work;
+#if defined(CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE)
+	struct delayed_work	keep_alive_work;
+	unsigned long		last_activity_time;
+#endif /* CONFIG_CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 	struct work_struct	tx_failure_work;
 	int			delayed_link_loss;
-	spinlock_t		bss_loss_lock;
-	int			bss_loss_status;
-	int			bss_loss_confirm_id;
 
 	/* TX rate policy cache */
 	struct tx_policy_cache tx_policy_cache;
@@ -272,24 +190,18 @@ struct cw1200_common {
 
 	/* statistics */
 	struct ieee80211_low_level_stats stats;
-#if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
-	/* Workaround for WFD testcase 6.1.10*/
-	struct work_struct	linkid_reset_work;
-	u8			action_frame_sa[ETH_ALEN];
-	u8			action_linkid;
-#endif
 };
 
 struct cw1200_sta_priv {
-	int link_id;
+        int link_id;
 };
 
 /* interfaces for the drivers */
-int cw1200_core_probe(const struct sbus_ops *sbus_ops,
-		      struct sbus_priv *sbus,
-		      struct device *pdev,
-		      struct cw1200_common **pself);
-void cw1200_core_release(struct cw1200_common *self);
+int cw1200_probe(const struct sbus_ops *sbus_ops,
+		 struct sbus_priv *sbus,
+		 struct device *pdev,
+		 struct cw1200_common **pself);
+void cw1200_release(struct cw1200_common *self);
 
 #define CW1200_DBG_MSG		0x00000001
 #define CW1200_DBG_NIY		0x00000002

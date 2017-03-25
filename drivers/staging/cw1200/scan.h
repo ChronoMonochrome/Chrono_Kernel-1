@@ -27,15 +27,17 @@ struct cw1200_scan {
 	struct delayed_work timeout;
 	struct cfg80211_scan_request *req;
 	struct ieee80211_channel **begin;
-	struct ieee80211_channel **curr;
 	struct ieee80211_channel **end;
 	struct wsm_ssid ssids[WSM_SCAN_MAX_NUM_OF_SSIDS];
+	u8 *ie;
+	size_t ie_len;
 	int output_power;
 	int n_ssids;
 	int status;
 	atomic_t in_progress;
 	/* Direct probe requests workaround */
 	struct delayed_work probe_work;
+	struct sk_buff *probe_skb;
 	int direct_probe;
 };
 

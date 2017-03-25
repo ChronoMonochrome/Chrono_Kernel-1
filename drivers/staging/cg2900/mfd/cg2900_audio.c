@@ -57,8 +57,10 @@
 enum chip_revision {
 	CG2900_CHIP_REV_PG1,
 	CG2900_CHIP_REV_PG2,
-	CG2905_CHIP_REV_PG1_1,
+	CG2905_CHIP_REV_PG1_05,
+	CG2905_CHIP_REV_PG2,
 	CG2910_CHIP_REV_PG1,
+	CG2910_CHIP_REV_PG1_05,
 	CG2910_CHIP_REV_PG2
 };
 
@@ -357,19 +359,17 @@ static u16 fm_get_conversion(struct audio_info *info,
 	 * For CG2910, Set the external sample rate (host side)
 	 * of the digital output in units of [10Hz]
 	 */
-	if (info->revision == CG2910_CHIP_REV_PG1 ||
-			info->revision == CG2910_CHIP_REV_PG2 ||
-			info->revision == CG2905_CHIP_REV_PG1_1) {
-		if (srate > ENDPOINT_SAMPLE_RATE_44_1_KHZ)
-			return CG2910_FM_CMD_SET_CTRL_48000_HEX;
-		else
-			return CG2910_FM_CMD_SET_CTRL_44100_HEX;
-
-	} else {
+	if (info->revision == CG2900_CHIP_REV_PG1 ||
+			info->revision == CG2900_CHIP_REV_PG2) {
 		if (srate >= ENDPOINT_SAMPLE_RATE_44_1_KHZ)
 			return CG2900_FM_CMD_SET_CTRL_CONV_UP;
 		else
 			return CG2900_FM_CMD_SET_CTRL_CONV_DOWN;
+	} else {
+		if (srate > ENDPOINT_SAMPLE_RATE_44_1_KHZ)
+			return CG2910_FM_CMD_SET_CTRL_48000_HEX;
+		else
+			return CG2910_FM_CMD_SET_CTRL_44100_HEX;
 	}
 }
 
@@ -1840,21 +1840,21 @@ static int conn_start_i2s_to_fm_rx(struct audio_user *audio_user,
 	mutex_lock(&info->bt_mutex);
 
 	/*
-	 * Now set the output mode of the External Sample Rate Converter by
-	 * sending HCI_Write command with AUP_EXT_SetMode.
+	 * Now set the output mode of the BT Sample Rate Converter by
+	 * sending HCI_Write command with AUP_BT_SetMode.
 	 */
 	err = send_fm_write_1_param(audio_user,
-				    CG2900_FM_CMD_ID_AUP_EXT_SET_MODE,
-				    CG2900_FM_CMD_AUP_EXT_SET_MODE_PARALLEL);
+				    CG2900_FM_CMD_ID_AUP_BT_SET_MODE,
+				    CG2900_FM_CMD_AUP_BT_SET_MODE_PARALLEL);
 	if (err)
 		goto finished_unlock_mutex;
 
 	/*
-	 * Now configure the External Sample Rate Converter by sending
-	 * HCI_Write command with AUP_EXT_SetControl.
+	 * Now configure the BT Sample Rate Converter by sending
+	 * HCI_Write command with AUP_BT_SetControl.
 	 */
 	err = send_fm_write_1_param(
-		audio_user, CG2900_FM_CMD_ID_AUP_EXT_SET_CTRL,
+		audio_user, CG2900_FM_CMD_ID_AUP_BT_SET_CTRL,
 		fm_get_conversion(info, fm_config->fm.sample_rate));
 	if (err)
 		goto finished_unlock_mutex;
@@ -1873,18 +1873,18 @@ static int conn_start_i2s_to_fm_rx(struct audio_user *audio_user,
 
 		memset(&fm_cfg, 0, sizeof(fm_cfg));
 
-		/* Configure port FM RX */
+		/* Configure port FM RX - PORT 0 is used for BT Sample Rate Converter digital Output*/
 		/* Expects 0-3 - same as user API - so no conversion needed */
 		PORTCFG_FM_SET_SRATE(fm_cfg, (u8)fm_config->fm.sample_rate);
 
-		err = send_vs_port_cfg(audio_user, CG2900_MC_PORT_FM_RX_1,
+		err = send_vs_port_cfg(audio_user, CG2900_MC_PORT_FM_RX_0,
 				       &fm_cfg, sizeof(fm_cfg));
 		if (err)
 			goto finished_unlock_mutex;
 
 		/* CreateStream */
 		err = send_vs_create_stream(audio_user,
-					    CG2900_MC_PORT_FM_RX_1,
+					    CG2900_MC_PORT_FM_RX_0,
 					    CG2900_MC_PORT_I2S,
 					    0); /* chip doesn't care */
 	}
@@ -2396,12 +2396,20 @@ int cg2900_audio_open(unsigned int *session, struct device *parent)
 			info->revision = CG2900_CHIP_REV_PG2;
 			break;
 
-		case CG2905_PG1_1_REV:
-			info->revision = CG2905_CHIP_REV_PG1_1;
+		case CG2905_PG1_05_REV:
+			info->revision = CG2905_CHIP_REV_PG1_05;
+			break;
+
+		case CG2905_PG2_REV:
+			info->revision = CG2905_CHIP_REV_PG2;
 			break;
 
 		case CG2910_PG1_REV:
 			info->revision = CG2910_CHIP_REV_PG1;
+			break;
+
+		case CG2910_PG1_05_REV:
+			info->revision = CG2910_CHIP_REV_PG1_05;
 			break;
 
 		case CG2910_PG2_REV:
@@ -3476,7 +3484,7 @@ static int __devexit cg2900_audio_fm_remove(struct platform_device *pdev)
 
 static struct platform_driver cg2900_audio_bt_driver = {
 	.driver = {
-		.name	= "cg2900-audiobt",
+		.name	= "cg2900-audiovs",
 		.owner	= THIS_MODULE,
 	},
 	.probe	= cg2900_audio_bt_probe,

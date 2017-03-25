@@ -12,7 +12,6 @@
 
 #include <asm/mach-types.h>
 #include <linux/gpio.h>
-#include <linux/gpio/nomadik.h>
 #include <linux/ioport.h>
 #include <linux/mfd/abx500/ab8500-gpio.h>
 #include <linux/platform_device.h>
@@ -20,6 +19,7 @@
 #include <mach/id.h>
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci.h>
+#include <plat/gpio-nomadik.h>
 #include <plat/pincfg.h>
 
 #include "board-mop500.h"
@@ -29,13 +29,12 @@
 #include "pins-db8500.h"
 #include "pins.h"
 
-#define CG2900_BT_ENABLE_GPIO		170
-#define CG2900_GBF_ENA_RESET_GPIO	171
-#define WLAN_PMU_EN_GPIO		226
-#define WLAN_PMU_EN_GPIO_SNOWBALL	161
-#define WLAN_PMU_EN_GPIO_U9500		AB8500_PIN_GPIO11
-#define CG2900_UX500_BT_CTS_GPIO	0
-#define CG2900_U5500_BT_CTS_GPIO	168
+#define CG2900_BT_ENABLE_GPIO		222
+#define CG2900_GBF_ENA_RESET_GPIO	209
+#define WLAN_PMU_EN_GPIO		199
+#define WLAN_PMU_EN_GPIO_U9500		AB8500_PIN_GPIO(11)
+#define CG2900_UX500_BT_CTS_GPIO		0
+#define CG2900_U5500_BT_CTS_GPIO		168
 
 enum cg2900_gpio_pull_sleep ux500_cg2900_sleep_gpio[21] = {
 	CG2900_NO_PULL,		/* GPIO 0:  PTA_CONFX */
@@ -161,34 +160,6 @@ static struct resource cg2900_uart_resources_u8500[] = {
 	},
 };
 
-static struct resource cg2900_uart_resources_snowball[] = {
-	{
-		.start = CG2900_GBF_ENA_RESET_GPIO,
-		.end = CG2900_GBF_ENA_RESET_GPIO,
-		.flags = IORESOURCE_IO,
-		.name = "gbf_ena_reset",
-	},
-	{
-		.start = WLAN_PMU_EN_GPIO_SNOWBALL,
-		.end = WLAN_PMU_EN_GPIO_SNOWBALL,
-		.flags = IORESOURCE_IO,
-		.name = "pmu_en",
-	},
-	{
-		.start = CG2900_UX500_BT_CTS_GPIO,
-		.end = CG2900_UX500_BT_CTS_GPIO,
-		.flags = IORESOURCE_IO,
-		.name = "cts_gpio",
-	},
-	{
-		.start = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
-		.end = NOMADIK_GPIO_TO_IRQ(CG2900_UX500_BT_CTS_GPIO),
-		.flags = IORESOURCE_IRQ,
-		.name = "cts_irq",
-	},
-};
-
-
 static struct resource cg2900_uart_resources_u9500[] = {
 	{
 		.start = CG2900_GBF_ENA_RESET_GPIO,
@@ -260,75 +231,23 @@ static struct platform_device ux500_cg2900_uart_device = {
 	},
 };
 
-static bool mach_supported(void)
-{
-	if (machine_is_u8500() ||
-	    machine_is_u5500() ||
-	    machine_is_hrefv60() ||
-	    machine_is_u8520() ||
-	    machine_is_nomadik() ||
-	    machine_is_snowball() ||
-	    machine_is_u9540())
-		return true;
-
-	return false;
-}
-
 static int __init board_cg2900_init(void)
 {
 	int err;
 
-	if (!mach_supported())
-		return 0;
-
 	dcg2900_init_platdata(&ux500_cg2900_test_platform_data);
-	if (machine_is_u5500()) {
-		ux500_cg2900_uart_platform_data.uart.uart_enabled =
-						u5500_cg2900_uart_enabled;
-		ux500_cg2900_uart_platform_data.uart.uart_disabled =
-						u5500_cg2900_uart_disabled;
-	} else {
+
 		ux500_cg2900_uart_platform_data.uart.uart_enabled =
 						ux500_cg2900_uart_enabled;
 		ux500_cg2900_uart_platform_data.uart.uart_disabled =
 						ux500_cg2900_uart_disabled;
 		ux500_cg2900_uart_platform_data.regulator_id = "vdd";
-	}
 	dcg2900_init_platdata(&ux500_cg2900_uart_platform_data);
-
-	if (pins_for_u9500()) {
-		/* u9500 */
-		ux500_cg2900_uart_device.num_resources =
-				ARRAY_SIZE(cg2900_uart_resources_u9500);
-		ux500_cg2900_uart_device.resource =
-				cg2900_uart_resources_u9500;
-	} else if (cpu_is_u8500()) {
-		if (machine_is_hrefv60() || machine_is_u8520()) {
 			/* u8500 */
 			ux500_cg2900_uart_device.num_resources =
-				ARRAY_SIZE(cg2900_uart_resources_u8500);
+					ARRAY_SIZE(cg2900_uart_resources_u8500);
 			ux500_cg2900_uart_device.resource =
-				cg2900_uart_resources_u8500;
-		} else if (machine_is_snowball()) {
-			/* snowball have diffrent PMU_EN gpio */
-			ux500_cg2900_uart_device.num_resources =
-				ARRAY_SIZE(cg2900_uart_resources_snowball);
-			ux500_cg2900_uart_device.resource =
-				cg2900_uart_resources_snowball;
-		} else {
-			/* u8500 pre v60*/
-			ux500_cg2900_uart_device.num_resources =
-				ARRAY_SIZE(cg2900_uart_resources_pre_v60);
-			ux500_cg2900_uart_device.resource =
-				cg2900_uart_resources_pre_v60;
-		}
-	} else if (cpu_is_u5500()) {
-		/* u5500 */
-		ux500_cg2900_uart_device.num_resources =
-				ARRAY_SIZE(cg2900_uart_resources_u5500);
-		ux500_cg2900_uart_device.resource =
-				cg2900_uart_resources_u5500;
-	}
+					cg2900_uart_resources_u8500;
 
 	err = platform_device_register(&ux500_cg2900_device);
 	if (err)
@@ -352,9 +271,6 @@ static int __init board_cg2900_init(void)
 
 static void __exit board_cg2900_exit(void)
 {
-	if (!mach_supported())
-		return;
-
 	platform_device_unregister(&ux500_stlc2690_chip_device);
 	platform_device_unregister(&ux500_cg2900_chip_device);
 	platform_device_unregister(&ux500_cg2900_test_device);

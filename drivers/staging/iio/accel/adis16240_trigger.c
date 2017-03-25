@@ -1,9 +1,14 @@
 #include <linux/interrupt.h>
+#include <linux/irq.h>
+#include <linux/mutex.h>
+#include <linux/device.h>
 #include <linux/kernel.h>
+#include <linux/sysfs.h>
+#include <linux/list.h>
 #include <linux/spi/spi.h>
-#include <linux/export.h>
 
 #include "../iio.h"
+#include "../sysfs.h"
 #include "../trigger.h"
 #include "adis16240.h"
 
@@ -22,21 +27,17 @@ static irqreturn_t adis16240_data_rdy_trig_poll(int irq, void *trig)
 static int adis16240_data_rdy_trigger_set_state(struct iio_trigger *trig,
 						bool state)
 {
-	struct iio_dev *indio_dev = trig->private_data;
+	struct adis16240_state *st = trig->private_data;
+	struct iio_dev *indio_dev = st->indio_dev;
 
 	dev_dbg(&indio_dev->dev, "%s (%d)\n", __func__, state);
-	return adis16240_set_irq(indio_dev, state);
+	return adis16240_set_irq(st->indio_dev, state);
 }
-
-static const struct iio_trigger_ops adis16240_trigger_ops = {
-	.owner = THIS_MODULE,
-	.set_trigger_state = &adis16240_data_rdy_trigger_set_state,
-};
 
 int adis16240_probe_trigger(struct iio_dev *indio_dev)
 {
 	int ret;
-	struct adis16240_state *st = iio_priv(indio_dev);
+	struct adis16240_state *st = indio_dev->dev_data;
 
 	st->trig = iio_allocate_trigger("adis16240-dev%d", indio_dev->id);
 	if (st->trig == NULL) {
@@ -53,8 +54,9 @@ int adis16240_probe_trigger(struct iio_dev *indio_dev)
 		goto error_free_trig;
 
 	st->trig->dev.parent = &st->us->dev;
-	st->trig->ops = &adis16240_trigger_ops;
-	st->trig->private_data = indio_dev;
+	st->trig->owner = THIS_MODULE;
+	st->trig->private_data = st;
+	st->trig->set_trigger_state = &adis16240_data_rdy_trigger_set_state;
 	ret = iio_trigger_register(st->trig);
 
 	/* select default trigger */
@@ -74,9 +76,9 @@ error_ret:
 
 void adis16240_remove_trigger(struct iio_dev *indio_dev)
 {
-	struct adis16240_state *st = iio_priv(indio_dev);
+	struct adis16240_state *state = indio_dev->dev_data;
 
-	iio_trigger_unregister(st->trig);
-	free_irq(st->us->irq, st->trig);
-	iio_free_trigger(st->trig);
+	iio_trigger_unregister(state->trig);
+	free_irq(state->us->irq, state->trig);
+	iio_free_trigger(state->trig);
 }

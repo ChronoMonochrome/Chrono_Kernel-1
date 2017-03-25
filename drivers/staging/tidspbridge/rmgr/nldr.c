@@ -22,6 +22,8 @@
 
 #include <dspbridge/dbdefs.h>
 
+#include <dspbridge/dbc.h>
+
 /* Platform manager */
 #include <dspbridge/cod.h>
 #include <dspbridge/dev.h>
@@ -263,6 +265,8 @@ static struct dbll_fxns ldr_fxns = {
 	(dbll_unload_fxn) dbll_unload,
 };
 
+static u32 refs;		/* module reference count */
+
 static int add_ovly_info(void *handle, struct dbll_sect_info *sect_info,
 				u32 addr, u32 bytes);
 static int add_ovly_node(struct dsp_uuid *uuid_obj,
@@ -308,6 +312,11 @@ int nldr_allocate(struct nldr_object *nldr_obj, void *priv_ref,
 {
 	struct nldr_nodeobject *nldr_node_obj = NULL;
 	int status = 0;
+
+	DBC_REQUIRE(refs > 0);
+	DBC_REQUIRE(node_props != NULL);
+	DBC_REQUIRE(nldr_nodeobj != NULL);
+	DBC_REQUIRE(nldr_obj);
 
 	/* Initialize handle in case of failure */
 	*nldr_nodeobj = NULL;
@@ -389,6 +398,8 @@ int nldr_allocate(struct nldr_object *nldr_obj, void *priv_ref,
 	if (status && nldr_node_obj)
 		kfree(nldr_node_obj);
 
+	DBC_ENSURE((!status && *nldr_nodeobj)
+		   || (status && *nldr_nodeobj == NULL));
 	return status;
 }
 
@@ -414,6 +425,12 @@ int nldr_create(struct nldr_object **nldr,
 	struct rmm_segment *rmm_segs = NULL;
 	u16 i;
 	int status = 0;
+	DBC_REQUIRE(refs > 0);
+	DBC_REQUIRE(nldr != NULL);
+	DBC_REQUIRE(hdev_obj != NULL);
+	DBC_REQUIRE(pattrs != NULL);
+	DBC_REQUIRE(pattrs->ovly != NULL);
+	DBC_REQUIRE(pattrs->write != NULL);
 
 	/* Allocate dynamic loader object */
 	nldr_obj = kzalloc(sizeof(struct nldr_object), GFP_KERNEL);
@@ -423,10 +440,13 @@ int nldr_create(struct nldr_object **nldr,
 		dev_get_cod_mgr(hdev_obj, &cod_mgr);
 		if (cod_mgr) {
 			status = cod_get_loader(cod_mgr, &nldr_obj->dbll);
+			DBC_ASSERT(!status);
 			status = cod_get_base_lib(cod_mgr, &nldr_obj->base_lib);
+			DBC_ASSERT(!status);
 			status =
 			    cod_get_base_name(cod_mgr, sz_zl_file,
 							COD_MAXPATHLENGTH);
+			DBC_ASSERT(!status);
 		}
 		status = 0;
 		/* end lazy status checking */
@@ -527,6 +547,7 @@ int nldr_create(struct nldr_object **nldr,
 		status =
 		    cod_get_base_name(cod_mgr, sz_zl_file, COD_MAXPATHLENGTH);
 		/* lazy check */
+		DBC_ASSERT(!status);
 		/* First count number of overlay nodes */
 		status =
 		    dcd_get_objects(nldr_obj->dcd_mgr, sz_zl_file,
@@ -562,6 +583,7 @@ int nldr_create(struct nldr_object **nldr,
 		*nldr = NULL;
 	}
 	/* FIXME:Temp. Fix. Must be removed */
+	DBC_ENSURE((!status && *nldr) || (status && *nldr == NULL));
 	return status;
 }
 
@@ -573,6 +595,8 @@ void nldr_delete(struct nldr_object *nldr_obj)
 	struct ovly_sect *ovly_section;
 	struct ovly_sect *next;
 	u16 i;
+	DBC_REQUIRE(refs > 0);
+	DBC_REQUIRE(nldr_obj);
 
 	nldr_obj->ldr_fxns.exit_fxn();
 	if (nldr_obj->rmm)
@@ -620,6 +644,22 @@ void nldr_delete(struct nldr_object *nldr_obj)
 }
 
 /*
+ *  ======== nldr_exit ========
+ *  Discontinue usage of NLDR module.
+ */
+void nldr_exit(void)
+{
+	DBC_REQUIRE(refs > 0);
+
+	refs--;
+
+	if (refs == 0)
+		rmm_exit();
+
+	DBC_ENSURE(refs >= 0);
+}
+
+/*
  *  ======== nldr_get_fxn_addr ========
  */
 int nldr_get_fxn_addr(struct nldr_nodeobject *nldr_node_obj,
@@ -631,6 +671,10 @@ int nldr_get_fxn_addr(struct nldr_nodeobject *nldr_node_obj,
 	bool status1 = false;
 	s32 i = 0;
 	struct lib_node root = { NULL, 0, NULL };
+	DBC_REQUIRE(refs > 0);
+	DBC_REQUIRE(nldr_node_obj);
+	DBC_REQUIRE(addr != NULL);
+	DBC_REQUIRE(str_fxn != NULL);
 
 	nldr_obj = nldr_node_obj->nldr_obj;
 	/* Called from node_create(), node_delete(), or node_run(). */
@@ -646,6 +690,7 @@ int nldr_get_fxn_addr(struct nldr_nodeobject *nldr_node_obj,
 			root = nldr_node_obj->delete_lib;
 			break;
 		default:
+			DBC_ASSERT(false);
 			break;
 		}
 	} else {
@@ -715,6 +760,7 @@ int nldr_get_rmm_manager(struct nldr_object *nldr,
 {
 	int status = 0;
 	struct nldr_object *nldr_obj = nldr;
+	DBC_REQUIRE(rmm_mgr != NULL);
 
 	if (nldr) {
 		*rmm_mgr = nldr_obj->rmm;
@@ -723,7 +769,26 @@ int nldr_get_rmm_manager(struct nldr_object *nldr,
 		status = -EFAULT;
 	}
 
+	DBC_ENSURE(!status || (rmm_mgr != NULL && *rmm_mgr == NULL));
+
 	return status;
+}
+
+/*
+ *  ======== nldr_init ========
+ *  Initialize the NLDR module.
+ */
+bool nldr_init(void)
+{
+	DBC_REQUIRE(refs >= 0);
+
+	if (refs == 0)
+		rmm_init();
+
+	refs++;
+
+	DBC_ENSURE(refs > 0);
+	return true;
 }
 
 /*
@@ -735,6 +800,9 @@ int nldr_load(struct nldr_nodeobject *nldr_node_obj,
 	struct nldr_object *nldr_obj;
 	struct dsp_uuid lib_uuid;
 	int status = 0;
+
+	DBC_REQUIRE(refs > 0);
+	DBC_REQUIRE(nldr_node_obj);
 
 	nldr_obj = nldr_node_obj->nldr_obj;
 
@@ -771,6 +839,7 @@ int nldr_load(struct nldr_nodeobject *nldr_node_obj,
 					break;
 
 				default:
+					DBC_ASSERT(false);
 					break;
 				}
 			}
@@ -793,6 +862,9 @@ int nldr_unload(struct nldr_nodeobject *nldr_node_obj,
 	int status = 0;
 	struct lib_node *root_lib = NULL;
 	s32 i = 0;
+
+	DBC_REQUIRE(refs > 0);
+	DBC_REQUIRE(nldr_node_obj);
 
 	if (nldr_node_obj != NULL) {
 		if (nldr_node_obj->dynamic) {
@@ -817,6 +889,7 @@ int nldr_unload(struct nldr_nodeobject *nldr_node_obj,
 					nldr_node_obj->pers_libs = 0;
 					break;
 				default:
+					DBC_ASSERT(false);
 					break;
 				}
 			} else {
@@ -856,6 +929,7 @@ static int add_ovly_info(void *handle, struct dbll_sect_info *sect_info,
 	/* Find the node it belongs to */
 	for (i = 0; i < nldr_obj->ovly_nodes; i++) {
 		node_name = nldr_obj->ovly_table[i].node_name;
+		DBC_REQUIRE(node_name);
 		if (strncmp(node_name, sect_name + 1, strlen(node_name)) == 0) {
 			/* Found the node */
 			break;
@@ -944,6 +1018,8 @@ static int add_ovly_node(struct dsp_uuid *uuid_obj,
 			/* Add node to table */
 			nldr_obj->ovly_table[nldr_obj->ovly_nid].uuid =
 			    *uuid_obj;
+			DBC_REQUIRE(obj_def.obj_data.node_obj.ndb_props.
+				    ac_name);
 			len =
 			    strlen(obj_def.obj_data.node_obj.ndb_props.ac_name);
 			node_name = obj_def.obj_data.node_obj.ndb_props.ac_name;
@@ -1053,6 +1129,7 @@ static void free_sects(struct nldr_object *nldr_obj,
 		ret =
 		    rmm_free(nldr_obj->rmm, 0, ovly_section->sect_run_addr,
 			     ovly_section->size, true);
+		DBC_ASSERT(ret);
 		ovly_section = ovly_section->next_sect;
 		i++;
 	}
@@ -1172,6 +1249,7 @@ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
 
 	if (depth > MAXDEPTH) {
 		/* Error */
+		DBC_ASSERT(false);
 	}
 	root->lib = NULL;
 	/* Allocate a buffer for library file name of size DBL_MAXPATHLENGTH */
@@ -1234,6 +1312,7 @@ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
 		    dcd_get_num_dep_libs(nldr_node_obj->nldr_obj->dcd_mgr,
 					 &uuid, &nd_libs, &np_libs, phase);
 	}
+	DBC_ASSERT(nd_libs >= np_libs);
 	if (!status) {
 		if (!(*nldr_node_obj->phase_split))
 			np_libs = 0;
@@ -1395,6 +1474,7 @@ static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
 		}
 	}
 
+	DBC_ASSERT(i < nldr_obj->ovly_nodes);
 
 	if (!po_node) {
 		status = -ENOENT;
@@ -1420,6 +1500,7 @@ static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
 		break;
 
 	default:
+		DBC_ASSERT(false);
 		break;
 	}
 
@@ -1542,6 +1623,9 @@ static int remote_alloc(void **ref, u16 mem_sect, u32 size,
 	struct rmm_addr *rmm_addr_obj = (struct rmm_addr *)dsp_address;
 	bool mem_load_req = false;
 	int status = -ENOMEM;	/* Set to fail */
+	DBC_REQUIRE(hnode);
+	DBC_REQUIRE(mem_sect == DBLL_CODE || mem_sect == DBLL_DATA ||
+		    mem_sect == DBLL_BSS);
 	nldr_obj = hnode->nldr_obj;
 	rmm = nldr_obj->rmm;
 	/* Convert size to DSP words */
@@ -1567,6 +1651,7 @@ static int remote_alloc(void **ref, u16 mem_sect, u32 size,
 			mem_phase_bit = EXECUTEDATAFLAGBIT;
 			break;
 		default:
+			DBC_ASSERT(false);
 			break;
 		}
 		if (mem_sect == DBLL_CODE)
@@ -1585,9 +1670,11 @@ static int remote_alloc(void **ref, u16 mem_sect, u32 size,
 	/* Find an appropriate segment based on mem_sect */
 	if (segid == NULLID) {
 		/* No memory requirements of preferences */
+		DBC_ASSERT(!mem_load_req);
 		goto func_cont;
 	}
 	if (segid <= MAXSEGID) {
+		DBC_ASSERT(segid < nldr_obj->dload_segs);
 		/* Attempt to allocate from segid first. */
 		rmm_addr_obj->segid = segid;
 		status =
@@ -1598,6 +1685,7 @@ static int remote_alloc(void **ref, u16 mem_sect, u32 size,
 		}
 	} else {
 		/* segid > MAXSEGID ==> Internal or external memory */
+		DBC_ASSERT(segid == MEMINTERNALID || segid == MEMEXTERNALID);
 		/*  Check for any internal or external memory segment,
 		 *  depending on segid. */
 		mem_sect_type |= segid == MEMINTERNALID ?
@@ -1648,6 +1736,8 @@ static int remote_free(void **ref, u16 space, u32 dsp_address,
 	u32 word_size;
 	int status = -ENOMEM;	/* Set to fail */
 
+	DBC_REQUIRE(nldr_obj);
+
 	rmm = nldr_obj->rmm;
 
 	/* Convert size to DSP words */
@@ -1671,6 +1761,7 @@ static void unload_lib(struct nldr_nodeobject *nldr_node_obj,
 	struct nldr_object *nldr_obj = nldr_node_obj->nldr_obj;
 	u16 i;
 
+	DBC_ASSERT(root != NULL);
 
 	/* Unload dependent libraries */
 	for (i = 0; i < root->dep_libs; i++)
@@ -1721,6 +1812,7 @@ static void unload_ovly(struct nldr_nodeobject *nldr_node_obj,
 		}
 	}
 
+	DBC_ASSERT(i < nldr_obj->ovly_nodes);
 
 	if (!po_node)
 		/* TODO: Should we print warning here? */
@@ -1747,11 +1839,14 @@ static void unload_ovly(struct nldr_nodeobject *nldr_node_obj,
 		other_alloc = po_node->other_sects;
 		break;
 	default:
+		DBC_ASSERT(false);
 		break;
 	}
+	DBC_ASSERT(ref_count && (*ref_count > 0));
 	if (ref_count && (*ref_count > 0)) {
 		*ref_count -= 1;
 		if (other_ref) {
+			DBC_ASSERT(*other_ref > 0);
 			*other_ref -= 1;
 		}
 	}
@@ -1802,6 +1897,9 @@ int nldr_find_addr(struct nldr_nodeobject *nldr_node, u32 sym_addr,
 	bool status1 = false;
 	s32 i = 0;
 	struct lib_node root = { NULL, 0, NULL };
+	DBC_REQUIRE(refs > 0);
+	DBC_REQUIRE(offset_output != NULL);
+	DBC_REQUIRE(sym_name != NULL);
 	pr_debug("%s(0x%x, 0x%x, 0x%x, 0x%x,  %s)\n", __func__, (u32) nldr_node,
 			sym_addr, offset_range, (u32) offset_output, sym_name);
 
@@ -1817,6 +1915,7 @@ int nldr_find_addr(struct nldr_nodeobject *nldr_node, u32 sym_addr,
 			root = nldr_node->delete_lib;
 			break;
 		default:
+			DBC_ASSERT(false);
 			break;
 		}
 	} else {

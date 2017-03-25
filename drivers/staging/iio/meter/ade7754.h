@@ -78,15 +78,17 @@
 /**
  * struct ade7754_state - device instance specific data
  * @us:			actual spi_device
- * @buf_lock:		mutex to protect tx and rx
+ * @indio_dev:		industrial I/O device structure
  * @tx:			transmit buffer
  * @rx:			receive buffer
+ * @buf_lock:		mutex to protect tx and rx
  **/
 struct ade7754_state {
-	struct spi_device	*us;
-	struct mutex		buf_lock;
-	u8			tx[ADE7754_MAX_TX] ____cacheline_aligned;
-	u8			rx[ADE7754_MAX_RX];
+	struct spi_device		*us;
+	struct iio_dev			*indio_dev;
+	u8				*tx;
+	u8				*rx;
+	struct mutex			buf_lock;
 };
 
 #endif
