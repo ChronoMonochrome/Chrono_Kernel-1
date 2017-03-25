@@ -2,7 +2,6 @@
  * debugfs.c - ACPI debugfs interface to userspace.
  */
 
-#include <linux/export.h>
 #include <linux/init.h>
 #include <linux/debugfs.h>
 #include <acpi/acpi_drivers.h>

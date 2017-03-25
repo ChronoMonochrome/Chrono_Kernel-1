@@ -13,7 +13,6 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/init.h>
-#include <linux/export.h>
 #include <asm/uaccess.h>
 #include <asm/amigahw.h>
 #include <asm/setup.h>

@@ -31,7 +31,6 @@
  */
 
 #include <linux/jiffies.h>
-#include <linux/module.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 

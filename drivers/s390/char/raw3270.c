@@ -7,6 +7,7 @@
  *     Copyright IBM Corp. 2003, 2009
  */
 
+#include <linux/kernel_stat.h>
 #include <linux/module.h>
 #include <linux/err.h>
 #include <linux/init.h>
@@ -75,7 +76,7 @@ static LIST_HEAD(raw3270_devices);
 static int raw3270_registered;
 
 /* Module parameters */
-static bool tubxcorrect = 0;
+static int tubxcorrect = 0;
 module_param(tubxcorrect, bool, 0);
 
 /*
@@ -329,6 +330,7 @@ raw3270_irq (struct ccw_device *cdev, unsigned long intparm, struct irb *irb)
 	struct raw3270_request *rq;
 	int rc;
 
+	kstat_cpu(smp_processor_id()).irqs[IOINT_C70]++;
 	rp = dev_get_drvdata(&cdev->dev);
 	if (!rp)
 		return;
@@ -1396,7 +1398,6 @@ static struct ccw_driver raw3270_ccw_driver = {
 	.freeze		= &raw3270_pm_stop,
 	.thaw		= &raw3270_pm_start,
 	.restore	= &raw3270_pm_start,
-	.int_class	= IOINT_C70,
 };
 
 static int

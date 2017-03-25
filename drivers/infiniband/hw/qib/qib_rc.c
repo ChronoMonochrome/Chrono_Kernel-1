@@ -59,7 +59,8 @@ static void start_timer(struct qib_qp *qp)
 	qp->s_flags |= QIB_S_TIMER;
 	qp->s_timer.function = rc_timeout;
 	/* 4.096 usec. * (1 << qp->timeout) */
-	qp->s_timer.expires = jiffies + qp->timeout_jiffies;
+	qp->s_timer.expires = jiffies +
+		usecs_to_jiffies((4096UL * (1UL << qp->timeout)) / 1000UL);
 	add_timer(&qp->s_timer);
 }
 
@@ -238,7 +239,7 @@ int qib_make_rc_req(struct qib_qp *qp)
 	u32 len;
 	u32 bth0;
 	u32 bth2;
-	u32 pmtu = qp->pmtu;
+	u32 pmtu = ib_mtu_enum_to_int(qp->path_mtu);
 	char newreq;
 	unsigned long flags;
 	int ret = 0;
@@ -271,9 +272,13 @@ int qib_make_rc_req(struct qib_qp *qp)
 			goto bail;
 		}
 		wqe = get_swqe_ptr(qp, qp->s_last);
-		qib_send_complete(qp, wqe, qp->s_last != qp->s_acked ?
-			IB_WC_SUCCESS : IB_WC_WR_FLUSH_ERR);
-		/* will get called again */
+		while (qp->s_last != qp->s_acked) {
+			qib_send_complete(qp, wqe, IB_WC_SUCCESS);
+			if (++qp->s_last >= qp->s_size)
+				qp->s_last = 0;
+			wqe = get_swqe_ptr(qp, qp->s_last);
+		}
+		qib_send_complete(qp, wqe, IB_WC_WR_FLUSH_ERR);
 		goto done;
 	}
 
@@ -1514,7 +1519,9 @@ read_middle:
 		 * 4.096 usec. * (1 << qp->timeout)
 		 */
 		qp->s_flags |= QIB_S_TIMER;
-		mod_timer(&qp->s_timer, jiffies + qp->timeout_jiffies);
+		mod_timer(&qp->s_timer, jiffies +
+			usecs_to_jiffies((4096UL * (1UL << qp->timeout)) /
+					 1000UL));
 		if (qp->s_flags & QIB_S_WAIT_ACK) {
 			qp->s_flags &= ~QIB_S_WAIT_ACK;
 			qib_schedule_send(qp);
@@ -1725,7 +1732,7 @@ static int qib_rc_rcv_error(struct qib_other_headers *ohdr,
 		 * same request.
 		 */
 		offset = ((psn - e->psn) & QIB_PSN_MASK) *
-			qp->pmtu;
+			ib_mtu_enum_to_int(qp->path_mtu);
 		len = be32_to_cpu(reth->length);
 		if (unlikely(offset + len != e->rdma_sge.sge_length))
 			goto unlock_done;
@@ -1869,7 +1876,7 @@ void qib_rc_rcv(struct qib_ctxtdata *rcd, struct qib_ib_header *hdr,
 	u32 psn;
 	u32 pad;
 	struct ib_wc wc;
-	u32 pmtu = qp->pmtu;
+	u32 pmtu = ib_mtu_enum_to_int(qp->path_mtu);
 	int diff;
 	struct ib_reth *reth;
 	unsigned long flags;
@@ -1885,8 +1892,10 @@ void qib_rc_rcv(struct qib_ctxtdata *rcd, struct qib_ib_header *hdr,
 	}
 
 	opcode = be32_to_cpu(ohdr->bth[0]);
+	spin_lock_irqsave(&qp->s_lock, flags);
 	if (qib_ruc_check_hdr(ibp, hdr, has_grh, qp, opcode))
-		return;
+		goto sunlock;
+	spin_unlock_irqrestore(&qp->s_lock, flags);
 
 	psn = be32_to_cpu(ohdr->bth[2]);
 	opcode >>= 24;
@@ -1946,6 +1955,8 @@ void qib_rc_rcv(struct qib_ctxtdata *rcd, struct qib_ib_header *hdr,
 		break;
 	}
 
+	memset(&wc, 0, sizeof wc);
+
 	if (qp->state == IB_QPS_RTR && !(qp->r_flags & QIB_R_COMM_EST)) {
 		qp->r_flags |= QIB_R_COMM_EST;
 		if (qp->ibqp.event_handler) {
@@ -1998,19 +2009,16 @@ send_middle:
 			goto rnr_nak;
 		qp->r_rcv_len = 0;
 		if (opcode == OP(SEND_ONLY))
-			goto no_immediate_data;
-		/* FALLTHROUGH for SEND_ONLY_WITH_IMMEDIATE */
+			goto send_last;
+		/* FALLTHROUGH */
 	case OP(SEND_LAST_WITH_IMMEDIATE):
 send_last_imm:
 		wc.ex.imm_data = ohdr->u.imm_data;
 		hdrsize += 4;
 		wc.wc_flags = IB_WC_WITH_IMM;
-		goto send_last;
+		/* FALLTHROUGH */
 	case OP(SEND_LAST):
 	case OP(RDMA_WRITE_LAST):
-no_immediate_data:
-		wc.wc_flags = 0;
-		wc.ex.imm_data = 0;
 send_last:
 		/* Get the number of bytes the message was padded by. */
 		pad = (be32_to_cpu(ohdr->bth[0]) >> 20) & 3;
@@ -2043,11 +2051,6 @@ send_last:
 		wc.src_qp = qp->remote_qpn;
 		wc.slid = qp->remote_ah_attr.dlid;
 		wc.sl = qp->remote_ah_attr.sl;
-		/* zero fields that are N/A */
-		wc.vendor_err = 0;
-		wc.pkey_index = 0;
-		wc.dlid_path_bits = 0;
-		wc.port_num = 0;
 		/* Signal completion event if the solicited bit is set. */
 		qib_cq_enter(to_icq(qp->ibqp.recv_cq), &wc,
 			     (ohdr->bth[0] &
@@ -2086,7 +2089,7 @@ send_last:
 		if (opcode == OP(RDMA_WRITE_FIRST))
 			goto send_middle;
 		else if (opcode == OP(RDMA_WRITE_ONLY))
-			goto no_immediate_data;
+			goto send_last;
 		ret = qib_get_rwqe(qp, 1);
 		if (ret < 0)
 			goto nack_op_err;

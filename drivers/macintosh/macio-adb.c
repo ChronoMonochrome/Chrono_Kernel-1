@@ -14,6 +14,7 @@
 #include <asm/pgtable.h>
 #include <asm/hydra.h>
 #include <asm/irq.h>
+#include <asm/system.h>
 #include <linux/init.h>
 #include <linux/ioport.h>
 

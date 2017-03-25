@@ -11,7 +11,6 @@
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
 #include <linux/delay.h>
-#include <linux/module.h>
 #include <linux/interrupt.h>
 #include <linux/jiffies.h>
 #include <linux/sched.h>
@@ -95,6 +94,8 @@
 #define P4e_s(a)	(TF(a & NAND_Ecc_P4e)		<< 0)
 #define P4o_s(a)	(TF(a & NAND_Ecc_P4o)		<< 1)
 
+static const char *part_probes[] = { "cmdlinepart", NULL };
+
 /* oob info generated runtime depending on ecc algorithm and layout selected */
 static struct nand_ecclayout omap_oobinfo;
 /* Define some generic bad / good block scan pattern which are used
@@ -113,6 +114,7 @@ struct omap_nand_info {
 	struct nand_hw_control		controller;
 	struct omap_nand_platform_data	*pdata;
 	struct mtd_info			mtd;
+	struct mtd_partition		*parts;
 	struct nand_chip		nand;
 	struct platform_device		*pdev;
 
@@ -742,12 +744,12 @@ static int omap_compare_ecc(u8 *ecc_data1,	/* read from NAND memory */
 
 	case 1:
 		/* Uncorrectable error */
-		pr_debug("ECC UNCORRECTED_ERROR 1\n");
+		DEBUG(MTD_DEBUG_LEVEL0, "ECC UNCORRECTED_ERROR 1\n");
 		return -1;
 
 	case 11:
 		/* UN-Correctable error */
-		pr_debug("ECC UNCORRECTED_ERROR B\n");
+		DEBUG(MTD_DEBUG_LEVEL0, "ECC UNCORRECTED_ERROR B\n");
 		return -1;
 
 	case 12:
@@ -764,8 +766,8 @@ static int omap_compare_ecc(u8 *ecc_data1,	/* read from NAND memory */
 
 		find_bit = (ecc_bit[5] << 2) + (ecc_bit[3] << 1) + ecc_bit[1];
 
-		pr_debug("Correcting single bit ECC error at offset: "
-				"%d, bit: %d\n", find_byte, find_bit);
+		DEBUG(MTD_DEBUG_LEVEL0, "Correcting single bit ECC error at "
+				"offset: %d, bit: %d\n", find_byte, find_bit);
 
 		page_data[find_byte] ^= (1 << find_bit);
 
@@ -777,7 +779,7 @@ static int omap_compare_ecc(u8 *ecc_data1,	/* read from NAND memory */
 			    ecc_data2[2] == 0)
 				return 0;
 		}
-		pr_debug("UNCORRECTED_ERROR default\n");
+		DEBUG(MTD_DEBUG_LEVEL0, "UNCORRECTED_ERROR default\n");
 		return -1;
 	}
 }
@@ -1058,7 +1060,6 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 		(pdata->ecc_opt == OMAP_ECC_HAMMING_CODE_HW_ROMCODE)) {
 		info->nand.ecc.bytes            = 3;
 		info->nand.ecc.size             = 512;
-		info->nand.ecc.strength         = 1;
 		info->nand.ecc.calculate        = omap_calculate_ecc;
 		info->nand.ecc.hwctl            = omap_enable_hwecc;
 		info->nand.ecc.correct          = omap_correct_data;
@@ -1102,8 +1103,13 @@ static int __devinit omap_nand_probe(struct platform_device *pdev)
 		goto out_release_mem_region;
 	}
 
-	mtd_device_parse_register(&info->mtd, NULL, NULL, pdata->parts,
-				  pdata->nr_parts);
+	err = parse_mtd_partitions(&info->mtd, part_probes, &info->parts, 0);
+	if (err > 0)
+		mtd_device_register(&info->mtd, info->parts, err);
+	else if (pdata->parts)
+		mtd_device_register(&info->mtd, pdata->parts, pdata->nr_parts);
+	else
+		mtd_device_register(&info->mtd, NULL, 0);
 
 	platform_set_drvdata(pdev, &info->mtd);
 
@@ -1146,7 +1152,20 @@ static struct platform_driver omap_nand_driver = {
 	},
 };
 
-module_platform_driver(omap_nand_driver);
+static int __init omap_nand_init(void)
+{
+	pr_info("%s driver initializing\n", DRIVER_NAME);
+
+	return platform_driver_register(&omap_nand_driver);
+}
+
+static void __exit omap_nand_exit(void)
+{
+	platform_driver_unregister(&omap_nand_driver);
+}
+
+module_init(omap_nand_init);
+module_exit(omap_nand_exit);
 
 MODULE_ALIAS("platform:" DRIVER_NAME);
 MODULE_LICENSE("GPL");

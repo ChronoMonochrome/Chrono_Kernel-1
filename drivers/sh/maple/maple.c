@@ -20,7 +20,6 @@
 #include <linux/maple.h>
 #include <linux/dma-mapping.h>
 #include <linux/delay.h>
-#include <linux/module.h>
 #include <asm/cacheflush.h>
 #include <asm/dma.h>
 #include <asm/io.h>

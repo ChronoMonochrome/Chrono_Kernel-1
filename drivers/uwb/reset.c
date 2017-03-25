@@ -32,7 +32,6 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
-#include <linux/export.h>
 
 #include "uwb-internal.h"
 
