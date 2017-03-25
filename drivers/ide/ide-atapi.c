@@ -5,7 +5,6 @@
 #include <linux/kernel.h>
 #include <linux/cdrom.h>
 #include <linux/delay.h>
-#include <linux/export.h>
 #include <linux/ide.h>
 #include <linux/scatterlist.h>
 #include <linux/gfp.h>

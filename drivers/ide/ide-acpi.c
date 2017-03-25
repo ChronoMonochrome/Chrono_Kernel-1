@@ -17,7 +17,6 @@
 #include <linux/ide.h>
 #include <linux/pci.h>
 #include <linux/dmi.h>
-#include <linux/module.h>
 
 #include <acpi/acpi_bus.h>
 
@@ -53,15 +52,15 @@ struct ide_acpi_hwif_link {
 #define DEBPRINT(fmt, args...)	do {} while (0)
 #endif	/* DEBUGGING */
 
-static bool ide_noacpi;
+static int ide_noacpi;
 module_param_named(noacpi, ide_noacpi, bool, 0);
 MODULE_PARM_DESC(noacpi, "disable IDE ACPI support");
 
-static bool ide_acpigtf;
+static int ide_acpigtf;
 module_param_named(acpigtf, ide_acpigtf, bool, 0);
 MODULE_PARM_DESC(acpigtf, "enable IDE ACPI _GTF support");
 
-static bool ide_acpionboot;
+static int ide_acpionboot;
 module_param_named(acpionboot, ide_acpionboot, bool, 0);
 MODULE_PARM_DESC(acpionboot, "call IDE ACPI methods on boot");
 

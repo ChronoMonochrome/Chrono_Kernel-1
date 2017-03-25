@@ -155,6 +155,8 @@ static int socrates_nand_device_ready(struct mtd_info *mtd)
 	return 1;
 }
 
+static const char *part_probes[] = { "cmdlinepart", NULL };
+
 /*
  * Probe for the NAND device.
  */
@@ -164,7 +166,8 @@ static int __devinit socrates_nand_probe(struct platform_device *ofdev)
 	struct mtd_info *mtd;
 	struct nand_chip *nand_chip;
 	int res;
-	struct mtd_part_parser_data ppdata;
+	struct mtd_partition *partitions = NULL;
+	int num_partitions = 0;
 
 	/* Allocate memory for the device structure (and zero it) */
 	host = kzalloc(sizeof(struct socrates_nand_host), GFP_KERNEL);
@@ -190,7 +193,6 @@ static int __devinit socrates_nand_probe(struct platform_device *ofdev)
 	mtd->name = "socrates_nand";
 	mtd->owner = THIS_MODULE;
 	mtd->dev.parent = &ofdev->dev;
-	ppdata.of_node = ofdev->dev.of_node;
 
 	/*should never be accessed directly */
 	nand_chip->IO_ADDR_R = (void *)0xdeadbeef;
@@ -223,10 +225,30 @@ static int __devinit socrates_nand_probe(struct platform_device *ofdev)
 		goto out;
 	}
 
-	res = mtd_device_parse_register(mtd, NULL, &ppdata, NULL, 0);
+#ifdef CONFIG_MTD_CMDLINE_PARTS
+	num_partitions = parse_mtd_partitions(mtd, part_probes,
+					      &partitions, 0);
+	if (num_partitions < 0) {
+		res = num_partitions;
+		goto release;
+	}
+#endif
+
+	if (num_partitions == 0) {
+		num_partitions = of_mtd_parse_partitions(&ofdev->dev,
+							 ofdev->dev.of_node,
+							 &partitions);
+		if (num_partitions < 0) {
+			res = num_partitions;
+			goto release;
+		}
+	}
+
+	res = mtd_device_register(mtd, partitions, num_partitions);
 	if (!res)
 		return res;
 
+release:
 	nand_release(mtd);
 
 out:
@@ -273,7 +295,18 @@ static struct platform_driver socrates_nand_driver = {
 	.remove		= __devexit_p(socrates_nand_remove),
 };
 
-module_platform_driver(socrates_nand_driver);
+static int __init socrates_nand_init(void)
+{
+	return platform_driver_register(&socrates_nand_driver);
+}
+
+static void __exit socrates_nand_exit(void)
+{
+	platform_driver_unregister(&socrates_nand_driver);
+}
+
+module_init(socrates_nand_init);
+module_exit(socrates_nand_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Ilya Yanok");
