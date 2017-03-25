@@ -16,7 +16,7 @@
 #include "../codecs/cg29xx.h"
 #include "ux500_msp_dai.h"
 
-#define UX500_CG29XX_MSP_CLOCK_FREQ	18900000
+#define UX500_CG29XX_MSP_CLOCK_FREQ	19200000
 #define U5500_CG29XX_MSP_CLOCK_FREQ 13000000
 #define UX500_CG29XX_DAI_SLOT_WIDTH	16
 #define UX500_CG29XX_DAI_SLOTS	2
@@ -87,10 +87,10 @@ int ux500_cg29xx_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	err = snd_soc_dai_set_tdm_slot(cpu_dai,
-				UX500_CG29XX_DAI_ACTIVE_SLOTS,
-				UX500_CG29XX_DAI_ACTIVE_SLOTS,
-				UX500_CG29XX_DAI_SLOTS,
-				UX500_CG29XX_DAI_SLOT_WIDTH);
+			UX500_CG29XX_DAI_ACTIVE_SLOTS,
+			UX500_CG29XX_DAI_ACTIVE_SLOTS,
+			UX500_CG29XX_DAI_SLOTS,
+			UX500_CG29XX_DAI_SLOT_WIDTH);
 
 	if (err) {
 		pr_err("%s: cg29xx_set_tdm_slot(cpu_dai) failed with %d.\n",

@@ -11,9 +11,10 @@
  * by the Free Software Foundation.
  */
 
-#include <linux/module.h>
 #include <linux/io.h>
 #include <sound/soc.h>
+#include <sound/pcm.h>
+#include <sound/pcm_params.h>
 #include <asm/mach-types.h>
 
 #include "ux500_pcm.h"
@@ -68,6 +69,78 @@ static struct platform_device cg29xx_codec = {
 		.dev = {
 			.platform_data = NULL,
 		},
+};
+#else
+int ux500_gen_msp0_hw_params(struct snd_pcm_substream *substream,
+		struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	int channels = params_channels(params);
+	int err = 0;
+
+	pr_debug("%s: Enter.\n", __func__);
+	pr_debug("%s: substream->pcm->name = %s.\n", __func__, substream->pcm->name);
+	pr_debug("%s: substream->pcm->id = %s.\n", __func__, substream->pcm->id);
+	pr_debug("%s: substream->name = %s.\n", __func__, substream->name);
+	pr_debug("%s: substream->number = %d.\n", __func__, substream->number);
+	pr_debug("%s: channels = %d.\n", __func__, channels);
+	pr_debug("%s: DAI-index (Platform): %d\n", __func__, cpu_dai->id);
+
+	if (channels != 1) {
+		pr_err("%s: Only 1 channel.\n", __func__);
+		err = -EINVAL;
+		goto out_err;
+	}
+
+	switch (params_format(params)) {
+	case SNDRV_PCM_FORMAT_S16_LE:
+		break;
+	default:
+		pr_err("%s: Only S16_LE.\n", __func__);
+		err = -EINVAL;
+		goto out_err;
+	}
+
+	err = snd_soc_dai_set_fmt(cpu_dai,
+				SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_CBS_CFS |
+				SND_SOC_DAIFMT_NB_NF);
+
+	if (err) {
+		pr_err("%s: snd_soc_dai_set_fmt(cpu_dai) failed with %d.\n",
+			__func__,
+			err);
+		goto out_err;
+	}
+
+	err = snd_soc_dai_set_sysclk(cpu_dai,
+		UX500_MSP_MASTER_CLOCK,
+		19200000,
+		0);
+
+	if (err) {
+		pr_err("%s: snd_soc_dai_set_sysclk(cpu_dai) failed with %d.\n",
+			__func__, err);
+		goto out_err;
+	}
+
+	err = snd_soc_dai_set_tdm_slot(cpu_dai, 0x1, 0x1, 1, 16);
+
+	if (err) {
+		pr_err("%s: cg29xx_set_tdm_slot(cpu_dai) failed with %d.\n",
+			__func__,
+			err);
+		goto out_err;
+	}
+	ux500_msp_dai_set_data_delay(cpu_dai, MSP_DELAY_1);
+out_err:
+	return err;
+}
+
+struct snd_soc_ops ux500_gen_msp0_ops[] = {
+	{
+		.hw_params = ux500_gen_msp0_hw_params,
+	}
 };
 #endif
 
@@ -139,6 +212,17 @@ struct snd_soc_dai_link u8500_dai_links[] = {
 	.codec_name = "cg29xx-codec.0",
 	.init = NULL,
 	.ops = ux500_cg29xx_ops,
+	},
+	#else
+	{
+	.name = "msp_0",
+	.stream_name = "msp_0",
+	.cpu_dai_name = "ux500-msp-i2s.0",
+	.codec_dai_name = "snd-soc-dummy-dai",
+	.platform_name = "ux500-pcm.0",
+	.codec_name = "snd-soc-dummy",
+	.init = NULL,
+	.ops = ux500_gen_msp0_ops,
 	},
 	#endif
 };
