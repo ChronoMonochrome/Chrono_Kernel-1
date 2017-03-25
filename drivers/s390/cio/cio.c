@@ -601,6 +601,8 @@ void __irq_entry do_IRQ(struct pt_regs *regs)
 	struct pt_regs *old_regs;
 
 	old_regs = set_irq_regs(regs);
+	s390_idle_check(regs, S390_lowcore.int_clock,
+			S390_lowcore.async_enter_timer);
 	irq_enter();
 	__this_cpu_write(s390_idle.nohz_delay, 1);
 	if (S390_lowcore.int_clock >= S390_lowcore.clock_comparator)
@@ -620,7 +622,6 @@ void __irq_entry do_IRQ(struct pt_regs *regs)
 		sch = (struct subchannel *)(unsigned long)tpi_info->intparm;
 		if (!sch) {
 			/* Clear pending interrupt condition. */
-			kstat_cpu(smp_processor_id()).irqs[IOINT_CIO]++;
 			tsch(tpi_info->schid, irb);
 			continue;
 		}
@@ -633,10 +634,7 @@ void __irq_entry do_IRQ(struct pt_regs *regs)
 			/* Call interrupt handler if there is one. */
 			if (sch->driver && sch->driver->irq)
 				sch->driver->irq(sch);
-			else
-				kstat_cpu(smp_processor_id()).irqs[IOINT_CIO]++;
-		} else
-			kstat_cpu(smp_processor_id()).irqs[IOINT_CIO]++;
+		}
 		spin_unlock(sch->lock);
 		/*
 		 * Are more interrupts pending?
@@ -656,8 +654,8 @@ static struct io_subchannel_private console_priv;
 static int console_subchannel_in_use;
 
 /*
- * Use cio_tpi to get a pending interrupt and call the interrupt handler.
- * Return non-zero if an interrupt was processed, zero otherwise.
+ * Use tpi to get a pending interrupt, call the interrupt handler and
+ * return a pointer to the subchannel structure.
  */
 static int cio_tpi(void)
 {
@@ -669,23 +667,14 @@ static int cio_tpi(void)
 	tpi_info = (struct tpi_info *)&S390_lowcore.subchannel_id;
 	if (tpi(NULL) != 1)
 		return 0;
-	kstat_cpu(smp_processor_id()).irqs[IO_INTERRUPT]++;
-	if (tpi_info->adapter_IO) {
-		do_adapter_IO(tpi_info->isc);
-		return 1;
-	}
 	irb = (struct irb *)&S390_lowcore.irb;
 	/* Store interrupt response block to lowcore. */
-	if (tsch(tpi_info->schid, irb) != 0) {
+	if (tsch(tpi_info->schid, irb) != 0)
 		/* Not status pending or not operational. */
-		kstat_cpu(smp_processor_id()).irqs[IOINT_CIO]++;
 		return 1;
-	}
 	sch = (struct subchannel *)(unsigned long)tpi_info->intparm;
-	if (!sch) {
-		kstat_cpu(smp_processor_id()).irqs[IOINT_CIO]++;
+	if (!sch)
 		return 1;
-	}
 	irq_context = in_interrupt();
 	if (!irq_context)
 		local_bh_disable();
@@ -694,8 +683,6 @@ static int cio_tpi(void)
 	memcpy(&sch->schib.scsw, &irb->scsw, sizeof(union scsw));
 	if (sch->driver && sch->driver->irq)
 		sch->driver->irq(sch);
-	else
-		kstat_cpu(smp_processor_id()).irqs[IOINT_CIO]++;
 	spin_unlock(sch->lock);
 	irq_exit();
 	if (!irq_context)
@@ -1067,7 +1054,7 @@ void reipl_ccw_dev(struct ccw_dev_id *devid)
 {
 	struct subchannel_id schid;
 
-	s390_reset_system(NULL, NULL);
+	s390_reset_system();
 	if (reipl_find_schid(devid, &schid) != 0)
 		panic("IPL Device not found\n");
 	do_reipl_asm(*((__u32*)&schid));

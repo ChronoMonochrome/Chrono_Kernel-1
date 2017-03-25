@@ -40,10 +40,12 @@
 
 #define MY_NAME	"pciehp"
 
-extern bool pciehp_poll_mode;
+extern int pciehp_poll_mode;
 extern int pciehp_poll_time;
-extern bool pciehp_debug;
-extern bool pciehp_force;
+extern int pciehp_debug;
+extern int pciehp_force;
+extern struct workqueue_struct *pciehp_wq;
+extern struct workqueue_struct *pciehp_ordered_wq;
 
 #define dbg(format, arg...)						\
 do {									\
@@ -77,7 +79,6 @@ struct slot {
 	struct hotplug_slot *hotplug_slot;
 	struct delayed_work work;	/* work for button event */
 	struct mutex lock;
-	struct workqueue_struct *wq;
 };
 
 struct event_info {

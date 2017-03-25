@@ -37,7 +37,6 @@
 struct file_operations;
 
 #include <linux/debugfs.h>
-#include <linux/export.h>
 
 #include "ipoib.h"
 
@@ -213,15 +212,16 @@ static int ipoib_path_seq_show(struct seq_file *file, void *iter_ptr)
 		   gid_buf, path.pathrec.dlid ? "yes" : "no");
 
 	if (path.pathrec.dlid) {
-		rate = ib_rate_to_mbps(path.pathrec.rate);
+		rate = ib_rate_to_mult(path.pathrec.rate) * 25;
 
 		seq_printf(file,
 			   "  DLID:     0x%04x\n"
 			   "  SL: %12d\n"
-			   "  rate: %8d.%d Gb/sec\n",
+			   "  rate: %*d%s Gb/sec\n",
 			   be16_to_cpu(path.pathrec.dlid),
 			   path.pathrec.sl,
-			   rate / 1000, rate % 1000);
+			   10 - ((rate % 10) ? 2 : 0),
+			   rate / 10, rate % 10 ? ".5" : "");
 	}
 
 	seq_putc(file, '\n');

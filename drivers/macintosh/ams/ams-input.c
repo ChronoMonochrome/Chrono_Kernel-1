@@ -19,11 +19,11 @@
 
 #include "ams.h"
 
-static bool joystick;
+static unsigned int joystick;
 module_param(joystick, bool, S_IRUGO);
 MODULE_PARM_DESC(joystick, "Enable the input class device on module load");
 
-static bool invert;
+static unsigned int invert;
 module_param(invert, bool, S_IWUSR | S_IRUGO);
 MODULE_PARM_DESC(invert, "Invert input data on X and Y axis");
 

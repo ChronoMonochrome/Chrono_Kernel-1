@@ -168,7 +168,7 @@ static int __init smsgiucv_app_init(void)
 	rc = dev_set_name(smsg_app_dev, KMSG_COMPONENT);
 	if (rc) {
 		kfree(smsg_app_dev);
-		goto fail;
+		goto fail_put_driver;
 	}
 	smsg_app_dev->bus = &iucv_bus;
 	smsg_app_dev->parent = iucv_root;
@@ -177,7 +177,7 @@ static int __init smsgiucv_app_init(void)
 	rc = device_register(smsg_app_dev);
 	if (rc) {
 		put_device(smsg_app_dev);
-		goto fail;
+		goto fail_put_driver;
 	}
 
 	/* convert sender to uppercase characters */
@@ -191,11 +191,12 @@ static int __init smsgiucv_app_init(void)
 	rc = smsg_register_callback(SMSG_PREFIX, smsg_app_callback);
 	if (rc) {
 		device_unregister(smsg_app_dev);
-		goto fail;
+		goto fail_put_driver;
 	}
 
 	rc = 0;
-fail:
+fail_put_driver:
+	put_driver(smsgiucv_drv);
 	return rc;
 }
 module_init(smsgiucv_app_init);

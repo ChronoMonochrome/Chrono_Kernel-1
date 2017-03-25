@@ -310,7 +310,18 @@ static struct platform_driver bfin_cf_driver = {
 	.remove = __devexit_p(bfin_cf_remove),
 };
 
-module_platform_driver(bfin_cf_driver);
+static int __init bfin_cf_init(void)
+{
+	return platform_driver_register(&bfin_cf_driver);
+}
+
+static void __exit bfin_cf_exit(void)
+{
+	platform_driver_unregister(&bfin_cf_driver);
+}
+
+module_init(bfin_cf_init);
+module_exit(bfin_cf_exit);
 
 MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
 MODULE_DESCRIPTION("BFIN CF/PCMCIA Driver");

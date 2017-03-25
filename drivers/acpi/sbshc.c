@@ -13,7 +13,6 @@
 #include <linux/wait.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
-#include <linux/module.h>
 #include <linux/interrupt.h>
 #include "sbshc.h"
 

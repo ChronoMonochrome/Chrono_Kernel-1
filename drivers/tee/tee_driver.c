@@ -60,17 +60,58 @@ static void reset_session(struct tee_session *ts)
 static int copy_ta(struct tee_session *ts,
 		   struct tee_session *ku_buffer)
 {
-	ts->ta = kmalloc(ku_buffer->ta_size, GFP_KERNEL);
-	if (ts->ta == NULL) {
-		pr_err(TEED_PFX "[%s] error, out of memory (ta)\n",
-		       __func__);
-		set_emsg(ts, TEED_ERROR_OUT_OF_MEMORY, __LINE__);
-		return -ENOMEM;
-	}
+	int ret = -EINVAL;
+	size_t mem_chunks_length = 1;
+	struct hwmem_mem_chunk mem_chunks;
+	struct ta_addr *ta_addr;
 
 	ts->ta_size = ku_buffer->ta_size;
 
-	memcpy(ts->ta, ku_buffer->ta, ku_buffer->ta_size);
+	if (ts->ta_size == 0)
+		return 0;
+
+	ta_addr = kmalloc(sizeof(struct ta_addr), GFP_KERNEL);
+	if (!ta_addr)
+		return -ENOMEM;
+
+	ta_addr->paddr = NULL;
+	ta_addr->vaddr = NULL;
+
+	ta_addr->alloc = hwmem_alloc(ts->ta_size,
+				     (HWMEM_ALLOC_HINT_WRITE_COMBINE |
+				      HWMEM_ALLOC_HINT_CACHED |
+				      HWMEM_ALLOC_HINT_CACHE_WB |
+				      HWMEM_ALLOC_HINT_CACHE_AOW |
+				      HWMEM_ALLOC_HINT_INNER_AND_OUTER_CACHE),
+				     (HWMEM_ACCESS_READ | HWMEM_ACCESS_WRITE |
+				      HWMEM_ACCESS_IMPORT),
+				     HWMEM_MEM_CONTIGUOUS_SYS);
+
+	if (IS_ERR(ta_addr->alloc)) {
+		set_emsg(ts, TEED_ERROR_OUT_OF_MEMORY, __LINE__);
+		pr_err(TEED_PFX "[%s] couldn't alloc hwmem for TA\n",
+		       __func__);
+		kfree(ta_addr);
+		return PTR_ERR(ta_addr->alloc);
+	}
+
+	ret = hwmem_pin(ta_addr->alloc, &mem_chunks, &mem_chunks_length);
+	if (ret) {
+		pr_err(TEED_PFX "[%s] couldn't pin TA buffer\n",
+		       __func__);
+		kfree(ta_addr);
+		return ret;
+	}
+
+	ta_addr->paddr = (void *)mem_chunks.paddr;
+	ta_addr->vaddr = hwmem_kmap(ta_addr->alloc);
+	ts->ta = ta_addr;
+
+	if (copy_from_user(ta_addr->vaddr, ku_buffer->ta, ts->ta_size)) {
+		pr_err(TEED_PFX "[%s] error, copy_from_user failed\n",
+		       __func__);
+	}
+
 	return 0;
 }
 
@@ -86,9 +127,31 @@ static int copy_uuid(struct tee_session *ts,
 		return -ENOMEM;
 	}
 
-	memcpy(ts->uuid, ku_buffer->uuid, sizeof(struct tee_uuid));
+	if (copy_from_user(ts->uuid, ku_buffer->uuid,
+			   sizeof(struct tee_uuid))) {
+		pr_err(TEED_PFX "[%s] error, copy_from_user failed\n",
+		       __func__);
+		set_emsg(ts, TEED_ERROR_COMMUNICATION, __LINE__);
+		return -EIO;
+	}
 
 	return 0;
+}
+
+static inline void free_ta(struct ta_addr *ta)
+{
+	if (ta->alloc) {
+		hwmem_kunmap(ta->alloc);
+		hwmem_unpin(ta->alloc);
+		hwmem_release(ta->alloc);
+	}
+
+	ta->alloc = NULL;
+	ta->paddr = NULL;
+	ta->vaddr = NULL;
+
+	kfree(ta);
+	ta = NULL;
 }
 
 static inline void free_operation(struct tee_session *ts,
@@ -183,13 +246,9 @@ static int copy_memref_to_kernel(struct tee_session *ts,
 	size_t mem_chunks_length = 1;
 	struct hwmem_mem_chunk mem_chunks;
 
-	if (ku_buffer->op->shm[memref].size == 0) {
-		pr_err(TEED_PFX "[%s] error, size of memref is zero "
-		       "(memref: %d)\n", __func__, memref);
-		return ret;
-	}
-
-	alloc[memref] = hwmem_alloc(ku_buffer->op->shm[memref].size,
+	if (ku_buffer->op->shm[memref].size != 0) {
+		alloc[memref] = hwmem_alloc(
+				    ku_buffer->op->shm[memref].size,
 				    (HWMEM_ALLOC_HINT_WRITE_COMBINE |
 				     HWMEM_ALLOC_HINT_CACHED |
 				     HWMEM_ALLOC_HINT_CACHE_WB |
@@ -199,38 +258,53 @@ static int copy_memref_to_kernel(struct tee_session *ts,
 				     HWMEM_ACCESS_IMPORT),
 				    HWMEM_MEM_CONTIGUOUS_SYS);
 
-	if (IS_ERR(alloc[memref])) {
-		pr_err(TEED_PFX "[%s] couldn't alloc hwmem_alloc (memref: %d)"
-		       "\n", __func__, memref);
-		return PTR_ERR(alloc[memref]);
+		if (IS_ERR(alloc[memref])) {
+			pr_err(TEED_PFX "[%s] couldn't alloc hwmem_alloc "
+			       " (memref: %d)\n", __func__, memref);
+			return PTR_ERR(alloc[memref]);
+		}
+
+		ret = hwmem_pin(alloc[memref], &mem_chunks, &mem_chunks_length);
+		if (ret) {
+			pr_err(TEED_PFX "[%s] couldn't pin buffer "
+			       "(memref: %d)\n", __func__, memref);
+			return ret;
+		}
+
+		/*
+		 * Since phys_to_virt is not working for hwmem memory we are
+		 * storing the virtual addresses in separate array in
+		 * tee_session and we keep the address of the physical pointers
+		 * in the memref buffer.
+		 */
+		ts->op->shm[memref].buffer = (void *)mem_chunks.paddr;
+		ts->vaddr[memref] = hwmem_kmap(alloc[memref]);
+
+		/*
+		 * Buffer unmapped/freed in invoke_command if this function
+		 * fails.
+		 */
+		if (!ts->op->shm[memref].buffer || !ts->vaddr[memref]) {
+			pr_err(TEED_PFX "[%s] out of memory (memref: %d)\n",
+			       __func__, memref);
+			return -ENOMEM;
+		}
+
+		if (ku_buffer->op->shm[memref].flags & TEEC_MEM_INPUT) {
+			if (copy_from_user(ts->vaddr[memref],
+					   ku_buffer->op->shm[memref].buffer,
+					   ku_buffer->op->shm[memref].size)) {
+				pr_err(TEED_PFX "[%s] error, copy_from_user "
+				       "failed\n", __func__);
+				set_emsg(ts, TEED_ERROR_COMMUNICATION,
+					 __LINE__);
+				return -EIO;
+			}
+		}
+	} else {
+		ts->op->shm[memref].buffer = NULL;
+		ts->vaddr[memref] = NULL;
 	}
-
-	ret = hwmem_pin(alloc[memref], &mem_chunks, &mem_chunks_length);
-	if (ret) {
-		pr_err(TEED_PFX "[%s] couldn't pin buffer (memref: %d)\n",
-		       __func__, memref);
-		return ret;
-	}
-
-	/*
-	 * Since phys_to_virt is not working for hwmem memory we are storing the
-	 * virtual addresses in separate array in tee_session and we keep the
-	 * address of the physical pointers in the memref buffer.
-	 */
-	ts->op->shm[memref].buffer = (void *)mem_chunks.paddr;
-	ts->vaddr[memref] = hwmem_kmap(alloc[memref]);
-
-	/* Buffer unmapped/freed in invoke_command if this function fails. */
-	if (!ts->op->shm[memref].buffer || !ts->vaddr[memref]) {
-		pr_err(TEED_PFX "[%s] out of memory (memref: %d)\n",
-		       __func__, memref);
-		return -ENOMEM;
-	}
-
-	if (ku_buffer->op->shm[memref].flags & TEEC_MEM_INPUT)
-		memcpy(ts->vaddr[memref],
-		       ku_buffer->op->shm[memref].buffer,
-		       ku_buffer->op->shm[memref].size);
 
 	ts->op->shm[memref].size = ku_buffer->op->shm[memref].size;
 	ts->op->shm[memref].flags = ku_buffer->op->shm[memref].flags;
@@ -248,7 +322,7 @@ static int open_tee_device(struct tee_session *ts,
 		return -EINVAL;
 	}
 
-	if (ku_buffer->ta) {
+	if (ku_buffer->ta && ku_buffer->ta_size > 0) {
 		ret = copy_ta(ts, ku_buffer);
 	} else if (ku_buffer->uuid) {
 		ret = copy_uuid(ts, ku_buffer);
@@ -312,7 +386,8 @@ static int invoke_command(struct tee_session *ts,
 
 	for (i = 0; i < TEEC_CONFIG_PAYLOAD_REF_COUNT; ++i) {
 		if ((ku_buffer->op->flags & (1 << i)) &&
-		    (ku_buffer->op->shm[i].flags & TEEC_MEM_OUTPUT)) {
+		    (ku_buffer->op->shm[i].flags & TEEC_MEM_OUTPUT) &&
+		    (ts->vaddr[i] != NULL)) {
 			ret = copy_memref_to_user(ts, u_buffer->op, i);
 			if (ret) {
 				pr_err(TEED_PFX "[%s] failed copy memref[%d] "
@@ -444,8 +519,8 @@ static int tee_write(struct file *filp, const char __user *buffer,
 				ret = -EINVAL;
 			}
 
-			kfree(ts->ta);
-			ts->ta = NULL;
+			if (ts->ta)
+				free_ta(ts->ta);
 
 			reset_session(ts);
 			break;

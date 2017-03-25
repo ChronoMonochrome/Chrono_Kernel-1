@@ -27,7 +27,6 @@
 #include <linux/pci.h>
 #include <linux/pci_hotplug.h>
 #include <linux/slab.h>
-#include <linux/module.h>
 #include "pciehp.h"
 
 #define PCIEHP_DETECT_PCIE	(0)

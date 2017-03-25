@@ -5,7 +5,7 @@
  *****************************************************************************/
 
 /*
- * Copyright (C) 2000 - 2012, Intel Corp.
+ * Copyright (C) 2000 - 2011, Intel Corp.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,6 @@
  * POSSIBILITY OF SUCH DAMAGES.
  */
 
-#include <linux/export.h>
 #include <acpi/acpi.h>
 #include "accommon.h"
 #include "acnamesp.h"
@@ -171,9 +170,7 @@ const char *acpi_gbl_region_types[ACPI_NUM_PREDEFINED_REGIONS] = {
 	"SMBus",
 	"SystemCMOS",
 	"PCIBARTarget",
-	"IPMI",
-	"GeneralPurposeIo",
-	"GenericSerialBus"
+	"IPMI"
 };
 
 char *acpi_ut_get_region_name(u8 space_id)
@@ -497,20 +494,19 @@ char *acpi_ut_get_mutex_name(u32 mutex_id)
 
 /* Names for Notify() values, used for debug output */
 
-static const char *acpi_gbl_notify_value_names[ACPI_NOTIFY_MAX + 1] = {
-	/* 00 */ "Bus Check",
-	/* 01 */ "Device Check",
-	/* 02 */ "Device Wake",
-	/* 03 */ "Eject Request",
-	/* 04 */ "Device Check Light",
-	/* 05 */ "Frequency Mismatch",
-	/* 06 */ "Bus Mode Mismatch",
-	/* 07 */ "Power Fault",
-	/* 08 */ "Capabilities Check",
-	/* 09 */ "Device PLD Check",
-	/* 10 */ "Reserved",
-	/* 11 */ "System Locality Update",
-	/* 12 */ "Shutdown Request"
+static const char *acpi_gbl_notify_value_names[] = {
+	"Bus Check",
+	"Device Check",
+	"Device Wake",
+	"Eject Request",
+	"Device Check Light",
+	"Frequency Mismatch",
+	"Bus Mode Mismatch",
+	"Power Fault",
+	"Capabilities Check",
+	"Device PLD Check",
+	"Reserved",
+	"System Locality Update"
 };
 
 const char *acpi_ut_get_notify_name(u32 notify_value)
@@ -520,10 +516,9 @@ const char *acpi_ut_get_notify_name(u32 notify_value)
 		return (acpi_gbl_notify_value_names[notify_value]);
 	} else if (notify_value <= ACPI_MAX_SYS_NOTIFY) {
 		return ("Reserved");
-	} else if (notify_value <= ACPI_MAX_DEVICE_SPECIFIC_NOTIFY) {
-		return ("Device Specific");
-	} else {
-		return ("Hardware Specific");
+	} else {		/* Greater or equal to 0x80 */
+
+		return ("**Device Specific**");
 	}
 }
 #endif

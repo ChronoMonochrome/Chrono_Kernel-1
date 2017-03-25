@@ -44,7 +44,6 @@
 #include <linux/seq_file.h>
 #include <linux/scatterlist.h>
 #include <linux/iommu-helper.h>
-#include <linux/export.h>
 
 #include <asm/byteorder.h>
 #include <asm/cache.h>		/* for L1_CACHE_BYTES */

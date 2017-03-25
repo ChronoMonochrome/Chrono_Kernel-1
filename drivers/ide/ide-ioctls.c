@@ -2,7 +2,6 @@
  * IDE ioctls handling.
  */
 
-#include <linux/export.h>
 #include <linux/hdreg.h>
 #include <linux/ide.h>
 #include <linux/slab.h>

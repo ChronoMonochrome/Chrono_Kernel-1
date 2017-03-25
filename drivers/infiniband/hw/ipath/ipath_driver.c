@@ -41,7 +41,6 @@
 #include <linux/vmalloc.h>
 #include <linux/bitmap.h>
 #include <linux/slab.h>
-#include <linux/module.h>
 
 #include "ipath_kernel.h"
 #include "ipath_verbs.h"

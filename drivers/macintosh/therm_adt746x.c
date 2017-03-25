@@ -29,6 +29,7 @@
 #include <asm/prom.h>
 #include <asm/machdep.h>
 #include <asm/io.h>
+#include <asm/system.h>
 #include <asm/sections.h>
 
 #undef DEBUG
@@ -51,7 +52,7 @@ static const char *sensor_location[3];
 
 static int limit_adjust;
 static int fan_speed = -1;
-static bool verbose;
+static int verbose;
 
 MODULE_AUTHOR("Colin Leroy <colin@colino.net>");
 MODULE_DESCRIPTION("Driver for ADT746x thermostat in iBook G4 and "

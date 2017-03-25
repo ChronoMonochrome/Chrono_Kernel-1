@@ -28,7 +28,6 @@
 
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
-#include <linux/module.h>
 
 struct fis_image_desc {
     unsigned char name[16];      // Null terminated name
@@ -57,8 +56,8 @@ static inline int redboot_checksum(struct fis_image_desc *img)
 }
 
 static int parse_redboot_partitions(struct mtd_info *master,
-				    struct mtd_partition **pparts,
-				    struct mtd_part_parser_data *data)
+                             struct mtd_partition **pparts,
+                             unsigned long fis_origin)
 {
 	int nrparts = 0;
 	struct fis_image_desc *buf;
@@ -78,7 +77,8 @@ static int parse_redboot_partitions(struct mtd_info *master,
 
 	if ( directory < 0 ) {
 		offset = master->size + directory * master->erasesize;
-		while (mtd_block_isbad(master, offset)) {
+		while (master->block_isbad && 
+		       master->block_isbad(master, offset)) {
 			if (!offset) {
 			nogood:
 				printk(KERN_NOTICE "Failed to find a non-bad block to check for RedBoot partition table\n");
@@ -88,7 +88,8 @@ static int parse_redboot_partitions(struct mtd_info *master,
 		}
 	} else {
 		offset = directory * master->erasesize;
-		while (mtd_block_isbad(master, offset)) {
+		while (master->block_isbad && 
+		       master->block_isbad(master, offset)) {
 			offset += master->erasesize;
 			if (offset == master->size)
 				goto nogood;
@@ -102,8 +103,8 @@ static int parse_redboot_partitions(struct mtd_info *master,
 	printk(KERN_NOTICE "Searching for RedBoot partition table in %s at offset 0x%lx\n",
 	       master->name, offset);
 
-	ret = mtd_read(master, offset, master->erasesize, &retlen,
-		       (void *)buf);
+	ret = master->read(master, offset,
+			   master->erasesize, &retlen, (void *)buf);
 
 	if (ret)
 		goto out;
@@ -196,10 +197,11 @@ static int parse_redboot_partitions(struct mtd_info *master,
 			goto out;
 		}
 		new_fl->img = &buf[i];
-		if (data && data->origin)
-			buf[i].flash_base -= data->origin;
-		else
-			buf[i].flash_base &= master->size-1;
+                if (fis_origin) {
+                        buf[i].flash_base -= fis_origin;
+                } else {
+                        buf[i].flash_base &= master->size-1;
+                }
 
 		/* I'm sure the JFFS2 code has done me permanent damage.
 		 * I now think the following is _normal_

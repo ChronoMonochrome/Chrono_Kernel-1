@@ -14,7 +14,6 @@
 #include <linux/irq.h>
 #include <linux/bitmap.h>
 #include <linux/spinlock.h>
-#include <linux/module.h>
 #include "internals.h" /* only for activate_irq() damage.. */
 
 /*

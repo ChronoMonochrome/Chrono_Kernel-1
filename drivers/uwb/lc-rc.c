@@ -36,7 +36,6 @@
 #include <linux/etherdevice.h>
 #include <linux/usb.h>
 #include <linux/slab.h>
-#include <linux/export.h>
 
 #include "uwb-internal.h"
 

@@ -36,8 +36,8 @@
 #include <linux/timex.h>
 #include <linux/uaccess.h>
 #include <linux/wait.h>
-#include <linux/dma-mapping.h>
-#include <linux/atomic.h>
+
+#include <asm/atomic.h>
 #include <asm/byteorder.h>
 
 #include "nosy.h"
@@ -536,7 +536,7 @@ add_card(struct pci_dev *dev, const struct pci_device_id *unused)
 	u32 p, end;
 	int ret, i;
 
-	if (pci_set_dma_mask(dev, DMA_BIT_MASK(32))) {
+	if (pci_set_dma_mask(dev, 0xffffffff)) {
 		dev_err(&dev->dev,
 		    "DMA address limits not supported for PCILynx hardware\n");
 		return -ENXIO;

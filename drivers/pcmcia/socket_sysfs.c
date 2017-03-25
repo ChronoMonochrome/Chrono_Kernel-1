@@ -23,6 +23,7 @@
 #include <linux/pm.h>
 #include <linux/device.h>
 #include <linux/mutex.h>
+#include <asm/system.h>
 #include <asm/irq.h>
 
 #include <pcmcia/ss.h>

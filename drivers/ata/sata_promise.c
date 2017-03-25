@@ -147,10 +147,6 @@ struct pdc_port_priv {
 	dma_addr_t		pkt_dma;
 };
 
-struct pdc_host_priv {
-	spinlock_t hard_reset_lock;
-};
-
 static int pdc_sata_scr_read(struct ata_link *link, unsigned int sc_reg, u32 *val);
 static int pdc_sata_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val);
 static int pdc_ata_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
@@ -805,10 +801,9 @@ static void pdc_hard_reset_port(struct ata_port *ap)
 	void __iomem *host_mmio = ap->host->iomap[PDC_MMIO_BAR];
 	void __iomem *pcictl_b1_mmio = host_mmio + PDC_PCI_CTL + 1;
 	unsigned int ata_no = pdc_ata_port_to_ata_no(ap);
-	struct pdc_host_priv *hpriv = ap->host->private_data;
 	u8 tmp;
 
-	spin_lock(&hpriv->hard_reset_lock);
+	spin_lock(&ap->host->lock);
 
 	tmp = readb(pcictl_b1_mmio);
 	tmp &= ~(0x10 << ata_no);
@@ -819,7 +814,7 @@ static void pdc_hard_reset_port(struct ata_port *ap)
 	writeb(tmp, pcictl_b1_mmio);
 	readb(pcictl_b1_mmio); /* flush */
 
-	spin_unlock(&hpriv->hard_reset_lock);
+	spin_unlock(&ap->host->lock);
 }
 
 static int pdc_sata_hardreset(struct ata_link *link, unsigned int *class,
@@ -1184,15 +1179,16 @@ static void pdc_host_init(struct ata_host *host)
 static int pdc_ata_init_one(struct pci_dev *pdev,
 			    const struct pci_device_id *ent)
 {
+	static int printed_version;
 	const struct ata_port_info *pi = &pdc_port_info[ent->driver_data];
 	const struct ata_port_info *ppi[PDC_MAX_PORTS];
 	struct ata_host *host;
-	struct pdc_host_priv *hpriv;
 	void __iomem *host_mmio;
 	int n_ports, i, rc;
 	int is_sataii_tx4;
 
-	ata_print_version_once(&pdev->dev, DRV_VERSION);
+	if (!printed_version++)
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	/* enable and acquire resources */
 	rc = pcim_enable_device(pdev);
@@ -1221,14 +1217,9 @@ static int pdc_ata_init_one(struct pci_dev *pdev,
 
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, n_ports);
 	if (!host) {
-		dev_err(&pdev->dev, "failed to allocate host\n");
+		dev_printk(KERN_ERR, &pdev->dev, "failed to allocate host\n");
 		return -ENOMEM;
 	}
-	hpriv = devm_kzalloc(&pdev->dev, sizeof *hpriv, GFP_KERNEL);
-	if (!hpriv)
-		return -ENOMEM;
-	spin_lock_init(&hpriv->hard_reset_lock);
-	host->private_data = hpriv;
 	host->iomap = pcim_iomap_table(pdev);
 
 	is_sataii_tx4 = pdc_is_sataii_tx4(pi->flags);

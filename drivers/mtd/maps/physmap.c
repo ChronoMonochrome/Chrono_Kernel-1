@@ -27,8 +27,8 @@ struct physmap_flash_info {
 	struct mtd_info		*mtd[MAX_RESOURCES];
 	struct mtd_info		*cmtd;
 	struct map_info		map[MAX_RESOURCES];
-	spinlock_t		vpp_lock;
-	int			vpp_refcnt;
+	int			nr_parts;
+	struct mtd_partition	*parts;
 };
 
 static int physmap_flash_remove(struct platform_device *dev)
@@ -46,6 +46,8 @@ static int physmap_flash_remove(struct platform_device *dev)
 
 	if (info->cmtd) {
 		mtd_device_unregister(info->cmtd);
+		if (info->nr_parts)
+			kfree(info->parts);
 		if (info->cmtd != info->mtd[0])
 			mtd_concat_destroy(info->cmtd);
 	}
@@ -65,26 +67,12 @@ static void physmap_set_vpp(struct map_info *map, int state)
 {
 	struct platform_device *pdev;
 	struct physmap_flash_data *physmap_data;
-	struct physmap_flash_info *info;
-	unsigned long flags;
 
 	pdev = (struct platform_device *)map->map_priv_1;
 	physmap_data = pdev->dev.platform_data;
 
-	if (!physmap_data->set_vpp)
-		return;
-
-	info = platform_get_drvdata(pdev);
-
-	spin_lock_irqsave(&info->vpp_lock, flags);
-	if (state) {
-		if (++info->vpp_refcnt == 1)    /* first nested 'on' */
-			physmap_data->set_vpp(pdev, 1);
-	} else {
-		if (--info->vpp_refcnt == 0)    /* last nested 'off' */
-			physmap_data->set_vpp(pdev, 0);
-	}
-	spin_unlock_irqrestore(&info->vpp_lock, flags);
+	if (physmap_data->set_vpp)
+		physmap_data->set_vpp(pdev, state);
 }
 
 static const char *rom_probe_types[] = {
@@ -101,7 +89,6 @@ static int physmap_flash_probe(struct platform_device *dev)
 	struct physmap_flash_data *physmap_data;
 	struct physmap_flash_info *info;
 	const char **probe_type;
-	const char **part_types;
 	int err = 0;
 	int i;
 	int devices_found = 0;
@@ -188,12 +175,23 @@ static int physmap_flash_probe(struct platform_device *dev)
 	if (err)
 		goto err_out;
 
-	spin_lock_init(&info->vpp_lock);
+	err = parse_mtd_partitions(info->cmtd, part_probe_types,
+				   &info->parts, 0);
+	if (err > 0) {
+		mtd_device_register(info->cmtd, info->parts, err);
+		info->nr_parts = err;
+		return 0;
+	}
 
-	part_types = physmap_data->part_probe_types ? : part_probe_types;
+	if (physmap_data->nr_parts) {
+		printk(KERN_NOTICE "Using physmap partition information\n");
+		mtd_device_register(info->cmtd, physmap_data->parts,
+				    physmap_data->nr_parts);
+		return 0;
+	}
 
-	mtd_device_parse_register(info->cmtd, part_types, NULL,
-				  physmap_data->parts, physmap_data->nr_parts);
+	mtd_device_register(info->cmtd, NULL, 0);
+
 	return 0;
 
 err_out:
@@ -208,8 +206,9 @@ static void physmap_flash_shutdown(struct platform_device *dev)
 	int i;
 
 	for (i = 0; i < MAX_RESOURCES && info->mtd[i]; i++)
-		if (mtd_suspend(info->mtd[i]) == 0)
-			mtd_resume(info->mtd[i]);
+		if (info->mtd[i]->suspend && info->mtd[i]->resume)
+			if (info->mtd[i]->suspend(info->mtd[i]) == 0)
+				info->mtd[i]->resume(info->mtd[i]);
 }
 #else
 #define physmap_flash_shutdown NULL
@@ -246,6 +245,21 @@ static struct platform_device physmap_flash = {
 	.num_resources	= 1,
 	.resource	= &physmap_flash_resource,
 };
+
+void physmap_configure(unsigned long addr, unsigned long size,
+		int bankwidth, void (*set_vpp)(struct map_info *, int))
+{
+	physmap_flash_resource.start = addr;
+	physmap_flash_resource.end = addr + size - 1;
+	physmap_flash_data.width = bankwidth;
+	physmap_flash_data.set_vpp = set_vpp;
+}
+
+void physmap_set_partitions(struct mtd_partition *parts, int num_parts)
+{
+	physmap_flash_data.nr_parts = num_parts;
+	physmap_flash_data.parts = parts;
+}
 #endif
 
 static int __init physmap_init(void)

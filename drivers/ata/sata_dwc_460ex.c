@@ -766,15 +766,11 @@ static int dma_dwc_xfer_setup(struct scatterlist *sg, int num_elems,
 static void dma_dwc_exit(struct sata_dwc_device *hsdev)
 {
 	dev_dbg(host_pvt.dwc_dev, "%s:\n", __func__);
-	if (host_pvt.sata_dma_regs) {
+	if (host_pvt.sata_dma_regs)
 		iounmap(host_pvt.sata_dma_regs);
-		host_pvt.sata_dma_regs = NULL;
-	}
 
-	if (hsdev->irq_dma) {
+	if (hsdev->irq_dma)
 		free_irq(hsdev->irq_dma, hsdev);
-		hsdev->irq_dma = 0;
-	}
 }
 
 /*
@@ -1329,7 +1325,7 @@ static int sata_dwc_port_start(struct ata_port *ap)
 			dev_err(ap->dev, "%s: dma_alloc_coherent failed\n",
 				 __func__);
 			err = -ENOMEM;
-			goto CLEANUP_ALLOC;
+			goto CLEANUP;
 		}
 	}
 
@@ -1349,13 +1345,15 @@ static int sata_dwc_port_start(struct ata_port *ap)
 	/* Clear any error bits before libata starts issuing commands */
 	clear_serror();
 	ap->private_data = hsdevp;
-	dev_dbg(ap->dev, "%s: done\n", __func__);
-	return 0;
 
-CLEANUP_ALLOC:
-	kfree(hsdevp);
 CLEANUP:
-	dev_dbg(ap->dev, "%s: fail. ap->id = %d\n", __func__, ap->print_id);
+	if (err) {
+		sata_dwc_port_stop(ap);
+		dev_dbg(ap->dev, "%s: fail\n", __func__);
+	} else {
+		dev_dbg(ap->dev, "%s: done\n", __func__);
+	}
+
 	return err;
 }
 
@@ -1640,12 +1638,13 @@ static int sata_dwc_probe(struct platform_device *ofdev)
 	const struct ata_port_info *ppi[] = { &pi, NULL };
 
 	/* Allocate DWC SATA device */
-	hsdev = kzalloc(sizeof(*hsdev), GFP_KERNEL);
+	hsdev = kmalloc(sizeof(*hsdev), GFP_KERNEL);
 	if (hsdev == NULL) {
 		dev_err(&ofdev->dev, "kmalloc failed for hsdev\n");
 		err = -ENOMEM;
-		goto error;
+		goto error_out;
 	}
+	memset(hsdev, 0, sizeof(*hsdev));
 
 	/* Ioremap SATA registers */
 	base = of_iomap(ofdev->dev.of_node, 0);
@@ -1653,7 +1652,7 @@ static int sata_dwc_probe(struct platform_device *ofdev)
 		dev_err(&ofdev->dev, "ioremap failed for SATA register"
 			" address\n");
 		err = -ENODEV;
-		goto error_kmalloc;
+		goto error_out;
 	}
 	hsdev->reg_base = base;
 	dev_dbg(&ofdev->dev, "ioremap done for SATA register address\n");
@@ -1666,7 +1665,7 @@ static int sata_dwc_probe(struct platform_device *ofdev)
 	if (!host) {
 		dev_err(&ofdev->dev, "ata_host_alloc_pinfo failed\n");
 		err = -ENOMEM;
-		goto error_iomap;
+		goto error_out;
 	}
 
 	host->private_data = hsdev;
@@ -1734,11 +1733,8 @@ error_out:
 	/* Free SATA DMA resources */
 	dma_dwc_exit(hsdev);
 
-error_iomap:
-	iounmap(base);
-error_kmalloc:
-	kfree(hsdev);
-error:
+	if (base)
+		iounmap(base);
 	return err;
 }
 
@@ -1777,7 +1773,18 @@ static struct platform_driver sata_dwc_driver = {
 	.remove = sata_dwc_remove,
 };
 
-module_platform_driver(sata_dwc_driver);
+static int __init sata_dwc_init(void)
+{
+	return platform_driver_register(&sata_dwc_driver);
+}
+
+static void __exit sata_dwc_exit(void)
+{
+	platform_driver_unregister(&sata_dwc_driver);
+}
+
+module_init(sata_dwc_init);
+module_exit(sata_dwc_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Mark Miesfeld <mmiesfeld@amcc.com>");

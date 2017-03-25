@@ -43,6 +43,7 @@
 /* For SCSI -> ATAPI command conversion */
 #include <scsi/scsi.h>
 
+#include <linux/irq.h>
 #include <linux/io.h>
 #include <asm/byteorder.h>
 #include <linux/uaccess.h>

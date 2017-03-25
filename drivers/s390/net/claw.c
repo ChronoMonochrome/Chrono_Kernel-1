@@ -63,6 +63,7 @@
 
 #define KMSG_COMPONENT "claw"
 
+#include <linux/kernel_stat.h>
 #include <asm/ccwdev.h>
 #include <asm/ccwgroup.h>
 #include <asm/debug.h>
@@ -290,7 +291,6 @@ static struct ccw_driver claw_ccw_driver = {
 	.ids	= claw_ids,
 	.probe	= ccwgroup_probe_ccwdev,
 	.remove	= ccwgroup_remove_ccwdev,
-	.int_class = IOINT_CLW,
 };
 
 static ssize_t
@@ -645,6 +645,7 @@ claw_irq_handler(struct ccw_device *cdev,
         struct claw_env  *p_env;
         struct chbk *p_ch_r=NULL;
 
+	kstat_cpu(smp_processor_id()).irqs[IOINT_CLW]++;
 	CLAW_DBF_TEXT(4, trace, "clawirq");
         /* Bypass all 'unsolicited interrupts' */
 	privptr = dev_get_drvdata(&cdev->dev);

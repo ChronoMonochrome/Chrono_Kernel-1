@@ -9,7 +9,7 @@ static u8 xec_mask	 = 0xf;
 static u8 nb_err_cpumask = 0xf;
 
 static bool report_gart_errors;
-static void (*nb_bus_decoder)(int node_id, struct mce *m);
+static void (*nb_bus_decoder)(int node_id, struct mce *m, u32 nbcfg);
 
 void amd_report_gart_errors(bool v)
 {
@@ -17,13 +17,13 @@ void amd_report_gart_errors(bool v)
 }
 EXPORT_SYMBOL_GPL(amd_report_gart_errors);
 
-void amd_register_ecc_decoder(void (*f)(int, struct mce *))
+void amd_register_ecc_decoder(void (*f)(int, struct mce *, u32))
 {
 	nb_bus_decoder = f;
 }
 EXPORT_SYMBOL_GPL(amd_register_ecc_decoder);
 
-void amd_unregister_ecc_decoder(void (*f)(int, struct mce *))
+void amd_unregister_ecc_decoder(void (*f)(int, struct mce *, u32))
 {
 	if (nb_bus_decoder) {
 		WARN_ON(nb_bus_decoder != f);
@@ -39,30 +39,41 @@ EXPORT_SYMBOL_GPL(amd_unregister_ecc_decoder);
  */
 
 /* transaction type */
-const char * const tt_msgs[] = { "INSN", "DATA", "GEN", "RESV" };
+const char *tt_msgs[] = { "INSN", "DATA", "GEN", "RESV" };
 EXPORT_SYMBOL_GPL(tt_msgs);
 
 /* cache level */
-const char * const ll_msgs[] = { "RESV", "L1", "L2", "L3/GEN" };
+const char *ll_msgs[] = { "RESV", "L1", "L2", "L3/GEN" };
 EXPORT_SYMBOL_GPL(ll_msgs);
 
 /* memory transaction type */
-const char * const rrrr_msgs[] = {
+const char *rrrr_msgs[] = {
        "GEN", "RD", "WR", "DRD", "DWR", "IRD", "PRF", "EV", "SNP"
 };
 EXPORT_SYMBOL_GPL(rrrr_msgs);
 
 /* participating processor */
-const char * const pp_msgs[] = { "SRC", "RES", "OBS", "GEN" };
+const char *pp_msgs[] = { "SRC", "RES", "OBS", "GEN" };
 EXPORT_SYMBOL_GPL(pp_msgs);
 
 /* request timeout */
-const char * const to_msgs[] = { "no timeout", "timed out" };
+const char *to_msgs[] = { "no timeout",	"timed out" };
 EXPORT_SYMBOL_GPL(to_msgs);
 
 /* memory or i/o */
-const char * const ii_msgs[] = { "MEM", "RESV", "IO", "GEN" };
+const char *ii_msgs[] = { "MEM", "RESV", "IO", "GEN" };
 EXPORT_SYMBOL_GPL(ii_msgs);
+
+static const char *f10h_nb_mce_desc[] = {
+	"HT link data error",
+	"Protocol error (link, L3, probe filter, etc.)",
+	"Parity error in NB-internal arrays",
+	"Link Retry due to IO link transmission error",
+	"L3 ECC data cache error",
+	"ECC error in L3 cache tag",
+	"L3 LRU parity bits error",
+	"ECC Error in the Probe Filter directory"
+};
 
 static const char * const f15h_ic_mce_desc[] = {
 	"UC during a demand linefill from L2",
@@ -77,7 +88,7 @@ static const char * const f15h_ic_mce_desc[] = {
 	"Parity error for IC probe tag valid bit",
 	"PFB non-cacheable bit parity error",
 	"PFB valid bit parity error",			/* xec = 0xd */
-	"Microcode Patch Buffer",			/* xec = 010 */
+	"patch RAM",					/* xec = 010 */
 	"uop queue",
 	"insn buffer",
 	"predecode buffer",
@@ -93,34 +104,12 @@ static const char * const f15h_cu_mce_desc[] = {
 	"WCC Tag ECC error",
 	"WCC Data ECC error",
 	"WCB Data parity error",
-	"VB Data ECC or parity error",
+	"VB Data/ECC error",
 	"L2 Tag ECC error",				/* xec = 0x10 */
 	"Hard L2 Tag ECC error",
 	"Multiple hits on L2 tag",
 	"XAB parity error",
 	"PRB address parity error"
-};
-
-static const char * const nb_mce_desc[] = {
-	"DRAM ECC error detected on the NB",
-	"CRC error detected on HT link",
-	"Link-defined sync error packets detected on HT link",
-	"HT Master abort",
-	"HT Target abort",
-	"Invalid GART PTE entry during GART table walk",
-	"Unsupported atomic RMW received from an IO link",
-	"Watchdog timeout due to lack of progress",
-	"DRAM ECC error detected on the NB",
-	"SVM DMA Exclusion Vector error",
-	"HT data error detected on link",
-	"Protocol error (link, L3, probe filter)",
-	"NB internal arrays parity error",
-	"DRAM addr/ctl signals parity error",
-	"IO link transmission error",
-	"L3 data cache ECC error",			/* xec = 0x1c */
-	"L3 cache tag error",
-	"L3 LRU parity bits error",
-	"ECC Error in the Probe Filter directory"
 };
 
 static const char * const fr_ex_mce_desc[] = {
@@ -136,7 +125,7 @@ static const char * const fr_ex_mce_desc[] = {
 	"Physical register file AG0 port",
 	"Physical register file AG1 port",
 	"Flag register file",
-	"DE error occurred"
+	"DE correctable error could not be corrected"
 };
 
 static bool f12h_dc_mce(u16 ec, u8 xec)
@@ -266,9 +255,10 @@ static bool f15h_dc_mce(u16 ec, u8 xec)
 	} else if (BUS_ERROR(ec)) {
 
 		if (!xec)
-			pr_cont("System Read Data Error.\n");
+			pr_cont("during system linefill.\n");
 		else
-			pr_cont(" Internal error condition type %d.\n", xec);
+			pr_cont(" Internal %s condition.\n",
+				((xec == 1) ? "livelock" : "deadlock"));
 	} else
 		ret = false;
 
@@ -365,11 +355,7 @@ static bool f15h_ic_mce(u16 ec, u8 xec)
 		pr_cont("%s.\n", f15h_ic_mce_desc[xec-2]);
 		break;
 
-	case 0x10:
-		pr_cont("%s.\n", f15h_ic_mce_desc[xec-4]);
-		break;
-
-	case 0x11 ... 0x14:
+	case 0x10 ... 0x14:
 		pr_cont("Decoder %s parity error.\n", f15h_ic_mce_desc[xec-4]);
 		break;
 
@@ -510,31 +496,58 @@ wrong_ls_mce:
 	pr_emerg(HW_ERR "Corrupted LS MCE info?\n");
 }
 
-void amd_decode_nb_mce(struct mce *m)
+static bool k8_nb_mce(u16 ec, u8 xec)
 {
-	struct cpuinfo_x86 *c = &boot_cpu_data;
-	int node_id = amd_get_nb_id(m->extcpu);
-	u16 ec = EC(m->status);
-	u8 xec = XEC(m->status, 0x1f);
-	u8 offset = 0;
-
-	pr_emerg(HW_ERR "Northbridge Error (node %d): ", node_id);
+	bool ret = true;
 
 	switch (xec) {
-	case 0x0 ... 0xe:
+	case 0x1:
+		pr_cont("CRC error detected on HT link.\n");
+		break;
 
-		/* special handling for DRAM ECCs */
-		if (xec == 0x0 || xec == 0x8) {
-			/* no ECCs on F11h */
-			if (c->x86 == 0x11)
-				goto wrong_nb_mce;
+	case 0x5:
+		pr_cont("Invalid GART PTE entry during GART table walk.\n");
+		break;
 
-			pr_cont("%s.\n", nb_mce_desc[xec]);
+	case 0x6:
+		pr_cont("Unsupported atomic RMW received from an IO link.\n");
+		break;
 
-			if (nb_bus_decoder)
-				nb_bus_decoder(node_id, m);
-			return;
-		}
+	case 0x0:
+	case 0x8:
+		if (boot_cpu_data.x86 == 0x11)
+			return false;
+
+		pr_cont("DRAM ECC error detected on the NB.\n");
+		break;
+
+	case 0xd:
+		pr_cont("Parity error on the DRAM addr/ctl signals.\n");
+		break;
+
+	default:
+		ret = false;
+		break;
+	}
+
+	return ret;
+}
+
+static bool f10h_nb_mce(u16 ec, u8 xec)
+{
+	bool ret = true;
+	u8 offset = 0;
+
+	if (k8_nb_mce(ec, xec))
+		return true;
+
+	switch(xec) {
+	case 0xa ... 0xc:
+		offset = 10;
+		break;
+
+	case 0xe:
+		offset = 11;
 		break;
 
 	case 0xf:
@@ -543,25 +556,100 @@ void amd_decode_nb_mce(struct mce *m)
 		else if (BUS_ERROR(ec))
 			pr_cont("DMA Exclusion Vector Table Walk error.\n");
 		else
-			goto wrong_nb_mce;
-		return;
+			ret = false;
+
+		goto out;
+		break;
 
 	case 0x19:
 		if (boot_cpu_data.x86 == 0x15)
 			pr_cont("Compute Unit Data Error.\n");
 		else
-			goto wrong_nb_mce;
-		return;
+			ret = false;
+
+		goto out;
+		break;
 
 	case 0x1c ... 0x1f:
-		offset = 13;
+		offset = 24;
 		break;
 
 	default:
-		goto wrong_nb_mce;
+		ret = false;
+
+		goto out;
+		break;
 	}
 
-	pr_cont("%s.\n", nb_mce_desc[xec - offset]);
+	pr_cont("%s.\n", f10h_nb_mce_desc[xec - offset]);
+
+out:
+	return ret;
+}
+
+static bool nb_noop_mce(u16 ec, u8 xec)
+{
+	return false;
+}
+
+void amd_decode_nb_mce(int node_id, struct mce *m, u32 nbcfg)
+{
+	struct cpuinfo_x86 *c = &boot_cpu_data;
+	u16 ec   = EC(m->status);
+	u8 xec   = XEC(m->status, 0x1f);
+	u32 nbsh = (u32)(m->status >> 32);
+	int core = -1;
+
+	pr_emerg(HW_ERR "Northbridge Error (node %d", node_id);
+
+	/* F10h, revD can disable ErrCpu[3:0] through ErrCpuVal */
+	if (c->x86 == 0x10 && c->x86_model > 7) {
+		if (nbsh & NBSH_ERR_CPU_VAL)
+			core = nbsh & nb_err_cpumask;
+	} else {
+		u8 assoc_cpus = nbsh & nb_err_cpumask;
+
+		if (assoc_cpus > 0)
+			core = fls(assoc_cpus) - 1;
+	}
+
+	if (core >= 0)
+		pr_cont(", core %d): ", core);
+	else
+		pr_cont("): ");
+
+	switch (xec) {
+	case 0x2:
+		pr_cont("Sync error (sync packets on HT link detected).\n");
+		return;
+
+	case 0x3:
+		pr_cont("HT Master abort.\n");
+		return;
+
+	case 0x4:
+		pr_cont("HT Target abort.\n");
+		return;
+
+	case 0x7:
+		pr_cont("NB Watchdog timeout.\n");
+		return;
+
+	case 0x9:
+		pr_cont("SVM DMA Exclusion Vector error.\n");
+		return;
+
+	default:
+		break;
+	}
+
+	if (!fam_ops->nb_mce(ec, xec))
+		goto wrong_nb_mce;
+
+	if (c->x86 == 0xf || c->x86 == 0x10 || c->x86 == 0x15)
+		if ((xec == 0x8 || xec == 0x0) && nb_bus_decoder)
+			nb_bus_decoder(node_id, m, nbcfg);
+
 	return;
 
 wrong_nb_mce:
@@ -575,6 +663,9 @@ static void amd_decode_fr_mce(struct mce *m)
 	u8 xec = XEC(m->status, xec_mask);
 
 	if (c->x86 == 0xf || c->x86 == 0x11)
+		goto wrong_fr_mce;
+
+	if (c->x86 != 0x15 && xec != 0x0)
 		goto wrong_fr_mce;
 
 	pr_emerg(HW_ERR "%s Error: ",
@@ -673,13 +764,13 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
 {
 	struct mce *m = (struct mce *)data;
 	struct cpuinfo_x86 *c = &boot_cpu_data;
-	int ecc;
+	int node, ecc;
 
 	if (amd_filter_mce(m))
 		return NOTIFY_STOP;
 
-	pr_emerg(HW_ERR "CPU:%d\tMC%d_STATUS[%s|%s|%s|%s|%s",
-		m->extcpu, m->bank,
+	pr_emerg(HW_ERR "MC%d_STATUS[%s|%s|%s|%s|%s",
+		m->bank,
 		((m->status & MCI_STATUS_OVER)	? "Over"  : "-"),
 		((m->status & MCI_STATUS_UC)	? "UE"	  : "CE"),
 		((m->status & MCI_STATUS_MISCV)	? "MiscV" : "-"),
@@ -698,8 +789,6 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
 
 	pr_cont("]: 0x%016llx\n", m->status);
 
-	if (m->status & MCI_STATUS_ADDRV)
-		pr_emerg(HW_ERR "\tMC%d_ADDR: 0x%016llx\n", m->bank, m->addr);
 
 	switch (m->bank) {
 	case 0:
@@ -722,7 +811,8 @@ int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
 		break;
 
 	case 4:
-		amd_decode_nb_mce(m);
+		node = amd_get_nb_id(m->extcpu);
+		amd_decode_nb_mce(node, m, 0);
 		break;
 
 	case 5:
@@ -754,7 +844,9 @@ static int __init mce_amd_init(void)
 	if (c->x86_vendor != X86_VENDOR_AMD)
 		return 0;
 
-	if (c->x86 < 0xf || c->x86 > 0x15)
+	if ((c->x86 < 0xf || c->x86 > 0x12) &&
+	    (c->x86 != 0x14 || c->x86_model > 0xf) &&
+	    (c->x86 != 0x15 || c->x86_model > 0xf))
 		return 0;
 
 	fam_ops = kzalloc(sizeof(struct amd_decoder_ops), GFP_KERNEL);
@@ -765,44 +857,50 @@ static int __init mce_amd_init(void)
 	case 0xf:
 		fam_ops->dc_mce = k8_dc_mce;
 		fam_ops->ic_mce = k8_ic_mce;
+		fam_ops->nb_mce = k8_nb_mce;
 		break;
 
 	case 0x10:
 		fam_ops->dc_mce = f10h_dc_mce;
 		fam_ops->ic_mce = k8_ic_mce;
+		fam_ops->nb_mce = f10h_nb_mce;
 		break;
 
 	case 0x11:
 		fam_ops->dc_mce = k8_dc_mce;
 		fam_ops->ic_mce = k8_ic_mce;
+		fam_ops->nb_mce = f10h_nb_mce;
 		break;
 
 	case 0x12:
 		fam_ops->dc_mce = f12h_dc_mce;
 		fam_ops->ic_mce = k8_ic_mce;
+		fam_ops->nb_mce = nb_noop_mce;
 		break;
 
 	case 0x14:
 		nb_err_cpumask  = 0x3;
 		fam_ops->dc_mce = f14h_dc_mce;
 		fam_ops->ic_mce = f14h_ic_mce;
+		fam_ops->nb_mce = nb_noop_mce;
 		break;
 
 	case 0x15:
 		xec_mask = 0x1f;
 		fam_ops->dc_mce = f15h_dc_mce;
 		fam_ops->ic_mce = f15h_ic_mce;
+		fam_ops->nb_mce = f10h_nb_mce;
 		break;
 
 	default:
-		printk(KERN_WARNING "Huh? What family is it: 0x%x?!\n", c->x86);
+		printk(KERN_WARNING "Huh? What family is that: %d?!\n", c->x86);
 		kfree(fam_ops);
 		return -EINVAL;
 	}
 
 	pr_info("MCE: In-kernel MCE decoding enabled.\n");
 
-	mce_register_decode_chain(&amd_mce_dec_nb);
+	atomic_notifier_chain_register(&x86_mce_decoder_chain, &amd_mce_dec_nb);
 
 	return 0;
 }
@@ -811,7 +909,7 @@ early_initcall(mce_amd_init);
 #ifdef MODULE
 static void __exit mce_amd_exit(void)
 {
-	mce_unregister_decode_chain(&amd_mce_dec_nb);
+	atomic_notifier_chain_unregister(&x86_mce_decoder_chain, &amd_mce_dec_nb);
 	kfree(fam_ops);
 }
 

@@ -596,12 +596,14 @@ static int adma_set_dma_masks(struct pci_dev *pdev, void __iomem *mmio_base)
 
 	rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (rc) {
-		dev_err(&pdev->dev, "32-bit DMA enable failed\n");
+		dev_printk(KERN_ERR, &pdev->dev,
+			"32-bit DMA enable failed\n");
 		return rc;
 	}
 	rc = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (rc) {
-		dev_err(&pdev->dev, "32-bit consistent DMA enable failed\n");
+		dev_printk(KERN_ERR, &pdev->dev,
+			"32-bit consistent DMA enable failed\n");
 		return rc;
 	}
 	return 0;
@@ -610,13 +612,15 @@ static int adma_set_dma_masks(struct pci_dev *pdev, void __iomem *mmio_base)
 static int adma_ata_init_one(struct pci_dev *pdev,
 			     const struct pci_device_id *ent)
 {
+	static int printed_version;
 	unsigned int board_idx = (unsigned int) ent->driver_data;
 	const struct ata_port_info *ppi[] = { &adma_port_info[board_idx], NULL };
 	struct ata_host *host;
 	void __iomem *mmio_base;
 	int rc, port_no;
 
-	ata_print_version_once(&pdev->dev, DRV_VERSION);
+	if (!printed_version++)
+		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
 
 	/* alloc host */
 	host = ata_host_alloc_pinfo(&pdev->dev, ppi, ADMA_PORTS);

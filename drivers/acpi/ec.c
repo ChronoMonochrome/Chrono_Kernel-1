@@ -71,6 +71,9 @@ enum ec_command {
 #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
 #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
 
+#define ACPI_EC_STORM_THRESHOLD 8	/* number of false interrupts
+					   per one transaction */
+
 enum {
 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
 	EC_FLAGS_GPE_STORM,		/* GPE storm detected */
@@ -83,15 +86,6 @@ enum {
 static unsigned int ec_delay __read_mostly = ACPI_EC_DELAY;
 module_param(ec_delay, uint, 0644);
 MODULE_PARM_DESC(ec_delay, "Timeout(ms) waited until an EC command completes");
-
-/*
- * If the number of false interrupts per one transaction exceeds
- * this threshold, will think there is a GPE storm happened and
- * will disable the GPE for normal transaction.
- */
-static unsigned int ec_storm_threshold  __read_mostly = 8;
-module_param(ec_storm_threshold, uint, 0644);
-MODULE_PARM_DESC(ec_storm_threshold, "Maxim false GPE numbers not considered as GPE storm");
 
 /* If we find an EC via the ECDT, we need to keep a ptr to its context */
 /* External interfaces use first EC only, so remember */
@@ -217,7 +211,7 @@ static int ec_check_sci_sync(struct acpi_ec *ec, u8 state)
 static int ec_poll(struct acpi_ec *ec)
 {
 	unsigned long flags;
-	int repeat = 5; /* number of command restarts */
+	int repeat = 2; /* number of command restarts */
 	while (repeat--) {
 		unsigned long delay = jiffies +
 			msecs_to_jiffies(ec_delay);
@@ -235,6 +229,8 @@ static int ec_poll(struct acpi_ec *ec)
 			}
 			advance_transaction(ec, acpi_ec_read_status(ec));
 		} while (time_before(jiffies, delay));
+		if (acpi_ec_read_status(ec) & ACPI_EC_FLAG_IBF)
+			break;
 		pr_debug(PREFIX "controller reset, restart transaction\n");
 		spin_lock_irqsave(&ec->curr_lock, flags);
 		start_transaction(ec);
@@ -323,7 +319,7 @@ static int acpi_ec_transaction(struct acpi_ec *ec, struct transaction *t)
 		msleep(1);
 		/* It is safe to enable the GPE outside of the transaction. */
 		acpi_enable_gpe(NULL, ec->gpe);
-	} else if (t->irq_count > ec_storm_threshold) {
+	} else if (t->irq_count > ACPI_EC_STORM_THRESHOLD) {
 		pr_info(PREFIX "GPE storm detected, "
 			"transactions will use polling mode\n");
 		set_bit(EC_FLAGS_GPE_STORM, &ec->flags);
@@ -448,16 +444,6 @@ int ec_transaction(u8 command,
 }
 
 EXPORT_SYMBOL(ec_transaction);
-
-/* Get the handle to the EC device */
-acpi_handle ec_get_handle(void)
-{
-	if (!first_ec)
-		return NULL;
-	return first_ec->handle;
-}
-
-EXPORT_SYMBOL(ec_get_handle);
 
 void acpi_ec_block_transactions(void)
 {
@@ -826,10 +812,10 @@ static int acpi_ec_add(struct acpi_device *device)
 		first_ec = ec;
 	device->driver_data = ec;
 
-	ret = !!request_region(ec->data_addr, 1, "EC data");
-	WARN(!ret, "Could not request EC data io port 0x%lx", ec->data_addr);
-	ret = !!request_region(ec->command_addr, 1, "EC cmd");
-	WARN(!ret, "Could not request EC cmd io port 0x%lx", ec->command_addr);
+	WARN(!request_region(ec->data_addr, 1, "EC data"),
+	     "Could not request EC data io port 0x%lx", ec->data_addr);
+	WARN(!request_region(ec->command_addr, 1, "EC cmd"),
+	     "Could not request EC cmd io port 0x%lx", ec->command_addr);
 
 	pr_info(PREFIX "GPE = 0x%lx, I/O: command/status = 0x%lx, data = 0x%lx\n",
 			  ec->gpe, ec->command_addr, ec->data_addr);
@@ -928,17 +914,6 @@ static int ec_flag_msi(const struct dmi_system_id *id)
 	return 0;
 }
 
-/*
- * Clevo M720 notebook actually works ok with IRQ mode, if we lifted
- * the GPE storm threshold back to 20
- */
-static int ec_enlarge_storm_threshold(const struct dmi_system_id *id)
-{
-	pr_debug("Setting the EC GPE storm threshold to 20\n");
-	ec_storm_threshold  = 20;
-	return 0;
-}
-
 static struct dmi_system_id __initdata ec_dmi_table[] = {
 	{
 	ec_skip_dsdt_scan, "Compal JFL92", {
@@ -970,20 +945,9 @@ static struct dmi_system_id __initdata ec_dmi_table[] = {
 	{
 	ec_validate_ecdt, "ASUS hardware", {
 	DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer Inc.") }, NULL},
-	{
-	ec_enlarge_storm_threshold, "CLEVO hardware", {
-	DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
-	DMI_MATCH(DMI_PRODUCT_NAME, "M720T/M730T"),}, NULL},
-	{
-	ec_skip_dsdt_scan, "HP Folio 13", {
-	DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
-	DMI_MATCH(DMI_PRODUCT_NAME, "HP Folio 13"),}, NULL},
-	{
-	ec_validate_ecdt, "ASUS hardware", {
-	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
-	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
 	{},
 };
+
 
 int __init acpi_ec_ecdt_probe(void)
 {
