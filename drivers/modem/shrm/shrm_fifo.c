@@ -216,7 +216,9 @@ int shm_write_msg_to_fifo(struct shrm_dev *shrm, u8 channel,
 			dev_warn(shrm->dev,
 					"Modem is lagging behind in reading."
 					"Stopping n/w dev queue\n");
+#ifdef CONFIG_U8500_SHRM_DEFAULT_NET
 			shrm_stop_netdev(shrm->ndev);
+#endif
 		}
 
 		return -EAGAIN;
@@ -658,6 +660,8 @@ void update_ca_audio_local_wptr(struct shrm_dev *shrm)
 	fifo->reader_local_wptr = fifo->shared_wptr;
 }
 
+extern void log_this(u8 pc, char* a, u32 extra1, char* b, u32 extra2);
+
 void update_ac_common_local_rptr(struct shrm_dev *shrm)
 {
 	/*
@@ -685,6 +689,8 @@ void update_ac_common_local_rptr(struct shrm_dev *shrm)
 	/* Chance of race condition of below variables with write_msg */
 	fifo->availablesize += free_space;
 	fifo->writer_local_rptr = fifo->shared_rptr;
+	log_this(82, "rptr", fifo->shared_rptr, NULL, 0);
+	trace_printk("rptr : 0x%04x\n", fifo->shared_rptr);
 	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
@@ -714,6 +720,8 @@ void update_ac_audio_local_rptr(struct shrm_dev *shrm)
 	/* Chance of race condition of below variables with write_msg */
 	fifo->availablesize += free_space;
 	fifo->writer_local_rptr = fifo->shared_rptr;
+	log_this(80, "rptr", fifo->shared_rptr, NULL, 0);
+	trace_printk("rptr : 0x%04x\n", fifo->shared_rptr);
 	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
@@ -726,12 +734,15 @@ void update_ac_common_shared_wptr(struct shrm_dev *shrm)
 	struct fifo_write_params *fifo;
 
 	fifo = &ape_shm_fifo_0;
+
 	spin_lock_bh(&fifo->fifo_update_lock);
 	/* Update shared pointer fifo offset of the IPC zone */
 	(*((u32 *)shrm->ac_common_shared_wptr)) =
 						fifo->writer_local_wptr;
 
 	fifo->shared_wptr = fifo->writer_local_wptr;
+	log_this(83, "wptr", fifo->shared_wptr, NULL, 0);
+	trace_printk("wptr : 0x%04x\n", fifo->shared_wptr);
 	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
@@ -749,6 +760,8 @@ void update_ac_audio_shared_wptr(struct shrm_dev *shrm)
 	(*((u32 *)shrm->ac_audio_shared_wptr)) =
 						fifo->writer_local_wptr;
 	fifo->shared_wptr = fifo->writer_local_wptr;
+	log_this(81, "wptr", fifo->shared_wptr, NULL, 0);
+	trace_printk("wptr : 0x%04x\n", fifo->shared_wptr);
 	spin_unlock_bh(&fifo->fifo_update_lock);
 }
 
