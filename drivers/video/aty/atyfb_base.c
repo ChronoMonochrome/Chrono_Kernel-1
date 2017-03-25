@@ -301,9 +301,9 @@ static struct fb_ops atyfb_ops = {
 	.fb_sync	= atyfb_sync,
 };
 
-static bool noaccel;
+static int noaccel;
 #ifdef CONFIG_MTRR
-static bool nomtrr;
+static int nomtrr;
 #endif
 static int vram;
 static int pll;
@@ -3458,10 +3458,9 @@ static int __devinit atyfb_setup_generic(struct pci_dev *pdev,
 
 	raddr = addr + 0x7ff000UL;
 	rrp = &pdev->resource[2];
-	if ((rrp->flags & IORESOURCE_MEM) &&
-	    request_mem_region(rrp->start, resource_size(rrp), "atyfb")) {
+	if ((rrp->flags & IORESOURCE_MEM) && request_mem_region(rrp->start, rrp->end - rrp->start + 1, "atyfb")) {
 		par->aux_start = rrp->start;
-		par->aux_size = resource_size(rrp);
+		par->aux_size = rrp->end - rrp->start + 1;
 		raddr = rrp->start;
 		PRINTKI("using auxiliary register aperture\n");
 	}
@@ -3551,7 +3550,7 @@ static int __devinit atyfb_pci_probe(struct pci_dev *pdev,
 
 	/* Reserve space */
 	res_start = rp->start;
-	res_size = resource_size(rp);
+	res_size = rp->end - rp->start + 1;
 	if (!request_mem_region(res_start, res_size, "atyfb"))
 		return -EBUSY;
 
