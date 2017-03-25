@@ -69,12 +69,10 @@
 				| ALARM_SEC_BIT)
 
 #define VT8500_RTC_CR_ENABLE	(1 << 0)	/* Enable RTC */
-#define VT8500_RTC_CR_12H	(1 << 1)	/* 12h time format */
+#define VT8500_RTC_CR_24H	(1 << 1)	/* 24h time format */
 #define VT8500_RTC_CR_SM_ENABLE	(1 << 2)	/* Enable periodic irqs */
 #define VT8500_RTC_CR_SM_SEC	(1 << 3)	/* 0: 1Hz/60, 1: 1Hz */
 #define VT8500_RTC_CR_CALIB	(1 << 4)	/* Enable calibration */
-
-#define VT8500_RTC_IS_ALARM	(1 << 0)	/* Alarm interrupt status */
 
 struct vt8500_rtc {
 	void __iomem		*regbase;
@@ -98,7 +96,7 @@ static irqreturn_t vt8500_rtc_irq(int irq, void *dev_id)
 
 	spin_unlock(&vt8500_rtc->lock);
 
-	if (isr & VT8500_RTC_IS_ALARM)
+	if (isr & 1)
 		events |= RTC_AF | RTC_IRQF;
 
 	rtc_update_irq(vt8500_rtc->rtc, 1, events);
@@ -118,7 +116,7 @@ static int vt8500_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	tm->tm_min = bcd2bin((time & TIME_MIN_MASK) >> TIME_MIN_S);
 	tm->tm_hour = bcd2bin((time & TIME_HOUR_MASK) >> TIME_HOUR_S);
 	tm->tm_mday = bcd2bin(date & DATE_DAY_MASK);
-	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S) - 1;
+	tm->tm_mon = bcd2bin((date & DATE_MONTH_MASK) >> DATE_MONTH_S);
 	tm->tm_year = bcd2bin((date & DATE_YEAR_MASK) >> DATE_YEAR_S)
 			+ ((date >> DATE_CENTURY_S) & 1 ? 200 : 100);
 	tm->tm_wday = (time & TIME_DOW_MASK) >> TIME_DOW_S;
@@ -137,9 +135,8 @@ static int vt8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	}
 
 	writel((bin2bcd(tm->tm_year - 100) << DATE_YEAR_S)
-		| (bin2bcd(tm->tm_mon + 1) << DATE_MONTH_S)
-		| (bin2bcd(tm->tm_mday))
-		| ((tm->tm_year >= 200) << DATE_CENTURY_S),
+		| (bin2bcd(tm->tm_mon) << DATE_MONTH_S)
+		| (bin2bcd(tm->tm_mday)),
 		vt8500_rtc->regbase + VT8500_RTC_DS);
 	writel((bin2bcd(tm->tm_wday) << TIME_DOW_S)
 		| (bin2bcd(tm->tm_hour) << TIME_HOUR_S)
@@ -164,8 +161,8 @@ static int vt8500_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	alrm->time.tm_sec = bcd2bin((alarm & TIME_SEC_MASK));
 
 	alrm->enabled = (alarm & ALARM_ENABLE_MASK) ? 1 : 0;
-	alrm->pending = (isr & VT8500_RTC_IS_ALARM) ? 1 : 0;
 
+	alrm->pending = (isr & 1) ? 1 : 0;
 	return rtc_valid_tm(&alrm->time);
 }
 
@@ -249,7 +246,7 @@ static int __devinit vt8500_rtc_probe(struct platform_device *pdev)
 	}
 
 	/* Enable RTC and set it to 24-hour mode */
-	writel(VT8500_RTC_CR_ENABLE,
+	writel(VT8500_RTC_CR_ENABLE | VT8500_RTC_CR_24H,
 	       vt8500_rtc->regbase + VT8500_RTC_CR);
 
 	vt8500_rtc->rtc = rtc_device_register("vt8500-rtc", &pdev->dev,
@@ -312,7 +309,17 @@ static struct platform_driver vt8500_rtc_driver = {
 	},
 };
 
-module_platform_driver(vt8500_rtc_driver);
+static int __init vt8500_rtc_init(void)
+{
+	return platform_driver_register(&vt8500_rtc_driver);
+}
+module_init(vt8500_rtc_init);
+
+static void __exit vt8500_rtc_exit(void)
+{
+	platform_driver_unregister(&vt8500_rtc_driver);
+}
+module_exit(vt8500_rtc_exit);
 
 MODULE_AUTHOR("Alexey Charkov <alchark@gmail.com>");
 MODULE_DESCRIPTION("VIA VT8500 SoC Realtime Clock Driver (RTC)");

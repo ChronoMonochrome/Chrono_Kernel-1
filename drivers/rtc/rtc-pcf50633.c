@@ -294,7 +294,17 @@ static struct platform_driver pcf50633_rtc_driver = {
 	.remove = __devexit_p(pcf50633_rtc_remove),
 };
 
-module_platform_driver(pcf50633_rtc_driver);
+static int __init pcf50633_rtc_init(void)
+{
+	return platform_driver_register(&pcf50633_rtc_driver);
+}
+module_init(pcf50633_rtc_init);
+
+static void __exit pcf50633_rtc_exit(void)
+{
+	platform_driver_unregister(&pcf50633_rtc_driver);
+}
+module_exit(pcf50633_rtc_exit);
 
 MODULE_DESCRIPTION("PCF50633 RTC driver");
 MODULE_AUTHOR("Balaji Rao <balajirrao@openmoko.org>");
