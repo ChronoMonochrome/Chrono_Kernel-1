@@ -13,7 +13,6 @@
 #include <linux/backlight.h>
 #include <linux/mfd/adp5520.h>
 #include <linux/slab.h>
-#include <linux/module.h>
 
 struct adp5520_bl {
 	struct device *master;
@@ -289,7 +288,7 @@ static int __devinit adp5520_bl_probe(struct platform_device *pdev)
 	struct adp5520_bl *data;
 	int ret = 0;
 
-	data = devm_kzalloc(&pdev->dev, sizeof(*data), GFP_KERNEL);
+	data = kzalloc(sizeof(*data), GFP_KERNEL);
 	if (data == NULL)
 		return -ENOMEM;
 
@@ -298,6 +297,7 @@ static int __devinit adp5520_bl_probe(struct platform_device *pdev)
 
 	if (data->pdata  == NULL) {
 		dev_err(&pdev->dev, "missing platform data\n");
+		kfree(data);
 		return -ENODEV;
 	}
 
@@ -313,6 +313,7 @@ static int __devinit adp5520_bl_probe(struct platform_device *pdev)
 				       &adp5520_bl_ops, &props);
 	if (IS_ERR(bl)) {
 		dev_err(&pdev->dev, "failed to register backlight\n");
+		kfree(data);
 		return PTR_ERR(bl);
 	}
 
@@ -324,6 +325,7 @@ static int __devinit adp5520_bl_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register sysfs\n");
 		backlight_device_unregister(bl);
+		kfree(data);
 	}
 
 	platform_set_drvdata(pdev, bl);
@@ -345,6 +347,7 @@ static int __devexit adp5520_bl_remove(struct platform_device *pdev)
 				&adp5520_bl_attr_group);
 
 	backlight_device_unregister(bl);
+	kfree(data);
 
 	return 0;
 }
@@ -380,7 +383,17 @@ static struct platform_driver adp5520_bl_driver = {
 	.resume		= adp5520_bl_resume,
 };
 
-module_platform_driver(adp5520_bl_driver);
+static int __init adp5520_bl_init(void)
+{
+	return platform_driver_register(&adp5520_bl_driver);
+}
+module_init(adp5520_bl_init);
+
+static void __exit adp5520_bl_exit(void)
+{
+	platform_driver_unregister(&adp5520_bl_driver);
+}
+module_exit(adp5520_bl_exit);
 
 MODULE_AUTHOR("Michael Hennerich <hennerich@blackfin.uclinux.org>");
 MODULE_DESCRIPTION("ADP5520(01) Backlight Driver");

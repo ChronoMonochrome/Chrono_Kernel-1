@@ -273,6 +273,20 @@ static int get_next_job_id(void)
 }
 
 /**
+ * Check for macroblock formats
+ */
+static bool is_mb_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
  * Limit the number of cores used in some "easy" and impossible cases
  */
 static int limit_blits(int n_split, struct b2r2_blt_req *user_req)
@@ -285,6 +299,14 @@ static int limit_blits(int n_split, struct b2r2_blt_req *user_req)
 
 	if (user_req->src_rect.width < n_split &&
 			user_req->src_rect.height < n_split)
+		return 1;
+
+	/*
+	 * Handle macroblock formats with one
+	 * core for now since there seems to be some bug
+	 * related to macroblock access patterns
+	 */
+	if (is_mb_fmt(user_req->src_img.fmt))
 		return 1;
 
 	return n_split;
@@ -308,25 +330,13 @@ static bool is_scaling_fmt(enum b2r2_blt_fmt fmt)
 	case B2R2_BLT_FMT_YVU422_PACKED_SEMI_PLANAR:
 	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
 	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YV12:
 		return true;
 	default:
 		return false;
 	}
 }
 
-/**
- * Check for macroblock formats
- */
-static bool is_mb_fmt(enum b2r2_blt_fmt fmt)
-{
-	switch (fmt) {
-	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
-	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
-		return true;
-	default:
-		return false;
-	}
-}
 
 /**
  * Split a request rectangle on available cores
@@ -367,16 +377,12 @@ static int b2r2_blt_split_request(struct b2r2_blt_data *blt_data,
 		return -ENOSYS;
 	} else if (*n_split == 1 ||
 			(srw < *n_split && srh < *n_split) ||
-			(drw < *n_split && drh < *n_split) ||
-			is_mb_fmt(user_req->src_img.fmt)) {
-		/* Handle macroblock formats with one
-		 * core for now since there seems to be some bug
-		 * related to macroblock access patterns
-		 */
+			(drw < *n_split && drh < *n_split)) {
 		memcpy(&split_requests[0]->user_req,
 				user_req,
 				sizeof(*user_req));
-		split_requests[0]->core_mask = 1;
+		split_requests[0]->core_mask =
+				(1 << split_requests[0]->instance->control_id);
 		*n_split = 1;
 		return 0;
 	}
@@ -427,8 +433,10 @@ static int b2r2_blt_split_request(struct b2r2_blt_data *blt_data,
 		user_req->dst_rect.height,
 		user_req->dst_img.fmt);
 
-	/* TODO: We need sub pixel precision here,
-	 * or a better way to split rects */
+	/*
+	 * TODO: We need sub pixel precision here,
+	 * or a better way to split rects
+	 */
 	dstart_x = user_req->dst_rect.x;
 	dstart_y = user_req->dst_rect.y;
 	if (bg_blend) {
@@ -509,20 +517,24 @@ static int b2r2_blt_split_request(struct b2r2_blt_data *blt_data,
 		}
 	}
 
-	/* Check for flip and rotate to establish destination
-	 * step order */
+	/*
+	 * Check for flip and rotate to establish destination
+	 * step order
+	 */
 	if (transform & B2R2_BLT_TRANSFORM_FLIP_H) {
 		dstart_x +=  drw;
 		if (bg_blend)
 			bstart_x +=  drw;
 		dso_x = -1;
 	}
-	if ((transform & B2R2_BLT_TRANSFORM_FLIP_V) ||
-			(transform & B2R2_BLT_TRANSFORM_CCW_ROT_90)) {
-		dstart_y += drh;
-		if (bg_blend)
-			bstart_y += drh;
-		dso_y = -1;
+	if (transform != B2R2_BLT_TRANSFORM_CCW_ROT_270) {
+		if ((transform & B2R2_BLT_TRANSFORM_FLIP_V) ||
+				(transform & B2R2_BLT_TRANSFORM_CCW_ROT_90)) {
+			dstart_y += drh;
+			if (bg_blend)
+				bstart_y += drh;
+			dso_y = -1;
+		}
 	}
 
 	/* Set scan starting position */
@@ -621,7 +633,7 @@ static int b2r2_blt_split_request(struct b2r2_blt_data *blt_data,
 				sreq->bg_rect.width,
 				sreq->bg_rect.height);
 
-		core_mask |= (1 << i);
+		core_mask |= (1 << split_requests[i]->instance->control_id);
 	}
 
 	for (i = 0; i < *n_split; i++)
@@ -818,8 +830,7 @@ static int b2r2_blt_blit_internal(int handle,
 	/* Don't split small requests */
 	n_blit = limit_blits(n_instance, &ureq);
 
-	/* The id needs to be universal on
-	 * all cores */
+	/* The id needs to be universal on all cores */
 	request_id = get_next_job_id();
 
 #ifdef CONFIG_B2R2_GENERIC_ONLY
@@ -857,8 +868,10 @@ static int b2r2_blt_blit_internal(int handle,
 
 #ifdef CONFIG_B2R2_GENERIC_ONLY
 	if (ureq.flags & B2R2_BLT_FLAG_BG_BLEND) {
-		/* No support for BG BLEND in generic
-		 * implementation yet */
+		/*
+		 * No support for BG BLEND in generic
+		 * implementation yet
+		 */
 		b2r2_log_warn(b2r2_blt->dev, "%s: Unsupported: "
 			"Background blend in b2r2_generic_blt\n",
 			__func__);
@@ -882,14 +895,22 @@ static int b2r2_blt_blit_internal(int handle,
 		int j;
 		/* TODO: if one blitter fails then cancel the jobs added */
 
-		/* Call waitjob for successful jobs
-		 * (synchs if specified in request) */
+		/*
+		 * Call waitjob for successful jobs
+		 * (synchs if specified in request)
+		 */
 		if (ureq.flags & B2R2_BLT_FLAG_DRY_RUN)
 			goto exit;
 
 		for (j = 0; j < i; j++) {
 			int rtmp;
 
+			/*
+			 * For debugging purposes we can choose to
+			 * omit parts of the split job through debugfs
+			 */
+			if (split_requests[j]->instance->control->bypass)
+				continue;
 			rtmp = b2r2_control_waitjob(split_requests[j]);
 			if (rtmp < 0) {
 				b2r2_log_err(b2r2_blt->dev,
@@ -906,8 +927,10 @@ static int b2r2_blt_blit_internal(int handle,
 	if (ret == -ENOSYS) {
 		struct b2r2_blt_request *request_gen = NULL;
 		if (ureq.flags & B2R2_BLT_FLAG_BG_BLEND) {
-			/* No support for BG BLEND in generic
-			 * implementation yet */
+			/*
+			 * No support for BG BLEND in generic
+			 * implementation yet
+			 */
 			b2r2_log_warn(b2r2_blt->dev, "%s: Unsupported: "
 				"Background blend in b2r2_generic_blt\n",
 				__func__);
@@ -1086,6 +1109,8 @@ int b2r2_blt_request(int handle,
 	if (!atomic_inc_not_zero(&blt_refcount.refcount))
 		return -ENOSYS;
 
+	b2r2_core_on_reset_completion_wait();
+
 	/* Exclude some currently unsupported cases */
 	if ((user_req->flags & B2R2_BLT_FLAG_REPORT_WHEN_DONE) ||
 			(user_req->flags & B2R2_BLT_FLAG_REPORT_PERFORMANCE) ||
@@ -1234,7 +1259,6 @@ static long b2r2_blt_ioctl_us(struct file *file,
 	int ret = 0;
 	int handle = (int) file->private_data;
 
-	/** Process actual ioctl */
 	b2r2_log_info(b2r2_blt->dev, "%s\n", __func__);
 
 	/* Get the instance from the file structure */
@@ -1430,8 +1454,10 @@ static ssize_t b2r2_blt_read_us(struct file *filp,
 	core_mask = requests[first_index]->core_mask >> 1;
 	core_mask &= ~(1 << first_index);
 
-	/* If there are any more cores, try reading the report
-	 * with the specific ID from the other cores */
+	/*
+	 * If there are any more cores, try reading the report
+	 * with the specific ID from the other cores
+	 */
 	for (i = 0; i < B2R2_MAX_NBR_DEVICES; i++) {
 		if ((core_mask & 1) && (ctl[i] != NULL)) {
 			/* TODO: Do we need to wait here? */

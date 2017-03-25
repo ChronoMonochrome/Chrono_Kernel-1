@@ -74,7 +74,8 @@ int b2r2_debug_init(struct b2r2_control *cont);
 void b2r2_debug_exit(void);
 void b2r2_debug_job_done(struct b2r2_control *cont,
 		struct b2r2_node *node);
-
+void b2r2_debug_buffers_unresolve(struct b2r2_control *cont,
+		struct b2r2_blt_request *request);
 #else
 
 #define b2r2_log_err(...)
@@ -93,6 +94,12 @@ static inline void b2r2_debug_exit(void)
 }
 static inline void b2r2_debug_job_done(struct b2r2_control *cont,
 		struct b2r2_node *node)
+{
+	return;
+}
+
+static inline void b2r2_debug_buffers_unresolve(struct b2r2_control *cont,
+		struct b2r2_blt_request *request)
 {
 	return;
 }
