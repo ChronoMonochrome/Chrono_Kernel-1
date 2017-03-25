@@ -393,8 +393,7 @@ static struct crypto_alg geode_cbc_alg = {
 	.cra_driver_name	=	"cbc-aes-geode",
 	.cra_priority		=	400,
 	.cra_flags			=	CRYPTO_ALG_TYPE_BLKCIPHER |
-						CRYPTO_ALG_KERN_DRIVER_ONLY |
-						CRYPTO_ALG_NEED_FALLBACK,
+							CRYPTO_ALG_NEED_FALLBACK,
 	.cra_init			=	fallback_init_blk,
 	.cra_exit			=	fallback_exit_blk,
 	.cra_blocksize		=	AES_MIN_BLOCK_SIZE,
@@ -480,8 +479,7 @@ static struct crypto_alg geode_ecb_alg = {
 	.cra_driver_name	=	"ecb-aes-geode",
 	.cra_priority		=	400,
 	.cra_flags			=	CRYPTO_ALG_TYPE_BLKCIPHER |
-						CRYPTO_ALG_KERN_DRIVER_ONLY |
-						CRYPTO_ALG_NEED_FALLBACK,
+							CRYPTO_ALG_NEED_FALLBACK,
 	.cra_init			=	fallback_init_blk,
 	.cra_exit			=	fallback_exit_blk,
 	.cra_blocksize		=	AES_MIN_BLOCK_SIZE,
