@@ -129,6 +129,7 @@
 #include <linux/interrupt.h>
 #include <linux/device.h>
 #include <asm/dma.h>
+#include <asm/system.h>
 #include <asm/io.h>
 #include <asm/pgtable.h>
 #include <asm/byteorder.h>

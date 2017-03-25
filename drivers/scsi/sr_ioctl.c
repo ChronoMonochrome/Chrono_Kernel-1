@@ -4,7 +4,6 @@
 #include <linux/errno.h>
 #include <linux/string.h>
 #include <linux/blkdev.h>
-#include <linux/module.h>
 #include <linux/blkpg.h>
 #include <linux/cdrom.h>
 #include <linux/delay.h>

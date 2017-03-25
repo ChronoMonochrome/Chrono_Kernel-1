@@ -40,7 +40,6 @@
  */
 
 #include <linux/slab.h>
-#include <linux/module.h>
 
 #include <scsi/osd_initiator.h>
 #include <scsi/osd_sec.h>

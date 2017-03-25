@@ -5,7 +5,6 @@
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/zorro.h>
-#include <linux/module.h>
 
 #include <asm/page.h>
 #include <asm/pgtable.h>
