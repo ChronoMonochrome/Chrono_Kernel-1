@@ -29,7 +29,6 @@
  */
 #include <linux/compat.h>
 #include <linux/ratelimit.h>
-#include <linux/export.h>
 
 #include "drmP.h"
 #include "drm_core.h"
@@ -315,8 +314,7 @@ static int compat_drm_getclient(struct file *file, unsigned int cmd,
 	if (err)
 		return err;
 
-	if (__get_user(c32.idx, &client->idx)
-	    || __get_user(c32.auth, &client->auth)
+	if (__get_user(c32.auth, &client->auth)
 	    || __get_user(c32.pid, &client->pid)
 	    || __get_user(c32.uid, &client->uid)
 	    || __get_user(c32.magic, &client->magic)
