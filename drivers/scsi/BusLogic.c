@@ -47,6 +47,7 @@
 
 #include <asm/dma.h>
 #include <asm/io.h>
+#include <asm/system.h>
 
 #include <scsi/scsi.h>
 #include <scsi/scsi_cmnd.h>
