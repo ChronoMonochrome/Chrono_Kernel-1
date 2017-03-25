@@ -612,7 +612,7 @@ static int cg29xx_codec_probe(struct snd_soc_codec *codec)
 {
 	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 
-	snd_soc_add_codec_controls(
+	snd_soc_add_controls(
 		codec,
 		cg29xx_snd_controls,
 		ARRAY_SIZE(cg29xx_snd_controls));
@@ -627,7 +627,7 @@ static int cg29xx_codec_remove(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static int cg29xx_codec_suspend(struct snd_soc_codec *codec)
+static int cg29xx_codec_suspend(struct snd_soc_codec *codec, pm_message_t state)
 {
 	pr_debug("%s: Enter (codec->name = %s).\n", __func__, codec->name);
 

@@ -3,7 +3,8 @@
  *
  * Author: Mikko J. Lehto <mikko.lehto@symbio.com>,
  *         Mikko Sarmanne <mikko.sarmanne@symbio.com>,
- *         Ola Lilja <ola.o.lilja@stericsson.com>
+ *         Ola Lilja <ola.o.lilja@stericsson.com>,
+ *         Kristoffer Karlsson <kristoffer.karlsson@stericsson.com>
  *         for ST-Ericsson.
  *
  * License terms:
@@ -16,37 +17,45 @@
 #ifndef AB8500_CODEC_REGISTERS_H
 #define AB8500_CODEC_REGISTERS_H
 
-#define AB8500_SUPPORTED_RATE (SNDRV_PCM_RATE_48000)
-#define AB8500_SUPPORTED_FMT (SNDRV_PCM_FMTBIT_S16_LE)
+#define AB850X_SUPPORTED_RATE (SNDRV_PCM_RATE_48000)
+#define AB850X_SUPPORTED_FMT (SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S32_LE)
+
+#define LINEIN_RAMP_DELAY 50
 
 extern struct snd_soc_dai_driver ab8500_codec_dai[];
 extern struct snd_soc_codec_driver soc_codec_dev_ab8500;
 
-#define LINEIN_RAMP_DELAY 50
-
 /* Extended interface for codec-driver */
 
-int ab8500_audio_power_control(bool power_on);
-void ab8500_audio_pwm_vibra(unsigned char speed_left_pos,
-			unsigned char speed_left_neg,
-			unsigned char speed_right_pos,
-			unsigned char speed_right_neg);
-int ab8500_audio_set_word_length(struct snd_soc_dai *dai, unsigned int wl);
-int ab8500_audio_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay);
-int ab8500_audio_setup_if1(struct snd_soc_codec *codec,
+int ab850x_audio_power_control(bool power_on);
+int ab850x_audio_pwm_vibra(unsigned char pdutcyc1, unsigned char ndutcyc1,
+		unsigned char pdutcyc2, unsigned char ndutcyc2);
+int ab8505_audio_pwm_output(bool pwm1_mod, unsigned char pwm1_freq,
+		bool pwm2_mod, unsigned char pwm2_freq);
+int ab850x_audio_set_word_length(struct snd_soc_dai *dai, unsigned int wl);
+int ab850x_audio_set_bit_delay(struct snd_soc_dai *dai, unsigned int delay);
+int ab850x_audio_setup_if1(struct snd_soc_codec *codec,
 			unsigned int fmt,
 			unsigned int wl,
 			unsigned int delay);
 
-void ab8500_audio_anc_configure(struct snd_soc_codec *codec,
+void ab850x_audio_anc_configure(struct snd_soc_codec *codec,
 			bool apply_fir, bool apply_iir);
 
-enum ab8500_audio_adcm {
-	AB8500_AUDIO_ADCM_NORMAL,
-	AB8500_AUDIO_ADCM_FORCE_UP,
-	AB8500_AUDIO_ADCM_FORCE_DOWN
+enum ab850x_audio_chipid {
+	AB850X_AUDIO_UNKNOWN,
+	AB850X_AUDIO_AB8500,
+	AB850X_AUDIO_AB9540_V1, AB850X_AUDIO_AB9540_V2, AB850X_AUDIO_AB9540_V3,
+	AB850X_AUDIO_AB8505_V1, AB850X_AUDIO_AB8505_V2, AB850X_AUDIO_AB8505_V3
 };
-int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm);
+enum ab850x_audio_chipid ab850x_audio_get_chipid(struct device *dev);
+
+enum ab850x_audio_adcm {
+	AB850X_AUDIO_ADCM_NORMAL,
+	AB850X_AUDIO_ADCM_FORCE_UP,
+	AB850X_AUDIO_ADCM_FORCE_DOWN
+};
+int ab850x_audio_set_adcm(enum ab850x_audio_adcm req_adcm);
 
 #define SOC_SINGLE_VALUE_S1R(xreg0, xcount, xmin, xmax, xinvert) \
 	((unsigned long)&(struct soc_smra_control) \
@@ -146,7 +155,8 @@ int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm);
 #define REG_PWMGENCONF1		0x0F
 #define REG_PWMGENCONF2		0x10
 #define REG_PWMGENCONF3		0x11
-#define REG_PWMGENCONF4		0x12
+#define REG_PWMGENCONF4		0x12	/* Used only in ab8500 */
+#define REG_IPWMACFREQ		0x12	/* Used only in ab8505 v2 */
 #define REG_PWMGENCONF5		0x13
 #define REG_ANAGAIN1		0x14
 #define REG_ANAGAIN2		0x15
@@ -241,10 +251,27 @@ int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm);
 #define REG_FIFOCONF6		0x6E
 #define REG_AUDREV		0x6F
 
-#define AB8500_FIRST_REG	REG_POWERUP
-#define AB8500_LAST_REG		REG_AUDREV
-#define AB8500_CACHEREGNUM	(AB8500_LAST_REG + 1)
-
+/* AB8505 extended audio bank (0x0d) register definitions */
+#define REG_EPWM1CONF		0x70
+#define REG_EPWM2CONF		0x71
+#define REG_DMICFREQ		0x72
+#define REG_USBHSGAIN		0x73
+#define REG_USBDRVCTRL		0x74
+#define REG_EARGAINMICSEL	0x75
+#define REG_PDMCTRL		0x76
+#define REG_CIDEMICTRL		0x77
+#define REG_HFGAINCTRL_V1	0x78
+#define REG_VIBGAINCTRL_V1	0x79
+#define REG_EPWM1ACDCA		0x7A
+#define REG_EPWM1ACDCB		0x7B
+#define REG_EPWM1ACFREQ		0x7C
+#define REG_EPWM2ACDCA		0x7D
+#define REG_EPWM2ACDCB		0x7E
+#define REG_EPWM2ACFREQ		0x7F
+#define REG_HFLGAINCTRL_V2	0x80
+#define REG_HFRGAINCTRL_V2	0x81
+#define REG_VIBGAINCTRL_V2	0x82
+#define REG_MIXCTRL		0x83
 
 #define REG_MASK_ALL				0xFF
 #define REG_MASK_NONE				0x00
@@ -268,6 +295,7 @@ int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm);
 #define REG_DAPATHENA_ENDA4			4
 #define REG_DAPATHENA_ENDA5			3
 #define REG_DAPATHENA_ENDA6			2
+#define REG_DAPATHENA_ENHPEAR			1
 
 /* REG_ANACONF1 */
 #define REG_ANACONF1_HSLOWPOW			7
@@ -317,6 +345,7 @@ int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm);
 #define REG_ANACONF4_ENVIB2			0
 
 /* REG_DAPATHCONF */
+#define REG_DAPATHCONF_CPLFMD			7
 #define REG_DAPATHCONF_ENDACEAR			6
 #define REG_DAPATHCONF_ENDACHSL			5
 #define REG_DAPATHCONF_ENDACHSR			4
@@ -679,5 +708,116 @@ int ab8500_audio_set_adcm(enum ab8500_audio_adcm req_adcm);
 #define REG_FIFOCONF6_BFIFOSAMPLE_MAX		0xFF
 
 /* REG_AUDREV */
+
+/* REG_ADPATHENA */
+#define REG_ADPATHENA_SELIN			1
+#define REG_ADPATHENA_LPADC3			0
+
+/* REG_IPWMACFREQ */
+#define REG_IPWMACFREQ_FREQ_MAX			0xC8
+#define REG_IPWMACFREQ_FREQ			0
+
+/* REG_EPWM1CONF */
+#define REG_EPWM1CONF_EDGE			7
+#define REG_EPWM1CONF_TOHFR			6
+#define REG_EPWM1CONF_EN			4
+#define REG_EPWM1CONF_FREQ_MAX			0xF
+#define REG_EPWM1CONF_FREQ			0
+
+/* REG_EPWM2CONF */
+#define REG_EPWM2CONF_EDGE			7
+#define REG_EPWM2CONF_TOHFL			6
+#define REG_EPWM2CONF_GPIOSEL			5
+#define REG_EPWM2CONF_EN			4
+#define REG_EPWM2CONF_FREQ_MAX			0xF
+#define REG_EPWM2CONF_FREQ			0
+
+/* REG_DMICFREQ */
+#define REG_DMICFREQ_AD12LBMONO			7
+#define REG_DMICFREQ_MIC12FREQ			4
+#define REG_DMICFREQ_MIC34FREQ			2
+#define REG_DMICFREQ_MIC56FREQ			0
+#define REG_DMICFREQ_MICxxFREQ_MAX		0x3
+
+/* REG_USBHSGAIN */
+#define REG_USBHSGAIN_UHSL			4
+#define REG_USBHSGAIN_UHSX_MAX			0xF
+#define REG_USBHSGAIN_UHSR			0
+
+/* REG_USBDRVCTRL */
+#define REG_USBDRVCTRL_ENCKLOL			7
+#define REG_USBDRVCTRL_ENCKLOR			6
+#define REG_USBDRVCTRL_ENCKLOLDM		5
+#define REG_USBDRVCTRL_ENCKLORDP		4
+#define REG_USBDRVCTRL_MUTEUHSL			3
+#define REG_USBDRVCTRL_MUTEUHSR			2
+#define REG_USBDRVCTRL_ENUHSL			1
+#define REG_USBDRVCTRL_ENUHSR			0
+
+/* REG_EARGAINMICSEL */
+#define REG_EARGAINMICSEL_USBMICSEL_SHIFT	4
+#define REG_EARGAINMICSEL_GAIN_MAX		0x8
+#define REG_EARGAINMICSEL_GAIN			0
+
+/* REG_PDMCTRL */
+#define REG_PDMCTRL_UHSSEL			6
+#define REG_PDMCTRL_D1TOHFR			5
+#define REG_PDMCTRL_D5TOHFL			4
+#define REG_PDMCTRL_D6TOHFL			4
+#define REG_PDMCTRL_ENPDM1			1
+#define REG_PDMCTRL_ENPDM2			0
+
+/* REG_CIDEMICTRL */
+#define REG_CIDEMICTRL_DALOWHFNOI		7
+#define REG_CIDEMICTRL_PWMACMODE		4
+#define REG_CIDEMICTRL_MAX			2
+
+/* REG_EPWM1ACDCA */
+#define REG_EPWM1ACDCA_ACSEL			7
+#define REG_EPWM1ACDCA_ACDCA_MAX		0x64
+#define REG_EPWM1ACDCA_ACDCA			0
+
+/* REG_EPWM1ACDCB */
+#define REG_EPWM1ACDCB_ACDCB_MAX		0x64
+#define REG_EPWM1ACDCB_ACDCB			0
+
+/* REG_EPWM1ACFREQ */
+#define REG_EPWM1ACFREQ_FREQ_MAX		0xFF
+
+/* REG_EPWM2ACDCA */
+#define REG_EPWM2ACDCA_ACDCA_MAX		0x64
+#define REG_EPWM2ACDCA_ACSEL			7
+#define REG_EPWM2ACDCA_ACDCA			0
+
+/* REG_EPWM2ACDCB */
+#define REG_EPWM2ACDCB_ACDCB_MAX		0x64
+#define REG_EPWM2ACDCB_ACDCB			0
+
+/* REG_EPWM2ACFREQ */
+#define REG_EPWM2ACFREQ_FREQ_MAX		0xFF
+
+/* REG_HFGAINCTRL_V1 (ab8505 v1) */
+#define REG_HFGAINCTRL_V1_HFL			4
+#define REG_HFGAINCTRL_V1_HFR			0
+#define REG_HFGAINCTRL_V1_HFX_MAX		0xF
+
+/* REG_VIBGAINCTRL_V1 (ab8505 v1) */
+#define REG_VIBGAINCTRL_V1_SHIFT		4
+#define REG_VIBGAINCTRL_V1_MAX			0xF
+
+/* REG_HFGAINCTRL_V2 (ab8505 v2) */
+#define REG_HFGAINCTRL_V2_SHIFT			0
+#define REG_HFGAINCTRL_V2_MAX			0x18
+
+/* REG_VIBGAINCTRL_V2 (ab8505 v2) */
+#define REG_VIBGAINCTRL_V2_SHIFT		0
+#define REG_VIBGAINCTRL_V2_MAX			0x18
+
+/* REG_MIXCTRL */
+#define REG_MIXCTRL_DA78MONO			4
+#define REG_MIXCTRL_DA7ADDDA1			3
+#define REG_MIXCTRL_DA8ADDDA2			2
+#define REG_MIXCTRL_DA7ADDDA3			1
+#define REG_MIXCTRL_DA8ADDDA4			0
 
 #endif
