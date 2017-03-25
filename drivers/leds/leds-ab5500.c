@@ -612,7 +612,7 @@ static int ab5500_led_register_leds(struct device *dev,
 	hvleds->dev = dev;
 	hvleds->pdata = pdata;
 
-	if (abx500_get_chip_id(dev) == AB5500_2_0)
+	if (abx500_get_chip_id(dev) >= AB5500_2_0)
 		hvleds->hw_fade = true;
 	else
 		hvleds->hw_fade = false;
