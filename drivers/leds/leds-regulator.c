@@ -152,7 +152,7 @@ static int __devinit regulator_led_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	vcc = regulator_get_exclusive(&pdev->dev, "vled");
+	vcc = regulator_get_exclusive(&pdev->dev, pdata->reg_id);
 	if (IS_ERR(vcc)) {
 		dev_err(&pdev->dev, "Cannot get vcc for %s\n", pdata->name);
 		return PTR_ERR(vcc);
@@ -229,7 +229,17 @@ static struct platform_driver regulator_led_driver = {
 	.remove = __devexit_p(regulator_led_remove),
 };
 
-module_platform_driver(regulator_led_driver);
+static int __init regulator_led_init(void)
+{
+	return platform_driver_register(&regulator_led_driver);
+}
+module_init(regulator_led_init);
+
+static void __exit regulator_led_exit(void)
+{
+	platform_driver_unregister(&regulator_led_driver);
+}
+module_exit(regulator_led_exit);
 
 MODULE_AUTHOR("Antonio Ospite <ospite@studenti.unina.it>");
 MODULE_DESCRIPTION("Regulator driven LED driver");

@@ -371,7 +371,18 @@ static struct i2c_driver pca955x_driver = {
 	.id_table = pca955x_id,
 };
 
-module_i2c_driver(pca955x_driver);
+static int __init pca955x_leds_init(void)
+{
+	return i2c_add_driver(&pca955x_driver);
+}
+
+static void __exit pca955x_leds_exit(void)
+{
+	i2c_del_driver(&pca955x_driver);
+}
+
+module_init(pca955x_leds_init);
+module_exit(pca955x_leds_exit);
 
 MODULE_AUTHOR("Nate Case <ncase@xes-inc.com>");
 MODULE_DESCRIPTION("PCA955x LED driver");
