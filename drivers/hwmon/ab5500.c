@@ -25,7 +25,6 @@
 #include <linux/mfd/abx500/ab5500-gpadc.h>
 #include <linux/mfd/abx500/ab5500-bm.h>
 #include "abx500.h"
-#include <asm/mach-types.h>
 
 /* AB5500 driver monitors GPADC - XTAL_TEMP, PCB_TEMP,
  * BTEMP_BALL, BAT_CTRL and DIE_TEMP
@@ -165,7 +164,7 @@ static int ab5500_temp_irq_handler(int irq, struct abx500_temp *data)
 	return 0;
 }
 
-int __init ab5500_hwmon_init(struct abx500_temp *data)
+int __init abx500_hwmon_init(struct abx500_temp *data)
 {
 	int err;
 
