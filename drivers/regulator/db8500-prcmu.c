@@ -17,8 +17,9 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/db8500-prcmu.h>
-#include <linux/module.h>
 #include "dbx500-prcmu.h"
+
+int (*prcmu_set_epod) (u16 epod_id, u8 epod_state);
 
 static int db8500_regulator_enable(struct regulator_dev *rdev)
 {
@@ -82,8 +83,13 @@ static struct regulator_ops db8500_regulator_ops = {
 /*
  * EPOD control
  */
+#ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
+bool epod_on[NUM_EPOD_ID];
+bool epod_ramret[NUM_EPOD_ID];
+#else
 static bool epod_on[NUM_EPOD_ID];
 static bool epod_ramret[NUM_EPOD_ID];
+#endif
 
 static int enable_epod(u16 epod_id, bool ramret)
 {
@@ -412,10 +418,13 @@ dbx500_regulator_info[DB8500_NUM_REGULATORS] = {
 
 static int __devinit db8500_regulator_probe(struct platform_device *pdev)
 {
-	struct regulator_init_data *db8500_init_data =
+	struct db8500_regulator_init_data *db8500_init_pdata =
 					dev_get_platdata(&pdev->dev);
+	struct regulator_init_data *db8500_init_data =
+		(struct regulator_init_data *) db8500_init_pdata->regulators;
 	int i, err;
 
+	prcmu_set_epod = db8500_init_pdata->set_epod;
 	/* register all regulators */
 	for (i = 0; i < ARRAY_SIZE(dbx500_regulator_info); i++) {
 		struct dbx500_regulator_info *info;
@@ -427,7 +436,7 @@ static int __devinit db8500_regulator_probe(struct platform_device *pdev)
 
 		/* register with the regulator framework */
 		info->rdev = regulator_register(&info->desc, &pdev->dev,
-				init_data, info, NULL);
+				init_data, info);
 		if (IS_ERR(info->rdev)) {
 			err = PTR_ERR(info->rdev);
 			dev_err(&pdev->dev, "failed to register %s: err %i\n",

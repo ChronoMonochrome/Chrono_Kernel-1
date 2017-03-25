@@ -24,4 +24,15 @@ enum db5500_regulator_id {
 	DB5500_NUM_REGULATORS
 };
 
+/**
+ * struct db5500_regulator_init_data - mfd device prcmu-regulators data
+ *
+ */
+struct db5500_regulator_init_data {
+	int (*set_epod) (u16 epod_id, u8 epod_state);
+	void *regulators;
+	int reg_num;
+};
+
+
 #endif
