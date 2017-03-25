@@ -332,20 +332,18 @@ static int pl031_probe(struct amba_device *adev, const struct amba_id *id)
 	dev_dbg(&adev->dev, "revision = 0x%01x\n", ldata->hw_revision);
 
 	/* Enable the clockwatch on ST Variants */
-	if (ldata->hw_designer == AMBA_VENDOR_ST)
+	if ((ldata->hw_designer == AMBA_VENDOR_ST) &&
+	    (ldata->hw_revision > 1))
 		writel(readl(ldata->base + RTC_CR) | RTC_CR_CWEN,
 		       ldata->base + RTC_CR);
 
-	/*
-	 * On ST PL031 variants, the RTC reset value does not provide correct
-	 * weekday for 2000-01-01. Correct the erroneous sunday to saturday.
-	 */
+	/* The RTC reset value does not provide correct wday for 1.1.2000.
+	   Configure the correct wday for 1.1.2000 */
 	if (ldata->hw_designer == AMBA_VENDOR_ST) {
 		if (readl(ldata->base + RTC_YDR) == 0x2000) {
 			time = readl(ldata->base + RTC_DR);
-			if ((time &
-			     (RTC_MON_MASK | RTC_MDAY_MASK | RTC_WDAY_MASK))
-			    == 0x02120000) {
+			if ((time & (RTC_MON_MASK | RTC_MDAY_MASK \
+				| RTC_WDAY_MASK)) == 0x02120000) {
 				time = time | (0x7 << RTC_WDAY_SHIFT);
 				writel(0x2000, ldata->base + RTC_YLR);
 				writel(time, ldata->base + RTC_LR);
@@ -361,7 +359,8 @@ static int pl031_probe(struct amba_device *adev, const struct amba_id *id)
 	}
 
 	if (request_irq(adev->irq[0], pl031_interrupt,
-			0, "rtc-pl031", ldata)) {
+			IRQF_SHARED | IRQF_NO_SUSPEND,
+			"rtc-pl031", ldata)) {
 		ret = -EIO;
 		goto out_no_irq;
 	}
@@ -429,8 +428,6 @@ static struct amba_id pl031_ids[] = {
 	{0, 0},
 };
 
-MODULE_DEVICE_TABLE(amba, pl031_ids);
-
 static struct amba_driver pl031_driver = {
 	.drv = {
 		.name = "rtc-pl031",
@@ -440,7 +437,18 @@ static struct amba_driver pl031_driver = {
 	.remove = pl031_remove,
 };
 
-module_amba_driver(pl031_driver);
+static int __init pl031_init(void)
+{
+	return amba_driver_register(&pl031_driver);
+}
+
+static void __exit pl031_exit(void)
+{
+	amba_driver_unregister(&pl031_driver);
+}
+
+module_init(pl031_init);
+module_exit(pl031_exit);
 
 MODULE_AUTHOR("Deepak Saxena <dsaxena@plexity.net");
 MODULE_DESCRIPTION("ARM AMBA PL031 RTC Driver");
