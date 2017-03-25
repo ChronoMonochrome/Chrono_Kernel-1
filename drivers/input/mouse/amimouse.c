@@ -25,6 +25,7 @@
 
 #include <asm/irq.h>
 #include <asm/setup.h>
+#include <asm/system.h>
 #include <asm/uaccess.h>
 #include <asm/amigahw.h>
 #include <asm/amigaints.h>

@@ -19,11 +19,10 @@
 #include <linux/input.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
-#include <linux/module.h>
 #include <linux/regulator/consumer.h>
 
 #include <plat/ske.h>
-#include <linux/gpio/nomadik.h>
+#include <plat/gpio-nomadik.h>
 
 /* SKE_CR bits */
 #define SKE_KPMLT	(0x1 << 6)
@@ -125,7 +124,7 @@ static void ske_keypad_set_bits(struct ske_keypad *keypad, u16 addr,
  * @keypad: pointer to device structure
  * Enable Multi key press detection, auto scan mode
  */
-static int __init ske_keypad_chip_init(struct ske_keypad *keypad)
+static int __devinit ske_keypad_chip_init(struct ske_keypad *keypad)
 {
 	u32 value;
 	int timeout = keypad->board->debounce_ms;
@@ -558,7 +557,7 @@ static irqreturn_t ske_keypad_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static int __init ske_keypad_probe(struct platform_device *pdev)
+static int __devinit ske_keypad_probe(struct platform_device *pdev)
 {
 	struct ske_keypad *keypad;
 	struct resource *res = NULL;
@@ -759,8 +758,8 @@ static int __init ske_keypad_probe(struct platform_device *pdev)
 	}
 
 	for (i = 0; i < plat->kconnected_rows; i++) {
-		keypad->ske_rows[i] = *plat->gpio_input_pins;
-		keypad->ske_cols[i] = *plat->gpio_output_pins;
+		keypad->ske_rows[i] = plat->gpio_input_pins[i];
+		keypad->ske_cols[i] = plat->gpio_output_pins[i];
 		keypad->gpio_input_irq[i] =
 				NOMADIK_GPIO_TO_IRQ(keypad->ske_rows[i]);
 	}
@@ -879,7 +878,7 @@ static int __devexit ske_keypad_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM_SLEEP
+#ifdef CONFIG_PM
 static int ske_keypad_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -930,23 +929,28 @@ static int ske_keypad_resume(struct device *dev)
 
 	return 0;
 }
+
+static const struct dev_pm_ops ske_keypad_dev_pm_ops = {
+	.suspend = ske_keypad_suspend,
+	.resume = ske_keypad_resume,
+};
 #endif
 
-static SIMPLE_DEV_PM_OPS(ske_keypad_dev_pm_ops,
-			 ske_keypad_suspend, ske_keypad_resume);
-
-static struct platform_driver ske_keypad_driver = {
+struct platform_driver ske_keypad_driver = {
 	.driver = {
 		.name = "nmk-ske-keypad",
 		.owner  = THIS_MODULE,
+#ifdef CONFIG_PM
 		.pm = &ske_keypad_dev_pm_ops,
+#endif
 	},
+	.probe = ske_keypad_probe,
 	.remove = __devexit_p(ske_keypad_remove),
 };
 
 static int __init ske_keypad_init(void)
 {
-	return platform_driver_probe(&ske_keypad_driver, ske_keypad_probe);
+	return platform_driver_register(&ske_keypad_driver);
 }
 module_init(ske_keypad_init);
 
