@@ -113,7 +113,7 @@ static int ab5500_rtc_request_read(struct device *dev)
 		if (!(value & AB5500_READREQ_REQ))
 			return 0;
 
-		msleep(1);
+		usleep_range(1000, 2000);
 	}
 
 	return -EIO;
