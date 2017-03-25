@@ -127,6 +127,24 @@ ENTRY(v3_dma_map_area)
 ENDPROC(v3_dma_unmap_area)
 ENDPROC(v3_dma_map_area)
 
+/*
+ *	clean_dcache_all()
+ *
+ *	Clean the whole D-cache.
+ */
+ENTRY(v3_clean_dcache_all)
+	mov	pc, lr
+ENDPROC(v3_clean_dcache_all)
+
+/*
+ *	flush_dcache_all()
+ *
+ *	Flush the whole D-cache.
+ */
+ENTRY(v3_flush_dcache_all)
+	mov	pc, lr
+ENDPROC(v3_flush_dcache_all)
+
 	__INITDATA
 
 	@ define struct cpu_cache_fns (see <asm/cacheflush.h> and proc-macros.S)

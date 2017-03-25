@@ -14,6 +14,8 @@
 #include <asm/mach/time.h>
 #include <linux/init.h>
 
+extern void ux500_restart(char, const char *);
+
 void __init ux500_map_io(void);
 extern void __init u5500_map_io(void);
 extern void __init u8500_map_io(void);
@@ -26,6 +28,7 @@ extern void __init ux500_init_irq(void);
 extern void __init u5500_sdi_init(struct device *parent);
 
 extern void __init db5500_dma_init(struct device *parent);
+extern void __init db8500_dma_init(struct device *parent);
 
 extern struct device *ux500_soc_device_init(const char *soc_id);
 
@@ -47,6 +50,13 @@ extern struct sys_timer ux500_timer;
 	.pfn		= __phys_to_pfn(x),	\
 	.length		= sz,			\
 	.type		= MT_MEMORY,		\
+}
+
+#define __MEM_DEV_DESC_DB9540_ROM(x, sz) {		\
+	.virtual	= IO_ADDRESS_DB9540_ROM(x),	\
+	.pfn		= __phys_to_pfn(x),		\
+	.length		= sz,				\
+	.type		= MT_MEMORY,			\
 }
 
 #endif /*  __ASM_ARCH_SETUP_H */

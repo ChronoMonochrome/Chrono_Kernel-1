@@ -240,6 +240,24 @@ ENTRY(fa_dma_unmap_area)
 	mov	pc, lr
 ENDPROC(fa_dma_unmap_area)
 
+/*
+ *	clean_dcache_all()
+ *
+ *	Clean the whole D-cache.
+ */
+ENTRY(fa_clean_dcache_all)
+	mov	pc, lr
+ENDPROC(fa_clean_dcache_all)
+
+/*
+ *	flush_dcache_all()
+ *
+ *	Flush the whole D-cache.
+ */
+ENTRY(fa_flush_dcache_all)
+	mov	pc, lr
+ENDPROC(fa_flush_dcache_all)
+
 	__INITDATA
 
 	@ define struct cpu_cache_fns (see <asm/cacheflush.h> and proc-macros.S)

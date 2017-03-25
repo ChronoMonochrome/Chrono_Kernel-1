@@ -9,6 +9,7 @@
 #include <linux/platform_device.h>
 #include <linux/io.h>
 #include <linux/clk.h>
+#include <linux/mfd/dbx500-prcmu.h>
 #include <linux/mfd/db8500-prcmu.h>
 #include <linux/mfd/db5500-prcmu.h>
 #include <linux/clksrc-dbx500-prcmu.h>
@@ -18,13 +19,17 @@
 #include <linux/stat.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
+#include <linux/delay.h>
 
 #include <asm/hardware/gic.h>
 #include <asm/mach/map.h>
+#include <asm/system_misc.h>
 
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/devices.h>
+#include <mach/reboot_reasons.h>
+#include <mach/pm.h>
 
 #include "clock.h"
 
@@ -35,6 +40,52 @@ static const struct of_device_id ux500_dt_irq_match[] = {
 	{},
 };
 
+/*
+ * The reboot reason string can be 255 characters long and the memory
+ * in which we save the sw reset reason is 2 bytes. Therefore we need to
+ * convert the string into a 16 bit pattern.
+ *
+ * See file reboot_reasons.h for conversion.
+ */
+static unsigned short map_cmd_to_code(const char *cmd)
+{
+	int i;
+
+	if (cmd == NULL)
+		/* normal reboot w/o argument */
+		return SW_RESET_NO_ARGUMENT;
+
+	/* Search through reboot reason list */
+	for (i = 0; i < reboot_reasons_size; i++) {
+		if (!strcmp(reboot_reasons[i].reason, cmd))
+			return reboot_reasons[i].code;
+	}
+
+	/* No valid Reboot Reason found */
+	return SW_RESET_CRASH;
+}
+
+void ux500_restart(char mode, const char *cmd)
+{
+	unsigned short reset_code;
+
+	reset_code = map_cmd_to_code(cmd);
+	prcmu_system_reset(reset_code);
+
+	mdelay(1000);
+
+	/*
+	 * On 5500, the PRCMU firmware waits for up to 2 seconds for the modem
+	 * to respond.
+	 */
+	if (cpu_is_u5500())
+		mdelay(2000);
+
+	printk(KERN_ERR "Reboot via PRCMU failed -- System halted\n");
+	while (1)
+		;
+}
+
 void __init ux500_init_irq(void)
 {
 	void __iomem *dist_base;
@@ -43,7 +94,7 @@ void __init ux500_init_irq(void)
 	if (cpu_is_u5500()) {
 		dist_base = __io_address(U5500_GIC_DIST_BASE);
 		cpu_base = __io_address(U5500_GIC_CPU_BASE);
-	} else if (cpu_is_u8500()) {
+	} else if (cpu_is_u8500() || cpu_is_u9540()) {
 		dist_base = __io_address(U8500_GIC_DIST_BASE);
 		cpu_base = __io_address(U8500_GIC_CPU_BASE);
 	} else
@@ -57,13 +108,21 @@ void __init ux500_init_irq(void)
 		gic_init(0, 29, dist_base, cpu_base);
 
 	/*
+	 * On WD reboot gic is in some cases decoupled.
+	 * This will make sure that the GIC is correctly configured.
+	 */
+	ux500_pm_gic_recouple();
+
+	/*
 	 * Init clocks here so that they are available for system timer
 	 * initialization.
 	 */
 	if (cpu_is_u5500())
 		db5500_prcmu_early_init();
-	if (cpu_is_u8500())
+	if (cpu_is_u8500() || cpu_is_u9540())
 		db8500_prcmu_early_init();
+
+	arm_pm_restart = ux500_restart;
 	clk_init();
 }
 

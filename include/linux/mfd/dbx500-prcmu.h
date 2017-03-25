@@ -276,7 +276,7 @@ static inline int prcmu_set_power_state(u8 state, bool keep_ulp_clk,
 static inline u8 prcmu_get_power_state_result(void)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_get_power_state_result();
 	else
 		return db8500_prcmu_get_power_state_result();
 }
@@ -332,7 +332,7 @@ static inline bool prcmu_pending_irq(void)
 static inline int prcmu_set_epod(u16 epod_id, u8 epod_state)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_set_epod(epod_id, epod_state);
 	else
 		return db8500_prcmu_set_epod(epod_id, epod_state);
 }
@@ -387,14 +387,14 @@ int prcmu_set_clock_rate(u8 clock, unsigned long rate);
 static inline int prcmu_set_ddr_opp(u8 opp)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_set_ddr_opp(opp);
 	else
 		return db8500_prcmu_set_ddr_opp(opp);
 }
 static inline int prcmu_get_ddr_opp(void)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_get_ddr_opp();
 	else
 		return db8500_prcmu_get_ddr_opp();
 }
@@ -402,7 +402,7 @@ static inline int prcmu_get_ddr_opp(void)
 static inline int prcmu_set_arm_opp(u8 opp)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_set_arm_opp(opp);
 	else
 		return db8500_prcmu_set_arm_opp(opp);
 }
@@ -410,7 +410,7 @@ static inline int prcmu_set_arm_opp(u8 opp)
 static inline int prcmu_get_arm_opp(void)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_get_arm_opp();
 	else
 		return db8500_prcmu_get_arm_opp();
 }
@@ -418,7 +418,7 @@ static inline int prcmu_get_arm_opp(void)
 static inline int prcmu_set_ape_opp(u8 opp)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_set_ape_opp(opp);
 	else
 		return db8500_prcmu_set_ape_opp(opp);
 }
@@ -426,7 +426,7 @@ static inline int prcmu_set_ape_opp(u8 opp)
 static inline int prcmu_get_ape_opp(void)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_get_ape_opp();
 	else
 		return db8500_prcmu_get_ape_opp();
 }
@@ -447,12 +447,20 @@ static inline u16 prcmu_get_reset_code(void)
 		return db8500_prcmu_get_reset_code();
 }
 
+static inline u32 prcmu_get_reset_status(void)
+{
+	if (cpu_is_u8500())
+		return db8500_prcmu_get_reset_status();
+	else
+		return 0;
+}
+
 void prcmu_ac_wake_req(void);
 void prcmu_ac_sleep_req(void);
 static inline void prcmu_modem_reset(void)
 {
 	if (cpu_is_u5500())
-		return;
+		return db5500_prcmu_modem_reset();
 	else
 		return db8500_prcmu_modem_reset();
 }
@@ -460,7 +468,7 @@ static inline void prcmu_modem_reset(void)
 static inline bool prcmu_is_ac_wake_requested(void)
 {
 	if (cpu_is_u5500())
-		return db5500_prcmu_is_ac_wake_requested();
+		return db5500_prcmu_is_modem_requested();
 	else
 		return db8500_prcmu_is_ac_wake_requested();
 }
@@ -492,7 +500,7 @@ static inline int prcmu_enable_dsipll(void)
 static inline int prcmu_config_esram0_deep_sleep(u8 state)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_config_esram0_deep_sleep(state);
 	else
 		return db8500_prcmu_config_esram0_deep_sleep(state);
 }
@@ -500,7 +508,7 @@ static inline int prcmu_config_esram0_deep_sleep(u8 state)
 static inline int prcmu_config_hotdog(u8 threshold)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_config_hotdog(threshold);
 	else
 		return db8500_prcmu_config_hotdog(threshold);
 }
@@ -508,7 +516,7 @@ static inline int prcmu_config_hotdog(u8 threshold)
 static inline int prcmu_config_hotmon(u8 low, u8 high)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_config_hotmon(low, high);
 	else
 		return db8500_prcmu_config_hotmon(low, high);
 }
@@ -516,7 +524,7 @@ static inline int prcmu_config_hotmon(u8 low, u8 high)
 static inline int prcmu_start_temp_sense(u16 cycles32k)
 {
 	if (cpu_is_u5500())
-		return  -EINVAL;
+		return  db5500_prcmu_start_temp_sense(cycles32k);
 	else
 		return  db8500_prcmu_start_temp_sense(cycles32k);
 }
@@ -524,7 +532,7 @@ static inline int prcmu_start_temp_sense(u16 cycles32k)
 static inline int prcmu_stop_temp_sense(void)
 {
 	if (cpu_is_u5500())
-		return  -EINVAL;
+		return  db5500_prcmu_stop_temp_sense();
 	else
 		return  db8500_prcmu_stop_temp_sense();
 }
@@ -532,7 +540,7 @@ static inline int prcmu_stop_temp_sense(void)
 static inline u32 prcmu_read(unsigned int reg)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_read(reg);
 	else
 		return db8500_prcmu_read(reg);
 }
@@ -540,7 +548,7 @@ static inline u32 prcmu_read(unsigned int reg)
 static inline void prcmu_write(unsigned int reg, u32 value)
 {
 	if (cpu_is_u5500())
-		return;
+		db5500_prcmu_write(reg, value);
 	else
 		db8500_prcmu_write(reg, value);
 }
@@ -548,7 +556,7 @@ static inline void prcmu_write(unsigned int reg, u32 value)
 static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
 {
 	if (cpu_is_u5500())
-		return;
+		db5500_prcmu_write_masked(reg, mask, value);
 	else
 		db8500_prcmu_write_masked(reg, mask, value);
 }
@@ -556,7 +564,7 @@ static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 value)
 static inline int prcmu_enable_a9wdog(u8 id)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_enable_a9wdog(id);
 	else
 		return db8500_prcmu_enable_a9wdog(id);
 }
@@ -564,7 +572,7 @@ static inline int prcmu_enable_a9wdog(u8 id)
 static inline int prcmu_disable_a9wdog(u8 id)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_disable_a9wdog(id);
 	else
 		return db8500_prcmu_disable_a9wdog(id);
 }
@@ -572,7 +580,7 @@ static inline int prcmu_disable_a9wdog(u8 id)
 static inline int prcmu_kick_a9wdog(u8 id)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_kick_a9wdog(id);
 	else
 		return db8500_prcmu_kick_a9wdog(id);
 }
@@ -580,7 +588,7 @@ static inline int prcmu_kick_a9wdog(u8 id)
 static inline int prcmu_load_a9wdog(u8 id, u32 timeout)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_load_a9wdog(id, timeout);
 	else
 		return db8500_prcmu_load_a9wdog(id, timeout);
 }
@@ -588,10 +596,17 @@ static inline int prcmu_load_a9wdog(u8 id, u32 timeout)
 static inline int prcmu_config_a9wdog(u8 num, bool sleep_auto_off)
 {
 	if (cpu_is_u5500())
-		return -EINVAL;
+		return db5500_prcmu_config_a9wdog(num, sleep_auto_off);
 	else
 		return db8500_prcmu_config_a9wdog(num, sleep_auto_off);
 }
+
+static inline void prcmu_vc(bool enable)
+{
+	if (cpu_is_u8500())
+		db8500_prcmu_vc(enable);
+}
+
 #else
 
 static inline void __init prcmu_early_init(void) {}
@@ -689,6 +704,11 @@ static inline u16 prcmu_get_reset_code(void)
 	return 0;
 }
 
+static inline u32 prcmu_get_reset_status(void)
+{
+	return 0;
+}
+
 static inline void prcmu_ac_wake_req(void) {}
 
 static inline void prcmu_ac_sleep_req(void) {}
@@ -755,6 +775,8 @@ static inline u32 prcmu_read(unsigned int reg)
 static inline void prcmu_write(unsigned int reg, u32 value) {}
 
 static inline void prcmu_write_masked(unsigned int reg, u32 mask, u32 value) {}
+
+static inline void prcmu_vc(bool enable) {}
 
 #endif
 
@@ -866,6 +888,7 @@ int prcmu_qos_add_notifier(int prcmu_qos_class,
 			   struct notifier_block *notifier);
 int prcmu_qos_remove_notifier(int prcmu_qos_class,
 			      struct notifier_block *notifier);
+void prcmu_qos_voice_call_override(bool enable);
 
 #else
 
@@ -909,7 +932,7 @@ static inline int prcmu_qos_remove_notifier(int prcmu_qos_class,
 {
 	return 0;
 }
-
+static inline void prcmu_qos_voice_call_override(bool enable) {}
 #endif
 
 #endif /* __MACH_PRCMU_H */

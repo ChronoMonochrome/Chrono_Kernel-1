@@ -14,11 +14,17 @@
 #ifndef _HWMON_H_
 #define _HWMON_H_
 
+#include <linux/notifier.h>
+
 struct device;
 
 struct device *hwmon_device_register(struct device *dev);
 
 void hwmon_device_unregister(struct device *dev);
+
+int hwmon_notifier_register(struct notifier_block *nb);
+int hwmon_notifier_unregister(struct notifier_block *nb);
+void hwmon_notify(unsigned long val, void *v);
 
 /* Scale user input to sensible values */
 static inline int SENSORS_LIMIT(long value, long low, long high)

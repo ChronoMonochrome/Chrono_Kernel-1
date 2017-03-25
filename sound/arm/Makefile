@@ -14,3 +14,7 @@ snd-pxa2xx-lib-$(CONFIG_SND_PXA2XX_LIB_AC97)	+= pxa2xx-ac97-lib.o
 
 obj-$(CONFIG_SND_PXA2XX_AC97)	+= snd-pxa2xx-ac97.o
 snd-pxa2xx-ac97-objs		:= pxa2xx-ac97.o
+obj-$(CONFIG_SND_U8500_ALSA_AB8500)  += u8500mod_alsa.o
+ifneq ($(CONFIG_SND_U8500_ALSA_AB8500),n)
+u8500mod_alsa-objs		:= u8500_alsa_ab8500.o u8500_alsa_hdmi.o
+endif

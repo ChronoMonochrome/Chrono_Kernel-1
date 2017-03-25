@@ -1,4 +1,7 @@
 snd-soc-88pm860x-objs := 88pm860x-codec.o
+snd-soc-ab3550-objs := ab3550.o
+snd-soc-ab5500-objs := ab5500.o
+snd-soc-ab8500_audio-objs := ab8500_audio.o
 snd-soc-ac97-objs := ac97.o
 snd-soc-ad1836-objs := ad1836.o
 snd-soc-ad193x-objs := ad193x.o
@@ -13,6 +16,8 @@ snd-soc-ak4535-objs := ak4535.o
 snd-soc-ak4641-objs := ak4641.o
 snd-soc-ak4642-objs := ak4642.o
 snd-soc-ak4671-objs := ak4671.o
+snd-soc-av8100_audio-objs := av8100_audio.o
+snd-soc-cg29xx-objs := cg29xx.o
 snd-soc-cq93vc-objs := cq93vc.o
 snd-soc-cs42l51-objs := cs42l51.o
 snd-soc-cs42l73-objs := cs42l73.o
@@ -102,6 +107,9 @@ snd-soc-wm-hubs-objs := wm_hubs.o
 snd-soc-max9877-objs := max9877.o
 snd-soc-tpa6130a2-objs := tpa6130a2.o
 
+obj-$(CONFIG_SND_SOC_AB3550)    += snd-soc-ab3550.o
+obj-$(CONFIG_SND_SOC_AB5500)    += snd-soc-ab5500.o
+obj-$(CONFIG_SND_SOC_AB8500)    += snd-soc-ab8500_audio.o
 obj-$(CONFIG_SND_SOC_88PM860X)	+= snd-soc-88pm860x.o
 obj-$(CONFIG_SND_SOC_AC97_CODEC)	+= snd-soc-ac97.o
 obj-$(CONFIG_SND_SOC_AD1836)	+= snd-soc-ad1836.o
@@ -119,6 +127,8 @@ obj-$(CONFIG_SND_SOC_AK4642)	+= snd-soc-ak4642.o
 obj-$(CONFIG_SND_SOC_AK4671)	+= snd-soc-ak4671.o
 obj-$(CONFIG_SND_SOC_ALC5623)    += snd-soc-alc5623.o
 obj-$(CONFIG_SND_SOC_ALC5632)	+= snd-soc-alc5632.o
+obj-$(CONFIG_SND_SOC_AV8100)	+= snd-soc-av8100_audio.o
+obj-$(CONFIG_SND_SOC_CG29XX)	+= snd-soc-cg29xx.o
 obj-$(CONFIG_SND_SOC_CQ0093VC) += snd-soc-cq93vc.o
 obj-$(CONFIG_SND_SOC_CS42L51)	+= snd-soc-cs42l51.o
 obj-$(CONFIG_SND_SOC_CS42L73)	+= snd-soc-cs42l73.o
@@ -205,3 +215,9 @@ obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
 # Amp
 obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
 obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-tpa6130a2.o
+ifdef CONFIG_SND_SOC_UX500_DEBUG
+CFLAGS_av8100_audio.o := -DDEBUG
+CFLAGS_ab3550.o := -DDEBUG
+CFLAGS_cg29xx.o := -DDEBUG
+CFLAGS_ab8500_audio.o := -DDEBUG
+endif

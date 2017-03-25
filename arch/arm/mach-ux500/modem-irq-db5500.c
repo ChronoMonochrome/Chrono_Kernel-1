@@ -81,7 +81,7 @@ static irqreturn_t modem_cpu_irq_handler(int irq, void *data)
 		   virt_irq);
 
 	if (virt_irq != 0)
-		generic_handle_irq(virt_irq);
+		handle_nested_irq(virt_irq);
 
 	pr_debug("modem_irq: Done handling virtual IRQ %d!\n", virt_irq);
 
@@ -91,6 +91,7 @@ static irqreturn_t modem_cpu_irq_handler(int irq, void *data)
 static void create_virtual_irq(int irq, struct irq_chip *modem_irq_chip)
 {
 	irq_set_chip_and_handler(irq, modem_irq_chip, handle_simple_irq);
+	irq_set_nested_thread(irq, 1);
 	set_irq_flags(irq, IRQF_VALID);
 
 	pr_debug("modem_irq: Created virtual IRQ %d\n", irq);
@@ -131,7 +132,8 @@ static int modem_irq_init(void)
 	create_virtual_irq(MBOX_PAIR2_VIRT_IRQ, &modem_irq_chip);
 
 	err = request_threaded_irq(IRQ_DB5500_MODEM, NULL,
-				   modem_cpu_irq_handler, IRQF_ONESHOT,
+				   modem_cpu_irq_handler,
+				   IRQF_NO_SUSPEND | IRQF_ONESHOT,
 				   "modem_irq", mi);
 	if (err)
 		pr_err("modem_irq: Could not register IRQ %d\n",

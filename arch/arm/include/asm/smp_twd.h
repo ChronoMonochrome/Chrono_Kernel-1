@@ -42,4 +42,12 @@ static inline void twd_local_timer_of_register(void)
 }
 #endif
 
+#if defined(CONFIG_HOTPLUG) || defined(CONFIG_CPU_IDLE)
+void twd_save(void);
+void twd_restore(void);
+#else
+static inline void twd_save(void) { }
+static inline void twd_restore(void) { }
+#endif
+
 #endif

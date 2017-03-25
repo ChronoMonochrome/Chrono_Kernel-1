@@ -11,7 +11,129 @@
 #include <linux/kernel.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/ab8500.h>
+#include <mach/id.h> /* to identify older boards for fixes */
+#include <asm/mach-types.h>
 #include "board-mop500-regulators.h"
+
+#ifdef CONFIG_REGULATOR_FIXED_VOLTAGE
+/*
+ * GPIO regulator controlled by the ab8500 GPIO16
+ */
+static struct regulator_consumer_supply gpio_wlan_vbat_consumers[] = {
+	/* for cg2900 chip */
+	REGULATOR_SUPPLY("vdd", "cg2900-uart.0"),
+	/* for cw1200 chip */
+	REGULATOR_SUPPLY("vdd", "cw1200_wlan"),
+};
+
+struct regulator_init_data gpio_wlan_vbat_regulator = {
+	.constraints = {
+		.name = "WLAN-VBAT",
+		.min_uV = 3600000,
+		.max_uV = 3600000,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(gpio_wlan_vbat_consumers),
+	.consumer_supplies = gpio_wlan_vbat_consumers,
+};
+
+/*
+ * GPIO regulator controlled by the ab8500 GPIO26
+ */
+static struct regulator_consumer_supply gpio_en_3v3_consumers[] = {
+	/* for LAN chip */
+	REGULATOR_SUPPLY("vdd33a", "smsc911x.0"),
+};
+
+struct regulator_init_data gpio_en_3v3_regulator = {
+	.constraints = {
+		.name = "EN-3V3",
+		.min_uV = 3300000,
+		.max_uV = 3300000,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(gpio_en_3v3_consumers),
+	.consumer_supplies = gpio_en_3v3_consumers,
+};
+
+/*
+ * GPIO regulator controlled by the ab8500 GPIO4
+ * 3.3V for snowball lcd
+ */
+static struct regulator_consumer_supply gpio_en_lcd_3v3_consumers[] = {
+	REGULATOR_SUPPLY("lcd3v3", "mcde_display_dpi.5"),
+};
+
+struct regulator_init_data gpio_en_lcd_3v3_regulator = {
+	.constraints = {
+		.name = "LCD-3V3",
+		.min_uV = 3300000,
+		.max_uV = 3300000,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(gpio_en_lcd_3v3_consumers),
+	.consumer_supplies = gpio_en_lcd_3v3_consumers,
+};
+
+/*
+ * GPIO regulator controlled by the ab8500 GPIO2
+ * 1.8V for snowball lcd
+ */
+static struct regulator_consumer_supply gpio_en_lcd_1v8_consumers[] = {
+	REGULATOR_SUPPLY("lcd1v8", "mcde_display_dpi.5"),
+};
+
+struct regulator_init_data gpio_en_lcd_1v8_regulator = {
+	.constraints = {
+		.name = "LCD-1V8",
+		.min_uV = 1800000,
+		.max_uV = 1800000,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(gpio_en_lcd_1v8_consumers),
+	.consumer_supplies = gpio_en_lcd_1v8_consumers,
+};
+
+/*
+ * GPIO regulator controlled by the ab8500 GPIO42
+ * VLED Boost for snowball lcd
+ */
+static struct regulator_consumer_supply gpio_en_lcd_vled_boost_consumers[] = {
+	REGULATOR_SUPPLY("lcdvledboost", "mcde_display_dpi.5"),
+};
+
+struct regulator_init_data gpio_en_lcd_vled_boost_regulator = {
+	.constraints = {
+		.name = "LCD-VLED-BOOST",
+		.min_uV = 5000000,
+		.max_uV = 5000000,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(gpio_en_lcd_vled_boost_consumers),
+	.consumer_supplies = gpio_en_lcd_vled_boost_consumers,
+};
+
+/*
+ * GPIO regulator controlled by the ab8500 GPIO41
+ * VLED for snowball lcd
+ */
+static struct regulator_consumer_supply gpio_en_lcd_vled_consumers[] = {
+	REGULATOR_SUPPLY("lcdvled", "mcde_display_dpi.5"),
+};
+
+struct regulator_init_data gpio_en_lcd_vled_regulator = {
+	.constraints = {
+		.name = "LCD-VLED",
+		.min_uV = 5000000,
+		.max_uV = 5000000,
+		.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies = ARRAY_SIZE(gpio_en_lcd_vled_consumers),
+	.consumer_supplies = gpio_en_lcd_vled_consumers,
+};
+
+
+#endif
 
 /*
  * TPS61052 regulator
@@ -38,21 +160,37 @@ struct regulator_init_data tps61052_regulator = {
 };
 
 static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
-	/* External displays, connector on board 2v5 power supply */
-	REGULATOR_SUPPLY("vaux12v5", "mcde.0"),
+	/* Main display, u8500 R3 uib */
+	REGULATOR_SUPPLY("vddi", "mcde_disp_sony_acx424akp.0"),
+	/* Main display, u8500 uib and ST uib */
+	REGULATOR_SUPPLY("vdd1", "samsung_s6d16d0.0"),
+	/* Secondary display, ST uib */
+	REGULATOR_SUPPLY("vdd1", "samsung_s6d16d0.1"),
 	/* SFH7741 proximity sensor */
 	REGULATOR_SUPPLY("vcc", "gpio-keys.0"),
 	/* BH1780GLS ambient light sensor */
 	REGULATOR_SUPPLY("vcc", "2-0029"),
 	/* lsm303dlh accelerometer */
-	REGULATOR_SUPPLY("vdd", "3-0018"),
+	REGULATOR_SUPPLY("vdd", "2-0018"),
+	/* lsm303dlhc accelerometer */
+	REGULATOR_SUPPLY("vdd", "2-0019"),
 	/* lsm303dlh magnetometer */
-	REGULATOR_SUPPLY("vdd", "3-001e"),
+	REGULATOR_SUPPLY("vdd", "2-001e"),
 	/* Rohm BU21013 Touchscreen devices */
 	REGULATOR_SUPPLY("avdd", "3-005c"),
 	REGULATOR_SUPPLY("avdd", "3-005d"),
 	/* Synaptics RMI4 Touchscreen device */
 	REGULATOR_SUPPLY("vdd", "3-004b"),
+	/* L3G4200D Gyroscope device */
+	REGULATOR_SUPPLY("vdd", "2-0068"),
+	/* Ambient light sensor device */
+	REGULATOR_SUPPLY("vdd", "3-0029"),
+	/* Pressure sensor device */
+	REGULATOR_SUPPLY("vdd", "2-005c"),
+	/* Cypress TrueTouch Touchscreen device */
+	REGULATOR_SUPPLY("vcpin", "spi8.0"),
+	/* Camera device */
+	REGULATOR_SUPPLY("vaux12v5", "mmio_camera"),
 };
 
 static struct regulator_consumer_supply ab8500_vaux2_consumers[] = {
@@ -60,9 +198,16 @@ static struct regulator_consumer_supply ab8500_vaux2_consumers[] = {
 	REGULATOR_SUPPLY("vmmc", "sdi4"),
 	/* AB8500 audio codec */
 	REGULATOR_SUPPLY("vcc-N2158", "ab8500-codec.0"),
+	/* AB8500 accessory detect 1 */
+	REGULATOR_SUPPLY("vcc-N2158", "ab8500-acc-det.0"),
+	/* AB8500 Tv-out device */
+	REGULATOR_SUPPLY("vcc-N2158", "mcde_tv_ab8500.4"),
+	/* AV8100 HDMI device */
+	REGULATOR_SUPPLY("vcc-N2158", "av8100_hdmi.3"),
 };
 
 static struct regulator_consumer_supply ab8500_vaux3_consumers[] = {
+	REGULATOR_SUPPLY("v-SD-STM", "stm"),
 	/* External MMC slot power */
 	REGULATOR_SUPPLY("vmmc", "sdi0"),
 };
@@ -72,26 +217,30 @@ static struct regulator_consumer_supply ab8500_vtvout_consumers[] = {
 	REGULATOR_SUPPLY("vtvout", "ab8500-denc.0"),
 	/* Internal general-purpose ADC */
 	REGULATOR_SUPPLY("vddadc", "ab8500-gpadc.0"),
+	/* ADC for charger */
+	REGULATOR_SUPPLY("vddadc", "ab8500-charger.0"),
+	/* AB8500 Tv-out device */
+	REGULATOR_SUPPLY("vtvout", "mcde_tv_ab8500.4"),
 };
 
 static struct regulator_consumer_supply ab8500_vaud_consumers[] = {
 	/* AB8500 audio-codec main supply */
-	REGULATOR_SUPPLY("vaud", "ab8500-codec.0"),
+	REGULATOR_SUPPLY("v-audio", NULL),
 };
 
 static struct regulator_consumer_supply ab8500_vamic1_consumers[] = {
 	/* AB8500 audio-codec Mic1 supply */
-	REGULATOR_SUPPLY("vamic1", "ab8500-codec.0"),
+	REGULATOR_SUPPLY("v-amic1", NULL),
 };
 
 static struct regulator_consumer_supply ab8500_vamic2_consumers[] = {
 	/* AB8500 audio-codec Mic2 supply */
-	REGULATOR_SUPPLY("vamic2", "ab8500-codec.0"),
+	REGULATOR_SUPPLY("v-amic2", NULL),
 };
 
 static struct regulator_consumer_supply ab8500_vdmic_consumers[] = {
 	/* AB8500 audio-codec DMic supply */
-	REGULATOR_SUPPLY("vdmic", "ab8500-codec.0"),
+	REGULATOR_SUPPLY("v-dmic", NULL),
 };
 
 static struct regulator_consumer_supply ab8500_vintcore_consumers[] = {
@@ -102,74 +251,85 @@ static struct regulator_consumer_supply ab8500_vintcore_consumers[] = {
 };
 
 static struct regulator_consumer_supply ab8500_vana_consumers[] = {
-	/* External displays, connector on board, 1v8 power supply */
-	REGULATOR_SUPPLY("vsmps2", "mcde.0"),
+	/* DB8500 DSI */
+	REGULATOR_SUPPLY("vdddsi1v2", "mcde"),
+	/* DB8500 CSI */
+	REGULATOR_SUPPLY("vddcsi1v2", "mmio_camera"),
+};
+
+static struct regulator_consumer_supply ab8500_sysclkreq_2_consumers[] = {
+	/* CG2900 device */
+	REGULATOR_SUPPLY("gbf_1v8", "cg2900-uart.0"),
+};
+
+static struct regulator_consumer_supply ab8500_sysclkreq_4_consumers[] = {
+	/* CW1200 device */
+	REGULATOR_SUPPLY("wlan_1v8", "cw1200_wlan.0"),
 };
 
 /* ab8500 regulator register initialization */
-struct ab8500_regulator_reg_init
-ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
+static struct ab8500_regulator_reg_init ab8500_reg_init[] = {
 	/*
 	 * VanaRequestCtrl          = HP/LP depending on VxRequest
 	 * VextSupply1RequestCtrl   = HP/LP depending on VxRequest
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL2, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL2,       0xf0, 0x00),
 	/*
 	 * VextSupply2RequestCtrl   = HP/LP depending on VxRequest
 	 * VextSupply3RequestCtrl   = HP/LP depending on VxRequest
 	 * Vaux1RequestCtrl         = HP/LP depending on VxRequest
 	 * Vaux2RequestCtrl         = HP/LP depending on VxRequest
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL3, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL3,       0xff, 0x00),
 	/*
 	 * Vaux3RequestCtrl         = HP/LP depending on VxRequest
 	 * SwHPReq                  = Control through SWValid disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL4, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUREQUESTCTRL4,       0x07, 0x00),
 	/*
 	 * VanaSysClkReq1HPValid    = disabled
 	 * Vaux1SysClkReq1HPValid   = disabled
 	 * Vaux2SysClkReq1HPValid   = disabled
 	 * Vaux3SysClkReq1HPValid   = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID1, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID1, 0xe8, 0x00),
 	/*
 	 * VextSupply1SysClkReq1HPValid = disabled
 	 * VextSupply2SysClkReq1HPValid = disabled
 	 * VextSupply3SysClkReq1HPValid = SysClkReq1 controlled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID2, 0x40),
+	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQ1HPVALID2, 0x70, 0x40),
 	/*
 	 * VanaHwHPReq1Valid        = disabled
 	 * Vaux1HwHPreq1Valid       = disabled
 	 * Vaux2HwHPReq1Valid       = disabled
 	 * Vaux3HwHPReqValid        = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ1VALID1, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ1VALID1,     0xe8, 0x00),
 	/*
 	 * VextSupply1HwHPReq1Valid = disabled
 	 * VextSupply2HwHPReq1Valid = disabled
 	 * VextSupply3HwHPReq1Valid = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ1VALID2, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ1VALID2,     0x07, 0x00),
 	/*
 	 * VanaHwHPReq2Valid        = disabled
 	 * Vaux1HwHPReq2Valid       = disabled
 	 * Vaux2HwHPReq2Valid       = disabled
 	 * Vaux3HwHPReq2Valid       = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ2VALID1, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ2VALID1,     0xe8, 0x00),
 	/*
 	 * VextSupply1HwHPReq2Valid = disabled
 	 * VextSupply2HwHPReq2Valid = disabled
 	 * VextSupply3HwHPReq2Valid = HWReq2 controlled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ2VALID2, 0x04),
+	INIT_REGULATOR_REGISTER(AB8500_REGUHWHPREQ2VALID2,     0x07, 0x04),
 	/*
 	 * VanaSwHPReqValid         = disabled
 	 * Vaux1SwHPReqValid        = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUSWHPREQVALID1, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUSWHPREQVALID1,      0xa0, 0x00),
 	/*
 	 * Vaux2SwHPReqValid        = disabled
 	 * Vaux3SwHPReqValid        = disabled
@@ -177,7 +337,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
 	 * VextSupply2SwHPReqValid  = disabled
 	 * VextSupply3SwHPReqValid  = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUSWHPREQVALID2, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUSWHPREQVALID2,      0x1f, 0x00),
 	/*
 	 * SysClkReq2Valid1         = SysClkReq2 controlled
 	 * SysClkReq3Valid1         = disabled
@@ -187,7 +347,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
 	 * SysClkReq7Valid1         = disabled
 	 * SysClkReq8Valid1         = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQVALID1, 0x2a),
+	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQVALID1,    0xfe, 0x2a),
 	/*
 	 * SysClkReq2Valid2         = disabled
 	 * SysClkReq3Valid2         = disabled
@@ -197,7 +357,7 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
 	 * SysClkReq7Valid2         = disabled
 	 * SysClkReq8Valid2         = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQVALID2, 0x20),
+	INIT_REGULATOR_REGISTER(AB8500_REGUSYSCLKREQVALID2,    0xfe, 0x20),
 	/*
 	 * VTVoutEna                = disabled
 	 * Vintcore12Ena            = disabled
@@ -205,66 +365,62 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
 	 * Vintcore12LP             = inactive (HP)
 	 * VTVoutLP                 = inactive (HP)
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUMISC1, 0x10),
+	INIT_REGULATOR_REGISTER(AB8500_REGUMISC1,              0xfe, 0x10),
 	/*
 	 * VaudioEna                = disabled
 	 * VdmicEna                 = disabled
 	 * Vamic1Ena                = disabled
 	 * Vamic2Ena                = disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_VAUDIOSUPPLY, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_VAUDIOSUPPLY,           0x1e, 0x00),
 	/*
 	 * Vamic1_dzout             = high-Z when Vamic1 is disabled
 	 * Vamic2_dzout             = high-Z when Vamic2 is disabled
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL1VAMIC, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL1VAMIC,         0x03, 0x00),
 	/*
-	 * VPll                     = Hw controlled
+	 * VPll                     = Hw controlled (NOTE! PRCMU bits)
 	 * VanaRegu                 = force off
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_VPLLVANAREGU, 0x02),
+	INIT_REGULATOR_REGISTER(AB8500_VPLLVANAREGU,           0x0f, 0x02),
 	/*
 	 * VrefDDREna               = disabled
 	 * VrefDDRSleepMode         = inactive (no pulldown)
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_VREFDDR, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_VREFDDR,                0x03, 0x00),
 	/*
-	 * VextSupply1Regu          = HW control
-	 * VextSupply2Regu          = HW control
-	 * VextSupply3Regu          = HW control
+	 * VextSupply1Regu          = force LP
+	 * VextSupply2Regu          = force OFF
+	 * VextSupply3Regu          = force HP (-> STBB2=LP and TPS=LP)
 	 * ExtSupply2Bypass         = ExtSupply12LPn ball is 0 when Ena is 0
 	 * ExtSupply3Bypass         = ExtSupply3LPn ball is 0 when Ena is 0
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU, 0x2a),
+	INIT_REGULATOR_REGISTER(AB8500_EXTSUPPLYREGU,          0xff, 0x13),
 	/*
 	 * Vaux1Regu                = force HP
 	 * Vaux2Regu                = force off
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_VAUX12REGU, 0x01),
+	INIT_REGULATOR_REGISTER(AB8500_VAUX12REGU,             0x0f, 0x01),
 	/*
-	 * Vaux3regu                = force off
+	 * Vaux3Regu                = force off
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3REGU, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3REGU,          0x03, 0x00),
 	/*
-	 * Vsmps1                   = 1.15V
+	 * Vaux1Sel                 = 2.8 V
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_VSMPS1SEL1, 0x24),
-	/*
-	 * Vaux1Sel                 = 2.5 V
-	 */
-	INIT_REGULATOR_REGISTER(AB8500_VAUX1SEL, 0x08),
+	INIT_REGULATOR_REGISTER(AB8500_VAUX1SEL,               0x0f, 0x0C),
 	/*
 	 * Vaux2Sel                 = 2.9 V
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_VAUX2SEL, 0x0d),
+	INIT_REGULATOR_REGISTER(AB8500_VAUX2SEL,               0x0f, 0x0d),
 	/*
 	 * Vaux3Sel                 = 2.91 V
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3SEL, 0x07),
+	INIT_REGULATOR_REGISTER(AB8500_VRF1VAUX3SEL,           0x07, 0x07),
 	/*
 	 * VextSupply12LP           = disabled (no LP)
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL2SPARE, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUCTRL2SPARE,         0x01, 0x00),
 	/*
 	 * Vaux1Disch               = short discharge time
 	 * Vaux2Disch               = short discharge time
@@ -273,23 +429,24 @@ ab8500_regulator_reg_init[AB8500_NUM_REGULATOR_REGISTERS] = {
 	 * VTVoutDisch              = short discharge time
 	 * VaudioDisch              = short discharge time
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUCTRLDISCH, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUCTRLDISCH,          0xfc, 0x00),
 	/*
 	 * VanaDisch                = short discharge time
 	 * VdmicPullDownEna         = pulldown disabled when Vdmic is disabled
 	 * VdmicDisch               = short discharge time
 	 */
-	INIT_REGULATOR_REGISTER(AB8500_REGUCTRLDISCH2, 0x00),
+	INIT_REGULATOR_REGISTER(AB8500_REGUCTRLDISCH2,         0x16, 0x00),
 };
 
 /* AB8500 regulators */
-struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
+static struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
 	/* supplies to the display/camera */
 	[AB8500_LDO_AUX1] = {
+		.supply_regulator = "ab8500-ext-supply3",
 		.constraints = {
 			.name = "V-DISPLAY",
-			.min_uV = 2500000,
-			.max_uV = 2900000,
+			.min_uV = 2800000,
+			.max_uV = 3300000,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
 					  REGULATOR_CHANGE_STATUS,
 			.boot_on = 1, /* display is on at boot */
@@ -306,24 +463,32 @@ struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
 	},
 	/* supplies to the on-board eMMC */
 	[AB8500_LDO_AUX2] = {
+		.supply_regulator = "ab8500-ext-supply3",
 		.constraints = {
 			.name = "V-eMMC1",
 			.min_uV = 1100000,
 			.max_uV = 3300000,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-					  REGULATOR_CHANGE_STATUS,
+					  REGULATOR_CHANGE_STATUS |
+					  REGULATOR_CHANGE_MODE,
+			.valid_modes_mask = REGULATOR_MODE_NORMAL |
+					    REGULATOR_MODE_IDLE,
 		},
 		.num_consumer_supplies = ARRAY_SIZE(ab8500_vaux2_consumers),
 		.consumer_supplies = ab8500_vaux2_consumers,
 	},
 	/* supply for VAUX3, supplies to SDcard slots */
 	[AB8500_LDO_AUX3] = {
+		.supply_regulator = "ab8500-ext-supply3",
 		.constraints = {
 			.name = "V-MMC-SD",
 			.min_uV = 1100000,
 			.max_uV = 3300000,
 			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
-					  REGULATOR_CHANGE_STATUS,
+					  REGULATOR_CHANGE_STATUS |
+					  REGULATOR_CHANGE_MODE,
+			.valid_modes_mask = REGULATOR_MODE_NORMAL |
+					    REGULATOR_MODE_IDLE,
 		},
 		.num_consumer_supplies = ARRAY_SIZE(ab8500_vaux3_consumers),
 		.consumer_supplies = ab8500_vaux3_consumers,
@@ -377,18 +542,167 @@ struct regulator_init_data ab8500_regulators[AB8500_NUM_REGULATORS] = {
 	[AB8500_LDO_INTCORE] = {
 		.constraints = {
 			.name = "V-INTCORE",
-			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+			.min_uV = 1250000,
+			.max_uV = 1350000,
+			.input_uV = 1800000,
+			.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE |
+					  REGULATOR_CHANGE_STATUS |
+					  REGULATOR_CHANGE_MODE |
+					  REGULATOR_CHANGE_DRMS,
+			.valid_modes_mask = REGULATOR_MODE_NORMAL |
+					    REGULATOR_MODE_IDLE,
 		},
 		.num_consumer_supplies = ARRAY_SIZE(ab8500_vintcore_consumers),
 		.consumer_supplies = ab8500_vintcore_consumers,
 	},
-	/* supply for U8500 CSI/DSI, VANA LDO */
+	/* supply for U8500 CSI-DSI, VANA LDO */
 	[AB8500_LDO_ANA] = {
 		.constraints = {
-			.name = "V-CSI/DSI",
+			.name = "V-CSI-DSI",
 			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
 		},
 		.num_consumer_supplies = ARRAY_SIZE(ab8500_vana_consumers),
 		.consumer_supplies = ab8500_vana_consumers,
 	},
+	/* sysclkreq 2 pin */
+	[AB8500_SYSCLKREQ_2] = {
+		.constraints = {
+			.name = "V-SYSCLKREQ-2",
+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+		},
+		.num_consumer_supplies =
+			ARRAY_SIZE(ab8500_sysclkreq_2_consumers),
+		.consumer_supplies = ab8500_sysclkreq_2_consumers,
+	},
+	/* sysclkreq 4 pin */
+	[AB8500_SYSCLKREQ_4] = {
+		.constraints = {
+			.name = "V-SYSCLKREQ-4",
+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+		},
+		.num_consumer_supplies =
+			ARRAY_SIZE(ab8500_sysclkreq_4_consumers),
+		.consumer_supplies = ab8500_sysclkreq_4_consumers,
+	},
 };
+
+/* supply for VextSupply3 */
+static struct regulator_consumer_supply ab8500_ext_supply3_consumers[] = {
+	/* SIM supply for 3 V SIM cards */
+	REGULATOR_SUPPLY("vinvsim", "sim-detect.0"),
+};
+
+/* extended configuration for VextSupply2, only used for HREFP_V20 boards */
+static struct ab8500_ext_regulator_cfg ab8500_ext_supply2 = {
+	.hwreq = true,
+};
+
+/*
+ * AB8500 external regulators
+ */
+static struct regulator_init_data ab8500_ext_regulators[] = {
+	/* fixed Vbat supplies VSMPS1_EXT_1V8 */
+	[AB8500_EXT_SUPPLY1] = {
+		.constraints = {
+			.name = "ab8500-ext-supply1",
+			.min_uV = 1800000,
+			.max_uV = 1800000,
+			.initial_mode = REGULATOR_MODE_IDLE,
+			.boot_on = 1,
+			.always_on = 1,
+		},
+	},
+	/* fixed Vbat supplies VSMPS2_EXT_1V36 and VSMPS5_EXT_1V15 */
+	[AB8500_EXT_SUPPLY2] = {
+		.constraints = {
+			.name = "ab8500-ext-supply2",
+			.min_uV = 1360000,
+			.max_uV = 1360000,
+		},
+	},
+	/* fixed Vbat supplies VSMPS3_EXT_3V4 and VSMPS4_EXT_3V4 */
+	[AB8500_EXT_SUPPLY3] = {
+		.constraints = {
+			.name = "ab8500-ext-supply3",
+			.min_uV = 3400000,
+			.max_uV = 3400000,
+			.valid_ops_mask = REGULATOR_CHANGE_STATUS,
+			.boot_on = 1,
+		},
+		.num_consumer_supplies =
+			ARRAY_SIZE(ab8500_ext_supply3_consumers),
+		.consumer_supplies = ab8500_ext_supply3_consumers,
+	},
+};
+
+struct ab8500_regulator_platform_data ab8500_regulator_plat_data = {
+	.reg_init               = ab8500_reg_init,
+	.num_reg_init           = ARRAY_SIZE(ab8500_reg_init),
+	.regulator              = ab8500_regulators,
+	.num_regulator          = ARRAY_SIZE(ab8500_regulators),
+	.ext_regulator          = ab8500_ext_regulators,
+	.num_ext_regulator      = ARRAY_SIZE(ab8500_ext_regulators),
+};
+
+static void ab8500_modify_reg_init(int id, u8 mask, u8 value)
+{
+	int i;
+
+	for (i = ARRAY_SIZE(ab8500_reg_init) - 1; i >= 0; i--) {
+		if (ab8500_reg_init[i].id == id) {
+			u8 initval = ab8500_reg_init[i].value;
+			initval = (initval & ~mask) | (value & mask);
+			ab8500_reg_init[i].value = initval;
+
+			BUG_ON(mask & ~ab8500_reg_init[i].mask);
+			return;
+		}
+	}
+
+	BUG_ON(1);
+}
+
+void mop500_regulator_init(void)
+{
+	struct regulator_init_data *regulator;
+
+	/*
+	 * Temporarily turn on Vaux2 on 8520 machine
+	 */
+	if (machine_is_u8520()) {
+		/* Vaux2 initialized to be on */
+		ab8500_modify_reg_init(AB8500_VAUX12REGU, 0x0f, 0x05);
+
+		/* Vaux2 always on */
+		regulator = &ab8500_ext_regulators[AB8500_LDO_AUX2];
+		regulator->constraints.always_on = 1;
+	}
+
+	/*
+	 * Handle AB8500_EXT_SUPPLY2 on HREFP_V20_V50 boards (do it for
+	 * all HREFP_V20 boards)
+	 */
+	if (cpu_is_u8500v20()) {
+		/* VextSupply2RequestCtrl =  HP/OFF depending on VxRequest */
+		ab8500_modify_reg_init(AB8500_REGUREQUESTCTRL3, 0x01, 0x01);
+
+		/* VextSupply2SysClkReq1HPValid = SysClkReq1 controlled */
+		ab8500_modify_reg_init(AB8500_REGUSYSCLKREQ1HPVALID2,
+			0x20, 0x20);
+
+		/* VextSupply2 = force HP at initialization */
+		ab8500_modify_reg_init(AB8500_EXTSUPPLYREGU, 0x0c, 0x04);
+
+		/* enable VextSupply2 during platform active */
+		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
+		regulator->constraints.always_on = 1;
+
+		/* disable VextSupply2 in suspend */
+		regulator = &ab8500_ext_regulators[AB8500_EXT_SUPPLY2];
+		regulator->constraints.state_mem.disabled = 1;
+		regulator->constraints.state_standby.disabled = 1;
+
+		/* enable VextSupply2 HW control (used in suspend) */
+		regulator->driver_data = (void *)&ab8500_ext_supply2;
+	}
+}

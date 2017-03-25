@@ -10,6 +10,8 @@
 #ifndef __LINUX_MFD_AB8500_REGULATOR_H
 #define __LINUX_MFD_AB8500_REGULATOR_H
 
+#include <linux/platform_device.h>
+
 /* AB8500 regulators */
 enum ab8500_regulator_id {
 	AB8500_LDO_AUX1,
@@ -17,12 +19,13 @@ enum ab8500_regulator_id {
 	AB8500_LDO_AUX3,
 	AB8500_LDO_INTCORE,
 	AB8500_LDO_TVOUT,
-	AB8500_LDO_USB,
 	AB8500_LDO_AUDIO,
 	AB8500_LDO_ANAMIC1,
 	AB8500_LDO_ANAMIC2,
 	AB8500_LDO_DMIC,
 	AB8500_LDO_ANA,
+	AB8500_SYSCLKREQ_2,
+	AB8500_SYSCLKREQ_4,
 	AB8500_NUM_REGULATORS,
 };
 
@@ -48,13 +51,15 @@ enum ab9540_regulator_id {
 /* AB8500 and AB9540 register initialization */
 struct ab8500_regulator_reg_init {
 	int id;
+	u8 mask;
 	u8 value;
 };
 
-#define INIT_REGULATOR_REGISTER(_id, _value)	\
-	{					\
-		.id = _id,			\
-		.value = _value,		\
+#define INIT_REGULATOR_REGISTER(_id, _mask, _value)	\
+	{						\
+		.id = _id,				\
+		.mask = _mask,				\
+		.value = _value,			\
 	}
 
 /* AB8500 registers */
@@ -86,7 +91,6 @@ enum ab8500_regulator_reg {
 	AB8500_REGUCTRL2SPARE,
 	AB8500_REGUCTRLDISCH,
 	AB8500_REGUCTRLDISCH2,
-	AB8500_VSMPS1SEL1,
 	AB8500_NUM_REGULATOR_REGISTERS,
 };
 
@@ -138,5 +142,36 @@ enum ab9540_regulator_reg {
 	AB9540_REGUCTRLDISCH3,
 	AB9540_NUM_REGULATOR_REGISTERS,
 };
+
+/* AB8500 external regulators */
+struct ab8500_ext_regulator_cfg {
+	bool hwreq; /* requires hw mode or high power mode */
+};
+
+enum ab8500_ext_regulator_id {
+	AB8500_EXT_SUPPLY1,
+	AB8500_EXT_SUPPLY2,
+	AB8500_EXT_SUPPLY3,
+	AB8500_NUM_EXT_REGULATORS,
+};
+
+/* AB8500 regulator platform data */
+struct ab8500_regulator_platform_data {
+	int num_reg_init;
+	struct ab8500_regulator_reg_init *reg_init;
+	int num_regulator;
+	struct regulator_init_data *regulator;
+	int num_ext_regulator;
+	struct regulator_init_data *ext_regulator;
+};
+
+/* AB8500 external regulator functions (internal) */
+#ifdef CONFIG_REGULATOR_AB8500_EXT
+__devinit int ab8500_ext_regulator_init(struct platform_device *pdev);
+__devexit int ab8500_ext_regulator_exit(struct platform_device *pdev);
+#else
+inline __devinit int ab8500_ext_regulator_init(struct platform_device *pdev) {}
+inline __devexit int ab8500_ext_regulator_exit(struct platform_device *pdev) {}
+#endif
 
 #endif

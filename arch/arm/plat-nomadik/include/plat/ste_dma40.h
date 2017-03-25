@@ -146,6 +146,7 @@ struct stedma40_chan_cfg {
  * @memcpy_conf_phy: default configuration of physical channel memcpy
  * @memcpy_conf_log: default configuration of logical channel memcpy
  * @disabled_channels: A vector, ending with -1, that marks physical channels
+ * @use_esram_lcla: flag for mapping the lcla into esram region
  * that are for different reasons not available for the driver.
  */
 struct stedma40_platform_data {
@@ -161,6 +162,24 @@ struct stedma40_platform_data {
 };
 
 #ifdef CONFIG_STE_DMA40
+
+/*
+ * stedma40_get_src_addr - get current source address
+ * @chan: the DMA channel
+ *
+ * Returns the physical address of the current source element to be read by the
+ * DMA.
+ */
+dma_addr_t stedma40_get_src_addr(struct dma_chan *chan);
+
+/*
+ * stedma40_get_dst_addr - get current destination address
+ * @chan: the DMA channel
+ *
+ * Returns the physical address of the current destination element to be
+ * written by the DMA.
+ */
+dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan);
 
 /**
  * stedma40_filter() - Provides stedma40_chan_cfg to the
@@ -204,6 +223,16 @@ dma_async_tx_descriptor *stedma40_slave_mem(struct dma_chan *chan,
 }
 
 #else
+dma_addr_t stedma40_get_src_addr(struct dma_chan *chan)
+{
+	return NULL;
+}
+
+dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan)
+{
+	return NULL;
+}
+
 static inline bool stedma40_filter(struct dma_chan *chan, void *data)
 {
 	return false;

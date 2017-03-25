@@ -296,6 +296,7 @@ struct hci_conn {
 	__u8		type;
 	bool		out;
 	__u8		attempt;
+	__u8		no_autoretry;
 	__u8		dev_class[3];
 	__u8		features[8];
 	__u16		interval;
@@ -332,6 +333,8 @@ struct hci_conn {
 	void		*l2cap_data;
 	void		*sco_data;
 	void		*smp_conn;
+
+	struct bt_sco_parameters	*sco_parameters;
 
 	struct hci_conn	*link;
 
@@ -573,7 +576,8 @@ void hci_chan_list_flush(struct hci_conn *conn);
 
 struct hci_conn *hci_connect(struct hci_dev *hdev, int type,
 					__u16 pkt_type, bdaddr_t *dst,
-					__u8 sec_level, __u8 auth_type);
+					__u8 sec_level, __u8 auth_type,
+					struct bt_sco_parameters *sco_parameters);
 int hci_conn_check_link_mode(struct hci_conn *conn);
 int hci_conn_check_secure(struct hci_conn *conn, __u8 sec_level);
 int hci_conn_security(struct hci_conn *conn, __u8 sec_level, __u8 auth_type);

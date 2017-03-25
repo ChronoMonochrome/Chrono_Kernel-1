@@ -14,20 +14,23 @@
 #include <linux/amba/bus.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
+#include <linux/gpio/nomadik.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
+#include <linux/dma-mapping.h>
+#include <linux/delay.h>
 
-#include <asm/mach/map.h>
 #include <asm/pmu.h>
-#include <plat/gpio-nomadik.h>
+#include <asm/mach/map.h>
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/devices.h>
 #include <mach/usb.h>
 #include <mach/db8500-regs.h>
+#include <mach/ste-dma40-db8500.h>
 
 #include "devices-db8500.h"
-#include "ste-dma40-db8500.h"
+#include "prcc.h"
 
 /* minimum static i/o mapping required to boot U8500 platforms */
 static struct map_desc u8500_uart_io_desc[] __initdata = {
@@ -35,26 +38,43 @@ static struct map_desc u8500_uart_io_desc[] __initdata = {
 	__IO_DEV_DESC(U8500_UART2_BASE, SZ_4K),
 };
 
-static struct map_desc u8500_io_desc[] __initdata = {
+/*  U8500 and U9540 common io_desc */
+static struct map_desc u8500_common_io_desc[] __initdata = {
 	/* SCU base also covers GIC CPU BASE and TWD with its 4K page */
 	__IO_DEV_DESC(U8500_SCU_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GIC_DIST_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_L2CC_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_MTU0_BASE, SZ_4K),
+	__IO_DEV_DESC(U8500_MTU1_BASE, SZ_4K),
+	__IO_DEV_DESC(U8500_RTC_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_BACKUPRAM0_BASE, SZ_8K),
-
 	__IO_DEV_DESC(U8500_CLKRST1_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST2_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST3_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST5_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_CLKRST6_BASE, SZ_4K),
 
-	__IO_DEV_DESC(U8500_PRCMU_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO0_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO1_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO2_BASE, SZ_4K),
 	__IO_DEV_DESC(U8500_GPIO3_BASE, SZ_4K),
+};
+
+/* U8500 IO map specific description */
+static struct map_desc u8500_io_desc[] __initdata = {
+	__IO_DEV_DESC(U8500_PRCMU_BASE, SZ_4K),
+	/* Map U8500_PUBLIC_BOOT_ROM_BASE (base+17000) only
+	 * for TEE security driver
+	 * and avoid overlap with asic ID at base+1D000 */
+	__MEM_DEV_DESC(U8500_BOOT_ROM_BASE+0x17000, 6*SZ_4K),
 	__IO_DEV_DESC(U8500_PRCMU_TCDM_BASE, SZ_4K),
+};
+
+/* U9540 IO map specific description */
+static struct map_desc u9540_io_desc[] __initdata = {
+	__IO_DEV_DESC(U8500_PRCMU_BASE, SZ_4K + SZ_8K),
+	__MEM_DEV_DESC_DB9540_ROM(U9540_BOOT_ROM_BASE, SZ_1M),
+	__IO_DEV_DESC(U8500_PRCMU_TCDM_BASE, SZ_4K + SZ_8K),
 };
 
 void __init u8500_map_io(void)
@@ -64,9 +84,22 @@ void __init u8500_map_io(void)
 	 */
 	iotable_init(u8500_uart_io_desc, ARRAY_SIZE(u8500_uart_io_desc));
 
+	/*
+	 * STE NMF CM driver only used on the U8500 allocate using
+	 * dma_alloc_coherent:
+	 *    8M for SIA and SVA data + 2M for SIA code + 2M for SVA code
+	 *    Can't be higher than 14M with VMALLOC_END at 0xFF000000
+	 */
+	init_consistent_dma_size(14*SZ_1M);
+
 	ux500_map_io();
 
-	iotable_init(u8500_io_desc, ARRAY_SIZE(u8500_io_desc));
+	iotable_init(u8500_common_io_desc, ARRAY_SIZE(u8500_common_io_desc));
+
+	if (cpu_is_u9540())
+		iotable_init(u9540_io_desc, ARRAY_SIZE(u9540_io_desc));
+	else
+		iotable_init(u8500_io_desc, ARRAY_SIZE(u8500_io_desc));
 
 	_PRCMU_BASE = __io_address(U8500_PRCMU_BASE);
 }
@@ -115,33 +148,49 @@ static struct platform_device db8500_prcmu_device = {
 	.name			= "db8500-prcmu",
 };
 
+static unsigned int per_clkrst_base[7] = {
+	0,
+	U8500_CLKRST1_BASE,
+	U8500_CLKRST2_BASE,
+	U8500_CLKRST3_BASE,
+	0,
+	0,
+	U8500_CLKRST6_BASE,
+};
+
+void u8500_reset_ip(unsigned char per, unsigned int ip_mask)
+{
+	void __iomem *prcc_rst_set, *prcc_rst_clr;
+
+	if (per == 0 || per == 4 || per == 5 || per > 6)
+		return;
+
+	prcc_rst_set = __io_address(per_clkrst_base[per] + PRCC_K_SOFTRST_SET);
+	prcc_rst_clr = __io_address(per_clkrst_base[per] + PRCC_K_SOFTRST_CLR);
+
+	/* Activate soft reset PRCC_K_SOFTRST_CLR */
+	writel(ip_mask, prcc_rst_clr);
+	udelay(1);
+
+	/* Release soft reset PRCC_K_SOFTRST_SET */
+	writel(ip_mask, prcc_rst_set);
+	udelay(1);
+}
+
 static struct platform_device *platform_devs[] __initdata = {
-	&u8500_dma40_device,
+	&u8500_gpio_devs[0],
+	&u8500_gpio_devs[1],
+	&u8500_gpio_devs[2],
+	&u8500_gpio_devs[3],
+	&u8500_gpio_devs[4],
+	&u8500_gpio_devs[5],
+	&u8500_gpio_devs[6],
+	&u8500_gpio_devs[7],
+	&u8500_gpio_devs[8],
 	&db8500_pmu_device,
 	&db8500_prcmu_device,
+	&u8500_wdt_device,
 };
-
-static resource_size_t __initdata db8500_gpio_base[] = {
-	U8500_GPIOBANK0_BASE,
-	U8500_GPIOBANK1_BASE,
-	U8500_GPIOBANK2_BASE,
-	U8500_GPIOBANK3_BASE,
-	U8500_GPIOBANK4_BASE,
-	U8500_GPIOBANK5_BASE,
-	U8500_GPIOBANK6_BASE,
-	U8500_GPIOBANK7_BASE,
-	U8500_GPIOBANK8_BASE,
-};
-
-static void __init db8500_add_gpios(struct device *parent)
-{
-	struct nmk_gpio_platform_data pdata = {
-		.supports_sleepmode = true,
-	};
-
-	dbx500_add_gpios(parent, ARRAY_AND_SIZE(db8500_gpio_base),
-			 IRQ_DB8500_GPIO0, &pdata);
-}
 
 static int usb_db8500_rx_dma_cfg[] = {
 	DB8500_DMA_DEV38_USB_OTG_IEP_1_9,
@@ -190,10 +239,14 @@ struct device * __init u8500_init_devices(void)
 	struct device *parent;
 	int i;
 
+#ifdef CONFIG_STM_TRACE
+	/* Early init for STM tracing */
+	platform_device_register(&u8500_stm_device);
+#endif
 	parent = db8500_soc_device_init();
 
+	db8500_dma_init(parent);
 	db8500_add_rtc(parent);
-	db8500_add_gpios(parent);
 	db8500_add_usb(parent, usb_db8500_rx_dma_cfg, usb_db8500_tx_dma_cfg);
 
 	platform_device_register_data(parent,
