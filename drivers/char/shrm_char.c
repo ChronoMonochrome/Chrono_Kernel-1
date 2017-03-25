@@ -25,8 +25,8 @@
 
 
 #define NAME "IPC_ISA"
-/* L2 header for rtc_calibration device is 0xC8 and hence 0xC8 + 1 = 201 */
-#define MAX_L2_HEADERS 201
+/* L2 header for common loopback device is 0xc0 and hence 0xdd+1 = 222*/
+#define MAX_L2_HEADERS 222
 
 #define SIZE_OF_FIFO (512*1024)
 
@@ -52,6 +52,8 @@ static struct map_device map_dev[] = {
 	{AUDIO_LOOPBACK_MESSAGING, 5, "audio_loopback"},
 	{CIQ_MESSAGING, 6, "ciq"},
 	{RTC_CAL_MESSAGING, 7, "rtc_calibration"},
+	{IPCCTRL, 8, "ipcctr"},
+	{IPCDATA, 9, "ipcdata"},
 };
 
 /*
@@ -429,6 +431,13 @@ ssize_t isa_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
 		msgsize = ret;
 	}
 	spin_unlock_bh(&q->update_lock);
+	/* if RPC, Security  msg read, then unlock the acquired lock */
+	if (isadev->device_id == RPC_MESSAGING) {
+		wake_unlock(&shrm->rpc_wake_lock);
+	}
+	if (isadev->device_id == SECURITY_MESSAGING) {
+		wake_unlock(&shrm->sec_wake_lock);
+	}
 	dev_dbg(shrm->dev, "%s OUT\n", __func__);
 	return msgsize;
 }
@@ -493,6 +502,14 @@ ssize_t isa_write(struct file *filp, const char __user *buf,
 	case RTC_CAL_MESSAGING:
 		dev_dbg(shrm->dev, "isa_write(): RTC Calibration\n");
 		addr = (void *)wr_rtc_cal_msg;
+		break;
+	case IPCCTRL:
+		dev_dbg(shrm->dev, "ipc-control\n");
+		addr = isadev->addr;
+		break;
+	case IPCDATA:
+		dev_dbg(shrm->dev, "ipc-data\n");
+		addr = isadev->addr;
 		break;
 	default:
 		dev_dbg(shrm->dev, "Wrong device\n");
@@ -656,6 +673,14 @@ static int isa_close(struct inode *inode, struct file *filp)
 	case RTC_CAL_MESSAGING:
 		dev_info(shrm->dev, "Close RTC_CAL_MESSAGING Device\n");
 		break;
+	case IPCCTRL:
+		kfree(isadev->addr);
+		dev_info(shrm->dev, "Close ipc-ctrl\n");
+		break;
+	case IPCDATA:
+		kfree(isadev->addr);
+		dev_info(shrm->dev, "Close ipc-data\n");
+		break;
 	default:
 		dev_info(shrm->dev, "No such device present\n");
 		mutex_unlock(&isa_lock);
@@ -704,7 +729,9 @@ static int isa_open(struct inode *inode, struct file *filp)
 				(m != AUDIO_MESSAGING) &&
 				(m != SECURITY_MESSAGING) &&
 				(m != CIQ_MESSAGING) &&
-				(m != RTC_CAL_MESSAGING)) {
+				(m != RTC_CAL_MESSAGING) &&
+				(m != IPCCTRL) &&
+				(m != IPCDATA)) {
 		dev_err(shrm->dev, "No such device present\n");
 		mutex_unlock(&isa_lock);
 		return -ENODEV;
@@ -762,6 +789,22 @@ static int isa_open(struct inode *inode, struct file *filp)
 	case RTC_CAL_MESSAGING:
 		dev_info(shrm->dev, "Open RTC_CAL_MESSAGING Device\n");
 		break;
+	case IPCCTRL:
+		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
+		if (!isadev->addr) {
+                        mutex_unlock(&isa_lock);
+                        return -ENOMEM;
+                }
+                dev_info(shrm->dev, "Open IPCCTRL Device\n");
+                break;
+	case IPCDATA:
+		isadev->addr = kzalloc(10 * 1024, GFP_KERNEL);
+		if (!isadev->addr) {
+                        mutex_unlock(&isa_lock);
+                        return -ENOMEM;
+                }
+                dev_info(shrm->dev, "Open IPCDATA Device\n");
+                break;
 	};
 
 	mutex_unlock(&isa_lock);

@@ -24,6 +24,7 @@
 #include <linux/uaccess.h>
 #include <linux/io.h>
 
+#include <asm/system.h>
 #include <asm/rtc.h>
 #if defined(CONFIG_M32R)
 #include <asm/m32r.h>

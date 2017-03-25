@@ -56,6 +56,7 @@
 #include <linux/workqueue.h>
 
 #include <asm/uaccess.h>
+#include <asm/system.h>
 #include <asm/rtc.h>
 
 /*

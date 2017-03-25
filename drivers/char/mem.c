@@ -26,7 +26,6 @@
 #include <linux/bootmem.h>
 #include <linux/splice.h>
 #include <linux/pfn.h>
-#include <linux/export.h>
 
 #include <asm/uaccess.h>
 #include <asm/io.h>
@@ -862,7 +861,7 @@ static const struct file_operations kmsg_fops = {
 
 static const struct memdev {
 	const char *name;
-	umode_t mode;
+	mode_t mode;
 	const struct file_operations *fops;
 	struct backing_dev_info *dev_info;
 } devlist[] = {
@@ -918,7 +917,7 @@ static const struct file_operations memory_fops = {
 	.llseek = noop_llseek,
 };
 
-static char *mem_devnode(struct device *dev, umode_t *mode)
+static char *mem_devnode(struct device *dev, mode_t *mode)
 {
 	if (mode && devlist[MINOR(dev->devt)].mode)
 		*mode = devlist[MINOR(dev->devt)].mode;

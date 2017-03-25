@@ -37,6 +37,7 @@
 #include <linux/efi.h>
 #include <linux/uaccess.h>
 
+#include <asm/system.h>
 
 #define EFI_RTC_VERSION		"0.4"
 

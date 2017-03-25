@@ -17,7 +17,6 @@
 #include <linux/device.h>
 #include <linux/serial.h>
 #include <linux/tty.h>
-#include <linux/export.h>
 
 struct ttyprintk_port {
 	struct tty_port port;
@@ -67,7 +66,7 @@ static int tpk_printk(const unsigned char *buf, int count)
 				tmp[tpk_curr + 1] = '\0';
 				printk(KERN_INFO "%s%s", tpk_tag, tmp);
 				tpk_curr = 0;
-				if ((i + 1) < count && buf[i + 1] == '\n')
+				if (buf[i + 1] == '\n')
 					i++;
 				break;
 			case '\n':
@@ -171,7 +170,7 @@ static const struct tty_operations ttyprintk_ops = {
 	.ioctl = tpk_ioctl,
 };
 
-static struct tty_port_operations null_ops = { };
+struct tty_port_operations null_ops = { };
 
 static struct tty_driver *ttyprintk_driver;
 
@@ -184,10 +183,12 @@ static int __init ttyprintk_init(void)
 	if (!ttyprintk_driver)
 		return ret;
 
+	ttyprintk_driver->owner = THIS_MODULE;
 	ttyprintk_driver->driver_name = "ttyprintk";
 	ttyprintk_driver->name = "ttyprintk";
 	ttyprintk_driver->major = TTYAUX_MAJOR;
 	ttyprintk_driver->minor_start = 3;
+	ttyprintk_driver->num = 1;
 	ttyprintk_driver->type = TTY_DRIVER_TYPE_CONSOLE;
 	ttyprintk_driver->init_termios = tty_std_termios;
 	ttyprintk_driver->init_termios.c_oflag = OPOST | OCRNL | ONOCR | ONLRET;
