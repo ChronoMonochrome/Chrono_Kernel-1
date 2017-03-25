@@ -289,25 +289,25 @@ static unsigned int bm_bit_to_page_idx(struct drbd_bitmap *b, u64 bitnr)
 	return page_nr;
 }
 
-static unsigned long *__bm_map_pidx(struct drbd_bitmap *b, unsigned int idx)
+static unsigned long *__bm_map_pidx(struct drbd_bitmap *b, unsigned int idx, const enum km_type km)
 {
 	struct page *page = b->bm_pages[idx];
-	return (unsigned long *) kmap_atomic(page);
+	return (unsigned long *) kmap_atomic(page, km);
 }
 
 static unsigned long *bm_map_pidx(struct drbd_bitmap *b, unsigned int idx)
 {
-	return __bm_map_pidx(b, idx);
+	return __bm_map_pidx(b, idx, KM_IRQ1);
 }
 
-static void __bm_unmap(unsigned long *p_addr)
+static void __bm_unmap(unsigned long *p_addr, const enum km_type km)
 {
-	kunmap_atomic(p_addr);
+	kunmap_atomic(p_addr, km);
 };
 
 static void bm_unmap(unsigned long *p_addr)
 {
-	return __bm_unmap(p_addr);
+	return __bm_unmap(p_addr, KM_IRQ1);
 }
 
 /* long word offset of _bitmap_ sector */
@@ -378,14 +378,15 @@ static struct page **bm_realloc_pages(struct drbd_bitmap *b, unsigned long want)
 	 * thread.  As we have no disk yet, we are not in the IO path,
 	 * not even the IO path of the peer. */
 	bytes = sizeof(struct page *)*want;
-	new_pages = kzalloc(bytes, GFP_KERNEL);
+	new_pages = kmalloc(bytes, GFP_KERNEL);
 	if (!new_pages) {
-		new_pages = vzalloc(bytes);
+		new_pages = vmalloc(bytes);
 		if (!new_pages)
 			return NULL;
 		vmalloced = 1;
 	}
 
+	memset(new_pages, 0, bytes);
 	if (want >= have) {
 		for (i = 0; i < have; i++)
 			new_pages[i] = old_pages[i];
@@ -543,15 +544,15 @@ static unsigned long bm_count_bits(struct drbd_bitmap *b)
 
 	/* all but last page */
 	for (idx = 0; idx < b->bm_number_of_pages - 1; idx++) {
-		p_addr = __bm_map_pidx(b, idx);
+		p_addr = __bm_map_pidx(b, idx, KM_USER0);
 		for (i = 0; i < LWPP; i++)
 			bits += hweight_long(p_addr[i]);
-		__bm_unmap(p_addr);
+		__bm_unmap(p_addr, KM_USER0);
 		cond_resched();
 	}
 	/* last (or only) page */
 	last_word = ((b->bm_bits - 1) & BITS_PER_PAGE_MASK) >> LN2_BPL;
-	p_addr = __bm_map_pidx(b, idx);
+	p_addr = __bm_map_pidx(b, idx, KM_USER0);
 	for (i = 0; i < last_word; i++)
 		bits += hweight_long(p_addr[i]);
 	p_addr[last_word] &= cpu_to_lel(mask);
@@ -559,7 +560,7 @@ static unsigned long bm_count_bits(struct drbd_bitmap *b)
 	/* 32bit arch, may have an unused padding long */
 	if (BITS_PER_LONG == 32 && (last_word & 1) == 0)
 		p_addr[last_word+1] = 0;
-	__bm_unmap(p_addr);
+	__bm_unmap(p_addr, KM_USER0);
 	return bits;
 }
 
@@ -970,11 +971,11 @@ static void bm_page_io_async(struct bm_aio_ctx *ctx, int page_nr, int rw) __must
 		 * to use pre-allocated page pool */
 		void *src, *dest;
 		page = alloc_page(__GFP_HIGHMEM|__GFP_WAIT);
-		dest = kmap_atomic(page);
-		src = kmap_atomic(b->bm_pages[page_nr]);
+		dest = kmap_atomic(page, KM_USER0);
+		src = kmap_atomic(b->bm_pages[page_nr], KM_USER1);
 		memcpy(dest, src, PAGE_SIZE);
-		kunmap_atomic(src);
-		kunmap_atomic(dest);
+		kunmap_atomic(src, KM_USER1);
+		kunmap_atomic(dest, KM_USER0);
 		bm_store_page_idx(page, page_nr);
 	} else
 		page = b->bm_pages[page_nr];
@@ -1163,7 +1164,7 @@ int drbd_bm_write_page(struct drbd_conf *mdev, unsigned int idx) __must_hold(loc
  * this returns a bit number, NOT a sector!
  */
 static unsigned long __bm_find_next(struct drbd_conf *mdev, unsigned long bm_fo,
-	const int find_zero_bit)
+	const int find_zero_bit, const enum km_type km)
 {
 	struct drbd_bitmap *b = mdev->bitmap;
 	unsigned long *p_addr;
@@ -1178,7 +1179,7 @@ static unsigned long __bm_find_next(struct drbd_conf *mdev, unsigned long bm_fo,
 		while (bm_fo < b->bm_bits) {
 			/* bit offset of the first bit in the page */
 			bit_offset = bm_fo & ~BITS_PER_PAGE_MASK;
-			p_addr = __bm_map_pidx(b, bm_bit_to_page_idx(b, bm_fo));
+			p_addr = __bm_map_pidx(b, bm_bit_to_page_idx(b, bm_fo), km);
 
 			if (find_zero_bit)
 				i = find_next_zero_bit_le(p_addr,
@@ -1187,7 +1188,7 @@ static unsigned long __bm_find_next(struct drbd_conf *mdev, unsigned long bm_fo,
 				i = find_next_bit_le(p_addr,
 						PAGE_SIZE*8, bm_fo & BITS_PER_PAGE_MASK);
 
-			__bm_unmap(p_addr);
+			__bm_unmap(p_addr, km);
 			if (i < PAGE_SIZE*8) {
 				bm_fo = bit_offset + i;
 				if (bm_fo >= b->bm_bits)
@@ -1215,7 +1216,7 @@ static unsigned long bm_find_next(struct drbd_conf *mdev,
 	if (BM_DONT_TEST & b->bm_flags)
 		bm_print_lock_info(mdev);
 
-	i = __bm_find_next(mdev, bm_fo, find_zero_bit);
+	i = __bm_find_next(mdev, bm_fo, find_zero_bit, KM_IRQ1);
 
 	spin_unlock_irq(&b->bm_lock);
 	return i;
@@ -1239,13 +1240,13 @@ unsigned long drbd_bm_find_next_zero(struct drbd_conf *mdev, unsigned long bm_fo
 unsigned long _drbd_bm_find_next(struct drbd_conf *mdev, unsigned long bm_fo)
 {
 	/* WARN_ON(!(BM_DONT_SET & mdev->b->bm_flags)); */
-	return __bm_find_next(mdev, bm_fo, 0);
+	return __bm_find_next(mdev, bm_fo, 0, KM_USER1);
 }
 
 unsigned long _drbd_bm_find_next_zero(struct drbd_conf *mdev, unsigned long bm_fo)
 {
 	/* WARN_ON(!(BM_DONT_SET & mdev->b->bm_flags)); */
-	return __bm_find_next(mdev, bm_fo, 1);
+	return __bm_find_next(mdev, bm_fo, 1, KM_USER1);
 }
 
 /* returns number of bits actually changed.
@@ -1273,14 +1274,14 @@ static int __bm_change_bits_to(struct drbd_conf *mdev, const unsigned long s,
 		unsigned int page_nr = bm_bit_to_page_idx(b, bitnr);
 		if (page_nr != last_page_nr) {
 			if (p_addr)
-				__bm_unmap(p_addr);
+				__bm_unmap(p_addr, KM_IRQ1);
 			if (c < 0)
 				bm_set_page_lazy_writeout(b->bm_pages[last_page_nr]);
 			else if (c > 0)
 				bm_set_page_need_writeout(b->bm_pages[last_page_nr]);
 			changed_total += c;
 			c = 0;
-			p_addr = __bm_map_pidx(b, page_nr);
+			p_addr = __bm_map_pidx(b, page_nr, KM_IRQ1);
 			last_page_nr = page_nr;
 		}
 		if (val)
@@ -1289,7 +1290,7 @@ static int __bm_change_bits_to(struct drbd_conf *mdev, const unsigned long s,
 			c -= (0 != __test_and_clear_bit_le(bitnr & BITS_PER_PAGE_MASK, p_addr));
 	}
 	if (p_addr)
-		__bm_unmap(p_addr);
+		__bm_unmap(p_addr, KM_IRQ1);
 	if (c < 0)
 		bm_set_page_lazy_writeout(b->bm_pages[last_page_nr]);
 	else if (c > 0)
@@ -1342,13 +1343,13 @@ static inline void bm_set_full_words_within_one_page(struct drbd_bitmap *b,
 {
 	int i;
 	int bits;
-	unsigned long *paddr = kmap_atomic(b->bm_pages[page_nr]);
+	unsigned long *paddr = kmap_atomic(b->bm_pages[page_nr], KM_IRQ1);
 	for (i = first_word; i < last_word; i++) {
 		bits = hweight_long(paddr[i]);
 		paddr[i] = ~0UL;
 		b->bm_set += BITS_PER_LONG - bits;
 	}
-	kunmap_atomic(paddr);
+	kunmap_atomic(paddr, KM_IRQ1);
 }
 
 /* Same thing as drbd_bm_set_bits,
