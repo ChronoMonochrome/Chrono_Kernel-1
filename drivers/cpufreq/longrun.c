@@ -14,7 +14,6 @@
 
 #include <asm/msr.h>
 #include <asm/processor.h>
-#include <asm/cpu_device_id.h>
 
 static struct cpufreq_driver	longrun_driver;
 
@@ -289,12 +288,6 @@ static struct cpufreq_driver longrun_driver = {
 	.owner		= THIS_MODULE,
 };
 
-static const struct x86_cpu_id longrun_ids[] = {
-	{ X86_VENDOR_TRANSMETA, X86_FAMILY_ANY, X86_MODEL_ANY,
-	  X86_FEATURE_LONGRUN },
-	{}
-};
-MODULE_DEVICE_TABLE(x86cpu, longrun_ids);
 
 /**
  * longrun_init - initializes the Transmeta Crusoe LongRun CPUFreq driver
@@ -303,8 +296,12 @@ MODULE_DEVICE_TABLE(x86cpu, longrun_ids);
  */
 static int __init longrun_init(void)
 {
-	if (!x86_match_cpu(longrun_ids))
+	struct cpuinfo_x86 *c = &cpu_data(0);
+
+	if (c->x86_vendor != X86_VENDOR_TRANSMETA ||
+	    !cpu_has(c, X86_FEATURE_LONGRUN))
 		return -ENODEV;
+
 	return cpufreq_register_driver(&longrun_driver);
 }
 

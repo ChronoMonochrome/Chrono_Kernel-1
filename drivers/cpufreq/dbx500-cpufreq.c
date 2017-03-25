@@ -3,78 +3,24 @@
  * Copyright (C) ST-Ericsson SA 2010-2011
  *
  * License Terms: GNU General Public License v2
- * Author: Sundar Iyer <sundar.iyer@stericsson.com>
- * Author: Martin Persson <martin.persson@stericsson.com>
+ * Author: Sundar Iyer
+ * Author: Martin Persson
  * Author: Jonas Aaberg <jonas.aberg@stericsson.com>
  */
-
+#include <linux/platform_device.h>
 #include <linux/kernel.h>
+#include <linux/clk.h>
 #include <linux/cpufreq.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <mach/id.h>
 
-static struct cpufreq_frequency_table db8500_freq_table[] = {
-	[0] = {
-		.index = 0,
-		.frequency = 200000,
-	},
-	[1] = {
-		.index = 1,
-		.frequency = 400000,
-	},
-	[2] = {
-		.index = 2,
-		.frequency = 800000,
-	},
-	[3] = {
-		/* Used for MAX_OPP, if available */
-		.index = 3,
-		.frequency = CPUFREQ_TABLE_END,
-	},
-	[4] = {
-		.index = 4,
-		.frequency = CPUFREQ_TABLE_END,
-	},
-};
-
-static struct cpufreq_frequency_table db5500_freq_table[] = {
-	[0] = {
-		.index = 0,
-		.frequency = 200000,
-	},
-	[1] = {
-		.index = 1,
-		.frequency = 396500,
-	},
-	[2] = {
-		.index = 2,
-		.frequency = 793000,
-	},
-	[3] = {
-		.index = 3,
-		.frequency = CPUFREQ_TABLE_END,
-	},
-};
 
 static struct cpufreq_frequency_table *freq_table;
 static int freq_table_len;
 
-static enum arm_opp db8500_idx2opp[] = {
-	ARM_EXTCLK,
-	ARM_50_OPP,
-	ARM_100_OPP,
-	ARM_MAX_OPP
-};
-
-static enum arm_opp db5500_idx2opp[] = {
-	ARM_EXTCLK,
-	ARM_50_OPP,
-	ARM_100_OPP,
-};
-
-static enum arm_opp *idx2opp;
+struct clk *arm_clk;
 
 static struct freq_attr *dbx500_cpufreq_attr[] = {
 	&cpufreq_freq_attr_scaling_available_freqs,
@@ -92,6 +38,7 @@ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
 {
 	struct cpufreq_freqs freqs;
 	unsigned int idx;
+	int ret;
 
 	/* scale the target frequency to one of the extremes supported */
 	if (target_freq < policy->cpuinfo.min_freq)
@@ -101,7 +48,7 @@ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
 
 	/* Lookup the next frequency */
 	if (cpufreq_frequency_table_target
-	    (policy, freq_table, target_freq, relation, &idx)) {
+			(policy, freq_table, target_freq, relation, &idx)) {
 		return -EINVAL;
 	}
 
@@ -117,172 +64,29 @@ static int dbx500_cpufreq_target(struct cpufreq_policy *policy,
 
 	BUG_ON(idx >= freq_table_len);
 
-	/* request the PRCM unit for opp change */
-	if (prcmu_set_arm_opp(idx2opp[idx])) {
-		pr_err("ux500-cpufreq:  Failed to set OPP level\n");
-		return -EINVAL;
-	}
+	/* request the clk change*/
+	ret  = clk_set_rate(arm_clk, freqs.new*1000);
+
+	if (ret)
+		pr_err("dbx500-cpufreq : Failed to set arm_clk\n");
 
 	/* post change notification */
 	for_each_cpu(freqs.cpu, policy->cpus)
 		cpufreq_notify_transition(&freqs, CPUFREQ_POSTCHANGE);
 
-	return 0;
+	return ret;
 }
 
 static unsigned int dbx500_cpufreq_getspeed(unsigned int cpu)
 {
-	int i;
-	enum arm_opp current_opp;
-
-	current_opp = prcmu_get_arm_opp();
-
-	/* request the prcm to get the current ARM opp */
-	for (i = 0;  i < freq_table_len; i++) {
-		if (current_opp == idx2opp[i])
-			return freq_table[i].frequency;
-	}
-
-	pr_err("cpufreq: ERROR: unknown opp %d given from prcmufw!\n",
-	       current_opp);
-	BUG_ON(1);
-
-	/*
-	 * Better to return something that might be correct than
-	 * errno or zero, since clk_get_rate() won't do well with an errno.
-	 */
-	return freq_table[0].frequency;
-}
-
-static void __init dbx500_cpufreq_init_maxopp_freq(void)
-{
-	struct prcmu_fw_version *fw_version = prcmu_get_fw_version();
-
-	if ((fw_version == NULL) || !prcmu_has_arm_maxopp())
-		return;
-
-	switch (fw_version->project) {
-	case PRCMU_FW_PROJECT_U8500:
-	case PRCMU_FW_PROJECT_U9500:
-	case PRCMU_FW_PROJECT_U8420:
-		freq_table[3].frequency = 1000000;
-		break;
-	case PRCMU_FW_PROJECT_U8500_C2:
-	case PRCMU_FW_PROJECT_U9500_C2:
-	case PRCMU_FW_PROJECT_U8520:
-		freq_table[3].frequency = 1150000;
-		break;
-	default:
-		break;
-	}
-}
-
-static bool initialized;
-
-static void __init dbx500_cpufreq_early_init(void)
-{
-	if (cpu_is_u5500()) {
-		freq_table = db5500_freq_table;
-		idx2opp = db5500_idx2opp;
-		freq_table_len = ARRAY_SIZE(db5500_freq_table);
-	} else if (cpu_is_u8500()) {
-		freq_table = db8500_freq_table;
-		idx2opp = db8500_idx2opp;
-		dbx500_cpufreq_init_maxopp_freq();
-		freq_table_len = ARRAY_SIZE(db8500_freq_table);
-		if (!prcmu_has_arm_maxopp())
-			freq_table_len--;
-	} else {
-		ux500_unknown_soc();
-	}
-	initialized = true;
-}
-
-/*
- * This is called from localtimer initialization, via the clk_get_rate() for
- * the smp_twd clock.  This is way before cpufreq is initialized.
- */
-unsigned long dbx500_cpufreq_getfreq(void)
-{
-	if (!initialized)
-		dbx500_cpufreq_early_init();
-
-	return dbx500_cpufreq_getspeed(0) * 1000;
-}
-
-int dbx500_cpufreq_percent2freq(int percent)
-{
-	int op;
-	int i;
-
-	switch (percent) {
-	case 0:
-		/* Fall through */
-	case 25:
-		op = ARM_EXTCLK;
-		break;
-	case 50:
-		op = ARM_50_OPP;
-		break;
-	case 100:
-		op = ARM_100_OPP;
-		break;
-	case 125:
-		if (cpu_is_u8500() && prcmu_has_arm_maxopp())
-			op = ARM_MAX_OPP;
-		else
-			op = ARM_100_OPP;
-		break;
-	default:
-		pr_err("cpufreq-dbx500: Incorrect arm target value (%d).\n",
-		       percent);;
-		return -EINVAL;
-		break;
-	}
-
-	for (i = 0; idx2opp[i] != op && i < freq_table_len; i++)
-		;
-
-	if (freq_table[i].frequency == CPUFREQ_TABLE_END) {
-		pr_err("cpufreq-dbx500: Matching frequency does not exist!\n");
-		return -EINVAL;
-	}
-
-	return freq_table[i].frequency;
-}
-
-int dbx500_cpufreq_get_limits(int cpu, int r,
-			      unsigned int *min, unsigned int *max)
-{
-	int freq;
-	int ret;
-	static int old_freq;
-	struct cpufreq_policy p;
-
-	freq = dbx500_cpufreq_percent2freq(r);
-
-	if (freq < 0)
-		return -EINVAL;
-
-	if (freq != old_freq)
-		pr_debug("cpufreq-dbx500: set min arm freq to %d\n",
-			 freq);
-
-	(*min) = freq;
-
-	ret = cpufreq_get_policy(&p, cpu);
-	if (ret) {
-		pr_err("cpufreq-dbx500: Failed to get policy.\n");
-		return -EINVAL;
-	}
-
-	(*max) = p.max;
-	return 0;
+	unsigned int rate = clk_get_rate(arm_clk);
+	return rate / 1000;
 }
 
 static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
 {
 	int res;
+	int i;
 
 	/* get policy fields based on the table */
 	res = cpufreq_frequency_table_cpuinfo(policy, freq_table);
@@ -296,6 +100,10 @@ static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
 	policy->min = policy->cpuinfo.min_freq;
 	policy->max = policy->cpuinfo.max_freq;
 	policy->cur = dbx500_cpufreq_getspeed(policy->cpu);
+
+	for (i = 0; freq_table[i].frequency != policy->cur; i++)
+		;
+
 	policy->governor = CPUFREQ_DEFAULT_GOVERNOR;
 
 	/*
@@ -306,7 +114,7 @@ static int __cpuinit dbx500_cpufreq_init(struct cpufreq_policy *policy)
 	policy->cpuinfo.transition_latency = 20 * 1000; /* in ns */
 
 	/* policy sharing between dual CPUs */
-	cpumask_copy(policy->cpus, cpu_present_mask);
+	cpumask_copy(policy->cpus, &cpu_present_map);
 
 	policy->shared_type = CPUFREQ_SHARED_TYPE_ALL;
 
@@ -323,18 +131,38 @@ static struct cpufreq_driver dbx500_cpufreq_driver = {
 	.attr   = dbx500_cpufreq_attr,
 };
 
-static int __init dbx500_cpufreq_register(void)
+static int dbx500_cpu_freq_probe(struct platform_device *pdev)
 {
-	int i;
-
-	if (!initialized)
-		dbx500_cpufreq_early_init();
+	int i, ret;
+	freq_table = dev_get_platdata(pdev->dev.parent);
 
 	pr_info("dbx500-cpufreq : Available frequencies:\n");
 
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
 		pr_info("  %d Mhz\n", freq_table[i].frequency / 1000);
+	freq_table_len = i;
 
+	arm_clk = clk_get(&pdev->dev, "arm_clk");
+
+	if (IS_ERR(arm_clk)) {
+		dev_err(&pdev->dev, "cannot get clock\n");
+		ret = PTR_ERR(arm_clk);
+		return ret;
+	}
 	return cpufreq_register_driver(&dbx500_cpufreq_driver);
 }
+
+static struct platform_driver db8500_cpu_freq_driver = {
+	.driver = {
+		.name = "cpufreq-ux500",
+		.owner = THIS_MODULE,
+	},
+	.probe = dbx500_cpu_freq_probe,
+};
+
+static int __init dbx500_cpufreq_register(void)
+{
+	return platform_driver_register(&db8500_cpu_freq_driver);
+}
+
 device_initcall(dbx500_cpufreq_register);
