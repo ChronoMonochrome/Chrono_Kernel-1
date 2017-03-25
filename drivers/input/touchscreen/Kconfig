@@ -686,6 +686,18 @@ config TOUCHSCREEN_TOUCHIT213
 	  To compile this driver as a module, choose M here: the
 	  module will be called touchit213.
 
+config TOUCHSCREEN_TSC_SERIO
+	tristate "TSC-10/25/40 serial touchscreen support"
+	select SERIO
+	help
+	  Say Y here if you have a TSC-10, 25 or 40 serial touchscreen connected
+	  to your system.
+
+	  If unsure, say N.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called tsc40.
+
 config TOUCHSCREEN_TSC2005
         tristate "TSC2005 based touchscreens"
         depends on SPI_MASTER && GENERIC_HARDIRQS
@@ -762,7 +774,7 @@ config TOUCHSCREEN_TPS6507X
 	  module will be called tps6507x_ts.
 
 config TOUCHSCREEN_ZINITIX_BT404
-	bool "Zinitix BT404 Touchscreens"
+	tristate "Zinitix BT404 Touchscreens"
 	depends on I2C
 	default n
 	help
@@ -810,6 +822,24 @@ config TOUCHSCREEN_TMA140
 	depends on I2C
 	help
 	  This enables support for TMA140 driver over I2C based touchscreens.
+
+config TOUCHSCREEN_SWEEP2WAKE
+        tristate "Sweep2Wake for touchscreens"
+        default n
+
+config TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
+	depends on TOUCHSCREEN_SWEEP2WAKE
+        bool "Sweep2Wake for touchscreens"
+        default n
+
+config TOUCHSCREEN_DOUBLETAP2WAKE
+        tristate "DoubleTap2Wake for touchscreens"
+        default n
+
+config TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
+	depends on TOUCHSCREEN_DOUBLETAP2WAKE
+        bool "DoubleTap2Wake for touchscreens"
+        default n
 
 endif
 

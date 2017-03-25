@@ -28,7 +28,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/workqueue.h>
-#include <linux/input.h>
+#include <linux/i2c/twl.h>
 #include <linux/mfd/twl6040.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
@@ -47,7 +47,6 @@ struct vibra_info {
 	struct workqueue_struct *workqueue;
 	struct work_struct play_work;
 	struct mutex mutex;
-	int irq;
 
 	bool enabled;
 	int weak_speed;
@@ -74,12 +73,12 @@ static irqreturn_t twl6040_vib_irq_handler(int irq, void *data)
 	if (status & TWL6040_VIBLOCDET) {
 		dev_warn(info->dev, "Left Vibrator overcurrent detected\n");
 		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLL,
-				   TWL6040_VIBENA);
+				   TWL6040_VIBENAL);
 	}
 	if (status & TWL6040_VIBROCDET) {
 		dev_warn(info->dev, "Right Vibrator overcurrent detected\n");
 		twl6040_clear_bits(twl6040, TWL6040_REG_VIBCTLR,
-				   TWL6040_VIBENA);
+				   TWL6040_VIBENAR);
 	}
 
 	return IRQ_HANDLED;
@@ -97,23 +96,23 @@ static void twl6040_vibra_enable(struct vibra_info *info)
 	}
 
 	twl6040_power(info->twl6040, 1);
-	if (twl6040_get_revid(twl6040) <= TWL6040_REV_ES1_1) {
+	if (twl6040->rev <= TWL6040_REV_ES1_1) {
 		/*
 		 * ERRATA: Disable overcurrent protection for at least
 		 * 3ms when enabling vibrator drivers to avoid false
 		 * overcurrent detection
 		 */
 		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
-				  TWL6040_VIBENA | TWL6040_VIBCTRL);
+				  TWL6040_VIBENAL | TWL6040_VIBCTRLL);
 		twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
-				  TWL6040_VIBENA | TWL6040_VIBCTRL);
+				  TWL6040_VIBENAR | TWL6040_VIBCTRLR);
 		usleep_range(3000, 3500);
 	}
 
 	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLL,
-			  TWL6040_VIBENA);
+			  TWL6040_VIBENAL);
 	twl6040_reg_write(twl6040, TWL6040_REG_VIBCTLR,
-			  TWL6040_VIBENA);
+			  TWL6040_VIBENAR);
 
 	info->enabled = true;
 }
@@ -201,13 +200,6 @@ static int vibra_play(struct input_dev *input, void *data,
 	struct vibra_info *info = input_get_drvdata(input);
 	int ret;
 
-	/* Do not allow effect, while the routing is set to use audio */
-	ret = twl6040_get_vibralr_status(info->twl6040);
-	if (ret & TWL6040_VIBSEL) {
-		dev_info(&input->dev, "Vibra is configured for audio\n");
-		return -EBUSY;
-	}
-
 	info->weak_speed = effect->u.rumble.weak_magnitude;
 	info->strong_speed = effect->u.rumble.strong_magnitude;
 	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 1 : -1;
@@ -235,7 +227,7 @@ static void twl6040_vibra_close(struct input_dev *input)
 	mutex_unlock(&info->mutex);
 }
 
-#ifdef CONFIG_PM_SLEEP
+#if CONFIG_PM_SLEEP
 static int twl6040_vibra_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -257,7 +249,7 @@ static SIMPLE_DEV_PM_OPS(twl6040_vibra_pm_ops, twl6040_vibra_suspend, NULL);
 
 static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
 {
-	struct twl6040_vibra_data *pdata = pdev->dev.platform_data;
+	struct twl4030_vibra_data *pdata = pdev->dev.platform_data;
 	struct vibra_info *info;
 	int ret;
 
@@ -281,13 +273,6 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
 	if ((!info->vibldrv_res && !info->viblmotor_res) ||
 	    (!info->vibrdrv_res && !info->vibrmotor_res)) {
 		dev_err(info->dev, "invalid vibra driver/motor resistance\n");
-		ret = -EINVAL;
-		goto err_kzalloc;
-	}
-
-	info->irq = platform_get_irq(pdev, 0);
-	if (info->irq < 0) {
-		dev_err(info->dev, "invalid irq\n");
 		ret = -EINVAL;
 		goto err_kzalloc;
 	}
@@ -323,8 +308,9 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, info);
 
-	ret = request_threaded_irq(info->irq, NULL, twl6040_vib_irq_handler, 0,
-				   "twl6040_irq_vib", info);
+	ret = twl6040_request_irq(info->twl6040, TWL6040_IRQ_VIB,
+				  twl6040_vib_irq_handler, 0,
+				  "twl6040_irq_vib", info);
 	if (ret) {
 		dev_err(info->dev, "VIB IRQ request failed: %d\n", ret);
 		goto err_irq;
@@ -374,7 +360,7 @@ static int __devinit twl6040_vibra_probe(struct platform_device *pdev)
 err_voltage:
 	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
 err_regulator:
-	free_irq(info->irq, info);
+	twl6040_free_irq(info->twl6040, TWL6040_IRQ_VIB, info);
 err_irq:
 	input_unregister_device(info->input_dev);
 	info->input_dev = NULL;
@@ -393,7 +379,7 @@ static int __devexit twl6040_vibra_remove(struct platform_device *pdev)
 	struct vibra_info *info = platform_get_drvdata(pdev);
 
 	input_unregister_device(info->input_dev);
-	free_irq(info->irq, info);
+	twl6040_free_irq(info->twl6040, TWL6040_IRQ_VIB, info);
 	regulator_bulk_free(ARRAY_SIZE(info->supplies), info->supplies);
 	destroy_workqueue(info->workqueue);
 	kfree(info);
@@ -410,7 +396,18 @@ static struct platform_driver twl6040_vibra_driver = {
 		.pm	= &twl6040_vibra_pm_ops,
 	},
 };
-module_platform_driver(twl6040_vibra_driver);
+
+static int __init twl6040_vibra_init(void)
+{
+	return platform_driver_register(&twl6040_vibra_driver);
+}
+module_init(twl6040_vibra_init);
+
+static void __exit twl6040_vibra_exit(void)
+{
+	platform_driver_unregister(&twl6040_vibra_driver);
+}
+module_exit(twl6040_vibra_exit);
 
 MODULE_ALIAS("platform:twl6040-vibra");
 MODULE_DESCRIPTION("TWL6040 Vibra driver");

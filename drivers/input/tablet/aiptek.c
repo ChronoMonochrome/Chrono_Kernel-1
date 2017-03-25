@@ -1924,9 +1924,17 @@ static int __init aiptek_init(void)
 {
 	int result = usb_register(&aiptek_driver);
 	if (result == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
 		       DRIVER_DESC "\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_AUTHOR "\n");
+#else
+		;
+#endif
 	}
 	return result;
 }
