@@ -23,7 +23,6 @@
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/delay.h>
-#include <linux/module.h>
 #include <linux/regulator/consumer.h>
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -155,7 +154,7 @@ static ssize_t bh1780_store_power_state(struct device *dev,
 
 static DEVICE_ATTR(lux, S_IRUGO, bh1780_show_lux, NULL);
 
-static DEVICE_ATTR(power_state, S_IWUGO | S_IRUGO,
+static DEVICE_ATTR(power_state, S_IWUSR | S_IRUGO,
 		bh1780_show_power_state, bh1780_store_power_state);
 
 static struct attribute *bh1780_attributes[] = {
@@ -364,7 +363,18 @@ static struct i2c_driver bh1780_driver = {
 	},
 };
 
-module_i2c_driver(bh1780_driver);
+static int __init bh1780_init(void)
+{
+	return i2c_add_driver(&bh1780_driver);
+}
+
+static void __exit bh1780_exit(void)
+{
+	i2c_del_driver(&bh1780_driver);
+}
+
+module_init(bh1780_init)
+module_exit(bh1780_exit)
 
 MODULE_DESCRIPTION("BH1780GLI Ambient Light Sensor Driver");
 MODULE_LICENSE("GPL");
