@@ -14,7 +14,6 @@
 #include <linux/acpi.h>
 #include <linux/leds.h>
 #include <linux/slab.h>
-#include <linux/module.h>
 
 MODULE_AUTHOR("Louis Davis/Jim Dailey");
 MODULE_DESCRIPTION("Dell LED Control Driver");
