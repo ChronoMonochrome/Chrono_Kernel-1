@@ -49,9 +49,7 @@
 #include <linux/regulator/consumer.h>
 
 #include <linux/input/lps001wp.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
-#endif
 
 #define	DEBUG	1
 
@@ -171,9 +169,8 @@ struct lps001wp_prs_data {
 	struct delayed_work input_work;
 	struct input_dev *input_dev;
 #endif
-#ifdef CONFIG_HAS_EARLYSUSPEND
+	struct regulator *regulator;
 	struct early_suspend early_suspend;
-#endif
 
 	int hw_initialized;
 	/* hw_working=-1 means not tested yet */
@@ -185,8 +182,6 @@ struct lps001wp_prs_data {
 	int on_before_suspend;
 
 	u8 resume_state[RESUME_ENTRIES];
-
-	struct regulator *regulator;
 
 #ifdef DEBUG
 	u8 reg_addr;
@@ -390,13 +385,10 @@ static void lps001wp_prs_device_power_off(struct lps001wp_prs_data *prs)
 	if (err < 0)
 		dev_err(&prs->client->dev, "soft power off failed: %d\n", err);
 
-	/* disable regulator */
-	if (prs->regulator) {
-		err = regulator_disable(prs->regulator);
-		if (err < 0)
-			dev_err(&prs->client->dev, "failed to disable regulator\n");
+	if (prs->pdata->power_off) {
+		prs->pdata->power_off();
+		prs->hw_initialized = 0;
 	}
-
 	if (prs->hw_initialized) {
 		prs->hw_initialized = 0;
 	}
@@ -407,21 +399,13 @@ static int lps001wp_prs_device_power_on(struct lps001wp_prs_data *prs)
 {
 	int err = -EINVAL;
 
-	/* get the regulator the first time */
-	if (!prs->regulator) {
-		prs->regulator = regulator_get(&prs->client->dev, "vdd");
-		if (IS_ERR(prs->regulator)) {
-			dev_err(&prs->client->dev, "failed to get regulator\n");
-			prs->regulator = NULL;
-			return PTR_ERR(prs->regulator);
+	if (prs->pdata->power_on) {
+		err = prs->pdata->power_on();
+		if (err < 0) {
+			dev_err(&prs->client->dev,
+					"power_on failed: %d\n", err);
+			return err;
 		}
-	}
-
-	/* enable it also */
-	err = regulator_enable(prs->regulator);
-	if (err < 0) {
-		dev_err(&prs->client->dev, "failed to enable regulator\n");
-		return err;
 	}
 
 	if (!prs->hw_initialized) {
@@ -994,7 +978,7 @@ static ssize_t attr_addr_set(struct device *dev, struct device_attribute *attr,
 static struct device_attribute attributes[] = {
 	__ATTR(pollrate_ms, S_IWUSR | S_IRUGO, attr_get_polling_rate,
 		attr_set_polling_rate),
-	__ATTR(enable, S_IWUGO | S_IRUGO, attr_get_enable, attr_set_enable),
+	__ATTR(enable, S_IWUSR | S_IRUGO, attr_get_enable, attr_set_enable),
 	__ATTR(diff_enable, S_IWUSR | S_IRUGO, attr_get_diff_enable,
 		attr_set_diff_enable),
 	__ATTR(press_reference, S_IWUSR | S_IRUGO, attr_get_press_ref,
@@ -1362,10 +1346,6 @@ static int __devexit lps001wp_prs_remove(struct i2c_client *client)
 
 	if (prs->pdata->exit)
 		prs->pdata->exit();
-
-	if (prs->regulator)
-		regulator_put(prs->regulator);
-
 	kfree(prs->pdata);
 	kfree(prs);
 
@@ -1418,7 +1398,7 @@ static struct i2c_driver lps001wp_prs_driver = {
 	.driver = {
 			.name = LPS001WP_PRS_DEV_NAME,
 			.owner = THIS_MODULE,
-#if (!defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM))
+#if !defined(CONFIG_HAS_EARLYSUSPEND) && defined(CONFIG_PM)
 			.pm = &lps001wp_prs_dev_pm_ops,
 #endif
 	},

@@ -13,8 +13,8 @@
 
 #include <linux/delay.h>
 #include <linux/interrupt.h>
+#include <linux/mfd/ab8500.h>
 #include <linux/mfd/abx500.h>
-#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/mfd/abx500/ab8500-gpadc.h>
 #include <linux/mfd/abx500/ab8500-gpio.h>
@@ -342,20 +342,24 @@ static void ab8500_config_hw_test_basic_carkit(struct abx500_ad *dd, int enable)
  * sets the av switch direction - audio-in vs video-out
  */
 static void ab8500_set_av_switch(struct abx500_ad *dd,
-		enum accessory_avcontrol_dir dir)
+		enum accessory_avcontrol_dir dir, bool nahj_headset)
 {
-	int ret;
+	int ret = 0;
 
 	dev_dbg(&dd->pdev->dev, "%s: Enter (%d)\n", __func__, dir);
 	if (dir == NOT_SET) {
-		ret = gpio_direction_input(dd->pdata->video_ctrl_gpio);
-		dd->gpio35_dir_set = 0;
-		ret = gpio_direction_output(dd->pdata->video_ctrl_gpio, 0);
+		if (dd->pdata->video_ctrl_gpio)
+			ret = gpio_direction_output(dd->pdata->video_ctrl_gpio,
+					0);
 		if (dd->pdata->mic_ctrl)
-			 gpio_direction_output(dd->pdata->mic_ctrl, 0);
-	} else if (!dd->gpio35_dir_set) {
+			ret = gpio_direction_output(dd->pdata->mic_ctrl, 0);
+		if (dd->pdata->nahj_ctrl)
+			ret = gpio_direction_output(dd->pdata->nahj_ctrl, 0);
+		if (ret < 0)
+			dev_err(&dd->pdev->dev, "Direction set failed\n");
+	} else if (dir == AUDIO_IN) {
 		ret = gpio_direction_output(dd->pdata->video_ctrl_gpio,
-						dir == AUDIO_IN ? 1 : 0);
+				dd->pdata->video_ctrl_gpio_inverted ? 0 : 1);
 		if (ret < 0) {
 			dev_err(&dd->pdev->dev,
 				"%s: video_ctrl pin output config failed (%d).\n",
@@ -364,8 +368,7 @@ static void ab8500_set_av_switch(struct abx500_ad *dd,
 		}
 
 		if (dd->pdata->mic_ctrl) {
-			ret = gpio_direction_output(dd->pdata->mic_ctrl,
-					dir == AUDIO_IN ? 1 : 0);
+			ret = gpio_direction_output(dd->pdata->mic_ctrl, 1);
 			if (ret < 0) {
 				dev_err(&dd->pdev->dev,
 						"%s: mic_ctrl pin output"
@@ -375,12 +378,22 @@ static void ab8500_set_av_switch(struct abx500_ad *dd,
 			}
 		}
 
-		dd->gpio35_dir_set = 1;
+		if (dd->pdata->nahj_ctrl) {
+			ret = gpio_direction_output(dd->pdata->nahj_ctrl,
+					nahj_headset ? 0 : 1);
+			if (ret < 0) {
+				dev_err(&dd->pdev->dev,
+						"%s: nahj_ctrl pin output"
+						"config failed (%d).\n",
+						__func__, ret);
+				return;
+			}
+		}
+
 		dev_dbg(&dd->pdev->dev, "AV-SWITCH: %s\n",
 			dir == AUDIO_IN ? "AUDIO_IN" : "VIDEO_OUT");
 	} else {
-		gpio_set_value(dd->pdata->video_ctrl_gpio,
-						dir == AUDIO_IN ? 1 : 0);
+		dev_err(&dd->pdev->dev, "Wrong option\n");
 	}
 }
 
@@ -419,7 +432,7 @@ static void ab8500_turn_on_accdet_comparator(struct platform_device *pdev)
 
 static void *ab8500_accdet_abx500_gpadc_get(void)
 {
-	return ab8500_gpadc_get("ab8500-gpadc.0");
+	return ab8500_gpadc_get();
 }
 
 struct abx500_accdet_platform_data *

@@ -35,6 +35,7 @@
 #include <linux/interrupt.h>
 #include <linux/mutex.h>
 
+#include <asm/system.h>
 #include <asm/amigahw.h>
 #include <asm/amigaints.h>
 
@@ -106,9 +107,6 @@ static int __init amijoy_init(void)
 {
 	int i, j;
 	int err;
-
-	if (!MACH_IS_AMIGA)
-		return -ENODEV;
 
 	for (i = 0; i < 2; i++) {
 		if (!amijoy[i])
