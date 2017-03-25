@@ -171,11 +171,16 @@ static int __devinit samsung_s6d16d0_probe(struct mcde_display_device *ddev)
 	di->port.mode = MCDE_PORTMODE_CMD;
 	di->port.pixel_format = MCDE_PORTPIXFMT_DSI_24BPP;
 	di->port.sync_src = ddev->port->sync_src;
+	if (ddev->port->sync_src == MCDE_SYNCSRC_TE0 ||
+				ddev->port->sync_src == MCDE_SYNCSRC_TE1) {
+		di->port.vsync_polarity = VSYNC_ACTIVE_HIGH;
+		di->port.vsync_clock_div = 0;
+		di->port.vsync_min_duration = 0;
+		di->port.vsync_max_duration = 0;
+	}
 	di->port.frame_trig = ddev->port->frame_trig;
-	di->port.phy.dsi.num_data_lanes = 2;
+	di->port.phy.dsi.num_data_lanes = pdata->num_data_lanes;
 	di->port.phy.dsi.host_eot_gen = true;
-	/* TODO: Move UI to mcde_hw.c when clk_get_rate(dsi) is done */
-	di->port.phy.dsi.ui = 9;
 	di->port.phy.dsi.hs_freq = DSI_HS_FREQ_HZ;
 	di->port.phy.dsi.lp_freq = DSI_LP_FREQ_HZ;
 

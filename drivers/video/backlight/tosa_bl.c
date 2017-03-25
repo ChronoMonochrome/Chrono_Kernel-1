@@ -181,7 +181,18 @@ static struct i2c_driver tosa_bl_driver = {
 	.id_table	= tosa_bl_id,
 };
 
-module_i2c_driver(tosa_bl_driver);
+static int __init tosa_bl_init(void)
+{
+	return i2c_add_driver(&tosa_bl_driver);
+}
+
+static void __exit tosa_bl_exit(void)
+{
+	i2c_del_driver(&tosa_bl_driver);
+}
+
+module_init(tosa_bl_init);
+module_exit(tosa_bl_exit);
 
 MODULE_AUTHOR("Dmitry Baryshkov");
 MODULE_LICENSE("GPL v2");

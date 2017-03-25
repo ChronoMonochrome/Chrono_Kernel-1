@@ -18,6 +18,8 @@
 #include <linux/wait.h>
 #include <linux/workqueue.h>
 
+#include "b2r2_internal.h"
+
 /**
  * B2R2_RESET_TIMEOUT_VALUE - The number of times to read the status register
  *                             waiting for b2r2 to go idle after soft reset.
@@ -200,9 +202,11 @@ struct b2r2_core {
 	bool domain_enabled;
 	volatile bool valid;
 	int domain_request_count;
+	bool lockdown;
 
 	struct clk *b2r2_clock;
 	struct regulator *b2r2_reg;
+	struct regulator *vana_reg;
 
 	struct b2r2_control *control;
 };
@@ -296,5 +300,11 @@ void b2r2_core_job_release(struct b2r2_core_job *job, const char *caller);
 void b2r2_core_print_stats(struct b2r2_core *core);
 
 void b2r2_core_release(struct kref *control_ref);
+
+void b2r2_core_reset_hold(void);
+
+void b2r2_core_reset_release(void);
+
+void b2r2_core_on_reset_completion_wait(void);
 
 #endif /* !defined(__B2R2_CORE_JOB_H__) */
