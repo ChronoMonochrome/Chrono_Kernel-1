@@ -41,6 +41,7 @@
 
 #include <mach/hardware.h>
 #include <asm/irq.h>
+#include <asm/system.h>
 
 #include "soc_common.h"
 #include "sa11xx_base.h"
@@ -235,7 +236,10 @@ int sa11xx_drv_pcmcia_probe(struct device *dev, struct pcmcia_low_level *ops,
 		skt = &sinfo->skt[i];
 
 		skt->nr = first + i;
-		soc_pcmcia_init_one(skt, ops, dev);
+		skt->ops = ops;
+		skt->socket.owner = ops->owner;
+		skt->socket.dev.parent = dev;
+		skt->socket.pci_irq = NO_IRQ;
 
 		ret = sa11xx_drv_pcmcia_add_one(skt);
 		if (ret)

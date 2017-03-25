@@ -50,6 +50,7 @@
 #include <asm/machdep.h>
 #include <asm/io.h>
 #include <asm/pgtable.h>
+#include <asm/system.h>
 #include <asm/sections.h>
 #include <asm/irq.h>
 #include <asm/pmac_feature.h>

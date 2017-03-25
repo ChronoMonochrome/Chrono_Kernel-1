@@ -121,7 +121,43 @@ static struct bin_attribute w1_ds2780_bin_attr = {
 	.read = w1_ds2780_read_bin,
 };
 
-static DEFINE_IDA(bat_ida);
+static DEFINE_IDR(bat_idr);
+static DEFINE_MUTEX(bat_idr_lock);
+
+static int new_bat_id(void)
+{
+	int ret;
+
+	while (1) {
+		int id;
+
+		ret = idr_pre_get(&bat_idr, GFP_KERNEL);
+		if (ret == 0)
+			return -ENOMEM;
+
+		mutex_lock(&bat_idr_lock);
+		ret = idr_get_new(&bat_idr, NULL, &id);
+		mutex_unlock(&bat_idr_lock);
+
+		if (ret == 0) {
+			ret = id & MAX_ID_MASK;
+			break;
+		} else if (ret == -EAGAIN) {
+			continue;
+		} else {
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static void release_bat_id(int id)
+{
+	mutex_lock(&bat_idr_lock);
+	idr_remove(&bat_idr, id);
+	mutex_unlock(&bat_idr_lock);
+}
 
 static int w1_ds2780_add_slave(struct w1_slave *sl)
 {
@@ -129,7 +165,7 @@ static int w1_ds2780_add_slave(struct w1_slave *sl)
 	int id;
 	struct platform_device *pdev;
 
-	id = ida_simple_get(&bat_ida, 0, 0, GFP_KERNEL);
+	id = new_bat_id();
 	if (id < 0) {
 		ret = id;
 		goto noid;
@@ -158,7 +194,7 @@ bin_attr_failed:
 pdev_add_failed:
 	platform_device_unregister(pdev);
 pdev_alloc_failed:
-	ida_simple_remove(&bat_ida, id);
+	release_bat_id(id);
 noid:
 	return ret;
 }
@@ -169,7 +205,7 @@ static void w1_ds2780_remove_slave(struct w1_slave *sl)
 	int id = pdev->id;
 
 	platform_device_unregister(pdev);
-	ida_simple_remove(&bat_ida, id);
+	release_bat_id(id);
 	sysfs_remove_bin_file(&sl->dev.kobj, &w1_ds2780_bin_attr);
 }
 
@@ -185,14 +221,14 @@ static struct w1_family w1_ds2780_family = {
 
 static int __init w1_ds2780_init(void)
 {
-	ida_init(&bat_ida);
+	idr_init(&bat_idr);
 	return w1_register_family(&w1_ds2780_family);
 }
 
 static void __exit w1_ds2780_exit(void)
 {
 	w1_unregister_family(&w1_ds2780_family);
-	ida_destroy(&bat_ida);
+	idr_destroy(&bat_idr);
 }
 
 module_init(w1_ds2780_init);

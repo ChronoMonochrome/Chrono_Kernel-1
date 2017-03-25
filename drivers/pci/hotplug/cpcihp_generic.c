@@ -62,7 +62,7 @@
 #define warn(format, arg...) printk(KERN_WARNING "%s: " format "\n", MY_NAME , ## arg)
 
 /* local variables */
-static bool debug;
+static int debug;
 static char *bridge;
 static u8 bridge_busnr;
 static u8 bridge_slot;

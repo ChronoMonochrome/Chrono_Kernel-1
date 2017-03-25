@@ -8,7 +8,6 @@
 #include <linux/kernel.h>
 #include <linux/sysfs.h>
 #include <linux/workqueue.h>
-#include <linux/module.h>
 #include <linux/uwb/umc.h>
 #include <linux/pci.h>
 
