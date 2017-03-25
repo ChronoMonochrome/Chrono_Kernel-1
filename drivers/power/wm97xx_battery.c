@@ -25,8 +25,9 @@
 #include <linux/irq.h>
 #include <linux/slab.h>
 
+static DEFINE_MUTEX(bat_lock);
 static struct work_struct bat_work;
-static DEFINE_MUTEX(work_lock);
+static struct mutex work_lock;
 static int bat_status = POWER_SUPPLY_STATUS_UNKNOWN;
 static enum power_supply_property *prop;
 
@@ -180,6 +181,8 @@ static int __devinit wm97xx_bat_probe(struct platform_device *dev)
 	if (dev->id != -1)
 		return -EINVAL;
 
+	mutex_init(&work_lock);
+
 	if (!pdata) {
 		dev_err(&dev->dev, "No platform_data supplied\n");
 		return -EINVAL;
@@ -193,7 +196,7 @@ static int __devinit wm97xx_bat_probe(struct platform_device *dev)
 		if (ret)
 			goto err2;
 		ret = request_irq(gpio_to_irq(pdata->charge_gpio),
-				wm97xx_chrg_irq, 0,
+				wm97xx_chrg_irq, IRQF_DISABLED,
 				"AC Detect", dev);
 		if (ret)
 			goto err2;
@@ -288,7 +291,18 @@ static struct platform_driver wm97xx_bat_driver = {
 	.remove		= __devexit_p(wm97xx_bat_remove),
 };
 
-module_platform_driver(wm97xx_bat_driver);
+static int __init wm97xx_bat_init(void)
+{
+	return platform_driver_register(&wm97xx_bat_driver);
+}
+
+static void __exit wm97xx_bat_exit(void)
+{
+	platform_driver_unregister(&wm97xx_bat_driver);
+}
+
+module_init(wm97xx_bat_init);
+module_exit(wm97xx_bat_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Marek Vasut <marek.vasut@gmail.com>");
