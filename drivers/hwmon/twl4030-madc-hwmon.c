@@ -136,7 +136,19 @@ static struct platform_driver twl4030_madc_hwmon_driver = {
 		   },
 };
 
-module_platform_driver(twl4030_madc_hwmon_driver);
+static int __init twl4030_madc_hwmon_init(void)
+{
+	return platform_driver_register(&twl4030_madc_hwmon_driver);
+}
+
+module_init(twl4030_madc_hwmon_init);
+
+static void __exit twl4030_madc_hwmon_exit(void)
+{
+	platform_driver_unregister(&twl4030_madc_hwmon_driver);
+}
+
+module_exit(twl4030_madc_hwmon_exit);
 
 MODULE_DESCRIPTION("TWL4030 ADC Hwmon driver");
 MODULE_LICENSE("GPL");
