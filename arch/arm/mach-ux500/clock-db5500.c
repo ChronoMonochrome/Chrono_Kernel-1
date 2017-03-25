@@ -521,16 +521,22 @@ static struct clk_lookup db5500_prcmu_clocks[] = {
 	CLK_LOOKUP(per5clk, "PERIPH5", NULL),
 	CLK_LOOKUP(per6clk, "PERIPH6", NULL),
 	CLK_LOOKUP(hdmiclk, "mcde", "hdmi"),
+	CLK_LOOKUP(hdmiclk, "dsilink.0", "dsihs0"),
+	CLK_LOOKUP(hdmiclk, "dsilink.1", "dsihs1"),
 	CLK_LOOKUP(apeatclk, "apeat", NULL),
 	CLK_LOOKUP(apetraceclk, "apetrace", NULL),
 	CLK_LOOKUP(mcdeclk, "mcde", NULL),
 	CLK_LOOKUP(mcdeclk, "mcde", "mcde"),
+	CLK_LOOKUP(mcdeclk, "dsilink.0", "dsisys"),
+	CLK_LOOKUP(mcdeclk, "dsilink.1", "dsisys"),
 	CLK_LOOKUP(dmaclk, "dma40.0", NULL),
 	CLK_LOOKUP(b2r2clk, "b2r2", NULL),
 	CLK_LOOKUP(b2r2clk, "b2r2_bus", NULL),
 	CLK_LOOKUP(b2r2clk, "U8500-B2R2.0", NULL),
 	CLK_LOOKUP(tvclk, "tv", NULL),
 	CLK_LOOKUP(tvclk, "mcde", "tv"),
+	CLK_LOOKUP(tvclk, "dsilink.0", "dsilp0"),
+	CLK_LOOKUP(tvclk, "dsilink.1", "dsilp1"),
 };
 
 static struct clk_lookup db5500_prcc_clocks[] = {
@@ -703,14 +709,6 @@ late_initcall(init_clock_states);
 
 int __init db5500_clk_init(void)
 {
-	if (ux500_is_svp()) {
-		prcmu_clk_ops.enable = NULL;
-		prcmu_clk_ops.disable = NULL;
-		prcc_pclk_ops.enable = NULL;
-		prcc_pclk_ops.disable = NULL;
-		prcc_kclk_ops.enable = NULL;
-		prcc_kclk_ops.disable = NULL;
-	}
 	prcmu_clk_ops.get_rate = NULL;
 
 	clkdev_add_table(u8500_common_clock_sources,

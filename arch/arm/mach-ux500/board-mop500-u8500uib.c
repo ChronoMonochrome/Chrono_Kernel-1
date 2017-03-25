@@ -4,22 +4,19 @@
  * Board data for the U8500 UIB, also known as the New UIB
  * License terms: GNU General Public License (GPL), version 2
  */
-#include <linux/gpio.h>
+
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/i2c.h>
-#ifdef CONFIG_U8500_FLASH
-#include <../drivers/staging/camera_flash/adp1653_plat.h>
-#endif
+#include <linux/i2c/adp1653_plat.h>
+#include <linux/gpio.h>
 #include <linux/interrupt.h>
-#ifdef CONFIG_SENSORS_LSM303DLH
 #include <linux/lsm303dlh.h>
-#endif
-#ifdef CONFIG_SENSORS_L3G4200D
 #include <linux/l3g4200d.h>
-#endif
 #include <linux/mfd/tc3589x.h>
 #include <linux/input/matrix_keypad.h>
+#include <linux/input/lps001wp.h>
+#include <../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
 
 #include <asm/mach-types.h>
 #include <linux/gpio.h>
@@ -27,25 +24,89 @@
 
 #include "board-mop500.h"
 
-/* Dummy data that can be overridden by staging driver */
-struct i2c_board_info __initdata __weak mop500_i2c3_devices_u8500[] = {
+/*
+ * LSM303DLH accelerometer + magnetometer & L3G4200D Gyroscope sensors
+ */
+static struct lsm303dlh_platform_data lsm303dlh_pdata_u8500 = {
+	.axis_map_x = 1,
+	.axis_map_y = 0,
+	.axis_map_z = 2,
+	.negative_x = 0,
+	.negative_y = 0,
+	.negative_z = 1,
 };
 
-#ifdef CONFIG_U8500_FLASH
+static struct l3g4200d_gyr_platform_data l3g4200d_pdata_u8500 = {
+	.axis_map_x = 0,
+	.axis_map_y = 1,
+	.axis_map_z = 2,
+	.negative_x = 1,
+	.negative_y = 0,
+	.negative_z = 1,
+};
+
+/*
+ * Platform data for pressure sensor,
+ * poll interval and min interval in millseconds.
+ */
+static struct lps001wp_prs_platform_data lps001wp_pdata = {
+       .poll_interval = 1000,
+       .min_interval = 10,
+};
+
 static struct adp1653_platform_data __initdata adp1653_pdata_u8500_uib = {
 	.irq_no = CAMERA_FLASH_INT_PIN
 };
-#endif
 
 static struct i2c_board_info __initdata mop500_i2c2_devices_u8500[] = {
-#ifdef CONFIG_U8500_FLASH
+	{
+		/* LSM303DLH Accelerometer */
+		I2C_BOARD_INFO("lsm303dlh_a", 0x18),
+		.platform_data = &lsm303dlh_pdata_u8500,
+	},
+	{
+		/* LSM303DLH Magnetometer */
+		I2C_BOARD_INFO("lsm303dlh_m", 0x1E),
+		.platform_data = &lsm303dlh_pdata_u8500,
+	},
+	{
+		/* L3G4200D Gyroscope */
+		I2C_BOARD_INFO("l3g4200d", 0x68),
+		.platform_data = &l3g4200d_pdata_u8500,
+	},
 	{
 		I2C_BOARD_INFO("adp1653", 0x30),
 		.platform_data = &adp1653_pdata_u8500_uib
-	}
-#endif
+	},
+	{
+		/* LSP001WM Barometer */
+		I2C_BOARD_INFO("lps001wp_prs", 0x5C),
+		.platform_data = &lps001wp_pdata,
+	},
 };
 
+/*
+ * Synaptics RMI4 touchscreen interface on the U8500 UIB
+ */
+
+/*
+ * Descriptor structure.
+ * Describes the number of i2c devices on the bus that speak RMI.
+ */
+static struct synaptics_rmi4_platform_data rmi4_i2c_dev_platformdata = {
+	.irq_number     = NOMADIK_GPIO_TO_IRQ(84),
+	.irq_type       = (IRQF_TRIGGER_FALLING | IRQF_SHARED),
+	.x_flip		= true,
+	.y_flip		= false,
+	.regulator_en   = true,
+};
+
+static struct i2c_board_info __initdata mop500_i2c3_devices_u8500[] = {
+	{
+		I2C_BOARD_INFO("synaptics_rmi4_i2c", 0x4B),
+		.platform_data = &rmi4_i2c_dev_platformdata,
+	},
+};
 
 /*
  * TC35893
@@ -104,24 +165,34 @@ static struct i2c_board_info __initdata mop500_i2c0_devices_u8500[] = {
 	},
 };
 
-
 void __init mop500_u8500uib_init(void)
 {
+	int ret;
+
 	mop500_uib_i2c_add(3, mop500_i2c3_devices_u8500,
 			ARRAY_SIZE(mop500_i2c3_devices_u8500));
 
 	mop500_uib_i2c_add(0, mop500_i2c0_devices_u8500,
 			ARRAY_SIZE(mop500_i2c0_devices_u8500));
 
-#ifdef CONFIG_U8500_FLASH
-	if (machine_is_hrefv60() || machine_is_u8520())
+	if (machine_is_hrefv60() || machine_is_u8520()) {
+		lsm303dlh_pdata_u8500.irq_a1 = HREFV60_ACCEL_INT1_GPIO;
+		lsm303dlh_pdata_u8500.irq_a2 = HREFV60_ACCEL_INT2_GPIO;
+		lsm303dlh_pdata_u8500.irq_m = HREFV60_MAGNET_DRDY_GPIO;
 		adp1653_pdata_u8500_uib.enable_gpio =
 					HREFV60_CAMERA_FLASH_ENABLE;
-	else
+	} else {
+		lsm303dlh_pdata_u8500.irq_a1 = GPIO_ACCEL_INT1;
+		lsm303dlh_pdata_u8500.irq_a2 = GPIO_ACCEL_INT2;
+		lsm303dlh_pdata_u8500.irq_m = GPIO_MAGNET_DRDY;
 		adp1653_pdata_u8500_uib.enable_gpio =
 					GPIO_CAMERA_FLASH_ENABLE;
-#endif
-
+	}
+	ret = mop500_get_acc_id();
+	if (ret < 0)
+		printk(KERN_ERR " Failed to get Accelerometr chip ID\n");
+	else
+		lsm303dlh_pdata_u8500.chip_id = ret;
 	mop500_uib_i2c_add(2, mop500_i2c2_devices_u8500,
 			ARRAY_SIZE(mop500_i2c2_devices_u8500));
 }

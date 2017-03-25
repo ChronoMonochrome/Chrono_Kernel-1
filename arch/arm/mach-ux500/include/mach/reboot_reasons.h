@@ -8,7 +8,8 @@
  * Use this file to customize your reboot / sw reset reasons. Add, remove or
  * modify reasons in reboot_reasons[].
  * The reboot reasons will be saved to a secure location in TCDM memory and
- * can be read at bootup by e.g. the bootloader.
+ * can be read at bootup by e.g. the bootloader, or at a later stage userspace
+ * since the code is exposed through sysfs.
  */
 
 #ifndef _REBOOT_REASONS_H
@@ -16,8 +17,8 @@
 
 /*
  * These defines contains the codes that will be written down to a secure
- * location before resetting. These values are just dummy values and does not,
- * at the moment, affect anything.
+ * location before resetting. These values are exposed through a sysfs
+ * entry under /sys/socinfo, see mach-ux500/cpu-db8500.c
  */
 #define SW_RESET_NO_ARGUMENT 0xBEEF
 #define SW_RESET_FACTORY_RESET 0x4242
@@ -34,11 +35,14 @@
  */
 struct reboot_reason {
 	const char *reason;
-	unsigned short code;
+	u16 code;
 };
 
 extern struct reboot_reason reboot_reasons[];
 
 extern unsigned int reboot_reasons_size;
+
+u16 reboot_reason_code(const char *cmd);
+const char *reboot_reason_string(u16 code);
 
 #endif

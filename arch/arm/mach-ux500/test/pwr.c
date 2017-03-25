@@ -14,7 +14,7 @@
 #include <linux/seq_file.h>
 #include <linux/io.h>
 #include <linux/bitops.h>
-#include <linux/mfd/abx500/ab8500-sysctrl.h>
+#include <linux/mfd/abx500/ux500_sysctrl.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
@@ -802,7 +802,9 @@ static ssize_t pm_test_suspend_set(struct file *file,
 	ux500_suspend_dbg_test_start(suspend_test_length);
 
 	suspend_testing = true;
+#ifdef CONFIG_WAKELOCK
 	wake_unlock(&main_wake_lock);
+#endif
 
 	pr_info("Will do suspend %d times.\n", suspend_test_length);
 	return count;

@@ -203,56 +203,10 @@ static struct notifier_block display_nb = {
 	.notifier_call = display_postregistered_callback,
 };
 
-/*
-* This function is used to refresh the display (lcd, hdmi, tvout) with black
-* when the framebuffer is registered.
-* The main display will not be updated if startup graphics is displayed
-* from u-boot.
-*/
-static int framebuffer_postregistered_callback(struct notifier_block *nb,
-	unsigned long event, void *data)
+static int __init init_display_devices(void)
 {
-	int ret = 0;
-	struct fb_event *event_data = data;
-	struct fb_info *info;
-	struct fb_var_screeninfo var;
-	struct fb_fix_screeninfo fix;
-	struct mcde_fb *mfb;
-
-	if (event != FB_EVENT_FB_REGISTERED)
-		return 0;
-
-	if (!event_data)
-		return 0;
-
-	info = event_data->info;
-	mfb = to_mcde_fb(info);
-	if (mfb->id == 0 && display_initialized_during_boot)
-		goto out;
-
-	var = info->var;
-	fix = info->fix;
-	var.yoffset = var.yoffset ? 0 : var.yres;
-	if (info->fbops->fb_pan_display)
-		ret = info->fbops->fb_pan_display(&var, info);
-out:
-	return ret;
-}
-
-static struct notifier_block framebuffer_nb = {
-	.notifier_call = framebuffer_postregistered_callback,
-};
-
-int __init init_u5500_display_devices(void)
-{
-	int ret;
-
 	if (!cpu_is_u5500())
 		return 0;
-
-	ret = fb_register_client(&framebuffer_nb);
-	if (ret)
-		pr_warning("Failed to register framebuffer notifier\n");
 
 	(void)mcde_dss_register_notifier(&display_nb);
 
@@ -268,5 +222,4 @@ int __init init_u5500_display_devices(void)
 
 	return 0;
 }
-module_init(init_u5500_display_devices);
-
+module_init(init_display_devices);
