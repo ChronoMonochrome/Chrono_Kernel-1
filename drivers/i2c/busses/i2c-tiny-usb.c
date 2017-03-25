@@ -262,7 +262,20 @@ static struct usb_driver i2c_tiny_usb_driver = {
 	.id_table	= i2c_tiny_usb_table,
 };
 
-module_usb_driver(i2c_tiny_usb_driver);
+static int __init usb_i2c_tiny_usb_init(void)
+{
+	/* register this driver with the USB subsystem */
+	return usb_register(&i2c_tiny_usb_driver);
+}
+
+static void __exit usb_i2c_tiny_usb_exit(void)
+{
+	/* deregister this driver with the USB subsystem */
+	usb_deregister(&i2c_tiny_usb_driver);
+}
+
+module_init(usb_i2c_tiny_usb_init);
+module_exit(usb_i2c_tiny_usb_exit);
 
 /* ----- end of usb layer ------------------------------------------------ */
 
