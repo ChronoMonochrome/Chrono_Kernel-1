@@ -89,18 +89,19 @@ void b2r2_call_profiler_blt_done(const struct b2r2_blt_request * const request)
 		dev_err(cont->dev,
 			"%s: Failed to acquire semaphore, ret=%i. "
 			"Lost profiler call!\n", __func__, return_value);
-
 		return;
 	}
 
 	if (NULL == b2r2_profiler)
 		goto cleanup;
 
+	blt_profiling_info.core_id = cont->id;
+	blt_profiling_info.request_id = request->request_id;
 	blt_profiling_info.nsec_active_in_cpu = request->nsec_active_in_cpu;
 	blt_profiling_info.nsec_active_in_b2r2 = request->job.nsec_active_in_hw;
 	blt_profiling_info.total_time_nsec = request->total_time_nsec;
 
-	b2r2_profiler->blt_done(&request->user_req, request->request_id, &blt_profiling_info);
+	b2r2_profiler->blt_done(request, &blt_profiling_info);
 
 cleanup:
 	up(&b2r2_profiler_lock);

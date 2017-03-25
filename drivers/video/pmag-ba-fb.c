@@ -33,6 +33,7 @@
 #include <linux/types.h>
 
 #include <asm/io.h>
+#include <asm/system.h>
 
 #include <video/pmag-ba-fb.h>
 

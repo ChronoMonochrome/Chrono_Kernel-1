@@ -77,6 +77,7 @@
 #include <linux/crc32.h> /* For counting font checksums */
 #include <asm/fb.h>
 #include <asm/irq.h>
+#include <asm/system.h>
 
 #include "fbcon.h"
 

@@ -16,6 +16,8 @@
 #include <linux/fb.h>
 #include <linux/mm.h>
 #include <linux/dma-mapping.h>
+#include <linux/mutex.h>
+#include <linux/uaccess.h>
 
 #include <linux/hwmem.h>
 #include <linux/io.h>
@@ -349,18 +351,21 @@ static void get_ovly_info(struct fb_info *fbi, struct mcde_overlay *ovly,
 	}
 	info->w = fbi->var.xres;
 	info->h = fbi->var.yres;
-	info->dirty.x = 0;
-	info->dirty.y = 0;
-	info->dirty.w = fbi->var.xres;
-	info->dirty.h = fbi->var.yres;
 }
 
 void vmode_to_var(struct mcde_video_mode *video_mode,
-	struct fb_var_screeninfo *var)
+	enum mcde_display_rotation rotation, struct fb_var_screeninfo *var)
 {
 	/* TODO: use only 1 vbp and 1 vfp */
-	var->xres           = video_mode->xres;
-	var->yres           = video_mode->yres;
+	if (rotation == MCDE_DISPLAY_ROT_90_CW ||
+			rotation == MCDE_DISPLAY_ROT_90_CCW) {
+		var->xres           = video_mode->yres;
+		var->yres           = video_mode->xres;
+
+	} else {
+		var->xres           = video_mode->xres;
+		var->yres           = video_mode->yres;
+	}
 	var->pixclock       = video_mode->pixclock;
 	var->upper_margin   = video_mode->vbp;
 	var->lower_margin   = video_mode->vfp;
@@ -376,8 +381,19 @@ void vmode_to_var(struct mcde_video_mode *video_mode,
 void var_to_vmode(struct fb_var_screeninfo *var,
 	struct mcde_video_mode *video_mode)
 {
-	video_mode->xres       = var->xres;
-	video_mode->yres       = var->yres;
+	/*
+	 * The mcde_video_mode->xres (and ->yres) represent
+	 * the resolution of the screen. fb_var_screeninfo->xres and ->yres
+	 * represent the visible part of the framebuffer before rotation.
+	 * This has to be compensated for.
+	 */
+	if (var->rotate == FB_ROTATE_CW || var->rotate == FB_ROTATE_CCW) {
+		video_mode->xres       = var->yres;
+		video_mode->yres       = var->xres;
+	} else {
+		video_mode->xres       = var->xres;
+		video_mode->yres       = var->yres;
+	}
 	video_mode->pixclock   = var->pixclock;
 	video_mode->vbp        = var->upper_margin;
 	video_mode->vfp        = var->lower_margin;
@@ -401,7 +417,7 @@ enum mcde_display_rotation var_to_rotation(struct fb_var_screeninfo *var)
 		rot = MCDE_DISPLAY_ROT_90_CW;
 		break;
 	case FB_ROTATE_UD:
-		rot = MCDE_DISPLAY_ROT_180_CW;
+		rot = MCDE_DISPLAY_ROT_180;
 		break;
 	case FB_ROTATE_CCW:
 		rot = MCDE_DISPLAY_ROT_90_CCW;
@@ -456,7 +472,7 @@ static int check_var(struct fb_var_screeninfo *var, struct fb_info *fbi,
 			"mcde_dss_try_video_mode with size = %x\n", ret);
 		return ret;
 	}
-	vmode_to_var(&vmode, var);
+	vmode_to_var(&vmode, var_to_rotation(var), var);
 
 	/* Pixel format */
 	fmtinfo = var_to_pix_fmt_info(var);
@@ -552,7 +568,8 @@ static int mcde_fb_release(struct fb_info *fbi, int user)
 	return 0;
 }
 
-static int mcde_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
+/* +452052 ESD recovery for DSI video- */
+int mcde_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 {
 	struct mcde_display_device *ddev = fb_to_display(fbi);
 
@@ -566,7 +583,8 @@ static int mcde_fb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 	return check_var(var, fbi, ddev);
 }
 
-static int mcde_fb_set_par(struct fb_info *fbi)
+/* +452052 ESD recovery for DSI video- */
+int mcde_fb_set_par(struct fb_info *fbi)
 {
 	struct mcde_fb *mfb = to_mcde_fb(fbi);
 	struct mcde_display_device *ddev = fb_to_display(fbi);
@@ -615,15 +633,34 @@ mcde_fb_blank_end:
 static int mcde_fb_pan_display(struct fb_var_screeninfo *var,
 	struct fb_info *fbi)
 {
+	int ret = 0;
 	dev_vdbg(fbi->dev, "%s\n", __func__);
 
 	if (var->xoffset == fbi->var.xoffset &&
-					var->yoffset == fbi->var.yoffset)
-		return 0;
+					var->yoffset == fbi->var.yoffset) {
+		int i;
+		struct mcde_fb *mfb = to_mcde_fb(fbi);
 
-	fbi->var.xoffset = var->xoffset;
-	fbi->var.yoffset = var->yoffset;
-	return apply_var(fbi, fb_to_display(fbi));
+		for (i = 0; i < mfb->num_ovlys; i++) {
+			struct mcde_overlay *ovly = mfb->ovlys[i];
+			struct mcde_overlay_info info;
+			int num_buffers;
+
+			get_ovly_info(fbi, ovly, &info);
+			if (mcde_dss_apply_overlay(ovly, &info))
+				ret = -1;
+
+			num_buffers = var->yres_virtual / var->yres;
+			if (mcde_dss_update_overlay(ovly, num_buffers == 3))
+				ret = -2;
+		}
+	} else {
+		fbi->var.xoffset = var->xoffset;
+		fbi->var.yoffset = var->yoffset;
+		ret = apply_var(fbi, fb_to_display(fbi));
+	}
+
+	return ret;
 }
 
 static void mcde_fb_rotate(struct fb_info *fbi, int rotate)
@@ -639,6 +676,37 @@ static int mcde_fb_ioctl(struct fb_info *fbi, unsigned int cmd,
 	if (cmd == MCDE_GET_BUFFER_NAME_IOC)
 		return mfb->alloc_name;
 
+	if (cmd == FBIO_WAITFORVSYNC) {
+		int ret;
+		s64 timestamp;
+		struct mcde_display_device *ddev = fb_to_display(fbi);
+
+		if (!ddev)
+			return -ENODEV;
+
+		/*
+		 * Unlock the fb_info lock. It is locked by fbmem.c.
+		 * This enables other FB operations (such as FB FBIOPAN_DISPLAY)
+		 * to be run concurrently since mcde_dss_wait_for_vsync will
+		 * wait.
+		 */
+		mutex_unlock(&fbi->lock);
+		ret = mcde_dss_wait_for_vsync(ddev, &timestamp);
+		mutex_lock(&fbi->lock);
+		return ret;
+	}
+
+	if (cmd == MCDE_SET_VSCREENINFO_IOC) {
+		struct fb_var_screeninfo var;
+		if (copy_from_user(&var, (void *)arg, sizeof(var))) {
+			dev_warn(fbi->dev,
+				"%s: copy_from_user failed\n",
+				__func__);
+			return -EFAULT;
+		}
+		fbi->var = var;
+		return 0;
+	}
 	return -EINVAL;
 }
 

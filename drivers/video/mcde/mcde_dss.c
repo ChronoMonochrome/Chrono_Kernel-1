@@ -10,7 +10,6 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/export.h>
 #include <linux/device.h>
 #include <linux/err.h>
 #include <linux/slab.h>
@@ -18,6 +17,9 @@
 #include <video/mcde_dss.h>
 
 #define to_overlay(x) container_of(x, struct mcde_overlay, kobj)
+
+static int dss_update_channel_locked(struct mcde_display_device *ddev,
+					bool tripple_buffer);
 
 void overlay_release(struct kobject *kobj)
 {
@@ -34,18 +36,9 @@ static int apply_overlay(struct mcde_overlay *ovly,
 				struct mcde_overlay_info *info, bool force)
 {
 	int ret = 0;
-	if (ovly->ddev->invalidate_area) {
-		/* TODO: transform ovly coord to screen coords (vmode):
-		 * add offset
-		 */
-		struct mcde_rectangle dirty = info->dirty;
-		mutex_lock(&ovly->ddev->display_lock);
-		ret = ovly->ddev->invalidate_area(ovly->ddev, &dirty);
-		mutex_unlock(&ovly->ddev->display_lock);
-	}
 
 	if (ovly->info.paddr != info->paddr || force)
-		mcde_ovly_set_source_buf(ovly->state, info->paddr);
+		mcde_ovly_set_source_buf(ovly->state, info->paddr, info->kaddr);
 
 	if (ovly->info.stride != info->stride || ovly->info.fmt != info->fmt ||
 									force)
@@ -99,14 +92,9 @@ void mcde_dss_close_channel(struct mcde_display_device *ddev)
 }
 EXPORT_SYMBOL(mcde_dss_close_channel);
 
-int mcde_dss_enable_display(struct mcde_display_device *ddev)
+static int dss_enable_display_locked(struct mcde_display_device *ddev)
 {
 	int ret;
-
-	if (ddev->enabled)
-		return 0;
-
-	mutex_lock(&ddev->display_lock);
 	mcde_chnl_enable(ddev->chnl_state);
 
 	/* Initiate display communication */
@@ -123,37 +111,63 @@ int mcde_dss_enable_display(struct mcde_display_device *ddev)
 	dev_dbg(&ddev->dev, "Display enabled, chnl=%d\n",
 					ddev->chnl_id);
 	ddev->enabled = true;
-	mutex_unlock(&ddev->display_lock);
-
-	return 0;
+	return ret;
 
 display_failed:
 	mcde_chnl_disable(ddev->chnl_state);
+	return ret;
+}
+ 
+int mcde_dss_enable_display(struct mcde_display_device *ddev)
+{
+	int ret;
+
+	if (ddev->enabled)
+		return 0;
+ 
+ 	mutex_lock(&ddev->display_lock);
+	ret = dss_enable_display_locked(ddev);
 	mutex_unlock(&ddev->display_lock);
+
 	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_enable_display);
+
+static void dss_disable_display_locked(struct mcde_display_device *ddev)
+{
+ 	mcde_chnl_stop_flow(ddev->chnl_state);
+ 	(void)ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);
+ 	mcde_chnl_disable(ddev->chnl_state);
+	/* TODO: Disable overlays */
+	ddev->enabled = false;	
+}
 
 void mcde_dss_disable_display(struct mcde_display_device *ddev)
 {
 	if (!ddev->enabled)
 		return;
 
-	/* TODO: Disable overlays */
 	mutex_lock(&ddev->display_lock);
-
-	mcde_chnl_stop_flow(ddev->chnl_state);
-
-	(void)ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_OFF);
-
-	mcde_chnl_disable(ddev->chnl_state);
-
-	ddev->enabled = false;
+	dss_disable_display_locked(ddev);
 	mutex_unlock(&ddev->display_lock);
 
 	dev_dbg(&ddev->dev, "Display disabled, chnl=%d\n", ddev->chnl_id);
 }
 EXPORT_SYMBOL(mcde_dss_disable_display);
+
+int mcde_dss_restart_display(struct mcde_display_device *ddev)
+{
+	int ret;
+
+	mutex_lock(&ddev->display_lock);
+	dss_disable_display_locked(ddev);
+	ret = dss_enable_display_locked(ddev);
+	ret = dss_update_channel_locked(ddev, true);
+	mutex_unlock(&ddev->display_lock);
+
+	return ret;
+}
+EXPORT_SYMBOL(mcde_dss_restart_display);
 
 int mcde_dss_apply_channel(struct mcde_display_device *ddev)
 {
@@ -249,30 +263,36 @@ void mcde_dss_disable_overlay(struct mcde_overlay *ovly)
 }
 EXPORT_SYMBOL(mcde_dss_disable_overlay);
 
+static int dss_update_channel_locked(struct mcde_display_device *ddev,
+					bool tripple_buffer)
+{
+	int ret;
+	/* Do not perform an update if power mode is off */
+	if (ddev->get_power_mode(ddev) == MCDE_DISPLAY_PM_OFF) {
+		ret = 0;
+		goto power_mode_off;
+	}
+
+	ret = ddev->update(ddev, tripple_buffer);
+	if (ret)
+		goto update_failed;
+
+power_mode_off:
+update_failed:
+	return ret;
+}
+
 int mcde_dss_update_overlay(struct mcde_overlay *ovly, bool tripple_buffer)
 {
 	int ret;
 	dev_vdbg(&ovly->ddev->dev, "Overlay update, chnl=%d\n",
 							ovly->ddev->chnl_id);
 
-	if (!ovly->state || !ovly->ddev->update || !ovly->ddev->invalidate_area)
+	if (!ovly->state || !ovly->ddev->update)
 		return -EINVAL;
 
 	mutex_lock(&ovly->ddev->display_lock);
-	/* Do not perform an update if power mode is off */
-	if (ovly->ddev->get_power_mode(ovly->ddev) == MCDE_DISPLAY_PM_OFF) {
-		ret = 0;
-		goto power_mode_off;
-	}
-
-	ret = ovly->ddev->update(ovly->ddev, tripple_buffer);
-	if (ret)
-		goto update_failed;
-
-	ret = ovly->ddev->invalidate_area(ovly->ddev, NULL);
-
-power_mode_off:
-update_failed:
+	ret = dss_update_channel_locked(ovly->ddev, tripple_buffer);
 	mutex_unlock(&ovly->ddev->display_lock);
 	return ret;
 }
@@ -288,17 +308,8 @@ EXPORT_SYMBOL(mcde_dss_get_overlay_info);
 void mcde_dss_get_native_resolution(struct mcde_display_device *ddev,
 	u16 *x_res, u16 *y_res)
 {
-	u16 x_tmp, y_tmp;
 	mutex_lock(&ddev->display_lock);
-	ddev->get_native_resolution(ddev, &x_tmp, &y_tmp);
-	if (ddev->orientation == MCDE_DISPLAY_ROT_90_CW ||
-				ddev->orientation == MCDE_DISPLAY_ROT_90_CCW) {
-		*x_res = y_tmp;
-		*y_res = x_tmp;
-	} else {
-		*x_res = x_tmp;
-		*y_res = y_tmp;
-	}
+	ddev->get_native_resolution(ddev, x_res, y_res);
 	mutex_unlock(&ddev->display_lock);
 }
 EXPORT_SYMBOL(mcde_dss_get_native_resolution);
@@ -353,8 +364,6 @@ int mcde_dss_set_video_mode(struct mcde_display_device *ddev,
 	if (ret)
 		goto set_video_mode_failed;
 
-	if (ddev->invalidate_area)
-		ret = ddev->invalidate_area(ddev, NULL);
 power_mode_off:
 same_video_mode:
 set_video_mode_failed:
@@ -433,6 +442,31 @@ enum mcde_display_rotation mcde_dss_get_rotation(
 	return ret;
 }
 EXPORT_SYMBOL(mcde_dss_get_rotation);
+
+int mcde_dss_wait_for_vsync(struct mcde_display_device *ddev, s64 *timestamp)
+{
+	int ret;
+
+	/*
+	 * Do not take the display_lock so that other dss functions can
+	 * be called from another thread.
+	 */
+	mutex_lock(&ddev->vsync_lock); /* Protect against multi-thread usage */
+	ret = ddev->wait_for_vsync(ddev, timestamp);
+	mutex_unlock(&ddev->vsync_lock);
+	return ret;
+}
+EXPORT_SYMBOL(mcde_dss_wait_for_vsync);
+
+bool mcde_dss_secure_output(struct mcde_display_device *ddev)
+{
+	bool ret;
+	mutex_lock(&ddev->display_lock);
+	ret = ddev->secure_output();
+	mutex_unlock(&ddev->display_lock);
+	return ret;
+}
+EXPORT_SYMBOL(mcde_dss_secure_output);
 
 int __init mcde_dss_init(void)
 {
