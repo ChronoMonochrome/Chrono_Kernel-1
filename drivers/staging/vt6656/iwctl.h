@@ -46,13 +46,13 @@ int iwctl_siwap(struct net_device *dev,
 			 struct sockaddr *wrq,
              char *extra);
 
-void iwctl_giwrange(struct net_device *dev,
+int iwctl_giwrange(struct net_device *dev,
              struct iw_request_info *info,
              struct iw_point *wrq,
              char *extra);
 
 
-void iwctl_giwmode(struct net_device *dev,
+int iwctl_giwmode(struct net_device *dev,
              struct iw_request_info *info,
              __u32 *wmode,
              char *extra);
@@ -77,6 +77,11 @@ int iwctl_giwname(struct net_device *dev,
 			 char *wrq,
 			 char *extra);
 
+int iwctl_giwnwid(struct net_device *dev,
+             struct iw_request_info *info,
+			 struct iw_param *wrq,
+                   char *extra) ;
+
 int iwctl_giwsens(struct net_device *dev,
 			 struct iw_request_info *info,
 			 struct iw_param *wrq,
@@ -97,7 +102,7 @@ int iwctl_siwessid(struct net_device *dev,
              struct iw_point *wrq,
              char *extra);
 
-void iwctl_giwessid(struct net_device *dev,
+int iwctl_giwessid(struct net_device *dev,
              struct iw_request_info *info,
              struct iw_point *wrq,
              char *extra);
@@ -107,13 +112,16 @@ int iwctl_siwrate(struct net_device *dev,
 			 struct iw_param *wrq,
              char *extra);
 
-void iwctl_giwrate(struct net_device *dev,
+int iwctl_giwrate(struct net_device *dev,
              struct iw_request_info *info,
              struct iw_param *wrq,
              char *extra);
 
 int iwctl_siwrts(struct net_device *dev,
-		 struct iw_param *wrq);
+             struct iw_request_info *info,
+			 struct iw_param *wrq,
+             char *extra);
+
 
 int iwctl_giwrts(struct net_device *dev,
              struct iw_request_info *info,

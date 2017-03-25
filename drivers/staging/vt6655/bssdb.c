@@ -1327,13 +1327,13 @@ start:
     }
 
     if (pMgmt->eCurrMode == WMAC_MODE_IBSS_STA) {
-        // if adhoc started which essid is NULL string, rescanning.
+        // if adhoc started which essid is NULL string, rescaning.
         if ((pMgmt->eCurrState == WMAC_STATE_STARTED) && (pCurrSSID->len == 0)) {
             if (pDevice->uAutoReConnectTime < 10) {
                 pDevice->uAutoReConnectTime++;
             }
             else {
-                DBG_PRT(MSG_LEVEL_NOTICE, KERN_INFO "Adhoc re-scanning ...\n");
+                DBG_PRT(MSG_LEVEL_NOTICE, KERN_INFO "Adhoc re-scaning ...\n");
 	      pMgmt->eScanType = WMAC_SCAN_ACTIVE;
                 bScheduleCommand((void *) pDevice, WLAN_CMD_BSSID_SCAN, NULL);
                 bScheduleCommand((void *) pDevice, WLAN_CMD_SSID, NULL);

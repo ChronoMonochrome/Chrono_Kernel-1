@@ -1,3 +1,7 @@
+/*
+ * $Id: sbe_promformat.h,v 2.2 2005/09/28 00:10:09 rickd PMCC4_3_1B $
+ */
+
 #ifndef _INC_SBE_PROMFORMAT_H_
 #define _INC_SBE_PROMFORMAT_H_
 
@@ -18,6 +22,19 @@
  *
  * For further information, contact via email: support@sbei.com
  * SBE, Inc.  San Ramon, California  U.S.A.
+ *
+ *-----------------------------------------------------------------------------
+ * RCS info:
+ * RCS revision: $Revision: 2.2 $
+ * Last changed on $Date: 2005/09/28 00:10:09 $
+ * Changed by $Author: rickd $
+ *-----------------------------------------------------------------------------
+ * $Log: sbe_promformat.h,v $
+ * Revision 2.2  2005/09/28 00:10:09  rickd
+ * Add EEPROM sample from C4T1E1 board.
+ *
+ * Revision 2.1  2005/05/04 17:18:24  rickd
+ * Initial CI.
  *
  *-----------------------------------------------------------------------------
  */
@@ -67,6 +84,12 @@
  *  (time_t)         (time_t)        Iterations    Errors
  *
  */
+
+#ifdef __cplusplus
+extern      "C"
+{
+#endif
+
 
 #define STRUCT_OFFSET(type, symbol)  ((long)&(((type *)0)->symbol))
 
@@ -126,5 +149,9 @@
         FLD_TYPE1   fldType1;
         FLD_TYPE2   fldType2;
     }           PROMFORMAT;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif                          /*** _INC_SBE_PROMFORMAT_H_ ***/

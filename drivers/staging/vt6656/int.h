@@ -34,6 +34,7 @@
 #include "device.h"
 
 /*---------------------  Export Definitions -------------------------*/
+#pragma pack(1)
 typedef struct tagSINTData {
     BYTE    byTSR0;
     BYTE    byPkt0;
@@ -67,6 +68,6 @@ SINTData, *PSINTData;
 /*---------------------  Export Functions  --------------------------*/
 
 void INTvWorkItem(void *Context);
-void INTnsProcessData(PSDevice pDevice);
+int INTnsProcessData(PSDevice pDevice);
 
 #endif /* __INT_H__ */
