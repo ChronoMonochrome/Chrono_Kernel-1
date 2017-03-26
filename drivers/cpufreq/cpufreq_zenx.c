@@ -82,7 +82,7 @@ static spinlock_t hotplug_remove_cpumask_lock;
 static unsigned int hispeed_freq = 530000;
 
 /* Go to hi speed when CPU load at or above this value. */
-#define DEFAULT_GO_HISPEED_LOAD 95
+#define DEFAULT_GO_HISPEED_LOAD 99
 static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 
 /* Unplug auxillary CPUs below these values. */
