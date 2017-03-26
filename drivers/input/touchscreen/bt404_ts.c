@@ -59,11 +59,6 @@
 #if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
 #include <linux/ab8500-ponkey.h>
 #endif /* TOUCH_S2W or TOUCH_DT2W */
-/*
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-#include <linux/cpufreq.h>
-#endif
-*/
 
 #include <linux/input/bt404_ts.h>
 #include "zinitix_touch_bt4x3_firmware.h"
@@ -417,10 +412,6 @@ static struct wake_lock t2w_wakelock;
 static bool is_suspend = false;
 static bool waking_up = false;
 
-bool bt404_is_suspend(void) {
-	return is_suspend;
-}
-
 static void bt404_ponkey_thread(struct work_struct *bt404_ponkey_work)
 {
 	waking_up = true;
@@ -436,19 +427,6 @@ static void bt404_ponkey_thread(struct work_struct *bt404_ponkey_work)
 static DECLARE_WORK(bt404_ponkey_work, bt404_ponkey_thread);
 
 #endif /* TOUCH_DT2W or TOUCH_S2W */
-
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-extern bool cpu_freq_limits_enabled(void);
-extern bool cpufreq_limits_update(void);
-#endif
-
-
-static void cpufreq_limits_thread(struct work_struct *cpufreq_limits_work)
-{
-	if (cpu_freq_limits_enabled())
-		cpufreq_limits_update();
-}
-static DECLARE_WORK(cpufreq_limits_work, cpufreq_limits_thread);
 
 #ifdef TOUCH_S2W
 /* cocafe: SweepToWake with wakelock implementation */
@@ -4759,15 +4737,6 @@ static void bt404_ts_late_resume(struct early_suspend *h)
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
 	is_suspend = false;
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-	schedule_work(&cpufreq_limits_work);
-	/*int cpu;
-
-	if (cpu_freq_limits_enabled()) {
-		for_each_online_cpu(cpu)
-			  cpufreq_update_policy(cpu);
-	}*/
-#endif
 	bt404_ts_resume(&data->client->dev);
 }
 
@@ -4776,15 +4745,6 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
 	is_suspend = true;
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-	schedule_work(&cpufreq_limits_work);
-	/*int cpu;
-
-	if (cpu_freq_limits_enabled()) {
-		for_each_online_cpu(cpu)
-			  cpufreq_update_policy(cpu);
-	}*/
-#endif
 	bt404_ts_suspend(&data->client->dev);
 }
 
