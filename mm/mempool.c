@@ -14,7 +14,6 @@
 #include <linux/mempool.h>
 #include <linux/blkdev.h>
 #include <linux/writeback.h>
-#include <linux/percpu.h>
 
 static void add_element(mempool_t *pool, void *element)
 {
@@ -48,43 +47,6 @@ void mempool_destroy(mempool_t *pool)
 EXPORT_SYMBOL(mempool_destroy);
 
 /**
- * mempool_fill - fill a memory pool
- * @pool:	memory pool to fill
- * @gfp_mask:	allocation mask to use
- *
- * Allocate new elements with @gfp_mask and fill @pool so that it has
- * @pool->min_nr elements.  Returns 0 on success, -errno on failure.
- */
-static int mempool_fill(mempool_t *pool, gfp_t gfp_mask)
-{
-	/*
-	 * If curr_nr == min_nr is visible, we're correct regardless of
-	 * locking.
-	 */
-	while (pool->curr_nr < pool->min_nr) {
-		void *elem;
-		unsigned long flags;
-
-		elem = pool->alloc(gfp_mask, pool->pool_data);
-		if (unlikely(!elem))
-			return -ENOMEM;
-
-		spin_lock_irqsave(&pool->lock, flags);
-		if (pool->curr_nr < pool->min_nr) {
-			add_element(pool, elem);
-			elem = NULL;
-		}
-		spin_unlock_irqrestore(&pool->lock, flags);
-
-		if (elem) {
-			pool->free(elem, pool->pool_data);
-			return 0;
-		}
-	}
-	return 0;
-}
-
-/**
  * mempool_create - create a memory pool
  * @min_nr:    the minimum number of elements guaranteed to be
  *             allocated for this pool.
@@ -105,13 +67,11 @@ mempool_t *mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
 }
 EXPORT_SYMBOL(mempool_create);
 
-static mempool_t *__mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
-				   mempool_free_t *free_fn, void *pool_data,
-				   int node_id, size_t mempool_bytes)
+mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
+			mempool_free_t *free_fn, void *pool_data, int node_id)
 {
 	mempool_t *pool;
-
-	pool = kmalloc_node(mempool_bytes, GFP_KERNEL | __GFP_ZERO, node_id);
+	pool = kmalloc_node(sizeof(*pool), GFP_KERNEL | __GFP_ZERO, node_id);
 	if (!pool)
 		return NULL;
 	pool->elements = kmalloc_node(min_nr * sizeof(void *),
@@ -127,24 +87,19 @@ static mempool_t *__mempool_create(int min_nr, mempool_alloc_t *alloc_fn,
 	pool->alloc = alloc_fn;
 	pool->free = free_fn;
 
-	return pool;
-}
+	/*
+	 * First pre-allocate the guaranteed number of buffers.
+	 */
+	while (pool->curr_nr < pool->min_nr) {
+		void *element;
 
-mempool_t *mempool_create_node(int min_nr, mempool_alloc_t *alloc_fn,
-			       mempool_free_t *free_fn, void *pool_data,
-			       int node_id)
-{
-	mempool_t *pool;
-
-	pool = __mempool_create(min_nr, alloc_fn, free_fn, pool_data, node_id,
-				sizeof(*pool));
-
-	/* Pre-allocate the guaranteed number of buffers */
-	if (mempool_fill(pool, GFP_KERNEL)) {
-		mempool_destroy(pool);
-		return NULL;
+		element = pool->alloc(GFP_KERNEL, pool->pool_data);
+		if (unlikely(!element)) {
+			mempool_destroy(pool);
+			return NULL;
+		}
+		add_element(pool, element);
 	}
-
 	return pool;
 }
 EXPORT_SYMBOL(mempool_create_node);
@@ -182,8 +137,7 @@ int mempool_resize(mempool_t *pool, int new_min_nr, gfp_t gfp_mask)
 			spin_lock_irqsave(&pool->lock, flags);
 		}
 		pool->min_nr = new_min_nr;
-		spin_unlock_irqrestore(&pool->lock, flags);
-		return 0;
+		goto out_unlock;
 	}
 	spin_unlock_irqrestore(&pool->lock, flags);
 
@@ -197,17 +151,31 @@ int mempool_resize(mempool_t *pool, int new_min_nr, gfp_t gfp_mask)
 		/* Raced, other resize will do our work */
 		spin_unlock_irqrestore(&pool->lock, flags);
 		kfree(new_elements);
-		return 0;
+		goto out;
 	}
 	memcpy(new_elements, pool->elements,
 			pool->curr_nr * sizeof(*new_elements));
 	kfree(pool->elements);
 	pool->elements = new_elements;
 	pool->min_nr = new_min_nr;
+
+	while (pool->curr_nr < pool->min_nr) {
+		spin_unlock_irqrestore(&pool->lock, flags);
+		element = pool->alloc(gfp_mask, pool->pool_data);
+		if (!element)
+			goto out;
+		spin_lock_irqsave(&pool->lock, flags);
+		if (pool->curr_nr < pool->min_nr) {
+			add_element(pool, element);
+		} else {
+			spin_unlock_irqrestore(&pool->lock, flags);
+			pool->free(element, pool->pool_data);	/* Raced */
+			goto out;
+		}
+	}
+out_unlock:
 	spin_unlock_irqrestore(&pool->lock, flags);
-
-	mempool_fill(pool, gfp_mask);
-
+out:
 	return 0;
 }
 EXPORT_SYMBOL(mempool_resize);
@@ -399,113 +367,3 @@ void mempool_free_pages(void *element, void *pool_data)
 	__free_pages(element, order);
 }
 EXPORT_SYMBOL(mempool_free_pages);
-
-/*
- * Mempool for percpu memory.
- */
-static void *percpu_mempool_alloc_fn(gfp_t gfp_mask, void *data)
-{
-	struct percpu_mempool *pcpu_pool = data;
-	void __percpu *p;
-
-	/*
-	 * Percpu allocator doesn't do NOIO.  This makes percpu mempool
-	 * always try reserved elements first, which isn't such a bad idea
-	 * given that percpu allocator is pretty heavy and percpu areas are
-	 * expensive.
-	 */
-	if ((gfp_mask & GFP_KERNEL) != GFP_KERNEL)
-		return NULL;
-
-	p = __alloc_percpu(pcpu_pool->size, pcpu_pool->align);
-	return (void __kernel __force *)p;
-}
-
-static void percpu_mempool_free_fn(void *elem, void *data)
-{
-	void __percpu *p = (void __percpu __force *)elem;
-
-	free_percpu(p);
-}
-
-static void percpu_mempool_refill_workfn(struct work_struct *work)
-{
-	struct percpu_mempool *pcpu_pool =
-		container_of(work, struct percpu_mempool, refill_work);
-
-	percpu_mempool_refill(pcpu_pool, GFP_KERNEL);
-}
-
-/**
- * percpu_mempool_create - create mempool for percpu memory
- * @min_nr:	the minimum number of elements guaranteed to be
- *		allocated for this pool.
- * @size:	size of percpu memory areas in this pool
- * @align:	alignment of percpu memory areas in this pool
- *
- * This is counterpart of mempool_create() for percpu memory areas.
- * Allocations from the pool will return @size bytes percpu memory areas
- * aligned at @align bytes.
- */
-struct percpu_mempool *percpu_mempool_create(int min_nr, size_t size,
-					     size_t align)
-{
-	struct percpu_mempool *pcpu_pool;
-	mempool_t *pool;
-
-	BUILD_BUG_ON(offsetof(struct percpu_mempool, pool));
-
-	pool = __mempool_create(min_nr, percpu_mempool_alloc_fn,
-				percpu_mempool_free_fn, NULL, NUMA_NO_NODE,
-				sizeof(*pcpu_pool));
-	if (!pool)
-		return NULL;
-
-	/* fill in pcpu_pool part and set pool_data to self */
-	pcpu_pool = container_of(pool, struct percpu_mempool, pool);
-	pcpu_pool->size = size;
-	pcpu_pool->align = align;
-	INIT_WORK(&pcpu_pool->refill_work, percpu_mempool_refill_workfn);
-	pcpu_pool->pool.pool_data = pcpu_pool;
-
-	/* Pre-allocate the guaranteed number of buffers */
-	if (mempool_fill(&pcpu_pool->pool, GFP_KERNEL)) {
-		mempool_destroy(&pcpu_pool->pool);
-		return NULL;
-	}
-
-	return pcpu_pool;
-}
-EXPORT_SYMBOL_GPL(percpu_mempool_create);
-
-/**
- * percpu_mempool_refill - refill a percpu mempool
- * @pcpu_pool:	percpu mempool to refill
- * @gfp_mask:	allocation mask to use
- *
- * Refill @pcpu_pool upto the configured min_nr using @gfp_mask.
- *
- * Percpu memory allocation depends on %GFP_KERNEL.  If @gfp_mask doesn't
- * contain it, this function will schedule a work item to refill the pool
- * and return -%EAGAIN indicating refilling is in progress.
- */
-int percpu_mempool_refill(struct percpu_mempool *pcpu_pool, gfp_t gfp_mask)
-{
-	if ((gfp_mask & GFP_KERNEL) == GFP_KERNEL)
-		return mempool_fill(&pcpu_pool->pool, gfp_mask);
-
-	schedule_work(&pcpu_pool->refill_work);
-	return -EAGAIN;
-}
-EXPORT_SYMBOL_GPL(percpu_mempool_refill);
-
-/**
- * percpu_mempool_destroy - destroy a percpu mempool
- * @pcpu_pool:	percpu mempool to destroy
- */
-void percpu_mempool_destroy(struct percpu_mempool *pcpu_pool)
-{
-	cancel_work_sync(&pcpu_pool->refill_work);
-	mempool_destroy(&pcpu_pool->pool);
-}
-EXPORT_SYMBOL_GPL(percpu_mempool_destroy);
