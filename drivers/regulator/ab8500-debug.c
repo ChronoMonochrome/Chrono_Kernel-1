@@ -2141,11 +2141,11 @@ static struct dentry *ab8500_regulator_suspend_force_file;
 #define ENA_ABB_REGU_VOTG		0x01
 #define DIS_ABB_REGU_VOTG		0x00
 
-static bool votg_requested = false;
-
 static ssize_t abb_regu_votg_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d\n", votg_requested);
+	unsigned char votg_reg = abx500_get_register_interruptible(
+			&pdev->dev, AB8500_REGU_CTRL1, REG_ABB_REGU_VOTG, &votg_reg);
+	return sprintf(buf, "%d\n", votg_reg);
 }
 
 static ssize_t abb_regu_votg_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
@@ -2173,7 +2173,6 @@ static ssize_t abb_regu_votg_store(struct kobject *kobj, struct kobj_attribute *
 			return 0;
 		}
 
-		votg_requested = false;
 	} else if (val) {
 		ret = abx500_set_register_interruptible(
 				 &pdev->dev,
@@ -2185,7 +2184,6 @@ static ssize_t abb_regu_votg_store(struct kobject *kobj, struct kobj_attribute *
 			return 0;
 		}
 
-		votg_requested = true;
 	}
 
 	return count;
@@ -2282,14 +2280,14 @@ int __devinit ab8500_regulator_debug_init(struct platform_device *plf)
 	abb_regu_kobject = kobject_create_and_add("abb-regu", kernel_kobj);
 
 	if (!abb_regu_kobject) {
-		pr_err("abb-regu: faile to register sysfs\n");
+		pr_err("abb-regu: Failed to register sysfs\n");
 		return -ENOMEM;
 	}
 
 	ret = sysfs_create_group(abb_regu_kobject, &abb_regu_interface_group);
 
 	if (ret) {
-		pr_info("abb-regu: faile to register sysfs\n");
+		pr_info("abb-regu: Failed to register sysfs\n");
 		kobject_put(abb_regu_kobject);
 	}
 
