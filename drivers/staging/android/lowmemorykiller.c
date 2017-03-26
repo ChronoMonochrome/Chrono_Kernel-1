@@ -40,6 +40,7 @@
 #include <linux/mutex.h>
 #include <linux/delay.h>
 #include <linux/swap.h>
+#include <linux/ratelimit.h>
 #include <linux/rcupdate.h>
 #include <linux/notifier.h>
 #include <linux/fs.h>
@@ -118,6 +119,12 @@ static unsigned long lowmem_deathpending_timeout;
 	do {						\
 		if (lowmem_debug_level >= (level))	\
 			pr_err(x);			\
+	} while (0)
+
+#define lowmem_print_ratelimited(level, x...)			\
+	do {						\
+		if (lowmem_debug_level >= (level))	\
+			pr_err_ratelimited(x);			\
 	} while (0)
 
 static int test_task_flag(struct task_struct *p, int flag)
@@ -354,8 +361,8 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 
 #ifdef CONFIG_ANDROID_LOW_MEMORY_KILLER_DO_NOT_KILL_PROCESS
 		if (is_in_donotkill_proc_list(p->comm)) {
-			lowmem_print(2, "[lmk] the process '%s' is inside the donotkill_proc_names\n", p->comm);
-			lowmem_print(2, "[lmk] set oom_score_adj from %d to %d for (%s)\n", p->signal->oom_score_adj, 0, p->comm);
+			lowmem_print_ratelimited(2, "[lmk] the process '%s' is inside the donotkill_proc_names\n", p->comm);
+			lowmem_print_ratelimited(2, "[lmk] set oom_score_adj from %d to %d for (%s)\n", p->signal->oom_score_adj, 0, p->comm);
 			p->signal->oom_score_adj = 0;
 			continue;
 		}
