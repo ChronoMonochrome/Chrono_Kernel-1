@@ -2720,8 +2720,8 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 		val->intval = (di->bat_cap.mah  * 1000) / di->bat_cap.max_mah ;
 		if (last_mah != di->bat_cap.mah) {
 			printk("raw soc = %d\n", val->intval);
-			printk("inst_curr: %d mA\n", di->inst_curr);
-			printk("avg_curr: %d mA\n", di->avg_curr);
+			//printk("inst_curr: %d mA\n", di->inst_curr);
+			//printk("avg_curr: %d mA\n", di->avg_curr);
 		}
 		last_mah = di->bat_cap.mah;
 		break;
