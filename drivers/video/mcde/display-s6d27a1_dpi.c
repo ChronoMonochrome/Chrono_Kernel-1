@@ -1195,6 +1195,7 @@ static void s6d27a1_dpi_mcde_shutdown(struct mcde_display_device *ddev)
 	unregister_early_suspend(&lcd->earlysuspend);
 #endif
 
+	s6d27a1_dpi_power(lcd, FB_BLANK_POWERDOWN);
 	kfree(lcd);
 	mutex_unlock(&ddev->display_lock);
 	dev_dbg(&ddev->dev, "end %s\n", __func__);
