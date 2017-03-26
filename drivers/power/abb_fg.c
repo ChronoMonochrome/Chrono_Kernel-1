@@ -290,6 +290,7 @@ struct ab8500_fg_battery_capacity {
 	int level;
 	int prev_mah;
 	int prev_percent;
+	int prev_permille;
 	int prev_level;
 };
 
@@ -1781,6 +1782,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
 				di->bat_cap.prev_percent,
 				percent, di->bat_cap.permille);
 			di->bat_cap.prev_percent = percent;
+			di->bat_cap.prev_permille = di->bat_cap.permille;
 			di->bat_cap.prev_mah = di->bat_cap.mah;
 
 			changed = true;
@@ -2717,9 +2719,9 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 #if defined(CONFIG_MACH_JANICE) || 	defined(CONFIG_MACH_CODINA) || 	defined(CONFIG_MACH_GAVINI)
 	case POWER_SUPPLY_PROP_CAPACITY_RAW:
 
-		val->intval = (di->bat_cap.mah  * 1000) / di->bat_cap.max_mah ;
+		val->intval = di->bat_cap.prev_permille;
 		if (last_capacity != val->intval)
-			printk("raw soc = %d\n",val->intval);
+			printk("[ABB-FG] raw soc = %d\n", val->intval);
 		last_capacity = val->intval;
 		break;
 #endif
