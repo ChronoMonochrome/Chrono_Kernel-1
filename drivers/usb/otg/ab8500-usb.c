@@ -36,7 +36,7 @@
 #include <linux/mfd/ab8500.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/kernel_stat.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 #include <linux/wakelock.h>
 #include <linux/usb/ab8500-otg.h>
 #include <linux/input/ab8505_micro_usb_iddet.h>
@@ -76,7 +76,7 @@ struct blocking_notifier_head micro_usb_switch_notifier =
 #define AB8500_USB_PHY_TUNE2	0x06
 #define AB8500_USB_PHY_TUNE3	0x07
 
-static struct pm_qos_request_list usb_pm_qos_latency;
+static struct pm_qos_request usb_pm_qos_latency;
 static bool usb_pm_qos_is_latency_0;
 
 #define USB_PROBE_DELAY 1000 /* 1 seconds */
