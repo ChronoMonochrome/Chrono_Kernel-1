@@ -95,8 +95,8 @@ static bool is_suspend = 0;
 static unsigned int battery_type = 1;
 module_param_named(battery_type, battery_type, uint, 0644);
 
-static int termination_vol[] = {4200, 4350};
-static int recharge_vol[] = {4050, 4200};
+static int termination_vol[] = {4250, 4350};
+static int recharge_vol[] = {4100, 4200};
 static int termination_curr_1st[] = {200, 200};
 static int termination_curr_2nd[] = {150, 150};
 
