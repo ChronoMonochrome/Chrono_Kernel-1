@@ -1653,11 +1653,11 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 #endif
 
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-				dev_info(&client->dev,
-						"%4s[%1d]: %3d,%3d (%3d)\n",
-						"down", i,  cur->coord[i].x,
-						cur->coord[i].y,
-						cur->coord[i].width);
+			//	dev_info(&client->dev,
+			//			"%4s[%1d]: %3d,%3d (%3d)\n",
+			//			"down", i,  cur->coord[i].x,
+			//			cur->coord[i].y,
+			//			cur->coord[i].width);
 #endif
 			}
 
