@@ -89,7 +89,7 @@
 
 static signed char apeopp_requirement = 50, ddropp_requirement = 50;
 static unsigned int reset_delay = 10, power_on_delay = 10;
-static unsigned int sleep_in_delay = 50, sleep_out_delay = 120, sleep_out_delay_1st = 120,
+static unsigned int sleep_in_delay = 50, sleep_out_delay = 120, sleep_out_delay_1st = 5,
 			 sleep_out_delay_2nd = 120, display_off_delay = 0;
 
 static bool is_first_sleep_in_delay = 1;
