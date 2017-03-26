@@ -181,14 +181,14 @@ ram_console_save_old(struct ram_console_buffer *buffer, const char *bootinfo,
 		numerr = ram_console_decode_rs8(block, size, par);
 		if (numerr > 0) {
 #if 0
-			printk(KERN_INFO "ram_console: error in block %p, %d\n",
-			       block, numerr);
+//			printk(KERN_INFO "ram_console: error in block %p, %d\n",
+;
 #endif
 			ram_console_corrected_bytes += numerr;
 		} else if (numerr < 0) {
 #if 0
-			printk(KERN_INFO "ram_console: uncorrectable error in "
-			       "block %p\n", block);
+//			printk(KERN_INFO "ram_console: uncorrectable error in "
+;
 #endif
 			ram_console_bad_blocks++;
 		}
@@ -214,8 +214,8 @@ ram_console_save_old(struct ram_console_buffer *buffer, const char *bootinfo,
 	if (dest == NULL) {
 		dest = kmalloc(total_size, GFP_KERNEL);
 		if (dest == NULL) {
-			printk(KERN_ERR
-			       "ram_console: failed to allocate buffer\n");
+//			printk(KERN_ERR
+;
 			return;
 		}
 	}
@@ -277,7 +277,7 @@ static int __init ram_console_init(struct ram_console_buffer *buffer,
 	 */
 	ram_console_rs_decoder = init_rs(ECC_SYMSIZE, ECC_POLY, 0, 1, ECC_SIZE);
 	if (ram_console_rs_decoder == NULL) {
-		printk(KERN_INFO "ram_console: init_rs failed\n");
+;
 		return 0;
 	}
 
@@ -289,11 +289,11 @@ static int __init ram_console_init(struct ram_console_buffer *buffer,
 
 	numerr = ram_console_decode_rs8(buffer, sizeof(*buffer), par);
 	if (numerr > 0) {
-		printk(KERN_INFO "ram_console: error in header, %d\n", numerr);
+;
 		ram_console_corrected_bytes += numerr;
 	} else if (numerr < 0) {
-		printk(KERN_INFO
-		       "ram_console: uncorrectable error in header\n");
+//		printk(KERN_INFO
+;
 		ram_console_bad_blocks++;
 	}
 #endif
@@ -301,18 +301,18 @@ static int __init ram_console_init(struct ram_console_buffer *buffer,
 	if (buffer->sig == RAM_CONSOLE_SIG) {
 		if (buffer->size > ram_console_buffer_size
 		    || buffer->start > buffer->size)
-			printk(KERN_INFO "ram_console: found existing invalid "
-			       "buffer, size %d, start %d\n",
-			       buffer->size, buffer->start);
+//			printk(KERN_INFO "ram_console: found existing invalid "
+//			       "buffer, size %d, start %d\n",
+;
 		else {
-			printk(KERN_INFO "ram_console: found existing buffer, "
-			       "size %d, start %d\n",
-			       buffer->size, buffer->start);
+//			printk(KERN_INFO "ram_console: found existing buffer, "
+//			       "size %d, start %d\n",
+;
 			ram_console_save_old(buffer, bootinfo, old_buf);
 		}
 	} else {
-		printk(KERN_INFO "ram_console: no valid data in buffer "
-		       "(sig = 0x%08x)\n", buffer->sig);
+//		printk(KERN_INFO "ram_console: no valid data in buffer "
+;
 	}
 
 	buffer->sig = RAM_CONSOLE_SIG;
@@ -354,17 +354,16 @@ static int ram_console_driver_probe(struct platform_device *pdev)
 
 	if (res == NULL || pdev->num_resources != 1 ||
 	    !(res->flags & IORESOURCE_MEM)) {
-		printk(KERN_ERR "ram_console: invalid resource, %p %d flags "
-		       "%lx\n", res, pdev->num_resources, res ? res->flags : 0);
+//		printk(KERN_ERR "ram_console: invalid resource, %p %d flags "
+;
 		return -ENXIO;
 	}
-	buffer_size = res->end - res->start + 1;
-	start = res->start;
-	printk(KERN_INFO "ram_console: got buffer at %zx, size %zx\n",
-	       start, buffer_size);
+	buffer_size = (res->end - res->start + 1) - PAGE_SIZE;
+	start = res->start + PAGE_SIZE;
+	printk(KERN_INFO "ram_console: got buffer at %zx, size %zx\n", start, buffer_size);
 	buffer = ioremap(res->start, buffer_size);
 	if (buffer == NULL) {
-		printk(KERN_ERR "ram_console: failed to map memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -424,8 +423,8 @@ static int __init ram_console_late_init(void)
 #ifdef CONFIG_ANDROID_RAM_CONSOLE_EARLY_INIT
 	ram_console_old_log = kmalloc(ram_console_old_log_size, GFP_KERNEL);
 	if (ram_console_old_log == NULL) {
-		printk(KERN_ERR
-		       "ram_console: failed to allocate buffer for old log\n");
+//		printk(KERN_ERR
+;
 		ram_console_old_log_size = 0;
 		return 0;
 	}
@@ -434,7 +433,7 @@ static int __init ram_console_late_init(void)
 #endif
 	entry = create_proc_entry("last_kmsg", S_IFREG | S_IRUGO, NULL);
 	if (!entry) {
-		printk(KERN_ERR "ram_console: failed to create proc entry\n");
+;
 		kfree(ram_console_old_log);
 		ram_console_old_log = NULL;
 		return 0;
