@@ -42,6 +42,7 @@
 #include <linux/leds.h>
 #include <linux/leds-regulator.h>
 #include <linux/mfd/abx500/ux500_sysctrl.h>
+#include <linux/memblock.h>
 #include <video/ktd259x_bl.h>
 #include <../drivers/staging/android/timed_gpio.h>
 
@@ -112,6 +113,12 @@
 #define USB_SERIAL_NUMBER_LEN 31
 #endif
 
+#ifdef CONFIG_KEXEC_HARDBOOT
+#define KEXEC_HARDBOOT_SIZE (SZ_1M)
+// 1M before the RAM console (0x18000000) start
+#define KEXEC_HARDBOOT_START 0x1FE00000
+#endif
+
 #ifndef SSG_CAMERA_ENABLE
 #define SSG_CAMERA_ENABLE
 #endif
@@ -160,6 +167,37 @@ static int __init ram_console_setup(char *p)
 __setup("mem_ram_console=", ram_console_setup);
 
 #endif /* CONFIG_ANDROID_RAM_CONSOLE */
+
+#ifdef CONFIG_KEXEC_HARDBOOT
+static struct resource kexec_hardboot_resources[] = {
+	[0] = {
+		.start  = KEXEC_HARDBOOT_START,
+		.end    = KEXEC_HARDBOOT_START +
+			KEXEC_HARDBOOT_SIZE - 1,
+		.flags  = IORESOURCE_MEM,
+	},
+};
+
+static struct platform_device kexec_hardboot_device = {
+	.name           = "kexec_hardboot",
+	.id             = -1,
+};
+
+static void kexec_hardboot_reserve(void)
+{
+	if (memblock_reserve(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE)) {
+		printk(KERN_ERR "Failed to reserve memory for KEXEC_HARDBOOT: "
+		       "%dM@0x%.8X\n",
+		       KEXEC_HARDBOOT_SIZE / SZ_1M, KEXEC_HARDBOOT_START);
+		return;
+	}
+	memblock_free(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE);
+	memblock_remove(KEXEC_HARDBOOT_START, KEXEC_HARDBOOT_SIZE);
+
+	kexec_hardboot_device.num_resources  = ARRAY_SIZE(kexec_hardboot_resources);
+	kexec_hardboot_device.resource       = kexec_hardboot_resources;
+}
+#endif
 
 
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
@@ -2231,6 +2269,9 @@ static struct platform_device *platform_devs[] __initdata = {
 #ifdef CONFIG_MODEM_U8500
 	&u8500_modem_dev,
 #endif
+#ifdef CONFIG_KEXEC_HARDBOOT
+	&kexec_hardboot_device,
+#endif
 	&db8500_cpuidle_device,
 #ifdef CONFIG_USB_ANDROID
 	&android_usb_device,
@@ -2383,6 +2424,10 @@ static void __init codina_init_machine(void)
 	sec_common_init();
 
 	sec_common_init_early();
+	
+#if defined(CONFIG_KEXEC_HARDBOOT)
+	kexec_hardboot_reserve();
+#endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	if (ram_console_device.num_resources == 1)
