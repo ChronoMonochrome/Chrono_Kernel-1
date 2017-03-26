@@ -318,7 +318,7 @@ void check_alarm_boot_lpm(void)
 	if (battpwroff_charging == 1) {
 		u8 check_param = 0;
 
-		sec_get_param_value(__PARAM_INT_14, &check_param);
+		get_param_value(__PARAM_INT_14, &check_param);
 
 		pr_info("battpwroff_charging:%d, check_param:%d, alarm_en_exit:%d\n",
 			battpwroff_charging, check_param, alarm_en_exit);
@@ -335,7 +335,7 @@ void check_alarm_boot_lpm(void)
 	if (sec_lpm_bootmode == 1) {
 		u8 check_param = 0;
 
-		sec_get_param_value(__PARAM_INT_14, &check_param);
+		get_param_value(__PARAM_INT_14, &check_param);
 
 		pr_info("sec_lpm_bootmode:%d, check_param:%d, alarm_en_exit:%d\n",
 			sec_lpm_bootmode, check_param, alarm_en_exit);
@@ -614,7 +614,7 @@ static int __devexit ab8500_rtc_remove(struct platform_device *pdev)
 		ab8500_rtc_set_alarm(&pdev->dev, &autoboot_alm);
 	}
 
-	sec_get_param_value(__PARAM_INT_14, &temp_param);
+	get_param_value(__PARAM_INT_14, &temp_param);
 	pr_info("[AB8500 rtc] __PARAM_INT_14 = %d, %d\n",
 		temp_param, alarm_en_exit);
 	if ((temp_param == 0) && (alarm_en_exit == 1)) {

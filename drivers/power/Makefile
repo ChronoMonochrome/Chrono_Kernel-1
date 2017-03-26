@@ -43,5 +43,3 @@ obj-$(CONFIG_ABB_BM)		+= abb_charger.o abb_fg.o abb_btemp.o  abb_chargalg.o
 obj-$(CONFIG_ABB_FAKE_DFMS_DEVICES) += abb_links.o
 obj-$(CONFIG_CHARGER_PM2301)	+= pm2301_charger.o
 obj-$(CONFIG_PM2XXX_DEEP_DEBUG)	+= pm2301_deepdebug.o
-
-include $(srctree)/scripts/Makefile_build.thumb2
