@@ -79,3 +79,36 @@ cln() { git clean -fd; }
 # view diff introduced by commit $1 for file/dir $2
 
 view() { git diff $1~1 $1 $2; }
+
+#set -x
+gapply() { 
+	S=$(echo $1 | cut -d / -f7); 
+
+	if ! test -f $S.patch; then
+		wget $1.patch;
+	fi;
+
+	print_header()
+	{
+		echo $( cat $S.patch | head -n 4  | tail -n 1)
+	}
+
+	if test -f .git/rebase-apply/patch; then
+		git am --abort;
+	fi; 
+
+	OUT=$(git am $S.patch | grep -c "apply");
+	if [ $OUT == 1 ] ; then
+		read -p "git am failed, would you like to try patch? " -n 1 -r ; echo ; 
+		if [[ $REPLY =~ ^[Yy]$ ]] ; then 
+			patch -p1 -i $S.patch -o temp.out;
+			if [ ! $(cat temp.out | grep -c "ignored") -ge 0 ] && [ ! $(cat temp.out | grep -c "failed") -ge 0 ]; then
+				git am --continue;
+				print_header;
+			fi;
+		fi; 
+		rm -f temp.out;
+	else
+		 print_header;
+	fi
+}
