@@ -1216,11 +1216,11 @@ static unsigned int enabled = 1;
 
 static int taos_set_enable(const char *val, struct kernel_param *kp)
 {
-	if (strcmp(val, "0") >= 0) {
+	if ((strcmp(val, "0") >= 0) && enabled) {
 		i2c_del_driver(&taos_opt_driver);
 		enabled = 0;
 		return 0;
-	} else if (strcmp(val, "1") >= 0) {
+	} else if ((strcmp(val, "1") >= 0) && !enabled) {
 		enabled = (i2c_add_driver(&taos_opt_driver) >= 0);
 		return enabled;
 	}
