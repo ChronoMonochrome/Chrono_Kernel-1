@@ -4017,6 +4017,14 @@ static int ab8500_fg_resume(struct platform_device *pdev)
 		queue_work(di->fg_wq, &di->fg_work);
 	}
 
+	/*
+	 * FIXME: Workaround to fix laziness on low capacity
+	 */
+	if (di->bat_cap.prev_percent < 14) {
+		ab8500_fg_reinit();
+		pr_info("[ABB-FG] Reinit on low capacity\n");
+	}
+
 	return 0;
 }
 
