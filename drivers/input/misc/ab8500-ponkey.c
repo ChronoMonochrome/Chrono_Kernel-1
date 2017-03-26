@@ -176,26 +176,28 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
+
+static bool emu_working = false;
+static unsigned int emu_sleep = 500;
+static unsigned long emu_keycode = KEY_POWER;
+
 void ab8500_ponkey_emulator(bool press)
 {
 	if (press) {
-		gpio_keys_setstate(KEY_POWER, true);
+		gpio_keys_setstate(emu_keycode, true);
 		p_info->key_state = true;
-		input_report_key(p_info->idev, KEY_POWER, true);
+		input_report_key(p_info->idev, emu_keycode, true);
 		pr_err("[ABB-POnKey] Emulate Power Key PRESS\n");
 		input_sync(p_info->idev);
 	} else if (!press) {
-		gpio_keys_setstate(KEY_POWER, false);
+		gpio_keys_setstate(emu_keycode, false);
 		p_info->key_state = false;
-		input_report_key(p_info->idev, KEY_POWER, false);
+		input_report_key(p_info->idev, emu_keycode, false);
 		pr_err("[ABB-POnKey] Emulate Power Key RELEASE\n");
 		input_sync(p_info->idev);
 	}
 }
 EXPORT_SYMBOL(ab8500_ponkey_emulator);
-
-static bool emu_working = false;
-static unsigned int emu_sleep = 500;
 
 static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_work)
 {
@@ -208,24 +210,39 @@ static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_w
 	msleep(emu_sleep);
 
 	ab8500_ponkey_emulator(0);
+	
+	if (emu_keycode != KEY_POWER) {
+		p_info->idev->keybit[BIT_WORD(emu_keycode)] = (unsigned long)NULL;
+		p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+	}
 
 	emu_working = false;
 }
 static DECLARE_WORK(abb_ponkey_emulator_work, abb_ponkey_emulator_thread);
 
+static ssize_t abb_ponkey_emulator_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "Usage: keycode delay(ms)\n");
+
+	return strlen(buf);
+}
+
 static ssize_t abb_ponkey_emulator_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
-	int slp, ret;
+	int slp, keycode, ret;
 
-	ret = sscanf(buf, "%d", &slp);
+	ret = sscanf(buf, "%d %d", &keycode, &slp);
 
-	if ((ret < 0) || (slp < 0)) {
+	if ((ret < 0) || (slp < 0) || (keycode > 255) || (keycode < 0)) {
 		pr_err("[ABB-POnKey] Invalid inputs\n");
 		return -EINVAL;
 	}
 
-	if (!emu_working) {
+	if (!(emu_working && keycode == emu_keycode)) {
+		p_info->idev->keybit[BIT_WORD(emu_keycode)] = (unsigned long)NULL;
+		p_info->idev->keybit[BIT_WORD(keycode)] = BIT_MASK(keycode);
 		emu_sleep = slp;
+		emu_keycode = keycode;
 		schedule_work(&abb_ponkey_emulator_work);
 	} else {
 		pr_err("[ABB-POnKey] Emulator thread is working\n");
@@ -234,7 +251,7 @@ static ssize_t abb_ponkey_emulator_store(struct kobject *kobj, struct kobj_attri
 	return count;
 }
 
-static struct kobj_attribute abb_ponkey_emulator_interface = __ATTR(emulator, 0644, NULL, abb_ponkey_emulator_store);
+static struct kobj_attribute abb_ponkey_emulator_interface = __ATTR(emulator, 0644, abb_ponkey_emulator_show, abb_ponkey_emulator_store);
 
 static struct attribute *abb_ponkey_attrs[] = {
 	&abb_ponkey_emulator_interface.attr, 
