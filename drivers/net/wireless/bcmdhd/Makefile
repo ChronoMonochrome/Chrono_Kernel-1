@@ -3,6 +3,8 @@
 # SDIO Basic feature
 #####################
 
+CFLAGS_MODULE += $(DISABLE_LTO)
+
 DHDCFLAGS = -Wall -Wstrict-prototypes -Dlinux -DLINUX -DBCMDRIVER             \
         -DBCMDONGLEHOST -DUNRELEASEDCHIP -DBCMDMA32 -DBCMFILEIMAGE            \
         -DDHDTHREAD -DBDC -DOOB_INTR_ONLY                                     \
