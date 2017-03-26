@@ -25,9 +25,7 @@ define cmd_bounds
 	 echo " *"; \
 	 echo " */"; \
 	 echo ""; \
-         echo "#define NR_PAGEFLAGS 22 /* __NR_PAGEFLAGS       @ */"; \
-         echo "#define MAX_NR_ZONES 3 /* __MAX_NR_ZONES        @ */"; \
-         echo "#define NR_PCG_FLAGS 7 /* __NR_PCG_FLAGS        @ */"; \
+	 sed -ne $(sed-y) $<; \
 	 echo ""; \
 	 echo "#endif" ) > $@
 endef
