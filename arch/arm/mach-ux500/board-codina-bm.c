@@ -140,7 +140,7 @@ static struct v_to_cap cap_tbl[] = {
 	{3614,	3},
 	{3551,	2},
 	{3458,	1},
-	{3320,	0},
+	{3300,	0},
 };
 
 /* Temporarily, we use this table */
@@ -319,11 +319,11 @@ static const struct battery_type bat_type[] = {
 		.nominal_voltage = 3820,
 		.termination_vol = 4340,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
-		.termination_curr_1st = 100,
-		.termination_curr_2nd = 100,
+		.termination_curr_1st = 200,
+		.termination_curr_2nd = 150,
 		.recharge_vol = 4211,
 #else
-		.termination_curr = 100,
+		.termination_curr = 200,
 #endif
 		.normal_cur_lvl = 400,
 		.normal_vol_lvl = 4340,
@@ -333,7 +333,7 @@ static const struct battery_type bat_type[] = {
 		.maint_b_cur_lvl = 400,
 		.maint_b_vol_lvl = 4000,
 		.maint_b_chg_timer_h = 200,
-		.low_high_cur_lvl = 400,
+		.low_high_cur_lvl = 300,
 		.low_high_vol_lvl = 4000,
 #ifdef CONFIG_MEASURE_TEMP_BY_ADC_TABLE
 		.n_temp_tbl_elements = ARRAY_SIZE(adc_temp_tbl),
@@ -386,25 +386,21 @@ static const struct battery_type bat_type[] = {
 #endif
 		.charge_full_design = 1500,
 		.nominal_voltage = 3820,
-		.termination_vol = 4340,
+		.termination_vol =  4340,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
-		/* 
-		 * Please find real termination_curr_1st and
-		 * termination_curr_2nd values in abb_chargalg.c
-		 */
-		.termination_curr_1st = 100,
-		.termination_curr_2nd = 100,
-		.recharge_vol = 4211,
+		.termination_curr_1st = 200,	/* 100 */
+		.termination_curr_2nd = 150,	/* 100 */
+		.recharge_vol = 4211,		/* 4130 */
 #else
-		.termination_curr = 100,
+		.termination_curr = 200,	/* 200 */
 #endif
-		.normal_cur_lvl = 600,		/* was 700 */
+		.normal_cur_lvl = 900,		/* was 700 */
 		.normal_vol_lvl = 4340,		/* 4210 */
-		.maint_a_cur_lvl = 400,
-		.maint_a_vol_lvl = 4050,
+		.maint_a_cur_lvl = 600,
+		.maint_a_vol_lvl = 4150,
 		.maint_a_chg_timer_h = 60,
-		.maint_b_cur_lvl = 400,
-		.maint_b_vol_lvl = 4000,
+		.maint_b_cur_lvl = 600,
+		.maint_b_vol_lvl = 4100,
 		.maint_b_chg_timer_h = 200,
 		.low_high_cur_lvl = 300,
 		.low_high_vol_lvl = 4000,
@@ -542,12 +538,12 @@ struct ab8500_bm_data ab8500_bm_data = {
 	.temp_interval_chg	= 20,
 	.temp_interval_nochg	= 120,
 #if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
-	.ta_chg_current		= 800,
+	.ta_chg_current		= 900,
 	.ta_chg_current_input	= 600,
 	.ta_chg_voltage		= 4340,
 	.usb_chg_current	= 500,
 	.usb_chg_current_input	= 500,
-	.usb_chg_voltage	= 4350,
+	.usb_chg_voltage	= 4340,
 #endif
 	.main_safety_tmr_h	= 4,
 	.usb_safety_tmr_h	= 4,
