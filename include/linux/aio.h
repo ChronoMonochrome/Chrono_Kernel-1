@@ -246,6 +246,11 @@ static inline struct kiocb *list_kiocb(struct list_head *h)
 	return list_entry(h, struct kiocb, ki_list);
 }
 
+static inline bool is_kernel_kiocb(struct kiocb *kiocb)
+{
+	return kiocb->ki_key == KIOCB_KERNEL_KEY;
+}
+
 /* for sysctl: */
 extern unsigned long aio_nr;
 extern unsigned long aio_max_nr;
