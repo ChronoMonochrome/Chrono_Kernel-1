@@ -741,7 +741,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #ifdef CONFIG_PPP_FILTER
 	case PPPIOCSPASS:
 	{
-		struct sock_filter *code;
+		struct sock_filter *code = NULL;
 		err = get_filter(argp, &code);
 		if (err >= 0) {
 			ppp_lock(ppp);
@@ -755,7 +755,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 	case PPPIOCSACTIVE:
 	{
-		struct sock_filter *code;
+		struct sock_filter *code = NULL;
 		err = get_filter(argp, &code);
 		if (err >= 0) {
 			ppp_lock(ppp);
@@ -2177,7 +2177,7 @@ int ppp_register_net_channel(struct net *net, struct ppp_channel *chan)
 
 	pch->ppp = NULL;
 	pch->chan = chan;
-	pch->chan_net = get_net(net);
+	pch->chan_net = net;
 	chan->ppp = pch;
 	init_ppp_file(&pch->file, CHANNEL);
 	pch->file.hdrlen = chan->hdrlen;
@@ -2880,9 +2880,6 @@ ppp_disconnect_channel(struct channel *pch)
  */
 static void ppp_destroy_channel(struct channel *pch)
 {
-	put_net(pch->chan_net);
-	pch->chan_net = NULL;
-
 	atomic_dec(&channel_count);
 
 	if (!pch->file.dead) {
