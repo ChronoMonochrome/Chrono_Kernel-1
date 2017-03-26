@@ -22,6 +22,7 @@
 /* #define TOUCH_BOOSTER */
 #define TOUCH_S2W
 #define TOUCH_DT2W
+#define SCREENOFF_CPUFREQ_LIMITS
 #define DISABLE_TOUCHSCREEN_SPAM
 
 #include <linux/kernel.h>
@@ -49,15 +50,24 @@
 #include <linux/uaccess.h>
 #include <linux/input/mt.h>
 #include <linux/regulator/consumer.h>
+
 #ifdef TSP_FACTORY
 #include <linux/list.h>
 #endif
+
 #if defined(TOUCH_BOOSTER)
 #include <linux/mfd/dbx500-prcmu.h>
 #endif
+
 #if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
 #include <linux/ab8500-ponkey.h>
 #endif /* TOUCH_S2W or TOUCH_DT2W */
+
+#ifdef SCREENOFF_CPUFREQ_LIMITS
+#include <linux/cpufreq.h>
+#include <linux/cpu.h>
+#endif
+
 #include <linux/input/bt404_ts.h>
 #include "zinitix_touch_bt4x3_firmware.h"
 
@@ -409,6 +419,10 @@ static struct wake_lock t2w_wakelock;
 
 static bool is_suspend = false;
 static bool waking_up = false;
+
+bool bt404_is_suspend(void) {
+	return is_suspend;
+}
 
 static void bt404_ponkey_thread(struct work_struct *bt404_ponkey_work)
 {
@@ -4735,7 +4749,12 @@ static void bt404_ts_late_resume(struct early_suspend *h)
 #if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
 	is_suspend = false;
 #endif
-
+#ifdef SCREENOFF_CPUFREQ_LIMITS
+	int cpu;
+	for_each_online_cpu(cpu) {
+		cpufreq_update_policy(cpu);
+	}
+#endif
 	bt404_ts_resume(&data->client->dev);
 }
 
@@ -4745,6 +4764,12 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
 			container_of(h, struct bt404_ts_data, early_suspend);
 #if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
 	is_suspend = true;
+#endif
+#ifdef SCREENOFF_CPUFREQ_LIMITS
+	int cpu;
+	for_each_online_cpu(cpu) {
+		cpufreq_update_policy(cpu);
+	}
 #endif
 	bt404_ts_suspend(&data->client->dev);
 }

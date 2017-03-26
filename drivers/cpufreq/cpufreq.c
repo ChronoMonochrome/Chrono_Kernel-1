@@ -29,6 +29,8 @@
 #include <linux/completion.h>
 #include <linux/mutex.h>
 #include <linux/syscore_ops.h>
+#include <linux/kobject.h>
+#include <linux/sysfs.h>
 
 #include <trace/events/power.h>
 
@@ -44,6 +46,17 @@ static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
 static DEFINE_PER_CPU(char[CPUFREQ_NAME_LEN], cpufreq_cpu_governor);
 #endif
 static DEFINE_SPINLOCK(cpufreq_driver_lock);
+
+#define SCREENOFF_CPUFREQ_LIMITS
+#ifdef SCREENOFF_CPUFREQ_LIMITS
+/* ChronoMonochrome: screen off CPU frequency limits feature */
+extern bool bt404_is_suspend(void);
+static bool screenoff_cpu_freq_limits = false;
+static unsigned int screenoff_min_cpufreq = 0;
+static unsigned int screenoff_max_cpufreq = 0;
+static unsigned int screenoff_prev_min_cpufreq = 0;
+static unsigned int screenoff_prev_max_cpufreq = 0;
+#endif
 
 /*
  * cpu_policy_rwsem is a per CPU reader-writer semaphore designed to cure
@@ -1618,6 +1631,91 @@ int cpufreq_get_policy(struct cpufreq_policy *policy, unsigned int cpu)
 }
 EXPORT_SYMBOL(cpufreq_get_policy);
 
+#ifdef SCREENOFF_CPUFREQ_LIMITS
+void screenoff_cpufreq_limits_init(void)
+{
+	struct cpufreq_policy *data = cpufreq_cpu_get(0);
+	screenoff_min_cpufreq = data->min;
+	screenoff_max_cpufreq = data->max;
+	screenoff_prev_min_cpufreq = data->min;
+	screenoff_prev_max_cpufreq = data->max;
+	pr_err("[cpufreq] initialized screenoff cpufreq limits module with min %d and max %d MHz limits",
+					 screenoff_min_cpufreq / 1000,  screenoff_max_cpufreq / 1000
+	);
+}
+
+static int cpufreq_callback(struct notifier_block *nfb,
+		unsigned long event, void *data)
+{
+	if (screenoff_cpu_freq_limits) {
+		struct cpufreq_policy *policy = data;
+		int new_min = 0, new_max = 0;
+		bool is_suspend = bt404_is_suspend();
+
+		if (event != CPUFREQ_ADJUST)
+			return 0;
+		
+		screenoff_prev_min_cpufreq = policy->min;
+		screenoff_prev_max_cpufreq = policy->max;
+		new_min = is_suspend ? screenoff_min_cpufreq : screenoff_prev_min_cpufreq;
+		new_max = is_suspend ? screenoff_max_cpufreq : screenoff_prev_max_cpufreq;
+		
+		if (new_min > new_max) 
+			new_max = new_min;
+		
+		policy->min = new_min;
+		policy->max = new_max;
+	}
+	return 0;
+}
+
+static struct notifier_block cpufreq_notifier_block = 
+{
+	.notifier_call = cpufreq_callback,
+};
+
+static ssize_t screenoff_cpufreq_limits_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) 
+{
+	sprintf(buf, "status: %s\nmin = %d KHz\nmax = %d KHz\n", screenoff_cpu_freq_limits ? "on" : "off",
+		screenoff_min_cpufreq,
+		screenoff_max_cpufreq);
+
+	return strlen(buf);
+}
+
+static ssize_t screenoff_cpufreq_limits_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	if (!strncmp(buf, "on", 2)) {
+		screenoff_cpu_freq_limits = true;
+		return count;
+	}
+
+	if (!strncmp(buf, "off", 3)) {
+		screenoff_cpu_freq_limits = false;
+		return count;
+	}
+	
+	if (!strncmp(&buf[0], "min=", 4)) {
+		if (!sscanf(&buf[4], "%d", &screenoff_min_cpufreq))
+			goto invalid_input;
+	}
+
+	if (!strncmp(&buf[0], "max=", 4)) {
+		if (!sscanf(&buf[4], "%d", &screenoff_max_cpufreq))
+			goto invalid_input;
+	}
+
+	return count;
+
+invalid_input:
+	pr_err("[screenoff_cpufreq_limits] invalid input");
+	return -EINVAL;
+}
+
+static struct kobj_attribute screenoff_cpufreq_limits_interface = __ATTR(screenoff_cpufreq_limits, 0644,
+									   screenoff_cpufreq_limits_show,
+									   screenoff_cpufreq_limits_store);
+#endif /* SCREENOFF_CPUFREQ_LIMITS */
 
 /*
  * data   : current policy.
@@ -1802,6 +1900,20 @@ static struct notifier_block __refdata cpufreq_cpu_notifier = {
     .notifier_call = cpufreq_cpu_callback,
 };
 
+#ifdef SCREENOFF_CPUFREQ_LIMITS
+static struct attribute *cpufreq_attrs[] = {
+	&screenoff_cpufreq_limits_interface.attr,
+	NULL,
+};
+
+static struct attribute_group cpufreq_interface_group = {
+	 /* .name  = "governor", */ /* Not using subfolder now */
+	.attrs = cpufreq_attrs,
+};
+
+static struct kobject *cpufreq_kobject;
+#endif
+
 /*********************************************************************
  *               REGISTER / UNREGISTER CPUFREQ DRIVER                *
  *********************************************************************/
@@ -1865,6 +1977,20 @@ int cpufreq_register_driver(struct cpufreq_driver *driver_data)
 	register_hotcpu_notifier(&cpufreq_cpu_notifier);
 	pr_debug("driver %s up and running\n", driver_data->name);
 
+#ifdef SCREENOFF_CPUFREQ_LIMITS
+	cpufreq_kobject = kobject_create_and_add("cpufreq", kernel_kobj);
+	if (!cpufreq_kobject) {
+		pr_err("[cpufreq] Failed to create kobject interface\n");
+	}
+
+	ret = sysfs_create_group(cpufreq_kobject, &cpufreq_interface_group);
+	if (ret) {
+		kobject_put(cpufreq_kobject);
+	}
+	
+	screenoff_cpufreq_limits_init();
+	cpufreq_register_notifier(&cpufreq_notifier_block, CPUFREQ_POLICY_NOTIFIER);
+#endif
 	return 0;
 err_sysdev_unreg:
 	sysdev_driver_unregister(&cpu_sysdev_class,
