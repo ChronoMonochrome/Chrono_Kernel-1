@@ -381,7 +381,7 @@ int get_mali_workload(void)
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0220, NULL, _name##_store);
 
 #define ATTR_RW(_name)	\
-	static struct kobj_attribute _name##_interface = __ATTR(_name, 0644, _name##_show, _name##_store);
+	static struct kobj_attribute _name##_interface = __ATTR(_name, 0666, _name##_show, _name##_store);
 
 static ssize_t version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
