@@ -71,12 +71,6 @@ config MPU_SENSORS_BMA222
     help
       This enables support for the Bosch BMA222 accelerometer
       
-config MPU_SENSORS_BMA222E
-    bool "Bosch BMA222"
-    depends on MPU_SENSORS_MPU3050
-    help
-      This enables support for the Bosch BMA222 accelerometer
-      
 config MPU_SENSORS_KXSD9
     bool "Kionix KXSD9"
     depends on MPU_SENSORS_MPU3050

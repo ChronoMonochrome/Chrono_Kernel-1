@@ -1400,9 +1400,6 @@ static ssize_t mpu3050_acc_read(struct device *dev,
 
 	s8 x = 0, y = 0, z = 0;
 
-	struct mpu_private_data *mpu =
-		(struct mpu_private_data *) i2c_get_clientdata(this_client);
-	struct mldl_cfg *mldl_cfg = &mpu->mldl_cfg;
 	/*
 	   int retval = 0;
 
@@ -1893,10 +1890,8 @@ static struct i2c_driver mpu3050_driver = {
 	},
 	.address_list = normal_i2c,
 	.shutdown = mpu_shutdown,	/* optional */
-#if !defined(CONFIG_MPU_SENSORS_BMA222E)
 	.suspend = mpu_suspend,	/* optional */
 	.resume = mpu_resume,	/* optional */
-#endif
 
 #if 0
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(2, 6, 32)
