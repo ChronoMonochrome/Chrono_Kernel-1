@@ -57,7 +57,7 @@
 #define AB8500_VAPE_MAX_UV		1362500
 
 #define MALI_CLOCK_DEFLO		399360
-#define MALI_CLOCK_DEFHI		399360
+#define MALI_CLOCK_DEFHI		480000
 
 struct mali_dvfs_data
 {
@@ -67,12 +67,12 @@ struct mali_dvfs_data
 };
 
 static struct mali_dvfs_data mali_dvfs[] = {
-	{192000, 0x0101010A, 0x20},
-	{256000, 0x01030128, 0x20},
-	{299520, 0x0105014E, 0x20},
-	{320000, 0x01030132, 0x20},
-	{360000, 0x0105015E, 0x20},
-	{399360, 0x01050168, 0x20},
+	{192000, 0x0101010A, 0x26},
+	{256000, 0x01030128, 0x26},
+	{299520, 0x0105014E, 0x26},
+	{320000, 0x01030132, 0x26},
+	{360000, 0x0105015E, 0x26},
+	{399360, 0x01050168, 0x26},
 	{422400, 0x01010116, 0x26},
 	{441600, 0x0102012E, 0x26},
 	{460800, 0x01010118, 0x29},
@@ -88,11 +88,9 @@ static struct mali_dvfs_data mali_dvfs[] = {
 	{660480, 0x010501AC, 0x3F},
 	{679680, 0x010501B1, 0x3F},
 	{700800, 0x01040192, 0x3F},
-	{715200, 0x01040195, 0x3F},
+	{710400, 0x01010125, 0x3F},
 	{720000, 0x01040196, 0x3F},
 	{729600, 0x01010126, 0x3F},
-	{737280, 0x010501C0, 0x3F},
-	{752640, 0x010501C4, 0x3F},
 };
 
 int mali_utilization_high_to_low = MALI_HIGH_TO_LOW_LEVEL_UTILIZATION_LIMIT;
@@ -113,11 +111,11 @@ static struct workqueue_struct *mali_utilization_workqueue;
 static struct wake_lock wakelock;
 #endif
 
-static u32 boost_enable 	= 0;
+static u32 boost_enable 	= 1;
 static u32 boost_working 	= 0;
 static u32 boost_scheduled 	= 0;
 static u32 boost_required 	= 0;
-static u32 boost_delay 		= 1000;
+static u32 boost_delay 		= 500;
 static u32 boost_low 		= 0;
 static u32 boost_high 		= 0;
 static u32 boost_upthreshold 	= 233;
@@ -401,11 +399,6 @@ void mali_utilization_function(struct work_struct *ptr)
 
 }
 
-int get_mali_workload(void)
-{
-	return mali_last_utilization * sgaclk_freq() / 256; 
-}
-
 #define ATTR_RO(_name)	\
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0444, _name##_show, NULL);
 
@@ -413,7 +406,7 @@ int get_mali_workload(void)
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0220, NULL, _name##_store);
 
 #define ATTR_RW(_name)	\
-	static struct kobj_attribute _name##_interface = __ATTR(_name, 0666, _name##_show, _name##_store);
+	static struct kobj_attribute _name##_interface = __ATTR(_name, 0644, _name##_show, _name##_store);
 
 static ssize_t version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -516,11 +509,7 @@ ATTR_RW(mali_gpu_fullspeed);
 
 static ssize_t mali_gpu_load_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "load=%d (%d%%)\nworkload=%d\n", mali_last_utilization, 
-		mali_last_utilization * 100 / 256,
-		get_mali_workload());
-	
-	return strlen(buf);
+	return sprintf(buf, "%d (%d%%)\n", mali_last_utilization, mali_last_utilization * 100 / 256);
 }
 ATTR_RO(mali_gpu_load);
 
@@ -712,18 +701,6 @@ static ssize_t mali_dvfs_config_store(struct kobject *kobj, struct kobj_attribut
 
 	if (sscanf(buf, "%u pll=%x", &idx, &val) == 2) {
 		mali_dvfs[idx].clkpll = val;
-
-		return count;
-	}
-	
-	if (sscanf(buf, "%u vape-=%d", &idx, &val) == 2) {
-		mali_dvfs[idx].vape_raw -= val;
-
-		return count;
-	}
-	
-	if (sscanf(buf, "%u vape+=%d", &idx, &val) == 2) {
-		mali_dvfs[idx].vape_raw += val;
 
 		return count;
 	}
