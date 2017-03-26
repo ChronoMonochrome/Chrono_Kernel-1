@@ -110,16 +110,13 @@ static void ab8500_chargalg_early_suspend(struct early_suspend *h)
 static void ab8500_chargalg_late_resume(struct early_suspend *h)
 {
 	is_suspend = 0;
+
+	bln_disable_backlights(get_led_mask(), 0);
+	eoc_blink_ongoing = false;
 }
 
 static void eoc_wakeup_thread(struct work_struct *eoc_wakeup_work)
 {
-	pr_err("[abb-chargalg] [fn] EOC wakeup\n");
-
-	ab8500_ponkey_emulator(KEY_POWER, 1);
-	msleep(100);
-	ab8500_ponkey_emulator(KEY_POWER, 0);
-
 	eoc_noticed = 1;
 }
 static DECLARE_WORK(eoc_wakeup_work, eoc_wakeup_thread);
