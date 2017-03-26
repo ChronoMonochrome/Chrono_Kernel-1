@@ -162,7 +162,7 @@ static void __clk_unlock(struct clk *clk, void *last_lock, unsigned long flags)
 
 void __clk_disable(struct clk *clk, void *current_lock)
 {
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if (clk == NULL)
 		return;
@@ -184,7 +184,7 @@ void __clk_disable(struct clk *clk, void *current_lock)
 int __clk_enable(struct clk *clk, void *current_lock)
 {
 	int err;
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if (clk == NULL)
 		return 0;
@@ -226,7 +226,7 @@ bus_parent_error:
 unsigned long __clk_get_rate(struct clk *clk, void *current_lock)
 {
 	unsigned long rate;
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if (clk == NULL)
 		return 0;
@@ -293,7 +293,7 @@ EXPORT_SYMBOL(clk_get_rate);
 long clk_round_rate(struct clk *clk, unsigned long rate)
 {
 	long rounded_rate;
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if (clk == NULL)
 		return -EINVAL;
@@ -311,7 +311,7 @@ EXPORT_SYMBOL(clk_round_rate);
 long clk_round_rate_rec(struct clk *clk, unsigned long rate)
 {
 	long rounded_rate;
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if ((clk == NULL) || (clk->parent == NULL))
 		return -EINVAL;
@@ -327,7 +327,7 @@ long clk_round_rate_rec(struct clk *clk, unsigned long rate)
 
 static void lock_parent_rate(struct clk *clk)
 {
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if (clk->parent == NULL)
 		return;
@@ -342,7 +342,7 @@ static void lock_parent_rate(struct clk *clk)
 
 static void unlock_parent_rate(struct clk *clk)
 {
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if (clk->parent == NULL)
 		return;
@@ -358,7 +358,7 @@ static void unlock_parent_rate(struct clk *clk)
 int clk_set_rate(struct clk *clk, unsigned long rate)
 {
 	int err;
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if (clk == NULL)
 		return -EINVAL;
@@ -388,7 +388,7 @@ EXPORT_SYMBOL(clk_set_rate);
 int clk_set_rate_rec(struct clk *clk, unsigned long rate)
 {
 	int err;
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	if ((clk == NULL) || (clk->parent == NULL))
 		return -EINVAL;
@@ -414,7 +414,7 @@ unlock_and_return:
 int clk_set_parent(struct clk *clk, struct clk *parent)
 {
 	int err = 0;
-	unsigned long flags;
+	unsigned long flags=  0;
 	struct clk **p;
 
 	if ((clk == NULL) || (clk->parents == NULL))
