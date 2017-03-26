@@ -37,6 +37,10 @@
 struct device *dev;
 struct platform_device *pdev;
 
+/* DEBUG: device identified */
+
+int ab_version = 0;
+
 /* setting for suspend force (disabled by default) */
 static bool setting_suspend_force = true;
 
@@ -1691,6 +1695,12 @@ static int ab8500_regulator_status_print(struct seq_file *s, void *p)
 	err = seq_printf(s, "ab8500-regulator status:\n");
 	if (err < 0)
 		dev_err(dev, "seq_printf overflow\n");
+	
+	/* print regulator chip */
+	err = seq_printf(s, "chip :%i:\n", ab_version);
+	if (err < 0)
+		dev_err(dev, "seq_printf overflow\n");
+
 
 	/* print state */
 	for (i = 0; i < NUM_REGULATOR_STATE; i++) {
@@ -2223,11 +2233,13 @@ int __devinit ab8500_regulator_debug_init(struct platform_device *plf)
 		ab9540_registers_update();
 		ab9540_regulators_update();
 		ab8500_force_reg_update();
+		ab_version = 0x2;
 	} else if (is_ab8505(ab8500)) {
 		/* Update data structures for AB8505 */
 		ab8505_registers_update();
 		ab8505_regulators_update();
 		ab8500_force_reg_update();
+		ab_version = 0x1;
 	}
 	/* make suspend-force default if board profile is v5x-power */
 	boot_info_backupram = ioremap(BOOT_INFO_BACKUPRAM1, 0x4);
