@@ -319,6 +319,10 @@ static const struct battery_type bat_type[] = {
 		.nominal_voltage = 3820,
 		.termination_vol = 4340,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
+		/* 
+		 * Please find real termination_curr_1st and
+		 * termination_curr_2nd values in abb_chargalg.c
+		 */
 		.termination_curr_1st = 130,
 		.termination_curr_2nd = 120,
 		.recharge_vol = 4300,
