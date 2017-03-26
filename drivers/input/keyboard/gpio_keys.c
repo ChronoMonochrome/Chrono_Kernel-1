@@ -30,14 +30,6 @@
 #include <linux/kobject.h>
 #include <linux/ab8500-ponkey.h>
 #include <mach/board-sec-u8500.h>
-#ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
-#include <mach/sec_common.h>
-#include <mach/sec_param.h>
-
-struct timer_list debug_timer;
-struct gpio_keys_platform_data *g_pdata;
-extern int jack_is_detected;
-#endif
 
 extern struct class *sec_class;
 
@@ -432,24 +424,6 @@ static struct attribute_group sec_key_attr_group = {
 	.attrs = sec_key_attrs,
 };
 
-#ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
-bool gpio_keys_getstate(int keycode)
-{
-	switch (keycode) {
-	case KEY_VOLUMEUP:
-		return g_bVolUp;
-	case KEY_POWER:
-		return g_bPower;
-	case KEY_HOME:
-		return g_bHome;
-	default:
-		break;
-	}
-	return 0;
-}
-EXPORT_SYMBOL(gpio_keys_getstate);
-#endif //CONFIG_SAMSUNG_PRODUCT_SHIP
-
 void gpio_keys_setstate(int keycode, bool bState)
 {
 	switch (keycode) {
@@ -481,26 +455,6 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-	printk(KERN_DEBUG "[KEY] key: %s gpio_keys_report_event state = %d \n",
-		button->desc, state);
-
-	/* Forced Upload Mode checker */
-	bool bState = false;
-
-	bState = state ? true : false;
-
-	switch (button->code) {
-	case KEY_VOLUMEUP:
-		g_bVolUp = bState;
-		break;
-	case KEY_HOME:
-		g_bHome = bState;
-		break;
-	default:
-		break;
-	}
-#endif
 
 	if (button->gpio == VOL_UP_JANICE_R0_0) {
 		if (emulator_volup) {
@@ -797,11 +751,6 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	input_sync(input);
 
 	device_init_wakeup(&pdev->dev, wakeup);
-
-#if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-	/* Initialize for Forced Upload mode */
-	g_pdata = pdata;
-#endif
 
 	gpio_keys_kobject = kobject_create_and_add("gpio-keys", kernel_kobj);
 
