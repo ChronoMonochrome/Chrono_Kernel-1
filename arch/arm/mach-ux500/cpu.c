@@ -62,8 +62,10 @@ extern unsigned int unhandled_reset_count ;
 #endif /*CONFIG_SAMSUNG_KERNEL_DEBUG*/
 void ux500_restart(char mode, const char *cmd)
 {
+#if 0
 	unsigned short reset_code;
 	int i ;
+#endif
 	printk("ux500_restart: Call arch_reset(), mode: %c, cmd: %s\n", mode, cmd );
 
 #ifdef CONFIG_SAMSUNG_KERNEL_DEBUG
