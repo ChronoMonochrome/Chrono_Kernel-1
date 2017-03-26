@@ -69,6 +69,9 @@
 #include <mach/pm.h>
 #include <mach/reboot_reasons.h>
 
+#if defined(CONFIG_NFC_PN544)
+#include <linux/pn544.h>
+#endif
 
 #include <video/mcde_display.h>
 
@@ -308,7 +311,7 @@ struct regulator *gp2a_vio_reg;
 static int __init gp2a_setup( struct device * dev);
 static void gp2a_pwr(bool on);
 
-static struct gp2a_platform_data gp2a_plat_data = {
+static struct gp2a_platform_data gp2a_plat_data __initdata = {
 	.ps_vout_gpio = PS_VOUT_JANICE_R0_0,
 	.hw_setup = gp2a_setup,
 	.hw_pwr = gp2a_pwr,
@@ -390,7 +393,7 @@ static void gp2a_pwr(bool on)
 
 static int __init immvibe_setup( void );
 
-static struct isa1200_platform_data isa1200_plat_data = {
+static struct isa1200_platform_data isa1200_plat_data __refdata = {
 	.mot_hen_gpio = MOT_HEN_JANICE_R0_0,
 	.mot_len_gpio = MOT_LEN_JANICE_R0_0,
 	.mot_clk = NULL,
@@ -484,8 +487,7 @@ static void mxt224_power_con(bool on)
 		gpio_direction_output(TSP_LDO_ON1_JANICE_R0_0, 0);
 	}
 
-	printk(KERN_INFO "%s is finished.(%s)\n",
-						__func__, (on) ? "on" : "off");
+	printk(KERN_INFO "[TSP] GPIO output (%s)\n", (on) ? "on" : "off");
 }
 
 #ifdef CONFIG_USB_SWITCHER
@@ -572,19 +574,22 @@ static const u8 *mxt224_config[] = {
 /*
 	Configuration for MXT224-E
 */
-#define MXT224E_THRESHOLD_BATT		22
-#define MXT224E_THRESHOLD_CHRG		25
-#define MXT224E_CALCFG_BATT		0x72 //114
-#define MXT224E_CALCFG_CHRG		0x72 
+#define MXT224E_THRESHOLD_BATT			15	/* Default: 22 */
+#define MXT224E_THRESHOLD_CHRG			20	/* Default: 25 */
+#define MXT224E_CALCFG_BATT			0x72 	//114
+#define MXT224E_CALCFG_CHRG			0x72 
 #define MXT224E_ATCHFRCCALTHR_NORMAL		40
 #define MXT224E_ATCHFRCCALRATIO_NORMAL		55
 
+/* Power config settings */
 static u8 t7_config_e[] = {GEN_POWERCONFIG_T7,
 				48, 255, 25};
 
+/* Acquisition config */
 static u8 t8_config_e[] = {GEN_ACQUISITIONCONFIG_T8,
 				22, 0, 5, 1, 0, 0, 4, 35, MXT224E_ATCHFRCCALTHR_NORMAL, MXT224E_ATCHFRCCALRATIO_NORMAL};
 
+/* Multitouch screen config */
 #if defined(CONFIG_MACH_T1_CHN)
 static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
 				139, 0, 0, 19, 11, 0, 32, MXT224E_THRESHOLD_BATT, 2, 1, 10, 15, 1,
@@ -598,6 +603,7 @@ static u8 t9_config_e[] = {TOUCH_MULTITOUCHSCREEN_T9,
 				143, 80, 18, 15, 50, 50, 0};
 #endif
 
+/* Key array config */
 static u8 t15_config_e[] = {TOUCH_KEYARRAY_T15,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -627,6 +633,7 @@ static u8 t46_config_e[] = {SPT_CTECONFIG_T46,
 static u8 t47_config_e[] = {PROCI_STYLUS_T47,
 				0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
+/* Noise suppression config */
 static u8 t48_config_e[] = {PROCG_NOISESUPPRESSION_T48,
 				3, 132, MXT224E_CALCFG_BATT, 24, 0, 0, 0, 0, 1, 2, 0, 0, 0,
 				6,	6, 0, 0, 48, 4, 48, 10, 0, 100, 5, 0, 100, 0, 5,
@@ -876,12 +883,28 @@ static struct platform_device janice_gpio_i2c7_pdata = {
 	},
 };
 
+#if defined(CONFIG_NFC_PN544)
+static struct pn544_i2c_platform_data pn544_pdata __initdata = {
+	.irq_gpio = NFC_IRQ_JANICE_R0_0,
+	.ven_gpio = NFC_EN_JANICE_R0_0,
+	.firm_gpio = NFC_FIRM_JANICE_R0_0,
+};
+#endif
+
 static struct i2c_board_info __initdata janice_r0_0_gpio_i2c7_devices[] = {
-// TBD - NFC
-#if 0
+#if defined(CONFIG_NFC_PN544)
+	{
+		I2C_BOARD_INFO("pn544", 0x2b),
+		.irq = GPIO_TO_IRQ(NFC_IRQ_JANICE_R0_0),
+		.platform_data = &pn544_pdata,
+	},
+#else
+	// TBD - NFC
+	#if 0
 	{
 		I2C_BOARD_INFO("", 0x30),
 	},
+	#endif
 #endif
 };
 
@@ -1504,7 +1527,6 @@ static struct ab8500_gpio_platform_data ab8500_gpio_pdata = {
 	.config_pullups		= {0xE0, 0x1F, 0x00, 0x00, 0x80, 0x00},
 };
 
-
 static struct ab8500_sysctrl_platform_data ab8500_sysctrl_pdata = {
 	/*
 	 * SysClkReq1RfClkBuf - SysClkReq8RfClkBuf
@@ -1600,26 +1622,26 @@ static void sec_jack_mach_init(struct platform_device *pdev)
 	/* initialise threshold for ACCDETECT1 comparator
 	 * and the debounce for all ACCDETECT comparators */
 	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_ECI_AV_ACC,
-						0x80, 0x31);
+		0x80, 0x31);
 	if (ret < 0)
-		pr_err("%s: ab8500 write failed\n", __func__);
+		pr_err("%s: ab8500 write failed\n",__func__);
 
 	/* initialise threshold for ACCDETECT2 comparator1 and comparator2 */
 	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_ECI_AV_ACC,
-						0x81, 0xB3);
+		0x81, 0xB3);
 	if (ret < 0)
-		pr_err("%s: ab8500 write failed\n", __func__);
+		pr_err("%s: ab8500 write failed\n",__func__);
 
 	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_ECI_AV_ACC,
-						0x82, 0x33); //KSND
+		0x82, 0x33);
+
 	if (ret < 0)
-		pr_err("%s: ab8500 write failed\n", __func__);
+		pr_err("%s: ab8500 write failed\n",__func__);
 
 	/* set output polarity to Gnd when VAMIC1 is disabled */
-	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_REGU_CTRL1,
-						0x84, 0x1);
+	ret = abx500_set_register_interruptible(&pdev->dev, AB8500_REGU_CTRL1, 0x84, 0x1);
 	if (ret < 0)
-		pr_err("%s: ab8500 write failed\n", __func__);
+		pr_err("%s: ab8500 write failed\n",__func__);
 }
 
 int sec_jack_get_det_level(struct platform_device *pdev)
@@ -1627,11 +1649,8 @@ int sec_jack_get_det_level(struct platform_device *pdev)
 	u8 value = 0;
 	int ret = 0;
 
-	ret = abx500_get_register_interruptible(&pdev->dev, AB8500_INTERRUPT, 0x4,
+	abx500_get_register_interruptible(&pdev->dev, AB8500_INTERRUPT, 0x4,
 		&value);
-	if (ret < 0)
-		return ret;
-
 	ret = (value & 0x04) >> 2;
 	pr_info("%s: ret=%x\n", __func__, ret);
 
@@ -1650,10 +1669,7 @@ struct sec_jack_platform_data sec_jack_pdata = {
 	.det_f = "ACC_DETECT_1DB_F",
 	.buttons_r = "ACC_DETECT_21DB_R",
 	.buttons_f = "ACC_DETECT_21DB_F",
-	.regulator_mic_source = "v-amic1",
-#ifdef CONFIG_SAMSUNG_JACK_SW_WATERPROOF
-	.ear_reselector_zone    = 1650,
-#endif
+	.regulator_mic_source = "v-amic1"
 };
 #endif
 
@@ -2203,5 +2219,4 @@ MACHINE_START(JANICE, "SAMSUNG JANICE")
 	.timer		= &ux500_timer,
 	.init_machine	= janice_init_machine,
 	.restart	= ux500_restart,
-MACHINE_END
-
+MACHINE_END 
