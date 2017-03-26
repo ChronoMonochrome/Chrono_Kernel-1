@@ -31,6 +31,7 @@
 #include <linux/gpio.h>
 #include <linux/earlysuspend.h>
 #include <video/ktd259x_bl.h>
+#include <linux/moduleparam.h>
 
 /* to be removed when driver works */
 //#define dev_dbg dev_info
