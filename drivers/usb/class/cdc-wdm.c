@@ -823,7 +823,7 @@ static int wdm_suspend(struct usb_interface *intf, pm_message_t message)
 	}
 	spin_lock_irq(&desc->iuspin);
 
-	if ((message.event & PM_EVENT_AUTO) &&
+	if (PMSG_IS_AUTO(message) &&
 			(test_bit(WDM_IN_USE, &desc->flags)
 			|| test_bit(WDM_RESPONDING, &desc->flags))) {
 		spin_unlock_irq(&desc->iuspin);
