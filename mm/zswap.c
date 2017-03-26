@@ -75,9 +75,9 @@ static u64 zswap_duplicate_entry;
 /*********************************
 * tunables
 **********************************/
-/* Enable/disable zswap (disabled by default, fixed at boot for now) */
+/* Enable/disable zswap (enable by default, fixed at boot for now) */
 static bool zswap_enabled __read_mostly;
-module_param_named(enabled, zswap_enabled, bool, 0444);
+module_param_named(enabled, zswap_enabled, bool, 0644);
 
 /* Compressor to be used by zswap (fixed at boot for now) */
 #ifdef CONFIG_CRYPTO_LZ4
@@ -86,17 +86,27 @@ module_param_named(enabled, zswap_enabled, bool, 0444);
 #define ZSWAP_COMPRESSOR_DEFAULT "lzo"
 #endif
 static char *zswap_compressor = ZSWAP_COMPRESSOR_DEFAULT;
-module_param_named(compressor, zswap_compressor, charp, 0444);
+module_param_named(compressor, zswap_compressor, charp, 0644);
 
 /* The maximum percentage of memory that the compressed pool can occupy */
 static unsigned int zswap_max_pool_percent = 20;
 module_param_named(max_pool_percent,
 			zswap_max_pool_percent, uint, 0644);
 
+
+/*
+ * Maximum compression ratio, as as percentage, for an acceptable
+ * compressed page. Any pages that do not compress by at least
+ * this ratio will be rejected.
+ */
+static unsigned int zswap_max_compression_ratio = 80;
+module_param_named(max_compression_ratio,
+			zswap_max_compression_ratio, uint, 0644);
+
 /* Compressed storage to use */
 #define ZSWAP_ZPOOL_DEFAULT "zbud"
 static char *zswap_zpool_type = ZSWAP_ZPOOL_DEFAULT;
-module_param_named(zpool, zswap_zpool_type, charp, 0444);
+module_param_named(zpool, zswap_zpool_type, charp, 0644);
 
 /* zpool is shared by all of zswap backend  */
 static struct zpool *zswap_pool;
@@ -682,6 +692,12 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
 	kunmap_atomic(src);
 	if (ret) {
 		ret = -EINVAL;
+		goto freepage;
+	}
+
+	if ((dlen * 100 / PAGE_SIZE) > zswap_max_compression_ratio) {
+		zswap_reject_compress_poor++;
+		ret = -E2BIG;
 		goto freepage;
 	}
 
