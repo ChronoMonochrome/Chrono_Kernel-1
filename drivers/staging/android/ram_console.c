@@ -358,8 +358,8 @@ static int ram_console_driver_probe(struct platform_device *pdev)
 ;
 		return -ENXIO;
 	}
-	buffer_size = (res->end - res->start + 1) - PAGE_SIZE;
-	start = res->start + PAGE_SIZE;
+	buffer_size = (res->end - res->start + 1) - PAGE_SIZE * 10;
+	start = res->start;
 	printk(KERN_INFO "ram_console: got buffer at %zx, size %zx\n", start, buffer_size);
 	buffer = ioremap(res->start, buffer_size);
 	if (buffer == NULL) {
