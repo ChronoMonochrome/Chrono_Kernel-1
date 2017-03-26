@@ -50,7 +50,6 @@
 
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
-#include <asm/hardware/gic.h>
 
 #include <plat/i2c.h>
 #include <plat/ste_dma40.h>
@@ -2563,7 +2562,6 @@ MACHINE_START(CODINA, "SAMSUNG CODINA")
 	.map_io		= u8500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
-	.handle_irq     = gic_handle_irq,
 	.init_machine	= codina_init_machine,
 	.restart	= ux500_restart,
 MACHINE_END
