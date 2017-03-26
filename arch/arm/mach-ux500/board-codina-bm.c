@@ -409,11 +409,11 @@ static const struct battery_type bat_type[] = {
 		.nominal_voltage = 3820,
 		.termination_vol = 4340,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
-		.termination_curr_1st = 70,
-		.termination_curr_2nd = 50,
+		.termination_curr_1st = 150,
+		.termination_curr_2nd = 150,
 		.recharge_vol = 4300,
 #else
-		.termination_curr = 50,
+		.termination_curr = 150,
 #endif
 		.normal_cur_lvl = 400,
 		.normal_vol_lvl = 4340,
@@ -447,7 +447,7 @@ static const struct battery_type bat_type[] = {
 		.subsequent_timeout_time = HZ*60*90,
 			/* After an error stop charging for a minute. */
 		.error_charge_stoptime = HZ*60,
-		.over_voltage_threshold =  4500 ,
+		.over_voltage_threshold =  4400 ,
 #else
 		.n_batres_tbl_elements = ARRAY_SIZE(temp_to_batres_tbl),
 		.batres_tbl = temp_to_batres_tbl,
@@ -478,11 +478,11 @@ static const struct battery_type bat_type[] = {
 		.nominal_voltage = 3820,
 		.termination_vol =  4340,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
-		.termination_curr_1st = 70,	/* 100 */
-		.termination_curr_2nd = 50,	/* 100 */
+		.termination_curr_1st = 150,	/* 100 */
+		.termination_curr_2nd = 150,	/* 100 */
 		.recharge_vol = 4300,		/* 4130 */
 #else
-		.termination_curr = 50,	/* 200 */
+		.termination_curr = 150,	/* 200 */
 #endif
 		.normal_cur_lvl = 900,		/* was 700 */
 		.normal_vol_lvl = 4340,		/* 4210 */
@@ -516,7 +516,7 @@ static const struct battery_type bat_type[] = {
 		.subsequent_timeout_time = HZ*60*90,
 			/* After an error stop charging for a minute. */
 		.error_charge_stoptime = HZ*60,
-		.over_voltage_threshold =  4500 ,
+		.over_voltage_threshold =  4400 ,
 #else
 		.n_batres_tbl_elements = ARRAY_SIZE(temp_to_batres_tbl),
 		.batres_tbl = temp_to_batres_tbl,
@@ -601,7 +601,7 @@ static const struct ab8500_maxim_parameters maxi_params = {
 
 static const struct ab8500_bm_charger_parameters chg = {
 	.usb_volt_max		= 5500,
-	.usb_curr_max		= 400,
+	.usb_curr_max		= 500,
 	/* When power supply set as 7000mV (OVP SPEC above 6.8V)
 	   SET read it as .ac_volt_max.
 	   After charging is disabled, SET read the voltage
@@ -612,7 +612,7 @@ static const struct ab8500_bm_charger_parameters chg = {
 	   and ac voltage when discharging.
 	*/
 	.ac_volt_max		= 6650,
-	.ac_curr_max		= 600,
+	.ac_curr_max		= 900,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
 	.ac_volt_max_recovery	= 6800,
 	.usb_volt_max_recovery	= 5700,
@@ -628,11 +628,11 @@ struct ab8500_bm_data ab8500_bm_data = {
 	.temp_interval_chg	= 20,
 	.temp_interval_nochg	= 120,
 #if defined( CONFIG_USB_SWITCHER ) || defined( CONFIG_INPUT_AB8505_MICRO_USB_DETECT )
-	.ta_chg_current		= 500,
-	.ta_chg_current_input	= 600,
+	.ta_chg_current		= 600,
+	.ta_chg_current_input	= 900,
 	.ta_chg_voltage		= 4340,
 	.usb_chg_current	= 300,
-	.usb_chg_current_input	= 400,
+	.usb_chg_current_input	= 500,
 	.usb_chg_voltage	= 4340,
 #endif
 	.main_safety_tmr_h	= 4,
