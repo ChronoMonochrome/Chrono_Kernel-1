@@ -1,5 +1,4 @@
 
-
 /*
  *
  * Zinitix bt404 touchscreen driver
@@ -21,7 +20,7 @@
 /* #define TSP_VERBOSE_DEBUG */
 #define TSP_FACTORY
 
-#define TOUCH_BOOSTER
+/* #define TOUCH_BOOSTER */
 #define TOUCH_S2W
 
 #include <linux/kernel.h>
