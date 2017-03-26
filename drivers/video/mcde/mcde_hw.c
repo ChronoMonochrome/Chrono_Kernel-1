@@ -1174,6 +1174,126 @@ static int wait_for_vsync(struct mcde_chnl_state *chnl)
 	}
 }
 
+/* PRCMU LCDCLK */
+/* 60+++	79872000 unsafe
+ * 60++ 	62400000 unsafe
+ * 60+  	57051428 unsafe
+ * 60   	49920000
+ * 50   	39936000
+ * 45   	36305454
+ * 40   	33280000
+ */
+#include <linux/kobject.h>
+#include <linux/mfd/dbx500-prcmu.h>
+#include <linux/mfd/db8500-prcmu.h>
+
+#define LCDCLK_SET(clk) prcmu_set_clock_rate(PRCMU_LCDCLK, (unsigned long) clk);
+
+struct lcdclk_prop
+{
+	char *name;
+	unsigned int clk;
+};
+
+static struct lcdclk_prop lcdclk_prop[] = {
+  	[0] = {
+		.name = "60++ Hz",
+		.clk = 62400000,
+	},
+  	[1] = {
+		.name = "60+ Hz",
+		.clk = 57051428,
+	},
+	[2] = {
+		.name = "60 Hz",
+		.clk = 49920000,
+	},
+	[3] = {
+		.name = "50 Hz",
+		.clk = 39936000,
+	},
+	[4] = {
+		.name = "45 Hz",
+		.clk = 36305454,
+	},
+	[5] = {
+		.name = "40 Hz",
+		.clk = 33280000,
+	},
+};
+
+static unsigned int lcdclk_usr = 1; /* 60+ fps */
+
+static void lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
+{
+	msleep(200);
+
+	pr_err("[MCDE] LCDCLK %dHz\n", lcdclk_prop[lcdclk_usr].clk);
+
+	LCDCLK_SET(lcdclk_prop[lcdclk_usr].clk);
+}
+static DECLARE_WORK(lcdclk_work, lcdclk_thread);
+
+#define ATTR_RO(_name)	\
+	static struct kobj_attribute _name##_interface = __ATTR(_name, 0444, _name##_show, NULL);
+
+#define ATTR_WO(_name)	\
+	static struct kobj_attribute _name##_interface = __ATTR(_name, 0220, NULL, _name##_store);
+
+#define ATTR_RW(_name)	\
+	static struct kobj_attribute _name##_interface = __ATTR(_name, 0644, _name##_show, _name##_store);
+
+static ssize_t mcde_lcdclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	int i;
+	bool matched;
+
+	sprintf(buf, "%sCurrent: %s\n\n", buf, lcdclk_prop[lcdclk_usr].name);
+
+	for (i = 0; i < ARRAY_SIZE(lcdclk_prop); i++) {
+		if (i == lcdclk_usr)
+			matched = true;
+		else
+			matched = false;
+
+		sprintf(buf, "%s[%d][%s] %s\n", buf, i, matched ? "*" : " ", lcdclk_prop[i].name);
+	}
+	
+	sprintf(buf, "%sReal LCDCLK freq: %d\n", buf, (int) prcmu_clock_rate(PRCMU_LCDCLK));
+
+	return strlen(buf);
+}
+
+static ssize_t mcde_lcdclk_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, tmp;
+
+	ret = sscanf(buf, "%d", &tmp);
+	if (!ret || (tmp < 0) || (tmp > 5)) {
+		  pr_err("[MCDE] Bad cmd\n");
+		  return -EINVAL;
+	}
+
+	lcdclk_usr = tmp;
+
+	schedule_work(&lcdclk_work);
+
+	return count;
+}
+ATTR_RW(mcde_lcdclk);
+
+static struct attribute *mcde_attrs[] = {
+ 
+	&mcde_lcdclk_interface.attr, 
+	NULL,
+};
+
+static struct attribute_group mcde_interface_group = {
+	 /* .name  = "governor", */ /* Not using subfolder now */
+	.attrs = mcde_attrs,
+};
+
+static struct kobject *mcde_kobject;
 
 static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 {
@@ -1265,12 +1385,20 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 	}
 
 	if (port->type == MCDE_PORTTYPE_DPI) {
-		if (port->phy.dpi.lcd_freq != clk_round_rate(chnl->clk_dpi,
+
+		if (lcdclk_usr !=0) {
+			pr_err("[MCDE] Rebasing LCDCLK...\n");
+			schedule_work(&lcdclk_work);
+		} else {
+			if (port->phy.dpi.lcd_freq != clk_round_rate(chnl->clk_dpi,
 							port->phy.dpi.lcd_freq))
 			dev_warn(&mcde_dev->dev, "Could not set lcd freq"
 					" to %d\n", port->phy.dpi.lcd_freq);
-		WARN_ON_ONCE(clk_set_rate(chnl->clk_dpi,
+					
+			WARN_ON_ONCE(clk_set_rate(chnl->clk_dpi,
 						port->phy.dpi.lcd_freq));
+		}
+		
 		WARN_ON_ONCE(clk_enable(chnl->clk_dpi));
 	}
 
@@ -4324,12 +4452,28 @@ static struct platform_driver mcde_driver = {
 
 int __init mcde_init(void)
 {
+	int ret = 0;
+  
 	mutex_init(&mcde_hw_lock);
+	
+	mcde_kobject = kobject_create_and_add("mcde", kernel_kobj);
+	if (!mcde_kobject) {
+		pr_err("[MCDE] Failed to create kobject interface\n");
+		goto out;
+	}
+	
+	ret = sysfs_create_group(mcde_kobject, &mcde_interface_group);
+	if (ret) {
+		kobject_put(mcde_kobject);
+	}
+	
+out:
 	return platform_driver_register(&mcde_driver);
 }
 
 void mcde_exit(void)
 {
 	/* REVIEW: shutdown MCDE? */
+	kobject_put(mcde_kobject);
 	platform_driver_unregister(&mcde_driver);
 }
