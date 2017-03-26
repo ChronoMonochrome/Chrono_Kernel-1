@@ -33,5 +33,6 @@ struct bln_implementation {
 };
 
 void register_bln_implementation(struct bln_implementation *imp);
+void register_bln_implementation_flash(struct bln_implementation *imp);
 bool bln_is_ongoing(void);
 #endif

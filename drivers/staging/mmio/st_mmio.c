@@ -23,6 +23,8 @@
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/mmio.h>
 #include <linux/ratelimit.h>
+#include <linux/leds.h>
+#include <linux/bln.h>
 
 #include <mach/board-sec-u8500.h> // Include STE Board Revision
 #include "st_mmio.h"
@@ -2388,6 +2390,37 @@ static struct led_classdev st_mmio_led_classdev = {
 	.brightness_get = st_mmio_led_get_brightness,
 };
 
+static int st_mmio_bln_enable(int led_mask)
+{
+	st_mmio_led_set_brightness(&st_mmio_led_classdev, LED_FULL);
+	return 0;
+}
+
+static int st_mmio_bln_disable(int led_mask)
+{
+	st_mmio_led_set_brightness(&st_mmio_led_classdev, LED_OFF);
+	return 0;
+}
+
+static int st_mmio_bln_power_on(void)
+{
+	return 0;
+}
+
+static int st_mmio_bln_power_off(void)
+{
+	return 0;
+}
+
+
+static struct bln_implementation st_mmio_bln = {
+	.enable    = st_mmio_bln_enable,
+	.disable   = st_mmio_bln_disable,
+	.power_on  = st_mmio_bln_power_on,
+	.power_off = st_mmio_bln_power_off,
+	.led_count = 1
+};
+
 static ssize_t rear_vendor_id_store(struct device *dev, struct device_attribute *attr, char *buf)
 {
     return sprintf(buf, "0x%04x\n", (short)vendorID); // Write camera vendor ID (Ex: 0x0201)
@@ -2527,7 +2560,15 @@ static int __devinit mmio_probe(struct platform_device *pdev)
 	}
 	
 	/* Register flash leds class */
-	led_classdev_register(flash_dev, &st_mmio_led_classdev);
+	/*
+	 * Had trouble with getting bln to work with the torch when
+	 * going through the leds class so, just went directly to
+	 * bln.
+	 */
+	//led_classdev_register(flash_dev, &st_mmio_led_classdev);
+
+	/* Register flash BLN */
+	register_bln_implementation_flash(&st_mmio_bln);
 
 	/* Memory mapping */
 	info->siabase = ioremap(info->pdata->sia_base, SIA_ISP_MCU_SYS_SIZE);
