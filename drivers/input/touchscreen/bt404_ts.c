@@ -19,7 +19,7 @@
 /* #define TSP_VERBOSE_DEBUG */
 #define TSP_FACTORY
 
-#define TOUCH_BOOSTER
+/* #define TOUCH_BOOSTER */
 #define TOUCH_S2W
 #define TOUCH_DT2W
 #define DISABLE_TOUCHSCREEN_SPAM
@@ -236,15 +236,6 @@ static int m_ts_debug_mode = BT404_DEBUG;
 #define TSP_CMD_X_NUM		18 /* touch key channel is excluded */
 #define TSP_CMD_Y_NUM		10
 #define TSP_CMD_NODE_NUM	180 /* 18x10 */
-#endif
-
-#ifdef TOUCH_BOOSTER
-int bt404_ape_boost = 0, bt404_ddr_boost = 0, 
-	bt404_ape_opp = 100, bt404_ddr_opp = 50;
-module_param(bt404_ape_boost, uint, 0644);
-module_param(bt404_ddr_boost, uint, 0644);
-module_param(bt404_ape_opp, uint, 0644);
-module_param(bt404_ddr_opp, uint, 0644);
 #endif
 
 enum power_control {
@@ -1568,16 +1559,14 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 			PRCMU_QOS_APE_OPP,
 			(char *)data->client->name,
 			PRCMU_QOS_DEFAULT_VALUE);
-		
 		prcmu_qos_update_requirement(
 			PRCMU_QOS_DDR_OPP,
 			(char *)data->client->name,
 			PRCMU_QOS_DEFAULT_VALUE);
-		
-		/*prcmu_qos_update_requirement(
+		prcmu_qos_update_requirement(
 			PRCMU_QOS_ARM_KHZ,
 			(char *)data->client->name,
-			PRCMU_QOS_DEFAULT_VALUE);*/
+			PRCMU_QOS_DEFAULT_VALUE);
 #endif
 		return;
 	}
@@ -1653,10 +1642,10 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 					PRCMU_QOS_DDR_OPP,
 					(char *)data->client->name,
 					PRCMU_QOS_DEFAULT_VALUE);
-				/*prcmu_qos_update_requirement(
+				prcmu_qos_update_requirement(
 					PRCMU_QOS_ARM_KHZ,
 					(char *)data->client->name,
-					PRCMU_QOS_DEFAULT_VALUE);*/
+					PRCMU_QOS_DEFAULT_VALUE);
 			}
 #endif
 			continue;
@@ -1671,23 +1660,18 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 			if (cur_down) {
 #if defined(TOUCH_BOOSTER)
 				if (!data->finger_cnt) {
-					if (bt404_ape_boost) {
-						prcmu_qos_update_requirement(
-							PRCMU_QOS_APE_OPP,
-							(char *)data->client->name,
-							bt404_ape_opp);
-					}
-		
-					if (bt404_ddr_boost) {
-						prcmu_qos_update_requirement(
-							PRCMU_QOS_DDR_OPP,
-							(char *)data->client->name,
-							bt404_ddr_opp);
-					}
-					/*prcmu_qos_update_requirement(
+					prcmu_qos_update_requirement(
+						PRCMU_QOS_APE_OPP,
+						(char *)data->client->name,
+						PRCMU_QOS_APE_OPP_MAX);
+					prcmu_qos_update_requirement(
+						PRCMU_QOS_DDR_OPP,
+						(char *)data->client->name,
+						PRCMU_QOS_DDR_OPP_MAX);
+					prcmu_qos_update_requirement(
 						PRCMU_QOS_ARM_KHZ,
 						(char *)data->client->name,
-						800000);*/
+						800000);
 				}
 
 				data->finger_cnt++;
@@ -4341,8 +4325,8 @@ static int bt404_ts_probe(struct i2c_client *client,
 				  PRCMU_QOS_DEFAULT_VALUE);
 	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, (char *)client->name,
 				  PRCMU_QOS_DEFAULT_VALUE);
-	/*prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name,
-				  PRCMU_QOS_DEFAULT_VALUE);*/
+	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name,
+				  PRCMU_QOS_DEFAULT_VALUE);
 	dev_info(&client->dev, "add_prcmu_qos is added\n");
 #endif
 
@@ -4450,7 +4434,7 @@ err_request_irq:
 #if defined(TOUCH_BOOSTER)
 	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, (char *)client->name);
 	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP, (char *)client->name);
-	/*prcmu_qos_remove_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name);*/
+	prcmu_qos_remove_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name);
 #endif
 	if (data->pdata->power_con == LDO_CON)
 		gpio_set_value(pdata->gpio_ldo_en, 0);
@@ -4510,7 +4494,7 @@ static int bt404_ts_remove(struct i2c_client *client)
 #if defined(TOUCH_BOOSTER)
 	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, (char *)client->name);
 	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP, (char *)client->name);
-	/*prcmu_qos_remove_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name);*/
+	prcmu_qos_remove_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name);
 #endif
 
 #if USE_TEST_RAW_TH_DATA_MODE
