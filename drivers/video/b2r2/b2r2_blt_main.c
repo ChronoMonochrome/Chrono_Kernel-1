@@ -51,6 +51,7 @@
 
 #define B2R2_HEAP_SIZE (4 * PAGE_SIZE)
 #define MAX_TMP_BUF_SIZE (128 * PAGE_SIZE)
+#define CHARS_IN_REQ (2048)
 
 /*
  * TODO:
@@ -673,7 +674,14 @@ int b2r2_control_blt(struct b2r2_blt_request *request)
 
 #ifdef CONFIG_DEBUG_FS
 	/* Remember latest request for debugfs */
-	cont->debugfs_latest_request = *request;
+	mutex_lock(&cont->last_req_lock);
+	cont->latest_request[cont->buf_index] = *request;
+
+	/* Calculate, buf_index = (buf_index + 1) % last_request_count */
+	cont->buf_index++;
+	if (cont->buf_index >= cont->last_request_count)
+		cont->buf_index = 0;
+	mutex_unlock(&cont->last_req_lock);
 #endif
 
 	/* Submit the job */
@@ -1537,7 +1545,14 @@ int b2r2_generic_blt(struct b2r2_blt_request *request)
 
 #ifdef CONFIG_DEBUG_FS
 	/* Remember latest request */
-	cont->debugfs_latest_request = *request;
+	mutex_lock(&cont->last_req_lock);
+	cont->latest_request[cont->buf_index] = *request;
+
+	/* Calculate, buf_index = (buf_index + 1) % last_request_count */
+	cont->buf_index++;
+	if (cont->buf_index >= cont->last_request_count)
+		cont->buf_index = 0;
+	mutex_unlock(&cont->last_req_lock);
 #endif
 
 	/*
@@ -2056,8 +2071,7 @@ static int resolve_hwmem(struct b2r2_control *cont,
 		goto access_check_failed;
 	}
 
-	if (!(mem_type == HWMEM_MEM_CONTIGUOUS_SYS ||
-			mem_type == HWMEM_MEM_PROTECTED_SYS)) {
+	if (mem_type == HWMEM_MEM_SCATTERED_SYS) {
 		b2r2_log_info(cont->dev, "%s: Hwmem buffer is scattered.\n",
 			__func__);
 		return_value = -EINVAL;
@@ -2503,7 +2517,8 @@ static void dec_stat(struct b2r2_control *cont, unsigned long *stat)
 
 #ifdef CONFIG_DEBUG_FS
 /**
- * debugfs_b2r2_blt_request_read() - Implements debugfs read for B2R2 register
+ * debugfs_b2r2_blt_request_read() - Implements debugfs read for B2R2
+ * previous blits. Number of previous blits set using last_request_count.
  *
  * @filp: File pointer
  * @buf: User space buffer
@@ -2516,17 +2531,52 @@ static int debugfs_b2r2_blt_request_read(struct file *filp, char __user *buf,
 			size_t count, loff_t *f_pos)
 {
 	size_t dev_size = 0;
-	int ret = 0;
-	char *Buf = kmalloc(sizeof(char) * 4096, GFP_KERNEL);
+	size_t max_size = 0;
+	int i = 0, index = 0, ret = 0;
+	unsigned int last_request_count = 0;
+	char *req_buf = NULL;
+	char tmpbuf[9];
+
 	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
 
-	if (Buf == NULL) {
+	mutex_lock(&cont->last_req_lock);
+	last_request_count = cont->last_request_count;
+
+	/* Buffer size for one blit is below 2048 */
+	max_size = sizeof(char) * last_request_count * CHARS_IN_REQ;
+	req_buf = kmalloc(max_size, GFP_KERNEL);
+
+	if (req_buf == NULL) {
 		ret = -ENOMEM;
 		goto out;
 	}
 
-	dev_size = sprintf_req(&cont->debugfs_latest_request, Buf,
-		sizeof(char) * 4096);
+	/* buf_index is location to store next request */
+	index = cont->buf_index;
+
+	for (i = last_request_count; i > 0; i--) {
+		if (--index < 0)
+			index = last_request_count - 1;
+
+		if (i == last_request_count)
+			snprintf(tmpbuf, sizeof(tmpbuf), "(latest)");
+		else if (i == 1)
+			snprintf(tmpbuf, sizeof(tmpbuf), "(oldest)");
+		else
+			tmpbuf[0] = '\0';
+
+		dev_size += snprintf(req_buf + dev_size,
+			max_size - dev_size,
+			"Details of blit request [%d]%s\n",
+			last_request_count - i, tmpbuf);
+
+		if (dev_size > max_size)
+			goto out;
+
+		dev_size += sprintf_req(&cont->latest_request[index],
+			req_buf + dev_size,
+			max_size - dev_size);
+	}
 
 	/* No more to read if offset != 0 */
 	if (*f_pos > dev_size)
@@ -2535,14 +2585,16 @@ static int debugfs_b2r2_blt_request_read(struct file *filp, char __user *buf,
 	if (*f_pos + count > dev_size)
 		count = dev_size - *f_pos;
 
-	if (copy_to_user(buf, Buf, count))
+	if (copy_to_user(buf, &req_buf[*f_pos], count))
 		ret = -EINVAL;
+
 	*f_pos += count;
 	ret = count;
 
 out:
-	if (Buf != NULL)
-		kfree(Buf);
+	mutex_unlock(&cont->last_req_lock);
+	if (req_buf != NULL)
+		kfree(req_buf);
 	return ret;
 }
 
@@ -2552,6 +2604,105 @@ out:
 static const struct file_operations debugfs_b2r2_blt_request_fops = {
 	.owner = THIS_MODULE,
 	.read  = debugfs_b2r2_blt_request_read,
+};
+
+/**
+ * debugfs_b2r2_req_count_read() - Implements debugfs read for
+ *                             previous request count
+ * @filp: File pointer
+ * @buf: User space buffer
+ * @count: Number of bytes to read
+ * @f_pos: File position
+ *
+ * Returns number of bytes read or negative error code
+ */
+static int debugfs_b2r2_req_count_read(struct file *filp, char __user *buf,
+				   size_t count, loff_t *f_pos)
+{
+	/* 2 characters hex number + newline + string terminator; */
+	char tmpbuf[2+2];
+	size_t dev_size = 0;
+	int ret = 0;
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
+
+	dev_size = snprintf(tmpbuf, sizeof(tmpbuf),
+		"%02X\n", cont->last_request_count);
+	/* No more to read if offset != 0 */
+	if (*f_pos > dev_size)
+		return ret;
+
+	if (*f_pos + count > dev_size)
+		count = dev_size - *f_pos;
+
+	if (copy_to_user(buf, &tmpbuf[*f_pos], count))
+		return -EINVAL;
+	*f_pos += count;
+	ret = count;
+
+	return ret;
+}
+
+/**
+ * debugfs_b2r2_last_count_write() - Implements debugfs write for
+ *                              previous request count
+ * @filp: File pointer
+ * @buf: User space buffer
+ * @count: Number of bytes to write
+ * @f_pos: File position
+ *
+ * Returns number of bytes written or negative error code
+ */
+static int debugfs_b2r2_req_count_write(struct file *filp,
+			const char __user *buf, size_t count, loff_t *f_pos)
+{
+	char tmpbuf[80];
+	unsigned int req_count = 0;
+	int ret = 0;
+	struct b2r2_control *cont = filp->f_dentry->d_inode->i_private;
+
+	if (count >= sizeof(tmpbuf))
+		count = sizeof(tmpbuf) - 1;
+	if (copy_from_user(tmpbuf, buf, count))
+		return -EINVAL;
+
+	tmpbuf[count] = 0;
+	if (sscanf(tmpbuf, "%02X", &req_count) != 1)
+		return -EINVAL;
+
+	mutex_lock(&cont->last_req_lock);
+	/* Reset buf_index and request array */
+	cont->buf_index = 0;
+	memset(cont->latest_request, 0,
+		sizeof(cont->latest_request));
+
+	/* Make req_count in [1-MAX_LAST_REQUEST] range */
+	if (req_count < 1) {
+		b2r2_log_warn(cont->dev,
+			"%s: last_request_count is less than MIN\n", __func__);
+		req_count = 1;
+	}
+	if (req_count > MAX_LAST_REQUEST) {
+		b2r2_log_warn(cont->dev,
+			"%s: last_request_count is more than MAX\n", __func__);
+		req_count = MAX_LAST_REQUEST;
+	}
+
+	cont->last_request_count = req_count;
+	mutex_unlock(&cont->last_req_lock);
+
+	*f_pos += count;
+	ret = count;
+
+	return ret;
+}
+
+/**
+ * debugfs_b2r2_req_count_fops() - File operations for previous request count in debugfs
+ */
+static const struct file_operations debugfs_b2r2_req_count_fops = {
+	.owner = THIS_MODULE,
+	.read  = debugfs_b2r2_req_count_read,
+	.write = debugfs_b2r2_req_count_write,
 };
 
 /**
@@ -2863,7 +3014,7 @@ int b2r2_control_init(struct b2r2_control *cont)
 	/* Initialize node splitter */
 	ret = b2r2_node_split_init(cont);
 	if (ret) {
-		printk(KERN_WARNING "%s: node split init fails\n", __func__);
+;
 		goto b2r2_node_split_init_fail;
 	}
 
@@ -2882,21 +3033,28 @@ int b2r2_control_init(struct b2r2_control *cont)
 	ret = b2r2_mem_init(cont, B2R2_HEAP_SIZE,
 			4, sizeof(struct b2r2_node));
 	if (ret) {
-		printk(KERN_WARNING "%s: initializing B2R2 memhandler fails\n",
-				__func__);
+//		printk(KERN_WARNING "%s: initializing B2R2 memhandler fails\n",
+;
 		goto b2r2_mem_init_fail;
 	}
 
 #ifdef CONFIG_DEBUG_FS
+	/* Initialize last_request_count and lock */
+	cont->last_request_count = 1;
+	mutex_init(&cont->last_req_lock);
+
 	/* Register debug fs */
 	if (!IS_ERR_OR_NULL(cont->debugfs_root_dir)) {
-		debugfs_create_file("last_request", 0666,
+		debugfs_create_file("last_request", 0664,
 			cont->debugfs_root_dir,
 			cont, &debugfs_b2r2_blt_request_fops);
-		debugfs_create_file("stats", 0666,
+		debugfs_create_file("last_request_count", 0664,
+			cont->debugfs_root_dir,
+			cont, &debugfs_b2r2_req_count_fops);
+		debugfs_create_file("stats", 0664,
 			cont->debugfs_root_dir,
 			cont, &debugfs_b2r2_blt_stat_fops);
-		debugfs_create_file("bypass", 0666,
+		debugfs_create_file("bypass", 0664,
 			cont->debugfs_root_dir,
 			cont, &debugfs_b2r2_bypass_fops);
 	}
