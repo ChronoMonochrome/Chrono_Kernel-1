@@ -27,6 +27,8 @@
 #include <mach/devices.h>
 #include <mach/sec_common.h>
 #include <mach/reboot_reasons.h>
+#include <mach/sec_common.h>
+#include <mach/reboot_reasons.h>
 #include <mach/system.h>
 #include <mach/pm.h>
 
@@ -62,9 +64,9 @@ void __init ux500_init_devices(void)
 
 void ux500_restart(char mode, const char *cmd)
 {
-#if 0
-	unsigned short reset_code;
-	int i ;
+#ifdef CONFIG_UX500_SOC_DB8500
+	unsigned short reason;
+
 #endif
 	printk("ux500_restart: Call arch_reset(), mode: %c, cmd: %s\n", mode, cmd );
 
