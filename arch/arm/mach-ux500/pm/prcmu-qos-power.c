@@ -29,8 +29,6 @@
 #define AB8500_VAPESEL1_REG 0x0E   /* APE OPP 100 voltage */
 #define AB8500_VAPESEL2_REG 0x0F   /* APE OPP 50 voltage  */
 
-//#define DEBUG 1
-
 static int qos_delayed_cpufreq_notifier(struct notifier_block *,
 					unsigned long, void *);
 
@@ -179,52 +177,13 @@ void prcmu_qos_set_cpufreq_opp_delay(unsigned long n)
 	}
 	cpufreq_opp_delay = n;
 }
-
-unsigned int orig_min_freq = 0, last_min_freq = 0;
-volatile bool ignore_cpufreq_notifier = false;
-
-static int policy_cpufreq_notifier(struct notifier_block *nb, unsigned long event, void *data)
-{
-	struct cpufreq_policy *policy = data;
-	struct cpufreq_policy old_policy;
-
-	if (ignore_cpufreq_notifier || event != CPUFREQ_ADJUST || policy->cpu != 0)
-		return 0;
-
-	//FIXME: I don't know why, but CPUFREQ_NOTIFY event never occurs... only _ADJUST(0) and _INCOMPATIBLE(1) - sometimes _START(3)
-
-	if (cpufreq_get_policy(&old_policy, policy->cpu)) {
-		pr_err("prcmu qos notifier: get cpufreq policy failed\n");
-		return 0;
-	}
-
-	if (policy->min == old_policy.min) {
-		//ignore events that don't realy change min freq
-		return 0;
-	}
-
-	orig_min_freq = policy->min;
-	policy->min = max(orig_min_freq, last_min_freq);
-	//pr_debug("PRCMU QOS cpufreq notify: req:%d / orig:%d -> %d\n", last_min_freq, orig_min_freq, policy->min);
-	return 0;
-}
-
-static struct notifier_block policy_cpufreq_notifier_block = {
-	.notifier_call = policy_cpufreq_notifier,
-};
-
 #ifdef CONFIG_CPU_FREQ
 static void update_cpu_limits(s32 min_freq)
 {
 	int cpu;
 	struct cpufreq_policy policy;
 	int ret;
-	unsigned int freq = max(min_freq, orig_min_freq);
 
-	ignore_cpufreq_notifier = true;
-	last_min_freq = min_freq;
-
-	//pr_debug("PRCMU QOS update_cpu_limits: req:%d / orig:%d -> %d\n", min_freq, orig_min_freq, freq);
 	for_each_online_cpu(cpu) {
 		ret = cpufreq_get_policy(&policy, cpu);
 		if (ret) {
@@ -233,12 +192,11 @@ static void update_cpu_limits(s32 min_freq)
 			continue;
 		}
 
-		ret = cpufreq_update_freq(cpu, freq, policy.max);
+		ret = cpufreq_update_freq(cpu, min_freq, policy.max);
 		if (ret)
 			pr_err("prcmu qos: update cpufreq "
 			       "frequency limits failed\n");
 	}
-	ignore_cpufreq_notifier = false;
 }
 #else
 static inline void update_cpu_limits(s32 min_freq) { }
@@ -252,14 +210,12 @@ static s32 max_compare(s32 v1, s32 v2)
 static inline void __prcmu_qos_update_ddr_opp(s32 arm_kz_new_value,
 		s32 vsafe_new_value)
 {
-/*
 	if (cpu_is_u9540()) {
 		__prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
 				"cross_opp_ddr", arm_kz_new_value, false);
 		__prcmu_qos_update_requirement(PRCMU_QOS_VSAFE_OPP,
 				"cross_opp_ddr", vsafe_new_value, false);
 	}
-*/
 }
 
 
@@ -337,7 +293,6 @@ static void update_target(int target, bool sem)
 			break;
 		case 25:
 			/* 25% DDR OPP is not supported on 5500 */
-#if 0
 			if (!cpu_is_u5500()) {
 				op = DDR_25_OPP;
 				prcmu_set_ddr_opp(op);
@@ -351,7 +306,6 @@ static void update_target(int target, bool sem)
 					(PRCMU_QOS_DEFAULT_VALUE,
 						PRCMU_QOS_DEFAULT_VALUE);
 				}
-#endif
 				break;
 		default:
 			pr_err("prcmu qos: Incorrect ddr target value (%d)",
@@ -387,14 +341,12 @@ static void update_target(int target, bool sem)
 				op = APE_50_OPP;
 			pr_debug("prcmu qos: set ape opp to 50%%\n");
 
-#if 0
 			/* 9540 cross table matrix : release ARM constraint */
 			if (cpu_is_u9540()) {
 				__prcmu_qos_update_requirement(
 					PRCMU_QOS_ARM_KHZ, "cross_opp_ape",
 					PRCMU_QOS_DEFAULT_VALUE, false);
 			}
-#endif
 			break;
 		case 100:
 			/* 9540 cross table matrix: set ARM min freq to 400000 */
@@ -537,22 +489,6 @@ int prcmu_qos_requirement(int prcmu_qos_class)
 EXPORT_SYMBOL_GPL(prcmu_qos_requirement);
 
 /**
- * prcmu_qos_requirement_is_active - returns true if qos request is inside a list
- * @prcmu_qos_class: identifies which list of qos request to us
- * @name: identifies the request
- */
-bool prcmu_qos_requirement_is_active(int prcmu_qos_class, char *name)
-{
-	struct requirement_list *dep;
-
-	list_for_each_entry(dep, &prcmu_qos_array[prcmu_qos_class]->requirements.list, list) {
-                if (!strcmp(dep->name, name)) return true;
-        }
-
-	return false;
-}
-
-/**
  * prcmu_qos_add_requirement - inserts new qos request into the list
  * @prcmu_qos_class: identifies which list of qos request to us
  * @name: identifies the request
@@ -665,35 +601,11 @@ static int __prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 	return 0;
 }
 
-int ignore_usb_requirements = 0;
-module_param(ignore_usb_requirements, uint, 0644);
-
-int ignore_file_requirements = 0;
-module_param(ignore_file_requirements, uint, 0644);
-
-int ignore_sva_requirements = 0;
-module_param(ignore_sva_requirements, uint, 0644);
-
 int prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 		s32 val)
 {
-#if DEBUG
 	if (prcmu_qos_class == PRCMU_QOS_ARM_KHZ)
-		pr_err("QOS: ARM_KHZ: set %d on behalf of %s\n", val, name);
-#endif
-
-	if ((prcmu_qos_class == PRCMU_QOS_APE_OPP) &&
-	    (ignore_usb_requirements) &&
-	    (!strncmp(&name[0], "ab8500-usb", 10)))
-		val = 25;
-
-	if (ignore_file_requirements &&
-	    (!strncmp(&name[0], "file", 4)))
-		val = 25;
-
-	if (ignore_sva_requirements &&
-	    (!strncmp(&name[0], "sva", 3)))
-		val = 25;
+		return 0;
 	return __prcmu_qos_update_requirement(prcmu_qos_class, name,
 			val, true);
 }
@@ -964,7 +876,7 @@ static int qos_delayed_cpufreq_notifier(struct notifier_block *nb,
 
 	return 0;
 }
-#if 0
+
 static int __init prcmu_qos_power_preinit(void)
 {
 	/* 25% DDR OPP is not supported on u5500 */
@@ -974,176 +886,18 @@ static int __init prcmu_qos_power_preinit(void)
 
 }
 arch_initcall(prcmu_qos_power_preinit);
-#endif
-
-#define QOS_ARM_KHZ_NORMAL 200000
-#define QOS_ARM_KHZ_BOOST_DUR_MS_DEF 8000
-#define QOS_APE_OPP_NORMAL 25
-#define QOS_APE_OPP_BOOST_DUR_MS_DEF -1
-#define QOS_DDR_OPP_NORMAL 25
-#define QOS_DDR_OPP_BOOST_DUR_MS_DEF -1
-static unsigned int qos_ddr_opp = QOS_APE_OPP_NORMAL;
-static unsigned int qos_ape_opp = QOS_DDR_OPP_NORMAL;
-static unsigned int qos_arm_khz = QOS_ARM_KHZ_NORMAL;
-
-static int qos_arm_khz_boost_dur_ms = QOS_ARM_KHZ_BOOST_DUR_MS_DEF;
-module_param_named(qos_arm_khz_boost_dur_ms, qos_arm_khz_boost_dur_ms, int, 0666);
-
-static int qos_ape_opp_boost_dur_ms = QOS_APE_OPP_BOOST_DUR_MS_DEF;
-module_param_named(qos_ape_opp_boost_dur_ms, qos_ape_opp_boost_dur_ms, int, 0666);
-
-static int qos_ddr_opp_boost_dur_ms = QOS_DDR_OPP_BOOST_DUR_MS_DEF;
-module_param_named(qos_ddr_opp_boost_dur_ms, qos_ddr_opp_boost_dur_ms, int, 0666);
-
-static bool arm_khz_boosted = 0;
-static bool ape_opp_boosted = 0;
-static bool ddr_opp_boosted = 0;
-
-static void restore_ddr_opp_fn(struct work_struct *work)
-{
-	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "power HAL", QOS_DDR_OPP_NORMAL);
-	ddr_opp_boosted = 0;
-}
-static DECLARE_DELAYED_WORK(restore_ddr_opp_delayedwork, restore_ddr_opp_fn);
-
-extern bool is_suspended_get(void);
-
-static int set_qos_ddr_opp(const char *val, struct kernel_param *kp)
-{
-	unsigned int ddr_opp = 0;
-	unsigned int err = 0;
-
-	err = sscanf(val, "%d", &ddr_opp) == 1 ? 0 : -EINVAL;
-
-	if (err)
-		goto out;
-
-	switch (ddr_opp) {
-	    case 25:
-	    case 50:
-	    case 100:
-		qos_ddr_opp = ddr_opp;
-		if (ddr_opp_boosted)
-			cancel_delayed_work(&restore_ddr_opp_delayedwork);
-
-		if (qos_ddr_opp_boost_dur_ms != 0)
-			prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "power HAL", ddr_opp);
-
-		if (qos_ddr_opp_boost_dur_ms > 0) {
-			schedule_delayed_work(&restore_ddr_opp_delayedwork,
-				msecs_to_jiffies(qos_ddr_opp_boost_dur_ms));
-			ddr_opp_boosted = 1;
-		}
-
-		break;
-	    default:
-		err = -EINVAL;
-	}
-
-out:
-	if (err)
-		pr_err("QOS: invalid input '%s' for '%s'; use either 100, 50 or 25\n", val /* buf */, __func__);
-
-        return err;
-}
-module_param_call(qos_ddr_opp, set_qos_ddr_opp, param_get_uint, &qos_ddr_opp, 0666);
-
-static void restore_ape_opp_fn(struct work_struct *work)
-{
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "power HAL", QOS_APE_OPP_NORMAL);
-	ape_opp_boosted = 0;
-}
-static DECLARE_DELAYED_WORK(restore_ape_opp_delayedwork, restore_ape_opp_fn);
-
-static int set_qos_ape_opp(const char *val, struct kernel_param *kp)
-{
-	unsigned int ape_opp = 0;
-	unsigned int err = 0;
-
-	err = sscanf(val, "%d", &ape_opp) == 1 ? 0 : -EINVAL;
-
-	if (err)
-		goto out;
-
-	switch (ape_opp) {
-	    case 25:
-	    case 50:
-	    case 100:
-		qos_ape_opp = ape_opp;
-		if (ape_opp_boosted)
-			cancel_delayed_work(&restore_ape_opp_delayedwork);
-
-		if (qos_ape_opp_boost_dur_ms != 0)
-			prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "power HAL", ape_opp);
-
-		if (qos_ape_opp_boost_dur_ms > 0) {
-			schedule_delayed_work(&restore_ape_opp_delayedwork,
-				msecs_to_jiffies(qos_ape_opp_boost_dur_ms));
-			ape_opp_boosted = 1;
-		}
-
-		break;
-	    default:
-		err = -EINVAL;
-	}
-
-out:
-	if (err)
-		pr_err("QOS: invalid input '%s' for '%s'; use either 100, 50 or 25\n", val /* buf */, __func__);
-
-        return err;
-}
-module_param_call(qos_ape_opp, set_qos_ape_opp, param_get_uint, &qos_ape_opp, 0666);
-
-static void restore_arm_khz_fn(struct work_struct *work)
-{
-	prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ, "power HAL", QOS_ARM_KHZ_NORMAL);
-	arm_khz_boosted = 0;
-}
-static DECLARE_DELAYED_WORK(restore_arm_khz_delayedwork, restore_arm_khz_fn);
-
-static int set_qos_arm_khz(const char *val, struct kernel_param *kp)
-{
-	unsigned int arm_khz = 200000;
-	unsigned int err = sscanf(val, "%d", &arm_khz) == 1 ? 0 : -EINVAL;
-
-	if (err)
-		goto out;
-
-	qos_arm_khz = arm_khz;
-
-	if (arm_khz_boosted)
-		cancel_delayed_work(&restore_arm_khz_delayedwork);
-
-	if (qos_arm_khz_boost_dur_ms != 0)
-		prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ, "power HAL", arm_khz);
-
-	if (qos_arm_khz_boost_dur_ms > 0) {
-		schedule_delayed_work(&restore_arm_khz_delayedwork,
-			msecs_to_jiffies(qos_arm_khz_boost_dur_ms));
-		arm_khz_boosted = 1;
-	}
-
-out:
-	if (err)
-		pr_err("QOS: invalid input '%s' for '%s'\n", val /* buf */, __func__);
-
-        return err;
-}
-module_param_call(qos_arm_khz, set_qos_arm_khz, param_get_uint, &qos_arm_khz, 0666);
 
 static int __init prcmu_qos_power_init(void)
 {
 	int ret;
 	struct cpufreq_frequency_table *table;
-	struct cpufreq_policy policy;
 	unsigned int min_freq = UINT_MAX;
 	unsigned int max_freq = 0;
 	int i;
-/*
+
 	if (cpu_is_u9540())
 		update_target_max_recur = 2;
-*/
+
 	table = cpufreq_frequency_get_table(0);
 
 	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
@@ -1157,11 +911,6 @@ static int __init prcmu_qos_power_init(void)
 	arm_khz_qos.default_value = min_freq;
 	/* CPUs start at max */
 	atomic_set(&arm_khz_qos.target_value, arm_khz_qos.max_value);
-
-	ret = cpufreq_get_policy(&policy, 0);
-	last_min_freq = policy.min;
-	orig_min_freq = policy.min;
-	cpufreq_register_notifier(&policy_cpufreq_notifier_block, CPUFREQ_POLICY_NOTIFIER);
 
 	prcmu_qos_cpufreq_init_done = true;
 
@@ -1182,7 +931,7 @@ static int __init prcmu_qos_power_init(void)
 		pr_err("prcmu arm qos: setup failed\n");
 		goto arm_khz_qos_error;
 	}
-/*
+
 	if (cpu_is_u9540()) {
 		ret = register_prcmu_qos_misc(&vsafe_opp_qos,
 				&prcmu_qos_vsafe_power_fops);
@@ -1191,7 +940,7 @@ static int __init prcmu_qos_power_init(void)
 			goto vsafe_opp_qos_error;
 		}
 	}
-*/
+
 	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "cpufreq",
 			PRCMU_QOS_DEFAULT_VALUE);
 	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "cpufreq",
@@ -1212,24 +961,15 @@ static int __init prcmu_qos_power_init(void)
 		prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "cross_opp_arm",
 				PRCMU_QOS_DEFAULT_VALUE);
 	}
-*/
-
-	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "power HAL",
-			QOS_ARM_KHZ_NORMAL);
-	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "power HAL",
-			qos_ddr_opp);
-	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "power HAL",
-			qos_ape_opp);
-
 
 	return ret;
 
-vsafe_opp_qos_error:
-	misc_deregister(&arm_khz_qos.prcmu_qos_power_miscdev);
-arm_khz_qos_error:
-	misc_deregister(&ddr_opp_qos.prcmu_qos_power_miscdev);
-ddr_opp_qos_error:
-	misc_deregister(&ape_opp_qos.prcmu_qos_power_miscdev);
+vsafe_opp_qos_error: 
+	misc_deregister(&arm_khz_qos.prcmu_qos_power_miscdev); 
+arm_khz_qos_error: 
+	misc_deregister(&ddr_opp_qos.prcmu_qos_power_miscdev); 
+ddr_opp_qos_error: 
+	misc_deregister(&ape_opp_qos.prcmu_qos_power_miscdev); 
 	return ret;
 }
 late_initcall(prcmu_qos_power_init);
