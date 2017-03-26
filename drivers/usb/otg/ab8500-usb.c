@@ -1320,6 +1320,7 @@ static int __devexit ab8500_usb_remove(struct platform_device *pdev)
 		blocking_notifier_chain_unregister(&micro_usb_switch_notifier,
 				&ab->usb_nb);
 
+	sysfs_remove_group(&ab->dev->kobj, &ab8500_attr_group);
 	kfree(ab);
 
 	return 0;
