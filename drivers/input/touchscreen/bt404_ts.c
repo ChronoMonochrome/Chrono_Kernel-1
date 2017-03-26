@@ -238,6 +238,15 @@ static int m_ts_debug_mode = BT404_DEBUG;
 #define TSP_CMD_NODE_NUM	180 /* 18x10 */
 #endif
 
+#ifdef TOUCH_BOOSTER
+int bt404_ape_boost = 0, bt404_ddr_boost = 0, 
+	bt404_ape_opp = 100, bt404_ddr_opp = 50;
+module_param(bt404_ape_boost, uint, 0644);
+module_param(bt404_ddr_boost, uint, 0644);
+module_param(bt404_ape_opp, uint, 0644);
+module_param(bt404_ddr_opp, uint, 0644);
+#endif
+
 enum power_control {
 	POWER_OFF,
 	POWER_ON,
@@ -1559,10 +1568,12 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 			PRCMU_QOS_APE_OPP,
 			(char *)data->client->name,
 			PRCMU_QOS_DEFAULT_VALUE);
+		
 		prcmu_qos_update_requirement(
 			PRCMU_QOS_DDR_OPP,
 			(char *)data->client->name,
 			PRCMU_QOS_DEFAULT_VALUE);
+		
 		/*prcmu_qos_update_requirement(
 			PRCMU_QOS_ARM_KHZ,
 			(char *)data->client->name,
@@ -1660,14 +1671,19 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 			if (cur_down) {
 #if defined(TOUCH_BOOSTER)
 				if (!data->finger_cnt) {
-					prcmu_qos_update_requirement(
-						PRCMU_QOS_APE_OPP,
-						(char *)data->client->name,
-						PRCMU_QOS_APE_OPP_MAX);
-					prcmu_qos_update_requirement(
-						PRCMU_QOS_DDR_OPP,
-						(char *)data->client->name,
-						PRCMU_QOS_DDR_OPP_MAX);
+					if (bt404_ape_boost) {
+						prcmu_qos_update_requirement(
+							PRCMU_QOS_APE_OPP,
+							(char *)data->client->name,
+							bt404_ape_opp);
+					}
+		
+					if (bt404_ddr_boost) {
+						prcmu_qos_update_requirement(
+							PRCMU_QOS_DDR_OPP,
+							(char *)data->client->name,
+							bt404_ddr_opp);
+					}
 					/*prcmu_qos_update_requirement(
 						PRCMU_QOS_ARM_KHZ,
 						(char *)data->client->name,
