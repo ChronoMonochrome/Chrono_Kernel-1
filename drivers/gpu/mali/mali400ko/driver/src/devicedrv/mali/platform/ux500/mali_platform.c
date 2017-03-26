@@ -19,7 +19,6 @@
 
 #include <linux/regulator/consumer.h>
 #include <linux/err.h>
-#include <linux/module.h>
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/workqueue.h>
@@ -55,10 +54,10 @@
 #define AB8500_VAPE_SEL2	 	0x0F
 #define AB8500_VAPE_STEP_UV		12500
 #define AB8500_VAPE_MIN_UV		700000
-#define AB8500_VAPE_MAX_UV		1487500
+#define AB8500_VAPE_MAX_UV		1362500
 
 #define MALI_CLOCK_DEFLO		399360
-#define MALI_CLOCK_DEFHI		399360
+#define MALI_CLOCK_DEFHI		480000
 
 struct mali_dvfs_data
 {
@@ -68,12 +67,12 @@ struct mali_dvfs_data
 };
 
 static struct mali_dvfs_data mali_dvfs[] = {
-	{192000, 0x0101010A, 0x20},
-	{256000, 0x01030128, 0x20},
-	{299520, 0x0105014E, 0x20},
-	{320000, 0x01030132, 0x20},
-	{360000, 0x0105015E, 0x20},
-	{399360, 0x01050168, 0x20},
+	{192000, 0x0101010A, 0x26},
+	{256000, 0x01030128, 0x26},
+	{299520, 0x0105014E, 0x26},
+	{320000, 0x01030132, 0x26},
+	{360000, 0x0105015E, 0x26},
+	{399360, 0x01050168, 0x26},
 	{422400, 0x01010116, 0x26},
 	{441600, 0x0102012E, 0x26},
 	{460800, 0x01010118, 0x29},
@@ -89,11 +88,9 @@ static struct mali_dvfs_data mali_dvfs[] = {
 	{660480, 0x010501AC, 0x3F},
 	{679680, 0x010501B1, 0x3F},
 	{700800, 0x01040192, 0x3F},
-	{715200, 0x01040195, 0x3F},
+	{710400, 0x01010125, 0x3F},
 	{720000, 0x01040196, 0x3F},
 	{729600, 0x01010126, 0x3F},
-	{737280, 0x010501C0, 0x3F},
-	{752640, 0x010501C4, 0x3F},
 };
 
 int mali_utilization_high_to_low = MALI_HIGH_TO_LOW_LEVEL_UTILIZATION_LIMIT;
@@ -102,9 +99,7 @@ int mali_utilization_low_to_high = MALI_LOW_TO_HIGH_LEVEL_UTILIZATION_LIMIT;
 static bool is_running;
 static bool is_initialized;
 
-u32 mali_last_utilization;
-EXPORT_SYMBOL(mali_last_utilization);
-
+static u32 mali_last_utilization;
 module_param(mali_last_utilization, uint, 0444);
 
 static struct regulator *regulator;
@@ -117,22 +112,20 @@ static struct wake_lock wakelock;
 #endif
 
 static u32 boost_enable 	= 1;
-u32 boost_working 	= 0;
-static u32 boost_scheduled 	= 0;
+static u32 boost_working 	= 0;
 static u32 boost_required 	= 0;
-static u32 __read_mostly boost_delay 		= 0;
+static u32 boost_delay 		= 500;
 static u32 boost_low 		= 0;
 static u32 boost_high 		= 0;
-u32 __read_mostly boost_upthreshold 	= 233;
-u32 __read_mostly boost_downthreshold 	= 64;
-//mutex to protect above variables
-static DEFINE_MUTEX(mali_boost_lock);
+static u32 boost_utilization 	= 0;
+static u32 boost_upthreshold 	= 233;
+static u32 boost_downthreshold 	= 64;
 
 static struct delayed_work mali_boost_delayedwork;
 
 static int vape_voltage(u8 raw)
 {
-	if (raw <= 0x3F) {
+	if (raw <= 0x35) {
 		return (AB8500_VAPE_MIN_UV + (raw * AB8500_VAPE_STEP_UV));
 	} else {
 		return AB8500_VAPE_MAX_UV;
@@ -170,36 +163,64 @@ static int sgaclk_freq(void)
 	return (pllsoc0_freq(soc0pll) / (sgaclk & 0xf));
 }
 
+static void mali_boost_init(void)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(mali_dvfs); i++) {
+		if (mali_dvfs[i].freq == MALI_CLOCK_DEFLO) {
+			boost_low = i;
+			break;
+		}
+	}
+
+	for (i = 0; i < ARRAY_SIZE(mali_dvfs); i++) {
+		if (mali_dvfs[i].freq == MALI_CLOCK_DEFHI) {
+			boost_high = i;
+			break;
+		}
+	}
+
+	pr_info("[Mali] Booster: %u kHz - %u kHz\n", 
+			mali_dvfs[boost_low].freq, 
+			mali_dvfs[boost_high].freq);
+}
+
 static void mali_boost_update(void)
 {
 	u8 vape;
 	u32 pll;
 
-	if (boost_required) {
-		vape = mali_dvfs[boost_high].vape_raw;
-		pll = mali_dvfs[boost_high].clkpll;
+	if (!boost_required) {
+		if (boost_utilization >= boost_upthreshold) {
+			vape = mali_dvfs[boost_high].vape_raw;
+			pll = mali_dvfs[boost_high].clkpll;
 
-		pr_err("[Mali] @%u kHz - Boost\n", mali_dvfs[boost_high].freq);
+			pr_err("[Mali] @%u kHz - Boost\n", mali_dvfs[boost_high].freq);
 
-		prcmu_abb_write(AB8500_REGU_CTRL2,
-			AB8500_VAPE_SEL1,
-			&vape,
-			1);
-		prcmu_write(PRCMU_PLLSOC0, pll);
-		boost_working = true;
+			prcmu_abb_write(AB8500_REGU_CTRL2, 
+				AB8500_VAPE_SEL1, 
+				&vape, 
+				1);
+			prcmu_write(PRCMU_PLLSOC0, pll);
+
+			boost_required = 1;
+		}
 	} else {
-		vape = mali_dvfs[boost_low].vape_raw;
-		pll = mali_dvfs[boost_low].clkpll;
+		if (boost_utilization <= boost_downthreshold) {
+			vape = mali_dvfs[boost_low].vape_raw;
+			pll = mali_dvfs[boost_low].clkpll;
 
-		pr_err("[Mali] @%u kHz - Deboost\n", mali_dvfs[boost_low].freq);
+			pr_err("[Mali] @%u kHz - Deboost\n", mali_dvfs[boost_low].freq);
 
-		prcmu_write(PRCMU_PLLSOC0, pll);
-		prcmu_abb_write(AB8500_REGU_CTRL2,
-			AB8500_VAPE_SEL1,
-			&vape,
-			1);
+			prcmu_write(PRCMU_PLLSOC0, pll);
+			prcmu_abb_write(AB8500_REGU_CTRL2, 
+				AB8500_VAPE_SEL1, 
+				&vape, 
+				1);
 
-		boost_working = false;
+			boost_required = 0;
+		}
 	}
 }
 
@@ -220,37 +241,8 @@ static void mali_clock_apply(u32 idx)
 
 static void mali_boost_work(struct work_struct *work)
 {
-	mutex_lock(&mali_boost_lock);
 	mali_boost_update();
-	boost_scheduled = false;
-	mutex_unlock(&mali_boost_lock);
-}
-
-static void mali_boost_init(void)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(mali_dvfs); i++) {
-		if (mali_dvfs[i].freq == MALI_CLOCK_DEFLO) {
-			boost_low = i;
-			break;
-		}
-	}
-
-	for (i = 0; i < ARRAY_SIZE(mali_dvfs); i++) {
-		if (mali_dvfs[i].freq == MALI_CLOCK_DEFHI) {
-			boost_high = i;
-			break;
-		}
-	}
-
-	if (sgaclk_freq() != mali_dvfs[boost_low].freq) {
-		mali_clock_apply(boost_low);
-	}
-
-	pr_info("[Mali] Booster: %u kHz - %u kHz\n", 
-			mali_dvfs[boost_low].freq, 
-			mali_dvfs[boost_high].freq);
+	boost_working = false;
 }
 
 static _mali_osk_errcode_t mali_platform_powerdown(void)
@@ -303,7 +295,7 @@ error:
 	MALI_ERROR(_MALI_OSK_ERR_FAULT);
 }
 
-/* Rationale behind the values for: (switching between APE_50_OPP and APE_100_OPP)
+/* Rationale behind the values for:
 * MALI_HIGH_LEVEL_UTILIZATION_LIMIT and MALI_LOW_LEVEL_UTILIZATION_LIMIT
 * When operating at half clock frequency a faster clock is requested when
 * reaching 75% utilization. When operating at full clock frequency a slower
@@ -323,98 +315,52 @@ error:
 * |-------|-------|-------|-------|
 * Utilization on half speed clock
 */
-
-/* boost switching logic:
- * - boost_working means that freq is already set to high value
- * - boost_scheduled means that job is scheduled to turn boost either on or off
- * - boost_required is a flag for scheduled job telling it what to do with boost
- *
- * if we are in APE_50_OPP, skip boost
- * if we are in APE_100_OPP and util>boost_up_thresh, shedule boost if its not on or - if its on and scheduled to be turned off -  cancel that schedule
- * if boost is scheduled and not yet working and util < util_high_to_low, then cancel scheduled boost
- * if boost is on and util < boost_down_thresh, schedule boost to be turned off
- */
 void mali_utilization_function(struct work_struct *ptr)
 {
 	/*By default, platform start with 50% APE OPP and 25% DDR OPP*/
 	static u32 has_requested_low = 1;
 
+	if (mali_last_utilization > mali_utilization_low_to_high) {
+		if (has_requested_low) {
+			MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u SIGNAL_HIGH\n", mali_last_utilization));
+			/*Request 100% APE_OPP.*/
+			if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "mali", 100)) {
+				MALI_DEBUG_PRINT(2, ("MALI 100% APE_OPP failed\n"));
+				return;
+			}
+			/*
+			* Since the utilization values will be reported higher
+			* if DDR_OPP is lowered, we also request 100% DDR_OPP.
+			*/
+			if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "mali", 100)) {
+				MALI_DEBUG_PRINT(2, ("MALI 100% DDR_OPP failed\n"));
+				return;
+			}
+			has_requested_low = 0;
+		}
+	} else {
+		if (mali_last_utilization < mali_utilization_high_to_low) {
+			if (!has_requested_low) {
+				/*Remove APE_OPP and DDR_OPP requests*/
+				prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "mali");
+				prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP, "mali");
+				MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u SIGNAL_LOW\n", mali_last_utilization));
+				has_requested_low = 1;
+			}
+		}
+	}
+
+	if (boost_enable) {
+		if (!boost_working) {
+			boost_utilization = mali_last_utilization;
+			boost_working = true;
+
+			schedule_delayed_work(&mali_boost_delayedwork, 
+				msecs_to_jiffies(boost_delay));
+		}
+	}
+
 	MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u\n", mali_last_utilization));
-
-	mutex_lock(&mali_boost_lock);
-	if ((!boost_required && !boost_working && !boost_scheduled) || !boost_enable) {
-		// consider power saving mode (APE_50_OPP) only if we're not on boost
-		int ape_opp = prcmu_get_ape_opp();
-		/*
-		if APE_OPP==100 because someone else wanted this (touchboost in particular) and not mali,
-		we should check if utilization is high enough so we can also request high ape to maintain
-		satisfying UI performance.
-		*/
-		int up_threshold = (ape_opp == APE_50_OPP && has_requested_low ? mali_utilization_low_to_high : (mali_utilization_high_to_low));
-
-		if (mali_last_utilization >= up_threshold) {
-			if (has_requested_low) {
-				MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u SIGNAL_HIGH\n", mali_last_utilization));
-				/*Request 100% APE_OPP.*/
-				prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "mali", PRCMU_QOS_MAX_VALUE);
-				/*
-				* Since the utilization values will be reported higher
-				* if DDR_OPP is lowered, we also request 100% DDR_OPP.
-				*/
-				prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "mali", PRCMU_QOS_MAX_VALUE);
-				has_requested_low = 0;
-				mutex_unlock(&mali_boost_lock);
-				return;		//After we switch to APE_100_OPP we want to measure utilization once again before entering boost logic
-			}
-		} else {
-			if (mali_last_utilization < mali_utilization_high_to_low) {
-				if (!has_requested_low) {
-					/*Remove APE_OPP and DDR_OPP requests*/
-					prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "mali", PRCMU_QOS_DEFAULT_VALUE);
-					prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "mali", PRCMU_QOS_DEFAULT_VALUE);
-					MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u SIGNAL_LOW\n", mali_last_utilization));
-					has_requested_low = 1;
-				}
-			}
-		}
-	}
-
-	if (!has_requested_low && boost_enable) {
-		// consider boost only if we are in APE_100_OPP mode
-		if (!boost_required && mali_last_utilization > boost_upthreshold) {
-			boost_required = true;
-		if (!boost_scheduled) {
-				//schedule job to turn boost on
-				boost_scheduled = true;
-				schedule_delayed_work(&mali_boost_delayedwork, msecs_to_jiffies(boost_delay));
-			} else {
-				//cancel job meant to turn boost off
-				boost_scheduled = false;
-				cancel_delayed_work(&mali_boost_delayedwork);
-			}
-		} else if (boost_required && !boost_working && mali_last_utilization < boost_downthreshold) {
-			boost_required = false;
-			if (boost_scheduled) {
-				//if it's not working yet, but is scheduled to be turned on, than cancel scheduled job
-				cancel_delayed_work(&mali_boost_delayedwork);
-				boost_scheduled = false;
-			}
-		} else if (boost_working && mali_last_utilization < boost_downthreshold) {
-			boost_required = false;
-			if (!boost_scheduled) {
-				// if boost is on and isn't yet scheduled to be turned off then schedule it
-				boost_scheduled = true;
-				schedule_delayed_work(&mali_boost_delayedwork, msecs_to_jiffies(boost_delay));
-			}
-		}
-	}
-	mutex_unlock(&mali_boost_lock);
-
-}
-
-int get_mali_workload(void)
-{
-	return mali_last_utilization * sgaclk_freq() / 256; 
 }
 
 #define ATTR_RO(_name)	\
@@ -424,7 +370,7 @@ int get_mali_workload(void)
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0220, NULL, _name##_store);
 
 #define ATTR_RW(_name)	\
-	static struct kobj_attribute _name##_interface = __ATTR(_name, 0666, _name##_show, _name##_store);
+	static struct kobj_attribute _name##_interface = __ATTR(_name, 0644, _name##_show, _name##_store);
 
 static ssize_t version_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -468,37 +414,6 @@ static ssize_t mali_gpu_clock_store(struct kobject *kobj, struct kobj_attribute 
 
 ATTR_RW(mali_gpu_clock);
 
-static ssize_t mali_gpu_vape_50_opp_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	u8 value;
-
-	prcmu_abb_read(AB8500_REGU_CTRL2,
-			AB8500_VAPE_SEL2,
-			&value,
-			1);
-
-	return sprintf(buf, "%u uV - 0x%x\n", vape_voltage(value), value);
-}
-
-static ssize_t mali_gpu_vape_50_opp_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int val;
-	u8 vape;
-
-	if (sscanf(buf, "%x", &val)) {
-		vape = val;
-		prcmu_abb_write(AB8500_REGU_CTRL2,
-			AB8500_VAPE_SEL2,
-			&vape,
-			1);
-		return count;
-	}
-
-	return -EINVAL;
-}
-
-ATTR_RW(mali_gpu_vape_50_opp);
-
 static ssize_t mali_gpu_fullspeed_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	/*
@@ -527,18 +442,13 @@ ATTR_RW(mali_gpu_fullspeed);
 
 static ssize_t mali_gpu_load_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "load=%d (%d%%)\nworkload=%d\n", mali_last_utilization, 
-		mali_last_utilization * 100 / 256,
-		get_mali_workload());
-	
-	return strlen(buf);
+	return sprintf(buf, "%d (%d%%)\n", mali_last_utilization, mali_last_utilization * 100 / 256);
 }
 ATTR_RO(mali_gpu_load);
 
 static ssize_t mali_gpu_vape_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	u8 value;
-	bool opp50;
 
 	/*
 	 * cocafe:
@@ -546,19 +456,18 @@ static ssize_t mali_gpu_vape_show(struct kobject *kobj, struct kobj_attribute *a
 	 * In APE 50OPP, Vape uses SEL2. 
 	 * And the clocks are half.
 	 */
-	opp50 = (prcmu_get_ape_opp() != APE_100_OPP);
 	prcmu_abb_read(AB8500_REGU_CTRL2, 
-			opp50 ? AB8500_VAPE_SEL2 : AB8500_VAPE_SEL1,
+			AB8500_VAPE_SEL1, 
 			&value, 
 			1);
 
-	return sprintf(buf, "%u uV - 0x%x (OPP:%d)\n", vape_voltage(value), value, opp50 ? 50 : 100);
+	return sprintf(buf, "%u uV\n", vape_voltage(value));
 }
 ATTR_RO(mali_gpu_vape);
 
 static ssize_t mali_auto_boost_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return sprintf(buf, "enabled: %d, required: %d, scheduled: %d, working: %d\n", boost_enable, boost_required, boost_scheduled, boost_working);
+	return sprintf(buf, "%d\n", boost_enable);
 }
 
 static ssize_t mali_auto_boost_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
@@ -566,15 +475,12 @@ static ssize_t mali_auto_boost_store(struct kobject *kobj, struct kobj_attribute
 	if(sysfs_streq(buf, "0")) {
 		boost_enable = 0;
 
-		if (boost_scheduled) {
-			cancel_delayed_work(&mali_boost_delayedwork);
-			boost_scheduled = false;
-		}
 		if (boost_working) {
-			boost_working = false;
+			cancel_delayed_work(&mali_boost_delayedwork);
 			mali_clock_apply(boost_low);
+			boost_required = 0;
+			boost_working = 0;
 		}
-		boost_required = 0;
 	} else {
 		boost_enable = 1;
 		mali_clock_apply(boost_low);
@@ -726,18 +632,6 @@ static ssize_t mali_dvfs_config_store(struct kobject *kobj, struct kobj_attribut
 
 		return count;
 	}
-	
-	if (sscanf(buf, "%u vape-=%d", &idx, &val) == 2) {
-		mali_dvfs[idx].vape_raw -= val;
-
-		return count;
-	}
-	
-	if (sscanf(buf, "%u vape+=%d", &idx, &val) == 2) {
-		mali_dvfs[idx].vape_raw += val;
-
-		return count;
-	}
 
 	if (sscanf(buf, "%u vape=%x", &idx, &val) == 2) {
 		mali_dvfs[idx].vape_raw = val;
@@ -767,7 +661,6 @@ static struct attribute *mali_attrs[] = {
 	&mali_gpu_fullspeed_interface.attr, 
 	&mali_gpu_load_interface.attr, 
 	&mali_gpu_vape_interface.attr, 
-	&mali_gpu_vape_50_opp_interface.attr,
 	&mali_auto_boost_interface.attr, 
 	&mali_boost_delay_interface.attr, 
 	&mali_boost_low_interface.attr, 
@@ -804,7 +697,6 @@ _mali_osk_errcode_t mali_platform_init()
 		}
 
 		INIT_WORK(&mali_utilization_work, mali_utilization_function);
-		//TODO register a notifier block with prcmu opp update func to monitor ape opp
 		INIT_DELAYED_WORK(&mali_boost_delayedwork, mali_boost_work);
 
 		regulator = regulator_get(NULL, "v-mali");
@@ -834,9 +726,6 @@ _mali_osk_errcode_t mali_platform_init()
 			kobject_put(mali_kobject);
 		}
 
-		prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "mali", PRCMU_QOS_DEFAULT_VALUE);
-		prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "mali", PRCMU_QOS_DEFAULT_VALUE);
-
 		pr_info("[Mali] DB8500 GPU OC Initialized (%s)\n", MALI_UX500_VERSION);
 
 		is_initialized = true;
@@ -860,8 +749,6 @@ _mali_osk_errcode_t mali_platform_deinit()
 	kobject_put(mali_kobject);
 	is_running = false;
 	mali_last_utilization = 0;
-	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "mali");
-	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP, "mali");
 	is_initialized = false;
 	MALI_DEBUG_PRINT(2, ("SGA terminated.\n"));
 	MALI_SUCCESS;
