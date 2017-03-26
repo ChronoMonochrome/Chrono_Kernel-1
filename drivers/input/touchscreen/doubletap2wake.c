@@ -40,19 +40,8 @@
 #define DT2W_FEATHER		200
 #define DT2W_TIME		700
 
-static unsigned int dt2w_feather = DT2W_FEATHER;
-static unsigned int dt2w_time = DT2W_TIME;
-static unsigned int dt2w_debug = DT2W_DEBUG;
-static unsigned int dt2w_pwrkey_dur = DT2W_PWRKEY_DUR;
-module_param_named(dt2w_debug, dt2w_debug, uint, 0644);
-module_param_named(dt2w_feather, dt2w_feather, uint, 0644);
-module_param_named(dt2w_time, dt2w_time, uint, 0644);
-module_param_named(dt2w_pwrkey_dur, dt2w_pwrkey_dur, uint, 0644);
-
 /* Resources */
-
 int dt2w_switch = DT2W_DEFAULT;
-EXPORT_SYMBOL(dt2w_switch);
 static cputime64_t tap_time_pre = 0;
 static int touch_nr = 0, x_pre = 0, y_pre = 0;
 static bool scr_suspended = false, exec_count = true;
@@ -60,12 +49,25 @@ static struct input_dev * doubletap2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
+static bool use_wakelock = true;
 static struct wake_lock dt2w_wake_lock;
-bool is_dt2w_wakelock_active(void) {
-	return wake_lock_active(&dt2w_wake_lock);
-}
-bool dt2w_use_wakelock;
 #endif
+
+/* Read cmdline for dt2w */
+static int __init read_dt2w_cmdline(char *dt2w)
+{
+	if (strcmp(dt2w, "1") == 0) {
+		printk(KERN_INFO "[cmdline_dt2w]: DoubleTap2Wake enabled. | dt2w='%s'", dt2w);
+		dt2w_switch = 1;
+	} else if (strcmp(dt2w, "0") == 0) {
+		printk(KERN_INFO "[cmdline_dt2w]: DoubleTap2Wake disabled. | dt2w='%s'", dt2w);
+		dt2w_switch = 0;
+	} else {
+		printk(KERN_INFO "[cmdline_dt2w]: No valid input found. Going with default: | dt2w='%u'", dt2w_switch);
+	}
+	return 1;
+}
+__setup("dt2w=", read_dt2w_cmdline);
 
 /* PowerKey setter */
 void doubletap2wake_setdev(struct input_dev * input_device) {
@@ -80,10 +82,10 @@ static void doubletap2wake_presspwr(struct work_struct * doubletap2wake_presspwr
                 return;
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
-	mdelay(dt2w_pwrkey_dur);
+	msleep(DT2W_PWRKEY_DUR);
 	input_event(doubletap2wake_pwrdev, EV_KEY, KEY_POWER, 0);
 	input_event(doubletap2wake_pwrdev, EV_SYN, 0, 0);
-	mdelay(dt2w_pwrkey_dur);
+	msleep(DT2W_PWRKEY_DUR);
         mutex_unlock(&pwrkeyworklock);
 	return;
 }
@@ -104,7 +106,7 @@ void doubletap2wake_reset(void)
 	y_pre = 0;
 }
 
-static inline unsigned int calc_feather(int coord, int prev_coord) {
+static unsigned int calc_feather(int coord, int prev_coord) {
 	int calc_coord = 0;
 	calc_coord = coord-prev_coord;
 	if (calc_coord < 0)
@@ -112,29 +114,26 @@ static inline unsigned int calc_feather(int coord, int prev_coord) {
 	return calc_coord;
 }
 
-extern unsigned int is_lpm;
-
 /* Sweep2wake main function */
 void detect_doubletap2wake(int x, int y, bool st)
 {
 	bool single_touch = st;
-	if (!dt2w_switch)
-		return;
 
-	if (unlikely(dt2w_debug && (scr_suspended || is_lpm) == true))
-	        pr_err("[doubletap2wake]: x,y(%4d,%4d) single:%s\n",
-        	        x, y, (single_touch) ? "true" : "false");
 
-	if ((!single_touch) && (dt2w_switch > 0) && (exec_count) && (scr_suspended || is_lpm)) {
+#if DT2W_DEBUG
+        pr_info("[doubletap2wake]: x,y(%4d,%4d) single:%s\n",
+                x, y, (single_touch) ? "true" : "false");
+#endif
+	if ((!single_touch) && (dt2w_switch > 0) && (exec_count) && (scr_suspended)) {
 		if (touch_nr == 0) {
 			tap_time_pre = ktime_to_ms(ktime_get());
 			x_pre = x;
 			y_pre = y;
 			touch_nr++;
 		} else if (touch_nr == 1) {
-			if ((calc_feather(x, x_pre) < dt2w_feather) &&
-			    (calc_feather(y, y_pre) < dt2w_feather) &&
-			    ((ktime_to_ms(ktime_get())-tap_time_pre) < dt2w_time))
+			if ((calc_feather(x, x_pre) < DT2W_FEATHER) &&
+			    (calc_feather(y, y_pre) < DT2W_FEATHER) &&
+			    ((ktime_to_ms(ktime_get())-tap_time_pre) < DT2W_TIME))
 				touch_nr++;
 			else
 				doubletap2wake_reset();
@@ -151,8 +150,7 @@ void detect_doubletap2wake(int x, int y, bool st)
 			touch_nr++;
 		}
 		if ((touch_nr > 1)) {
-			if (dt2w_debug)
-				pr_err("[doubletap2wake]:ON\n");
+			pr_info("[doubletap2wake]:ON\n");
 			exec_count = false;
 			doubletap2wake_pwrtrigger();
 			doubletap2wake_reset();
@@ -170,10 +168,6 @@ void dt2w_set_scr_suspended(bool suspended)
 	doubletap2wake_reset();
 }
 
-#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
-extern void should_break_suspend_check_init_work(void);
-#endif
-
 static int set_enable(const char *val, struct kernel_param *kp)
 {
 	int max_tries = 10; 
@@ -185,36 +179,33 @@ static int set_enable(const char *val, struct kernel_param *kp)
 		 * it causes unbalanced irq enable/disable requests. So
 		 * I'm waking the screen and then setting it.
 		 */
-		if(dt2w_debug)	
-			pr_err("dt2w: cant enable/disable while screen is off! Waking...\n");
+		if(DT2W_DEBUG)	
+			printk("dt2w: cant enable/disable while screen is off! Waking...\n");
 
 		doubletap2wake_pwrtrigger();
 
 		while(scr_suspended && tries <= max_tries){
-			mdelay(200);
+			msleep(200);
 			tries = tries + 1;
 		}
 	}
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
 		dt2w_switch = 1;
-#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
-		should_break_suspend_check_init_work();
-#endif
-		if(dt2w_debug)
-			pr_err("dt2w: enabled\n");
+		if(DT2W_DEBUG)
+			printk("dt2w: enabled\n");
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-		if(dt2w_use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
+		if(use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
 			wake_lock(&dt2w_wake_lock);
-			if(dt2w_debug)
-				pr_err("dt2w: wake lock enabled\n");
+			if(DT2W_DEBUG)
+				printk("dt2w: wake lock enabled\n");
 		}
 #endif
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
 		dt2w_switch = 0;
-		if(dt2w_debug)
-			pr_err("dt2w: disabled\n");
+		if(DT2W_DEBUG)
+			printk("dt2w: disabled\n");
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
 		if(wake_lock_active(&dt2w_wake_lock)){
 			wake_unlock(&dt2w_wake_lock);
@@ -232,47 +223,48 @@ module_param_call(enable, set_enable, param_get_int, &dt2w_switch, 0664);
 
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
 
-static int set_dt2w_use_wakelock(const char *val, struct kernel_param *kp){
+static int set_use_wakelock(const char *val, struct kernel_param *kp){
 
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
-		dt2w_use_wakelock = true;
-		if(dt2w_use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
+		use_wakelock = true;
+		if(use_wakelock && !wake_lock_active(&dt2w_wake_lock)){
 			wake_lock(&dt2w_wake_lock);
-			if(dt2w_debug)
+			if(DT2W_DEBUG)
 				printk("dt2w: wake lock enabled\n");
 		}
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
-		dt2w_use_wakelock = false;
+		use_wakelock = true;
 		if(wake_lock_active(&dt2w_wake_lock)){
 			wake_unlock(&dt2w_wake_lock);
 		}
 
 	}else {
-		pr_err("dt2w: invalid input '%s' for 'dt2w_use_wakelock'; use 1 or 0\n", val);
+		printk("dt2w: invalid input '%s' for 'use_wakelock'; use 1 or 0\n", val);
 	}
 	return 0;
 
 }
 
-module_param_call(dt2w_use_wakelock, set_dt2w_use_wakelock, param_get_bool, &dt2w_use_wakelock, 0664);
+module_param_call(use_wakelock, set_use_wakelock, param_get_bool, &use_wakelock, 0664);
 #endif
 
-int __devinit doubletap2wake_init(void)
+static int __init doubletap2wake_init(void)
 {
 #ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE_WAKELOCK
-	wake_lock_init(&dt2w_wake_lock, WAKE_LOCK_SUSPEND, "dt2w_kernel_wake_lock");		
+	wake_lock_init(&dt2w_wake_lock, WAKE_LOCK_SUSPEND, "dt2w_kernel_wake_lock");
 #endif
-	pr_err("[doubletap2wake]: %s done\n", __func__);
+	pr_info("[doubletap2wake]: %s done\n", __func__);
 	return 0;
 }
-EXPORT_SYMBOL(doubletap2wake_init);
 
-void __exit doubletap2wake_exit(void)
+static void __exit doubletap2wake_exit(void)
 {
-	wake_lock_destroy(&dt2w_wake_lock);
 	return;
 }
+
+module_init(doubletap2wake_init);
+module_exit(doubletap2wake_exit);
 
 MODULE_DESCRIPTION("DoubleTap2wake");
 MODULE_LICENSE("GPLv2");

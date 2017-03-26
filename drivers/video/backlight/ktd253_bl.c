@@ -31,6 +31,12 @@
 #include <linux/gpio.h>
 #include <linux/earlysuspend.h>
 #include <video/ktd253x_bl.h>
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+#include <linux/input/sweep2wake.h>
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
 
 /* to be removed when driver works */
 /* #define dev_dbg dev_info */
@@ -78,6 +84,19 @@ static int ktd253_set_brightness(struct backlight_device *bd)
 
 	dev_dbg(&bd->dev, "%s function enter (%d->%d)\n", __func__,
 		pKtd253Data->brightness, reqBrightness);
+
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+	if(!reqBrightness)
+		s2w_set_scr_suspended(true);
+	else
+		s2w_set_scr_suspended(false);
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+	if(!reqBrightness)
+		dt2w_set_scr_suspended(true);
+	else
+		dt2w_set_scr_suspended(false);
+#endif
 
 	/* Don't update backlight controller if the backlight is disabled (e.g. phone is suspended) */
 	if (pKtd253Data->backlight_disabled) {
