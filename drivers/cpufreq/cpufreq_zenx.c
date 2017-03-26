@@ -79,11 +79,11 @@ static cpumask_t hotplug_remove_cpumask;
 static spinlock_t hotplug_remove_cpumask_lock;
 
 /* Hi speed to bump to from lo speed when load burst (default max) */
-static unsigned int hispeed_freq;
+static unsigned int hispeed_freq = 530000;
 
 /* Go to hi speed when CPU load at or above this value. */
 #define DEFAULT_GO_HISPEED_LOAD 95
-static unsigned long go_hispeed_load = 100;
+static unsigned long go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
 
 /* Unplug auxillary CPUs below these values. */
 #define DEFAULT_UNPLUG_LOAD_CPU1 0
@@ -362,7 +362,7 @@ static void cpufreq_zenx_timer(unsigned long data)
 	pcpu->last_cpu_load = cpu_load;
 	boosted = boost_val || now < boostpulse_endtime || now < (last_input_time + input_boost_ms * 1000);;
 
-	if (go_hispeed_load && cpu_load >= go_hispeed_load) {
+	if (cpu_load >= go_hispeed_load) {
 		if (pcpu->target_freq < hispeed_freq) {
 			new_freq = hispeed_freq;
 		} else {
