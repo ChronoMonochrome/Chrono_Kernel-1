@@ -575,14 +575,14 @@ static int s6d27a1_dpi_ldi_init(struct s6d27a1_dpi *lcd)
 
 	ret |= s6d27a1_write_dcs_sequence(lcd, DCS_CMD_SEQ_S6D27A1_INIT);
 
-
+/*
 	if (lcd->pd->bl_ctrl)
 		ret |= s6d27a1_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_S6D27A1_ENABLE_BACKLIGHT_CONTROL);
 	else
 		ret |= s6d27a1_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_S6D27A1_DISABLE_BACKLIGHT_CONTROL);
-
+*/
 	return ret;
 }
 
@@ -590,8 +590,15 @@ static int s6d27a1_dpi_ldi_enable(struct s6d27a1_dpi *lcd)
 {
 	int ret = 0;
 	dev_dbg(lcd->dev, "s6d27a1_dpi_ldi_enable\n");
-
+	
+	if (lcd->pd->sleep_out_delay)
+			msleep(lcd->pd->sleep_out_delay);
 	ret |= s6d27a1_write_dcs_sequence(lcd, DCS_CMD_SEQ_S6D27A1_DISPLAY_ON);
+	
+	if (lcd->pd->sleep_out_delay)
+			msleep(lcd->pd->sleep_out_delay);
+	if (!ret)
+		lcd->ldi_state = LDI_STATE_ON;
 
 	return ret;
 }
@@ -601,7 +608,11 @@ static int s6d27a1_dpi_ldi_disable(struct s6d27a1_dpi *lcd)
 	int ret;
 
 	dev_dbg(lcd->dev, "s6d27a1_dpi_ldi_disable\n");
-	ret = s6d27a1_write_dcs_sequence(lcd,
+	
+	ret |= s6d27a1_write_dcs_sequence(lcd,
+					DCS_CMD_SEQ_S6D27A1_DISPLAY_OFF);
+
+	ret |= s6d27a1_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_S6D27A1_ENTER_SLEEP_MODE);
 
 	if (lcd->pd->sleep_in_delay)
