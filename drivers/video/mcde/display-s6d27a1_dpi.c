@@ -435,6 +435,7 @@ static void s6d27a1_release_opp(struct s6d27a1_dpi *lcd)
 	}
 }
 
+#if 0
 /* Reverse order of power on and channel update as compared with MCDE default display update */
 static int s6d27a1_display_update(struct mcde_display_device *ddev,
 							bool tripple_buffer)
@@ -474,6 +475,7 @@ static int s6d27a1_display_update(struct mcde_display_device *ddev,
 		
 	return 0;
 }
+#endif
 
 static int s6d27a1_set_rotation(struct mcde_display_device *ddev,
 	enum mcde_display_rotation rotation)
@@ -668,7 +670,7 @@ static int s6d27a1_dpi_ldi_enable(struct s6d27a1_dpi *lcd)
 
 static int s6d27a1_dpi_ldi_disable(struct s6d27a1_dpi *lcd)
 {
-	int ret;
+	int ret = 0;
 
 	dev_dbg(lcd->dev, "s6d27a1_dpi_ldi_disable\n");
 	
@@ -1428,12 +1430,11 @@ static void s6d27a1_dpi_mcde_early_suspend(
 	struct s6d27a1_dpi *lcd = container_of(earlysuspend,
 						struct s6d27a1_dpi,
 						earlysuspend);
+	pm_message_t dummy;
 	
 	#ifdef CONFIG_DB8500_LIVEOPP
 	schedule_work(&requirements_remove_work);
 	#endif
-	
-	pm_message_t dummy;
 
 	s6d27a1_dpi_mcde_suspend(lcd->mdd, dummy);
 
