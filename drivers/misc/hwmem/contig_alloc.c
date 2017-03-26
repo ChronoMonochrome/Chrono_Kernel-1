@@ -103,10 +103,10 @@ void *cona_create(const char *name, phys_addr_t region_paddr,
 	 * address if LOMEM region is enough to contain the whole HWMEM.
 	 * otherwise map hwmem to VMALLOC region.
 	 */
-	if (region_end > region_paddr
-	    && region_end < virt_to_phys(high_memory)) {
+	if (__phys_to_virt(region_end) > __phys_to_virt(region_paddr)
+	    && __phys_to_virt(region_end) < (unsigned long)high_memory) {
 		instance->region_kaddr = phys_to_virt(region_paddr);
-		pr_err("hwmem: %s map to LOMEM, start: 0x%p, end: 0x%p\n",
+		pr_info("hwmem: %s map to LOMEM, start: 0x%p, end: 0x%p\n",
 			name,
 			phys_to_virt(region_paddr),
 			phys_to_virt(region_paddr+region_size));
@@ -123,10 +123,9 @@ void *cona_create(const char *name, phys_addr_t region_paddr,
 		}
 
 		instance->region_kaddr = vm_area->addr;
-		pr_err("hwmem: %s map to VMALLOC, address: 0x%p, paddr=0x%p\n",
+		pr_info("hwmem: %s map to VMALLOC, address: 0x%p\n",
 			name,
-			instance->region_kaddr,
-			region_paddr);
+			instance->region_kaddr);
 	}
 
 	/*
