@@ -200,8 +200,8 @@ sbni_isa_probe( struct net_device  *dev )
 
 		return  0;
 	else {
-		printk( KERN_ERR "sbni: base address 0x%lx is busy, or adapter "
-			"is malfunctional!\n", dev->base_addr );
+//		printk( KERN_ERR "sbni: base address 0x%lx is busy, or adapter "
+;
 		return  -ENODEV;
 	}
 }
@@ -251,7 +251,7 @@ int __init sbni_probe(int unit)
 		return err;
 	}
 	if( version_printed++ == 0 )
-		printk( KERN_INFO "%s", version );
+;
 	return 0;
 }
 
@@ -326,10 +326,10 @@ sbni_pci_probe( struct net_device  *dev )
 		}
 
 		if (pci_irq_line <= 0 || pci_irq_line >= nr_irqs)
-			printk( KERN_WARNING
-	"  WARNING: The PCI BIOS assigned this PCI card to IRQ %d, which is unlikely to work!.\n"
-	" You should use the PCI BIOS setup to assign a valid IRQ line.\n",
-				pci_irq_line );
+//			printk( KERN_WARNING
+//	"  WARNING: The PCI BIOS assigned this PCI card to IRQ %d, which is unlikely to work!.\n"
+//	" You should use the PCI BIOS setup to assign a valid IRQ line.\n",
+;
 
 		/* avoiding re-enable dual adapters */
 		if( (pci_ioaddr & 7) == 0  &&  pci_enable_device( pdev ) ) {
@@ -372,8 +372,8 @@ sbni_probe1( struct net_device  *dev,  unsigned long  ioaddr,  int  irq )
 		outb( 0, ioaddr + CSR0 );
 
 		if( !irq ) {
-			printk( KERN_ERR "%s: can't detect device irq!\n",
-				dev->name );
+//			printk( KERN_ERR "%s: can't detect device irq!\n",
+;
 			release_region( ioaddr, SBNI_IO_EXTENT );
 			return NULL;
 		}
@@ -386,7 +386,7 @@ sbni_probe1( struct net_device  *dev,  unsigned long  ioaddr,  int  irq )
 	/* Fill in sbni-specific dev fields. */
 	nl = netdev_priv(dev);
 	if( !nl ) {
-		printk( KERN_ERR "%s: unable to get memory!\n", dev->name );
+;
 		release_region( ioaddr, SBNI_IO_EXTENT );
 		return NULL;
 	}
@@ -415,21 +415,21 @@ sbni_probe1( struct net_device  *dev,  unsigned long  ioaddr,  int  irq )
 	if( inb( ioaddr + CSR0 ) & 0x01 )
 		nl->state |= FL_SLOW_MODE;
 
-	printk( KERN_NOTICE "%s: ioaddr %#lx, irq %d, "
-		"MAC: 00:ff:01:%02x:%02x:%02x\n", 
-		dev->name, dev->base_addr, dev->irq,
-		((u8 *) dev->dev_addr) [3],
-		((u8 *) dev->dev_addr) [4],
-		((u8 *) dev->dev_addr) [5] );
+//	printk( KERN_NOTICE "%s: ioaddr %#lx, irq %d, "
+//		"MAC: 00:ff:01:%02x:%02x:%02x\n", 
+//		dev->name, dev->base_addr, dev->irq,
+//		((u8 *) dev->dev_addr) [3],
+//		((u8 *) dev->dev_addr) [4],
+;
 
-	printk( KERN_NOTICE "%s: speed %d, receive level ", dev->name,
-		( (nl->state & FL_SLOW_MODE)  ?  500000 : 2000000)
-		/ (1 << nl->csr1.rate) );
+//	printk( KERN_NOTICE "%s: speed %d, receive level ", dev->name,
+//		( (nl->state & FL_SLOW_MODE)  ?  500000 : 2000000)
+;
 
 	if( nl->delta_rxl == 0 )
-		printk( "0x%x (fixed)\n", nl->cur_rxl_index ); 
+;
 	else
-		printk( "(auto)\n");
+;
 
 #ifdef CONFIG_SBNI_MULTILINE
 	nl->master = dev;
@@ -568,7 +568,7 @@ handle_channel( struct net_device  *dev )
 		 */
 		csr0 = inb( ioaddr + CSR0 );
 		if( !(csr0 & TR_RDY)  ||  (csr0 & RC_RDY) )
-			printk( KERN_ERR "%s: internal error!\n", dev->name );
+;
 
 		/* if state & FL_NEED_RESEND != 0 then tx_frameno != 0 */
 		if( req_ans  ||  nl->tx_frameno != 0 )
@@ -851,7 +851,7 @@ prepare_to_send( struct sk_buff  *skb,  struct net_device  *dev )
 
 	/* nl->tx_buf_p == NULL here! */
 	if( nl->tx_buf_p )
-		printk( KERN_ERR "%s: memory leak!\n", dev->name );
+;
 
 	nl->outpos = 0;
 	nl->state &= ~(FL_WAIT_ACK | FL_NEED_RESEND);
@@ -1179,16 +1179,16 @@ sbni_open( struct net_device  *dev )
 
 				((struct net_local *) (netdev_priv(*p)))
 					->second = dev;
-				printk( KERN_NOTICE "%s: using shared irq "
-					"with %s\n", dev->name, (*p)->name );
+//				printk( KERN_NOTICE "%s: using shared irq "
+;
 				nl->state |= FL_SECONDARY;
 				goto  handler_attached;
 			}
 	}
 
 	if( request_irq(dev->irq, sbni_interrupt, IRQF_SHARED, dev->name, dev) ) {
-		printk( KERN_ERR "%s: unable to get IRQ %d.\n",
-			dev->name, dev->irq );
+//		printk( KERN_ERR "%s: unable to get IRQ %d.\n",
+;
 		return  -EAGAIN;
 	}
 
@@ -1220,8 +1220,8 @@ sbni_close( struct net_device  *dev )
 	struct net_local  *nl = netdev_priv(dev);
 
 	if( nl->second  &&  nl->second->flags & IFF_UP ) {
-		printk( KERN_NOTICE "Secondary channel (%s) is active!\n",
-			nl->second->name );
+//		printk( KERN_NOTICE "Secondary channel (%s) is active!\n",
+;
 		return  -EBUSY;
 	}
 
@@ -1363,8 +1363,8 @@ sbni_ioctl( struct net_device  *dev,  struct ifreq  *ifr,  int  cmd )
 			return -EFAULT;
 		slave_dev = dev_get_by_name(&init_net, slave_name );
 		if( !slave_dev  ||  !(slave_dev->flags & IFF_UP) ) {
-			printk( KERN_ERR "%s: trying to enslave non-active "
-				"device %s\n", dev->name, slave_name );
+//			printk( KERN_ERR "%s: trying to enslave non-active "
+;
 			return  -EPERM;
 		}
 
@@ -1417,8 +1417,8 @@ enslave( struct net_device  *dev,  struct net_device  *slave_dev )
 
 	spin_unlock( &snl->lock );
 	spin_unlock( &nl->lock );
-	printk( KERN_NOTICE "%s: slave device (%s) attached.\n",
-		dev->name, slave_dev->name );
+//	printk( KERN_NOTICE "%s: slave device (%s) attached.\n",
+;
 	return  0;
 }
 
@@ -1547,7 +1547,7 @@ sbni_setup( char  *p )
 				break;
 	}
 bad_param:
-	printk( KERN_ERR "Error in sbni kernel parameter!\n" );
+;
 	return 0;
 }
 

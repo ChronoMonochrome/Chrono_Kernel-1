@@ -1347,7 +1347,7 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
 
 	dev = ieee80211_alloc_hw(sizeof(*priv), &rtl8187_ops);
 	if (!dev) {
-		printk(KERN_ERR "rtl8187: ieee80211 alloc failed\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1406,8 +1406,8 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
 	eeprom_93cx6_multiread(&eeprom, RTL8187_EEPROM_MAC_ADDR,
 			       (__le16 __force *)mac_addr, 3);
 	if (!is_valid_ether_addr(mac_addr)) {
-		printk(KERN_WARNING "rtl8187: Invalid hwaddr! Using randomly "
-		       "generated MAC address\n");
+//		printk(KERN_WARNING "rtl8187: Invalid hwaddr! Using randomly "
+;
 		random_ether_addr(mac_addr);
 	}
 	SET_IEEE80211_PERM_ADDR(dev, mac_addr);
@@ -1462,8 +1462,8 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
 		 * only uses it in their sources
 		 */
 		/*if (priv->asic_rev == 0) {
-			printk(KERN_WARNING "rtl8187: Forcing use of USB "
-			       "requests to write to radio registers\n");
+//			printk(KERN_WARNING "rtl8187: Forcing use of USB "
+;
 			priv->asic_rev = 1;
 		}*/
 		switch (rtl818x_ioread8(priv, (u8 *)0xFFE1)) {
@@ -1520,8 +1520,8 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
 	dev->wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION);
 
 	if ((id->driver_info == DEVICE_RTL8187) && priv->is_rtl8187b)
-		printk(KERN_INFO "rtl8187: inconsistency between id with OEM"
-		       " info!\n");
+//		printk(KERN_INFO "rtl8187: inconsistency between id with OEM"
+;
 
 	priv->rf = rtl8187_detect_rf(dev);
 	dev->extra_tx_headroom = (!priv->is_rtl8187b) ?
@@ -1534,7 +1534,7 @@ static int __devinit rtl8187_probe(struct usb_interface *intf,
 
 	err = ieee80211_register_hw(dev);
 	if (err) {
-		printk(KERN_ERR "rtl8187: Cannot register device\n");
+;
 		goto err_free_dmabuf;
 	}
 	mutex_init(&priv->conf_mutex);

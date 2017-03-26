@@ -266,7 +266,7 @@ static void printk_buf(int level, const u8 * data, u32 len)
 	while (len) {
 		snprint_line(line, sizeof(line), &data[ofs],
 			     min(len, 16U), ofs);
-		printk(KERN_DEBUG "%s\n", line);
+;
 		ofs += 16;
 		len -= min(len, 16U);
 	}
@@ -1204,8 +1204,8 @@ static ssize_t store_debug_level(struct device_driver *d, const char *buf,
 	} else
 		val = simple_strtoul(p, &p, 10);
 	if (p == buf)
-		printk(KERN_INFO DRV_NAME
-		       ": %s is not in hex or decimal form.\n", buf);
+//		printk(KERN_INFO DRV_NAME
+;
 	else
 		ipw_debug_level = val;
 
@@ -5209,8 +5209,8 @@ static void ipw_rx_queue_replenish(void *data)
 		rxb = list_entry(element, struct ipw_rx_mem_buffer, list);
 		rxb->skb = alloc_skb(IPW_RX_BUF_SIZE, GFP_ATOMIC);
 		if (!rxb->skb) {
-			printk(KERN_CRIT "%s: Can not allocate SKB buffers.\n",
-			       priv->net_dev->name);
+//			printk(KERN_CRIT "%s: Can not allocate SKB buffers.\n",
+;
 			/* We don't reschedule replenish work here -- we will
 			 * call the restock method and if it still needs
 			 * more buffers it will schedule replenish */
@@ -7775,8 +7775,8 @@ static void ipw_rebuild_decrypted_skb(struct ipw_priv *priv,
 	case SEC_LEVEL_0:
 		break;
 	default:
-		printk(KERN_ERR "Unknown security level %d\n",
-		       priv->ieee->sec.level);
+//		printk(KERN_ERR "Unknown security level %d\n",
+;
 		break;
 	}
 }
@@ -8374,7 +8374,7 @@ static void ipw_rx(struct ipw_priv *priv)
 	while (i != r) {
 		rxb = priv->rxq->queue[i];
 		if (unlikely(rxb == NULL)) {
-			printk(KERN_CRIT "Queue not allocated!\n");
+;
 			break;
 		}
 		priv->rxq->queue[i] = NULL;
@@ -8646,9 +8646,9 @@ static int ipw_sw_reset(struct ipw_priv *priv, int option)
 	if ((priv->pci_dev->device == 0x4223) ||
 	    (priv->pci_dev->device == 0x4224)) {
 		if (option == 1)
-			printk(KERN_INFO DRV_NAME
-			       ": Detected Intel PRO/Wireless 2915ABG Network "
-			       "Connection\n");
+//			printk(KERN_INFO DRV_NAME
+//			       ": Detected Intel PRO/Wireless 2915ABG Network "
+;
 		priv->ieee->abg_true = 1;
 		band = LIBIPW_52GHZ_BAND | LIBIPW_24GHZ_BAND;
 		modulation = LIBIPW_OFDM_MODULATION |
@@ -8657,9 +8657,9 @@ static int ipw_sw_reset(struct ipw_priv *priv, int option)
 		priv->ieee->mode = IEEE_A | IEEE_G | IEEE_B;
 	} else {
 		if (option == 1)
-			printk(KERN_INFO DRV_NAME
-			       ": Detected Intel PRO/Wireless 2200BG Network "
-			       "Connection\n");
+//			printk(KERN_INFO DRV_NAME
+//			       ": Detected Intel PRO/Wireless 2200BG Network "
+;
 
 		priv->ieee->abg_true = 0;
 		band = LIBIPW_24GHZ_BAND;
@@ -10313,8 +10313,8 @@ static int ipw_tx_skb(struct ipw_priv *priv, struct libipw_txb *txb,
 		case SEC_LEVEL_0:
 			break;
 		default:
-			printk(KERN_ERR "Unknown security level %d\n",
-			       priv->ieee->sec.level);
+//			printk(KERN_ERR "Unknown security level %d\n",
+;
 			break;
 		}
 	} else
@@ -10359,16 +10359,16 @@ static int ipw_tx_skb(struct ipw_priv *priv, struct libipw_txb *txb,
 		for (j = i; j < txb->nr_frags; j++)
 			remaining_bytes += txb->fragments[j]->len - hdr_len;
 
-		printk(KERN_INFO "Trying to reallocate for %d bytes\n",
-		       remaining_bytes);
+//		printk(KERN_INFO "Trying to reallocate for %d bytes\n",
+;
 		skb = alloc_skb(remaining_bytes, GFP_ATOMIC);
 		if (skb != NULL) {
 			tfd->u.data.chunk_len[i] = cpu_to_le16(remaining_bytes);
 			for (j = i; j < txb->nr_frags; j++) {
 				int size = txb->fragments[j]->len - hdr_len;
 
-				printk(KERN_INFO "Adding frag %d %d...\n",
-				       j, size);
+//				printk(KERN_INFO "Adding frag %d %d...\n",
+;
 				memcpy(skb_put(skb, size),
 				       txb->fragments[j]->data + hdr_len, size);
 			}
@@ -10535,8 +10535,8 @@ static int ipw_net_set_mac_address(struct net_device *dev, void *p)
 	mutex_lock(&priv->mutex);
 	priv->config |= CFG_CUSTOM_MAC;
 	memcpy(priv->mac_addr, addr->sa_data, ETH_ALEN);
-	printk(KERN_INFO "%s: Setting MAC to %pM\n",
-	       priv->net_dev->name, priv->mac_addr);
+//	printk(KERN_INFO "%s: Setting MAC to %pM\n",
+;
 	schedule_work(&priv->adapter_restart);
 	mutex_unlock(&priv->mutex);
 	return 0;
@@ -11758,7 +11758,7 @@ static int __devinit ipw_pci_probe(struct pci_dev *pdev,
 	if (!err)
 		err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (err) {
-		printk(KERN_WARNING DRV_NAME ": No suitable DMA available.\n");
+;
 		goto out_pci_disable_device;
 	}
 
@@ -11855,10 +11855,10 @@ static int __devinit ipw_pci_probe(struct pci_dev *pdev,
 	}
 #endif
 
-	printk(KERN_INFO DRV_NAME ": Detected geography %s (%d 802.11bg "
-	       "channels, %d 802.11a channels)\n",
-	       priv->ieee->geo.name, priv->ieee->geo.bg_channels,
-	       priv->ieee->geo.a_channels);
+//	printk(KERN_INFO DRV_NAME ": Detected geography %s (%d 802.11bg "
+//	       "channels, %d 802.11a channels)\n",
+//	       priv->ieee->geo.name, priv->ieee->geo.bg_channels,
+;
 
 	return 0;
 
@@ -11968,7 +11968,7 @@ static int ipw_pci_suspend(struct pci_dev *pdev, pm_message_t state)
 	struct ipw_priv *priv = pci_get_drvdata(pdev);
 	struct net_device *dev = priv->net_dev;
 
-	printk(KERN_INFO "%s: Going into suspend...\n", dev->name);
+;
 
 	/* Take down the device; powers it off, etc. */
 	ipw_down(priv);
@@ -11992,13 +11992,13 @@ static int ipw_pci_resume(struct pci_dev *pdev)
 	int err;
 	u32 val;
 
-	printk(KERN_INFO "%s: Coming out of suspend...\n", dev->name);
+;
 
 	pci_set_power_state(pdev, PCI_D0);
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: pci_enable_device failed on resume\n",
+;
 		return err;
 	}
 	pci_restore_state(pdev);
@@ -12053,8 +12053,8 @@ static int __init ipw_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO DRV_NAME ": " DRV_DESCRIPTION ", " DRV_VERSION "\n");
-	printk(KERN_INFO DRV_NAME ": " DRV_COPYRIGHT "\n");
+;
+;
 
 	ret = pci_register_driver(&ipw_driver);
 	if (ret) {

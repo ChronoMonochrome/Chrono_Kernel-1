@@ -192,8 +192,8 @@ void b43legacyinfo(struct b43legacy_wl *wl, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_INFO "b43legacy-%s: %pV",
-	       (wl && wl->hw) ? wiphy_name(wl->hw->wiphy) : "wlan", &vaf);
+//	printk(KERN_INFO "b43legacy-%s: %pV",
+;
 
 	va_end(args);
 }
@@ -211,8 +211,8 @@ void b43legacyerr(struct b43legacy_wl *wl, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_ERR "b43legacy-%s ERROR: %pV",
-	       (wl && wl->hw) ? wiphy_name(wl->hw->wiphy) : "wlan", &vaf);
+//	printk(KERN_ERR "b43legacy-%s ERROR: %pV",
+;
 
 	va_end(args);
 }
@@ -230,8 +230,8 @@ void b43legacywarn(struct b43legacy_wl *wl, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_WARNING "b43legacy-%s warning: %pV",
-	       (wl && wl->hw) ? wiphy_name(wl->hw->wiphy) : "wlan", &vaf);
+//	printk(KERN_WARNING "b43legacy-%s warning: %pV",
+;
 
 	va_end(args);
 }
@@ -247,8 +247,8 @@ void b43legacydbg(struct b43legacy_wl *wl, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_DEBUG "b43legacy-%s debug: %pV",
-	       (wl && wl->hw) ? wiphy_name(wl->hw->wiphy) : "wlan", &vaf);
+//	printk(KERN_DEBUG "b43legacy-%s debug: %pV",
+;
 
 	va_end(args);
 }
@@ -3950,10 +3950,10 @@ static void b43legacy_print_driverinfo(void)
 #ifdef CONFIG_B43LEGACY_DMA
 	feat_dma = "D";
 #endif
-	printk(KERN_INFO "Broadcom 43xx-legacy driver loaded "
-	       "[ Features: %s%s%s%s, Firmware-ID: "
-	       B43legacy_SUPPORTED_FIRMWARE_ID " ]\n",
-	       feat_pci, feat_leds, feat_pio, feat_dma);
+//	printk(KERN_INFO "Broadcom 43xx-legacy driver loaded "
+//	       "[ Features: %s%s%s%s, Firmware-ID: "
+//	       B43legacy_SUPPORTED_FIRMWARE_ID " ]\n",
+;
 }
 
 static int __init b43legacy_init(void)

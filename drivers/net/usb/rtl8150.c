@@ -991,8 +991,8 @@ static void rtl8150_disconnect(struct usb_interface *intf)
 
 static int __init usb_rtl8150_init(void)
 {
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return usb_register(&rtl8150_driver);
 }
 

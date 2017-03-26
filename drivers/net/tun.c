@@ -80,23 +80,23 @@ static int debug;
 #define tun_debug(level, tun, fmt, args...)			\
 do {								\
 	if (tun->debug)						\
-		netdev_printk(level, tun->dev, fmt, ##args);	\
+;
 } while (0)
 #define DBG1(level, fmt, args...)				\
 do {								\
 	if (debug == 2)						\
-		printk(level fmt, ##args);			\
+;
 } while (0)
 #else
 #define tun_debug(level, tun, fmt, args...)			\
 do {								\
 	if (0)							\
-		netdev_printk(level, tun->dev, fmt, ##args);	\
+;								\
 } while (0)
 #define DBG1(level, fmt, args...)				\
 do {								\
 	if (0)							\
-		printk(level fmt, ##args);			\
+;								\
 } while (0)
 #endif
 

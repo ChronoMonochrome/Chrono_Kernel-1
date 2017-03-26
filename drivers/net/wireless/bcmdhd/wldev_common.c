@@ -40,9 +40,8 @@
 #define dtohchanspec(i) i
 
 #define	WLDEV_ERROR(args)						\
-	do {										\
-		printk(KERN_ERR "WLDEV-ERROR) %s : ", __func__);	\
-		printk args;							\
+	do {								\
+			;						\
 	} while (0)
 
 extern int dhd_ioctl_entry_local(struct net_device *net, wl_ioctl_t *ioc, int cmd);

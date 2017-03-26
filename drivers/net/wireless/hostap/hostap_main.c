@@ -86,14 +86,14 @@ struct net_device * hostap_add_interface(struct local_info *local,
 		rtnl_unlock();
 
 	if (ret < 0) {
-		printk(KERN_WARNING "%s: failed to add new netdevice!\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: failed to add new netdevice!\n",
+;
 		free_netdev(dev);
 		return NULL;
 	}
 
-	printk(KERN_DEBUG "%s: registered netdevice %s\n",
-	       mdev->name, dev->name);
+//	printk(KERN_DEBUG "%s: registered netdevice %s\n",
+;
 
 	return dev;
 }
@@ -165,8 +165,8 @@ int prism2_wds_add(local_info_t *local, u8 *remote_addr,
 		/* take pre-allocated entry into use */
 		memcpy(empty->u.wds.remote_addr, remote_addr, ETH_ALEN);
 		read_unlock_bh(&local->iface_lock);
-		printk(KERN_DEBUG "%s: using pre-allocated WDS netdevice %s\n",
-		       local->dev->name, empty->dev->name);
+//		printk(KERN_DEBUG "%s: using pre-allocated WDS netdevice %s\n",
+;
 		return 0;
 	}
 	read_unlock_bh(&local->iface_lock);
@@ -182,8 +182,8 @@ int prism2_wds_add(local_info_t *local, u8 *remote_addr,
 
 	/* verify that there is room for wds# postfix in the interface name */
 	if (strlen(local->dev->name) >= IFNAMSIZ - 5) {
-		printk(KERN_DEBUG "'%s' too long base device name\n",
-		       local->dev->name);
+//		printk(KERN_DEBUG "'%s' too long base device name\n",
+;
 		return -EINVAL;
 	}
 
@@ -348,7 +348,7 @@ int hostap_set_encryption(local_info_t *local)
 
 	if (local->func->get_rid(local->dev, HFA384X_RID_CNFWEPFLAGS, &val, 2,
 				 1) < 0) {
-		printk(KERN_DEBUG "Could not read current WEP flags.\n");
+;
 		goto fail;
 	}
 	le16_to_cpus(&val);
@@ -378,8 +378,8 @@ int hostap_set_encryption(local_info_t *local)
 
 	if (val != old_val &&
 	    hostap_set_word(local->dev, HFA384X_RID_CNFWEPFLAGS, val)) {
-		printk(KERN_DEBUG "Could not write new WEP flags (0x%x)\n",
-		       val);
+//		printk(KERN_DEBUG "Could not write new WEP flags (0x%x)\n",
+;
 		goto fail;
 	}
 
@@ -404,20 +404,20 @@ int hostap_set_encryption(local_info_t *local)
 		if (local->func->set_rid(local->dev,
 					 HFA384X_RID_CNFDEFAULTKEY0 + i,
 					 keybuf, keylen)) {
-			printk(KERN_DEBUG "Could not set key %d (len=%d)\n",
-			       i, keylen);
+//			printk(KERN_DEBUG "Could not set key %d (len=%d)\n",
+;
 			goto fail;
 		}
 	}
 	if (hostap_set_word(local->dev, HFA384X_RID_CNFWEPDEFAULTKEYID, idx)) {
-		printk(KERN_DEBUG "Could not set default keyid %d\n", idx);
+;
 		goto fail;
 	}
 
 	return 0;
 
  fail:
-	printk(KERN_DEBUG "%s: encryption setup failed\n", local->dev->name);
+;
 	return -1;
 }
 
@@ -445,8 +445,8 @@ int hostap_set_antsel(local_info_t *local)
 
 		if (local->func->cmd(local->dev, HFA384X_CMDCODE_WRITEMIF,
 				     HFA386X_CR_TX_CONFIGURE, &val, NULL)) {
-			printk(KERN_INFO "%s: setting TX AntSel failed\n",
-			       local->dev->name);
+//			printk(KERN_INFO "%s: setting TX AntSel failed\n",
+;
 			ret = -1;
 		}
 	}
@@ -469,8 +469,8 @@ int hostap_set_antsel(local_info_t *local)
 
 		if (local->func->cmd(local->dev, HFA384X_CMDCODE_WRITEMIF,
 				     HFA386X_CR_RX_CONFIGURE, &val, NULL)) {
-			printk(KERN_INFO "%s: setting RX AntSel failed\n",
-			       local->dev->name);
+//			printk(KERN_INFO "%s: setting RX AntSel failed\n",
+;
 			ret = -1;
 		}
 	}
@@ -513,8 +513,8 @@ int hostap_set_auth_algs(local_info_t *local)
 		val = PRISM2_AUTH_OPEN;
 
 	if (hostap_set_word(local->dev, HFA384X_RID_CNFAUTHENTICATION, val)) {
-		printk(KERN_INFO "%s: cnfAuthentication setting to 0x%x "
-		       "failed\n", local->dev->name, local->auth_algs);
+//		printk(KERN_INFO "%s: cnfAuthentication setting to 0x%x "
+;
 		return -EINVAL;
 	}
 
@@ -528,28 +528,28 @@ void hostap_dump_rx_header(const char *name, const struct hfa384x_rx_frame *rx)
 
 	status = __le16_to_cpu(rx->status);
 
-	printk(KERN_DEBUG "%s: RX status=0x%04x (port=%d, type=%d, "
-	       "fcserr=%d) silence=%d signal=%d rate=%d rxflow=%d; "
+//	printk(KERN_DEBUG "%s: RX status=0x%04x (port=%d, type=%d, "
+;
 	       "jiffies=%ld\n",
 	       name, status, (status >> 8) & 0x07, status >> 13, status & 1,
 	       rx->silence, rx->signal, rx->rate, rx->rxflow, jiffies);
 
 	fc = __le16_to_cpu(rx->frame_control);
-	printk(KERN_DEBUG "   FC=0x%04x (type=%d:%d) dur=0x%04x seq=0x%04x "
-	       "data_len=%d%s%s\n",
-	       fc, (fc & IEEE80211_FCTL_FTYPE) >> 2,
-	       (fc & IEEE80211_FCTL_STYPE) >> 4,
-	       __le16_to_cpu(rx->duration_id), __le16_to_cpu(rx->seq_ctrl),
-	       __le16_to_cpu(rx->data_len),
-	       fc & IEEE80211_FCTL_TODS ? " [ToDS]" : "",
-	       fc & IEEE80211_FCTL_FROMDS ? " [FromDS]" : "");
+//	printk(KERN_DEBUG "   FC=0x%04x (type=%d:%d) dur=0x%04x seq=0x%04x "
+//	       "data_len=%d%s%s\n",
+//	       fc, (fc & IEEE80211_FCTL_FTYPE) >> 2,
+//	       (fc & IEEE80211_FCTL_STYPE) >> 4,
+//	       __le16_to_cpu(rx->duration_id), __le16_to_cpu(rx->seq_ctrl),
+//	       __le16_to_cpu(rx->data_len),
+//	       fc & IEEE80211_FCTL_TODS ? " [ToDS]" : "",
+;
 
-	printk(KERN_DEBUG "   A1=%pM A2=%pM A3=%pM A4=%pM\n",
-	       rx->addr1, rx->addr2, rx->addr3, rx->addr4);
+//	printk(KERN_DEBUG "   A1=%pM A2=%pM A3=%pM A4=%pM\n",
+;
 
-	printk(KERN_DEBUG "   dst=%pM src=%pM len=%d\n",
-	       rx->dst_addr, rx->src_addr,
-	       __be16_to_cpu(rx->len));
+//	printk(KERN_DEBUG "   dst=%pM src=%pM len=%d\n",
+//	       rx->dst_addr, rx->src_addr,
+;
 }
 
 
@@ -557,27 +557,27 @@ void hostap_dump_tx_header(const char *name, const struct hfa384x_tx_frame *tx)
 {
 	u16 fc;
 
-	printk(KERN_DEBUG "%s: TX status=0x%04x retry_count=%d tx_rate=%d "
-	       "tx_control=0x%04x; jiffies=%ld\n",
+//	printk(KERN_DEBUG "%s: TX status=0x%04x retry_count=%d tx_rate=%d "
+;
 	       name, __le16_to_cpu(tx->status), tx->retry_count, tx->tx_rate,
 	       __le16_to_cpu(tx->tx_control), jiffies);
 
 	fc = __le16_to_cpu(tx->frame_control);
-	printk(KERN_DEBUG "   FC=0x%04x (type=%d:%d) dur=0x%04x seq=0x%04x "
-	       "data_len=%d%s%s\n",
-	       fc, (fc & IEEE80211_FCTL_FTYPE) >> 2,
-	       (fc & IEEE80211_FCTL_STYPE) >> 4,
-	       __le16_to_cpu(tx->duration_id), __le16_to_cpu(tx->seq_ctrl),
-	       __le16_to_cpu(tx->data_len),
-	       fc & IEEE80211_FCTL_TODS ? " [ToDS]" : "",
-	       fc & IEEE80211_FCTL_FROMDS ? " [FromDS]" : "");
+//	printk(KERN_DEBUG "   FC=0x%04x (type=%d:%d) dur=0x%04x seq=0x%04x "
+//	       "data_len=%d%s%s\n",
+//	       fc, (fc & IEEE80211_FCTL_FTYPE) >> 2,
+//	       (fc & IEEE80211_FCTL_STYPE) >> 4,
+//	       __le16_to_cpu(tx->duration_id), __le16_to_cpu(tx->seq_ctrl),
+//	       __le16_to_cpu(tx->data_len),
+//	       fc & IEEE80211_FCTL_TODS ? " [ToDS]" : "",
+;
 
-	printk(KERN_DEBUG "   A1=%pM A2=%pM A3=%pM A4=%pM\n",
-	       tx->addr1, tx->addr2, tx->addr3, tx->addr4);
+//	printk(KERN_DEBUG "   A1=%pM A2=%pM A3=%pM A4=%pM\n",
+;
 
-	printk(KERN_DEBUG "   dst=%pM src=%pM len=%d\n",
-	       tx->dst_addr, tx->src_addr,
-	       __be16_to_cpu(tx->len));
+//	printk(KERN_DEBUG "   dst=%pM src=%pM len=%d\n",
+//	       tx->dst_addr, tx->src_addr,
+;
 }
 
 
@@ -666,8 +666,8 @@ static int prism2_open(struct net_device *dev)
 	local = iface->local;
 
 	if (local->no_pri) {
-		printk(KERN_DEBUG "%s: could not set interface UP - no PRI "
-		       "f/w\n", dev->name);
+//		printk(KERN_DEBUG "%s: could not set interface UP - no PRI "
+;
 		return 1;
 	}
 
@@ -680,8 +680,8 @@ static int prism2_open(struct net_device *dev)
 	local->num_dev_open++;
 
 	if (!local->dev_enabled && local->func->hw_enable(dev, 1)) {
-		printk(KERN_WARNING "%s: could not enable MAC port\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: could not enable MAC port\n",
+;
 		prism2_close(dev);
 		return 1;
 	}
@@ -739,8 +739,8 @@ void hostap_set_multicast_list_queue(struct work_struct *work)
 
 	if (hostap_set_word(dev, HFA384X_RID_PROMISCUOUSMODE,
 			    local->is_promisc)) {
-		printk(KERN_INFO "%s: %sabling promiscuous mode failed\n",
-		       dev->name, local->is_promisc ? "en" : "dis");
+//		printk(KERN_INFO "%s: %sabling promiscuous mode failed\n",
+;
 	}
 }
 
@@ -787,14 +787,14 @@ static void prism2_tx_timeout(struct net_device *dev)
 	iface = netdev_priv(dev);
 	local = iface->local;
 
-	printk(KERN_WARNING "%s Tx timed out! Resetting card\n", dev->name);
+;
 	netif_stop_queue(local->dev);
 
 	local->func->read_regs(dev, &regs);
-	printk(KERN_DEBUG "%s: CMD=%04x EVSTAT=%04x "
-	       "OFFSET0=%04x OFFSET1=%04x SWSUPPORT0=%04x\n",
-	       dev->name, regs.cmd, regs.evstat, regs.offset0, regs.offset1,
-	       regs.swsupport0);
+//	printk(KERN_DEBUG "%s: CMD=%04x EVSTAT=%04x "
+//	       "OFFSET0=%04x OFFSET1=%04x SWSUPPORT0=%04x\n",
+//	       dev->name, regs.cmd, regs.evstat, regs.offset0, regs.offset1,
+;
 
 	local->func->schedule_reset(local);
 }
@@ -896,7 +896,7 @@ static int hostap_enable_hostapd(local_info_t *local, int rtnl_locked)
 	if (local->apdev)
 		return -EEXIST;
 
-	printk(KERN_DEBUG "%s: enabling hostapd mode\n", dev->name);
+;
 
 	local->apdev = hostap_add_interface(local, HOSTAP_INTERFACE_AP,
 					    rtnl_locked, local->ddev->name,
@@ -912,7 +912,7 @@ static int hostap_disable_hostapd(local_info_t *local, int rtnl_locked)
 {
 	struct net_device *dev = local->dev;
 
-	printk(KERN_DEBUG "%s: disabling hostapd mode\n", dev->name);
+;
 
 	hostap_remove_interface(local->apdev, rtnl_locked, 1);
 	local->apdev = NULL;
@@ -928,7 +928,7 @@ static int hostap_enable_hostapd_sta(local_info_t *local, int rtnl_locked)
 	if (local->stadev)
 		return -EEXIST;
 
-	printk(KERN_DEBUG "%s: enabling hostapd STA mode\n", dev->name);
+;
 
 	local->stadev = hostap_add_interface(local, HOSTAP_INTERFACE_STA,
 					     rtnl_locked, local->ddev->name,
@@ -944,7 +944,7 @@ static int hostap_disable_hostapd_sta(local_info_t *local, int rtnl_locked)
 {
 	struct net_device *dev = local->dev;
 
-	printk(KERN_DEBUG "%s: disabling hostapd mode\n", dev->name);
+;
 
 	hostap_remove_interface(local->stadev, rtnl_locked, 1);
 	local->stadev = NULL;
@@ -1104,8 +1104,8 @@ static int __init hostap_init(void)
 	if (init_net.proc_net != NULL) {
 		hostap_proc = proc_mkdir("hostap", init_net.proc_net);
 		if (!hostap_proc)
-			printk(KERN_WARNING "Failed to mkdir "
-			       "/proc/net/hostap\n");
+//			printk(KERN_WARNING "Failed to mkdir "
+;
 	} else
 		hostap_proc = NULL;
 

@@ -1927,7 +1927,7 @@ dhd_bus_txdata(struct dhd_bus *bus, void *pkt)
 	for (i = 0; i < (datalen - 4); i++) {
 		DHD_ERROR(("%02X ", dump_data[i]));
 		if ((i & 15) == 15)
-			printk("\n");
+;
 	}
 	DHD_ERROR(("\n"));
 

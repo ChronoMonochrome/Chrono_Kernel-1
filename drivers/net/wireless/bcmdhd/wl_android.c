@@ -1260,7 +1260,7 @@ int wl_android_wifi_on(struct net_device *dev)
 	int ret = 0;
 	int retry = POWERUP_MAX_RETRY;
 
-	printk("%s in\n", __FUNCTION__);
+;
 	if (!dev) {
 		DHD_ERROR(("%s: dev is null\n", __FUNCTION__));
 		return -EINVAL;
@@ -1303,7 +1303,7 @@ int wl_android_wifi_off(struct net_device *dev)
 {
 	int ret = 0;
 
-	printk("%s in\n", __FUNCTION__);
+;
 	if (!dev) {
 		DHD_TRACE(("%s: dev is null\n", __FUNCTION__));
 		return -EINVAL;
@@ -1526,7 +1526,7 @@ wl_android_ch_res_rl(struct net_device *dev, bool change)
 	int error = 0;
 	s32 srl = 7;
 	s32 lrl = 4;
-	printk("%s enter\n", __FUNCTION__);
+;
 	if (change) {
 		srl = 4;
 		lrl = 2;

@@ -336,8 +336,8 @@ void b43info(struct b43_wl *wl, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_INFO "b43-%s: %pV",
-	       (wl && wl->hw) ? wiphy_name(wl->hw->wiphy) : "wlan", &vaf);
+//	printk(KERN_INFO "b43-%s: %pV",
+;
 
 	va_end(args);
 }
@@ -357,8 +357,8 @@ void b43err(struct b43_wl *wl, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_ERR "b43-%s ERROR: %pV",
-	       (wl && wl->hw) ? wiphy_name(wl->hw->wiphy) : "wlan", &vaf);
+//	printk(KERN_ERR "b43-%s ERROR: %pV",
+;
 
 	va_end(args);
 }
@@ -378,8 +378,8 @@ void b43warn(struct b43_wl *wl, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_WARNING "b43-%s warning: %pV",
-	       (wl && wl->hw) ? wiphy_name(wl->hw->wiphy) : "wlan", &vaf);
+//	printk(KERN_WARNING "b43-%s warning: %pV",
+;
 
 	va_end(args);
 }
@@ -397,8 +397,8 @@ void b43dbg(struct b43_wl *wl, const char *fmt, ...)
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_DEBUG "b43-%s debug: %pV",
-	       (wl && wl->hw) ? wiphy_name(wl->hw->wiphy) : "wlan", &vaf);
+//	printk(KERN_DEBUG "b43-%s debug: %pV",
+;
 
 	va_end(args);
 }
@@ -1052,25 +1052,25 @@ static void b43_dump_keymemory(struct b43_wldev *dev)
 	}
 	for (index = 0; index < count; index++) {
 		key = &(dev->key[index]);
-		printk(KERN_DEBUG "Key slot %02u: %s",
-		       index, (key->keyconf == NULL) ? " " : "*");
+//		printk(KERN_DEBUG "Key slot %02u: %s",
+;
 		offset = dev->ktp + (index * B43_SEC_KEYSIZE);
 		for (i = 0; i < B43_SEC_KEYSIZE; i += 2) {
 			u16 tmp = b43_shm_read16(dev, B43_SHM_SHARED, offset + i);
-			printk("%02X%02X", (tmp & 0xFF), ((tmp >> 8) & 0xFF));
+;
 		}
 
 		algo = b43_shm_read16(dev, B43_SHM_SHARED,
 				      B43_SHM_SH_KEYIDXBLOCK + (index * 2));
-		printk("   Algo: %04X/%02X", algo, key->algorithm);
+;
 
 		if (index >= pairwise_keys_start) {
 			if (key->algorithm == B43_SEC_ALGO_TKIP) {
-				printk("   TKIP: ");
+;
 				offset = B43_SHM_SH_TKIPTSCTTAK + (index - 4) * (10 + 4);
 				for (i = 0; i < 14; i += 2) {
 					u16 tmp = b43_shm_read16(dev, B43_SHM_SHARED, offset + i);
-					printk("%02X%02X", (tmp & 0xFF), ((tmp >> 8) & 0xFF));
+;
 				}
 			}
 			rcmta0 = b43_shm_read32(dev, B43_SHM_RCMTA,
@@ -1079,10 +1079,10 @@ static void b43_dump_keymemory(struct b43_wldev *dev)
 						((index - pairwise_keys_start) * 2) + 1);
 			*((__le32 *)(&mac[0])) = cpu_to_le32(rcmta0);
 			*((__le16 *)(&mac[4])) = cpu_to_le16(rcmta1);
-			printk("   MAC: %pM", mac);
+;
 		} else
-			printk("   DEFAULT KEY");
-		printk("\n");
+;
+;
 	}
 }
 
@@ -1766,15 +1766,15 @@ static void handle_irq_ucode_debug(struct b43_wldev *dev)
 		for (i = 0, cnt = 0; i < 64; i++) {
 			u16 tmp = b43_shm_read16(dev, B43_SHM_SCRATCH, i);
 			if (cnt == 0)
-				printk(KERN_INFO);
-			printk("r%02u: 0x%04X  ", i, tmp);
+;
+;
 			cnt++;
 			if (cnt == 6) {
-				printk("\n");
+;
 				cnt = 0;
 			}
 		}
-		printk("\n");
+;
 		break;
 	case B43_DEBUGIRQ_MARKER:
 		if (!B43_DEBUG)
@@ -2398,6 +2398,13 @@ static int b43_upload_microcode(struct b43_wldev *dev)
 		b43err(dev->wl, "YOUR FIRMWARE IS TOO OLD. Firmware from "
 		       "binary drivers older than version 4.x is unsupported. "
 		       "You must upgrade your firmware files.\n");
+		b43_print_fw_helptext(dev->wl, 1);
+		err = -EOPNOTSUPP;
+		goto error;
+	} else if (fwrev >= 598) {
+		b43err(dev->wl, "YOUR FIRMWARE IS TOO NEW. Support for "
+		       "firmware 598 and up requires kernel 3.2 or newer. You "
+		       "have to install older firmware or upgrade kernel.\n");
 		b43_print_fw_helptext(dev->wl, 1);
 		err = -EOPNOTSUPP;
 		goto error;
@@ -5098,11 +5105,11 @@ static void b43_print_driverinfo(void)
 #ifdef CONFIG_B43_SDIO
 	feat_sdio = "S";
 #endif
-	printk(KERN_INFO "Broadcom 43xx driver loaded "
-	       "[ Features: %s%s%s%s%s, Firmware-ID: "
-	       B43_SUPPORTED_FIRMWARE_ID " ]\n",
-	       feat_pci, feat_pcmcia, feat_nphy,
-	       feat_leds, feat_sdio);
+//	printk(KERN_INFO "Broadcom 43xx driver loaded "
+//	       "[ Features: %s%s%s%s%s, Firmware-ID: "
+//	       B43_SUPPORTED_FIRMWARE_ID " ]\n",
+//	       feat_pci, feat_pcmcia, feat_nphy,
+;
 }
 
 static int __init b43_init(void)

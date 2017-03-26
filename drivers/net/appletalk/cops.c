@@ -280,7 +280,7 @@ static int __init cops_probe1(struct net_device *dev, int ioaddr)
 	int retval;
 	
         if(cops_debug && version_printed++ == 0)
-		printk("%s", version);
+;
 
 	/* Grab the region so no one else tries to probe our ioports. */
 	if (!request_region(ioaddr, COPS_IO_EXTENT, dev->name))
@@ -346,15 +346,15 @@ static int __init cops_probe1(struct net_device *dev, int ioaddr)
 
 	/* Tell the user where the card is and what mode we're in. */
 	if(board==DAYNA)
-		printk("%s: %s at %#3x, using IRQ %d, in Dayna mode.\n", 
-			dev->name, cardname, ioaddr, dev->irq);
+//		printk("%s: %s at %#3x, using IRQ %d, in Dayna mode.\n", 
+;
 	if(board==TANGENT) {
 		if(dev->irq)
-			printk("%s: %s at %#3x, IRQ %d, in Tangent mode\n", 
-				dev->name, cardname, ioaddr, dev->irq);
+//			printk("%s: %s at %#3x, IRQ %d, in Tangent mode\n", 
+;
 		else
-			printk("%s: %s at %#3x, using polled IO, in Tangent mode.\n", 
-				dev->name, cardname, ioaddr);
+//			printk("%s: %s at %#3x, using polled IO, in Tangent mode.\n", 
+;
 
 	}
         return 0;
@@ -433,7 +433,7 @@ static int cops_open(struct net_device *dev)
 		} 
 		else 
 		{
-			printk(KERN_WARNING "%s: No irq line set\n", dev->name);
+;
 			return -EAGAIN;
 		}
 	}
@@ -536,19 +536,19 @@ static void cops_load (struct net_device *dev)
         else
 #endif
 	{
-		printk(KERN_INFO "%s; unsupported board type.\n", dev->name);
+;
 		return;
 	}
 	
         /* Check to make sure firmware is correct length. */
         if(lp->board==DAYNA && ltf->length!=5983)
         {
-                printk(KERN_WARNING "%s: Firmware is not length of FFDRV.BIN.\n", dev->name);
+;
                 return;
         }
         if(lp->board==TANGENT && ltf->length!=2501)
         {
-                printk(KERN_WARNING "%s: Firmware is not length of DRVCODE.BIN.\n", dev->name);
+;
                 return;
         }
 
@@ -580,8 +580,8 @@ static void cops_load (struct net_device *dev)
         }
 
 	if(cops_debug > 1)
-		printk("%s: Uploaded firmware - %d bytes of %d bytes.\n", 
-			dev->name, i, ltf->length);
+//		printk("%s: Uploaded firmware - %d bytes of %d bytes.\n", 
+;
 
         if(lp->board==DAYNA) 	/* Tell Dayna to run the firmware code. */
                 outb(1, ioaddr+DAYNA_INT_CARD);
@@ -662,8 +662,8 @@ static int cops_nodeid (struct net_device *dev, int nodeid)
 	}
 
 	if(cops_debug > 1)
-		printk(KERN_DEBUG "%s: Node ID %d has been acquired.\n", 
-			dev->name, lp->node_acquire);
+//		printk(KERN_DEBUG "%s: Node ID %d has been acquired.\n", 
+;
 
 	lp->nodeid=1;	/* Set got nodeid to 1. */
 
@@ -772,7 +772,7 @@ static void cops_rx(struct net_device *dev)
 
                 if(boguscount==1000000)
                 {
-                        printk(KERN_WARNING "%s: DMA timed out.\n",dev->name);
+;
 			spin_unlock_irqrestore(&lp->lock, flags);
                         return;
                 }
@@ -791,8 +791,8 @@ static void cops_rx(struct net_device *dev)
         skb = dev_alloc_skb(pkt_len);
         if(skb == NULL)
         {
-                printk(KERN_WARNING "%s: Memory squeeze, dropping packet.\n",
-			dev->name);
+//                printk(KERN_WARNING "%s: Memory squeeze, dropping packet.\n",
+;
                 dev->stats.rx_dropped++;
                 while(pkt_len--)        /* Discard packet */
                         inb(ioaddr);
@@ -813,8 +813,8 @@ static void cops_rx(struct net_device *dev)
         /* Check for bad response length */
         if(pkt_len < 0 || pkt_len > MAX_LLAP_SIZE)
         {
-		printk(KERN_WARNING "%s: Bad packet length of %d bytes.\n", 
-			dev->name, pkt_len);
+//		printk(KERN_WARNING "%s: Bad packet length of %d bytes.\n", 
+;
                 dev->stats.tx_errors++;
                 dev_kfree_skb_any(skb);
                 return;
@@ -831,7 +831,7 @@ static void cops_rx(struct net_device *dev)
         /* One last check to make sure we have a good packet. */
         if(rsp_type != LAP_RESPONSE)
         {
-                printk(KERN_WARNING "%s: Bad packet type %d.\n", dev->name, rsp_type);
+;
                 dev->stats.tx_errors++;
                 dev_kfree_skb_any(skb);
                 return;
@@ -858,9 +858,9 @@ static void cops_timeout(struct net_device *dev)
         if(lp->board==TANGENT)
         {
 		if((inb(ioaddr+TANG_CARD_STATUS)&TANG_TX_READY)==0)
-               		printk(KERN_WARNING "%s: No TX complete interrupt.\n", dev->name);
+;
 	}
-	printk(KERN_WARNING "%s: Transmit timed out.\n", dev->name);
+;
 	cops_jumpstart(dev);	/* Restart the card. */
 	dev->trans_start = jiffies; /* prevent tx timeout */
 	netif_wake_queue(dev);
@@ -926,7 +926,7 @@ static netdev_tx_t cops_send_packet(struct sk_buff *skb,
 static void set_multicast_list(struct net_device *dev)
 {
         if(cops_debug >= 3)
-		printk("%s: set_multicast_list executed\n", dev->name);
+;
 }
 
 /*
@@ -994,8 +994,8 @@ module_param(board_type, int, 0);
 static int __init cops_module_init(void)
 {
 	if (io == 0)
-		printk(KERN_WARNING "%s: You shouldn't autoprobe with insmod\n",
-			cardname);
+//		printk(KERN_WARNING "%s: You shouldn't autoprobe with insmod\n",
+;
 	cops_dev = cops_probe(-1);
 	if (IS_ERR(cops_dev))
 		return PTR_ERR(cops_dev);

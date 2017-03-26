@@ -981,7 +981,7 @@ static int smsc95xx_bind(struct usbnet *dev, struct usb_interface *intf)
 	struct smsc95xx_priv *pdata = NULL;
 	int ret;
 
-	printk(KERN_INFO SMSC_CHIPNAME " v" SMSC_DRIVER_VERSION "\n");
+;
 
 	ret = usbnet_get_endpoints(dev, intf);
 	if (ret < 0) {
