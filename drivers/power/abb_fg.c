@@ -134,10 +134,17 @@ extern unsigned int system_rev;
 static bool debug_mask = 0;
 module_param(debug_mask, bool, 0644);
 
-static unsigned int uLowBatZero = LOWBAT_ZERO_VOLTAGE;
-static unsigned int uLowBatTolerance = LOWBAT_TOLERANCE;
-static bool bLowBatWakelock = 0;
+static unsigned int lowbat_zerovolt = LOWBAT_ZERO_VOLTAGE;
+static unsigned int lowbat_tolerance_volt = LOWBAT_TOLERANCE;
+static bool use_lowbat_wakelock = 0;
 
+/* 
+ * Voltage Threshold that decides when to power off.
+ */
+static unsigned int pwroff_threshold = 3200;
+
+/* Allow battery capacity goes up */
+static unsigned int battlvl_real = 1;
 
 /*
  * cocafe: Cycle Charging Control - Similar to Battery Life Extender by Ezekeel
@@ -1652,7 +1659,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
 		 * unless we're charging or if we're in init
 		 */
 		if (!(!di->flags.charging && di->bat_cap.level >
-			di->bat_cap.prev_level) || init) {
+			di->bat_cap.prev_level) || init || battlvl_real) {
 			dev_dbg(di->dev, "level changed from %d to %d\n",
 				di->bat_cap.prev_level,
 				di->bat_cap.level);
@@ -1669,11 +1676,11 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
 	if (di->flags.low_bat) {
 		if (!di->lpm_chg_mode) {
 			if (percent <= 1  &&
-			    di->vbat <= uLowBatZero && !changed) {
+			    di->vbat <= lowbat_zerovolt && !changed) {
 				di->lowbat_poweroff = true;
 			} else if ((percent > 1 && !di->flags.charging) ||
 				   (percent <= 1 &&
-				    di->vbat > uLowBatZero)) {
+				    di->vbat > lowbat_zerovolt)) {
 				/* battery capacity will be getting low to 1%.
 				   we're waiting for it */
 				dev_info(di->dev,
@@ -1684,7 +1691,7 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
 					 percent, di->vbat);
 				di->lowbat_poweroff = false;
 				di->lowbat_poweroff_locked = true;
-				if(bLowBatWakelock)
+				if(use_lowbat_wakelock)
 					wake_lock(&di->lowbat_poweroff_wake_lock);
 			} else {
 				/* battery capacity is exceed 1% and/or
@@ -1696,27 +1703,27 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
 					 percent, di->vbat);
 				di->lowbat_poweroff = false;
 				di->lowbat_poweroff_locked = false;
-				if(bLowBatWakelock)
+				if(use_lowbat_wakelock)
 					wake_unlock(&di->lowbat_poweroff_wake_lock);
 			}
 		}
 	}
 
 	if (di->lowbat_poweroff_locked) {
-		if (percent <= 1 && di->vbat <= uLowBatZero
+		if (percent <= 1 && di->vbat <= lowbat_zerovolt
 		    && !changed)
 			di->lowbat_poweroff = true;
 
 		if (di->vbat > 3450) {
 			dev_info(di->dev, "Low bat condition is recovered.\n");
 			di->lowbat_poweroff_locked = false;
-			if(bLowBatWakelock)
+			if(use_lowbat_wakelock)
 				wake_unlock(&di->lowbat_poweroff_wake_lock);
 		}
 	}
 
-	if ((percent == 0 && di->vbat <= uLowBatZero) ||
-		(percent <= 1 && di->vbat <= uLowBatZero && !changed))
+	if ((percent == 0 && di->vbat <= lowbat_zerovolt) ||
+		(percent <= 1 && di->vbat <= lowbat_zerovolt && !changed))
 		di->lowbat_poweroff = true;
 
 	if (di->lowbat_poweroff && di->lpm_chg_mode) {
@@ -1729,13 +1736,22 @@ static void ab8500_fg_check_capacity_limits(struct ab8500_fg *di, bool init)
 	 * If we have received the LOW_BAT IRQ, set capacity to 0 to initiate
 	 * shutdown
 	 */
-	if (di->lowbat_poweroff) {
+	if (di->lowbat_poweroff && (di->vbat < pwroff_threshold) ) {
 		dev_info(di->dev, "Battery low, set capacity to 0\n");
 		di->bat_cap.prev_percent = 0;
 		di->bat_cap.permille = 0;
 		di->bat_cap.prev_mah = 0;
 		di->bat_cap.mah = 0;
 		changed = true;
+
+		/*
+		 * FIXME: Samsung battery driver needs some time to fresh
+		 * battery stats. Sometimes it will be powered off by HW, 
+		 * instead of soft-method. So refresh fg to notice Samsung 
+		 * battery driver.
+		 */
+		ab8500_fg_reinit();
+		 
 	} else if (di->bat_cap.prev_percent !=
 			percent) {
 		if (percent == 0) {
@@ -2462,7 +2478,7 @@ static void ab8500_fg_low_bat_work(struct work_struct *work)
 	vbat = ab8500_comp_fg_bat_voltage(di, true);
 
 	/* Check if LOW_BAT still fulfilled */
-	if (vbat < di->bat->fg_params->lowbat_threshold + uLowBatTolerance) {
+	if (vbat < di->bat->fg_params->lowbat_threshold + lowbat_tolerance_volt) {
 		di->flags.low_bat = true;
 		dev_warn(di->dev, "Battery voltage still LOW\n");
 
@@ -2581,7 +2597,7 @@ static irqreturn_t ab8500_fg_lowbatf_handler(int irq, void *_di)
 	struct ab8500_fg *di = _di;
 
 	if (!di->flags.low_bat_delay) {
-		if (bLowBatWakelock)
+		if (use_lowbat_wakelock)
 			wake_lock_timeout(&di->lowbat_wake_lock, 20 * HZ);
 
 		dev_warn(di->dev, "Battery voltage is below LOW threshold\n");
@@ -2883,6 +2899,19 @@ static int ab8500_fg_init_hw_registers(struct ab8500_fg *di)
 		ab8500_volt_to_regval(
 			di->bat->fg_params->lowbat_threshold) << 1 |
 		LOW_BAT_ENABLE);
+	if (ret) {
+		dev_err(di->dev, "%s write failed\n", __func__);
+		goto out;
+	}
+
+	/* 
+	 * BATTOK: 
+	 * Disable it now, in order not to let AB8500 shut down by itself
+	 */
+	ret = abx500_set_register_interruptible(di->dev,
+		AB8500_SYS_CTRL2_BLOCK,
+		AB8500_BATT_OK_REG,
+		0x00);
 	if (ret) {
 		dev_err(di->dev, "%s write failed\n", __func__);
 		goto out;
@@ -3226,7 +3255,7 @@ static int ab8500_fg_reboot_call(struct notifier_block *self,
 
 static ssize_t abb_fg_lowbat_zero_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%d mV\n", uLowBatZero);
+	sprintf(buf, "%d mV\n", lowbat_zerovolt);
 
 	return strlen(buf);
 }
@@ -3243,8 +3272,8 @@ static ssize_t abb_fg_lowbat_zero_store(struct kobject *kobj, struct kobj_attrib
 		return count;
 	}
 
-	pr_info("[ABB-FG] LowBat Zero %d ==> %d mV\n", uLowBatZero, vBuf);
-	uLowBatZero = vBuf;
+	pr_info("[ABB-FG] LowBat Zero %d ==> %d mV\n", lowbat_zerovolt, vBuf);
+	lowbat_zerovolt = vBuf;
 
 	return count;
 }
@@ -3253,7 +3282,7 @@ static struct kobj_attribute abb_fg_lowbat_zero_interface = __ATTR(lowbat_zero, 
 
 static ssize_t abb_fg_lowbat_tolerance_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%d mV\n", uLowBatTolerance);
+	sprintf(buf, "%d mV\n", lowbat_tolerance_volt);
 
 	return strlen(buf);
 }
@@ -3270,8 +3299,8 @@ static ssize_t abb_fg_lowbat_tolerance_store(struct kobject *kobj, struct kobj_a
 		return count;
 	}
 
-	pr_info("[ABB-FG] LowBat Tolerance %d ==> %d mV\n", uLowBatTolerance, vBuf);
-	uLowBatTolerance = vBuf;
+	pr_info("[ABB-FG] LowBat Tolerance %d ==> %d mV\n", lowbat_tolerance_volt, vBuf);
+	lowbat_tolerance_volt = vBuf;
 
 	return count;
 }
@@ -3296,7 +3325,7 @@ static struct kobj_attribute abb_fg_refresh_interface = __ATTR(fg_refresh, 0644,
 
 static ssize_t abb_fg_use_wakelock_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%d\n", bLowBatWakelock);
+	sprintf(buf, "%d\n", use_lowbat_wakelock);
 
 	return strlen(buf);
 }
@@ -3313,9 +3342,9 @@ static ssize_t abb_fg_use_wakelock_store(struct kobject *kobj, struct kobj_attri
 		return count;
 	}
 
-	pr_info("[ABB-FG] LowBat Wakelock %d ==> %d\n", bLowBatWakelock, vBuf);
+	pr_info("[ABB-FG] LowBat Wakelock %d ==> %d\n", use_lowbat_wakelock, vBuf);
 
-	bLowBatWakelock = vBuf;
+	use_lowbat_wakelock = vBuf;
 
 	return count;
 }
@@ -3394,12 +3423,59 @@ static ssize_t abb_fg_cycle_charging_store(struct kobject *kobj, struct kobj_att
 
 static struct kobj_attribute abb_fg_cycle_charging_interface = __ATTR(fg_cyc, 0644, abb_fg_cycle_charging_show, abb_fg_cycle_charging_store);
 
+static ssize_t abb_fg_pwroff_threshold_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "%dmV\n\n* HW will shutdown below 2900mV\n", pwroff_threshold);
+
+	return strlen(buf);
+}
+
+static ssize_t abb_fg_pwroff_threshold_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val;
+
+	ret = sscanf(buf, "%d", &val);
+
+	if (!ret)
+		return -EINVAL;
+
+	pwroff_threshold = val;
+
+	return count;
+}
+
+static struct kobj_attribute abb_fg_pwroff_threshold_interface = __ATTR(pwroff_threshold, 0644, abb_fg_pwroff_threshold_show, abb_fg_pwroff_threshold_store);
+
+static ssize_t abb_fg_capacity_real_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "%d\n", battlvl_real);
+
+	return strlen(buf);
+}
+
+static ssize_t abb_fg_capacity_real_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val;
+
+	ret = sscanf(buf, "%d", &val);
+
+	if (!ret)
+		return -EINVAL;
+
+	battlvl_real = val;
+
+	return count;
+}
+
+static struct kobj_attribute abb_fg_capacity_real_interface = __ATTR(capacity_real, 0644, abb_fg_capacity_real_show, abb_fg_capacity_real_store);
+
 static struct attribute *abb_fg_attrs[] = {
 	&abb_fg_lowbat_zero_interface.attr, 
 	&abb_fg_lowbat_tolerance_interface.attr, 
 	&abb_fg_refresh_interface.attr, 
 	&abb_fg_cycle_charging_interface.attr, 
 	&abb_fg_use_wakelock_interface.attr, 
+	&abb_fg_capacity_real_interface.attr, 
 	NULL,
 };
 
