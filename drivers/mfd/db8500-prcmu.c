@@ -49,6 +49,14 @@
 #include <mach/prcmu-debug.h>
 #include "dbx500-prcmu-regs.h"
 
+/* Define regulator for i8190 */
+
+#ifdef CONFIG_MACH_SEC_GOLDEN
+#define AB8505
+#else
+#define AB8500
+#endif
+
 #ifdef CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
 #define PRCMU_I2C_TIMEOUT	0x0F000000
 #endif //CONFIG_SAMSUNG_PANIC_DISPLAY_DEVICES
@@ -1093,7 +1101,21 @@ static void db8500_prcmu_get_abb_event_buffer(void __iomem **buf)
 #define LIVEOPP_VER		"2.2"
 
 #define PRCMU_ARMFIX_REG		0x0000
+#define PRCMU_ACLK_REG			0x0004
+#define PRCMU_SVACLK_REG		0x0008
+#define PRCMU_SIACLK_REG		0x000c
 #define PRCMU_SGACLK_REG		0x0014
+#define PRCMU_PER1CLK_REG		0x002c
+#define PRCMU_PER2CLK_REG		0x0030
+#define PRCMU_PER3CLK_REG		0x0034
+#define PRCMU_PER5CLK_REG		0x0038
+#define PRCMU_PER6CLK_REG		0x003c
+#define PRCMU_BMLCLK_REG		0x004c
+#define PRCMU_APEATCLK_REG		0x005c
+#define PRCMU_APETRACECLK_REG		0x0060
+#define PRCMU_MCDECLK_REG		0x0064
+#define PRCMU_DMACLK_REG		0x0074
+#define PRCMU_B2R2CLK_REG		0x0078
 #define PRCMU_PLLSOC0_REG		0x0080
 #define PRCMU_PLLSOC1_REG		0x0084
 #define PRCMU_PLLARM_REG		0x0088
@@ -1130,8 +1152,8 @@ struct liveopp_arm_table
 	u32 	pllarm_raw;
 	u8 	varm_raw;
 	u8  	vbbx_raw;
-	s8	ddr_opp;
-	s8	ape_opp;
+	int	ddr_opp;
+	int	ape_opp;
 };
 
 /* 
@@ -1141,9 +1163,15 @@ struct liveopp_arm_table
  */
 #define AB8500_VARM_VSEL_MASK 		0x3f
 #define AB8500_VARM_STEP_UV		12500
+#define AB8500_VARM_MIN_UV		700000
+#define AB8500_VARM_MAX_UV		1362500
+
+#define AB8505_VARM_VSEL_MASK 		0x7f
 #define AB8505_VARM_STEP_UV		6250
 #define AB8500_VARM_MIN_UV		700000
 #define AB8500_VARM_MAX_UV		1362500
+#define AB8505_VARM_MIN_UV		600000
+#define AB8505_VARM_MAX_UV		1393750
 
 /*
  * Vbb:
@@ -1153,6 +1181,10 @@ struct liveopp_arm_table
 #define AB8500_VBBP_VSEL_MASK		0xf0
 #define AB8500_VBBN_VSEL_MASK		0x0f
 #define AB8500_VBB_STEP_UV		100000
+
+#define AB8505_VBBP_VSEL_MASK		0xf0
+#define AB8505_VBBN_VSEL_MASK		0x0f
+#define AB8505_VBB_STEP_UV		50000
 
 /* PLLARM in 38.4MHz steps */
 #define PLLARM_FREQ_STEPS		38400
@@ -1167,63 +1199,48 @@ static unsigned int last_arm_idx = 0;
 static int liveopp_start = 0;
 #endif
 
+#ifdef CONFIG_MACH_SEC_GOLDEN 
+/* table for i8190 */
+/* defaults bases on my avs values */
 static struct liveopp_arm_table liveopp_arm[] = {
-#ifndef LIVEOPP_UVED_TABLE
 //	| CLK            | PLL       | VDD | VBB | DDR | APE |
-	{  30000,   30720, 0x00050104, 0x16, 0xDB,  25,  25},
-	{  50000,   46080, 0x00050106, 0x16, 0xDB,  25,  25},
-	{ 100000,   99840, 0x0005010D, 0x17, 0xDB,  25,  25},
-	{ 125000,  122880, 0x00050110, 0x17, 0xDB,  25,  25},	
-	{ 150000,  153600, 0x00050114, 0x17, 0xDB,  25,  25},
-	{ 175000,  176640, 0x00050117, 0x17, 0xDB,  25,  25},
-	{ 184000,  184320, 0x00050118, 0x18, 0xDB,  25,  25},
+//	{  50000,   46080, 0x00050106, 0x16, 0xDB,  25,  25},
+//	{ 100000,   99840, 0x0005010D, 0x17, 0xDB,  25,  25},
+	{ 200000,  199680, 0x0005011A, 0x4C, 0xBD,  25,  25}, // VARM_RET
+	{ 300000,  299520, 0x00050127, 0x4C, 0xBD,  25,  25},
+	{ 400000,  399360, 0x00050134, 0x4C, 0xBD,  25,  50}, // VARM_50
+	{ 500000,  499200, 0x00050141, 0x4C, 0xBD,  25,  50},
+	{ 600000,  599040, 0x0005014E, 0x4C, 0xBD,  50,  50},
+	{ 700000,  698880, 0x0005015B, 0x4C, 0xBD,  50,  50},
+	{ 800000,  798720, 0x00050168, 0x5A, 0xBD, 100,  50}, // VARM_100
+	{ 900000,  898560, 0x00050175, 0x5A, 0xBD, 100,  50},
+	{1000000,  998400, 0x00050182, 0x5A, 0xBD, 100, 100}, 
+	{1100000, 1098240, 0x0005018F, 0xF8, 0xCD, 100, 100}, // VARM_MAX
+	{1200000, 1198080, 0x0005019C, 0xF8, 0xFF, 100, 100},
+};
+#else
+/* table for others */
+static struct liveopp_arm_table liveopp_arm[] = {
+//	| CLK            | PLL       | VDD | VBB | DDR | APE |
 	{ 200000,  199680, 0x0005011A, 0x18, 0xDB,  25,  25},
 	{ 250000,  253440, 0x00050121, 0x18, 0xDB,  25,  25},
-	{ 275000,  276480, 0x00050124, 0x18, 0xDB,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x19, 0xDB,  25,  25},
-	{ 400000,  399360, 0x00050134, 0x1a, 0xDB,  25,  50},
-	{ 500000,  499200, 0x00050141, 0x20, 0xDB,  25,  50},
-	{ 530000,  529920, 0x00050145, 0x20, 0xDB,  25,  50},
-	{ 550000,  552960, 0x00050148, 0x21, 0xDB,  25,  50},
-	{ 575000,  576000, 0x0005014b, 0x22, 0xDB,  50,  50},
-	{ 600000,  599040, 0x0005014E, 0x23, 0xDB,  50,  50},
+	{ 300000,  299520, 0x00050127, 0x18, 0xDB,  25,  50},
+	{ 350000,  353280, 0x0005012E, 0x18, 0xDB,  25,  50},
+	{ 400000,  399360, 0x00050134, 0x18, 0xDB,  50,  50},
+	{ 450000,  453120, 0x0005013B, 0x20, 0xDB,  50,  50},
+	{ 500000,  499200, 0x00050141, 0x20, 0xDB,  50,  50},
+	{ 550000,  552960, 0x00050148, 0x20, 0xDB,  50,  50},
+	{ 600000,  599040, 0x0005014E, 0x20, 0xDB,  50,  50},
 	{ 700000,  698880, 0x0005015B, 0x24, 0xDB,  50,  50},
 	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 100,  50},
-	{ 900000,  898560, 0x00050175, 0x30, 0xDB, 100,  50},
-	{1000000,  998400, 0x00050182, 0x31, 0x8F, 100, 100},
-	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 100, 100},
-	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 100, 100},
-	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 100, 100},
-	{1230000, 1228800, 0x000501A0, 0x38, 0x8F, 100, 100},
-	{1245000, 1244160, 0x000501A2, 0x38, 0x8F, 100, 100},
-#else
-	{  30000,   30720, 0x00050104, 0x11, 0xEB,  25,  25},
-	{  50000,   46080, 0x00050106, 0x11, 0xEB,  25,  25},
-	{ 100000,   99840, 0x0005010D, 0x11, 0xEB,  25,  25},
-	{ 125000,  122880, 0x00050110, 0x11, 0xEB,  25,  25},	
-	{ 150000,  153600, 0x00050114, 0x11, 0xEB,  25,  25},
-	{ 175000,  176640, 0x00050117, 0x11, 0xEB,  25,  25},
-	{ 200000,  199680, 0x0005011A, 0x11, 0xEB,  25,  25},
-	{ 250000,  253440, 0x00050121, 0x13, 0xEB,  25,  25},
-	{ 275000,  276480, 0x00050124, 0x13, 0xEB,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x13, 0xEB,  25,  25},
-	{ 400000,  399360, 0x00050134, 0x14, 0xEB,  25,  50},
-	{ 500000,  499200, 0x00050141, 0x16, 0xEB,  25,  50},
-	{ 530000,  529920, 0x00050145, 0x16, 0xEB,  25,  50},
-	{ 550000,  552960, 0x00050148, 0x16, 0xEB,  25,  50},
-	{ 575000,  576000, 0x0005014b, 0x18, 0xEB,  50,  50},
-	{ 600000,  599040, 0x0005014E, 0x19, 0xEB,  50,  50},
-	{ 700000,  698880, 0x0005015B, 0x1D, 0xEB,  50,  50},
-	{ 800000,  798720, 0x00050168, 0x20, 0xEB, 100,  50},
-	{ 900000,  898560, 0x00050175, 0x29, 0xEB, 100,  50},
-	{1000000,  998400, 0x00050182, 0x31, 0xCD, 100, 100},
-	{1100000, 1098240, 0x0005018F, 0x36, 0xCD, 100, 100},
-	{1150000, 1152000, 0x00050196, 0x36, 0xCD, 100, 100},
-	{1200000, 1198080, 0x0005019C, 0x37, 0xCD, 100, 100},
-	{1230000, 1228800, 0x000501A0, 0x38, 0xCD, 100, 100},
-	{1245000, 1244160, 0x000501A2, 0x38, 0xCD, 100, 100},
-#endif
+	{1000000,  998400, 0x00050182, 0x31, 0x8F, 100,  50},
+	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 100,  50},
+	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 100,  50},
+	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 100,  50},
+	{1230000, 1228800, 0x000501A0, 0x38, 0x8F, 100,  50},
+	{1245000, 1244160, 0x000501A2, 0x38, 0x8F, 100,  50},
 };
+#endif
 
 static const char *armopp_name[] = 
 {
@@ -1243,6 +1260,7 @@ static const char *armopp_name[] =
  *      BIT(8)    (0x80) is enabled in MAX_OPP, and it's unknown yet!
  */
 
+#ifdef AB8500
 static int varm_uv(u8 raw)
 {
 	raw &= AB8500_VARM_VSEL_MASK;
@@ -1253,7 +1271,21 @@ static int varm_uv(u8 raw)
 		return AB8500_VARM_MAX_UV;
 	}
 }
+#endif
+#ifdef AB8505
+static int varm_uv(u8 raw)
+{
+	raw &= AB8505_VARM_VSEL_MASK;
 
+	if (raw <= 0x7f) {
+		return (AB8505_VARM_MIN_UV + (raw * AB8505_VARM_STEP_UV));
+	} else {
+		return AB8505_VARM_MAX_UV;
+	}
+}
+#endif
+
+#ifdef AB8500
 static int vbbp_uv(u8 raw)
 {
 	int ret;
@@ -1305,6 +1337,49 @@ static int vbbn_uv(u8 raw)
 
 	return ret;
 }
+#endif
+#ifdef AB8505
+static int vbbp_uv(u8 raw)
+{
+	int ret;
+	raw &= AB8505_VBBP_VSEL_MASK;
+	raw >>= 4; /* shift 4 bits right */
+
+	switch (raw) {
+		case 0x00 ... 0x07:
+			ret = -AB8505_VBB_STEP_UV * raw;
+			break;
+		case 0x08 ... 0x0f:
+			ret = 50000 + (raw - 0x08) * AB8505_VBB_STEP_UV; 
+			break;
+		default:
+			ret = 0;
+			break;
+	}
+
+	return ret;
+}
+
+static int vbbn_uv(u8 raw)
+{
+	int ret;
+	raw &= AB8505_VBBN_VSEL_MASK;
+
+	switch (raw) {
+		case 0x00 ... 0x07:
+			ret = -AB8505_VBB_STEP_UV * raw;
+			break;
+		case 0x08 ... 0x0f:
+			ret = 50000 + (raw - 0x08) * AB8505_VBB_STEP_UV; 
+			break;
+		default:
+			ret = 0;
+			break;
+	}
+
+	return ret;
+}
+#endif
 
 static int pllarm_freq(u32 raw)
 {
@@ -1323,16 +1398,97 @@ static int pllarm_freq(u32 raw)
 	return pll;
 }
 
-static struct liveopp_arm_table curr_table;
+struct prcmu_regs_table
+{
+	u32 reg;
+	u32 boost_value;
+	u32 unboost_value;
+	char *name;
+};
+
+static bool ddr_clocks_boost = false;
+
+static struct prcmu_regs_table prcmu_regs[] = {
+      // PRCMU reg            | Boost val   | Unboost val|      Name     
+	{PRCMU_ACLK_REG,	0x183,       0x184,	       "aclk"},
+	{PRCMU_SVACLK_REG,	0x002,       0x002,	     "svaclk"},
+	{PRCMU_SIACLK_REG,	0x002,       0x002,	     "siaclk"}, 
+	{PRCMU_PER1CLK_REG,	0x185,       0x186,	    "per1clk"},
+	{PRCMU_PER2CLK_REG,	0x185,       0x186,	    "per2clk"},
+	{PRCMU_PER3CLK_REG,	0x185,       0x186,	    "per3clk"},
+	{PRCMU_PER5CLK_REG,	0x185,       0x186,	    "per5clk"},
+	{PRCMU_PER6CLK_REG,	0x185,       0x186,	    "per6clk"},
+	{PRCMU_BMLCLK_REG,	0x003,       0x004,          "bmlclk"},
+	{PRCMU_APEATCLK_REG,	0x183,       0x184,	   "apeatclk"},
+	{PRCMU_APETRACECLK_REG,	0x184,       0x185,	"apetraceclk"},
+	{PRCMU_MCDECLK_REG,	0x185,       0x185,	    "mcdeclk"},
+	{PRCMU_DMACLK_REG,	0x183,       0x184,          "dmaclk"},
+	{PRCMU_B2R2CLK_REG,	0x004,       0x004,	    "b2r2clk"},
+};
+
+static struct liveopp_arm_table curr_table; // LiveOPP step that uses at the moment 
+
+static bool pllddr_opp_lock = false;
+
+static int db8500_prcmu_get_ddr_opp(void);
+
+static void ddr_cross_clocks_boost(bool state)
+{
+	int i, val, ddr_opp;
+	u32 old_val, new_val;
+	int new_divider, old_divider, base;
+	
+	pllddr_opp_lock = true;
+	
+	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
+				old_val = readl(prcmu_base + prcmu_regs[i].reg);
+		
+				new_val = state ? prcmu_regs[i].boost_value :
+						prcmu_regs[i].unboost_value;
+						
+				if ((!old_val) || (old_val == new_val)) continue;
+	
+				old_divider = old_val & 0xf;
+				new_divider = new_val & 0xf;
+				
+				if (!new_divider) {
+					pr_err("LiveOPP: bad divider, %s:%s:%#05x:\n", __func__, 
+						    prcmu_regs[i].name,
+						    new_val);
+					continue;
+				}
+
+				base = old_val ^ old_divider;
+				
+				ddr_opp = readb(PRCM_DDR_SUBSYS_APE_MINBW);
+				
+				if (ddr_opp != DDR_100_OPP) new_divider *= 2;
+				
+				new_val = base | new_divider;
+				
+				pr_err("[LiveOPP] set %s=%#05x -> %#05x\n", prcmu_regs[i].name, 
+									      old_val, new_val);
+	
+				for (val = old_val;
+				    (new_val > old_val) ? (val <= new_val) : (val >= new_val); 
+				    (new_val > old_val) ? val++ : val--)  {
+					      writel_relaxed(val, prcmu_base + prcmu_regs[i].reg);
+					      udelay(200);
+				}
+
+			}
+			
+	pllddr_opp_lock = false;
+}
 
 static void requirements_update_thread(struct work_struct *requirements_update_work)
 {
-	prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,
-					"cpufreq",
+	if (!pllddr_opp_lock)
+		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "cpufreq",
 					(signed char)curr_table.ddr_opp);
-	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP,
-					"cpufreq",
-					(signed char)curr_table.ape_opp);
+	
+	prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "cpufreq",
+				(signed char)curr_table.ape_opp);
 }
 static DECLARE_WORK(requirements_update_work, requirements_update_thread);
 
@@ -1534,8 +1690,8 @@ static ssize_t arm_step_show(struct kobject *kobj, struct kobj_attribute *attr, 
 	sprintf(buf, "%sVarm:\t\t\t%d uV (%#04x)\n", buf, varm_uv(liveopp_arm[_index].varm_raw),
 								     (int)liveopp_arm[_index].varm_raw);
 	sprintf(buf, "%sVbbx:\t\t\t%#04x\n", buf, (int)liveopp_arm[_index].vbbx_raw);
-	sprintf(buf, "%sDDR_OPP:\t\t\t%d\n", buf, (int)((signed char)liveopp_arm[_index].ddr_opp));
-	sprintf(buf, "%sAPE_OPP:\t\t\t%d\n", buf, (int)((signed char)liveopp_arm[_index].ape_opp));
+	sprintf(buf, "%sDDR_OPP:\t\t\t%d\n", buf, liveopp_arm[_index].ddr_opp);
+	sprintf(buf, "%sAPE_OPP:\t\t\t%d\n", buf, liveopp_arm[_index].ape_opp);
 
 	return sprintf(buf, "%s\n", buf);
 }
@@ -1609,7 +1765,8 @@ static ssize_t arm_step_store(struct kobject *kobj, struct kobj_attribute *attr,
 	if (!strncmp(buf, "ddropp=", 7)) {
 		ret = sscanf(&buf[7], "%d", &val);
 		if ((!ret) || (val != 25 && val != 50 && val != 100 && val != -1 && val != -2)) {
-			pr_err("[LiveOPP] Invalid QOS_DDR_OPP value. Enter 25, 50 or 100\n");
+			pr_err("[LiveOPP] Invalid QOS_DDR_OPP value."
+			"Enter 25, 50, 100 or 125\n");
 			return -EINVAL;
 		}
 
@@ -1650,15 +1807,6 @@ ARM_STEP(arm_step13, 13);
 ARM_STEP(arm_step14, 14);
 ARM_STEP(arm_step15, 15);
 ARM_STEP(arm_step16, 16);
-ARM_STEP(arm_step17, 17);
-ARM_STEP(arm_step18, 18);
-ARM_STEP(arm_step19, 19);
-ARM_STEP(arm_step20, 20);
-ARM_STEP(arm_step21, 21);
-ARM_STEP(arm_step22, 22);
-ARM_STEP(arm_step23, 23);
-ARM_STEP(arm_step24, 24);
-ARM_STEP(arm_step25, 25);
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
@@ -1698,24 +1846,100 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	
 	if (new_divider != old_divider)
 	{ 
-		/* changing divider is unstable */
 		return -EINVAL;
 	}
 
-       /*
-	* I don't know why, but if we immediately set new value to PRCMU_PLLDDR_REG,
-	* it'll cause reboot. Only following way works properly.
-	*/
 	for (val = old_val;
 	     (new_val > old_val) ? (val <= new_val) : (val >= new_val); 
 	     (new_val > old_val) ? val++ : val--) {
 			writel_relaxed(val, prcmu_base + PRCMU_PLLDDR_REG);
-			udelay(100);
+			udelay(200);
 	}
 	
 	return count;
 }
 ATTR_RW(pllddr);
+
+static int pllddr_cross_clk_freq(int pllddr_freq, u32 reg_raw)
+{
+	int reg_freq, reg_div;
+	
+	reg_div = reg_raw & 0xf;
+	reg_freq = (pllddr_freq - (pllddr_freq % reg_div)) / reg_div;
+	
+	return reg_freq;
+}
+
+static ssize_t pllddr_cross_clocks_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	u32 pllddr_value, reg_value;
+	int i, pllddr_freq;
+	
+	pllddr_value = readl(prcmu_base + PRCMU_PLLDDR_REG);
+	pllddr_freq = pllarm_freq(pllddr_value);
+
+	sprintf(buf, "Clocks boost: %s\n", ddr_clocks_boost ? "on" : "off");
+
+	sprintf(buf, "%sPLLDDR: %d kHz\n\n", buf, pllddr_freq);
+	
+	sprintf(buf, "%sBoost settings (OPP100)\n", buf);
+	
+	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
+	  
+		sprintf(buf, "%s%s=%#05x   (%d kHz)\n", buf, prcmu_regs[i].name, 
+		        prcmu_regs[i].boost_value, pllddr_cross_clk_freq(pllddr_freq,
+									 prcmu_regs[i].boost_value));
+	}
+	
+	sprintf(buf, "%s\nCurrent clocks\n", buf);
+	
+	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
+
+		reg_value = readl(prcmu_base + prcmu_regs[i].reg);
+		sprintf(buf, "%s%s=%#05x   (%d kHz)\n", buf, prcmu_regs[i].name, 
+			reg_value,     pllddr_cross_clk_freq(pllddr_freq, reg_value));
+	}
+
+	return strlen(buf);
+}
+
+static ssize_t pllddr_cross_clocks_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int i, len;
+
+	u32 val;
+	
+	if (!strncmp(&buf[0], "on", 2)) {
+		ddr_clocks_boost = true;
+		ddr_cross_clocks_boost(ddr_clocks_boost);
+	}
+	
+	if (!strncmp(&buf[0], "off", 3)) {
+		ddr_clocks_boost = false;
+		ddr_cross_clocks_boost(ddr_clocks_boost);
+	}
+	
+	
+	for (i = 0; i < ARRAY_SIZE(prcmu_regs); i++) {
+		len = strlen(prcmu_regs[i].name);
+	  
+		if (!strncmp(&buf[0], prcmu_regs[i].name, len)) {
+			if (!sscanf(&buf[len + 1], "%x", &val))
+				  goto invalid_input;
+			
+			prcmu_regs[i].boost_value = val;
+			
+			return count;
+		}
+	}
+
+	return count;
+	
+invalid_input:
+	pr_err("LiveOPP: invalid input in %s", __func__);
+	return -EINVAL;
+}
+ATTR_RW(pllddr_cross_clocks);
 
 static struct attribute *liveopp_attrs[] = {
 #if CONFIG_LIVEOPP_DEBUG > 1
@@ -1728,33 +1952,25 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_pllclk_interface.attr,
 	&arm_varm_interface.attr,
 	&arm_vbb_interface.attr,
-	&arm_step00_interface.attr, 
-	&arm_step01_interface.attr, 
-	&arm_step02_interface.attr, 
-	&arm_step03_interface.attr, 
-	&arm_step04_interface.attr, 
-	&arm_step05_interface.attr, 
-	&arm_step06_interface.attr, 
-	&arm_step07_interface.attr, 
-	&arm_step08_interface.attr, 
-	&arm_step09_interface.attr, 
-	&arm_step10_interface.attr, 
+	&arm_step00_interface.attr,
+	&arm_step01_interface.attr,
+	&arm_step02_interface.attr,
+	&arm_step03_interface.attr,
+	&arm_step04_interface.attr,
+	&arm_step05_interface.attr,
+	&arm_step06_interface.attr,
+	&arm_step07_interface.attr,
+	&arm_step08_interface.attr,
+	&arm_step09_interface.attr,
+	&arm_step10_interface.attr,
 	&arm_step11_interface.attr, 
 	&arm_step12_interface.attr, 
 	&arm_step13_interface.attr, 
 	&arm_step14_interface.attr, 
 	&arm_step15_interface.attr, 
 	&arm_step16_interface.attr, 
-	&arm_step17_interface.attr, 
-	&arm_step18_interface.attr, 
-	&arm_step19_interface.attr, 
-	&arm_step20_interface.attr, 
-	&arm_step21_interface.attr, 
-	&arm_step22_interface.attr, 
-	&arm_step23_interface.attr, 
-	&arm_step24_interface.attr, 
-	&arm_step25_interface.attr,
 	&pllddr_interface.attr, 
+	&pllddr_cross_clocks_interface.attr,
 	NULL,
 };
 
@@ -4975,39 +5191,9 @@ static void  db8500_prcmu_update_freq(void *pdata)
 			last_arm_idx = i;
 		}
 
-		/* Recalibrate voltages */
-		/*
-		if (liveopp_arm[i].freq_show <= 1000000) {
-			liveopp_arm[i].vbbx_raw = avs_vbb;
-		}
-
 		switch (liveopp_arm[i].freq_show) {
-			case 100000:
-				liveopp_arm[i].varm_raw = avs_varm_50  - 3;
-				break;
-			case 200000:
-				liveopp_arm[i].varm_raw = avs_varm_50  - 2;
-				break;
-			case 300000:
-				liveopp_arm[i].varm_raw = avs_varm_50  - 1;
-				break;
-			case 400000:
-				liveopp_arm[i].varm_raw = avs_varm_50;
-				break;
-			case 500000:
-				liveopp_arm[i].varm_raw = avs_varm_50  + 4;
-				break;
-			case 600000:
-				liveopp_arm[i].varm_raw = avs_varm_100 - 4;
-				break;
-			case 700000:
-				liveopp_arm[i].varm_raw = avs_varm_100 - 2;
-				break;
 			case 800000:
 				liveopp_arm[i].varm_raw = avs_varm_100;
-				break;
-			case 900000:
-				liveopp_arm[i].varm_raw = avs_varm_100 + 4;
 				break;
 			case 1000000:
 				liveopp_arm[i].varm_raw = avs_varm_max;
@@ -5015,8 +5201,8 @@ static void  db8500_prcmu_update_freq(void *pdata)
 			default:
 				break;
 		}
-		*/
 	}
+
 	#else /* CONFIG_DB8500_LIVEOPP */
 	if  (!db8500_prcmu_has_arm_maxopp())
 		return;
@@ -5096,3 +5282,4 @@ arch_initcall(db8500_prcmu_init);
 MODULE_AUTHOR("Mattias Nilsson <mattias.i.nilsson@stericsson.com>");
 MODULE_DESCRIPTION("DB8500 PRCM Unit driver");
 MODULE_LICENSE("GPL v2");
+
