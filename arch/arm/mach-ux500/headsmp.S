@@ -11,7 +11,6 @@
 #include <linux/linkage.h>
 #include <linux/init.h>
 
-	__CPUINIT
 /*
  * U8500 specific entry point for secondary CPUs.
  */
