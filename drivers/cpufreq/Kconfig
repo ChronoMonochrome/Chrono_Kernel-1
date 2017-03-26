@@ -152,6 +152,7 @@ config CPU_FREQ_DEFAULT_GOV_ABYSSPLUG
 	select CPU_FREQ_GOV_ABYSSPLUG
 	help
           Use the CPUFreq governor 'abyssplug' as default.
+
 config CPU_FREQ_DEFAULT_GOV_ZZMOOVE
 	  bool "zzmoove"
 	  select CPU_FREQ_GOV_ZZMOOVE
@@ -160,6 +161,7 @@ config CPU_FREQ_DEFAULT_GOV_ZZMOOVE
 	  Use the CPUFreq governor 'zzmoove' as default, using predefined
 	  frequency lookup tables and optimized scaling triggers instead of
 	  % frequency steps to get smooth up/downscaling dependant on CPU load.
+
 config CPU_FREQ_DEFAULT_GOV_PEGASUSQPLUS
 	bool "pegasusq plus"
 	select CPU_FREQ_GOV_PEGASUSQPLUS

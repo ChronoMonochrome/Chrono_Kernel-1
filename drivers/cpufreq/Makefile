@@ -1,4 +1,4 @@
-# CPUfreq core
+c# CPUfreq core
 obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o
 # CPUfreq stats
 obj-$(CONFIG_CPU_FREQ_STAT)             += cpufreq_stats.o
@@ -28,6 +28,9 @@ obj-$(CONFIG_CPU_FREQ_GOV_ZZMOOVE)      += cpufreq_zzmoove.o
 obj-$(CONFIG_CPU_FREQ_GOV_LULZACTIVEQ)	+= cpufreq_lulzactiveq.o
 obj-$(CONFIG_CPU_FREQ_GOV_INTELLIDEMAND) += cpufreq_intellidemand.o
 obj-$(CONFIG_CPU_FREQ_GOV_INTELLIACTIVE) += cpufreq_intelliactive.o
+obj-$(CONFIG_CPU_FREQ_GOV_DYNAMIC)	+= cpufreq_dynamic.o
+obj-$(CONFIG_CPU_FREQ_GOV_LIONHEART)	+= cpufreq_lionheart.o
+obj-$(CONFIG_CPU_FREQ_GOV_ZZMOOVE)      += cpufreq_zzmoove.o
 obj-$(CONFIG_CPU_FREQ_GOV_ZENX) += cpufreq_zenx.o
 
 #CPUfreq limits on suspend
