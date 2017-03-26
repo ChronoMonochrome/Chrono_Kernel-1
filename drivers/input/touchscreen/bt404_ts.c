@@ -1,4 +1,3 @@
-
 /*
  *
  * Zinitix bt404 touchscreen driver
@@ -1522,11 +1521,11 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 	if (force_clear) {
 		for (i = 0; i < data->cap_info.max_finger; i++) {
 			if (prev->coord[i].sub_status & 0x1) {
-				dev_info(&client->dev,
-						"%4s[%1d]: %3d,%3d (%3d)\n",
-						"up/f", i, cur->coord[i].x,
-						cur->coord[i].x,
-						cur->coord[i].width);
+				// dev_info(&client->dev,
+				// 		"%4s[%1d]: %3d,%3d (%3d)\n",
+				// 		"up/f", i, cur->coord[i].x,
+				// 		cur->coord[i].x,
+				// 		cur->coord[i].width);
 				prev->coord[i].sub_status &= ~(0x01);
 			}
 
