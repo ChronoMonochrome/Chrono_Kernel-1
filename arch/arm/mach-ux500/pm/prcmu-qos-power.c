@@ -584,14 +584,34 @@ static int __prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 	return 0;
 }
 
+int ignore_usb_requirements = 0;
+module_param(ignore_usb_requirements, uint, 0644);
+
+int ignore_file_requirements = 0;
+module_param(ignore_file_requirements, uint, 0644);
+
+int ignore_sva_requirements = 0;
+module_param(ignore_sva_requirements, uint, 0644);
+
 int prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 		s32 val)
 {
 	if (prcmu_qos_class == PRCMU_QOS_ARM_KHZ)
 		return 0;
+	
 	if ((prcmu_qos_class == PRCMU_QOS_APE_OPP) &&
+	    (ignore_usb_requirements) &&
 	    (!strncmp(&name[0], "ab8500-usb", 10)))
-		return 0;
+		val = 25;
+		
+	if (ignore_file_requirements &&
+	    (!strncmp(&name[0], "file", 4)))
+		val = 25;
+		
+	if (ignore_sva_requirements &&
+	    (!strncmp(&name[0], "sva", 3)))
+		val = 25;
+		
 	return __prcmu_qos_update_requirement(prcmu_qos_class, name,
 			val, true);
 }
