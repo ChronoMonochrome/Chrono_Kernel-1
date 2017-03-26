@@ -461,15 +461,10 @@ static int ux500_pd_bus_notify(struct notifier_block *nb,
 
 struct dev_pm_domain ux500_amba_dev_power_domain = {
 	.ops = {
-		.suspend = amba_pm_suspend,
-		.resume = amba_pm_resume,
-		.freeze = amba_pm_freeze,
-		.thaw = amba_pm_thaw,
-		.poweroff = amba_pm_poweroff,
-		.restore = amba_pm_restore,
 		SET_RUNTIME_PM_OPS(ux500_pd_amba_runtime_suspend,
 				   ux500_pd_amba_runtime_resume,
 				   ux500_pd_amba_runtime_idle)
+		USE_PLATFORM_PM_SLEEP_OPS
 		.suspend_noirq = ux500_pd_amba_suspend_noirq,
 		.resume_noirq = ux500_pd_amba_resume_noirq,
 	},
