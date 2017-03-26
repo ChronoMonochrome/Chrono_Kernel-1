@@ -619,7 +619,7 @@ int phonet_bind_config(struct usb_configuration *c)
 	return err;
 }
 
-int __init gphonet_setup(struct usb_gadget *gadget)
+int gphonet_setup(struct usb_gadget *gadget)
 {
 	struct phonet_port *port;
 	int err;
