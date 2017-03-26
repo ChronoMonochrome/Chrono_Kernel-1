@@ -25,9 +25,6 @@
 #define INSTANCES_DEFAULT_SIZE 10
 #define INSTANCES_GROW_SIZE 5
 
-/* Upscaling needs overlapping of strips */
-#define B2R2_UPSCALE_OVERLAP 8
-
 /*
  * Internal types
  */
@@ -439,24 +436,19 @@ int b2r2_node_split_analyze(const struct b2r2_blt_request *req,
 		goto error;
 	}
 
-	/* Setup default values for step size as fallback */
-	if (!this->dst.dx)
-		this->dst.dx = this->dst.win.width;
-
-	if (!this->dst.dy)
-		this->dst.dy = this->dst.win.height;
-
 	/* Setup the origin and movement of the destination window */
 	if (this->dst.hso == B2R2_TY_HSO_RIGHT_TO_LEFT) {
-		this->dst.dx = -this->dst.dx;
+		this->dst.dx = -this->dst.win.width;
 		this->dst.win.x = this->dst.rect.x + this->dst.rect.width - 1;
 	} else {
+		this->dst.dx = this->dst.win.width;
 		this->dst.win.x = this->dst.rect.x;
 	}
 	if (this->dst.vso == B2R2_TY_VSO_BOTTOM_TO_TOP) {
-		this->dst.dy = -this->dst.dy;
+		this->dst.dy = -this->dst.win.height;
 		this->dst.win.y = this->dst.rect.y + this->dst.rect.height - 1;
 	} else {
+		this->dst.dy = this->dst.win.height;
 		this->dst.win.y = this->dst.rect.y;
 	}
 
@@ -520,26 +512,10 @@ int b2r2_node_split_configure(struct b2r2_control *cont,
 			if (ret < 0)
 				goto error;
 
-			/* did the last tile cover the remaining pixels? */
-			if (x_pixels + dst->win.width == dst->rect.width) {
-				b2r2_log_info(cont->dev,
-					"%s: dst.rect.width covered.\n",
-					__func__);
-				break;
-			}
-
 			dst->win.x += dst->dx;
 			x_pixels += max(dst->dx, -dst->dx);
 			b2r2_log_info(cont->dev, "%s: x_pixels=%d\n",
 				__func__, x_pixels);
-		}
-
-		/* did the last tile cover the remaining pixels? */
-		if (y_pixels + dst->win.height == dst->rect.height) {
-			b2r2_log_info(cont->dev,
-					"%s: dst.rect.height covered.\n",
-					__func__);
-			break;
 		}
 
 		dst->win.y += dst->dy;
@@ -1061,59 +1037,6 @@ static int calc_rot_count(u32 width, u32 height)
 	return count;
 }
 
-static int calc_ovrlp(struct b2r2_control *cont,
-			u32 win_size, u32 rect_size, u16 scale, int *src_ovlp)
-{
-	int ovlp = 0;
-
-	if (scale >= (1 << 10))
-		goto exit; /* downscale, no overlap */
-
-	if (rect_size <= win_size)
-		goto exit; /* The window is big enough for the whole rect */
-
-	ovlp = rescale(cont, B2R2_UPSCALE_OVERLAP, scale);
-	ovlp >>= 10;
-
-	/* The windows size needs to at least twice the overlap */
-	if (win_size < (ovlp * 2))
-		ovlp = 0;
-
-exit:
-	if (src_ovlp)
-		*src_ovlp = ovlp ? B2R2_UPSCALE_OVERLAP : 0;
-
-	return ovlp;
-}
-
-
-/**
- * Calculate the number of strips that are needed to cover a certain rect
- * taking into account eventual strip overlap (i.e. step_size < win_size)
- * Optionally the partial size of the last strip is returned in 'remainder'
- * In that case that partial strip is not included in total count.
- */
-static int calc_strip_count(s32 win_size, u32 step_size,
-					s32 rect_size, u32 *remainder)
-{
-	u32 count, width_remain;
-
-	for (count = 1, width_remain = (u32)rect_size;
-				width_remain > win_size; count++)
-		width_remain -= step_size;
-
-	if (remainder) {
-		if (width_remain == win_size) {
-			*remainder = 0;
-		} else {
-			*remainder = width_remain;
-			--count;
-		}
-	}
-
-	return count;
-}
-
 static int analyze_rot_scale_downscale(struct b2r2_node_split_job *this,
 		const struct b2r2_blt_request *req, u32 *node_count,
 		u32 *buf_count)
@@ -1285,7 +1208,7 @@ static int analyze_scaling(struct b2r2_node_split_job *this,
 	int ret;
 	u32 copy_count;
 	u32 nbr_cols;
-	s32 dst_w, ovlp;
+	s32 dst_w;
 	struct b2r2_control *cont = req->instance->control;
 
 	b2r2_log_info(cont->dev, "%s\n", __func__);
@@ -1324,20 +1247,12 @@ static int analyze_scaling(struct b2r2_node_split_job *this,
 
 	this->dst.win.width = min(dst_w, this->dst.rect.width);
 
-	/* Calculate the eventual stripe overlap */
-	ovlp = calc_ovrlp(cont, this->dst.win.width,
-				this->dst.rect.width, this->h_rsf, NULL);
-
-	this->dst.dx = this->dst.win.width - ovlp;
-
 	b2r2_log_info(cont->dev, "%s: dst.win.width=%d\n",
 		__func__, this->dst.win.width);
 
-	b2r2_log_info(cont->dev, "%s: stripe_ovlp=%d\n",
-					__func__, ovlp);
-
-	nbr_cols = calc_strip_count(this->dst.win.width, this->dst.dx,
-						this->dst.rect.width, NULL);
+	nbr_cols = this->dst.rect.width / this->dst.win.width;
+	if (this->dst.rect.width % this->dst.win.width)
+		nbr_cols++;
 
 	*node_count = copy_count * nbr_cols;
 
@@ -1818,7 +1733,7 @@ static int configure_rot_scale(struct b2r2_control *cont,
 {
 	int ret;
 
-	bool upscale = (u32)this->h_rsf * (u32)this->v_rsf < (1 << 20);
+	bool upscale = (u32)this->h_rsf * (u32)this->v_rsf < (1 << 10);
 
 	if (upscale)
 		ret = configure_rot_upscale(cont, node, next, this);
@@ -2533,12 +2448,6 @@ static void configure_src(struct b2r2_control *cont,
 		}
 
 		set_src_3(node, src->addr, src);
-		/*
-		 * The VMXs are restrained by the semi planar input
-		 * order. And since the internal format of b2r2 is 32-bit
-		 * AYUV we need to supply same order of components on
-		 * the b2r2 bus for the planar input formats.
-		 */
 		if (b2r2_is_yvu_fmt(src->fmt)) {
 			set_src_1(node, tmp_buf.chroma_addr, &tmp_buf);
 			set_src_2(node, tmp_buf.chroma_cr_addr, &tmp_buf);
@@ -2684,14 +2593,14 @@ static int configure_dst(struct b2r2_control *cont, struct b2r2_node *node,
 				sizeof(dst_planes[2]));
 
 			dst_planes[2].addr = dst->chroma_cr_addr;
+
 			/*
 			 * The third plane will be Cr.
 			 * The flag B2R2_TTY_CB_NOT_CR actually works
 			 * the other way around, i.e. as if it was
 			 * B2R2_TTY_CR_NOT_CB.
 			 */
-			dst_planes[2].chroma_selection
-					= B2R2_TTY_CB_NOT_CR;
+			dst_planes[2].chroma_selection = B2R2_TTY_CB_NOT_CR;
 
 			/* switch the U and V planes for YVU formats */
 			if (b2r2_is_yvu420_fmt(dst->fmt)) {
