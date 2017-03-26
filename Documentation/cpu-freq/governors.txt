@@ -128,18 +128,20 @@ in the bash (as said, 1000 is default), do:
 echo `$(($(cat cpuinfo_transition_latency) * 750 / 1000)) \
     >ondemand/sampling_rate
 
-sampling_rate_min:
+show_sampling_rate_min:
 The sampling rate is limited by the HW transition latency:
 transition_latency * 100
 Or by kernel restrictions:
 If CONFIG_NO_HZ is set, the limit is 10ms fixed.
-If CONFIG_NO_HZ is not set or nohz=off boot parameter is used, the
+If CONFIG_NO_HZ is not set or no_hz=off boot parameter is used, the
 limits depend on the CONFIG_HZ option:
 HZ=1000: min=20000us  (20ms)
 HZ=250:  min=80000us  (80ms)
 HZ=100:  min=200000us (200ms)
 The highest value of kernel and HW latency restrictions is shown and
 used as the minimum sampling rate.
+
+show_sampling_rate_max: THIS INTERFACE IS DEPRECATED, DON'T USE IT.
 
 up_threshold: defines what the average CPU usage between the samplings
 of 'sampling_rate' needs to be for the kernel to make a decision on
@@ -275,7 +277,6 @@ hispeed_freq according to load as usual.
 boostpulse_duration: Length of time to hold CPU speed at hispeed_freq
 on a write to boostpulse, before allowing speed to drop according to
 load as usual.  Default is 80000 uS.
-
 
 3. The Governor Interface in the CPUfreq Core
 =============================================
