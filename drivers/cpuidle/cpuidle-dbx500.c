@@ -309,6 +309,9 @@ static bool is_last_cpu_running(void)
 	return atomic_read(&idle_cpus_counter) == num_online_cpus();
 }
 
+static unsigned int max_depth;
+module_param(max_depth, uint, 0644);
+
 static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 				 bool gic_frozen, ktime_t entry_time,
 				 ktime_t *est_wake_time)
@@ -316,7 +319,6 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	int i;
 
 	int cpu;
-	int max_depth;
 	bool uart, modem, ape;
 	s64 delta_us;
 
@@ -372,7 +374,7 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	 * Never go deeper than the governor recommends even though it might be
 	 * possible from a scheduled wake up point of view
 	 */
-	max_depth = ux500_ci_dbg_deepest_state();
+	max_depth = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE;
 
 	for_each_online_cpu(cpu) {
 		if (max_depth > per_cpu(cpu_state, cpu)->gov_cstate)
