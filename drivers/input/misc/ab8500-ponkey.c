@@ -195,6 +195,18 @@ void ab8500_ponkey_emulator(unsigned long keycode, bool press)
 }
 EXPORT_SYMBOL(ab8500_ponkey_emulator);
 
+void abb_ponkey_remap_power_key(unsigned long old_keycode, unsigned long new_keycode)
+{
+	p_info->idev->keybit[BIT_WORD(old_keycode)] = (unsigned long)NULL;
+	p_info->idev->keybit[BIT_WORD(new_keycode)] = BIT_MASK(new_keycode);
+}
+
+void abb_ponkey_unmap_power_key(unsigned long old_keycode)
+{
+	p_info->idev->keybit[BIT_WORD(old_keycode)] = (unsigned long)NULL;
+	p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+}
+
 static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_work)
 {
 	pr_err("[ABB-POnKey] Emulator thread called, timer = %d\n", emu_sleep);
@@ -207,10 +219,8 @@ static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_w
 
 	ab8500_ponkey_emulator(emu_keycode, 0);
 	
-	if (emu_keycode != KEY_POWER) {
-		p_info->idev->keybit[BIT_WORD(emu_keycode)] = (unsigned long)NULL;
-		p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
-	}
+	if (emu_keycode != KEY_POWER)
+		abb_ponkey_unmap_power_key(emu_keycode);
 
 	emu_working = false;
 }
@@ -235,8 +245,7 @@ static ssize_t abb_ponkey_emulator_store(struct kobject *kobj, struct kobj_attri
 	}
 
 	if (!(emu_working && keycode == emu_keycode)) {
-		p_info->idev->keybit[BIT_WORD(emu_keycode)] = (unsigned long)NULL;
-		p_info->idev->keybit[BIT_WORD(keycode)] = BIT_MASK(keycode);
+		abb_ponkey_remap_power_key(emu_keycode, keycode);
 		emu_sleep = slp;
 		emu_keycode = keycode;
 		schedule_work(&abb_ponkey_emulator_work);
