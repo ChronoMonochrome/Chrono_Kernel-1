@@ -54,7 +54,7 @@
 #define AB8500_VAPE_SEL2	 	0x0F
 #define AB8500_VAPE_STEP_UV		12500
 #define AB8500_VAPE_MIN_UV		700000
-#define AB8500_VAPE_MAX_UV		1362500
+#define AB8500_VAPE_MAX_UV		1487500
 
 #define MALI_CLOCK_DEFLO		399360
 #define MALI_CLOCK_DEFHI		480000
@@ -127,7 +127,7 @@ static struct delayed_work mali_boost_delayedwork;
 
 static int vape_voltage(u8 raw)
 {
-	if (raw <= 0x35) {
+	if (raw <= 0x3F) {
 		return (AB8500_VAPE_MIN_UV + (raw * AB8500_VAPE_STEP_UV));
 	} else {
 		return AB8500_VAPE_MAX_UV;

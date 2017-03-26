@@ -1167,7 +1167,7 @@ struct liveopp_arm_table
 #define AB8500_VARM_VSEL_MASK 		0x3f
 #define AB8500_VARM_STEP_UV		12500
 #define AB8500_VARM_MIN_UV		700000
-#define AB8500_VARM_MAX_UV		1362500
+#define AB8500_VARM_MAX_UV		1487500
 
 #define AB8505_VARM_VSEL_MASK 		0x7f
 #define AB8505_VARM_STEP_UV		6250
@@ -1538,7 +1538,7 @@ static int varm_uv(u8 raw)
 {
 	raw &= AB8500_VARM_VSEL_MASK;
 
-	if (raw <= 0x35) {
+	if (raw <= 0x3f) {
 		return (AB8500_VARM_MIN_UV + (raw * AB8500_VARM_STEP_UV));
 	} else {
 		return AB8500_VARM_MAX_UV;
