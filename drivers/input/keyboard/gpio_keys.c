@@ -480,7 +480,7 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 
 	if (button->gpio == VOL_UP_JANICE_R0_0) {
 		if (emulator_volup) {
-			ab8500_ponkey_emulator(state);
+			ab8500_ponkey_emulator(KEY_POWER, state);
 
 			return 0;
 		}
@@ -488,7 +488,7 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 
 	if (button->gpio == VOL_DOWN_JANICE_R0_0) {
 		if (emulator_voldown) {
-			ab8500_ponkey_emulator(state);
+			ab8500_ponkey_emulator(KEY_POWER, state);
 
 			return 0;
 		}

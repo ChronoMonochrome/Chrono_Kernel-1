@@ -181,18 +181,18 @@ static bool emu_working = false;
 static unsigned int emu_sleep = 500;
 static unsigned long emu_keycode = KEY_POWER;
 
-void ab8500_ponkey_emulator(bool press)
+void ab8500_ponkey_emulator(unsigned long keycode, bool press)
 {
 	if (press) {
-		gpio_keys_setstate(emu_keycode, true);
+		gpio_keys_setstate(keycode, true);
 		p_info->key_state = true;
-		input_report_key(p_info->idev, emu_keycode, true);
+		input_report_key(p_info->idev, keycode, true);
 		pr_err("[ABB-POnKey] Emulate Power Key PRESS\n");
 		input_sync(p_info->idev);
 	} else if (!press) {
-		gpio_keys_setstate(emu_keycode, false);
+		gpio_keys_setstate(keycode, false);
 		p_info->key_state = false;
-		input_report_key(p_info->idev, emu_keycode, false);
+		input_report_key(p_info->idev, keycode, false);
 		pr_err("[ABB-POnKey] Emulate Power Key RELEASE\n");
 		input_sync(p_info->idev);
 	}
@@ -205,11 +205,11 @@ static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_w
 
 	emu_working = true;
 
-	ab8500_ponkey_emulator(1);
+	ab8500_ponkey_emulator(emu_keycode, 1);
 
 	msleep(emu_sleep);
 
-	ab8500_ponkey_emulator(0);
+	ab8500_ponkey_emulator(emu_keycode, 0);
 	
 	if (emu_keycode != KEY_POWER) {
 		p_info->idev->keybit[BIT_WORD(emu_keycode)] = (unsigned long)NULL;

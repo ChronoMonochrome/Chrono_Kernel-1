@@ -28,6 +28,8 @@
 #include <linux/mfd/abx500/ab8500-bm.h>
 #include <linux/mfd/abx500/ab8500-gpadc.h>
 
+#include <linux/input.h> // for ABB POnKey
+
 /* Watchdog kick interval */
 #define CHG_WD_INTERVAL			(60 * HZ)
 
@@ -114,9 +116,9 @@ static void eoc_wakeup_thread(struct work_struct *eoc_wakeup_work)
 {
 	pr_err("[abb-chargalg] [fn] EOC wakeup\n");
 
-	ab8500_ponkey_emulator(1);
+	ab8500_ponkey_emulator(KEY_POWER, 1);
 	msleep(100);
-	ab8500_ponkey_emulator(0);
+	ab8500_ponkey_emulator(KEY_POWER, 0);
 
 	eoc_noticed = 1;
 }
