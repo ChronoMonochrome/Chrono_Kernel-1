@@ -104,7 +104,7 @@ static unsigned long lowmem_deathpending_timeout;
 #define lowmem_print(level, x...)			\
 	do {						\
 		if (lowmem_debug_level >= (level))	\
-			pr_info(x);			\
+			pr_err(x);			\
 	} while (0)
 
 static int
