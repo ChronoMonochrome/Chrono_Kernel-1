@@ -42,7 +42,7 @@
 #include <video/mcde_display-dpi.h>
 #include <video/mcde_display_ssg_dpi.h>
 
-#define ESD_PORT_NUM 93
+#define ESD_PORT_NUM	93
 #define SPI_COMMAND		0
 #define SPI_DATA		1
 
@@ -60,7 +60,7 @@
 #define MAX_BRIGHTNESS		255
 #define DEFAULT_BRIGHTNESS	120
 
-#define DCS_CMD_COLMOD		0x3A	/* Set Pixel Format */
+#define DCS_CMD_COLMOD          0x3A    /* Set Pixel Format */
 #define DCS_CMD_WS2401_RESCTL	0xB8	/* Resolution Select Control */
 #define DCS_CMD_WS2401_PSMPS	0xBD	/* SMPS Positive Control */
 #define DCS_CMD_WS2401_NSMPS	0xBE	/* SMPS Negative Control */
@@ -73,18 +73,12 @@
 #define DCS_CMD_WS2401_READID1	0xDA	/* Read panel ID 1 */
 #define DCS_CMD_WS2401_READID2	0xDB	/* Read panel ID 2 */
 #define DCS_CMD_WS2401_READID3	0xDC	/* Read panel ID 3 */
-#define DCS_CMD_WS2401_GAMMA_R1	0xE7	/* GAMMA(RED) */
-#define DCS_CMD_WS2401_GAMMA_R2	0xEA	/* GAMMA(RED) */
-#define DCS_CMD_WS2401_GAMMA_G1	0xE8	/* GAMMA(GREEN) */
-#define DCS_CMD_WS2401_GAMMA_G2	0xEB	/* GAMMA(GREEN) */
-#define DCS_CMD_WS2401_GAMMA_B1	0xE9	/* GAMMA(BLUE) */
-#define DCS_CMD_WS2401_GAMMA_B2	0xEC	/* GAMMA(BLUE) */
 #define DCS_CMD_WS2401_PASSWD1	0xF0	/* Password1 Command for Level2 */
 #define DCS_CMD_WS2401_DISCTL	0xF2	/* Display Control */
 #define DCS_CMD_WS2401_PWRCTL	0xF3	/* Power Control */
 #define DCS_CMD_WS2401_VCOMCTL	0xF4	/* VCOM Control */
 #define DCS_CMD_WS2401_SRCCTL	0xF5	/* Source Control */
-#define DCS_CMD_WS2401_PANELCTL 0xF6	/*Panel Control*/
+#define DCS_CMD_WS2401_PANELCTL 0xF6	/* Panel Control */
 
 
 #define DCS_CMD_SEQ_DELAY_MS	0xFE
@@ -144,7 +138,7 @@ static const u8 DCS_CMD_SEQ_WS2401_INIT[] = {
 	/* Flip V(d0), Flip H(d1), RGB/BGR(d3) */
 	2,	DCS_CMD_SET_ADDRESS_MODE,	0x08,
 	/* 0x60=262K Colour(=18 bit/pixel), 0x70=16.7M Colour(=24 bit/pixel) */
-	2,	DCS_CMD_COLMOD,			0x70,
+	2,	DCS_CMD_COLMOD,				0x70,
 
 	3,	DCS_CMD_WS2401_SMPS,		0x00,	/*SMPS Block init*/
 						0x0F,
@@ -182,123 +176,11 @@ static const u8 DCS_CMD_SEQ_WS2401_INIT[] = {
 						0x00,
 						0x06,
 						0x03,
-	5,	DCS_CMD_WS2401_PANELCTL, 0x34,
-		0x00,
-		0x80,
-		0x00,
-
-	DCS_CMD_SEQ_END
-};
-
-static const u8 DCS_CMD_SEQ_WS2401_GAMMA_SET[] = {
-
-	18,	DCS_CMD_WS2401_GAMMA_R1,	0x00,	/*RED1*/
-						0x5B,
-						0x41,
-						0x41,
-						0x40,
-						0x41,
-						0x3F,
-						0x39,
-						0x2F,
-						0x2C,
-						0x2C,
-						0x2B,
-						0x2B,
-						0x2F,
-						0x22,
-						0x17,
+	5,	DCS_CMD_WS2401_PANELCTL,        0x34,
+						0x00,
+						0x80,
 						0x00,
 
-	18,	DCS_CMD_WS2401_GAMMA_R2,	0x00,	/*RED2*/
-						0x5B,
-						0x41,
-						0x41,
-						0x40,
-						0x41,
-						0x3F,
-						0x39,
-						0x2F,
-						0x2C,
-						0x2C,
-						0x2B,
-						0x2B,
-						0x2F,
-						0x22,
-						0x17,
-						0x00,
-
-	18,	DCS_CMD_WS2401_GAMMA_G1,	0x00,	/*GREEN1*/
-						0x59,
-						0x3F,
-						0x3F,
-						0x3E,
-						0x40,
-						0x3E,
-						0x39,
-						0x2F,
-						0x2C,
-						0x2B,
-						0x29,
-						0x25,
-						0x2A,
-						0x19,
-						0x07,
-						0x00,
-
-	18,	DCS_CMD_WS2401_GAMMA_G2,	0x00,	/*GREEN2*/
-						0x59,
-						0x3F,
-						0x3F,
-						0x3E,
-						0x40,
-						0x3E,
-						0x39,
-						0x2F,
-						0x2C,
-						0x2B,
-						0x29,
-						0x25,
-						0x2A,
-						0x19,
-						0x07,
-						0x00,
-
-	18,	DCS_CMD_WS2401_GAMMA_B1,	0x00,	/*BLUE*/
-						0x55,
-						0x3A,
-						0x3A,
-						0x3C,
-						0x3F,
-						0x3D,
-						0x38,
-						0x27,
-						0x37,
-						0x29,
-						0x27,
-						0x22,
-						0x39,
-						0x04,
-						0x03,
-						0x00,
-
-	18,	DCS_CMD_WS2401_GAMMA_B2,	0x00,	/*BLUE*/
-						0x55,
-						0x3A,
-						0x3A,
-						0x3C,
-						0x3F,
-						0x3D,
-						0x38,
-						0x27,
-						0x37,
-						0x29,
-						0x27,
-						0x22,
-						0x39,
-						0x04,
-						0x03,
-						0x00,
 	DCS_CMD_SEQ_END
 };
 
@@ -656,7 +538,6 @@ static int ws2401_dpi_ldi_init(struct ws2401_dpi *lcd)
 
 	ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_INIT);
 
-		ret |= ws2401_write_dcs_sequence(lcd, DCS_CMD_SEQ_WS2401_GAMMA_SET);
 /*
 	if (lcd->pd->bl_ctrl)
 		ret |= ws2401_write_dcs_sequence(lcd,
@@ -997,7 +878,7 @@ static void est_test_timer_func(unsigned long data)
 }
 #endif
 #endif
-static int __init ws2401_dpi_spi_probe(struct spi_device *spi)
+static int __devinit ws2401_dpi_spi_probe(struct spi_device *spi)
 {
 	int ret = 0;
 	struct ws2401_dpi *lcd = container_of(spi->dev.driver,
@@ -1337,7 +1218,7 @@ static void ws2401_dpi_mcde_late_resume(
 }
 #endif
 
-static struct mcde_display_driver ws2401_dpi_mcde = {
+static struct mcde_display_driver ws2401_dpi_mcde __refdata = {
 	.probe          = ws2401_dpi_mcde_probe,
 	.remove         = ws2401_dpi_mcde_remove,
 	.shutdown	= ws2401_dpi_mcde_shutdown,
@@ -1371,4 +1252,3 @@ module_exit(ws2401_dpi_exit);
 MODULE_AUTHOR("Gareth Phillips <gareth.phillips@samsung.com>");
 MODULE_DESCRIPTION("WideChips WS2401 DPI Driver");
 MODULE_LICENSE("GPL");
-
