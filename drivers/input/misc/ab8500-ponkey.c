@@ -183,13 +183,13 @@ void ab8500_ponkey_emulator(unsigned long keycode, bool press)
 		gpio_keys_setstate(keycode, true);
 		p_info->key_state = true;
 		input_report_key(p_info->idev, keycode, true);
-		pr_err("[ABB-POnKey] Emulate Power Key PRESS\n");
+		pr_err("[ABB-POnKey] Emulate %d Key PRESS\n", keycode);
 		input_sync(p_info->idev);
 	} else if (!press) {
 		gpio_keys_setstate(keycode, false);
 		p_info->key_state = false;
 		input_report_key(p_info->idev, keycode, false);
-		pr_err("[ABB-POnKey] Emulate Power Key RELEASE\n");
+		pr_err("[ABB-POnKey] Emulate %d Key RELEASE\n", keycode);
 		input_sync(p_info->idev);
 	}
 }
