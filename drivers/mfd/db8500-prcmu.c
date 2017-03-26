@@ -1866,7 +1866,7 @@ static int request_panic_pll(u8 clock, bool enable)
 static int request_panic_sysclk(bool enable)
 {
 	int r;
-	unsigned long flags;
+	/* unsigned long flags; */
 
 	r = 0;
 
@@ -1896,7 +1896,7 @@ static int request_panic_sysclk(bool enable)
 static int request_panic_clock(u8 clock, bool enable)
 {
 	u32 val;
-	unsigned long flags;
+	/* unsigned long flags; */
 
 	/* Grab the HW semaphore. */
 	while ((readl(PRCM_SEM) & PRCM_SEM_PRCM_SEM) != 0)
