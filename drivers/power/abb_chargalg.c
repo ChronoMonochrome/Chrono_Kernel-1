@@ -111,7 +111,7 @@ static void ab8500_chargalg_late_resume(struct early_suspend *h)
 {
 	is_suspend = 0;
 	
-	if (eoc_blink_ongoing) {
+	if (eoc_blink_ongoing && !bln_is_ongoing()) {
 		cancel_delayed_work(&eoc_blink_stop_work);
 		schedule_delayed_work(&eoc_blink_stop_work, 0);
 		eoc_blink_ongoing = false;
