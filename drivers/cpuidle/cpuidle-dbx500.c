@@ -30,6 +30,38 @@
 #include "cpuidle-dbx500.h"
 #include "cpuidle-dbx500_dbg.h"
 
+int clockevents_program_event_legacy(struct clock_event_device *dev, ktime_t expires,
+                             ktime_t now)
+{
+	unsigned long long clc;
+	int64_t delta;
+
+	if (unlikely(expires.tv64 < 0)) {
+		WARN_ON_ONCE(1);
+		return -ETIME;
+	}
+
+	delta = ktime_to_ns(ktime_sub(expires, now));
+
+	if (delta <= 0)
+		return -ETIME;
+
+	dev->next_event = expires;
+
+ 	if (dev->mode == CLOCK_EVT_MODE_SHUTDOWN)
+		return 0;
+
+	if (delta > dev->max_delta_ns)
+		delta = dev->max_delta_ns;
+	if (delta < dev->min_delta_ns)
+		delta = dev->min_delta_ns;
+
+		clc = delta * dev->mult;
+		clc >>= dev->shift;
+
+	return dev->set_next_event((unsigned long) clc, dev);
+}
+
 /*
  * All measurements are with two cpus online (worst case) and at
  * 200 MHz (worst case)
@@ -256,7 +288,7 @@ static void restore_sequence(struct cpu_state *state)
 		if ((ktime_to_us(now) >= ktime_to_us(time_next)))
 			time_next = ktime_add(now, ktime_set(0, 1000));
 		/* Make sure have an MTU interrupt waiting for us */
-		WARN_ON(clockevents_program_event(mtu_clkevt,
+		WARN_ON(clockevents_program_event_legacy(mtu_clkevt,
 					  time_next,
 					  now));
 	}
