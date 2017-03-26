@@ -142,15 +142,15 @@ static void s6e63m0_init_smart_dimming_table_22(struct s6e63m0_dsi_lcd *lcd)
 			gamma_table_sm2[i][j+3] = (gamma_22[j]); // j+3 : for first value
 	}
 #if 0
-	printk("++++++++++++++++++ !SMART DIMMING RESULT! +++++++++++++++++++\n");
+;
 
 	for (i = 0; i < MAX_GAMMA_VALUE; i++) {
-		printk("SmartDimming Gamma Result=[%3d] : ",candela_table[i]);
+;
 		for (j = 0; j < GAMMA_PARAM_LEN; j++)
-			printk("[0x%02x], ", gamma_table_sm2[i][j+3]);
-		printk("\n");
+;
+;
 	}
-	printk("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++");	
+;
 #endif
 }
 #endif
@@ -441,7 +441,7 @@ static int s6e63m0_set_gamma(struct s6e63m0_dsi_lcd *lcd)
 	ret = s6e63m0_write_dcs_vid_seq(ddev, lcd->gamma_seq[lcd->bl]);
 #if 0
 	for (i=3; i<24 ; i++)
-	printk("gamma_seq[%d][%x]...current_gamma=[%d]\n",i,lcd->gamma_seq[lcd->bl][i],lcd->current_gamma);
+;
 #endif
 	if (ret == 0)
 		ret = s6e63m0_write_dcs_vid_seq(ddev, DCS_CMD_SEQ_GAMMA_SET_UPDATE);
@@ -890,7 +890,7 @@ static int s6e63m0_dsi_set_power_mode(struct mcde_display_device *ddev,
 					power_mode == MCDE_DISPLAY_PM_OFF) {
 #ifdef ESD_OPERATION
 		if (lcd->esd_enable) {
-	                printk(KERN_INFO " %s esd_enable=1", __func__);
+;
 			lcd->esd_enable = 0;
 			irq_set_irq_type(GPIO_TO_IRQ(lcd->esd_port), IRQF_TRIGGER_NONE);
 			disable_irq_nosync(GPIO_TO_IRQ(lcd->esd_port));
@@ -900,7 +900,7 @@ static int s6e63m0_dsi_set_power_mode(struct mcde_display_device *ddev,
 				dev_dbg(lcd->dev," cancel_work_sync\n");
 			}
 	
-                        printk(KERN_INFO " %s change esd_enable=0", __func__);
+;
 			dev_dbg(lcd->dev,"change lcd->esd_enable :%d\n", lcd->esd_enable);
 		}
 #endif		
@@ -1255,7 +1255,7 @@ static void mcde_send_to_compdev(int compdev, struct fb_fix_screeninfo finfo, st
     ret = ioctl(ctx->compdev, COMPDEV_POST_BUFFER_IOC,
             (struct compdev_img*)&img);
     if (ret < 0)
-        printk("%s: Failed to post buffers to compdev, %d", __func__, ret);
+;
 
 }
 #endif
@@ -1274,7 +1274,7 @@ void mcde_recovery_fb(struct s6e63m0_dsi_lcd *lcd)
 
 	fbi = get_primary_display_fb_info();
 	mfb = to_mcde_fb(fbi);
-        printk("mfb =[%x]\n");
+;
 	if (mfb->early_suspend.suspend) {
 	pr_info("%s MCDE suspend \n", __func__);
 	mfb->early_suspend.suspend(&mfb->early_suspend);
@@ -1294,7 +1294,7 @@ void mcde_recovery_fb(struct s6e63m0_dsi_lcd *lcd)
 #if 0
         compdev = open("/dev/comp0", O_RDWR, 0);
         if (compdev == NULL) {
-            printk(KERN_INFO " %s compdev open fail !!\n", __func__);
+;
             return;
         }
 
@@ -1307,27 +1307,27 @@ void mcde_recovery_fb(struct s6e63m0_dsi_lcd *lcd)
                 struct mcde_overlay *ovly = mfb->ovlys[i];
                 rot = ovly->ddev->get_rotation(ovly->ddev);
 
-                printk(KERN_INFO "%s  ovly nb = %d\n", __func__, i);
+;
                 /* Set rotation */
                 ret = mcde_dss_set_rotation(ovly->ddev, rot);
                 if (ret != 0) {
-                    printk(KERN_INFO "%s  mcde_dss_set_rotation failed\n", __func__);                
+;
                 }
                 
                 /* Apply */
                 ret = mcde_dss_apply_channel(ovly->ddev);
                 if (ret != 0) {
-                    printk(KERN_INFO "%s  mcde_dss_apply_channel failed\n", __func__);                
+;
                 }               
 
                 ret = mcde_dss_apply_overlay(ovly, NULL);                
                 if (ret != 0) {
-                    printk(KERN_INFO "%s  mcde_dss_apply_overlay failed\n", __func__);                
+;
                 }               
 
                 ret = mcde_dss_update_overlay(ovly, true);
                 if (ret != 0) {
-                    printk(KERN_INFO "%s  mcde_dss_update_overlay failed\n", __func__);                
+;
                 }                
             }
         }
@@ -1343,7 +1343,7 @@ void mcde_recovery_fb(struct s6e63m0_dsi_lcd *lcd)
 #if 0
         lcd->ddev->fbi->var.rotate = rot;
 
-    printk(" %s chnl->hw_rot=%d, fb_rot=%d\n",__func__, lcd->ddev->chnl_state->hw_rot, lcd->ddev->fbi->var.rotate);
+;
 
     lcd->ddev->update_flags |= UPDATE_FLAG_ROTATION;
 
@@ -1359,7 +1359,7 @@ void mcde_recovery_fb(struct s6e63m0_dsi_lcd *lcd)
     mcde_send_to_compdev(compdev, fbi->fix, fbi->var, rot);  
     close(compdev);
 #endif
-    printk(" %s Exit\n", __func__);
+;
 	/* -452052 ESD recovery for DSI video */
 
 }
