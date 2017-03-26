@@ -804,8 +804,6 @@ static int irq_thread(void *data)
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	current->irq_thread = 1;
 
-	irq_thread_check_affinity(desc, action);
-
 	while (!irq_wait_for_interrupt(action)) {
 		irqreturn_t action_ret;
 
@@ -1035,7 +1033,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
 		 * thread_mask assigned. See the loop above which or's
 		 * all existing action->thread_mask bits.
 		 */
-		new->thread_mask = 1UL << ffz(thread_mask);
+		new->thread_mask = 1 << ffz(thread_mask);
 	}
 
 	if (!shared) {
