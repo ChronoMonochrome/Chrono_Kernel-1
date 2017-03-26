@@ -41,7 +41,7 @@ static inline void platform_do_lowpower(unsigned int cpu)
 		context_restore_cpu_registers();
 		context_varm_restore_core();
 
-		if (pen_release == cpu) {
+		if (pen_release == cpu_logical_map(cpu)) {
 			/*
 			* OK, proper wakeup, we're done
 			 */
