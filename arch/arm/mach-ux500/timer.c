@@ -103,13 +103,10 @@ static void __init ux500_timer_init(void)
 	if (cpu_is_u5500())
 		db5500_mtimer_init(__io_address(U5500_MTIMER_BASE));
 	clksrc_dbx500_prcmu_init(prcmu_timer_base);
-	ux500_twd_init();
-}
-
 #ifdef CONFIG_DBX500_CONTEXT
 	WARN_ON(context_ape_notifier_register(&mtu_context_notifier));
 #endif
-
+	ux500_twd_init();
 }
 
 struct sys_timer ux500_timer = {
