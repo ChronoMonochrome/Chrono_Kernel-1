@@ -77,6 +77,10 @@ static unsigned int aggresive_io_is_busy = 40*128/100;
 static unsigned int aggresive_standby_delay_factor = 3;
 static unsigned int aggresive_standby_threshold_freq = 200000;
 static unsigned int aggresive_power_optimal_freq = 0;
+static unsigned int aggresive_max_non_oc_freq = 0;
+static unsigned int aggresive_oc_freq_boost_ms = 0;
+static unsigned int aggresive_input_boost_us = 500*1000;
+static unsigned int aggresive_input_boost_freq = 800000;
 
 module_param(mali_high_utilization_threshold, uint, 0644);
 module_param(aggresive_power_optimal_freq, uint, 0644);
@@ -87,6 +91,11 @@ module_param(aggresive_high_freq_sampling_up_factor, uint, 0644);
 module_param(aggresive_io_is_busy, uint, 0644);
 module_param(aggresive_standby_delay_factor, uint, 0644);
 module_param(aggresive_standby_threshold_freq, uint, 0644);
+module_param(aggresive_max_non_oc_freq, uint, 0644);
+module_param(aggresive_oc_freq_boost_ms, uint, 0644);
+module_param(aggresive_input_boost_us, uint, 0644);
+module_param(aggresive_input_boost_freq, uint, 0644);
+
 
 static int aggresive_mode_is_enabled(const char *val, struct kernel_param *kp)
 {
@@ -95,6 +104,22 @@ static int aggresive_mode_is_enabled(const char *val, struct kernel_param *kp)
 	return param_get_int(val, kp);
 }
 module_param_call(aggresive_mode, aggresive_mode_is_enabled, aggresive_mode_is_enabled, &aggresive_mode, 0644);
+
+#define current_max_non_oc_freq \
+	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
+	aggresive_max_non_oc_freq : dbs_tuners_ins.max_non_oc_freq) 
+
+#define current_oc_freq_boost_ms \
+	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
+	aggresive_oc_freq_boost_ms : dbs_tuners_ins.oc_freq_boost_ms) 
+
+#define current_input_boost_us \
+	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
+	aggresive_input_boost_us : dbs_tuners_ins.input_boost_us) 
+
+#define current_input_boost_freq \
+	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
+	aggresive_input_boost_freq : dbs_tuners_ins.input_boost_freq) 
 
 #define current_power_optimal_freq \
 	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
@@ -348,10 +373,10 @@ static void recalculate_freq_limits(void) {
 
 		//find suspend  hard limit
 		pr_debug("current limits: _standby_max_freq_soft: %d, _suspend_max_freq_soft: %d, _suspend_max_freq_hard:%d\n", dbs_tuners_ins._standby_max_freq_soft, dbs_tuners_ins._suspend_max_freq_soft, dbs_tuners_ins._suspend_max_freq_hard);
-		pr_debug("frequency settings: suspend_max_freq: %d, power_optimal_freq: %d, max_non_oc_freq: %d, policy->max: %d, oc_freq_boost_ms: %d\n", dbs_tuners_ins.suspend_max_freq, current_power_optimal_freq, dbs_tuners_ins.max_non_oc_freq, policy->max, dbs_tuners_ins.oc_freq_boost_ms);
+		pr_debug("frequency settings: suspend_max_freq: %d, power_optimal_freq: %d, max_non_oc_freq: %d, policy->max: %d, oc_freq_boost_ms: %d\n", dbs_tuners_ins.suspend_max_freq, current_power_optimal_freq, current_max_non_oc_freq, policy->max, current_oc_freq_boost_ms);
 		//TODO can't decide which of the two should be first...
-		if (dbs_tuners_ins.max_non_oc_freq && (dbs_tuners_ins.oc_freq_boost_ms == 0 || (current_power_optimal_freq == 0 && dbs_tuners_ins.suspend_max_freq == 0)))
-			dbs_tuners_ins._suspend_max_freq_hard = dbs_tuners_ins.max_non_oc_freq;
+		if (current_max_non_oc_freq && (current_oc_freq_boost_ms == 0 || (current_power_optimal_freq == 0 && dbs_tuners_ins.suspend_max_freq == 0)))
+			dbs_tuners_ins._suspend_max_freq_hard = current_max_non_oc_freq;
 		else if (current_power_optimal_freq)
 			dbs_tuners_ins._suspend_max_freq_hard = current_power_optimal_freq;
 		else if (dbs_tuners_ins.suspend_max_freq)
@@ -368,8 +393,8 @@ static void recalculate_freq_limits(void) {
 			dbs_tuners_ins._suspend_max_freq_soft = policy->max;
 
 		//calculate standby soft freq limit
-		if (dbs_tuners_ins.max_non_oc_freq && ((dbs_tuners_ins.max_non_oc_freq < policy->max && dbs_tuners_ins.oc_freq_boost_ms == 0) || current_power_optimal_freq == 0))
-			dbs_tuners_ins._standby_max_freq_soft = dbs_tuners_ins.max_non_oc_freq;
+		if (current_max_non_oc_freq && ((current_max_non_oc_freq < policy->max && current_oc_freq_boost_ms == 0) || current_power_optimal_freq == 0))
+			dbs_tuners_ins._standby_max_freq_soft = current_max_non_oc_freq;
 		else if (current_power_optimal_freq)
 			dbs_tuners_ins._standby_max_freq_soft = current_power_optimal_freq;
 		else
@@ -382,8 +407,8 @@ static void recalculate_freq_limits(void) {
 		if (dbs_tuners_ins._standby_max_freq_soft > policy->max)
 			dbs_tuners_ins._standby_max_freq_soft = policy->max;
 
-		if (policy->max > dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_boost_ms)
-			dbs_tuners_ins._oc_limit = dbs_tuners_ins.oc_freq_boost_ms*num_present_cpus()*(policy->max-dbs_tuners_ins.max_non_oc_freq)/1000;
+		if (policy->max > current_max_non_oc_freq && current_oc_freq_boost_ms)
+			dbs_tuners_ins._oc_limit = current_oc_freq_boost_ms*num_present_cpus()*(policy->max-current_max_non_oc_freq)/1000;
 		else
 			dbs_tuners_ins._oc_limit = 0;
 
@@ -659,16 +684,16 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	unsigned int max_freq_hard = policy->max;
 	unsigned int max_freq_soft = policy->max;
 
-	bool boosted = (dbs_tuners_ins.input_boost_freq > 0) && (ktime_to_us(ktime_get()) < (last_input_time + dbs_tuners_ins.input_boost_us));
+	bool boosted = (current_input_boost_freq > 0) && (ktime_to_us(ktime_get()) < (last_input_time + current_input_boost_us));
 	bool active = !(suspend || standby);
 
 	unsigned int oc_freq_delta = 0;
 
 	unsigned int j;
 
-	if (active && policy->cur > dbs_tuners_ins.max_non_oc_freq && this_dbs_info->oc_boost_cycles) {
+	if (active && policy->cur > current_max_non_oc_freq && this_dbs_info->oc_boost_cycles) {
 		pr_debug("this_dbs_info->oc_boost_cycles = %d", this_dbs_info->oc_boost_cycles);
-		oc_freq_delta = (policy->cur - dbs_tuners_ins.max_non_oc_freq)/1000;
+		oc_freq_delta = (policy->cur - current_max_non_oc_freq)/1000;
 	}
 
 	/*
@@ -757,22 +782,22 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	if (boosted) {
 		unsigned int freq_target;
 	        if (suspend) {
-			if (dbs_tuners_ins.max_non_oc_freq) {
+			if (current_max_non_oc_freq) {
 				//TODO optimize this
 				//this is to avoid a situation where some process is spinning in the background
 				//and a volume key is pressed (or any key that does not cause the screen to turn on)
 				//without this time limit it could leave the cpu constantly spinning at max oc freq
 				//and with it it'll only spin at max_non_oc_freq, which is a "lesser evil"
-				if (dbs_tuners_ins.oc_freq_boost_ms) {
+				if (current_oc_freq_boost_ms) {
 					freq_target = policy->max;
 				} else {
-					freq_target = dbs_tuners_ins.max_non_oc_freq;
+					freq_target = current_max_non_oc_freq;
 					max_freq_hard = freq_target;
 				}
 			} else
 				freq_target = policy->max;
 		} else {
-			freq_target = dbs_tuners_ins.input_boost_freq;
+			freq_target = current_input_boost_freq;
 		}
 		if (policy->cur < freq_target) {
 			pr_debug("Boosting freq from %d to %d, dt=%llu us\n", this_dbs_info->requested_freq, freq_target, ktime_to_us(ktime_get())-last_input_time);
@@ -794,11 +819,11 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			schedule_work(&input_unboost_work);
 	}
 
-	if (active && dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_boost_ms) {
+	if (active && current_max_non_oc_freq && current_oc_freq_boost_ms) {
 		if (this_dbs_info->oc_boost_cycles == 0)
-			max_freq_hard = dbs_tuners_ins.max_non_oc_freq;
+			max_freq_hard = current_max_non_oc_freq;
 		else if (this_dbs_info->oc_boost_cycles < dbs_tuners_ins._oc_limit) {
-			max_freq_soft = dbs_tuners_ins.max_non_oc_freq;
+			max_freq_soft = current_max_non_oc_freq;
 		}
 		if (this_dbs_info->oc_boost_cycles > 0)
 			pr_debug("oc limit: %d (%d), freq_delta: %d, soft: %d, hard: %d",
@@ -883,7 +908,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	 */
 	/* Check for frequency decrease */
 
-	if (max_load < this_dbs_info->down_threshold && (!boosted || policy->cur > dbs_tuners_ins.input_boost_freq)) {
+	if (max_load < this_dbs_info->down_threshold && (!boosted || policy->cur > current_input_boost_freq)) {
 		//calculate minimum freq that can support current workload (load_pct*cur_freq) with load < up_threshold-down_diff
 		min_supporting_freq = (this_dbs_info->requested_freq*max_load)/(current_up_threshold - current_down_differential);
 		cpufreq_frequency_table_target(policy, this_dbs_info->freq_table, min_supporting_freq, CPUFREQ_RELATION_L, &idx);
@@ -1009,7 +1034,7 @@ static void hotplug_input_event(struct input_handle *handle,
 	if (dbs_tuners_ins._oc_limit)
 		dbs_info->oc_boost_cycles = dbs_tuners_ins._oc_limit*2;
 
-	if (now - last_input_time < dbs_tuners_ins.input_boost_us || policy->cur >= dbs_tuners_ins.input_boost_freq) {
+	if (now - last_input_time < current_input_boost_us || policy->cur >= current_input_boost_freq) {
 		//if input events occur, keep the boost running, just don't flush delayed work
 		pr_debug(" - boost trigger not needed: dt=%llu us, freq=%d MHz\n", now - last_input_time, policy->cur/1000);
 		last_input_time = now;
