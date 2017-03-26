@@ -3880,7 +3880,7 @@ static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tkey_threshold_show, NULL);
 static struct attribute *touchkey_attributes[] = {
 	&dev_attr_touchkey_back.attr,
 	&dev_attr_touchkey_menu.attr,
-        &dev_attr_touchkey_raw_data1.attr,
+	&dev_attr_touchkey_raw_data1.attr,
 	&dev_attr_touchkey_raw_data0.attr,
 	&dev_attr_touchkey_threshold.attr,
 	NULL,
@@ -4639,12 +4639,22 @@ err_i2c:
 	return ret;
 }
 
+static int last_suspend_skipped = 0, last_resume_skipped = 0;
+bool break_suspend_early(bool);
+
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
 static int bt404_ts_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
+
+	if (s2w_switch || dt2w_switch) {
+	        if (break_suspend_early(true)) {
+			goto out;
+		}
+	}
+
 
 	if (!data->enabled) {
 		dev_err(dev, "%s, already disabled\n", __func__);
@@ -4700,6 +4710,14 @@ static int bt404_ts_resume(struct device *dev)
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
+
+	if (s2w_switch || dt2w_switch) {
+		if (break_suspend_early(false)) {
+			if (last_suspend_skipped) {
+				goto out;
+			}
+		}
+	}
 
 	if (data->enabled) {
 		dev_err(dev, "%s, already enabled\n", __func__);
