@@ -1051,9 +1051,15 @@ static int __init prcmu_qos_power_preinit(void)
 arch_initcall(prcmu_qos_power_preinit);
 #endif
 
+#define QOS_ARM_KHZ_NORMAL 200000
+#define QOS_ARM_KHZ_BOOST_DUR_MS_DEF 8000
 unsigned int qos_ddr_opp = 25;
 unsigned int qos_ape_opp = 25;
-unsigned int qos_arm_khz = 200000;
+unsigned int qos_arm_khz = QOS_ARM_KHZ_NORMAL;
+unsigned int qos_arm_khz_boost_dur_ms = QOS_ARM_KHZ_BOOST_DUR_MS_DEF;
+module_param_named(qos_arm_khz_boost_dur_ms, qos_arm_khz_boost_dur_ms, uint, 0666);
+
+bool arm_khz_boosted = 0;
 
 static int set_qos_ddr_opp(const char *val, struct kernel_param *kp)
 {
@@ -1109,6 +1115,13 @@ out:
 }
 module_param_call(qos_ape_opp, set_qos_ape_opp, param_get_uint, &qos_ape_opp, 0666);
 
+static void restore_arm_khz_fn(struct work_struct *work)
+{
+	prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ, "power HAL", QOS_ARM_KHZ_NORMAL);
+	arm_khz_boosted = 0;
+}
+static DECLARE_DELAYED_WORK(restore_arm_khz_delayedwork, restore_arm_khz_fn);
+
 static int set_qos_arm_khz(const char *val, struct kernel_param *kp)
 {
 	unsigned int arm_khz = 200000;
@@ -1118,7 +1131,17 @@ static int set_qos_arm_khz(const char *val, struct kernel_param *kp)
 		goto out;
 
 	qos_arm_khz = arm_khz;
+
+	if (arm_khz_boosted) {
+		cancel_delayed_work(&restore_arm_khz_delayedwork);
+		arm_khz_boosted = 0;
+	}
+
 	prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ, "power HAL", arm_khz);
+	arm_khz_boosted = 1;
+
+	schedule_delayed_work(&restore_arm_khz_delayedwork,
+		msecs_to_jiffies(qos_arm_khz_boost_dur_ms));
 
 out:
 	if (err)
@@ -1212,7 +1235,7 @@ static int __init prcmu_qos_power_init(void)
 */
 
 	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "power HAL",
-			200000);
+			QOS_ARM_KHZ_NORMAL);
 	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "power HAL",
 			qos_ddr_opp);
 	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "power HAL",
@@ -1225,12 +1248,12 @@ static int __init prcmu_qos_power_init(void)
 
 	return ret;
 
-vsafe_opp_qos_error: 
-	misc_deregister(&arm_khz_qos.prcmu_qos_power_miscdev); 
-arm_khz_qos_error: 
-	misc_deregister(&ddr_opp_qos.prcmu_qos_power_miscdev); 
-ddr_opp_qos_error: 
-	misc_deregister(&ape_opp_qos.prcmu_qos_power_miscdev); 
+vsafe_opp_qos_error:
+	misc_deregister(&arm_khz_qos.prcmu_qos_power_miscdev);
+arm_khz_qos_error:
+	misc_deregister(&ddr_opp_qos.prcmu_qos_power_miscdev);
+ddr_opp_qos_error:
+	misc_deregister(&ape_opp_qos.prcmu_qos_power_miscdev);
 	return ret;
 }
 late_initcall(prcmu_qos_power_init);
