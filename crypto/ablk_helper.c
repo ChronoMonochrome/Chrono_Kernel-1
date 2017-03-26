@@ -26,13 +26,14 @@
 
 #include <linux/kernel.h>
 #include <linux/crypto.h>
+#include <linux/err.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/hardirq.h>
 #include <crypto/algapi.h>
 #include <crypto/cryptd.h>
 #include <crypto/ablk_helper.h>
-#include <asm/simd.h>
+#include <asm-generic/simd.h>
 
 int ablk_set_key(struct crypto_ablkcipher *tfm, const u8 *key,
 		 unsigned int key_len)
