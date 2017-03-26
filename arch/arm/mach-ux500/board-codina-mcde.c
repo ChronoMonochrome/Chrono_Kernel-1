@@ -135,8 +135,14 @@ struct ssg_dpi_display_platform_data codina_dpi_pri_display_info = {
 	.reset_gpio		= LCD_RESX_CODINA_R0_0,
 	.pwr_gpio		= LCD_PWR_EN_CODINA_R0_0,
 	.bl_ctrl		= false,
-	.min_ddr_opp		= 50,
+	.power_on_delay         = 10,
+	.reset_delay            = 10,
+	.sleep_out_delay        = 120, /* 50ms for WS2401, but 120ms for S6D27A1 */
 
+	.display_off_delay      = 25,
+	.sleep_in_delay         = 120,
+
+	.min_ddr_opp		= 50,
 	.video_mode.xres	= 480,
 	.video_mode.yres	= 800,
 	.video_mode.interlaced	= false,
@@ -468,7 +474,6 @@ int __init init_codina_display_devices(void)
 		codina_dpi_pri_display_info.video_mode.vbp = 8;
 		codina_dpi_pri_display_info.video_mode.vfp = 18;
 		codina_dpi_pri_display_info.sleep_out_delay = 50;
- 		codina_dpi_pri_display_info.video_mode.vfp = 4;
 	} else {
 		generic_display0.name = LCD_DRIVER_NAME_S6D27A1;
 		/* video modes */
