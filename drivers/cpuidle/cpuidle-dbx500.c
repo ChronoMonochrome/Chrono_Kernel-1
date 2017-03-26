@@ -341,15 +341,18 @@ static bool is_last_cpu_running(void)
 	return atomic_read(&idle_cpus_counter) == num_online_cpus();
 }
 
-static unsigned int max_depth;
-module_param(max_depth, uint, 0644);
+static unsigned int deepest_state = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE;
+module_param(deepest_state, uint, 0644);
+
+static unsigned int use_gov_state = true;
+module_param(use_gov_state, uint, 0644);
 
 static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 				 bool gic_frozen, ktime_t entry_time,
 				 ktime_t *est_wake_time)
 {
 	int i;
-
+	int max_depth;
 	int cpu;
 	bool uart, modem, ape;
 	s64 delta_us;
@@ -406,11 +409,13 @@ static int determine_sleep_state(u32 *sleep_time, int loc_idle_counter,
 	 * Never go deeper than the governor recommends even though it might be
 	 * possible from a scheduled wake up point of view
 	 */
-	max_depth = CONFIG_DBX500_CPUIDLE_DEEPEST_STATE;
+	max_depth = deepest_state;
 
-	for_each_online_cpu(cpu) {
-		if (max_depth > per_cpu(cpu_state, cpu)->gov_cstate)
-			max_depth = per_cpu(cpu_state, cpu)->gov_cstate;
+	if (use_gov_state) {
+		for_each_online_cpu(cpu) {
+			if (max_depth > per_cpu(cpu_state, cpu)->gov_cstate)
+				max_depth = per_cpu(cpu_state, cpu)->gov_cstate;
+		}
 	}
 
 	uart = ux500_ci_dbg_force_ape_on();
