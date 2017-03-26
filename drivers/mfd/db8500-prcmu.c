@@ -464,6 +464,7 @@ static __iomem void *tcdm_base;
  */
 static u32 reset_status_copy;
 static u16 reset_code_copy;
+__iomem void *tcdm_base_bkp;
 
 struct clk_mgt {
 	void __iomem *reg;
@@ -3784,6 +3785,7 @@ struct prcmu_fops_register_data *__init db8500_prcmu_early_init(void)
 	if (reset_status_copy & DB8500_SEC_PRCM_RESET_STATUS_APE_SOFTWARE_RESET)
 		reset_code_copy = readw(tcdm_base + PRCM_SW_RST_REASON);
 
+	tcdm_base_bkp = __io_address(U8500_PRCMU_TCDM_BASE);
 	spin_lock_init(&mb0_transfer.lock);
 	spin_lock_init(&mb0_transfer.dbb_irqs_lock);
 	mutex_init(&mb0_transfer.ac_wake_lock);
