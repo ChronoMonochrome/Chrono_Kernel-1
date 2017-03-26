@@ -431,6 +431,55 @@ static int ws2401_set_rotation(struct mcde_display_device *ddev,
 	return 0;
 }
 
+/* Reverse order of power on and channel update as compared with MCDE default display update */
+static int ws2401_display_update(struct mcde_display_device *ddev,
+							bool tripple_buffer)
+{
+	int ret = 0;
+
+	if (ddev->power_mode != MCDE_DISPLAY_PM_ON && ddev->set_power_mode) {
+		ret = ddev->set_power_mode(ddev, MCDE_DISPLAY_PM_ON);
+		if (ret < 0) {
+			dev_warn(&ddev->dev,
+				"%s:Failed to set power mode to on\n",
+				__func__);
+			return ret;
+		}
+	}
+
+	ret = mcde_chnl_update(ddev->chnl_state, tripple_buffer);
+	if (ret < 0) {
+		dev_warn(&ddev->dev, "%s:Failed to update channel\n", __func__);
+		return ret;
+	}
+	return 0;
+}
+
+static int ws2401_apply_config(struct mcde_display_device *ddev)
+{
+	int ret;
+
+	pr_info("%s: Called\n", __func__);
+
+	if (!ddev->update_flags)
+		return 0;
+
+	if (ddev->update_flags & (UPDATE_FLAG_VIDEO_MODE |
+			UPDATE_FLAG_ROTATION))
+		mcde_chnl_stop_flow(ddev->chnl_state);
+
+	ret = mcde_chnl_apply(ddev->chnl_state);
+	if (ret < 0) {
+		dev_warn(&ddev->dev, "%s:Failed to apply to channel\n",
+							__func__);
+		return ret;
+	}
+
+	ddev->update_flags = 0;
+	ddev->first_update = true;
+
+	return 0;
+}
 
 static int ws2401_spi_write_byte(struct ws2401_dpi *lcd, int addr, int data)
 {
@@ -991,6 +1040,8 @@ static int __devinit ws2401_dpi_mcde_probe(
 	ddev->try_video_mode = try_video_mode;
 	ddev->set_video_mode = set_video_mode;
 	ddev->set_rotation = ws2401_set_rotation;
+	ddev->update = ws2401_display_update;
+	ddev->apply_config = ws2401_apply_config;
 
 	lcd = kzalloc(sizeof(struct ws2401_dpi), GFP_KERNEL);
 	if (!lcd)
