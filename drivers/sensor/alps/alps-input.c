@@ -50,14 +50,18 @@ struct alps_data {
 	int flgA;
 };
 
+static unsigned int disable = 0;
+module_param_named(disable, disable, uint, 0644);
+
 /* for I/O Control */
 static long alps_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	int ret = -1, tmpval;
+	if (disable) return ret;
 	void __user *argp = (void __user *)arg;
 	struct alps_data *data = container_of(filp->private_data,
 					     struct alps_data, alps_device);
-
+	
 	switch (cmd) {
 	case ALPSIO_SET_MAGACTIVATE:
 			ret = copy_from_user(&tmpval, argp, sizeof(tmpval));
@@ -144,7 +148,7 @@ static const struct file_operations alps_fops = {
 
 static void accsns_poll(struct input_dev *idev)
 {
-
+	if (disable) return;
 	if	(system_rev >= CODINA_TMO_R0_1)	{
 
 		int xyz[3];
@@ -174,6 +178,7 @@ static void accsns_poll(struct input_dev *idev)
 static void hscd_poll(struct input_dev *idev)
 {
 	int xyz[3];
+	if (disable) return;
 
 	if (hscd_get_magnetic_field_data(xyz) == 0) {
 		input_report_abs(idev, EVENT_TYPE_MAGV_X, xyz[0]);
@@ -186,6 +191,7 @@ static void hscd_poll(struct input_dev *idev)
 
 static void alps_poll(struct input_polled_dev *dev)
 {
+	if (disable) return;
 	struct alps_data *data = dev->private;
 
 	if (!data->suspend_flag) {
@@ -205,6 +211,7 @@ static int alps_probe(struct platform_device *dev)
 	int ret;
 	struct alps_data *data;
 	struct input_dev *idev;
+	if (disable) return;
 
 	pr_info("alps: alps_probe\n");
 
