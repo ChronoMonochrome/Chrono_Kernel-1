@@ -177,9 +177,66 @@ void prcmu_qos_set_cpufreq_opp_delay(unsigned long n)
 	}
 	cpufreq_opp_delay = n;
 }
+
+unsigned int orig_min_freq = 0, last_min_freq = 0;
+volatile bool ignore_cpufreq_notifier = false;
+
+static int policy_cpufreq_notifier(struct notifier_block *nb, unsigned long event, void *data)
+{
+	struct cpufreq_policy *policy = data;
+	struct cpufreq_policy old_policy;
+
+	if (ignore_cpufreq_notifier || event != CPUFREQ_ADJUST || policy->cpu != 0)
+		return 0;
+
+	//FIXME: I don't know why, but CPUFREQ_NOTIFY event never occurs... only _ADJUST(0) and _INCOMPATIBLE(1) - sometimes _START(3)
+
+	if (cpufreq_get_policy(&old_policy, policy->cpu)) {
+		pr_err("prcmu qos notifier: get cpufreq policy failed\n");
+		return 0;
+	}
+
+	if (policy->min == old_policy.min) {
+		//ignore events that don't realy change min freq
+		return 0;
+	}
+
+	orig_min_freq = policy->min;
+	policy->min = max(orig_min_freq, last_min_freq);
+	//pr_debug("PRCMU QOS cpufreq notify: req:%d / orig:%d -> %d\n", last_min_freq, orig_min_freq, policy->min);
+	return 0;
+}
+
+static struct notifier_block policy_cpufreq_notifier_block = {
+	.notifier_call = policy_cpufreq_notifier,
+};
+
 #ifdef CONFIG_CPU_FREQ
 static void update_cpu_limits(s32 min_freq)
 {
+	int cpu;
+	struct cpufreq_policy policy;
+	int ret;
+	unsigned int freq = max(min_freq, orig_min_freq);
+
+	ignore_cpufreq_notifier = true;
+	last_min_freq = min_freq;
+
+	//pr_debug("PRCMU QOS update_cpu_limits: req:%d / orig:%d -> %d\n", min_freq, orig_min_freq, freq);
+	for_each_online_cpu(cpu) {
+		ret = cpufreq_get_policy(&policy, cpu);
+		if (ret) {
+			pr_err("prcmu qos: get cpufreq policy failed (cpu%d)\n",
+			       cpu);
+			continue;
+		}
+
+		ret = cpufreq_update_freq(cpu, freq, policy.max);
+		if (ret)
+			pr_err("prcmu qos: update cpufreq "
+			       "frequency limits failed\n");
+	}
+	ignore_cpufreq_notifier = false;
 }
 #else
 static inline void update_cpu_limits(s32 min_freq) { }
@@ -193,12 +250,14 @@ static s32 max_compare(s32 v1, s32 v2)
 static inline void __prcmu_qos_update_ddr_opp(s32 arm_kz_new_value,
 		s32 vsafe_new_value)
 {
+/*
 	if (cpu_is_u9540()) {
 		__prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
 				"cross_opp_ddr", arm_kz_new_value, false);
 		__prcmu_qos_update_requirement(PRCMU_QOS_VSAFE_OPP,
 				"cross_opp_ddr", vsafe_new_value, false);
 	}
+*/
 }
 
 
@@ -276,6 +335,7 @@ static void update_target(int target, bool sem)
 			break;
 		case 25:
 			/* 25% DDR OPP is not supported on 5500 */
+#if 0
 			if (!cpu_is_u5500()) {
 				op = DDR_25_OPP;
 				prcmu_set_ddr_opp(op);
@@ -289,6 +349,7 @@ static void update_target(int target, bool sem)
 					(PRCMU_QOS_DEFAULT_VALUE,
 						PRCMU_QOS_DEFAULT_VALUE);
 				}
+#endif
 				break;
 		default:
 			pr_err("prcmu qos: Incorrect ddr target value (%d)",
@@ -324,12 +385,14 @@ static void update_target(int target, bool sem)
 				op = APE_50_OPP;
 			pr_debug("prcmu qos: set ape opp to 50%%\n");
 
+#if 0
 			/* 9540 cross table matrix : release ARM constraint */
 			if (cpu_is_u9540()) {
 				__prcmu_qos_update_requirement(
 					PRCMU_QOS_ARM_KHZ, "cross_opp_ape",
 					PRCMU_QOS_DEFAULT_VALUE, false);
 			}
+#endif
 			break;
 		case 100:
 			/* 9540 cross table matrix: set ARM min freq to 400000 */
@@ -613,21 +676,20 @@ int prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 		s32 val)
 {
 	if (prcmu_qos_class == PRCMU_QOS_ARM_KHZ)
-		return 0;
-	
+		pr_err("QOS: ARM_KHZ: set %d on behalf of %s\n", val, name);
+
 	if ((prcmu_qos_class == PRCMU_QOS_APE_OPP) &&
 	    (ignore_usb_requirements) &&
 	    (!strncmp(&name[0], "ab8500-usb", 10)))
 		val = 25;
-		
+
 	if (ignore_file_requirements &&
 	    (!strncmp(&name[0], "file", 4)))
 		val = 25;
-		
+
 	if (ignore_sva_requirements &&
 	    (!strncmp(&name[0], "sva", 3)))
 		val = 25;
-		
 	return __prcmu_qos_update_requirement(prcmu_qos_class, name,
 			val, true);
 }
@@ -912,6 +974,7 @@ arch_initcall(prcmu_qos_power_preinit);
 
 unsigned int qos_ddr_opp = 25;
 unsigned int qos_ape_opp = 25;
+unsigned int qos_arm_khz = 200000;
 
 static int set_qos_ddr_opp(const char *val, struct kernel_param *kp)
 {
@@ -967,10 +1030,30 @@ out:
 }
 module_param_call(qos_ape_opp, set_qos_ape_opp, param_get_uint, &qos_ape_opp, 0664);
 
+static int set_qos_arm_khz(const char *val, struct kernel_param *kp)
+{
+	unsigned int arm_khz = 200000;
+	unsigned int err = sscanf(val, "%d", &arm_khz) == 1 ? 0 : -EINVAL;
+
+	if (err)
+		goto out;
+
+	qos_arm_khz = arm_khz;
+	prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ, "power HAL", arm_khz);
+
+out:
+	if (err)
+		pr_err("QOS: invalid input '%s' for '%s'\n", val /* buf */, __func__);
+
+        return err;
+}
+module_param_call(qos_arm_khz, set_qos_arm_khz, param_get_uint, &qos_arm_khz, 0664);
+
 static int __init prcmu_qos_power_init(void)
 {
 	int ret;
 	struct cpufreq_frequency_table *table;
+	struct cpufreq_policy policy;
 	unsigned int min_freq = UINT_MAX;
 	unsigned int max_freq = 0;
 	int i;
@@ -991,6 +1074,11 @@ static int __init prcmu_qos_power_init(void)
 	arm_khz_qos.default_value = min_freq;
 	/* CPUs start at max */
 	atomic_set(&arm_khz_qos.target_value, arm_khz_qos.max_value);
+
+	ret = cpufreq_get_policy(&policy, 0);
+	last_min_freq = policy.min;
+	orig_min_freq = policy.min;
+	cpufreq_register_notifier(&policy_cpufreq_notifier_block, CPUFREQ_POLICY_NOTIFIER);
 
 	prcmu_qos_cpufreq_init_done = true;
 
@@ -1043,6 +1131,8 @@ static int __init prcmu_qos_power_init(void)
 	}
 */
 
+	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "power HAL",
+			200000);
 	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "power HAL",
 			qos_ddr_opp);
 	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "power HAL",
