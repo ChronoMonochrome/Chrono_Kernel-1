@@ -742,7 +742,7 @@ static void init_debugfs(void)
 
 extern int hwmem_ioctl_init(void);
 
-static int __devinit hwmem_probe(struct platform_device *pdev)
+static int hwmem_probe(struct platform_device *pdev)
 {
 	int ret;
 
