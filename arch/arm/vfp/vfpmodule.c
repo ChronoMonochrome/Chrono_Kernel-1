@@ -74,7 +74,7 @@ static bool vfp_state_in_hw(unsigned int cpu, struct thread_info *thread)
 /*
  * Force a reload of the VFP context from the thread structure.  We do
  * this by ensuring that access to the VFP hardware is disabled, and
- * clear vfp_current_hw_state.  Must be called from non-preemptible context.
+ * clear last_VFP_context.  Must be called from non-preemptible context.
  */
 static void vfp_force_reload(unsigned int cpu, struct thread_info *thread)
 {
@@ -459,7 +459,11 @@ static int vfp_pm_suspend(void)
 
 	/* if vfp is on, then save state for resumption */
 	if (fpexc & FPEXC_EN) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: saving vfp state\n", __func__);
+#else
+		;
+#endif
 		vfp_save_state(&ti->vfpstate, fpexc);
 
 		/* disable, just in case */
@@ -655,6 +659,26 @@ static int vfp_hotplug(struct notifier_block *b, unsigned long action,
 	return NOTIFY_OK;
 }
 
+#ifdef CONFIG_PROC_FS
+static int proc_read_status(char *page, char **start, off_t off, int count,
+			    int *eof, void *data)
+{
+	char *p = page;
+	int len;
+
+	p += snprintf(p, PAGE_SIZE, "%llu\n", atomic64_read(&vfp_bounce_count));
+
+	len = (p - page) - off;
+	if (len < 0)
+		len = 0;
+
+	*eof = (len <= count) ? 1 : 0;
+	*start = page + off;
+
+	return len;
+}
+#endif
+
 #ifdef CONFIG_KERNEL_MODE_NEON
 
 /*
@@ -701,26 +725,6 @@ EXPORT_SYMBOL(kernel_neon_end);
 
 #endif /* CONFIG_KERNEL_MODE_NEON */
 
-#ifdef CONFIG_PROC_FS
-static int proc_read_status(char *page, char **start, off_t off, int count,
-			    int *eof, void *data)
-{
-	char *p = page;
-	int len;
-
-	p += snprintf(p, PAGE_SIZE, "%llu\n", atomic64_read(&vfp_bounce_count));
-
-	len = (p - page) - off;
-	if (len < 0)
-		len = 0;
-
-	*eof = (len <= count) ? 1 : 0;
-	*start = page + off;
-
-	return len;
-}
-#endif
-
 /*
  * VFP support code initialisation.
  */
@@ -745,21 +749,37 @@ static int __init vfp_init(void)
 	barrier();
 	vfp_vector = vfp_null_entry;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "VFP support v0.3: ");
+#else
+	;
+#endif
 	if (VFP_arch)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("not present\n");
+#else
+		;
+#endif
 	else if (vfpsid & FPSID_NODOUBLE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("no double precision support\n");
+#else
+		;
+#endif
 	} else {
 		hotcpu_notifier(vfp_hotplug, 0);
 
 		VFP_arch = (vfpsid & FPSID_ARCH_MASK) >> FPSID_ARCH_BIT;  /* Extract the architecture version */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("implementor %02x architecture %d part %02x variant %x rev %x\n",
 			(vfpsid & FPSID_IMPLEMENTER_MASK) >> FPSID_IMPLEMENTER_BIT,
 			(vfpsid & FPSID_ARCH_MASK) >> FPSID_ARCH_BIT,
 			(vfpsid & FPSID_PART_MASK) >> FPSID_PART_BIT,
 			(vfpsid & FPSID_VARIANT_MASK) >> FPSID_VARIANT_BIT,
 			(vfpsid & FPSID_REV_MASK) >> FPSID_REV_BIT);
+#else
+		;
+#endif
 
 		vfp_vector = vfp_support_entry;
 
@@ -803,7 +823,17 @@ static int __init vfp_init(void)
 #endif
 		}
 	}
+
+#ifdef CONFIG_PROC_FS
+	procfs_entry = create_proc_entry("cpu/vfp_bounce", S_IRUGO, NULL);
+
+	if (procfs_entry)
+		procfs_entry->read_proc = proc_read_status;
+	else
+		pr_err("Failed to create procfs node for VFP bounce reporting\n");
+#endif
+
 	return 0;
 }
 
-core_initcall(vfp_init);
+late_initcall(vfp_init);
