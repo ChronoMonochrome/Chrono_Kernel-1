@@ -423,6 +423,12 @@ static int cpufreq_limits_driver_init(void)
 	ret = input_register_handler(&cpufreq_input_handler);
 	if (ret)
 		pr_err("Cannot register cpufreq input handler.\n");
+		
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", PRCMU_QOS_DEFAULT_VALUE))
+		pr_err("pcrm_qos_add APE failed\n");
+	
+	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST", PRCMU_QOS_DEFAULT_VALUE)) 
+		pr_err("pcrm_qos_add DDR failed\n");
 	
 	cpufreq_register_notifier(&cpufreq_notifier_block, CPUFREQ_POLICY_NOTIFIER);
 	
@@ -431,6 +437,8 @@ static int cpufreq_limits_driver_init(void)
 
 static void cpufreq_limits_driver_exit(void)
 {
+	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "APEBOOST");
+	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST");
 	unregister_early_suspend(&driver_early_suspend);
 }
 

@@ -32,6 +32,7 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/input/input_boost.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #include <asm/cputime.h>
 
@@ -142,6 +143,12 @@ static int boost_val;
 static int boostpulse_duration_val = DEFAULT_MIN_SAMPLE_TIME;
 /* End time of boost pulse in ktime converted to usecs */
 static u64 boostpulse_endtime;
+
+static unsigned int ape_boost = 1, ddr_boost = 0, ape_opp = 100, ddr_opp = 50;
+module_param(ape_boost, uint, 0644);
+module_param(ddr_boost, uint, 0644);
+module_param(ape_opp, uint, 0644);
+module_param(ddr_opp, uint, 0644);
 
 /*
  * Max additional time to wait in idle, beyond timer_rate, at speeds above
@@ -308,6 +315,37 @@ static u64 update_load(int cpu)
 	return now;
 }
 
+static bool input_boosted = false;
+
+static void input_boost_thread(struct work_struct *requirements_update_work)
+{
+	if (!input_boosted) {
+		if (ape_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", ape_opp);
+		
+		if (ddr_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,	"DDRBOOST", ddr_opp);
+		
+		//pr_err("[interactive] input boost \n");
+		input_boosted = true;
+	}	
+}
+static DECLARE_WORK(input_boost_work, input_boost_thread);
+
+static void input_unboost_thread(struct work_struct *requirements_update_work)
+{
+	if (input_boosted) { 
+		if (ape_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", PRCMU_QOS_DEFAULT_VALUE);
+		if (ddr_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST", PRCMU_QOS_DEFAULT_VALUE);
+		
+		//pr_err("[interactive] unboosted \n");
+		input_boosted = false;
+	}
+}
+static DECLARE_WORK(input_unboost_work, input_unboost_thread);
+
 static void cpufreq_zenx_timer(unsigned long data)
 {
 	u64 now;
@@ -378,6 +416,11 @@ static void cpufreq_zenx_timer(unsigned long data)
 	if (boosted) {
 		if (new_freq < input_boost_freq)
 			new_freq = input_boost_freq;
+		if (!input_boosted)
+			schedule_work(&input_boost_work);
+	} else {
+		if (input_boosted)
+			schedule_work(&input_unboost_work);
 	}
 
 	if (pcpu->target_freq >= hispeed_freq &&
