@@ -589,6 +589,9 @@ int prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 {
 	if (prcmu_qos_class == PRCMU_QOS_ARM_KHZ)
 		return 0;
+	if ((prcmu_qos_class == PRCMU_QOS_APE_OPP) &&
+	    (!strncmp(&name[0], "ab8500-usb", 10)))
+		return 0;
 	return __prcmu_qos_update_requirement(prcmu_qos_class, name,
 			val, true);
 }
