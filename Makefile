@@ -348,7 +348,7 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   =
+CFLAGS_MODULE   = -fno-pic
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
 CFLAGS_KERNEL	= -D__linux__
@@ -369,7 +369,35 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks
+		   -fno-delete-null-pointer-checks \
+		   -funsafe-math-optimizations \
+		   -ftree-vectorize -pipe -marm \
+		   -mcpu=cortex-a9 \
+		   -mtune=cortex-a9 \
+		   -mfloat-abi=softfp \
+		   -mfpu=vfpv3 \
+		   -mvectorize-with-neon-double \
+		   -floop-interchange \
+		   -floop-strip-mine \
+		   -floop-block \
+		   -floop-nest-optimize \
+		   -fgraphite-identity \
+		   -floop-parallelize-all \
+		   -DNDEBUG \
+		   -fsection-anchors \
+		   -funsafe-loop-optimizations \
+		   -fivopts \
+		   -ftree-loop-im \
+		   -ftree-loop-ivcanon \
+		   -funswitch-loops \
+		   -frename-registers \
+		   -fgcse-sm \
+		   -fgcse-las \
+		   -fweb \
+		   -ftracer \
+		   -fipa-pta \
+		   -fmodulo-sched \
+		   -fmodulo-sched-allow-regmoves
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
@@ -562,8 +590,10 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -Ofast
 endif
+
+LDFLAGS += -O3 --sort-common
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
 
