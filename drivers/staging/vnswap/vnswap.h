@@ -106,14 +106,14 @@ struct vnswap {
 	struct vnswap_stats stats;
 };
 
-void vnswap_init_disksize(u64 disksize);
-int vnswap_init_backing_storage(void);
+extern void vnswap_init_disksize(u64 disksize);
+extern int vnswap_init_backing_storage(void);
 
-struct vnswap *vnswap_device;
-struct block_device *backing_storage_bdev;
+extern struct vnswap *vnswap_device;
+extern struct block_device *backing_storage_bdev;
 
 #ifdef CONFIG_SYSFS
-struct attribute_group vnswap_disk_attr_group;
+extern struct attribute_group vnswap_disk_attr_group;
 #endif
 
 #endif
