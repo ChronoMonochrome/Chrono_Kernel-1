@@ -30,9 +30,6 @@
 #include <asm/ioctls.h>
 #include <mach/sec_debug.h>
 
-static unsigned int enabled = 1;
-module_param(enabled, uint, S_IWUSR | S_IRUGO);
-
 /*
  * struct logger_log - represents a specific log, such as 'main' or 'radio'
  *
@@ -442,9 +439,6 @@ ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
 	struct timespec now;
 	ssize_t ret = 0;
 
-	if (!enabled)
-		return 0;
-
 	now = current_kernel_time();
 
 	header.pid = current->tgid;
@@ -723,15 +717,15 @@ static struct logger_log VAR = { \
 	.size = SIZE, \
 };
 
-DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 64*1024)
-DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 32*1024)
+DEFINE_LOGGER_DEVICE(log_main, LOGGER_LOG_MAIN, 2048*1024)
+DEFINE_LOGGER_DEVICE(log_events, LOGGER_LOG_EVENTS, 256*1024)
 #if defined(CONFIG_MACH_T0)
 DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 2048*1024)
 #else
-DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 32*1024)
+DEFINE_LOGGER_DEVICE(log_radio, LOGGER_LOG_RADIO, 1024*1024)
 #endif
-DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 64*1024)
-DEFINE_LOGGER_DEVICE(log_sf, LOGGER_LOG_SF, 64*1024)
+DEFINE_LOGGER_DEVICE(log_system, LOGGER_LOG_SYSTEM, 256*1024)
+DEFINE_LOGGER_DEVICE(log_sf, LOGGER_LOG_SF, 256*1024)
 
 static struct logger_log *get_log_from_minor(int minor)
 {
@@ -789,10 +783,7 @@ static int __init logger_init(void)
 	if (unlikely(ret))
 		goto out;
 
-
 out:
 	return ret;
 }
 device_initcall(logger_init);
-
-MODULE_LICENSE("GPL");
