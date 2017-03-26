@@ -115,27 +115,29 @@ static u64 last_input_time = 0;
 static DEFINE_MUTEX(dbs_mutex);
 
 static struct dbs_tuners {
-	unsigned int sampling_rate;
-	unsigned int standby_sampling_rate;
-	unsigned int suspend_sampling_rate;
-	unsigned int suspend_sampling_up_factor;
-	unsigned int standby_sampling_up_factor;
-	unsigned int standby_delay_factor;
-	unsigned int sampling_down_factor;
-	unsigned int sampling_down_factor_relax_khz;
+	unsigned int input_boost_freq;
+	unsigned int input_boost_us;
+	unsigned int power_optimal_freq;
+	unsigned int high_freq_sampling_up_factor;
+
 	unsigned int up_threshold;
 	unsigned int down_differential;
 	unsigned int ignore_nice;
 	unsigned int io_is_busy;
 
-	unsigned int power_optimal_freq;
-	unsigned int high_freq_sampling_up_factor;
-
+	unsigned int sampling_rate;
+	unsigned int sampling_down_factor;
+	unsigned int sampling_down_factor_relax_khz;
 	unsigned int max_non_oc_freq;
-	unsigned int oc_freq_limit_us;
+	unsigned int oc_freq_boost_ms;
+	unsigned int standby_delay_factor;
+	unsigned int standby_threshold_freq;
 
-	unsigned int input_boost_freq;
-	unsigned int input_boost_us;
+	unsigned int standby_sampling_rate;
+	unsigned int standby_sampling_up_factor;
+
+	unsigned int suspend_sampling_rate;
+	unsigned int suspend_sampling_up_factor;
 	unsigned int suspend_max_freq;
 
 //internal
@@ -143,23 +145,32 @@ static struct dbs_tuners {
 	unsigned int _suspend_max_freq_hard;
 	unsigned int _standby_max_freq_soft;
 	unsigned int _oc_limit;
+	unsigned int _standby_threshold_freq;
 } dbs_tuners_ins = {
-	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
-	.down_differential = DEF_DOWN_DIFFERENTIAL,
-	.suspend_sampling_up_factor = 7,
-	.standby_sampling_up_factor = 4,
-	.standby_delay_factor = 1,
-	.sampling_down_factor = 2,
-	.sampling_down_factor_relax_khz = 500000,
-
-	.ignore_nice = 0,
-	.io_is_busy = 20*128/100,
-
 	.input_boost_freq = 400000,
 	.input_boost_us = 100*1000,
-	.suspend_max_freq = 0,
 	.power_optimal_freq = 800000,
 	.high_freq_sampling_up_factor = 2,
+
+	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
+	.down_differential = DEF_DOWN_DIFFERENTIAL,
+	.ignore_nice = 1,
+	.io_is_busy = 20*128/100,
+	.standby_delay_factor = 1,
+	.standby_threshold_freq = 0,
+
+	.sampling_rate = 2,
+	.sampling_down_factor = 2,
+	.sampling_down_factor_relax_khz = 500000,
+	.max_non_oc_freq = 1000000,
+	.oc_freq_boost_ms = 1500,
+
+	.standby_sampling_rate = 3,
+	.standby_sampling_up_factor = 5,
+
+	.suspend_sampling_rate = 5,
+	.suspend_sampling_up_factor = 5,
+	.suspend_max_freq = 600000,
 };
 
 static unsigned int delay;
@@ -263,9 +274,9 @@ static void recalculate_freq_limits(void) {
 
 		//find suspend  hard limit
 		pr_debug("current limits: _standby_max_freq_soft: %d, _suspend_max_freq_soft: %d, _suspend_max_freq_hard:%d\n", dbs_tuners_ins._standby_max_freq_soft, dbs_tuners_ins._suspend_max_freq_soft, dbs_tuners_ins._suspend_max_freq_hard);
-		pr_debug("frequency settings: suspend_max_freq: %d, power_optimal_freq: %d, max_non_oc_freq: %d, policy->max: %d, oc_freq_limit_us: %d\n", dbs_tuners_ins.suspend_max_freq, dbs_tuners_ins.power_optimal_freq, dbs_tuners_ins.max_non_oc_freq, policy->max, dbs_tuners_ins.oc_freq_limit_us);
+		pr_debug("frequency settings: suspend_max_freq: %d, power_optimal_freq: %d, max_non_oc_freq: %d, policy->max: %d, oc_freq_boost_ms: %d\n", dbs_tuners_ins.suspend_max_freq, dbs_tuners_ins.power_optimal_freq, dbs_tuners_ins.max_non_oc_freq, policy->max, dbs_tuners_ins.oc_freq_boost_ms);
 		//TODO can't decide which of the two should be first...
-		if (dbs_tuners_ins.max_non_oc_freq && (dbs_tuners_ins.oc_freq_limit_us == 0 || (dbs_tuners_ins.power_optimal_freq == 0 && dbs_tuners_ins.suspend_max_freq == 0)))
+		if (dbs_tuners_ins.max_non_oc_freq && (dbs_tuners_ins.oc_freq_boost_ms == 0 || (dbs_tuners_ins.power_optimal_freq == 0 && dbs_tuners_ins.suspend_max_freq == 0)))
 			dbs_tuners_ins._suspend_max_freq_hard = dbs_tuners_ins.max_non_oc_freq;
 		else if (dbs_tuners_ins.power_optimal_freq)
 			dbs_tuners_ins._suspend_max_freq_hard = dbs_tuners_ins.power_optimal_freq;
@@ -283,7 +294,7 @@ static void recalculate_freq_limits(void) {
 			dbs_tuners_ins._suspend_max_freq_soft = policy->max;
 
 		//calculate standby soft freq limit
-		if (dbs_tuners_ins.max_non_oc_freq && ((dbs_tuners_ins.max_non_oc_freq < policy->max && dbs_tuners_ins.oc_freq_limit_us == 0) || dbs_tuners_ins.power_optimal_freq == 0))
+		if (dbs_tuners_ins.max_non_oc_freq && ((dbs_tuners_ins.max_non_oc_freq < policy->max && dbs_tuners_ins.oc_freq_boost_ms == 0) || dbs_tuners_ins.power_optimal_freq == 0))
 			dbs_tuners_ins._standby_max_freq_soft = dbs_tuners_ins.max_non_oc_freq;
 		else if (dbs_tuners_ins.power_optimal_freq)
 			dbs_tuners_ins._standby_max_freq_soft = dbs_tuners_ins.power_optimal_freq;
@@ -297,11 +308,12 @@ static void recalculate_freq_limits(void) {
 		if (dbs_tuners_ins._standby_max_freq_soft > policy->max)
 			dbs_tuners_ins._standby_max_freq_soft = policy->max;
 
-		if (policy->max > dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_limit_us)
-			dbs_tuners_ins._oc_limit = dbs_tuners_ins.oc_freq_limit_us/1000*num_present_cpus()*(policy->max-dbs_tuners_ins.max_non_oc_freq)/1000;
+		if (policy->max > dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_boost_ms)
+			dbs_tuners_ins._oc_limit = dbs_tuners_ins.oc_freq_boost_ms*num_present_cpus()*(policy->max-dbs_tuners_ins.max_non_oc_freq)/1000;
 		else
 			dbs_tuners_ins._oc_limit = 0;
 
+		dbs_tuners_ins._standby_threshold_freq = policy->min + dbs_tuners_ins.standby_threshold_freq;
 		pr_debug("calculated limits: _standby_max_freq_soft: %d, _suspend_max_freq_soft: %d, _suspend_max_freq_hard:%d, _oc_limit: %d\n",
 				dbs_tuners_ins._standby_max_freq_soft, dbs_tuners_ins._suspend_max_freq_soft, dbs_tuners_ins._suspend_max_freq_hard, dbs_tuners_ins._oc_limit);
 }
@@ -346,6 +358,7 @@ show_one(down_differential, down_differential);
 show_one(ignore_nice_load, ignore_nice);
 show_one_conv(io_is_busy, io_is_busy, (value+1)*100/128);
 
+show_one(standby_threshold_freq, standby_threshold_freq);
 show_one(input_boost_freq, input_boost_freq);
 show_one(input_boost_ms, input_boost_us/1000);
 
@@ -355,7 +368,7 @@ show_one(power_optimal_freq, power_optimal_freq);
 show_one(high_freq_sampling_up_factor, high_freq_sampling_up_factor);
 
 show_one(max_non_oc_freq, max_non_oc_freq);
-show_one(oc_freq_limit_ms, oc_freq_limit_us/1000);
+show_one(oc_freq_boost_ms, oc_freq_boost_ms);
 
 static bool verify_freq(unsigned int *freq) {
 	unsigned int idx, ret;
@@ -399,8 +412,10 @@ store_bounded_int(suspend_sampling_up_factor, suspend_sampling_up_factor, 1, MAX
 __store_int(power_optimal_freq, power_optimal_freq, input==0 || verify_freq(&input), input, recalculate_freq_limits());
 store_bounded_int(high_freq_sampling_up_factor, high_freq_sampling_up_factor, 1, MAX_SAMPLING_DOWN_FACTOR);
 
+__store_int(standby_threshold_freq, standby_threshold_freq, input>=0, input, recalculate_freq_limits());
+
 __store_int(max_non_oc_freq, max_non_oc_freq, verify_freq(&input), input, recalculate_freq_limits());
-__store_int(oc_freq_limit_ms, oc_freq_limit_us, true, input*1000, recalculate_freq_limits());
+__store_int(oc_freq_boost_ms, oc_freq_boost_ms, true, input, recalculate_freq_limits());
 
 __store_int(suspend_sampling_rate, suspend_sampling_rate,
 		input >= min_sampling_rate,
@@ -473,6 +488,7 @@ define_one_global_rw(standby_sampling_rate);
 define_one_global_rw(suspend_sampling_up_factor);
 define_one_global_rw(standby_sampling_up_factor);
 define_one_global_rw(standby_delay_factor);
+define_one_global_rw(standby_threshold_freq);
 define_one_global_rw(sampling_down_factor);
 define_one_global_rw(sampling_down_factor_relax_khz);
 define_one_global_rw(up_threshold);
@@ -488,7 +504,7 @@ define_one_global_rw(power_optimal_freq);
 define_one_global_rw(high_freq_sampling_up_factor);
 
 define_one_global_rw(max_non_oc_freq);
-define_one_global_rw(oc_freq_limit_ms);
+define_one_global_rw(oc_freq_boost_ms);
 
 static struct attribute *dbs_attributes[] = {
 	&input_boost_freq.attr,
@@ -505,8 +521,9 @@ static struct attribute *dbs_attributes[] = {
 	&sampling_down_factor.attr,
 	&sampling_down_factor_relax_khz.attr,
 	&max_non_oc_freq.attr,
-	&oc_freq_limit_ms.attr,
+	&oc_freq_boost_ms.attr,
 	&standby_delay_factor.attr,
+	&standby_threshold_freq.attr,
 
 	&standby_sampling_rate.attr,
 	&standby_sampling_up_factor.attr,
@@ -641,7 +658,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 				//and a volume key is pressed (or any key that does not cause the screen to turn on)
 				//without this time limit it could leave the cpu constantly spinning at max oc freq
 				//and with it it'll only spin at max_non_oc_freq, which is a "lesser evil"
-				if (dbs_tuners_ins.oc_freq_limit_us) {
+				if (dbs_tuners_ins.oc_freq_boost_ms) {
 					freq_target = policy->max;
 				} else {
 					freq_target = dbs_tuners_ins.max_non_oc_freq;
@@ -663,7 +680,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		max_freq_soft = dbs_tuners_ins._suspend_max_freq_soft;
 	}
 
-	if (active && dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_limit_us) {
+	if (active && dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_boost_ms) {
 		if (this_dbs_info->oc_boost_cycles == 0)
 			max_freq_hard = dbs_tuners_ins.max_non_oc_freq;
 		else if (this_dbs_info->oc_boost_cycles < dbs_tuners_ins._oc_limit) {
@@ -732,7 +749,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	/*
 	 * if we cannot reduce the frequency anymore, break out early
 	 */
-	if (policy->cur == policy->min) {
+	if (policy->cur <= dbs_tuners_ins._standby_threshold_freq) {
 		if (active) {
 			if (++(this_dbs_info->standby_counter) >= dbs_tuners_ins.standby_delay_factor) {
 				standby = true;
@@ -743,7 +760,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			//TODO move all state management code to functions and just call go_active, go_suspend etc...
 			delay = dbs_tuners_ins.standby_sampling_rate;
 		}
-		return;
+		if (policy->cur == policy->min) return;
 	}
 	/*
 	 * The optimal frequency is the frequency that is the lowest that
@@ -1024,11 +1041,14 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			/* Bring kernel and HW constraints together */
 			min_sampling_rate = max(min_sampling_rate,
 					MIN_LATENCY_MULTIPLIER * latency);
+			/*
 			dbs_tuners_ins.sampling_rate =
 				usecs_to_jiffies(max(min_sampling_rate,
 				    latency * LATENCY_MULTIPLIER));
-			dbs_tuners_ins.standby_sampling_rate = dbs_tuners_ins.sampling_rate;
-			dbs_tuners_ins.suspend_sampling_rate = dbs_tuners_ins.sampling_rate;
+			*/
+			dbs_tuners_ins.sampling_rate = max(dbs_tuners_ins.sampling_rate, usecs_to_jiffies(min_sampling_rate));
+			dbs_tuners_ins.standby_sampling_rate = max(dbs_tuners_ins.standby_sampling_rate, dbs_tuners_ins.sampling_rate);
+			dbs_tuners_ins.suspend_sampling_rate = max(dbs_tuners_ins.suspend_sampling_rate, dbs_tuners_ins.sampling_rate);
 			recalculate_freq_limits();
 
 			cpufreq_register_notifier(
