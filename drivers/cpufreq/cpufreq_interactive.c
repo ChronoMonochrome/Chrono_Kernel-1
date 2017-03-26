@@ -32,6 +32,7 @@
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
 #include <linux/input/input_boost.h>
+#include <linux/mfd/dbx500-prcmu.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
@@ -141,6 +142,12 @@ static bool io_is_busy = true;
 static unsigned int up_threshold_any_cpu_load;
 static unsigned int sync_freq;
 static unsigned int up_threshold_any_cpu_freq;
+
+static unsigned int ape_boost = 1, ddr_boost = 0, ape_opp = 100, ddr_opp = 50;
+module_param(ape_boost, uint, 0644);
+module_param(ddr_boost, uint, 0644);
+module_param(ape_opp, uint, 0644);
+module_param(ddr_opp, uint, 0644);
 
 static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
 						  cputime64_t *wall)
@@ -328,6 +335,37 @@ static u64 update_load(int cpu)
 	return now;
 }
 
+static bool input_boosted = false;
+
+static void input_boost_thread(struct work_struct *requirements_update_work)
+{
+	if (!input_boosted) {
+		if (ape_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", ape_opp);
+		
+		if (ddr_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,	"DDRBOOST", ddr_opp);
+		
+		//pr_err("[interactive] input boost \n");
+		input_boosted = true;
+	}	
+}
+static DECLARE_WORK(input_boost_work, input_boost_thread);
+
+static void input_unboost_thread(struct work_struct *requirements_update_work)
+{
+	if (input_boosted) { 
+		if (ape_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", PRCMU_QOS_DEFAULT_VALUE);
+		if (ddr_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST", PRCMU_QOS_DEFAULT_VALUE);
+		
+		//pr_err("[interactive] unboosted \n");
+		input_boosted = false;
+	}
+}
+static DECLARE_WORK(input_unboost_work, input_unboost_thread);
+
 static void cpufreq_interactive_timer(unsigned long data)
 {
 	u64 now;
@@ -409,6 +447,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 	if (boosted) {
 		if (new_freq < input_boost_freq)
 			new_freq = input_boost_freq;
+		if (!input_boosted)
+			schedule_work(&input_boost_work);
+	} else {
+		if (input_boosted)
+			schedule_work(&input_unboost_work);
 	}
 
 	pcpu->timer_rate = freq_to_timer_rate(new_freq);
@@ -1424,7 +1467,7 @@ module_init(cpufreq_interactive_init);
 #endif
 
 static void __exit cpufreq_interactive_exit(void)
-{
+{;
 	cpufreq_unregister_governor(&cpufreq_gov_interactive);
 	kthread_stop(speedchange_task);
 	put_task_struct(speedchange_task);
