@@ -26,14 +26,13 @@ config ANDROID_LOGGER
 	tristate "Android log driver"
 	default n
 
-config ASHMEM
-	bool "Enable the Anonymous Shared Memory Subsystem"
-	default n
-	depends on SHMEM || TINY_SHMEM
-	help
-	  The ashmem subsystem is a new shared memory allocator, similar to
-	  POSIX SHM but with different behavior and sporting a simpler
-	  file-based API.
+config ANDROID_LOGGER_REDUCE_MAIN_BUFFER
+	bool
+	depends on ANDROID_LOGGER
+
+config ANDROID_LOGGER_REDUCE_RADIO_BUFFER
+	bool
+	depends on ANDROID_LOGGER
 
 config ANDROID_RAM_CONSOLE
 	bool "Android RAM buffer console"
