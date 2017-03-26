@@ -1,6 +1,8 @@
 /*
  * Copyright (C) ST-Ericsson SA 2010
  * Author: Pankaj Chauhan <pankaj.chauhan@stericsson.com> for ST-Ericsson.
+ * Copyright (C) 2014
+ * Modified: Jonathan Dennis [Meticulus] theonejohnnyd@gmail.com
  * License terms: GNU General Public License (GPL), version 2.
  */
 #include <linux/delay.h>
@@ -2278,11 +2280,9 @@ rear_flash_enable_show(struct device *dev,
 	return sprintf(buf, "%d\n", assistive_mode);
 }
 
-	static ssize_t
-rear_flash_enable_store(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t size)
+static void toggle_rearcam_flash(bool on)
 {
-	if (buf[0] == '0') {
+	if (!on) {
 		if (burning_mode) {
 			burning_mode = 0;
 			gpio_set_value(140, 0);
@@ -2312,18 +2312,25 @@ rear_flash_enable_store(struct device *dev,
 		#endif
 #endif
 	}
+}
+
+static ssize_t
+rear_flash_enable_store(struct device *dev,
+		struct device_attribute *attr, char *buf, size_t size)
+{
+	toggle_rearcam_flash(buf[0] == '1');
 
 	return size;
 }
 
-	static ssize_t
+static ssize_t
 rear_flash_burning_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	return sprintf(buf, "%d\n", burning_mode);
 }
 
-	static ssize_t
+static ssize_t
 rear_flash_burning_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
@@ -2353,6 +2360,33 @@ rear_flash_burning_store(struct device *dev,
 	return size;
 
 }
+
+static enum led_brightness st_mmio_led_get_brightness(struct led_classdev *led_cdev)
+{
+	if(assistive_mode) return LED_FULL;
+	else return LED_OFF;
+}
+
+static void st_mmio_led_set_brightness(struct led_classdev *led_cdev, enum led_brightness brightness)
+{
+	if((int)brightness)
+	{
+		toggle_rearcam_flash(true);
+	}
+	else
+	{
+		toggle_rearcam_flash(false);
+	}
+}
+
+static struct led_classdev st_mmio_led_classdev = {
+	.name		= "rearcam-flash",
+	.brightness	= 0,
+	.max_brightness = 255,
+	.flags		= 0,
+	.brightness_set = st_mmio_led_set_brightness,
+	.brightness_get = st_mmio_led_get_brightness,
+};
 
 static ssize_t rear_vendor_id_store(struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -2491,6 +2525,9 @@ static int __devinit mmio_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Error %d registering misc dev!", err);
 		goto err_miscreg;
 	}
+	
+	/* Register flash leds class */
+	led_classdev_register(flash_dev, &st_mmio_led_classdev);
 
 	/* Memory mapping */
 	info->siabase = ioremap(info->pdata->sia_base, SIA_ISP_MCU_SYS_SIZE);
