@@ -409,12 +409,6 @@ static int cpufreq_limits_driver_init(void)
 	INIT_WORK(&late_resume_work, late_resume_work_fn);
 	
 	register_early_suspend(&driver_early_suspend);
-	
-	//when screen is on, APE_OPP 25 sometimes messes it up
-	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-				"codina_lcd_dpi", 50)) {
-			pr_info("pcrm_qos_add APE failed\n");
-	}
 
 	cpufreq_kobject = kobject_create_and_add("cpufreq", kernel_kobj);
 	if (!cpufreq_kobject) {
