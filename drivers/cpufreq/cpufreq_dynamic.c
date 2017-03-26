@@ -551,10 +551,15 @@ static struct attribute_group dbs_attr_group = {
 
 /************************** sysfs end ************************/
 
-static unsigned int cpufreq_load = 0;
+static unsigned int cpufreq_load = 0, cpufreq_workload = 0;
 unsigned int get_cpufreq_load(void)
 {
 	return cpufreq_load;
+}
+
+unsigned int get_cpufreq_workload(void)
+{
+	return cpufreq_workload;
 }
 
 static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
@@ -653,6 +658,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			max_load = load;
 
 		cpufreq_load = max_load;
+		cpufreq_workload = policy->cur * (wall_time - idle_time) / wall_time;
 		
 		if (oc_freq_delta) {
 			unsigned int oc_workload = oc_freq_delta*(wall_time - idle_time)/1000;
