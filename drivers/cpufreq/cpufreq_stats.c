@@ -11,10 +11,10 @@
 
 #include <linux/kernel.h>
 #include <linux/slab.h>
+#include <linux/sysdev.h>
 #include <linux/cpu.h>
 #include <linux/sysfs.h>
 #include <linux/cpufreq.h>
-#include <linux/module.h>
 #include <linux/jiffies.h>
 #include <linux/percpu.h>
 #include <linux/kobject.h>
@@ -328,7 +328,6 @@ static int __cpuinit cpufreq_stat_cpu_callback(struct notifier_block *nfb,
 		cpufreq_update_policy(cpu);
 		break;
 	case CPU_DOWN_PREPARE:
-	case CPU_DOWN_PREPARE_FROZEN:
 		cpufreq_stats_free_sysfs(cpu);
 		break;
 	case CPU_DEAD:

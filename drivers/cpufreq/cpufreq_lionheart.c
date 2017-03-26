@@ -33,6 +33,7 @@
 #include <linux/tick.h>
 #include <linux/ktime.h>
 #include <linux/sched.h>
+#include <linux/input/input_boost.h>
 
 #define DEF_FREQUENCY_UP_THRESHOLD		(65)
 #define DEF_FREQUENCY_DOWN_THRESHOLD		(30)
@@ -301,6 +302,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	struct cpufreq_policy *policy;
 	unsigned int j;
+	
+	bool boosted = ktime_to_us(ktime_get()) < (last_input_time + input_boost_ms * 1000);
 
 	policy = this_dbs_info->cur_policy;
 
@@ -364,6 +367,13 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 		__cpufreq_driver_target(policy, this_dbs_info->requested_freq,
 			CPUFREQ_RELATION_H);
+		return;
+	}
+	
+	if (boosted) {
+		if (policy->cur < input_boost_freq)
+			  __cpufreq_driver_target(policy, input_boost_freq, CPUFREQ_RELATION_H);
+
 		return;
 	}
 
