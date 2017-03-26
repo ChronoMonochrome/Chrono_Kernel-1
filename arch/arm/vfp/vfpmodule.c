@@ -765,4 +765,4 @@ static int __init vfp_init(void)
 	return 0;
 }
 
-core_initcall(vfp_init);
+late_initcall(vfp_init);
