@@ -22,7 +22,6 @@
 /* #define TOUCH_BOOSTER */
 #define TOUCH_S2W
 #define TOUCH_DT2W
-#define SCREENOFF_CPUFREQ_LIMITS
 #define DISABLE_TOUCHSCREEN_SPAM
 
 #include <linux/kernel.h>
@@ -60,11 +59,6 @@
 #if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
 #include <linux/ab8500-ponkey.h>
 #endif /* TOUCH_S2W or TOUCH_DT2W */
-
-#ifdef SCREENOFF_CPUFREQ_LIMITS
-#include <linux/cpufreq.h>
-#include <linux/cpu.h>
-#endif
 
 #include <linux/input/bt404_ts.h>
 #include "zinitix_touch_bt4x3_firmware.h"
@@ -418,10 +412,6 @@ static struct wake_lock t2w_wakelock;
 static bool is_suspend = false;
 static bool waking_up = false;
 
-bool bt404_is_suspend(void) {
-	return is_suspend;
-}
-
 static void bt404_ponkey_thread(struct work_struct *bt404_ponkey_work)
 {
 	waking_up = true;
@@ -435,6 +425,7 @@ static void bt404_ponkey_thread(struct work_struct *bt404_ponkey_work)
 	waking_up = false;
 }
 static DECLARE_WORK(bt404_ponkey_work, bt404_ponkey_thread);
+
 #endif /* TOUCH_DT2W or TOUCH_S2W */
 
 #ifdef TOUCH_S2W
@@ -4433,20 +4424,8 @@ static int bt404_ts_probe(struct i2c_client *client,
 				&touchscreen_temp_attr_group);
 	if (ret)
 		dev_err(&client->dev,
-			"Failed to create sysfs (touchscreen_temp_attr_group)."
-									"\n");
-	//when screen is on, APE_OPP 25 sometimes messes it up
-	//TODO change these to add/update/remove
-	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add APE failed\n");
-	}
-
-	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add DDR failed\n");
-	}
-
+			"Failed to create sysfs (touchscreen_temp_attr_group).");
+	
 	dev_info(&client->dev, "successfully probed.\n");
 	return 0;
 
@@ -4751,28 +4730,13 @@ out:
 }
 #endif
 
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void bt404_ts_late_resume(struct early_suspend *h)
 {
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
-#if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
 	is_suspend = false;
-#endif
-#ifdef SCREENOFF_CPUFREQ_LIMITS
-	int cpu;
-	for_each_online_cpu(cpu) {
-		cpufreq_update_policy(cpu);
-	}
-#endif
-	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add APE failed\n");
-	}
-	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add DDR failed\n");
-	}
 	bt404_ts_resume(&data->client->dev);
 }
 
@@ -4780,19 +4744,7 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
 {
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
-#if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
 	is_suspend = true;
-#endif
-#ifdef SCREENOFF_CPUFREQ_LIMITS
-	int cpu;
-	for_each_online_cpu(cpu) {
-		cpufreq_update_policy(cpu);
-	}
-#endif
-	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
-				"codina_lcd_dpi");
-	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
-				"codina_lcd_dpi");
 	bt404_ts_suspend(&data->client->dev);
 }
 
