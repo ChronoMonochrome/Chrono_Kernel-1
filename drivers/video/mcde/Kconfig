@@ -1,6 +1,11 @@
 config MCDE
 	bool
 
+config MCDE_LCDCLK_MANAGEMENT
+	bool
+	default n
+	depends on MCDE
+
 config FB_MCDE
 	bool "MCDE fbdev support"
 	depends on FB

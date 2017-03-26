@@ -57,10 +57,10 @@ int V255_adjustment(struct SMART_DIM *pSmart)
 	pSmart->RGB_OUTPUT.B_VOLTAGE.level_0 = S6E63M0_VREG0_REF;
 
 	#ifdef SMART_DIMMING_DEBUG
-	printk("%s V255 RED:%d GREEN:%d BLUE:%d\n", __func__,
-			pSmart->RGB_OUTPUT.R_VOLTAGE.level_255,
-			pSmart->RGB_OUTPUT.G_VOLTAGE.level_255,
-			pSmart->RGB_OUTPUT.B_VOLTAGE.level_255);
+//	printk("%s V255 RED:%d GREEN:%d BLUE:%d\n", __func__,
+//			pSmart->RGB_OUTPUT.R_VOLTAGE.level_255,
+//			pSmart->RGB_OUTPUT.G_VOLTAGE.level_255,
+;
 	#endif
 
 	return 0;
@@ -130,10 +130,10 @@ int V1_adjustment(struct SMART_DIM *pSmart)
 	pSmart->RGB_OUTPUT.B_VOLTAGE.level_1 = result_4;
 
 	#ifdef SMART_DIMMING_DEBUG
-	printk("%s V1 RED:%d GREEN:%d BLUE:%d\n", __func__,
-			pSmart->RGB_OUTPUT.R_VOLTAGE.level_1,
-			pSmart->RGB_OUTPUT.G_VOLTAGE.level_1,
-			pSmart->RGB_OUTPUT.B_VOLTAGE.level_1);
+//	printk("%s V1 RED:%d GREEN:%d BLUE:%d\n", __func__,
+//			pSmart->RGB_OUTPUT.R_VOLTAGE.level_1,
+//			pSmart->RGB_OUTPUT.G_VOLTAGE.level_1,
+;
 	#endif
 
 	return 0;
@@ -187,10 +187,10 @@ int V171_adjustment(struct SMART_DIM *pSmart)
 	pSmart->RGB_OUTPUT.B_VOLTAGE.level_171 = result_4;;
 
 	#ifdef SMART_DIMMING_DEBUG
-	printk("%s V171 RED:%d GREEN:%d BLUE:%d\n", __func__,
-			pSmart->RGB_OUTPUT.R_VOLTAGE.level_171,
-			pSmart->RGB_OUTPUT.G_VOLTAGE.level_171,
-			pSmart->RGB_OUTPUT.B_VOLTAGE.level_171);
+//	printk("%s V171 RED:%d GREEN:%d BLUE:%d\n", __func__,
+//			pSmart->RGB_OUTPUT.R_VOLTAGE.level_171,
+//			pSmart->RGB_OUTPUT.G_VOLTAGE.level_171,
+;
 	#endif
 
 	return 0;
@@ -267,10 +267,10 @@ int V87_adjustment(struct SMART_DIM *pSmart)
 	pSmart->RGB_OUTPUT.B_VOLTAGE.level_87 = result_4;
 
 	#ifdef SMART_DIMMING_DEBUG
-	printk("%s V87 RED:%d GREEN:%d BLUE:%d\n", __func__,
-			pSmart->RGB_OUTPUT.R_VOLTAGE.level_87,
-			pSmart->RGB_OUTPUT.G_VOLTAGE.level_87,
-			pSmart->RGB_OUTPUT.B_VOLTAGE.level_87);
+//	printk("%s V87 RED:%d GREEN:%d BLUE:%d\n", __func__,
+//			pSmart->RGB_OUTPUT.R_VOLTAGE.level_87,
+//			pSmart->RGB_OUTPUT.G_VOLTAGE.level_87,
+;
 	#endif
 
 	return 0;
@@ -345,10 +345,10 @@ int V43_adjustment(struct SMART_DIM *pSmart)
 	pSmart->RGB_OUTPUT.B_VOLTAGE.level_43 = result_4;
 
 	#ifdef SMART_DIMMING_DEBUG
-	printk("%s V43 RED:%d GREEN:%d BLUE:%d\n", __func__,
-			pSmart->RGB_OUTPUT.R_VOLTAGE.level_43,
-			pSmart->RGB_OUTPUT.G_VOLTAGE.level_43,
-			pSmart->RGB_OUTPUT.B_VOLTAGE.level_43);
+//	printk("%s V43 RED:%d GREEN:%d BLUE:%d\n", __func__,
+//			pSmart->RGB_OUTPUT.R_VOLTAGE.level_43,
+//			pSmart->RGB_OUTPUT.G_VOLTAGE.level_43,
+;
 	#endif
 
 	return 0;
@@ -426,10 +426,10 @@ int V19_adjustment(struct SMART_DIM *pSmart)
 	pSmart->RGB_OUTPUT.B_VOLTAGE.level_19 = result_4;
 
 	#ifdef SMART_DIMMING_DEBUG
-	printk("%s V19 RED:%d GREEN:%d BLUE:%d\n", __func__,
-			pSmart->RGB_OUTPUT.R_VOLTAGE.level_19,
-			pSmart->RGB_OUTPUT.G_VOLTAGE.level_19,
-			pSmart->RGB_OUTPUT.B_VOLTAGE.level_19);
+//	printk("%s V19 RED:%d GREEN:%d BLUE:%d\n", __func__,
+//			pSmart->RGB_OUTPUT.R_VOLTAGE.level_19,
+//			pSmart->RGB_OUTPUT.G_VOLTAGE.level_19,
+;
 	#endif
 
 	return 0;
@@ -675,9 +675,9 @@ int Generate_gray_scale(struct SMART_DIM *pSmart)
 			cal_cnt++;
 		} else {
 			if (cnt == S6E63M0_ARRAY[6]) {
-				printk("%s end\n", __func__);
+;
 			} else {
-				printk(KERN_ERR "%s fail cnt:%d \n", __func__, cnt);
+;
 				return -1;
 			}
 		}
@@ -686,10 +686,10 @@ int Generate_gray_scale(struct SMART_DIM *pSmart)
 
 	#ifdef SMART_DIMMING_DEBUG
 		for (cnt = 0; cnt < S6E63M0_GRAY_SCALE_MAX; cnt++) {
-			printk("%s %d R:%d G:%d B:%d\n", __func__, cnt,
-				pSmart->GRAY.TABLE[cnt].R_Gray,
-				pSmart->GRAY.TABLE[cnt].G_Gray,
-				pSmart->GRAY.TABLE[cnt].B_Gray);
+//			printk("%s %d R:%d G:%d B:%d\n", __func__, cnt,
+//				pSmart->GRAY.TABLE[cnt].R_Gray,
+//				pSmart->GRAY.TABLE[cnt].G_Gray,
+;
 		}
 	#endif
 	return 0;
@@ -706,7 +706,7 @@ int Smart_dimming_init(struct SMART_DIM *smart_dim)
 	V19_adjustment(smart_dim);
 
 	if (Generate_gray_scale(smart_dim)) {
-		printk(KERN_ERR "lcd smart dimming fail Generate_gray_scale\n");
+;
 		return -1;
 	}
 
@@ -782,23 +782,23 @@ void generate_gamma(struct SMART_DIM *pSmart, char *str, int size)
 	}
 
 	#ifdef SMART_DIMMING_DEBUG
-	printk("%s candela_1:%llu candela_19:%llu  candela_43:%llu  "
-		"candela_87:%llu  candela_171:%llu  candela_255:%llu \n", __func__,
-		candela_level[0], candela_level[1], candela_level[2],
-		candela_level[3], candela_level[4], candela_level[5]);
+//	printk("%s candela_1:%llu candela_19:%llu  candela_43:%llu  "
+//		"candela_87:%llu  candela_171:%llu  candela_255:%llu \n", __func__,
+//		candela_level[0], candela_level[1], candela_level[2],
+;
 	#endif
 
 	/*calculate brightness level*/
 	for (cnt = 0; cnt < S6E63M0_TABLE_MAX; cnt++) {
 		if (searching_function(candela_level[cnt], &(bl_index[cnt]))) {
-			printk("%s searching functioin error cnt:%d\n", __func__, cnt);
+;
 		}
 	}
 
 	#ifdef SMART_DIMMING_DEBUG
-	printk("%s bl_index_1:%d bl_index_19:%d bl_index_43:%d "
-		"bl_index_87:%d bl_index_171:%d bl_index_255:%d\n", __func__,
-		bl_index[0], bl_index[1], bl_index[2], bl_index[3], bl_index[4], bl_index[5]);
+//	printk("%s bl_index_1:%d bl_index_19:%d bl_index_43:%d "
+//		"bl_index_87:%d bl_index_171:%d bl_index_255:%d\n", __func__,
+;
 	#endif
 
 	/*Generate Gamma table*/
