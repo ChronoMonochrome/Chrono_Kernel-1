@@ -39,6 +39,9 @@ static struct device *sysctrl_dev;
 static bool use_pcut_registers = false;
 #endif
 
+static unsigned int reboot_to_lpm = 0;
+module_param_named(reboot_to_lpm, reboot_to_lpm, uint, 0644);
+
 void ab8500_power_off(void)
 {
 	struct ab8500_platform_data *plat;
@@ -62,48 +65,50 @@ void ab8500_power_off(void)
 		return;
 	}
 
-	/*
-	 * If we have a charger connected and we're powering off,
-	 * reboot into charge-only mode.
-	 */
+	if (reboot_to_lpm){
+		/*
+		 * If we have a charger connected and we're powering off,
+		 * reboot into charge-only mode.
+		 */
 
-	for (i = 0; i < ARRAY_SIZE(pss); i++) {
-		psy = power_supply_get_by_name(pss[i]);
-		if (!psy)
-			continue;
+		for (i = 0; i < ARRAY_SIZE(pss); i++) {
+			psy = power_supply_get_by_name(pss[i]);
+			if (!psy)
+				continue;
 
-		ret = psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &val);
-
-#ifdef CONFIG_BATTERY_SAMSUNG
-		if (!ret && (val.intval != POWER_SUPPLY_TYPE_BATTERY)) {
-#else
-		if (!ret && val.intval) {
-#endif
-			charger_present = true;
-			break;
-		}
-	}
-
-        abx500_get_register_interruptible(sysctrl_dev, AB8500_CHARGER,
-                                          AB8500_CH_STATUS1_REG, &data);
-
-	if (!charger_present && !(data & 0x01))
-		goto shutdown;
-
+			ret = psy->get_property(psy, POWER_SUPPLY_PROP_ONLINE, &val);
 
 #ifdef CONFIG_BATTERY_SAMSUNG
-	machine_restart("ta");
+			if (!ret && (val.intval != POWER_SUPPLY_TYPE_BATTERY)) {
 #else
-	/* Check if battery is known */
-	psy = power_supply_get_by_name("ab8500_btemp");
-	if (psy) {
-		ret = psy->get_property(psy, POWER_SUPPLY_PROP_TECHNOLOGY,
-					&val);
-		if (!ret && val.intval != POWER_SUPPLY_TECHNOLOGY_UNKNOWN) {
-				machine_restart("ta");
-		}
-	}
+			if (!ret && val.intval) {
 #endif
+				charger_present = true;
+				break;
+			}
+		}
+
+	        abx500_get_register_interruptible(sysctrl_dev, AB8500_CHARGER,
+       	                                   AB8500_CH_STATUS1_REG, &data);
+
+		if (!charger_present && !(data & 0x01))
+			goto shutdown;
+
+
+#ifdef CONFIG_BATTERY_SAMSUNG
+		machine_restart("ta");
+#else
+		/* Check if battery is known */
+		psy = power_supply_get_by_name("ab8500_btemp");
+		if (psy) {
+			ret = psy->get_property(psy, POWER_SUPPLY_PROP_TECHNOLOGY,
+						&val);
+			if (!ret && val.intval != POWER_SUPPLY_TECHNOLOGY_UNKNOWN) {
+					machine_restart("ta");
+			}
+		}
+#endif
+	}
 
 shutdown:
 	sigfillset(&all);
