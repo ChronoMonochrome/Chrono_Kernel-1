@@ -60,8 +60,10 @@ static bool eoc_noticed = 0;
 static bool eoc_first = 0;
 static bool eoc_real = 0;
 static bool is_suspend = 0;
-static int termination_curr_1st = 150;
-static int termination_curr_2nd = 150;
+
+static int recharge_vol = 4211;
+static int termination_curr_1st = 100;
+static int termination_curr_2nd = 100;
 
 static void ab8500_chargalg_early_suspend(struct early_suspend *h)
 {
@@ -1857,8 +1859,7 @@ static void ab8500_chargalg_algorithm(struct ab8500_chargalg *di)
 		/* Intentional fallthrough */
 
 	case STATE_WAIT_FOR_RECHARGE:
-		if (di->batt_data.volt <=
-		    di->bat->bat_type[di->bat->batt_id].recharge_vol) {
+		if (di->batt_data.volt <= recharge_vol) {
 			if (di->rch_cnt-- == 0) {
 				di->recharging_status = true;
 				ab8500_chargalg_state_to(di, STATE_NORMAL_INIT);
@@ -2488,7 +2489,7 @@ static struct kobj_attribute abb_chargalg_eoc_real_interface = __ATTR(eoc_real, 
 
 static ssize_t abb_chargalg_termination_curr_1st_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%d\n", termination_curr_1st);
+	sprintf(buf, "%d mA\n", termination_curr_1st);
 
 	return strlen(buf);
 }
@@ -2497,7 +2498,7 @@ static ssize_t abb_chargalg_termination_curr_1st_store(struct kobject *kobj, str
 {
 	int ret, val;
 
-	ret = sscanf(buf, "%d", &val);
+	ret = sscanf(buf, "%d mA", &val);
 
 	if (!ret)
 		return -EINVAL;
@@ -2512,7 +2513,7 @@ static struct kobj_attribute abb_chargalg_termination_curr_1st_interface =
 	
 static ssize_t abb_chargalg_termination_curr_2nd_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%d\n", termination_curr_2nd);
+	sprintf(buf, "%d mA\n", termination_curr_2nd);
 
 	return strlen(buf);
 }
@@ -2534,6 +2535,30 @@ static ssize_t abb_chargalg_termination_curr_2nd_store(struct kobject *kobj, str
 static struct kobj_attribute abb_chargalg_termination_curr_2nd_interface = 
 	__ATTR(termination_curr_2nd, 0644, abb_chargalg_termination_curr_2nd_show, abb_chargalg_termination_curr_2nd_store);
 
+static ssize_t abb_chargalg_recharge_vol_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "%d mV\n", recharge_vol);
+
+	return strlen(buf);
+}
+
+static ssize_t abb_chargalg_recharge_vol_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, val;
+
+	ret = sscanf(buf, "%d", &val);
+
+	if (!ret)
+		return -EINVAL;
+
+	recharge_vol = val;
+
+	return count;
+}
+
+static struct kobj_attribute abb_chargalg_recharge_vol_interface = 
+	__ATTR(recharge_vol, 0644, abb_chargalg_recharge_vol_show, abb_chargalg_recharge_vol_store);	
+
 static struct attribute *abb_chargalg_attrs[] = {
 	&abb_chargalg_charging_stats_interface.attr, 
 	&abb_chargalg_eoc_stats_interface.attr, 
@@ -2541,6 +2566,7 @@ static struct attribute *abb_chargalg_attrs[] = {
 	&abb_chargalg_eoc_real_interface.attr, 
 	&abb_chargalg_termination_curr_1st_interface.attr,
 	&abb_chargalg_termination_curr_2nd_interface.attr,
+	&abb_chargalg_recharge_vol_interface.attr,
 	NULL,
 };
 
