@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) ST-Ericsson SA 2012
  *
@@ -8,11 +9,16 @@
  *	Johan Palsson <johan.palsson@stericsson.com>
  *	Karl Komierowski <karl.komierowski@stericsson.com>
  *	Arun R Murthy <arun.murthy@stericsson.com>
+ *
+ * Modified: Huang Ji (cocafe@xda-developers.com)
+ *
  */
 
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
+#include <linux/sysfs.h>
+#include <linux/kobject.h>
 #include <linux/interrupt.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
@@ -80,6 +86,16 @@
 
 /* Step up/down delay in us */
 #define STEP_UDELAY			1000
+
+/* cocafe: ABB charger control */
+#define MAX_AC_CURR_USER		900
+#define MAX_USB_CURR_USER		900
+
+struct ab8500_charger *static_di;
+
+static bool maxcurr_req = false;
+static unsigned int ac_curr_max_user = 600;
+static unsigned int usb_curr_max_user = 500;
 
 /* UsbLineStatus register - usb types */
 enum ab8500_charger_link_status {
@@ -1193,6 +1209,7 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
 		/* Check if the requested voltage or current is valid */
 		volt_index = ab8500_voltage_to_regval(vset);
 		curr_index = ab8500_current_to_regval(iset);
+
 		input_curr_index = ab8500_current_to_regval(
 			di->bat->chg_params->ac_curr_max);
 		if (volt_index < 0 || curr_index < 0 || input_curr_index < 0) {
@@ -1209,9 +1226,16 @@ static int ab8500_charger_ac_en(struct ux500_charger *charger,
 			dev_err(di->dev, "%s write failed\n", __func__);
 			return ret;
 		}
-		/* MainChInputCurr: current that can be drawn from the charger*/
-		ret = ab8500_charger_set_main_in_curr(di,
-			di->bat->chg_params->ac_curr_max);
+
+		if (!maxcurr_req) {
+			/* MainChInputCurr: current that can be drawn from the charger*/
+			ret = ab8500_charger_set_main_in_curr(di,
+				di->bat->chg_params->ac_curr_max);
+		} else {
+			ret = ab8500_charger_set_main_in_curr(di,
+                                ac_curr_max_user);
+		}
+
 		if (ret) {
 			dev_err(di->dev, "%s Failed to set MainChInputCurr\n",
 				__func__);
@@ -1379,8 +1403,15 @@ static int ab8500_charger_usb_en(struct ux500_charger *charger,
 			dev_err(di->dev, "%s write failed\n", __func__);
 			return ret;
 		}
-		/* USBChInputCurr: current that can be drawn from the usb */
-		ret = ab8500_charger_set_vbus_in_curr(di, di->max_usb_in_curr);
+
+		if (!maxcurr_req) {
+			/* USBChInputCurr: current that can be drawn from the usb */
+			ret = ab8500_charger_set_vbus_in_curr(di, di->max_usb_in_curr);
+		} else {
+			/* USBChInputCurr: current that can be drawn from the usb */
+			ret = ab8500_charger_set_vbus_in_curr(di, usb_curr_max_user);
+		}
+
 		if (ret) {
 			dev_err(di->dev, "setting USBChInputCurr failed\n");
 			return ret;
@@ -2232,6 +2263,8 @@ static irqreturn_t ab8500_charger_vbusovv_handler(int irq, void *_di)
 {
 	struct ab8500_charger *di = _di;
 
+	/* dev_info(di->dev, "VBUS overvoltage detected\n"); */
+
 	dev_dbg(di->dev, "VBUS overvoltage detected\n");
 	di->flags.vbus_ovv = true;
 	ab8500_power_supply_changed(di, &di->usb_chg.psy);
@@ -2612,6 +2645,115 @@ static int ab8500_charger_suspend(struct platform_device *pdev,
 #define ab8500_charger_resume       NULL
 #endif
 
+static ssize_t ac_curr_max_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", ac_curr_max_user);
+}
+
+static ssize_t ac_curr_max_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+//	struct ab8500_charger *di = static_di;
+	int val;
+	int ret;
+
+	if (!strncmp(buf, "reset", 5)) {
+		pr_err("abb-charger: reset ac current requests\n");
+		ac_curr_max_user = 600;
+		maxcurr_req = false;
+		return count;
+	}
+	
+	ret = sscanf(buf, "%d", &val);
+
+	/* Allow 0mA */
+	if ((val < 0) || (val % 100) || (val > MAX_AC_CURR_USER)) {
+		pr_err("abb-charger: invalid inputs\n");
+		return -EINVAL;
+	}
+
+	pr_info("abb-charger: set max ac current %dmA\n", val);
+	ac_curr_max_user = val;
+
+	maxcurr_req = true;
+
+	return count;
+}
+
+static struct kobj_attribute ac_curr_max_interface = __ATTR(max_ac_c, 0644, ac_curr_max_show, ac_curr_max_store);
+
+static ssize_t usb_curr_max_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", usb_curr_max_user);
+}
+
+static ssize_t usb_curr_max_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+//	struct ab8500_charger *di = static_di;
+	int val;
+	int ret;
+
+	if (!strncmp(buf, "reset", 5)) {
+		pr_err("abb-charger: reset usb current requests\n");
+		usb_curr_max_user = 500;
+		maxcurr_req = false;
+		return count;
+	}
+	
+	ret = sscanf(buf, "%d", &val);
+
+	/* Allow 0mA */
+	if ((val < 0) || (val % 100) || (val > MAX_USB_CURR_USER)) {
+		pr_err("abb-charger: invalid inputs\n");
+		return -EINVAL;
+	}
+
+	pr_info("abb-charger: set max usb current %dmA\n", val);
+
+	usb_curr_max_user = val;
+
+	maxcurr_req = true;
+
+	return count;
+}
+
+static struct kobj_attribute usb_curr_max_interface = __ATTR(max_usb_c, 0644, usb_curr_max_show, usb_curr_max_store);
+
+static ssize_t abb_charger_stats_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	struct ab8500_charger *di = static_di;
+
+	sprintf(buf, "ab8500_bm_data:\n");
+	sprintf(buf, "%sta_chg_current: %d\n", 		buf, di->bat->ta_chg_current);
+	sprintf(buf, "%sta_chg_current_input: %d\n", 	buf, di->bat->ta_chg_current_input);
+	sprintf(buf, "%sta_chg_voltage: %d\n", 		buf, di->bat->ta_chg_voltage);
+	sprintf(buf, "%susb_chg_current: %d\n", 	buf, di->bat->usb_chg_current);
+	sprintf(buf, "%susb_chg_current_input: %d\n", 	buf, di->bat->usb_chg_current_input);
+	sprintf(buf, "%susb_chg_voltage: %d\n", 	buf, di->bat->usb_chg_voltage);
+	sprintf(buf, "%s\n", 				buf);
+	sprintf(buf, "%sab8500_bm_charger_params:\n", 	buf);
+	sprintf(buf, "%sac_volt_max: %d\n", 		buf, di->bat->chg_params->ac_volt_max);
+	sprintf(buf, "%sac_curr_max: %d\n", 		buf, di->bat->chg_params->ac_curr_max);
+	sprintf(buf, "%susb_volt_max: %d\n", 		buf, di->bat->chg_params->usb_volt_max);
+	sprintf(buf, "%susb_curr_max: %d\n", 		buf, di->bat->chg_params->usb_curr_max);
+
+	return strlen(buf);
+}
+
+static struct kobj_attribute abb_charger_stats_interface = __ATTR(stats, 0444, abb_charger_stats_show, NULL);
+
+static struct attribute *abb_charger_attrs[] = {
+	&ac_curr_max_interface.attr, 
+	&usb_curr_max_interface.attr, 
+	&abb_charger_stats_interface.attr, 
+	NULL,
+};
+
+static struct attribute_group abb_charger_interface_group = {
+	.attrs = abb_charger_attrs,
+};
+
+static struct kobject *abb_charger_kobject;
+
 static int __devexit ab8500_charger_remove(struct platform_device *pdev)
 {
 	struct ab8500_charger *di = platform_get_drvdata(pdev);
@@ -2644,6 +2786,8 @@ static int __devexit ab8500_charger_remove(struct platform_device *pdev)
 	/* Delete the work queue */
 	destroy_workqueue(di->charger_wq);
 
+	kobject_put(abb_charger_kobject);
+
 	flush_scheduled_work();
 	power_supply_unregister(&di->usb_chg.psy);
 	power_supply_unregister(&di->ac_chg.psy);
@@ -2666,8 +2810,6 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 		kzalloc(sizeof(struct ab8500_charger), GFP_KERNEL);
 	if (!di)
 		return -ENOMEM;
-
-	//static_di = di;
 
 	/* get parent data */
 	di->dev = &pdev->dev;
@@ -2784,6 +2926,20 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 	INIT_WORK(&di->check_usb_thermal_prot_work,
 		ab8500_charger_check_usb_thermal_prot_work);
 
+	abb_charger_kobject = kobject_create_and_add("abb-charger", kernel_kobj);
+
+	if (!abb_charger_kobject) {
+		pr_err("abb-charger: faile to create kobjects\n");
+		return -ENOMEM;
+	}
+
+	ret = sysfs_create_group(abb_charger_kobject, &abb_charger_interface_group);
+
+	if (ret) {
+		pr_err("abb-charger: faile to register sysfs\n");
+		kobject_put(abb_charger_kobject);
+	}
+
 	/*
 	 * VDD ADC supply needs to be enabled from this driver when there
 	 * is a charger connected to avoid erroneous BTEMP_HIGH/LOW
@@ -2869,6 +3025,8 @@ static int __devinit ab8500_charger_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, di);
 
+	static_di = di;
+
 	return ret;
 
 free_irq:
@@ -2923,3 +3081,4 @@ MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Johan Palsson, Karl Komierowski, Arun R Murthy");
 MODULE_ALIAS("platform:ab8500-charger");
 MODULE_DESCRIPTION("AB8500 charger management driver");
+
