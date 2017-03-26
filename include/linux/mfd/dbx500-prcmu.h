@@ -625,7 +625,6 @@ unsigned long prcmu_qos_get_cpufreq_opp_delay(void);
 void prcmu_qos_set_cpufreq_opp_delay(unsigned long);
 void prcmu_qos_force_opp(int, s32);
 int prcmu_qos_requirement(int pm_qos_class);
-bool prcmu_qos_requirement_is_active(int prcmu_qos_class, char *name);
 int prcmu_qos_add_requirement(int pm_qos_class, char *name, s32 value);
 int prcmu_qos_update_requirement(int pm_qos_class, char *name, s32 new_value);
 void prcmu_qos_remove_requirement(int pm_qos_class, char *name);
