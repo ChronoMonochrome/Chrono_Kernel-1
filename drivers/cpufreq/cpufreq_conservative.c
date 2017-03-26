@@ -424,8 +424,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	 * can support the current CPU usage without triggering the up
 	 * policy. To be safe, we focus 10 points under the threshold.
 	 */
-	/* Check for frequency decrease */
-	if (max_load < (dbs_tuners_ins.down_threshold)) {
+	if (max_load < (dbs_tuners_ins.down_threshold - 10)) {
 		/*
 		 * if we cannot reduce the frequency anymore, break out early
 		 */
@@ -439,7 +438,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			this_dbs_info->requested_freq = policy->min;
 
 		__cpufreq_driver_target(policy, this_dbs_info->requested_freq,
-				CPUFREQ_RELATION_L);
+				CPUFREQ_RELATION_H);
 		return;
 	}
 }
