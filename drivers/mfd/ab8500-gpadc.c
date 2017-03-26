@@ -745,6 +745,7 @@ static int ab8500_gpadc_runtime_idle(struct device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
 static int ab8500_gpadc_suspend(struct device *dev)
 {
 	struct ab8500_gpadc *gpadc = dev_get_drvdata(dev);
@@ -769,6 +770,7 @@ static int ab8500_gpadc_resume(struct device *dev)
 	mutex_unlock(&gpadc->ab8500_gpadc_lock);
 	return 0;
 }
+#endif
 
 static int __devinit ab8500_gpadc_probe(struct platform_device *pdev)
 {
