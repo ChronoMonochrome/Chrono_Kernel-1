@@ -35,9 +35,11 @@
 
 #include <linux/err.h>
 
-
 #include <linux/device.h>
 #include <linux/stat.h>
+
+size_t max_zpage_size = PAGE_SIZE / 10 * 9;
+module_param(max_zpage_size, uint, 0644);
 
 #define __ATTR_WO(_name) {                                             \
 	.attr   = { .name = __stringify(_name), .mode = S_IWUSR },      \
