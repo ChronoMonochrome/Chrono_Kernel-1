@@ -331,6 +331,7 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 		n = ARRAY_SIZE(reboot_tbl);
 		for (i = 0; i < n; i++) {
 			if (!strcmp((char *)cmd, reboot_tbl[i].cmd)) {
+/*
 				if(!strcmp((char *)cmd, "recovery")) {
 					u8 prerecovery_state = 0;
 					printk(KERN_INFO "%s: clear prerecovery flag=%d\n", __func__,
@@ -338,6 +339,7 @@ static int __sec_common_reboot_call(struct notifier_block *this,
 					if (likely(sec_set_param_value))
 						sec_set_param_value(__FORCE_PRERECOVERY, &prerecovery_state);
 				}
+*/
 				mode = reboot_tbl[i].mode;
 				break;
 			} else if(!strncmp(cmd, "sud", 3)) {
