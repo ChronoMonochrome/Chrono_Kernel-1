@@ -456,7 +456,7 @@ static ssize_t bln_blink_store(struct kobject *kobj, struct kobj_attribute *attr
 	int delay_tmp;
 	
 	if (!strncmp(&buf[0], "bln_ondelay=", 12)) {
-		ret = sscanf(&buf[8], "%d", &delay_tmp);
+		ret = sscanf(&buf[12], "%d", &delay_tmp);
 
 		if ((!ret) || (delay_tmp < 1)) {
 			pr_err("[BLN] invalid input - delay too short\n");
@@ -469,7 +469,7 @@ static ssize_t bln_blink_store(struct kobject *kobj, struct kobj_attribute *attr
 	}
 
 	if (!strncmp(&buf[0], "bln_offdelay=", 13)) {
-		ret = sscanf(&buf[9], "%d", &delay_tmp);
+		ret = sscanf(&buf[13], "%d", &delay_tmp);
 
 		if ((!ret) || (delay_tmp < 1)) {
 			pr_err("[BLN] invalid input - delay too short\n");
@@ -496,6 +496,8 @@ static ssize_t bln_blink_store(struct kobject *kobj, struct kobj_attribute *attr
 
 		return count;
 	}
+	
+	return count;
 }
 
 static struct kobj_attribute bln_blink_interface = __ATTR(blink_mode, 0644, bln_blink_show, bln_blink_store);
