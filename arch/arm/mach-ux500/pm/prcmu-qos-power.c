@@ -1013,13 +1013,6 @@ static int set_qos_ddr_opp(const char *val, struct kernel_param *kp)
 	unsigned int ddr_opp = 0;
 	unsigned int err = 0;
 
-	if (is_suspended_get()) {
-#if DEBUG
-		pr_err("QoS: not changing DDR_OPP on behalf of PowerHAL in suspend\n");
-#endif
-		return -EINVAL;
-	}
-
 	err = sscanf(val, "%d", &ddr_opp) == 1 ? 0 : -EINVAL;
 
 	if (err)
@@ -1066,13 +1059,6 @@ static int set_qos_ape_opp(const char *val, struct kernel_param *kp)
 {
 	unsigned int ape_opp = 0;
 	unsigned int err = 0;
-
-	if (is_suspended_get()) {
-#if DEBUG
-		pr_err("QoS: not changing APE_OPP on behalf of PowerHAL in suspend\n");
-#endif
-		return -EINVAL;
-	}
 
 	err = sscanf(val, "%d", &ape_opp) == 1 ? 0 : -EINVAL;
 
