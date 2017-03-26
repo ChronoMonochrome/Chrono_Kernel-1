@@ -2,7 +2,7 @@
  * drivers/cpufreq/cpufreq_limits_on_suspend.c
  * 
  * Copyright (c) 2014, Shilin Victor <chrono.monochrome@gmail.com>
- *
+ * 
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -20,11 +20,14 @@
 #include <linux/init.h>
 #include <linux/cpufreq.h>
 #include <linux/kobject.h>
+#include <linux/hrtimer.h>
+#include <linux/slab.h>
+#include <linux/input.h>
 #include <linux/sysfs.h>
 
 static bool module_is_loaded = false;
-
 static bool cpu_freq_limits = false;
+
 static unsigned int screenoff_min_cpufreq = 100000;
 static unsigned int screenoff_max_cpufreq = 400000;
 
@@ -33,6 +36,15 @@ static unsigned int screenon_max_cpufreq = 0;
 
 static unsigned int restore_screenon_min_cpufreq = 0;// these values will be gotten from system at load
 static unsigned int restore_screenon_max_cpufreq = 0; 
+
+unsigned int input_boost_freq = 400000;
+EXPORT_SYMBOL(input_boost_freq);
+unsigned int input_boost_ms = 40;
+EXPORT_SYMBOL(input_boost_ms);
+u64 last_input_time;
+EXPORT_SYMBOL(last_input_time);
+
+#define MIN_INPUT_INTERVAL (150 * USEC_PER_MSEC)
 
 bool cpu_freq_limits_enabled(void) {
 	return cpu_freq_limits;
@@ -145,6 +157,50 @@ static ssize_t cpufreq_limits_show(struct kobject *kobj, struct kobj_attribute *
 	return strlen(buf);
 }
 
+static ssize_t cpufreq_input_boost_freq_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) 
+{
+	sprintf(buf, "%d", input_boost_freq);
+	return strlen(buf);
+}
+
+static ssize_t cpufreq_input_boost_freq_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+	
+	ret = sscanf(&buf[0], "%d", &input_boost_freq);
+
+	if (!ret)
+		return -EINVAL;
+	
+	return count;
+}
+
+static struct kobj_attribute cpufreq_input_boost_freq_interface = __ATTR(input_boost_freq, 0644,
+									   cpufreq_input_boost_freq_show,
+									   cpufreq_input_boost_freq_store);
+
+static ssize_t cpufreq_input_boost_ms_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf) 
+{
+	sprintf(buf, "%d", input_boost_ms);
+	return strlen(buf);
+}
+
+static ssize_t cpufreq_input_boost_ms_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+  
+	ret = sscanf(&buf[0], "%d", &input_boost_ms);
+
+	if (!ret)
+		return -EINVAL;
+	
+	return count;
+}
+
+static struct kobj_attribute cpufreq_input_boost_ms_interface = __ATTR(input_boost_ms, 0644,
+									   cpufreq_input_boost_ms_show,
+									   cpufreq_input_boost_ms_store);
+
 static ssize_t cpufreq_limits_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
   	if (!strncmp(&buf[0], "screenon_min=", 13)) {
@@ -190,6 +246,8 @@ static struct kobj_attribute cpufreq_limits_interface = __ATTR(cpufreq_limits_on
 
 static struct attribute *cpufreq_attrs[] = {
 	&cpufreq_limits_interface.attr,
+	&cpufreq_input_boost_freq_interface.attr,
+	&cpufreq_input_boost_ms_interface.attr,
 	NULL,
 };
 
@@ -198,6 +256,92 @@ static struct attribute_group cpufreq_interface_group = {
 };
 
 static struct kobject *cpufreq_kobject;
+
+static void cpufreq_input_event(struct input_handle *handle,
+		unsigned int type, unsigned int code, int value)
+{
+	u64 now;
+	
+	if (!input_boost_freq)
+		return;
+
+	now = ktime_to_us(ktime_get());
+	if (now - last_input_time < MIN_INPUT_INTERVAL)
+		return;
+
+	last_input_time = ktime_to_us(ktime_get());
+}
+
+static int cpufreq_input_connect(struct input_handler *handler,
+		struct input_dev *dev, const struct input_device_id *id)
+{
+	struct input_handle *handle;
+	int error;
+
+	handle = kzalloc(sizeof(struct input_handle), GFP_KERNEL);
+	if (!handle)
+		return -ENOMEM;
+
+	handle->dev = dev;
+	handle->handler = handler;
+	handle->name = "cpufreq";
+
+	error = input_register_handle(handle);
+	if (error)
+		goto err2;
+
+	error = input_open_device(handle);
+	if (error)
+		goto err1;
+
+	return 0;
+err1:
+	input_unregister_handle(handle);
+err2:
+	kfree(handle);
+	return error;
+}
+
+static void cpufreq_input_disconnect(struct input_handle *handle)
+{
+	input_close_device(handle);
+	input_unregister_handle(handle);
+	kfree(handle);
+}
+
+static const struct input_device_id cpufreq_ids[] = {
+	/* multi-touch touchscreen */
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_EVBIT |
+			INPUT_DEVICE_ID_MATCH_ABSBIT,
+		.evbit = { BIT_MASK(EV_ABS) },
+		.absbit = { [BIT_WORD(ABS_MT_POSITION_X)] =
+			BIT_MASK(ABS_MT_POSITION_X) |
+			BIT_MASK(ABS_MT_POSITION_Y) },
+	},
+	/* touchpad */
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_KEYBIT |
+			INPUT_DEVICE_ID_MATCH_ABSBIT,
+		.keybit = { [BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH) },
+		.absbit = { [BIT_WORD(ABS_X)] =
+			BIT_MASK(ABS_X) | BIT_MASK(ABS_Y) },
+	},
+	/* Keypad */
+	{
+		.flags = INPUT_DEVICE_ID_MATCH_EVBIT,
+		.evbit = { BIT_MASK(EV_KEY) },
+	},
+	{ },
+};
+
+static struct input_handler cpufreq_input_handler = {
+	.event          = cpufreq_input_event,
+	.connect        = cpufreq_input_connect,
+	.disconnect     = cpufreq_input_disconnect,
+	.name           = "cpufreq_input_boost",
+	.id_table       = cpufreq_ids,
+};
 
 static int cpufreq_limits_driver_init(void)
 {
@@ -216,6 +360,10 @@ static int cpufreq_limits_driver_init(void)
 	if (ret) {
 		kobject_put(cpufreq_kobject);
 	}
+	
+	ret = input_register_handler(&cpufreq_input_handler);
+	if (ret)
+		pr_err("Cannot register cpufreq input handler.\n");
 	
 	cpufreq_register_notifier(&cpufreq_notifier_block, CPUFREQ_POLICY_NOTIFIER);
 	
