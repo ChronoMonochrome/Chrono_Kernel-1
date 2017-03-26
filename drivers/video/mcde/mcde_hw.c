@@ -1198,7 +1198,7 @@ struct lcdclk_prop
 static struct lcdclk_prop lcdclk_prop[] = {
   	[0] = {
 		.name = "60++ Hz",
-		.clk = 62400000,
+		.clk = 66560000,
 	},
   	[1] = {
 		.name = "60+ Hz",
@@ -1222,15 +1222,20 @@ static struct lcdclk_prop lcdclk_prop[] = {
 	},
 };
 
-static unsigned int lcdclk_usr = 1; /* 60+ fps */
+static int lcdclk_usr = -1; /* Default LCDCLK */
+static unsigned int custom_lcdclk = 0; /* assume default lcdclk a non-custom */
 
 static void lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
 {
 	msleep(200);
 
-	pr_err("[MCDE] LCDCLK %dHz\n", lcdclk_prop[lcdclk_usr].clk);
-
-	LCDCLK_SET(lcdclk_prop[lcdclk_usr].clk);
+	if ((custom_lcdclk != 0) && (lcdclk_usr == -2)) {
+		pr_err("[MCDE] LCDCLK %dHz\n", custom_lcdclk);
+		LCDCLK_SET(custom_lcdclk);
+	} else if (lcdclk_usr != -1) { 
+		pr_err("[MCDE] LCDCLK %dHz\n", lcdclk_prop[lcdclk_usr].clk);
+		LCDCLK_SET(lcdclk_prop[lcdclk_usr].clk);
+	}
 }
 static DECLARE_WORK(lcdclk_work, lcdclk_thread);
 
@@ -1246,20 +1251,15 @@ static DECLARE_WORK(lcdclk_work, lcdclk_thread);
 static ssize_t mcde_lcdclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	int i;
-	bool matched;
 
-	sprintf(buf, "%sCurrent: %s\n\n", buf, lcdclk_prop[lcdclk_usr].name);
-
+	sprintf(buf, "%s[-2][%s] Custom\n", buf, lcdclk_usr == -2 ? "*" : " ");
+	sprintf(buf, "%s[-1][%s] Default\n", buf, lcdclk_usr == -1 ? "*" : " ");
+	
 	for (i = 0; i < ARRAY_SIZE(lcdclk_prop); i++) {
-		if (i == lcdclk_usr)
-			matched = true;
-		else
-			matched = false;
-
-		sprintf(buf, "%s[%d][%s] %s\n", buf, i, matched ? "*" : " ", lcdclk_prop[i].name);
+		sprintf(buf, "%s[%d][%s] %s\n", buf, i, i == lcdclk_usr ? "*" : " ", lcdclk_prop[i].name);
 	}
 	
-	sprintf(buf, "%sReal LCDCLK freq: %d\n", buf, (int) prcmu_clock_rate(PRCMU_LCDCLK));
+	sprintf(buf, "%sCurrent LCDCLK freq: %d\n", buf, (int) prcmu_clock_rate(PRCMU_LCDCLK));
 
 	return strlen(buf);
 }
@@ -1267,9 +1267,15 @@ static ssize_t mcde_lcdclk_show(struct kobject *kobj, struct kobj_attribute *att
 static ssize_t mcde_lcdclk_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	int ret, tmp;
+	
+	if (sscanf(buf, "lcdclk=%d", &tmp)) {
+		custom_lcdclk = tmp;
+
+		return count;
+	}
 
 	ret = sscanf(buf, "%d", &tmp);
-	if (!ret || (tmp < 0) || (tmp > 5)) {
+	if (!ret || (tmp < -2) || (tmp > 5)) {
 		  pr_err("[MCDE] Bad cmd\n");
 		  return -EINVAL;
 	}
@@ -1386,10 +1392,10 @@ static int update_channel_static_registers(struct mcde_chnl_state *chnl)
 
 	if (port->type == MCDE_PORTTYPE_DPI) {
 
-		if (lcdclk_usr !=0) {
+		if (lcdclk_usr > 0 || lcdclk_usr == -2) {
 			pr_err("[MCDE] Rebasing LCDCLK...\n");
 			schedule_work(&lcdclk_work);
-		} else {
+		} else if (lcdclk_usr == -1) {
 			if (port->phy.dpi.lcd_freq != clk_round_rate(chnl->clk_dpi,
 							port->phy.dpi.lcd_freq))
 			dev_warn(&mcde_dev->dev, "Could not set lcd freq"
