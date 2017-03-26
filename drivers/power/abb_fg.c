@@ -3439,7 +3439,7 @@ static struct kobj_attribute abb_fg_cycle_charging_interface = __ATTR(fg_cyc, 06
 
 static ssize_t abb_fg_pwroff_threshold_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%dmV\n\n* HW will shutdown below 2900mV\n", pwroff_threshold);
+	sprintf(buf, "%dmV\n\n* HW will shutdown above 3000mV\n", pwroff_threshold);
 
 	return strlen(buf);
 }
