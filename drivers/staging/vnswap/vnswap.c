@@ -82,7 +82,6 @@ void vnswap_init_disksize(u64 disksize)
 		vnswap_table[i] = -1;
 	vnswap_device->init_success = VNSWAP_INIT_DISKSIZE_SUCCESS;
 }
-EXPORT_SYMBOL(vnswap_init_disksize);
 
 int vnswap_init_backing_storage(void)
 {
@@ -306,7 +305,6 @@ error:
 	vnswap_device->init_success |= VNSWAP_INIT_BACKING_STORAGE_FAIL;
 	return ret;
 }
-EXPORT_SYMBOL(vnswap_init_backing_storage);
 
 /* find free area (nand_offset, page_offset) in backing storage */
 int vnswap_find_free_area_in_backing_storage(int *nand_offset)
