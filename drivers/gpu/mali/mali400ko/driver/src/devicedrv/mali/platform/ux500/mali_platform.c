@@ -339,7 +339,15 @@ void mali_utilization_function(struct work_struct *ptr)
 	mutex_lock(&mali_boost_lock);
 	if ((!boost_required && !boost_working && !boost_scheduled) || !boost_enable) {
 		// consider power saving mode (APE_50_OPP) only if we're not on boost
-		if (mali_last_utilization > mali_utilization_low_to_high) {
+		int ape_opp = prcmu_get_ape_opp();
+		/*
+		if APE_OPP==100 because someone else wanted this (touchboost in particular) and not mali,
+		we should check if utilization is high enough so we can also request high ape to maintain
+		satisfying UI performance.
+		*/
+		int up_threshold = (ape_opp == APE_50_OPP && has_requested_low ? mali_utilization_low_to_high : (mali_utilization_high_to_low));
+
+		if (mali_last_utilization >= up_threshold) {
 			if (has_requested_low) {
 				MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u SIGNAL_HIGH\n", mali_last_utilization));
 				/*Request 100% APE_OPP.*/
@@ -770,6 +778,7 @@ _mali_osk_errcode_t mali_platform_init()
 		}
 
 		INIT_WORK(&mali_utilization_work, mali_utilization_function);
+		//TODO register a notifier block with prcmu opp update func to monitor ape opp
 		INIT_DELAYED_WORK(&mali_boost_delayedwork, mali_boost_work);
 
 		regulator = regulator_get(NULL, "v-mali");
