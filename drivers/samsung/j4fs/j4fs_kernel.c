@@ -858,7 +858,7 @@ struct dentry *j4fs_lookup(struct inode * dir, struct dentry *dentry, struct nam
 	return d_splice_alias(inode, dentry);
 }
 
-struct inode *j4fs_new_inode(struct inode *dir, struct dentry *dentry, int mode)
+struct inode *j4fs_new_inode(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	struct super_block *sb;
 	struct inode * inode;
@@ -1120,7 +1120,7 @@ int j4fs_add_nondir(struct dentry *dentry, struct inode *inode)
  * If the create succeeds, we fill in the inode information
  * with d_instantiate().
  */
-int j4fs_create (struct inode * dir, struct dentry * dentry, int mode, struct nameidata *nd)
+int j4fs_create (struct inode * dir, struct dentry * dentry, umode_t mode, struct nameidata *nd)
 {
 	struct inode * inode;
 	int err=-1;
