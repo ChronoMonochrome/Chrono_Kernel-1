@@ -8,7 +8,6 @@
 #include <linux/errno.h>
 #include <linux/clksrc-dbx500-prcmu.h>
 #include <linux/clksrc-db5500-mtimer.h>
-#include <linux/of.h>
 
 #include <asm/smp_twd.h>
 
@@ -16,7 +15,6 @@
 
 #include <mach/setup.h>
 #include <mach/hardware.h>
-#include <mach/irqs.h>
 #include <mach/context.h>
 
 #ifdef CONFIG_DBX500_CONTEXT
@@ -52,13 +50,9 @@ static void __init ux500_twd_init(void)
 	twd_local_timer = cpu_is_u5500() ? &u5500_twd_local_timer :
 					   &u8500_twd_local_timer;
 
-	if (of_have_populated_dt())
-		twd_local_timer_of_register();
-	else {
-		err = twd_local_timer_register(twd_local_timer);
-		if (err)
-			pr_err("twd_local_timer_register failed %d\n", err);
-	}
+	err = twd_local_timer_register(twd_local_timer);
+	if (err)
+		pr_err("twd_local_timer_register failed %d\n", err);
 }
 #else
 #define ux500_twd_init()	do { } while(0)
@@ -67,6 +61,7 @@ static void __init ux500_twd_init(void)
 static void __init ux500_timer_init(void)
 {
 	void __iomem *prcmu_timer_base;
+	int err;
 
 	if (cpu_is_u5500()) {
 		mtu_base = __io_address(U5500_MTU0_BASE);
@@ -103,10 +98,13 @@ static void __init ux500_timer_init(void)
 	if (cpu_is_u5500())
 		db5500_mtimer_init(__io_address(U5500_MTIMER_BASE));
 	clksrc_dbx500_prcmu_init(prcmu_timer_base);
+	ux500_twd_init();
+}
+
 #ifdef CONFIG_DBX500_CONTEXT
 	WARN_ON(context_ape_notifier_register(&mtu_context_notifier));
 #endif
-	ux500_twd_init();
+
 }
 
 struct sys_timer ux500_timer = {
