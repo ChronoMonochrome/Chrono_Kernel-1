@@ -62,9 +62,9 @@ void __init ux500_init_devices(void)
 
 void ux500_restart(char mode, const char *cmd)
 {
-#ifdef CONFIG_UX500_SOC_DB8500
-	unsigned short reason;
-
+#if 0
+	unsigned short reset_code;
+	int i ;
 #endif
 	printk("ux500_restart: Call arch_reset(), mode: %c, cmd: %s\n", mode, cmd );
 
