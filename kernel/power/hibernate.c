@@ -658,10 +658,6 @@ int hibernate(void)
 
  Thaw:
 	thaw_processes();
-
-	/* Don't bother checking whether freezer_test_done is true */
-	freezer_test_done = false;
-
  Free_bitmaps:
 	free_basic_memory_bitmaps();
  Exit:
