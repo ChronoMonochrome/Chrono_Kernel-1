@@ -24,7 +24,6 @@
 #include <mach/hardware.h>
 #include <mach/setup.h>
 #include <mach/devices.h>
-#include <mach/reboot_reasons.h>
 #include <mach/sec_common.h>
 #include <mach/reboot_reasons.h>
 #include <mach/system.h>
