@@ -64,94 +64,97 @@ static unsigned int min_sampling_rate;
 
 // Chrono: GPU-aware config tunables
 
-static bool aggresive_mode = false;
+static bool aggressive_mode = false;
+static unsigned int aggressive_mode_enabled = CONFIG_DYNAMIC_AGGRESSIVE_MODE_ENABLED;
 extern u32 mali_last_utilization;
 extern u32 boost_working;
 extern u32 boost_upthreshold;
 static u32 mali_high_utilization_threshold = 192;
-static unsigned int aggresive_up_threshold = 40;
-static unsigned int aggresive_down_differential = 20;
-static unsigned int aggresive_sampling_down_factor = 5;
-static unsigned int aggresive_high_freq_sampling_up_factor = 1;
-static unsigned int aggresive_io_is_busy = 40*128/100;
-static unsigned int aggresive_standby_delay_factor = 3;
-static unsigned int aggresive_standby_threshold_freq = 200000;
-static unsigned int aggresive_power_optimal_freq = 0;
-static unsigned int aggresive_max_non_oc_freq = 0;
-static unsigned int aggresive_oc_freq_boost_ms = 0;
-static unsigned int aggresive_input_boost_us = 500*1000;
-static unsigned int aggresive_input_boost_freq = 800000;
+static unsigned int aggressive_up_threshold = 40;
+static unsigned int aggressive_down_differential = 20;
+static unsigned int aggressive_sampling_down_factor = 5;
+static unsigned int aggressive_high_freq_sampling_up_factor = 1;
+static unsigned int aggressive_io_is_busy = 40*128/100;
+static unsigned int aggressive_standby_delay_factor = 3;
+static unsigned int aggressive_standby_threshold_freq = 200000;
+static unsigned int aggressive_power_optimal_freq = 0;
+static unsigned int aggressive_max_non_oc_freq = 0;
+static unsigned int aggressive_oc_freq_boost_ms = 0;
+static unsigned int aggressive_input_boost_us = 500*1000;
+static unsigned int aggressive_input_boost_freq = 800000;
 
 module_param(mali_high_utilization_threshold, uint, 0644);
-module_param(aggresive_power_optimal_freq, uint, 0644);
-module_param(aggresive_up_threshold, uint, 0644);
-module_param(aggresive_down_differential, uint, 0644);
-module_param(aggresive_sampling_down_factor, uint, 0644);
-module_param(aggresive_high_freq_sampling_up_factor, uint, 0644);
-module_param(aggresive_io_is_busy, uint, 0644);
-module_param(aggresive_standby_delay_factor, uint, 0644);
-module_param(aggresive_standby_threshold_freq, uint, 0644);
-module_param(aggresive_max_non_oc_freq, uint, 0644);
-module_param(aggresive_oc_freq_boost_ms, uint, 0644);
-module_param(aggresive_input_boost_us, uint, 0644);
-module_param(aggresive_input_boost_freq, uint, 0644);
+module_param(aggressive_mode_enabled, uint, 0644);
+module_param(aggressive_power_optimal_freq, uint, 0644);
+module_param(aggressive_up_threshold, uint, 0644);
+module_param(aggressive_down_differential, uint, 0644);
+module_param(aggressive_sampling_down_factor, uint, 0644);
+module_param(aggressive_high_freq_sampling_up_factor, uint, 0644);
+module_param(aggressive_io_is_busy, uint, 0644);
+module_param(aggressive_standby_delay_factor, uint, 0644);
+module_param(aggressive_standby_threshold_freq, uint, 0644);
+module_param(aggressive_max_non_oc_freq, uint, 0644);
+module_param(aggressive_oc_freq_boost_ms, uint, 0644);
+module_param(aggressive_input_boost_us, uint, 0644);
+module_param(aggressive_input_boost_freq, uint, 0644);
 
 
-static int aggresive_mode_is_enabled(const char *val, struct kernel_param *kp)
+static int aggressive_mode_is_enabled(const char *val, struct kernel_param *kp)
 {
-	aggresive_mode = (mali_last_utilization > mali_high_utilization_threshold || boost_working);
+	aggressive_mode = (aggressive_mode_enabled && (boost_working ||
+				 (mali_last_utilization > mali_high_utilization_threshold)));
 
 	return param_get_int(val, kp);
 }
-module_param_call(aggresive_mode, aggresive_mode_is_enabled, aggresive_mode_is_enabled, &aggresive_mode, 0644);
+module_param_call(aggressive_mode, aggressive_mode_is_enabled, aggressive_mode_is_enabled, &aggressive_mode, 0644);
 
 #define current_max_non_oc_freq \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_max_non_oc_freq : dbs_tuners_ins.max_non_oc_freq) 
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_max_non_oc_freq : dbs_tuners_ins.max_non_oc_freq) 
 
 #define current_oc_freq_boost_ms \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_oc_freq_boost_ms : dbs_tuners_ins.oc_freq_boost_ms) 
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_oc_freq_boost_ms : dbs_tuners_ins.oc_freq_boost_ms) 
 
 #define current_input_boost_us \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_input_boost_us : dbs_tuners_ins.input_boost_us) 
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_input_boost_us : dbs_tuners_ins.input_boost_us) 
 
 #define current_input_boost_freq \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_input_boost_freq : dbs_tuners_ins.input_boost_freq) 
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_input_boost_freq : dbs_tuners_ins.input_boost_freq) 
 
 #define current_power_optimal_freq \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_power_optimal_freq : dbs_tuners_ins.power_optimal_freq)
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_power_optimal_freq : dbs_tuners_ins.power_optimal_freq)
 
 #define current_up_threshold \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_up_threshold : dbs_tuners_ins.up_threshold)
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_up_threshold : dbs_tuners_ins.up_threshold)
 
 #define current_down_differential \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_down_differential : dbs_tuners_ins.down_differential)
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_down_differential : dbs_tuners_ins.down_differential)
 
 #define current_sampling_down_factor \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_sampling_down_factor : dbs_tuners_ins.sampling_down_factor)
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_sampling_down_factor : dbs_tuners_ins.sampling_down_factor)
 
 #define current_high_freq_sampling_up_factor \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_high_freq_sampling_up_factor : dbs_tuners_ins.high_freq_sampling_up_factor)
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_high_freq_sampling_up_factor : dbs_tuners_ins.high_freq_sampling_up_factor)
 
 #define current_io_is_busy \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_io_is_busy : dbs_tuners_ins.io_is_busy)
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_io_is_busy : dbs_tuners_ins.io_is_busy)
 
 #define current_standby_delay_factor \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_standby_delay_factor : dbs_tuners_ins.standby_delay_factor)
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_standby_delay_factor : dbs_tuners_ins.standby_delay_factor)
 
 #define current_standby_threshold_freq \
-	((mali_last_utilization > mali_high_utilization_threshold || boost_working) ? \
-	aggresive_standby_threshold_freq : dbs_tuners_ins.standby_threshold_freq) 
+	(aggressive_mode_enabled && (boost_working || (mali_last_utilization > mali_high_utilization_threshold)) ? \
+	aggressive_standby_threshold_freq : dbs_tuners_ins.standby_threshold_freq) 
 
 enum ignore_nice_enum {
 	IGNORE_NICE_SUSPEND,
