@@ -50,7 +50,7 @@ int init_config(void);
 	MODULE_PARM_DESC(cfgMpcYBanks_##mpc, "Nb of Y-Ram banks used on " #mpc); \
 									\
 	static int          cfgSchedulerTypeHybrid_##mpc = 1;		\
-	module_param(cfgSchedulerTypeHybrid_##mpc, bool, S_IRUGO);	\
+	module_param(cfgSchedulerTypeHybrid_##mpc, int, S_IRUGO);	\
 	MODULE_PARM_DESC(cfgSchedulerTypeHybrid_##mpc, "Scheduler used on " #mpc " (Hybrid or Synchronous)"); \
 									\
 	static unsigned int cfgMpcSDRAMCodeSize_##mpc = SDRAM_CODE_SIZE_##mpc; \
