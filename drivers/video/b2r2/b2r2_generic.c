@@ -255,11 +255,11 @@ static s32 validate_buf(struct b2r2_control *cont,
 		return -EINVAL;
 	}
 
-	if (image->pitch == 0) {
+	if (image->pitch == 0)
 		/* autodetect pitch based on format and width */
 		pitch = b2r2_calc_pitch_from_width(cont->dev,
 			image->width, image->fmt);
-	} else
+	else
 		pitch = image->pitch;
 
 	expect_buf_size = pitch * image->height;
@@ -620,13 +620,12 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 		return;
 	}
 
-	if (src_img->pitch == 0) {
+	if (src_img->pitch == 0)
 		/* Determine pitch based on format and width of the image. */
 		src_pitch = b2r2_calc_pitch_from_width(cont->dev,
-			src_img->width, src_img->fmt);
-	} else {
+				src_img->width, src_img->fmt);
+	else
 		src_pitch = src_img->pitch;
-	}
 
 	b2r2_log_info(cont->dev, "%s transform=%#010x\n",
 			__func__, req->user_req.transform);
@@ -653,24 +652,24 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 	}
 
 	/* Configure horizontal rescale */
-	if (h_scf != (1 << 10)) {
+	if (h_scf != (1 << 10))
 		b2r2_log_info(cont->dev, "%s: Scaling horizontally by 0x%.8x"
 			"\ns(%d, %d)->d(%d, %d)\n", __func__,
 			h_scf, src_rect->width, src_rect->height,
 			dst_rect->width, dst_rect->height);
-	}
+
 	fctl |= B2R2_FCTL_HF2D_MODE_ENABLE_RESIZER;
 	rsf &= ~(0xffff << B2R2_RSF_HSRC_INC_SHIFT);
 	rsf |= h_scf << B2R2_RSF_HSRC_INC_SHIFT;
 	rzi |= B2R2_RZI_DEFAULT_HNB_REPEAT;
 
 	/* Configure vertical rescale */
-	if (v_scf != (1 << 10)) {
+	if (v_scf != (1 << 10))
 		b2r2_log_info(cont->dev, "%s: Scaling vertically by 0x%.8x"
 			"\ns(%d, %d)->d(%d, %d)\n", __func__,
 			v_scf, src_rect->width, src_rect->height,
 			dst_rect->width, dst_rect->height);
-	}
+
 	fctl |= B2R2_FCTL_VF2D_MODE_ENABLE_RESIZER;
 	rsf &= ~(0xffff << B2R2_RSF_VSRC_INC_SHIFT);
 	rsf |= v_scf << B2R2_RSF_VSRC_INC_SHIFT;
@@ -909,7 +908,7 @@ static void setup_input_stage(const struct b2r2_blt_request *req,
 
 		b2r2_get_cb_cr_addr(req->src_resolved.physical_address,
 			src_pitch, src_img->height, src_img->fmt,
-			&cr_addr, &cb_addr);
+			&cb_addr, &cr_addr);
 
 		node->node.GROUP3.B2R2_SBA = cr_addr;
 		node->node.GROUP3.B2R2_STY =
@@ -1072,13 +1071,12 @@ static void setup_dst_read_stage(const struct b2r2_blt_request *req,
 	bool fullrange = (req->user_req.flags &
 		B2R2_BLT_FLAG_FULL_RANGE_YUV) != 0;
 
-	if (dst_img->pitch == 0) {
+	if (dst_img->pitch == 0)
 		/* Determine pitch based on format and width of the image. */
 		dst_pitch = b2r2_calc_pitch_from_width(cont->dev,
-			dst_img->width, dst_img->fmt);
-	} else {
+				dst_img->width, dst_img->fmt);
+	else
 		dst_pitch = dst_img->pitch;
-	}
 
 	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
@@ -1458,10 +1456,10 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 
 	b2r2_log_info(cont->dev, "%s ENTRY\n", __func__);
 
-	if (dst_img->pitch == 0) {
+	if (dst_img->pitch == 0)
 		dst_pitch = b2r2_calc_pitch_from_width(cont->dev,
 			dst_img->width, dst_img->fmt);
-	} else
+	else
 		dst_pitch = dst_img->pitch;
 
 	if ((req->user_req.flags & B2R2_BLT_FLAG_DITHER) != 0)
@@ -1492,7 +1490,7 @@ static void setup_writeback_stage(const struct b2r2_blt_request *req,
 
 		b2r2_get_cb_cr_addr(req->dst_resolved.physical_address,
 			dst_pitch, dst_img->height, dst_fmt,
-			&cr_addr, &cb_addr);
+			&cb_addr, &cr_addr);
 
 		switch (dst_fmt) {
 		case B2R2_BLT_FMT_YUV420_PACKED_PLANAR:
@@ -2451,17 +2449,15 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 		 * suitable scanning order while writing
 		 * to the temporary buffer.
 		 */
-		if (req->user_req.transform & B2R2_BLT_TRANSFORM_FLIP_H) {
+		if (req->user_req.transform & B2R2_BLT_TRANSFORM_FLIP_H)
 			node->node.GROUP1.B2R2_TXY |=
 				((dst_rect_area->height - 1) & 0xffff) <<
 				B2R2_XY_X_SHIFT;
-		}
 
-		if (req->user_req.transform & B2R2_BLT_TRANSFORM_FLIP_V) {
+		if (req->user_req.transform & B2R2_BLT_TRANSFORM_FLIP_V)
 			node->node.GROUP1.B2R2_TXY |=
 				((dst_rect_area->width - 1) & 0xffff) <<
 				B2R2_XY_Y_SHIFT;
-		}
 
 		node->node.GROUP1.B2R2_TSZ =
 			((dst_rect_area->height & 0xfff) <<
@@ -2469,17 +2465,15 @@ void b2r2_generic_set_areas(const struct b2r2_blt_request *req,
 			((dst_rect_area->width & 0xfff) <<
 						B2R2_SZ_HEIGHT_SHIFT);
 	} else {
-		if (req->user_req.transform & B2R2_BLT_TRANSFORM_FLIP_H) {
+		if (req->user_req.transform & B2R2_BLT_TRANSFORM_FLIP_H)
 			node->node.GROUP1.B2R2_TXY |=
 				((dst_rect_area->width - 1) & 0xffff) <<
 				B2R2_XY_X_SHIFT;
-		}
 
-		if (req->user_req.transform & B2R2_BLT_TRANSFORM_FLIP_V) {
+		if (req->user_req.transform & B2R2_BLT_TRANSFORM_FLIP_V)
 			node->node.GROUP1.B2R2_TXY |=
 				((dst_rect_area->height - 1) & 0xffff) <<
 				B2R2_XY_Y_SHIFT;
-		}
 
 		node->node.GROUP1.B2R2_TSZ =
 			((dst_rect_area->width & 0xfff) <<

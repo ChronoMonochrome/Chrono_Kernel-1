@@ -273,6 +273,20 @@ static int get_next_job_id(void)
 }
 
 /**
+ * Check for macroblock formats
+ */
+static bool is_mb_fmt(enum b2r2_blt_fmt fmt)
+{
+	switch (fmt) {
+	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
+	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+/**
  * Limit the number of cores used in some "easy" and impossible cases
  */
 static int limit_blits(int n_split, struct b2r2_blt_req *user_req)
@@ -285,6 +299,14 @@ static int limit_blits(int n_split, struct b2r2_blt_req *user_req)
 
 	if (user_req->src_rect.width < n_split &&
 			user_req->src_rect.height < n_split)
+		return 1;
+
+	/*
+	 * Handle macroblock formats with one
+	 * core for now since there seems to be some bug
+	 * related to macroblock access patterns
+	 */
+	if (is_mb_fmt(user_req->src_img.fmt))
 		return 1;
 
 	return n_split;
@@ -315,19 +337,6 @@ static bool is_scaling_fmt(enum b2r2_blt_fmt fmt)
 	}
 }
 
-/**
- * Check for macroblock formats
- */
-static bool is_mb_fmt(enum b2r2_blt_fmt fmt)
-{
-	switch (fmt) {
-	case B2R2_BLT_FMT_YUV420_PACKED_SEMIPLANAR_MB_STE:
-	case B2R2_BLT_FMT_YUV422_PACKED_SEMIPLANAR_MB_STE:
-		return true;
-	default:
-		return false;
-	}
-}
 
 /**
  * Split a request rectangle on available cores
@@ -368,13 +377,7 @@ static int b2r2_blt_split_request(struct b2r2_blt_data *blt_data,
 		return -ENOSYS;
 	} else if (*n_split == 1 ||
 			(srw < *n_split && srh < *n_split) ||
-			(drw < *n_split && drh < *n_split) ||
-			is_mb_fmt(user_req->src_img.fmt)) {
-		/*
-		 * Handle macroblock formats with one
-		 * core for now since there seems to be some bug
-		 * related to macroblock access patterns
-		 */
+			(drw < *n_split && drh < *n_split)) {
 		memcpy(&split_requests[0]->user_req,
 				user_req,
 				sizeof(*user_req));
@@ -1106,6 +1109,8 @@ int b2r2_blt_request(int handle,
 	if (!atomic_inc_not_zero(&blt_refcount.refcount))
 		return -ENOSYS;
 
+	b2r2_core_on_reset_completion_wait();
+
 	/* Exclude some currently unsupported cases */
 	if ((user_req->flags & B2R2_BLT_FLAG_REPORT_WHEN_DONE) ||
 			(user_req->flags & B2R2_BLT_FLAG_REPORT_PERFORMANCE) ||
@@ -1562,8 +1567,8 @@ static int b2r2_blt_probe(struct platform_device *pdev)
 
 	ret = misc_register(&b2r2_blt->miscdev);
 	if (ret != 0) {
-		printk(KERN_WARNING "%s: registering misc device fails\n",
-				__func__);
+//		printk(KERN_WARNING "%s: registering misc device fails\n",
+;
 		goto error_exit;
 	}
 
@@ -1643,7 +1648,7 @@ static struct platform_driver platform_b2r2_blt_driver = {
  */
 static int __init b2r2_blt_init(void)
 {
-	printk(KERN_INFO "%s\n", __func__);
+;
 	return platform_driver_probe(&platform_b2r2_blt_driver, b2r2_blt_probe);
 }
 module_init(b2r2_blt_init);
@@ -1653,7 +1658,7 @@ module_init(b2r2_blt_init);
  */
 static void __exit b2r2_blt_exit(void)
 {
-	printk(KERN_INFO "%s\n", __func__);
+;
 	platform_driver_unregister(&platform_b2r2_blt_driver);
 	return;
 }
