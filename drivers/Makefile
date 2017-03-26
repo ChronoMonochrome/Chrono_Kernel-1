@@ -143,6 +143,8 @@ obj-$(CONFIG_AUTHENTEC_VPNCLIENT_INTERCEPTOR) += interceptor/
 
 obj-$(CONFIG_BATTERY_SAMSUNG)	+= battery/
 
+#exfat
+obj-y   += exfat/
 
 
 obj-$(CONFIG_NFC)		+= nfc/
