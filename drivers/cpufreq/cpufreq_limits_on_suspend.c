@@ -22,12 +22,17 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 
+static bool module_is_loaded = false;
+
 static bool cpu_freq_limits = false;
 static unsigned int screenoff_min_cpufreq = 100000;
 static unsigned int screenoff_max_cpufreq = 400000;
 
-static unsigned int screenon_min_cpufreq = 0;
+static unsigned int screenon_min_cpufreq = 0; // screenon_min_cpufreq and screenon_max_cpufreq uses system values
 static unsigned int screenon_max_cpufreq = 0;
+
+static unsigned int restore_screenon_min_cpufreq = 0;// these values will be gotten from system at load
+static unsigned int restore_screenon_max_cpufreq = 0; 
 
 bool cpu_freq_limits_enabled(void) {
 	return cpu_freq_limits;
@@ -57,7 +62,12 @@ void cpufreq_limits_update(void) {
 		
 		policy->min = new_min;
 		policy->max = new_max;
-		pr_err("[cpufreq_limits] new cpufreq limits are %d and %d kHz\n", policy->min, policy->max);
+		pr_err("[cpufreq_limits] new cpufreqs are %d - %d kHz\n", policy->min, policy->max);
+		
+		if (restore_screenon_max_cpufreq < screenon_max_cpufreq)
+			restore_screenon_max_cpufreq = screenon_max_cpufreq;
+		if (restore_screenon_min_cpufreq < screenon_min_cpufreq)
+			restore_screenon_min_cpufreq = screenon_min_cpufreq;
 	}
 }  
 
@@ -70,17 +80,44 @@ static int cpufreq_callback(struct notifier_block *nfb,
 	
 	if (cpu_freq_limits) {
 	  
-		struct cpufreq_policy *policy = cpufreq_cpu_get(0);
+		struct cpufreq_policy *policy = data;
 		
 #ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
 		bool is_suspend = bt404_is_suspend();
 #endif
+		
+		/* FIXME: would be better move that code to init function ?   */
+		if (!module_is_loaded) {
+		
+			if (policy)
+				policy->min = 200000;
+	
+			if (!screenoff_min_cpufreq)
+				  screenoff_min_cpufreq = policy->min;
+			if (!screenoff_max_cpufreq)
+				  screenoff_max_cpufreq = policy->max;
+			module_is_loaded = true;
+		}
+		/*------------------------------------------------------------*/
 	  
-		if (!is_suspend && (screenon_max_cpufreq != policy->max )) 
+		if (!is_suspend && (screenon_max_cpufreq != policy->max)) 
 			screenon_max_cpufreq = policy->max;
 	
-		if (!is_suspend && (screenon_min_cpufreq != policy->min )) 
+		if (!is_suspend && (screenon_min_cpufreq != policy->min)) 
 			screenon_min_cpufreq = policy->min;
+
+		if (!is_suspend && (policy->min == screenoff_min_cpufreq)
+		  && (screenon_min_cpufreq != screenoff_min_cpufreq)) { 
+			  policy->min = restore_screenon_min_cpufreq;
+			  pr_err("[cpufreq_limits] new cpufreqs are %d - %d kHz\n", policy->min, policy->max);
+		}
+
+		if (!is_suspend && (policy->max == screenoff_max_cpufreq)
+		   && (screenon_max_cpufreq != screenoff_max_cpufreq)) { 
+			  policy->max = restore_screenon_max_cpufreq;
+			  pr_err("[cpufreq_limits] new cpufreqs are %d - %d kHz\n", policy->min, policy->max);
+		}
+			
 	}
 
 	return 0;
@@ -167,12 +204,7 @@ static struct kobject *cpufreq_kobject;
 static int cpufreq_limits_driver_init(void)
 {
 	int ret;
-	
-	struct cpufreq_policy *data = cpufreq_cpu_get(0);
-	if (!screenoff_min_cpufreq)
-		screenoff_min_cpufreq = data->min;
-	if (!screenoff_max_cpufreq)
-		screenoff_max_cpufreq = data->max;
+
 	pr_err("[cpufreq_limits] initialized module with min %d and max %d MHz limits",
 					 screenoff_min_cpufreq / 1000,  screenoff_max_cpufreq / 1000
 	);
