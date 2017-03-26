@@ -101,6 +101,7 @@ obj-$(CONFIG_BATTERY_SAMSUNG)	+= board-kyle-battery.o
 endif
 obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
 obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+obj-$(CONFIG_LOCAL_TIMERS)	+= localtimer.o
 obj-$(CONFIG_U5500_MODEM_IRQ)	+= modem-irq-db5500.o
 obj-$(CONFIG_TEE_UX500) 	+= tee_ux500.o product.o
 obj-$(CONFIG_TEE_SVP)		+= tee_service_svp.o
