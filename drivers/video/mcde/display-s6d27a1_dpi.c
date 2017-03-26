@@ -31,6 +31,7 @@
 #include <linux/lcd.h>
 #include <linux/backlight.h>
 #include <linux/mutex.h>
+#include <linux/kthread.h>
 #include <linux/workqueue.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
@@ -1134,11 +1135,10 @@ static int __devinit s6d27a1_dpi_mcde_probe(
 	register_early_suspend(&lcd->earlysuspend);
 #endif
 	//when screen is on, APE_OPP 25 sometimes messes it up
-	//TODO change these to add/update/remove
 	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add APE failed\n");
-	}
+				"codina_lcd_dpi", 50)) {
+			pr_info("pcrm_qos_add APE failed\n");
+		}
 	
 	dev_dbg(&ddev->dev, "DPI display probed\n");
 
@@ -1230,6 +1230,21 @@ static int s6d27a1_dpi_mcde_suspend(
 	return ret;
 }
 
+static void requirements_add_thread(struct work_struct *requirements_add_work)
+{
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add APE failed\n");
+	}
+}
+static DECLARE_WORK(requirements_add_work, requirements_add_thread);
+
+static void requirements_remove_thread(struct work_struct *requirements_remove_work)
+{
+	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "codina_lcd_dpi");
+}
+static DECLARE_WORK(requirements_remove_work, requirements_remove_thread);
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void s6d27a1_dpi_mcde_early_suspend(
 		struct early_suspend *earlysuspend)
@@ -1238,8 +1253,9 @@ static void s6d27a1_dpi_mcde_early_suspend(
 						struct s6d27a1_dpi,
 						earlysuspend);
 	
-	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
-				"codina_lcd_dpi");
+	#ifdef CONFIG_DB8500_LIVEOPP
+	schedule_work(&requirements_remove_work);
+	#endif
 	
 	pm_message_t dummy;
 
@@ -1254,10 +1270,9 @@ static void s6d27a1_dpi_mcde_late_resume(
 						struct s6d27a1_dpi,
 						earlysuspend);
 	
-	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add APE failed\n");
-	}
+	#ifdef CONFIG_DB8500_LIVEOPP
+	schedule_work(&requirements_add_work);
+	#endif
 
 	s6d27a1_dpi_mcde_resume(lcd->mdd);
 

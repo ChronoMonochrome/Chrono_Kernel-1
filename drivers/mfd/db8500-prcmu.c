@@ -1167,62 +1167,46 @@ static unsigned int last_arm_idx = 0;
 static int liveopp_start = 0;
 #endif
 
+// below this freq will be used ape_25_opp
+#define APE_25_OPP_DEFAULT_CPUFREQ 275000
+static bool liveopp_use_ape_25_opp = false;
+static unsigned int ape_25_opp_max_cpufreq = APE_25_OPP_DEFAULT_CPUFREQ;
+
+bool liveopp_use_ape_25_opp_state(void) {
+	return liveopp_use_ape_25_opp;
+}
+
 static struct liveopp_arm_table liveopp_arm[] = {
-#ifndef LIVEOPP_UVED_TABLE
 //	| CLK            | PLL       | VDD | VBB | DDR | APE |
-	{  30000,   30720, 0x00050104, 0x16, 0xDB,  25,  25},
-	{  50000,   46080, 0x00050106, 0x16, 0xDB,  25,  25},
-	{ 100000,   99840, 0x0005010D, 0x17, 0xDB,  25,  25},
-	{ 125000,  122880, 0x00050110, 0x17, 0xDB,  25,  25},	
-	{ 150000,  153600, 0x00050114, 0x17, 0xDB,  25,  25},
-	{ 175000,  176640, 0x00050117, 0x17, 0xDB,  25,  25},
-	{ 184000,  184320, 0x00050118, 0x18, 0xDB,  25,  25},
-	{ 200000,  199680, 0x0005011A, 0x18, 0xDB,  25,  25},
-	{ 250000,  253440, 0x00050121, 0x18, 0xDB,  25,  25},
-	{ 275000,  276480, 0x00050124, 0x18, 0xDB,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x19, 0xDB,  25,  25},
+	{  30000,   30720, 0x00050104, 0x16, 0xDB,  25,  50},
+	{  50000,   46080, 0x00050106, 0x16, 0xDB,  25,  50},
+	{  85000,   84480, 0x0005010B, 0x17, 0xDB,  25,  50},
+	{ 100000,   99840, 0x0005010D, 0x17, 0xDB,  25,  50},
+	{ 125000,  122880, 0x00050110, 0x17, 0xDB,  25,  50},
+	{ 150000,  153600, 0x00050114, 0x17, 0xDB,  25,  50},
+	{ 175000,  176640, 0x00050117, 0x17, 0xDB,  25,  50},
+	{ 184000,  184320, 0x00050118, 0x18, 0xDB,  25,  50},
+	{ 200000,  199680, 0x0005011A, 0x18, 0xDB,  25,  50},
+	{ 250000,  253440, 0x00050121, 0x18, 0xDB,  25,  50},
+	{ 275000,  276480, 0x00050124, 0x18, 0xDB,  25,  50},
+	{ 300000,  299520, 0x00050127, 0x19, 0xDB,  25,  50},
+	{ 350000,  353280, 0x0005012E, 0x1a, 0xDB,  25,  50},
 	{ 400000,  399360, 0x00050134, 0x1a, 0xDB,  25,  50},
+	{ 450000,  453120, 0x0005013B, 0x20, 0xDB,  25,  50},
 	{ 500000,  499200, 0x00050141, 0x20, 0xDB,  25,  50},
 	{ 530000,  529920, 0x00050145, 0x20, 0xDB,  25,  50},
 	{ 550000,  552960, 0x00050148, 0x21, 0xDB,  25,  50},
 	{ 575000,  576000, 0x0005014b, 0x22, 0xDB,  50,  50},
 	{ 600000,  599040, 0x0005014E, 0x23, 0xDB,  50,  50},
-	{ 700000,  698880, 0x0005015B, 0x24, 0xDB,  50,  50},
-	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 100,  50},
-	{ 900000,  898560, 0x00050175, 0x30, 0xDB, 100,  50},
+	{ 700000,  698880, 0x0005015B, 0x24, 0xDB,  50, 100},
+	{ 800000,  798720, 0x00050168, 0x24, 0xDB, 100, 100},
+	{ 900000,  898560, 0x00050175, 0x30, 0xDB, 100, 100},
 	{1000000,  998400, 0x00050182, 0x31, 0x8F, 100, 100},
 	{1100000, 1098240, 0x0005018F, 0x36, 0x8F, 100, 100},
 	{1150000, 1152000, 0x00050196, 0x36, 0x8F, 100, 100},
 	{1200000, 1198080, 0x0005019C, 0x37, 0x8F, 100, 100},
 	{1230000, 1228800, 0x000501A0, 0x38, 0x8F, 100, 100},
 	{1245000, 1244160, 0x000501A2, 0x38, 0x8F, 100, 100},
-#else
-	{  30000,   30720, 0x00050104, 0x11, 0xEB,  25,  25},
-	{  50000,   46080, 0x00050106, 0x11, 0xEB,  25,  25},
-	{ 100000,   99840, 0x0005010D, 0x11, 0xEB,  25,  25},
-	{ 125000,  122880, 0x00050110, 0x11, 0xEB,  25,  25},	
-	{ 150000,  153600, 0x00050114, 0x11, 0xEB,  25,  25},
-	{ 175000,  176640, 0x00050117, 0x11, 0xEB,  25,  25},
-	{ 200000,  199680, 0x0005011A, 0x11, 0xEB,  25,  25},
-	{ 250000,  253440, 0x00050121, 0x13, 0xEB,  25,  25},
-	{ 275000,  276480, 0x00050124, 0x13, 0xEB,  25,  25},
-	{ 300000,  299520, 0x00050127, 0x13, 0xEB,  25,  25},
-	{ 400000,  399360, 0x00050134, 0x14, 0xEB,  25,  50},
-	{ 500000,  499200, 0x00050141, 0x16, 0xEB,  25,  50},
-	{ 530000,  529920, 0x00050145, 0x16, 0xEB,  25,  50},
-	{ 550000,  552960, 0x00050148, 0x16, 0xEB,  25,  50},
-	{ 575000,  576000, 0x0005014b, 0x18, 0xEB,  50,  50},
-	{ 600000,  599040, 0x0005014E, 0x19, 0xEB,  50,  50},
-	{ 700000,  698880, 0x0005015B, 0x1D, 0xEB,  50,  50},
-	{ 800000,  798720, 0x00050168, 0x20, 0xEB, 100,  50},
-	{ 900000,  898560, 0x00050175, 0x29, 0xEB, 100,  50},
-	{1000000,  998400, 0x00050182, 0x31, 0xCD, 100, 100},
-	{1100000, 1098240, 0x0005018F, 0x36, 0xCD, 100, 100},
-	{1150000, 1152000, 0x00050196, 0x36, 0xCD, 100, 100},
-	{1200000, 1198080, 0x0005019C, 0x37, 0xCD, 100, 100},
-	{1230000, 1228800, 0x000501A0, 0x38, 0xCD, 100, 100},
-	{1245000, 1244160, 0x000501A2, 0x38, 0xCD, 100, 100},
-#endif
 };
 
 static const char *armopp_name[] = 
@@ -1659,6 +1643,9 @@ ARM_STEP(arm_step22, 22);
 ARM_STEP(arm_step23, 23);
 ARM_STEP(arm_step24, 24);
 ARM_STEP(arm_step25, 25);
+ARM_STEP(arm_step26, 26);
+ARM_STEP(arm_step27, 27);
+ARM_STEP(arm_step28, 28);
 
 #if CONFIG_LIVEOPP_DEBUG > 1
 static ssize_t liveopp_start_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
@@ -1717,6 +1704,68 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 }
 ATTR_RW(pllddr);
 
+static void update_ape_opp(bool state) {
+	int i;
+	
+	if (liveopp_arm) {
+  
+		for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
+		
+			if ((!state) &&	liveopp_arm[i].ape_opp == 25) {
+				liveopp_arm[i].ape_opp = 50;
+				continue;
+			}
+		
+			if (state && liveopp_arm[i].freq_show <= ape_25_opp_max_cpufreq) {
+				liveopp_arm[i].ape_opp = 25;
+			}
+		}
+	}
+}
+
+static ssize_t use_ape_25_opp_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "status: %s\n"
+		     "max CPUfreq with APE_25_OPP: %d\n",
+		     liveopp_use_ape_25_opp ? "on" : "off",
+		     ape_25_opp_max_cpufreq);
+	
+	return strlen(buf);
+}
+
+static ssize_t use_ape_25_opp_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	bool old_state = liveopp_use_ape_25_opp,
+	     old_max_cpufreq = ape_25_opp_max_cpufreq;
+	if (!strncmp(buf, "on", 2)) {
+		liveopp_use_ape_25_opp = true;
+	}
+	
+	if (!strncmp(buf, "off", 3)) {
+		liveopp_use_ape_25_opp = false;
+	}
+	
+	if (!strncmp(&buf[0], "max_freq=", 9)) {
+		if (!sscanf(&buf[9], "%d", &ape_25_opp_max_cpufreq))
+			pr_err("[LiveOPP] invalid input\n");
+	}
+	
+	if ((old_state == liveopp_use_ape_25_opp) &&
+	    (old_max_cpufreq == ape_25_opp_max_cpufreq)
+	)
+		return count;
+
+	if (liveopp_use_ape_25_opp)
+		pr_err("LiveOPP: allow to use ape 25 opp\n");
+	else
+		pr_err("LiveOPP: disallow to use ape 25 opp\n");
+ 
+	update_ape_opp(liveopp_use_ape_25_opp);
+	
+	return count;
+}
+ATTR_RW(use_ape_25_opp);
+
 static struct attribute *liveopp_attrs[] = {
 #if CONFIG_LIVEOPP_DEBUG > 1
 	&liveopp_start_interface.attr, 
@@ -1754,7 +1803,11 @@ static struct attribute *liveopp_attrs[] = {
 	&arm_step23_interface.attr, 
 	&arm_step24_interface.attr, 
 	&arm_step25_interface.attr,
+	&arm_step26_interface.attr, 
+	&arm_step27_interface.attr, 
+	&arm_step28_interface.attr,
 	&pllddr_interface.attr, 
+	&use_ape_25_opp_interface.attr,
 	NULL,
 };
 
@@ -4961,7 +5014,7 @@ static void  db8500_prcmu_update_freq(void *pdata)
 					avs_varm_max,
 					avs_varm_100,
 					avs_varm_50);
-
+	
 	for (i = 0; i < ARRAY_SIZE(liveopp_arm); i++) {
 		/* Update frequencies */
 		freq_table[i].frequency = liveopp_arm[i].freq_show;

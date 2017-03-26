@@ -1062,11 +1062,10 @@ static int __devinit ws2401_dpi_mcde_probe(
 	register_early_suspend(&lcd->earlysuspend);
 #endif
 	//when screen is on, APE_OPP 25 sometimes messes it up
-	//TODO change these to add/update/remove
 	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-			"codina_lcd_dpi", 50)) {
-		pr_info("pcrm_qos_add APE failed\n");
-	}
+				"codina_lcd_dpi", 50)) {
+			pr_info("pcrm_qos_add APE failed\n");
+		}
 
 	dev_dbg(&ddev->dev, "DPI display probed\n");
 
@@ -1169,6 +1168,7 @@ static int ws2401_dpi_mcde_suspend(
 	return ret;
 }
 
+#ifdef CONFIG_DB8500_LIVEOPP
 static void requirements_add_thread(struct work_struct *requirements_add_work)
 {
 	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
@@ -1183,6 +1183,7 @@ static void requirements_remove_thread(struct work_struct *requirements_remove_w
 	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, "codina_lcd_dpi");
 }
 static DECLARE_WORK(requirements_remove_work, requirements_remove_thread);
+#endif
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void ws2401_dpi_mcde_early_suspend(
@@ -1210,7 +1211,9 @@ static void ws2401_dpi_mcde_early_suspend(
 	}
 	#endif
 	
+	#ifdef CONFIG_DB8500_LIVEOPP
 	schedule_work(&requirements_remove_work);
+	#endif
 
 	ws2401_dpi_mcde_suspend(lcd->mdd, dummy);
 
@@ -1228,7 +1231,9 @@ static void ws2401_dpi_mcde_late_resume(
 		enable_irq(GPIO_TO_IRQ(lcd->esd_port));
 	#endif
 		
+	#ifdef CONFIG_DB8500_LIVEOPP
 	schedule_work(&requirements_add_work);
+	#endif
 
 	ws2401_dpi_mcde_resume(lcd->mdd);
 
