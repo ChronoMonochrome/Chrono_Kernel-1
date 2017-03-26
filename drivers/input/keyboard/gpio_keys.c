@@ -788,10 +788,120 @@ static ssize_t gpio_keys_ponkey_emulator_store(struct kobject *kobj, struct kobj
 	return count;
 }
 
-static struct kobj_attribute gpio_keys_ponkey_emulator_interface = __ATTR(ponkey_emu, 0644, gpio_keys_ponkey_emulator_show, gpio_keys_ponkey_emulator_store);
+static struct kobj_attribute gpio_keys_ponkey_emulator_interface =
+	 __ATTR(ponkey_emu, 0644, gpio_keys_ponkey_emulator_show, gpio_keys_ponkey_emulator_store);
+
+struct input_dev *p_gpio_keys;
+struct gpio_keys_platform_data *p_pdata;
+struct gpio_keys_drvdata *p_ddata;
+
+static bool emu_working = false;
+static unsigned int emu_delay = 100;
+static unsigned int emu_keycode;
+module_param_named(emu_delay, emu_delay, uint, 0644);
+
+inline int gpio_keys_emulator(unsigned long keycode, bool press)
+{
+	struct gpio_button_data *bdata;
+	struct gpio_keys_button *button;
+
+	int i, idx = -1;
+
+	for (i = 0; i < p_pdata->nbuttons; i++) {
+		button = &p_pdata->buttons[i];
+
+		if (button->code == keycode) {
+			idx = i;
+			break;
+		}
+	}
+
+	if (idx < 0)
+		return -1;
+
+
+        bdata = &p_ddata->data[idx];
+
+        if (press) {
+                gpio_keys_setstate(keycode, true);
+                bdata->key_state = true;
+                input_report_key(p_gpio_keys, keycode, true);
+                pr_err("[gpio-keys] Emulate %d Key PRESS\n", keycode);
+                input_sync(p_gpio_keys);
+        } else if (!press) {
+                gpio_keys_setstate(keycode, false);
+                bdata->key_state = false;
+                input_report_key(p_gpio_keys, keycode, false);
+                pr_err("[gpio-keys] Emulate %d Key RELEASE\n", keycode);
+                input_sync(p_gpio_keys);
+        }
+
+	return 0;
+}
+EXPORT_SYMBOL(gpio_keys_emulator);
+
+static void gpio_keys_emulator_thread(struct work_struct *abb_ponkey_emulator_work)
+{
+        pr_err("[gpio-keys] Emulator thread called, timer = %d\n", 100);
+
+        emu_working = true;
+
+        if (gpio_keys_emulator(emu_keycode, 1) < 0) {
+		pr_err("[gpio-keys] can't find button with keycode %d", emu_keycode);
+	} else {
+	        mdelay(100);
+
+	        gpio_keys_emulator(emu_keycode, 0);
+	}
+
+        emu_working = false;
+}
+static DECLARE_WORK(gpio_keys_emulator_work, gpio_keys_emulator_thread);
+
+static ssize_t gpio_keys_emulator_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf,   "emu_keycode=%d\n", emu_keycode);
+}
+
+static ssize_t gpio_keys_emulator_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	int ret, len = strlen("emu_keycode=");
+	unsigned int keycode;
+
+	if (!strncmp(&buf[0], "emu_keycode=", len)) {
+                ret = sscanf(&buf[len], "%d", &keycode);
+                if (ret) {
+                        emu_keycode = keycode;
+                } else {
+                        pr_err("%s: unknown cmds\n", __func__);
+                }
+		
+		return count;
+        }
+
+	if (strstr(buf, "press") != NULL) {
+		if (!emu_working && emu_keycode)
+			schedule_work(&gpio_keys_emulator_work);
+		else if (emu_working)
+			pr_err("%s: gpio_keys_emulator_work already running\n");
+		else
+			pr_err("%s: emu_keycode is not set\n");
+
+		return count;
+	} else {
+                pr_err("%s: unknown cmds\n", __func__);
+        }
+
+
+	return count;
+}
+
+static struct kobj_attribute gpio_keys_emulator_interface =
+         __ATTR(emu, 0644, gpio_keys_emulator_show, gpio_keys_emulator_store);
 
 static struct attribute *gpio_keys_attrs_kobjects[] = {
 	&gpio_keys_ponkey_emulator_interface.attr, 
+	&gpio_keys_emulator_interface.attr,
 	NULL,
 };
 
@@ -909,6 +1019,10 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	if (ret) {
 		kobject_put(gpio_keys_kobject);
 	}
+
+	p_gpio_keys = input;
+	p_pdata = pdata;
+        p_ddata = ddata;
 
 	early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
 	early_suspend.suspend = gpio_keys_early_suspend;
