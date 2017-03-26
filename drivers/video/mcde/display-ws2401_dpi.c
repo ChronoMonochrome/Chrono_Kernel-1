@@ -1193,6 +1193,9 @@ static void ws2401_dpi_mcde_early_suspend(
 				lcd->esd_enable);
 	}
 	#endif
+	
+	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi");
 
 	ws2401_dpi_mcde_suspend(lcd->mdd, dummy);
 
@@ -1209,6 +1212,11 @@ static void ws2401_dpi_mcde_late_resume(
 	if (lcd->lcd_connected)
 		enable_irq(GPIO_TO_IRQ(lcd->esd_port));
 	#endif
+		
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add APE failed\n");
+	}
 
 	ws2401_dpi_mcde_resume(lcd->mdd);
 

@@ -24,8 +24,6 @@
 #include <asm/atomic.h>
 #endif /* CONFIG_ZRAM_FOR_ANDROID */
 
-#include <linux/mfd/dbx500-prcmu.h>
-
 #include "power.h"
 
 enum {
@@ -38,15 +36,6 @@ static int debug_mask = DEBUG_USER_STATE;
 atomic_t optimize_comp_on = ATOMIC_INIT(0);
 EXPORT_SYMBOL(optimize_comp_on);
 #endif /* CONFIG_ZRAM_FOR_ANDROID */
-
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-static bool is_earlysuspend = false;
-extern void cpufreq_limits_update(bool);
-extern bool is_boot_complete(void);
-bool is_earlysuspended(void) {
-	return is_earlysuspend;
-}
-#endif /* CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND */
 
 module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
 
@@ -186,21 +175,6 @@ void request_suspend_state(suspend_state_t new_state)
 		struct rtc_time tm;
 		getnstimeofday(&ts);
 		rtc_time_to_tm(ts.tv_sec, &tm);
-		if (is_boot_complete()) {
-			if (new_state == PM_SUSPEND_ON) {
-				if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
-					    "codina_lcd_dpi", 50)) {
-				    pr_info("pcrm_qos_add APE failed\n");
-				}
-				is_earlysuspend = false;
-				cpufreq_limits_update(is_earlysuspend);
-			} else {
-				is_earlysuspend = true;
-				cpufreq_limits_update(is_earlysuspend);
-				prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
-				"codina_lcd_dpi");
-			}
-		}
 		pr_info("request_suspend_state: %s (%d->%d) at %lld "
 			"(%d-%02d-%02d %02d:%02d:%02d.%09lu UTC)\n",
 			new_state != PM_SUSPEND_ON ? "sleep" : "wakeup",
