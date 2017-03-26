@@ -596,7 +596,9 @@ static struct dsiescclk dsiescclk[3] = {
 #define PRCMU_PLLDSI_LOCKP_LOCKED	0x3
 
 struct wake_lock prcmu_uart_wake_lock;
+#ifdef CONFIG_DBX500_CPUIDLE_DEBUG
 extern void ux500_ci_dbg_console(void);
+#endif
 
 int db8500_prcmu_enable_dsipll(void)
 {
