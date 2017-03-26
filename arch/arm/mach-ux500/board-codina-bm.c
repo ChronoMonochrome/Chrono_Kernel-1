@@ -396,13 +396,13 @@ static const struct battery_type bat_type[] = {
 #else
 		.termination_curr = 100,
 #endif
-		.normal_cur_lvl = 600,		/* was 700 */
-		.normal_vol_lvl = 4340,		/* 4210 */
-		.maint_a_cur_lvl = 400,
-		.maint_a_vol_lvl = 4050,
+		.normal_cur_lvl = 900,          /* was 700 */
+		.normal_vol_lvl = 4340,         /* 4210 */
+		.maint_a_cur_lvl = 600,
+		.maint_a_vol_lvl = 4150,
 		.maint_a_chg_timer_h = 60,
-		.maint_b_cur_lvl = 400,
-		.maint_b_vol_lvl = 4000,
+		.maint_b_cur_lvl = 600,
+		.maint_b_vol_lvl = 4100,
 		.maint_b_chg_timer_h = 200,
 		.low_high_cur_lvl = 300,
 		.low_high_vol_lvl = 4000,
