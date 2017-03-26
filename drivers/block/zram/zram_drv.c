@@ -34,6 +34,8 @@
 #include <linux/vmalloc.h>
 #include <linux/ratelimit.h>
 
+// FIXME: move the line below to include/linux/pagemap.h  
+void page_endio(struct page *page, int rw, int err);
 
 size_t max_zpage_size = PAGE_SIZE / 10 * 9;
 module_param(max_zpage_size, uint, 0644);
