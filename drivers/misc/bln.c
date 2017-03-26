@@ -2,8 +2,6 @@
  *
  * Copyright 2011  Michael Richter (alias neldar)
  * Copyright 2011  Adam Kent <adam@semicircular.net>
- * Copyright 2014  Jonathan Jason Dennis [Meticulus]
-			theonejohnnyd@gmail.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -17,9 +15,6 @@
 #include <linux/miscdevice.h>
 #include <linux/bln.h>
 #include <linux/mutex.h>
-#include <linux/kthread.h>
-#include <linux/sched.h>
-#include <linux/delay.h>
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
 #include <linux/wakelock.h>
 #endif
@@ -27,16 +22,13 @@
 static bool bln_enabled = true;
 static bool bln_ongoing = false; /* ongoing LED Notification */
 static int bln_blink_state = 0;
-static bool bln_blink_mode = true; /* blink by default */
-static int bln_blinkon_delay = 1000; /* blink on with 1000msec delay by default */
-static int bln_blinkoff_delay = 1000; /* blink off with 1000msec delay by default */
 static bool bln_suspended = false; /* is system suspended */
 static struct bln_implementation *bln_imp = NULL;
 
 static long unsigned int notification_led_mask = 0x0;
 
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-static bool use_wakelock = false; /* i don't want to burn batteries */
+static bool use_wakelock = true;
 static struct wake_lock bln_wake_lock;
 #endif
 
@@ -57,7 +49,7 @@ static int gen_all_leds_mask(void)
 	return mask;
 }
 
-static int get_led_mask(void) {
+static int get_led_mask(void){
 	return (notification_led_mask != 0) ? notification_led_mask : gen_all_leds_mask();
 }
 
@@ -83,7 +75,7 @@ static void bln_power_on(void)
 {
 	if (likely(bln_imp && bln_imp->power_on)) {
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-		if (use_wakelock && !wake_lock_active(&bln_wake_lock)) {
+		if(use_wakelock && !wake_lock_active(&bln_wake_lock)){
 			wake_lock(&bln_wake_lock);
 		}
 #endif
@@ -96,7 +88,7 @@ static void bln_power_off(void)
 	if (likely(bln_imp && bln_imp->power_off)) {
 		bln_imp->power_off();
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-		if (wake_lock_active(&bln_wake_lock)) {
+		if(wake_lock_active(&bln_wake_lock)){
 			wake_unlock(&bln_wake_lock);
 		}
 #endif
@@ -121,17 +113,6 @@ static struct early_suspend bln_suspend_data = {
 	.resume = bln_late_resume,
 };
 
-static void blink_thread(void)
-{
-	while(bln_suspended)
-	{
-		bln_enable_backlights(get_led_mask());
-		msleep(bln_blinkon_delay);
-		bln_disable_backlights(get_led_mask());
-		msleep(bln_blinkoff_delay);
-	}
-}
-
 static void enable_led_notification(void)
 {
 	if (!bln_enabled)
@@ -143,23 +124,11 @@ static void enable_led_notification(void)
 	*/
 	if (!bln_suspended)
 		return;
-	
-	/*
-	* If we already have a blink thread going
-	* don't start another one.
-	*/
-	if (bln_ongoing & bln_blink_mode)
-		return;
 
 	bln_ongoing = true;
 
 	bln_power_on();
-
-	if (unlikely(!bln_blink_mode))
-		bln_enable_backlights(get_led_mask());
-	else
-		kthread_run(&blink_thread, NULL, "bln_blink_thread");
-
+	bln_enable_backlights(get_led_mask());
 	pr_info("%s: notification led enabled\n", __FUNCTION__);
 }
 
@@ -180,10 +149,10 @@ static ssize_t backlightnotification_status_read(struct device *dev,
 {
 	int ret = 0;
 		
-	if (unlikely(!bln_imp))
+	if(unlikely(!bln_imp))
 		ret = -1;
 
-	if (bln_enabled)
+	if(bln_enabled)
 		ret = 1;
 	else
 		ret = 0;
@@ -196,7 +165,7 @@ static ssize_t backlightnotification_status_write(struct device *dev,
 {
 	unsigned int data;
 
-	if (unlikely(!bln_imp)) {
+	if(unlikely(!bln_imp)) {
 		pr_err("%s: no BLN implementation registered!\n", __FUNCTION__);
 		return size;
 	}
@@ -266,7 +235,7 @@ static ssize_t notification_led_mask_write(struct device *dev,
 			return size;
 	}
 
-	if (data & gen_all_leds_mask()) {
+	if(data & gen_all_leds_mask()){
 		notification_led_mask = data;
 	} else {
 		//TODO: correct error code
@@ -376,13 +345,13 @@ static ssize_t buttons_led_status_write(struct device *dev,
 	}
 
 	if (data == 1) {
-		if (!bln_suspended) {
+		if(!bln_suspended){
 			buttons_led_enabled = true;
 			bln_power_on();
 			bln_enable_backlights(gen_all_leds_mask());
 		}
 	} else if (data == 0) {
-		if (!bln_suspended) {
+		if(!bln_suspended){
 			buttons_led_enabled = false;
 			bln_disable_backlights(gen_all_leds_mask());
 		}
@@ -442,76 +411,6 @@ static struct miscdevice bln_device = {
 	.name = "backlightnotification",
 };
 
-static ssize_t bln_blink_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	sprintf(buf, "blink status: %s\n", bln_blink_mode ? "on" : "off");
-	sprintf(buf, "%sblink on delay: %d mscec\n", buf, bln_blinkon_delay);
-	sprintf(buf, "%sblink off delay: %d msec\n", buf, bln_blinkoff_delay);
-
-	return strlen(buf);
-}
-
-static ssize_t bln_blink_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int ret;
-	int delay_tmp;
-
-	if (!strncmp(buf, "on", 2)) {
-		bln_blink_mode = true;
-
-		pr_err("[BLN] BLN Blink Mode on\n");
-
-		return count;
-	}
-
-	if (!strncmp(buf, "off", 3)) {
-		bln_blink_mode = false;
-
-		pr_err("[BLN] BLN Blink Mode off\n");
-
-		return count;
-	}
-
-	if (!strncmp(&buf[0], "ondelay=", 8)) {
-		ret = sscanf(&buf[8], "%d", &delay_tmp);
-
-		if ((!ret) || (delay_tmp < 1)) {
-			pr_err("[BLN] invalid input - delay too short\n");
-			return -EINVAL;
-		}
-
-		bln_blinkon_delay = delay_tmp;
-
-		return count;
-	}
-
-	if (!strncmp(&buf[0], "offdelay=", 9)) {
-		ret = sscanf(&buf[9], "%d", &delay_tmp);
-
-		if ((!ret) || (delay_tmp < 1)) {
-			pr_err("[BLN] invalid input - delay too short\n");
-			return -EINVAL;
-		}
-
-		bln_blinkoff_delay = delay_tmp;
-
-		return count;
-	}
-}
-
-static struct kobj_attribute bln_blink_interface = __ATTR(blink_mode, 0644, bln_blink_show, bln_blink_store);
-
-static struct attribute *bln_attrs[] = {
-	&bln_blink_interface.attr,
-	NULL,
-};
-
-static struct attribute_group bln_interface_group = {
-	.attrs = bln_attrs,
-};
-
-static struct kobject *bln_kobject;
-
 /**
  *	register_bln_implementation	- register a bln implementation of a touchkey device device
  *	@imp: bln implementation structure
@@ -521,7 +420,7 @@ static struct kobject *bln_kobject;
 void register_bln_implementation(struct bln_implementation *imp)
 {
 	//TODO: more checks
-	if (imp) {
+	if(imp){
 		bln_imp = imp;
 	}
 }
@@ -555,18 +454,6 @@ static int __init bln_control_init(void)
 		pr_err("Failed to create sysfs group for device (%s)!\n",
 				bln_device.name);
 		return 1;
-	}
-
-	bln_kobject = kobject_create_and_add("bln", kernel_kobj);
-
-	if (!bln_kobject) {
-		return -ENOMEM;
-	}
-
-	ret = sysfs_create_group(bln_kobject, &bln_interface_group);
-
-	if (ret) {
-		kobject_put(bln_kobject);
 	}
 
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
