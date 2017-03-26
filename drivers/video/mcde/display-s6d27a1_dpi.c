@@ -86,66 +86,6 @@
 
 #define DPI_DISP_TRACE	dev_dbg(&ddev->dev, "%s\n", __func__)
 
-/* S6D27A1 PRCMU LCDCLK */
-/* 60+++	79872000 unsafe
- * 60++ 	62400000 unsafe
- * 60+  	57051428 unsafe
- * 60   	49920000
- * 50   	39936000
- * 45   	36305454
- * 40   	33280000
- */
-#include <linux/mfd/dbx500-prcmu.h>
-#include <linux/mfd/db8500-prcmu.h>
-
-#define LCDCLK_SET(clk) prcmu_set_clock_rate(PRCMU_LCDCLK, (unsigned long) clk);
-
-struct lcdclk_prop
-{
-	char *name;
-	unsigned int clk;
-};
-
-static struct lcdclk_prop lcdclk_prop[] = {
-  	[0] = {
-		.name = "60++ Hz",
-		.clk = 62400000,
-	},
-  	[1] = {
-		.name = "60+ Hz",
-		.clk = 57051428,
-	},
-	[2] = {
-		.name = "60 Hz",
-		.clk = 49920000,
-	},
-	[3] = {
-		.name = "50 Hz",
-		.clk = 39936000,
-	},
-	[4] = {
-		.name = "45 Hz",
-		.clk = 36305454,
-	},
-	[5] = {
-		.name = "40 Hz",
-		.clk = 33280000,
-	},
-};
-
-static unsigned int lcdclk_usr = 0; /* 60++ fps */
-
-static void s6d27a1_lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
-{
-	msleep(200);
-
-	pr_err("[s6d27a1] LCDCLK %dHz\n", lcdclk_prop[lcdclk_usr].clk);
-
-	LCDCLK_SET(lcdclk_prop[lcdclk_usr].clk);
-}
-static DECLARE_WORK(s6d27a1_lcdclk_work, s6d27a1_lcdclk_thread);
-
-
 static signed char apeopp_requirement = 0, ddropp_requirement = 0;
 
 /* to be removed when display works */
@@ -952,47 +892,6 @@ static const struct backlight_ops s6d27a1_dpi_backlight_ops  = {
 	.update_status = s6d27a1_dpi_set_brightness,
 };
 
-static ssize_t s6d27a1_sysfs_show_lcdclk(struct device *dev,
-	struct device_attribute *attr, char *buf)
-{
-	int i;
-	bool matched;
-
-	sprintf(buf, "Current: %s\n\n", lcdclk_prop[lcdclk_usr].name);
-
-	for (i = 0; i < ARRAY_SIZE(lcdclk_prop); i++) {
-		if (i == lcdclk_usr)
-			matched = true;
-		else
-			matched = false;
-
-		sprintf(buf, "%s[%d][%s] %s\n", buf, i, matched ? "*" : " ", lcdclk_prop[i].name);
-	}
-
-	return strlen(buf);
-}
-
-static ssize_t s6d27a1_sysfs_store_lcdclk(struct device *dev,
-	struct device_attribute *attr,
-	const char *buf, size_t len)
-{
-	int ret, tmp;
-
-	ret = sscanf(buf, "%d", &tmp);
-	if (!ret || (tmp < 0) || (tmp > 3)) {
-		  pr_err("[s6d27a1] Bad cmd\n");
-		  return -EINVAL;
-	}
-
-	lcdclk_usr = tmp;
-
-	schedule_work(&s6d27a1_lcdclk_work);
-
-	return len;
-}
-
-static DEVICE_ATTR(lcdclk, 0644, s6d27a1_sysfs_show_lcdclk, s6d27a1_sysfs_store_lcdclk);
-
 static ssize_t s6d_sysfs_show_opp(struct device *dev,
 				      struct device_attribute *attr, char *buf)
 {
@@ -1291,10 +1190,6 @@ static int __devinit s6d27a1_dpi_mcde_probe(
 	ret = device_create_file(&(ddev->dev), &dev_attr_mcde_screenon_opp);	
 	if (ret < 0)
 		dev_err(&(ddev->dev), "failed to add mcde_screeon_opp sysfs entries\n");
-	
-	ret = device_create_file(&(ddev->dev), &dev_attr_lcdclk);
-	if (ret < 0)
-		dev_err(&(ddev->dev), "failed to add sysfs entries\n");
 
 	lcd->spi_drv.driver.name	= "pri_lcd_spi";
 	lcd->spi_drv.driver.bus		= &spi_bus_type;
@@ -1453,11 +1348,6 @@ static void s6d27a1_dpi_mcde_late_resume(
 	#endif
 
 	s6d27a1_dpi_mcde_resume(lcd->mdd);
-	
-	if (lcdclk_usr != 0) {
-		pr_err("[s6d27a1] Rebasing LCDCLK...\n");
-		schedule_work(&s6d27a1_lcdclk_work);
-	}
 
 }
 #endif
