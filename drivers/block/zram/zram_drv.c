@@ -31,6 +31,10 @@
 #include <linux/idr.h>
 #include <linux/sysfs.h>
 
+
+size_t max_zpage_size = PAGE_SIZE / 10 * 9;
+module_param(max_zpage_size, uint, 0644);
+
 #include "zram_drv.h"
 
 static DEFINE_IDR(zram_index_idr);
