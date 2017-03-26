@@ -567,7 +567,7 @@ static int binder_update_page_range(struct binder_proc *proc, int allocate,
 		page = &proc->pages[(page_addr - proc->buffer) / PAGE_SIZE];
 
 		BUG_ON(*page);
-		*page = alloc_page(GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO);
+		*page = alloc_page(GFP_KERNEL | __GFP_ZERO);
 		if (*page == NULL) {
 			pr_err("binder: %d: binder_alloc_buf failed "
 			       "for page at %p\n", proc->pid, page_addr);
@@ -3224,7 +3224,7 @@ static void print_binder_proc(struct seq_file *m,
 		m->count = start_pos;
 }
 
-static const char * const binder_return_strings[] = {
+static const char *binder_return_strings[] = {
 	"BR_ERROR",
 	"BR_OK",
 	"BR_TRANSACTION",
@@ -3245,7 +3245,7 @@ static const char * const binder_return_strings[] = {
 	"BR_FAILED_REPLY"
 };
 
-static const char * const binder_command_strings[] = {
+static const char *binder_command_strings[] = {
 	"BC_TRANSACTION",
 	"BC_REPLY",
 	"BC_ACQUIRE_RESULT",
@@ -3265,7 +3265,7 @@ static const char * const binder_command_strings[] = {
 	"BC_DEAD_BINDER_DONE"
 };
 
-static const char * const binder_objstat_strings[] = {
+static const char *binder_objstat_strings[] = {
 	"proc",
 	"thread",
 	"node",
