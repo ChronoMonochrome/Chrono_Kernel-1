@@ -101,6 +101,7 @@ obj-$(CONFIG_BATTERY_SAMSUNG)	+= board-kyle-battery.o
 endif
 obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
 obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+obj-$(CONFIG_LOCAL_TIMERS)	+= localtimer.o
 obj-$(CONFIG_U5500_MODEM_IRQ)	+= modem-irq-db5500.o
 obj-$(CONFIG_TEE_UX500) 	+= tee_ux500.o product.o
 obj-$(CONFIG_TEE_SVP)		+= tee_service_svp.o
@@ -112,7 +113,7 @@ obj-$(CONFIG_UX500_DEBUG_HWREG) 	+= hwreg.o
 obj-$(CONFIG_HWMEM)			+= hwmem-int.o
 obj-$(CONFIG_UX500_L2X0_PREFETCH_CTRL)	+= l2x0-prefetch.o
 obj-$(CONFIG_AB5500_BM)			+= board-u5500-bm.o
-obj-y	+= prcmu-debug.o
+obj-$(CONFIG_DBX500_PRCMU_DEBUG)	+= prcmu-debug.o
 obj-$(CONFIG_UX500_DB_DUMP)		+= dbx500_dump.o
 obj-$(CONFIG_UX500_DEBUG_LAST_IO)	+= debug-last-io.o
 obj-$(CONFIG_RTC_HCTOHC)		+= hctohc.o
@@ -137,5 +138,3 @@ endif
 endif
 endif
 obj-$(CONFIG_MACH_SAMSUNG_UX500)	+= sec_common.o
-obj-$(CONFIG_ARCH_RANDOM) += early_random.o
-obj-$(CONFIG_RQ_STATS)                 += rq_stats.o
