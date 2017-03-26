@@ -1001,10 +1001,10 @@ static int mac80211_hwsim_hw_scan(struct ieee80211_hw *hw,
 	hsd->hw = hw;
 	INIT_DELAYED_WORK(&hsd->w, hw_scan_done);
 
-	printk(KERN_DEBUG "hwsim hw_scan request\n");
+;
 	for (i = 0; i < req->n_channels; i++)
-		printk(KERN_DEBUG "hwsim hw_scan freq %d\n",
-			req->channels[i]->center_freq);
+//		printk(KERN_DEBUG "hwsim hw_scan freq %d\n",
+;
 
 	ieee80211_queue_delayed_work(hw, &hsd->w, 2 * HZ);
 
@@ -1018,11 +1018,11 @@ static void mac80211_hwsim_sw_scan(struct ieee80211_hw *hw)
 	mutex_lock(&hwsim->mutex);
 
 	if (hwsim->scanning) {
-		printk(KERN_DEBUG "two hwsim sw_scans detected!\n");
+;
 		goto out;
 	}
 
-	printk(KERN_DEBUG "hwsim sw_scan request, prepping stuff\n");
+;
 	hwsim->scanning = true;
 
 out:
@@ -1035,7 +1035,7 @@ static void mac80211_hwsim_sw_scan_complete(struct ieee80211_hw *hw)
 
 	mutex_lock(&hwsim->mutex);
 
-	printk(KERN_DEBUG "hwsim sw_scan_complete\n");
+;
 	hwsim->scanning = false;
 
 	mutex_unlock(&hwsim->mutex);
@@ -1138,7 +1138,7 @@ static void hwsim_send_ps_poll(void *dat, u8 *mac, struct ieee80211_vif *vif)
 	memcpy(pspoll->bssid, vp->bssid, ETH_ALEN);
 	memcpy(pspoll->ta, mac, ETH_ALEN);
 	if (!mac80211_hwsim_tx_frame(data->hw, skb))
-		printk(KERN_DEBUG "%s: PS-Poll frame not ack'ed\n", __func__);
+;
 	dev_kfree_skb(skb);
 }
 
@@ -1169,7 +1169,7 @@ static void hwsim_send_nullfunc(struct mac80211_hwsim_data *data, u8 *mac,
 	memcpy(hdr->addr2, mac, ETH_ALEN);
 	memcpy(hdr->addr3, vp->bssid, ETH_ALEN);
 	if (!mac80211_hwsim_tx_frame(data->hw, skb))
-		printk(KERN_DEBUG "%s: nullfunc frame not ack'ed\n", __func__);
+;
 	dev_kfree_skb(skb);
 }
 
@@ -1276,12 +1276,12 @@ static int __init init_mac80211_hwsim(void)
 	addr[0] = 0x02;
 
 	for (i = 0; i < radios; i++) {
-		printk(KERN_DEBUG "mac80211_hwsim: Initializing radio %d\n",
-		       i);
+//		printk(KERN_DEBUG "mac80211_hwsim: Initializing radio %d\n",
+;
 		hw = ieee80211_alloc_hw(sizeof(*data), &mac80211_hwsim_ops);
 		if (!hw) {
-			printk(KERN_DEBUG "mac80211_hwsim: ieee80211_alloc_hw "
-			       "failed\n");
+//			printk(KERN_DEBUG "mac80211_hwsim: ieee80211_alloc_hw "
+;
 			err = -ENOMEM;
 			goto failed;
 		}
@@ -1291,9 +1291,9 @@ static int __init init_mac80211_hwsim(void)
 		data->dev = device_create(hwsim_class, NULL, 0, hw,
 					  "hwsim%d", i);
 		if (IS_ERR(data->dev)) {
-			printk(KERN_DEBUG
-			       "mac80211_hwsim: device_create "
-			       "failed (%ld)\n", PTR_ERR(data->dev));
+//			printk(KERN_DEBUG
+//			       "mac80211_hwsim: device_create "
+;
 			err = -ENOMEM;
 			goto failed_drvdata;
 		}
@@ -1442,8 +1442,8 @@ static int __init init_mac80211_hwsim(void)
 			schedule_timeout_interruptible(1);
 		err = ieee80211_register_hw(hw);
 		if (err < 0) {
-			printk(KERN_DEBUG "mac80211_hwsim: "
-			       "ieee80211_register_hw failed (%d)\n", err);
+//			printk(KERN_DEBUG "mac80211_hwsim: "
+;
 			goto failed_hw;
 		}
 
@@ -1539,7 +1539,7 @@ failed:
 
 static void __exit exit_mac80211_hwsim(void)
 {
-	printk(KERN_DEBUG "mac80211_hwsim: unregister radios\n");
+;
 
 	mac80211_hwsim_free();
 	unregister_netdev(hwsim_mon);

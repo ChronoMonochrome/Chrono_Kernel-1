@@ -1009,7 +1009,7 @@ static int smsc75xx_bind(struct usbnet *dev, struct usb_interface *intf)
 	struct smsc75xx_priv *pdata = NULL;
 	int ret;
 
-	printk(KERN_INFO SMSC_CHIPNAME " v" SMSC_DRIVER_VERSION "\n");
+;
 
 	ret = usbnet_get_endpoints(dev, intf);
 	check_warn_return(ret, "usbnet_get_endpoints failed: %d", ret);

@@ -765,13 +765,13 @@ vt6656_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	struct net_device *netdev = NULL;
 	PSDevice pDevice = NULL;
 
-	printk(KERN_NOTICE "%s Ver. %s\n", DEVICE_FULL_DRV_NAM, DEVICE_VERSION);
-	printk(KERN_NOTICE "Copyright (c) 2004 VIA Networking Technologies, Inc.\n");
+;
+;
 
 	udev = usb_get_dev(udev);
 	netdev = alloc_etherdev(sizeof(DEVICE_INFO));
 	if (!netdev) {
-		printk(KERN_ERR DEVICE_NAME ": allocate net device failed\n");
+;
 		rc = -ENOMEM;
 		goto err_nomem;
 	}
@@ -797,7 +797,7 @@ vt6656_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	memcpy(pDevice->dev->dev_addr, fake_mac, ETH_ALEN);
 	rc = register_netdev(netdev);
 	if (rc) {
-		printk(KERN_ERR DEVICE_NAME " Failed to register netdev\n");
+;
 		goto err_netdev;
 	}
 
@@ -870,7 +870,7 @@ static void usb_device_reset(PSDevice pDevice)
  int status;
  status = usb_reset_device(pDevice->usb);
 	if (status)
-            printk("usb_device_reset fail status=%d\n",status);
+;
 	return ;
 }
 
@@ -1438,32 +1438,32 @@ static unsigned char *Config_FileOperation(PSDevice pDevice)
     //open file
       filp = filp_open(config_path, O_RDWR, 0);
         if (IS_ERR(filp)) {
-	     printk("Config_FileOperation file Not exist\n");
+;
 	     result=-1;
              goto error2;
 	  }
 
      if(!(filp->f_op) || !(filp->f_op->read) ||!(filp->f_op->write)) {
-           printk("file %s cann't readable or writable?\n",config_path);
+;
 	  result = -1;
 	  goto error1;
      	}
 
     buffer = kmalloc(1024, GFP_KERNEL);
     if(buffer==NULL) {
-      printk("allocate mem for file fail?\n");
+;
       result = -1;
       goto error1;
     }
 
     if(filp->f_op->read(filp, buffer, 1024, &filp->f_pos)<0) {
-     printk("read file error?\n");
+;
      result = -1;
     }
 
 error1:
   if(filp_close(filp,NULL))
-       printk("Config_FileOperation:close file fail\n");
+;
 
 error2:
   set_fs (old_fs);
@@ -1511,7 +1511,7 @@ static int Read_config_file(PSDevice pDevice) {
      pDevice->config_file.ZoneType=ZoneType_Europe;
     }
     else {
-      printk("Unknown Zonetype[%s]?\n",tmpbuffer);
+;
    }
  }
 }
@@ -2112,7 +2112,7 @@ static struct usb_driver vt6656_driver = {
 
 static int __init vt6656_init_module(void)
 {
-    printk(KERN_NOTICE DEVICE_FULL_DRV_NAM " " DEVICE_VERSION);
+;
     return usb_register(&vt6656_driver);
 }
 

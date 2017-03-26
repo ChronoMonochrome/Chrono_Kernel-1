@@ -506,7 +506,7 @@ static int proc_get_stats_rx(char *page, char **start,
 static void rtl8192_proc_module_init(void)
 {
 	RT_TRACE(COMP_INIT, "Initializing proc filesystem\n");
-	rtl8192_proc=create_proc_entry(RTL819xE_MODULE_NAME, S_IFDIR, init_net.proc_net);
+	rtl8192_proc = proc_mkdir(RTL819xE_MODULE_NAME, init_net.proc_net);
 }
 
 
@@ -520,7 +520,7 @@ static void rtl8192_proc_remove_one(struct r8192_priv *priv)
 {
 	struct net_device *dev = priv->ieee80211->dev;
 
-	printk("dev name=======> %s\n",dev->name);
+;
 
 	if (priv->dir_dev) {
 		remove_proc_entry("stats-tx", priv->dir_dev);
@@ -538,9 +538,7 @@ static void rtl8192_proc_init_one(struct r8192_priv *priv)
 	struct net_device *dev = priv->ieee80211->dev;
 	struct proc_dir_entry *e;
 
-	priv->dir_dev = create_proc_entry(dev->name,
-					  S_IFDIR | S_IRUGO | S_IXUGO,
-					  rtl8192_proc);
+	priv->dir_dev = proc_mkdir(dev->name, rtl8192_proc);
 	if (!priv->dir_dev) {
 		RT_TRACE(COMP_ERR, "Unable to initialize /proc/net/rtl8192/%s\n",
 		      dev->name);
@@ -599,7 +597,7 @@ static void tx_timeout(struct net_device *dev)
 	struct r8192_priv *priv = ieee80211_priv(dev);
 
 	schedule_work(&priv->reset_wq);
-	printk("TXTIMEOUT");
+;
 }
 
 static void rtl8192_irq_enable(struct r8192_priv *priv)
@@ -1796,7 +1794,7 @@ static short rtl8192_is_tx_queue_empty(struct ieee80211_device *ieee)
 		if ((i== TXCMD_QUEUE) || (i == HCCA_QUEUE) )
 			continue;
 		if (skb_queue_len(&(&priv->tx_ring[i])->queue) > 0){
-			printk("===>tx queue is not empty:%d, %d\n", i, skb_queue_len(&(&priv->tx_ring[i])->queue));
+;
 			return 0;
 		}
 	}
@@ -1841,14 +1839,14 @@ static void rtl8192_hw_to_sleep(struct ieee80211_device *ieee, u32 th, u32 tl)
 	//
 	if(((tl>=rb)&& (tl-rb) <= MSECS(MIN_SLEEP_TIME))
 			||((rb>tl)&& (rb-tl) < MSECS(MIN_SLEEP_TIME))) {
-		printk("too short to sleep::%x, %x, %lx\n",tl, rb,  MSECS(MIN_SLEEP_TIME));
+;
 		return;
 	}
 
 	if(((tl > rb) && ((tl-rb) > MSECS(MAX_SLEEP_TIME)))||
 			((tl < rb) && (tl>MSECS(69)) && ((rb-tl) > MSECS(MAX_SLEEP_TIME)))||
 			((tl<rb)&&(tl<MSECS(69))&&((tl+0xffffffff-rb)>MSECS(MAX_SLEEP_TIME)))) {
-		printk("========>too long to sleep:%x, %x, %lx\n", tl, rb,  MSECS(MAX_SLEEP_TIME));
+;
 		return;
 	}
 
@@ -2370,7 +2368,7 @@ static short rtl8192_get_channel_map(struct r8192_priv *priv)
 {
 #ifdef ENABLE_DOT11D
 	if(priv->ChannelPlan> COUNTRY_CODE_GLOBAL_DOMAIN){
-		printk("rtl8180_init:Error channel plan! Set to default.\n");
+;
 		priv->ChannelPlan= 0;
 	}
 	RT_TRACE(COMP_INIT, "Channel plan is %d\n",priv->ChannelPlan);
@@ -2410,14 +2408,14 @@ static short rtl8192_init(struct r8192_priv *priv)
 	priv->watch_dog_timer.data = (unsigned long)priv;
 	priv->watch_dog_timer.function = watch_dog_timer_callback;
         if (request_irq(dev->irq, rtl8192_interrupt, IRQF_SHARED, dev->name, priv)) {
-		printk("Error allocating IRQ %d",dev->irq);
+;
 		return -1;
 	}else{
 		priv->irq=dev->irq;
-		printk("IRQ %d",dev->irq);
+;
 	}
 	if (rtl8192_pci_initdescring(priv) != 0){
-		printk("Endopoints initialization failed");
+;
 		return -1;
 	}
 
@@ -3050,7 +3048,7 @@ bool MgntActSet_802_11_PowerSaveMode(struct r8192_priv *priv, u8 rtPsMode)
 		priv->ieee80211->sta_sleep = 0;
 
                 spin_lock(&priv->ieee80211->mgmt_tx_lock);
-		printk("LPS leave: notify AP we are awaked ++++++++++ SendNullFunctionData\n");
+;
 		ieee80211_sta_ps_send_null_frame(priv->ieee80211, 0);
                 spin_unlock(&priv->ieee80211->mgmt_tx_lock);
 	}
@@ -3183,7 +3181,7 @@ void ieee80211_ips_leave_wq(struct ieee80211_device *ieee80211)
 				return;
 			}
 			else{
-				printk("=========>%s(): IPSLeave\n",__FUNCTION__);
+;
 				queue_work(priv->ieee80211->wq,&priv->ieee80211->ips_leave_wq);
 			}
 		}
@@ -3304,7 +3302,7 @@ static void rtl819x_watchdog_wqcallback(struct work_struct *work)
 			{
 				if (priv->eRFPowerState == eRfOff)
 					RT_TRACE(COMP_ERR,"========>%s()\n",__FUNCTION__);
-				printk("===>%s(): AP is power off,connect another one\n",__FUNCTION__);
+;
 				//		Dot11d_Reset(dev);
 				ieee->state = IEEE80211_ASSOCIATING;
 				notify_wx_assoc_event(priv->ieee80211);
@@ -4705,7 +4703,7 @@ static void __devexit rtl8192_pci_disconnect(struct pci_dev *pdev)
 			rtl8192_free_tx_ring(priv, i);
 
 		if (priv->irq) {
-			printk("Freeing irq %d\n", priv->irq);
+;
 			free_irq(priv->irq, priv);
 			priv->irq = 0;
 		}
@@ -4734,8 +4732,8 @@ static int __init rtl8192_pci_module_init(void)
 	if (retval)
 		return retval;
 
-	printk(KERN_INFO "\nLinux kernel driver for RTL8192 based WLAN cards\n");
-	printk(KERN_INFO "Copyright (c) 2007-2008, Realsil Wlan\n");
+;
+;
 	RT_TRACE(COMP_INIT, "Initializing module\n");
 	rtl8192_proc_module_init();
       if(0!=pci_register_driver(&rtl8192_pci_driver))
