@@ -237,7 +237,7 @@ static int __devinit olympic_probe(struct pci_dev *pdev, const struct pci_device
 	init_waitqueue_head(&olympic_priv->srb_wait);
 	init_waitqueue_head(&olympic_priv->trb_wait);
 #if OLYMPIC_DEBUG  
-	printk(KERN_INFO "pci_device: %p, dev:%p, dev->priv: %p\n", pdev, dev, netdev_priv(dev));
+;
 #endif
 	dev->irq=pdev->irq;
 	dev->base_addr=pci_resource_start(pdev, 0);
@@ -268,13 +268,13 @@ static int __devinit olympic_probe(struct pci_dev *pdev, const struct pci_device
 
 	pci_set_drvdata(pdev,dev) ; 
 	register_netdev(dev) ; 
-	printk("Olympic: %s registered as: %s\n",olympic_priv->olympic_card_name,dev->name);
+;
 	if (olympic_priv->olympic_network_monitor) { /* Must go after register_netdev as we need the device name */ 
 		char proc_name[20] ; 
 		strcpy(proc_name,"olympic_") ;
 		strcat(proc_name,dev->name) ; 
 		proc_create_data(proc_name, 0, init_net.proc_net, &olympic_proc_ops, dev);
-		printk("Olympic: Network Monitor information: /proc/%s\n",proc_name); 
+;
 	}
 	return  0 ;
 
@@ -303,15 +303,15 @@ static int olympic_init(struct net_device *dev)
 	olympic_priv=netdev_priv(dev);
 	olympic_mmio=olympic_priv->olympic_mmio;
 
-	printk("%s\n", version);
-	printk("%s. I/O at %hx, MMIO at %p, LAP at %p, using irq %d\n", olympic_priv->olympic_card_name, (unsigned int) dev->base_addr,olympic_priv->olympic_mmio, olympic_priv->olympic_lap, dev->irq);
+;
+;
 
 	writel(readl(olympic_mmio+BCTL) | BCTL_SOFTRESET,olympic_mmio+BCTL);
 	t=jiffies;
 	while((readl(olympic_mmio+BCTL)) & BCTL_SOFTRESET) {
 		schedule();		
 		if(time_after(jiffies, t + 40*HZ)) {
-			printk(KERN_ERR "IBM PCI tokenring card not responding.\n");
+;
 			return -ENODEV;
 		}
 	}
@@ -323,9 +323,9 @@ static int olympic_init(struct net_device *dev)
 	}
 	
 #if OLYMPIC_DEBUG
-	printk("BCTL: %x\n",readl(olympic_mmio+BCTL));
-	printk("GPR: %x\n",readw(olympic_mmio+GPR));
-	printk("SISRMASK: %x\n",readl(olympic_mmio+SISR_MASK));
+;
+;
+;
 #endif
 	/* Aaaahhh, You have got to be real careful setting GPR, the card
 	   holds the previous values from flash memory, including autosense 
@@ -336,21 +336,21 @@ static int olympic_init(struct net_device *dev)
 	if (olympic_priv->olympic_ring_speed  == 0) { /* Autosense */
 		writew(readw(olympic_mmio+GPR)|GPR_AUTOSENSE,olympic_mmio+GPR);
 		if (olympic_priv->olympic_message_level) 
-			printk(KERN_INFO "%s: Ringspeed autosense mode on\n",olympic_priv->olympic_card_name);
+;
 	} else if (olympic_priv->olympic_ring_speed == 16) {
 		if (olympic_priv->olympic_message_level) 
-			printk(KERN_INFO "%s: Trying to open at 16 Mbps as requested\n", olympic_priv->olympic_card_name);
+;
 		writew(GPR_16MBPS, olympic_mmio+GPR);
 	} else if (olympic_priv->olympic_ring_speed == 4) {
 		if (olympic_priv->olympic_message_level) 
-			printk(KERN_INFO "%s: Trying to open at 4 Mbps as requested\n", olympic_priv->olympic_card_name) ; 
+;
 		writew(0, olympic_mmio+GPR);
 	} 
 	
 	writew(readw(olympic_mmio+GPR)|GPR_NEPTUNE_BF,olympic_mmio+GPR);
 
 #if OLYMPIC_DEBUG
-	printk("GPR = %x\n",readw(olympic_mmio + GPR) ) ; 
+;
 #endif
 	/* Solo has been paused to meet the Cardbus power
 	 * specs if the adapter is cardbus. Check to 
@@ -363,7 +363,7 @@ static int olympic_init(struct net_device *dev)
 		while (!(readl(olympic_mmio+CLKCTL) & CLKCTL_PAUSE)) {
 			schedule() ; 
 			if(time_after(jiffies, t + 2*HZ)) {
-				printk(KERN_ERR "IBM Cardbus tokenring adapter not responsing.\n") ; 
+;
 				return -ENODEV;
 			}
 		}
@@ -377,7 +377,7 @@ static int olympic_init(struct net_device *dev)
 	while(!((readl(olympic_mmio+SISR_RR)) & SISR_SRB_REPLY)) {
 		schedule();		
 		if(time_after(jiffies, t + 15*HZ)) {
-			printk(KERN_ERR "IBM PCI tokenring card not responding.\n");
+;
 			return -ENODEV;
 		}
 	}
@@ -385,7 +385,7 @@ static int olympic_init(struct net_device *dev)
 	writel(readw(olympic_mmio+LAPWWO),olympic_mmio+LAPA);
 
 #if OLYMPIC_DEBUG
-	printk("LAPWWO: %x, LAPA: %x\n",readl(olympic_mmio+LAPWWO), readl(olympic_mmio+LAPA));
+;
 #endif
 
 	init_srb=olympic_priv->olympic_lap + ((readw(olympic_mmio+LAPWWO)) & (~0xf800));
@@ -393,29 +393,29 @@ static int olympic_init(struct net_device *dev)
 #if OLYMPIC_DEBUG		
 {
 	int i;
-	printk("init_srb(%p): ",init_srb);
+;
 	for(i=0;i<20;i++)
-		printk("%x ",readb(init_srb+i));
-	printk("\n");
+;
+;
 }
 #endif	
 	if(readw(init_srb+6)) {
-		printk(KERN_INFO "tokenring card initialization failed. errorcode : %x\n",readw(init_srb+6));
+;
 		return -ENODEV;
 	}
 
 	if (olympic_priv->olympic_message_level) {
 		if ( readb(init_srb +2) & 0x40) { 
-			printk(KERN_INFO "Olympic: Adapter is FDX capable.\n") ;
+;
 		} else { 
-			printk(KERN_INFO "Olympic: Adapter cannot do FDX.\n");
+;
 		}
 	}
   
 	uaa_addr=swab16(readw(init_srb+8));
 
 #if OLYMPIC_DEBUG
-	printk("UAA resides at %x\n",uaa_addr);
+;
 #endif
 
 	writel(uaa_addr,olympic_mmio+LAPA);
@@ -424,7 +424,7 @@ static int olympic_init(struct net_device *dev)
 	memcpy_fromio(&dev->dev_addr[0], adapter_addr,6);
 
 #if OLYMPIC_DEBUG
-	printk("adapter address: %pM\n", dev->dev_addr);
+;
 #endif
 
 	olympic_priv->olympic_addr_table_addr = swab16(readw(init_srb + 12)); 
@@ -451,8 +451,8 @@ static int olympic_open(struct net_device *dev)
 		return -EAGAIN;
 
 #if OLYMPIC_DEBUG
-	printk("BMCTL: %x\n",readl(olympic_mmio+BMCTL_SUM));
-	printk("pending ints: %x\n",readl(olympic_mmio+SISR_RR));
+;
+;
 #endif
 
 	writel(SISR_MI,olympic_mmio+SISR_MASK_SUM);
@@ -467,9 +467,9 @@ static int olympic_open(struct net_device *dev)
 	init_srb=olympic_priv->olympic_lap + ((readw(olympic_mmio+LAPWWO)) & (~0xf800));
 	
 #if OLYMPIC_DEBUG
-	printk("LAPWWO: %x, LAPA: %x\n",readw(olympic_mmio+LAPWWO), readl(olympic_mmio+LAPA));
-	printk("SISR Mask = %04x\n", readl(olympic_mmio+SISR_MASK));
-	printk("Before the open command\n");
+;
+;
+;
 #endif	
 	do {
 		memset_io(init_srb,0,SRB_COMMAND_SIZE);
@@ -512,16 +512,16 @@ static int olympic_open(struct net_device *dev)
  		while(olympic_priv->srb_queued) {        
 			schedule() ; 
         		if(signal_pending(current))	{            
-				printk(KERN_WARNING "%s: Signal received in open.\n",
-                			dev->name);
-            			printk(KERN_WARNING "SISR=%x LISR=%x\n",
-                			readl(olympic_mmio+SISR),
-                			readl(olympic_mmio+LISR));
+//				printk(KERN_WARNING "%s: Signal received in open.\n",
+;
+//            			printk(KERN_WARNING "SISR=%x LISR=%x\n",
+//                			readl(olympic_mmio+SISR),
+;
             			olympic_priv->srb_queued=0;
             			break;
         		}
 			if (time_after(jiffies, t + 10*HZ)) {
-				printk(KERN_WARNING "%s: SRB timed out.\n",dev->name);
+;
 				olympic_priv->srb_queued=0;
 				break ; 
 			} 
@@ -531,10 +531,10 @@ static int olympic_open(struct net_device *dev)
 		set_current_state(TASK_RUNNING) ; 
 		olympic_priv->srb_queued = 0 ; 
 #if OLYMPIC_DEBUG
-		printk("init_srb(%p): ",init_srb);
+;
 		for(i=0;i<20;i++)
-			printk("%02x ",readb(init_srb+i));
-		printk("\n");
+;
+;
 #endif
 		
 		/* If we get the same return response as we set, the interrupt wasn't raised and the open
@@ -543,14 +543,14 @@ static int olympic_open(struct net_device *dev)
 
 		switch (resp = readb(init_srb+2)) {
 		case OLYMPIC_CLEAR_RET_CODE:
-			printk(KERN_WARNING "%s: Adapter Open time out or error.\n", dev->name) ; 
+;
 			goto out;
 		case 0:
 			open_finished = 1;
 			break;
 		case 0x07:
 			if (!olympic_priv->olympic_ring_speed && open_finished) { /* Autosense , first time around */
-				printk(KERN_WARNING "%s: Retrying at different ring speed\n", dev->name);
+;
 				open_finished = 0 ;  
 				continue;
 			}
@@ -558,22 +558,22 @@ static int olympic_open(struct net_device *dev)
 			err = readb(init_srb+7);
 
 			if (!olympic_priv->olympic_ring_speed && ((err & 0x0f) == 0x0d)) { 
-				printk(KERN_WARNING "%s: Tried to autosense ring speed with no monitors present\n",dev->name);
-				printk(KERN_WARNING "%s: Please try again with a specified ring speed\n",dev->name);
+;
+;
 			} else {
-				printk(KERN_WARNING "%s: %s - %s\n", dev->name,
-					open_maj_error[(err & 0xf0) >> 4],
-					open_min_error[(err & 0x0f)]);
+//				printk(KERN_WARNING "%s: %s - %s\n", dev->name,
+//					open_maj_error[(err & 0xf0) >> 4],
+;
 			}
 			goto out;
 
 		case 0x32:
-			printk(KERN_WARNING "%s: Invalid LAA: %pM\n",
-			       dev->name, olympic_priv->olympic_laa);
+//			printk(KERN_WARNING "%s: Invalid LAA: %pM\n",
+;
 			goto out;
 
 		default:
-			printk(KERN_WARNING "%s: Bad OPEN response: %x\n", dev->name, resp);
+;
 			goto out;
 
 		}
@@ -581,7 +581,7 @@ static int olympic_open(struct net_device *dev)
 
 	if (readb(init_srb+18) & (1<<3)) 
 		if (olympic_priv->olympic_message_level) 
-			printk(KERN_INFO "%s: Opened in FDX Mode\n",dev->name);
+;
 
 	if (readb(init_srb+18) & (1<<1))
 		olympic_priv->olympic_ring_speed = 100 ; 
@@ -591,7 +591,7 @@ static int olympic_open(struct net_device *dev)
 		olympic_priv->olympic_ring_speed = 4 ; 
 
 	if (olympic_priv->olympic_message_level) 
-		printk(KERN_INFO "%s: Opened in %d Mbps mode\n",dev->name, olympic_priv->olympic_ring_speed);
+;
 
 	olympic_priv->asb = swab16(readw(init_srb+8));
 	olympic_priv->srb = swab16(readw(init_srb+10));
@@ -624,7 +624,7 @@ static int olympic_open(struct net_device *dev)
 	}
 
 	if (i==0) {
-		printk(KERN_WARNING "%s: Not enough memory to allocate rx buffers. Adapter disabled\n",dev->name);
+;
 		goto out;
 	}
 
@@ -645,23 +645,23 @@ static int olympic_open(struct net_device *dev)
 	writew(i, olympic_mmio+RXSTATQCNT);
 
 #if OLYMPIC_DEBUG 
-	printk("# of rx buffers: %d, RXENQ: %x\n",i, readw(olympic_mmio+RXENQ));
-	printk("RXCSA: %x, rx_status_ring[0]: %p\n",readl(olympic_mmio+RXCSA),&olympic_priv->olympic_rx_status_ring[0]);
-	printk(" stat_ring[1]: %p, stat_ring[2]: %p, stat_ring[3]: %p\n", &(olympic_priv->olympic_rx_status_ring[1]), &(olympic_priv->olympic_rx_status_ring[2]), &(olympic_priv->olympic_rx_status_ring[3]) );
-	printk(" stat_ring[4]: %p, stat_ring[5]: %p, stat_ring[6]: %p\n", &(olympic_priv->olympic_rx_status_ring[4]), &(olympic_priv->olympic_rx_status_ring[5]), &(olympic_priv->olympic_rx_status_ring[6]) );
-	printk(" stat_ring[7]: %p\n", &(olympic_priv->olympic_rx_status_ring[7])  );
+;
+;
+;
+;
+;
 
-	printk("RXCDA: %x, rx_ring[0]: %p\n",readl(olympic_mmio+RXCDA),&olympic_priv->olympic_rx_ring[0]);
-	printk("Rx_ring_dma_addr = %08x, rx_status_dma_addr = %08x\n",
-		olympic_priv->rx_ring_dma_addr,olympic_priv->rx_status_ring_dma_addr) ; 
+;
+//	printk("Rx_ring_dma_addr = %08x, rx_status_dma_addr = %08x\n",
+;
 #endif
 
 	writew((((readw(olympic_mmio+RXENQ)) & 0x8000) ^ 0x8000) | i,olympic_mmio+RXENQ);
 
 #if OLYMPIC_DEBUG 
-	printk("# of rx buffers: %d, RXENQ: %x\n",i, readw(olympic_mmio+RXENQ));
-	printk("RXCSA: %x, rx_ring[0]: %p\n",readl(olympic_mmio+RXCSA),&olympic_priv->olympic_rx_status_ring[0]);
-	printk("RXCDA: %x, rx_ring[0]: %p\n",readl(olympic_mmio+RXCDA),&olympic_priv->olympic_rx_ring[0]);
+;
+;
+;
 #endif 
 
 	writel(SISR_RX_STATUS | SISR_RX_NOBUF,olympic_mmio+SISR_MASK_SUM);
@@ -694,8 +694,8 @@ static int olympic_open(struct net_device *dev)
 	writel(SISR_TX1_EOF | SISR_ADAPTER_CHECK | SISR_ARB_CMD | SISR_TRB_REPLY | SISR_ASB_FREE | SISR_ERR,olympic_mmio+SISR_MASK_SUM);
 
 #if OLYMPIC_DEBUG 
-	printk("BMCTL: %x\n",readl(olympic_mmio+BMCTL_SUM));
-	printk("SISR MASK: %x\n",readl(olympic_mmio+SISR_MASK));
+;
+;
 #endif
 
 	if (olympic_priv->olympic_network_monitor) { 
@@ -707,16 +707,16 @@ static int olympic_open(struct net_device *dev)
 
 		for (i = 0; i < 6; i++)
 			addr[i] = readb(oat+offsetof(struct olympic_adapter_addr_table,node_addr)+i);
-		printk("%s: Node Address: %pM\n", dev->name, addr);
-		printk("%s: Functional Address: %02x:%02x:%02x:%02x\n",dev->name, 
-			readb(oat+offsetof(struct olympic_adapter_addr_table,func_addr)), 
-			readb(oat+offsetof(struct olympic_adapter_addr_table,func_addr)+1),
-			readb(oat+offsetof(struct olympic_adapter_addr_table,func_addr)+2),
-			readb(oat+offsetof(struct olympic_adapter_addr_table,func_addr)+3));
+;
+//		printk("%s: Functional Address: %02x:%02x:%02x:%02x\n",dev->name, 
+//			readb(oat+offsetof(struct olympic_adapter_addr_table,func_addr)), 
+//			readb(oat+offsetof(struct olympic_adapter_addr_table,func_addr)+1),
+//			readb(oat+offsetof(struct olympic_adapter_addr_table,func_addr)+2),
+;
 
 		for (i = 0; i < 6; i++)
 			addr[i] = readb(opt+offsetof(struct olympic_parameters_table, up_node_addr)+i);
-		printk("%s: NAUN Address: %pM\n", dev->name, addr);
+;
 	}
 	
 	netif_start_queue(dev);
@@ -760,7 +760,7 @@ static void olympic_rx(struct net_device *dev)
 		olympic_priv->rx_status_last_received++ ;
 		olympic_priv->rx_status_last_received &= (OLYMPIC_RX_RING_SIZE -1);
 #if OLYMPIC_DEBUG
-		printk("rx status: %x rx len: %x\n", le32_to_cpu(rx_status->status_buffercnt), le32_to_cpu(rx_status->fragmentcnt_framelen));
+;
 #endif
 		length = le32_to_cpu(rx_status->fragmentcnt_framelen) & 0xffff;
 		buffer_cnt = le32_to_cpu(rx_status->status_buffercnt) & 0xffff; 
@@ -768,22 +768,22 @@ static void olympic_rx(struct net_device *dev)
 		frag_len = le32_to_cpu(rx_status->fragmentcnt_framelen) >> 16; 
 
 #if OLYMPIC_DEBUG 
-		printk("length: %x, frag_len: %x, buffer_cnt: %x\n", length, frag_len, buffer_cnt);
+;
 #endif
                 l_status_buffercnt = le32_to_cpu(rx_status->status_buffercnt);
 		if(l_status_buffercnt & 0xC0000000) {
 			if (l_status_buffercnt & 0x3B000000) {
 				if (olympic_priv->olympic_message_level) {
 					if (l_status_buffercnt & (1<<29))  /* Rx Frame Truncated */
-						printk(KERN_WARNING "%s: Rx Frame Truncated\n",dev->name);
+;
 					if (l_status_buffercnt & (1<<28)) /*Rx receive overrun */
-						printk(KERN_WARNING "%s: Rx Frame Receive overrun\n",dev->name);
+;
 					if (l_status_buffercnt & (1<<27)) /* No receive buffers */
-						printk(KERN_WARNING "%s: No receive buffers\n",dev->name);
+;
 					if (l_status_buffercnt & (1<<25)) /* Receive frame error detect */
-						printk(KERN_WARNING "%s: Receive frame error detect\n",dev->name);
+;
 					if (l_status_buffercnt & (1<<24)) /* Received Error Detect */
-						printk(KERN_WARNING "%s: Received Error Detect\n",dev->name);
+;
 				} 
 				olympic_priv->rx_ring_last_received += i ; 
 				olympic_priv->rx_ring_last_received &= (OLYMPIC_RX_RING_SIZE -1) ; 
@@ -797,7 +797,7 @@ static void olympic_rx(struct net_device *dev)
 				}
 
 				if (skb == NULL) {
-					printk(KERN_WARNING "%s: Not enough memory to copy packet to upper layers.\n",dev->name) ;
+;
 					dev->stats.rx_dropped++;
 					/* Update counters even though we don't transfer the frame */
 					olympic_priv->rx_ring_last_received += i ; 
@@ -937,7 +937,7 @@ static irqreturn_t olympic_interrupt(int irq, void *dev_id)
 
 	/* Hotswap gives us this on removal */
 	if (sisr == 0xffffffff) { 
-		printk(KERN_WARNING "%s: Hotswap adapter removal.\n",dev->name) ; 
+;
 		spin_unlock(&olympic_priv->olympic_lock) ; 
 		return IRQ_NONE;
 	} 
@@ -948,10 +948,10 @@ static irqreturn_t olympic_interrupt(int irq, void *dev_id)
 		/* If we ever get this the adapter is seriously dead. Only a reset is going to 
 		 * bring it back to life. We're talking pci bus errors and such like :( */ 
 		if((sisr & SISR_ERR) && (readl(olympic_mmio+EISR) & EISR_MASK_OPTIONS)) {
-			printk(KERN_ERR "Olympic: EISR Error, EISR=%08x\n",readl(olympic_mmio+EISR)) ; 
-			printk(KERN_ERR "The adapter must be reset to clear this condition.\n") ; 
-			printk(KERN_ERR "Please report this error to the driver maintainer and/\n") ; 
-			printk(KERN_ERR "or the linux-tr mailing list.\n") ; 
+;
+;
+;
+;
 			wake_up_interruptible(&olympic_priv->srb_wait);
 			spin_unlock(&olympic_priv->olympic_lock) ; 
 			return IRQ_HANDLED;
@@ -991,10 +991,10 @@ static irqreturn_t olympic_interrupt(int irq, void *dev_id)
 	
 		if (sisr & SISR_ADAPTER_CHECK) {
 			netif_stop_queue(dev);
-			printk(KERN_WARNING "%s: Adapter Check Interrupt Raised, 8 bytes of information follow:\n", dev->name);
+;
 			writel(readl(olympic_mmio+LAPWWC),olympic_mmio+LAPA);
 			adapter_check_area = olympic_priv->olympic_lap + ((readl(olympic_mmio+LAPWWC)) & (~0xf800)) ;
-			printk(KERN_WARNING "%s: Bytes %02x:%02x:%02x:%02x:%02x:%02x:%02x:%02x\n",dev->name, readb(adapter_check_area+0), readb(adapter_check_area+1), readb(adapter_check_area+2), readb(adapter_check_area+3), readb(adapter_check_area+4), readb(adapter_check_area+5), readb(adapter_check_area+6), readb(adapter_check_area+7)) ; 
+;
 			spin_unlock(&olympic_priv->olympic_lock) ; 
 			return IRQ_HANDLED; 
 		} /* SISR_ADAPTER_CHECK */
@@ -1023,8 +1023,8 @@ static irqreturn_t olympic_interrupt(int irq, void *dev_id)
                   	   	   /var/log/messages.  */
 		} /* SISR_RX_NOBUF */
 	} else { 
-		printk(KERN_WARNING "%s: Unexpected interrupt: %x\n",dev->name, sisr);
-		printk(KERN_WARNING "%s: SISR_MASK: %x\n",dev->name, readl(olympic_mmio+SISR_MASK)) ;
+;
+;
 	} /* One if the interrupts we want */
 	writel(SISR_MI,olympic_mmio+SISR_MASK_SUM);
 	
@@ -1095,14 +1095,14 @@ static int olympic_close(struct net_device *dev)
 		t = schedule_timeout_interruptible(60*HZ);
 
         	if(signal_pending(current))	{            
-			printk(KERN_WARNING "%s: SRB timed out.\n",dev->name);
-            		printk(KERN_WARNING "SISR=%x MISR=%x\n",readl(olympic_mmio+SISR),readl(olympic_mmio+LISR));
+;
+;
             		olympic_priv->srb_queued=0;
             		break;
         	}
 
 		if (t == 0) { 
-			printk(KERN_WARNING "%s: SRB timed out. May not be fatal.\n",dev->name);
+;
 		} 
 		olympic_priv->srb_queued=0;
     	}
@@ -1122,10 +1122,10 @@ static int olympic_close(struct net_device *dev)
 #if OLYMPIC_DEBUG
 	{
 	int i ; 
-	printk("srb(%p): ",srb);
+;
 	for(i=0;i<4;i++)
-		printk("%x ",readb(srb+i));
-	printk("\n");
+;
+;
 	}
 #endif
 	free_irq(dev->irq,dev);
@@ -1220,14 +1220,14 @@ static void olympic_srb_bh(struct net_device *dev)
 		case SRB_MODIFY_RECEIVE_OPTIONS:
 			switch (readb(srb+2)) { 
 				case 0x01:
-					printk(KERN_WARNING "%s: Unrecognized srb command\n",dev->name) ; 
+;
 					break ; 
 				case 0x04:
-					printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n",dev->name);
+;
 					break ; 
 				default:
 					if (olympic_priv->olympic_message_level) 
-						printk(KERN_WARNING "%s: Receive Options Modified to %x,%x\n",dev->name,olympic_priv->olympic_copy_all_options, olympic_priv->olympic_receive_options) ; 
+;
 					break ; 	
 			} /* switch srb[2] */ 
 			break ;
@@ -1240,19 +1240,19 @@ static void olympic_srb_bh(struct net_device *dev)
 				case 0x00:
 					break ; 
 				case 0x01:
-					printk(KERN_WARNING "%s: Unrecognized srb command\n",dev->name);
+;
 					break ;
 				case 0x04:
-					printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n",dev->name); 
+;
 					break ;
 				case 0x3c:
-					printk(KERN_WARNING "%s: Group/Functional address indicator bits not set correctly\n",dev->name) ; 
+;
 					break ;
 				case 0x3e: /* If we ever implement individual multicast addresses, will need to deal with this */
-					printk(KERN_WARNING "%s: Group address registers full\n",dev->name) ; 
+;
 					break ;  
 				case 0x55:
-					printk(KERN_INFO "%s: Group Address already set.\n",dev->name) ; 
+;
 					break ;
 				default:
 					break ; 
@@ -1267,13 +1267,13 @@ static void olympic_srb_bh(struct net_device *dev)
 				case 0x00:
 					break ; 
 				case 0x01:
-					printk(KERN_WARNING "%s: Unrecognized srb command\n",dev->name);
+;
 					break ; 
 				case 0x04:
-					printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n",dev->name) ; 
+;
 					break ; 
 				case 0x39: /* Must deal with this if individual multicast addresses used */
-					printk(KERN_INFO "%s: Group address not found\n",dev->name);
+;
 					break ;
 				default:
 					break ; 
@@ -1288,13 +1288,13 @@ static void olympic_srb_bh(struct net_device *dev)
 			switch (readb(srb+2)) { 
 				case 0x00:
 					if (olympic_priv->olympic_message_level)
-						printk(KERN_INFO "%s: Functional Address Mask Set\n",dev->name);
+;
 					break ;
 				case 0x01:
-					printk(KERN_WARNING "%s: Unrecognized srb command\n",dev->name);
+;
 					break ; 
 				case 0x04:
-					printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n",dev->name) ; 
+;
 					break ; 
 				default:
 					break ; 
@@ -1308,13 +1308,13 @@ static void olympic_srb_bh(struct net_device *dev)
 			switch (readb(srb+2)) { 
 				case 0x00: 
 					if (olympic_priv->olympic_message_level) 
-						printk(KERN_INFO "%s: Read Log issued\n",dev->name) ; 
+;
 					break ; 
 				case 0x01:
-					printk(KERN_WARNING "%s: Unrecognized srb command\n",dev->name);
+;
 					break ; 
 				case 0x04:
-					printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n",dev->name) ; 
+;
 					break ; 
 			
 			} /* switch srb[2] */
@@ -1326,13 +1326,13 @@ static void olympic_srb_bh(struct net_device *dev)
 			switch (readb(srb+2)) { 
 				case 0x00: 
 					if (olympic_priv->olympic_message_level) 
-						printk(KERN_INFO "%s: Read Source Routing Counters issued\n",dev->name) ; 
+;
 					break ; 
 				case 0x01:
-					printk(KERN_WARNING "%s: Unrecognized srb command\n",dev->name);
+;
 					break ; 
 				case 0x04:
-					printk(KERN_WARNING "%s: Adapter must be open for this operation, doh!!\n",dev->name) ; 
+;
 					break ; 
 				default:
 					break ; 
@@ -1340,7 +1340,7 @@ static void olympic_srb_bh(struct net_device *dev)
 			break ;
  
 		default:
-			printk(KERN_WARNING "%s: Unrecognized srb bh return value.\n",dev->name);
+;
 			break ; 
 	} /* switch srb[0] */
 
@@ -1352,17 +1352,17 @@ static int olympic_set_mac_address (struct net_device *dev, void *addr)
 	struct olympic_private *olympic_priv = netdev_priv(dev);
 
 	if (netif_running(dev)) { 
-		printk(KERN_WARNING "%s: Cannot set mac/laa address while card is open\n", dev->name) ; 
+;
 		return -EIO ; 
 	}
 
 	memcpy(olympic_priv->olympic_laa, saddr->sa_data,dev->addr_len) ; 
 	
 	if (olympic_priv->olympic_message_level) { 
- 		printk(KERN_INFO "%s: MAC/LAA Set to  = %x.%x.%x.%x.%x.%x\n",dev->name, olympic_priv->olympic_laa[0],
-		olympic_priv->olympic_laa[1], olympic_priv->olympic_laa[2],
-		olympic_priv->olympic_laa[3], olympic_priv->olympic_laa[4],
-		olympic_priv->olympic_laa[5]);
+// 		printk(KERN_INFO "%s: MAC/LAA Set to  = %x.%x.%x.%x.%x.%x\n",dev->name, olympic_priv->olympic_laa[0],
+//		olympic_priv->olympic_laa[1], olympic_priv->olympic_laa[2],
+//		olympic_priv->olympic_laa[3], olympic_priv->olympic_laa[4],
+;
 	} 
 
 	return 0 ; 
@@ -1402,15 +1402,15 @@ static void olympic_arb_cmd(struct net_device *dev)
 		frame_data = buf_ptr+offsetof(struct mac_receive_buffer,frame_data) ; 
 
 		for (i=0 ;  i < 14 ; i++) { 
-			printk("Loc %d = %02x\n",i,readb(frame_data + i)); 
+;
 		}
 
-		printk("next %04x, fs %02x, len %04x\n",readw(buf_ptr+offsetof(struct mac_receive_buffer,next)), readb(buf_ptr+offsetof(struct mac_receive_buffer,frame_status)), readw(buf_ptr+offsetof(struct mac_receive_buffer,buffer_length)));
+;
 }
 #endif 
 		mac_frame = dev_alloc_skb(frame_len) ; 
 		if (!mac_frame) {
-			printk(KERN_WARNING "%s: Memory squeeze, dropping frame.\n", dev->name);
+;
 			goto drop_frame;
 		}
 
@@ -1427,12 +1427,12 @@ static void olympic_arb_cmd(struct net_device *dev)
 
 		if (olympic_priv->olympic_network_monitor) { 
 			struct trh_hdr *mac_hdr;
-			printk(KERN_WARNING "%s: Received MAC Frame, details:\n",dev->name);
+;
 			mac_hdr = tr_hdr(mac_frame);
-			printk(KERN_WARNING "%s: MAC Frame Dest. Addr: %pM\n",
-			       dev->name, mac_hdr->daddr);
-			printk(KERN_WARNING "%s: MAC Frame Srce. Addr: %pM\n",
-			       dev->name, mac_hdr->saddr);
+//			printk(KERN_WARNING "%s: MAC Frame Dest. Addr: %pM\n",
+;
+//			printk(KERN_WARNING "%s: MAC Frame Srce. Addr: %pM\n",
+;
 		}
 		netif_rx(mac_frame);
 
@@ -1473,13 +1473,13 @@ drop_frame:
 
 		if (lan_status_diff & (LSC_LWF | LSC_ARW | LSC_FPE | LSC_RR) ) { 
 			if (lan_status_diff & LSC_LWF) 
-					printk(KERN_WARNING "%s: Short circuit detected on the lobe\n",dev->name);
+;
 			if (lan_status_diff & LSC_ARW) 
-					printk(KERN_WARNING "%s: Auto removal error\n",dev->name);
+;
 			if (lan_status_diff & LSC_FPE)
-					printk(KERN_WARNING "%s: FDX Protocol Error\n",dev->name);
+;
 			if (lan_status_diff & LSC_RR) 
-					printk(KERN_WARNING "%s: Force remove MAC frame received\n",dev->name);
+;
 		
 			/* Adapter has been closed by the hardware */
 		
@@ -1490,30 +1490,30 @@ drop_frame:
 			writel(readl(olympic_mmio+BCTL)&~(3<<13),olympic_mmio+BCTL);
 			netif_stop_queue(dev);
 			olympic_priv->srb = readw(olympic_priv->olympic_lap + LAPWWO) ; 
-			printk(KERN_WARNING "%s: Adapter has been closed\n", dev->name);
+;
 		} /* If serious error */
 		
 		if (olympic_priv->olympic_message_level) { 
 			if (lan_status_diff & LSC_SIG_LOSS) 
-					printk(KERN_WARNING "%s: No receive signal detected\n", dev->name);
+;
 			if (lan_status_diff & LSC_HARD_ERR)
-					printk(KERN_INFO "%s: Beaconing\n",dev->name);
+;
 			if (lan_status_diff & LSC_SOFT_ERR)
-					printk(KERN_WARNING "%s: Adapter transmitted Soft Error Report Mac Frame\n",dev->name);
+;
 			if (lan_status_diff & LSC_TRAN_BCN) 
-					printk(KERN_INFO "%s: We are transmitting the beacon, aaah\n",dev->name);
+;
 			if (lan_status_diff & LSC_SS) 
-					printk(KERN_INFO "%s: Single Station on the ring\n", dev->name);
+;
 			if (lan_status_diff & LSC_RING_REC)
-					printk(KERN_INFO "%s: Ring recovery ongoing\n",dev->name);
+;
 			if (lan_status_diff & LSC_FDX_MODE)
-					printk(KERN_INFO "%s: Operating in FDX mode\n",dev->name);
+;
 		} 	
 		
 		if (lan_status_diff & LSC_CO) { 
 					
 				if (olympic_priv->olympic_message_level) 
-					printk(KERN_INFO "%s: Counter Overflow\n", dev->name);
+;
 					
 				/* Issue READ.LOG command */
 
@@ -1533,7 +1533,7 @@ drop_frame:
 		if (lan_status_diff & LSC_SR_CO) { 
 
 				if (olympic_priv->olympic_message_level)
-					printk(KERN_INFO "%s: Source routing counters overflow\n", dev->name);
+;
 
 				/* Issue a READ.SR.COUNTERS */
 				
@@ -1552,7 +1552,7 @@ drop_frame:
 	
 	}  /* Lan.change.status */
 	else
-		printk(KERN_WARNING "%s: Unknown arb command\n", dev->name);
+;
 }
 
 static void olympic_asb_bh(struct net_device *dev) 
@@ -1579,16 +1579,16 @@ static void olympic_asb_bh(struct net_device *dev)
 	if (olympic_priv->asb_queued == 2) { 
 		switch (readb(asb_block+2)) {
 			case 0x01:
-				printk(KERN_WARNING "%s: Unrecognized command code\n", dev->name);
+;
 				break ;
 			case 0x26:
-				printk(KERN_WARNING "%s: Unrecognized buffer address\n", dev->name);
+;
 				break ;
 			case 0xFF:
 				/* Valid response, everything should be ok again */
 				break ;
 			default:
-				printk(KERN_WARNING "%s: Invalid return code in asb\n",dev->name);
+;
 				break ;
 		}
 	}

@@ -537,15 +537,15 @@ static int __devinit dfx_register(struct device *bdev)
 
 	dev = alloc_fddidev(sizeof(*bp));
 	if (!dev) {
-		printk(KERN_ERR "%s: Unable to allocate fddidev, aborting\n",
-		       print_name);
+//		printk(KERN_ERR "%s: Unable to allocate fddidev, aborting\n",
+;
 		return -ENOMEM;
 	}
 
 	/* Enable PCI device. */
 	if (dfx_bus_pci && pci_enable_device(to_pci_dev(bdev))) {
-		printk(KERN_ERR "%s: Cannot enable PCI device, aborting\n",
-		       print_name);
+//		printk(KERN_ERR "%s: Cannot enable PCI device, aborting\n",
+;
 		goto err_out;
 	}
 
@@ -562,9 +562,9 @@ static int __devinit dfx_register(struct device *bdev)
 	else
 		region = request_region(bar_start, bar_len, print_name);
 	if (!region) {
-		printk(KERN_ERR "%s: Cannot reserve I/O resource "
-		       "0x%lx @ 0x%lx, aborting\n",
-		       print_name, (long)bar_len, (long)bar_start);
+//		printk(KERN_ERR "%s: Cannot reserve I/O resource "
+//		       "0x%lx @ 0x%lx, aborting\n",
+;
 		err = -EBUSY;
 		goto err_out_disable;
 	}
@@ -573,7 +573,7 @@ static int __devinit dfx_register(struct device *bdev)
 	if (dfx_use_mmio) {
 		bp->base.mem = ioremap_nocache(bar_start, bar_len);
 		if (!bp->base.mem) {
-			printk(KERN_ERR "%s: Cannot map MMIO\n", print_name);
+;
 			err = -ENOMEM;
 			goto err_out_region;
 		}
@@ -597,7 +597,7 @@ static int __devinit dfx_register(struct device *bdev)
 	if (err)
 		goto err_out_kfree;
 
-	printk("%s: registered as %s\n", print_name, dev->name);
+;
 	return 0;
 
 err_out_kfree:
@@ -673,7 +673,7 @@ static void __devinit dfx_bus_init(struct net_device *dev)
 	int dfx_use_mmio = DFX_MMIO || dfx_bus_tc;
 	u8 val;
 
-	DBG_printk("In dfx_bus_init...\n");
+;
 
 	/* Initialize a pointer back to the net_device struct */
 	bp->dev = dev;
@@ -817,7 +817,7 @@ static void __devexit dfx_bus_uninit(struct net_device *dev)
 	int dfx_bus_eisa = DFX_BUS_EISA(bdev);
 	u8 val;
 
-	DBG_printk("In dfx_bus_uninit...\n");
+;
 
 	/* Uninitialize adapter based on bus type */
 
@@ -873,7 +873,7 @@ static void __devinit dfx_bus_config_check(DFX_board_t *bp)
 	int	status;				/* return code from adapter port control call */
 	u32	host_data;			/* LW data returned from port control call */
 
-	DBG_printk("In dfx_bus_config_check...\n");
+;
 
 	/* Configuration check only valid for EISA adapter */
 
@@ -979,7 +979,7 @@ static int __devinit dfx_driver_init(struct net_device *dev,
 	__le32 le32;
 	char *board_name = NULL;
 
-	DBG_printk("In dfx_driver_init...\n");
+;
 
 	/* Initialize bus-specific hardware registers */
 
@@ -1022,8 +1022,8 @@ static int __devinit dfx_driver_init(struct net_device *dev,
 
 	if (dfx_hw_port_ctrl_req(bp, PI_PCTRL_M_MLA, PI_PDATA_A_MLA_K_LO, 0,
 				 &data) != DFX_K_SUCCESS) {
-		printk("%s: Could not read adapter factory MAC address!\n",
-		       print_name);
+//		printk("%s: Could not read adapter factory MAC address!\n",
+;
 		return DFX_K_FAILURE;
 	}
 	le32 = cpu_to_le32(data);
@@ -1031,8 +1031,8 @@ static int __devinit dfx_driver_init(struct net_device *dev,
 
 	if (dfx_hw_port_ctrl_req(bp, PI_PCTRL_M_MLA, PI_PDATA_A_MLA_K_HI, 0,
 				 &data) != DFX_K_SUCCESS) {
-		printk("%s: Could not read adapter factory MAC address!\n",
-		       print_name);
+//		printk("%s: Could not read adapter factory MAC address!\n",
+;
 		return DFX_K_FAILURE;
 	}
 	le32 = cpu_to_le32(data);
@@ -1073,8 +1073,8 @@ static int __devinit dfx_driver_init(struct net_device *dev,
 						   &bp->kmalloced_dma,
 						   GFP_ATOMIC);
 	if (top_v == NULL) {
-		printk("%s: Could not allocate memory for host buffers "
-		       "and structures!\n", print_name);
+//		printk("%s: Could not allocate memory for host buffers "
+;
 		return DFX_K_FAILURE;
 	}
 	memset(top_v, 0, alloc_size);	/* zero out memory before continuing */
@@ -1133,17 +1133,17 @@ static int __devinit dfx_driver_init(struct net_device *dev,
 
 	/* Display virtual and physical addresses if debug driver */
 
-	DBG_printk("%s: Descriptor block virt = %0lX, phys = %0X\n",
-		   print_name,
-		   (long)bp->descr_block_virt, bp->descr_block_phys);
-	DBG_printk("%s: Command Request buffer virt = %0lX, phys = %0X\n",
-		   print_name, (long)bp->cmd_req_virt, bp->cmd_req_phys);
-	DBG_printk("%s: Command Response buffer virt = %0lX, phys = %0X\n",
-		   print_name, (long)bp->cmd_rsp_virt, bp->cmd_rsp_phys);
-	DBG_printk("%s: Receive buffer block virt = %0lX, phys = %0X\n",
-		   print_name, (long)bp->rcv_block_virt, bp->rcv_block_phys);
-	DBG_printk("%s: Consumer block virt = %0lX, phys = %0X\n",
-		   print_name, (long)bp->cons_block_virt, bp->cons_block_phys);
+//	DBG_printk("%s: Descriptor block virt = %0lX, phys = %0X\n",
+//		   print_name,
+;
+//	DBG_printk("%s: Command Request buffer virt = %0lX, phys = %0X\n",
+;
+//	DBG_printk("%s: Command Response buffer virt = %0lX, phys = %0X\n",
+;
+//	DBG_printk("%s: Receive buffer block virt = %0lX, phys = %0X\n",
+;
+//	DBG_printk("%s: Consumer block virt = %0lX, phys = %0X\n",
+;
 
 	return DFX_K_SUCCESS;
 }
@@ -1184,7 +1184,7 @@ static int __devinit dfx_driver_init(struct net_device *dev,
 
 static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 	{
-	DBG_printk("In dfx_adap_init...\n");
+;
 
 	/* Disable PDQ interrupts first */
 
@@ -1194,7 +1194,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 
 	if (dfx_hw_dma_uninit(bp, bp->reset_type) != DFX_K_SUCCESS)
 		{
-		printk("%s: Could not uninitialize/reset adapter!\n", bp->dev->name);
+;
 		return DFX_K_FAILURE;
 		}
 
@@ -1228,7 +1228,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 							bp->burst_size,
 							NULL) != DFX_K_SUCCESS)
 		{
-		printk("%s: Could not set adapter burst size!\n", bp->dev->name);
+;
 		return DFX_K_FAILURE;
 		}
 
@@ -1245,7 +1245,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 							0,
 							NULL) != DFX_K_SUCCESS)
 		{
-		printk("%s: Could not set consumer block address!\n", bp->dev->name);
+;
 		return DFX_K_FAILURE;
 		}
 
@@ -1263,8 +1263,8 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 				 (u32)(bp->descr_block_phys |
 				       PI_PDATA_A_INIT_M_BSWAP_INIT),
 				 0, NULL) != DFX_K_SUCCESS) {
-		printk("%s: Could not set descriptor block address!\n",
-		       bp->dev->name);
+//		printk("%s: Could not set descriptor block address!\n",
+;
 		return DFX_K_FAILURE;
 	}
 
@@ -1277,7 +1277,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 	bp->cmd_req_virt->char_set.item[1].item_code	= PI_ITEM_K_EOL;
 	if (dfx_hw_dma_cmd_req(bp) != DFX_K_SUCCESS)
 		{
-		printk("%s: DMA command request failed!\n", bp->dev->name);
+;
 		return DFX_K_FAILURE;
 		}
 
@@ -1293,7 +1293,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 	bp->cmd_req_virt->snmp_set.item[2].item_code	= PI_ITEM_K_EOL;
 	if (dfx_hw_dma_cmd_req(bp) != DFX_K_SUCCESS)
 		{
-		printk("%s: DMA command request failed!\n", bp->dev->name);
+;
 		return DFX_K_FAILURE;
 		}
 
@@ -1301,7 +1301,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 
 	if (dfx_ctl_update_cam(bp) != DFX_K_SUCCESS)
 		{
-		printk("%s: Adapter CAM update failed!\n", bp->dev->name);
+;
 		return DFX_K_FAILURE;
 		}
 
@@ -1309,7 +1309,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 
 	if (dfx_ctl_update_filters(bp) != DFX_K_SUCCESS)
 		{
-		printk("%s: Adapter filters update failed!\n", bp->dev->name);
+;
 		return DFX_K_FAILURE;
 		}
 
@@ -1325,7 +1325,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 
 	if (dfx_rcv_init(bp, get_buffers))
 	        {
-		printk("%s: Receive buffer allocation failed\n", bp->dev->name);
+;
 		if (get_buffers)
 			dfx_rcv_flush(bp);
 		return DFX_K_FAILURE;
@@ -1336,7 +1336,7 @@ static int dfx_adap_init(DFX_board_t *bp, int get_buffers)
 	bp->cmd_req_virt->cmd_type = PI_CMD_K_START;
 	if (dfx_hw_dma_cmd_req(bp) != DFX_K_SUCCESS)
 		{
-		printk("%s: Start command failed\n", bp->dev->name);
+;
 		if (get_buffers)
 			dfx_rcv_flush(bp);
 		return DFX_K_FAILURE;
@@ -1384,14 +1384,14 @@ static int dfx_open(struct net_device *dev)
 	DFX_board_t *bp = netdev_priv(dev);
 	int ret;
 
-	DBG_printk("In dfx_open...\n");
+;
 
 	/* Register IRQ - support shared interrupts by passing device ptr */
 
 	ret = request_irq(dev->irq, dfx_interrupt, IRQF_SHARED, dev->name,
 			  dev);
 	if (ret) {
-		printk(KERN_ERR "%s: Requested IRQ %d is busy\n", dev->name, dev->irq);
+;
 		return ret;
 	}
 
@@ -1427,7 +1427,7 @@ static int dfx_open(struct net_device *dev)
 	bp->reset_type = PI_PDATA_A_RESET_M_SKIP_ST;	/* skip self-test */
 	if (dfx_adap_init(bp, 1) != DFX_K_SUCCESS)
 	{
-		printk(KERN_ERR "%s: Adapter open failed!\n", dev->name);
+;
 		free_irq(dev->irq, dev);
 		return -EAGAIN;
 	}
@@ -1474,7 +1474,7 @@ static int dfx_close(struct net_device *dev)
 {
 	DFX_board_t *bp = netdev_priv(dev);
 
-	DBG_printk("In dfx_close...\n");
+;
 
 	/* Disable PDQ interrupts first */
 
@@ -1572,43 +1572,43 @@ static void dfx_int_pr_halt_id(DFX_board_t	*bp)
 	switch (halt_id)
 		{
 		case PI_HALT_ID_K_SELFTEST_TIMEOUT:
-			printk("%s: Halt ID: Selftest Timeout\n", bp->dev->name);
+;
 			break;
 
 		case PI_HALT_ID_K_PARITY_ERROR:
-			printk("%s: Halt ID: Host Bus Parity Error\n", bp->dev->name);
+;
 			break;
 
 		case PI_HALT_ID_K_HOST_DIR_HALT:
-			printk("%s: Halt ID: Host-Directed Halt\n", bp->dev->name);
+;
 			break;
 
 		case PI_HALT_ID_K_SW_FAULT:
-			printk("%s: Halt ID: Adapter Software Fault\n", bp->dev->name);
+;
 			break;
 
 		case PI_HALT_ID_K_HW_FAULT:
-			printk("%s: Halt ID: Adapter Hardware Fault\n", bp->dev->name);
+;
 			break;
 
 		case PI_HALT_ID_K_PC_TRACE:
-			printk("%s: Halt ID: FDDI Network PC Trace Path Test\n", bp->dev->name);
+;
 			break;
 
 		case PI_HALT_ID_K_DMA_ERROR:
-			printk("%s: Halt ID: Adapter DMA Error\n", bp->dev->name);
+;
 			break;
 
 		case PI_HALT_ID_K_IMAGE_CRC_ERROR:
-			printk("%s: Halt ID: Firmware Image CRC Error\n", bp->dev->name);
+;
 			break;
 
 		case PI_HALT_ID_K_BUS_EXCEPTION:
-			printk("%s: Halt ID: 68000 Bus Exception\n", bp->dev->name);
+;
 			break;
 
 		default:
-			printk("%s: Halt ID: Unknown (code = %X)\n", bp->dev->name, halt_id);
+;
 			break;
 		}
 	}
@@ -1685,30 +1685,30 @@ static void dfx_int_type_0_process(DFX_board_t	*bp)
 		/* Check for Non-Existent Memory error */
 
 		if (type_0_status & PI_TYPE_0_STAT_M_NXM)
-			printk("%s: Non-Existent Memory Access Error\n", bp->dev->name);
+;
 
 		/* Check for Packet Memory Parity error */
 
 		if (type_0_status & PI_TYPE_0_STAT_M_PM_PAR_ERR)
-			printk("%s: Packet Memory Parity Error\n", bp->dev->name);
+;
 
 		/* Check for Host Bus Parity error */
 
 		if (type_0_status & PI_TYPE_0_STAT_M_BUS_PAR_ERR)
-			printk("%s: Host Bus Parity Error\n", bp->dev->name);
+;
 
 		/* Reset adapter and bring it back on-line */
 
 		bp->link_available = PI_K_FALSE;	/* link is no longer available */
 		bp->reset_type = 0;					/* rerun on-board diagnostics */
-		printk("%s: Resetting adapter...\n", bp->dev->name);
+;
 		if (dfx_adap_init(bp, 0) != DFX_K_SUCCESS)
 			{
-			printk("%s: Adapter reset failed!  Disabling adapter interrupts.\n", bp->dev->name);
+;
 			dfx_port_write_long(bp, PI_PDQ_K_REG_HOST_INT_ENB, PI_HOST_INT_K_DISABLE_ALL_INTS);
 			return;
 			}
-		printk("%s: Adapter reset successful!\n", bp->dev->name);
+;
 		return;
 		}
 
@@ -1742,21 +1742,21 @@ static void dfx_int_type_0_process(DFX_board_t	*bp)
 			 * leave the adapter in the broken state.
 			 */
 
-			printk("%s: Controller has transitioned to HALTED state!\n", bp->dev->name);
+;
 			dfx_int_pr_halt_id(bp);			/* display halt id as string */
 
 			/* Reset adapter and bring it back on-line */
 
 			bp->link_available = PI_K_FALSE;	/* link is no longer available */
 			bp->reset_type = 0;					/* rerun on-board diagnostics */
-			printk("%s: Resetting adapter...\n", bp->dev->name);
+;
 			if (dfx_adap_init(bp, 0) != DFX_K_SUCCESS)
 				{
-				printk("%s: Adapter reset failed!  Disabling adapter interrupts.\n", bp->dev->name);
+;
 				dfx_port_write_long(bp, PI_PDQ_K_REG_HOST_INT_ENB, PI_HOST_INT_K_DISABLE_ALL_INTS);
 				return;
 				}
-			printk("%s: Adapter reset successful!\n", bp->dev->name);
+;
 			}
 		else if (state == PI_STATE_K_LINK_AVAIL)
 			{
@@ -2247,11 +2247,11 @@ static void dfx_ctl_set_multicast_list(struct net_device *dev)
 
 		if (dfx_ctl_update_cam(bp) != DFX_K_SUCCESS)
 			{
-			DBG_printk("%s: Could not update multicast address table!\n", dev->name);
+;
 			}
 		else
 			{
-			DBG_printk("%s: Multicast address table updated!  Added %d addresses.\n", dev->name, bp->mc_count);
+;
 			}
 		}
 
@@ -2259,11 +2259,11 @@ static void dfx_ctl_set_multicast_list(struct net_device *dev)
 
 	if (dfx_ctl_update_filters(bp) != DFX_K_SUCCESS)
 		{
-		DBG_printk("%s: Could not update adapter filters!\n", dev->name);
+;
 		}
 	else
 		{
-		DBG_printk("%s: Adapter filters updated!\n", dev->name);
+;
 		}
 	}
 
@@ -2336,11 +2336,11 @@ static int dfx_ctl_set_mac_address(struct net_device *dev, void *addr)
 
 		if (dfx_ctl_update_filters(bp) != DFX_K_SUCCESS)
 			{
-			DBG_printk("%s: Could not update adapter filters!\n", dev->name);
+;
 			}
 		else
 			{
-			DBG_printk("%s: Adapter filters updated!\n", dev->name);
+;
 			}
 		}
 
@@ -2348,11 +2348,11 @@ static int dfx_ctl_set_mac_address(struct net_device *dev, void *addr)
 
 	if (dfx_ctl_update_cam(bp) != DFX_K_SUCCESS)
 		{
-		DBG_printk("%s: Could not set new MAC address!\n", dev->name);
+;
 		}
 	else
 		{
-		DBG_printk("%s: Adapter CAM updated with new MAC address\n", dev->name);
+;
 		}
 	return 0;			/* always return zero */
 	}
@@ -3080,7 +3080,7 @@ static void dfx_rcv_queue_process(
 					skb = dev_alloc_skb(pkt_len+3);	/* alloc new buffer to pass up, add room for PRH */
 				if (skb == NULL)
 					{
-					printk("%s: Could not allocate receive buffer.  Dropping packet.\n", bp->dev->name);
+;
 					bp->rcv_discards++;
 					break;
 					}
@@ -3207,8 +3207,8 @@ static netdev_tx_t dfx_xmt_queue_pkt(struct sk_buff *skb,
 
 	if (!IN_RANGE(skb->len, FDDI_K_LLC_ZLEN, FDDI_K_LLC_LEN))
 	{
-		printk("%s: Invalid packet length - %u bytes\n",
-			dev->name, skb->len);
+//		printk("%s: Invalid packet length - %u bytes\n",
+;
 		bp->xmt_length_errors++;		/* bump error counter */
 		netif_wake_queue(dev);
 		dev_kfree_skb(skb);

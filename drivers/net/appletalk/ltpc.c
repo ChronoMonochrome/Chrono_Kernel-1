@@ -297,7 +297,7 @@ static void enQ(struct xmitQel *qel)
 	spin_unlock_irqrestore(&txqueue_lock, flags);
 
 	if (debug & DEBUG_LOWER)
-		printk("enqueued a 0x%02x command\n",qel->cbuf[0]);
+;
 }
 
 static struct xmitQel *deQ(void)
@@ -316,11 +316,11 @@ static struct xmitQel *deQ(void)
 
 	if ((debug & DEBUG_LOWER) && qel) {
 		int n;
-		printk(KERN_DEBUG "ltpc: dequeued command ");
+;
 		n = qel->cbuflen;
 		if (n>100) n=100;
-		for(i=0;i<n;i++) printk("%02x ",qel->cbuf[i]);
-		printk("\n");
+;
+;
 	}
 
 	return qel;
@@ -386,7 +386,7 @@ static void handlefc(struct net_device *dev)
 	inb_p(base+3);
 	inb_p(base+2);
 
-	if ( wait_timeout(dev,0xfc) ) printk("timed out in handlefc\n");
+;
 }
 
 /* read data from the card */
@@ -408,7 +408,7 @@ static void handlefd(struct net_device *dev)
 	inb_p(base+3);
 	inb_p(base+2);
 
-	if ( wait_timeout(dev,0xfd) ) printk("timed out in handlefd\n");
+;
 	sendup_buffer(dev);
 } 
 
@@ -434,8 +434,8 @@ static void handlewrite(struct net_device *dev)
 
 	if ( wait_timeout(dev,0xfb) ) {
 		flags=claim_dma_lock();
-		printk("timed out in handlewrite, dma res %d\n",
-			get_dma_residue(dev->dma) );
+//		printk("timed out in handlewrite, dma res %d\n",
+;
 		release_dma_lock(flags);
 	}
 }
@@ -460,7 +460,7 @@ static void handleread(struct net_device *dev)
 
 	inb_p(base+3);
 	inb_p(base+2);
-	if ( wait_timeout(dev,0xfb) ) printk("timed out in handleread\n");
+;
 }
 
 static void handlecommand(struct net_device *dev)
@@ -480,7 +480,7 @@ static void handlecommand(struct net_device *dev)
 	release_dma_lock(flags);
 	inb_p(base+3);
 	inb_p(base+2);
-	if ( wait_timeout(dev,0xfa) ) printk("timed out in handlecommand\n");
+;
 } 
 
 /* ready made command for getting the result from the card */
@@ -520,7 +520,7 @@ static void idle(struct net_device *dev)
 
 loop:
 	if (0>oops--) { 
-		printk("idle: looped too many times\n");
+;
 		goto done;
 	}
 
@@ -530,17 +530,17 @@ loop:
 	switch(state) {
 		case 0xfc:
 			/* incoming command */
-			if (debug & DEBUG_LOWER) printk("idle: fc\n");
+;
 			handlefc(dev); 
 			break;
 		case 0xfd:
 			/* incoming data */
-			if(debug & DEBUG_LOWER) printk("idle: fd\n");
+;
 			handlefd(dev); 
 			break;
 		case 0xf9:
 			/* result ready */
-			if (debug & DEBUG_LOWER) printk("idle: f9\n");
+;
 			if(!mboxinuse[0]) {
 				mboxinuse[0] = 1;
 				qels[0].cbuf = rescbuf;
@@ -554,7 +554,7 @@ loop:
 			inb_p(dev->base_addr+1);
 			inb_p(dev->base_addr+0);
 			if( wait_timeout(dev,0xf9) )
-				printk("timed out idle f9\n");
+;
 			break;
 		case 0xf8:
 			/* ?? */
@@ -562,26 +562,26 @@ loop:
 				inb_p(dev->base_addr+1);
 				inb_p(dev->base_addr+0);
 				if(wait_timeout(dev,0xf8) )
-					printk("timed out idle f8\n");
+;
 			} else {
 				goto done;
 			}
 			break;
 		case 0xfa:
 			/* waiting for command */
-			if(debug & DEBUG_LOWER) printk("idle: fa\n");
+;
 			if (xmQhd) {
 				q=deQ();
 				memcpy(ltdmacbuf,q->cbuf,q->cbuflen);
 				ltdmacbuf[1] = q->mailbox;
 				if (debug>1) { 
 					int n;
-					printk("ltpc: sent command     ");
+;
 					n = q->cbuflen;
 					if (n>100) n=100;
 					for(i=0;i<n;i++)
-						printk("%02x ",ltdmacbuf[i]);
-					printk("\n");
+;
+;
 				}
 				handlecommand(dev);
 					if(0xfa==inb_p(base+6)) {
@@ -600,14 +600,14 @@ loop:
 					qels[0].mailbox = 0;
 					enQ(&qels[0]);
 				} else {
-					printk("trouble: response command already queued\n");
+;
 					goto done;
 				}
 			} 
 			break;
 		case 0Xfb:
 			/* data transfer ready */
-			if(debug & DEBUG_LOWER) printk("idle: fb\n");
+;
 			if(q->QWrite) {
 				memcpy(ltdmabuf,q->dbuf,q->dbuflen);
 				handlewrite(dev);
@@ -664,7 +664,7 @@ static int do_write(struct net_device *dev, void *cbuf, int cbuflen,
 		mboxinuse[i]=0;
 		return ret;
 	}
-	printk("ltpc: could not allocate mbox\n");
+;
 	return -1;
 }
 
@@ -688,7 +688,7 @@ static int do_read(struct net_device *dev, void *cbuf, int cbuflen,
 		mboxinuse[i]=0;
 		return ret;
 	}
-	printk("ltpc: could not allocate mbox\n");
+;
 	return -1;
 }
 
@@ -726,7 +726,7 @@ static int sendup_buffer (struct net_device *dev)
 	struct lt_rcvlap *ltc = (struct lt_rcvlap *) ltdmacbuf;
 
 	if (ltc->command != LT_RCVLAP) {
-		printk("unknown command 0x%02x from ltpc card\n",ltc->command);
+;
 		return -1;
 	}
 	dnode = ltc->dnode;
@@ -738,13 +738,13 @@ static int sendup_buffer (struct net_device *dev)
 	if (llaptype == 1) 
 		sklen += 8;  /* correct for short ddp */
 	if(sklen > 800) {
-		printk(KERN_INFO "%s: nonsense length in ltpc command 0x14: 0x%08x\n",
-			dev->name,sklen);
+//		printk(KERN_INFO "%s: nonsense length in ltpc command 0x14: 0x%08x\n",
+;
 		return -1;
 	}
 
 	if ( (llaptype==0) || (llaptype>2) ) {
-		printk(KERN_INFO "%s: unknown LLAP type: %d\n",dev->name,llaptype);
+;
 		return -1;
 	}
 
@@ -752,8 +752,8 @@ static int sendup_buffer (struct net_device *dev)
 	skb = dev_alloc_skb(3+sklen);
 	if (skb == NULL) 
 	{
-		printk("%s: dropping packet due to memory squeeze.\n",
-			dev->name);
+//		printk("%s: dropping packet due to memory squeeze.\n",
+;
 		return -1;
 	}
 	skb->dev = dev;
@@ -790,7 +790,7 @@ ltpc_interrupt(int irq, void *dev_id)
 	struct net_device *dev = dev_id;
 
 	if (dev==NULL) {
-		printk("ltpc_interrupt: unknown device.\n");
+;
 		return IRQ_NONE;
 	}
 
@@ -823,7 +823,7 @@ static int ltpc_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 	struct lt_init c;
 	int ltflags;
 
-	if(debug & DEBUG_VERBOSE) printk("ltpc_ioctl called\n");
+;
 
 	switch(cmd) {
 		case SIOCSIFADDR:
@@ -877,7 +877,7 @@ static void ltpc_poll(unsigned long l)
 	if(debug & DEBUG_VERBOSE) {
 		if (!ltpc_poll_counter) {
 			ltpc_poll_counter = 50;
-			printk("ltpc poll is alive\n");
+;
 		}
 		ltpc_poll_counter--;
 	}
@@ -911,20 +911,20 @@ static netdev_tx_t ltpc_xmit(struct sk_buff *skb, struct net_device *dev)
 	skb_reset_transport_header(skb);
 
 	if(debug & DEBUG_UPPER) {
-		printk("command ");
+;
 		for(i=0;i<6;i++)
 			printk("%02x ",((unsigned char *)&cbuf)[i]);
-		printk("\n");
+;
 	}
 
 	hdr = skb_transport_header(skb);
 	do_write(dev, &cbuf, sizeof(cbuf), hdr, skb->len);
 
 	if(debug & DEBUG_UPPER) {
-		printk("sent %d ddp bytes\n",skb->len);
+;
 		for (i = 0; i < skb->len; i++)
-			printk("%02x ", hdr[i]);
-		printk("\n");
+;
+;
 	}
 
 	dev->stats.tx_packets++;
@@ -1050,7 +1050,7 @@ struct net_device * __init ltpc_probe(void)
 	} 
 
 	/* give up in despair */
-	printk(KERN_ERR "LocalTalk card not found; 220 = %02x, 240 = %02x.\n", x,y);
+;
 	err = -ENODEV;
 	goto out1;
 
@@ -1069,7 +1069,7 @@ struct net_device * __init ltpc_probe(void)
 		autoirq = probe_irq_off(irq_mask);
 
 		if (autoirq == 0) {
-			printk(KERN_ERR "ltpc: probe at %#x failed to detect IRQ line.\n", io);
+;
 		} else {
 			irq = autoirq;
 		}
@@ -1078,7 +1078,7 @@ struct net_device * __init ltpc_probe(void)
 	/* allocate a DMA buffer */
 	ltdmabuf = (unsigned char *) dma_mem_alloc(1000);
 	if (!ltdmabuf) {
-		printk(KERN_ERR "ltpc: mem alloc failed\n");
+;
 		err = -ENOMEM;
 		goto out2;
 	}
@@ -1086,7 +1086,7 @@ struct net_device * __init ltpc_probe(void)
 	ltdmacbuf = &ltdmabuf[800];
 
 	if(debug & DEBUG_VERBOSE) {
-		printk("ltdmabuf pointer %08lx\n",(unsigned long) ltdmabuf);
+;
 	}
 
 	/* reset the card */
@@ -1112,16 +1112,16 @@ struct net_device * __init ltpc_probe(void)
 	   use it... */
 	dma = ltpc_probe_dma(io, dma);
 	if (!dma) {  /* no dma channel */
-		printk(KERN_ERR "No DMA channel found on ltpc card.\n");
+;
 		err = -ENODEV;
 		goto out3;
 	}
 
 	/* print out friendly message */
 	if(irq)
-		printk(KERN_INFO "Apple/Farallon LocalTalk-PC card at %03x, IR%d, DMA%d.\n",io,irq,dma);
+;
 	else
-		printk(KERN_INFO "Apple/Farallon LocalTalk-PC card at %03x, DMA%d.  Using polled mode.\n",io,dma);
+;
 
 	dev->netdev_ops = &ltpc_netdev;
 	dev->base_addr = io;
@@ -1152,7 +1152,7 @@ struct net_device * __init ltpc_probe(void)
 	}
 
 	if(debug & DEBUG_VERBOSE) {
-		printk("setting up timer and irq\n");
+;
 	}
 
 	/* grab it and don't let go :-) */
@@ -1162,7 +1162,7 @@ struct net_device * __init ltpc_probe(void)
 		(void) inb_p(io+7);  /* and reset irq line */
 	} else {
 		if( irq )
-			printk(KERN_ERR "ltpc: IRQ already in use, using polled mode.\n");
+;
 		dev->irq = 0;
 		/* polled mode -- 20 times per second */
 		/* this is really, really slow... should it poll more often? */
@@ -1240,8 +1240,8 @@ module_param(dma, int, 0);
 static int __init ltpc_module_init(void)
 {
         if(io == 0)
-		printk(KERN_NOTICE
-		       "ltpc: Autoprobing is not recommended for modules\n");
+//		printk(KERN_NOTICE
+;
 
 	dev_ltpc = ltpc_probe();
 	if (IS_ERR(dev_ltpc))
@@ -1254,35 +1254,35 @@ module_init(ltpc_module_init);
 static void __exit ltpc_cleanup(void)
 {
 
-	if(debug & DEBUG_VERBOSE) printk("unregister_netdev\n");
+;
 	unregister_netdev(dev_ltpc);
 
 	ltpc_timer.data = 0;  /* signal the poll routine that we're done */
 
 	del_timer_sync(&ltpc_timer);
 
-	if(debug & DEBUG_VERBOSE) printk("freeing irq\n");
+;
 
 	if (dev_ltpc->irq)
 		free_irq(dev_ltpc->irq, dev_ltpc);
 
-	if(debug & DEBUG_VERBOSE) printk("freeing dma\n");
+;
 
 	if (dev_ltpc->dma)
 		free_dma(dev_ltpc->dma);
 
-	if(debug & DEBUG_VERBOSE) printk("freeing ioaddr\n");
+;
 
 	if (dev_ltpc->base_addr)
 		release_region(dev_ltpc->base_addr,8);
 
 	free_netdev(dev_ltpc);
 
-	if(debug & DEBUG_VERBOSE) printk("free_pages\n");
+;
 
 	free_pages( (unsigned long) ltdmabuf, get_order(1000));
 
-	if(debug & DEBUG_VERBOSE) printk("returning from cleanup_module\n");
+;
 }
 
 module_exit(ltpc_cleanup);

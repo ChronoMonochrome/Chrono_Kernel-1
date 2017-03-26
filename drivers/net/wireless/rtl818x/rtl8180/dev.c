@@ -910,15 +910,15 @@ static int __devinit rtl8180_probe(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR "%s (rtl8180): Cannot enable new PCI device\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "%s (rtl8180): Cannot enable new PCI device\n",
+;
 		return err;
 	}
 
 	err = pci_request_regions(pdev, KBUILD_MODNAME);
 	if (err) {
-		printk(KERN_ERR "%s (rtl8180): Cannot obtain PCI resources\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "%s (rtl8180): Cannot obtain PCI resources\n",
+;
 		return err;
 	}
 
@@ -929,16 +929,16 @@ static int __devinit rtl8180_probe(struct pci_dev *pdev,
 
 	if (mem_len < sizeof(struct rtl818x_csr) ||
 	    io_len < sizeof(struct rtl818x_csr)) {
-		printk(KERN_ERR "%s (rtl8180): Too short PCI resources\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "%s (rtl8180): Too short PCI resources\n",
+;
 		err = -ENOMEM;
 		goto err_free_reg;
 	}
 
 	if ((err = pci_set_dma_mask(pdev, DMA_BIT_MASK(32))) ||
 	    (err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32)))) {
-		printk(KERN_ERR "%s (rtl8180): No suitable DMA available\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "%s (rtl8180): No suitable DMA available\n",
+;
 		goto err_free_reg;
 	}
 
@@ -946,8 +946,8 @@ static int __devinit rtl8180_probe(struct pci_dev *pdev,
 
 	dev = ieee80211_alloc_hw(sizeof(*priv), &rtl8180_ops);
 	if (!dev) {
-		printk(KERN_ERR "%s (rtl8180): ieee80211 alloc failed\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "%s (rtl8180): ieee80211 alloc failed\n",
+;
 		err = -ENOMEM;
 		goto err_free_reg;
 	}
@@ -964,8 +964,8 @@ static int __devinit rtl8180_probe(struct pci_dev *pdev,
 		priv->map = pci_iomap(pdev, 0, io_len);
 
 	if (!priv->map) {
-		printk(KERN_ERR "%s (rtl8180): Cannot map device memory\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "%s (rtl8180): Cannot map device memory\n",
+;
 		goto err_free_dev;
 	}
 
@@ -1007,8 +1007,8 @@ static int __devinit rtl8180_probe(struct pci_dev *pdev,
 		chip_name = "RTL8185vD";
 		break;
 	default:
-		printk(KERN_ERR "%s (rtl8180): Unknown chip! (0x%x)\n",
-		       pci_name(pdev), reg >> 25);
+//		printk(KERN_ERR "%s (rtl8180): Unknown chip! (0x%x)\n",
+;
 		goto err_iounmap;
 	}
 
@@ -1049,14 +1049,14 @@ static int __devinit rtl8180_probe(struct pci_dev *pdev,
 		rf_name = "RTL8255";
 		break;
 	default:
-		printk(KERN_ERR "%s (rtl8180): Unknown RF! (0x%x)\n",
-		       pci_name(pdev), eeprom_val);
+//		printk(KERN_ERR "%s (rtl8180): Unknown RF! (0x%x)\n",
+;
 		goto err_iounmap;
 	}
 
 	if (!priv->rf) {
-		printk(KERN_ERR "%s (rtl8180): %s RF frontend not supported!\n",
-		       pci_name(pdev), rf_name);
+//		printk(KERN_ERR "%s (rtl8180): %s RF frontend not supported!\n",
+;
 		goto err_iounmap;
 	}
 
@@ -1071,8 +1071,8 @@ static int __devinit rtl8180_probe(struct pci_dev *pdev,
 
 	eeprom_93cx6_multiread(&eeprom, 0x7, (__le16 *)mac_addr, 3);
 	if (!is_valid_ether_addr(mac_addr)) {
-		printk(KERN_WARNING "%s (rtl8180): Invalid hwaddr! Using"
-		       " randomly generated MAC addr\n", pci_name(pdev));
+//		printk(KERN_WARNING "%s (rtl8180): Invalid hwaddr! Using"
+;
 		random_ether_addr(mac_addr);
 	}
 	SET_IEEE80211_PERM_ADDR(dev, mac_addr);
@@ -1101,8 +1101,8 @@ static int __devinit rtl8180_probe(struct pci_dev *pdev,
 
 	err = ieee80211_register_hw(dev);
 	if (err) {
-		printk(KERN_ERR "%s (rtl8180): Cannot register device\n",
-		       pci_name(pdev));
+//		printk(KERN_ERR "%s (rtl8180): Cannot register device\n",
+;
 		goto err_iounmap;
 	}
 

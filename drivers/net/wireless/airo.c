@@ -1266,28 +1266,28 @@ static int flashputbuf(struct airo_info *ai);
 static int flashrestart(struct airo_info *ai,struct net_device *dev);
 
 #define airo_print(type, name, fmt, args...) \
-	printk(type DRV_NAME "(%s): " fmt "\n", name, ##args)
-
-#define airo_print_info(name, fmt, args...) \
-	airo_print(KERN_INFO, name, fmt, ##args)
-
-#define airo_print_dbg(name, fmt, args...) \
-	airo_print(KERN_DEBUG, name, fmt, ##args)
-
-#define airo_print_warn(name, fmt, args...) \
-	airo_print(KERN_WARNING, name, fmt, ##args)
-
-#define airo_print_err(name, fmt, args...) \
-	airo_print(KERN_ERR, name, fmt, ##args)
-
-#define AIRO_FLASH(dev) (((struct airo_info *)dev->ml_priv)->flash)
-
-/***********************************************************************
- *                              MIC ROUTINES                           *
- ***********************************************************************
- */
-
-static int RxSeqValid (struct airo_info *ai,miccntx *context,int mcast,u32 micSeq);
+//	printk(type DRV_NAME "(%s): " fmt "\n", name, ##args)
+//
+//#define airo_print_info(name, fmt, args...) \
+//	airo_print(KERN_INFO, name, fmt, ##args)
+//
+//#define airo_print_dbg(name, fmt, args...) \
+//	airo_print(KERN_DEBUG, name, fmt, ##args)
+//
+//#define airo_print_warn(name, fmt, args...) \
+//	airo_print(KERN_WARNING, name, fmt, ##args)
+//
+//#define airo_print_err(name, fmt, args...) \
+//	airo_print(KERN_ERR, name, fmt, ##args)
+//
+//#define AIRO_FLASH(dev) (((struct airo_info *)dev->ml_priv)->flash)
+//
+///***********************************************************************
+// *                              MIC ROUTINES                           *
+// ***********************************************************************
+// */
+//
+;
 static void MoveWindow(miccntx *context, u32 micSeq);
 static void emmh32_setseed(emmh32_context *context, u8 *pkey, int keylen,
 			   struct crypto_cipher *tfm);

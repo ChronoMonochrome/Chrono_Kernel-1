@@ -289,11 +289,11 @@ etrax_ethernet_init(void)
         struct net_local* np;
 	int i, err;
 
-	printk(KERN_INFO
-	       "ETRAX 100LX 10/100MBit ethernet v2.0 (c) 1998-2007 Axis Communications AB\n");
+//	printk(KERN_INFO
+;
 
 	if (cris_request_io_interface(if_eth, cardname)) {
-		printk(KERN_CRIT "etrax_ethernet_init failed to get IO interface\n");
+;
 		return -EBUSY;
 	}
 
@@ -443,7 +443,7 @@ e100_set_mac_address(struct net_device *dev, void *p)
 
 	/* show it in the log as well */
 
-	printk(KERN_INFO "%s: changed MAC to %pM\n", dev->name, dev->dev_addr);
+;
 
 	spin_unlock(&np->lock);
 
@@ -1053,8 +1053,8 @@ e100_tx_timeout(struct net_device *dev)
 
 	spin_lock_irqsave(&np->lock, flags);
 
-	printk(KERN_WARNING "%s: transmit timed out, %s?\n", dev->name,
-	       tx_done(dev) ? "IRQ problem" : "network cable problem");
+//	printk(KERN_WARNING "%s: transmit timed out, %s?\n", dev->name,
+;
 
 	/* remember we got an error */
 
@@ -1101,7 +1101,7 @@ e100_send_packet(struct sk_buff *skb, struct net_device *dev)
 	unsigned long flags;
 
 #ifdef ETHDEBUG
-	printk("send packet len %d\n", length);
+;
 #endif
 	spin_lock_irqsave(&np->lock, flags);  /* protect from tx_interrupt and ourself */
 
@@ -1204,13 +1204,13 @@ e100nw_interrupt(int irq, void *dev_id)
 		*R_NETWORK_TR_CTRL = network_tr_ctrl_shadow;
 		SETS(network_tr_ctrl_shadow, R_NETWORK_TR_CTRL, clr_error, nop);
 		dev->stats.tx_errors++;
-		D(printk("ethernet receiver underrun!\n"));
+;
 	}
 
 	/* check for overrun irq */
 	if (irqbits & IO_STATE(R_IRQ_MASK0_RD, overrun, active)) {
 		update_rx_stats(&dev->stats); /* this will ack the irq */
-		D(printk("ethernet receiver overrun!\n"));
+;
 	}
 	/* check for excessive collision irq */
 	if (irqbits & IO_STATE(R_IRQ_MASK0_RD, excessive_col, active)) {
@@ -1218,7 +1218,7 @@ e100nw_interrupt(int irq, void *dev_id)
 		*R_NETWORK_TR_CTRL = network_tr_ctrl_shadow;
 		SETS(network_tr_ctrl_shadow, R_NETWORK_TR_CTRL, clr_error, nop);
 		dev->stats.tx_errors++;
-		D(printk("ethernet excessive collisions!\n"));
+;
 	}
 	return IRQ_HANDLED;
 }
@@ -1251,7 +1251,7 @@ e100_rx(struct net_device *dev)
 	dev->stats.rx_bytes += length;
 
 #ifdef ETHDEBUG
-	printk("Got a packet of length %d:\n", length);
+;
 	/* dump the first bytes in the packet */
 	skb_data_ptr = (unsigned char *)phys_to_virt(myNextRxDesc->descr.buf);
 	for (i = 0; i < 8; i++) {
@@ -1267,7 +1267,7 @@ e100_rx(struct net_device *dev)
 		skb = dev_alloc_skb(length - ETHER_HEAD_LEN);
 		if (!skb) {
 			dev->stats.rx_errors++;
-			printk(KERN_NOTICE "%s: Memory squeeze, dropping packet.\n", dev->name);
+;
 			goto update_nextrxdesc;
 		}
 
@@ -1275,10 +1275,10 @@ e100_rx(struct net_device *dev)
 		skb_data_ptr = skb_push(skb, ETHER_HEAD_LEN); /* allocate room for the header */
 
 #ifdef ETHDEBUG
-		printk("head = 0x%x, data = 0x%x, tail = 0x%x, end = 0x%x\n",
-		       skb->head, skb->data, skb_tail_pointer(skb),
-		       skb_end_pointer(skb));
-		printk("copying packet to 0x%x.\n", skb_data_ptr);
+//		printk("head = 0x%x, data = 0x%x, tail = 0x%x, end = 0x%x\n",
+//		       skb->head, skb->data, skb_tail_pointer(skb),
+;
+;
 #endif
 
 		memcpy(skb_data_ptr, phys_to_virt(myNextRxDesc->descr.buf), length);
@@ -1293,7 +1293,7 @@ e100_rx(struct net_device *dev)
 		struct sk_buff *new_skb = dev_alloc_skb(MAX_MEDIA_DATA_SIZE + 2 * L1_CACHE_BYTES);
 		if (!new_skb) {
 			dev->stats.rx_errors++;
-			printk(KERN_NOTICE "%s: Memory squeeze, dropping packet.\n", dev->name);
+;
 			goto update_nextrxdesc;
 		}
 		skb = myNextRxDesc->skb;
@@ -1331,7 +1331,7 @@ e100_rx(struct net_device *dev)
 static int
 e100_close(struct net_device *dev)
 {
-	printk(KERN_INFO "Closing %s.\n", dev->name);
+;
 
 	netif_stop_queue(dev);
 
@@ -1500,7 +1500,7 @@ e100_set_config(struct net_device *dev, struct ifmap *map)
 			return -EOPNOTSUPP;
 			break;
 		default:
-			printk(KERN_ERR "%s: Invalid media selected", dev->name);
+;
 			spin_unlock(&np->lock);
 			return -EINVAL;
 	}
@@ -1639,7 +1639,7 @@ set_multicast_list(struct net_device *dev)
 void
 e100_hardware_send_packet(struct net_local *np, char *buf, int length)
 {
-	D(printk("e100 send pack, buf 0x%x len %d\n", buf, length));
+;
 
 	spin_lock(&np->led_lock);
 	if (!led_active && time_after(jiffies, led_next_time)) {
@@ -1734,7 +1734,7 @@ e100_boot_setup(char* str)
 	for (i = 0; i <  ETH_ALEN; i++) {
 		unsigned int tmp;
 		if (sscanf(str + 3*i, "%2x", &tmp) != 1) {
-			printk(KERN_WARNING "Malformed station address");
+;
 			return 0;
 		}
 		sa.sa_data[i] = (char)tmp;
