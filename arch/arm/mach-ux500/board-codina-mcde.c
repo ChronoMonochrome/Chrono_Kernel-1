@@ -135,8 +135,8 @@ struct ssg_dpi_display_platform_data codina_dpi_pri_display_info = {
 	.reset_gpio		= LCD_RESX_CODINA_R0_0,
 	.pwr_gpio		= LCD_PWR_EN_CODINA_R0_0,
 	.bl_ctrl		= false,
-	.power_on_delay         = 10,
-	.reset_delay            = 10,
+	.power_on_delay         = 5,
+	.reset_delay            = 5,
 	.sleep_out_delay        = 120, /* 50ms for WS2401, but 120ms for S6D27A1 */
 
 	.display_off_delay      = 25,

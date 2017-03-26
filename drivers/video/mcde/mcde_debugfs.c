@@ -1589,7 +1589,7 @@ static int debugfs_force_reset_write(struct file *filp,
 	const char __user *buf,
 	size_t count, loff_t *f_pos)
 {
-	printk(KERN_ALERT, "Force reset issued.\n");
+;
 
 	atomic_set(&force_restart, true);
 	queue_work(system_long_wq, &mcde_restart_work);
