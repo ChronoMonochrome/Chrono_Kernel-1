@@ -13,6 +13,7 @@
 #include "mali_platform.h"
 
 /* Define how often to calculate and report GPU utilization, in milliseconds */
+/* Default: 500ms */
 #define MALI_GPU_UTILIZATION_TIMEOUT 1000
 
 /* cocafe: add a module paramerter to control utilization timeout */
