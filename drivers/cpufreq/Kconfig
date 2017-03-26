@@ -290,6 +290,11 @@ config CPU_FREQ_GOV_DYNAMIC
 		https://github.com/mkaluza/project-zen/wiki/Dynamic-governor
 
 		If in doubt, say N.
+
+config DYNAMIC_AGGRESSIVE_MODE_ENABLED
+	int "Aggressive dynamic CPUfreq scaling"
+	depends on CPU_FREQ_GOV_DYNAMIC
+	default 1
 	  
 config CPU_FREQ_GOV_INTERACTIVEPLUS
 	tristate "'interactiveplus' cpufreq policy governor"
