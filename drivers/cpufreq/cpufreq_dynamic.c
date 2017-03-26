@@ -62,6 +62,55 @@ static unsigned int min_sampling_rate;
 #define MAX_SAMPLING_UP_FACTOR		(20)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
 
+// Chrono: GPU-aware config tunables
+extern u32 mali_last_utilization;
+extern u32 boost_working;
+extern u32 boost_upthreshold;
+static u32 mali_high_utilization_threshold = 233;
+static unsigned int aggresive_up_threshold = 40;
+static unsigned int aggresive_down_differential = 20;
+static unsigned int aggresive_sampling_down_factor = 5;
+static unsigned int aggresive_high_freq_sampling_up_factor = 1;
+static unsigned int aggresive_io_is_busy = 40*128/100;
+static unsigned int aggresive_standby_delay_factor = 3;
+static unsigned int aggresive_standby_threshold_freq = 200000;
+module_param(mali_high_utilization_threshold, uint, 0644);
+module_param(aggresive_up_threshold, uint, 0644);
+module_param(aggresive_down_differential, uint, 0644);
+module_param(aggresive_sampling_down_factor, uint, 0644);
+module_param(aggresive_high_freq_sampling_up_factor, uint, 0644);
+module_param(aggresive_io_is_busy, uint, 0644);
+module_param(aggresive_standby_delay_factor, uint, 0644);
+module_param(aggresive_standby_threshold_freq, uint, 0644);
+
+#define current_up_threshold \
+	(mali_last_utilization > mali_high_utilization_threshold ? \
+	aggresive_up_threshold : dbs_tuners_ins.up_threshold)
+
+#define current_down_differential \
+	(mali_last_utilization > mali_high_utilization_threshold ? \
+	aggresive_down_differential : dbs_tuners_ins.down_differential)
+
+#define current_sampling_down_factor \
+	(mali_last_utilization > mali_high_utilization_threshold ? \
+	aggresive_sampling_down_factor : dbs_tuners_ins.sampling_down_factor)
+
+#define current_high_freq_sampling_up_factor \
+	(mali_last_utilization > mali_high_utilization_threshold ? \
+	aggresive_high_freq_sampling_up_factor : dbs_tuners_ins.high_freq_sampling_up_factor)
+
+#define current_io_is_busy \
+	(mali_last_utilization > mali_high_utilization_threshold ? \
+	aggresive_io_is_busy : dbs_tuners_ins.io_is_busy)
+
+#define current_standby_delay_factor \
+	(mali_last_utilization > mali_high_utilization_threshold ? \
+	aggresive_standby_delay_factor : dbs_tuners_ins.standby_delay_factor)
+
+#define current_standby_threshold_freq \
+	(mali_last_utilization > mali_high_utilization_threshold ? \
+	aggresive_standby_threshold_freq : dbs_tuners_ins.standby_threshold_freq) 
+
 enum ignore_nice_enum {
 	IGNORE_NICE_SUSPEND,
 	IGNORE_NICE_STANDBY,
@@ -213,7 +262,7 @@ static inline cputime64_t get_cpu_idle_time(unsigned int cpu, cputime64_t *wall,
 
 	if (idle_time == -1ULL)
 		return get_cpu_idle_time_jiffy(cpu, wall);
-	else if (dbs_tuners_ins.io_is_busy != 1)
+	else if (current_io_is_busy != 1)
 		*iowait = get_cpu_iowait_time_us(cpu, wall);
 
 	return idle_time;
@@ -221,9 +270,9 @@ static inline cputime64_t get_cpu_idle_time(unsigned int cpu, cputime64_t *wall,
 
 static inline void recalculate_down_threshold(struct cpu_dbs_info_s *this_dbs_info)
 {
-	unsigned int temp = (dbs_tuners_ins.up_threshold - dbs_tuners_ins.down_differential) * this_dbs_info->freq_lo / this_dbs_info->cur_policy->cur;
-	if (temp < 10 || temp > (dbs_tuners_ins.up_threshold - dbs_tuners_ins.down_differential))
-		temp = (dbs_tuners_ins.up_threshold - dbs_tuners_ins.down_differential)/2;
+	unsigned int temp = (current_up_threshold - current_down_differential) * this_dbs_info->freq_lo / this_dbs_info->cur_policy->cur;
+	if (temp < 10 || temp > (current_up_threshold - current_down_differential))
+		temp = (current_up_threshold - current_down_differential)/2;
 	this_dbs_info->down_threshold = temp;
 }
 
@@ -321,7 +370,7 @@ static void recalculate_freq_limits(void) {
 		else
 			dbs_tuners_ins._oc_limit = 0;
 
-		dbs_tuners_ins._standby_threshold_freq = policy->min + dbs_tuners_ins.standby_threshold_freq;
+		dbs_tuners_ins._standby_threshold_freq = policy->min + current_standby_threshold_freq;
 		pr_debug("calculated limits: _standby_max_freq_soft: %d, _suspend_max_freq_soft: %d, _suspend_max_freq_hard:%d, _oc_limit: %d\n",
 				dbs_tuners_ins._standby_max_freq_soft, dbs_tuners_ins._suspend_max_freq_soft, dbs_tuners_ins._suspend_max_freq_hard, dbs_tuners_ins._oc_limit);
 }
@@ -444,13 +493,13 @@ __store_int(sampling_rate, sampling_rate,
 		);
 
 __store_int(up_threshold, up_threshold,
-		dbs_tuners_ins.down_differential < input && input <= 100,
+		current_down_differential < input && input <= 100,
 		input,
 		recalculate_down_threshold_all()
 		);
 
 __store_int(down_differential, down_differential,
-		0 < input  && input < dbs_tuners_ins.up_threshold,
+		0 < input  && input < current_up_threshold,
 		input,
 		recalculate_down_threshold_all()
 		);
@@ -458,7 +507,7 @@ __store_int(down_differential, down_differential,
 static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
 				      const char *buf, size_t count)
 {
-	unsigned int input, prev = dbs_tuners_ins.io_is_busy;
+	unsigned int input, prev = current_io_is_busy;
 	int ret;
 
 	unsigned int j;
@@ -470,14 +519,14 @@ static ssize_t store_io_is_busy(struct kobject *a, struct attribute *b,
 	if (input >= 100)
 		input = 1;
 
-	if (input == dbs_tuners_ins.io_is_busy) /* nothing to do */
+	if (input == current_io_is_busy) /* nothing to do */
 		return count;
 
 	dbs_tuners_ins.io_is_busy = input*128/100;
 
 	// if io_is_busy == 1 then we just ignore cpu io time completely
 	// otherwise we have to keep track of it
-	if (dbs_tuners_ins.io_is_busy == 1) return count;
+	if (current_io_is_busy == 1) return count;
 
 	// if it has been changed from some other non 1 value, prev_cpu_io values are up to date
 	if (prev != 1) return count;
@@ -634,15 +683,15 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 				j_dbs_info->prev_cpu_idle);
 		j_dbs_info->prev_cpu_idle = cur_idle_time;
 
-		if (dbs_tuners_ins.io_is_busy != 1 || active == 0) {
+		if (current_io_is_busy != 1 || active == 0) {
 			unsigned int io_time = (unsigned int) cputime64_sub(cur_io_time,
 					j_dbs_info->prev_cpu_io);
 			j_dbs_info->prev_cpu_io = cur_io_time;
 
-			if (dbs_tuners_ins.io_is_busy == 0 || active == 0)
+			if (current_io_is_busy == 0 || active == 0)
 				idle_time += io_time;
 			else {
-				unsigned int max_busy_io_time = (wall_time*dbs_tuners_ins.io_is_busy) >> 7;
+				unsigned int max_busy_io_time = (wall_time*current_io_is_busy) >> 7;
 				if (io_time >= max_busy_io_time)
 					idle_time += io_time - max_busy_io_time;
 			}
@@ -750,7 +799,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	}
 
 	/* Check for frequency increase */
-	if (max_load > (active ? dbs_tuners_ins.up_threshold : 99)) {
+	if (max_load > (active ? current_up_threshold : 99)) {
 		if (standby) {
 			max_freq_soft = dbs_tuners_ins._standby_max_freq_soft;
 		}
@@ -774,7 +823,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 				return;
 		} else if (dbs_tuners_ins.power_optimal_freq && policy->cur >= dbs_tuners_ins.power_optimal_freq) {
 			//if we're at or above optimal freq, then delay freq increase by high_freq_sampling_up_factor
-			if (++(this_dbs_info->sampling_up_counter) < dbs_tuners_ins.high_freq_sampling_up_factor)
+			if (++(this_dbs_info->sampling_up_counter) < current_high_freq_sampling_up_factor)
 				return;
 		}
 
@@ -799,7 +848,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	 */
 	if (policy->cur <= dbs_tuners_ins._standby_threshold_freq) {
 		if (active) {
-			if (++(this_dbs_info->standby_counter) >= dbs_tuners_ins.standby_delay_factor) {
+			if (++(this_dbs_info->standby_counter) >= current_standby_delay_factor) {
 				standby = true;
 				pr_debug("Entering standby. dt=%lu ms", (unsigned long int)(ktime_to_us(ktime_get())-last_input_time)/1000);
 				this_dbs_info->oc_boost_cycles = 0;
@@ -819,13 +868,13 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	if (max_load < this_dbs_info->down_threshold && (!boosted || policy->cur > dbs_tuners_ins.input_boost_freq)) {
 		//calculate minimum freq that can support current workload (load_pct*cur_freq) with load < up_threshold-down_diff
-		min_supporting_freq = (this_dbs_info->requested_freq*max_load)/(dbs_tuners_ins.up_threshold - dbs_tuners_ins.down_differential);
+		min_supporting_freq = (this_dbs_info->requested_freq*max_load)/(current_up_threshold - current_down_differential);
 		cpufreq_frequency_table_target(policy, this_dbs_info->freq_table, min_supporting_freq, CPUFREQ_RELATION_L, &idx);
 		min_supporting_freq = this_dbs_info->freq_table[idx].frequency;
 
 
 		if (active) {
-			if (++(this_dbs_info->down_skip) < dbs_tuners_ins.sampling_down_factor) {
+			if (++(this_dbs_info->down_skip) < current_sampling_down_factor) {
 				//if the frequency that can support current load
 				//is at least sampling_down_factor_relax_khz
 				//smaller than current freq then try decreasing freq by one step
