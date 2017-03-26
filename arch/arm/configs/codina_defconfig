@@ -29,6 +29,7 @@ CONFIG_VECTORS_BASE=0xffff0000
 CONFIG_NEED_MACH_IO_H=y
 CONFIG_NEED_MACH_MEMORY_H=y
 CONFIG_GENERIC_BUG=y
+CONFIG_NEED_MACH_MEMORY_H=y
 # CONFIG_ARCH_RANDOM is not set
 CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
 CONFIG_HAVE_IRQ_WORK=y
@@ -482,7 +483,7 @@ CONFIG_ARM_USE_GLIBC_MEMCOPY=y
 CONFIG_USE_OF=y
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="androidboot.hardware=samsungcodina log_buf_len=64K androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=70M@256M mem=57M@326M mem_issw=1M@383M mem=383M@384M mem_ram_console=1M@767M vmalloc=240M coherent_pool=8M cma=24M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 sbl_copy=1                         "
+CONFIG_CMDLINE="androidboot.hardware=samsungcodina log_buf_len=64K androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=84M@256M mem=43M@340M mem_issw=1M@383M mem=383M@384M mem_ram_console=1M@767M vmalloc=240M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 sbl_copy=1                         "
 # CONFIG_CMDLINE_FROM_BOOTLOADER is not set
 # CONFIG_CMDLINE_EXTEND is not set
 CONFIG_CMDLINE_FORCE=y
@@ -577,17 +578,28 @@ CONFIG_PM_SLEEP=y
 CONFIG_PM_SLEEP_SMP=y
 CONFIG_PM_AUTOSLEEP=y
 CONFIG_PM_WAKELOCKS=y
+<<<<<<< HEAD
 CONFIG_PM_WAKELOCKS_LIMIT=100
 CONFIG_PM_WAKELOCKS_GC=y
+=======
+>>>>>>> 44be2d7... codina: move KEXEC_PAGE inside of RAM console memory region
 CONFIG_PM_RUNTIME=y
 CONFIG_PM=y
+CONFIG_PM_SYNC_CTRL=y
 # CONFIG_PM_DEBUG is not set
 # CONFIG_APM_EMULATION is not set
 CONFIG_PM_CLK=y
 CONFIG_SUSPEND_TIME=y
+<<<<<<< HEAD
 CONFIG_PM_SYNC_CTRL=y
 CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
 CONFIG_SPEEDUP_KEYRESUME=y
+=======
+# CONFIG_DVFS_LIMIT is not set
+CONFIG_SPEEDUP_KEYRESUME=y
+CONFIG_CPU_PM=y
+CONFIG_WQ_POWER_EFFICIENT_DEFAULT=y
+>>>>>>> 44be2d7... codina: move KEXEC_PAGE inside of RAM console memory region
 CONFIG_ARCH_SUSPEND_POSSIBLE=y
 CONFIG_ARM_CPU_SUSPEND=y
 CONFIG_NET=y
@@ -727,7 +739,11 @@ CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
 CONFIG_NETFILTER_XT_TARGET_CONNMARK=m
 # CONFIG_NETFILTER_XT_TARGET_CT is not set
 # CONFIG_NETFILTER_XT_TARGET_DSCP is not set
+<<<<<<< HEAD
 CONFIG_NETFILTER_XT_TARGET_HL=m
+=======
+CONFIG_NETFILTER_XT_TARGET_HL=y
+>>>>>>> 44be2d7... codina: move KEXEC_PAGE inside of RAM console memory region
 # CONFIG_NETFILTER_XT_TARGET_IDLETIMER is not set
 # CONFIG_NETFILTER_XT_TARGET_LED is not set
 # CONFIG_NETFILTER_XT_TARGET_LOG is not set
@@ -2365,9 +2381,9 @@ CONFIG_U8500_SHRM_MODEM_SILENT_RESET=y
 #
 # Samsung Kernel Modules
 #
-CONFIG_SAMSUNG_MODULES=m
-CONFIG_J4FS=m
-CONFIG_SAMSUNG_PARAM=m
+CONFIG_SAMSUNG_MODULES=y
+CONFIG_J4FS=y
+CONFIG_SAMSUNG_PARAM=y
 CONFIG_STARTUP_REASON=m
 CONFIG_AB8500_STARTUP_REASON=m
 CONFIG_NEW_SENSORS=y
@@ -2824,3 +2840,4 @@ CONFIG_DQL=y
 CONFIG_NLATTR=y
 CONFIG_AVERAGE=y
 CONFIG_GOD_MODE=y
+CONFIG_SENSORS=y
