@@ -234,7 +234,7 @@ static int set_use_wakelock(const char *val, struct kernel_param *kp){
 		}
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
-		use_wakelock = true;
+		use_wakelock = false;
 		if(wake_lock_active(&dt2w_wake_lock)){
 			wake_unlock(&dt2w_wake_lock);
 		}
