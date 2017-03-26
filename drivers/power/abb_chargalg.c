@@ -62,8 +62,8 @@ static bool eoc_real = 0;
 static bool is_suspend = 0;
 
 static int recharge_vol = 4211;
-static int termination_curr_1st = 100;
-static int termination_curr_2nd = 100;
+static int termination_curr_1st = 200;
+static int termination_curr_2nd = 150;
 
 static void ab8500_chargalg_early_suspend(struct early_suspend *h)
 {
