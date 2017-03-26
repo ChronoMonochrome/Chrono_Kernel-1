@@ -26,14 +26,6 @@ config ANDROID_LOGGER
 	tristate "Android log driver"
 	default n
 
-config ANDROID_LOGGER_REDUCE_MAIN_BUFFER
-	bool
-	depends on ANDROID_LOGGER
-
-config ANDROID_LOGGER_REDUCE_RADIO_BUFFER
-	bool
-	depends on ANDROID_LOGGER
-
 config ANDROID_RAM_CONSOLE
 	bool "Android RAM buffer console"
 	default n
