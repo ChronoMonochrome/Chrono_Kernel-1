@@ -6,7 +6,7 @@
 #include <linux/pci.h>
 #include <linux/io.h>
 
-#include <linux/export.h>
+#include <linux/module.h>
 
 #ifdef CONFIG_PCI
 /**
