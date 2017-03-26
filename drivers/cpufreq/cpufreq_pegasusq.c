@@ -164,7 +164,7 @@ static unsigned int get_nr_run_avg(void)
 
 #define DEF_MAX_CPU_LOCK			(0)
 #define DEF_MIN_CPU_LOCK			(0)
-#define DEF_CPU_UP_FREQ				(800000)
+#define DEF_CPU_UP_FREQ				(600000)
 #define DEF_CPU_DOWN_FREQ			(200000)
 #define DEF_UP_NR_CPUS				(1)
 #define DEF_CPU_UP_RATE				(10)
@@ -178,7 +178,7 @@ static unsigned int get_nr_run_avg(void)
 #define UP_THRESHOLD_AT_MIN_FREQ		(80)
 #define FREQ_FOR_RESPONSIVENESS			(600000)
 /* for fast decrease */
-#define FREQ_FOR_FAST_DOWN			(800000)
+#define FREQ_FOR_FAST_DOWN			(1000000)
 #define UP_THRESHOLD_AT_FAST_DOWN		(95)
 
 #define HOTPLUG_DOWN_INDEX			(0)
