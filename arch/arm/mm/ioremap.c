@@ -366,8 +366,6 @@ void __iounmap(volatile void __iomem *io_addr)
 {
 	void *addr = (void *)(PAGE_MASK & (unsigned long)io_addr);
 	struct vm_struct *vm;
-#if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
-	struct vm_struct **p, *tmp;
 
 	read_lock(&vmlist_lock);
 	for (vm = vmlist; vm; vm = vm->next) {
@@ -381,7 +379,7 @@ void __iounmap(volatile void __iomem *io_addr)
 			read_unlock(&vmlist_lock);
 			return;
 		}
-#ifndef CONFIG_SMP
+#if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
 		/*
 		 * If this is a section based mapping we need to handle it
 		 * specially as the VM subsystem does not know how to handle
