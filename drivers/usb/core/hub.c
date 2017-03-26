@@ -2652,7 +2652,7 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 	struct usb_hub	*hub = hdev_to_hub(udev->parent);
 	int		port1 = udev->portnum;
 	int		status;
-	u16		portchange, portstatus;
+	u16		portchange = 0, portstatus = 0;
 
 #ifdef CONFIG_USB_OTG_20
 		if (!udev->bus->is_b_host && udev->bus->hnp_support &&
