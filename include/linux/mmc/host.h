@@ -425,7 +425,7 @@ int mmc_card_can_sleep(struct mmc_host *host);
 int mmc_pm_notify(struct notifier_block *notify_block, unsigned long, void *);
 
 /* Module parameter */
-extern bool mmc_assume_removable;
+extern int mmc_assume_removable;
 
 static inline int mmc_card_is_removable(struct mmc_host *host)
 {
