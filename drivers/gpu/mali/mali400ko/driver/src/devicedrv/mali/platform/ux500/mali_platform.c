@@ -369,6 +369,11 @@ void mali_utilization_function(struct work_struct *ptr)
 	MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u\n", mali_last_utilization));
 }
 
+int get_mali_workload(void)
+{
+	return mali_last_utilization * sgaclk_freq() / 256; 
+}
+
 #define ATTR_RO(_name)	\
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0444, _name##_show, NULL);
 
@@ -448,7 +453,11 @@ ATTR_RW(mali_gpu_fullspeed);
 
 static ssize_t mali_gpu_load_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d (%d%%)\n", mali_last_utilization, mali_last_utilization * 100 / 256);
+	sprintf(buf, "load=%d (%d%%)\nworkload=%d\n", mali_last_utilization, 
+		mali_last_utilization * 100 / 256,
+		get_mali_workload());
+	
+	return strlen(buf);
 }
 ATTR_RO(mali_gpu_load);
 
