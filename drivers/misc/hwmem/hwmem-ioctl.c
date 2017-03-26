@@ -503,7 +503,7 @@ static unsigned long hwmem_get_unmapped_area(struct file *file,
 	return current->mm->get_unmapped_area(NULL, addr, len, 0, flags);
 }
 
-int __init hwmem_ioctl_init(void)
+int hwmem_ioctl_init(void)
 {
 	if (PAGE_SHIFT < 1 || PAGE_SHIFT > 30 || sizeof(size_t) != 4 ||
 		sizeof(int) > 4 || sizeof(enum hwmem_alloc_flags) != 4 ||
