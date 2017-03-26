@@ -55,9 +55,7 @@
 #include <linux/list.h>
 #endif
 
-#if defined(TOUCH_BOOSTER)
 #include <linux/mfd/dbx500-prcmu.h>
-#endif
 
 #if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
 #include <linux/ab8500-ponkey.h>
@@ -4437,6 +4435,18 @@ static int bt404_ts_probe(struct i2c_client *client,
 		dev_err(&client->dev,
 			"Failed to create sysfs (touchscreen_temp_attr_group)."
 									"\n");
+	//when screen is on, APE_OPP 25 sometimes messes it up
+	//TODO change these to add/update/remove
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add APE failed\n");
+	}
+
+	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add DDR failed\n");
+	}
+
 	dev_info(&client->dev, "successfully probed.\n");
 	return 0;
 
@@ -4755,6 +4765,14 @@ static void bt404_ts_late_resume(struct early_suspend *h)
 		cpufreq_update_policy(cpu);
 	}
 #endif
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add APE failed\n");
+	}
+	if (prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add DDR failed\n");
+	}
 	bt404_ts_resume(&data->client->dev);
 }
 
@@ -4771,6 +4789,10 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
 		cpufreq_update_policy(cpu);
 	}
 #endif
+	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+				"codina_lcd_dpi");
+	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP,
+				"codina_lcd_dpi");
 	bt404_ts_suspend(&data->client->dev);
 }
 
