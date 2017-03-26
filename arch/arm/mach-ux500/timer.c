@@ -15,6 +15,7 @@
 
 #include <mach/setup.h>
 #include <mach/hardware.h>
+#include <mach/irqs.h>
 #include <mach/context.h>
 
 #ifdef CONFIG_DBX500_CONTEXT
@@ -61,7 +62,6 @@ static void __init ux500_twd_init(void)
 static void __init ux500_timer_init(void)
 {
 	void __iomem *prcmu_timer_base;
-	int err;
 
 	if (cpu_is_u5500()) {
 		mtu_base = __io_address(U5500_MTU0_BASE);
