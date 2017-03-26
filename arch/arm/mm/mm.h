@@ -76,5 +76,11 @@ extern u32 arm_dma_limit;
 #define arm_dma_limit ((u32)~0)
 #endif
 
+#ifdef CONFIG_ZONE_DMA
+extern u32 arm_dma_limit;
+#else
+#define arm_dma_limit ((u32)~0)
+#endif
+
 void __init bootmem_init(void);
 void arm_mm_memblock_reserve(void);
