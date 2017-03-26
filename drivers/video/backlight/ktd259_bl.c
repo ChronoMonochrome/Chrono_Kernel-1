@@ -97,12 +97,12 @@ static int ktd259_set_brightness(struct backlight_device *bd)
 			min_brightness = 1;
 			pr_err("[ktd259_bl] invalid input - setting bl to 1\n");
 		}
-
+/*
 		if (unlikely(min_brightness > 10)) {
 			min_brightness = 10;
 			pr_err("[ktd259_bl] invalid input - setting bl to 10\n");
 		}
-
+*/
 		reqBrightness = min_brightness;
 	}
 
