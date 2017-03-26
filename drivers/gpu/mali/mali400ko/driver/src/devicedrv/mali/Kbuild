@@ -121,11 +121,22 @@ MALI_PLATFORM_FILE = platform/default/mali_platform.c
 endif
 
 # Get subversion revision number, fall back to only ${MALI_RELEASE_NAME} if no svn info is available
-SVN_REV := $(shell (cd $(DRIVER_DIR); (svnversion | grep -qv exported | grep -qv "Unversioned directory" && svnversion) || git svn info | grep '^Revision: '| sed -e 's/^Revision: //' ) 2>/dev/null )
+SVN_REV := $(shell (cd $(DRIVER_DIR); (svnversion | grep -qv exported && svnversion) || git svn info | grep '^Revision: '| sed -e 's/^Revision: //' ) 2>/dev/null )
 ifeq ($(SVN_REV),)
 SVN_REV := $(MALI_RELEASE_NAME)
 else
 SVN_REV := $(MALI_RELEASE_NAME)-r$(SVN_REV)
+endif
+
+# Validate selected config
+ifneq ($(shell [ -d $(DRIVER_DIR)/arch-$(CONFIG) ] && [ -f $(DRIVER_DIR)/arch-$(CONFIG)/config.h ] && echo "OK"), OK)
+$(warning Current directory is $(shell pwd))
+$(error No configuration found for config $(CONFIG). Check that arch-$(CONFIG)/config.h exists)
+else
+# Link arch to the selected arch-config directory
+$(shell [ -L $(DRIVER_DIR)/arch ] && rm $(DRIVER_DIR)/arch)
+$(shell ln -sf $(DRIVER_DIR)/arch-$(CONFIG) $(DRIVER_DIR)/arch)
+$(shell touch $(DRIVER_DIR)/arch/config.h)
 endif
 
 # Set up our defines, which will be passed to gcc
