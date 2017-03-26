@@ -533,10 +533,12 @@ static int _request_firmware(const struct firmware **firmware_p,
 		return 0;
 	}
 
-	retval = usermodehelper_read_trylock();
-	if (WARN_ON(retval)) {
+	read_lock_usermodehelper();
+
+	if (WARN_ON(usermodehelper_is_disabled())) {
 		dev_err(device, "firmware: %s will not be loaded\n", name);
-		goto out_nolock;
+		retval = -EBUSY;
+		goto out;
 	}
 
 	if (uevent)
@@ -571,9 +573,8 @@ static int _request_firmware(const struct firmware **firmware_p,
 	fw_destroy_instance(fw_priv);
 
 out:
-	usermodehelper_read_unlock();
+	read_unlock_usermodehelper();
 
-out_nolock:
 	if (retval) {
 		release_firmware(firmware);
 		*firmware_p = NULL;
