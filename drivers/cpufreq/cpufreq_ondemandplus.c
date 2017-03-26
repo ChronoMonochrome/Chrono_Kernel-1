@@ -164,6 +164,14 @@ static inline cputime64_t get_cpu_idle_time(unsigned int cpu,
 	return idle_time;
 }
 
+extern bool cpu_freq_limits_get(void);
+extern bool is_suspended_get(void);
+extern int screen_on_min_cpufreq_get_(void);
+extern int screen_off_max_cpufreq_get_(void);
+static unsigned int screen_off_max_freq; 
+static int screen_on_min_freq; 
+
+
 static void cpufreq_ondemandplus_timer(unsigned long data)
 {
 	unsigned int delta_idle;
@@ -186,6 +194,8 @@ static void cpufreq_ondemandplus_timer(unsigned long data)
 	static unsigned int lo_avg_cpu_freq;
 	static unsigned int hi_avg_cpu_freq;
 	static unsigned int low_timer_rate = 0;
+	screen_off_max_freq = screen_off_max_cpufreq_get_(); 
+	screen_on_min_freq = screen_on_min_cpufreq_get_(); 
 
 	smp_rmb();
 
@@ -257,7 +267,7 @@ static void cpufreq_ondemandplus_timer(unsigned long data)
 	new_freq = pcpu->target_freq;
 
 	/* suspended scaling behavior */
-	if (max_capped == screen_off_max_freq) {
+	if (is_suspended_get()) {
 		if (stay_counter) {
 			stay_counter = 0;
 		}
@@ -397,7 +407,7 @@ rearm:
 		 */
 		 
 		unsigned int cur_min_policy;
-		if (max_capped == screen_off_max_freq) {
+		if (is_suspended_get()) {
 			cur_min_policy = pcpu->policy->min;
 		} else {
 			cur_min_policy = screen_on_min_freq;
@@ -448,7 +458,7 @@ rearm:
 		 */				
 		pcpu->time_in_idle = get_cpu_idle_time(
 			data, &pcpu->idle_exit_time);
-		if (max_capped == screen_off_max_freq) {
+		if (is_suspended_get()) {
 			mod_timer(&pcpu->cpu_timer,
 				jiffies + usecs_to_jiffies(timer_rate * 3));	
 		} else if (!low_timer_rate) {
@@ -468,7 +478,7 @@ exit:
 	if (pcpu->idling) {
 		memset(last_cpu_freqs, 0, sizeof(last_cpu_freqs));
 		i = 0;
-	} else if (max_capped != screen_off_max_freq) {
+	} else if (is_suspended_get()) {
 		static unsigned int last_cpu_freq_field;
 		last_cpu_freq_field = i % 5;
 		if (new_freq) {
