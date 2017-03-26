@@ -53,8 +53,6 @@
 	(__GFP_FS | __GFP_NORETRY | __GFP_NOWARN | __GFP_NOMEMALLOC)
 #endif
 
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-=======
 #define MAX_CLIENTS 16
 #define LOCAL_CLIENT ((uint16_t)-1)
 
@@ -128,7 +126,6 @@ static inline int zcache_comp_op(enum comp_op op,
 	return ret;
 }
 
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 /**********
  * Compression buddies ("zbud") provides for packing two (or, possibly
  * in the future, more) compressed ephemeral pages into a single "raw"
@@ -152,7 +149,8 @@ static inline int zcache_comp_op(enum comp_op op,
 #define ZBUD_MAX_BUDS 2
 
 struct zbud_hdr {
-	uint32_t pool_id;
+	uint16_t client_id;
+	uint16_t pool_id;
 	struct tmem_oid oid;
 	uint32_t index;
 	uint16_t size; /* compressed size in bytes, zero means unused */
@@ -200,6 +198,7 @@ static unsigned long zcache_zbud_curr_zbytes;
 static unsigned long zcache_zbud_cumul_zpages;
 static unsigned long zcache_zbud_cumul_zbytes;
 static unsigned long zcache_compress_poor;
+static unsigned long zcache_mean_compress_poor;
 
 /* forward references */
 static void *zcache_get_free_page(void);
@@ -374,7 +373,8 @@ static void zbud_free_and_delist(struct zbud_hdr *zh)
 	}
 }
 
-static struct zbud_hdr *zbud_create(uint32_t pool_id, struct tmem_oid *oid,
+static struct zbud_hdr *zbud_create(uint16_t client_id, uint16_t pool_id,
+					struct tmem_oid *oid,
 					uint32_t index, struct page *page,
 					void *cdata, unsigned size)
 {
@@ -433,13 +433,7 @@ init_zh:
 	zh->index = index;
 	zh->oid = *oid;
 	zh->pool_id = pool_id;
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	/* can wait to copy the data until the list locks are dropped */
-	spin_unlock(&zbud_budlists_spinlock);
-
-=======
 	zh->client_id = client_id;
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 	to = zbud_data(zh, size);
 	memcpy(to, cdata, size);
 	spin_unlock(&zbpg->lock);
@@ -494,7 +488,8 @@ static unsigned long zcache_evicted_raw_pages;
 static unsigned long zcache_evicted_buddied_pages;
 static unsigned long zcache_evicted_unbuddied_pages;
 
-static struct tmem_pool *zcache_get_pool_by_id(uint32_t poolid);
+static struct tmem_pool *zcache_get_pool_by_id(uint16_t cli_id,
+						uint16_t poolid);
 static void zcache_put_pool(struct tmem_pool *pool);
 
 /*
@@ -504,7 +499,8 @@ static void zbud_evict_zbpg(struct zbud_page *zbpg)
 {
 	struct zbud_hdr *zh;
 	int i, j;
-	uint32_t pool_id[ZBUD_MAX_BUDS], index[ZBUD_MAX_BUDS];
+	uint32_t pool_id[ZBUD_MAX_BUDS], client_id[ZBUD_MAX_BUDS];
+	uint32_t index[ZBUD_MAX_BUDS];
 	struct tmem_oid oid[ZBUD_MAX_BUDS];
 	struct tmem_pool *pool;
 
@@ -513,6 +509,7 @@ static void zbud_evict_zbpg(struct zbud_page *zbpg)
 	for (i = 0, j = 0; i < ZBUD_MAX_BUDS; i++) {
 		zh = &zbpg->buddy[i];
 		if (zh->size) {
+			client_id[j] = zh->client_id;
 			pool_id[j] = zh->pool_id;
 			oid[j] = zh->oid;
 			index[j] = zh->index;
@@ -522,7 +519,7 @@ static void zbud_evict_zbpg(struct zbud_page *zbpg)
 	}
 	spin_unlock(&zbpg->lock);
 	for (i = 0; i < j; i++) {
-		pool = zcache_get_pool_by_id(pool_id[i]);
+		pool = zcache_get_pool_by_id(client_id[i], pool_id[i]);
 		if (pool != NULL) {
 			tmem_flush_page(pool, &oid[i], index[i]);
 			zcache_put_pool(pool);
@@ -637,9 +634,8 @@ static int zbud_show_unbuddied_list_counts(char *buf)
 	int i;
 	char *p = buf;
 
-	for (i = 0; i < NCHUNKS - 1; i++)
+	for (i = 0; i < NCHUNKS; i++)
 		p += sprintf(p, "%u ", zbud_unbuddied[i].count);
-	p += sprintf(p, "%d\n", zbud_unbuddied[i].count);
 	return p - buf;
 }
 
@@ -688,9 +684,6 @@ struct zv_hdr {
 	DECL_SENTINEL
 };
 
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-static const int zv_max_page_size = (PAGE_SIZE / 8) * 7;
-=======
 /* rudimentary policy limits */
 /* total number of persistent pages may not exceed this percentage */
 static unsigned int zv_page_count_policy_percent = 75;
@@ -708,25 +701,11 @@ static unsigned int zv_max_mean_zsize = (PAGE_SIZE / 8) * 5;
 
 static atomic_t zv_curr_dist_counts[NCHUNKS];
 static atomic_t zv_cumul_dist_counts[NCHUNKS];
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 
 static unsigned long zv_create(struct zs_pool *pool, uint32_t pool_id,
 				struct tmem_oid *oid, uint32_t index,
 				void *cdata, unsigned clen)
 {
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	struct page *page;
-	struct zv_hdr *zv = NULL;
-	uint32_t offset;
-	int ret;
-
-	BUG_ON(!irqs_disabled());
-	ret = xv_malloc(xvpool, clen + sizeof(struct zv_hdr),
-			&page, &offset, ZCACHE_GFP_MASK);
-	if (unlikely(ret))
-		goto out;
-	zv = kmap_atomic(page, KM_USER0) + offset;
-=======
 	struct zv_hdr *zv;
 	u32 size = clen + sizeof(struct zv_hdr);
 	int chunks = (size + (CHUNK_SIZE - 1)) >> CHUNK_SHIFT;
@@ -740,7 +719,6 @@ static unsigned long zv_create(struct zs_pool *pool, uint32_t pool_id,
 	atomic_inc(&zv_curr_dist_counts[chunks]);
 	atomic_inc(&zv_cumul_dist_counts[chunks]);
 	zv = zs_map_object(pool, handle, ZS_MM_WO);
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 	zv->index = index;
 	zv->oid = *oid;
 	zv->pool_id = pool_id;
@@ -755,24 +733,13 @@ out:
 static void zv_free(struct zs_pool *pool, unsigned long handle)
 {
 	unsigned long flags;
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	struct page *page;
-	uint32_t offset;
-	uint16_t size;
-=======
 	struct zv_hdr *zv;
 	uint16_t size;
 	int chunks;
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 
 	zv = zs_map_object(pool, handle, ZS_MM_RW);
 	ASSERT_SENTINEL(zv, ZVH);
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	size = xv_get_object_size(zv) - sizeof(*zv);
-	BUG_ON(size == 0 || size > zv_max_page_size);
-=======
 	size = zv->size + sizeof(struct zv_hdr);
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 	INVERT_SENTINEL(zv, ZVH);
 	zs_unmap_object(pool, handle);
 
@@ -795,18 +762,6 @@ static void zv_decompress(struct page *page, unsigned long handle)
 	zv = zs_map_object(zcache_host.zspool, handle, ZS_MM_RO);
 	BUG_ON(zv->size == 0);
 	ASSERT_SENTINEL(zv, ZVH);
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	size = xv_get_object_size(zv) - sizeof(*zv);
-	BUG_ON(size == 0 || size > zv_max_page_size);
-	to_va = kmap_atomic(page, KM_USER0);
-	ret = lzo1x_decompress_safe((char *)zv + sizeof(*zv),
-					size, to_va, &clen);
-	kunmap_atomic(to_va, KM_USER0);
-	BUG_ON(ret != LZO_E_OK);
-	BUG_ON(clen != PAGE_SIZE);
-}
-
-=======
 	to_va = kmap_atomic(page);
 	ret = zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, (char *)zv + sizeof(*zv),
 				zv->size, to_va, &clen);
@@ -969,7 +924,6 @@ static struct kobj_attribute zcache_zv_page_count_policy_percent_attr = {
 };
 #endif
 
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 /*
  * zcache core code starts here
  */
@@ -982,31 +936,18 @@ static unsigned long zcache_flobj_found;
 static unsigned long zcache_failed_eph_puts;
 static unsigned long zcache_failed_pers_puts;
 
-#define MAX_POOLS_PER_CLIENT 16
-
-static struct {
-	struct tmem_pool *tmem_pools[MAX_POOLS_PER_CLIENT];
-	struct xv_pool *xvpool;
-} zcache_client;
-
 /*
  * Tmem operations assume the poolid implies the invoking client.
- * Zcache only has one client (the kernel itself), so translate
- * the poolid into the tmem_pool allocated for it.  A KVM version
+ * Zcache only has one client (the kernel itself): LOCAL_CLIENT.
+ * RAMster has each client numbered by cluster node, and a KVM version
  * of zcache would have one client per guest and each client might
  * have a poolid==N.
  */
-static struct tmem_pool *zcache_get_pool_by_id(uint32_t poolid)
+static struct tmem_pool *zcache_get_pool_by_id(uint16_t cli_id, uint16_t poolid)
 {
 	struct tmem_pool *pool = NULL;
+	struct zcache_client *cli = NULL;
 
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	if (poolid >= 0) {
-		pool = zcache_client.tmem_pools[poolid];
-		if (pool != NULL)
-			atomic_inc(&pool->refcount);
-	}
-=======
 	cli = get_zcache_client(cli_id);
 	if (!cli)
 		goto out;
@@ -1016,16 +957,11 @@ static struct tmem_pool *zcache_get_pool_by_id(uint32_t poolid)
 	if (pool != NULL)
 		atomic_inc(&pool->refcount);
 out:
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 	return pool;
 }
 
 static void zcache_put_pool(struct tmem_pool *pool)
 {
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	if (pool != NULL)
-		atomic_dec(&pool->refcount);
-=======
 	struct zcache_client *cli = NULL;
 
 	if (pool == NULL)
@@ -1056,7 +992,6 @@ int zcache_new_client(uint16_t cli_id)
 	ret = 0;
 out:
 	return ret;
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 }
 
 /* counters for debugging */
@@ -1229,59 +1164,50 @@ static unsigned long zcache_curr_pers_pampd_count_max;
 /* forward reference */
 static int zcache_compress(struct page *from, void **out_va, unsigned *out_len);
 
-static void *zcache_pampd_create(struct tmem_pool *pool, struct tmem_oid *oid,
-				 uint32_t index, struct page *page)
+static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
+				struct tmem_pool *pool, struct tmem_oid *oid,
+				 uint32_t index)
 {
 	void *pampd = NULL, *cdata;
 	unsigned clen;
 	int ret;
-	bool ephemeral = is_ephemeral(pool);
 	unsigned long count;
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-=======
 	struct page *page = (struct page *)(data);
 	struct zcache_client *cli = pool->client;
 	uint16_t client_id = get_client_id_from_client(cli);
 	unsigned long zv_mean_zsize;
 	unsigned long curr_pers_pampd_count;
 	u64 total_zsize;
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 
-	if (ephemeral) {
+	if (eph) {
 		ret = zcache_compress(page, &cdata, &clen);
 		if (ret == 0)
-
 			goto out;
 		if (clen == 0 || clen > zbud_max_buddy_size()) {
 			zcache_compress_poor++;
 			goto out;
 		}
-		pampd = (void *)zbud_create(pool->pool_id, oid, index,
-						page, cdata, clen);
+		pampd = (void *)zbud_create(client_id, pool->pool_id, oid,
+						index, page, cdata, clen);
 		if (pampd != NULL) {
 			count = atomic_inc_return(&zcache_curr_eph_pampd_count);
 			if (count > zcache_curr_eph_pampd_count_max)
 				zcache_curr_eph_pampd_count_max = count;
 		}
 	} else {
-		/*
-		 * FIXME: This is all the "policy" there is for now.
-		 * 3/4 totpages should allow ~37% of RAM to be filled with
-		 * compressed frontswap pages
-		 */
-		if (atomic_read(&zcache_curr_pers_pampd_count) >
-							3 * totalram_pages / 4)
+		curr_pers_pampd_count =
+			atomic_read(&zcache_curr_pers_pampd_count);
+		if (curr_pers_pampd_count >
+		    (zv_page_count_policy_percent * totalram_pages) / 100)
 			goto out;
 		ret = zcache_compress(page, &cdata, &clen);
 		if (ret == 0)
 			goto out;
-		if (clen > zv_max_page_size) {
+		/* reject if compression is too poor */
+		if (clen > zv_max_zsize) {
 			zcache_compress_poor++;
 			goto out;
 		}
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-		pampd = (void *)zv_create(zcache_client.xvpool, pool->pool_id,
-=======
 		/* reject if mean compression is too poor */
 		if ((clen > zv_max_mean_zsize) && (curr_pers_pampd_count > 0)) {
 			total_zsize = zs_get_total_size_bytes(cli->zspool);
@@ -1293,7 +1219,6 @@ static void *zcache_pampd_create(struct tmem_pool *pool, struct tmem_oid *oid,
 			}
 		}
 		pampd = (void *)zv_create(cli->zspool, pool->pool_id,
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 						oid, index, cdata, clen);
 		if (pampd == NULL)
 			goto out;
@@ -1309,18 +1234,6 @@ out:
  * fill the pageframe corresponding to the struct page with the data
  * from the passed pampd
  */
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-static int zcache_pampd_get_data(struct page *page, void *pampd,
-						struct tmem_pool *pool)
-{
-	int ret = 0;
-
-	if (is_ephemeral(pool))
-		ret = zbud_decompress(page, pampd);
-	else
-		zv_decompress(page, pampd);
-	return ret;
-=======
 static int zcache_pampd_get_data(char *data, size_t *bufsize, bool raw,
 					void *pampd, struct tmem_pool *pool,
 					struct tmem_oid *oid, uint32_t index)
@@ -1346,34 +1259,55 @@ static int zcache_pampd_get_data_and_free(char *data, size_t *bufsize, bool raw,
 	zbud_free_and_delist((struct zbud_hdr *)pampd);
 	atomic_dec(&zcache_curr_eph_pampd_count);
 	return 0;
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 }
 
 /*
  * free the pampd and remove it from any zcache lists
  * pampd must no longer be pointed to from any tmem data structures!
  */
-static void zcache_pampd_free(void *pampd, struct tmem_pool *pool)
+static void zcache_pampd_free(void *pampd, struct tmem_pool *pool,
+				struct tmem_oid *oid, uint32_t index)
 {
+	struct zcache_client *cli = pool->client;
+
 	if (is_ephemeral(pool)) {
 		zbud_free_and_delist((struct zbud_hdr *)pampd);
 		atomic_dec(&zcache_curr_eph_pampd_count);
 		BUG_ON(atomic_read(&zcache_curr_eph_pampd_count) < 0);
 	} else {
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-		zv_free(zcache_client.xvpool, (struct zv_hdr *)pampd);
-=======
 		zv_free(cli->zspool, (unsigned long)pampd);
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 		atomic_dec(&zcache_curr_pers_pampd_count);
 		BUG_ON(atomic_read(&zcache_curr_pers_pampd_count) < 0);
 	}
 }
 
+static void zcache_pampd_free_obj(struct tmem_pool *pool, struct tmem_obj *obj)
+{
+}
+
+static void zcache_pampd_new_obj(struct tmem_obj *obj)
+{
+}
+
+static int zcache_pampd_replace_in_obj(void *pampd, struct tmem_obj *obj)
+{
+	return -1;
+}
+
+static bool zcache_pampd_is_remote(void *pampd)
+{
+	return 0;
+}
+
 static struct tmem_pamops zcache_pamops = {
 	.create = zcache_pampd_create,
 	.get_data = zcache_pampd_get_data,
+	.get_data_and_free = zcache_pampd_get_data_and_free,
 	.free = zcache_pampd_free,
+	.free_obj = zcache_pampd_free_obj,
+	.new_obj = zcache_pampd_new_obj,
+	.replace_in_obj = zcache_pampd_replace_in_obj,
+	.is_remote = zcache_pampd_is_remote,
 };
 
 /*
@@ -1527,6 +1461,7 @@ ZCACHE_SYSFS_RO(failed_get_free_pages);
 ZCACHE_SYSFS_RO(failed_alloc);
 ZCACHE_SYSFS_RO(put_to_flush);
 ZCACHE_SYSFS_RO(compress_poor);
+ZCACHE_SYSFS_RO(mean_compress_poor);
 ZCACHE_SYSFS_RO_ATOMIC(zbud_curr_raw_pages);
 ZCACHE_SYSFS_RO_ATOMIC(zbud_curr_zpages);
 ZCACHE_SYSFS_RO_ATOMIC(curr_obj_count);
@@ -1535,6 +1470,10 @@ ZCACHE_SYSFS_RO_CUSTOM(zbud_unbuddied_list_counts,
 			zbud_show_unbuddied_list_counts);
 ZCACHE_SYSFS_RO_CUSTOM(zbud_cumul_chunk_counts,
 			zbud_show_cumul_chunk_counts);
+ZCACHE_SYSFS_RO_CUSTOM(zv_curr_dist_counts,
+			zv_curr_dist_counts_show);
+ZCACHE_SYSFS_RO_CUSTOM(zv_cumul_dist_counts,
+			zv_cumul_dist_counts_show);
 
 static struct attribute *zcache_attrs[] = {
 	&zcache_curr_obj_count_attr.attr,
@@ -1548,6 +1487,7 @@ static struct attribute *zcache_attrs[] = {
 	&zcache_failed_eph_puts_attr.attr,
 	&zcache_failed_pers_puts_attr.attr,
 	&zcache_compress_poor_attr.attr,
+	&zcache_mean_compress_poor_attr.attr,
 	&zcache_zbud_curr_raw_pages_attr.attr,
 	&zcache_zbud_curr_zpages_attr.attr,
 	&zcache_zbud_curr_zbytes_attr.attr,
@@ -1563,6 +1503,11 @@ static struct attribute *zcache_attrs[] = {
 	&zcache_put_to_flush_attr.attr,
 	&zcache_zbud_unbuddied_list_counts_attr.attr,
 	&zcache_zbud_cumul_chunk_counts_attr.attr,
+	&zcache_zv_curr_dist_counts_attr.attr,
+	&zcache_zv_cumul_dist_counts_attr.attr,
+	&zcache_zv_max_zsize_attr.attr,
+	&zcache_zv_max_mean_zsize_attr.attr,
+	&zcache_zv_page_count_policy_percent_attr.attr,
 	NULL,
 };
 
@@ -1611,24 +1556,20 @@ static struct shrinker zcache_shrinker = {
  * zcache shims between cleancache/frontswap ops and tmem
  */
 
-static int zcache_put_page(int pool_id, struct tmem_oid *oidp,
+static int zcache_put_page(int cli_id, int pool_id, struct tmem_oid *oidp,
 				uint32_t index, struct page *page)
 {
 	struct tmem_pool *pool;
 	int ret = -1;
 
 	BUG_ON(!irqs_disabled());
-	pool = zcache_get_pool_by_id(pool_id);
+	pool = zcache_get_pool_by_id(cli_id, pool_id);
 	if (unlikely(pool == NULL))
 		goto out;
 	if (!zcache_freeze && zcache_do_preload(pool) == 0) {
 		/* preload does preempt_disable on success */
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-		ret = tmem_put(pool, oidp, index, page);
-=======
 		ret = tmem_put(pool, oidp, index, (char *)(page),
 				PAGE_SIZE, 0, is_ephemeral(pool));
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 		if (ret < 0) {
 			if (is_ephemeral(pool))
 				zcache_failed_eph_puts++;
@@ -1647,30 +1588,28 @@ out:
 	return ret;
 }
 
-static int zcache_get_page(int pool_id, struct tmem_oid *oidp,
+static int zcache_get_page(int cli_id, int pool_id, struct tmem_oid *oidp,
 				uint32_t index, struct page *page)
 {
 	struct tmem_pool *pool;
 	int ret = -1;
 	unsigned long flags;
+	size_t size = PAGE_SIZE;
 
 	local_irq_save(flags);
-	pool = zcache_get_pool_by_id(pool_id);
+	pool = zcache_get_pool_by_id(cli_id, pool_id);
 	if (likely(pool != NULL)) {
 		if (atomic_read(&pool->obj_count) > 0)
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-			ret = tmem_get(pool, oidp, index, page);
-=======
 			ret = tmem_get(pool, oidp, index, (char *)(page),
 					&size, 0, is_ephemeral(pool));
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 		zcache_put_pool(pool);
 	}
 	local_irq_restore(flags);
 	return ret;
 }
 
-static int zcache_flush_page(int pool_id, struct tmem_oid *oidp, uint32_t index)
+static int zcache_flush_page(int cli_id, int pool_id,
+				struct tmem_oid *oidp, uint32_t index)
 {
 	struct tmem_pool *pool;
 	int ret = -1;
@@ -1678,7 +1617,7 @@ static int zcache_flush_page(int pool_id, struct tmem_oid *oidp, uint32_t index)
 
 	local_irq_save(flags);
 	zcache_flush_total++;
-	pool = zcache_get_pool_by_id(pool_id);
+	pool = zcache_get_pool_by_id(cli_id, pool_id);
 	if (likely(pool != NULL)) {
 		if (atomic_read(&pool->obj_count) > 0)
 			ret = tmem_flush_page(pool, oidp, index);
@@ -1690,7 +1629,8 @@ static int zcache_flush_page(int pool_id, struct tmem_oid *oidp, uint32_t index)
 	return ret;
 }
 
-static int zcache_flush_object(int pool_id, struct tmem_oid *oidp)
+static int zcache_flush_object(int cli_id, int pool_id,
+				struct tmem_oid *oidp)
 {
 	struct tmem_pool *pool;
 	int ret = -1;
@@ -1698,7 +1638,7 @@ static int zcache_flush_object(int pool_id, struct tmem_oid *oidp)
 
 	local_irq_save(flags);
 	zcache_flobj_total++;
-	pool = zcache_get_pool_by_id(pool_id);
+	pool = zcache_get_pool_by_id(cli_id, pool_id);
 	if (likely(pool != NULL)) {
 		if (atomic_read(&pool->obj_count) > 0)
 			ret = tmem_flush_object(pool, oidp);
@@ -1710,23 +1650,14 @@ static int zcache_flush_object(int pool_id, struct tmem_oid *oidp)
 	return ret;
 }
 
-static int zcache_destroy_pool(int pool_id)
+static int zcache_destroy_pool(int cli_id, int pool_id)
 {
 	struct tmem_pool *pool = NULL;
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-=======
 	struct zcache_client *cli;
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 	int ret = -1;
 
 	if (pool_id < 0)
 		goto out;
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	pool = zcache_client.tmem_pools[pool_id];
-	if (pool == NULL)
-		goto out;
-	zcache_client.tmem_pools[pool_id] = NULL;
-=======
 
 	cli = get_zcache_client(cli_id);
 	if (cli == NULL)
@@ -1737,27 +1668,24 @@ static int zcache_destroy_pool(int pool_id)
 	if (pool == NULL)
 		goto out;
 	idr_remove(&cli->tmem_pools, pool_id);
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 	/* wait for pool activity on other cpus to quiesce */
 	while (atomic_read(&pool->refcount) != 0)
 		;
+	atomic_dec(&cli->refcount);
 	local_bh_disable();
 	ret = tmem_destroy_pool(pool);
 	local_bh_enable();
 	kfree(pool);
-	pr_info("zcache: destroyed pool id=%d\n", pool_id);
+	pr_info("zcache: destroyed pool id=%d, cli_id=%d\n",
+			pool_id, cli_id);
 out:
 	return ret;
 }
 
-static int zcache_new_pool(uint32_t flags)
+static int zcache_new_pool(uint16_t cli_id, uint32_t flags)
 {
 	int poolid = -1;
 	struct tmem_pool *pool;
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-
-	pool = kmalloc(sizeof(struct tmem_pool), GFP_KERNEL);
-=======
 	struct zcache_client *cli = NULL;
 	int r;
 
@@ -1767,19 +1695,11 @@ static int zcache_new_pool(uint32_t flags)
 
 	atomic_inc(&cli->refcount);
 	pool = kmalloc(sizeof(struct tmem_pool), GFP_ATOMIC);
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 	if (pool == NULL) {
 		pr_info("zcache: pool creation failed: out of memory\n");
 		goto out;
 	}
 
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	for (poolid = 0; poolid < MAX_POOLS_PER_CLIENT; poolid++)
-		if (zcache_client.tmem_pools[poolid] == NULL)
-			break;
-	if (poolid >= MAX_POOLS_PER_CLIENT) {
-		pr_info("zcache: pool creation failed: max exceeded\n");
-=======
 	do {
 		r = idr_pre_get(&cli->tmem_pools, GFP_ATOMIC);
 		if (r != 1) {
@@ -1791,24 +1711,20 @@ static int zcache_new_pool(uint32_t flags)
 	} while (r == -EAGAIN);
 	if (r) {
 		pr_info("zcache: pool creation failed: error %d\n", r);
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 		kfree(pool);
 		goto out;
 	}
 
 	atomic_set(&pool->refcount, 0);
-	pool->client = &zcache_client;
+	pool->client = cli;
 	pool->pool_id = poolid;
 	tmem_new_pool(pool, flags);
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-	zcache_client.tmem_pools[poolid] = pool;
-	pr_info("zcache: created %s tmem pool, id=%d\n",
-=======
 	pr_info("zcache: created %s tmem pool, id=%d, client=%d\n",
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 		flags & TMEM_POOL_PERSIST ? "persistent" : "ephemeral",
-		poolid);
+		poolid, cli_id);
 out:
+	if (cli != NULL)
+		atomic_dec(&cli->refcount);
 	return poolid;
 }
 
@@ -1829,7 +1745,7 @@ static void zcache_cleancache_put_page(int pool_id,
 	struct tmem_oid oid = *(struct tmem_oid *)&key;
 
 	if (likely(ind == index))
-		(void)zcache_put_page(pool_id, &oid, index, page);
+		(void)zcache_put_page(LOCAL_CLIENT, pool_id, &oid, index, page);
 }
 
 static int zcache_cleancache_get_page(int pool_id,
@@ -1841,7 +1757,7 @@ static int zcache_cleancache_get_page(int pool_id,
 	int ret = -1;
 
 	if (likely(ind == index))
-		ret = zcache_get_page(pool_id, &oid, index, page);
+		ret = zcache_get_page(LOCAL_CLIENT, pool_id, &oid, index, page);
 	return ret;
 }
 
@@ -1853,7 +1769,7 @@ static void zcache_cleancache_flush_page(int pool_id,
 	struct tmem_oid oid = *(struct tmem_oid *)&key;
 
 	if (likely(ind == index))
-		(void)zcache_flush_page(pool_id, &oid, ind);
+		(void)zcache_flush_page(LOCAL_CLIENT, pool_id, &oid, ind);
 }
 
 static void zcache_cleancache_flush_inode(int pool_id,
@@ -1861,13 +1777,13 @@ static void zcache_cleancache_flush_inode(int pool_id,
 {
 	struct tmem_oid oid = *(struct tmem_oid *)&key;
 
-	(void)zcache_flush_object(pool_id, &oid);
+	(void)zcache_flush_object(LOCAL_CLIENT, pool_id, &oid);
 }
 
 static void zcache_cleancache_flush_fs(int pool_id)
 {
 	if (pool_id >= 0)
-		(void)zcache_destroy_pool(pool_id);
+		(void)zcache_destroy_pool(LOCAL_CLIENT, pool_id);
 }
 
 static int zcache_cleancache_init_fs(size_t pagesize)
@@ -1875,7 +1791,7 @@ static int zcache_cleancache_init_fs(size_t pagesize)
 	BUG_ON(sizeof(struct cleancache_filekey) !=
 				sizeof(struct tmem_oid));
 	BUG_ON(pagesize != PAGE_SIZE);
-	return zcache_new_pool(0);
+	return zcache_new_pool(LOCAL_CLIENT, 0);
 }
 
 static int zcache_cleancache_init_shared_fs(char *uuid, size_t pagesize)
@@ -1884,7 +1800,7 @@ static int zcache_cleancache_init_shared_fs(char *uuid, size_t pagesize)
 	BUG_ON(sizeof(struct cleancache_filekey) !=
 				sizeof(struct tmem_oid));
 	BUG_ON(pagesize != PAGE_SIZE);
-	return zcache_new_pool(0);
+	return zcache_new_pool(LOCAL_CLIENT, 0);
 }
 
 static struct cleancache_ops zcache_cleancache_ops = {
@@ -1940,8 +1856,8 @@ static int zcache_frontswap_put_page(unsigned type, pgoff_t offset,
 	BUG_ON(!PageLocked(page));
 	if (likely(ind64 == ind)) {
 		local_irq_save(flags);
-		ret = zcache_put_page(zcache_frontswap_poolid, &oid,
-					iswiz(ind), page);
+		ret = zcache_put_page(LOCAL_CLIENT, zcache_frontswap_poolid,
+					&oid, iswiz(ind), page);
 		local_irq_restore(flags);
 	}
 	return ret;
@@ -1959,8 +1875,8 @@ static int zcache_frontswap_get_page(unsigned type, pgoff_t offset,
 
 	BUG_ON(!PageLocked(page));
 	if (likely(ind64 == ind))
-		ret = zcache_get_page(zcache_frontswap_poolid, &oid,
-					iswiz(ind), page);
+		ret = zcache_get_page(LOCAL_CLIENT, zcache_frontswap_poolid,
+					&oid, iswiz(ind), page);
 	return ret;
 }
 
@@ -1972,8 +1888,8 @@ static void zcache_frontswap_flush_page(unsigned type, pgoff_t offset)
 	struct tmem_oid oid = oswiz(type, ind);
 
 	if (likely(ind64 == ind))
-		(void)zcache_flush_page(zcache_frontswap_poolid, &oid,
-					iswiz(ind));
+		(void)zcache_flush_page(LOCAL_CLIENT, zcache_frontswap_poolid,
+					&oid, iswiz(ind));
 }
 
 /* flush all pages from the passed swaptype */
@@ -1984,7 +1900,8 @@ static void zcache_frontswap_flush_area(unsigned type)
 
 	for (ind = SWIZ_MASK; ind >= 0; ind--) {
 		oid = oswiz(type, ind);
-		(void)zcache_flush_object(zcache_frontswap_poolid, &oid);
+		(void)zcache_flush_object(LOCAL_CLIENT,
+						zcache_frontswap_poolid, &oid);
 	}
 }
 
@@ -1992,7 +1909,8 @@ static void zcache_frontswap_init(unsigned ignored)
 {
 	/* a single tmem poolid is used for all frontswap "types" (swapfiles) */
 	if (zcache_frontswap_poolid < 0)
-		zcache_frontswap_poolid = zcache_new_pool(TMEM_POOL_PERSIST);
+		zcache_frontswap_poolid =
+			zcache_new_pool(LOCAL_CLIENT, TMEM_POOL_PERSIST);
 }
 
 static struct frontswap_ops zcache_frontswap_ops = {
@@ -2124,16 +2042,12 @@ static int __init zcache_init(void)
 				sizeof(struct tmem_objnode), 0, 0, NULL);
 	zcache_obj_cache = kmem_cache_create("zcache_obj",
 				sizeof(struct tmem_obj), 0, 0, NULL);
-<<<<<<< HEAD:drivers/staging/zcache/zcache.c
-#endif
-=======
 	ret = zcache_new_client(LOCAL_CLIENT);
 	if (ret) {
 		pr_err("zcache: can't create client\n");
 		goto out;
 	}
 
->>>>>>> ef598cd... zRam && zCache: backport from 3.5 branch:drivers/staging/zcache/zcache-main.c
 #ifdef CONFIG_CLEANCACHE
 	if (zcache_enabled && use_cleancache) {
 		struct cleancache_ops old_ops;
@@ -2151,11 +2065,6 @@ static int __init zcache_init(void)
 	if (zcache_enabled && use_frontswap) {
 		struct frontswap_ops old_ops;
 
-		zcache_client.xvpool = xv_create_pool();
-		if (zcache_client.xvpool == NULL) {
-			pr_err("zcache: can't create xvpool\n");
-			goto out;
-		}
 		old_ops = zcache_frontswap_register_ops();
 		pr_info("zcache: frontswap enabled using kernel "
 			"transcendent memory and zsmalloc\n");
