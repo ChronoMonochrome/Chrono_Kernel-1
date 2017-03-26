@@ -2559,7 +2559,7 @@ __setup("board_id=", board_id_setup);
 
 MACHINE_START(CODINA, "SAMSUNG CODINA")
 	/* Maintainer: SAMSUNG based on ST Ericsson */
-	.boot_params	= 0x100,
+	.atag_offset	= 0x100,
 	.map_io		= u8500_map_io,
 	.init_irq	= ux500_init_irq,
 	.timer		= &ux500_timer,
