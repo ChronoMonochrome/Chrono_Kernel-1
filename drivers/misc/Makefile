@@ -68,3 +68,4 @@ obj-y				+= modem_audio/
 obj-$(CONFIG_USE_DPP2601)	+= projector/
 obj-$(CONFIG_TORCH_FLASH)	+= torch_flash.o
 obj-$(CONFIG_NFC_PN544)		+= pn544.o
+obj-$(CONFIG_GENERIC_BLN)	+= bln.o
