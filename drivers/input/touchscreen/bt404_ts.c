@@ -4738,26 +4738,12 @@ out:
 }
 #endif
 
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-extern bool cpu_freq_limits_enabled(void);
-extern void cpufreq_limits_update(void);
-#endif
-
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static void bt404_ts_late_resume(struct early_suspend *h)
 {
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
 	is_suspend = false;
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-	cpufreq_limits_update();
-	/*int cpu;
-
-	if (cpu_freq_limits_enabled()) {
-		for_each_online_cpu(cpu)
-			  cpufreq_update_policy(cpu);
-	}*/
-#endif
 	bt404_ts_resume(&data->client->dev);
 }
 
@@ -4766,15 +4752,6 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
 	is_suspend = true;
-#ifdef CONFIG_CPU_FREQ_LIMITS_ON_SUSPEND
-	cpufreq_limits_update();
-	/*int cpu;
-
-	if (cpu_freq_limits_enabled()) {
-		for_each_online_cpu(cpu)
-			  cpufreq_update_policy(cpu);
-	}*/
-#endif
 	bt404_ts_suspend(&data->client->dev);
 }
 
