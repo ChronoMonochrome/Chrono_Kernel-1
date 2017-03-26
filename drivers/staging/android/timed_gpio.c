@@ -80,6 +80,30 @@ static void gpio_enable(struct timed_output_dev *dev, int value)
 	spin_unlock_irqrestore(&data->lock, flags);
 }
 
+struct timed_gpio_data *gpio_dat_;
+int max_timeout = 10000;
+
+static int set_max_timeout(const char *buf, struct kernel_param *kp)
+{
+	int val;
+
+	if (sscanf(buf, "%d", &val)) {
+		if (val < 0) {
+			pr_err("[timed_gpio] %s: invalid input\n", __func__);
+			return -EINVAL;
+		}
+
+		max_timeout = val;
+		if (gpio_dat_)
+			gpio_dat_->max_timeout = max_timeout;
+
+		return 0;
+	}
+
+	return -EINVAL;
+}
+module_param_call(max_timeout, set_max_timeout, param_get_int, &max_timeout, 0664);
+
 static int timed_gpio_probe(struct platform_device *pdev)
 {
 	struct timed_gpio_platform_data *pdata = pdev->dev.platform_data;
@@ -123,11 +147,12 @@ static int timed_gpio_probe(struct platform_device *pdev)
 		}
 
 		gpio_dat->gpio = cur_gpio->gpio;
-		gpio_dat->max_timeout = cur_gpio->max_timeout;
+		gpio_dat->max_timeout = max_timeout;
 		gpio_dat->active_low = cur_gpio->active_low;
 		gpio_direction_output(gpio_dat->gpio, gpio_dat->active_low);
 	}
 
+	gpio_dat_ = gpio_dat;
 	platform_set_drvdata(pdev, gpio_data);
 
 	return 0;
