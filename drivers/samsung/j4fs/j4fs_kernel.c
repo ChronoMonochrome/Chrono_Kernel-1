@@ -1415,7 +1415,7 @@ ssize_t lfs_write(struct file *file, const char __user * buffer, size_t count, l
 	return -EINVAL;
 }
 
-int j4fs_fsync(struct file *file, int datasync)
+int j4fs_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
 {
 	return 0;
 }
