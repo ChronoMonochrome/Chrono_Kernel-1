@@ -83,7 +83,7 @@ CONFIG_RCU_BOOST_PRIO=1
 CONFIG_RCU_BOOST_DELAY=500
 CONFIG_IKCONFIG=m
 CONFIG_IKCONFIG_PROC=y
-CONFIG_LOG_BUF_SHIFT=17
+CONFIG_LOG_BUF_SHIFT=12
 CONFIG_CGROUPS=y
 # CONFIG_CGROUP_DEBUG is not set
 # CONFIG_CGROUP_FREEZER is not set
@@ -477,7 +477,7 @@ CONFIG_ARM_USE_GLIBC_MEMCOPY=y
 # CONFIG_USE_OF is not set
 CONFIG_ZBOOT_ROM_TEXT=0
 CONFIG_ZBOOT_ROM_BSS=0
-CONFIG_CMDLINE="androidboot.selinux=permissive cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=72M@256M mem=55M@328M mem_issw=1M@383M mem=383M@384M vmalloc=264M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 logo. lcdtype=4 sbl_copy=1"
+CONFIG_CMDLINE="androidboot.selinux=permissive log_buf_len=64K cachepolicy=writealloc mpcore_wdt.mpcore_margin=359 root=/dev/ram0 rw rootwait crash_reboot=yes crash_dump=no  init=init console='null' mem=96M@0 mem_mtrace=15M@96M mem_mshared=1M@111M mem_modem=16M@112M mem=128M@128M hwmem=72M@256M mem=55M@328M mem_issw=1M@383M mem=383M@384M vmalloc=264M jig_smd=0 lpm_boot=0 checksum_pass=1 checksum_done=1 sec_debug.enable=0 sec_debug.enable_user=0 androidboot.serialno=47907233a768cf60 board_id=12 startup_graphics=1 logo. lcdtype=4 sbl_copy=1"
 # CONFIG_CMDLINE_FROM_BOOTLOADER is not set
 # CONFIG_CMDLINE_EXTEND=n
 CONFIG_CMDLINE_FORCE=y
