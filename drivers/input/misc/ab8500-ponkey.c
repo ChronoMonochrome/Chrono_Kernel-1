@@ -65,10 +65,6 @@ struct ab8500_ponkey_info {
 
 struct ab8500_ponkey_info *p_info;
 
-#ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
-extern bool gpio_keys_getstate(int keycode);
-extern int jack_is_detected;
-#endif
 extern void gpio_keys_setstate(int keycode, bool bState);
 
 static int ab5500_ponkey_hw_init(struct platform_device *pdev)
