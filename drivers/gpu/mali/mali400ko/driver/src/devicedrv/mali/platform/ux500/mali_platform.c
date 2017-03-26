@@ -101,7 +101,9 @@ int mali_utilization_low_to_high = MALI_LOW_TO_HIGH_LEVEL_UTILIZATION_LIMIT;
 static bool is_running;
 static bool is_initialized;
 
-static u32 mali_last_utilization;
+u32 mali_last_utilization;
+EXPORT_SYMBOL(mali_last_utilization);
+
 module_param(mali_last_utilization, uint, 0444);
 
 static struct regulator *regulator;
@@ -114,14 +116,14 @@ static struct wake_lock wakelock;
 #endif
 
 static u32 boost_enable 	= 1;
-static u32 boost_working 	= 0;
+u32 boost_working 	= 0;
 static u32 boost_scheduled 	= 0;
 static u32 boost_required 	= 0;
-static u32 boost_delay 		= 500;
+static u32 __read_mostly boost_delay 		= 0;
 static u32 boost_low 		= 0;
 static u32 boost_high 		= 0;
-static u32 boost_upthreshold 	= 233;
-static u32 boost_downthreshold 	= 64;
+u32 __read_mostly boost_upthreshold 	= 233;
+u32 __read_mostly boost_downthreshold 	= 64;
 //mutex to protect above variables
 static DEFINE_MUTEX(mali_boost_lock);
 
@@ -380,7 +382,7 @@ void mali_utilization_function(struct work_struct *ptr)
 		// consider boost only if we are in APE_100_OPP mode
 		if (!boost_required && mali_last_utilization > boost_upthreshold) {
 			boost_required = true;
-			if (!boost_scheduled) {
+		if (!boost_scheduled) {
 				//schedule job to turn boost on
 				boost_scheduled = true;
 				schedule_delayed_work(&mali_boost_delayedwork, msecs_to_jiffies(boost_delay));
