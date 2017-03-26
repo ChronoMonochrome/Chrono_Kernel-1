@@ -48,6 +48,37 @@
 #include <linux/ab8500-ponkey.h>
 #include <linux/earlysuspend.h>
 
+/* Chrono: bln blink on eoc_real=1 */
+#include <linux/bln.h>
+
+/*
+static int eoc_blink_mode = 1; // enable blinking
+static int eoc_blink_time_on = 10000; // enable LED for 10 sec
+static int eoc_blink_time_off = 2000; // disable LED for 2 sec
+*/
+
+static unsigned int eoc_blink = 1;
+module_param_named(eoc_blink, eoc_blink, uint, 0644);
+
+static bool eoc_blink_ongoing = false;
+static int eoc_blink_mode = 0;
+
+static unsigned int eoc_blink_timeout_sec = 1200; // disable LED after 1200 sec
+module_param_named(eoc_blink_timeout_sec, eoc_blink_timeout_sec, uint, 0644);
+
+static void eoc_blink_fn(struct work_struct *work)
+{
+	bln_enable_backlights(get_led_mask(), 0);
+}
+static DECLARE_WORK(eoc_blink_work, eoc_blink_fn);
+
+static void eoc_blink_stop_fn(struct work_struct *work)
+{
+	bln_disable_backlights(get_led_mask(), 0);
+	eoc_blink_ongoing = false;
+}
+static DECLARE_DELAYED_WORK(eoc_blink_stop_work, eoc_blink_stop_fn);
+
 #define CHARGING_PAUSED			-1
 #define CHARGING_STOPPED		0
 #define CHARGING_WORKING		1
@@ -1028,6 +1059,12 @@ for the %d time, out of %d before EOC\n",  di->eoc_cnt_1st, EOC_COND_CNT_1ST);
 				/* Wakeup device to notice user */
 				if (!eoc_noticed && is_suspend)
 					schedule_work_on(0, &eoc_wakeup_work);
+
+				if (eoc_blink && !eoc_blink_ongoing && !bln_is_ongoing()) {
+					schedule_work(&eoc_blink_work);
+					schedule_delayed_work(&eoc_blink_stop_work, msecs_to_jiffies(eoc_blink_timeout_sec * 1000 ));
+					eoc_blink_ongoing = true;
+				}
 			} else {
 				dev_dbg(di->dev,
 				" real EOC limit reached for the %d"
@@ -1228,6 +1265,15 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 			break ;
 
 		case POWER_SUPPLY_PROP_PRESENT:
+			if (!ret.intval && (ext->type == POWER_SUPPLY_TYPE_MAINS || 
+				ext->type == POWER_SUPPLY_TYPE_USB) && 
+				(di->chg_info.conn_chg & AC_CHG || di->chg_info.conn_chg & USB_CHG)) {
+			      if (eoc_blink_ongoing) {
+                                        cancel_delayed_work(&eoc_blink_stop_work);
+                                        schedule_delayed_work(&eoc_blink_stop_work, 0);
+                                        eoc_blink_ongoing = false;
+                                }
+			}
 			switch (ext->type) {
 			case POWER_SUPPLY_TYPE_BATTERY:
 				/* Battery present */
@@ -2513,7 +2559,7 @@ static ssize_t abb_chargalg_termination_curr_1st_store(struct kobject *kobj, str
 
 static struct kobj_attribute abb_chargalg_termination_curr_1st_interface = 
 	__ATTR(termination_curr_1st, 0644, abb_chargalg_termination_curr_1st_show, abb_chargalg_termination_curr_1st_store);
-	
+
 static ssize_t abb_chargalg_termination_curr_2nd_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	sprintf(buf, "%d mA\n", termination_curr_2nd[battery_type%2]);
@@ -2586,6 +2632,33 @@ static ssize_t abb_chargalg_termination_vol_store(struct kobject *kobj, struct k
 static struct kobj_attribute abb_chargalg_termination_vol_interface =
         __ATTR(termination_vol, 0644, abb_chargalg_termination_vol_show, abb_chargalg_termination_vol_store);
 
+static ssize_t test_ena_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+                               if (eoc_blink && !eoc_blink_ongoing && !bln_is_ongoing()) {
+                                       schedule_work(&eoc_blink_work);
+                                       schedule_delayed_work(&eoc_blink_stop_work, msecs_to_jiffies(eoc_blink_timeout_sec * 1000));
+                                       eoc_blink_ongoing = true;
+                               }
+
+
+       return count;
+}
+
+static struct kobj_attribute test_ena_interface = __ATTR(test_ena, 0644, NULL, test_ena_store);
+
+static ssize_t test_dis_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+                             if (eoc_blink_ongoing) {
+                                        cancel_delayed_work(&eoc_blink_stop_work);
+                                        schedule_delayed_work(&eoc_blink_stop_work, 0);
+                                        eoc_blink_ongoing = false;
+                                }
+
+        return count;
+}
+
+static struct kobj_attribute test_dis_interface = __ATTR(test_dis, 0644, NULL, test_dis_store);
+
 static struct attribute *abb_chargalg_attrs[] = {
 	&abb_chargalg_charging_stats_interface.attr, 
 	&abb_chargalg_eoc_stats_interface.attr, 
@@ -2595,6 +2668,8 @@ static struct attribute *abb_chargalg_attrs[] = {
 	&abb_chargalg_termination_curr_2nd_interface.attr,
 	&abb_chargalg_termination_vol_interface.attr,
 	&abb_chargalg_recharge_vol_interface.attr,
+	&test_ena_interface.attr,
+	&test_dis_interface.attr,
 	NULL,
 };
 
