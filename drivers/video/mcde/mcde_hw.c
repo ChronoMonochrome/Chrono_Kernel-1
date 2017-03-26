@@ -1197,11 +1197,11 @@ struct lcdclk_prop
 
 static struct lcdclk_prop lcdclk_prop[] = {
   	[0] = {
-		.name = "60++ Hz",
+		.name = "60++ Hz (unsafe)",
 		.clk = 66560000,
 	},
   	[1] = {
-		.name = "60+ Hz",
+		.name = "60+ Hz (unsafe)",
 		.clk = 57051428,
 	},
 	[2] = {
