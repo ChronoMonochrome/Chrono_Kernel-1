@@ -604,7 +604,8 @@ static int __prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 int prcmu_qos_update_requirement(int prcmu_qos_class, char *name,
 		s32 val)
 {
-
+	if (prcmu_qos_class == PRCMU_QOS_ARM_KHZ)
+		return 0;
 	return __prcmu_qos_update_requirement(prcmu_qos_class, name,
 			val, true);
 }
