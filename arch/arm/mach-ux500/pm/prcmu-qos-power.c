@@ -1001,7 +1001,7 @@ out:
 
         return err;
 }
-module_param_call(qos_ddr_opp, set_qos_ddr_opp, param_get_uint, &qos_ddr_opp, 0664);
+module_param_call(qos_ddr_opp, set_qos_ddr_opp, param_get_uint, &qos_ddr_opp, 0666);
 
 static int set_qos_ape_opp(const char *val, struct kernel_param *kp)
 {
@@ -1028,7 +1028,7 @@ out:
 
         return err;
 }
-module_param_call(qos_ape_opp, set_qos_ape_opp, param_get_uint, &qos_ape_opp, 0664);
+module_param_call(qos_ape_opp, set_qos_ape_opp, param_get_uint, &qos_ape_opp, 0666);
 
 static int set_qos_arm_khz(const char *val, struct kernel_param *kp)
 {
@@ -1047,7 +1047,7 @@ out:
 
         return err;
 }
-module_param_call(qos_arm_khz, set_qos_arm_khz, param_get_uint, &qos_arm_khz, 0664);
+module_param_call(qos_arm_khz, set_qos_arm_khz, param_get_uint, &qos_arm_khz, 0666);
 
 static int __init prcmu_qos_power_init(void)
 {
