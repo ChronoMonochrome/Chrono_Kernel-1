@@ -33,6 +33,7 @@
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
 #include <linux/input.h>
+#include <linux/input/input_boost.h>
 
 static int active_count;
 
@@ -429,7 +430,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 	loadadjfreq = (unsigned int)cputime_speedadj * 100;
 	cpu_load = loadadjfreq / pcpu->target_freq;
 	pcpu->prev_load = cpu_load;
-	boosted = boost_val || now < boostpulse_endtime;
+	boosted = boost_val || now < boostpulse_endtime || now < (last_input_time + input_boost_ms * 1000);
 
 	if (counter < 5) {
 		counter++;
@@ -438,7 +439,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 		}
 	}
 
-	if (cpu_load >= go_hispeed_load || boosted) {
+	if (cpu_load >= go_hispeed_load) {
 		if (pcpu->target_freq < hispeed_freq) {
 			nr_cpus = num_online_cpus();
 
@@ -478,6 +479,11 @@ static void cpufreq_interactive_timer(unsigned long data)
 				max_load >= up_threshold_any_cpu_load)
 				new_freq = sync_freq;
 		}
+	}
+	
+	if (boosted) {
+		if (new_freq < input_boost_freq)
+			new_freq = input_boost_freq;
 	}
 
 	if (counter > 0) {

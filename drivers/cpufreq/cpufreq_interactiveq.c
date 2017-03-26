@@ -33,6 +33,7 @@
 #include <linux/earlysuspend.h>
 #include <linux/slab.h>
 #include <asm/cputime.h>
+#include <linux/input/input_boost.h>
 
 /* #define CREATE_TRACE_POINTS */
 /* #include <trace/events/cpufreq_interactive.h> */
@@ -362,9 +363,9 @@ static void cpufreq_interactiveq_timer(unsigned long data)
 	do_div(cputime_speedadj, delta_time);
 	loadadjfreq = (unsigned int)cputime_speedadj * 100;
 	cpu_load = loadadjfreq / pcpu->target_freq;
-	boosted = boost_val || now < boostpulse_endtime;
+	boosted = boost_val || now < boostpulse_endtime || now < (last_input_time + input_boost_ms * 1000);
 
-	if (cpu_load >= go_hispeed_load || boosted) {
+	if (cpu_load >= go_hispeed_load) {
 		if (pcpu->target_freq < hispeed_freq) {
 			new_freq = hispeed_freq;
 		} else {
@@ -375,6 +376,11 @@ static void cpufreq_interactiveq_timer(unsigned long data)
 		}
 	} else {
 		new_freq = choose_freq(pcpu, loadadjfreq);
+	}
+	
+	if (boosted) {
+		if (new_freq < input_boost_freq)
+			new_freq = input_boost_freq;
 	}
 
 	if (pcpu->target_freq >= hispeed_freq &&
