@@ -50,7 +50,6 @@
 #include <linux/err.h>
 #include <linux/kref.h>
 #include <linux/ktime.h>
-#include <linux/mutex.h>
 
 #include "b2r2_internal.h"
 #include "b2r2_core.h"
@@ -168,8 +167,6 @@ static void stop_hw_timer(struct b2r2_core *core,
 
 static int init_hw(struct b2r2_core *core);
 static void exit_hw(struct b2r2_core *core);
-
-static DEFINE_MUTEX(reset_mutex);
 
 /* Tracking release bug... */
 #ifdef DEBUG_CHECK_ADDREF_RELEASE
@@ -615,9 +612,6 @@ static void domain_disable_work_function(struct work_struct *work)
 		exit_hw(core);
 		clk_disable(core->b2r2_clock);
 		regulator_disable(core->b2r2_reg);
-		/* VANA is tighly coupled to DSS EPOD */
-		if (core->vana_reg)
-			regulator_disable(core->vana_reg);
 		core->domain_enabled = false;
 	}
 
@@ -641,10 +635,6 @@ static int domain_enable(struct b2r2_core *core)
 	if (!core->domain_enabled) {
 		int retry = 0;
 		int ret;
-
-		/* VANA is tighly coupled to DSS EPOD */
-		if (core->vana_reg)
-			WARN_ON_ONCE(regulator_enable(core->vana_reg));
 again:
 		/*
 		 * Since regulator_enable() may sleep we have to handle
@@ -682,8 +672,6 @@ enable_clk_failed:
 	if (regulator_disable(core->b2r2_reg) < 0)
 		b2r2_log_err(core->dev, "%s: regulator_disable failed!\n",
 				__func__);
-	if (core->vana_reg)
-		WARN_ON_ONCE(regulator_disable(core->vana_reg));
 
 regulator_enable_failed:
 	core->domain_request_count--;
@@ -2259,8 +2247,14 @@ static int init_hw(struct b2r2_core *core)
 	writel(readl(&core->hw->BLT_CTL) | B2R2BLT_CTLGLOBAL_soft_reset,
 		&core->hw->BLT_CTL);
 
-	/* Enable interrupt handler */
-	enable_irq(core->irq);
+	/* Set up interrupt handler */
+	result = request_irq(core->irq, b2r2_irq_handler, IRQF_SHARED,
+			     "b2r2-interrupt", core);
+	if (result) {
+		b2r2_log_err(core->dev,
+			"%s: failed to register IRQ for B2R2\n", __func__);
+		goto b2r2_init_request_irq_failed;
+	}
 
 	b2r2_log_info(core->dev, "do a global reset..\n");
 
@@ -2290,11 +2284,11 @@ static int init_hw(struct b2r2_core *core)
 	}
 	if (!IS_ERR_OR_NULL(core->debugfs_regs_dir)) {
 		int i;
-		debugfs_create_file("all", 0664, core->debugfs_regs_dir,
+		debugfs_create_file("all", 0666, core->debugfs_regs_dir,
 				(void *)core->hw, &debugfs_b2r2_regs_fops);
 		/* Create debugfs entries for all static registers */
 		for (i = 0; i < ARRAY_SIZE(debugfs_regs); i++)
-			debugfs_create_file(debugfs_regs[i].name, 0664,
+			debugfs_create_file(debugfs_regs[i].name, 0666,
 					core->debugfs_regs_dir,
 					(void *)(((u8 *) core->hw) +
 							debugfs_regs[i].offset),
@@ -2355,9 +2349,9 @@ static void exit_hw(struct b2r2_core *core)
 	b2r2_log_debug(core->dev, "%s: clearing interrupts\n", __func__);
 	clear_interrupts(core);
 
-	/* Disable B2R2 interrupt handler */
-	b2r2_log_debug(core->dev, "%s: disable interrupt handler\n", __func__);
-	disable_irq(core->irq);
+	/* Free B2R2 interrupt handler */
+	b2r2_log_debug(core->dev, "%s: freeing interrupt handler\n", __func__);
+	free_irq(core->irq, core);
 
 	b2r2_log_debug(core->dev, "%s: unlocking core->lock\n", __func__);
 	spin_unlock_irqrestore(&core->lock, flags);
@@ -2436,13 +2430,6 @@ static int b2r2_probe(struct platform_device *pdev)
 		goto error_exit;
 	}
 
-	/* Get the VANA regulator */
-	core->vana_reg = regulator_get(core->dev, "vdddsi1v2");
-	/* For some platforms vana does not exist as a regulator */
-	if (IS_ERR(core->vana_reg))
-		dev_err(&pdev->dev, "regulator_get vana failed (dev_name=%s)\n",
-				dev_name(core->dev));
-
 	/* Init power management */
 	mutex_init(&core->domain_lock);
 	INIT_DELAYED_WORK_DEFERRABLE(&core->domain_disable_work,
@@ -2463,16 +2450,6 @@ static int b2r2_probe(struct platform_device *pdev)
 			__func__, core->irq);
 		goto error_exit;
 	}
-
-	/* Set up interrupt handler */
-	ret = request_irq(core->irq, b2r2_irq_handler, IRQF_SHARED,
-			     "b2r2-interrupt", core);
-	if (ret) {
-		b2r2_log_err(core->dev,
-			"%s: failed to register IRQ for B2R2\n", __func__);
-		goto error_exit;
-	}
-	disable_irq(core->irq);
 
 	core->hw = (struct b2r2_memory_map *) ioremap(res->start,
 			 res->end - res->start + 1);
@@ -2515,22 +2492,22 @@ static int b2r2_probe(struct platform_device *pdev)
 	}
 
 	if (!IS_ERR_OR_NULL(core->debugfs_core_root_dir)) {
-		debugfs_create_file("stats", 0664, core->debugfs_core_root_dir,
+		debugfs_create_file("stats", 0666, core->debugfs_core_root_dir,
 				core, &debugfs_b2r2_stat_fops);
-		debugfs_create_file("clock", 0664, core->debugfs_core_root_dir,
+		debugfs_create_file("clock", 0666, core->debugfs_core_root_dir,
 				core, &debugfs_b2r2_clock_fops);
-		debugfs_create_file("enabled", 0664,
+		debugfs_create_file("enabled", 0666,
 				core->debugfs_core_root_dir,
 				core, &debugfs_b2r2_enabled_fops);
-		debugfs_create_u8("op_size", 0664, core->debugfs_core_root_dir,
+		debugfs_create_u8("op_size", 0666, core->debugfs_core_root_dir,
 				&core->op_size);
-		debugfs_create_u8("ch_size", 0664, core->debugfs_core_root_dir,
+		debugfs_create_u8("ch_size", 0666, core->debugfs_core_root_dir,
 				&core->ch_size);
-		debugfs_create_u8("pg_size", 0664, core->debugfs_core_root_dir,
+		debugfs_create_u8("pg_size", 0666, core->debugfs_core_root_dir,
 				&core->pg_size);
-		debugfs_create_u8("mg_size", 0664, core->debugfs_core_root_dir,
+		debugfs_create_u8("mg_size", 0666, core->debugfs_core_root_dir,
 				&core->mg_size);
-		debugfs_create_u16("min_req_time", 0664,
+		debugfs_create_u16("min_req_time", 0666,
 			core->debugfs_core_root_dir, &core->min_req_time);
 	}
 #endif
@@ -2568,17 +2545,11 @@ error_exit:
 	if (!IS_ERR_OR_NULL(core->b2r2_reg))
 		regulator_put(core->b2r2_reg);
 
-	if (!IS_ERR_OR_NULL(core->vana_reg))
-		regulator_put(core->vana_reg);
-
 	if (!IS_ERR_OR_NULL(core->b2r2_clock))
 		clk_put(core->b2r2_clock);
 
 	if (!IS_ERR_OR_NULL(core->work_queue))
 		destroy_workqueue(core->work_queue);
-
-	if (core->hw)
-		iounmap(core->hw);
 
 	if (debug_init)
 		b2r2_debug_exit();
@@ -2643,8 +2614,6 @@ void b2r2_core_release(struct kref *control_ref)
 	/* Return the clock */
 	clk_put(core->b2r2_clock);
 	regulator_put(core->b2r2_reg);
-	if (core->vana_reg)
-		regulator_put(core->vana_reg);
 
 	core->dev = NULL;
 	kfree(core);
@@ -2669,10 +2638,6 @@ static int b2r2_remove(struct platform_device *pdev)
 	BUG_ON(core == NULL);
 	b2r2_log_info(&pdev->dev, "%s: Started\n", __func__);
 
-	/* Free B2R2 interrupt handler */
-	b2r2_log_debug(core->dev, "%s: freeing interrupt handler\n", __func__);
-	free_irq(core->irq, core);
-
 #ifdef CONFIG_DEBUG_FS
 	if (!IS_ERR_OR_NULL(core->debugfs_root_dir)) {
 		debugfs_remove_recursive(core->debugfs_root_dir);
@@ -2694,29 +2659,68 @@ static int b2r2_remove(struct platform_device *pdev)
 }
 
 /**
- * b2r2_core_reset_hold() - This routine resets b2r2 in a controlled fashion and
- *                          holds the cores in a suspended state.
- *                          The reset will happen after a period of time.
+ * b2r2_reset_hold() - This routine resets b2r2 in a controlled fashion and
+ *                     holds the cores in a suspended state.
+ *
  */
-void b2r2_core_reset_hold(void)
+int b2r2_reset_hold(void)
 {
-	/* take the lock and don't unlock until reset_release */
-	mutex_lock(&reset_mutex);
+	struct b2r2_core *core;
+	int i;
+
+	for (i = 0; i < B2R2_MAX_NBR_DEVICES; i++) {
+		core = b2r2_core[i];
+		if (core) {
+			mutex_lock(&core->domain_lock);
+			core->lockdown = true;
+			core->domain_request_count = 0;
+			exit_hw(core);
+			clk_disable(core->b2r2_clock);
+			regulator_disable(core->b2r2_reg);
+			core->domain_enabled = false;
+
+			/* Flush B2R2 work queue (call all callbacks) */
+			flush_workqueue(core->work_queue);
+
+#ifdef HANDLE_TIMEOUTED_JOBS
+			cancel_delayed_work(&core->timeout_work);
+#endif
+
+			/*
+			 * Flush B2R2 work queue (call all callbacks for
+			 * cancelled jobs)
+			 */
+			flush_workqueue(core->work_queue);
+
+			/* Make sure power is turned off */
+			cancel_delayed_work_sync(&core->domain_disable_work);
+
+			mutex_unlock(&core->domain_lock);
+		}
+	}
+
+	return 0;
 }
 
 /**
- * b2r2_core_reset_release() - This routine lets go of the b2r2 reset
+ * b2r2_reset_release() - This routine lets go of the b2r2 reset
  *
  */
-void b2r2_core_reset_release(void)
+int b2r2_reset_release(void)
 {
-	mutex_unlock(&reset_mutex);
-}
+	struct b2r2_core *core;
+	int i;
 
-void b2r2_core_on_reset_completion_wait(void)
-{
-	mutex_lock(&reset_mutex);
-	mutex_unlock(&reset_mutex);
+	for (i = 0; i < B2R2_MAX_NBR_DEVICES; i++) {
+		core = b2r2_core[i];
+		if (core) {
+			mutex_lock(&core->domain_lock);
+			core->lockdown = false;
+			mutex_unlock(&core->domain_lock);
+		}
+	}
+
+	return 0;
 }
 
 /**
