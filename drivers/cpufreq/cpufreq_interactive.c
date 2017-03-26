@@ -30,6 +30,7 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
+#include <linux/earlysuspend.h>
 #include <asm/cputime.h>
 
 #define CREATE_TRACE_POINTS
@@ -69,6 +70,7 @@ static struct task_struct *speedchange_task;
 static cpumask_t speedchange_cpumask;
 static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
+static struct work_struct suspend, resume;
 
 /* Hi speed to bump to from lo speed when load burst (default max) */
 static unsigned int hispeed_freq = 500000;
@@ -1209,6 +1211,46 @@ static struct notifier_block cpufreq_interactive_idle_nb = {
 	.notifier_call = cpufreq_interactive_idle_notifier,
 };
 
+static void cpufreq_interactive_suspend(struct work_struct *work)
+{
+	int cpu;
+
+	for_each_online_cpu(cpu) {
+		if (!cpu)
+			continue;
+
+		cpu_down(cpu);
+	}
+}
+
+static void cpufreq_interactive_resume(struct work_struct *work)
+{
+	int cpu;
+
+	for_each_possible_cpu(cpu) {
+		if (!cpu)
+			continue;
+
+		cpu_up(cpu);
+	}
+}
+
+static void cpufreq_interactive_early_suspend(struct early_suspend *handler)
+{
+	schedule_work(&suspend);
+}
+
+static void cpufreq_interactive_late_resume(struct early_suspend *handler)
+{
+	schedule_work(&resume);
+}
+
+static struct early_suspend cpufreq_interactive_early_suspend = {
+	.level = EARLY_SUSPEND_LEVEL_DISABLE_FB,
+	.suspend = cpufreq_interactive_early_suspend,
+	.resume = cpufreq_interactive_late_resume,
+};
+
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event)
 {
@@ -1399,6 +1441,10 @@ static int __init cpufreq_interactive_init(void)
 			       "cfinteractive");
 	if (IS_ERR(speedchange_task))
 		return PTR_ERR(speedchange_task);
+
+	register_early_suspend(&cpufreq_interactive_early_suspend);
+	INIT_WORK(&resume, cpufreq_interactive_resume);
+	INIT_WORK(&suspend, cpufreq_interactive_suspend);
 
 	sched_setscheduler_nocheck(speedchange_task, SCHED_FIFO, &param);
 	get_task_struct(speedchange_task);
