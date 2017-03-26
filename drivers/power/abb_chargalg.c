@@ -59,7 +59,7 @@ static int eoc_blink_time_on = 10000; // enable LED for 10 sec
 static int eoc_blink_time_off = 2000; // disable LED for 2 sec
 */
 
-static unsigned int eoc_blink = 1;
+static unsigned int eoc_blink = 0;
 module_param_named(eoc_blink, eoc_blink, uint, 0644);
 
 static bool eoc_blink_ongoing = false;
@@ -120,6 +120,13 @@ static void ab8500_chargalg_late_resume(struct early_suspend *h)
 
 static void eoc_wakeup_thread(struct work_struct *eoc_wakeup_work)
 {
+	if (!eoc_blink) {
+		pr_err("[abb-chargalg] [fn] EOC wakeup\n");
+		ab8500_ponkey_emulator(KEY_POWER, 1);
+		msleep(100);
+		ab8500_ponkey_emulator(KEY_POWER, 0);
+	}
+
 	eoc_noticed = 1;
 }
 static DECLARE_WORK(eoc_wakeup_work, eoc_wakeup_thread);
