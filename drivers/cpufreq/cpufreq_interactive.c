@@ -403,13 +403,13 @@ static void cpufreq_interactive_timer(unsigned long data)
 		if (pcpu->target_freq < hispeed_freq) {
 			new_freq = hispeed_freq;
 		} else {
-			new_freq = choose_freq(pcpu, loadadjfreq);
+			new_freq = pcpu->policy->max * cpu_load / 100;
 
 			if (new_freq < hispeed_freq)
 				new_freq = hispeed_freq;
 		}
 	} else {
-		new_freq = choose_freq(pcpu, loadadjfreq);
+		new_freq = pcpu->policy->max * cpu_load / 100;
 		if (new_freq > hispeed_freq &&
 				pcpu->target_freq < hispeed_freq)
 			new_freq = hispeed_freq;
