@@ -8,6 +8,7 @@
 #include <linux/errno.h>
 #include <linux/clksrc-dbx500-prcmu.h>
 #include <linux/clksrc-db5500-mtimer.h>
+#include <linux/of.h>
 
 #include <asm/smp_twd.h>
 
@@ -51,9 +52,13 @@ static void __init ux500_twd_init(void)
 	twd_local_timer = cpu_is_u5500() ? &u5500_twd_local_timer :
 					   &u8500_twd_local_timer;
 
-	err = twd_local_timer_register(twd_local_timer);
-	if (err)
-		pr_err("twd_local_timer_register failed %d\n", err);
+	if (of_have_populated_dt())
+		twd_local_timer_of_register();
+	else {
+		err = twd_local_timer_register(twd_local_timer);
+		if (err)
+			pr_err("twd_local_timer_register failed %d\n", err);
+	}
 }
 #else
 #define ux500_twd_init()	do { } while(0)
