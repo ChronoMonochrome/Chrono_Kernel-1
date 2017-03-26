@@ -34,7 +34,7 @@
 #include <linux/idr.h>
 #include "tmem.h"
 
-#include "../zsmalloc/zsmalloc.h"
+#include <linux/zsmalloc.h>
 
 #ifdef CONFIG_CLEANCACHE
 #include <linux/cleancache.h>
@@ -42,8 +42,6 @@
 #ifdef CONFIG_FRONTSWAP
 #include <linux/frontswap.h>
 #endif
-
-#define ZCACHE_COMPRESSOR_DEFAULT "lz4"
 
 #if 0
 /* this is more aggressive but may cause other problems? */
@@ -466,14 +464,14 @@ static int zbud_decompress(struct page *page, struct zbud_hdr *zh)
 	}
 	ASSERT_SENTINEL(zh, ZBH);
 	BUG_ON(zh->size == 0 || zh->size > zbud_max_buddy_size());
-	to_va = kmap_atomic(page);
+	to_va = kmap_atomic(page, KM_USER0);
 	size = zh->size;
 	from_va = zbud_data(zh, size);
 	ret = zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, from_va, size,
 				to_va, &out_len);
 	BUG_ON(ret);
 	BUG_ON(out_len != PAGE_SIZE);
-	kunmap_atomic(to_va);
+	kunmap_atomic(to_va, KM_USER0);
 out:
 	spin_unlock(&zbpg->lock);
 	return ret;
@@ -762,10 +760,10 @@ static void zv_decompress(struct page *page, unsigned long handle)
 	zv = zs_map_object(zcache_host.zspool, handle, ZS_MM_RO);
 	BUG_ON(zv->size == 0);
 	ASSERT_SENTINEL(zv, ZVH);
-	to_va = kmap_atomic(page);
+	to_va = kmap_atomic(page, KM_USER0);
 	ret = zcache_comp_op(ZCACHE_COMPOP_DECOMPRESS, (char *)zv + sizeof(*zv),
 				zv->size, to_va, &clen);
-	kunmap_atomic(to_va);
+	kunmap_atomic(to_va, KM_USER0);
 	zs_unmap_object(zcache_host.zspool, handle);
 	BUG_ON(ret);
 	BUG_ON(clen != PAGE_SIZE);
@@ -1210,7 +1208,7 @@ static void *zcache_pampd_create(char *data, size_t size, bool raw, int eph,
 		}
 		/* reject if mean compression is too poor */
 		if ((clen > zv_max_mean_zsize) && (curr_pers_pampd_count > 0)) {
-			total_zsize = zs_get_total_size_bytes(cli->zspool);
+			total_zsize = zs_get_total_pages(cli->zspool) << PAGE_SHIFT;
 			zv_mean_zsize = div_u64(total_zsize,
 						curr_pers_pampd_count);
 			if (zv_mean_zsize > zv_max_mean_zsize) {
@@ -1327,13 +1325,13 @@ static int zcache_compress(struct page *from, void **out_va, unsigned *out_len)
 	if (unlikely(dmem == NULL))
 		goto out;  /* no buffer or no compressor so can't compress */
 	*out_len = PAGE_SIZE << ZCACHE_DSTMEM_ORDER;
-	from_va = kmap_atomic(from);
+	from_va = kmap_atomic(from, KM_USER0);
 	mb();
 	ret = zcache_comp_op(ZCACHE_COMPOP_COMPRESS, from_va, PAGE_SIZE, dmem,
 				out_len);
 	BUG_ON(ret);
 	*out_va = dmem;
-	kunmap_atomic(from_va);
+	kunmap_atomic(from_va, KM_USER0);
 	ret = 1;
 out:
 	return ret;
@@ -1936,7 +1934,7 @@ struct frontswap_ops zcache_frontswap_register_ops(void)
  * NOTHING HAPPENS!
  */
 
-static int zcache_enabled = 1;
+static int zcache_enabled;
 
 static int __init enable_zcache(char *s)
 {
@@ -1988,7 +1986,7 @@ static int __init zcache_comp_init(void)
 					zcache_comp_name);
 	}
 	if (!ret)
-		strcpy(zcache_comp_name, ZCACHE_COMPRESSOR_DEFAULT);
+		strcpy(zcache_comp_name, "lzo");
 	ret = crypto_has_comp(zcache_comp_name, 0, 0);
 	if (!ret) {
 		ret = 1;
