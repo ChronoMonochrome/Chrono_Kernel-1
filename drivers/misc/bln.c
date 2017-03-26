@@ -35,7 +35,7 @@ static struct bln_implementation *bln_imp = NULL;
 static long unsigned int notification_led_mask = 0x0;
 
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-static bool use_wakelock = true;
+static bool use_wakelock = false; /* i don't want to burn batteries */
 static struct wake_lock bln_wake_lock;
 #endif
 
@@ -56,7 +56,7 @@ static int gen_all_leds_mask(void)
 	return mask;
 }
 
-static int get_led_mask(void){
+static int get_led_mask(void) {
 	return (notification_led_mask != 0) ? notification_led_mask : gen_all_leds_mask();
 }
 
@@ -82,7 +82,7 @@ static void bln_power_on(void)
 {
 	if (likely(bln_imp && bln_imp->power_on)) {
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-		if(use_wakelock && !wake_lock_active(&bln_wake_lock)){
+		if (use_wakelock && !wake_lock_active(&bln_wake_lock)) {
 			wake_lock(&bln_wake_lock);
 		}
 #endif
@@ -95,7 +95,7 @@ static void bln_power_off(void)
 	if (likely(bln_imp && bln_imp->power_off)) {
 		bln_imp->power_off();
 #ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-		if(wake_lock_active(&bln_wake_lock)){
+		if (wake_lock_active(&bln_wake_lock)) {
 			wake_unlock(&bln_wake_lock);
 		}
 #endif
@@ -178,10 +178,10 @@ static ssize_t backlightnotification_status_read(struct device *dev,
 {
 	int ret = 0;
 		
-	if(unlikely(!bln_imp))
+	if (unlikely(!bln_imp))
 		ret = -1;
 
-	if(bln_enabled)
+	if (bln_enabled)
 		ret = 1;
 	else
 		ret = 0;
@@ -194,7 +194,7 @@ static ssize_t backlightnotification_status_write(struct device *dev,
 {
 	unsigned int data;
 
-	if(unlikely(!bln_imp)) {
+	if (unlikely(!bln_imp)) {
 		pr_err("%s: no BLN implementation registered!\n", __FUNCTION__);
 		return size;
 	}
@@ -264,7 +264,7 @@ static ssize_t notification_led_mask_write(struct device *dev,
 			return size;
 	}
 
-	if(data & gen_all_leds_mask()){
+	if (data & gen_all_leds_mask()) {
 		notification_led_mask = data;
 	} else {
 		//TODO: correct error code
@@ -374,13 +374,13 @@ static ssize_t buttons_led_status_write(struct device *dev,
 	}
 
 	if (data == 1) {
-		if(!bln_suspended){
+		if (!bln_suspended) {
 			buttons_led_enabled = true;
 			bln_power_on();
 			bln_enable_backlights(gen_all_leds_mask());
 		}
 	} else if (data == 0) {
-		if(!bln_suspended){
+		if (!bln_suspended) {
 			buttons_led_enabled = false;
 			bln_disable_backlights(gen_all_leds_mask());
 		}
@@ -505,7 +505,7 @@ static struct kobject *bln_kobject;
 void register_bln_implementation(struct bln_implementation *imp)
 {
 	//TODO: more checks
-	if(imp){
+	if (imp) {
 		bln_imp = imp;
 	}
 }
