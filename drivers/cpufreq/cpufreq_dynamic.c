@@ -551,16 +551,36 @@ static struct attribute_group dbs_attr_group = {
 
 /************************** sysfs end ************************/
 
-static unsigned int cpufreq_load = 0, cpufreq_workload = 0;
-unsigned int get_cpufreq_load(void)
-{
-	return cpufreq_load;
-}
+static bool input_boosted = false;
 
-unsigned int get_cpufreq_workload(void)
+static void input_boost_thread(struct work_struct *requirements_update_work)
 {
-	return cpufreq_workload;
+	if (!input_boosted) {
+		if (ape_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", ape_opp);
+		
+		if (ddr_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,	"DDRBOOST", ddr_opp);
+		
+		//pr_err("[interactive] input boost \n");
+		input_boosted = true;
+	}	
 }
+static DECLARE_WORK(input_boost_work, input_boost_thread);
+
+static void input_unboost_thread(struct work_struct *requirements_update_work)
+{
+	if (input_boosted) { 
+		if (ape_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", PRCMU_QOS_DEFAULT_VALUE);
+		if (ddr_boost)
+			prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST", PRCMU_QOS_DEFAULT_VALUE);
+		
+		//pr_err("[interactive] unboosted \n");
+		input_boosted = false;
+	}
+}
+static DECLARE_WORK(input_unboost_work, input_unboost_thread);
 
 static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 {
@@ -657,9 +677,6 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		if (load > max_load)
 			max_load = load;
 
-		cpufreq_load = max_load;
-		cpufreq_workload = policy->cur * (wall_time - idle_time) / wall_time;
-		
 		if (oc_freq_delta) {
 			unsigned int oc_workload = oc_freq_delta*(wall_time - idle_time)/1000;
 			if (this_dbs_info->oc_boost_cycles > oc_workload)
@@ -694,11 +711,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		if (policy->cur < freq_target) {
 			pr_debug("Boosting freq from %d to %d, dt=%llu us\n", this_dbs_info->requested_freq, freq_target, ktime_to_us(ktime_get())-last_input_time);
 
-			if (ape_boost)
-				prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", ape_opp);
-		
-			if (ddr_boost)
-				prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP,	"DDRBOOST", ddr_opp);
+			if (!input_boosted)
+				schedule_work(&input_boost_work);
 			
 			this_dbs_info->requested_freq = freq_target;
 			__cpufreq_driver_target(policy, freq_target, CPUFREQ_RELATION_H);
@@ -710,8 +724,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	}
 	
 	if (!boosted) {
-		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "APEBOOST", PRCMU_QOS_DEFAULT_VALUE);	
-		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "DDRBOOST", PRCMU_QOS_DEFAULT_VALUE);
+		if (input_boosted)
+			schedule_work(&input_unboost_work);
 	}
 
 	if (active && dbs_tuners_ins.max_non_oc_freq && dbs_tuners_ins.oc_freq_boost_ms) {
