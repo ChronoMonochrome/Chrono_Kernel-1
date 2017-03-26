@@ -57,7 +57,7 @@
 #define AB8500_VAPE_MAX_UV		1487500
 
 #define MALI_CLOCK_DEFLO		399360
-#define MALI_CLOCK_DEFHI		480000
+#define MALI_CLOCK_DEFHI		399360
 
 struct mali_dvfs_data
 {
@@ -67,12 +67,12 @@ struct mali_dvfs_data
 };
 
 static struct mali_dvfs_data mali_dvfs[] = {
-	{192000, 0x0101010A, 0x26},
-	{256000, 0x01030128, 0x26},
-	{299520, 0x0105014E, 0x26},
-	{320000, 0x01030132, 0x26},
-	{360000, 0x0105015E, 0x26},
-	{399360, 0x01050168, 0x26},
+	{192000, 0x0101010A, 0x20},
+	{256000, 0x01030128, 0x20},
+	{299520, 0x0105014E, 0x20},
+	{320000, 0x01030132, 0x20},
+	{360000, 0x0105015E, 0x20},
+	{399360, 0x01050168, 0x20},
 	{422400, 0x01010116, 0x26},
 	{441600, 0x0102012E, 0x26},
 	{460800, 0x01010118, 0x29},
@@ -411,6 +411,11 @@ void mali_utilization_function(struct work_struct *ptr)
 
 }
 
+int get_mali_workload(void)
+{
+	return mali_last_utilization * sgaclk_freq() / 256; 
+}
+
 #define ATTR_RO(_name)	\
 	static struct kobj_attribute _name##_interface = __ATTR(_name, 0444, _name##_show, NULL);
 
@@ -521,7 +526,11 @@ ATTR_RW(mali_gpu_fullspeed);
 
 static ssize_t mali_gpu_load_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	return sprintf(buf, "%d (%d%%)\n", mali_last_utilization, mali_last_utilization * 100 / 256);
+	sprintf(buf, "load=%d (%d%%)\nworkload=%d\n", mali_last_utilization, 
+		mali_last_utilization * 100 / 256,
+		get_mali_workload());
+	
+	return strlen(buf);
 }
 ATTR_RO(mali_gpu_load);
 
