@@ -111,10 +111,10 @@ static struct workqueue_struct *mali_utilization_workqueue;
 static struct wake_lock wakelock;
 #endif
 
-static u32 boost_enable 	= 1;
+static u32 boost_enable 	= 0;
 static u32 boost_working 	= 0;
 static u32 boost_required 	= 0;
-static u32 boost_delay 		= 500;
+static u32 boost_delay 		= 1000;
 static u32 boost_low 		= 0;
 static u32 boost_high 		= 0;
 static u32 boost_utilization 	= 0;
