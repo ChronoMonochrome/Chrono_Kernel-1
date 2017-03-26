@@ -63,7 +63,7 @@ module_param_named(eoc_blink, eoc_blink, uint, 0644);
 static bool eoc_blink_ongoing = false;
 static int eoc_blink_mode = 0;
 
-static unsigned int eoc_blink_timeout_sec = 1200; // disable LED after 1200 sec
+static unsigned int eoc_blink_timeout_sec = 3 * 3600; // disable LED after 3 hours
 module_param_named(eoc_blink_timeout_sec, eoc_blink_timeout_sec, uint, 0644);
 
 static void eoc_blink_fn(struct work_struct *work)
@@ -1062,7 +1062,8 @@ for the %d time, out of %d before EOC\n",  di->eoc_cnt_1st, EOC_COND_CNT_1ST);
 
 				if (eoc_blink && !eoc_blink_ongoing && !bln_is_ongoing()) {
 					schedule_work(&eoc_blink_work);
-					schedule_delayed_work(&eoc_blink_stop_work, msecs_to_jiffies(eoc_blink_timeout_sec * 1000 ));
+					if (eoc_blink_timeout_sec)
+						schedule_delayed_work(&eoc_blink_stop_work, msecs_to_jiffies(eoc_blink_timeout_sec * 1000 ));
 					eoc_blink_ongoing = true;
 				}
 			} else {
@@ -1269,7 +1270,8 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 				ext->type == POWER_SUPPLY_TYPE_USB) && 
 				(di->chg_info.conn_chg & AC_CHG || di->chg_info.conn_chg & USB_CHG)) {
 			      if (eoc_blink_ongoing) {
-                                        cancel_delayed_work(&eoc_blink_stop_work);
+					if (eoc_blink_timeout_sec)
+	                                        cancel_delayed_work(&eoc_blink_stop_work);
                                         schedule_delayed_work(&eoc_blink_stop_work, 0);
                                         eoc_blink_ongoing = false;
                                 }
