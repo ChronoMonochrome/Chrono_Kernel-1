@@ -455,11 +455,15 @@ static int ws2401_display_update(struct mcde_display_device *ddev,
 	return 0;
 }
 
+static unsigned int debug = 0;
+module_param_named(debug, debug, uint, 0644);
+
 static int ws2401_apply_config(struct mcde_display_device *ddev)
 {
 	int ret;
 
-	pr_info("%s: Called\n", __func__);
+	if (debug)
+		pr_info("%s: Called\n", __func__);
 
 	if (!ddev->update_flags)
 		return 0;
