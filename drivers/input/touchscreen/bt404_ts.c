@@ -429,18 +429,21 @@ static DECLARE_WORK(bt404_ponkey_work, bt404_ponkey_thread);
 #define ABS_THRESHOLD_X			120
 #define ABS_THRESHOLD_Y			240
 
-static int x_press, x_release;
-static int y_press, y_release;
+static unsigned int x_press, x_release;
+static unsigned int y_press, y_release;
 
-static int x_threshold = ABS_THRESHOLD_X;
-static int y_threshold = ABS_THRESHOLD_Y;
+static unsigned int x_threshold = ABS_THRESHOLD_X;
+static unsigned int y_threshold = ABS_THRESHOLD_Y;
 
 static bool sweep2wake = false;
 #endif /* TOUCH_S2W */
 
 #ifdef TOUCH_DT2W
+#define DEFAULT_PRESS_TIMEOUT 500
 static unsigned long press_time = 0;
 static unsigned int press_count = 0;
+
+static unsigned int press_timeout = DEFAULT_PRESS_TIMEOUT; /* press_timeout in msecs */
 
 static bool doubletap2wake = false;
 #endif /* TOUCH_DT2W */
@@ -1681,7 +1684,7 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 #ifdef TOUCH_DT2W
 				if (is_suspend) {
 					if (doubletap2wake) {
-						if (!press_count || press_time + 500 >= ktime_to_ms(ktime_get())) {
+						if (!press_count || press_time + press_timeout >= ktime_to_ms(ktime_get())) {
 							pr_info("[DT2W] ++Press Count\n");
 							++press_count;
 							press_time = ktime_to_ms(ktime_get());
@@ -3894,6 +3897,7 @@ static struct attribute_group touchscreen_temp_attr_group = {
 static ssize_t bt404_doubletap2wake_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	sprintf(buf, "status: %s\n", doubletap2wake ? "on" : "off");
+	sprintf(buf, "%stimeout: %d\n", buf, press_timeout);
 	#if CONFIG_HAS_WAKELOCK
 	sprintf(buf, "%swakelock_ena: %d\n", buf, wake_lock_active(&t2w_wakelock));
 	#endif
@@ -3904,7 +3908,7 @@ static ssize_t bt404_doubletap2wake_show(struct kobject *kobj, struct kobj_attri
 static ssize_t bt404_doubletap2wake_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	int ret;
-	int threshold_tmp;
+	int press_timeout_tmp;
 
 	if (!strncmp(buf, "on", 2)) {
 		doubletap2wake = true;
@@ -3926,6 +3930,19 @@ static ssize_t bt404_doubletap2wake_store(struct kobject *kobj, struct kobj_attr
 		#endif
 
 		pr_err("[TSP] DoubleTap2Wake Off\n");
+
+		return count;
+	}
+
+	if (!strncmp(&buf[0], "timeout=", 8)) {
+		ret = sscanf(&buf[8], "%d", &press_timeout_tmp);
+
+		if (!ret) {
+			pr_err("[TSP] invalid input\n");
+			return -EINVAL;
+		}
+
+		press_timeout = press_timeout_tmp;
 
 		return count;
 	}
