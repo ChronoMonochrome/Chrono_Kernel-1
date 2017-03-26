@@ -328,35 +328,6 @@ static ssize_t led_count_read(struct device *dev,
 	return sprintf(buf,"%u\n", ret);
 }
 
-#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-static ssize_t wakelock_read(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	return sprintf(buf,"%u\n", (use_wakelock ? 1 : 0));
-}
-
-static ssize_t wakelock_write(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t size)
-{
-	unsigned int data;
-
-	if (sscanf(buf, "%u\n", &data) != 1) {
-			pr_info("%s: input error\n", __FUNCTION__);
-			return size;
-	}
-
-	if (data == 1) {
-		use_wakelock = true;
-	} else if (data == 0) {
-		use_wakelock = false;
-	} else {
-		pr_info("%s: wrong input %u\n", __FUNCTION__, data);
-	}
-
-	return size;
-}
-#endif
-
 #ifdef CONFIG_GENERIC_BLN_EMULATE_BUTTONS_LED
 static ssize_t buttons_led_status_read(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -411,10 +382,6 @@ static DEVICE_ATTR(notification_led_mask, S_IRUGO | S_IWUGO,
 		notification_led_mask_write);
 static DEVICE_ATTR(version, S_IRUGO , backlightnotification_version, NULL);
 
-#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-static DEVICE_ATTR(wakelock, S_IRUGO | S_IWUGO, wakelock_read, wakelock_write);
-#endif
-
 
 static struct attribute *bln_notification_attributes[] = {
 	&dev_attr_blink_control.attr,
@@ -424,9 +391,6 @@ static struct attribute *bln_notification_attributes[] = {
 	&dev_attr_notification_led_mask.attr,
 #ifdef CONFIG_GENERIC_BLN_EMULATE_BUTTONS_LED
 	&dev_attr_buttons_led.attr,
-#endif
-#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
-	&dev_attr_wakelock.attr,
 #endif
 	&dev_attr_version.attr,
 	NULL
@@ -480,7 +444,7 @@ static ssize_t bln_blink_store(struct kobject *kobj, struct kobj_attribute *attr
 
 		return count;
 	}
-
+	
 	if (!strncmp(buf, "on", 2)) {
 		bln_blink_mode = true;
 
@@ -500,10 +464,44 @@ static ssize_t bln_blink_store(struct kobject *kobj, struct kobj_attribute *attr
 	return count;
 }
 
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+static ssize_t bln_wakelock_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "status: %s\n", use_wakelock ? "on" : "off");
+	return strlen(buf);
+}
+
+
+static ssize_t bln_wakelock_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+	if (!strncmp(buf, "on", 2)) {
+		use_wakelock = true;
+
+		pr_err("[BLN] use_wakelock = true\n");
+
+		return count;
+	}
+
+	if (!strncmp(buf, "off", 3)) {
+		use_wakelock = false;
+
+		pr_err("[BLN] use_wakelock = false\n");
+
+		return count;
+	}
+}
+#endif
+
 static struct kobj_attribute bln_blink_interface = __ATTR(blink_mode, 0644, bln_blink_show, bln_blink_store);
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+static struct kobj_attribute bln_wakelock_interface = __ATTR(bln_wakelock, 0644, bln_wakelock_show, bln_wakelock_store);
+#endif
 
 static struct attribute *bln_attrs[] = {
 	&bln_blink_interface.attr,
+#ifdef CONFIG_GENERIC_BLN_USE_WAKELOCK
+	&bln_wakelock_interface.attr,
+#endif
 	NULL,
 };
 
