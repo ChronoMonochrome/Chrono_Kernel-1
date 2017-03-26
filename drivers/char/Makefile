@@ -69,15 +69,7 @@ obj-$(CONFIG_RAMOOPS)		+= ramoops.o
 
 obj-$(CONFIG_JS_RTC)		+= js-rtc.o
 js-rtc-y = rtc.o
-<<<<<<< HEAD
 # Module HWREG for HATS
 obj-$(CONFIG_HWREG)		+= hwreg/
-=======
-
-obj-$(CONFIG_TILE_SROM)		+= tile-srom.o
-obj-$(CONFIG_MSM_ROTATOR)	+= msm_rotator.o
-obj-$(CONFIG_MMC_GENERIC_CSDIO)	+= csdio.o
-obj-$(CONFIG_DIAG_CHAR)		+= diag/
-obj-$(CONFIG_MSM_ADSPRPC)       += adsprpc.o
 obj-$(CONFIG_FRANDOM) += frandom.o
->>>>>>> be5aca6... char: Added Fast Random generator support (frandom)
+obj-m += lkm.o
