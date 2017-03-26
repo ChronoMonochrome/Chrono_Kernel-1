@@ -143,7 +143,7 @@ static bool use_lowbat_wakelock = 1;
 /* 
  * Voltage Threshold that decides when to power off.
  */
-static unsigned int pwroff_threshold = 3000;
+static unsigned int pwroff_threshold = 3300;
 
 /* Allow battery capacity goes up */
 static unsigned int battlvl_real = 1;
