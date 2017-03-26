@@ -636,6 +636,18 @@ static ssize_t mali_dvfs_config_store(struct kobject *kobj, struct kobj_attribut
 
 		return count;
 	}
+	
+	if (sscanf(buf, "%u vape-=%d", &idx, &val) == 2) {
+		mali_dvfs[idx].vape_raw -= val;
+
+		return count;
+	}
+	
+	if (sscanf(buf, "%u vape+=%d", &idx, &val) == 2) {
+		mali_dvfs[idx].vape_raw += val;
+
+		return count;
+	}
 
 	if (sscanf(buf, "%u vape=%x", &idx, &val) == 2) {
 		mali_dvfs[idx].vape_raw = val;
