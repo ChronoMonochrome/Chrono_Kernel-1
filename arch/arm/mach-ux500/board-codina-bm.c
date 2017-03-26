@@ -315,13 +315,13 @@ static const struct battery_type bat_type[] = {
 #endif
 		.charge_full_design = 1500,
 		.nominal_voltage = 3820,
-		.termination_vol = 4260,
+		.termination_vol = 4100,
 #ifdef CONFIG_SAMSUNG_CHARGER_SPEC
 		.termination_curr_1st = 200,
 		.termination_curr_2nd = 150,
-		.recharge_vol = 4211,
+		.recharge_vol = 4050,
 #else
-		.termination_curr = 200,
+		.termination_curr =200,
 #endif
 		.normal_cur_lvl = 400,
 		.normal_vol_lvl = 4340,
@@ -331,7 +331,7 @@ static const struct battery_type bat_type[] = {
 		.maint_b_cur_lvl = 400,
 		.maint_b_vol_lvl = 4000,
 		.maint_b_chg_timer_h = 200,
-		.low_high_cur_lvl = 400,
+		.low_high_cur_lvl = 300,
 		.low_high_vol_lvl = 4000,
 #ifdef CONFIG_MEASURE_TEMP_BY_ADC_TABLE
 		.n_temp_tbl_elements = ARRAY_SIZE(adc_temp_tbl),
