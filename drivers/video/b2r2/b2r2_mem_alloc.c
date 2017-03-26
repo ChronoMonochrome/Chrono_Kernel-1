@@ -232,7 +232,7 @@ int b2r2_mem_init(struct b2r2_control *cont,
 	cont->mem_heap.start_virt_ptr = dma_alloc_coherent(cont->dev,
 		aligned_size, &(cont->mem_heap.start_phys_addr), GFP_KERNEL);
 	if (!cont->mem_heap.start_phys_addr || !cont->mem_heap.start_virt_ptr) {
-		printk(KERN_ERR "B2R2_MEM: Failed to allocate memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -259,7 +259,7 @@ int b2r2_mem_init(struct b2r2_control *cont,
 		dma_free_coherent(cont->dev, aligned_size,
 			cont->mem_heap.start_virt_ptr,
 			cont->mem_heap.start_phys_addr);
-		printk(KERN_ERR "B2R2_MEM: Failed to allocate memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -275,7 +275,7 @@ int b2r2_mem_init(struct b2r2_control *cont,
 		dma_free_coherent(cont->dev, aligned_size,
 			cont->mem_heap.start_virt_ptr,
 			cont->mem_heap.start_phys_addr);
-		printk(KERN_ERR "B2R2_MEM: Failed to allocate memory\n");
+;
 		return -ENOMEM;
 	}
 
@@ -397,7 +397,7 @@ int b2r2_mem_alloc(struct b2r2_control *cont, u32 requested_size,
 	if (!mem_handle)
 		return -EINVAL;
 
-	printk(KERN_INFO "%s: size=%d\n", __func__, requested_size);
+;
 
 	*mem_handle = 0;
 
@@ -480,7 +480,7 @@ int b2r2_mem_free(struct b2r2_control *cont, u32 mem_handle)
 		ret = -EINVAL;
 
 	if (!ret) {
-		printk(KERN_INFO "%s: freeing block 0x%p\n", __func__, mem_block);
+;
 		/* Release the block */
 
 		mem_block->free = true;
@@ -630,7 +630,7 @@ int b2r2_node_alloc(struct b2r2_control *cont, u32 num_nodes,
 			node_ptr->physical_address = physical_address +
 					offsetof(struct b2r2_node, node);
 		} else {
-			printk(KERN_ERR "B2R2_MEM: Failed to allocate memory for node\n");
+;
 			ret = -ENOMEM;
 			break;
 		}
