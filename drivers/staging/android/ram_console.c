@@ -15,7 +15,6 @@
 
 #include <linux/console.h>
 #include <linux/init.h>
-#include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/proc_fs.h>
@@ -359,8 +358,8 @@ static int ram_console_driver_probe(struct platform_device *pdev)
 ;
 		return -ENXIO;
 	}
-	buffer_size = (res->end - res->start + 1) - PAGE_SIZE * 10;
-	start = res->start;
+	buffer_size = (res->end - res->start + 1) - PAGE_SIZE;
+	start = res->start + PAGE_SIZE;
 	printk(KERN_INFO "ram_console: got buffer at %zx, size %zx\n", start, buffer_size);
 	buffer = ioremap(res->start, buffer_size);
 	if (buffer == NULL) {
@@ -432,7 +431,7 @@ static int __init ram_console_late_init(void)
 	memcpy(ram_console_old_log,
 	       ram_console_old_log_init_buffer, ram_console_old_log_size);
 #endif
-	entry = proc_create_data("last_kmsg", S_IFREG | S_IRUGO, NULL, &ram_console_file_ops, NULL);
+	entry = create_proc_entry("last_kmsg", S_IFREG | S_IRUGO, NULL);
 	if (!entry) {
 ;
 		kfree(ram_console_old_log);
@@ -440,6 +439,7 @@ static int __init ram_console_late_init(void)
 		return 0;
 	}
 
+	entry->proc_fops = &ram_console_file_ops;
 	entry->size = ram_console_old_log_size;
 	return 0;
 }
