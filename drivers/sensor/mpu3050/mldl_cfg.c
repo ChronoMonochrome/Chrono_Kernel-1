@@ -298,7 +298,7 @@ static int MLDLGetSiliconRev(struct mldl_cfg *pdata,
 			     void *mlsl_handle)
 {
 	int result = 0;
-#if defined(CONFIG_MPU_SENSORS_BMA222E)
+#if 0
 	unsigned char index = 0x00;
 	unsigned char bank =
 	    (BIT_PRFTCH_EN | BIT_CFG_USER_BANK | MPU_MEM_OTP_BANK_0);
@@ -416,7 +416,7 @@ static tMLError mpu60xx_pwr_mgmt(struct mldl_cfg *pdata,
 	unsigned char b;
 	tMLError result;
 
-	if (powerselection < 0 || powerselection > 7)
+	if (powerselection > 7)
 		return ML_ERROR_INVALID_PARAMETER;
 
 	result =
@@ -1004,10 +1004,17 @@ static int gyro_resume(struct mldl_cfg *mldl_cfg, void *gyro_handle)
 				mldl_cfg->gyro_power & BIT_STBY_YG,
 				mldl_cfg->gyro_power & BIT_STBY_ZG);
 	ERROR_CHECK(result);
+	/* force setting for bypass mode*/
+	reg = ((mldl_cfg->int_config |
+		mldl_cfg->pdata->int_config) & (~BIT_DMP_INT_EN)) |
+		BIT_RAW_RDY_EN;
+	pr_info("%s: intcfg=%x", __func__, reg);
 	result = MLSLSerialWriteSingle(gyro_handle, mldl_cfg->addr,
-				MPUREG_INT_CFG,
+				MPUREG_INT_CFG, reg);
+#if 0
 				(mldl_cfg->int_config |
 					mldl_cfg->pdata->int_config));
+#endif
 	ERROR_CHECK(result);
 #endif
 
@@ -1047,8 +1054,8 @@ static int gyro_resume(struct mldl_cfg *mldl_cfg, void *gyro_handle)
 				mldl_cfg->dmp_cfg2);
 	ERROR_CHECK(result);
 
+#if 0
 	/* Write and verify memory */
-#if defined(CONFIG_MPU_SENSORS_BMA222E)
 	for (ii = 0; ii < MPU_MEM_NUM_RAM_BANKS; ii++) {
 		unsigned char read[MPU_MEM_BANK_SIZE];
 
@@ -1058,7 +1065,6 @@ static int gyro_resume(struct mldl_cfg *mldl_cfg, void *gyro_handle)
 					MPU_MEM_BANK_SIZE,
 					mldl_cfg->ram[ii]);
 		ERROR_CHECK(result);
-#if 0
 		result = MLSLSerialReadMem(gyro_handle, mldl_cfg->addr,
 					((ii << 8) | 0x00),
 					MPU_MEM_BANK_SIZE, read);
@@ -1079,7 +1085,6 @@ static int gyro_resume(struct mldl_cfg *mldl_cfg, void *gyro_handle)
 			}
 		}
 		ERROR_CHECK(result);
-#endif
 	}
 #endif
 	result = MLSLSerialWriteSingle(gyro_handle, mldl_cfg->addr,
@@ -1139,11 +1144,7 @@ int mpu3050_open(struct mldl_cfg *mldl_cfg,
 {
 	int result;
 	/* Default is Logic HIGH, pushpull, latch disabled, anyread to clear */
-#if defined(CONFIG_MPU_SENSORS_BMA222E)
-     mldl_cfg->int_config = BIT_INT_ANYRD_2CLEAR | BIT_DMP_INT_EN;
-#else
 	mldl_cfg->int_config = BIT_INT_ANYRD_2CLEAR | BIT_RAW_RDY_EN;
-#endif
 	mldl_cfg->clk_src = MPU_CLK_SEL_PLLGYROZ;
 	mldl_cfg->lpf = MPU_FILTER_42HZ;
 	mldl_cfg->full_scale = MPU_FS_2000DPS;
