@@ -254,6 +254,7 @@ config UX500_DEBUG_NO_LAUTERBACH
        help
 	  Disable clocks needed for Lauterbach debugging at boot.
 	  If yes, you will reduce the power consumption.
+       default y
 
 config UX500_L2X0_PREFETCH_CTRL
 	bool "PL310 prefetch control"
