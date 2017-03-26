@@ -130,7 +130,6 @@ struct kiocb {
 };
 
 #define is_sync_kiocb(iocb)	((iocb)->ki_key == KIOCB_SYNC_KEY)
-#define is_kernel_kiocb(iocb)	((iocb)->ki_key == KIOCB_KERNEL_KEY)
 #define init_sync_kiocb(x, filp)			\
 	do {						\
 		struct task_struct *tsk = current;	\
