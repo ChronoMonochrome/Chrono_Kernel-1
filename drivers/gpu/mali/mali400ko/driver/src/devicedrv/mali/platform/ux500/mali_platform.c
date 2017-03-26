@@ -64,33 +64,35 @@ struct mali_dvfs_data
 	u32 	freq;
 	u32 	clkpll;
 	u8 	vape_raw;
+	u8 	vape_50opp_raw; // will be applied only to VAPE_SEL2 when ape_opp < 100%
 };
 
+//TODO: change vape_50opp_raw according to avs data
 static struct mali_dvfs_data mali_dvfs[] = {
-	{192000, 0x01050132, 0x26},
-	{253440, 0x01050142, 0x26},
-	{299520, 0x0105014E, 0x26},
-	{318720, 0x01050153, 0x26},
-	{360000, 0x0105015E, 0x26},
-	{399360, 0x01050168, 0x26},
-	{422400, 0x0105016E, 0x26},
-	{441600, 0x01050173, 0x26},
-	{460800, 0x01050178, 0x29},
-	{480000, 0x0105017D, 0x2A},
-	{499200, 0x01050182, 0x2B},
-	{518400, 0x01050187, 0x2C},
-	{537600, 0x0105018C, 0x2D},
-	{560640, 0x01050192, 0x2F},
-	{579840, 0x01050197, 0x30},
-	{600000, 0x0105019C, 0x32},
-	{618240, 0x010501A1, 0x33},
-	{641280, 0x010501A7, 0x34},
-	{660480, 0x010501AC, 0x39},
-	{679680, 0x010501B1, 0x39},
-	{702720, 0x010501B7, 0x39},
-	{710400, 0x010501B9, 0x39},
-	{721920, 0x010501BC, 0x39},
-	{729600, 0x010501BE, 0x39},
+	{192000, 0x01050132, 0x26, 0x18},
+	{253440, 0x01050142, 0x26, 0x18},
+	{299520, 0x0105014E, 0x26, 0x18},
+	{318720, 0x01050153, 0x26, 0x18},
+	{360000, 0x0105015E, 0x26, 0x18},
+	{399360, 0x01050168, 0x26, 0x18},
+	{422400, 0x0105016E, 0x26, 0x18},
+	{441600, 0x01050173, 0x26, 0x18},
+	{460800, 0x01050178, 0x29, 0x18},
+	{480000, 0x0105017D, 0x2A, 0x18},
+	{499200, 0x01050182, 0x2B, 0x18},
+	{518400, 0x01050187, 0x2C, 0x18},
+	{537600, 0x0105018C, 0x2D, 0x19},
+	{560640, 0x01050192, 0x2F, 0x19},
+	{579840, 0x01050197, 0x30, 0x19},
+	{600000, 0x0105019C, 0x32, 0x19},
+	{618240, 0x010501A1, 0x33, 0x1a},
+	{641280, 0x010501A7, 0x34, 0x1a},
+	{660480, 0x010501AC, 0x39, 0x1a},
+	{679680, 0x010501B1, 0x39, 0x1a},
+	{702720, 0x010501B7, 0x39, 0x1a},
+	{710400, 0x010501B9, 0x39, 0x1a},
+	{721920, 0x010501BC, 0x39, 0x1b},
+	{729600, 0x010501BE, 0x39, 0x1b},
 };
 
 int mali_utilization_high_to_low = MALI_HIGH_TO_LOW_LEVEL_UTILIZATION_LIMIT;
@@ -333,6 +335,7 @@ void mali_utilization_function(struct work_struct *ptr)
 {
 	/*By default, platform start with 50% APE OPP and 25% DDR OPP*/
 	static u32 has_requested_low = 1;
+	u8 vape = mali_dvfs[boost_low].vape_50opp_raw;
 
 	MALI_DEBUG_PRINT(5, ("MALI GPU utilization: %u\n", mali_last_utilization));
 
@@ -356,6 +359,15 @@ void mali_utilization_function(struct work_struct *ptr)
 		} else {
 			if (mali_last_utilization < mali_utilization_high_to_low) {
 				if (!has_requested_low) {
+
+					/*
+					 * In APE 50OPP, Vape uses SEL2. 
+					 */
+					prcmu_abb_write(AB8500_REGU_CTRL2,
+							AB8500_VAPE_SEL2,
+							&vape,
+							1);
+					
 					/*Remove APE_OPP and DDR_OPP requests*/
 					prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "mali", PRCMU_QOS_DEFAULT_VALUE);
 					prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "mali", PRCMU_QOS_DEFAULT_VALUE);
@@ -679,17 +691,18 @@ static ssize_t mali_dvfs_config_show(struct kobject *kobj, struct kobj_attribute
 {
 	int i;
 
-	sprintf(buf, "idx freq   rawfreq clkpll     Vape\n");
+	sprintf(buf, "idx   freq    rawfreq       clkpll            Vape     Vape_50_opp\n");
 
 	for (i = 0; i < ARRAY_SIZE(mali_dvfs); i++) {
-		sprintf(buf, "%s%3u%7u%7u  %#010x%8u %#04x\n", 
+		sprintf(buf, "%s%3u%7u%7u  %#010x%8u %#04x %#04x\n", 
 			buf, 
 			i, 
 			mali_dvfs[i].freq, 
 			pllsoc0_freq(mali_dvfs[i].clkpll), 
 			mali_dvfs[i].clkpll, 
 			vape_voltage(mali_dvfs[i].vape_raw), 
-			mali_dvfs[i].vape_raw);
+			mali_dvfs[i].vape_raw,
+			mali_dvfs[i].vape_50opp_raw);
 	}
 
 	return strlen(buf);
@@ -704,12 +717,19 @@ static ssize_t mali_dvfs_config_store(struct kobject *kobj, struct kobj_attribut
 
 		return count;
 	}
+	
+	if (sscanf(buf, "%u vape50opp=%x", &idx, &val) == 2) {
+		mali_dvfs[idx].vape_50opp_raw = val;
+
+		return count;
+	}
 
 	if (sscanf(buf, "%u vape=%x", &idx, &val) == 2) {
 		mali_dvfs[idx].vape_raw = val;
 
 		return count;
 	}
+	
 
 	return -EINVAL;
 }
