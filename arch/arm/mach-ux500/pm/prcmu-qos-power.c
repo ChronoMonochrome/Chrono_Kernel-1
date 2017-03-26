@@ -472,6 +472,22 @@ int prcmu_qos_requirement(int prcmu_qos_class)
 EXPORT_SYMBOL_GPL(prcmu_qos_requirement);
 
 /**
+ * prcmu_qos_requirement_is_active - returns true if qos request is inside a list
+ * @prcmu_qos_class: identifies which list of qos request to us
+ * @name: identifies the request
+ */
+bool prcmu_qos_requirement_is_active(int prcmu_qos_class, char *name)
+{
+	struct requirement_list *dep;
+
+	list_for_each_entry(dep, &prcmu_qos_array[prcmu_qos_class]->requirements.list, list) {
+                if (!strcmp(dep->name, name)) return true;
+        }
+
+	return false;
+}
+
+/**
  * prcmu_qos_add_requirement - inserts new qos request into the list
  * @prcmu_qos_class: identifies which list of qos request to us
  * @name: identifies the request
