@@ -29,6 +29,7 @@
 #include <linux/sysfs.h>
 #include <linux/kobject.h>
 #include <linux/ab8500-ponkey.h>
+#include <linux/earlysuspend.h>
 #include <mach/board-sec-u8500.h>
 
 extern struct class *sec_class;
@@ -449,6 +450,76 @@ extern void projector_motor_cw(void);
 extern void projector_motor_ccw(void);
 #endif
 
+static unsigned int volkey_press_skip_track = false;
+
+// determines whether skip track thread is already run
+static bool volkey_skip_track_is_ongoing = false;
+
+// determines whether track should be skipped now
+static bool volkey_skip_track_now = false;
+
+// remap vol.up -> KEY_NEXTSONG / vol.down -> KEY_PREVIOUSSONG
+static bool volkey_remap_keys = false;
+
+// if true, KEY_NEXTSONG will be emulated, otherwise - KEY_PREVIOUSSONG
+static bool volkey_emulate_key_nextsong = false;
+
+// below this threshold don't emulate KEY_NEXTSONG/KEY_PREVIOUSSONG
+static unsigned int volkey_long_press_delay_ms = 300;
+
+// FIXME: key press emulation requires this additional delay 
+static unsigned int volkey_do_volume_key_press_delay_ms = 101;
+
+static unsigned int volkey_skip_tracks_in_suspend_only = true;
+
+static unsigned int volkey_debug_level = 1;
+
+module_param_named(volkey_press_skip_track, volkey_press_skip_track, uint, 0644);
+module_param_named(volkey_long_press_delay_ms, volkey_long_press_delay_ms, uint, 0644);
+module_param_named(volkey_do_volume_key_press_delay_ms, volkey_do_volume_key_press_delay_ms, uint, 0644);
+module_param_named(volkey_debug_level, volkey_debug_level, uint, 0644);
+module_param_named(volkey_skip_tracks_in_suspend_only, volkey_skip_tracks_in_suspend_only, uint, 0644);
+
+static void volkey_skip_track_fn(struct work_struct *volkey_skip_track_work)
+{
+	volkey_skip_track_now = true;
+	volkey_skip_track_is_ongoing = false;
+}
+static DECLARE_DELAYED_WORK(volkey_skip_track_work, volkey_skip_track_fn);
+
+static void volkey_do_volume_key_press_fn(struct work_struct *volkey_skip_track_work)
+{
+	int key;
+
+	if (volkey_remap_keys) 
+		key = volkey_emulate_key_nextsong ? KEY_NEXTSONG : KEY_PREVIOUSSONG;
+	else
+		key = volkey_emulate_key_nextsong ? KEY_VOLUMEUP : KEY_VOLUMEDOWN;
+
+	ab8500_ponkey_emulator(key, 1);
+
+	mdelay(volkey_do_volume_key_press_delay_ms);
+
+	ab8500_ponkey_emulator(key, 0);
+	
+	abb_ponkey_unmap_power_key(key);
+}
+static DECLARE_WORK(volkey_do_volume_key_press_work, volkey_do_volume_key_press_fn);
+
+static bool is_suspend = false;
+static struct early_suspend early_suspend;
+
+static void gpio_keys_early_suspend(struct early_suspend *h)
+{
+	is_suspend = true;
+}
+
+static void gpio_keys_late_resume(struct early_suspend *h)
+{
+	is_suspend = false;
+}
+
+
 static int gpio_keys_report_event(struct gpio_button_data *bdata)
 {
 	struct gpio_keys_button *button = bdata->button;
@@ -456,19 +527,100 @@ static int gpio_keys_report_event(struct gpio_button_data *bdata)
 	unsigned int type = button->type ?: EV_KEY;
 	int state = (gpio_get_value_cansleep(button->gpio) ? 1 : 0) ^ button->active_low;
 
-	if (button->gpio == VOL_UP_JANICE_R0_0) {
-		if (emulator_volup) {
+	if (emulator_volup) {
+		if (button->gpio == VOL_UP_JANICE_R0_0) {
 			ab8500_ponkey_emulator(KEY_POWER, state);
 
 			return 0;
 		}
-	}
-
-	if (button->gpio == VOL_DOWN_JANICE_R0_0) {
-		if (emulator_voldown) {
+	} else if (emulator_voldown) {
+		if (button->gpio == VOL_DOWN_JANICE_R0_0) {
 			ab8500_ponkey_emulator(KEY_POWER, state);
 
 			return 0;
+		}
+	} else if (volkey_press_skip_track && (is_suspend || !volkey_skip_tracks_in_suspend_only)) {
+		if (button->gpio == VOL_UP_JANICE_R0_0 || button->gpio == VOL_DOWN_JANICE_R0_0) {
+			// if vol.up/vol.down is pressed when volkey_skip_track_work is running, cancel it first
+			if (volkey_skip_track_is_ongoing && state == 1) {
+				if (volkey_debug_level > 0) 
+					pr_err("[GPIO-KEYS] volkey_skip_track_work is already run\n");
+
+				if (volkey_debug_level > 1) {
+					pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
+					pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
+					pr_err("volkey_emulate_key_nextsong = %d\n", (int)volkey_emulate_key_nextsong);
+				}
+
+				cancel_delayed_work(&volkey_skip_track_work);
+				volkey_skip_track_is_ongoing = false;
+				volkey_skip_track_now = false;
+			}
+
+			volkey_emulate_key_nextsong = (button->gpio == VOL_UP_JANICE_R0_0);
+			
+			// vol.up/vol.down is pressed, start volkey_skip_track_work now
+			if (state == 1) {
+				if (volkey_debug_level > 0)
+					pr_err("[GPIO-KEYS] vol.%s is pressed\n", 
+							volkey_emulate_key_nextsong ? "up" : "down");
+			
+				if (volkey_debug_level > 1) {
+					pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
+					pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
+					pr_err("volkey_emulate_key_nextsong = %d\n", (int)volkey_emulate_key_nextsong);
+				}
+
+				volkey_skip_track_now = false;
+				schedule_delayed_work(&volkey_skip_track_work, volkey_long_press_delay_ms);
+				volkey_skip_track_is_ongoing = true;
+
+				return 0;
+			} else if (state == 0 && volkey_skip_track_now) {
+				// vol.up/vol.down is released and volkey_long_press_delay_ms has spent, skip track now
+				if (volkey_debug_level > 0)
+					pr_err("[GPIO-KEYS] vol.%s is released, skipping track\n", 
+							volkey_emulate_key_nextsong ? "up" : "down");
+				
+				if (volkey_debug_level > 1) {
+					pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
+					pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
+					pr_err("volkey_emulate_key_nextsong = %d\n", (int)volkey_emulate_key_nextsong);
+				}
+
+				// emulate KEY_NEXTSONG / KEY_PREVIOUSSONG
+				volkey_remap_keys = true;
+
+				abb_ponkey_remap_power_key(KEY_POWER, 
+					volkey_emulate_key_nextsong ? KEY_NEXTSONG : KEY_PREVIOUSSONG);
+
+				schedule_work(&volkey_do_volume_key_press_work);
+
+				volkey_skip_track_now = false;
+
+				return 0;
+			} else if (state == 0 && !volkey_skip_track_now) {
+				if (volkey_debug_level > 0)
+					pr_err("[GPIO-KEYS] vol.%s is released, not skipping track\n", 
+							volkey_emulate_key_nextsong ? "up" : "down");
+			
+				if (volkey_debug_level > 1) {
+					pr_err("volkey_skip_track_now = %d\n", (int)volkey_skip_track_now);
+					pr_err("volkey_skip_track_is_ongoing = %d\n", (int)volkey_skip_track_is_ongoing);
+					pr_err("volkey_emulate_key_nextsong = %d\n", (int)volkey_emulate_key_nextsong);
+				}
+
+				// volume key is released before volkey_long_press_delay_ms 
+				// has spent, emulate volume key press
+				volkey_remap_keys = false;
+
+				abb_ponkey_remap_power_key(KEY_POWER, 
+					volkey_emulate_key_nextsong ? KEY_VOLUMEUP : KEY_VOLUMEDOWN);
+
+				schedule_work(&volkey_do_volume_key_press_work);
+
+				return 0;
+			}
 		}
 	}
 
@@ -763,6 +915,12 @@ static int __devinit gpio_keys_probe(struct platform_device *pdev)
 	if (ret) {
 		kobject_put(gpio_keys_kobject);
 	}
+
+	early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
+	early_suspend.suspend = gpio_keys_early_suspend;
+	early_suspend.resume = gpio_keys_late_resume;
+
+	register_early_suspend(&early_suspend);
 
 	return 0;
 
