@@ -1133,7 +1133,13 @@ static int __devinit s6d27a1_dpi_mcde_probe(
 	lcd->earlysuspend.resume  = s6d27a1_dpi_mcde_late_resume;
 	register_early_suspend(&lcd->earlysuspend);
 #endif
-
+	//when screen is on, APE_OPP 25 sometimes messes it up
+	//TODO change these to add/update/remove
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add APE failed\n");
+	}
+	
 	dev_dbg(&ddev->dev, "DPI display probed\n");
 
 	goto out;
@@ -1231,6 +1237,10 @@ static void s6d27a1_dpi_mcde_early_suspend(
 	struct s6d27a1_dpi *lcd = container_of(earlysuspend,
 						struct s6d27a1_dpi,
 						earlysuspend);
+	
+	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+				"codina_lcd_dpi");
+	
 	pm_message_t dummy;
 
 	s6d27a1_dpi_mcde_suspend(lcd->mdd, dummy);
@@ -1243,7 +1253,11 @@ static void s6d27a1_dpi_mcde_late_resume(
 	struct s6d27a1_dpi *lcd = container_of(earlysuspend,
 						struct s6d27a1_dpi,
 						earlysuspend);
-
+	
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add APE failed\n");
+	}
 
 	s6d27a1_dpi_mcde_resume(lcd->mdd);
 
