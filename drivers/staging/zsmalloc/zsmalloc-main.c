@@ -225,7 +225,7 @@ struct zs_pool {
  * so that USE_PGTABLE_MAPPING is defined. This causes zsmalloc to use
  * page table mapping rather than copying for object mapping.
 */
-#if defined(CONFIG_ARM)
+#if defined(CONFIG_ARM) && !defined(MODULE)
 #define USE_PGTABLE_MAPPING
 #endif
 
@@ -472,7 +472,7 @@ static void reset_page(struct page *page)
 	set_page_private(page, 0);
 	page->mapping = NULL;
 	page->freelist = NULL;
-	reset_page_mapcount(page);
+	page_mapcount_reset(page);
 }
 
 static void free_zspage(struct page *first_page)
@@ -631,7 +631,7 @@ static inline int __zs_cpu_up(struct mapping_area *area)
 	 */
 	if (area->vm)
 		return 0;
-	area->vm = alloc_vm_area(PAGE_SIZE * 2);
+	area->vm = alloc_vm_area(PAGE_SIZE * 2, NULL);
 	if (!area->vm)
 		return -ENOMEM;
 	return 0;
@@ -844,7 +844,8 @@ void zs_destroy_pool(struct zs_pool *pool)
 
 		for (fg = 0; fg < _ZS_NR_FULLNESS_GROUPS; fg++) {
 			if (class->fullness_list[fg]) {
-				pr_info("Freeing non-empty class with size %db, fullness group %d\n",
+				pr_info("Freeing non-empty class with size "
+					"%db, fullness group %d\n",
 					class->size, fg);
 			}
 		}
