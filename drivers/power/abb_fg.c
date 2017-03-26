@@ -129,9 +129,6 @@ extern bool vbus_state;
 
 extern unsigned int system_rev;
 
-static int last_capacity = 0;
-static struct ab8500_fg *di_;
-
 static bool debug_mask = 0;
 module_param(debug_mask, bool, 0644);
 
@@ -1612,15 +1609,6 @@ static int ab8500_fg_calc_cap_discharge_fg(struct ab8500_fg *di)
 	return di->bat_cap.mah;
 }
 
-static unsigned int __read_mostly cap_levels_critical = 2;
-static unsigned int __read_mostly cap_levels_low = 17;
-static unsigned int __read_mostly cap_levels_normal = 40;
-static unsigned int __read_mostly cap_levels_high = 85;
-module_param(cap_levels_critical, uint, 0644);
-module_param(cap_levels_low, uint, 0644);
-module_param(cap_levels_normal, uint, 0644);
-module_param(cap_levels_high, uint, 0644);
-
 /**
  * ab8500_fg_capacity_level() - Get the battery capacity level
  * @di:		pointer to the ab8500_fg structure
@@ -1633,14 +1621,14 @@ static int ab8500_fg_capacity_level(struct ab8500_fg *di)
 
 	percent = DIV_ROUND_CLOSEST(di->bat_cap.permille, 10);
 
-	if (percent <= cap_levels_critical ||
+	if (percent <= di->bat->cap_levels->critical ||
 		di->flags.low_bat)
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_CRITICAL;
-	else if (percent <= cap_levels_low)
+	else if (percent <= di->bat->cap_levels->low)
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_LOW;
-	else if (percent <= cap_levels_normal)
+	else if (percent <= di->bat->cap_levels->normal)
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_NORMAL;
-	else if (percent <= cap_levels_high)
+	else if (percent <= di->bat->cap_levels->high)
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_HIGH;
 	else
 		ret = POWER_SUPPLY_CAPACITY_LEVEL_FULL;
@@ -2647,7 +2635,6 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 	struct ab8500_fg *di;
 
 	di = to_ab8500_fg_device_info(psy);
-	if (!di_) di_ = di;
 
 	/*
 	 * If battery is identified as unknown and charging of unknown
@@ -2725,13 +2712,7 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CAPACITY_RAW:
 
 		val->intval = (di->bat_cap.mah  * 1000) / di->bat_cap.max_mah ;
-		if (last_capacity != val->intval)
-#ifdef CONFIG_DEBUG_PRINTK
-			printk("raw soc = %d\n",val->intval);
-#else
-			;
-#endif
-		last_capacity = val->intval;
+		printk("raw soc = %d",val->intval);
 		break;
 #endif
 	/* Instantaneous vbat ADC value */
@@ -3054,7 +3035,8 @@ static void ab8500_fg_reinit_param_work(struct work_struct *work)
 	       switchoff_status);
 
 #if defined(CONFIG_BATT_CAPACITY_PARAM)
-	get_param_value(__BATT_CAPACITY, &off_status);
+	if (get_param_value)
+		get_param_value(__BATT_CAPACITY, &off_status);
 #else
 	off_status = ab8500_fg_read_battery_capacity(di);
 #endif
@@ -3082,7 +3064,8 @@ static void ab8500_fg_reinit_param_work(struct work_struct *work)
 			 states[param_charge_state]);
 
 #if defined(CONFIG_BATT_CAPACITY_PARAM)
-		set_param_value(__BATT_CAPACITY, &offset_null);
+		if (set_param_value)
+			set_param_value(__BATT_CAPACITY, &offset_null);
 #else
 		ab8500_fg_write_battery_capacity(di, offset_null);
 #endif
@@ -3095,7 +3078,8 @@ static void ab8500_fg_reinit_param_work(struct work_struct *work)
 		       "[FG_DATA] *** Maybe this is a first boot ***\n",
 		       off_status);
 #if defined(CONFIG_BATT_CAPACITY_PARAM)
-		set_param_value(__BATT_CAPACITY, &offset_null);
+		if (set_param_value)
+			set_param_value(__BATT_CAPACITY, &offset_null);
 #else
 		ab8500_fg_write_battery_capacity(di, offset_null);
 #endif
@@ -3206,16 +3190,6 @@ static int ab8500_fg_resume(struct platform_device *pdev)
 		queue_work(di->fg_wq, &di->fg_work);
 	}
 
-	/* 
-	 * FIXME: Workaround to fix laziness on low capacity
-	 */
-	/*
-	if (di->bat_cap.prev_percent < 5) {
-		ab8500_fg_reinit();
-		pr_info("[ABB-FG] Reinit on low capacity\n");
-	}
-	*/
-
 	return 0;
 }
 
@@ -3268,7 +3242,8 @@ static int ab8500_fg_reboot_call(struct notifier_block *self,
 	off_status |= (di->bat->charge_state << OFF_CHARGE_STATE);
 
 #if defined(CONFIG_BATT_CAPACITY_PARAM)
-	set_param_value(__BATT_CAPACITY, &off_status);
+	if (set_param_value)
+		set_param_value(__BATT_CAPACITY, &off_status);
 #else
 	ab8500_fg_write_battery_capacity(di, off_status);
 #endif
@@ -3492,26 +3467,6 @@ static ssize_t abb_fg_capacity_real_store(struct kobject *kobj, struct kobj_attr
 
 static struct kobj_attribute abb_fg_capacity_real_interface = __ATTR(capacity_real, 0644, abb_fg_capacity_real_show, abb_fg_capacity_real_store);
 
-static ssize_t abb_fg_average_current_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	if (di_)
-		sprintf(buf, "%d mA\n", di_->avg_curr);
-
-	return strlen(buf);
-}
-
-static struct kobj_attribute abb_fg_average_current_interface = __ATTR(average_current, 0444, abb_fg_average_current_show, NULL);
-
-static ssize_t abb_fg_instant_current_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	if (di_)
-		sprintf(buf, "%d mA\n", di_->inst_curr);
-
-	return strlen(buf);
-}
-
-static struct kobj_attribute abb_fg_instant_current_interface = __ATTR(instant_current, 0444, abb_fg_instant_current_show, NULL);
-
 static struct attribute *abb_fg_attrs[] = {
 	&abb_fg_lowbat_zero_interface.attr, 
 	&abb_fg_lowbat_tolerance_interface.attr, 
@@ -3519,9 +3474,6 @@ static struct attribute *abb_fg_attrs[] = {
 	&abb_fg_cycle_charging_interface.attr, 
 	&abb_fg_use_wakelock_interface.attr, 
 	&abb_fg_capacity_real_interface.attr, 
-	&abb_fg_pwroff_threshold_interface.attr, 
-	&abb_fg_instant_current_interface.attr,
-	&abb_fg_average_current_interface.attr,
 	NULL,
 };
 
