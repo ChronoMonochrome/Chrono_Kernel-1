@@ -48,8 +48,8 @@ static const unsigned freqs[] = { 400000, 300000, 200000, 100000 };
  * performance cost, and for other reasons may not always be desired.
  * So we allow it it to be disabled.
  */
-int use_spi_crc = 1;
-module_param(use_spi_crc, bool, 0644);
+int use_spi_crc = 0;
+module_param(use_spi_crc, int, 0644);
 
 /*
  * We normally treat cards as removed during suspend if they are not
@@ -63,7 +63,7 @@ int mmc_assume_removable;
 int mmc_assume_removable = 1;
 #endif
 EXPORT_SYMBOL(mmc_assume_removable);
-module_param_named(removable, mmc_assume_removable, bool, 0644);
+module_param_named(removable, mmc_assume_removable, int, 0644);
 MODULE_PARM_DESC(
 	removable,
 	"MMC/SD cards are removable and may be removed during suspend");
