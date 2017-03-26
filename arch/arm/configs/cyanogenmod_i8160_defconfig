@@ -1,6 +1,6 @@
 #
 # Automatically generated make config: don't edit
-# Linux/arm 3.2.0 Kernel Configuration
+# Linux/arm 3.0.101 Kernel Configuration
 #
 CONFIG_ARM=y
 CONFIG_HAVE_PWM=y
@@ -2002,9 +2002,9 @@ CONFIG_UHID=y
 #
 # USB Input Devices
 #
-CONFIG_USB_HID=y
-CONFIG_HID_PID=y
-CONFIG_USB_HIDDEV=y
+CONFIG_USB_HID is not set
+CONFIG_HID_PID is not set
+CONFIG_USB_HIDDEV is not set
 
 #
 # Special HID drivers
@@ -2582,7 +2582,7 @@ CONFIG_FAT_FS=y
 CONFIG_VFAT_FS=y
 CONFIG_FAT_DEFAULT_CODEPAGE=437
 CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
-CONFIG_EXFAT_FS=m
+CONFIG_EXFAT_FS=y
 CONFIG_EXFAT_DISCARD=y
 # CONFIG_EXFAT_DELAYED_SYNC is not set
 # CONFIG_EXFAT_KERNEL_DEBUG is not set
@@ -2638,7 +2638,7 @@ CONFIG_NETWORK_FILESYSTEMS=y
 # CONFIG_NFS_FS is not set
 # CONFIG_NFSD is not set
 # CONFIG_CEPH_FS is not set
-CONFIG_CIFS=y
+CONFIG_CIFS=m
 # CONFIG_CIFS_STATS is not set
 # CONFIG_CIFS_WEAK_PW_HASH is not set
 # CONFIG_CIFS_UPCALL is not set
