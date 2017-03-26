@@ -838,7 +838,7 @@ static int nt35512_dsi_set_video_mode(struct mcde_display_device *ddev,
 
 	ddev->video_mode = *video_mode;
 	channel_video_mode = ddev->video_mode;
-	printk(KERN_INFO "hjoun %s rotation=%d, vid_xres=%d, vid_yres=%d\n", __func__, ddev->rotation, video_mode->xres, video_mode->yres);
+;
 	/* Dependant on if display should rotate or MCDE should rotate */
 	if (ddev->rotation == MCDE_DISPLAY_ROT_90_CCW ||
 				ddev->rotation == MCDE_DISPLAY_ROT_90_CW) {

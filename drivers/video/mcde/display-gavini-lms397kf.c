@@ -828,7 +828,7 @@ static int gavini_power(struct gavini_lcd_driver *lcd, int power)
 	int ret = 0;
 
 	dev_dbg(lcd->dev, "Invoked %s\n", __func__);
-	printk("%s power:%d\n",__func__,power);
+;
 	mutex_lock(&lcd->lock);
 
 	dev_dbg(lcd->dev, "%s(): old=%d (%s), new=%d (%s)\n", __func__,
@@ -1103,7 +1103,7 @@ static int gavini_mcde_panel_resume(struct mcde_display_device *ddev)
 	int ret = 0;
 	struct gavini_lcd_driver *lcd = dev_get_drvdata(&ddev->dev);
 
-	printk("%s\n",__func__);
+;
 	
 	dev_dbg(&ddev->dev, "Invoked %s\n", __func__);
 
@@ -1127,7 +1127,7 @@ static int gavini_mcde_panel_suspend(struct mcde_display_device *ddev, pm_messag
 	int ret = 0;
 	struct gavini_lcd_driver *lcd = dev_get_drvdata(&ddev->dev);
 
-	printk("%s\n",__func__);
+;
 	dev_dbg(&ddev->dev, "Invoked %s\n", __func__);
 
 	lcd->beforepower = lcd->power;
@@ -1153,7 +1153,7 @@ static void gavini_mcde_panel_early_suspend(struct early_suspend *earlysuspend)
 {
 	struct gavini_lcd_driver *lcd = container_of(earlysuspend, struct gavini_lcd_driver, earlysuspend);
 	pm_message_t dummy;
-	printk("%s\n",__func__);
+;
 	gavini_mcde_panel_suspend(lcd->mdd, dummy);
 }
 
@@ -1161,7 +1161,7 @@ static void gavini_mcde_panel_late_resume(struct early_suspend *earlysuspend)
 {
 	struct gavini_lcd_driver *lcd = container_of(earlysuspend, struct gavini_lcd_driver, earlysuspend);
 
-	printk("%s\n",__func__);
+;
 	
 	gavini_mcde_panel_resume(lcd->mdd);
 }
