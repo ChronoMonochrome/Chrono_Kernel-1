@@ -133,7 +133,7 @@ static struct lcdclk_prop lcdclk_prop[] = {
 	},
 };
 
-static unsigned int lcdclk_usr = 2; /* 60 fps */
+static unsigned int lcdclk_usr = 0; /* 60++ fps */
 
 static void s6d27a1_lcdclk_thread(struct work_struct *ws2401_lcdclk_work)
 {
