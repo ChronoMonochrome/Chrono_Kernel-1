@@ -579,8 +579,10 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
 	memset(&zram->stats, 0, sizeof(zram->stats));
 
 	zram->disksize = 0;
-	if (reset_capacity)
+	if (reset_capacity) {
 		set_capacity(zram->disk, 0);
+		revalidate_disk(zram->disk);
+	}
 	up_write(&zram->init_lock);
 }
 
@@ -611,6 +613,7 @@ static ssize_t disksize_store(struct device *dev,
 	zram->meta = meta;
 	zram->disksize = disksize;
 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
+	revalidate_disk(zram->disk);
 	up_write(&zram->init_lock);
 
 	return len;
