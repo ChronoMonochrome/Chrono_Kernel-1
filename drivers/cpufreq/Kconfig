@@ -114,7 +114,6 @@ config CPU_FREQ_DEFAULT_GOV_LIONHEART
 	select CPU_FREQ_GOV_LIONHEART
 	help
 	  Use the CPUFreq governor 'lionheart' as default.
-
 	  
 config CPU_FREQ_DEFAULT_GOV_INTERACTIVEPLUS
 	bool "interactiveplus"
@@ -162,10 +161,11 @@ config CPU_FREQ_DEFAULT_GOV_LAGFREE
           governor. If unsure have a look at the help section of the
           driver. Fallback governor will be the performance governor.
 
-config CPU_FREQ_GOV_LIONHEART
-	tristate "'lionheart' cpufreq governor"
-	depends on CPU_FREQ
-
+config CPU_FREQ_DEFAULT_GOV_ZENX
+	bool "ZenX"
+	select CPU_FREQ_GOV_ZENX
+	help
+		Use the CPUFreq governor 'ZenX' as default.
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
@@ -324,6 +324,16 @@ config CPU_FREQ_GOV_LAGFREE
 
           If in doubt, say N.
 
+config CPU_FREQ_GOV_ZENX
+	tristate "'ZenX' cpufreq governor"
+	depends on CPU_FREQ
+	help
+		'ZenX' - an interactive-based governor
+		This governor provides full CPU hotplugging support
+		based on average CPU load across all CPUs.
+		For details, take a look at linux/Documentation/cpu-freq.
+		If in doubt, say N
+
 config CPU_FREQ_GOV_INTELLIACTIVE
 	tristate "'intelliactive' cpufreq policy governor"
 	help
@@ -384,6 +394,11 @@ config CPU_FREQ_GOV_INTERACTIVEQ
 	  InteractiveQ will hotplug CPU1 when system goes *suspend*.
 	  If in doubt, say N.
 
+
+config CPU_FREQ_GOV_LIONHEART
+	tristate "'lionheart' cpufreq governor"
+	depends on CPU_FREQ
+	  
 config CPU_FREQ_GOV_HOTPLUG
        tristate "'hotplug' cpufreq governor"
        depends on CPU_FREQ && NO_HZ && HOTPLUG_CPU
@@ -444,6 +459,10 @@ config CPU_FREQ_GOV_FANTASY
 	  For details, take a look at linux/Documentation/cpu-freq.
 	  If in doubt, say N.
 
+config CPU_FREQ_LIMITS_ON_SUSPEND
+	bool "CPUfreq limits on suspend"
+	depends on CPU_FREQ
+	default y
 		 
 menu "x86 CPU frequency scaling drivers"
 depends on X86
