@@ -85,7 +85,7 @@
 #define OFF_VOLTAGE_MASK		0x1FFF
 
 #define LOWBAT_TOLERANCE		40
-#define LOWBAT_ZERO_VOLTAGE		3300
+#define LOWBAT_ZERO_VOLTAGE		3320
 
 #define MAIN_CH_NO_OVERSHOOT_ENA_N	0x02
 #define MAIN_CH_ENA			0x01
@@ -138,12 +138,12 @@ module_param(debug_mask, bool, 0644);
 
 static unsigned int lowbat_zerovolt = LOWBAT_ZERO_VOLTAGE;
 static unsigned int lowbat_tolerance_volt = LOWBAT_TOLERANCE;
-static bool use_lowbat_wakelock = 1;
+static bool use_lowbat_wakelock = 0;
 
 /* 
  * Voltage Threshold that decides when to power off.
  */
-static unsigned int pwroff_threshold = 3300;
+static unsigned int pwroff_threshold = 3200;
 
 /* Allow battery capacity goes up */
 static unsigned int battlvl_real = 1;
@@ -3439,7 +3439,7 @@ static struct kobj_attribute abb_fg_cycle_charging_interface = __ATTR(fg_cyc, 06
 
 static ssize_t abb_fg_pwroff_threshold_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%dmV\n\n* HW will shutdown above 3000mV\n", pwroff_threshold);
+	sprintf(buf, "%dmV\n\n* HW will shutdown below 2900mV\n", pwroff_threshold);
 
 	return strlen(buf);
 }
