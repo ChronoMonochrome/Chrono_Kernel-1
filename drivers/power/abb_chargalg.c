@@ -110,9 +110,12 @@ static void ab8500_chargalg_early_suspend(struct early_suspend *h)
 static void ab8500_chargalg_late_resume(struct early_suspend *h)
 {
 	is_suspend = 0;
-
-	bln_disable_backlights(get_led_mask(), 0);
-	eoc_blink_ongoing = false;
+	
+	if (eoc_blink_ongoing) {
+		cancel_delayed_work(&eoc_blink_stop_work);
+		schedule_delayed_work(&eoc_blink_stop_work, 0);
+		eoc_blink_ongoing = false;
+	}
 }
 
 static void eoc_wakeup_thread(struct work_struct *eoc_wakeup_work)
