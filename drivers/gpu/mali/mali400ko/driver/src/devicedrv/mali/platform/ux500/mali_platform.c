@@ -67,30 +67,30 @@ struct mali_dvfs_data
 };
 
 static struct mali_dvfs_data mali_dvfs[] = {
-	{192000, 0x01050132, 0x26},
-	{253440, 0x01050142, 0x26},
+	{192000, 0x0101010A, 0x26},
+	{256000, 0x01030128, 0x26},
 	{299520, 0x0105014E, 0x26},
-	{318720, 0x01050153, 0x26},
+	{320000, 0x01030132, 0x26},
 	{360000, 0x0105015E, 0x26},
 	{399360, 0x01050168, 0x26},
-	{422400, 0x0105016E, 0x26},
-	{441600, 0x01050173, 0x26},
-	{460800, 0x01050178, 0x29},
-	{480000, 0x0105017D, 0x2A},
-	{499200, 0x01050182, 0x2B},
-	{518400, 0x01050187, 0x2C},
-	{537600, 0x0105018C, 0x2D},
+	{422400, 0x01010116, 0x26},
+	{441600, 0x0102012E, 0x26},
+	{460800, 0x01010118, 0x29},
+	{480000, 0x01020132, 0x2A},
+	{499200, 0x0101011A, 0x2B},
+	{518400, 0x01020136, 0x2C},
+	{537600, 0x0101011C, 0x2D},
 	{560640, 0x01050192, 0x2F},
 	{579840, 0x01050197, 0x30},
-	{600000, 0x0105019C, 0x32},
-	{618240, 0x010501A1, 0x33},
-	{641280, 0x010501A7, 0x34},
-	{660480, 0x010501AC, 0x39},
-	{679680, 0x010501B1, 0x39},
-	{702720, 0x010501B7, 0x39},
-	{710400, 0x010501B9, 0x39},
-	{721920, 0x010501BC, 0x39},
-	{729600, 0x010501BE, 0x39},
+	{600000, 0x0104017D, 0x32},
+	{619200, 0x01040181, 0x33},
+	{640000, 0x01030164, 0x34},
+	{660480, 0x010501AC, 0x3F},
+	{679680, 0x010501B1, 0x3F},
+	{700800, 0x01040192, 0x3F},
+	{710400, 0x01010125, 0x3F},
+	{720000, 0x01040196, 0x3F},
+	{729600, 0x01010126, 0x3F},
 };
 
 int mali_utilization_high_to_low = MALI_HIGH_TO_LOW_LEVEL_UTILIZATION_LIMIT;
@@ -111,10 +111,10 @@ static struct workqueue_struct *mali_utilization_workqueue;
 static struct wake_lock wakelock;
 #endif
 
-static u32 boost_enable 	= 0;
+static u32 boost_enable 	= 1;
 static u32 boost_working 	= 0;
 static u32 boost_required 	= 0;
-static u32 boost_delay 		= 1000;
+static u32 boost_delay 		= 500;
 static u32 boost_low 		= 0;
 static u32 boost_high 		= 0;
 static u32 boost_utilization 	= 0;
