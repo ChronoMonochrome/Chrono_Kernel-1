@@ -1,3 +1,5 @@
+
+
 /*
  *
  * Zinitix bt404 touchscreen driver
@@ -21,8 +23,6 @@
 
 #define TOUCH_BOOSTER
 #define TOUCH_S2W
-#define TOUCH_DT2W
-#define DISABLE_TOUCHSCREEN_SPAM
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -52,14 +52,12 @@
 #ifdef TSP_FACTORY
 #include <linux/list.h>
 #endif
-
 #if defined(TOUCH_BOOSTER)
 #include <linux/mfd/dbx500-prcmu.h>
 #endif
-
-#if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
+#ifdef TOUCH_S2W
 #include <linux/ab8500-ponkey.h>
-#endif /* TOUCH_S2W or TOUCH_DT2W */
+#endif
 #include <linux/input/bt404_ts.h>
 #include "zinitix_touch_bt4x3_firmware.h"
 
@@ -238,15 +236,6 @@ static int m_ts_debug_mode = BT404_DEBUG;
 #define TSP_CMD_NODE_NUM	180 /* 18x10 */
 #endif
 
-#ifdef TOUCH_BOOSTER
-int bt404_ape_boost = 0, bt404_ddr_boost = 0, 
-	bt404_ape_opp = 100, bt404_ddr_opp = 50;
-module_param(bt404_ape_boost, uint, 0644);
-module_param(bt404_ddr_boost, uint, 0644);
-module_param(bt404_ape_opp, uint, 0644);
-module_param(bt404_ddr_opp, uint, 0644);
-#endif
-
 enum power_control {
 	POWER_OFF,
 	POWER_ON,
@@ -412,14 +401,26 @@ struct tsp_cmd {
 	void			(*cmd_func)(void *device_data);
 };
 
-#if defined(TOUCH_DT2W) || defined(TOUCH_S2W)
+#ifdef TOUCH_S2W
+/* cocafe: SweepToWake with wakelock implementation */
+#define ABS_THRESHOLD_X			120
+#define ABS_THRESHOLD_Y			240
+
 #if CONFIG_HAS_WAKELOCK
 #include <linux/wakelock.h>
-static struct wake_lock t2w_wakelock;
-#endif /* WAKELOCK */
+static struct wake_lock s2w_wakelock;
+#endif
+
+static int x_press, x_release;
+static int y_press, y_release;
+
+static int x_threshold = ABS_THRESHOLD_X;
+static int y_threshold = ABS_THRESHOLD_Y;
 
 static bool is_suspend = false;
 static bool waking_up = false;
+
+static bool sweep2wake = false;
 
 static void bt404_ponkey_thread(struct work_struct *bt404_ponkey_work)
 {
@@ -434,31 +435,7 @@ static void bt404_ponkey_thread(struct work_struct *bt404_ponkey_work)
 	waking_up = false;
 }
 static DECLARE_WORK(bt404_ponkey_work, bt404_ponkey_thread);
-#endif /* TOUCH_DT2W or TOUCH_S2W */
-
-#ifdef TOUCH_S2W
-/* cocafe: SweepToWake with wakelock implementation */
-#define ABS_THRESHOLD_X			120
-#define ABS_THRESHOLD_Y			240
-
-static unsigned int x_press, x_release;
-static unsigned int y_press, y_release;
-
-static unsigned int x_threshold = ABS_THRESHOLD_X;
-static unsigned int y_threshold = ABS_THRESHOLD_Y;
-
-static bool sweep2wake = false;
-#endif /* TOUCH_S2W */
-
-#ifdef TOUCH_DT2W
-#define DEFAULT_PRESS_TIMEOUT 250
-static unsigned long press_time = 0;
-static unsigned int press_count = 0;
-
-static unsigned int press_timeout = DEFAULT_PRESS_TIMEOUT; /* press_timeout in msecs */
-
-static bool doubletap2wake = false;
-#endif /* TOUCH_DT2W */
+#endif
 
 static void fw_update(void *device_data);
 static void get_fw_ver_bin(void *device_data);
@@ -1546,11 +1523,11 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 	if (force_clear) {
 		for (i = 0; i < data->cap_info.max_finger; i++) {
 			if (prev->coord[i].sub_status & 0x1) {
-				// dev_info(&client->dev,
-				// 		"%4s[%1d]: %3d,%3d (%3d)\n",
-				// 		"up/f", i, cur->coord[i].x,
-				// 		cur->coord[i].x,
-				// 		cur->coord[i].width);
+				dev_info(&client->dev,
+						"%4s[%1d]: %3d,%3d (%3d)\n",
+						"up/f", i, cur->coord[i].x,
+						cur->coord[i].x,
+						cur->coord[i].width);
 				prev->coord[i].sub_status &= ~(0x01);
 			}
 
@@ -1567,16 +1544,14 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 			PRCMU_QOS_APE_OPP,
 			(char *)data->client->name,
 			PRCMU_QOS_DEFAULT_VALUE);
-		
 		prcmu_qos_update_requirement(
 			PRCMU_QOS_DDR_OPP,
 			(char *)data->client->name,
 			PRCMU_QOS_DEFAULT_VALUE);
-		
-		/*prcmu_qos_update_requirement(
+		prcmu_qos_update_requirement(
 			PRCMU_QOS_ARM_KHZ,
 			(char *)data->client->name,
-			PRCMU_QOS_DEFAULT_VALUE);*/
+			PRCMU_QOS_DEFAULT_VALUE);
 #endif
 		return;
 	}
@@ -1594,11 +1569,9 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 		if (prev_exist && cur_up) {
 
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-#ifndef DISABLE_TOUCHSCREEN_SPAM
 			dev_info(&client->dev, "%4s[%1d]: %3d,%3d (%3d)\n",
 					"up", i, cur->coord[i].x,
 					cur->coord[i].x, cur->coord[i].width);
-#endif
 #endif
 
 #ifdef TOUCH_S2W
@@ -1612,22 +1585,6 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 							(abs(y_release - y_press) >= y_threshold)) {
 								if (!waking_up)
 									schedule_work(&bt404_ponkey_work);
-						}
-					}
-				}
-			}
-#endif
-
-#ifdef TOUCH_DT2W
-			if (is_suspend) {
-				if (doubletap2wake) {
-					if (cur_up) {
-						if (press_count == 2) {
-							pr_info("[DT2W] Press Count == 2\n");
-							if (!waking_up)
-								schedule_work(&bt404_ponkey_work);
-							press_count = 0;
-							press_time = 0;
 						}
 					}
 				}
@@ -1652,10 +1609,10 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 					PRCMU_QOS_DDR_OPP,
 					(char *)data->client->name,
 					PRCMU_QOS_DEFAULT_VALUE);
-				/*prcmu_qos_update_requirement(
+				prcmu_qos_update_requirement(
 					PRCMU_QOS_ARM_KHZ,
 					(char *)data->client->name,
-					PRCMU_QOS_DEFAULT_VALUE);*/
+					PRCMU_QOS_DEFAULT_VALUE);
 			}
 #endif
 			continue;
@@ -1670,23 +1627,18 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 			if (cur_down) {
 #if defined(TOUCH_BOOSTER)
 				if (!data->finger_cnt) {
-					if (bt404_ape_boost) {
-						prcmu_qos_update_requirement(
-							PRCMU_QOS_APE_OPP,
-							(char *)data->client->name,
-							bt404_ape_opp);
-					}
-		
-					if (bt404_ddr_boost) {
-						prcmu_qos_update_requirement(
-							PRCMU_QOS_DDR_OPP,
-							(char *)data->client->name,
-							bt404_ddr_opp);
-					}
-					/*prcmu_qos_update_requirement(
+					prcmu_qos_update_requirement(
+						PRCMU_QOS_APE_OPP,
+						(char *)data->client->name,
+						PRCMU_QOS_APE_OPP_MAX);
+					prcmu_qos_update_requirement(
+						PRCMU_QOS_DDR_OPP,
+						(char *)data->client->name,
+						PRCMU_QOS_DDR_OPP_MAX);
+					prcmu_qos_update_requirement(
 						PRCMU_QOS_ARM_KHZ,
 						(char *)data->client->name,
-						800000);*/
+						800000);
 				}
 
 				data->finger_cnt++;
@@ -1702,32 +1654,12 @@ static void bt404_ts_report_touch_data(struct bt404_ts_data *data,
 				}
 #endif
 
-#ifdef TOUCH_DT2W
-				if (is_suspend) {
-					if (doubletap2wake) {
-						if (!press_count || press_time + press_timeout >= ktime_to_ms(ktime_get())) {
-							pr_info("[DT2W] ++Press Count\n");
-							++press_count;
-							press_time = ktime_to_ms(ktime_get());
-							pr_info("[DT2W] Press Count : %d\n", press_count);
-							pr_info("[DT2W] Press Time : %ld\n", press_time);
-						} else {
-							pr_info("[DT2W] PRESS RESET\n");
-							press_count = 0;
-							press_time = 0;
-						}
-					}
-				}
-#endif
-
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-#ifndef DISABLE_TOUCHSCREEN_SPAM
 				dev_info(&client->dev,
 						"%4s[%1d]: %3d,%3d (%3d)\n",
 						"down", i,  cur->coord[i].x,
 						cur->coord[i].y,
 						cur->coord[i].width);
-#endif
 #endif
 			}
 
@@ -1913,11 +1845,9 @@ static irqreturn_t bt404_ts_interrupt(int irq, void *dev_id)
 			input_report_key(data->input_dev_tk,
 				data->pdata->button_map[offset], action);
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-#ifndef DISABLE_TOUCHSCREEN_SPAM
 			dev_info(&client->dev, "key[%3d]:%s\n",
 						data->pdata->button_map[offset],
 						(action) ? "down" : "up");
-#endif
 #endif
 		}
 
@@ -1936,11 +1866,9 @@ static irqreturn_t bt404_ts_interrupt(int irq, void *dev_id)
 			input_report_key(data->input_dev_tk,
 				data->pdata->button_map[offset], action);
 #if !defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
-#ifndef DISABLE_TOUCHSCREEN_SPAM
 			dev_info(&client->dev, "key[%3d]:%s\n",
 						data->pdata->button_map[offset],
 						(action) ? "down" : "up");
-#endif
 #endif
 		}
 
@@ -3880,7 +3808,7 @@ static DEVICE_ATTR(touchkey_threshold, S_IRUGO, tkey_threshold_show, NULL);
 static struct attribute *touchkey_attributes[] = {
 	&dev_attr_touchkey_back.attr,
 	&dev_attr_touchkey_menu.attr,
-	&dev_attr_touchkey_raw_data1.attr,
+        &dev_attr_touchkey_raw_data1.attr,
 	&dev_attr_touchkey_raw_data0.attr,
 	&dev_attr_touchkey_threshold.attr,
 	NULL,
@@ -3920,80 +3848,6 @@ static struct attribute_group touchscreen_temp_attr_group = {
 	.attrs = touchscreen_temp_attributes,
 };
 
-#ifdef TOUCH_DT2W
-static ssize_t bt404_doubletap2wake_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
-{
-	sprintf(buf, "status: %s\n", doubletap2wake ? "on" : "off");
-	sprintf(buf, "%stimeout: %d\n", buf, press_timeout);
-	#if CONFIG_HAS_WAKELOCK
-	sprintf(buf, "%swakelock_ena: %d\n", buf, wake_lock_active(&t2w_wakelock));
-	#endif
-
-	return strlen(buf);
-}
-
-static ssize_t bt404_doubletap2wake_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int ret;
-	int press_timeout_tmp;
-
-	if (!strncmp(buf, "on", 2)) {
-		doubletap2wake = true;
-
-		#if CONFIG_HAS_WAKELOCK
-		wake_lock(&t2w_wakelock);
-		#endif
-
-		pr_err("[TSP] DoubleTap2Wake On\n");
-
-		return count;
-	}
-
-	if (!strncmp(buf, "off", 3)) {
-		doubletap2wake = false;
-
-		#if CONFIG_HAS_WAKELOCK
-		wake_unlock(&t2w_wakelock);
-		#endif
-
-		pr_err("[TSP] DoubleTap2Wake Off\n");
-
-		return count;
-	}
-
-	if (!strncmp(&buf[0], "timeout=", 8)) {
-		ret = sscanf(&buf[8], "%d", &press_timeout_tmp);
-
-		if (!ret) {
-			pr_err("[TSP] invalid input\n");
-			return -EINVAL;
-		}
-
-		press_timeout = press_timeout_tmp;
-
-		return count;
-	}
-
-	#if CONFIG_HAS_WAKELOCK
-	/* For development activity */
-	if (!strncmp(&buf[0], "wakelock=", 9)) {
-		sscanf(&buf[9], "%d", &ret);
-
-		if (!ret)
-			wake_unlock(&t2w_wakelock);
-		else
-			wake_lock(&t2w_wakelock);
-		
-		return count;
-	}
-	#endif
-		
-	return count;
-}
-
-static struct kobj_attribute bt404_doubletap2wake_interface = __ATTR(doubletap2wake, 0644, bt404_doubletap2wake_show, bt404_doubletap2wake_store);
-#endif /* TOUCH_DT2W */
-
 #ifdef TOUCH_S2W
 static ssize_t bt404_sweep2wake_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -4001,7 +3855,7 @@ static ssize_t bt404_sweep2wake_show(struct kobject *kobj, struct kobj_attribute
 	sprintf(buf, "%sthreshold_x: %d\n", buf, x_threshold);
 	sprintf(buf, "%sthreshold_y: %d\n", buf, y_threshold);
 	#if CONFIG_HAS_WAKELOCK
-	sprintf(buf, "%swakelock_ena: %d\n", buf, wake_lock_active(&t2w_wakelock));
+	sprintf(buf, "%swakelock_ena: %d\n", buf, wake_lock_active(&s2w_wakelock));
 	#endif
 
 	return strlen(buf);
@@ -4016,7 +3870,7 @@ static ssize_t bt404_sweep2wake_store(struct kobject *kobj, struct kobj_attribut
 		sweep2wake = true;
 
 		#if CONFIG_HAS_WAKELOCK
-		wake_lock(&t2w_wakelock);
+		wake_lock(&s2w_wakelock);
 		#endif
 
 		pr_err("[TSP] Sweep2Wake On\n");
@@ -4028,7 +3882,7 @@ static ssize_t bt404_sweep2wake_store(struct kobject *kobj, struct kobj_attribut
 		sweep2wake = false;
 
 		#if CONFIG_HAS_WAKELOCK
-		wake_unlock(&t2w_wakelock);
+		wake_unlock(&s2w_wakelock);
 		#endif
 
 		pr_err("[TSP] Sweep2Wake Off\n");
@@ -4045,7 +3899,7 @@ static ssize_t bt404_sweep2wake_store(struct kobject *kobj, struct kobj_attribut
 		}
 
 		x_threshold = threshold_tmp;
-
+		
 		return count;
 	}
 
@@ -4058,7 +3912,7 @@ static ssize_t bt404_sweep2wake_store(struct kobject *kobj, struct kobj_attribut
 		}
 
 		y_threshold = threshold_tmp;
-
+		
 		return count;
 	}
 
@@ -4068,26 +3922,23 @@ static ssize_t bt404_sweep2wake_store(struct kobject *kobj, struct kobj_attribut
 		sscanf(&buf[9], "%d", &ret);
 
 		if (!ret)
-			wake_unlock(&t2w_wakelock);
+			wake_unlock(&s2w_wakelock);
 		else
-			wake_lock(&t2w_wakelock);
-
+			wake_lock(&s2w_wakelock);
+		
 		return count;
 	}
 	#endif
-
+		
 	return count;
 }
 
 static struct kobj_attribute bt404_sweep2wake_interface = __ATTR(sweep2wake, 0644, bt404_sweep2wake_show, bt404_sweep2wake_store);
-#endif /* TOUCH_S2W */
+#endif
 
 static struct attribute *bt404_attrs[] = {
 #ifdef TOUCH_S2W
 	&bt404_sweep2wake_interface.attr, 
-#endif
-#ifdef TOUCH_DT2W
-	&bt404_doubletap2wake_interface.attr,
 #endif
 	NULL,
 };
@@ -4340,8 +4191,8 @@ static int bt404_ts_probe(struct i2c_client *client,
 				  PRCMU_QOS_DEFAULT_VALUE);
 	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, (char *)client->name,
 				  PRCMU_QOS_DEFAULT_VALUE);
-	/*prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name,
-				  PRCMU_QOS_DEFAULT_VALUE);*/
+	prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name,
+				  PRCMU_QOS_DEFAULT_VALUE);
 	dev_info(&client->dev, "add_prcmu_qos is added\n");
 #endif
 
@@ -4357,8 +4208,8 @@ static int bt404_ts_probe(struct i2c_client *client,
 		kobject_put(bt404_kobject);
 	}
 
-#if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
-	wake_lock_init(&t2w_wakelock, WAKE_LOCK_SUSPEND, "t2w_wakelock");
+#ifdef TOUCH_S2W
+	wake_lock_init(&s2w_wakelock, WAKE_LOCK_SUSPEND, "s2w_wakelock");
 #endif
 
 	data->irq = client->irq;
@@ -4439,8 +4290,8 @@ static int bt404_ts_probe(struct i2c_client *client,
 				&touchscreen_temp_attr_group);
 	if (ret)
 		dev_err(&client->dev,
-			"Failed to create sysfs (touchscreen_temp_attr_group).");
-	
+			"Failed to create sysfs (touchscreen_temp_attr_group)."
+									"\n");
 	dev_info(&client->dev, "successfully probed.\n");
 	return 0;
 
@@ -4449,7 +4300,7 @@ err_request_irq:
 #if defined(TOUCH_BOOSTER)
 	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, (char *)client->name);
 	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP, (char *)client->name);
-	/*prcmu_qos_remove_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name);*/
+	prcmu_qos_remove_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name);
 #endif
 	if (data->pdata->power_con == LDO_CON)
 		gpio_set_value(pdata->gpio_ldo_en, 0);
@@ -4509,7 +4360,7 @@ static int bt404_ts_remove(struct i2c_client *client)
 #if defined(TOUCH_BOOSTER)
 	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP, (char *)client->name);
 	prcmu_qos_remove_requirement(PRCMU_QOS_DDR_OPP, (char *)client->name);
-	/*prcmu_qos_remove_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name);*/
+	prcmu_qos_remove_requirement(PRCMU_QOS_ARM_KHZ, (char *)client->name);
 #endif
 
 #if USE_TEST_RAW_TH_DATA_MODE
@@ -4639,22 +4490,12 @@ err_i2c:
 	return ret;
 }
 
-static int last_suspend_skipped = 0, last_resume_skipped = 0;
-bool break_suspend_early(bool);
-
 #if defined(CONFIG_PM) || defined(CONFIG_HAS_EARLYSUSPEND)
 static int bt404_ts_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
-
-	if (s2w_switch || dt2w_switch) {
-	        if (break_suspend_early(true)) {
-			goto out;
-		}
-	}
-
 
 	if (!data->enabled) {
 		dev_err(dev, "%s, already disabled\n", __func__);
@@ -4664,11 +4505,6 @@ static int bt404_ts_suspend(struct device *dev)
 
 #ifdef TOUCH_S2W
 	if (sweep2wake)
-		goto out;
-#endif
-
-#ifdef TOUCH_DT2W
-	if (doubletap2wake)
 		goto out;
 #endif
 	disable_irq(data->irq);
@@ -4711,14 +4547,6 @@ static int bt404_ts_resume(struct device *dev)
 	struct bt404_ts_data *data = i2c_get_clientdata(client);
 	int ret;
 
-	if (s2w_switch || dt2w_switch) {
-		if (break_suspend_early(false)) {
-			if (last_suspend_skipped) {
-				goto out;
-			}
-		}
-	}
-
 	if (data->enabled) {
 		dev_err(dev, "%s, already enabled\n", __func__);
 		ret = -1;
@@ -4727,11 +4555,6 @@ static int bt404_ts_resume(struct device *dev)
 
 #ifdef TOUCH_S2W
 	if (sweep2wake)
-		goto out;
-#endif
-
-#ifdef TOUCH_DT2W
-	if (doubletap2wake)
 		goto out;
 #endif
 
@@ -4768,8 +4591,8 @@ static void bt404_ts_late_resume(struct early_suspend *h)
 {
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
-#if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
-	is_suspend = false;
+#ifdef TOUCH_S2W
+	is_suspend = 0;
 #endif
 
 	bt404_ts_resume(&data->client->dev);
@@ -4779,8 +4602,8 @@ static void bt404_ts_early_suspend(struct early_suspend *h)
 {
 	struct bt404_ts_data *data =
 			container_of(h, struct bt404_ts_data, early_suspend);
-#if defined(TOUCH_S2W) || defined(TOUCH_DT2W)
-	is_suspend = true;
+#ifdef TOUCH_S2W
+	is_suspend = 1;
 #endif
 	bt404_ts_suspend(&data->client->dev);
 }
