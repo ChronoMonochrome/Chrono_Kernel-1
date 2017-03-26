@@ -100,6 +100,7 @@ static struct v_to_cap cap_tbl_B[] = {
 };
 #endif
 
+#if 0
 /* Temporarily, we use this table */
 /* 1500 mAh battery table used in Janice (OCV from STE) */
 static struct v_to_cap cap_tbl[] = {
@@ -142,6 +143,7 @@ static struct v_to_cap cap_tbl[] = {
 	{3458,	1},
 	{3300,	0},
 };
+#endif
 
 /* Temporarily, we use this table */
 /* 1500 mAh battery table used in Janice (OCV from STE) */
@@ -251,6 +253,7 @@ static struct res_to_temp temp_tbl[] = {
 	{65,   9425},
 };
 
+#if 0
 static struct res_to_temp adc_temp_tbl[] = {
 	{-10, 780},
 	{-5, 660},
@@ -273,6 +276,7 @@ static struct res_to_temp adc_temp_tbl[] = {
 	{65, 55},
 	{70, 48},
 };
+#endif
 
 #ifdef CONFIG_AB8500_BATTERY_THERM_ON_BATCTRL
 /*
@@ -289,6 +293,8 @@ static struct batres_vs_temp temp_to_batres_tbl[] = {
 	{-20, 595},
 };
 #else
+
+#if 0
 /*
  * Note that the batres_vs_temp table must be strictly sorted by falling
  * temperature values to work.
@@ -302,6 +308,7 @@ static struct batres_vs_temp temp_to_batres_tbl[] = {
 	{-10, 300},
 	{-20, 300},
 };
+#endif
 #endif
 
 static const struct battery_type bat_type[] = {
