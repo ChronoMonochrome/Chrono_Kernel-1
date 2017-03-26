@@ -949,7 +949,7 @@ static void est_test_timer_func(unsigned long data)
 }
 #endif
 #endif
-static int __init s6d27a1_dpi_spi_probe(struct spi_device *spi)
+static int __devinit s6d27a1_dpi_spi_probe(struct spi_device *spi)
 {
 	int ret = 0;
 	struct s6d27a1_dpi *lcd = container_of(spi->dev.driver,
@@ -1250,7 +1250,7 @@ static void s6d27a1_dpi_mcde_late_resume(
 }
 #endif
 
-static struct mcde_display_driver s6d27a1_dpi_mcde = {
+static struct mcde_display_driver s6d27a1_dpi_mcde __refdata = {
 	.probe          = s6d27a1_dpi_mcde_probe,
 	.remove         = s6d27a1_dpi_mcde_remove,
 	.shutdown	= s6d27a1_dpi_mcde_shutdown,
