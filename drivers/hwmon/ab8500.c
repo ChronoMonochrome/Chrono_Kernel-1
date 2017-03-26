@@ -136,7 +136,7 @@ static int ab8500_temp_irq_handler(int irq, struct abx500_temp *data)
 	return 0;
 }
 
-int __init abx500_hwmon_init(struct abx500_temp *data)
+int __devinit abx500_hwmon_init(struct abx500_temp *data)
 {
 	data->ab8500_gpadc = ab8500_gpadc_get();
 	if (IS_ERR(data->ab8500_gpadc))

@@ -167,7 +167,7 @@ static void ux500_l2x0_inv_all(void)
 	ux500_cache_sync();
 }
 
-static int ux500_l2x0_init(void)
+static int __init ux500_l2x0_init(void)
 {
 	uint32_t aux_val = 0x3e000000;
 
