@@ -131,6 +131,8 @@ extern bool vbus_state;
 
 extern unsigned int system_rev;
 
+static int last_capacity = 0;
+
 static bool debug_mask = 0;
 module_param(debug_mask, bool, 0644);
 
@@ -2714,7 +2716,9 @@ static int ab8500_fg_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CAPACITY_RAW:
 
 		val->intval = (di->bat_cap.mah  * 1000) / di->bat_cap.max_mah ;
-		printk("raw soc = %d",val->intval);
+		if (last_capacity != val->intval)
+			printk("raw soc = %d\n",val->intval);
+		last_capacity = val->intval;
 		break;
 #endif
 	/* Instantaneous vbat ADC value */
