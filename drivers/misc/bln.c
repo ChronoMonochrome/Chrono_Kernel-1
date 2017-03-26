@@ -53,7 +53,7 @@ static bool buttons_led_enabled = false;
 
 #define BACKLIGHTNOTIFICATION_VERSION 9
 
-static int gen_all_leds_mask(void)
+int gen_all_leds_mask(void)
 {
 	int i = 0;
 	int mask = 0x0;
@@ -64,7 +64,7 @@ static int gen_all_leds_mask(void)
 	return mask;
 }
 
-static int get_led_mask(void) {
+int get_led_mask(void) {
 	return (notification_led_mask != 0) ? notification_led_mask : gen_all_leds_mask();
 }
 
@@ -74,24 +74,24 @@ static void reset_bln_states(void)
 	bln_ongoing = false;
 }
 
-static void bln_enable_backlights(int mask)
+void bln_enable_backlights(int mask, int mode)
 {
-	if (bln_imp && bln_blink_mode != 3){
+	if (bln_imp && mode != 3){
 		bln_imp->enable(mask);
 	}
 
-	if ((bln_blink_mode == 2 || bln_blink_mode == 3) && bln_imp_flash){
+	if ((mode == 2 || mode == 3) && bln_imp_flash){
 		bln_imp_flash->enable(mask);
 	}
 }
 
-static void bln_disable_backlights(int mask)
+void bln_disable_backlights(int mask, int mode)
 {
-	if (bln_imp && bln_blink_mode != 3){
+	if (bln_imp && mode != 3){
 		bln_imp->disable(mask);
 	}
-	
-	if ((bln_blink_mode == 2 || bln_blink_mode == 3) && bln_imp_flash){
+
+	if ((mode == 2 || mode == 3) && bln_imp_flash){
 		bln_imp_flash->disable(mask);
 	}
 }
@@ -128,7 +128,7 @@ static void bln_early_suspend(struct early_suspend *h)
 static void disable_led_notification(void)
 {
 	if (bln_ongoing) {
-		bln_disable_backlights(gen_all_leds_mask());
+		bln_disable_backlights(gen_all_leds_mask(), bln_blink_mode);
 		bln_power_off();
 	}
 
@@ -154,9 +154,9 @@ static void blink_thread(void)
 {
 	while(bln_suspended)
 	{
-		bln_enable_backlights(get_led_mask());
+		bln_enable_backlights(get_led_mask(), bln_blink_mode);
 		msleep(bln_blinkon_delay);
-		bln_disable_backlights(get_led_mask());
+		bln_disable_backlights(get_led_mask(), bln_blink_mode);
 		msleep(bln_blinkoff_delay);
 	}
 }
@@ -184,7 +184,7 @@ static void enable_led_notification(void)
 
 	bln_power_on();
 	if(!bln_blink_mode)
-		bln_enable_backlights(get_led_mask());
+		bln_enable_backlights(get_led_mask(), bln_blink_mode);
 	else
 		kthread_run(&blink_thread, NULL,"bln_blink_thread");
 
@@ -342,10 +342,10 @@ static ssize_t blink_control_write(struct device *dev,
 	 */
 	if (data == 1) {
 		bln_blink_state = 1;
-		bln_disable_backlights(get_led_mask());
+		bln_disable_backlights(get_led_mask(), bln_blink_mode);
 	} else if (data == 0) {
 		bln_blink_state = 0;
-		bln_enable_backlights(get_led_mask());
+		bln_enable_backlights(get_led_mask(), bln_blink_mode);
 	} else {
 		pr_info("%s: wrong input %u\n", __FUNCTION__, data);
 	}
@@ -391,12 +391,12 @@ static ssize_t buttons_led_status_write(struct device *dev,
 		if (!bln_suspended) {
 			buttons_led_enabled = true;
 			bln_power_on();
-			bln_enable_backlights(gen_all_leds_mask());
+			bln_enable_backlights(gen_all_leds_mask(), bln_blink_mode);
 		}
 	} else if (data == 0) {
 		if (!bln_suspended) {
 			buttons_led_enabled = false;
-			bln_disable_backlights(gen_all_leds_mask());
+			bln_disable_backlights(gen_all_leds_mask(), bln_blink_mode);
 		}
 	} else {
 		pr_info("%s: wrong input %u\n", __FUNCTION__, data);
