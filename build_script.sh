@@ -65,7 +65,12 @@ inst(){
     fi
     cd ..
     rm $KERNEL_NAME
-    zip -r -9 $KERNEL_NAME META-INF system ramdisk genfstab osfiles recovery boot.img tmp
+    if [ "$2" == "light" ] ; then 
+        zip -r -9 $KERNEL_NAME META-INF system ramdisk boot.img tmp
+    else
+        zip -r -9 $KERNEL_NAME META-INF system ramdisk genfstab osfiles recovery boot.img tmp
+    fi
+
     cd $SOURCE
     #send
     #sudo shutdown -h now
