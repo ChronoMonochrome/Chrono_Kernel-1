@@ -940,7 +940,7 @@ static int qos_delayed_cpufreq_notifier(struct notifier_block *nb,
 
 	return 0;
 }
-
+#if 0
 static int __init prcmu_qos_power_preinit(void)
 {
 	/* 25% DDR OPP is not supported on u5500 */
@@ -950,6 +950,64 @@ static int __init prcmu_qos_power_preinit(void)
 
 }
 arch_initcall(prcmu_qos_power_preinit);
+#endif
+
+unsigned int qos_ddr_opp = 25;
+unsigned int qos_ape_opp = 25;
+
+static int set_qos_ddr_opp(const char *val, struct kernel_param *kp)
+{
+	unsigned int ddr_opp = 0;
+	unsigned int err = sscanf(val, "%d", &ddr_opp) == 1 ? 0 : -EINVAL;
+
+	if (err)
+		goto out;
+
+	switch (ddr_opp) {
+	    case 25:
+	    case 50:
+	    case 100:
+		qos_ddr_opp = ddr_opp;
+		prcmu_qos_update_requirement(PRCMU_QOS_DDR_OPP, "power HAL", ddr_opp);
+		break;
+	    default:
+		err = -EINVAL;
+	}
+
+out:
+	if (err)
+		pr_err("QOS: invalid input '%s' for '%s'; use either 100, 50 or 25\n", val, __func__);
+
+        return err;
+}
+module_param_call(qos_ddr_opp, set_qos_ddr_opp, param_get_uint, &qos_ddr_opp, 0664);
+
+static int set_qos_ape_opp(const char *val, struct kernel_param *kp)
+{
+	unsigned int ape_opp = 0;
+	unsigned int err = sscanf(val, "%d", &ape_opp) == 1 ? 0 : -EINVAL;
+
+	if (err)
+		goto out;
+
+	switch (ape_opp) {
+	    case 25:
+	    case 50:
+	    case 100:
+		qos_ape_opp = ape_opp;
+		prcmu_qos_update_requirement(PRCMU_QOS_APE_OPP, "power HAL", ape_opp);
+		break;
+	    default:
+		err = -EINVAL;
+	}
+
+out:
+	if (err)
+		pr_err("QOS: invalid input '%s' for '%s'; use either 100, 50 or 25\n", val /* buf */, __func__);
+
+        return err;
+}
+module_param_call(qos_ape_opp, set_qos_ape_opp, param_get_uint, &qos_ape_opp, 0664);
 
 static int __init prcmu_qos_power_init(void)
 {
@@ -958,10 +1016,10 @@ static int __init prcmu_qos_power_init(void)
 	unsigned int min_freq = UINT_MAX;
 	unsigned int max_freq = 0;
 	int i;
-
+/*
 	if (cpu_is_u9540())
 		update_target_max_recur = 2;
-
+*/
 	table = cpufreq_frequency_get_table(0);
 
 	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
@@ -995,7 +1053,7 @@ static int __init prcmu_qos_power_init(void)
 		pr_err("prcmu arm qos: setup failed\n");
 		goto arm_khz_qos_error;
 	}
-
+/*
 	if (cpu_is_u9540()) {
 		ret = register_prcmu_qos_misc(&vsafe_opp_qos,
 				&prcmu_qos_vsafe_power_fops);
@@ -1004,7 +1062,7 @@ static int __init prcmu_qos_power_init(void)
 			goto vsafe_opp_qos_error;
 		}
 	}
-
+*/
 	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "cpufreq",
 			PRCMU_QOS_DEFAULT_VALUE);
 	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "cpufreq",
@@ -1014,7 +1072,6 @@ static int __init prcmu_qos_power_init(void)
 /*
 	cpufreq_register_notifier(&qos_delayed_cpufreq_notifier_block,
 			CPUFREQ_TRANSITION_NOTIFIER);
-*/
 	if (cpu_is_u9540()) {
 		prcmu_qos_add_requirement(PRCMU_QOS_ARM_KHZ, "cpufreq",
 				PRCMU_QOS_DEFAULT_VALUE);
@@ -1027,6 +1084,13 @@ static int __init prcmu_qos_power_init(void)
 		prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "cross_opp_arm",
 				PRCMU_QOS_DEFAULT_VALUE);
 	}
+*/
+
+	prcmu_qos_add_requirement(PRCMU_QOS_DDR_OPP, "power HAL",
+			qos_ddr_opp);
+	prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP, "power HAL",
+			qos_ape_opp);
+
 
 #ifdef CONFIG_DEBUG_FS
 	ret = setup_debugfs();
