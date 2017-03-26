@@ -87,7 +87,7 @@
 
 /* to be removed when display works */
 //#define dev_dbg	dev_info
-/*#define ESD_OPERATION*/
+#define ESD_OPERATION
 /*
 #define ESD_TEST
 */
@@ -575,14 +575,14 @@ static int s6d27a1_dpi_ldi_init(struct s6d27a1_dpi *lcd)
 
 	ret |= s6d27a1_write_dcs_sequence(lcd, DCS_CMD_SEQ_S6D27A1_INIT);
 
-/*
+
 	if (lcd->pd->bl_ctrl)
 		ret |= s6d27a1_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_S6D27A1_ENABLE_BACKLIGHT_CONTROL);
 	else
 		ret |= s6d27a1_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_S6D27A1_DISABLE_BACKLIGHT_CONTROL);
-*/
+
 	return ret;
 }
 
@@ -590,15 +590,8 @@ static int s6d27a1_dpi_ldi_enable(struct s6d27a1_dpi *lcd)
 {
 	int ret = 0;
 	dev_dbg(lcd->dev, "s6d27a1_dpi_ldi_enable\n");
-	
-	if (lcd->pd->sleep_out_delay)
-			msleep(lcd->pd->sleep_out_delay);
+
 	ret |= s6d27a1_write_dcs_sequence(lcd, DCS_CMD_SEQ_S6D27A1_DISPLAY_ON);
-	
-	if (lcd->pd->sleep_out_delay)
-			msleep(lcd->pd->sleep_out_delay);
-	if (!ret)
-		lcd->ldi_state = LDI_STATE_ON;
 
 	return ret;
 }
@@ -608,11 +601,7 @@ static int s6d27a1_dpi_ldi_disable(struct s6d27a1_dpi *lcd)
 	int ret;
 
 	dev_dbg(lcd->dev, "s6d27a1_dpi_ldi_disable\n");
-	
-	ret |= s6d27a1_write_dcs_sequence(lcd,
-					DCS_CMD_SEQ_S6D27A1_DISPLAY_OFF);
-
-	ret |= s6d27a1_write_dcs_sequence(lcd,
+	ret = s6d27a1_write_dcs_sequence(lcd,
 				DCS_CMD_SEQ_S6D27A1_ENTER_SLEEP_MODE);
 
 	if (lcd->pd->sleep_in_delay)
@@ -1195,7 +1184,6 @@ static void s6d27a1_dpi_mcde_shutdown(struct mcde_display_device *ddev)
 	unregister_early_suspend(&lcd->earlysuspend);
 #endif
 
-	s6d27a1_dpi_power(lcd, FB_BLANK_POWERDOWN);
 	kfree(lcd);
 	mutex_unlock(&ddev->display_lock);
 	dev_dbg(&ddev->dev, "end %s\n", __func__);
@@ -1250,6 +1238,9 @@ static void s6d27a1_dpi_mcde_early_suspend(
 						struct s6d27a1_dpi,
 						earlysuspend);
 	
+	prcmu_qos_remove_requirement(PRCMU_QOS_APE_OPP,
+				"codina_lcd_dpi");
+	
 	pm_message_t dummy;
 
 	s6d27a1_dpi_mcde_suspend(lcd->mdd, dummy);
@@ -1262,6 +1253,11 @@ static void s6d27a1_dpi_mcde_late_resume(
 	struct s6d27a1_dpi *lcd = container_of(earlysuspend,
 						struct s6d27a1_dpi,
 						earlysuspend);
+	
+	if (prcmu_qos_add_requirement(PRCMU_QOS_APE_OPP,
+			"codina_lcd_dpi", 50)) {
+		pr_info("pcrm_qos_add APE failed\n");
+	}
 
 	s6d27a1_dpi_mcde_resume(lcd->mdd);
 
