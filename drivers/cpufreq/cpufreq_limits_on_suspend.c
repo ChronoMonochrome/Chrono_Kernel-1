@@ -106,16 +106,14 @@ static int cpufreq_callback(struct notifier_block *nfb,
 		if (!is_suspend && (screenon_min_cpufreq != policy->min)) 
 			screenon_min_cpufreq = policy->min;
 
-		if (!is_suspend && (policy->min == screenoff_min_cpufreq)
-		  && (screenon_min_cpufreq != screenoff_min_cpufreq)) { 
+		if (!is_suspend && (policy->min == screenoff_min_cpufreq)) { 
 			  policy->min = restore_screenon_min_cpufreq;
-			  pr_err("[cpufreq_limits] new cpufreqs are %d - %d kHz\n", policy->min, policy->max);
+			  pr_err("[cpufreq_limits] min cpufreq restored -> %d kHz\n", policy->min);
 		}
 
-		if (!is_suspend && (policy->max == screenoff_max_cpufreq)
-		   && (screenon_max_cpufreq != screenoff_max_cpufreq)) { 
+		if (!is_suspend && (policy->max == screenoff_max_cpufreq)) { 
 			  policy->max = restore_screenon_max_cpufreq;
-			  pr_err("[cpufreq_limits] new cpufreqs are %d - %d kHz\n", policy->min, policy->max);
+			  pr_err("[cpufreq_limits] max cpufreq restored -> %d kHz\n", policy->max);
 		}
 			
 	}
