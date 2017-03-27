@@ -11,6 +11,7 @@
 
 #include <linux/interrupt.h>
 #include <linux/io.h>
+#include <linux/module.h>
 #include <linux/kthread.h>
 #include <linux/mm.h>
 #include <linux/semaphore.h>
@@ -32,6 +33,7 @@
 
 __iomem void *prcmu_base = NULL;
 __iomem void *prcmu_tcdm_base = NULL;
+extern struct outer_cache_fns outer_cache __read_mostly;
 
 /* DSP Load Monitoring */
 #define FULL_OPP 100
