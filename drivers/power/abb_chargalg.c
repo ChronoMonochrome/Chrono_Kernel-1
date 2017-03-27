@@ -28,6 +28,8 @@
 #include <linux/mfd/abx500/ab8500-bm.h>
 #include <linux/mfd/abx500/ab8500-gpadc.h>
 
+#include <linux/input.h> // for ABB POnKey
+
 /* Watchdog kick interval */
 #define CHG_WD_INTERVAL			(60 * HZ)
 
@@ -48,6 +50,37 @@
 #include <linux/ab8500-ponkey.h>
 #include <linux/earlysuspend.h>
 
+/* Chrono: bln blink on eoc_real=1 */
+#include <linux/bln.h>
+
+/*
+static int eoc_blink_mode = 1; // enable blinking
+static int eoc_blink_time_on = 10000; // enable LED for 10 sec
+static int eoc_blink_time_off = 2000; // disable LED for 2 sec
+*/
+
+static unsigned int eoc_blink = 0;
+module_param_named(eoc_blink, eoc_blink, uint, 0644);
+
+static bool eoc_blink_ongoing = false;
+static int eoc_blink_mode = 0;
+
+static unsigned int eoc_blink_timeout_sec = 3 * 3600; // disable LED after 3 hours
+module_param_named(eoc_blink_timeout_sec, eoc_blink_timeout_sec, uint, 0644);
+
+static void eoc_blink_fn(struct work_struct *work)
+{
+	bln_enable_backlights(get_led_mask(), 0);
+}
+static DECLARE_WORK(eoc_blink_work, eoc_blink_fn);
+
+static void eoc_blink_stop_fn(struct work_struct *work)
+{
+	bln_disable_backlights(get_led_mask(), 0);
+	eoc_blink_ongoing = false;
+}
+static DECLARE_DELAYED_WORK(eoc_blink_stop_work, eoc_blink_stop_fn);
+
 #define CHARGING_PAUSED			-1
 #define CHARGING_STOPPED		0
 #define CHARGING_WORKING		1
@@ -61,9 +94,13 @@ static bool eoc_first = 0;
 static bool eoc_real = 0;
 static bool is_suspend = 0;
 
-static int recharge_vol = 4211;
-static int termination_curr_1st = 200;
-static int termination_curr_2nd = 150;
+static unsigned int battery_type = 1;
+module_param_named(battery_type, battery_type, uint, 0644);
+
+static int termination_vol[] = {4250, 4350};
+static int recharge_vol[] = {4100, 4200};
+static int termination_curr_1st[] = {200, 200};
+static int termination_curr_2nd[] = {150, 150};
 
 static void ab8500_chargalg_early_suspend(struct early_suspend *h)
 {
@@ -73,15 +110,22 @@ static void ab8500_chargalg_early_suspend(struct early_suspend *h)
 static void ab8500_chargalg_late_resume(struct early_suspend *h)
 {
 	is_suspend = 0;
+	
+	if (eoc_blink_ongoing && !bln_is_ongoing()) {
+		cancel_delayed_work(&eoc_blink_stop_work);
+		schedule_delayed_work(&eoc_blink_stop_work, 0);
+		eoc_blink_ongoing = false;
+	}
 }
 
 static void eoc_wakeup_thread(struct work_struct *eoc_wakeup_work)
 {
-	pr_err("[abb-chargalg] [fn] EOC wakeup\n");
-
-	ab8500_ponkey_emulator(1);
-	msleep(100);
-	ab8500_ponkey_emulator(0);
+	if (!eoc_blink) {
+		pr_err("[abb-chargalg] [fn] EOC wakeup\n");
+		ab8500_ponkey_emulator(KEY_POWER, 1);
+		msleep(100);
+		ab8500_ponkey_emulator(KEY_POWER, 0);
+	}
 
 	eoc_noticed = 1;
 }
@@ -991,8 +1035,7 @@ static void ab8500_chargalg_end_of_charge(struct ab8500_chargalg *di)
 	if (di->charge_status == POWER_SUPPLY_STATUS_CHARGING &&
 	    (di->charge_state == STATE_NORMAL ||
 	     di->charge_state == STATE_TIMED_OUT_CHARGING) &&
-	    !di->maintenance_chg && (di->batt_data.volt >=
-		di->bat->bat_type[di->bat->batt_id].termination_vol ||
+	    !di->maintenance_chg && (di->batt_data.volt >= termination_vol[di->bat->batt_id] ||
 		di->events.usb_cv_active || di->events.ac_cv_active) &&
 	    di->batt_data.avg_curr >= 0) {
 
@@ -1003,7 +1046,7 @@ static void ab8500_chargalg_end_of_charge(struct ab8500_chargalg *di)
 		*/
 		if (!di->recharging_status && !di->initial_timeout_expire &&
 		    di->batt_data.avg_curr <=
-		    termination_curr_1st) {
+		    termination_curr_1st[di->bat->batt_id]) {
 
 			if (!di->full_charging_status_1st) {
 				if (++di->eoc_cnt_1st >= EOC_COND_CNT_1ST) {
@@ -1027,7 +1070,7 @@ for the %d time, out of %d before EOC\n",  di->eoc_cnt_1st, EOC_COND_CNT_1ST);
 		}
 
 		if (di->batt_data.avg_curr <=
-		   termination_curr_2nd) {
+		   termination_curr_2nd[di->bat->batt_id]) {
 
 			if (++di->eoc_cnt_2nd >= EOC_COND_CNT_2ND) {
 				di->eoc_cnt_2nd = 0;
@@ -1041,6 +1084,13 @@ for the %d time, out of %d before EOC\n",  di->eoc_cnt_1st, EOC_COND_CNT_1ST);
 				/* Wakeup device to notice user */
 				if (!eoc_noticed && is_suspend)
 					schedule_work_on(0, &eoc_wakeup_work);
+
+				if (eoc_blink && !eoc_blink_ongoing && !bln_is_ongoing()) {
+					schedule_work(&eoc_blink_work);
+					if (eoc_blink_timeout_sec)
+						schedule_delayed_work(&eoc_blink_stop_work, msecs_to_jiffies(eoc_blink_timeout_sec * 1000 ));
+					eoc_blink_ongoing = true;
+				}
 			} else {
 				dev_dbg(di->dev,
 				" real EOC limit reached for the %d"
@@ -1178,6 +1228,10 @@ static void handle_maxim_chg_curr(struct ab8500_chargalg *di)
 	}
 }
 
+unsigned int is_charger_present = false;
+EXPORT_SYMBOL(is_charger_present);
+module_param_named(is_charger_present, is_charger_present, uint, 0644);
+
 static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 {
 	struct power_supply *psy;
@@ -1186,6 +1240,7 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 	union power_supply_propval ret;
 	int i, j;
 	bool psy_found = false;
+	bool is_charger = false;
 
 	psy = (struct power_supply *)data;
 	ext = dev_get_drvdata(dev);
@@ -1241,6 +1296,20 @@ static int ab8500_chargalg_get_ext_psy_data(struct device *dev, void *data)
 			break ;
 
 		case POWER_SUPPLY_PROP_PRESENT:
+			is_charger = (ext->type == POWER_SUPPLY_TYPE_MAINS ||
+                                ext->type == POWER_SUPPLY_TYPE_USB) &&
+                                (di->chg_info.conn_chg & AC_CHG || di->chg_info.conn_chg & USB_CHG);
+			if (!ret.intval && is_charger) {
+			      if (eoc_blink_ongoing) {
+					if (eoc_blink_timeout_sec)
+	                                        cancel_delayed_work(&eoc_blink_stop_work);
+                                        schedule_delayed_work(&eoc_blink_stop_work, 0);
+                                        eoc_blink_ongoing = false;
+                                }
+				is_charger_present = false;
+			} else if (ret.intval && is_charger) {
+				is_charger_present = true;
+			}
 			switch (ext->type) {
 			case POWER_SUPPLY_TYPE_BATTERY:
 				/* Battery present */
@@ -1875,7 +1944,7 @@ static void ab8500_chargalg_algorithm(struct ab8500_chargalg *di)
 		/* Intentional fallthrough */
 
 	case STATE_WAIT_FOR_RECHARGE:
-		if (di->batt_data.volt <= recharge_vol) {
+		if (di->batt_data.volt <= recharge_vol[di->bat->batt_id]) {
 			if (di->rch_cnt-- == 0) {
 				di->recharging_status = true;
 				ab8500_chargalg_state_to(di, STATE_NORMAL_INIT);
@@ -2505,7 +2574,7 @@ static struct kobj_attribute abb_chargalg_eoc_real_interface = __ATTR(eoc_real, 
 
 static ssize_t abb_chargalg_termination_curr_1st_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%d mA\n", termination_curr_1st);
+	sprintf(buf, "%d mA\n", termination_curr_1st[battery_type%2]);
 
 	return strlen(buf);
 }
@@ -2519,17 +2588,17 @@ static ssize_t abb_chargalg_termination_curr_1st_store(struct kobject *kobj, str
 	if (!ret)
 		return -EINVAL;
 
-	termination_curr_1st = val;
+	termination_curr_1st[battery_type%2] = val;
 
 	return count;
 }
 
 static struct kobj_attribute abb_chargalg_termination_curr_1st_interface = 
 	__ATTR(termination_curr_1st, 0644, abb_chargalg_termination_curr_1st_show, abb_chargalg_termination_curr_1st_store);
-	
+
 static ssize_t abb_chargalg_termination_curr_2nd_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%d mA\n", termination_curr_2nd);
+	sprintf(buf, "%d mA\n", termination_curr_2nd[battery_type%2]);
 
 	return strlen(buf);
 }
@@ -2543,7 +2612,7 @@ static ssize_t abb_chargalg_termination_curr_2nd_store(struct kobject *kobj, str
 	if (!ret)
 		return -EINVAL;
 
-	termination_curr_2nd = val;
+	termination_curr_2nd[battery_type%2] = val;
 
 	return count;
 }
@@ -2553,7 +2622,7 @@ static struct kobj_attribute abb_chargalg_termination_curr_2nd_interface =
 
 static ssize_t abb_chargalg_recharge_vol_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
-	sprintf(buf, "%d mV\n", recharge_vol);
+	sprintf(buf, "%d mV\n", recharge_vol[battery_type%2]);
 
 	return strlen(buf);
 }
@@ -2567,13 +2636,64 @@ static ssize_t abb_chargalg_recharge_vol_store(struct kobject *kobj, struct kobj
 	if (!ret)
 		return -EINVAL;
 
-	recharge_vol = val;
+	recharge_vol[battery_type%2] = val;
 
 	return count;
 }
 
 static struct kobj_attribute abb_chargalg_recharge_vol_interface = 
 	__ATTR(recharge_vol, 0644, abb_chargalg_recharge_vol_show, abb_chargalg_recharge_vol_store);	
+
+static ssize_t abb_chargalg_termination_vol_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+        sprintf(buf, "%d mV\n", termination_vol[battery_type%2]);
+
+        return strlen(buf);
+}
+
+static ssize_t abb_chargalg_termination_vol_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+        int ret, val;
+
+        ret = sscanf(buf, "%d", &val);
+
+        if (!ret || val > 4350)
+                return -EINVAL;
+
+        termination_vol[battery_type%2] = val;
+
+        return count;
+}
+
+static struct kobj_attribute abb_chargalg_termination_vol_interface =
+        __ATTR(termination_vol, 0644, abb_chargalg_termination_vol_show, abb_chargalg_termination_vol_store);
+
+static ssize_t test_ena_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+                               if (eoc_blink && !eoc_blink_ongoing && !bln_is_ongoing()) {
+                                       schedule_work(&eoc_blink_work);
+                                       schedule_delayed_work(&eoc_blink_stop_work, msecs_to_jiffies(eoc_blink_timeout_sec * 1000));
+                                       eoc_blink_ongoing = true;
+                               }
+
+
+       return count;
+}
+
+static struct kobj_attribute test_ena_interface = __ATTR(test_ena, 0644, NULL, test_ena_store);
+
+static ssize_t test_dis_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
+{
+                             if (eoc_blink_ongoing) {
+                                        cancel_delayed_work(&eoc_blink_stop_work);
+                                        schedule_delayed_work(&eoc_blink_stop_work, 0);
+                                        eoc_blink_ongoing = false;
+                                }
+
+        return count;
+}
+
+static struct kobj_attribute test_dis_interface = __ATTR(test_dis, 0644, NULL, test_dis_store);
 
 static struct attribute *abb_chargalg_attrs[] = {
 	&abb_chargalg_charging_stats_interface.attr, 
@@ -2582,7 +2702,10 @@ static struct attribute *abb_chargalg_attrs[] = {
 	&abb_chargalg_eoc_real_interface.attr, 
 	&abb_chargalg_termination_curr_1st_interface.attr,
 	&abb_chargalg_termination_curr_2nd_interface.attr,
+	&abb_chargalg_termination_vol_interface.attr,
 	&abb_chargalg_recharge_vol_interface.attr,
+	&test_ena_interface.attr,
+	&test_dis_interface.attr,
 	NULL,
 };
 
@@ -2680,6 +2803,8 @@ static int __devinit ab8500_chargalg_probe(struct platform_device *pdev)
 		goto free_device_info;
 	}
 	di->bat = plat->battery;
+
+	battery_type = di->bat->batt_id;
 
 	/* chargalg supply */
 	di->chargalg_psy.name = "ab8500_chargalg";
