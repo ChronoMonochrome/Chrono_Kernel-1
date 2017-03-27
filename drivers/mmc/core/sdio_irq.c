@@ -13,7 +13,6 @@
  * your option) any later version.
  */
 
-#include <linux/export.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
