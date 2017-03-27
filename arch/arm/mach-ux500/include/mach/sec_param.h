@@ -163,8 +163,8 @@ typedef struct {
     param_str_t param_str_list[MAX_STRING_PARAM];
 }param_file2_t;
 
-extern void set_param_value (int idx, void *value);
-extern void get_param_value (int idx, void *value);
+extern void (*sec_set_param_value) (int idx, void *value);
+extern void (*sec_get_param_value) (int idx, void *value);
 
 #if defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined (CONFIG_MACH_GAVINI_CHN)
 extern int alarm_en_exit;
