@@ -512,7 +512,7 @@ struct dentry *pohmelfs_lookup(struct inode *dir, struct dentry *dentry, struct 
 	int err, lock_type = POHMELFS_READ_LOCK, need_lock = 1;
 	struct qstr str = dentry->d_name;
 
-	if ((nd->intent.open.flags & O_ACCMODE) > 1)
+	if ((nd->intent.open.flags & O_ACCMODE) != O_RDONLY)
 		lock_type = POHMELFS_WRITE_LOCK;
 
 	if (test_bit(NETFS_INODE_OWNED, &parent->state)) {
@@ -661,7 +661,7 @@ static int pohmelfs_create_entry(struct inode *dir, struct dentry *dentry, u64 s
 /*
  * VFS create and mkdir callbacks.
  */
-static int pohmelfs_create(struct inode *dir, struct dentry *dentry, int mode,
+static int pohmelfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 		struct nameidata *nd)
 {
 	return pohmelfs_create_entry(dir, dentry, 0, mode);
