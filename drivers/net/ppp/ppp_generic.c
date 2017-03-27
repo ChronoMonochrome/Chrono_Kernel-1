@@ -32,7 +32,7 @@
 #include <linux/poll.h>
 #include <linux/ppp_defs.h>
 #include <linux/filter.h>
-#include <linux/ppp-ioctl.h>
+#include <linux/if_ppp.h>
 #include <linux/ppp_channel.h>
 #include <linux/ppp-comp.h>
 #include <linux/skbuff.h>
@@ -48,7 +48,7 @@
 #include <linux/slab.h>
 #include <asm/unaligned.h>
 #include <net/slhc_vj.h>
-#include <linux/atomic.h>
+#include <asm/atomic.h>
 
 #include <linux/nsproxy.h>
 #include <net/net_namespace.h>
@@ -1030,7 +1030,7 @@ static void ppp_setup(struct net_device *dev)
 {
 	dev->netdev_ops = &ppp_netdev_ops;
 	dev->hard_header_len = PPP_HDRLEN;
-	dev->mtu = PPP_MRU;
+	dev->mtu = PPP_MTU;
 	dev->addr_len = 0;
 	dev->tx_queue_len = 3;
 	dev->type = ARPHRD_PPP;
@@ -1466,12 +1466,7 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
 			continue;
 		}
 
-		/*
-		 * hdrlen includes the 2-byte PPP protocol field, but the
-		 * MTU counts only the payload excluding the protocol field.
-		 * (RFC1661 Section 2)
-		 */
-		mtu = pch->chan->mtu - (hdrlen - 2);
+		mtu = pch->chan->mtu - hdrlen;
 		if (mtu < 4)
 			mtu = 4;
 		if (flen > mtu)
@@ -2137,7 +2132,7 @@ ppp_mp_reconstruct(struct ppp *ppp)
 
 				skb->len += p->len;
 				skb->data_len += p->len;
-				skb->truesize += p->truesize;
+				skb->truesize += p->len;
 
 				if (p == tail)
 					break;
@@ -2177,7 +2172,7 @@ int ppp_register_net_channel(struct net *net, struct ppp_channel *chan)
 
 	pch->ppp = NULL;
 	pch->chan = chan;
-	pch->chan_net = get_net(net);
+	pch->chan_net = net;
 	chan->ppp = pch;
 	init_ppp_file(&pch->file, CHANNEL);
 	pch->file.hdrlen = chan->hdrlen;
@@ -2880,9 +2875,6 @@ ppp_disconnect_channel(struct channel *pch)
  */
 static void ppp_destroy_channel(struct channel *pch)
 {
-	put_net(pch->chan_net);
-	pch->chan_net = NULL;
-
 	atomic_dec(&channel_count);
 
 	if (!pch->file.dead) {
