@@ -247,6 +247,11 @@ extern struct bio *bio_copy_kern(struct request_queue *, void *, unsigned int,
 extern void bio_set_pages_dirty(struct bio *bio);
 extern void bio_check_pages_dirty(struct bio *bio);
 
+void generic_start_io_acct(int rw, unsigned long sectors,
+			   struct hd_struct *part);
+void generic_end_io_acct(int rw, struct hd_struct *part,
+			 unsigned long start_time);
+
 #ifndef ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE
 # error	"You should define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE for your platform"
 #endif
@@ -268,6 +273,14 @@ void zero_fill_bio(struct bio *bio);
 extern struct bio_vec *bvec_alloc_bs(gfp_t, int, unsigned long *, struct bio_set *);
 extern void bvec_free_bs(struct bio_set *, struct bio_vec *, unsigned int);
 extern unsigned int bvec_nr_vecs(unsigned short idx);
+
+static inline ssize_t bvec_length(const struct bio_vec *bvec, unsigned long nr)
+{
+	ssize_t bytes = 0;
+	while (nr--)
+		bytes += (bvec++)->bv_len;
+	return bytes;
+}
 
 /*
  * bio_set is used to allow other portions of the IO system to

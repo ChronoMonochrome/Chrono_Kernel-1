@@ -1174,11 +1174,14 @@ static struct notifier_block zs_cpu_nb = {
 	.notifier_call = zs_cpu_notifier
 };
 
+extern int __register_cpu_notifier(struct notifier_block *nb);
+extern void __unregister_cpu_notifier(struct notifier_block *nb);
+
 static int zs_register_cpu_notifier(void)
 {
 	int cpu, uninitialized_var(ret);
 
-	cpu_notifier_register_begin();
+	cpu_maps_update_begin();
 
 	__register_cpu_notifier(&zs_cpu_nb);
 	for_each_online_cpu(cpu) {
@@ -1187,7 +1190,7 @@ static int zs_register_cpu_notifier(void)
 			break;
 	}
 
-	cpu_notifier_register_done();
+	cpu_maps_update_done();
 	return notifier_to_errno(ret);
 }
 
@@ -1195,13 +1198,13 @@ static void zs_unregister_cpu_notifier(void)
 {
 	int cpu;
 
-	cpu_notifier_register_begin();
+	cpu_maps_update_begin();
 
 	for_each_online_cpu(cpu)
 		zs_cpu_notifier(NULL, CPU_DEAD, (void *)(long)cpu);
 	__unregister_cpu_notifier(&zs_cpu_nb);
 
-	cpu_notifier_register_done();
+	cpu_maps_update_done();
 }
 
 static void init_zs_size_classes(void)
