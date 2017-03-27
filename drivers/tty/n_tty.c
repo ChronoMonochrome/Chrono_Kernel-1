@@ -1049,13 +1049,9 @@ static inline void n_tty_receive_overrun(struct tty_struct *tty)
 	tty->num_overrun++;
 	if (time_before(tty->overrun_time, jiffies - HZ) ||
 			time_after(tty->overrun_time, jiffies)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: %d input overrun(s)\n",
 			tty_name(tty, buf),
 			tty->num_overrun);
-#else
-		;
-#endif
 		tty->overrun_time = jiffies;
 		tty->num_overrun = 0;
 	}

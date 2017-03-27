@@ -923,11 +923,7 @@ static int atmel_startup(struct uart_port *port)
 	retval = request_irq(port->irq, atmel_interrupt, IRQF_SHARED,
 			tty ? tty->name : "atmel_serial", port);
 	if (retval) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("atmel_serial: atmel_startup - Can't get irq\n");
-#else
-		;
-#endif
 		return retval;
 	}
 

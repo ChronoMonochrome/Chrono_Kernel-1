@@ -866,14 +866,10 @@ static int uart_set_info(struct tty_struct *tty, struct uart_state *state,
 			 */
 			if (uport->flags & UPF_SPD_MASK) {
 				char buf[64];
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE
 				       "%s sets custom speed on %s. This "
 				       "is deprecated.\n", current->comm,
 				       tty_name(port->tty, buf));
-#else
-				;
-#endif
 			}
 			uart_change_speed(tty, state, NULL);
 		}
@@ -2044,16 +2040,12 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
 		break;
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s%s%s%d at %s (irq = %d) is a %s\n",
 	       port->dev ? dev_name(port->dev) : "",
 	       port->dev ? ": " : "",
 	       drv->dev_name,
 	       drv->tty_driver->name_base + port->line,
 	       address, port->irq, uart_type(port));
-#else
-	;
-#endif
 }
 
 static void
@@ -2398,12 +2390,8 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
 	BUG_ON(in_interrupt());
 
 	if (state->uart_port != uport)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "Removing wrong port: %p != %p\n",
 			state->uart_port, uport);
-#else
-		;
-#endif
 
 	mutex_lock(&port_mutex);
 

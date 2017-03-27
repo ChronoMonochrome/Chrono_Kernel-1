@@ -1506,17 +1506,9 @@ static int __init ucc_uart_init(void)
 {
 	int ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Freescale QUICC Engine UART device driver\n");
-#else
-	;
-#endif
 #ifdef LOOPBACK
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ucc-uart: Using loopback mode\n");
-#else
-	;
-#endif
 #endif
 
 	ret = uart_register_driver(&ucc_uart_driver);
@@ -1535,12 +1527,8 @@ static int __init ucc_uart_init(void)
 
 static void __exit ucc_uart_exit(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "Freescale QUICC Engine UART device driver unloading\n");
-#else
-	;
-#endif
 
 	platform_driver_unregister(&ucc_uart_of_driver);
 	uart_unregister_driver(&ucc_uart_driver);

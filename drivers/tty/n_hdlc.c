@@ -246,11 +246,7 @@ static void n_hdlc_release(struct n_hdlc *n_hdlc)
 	struct n_hdlc_buf *buf;
 	
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_release() called\n",__FILE__,__LINE__);
-#else
-		;
-#endif
 		
 	/* Ensure that the n_hdlcd process is not hanging on select()/poll() */
 	wake_up_interruptible (&tty->read_wait);
@@ -305,11 +301,7 @@ static void n_hdlc_tty_close(struct tty_struct *tty)
 	struct n_hdlc *n_hdlc = tty2n_hdlc (tty);
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_close() called\n",__FILE__,__LINE__);
-#else
-		;
-#endif
 		
 	if (n_hdlc != NULL) {
 		if (n_hdlc->magic != HDLC_MAGIC) {
@@ -332,11 +324,7 @@ static void n_hdlc_tty_close(struct tty_struct *tty)
 	}
 	
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_close() success\n",__FILE__,__LINE__);
-#else
-		;
-#endif
 		
 }	/* end of n_hdlc_tty_close() */
 
@@ -351,13 +339,9 @@ static int n_hdlc_tty_open (struct tty_struct *tty)
 	struct n_hdlc *n_hdlc = tty2n_hdlc (tty);
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_open() called (device=%s)\n",
 		__FILE__,__LINE__,
 		tty->name);
-#else
-		;
-#endif
 		
 	/* There should not be an existing table for this slot. */
 	if (n_hdlc) {
@@ -384,11 +368,7 @@ static int n_hdlc_tty_open (struct tty_struct *tty)
 	tty_driver_flush_buffer(tty);
 		
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_open() success\n",__FILE__,__LINE__);
-#else
-		;
-#endif
 		
 	return 0;
 	
@@ -410,11 +390,7 @@ static void n_hdlc_send_frames(struct n_hdlc *n_hdlc, struct tty_struct *tty)
 	struct n_hdlc_buf *tbuf;
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_send_frames() called\n",__FILE__,__LINE__);
-#else
-		;
-#endif
  check_again:
 		
  	spin_lock_irqsave(&n_hdlc->tx_buf_list.spinlock, flags);
@@ -436,12 +412,8 @@ static void n_hdlc_send_frames(struct n_hdlc *n_hdlc, struct tty_struct *tty)
 		
 	while (tbuf) {
 		if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d)sending frame %p, count=%d\n",
 				__FILE__,__LINE__,tbuf,tbuf->count);
-#else
-			;
-#endif
 			
 		/* Send the next block of data to device */
 		set_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
@@ -459,12 +431,8 @@ static void n_hdlc_send_frames(struct n_hdlc *n_hdlc, struct tty_struct *tty)
 		
 		if (actual == tbuf->count) {
 			if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s(%d)frame %p completed\n",
 					__FILE__,__LINE__,tbuf);
-#else
-				;
-#endif
 					
 			/* free current transmit buffer */
 			n_hdlc_buf_put(&n_hdlc->tx_free_buf_list, tbuf);
@@ -479,12 +447,8 @@ static void n_hdlc_send_frames(struct n_hdlc *n_hdlc, struct tty_struct *tty)
 			tbuf = n_hdlc_buf_get(&n_hdlc->tx_buf_list);
 		} else {
 			if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s(%d)frame %p pending\n",
 					__FILE__,__LINE__,tbuf);
-#else
-				;
-#endif
 					
 			/* buffer not accepted by driver */
 			/* set this buffer as pending buffer */
@@ -505,11 +469,7 @@ static void n_hdlc_send_frames(struct n_hdlc *n_hdlc, struct tty_struct *tty)
 	  goto check_again;
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_send_frames() exit\n",__FILE__,__LINE__);
-#else
-		;
-#endif
 		
 }	/* end of n_hdlc_send_frames() */
 
@@ -524,11 +484,7 @@ static void n_hdlc_tty_wakeup(struct tty_struct *tty)
 	struct n_hdlc *n_hdlc = tty2n_hdlc(tty);
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_wakeup() called\n",__FILE__,__LINE__);
-#else
-		;
-#endif
 		
 	if (!n_hdlc)
 		return;
@@ -559,12 +515,8 @@ static void n_hdlc_tty_receive(struct tty_struct *tty, const __u8 *data,
 	register struct n_hdlc_buf *buf;
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_receive() called count=%d\n",
 			__FILE__,__LINE__, count);
-#else
-		;
-#endif
 		
 	/* This can happen if stuff comes in on the backup tty */
 	if (!n_hdlc || tty != n_hdlc->tty)
@@ -572,23 +524,15 @@ static void n_hdlc_tty_receive(struct tty_struct *tty, const __u8 *data,
 		
 	/* verify line is using HDLC discipline */
 	if (n_hdlc->magic != HDLC_MAGIC) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d) line not using HDLC discipline\n",
 			__FILE__,__LINE__);
-#else
-		;
-#endif
 		return;
 	}
 	
 	if ( count>maxframe ) {
 		if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d) rx count>maxframesize, data discarded\n",
 			       __FILE__,__LINE__);
-#else
-			;
-#endif
 		return;
 	}
 
@@ -603,12 +547,8 @@ static void n_hdlc_tty_receive(struct tty_struct *tty, const __u8 *data,
 	
 	if (!buf) {
 		if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d) no more rx buffers, data discarded\n",
 			       __FILE__,__LINE__);
-#else
-			;
-#endif
 		return;
 	}
 		
@@ -644,11 +584,7 @@ static ssize_t n_hdlc_tty_read(struct tty_struct *tty, struct file *file,
 	DECLARE_WAITQUEUE(wait, current);
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_read() called\n",__FILE__,__LINE__);
-#else
-		;
-#endif
 		
 	/* Validate the pointers */
 	if (!n_hdlc)
@@ -656,12 +592,8 @@ static ssize_t n_hdlc_tty_read(struct tty_struct *tty, struct file *file,
 
 	/* verify user access to buffer */
 	if (!access_ok(VERIFY_WRITE, buf, nr)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s(%d) n_hdlc_tty_read() can't verify user "
 		"buffer\n", __FILE__, __LINE__);
-#else
-		;
-#endif
 		return -EFAULT;
 	}
 
@@ -736,12 +668,8 @@ static ssize_t n_hdlc_tty_write(struct tty_struct *tty, struct file *file,
 	struct n_hdlc_buf *tbuf;
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_write() called count=%Zd\n",
 			__FILE__,__LINE__,count);
-#else
-		;
-#endif
 		
 	/* Verify pointers */
 	if (!n_hdlc)
@@ -778,11 +706,7 @@ static ssize_t n_hdlc_tty_write(struct tty_struct *tty, struct file *file,
 		n_hdlc = tty2n_hdlc (tty);
 		if (!n_hdlc || n_hdlc->magic != HDLC_MAGIC || 
 		    tty != n_hdlc->tty) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("n_hdlc_tty_write: %p invalid after wait!\n", n_hdlc);
-#else
-			;
-#endif
 			error = -EIO;
 			break;
 		}
@@ -828,12 +752,8 @@ static int n_hdlc_tty_ioctl(struct tty_struct *tty, struct file *file,
 	unsigned long flags;
 	
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_ioctl() called %d\n",
 			__FILE__,__LINE__,cmd);
-#else
-		;
-#endif
 		
 	/* Verify the status of the device */
 	if (!n_hdlc || n_hdlc->magic != HDLC_MAGIC)
@@ -896,11 +816,7 @@ static unsigned int n_hdlc_tty_poll(struct tty_struct *tty, struct file *filp,
 	unsigned int mask = 0;
 
 	if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s(%d)n_hdlc_tty_poll() called\n",__FILE__,__LINE__);
-#else
-		;
-#endif
 		
 	if (n_hdlc && n_hdlc->magic == HDLC_MAGIC && tty == n_hdlc->tty) {
 		/* queue current process into any wait queue that */
@@ -950,11 +866,7 @@ static struct n_hdlc *n_hdlc_alloc(void)
 		if (buf)
 			n_hdlc_buf_put(&n_hdlc->rx_free_buf_list,buf);
 		else if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d)n_hdlc_alloc(), kalloc() failed for rx buffer %d\n",__FILE__,__LINE__, i);
-#else
-			;
-#endif
 	}
 	
 	/* allocate free tx buffer list */
@@ -963,11 +875,7 @@ static struct n_hdlc *n_hdlc_alloc(void)
 		if (buf)
 			n_hdlc_buf_put(&n_hdlc->tx_free_buf_list,buf);
 		else if (debuglevel >= DEBUG_LEVEL_INFO)	
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s(%d)n_hdlc_alloc(), kalloc() failed for tx buffer %d\n",__FILE__,__LINE__, i);
-#else
-			;
-#endif
 	}
 	
 	/* Initialize the control block */
@@ -1057,32 +965,16 @@ static int __init n_hdlc_init(void)
 	else if (maxframe > 65535)
 		maxframe = 65535;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(hdlc_banner, maxframe);
-#else
-	;
-#endif
 
 	status = tty_register_ldisc(N_HDLC, &n_hdlc_ldisc);
 	if (!status)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(hdlc_register_ok);
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(hdlc_register_fail, status);
-#else
-		;
-#endif
 
 	if (status)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(hdlc_init_fail, status);
-#else
-		;
-#endif
 	return status;
 	
 }	/* end of init_module() */
@@ -1098,17 +990,9 @@ static void __exit n_hdlc_exit(void)
 	int status = tty_unregister_ldisc(N_HDLC);
 
 	if (status)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(hdlc_unregister_fail, status);
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(hdlc_unregister_ok);
-#else
-		;
-#endif
 }
 
 module_init(n_hdlc_init);

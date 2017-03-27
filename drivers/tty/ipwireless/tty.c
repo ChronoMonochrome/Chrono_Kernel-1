@@ -77,25 +77,17 @@ static void report_registering(struct ipw_tty *tty)
 {
 	char *iftype = tty_type_name(tty->tty_type);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 	       ": registering %s device ttyIPWp%d\n", iftype, tty->index);
-#else
-	;
-#endif
 }
 
 static void report_deregistering(struct ipw_tty *tty)
 {
 	char *iftype = tty_type_name(tty->tty_type);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO IPWIRELESS_PCCARD_NAME
 	       ": deregistering %s device ttyIPWp%d\n", iftype,
 	       tty->index);
-#else
-	;
-#endif
 }
 
 static struct ipw_tty *get_tty(int index)
@@ -205,13 +197,9 @@ void ipwireless_tty_received(struct ipw_tty *tty, unsigned char *data,
 	work = tty_insert_flip_string(linux_tty, data, length);
 
 	if (work != length)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG IPWIRELESS_PCCARD_NAME
 				": %d chars not inserted to flip buffer!\n",
 				length - work);
-#else
-		;
-#endif
 
 	/*
 	 * This may sleep if ->low_latency is set

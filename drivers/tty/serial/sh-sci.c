@@ -2227,13 +2227,9 @@ static struct console early_serial_console = {
 
 static char early_serial_buf[32];
 
-#ifdef CONFIG_DEBUG_PRINTK
 static int __devinit sci_probe_earlyprintk(struct platform_device *pdev)
 {
 	struct plat_sci_port *cfg = pdev->dev.platform_data;
-#else
-static int __devinit sci_probe_early;
-#endif
 
 	if (early_serial_console.data)
 		return -EEXIST;
@@ -2294,13 +2290,9 @@ static int sci_runtime_resume(struct device *dev)
 #define SCI_CONSOLE	(&serial_console)
 
 #else
-#ifdef CONFIG_DEBUG_PRINTK
 static inline int __devinit sci_probe_earlyprintk(struct platform_device *pdev)
 {
 	return -EINVAL;
-#else
-static inline int __devinit sci_probe_early;
-#endif
 }
 
 #define SCI_CONSOLE	NULL
@@ -2376,11 +2368,7 @@ static int __devinit sci_probe(struct platform_device *dev)
 	 * to make it beyond this yet.
 	 */
 	if (is_early_platform_device(dev))
-#ifdef CONFIG_DEBUG_PRINTK
 		return sci_probe_earlyprintk(dev);
-#else
-		return sci_probe_early;
-#endif
 
 	platform_set_drvdata(dev, sp);
 
@@ -2447,11 +2435,7 @@ static int __init sci_init(void)
 {
 	int ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner);
-#else
-	;
-#endif
 
 	ret = uart_register_driver(&sci_uart_driver);
 	if (likely(ret == 0)) {

@@ -125,19 +125,11 @@ static inline int serial_paranoia_check(struct m68k_serial *info,
 		"Warning: null m68k_serial for %s in %s\n";
 
 	if (!info) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(badinfo, name, routine);
-#else
-		;
-#endif
 		return 1;
 	}
 	if (info->magic != SERIAL_MAGIC) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(badmagic, name, routine);
-#else
-		;
-#endif
 		return 1;
 	}
 #endif
@@ -611,11 +603,7 @@ static void rs_set_ldisc(struct tty_struct *tty)
 
 	info->is_cons = (tty->termios->c_line == N_TTY);
 	
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("ttyS%d console mode %s\n", info->line, info->is_cons ? "on" : "off");
-#else
-	;
-#endif
 }
 
 static void rs_flush_chars(struct tty_struct *tty)
@@ -1021,21 +1009,13 @@ static void rs_close(struct tty_struct *tty, struct file * filp)
 		 * one, we've got real problems, since it means the
 		 * serial port won't be shutdown.
 		 */
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("rs_close: bad serial port count; tty->count is 1, "
-#else
-		;
-#endif
 		       "info->count is %d\n", info->count);
 		info->count = 1;
 	}
 	if (--info->count < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("rs_close: bad serial port count for ttyS%d: %d\n",
 		       info->line, info->count);
-#else
-		;
-#endif
 		info->count = 0;
 	}
 	if (info->count) {
@@ -1234,11 +1214,7 @@ int rs_open(struct tty_struct *tty, struct file * filp)
 
 static void show_serial_version(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("MC68328 serial driver version 1.00\n");
-#else
-	;
-#endif
 }
 
 static const struct tty_operations rs_ops = {
@@ -1313,17 +1289,9 @@ rs68328_init(void)
 	    info->line = i;
 	    info->is_cons = 1; /* Means shortcuts work */
 	    
-#ifdef CONFIG_DEBUG_PRINTK
 	    printk("%s%d at 0x%08x (irq = %d)", serial_driver->name, info->line, 
 		   info->port, info->irq);
-#else
-	    ;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	    printk(" is a builtin MC68328 UART\n");
-#else
-	    ;
-#endif
 	    
 #ifdef CONFIG_M68VZ328
 		if (i > 0 )
