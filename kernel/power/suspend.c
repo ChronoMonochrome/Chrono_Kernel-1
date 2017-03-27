@@ -23,7 +23,6 @@
 #include <linux/slab.h>
 #include <linux/export.h>
 #include <linux/suspend.h>
-#include <linux/kthread.h>
 #include <linux/syscore_ops.h>
 #include <linux/ftrace.h>
 #include <linux/rtc.h>
@@ -40,10 +39,6 @@ const char *const pm_states[PM_SUSPEND_MAX] = {
 };
 
 static const struct platform_suspend_ops *suspend_ops;
-
-static struct completion second_cpu_complete = {1,
-	__WAIT_QUEUE_HEAD_INITIALIZER((second_cpu_complete).wait)
-};
 
 /**
  * suspend_set_ops - Set the global suspend method table.
@@ -167,10 +162,9 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 	if (suspend_test(TEST_PLATFORM))
 		goto Platform_wake;
 
-
 	error = disable_nonboot_cpus();
 	if (error || suspend_test(TEST_CPUS))
-		goto Platform_wake;
+		goto Enable_cpus;
 
 	arch_suspend_disable_irqs();
 	BUG_ON(!irqs_disabled());
@@ -187,6 +181,9 @@ static int suspend_enter(suspend_state_t state, bool *wakeup)
 
 	arch_suspend_enable_irqs();
 	BUG_ON(irqs_disabled());
+
+ Enable_cpus:
+	enable_nonboot_cpus();
 
  Platform_wake:
 	if (suspend_ops->wake)
@@ -267,18 +264,6 @@ static void suspend_finish(void)
 	pm_restore_console();
 }
 
-static int plug_secondary_cpus(void *data)
-{
-	if (!(suspend_test(TEST_FREEZER) ||
-	      suspend_test(TEST_DEVICES) ||
-	      suspend_test(TEST_PLATFORM)))
-		enable_nonboot_cpus();
-
-	complete(&second_cpu_complete);
-
-	return 0;
-}
-
 /**
  * enter_state - Do common work needed to enter system sleep state.
  * @state: System sleep state to enter.
@@ -290,21 +275,12 @@ static int plug_secondary_cpus(void *data)
 int enter_state(suspend_state_t state)
 {
 	int error;
-	struct task_struct *cpu_task;
 
 	if (!valid_state(state))
 		return -ENODEV;
 
 	if (!mutex_trylock(&pm_mutex))
 		return -EBUSY;
-
-	/*
-	 * Assure that previous started thread is completed before
-	 * attempting to suspend again.
-	 */
-	error = wait_for_completion_timeout(&second_cpu_complete,
-					    msecs_to_jiffies(500));
-	WARN_ON(error == 0);
 
 	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	sys_sync();
@@ -327,11 +303,6 @@ int enter_state(suspend_state_t state)
 	pr_debug("PM: Finishing wakeup.\n");
 	suspend_finish();
  Unlock:
-
-	cpu_task = kthread_run(plug_secondary_cpus,
-			       NULL, "cpu-plug");
-	BUG_ON(IS_ERR(cpu_task));
-
 	mutex_unlock(&pm_mutex);
 	return error;
 }
