@@ -547,10 +547,14 @@ static void prcmu_data_mem_print(struct seq_file *s, char width)
 					return;
 				}
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 					"0x%x: 0x%08x 0x%08x 0x%08x 0x%08x\n",
 					((int)tcdm_base) + i, dmem[0],
 					dmem[1], dmem[2], dmem[3]);
+#else
+				;
+#endif
 			}
 		}
 	}
@@ -558,7 +562,11 @@ static void prcmu_data_mem_print(struct seq_file *s, char width)
 
 void prcmu_debug_dump_data_mem(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PRCMU data memory dump:\n");
+#else
+	;
+#endif
 	prcmu_data_mem_print(NULL, 4);
 }
 
@@ -603,9 +611,13 @@ static void prcmu_regs_print(struct seq_file *s)
 					return;
 				}
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 					"0x%04x: 0x%08x\n",
 					u8500_prcmu_dump_regs[i], reg_val);
+#else
+				;
+#endif
 			}
 		}
 	}
@@ -644,11 +656,15 @@ static void prcmu_secure_regs_print(struct seq_file *s)
 					break;
 				}
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 					"0x%04x: 0x%08x\n",
 					u8500_prcmu_dump_secure_regs[i] +
 					SZ_4K,
 					reg_val);
+#else
+				;
+#endif
 			}
 		}
 
@@ -658,7 +674,11 @@ static void prcmu_secure_regs_print(struct seq_file *s)
 
 void prcmu_debug_dump_regs(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PRCMU registers dump:\n");
+#else
+	;
+#endif
 	prcmu_regs_print(NULL);
 	prcmu_secure_regs_print(NULL);
 }
