@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  *  linux/fs/pipe.c
  *
@@ -1277,11 +1280,17 @@ long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = -EINVAL;
 		if (!nr_pages)
 			goto out;
-
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
 		if (!capable(CAP_SYS_RESOURCE) && size > pipe_max_size) {
 			ret = -EPERM;
 			goto out;
 		}
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 		ret = pipe_set_size(pipe, nr_pages);
 		break;
 		}
