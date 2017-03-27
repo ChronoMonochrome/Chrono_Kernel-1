@@ -536,7 +536,8 @@ struct address_space;
 struct writeback_control;
 
 struct iov_iter {
-	const struct iovec *iov;
+	struct iov_iter_ops *ops;
+	unsigned long data;
 	unsigned long nr_segs;
 	size_t iov_offset;
 	size_t count;
@@ -630,7 +631,8 @@ static inline void iov_iter_init(struct iov_iter *i,
 			const struct iovec *iov, unsigned long nr_segs,
 			size_t count, size_t written)
 {
-	i->iov = iov;
+	i->ops = &ii_iovec_ops;
+	i->data = (unsigned long)iov;
 	i->nr_segs = nr_segs;
 	i->iov_offset = 0;
 	i->count = count + written;
@@ -2360,6 +2362,12 @@ static inline int deny_write_access(struct file *file)
 	struct inode *inode = file->f_path.dentry->d_inode;
 	return atomic_dec_unless_positive(&inode->i_writecount) ? 0 : -ETXTBSY;
 }
+
+static inline struct inode *file_inode(struct file *f)
+{
+	return f->f_path.dentry->d_inode;
+}
+
 static inline void put_write_access(struct inode * inode)
 {
 	atomic_dec(&inode->i_writecount);
