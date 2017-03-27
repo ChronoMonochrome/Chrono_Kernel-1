@@ -14,14 +14,14 @@ config SAMSUNG_MODULES
 config J4FS
 	tristate "Samsung J4FS support"
 	depends on SAMSUNG_MODULES
-	default m
+	default y
 	help
 	  Say Y to enable Samsung J4FS support.
 
 config SAMSUNG_PARAM
-	tristate "Samsung Param-Partition Support"
+	boolean "Samsung Param-Partition Support"
 	depends on SAMSUNG_MODULES
-	default m
+	default y
 	help
 		Say Y to enable Samsung Param support.
 
