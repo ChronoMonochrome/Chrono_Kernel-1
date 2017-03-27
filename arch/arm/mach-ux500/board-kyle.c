@@ -1599,7 +1599,11 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("@@@@ BT WAKE_PEER\n");
+#else
+	;
+#endif
 	return;
 }
 
@@ -2091,35 +2095,67 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 0x101:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Kyle AT&T Board Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = KYLE_ATT_R0_0;
 		break;
 	case 0x102:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Kyle AT&T Board Rev 0.1\n");
+#else
+		;
+#endif
 		system_rev = KYLE_ATT_R0_1;
 		break;
 	case 0x103:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Kyle AT&T Board Rev 0.2\n");
+#else
+		;
+#endif
 		system_rev = KYLE_ATT_R0_2;
 		break;
 	case 0x104:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Kyle AT&T Board Rev 0.3\n");
+#else
+		;
+#endif
 		system_rev = KYLE_ATT_R0_3;
 		break;
 	case 0x105:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Kyle AT&T Board Rev 0.4\n");
+#else
+		;
+#endif
 		system_rev = KYLE_ATT_R0_4;
 		break;
 	case 0x106:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Kyle AT&T Board Rev 0.5\n");
+#else
+		;
+#endif
 		system_rev = KYLE_ATT_R0_5;
 		break;
 	case 0x107:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Kyle AT&T Board Rev 0.6\n");
+#else
+		;
+#endif
 		system_rev = KYLE_ATT_R0_6;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unknown board_id=%c\n", *str);
+#else
+		;
+#endif
 		break;
 	};
 

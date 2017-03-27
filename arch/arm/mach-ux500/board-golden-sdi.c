@@ -117,7 +117,11 @@ static int brcm_init_wlan_mem(void)
 		goto err_mem_alloc;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: WIFI MEM Allocated\n", __FUNCTION__);
+#else
+	;
+#endif
 	return 0;
 
  err_mem_alloc:
@@ -250,7 +254,11 @@ static void __init sdi0_configure(void)
 
 	ret = gpio_request(TXS0206_EN_GOLDEN_BRINGUP, "SD Card LS EN");
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "unable to config gpios for level shifter.\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -406,12 +414,20 @@ static int brcm_wlan_power(int onoff)
 {
 	sdi1_card_power_on = (onoff == 0) ? false : true;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s Enter: power %s\n", __FUNCTION__, onoff ? "on" : "off");
+#else
+	;
+#endif
 	pr_info("111%s Enter: power %s\n", __FUNCTION__, onoff ? "on" : "off");
 	if (onoff) {
 		gpio_set_value(wifi_gpio_reset, 1);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "WLAN: GPIO_WLAN_EN = %d \n"
 				, gpio_get_value(wifi_gpio_reset));
+#else
+		;
+#endif
 	} else {
 		gpio_set_value(wifi_gpio_reset, 0);
 		printk(KERN_ERR "WLAN: GPIO_WLAN_EN = %d \n"
@@ -551,19 +567,31 @@ static void golden_wifi_init(void)
 	/* Enable the WLAN GPIO */
 	status = gpio_request(wifi_gpio_reset, "wlan_power");
 	if (status) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "INIT : Unable to request GPIO_WLAN_ENABLE\n");
+#else
+		;
+#endif
 		return;
 	}
 
 	gpio_direction_output(wifi_gpio_reset, 0);
 
 	if (gpio_request(wifi_gpio_irq, "bcmsdh_sdmmc")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unable to request WLAN_IRQ\n");
+#else
+		;
+#endif
 		return;
 	}
 
 	if (gpio_direction_input(wifi_gpio_irq)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unable to set directtion on WLAN_IRQ\n");
+#else
+		;
+#endif
 		return;
 	}
 	return;
@@ -586,8 +614,12 @@ static void golden_sdi2_init(void)
 /* BCM code uses a fixed name */
 int u8500_wifi_power(int on, int flag)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: WLAN Power %s, flag %d\n",
 		__func__, on ? "on" : "down", flag);
+#else
+	;
+#endif
 	if (flag != 1) {
 		gpio_set_value(wifi_gpio_reset, on);
 		if (on)

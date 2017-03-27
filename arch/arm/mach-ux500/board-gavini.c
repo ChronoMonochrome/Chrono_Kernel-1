@@ -558,8 +558,12 @@ static void mxt224_power_con(bool on)
 		gpio_direction_output(TSP_LDO_ON1_GAVINI_R0_0, 0);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s is finished.(%s)\n",
 						__func__, (on) ? "on" : "off");
+#else
+	;
+#endif
 }
 
 #ifdef CONFIG_USB_SWITCHER
@@ -582,7 +586,11 @@ static int mxt224_usb_switcher_notify(struct notifier_block *self, unsigned long
 static void mxt224_register_callback(void *function)
 {
 /*
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mxt224_register_callback\n");
+#else
+	;
+#endif
 
 	charging_cbs.tsp_set_charging_cable = function;
 */
@@ -1998,7 +2006,11 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("@@@@ BT WAKE_PEER\n");
+#else
+	;
+#endif
 	return;
 }
 
@@ -2414,39 +2426,75 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 7:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GAVINI Board Rev 0.0\n");
+#else
+		;
+#endif
 		system_rev = GAVINI_R0_0;
 		break;
 	case 8:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GAVINI Board Rev 0.0A\n");
+#else
+		;
+#endif
 		system_rev = GAVINI_R0_0_A;
 		break;
 	case 9:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GAVINI Board Rev 0.0B\n");
+#else
+		;
+#endif
 		system_rev = GAVINI_R0_0_B;
 		break;
 	case 10:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GAVINI Board Rev 0.0A_EMUL\n");
+#else
+		;
+#endif
 		system_rev = GAVINI_R0_0_A_EMUL;
 		break;
 	case 11:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GAVINI Board Rev 0.0C\n");
+#else
+		;
+#endif
 		system_rev = GAVINI_R0_0_C;
 		break;
 	case 12:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GAVINI Board Rev 0.0D\n");
+#else
+		;
+#endif
 		system_rev = GAVINI_R0_0_D;
 		break;
 	case 13:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GAVINI Board Rev 0.1\n");
+#else
+		;
+#endif
 		system_rev = GAVINI_R0_1;
 		break;
 	case 14:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "GAVINI Board Rev 0.1\n");
+#else
+		;
+#endif
 		system_rev = GAVINI_R0_3;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unknown board_id=%c\n", *str);
+#else
+		;
+#endif
 		break;
 	};
 

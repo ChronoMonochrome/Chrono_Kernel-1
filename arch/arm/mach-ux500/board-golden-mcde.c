@@ -270,7 +270,11 @@ static void update_mcde_opp(struct device *dev,
 {
 	static s32 requested_qos;
 	s32 req_ape = PRCMU_QOS_DEFAULT_VALUE;
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk("rot_channel=[%d],num_overlays=[%d]\n",reqs->num_rot_channels,reqs->num_overlays);
+#else
+//	;
+#endif
 	if (reqs->num_rot_channels && reqs->num_overlays > 1)
 		req_ape = PRCMU_QOS_MAX_VALUE;
 	

@@ -55,3 +55,4 @@ void __ref ux500_cpu_die(unsigned int cpu)
 	ux500_ci_dbg_plug(cpu);
 
 }
+

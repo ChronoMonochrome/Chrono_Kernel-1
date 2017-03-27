@@ -1013,6 +1013,7 @@ static struct clk rtc32k = {
  */
 
 /* AB9540 Parent SysClk needed for all SysClk12 support */
+/*
 static struct clk ab9540_sysclk12Parent = {
 	.name = "ab9540_sysclk12Parent",
 	.ops = &ab9540_sysclk12Parent_ops,
@@ -1027,7 +1028,7 @@ static struct clk ab9540_sysclk = {
 	.mutex = &sysclk_mutex,
 	.parent = &ab9540_sysclk12Parent,
 };
-
+*/
 static struct clk clkout0 = {
 	.name = "clkout0",
 	.ops = &clkout0_ops,
@@ -1035,7 +1036,7 @@ static struct clk clkout0 = {
 	.rate = 9600000,
 	.mutex = &clkout0_mutex,
 };
-
+/*
 static struct clk ab9540_clkout1 = {
 	.name = "clkout1",
 	.ops = &clkout1_ops,
@@ -1043,6 +1044,7 @@ static struct clk ab9540_clkout1 = {
 	.rate = 9600000,
 	.mutex = &sysclk_mutex,
 };
+*/
 
 static struct clk ab8500_clkout1 = {
 	.name = "clkout1",
@@ -1080,6 +1082,8 @@ static struct clk ab8500_audioclk = {
 	.mutex = &ab_intclk_mutex,
 	.parent = &ab8500_intclk,
 };
+
+/*
 static struct clk *ab9540_intclk_parents[NUM_AB_INTCLK_PARENTS] = {
 	[AB_INTCLK_PARENT_SYSCLK] = &ab9540_sysclk,
 	[AB_INTCLK_PARENT_ULPCLK] = &ab_ulpclk,
@@ -1143,6 +1147,7 @@ static struct clk ab9540_usbclkint = {
 	.mutex = &sysclk_mutex,
 	.parent = &ab9540_sysclk12Parent,
 };
+*/
 
 static DEF_PRCMU_CLK(sgaclk, PRCMU_SGACLK, 320000000);
 static DEF_PRCMU_CLK(uartclk, PRCMU_UARTCLK, 38400000);
@@ -1627,6 +1632,7 @@ static struct clk_lookup u8500_v2_sysclks[] = {
 	CLK_LOOKUP(ab8500_sysclk4, NULL, "sysclk4"),
 };
 
+#if 0
 static struct clk_lookup u9540_sysclks[] = {
 	CLK_LOOKUP(ab9540_sysclk12Buf1, "ab9540-sysclk12Buf1", NULL),
 	CLK_LOOKUP(ab9540_sysclk12Buf2, "ab9540-sysclk12Buf2", NULL),
@@ -1672,6 +1678,7 @@ static struct clk_lookup u9540_clocks[] = {
 	/* PERIPH 2 */
 	CLK_LOOKUP(p2_msp4_clk, "msp4", NULL),
 };
+#endif
 
 static void ab8500_sysclk_init_disable(struct work_struct *not_used)
 {
@@ -1715,6 +1722,7 @@ unlock_and_exit:
 	mutex_unlock(&sysclk_mutex);
 }
 
+#if 0
 static void ab9540_sysclk_init_disable(struct work_struct *not_used)
 {
 	mutex_lock(&ab9540_sysclk12buf_mutex);
@@ -1734,6 +1742,7 @@ static void ab9540_sysclk_init_disable(struct work_struct *not_used)
 
 	mutex_unlock(&ab9540_sysclk12buf_mutex);
 }
+#endif
 
 static struct clk *db8500_dbg_clks[] __initdata = {
 	/* Clock sources */
@@ -1830,6 +1839,7 @@ static struct clk *db8500_dbg_clks[] __initdata = {
 	&p6_pclk7,
 };
 
+#if 0
 static struct clk *db9540_dbg_clks[] __initdata = {
 	/* Clock sources */
 	&soc0_pll,
@@ -1927,6 +1937,7 @@ static struct clk *db9540_dbg_clks[] __initdata = {
 	&p6_pclk6,
 	&p6_pclk7,
 };
+#endif
 
 /* List of clocks which might be enabled from the bootloader */
 
@@ -2019,11 +2030,12 @@ static int __init init_clock_states(void)
 		if (!ux500_jtag_enabled())
 			clk_disable(&apetraceclk);
 	}
-
+/*
 	if (cpu_is_u9540())
 		INIT_DELAYED_WORK(&sysclk_disable_work,
 			ab9540_sysclk_init_disable);
 	else
+*/
 		INIT_DELAYED_WORK(&sysclk_disable_work,
 			ab8500_sysclk_init_disable);
 	schedule_delayed_work(&sysclk_disable_work, 10 * HZ);
@@ -2075,18 +2087,19 @@ int __init db8500_clk_init(void)
 	 */
 	if (clk_set_rate(&sdmmcclk, 100000000))
 		pr_err("clock: failed to set rate %s.\n", sdmmcclk.name);
-
+/*
 	if (cpu_is_u9540()) {
 		clkdev_add_table(u9540_sysclks,
 				ARRAY_SIZE(u9540_sysclks));
 		clkdev_add_table(u9540_clocks,
 				ARRAY_SIZE(u9540_clocks));
 	} else {
+*/
 		clkdev_add_table(u8500_v2_sysclks,
 				ARRAY_SIZE(u8500_v2_sysclks));
 		clkdev_add_table(u8500_clocks,
 				ARRAY_SIZE(u8500_clocks));
-	}
+//	}
 
 	clkdev_add_table(common_clocks,
 			ARRAY_SIZE(common_clocks));
@@ -2096,10 +2109,12 @@ int __init db8500_clk_init(void)
 
 int __init db8500_clk_debug_init(void)
 {
+/*
 	if (cpu_is_u9540())
 		return dbx500_clk_debug_init(db9540_dbg_clks,
 					     ARRAY_SIZE(db9540_dbg_clks));
 	else
+*/
 		return dbx500_clk_debug_init(db8500_dbg_clks,
 					     ARRAY_SIZE(db8500_dbg_clks));
 }

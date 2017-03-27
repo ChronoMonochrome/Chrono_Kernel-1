@@ -445,7 +445,11 @@ static int __init dbx500_hw_obs_debug_init(void)
 		goto fail;
 	hwobs.enable = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hw observer intialized\n");
+#else
+	;
+#endif
 	return 0;
 
 fail:
