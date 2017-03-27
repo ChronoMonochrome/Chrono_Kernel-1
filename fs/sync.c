@@ -104,7 +104,10 @@ static void sync_one_sb(struct super_block *sb, void *arg)
  * Sync all the data for all the filesystems (called by sys_sync() and
  * emergency sync)
  */
-static void sync_filesystems(int wait)
+#ifndef CONFIG_DYNAMIC_FSYNC
+static
+#endif
+void sync_filesystems(int wait)
 {
 	iterate_supers(sync_one_sb, &wait);
 }
