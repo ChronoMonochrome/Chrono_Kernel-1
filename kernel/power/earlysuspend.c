@@ -23,6 +23,9 @@
 #ifdef CONFIG_ZRAM_FOR_ANDROID
 #include <asm/atomic.h>
 #endif /* CONFIG_ZRAM_FOR_ANDROID */
+#ifdef CONFIG_PM_SYNC_CTRL
+#include <linux/pm_sync_ctrl.h>
+#endif /* CONFIG_PM_SYNC_CTRL */
 
 #include "power.h"
 #include <linux/delay.h>
@@ -171,6 +174,14 @@ static void early_suspend(struct work_struct *work)
 	standby_level = STANDBY_WITH_POWER;
 	mutex_unlock(&early_suspend_lock);
 
+	if (debug_mask & DEBUG_SUSPEND)
+		pr_err("early_suspend: sync\n");
+#ifdef CONFIG_PM_SYNC_CTRL
+	if (pm_sync_active)
+		sys_sync();
+#else
+	sys_sync();
+#endif
 abort:
 	spin_lock_irqsave(&state_lock, irqflags);
 	if (state == SUSPEND_REQUESTED_AND_SUSPENDED)
