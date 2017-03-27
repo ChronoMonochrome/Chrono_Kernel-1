@@ -32,7 +32,7 @@
 #include <linux/poll.h>
 #include <linux/ppp_defs.h>
 #include <linux/filter.h>
-#include <linux/if_ppp.h>
+#include <linux/ppp-ioctl.h>
 #include <linux/ppp_channel.h>
 #include <linux/ppp-comp.h>
 #include <linux/skbuff.h>
@@ -1030,7 +1030,7 @@ static void ppp_setup(struct net_device *dev)
 {
 	dev->netdev_ops = &ppp_netdev_ops;
 	dev->hard_header_len = PPP_HDRLEN;
-	dev->mtu = PPP_MTU;
+	dev->mtu = PPP_MRU;
 	dev->addr_len = 0;
 	dev->tx_queue_len = 3;
 	dev->type = ARPHRD_PPP;
@@ -1140,9 +1140,9 @@ ppp_send_frame(struct ppp *ppp, struct sk_buff *skb)
 		if (ppp->pass_filter &&
 		    sk_run_filter(skb, ppp->pass_filter) == 0) {
 			if (ppp->debug & 1)
-//				netdev_printk(KERN_DEBUG, ppp->dev,
-//					      "PPP: outbound frame "
-;
+				netdev_printk(KERN_DEBUG, ppp->dev,
+					      "PPP: outbound frame "
+					      "not passed\n");
 			kfree_skb(skb);
 			return;
 		}
@@ -1466,7 +1466,12 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
 			continue;
 		}
 
-		mtu = pch->chan->mtu - hdrlen;
+		/*
+		 * hdrlen includes the 2-byte PPP protocol field, but the
+		 * MTU counts only the payload excluding the protocol field.
+		 * (RFC1661 Section 2)
+		 */
+		mtu = pch->chan->mtu - (hdrlen - 2);
 		if (mtu < 4)
 			mtu = 4;
 		if (flen > mtu)
@@ -1706,8 +1711,8 @@ ppp_receive_nonmp_frame(struct ppp *ppp, struct sk_buff *skb)
 
 		len = slhc_uncompress(ppp->vj, skb->data + 2, skb->len - 2);
 		if (len <= 0) {
-//			netdev_printk(KERN_DEBUG, ppp->dev,
-;
+			netdev_printk(KERN_DEBUG, ppp->dev,
+				      "PPP: VJ decompression error\n");
 			goto err;
 		}
 		len += 2;
@@ -1770,9 +1775,9 @@ ppp_receive_nonmp_frame(struct ppp *ppp, struct sk_buff *skb)
 			if (ppp->pass_filter &&
 			    sk_run_filter(skb, ppp->pass_filter) == 0) {
 				if (ppp->debug & 1)
-//					netdev_printk(KERN_DEBUG, ppp->dev,
-//						      "PPP: inbound frame "
-;
+					netdev_printk(KERN_DEBUG, ppp->dev,
+						      "PPP: inbound frame "
+						      "not passed\n");
 				kfree_skb(skb);
 				return;
 			}
@@ -2032,9 +2037,9 @@ ppp_mp_reconstruct(struct ppp *ppp)
 				minseq + 1: PPP_MP_CB(p)->sequence;
 
 			if (ppp->debug & 1)
-//				netdev_printk(KERN_DEBUG, ppp->dev,
-//					      "lost frag %u..%u\n",
-;
+				netdev_printk(KERN_DEBUG, ppp->dev,
+					      "lost frag %u..%u\n",
+					      oldseq, seq-1);
 
 			goto again;
 		}
@@ -2061,9 +2066,9 @@ ppp_mp_reconstruct(struct ppp *ppp)
 		    (PPP_MP_CB(head)->BEbits & B)) {
 			if (len > ppp->mrru + 2) {
 				++ppp->dev->stats.rx_length_errors;
-//				netdev_printk(KERN_DEBUG, ppp->dev,
-//					      "PPP: reconstructed packet"
-;
+				netdev_printk(KERN_DEBUG, ppp->dev,
+					      "PPP: reconstructed packet"
+					      " is too long (%d)\n", len);
 			} else {
 				tail = p;
 				break;
@@ -2081,9 +2086,9 @@ ppp_mp_reconstruct(struct ppp *ppp)
 
 			skb_queue_reverse_walk_from_safe(list, p, tmp2) {
 				if (ppp->debug & 1)
-//					netdev_printk(KERN_DEBUG, ppp->dev,
-//						      "discarding frag %u\n",
-;
+					netdev_printk(KERN_DEBUG, ppp->dev,
+						      "discarding frag %u\n",
+						      PPP_MP_CB(p)->sequence);
 				__skb_unlink(p, list);
 				kfree_skb(p);
 			}
@@ -2103,18 +2108,18 @@ ppp_mp_reconstruct(struct ppp *ppp)
 				if (p == head)
 					break;
 				if (ppp->debug & 1)
-//					netdev_printk(KERN_DEBUG, ppp->dev,
-//						      "discarding frag %u\n",
-;
+					netdev_printk(KERN_DEBUG, ppp->dev,
+						      "discarding frag %u\n",
+						      PPP_MP_CB(p)->sequence);
 				__skb_unlink(p, list);
 				kfree_skb(p);
 			}
 
 			if (ppp->debug & 1)
-//				netdev_printk(KERN_DEBUG, ppp->dev,
-//					      "  missed pkts %u..%u\n",
-//					      ppp->nextseq,
-;
+				netdev_printk(KERN_DEBUG, ppp->dev,
+					      "  missed pkts %u..%u\n",
+					      ppp->nextseq,
+					      PPP_MP_CB(head)->sequence-1);
 			++ppp->dev->stats.rx_dropped;
 			ppp_receive_error(ppp);
 		}
@@ -2132,7 +2137,7 @@ ppp_mp_reconstruct(struct ppp *ppp)
 
 				skb->len += p->len;
 				skb->data_len += p->len;
-				skb->truesize += p->len;
+				skb->truesize += p->truesize;
 
 				if (p == tail)
 					break;
@@ -2172,7 +2177,7 @@ int ppp_register_net_channel(struct net *net, struct ppp_channel *chan)
 
 	pch->ppp = NULL;
 	pch->chan = chan;
-	pch->chan_net = net;
+	pch->chan_net = get_net(net);
 	chan->ppp = pch;
 	init_ppp_file(&pch->file, CHANNEL);
 	pch->file.hdrlen = chan->hdrlen;
@@ -2875,6 +2880,9 @@ ppp_disconnect_channel(struct channel *pch)
  */
 static void ppp_destroy_channel(struct channel *pch)
 {
+	put_net(pch->chan_net);
+	pch->chan_net = NULL;
+
 	atomic_dec(&channel_count);
 
 	if (!pch->file.dead) {
