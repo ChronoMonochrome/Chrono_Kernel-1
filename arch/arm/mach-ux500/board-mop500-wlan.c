@@ -6,6 +6,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/export.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
@@ -34,6 +35,7 @@ static struct resource cw1200_href_resources[] = {
 	},
 };
 
+/*
 static struct resource cw1200_href60_resources[] = {
 	{
 		.start = 85,
@@ -63,6 +65,7 @@ static struct resource cw1200_u9500_resources[] = {
 		.name = "cw1200_irq",
 	},
 };
+*/
 
 static struct cw1200_platform_data cw1200_platform_data = {
 	.clk_ctrl = cw1200_clk_ctrl,
