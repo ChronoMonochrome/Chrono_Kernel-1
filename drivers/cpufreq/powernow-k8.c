@@ -35,7 +35,6 @@
 #include <linux/slab.h>
 #include <linux/string.h>
 #include <linux/cpumask.h>
-#include <linux/sched.h>	/* for current / set_cpus_allowed() */
 #include <linux/io.h>
 #include <linux/delay.h>
 
@@ -542,35 +541,23 @@ static void check_supported_cpu(void *_rc)
 	if ((eax & CPUID_XFAM) == CPUID_XFAM_K8) {
 		if (((eax & CPUID_USE_XFAM_XMOD) != CPUID_USE_XFAM_XMOD) ||
 		    ((eax & CPUID_XMOD) > CPUID_XMOD_REV_MASK)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 				"Processor cpuid %x not supported\n", eax);
-#else
-			;
-#endif
 			return;
 		}
 
 		eax = cpuid_eax(CPUID_GET_MAX_CAPABILITIES);
 		if (eax < CPUID_FREQ_VOLT_CAPABILITIES) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 			       "No frequency change capabilities detected\n");
-#else
-			;
-#endif
 			return;
 		}
 
 		cpuid(CPUID_FREQ_VOLT_CAPABILITIES, &eax, &ebx, &ecx, &edx);
 		if ((edx & P_STATE_TRANSITION_CAPABLE)
 			!= P_STATE_TRANSITION_CAPABLE) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 				"Power state transitions not supported\n");
-#else
-			;
-#endif
 			return;
 		}
 	} else { /* must be a HW Pstate capable processor */
@@ -627,12 +614,8 @@ static int check_pst_table(struct powernow_k8_data *data, struct pst_s *pst,
 		return -EINVAL;
 	}
 	if (lastfid > LO_FID_TABLE_TOP)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO FW_BUG PFX
 			"first fid not from lo freq table\n");
-#else
-		;
-#endif
 
 	return 0;
 }
@@ -650,34 +633,22 @@ static void print_basics(struct powernow_k8_data *data)
 		if (data->powernow_table[j].frequency !=
 				CPUFREQ_ENTRY_INVALID) {
 			if (cpu_family == CPU_HW_PSTATE) {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PFX
 					"   %d : pstate %d (%d MHz)\n", j,
 					data->powernow_table[j].index,
 					data->powernow_table[j].frequency/1000);
-#else
-				;
-#endif
 			} else {
-#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO PFX
 					"fid 0x%x (%d MHz), vid 0x%x\n",
 					data->powernow_table[j].index & 0xff,
 					data->powernow_table[j].frequency/1000,
 					data->powernow_table[j].index >> 8);
-#else
-				;
-#endif
 			}
 		}
 	}
 	if (data->batps)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Only %d pstates on battery\n",
 				data->batps);
-#else
-		;
-#endif
 }
 
 static u32 freq_from_fid_did(u32 fid, u32 did)
@@ -702,13 +673,9 @@ static int fill_powernow_table(struct powernow_k8_data *data,
 
 	if (data->batps) {
 		/* use ACPI support to get full speed on mains power */
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 			"Only %d pstates usable (use ACPI driver for full "
 			"range\n", data->batps);
-#else
-		;
-#endif
 		data->numps = data->batps;
 	}
 
@@ -1038,15 +1005,11 @@ static int fill_powernow_table_fidvid(struct powernow_k8_data *data,
 		}
 
 		if (freq != (data->acpi_data.states[i].core_frequency * 1000)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX "invalid freq entries "
 				"%u kHz vs. %u kHz\n", freq,
 				(unsigned int)
 				(data->acpi_data.states[i].core_frequency
 				 * 1000));
-#else
-			;
-#endif
 			invalidate_entry(powernow_table, i);
 			continue;
 		}
@@ -1175,16 +1138,23 @@ static int transition_frequency_pstate(struct powernow_k8_data *data,
 	return res;
 }
 
-/* Driver entry point to switch to the target frequency */
-static int powernowk8_target(struct cpufreq_policy *pol,
-		unsigned targfreq, unsigned relation)
+struct powernowk8_target_arg {
+	struct cpufreq_policy		*pol;
+	unsigned			targfreq;
+	unsigned			relation;
+};
+
+static long powernowk8_target_fn(void *arg)
 {
-	cpumask_var_t oldmask;
+	struct powernowk8_target_arg *pta = arg;
+	struct cpufreq_policy *pol = pta->pol;
+	unsigned targfreq = pta->targfreq;
+	unsigned relation = pta->relation;
 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
 	u32 checkfid;
 	u32 checkvid;
 	unsigned int newstate;
-	int ret = -EIO;
+	int ret;
 
 	if (!data)
 		return -EINVAL;
@@ -1192,29 +1162,16 @@ static int powernowk8_target(struct cpufreq_policy *pol,
 	checkfid = data->currfid;
 	checkvid = data->currvid;
 
-	/* only run on specific CPU from here on. */
-	/* This is poor form: use a workqueue or smp_call_function_single */
-	if (!alloc_cpumask_var(&oldmask, GFP_KERNEL))
-		return -ENOMEM;
-
-	cpumask_copy(oldmask, tsk_cpus_allowed(current));
-	set_cpus_allowed_ptr(current, cpumask_of(pol->cpu));
-
-	if (smp_processor_id() != pol->cpu) {
-		printk(KERN_ERR PFX "limiting to cpu %u failed\n", pol->cpu);
-		goto err_out;
-	}
-
 	if (pending_bit_stuck()) {
 		printk(KERN_ERR PFX "failing targ, change pending bit set\n");
-		goto err_out;
+		return -EIO;
 	}
 
 	pr_debug("targ: cpu %d, %d kHz, min %d, max %d, relation %d\n",
 		pol->cpu, targfreq, pol->min, pol->max, relation);
 
 	if (query_current_values_with_pending_wait(data))
-		goto err_out;
+		return -EIO;
 
 	if (cpu_family != CPU_HW_PSTATE) {
 		pr_debug("targ: curr fid 0x%x, vid 0x%x\n",
@@ -1222,21 +1179,17 @@ static int powernowk8_target(struct cpufreq_policy *pol,
 
 		if ((checkvid != data->currvid) ||
 		    (checkfid != data->currfid)) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PFX
 				"error - out of sync, fix 0x%x 0x%x, "
 				"vid 0x%x 0x%x\n",
 				checkfid, data->currfid,
 				checkvid, data->currvid);
-#else
-			;
-#endif
 		}
 	}
 
 	if (cpufreq_frequency_table_target(pol, data->powernow_table,
 				targfreq, relation, &newstate))
-		goto err_out;
+		return -EIO;
 
 	mutex_lock(&fidvid_mutex);
 
@@ -1249,9 +1202,8 @@ static int powernowk8_target(struct cpufreq_policy *pol,
 		ret = transition_frequency_fidvid(data, newstate);
 	if (ret) {
 		printk(KERN_ERR PFX "transition frequency failed\n");
-		ret = 1;
 		mutex_unlock(&fidvid_mutex);
-		goto err_out;
+		return 1;
 	}
 	mutex_unlock(&fidvid_mutex);
 
@@ -1260,12 +1212,18 @@ static int powernowk8_target(struct cpufreq_policy *pol,
 				data->powernow_table[newstate].index);
 	else
 		pol->cur = find_khz_freq_from_fid(data->currfid);
-	ret = 0;
 
-err_out:
-	set_cpus_allowed_ptr(current, oldmask);
-	free_cpumask_var(oldmask);
-	return ret;
+	return 0;
+}
+
+/* Driver entry point to switch to the target frequency */
+static int powernowk8_target(struct cpufreq_policy *pol,
+		unsigned targfreq, unsigned relation)
+{
+	struct powernowk8_target_arg pta = { .pol = pol, .targfreq = targfreq,
+					     .relation = relation };
+
+	return work_on_cpu(pol->cpu, powernowk8_target_fn, &pta);
 }
 
 /* Driver entry point to verify the policy and range of frequencies */
@@ -1498,19 +1456,11 @@ static void cpb_toggle(bool t)
 	if (t && !cpb_enabled) {
 		cpb_enabled = true;
 		_cpb_toggle_msrs(t);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Core Boosting enabled.\n");
-#else
-		;
-#endif
 	} else if (!t && cpb_enabled) {
 		cpb_enabled = false;
 		_cpb_toggle_msrs(t);
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Core Boosting disabled.\n");
-#else
-		;
-#endif
 	}
 }
 
@@ -1618,12 +1568,8 @@ static int __cpuinit powernowk8_init(void)
 	if (supported_cpus != num_online_cpus())
 		return -ENODEV;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Found %d %s (%d cpu cores) (" VERSION ")\n",
 		num_online_nodes(), boot_cpu_data.x86_model_id, supported_cpus);
-#else
-	;
-#endif
 
 	if (boot_cpu_has(X86_FEATURE_CPB)) {
 
@@ -1644,12 +1590,8 @@ static int __cpuinit powernowk8_init(void)
 			cpb_enabled |= !(!!(reg->l & BIT(25)));
 		}
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "Core Performance Boosting: %s.\n",
 			(cpb_enabled ? "on" : "off"));
-#else
-		;
-#endif
 	}
 
 	rv = cpufreq_register_driver(&cpufreq_amd64_driver);
