@@ -167,6 +167,9 @@ enum {
 	MAX8925_IRQ_VCHG_DC_OVP,
 	MAX8925_IRQ_VCHG_DC_F,
 	MAX8925_IRQ_VCHG_DC_R,
+	MAX8925_IRQ_VCHG_USB_OVP,
+	MAX8925_IRQ_VCHG_USB_F,
+	MAX8925_IRQ_VCHG_USB_R,
 	MAX8925_IRQ_VCHG_THM_OK_R,
 	MAX8925_IRQ_VCHG_THM_OK_F,
 	MAX8925_IRQ_VCHG_SYSLOW_F,
@@ -203,8 +206,6 @@ struct max8925_chip {
 	int			irq_base;
 	int			core_irq;
 	int			tsc_irq;
-
-	unsigned int            wakeup_flag;
 };
 
 struct max8925_backlight_pdata {
@@ -222,10 +223,6 @@ struct max8925_power_pdata {
 	unsigned	batt_detect:1;
 	unsigned	topoff_threshold:2;
 	unsigned	fast_charge:3;	/* charge current */
-	unsigned	no_temp_support:1; /* set if no temperature detect */
-	unsigned	no_insert_detect:1; /* set if no ac insert detect */
-	char		**supplied_to;
-	int		num_supplicants;
 };
 
 /*

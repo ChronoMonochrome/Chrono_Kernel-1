@@ -211,9 +211,6 @@ enum ab8500_version {
 #define AB8500_NUM_IRQ_REGS		14
 #define AB9540_NUM_IRQ_REGS		17
 
-/* Forward declaration */
-struct ab8500_charger;
-
 /**
  * struct ab8500 - ab8500 internal structure
  * @dev: parent device
@@ -232,12 +229,12 @@ struct ab8500_charger;
  * @mask_size: Actual number of valid entries in mask[], oldmask[] and
  * irq_reg_offset
  * @irq_reg_offset: Array of offsets into IRQ registers
- * @charger: pointer to the charger driver device information.
  */
 struct ab8500 {
 	struct device	*dev;
 	struct mutex	lock;
 	struct mutex	irq_lock;
+
 	int		irq_base;
 	int		irq;
 	enum ab8500_version version;
@@ -254,52 +251,29 @@ struct ab8500 {
 	u8 *oldmask;
 	int mask_size;
 	const int *irq_reg_offset;
-
-	struct ab8500_charger *charger;
 };
 
-struct ab8500_regulator_platform_data;
-struct ab8500_accdet_platform_data;
-struct ab8500_denc_platform_data;
-struct ab8500_audio_platform_data;
+struct regulator_reg_init;
+struct regulator_init_data;
 struct ab8500_gpio_platform_data;
-struct ab8500_sysctrl_platform_data;
 
 /**
  * struct ab8500_platform_data - AB8500 platform data
- * @pm_power_off: Should machine pm power off hook be registered or not
- * @thermal_power_off_pending: Set if there was a thermal alarm
- * @thermal_set_time_sec: Time of the thermal alarm
- * @thermal_time_out: Time out before the thermal alarm should be ignored
  * @irq_base: start of AB8500 IRQs, AB8500_NR_IRQS will be used
  * @init: board-specific initialization after detection of ab8500
+ * @num_regulator_reg_init: number of regulator init registers
+ * @regulator_reg_init: regulator init registers
+ * @num_regulator: number of regulators
  * @regulator: machine-specific constraints for regulators
- * @accdet: machine-specific Accessory detection data
- * @battery: machine-specific battery management data
- * @charger: machine-specific charger data
- * @btemp: machine-specific battery temp data
- * @pwmled: machine-specific pwmled data
  */
 struct ab8500_platform_data {
 	int irq_base;
-	bool pm_power_off;
-	bool thermal_power_off_pending;
-	long thermal_set_time_sec;
-	long thermal_time_out;
 	void (*init) (struct ab8500 *);
-	struct ab8500_regulator_platform_data *regulator;
-	struct abx500_accdet_platform_data *accdet;
-	struct abx500_bm_data *battery;
-	struct ab8500_denc_platform_data *denc;
-	struct ab8500_audio_platform_data *audio;
-	struct abx500_charger_platform_data *charger;
-	struct abx500_btemp_platform_data *btemp;
-	struct abx500_fg_platform_data *fg;
-	struct abx500_chargalg_platform_data *chargalg;
+	int num_regulator_reg_init;
+	struct ab8500_regulator_reg_init *regulator_reg_init;
+	int num_regulator;
+	struct regulator_init_data *regulator;
 	struct ab8500_gpio_platform_data *gpio;
-	struct abx500_usbgpio_platform_data *usb;
-	struct ab8500_sysctrl_platform_data *sysctrl;
-	struct ab8500_pwmled_platform_data *pwmled;
 };
 
 extern int __devinit ab8500_init(struct ab8500 *ab8500,
@@ -349,13 +323,5 @@ static inline int is_ab8500_2p0(struct ab8500 *ab)
 {
 	return (is_ab8500(ab) && (ab->chip_id == AB8500_CUT2P0));
 }
-
-#ifdef CONFIG_AB8500_DEBUG
-void ab8500_dump_all_banks(struct device *dev);
-void ab8500_debug_register_interrupt(int line);
-#else
-static inline void ab8500_dump_all_banks(struct device *dev) {}
-static inline void ab8500_debug_register_interrupt(int line) {}
-#endif
 
 #endif /* MFD_AB8500_H */
