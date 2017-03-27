@@ -41,14 +41,18 @@
 
 /* Resources */
 int s2w_switch = 0;
+EXPORT_SYMBOL(s2w_switch);
 static bool scr_suspended = false, exec_count = true;
 static bool scr_on_touch = false, barrier[2] = {false, false};
 static struct input_dev * sweep2wake_pwrdev;
 static DEFINE_MUTEX(pwrkeyworklock);
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
-static bool use_wakelock = true;
 static struct wake_lock s2w_wake_lock;
+bool is_s2w_wakelock_active(void) {
+        return wake_lock_active(&s2w_wake_lock);
+}
+bool s2w_use_wakelock;
 #endif
 
 /* Read cmdline for s2w */
@@ -80,10 +84,10 @@ static void sweep2wake_presspwr(struct work_struct * sweep2wake_presspwr_work) {
                 return;
 	input_event(sweep2wake_pwrdev, EV_KEY, KEY_POWER, 1);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
-	msleep(S2W_PWRKEY_DUR);
+	mdelay(S2W_PWRKEY_DUR);
 	input_event(sweep2wake_pwrdev, EV_KEY, KEY_POWER, 0);
 	input_event(sweep2wake_pwrdev, EV_SYN, 0, 0);
-	msleep(S2W_PWRKEY_DUR);
+	mdelay(S2W_PWRKEY_DUR);
         mutex_unlock(&pwrkeyworklock);
 	return;
 }
@@ -102,12 +106,18 @@ void s2w_reset(void)
 	exec_count = true;
 }
 
+
+extern unsigned int is_lpm;
+
 /* Sweep2wake main function */
 void detect_sweep2wake(int x, int y, bool st)
 {
         int prevx = 0, nextx = 0;
         bool single_touch = st;
-	
+
+	if (!s2w_switch)
+		return;
+
 	if(!single_touch){
 		s2w_reset();
 		return;
@@ -117,7 +127,7 @@ void detect_sweep2wake(int x, int y, bool st)
                 x, y, (single_touch) ? "true" : "false");
 #endif
 	//left->right
-	if ((single_touch) && (scr_suspended == true) && (s2w_switch > 0)) {
+	if ((single_touch) && (scr_suspended || is_lpm) && (s2w_switch > 0)) {
 		prevx = 0;
 		nextx = S2W_X_B1;
 		if ((barrier[0] == true) ||
@@ -187,6 +197,9 @@ void s2w_set_scr_suspended(bool suspended)
 	scr_suspended = suspended;
 	s2w_reset();
 }
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
+extern void should_break_suspend_check_init_work(void);
+#endif
 
 static int set_enable(const char *val, struct kernel_param *kp)
 {
@@ -211,11 +224,14 @@ static int set_enable(const char *val, struct kernel_param *kp)
 	}
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
 		s2w_switch = 1;
+#ifdef CONFIG_TOUCHSCREEN_ZINITIX_BT404
+		should_break_suspend_check_init_work();
+#endif
 		if(DEBUG)
 			printk("s2w: enabled\n");
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
-		if(use_wakelock && !wake_lock_active(&s2w_wake_lock)){
+		if(s2w_use_wakelock && !wake_lock_active(&s2w_wake_lock)){
 			wake_lock(&s2w_wake_lock);
 			if(DEBUG)
 				printk("s2w: wake lock enabled\n");
@@ -243,33 +259,33 @@ module_param_call(enable, set_enable, param_get_int, &s2w_switch, 0664);
 
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
 
-static int set_use_wakelock(const char *val, struct kernel_param *kp){
+static int set_s2w_use_wakelock(const char *val, struct kernel_param *kp){
 
 	if(strcmp(val, "1") >= 0 || strcmp(val, "true") >= 0){
-		use_wakelock = true;
-		if(use_wakelock && !wake_lock_active(&s2w_wake_lock)){
+		s2w_use_wakelock = true;
+		if(s2w_use_wakelock && !wake_lock_active(&s2w_wake_lock)){
 			wake_lock(&s2w_wake_lock);
 			if(DEBUG)
 				printk("s2w: wake lock enabled\n");
 		}
 	}
 	else if(strcmp(val, "0") >= 0 || strcmp(val, "false") >= 0){
-		use_wakelock = false;
+		s2w_use_wakelock = false;
 		if(wake_lock_active(&s2w_wake_lock)){
 			wake_unlock(&s2w_wake_lock);
 		}
 
 	}else {
-		printk("s2w: invalid input '%s' for 'use_wakelock'; use 1 or 0\n", val);
+		printk("s2w: invalid input '%s' for 's2w_use_wakelock'; use 1 or 0\n", val);
 	}
 	return 0;
 
 }
 
-module_param_call(use_wakelock, set_use_wakelock, param_get_bool, &use_wakelock, 0664);
+module_param_call(s2w_use_wakelock, set_s2w_use_wakelock, param_get_bool, &s2w_use_wakelock, 0664);
 #endif
 
-static int __init sweep2wake_init(void)
+int __devinit sweep2wake_init(void)
 {
 #ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE_WAKELOCK
 	wake_lock_init(&s2w_wake_lock, WAKE_LOCK_SUSPEND, "s2w_kernel_wake_lock");
@@ -277,14 +293,12 @@ static int __init sweep2wake_init(void)
 	pr_info("[sweep2wake]: %s done\n", __func__);
 	return 0;
 }
+EXPORT_SYMBOL(sweep2wake_init);
 
-static void __exit sweep2wake_exit(void)
+void __exit sweep2wake_exit(void)
 {
 	return;
 }
-
-module_init(sweep2wake_init);
-module_exit(sweep2wake_exit);
 
 MODULE_DESCRIPTION("Sweep2wake");
 MODULE_LICENSE("GPLv2");
