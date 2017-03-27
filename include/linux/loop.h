@@ -64,6 +64,7 @@ struct loop_device {
 
 	struct request_queue	*lo_queue;
 	struct gendisk		*lo_disk;
+	struct list_head	lo_list;
 };
 
 #endif /* __KERNEL__ */
@@ -73,6 +74,7 @@ struct loop_device {
  */
 enum {
 	LO_FLAGS_READ_ONLY	= 1,
+	LO_FLAGS_USE_AOPS	= 2,
 	LO_FLAGS_AUTOCLEAR	= 4,
 	LO_FLAGS_PARTSCAN	= 8,
 };
