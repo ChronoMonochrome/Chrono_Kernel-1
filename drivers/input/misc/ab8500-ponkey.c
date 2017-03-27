@@ -71,10 +71,6 @@ struct ab8500_ponkey_info {
 
 struct ab8500_ponkey_info *p_info;
 
-#ifndef CONFIG_SAMSUNG_PRODUCT_SHIP
-extern bool gpio_keys_getstate(int keycode);
-extern int jack_is_detected;
-#endif
 extern void gpio_keys_setstate(int keycode, bool bState);
 
 static int ab5500_ponkey_hw_init(struct platform_device *pdev)
@@ -182,26 +178,51 @@ static irqreturn_t ab8500_ponkey_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-void ab8500_ponkey_emulator(bool press)
+
+static bool emu_working = false;
+static unsigned int emu_sleep = 500;
+static unsigned long emu_keycode = KEY_POWER;
+
+void ab8500_ponkey_emulator(unsigned long keycode, bool press)
 {
 	if (press) {
-		gpio_keys_setstate(KEY_POWER, true);
+		gpio_keys_setstate(keycode, true);
 		p_info->key_state = true;
-		input_report_key(p_info->idev, KEY_POWER, true);
-		pr_err("[ABB-POnKey] Emulate Power Key PRESS\n");
+		input_report_key(p_info->idev, keycode, true);
+		pr_err("[ABB-POnKey] Emulate %d Key PRESS\n", keycode);
 		input_sync(p_info->idev);
 	} else if (!press) {
-		gpio_keys_setstate(KEY_POWER, false);
+		gpio_keys_setstate(keycode, false);
 		p_info->key_state = false;
-		input_report_key(p_info->idev, KEY_POWER, false);
-		pr_err("[ABB-POnKey] Emulate Power Key RELEASE\n");
+		input_report_key(p_info->idev, keycode, false);
+		pr_err("[ABB-POnKey] Emulate %d Key RELEASE\n", keycode);
 		input_sync(p_info->idev);
 	}
 }
 EXPORT_SYMBOL(ab8500_ponkey_emulator);
 
-static bool emu_working = false;
-static unsigned int emu_sleep = 500;
+void abb_ponkey_remap_power_key(unsigned long old_keycode, unsigned long new_keycode)
+{
+	p_info->idev->keybit[BIT_WORD(old_keycode)] = (unsigned long)NULL;
+	p_info->idev->keybit[BIT_WORD(new_keycode)] = BIT_MASK(new_keycode);
+}
+
+void abb_ponkey_unmap_all_keys(unsigned long *keys, unsigned int array_len)
+{
+	int i;	
+
+	for (i = 0; i < array_len; i++){
+		p_info->idev->keybit[BIT_WORD(keys[i])] = (unsigned long)NULL;
+	}
+
+	p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+}
+
+void abb_ponkey_unmap_power_key(unsigned long old_keycode)
+{
+	p_info->idev->keybit[BIT_WORD(old_keycode)] = (unsigned long)NULL;
+	p_info->idev->keybit[BIT_WORD(KEY_POWER)] = BIT_MASK(KEY_POWER);
+}
 
 static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_work)
 {
@@ -209,29 +230,41 @@ static void abb_ponkey_emulator_thread(struct work_struct *abb_ponkey_emulator_w
 
 	emu_working = true;
 
-	ab8500_ponkey_emulator(1);
+	ab8500_ponkey_emulator(emu_keycode, 1);
 
 	msleep(emu_sleep);
 
-	ab8500_ponkey_emulator(0);
+	ab8500_ponkey_emulator(emu_keycode, 0);
+	
+	if (emu_keycode != KEY_POWER)
+		abb_ponkey_unmap_power_key(emu_keycode);
 
 	emu_working = false;
 }
 static DECLARE_WORK(abb_ponkey_emulator_work, abb_ponkey_emulator_thread);
 
+static ssize_t abb_ponkey_emulator_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
+{
+	sprintf(buf, "Usage: keycode delay(ms)\n");
+
+	return strlen(buf);
+}
+
 static ssize_t abb_ponkey_emulator_store(struct kobject *kobj, struct kobj_attribute *attr, const char *buf, size_t count)
 {
-	int slp, ret;
+	int slp, keycode, ret;
 
-	ret = sscanf(buf, "%d", &slp);
+	ret = sscanf(buf, "%d %d", &keycode, &slp);
 
-	if ((ret < 0) || (slp < 0)) {
+	if ((ret < 0) || (slp < 0) || (keycode > 255) || (keycode < 0)) {
 		pr_err("[ABB-POnKey] Invalid inputs\n");
 		return -EINVAL;
 	}
 
-	if (!emu_working) {
+	if (!(emu_working && keycode == emu_keycode)) {
+		abb_ponkey_remap_power_key(emu_keycode, keycode);
 		emu_sleep = slp;
+		emu_keycode = keycode;
 		schedule_work(&abb_ponkey_emulator_work);
 	} else {
 		pr_err("[ABB-POnKey] Emulator thread is working\n");
@@ -240,7 +273,7 @@ static ssize_t abb_ponkey_emulator_store(struct kobject *kobj, struct kobj_attri
 	return count;
 }
 
-static struct kobj_attribute abb_ponkey_emulator_interface = __ATTR(emulator, 0644, NULL, abb_ponkey_emulator_store);
+static struct kobj_attribute abb_ponkey_emulator_interface = __ATTR(emulator, 0644, abb_ponkey_emulator_show, abb_ponkey_emulator_store);
 
 static struct attribute *abb_ponkey_attrs[] = {
 	&abb_ponkey_emulator_interface.attr, 

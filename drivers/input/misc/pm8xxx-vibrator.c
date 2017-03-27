@@ -277,7 +277,18 @@ static struct platform_driver pm8xxx_vib_driver = {
 		.pm	= &pm8xxx_vib_pm_ops,
 	},
 };
-module_platform_driver(pm8xxx_vib_driver);
+
+static int __init pm8xxx_vib_init(void)
+{
+	return platform_driver_register(&pm8xxx_vib_driver);
+}
+module_init(pm8xxx_vib_init);
+
+static void __exit pm8xxx_vib_exit(void)
+{
+	platform_driver_unregister(&pm8xxx_vib_driver);
+}
+module_exit(pm8xxx_vib_exit);
 
 MODULE_ALIAS("platform:pm8xxx_vib");
 MODULE_DESCRIPTION("PMIC8xxx vibrator driver based on ff-memless framework");
