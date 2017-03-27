@@ -1748,7 +1748,11 @@ static void u8500_uart2_reset(void)
 
 static void bt_wake_peer(struct uart_port *port)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("@@@@ BT WAKE_PEER\n");
+#else
+	;
+#endif
 	return;
 }
 
@@ -2209,23 +2213,43 @@ static int __init board_id_setup(char *str)
 
 	switch (board_id) {
 	case 0x0101:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.0\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_0;
 		break;
 	case 0x0102:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.1\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_1;
 		break;
 	case 0x0103:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.2\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_2;
 		break;
 	case 0x0104:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SKOMER Board for Rev0.3\n");
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_3;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Unknown board_id=%c\n", *str);
+#else
+		;
+#endif
 		system_rev = SKOMER_R0_0;
 		break;
 	};

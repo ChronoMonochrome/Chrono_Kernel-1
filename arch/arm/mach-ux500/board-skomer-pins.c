@@ -357,7 +357,11 @@ static void __init gps_pins_init(void)
 
 	BUG_ON(!gps_dev);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("gps_pins_init!!\n");
+#else
+	;
+#endif
 
 	nmk_config_pins(skomer_gps_uart_pins,
 		ARRAY_SIZE(skomer_gps_uart_pins));
@@ -373,7 +377,11 @@ static void __init gps_pins_init(void)
 	gpio_export_link(gps_dev, "GPS_nRST", GPS_RST_N_SKOMER_BRINGUP);
 	gpio_export_link(gps_dev, "GPS_ON_OFF", GPS_ON_OFF_SKOMER_BRINGUP);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("gps_pins_init done!!\n");
+#else
+	;
+#endif
 }
 
 static void __init sdmmc_pins_init(void)
@@ -397,7 +405,11 @@ static void __init sdmmc_pins_init(void)
 		skomer_ab8505_regulators[AB9540_LDO_AUX3].constraints.valid_ops_mask = 0;
 		skomer_ab8505_regulators[AB9540_LDO_AUX3].constraints.always_on = 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SD Card I/F set for STM APE Trace\n");
+#else
+		;
+#endif
 
 	} else if (sec_debug_settings & SEC_DBG_STM_MODEM_OPT) {
 
@@ -415,7 +427,11 @@ static void __init sdmmc_pins_init(void)
 		skomer_ab8505_regulators[AB9540_LDO_AUX3].constraints.valid_ops_mask = 0;
 		skomer_ab8505_regulators[AB9540_LDO_AUX3].constraints.always_on = 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "SD Card I/F set for STM Modem Trace\n");
+#else
+		;
+#endif
 	} else if (sec_debug_settings & SEC_DBG_STM_FIDO_OPT) {
 
 		value = readl(prcm_gpiocr);
@@ -425,7 +441,11 @@ static void __init sdmmc_pins_init(void)
 		nmk_config_pins(skomer_bringup_fidobox_trace,
 			ARRAY_SIZE(skomer_bringup_fidobox_trace));
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "XTI I/F set for STM Fidobox Trace\n");
+#else
+		;
+#endif
 	} else {
 		/* Set GPIO ALT to A */
 		value = readl(prcm_gpiocr);

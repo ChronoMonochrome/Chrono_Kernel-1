@@ -12,6 +12,7 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
+#include <linux/dma-contiguous.h>
 #include <linux/i2c.h>
 #include <linux/gpio.h>
 #include <linux/amba/bus.h>
@@ -197,6 +198,22 @@ static void kexec_hardboot_reserve(void)
 
 	kexec_hardboot_device.num_resources  = ARRAY_SIZE(kexec_hardboot_resources);
 	kexec_hardboot_device.resource       = kexec_hardboot_resources;
+}
+#endif
+
+#if 0
+#define CMA_BASE 0x0
+#define CMA_SIZE 8 * SZ_1M
+#define CMA_LIMIT 0x0
+#define CMA_FIXED false
+struct cma *codina_cma;
+
+static void __init codina_dma_reserve(void) {
+       int res = 0;
+
+	res = dma_contiguous_reserve_area(CMA_SIZE, CMA_BASE, CMA_LIMIT, &codina_cma, true);
+	if (!res)
+		pr_err("[codina] failed to reserve cma area of %d size\n", CMA_SIZE);
 }
 #endif
 
@@ -2357,7 +2374,7 @@ static void __init codina_i2c_init(void)
 	i2c_register_board_info(7,
 		ARRAY_AND_SIZE(codina_r0_0_gpio_i2c7_devices));
 	if	(system_rev >= CODINA_TMO_R0_1)	{
-#ifndef CONFIG_NFC_PN544
+#if 0
 		platform_device_register(&codina_gpio_i2c8_pdata);
 	i2c_register_board_info(8,
 		ARRAY_AND_SIZE(codina_r0_0_gpio_i2c8_devices));
@@ -2432,6 +2449,9 @@ static void __init codina_init_machine(void)
 	kexec_hardboot_reserve();
 #endif
 #endif
+#if 0
+	codina_dma_reserve();
+#endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	if (ram_console_device.num_resources == 1)
@@ -2439,7 +2459,6 @@ static void __init codina_init_machine(void)
 #endif
 
 	platform_device_register(&db8500_prcmu_device);
-	platform_device_register(&u8500_usecase_gov_device);
 
 	u8500_init_devices();
 

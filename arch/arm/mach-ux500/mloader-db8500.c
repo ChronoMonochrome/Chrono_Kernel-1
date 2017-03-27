@@ -9,6 +9,7 @@
  *
  */
 #include <linux/types.h>
+#include <linux/bug.h>
 #include <linux/platform_device.h>
 
 #include <mach/mloader-dbx500.h>
