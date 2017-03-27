@@ -54,7 +54,7 @@
 
 /* Use our own dbg macro */
 #undef dbg
-#define dbg( format, arg... ) do { if( debug ) printk( KERN_DEBUG __FILE__ ": " format "\n" , ## arg ); } while ( 0 )
+;
 
 MODULE_AUTHOR(DRIVER_AUTHOR);
 MODULE_DESCRIPTION(DRIVER_DESC);
@@ -62,7 +62,7 @@ MODULE_LICENSE("GPL");
 
 /* Module parameters */
 static DEFINE_MUTEX(iowarrior_mutex);
-static int debug = 0;
+static bool debug = 0;
 module_param(debug, bool, 0644);
 MODULE_PARM_DESC(debug, "debug=1 enables debugging messages");
 
@@ -734,7 +734,7 @@ static const struct file_operations iowarrior_fops = {
 	.llseek = noop_llseek,
 };
 
-static char *iowarrior_devnode(struct device *dev, mode_t *mode)
+static char *iowarrior_devnode(struct device *dev, umode_t *mode)
 {
 	return kasprintf(GFP_KERNEL, "usb/%s", dev_name(dev));
 }

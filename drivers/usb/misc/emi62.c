@@ -259,7 +259,7 @@ wraperr:
 	return err;
 }
 
-static const struct usb_device_id id_table[] __devinitconst = {
+static const struct usb_device_id id_table[] = {
 	{ USB_DEVICE(EMI62_VENDOR_ID, EMI62_PRODUCT_ID) },
 	{ }                                             /* Terminating entry */
 };
@@ -295,7 +295,7 @@ static int __init emi62_init (void)
 	int retval;
 	retval = usb_register (&emi62_driver);
 	if (retval)
-		printk(KERN_ERR "adi-emi: registration failed\n");
+;
 	return retval;
 }
 

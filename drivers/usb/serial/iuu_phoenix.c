@@ -34,9 +34,9 @@
 
 
 #ifdef CONFIG_USB_SERIAL_DEBUG
-static int debug = 1;
+static bool debug = 1;
 #else
-static int debug;
+static bool debug;
 #endif
 
 /*
@@ -65,7 +65,7 @@ static int clockmode = 1;
 static int cdmode = 1;
 static int iuu_cardin;
 static int iuu_cardout;
-static int xmas;
+static bool xmas;
 static int vcc_default = 5;
 
 static void read_rxcmd_callback(struct urb *urb);
@@ -327,7 +327,7 @@ static int bulk_immediate(struct usb_serial_port *port, u8 *buf, u8 count)
 	    usb_bulk_msg(serial->dev,
 			 usb_sndbulkpipe(serial->dev,
 					 port->bulk_out_endpointAddress), buf,
-			 count, &actual, HZ * 1);
+			 count, &actual, 1000);
 
 	if (status != IUU_OPERATION_OK)
 		dbg("%s - error = %2x", __func__, status);
@@ -350,7 +350,7 @@ static int read_immediate(struct usb_serial_port *port, u8 *buf, u8 count)
 	    usb_bulk_msg(serial->dev,
 			 usb_rcvbulkpipe(serial->dev,
 					 port->bulk_in_endpointAddress), buf,
-			 count, &actual, HZ * 1);
+			 count, &actual, 1000);
 
 	if (status != IUU_OPERATION_OK)
 		dbg("%s - error = %2x", __func__, status);
@@ -1302,8 +1302,8 @@ static int __init iuu_init(void)
 	retval = usb_register(&iuu_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&iuu_device);

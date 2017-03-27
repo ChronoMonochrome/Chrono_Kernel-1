@@ -94,7 +94,7 @@ static long
 modem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
-	printk(KERN_INFO "modem_ioctl: cmd=0x%x, arg=%lu\n", cmd, arg);
+;
 
 	/* handle ioctls */
 	switch (cmd) {
@@ -104,14 +104,14 @@ modem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case GS_IOC_NOTIFY_DTR_TEST:
 		{
-			printk(KERN_ALERT"DUN : DTR %d\n", (int)arg);
+;
 			notify_control_line_state((int)arg);
 			break;
 		}
 
 	default:
-		printk(KERN_INFO "modem_ioctl: Unknown ioctl cmd(0x%x).\n",
-				cmd);
+//		printk(KERN_INFO "modem_ioctl: Unknown ioctl cmd(0x%x).\n",
+;
 		return -ENOIOCTLCMD;
 	}
 	return 0;
@@ -137,7 +137,7 @@ static struct miscdevice modem_device = {
 int acm_modem_register(void *data)
 {
 	if (data == NULL) {
-		printk(KERN_INFO "DUN register failed. data is null.\n");
+;
 		return -1;
 	}
 
@@ -145,7 +145,7 @@ int acm_modem_register(void *data)
 
 	init_waitqueue_head(&modem_wait_q);
 
-	printk(KERN_INFO "DUN is registerd\n");
+;
 
 	return 0;
 }
@@ -156,7 +156,7 @@ static int modem_misc_register(void)
 	int ret;
 	ret = misc_register(&modem_device);
 	if (ret) {
-		printk(KERN_ERR "DUN register is failed, ret = %d\n", ret);
+;
 		return ret;
 	}
 	return ret;
@@ -166,6 +166,6 @@ void modem_unregister(void)
 {
 	acm_data = NULL;
 
-	printk(KERN_INFO "DUN is unregisterd\n");
+;
 }
 EXPORT_SYMBOL(modem_unregister);

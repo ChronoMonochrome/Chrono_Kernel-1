@@ -382,9 +382,9 @@ static int ab5500_usb_irq_setup(struct platform_device *pdev,
 		IRQF_NO_SUSPEND | IRQF_SHARED,
 		"usb-link-status-update", ab);
 	if (ret < 0) {
-		printk(KERN_ERR "failed to set the callback"
-				" handler for usb charge"
-				" detect done\n");
+//		printk(KERN_ERR "failed to set the callback"
+//				" handler for usb charge"
+;
 		err = ret;
 		goto irq_fail;
 	}

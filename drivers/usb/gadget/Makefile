@@ -4,6 +4,7 @@
 ccflags-$(CONFIG_USB_GADGET_DEBUG) := -DDEBUG
 
 obj-$(CONFIG_USB_DUMMY_HCD)	+= dummy_hcd.o
+obj-$(CONFIG_USB_NET2272)	+= net2272.o
 obj-$(CONFIG_USB_NET2280)	+= net2280.o
 obj-$(CONFIG_USB_AMD5536UDC)	+= amd5536udc.o
 obj-$(CONFIG_USB_PXA25X)	+= pxa25x_udc.o
@@ -49,7 +50,7 @@ g_dbgp-y			:= dbgp.o
 g_nokia-y			:= nokia.o
 g_webcam-y			:= webcam.o
 g_ncm-y				:= ncm.o
-g_android-y			:= android.o
+g_android-y			:= android.o f_hid.o
 
 obj-$(CONFIG_USB_ZERO)		+= g_zero.o
 obj-$(CONFIG_USB_AUDIO)		+= g_audio.o
