@@ -18,6 +18,7 @@
 #include <linux/bio.h>
 #include <linux/swapops.h>
 #include <linux/writeback.h>
+#include <linux/frontswap.h>
 #include <linux/aio.h>
 #include <linux/blkdev.h>
 #include <asm/pgtable.h>
@@ -42,7 +43,7 @@ static struct bio *get_swap_bio(gfp_t gfp_flags,
 	return bio;
 }
 
-static void end_swap_bio_write(struct bio *bio, int err)
+void end_swap_bio_write(struct bio *bio, int err)
 {
 	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
 	struct page *page = bio->bi_io_vec[0].bv_page;
@@ -58,10 +59,12 @@ static void end_swap_bio_write(struct bio *bio, int err)
 		 * Also clear PG_reclaim to avoid rotate_reclaimable_page()
 		 */
 		set_page_dirty(page);
+#ifndef CONFIG_ZSWAP
 		printk(KERN_ALERT "Write-error on swap-device (%u:%u:%Lu)\n",
 				imajor(bio->bi_bdev->bd_inode),
 				iminor(bio->bi_bdev->bd_inode),
 				(unsigned long long)bio->bi_sector);
+#endif
 		ClearPageReclaim(page);
 	}
 	end_page_writeback(page);
@@ -80,53 +83,66 @@ void end_swap_bio_read(struct bio *bio, int err)
 				imajor(bio->bi_bdev->bd_inode),
 				iminor(bio->bi_bdev->bd_inode),
 				(unsigned long long)bio->bi_sector);
-		goto out;
+	} else {
+		SetPageUptodate(page);
 	}
-
-	SetPageUptodate(page);
-
-	/*
-	 * There is no guarantee that the page is in swap cache - the software
-	 * suspend code (at least) uses end_swap_bio_read() against a non-
-	 * swapcache page.  So we must check PG_swapcache before proceeding with
-	 * this optimization.
-	 */
-	if (likely(PageSwapCache(page))) {
-		/*
-		 * The swap subsystem performs lazy swap slot freeing,
-		 * expecting that the page will be swapped out again.
-		 * So we can avoid an unnecessary write if the page
-		 * isn't redirtied.
-		 * This is good for real swap storage because we can
-		 * reduce unnecessary I/O and enhance wear-leveling
-		 * if an SSD is used as the as swap device.
-		 * But if in-memory swap device (eg zram) is used,
-		 * this causes a duplicated copy between uncompressed
-		 * data in VM-owned memory and compressed data in
-		 * zram-owned memory.  So let's free zram-owned memory
-		 * and make the VM-owned decompressed page *dirty*,
-		 * so the page should be swapped out somewhere again if
-		 * we again wish to reclaim it.
-		 */
-		struct gendisk *disk = bio->bi_bdev->bd_disk;
-		if (disk->fops->swap_slot_free_notify) {
-			swp_entry_t entry;
-			unsigned long offset;
-
-			entry.val = page_private(page);
-			offset = swp_offset(entry);
-
-			SetPageDirty(page);
-			disk->fops->swap_slot_free_notify(bio->bi_bdev,
-					offset);
-		}
-	}
-
-out:
 	unlock_page(page);
 	bio_put(bio);
 }
 
+#ifdef CONFIG_ZSWAP
+int __swap_writepage(struct page *page, struct writeback_control *wbc,
+	void (*end_write_func)(struct bio *, int));
+
+/*
+ * We may have stale swap cache pages in memory: notice
+ * them here and get rid of the unnecessary final write.
+ */
+int swap_writepage(struct page *page, struct writeback_control *wbc)
+{
+	int ret = 0;
+
+	if (try_to_free_swap(page)) {
+		unlock_page(page);
+		goto out;
+	}
+
+#ifdef CONFIG_FRONTSWAP
+	if (frontswap_store(page) == 0) {
+		set_page_writeback(page);
+		unlock_page(page);
+		end_page_writeback(page);
+		goto out;
+	}
+#endif
+	ret = __swap_writepage(page, wbc, end_swap_bio_write);
+out:
+	return ret;
+}
+
+int __swap_writepage(struct page *page, struct writeback_control *wbc,
+	void (*end_write_func)(struct bio *, int))
+{
+	struct bio *bio;
+	int ret = 0, rw = WRITE;
+
+	bio = get_swap_bio(GFP_NOIO, page, end_write_func);
+	if (bio == NULL) {
+		set_page_dirty(page);
+		unlock_page(page);
+		ret = -ENOMEM;
+		goto out;
+	}
+	if (wbc->sync_mode == WB_SYNC_ALL)
+		rw |= REQ_SYNC;
+	count_vm_event(PSWPOUT);
+	set_page_writeback(page);
+	unlock_page(page);
+	submit_bio(rw, bio);
+out:
+	return ret;
+}
+#else
 /*
  * We may have stale swap cache pages in memory: notice
  * them here and get rid of the unnecessary final write.
@@ -140,6 +156,16 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
 		unlock_page(page);
 		goto out;
 	}
+
+#ifdef CONFIG_FRONTSWAP
+	if (frontswap_store(page) == 0) {
+		set_page_writeback(page);
+		unlock_page(page);
+		end_page_writeback(page);
+		goto out;
+	}
+#endif
+
 	bio = get_swap_bio(GFP_NOIO, page, end_swap_bio_write);
 	if (bio == NULL) {
 		set_page_dirty(page);
@@ -156,6 +182,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
 out:
 	return ret;
 }
+#endif /* !CONFIG_ZSWAP */
 
 int swap_readpage(struct page *page)
 {
@@ -164,6 +191,15 @@ int swap_readpage(struct page *page)
 
 	VM_BUG_ON(!PageLocked(page));
 	VM_BUG_ON(PageUptodate(page));
+
+#ifdef CONFIG_FRONTSWAP
+	if (frontswap_load(page) == 0) {
+		SetPageUptodate(page);
+		unlock_page(page);
+		goto out;
+	}
+#endif
+
 	bio = get_swap_bio(GFP_KERNEL, page, end_swap_bio_read);
 	if (bio == NULL) {
 		unlock_page(page);
