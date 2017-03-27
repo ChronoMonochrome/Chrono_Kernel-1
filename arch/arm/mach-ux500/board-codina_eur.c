@@ -12,6 +12,7 @@
 #include <linux/interrupt.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
+#include <linux/dma-contiguous.h>
 #include <linux/i2c.h>
 #include <linux/gpio.h>
 #include <linux/amba/bus.h>
@@ -200,7 +201,6 @@ static void kexec_hardboot_reserve(void)
 }
 #endif
 
-#if 0
 #define CMA_BASE 0x0
 #define CMA_SIZE 8 * SZ_1M
 #define CMA_LIMIT 0x0
@@ -214,7 +214,7 @@ static void __init codina_dma_reserve(void) {
 	if (!res)
 		pr_err("[codina] failed to reserve cma area of %d size\n", CMA_SIZE);
 }
-#endif
+
 
 #if defined(CONFIG_INPUT_YAS_MAGNETOMETER)
 struct yas_platform_data yas_data = {
@@ -2448,9 +2448,7 @@ static void __init codina_init_machine(void)
 	kexec_hardboot_reserve();
 #endif
 #endif
-#if 0
 	codina_dma_reserve();
-#endif
 
 #ifdef CONFIG_ANDROID_RAM_CONSOLE
 	if (ram_console_device.num_resources == 1)
