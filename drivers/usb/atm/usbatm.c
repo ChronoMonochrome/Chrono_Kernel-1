@@ -669,7 +669,7 @@ static int usbatm_atm_send(struct atm_vcc *vcc, struct sk_buff *skb)
 	if (!instance || instance->disconnected) {
 #ifdef DEBUG
 		if (printk_ratelimit())
-			printk(KERN_DEBUG "%s: %s!\n", __func__, instance ? "disconnected" : "NULL instance");
+;
 #endif
 		err = -ENODEV;
 		goto fail;
@@ -1339,7 +1339,7 @@ static int __init usbatm_usb_init(void)
 	dbg("%s: driver version %s", __func__, DRIVER_VERSION);
 
 	if (sizeof(struct usbatm_control) > FIELD_SIZEOF(struct sk_buff, cb)) {
-		printk(KERN_ERR "%s unusable with this kernel!\n", usbatm_driver_name);
+;
 		return -EIO;
 	}
 

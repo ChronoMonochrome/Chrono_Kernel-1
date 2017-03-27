@@ -717,6 +717,8 @@ static void fsl_queue_td(struct fsl_ep *ep, struct fsl_req *req)
 		lastreq = list_entry(ep->queue.prev, struct fsl_req, queue);
 		lastreq->tail->next_td_ptr =
 			cpu_to_hc32(req->head->td_dma & DTD_ADDR_MASK);
+		/* Ensure dTD's next dtd pointer to be updated */
+		wmb();
 		/* Read prime bit, if 1 goto done */
 		if (fsl_readl(&dr_regs->endpointprime) & bitmask)
 			goto out;
@@ -1469,7 +1471,7 @@ static void setup_received_irq(struct fsl_udc *udc,
 			mdelay(10);
 			tmp = fsl_readl(&dr_regs->portsc1) | (ptc << 16);
 			fsl_writel(tmp, &dr_regs->portsc1);
-			printk(KERN_INFO "udc: switch to test mode %d.\n", ptc);
+;
 		}
 
 		return;
@@ -1963,7 +1965,7 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
 	if (udc_controller->transceiver) {
 		/* Suspend the controller until OTG enable it */
 		udc_controller->stopped = 1;
-		printk(KERN_INFO "Suspend udc for OTG auto detect\n");
+;
 
 		/* connect to bus through transceiver */
 		if (udc_controller->transceiver) {
@@ -1984,13 +1986,13 @@ int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
 		udc_controller->ep0_state = WAIT_FOR_SETUP;
 		udc_controller->ep0_dir = 0;
 	}
-	printk(KERN_INFO "%s: bind to driver %s\n",
-			udc_controller->gadget.name, driver->driver.name);
+//	printk(KERN_INFO "%s: bind to driver %s\n",
+;
 
 out:
 	if (retval)
-		printk(KERN_WARNING "gadget driver register failed %d\n",
-		       retval);
+//		printk(KERN_WARNING "gadget driver register failed %d\n",
+;
 	return retval;
 }
 EXPORT_SYMBOL(usb_gadget_probe_driver);
@@ -2035,8 +2037,8 @@ int usb_gadget_unregister_driver(struct usb_gadget_driver *driver)
 	udc_controller->gadget.dev.driver = NULL;
 	udc_controller->driver = NULL;
 
-	printk(KERN_WARNING "unregistered gadget driver '%s'\n",
-	       driver->driver.name);
+//	printk(KERN_WARNING "unregistered gadget driver '%s'\n",
+;
 	return 0;
 }
 EXPORT_SYMBOL(usb_gadget_unregister_driver);
@@ -2757,7 +2759,7 @@ static struct platform_driver udc_driver = {
 
 static int __init udc_init(void)
 {
-	printk(KERN_INFO "%s (%s)\n", driver_desc, DRIVER_VERSION);
+;
 	return platform_driver_probe(&udc_driver, fsl_udc_probe);
 }
 
@@ -2766,7 +2768,7 @@ module_init(udc_init);
 static void __exit udc_exit(void)
 {
 	platform_driver_unregister(&udc_driver);
-	printk(KERN_WARNING "%s unregistered\n", driver_desc);
+;
 }
 
 module_exit(udc_exit);

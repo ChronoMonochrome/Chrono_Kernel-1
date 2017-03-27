@@ -217,10 +217,10 @@ static unsigned char OperationalMajorVersion;
 static unsigned char OperationalMinorVersion;
 static unsigned short OperationalBuildNumber;
 
-static int debug;
+static bool debug;
 
 static int closing_wait = EDGE_CLOSING_WAIT;
-static int ignore_cpu_rev;
+static bool ignore_cpu_rev;
 static int default_uart_mode;		/* RS232 */
 
 static void edge_tty_recv(struct device *dev, struct tty_struct *tty,
@@ -558,6 +558,9 @@ static void chase_port(struct edgeport_port *port, unsigned long timeout,
 	wait_queue_t wait;
 	unsigned long flags;
 
+	if (!tty)
+		return;
+
 	if (!timeout)
 		timeout = (HZ * EDGE_CLOSING_WAIT)/100;
 
@@ -870,8 +873,8 @@ static int build_i2c_fw_hdr(__u8 *header, struct device *dev)
 
 	err = request_firmware(&fw, fw_name, dev);
 	if (err) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       fw_name, err);
+//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 		kfree(buffer);
 		return err;
 	}
@@ -1436,8 +1439,8 @@ static int download_fw(struct edgeport_serial *serial)
 
 		err = request_firmware(&fw, fw_name, dev);
 		if (err) {
-			printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-			       fw_name, err);
+//			printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 			kfree(buffer);
 			return err;
 		}
@@ -2793,6 +2796,7 @@ static struct usb_serial_driver edgeport_2port_device = {
 	.set_termios		= edge_set_termios,
 	.tiocmget		= edge_tiocmget,
 	.tiocmset		= edge_tiocmset,
+	.get_icount		= edge_get_icount,
 	.write			= edge_write,
 	.write_room		= edge_write_room,
 	.chars_in_buffer	= edge_chars_in_buffer,
@@ -2815,8 +2819,8 @@ static int __init edgeport_init(void)
 	retval = usb_register(&io_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&edgeport_2port_device);

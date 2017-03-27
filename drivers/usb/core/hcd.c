@@ -981,10 +981,7 @@ static int register_root_hub(struct usb_hcd *hcd)
 	if (retval) {
 		dev_err (parent_dev, "can't register root hub for %s, %d\n",
 				dev_name(&usb_dev->dev), retval);
-	}
-	mutex_unlock(&usb_bus_list_lock);
-
-	if (retval == 0) {
+	} else {
 		spin_lock_irq (&hcd_root_hub_lock);
 		hcd->rh_registered = 1;
 		spin_unlock_irq (&hcd_root_hub_lock);
@@ -993,6 +990,7 @@ static int register_root_hub(struct usb_hcd *hcd)
 		if (HCD_DEAD(hcd))
 			usb_hc_died (hcd);	/* This time clean up */
 	}
+	mutex_unlock(&usb_bus_list_lock);
 
 	return retval;
 }
@@ -1954,7 +1952,7 @@ int hcd_bus_suspend(struct usb_device *rhdev, pm_message_t msg)
 	int		old_state = hcd->state;
 
 	dev_dbg(&rhdev->dev, "bus %s%s\n",
-			(msg.event & PM_EVENT_AUTO ? "auto-" : ""), "suspend");
+			(PMSG_IS_AUTO(msg) ? "auto-" : ""), "suspend");
 	if (HCD_DEAD(hcd)) {
 		dev_dbg(&rhdev->dev, "skipped %s of dead bus\n", "suspend");
 		return 0;
@@ -1990,7 +1988,7 @@ int hcd_bus_resume(struct usb_device *rhdev, pm_message_t msg)
 	int		old_state = hcd->state;
 
 	dev_dbg(&rhdev->dev, "usb %s%s\n",
-			(msg.event & PM_EVENT_AUTO ? "auto-" : ""), "resume");
+			(PMSG_IS_AUTO(msg) ? "auto-" : ""), "resume");
 	if (HCD_DEAD(hcd)) {
 		dev_dbg(&rhdev->dev, "skipped %s of dead bus\n", "resume");
 		return 0;
@@ -2462,8 +2460,8 @@ int usb_add_hcd(struct usb_hcd *hcd,
 
 	retval = sysfs_create_group(&rhdev->dev.kobj, &usb_bus_attr_group);
 	if (retval < 0) {
-		printk(KERN_ERR "Cannot register USB bus sysfs attributes: %d\n",
-		       retval);
+//		printk(KERN_ERR "Cannot register USB bus sysfs attributes: %d\n",
+;
 		goto error_create_attr_group;
 	}
 	if (hcd->uses_new_polling && HCD_POLL_RH(hcd))
@@ -2608,7 +2606,7 @@ void usb_mon_deregister (void)
 {
 
 	if (mon_ops == NULL) {
-		printk(KERN_ERR "USB: monitor was not registered\n");
+;
 		return;
 	}
 	mon_ops = NULL;

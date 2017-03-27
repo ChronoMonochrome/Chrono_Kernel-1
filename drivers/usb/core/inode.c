@@ -65,7 +65,7 @@ static umode_t devmode = USBFS_DEFAULT_DEVMODE;
 static umode_t busmode = USBFS_DEFAULT_BUSMODE;
 static umode_t listmode = USBFS_DEFAULT_LISTMODE;
 
-static int usbfs_show_options(struct seq_file *seq, struct vfsmount *mnt)
+static int usbfs_show_options(struct seq_file *seq, struct dentry *root)
 {
 	if (devuid != 0)
 		seq_printf(seq, ",devuid=%u", devuid);
@@ -179,8 +179,8 @@ static int parse_options(struct super_block *s, char *data)
 			listmode = option & S_IRWXUGO;
 			break;
 		default:
-			printk(KERN_ERR "usbfs: unrecognised mount option "
-			       "\"%s\" or missing value\n", p);
+//			printk(KERN_ERR "usbfs: unrecognised mount option "
+;
 			return -EINVAL;
 		}
 	}
@@ -239,9 +239,9 @@ static void update_sb(struct super_block *sb)
 				update_special(bus);
 				break;
 			default:
-				printk(KERN_WARNING "usbfs: Unknown node %s "
-				       "mode %x found on remount!\n",
-				       bus->d_name.name, bus->d_inode->i_mode);
+//				printk(KERN_WARNING "usbfs: Unknown node %s "
+//				       "mode %x found on remount!\n",
+;
 				break;
 			}
 		}
@@ -260,7 +260,7 @@ static int remount(struct super_block *sb, int *flags, char *data)
 		return 0;
 
 	if (parse_options(sb, data)) {
-		printk(KERN_WARNING "usbfs: mount parameter error.\n");
+;
 		return -EINVAL;
 	}
 
@@ -431,18 +431,10 @@ static loff_t default_file_lseek (struct file *file, loff_t offset, int orig)
 	return retval;
 }
 
-static int default_open (struct inode *inode, struct file *file)
-{
-	if (inode->i_private)
-		file->private_data = inode->i_private;
-
-	return 0;
-}
-
 static const struct file_operations default_file_operations = {
 	.read =		default_read_file,
 	.write =	default_write_file,
-	.open =		default_open,
+	.open =		simple_open,
 	.llseek =	default_file_lseek,
 };
 
@@ -456,7 +448,6 @@ static const struct super_operations usbfs_ops = {
 static int usbfs_fill_super(struct super_block *sb, void *data, int silent)
 {
 	struct inode *inode;
-	struct dentry *root;
 
 	sb->s_blocksize = PAGE_CACHE_SIZE;
 	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
@@ -464,19 +455,11 @@ static int usbfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_op = &usbfs_ops;
 	sb->s_time_gran = 1;
 	inode = usbfs_get_inode(sb, S_IFDIR | 0755, 0);
-
-	if (!inode) {
-		dbg("%s: could not get inode!",__func__);
-		return -ENOMEM;
-	}
-
-	root = d_alloc_root(inode);
-	if (!root) {
+	sb->s_root = d_make_root(inode);
+	if (!sb->s_root) {
 		dbg("%s: could not get root dentry!",__func__);
-		iput(inode);
 		return -ENOMEM;
 	}
-	sb->s_root = root;
 	return 0;
 }
 
@@ -501,7 +484,7 @@ static int fs_create_by_name (const char *name, mode_t mode,
 	 */
 	if (!parent ) {
 		if (usbfs_mount && usbfs_mount->mnt_sb) {
-			parent = usbfs_mount->mnt_sb->s_root;
+			parent = usbfs_mount->mnt_root;
 		}
 	}
 
@@ -602,19 +585,19 @@ static int create_special_files (void)
 	/* create the devices special file */
 	retval = simple_pin_fs(&usb_fs_type, &usbfs_mount, &usbfs_mount_count);
 	if (retval) {
-		printk(KERN_ERR "Unable to get usbfs mount\n");
+;
 		goto exit;
 	}
 
 	ignore_mount = 0;
 
-	parent = usbfs_mount->mnt_sb->s_root;
+	parent = usbfs_mount->mnt_root;
 	devices_usbfs_dentry = fs_create_file ("devices",
 					       listmode | S_IFREG, parent,
 					       NULL, &usbfs_devices_fops,
 					       listuid, listgid);
 	if (devices_usbfs_dentry == NULL) {
-		printk(KERN_ERR "Unable to create devices usbfs file\n");
+;
 		retval = -ENODEV;
 		goto error_clean_mounts;
 	}
@@ -662,11 +645,11 @@ static void usbfs_add_bus(struct usb_bus *bus)
 
 	sprintf (name, "%03d", bus->busnum);
 
-	parent = usbfs_mount->mnt_sb->s_root;
+	parent = usbfs_mount->mnt_root;
 	bus->usbfs_dentry = fs_create_file (name, busmode | S_IFDIR, parent,
 					    bus, NULL, busuid, busgid);
 	if (bus->usbfs_dentry == NULL) {
-		printk(KERN_ERR "Error creating usbfs bus entry\n");
+;
 		return;
 	}
 }
@@ -697,7 +680,7 @@ static void usbfs_add_device(struct usb_device *dev)
 					    &usbdev_file_operations,
 					    devuid, devgid);
 	if (dev->usbfs_dentry == NULL) {
-		printk(KERN_ERR "Error creating usbfs device entry\n");
+;
 		return;
 	}
 

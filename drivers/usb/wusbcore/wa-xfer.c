@@ -481,7 +481,7 @@ static void __wa_xfer_setup_hdr0(struct wa_xfer *xfer,
 	case WA_XFER_TYPE_BI:
 		break;
 	case WA_XFER_TYPE_ISO:
-		printk(KERN_ERR "FIXME: ISOC not implemented\n");
+;
 	default:
 		BUG();
 	};
@@ -769,15 +769,15 @@ static int __wa_seg_submit(struct wa_rpipe *rpipe, struct wa_xfer *xfer,
 	int result;
 	result = usb_submit_urb(&seg->urb, GFP_ATOMIC);
 	if (result < 0) {
-		printk(KERN_ERR "xfer %p#%u: REQ submit failed: %d\n",
-		       xfer, seg->index, result);
+//		printk(KERN_ERR "xfer %p#%u: REQ submit failed: %d\n",
+;
 		goto error_seg_submit;
 	}
 	if (seg->dto_urb) {
 		result = usb_submit_urb(seg->dto_urb, GFP_ATOMIC);
 		if (result < 0) {
-			printk(KERN_ERR "xfer %p#%u: DTO submit failed: %d\n",
-			       xfer, seg->index, result);
+//			printk(KERN_ERR "xfer %p#%u: DTO submit failed: %d\n",
+;
 			goto error_dto_submit;
 		}
 	}
@@ -1122,8 +1122,8 @@ int wa_urb_dequeue(struct wahc *wa, struct urb *urb)
 		switch (seg->status) {
 		case WA_SEG_NOTREADY:
 		case WA_SEG_READY:
-			printk(KERN_ERR "xfer %p#%u: dequeue bad state %u\n",
-			       xfer, cnt, seg->status);
+//			printk(KERN_ERR "xfer %p#%u: dequeue bad state %u\n",
+;
 			WARN_ON(1);
 			break;
 		case WA_SEG_DELAYED:
@@ -1218,17 +1218,17 @@ static int wa_xfer_status_to_errno(u8 status)
 		return 0;
 	if (status >= ARRAY_SIZE(xlat)) {
 		if (printk_ratelimit())
-			printk(KERN_ERR "%s(): BUG? "
-			       "Unknown WA transfer status 0x%02x\n",
-			       __func__, real_status);
+//			printk(KERN_ERR "%s(): BUG? "
+//			       "Unknown WA transfer status 0x%02x\n",
+;
 		return -EINVAL;
 	}
 	errno = xlat[status];
 	if (unlikely(errno > 0)) {
 		if (printk_ratelimit())
-			printk(KERN_ERR "%s(): BUG? "
-			       "Inconsistent WA status: 0x%02x\n",
-			       __func__, real_status);
+//			printk(KERN_ERR "%s(): BUG? "
+//			       "Inconsistent WA status: 0x%02x\n",
+;
 		errno = -errno;
 	}
 	return errno;

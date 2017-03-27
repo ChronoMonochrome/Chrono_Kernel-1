@@ -361,8 +361,8 @@ static int mdc800_usb_waitForIRQ (int mode, int msec)
 	
 	if (mdc800->state == NOT_CONNECTED)
 	{
-		printk(KERN_WARNING "mdc800: Camera gets disconnected "
-		       "during waiting for irq.\n");
+//		printk(KERN_WARNING "mdc800: Camera gets disconnected "
+;
 		mdc800->camera_request_ready=0;
 		return -2;
 	}
@@ -707,8 +707,8 @@ static ssize_t mdc800_device_read (struct file *file, char __user *buf, size_t l
 	}
 	if (mdc800->state == WORKING)
 	{
-		printk(KERN_WARNING "mdc800: Illegal State \"working\""
-		       "reached during read ?!\n");
+//		printk(KERN_WARNING "mdc800: Illegal State \"working\""
+;
 		mutex_unlock(&mdc800->io_lock);
 		return -EBUSY;
 	}
@@ -1036,8 +1036,8 @@ static int __init usb_mdc800_init (void)
 	if (retval)
 		goto cleanup_on_fail;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 	return 0;
 
@@ -1047,7 +1047,7 @@ cleanup_on_fail:
 
 	if (mdc800 != NULL)
 	{
-		printk(KERN_ERR "mdc800: can't alloc memory!\n");
+;
 
 		kfree(mdc800->download_urb_buffer);
 		kfree(mdc800->write_urb_buffer);

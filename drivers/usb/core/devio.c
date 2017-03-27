@@ -46,6 +46,7 @@
 #include <linux/cdev.h>
 #include <linux/notifier.h>
 #include <linux/security.h>
+#include <linux/user_namespace.h>
 #include <asm/uaccess.h>
 #include <asm/byteorder.h>
 #include <linux/moduleparam.h>
@@ -68,7 +69,7 @@ struct dev_state {
 	wait_queue_head_t wait;     /* wake up if a request completed */
 	unsigned int discsignr;
 	struct pid *disc_pid;
-	uid_t disc_uid, disc_euid;
+	const struct cred *cred;
 	void __user *disccontext;
 	unsigned long ifclaimed;
 	u32 secid;
@@ -79,7 +80,7 @@ struct async {
 	struct list_head asynclist;
 	struct dev_state *ps;
 	struct pid *pid;
-	uid_t uid, euid;
+	const struct cred *cred;
 	unsigned int signr;
 	unsigned int ifnum;
 	void __user *userbuffer;
@@ -91,7 +92,7 @@ struct async {
 	u8 bulk_status;
 };
 
-static int usbfs_snoop;
+static bool usbfs_snoop;
 module_param(usbfs_snoop, bool, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(usbfs_snoop, "true to log all usbfs traffic");
 
@@ -248,6 +249,7 @@ static struct async *alloc_async(unsigned int numisoframes)
 static void free_async(struct async *as)
 {
 	put_pid(as->pid);
+	put_cred(as->cred);
 	kfree(as->urb->transfer_buffer);
 	kfree(as->urb->setup_packet);
 	usb_free_urb(as->urb);
@@ -292,17 +294,14 @@ static struct async *async_getcompleted(struct dev_state *ps)
 static struct async *async_getpending(struct dev_state *ps,
 					     void __user *userurb)
 {
-	unsigned long flags;
 	struct async *as;
 
-	spin_lock_irqsave(&ps->lock, flags);
 	list_for_each_entry(as, &ps->async_pending, asynclist)
 		if (as->userurb == userurb) {
 			list_del_init(&as->asynclist);
-			spin_unlock_irqrestore(&ps->lock, flags);
 			return as;
 		}
-	spin_unlock_irqrestore(&ps->lock, flags);
+
 	return NULL;
 }
 
@@ -357,6 +356,7 @@ static void cancel_bulk_urbs(struct dev_state *ps, unsigned bulk_addr)
 __releases(ps->lock)
 __acquires(ps->lock)
 {
+	struct urb *urb;
 	struct async *as;
 
 	/* Mark all the pending URBs that match bulk_addr, up to but not
@@ -379,8 +379,11 @@ __acquires(ps->lock)
 	list_for_each_entry(as, &ps->async_pending, asynclist) {
 		if (as->bulk_status == AS_UNLINK) {
 			as->bulk_status = 0;		/* Only once */
+			urb = as->urb;
+			usb_get_urb(urb);
 			spin_unlock(&ps->lock);		/* Allow completions */
-			usb_unlink_urb(as->urb);
+			usb_unlink_urb(urb);
+			usb_put_urb(urb);
 			spin_lock(&ps->lock);
 			goto rescan;
 		}
@@ -393,9 +396,8 @@ static void async_completed(struct urb *urb)
 	struct dev_state *ps = as->ps;
 	struct siginfo sinfo;
 	struct pid *pid = NULL;
-	uid_t uid = 0;
-	uid_t euid = 0;
 	u32 secid = 0;
+	const struct cred *cred = NULL;
 	int signr;
 
 	spin_lock(&ps->lock);
@@ -408,8 +410,7 @@ static void async_completed(struct urb *urb)
 		sinfo.si_code = SI_ASYNCIO;
 		sinfo.si_addr = as->userurb;
 		pid = get_pid(as->pid);
-		uid = as->uid;
-		euid = as->euid;
+		cred = get_cred(as->cred);
 		secid = as->secid;
 	}
 	snoop(&urb->dev->dev, "urb complete\n");
@@ -423,9 +424,9 @@ static void async_completed(struct urb *urb)
 	spin_unlock(&ps->lock);
 
 	if (signr) {
-		kill_pid_info_as_uid(sinfo.si_signo, &sinfo, pid, uid,
-				      euid, secid);
+		kill_pid_info_as_cred(sinfo.si_signo, &sinfo, pid, cred, secid);
 		put_pid(pid);
+		put_cred(cred);
 	}
 
 	wake_up(&ps->wait);
@@ -433,6 +434,7 @@ static void async_completed(struct urb *urb)
 
 static void destroy_async(struct dev_state *ps, struct list_head *list)
 {
+	struct urb *urb;
 	struct async *as;
 	unsigned long flags;
 
@@ -440,10 +442,13 @@ static void destroy_async(struct dev_state *ps, struct list_head *list)
 	while (!list_empty(list)) {
 		as = list_entry(list->next, struct async, asynclist);
 		list_del_init(&as->asynclist);
+		urb = as->urb;
+		usb_get_urb(urb);
 
 		/* drop the spinlock so the completion handler can run */
 		spin_unlock_irqrestore(&ps->lock, flags);
-		usb_kill_urb(as->urb);
+		usb_kill_urb(urb);
+		usb_put_urb(urb);
 		spin_lock_irqsave(&ps->lock, flags);
 	}
 	spin_unlock_irqrestore(&ps->lock, flags);
@@ -637,7 +642,25 @@ static int check_ctrlrecip(struct dev_state *ps, unsigned int requesttype,
 	index &= 0xff;
 	switch (requesttype & USB_RECIP_MASK) {
 	case USB_RECIP_ENDPOINT:
+		if ((index & ~USB_DIR_IN) == 0)
+			return 0;
 		ret = findintfep(ps->dev, index);
+		if (ret < 0) {
+			/*
+			 * Some not fully compliant Win apps seem to get
+			 * index wrong and have the endpoint number here
+			 * rather than the endpoint address (with the
+			 * correct direction). Win does let this through,
+			 * so we'll not reject it here but leave it to
+			 * the device to not break KVM. But we warn.
+			 */
+			ret = findintfep(ps->dev, index ^ 0x80);
+			if (ret >= 0)
+				dev_info(&ps->dev->dev,
+					"%s: process %i (%s) requesting ep %02x but needs %02x\n",
+					__func__, task_pid_nr(current),
+					current->comm, index, index ^ 0x80);
+		}
 		if (ret >= 0)
 			ret = checkintf(ps, ret);
 		break;
@@ -672,7 +695,6 @@ static int usbdev_open(struct inode *inode, struct file *file)
 {
 	struct usb_device *dev = NULL;
 	struct dev_state *ps;
-	const struct cred *cred = current_cred();
 	int ret;
 
 	ret = -ENOMEM;
@@ -722,8 +744,7 @@ static int usbdev_open(struct inode *inode, struct file *file)
 	init_waitqueue_head(&ps->wait);
 	ps->discsignr = 0;
 	ps->disc_pid = get_pid(task_pid(current));
-	ps->disc_uid = cred->uid;
-	ps->disc_euid = cred->euid;
+	ps->cred = get_current_cred();
 	ps->disccontext = NULL;
 	ps->ifclaimed = 0;
 	security_task_getsecid(current, &ps->secid);
@@ -765,6 +786,7 @@ static int usbdev_release(struct inode *inode, struct file *file)
 	usb_unlock_device(dev);
 	usb_put_dev(dev);
 	put_pid(ps->disc_pid);
+	put_cred(ps->cred);
 
 	as = async_getcompleted(ps);
 	while (as) {
@@ -846,10 +868,10 @@ static int proc_control(struct dev_state *ps, void __user *arg)
 	}
 	free_page((unsigned long)tbuf);
 	if (i < 0 && i != -EPIPE) {
-		dev_printk(KERN_DEBUG, &dev->dev, "usbfs: USBDEVFS_CONTROL "
-			   "failed cmd %s rqt %u rq %u len %u ret %d\n",
-			   current->comm, ctrl.bRequestType, ctrl.bRequest,
-			   ctrl.wLength, i);
+//		dev_printk(KERN_DEBUG, &dev->dev, "usbfs: USBDEVFS_CONTROL "
+//			   "failed cmd %s rqt %u rq %u len %u ret %d\n",
+//			   current->comm, ctrl.bRequestType, ctrl.bRequest,
+;
 	}
 	return i;
 }
@@ -1065,7 +1087,6 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
 	struct usb_host_endpoint *ep;
 	struct async *as;
 	struct usb_ctrlrequest *dr = NULL;
-	const struct cred *cred = current_cred();
 	unsigned int u, totlen, isofrmlen;
 	int ret, ifnum = -1;
 	int is_in;
@@ -1279,8 +1300,7 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
 	as->signr = uurb->signr;
 	as->ifnum = ifnum;
 	as->pid = get_pid(task_pid(current));
-	as->uid = cred->uid;
-	as->euid = cred->euid;
+	as->cred = get_current_cred();
 	security_task_getsecid(current, &as->secid);
 	if (!is_in && uurb->buffer_length > 0) {
 		if (copy_from_user(as->urb->transfer_buffer, uurb->buffer,
@@ -1327,8 +1347,8 @@ static int proc_do_submiturb(struct dev_state *ps, struct usbdevfs_urb *uurb,
 	}
 
 	if (ret) {
-		dev_printk(KERN_DEBUG, &ps->dev->dev,
-			   "usbfs: usb_submit_urb returned %d\n", ret);
+//		dev_printk(KERN_DEBUG, &ps->dev->dev,
+;
 		snoop_urb(ps->dev, as->userurb, as->urb->pipe,
 				0, ret, COMPLETE, NULL, 0);
 		async_removepending(as);
@@ -1352,12 +1372,24 @@ static int proc_submiturb(struct dev_state *ps, void __user *arg)
 
 static int proc_unlinkurb(struct dev_state *ps, void __user *arg)
 {
+	struct urb *urb;
 	struct async *as;
+	unsigned long flags;
 
+	spin_lock_irqsave(&ps->lock, flags);
 	as = async_getpending(ps, arg);
-	if (!as)
+	if (!as) {
+		spin_unlock_irqrestore(&ps->lock, flags);
 		return -EINVAL;
-	usb_kill_urb(as->urb);
+	}
+
+	urb = as->urb;
+	usb_get_urb(urb);
+	spin_unlock_irqrestore(&ps->lock, flags);
+
+	usb_kill_urb(urb);
+	usb_put_urb(urb);
+
 	return 0;
 }
 
@@ -1540,10 +1572,14 @@ static int processcompl_compat(struct async *as, void __user * __user *arg)
 	void __user *addr = as->userurb;
 	unsigned int i;
 
-	if (as->userbuffer && urb->actual_length)
-		if (copy_to_user(as->userbuffer, urb->transfer_buffer,
-				 urb->actual_length))
+	if (as->userbuffer && urb->actual_length) {
+		if (urb->number_of_packets > 0)		/* Isochronous */
+			i = urb->transfer_buffer_length;
+		else					/* Non-Isoc */
+			i = urb->actual_length;
+		if (copy_to_user(as->userbuffer, urb->transfer_buffer, i))
 			return -EFAULT;
+	}
 	if (put_user(as->status, &userurb->status))
 		return -EFAULT;
 	if (put_user(urb->actual_length, &userurb->actual_length))
@@ -1998,9 +2034,8 @@ static void usbdev_remove(struct usb_device *udev)
 			sinfo.si_errno = EPIPE;
 			sinfo.si_code = SI_ASYNCIO;
 			sinfo.si_addr = ps->disccontext;
-			kill_pid_info_as_uid(ps->discsignr, &sinfo,
-					ps->disc_pid, ps->disc_uid,
-					ps->disc_euid, ps->secid);
+			kill_pid_info_as_cred(ps->discsignr, &sinfo,
+					ps->disc_pid, ps->cred, ps->secid);
 		}
 	}
 }
@@ -2062,20 +2097,20 @@ int __init usb_devio_init(void)
 	retval = register_chrdev_region(USB_DEVICE_DEV, USB_DEVICE_MAX,
 					"usb_device");
 	if (retval) {
-		printk(KERN_ERR "Unable to register minors for usb_device\n");
+;
 		goto out;
 	}
 	cdev_init(&usb_device_cdev, &usbdev_file_operations);
 	retval = cdev_add(&usb_device_cdev, USB_DEVICE_DEV, USB_DEVICE_MAX);
 	if (retval) {
-		printk(KERN_ERR "Unable to get usb_device major %d\n",
-		       USB_DEVICE_MAJOR);
+//		printk(KERN_ERR "Unable to get usb_device major %d\n",
+;
 		goto error_cdev;
 	}
 #ifdef CONFIG_USB_DEVICE_CLASS
 	usb_classdev_class = class_create(THIS_MODULE, "usb_device");
 	if (IS_ERR(usb_classdev_class)) {
-		printk(KERN_ERR "Unable to register usb_device class\n");
+;
 		retval = PTR_ERR(usb_classdev_class);
 		cdev_del(&usb_device_cdev);
 		usb_classdev_class = NULL;

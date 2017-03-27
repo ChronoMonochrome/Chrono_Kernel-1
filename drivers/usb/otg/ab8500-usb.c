@@ -36,7 +36,7 @@
 #include <linux/mfd/ab8500.h>
 #include <linux/mfd/dbx500-prcmu.h>
 #include <linux/kernel_stat.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 #include <linux/wakelock.h>
 #include <linux/usb/ab8500-otg.h>
 #include <linux/input/ab8505_micro_usb_iddet.h>
@@ -76,7 +76,7 @@ struct blocking_notifier_head micro_usb_switch_notifier =
 #define AB8500_USB_PHY_TUNE2	0x06
 #define AB8500_USB_PHY_TUNE3	0x07
 
-static struct pm_qos_request_list usb_pm_qos_latency;
+static struct pm_qos_request usb_pm_qos_latency;
 static bool usb_pm_qos_is_latency_0;
 
 #define USB_PROBE_DELAY 1000 /* 1 seconds */
@@ -220,8 +220,10 @@ static void ab8500_usb_load(struct work_struct *work)
 	if ((num_irqs > old_num_irqs) &&
 		(num_irqs - old_num_irqs) > USB_LIMIT) {
 
+		/*
 		prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
 					     "usb", 1000000);
+		*/
 		if (!usb_pm_qos_is_latency_0) {
 
 			pm_qos_add_request(&usb_pm_qos_latency,
@@ -235,9 +237,10 @@ static void ab8500_usb_load(struct work_struct *work)
 				pm_qos_remove_request(&usb_pm_qos_latency);
 				usb_pm_qos_is_latency_0 = false;
 		}
-
+		/*
 		prcmu_qos_update_requirement(PRCMU_QOS_ARM_KHZ,
 					     "usb", PRCMU_QOS_DEFAULT_VALUE);
+		*/
 	}
 	old_num_irqs = num_irqs;
 
@@ -1168,8 +1171,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 							AB8500_BANK12_ACCESS,
 							0x01);
 		if (ret < 0)
-			printk(KERN_ERR "Failed to enable bank12"
-						" access ret=%d\n", ret);
+//			printk(KERN_ERR "Failed to enable bank12"
+;
 
 		if (is_ab8505(ab->ab8500)) {
 			/* Apply new Phy tuning values
@@ -1179,16 +1182,16 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 								AB8500_USB_PHY_TUNE1,
 								0xD9);
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE1"
-							" register ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE1"
+;
 
 				ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
 								AB8500_USB_PHY_TUNE2,
 								0x00);
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE2"
-							" register ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE2"
+;
 
 				ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
@@ -1196,24 +1199,24 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 								0xFC);
 
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE3"
-							" regester ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE3"
+;
 		} else {
 			ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
 								AB8500_USB_PHY_TUNE1,
 								0xD8);
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE1"
-							" register ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE1"
+;
 
 				ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
 								AB8500_USB_PHY_TUNE2,
 								0x00);
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE2"
-							" register ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE2"
+;
 
 				ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
@@ -1221,8 +1224,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 								0xFC);
 
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE3"
-							" regester ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE3"
+;
 		}
 
 		/* Switch to normal mode/disable Bank 0x12 access */
@@ -1232,8 +1235,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 						0x00);
 
 		if (ret < 0)
-			printk(KERN_ERR "Failed to switch bank12"
-						" access ret=%d\n", ret);
+//			printk(KERN_ERR "Failed to switch bank12"
+;
 	}
 	/* Needed to enable ID detection. */
 	ab8500_usb_wd_workaround(ab);
@@ -1317,6 +1320,7 @@ static int __devexit ab8500_usb_remove(struct platform_device *pdev)
 		blocking_notifier_chain_unregister(&micro_usb_switch_notifier,
 				&ab->usb_nb);
 
+	sysfs_remove_group(&ab->dev->kobj, &ab8500_attr_group);
 	kfree(ab);
 
 	return 0;

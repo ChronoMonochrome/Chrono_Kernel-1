@@ -242,36 +242,36 @@ static const char *CHIP;
  */
 
 /* too wordy: dev_printk(level , &(d)->gadget->dev , fmt , ## args) */
-#define xprintk(d,level,fmt,args...) \
-	printk(level "%s: " fmt , shortname , ## args)
-
-#ifdef DEBUG
-#define DBG(dev,fmt,args...) \
-	xprintk(dev , KERN_DEBUG , fmt , ## args)
-#else
-#define DBG(dev,fmt,args...) \
-	do { } while (0)
-#endif /* DEBUG */
-
-#ifdef VERBOSE_DEBUG
-#define VDEBUG	DBG
-#else
-#define VDEBUG(dev,fmt,args...) \
-	do { } while (0)
-#endif /* DEBUG */
-
-#define ERROR(dev,fmt,args...) \
-	xprintk(dev , KERN_ERR , fmt , ## args)
-#define INFO(dev,fmt,args...) \
-	xprintk(dev , KERN_INFO , fmt , ## args)
-
-
-/*----------------------------------------------------------------------*/
-
-/* SYNCHRONOUS ENDPOINT OPERATIONS (bulk/intr/iso)
- *
- * After opening, configure non-control endpoints.  Then use normal
- * stream read() and write() requests; and maybe ioctl() to get more
+//#define xprintk(d,level,fmt,args...) \
+//	printk(level "%s: " fmt , shortname , ## args)
+//
+//#ifdef DEBUG
+//#define DBG(dev,fmt,args...) \
+//	xprintk(dev , KERN_DEBUG , fmt , ## args)
+//#else
+//#define DBG(dev,fmt,args...) \
+//	do { } while (0)
+//#endif /* DEBUG */
+//
+//#ifdef VERBOSE_DEBUG
+//#define VDEBUG	DBG
+//#else
+//#define VDEBUG(dev,fmt,args...) \
+//	do { } while (0)
+//#endif /* DEBUG */
+//
+//#define ERROR(dev,fmt,args...) \
+//	xprintk(dev , KERN_ERR , fmt , ## args)
+//#define INFO(dev,fmt,args...) \
+//	xprintk(dev , KERN_INFO , fmt , ## args)
+//
+//
+///*----------------------------------------------------------------------*/
+//
+///* SYNCHRONOUS ENDPOINT OPERATIONS (bulk/intr/iso)
+// *
+// * After opening, configure non-control endpoints.  Then use normal
+;
  * precise FIFO status when recovering from cancellation.
  */
 
@@ -2069,7 +2069,7 @@ gadgetfs_fill_super (struct super_block *sb, void *opts, int silent)
 	if (!inode)
 		goto enomem0;
 	inode->i_op = &simple_dir_inode_operations;
-	if (!(d = d_alloc_root (inode)))
+	if (!(d = d_make_root (inode)))
 		goto enomem1;
 	sb->s_root = d;
 

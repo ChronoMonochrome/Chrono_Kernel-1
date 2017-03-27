@@ -80,7 +80,7 @@
 #include <linux/usb/serial.h>
 #include "belkin_sa.h"
 
-static int debug;
+static bool debug;
 
 /*
  * Version Information
@@ -575,8 +575,8 @@ static int __init belkin_sa_init(void)
 	retval = usb_register(&belkin_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&belkin_device);

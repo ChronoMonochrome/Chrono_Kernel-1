@@ -956,8 +956,8 @@ static void tusb_musb_enable(struct musb *musb)
 				TUSB_INT_SRC_ID_STATUS_CHNG);
 
 	if (is_dma_capable() && dma_off)
-		printk(KERN_WARNING "%s %s: dma not reactivated\n",
-				__FILE__, __func__);
+//		printk(KERN_WARNING "%s %s: dma not reactivated\n",
+;
 	else
 		dma_off = 1;
 }
@@ -980,8 +980,8 @@ static void tusb_musb_disable(struct musb *musb)
 	del_timer(&musb_idle_timer);
 
 	if (is_dma_capable() && !dma_off) {
-		printk(KERN_WARNING "%s %s: dma still active\n",
-				__FILE__, __func__);
+//		printk(KERN_WARNING "%s %s: dma still active\n",
+;
 		dma_off = 1;
 	}
 }
@@ -1027,7 +1027,7 @@ static int tusb_musb_start(struct musb *musb)
 	if (musb->board_set_power)
 		ret = musb->board_set_power(1);
 	if (ret != 0) {
-		printk(KERN_ERR "tusb: Cannot enable TUSB6010\n");
+;
 		return ret;
 	}
 
@@ -1035,14 +1035,14 @@ static int tusb_musb_start(struct musb *musb)
 
 	if (musb_readl(tbase, TUSB_PROD_TEST_RESET) !=
 		TUSB_PROD_TEST_RESET_VAL) {
-		printk(KERN_ERR "tusb: Unable to detect TUSB6010\n");
+;
 		goto err;
 	}
 
 	ret = tusb_print_revision(musb);
 	if (ret < 2) {
-		printk(KERN_ERR "tusb: Unsupported TUSB6010 revision %i\n",
-				ret);
+//		printk(KERN_ERR "tusb: Unsupported TUSB6010 revision %i\n",
+;
 		goto err;
 	}
 
@@ -1128,8 +1128,8 @@ static int tusb_musb_init(struct musb *musb)
 
 	ret = tusb_musb_start(musb);
 	if (ret) {
-		printk(KERN_ERR "Could not start tusb6010 (%d)\n",
-				ret);
+//		printk(KERN_ERR "Could not start tusb6010 (%d)\n",
+;
 		goto done;
 	}
 	musb->isr = tusb_musb_interrupt;

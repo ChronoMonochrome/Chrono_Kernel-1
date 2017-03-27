@@ -43,7 +43,7 @@
 
 #define CYBERJACK_LOCAL_BUF_SIZE 32
 
-static int debug;
+static bool debug;
 
 /*
  * Version Information
@@ -504,9 +504,9 @@ static int __init cyberjack_init(void)
 	if (retval)
 		goto failed_usb_register;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION " "
-	       DRIVER_AUTHOR "\n");
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION " "
+;
+;
 
 	return 0;
 failed_usb_register:
