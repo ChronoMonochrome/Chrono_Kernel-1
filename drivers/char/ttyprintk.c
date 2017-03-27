@@ -78,7 +78,7 @@ static int tpk_;
 				;
 #endif
 				tpk_curr = 0;
-				if (buf[i + 1] == '\n')
+				if ((i + 1) < count && buf[i + 1] == '\n')
 					i++;
 				break;
 			case '\n':
