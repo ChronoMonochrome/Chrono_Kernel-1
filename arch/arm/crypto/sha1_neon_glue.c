@@ -19,7 +19,6 @@
  */
 
 #include <crypto/internal/hash.h>
-#include <asm-generic/simd.h>
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/mm.h>
@@ -28,6 +27,7 @@
 #include <crypto/sha.h>
 #include <asm/byteorder.h>
 #include <asm/neon.h>
+#include <asm/simd.h>
 #include <asm/crypto/sha1.h>
 
 

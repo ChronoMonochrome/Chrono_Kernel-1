@@ -106,7 +106,7 @@ struct stedma40_half_channel_info {
  * @dst_dev_type: Dst device type
  * @src_info: Parameters for dst half channel
  * @dst_info: Parameters for dst half channel
- * @use_fixed_channel: if true, use the physical channel specified by phy_channel
+ * @use_fixed_channel: if true, use physical channel specified by phy_channel
  * @phy_channel: physical channel to use, only if use_fixed_channel is true
  *
  * This structure has to be filled by the client drivers.
@@ -196,6 +196,24 @@ dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan);
  * returns 0 or positive number of remaning bytes.
  */
 u32 stedma40_residue(struct dma_chan *chan);
+
+/*
+ * stedma40_get_src_addr - get current source address
+ * @chan: the DMA channel
+ *
+ * Returns the physical address of the current source element to be read by the
+ * DMA.
+ */
+dma_addr_t stedma40_get_src_addr(struct dma_chan *chan);
+
+/*
+ * stedma40_get_dst_addr - get current destination address
+ * @chan: the DMA channel
+ *
+ * Returns the physical address of the current destination element to be
+ * written by the DMA.
+ */
+dma_addr_t stedma40_get_dst_addr(struct dma_chan *chan);
 
 /**
  * stedma40_filter() - Provides stedma40_chan_cfg to the
