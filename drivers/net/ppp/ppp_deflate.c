@@ -1,12 +1,34 @@
 /*
+ *  ==FILEVERSION 980319==
+ *
  * ppp_deflate.c - interface the zlib procedures for Deflate compression
  * and decompression (as used by gzip) to the PPP code.
+ * This version is for use with Linux kernel 1.3.X.
  *
- * Copyright 1994-1998 Paul Mackerras.
+ * Copyright (c) 1994 The Australian National University.
+ * All rights reserved.
  *
- *  This program is free software; you can redistribute it and/or
- *  modify it under the terms of the GNU General Public License
- *  version 2 as published by the Free Software Foundation.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation is hereby granted, provided that the above copyright
+ * notice appears in all copies.  This software is provided without any
+ * warranty, express or implied. The Australian National University
+ * makes no representations about the suitability of this software for
+ * any purpose.
+ *
+ * IN NO EVENT SHALL THE AUSTRALIAN NATIONAL UNIVERSITY BE LIABLE TO ANY
+ * PARTY FOR DIRECT, INDIRECT, SPECIAL, INCIDENTAL, OR CONSEQUENTIAL DAMAGES
+ * ARISING OUT OF THE USE OF THIS SOFTWARE AND ITS DOCUMENTATION, EVEN IF
+ * THE AUSTRALIAN NATIONAL UNIVERSITY HAS BEEN ADVISED OF THE POSSIBILITY
+ * OF SUCH DAMAGE.
+ *
+ * THE AUSTRALIAN NATIONAL UNIVERSITY SPECIFICALLY DISCLAIMS ANY WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+ * AND FITNESS FOR A PARTICULAR PURPOSE.  THE SOFTWARE PROVIDED HEREUNDER IS
+ * ON AN "AS IS" BASIS, AND THE AUSTRALIAN NATIONAL UNIVERSITY HAS NO
+ * OBLIGATION TO PROVIDE MAINTENANCE, SUPPORT, UPDATES, ENHANCEMENTS,
+ * OR MODIFICATIONS.
+ *
+ * From: deflate.c,v 1.1 1996/01/18 03:17:48 paulus Exp
  */
 
 #include <linux/module.h>
@@ -229,8 +251,8 @@ static int z_compress(void *arg, unsigned char *rptr, unsigned char *obuf,
 		r = zlib_deflate(&state->strm, Z_PACKET_FLUSH);
 		if (r != Z_OK) {
 			if (state->debug)
-				printk(KERN_ERR
-				       "z_compress: deflate returned %d\n", r);
+//				printk(KERN_ERR
+;
 			break;
 		}
 		if (state->strm.avail_out == 0) {
@@ -421,8 +443,8 @@ static int z_decompress(void *arg, unsigned char *ibuf, int isize,
 
 	if (isize <= PPP_HDRLEN + DEFLATE_OVHD) {
 		if (state->debug)
-			printk(KERN_DEBUG "z_decompress%d: short pkt (%d)\n",
-			       state->unit, isize);
+//			printk(KERN_DEBUG "z_decompress%d: short pkt (%d)\n",
+;
 		return DECOMP_ERROR;
 	}
 
@@ -430,8 +452,8 @@ static int z_decompress(void *arg, unsigned char *ibuf, int isize,
 	seq = get_unaligned_be16(ibuf + PPP_HDRLEN);
 	if (seq != (state->seqno & 0xffff)) {
 		if (state->debug)
-			printk(KERN_DEBUG "z_decompress%d: bad seq # %d, expected %d\n",
-			       state->unit, seq, state->seqno & 0xffff);
+//			printk(KERN_DEBUG "z_decompress%d: bad seq # %d, expected %d\n",
+;
 		return DECOMP_ERROR;
 	}
 	++state->seqno;
@@ -463,8 +485,8 @@ static int z_decompress(void *arg, unsigned char *ibuf, int isize,
 		r = zlib_inflate(&state->strm, Z_PACKET_FLUSH);
 		if (r != Z_OK) {
 			if (state->debug)
-				printk(KERN_DEBUG "z_decompress%d: inflate returned %d (%s)\n",
-				       state->unit, r, (state->strm.msg? state->strm.msg: ""));
+//				printk(KERN_DEBUG "z_decompress%d: inflate returned %d (%s)\n",
+;
 			return DECOMP_FATALERROR;
 		}
 		if (state->strm.avail_out != 0)
@@ -489,16 +511,16 @@ static int z_decompress(void *arg, unsigned char *ibuf, int isize,
 			overflow = 1;
 		} else {
 			if (state->debug)
-				printk(KERN_DEBUG "z_decompress%d: ran out of mru\n",
-				       state->unit);
+//				printk(KERN_DEBUG "z_decompress%d: ran out of mru\n",
+;
 			return DECOMP_FATALERROR;
 		}
 	}
 
 	if (decode_proto) {
 		if (state->debug)
-			printk(KERN_DEBUG "z_decompress%d: didn't get proto\n",
-			       state->unit);
+//			printk(KERN_DEBUG "z_decompress%d: didn't get proto\n",
+;
 		return DECOMP_ERROR;
 	}
 
@@ -546,8 +568,8 @@ static void z_incomp(void *arg, unsigned char *ibuf, int icnt)
 	if (r != Z_OK) {
 		/* gak! */
 		if (state->debug) {
-			printk(KERN_DEBUG "z_incomp%d: inflateIncomp returned %d (%s)\n",
-			       state->unit, r, (state->strm.msg? state->strm.msg: ""));
+//			printk(KERN_DEBUG "z_incomp%d: inflateIncomp returned %d (%s)\n",
+;
 		}
 		return;
 	}
@@ -612,8 +634,8 @@ static int __init deflate_init(void)
 {
         int answer = ppp_register_compressor(&ppp_deflate);
         if (answer == 0)
-                printk(KERN_INFO
-		       "PPP Deflate Compression module registered\n");
+//                printk(KERN_INFO
+;
 	ppp_register_compressor(&ppp_deflate_draft);
         return answer;
 }

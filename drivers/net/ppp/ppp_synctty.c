@@ -39,12 +39,11 @@
 #include <linux/netdevice.h>
 #include <linux/poll.h>
 #include <linux/ppp_defs.h>
-#include <linux/ppp-ioctl.h>
+#include <linux/if_ppp.h>
 #include <linux/ppp_channel.h>
 #include <linux/spinlock.h>
 #include <linux/completion.h>
 #include <linux/init.h>
-#include <linux/interrupt.h>
 #include <linux/slab.h>
 #include <asm/unaligned.h>
 #include <asm/uaccess.h>
@@ -146,13 +145,13 @@ ppp_print_buffer (const char *name, const __u8 *buf, int count)
 	__u8 line[44];
 
 	if (name != NULL)
-		printk(KERN_DEBUG "ppp_synctty: %s, count = %d\n", name, count);
+;
 
 	while (count > 8) {
 		memset (line, 32, 44);
 		ppp_print_hex (line, buf, 8);
 		ppp_print_char (&line[8 * 3], buf, 8);
-		printk(KERN_DEBUG "%s\n", line);
+;
 		count -= 8;
 		buf += 8;
 	}
@@ -161,7 +160,7 @@ ppp_print_buffer (const char *name, const __u8 *buf, int count)
 		memset (line, 32, 44);
 		ppp_print_hex (line, buf, count);
 		ppp_print_char (&line[8 * 3], buf, count);
-		printk(KERN_DEBUG "%s\n", line);
+;
 	}
 }
 
@@ -436,8 +435,8 @@ ppp_sync_init(void)
 
 	err = tty_register_ldisc(N_SYNC_PPP, &ppp_sync_ldisc);
 	if (err != 0)
-		printk(KERN_ERR "PPP_sync: error %d registering line disc.\n",
-		       err);
+//		printk(KERN_ERR "PPP_sync: error %d registering line disc.\n",
+;
 	return err;
 }
 
@@ -731,7 +730,7 @@ ppp_sync_input(struct syncppp *ap, const unsigned char *buf,
 	/* stuff the chars in the skb */
 	skb = dev_alloc_skb(ap->mru + PPP_HDRLEN + 2);
 	if (!skb) {
-		printk(KERN_ERR "PPPsync: no memory (input pkt)\n");
+;
 		goto err;
 	}
 	/* Try to get the payload 4-byte aligned */
@@ -781,7 +780,7 @@ static void __exit
 ppp_sync_cleanup(void)
 {
 	if (tty_unregister_ldisc(N_SYNC_PPP) != 0)
-		printk(KERN_ERR "failed to unregister Sync PPP line discipline\n");
+;
 }
 
 module_init(ppp_sync_init);
