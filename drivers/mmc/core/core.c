@@ -25,6 +25,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/fault-inject.h>
 #include <linux/random.h>
+#include <linux/suspend.h>
 
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
