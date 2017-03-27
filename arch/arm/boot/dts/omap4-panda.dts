@@ -1,20 +1,11 @@
-/*
- * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- */
 /dts-v1/;
 
-/include/ "omap4.dtsi"
+/memreserve/ 0x9D000000 0x03000000; /* Frame buffer */
+/memreserve/ 0xB0000000 0x10000000; /* Top 256MB is unaccessable */
+
+/include/ "skeleton.dtsi"
 
 / {
 	model = "TI OMAP4 PandaBoard";
-	compatible = "ti,omap4-panda", "ti,omap4430", "ti,omap4";
-
-	memory {
-		device_type = "memory";
-		reg = <0x80000000 0x40000000>; /* 1 GB */
-	};
+	compatible = "ti,omap4-panda", "ti,omap4430";
 };
