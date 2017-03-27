@@ -685,7 +685,11 @@ static void dsp_halt(struct file *file)
 		chk_send_dsp_cmd(&dev, HDEX_RECORD_STOP);
 		msnd_disable_irq(&dev);
 		if (file) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG LOGNAME ": Stopping read for %p\n", file);
+#else
+			;
+#endif
 			dev.mode &= ~FMODE_READ;
 		}
 		clear_bit(F_AUDIO_READ_INUSE, &dev.flags);
@@ -697,7 +701,11 @@ static void dsp_halt(struct file *file)
 		}
 		msnd_disable_irq(&dev);
 		if (file) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG LOGNAME ": Stopping write for %p\n", file);
+#else
+			;
+#endif
 			dev.mode &= ~FMODE_WRITE;
 		}
 		clear_bit(F_AUDIO_WRITE_INUSE, &dev.flags);
@@ -718,7 +726,11 @@ static int dsp_open(struct file *file)
 		msnd_fifo_make_empty(&dev.DAPF);
 		reset_play_queue();
 		if (file) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG LOGNAME ": Starting write for %p\n", file);
+#else
+			;
+#endif
 			dev.mode |= FMODE_WRITE;
 		}
 		msnd_enable_irq(&dev);
@@ -729,7 +741,11 @@ static int dsp_open(struct file *file)
 		msnd_fifo_make_empty(&dev.DARF);
 		reset_record_queue();
 		if (file) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG LOGNAME ": Starting read for %p\n", file);
+#else
+			;
+#endif
 			dev.mode |= FMODE_READ;
 		}
 		msnd_enable_irq(&dev);
@@ -1065,18 +1081,30 @@ static __inline__ void eval_dsp_msg(register WORD wMessage)
 		case HIDSP_PLAY_UNDER:
 #endif
 		case HIDSP_INT_PLAY_UNDER:
+#ifdef CONFIG_DEBUG_PRINTK
 /*			printk(KERN_DEBUG LOGNAME ": Play underflow\n"); */
+#else
+/*			;
+#endif
 			clear_bit(F_WRITING, &dev.flags);
 			break;
 
 		case HIDSP_INT_RECORD_OVER:
+#ifdef CONFIG_DEBUG_PRINTK
 /*			printk(KERN_DEBUG LOGNAME ": Record overflow\n"); */
+#else
+/*			;
+#endif
 			clear_bit(F_READING, &dev.flags);
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 /*			printk(KERN_DEBUG LOGNAME ": DSP message %d 0x%02x\n",
 			LOBYTE(wMessage), LOBYTE(wMessage)); */
+#else
+/*			;
+#endif
 			break;
 		}
 		break;
@@ -1087,7 +1115,11 @@ static __inline__ void eval_dsp_msg(register WORD wMessage)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 /*		printk(KERN_DEBUG LOGNAME ": HIMT message %d 0x%02x\n", HIBYTE(wMessage), HIBYTE(wMessage)); */
+#else
+/*		;
+#endif
 		break;
 	}
 }
@@ -1162,10 +1194,14 @@ static int __init probe_multisound(void)
 
 #ifdef MSND_CLASSIC
 	dev.name = "Classic/Tahiti/Monterey";
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": %s, "
 #else
 	switch (dev.info >> 4) {
 	case 0xf: xv = "<= 1.15"; break;
+#else
+	;
+#endif
 	case 0x1: xv = "1.18/1.2"; break;
 	case 0x2: xv = "1.3"; break;
 	case 0x3: xv = "1.4"; break;
@@ -1185,6 +1221,7 @@ static int __init probe_multisound(void)
 		dev.name = pinfiji;
 		break;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": %s revision %s, Xilinx version %s, "
 #endif /* MSND_CLASSIC */
 	       "I/O 0x%x-0x%x, IRQ %d, memory mapped to %p-%p\n",
@@ -1195,6 +1232,9 @@ static int __init probe_multisound(void)
 	       dev.io, dev.io + dev.numio - 1,
 	       dev.irq,
 	       dev.base, dev.base + 0x7fff);
+#else
+	;
+#endif
 
 	release_region(dev.io, dev.numio);
 	return 0;
@@ -1287,15 +1327,17 @@ static int __init calibrate_adc(WORD srate)
 		schedule_timeout(HZ / 3);
 		return 0;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING LOGNAME ": ADC calibration failed\n");
+#else
+	;
+#endif
 
 	return -EIO;
 }
 
 static int upload_dsp_code(void)
 {
-	int ret = 0;
-
 	msnd_outb(HPBLKSEL_0, dev.io + HP_BLKS);
 #ifndef HAVE_DSPCODEH
 	INITCODESIZE = mod_firmware_load(INITCODEFILE, &INITCODE);
@@ -1313,23 +1355,33 @@ static int upload_dsp_code(void)
 #endif
 	memcpy_toio(dev.base, PERMCODE, PERMCODESIZE);
 	if (msnd_upload_host(&dev, INITCODE, INITCODESIZE) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": Error uploading to DSP\n");
-		ret = -ENODEV;
-		goto out;
+#else
+		;
+#endif
+		return -ENODEV;
 	}
 #ifdef HAVE_DSPCODEH
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": DSP firmware uploaded (resident)\n");
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": DSP firmware uploaded\n");
+#else
+	;
+#endif
 #endif
 
-out:
 #ifndef HAVE_DSPCODEH
 	vfree(INITCODE);
 	vfree(PERMCODE);
 #endif
 
-	return ret;
+	return 0;
 }
 
 #ifdef MSND_CLASSIC
@@ -1353,7 +1405,11 @@ static int initialize(void)
 	reset_proteus();
 #endif
 	if ((err = init_sma()) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": Cannot initialize SMA\n");
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -1361,7 +1417,11 @@ static int initialize(void)
 		return err;
 
 	if ((err = upload_dsp_code()) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": Cannot upload DSP code\n");
+#else
+		;
+#endif
 		return err;
 	}
 
@@ -1369,7 +1429,11 @@ static int initialize(void)
 	while (readw(dev.base)) {
 		mdelay(1);
 		if (!timeout--) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG LOGNAME ": DSP reset timeout\n");
+#else
+			;
+#endif
 			return -EIO;
 		}
 	}
@@ -1387,10 +1451,18 @@ static int dsp_full_reset(void)
 		return 0;
 
 	set_bit(F_RESETTING, &dev.flags);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": DSP reset\n");
+#else
+	;
+#endif
 	dsp_halt(NULL);			/* Unconditionally halt */
 	if ((rv = initialize()))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": DSP reset failed\n");
+#else
+		;
+#endif
 	force_recsrc(dev.recsrc);
 	dsp_open(NULL);
 	clear_bit(F_RESETTING, &dev.flags);
@@ -1565,7 +1637,11 @@ static int __init msnd_pinnacle_cfg_devices(int cfg, int reset, msnd_pinnacle_cf
 
 	/* Reset devices if told to */
 	if (reset) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME ": Resetting all devices\n");
+#else
+		;
+#endif
 		for (i = 0; i < 4; ++i)
 			if (msnd_write_cfg_logical(cfg, i, 0, 0, 0, 0))
 				return -EIO;
@@ -1582,23 +1658,35 @@ static int __init msnd_pinnacle_cfg_devices(int cfg, int reset, msnd_pinnacle_cf
 		case 1:		/* MPU */
 			if (!(device[i].io0 && device[i].irq))
 				continue;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO LOGNAME
 			       ": Configuring MPU to I/O 0x%x IRQ %d\n",
 			       device[i].io0, device[i].irq);
+#else
+			;
+#endif
 			break;
 		case 2:		/* IDE */
 			if (!(device[i].io0 && device[i].io1 && device[i].irq))
 				continue;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO LOGNAME
 			       ": Configuring IDE to I/O 0x%x, 0x%x IRQ %d\n",
 			       device[i].io0, device[i].io1, device[i].irq);
+#else
+			;
+#endif
 			break;
 		case 3:		/* Joystick */
 			if (!(device[i].io0))
 				continue;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO LOGNAME
 			       ": Configuring joystick to I/O 0x%x\n",
 			       device[i].io0);
+#else
+			;
+#endif
 			break;
 		}
 
@@ -1635,7 +1723,7 @@ static int ide_irq __initdata = 0;
 static int joystick_io __initdata = 0;
 
 /* If we have the digital daugherboard... */
-static bool digital __initdata = false;
+static int digital __initdata = 0;
 #endif
 
 static int fifosize __initdata =	DEFFIFOSIZE;
@@ -1705,7 +1793,7 @@ static int joystick_io __initdata =	CONFIG_MSNDPIN_JOYSTICK_IO;
 #ifndef CONFIG_MSNDPIN_DIGITAL
 #  define CONFIG_MSNDPIN_DIGITAL	0
 #endif
-static bool digital __initdata =	CONFIG_MSNDPIN_DIGITAL;
+static int digital __initdata =		CONFIG_MSNDPIN_DIGITAL;
 
 #endif /* MSND_CLASSIC */
 
@@ -1746,11 +1834,19 @@ static int __init msnd_init(void)
 	static msnd_pinnacle_cfg_t pinnacle_devs;
 #endif /* MSND_CLASSIC */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": Turtle Beach " LONGNAME " Linux Driver Version "
 	       VERSION ", Copyright (C) 1998 Andrew Veliath\n");
+#else
+	;
+#endif
 
 	if (io == -1 || irq == -1 || mem == -1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": io, irq and mem must be set\n");
+#else
+		;
+#endif
 
 #ifdef MSND_CLASSIC
 	if (io == -1 ||
@@ -1818,12 +1914,24 @@ static int __init msnd_init(void)
 	}
 #else
 	if (cfg == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME ": Assuming PnP mode\n");
+#else
+		;
+#endif
 	} else if (cfg != 0x250 && cfg != 0x260 && cfg != 0x270) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME ": Config port must be 0x250, 0x260 or 0x270 (or unspecified for PnP mode)\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO LOGNAME ": Non-PnP mode: configuring at port 0x%x\n", cfg);
+#else
+		;
+#endif
 
 		/* DSP */
 		pinnacle_devs[0].io0 = io;
@@ -1895,7 +2003,11 @@ static int __init msnd_init(void)
 	msnd_fifo_init(&dev.DAPF);
 	msnd_fifo_init(&dev.DARF);
 	spin_lock_init(&dev.lock);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO LOGNAME ": %u byte audio FIFOs (x2)\n", dev.fifosize);
+#else
+	;
+#endif
 	if ((err = msnd_fifo_alloc(&dev.DAPF, dev.fifosize)) < 0) {
 		printk(KERN_ERR LOGNAME ": Couldn't allocate write FIFO\n");
 		return err;

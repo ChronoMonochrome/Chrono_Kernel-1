@@ -14,7 +14,6 @@
  */
 
 #include <linux/platform_device.h>
-#include <linux/export.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -92,6 +91,18 @@ static struct snd_soc_platform_driver dummy_platform = {
 static struct snd_soc_codec_driver dummy_codec;
 static struct snd_soc_dai_driver dummy_dai = {
 	.name = "snd-soc-dummy-dai",
+	.playback = {
+		.channels_min = 1,
+		.channels_max = UINT_MAX,
+		.formats = 0xffffffff,
+		.rates = SNDRV_PCM_RATE_8000_192000,
+	},
+	.capture = {
+		.channels_min = 1,
+		.channels_max = UINT_MAX,
+		.formats = 0xffffffff,
+		.rates = SNDRV_PCM_RATE_8000_192000,
+	}
 };
 
 static __devinit int snd_soc_dummy_probe(struct platform_device *pdev)
