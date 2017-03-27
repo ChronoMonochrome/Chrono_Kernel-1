@@ -1548,15 +1548,11 @@ static int __cpufreq_governor(struct cpufreq_policy *policy,
 		if (!gov)
 			return -EINVAL;
 		else {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s governor failed, too long"
 			       " transition latency of HW, fallback"
 			       " to %s governor\n",
 			       policy->governor->name,
 			       gov->name);
-#else
-			;
-#endif
 			policy->governor = gov;
 		}
 	}

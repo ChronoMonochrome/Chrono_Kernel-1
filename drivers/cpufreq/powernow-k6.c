@@ -231,11 +231,7 @@ static int __init powernow_k6_init(void)
 		return -ENODEV;
 
 	if (!request_region(POWERNOW_IOPORT, 16, "PowerNow!")) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "PowerNow IOPORT region already used.\n");
-#else
-		;
-#endif
 		return -EIO;
 	}
 
