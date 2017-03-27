@@ -230,7 +230,7 @@ static int wusb_ccm_mac(struct crypto_blkcipher *tfm_cbc,
 	dst_size = blen + sizeof(b0) + sizeof(b1) + zero_padding;
 	dst_buf = kzalloc(dst_size, GFP_KERNEL);
 	if (dst_buf == NULL) {
-		printk(KERN_ERR "E: can't alloc destination buffer\n");
+;
 		goto error_dst_buf;
 	}
 
@@ -265,8 +265,8 @@ static int wusb_ccm_mac(struct crypto_blkcipher *tfm_cbc,
 	desc.flags = 0;
 	result = crypto_blkcipher_encrypt(&desc, &sg_dst, sg, dst_size);
 	if (result < 0) {
-		printk(KERN_ERR "E: can't compute CBC-MAC tag (MIC): %d\n",
-		       result);
+//		printk(KERN_ERR "E: can't compute CBC-MAC tag (MIC): %d\n",
+;
 		goto error_cbc_crypt;
 	}
 
@@ -311,24 +311,24 @@ ssize_t wusb_prf(void *out, size_t out_size,
 	tfm_cbc = crypto_alloc_blkcipher("cbc(aes)", 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(tfm_cbc)) {
 		result = PTR_ERR(tfm_cbc);
-		printk(KERN_ERR "E: can't load CBC(AES): %d\n", (int)result);
+;
 		goto error_alloc_cbc;
 	}
 	result = crypto_blkcipher_setkey(tfm_cbc, key, 16);
 	if (result < 0) {
-		printk(KERN_ERR "E: can't set CBC key: %d\n", (int)result);
+;
 		goto error_setkey_cbc;
 	}
 
 	tfm_aes = crypto_alloc_cipher("aes", 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(tfm_aes)) {
 		result = PTR_ERR(tfm_aes);
-		printk(KERN_ERR "E: can't load AES: %d\n", (int)result);
+;
 		goto error_alloc_aes;
 	}
 	result = crypto_cipher_setkey(tfm_aes, key, 16);
 	if (result < 0) {
-		printk(KERN_ERR "E: can't set AES key: %d\n", (int)result);
+;
 		goto error_setkey_aes;
 	}
 
@@ -396,19 +396,19 @@ static int wusb_oob_mic_verify(void)
 
 	result = wusb_oob_mic(mic, stv_hsmic_key, &stv_hsmic_n, &stv_hsmic_hs);
 	if (result < 0)
-		printk(KERN_ERR "E: WUSB OOB MIC test: failed: %d\n", result);
+;
 	else if (memcmp(stv_hsmic_hs.MIC, mic, sizeof(mic))) {
-		printk(KERN_ERR "E: OOB MIC test: "
-		       "mismatch between MIC result and WUSB1.0[A2]\n");
+//		printk(KERN_ERR "E: OOB MIC test: "
+;
 		hs_size = sizeof(stv_hsmic_hs) - sizeof(stv_hsmic_hs.MIC);
-		printk(KERN_ERR "E: Handshake2 in: (%zu bytes)\n", hs_size);
+;
 		wusb_key_dump(&stv_hsmic_hs, hs_size);
-		printk(KERN_ERR "E: CCM Nonce in: (%zu bytes)\n",
-		       sizeof(stv_hsmic_n));
+//		printk(KERN_ERR "E: CCM Nonce in: (%zu bytes)\n",
+;
 		wusb_key_dump(&stv_hsmic_n, sizeof(stv_hsmic_n));
-		printk(KERN_ERR "E: MIC out:\n");
+;
 		wusb_key_dump(mic, sizeof(mic));
-		printk(KERN_ERR "E: MIC out (from WUSB1.0[A.2]):\n");
+;
 		wusb_key_dump(stv_hsmic_hs.MIC, sizeof(stv_hsmic_hs.MIC));
 		result = -EINVAL;
 	} else
@@ -471,21 +471,21 @@ static int wusb_key_derive_verify(void)
 	result = wusb_key_derive(&keydvt_out, stv_key_a1, &stv_keydvt_n_a1,
 				 &stv_keydvt_in_a1);
 	if (result < 0)
-		printk(KERN_ERR "E: WUSB key derivation test: "
-		       "derivation failed: %d\n", result);
+//		printk(KERN_ERR "E: WUSB key derivation test: "
+;
 	if (memcmp(&stv_keydvt_out_a1, &keydvt_out, sizeof(keydvt_out))) {
-		printk(KERN_ERR "E: WUSB key derivation test: "
-		       "mismatch between key derivation result "
-		       "and WUSB1.0[A1] Errata 2006/12\n");
-		printk(KERN_ERR "E: keydvt in: key\n");
+//		printk(KERN_ERR "E: WUSB key derivation test: "
+//		       "mismatch between key derivation result "
+;
+;
 		wusb_key_dump(stv_key_a1, sizeof(stv_key_a1));
-		printk(KERN_ERR "E: keydvt in: nonce\n");
+;
 		wusb_key_dump( &stv_keydvt_n_a1, sizeof(stv_keydvt_n_a1));
-		printk(KERN_ERR "E: keydvt in: hnonce & dnonce\n");
+;
 		wusb_key_dump(&stv_keydvt_in_a1, sizeof(stv_keydvt_in_a1));
-		printk(KERN_ERR "E: keydvt out: KCK\n");
+;
 		wusb_key_dump(&keydvt_out.kck, sizeof(keydvt_out.kck));
-		printk(KERN_ERR "E: keydvt out: PTK\n");
+;
 		wusb_key_dump(&keydvt_out.ptk, sizeof(keydvt_out.ptk));
 		result = -EINVAL;
 	} else

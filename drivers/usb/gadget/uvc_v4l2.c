@@ -95,8 +95,8 @@ uvc_v4l2_set_format(struct uvc_video *video, struct v4l2_format *fmt)
 	}
 
 	if (i == ARRAY_SIZE(uvc_formats)) {
-		printk(KERN_INFO "Unsupported format 0x%08x.\n",
-			fmt->fmt.pix.pixelformat);
+//		printk(KERN_INFO "Unsupported format 0x%08x.\n",
+;
 		return -EINVAL;
 	}
 
@@ -168,8 +168,8 @@ uvc_v4l2_release(struct file *file)
 	uvc_video_enable(video, 0);
 	mutex_lock(&video->queue.mutex);
 	if (uvc_free_buffers(&video->queue) < 0)
-		printk(KERN_ERR "uvc_v4l2_release: Unable to free "
-				"buffers.\n");
+//		printk(KERN_ERR "uvc_v4l2_release: Unable to free "
+;
 	mutex_unlock(&video->queue.mutex);
 
 	file->private_data = NULL;

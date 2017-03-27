@@ -33,6 +33,11 @@
 
 #include "gadget_chips.h"
 
+int hid_mouse_enable = 0;
+module_param(hid_mouse_enable, uint, 0644);
+int hid_keyboard_enable = 0;
+module_param(hid_keyboard_enable, uint, 0644);
+
 /*
  * Kbuild is not very cooperative with respect to linking separately
  * compiled library objects into one module.  So for now we won't use
@@ -62,6 +67,9 @@
 #include "f_mtp.c"
 #endif
 #include "f_accessory.c"
+#include "f_hid.h"
+#include "f_hid_android_keyboard.c"
+#include "f_hid_android_mouse.c"
 #define USB_ETH_RNDIS y
 #include "f_rndis.c"
 #include "rndis.c"
@@ -803,8 +811,8 @@ static ssize_t mass_storage_vendor_store(struct device *dev,
 	if (sscanf(buf, "%s", config->common->vendor_string) != 1)
 		return -EINVAL;
 
-	printk(KERN_DEBUG "usb: %s: vendor %s", __func__,
-			config->common->vendor_string);
+//	printk(KERN_DEBUG "usb: %s: vendor %s", __func__,
+;
 	return size;
 }
 
@@ -831,8 +839,8 @@ static ssize_t mass_storage_product_store(struct device *dev,
 	if (sscanf(buf, "%s", config->common->product_string) != 1)
 		return -EINVAL;
 
-	printk(KERN_DEBUG "usb: %s: product %s", __func__,
-			config->common->product_string);
+//	printk(KERN_DEBUG "usb: %s: product %s", __func__,
+;
 	return size;
 }
 
@@ -979,6 +987,48 @@ static struct android_usb_function accessory_function = {
 };
 
 
+static int hid_function_init(struct android_usb_function *f, struct usb_composite_dev *cdev)
+{
+	return ghid_setup(cdev->gadget, 2);
+}
+
+static void hid_function_cleanup(struct android_usb_function *f)
+{
+	ghid_cleanup();
+}
+
+static int hid_function_bind_config(struct android_usb_function *f, struct usb_configuration *c)
+{
+	int ret;
+	
+	if (hid_keyboard_enable) {
+;
+		ret = hidg_bind_config(c, &ghid_device_android_keyboard, 0);
+		if (ret) {
+			pr_info("%s: hid_function_bind_config keyboard failed: %d\n", __func__, ret);
+			return ret;
+		}
+	}
+	
+	if (hid_mouse_enable) {
+;
+		ret = hidg_bind_config(c, &ghid_device_android_mouse, 1);
+		if (ret) {
+			pr_info("%s: hid_function_bind_config mouse failed: %d\n", __func__, ret);
+			return ret;
+		}
+	}
+	
+	return 0;
+}
+
+static struct android_usb_function hid_function = {
+	.name		= "hid",
+	.init		= hid_function_init,
+	.cleanup	= hid_function_cleanup,
+	.bind_config	= hid_function_bind_config,
+};
+
 static struct android_usb_function *supported_functions[] = {
 	&adb_function,
 	&acm_function,
@@ -992,6 +1042,7 @@ static struct android_usb_function *supported_functions[] = {
 	&accessory_function,
 	&audio_source_function,
 	&ecm_function,
+	&hid_function,
 	NULL
 };
 
@@ -1071,7 +1122,7 @@ android_bind_enabled_functions(struct android_dev *dev,
 	int ret;
 
 	list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
-		printk(KERN_DEBUG "usb: %s f:%s\n", __func__, f->name);
+;
 		ret = f->bind_config(f, c);
 		if (ret) {
 			pr_err("%s: %s failed", __func__, f->name);
@@ -1097,7 +1148,7 @@ static int android_enable_function(struct android_dev *dev, char *name)
 {
 	struct android_usb_function **functions = dev->functions;
 	struct android_usb_function *f;
-	printk(KERN_DEBUG "usb: %s name=%s\n", __func__, name);
+;
 	while ((f = *functions++)) {
 		if (!strcmp(name, f->name)) {
 			list_add_tail(&f->enabled_list, &dev->enabled_functions);
@@ -1118,8 +1169,8 @@ functions_show(struct device *pdev, struct device_attribute *attr, char *buf)
 	char *buff = buf;
 
 	list_for_each_entry(f, &dev->enabled_functions, enabled_list){
-		printk(KERN_DEBUG "usb: %s enabled_func=%s\n",
-				__func__, f->name);
+//		printk(KERN_DEBUG "usb: %s enabled_func=%s\n",
+;
 		buff += sprintf(buff, "%s,", f->name);
 	}
 	if (buff != buf)
@@ -1141,7 +1192,7 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 	strncpy(buf, buff, sizeof(buf));
 	b = strim(buf);
 
-	printk(KERN_DEBUG "usb: [%s] functions = %s\n", __func__, b);
+;
 	while (b) {
 		name = strsep(&b, ",");
 		if (name) {
@@ -1150,6 +1201,8 @@ functions_store(struct device *pdev, struct device_attribute *attr,
 				pr_err("android_usb: Cannot enable '%s'", name);
 		}
 	}
+	/* HID driver always enabled, it's the whole point of this kernel patch */
+	android_enable_function(dev, "hid");
 
 	return size;
 }
@@ -1158,7 +1211,7 @@ static ssize_t enable_show(struct device *pdev, struct device_attribute *attr,
 			   char *buf)
 {
 	struct android_dev *dev = dev_get_drvdata(pdev);
-	printk(KERN_DEBUG "usb: %s dev->enabled=%d\n", __func__,  dev->enabled);
+;
 	return sprintf(buf, "%d\n", dev->enabled);
 }
 
@@ -1170,8 +1223,8 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 	int enabled = 0;
 
 	sscanf(buff, "%d", &enabled);
-	printk(KERN_DEBUG "usb: %s enabled=%d, !dev->enabled=%d\n",
-			__func__, enabled, !dev->enabled);
+//	printk(KERN_DEBUG "usb: %s enabled=%d, !dev->enabled=%d\n",
+;
 	if (enabled && !dev->enabled) {
 		/* update values in composite driver's copy of device descriptor */
 		cdev->desc.idVendor = device_desc.idVendor;
@@ -1411,7 +1464,7 @@ static int android_bind(struct usb_composite_dev *cdev)
 static int android_usb_unbind(struct usb_composite_dev *cdev)
 {
 	struct android_dev *dev = _android_dev;
-	printk(KERN_DEBUG "usb: %s\n", __func__);
+;
 	cancel_work_sync(&dev->work);
 	android_cleanup_functions(dev->functions);
 	return 0;
@@ -1512,7 +1565,7 @@ static int __init init(void)
 	struct android_dev *dev;
 	int err;
 
-	printk(KERN_DEBUG "usb: %s\n", __func__);
+;
 	android_class = class_create(THIS_MODULE, "android_usb");
 	if (IS_ERR(android_class))
 		return PTR_ERR(android_class);
@@ -1541,8 +1594,8 @@ static int __init init(void)
 #ifdef CONFIG_USB_DUN_SUPPORT
 	err = modem_misc_register();
 	if (err) {
-		printk(KERN_ERR "usb: %s modem misc register is failed\n",
-				__func__);
+//		printk(KERN_ERR "usb: %s modem misc register is failed\n",
+;
 		return err;
 	}
 #endif

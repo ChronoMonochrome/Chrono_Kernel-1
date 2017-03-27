@@ -38,7 +38,7 @@ static int debug = 1;
 #define dbg(lvl, format, arg...) 					\
 do { 									\
 	if (debug >= lvl)						\
-		printk(KERN_DEBUG "%s: " format "\n", __FILE__, ##arg);	\
+;
 } while (0)
 
 
@@ -132,11 +132,11 @@ static void adu_debug_data(int level, const char *function, int size,
 	if (debug < level)
 		return;
 
-	printk(KERN_DEBUG "%s: %s - length = %d, data = ",
-	       __FILE__, function, size);
+//	printk(KERN_DEBUG "%s: %s - length = %d, data = ",
+;
 	for (i = 0; i < size; ++i)
-		printk("%.2x ", data[i]);
-	printk("\n");
+;
+;
 }
 
 /**
@@ -283,8 +283,8 @@ static int adu_open(struct inode *inode, struct file *file)
 
 	interface = usb_find_interface(&adu_driver, subminor);
 	if (!interface) {
-		printk(KERN_ERR "adutux: %s - error, can't find device for "
-		       "minor %d\n", __func__, subminor);
+//		printk(KERN_ERR "adutux: %s - error, can't find device for "
+;
 		retval = -ENODEV;
 		goto exit_no_device;
 	}
@@ -416,8 +416,8 @@ static ssize_t adu_read(struct file *file, __user char *buffer, size_t count,
 	/* verify that the device wasn't unplugged */
 	if (dev->udev == NULL) {
 		retval = -ENODEV;
-		printk(KERN_ERR "adutux: No device or device unplugged %d\n",
-		       retval);
+//		printk(KERN_ERR "adutux: No device or device unplugged %d\n",
+;
 		goto exit;
 	}
 
@@ -577,8 +577,8 @@ static ssize_t adu_write(struct file *file, const __user char *buffer,
 	/* verify that the device wasn't unplugged */
 	if (dev->udev == NULL) {
 		retval = -ENODEV;
-		printk(KERN_ERR "adutux: No device or device unplugged %d\n",
-		       retval);
+//		printk(KERN_ERR "adutux: No device or device unplugged %d\n",
+;
 		goto exit;
 	}
 
@@ -894,14 +894,14 @@ static int __init adu_init(void)
 	/* register this driver with the USB subsystem */
 	result = usb_register(&adu_driver);
 	if (result < 0) {
-		printk(KERN_ERR "usb_register failed for the "__FILE__
-		       " driver. Error number %d\n", result);
+//		printk(KERN_ERR "usb_register failed for the "__FILE__
+;
 		goto exit;
 	}
 
-	printk(KERN_INFO "adutux " DRIVER_DESC " " DRIVER_VERSION "\n");
-	printk(KERN_INFO "adutux is an experimental driver. "
-	       "Use at your own risk\n");
+;
+//	printk(KERN_INFO "adutux is an experimental driver. "
+;
 
 exit:
 	dbg(2," %s : leave, return value %d", __func__, result);

@@ -800,9 +800,9 @@ int usb_register_device_driver(struct usb_device_driver *new_udriver,
 			usbcore_name, new_udriver->name);
 		usbfs_update_special();
 	} else {
-		printk(KERN_ERR "%s: error %d registering device "
-			"	driver %s\n",
-			usbcore_name, retval, new_udriver->name);
+//		printk(KERN_ERR "%s: error %d registering device "
+//			"	driver %s\n",
+;
 	}
 
 	return retval;
@@ -884,9 +884,9 @@ out_removeid:
 out_newid:
 	driver_unregister(&new_driver->drvwrap.driver);
 
-	printk(KERN_ERR "%s: error %d registering interface "
-			"	driver %s\n",
-			usbcore_name, retval, new_driver->name);
+//	printk(KERN_ERR "%s: error %d registering interface "
+//			"	driver %s\n",
+;
 	goto out;
 }
 EXPORT_SYMBOL_GPL(usb_register_driver);
@@ -1043,8 +1043,7 @@ static int usb_resume_device(struct usb_device *udev, pm_message_t msg)
 	/* Non-root devices on a full/low-speed bus must wait for their
 	 * companion high-speed root hub, in case a handoff is needed.
 	 */
-	if (!(msg.event & PM_EVENT_AUTO) && udev->parent &&
-			udev->bus->hs_companion)
+	if (!PMSG_IS_AUTO(msg) && udev->parent && udev->bus->hs_companion)
 		device_pm_wait_for_dev(&udev->dev,
 				&udev->bus->hs_companion->root_hub->dev);
 
@@ -1072,7 +1071,7 @@ static int usb_suspend_interface(struct usb_device *udev,
 
 	if (driver->suspend) {
 		status = driver->suspend(intf, msg);
-		if (status && !(msg.event & PM_EVENT_AUTO))
+		if (status && !PMSG_IS_AUTO(msg))
 			dev_err(&intf->dev, "%s error %d\n",
 					"suspend", status);
 	} else {
@@ -1186,7 +1185,7 @@ static int usb_suspend_both(struct usb_device *udev, pm_message_t msg)
 			status = usb_suspend_interface(udev, intf, msg);
 
 			/* Ignore errors during system sleep transitions */
-			if (!(msg.event & PM_EVENT_AUTO))
+			if (!PMSG_IS_AUTO(msg))
 				status = 0;
 			if (status != 0)
 				break;
@@ -1196,7 +1195,7 @@ static int usb_suspend_both(struct usb_device *udev, pm_message_t msg)
 		status = usb_suspend_device(udev, msg);
 
 		/* Again, ignore errors during system sleep transitions */
-		if (!(msg.event & PM_EVENT_AUTO))
+		if (!PMSG_IS_AUTO(msg))
 			status = 0;
 	}
 

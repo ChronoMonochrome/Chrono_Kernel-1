@@ -53,7 +53,7 @@ MODULE_AUTHOR("Tony Olech");
 MODULE_DESCRIPTION("FTDI ELAN driver");
 MODULE_LICENSE("GPL");
 #define INT_MODULE_PARM(n, v) static int n = v;module_param(n, int, 0444)
-static int distrust_firmware = 1;
+static bool distrust_firmware = 1;
 module_param(distrust_firmware, bool, 0);
 MODULE_PARM_DESC(distrust_firmware, "true to distrust firmware power/overcurren"
         "t setup");
@@ -628,7 +628,7 @@ static int ftdi_elan_open(struct inode *inode, struct file *file)
         interface = usb_find_interface(&ftdi_elan_driver, subminor);
 
         if (!interface) {
-                printk(KERN_ERR "can't find device for minor %d\n", subminor);
+;
                 return -ENODEV;
         } else {
                 struct usb_ftdi *ftdi = usb_get_intfdata(interface);
@@ -2758,7 +2758,7 @@ static int ftdi_elan_probe(struct usb_interface *interface,
 
 	ftdi = kzalloc(sizeof(struct usb_ftdi), GFP_KERNEL);
 	if (!ftdi) {
-                printk(KERN_ERR "Out of memory\n");
+;
                 return -ENOMEM;
         }
 
@@ -2889,7 +2889,7 @@ static struct usb_driver ftdi_elan_driver = {
 static int __init ftdi_elan_init(void)
 {
         int result;
-        printk(KERN_INFO "driver %s\n", ftdi_elan_driver.name);
+;
         mutex_init(&ftdi_module_lock);
         INIT_LIST_HEAD(&ftdi_static_list);
         status_queue = create_singlethread_workqueue("ftdi-status-control");
@@ -2906,8 +2906,8 @@ static int __init ftdi_elan_init(void)
 		destroy_workqueue(status_queue);
 		destroy_workqueue(command_queue);
 		destroy_workqueue(respond_queue);
-                printk(KERN_ERR "usb_register failed. Error number %d\n",
-		       result);
+//                printk(KERN_ERR "usb_register failed. Error number %d\n",
+;
 	}
         return result;
 
@@ -2916,7 +2916,7 @@ static int __init ftdi_elan_init(void)
  err_command_queue:
 	destroy_workqueue(status_queue);
  err_status_queue:
-	printk(KERN_ERR "%s couldn't create workqueue\n", ftdi_elan_driver.name);
+;
 	return -ENOMEM;
 }
 
@@ -2925,7 +2925,7 @@ static void __exit ftdi_elan_exit(void)
         struct usb_ftdi *ftdi;
         struct usb_ftdi *temp;
         usb_deregister(&ftdi_elan_driver);
-        printk(KERN_INFO "ftdi_u132 driver deregistered\n");
+;
         list_for_each_entry_safe(ftdi, temp, &ftdi_static_list, ftdi_list) {
                 ftdi_status_cancel_work(ftdi);
                 ftdi_command_cancel_work(ftdi);

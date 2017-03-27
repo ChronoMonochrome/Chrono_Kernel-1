@@ -46,7 +46,7 @@
 #define FULLPWRBIT          0x00000080
 #define NEXT_BOARD_POWER_BIT        0x00000004
 
-static int debug;
+static bool debug;
 
 /* Version Information */
 #define DRIVER_VERSION "v0.1"
@@ -709,8 +709,8 @@ static int __init ssu100_init(void)
 	if (retval)
 		goto failed_usb_register;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 	return 0;
 

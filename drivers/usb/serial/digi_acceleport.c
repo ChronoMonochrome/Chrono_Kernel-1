@@ -227,7 +227,7 @@
 *  - All sleeps use a timeout of DIGI_RETRY_TIMEOUT before looping to
 *    recheck the condition they are sleeping on.  This is defensive,
 *    in case a wake up is lost.
-*  - Following Documentation/DocBook/kernel-locking.pdf no spin locks
+*  - Following Documentation/DocBook/kernel-locking.tmpl no spin locks
 *    are held when calling copy_to/from_user or printk.
 */
 
@@ -467,7 +467,7 @@ static int digi_read_oob_callback(struct urb *urb);
 
 /* Statics */
 
-static int debug;
+static bool debug;
 
 static const struct usb_device_id id_table_combined[] = {
 	{ USB_DEVICE(DIGI_VENDOR_ID, DIGI_2_ID) },
@@ -1817,8 +1817,8 @@ static int __init digi_init(void)
 	retval = usb_register(&digi_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&digi_acceleport_4_device);

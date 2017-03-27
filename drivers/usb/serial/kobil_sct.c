@@ -160,17 +160,17 @@ static int kobil_startup(struct usb_serial *serial)
 
 	switch (priv->device_type) {
 	case KOBIL_ADAPTER_B_PRODUCT_ID:
-		printk(KERN_DEBUG "KOBIL B1 PRO / KAAN PRO detected\n");
+;
 		break;
 	case KOBIL_ADAPTER_K_PRODUCT_ID:
-		printk(KERN_DEBUG
-		  "KOBIL KAAN Standard Plus / SecOVID Reader Plus detected\n");
+//		printk(KERN_DEBUG
+;
 		break;
 	case KOBIL_USBTWIN_PRODUCT_ID:
-		printk(KERN_DEBUG "KOBIL USBTWIN detected\n");
+;
 		break;
 	case KOBIL_KAAN_SIM_PRODUCT_ID:
-		printk(KERN_DEBUG "KOBIL KAAN SIM detected\n");
+;
 		break;
 	}
 	usb_set_serial_port_data(serial->port[0], priv);
@@ -717,8 +717,8 @@ static int __init kobil_init(void)
 	if (retval)
 		goto failed_usb_register;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 	return 0;
 failed_usb_register:

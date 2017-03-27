@@ -173,70 +173,70 @@ module_param(qlen, uint, S_IRUGO|S_IWUSR);
 
 /*-------------------------------------------------------------------------*/
 
-#define xprintk(d, level, fmt, args...) \
-	printk(level "%s: " fmt, DRIVER_DESC, ## args)
-
-#ifdef DEBUG
-#define DBG(dev, fmt, args...) \
-	xprintk(dev, KERN_DEBUG, fmt, ## args)
-#else
-#define DBG(dev, fmt, args...) \
-	do { } while (0)
-#endif /* DEBUG */
-
-#ifdef VERBOSE
-#define VDBG(dev, fmt, args...) \
-	xprintk(dev, KERN_DEBUG, fmt, ## args)
-#else
-#define VDBG(dev, fmt, args...) \
-	do { } while (0)
-#endif /* VERBOSE */
-
-#define ERROR(dev, fmt, args...) \
-	xprintk(dev, KERN_ERR, fmt, ## args)
-#define WARNING(dev, fmt, args...) \
-	xprintk(dev, KERN_WARNING, fmt, ## args)
-#define INFO(dev, fmt, args...) \
-	xprintk(dev, KERN_INFO, fmt, ## args)
-
-/*-------------------------------------------------------------------------*/
-
-/* USB DRIVER HOOKUP (to the hardware driver, below us), mostly
- * ep0 implementation:  descriptors, config management, setup().
- * also optional class-specific notification interrupt transfer.
- */
-
-/*
- * DESCRIPTORS ... most are static, but strings and (full) configuration
- * descriptors are built on demand.
- */
-
-#define STRING_MANUFACTURER		1
-#define STRING_PRODUCT			2
-#define STRING_SERIALNUM		3
-
-/* holds our biggest descriptor */
-#define USB_DESC_BUFSIZE		256
-#define USB_BUFSIZE			8192
-
-/* This device advertises one configuration. */
-#define DEV_CONFIG_VALUE		1
-#define	PRINTER_INTERFACE		0
-
-static struct usb_device_descriptor device_desc = {
-	.bLength =		sizeof device_desc,
-	.bDescriptorType =	USB_DT_DEVICE,
-	.bcdUSB =		cpu_to_le16(0x0200),
-	.bDeviceClass =		USB_CLASS_PER_INTERFACE,
-	.bDeviceSubClass =	0,
-	.bDeviceProtocol =	0,
-	.idVendor =		cpu_to_le16(PRINTER_VENDOR_NUM),
-	.idProduct =		cpu_to_le16(PRINTER_PRODUCT_NUM),
-	.iManufacturer =	STRING_MANUFACTURER,
-	.iProduct =		STRING_PRODUCT,
-	.iSerialNumber =	STRING_SERIALNUM,
-	.bNumConfigurations =	1
-};
+//#define xprintk(d, level, fmt, args...) \
+//	printk(level "%s: " fmt, DRIVER_DESC, ## args)
+//
+//#ifdef DEBUG
+//#define DBG(dev, fmt, args...) \
+//	xprintk(dev, KERN_DEBUG, fmt, ## args)
+//#else
+//#define DBG(dev, fmt, args...) \
+//	do { } while (0)
+//#endif /* DEBUG */
+//
+//#ifdef VERBOSE
+//#define VDBG(dev, fmt, args...) \
+//	xprintk(dev, KERN_DEBUG, fmt, ## args)
+//#else
+//#define VDBG(dev, fmt, args...) \
+//	do { } while (0)
+//#endif /* VERBOSE */
+//
+//#define ERROR(dev, fmt, args...) \
+//	xprintk(dev, KERN_ERR, fmt, ## args)
+//#define WARNING(dev, fmt, args...) \
+//	xprintk(dev, KERN_WARNING, fmt, ## args)
+//#define INFO(dev, fmt, args...) \
+//	xprintk(dev, KERN_INFO, fmt, ## args)
+//
+///*-------------------------------------------------------------------------*/
+//
+///* USB DRIVER HOOKUP (to the hardware driver, below us), mostly
+// * ep0 implementation:  descriptors, config management, setup().
+// * also optional class-specific notification interrupt transfer.
+// */
+//
+///*
+// * DESCRIPTORS ... most are static, but strings and (full) configuration
+// * descriptors are built on demand.
+// */
+//
+//#define STRING_MANUFACTURER		1
+//#define STRING_PRODUCT			2
+//#define STRING_SERIALNUM		3
+//
+///* holds our biggest descriptor */
+//#define USB_DESC_BUFSIZE		256
+//#define USB_BUFSIZE			8192
+//
+///* This device advertises one configuration. */
+//#define DEV_CONFIG_VALUE		1
+//#define	PRINTER_INTERFACE		0
+//
+//static struct usb_device_descriptor device_desc = {
+//	.bLength =		sizeof device_desc,
+//	.bDescriptorType =	USB_DT_DEVICE,
+//	.bcdUSB =		cpu_to_le16(0x0200),
+//	.bDeviceClass =		USB_CLASS_PER_INTERFACE,
+//	.bDeviceSubClass =	0,
+//	.bDeviceProtocol =	0,
+//	.idVendor =		cpu_to_le16(PRINTER_VENDOR_NUM),
+//	.idProduct =		cpu_to_le16(PRINTER_PRODUCT_NUM),
+//	.iManufacturer =	STRING_MANUFACTURER,
+//	.iProduct =		STRING_PRODUCT,
+//	.iSerialNumber =	STRING_SERIALNUM,
+//	.bNumConfigurations =	1
+;
 
 static struct usb_otg_descriptor otg_desc = {
 	.bLength =		sizeof otg_desc,

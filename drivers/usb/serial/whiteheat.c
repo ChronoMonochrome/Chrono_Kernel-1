@@ -87,7 +87,7 @@
 #include <linux/ihex.h>
 #include "whiteheat.h"			/* WhiteHEAT specific commands */
 
-static int debug;
+static bool debug;
 
 #ifndef CMSPAR
 #define CMSPAR 0
@@ -576,6 +576,7 @@ no_firmware:
 		"%s: please contact support@connecttech.com\n",
 		serial->type->description);
 	kfree(result);
+	kfree(command);
 	return -ENODEV;
 
 no_command_private:
@@ -1208,7 +1209,7 @@ static void firm_setup_port(struct tty_struct *tty)
 	struct whiteheat_port_settings port_settings;
 	unsigned int cflag = tty->termios->c_cflag;
 
-	port_settings.port = port->number + 1;
+	port_settings.port = port->number - port->serial->minor + 1;
 
 	/* get the byte size */
 	switch (cflag & CSIZE) {
@@ -1528,8 +1529,8 @@ static int __init whiteheat_init(void)
 	retval = usb_register(&whiteheat_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&whiteheat_device);

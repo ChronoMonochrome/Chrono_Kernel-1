@@ -1358,8 +1358,8 @@ static int __init ep_config_from_table(struct musb *musb)
 		break;
 	}
 
-	printk(KERN_DEBUG "%s: setup fifo_mode %d\n",
-			musb_driver_name, fifo_mode);
+//	printk(KERN_DEBUG "%s: setup fifo_mode %d\n",
+;
 
 
 done:
@@ -1388,10 +1388,10 @@ done:
 		musb->nr_endpoints = max(epn, musb->nr_endpoints);
 	}
 
-	printk(KERN_DEBUG "%s: %d/%d max ep, %d/%d memory\n",
-			musb_driver_name,
-			n + 1, musb->config->num_eps * 2 - 1,
-			offset, (1 << (musb->config->ram_bits + 2)));
+//	printk(KERN_DEBUG "%s: %d/%d max ep, %d/%d memory\n",
+//			musb_driver_name,
+//			n + 1, musb->config->num_eps * 2 - 1,
+;
 
 #ifdef CONFIG_USB_MUSB_HDRC_HCD
 	if (!musb->bulk_ep) {
@@ -1495,8 +1495,8 @@ static int __init musb_core_init(u16 musb_type, struct musb *musb)
 	if (reg & MUSB_CONFIGDATA_SOFTCONE)
 		strcat(aInfo, ", SoftConn");
 
-	printk(KERN_DEBUG "%s: ConfigData=0x%02x (%s)\n",
-			musb_driver_name, reg, aInfo);
+//	printk(KERN_DEBUG "%s: ConfigData=0x%02x (%s)\n",
+;
 
 	aDate[0] = 0;
 	if (MUSB_CONTROLLER_MHDRC == musb_type) {
@@ -1507,9 +1507,9 @@ static int __init musb_core_init(u16 musb_type, struct musb *musb)
 		type = "";
 #ifdef CONFIG_USB_MUSB_HDRC_HCD
 #ifndef	CONFIG_USB_OTG_BLACKLIST_HUB
-		printk(KERN_ERR
-			"%s: kernel must blacklist external hubs\n",
-			musb_driver_name);
+//		printk(KERN_ERR
+//			"%s: kernel must blacklist external hubs\n",
+;
 #endif
 #endif
 	}
@@ -1519,8 +1519,8 @@ static int __init musb_core_init(u16 musb_type, struct musb *musb)
 	snprintf(aRevision, 32, "%d.%d%s", MUSB_HWVERS_MAJOR(musb->hwvers),
 		MUSB_HWVERS_MINOR(musb->hwvers),
 		(musb->hwvers & MUSB_HWVERS_RC) ? "RC" : "");
-	printk(KERN_DEBUG "%s: %sHDRC RTL version %s %s\n",
-			musb_driver_name, type, aRevision, aDate);
+//	printk(KERN_DEBUG "%s: %sHDRC RTL version %s %s\n",
+;
 
 	/* configure ep0 */
 	musb_configure_ep0(musb);
@@ -1708,7 +1708,7 @@ irqreturn_t musb_interrupt(struct musb *musb)
 EXPORT_SYMBOL_GPL(musb_interrupt);
 
 #ifndef CONFIG_MUSB_PIO_ONLY
-static int __initdata use_dma = 1;
+static bool __initdata use_dma = 1;
 
 /* "modprobe ... use_dma=0" etc */
 module_param(use_dma, bool, 0);
@@ -2154,8 +2154,6 @@ musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl)
 	}
 	if (status < 0)
 		goto fail3;
-
-	pm_runtime_put(musb->controller);
 
 	status = musb_init_debugfs(musb);
 	if (status < 0)

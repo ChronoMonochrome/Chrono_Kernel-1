@@ -98,7 +98,7 @@
 #define dbg(lvl, format, arg...)					\
 do {									\
 	if (debug >= lvl)						\
-		printk(KERN_DEBUG "%s: " format "\n", __FILE__, ##arg);	\
+;
 } while (0)
 
 /* Version Information */
@@ -269,7 +269,7 @@ static const struct file_operations tower_fops = {
 	.llseek =	tower_llseek,
 };
 
-static char *legousbtower_devnode(struct device *dev, mode_t *mode)
+static char *legousbtower_devnode(struct device *dev, umode_t *mode)
 {
 	return kasprintf(GFP_KERNEL, "usb/%s", dev_name(dev));
 }
@@ -794,7 +794,7 @@ static void tower_interrupt_in_callback (struct urb *urb)
 			dev->read_last_arrival = jiffies;
 			dbg(3, "%s: received %d bytes", __func__, urb->actual_length);
 		} else {
-			printk(KERN_WARNING "%s: read_buffer overflow, %d bytes dropped", __func__, urb->actual_length);
+;
 		}
 		spin_unlock (&dev->read_buffer_lock);
 	}
@@ -1063,8 +1063,8 @@ static int __init lego_usb_tower_init(void)
 		goto exit;
 	}
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 exit:
 	dbg(2, "%s: leave, return value %d", __func__, retval);

@@ -37,7 +37,7 @@
 #include <linux/serial.h>
 #include "usb-wwan.h"
 
-static int debug;
+static bool debug;
 
 void usb_wwan_dtr_rts(struct usb_serial_port *port, int on)
 {
@@ -311,8 +311,8 @@ static void usb_wwan_indat_callback(struct urb *urb)
 			err = usb_submit_urb(urb, GFP_ATOMIC);
 			if (err) {
 				if (err != -EPERM) {
-					printk(KERN_ERR "%s: resubmit read urb failed. "
-						"(%d)", __func__, err);
+//					printk(KERN_ERR "%s: resubmit read urb failed. "
+;
 					/* busy also in error unless we are killed */
 					usb_mark_last_busy(port->serial->dev);
 				}
@@ -651,7 +651,7 @@ int usb_wwan_suspend(struct usb_serial *serial, pm_message_t message)
 
 	dbg("%s entered", __func__);
 
-	if (message.event & PM_EVENT_AUTO) {
+	if (PMSG_IS_AUTO(message)) {
 		spin_lock_irq(&intfdata->susp_lock);
 		b = intfdata->in_flight;
 		spin_unlock_irq(&intfdata->susp_lock);

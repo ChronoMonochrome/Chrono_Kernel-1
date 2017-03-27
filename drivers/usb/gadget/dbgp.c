@@ -78,7 +78,7 @@ static int dbgp_consume(char *buf, unsigned len)
 	if (c != 0)
 		buf[len-1] = 0;
 
-	printk(KERN_NOTICE "%s%c", buf, c);
+;
 	return 0;
 }
 
