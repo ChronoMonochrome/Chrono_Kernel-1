@@ -983,11 +983,19 @@ static void carm_handle_array_info(struct carm_host *host,
 		slen--;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME "(%s): port %u device %Lu sectors\n",
 	       pci_name(host->pdev), port->port_no,
 	       (unsigned long long) port->capacity);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME "(%s): port %u device \"%s\"\n",
 	       pci_name(host->pdev), port->port_no, port->name);
+#else
+	;
+#endif
 
 out:
 	assert(host->state == HST_DEV_SCAN);
@@ -1018,8 +1026,12 @@ static void carm_handle_scan_chan(struct carm_host *host,
 			dev_count++;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME "(%s): found %u interesting devices\n",
 	       pci_name(host->pdev), dev_count);
+#else
+	;
+#endif
 
 out:
 	assert(host->state == HST_PORT_SCAN);
@@ -1152,8 +1164,12 @@ static inline void carm_handle_resp(struct carm_host *host,
 	return;
 
 err_out:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING DRV_NAME "(%s): BUG: unhandled message type %d/%d\n",
 	       pci_name(host->pdev), crq->msg_type, crq->msg_subtype);
+#else
+	;
+#endif
 	carm_end_rq(host, crq, -EIO);
 }
 
@@ -1184,8 +1200,12 @@ static inline void carm_handle_responses(struct carm_host *host)
 		else if ((status & 0xff000000) == (1 << 31)) {
 			u8 *evt_type_ptr = (u8 *) &resp[idx];
 			u8 evt_type = *evt_type_ptr;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING DRV_NAME "(%s): unhandled event type %d\n",
 			       pci_name(host->pdev), (int) evt_type);
+#else
+			;
+#endif
 			resp[idx].status = cpu_to_le32(0xffffffff);
 		}
 
@@ -1334,8 +1354,12 @@ static void carm_fsm_task (struct work_struct *work)
 				activated++;
 			}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRV_NAME "(%s): %d ports activated\n",
 		       pci_name(host->pdev), activated);
+#else
+		;
+#endif
 
 		new_state = HST_PROBE_FINISHED;
 		reschedule = 1;
@@ -1684,10 +1708,14 @@ static int carm_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 	DPRINTK("waiting for probe_comp\n");
 	wait_for_completion(&host->probe_comp);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: pci %s, ports %d, io %llx, irq %u, major %d\n",
 	       host->name, pci_name(pdev), (int) CARM_MAX_PORTS,
 	       (unsigned long long)pci_resource_start(pdev, 0),
 		   pdev->irq, host->major);
+#else
+	;
+#endif
 
 	carm_host_id++;
 	pci_set_drvdata(pdev, host);

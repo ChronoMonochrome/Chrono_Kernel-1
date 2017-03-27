@@ -180,7 +180,11 @@ int snd_rawmidi_drain_output(struct snd_rawmidi_substream *substream)
 	if (signal_pending(current))
 		err = -ERESTARTSYS;
 	if (runtime->avail < runtime->buffer_size && !timeout) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "rawmidi drain error (avail = %li, buffer_size = %li)\n", (long)runtime->avail, (long)runtime->buffer_size);
+#else
+		;
+#endif
 		err = -EIO;
 	}
 	runtime->drain = 0;
@@ -804,7 +808,11 @@ static long snd_rawmidi_ioctl(struct file *file, unsigned int cmd, unsigned long
 	}
 #ifdef CONFIG_SND_DEBUG
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "rawmidi: unknown command = 0x%x\n", cmd);
+#else
+		;
+#endif
 #endif
 	}
 	return -ENOTTY;

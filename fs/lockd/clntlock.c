@@ -212,9 +212,9 @@ nlmclnt_recovery(struct nlm_host *host)
 		nlm_get_host(host);
 		task = kthread_run(reclaimer, host, "%s-reclaim", host->h_name);
 		if (IS_ERR(task))
-			printk(KERN_ERR "lockd: unable to spawn reclaimer "
-				"thread. Locks for %s won't be reclaimed! "
-				"(%ld)\n", host->h_name, PTR_ERR(task));
+//			printk(KERN_ERR "lockd: unable to spawn reclaimer "
+//				"thread. Locks for %s won't be reclaimed! "
+;
 	}
 }
 
@@ -232,7 +232,7 @@ reclaimer(void *ptr)
 	down_write(&host->h_rwsem);
 	lockd_up(net);	/* note: this cannot fail as lockd is already running */
 
-	dprintk("lockd: reclaiming locks for host %s\n", host->h_name);
+;
 
 restart:
 	nsmstate = host->h_nsmstate;
@@ -267,7 +267,7 @@ restart:
 
 	host->h_reclaiming = 0;
 	up_write(&host->h_rwsem);
-	dprintk("NLM: done reclaiming locks for host %s\n", host->h_name);
+;
 
 	/* Now, wake up all processes that sleep on a blocked lock */
 	spin_lock(&nlm_blocked_lock);

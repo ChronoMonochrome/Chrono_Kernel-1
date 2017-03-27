@@ -134,7 +134,7 @@ static inline void low_nmcpy(unsigned char *dst, char *src)
 static int afiucv_pm_prepare(struct device *dev)
 {
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_WARNING "afiucv_pm_prepare\n");
+;
 #endif
 	return 0;
 }
@@ -142,7 +142,7 @@ static int afiucv_pm_prepare(struct device *dev)
 static void afiucv_pm_complete(struct device *dev)
 {
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_WARNING "afiucv_pm_complete\n");
+;
 #endif
 }
 
@@ -160,7 +160,7 @@ static int afiucv_pm_freeze(struct device *dev)
 	int err = 0;
 
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_WARNING "afiucv_pm_freeze\n");
+;
 #endif
 	read_lock(&iucv_sk_list.lock);
 	sk_for_each(sk, node, &iucv_sk_list.head) {
@@ -197,7 +197,7 @@ static int afiucv_pm_restore_thaw(struct device *dev)
 	struct hlist_node *node;
 
 #ifdef CONFIG_PM_DEBUG
-	printk(KERN_WARNING "afiucv_pm_restore_thaw\n");
+;
 #endif
 	read_lock(&iucv_sk_list.lock);
 	sk_for_each(sk, node, &iucv_sk_list.head) {

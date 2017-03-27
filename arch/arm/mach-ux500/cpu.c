@@ -66,7 +66,11 @@ void ux500_restart(char mode, const char *cmd)
 	unsigned short reason;
 
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ux500_restart: Call arch_reset(), mode: %c, cmd: %s\n", mode, cmd );
+#else
+	;
+#endif
 
 
 #ifdef CONFIG_UX500_SOC_DB8500

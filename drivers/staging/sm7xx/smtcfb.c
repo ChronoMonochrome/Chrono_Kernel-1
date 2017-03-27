@@ -45,12 +45,12 @@
 #include "smtcfb.h"
 
 #ifdef DEBUG
-#define smdbg(format, arg...) printk(KERN_DEBUG format , ## arg)
-#else
-#define smdbg(format, arg...)
-#endif
-
-struct screen_info smtc_screen_info;
+//#define smdbg(format, arg...) printk(KERN_DEBUG format , ## arg)
+//#else
+//#define smdbg(format, arg...)
+//#endif
+//
+;
 
 /*
 * Private structure
@@ -783,8 +783,8 @@ static int smtc_map_smem(struct smtcfb_info *sfb,
 	sfb->fb.screen_base = smtc_VRAMBaseAddress;
 
 	if (!sfb->fb.screen_base) {
-		printk(KERN_ERR "%s: unable to map screen memory\n",
-				sfb->fb.fix.id);
+//		printk(KERN_ERR "%s: unable to map screen memory\n",
+;
 		return -ENOMEM;
 	}
 
@@ -870,8 +870,8 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
 	int err;
 	unsigned long pFramebufferPhysical;
 
-	printk(KERN_INFO
-		"Silicon Motion display driver " SMTC_LINUX_FB_VERSION "\n");
+//	printk(KERN_INFO
+;
 
 	err = pci_enable_device(pdev);	/* enable SMTC chip */
 	if (err)
@@ -932,15 +932,15 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
 		if (sfb->fb.var.bits_per_pixel == 32) {
 			smtc_VRAMBaseAddress += 0x800000;
 			hw.m_pLFB += 0x800000;
-			printk(KERN_INFO
-				"\nsmtc_VRAMBaseAddress=%p hw.m_pLFB=%p\n",
-					smtc_VRAMBaseAddress, hw.m_pLFB);
+//			printk(KERN_INFO
+//				"\nsmtc_VRAMBaseAddress=%p hw.m_pLFB=%p\n",
+;
 		}
 #endif
 		if (!smtc_RegBaseAddress) {
-			printk(KERN_ERR
-				"%s: unable to map memory mapped IO\n",
-				sfb->fb.fix.id);
+//			printk(KERN_ERR
+//				"%s: unable to map memory mapped IO\n",
+;
 			err = -ENOMEM;
 			goto failed_fb;
 		}
@@ -973,8 +973,8 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
 		smtc_seqw(0x6b, 0x02);
 		break;
 	default:
-		printk(KERN_ERR
-		"No valid Silicon Motion display chip was detected!\n");
+//		printk(KERN_ERR
+;
 
 		goto failed_fb;
 	}
@@ -998,15 +998,15 @@ static int __devinit smtcfb_pci_probe(struct pci_dev *pdev,
 	if (err < 0)
 		goto failed;
 
-	printk(KERN_INFO "Silicon Motion SM%X Rev%X primary display mode"
-			"%dx%d-%d Init Complete.\n", hw.chipID, hw.chipRevID,
-			sfb->fb.var.xres, sfb->fb.var.yres,
-			sfb->fb.var.bits_per_pixel);
+//	printk(KERN_INFO "Silicon Motion SM%X Rev%X primary display mode"
+//			"%dx%d-%d Init Complete.\n", hw.chipID, hw.chipRevID,
+//			sfb->fb.var.xres, sfb->fb.var.yres,
+;
 
 	return 0;
 
 failed:
-	printk(KERN_ERR "Silicon Motion, Inc.  primary display init fail\n");
+;
 
 	smtc_unmap_smem(sfb);
 	smtc_unmap_mmio(sfb);

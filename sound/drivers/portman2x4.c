@@ -411,9 +411,13 @@ static void portman_flush_input(struct portman *pm, unsigned char port)
 		command = RXDATA1;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING
 			   "portman_flush_input() Won't flush port %i\n",
 			   port);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -806,7 +810,11 @@ static int __devinit snd_portman_probe(struct platform_device *pdev)
 		goto __err;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO "Portman 2x4 on 0x%lx\n", p->base);
+#else
+	;
+#endif
 	return 0;
 
 __err:

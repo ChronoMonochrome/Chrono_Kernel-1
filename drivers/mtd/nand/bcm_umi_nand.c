@@ -362,15 +362,23 @@ static int __devinit bcm_umi_nand_probe(struct platform_device *pdev)
 	struct resource *r;
 	int err = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(gBanner);
+#else
+	;
+#endif
 
 	/* Allocate memory for MTD device structure and private data */
 	board_mtd =
 	    kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip),
 		    GFP_KERNEL);
 	if (!board_mtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "Unable to allocate NAND MTD device structure.\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 

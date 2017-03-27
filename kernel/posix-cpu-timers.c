@@ -967,9 +967,13 @@ static void check_thread_timers(struct task_struct *tsk,
 				soft += USEC_PER_SEC;
 				sig->rlim[RLIMIT_RTTIME].rlim_cur = soft;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 				"RT Watchdog Timeout: %s[%d]\n",
 				tsk->comm, task_pid_nr(tsk));
+#else
+			;
+#endif
 			__group_send_sig_info(SIGXCPU, SEND_SIG_PRIV, tsk);
 		}
 	}

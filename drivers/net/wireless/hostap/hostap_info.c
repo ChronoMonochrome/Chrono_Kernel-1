@@ -14,8 +14,8 @@ static void prism2_info_commtallies16(local_info_t *local, unsigned char *buf,
 	struct hfa384x_comm_tallies *tallies;
 
 	if (left < sizeof(struct hfa384x_comm_tallies)) {
-		printk(KERN_DEBUG "%s: too short (len=%d) commtallies "
-		       "info frame\n", local->dev->name, left);
+//		printk(KERN_DEBUG "%s: too short (len=%d) commtallies "
+;
 		return;
 	}
 
@@ -54,8 +54,8 @@ static void prism2_info_commtallies32(local_info_t *local, unsigned char *buf,
 	struct hfa384x_comm_tallies32 *tallies;
 
 	if (left < sizeof(struct hfa384x_comm_tallies32)) {
-		printk(KERN_DEBUG "%s: too short (len=%d) commtallies32 "
-		       "info frame\n", local->dev->name, left);
+//		printk(KERN_DEBUG "%s: too short (len=%d) commtallies32 "
+;
 		return;
 	}
 
@@ -134,8 +134,8 @@ static void prism2_info_linkstatus(local_info_t *local, unsigned char *buf,
 	local->last_join_time = 0;
 
 	if (left != 2) {
-		printk(KERN_DEBUG "%s: invalid linkstatus info frame "
-		       "length %d\n", local->dev->name, left);
+//		printk(KERN_DEBUG "%s: invalid linkstatus info frame "
+;
 		return;
 	}
 
@@ -224,7 +224,7 @@ static void prism2_host_roaming(local_info_t *local)
 	       dev->name, req.bssid, le16_to_cpu(req.channel));
 	if (local->func->set_rid(dev, HFA384X_RID_JOINREQUEST, &req,
 				 sizeof(req))) {
-		printk(KERN_DEBUG "%s: JoinRequest failed\n", dev->name);
+;
 	}
 	local->last_join_time = jiffies;
 }
@@ -257,8 +257,8 @@ static void prism2_info_scanresults(local_info_t *local, unsigned char *buf,
 	struct hfa384x_hostscan_result *results, *prev;
 
 	if (left < 4) {
-		printk(KERN_DEBUG "%s: invalid scanresult info frame "
-		       "length %d\n", local->dev->name, left);
+//		printk(KERN_DEBUG "%s: invalid scanresult info frame "
+;
 		return;
 	}
 
@@ -310,16 +310,16 @@ static void prism2_info_hostscanresults(local_info_t *local,
 	wake_up_interruptible(&local->hostscan_wq);
 
 	if (left < 4) {
-		printk(KERN_DEBUG "%s: invalid hostscanresult info frame "
-		       "length %d\n", local->dev->name, left);
+//		printk(KERN_DEBUG "%s: invalid hostscanresult info frame "
+;
 		return;
 	}
 
 	pos = (__le16 *) buf;
 	copy_len = result_size = le16_to_cpu(*pos);
 	if (result_size == 0) {
-		printk(KERN_DEBUG "%s: invalid result_size (0) in "
-		       "hostscanresults\n", local->dev->name);
+//		printk(KERN_DEBUG "%s: invalid result_size (0) in "
+;
 		return;
 	}
 	if (copy_len > sizeof(struct hfa384x_hostscan_result))
@@ -343,8 +343,8 @@ static void prism2_info_hostscanresults(local_info_t *local,
 	}
 
 	if (left) {
-		printk(KERN_DEBUG "%s: short HostScan result entry (%d/%d)\n",
-		       local->dev->name, left, result_size);
+//		printk(KERN_DEBUG "%s: short HostScan result entry (%d/%d)\n",
+;
 	}
 
 	spin_lock_irqsave(&local->lock, flags);
@@ -422,8 +422,8 @@ static void handle_info_queue_linkstatus(local_info_t *local)
 
 	if (local->func->get_rid(local->dev, HFA384X_RID_CURRENTBSSID,
 				 local->bssid, ETH_ALEN, 1) < 0) {
-		printk(KERN_DEBUG "%s: could not read CURRENTBSSID after "
-		       "LinkStatus event\n", local->dev->name);
+//		printk(KERN_DEBUG "%s: could not read CURRENTBSSID after "
+;
 	} else {
 		PDEBUG(DEBUG_EXTRA, "%s: LinkStatus: BSSID=%pM\n",
 		       local->dev->name,

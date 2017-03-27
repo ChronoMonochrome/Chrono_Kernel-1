@@ -161,9 +161,13 @@ static int acpi_fan_add(struct acpi_device *device)
 		dev_err(&device->dev, "Failed to create sysfs link "
 			"'device'\n");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n",
 	       acpi_device_name(device), acpi_device_bid(device),
 	       !device->power.state ? "on" : "off");
+#else
+	;
+#endif
 
       end:
 	return result;

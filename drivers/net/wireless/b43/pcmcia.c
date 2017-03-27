@@ -104,8 +104,8 @@ err_disable:
 err_kfree_ssb:
 	kfree(ssb);
 out_error:
-	printk(KERN_ERR "b43-pcmcia: Initialization failed (%d, %d)\n",
-	       res, err);
+//	printk(KERN_ERR "b43-pcmcia: Initialization failed (%d, %d)\n",
+;
 	return err;
 }
 

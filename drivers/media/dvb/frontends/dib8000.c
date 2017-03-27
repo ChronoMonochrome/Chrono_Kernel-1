@@ -30,7 +30,11 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "turn on debugging (default: 0)");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) do { if (debug) { printk(KERN_DEBUG "DiB8000: "); printk(args); printk("\n"); } } while (0)
+#else
+#define d;
+#endif
 
 #define FE_STATUS_TUNE_FAILED 0
 
@@ -97,7 +101,11 @@ static u16 dib8000_i2c_read16(struct i2c_device *i2c, u16 reg)
 	};
 
 	if (mutex_lock_interruptible(i2c->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return 0;
 	}
 
@@ -107,7 +115,11 @@ static u16 dib8000_i2c_read16(struct i2c_device *i2c, u16 reg)
 	msg[1].buf    = i2c->i2c_read_buffer;
 
 	if (i2c_transfer(i2c->adap, msg, 2) != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("i2c read error on %d", reg);
+#else
+		d;
+#endif
 
 	ret = (msg[1].buf[0] << 8) | msg[1].buf[1];
 	mutex_unlock(i2c->i2c_buffer_lock);
@@ -119,7 +131,11 @@ static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
 	u16 ret;
 
 	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return 0;
 	}
 
@@ -137,7 +153,11 @@ static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
 	state->msg[1].len = 2;
 
 	if (i2c_transfer(state->i2c.adap, state->msg, 2) != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("i2c read error on %d", reg);
+#else
+		d;
+#endif
 
 	ret = (state->i2c_read_buffer[0] << 8) | state->i2c_read_buffer[1];
 	mutex_unlock(&state->i2c_buffer_lock);
@@ -161,7 +181,11 @@ static int dib8000_i2c_write16(struct i2c_device *i2c, u16 reg, u16 val)
 	int ret = 0;
 
 	if (mutex_lock_interruptible(i2c->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -182,7 +206,11 @@ static int dib8000_write_word(struct dib8000_state *state, u16 reg, u16 val)
 	int ret;
 
 	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not acquire lock");
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -328,7 +356,11 @@ static void dib8000_set_acquisition_mode(struct dib8000_state *state)
 {
 	u16 nud = dib8000_read_word(state, 298);
 	nud |= (1 << 3) | (1 << 0);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("acquisition mode activated");
+#else
+	d;
+#endif
 	dib8000_write_word(state, 298, nud);
 }
 static int dib8000_set_output_mode(struct dvb_frontend *fe, int mode)
@@ -341,8 +373,12 @@ static int dib8000_set_output_mode(struct dvb_frontend *fe, int mode)
 	fifo_threshold = 1792;
 	smo_mode = (dib8000_read_word(state, 299) & 0x0050) | (1 << 1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("-I-	Setting output mode for demod %p to %d",
 			&state->fe[0], mode);
+#else
+	d;
+#endif
 
 	switch (mode) {
 	case OUTMODE_MPEG2_PAR_GATED_CLK:	// STBs with parallel gated clock
@@ -376,8 +412,12 @@ static int dib8000_set_output_mode(struct dvb_frontend *fe, int mode)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Unhandled output_mode passed to be set for demod %p",
 				&state->fe[0]);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -445,7 +485,11 @@ static void dib8000_set_power_mode(struct dib8000_state *state, enum dib8000_pow
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("powermode : 774 : %x ; 775 : %x; 776 : %x ; 900 : %x; 1280 : %x", reg_774, reg_775, reg_776, reg_900, reg_1280);
+#else
+	d;
+#endif
 	dib8000_write_word(state, 774, reg_774);
 	dib8000_write_word(state, 775, reg_775);
 	dib8000_write_word(state, 776, reg_776);
@@ -506,10 +550,18 @@ static int dib8000_set_bandwidth(struct dvb_frontend *fe, u32 bw)
 		bw = 6000;
 
 	if (state->timf == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("using default timf");
+#else
+		d;
+#endif
 		timf = state->timf_default;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("using updated timf");
+#else
+		d;
+#endif
 		timf = state->timf;
 	}
 
@@ -545,7 +597,11 @@ int dib8000_set_wbd_ref(struct dvb_frontend *fe, u16 value)
 EXPORT_SYMBOL(dib8000_set_wbd_ref);
 static void dib8000_reset_pll_common(struct dib8000_state *state, const struct dibx000_bandwidth_config *bw)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("ifreq: %d %x, inversion: %d", bw->ifreq, bw->ifreq, bw->ifreq >> 25);
+#else
+	d;
+#endif
 	dib8000_write_word(state, 23, (u16) (((bw->internal * 1000) >> 16) & 0xffff));	/* P_sec_len */
 	dib8000_write_word(state, 24, (u16) ((bw->internal * 1000) & 0xffff));
 	dib8000_write_word(state, 27, (u16) ((bw->ifreq >> 16) & 0x01ff));
@@ -572,7 +628,11 @@ static void dib8000_reset_pll(struct dib8000_state *state)
 	clk_cfg1 = (clk_cfg1 & 0xfff7) | (pll->pll_bypass << 3);
 	dib8000_write_word(state, 902, clk_cfg1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("clk_cfg1: 0x%04x", clk_cfg1);	/* 0x507 1 0 1 000 0 0 11 1 */
+#else
+	d;
+#endif
 
 	/* smpl_cfg: P_refclksel=2, P_ensmplsel=1 nodivsmpl=1 */
 	if (state->cfg.pll->ADClkSrc == 0)
@@ -614,7 +674,11 @@ static int dib8000_cfg_gpio(struct dib8000_state *st, u8 num, u8 dir, u8 val)
 	st->cfg.gpio_val |= (val & 0x01) << num;	/* set the new value */
 	dib8000_write_word(st, 1030, st->cfg.gpio_val);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("gpio dir: %x: gpio val: %x", st->cfg.gpio_dir, st->cfg.gpio_val);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -735,25 +799,45 @@ static u16 dib8000_identify(struct i2c_device *client)
 	value = dib8000_i2c_read16(client, 896);
 
 	if ((value = dib8000_i2c_read16(client, 896)) != 0x01b3) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("wrong Vendor ID (read=0x%x)", value);
+#else
+		d;
+#endif
 		return 0;
 	}
 
 	value = dib8000_i2c_read16(client, 897);
 	if (value != 0x8000 && value != 0x8001 && value != 0x8002) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("wrong Device ID (%x)", value);
+#else
+		d;
+#endif
 		return 0;
 	}
 
 	switch (value) {
 	case 0x8000:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("found DiB8000A");
+#else
+		d;
+#endif
 		break;
 	case 0x8001:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("found DiB8000B");
+#else
+		d;
+#endif
 		break;
 	case 0x8002:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("found DiB8000C");
+#else
+		d;
+#endif
 		break;
 	}
 	return value;
@@ -769,7 +853,11 @@ static int dib8000_reset(struct dvb_frontend *fe)
 		return -EINVAL;
 
 	if (state->revision == 0x8000)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("error : dib8000 MA not supported");
+#else
+		d;
+#endif
 
 	dibx000_reset_i2c_master(&state->i2c_master);
 
@@ -797,17 +885,29 @@ static int dib8000_reset(struct dvb_frontend *fe)
 	if (state->cfg.drives)
 		dib8000_write_word(state, 906, state->cfg.drives);
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("using standard PAD-drive-settings, please adjust settings in config-struct to be optimal.");
+#else
+		d;
+#endif
 		dib8000_write_word(state, 906, 0x2d98);	// min drive SDRAM - not optimal - adjust
 	}
 
 	dib8000_reset_pll(state);
 
 	if (dib8000_reset_gpio(state) != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("GPIO reset was not successful.");
+#else
+		d;
+#endif
 
 	if (dib8000_set_output_mode(fe, OUTMODE_HIGH_Z) != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("OUTPUT_MODE could not be resetted.");
+#else
+		d;
+#endif
 
 	state->current_agc = NULL;
 
@@ -890,7 +990,11 @@ static int dib8000_set_agc_config(struct dib8000_state *state, u8 band)
 		}
 
 	if (agc == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("no valid AGC configuration found for band 0x%02x", band);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 
@@ -906,8 +1010,12 @@ static int dib8000_set_agc_config(struct dib8000_state *state, u8 band)
 	dib8000_write_word(state, 102, (agc->alpha_mant << 5) | agc->alpha_exp);
 	dib8000_write_word(state, 103, (agc->beta_mant << 6) | agc->beta_exp);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("WBD: ref: %d, sel: %d, active: %d, alpha: %d",
 		state->wbd_ref != 0 ? state->wbd_ref : agc->wbd_ref, agc->wbd_sel, !agc->perform_agc_softsplit, agc->wbd_sel);
+#else
+	d;
+#endif
 
 	/* AGC continued */
 	if (state->wbd_ref != 0)
@@ -957,7 +1065,11 @@ static int dib8000_agc_soft_split(struct dib8000_state *state)
 			(agc - state->current_agc->split.min_thres) /
 			(state->current_agc->split.max_thres - state->current_agc->split.min_thres);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("AGC split_offset: %d", split_offset);
+#else
+	d;
+#endif
 
 	// P_agc_force_split and P_agc_split_offset
 	dib8000_write_word(state, 107, (dib8000_read_word(state, 107) & 0xff00) | split_offset);
@@ -1057,7 +1169,11 @@ static void dib8000_update_timf(struct dib8000_state *state)
 
 	dib8000_write_word(state, 29, (u16) (timf >> 16));
 	dib8000_write_word(state, 30, (u16) (timf & 0xffff));
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Updated timing frequency: %d (default: %d)", state->timf, state->timf_default);
+#else
+	d;
+#endif
 }
 
 static const u16 adc_target_16dB[11] = {
@@ -1397,7 +1513,11 @@ static void dib8000_set_channel(struct dib8000_state *state, u8 seq, u8 autosear
 				((state->fe[0]->dtv_property_cache.isdbt_partial_reception & 1) << 5) | ((state->fe[0]->dtv_property_cache.
 												 isdbt_sb_mode & 1) << 4));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("mode = %d ; guard = %d", mode, state->fe[0]->dtv_property_cache.guard_interval);
+#else
+	d;
+#endif
 
 	/* signal optimization parameter */
 
@@ -1415,7 +1535,11 @@ static void dib8000_set_channel(struct dib8000_state *state, u8 seq, u8 autosear
 		for (i = 0; i < nbseg_diff; i++)
 			seg_diff_mask |= 1 << permu_seg[i];
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("nbseg_diff = %X (%d)", seg_diff_mask, seg_diff_mask);
+#else
+	d;
+#endif
 
 	state->differential_constellation = (seg_diff_mask != 0);
 	dib8000_set_diversity_in(state->fe[0], state->diversity_onoff);
@@ -1623,7 +1747,11 @@ static void dib8000_set_channel(struct dib8000_state *state, u8 seq, u8 autosear
 		dib8000_write_word(state, 288, (~seg_mask13 | seg_diff_mask) & 0x1fff);	/* P_tmcc_seg_eq_inh */
 	else
 		dib8000_write_word(state, 288, 0x1fff);	//disable equalisation of the tmcc when autosearch to be able to find the DQPSK channels.
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("287 = %X (%d)", ~seg_mask13 | 0x1000, ~seg_mask13 | 0x1000);
+#else
+	d;
+#endif
 
 	dib8000_write_word(state, 211, seg_mask13 & (~seg_diff_mask));	/* P_des_seg_enabled     */
 
@@ -1816,7 +1944,11 @@ static int dib8000_autosearch_start(struct dvb_frontend *fe)
 		if (state->fe[0]->dtv_property_cache.guard_interval == GUARD_INTERVAL_AUTO)
 			state->fe[0]->dtv_property_cache.guard_interval = GUARD_INTERVAL_1_8;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("using list for autosearch : %d", slist);
+#else
+		d;
+#endif
 		dib8000_set_channel(state, (unsigned char)slist, 1);
 		//dib8000_write_word(state, 0, (dib8000_read_word(state, 0) & 0x9fff) | (1 << 13));  // P_mode = 1
 
@@ -1854,12 +1986,20 @@ static int dib8000_autosearch_irq(struct dvb_frontend *fe)
 	u16 irq_pending = dib8000_read_word(state, 1284);
 
 	if (irq_pending & 0x1) {	// failed
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000_autosearch_irq failed");
+#else
+		d;
+#endif
 		return 1;
 	}
 
 	if (irq_pending & 0x2) {	// succeeded
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000_autosearch_irq succeeded");
+#else
+		d;
+#endif
 		return 2;
 	}
 
@@ -1949,7 +2089,11 @@ static int dib8000_wakeup(struct dvb_frontend *fe)
 	dib8000_set_power_mode(state, DIB8000M_POWER_ALL);
 	dib8000_set_adc_state(state, DIBX000_ADC_ON);
 	if (dib8000_set_adc_state(state, DIBX000_SLOW_ADC_ON) != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("could not start Slow ADC");
+#else
+		d;
+#endif
 
 	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL); index_frontend++) {
 		ret = state->fe[index_frontend]->ops.init(state->fe[index_frontend]);
@@ -2004,7 +2148,11 @@ static int dib8000_get_frontend(struct dvb_frontend *fe, struct dvb_frontend_par
 	for (index_frontend = 1; (index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL); index_frontend++) {
 		state->fe[index_frontend]->ops.read_status(state->fe[index_frontend], &stat);
 		if (stat&FE_HAS_SYNC) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("TMCC lock on the slave%i", index_frontend);
+#else
+			d;
+#endif
 			/* synchronize the cache with the other frontends */
 			state->fe[index_frontend]->ops.get_frontend(state->fe[index_frontend], fep);
 			for (sub_index_frontend = 0; (sub_index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[sub_index_frontend] != NULL); sub_index_frontend++) {
@@ -2043,76 +2191,140 @@ static int dib8000_get_frontend(struct dvb_frontend *fe, struct dvb_frontend_par
 	switch (val & 0x3) {
 	case 0:
 		fe->dtv_property_cache.guard_interval = GUARD_INTERVAL_1_32;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000_get_frontend GI = 1/32 ");
+#else
+		d;
+#endif
 		break;
 	case 1:
 		fe->dtv_property_cache.guard_interval = GUARD_INTERVAL_1_16;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000_get_frontend GI = 1/16 ");
+#else
+		d;
+#endif
 		break;
 	case 2:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000_get_frontend GI = 1/8 ");
+#else
+		d;
+#endif
 		fe->dtv_property_cache.guard_interval = GUARD_INTERVAL_1_8;
 		break;
 	case 3:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000_get_frontend GI = 1/4 ");
+#else
+		d;
+#endif
 		fe->dtv_property_cache.guard_interval = GUARD_INTERVAL_1_4;
 		break;
 	}
 
 	val = dib8000_read_word(state, 505);
 	fe->dtv_property_cache.isdbt_partial_reception = val & 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("dib8000_get_frontend : partial_reception = %d ", fe->dtv_property_cache.isdbt_partial_reception);
+#else
+	d;
+#endif
 
 	for (i = 0; i < 3; i++) {
 		val = dib8000_read_word(state, 493 + i);
 		fe->dtv_property_cache.layer[i].segment_count = val & 0x0F;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000_get_frontend : Layer %d segments = %d ", i, fe->dtv_property_cache.layer[i].segment_count);
+#else
+		d;
+#endif
 
 		val = dib8000_read_word(state, 499 + i);
 		fe->dtv_property_cache.layer[i].interleaving = val & 0x3;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000_get_frontend : Layer %d time_intlv = %d ", i, fe->dtv_property_cache.layer[i].interleaving);
+#else
+		d;
+#endif
 
 		val = dib8000_read_word(state, 481 + i);
 		switch (val & 0x7) {
 		case 1:
 			fe->dtv_property_cache.layer[i].fec = FEC_1_2;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d Code Rate = 1/2 ", i);
+#else
+			d;
+#endif
 			break;
 		case 2:
 			fe->dtv_property_cache.layer[i].fec = FEC_2_3;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d Code Rate = 2/3 ", i);
+#else
+			d;
+#endif
 			break;
 		case 3:
 			fe->dtv_property_cache.layer[i].fec = FEC_3_4;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d Code Rate = 3/4 ", i);
+#else
+			d;
+#endif
 			break;
 		case 5:
 			fe->dtv_property_cache.layer[i].fec = FEC_5_6;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d Code Rate = 5/6 ", i);
+#else
+			d;
+#endif
 			break;
 		default:
 			fe->dtv_property_cache.layer[i].fec = FEC_7_8;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d Code Rate = 7/8 ", i);
+#else
+			d;
+#endif
 			break;
 		}
 
 		val = dib8000_read_word(state, 487 + i);
 		switch (val & 0x3) {
 		case 0:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d DQPSK ", i);
+#else
+			d;
+#endif
 			fe->dtv_property_cache.layer[i].modulation = DQPSK;
 			break;
 		case 1:
 			fe->dtv_property_cache.layer[i].modulation = QPSK;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d QPSK ", i);
+#else
+			d;
+#endif
 			break;
 		case 2:
 			fe->dtv_property_cache.layer[i].modulation = QAM_16;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d QAM16 ", i);
+#else
+			d;
+#endif
 			break;
 		case 3:
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("dib8000_get_frontend : Layer %d QAM64 ", i);
+#else
+			d;
+#endif
 			fe->dtv_property_cache.layer[i].modulation = QAM_64;
 			break;
 		}
@@ -2144,12 +2356,20 @@ static int dib8000_set_frontend(struct dvb_frontend *fe, struct dvb_frontend_par
 	int  time_slave = FE_CALLBACK_TIME_NEVER;
 
 	if (state->fe[0]->dtv_property_cache.frequency == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000: must at least specify frequency ");
+#else
+		d;
+#endif
 		return 0;
 	}
 
 	if (state->fe[0]->dtv_property_cache.bandwidth_hz == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("dib8000: no bandwidth specified, set to default ");
+#else
+		d;
+#endif
 		state->fe[0]->dtv_property_cache.bandwidth_hz = 6000000;
 	}
 
@@ -2236,14 +2456,26 @@ static int dib8000_set_frontend(struct dvb_frontend *fe, struct dvb_frontend_par
 						 nbr_pending++;
 						 break;
 					case 2:
+#ifdef CONFIG_DEBUG_PRINTK
 						 dprintk("autosearch succeed on the frontend%i", index_frontend);
+#else
+						 d;
+#endif
 						 exit_condition = 2;
 						 index_frontend_success = index_frontend;
 						 break;
 					default:
+#ifdef CONFIG_DEBUG_PRINTK
 						 dprintk("unhandled autosearch result");
+#else
+						 d;
+#endif
 					case 1:
+#ifdef CONFIG_DEBUG_PRINTK
 						 dprintk("autosearch failed for the frontend%i", index_frontend);
+#else
+						 d;
+#endif
 						 break;
 					}
 				}
@@ -2255,11 +2487,19 @@ static int dib8000_set_frontend(struct dvb_frontend *fe, struct dvb_frontend_par
 		} while ((exit_condition == 0) && i--);
 
 		if (exit_condition == 1) { /* tune failed */
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("tune failed");
+#else
+			d;
+#endif
 			return 0;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("tune success on frontend%i", index_frontend_success);
+#else
+		d;
+#endif
 
 		dib8000_get_frontend(fe, fep);
 	}
@@ -2419,12 +2659,20 @@ int dib8000_set_slave_frontend(struct dvb_frontend *fe, struct dvb_frontend *fe_
 	while ((index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL))
 		index_frontend++;
 	if (index_frontend < MAX_NUMBER_OF_FRONTENDS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("set slave fe %p to index %i", fe_slave, index_frontend);
+#else
+		d;
+#endif
 		state->fe[index_frontend] = fe_slave;
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("too many slave frontend");
+#else
+	d;
+#endif
 	return -ENOMEM;
 }
 EXPORT_SYMBOL(dib8000_set_slave_frontend);
@@ -2437,12 +2685,20 @@ int dib8000_remove_slave_frontend(struct dvb_frontend *fe)
 	while ((index_frontend < MAX_NUMBER_OF_FRONTENDS) && (state->fe[index_frontend] != NULL))
 		index_frontend++;
 	if (index_frontend != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("remove slave fe %p (index %i)", state->fe[index_frontend-1], index_frontend-1);
+#else
+		d;
+#endif
 		state->fe[index_frontend] = NULL;
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("no frontend to be removed");
+#else
+	d;
+#endif
 	return -ENODEV;
 }
 EXPORT_SYMBOL(dib8000_remove_slave_frontend);
@@ -2466,18 +2722,30 @@ int dib8000_i2c_enumeration(struct i2c_adapter *host, int no_of_demods, u8 defau
 
 	client.i2c_write_buffer = kzalloc(4 * sizeof(u8), GFP_KERNEL);
 	if (!client.i2c_write_buffer) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: not enough memory", __func__);
+#else
+		d;
+#endif
 		return -ENOMEM;
 	}
 	client.i2c_read_buffer = kzalloc(4 * sizeof(u8), GFP_KERNEL);
 	if (!client.i2c_read_buffer) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: not enough memory", __func__);
+#else
+		d;
+#endif
 		ret = -ENOMEM;
 		goto error_memory_read;
 	}
 	client.i2c_buffer_lock = kzalloc(sizeof(struct mutex), GFP_KERNEL);
 	if (!client.i2c_buffer_lock) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: not enough memory", __func__);
+#else
+		d;
+#endif
 		ret = -ENOMEM;
 		goto error_memory_lock;
 	}
@@ -2493,7 +2761,11 @@ int dib8000_i2c_enumeration(struct i2c_adapter *host, int no_of_demods, u8 defau
 			dib8000_i2c_write16(&client, 1287, 0x0003);	/* sram lead in, rdy */
 			client.addr = default_addr;
 			if (dib8000_identify(&client) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("#%d: not identified", k);
+#else
+				d;
+#endif
 				ret  = -EINVAL;
 				goto error;
 			}
@@ -2507,7 +2779,11 @@ int dib8000_i2c_enumeration(struct i2c_adapter *host, int no_of_demods, u8 defau
 		client.addr = new_addr;
 		dib8000_identify(&client);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("IC %d initialized (to i2c_address 0x%x)", k, new_addr);
+#else
+		d;
+#endif
 	}
 
 	for (k = 0; k < no_of_demods; k++) {
@@ -2567,7 +2843,11 @@ int dib8000_pid_filter_ctrl(struct dvb_frontend *fe, u8 onoff)
 	u16 val = dib8000_read_word(st, 299) & 0xffef;
 	val |= (onoff & 0x1) << 4;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("pid filter enabled %d", onoff);
+#else
+	d;
+#endif
 	return dib8000_write_word(st, 299, val);
 }
 EXPORT_SYMBOL(dib8000_pid_filter_ctrl);
@@ -2575,7 +2855,11 @@ EXPORT_SYMBOL(dib8000_pid_filter_ctrl);
 int dib8000_pid_filter(struct dvb_frontend *fe, u8 id, u16 pid, u8 onoff)
 {
 	struct dib8000_state *st = fe->demodulator_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Index %x, PID %d, OnOff %d", id, pid, onoff);
+#else
+	d;
+#endif
 	return dib8000_write_word(st, 305 + id, onoff ? (1 << 13) | pid : 0);
 }
 EXPORT_SYMBOL(dib8000_pid_filter);
@@ -2615,7 +2899,11 @@ struct dvb_frontend *dib8000_attach(struct i2c_adapter *i2c_adap, u8 i2c_addr, s
 	struct dvb_frontend *fe;
 	struct dib8000_state *state;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("dib8000_attach");
+#else
+	d;
+#endif
 
 	state = kzalloc(sizeof(struct dib8000_state), GFP_KERNEL);
 	if (state == NULL)

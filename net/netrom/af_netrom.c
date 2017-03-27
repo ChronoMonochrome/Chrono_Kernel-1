@@ -1406,13 +1406,13 @@ static int __init nr_proto_init(void)
 		goto out;
 
 	if (nr_ndevs > 0x7fffffff/sizeof(struct net_device *)) {
-		printk(KERN_ERR "NET/ROM: nr_proto_init - nr_ndevs parameter to large\n");
+;
 		return -1;
 	}
 
 	dev_nr = kzalloc(nr_ndevs * sizeof(struct net_device *), GFP_KERNEL);
 	if (dev_nr == NULL) {
-		printk(KERN_ERR "NET/ROM: nr_proto_init - unable to allocate device array\n");
+;
 		return -1;
 	}
 
@@ -1423,13 +1423,13 @@ static int __init nr_proto_init(void)
 		sprintf(name, "nr%d", i);
 		dev = alloc_netdev(0, name, nr_setup);
 		if (!dev) {
-			printk(KERN_ERR "NET/ROM: nr_proto_init - unable to allocate device structure\n");
+;
 			goto fail;
 		}
 
 		dev->base_addr = i;
 		if (register_netdev(dev)) {
-			printk(KERN_ERR "NET/ROM: nr_proto_init - unable to register network device\n");
+;
 			free_netdev(dev);
 			goto fail;
 		}
@@ -1438,7 +1438,7 @@ static int __init nr_proto_init(void)
 	}
 
 	if (sock_register(&nr_family_ops)) {
-		printk(KERN_ERR "NET/ROM: nr_proto_init - unable to register socket family\n");
+;
 		goto fail;
 	}
 

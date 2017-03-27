@@ -320,10 +320,14 @@ static void snd_ymfpci_pcm_interrupt(struct snd_ymfpci *chip, struct snd_ymfpci_
 		ypcm->last_pos = pos;
 		if (ypcm->period_pos >= ypcm->period_size) {
 			/*
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 			       "done - active_bank = 0x%x, start = 0x%x\n",
 			       chip->active_bank,
 			       voice->bank[chip->active_bank].start);
+#else
+			;
+#endif
 			*/
 			ypcm->period_pos %= ypcm->period_size;
 			spin_unlock(&chip->reg_lock);
@@ -373,10 +377,14 @@ static void snd_ymfpci_pcm_capture_interrupt(struct snd_pcm_substream *substream
 		if (ypcm->period_pos >= ypcm->period_size) {
 			ypcm->period_pos %= ypcm->period_size;
 			/*
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 			       "done - active_bank = 0x%x, start = 0x%x\n",
 			       chip->active_bank,
 			       voice->bank[chip->active_bank].start);
+#else
+			;
+#endif
 			*/
 			spin_unlock(&chip->reg_lock);
 			snd_pcm_period_elapsed(substream);

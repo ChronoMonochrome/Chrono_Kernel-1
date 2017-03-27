@@ -752,10 +752,22 @@ struct mtd_info *mtd_concat_create(struct mtd_info *subdev[],	/* subdevices to c
 	int num_erase_region;
 	int max_writebufsize = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Concatenating MTD devices:\n");
+#else
+	;
+#endif
 	for (i = 0; i < num_devs; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "(%d): \"%s\"\n", i, subdev[i]->name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "into device \"%s\"\n", name);
+#else
+	;
+#endif
 
 	/* allocate the device structure */
 	size = SIZEOF_STRUCT_MTD_CONCAT(num_devs);
@@ -806,8 +818,12 @@ struct mtd_info *mtd_concat_create(struct mtd_info *subdev[],	/* subdevices to c
 	for (i = 1; i < num_devs; i++) {
 		if (concat->mtd.type != subdev[i]->type) {
 			kfree(concat);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Incompatible device type on \"%s\"\n",
 			       subdev[i]->name);
+#else
+			;
+#endif
 			return NULL;
 		}
 		if (concat->mtd.flags != subdev[i]->flags) {
@@ -818,8 +834,12 @@ struct mtd_info *mtd_concat_create(struct mtd_info *subdev[],	/* subdevices to c
 			if ((concat->mtd.flags ^ subdev[i]->
 			     flags) & ~MTD_WRITEABLE) {
 				kfree(concat);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Incompatible device flags on \"%s\"\n",
 				       subdev[i]->name);
+#else
+				;
+#endif
 				return NULL;
 			} else
 				/* if writeable attribute differs,
@@ -845,8 +865,12 @@ struct mtd_info *mtd_concat_create(struct mtd_info *subdev[],	/* subdevices to c
 		    !concat->mtd.read_oob  != !subdev[i]->read_oob ||
 		    !concat->mtd.write_oob != !subdev[i]->write_oob) {
 			kfree(concat);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Incompatible OOB or ECC data on \"%s\"\n",
 			       subdev[i]->name);
+#else
+			;
+#endif
 			return NULL;
 		}
 		concat->subdev[i] = subdev[i];

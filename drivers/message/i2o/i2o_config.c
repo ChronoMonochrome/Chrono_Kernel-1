@@ -586,8 +586,12 @@ static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
 	rcode = -ENOMEM;
 	reply = kzalloc(reply_size, GFP_KERNEL);
 	if (!reply) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Could not allocate reply buffer\n",
 		       c->name);
+#else
+		;
+#endif
 		goto out;
 	}
 
@@ -607,8 +611,12 @@ static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
 		sg_count =
 		    (size - sg_offset * 4) / sizeof(struct sg_simple_element);
 		if (sg_count > SG_TABLESIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s:IOCTL SG List too large (%u)\n",
 			       c->name, sg_count);
+#else
+			;
+#endif
 			rcode = -EINVAL;
 			goto cleanup;
 		}
@@ -619,9 +627,13 @@ static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
 
 			if (!(sg[i].flag_count & 0x10000000
 			      /*I2O_SGL_FLAGS_SIMPLE_ADDRESS_ELEMENT */ )) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "%s:Bad SG element %d - not simple (%x)\n",
 				       c->name, i, sg[i].flag_count);
+#else
+				;
+#endif
 				rcode = -EINVAL;
 				goto cleanup;
 			}
@@ -629,9 +641,13 @@ static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
 			p = &(sg_list[sg_index]);
 			/* Allocate memory for the transfer */
 			if (i2o_dma_alloc(&c->pdev->dev, p, sg_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "%s: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
 				       c->name, sg_size, i, sg_count);
+#else
+				;
+#endif
 				rcode = -ENOMEM;
 				goto sg_list_cleanup;
 			}
@@ -644,9 +660,13 @@ static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
 				    (p->virt,
 				     (void __user *)(unsigned long)sg[i].
 				     addr_bus, sg_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG
 					       "%s: Could not copy SG buf %d FROM user\n",
 					       c->name, i);
+#else
+					;
+#endif
 					rcode = -EFAULT;
 					goto sg_list_cleanup;
 				}
@@ -700,10 +720,14 @@ static int i2o_cfg_passthru32(struct file *file, unsigned cmnd,
 				if (copy_to_user
 				    ((void __user *)(u64) sg[j].addr_bus,
 				     sg_list[j].virt, sg_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING
 					       "%s: Could not copy %p TO user %x\n",
 					       c->name, sg_list[j].virt,
 					       sg[j].addr_bus);
+#else
+					;
+#endif
 					rcode = -EFAULT;
 					goto sg_list_cleanup;
 				}
@@ -716,14 +740,22 @@ sg_list_cleanup:
 	if (reply_size) {
 		// we wrote our own values for context - now restore the user supplied ones
 		if (copy_from_user(reply + 2, user_msg + 2, sizeof(u32) * 2)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: Could not copy message context FROM user\n",
 			       c->name);
+#else
+			;
+#endif
 			rcode = -EFAULT;
 		}
 		if (copy_to_user(user_reply, reply, reply_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: Could not copy reply TO user\n", c->name);
+#else
+			;
+#endif
 			rcode = -EFAULT;
 		}
 	}
@@ -822,8 +854,12 @@ static int i2o_cfg_passthru(unsigned long arg)
 
 	reply = kzalloc(reply_size, GFP_KERNEL);
 	if (!reply) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: Could not allocate reply buffer\n",
 		       c->name);
+#else
+		;
+#endif
 		rcode = -ENOMEM;
 		goto out;
 	}
@@ -845,8 +881,12 @@ static int i2o_cfg_passthru(unsigned long arg)
 		sg_count =
 		    (size - sg_offset * 4) / sizeof(struct sg_simple_element);
 		if (sg_count > SG_TABLESIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s:IOCTL SG List too large (%u)\n",
 			       c->name, sg_count);
+#else
+			;
+#endif
 			rcode = -EINVAL;
 			goto cleanup;
 		}
@@ -856,9 +896,13 @@ static int i2o_cfg_passthru(unsigned long arg)
 
 			if (!(sg[i].flag_count & 0x10000000
 			      /*I2O_SGL_FLAGS_SIMPLE_ADDRESS_ELEMENT */ )) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "%s:Bad SG element %d - not simple (%x)\n",
 				       c->name, i, sg[i].flag_count);
+#else
+				;
+#endif
 				rcode = -EINVAL;
 				goto sg_list_cleanup;
 			}
@@ -866,9 +910,13 @@ static int i2o_cfg_passthru(unsigned long arg)
 			p = &(sg_list[sg_index]);
 			if (i2o_dma_alloc(&c->pdev->dev, p, sg_size)) {
 			/* Allocate memory for the transfer */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG
 				       "%s: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
 				       c->name, sg_size, i, sg_count);
+#else
+				;
+#endif
 				rcode = -ENOMEM;
 				goto sg_list_cleanup;
 			}
@@ -880,9 +928,13 @@ static int i2o_cfg_passthru(unsigned long arg)
 				if (copy_from_user
 				    (p->virt, (void __user *)sg[i].addr_bus,
 				     sg_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG
 					       "%s: Could not copy SG buf %d FROM user\n",
 					       c->name, i);
+#else
+					;
+#endif
 					rcode = -EFAULT;
 					goto sg_list_cleanup;
 				}
@@ -935,10 +987,14 @@ static int i2o_cfg_passthru(unsigned long arg)
 				if (copy_to_user
 				    ((void __user *)sg[j].addr_bus, sg_list[j].virt,
 				     sg_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING
 					       "%s: Could not copy %p TO user %x\n",
 					       c->name, sg_list[j].virt,
 					       sg[j].addr_bus);
+#else
+					;
+#endif
 					rcode = -EFAULT;
 					goto sg_list_cleanup;
 				}
@@ -951,14 +1007,22 @@ sg_list_cleanup:
 	if (reply_size) {
 		// we wrote our own values for context - now restore the user supplied ones
 		if (copy_from_user(reply + 2, user_msg + 2, sizeof(u32) * 2)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: Could not copy message context FROM user\n",
 			       c->name);
+#else
+			;
+#endif
 			rcode = -EFAULT;
 		}
 		if (copy_to_user(user_reply, reply, reply_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: Could not copy reply TO user\n", c->name);
+#else
+			;
+#endif
 			rcode = -EFAULT;
 		}
 	}

@@ -270,8 +270,12 @@ static struct virtqueue *lg_find_vq(struct virtio_device *vdev,
 	 */
 	memcpy(&lvq->config, lg_vq(ldev->desc)+index, sizeof(lvq->config));
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Mapping virtqueue %i addr %lx\n", index,
 	       (unsigned long)lvq->config.pfn << PAGE_SHIFT);
+#else
+	;
+#endif
 	/* Figure out how many pages the ring will take, and map that memory */
 	lvq->pages = lguest_map((unsigned long)lvq->config.pfn << PAGE_SHIFT,
 				DIV_ROUND_UP(vring_size(lvq->config.num,
@@ -412,8 +416,12 @@ static void add_lguest_device(struct lguest_device_desc *d,
 	/* Start with zeroed memory; Linux's device layer counts on it. */
 	ldev = kzalloc(sizeof(*ldev), GFP_KERNEL);
 	if (!ldev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Cannot allocate lguest dev %u type %u\n",
 		       offset, d->type);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -462,7 +470,11 @@ static void scan_devices(void)
 		if (d->type == 0)
 			break;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Device at %i has size %u\n", i, desc_size(d));
+#else
+		;
+#endif
 		add_lguest_device(d, i);
 	}
 }

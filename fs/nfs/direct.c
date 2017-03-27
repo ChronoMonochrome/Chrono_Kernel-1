@@ -117,9 +117,9 @@ static inline int put_dreq(struct nfs_direct_req *dreq)
  */
 ssize_t nfs_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov, loff_t pos, unsigned long nr_segs)
 {
-	dprintk("NFS: nfs_direct_IO (%s) off/no(%Ld/%lu) EINVAL\n",
-			iocb->ki_filp->f_path.dentry->d_name.name,
-			(long long) pos, nr_segs);
+//	dprintk("NFS: nfs_direct_IO (%s) off/no(%Ld/%lu) EINVAL\n",
+//			iocb->ki_filp->f_path.dentry->d_name.name,
+;
 
 	return -EINVAL;
 }
@@ -359,13 +359,13 @@ static ssize_t nfs_direct_read_schedule_segment(struct nfs_direct_req *dreq,
 			break;
 		rpc_put_task(task);
 
-		dprintk("NFS: %5u initiated direct read call "
-			"(req %s/%Ld, %zu bytes @ offset %Lu)\n",
-				data->task.tk_pid,
-				inode->i_sb->s_id,
-				(long long)NFS_FILEID(inode),
-				bytes,
-				(unsigned long long)data->args.offset);
+//		dprintk("NFS: %5u initiated direct read call "
+//			"(req %s/%Ld, %zu bytes @ offset %Lu)\n",
+//				data->task.tk_pid,
+//				inode->i_sb->s_id,
+//				(long long)NFS_FILEID(inode),
+//				bytes,
+;
 
 		started += bytes;
 		user_addr += bytes;
@@ -510,12 +510,12 @@ static void nfs_direct_write_reschedule(struct nfs_direct_req *dreq)
 		if (!IS_ERR(task))
 			rpc_put_task(task);
 
-		dprintk("NFS: %5u rescheduled direct write call (req %s/%Ld, %u bytes @ offset %Lu)\n",
-				data->task.tk_pid,
-				inode->i_sb->s_id,
-				(long long)NFS_FILEID(inode),
-				data->args.count,
-				(unsigned long long)data->args.offset);
+//		dprintk("NFS: %5u rescheduled direct write call (req %s/%Ld, %u bytes @ offset %Lu)\n",
+//				data->task.tk_pid,
+//				inode->i_sb->s_id,
+//				(long long)NFS_FILEID(inode),
+//				data->args.count,
+;
 	}
 
 	if (put_dreq(dreq))
@@ -537,15 +537,15 @@ static void nfs_direct_commit_release(void *calldata)
 	int status = data->task.tk_status;
 
 	if (status < 0) {
-		dprintk("NFS: %5u commit failed with error %d.\n",
-				data->task.tk_pid, status);
+//		dprintk("NFS: %5u commit failed with error %d.\n",
+;
 		dreq->flags = NFS_ODIRECT_RESCHED_WRITES;
 	} else if (memcmp(&dreq->verf, &data->verf, sizeof(data->verf))) {
-		dprintk("NFS: %5u commit verify failed\n", data->task.tk_pid);
+;
 		dreq->flags = NFS_ODIRECT_RESCHED_WRITES;
 	}
 
-	dprintk("NFS: %5u commit returned %d\n", data->task.tk_pid, status);
+;
 	nfs_direct_write_complete(dreq, data->inode);
 	nfs_commit_free(data);
 }
@@ -593,7 +593,7 @@ static void nfs_direct_commit_schedule(struct nfs_direct_req *dreq)
 	/* Note: task.tk_ops->rpc_release will free dreq->commit_data */
 	dreq->commit_data = NULL;
 
-	dprintk("NFS: %5u initiated commit call\n", data->task.tk_pid);
+;
 
 	task = rpc_run_task(&task_setup_data);
 	if (!IS_ERR(task))
@@ -678,7 +678,7 @@ static void nfs_direct_write_release(void *calldata)
 				break;
 			case NFS_ODIRECT_DO_COMMIT:
 				if (memcmp(&dreq->verf, &data->verf, sizeof(dreq->verf))) {
-					dprintk("NFS: %5u write verify failed\n", data->task.tk_pid);
+;
 					dreq->flags = NFS_ODIRECT_RESCHED_WRITES;
 				}
 		}
@@ -789,13 +789,13 @@ static ssize_t nfs_direct_write_schedule_segment(struct nfs_direct_req *dreq,
 			break;
 		rpc_put_task(task);
 
-		dprintk("NFS: %5u initiated direct write call "
-			"(req %s/%Ld, %zu bytes @ offset %Lu)\n",
-				data->task.tk_pid,
-				inode->i_sb->s_id,
-				(long long)NFS_FILEID(inode),
-				bytes,
-				(unsigned long long)data->args.offset);
+//		dprintk("NFS: %5u initiated direct write call "
+//			"(req %s/%Ld, %zu bytes @ offset %Lu)\n",
+//				data->task.tk_pid,
+//				inode->i_sb->s_id,
+//				(long long)NFS_FILEID(inode),
+//				bytes,
+;
 
 		started += bytes;
 		user_addr += bytes;
@@ -918,10 +918,10 @@ ssize_t nfs_file_direct_read(struct kiocb *iocb, const struct iovec *iov,
 	count = iov_length(iov, nr_segs);
 	nfs_add_stats(mapping->host, NFSIOS_DIRECTREADBYTES, count);
 
-	dfprintk(FILE, "NFS: direct read(%s/%s, %zd@%Ld)\n",
-		file->f_path.dentry->d_parent->d_name.name,
-		file->f_path.dentry->d_name.name,
-		count, (long long) pos);
+//	dfprintk(FILE, "NFS: direct read(%s/%s, %zd@%Ld)\n",
+//		file->f_path.dentry->d_parent->d_name.name,
+//		file->f_path.dentry->d_name.name,
+;
 
 	retval = 0;
 	if (!count)
@@ -974,10 +974,10 @@ ssize_t nfs_file_direct_write(struct kiocb *iocb, const struct iovec *iov,
 	count = iov_length(iov, nr_segs);
 	nfs_add_stats(mapping->host, NFSIOS_DIRECTWRITTENBYTES, count);
 
-	dfprintk(FILE, "NFS: direct write(%s/%s, %zd@%Ld)\n",
-		file->f_path.dentry->d_parent->d_name.name,
-		file->f_path.dentry->d_name.name,
-		count, (long long) pos);
+//	dfprintk(FILE, "NFS: direct write(%s/%s, %zd@%Ld)\n",
+//		file->f_path.dentry->d_parent->d_name.name,
+//		file->f_path.dentry->d_name.name,
+;
 
 	retval = generic_write_checks(file, &pos, &count, 0);
 	if (retval)

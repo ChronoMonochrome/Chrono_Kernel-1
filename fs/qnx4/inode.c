@@ -203,12 +203,12 @@ static int qnx4_fill_super(struct super_block *s, void *data, int silent)
 	   if we don't belong here... */
 	bh = sb_bread(s, 1);
 	if (!bh) {
-		printk(KERN_ERR "qnx4: unable to read the superblock\n");
+;
 		goto outnobh;
 	}
 	if ( le32_to_cpup((__le32*) bh->b_data) != QNX4_SUPER_MAGIC ) {
 		if (!silent)
-			printk(KERN_ERR "qnx4: wrong fsid in superblock.\n");
+;
 		goto out;
 	}
 	s->s_op = &qnx4_sops;
@@ -222,14 +222,14 @@ static int qnx4_fill_super(struct super_block *s, void *data, int silent)
 	errmsg = qnx4_checkroot(s);
 	if (errmsg != NULL) {
  		if (!silent)
-			printk(KERN_ERR "qnx4: %s\n", errmsg);
+;
 		goto out;
 	}
 
  	/* does root not have inode number QNX4_ROOT_INO ?? */
 	root = qnx4_iget(s, QNX4_ROOT_INO * QNX4_INODES_PER_BLOCK);
 	if (IS_ERR(root)) {
-		printk(KERN_ERR "qnx4: get inode failed\n");
+;
 		ret = PTR_ERR(root);
  		goto outb;
  	}
@@ -294,17 +294,17 @@ struct inode *qnx4_iget(struct super_block *sb, unsigned long ino)
 
 	QNX4DEBUG((KERN_INFO "reading inode : [%d]\n", ino));
 	if (!ino) {
-		printk(KERN_ERR "qnx4: bad inode number on dev %s: %lu is "
-				"out of range\n",
-		       sb->s_id, ino);
+//		printk(KERN_ERR "qnx4: bad inode number on dev %s: %lu is "
+//				"out of range\n",
+;
 		iget_failed(inode);
 		return ERR_PTR(-EIO);
 	}
 	block = ino / QNX4_INODES_PER_BLOCK;
 
 	if (!(bh = sb_bread(sb, block))) {
-		printk(KERN_ERR "qnx4: major problem: unable to read inode from dev "
-		       "%s\n", sb->s_id);
+//		printk(KERN_ERR "qnx4: major problem: unable to read inode from dev "
+;
 		iget_failed(inode);
 		return ERR_PTR(-EIO);
 	}
@@ -337,8 +337,8 @@ struct inode *qnx4_iget(struct super_block *sb, unsigned long ino)
 		inode->i_mapping->a_ops = &qnx4_aops;
 		qnx4_i(inode)->mmu_private = inode->i_size;
 	} else {
-		printk(KERN_ERR "qnx4: bad inode %lu on dev %s\n",
-			ino, sb->s_id);
+//		printk(KERN_ERR "qnx4: bad inode %lu on dev %s\n",
+;
 		iget_failed(inode);
 		brelse(bh);
 		return ERR_PTR(-EIO);
@@ -422,7 +422,7 @@ static int __init init_qnx4_fs(void)
 		return err;
 	}
 
-	printk(KERN_INFO "QNX4 filesystem 0.2.3 registered.\n");
+;
 	return 0;
 }
 

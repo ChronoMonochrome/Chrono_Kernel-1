@@ -72,9 +72,13 @@ struct stv0299_state {
 
 static int debug;
 static int debug_legacy_dish_switch;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) printk(KERN_DEBUG "stv0299: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 
@@ -87,8 +91,12 @@ static int stv0299_writeregI (struct stv0299_state* state, u8 reg, u8 data)
 	ret = i2c_transfer (state->i2c, &msg, 1);
 
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: writereg error (reg == 0x%02x, val == 0x%02x, "
 			"ret == %i)\n", __func__, reg, data, ret);
+#else
+		d;
+#endif
 
 	return (ret != 1) ? -EREMOTEIO : 0;
 }
@@ -114,8 +122,12 @@ static u8 stv0299_readreg (struct stv0299_state* state, u8 reg)
 	ret = i2c_transfer (state->i2c, msg, 2);
 
 	if (ret != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: readreg error (reg == 0x%02x, ret == %i)\n",
 				__func__, reg, ret);
+#else
+		d;
+#endif
 
 	return b1[0];
 }
@@ -129,7 +141,11 @@ static int stv0299_readregs (struct stv0299_state* state, u8 reg1, u8 *b, u8 len
 	ret = i2c_transfer (state->i2c, msg, 2);
 
 	if (ret != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: readreg error (ret == %i)\n", __func__, ret);
+#else
+		d;
+#endif
 
 	return ret == 2 ? 0 : ret;
 }
@@ -357,9 +373,13 @@ static int stv0299_set_voltage (struct dvb_frontend* fe, fe_sec_voltage_t voltag
 	u8 reg0x08;
 	u8 reg0x0c;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: %s\n", __func__,
 		voltage == SEC_VOLTAGE_13 ? "SEC_VOLTAGE_13" :
 		voltage == SEC_VOLTAGE_18 ? "SEC_VOLTAGE_18" : "??");
+#else
+	d;
+#endif
 
 	reg0x08 = stv0299_readreg (state, 0x08);
 	reg0x0c = stv0299_readreg (state, 0x0c);
@@ -456,7 +476,11 @@ static int stv0299_init (struct dvb_frontend* fe)
 	u8 reg;
 	u8 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("stv0299: init chip\n");
+#else
+	d;
+#endif
 
 	stv0299_writeregI(state, 0x02, 0x30 | state->mcr_reg);
 	msleep(50);
@@ -572,7 +596,11 @@ static int stv0299_set_frontend(struct dvb_frontend* fe, struct dvb_frontend_par
 	if (p->inversion == INVERSION_OFF) invval = 0;
 	else if (p->inversion == INVERSION_ON) invval = 1;
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("stv0299 does not support auto-inversion\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	if (state->config->invert) invval = (~invval) & 1;

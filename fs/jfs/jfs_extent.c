@@ -34,58 +34,58 @@ static int extBrealloc(struct inode *, s64, s64, s64 *, s64 *);
 #endif
 static s64 extRoundDown(s64 nb);
 
-#define DPD(a)		(printk("(a): %d\n",(a)))
-#define DPC(a)		(printk("(a): %c\n",(a)))
-#define DPL1(a)					\
-{						\
-	if ((a) >> 32)				\
-		printk("(a): %x%08x  ",(a));	\
+//#define DPD(a)		(printk("(a): %d\n",(a)))
+//#define DPC(a)		(printk("(a): %c\n",(a)))
+//#define DPL1(a)					\
+//{						\
+//	if ((a) >> 32)				\
+;
 	else					\
-		printk("(a): %x  ",(a) << 32);	\
+;
 }
 #define DPL(a)					\
 {						\
 	if ((a) >> 32)				\
-		printk("(a): %x%08x\n",(a));	\
+;
 	else					\
-		printk("(a): %x\n",(a) << 32);	\
+;
 }
 
-#define DPD1(a)		(printk("(a): %d  ",(a)))
-#define DPX(a)		(printk("(a): %08x\n",(a)))
-#define DPX1(a)		(printk("(a): %08x  ",(a)))
-#define DPS(a)		(printk("%s\n",(a)))
-#define DPE(a)		(printk("\nENTERING: %s\n",(a)))
-#define DPE1(a)		(printk("\nENTERING: %s",(a)))
-#define DPS1(a)		(printk("  %s  ",(a)))
-
-
-/*
- * NAME:	extAlloc()
- *
- * FUNCTION:	allocate an extent for a specified page range within a
- *		file.
- *
- * PARAMETERS:
- *	ip	- the inode of the file.
- *	xlen	- requested extent length.
- *	pno	- the starting page number with the file.
- *	xp	- pointer to an xad.  on entry, xad describes an
- *		  extent that is used as an allocation hint if the
- *		  xaddr of the xad is non-zero.  on successful exit,
- *		  the xad describes the newly allocated extent.
- *	abnr	- bool indicating whether the newly allocated extent
- *		  should be marked as allocated but not recorded.
- *
- * RETURN VALUES:
- *	0	- success
- *	-EIO	- i/o error.
- *	-ENOSPC	- insufficient disk resources.
- */
-int
-extAlloc(struct inode *ip, s64 xlen, s64 pno, xad_t * xp, bool abnr)
-{
-	struct jfs_sb_info *sbi = JFS_SBI(ip->i_sb);
+//#define DPD1(a)		(printk("(a): %d  ",(a)))
+//#define DPX(a)		(printk("(a): %08x\n",(a)))
+//#define DPX1(a)		(printk("(a): %08x  ",(a)))
+//#define DPS(a)		(printk("%s\n",(a)))
+//#define DPE(a)		(printk("\nENTERING: %s\n",(a)))
+//#define DPE1(a)		(printk("\nENTERING: %s",(a)))
+//#define DPS1(a)		(printk("  %s  ",(a)))
+//
+//
+///*
+// * NAME:	extAlloc()
+// *
+// * FUNCTION:	allocate an extent for a specified page range within a
+// *		file.
+// *
+// * PARAMETERS:
+// *	ip	- the inode of the file.
+// *	xlen	- requested extent length.
+// *	pno	- the starting page number with the file.
+// *	xp	- pointer to an xad.  on entry, xad describes an
+// *		  extent that is used as an allocation hint if the
+// *		  xaddr of the xad is non-zero.  on successful exit,
+// *		  the xad describes the newly allocated extent.
+// *	abnr	- bool indicating whether the newly allocated extent
+// *		  should be marked as allocated but not recorded.
+// *
+// * RETURN VALUES:
+// *	0	- success
+// *	-EIO	- i/o error.
+// *	-ENOSPC	- insufficient disk resources.
+// */
+//int
+//extAlloc(struct inode *ip, s64 xlen, s64 pno, xad_t * xp, bool abnr)
+//{
+;
 	s64 nxlen, nxaddr, xoff, hint, xaddr = 0;
 	int rc;
 	int xflag;

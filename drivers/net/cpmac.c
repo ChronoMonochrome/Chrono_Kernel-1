@@ -228,21 +228,21 @@ static void cpmac_dump_regs(struct net_device *dev)
 		if (i % 16 == 0) {
 			if (i)
 				pr_cont("\n");
-			printk(KERN_DEBUG "%s: reg[%p]:", dev->name,
-			       priv->regs + i);
+//			printk(KERN_DEBUG "%s: reg[%p]:", dev->name,
+;
 		}
-		printk(" %08x", cpmac_read(priv->regs, i));
+;
 	}
-	printk("\n");
+;
 }
 
 static void cpmac_dump_desc(struct net_device *dev, struct cpmac_desc *desc)
 {
 	int i;
-	printk(KERN_DEBUG "%s: desc[%p]:", dev->name, desc);
+;
 	for (i = 0; i < sizeof(*desc) / 4; i++)
 		printk(" %08x", ((u32 *)desc)[i]);
-	printk("\n");
+;
 }
 
 static void cpmac_dump_all_desc(struct net_device *dev)
@@ -258,17 +258,17 @@ static void cpmac_dump_all_desc(struct net_device *dev)
 static void cpmac_dump_skb(struct net_device *dev, struct sk_buff *skb)
 {
 	int i;
-	printk(KERN_DEBUG "%s: skb 0x%p, len=%d\n", dev->name, skb, skb->len);
+;
 	for (i = 0; i < skb->len; i++) {
 		if (i % 16 == 0) {
 			if (i)
 				pr_cont("\n");
-			printk(KERN_DEBUG "%s: data[%p]:", dev->name,
-			       skb->data + i);
+//			printk(KERN_DEBUG "%s: data[%p]:", dev->name,
+;
 		}
 		printk(" %02x", ((u8 *)skb->data)[i]);
 	}
-	printk("\n");
+;
 }
 
 static int cpmac_mdio_read(struct mii_bus *bus, int phy_id, int reg)
@@ -300,7 +300,7 @@ static int cpmac_mdio_reset(struct mii_bus *bus)
 
 	cpmac_clk = clk_get(&bus->dev, "cpmac");
 	if (IS_ERR(cpmac_clk)) {
-		printk(KERN_ERR "unable to get cpmac clock\n");
+;
 		return -1;
 	}
 	ar7_device_reset(AR7_RESET_BIT_MDIO);
@@ -382,8 +382,8 @@ static struct sk_buff *cpmac_rx_one(struct cpmac_priv *priv,
 	cpmac_write(priv->regs, CPMAC_RX_ACK(0), (u32)desc->mapping);
 	if (unlikely(!desc->datalen)) {
 		if (netif_msg_rx_err(priv) && net_ratelimit())
-			printk(KERN_WARNING "%s: rx: spurious interrupt\n",
-			       priv->dev->name);
+//			printk(KERN_WARNING "%s: rx: spurious interrupt\n",
+;
 		return NULL;
 	}
 
@@ -403,15 +403,15 @@ static struct sk_buff *cpmac_rx_one(struct cpmac_priv *priv,
 						    DMA_FROM_DEVICE);
 		desc->hw_data = (u32)desc->data_mapping;
 		if (unlikely(netif_msg_pktdata(priv))) {
-			printk(KERN_DEBUG "%s: received packet:\n",
-			       priv->dev->name);
+//			printk(KERN_DEBUG "%s: received packet:\n",
+;
 			cpmac_dump_skb(priv->dev, result);
 		}
 	} else {
 		if (netif_msg_rx_err(priv) && net_ratelimit())
-			printk(KERN_WARNING
-			       "%s: low on skbs, dropping packet\n",
-			       priv->dev->name);
+//			printk(KERN_WARNING
+//			       "%s: low on skbs, dropping packet\n",
+;
 		priv->dev->stats.rx_dropped++;
 	}
 
@@ -431,8 +431,8 @@ static int cpmac_poll(struct napi_struct *napi, int budget)
 	spin_lock(&priv->rx_lock);
 	if (unlikely(!priv->rx_head)) {
 		if (netif_msg_rx_err(priv) && net_ratelimit())
-			printk(KERN_WARNING "%s: rx: polling, but no queue\n",
-			       priv->dev->name);
+//			printk(KERN_WARNING "%s: rx: polling, but no queue\n",
+;
 		spin_unlock(&priv->rx_lock);
 		napi_complete(napi);
 		return 0;
@@ -451,9 +451,9 @@ static int cpmac_poll(struct napi_struct *napi, int budget)
 			*/
 			if (unlikely(restart)) {
 				if (netif_msg_rx_err(priv))
-					printk(KERN_ERR "%s: poll found a"
-						" duplicate EOQ: %p and %p\n",
-						priv->dev->name, restart, desc);
+//					printk(KERN_ERR "%s: poll found a"
+//						" duplicate EOQ: %p and %p\n",
+;
 				goto fatal_error;
 			}
 
@@ -497,15 +497,15 @@ static int cpmac_poll(struct napi_struct *napi, int budget)
 		priv->dev->stats.rx_errors++;
 		priv->dev->stats.rx_fifo_errors++;
 		if (netif_msg_rx_err(priv) && net_ratelimit())
-			printk(KERN_WARNING "%s: rx dma ring overrun\n",
-			       priv->dev->name);
+//			printk(KERN_WARNING "%s: rx dma ring overrun\n",
+;
 
 		if (unlikely((restart->dataflags & CPMAC_OWN) == 0)) {
 			if (netif_msg_drv(priv))
-				printk(KERN_ERR "%s: cpmac_poll is trying to "
-					"restart rx from a descriptor that's "
-					"not free: %p\n",
-					priv->dev->name, restart);
+//				printk(KERN_ERR "%s: cpmac_poll is trying to "
+//					"restart rx from a descriptor that's "
+//					"not free: %p\n",
+;
 			goto fatal_error;
 		}
 
@@ -515,8 +515,8 @@ static int cpmac_poll(struct napi_struct *napi, int budget)
 	priv->rx_head = desc;
 	spin_unlock(&priv->rx_lock);
 	if (unlikely(netif_msg_rx_status(priv)))
-		printk(KERN_DEBUG "%s: poll processed %d packets\n",
-		       priv->dev->name, received);
+//		printk(KERN_DEBUG "%s: poll processed %d packets\n",
+;
 	if (processed == 0) {
 		/* we ran out of packets to read,
 		 * revert to interrupt-driven mode */
@@ -532,13 +532,13 @@ fatal_error:
 	 * Reset hardware to try to recover rather than wedging. */
 
 	if (netif_msg_drv(priv)) {
-		printk(KERN_ERR "%s: cpmac_poll is confused. "
-				"Resetting hardware\n", priv->dev->name);
+//		printk(KERN_ERR "%s: cpmac_poll is confused. "
+;
 		cpmac_dump_all_desc(priv->dev);
-		printk(KERN_DEBUG "%s: RX_PTR(0)=0x%08x RX_ACK(0)=0x%08x\n",
-			priv->dev->name,
-			cpmac_read(priv->regs, CPMAC_RX_PTR(0)),
-			cpmac_read(priv->regs, CPMAC_RX_ACK(0)));
+//		printk(KERN_DEBUG "%s: RX_PTR(0)=0x%08x RX_ACK(0)=0x%08x\n",
+//			priv->dev->name,
+//			cpmac_read(priv->regs, CPMAC_RX_PTR(0)),
+;
 	}
 
 	spin_unlock(&priv->rx_lock);
@@ -573,8 +573,8 @@ static int cpmac_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	desc = &priv->desc_ring[queue];
 	if (unlikely(desc->dataflags & CPMAC_OWN)) {
 		if (netif_msg_tx_err(priv) && net_ratelimit())
-			printk(KERN_WARNING "%s: tx dma ring full\n",
-			       dev->name);
+//			printk(KERN_WARNING "%s: tx dma ring full\n",
+;
 		return NETDEV_TX_BUSY;
 	}
 
@@ -588,8 +588,8 @@ static int cpmac_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	desc->datalen = len;
 	desc->buflen = len;
 	if (unlikely(netif_msg_tx_queued(priv)))
-		printk(KERN_DEBUG "%s: sending 0x%p, len=%d\n", dev->name, skb,
-		       skb->len);
+//		printk(KERN_DEBUG "%s: sending 0x%p, len=%d\n", dev->name, skb,
+;
 	if (unlikely(netif_msg_hw(priv)))
 		cpmac_dump_desc(dev, desc);
 	if (unlikely(netif_msg_pktdata(priv)))
@@ -615,8 +615,8 @@ static void cpmac_end_xmit(struct net_device *dev, int queue)
 				 DMA_TO_DEVICE);
 
 		if (unlikely(netif_msg_tx_done(priv)))
-			printk(KERN_DEBUG "%s: sent 0x%p, len=%d\n", dev->name,
-			       desc->skb, desc->skb->len);
+//			printk(KERN_DEBUG "%s: sent 0x%p, len=%d\n", dev->name,
+;
 
 		dev_kfree_skb_irq(desc->skb);
 		desc->skb = NULL;
@@ -624,8 +624,8 @@ static void cpmac_end_xmit(struct net_device *dev, int queue)
 			netif_wake_subqueue(dev, queue);
 	} else {
 		if (netif_msg_tx_err(priv) && net_ratelimit())
-			printk(KERN_WARNING
-			       "%s: end_xmit: spurious interrupt\n", dev->name);
+//			printk(KERN_WARNING
+;
 		if (__netif_subqueue_stopped(dev, queue))
 			netif_wake_subqueue(dev, queue);
 	}
@@ -706,8 +706,8 @@ static void cpmac_clear_rx(struct net_device *dev)
 	for (i = 0; i < priv->ring_size; i++) {
 		if ((desc->dataflags & CPMAC_OWN) == 0) {
 			if (netif_msg_rx_err(priv) && net_ratelimit())
-				printk(KERN_WARNING "%s: packet dropped\n",
-				       dev->name);
+//				printk(KERN_WARNING "%s: packet dropped\n",
+;
 			if (unlikely(netif_msg_hw(priv)))
 				cpmac_dump_desc(dev, desc);
 			desc->dataflags = CPMAC_OWN;
@@ -767,13 +767,13 @@ static void cpmac_check_status(struct net_device *dev)
 			 *error codes actually are. So just log them and hope..
 			 */
 			if (rx_code)
-				printk(KERN_WARNING "%s: host error %d on rx "
-				     "channel %d (macstatus %08x), resetting\n",
-				     dev->name, rx_code, rx_channel, macstatus);
+//				printk(KERN_WARNING "%s: host error %d on rx "
+//				     "channel %d (macstatus %08x), resetting\n",
+;
 			if (tx_code)
-				printk(KERN_WARNING "%s: host error %d on tx "
-				     "channel %d (macstatus %08x), resetting\n",
-				     dev->name, tx_code, tx_channel, macstatus);
+//				printk(KERN_WARNING "%s: host error %d on tx "
+//				     "channel %d (macstatus %08x), resetting\n",
+;
 		}
 
 		netif_tx_stop_all_queues(dev);
@@ -798,8 +798,8 @@ static irqreturn_t cpmac_irq(int irq, void *dev_id)
 	status = cpmac_read(priv->regs, CPMAC_MAC_INT_VECTOR);
 
 	if (unlikely(netif_msg_intr(priv)))
-		printk(KERN_DEBUG "%s: interrupt status: 0x%08x\n", dev->name,
-		       status);
+//		printk(KERN_DEBUG "%s: interrupt status: 0x%08x\n", dev->name,
+;
 
 	if (status & MAC_INT_TX)
 		cpmac_end_xmit(dev, (status & 7));
@@ -828,7 +828,7 @@ static void cpmac_tx_timeout(struct net_device *dev)
 	dev->stats.tx_errors++;
 	spin_unlock(&priv->lock);
 	if (netif_msg_tx_err(priv) && net_ratelimit())
-		printk(KERN_WARNING "%s: transmit timeout\n", dev->name);
+;
 
 	atomic_inc(&priv->reset_pending);
 	barrier();
@@ -965,8 +965,8 @@ static int cpmac_open(struct net_device *dev)
 	mem = platform_get_resource_byname(priv->pdev, IORESOURCE_MEM, "regs");
 	if (!request_mem_region(mem->start, resource_size(mem), dev->name)) {
 		if (netif_msg_drv(priv))
-			printk(KERN_ERR "%s: failed to request registers\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: failed to request registers\n",
+;
 		res = -ENXIO;
 		goto fail_reserve;
 	}
@@ -974,8 +974,8 @@ static int cpmac_open(struct net_device *dev)
 	priv->regs = ioremap(mem->start, resource_size(mem));
 	if (!priv->regs) {
 		if (netif_msg_drv(priv))
-			printk(KERN_ERR "%s: failed to remap registers\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: failed to remap registers\n",
+;
 		res = -ENXIO;
 		goto fail_remap;
 	}
@@ -1017,8 +1017,8 @@ static int cpmac_open(struct net_device *dev)
 	res = request_irq(dev->irq, cpmac_irq, IRQF_SHARED, dev->name, dev);
 	if (res) {
 		if (netif_msg_drv(priv))
-			printk(KERN_ERR "%s: failed to obtain irq\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: failed to obtain irq\n",
+;
 		goto fail_irq;
 	}
 
@@ -1144,7 +1144,7 @@ static int __devinit cpmac_probe(struct platform_device *pdev)
 	dev = alloc_etherdev_mq(sizeof(*priv), CPMAC_QUEUES);
 
 	if (!dev) {
-		printk(KERN_ERR "cpmac: Unable to allocate net_device\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1180,24 +1180,24 @@ static int __devinit cpmac_probe(struct platform_device *pdev)
 
 	if (IS_ERR(priv->phy)) {
 		if (netif_msg_drv(priv))
-			printk(KERN_ERR "%s: Could not attach to PHY\n",
-			       dev->name);
+//			printk(KERN_ERR "%s: Could not attach to PHY\n",
+;
 		rc = PTR_ERR(priv->phy);
 		goto fail;
 	}
 
 	rc = register_netdev(dev);
 	if (rc) {
-		printk(KERN_ERR "cpmac: error %i registering device %s\n", rc,
-		       dev->name);
+//		printk(KERN_ERR "cpmac: error %i registering device %s\n", rc,
+;
 		goto fail;
 	}
 
 	if (netif_msg_probe(priv)) {
-		printk(KERN_INFO
-		       "cpmac: device %s (regs: %p, irq: %d, phy: %s, "
-		       "mac: %pM)\n", dev->name, (void *)mem->start, dev->irq,
-		       priv->phy_name, dev->dev_addr);
+//		printk(KERN_INFO
+//		       "cpmac: device %s (regs: %p, irq: %d, phy: %s, "
+//		       "mac: %pM)\n", dev->name, (void *)mem->start, dev->irq,
+;
 	}
 	return 0;
 
@@ -1239,7 +1239,7 @@ int __devinit cpmac_init(void)
 	cpmac_mii->priv = ioremap(AR7_REGS_MDIO, 256);
 
 	if (!cpmac_mii->priv) {
-		printk(KERN_ERR "Can't ioremap mdio registers\n");
+;
 		res = -ENXIO;
 		goto fail_alloc;
 	}

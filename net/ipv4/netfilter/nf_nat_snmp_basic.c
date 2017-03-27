@@ -914,8 +914,8 @@ static inline void mangle_address(unsigned char *begin,
 		}
 
 		if (debug)
-			printk(KERN_DEBUG "bsalg: mapped %pI4 to %pI4\n",
-			       &old, addr);
+//			printk(KERN_DEBUG "bsalg: mapped %pI4 to %pI4\n",
+;
 	}
 }
 
@@ -1003,10 +1003,10 @@ static void hex_dump(const unsigned char *buf, size_t len)
 
 	for (i = 0; i < len; i++) {
 		if (i && !(i % 16))
-			printk("\n");
+;
 		printk("%02x ", *(buf + i));
 	}
-	printk("\n");
+;
 }
 
 /*
@@ -1047,7 +1047,7 @@ static int snmp_parse_mangle(unsigned char *msg,
 	if (!asn1_uint_decode (&ctx, end, &vers))
 		return 0;
 	if (debug > 1)
-		printk(KERN_DEBUG "bsalg: snmp version: %u\n", vers + 1);
+;
 	if (vers > 1)
 		return 1;
 
@@ -1063,10 +1063,10 @@ static int snmp_parse_mangle(unsigned char *msg,
 	if (debug > 1) {
 		unsigned int i;
 
-		printk(KERN_DEBUG "bsalg: community: ");
+;
 		for (i = 0; i < comm.len; i++)
-			printk("%c", comm.data[i]);
-		printk("\n");
+;
+;
 	}
 	kfree(comm.data);
 
@@ -1090,9 +1090,9 @@ static int snmp_parse_mangle(unsigned char *msg,
 		};
 
 		if (pdutype > SNMP_PDU_TRAP2)
-			printk(KERN_DEBUG "bsalg: bad pdu type %u\n", pdutype);
+;
 		else
-			printk(KERN_DEBUG "bsalg: pdu: %s\n", pdus[pdutype]);
+;
 	}
 	if (pdutype != SNMP_PDU_RESPONSE &&
 	    pdutype != SNMP_PDU_TRAP1 && pdutype != SNMP_PDU_TRAP2)
@@ -1118,9 +1118,9 @@ static int snmp_parse_mangle(unsigned char *msg,
 			return 0;
 
 		if (debug > 1)
-			printk(KERN_DEBUG "bsalg: request: id=0x%lx error_status=%u "
-			"error_index=%u\n", req.id, req.error_status,
-			req.error_index);
+//			printk(KERN_DEBUG "bsalg: request: id=0x%lx error_status=%u "
+//			"error_index=%u\n", req.id, req.error_status,
+;
 	}
 
 	/*
@@ -1144,13 +1144,13 @@ static int snmp_parse_mangle(unsigned char *msg,
 		}
 
 		if (debug > 1) {
-			printk(KERN_DEBUG "bsalg: object: ");
+;
 			for (i = 0; i < obj->id_len; i++) {
 				if (i > 0)
-					printk(".");
-				printk("%lu", obj->id[i]);
+;
+;
 			}
-			printk(": type=%u\n", obj->type);
+;
 
 		}
 
@@ -1207,7 +1207,7 @@ static int snmp_translate(struct nf_conn *ct,
 	if (!snmp_parse_mangle((unsigned char *)udph + sizeof(struct udphdr),
 			       paylen, &map, &udph->check)) {
 		if (net_ratelimit())
-			printk(KERN_WARNING "bsalg: parser failed\n");
+;
 		return NF_DROP;
 	}
 	return NF_ACCEPT;
@@ -1242,8 +1242,8 @@ static int help(struct sk_buff *skb, unsigned int protoff,
 	 */
 	if (ntohs(udph->len) != skb->len - (iph->ihl << 2)) {
 		 if (net_ratelimit())
-			 printk(KERN_WARNING "SNMP: dropping malformed packet src=%pI4 dst=%pI4\n",
-				&iph->saddr, &iph->daddr);
+//			 printk(KERN_WARNING "SNMP: dropping malformed packet src=%pI4 dst=%pI4\n",
+;
 		 return NF_DROP;
 	}
 

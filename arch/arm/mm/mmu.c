@@ -125,7 +125,11 @@ static int __init early_cachepolicy(char *p)
 	 * page tables.
 	 */
 	if (cpu_architecture() >= CPU_ARCH_ARMv6) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Only cachepolicy=writeback supported on ARMv6 and later\n");
+#else
+		;
+#endif
 		cachepolicy = CPOLICY_WRITEBACK;
 	}
 	flush_cache_all();
@@ -137,7 +141,11 @@ early_param("cachepolicy", early_cachepolicy);
 static int __init early_nocache(char *__unused)
 {
 	char *p = "buffered";
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "nocache is deprecated; use cachepolicy=%s\n", p);
+#else
+	;
+#endif
 	early_cachepolicy(p);
 	return 0;
 }
@@ -146,7 +154,11 @@ early_param("nocache", early_nocache);
 static int __init early_nowrite(char *__unused)
 {
 	char *p = "uncached";
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "nowb is deprecated; use cachepolicy=%s\n", p);
+#else
+	;
+#endif
 	early_cachepolicy(p);
 	return 0;
 }
@@ -536,8 +548,12 @@ static void __init build_mem_type_table(void)
 		mem_types[MT_CACHECLEAN].prot_sect |= PMD_SECT_WB;
 		break;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Memory policy: ECC %sabled, Data cache %s\n",
 		ecc_mask ? "en" : "dis", cp->policy);
+#else
+	;
+#endif
 
 	for (i = 0; i < ARRAY_SIZE(mem_types); i++) {
 		struct mem_type *t = &mem_types[i];
@@ -716,17 +732,25 @@ static void __init create_mapping(struct map_desc *md)
 	pgd_t *pgd;
 
 	if (md->virtual != vectors_base() && md->virtual < TASK_SIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BUG: not creating mapping for 0x%08llx"
 		       " at 0x%08lx in user region\n",
 		       (long long)__pfn_to_phys((u64)md->pfn), md->virtual);
+#else
+		;
+#endif
 		return;
 	}
 
 	if ((md->type == MT_DEVICE || md->type == MT_ROM) &&
 	    md->virtual >= PAGE_OFFSET && md->virtual < VMALLOC_END) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BUG: mapping for 0x%08llx"
 		       " at 0x%08lx overlaps vmalloc space\n",
 		       (long long)__pfn_to_phys((u64)md->pfn), md->virtual);
+#else
+		;
+#endif
 	}
 
 	type = &mem_types[md->type];
@@ -746,9 +770,13 @@ static void __init create_mapping(struct map_desc *md)
 	length = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
 
 	if (type->prot_l1 == 0 && ((addr | phys | length) & ~SECTION_MASK)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BUG: map for 0x%08llx at 0x%08lx can not "
 		       "be mapped using pages, ignoring.\n",
 		       (long long)__pfn_to_phys(md->pfn), addr);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -788,16 +816,24 @@ static int __init early_vmalloc(char *arg)
 
 	if (vmalloc_reserve < SZ_16M) {
 		vmalloc_reserve = SZ_16M;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"vmalloc area too small, limiting to %luMB\n",
 			vmalloc_reserve >> 20);
+#else
+		;
+#endif
 	}
 
 	if (vmalloc_reserve > VMALLOC_END - (PAGE_OFFSET + SZ_32M)) {
 		vmalloc_reserve = VMALLOC_END - (PAGE_OFFSET + SZ_32M);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"vmalloc area is too big, limiting to %luMB\n",
 			vmalloc_reserve >> 20);
+#else
+		;
+#endif
 	}
 
 	vmalloc_min = (void *)(VMALLOC_END - vmalloc_reserve);
@@ -832,8 +868,12 @@ void __init sanity_check_meminfo(void)
 		if (!highmem && __va(bank->start) < vmalloc_min &&
 		    bank->size > vmalloc_min - __va(bank->start)) {
 			if (meminfo.nr_banks >= NR_BANKS) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CRIT "NR_BANKS too low, "
 						 "ignoring high memory\n");
+#else
+				;
+#endif
 			} else {
 				memmove(bank + 1, bank,
 					(meminfo.nr_banks - i) * sizeof(*bank));
@@ -866,10 +906,14 @@ void __init sanity_check_meminfo(void)
 		 */
 		if (__va(bank->start) >= vmalloc_min ||
 		    __va(bank->start) < (void *)PAGE_OFFSET) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "Ignoring RAM at %.8llx-%.8llx "
 			       "(vmalloc region overlap).\n",
 			       (unsigned long long)bank->start,
 			       (unsigned long long)bank->start + bank->size - 1);
+#else
+			;
+#endif
 			continue;
 		}
 
@@ -880,11 +924,15 @@ void __init sanity_check_meminfo(void)
 		if (__va(bank->start + bank->size) > vmalloc_min ||
 		    __va(bank->start + bank->size) < __va(bank->start)) {
 			unsigned long newsize = vmalloc_min - __va(bank->start);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "Truncating RAM at %.8llx-%.8llx "
 			       "to -%.8llx (vmalloc region overlap).\n",
 			       (unsigned long long)bank->start,
 			       (unsigned long long)bank->start + bank->size - 1,
 			       (unsigned long long)bank->start + newsize - 1);
+#else
+			;
+#endif
 			bank->size = newsize;
 		}
 #endif
@@ -906,8 +954,12 @@ void __init sanity_check_meminfo(void)
 			reason = "with VIPT aliasing cache";
 		}
 		if (reason) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT "HIGHMEM is not supported %s, ignoring high memory\n",
 				reason);
+#else
+			;
+#endif
 			while (j > 0 && meminfo.bank[j - 1].highmem)
 				j--;
 		}

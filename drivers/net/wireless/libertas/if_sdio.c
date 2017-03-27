@@ -1281,8 +1281,8 @@ static int __init if_sdio_init_module(void)
 
 	lbs_deb_enter(LBS_DEB_SDIO);
 
-	printk(KERN_INFO "libertas_sdio: Libertas SDIO driver\n");
-	printk(KERN_INFO "libertas_sdio: Copyright Pierre Ossman\n");
+;
+;
 
 	ret = sdio_register_driver(&if_sdio_driver);
 

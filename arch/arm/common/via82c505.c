@@ -58,13 +58,25 @@ static struct pci_ops via82c505_ops = {
 
 void __init via82c505_preinit(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "PCI: VIA 82c505\n");
+#else
+	;
+#endif
 	if (!request_region(0xA8,2,"via config")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"VIA 82c505: Unable to request region 0xA8\n");
+#else
+		;
+#endif
 		return;
 	}
 	if (!request_region(0xCF8,8,"pci config")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING"VIA 82c505: Unable to request region 0xCF8\n");
+#else
+		;
+#endif
 		release_region(0xA8, 2);
 		return;
 	}

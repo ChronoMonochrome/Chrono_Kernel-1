@@ -32,6 +32,7 @@
 
 /*#define PCM_DEBUG*/
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define MSG(x...)	printk(KERN_INFO "au1xpsc_pcm: " x)
 #ifdef PCM_DEBUG
 #define DBG		MSG
@@ -42,6 +43,9 @@
 struct au1xpsc_audio_dmadata {
 	/* DDMA control data */
 	unsigned int ddma_id;		/* DDMA direction ID for this PSC */
+#else
+#define MSG(x...)	;
+#endif
 	u32 ddma_chan;			/* DDMA context */
 
 	/* PCM context (for irq handlers) */

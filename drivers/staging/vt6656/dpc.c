@@ -703,10 +703,10 @@ RXbBulkInProcessData (
 		      Descriptor_type = skb->data[cbIVOffset + 8 + 24 + 6 + 1 +1+1+1+2];
 		      Key_info = (skb->data[cbIVOffset + 8 + 24 + 6 + 1 +1+1+1+2+1]<<8) |skb->data[cbIVOffset + 8 + 24 + 6 + 1 +1+1+1+2+2] ;
 		      if(Descriptor_type==2) {    //RSN
-                         //  printk("WPA2_Rx_eapol-key_info<-----:%x\n",Key_info);
+;
 		      }
 		     else  if(Descriptor_type==254) {
-                        //  printk("WPA_Rx_eapol-key_info<-----:%x\n",Key_info);
+;
 		     }
                   }
 	      }

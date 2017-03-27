@@ -34,6 +34,7 @@ static int debug;
 module_param(debug, int, 0644);
 MODULE_PARM_DESC(debug, "Turn on/off debugging (default:off).");
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(level,fmt, arg...) if (debug >= level) \
 	printk(KERN_INFO "%s: " fmt, "mt2131", ## arg)
 
@@ -44,6 +45,9 @@ static u8 mt2131_config1[] = {
 	0x7f, 0xda, 0x4c, 0x00, 0x10, 0xaa, 0x78, 0x80,
 	0xff, 0x68, 0xa0, 0xff, 0xdd, 0x00, 0x00
 };
+#else
+#define d;
+#endif
 
 static u8 mt2131_config2[] = {
 	0x10,
@@ -60,7 +64,11 @@ static int mt2131_readreg(struct mt2131_priv *priv, u8 reg, u8 *val)
 	};
 
 	if (i2c_transfer(priv->i2c, msg, 2) != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mt2131 I2C read failed\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -73,7 +81,11 @@ static int mt2131_writereg(struct mt2131_priv *priv, u8 reg, u8 val)
 			       .buf = buf, .len = 2 };
 
 	if (i2c_transfer(priv->i2c, &msg, 1) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mt2131 I2C write failed\n");
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -85,8 +97,12 @@ static int mt2131_writeregs(struct mt2131_priv *priv,u8 *buf, u8 len)
 			       .flags = 0, .buf = buf, .len = len };
 
 	if (i2c_transfer(priv->i2c, &msg, 1) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "mt2131 I2C write failed (len=%i)\n",
 		       (int)len);
+#else
+		;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -111,7 +127,11 @@ static int mt2131_set_params(struct dvb_frontend *fe,
 		priv->bandwidth = 0;
 
 	freq = params->frequency / 1000;  // Hz -> kHz
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() freq=%d\n", __func__, freq);
+#else
+	d;
+#endif
 
 	f_lo1 = freq + MT2131_IF1 * 1000;
 	f_lo1 = (f_lo1 / 250) * 250;
@@ -157,14 +177,34 @@ static int mt2131_set_params(struct dvb_frontend *fe,
 	b[5] = num2 & 0x1F;
 	b[6] = div2;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "IF1: %dMHz IF2: %dMHz\n", MT2131_IF1, MT2131_IF2);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "PLL freq=%dkHz  band=%d\n", (int)freq, (int)if_band_center);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "PLL f_lo1=%dkHz  f_lo2=%dkHz\n", (int)f_lo1, (int)f_lo2);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "PLL div1=%d  num1=%d  div2=%d  num2=%d\n",
 		(int)div1, (int)num1, (int)div2, (int)num2);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "PLL [1..6]: %2x %2x %2x %2x %2x %2x\n",
 		(int)b[1], (int)b[2], (int)b[3], (int)b[4], (int)b[5],
 		(int)b[6]);
+#else
+	d;
+#endif
 
 	ret = mt2131_writeregs(priv,b,7);
 	if (ret < 0)
@@ -188,7 +228,11 @@ static int mt2131_set_params(struct dvb_frontend *fe,
 static int mt2131_get_frequency(struct dvb_frontend *fe, u32 *frequency)
 {
 	struct mt2131_priv *priv = fe->tuner_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 	*frequency = priv->frequency;
 	return 0;
 }
@@ -196,7 +240,11 @@ static int mt2131_get_frequency(struct dvb_frontend *fe, u32 *frequency)
 static int mt2131_get_bandwidth(struct dvb_frontend *fe, u32 *bandwidth)
 {
 	struct mt2131_priv *priv = fe->tuner_priv;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 	*bandwidth = priv->bandwidth;
 	return 0;
 }
@@ -214,8 +262,12 @@ static int mt2131_get_status(struct dvb_frontend *fe, u32 *status)
 		*status = TUNER_STATUS_LOCKED;
 
 	mt2131_readreg(priv, 0x09, &afc_status);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s() - LO Status = 0x%x, AFC Status = 0x%x\n",
 		__func__, lock_status, afc_status);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -224,7 +276,11 @@ static int mt2131_init(struct dvb_frontend *fe)
 {
 	struct mt2131_priv *priv = fe->tuner_priv;
 	int ret;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	if ((ret = mt2131_writeregs(priv, mt2131_config1,
 				    sizeof(mt2131_config1))) < 0)
@@ -244,7 +300,11 @@ static int mt2131_init(struct dvb_frontend *fe)
 
 static int mt2131_release(struct dvb_frontend *fe)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 	kfree(fe->tuner_priv);
 	fe->tuner_priv = NULL;
 	return 0;
@@ -274,7 +334,11 @@ struct dvb_frontend * mt2131_attach(struct dvb_frontend *fe,
 	struct mt2131_priv *priv = NULL;
 	u8 id = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "%s()\n", __func__);
+#else
+	d;
+#endif
 
 	priv = kzalloc(sizeof(struct mt2131_priv), GFP_KERNEL);
 	if (priv == NULL)
@@ -295,8 +359,12 @@ struct dvb_frontend * mt2131_attach(struct dvb_frontend *fe,
 		return NULL;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MT2131: successfully identified at address 0x%02x\n",
 	       cfg->i2c_address);
+#else
+	;
+#endif
 	memcpy(&fe->ops.tuner_ops, &mt2131_tuner_ops,
 	       sizeof(struct dvb_tuner_ops));
 

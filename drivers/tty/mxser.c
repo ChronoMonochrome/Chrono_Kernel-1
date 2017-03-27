@@ -1491,9 +1491,13 @@ static int mxser_ioctl_special(unsigned int cmd, void __user *argp)
 	switch (cmd) {
 	case MOXA_GET_MAJOR:
 		if (printk_ratelimit())
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "mxser: '%s' uses deprecated ioctl "
 					"%x (GET_MAJOR), fix your userspace\n",
 					current->comm, cmd);
+#else
+			;
+#endif
 		return put_user(ttymajor, (int __user *)argp);
 
 	case MOXA_CHKPORTENABLE:
@@ -2006,14 +2010,26 @@ static void mxser_wait_until_sent(struct tty_struct *tty, int timeout)
 	if (!timeout || timeout > 2 * info->timeout)
 		timeout = 2 * info->timeout;
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "In rs_wait_until_sent(%d) check=%lu...",
 		timeout, char_time);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("jiff=%lu...", jiffies);
+#else
+	;
+#endif
 #endif
 	spin_lock_irqsave(&info->slock, flags);
 	while (!((lsr = inb(info->ioaddr + UART_LSR)) & UART_LSR_TEMT)) {
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("lsr = %d (jiff=%lu)...", lsr, jiffies);
+#else
+		;
+#endif
 #endif
 		spin_unlock_irqrestore(&info->slock, flags);
 		schedule_timeout_interruptible(char_time);
@@ -2027,7 +2043,11 @@ static void mxser_wait_until_sent(struct tty_struct *tty, int timeout)
 	set_current_state(TASK_RUNNING);
 
 #ifdef SERIAL_DEBUG_RS_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("lsr = %d (jiff=%lu)...done\n", lsr, jiffies);
+#else
+	;
+#endif
 #endif
 }
 
@@ -2365,8 +2385,12 @@ static int __devinit mxser_initbrd(struct mxser_board *brd,
 	unsigned int i;
 	int retval;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "mxser: max. baud rate = %d bps\n",
 			brd->ports[0].max_baud);
+#else
+	;
+#endif
 
 	for (i = 0; i < brd->info->nports; i++) {
 		info = &brd->ports[i];
@@ -2665,8 +2689,12 @@ static int __init mxser_module_init(void)
 	if (!mxvar_sdriver)
 		return -ENOMEM;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MOXA Smartio/Industio family driver version %s\n",
 		MXSER_VERSION);
+#else
+	;
+#endif
 
 	/* Initialize the tty_driver structure */
 	mxvar_sdriver->owner = THIS_MODULE;
@@ -2701,8 +2729,12 @@ static int __init mxser_module_init(void)
 			continue;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "mxser: found MOXA %s board (CAP=0x%lx)\n",
 				brd->info->name, ioaddr[b]);
+#else
+		;
+#endif
 
 		/* mxser_initbrd will hook ISR. */
 		if (mxser_initbrd(brd, NULL) < 0) {

@@ -357,12 +357,20 @@ static long openprom_sunos_ioctl(struct file * file,
 	case OPROMGETCONS:
 	case OPROMGETFBNAME:
 		if (cnt++ < 10)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "openprom_sunos_ioctl: unimplemented ioctl\n");
+#else
+			;
+#endif
 		error = -EINVAL;
 		break;
 	default:
 		if (cnt++ < 10)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "openprom_sunos_ioctl: cmd 0x%X, arg 0x%lX\n", cmd, arg);
+#else
+			;
+#endif
 		error = -EINVAL;
 		break;
 	}

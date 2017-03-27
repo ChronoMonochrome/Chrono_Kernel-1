@@ -117,7 +117,11 @@ actcapi_chkhdr(act2000_card * card, actcapi_msghdr *hdr)
 }
 
 #define ACTCAPI_CHKSKB if (!skb) { \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "actcapi: alloc_skb failed\n"); \
+#else
+	;
+#endif
 	return; \
 }
 
@@ -139,7 +143,11 @@ actcapi_listen_req(act2000_card *card)
 		eazmask |= card->bch[i].eazmask;
 	ACTCAPI_MKHDR(9, 0x05, 0x00);
         if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_WARNING "actcapi: alloc_skb failed\n");
+#else
+                ;
+#endif
                 return -ENOMEM;
         }
 	m->msg.listen_req.controller = 0;
@@ -159,7 +167,11 @@ actcapi_connect_req(act2000_card *card, act2000_chan *chan, char *phone,
 
 	ACTCAPI_MKHDR((11 + strlen(phone)), 0x02, 0x00);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_WARNING "actcapi: alloc_skb failed\n");
+#else
+                ;
+#endif
 		chan->fsm_state = ACT2000_STATE_NULL;
 		return -ENOMEM;
 	}
@@ -204,15 +216,23 @@ actcapi_manufacturer_req_net(act2000_card *card)
 
 	ACTCAPI_MKHDR(5, 0xff, 0x00);
         if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_WARNING "actcapi: alloc_skb failed\n");
+#else
+                ;
+#endif
                 return -ENOMEM;
         }
 	m->msg.manufacturer_req_net.manuf_msg = 0x11;
 	m->msg.manufacturer_req_net.controller = 1;
 	m->msg.manufacturer_req_net.nettype = (card->ptype == ISDN_PTYPE_EURO)?1:0;
 	ACTCAPI_QUEUE_TX;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "act2000 %s: D-channel protocol now %s\n",
 	       card->interface.id, (card->ptype == ISDN_PTYPE_EURO)?"euro":"1tr6");
+#else
+	;
+#endif
 	card->interface.features &=
 		~(ISDN_FEATURE_P_UNKNOWN | ISDN_FEATURE_P_EURO | ISDN_FEATURE_P_1TR6);
 	card->interface.features |=
@@ -233,7 +253,11 @@ actcapi_manufacturer_req_v42(act2000_card *card, ulong arg)
 	ACTCAPI_MKHDR(8, 0xff, 0x00);
         if (!skb) {
 
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_WARNING "actcapi: alloc_skb failed\n");
+#else
+                ;
+#endif
                 return -ENOMEM;
         }
 	m->msg.manufacturer_req_v42.manuf_msg = 0x10;
@@ -256,7 +280,11 @@ actcapi_manufacturer_req_errh(act2000_card *card)
 	ACTCAPI_MKHDR(4, 0xff, 0x00);
         if (!skb) {
 
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_WARNING "actcapi: alloc_skb failed\n");
+#else
+                ;
+#endif
                 return -ENOMEM;
         }
 	m->msg.manufacturer_req_err.manuf_msg = 0x03;
@@ -283,7 +311,11 @@ actcapi_manufacturer_req_msn(act2000_card *card)
 		for (i = 0; i < 2; i++) {
 			ACTCAPI_MKHDR(6 + len, 0xff, 0x00);
 			if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "actcapi: alloc_skb failed\n");
+#else
+				;
+#endif
 				return -ENOMEM;
 			}
 			m->msg.manufacturer_req_msn.manuf_msg = 0x13 + i;
@@ -564,7 +596,11 @@ actcapi_data_b3_ind(act2000_card *card, struct sk_buff *skb) {
 	skb_pull(skb, 19);
 	card->interface.rcvcallb_skb(card->myid, chan, skb);
         if (!(skb = alloc_skb(11, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_WARNING "actcapi: alloc_skb failed\n");
+#else
+                ;
+#endif
                 return 1;
         }
 	msg = (actcapi_msg *)skb_put(skb, 11);
@@ -596,7 +632,11 @@ handle_ack(act2000_card *card, act2000_chan *chan, __u8 blocknr) {
 	skb = skb_peek(&card->ackq);
 	spin_unlock_irqrestore(&card->lock, flags);
         if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "act2000: handle_ack nothing found!\n");
+#else
+		;
+#endif
 		return 0;
 	}
         tmp = skb;
@@ -619,7 +659,11 @@ handle_ack(act2000_card *card, act2000_chan *chan, __u8 blocknr) {
                 spin_unlock_irqrestore(&card->lock, flags);
                 if ((tmp == skb) || (tmp == NULL)) {
 			/* reached end of queue */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "act2000: handle_ack nothing found!\n");
+#else
+			;
+#endif
                         return 0;
 		}
         }
@@ -654,8 +698,12 @@ actcapi_dispatch(struct work_struct *work)
 				chan = find_ncci(card, msg->msg.data_b3_conf.ncci);
 				if ((chan >= 0) && (card->bch[chan].fsm_state == ACT2000_STATE_ACTIVE)) {
 					if (msg->msg.data_b3_conf.info != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "act2000: DATA_B3_CONF: %04x\n",
 						       msg->msg.data_b3_conf.info);
+#else
+						;
+#endif
 					len = handle_ack(card, &card->bch[chan],
 							 msg->msg.data_b3_conf.blocknr);
 					if (len) {
@@ -912,9 +960,17 @@ actcapi_dispatch(struct work_struct *work)
 						&msg->msg.manufacturer_ind_err.errstring,
 						msg->hdr.len - 16);
 					if (msg->msg.manufacturer_ind_err.errcode)
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_WARNING "act2000: %s\n", tmp);
+#else
+						;
+#endif
 					else {
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_DEBUG "act2000: %s\n", tmp);
+#else
+						;
+#endif
 						if ((!strncmp(tmp, "INFO: Trace buffer con", 22)) ||
 						    (!strncmp(tmp, "INFO: Compile Date/Tim", 22))) {
 							card->flags |= ACT2000_FLAGS_RUNNING;
@@ -930,7 +986,11 @@ actcapi_dispatch(struct work_struct *work)
 				}
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "act2000: UNHANDLED Message %04x\n", ccmd);
+#else
+				;
+#endif
 				break;
 		}
 		dev_kfree_skb(skb);
@@ -943,50 +1003,118 @@ actcapi_debug_caddr(actcapi_addr *addr)
 {
 	char tmp[30];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " Alen  = %d\n", addr->len);
+#else
+	;
+#endif
 	if (addr->len > 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " Atnp  = 0x%02x\n", addr->tnp);
+#else
+		;
+#endif
 	if (addr->len > 1) {
 		memset(tmp, 0, 30);
 		memcpy(tmp, addr->num, addr->len - 1);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " Anum  = '%s'\n", tmp);
+#else
+		;
+#endif
 	}
 }
 
 static void
 actcapi_debug_ncpi(actcapi_ncpi *ncpi)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " ncpi.len = %d\n", ncpi->len);
+#else
+	;
+#endif
 	if (ncpi->len >= 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " ncpi.lic = 0x%04x\n", ncpi->lic);
+#else
+		;
+#endif
 	if (ncpi->len >= 4)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " ncpi.hic = 0x%04x\n", ncpi->hic);
+#else
+		;
+#endif
 	if (ncpi->len >= 6)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " ncpi.ltc = 0x%04x\n", ncpi->ltc);
+#else
+		;
+#endif
 	if (ncpi->len >= 8)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " ncpi.htc = 0x%04x\n", ncpi->htc);
+#else
+		;
+#endif
 	if (ncpi->len >= 10)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " ncpi.loc = 0x%04x\n", ncpi->loc);
+#else
+		;
+#endif
 	if (ncpi->len >= 12)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " ncpi.hoc = 0x%04x\n", ncpi->hoc);
+#else
+		;
+#endif
 	if (ncpi->len >= 13)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " ncpi.mod = %d\n", ncpi->modulo);
+#else
+		;
+#endif
 }
 
 static void
 actcapi_debug_dlpd(actcapi_dlpd *dlpd)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " dlpd.len = %d\n", dlpd->len);
+#else
+	;
+#endif
 	if (dlpd->len >= 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " dlpd.dlen   = 0x%04x\n", dlpd->dlen);
+#else
+		;
+#endif
 	if (dlpd->len >= 3)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " dlpd.laa    = 0x%02x\n", dlpd->laa);
+#else
+		;
+#endif
 	if (dlpd->len >= 4)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " dlpd.lab    = 0x%02x\n", dlpd->lab);
+#else
+		;
+#endif
 	if (dlpd->len >= 5)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " dlpd.modulo = %d\n", dlpd->modulo);
+#else
+		;
+#endif
 	if (dlpd->len >= 6)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG " dlpd.win    = %d\n", dlpd->win);
+#else
+		;
+#endif
 }
 
 #ifdef DEBUG_DUMP_SKB
@@ -999,12 +1127,20 @@ static void dump_skb(struct sk_buff *skb) {
 	for (i = 0; i < skb->len; i++) {
 		t += sprintf(t, "%02x ", *p++ & 0xff);
 		if ((i & 0x0f) == 8) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "dump: %s\n", tmp);
+#else
+			;
+#endif
 			t = tmp;
 		}
 	}
 	if (i & 0x07)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "dump: %s\n", tmp);
+#else
+		;
+#endif
 }
 #endif
 
@@ -1030,150 +1166,318 @@ actcapi_debug_msg(struct sk_buff *skb, int direction)
 			descr = valid_msg[i].description;
 			break;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s %s msg\n", direction?"Outgoing":"Incoming", descr);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " ApplID = %d\n", msg->hdr.applicationID);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " Len    = %d\n", msg->hdr.len);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " MsgNum = 0x%04x\n", msg->hdr.msgnum);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " Cmd    = 0x%02x\n", msg->hdr.cmd.cmd);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " SubCmd = 0x%02x\n", msg->hdr.cmd.subcmd);
+#else
+	;
+#endif
 	switch (i) {
 		case 0:
 			/* DATA B3 IND */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " BLOCK = 0x%02x\n",
 			       msg->msg.data_b3_ind.blocknr);
+#else
+			;
+#endif
 			break;
 		case 2:
 			/* CONNECT CONF */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI = 0x%04x\n",
 			       msg->msg.connect_conf.plci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Info = 0x%04x\n",
 			       msg->msg.connect_conf.info);
+#else
+			;
+#endif
 			break;
 		case 3:
 			/* CONNECT IND */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI = 0x%04x\n",
 			       msg->msg.connect_ind.plci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Contr = %d\n",
 			       msg->msg.connect_ind.controller);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " SI1   = %d\n",
 			       msg->msg.connect_ind.si1);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " SI2   = %d\n",
 			       msg->msg.connect_ind.si2);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " EAZ   = '%c'\n",
 			       msg->msg.connect_ind.eaz);
+#else
+			;
+#endif
 			actcapi_debug_caddr(&msg->msg.connect_ind.addr);
 			break;
 		case 5:
 			/* CONNECT ACTIVE IND */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI = 0x%04x\n",
 			       msg->msg.connect_active_ind.plci);
+#else
+			;
+#endif
 			actcapi_debug_caddr(&msg->msg.connect_active_ind.addr);
 			break;
 		case 8:
 			/* LISTEN CONF */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Contr = %d\n",
 			       msg->msg.listen_conf.controller);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Info = 0x%04x\n",
 			       msg->msg.listen_conf.info);
+#else
+			;
+#endif
 			break;
 		case 11:
 			/* INFO IND */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI = 0x%04x\n",
 			       msg->msg.info_ind.plci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Imsk = 0x%04x\n",
 			       msg->msg.info_ind.nr.mask);
+#else
+			;
+#endif
 			if (msg->hdr.len > 12) {
 				int l = msg->hdr.len - 12;
 				int j;
 				char *p = tmp;
 				for (j = 0; j < l ; j++)
 					p += sprintf(p, "%02x ", msg->msg.info_ind.el.display[j]);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG " D = '%s'\n", tmp);
+#else
+				;
+#endif
 			}
 			break;
 		case 14:
 			/* SELECT B2 PROTOCOL CONF */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI = 0x%04x\n",
 			       msg->msg.select_b2_protocol_conf.plci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Info = 0x%04x\n",
 			       msg->msg.select_b2_protocol_conf.info);
+#else
+			;
+#endif
 			break;
 		case 15:
 			/* SELECT B3 PROTOCOL CONF */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI = 0x%04x\n",
 			       msg->msg.select_b3_protocol_conf.plci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Info = 0x%04x\n",
 			       msg->msg.select_b3_protocol_conf.info);
+#else
+			;
+#endif
 			break;
 		case 16:
 			/* LISTEN B3 CONF */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI = 0x%04x\n",
 			       msg->msg.listen_b3_conf.plci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Info = 0x%04x\n",
 			       msg->msg.listen_b3_conf.info);
+#else
+			;
+#endif
 			break;
 		case 18:
 			/* CONNECT B3 IND */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " NCCI = 0x%04x\n",
 			       msg->msg.connect_b3_ind.ncci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI = 0x%04x\n",
 			       msg->msg.connect_b3_ind.plci);
+#else
+			;
+#endif
 			actcapi_debug_ncpi(&msg->msg.connect_b3_ind.ncpi);
 			break;
 		case 19:
 			/* CONNECT B3 ACTIVE IND */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " NCCI = 0x%04x\n",
 			       msg->msg.connect_b3_active_ind.ncci);
+#else
+			;
+#endif
 			actcapi_debug_ncpi(&msg->msg.connect_b3_active_ind.ncpi);
 			break;
 		case 26:
 			/* MANUFACTURER IND */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Mmsg = 0x%02x\n",
 			       msg->msg.manufacturer_ind_err.manuf_msg);
+#else
+			;
+#endif
 			switch (msg->msg.manufacturer_ind_err.manuf_msg) {
 				case 3:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG " Contr = %d\n",
 					       msg->msg.manufacturer_ind_err.controller);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG " Code = 0x%08x\n",
 					       msg->msg.manufacturer_ind_err.errcode);
+#else
+					;
+#endif
 					memset(tmp, 0, sizeof(tmp));
 					strncpy(tmp, &msg->msg.manufacturer_ind_err.errstring,
 						msg->hdr.len - 16);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG " Emsg = '%s'\n", tmp);
+#else
+					;
+#endif
 					break;
 			}
 			break;
 		case 30:
 			/* LISTEN REQ */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Imsk = 0x%08x\n",
 			       msg->msg.listen_req.infomask);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Emsk = 0x%04x\n",
 			       msg->msg.listen_req.eazmask);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " Smsk = 0x%04x\n",
 			       msg->msg.listen_req.simask);
+#else
+			;
+#endif
 			break;
 		case 35:
 			/* SELECT_B2_PROTOCOL_REQ */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
 			       msg->msg.select_b2_protocol_req.plci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " prot  = 0x%02x\n",
 			       msg->msg.select_b2_protocol_req.protocol);
+#else
+			;
+#endif
 			if (msg->hdr.len >= 11)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "No dlpd\n");
+#else
+				;
+#endif
 			else
 				actcapi_debug_dlpd(&msg->msg.select_b2_protocol_req.dlpd);
 			break;
 		case 44:
 			/* CONNECT RESP */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
 			       msg->msg.connect_resp.plci);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " CAUSE = 0x%02x\n",
 			       msg->msg.connect_resp.rejectcause);
+#else
+			;
+#endif
 			break;
 		case 45:
 			/* CONNECT ACTIVE RESP */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " PLCI  = 0x%04x\n",
 			       msg->msg.connect_active_resp.plci);
+#else
+			;
+#endif
 			break;
 	}
 }

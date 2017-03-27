@@ -30,6 +30,7 @@
 #include "mc44s803.h"
 #include "mc44s803_priv.h"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define mc_printk(level, format, arg...)	\
 	printk(level "mc44s803: " format , ## arg)
 
@@ -37,6 +38,9 @@
 static int mc44s803_writereg(struct mc44s803_priv *priv, u32 val)
 {
 	u8 buf[3];
+#else
+#define mc_;
+#endif
 	struct i2c_msg msg = {
 		.addr = priv->cfg->i2c_address, .flags = 0, .buf = buf, .len = 3
 	};
@@ -46,7 +50,11 @@ static int mc44s803_writereg(struct mc44s803_priv *priv, u32 val)
 	buf[2] = (val & 0xff);
 
 	if (i2c_transfer(priv->i2c, &msg, 1) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		mc_printk(KERN_WARNING, "I2C write failed\n");
+#else
+		mc_;
+#endif
 		return -EREMOTEIO;
 	}
 	return 0;
@@ -71,7 +79,11 @@ static int mc44s803_readreg(struct mc44s803_priv *priv, u8 reg, u32 *val)
 		return ret;
 
 	if (i2c_transfer(priv->i2c, msg, 1) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		mc_printk(KERN_WARNING, "I2C read failed\n");
+#else
+		mc_;
+#endif
 		return -EREMOTEIO;
 	}
 
@@ -210,7 +222,11 @@ exit:
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	mc_printk(KERN_WARNING, "I/O Error\n");
+#else
+	mc_;
+#endif
 	return err;
 }
 
@@ -287,7 +303,11 @@ exit:
 	if (fe->ops.i2c_gate_ctrl)
 		fe->ops.i2c_gate_ctrl(fe, 0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	mc_printk(KERN_WARNING, "I/O Error\n");
+#else
+	mc_;
+#endif
 	return err;
 }
 
@@ -347,7 +367,11 @@ struct dvb_frontend *mc44s803_attach(struct dvb_frontend *fe,
 		goto error;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	mc_printk(KERN_INFO, "successfully identified (ID = %x)\n", id);
+#else
+	mc_;
+#endif
 	memcpy(&fe->ops.tuner_ops, &mc44s803_tuner_ops,
 	       sizeof(struct dvb_tuner_ops));
 

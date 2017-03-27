@@ -867,7 +867,7 @@ static int __init pl2303_init(void)
 	retval = usb_register(&pl2303_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC "\n");
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&pl2303_device);

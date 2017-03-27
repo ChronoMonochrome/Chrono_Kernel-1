@@ -186,7 +186,7 @@ static void sh_eth_reset(struct net_device *ndev)
 			cnt--;
 		}
 		if (cnt < 0)
-			printk(KERN_ERR "Device reset fail\n");
+;
 
 		/* Table Init */
 		sh_eth_write(ndev, 0x0, TDLAR);
@@ -297,7 +297,7 @@ static void sh_eth_reset(struct net_device *ndev)
 		cnt--;
 	}
 	if (cnt == 0)
-		printk(KERN_ERR "Device reset fail\n");
+;
 
 	/* Table Init */
 	sh_eth_write(ndev, 0x0, TDLAR);
@@ -1745,7 +1745,7 @@ static const u16 *sh_eth_get_register_offset(int register_type)
 		reg_offset = sh_eth_offset_fast_sh3_sh2;
 		break;
 	default:
-		printk(KERN_ERR "Unknown register type (%d)\n", register_type);
+;
 		break;
 	}
 

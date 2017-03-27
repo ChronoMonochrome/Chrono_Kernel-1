@@ -95,7 +95,11 @@ int __init raid6_select_algo(void)
 	syndromes = (void *) __get_free_pages(GFP_KERNEL, 1);
 
 	if ( !syndromes ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("raid6: Yikes!  No memory available.\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -126,18 +130,30 @@ int __init raid6_select_algo(void)
 				bestprefer = best->prefer;
 				bestperf = perf;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("raid6: %-8s %5ld MB/s\n", (*algo)->name,
 			       (perf*HZ) >> (20-16+RAID6_TIME_JIFFIES_LG2));
+#else
+			;
+#endif
 		}
 	}
 
 	if (best) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("raid6: using algorithm %s (%ld MB/s)\n",
 		       best->name,
 		       (bestperf*HZ) >> (20-16+RAID6_TIME_JIFFIES_LG2));
+#else
+		;
+#endif
 		raid6_call = *best;
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("raid6: Yikes!  No algorithm found!\n");
+#else
+		;
+#endif
 
 	free_pages((unsigned long)syndromes, 1);
 

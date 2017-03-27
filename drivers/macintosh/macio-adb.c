@@ -123,7 +123,11 @@ int macio_init(void)
 	}
 	out_8(&adb->intr_enb.r, DFB | TAG);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adb: mac-io driver 1.0 for unified ADB\n");
+#else
+	;
+#endif
 
 	return 0;
 }

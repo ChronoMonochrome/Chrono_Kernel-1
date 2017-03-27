@@ -95,7 +95,7 @@ static const struct dev_pm_ops SM5103_pm_ops = {
 
 static int SM5103_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	printk(KERN_INFO "-> SM5103_%s(client=%s, id=%s)", __func__, client->name, id->name);
+;
 
     int ret = 0;
 	/* Struct NCP6914_platform_data * platdata = client->dev.platform_data; */
@@ -104,7 +104,7 @@ static int SM5103_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	pClient = client;
 	gpio_power_on  = 145; /* SM5103 SUBPMU_PWRON -> GPIO145 */
 
-	printk(KERN_INFO "<- SM5103_%s(client=%s) = %d", __func__, client->name, ret);
+;
 	return ret;	
 }
 
@@ -112,8 +112,8 @@ static int SM5103_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 static int SM5103_i2c_remove(struct i2c_client *client)
 {
-    printk(KERN_INFO "-> SM5103_%s(client=%s)", __func__, client->name);
-	printk(KERN_INFO "<- SM5103_%s(client=%s) = 0", __func__, client->name);
+;
+;
     return 0;
 }
 
@@ -140,17 +140,17 @@ static int _SM5103_i2c_send(struct i2c_client *client, const u8 *data, int len)
 	int ret = 0;
 
 	if (len <= 0) {
-		printk(KERN_ERR "%s(): invalid length %d", __func__, len);
+;
 		return -EINVAL;
 	}
 	
 	ret = i2c_master_send(client, data, len);
 
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to send %d bytes to Sm5103 [errno=%d]", len, ret);
+;
 	}
 	else if (ret != len) {
-		printk(KERN_ERR "Failed to send exactly %d bytes to Sm5103 (send %d)", len, ret);
+;
 		ret = -EIO;
 	}
 	else {
@@ -180,7 +180,7 @@ int SM5103_subPMIC_module_init(void)
 
 	ret = i2c_add_driver(&subPMIC_i2c_driver);
     if(ret < 0)
-		printk(KERN_ERR "Failed to add i2c driver for subPMIC [errno=%d]", ret);
+;
     
 	gpio_request(gpio_power_on, "SUBPMU_PWRON");
 
@@ -315,7 +315,7 @@ int SM5103_subPMIC_PinOnOff(int pin, int on_off)
     ret = SM5103_i2c_write(pClient, SM5103_REG_ONOFFCNTL1_ADDRESS, SM5103_pinstate);
     if(ret < 0) 
 	{
-        printk(KERN_ERR "Failed to write i2c driver for subPMIC (SM5103_REG_ONOFFCNTL1_ADDRESS) [errno=%d]", ret);
+;
 	    return ret;
     }
 	return ret;

@@ -1000,15 +1000,23 @@ static void mboxtest_receive_cb(u32 *data, u32 len, void *arg)
 	struct mboxtest_data *mboxtest = (struct mboxtest_data *) arg;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "receive_cb.. data.= 0x%X, len = %d\n",
 								*data, len);
+#else
+	;
+#endif
 	for (i = 0; i < len; i++)
 		*(mboxtest->rx_pointer++) = *(data++);
 
 	mboxtest->received += len;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "received = %d, words = %d\n",
 				mboxtest->received, mboxtest->words);
+#else
+	;
+#endif
 	if (mboxtest->received >= mboxtest->words)
 		complete(&mboxtest->rx_done);
 	dev_dbg(&channels.pdev->dev, "%s exiting\n", __func__);
@@ -1018,8 +1026,12 @@ static void mboxtest_send_cb(u32 *data, u32 len, void *arg)
 {
 	struct mboxtest_data *mboxtest = (struct mboxtest_data *) arg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "send_cb.. data.= 0x%X, len = %d\n",
 							*data, len);
+#else
+	;
+#endif
 
 	complete(&mboxtest->tx_done);
 	dev_dbg(&channels.pdev->dev, "kernel:mboxtest_send_cb exiting\n");
@@ -1062,8 +1074,12 @@ static int transfer_test(struct mboxtest_data *mboxtest)
 	/* Allocate buffers */
 	mboxtest->rx_buff = kzalloc(sizeof(unsigned int) * len, GFP_KERNEL);
 	if (!mboxtest->rx_buff) {
+#ifdef CONFIG_DEBUG_PRINTK
 		DBG_TEST(printk(KERN_INFO
 			"Cannot allocate mbox rx memory\n"));
+#else
+		DBG_TEST(;
+#endif
 		status = -ENOMEM;
 		goto err1;
 	}
@@ -1071,8 +1087,12 @@ static int transfer_test(struct mboxtest_data *mboxtest)
 
 	mboxtest->tx_buff = kzalloc(sizeof(unsigned int) * len, GFP_KERNEL);
 	if (!mboxtest->tx_buff) {
+#ifdef CONFIG_DEBUG_PRINTK
 		DBG_TEST(printk(KERN_INFO
 			"Cannot allocate mbox tx memory\n"));
+#else
+		DBG_TEST(;
+#endif
 		status = -ENOMEM;
 		goto err2;
 	}
@@ -1089,13 +1109,21 @@ static int transfer_test(struct mboxtest_data *mboxtest)
 
 	/* Start tx transfer test transfer */
 	status = mboxtest_transmit(mboxtest);
+#ifdef CONFIG_DEBUG_PRINTK
 	DBG_TEST(printk(KERN_INFO "xfer_words=%d\n",
 				mboxtest->xfer_words));
+#else
+	DBG_TEST(;
+#endif
 	if (!status)
 		wait_for_completion(&mboxtest->rx_done);
 	for (i = 0; i < len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		DBG_TEST(printk(KERN_INFO "%d -> TX:0x%X, RX:0x%X\n", i,
 			mboxtest->tx_buff[i], mboxtest->rx_buff[i]));
+#else
+		DBG_TEST(;
+#endif
 
 	dev_dbg(&channels.pdev->dev, "%s exiting %d\n", __func__, status);
 	return status;
@@ -1115,7 +1143,11 @@ static int mboxtest_prepare(struct mboxtest_data *mboxtest)
 
 	/* Trim to maxiumum data words per transfer */
 	if (mboxtest->xfer_words > MBOX_TEST_MAX_WORDS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		DBG_TEST(printk(KERN_INFO "Recalculating xfers ...\n"));
+#else
+		DBG_TEST(;
+#endif
 		mboxtest->xfer_words = MBOX_TEST_MAX_WORDS;
 		if (mboxtest->words % mboxtest->xfer_words)
 			mboxtest->xfers = (mboxtest->words /
@@ -1125,13 +1157,21 @@ static int mboxtest_prepare(struct mboxtest_data *mboxtest)
 						mboxtest->xfer_words);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DBG_TEST(printk(KERN_INFO "Params: chan=0x%X words=%d, xfers=%d\n",
 			mboxtest->channel, mboxtest->words,
 						mboxtest->xfers));
+#else
+	DBG_TEST(;
+#endif
 
 	if (mbox_channel_register(mboxtest->channel,
 			mboxtest_receive_cb, mboxtest)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		DBG_TEST(printk(KERN_INFO "Cannot register mbox channel\n"));
+#else
+		DBG_TEST(;
+#endif
 		err = -ENOMEM;
 		goto err;
 	}

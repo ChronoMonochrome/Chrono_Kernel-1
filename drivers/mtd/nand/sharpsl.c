@@ -126,7 +126,11 @@ static int __devinit sharpsl_nand_probe(struct platform_device *pdev)
 	/* Allocate memory for MTD device structure and private data */
 	sharpsl = kzalloc(sizeof(struct sharpsl_nand), GFP_KERNEL);
 	if (!sharpsl) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to allocate SharpSL NAND MTD device structure.\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
@@ -140,7 +144,11 @@ static int __devinit sharpsl_nand_probe(struct platform_device *pdev)
 	/* map physical address */
 	sharpsl->io = ioremap(r->start, resource_size(r));
 	if (!sharpsl->io) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ioremap to access Sharp SL NAND chip failed\n");
+#else
+		;
+#endif
 		err = -EIO;
 		goto err_ioremap;
 	}

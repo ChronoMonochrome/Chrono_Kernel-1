@@ -1624,9 +1624,13 @@ static void raid5_end_read_request(struct bio * bi, int error)
 				  bdn);
 		else if (atomic_read(&rdev->read_errors)
 			 > conf->max_nr_stripes)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "md/raid:%s: Too many read errors, failing device %s.\n",
 			       mdname(conf->mddev), bdn);
+#else
+			;
+#endif
 		else
 			retry = 1;
 		if (retry)
@@ -1712,6 +1716,7 @@ static void error(mddev_t *mddev, mdk_rdev_t *rdev)
 	}
 	set_bit(Faulty, &rdev->flags);
 	set_bit(MD_CHANGE_DEVS, &mddev->flags);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT
 	       "md/raid:%s: Disk failure on %s, disabling device.\n"
 	       "md/raid:%s: Operation continuing on %d devices.\n",
@@ -1719,6 +1724,9 @@ static void error(mddev_t *mddev, mdk_rdev_t *rdev)
 	       bdevname(rdev->bdev, b),
 	       mdname(mddev),
 	       conf->raid_disks - mddev->degraded);
+#else
+	;
+#endif
 }
 
 /*
@@ -4863,9 +4871,13 @@ static raid5_conf_t *setup_conf(mddev_t *mddev)
 
 		if (test_bit(In_sync, &rdev->flags)) {
 			char b[BDEVNAME_SIZE];
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "md/raid:%s: device %s operational as raid"
 			       " disk %d\n",
 			       mdname(mddev), bdevname(rdev->bdev, b), raid_disk);
+#else
+			;
+#endif
 		} else if (rdev->saved_raid_disk != raid_disk)
 			/* Cannot rely on bitmap to complete recovery */
 			conf->fullsync = 1;
@@ -4893,8 +4905,12 @@ static raid5_conf_t *setup_conf(mddev_t *mddev)
 		       mdname(mddev), memory);
 		goto abort;
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "md/raid:%s: allocated %dkB\n",
 		       mdname(mddev), memory);
+#else
+		;
+#endif
 
 	conf->thread = md_register_thread(raid5d, mddev, NULL);
 	if (!conf->thread) {
@@ -4950,9 +4966,13 @@ static int run(mddev_t *mddev)
 	sector_t reshape_offset = 0;
 
 	if (mddev->recovery_cp != MaxSector)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "md/raid:%s: not clean"
 		       " -- starting background reconstruction\n",
 		       mdname(mddev));
+#else
+		;
+#endif
 	if (mddev->reshape_position != MaxSector) {
 		/* Check that we can continue the reshape.
 		 * Currently only disks can change, it must
@@ -5015,8 +5035,12 @@ static int run(mddev_t *mddev)
 			       mdname(mddev));
 			return -EINVAL;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "md/raid:%s: reshape will continue\n",
 		       mdname(mddev));
+#else
+		;
+#endif
 		/* OK, we should be able to continue; */
 	} else {
 		BUG_ON(mddev->level != mddev->new_level);
@@ -5093,10 +5117,14 @@ static int run(mddev_t *mddev)
 	if (mddev->degraded > dirty_parity_disks &&
 	    mddev->recovery_cp != MaxSector) {
 		if (mddev->ok_start_degraded)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "md/raid:%s: starting dirty degraded array"
 			       " - data corruption possible.\n",
 			       mdname(mddev));
+#else
+			;
+#endif
 		else {
 			printk(KERN_ERR
 			       "md/raid:%s: cannot start dirty degraded array.\n",
@@ -5106,16 +5134,24 @@ static int run(mddev_t *mddev)
 	}
 
 	if (mddev->degraded == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "md/raid:%s: raid level %d active with %d out of %d"
 		       " devices, algorithm %d\n", mdname(mddev), conf->level,
 		       mddev->raid_disks-mddev->degraded, mddev->raid_disks,
 		       mddev->new_layout);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_ALERT "md/raid:%s: raid level %d active with %d"
 		       " out of %d devices, algorithm %d\n",
 		       mdname(mddev), conf->level,
 		       mddev->raid_disks - mddev->degraded,
 		       mddev->raid_disks, mddev->new_layout);
+#else
+		;
+#endif
 
 	print_raid5_conf(conf);
 
@@ -5136,9 +5172,13 @@ static int run(mddev_t *mddev)
 		mddev->to_remove = NULL;
 	else if (mddev->kobj.sd &&
 	    sysfs_create_group(&mddev->kobj, &raid5_attrs_group))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "raid5: failed to create sysfs attributes for %s\n",
 		       mdname(mddev));
+#else
+		;
+#endif
 	md_set_array_sectors(mddev, raid5_size(mddev, 0, 0));
 
 	if (mddev->queue) {
@@ -5176,7 +5216,11 @@ abort:
 		free_conf(conf);
 	}
 	mddev->private = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "md/raid:%s: failed to run raid set.\n", mdname(mddev));
+#else
+	;
+#endif
 	return -EIO;
 }
 
@@ -5252,22 +5296,38 @@ static void print_raid5_conf (raid5_conf_t *conf)
 	int i;
 	struct disk_info *tmp;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "RAID conf printout:\n");
+#else
+	;
+#endif
 	if (!conf) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(conf==NULL)\n");
+#else
+		;
+#endif
 		return;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG " --- level:%d rd:%d wd:%d\n", conf->level,
 	       conf->raid_disks,
 	       conf->raid_disks - conf->mddev->degraded);
+#else
+	;
+#endif
 
 	for (i = 0; i < conf->raid_disks; i++) {
 		char b[BDEVNAME_SIZE];
 		tmp = conf->disks + i;
 		if (tmp->rdev)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG " disk %d, o:%d, dev:%s\n",
 			       i, !test_bit(Faulty, &tmp->rdev->flags),
 			       bdevname(tmp->rdev->bdev, b));
+#else
+			;
+#endif
 	}
 }
 
@@ -5420,10 +5480,14 @@ static int check_stripe_cache(mddev_t *mddev)
 	    > conf->max_nr_stripes ||
 	    ((mddev->new_chunk_sectors << 9) / STRIPE_SIZE) * 4
 	    > conf->max_nr_stripes) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "md/raid:%s: reshape: not enough stripes.  Needed %lu\n",
 		       mdname(mddev),
 		       ((max(mddev->chunk_sectors, mddev->new_chunk_sectors) << 9)
 			/ STRIPE_SIZE)*4);
+#else
+		;
+#endif
 		return 0;
 	}
 	return 1;

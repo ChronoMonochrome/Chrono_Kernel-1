@@ -243,7 +243,11 @@ static void moxa_wait_finish(void __iomem *ofsAddr)
 		if (time_after(jiffies, end))
 			return;
 	if (readw(ofsAddr + FuncCode) != 0 && printk_ratelimit())
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "moxa function expired\n");
+#else
+		;
+#endif
 }
 
 static void moxafunc(void __iomem *ofsAddr, u16 cmd, u16 arg)
@@ -782,8 +786,12 @@ static int moxa_load_fw(struct moxa_board_conf *brd, const struct firmware *fw)
 		lens[a] = le16_to_cpu(hdr->len[a]);
 		if (lens[a] && len + lens[a] <= fw->size &&
 				moxa_check_fw(&fw->data[len]))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "MOXA firmware: unexpected input "
 				"at offset %u, but going on\n", (u32)len);
+#else
+			;
+#endif
 		if (!lens[a] && a < lencnt) {
 			sprintf(rsn, "too few entries in fw file");
 			goto err;
@@ -1029,8 +1037,12 @@ static int __init moxa_init(void)
 	struct moxa_board_conf *brd = moxa_boards;
 	unsigned int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MOXA Intellio family driver version %s\n",
 			MOXA_VERSION);
+#else
+	;
+#endif
 	moxaDriver = alloc_tty_driver(MAX_PORTS + 1);
 	if (!moxaDriver)
 		return -ENOMEM;
@@ -1080,9 +1092,13 @@ static int __init moxa_init(void)
 				continue;
 			}
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MOXA isa board found at 0x%.8lu and "
 					"ready (%u ports, firmware loaded)\n",
 					baseaddr[i], brd->numPorts);
+#else
+			;
+#endif
 
 			brd++;
 			isabrds++;

@@ -198,10 +198,14 @@ pb1x00_pcmcia_configure_socket(const struct pcmcia_configure *configure)
 				default:
 					pcr |= SET_VCC_VPP(VCC_HIZ,VPP_HIZ,
 							configure->sock);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
 							__func__,
 							configure->vcc, 
 							configure->vpp);
+#else
+					;
+#endif
 					break;
 			}
 			break;
@@ -226,10 +230,14 @@ pb1x00_pcmcia_configure_socket(const struct pcmcia_configure *configure)
 				default:
 					pcr |= SET_VCC_VPP(VCC_HIZ,VPP_HIZ,
 							configure->sock);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
 							__func__,
 							configure->vcc, 
 							configure->vpp);
+#else
+					;
+#endif
 					break;
 			}
 			break;
@@ -254,10 +262,14 @@ pb1x00_pcmcia_configure_socket(const struct pcmcia_configure *configure)
 				default:
 					pcr |= SET_VCC_VPP(VCC_HIZ,VPP_HIZ,
 							configure->sock);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%s: bad Vcc/Vpp (%d:%d)\n", 
 							__func__,
 							configure->vcc, 
 							configure->vpp);
+#else
+					;
+#endif
 					break;
 			}
 			break;

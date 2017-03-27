@@ -409,19 +409,31 @@ static pci_ers_result_t ngene_error_detected(struct pci_dev *dev,
 
 static pci_ers_result_t ngene_link_reset(struct pci_dev *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": link reset\n");
+#else
+	;
+#endif
 	return 0;
 }
 
 static pci_ers_result_t ngene_slot_reset(struct pci_dev *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": slot reset\n");
+#else
+	;
+#endif
 	return 0;
 }
 
 static void ngene_resume(struct pci_dev *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DEVICE_NAME ": resume\n");
+#else
+	;
+#endif
 }
 
 static struct pci_error_handlers ngene_errors = {
@@ -442,8 +454,12 @@ static struct pci_driver ngene_pci_driver = {
 
 static __init int module_init_ngene(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "nGene PCIE bridge driver, Copyright (C) 2005-2007 Micronas\n");
+#else
+	;
+#endif
 	return pci_register_driver(&ngene_pci_driver);
 }
 

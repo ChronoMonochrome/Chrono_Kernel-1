@@ -56,6 +56,7 @@
  * Debugging.
  */
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_AUTOCONF(fmt...)	printk(fmt)
 #else
 #define DEBUG_AUTOCONF(fmt...)	do { } while (0)
@@ -110,6 +111,9 @@
 static struct old_serial_port old_serial_port[] = {
 	SERIAL_PORT_DFNS
 };
+#else
+#define DEBUG_AUTOCONF(fmt...)	;
+#endif
 
 #define UART_NR	ARRAY_SIZE(old_serial_port)
 
@@ -192,7 +196,11 @@ static void sio_init(void)
 
 static void sio_error(int *status)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("SIO0 error[%04x]\n", *status);
+#else
+	;
+#endif
 	do {
 		sio_init();
 	} while ((*status = __sio_in(PLD_ESIO0CR)) != 3);
@@ -238,7 +246,11 @@ static void sio_init(void)
 
 static void sio_error(int *status)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("SIO0 error[%04x]\n", *status);
+#else
+	;
+#endif
 	do {
 		sio_init();
 	} while ((*status = __sio_in(M32R_SIO0_CR_PORTL)) != 3);
@@ -1161,7 +1173,11 @@ static int __init m32r_sio_init(void)
 {
 	int ret, i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: M32R SIO driver\n");
+#else
+	;
+#endif
 
 	for (i = 0; i < nr_irqs; i++)
 		spin_lock_init(&irq_lists[i].lock);

@@ -58,6 +58,7 @@ struct serial_private {
 
 static void moan_device(const char *str, struct pci_dev *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING
 	       "%s: %s\n"
 	       "Please send the output of lspci -vv, this\n"
@@ -66,6 +67,9 @@ static void moan_device(const char *str, struct pci_dev *dev)
 	       "modem board to rmk+serial@arm.linux.org.uk.\n",
 	       pci_name(dev), str, dev->vendor, dev->device,
 	       dev->subsystem_vendor, dev->subsystem_device);
+#else
+	;
+#endif
 }
 
 static int
@@ -228,7 +232,11 @@ static int pci_inteli960ni_init(struct pci_dev *dev)
 	/* is firmware started? */
 	pci_read_config_dword(dev, 0x44, (void *)&oldval);
 	if (oldval == 0x00001000L) { /* RESET value */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Local i960 firmware missing");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 	return 0;
@@ -925,9 +933,13 @@ static int pci_oxsemi_tornado_init(struct pci_dev *dev)
 	/* Tornado device */
 	if (deviceID == 0x07000200) {
 		number_uarts = ioread8(p + 4);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 			"%d ports detected on Oxford PCI Express device\n",
 								number_uarts);
+#else
+		;
+#endif
 	}
 	pci_iounmap(dev, p);
 	return number_uarts;
@@ -984,12 +996,16 @@ static int skip_tx_en_setup(struct serial_private *priv,
 			struct uart_port *port, int idx)
 {
 	port->flags |= UPF_NO_TXEN_TEST;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "serial8250: skipping TxEn test for device "
 			  "[%04x:%04x] subsystem [%04x:%04x]\n",
 			  priv->dev->vendor,
 			  priv->dev->device,
 			  priv->dev->subsystem_vendor,
 			  priv->dev->subsystem_device);
+#else
+	;
+#endif
 
 	return pci_default_setup(priv, board, port, idx);
 }
@@ -2571,13 +2587,21 @@ pciserial_init_ports(struct pci_dev *dev, const struct pciserial_board *board)
 			break;
 
 #ifdef SERIAL_DEBUG_PCI
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Setup PCI port: port %lx, irq %d, type %d\n",
 		       serial_port.iobase, serial_port.irq, serial_port.iotype);
+#else
+		;
+#endif
 #endif
 
 		priv->line[i] = serial8250_register_port(&serial_port);
 		if (priv->line[i] < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Couldn't register serial port %s: %d\n", pci_name(dev), priv->line[i]);
+#else
+			;
+#endif
 			break;
 		}
 	}

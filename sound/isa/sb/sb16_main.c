@@ -762,7 +762,11 @@ int snd_sb16dsp_configure(struct snd_sb * chip)
 	unsigned char realirq, realdma, realmpureg;
 	/* note: mpu register should be present only on SB16 Vibra soundcards */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	// printk(KERN_DEBUG "codec->irq=%i, codec->dma8=%i, codec->dma16=%i\n", chip->irq, chip->dma8, chip->dma16);
+#else
+	// ;
+#endif
 	spin_lock_irqsave(&chip->mixer_lock, flags);
 	mpureg = snd_sbmixer_read(chip, SB_DSP4_MPUSETUP) & ~0x06;
 	spin_unlock_irqrestore(&chip->mixer_lock, flags);

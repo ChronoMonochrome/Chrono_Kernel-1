@@ -110,10 +110,10 @@ static int pcl730_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	iobase = it->options[0];
 	iorange = this_board->io_range;
-	printk(KERN_INFO "comedi%d: pcl730: board=%s 0x%04lx ", dev->minor,
-	       this_board->name, iobase);
+//	printk(KERN_INFO "comedi%d: pcl730: board=%s 0x%04lx ", dev->minor,
+;
 	if (!request_region(iobase, iorange, "pcl730")) {
-		printk("I/O port conflict\n");
+;
 		return -EIO;
 	}
 	dev->board_name = this_board->name;
@@ -163,14 +163,14 @@ static int pcl730_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	s->range_table = &range_digital;
 	s->private = (void *)PCL730_DIO_LO;
 
-	printk(KERN_INFO "\n");
+;
 
 	return 0;
 }
 
 static int pcl730_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: pcl730: remove\n", dev->minor);
+;
 
 	if (dev->iobase)
 		release_region(dev->iobase, this_board->io_range);

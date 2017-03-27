@@ -675,15 +675,15 @@ static int __init visor_init(void)
 				break;
 			}
 		}
-		printk(KERN_INFO KBUILD_MODNAME
-		       ": Untested USB device specified at time of module insertion\n");
-		printk(KERN_INFO KBUILD_MODNAME
-		       ": Warning: This is not guaranteed to work\n");
-		printk(KERN_INFO KBUILD_MODNAME
-		       ": Using a newer kernel is preferred to this method\n");
-		printk(KERN_INFO KBUILD_MODNAME
-		       ": Adding Palm OS protocol 4.x support for unknown device: 0x%x/0x%x\n",
-			vendor, product);
+//		printk(KERN_INFO KBUILD_MODNAME
+;
+//		printk(KERN_INFO KBUILD_MODNAME
+;
+//		printk(KERN_INFO KBUILD_MODNAME
+;
+//		printk(KERN_INFO KBUILD_MODNAME
+//		       ": Adding Palm OS protocol 4.x support for unknown device: 0x%x/0x%x\n",
+;
 	}
 	retval = usb_serial_register(&handspring_device);
 	if (retval)
@@ -697,7 +697,7 @@ static int __init visor_init(void)
 	retval = usb_register(&visor_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_DESC "\n");
+;
 
 	return 0;
 failed_usb_register:

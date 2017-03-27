@@ -320,13 +320,13 @@ static int __init safe_init(void)
 {
 	int i, retval;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 	/* if we have vendor / product parameters patch them into id list */
 	if (vendor || product) {
-		printk(KERN_INFO KBUILD_MODNAME ": vendor: %x product: %x\n",
-		       vendor, product);
+//		printk(KERN_INFO KBUILD_MODNAME ": vendor: %x product: %x\n",
+;
 
 		for (i = 0; i < ARRAY_SIZE(id_table); i++) {
 			if (!id_table[i].idVendor && !id_table[i].idProduct) {

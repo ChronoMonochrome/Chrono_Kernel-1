@@ -190,12 +190,24 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
 		if (!(params->rmask & (1 << k)))
 			continue;
 #ifdef RULES_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s = ", snd_pcm_hw_param_names[k]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%04x%04x%04x%04x -> ", m->bits[3], m->bits[2], m->bits[1], m->bits[0]);
+#else
+		;
+#endif
 #endif
 		changed = snd_mask_refine(m, constrs_mask(constrs, k));
 #ifdef RULES_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%04x%04x%04x%04x\n", m->bits[3], m->bits[2], m->bits[1], m->bits[0]);
+#else
+		;
+#endif
 #endif
 		if (changed)
 			params->cmask |= 1 << k;
@@ -210,23 +222,47 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
 		if (!(params->rmask & (1 << k)))
 			continue;
 #ifdef RULES_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s = ", snd_pcm_hw_param_names[k]);
+#else
+		;
+#endif
 		if (i->empty)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("empty");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c%u %u%c", 
 			       i->openmin ? '(' : '[', i->min,
 			       i->max, i->openmax ? ')' : ']');
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" -> ");
+#else
+		;
+#endif
 #endif
 		changed = snd_interval_refine(i, constrs_interval(constrs, k));
 #ifdef RULES_DEBUG
 		if (i->empty)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("empty\n");
+#else
+			;
+#endif
 		else 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c%u %u%c\n", 
 			       i->openmin ? '(' : '[', i->min,
 			       i->max, i->openmax ? ')' : ']');
+#else
+			;
+#endif
 #endif
 		if (changed)
 			params->cmask |= 1 << k;
@@ -255,39 +291,79 @@ int snd_pcm_hw_refine(struct snd_pcm_substream *substream,
 			if (!doit)
 				continue;
 #ifdef RULES_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Rule %d [%p]: ", k, r->func);
+#else
+			;
+#endif
 			if (r->var >= 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("%s = ", snd_pcm_hw_param_names[r->var]);
+#else
+				;
+#endif
 				if (hw_is_mask(r->var)) {
 					m = hw_param_mask(params, r->var);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%x", *m->bits);
+#else
+					;
+#endif
 				} else {
 					i = hw_param_interval(params, r->var);
 					if (i->empty)
+#ifdef CONFIG_DEBUG_PRINTK
 						printk("empty");
+#else
+						;
+#endif
 					else
+#ifdef CONFIG_DEBUG_PRINTK
 						printk("%c%u %u%c", 
 						       i->openmin ? '(' : '[', i->min,
 						       i->max, i->openmax ? ')' : ']');
+#else
+						;
+#endif
 				}
 			}
 #endif
 			changed = r->func(params, r);
 #ifdef RULES_DEBUG
 			if (r->var >= 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" -> ");
+#else
+				;
+#endif
 				if (hw_is_mask(r->var))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("%x", *m->bits);
+#else
+					;
+#endif
 				else {
 					if (i->empty)
+#ifdef CONFIG_DEBUG_PRINTK
 						printk("empty");
+#else
+						;
+#endif
 					else
+#ifdef CONFIG_DEBUG_PRINTK
 						printk("%c%u %u%c", 
 						       i->openmin ? '(' : '[', i->min,
 						       i->max, i->openmax ? ')' : ']');
+#else
+						;
+#endif
 				}
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n");
+#else
+			;
+#endif
 #endif
 			rstamps[k] = stamp;
 			if (changed && r->var >= 0) {

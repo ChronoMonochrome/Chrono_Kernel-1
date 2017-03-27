@@ -957,9 +957,13 @@ void snd_emux_lock_voice(struct snd_emux *emu, int voice)
 	if (emu->voices[voice].state == SNDRV_EMUX_ST_OFF)
 		emu->voices[voice].state = SNDRV_EMUX_ST_LOCKED;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING
 			   "invalid voice for lock %d (state = %x)\n",
 			   voice, emu->voices[voice].state);
+#else
+		;
+#endif
 	spin_unlock_irqrestore(&emu->voice_lock, flags);
 }
 
@@ -975,9 +979,13 @@ void snd_emux_unlock_voice(struct snd_emux *emu, int voice)
 	if (emu->voices[voice].state == SNDRV_EMUX_ST_LOCKED)
 		emu->voices[voice].state = SNDRV_EMUX_ST_OFF;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING
 			   "invalid voice for unlock %d (state = %x)\n",
 			   voice, emu->voices[voice].state);
+#else
+		;
+#endif
 	spin_unlock_irqrestore(&emu->voice_lock, flags);
 }
 

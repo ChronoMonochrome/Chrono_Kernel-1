@@ -197,7 +197,11 @@ static void i_usX2Y_In04Int(struct urb *urb)
 		return;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//	printk("%i:0x%02X ", 8, (int)((unsigned char*)usX2Y->In04Buf)[8]); Master volume shows 0 here if fader is at max during boot ?!?
+#else
+	//	;
+#endif
 	if (us428ctls) {
 		int diff = -1;
 		if (-2 == us428ctls->CtlSnapShotLast) {

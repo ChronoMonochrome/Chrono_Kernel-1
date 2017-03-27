@@ -839,15 +839,23 @@ int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
 			err = mmc_read_switch(card);
 			if (!err) {
 				if (retries > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING
 					       "%s: recovered\n", 
 					       mmc_hostname(host));
+#else
+					;
+#endif
 				}
 				break;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				       "%s: read switch failed (attempt %d)\n",
 				       mmc_hostname(host), retries);
+#else
+				;
+#endif
 			}
 		}
 #else

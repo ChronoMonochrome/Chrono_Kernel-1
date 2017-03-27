@@ -151,14 +151,14 @@ static int __init hp_probe1(struct net_device *dev, int ioaddr)
 	}
 
 	if (ei_debug  &&  version_printed++ == 0)
-		printk(version);
+;
 
-	printk("%s: %s (ID %02x) at %#3x,", dev->name, name, board_id, ioaddr);
+;
 
 	for(i = 0; i < ETHER_ADDR_LEN; i++)
 		dev->dev_addr[i] = inb(ioaddr + i);
 
-	printk(" %pM", dev->dev_addr);
+;
 
 	/* Snarf the interrupt now.  Someday this could be moved to open(). */
 	if (dev->irq < 2) {
@@ -174,14 +174,14 @@ static int __init hp_probe1(struct net_device *dev, int ioaddr)
 				outb_p( 0x00 | HP_RUN, ioaddr + HP_CONFIGURE);
 				if (irq == probe_irq_off(cookie)		 /* It's a good IRQ line! */
 					&& request_irq (irq, eip_interrupt, 0, DRV_NAME, dev) == 0) {
-					printk(" selecting IRQ %d.\n", irq);
+;
 					dev->irq = *irqp;
 					break;
 				}
 			}
 		} while (*++irqp);
 		if (*irqp == 0) {
-			printk(" no free IRQ lines.\n");
+;
 			retval = -EBUSY;
 			goto out;
 		}
@@ -227,7 +227,7 @@ hp_reset_8390(struct net_device *dev)
 	int hp_base = dev->base_addr - NIC_OFFSET;
 	int saved_config = inb_p(hp_base + HP_CONFIGURE);
 
-	if (ei_debug > 1) printk("resetting the 8390 time=%ld...", jiffies);
+;
 	outb_p(0x00, hp_base + HP_CONFIGURE);
 	ei_status.txing = 0;
 	/* Pause just a few cycles for the hardware reset to take place. */
@@ -237,9 +237,9 @@ hp_reset_8390(struct net_device *dev)
 	udelay(5);
 
 	if ((inb_p(hp_base+NIC_OFFSET+EN0_ISR) & ENISR_RESET) == 0)
-		printk("%s: hp_reset_8390() did not complete.\n", dev->name);
+;
 
-	if (ei_debug > 1) printk("8390 reset done (%ld).", jiffies);
+;
 }
 
 static void
@@ -298,8 +298,8 @@ hp_block_input(struct net_device *dev, int count, struct sk_buff *skb, int ring_
 	  int addr = (high << 8) + low;
 	  /* Check only the lower 8 bits so we can ignore ring wrap. */
 	  if (((ring_offset + xfer_count) & 0xff) != (addr & 0xff))
-		printk("%s: RX transfer address mismatch, %#4.4x vs. %#4.4x (actual).\n",
-			   dev->name, ring_offset + xfer_count, addr);
+//		printk("%s: RX transfer address mismatch, %#4.4x vs. %#4.4x (actual).\n",
+;
 	}
 	outb_p(saved_config & (~HP_DATAON), nic_base - NIC_OFFSET + HP_CONFIGURE);
 }
@@ -355,8 +355,8 @@ hp_block_output(struct net_device *dev, int count,
 	  int low  = inb_p(nic_base + EN0_RSARLO);
 	  int addr = (high << 8) + low;
 	  if ((start_page << 8) + count != addr)
-		printk("%s: TX Transfer address mismatch, %#4.4x vs. %#4.4x.\n",
-			   dev->name, (start_page << 8) + count, addr);
+//		printk("%s: TX Transfer address mismatch, %#4.4x vs. %#4.4x.\n",
+;
 	}
 	outb_p(saved_config & (~HP_DATAON), nic_base - NIC_OFFSET + HP_CONFIGURE);
 }
@@ -395,7 +395,7 @@ init_module(void)
 	for (this_dev = 0; this_dev < MAX_HP_CARDS; this_dev++) {
 		if (io[this_dev] == 0)  {
 			if (this_dev != 0) break; /* only autoprobe 1st one */
-			printk(KERN_NOTICE "hp.c: Presently autoprobing (not recommended) for a single card.\n");
+;
 		}
 		dev = alloc_eip_netdev();
 		if (!dev)
@@ -407,7 +407,7 @@ init_module(void)
 			continue;
 		}
 		free_netdev(dev);
-		printk(KERN_WARNING "hp.c: No HP card found (i/o = 0x%x).\n", io[this_dev]);
+;
 		break;
 	}
 	if (found)

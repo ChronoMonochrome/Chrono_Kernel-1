@@ -416,9 +416,13 @@ static int pf_wait(struct pf_unit *pf, int go, int stop, char *fun, char *msg)
 		if (j > PF_SPIN)
 			e |= 0x100;
 		if (fun)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: %s %s: alt=0x%x stat=0x%x err=0x%x"
 			       " loop=%d phase=%d\n",
 			       pf->name, fun, msg, r, s, e, j, p);
+#else
+			;
+#endif
 		return (e << 8) + s;
 	}
 	return 0;
@@ -445,7 +449,11 @@ static int pf_command(struct pf_unit *pf, char *cmd, int dlen, char *fun)
 	}
 
 	if (read_reg(pf, 2) != 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %s: command phase error\n", pf->name, fun);
+#else
+		;
+#endif
 		pi_disconnect(pf->pi);
 		return -1;
 	}
@@ -488,8 +496,12 @@ static void pf_req_sense(struct pf_unit *pf, int quiet)
 		pf_completion(pf, buf, "Request sense");
 
 	if ((!r) && (!quiet))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Sense key: %x, ASC: %x, ASQ: %x\n",
 		       pf->name, buf[2] & 0xf, buf[12], buf[13]);
+#else
+		;
+#endif
 }
 
 static int pf_atapi(struct pf_unit *pf, char *cmd, int dlen, char *buf, char *fun)
@@ -553,12 +565,28 @@ static int pf_reset(struct pf_unit *pf)
 		flg &= (read_reg(pf, i + 1) == expect[i]);
 
 	if (verbose) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: Reset (%d) signature = ", pf->name, k);
+#else
+		;
+#endif
 		for (i = 0; i < 5; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%3x", read_reg(pf, i + 1));
+#else
+			;
+#endif
 		if (!flg)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" (incorrect)");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 
 	pi_disconnect(pf->pi);
@@ -616,9 +644,13 @@ static void pf_get_capacity(struct pf_unit *pf)
 	if (bs != 512) {
 		set_capacity(pf->disk, 0);
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: Drive %d, LUN %d,"
 			       " unsupported block size %d\n",
 			       pf->name, pf->drive, pf->lun, bs);
+#else
+			;
+#endif
 	}
 }
 
@@ -638,8 +670,12 @@ static int pf_identify(struct pf_unit *pf)
 	dt = buf[0] & 0x1f;
 	if ((dt != 0) && (dt != 7)) {
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: Drive %d, LUN %d, unsupported type %d\n",
 			       pf->name, pf->drive, pf->lun, dt);
+#else
+			;
+#endif
 		return -1;
 	}
 
@@ -654,17 +690,37 @@ static int pf_identify(struct pf_unit *pf)
 
 	pf_get_capacity(pf);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s %s, %s LUN %d, type %d",
 	       pf->name, mf, id, ms[pf->drive], pf->lun, dt);
+#else
+	;
+#endif
 	if (pf->removable)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", removable");
+#else
+		;
+#endif
 	if (pf->media_status == PF_NM)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", no media\n");
+#else
+		;
+#endif
 	else {
 		if (pf->media_status == PF_RO)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(", RO");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", %llu blocks\n",
 			(unsigned long long)get_capacity(pf->disk));
+#else
+		;
+#endif
 	}
 	return 0;
 }
@@ -701,8 +757,12 @@ static int pf_detect(void)
 	struct pf_unit *pf = units;
 	int k, unit;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: %s version %s, major %d, cluster %d, nice %d\n",
 	       name, name, PF_VERSION, major, cluster, nice);
+#else
+	;
+#endif
 
 	k = 0;
 	if (pf_drive_count == 0) {
@@ -733,7 +793,11 @@ static int pf_detect(void)
 	if (k)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: No ATAPI disk detected\n", name);
+#else
+	;
+#endif
 	for (pf = units, unit = 0; unit < PF_UNITS; pf++, unit++)
 		put_disk(pf->disk);
 	return -1;

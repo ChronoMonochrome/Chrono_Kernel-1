@@ -330,8 +330,12 @@ static void __devexit cpqarray_remove_one(int i)
 	 * no data returned, but don't want to send NULL to sendcmd */
 	if( sendcmd(FLUSH_CACHE, i, buff, 4, 0, 0, 0))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unable to flush cache on controller %d\n",
 				i);
+#else
+		;
+#endif
 	}
 	free_irq(hba[i]->intr, hba[i]);
 	iounmap(hba[i]->vaddr);
@@ -430,8 +434,12 @@ static int __devinit cpqarray_register_ctlr( int i, struct pci_dev *pdev)
 			goto Enomem1;
 
 	memset(hba[i]->cmd_pool, 0, NR_CMDS * sizeof(cmdlist_t));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "cpqarray: Finding drives on %s",
 		hba[i]->devname);
+#else
+	;
+#endif
 
 	spin_lock_init(&hba[i]->lock);
 	q = blk_init_queue(do_ida_request, &hba[i]->lock);
@@ -510,10 +518,14 @@ static int __devinit cpqarray_init_one( struct pci_dev *pdev,
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cpqarray: Device 0x%x has been found at"
 			" bus %d dev %d func %d\n",
 			pdev->device, pdev->bus->number, PCI_SLOT(pdev->devfn),
 			PCI_FUNC(pdev->devfn));
+#else
+	;
+#endif
 	i = alloc_cpqarray_hba();
 	if( i < 0 )
 		return (-1);
@@ -551,7 +563,11 @@ static int __init cpqarray_init(void)
 	int rc = 0;
 
 	/* detect controllers */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(DRIVER_NAME "\n");
+#else
+	;
+#endif
 
 	rc = pci_register_driver(&cpqarray_pci_driver);
 	if (rc)
@@ -587,8 +603,12 @@ static int alloc_cpqarray_hba(void)
 			return (i);
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "cpqarray: This driver supports a maximum"
 		" of 8 controllers.\n");
+#else
+	;
+#endif
 	return(-1);
 }
 
@@ -640,22 +660,62 @@ static int cpqarray_pci_init(ctlr_info_t *c, struct pci_dev *pdev)
 
 	/* check to see if controller has been disabled */
 	if(!(command & 0x02)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"cpqarray: controller appears to be disabled\n");
+#else
+		;
+#endif
 		return(-1);
 	}
 
 DBGINFO(
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("vendor_id = %x\n", vendor_id);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("device_id = %x\n", device_id);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("command = %x\n", command);
+#else
+	;
+#endif
 	for(i=0; i<6; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("addr[%d] = %lx\n", i, addr[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("revision = %x\n", revision);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("irq = %x\n", irq);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cache_line_size = %x\n", cache_line_size);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("latency_timer = %x\n", latency_timer);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("board_id = %x\n", board_id);
+#else
+	;
+#endif
 );
 
 	c->intr = irq;
@@ -669,7 +729,11 @@ DBGINFO(
 			if(!request_region( c->io_mem_addr, c->io_mem_length,
 				"cpqarray"))
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk( KERN_WARNING "cpqarray I/O memory range already in use addr %lx length = %ld\n", c->io_mem_addr, c->io_mem_length);
+#else
+				;
+#endif
 				c->io_mem_addr = 0;
 				c->io_mem_length = 0;
 			}
@@ -699,9 +763,13 @@ DBGINFO(
 		}
 	}
 	if (i == NR_PRODUCTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cpqarray: Sorry, I don't know how"
 			" to access the SMART Array controller %08lx\n", 
 				(unsigned long)board_id);
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -760,8 +828,12 @@ static int __devinit cpqarray_eisa_detect(void)
 				break;
 
 		if (j == NR_PRODUCTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "cpqarray: Sorry, I don't know how"
 				" to access the SMART Array controller %08lx\n",				 (unsigned long)board_id);
+#else
+			;
+#endif
 			continue;
 		}
 
@@ -772,10 +844,14 @@ static int __devinit cpqarray_eisa_detect(void)
 				hba[ctlr]->io_mem_length,
 				"cpqarray"))
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "cpqarray: I/O range already in "
 					"use addr = %lx length = %ld\n",
 					hba[ctlr]->io_mem_addr,
 					hba[ctlr]->io_mem_length);
+#else
+			;
+#endif
 			free_hba(ctlr);
 			continue;
 		}
@@ -798,19 +874,39 @@ static int __devinit cpqarray_eisa_detect(void)
 		hba[ctlr]->pci_dev = NULL; /* not PCI */
 
 DBGINFO(
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("i = %d, j = %d\n", i, j);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("irq = %x\n", intr);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("product name = %s\n", products[j].product_name);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("board_id = %x\n", board_id);
+#else
+	;
+#endif
 );
 
 		num_ctlr++;
 		i++;
 
 		if (cpqarray_register_ctlr(ctlr, NULL) == -1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"cpqarray: Can't register EISA controller %d\n",
 				ctlr);
+#else
+			;
+#endif
 
 	}
 
@@ -825,7 +921,11 @@ static int ida_open(struct block_device *bdev, fmode_t mode)
 	drv_info_t *drv = get_drv(bdev->bd_disk);
 	ctlr_info_t *host = get_host(bdev->bd_disk);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DBGINFO(printk("ida_open %s\n", bdev->bd_disk->disk_name));
+#else
+	DBGINFO(;
+#endif
 	/*
 	 * Root is allowed to open raw volume zero even if it's not configured
 	 * so array config can still work.  I don't think I really like this,
@@ -931,8 +1031,12 @@ queue_next:
 	c->req.hdr.blk = blk_rq_pos(creq);
 	c->rq = creq;
 DBGPX(
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("sector=%d, nr_sectors=%u\n",
 	       blk_rq_pos(creq), blk_rq_sectors(creq));
+#else
+	;
+#endif
 );
 	sg_init_table(tmp_sg, SG_MAX);
 	seg = blk_rq_map_sg(q, creq, tmp_sg);
@@ -950,7 +1054,11 @@ DBGPX(
 						 tmp_sg[i].offset,
 						 tmp_sg[i].length, dir);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 DBGPX(	printk("Submitting %u sectors in %d segments\n", blk_rq_sectors(creq), seg); );
+#else
+DBGPX(	;
+#endif
 	c->req.hdr.sg_cnt = seg;
 	c->req.hdr.blk_cnt = blk_rq_sectors(creq);
 	c->req.hdr.cmd = (rq_data_dir(creq) == READ) ? IDA_READ : IDA_WRITE;
@@ -1006,20 +1114,32 @@ static inline void complete_command(cmdlist_t *cmd, int timeout)
 
 	if (cmd->req.hdr.rcode & RCODE_NONFATAL &&
 	   (hba[cmd->ctlr]->misc_tflags & MISC_NONFATAL_WARN) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Non Fatal error on ida/c%dd%d\n",
 				cmd->ctlr, cmd->hdr.unit);
+#else
+		;
+#endif
 		hba[cmd->ctlr]->misc_tflags |= MISC_NONFATAL_WARN;
 	}
 	if (cmd->req.hdr.rcode & RCODE_FATAL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Fatal error on ida/c%dd%d\n",
 				cmd->ctlr, cmd->hdr.unit);
+#else
+		;
+#endif
 		error = -EIO;
 	}
 	if (cmd->req.hdr.rcode & RCODE_INVREQ) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "Invalid request on ida/c%dd%d = (cmd=%x sect=%d cnt=%d sg=%d ret=%x)\n",
 				cmd->ctlr, cmd->hdr.unit, cmd->req.hdr.cmd,
 				cmd->req.hdr.blk, cmd->req.hdr.blk_cnt,
 				cmd->req.hdr.sg_cnt, cmd->req.hdr.rcode);
+#else
+				;
+#endif
 		error = -EIO;
 	}
 	if (timeout)
@@ -1033,7 +1153,11 @@ static inline void complete_command(cmdlist_t *cmd, int timeout)
                 pci_unmap_page(hba[cmd->ctlr]->pci_dev, cmd->req.sg[i].addr,
 				cmd->req.sg[i].size, ddir);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DBGPX(printk("Done with %p\n", rq););
+#else
+	DBGPX(;
+#endif
 	__blk_end_request_all(rq, error);
 }
 
@@ -1065,7 +1189,11 @@ static irqreturn_t do_ida_intr(int irq, void *dev_id)
 			a1 = a; a &= ~3;
 			if ((c = h->cmpQ) == NULL)
 			{  
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "cpqarray: Completion of %08lx ignored\n", (unsigned long)a1);
+#else
+				;
+#endif
 				continue;	
 			} 
 			while(c->busaddr != a) {
@@ -1459,8 +1587,12 @@ static int sendcmd(
 		}
 		udelay(10);
 DBG(
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cpqarray ida%d: idaSendPciCmd FIFO full,"
 			" waiting!\n", ctlr);
+#else
+		;
+#endif
 );
 	} 
 	/*
@@ -1473,29 +1605,41 @@ DBG(
 		c->req.sg[0].size, PCI_DMA_BIDIRECTIONAL);
 	if (complete != 1) {
 		if (complete != c->busaddr) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( KERN_WARNING
 			"cpqarray ida%d: idaSendPciCmd "
 		      "Invalid command list address returned! (%08lx)\n",
 				ctlr, (unsigned long)complete);
+#else
+			;
+#endif
 			cmd_free(info_p, c, 1);
 			return (IO_ERROR);
 		}
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( KERN_WARNING
 			"cpqarray ida%d: idaSendPciCmd Timeout out, "
 			"No command list address returned!\n",
 			ctlr);
+#else
+		;
+#endif
 		cmd_free(info_p, c, 1);
 		return (IO_ERROR);
 	}
 
 	if (c->req.hdr.rcode & 0x00FE) {
 		if (!(c->req.hdr.rcode & BIG_PROBLEM)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( KERN_WARNING
 			"cpqarray ida%d: idaSendPciCmd, error: "
 				"Controller failed at init time "
 				"cmd: 0x%x, return code = 0x%x\n",
 				ctlr, c->req.hdr.cmd, c->req.hdr.rcode);
+#else
+			;
+#endif
 
 			cmd_free(info_p, c, 1);
 			return (IO_ERROR);
@@ -1525,8 +1669,12 @@ static int revalidate_allvol(ctlr_info_t *host)
 	spin_lock_irqsave(IDA_LOCK(ctlr), flags);
 	if (host->usage_count > 1) {
 		spin_unlock_irqrestore(IDA_LOCK(ctlr), flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cpqarray: Device busy for volume"
 			" revalidation (usage=%d)\n", host->usage_count);
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 	host->usage_count++;
@@ -1617,22 +1765,34 @@ static void start_fwbk(int ctlr)
 
 	/* Not a Integrated Raid, so there is nothing for us to do */
 		return;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cpqarray: Starting firmware's background"
 		" processing\n");
+#else
+	;
+#endif
 	/* Command does not return anything, but idasend command needs a 
 		buffer */
 	id_ctlr_buf = kmalloc(sizeof(id_ctlr_t), GFP_KERNEL);
 	if(id_ctlr_buf==NULL)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cpqarray: Out of memory. "
 			"Unable to start background processing.\n");
+#else
+		;
+#endif
 		return;
 	}		
 	ret_code = sendcmd(RESUME_BACKGROUND_ACTIVITY, ctlr, 
 		id_ctlr_buf, 0, 0, 0, 0);
 	if(ret_code != IO_OK)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cpqarray: Unable to start"
 			" background processing\n");
+#else
+		;
+#endif
 
 	kfree(id_ctlr_buf);
 }
@@ -1702,7 +1862,11 @@ static void getgeometry(int ctlr)
 		info_p->firm_rev[i] = id_ctlr_buf->firm_rev[i];
 	info_p->ctlr_sig = id_ctlr_buf->cfg_sig;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" (%s)\n", info_p->product_name);
+#else
+	;
+#endif
 	/*
 	 * Initialize logical drive map to zero
 	 */
@@ -1711,10 +1875,14 @@ static void getgeometry(int ctlr)
 	 * Get drive geometry for all logical drives
 	 */
 	if (id_ctlr_buf->nr_drvs > 16)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cpqarray ida%d:  This driver supports "
 			"16 logical drives per controller.\n.  "
 			" Additional drives will not be "
 			"detected\n", ctlr);
+#else
+		;
+#endif
 
 	for (log_unit = 0;
 	     (log_index < id_ctlr_buf->nr_drvs)
@@ -1735,11 +1903,15 @@ static void getgeometry(int ctlr)
 			   on the controller. 
 			 */
 			info_p->log_drv_map = 0;	
+#ifdef CONFIG_DEBUG_PRINTK
 			printk( KERN_WARNING
 			     "cpqarray ida%d: idaGetGeometry - Controller"
 				" failed to report status of logical drive %d\n"
 			 "Access to this controller has been disabled\n",
 				ctlr, log_unit);
+#else
+			;
+#endif
                 	goto err_4;
 		}
 		/*
@@ -1762,8 +1934,12 @@ static void getgeometry(int ctlr)
 				drv->sectors = id_ldrive->drv.sect_per_track;
 				info_p->log_drv_map |=	(1 << log_unit);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "cpqarray ida/c%dd%d: blksz=%d nr_blks=%d\n",
 		ctlr, log_unit, drv->blk_size, drv->nr_blks);
+#else
+	;
+#endif
 				ret_code = sendcmd(SENSE_CONFIG,
 						  ctlr, sense_config_buf,
 				 sizeof(config_t), 0, 0, log_unit);
@@ -1808,8 +1984,12 @@ static void __exit cpqarray_exit(void)
 	/* Double check that all controller entries have been removed */
 	for(i=0; i<MAX_CTLR; i++) {
 		if (hba[i] != NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "cpqarray: Removing EISA "
 					"controller %d\n", i);
+#else
+			;
+#endif
 			cpqarray_remove_one_eisa(i);
 		}
 	}

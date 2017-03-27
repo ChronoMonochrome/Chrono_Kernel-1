@@ -222,7 +222,7 @@ int crypto_alg_available(const char *name, u32 flags)
 
 static int __init init_crypto(void)
 {
-	printk(KERN_INFO "Initializing Cryptographic API\n");
+;
 	crypto_init_proc();
 	return 0;
 }

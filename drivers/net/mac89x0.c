@@ -260,18 +260,18 @@ struct net_device * __init mac89x0_probe(int unit)
 		lp->send_cmd = TX_NOW;
 
 	if (net_debug && version_printed++ == 0)
-		printk(version);
+;
 
-	printk(KERN_INFO "%s: cs89%c0%s rev %c found at %#8lx",
-	       dev->name,
-	       lp->chip_type==CS8900?'0':'2',
-	       lp->chip_type==CS8920M?"M":"",
-	       lp->chip_revision,
-	       dev->base_addr);
+//	printk(KERN_INFO "%s: cs89%c0%s rev %c found at %#8lx",
+//	       dev->name,
+//	       lp->chip_type==CS8900?'0':'2',
+//	       lp->chip_type==CS8920M?"M":"",
+//	       lp->chip_revision,
+;
 
 	/* Try to read the MAC address */
 	if ((readreg(dev, PP_SelfST) & (EEPROM_PRESENT | EEPROM_OK)) == 0) {
-		printk("\nmac89x0: No EEPROM, giving up now.\n");
+;
 		goto out1;
         } else {
                 for (i = 0; i < ETH_ALEN; i += 2) {
@@ -286,7 +286,7 @@ struct net_device * __init mac89x0_probe(int unit)
 
 	/* print the IRQ and ethernet address. */
 
-	printk(" IRQ %d ADDR %pM\n", dev->irq, dev->dev_addr);
+;
 
 	dev->netdev_ops		= &mac89x0_netdev_ops;
 
@@ -379,10 +379,10 @@ net_send_packet(struct sk_buff *skb, struct net_device *dev)
 	unsigned long flags;
 
 	if (net_debug > 3)
-		printk("%s: sent %d byte packet of type %x\n",
-		       dev->name, skb->len,
-		       (skb->data[ETH_ALEN+ETH_ALEN] << 8)
-		       | skb->data[ETH_ALEN+ETH_ALEN+1]);
+//		printk("%s: sent %d byte packet of type %x\n",
+//		       dev->name, skb->len,
+//		       (skb->data[ETH_ALEN+ETH_ALEN] << 8)
+;
 
 	/* keep the upload from being interrupted, since we
 	   ask the chip to start transmitting before the
@@ -436,7 +436,7 @@ static irqreturn_t net_interrupt(int irq, void *dev_id)
            faster than you can read them off, you're screwed.  Hasta la
            vista, baby!  */
 	while ((status = swab16(nubus_readw(dev->base_addr + ISQ_PORT)))) {
-		if (net_debug > 4)printk("%s: event=%04x\n", dev->name, status);
+;
 		switch(status & ISQ_EVENT_MASK) {
 		case ISQ_RECEIVER_EVENT:
 			/* Got a packet(s). */
@@ -466,7 +466,7 @@ static irqreturn_t net_interrupt(int irq, void *dev_id)
 				netif_wake_queue(dev);
 			}
 			if (status & TX_UNDERRUN) {
-				if (net_debug > 0) printk("%s: transmit underrun\n", dev->name);
+;
                                 lp->send_underrun++;
                                 if (lp->send_underrun == 3) lp->send_cmd = TX_AFTER_381;
                                 else if (lp->send_underrun == 6) lp->send_cmd = TX_AFTER_ALL;
@@ -510,7 +510,7 @@ net_rx(struct net_device *dev)
 	/* Malloc up new buffer. */
 	skb = alloc_skb(length, GFP_ATOMIC);
 	if (skb == NULL) {
-		printk("%s: Memory squeeze, dropping packet.\n", dev->name);
+;
 		dev->stats.rx_dropped++;
 		return;
 	}
@@ -519,10 +519,10 @@ net_rx(struct net_device *dev)
 	skb_copy_to_linear_data(skb, (void *)(dev->mem_start + PP_RxFrame),
 				length);
 
-	if (net_debug > 3)printk("%s: received %d byte packet of type %x\n",
-                                 dev->name, length,
-                                 (skb->data[ETH_ALEN+ETH_ALEN] << 8)
-				 | skb->data[ETH_ALEN+ETH_ALEN+1]);
+//	if (net_debug > 3)printk("%s: received %d byte packet of type %x\n",
+//                                 dev->name, length,
+//                                 (skb->data[ETH_ALEN+ETH_ALEN] << 8)
+;
 
         skb->protocol=eth_type_trans(skb,dev);
 	netif_rx(skb);
@@ -592,10 +592,10 @@ static void set_multicast_list(struct net_device *dev)
 static int set_mac_address(struct net_device *dev, void *addr)
 {
 	int i;
-	printk("%s: Setting MAC address to ", dev->name);
+;
 	for (i = 0; i < 6; i++)
 		printk(" %2.2x", dev->dev_addr[i] = ((unsigned char *)addr)[i]);
-	printk(".\n");
+;
 	/* set the Ethernet address */
 	for (i=0; i < ETH_ALEN/2; i++)
 		writereg(dev, PP_IA+i*2, dev->dev_addr[i*2] | (dev->dev_addr[i*2+1] << 8));
@@ -618,7 +618,7 @@ init_module(void)
 	net_debug = debug;
         dev_cs89x0 = mac89x0_probe(-1);
 	if (IS_ERR(dev_cs89x0)) {
-                printk(KERN_WARNING "mac89x0.c: No card found\n");
+;
 		return PTR_ERR(dev_cs89x0);
 	}
 	return 0;

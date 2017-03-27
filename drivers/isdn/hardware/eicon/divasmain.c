@@ -184,7 +184,11 @@ void diva_log_info(unsigned char *format, ...)
 	vsnprintf(line, sizeof(line), format, args);
 	va_end(args);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %s\n", DRIVERLNAME, line);
+#else
+	;
+#endif
 }
 
 void divas_get_version(char *p)
@@ -698,9 +702,13 @@ static int __devinit divas_init_one(struct pci_dev *pdev,
 	DBG_TRC(("%s bus: %08x fn: %08x insertion.\n",
 		 CardProperties[ent->driver_data].Name,
 		 pdev->bus->number, pdev->devfn))
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: %s bus: %08x fn: %08x insertion.\n",
 		DRIVERLNAME, CardProperties[ent->driver_data].Name,
 		pdev->bus->number, pdev->devfn);
+#else
+	;
+#endif
 
 	if (pci_enable_device(pdev)) {
 		DBG_TRC(("%s: %s bus: %08x fn: %08x device init failed.\n",
@@ -723,9 +731,13 @@ static int __devinit divas_init_one(struct pci_dev *pdev,
 	if (!pci_latency) {
 		DBG_TRC(("%s: bus: %08x fn: %08x fix latency.\n",
 			 DRIVERLNAME, pdev->bus->number, pdev->devfn))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 			"%s: bus: %08x fn: %08x fix latency.\n",
 			 DRIVERLNAME, pdev->bus->number, pdev->devfn);
+#else
+		;
+#endif
 		pci_write_config_byte(pdev, PCI_LATENCY_TIMER, new_latency);
 	}
 
@@ -755,8 +767,12 @@ static void __devexit divas_remove_one(struct pci_dev *pdev)
 
 	DBG_TRC(("bus: %08x fn: %08x removal.\n",
 		 pdev->bus->number, pdev->devfn))
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: bus: %08x fn: %08x removal.\n",
 		DRIVERLNAME, pdev->bus->number, pdev->devfn);
+#else
+	;
+#endif
 
 	if (pdiva) {
 		diva_driver_remove_card(pdiva);
@@ -772,19 +788,47 @@ static int DIVA_INIT_FUNCTION divas_init(void)
 	char tmprev[50];
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", DRIVERNAME);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_DIVAS);
+#else
+	;
+#endif
 	strcpy(tmprev, main_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s  Build: %s(%s)\n", getrev(tmprev),
 	       diva_xdi_common_code_build, DIVA_BUILD);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: support for: ", DRIVERLNAME);
+#else
+	;
+#endif
 #ifdef CONFIG_ISDN_DIVAS_BRIPCI
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("BRI/PCI ");
+#else
+	;
+#endif
 #endif
 #ifdef CONFIG_ISDN_DIVAS_PRIPCI
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("PRI/PCI ");
+#else
+	;
 #endif
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("adapters\n");
+#else
+	;
+#endif
 
 	if (!divasfunc_init(dbgmask)) {
 		printk(KERN_ERR "%s: failed to connect to DIDD.\n",
@@ -822,7 +866,11 @@ static int DIVA_INIT_FUNCTION divas_init(void)
 		       DRIVERLNAME);
 		goto out;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: started with major %d\n", DRIVERLNAME, major);
+#else
+	;
+#endif
 
       out:
 	return (ret);
@@ -838,7 +886,11 @@ static void DIVA_EXIT_FUNCTION divas_exit(void)
 	divas_unregister_chrdev();
 	divasfunc_exit();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
+#else
+	;
+#endif
 }
 
 module_init(divas_init);

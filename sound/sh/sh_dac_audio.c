@@ -414,13 +414,21 @@ static int __devinit snd_sh_dac_probe(struct platform_device *devptr)
 
 	strcpy(card->driver, "snd_sh_dac");
 	strcpy(card->shortname, "SuperH DAC audio driver");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s %s", card->longname, card->shortname);
+#else
+	;
+#endif
 
 	err = snd_card_register(card);
 	if (err < 0)
 		goto probe_error;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk("ALSA driver for SuperH DAC audio");
+#else
+	;
+#endif
 
 	platform_set_drvdata(devptr, card);
 	return 0;

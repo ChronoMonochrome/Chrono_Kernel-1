@@ -1171,8 +1171,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 							AB8500_BANK12_ACCESS,
 							0x01);
 		if (ret < 0)
-			printk(KERN_ERR "Failed to enable bank12"
-						" access ret=%d\n", ret);
+//			printk(KERN_ERR "Failed to enable bank12"
+;
 
 		if (is_ab8505(ab->ab8500)) {
 			/* Apply new Phy tuning values
@@ -1182,16 +1182,16 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 								AB8500_USB_PHY_TUNE1,
 								0xD9);
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE1"
-							" register ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE1"
+;
 
 				ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
 								AB8500_USB_PHY_TUNE2,
 								0x00);
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE2"
-							" register ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE2"
+;
 
 				ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
@@ -1199,24 +1199,24 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 								0xFC);
 
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE3"
-							" regester ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE3"
+;
 		} else {
 			ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
 								AB8500_USB_PHY_TUNE1,
 								0xD8);
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE1"
-							" register ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE1"
+;
 
 				ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
 								AB8500_USB_PHY_TUNE2,
 								0x00);
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE2"
-							" register ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE2"
+;
 
 				ret = abx500_set_register_interruptible(ab->dev,
 								AB8500_DEBUG,
@@ -1224,8 +1224,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 								0xFC);
 
 			if (ret < 0)
-				printk(KERN_ERR "Failed to set PHY_TUNE3"
-							" regester ret=%d\n", ret);
+//				printk(KERN_ERR "Failed to set PHY_TUNE3"
+;
 		}
 
 		/* Switch to normal mode/disable Bank 0x12 access */
@@ -1235,8 +1235,8 @@ static int __devinit ab8500_usb_probe(struct platform_device *pdev)
 						0x00);
 
 		if (ret < 0)
-			printk(KERN_ERR "Failed to switch bank12"
-						" access ret=%d\n", ret);
+//			printk(KERN_ERR "Failed to switch bank12"
+;
 	}
 	/* Needed to enable ID detection. */
 	ab8500_usb_wd_workaround(ab);

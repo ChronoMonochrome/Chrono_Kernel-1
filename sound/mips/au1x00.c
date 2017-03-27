@@ -681,7 +681,11 @@ au1000_init(void)
 		return err;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ALSA AC97: Driver Initialized\n");
+#else
+	;
+#endif
 	au1000_card = card;
 	return 0;
 }

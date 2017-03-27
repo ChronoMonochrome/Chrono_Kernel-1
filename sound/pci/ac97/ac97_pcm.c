@@ -619,7 +619,11 @@ int snd_ac97_pcm_open(struct ac97_pcm *pcm, unsigned int rate,
 				}
 				if (reg_ok[cidx] & (1 << (reg - AC97_PCM_FRONT_DAC_RATE)))
 					continue;
+#ifdef CONFIG_DEBUG_PRINTK
 				//printk(KERN_DEBUG "setting ac97 reg 0x%x to rate %d\n", reg, rate);
+#else
+				//;
+#endif
 				err = snd_ac97_set_rate(pcm->r[r].codec[cidx], reg, rate);
 				if (err < 0)
 					snd_printk(KERN_ERR "error in snd_ac97_set_rate: cidx=%d, reg=0x%x, rate=%d, err=%d\n", cidx, reg, rate, err);

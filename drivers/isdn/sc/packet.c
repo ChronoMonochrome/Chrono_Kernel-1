@@ -109,8 +109,12 @@ void rcvpkt(int card, RspMessage *rcvmsg)
 		return;
 	case 0x00: 
 	    if (!(skb = dev_alloc_skb(rcvmsg->msg_data.response.msg_len))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: rcvpkt out of memory, dropping packet\n",
 				sc_adapter[card]->devicename);
+#else
+			;
+#endif
 			return;
 		}
 		skb_put(skb, rcvmsg->msg_data.response.msg_len);

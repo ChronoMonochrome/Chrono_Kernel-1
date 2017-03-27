@@ -150,13 +150,22 @@ static int bcm_umi_bch_read_page_hwecc(struct mtd_info *mtd,
 		/* Update Stats */
 		if (stat < 0) {
 #if defined(NAND_BCM_UMI_DEBUG)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s uncorr_err sectorIdx=%d\n",
 			       __func__, sectorIdx);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s data %02x %02x %02x %02x "
 					 "%02x %02x %02x %02x\n",
 			       __func__, datap[0], datap[1], datap[2], datap[3],
 			       datap[4], datap[5], datap[6], datap[7]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s ecc  %02x %02x %02x %02x "
 					 "%02x %02x %02x %02x %02x %02x "
@@ -165,15 +174,22 @@ static int bcm_umi_bch_read_page_hwecc(struct mtd_info *mtd,
 			       eccCalc[3], eccCalc[4], eccCalc[5], eccCalc[6],
 			       eccCalc[7], eccCalc[8], eccCalc[9], eccCalc[10],
 			       eccCalc[11], eccCalc[12]);
+#else
+			;
+#endif
 			BUG();
 #endif
 			mtd->ecc_stats.failed++;
 		} else {
 #if defined(NAND_BCM_UMI_DEBUG)
 			if (stat > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO
 				       "%s %d correctable_errors detected\n",
 				       __func__, stat);
+#else
+				;
+#endif
 			}
 #endif
 			mtd->ecc_stats.corrected += stat;

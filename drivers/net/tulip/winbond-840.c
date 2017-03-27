@@ -938,18 +938,18 @@ static void tx_timeout(struct net_device *dev)
 
 	{
 		int i;
-		printk(KERN_DEBUG "  Rx ring %p: ", np->rx_ring);
+;
 		for (i = 0; i < RX_RING_SIZE; i++)
-			printk(KERN_CONT " %08x", (unsigned int)np->rx_ring[i].status);
-		printk(KERN_CONT "\n");
-		printk(KERN_DEBUG "  Tx ring %p: ", np->tx_ring);
+;
+;
+;
 		for (i = 0; i < TX_RING_SIZE; i++)
-			printk(KERN_CONT " %08x", np->tx_ring[i].status);
-		printk(KERN_CONT "\n");
+;
+;
 	}
-	printk(KERN_DEBUG "Tx cur %d Tx dirty %d Tx Full %d, q bytes %d\n",
-	       np->cur_tx, np->dirty_tx, np->tx_full, np->tx_q_bytes);
-	printk(KERN_DEBUG "Tx Descriptor addr %xh\n", ioread32(ioaddr+0x4C));
+//	printk(KERN_DEBUG "Tx cur %d Tx dirty %d Tx Full %d, q bytes %d\n",
+;
+;
 
 	disable_irq(dev->irq);
 	spin_lock_irq(&np->lock);
@@ -1511,16 +1511,16 @@ static int netdev_close(struct net_device *dev)
 	if (debug > 2) {
 		int i;
 
-		printk(KERN_DEBUG"  Tx ring at %p:\n", np->tx_ring);
+;
 		for (i = 0; i < TX_RING_SIZE; i++)
-			printk(KERN_DEBUG " #%d desc. %04x %04x %08x\n",
-			       i, np->tx_ring[i].length,
-			       np->tx_ring[i].status, np->tx_ring[i].buffer1);
-		printk(KERN_DEBUG "  Rx ring %p:\n", np->rx_ring);
+//			printk(KERN_DEBUG " #%d desc. %04x %04x %08x\n",
+//			       i, np->tx_ring[i].length,
+;
+;
 		for (i = 0; i < RX_RING_SIZE; i++) {
-			printk(KERN_DEBUG " #%d desc. %04x %04x %08x\n",
-			       i, np->rx_ring[i].length,
-			       np->rx_ring[i].status, np->rx_ring[i].buffer1);
+//			printk(KERN_DEBUG " #%d desc. %04x %04x %08x\n",
+//			       i, np->rx_ring[i].length,
+;
 		}
 	}
 #endif /* __i386__ debugging only */
@@ -1657,7 +1657,7 @@ static struct pci_driver w840_driver = {
 
 static int __init w840_init(void)
 {
-	printk(version);
+;
 	return pci_register_driver(&w840_driver);
 }
 

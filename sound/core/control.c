@@ -241,9 +241,13 @@ struct snd_kcontrol *snd_ctl_new1(const struct snd_kcontrol_new *ncontrol,
 	if (ncontrol->name) {
 		strlcpy(kctl.id.name, ncontrol->name, sizeof(kctl.id.name));
 		if (strcmp(ncontrol->name, kctl.id.name) != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING
 				   "Control name '%s' truncated to '%s'\n",
 				   ncontrol->name, kctl.id.name);
+#else
+			;
+#endif
 	}
 	kctl.id.index = ncontrol->index;
 	kctl.count = ncontrol->count ? ncontrol->count : 1;

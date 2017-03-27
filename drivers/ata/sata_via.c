@@ -360,9 +360,13 @@ static int vt6420_prereset(struct ata_link *link, unsigned long deadline)
 
 	online = (sstatus & 0xf) == 0x3;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_port_printk(ap, KERN_INFO,
 			"SATA link %s 1.5 Gbps (SStatus %X SControl %X)\n",
 			online ? "up" : "down", sstatus, scontrol);
+#else
+	ata_port_;
+#endif
 
 	/* SStatus is read one more time */
 	svia_scr_read(link, SCR_STATUS, &sstatus);
@@ -542,15 +546,23 @@ static void svia_configure(struct pci_dev *pdev, int board_id)
 	u8 tmp8;
 
 	pci_read_config_byte(pdev, PCI_INTERRUPT_LINE, &tmp8);
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &pdev->dev, "routed to hard irq line %d\n",
 	       (int) (tmp8 & 0xf0) == 0xf0 ? 0 : tmp8 & 0x0f);
+#else
+	dev_;
+#endif
 
 	/* make sure SATA channels are enabled */
 	pci_read_config_byte(pdev, SATA_CHAN_ENAB, &tmp8);
 	if ((tmp8 & ALL_PORTS) != ALL_PORTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev,
 			   "enabling SATA channels (0x%x)\n",
 			   (int) tmp8);
+#else
+		dev_;
+#endif
 		tmp8 |= ALL_PORTS;
 		pci_write_config_byte(pdev, SATA_CHAN_ENAB, tmp8);
 	}
@@ -558,9 +570,13 @@ static void svia_configure(struct pci_dev *pdev, int board_id)
 	/* make sure interrupts for each channel sent to us */
 	pci_read_config_byte(pdev, SATA_INT_GATE, &tmp8);
 	if ((tmp8 & ALL_PORTS) != ALL_PORTS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev,
 			   "enabling SATA channel interrupts (0x%x)\n",
 			   (int) tmp8);
+#else
+		dev_;
+#endif
 		tmp8 |= ALL_PORTS;
 		pci_write_config_byte(pdev, SATA_INT_GATE, tmp8);
 	}
@@ -568,9 +584,13 @@ static void svia_configure(struct pci_dev *pdev, int board_id)
 	/* make sure native mode is enabled */
 	pci_read_config_byte(pdev, SATA_NATIVE_MODE, &tmp8);
 	if ((tmp8 & NATIVE_MODE_ALL) != NATIVE_MODE_ALL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev,
 			   "enabling SATA channel native mode (0x%x)\n",
 			   (int) tmp8);
+#else
+		dev_;
+#endif
 		tmp8 |= NATIVE_MODE_ALL;
 		pci_write_config_byte(pdev, SATA_NATIVE_MODE, tmp8);
 	}
@@ -614,7 +634,11 @@ static int svia_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	const unsigned *bar_sizes;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	rc = pcim_enable_device(pdev);
 	if (rc)

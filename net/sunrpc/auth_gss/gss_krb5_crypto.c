@@ -66,8 +66,8 @@ krb5_encrypt(
 		goto out;
 
 	if (crypto_blkcipher_ivsize(tfm) > GSS_KRB5_MAX_BLOCKSIZE) {
-		dprintk("RPC:       gss_k5encrypt: tfm iv size too large %d\n",
-			crypto_blkcipher_ivsize(tfm));
+//		dprintk("RPC:       gss_k5encrypt: tfm iv size too large %d\n",
+;
 		goto out;
 	}
 
@@ -79,7 +79,7 @@ krb5_encrypt(
 
 	ret = crypto_blkcipher_encrypt_iv(&desc, sg, sg, length);
 out:
-	dprintk("RPC:       krb5_encrypt returns %d\n", ret);
+;
 	return ret;
 }
 
@@ -100,8 +100,8 @@ krb5_decrypt(
 		goto out;
 
 	if (crypto_blkcipher_ivsize(tfm) > GSS_KRB5_MAX_BLOCKSIZE) {
-		dprintk("RPC:       gss_k5decrypt: tfm iv size too large %d\n",
-			crypto_blkcipher_ivsize(tfm));
+//		dprintk("RPC:       gss_k5decrypt: tfm iv size too large %d\n",
+;
 		goto out;
 	}
 	if (iv)
@@ -112,7 +112,7 @@ krb5_decrypt(
 
 	ret = crypto_blkcipher_decrypt_iv(&desc, sg, sg, length);
 out:
-	dprintk("RPC:       gss_k5decrypt returns %d\n",ret);
+;
 	return ret;
 }
 
@@ -164,13 +164,13 @@ make_checksum_hmac_md5(struct krb5_ctx *kctx, char *header, int hdrlen,
 		return GSS_S_FAILURE;
 
 	if (cksumout->len < kctx->gk5e->cksumlength) {
-		dprintk("%s: checksum buffer length, %u, too small for %s\n",
-			__func__, cksumout->len, kctx->gk5e->name);
+//		dprintk("%s: checksum buffer length, %u, too small for %s\n",
+;
 		return GSS_S_FAILURE;
 	}
 
 	if (arcfour_hmac_md5_usage_to_salt(usage, rc4salt)) {
-		dprintk("%s: invalid usage value %u\n", __func__, usage);
+;
 		return GSS_S_FAILURE;
 	}
 
@@ -254,8 +254,8 @@ make_checksum(struct krb5_ctx *kctx, char *header, int hdrlen,
 					      cksumkey, usage, cksumout);
 
 	if (cksumout->len < kctx->gk5e->cksumlength) {
-		dprintk("%s: checksum buffer length, %u, too small for %s\n",
-			__func__, cksumout->len, kctx->gk5e->name);
+//		dprintk("%s: checksum buffer length, %u, too small for %s\n",
+;
 		return GSS_S_FAILURE;
 	}
 
@@ -330,13 +330,13 @@ make_checksum_v2(struct krb5_ctx *kctx, char *header, int hdrlen,
 	unsigned int checksumlen;
 
 	if (kctx->gk5e->keyed_cksum == 0) {
-		dprintk("%s: expected keyed hash for %s\n",
-			__func__, kctx->gk5e->name);
+//		dprintk("%s: expected keyed hash for %s\n",
+;
 		return GSS_S_FAILURE;
 	}
 	if (cksumkey == NULL) {
-		dprintk("%s: no key supplied for %s\n",
-			__func__, kctx->gk5e->name);
+//		dprintk("%s: no key supplied for %s\n",
+;
 		return GSS_S_FAILURE;
 	}
 
@@ -865,12 +865,12 @@ krb5_rc4_setup_seq_key(struct krb5_ctx *kctx, struct crypto_blkcipher *cipher,
 	u32 zeroconstant = 0;
 	int err;
 
-	dprintk("%s: entered\n", __func__);
+;
 
 	hmac = crypto_alloc_hash(kctx->gk5e->cksum_name, 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(hmac)) {
-		dprintk("%s: error %ld, allocating hash '%s'\n",
-			__func__, PTR_ERR(hmac), kctx->gk5e->cksum_name);
+//		dprintk("%s: error %ld, allocating hash '%s'\n",
+;
 		return PTR_ERR(hmac);
 	}
 
@@ -912,7 +912,7 @@ krb5_rc4_setup_seq_key(struct krb5_ctx *kctx, struct crypto_blkcipher *cipher,
 
 out_err:
 	crypto_free_hash(hmac);
-	dprintk("%s: returning %d\n", __func__, err);
+;
 	return err;
 }
 
@@ -932,12 +932,12 @@ krb5_rc4_setup_enc_key(struct krb5_ctx *kctx, struct crypto_blkcipher *cipher,
 	u8 seqnumarray[4];
 	int err, i;
 
-	dprintk("%s: entered, seqnum %u\n", __func__, seqnum);
+;
 
 	hmac = crypto_alloc_hash(kctx->gk5e->cksum_name, 0, CRYPTO_ALG_ASYNC);
 	if (IS_ERR(hmac)) {
-		dprintk("%s: error %ld, allocating hash '%s'\n",
-			__func__, PTR_ERR(hmac), kctx->gk5e->cksum_name);
+//		dprintk("%s: error %ld, allocating hash '%s'\n",
+;
 		return PTR_ERR(hmac);
 	}
 
@@ -987,7 +987,7 @@ krb5_rc4_setup_enc_key(struct krb5_ctx *kctx, struct crypto_blkcipher *cipher,
 
 out_err:
 	crypto_free_hash(hmac);
-	dprintk("%s: returning %d\n", __func__, err);
+;
 	return err;
 }
 

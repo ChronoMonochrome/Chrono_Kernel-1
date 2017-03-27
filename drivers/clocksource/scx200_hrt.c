@@ -71,7 +71,11 @@ static int __init init_hrt_clocksource(void)
 	if (!request_region(scx200_cb_base + SCx200_TIMER_OFFSET,
 			    SCx200_TIMER_SIZE,
 			    "NatSemi SCx200 High-Resolution Timer")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING NAME ": unable to lock timer region\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -88,8 +92,12 @@ static int __init init_hrt_clocksource(void)
 		cs_hrt.mult = clocksource_hz2mult(HRT_FREQ + ppm,
 						  cs_hrt.shift);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "enabling scx200 high-res timer (%s MHz +%d ppm)\n",
 		mhz27 ? "27":"1", ppm);
+#else
+	;
+#endif
 
 	return clocksource_register(&cs_hrt);
 }

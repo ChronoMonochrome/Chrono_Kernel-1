@@ -155,7 +155,11 @@ static int uli_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	int n_ports, rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	rc = pcim_enable_device(pdev);
 	if (rc)

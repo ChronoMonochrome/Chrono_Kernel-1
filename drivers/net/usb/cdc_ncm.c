@@ -1094,19 +1094,19 @@ cdc_ncm_speed_change(struct cdc_ncm_ctx *ctx,
 		ctx->rx_speed = rx_speed;
 
 		if ((tx_speed > 1000000) && (rx_speed > 1000000)) {
-			printk(KERN_INFO KBUILD_MODNAME
-				": %s: %u mbit/s downlink "
-				"%u mbit/s uplink\n",
-				ctx->netdev->name,
-				(unsigned int)(rx_speed / 1000000U),
-				(unsigned int)(tx_speed / 1000000U));
+//			printk(KERN_INFO KBUILD_MODNAME
+//				": %s: %u mbit/s downlink "
+//				"%u mbit/s uplink\n",
+//				ctx->netdev->name,
+//				(unsigned int)(rx_speed / 1000000U),
+;
 		} else {
-			printk(KERN_INFO KBUILD_MODNAME
-				": %s: %u kbit/s downlink "
-				"%u kbit/s uplink\n",
-				ctx->netdev->name,
-				(unsigned int)(rx_speed / 1000U),
-				(unsigned int)(tx_speed / 1000U));
+//			printk(KERN_INFO KBUILD_MODNAME
+//				": %s: %u kbit/s downlink "
+//				"%u kbit/s uplink\n",
+//				ctx->netdev->name,
+//				(unsigned int)(rx_speed / 1000U),
+;
 		}
 	}
 }
@@ -1139,9 +1139,9 @@ static void cdc_ncm_status(struct usbnet *dev, struct urb *urb)
 		 */
 		ctx->connected = event->wValue;
 
-		printk(KERN_INFO KBUILD_MODNAME ": %s: network connection:"
-			" %sconnected\n",
-			ctx->netdev->name, ctx->connected ? "" : "dis");
+//		printk(KERN_INFO KBUILD_MODNAME ": %s: network connection:"
+//			" %sconnected\n",
+;
 
 		if (ctx->connected)
 			netif_carrier_on(dev->net);
@@ -1235,7 +1235,7 @@ static struct ethtool_ops cdc_ncm_ethtool_ops = {
 
 static int __init cdc_ncm_init(void)
 {
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION "\n");
+;
 	return usb_register(&cdc_ncm_driver);
 }
 

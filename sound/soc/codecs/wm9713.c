@@ -724,9 +724,13 @@ static void pll_factors(struct _pll_div *pll_div, unsigned int source)
 
 	Ndiv = target / source;
 	if ((Ndiv < 5) || (Ndiv > 12))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"WM9713 PLL N value %u out of recommended range!\n",
 			Ndiv);
+#else
+		;
+#endif
 
 	pll_div->n = Ndiv;
 	Nmod = target % source;

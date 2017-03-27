@@ -39,7 +39,7 @@
 #include "boot.h"
 
 #ifdef FT_DEBUG
-#define DEBUG(n, args...) printk(KERN_DEBUG args);
+;
 #else
 #define DEBUG(n, args...)
 #endif

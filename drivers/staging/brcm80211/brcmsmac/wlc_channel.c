@@ -1155,7 +1155,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->cck[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->cck[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "20 MHz OFDM SISO   ");
 	for (i = 0; i < WLC_NUM_RATES_OFDM; i++) {
@@ -1163,7 +1163,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->ofdm[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->ofdm[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "20 MHz OFDM CDD    ");
 	for (i = 0; i < WLC_NUM_RATES_OFDM; i++) {
@@ -1171,7 +1171,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->ofdm_cdd[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->ofdm_cdd[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "40 MHz OFDM SISO   ");
 	for (i = 0; i < WLC_NUM_RATES_OFDM; i++) {
@@ -1179,7 +1179,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->ofdm_40_siso[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->ofdm_40_siso[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "40 MHz OFDM CDD    ");
 	for (i = 0; i < WLC_NUM_RATES_OFDM; i++) {
@@ -1187,7 +1187,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->ofdm_40_cdd[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->ofdm_40_cdd[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "20 MHz MCS0-7 SISO ");
 	for (i = 0; i < WLC_NUM_RATES_MCS_1_STREAM; i++) {
@@ -1195,7 +1195,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->mcs_20_siso[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->mcs_20_siso[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "20 MHz MCS0-7 CDD  ");
 	for (i = 0; i < WLC_NUM_RATES_MCS_1_STREAM; i++) {
@@ -1203,7 +1203,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->mcs_20_cdd[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->mcs_20_cdd[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "20 MHz MCS0-7 STBC ");
 	for (i = 0; i < WLC_NUM_RATES_MCS_1_STREAM; i++) {
@@ -1211,7 +1211,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->mcs_20_stbc[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->mcs_20_stbc[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "20 MHz MCS8-15 SDM ");
 	for (i = 0; i < WLC_NUM_RATES_MCS_2_STREAM; i++) {
@@ -1219,7 +1219,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->mcs_20_mimo[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->mcs_20_mimo[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "40 MHz MCS0-7 SISO ");
 	for (i = 0; i < WLC_NUM_RATES_MCS_1_STREAM; i++) {
@@ -1227,7 +1227,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->mcs_40_siso[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->mcs_40_siso[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "40 MHz MCS0-7 CDD  ");
 	for (i = 0; i < WLC_NUM_RATES_MCS_1_STREAM; i++) {
@@ -1235,7 +1235,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->mcs_40_cdd[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->mcs_40_cdd[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "40 MHz MCS0-7 STBC ");
 	for (i = 0; i < WLC_NUM_RATES_MCS_1_STREAM; i++) {
@@ -1243,7 +1243,7 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->mcs_40_stbc[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->mcs_40_stbc[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
 	sprintf(buf, "40 MHz MCS8-15 SDM ");
 	for (i = 0; i < WLC_NUM_RATES_MCS_2_STREAM; i++) {
@@ -1251,11 +1251,11 @@ static void wlc_phy_txpower_limits_dump(txpwr_limits_t *txpwr)
 			txpwr->mcs_40_mimo[i] / WLC_TXPWR_DB_FACTOR,
 			fraction[txpwr->mcs_40_mimo[i] % WLC_TXPWR_DB_FACTOR]);
 	}
-	printk(KERN_DEBUG "%s\n", buf);
+;
 
-	printk(KERN_DEBUG "MCS32               %2d%s\n",
-	       txpwr->mcs32 / WLC_TXPWR_DB_FACTOR,
-	       fraction[txpwr->mcs32 % WLC_TXPWR_DB_FACTOR]);
+//	printk(KERN_DEBUG "MCS32               %2d%s\n",
+//	       txpwr->mcs32 / WLC_TXPWR_DB_FACTOR,
+;
 }
 #endif				/* POWER_DBG */
 

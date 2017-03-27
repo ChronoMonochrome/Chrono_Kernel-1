@@ -256,7 +256,11 @@ static void * __init ___alloc_bootmem(unsigned long size, unsigned long align,
 	/*
 	 * Whoops, we cannot satisfy the allocation request.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
+#else
+	;
+#endif
 	panic("Out of memory");
 	return NULL;
 }

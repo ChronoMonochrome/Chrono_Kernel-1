@@ -125,9 +125,13 @@ static int rio_clear_locks(struct rio_mport *port)
 				  port->host_deviceid);
 	rio_local_read_config_32(port, RIO_HOST_DID_LOCK_CSR, &result);
 	if ((result & 0xffff) != 0xffff) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "RIO: badness when releasing host lock on master port, result %8.8x\n",
 		       result);
+#else
+		;
+#endif
 		ret = -EINVAL;
 	}
 	list_for_each_entry(rdev, &rio_devices, global_list) {
@@ -135,9 +139,13 @@ static int rio_clear_locks(struct rio_mport *port)
 				    port->host_deviceid);
 		rio_read_config_32(rdev, RIO_HOST_DID_LOCK_CSR, &result);
 		if ((result & 0xffff) != 0xffff) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "RIO: badness when releasing host lock on vid %4.4x did %4.4x\n",
 			       rdev->vid, rdev->did);
+#else
+			;
+#endif
 			ret = -EINVAL;
 		}
 
@@ -1153,13 +1161,21 @@ int __devinit rio_enum_mport(struct rio_mport *mport)
 	struct rio_net *net = NULL;
 	int rc = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "RIO: enumerate master port %d, %s\n", mport->id,
 	       mport->name);
+#else
+	;
+#endif
 	/* If somebody else enumerated our master port device, bail. */
 	if (rio_enum_host(mport) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "RIO: master port %d device has been enumerated by a remote host\n",
 		       mport->id);
+#else
+		;
+#endif
 		rc = -EBUSY;
 		goto out;
 	}
@@ -1181,9 +1197,13 @@ int __devinit rio_enum_mport(struct rio_mport *mport)
 
 		if (rio_enum_peer(net, mport, 0, NULL, 0) < 0) {
 			/* A higher priority host won enumeration, bail. */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "RIO: master port %d device has lost enumeration to a remote host\n",
 			       mport->id);
+#else
+			;
+#endif
 			rio_clear_locks(mport);
 			rc = -EBUSY;
 			goto out;
@@ -1192,8 +1212,12 @@ int __devinit rio_enum_mport(struct rio_mport *mport)
 		rio_clear_locks(mport);
 		rio_pw_enable(mport, 1);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "RIO: master port %d link inactive\n",
 		       mport->id);
+#else
+		;
+#endif
 		rc = -EINVAL;
 	}
 
@@ -1261,8 +1285,12 @@ int __devinit rio_disc_mport(struct rio_mport *mport)
 	struct rio_net *net = NULL;
 	int enum_timeout_flag = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "RIO: discover master port %d, %s\n", mport->id,
 	       mport->name);
+#else
+	;
+#endif
 
 	/* If master port has an active link, allocate net and discover peers */
 	if (rio_mport_is_active(mport)) {
@@ -1296,9 +1324,13 @@ int __devinit rio_disc_mport(struct rio_mport *mport)
 
 		if (rio_disc_peer(net, mport, RIO_ANY_DESTID(mport->sys_size),
 					0, NULL, 0) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "RIO: master port %d device has failed discovery\n",
 			       mport->id);
+#else
+			;
+#endif
 			goto bail;
 		}
 

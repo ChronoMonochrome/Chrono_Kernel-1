@@ -15,8 +15,12 @@
 static void probe_subsys_event(void *ignore,
 			       struct inode *inode, struct file *file)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Event is encountered with inode number %lu\n",
 		inode->i_ino);
+#else
+	;
+#endif
 }
 
 static int __init tp_sample_trace_init(void)

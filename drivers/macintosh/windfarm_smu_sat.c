@@ -25,6 +25,7 @@
 #define DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(args...)	printk(args)
 #else
 #define DBG(args...)	do { } while(0)
@@ -35,6 +36,9 @@
 
 struct wf_sat {
 	int			nr;
+#else
+#define DBG(args...)	;
+#endif
 	atomic_t		refcnt;
 	struct mutex		mutex;
 	unsigned long		last_read; /* jiffies when cache last updated */

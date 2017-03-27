@@ -359,7 +359,11 @@ static int __init parport_mfc3_init(void)
 		p->dev = &z->dev;
 
 		this_port[pias++] = p;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Multiface III port using irq\n", p->name);
+#else
+		;
+#endif
 		/* XXX: set operating mode */
 
 		p->private_data = (void *)piabase;

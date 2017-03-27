@@ -5280,7 +5280,11 @@ static int __init cciss_init(void)
 	 * array of them, the size must be a multiple of 8 bytes.
 	 */
 	BUILD_BUG_ON(sizeof(CommandList_struct) % COMMANDLIST_ALIGNMENT);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRIVER_NAME "\n");
+#else
+	;
+#endif
 
 	err = bus_register(&cciss_bus_type);
 	if (err)

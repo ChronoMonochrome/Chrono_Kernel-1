@@ -693,39 +693,39 @@ slhc_toss(struct slcompress *comp)
 int
 slhc_toss(struct slcompress *comp)
 {
-  printk(KERN_DEBUG "Called IP function on non IP-system: slhc_toss");
+;
   return -EINVAL;
 }
 int
 slhc_uncompress(struct slcompress *comp, unsigned char *icp, int isize)
 {
-  printk(KERN_DEBUG "Called IP function on non IP-system: slhc_uncompress");
+;
   return -EINVAL;
 }
 int
 slhc_compress(struct slcompress *comp, unsigned char *icp, int isize,
 	unsigned char *ocp, unsigned char **cpp, int compress_cid)
 {
-  printk(KERN_DEBUG "Called IP function on non IP-system: slhc_compress");
+;
   return -EINVAL;
 }
 
 int
 slhc_remember(struct slcompress *comp, unsigned char *icp, int isize)
 {
-  printk(KERN_DEBUG "Called IP function on non IP-system: slhc_remember");
+;
   return -EINVAL;
 }
 
 void
 slhc_free(struct slcompress *comp)
 {
-  printk(KERN_DEBUG "Called IP function on non IP-system: slhc_free");
+;
 }
 struct slcompress *
 slhc_init(int rslots, int tslots)
 {
-  printk(KERN_DEBUG "Called IP function on non IP-system: slhc_init");
+;
   return NULL;
 }
 

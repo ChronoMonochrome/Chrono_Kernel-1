@@ -70,6 +70,7 @@ static unsigned int skip_txen_test; /* force skip of txen test at init time */
  * Debugging.
  */
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_AUTOCONF(fmt...)	printk(fmt)
 #else
 #define DEBUG_AUTOCONF(fmt...)	do { } while (0)
@@ -119,6 +120,9 @@ static unsigned int skip_txen_test; /* force skip of txen test at init time */
 static const struct old_serial_port old_serial_port[] = {
 	SERIAL_PORT_DFNS /* defined in asm/serial.h */
 };
+#else
+#define DEBUG_AUTOCONF(fmt...)	;
+#endif
 
 #define UART_NR	CONFIG_SERIAL_8250_NR_UARTS
 
@@ -1273,10 +1277,14 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
 	serial_outp(up, UART_LCR, save_lcr);
 
 	if (up->capabilities != uart_config[up->port.type].flags) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "ttyS%d: detected caps %08x should be %08x\n",
 		       serial_index(&up->port), up->capabilities,
 		       uart_config[up->port.type].flags);
+#else
+		;
+#endif
 	}
 
 	up->port.fifosize = uart_config[up->port.type].fifo_size;
@@ -2081,8 +2089,12 @@ static int serial8250_startup(struct uart_port *port)
 	 */
 	if (!(up->port.flags & UPF_BUGGY_UART) &&
 	    (serial_inp(up, UART_LSR) == 0xff)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ttyS%d: LSR safety check engaged!\n",
 		       serial_index(&up->port));
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -3336,9 +3348,13 @@ static int __init serial8250_init(void)
 	if (nr_uarts > UART_NR)
 		nr_uarts = UART_NR;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: 8250/16550 driver, "
 		"%d ports, IRQ sharing %sabled\n", nr_uarts,
 		share_irqs ? "en" : "dis");
+#else
+	;
+#endif
 
 #ifdef CONFIG_SPARC
 	ret = sunserial_register_minors(&serial8250_reg, UART_NR);

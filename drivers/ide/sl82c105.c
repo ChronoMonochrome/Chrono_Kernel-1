@@ -84,9 +84,13 @@ static void sl82c105_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 	pci_write_config_word(dev, reg,  drv_ctrl);
 	pci_read_config_word (dev, reg, &drv_ctrl);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: selected %s (%dns) (%04X)\n", drive->name,
 			  ide_xfer_verbose(pio + XFER_PIO_0),
 			  ide_pio_cycle_time(drive, pio), drv_ctrl);
+#else
+	;
+#endif
 }
 
 /*
@@ -151,15 +155,23 @@ static void sl82c105_dma_lost_irq(ide_drive_t *drive)
 	u32 val, mask		= hwif->channel ? CTRL_IDE_IRQB : CTRL_IDE_IRQA;
 	u8 dma_cmd;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "sl82c105: lost IRQ, resetting host\n");
+#else
+	;
+#endif
 
 	/*
 	 * Check the raw interrupt from the drive.
 	 */
 	pci_read_config_dword(dev, 0x40, &val);
 	if (val & mask)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "sl82c105: drive was requesting IRQ, "
 		       "but host lost it\n");
+#else
+		;
+#endif
 
 	/*
 	 * Was DMA enabled?  If so, disable it - we're resetting the
@@ -168,7 +180,11 @@ static void sl82c105_dma_lost_irq(ide_drive_t *drive)
 	dma_cmd = inb(hwif->dma_base + ATA_DMA_CMD);
 	if (dma_cmd & 1) {
 		outb(dma_cmd & ~1, hwif->dma_base + ATA_DMA_CMD);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "sl82c105: DMA was enabled\n");
+#else
+		;
+#endif
 	}
 
 	sl82c105_reset_host(dev);
@@ -323,8 +339,12 @@ static int __devinit sl82c105_init_one(struct pci_dev *dev, const struct pci_dev
 		 * Never ever EVER under any circumstances enable
 		 * DMA when the bridge is this old.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRV_NAME ": Winbond W83C553 bridge "
 				 "revision %d, BM-DMA disabled\n", rev);
+#else
+		;
+#endif
 		d.dma_ops = NULL;
 		d.mwdma_mask = 0;
 		d.host_flags &= ~IDE_HFLAG_SERIALIZE_DMA;

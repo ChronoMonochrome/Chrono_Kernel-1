@@ -800,7 +800,11 @@ static int __init ibft_init(void)
 		if (rc)
 			goto out_free;
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "No iBFT detected.\n");
+#else
+		;
+#endif
 
 	return 0;
 

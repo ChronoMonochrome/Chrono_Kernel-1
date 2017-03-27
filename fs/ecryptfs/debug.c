@@ -34,8 +34,8 @@ void ecryptfs_dump_auth_tok(struct ecryptfs_auth_tok *auth_tok)
 	char salt[ECRYPTFS_SALT_SIZE * 2 + 1];
 	char sig[ECRYPTFS_SIG_SIZE_HEX + 1];
 
-	ecryptfs_printk(KERN_DEBUG, "Auth tok at mem loc [%p]:\n",
-			auth_tok);
+//	ecryptfs_printk(KERN_DEBUG, "Auth tok at mem loc [%p]:\n",
+;
 	if (auth_tok->flags & ECRYPTFS_PRIVATE_KEY) {
 		ecryptfs_printk(KERN_DEBUG, " * private key type\n");
 	} else {
@@ -57,17 +57,17 @@ void ecryptfs_dump_auth_tok(struct ecryptfs_auth_tok *auth_tok)
 			auth_tok->session_key.flags);
 	if (auth_tok->session_key.flags
 	    & ECRYPTFS_USERSPACE_SHOULD_TRY_TO_DECRYPT)
-		ecryptfs_printk(KERN_DEBUG,
-				" * Userspace decrypt request set\n");
+//		ecryptfs_printk(KERN_DEBUG,
+;
 	if (auth_tok->session_key.flags
 	    & ECRYPTFS_USERSPACE_SHOULD_TRY_TO_ENCRYPT)
-		ecryptfs_printk(KERN_DEBUG,
-				" * Userspace encrypt request set\n");
+//		ecryptfs_printk(KERN_DEBUG,
+;
 	if (auth_tok->session_key.flags & ECRYPTFS_CONTAINS_DECRYPTED_KEY) {
 		ecryptfs_printk(KERN_DEBUG, " * Contains decrypted key\n");
-		ecryptfs_printk(KERN_DEBUG,
-				" * session_key.decrypted_key_size = [0x%x]\n",
-				auth_tok->session_key.decrypted_key_size);
+//		ecryptfs_printk(KERN_DEBUG,
+//				" * session_key.decrypted_key_size = [0x%x]\n",
+;
 		ecryptfs_printk(KERN_DEBUG, " * Decrypted session key "
 				"dump:\n");
 		if (ecryptfs_verbosity > 0)
@@ -76,9 +76,9 @@ void ecryptfs_dump_auth_tok(struct ecryptfs_auth_tok *auth_tok)
 	}
 	if (auth_tok->session_key.flags & ECRYPTFS_CONTAINS_ENCRYPTED_KEY) {
 		ecryptfs_printk(KERN_DEBUG, " * Contains encrypted key\n");
-		ecryptfs_printk(KERN_DEBUG,
-				" * session_key.encrypted_key_size = [0x%x]\n",
-				auth_tok->session_key.encrypted_key_size);
+//		ecryptfs_printk(KERN_DEBUG,
+//				" * session_key.encrypted_key_size = [0x%x]\n",
+;
 		ecryptfs_printk(KERN_DEBUG, " * Encrypted session key "
 				"dump:\n");
 		if (ecryptfs_verbosity > 0)
@@ -103,19 +103,19 @@ void ecryptfs_dump_hex(char *data, int bytes)
 	if (ecryptfs_verbosity < 1)
 		return;
 	if (bytes != 0) {
-		printk(KERN_DEBUG "0x%.2x.", (unsigned char)data[i]);
+;
 		i++;
 	}
 	while (i < bytes) {
-		printk("0x%.2x.", (unsigned char)data[i]);
+;
 		i++;
 		if (i % 16 == 0) {
-			printk("\n");
+;
 			add_newline = 0;
 		} else
 			add_newline = 1;
 	}
 	if (add_newline)
-		printk("\n");
+;
 }
 

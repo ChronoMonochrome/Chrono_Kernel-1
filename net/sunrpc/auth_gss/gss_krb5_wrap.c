@@ -170,7 +170,7 @@ gss_wrap_kerberos_v1(struct krb5_ctx *kctx, int offset,
 	u8			*cksumkey;
 	u32			conflen = kctx->gk5e->conflen;
 
-	dprintk("RPC:       %s\n", __func__);
+;
 
 	now = get_seconds();
 
@@ -276,7 +276,7 @@ gss_unwrap_kerberos_v1(struct krb5_ctx *kctx, int offset, struct xdr_buf *buf)
 	int			crypt_offset;
 	u8			*cksumkey;
 
-	dprintk("RPC:       gss_unwrap_kerberos\n");
+;
 
 	ptr = (u8 *)buf->head[0].iov_base + offset;
 	if (g_verify_token_header(&kctx->mech_used, &bodysize, &ptr,
@@ -393,8 +393,8 @@ rotate_left(struct krb5_ctx *kctx, u32 offset, struct xdr_buf *buf, u16 rrc)
 	if (realrrc == 0)
 		return 0;
 
-	dprintk("%s: cannot process token with rotated data: "
-		"rrc %u, realrrc %u\n", __func__, rrc, realrrc);
+//	dprintk("%s: cannot process token with rotated data: "
+;
 	return 1;
 }
 
@@ -410,7 +410,7 @@ gss_wrap_kerberos_v2(struct krb5_ctx *kctx, u32 offset,
 	__be64		*be64ptr;
 	u32		err;
 
-	dprintk("RPC:       %s\n", __func__);
+;
 
 	if (kctx->gk5e->encrypt_v2 == NULL)
 		return GSS_S_FAILURE;
@@ -467,7 +467,7 @@ gss_unwrap_kerberos_v2(struct krb5_ctx *kctx, int offset, struct xdr_buf *buf)
 	unsigned int	movelen;
 
 
-	dprintk("RPC:       %s\n", __func__);
+;
 
 	if (kctx->gk5e->decrypt_v2 == NULL)
 		return GSS_S_FAILURE;
@@ -483,7 +483,7 @@ gss_unwrap_kerberos_v2(struct krb5_ctx *kctx, int offset, struct xdr_buf *buf)
 		return GSS_S_BAD_SIG;
 
 	if ((flags & KG2_TOKEN_FLAG_SEALED) == 0) {
-		dprintk("%s: token missing expected sealed flag\n", __func__);
+;
 		return GSS_S_DEFECTIVE_TOKEN;
 	}
 
@@ -514,12 +514,12 @@ gss_unwrap_kerberos_v2(struct krb5_ctx *kctx, int offset, struct xdr_buf *buf)
 				buf->len - GSS_KRB5_TOK_HDR_LEN - tailskip,
 				decrypted_hdr, GSS_KRB5_TOK_HDR_LEN);
 	if (err) {
-		dprintk("%s: error %u getting decrypted_hdr\n", __func__, err);
+;
 		return GSS_S_FAILURE;
 	}
 	if (memcmp(ptr, decrypted_hdr, 6)
 				|| memcmp(ptr + 8, decrypted_hdr + 8, 8)) {
-		dprintk("%s: token hdr, plaintext hdr mismatch!\n", __func__);
+;
 		return GSS_S_FAILURE;
 	}
 

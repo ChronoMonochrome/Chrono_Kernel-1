@@ -1206,7 +1206,11 @@ pciserial_txx9_init_one(struct pci_dev *dev, const struct pci_device_id *ent)
 	port.dev = &dev->dev;
 	line = serial_txx9_register_port(&port);
 	if (line < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Couldn't register serial port %s: %d\n", pci_name(dev), line);
+#else
+		;
+#endif
 		pci_disable_device(dev);
 		return line;
 	}
@@ -1276,7 +1280,11 @@ static int __init serial_txx9_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
  	printk(KERN_INFO "%s version %s\n", serial_name, serial_version);
+#else
+ 	;
+#endif
 
 	ret = uart_register_driver(&serial_txx9_reg);
 	if (ret)

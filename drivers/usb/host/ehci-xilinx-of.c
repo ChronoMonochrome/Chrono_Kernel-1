@@ -177,21 +177,21 @@ static int __devinit ehci_hcd_xilinx_of_probe(struct platform_device *op)
 	hcd->rsrc_len = res.end - res.start + 1;
 
 	if (!request_mem_region(hcd->rsrc_start, hcd->rsrc_len, hcd_name)) {
-		printk(KERN_ERR "%s: request_mem_region failed\n", __FILE__);
+;
 		rv = -EBUSY;
 		goto err_rmr;
 	}
 
 	irq = irq_of_parse_and_map(dn, 0);
 	if (irq == NO_IRQ) {
-		printk(KERN_ERR "%s: irq_of_parse_and_map failed\n", __FILE__);
+;
 		rv = -EBUSY;
 		goto err_irq;
 	}
 
 	hcd->regs = ioremap(hcd->rsrc_start, hcd->rsrc_len);
 	if (!hcd->regs) {
-		printk(KERN_ERR "%s: ioremap failed\n", __FILE__);
+;
 		rv = -ENOMEM;
 		goto err_ioremap;
 	}

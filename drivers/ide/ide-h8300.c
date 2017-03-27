@@ -85,7 +85,11 @@ static int __init h8300_ide_init(void)
 {
 	struct ide_hw hw, *hws[] = { &hw };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME ": H8/300 generic IDE interface\n");
+#else
+	;
+#endif
 
 	if (!request_region(CONFIG_H8300_IDE_BASE, H8300_IDE_GAP*8, "ide-h8300"))
 		goto out_busy;

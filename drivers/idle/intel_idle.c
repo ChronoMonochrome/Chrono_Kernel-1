@@ -419,8 +419,12 @@ static int intel_idle_cpuidle_devices_init(void)
 			int num_substates;
 
 			if (cstate > max_cstate) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(PREFIX "max_cstate %d reached\n",
 					max_cstate);
+#else
+				;
+#endif
 				break;
 			}
 
@@ -480,8 +484,12 @@ static int __init intel_idle_init(void)
 
 	retval = cpuidle_register_driver(&intel_idle_driver);
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG PREFIX "intel_idle yielding to %s",
 			cpuidle_get_driver()->name);
+#else
+		;
+#endif
 		return retval;
 	}
 

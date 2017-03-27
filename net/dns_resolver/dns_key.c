@@ -95,9 +95,9 @@ dns_resolver_instantiate(struct key *key, const void *_data, size_t datalen)
 			next_opt = memchr(opt, '#', end - opt) ?: end;
 			opt_len = next_opt - opt;
 			if (!opt_len) {
-				printk(KERN_WARNING
-				       "Empty option to dns_resolver key %d\n",
-				       key->serial);
+//				printk(KERN_WARNING
+//				       "Empty option to dns_resolver key %d\n",
+;
 				return -EINVAL;
 			}
 
@@ -131,10 +131,10 @@ dns_resolver_instantiate(struct key *key, const void *_data, size_t datalen)
 			}
 
 		bad_option_value:
-			printk(KERN_WARNING
-			       "Option '%*.*s' to dns_resolver key %d:"
-			       " bad/missing value\n",
-			       opt_nlen, opt_nlen, opt, key->serial);
+//			printk(KERN_WARNING
+//			       "Option '%*.*s' to dns_resolver key %d:"
+//			       " bad/missing value\n",
+;
 			return -EINVAL;
 		} while (opt = next_opt + 1, opt < end);
 	}
@@ -249,8 +249,8 @@ static int __init init_dns_resolver(void)
 	struct key *keyring;
 	int ret;
 
-	printk(KERN_NOTICE "Registering the %s key type\n",
-	       key_type_dns_resolver.name);
+//	printk(KERN_NOTICE "Registering the %s key type\n",
+;
 
 	/* create an override credential set with a special thread keyring in
 	 * which DNS requests are cached
@@ -301,8 +301,8 @@ static void __exit exit_dns_resolver(void)
 	key_revoke(dns_resolver_cache->thread_keyring);
 	unregister_key_type(&key_type_dns_resolver);
 	put_cred(dns_resolver_cache);
-	printk(KERN_NOTICE "Unregistered %s key type\n",
-	       key_type_dns_resolver.name);
+//	printk(KERN_NOTICE "Unregistered %s key type\n",
+;
 }
 
 module_init(init_dns_resolver)

@@ -510,16 +510,24 @@ target_emulate_evpd_b0(struct se_cmd *cmd, unsigned char *buf)
 		have_tp = 1;
 
 	if (cmd->data_length < (0x10 + 4)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Received data_length: %u"
 			" too small for EVPD 0xb0\n",
 			cmd->data_length);
+#else
+		;
+#endif
 		return -1;
 	}
 
 	if (have_tp && cmd->data_length < (0x3c + 4)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Received data_length: %u"
 			" too small for TPE=1 EVPD 0xb0\n",
 			cmd->data_length);
+#else
+		;
+#endif
 		have_tp = 0;
 	}
 
@@ -990,14 +998,22 @@ target_emulate_unmap(struct se_task *task)
 	dl = get_unaligned_be16(&cdb[0]);
 	bd_dl = get_unaligned_be16(&cdb[2]);
 	ptr = &buf[offset];
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "UNMAP: Sub: %s Using dl: %hu bd_dl: %hu size: %hu"
 		" ptr: %p\n", dev->transport->name, dl, bd_dl, size, ptr);
+#else
+	;
+#endif
 
 	while (size) {
 		lba = get_unaligned_be64(&ptr[0]);
 		range = get_unaligned_be32(&ptr[8]);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "UNMAP: Using lba: %llu and range: %u\n",
 				 (unsigned long long)lba, range);
+#else
+		;
+#endif
 
 		ret = dev->transport->do_discard(dev, lba, range);
 		if (ret < 0) {
@@ -1030,12 +1046,20 @@ target_emulate_write_same(struct se_task *task)
 
 	range = (cmd->data_length / DEV_ATTRIB(dev)->block_size);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "WRITE_SAME UNMAP: LBA: %llu Range: %u\n",
 			 (unsigned long long)lba, range);
+#else
+	;
+#endif
 
 	ret = dev->transport->do_discard(dev, lba, range);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "blkdev_issue_discard() failed for WRITE_SAME\n");
+#else
+		;
+#endif
 		return -1;
 	}
 

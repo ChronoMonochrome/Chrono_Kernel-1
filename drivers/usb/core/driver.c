@@ -803,9 +803,9 @@ int usb_register_device_driver(struct usb_device_driver *new_udriver,
 			usbcore_name, new_udriver->name);
 		usbfs_update_special();
 	} else {
-		printk(KERN_ERR "%s: error %d registering device "
-			"	driver %s\n",
-			usbcore_name, retval, new_udriver->name);
+//		printk(KERN_ERR "%s: error %d registering device "
+//			"	driver %s\n",
+;
 	}
 
 	return retval;
@@ -887,9 +887,9 @@ out_removeid:
 out_newid:
 	driver_unregister(&new_driver->drvwrap.driver);
 
-	printk(KERN_ERR "%s: error %d registering interface "
-			"	driver %s\n",
-			usbcore_name, retval, new_driver->name);
+//	printk(KERN_ERR "%s: error %d registering interface "
+//			"	driver %s\n",
+;
 	goto out;
 }
 EXPORT_SYMBOL_GPL(usb_register_driver);

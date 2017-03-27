@@ -147,7 +147,11 @@ void stv0900_write_reg(struct stv0900_internal *intp, u16 reg_addr,
 
 	ret = i2c_transfer(intp->i2c_adap, &i2cmsg, 1);
 	if (ret != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: i2c error %d\n", __func__, ret);
+#else
+		d;
+#endif
 }
 
 u8 stv0900_read_reg(struct stv0900_internal *intp, u16 reg)
@@ -171,8 +175,12 @@ u8 stv0900_read_reg(struct stv0900_internal *intp, u16 reg)
 
 	ret = i2c_transfer(intp->i2c_adap, msg, 2);
 	if (ret != 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: i2c error %d, reg[0x%02x]\n",
 				__func__, ret, reg);
+#else
+		d;
+#endif
 
 	return buf;
 }
@@ -291,7 +299,11 @@ static u32 stv0900_get_mclk_freq(struct stv0900_internal *intp, u32 ext_clk)
 
 	mclk = (div + 1) * ext_clk / ad_div;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: Calculated Mclk = %d\n", __func__, mclk);
+#else
+	d;
+#endif
 
 	return mclk;
 }
@@ -300,8 +312,12 @@ static enum fe_stv0900_error stv0900_set_mclk(struct stv0900_internal *intp, u32
 {
 	u32 m_div, clk_sel;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: Mclk set to %d, Quartz = %d\n", __func__, mclk,
 			intp->quartz);
+#else
+	d;
+#endif
 
 	if (intp == NULL)
 		return STV0900_INVALID_HANDLE;
@@ -374,7 +390,11 @@ static void stv0900_set_ts_parallel_serial(struct stv0900_internal *intp,
 					enum fe_stv0900_clock_type path2_ts)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (intp->chip_id >= 0x20) {
 		switch (path1_ts) {
@@ -416,7 +436,11 @@ static void stv0900_set_ts_parallel_serial(struct stv0900_internal *intp,
 			case STV0900_DVBCI_CLOCK:
 				stv0900_write_reg(intp,
 						R0900_TSGENERAL, 0x0A);
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("%s: 0x0a\n", __func__);
+#else
+				d;
+#endif
 				break;
 			}
 			break;
@@ -462,7 +486,11 @@ static void stv0900_set_ts_parallel_serial(struct stv0900_internal *intp,
 			case STV0900_DVBCI_CLOCK:
 				stv0900_write_reg(intp, R0900_TSGENERAL1X,
 							0x12);
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("%s: 0x12\n", __func__);
+#else
+				d;
+#endif
 				break;
 			}
 
@@ -532,17 +560,33 @@ void stv0900_set_tuner(struct dvb_frontend *fe, u32 frequency,
 
 	if (tuner_ops->set_frequency) {
 		if ((tuner_ops->set_frequency(fe, frequency)) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: Invalid parameter\n", __func__);
+#else
+			d;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: Frequency=%d\n", __func__, frequency);
+#else
+			d;
+#endif
 
 	}
 
 	if (tuner_ops->set_bandwidth) {
 		if ((tuner_ops->set_bandwidth(fe, bandwidth)) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: Invalid parameter\n", __func__);
+#else
+			d;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: Bandwidth=%d\n", __func__, bandwidth);
+#else
+			d;
+#endif
 
 	}
 }
@@ -560,9 +604,17 @@ void stv0900_set_bandwidth(struct dvb_frontend *fe, u32 bandwidth)
 
 	if (tuner_ops->set_bandwidth) {
 		if ((tuner_ops->set_bandwidth(fe, bandwidth)) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: Invalid parameter\n", __func__);
+#else
+			d;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("%s: Bandwidth=%d\n", __func__, bandwidth);
+#else
+			d;
+#endif
 
 	}
 }
@@ -617,7 +669,11 @@ static s32 stv0900_get_rf_level(struct stv0900_internal *intp,
 		i,
 		rf_lvl = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if ((lookup == NULL) || (lookup->size <= 0))
 		return 0;
@@ -651,7 +707,11 @@ static s32 stv0900_get_rf_level(struct stv0900_internal *intp,
 	else if (agc_gain < lookup->table[lookup->size-1].regval)
 		rf_lvl = -100;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: RFLevel = %d\n", __func__, rf_lvl);
+#else
+	d;
+#endif
 
 	return rf_lvl;
 }
@@ -690,7 +750,11 @@ static s32 stv0900_carr_get_quality(struct dvb_frontend *fe,
 		noise_field1,
 		noise_field0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (stv0900_get_standard(fe, demod) == STV0900_DVBS2_STANDARD) {
 		noise_field1 = NOSPLHT_NORMED1;
@@ -852,7 +916,11 @@ int stv0900_get_demod_lock(struct stv0900_internal *intp,
 
 	while ((timer < time_out) && (lock == 0)) {
 		dmd_state = stv0900_get_bits(intp, HEADER_MODE);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Demod State = %d\n", dmd_state);
+#else
+		d;
+#endif
 		switch (dmd_state) {
 		case STV0900_SEARCH:
 		case STV0900_PLH_DETECTED:
@@ -872,9 +940,17 @@ int stv0900_get_demod_lock(struct stv0900_internal *intp,
 	}
 
 	if (lock)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("DEMOD LOCK OK\n");
+#else
+		d;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("DEMOD LOCK FAIL\n");
+#else
+		d;
+#endif
 
 	return lock;
 }
@@ -885,7 +961,11 @@ void stv0900_stop_all_s2_modcod(struct stv0900_internal *intp,
 	s32 regflist,
 	i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	regflist = MODCODLST0;
 
@@ -902,7 +982,11 @@ void stv0900_activate_s2_modcod(struct stv0900_internal *intp,
 		reg_index,
 		field_index;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (intp->chip_id <= 0x11) {
 		msleep(5);
@@ -958,7 +1042,11 @@ void stv0900_activate_s2_modcod_single(struct stv0900_internal *intp,
 {
 	u32 reg_index;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	stv0900_write_reg(intp, MODCODLST0, 0xff);
 	stv0900_write_reg(intp, MODCODLST1, 0xf0);
@@ -976,7 +1064,11 @@ static enum dvbfe_algo stv0900_frontend_algo(struct dvb_frontend *fe)
 static int stb0900_set_property(struct dvb_frontend *fe,
 				struct dtv_property *tvp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(..)\n", __func__);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -984,7 +1076,11 @@ static int stb0900_set_property(struct dvb_frontend *fe,
 static int stb0900_get_property(struct dvb_frontend *fe,
 				struct dtv_property *tvp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(..)\n", __func__);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -1112,7 +1208,11 @@ u8 stv0900_get_optim_carr_loop(s32 srate, enum fe_stv0900_modcode modcode,
 	s32 i;
 	const struct stv0900_car_loop_optim *cls2, *cllqs2, *cllas2;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (chip_id <= 0x12) {
 		cls2 = FE_STV0900_S2CarLoop;
@@ -1225,7 +1325,11 @@ u8 stv0900_get_optim_short_carr_loop(s32 srate,
 	s32 mod_index = 0;
 	u8 aclc_value = 0x0b;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	s2scl = FE_STV0900_S2ShortCarLoop;
 	s2sclc30 = FE_STV0900_S2ShortCarLoopCut30;
@@ -1295,7 +1399,11 @@ enum fe_stv0900_error stv0900_st_dvbs2_single(struct stv0900_internal *intp,
 	enum fe_stv0900_error error = STV0900_NO_ERROR;
 	s32 reg_ind;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	switch (LDPC_Mode) {
 	case STV0900_DUAL:
@@ -1374,12 +1482,20 @@ static enum fe_stv0900_error stv0900_init_internal(struct dvb_frontend *fe,
 	struct stv0900_inode *temp_int = find_inode(state->i2c_adap,
 						state->config->demod_address);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if ((temp_int != NULL) && (p_init->demod_mode == STV0900_DUAL)) {
 		state->internal = temp_int->internal;
 		(state->internal->dmds_used)++;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: Find Internal Structure!\n", __func__);
+#else
+		d;
+#endif
 		return STV0900_NO_ERROR;
 	} else {
 		state->internal = kmalloc(sizeof(struct stv0900_internal),
@@ -1397,7 +1513,11 @@ static enum fe_stv0900_error stv0900_init_internal(struct dvb_frontend *fe,
 		state->internal->i2c_addr = state->config->demod_address;
 		state->internal->clkmode = state->config->clkmode;
 		state->internal->errs = STV0900_NO_ERROR;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: Create New Internal Structure!\n", __func__);
+#else
+		d;
+#endif
 	}
 
 	if (state->internal == NULL) {
@@ -1558,7 +1678,11 @@ static int stv0900_status(struct stv0900_internal *intp,
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: locked = %d\n", __func__, locked);
+#else
+	d;
+#endif
 
 	if (stvdebug) {
 		/* Print TS bitrate */
@@ -1568,7 +1692,11 @@ static int stv0900_status(struct stv0900_internal *intp,
 		bitrate = (stv0900_get_mclk_freq(intp, intp->quartz)/1000000)
 			* (tsbitrate1_val << 8 | tsbitrate0_val);
 		bitrate /= 16384;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("TS bitrate = %d Mbit/sec \n", bitrate);
+#else
+		d;
+#endif
 	};
 
 	return locked;
@@ -1587,7 +1715,11 @@ static enum dvbfe_search stv0900_search(struct dvb_frontend *fe,
 
 	enum fe_stv0900_error error = STV0900_NO_ERROR;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ", __func__);
+#else
+	d;
+#endif
 
 	if (!(INRANGE(100000, c->symbol_rate, 70000000)))
 		return DVBFE_ALGO_SEARCH_FAILED;
@@ -1642,10 +1774,18 @@ static enum dvbfe_search stv0900_search(struct dvb_frontend *fe,
 	}
 
 	if ((p_result.locked == TRUE) && (error == STV0900_NO_ERROR)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Search Success\n");
+#else
+		d;
+#endif
 		return DVBFE_ALGO_SEARCH_SUCCESS;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Search Fail\n");
+#else
+		d;
+#endif
 		return DVBFE_ALGO_SEARCH_FAILED;
 	}
 
@@ -1655,10 +1795,18 @@ static int stv0900_read_status(struct dvb_frontend *fe, enum fe_status *status)
 {
 	struct stv0900_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: ", __func__);
+#else
+	d;
+#endif
 
 	if ((stv0900_status(state->internal, state->demod)) == TRUE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("DEMOD LOCK OK\n");
+#else
+		d;
+#endif
 		*status = FE_HAS_CARRIER
 			| FE_HAS_VITERBI
 			| FE_HAS_SYNC
@@ -1669,7 +1817,11 @@ static int stv0900_read_status(struct dvb_frontend *fe, enum fe_status *status)
 		*status = 0;
 		if (state->config->set_lock_led)
 			state->config->set_lock_led(fe, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("DEMOD LOCK FAIL\n");
+#else
+		d;
+#endif
 	}
 
 	return 0;
@@ -1711,7 +1863,11 @@ static int stv0900_diseqc_init(struct dvb_frontend *fe)
 
 static int stv0900_init(struct dvb_frontend *fe)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	stv0900_stop_ts(fe, 1);
 	stv0900_diseqc_init(fe);
@@ -1808,7 +1964,11 @@ static int stv0900_set_tone(struct dvb_frontend *fe, fe_sec_tone_mode_t toneoff)
 	struct stv0900_internal *intp = state->internal;
 	enum fe_stv0900_demod_num demod = state->demod;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: %s\n", __func__, ((toneoff == 0) ? "On" : "Off"));
+#else
+	d;
+#endif
 
 	switch (toneoff) {
 	case SEC_TONE_ON:
@@ -1838,14 +1998,22 @@ static void stv0900_release(struct dvb_frontend *fe)
 {
 	struct stv0900_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (state->config->set_lock_led)
 		state->config->set_lock_led(fe, 0);
 
 	if ((--(state->internal->dmds_used)) <= 0) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: Actually removing\n", __func__);
+#else
+		d;
+#endif
 
 		remove_inode(state->internal);
 		kfree(state->internal);
@@ -1858,7 +2026,11 @@ static int stv0900_sleep(struct dvb_frontend *fe)
 {
 	struct stv0900_state *state = fe->demodulator_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	if (state->config->set_lock_led)
 		state->config->set_lock_led(fe, 0);
@@ -1968,12 +2140,20 @@ struct dvb_frontend *stv0900_attach(const struct stv0900_config *config,
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: Attaching STV0900 demodulator(%d) \n", __func__, demod);
+#else
+	d;
+#endif
 	return &state->frontend;
 
 error:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: Failed to attach STV0900 demodulator(%d) \n",
 		__func__, demod);
+#else
+	d;
+#endif
 	kfree(state);
 	return NULL;
 }

@@ -61,7 +61,7 @@ static void mdp_dma_s_update_lcd(struct msm_fb_data_type *mfd)
 		dma_s_cfg_reg |= DMA_IBUF_FORMAT_RGB565;
 
 	if (mfd->panel_info.pdest != DISPLAY_2) {
-		printk(KERN_ERR "error: non-secondary type through dma_s!\n");
+;
 		return;
 	}
 

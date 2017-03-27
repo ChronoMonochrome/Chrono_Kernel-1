@@ -73,11 +73,15 @@ ioc4_register_submodule(struct ioc4_submodule *is)
 
 	list_for_each_entry(idd, &ioc4_devices, idd_list) {
 		if (is->is_probe(idd)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: IOC4 submodule %s probe failed "
 			       "for pci_dev %s",
 			       __func__, module_name(is->is_owner),
 			       pci_name(idd->idd_pdev));
+#else
+			;
+#endif
 		}
 	}
  out:
@@ -100,11 +104,15 @@ ioc4_unregister_submodule(struct ioc4_submodule *is)
 
 	list_for_each_entry(idd, &ioc4_devices, idd_list) {
 		if (is->is_remove(idd)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: IOC4 submodule %s remove failed "
 			       "for pci_dev %s.\n",
 			       __func__, module_name(is->is_owner),
 			       pci_name(idd->idd_pdev));
+#else
+			;
+#endif
 		}
 	}
  out:
@@ -200,19 +208,27 @@ ioc4_clock_calibrate(struct ioc4_driver_data *idd)
 	/* Bounds check the result. */
 	if (period > IOC4_CALIBRATE_LOW_LIMIT ||
 	    period < IOC4_CALIBRATE_HIGH_LIMIT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "IOC4 %s: Clock calibration failed.  Assuming"
 		       "PCI clock is %d ns.\n",
 		       pci_name(idd->idd_pdev),
 		       IOC4_CALIBRATE_DEFAULT / IOC4_EXTINT_COUNT_DIVISOR);
+#else
+		;
+#endif
 		period = IOC4_CALIBRATE_DEFAULT;
 	} else {
 		u64 ns = period;
 
 		do_div(ns, IOC4_EXTINT_COUNT_DIVISOR);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "IOC4 %s: PCI clock is %llu ns.\n",
 		       pci_name(idd->idd_pdev), (unsigned long long)ns);
+#else
+		;
+#endif
 	}
 
 	/* Remember results.  We store the extint clock period rather
@@ -289,9 +305,13 @@ ioc4_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 
 	/* Enable IOC4 and take ownership of it */
 	if ((ret = pci_enable_device(pdev))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Failed to enable IOC4 device for pci_dev %s.\n",
 		       __func__, pci_name(pdev));
+#else
+		;
+#endif
 		goto out;
 	}
 	pci_set_master(pdev);
@@ -299,9 +319,13 @@ ioc4_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 	/* Set up per-IOC4 data */
 	idd = kmalloc(sizeof(struct ioc4_driver_data), GFP_KERNEL);
 	if (!idd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Failed to allocate IOC4 data for pci_dev %s.\n",
 		       __func__, pci_name(pdev));
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_idd;
 	}
@@ -313,29 +337,41 @@ ioc4_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 	 */
 	idd->idd_bar0 = pci_resource_start(idd->idd_pdev, 0);
 	if (!idd->idd_bar0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Unable to find IOC4 misc resource "
 		       "for pci_dev %s.\n",
 		       __func__, pci_name(idd->idd_pdev));
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_pci;
 	}
 	if (!request_mem_region(idd->idd_bar0, sizeof(struct ioc4_misc_regs),
 			    "ioc4_misc")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Unable to request IOC4 misc region "
 		       "for pci_dev %s.\n",
 		       __func__, pci_name(idd->idd_pdev));
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_pci;
 	}
 	idd->idd_misc_regs = ioremap(idd->idd_bar0,
 				     sizeof(struct ioc4_misc_regs));
 	if (!idd->idd_misc_regs) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Unable to remap IOC4 misc region "
 		       "for pci_dev %s.\n",
 		       __func__, pci_name(idd->idd_pdev));
+#else
+		;
+#endif
 		ret = -ENODEV;
 		goto out_misc_region;
 	}
@@ -344,10 +380,14 @@ ioc4_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 
 	/* Detect card variant */
 	idd->idd_variant = ioc4_variant(idd);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IOC4 %s: %s card detected.\n", pci_name(pdev),
 	       idd->idd_variant == IOC4_VARIANT_IO9 ? "IO9" :
 	       idd->idd_variant == IOC4_VARIANT_PCI_RT ? "PCI-RT" :
 	       idd->idd_variant == IOC4_VARIANT_IO10 ? "IO10" : "unknown");
+#else
+	;
+#endif
 
 	/* Initialize IOC4 */
 	pci_read_config_dword(idd->idd_pdev, PCI_COMMAND, &pcmd);
@@ -378,11 +418,15 @@ ioc4_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 	/* Add this IOC4 to all submodules */
 	list_for_each_entry(is, &ioc4_submodules, is_list) {
 		if (is->is_probe && is->is_probe(idd)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: IOC4 submodule 0x%s probe failed "
 			       "for pci_dev %s.\n",
 			       __func__, module_name(is->is_owner),
 			       pci_name(idd->idd_pdev));
+#else
+			;
+#endif
 		}
 	}
 	mutex_unlock(&ioc4_mutex);
@@ -398,7 +442,11 @@ ioc4_probe(struct pci_dev *pdev, const struct pci_device_id *pci_id)
 		 * goes out to a userland helper and that will hang if done
 		 * directly from ioc4_probe().
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IOC4 loading sgiioc4 submodule\n");
+#else
+		;
+#endif
 		schedule_work(&ioc4_load_modules_work);
 	}
 
@@ -427,11 +475,15 @@ ioc4_remove(struct pci_dev *pdev)
 	mutex_lock(&ioc4_mutex);
 	list_for_each_entry(is, &ioc4_submodules, is_list) {
 		if (is->is_remove && is->is_remove(idd)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: IOC4 submodule 0x%s remove failed "
 			       "for pci_dev %s.\n",
 			       __func__, module_name(is->is_owner),
 			       pci_name(idd->idd_pdev));
+#else
+			;
+#endif
 		}
 	}
 	mutex_unlock(&ioc4_mutex);
@@ -439,10 +491,14 @@ ioc4_remove(struct pci_dev *pdev)
 	/* Release resources */
 	iounmap(idd->idd_misc_regs);
 	if (!idd->idd_bar0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: Unable to get IOC4 misc mapping for pci_dev %s. "
 		       "Device removal may be incomplete.\n",
 		       __func__, pci_name(idd->idd_pdev));
+#else
+		;
+#endif
 	}
 	release_mem_region(idd->idd_bar0, sizeof(struct ioc4_misc_regs));
 

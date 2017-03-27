@@ -51,8 +51,12 @@ static void usb6fire_comm_receiver_handler(struct urb *urb)
 		urb->status = 0;
 		urb->actual_length = 0;
 		if (usb_submit_urb(urb, GFP_ATOMIC) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING PREFIX
 					"comm data receiver aborted.\n");
+#else
+			;
+#endif
 	}
 }
 

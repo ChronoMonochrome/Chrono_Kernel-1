@@ -22,6 +22,7 @@
 #define AMD76X_REVISION	" Ver: 2.0.2"
 #define EDAC_MOD_STR	"amd76x_edac"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define amd76x_printk(level, fmt, arg...) \
 	edac_printk(level, "amd76x", fmt, ##arg)
 
@@ -73,6 +74,9 @@
 
 struct amd76x_error_info {
 	u32 ecc_mode_status;
+#else
+#define amd76x_;
+#endif
 };
 
 enum amd76x_chips {
@@ -271,12 +275,20 @@ static int amd76x_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	amd76x_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!amd76x_pci) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
+#else
+		;
+#endif
 	}
 
 	/* get this far and it's successful */

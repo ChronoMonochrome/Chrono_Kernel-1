@@ -168,8 +168,8 @@ static int libipw_encrypt_fragment(struct libipw_device *ieee,
 
 	atomic_dec(&crypt->refcnt);
 	if (res < 0) {
-		printk(KERN_INFO "%s: Encryption failed: len=%d.\n",
-		       ieee->dev->name, frag->len);
+//		printk(KERN_INFO "%s: Encryption failed: len=%d.\n",
+;
 		ieee->ieee_stats.tx_discards++;
 		return -1;
 	}
@@ -282,13 +282,13 @@ netdev_tx_t libipw_xmit(struct sk_buff *skb, struct net_device *dev)
 	/* If there is no driver handler to take the TXB, dont' bother
 	 * creating it... */
 	if (!ieee->hard_start_xmit) {
-		printk(KERN_WARNING "%s: No xmit handler.\n", ieee->dev->name);
+;
 		goto success;
 	}
 
 	if (unlikely(skb->len < SNAP_SIZE + sizeof(u16))) {
-		printk(KERN_WARNING "%s: skb too small (%d).\n",
-		       ieee->dev->name, skb->len);
+//		printk(KERN_WARNING "%s: skb too small (%d).\n",
+;
 		goto success;
 	}
 
@@ -426,8 +426,8 @@ netdev_tx_t libipw_xmit(struct sk_buff *skb, struct net_device *dev)
 	txb = libipw_alloc_txb(nr_frags, frag_size,
 				  ieee->tx_headroom, GFP_ATOMIC);
 	if (unlikely(!txb)) {
-		printk(KERN_WARNING "%s: Could not allocate TXB\n",
-		       ieee->dev->name);
+//		printk(KERN_WARNING "%s: Could not allocate TXB\n",
+;
 		goto failed;
 	}
 	txb->encrypted = encrypt;

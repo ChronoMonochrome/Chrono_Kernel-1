@@ -222,7 +222,11 @@ static int __init via_cuda_start(void)
 	return -EAGAIN;
     }
 
+#ifdef CONFIG_DEBUG_PRINTK
     printk("Macintosh CUDA driver v0.5 for Unified ADB.\n");
+#else
+    ;
+#endif
 
     cuda_fully_inited = 1;
     return 0;
@@ -252,7 +256,11 @@ cuda_probe(void)
     	int x;							\
 	for (x = 1000; !(cond); --x) {				\
 	    if (x == 0) {					\
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Timeout waiting for " what "\n");	\
+#else
+		;
+#endif
 		return -ENXIO;					\
 	    }							\
 	    udelay(100);					\
@@ -473,12 +481,20 @@ cuda_interrupt(int irq, void *arg)
     }
     
     status = (~in_8(&via[B]) & (TIP|TREQ)) | (in_8(&via[ACR]) & SR_OUT);
+#ifdef CONFIG_DEBUG_PRINTK
     /* printk("cuda_interrupt: state=%d status=%x\n", cuda_state, status); */
+#else
+    /* ;
+#endif
     switch (cuda_state) {
     case idle:
 	/* CUDA has sent us the first byte of data - unsolicited */
 	if (status != TREQ)
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("cuda: state=idle, status=%x\n", status);
+#else
+	    ;
+#endif
 	(void)in_8(&via[SR]);
 	out_8(&via[B], in_8(&via[B]) & ~TIP);
 	cuda_state = reading;
@@ -489,7 +505,11 @@ cuda_interrupt(int irq, void *arg)
     case awaiting_reply:
 	/* CUDA has sent us the first byte of data of a reply */
 	if (status != TREQ)
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("cuda: state=awaiting_reply, status=%x\n", status);
+#else
+	    ;
+#endif
 	(void)in_8(&via[SR]);
 	out_8(&via[B], in_8(&via[B]) & ~TIP);
 	cuda_state = reading;
@@ -507,7 +527,11 @@ cuda_interrupt(int irq, void *arg)
 	} else {
 	    /* assert status == TIP + SR_OUT */
 	    if (status != TIP + SR_OUT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cuda: state=sent_first_byte status=%x\n", status);
+#else
+		;
+#endif
 	    out_8(&via[SR], current_req->data[1]);
 	    out_8(&via[B], in_8(&via[B]) ^ TACK);
 	    data_index = 2;
@@ -546,7 +570,11 @@ cuda_interrupt(int irq, void *arg)
 	} else {
 	    /* assert status == TIP | TREQ */
 	    if (status != TIP + TREQ)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("cuda: state=reading status=%x\n", status);
+#else
+		;
+#endif
 	    out_8(&via[B], in_8(&via[B]) ^ TACK);
 	}
 	break;
@@ -592,7 +620,11 @@ cuda_interrupt(int irq, void *arg)
 	break;
 
     default:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("cuda_interrupt: unknown cuda_state %d?\n", cuda_state);
+#else
+	;
+#endif
     }
     spin_unlock(&cuda_lock);
     if (complete && req) {
@@ -632,9 +664,21 @@ cuda_input(unsigned char *buf, int nb)
 	break;
 
     default:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("data from cuda (%d bytes):", nb);
+#else
+	;
+#endif
 	for (i = 0; i < nb; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk(" %.2x", buf[i]);
+#else
+	    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
     }
 }

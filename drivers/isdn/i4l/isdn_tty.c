@@ -349,16 +349,24 @@ isdn_tty_handleDLEdown(modem_info * info, atemu * m, int len)
 					/* Abort RX */
 					info->vonline &= ~1;
 #ifdef ISDN_DEBUG_MODEM_VOICE
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG
 					       "DLEdown: got DLE-DC4, send DLE-ETX on ttyI%d\n",
 					       info->line);
+#else
+					;
+#endif
 #endif
 					isdn_tty_at_cout("\020\003", info);
 					if (!info->vonline) {
 #ifdef ISDN_DEBUG_MODEM_VOICE
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_DEBUG
 						       "DLEdown: send VCON on ttyI%d\n",
 						       info->line);
+#else
+						;
+#endif
 #endif
 						isdn_tty_at_cout("\r\nVCON\r\n", info);
 					}
@@ -381,7 +389,11 @@ isdn_tty_handleDLEdown(modem_info * info, atemu * m, int len)
 		len--;
 	}
 	if (len < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdn_tty: len<0 in DLEdown\n");
+#else
+		;
+#endif
 		return 0;
 	}
 	return count;
@@ -430,9 +442,13 @@ isdn_tty_senddown(modem_info * info)
 		info->vonline &= ~6;
 		if (!info->vonline) {
 #ifdef ISDN_DEBUG_MODEM_VOICE
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 			       "senddown: send VCON on ttyI%d\n",
 			       info->line);
+#else
+			;
+#endif
 #endif
 			isdn_tty_at_cout("\r\nVCON\r\n", info);
 		}
@@ -465,9 +481,13 @@ isdn_tty_senddown(modem_info * info)
 	skb = dev_alloc_skb(skb_res + buflen);
 #endif
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "isdn_tty: Out of memory in ttyI%d senddown\n",
 		       info->line);
+#else
+		;
+#endif
 		return;
 	}
 	skb_reserve(skb, skb_res);
@@ -696,7 +716,11 @@ isdn_tty_modem_hup(modem_info * info, int local)
 	info->isdn_channel = -1;
 
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Mhup ttyI%d\n", info->line);
+#else
+	;
+#endif
 #endif
 	info->rcvsched = 0;
 	isdn_tty_flush_buffer(info->tty);
@@ -769,7 +793,11 @@ isdn_tty_suspend(char *id, modem_info * info, atemu * m)
 		return;
 
 #ifdef ISDN_DEBUG_MODEM_SERVICES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Msusp ttyI%d\n", info->line);
+#else
+	;
+#endif
 #endif
 	l = strlen(id);
 	if ((info->isdn_driver >= 0)) {
@@ -976,13 +1004,21 @@ isdn_tty_paranoia_check(modem_info *info, char *name, const char *routine)
 {
 #ifdef MODEM_PARANOIA_CHECK
 	if (!info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdn_tty: null info_struct for %s in %s\n",
 			name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 	if (info->magic != ISDN_ASYNC_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdn_tty: bad magic for modem struct %s in %s\n",
 		       name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 #endif
@@ -1020,7 +1056,11 @@ isdn_tty_change_speed(modem_info * info)
 		info->mcr &= ~UART_MCR_DTR;
 		if (info->emu.mdmreg[REG_DTRHUP] & BIT_DTRHUP) {
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Mhup in changespeed\n");
+#else
+			;
+#endif
 #endif
 			if (info->online)
 				info->ncarrier = 1;
@@ -1056,7 +1096,11 @@ isdn_tty_startup(modem_info * info)
 		return 0;
 	isdn_lock_drivers();
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "starting up ttyi%d ...\n", info->line);
+#else
+	;
+#endif
 #endif
 	/*
 	 * Now, initialize the UART
@@ -1085,7 +1129,11 @@ isdn_tty_shutdown(modem_info * info)
 	if (!(info->flags & ISDN_ASYNC_INITIALIZED))
 		return;
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Shutting down isdnmodem port %d ....\n", info->line);
+#else
+	;
+#endif
 #endif
 	isdn_unlock_drivers();
 	info->msr &= ~UART_MSR_RI;
@@ -1094,7 +1142,11 @@ isdn_tty_shutdown(modem_info * info)
 		if (info->emu.mdmreg[REG_DTRHUP] & BIT_DTRHUP) {
 			isdn_tty_modem_reset_regs(info, 0);
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Mhup in isdn_tty_shutdown\n");
+#else
+			;
+#endif
 #endif
 			isdn_tty_modem_hup(info, 1);
 		}
@@ -1167,9 +1219,13 @@ isdn_tty_write(struct tty_struct *tty, const u_char * buf, int count)
 					if (isdn_tty_end_vrx(buf, c)) {
 						info->vonline &= ~1;
 #ifdef ISDN_DEBUG_MODEM_VOICE
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_DEBUG
 						       "got !^Q/^S, send DLE-ETX,VCON on ttyI%d\n",
 						       info->line);
+#else
+						;
+#endif
 #endif
 						isdn_tty_at_cout("\020\003\r\nVCON\r\n", info);
 					}
@@ -1190,7 +1246,11 @@ isdn_tty_write(struct tty_struct *tty, const u_char * buf, int count)
 				}
 				info->vonline = 0;
 #ifdef ISDN_DEBUG_MODEM_VOICE
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "fax dle cc/c %d/%d\n", cc, c);
+#else
+				;
+#endif
 #endif
 				info->xmit_count += cc;
 			} else
@@ -1202,7 +1262,11 @@ isdn_tty_write(struct tty_struct *tty, const u_char * buf, int count)
 			if (info->dialing) {
 				info->dialing = 0;
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "Mhup in isdn_tty_write\n");
+#else
+				;
+#endif
 #endif
 				isdn_tty_modem_result(RESULT_NO_CARRIER, info);
 				isdn_tty_modem_hup(info, 1);
@@ -1355,7 +1419,11 @@ isdn_tty_tiocmget(struct tty_struct *tty)
 
 	mutex_lock(&modem_info_mutex);
 #ifdef ISDN_DEBUG_MODEM_IOCTL
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "ttyI%d ioctl TIOCMGET\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	control = info->mcr;
@@ -1381,7 +1449,11 @@ isdn_tty_tiocmset(struct tty_struct *tty,
 		return -EIO;
 
 #ifdef ISDN_DEBUG_MODEM_IOCTL
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "ttyI%d ioctl TIOCMxxx: %x %x\n", info->line, set, clear);
+#else
+	;
+#endif
 #endif
 
 	mutex_lock(&modem_info_mutex);
@@ -1399,7 +1471,11 @@ isdn_tty_tiocmset(struct tty_struct *tty,
 		if (info->emu.mdmreg[REG_DTRHUP] & BIT_DTRHUP) {
 			isdn_tty_modem_reset_regs(info, 0);
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Mhup in TIOCMSET\n");
+#else
+			;
+#endif
 #endif
 			if (info->online)
 				info->ncarrier = 1;
@@ -1423,7 +1499,11 @@ isdn_tty_ioctl(struct tty_struct *tty, uint cmd, ulong arg)
 	switch (cmd) {
 		case TCSBRK:   /* SVID version: non-zero arg --> no break */
 #ifdef ISDN_DEBUG_MODEM_IOCTL
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "ttyI%d ioctl TCSBRK\n", info->line);
+#else
+			;
+#endif
 #endif
 			retval = tty_check_change(tty);
 			if (retval)
@@ -1432,7 +1512,11 @@ isdn_tty_ioctl(struct tty_struct *tty, uint cmd, ulong arg)
 			return 0;
 		case TCSBRKP:  /* support for POSIX tcsendbreak() */
 #ifdef ISDN_DEBUG_MODEM_IOCTL
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "ttyI%d ioctl TCSBRKP\n", info->line);
+#else
+			;
+#endif
 #endif
 			retval = tty_check_change(tty);
 			if (retval)
@@ -1441,12 +1525,20 @@ isdn_tty_ioctl(struct tty_struct *tty, uint cmd, ulong arg)
 			return 0;
 		case TIOCSERGETLSR:	/* Get line status register */
 #ifdef ISDN_DEBUG_MODEM_IOCTL
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "ttyI%d ioctl TIOCSERGETLSR\n", info->line);
+#else
+			;
+#endif
 #endif
 			return isdn_tty_get_lsr_info(info, (uint __user *) arg);
 		default:
 #ifdef ISDN_DEBUG_MODEM_IOCTL
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "UNKNOWN ioctl 0x%08x on ttyi%d\n", cmd, info->line);
+#else
+			;
+#endif
 #endif
 			return -ENOIOCTLCMD;
 	}
@@ -1529,8 +1621,12 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
 	retval = 0;
 	add_wait_queue(&info->open_wait, &wait);
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "isdn_tty_block_til_ready before block: ttyi%d, count = %d\n",
 	       info->line, info->count);
+#else
+	;
+#endif
 #endif
 	if (!(tty_hung_up_p(filp)))
 		info->count--;
@@ -1559,8 +1655,12 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
 			break;
 		}
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "isdn_tty_block_til_ready blocking: ttyi%d, count = %d\n",
 		       info->line, info->count);
+#else
+		;
+#endif
 #endif
 		schedule();
 	}
@@ -1570,8 +1670,12 @@ isdn_tty_block_til_ready(struct tty_struct *tty, struct file *filp, modem_info *
 		info->count++;
 	info->blocked_open--;
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "isdn_tty_block_til_ready after blocking: ttyi%d, count = %d\n",
 	       info->line, info->count);
+#else
+	;
+#endif
 #endif
 	if (retval)
 		return retval;
@@ -1598,12 +1702,20 @@ isdn_tty_open(struct tty_struct *tty, struct file *filp)
 	if (isdn_tty_paranoia_check(info, tty->name, "isdn_tty_open"))
 		return -ENODEV;
 	if (!try_module_get(info->owner)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: cannot reserve module\n", __func__);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "isdn_tty_open %s, count = %d\n", tty->name, 
 	       info->count);
+#else
+	;
+#endif
 #endif
 	info->count++;
 	tty->driver_data = info;
@@ -1614,7 +1726,11 @@ isdn_tty_open(struct tty_struct *tty, struct file *filp)
 	retval = isdn_tty_startup(info);
 	if (retval) {
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "isdn_tty_open return after startup\n");
+#else
+		;
+#endif
 #endif
 		module_put(info->owner);
 		return retval;
@@ -1622,17 +1738,29 @@ isdn_tty_open(struct tty_struct *tty, struct file *filp)
 	retval = isdn_tty_block_til_ready(tty, filp, info);
 	if (retval) {
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "isdn_tty_open return after isdn_tty_block_til_ready \n");
+#else
+		;
+#endif
 #endif
 		module_put(info->owner);
 		return retval;
 	}
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "isdn_tty_open ttyi%d successful...\n", info->line);
+#else
+	;
+#endif
 #endif
 	dev->modempoll++;
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "isdn_tty_open normal exit\n");
+#else
+	;
+#endif
 #endif
 	return 0;
 }
@@ -1647,7 +1775,11 @@ isdn_tty_close(struct tty_struct *tty, struct file *filp)
 		return;
 	if (tty_hung_up_p(filp)) {
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "isdn_tty_close return after tty_hung_up_p\n");
+#else
+		;
+#endif
 #endif
 		return;
 	}
@@ -1670,7 +1802,11 @@ isdn_tty_close(struct tty_struct *tty, struct file *filp)
 	}
 	if (info->count) {
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "isdn_tty_close after info->count != 0\n");
+#else
+		;
+#endif
 #endif
 		module_put(info->owner);
 		return;
@@ -1721,7 +1857,11 @@ isdn_tty_close(struct tty_struct *tty, struct file *filp)
 	info->flags &= ~(ISDN_ASYNC_NORMAL_ACTIVE | ISDN_ASYNC_CLOSING);
 	wake_up_interruptible(&info->close_wait);
 #ifdef ISDN_DEBUG_MODEM_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "isdn_tty_close normal exit\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -1889,7 +2029,11 @@ isdn_tty_modem_init(void)
 	tty_set_operations(m->tty_modem, &modem_ops);
 	retval = tty_register_driver(m->tty_modem);
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdn_tty: Couldn't register modem-device\n");
+#else
+		;
+#endif
 		goto err;
 	}
 	for (i = 0; i < ISDN_MAX_CHANNELS; i++) {
@@ -1986,9 +2130,13 @@ static int
 isdn_tty_match_icall(char *cid, atemu *emu, int di)
 {
 #ifdef ISDN_DEBUG_MODEM_ICALL
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "m_fi: msn=%s lmsn=%s mmsn=%s mreg[SI1]=%d mreg[SI2]=%d\n",
 	       emu->msn, emu->lmsn, isdn_map_eaz2msn(emu->msn, di),
 	       emu->mdmreg[REG_SI1], emu->mdmreg[REG_SI2]);
+#else
+	;
+#endif
 #endif
 	if (strlen(emu->lmsn)) {
 		char *p = emu->lmsn;
@@ -2002,8 +2150,12 @@ isdn_tty_match_icall(char *cid, atemu *emu, int di)
 			if ((tmp = isdn_msncmp(cid, isdn_map_eaz2msn(p, di))) > ret)
 				ret = tmp;
 #ifdef ISDN_DEBUG_MODEM_ICALL
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "m_fi: lmsnX=%s mmsn=%s -> tmp=%d\n",
 			       p, isdn_map_eaz2msn(emu->msn, di), tmp);
+#else
+			;
+#endif
 #endif
 			if (q) {
 				*q = ';';
@@ -2020,8 +2172,12 @@ isdn_tty_match_icall(char *cid, atemu *emu, int di)
 		int tmp;
 		tmp = isdn_msncmp(cid, isdn_map_eaz2msn(emu->msn, di));
 #ifdef ISDN_DEBUG_MODEM_ICALL
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "m_fi: mmsn=%s -> tmp=%d\n",
 			       isdn_map_eaz2msn(emu->msn, di), tmp);
+#else
+			;
+#endif
 #endif
 		return tmp;
 	}
@@ -2052,18 +2208,30 @@ isdn_tty_find_icall(int di, int ch, setup_parm *setup)
 
 	if (!setup->phone[0]) {
 		nr = "0";
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "isdn_tty: Incoming call without OAD, assuming '0'\n");
+#else
+		;
+#endif
 	} else
 		nr = setup->phone;
 	si1 = (int) setup->si1;
 	si2 = (int) setup->si2;
 	if (!setup->eazmsn[0]) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdn_tty: Incoming call without CPN, assuming '0'\n");
+#else
+		;
+#endif
 		eaz = "0";
 	} else
 		eaz = setup->eazmsn;
 #ifdef ISDN_DEBUG_MODEM_ICALL
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "m_fi: eaz=%s si1=%d si2=%d\n", eaz, si1, si2);
+#else
+	;
+#endif
 #endif
 	wret = 0;
 	spin_lock_irqsave(&dev->lock, flags);
@@ -2076,10 +2244,18 @@ isdn_tty_find_icall(int di, int ch, setup_parm *setup)
 		    (info->emu.mdmreg[REG_SI2] == si2))	{         /* SI2 is matching */
 			idx = isdn_dc2minor(di, ch);
 #ifdef ISDN_DEBUG_MODEM_ICALL
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "m_fi: match1 wret=%d\n", wret);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "m_fi: idx=%d flags=%08lx drv=%d ch=%d usg=%d\n", idx,
 			       info->flags, info->isdn_driver, info->isdn_channel,
 			       dev->usage[idx]);
+#else
+			;
+#endif
 #endif
 			if (
 #ifndef FIX_FILE_TRANSFER
@@ -2106,8 +2282,12 @@ isdn_tty_find_icall(int di, int ch, setup_parm *setup)
 					info->emu.mdmreg[REG_SCREEN] = setup->screen;
 					isdn_info_update();
 					spin_unlock_irqrestore(&dev->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "isdn_tty: call from %s, -> RING on ttyI%d\n", nr,
 					       info->line);
+#else
+					;
+#endif
 					info->msr |= UART_MSR_RI;
 					isdn_tty_modem_result(RESULT_RING, info);
 					isdn_timer_ctrl(ISDN_TIMER_MODEMRING, 1);
@@ -2117,8 +2297,12 @@ isdn_tty_find_icall(int di, int ch, setup_parm *setup)
 		}
 	}
 	spin_unlock_irqrestore(&dev->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "isdn_tty: call from %s -> %s %s\n", nr, eaz,
 	       ((dev->drv[di]->flags & DRV_FLAG_REJBUS) && (wret != 2))? "rejected" : "ignored");
+#else
+	;
+#endif
 	return (wret == 2)?3:0;
 }
 
@@ -2138,7 +2322,11 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 		info = &dev->mdm.info[mi];
 		switch (c->command) {
                         case ISDN_STAT_CINF:
+#ifdef CONFIG_DEBUG_PRINTK
                                 printk(KERN_DEBUG "CHARGEINFO on ttyI%d: %ld %s\n", info->line, c->arg, c->parm.num);
+#else
+                                ;
+#endif
                                 info->emu.charge = (unsigned) simple_strtoul(c->parm.num, &e, 10);
                                 if (e == (char *)c->parm.num)
 					info->emu.charge = 0;
@@ -2146,7 +2334,11 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
                                 break;			
 			case ISDN_STAT_BSENT:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_BSENT ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				if ((info->isdn_driver == c->driver) &&
 				    (info->isdn_channel == c->arg)) {
@@ -2160,14 +2352,22 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 				break;
 			case ISDN_STAT_CAUSE:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_CAUSE ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				/* Signal cause to tty-device */
 				strncpy(info->last_cause, c->parm.num, 5);
 				return 1;
 			case ISDN_STAT_DISPLAY:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_DISPLAY ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				/* Signal display to tty-device */
 				if ((info->emu.mdmreg[REG_DISPLAY] & BIT_DISPLAY) && 
@@ -2180,7 +2380,11 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 				return 1;
 			case ISDN_STAT_DCONN:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_DCONN ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				if (TTY_IS_ACTIVE(info)) {
 					if (info->dialing == 1) {
@@ -2191,7 +2395,11 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 				break;
 			case ISDN_STAT_DHUP:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_DHUP ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				if (TTY_IS_ACTIVE(info)) {
 					if (info->dialing == 1) 
@@ -2200,7 +2408,11 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 						isdn_tty_modem_result(RESULT_NO_CARRIER, info);
 					info->dialing = 0;
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "Mhup in ISDN_STAT_DHUP\n");
+#else
+					;
+#endif
 #endif
 					isdn_tty_modem_hup(info, 0);
 					return 1;
@@ -2208,7 +2420,11 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 				break;
 			case ISDN_STAT_BCONN:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_BCONN ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				/* Wake up any processes waiting
 				 * for incoming call of this device when
@@ -2247,11 +2463,19 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 				break;
 			case ISDN_STAT_BHUP:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_BHUP ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				if (TTY_IS_ACTIVE(info)) {
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "Mhup in ISDN_STAT_BHUP\n");
+#else
+					;
+#endif
 #endif
 					isdn_tty_modem_hup(info, 0);
 					return 1;
@@ -2259,7 +2483,11 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 				break;
 			case ISDN_STAT_NODCH:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_NODCH ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				if (TTY_IS_ACTIVE(info)) {
 					if (info->dialing) {
@@ -2275,7 +2503,11 @@ isdn_tty_stat_callback(int i, isdn_ctrl *c)
 				break;
 			case ISDN_STAT_UNLOAD:
 #ifdef ISDN_TTY_STAT_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "tty_STAT_UNLOAD ttyI%d\n", info->line);
+#else
+				;
+#endif
 #endif
 				for (i = 0; i < ISDN_MAX_CHANNELS; i++) {
 					info = &dev->mdm.info[i];
@@ -2334,7 +2566,11 @@ isdn_tty_at_cout(char *msg, modem_info * info)
 	int l;
 
 	if (!msg) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "isdn_tty: Null-Message in isdn_tty_at_cout\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -2406,7 +2642,11 @@ isdn_tty_on_hook(modem_info * info)
 {
 	if (info->isdn_channel >= 0) {
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Mhup in isdn_tty_on_hook\n");
+#else
+		;
+#endif
 #endif
 		isdn_tty_modem_hup(info, 1);
 	}
@@ -2415,7 +2655,11 @@ isdn_tty_on_hook(modem_info * info)
 static void
 isdn_tty_off_hook(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "isdn_tty_off_hook\n");
+#else
+	;
+#endif
 }
 
 #define PLUSWAIT1 (HZ/2)        /* 0.5 sec. */
@@ -2491,9 +2735,13 @@ isdn_tty_modem_result(int code, modem_info * info)
 			break;
 		case RESULT_NO_CARRIER:
 #ifdef ISDN_DEBUG_MODEM_HUP
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "modem_result: NO CARRIER %d %d\n",
 			       (info->flags & ISDN_ASYNC_CLOSING),
 			       (!info->tty));
+#else
+			;
+#endif
 #endif
 			m->mdmreg[REG_RINGCNT] = 0;
 			del_timer(&info->nc_timer);
@@ -2504,16 +2752,24 @@ isdn_tty_modem_result(int code, modem_info * info)
 #ifdef CONFIG_ISDN_AUDIO
 			if (info->vonline & 1) {
 #ifdef ISDN_DEBUG_MODEM_VOICE
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "res3: send DLE-ETX on ttyI%d\n",
 				       info->line);
+#else
+				;
+#endif
 #endif
 				/* voice-recording, add DLE-ETX */
 				isdn_tty_at_cout("\020\003", info);
 			}
 			if (info->vonline & 2) {
 #ifdef ISDN_DEBUG_MODEM_VOICE
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "res3: send DLE-DC4 on ttyI%d\n",
 				       info->line);
+#else
+				;
+#endif
 #endif
 				/* voice-playing, add DLE-DC4 */
 				isdn_tty_at_cout("\020\024", info);
@@ -2528,8 +2784,12 @@ isdn_tty_modem_result(int code, modem_info * info)
 			break;
 		case RESULT_VCON:
 #ifdef ISDN_DEBUG_MODEM_VOICE
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "res3: send VCON on ttyI%d\n",
 			       info->line);
+#else
+			;
+#endif
 #endif
 			sprintf(info->last_cause, "0000");
 			if (!info->online)
@@ -3320,23 +3580,39 @@ isdn_tty_cmd_PLUSV(char **p, modem_info * info)
 			}
 			info->dtmf_state = isdn_audio_dtmf_init(info->dtmf_state);
 			if (!info->dtmf_state) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "isdn_tty: Couldn't malloc dtmf state\n");
+#else
+				;
+#endif
 				PARSE_ERROR1;
 			}
 			info->silence_state = isdn_audio_silence_init(info->silence_state);
 			if (!info->silence_state) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "isdn_tty: Couldn't malloc silence state\n");
+#else
+				;
+#endif
 				PARSE_ERROR1;
 			}
 			if (m->vpar[3] < 5) {
 				info->adpcmr = isdn_audio_adpcm_init(info->adpcmr, m->vpar[3]);
 				if (!info->adpcmr) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "isdn_tty: Couldn't malloc adpcm state\n");
+#else
+					;
+#endif
 					PARSE_ERROR1;
 				}
 			}
 #ifdef ISDN_DEBUG_AT
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "AT: +VRX\n");
+#else
+			;
+#endif
 #endif
 			info->vonline |= 1;
 			isdn_tty_modem_result(RESULT_CONNECT, info);
@@ -3434,18 +3710,30 @@ isdn_tty_cmd_PLUSV(char **p, modem_info * info)
 			}
 			info->dtmf_state = isdn_audio_dtmf_init(info->dtmf_state);
 			if (!info->dtmf_state) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "isdn_tty: Couldn't malloc dtmf state\n");
+#else
+				;
+#endif
 				PARSE_ERROR1;
 			}
 			if (m->vpar[3] < 5) {
 				info->adpcms = isdn_audio_adpcm_init(info->adpcms, m->vpar[3]);
 				if (!info->adpcms) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "isdn_tty: Couldn't malloc adpcm state\n");
+#else
+					;
+#endif
 					PARSE_ERROR1;
 				}
 			}
 #ifdef ISDN_DEBUG_AT
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "AT: +VTX\n");
+#else
+			;
+#endif
 #endif
 			m->lastDLE = 0;
 			info->vonline |= 2;
@@ -3516,7 +3804,11 @@ isdn_tty_parse_at(modem_info * info)
 	char ds[ISDN_MSNLEN];
 
 #ifdef ISDN_DEBUG_AT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "AT: '%s'\n", m->mdmcmd);
+#else
+	;
+#endif
 #endif
 	for (p = &m->mdmcmd[2]; *p;) {
 		switch (*p) {

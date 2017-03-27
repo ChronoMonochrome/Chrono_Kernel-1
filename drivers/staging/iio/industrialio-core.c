@@ -333,8 +333,8 @@ static int __init iio_dev_init(void)
 
 	err = alloc_chrdev_region(&iio_devt, 0, IIO_DEV_MAX, "iio");
 	if (err < 0)
-		printk(KERN_ERR "%s: failed to allocate char dev region\n",
-		       __FILE__);
+//		printk(KERN_ERR "%s: failed to allocate char dev region\n",
+;
 
 	return err;
 }
@@ -352,9 +352,9 @@ static int __init iio_init(void)
 	/* Register sysfs bus */
 	ret  = bus_register(&iio_bus_type);
 	if (ret < 0) {
-		printk(KERN_ERR
-		       "%s could not register bus type\n",
-			__FILE__);
+//		printk(KERN_ERR
+//		       "%s could not register bus type\n",
+;
 		goto error_nothing;
 	}
 
@@ -920,7 +920,7 @@ static int iio_device_add_event_sysfs(struct iio_dev *dev_info,
 						  i%IIO_EV_TYPE_MAX);
 			break;
 		default:
-			printk(KERN_INFO "currently unhandled type of event\n");
+;
 		}
 		ret = __iio_add_chan_devattr(postfix,
 					     NULL,

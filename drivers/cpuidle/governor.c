@@ -64,7 +64,11 @@ int cpuidle_switch_governor(struct cpuidle_governor *gov)
 		list_for_each_entry(dev, &cpuidle_detected_devices, device_list)
 			cpuidle_enable_device(dev);
 		cpuidle_install_idle_handler();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "cpuidle: using governor %s\n", gov->name);
+#else
+		;
+#endif
 	}
 
 	return 0;

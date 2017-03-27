@@ -158,12 +158,12 @@ void __jbd2_log_wait_for_space(journal_t *journal)
 			} else if (tid) {
 				jbd2_log_wait_commit(journal, tid);
 			} else {
-				printk(KERN_ERR "%s: needed %d blocks and "
-				       "only had %d space available\n",
-				       __func__, nblocks, space_left);
-				printk(KERN_ERR "%s: no way to get more "
-				       "journal space in %s\n", __func__,
-				       journal->j_devname);
+//				printk(KERN_ERR "%s: needed %d blocks and "
+//				       "only had %d space available\n",
+;
+//				printk(KERN_ERR "%s: no way to get more "
+//				       "journal space in %s\n", __func__,
+;
 				WARN_ON(1);
 				jbd2_journal_abort(journal, 0);
 			}
@@ -281,10 +281,10 @@ static int __process_buffer(journal_t *journal, struct journal_head *jh,
 			 * waiting for a commit to finish will cause
 			 * us to wait for a _very_ long time.
 			 */
-			printk(KERN_ERR "JBD2: %s: "
-			       "Waiting for Godot: block %llu\n",
-			       journal->j_devname,
-			       (unsigned long long) bh->b_blocknr);
+//			printk(KERN_ERR "JBD2: %s: "
+//			       "Waiting for Godot: block %llu\n",
+//			       journal->j_devname,
+;
 		jbd2_log_start_commit(journal, tid);
 		jbd2_log_wait_commit(journal, tid);
 		ret = 1;

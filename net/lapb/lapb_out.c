@@ -61,8 +61,8 @@ static void lapb_send_iframe(struct lapb_cb *lapb, struct sk_buff *skb, int poll
 	}
 
 #if LAPB_DEBUG > 1
-	printk(KERN_DEBUG "lapb: (%p) S%d TX I(%d) S%d R%d\n",
-	       lapb->dev, lapb->state, poll_bit, lapb->vs, lapb->vr);
+//	printk(KERN_DEBUG "lapb: (%p) S%d TX I(%d) S%d R%d\n",
+;
 #endif
 
 	lapb_transmit_buffer(lapb, skb, LAPB_COMMAND);
@@ -149,9 +149,9 @@ void lapb_transmit_buffer(struct lapb_cb *lapb, struct sk_buff *skb, int type)
 	}
 
 #if LAPB_DEBUG > 2
-	printk(KERN_DEBUG "lapb: (%p) S%d TX %02X %02X %02X\n",
-	       lapb->dev, lapb->state,
-	       skb->data[0], skb->data[1], skb->data[2]);
+//	printk(KERN_DEBUG "lapb: (%p) S%d TX %02X %02X %02X\n",
+//	       lapb->dev, lapb->state,
+;
 #endif
 
 	if (!lapb_data_transmit(lapb, skb))
@@ -165,14 +165,14 @@ void lapb_establish_data_link(struct lapb_cb *lapb)
 
 	if (lapb->mode & LAPB_EXTENDED) {
 #if LAPB_DEBUG > 1
-		printk(KERN_DEBUG "lapb: (%p) S%d TX SABME(1)\n",
-		       lapb->dev, lapb->state);
+//		printk(KERN_DEBUG "lapb: (%p) S%d TX SABME(1)\n",
+;
 #endif
 		lapb_send_control(lapb, LAPB_SABME, LAPB_POLLON, LAPB_COMMAND);
 	} else {
 #if LAPB_DEBUG > 1
-		printk(KERN_DEBUG "lapb: (%p) S%d TX SABM(1)\n",
-		       lapb->dev, lapb->state);
+//		printk(KERN_DEBUG "lapb: (%p) S%d TX SABM(1)\n",
+;
 #endif
 		lapb_send_control(lapb, LAPB_SABM, LAPB_POLLON, LAPB_COMMAND);
 	}
@@ -184,8 +184,8 @@ void lapb_establish_data_link(struct lapb_cb *lapb)
 void lapb_enquiry_response(struct lapb_cb *lapb)
 {
 #if LAPB_DEBUG > 1
-	printk(KERN_DEBUG "lapb: (%p) S%d TX RR(1) R%d\n",
-	       lapb->dev, lapb->state, lapb->vr);
+//	printk(KERN_DEBUG "lapb: (%p) S%d TX RR(1) R%d\n",
+;
 #endif
 
 	lapb_send_control(lapb, LAPB_RR, LAPB_POLLON, LAPB_RESPONSE);
@@ -196,8 +196,8 @@ void lapb_enquiry_response(struct lapb_cb *lapb)
 void lapb_timeout_response(struct lapb_cb *lapb)
 {
 #if LAPB_DEBUG > 1
-	printk(KERN_DEBUG "lapb: (%p) S%d TX RR(0) R%d\n",
-	       lapb->dev, lapb->state, lapb->vr);
+//	printk(KERN_DEBUG "lapb: (%p) S%d TX RR(0) R%d\n",
+;
 #endif
 	lapb_send_control(lapb, LAPB_RR, LAPB_POLLOFF, LAPB_RESPONSE);
 

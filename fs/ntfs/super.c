@@ -1869,8 +1869,8 @@ get_ctx_vol_failed:
 	vol->minor_ver = vi->minor_ver;
 	ntfs_attr_put_search_ctx(ctx);
 	unmap_mft_record(NTFS_I(vol->vol_ino));
-	printk(KERN_INFO "NTFS volume version %i.%i.\n", vol->major_ver,
-			vol->minor_ver);
+//	printk(KERN_INFO "NTFS volume version %i.%i.\n", vol->major_ver,
+;
 	if (vol->major_ver < 3 && NVolSparseEnabled(vol)) {
 		ntfs_warning(vol->sb, "Disabling sparse support due to NTFS "
 				"volume version %i.%i (need at least version "
@@ -3084,19 +3084,19 @@ static int __init init_ntfs_fs(void)
 	int err = 0;
 
 	/* This may be ugly but it results in pretty output so who cares. (-8 */
-	printk(KERN_INFO "NTFS driver " NTFS_VERSION " [Flags: R/"
-#ifdef NTFS_RW
-			"W"
-#else
-			"O"
-#endif
-#ifdef DEBUG
-			" DEBUG"
-#endif
-#ifdef MODULE
-			" MODULE"
-#endif
-			"].\n");
+//	printk(KERN_INFO "NTFS driver " NTFS_VERSION " [Flags: R/"
+//#ifdef NTFS_RW
+//			"W"
+//#else
+//			"O"
+//#endif
+//#ifdef DEBUG
+//			" DEBUG"
+//#endif
+//#ifdef MODULE
+//			" MODULE"
+//#endif
+;
 
 	ntfs_debug("Debug messages are enabled.");
 
@@ -3104,16 +3104,16 @@ static int __init init_ntfs_fs(void)
 			sizeof(ntfs_index_context), 0 /* offset */,
 			SLAB_HWCACHE_ALIGN, NULL /* ctor */);
 	if (!ntfs_index_ctx_cache) {
-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
-				ntfs_index_ctx_cache_name);
+//		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+;
 		goto ictx_err_out;
 	}
 	ntfs_attr_ctx_cache = kmem_cache_create(ntfs_attr_ctx_cache_name,
 			sizeof(ntfs_attr_search_ctx), 0 /* offset */,
 			SLAB_HWCACHE_ALIGN, NULL /* ctor */);
 	if (!ntfs_attr_ctx_cache) {
-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
-				ntfs_attr_ctx_cache_name);
+//		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+;
 		goto actx_err_out;
 	}
 
@@ -3121,8 +3121,8 @@ static int __init init_ntfs_fs(void)
 			(NTFS_MAX_NAME_LEN+1) * sizeof(ntfschar), 0,
 			SLAB_HWCACHE_ALIGN, NULL);
 	if (!ntfs_name_cache) {
-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
-				ntfs_name_cache_name);
+//		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+;
 		goto name_err_out;
 	}
 
@@ -3130,8 +3130,8 @@ static int __init init_ntfs_fs(void)
 			sizeof(ntfs_inode), 0,
 			SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD, NULL);
 	if (!ntfs_inode_cache) {
-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
-				ntfs_inode_cache_name);
+//		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+;
 		goto inode_err_out;
 	}
 
@@ -3140,15 +3140,15 @@ static int __init init_ntfs_fs(void)
 			SLAB_HWCACHE_ALIGN|SLAB_RECLAIM_ACCOUNT|SLAB_MEM_SPREAD,
 			ntfs_big_inode_init_once);
 	if (!ntfs_big_inode_cache) {
-		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
-				ntfs_big_inode_cache_name);
+//		printk(KERN_CRIT "NTFS: Failed to create %s!\n",
+;
 		goto big_inode_err_out;
 	}
 
 	/* Register the ntfs sysctls. */
 	err = ntfs_sysctl(1);
 	if (err) {
-		printk(KERN_CRIT "NTFS: Failed to register NTFS sysctls!\n");
+;
 		goto sysctl_err_out;
 	}
 
@@ -3157,7 +3157,7 @@ static int __init init_ntfs_fs(void)
 		ntfs_debug("NTFS driver registered successfully.");
 		return 0; /* Success! */
 	}
-	printk(KERN_CRIT "NTFS: Failed to register NTFS filesystem driver!\n");
+;
 
 	/* Unregister the ntfs sysctls. */
 	ntfs_sysctl(0);
@@ -3173,8 +3173,8 @@ actx_err_out:
 	kmem_cache_destroy(ntfs_index_ctx_cache);
 ictx_err_out:
 	if (!err) {
-		printk(KERN_CRIT "NTFS: Aborting NTFS filesystem driver "
-				"registration...\n");
+//		printk(KERN_CRIT "NTFS: Aborting NTFS filesystem driver "
+;
 		err = -ENOMEM;
 	}
 	return err;

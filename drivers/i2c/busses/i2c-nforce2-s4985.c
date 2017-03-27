@@ -170,7 +170,11 @@ static int __init nforce2_s4985_init(void)
 		goto ERROR0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Enabling SMBus multiplexing for Tyan S4985\n");
+#else
+	;
+#endif
 	/* Define the 5 virtual adapters and algorithms structures */
 	s4985_adapter = kzalloc(5 * sizeof(struct i2c_adapter), GFP_KERNEL);
 	if (!s4985_adapter) {

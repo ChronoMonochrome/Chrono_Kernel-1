@@ -1007,7 +1007,11 @@ static int s3c24xx_serial_cpufreq_transition(struct notifier_block *nb,
 		termios = tty->termios;
 
 		if (termios == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: no termios?\n", __func__);
+#else
+			;
+#endif
 			goto exit;
 		}
 

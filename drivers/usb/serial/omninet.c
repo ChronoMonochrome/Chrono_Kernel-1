@@ -218,12 +218,12 @@ static void omninet_read_bulk_callback(struct urb *urb)
 
 	if (debug && header->oh_xxx != 0x30) {
 		if (urb->actual_length) {
-			printk(KERN_DEBUG "%s: omninet_read %d: ",
-			       __FILE__, header->oh_len);
+//			printk(KERN_DEBUG "%s: omninet_read %d: ",
+;
 			for (i = 0; i < (header->oh_len +
 						OMNINET_HEADERLEN); i++)
-				printk("%.2x ", data[i]);
-			printk("\n");
+;
+;
 		}
 	}
 
@@ -372,8 +372,8 @@ static int __init omninet_init(void)
 	retval = usb_register(&omninet_driver);
 	if (retval)
 		goto failed_usb_register;
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 	return 0;
 failed_usb_register:
 	usb_serial_deregister(&zyxel_omninet_device);

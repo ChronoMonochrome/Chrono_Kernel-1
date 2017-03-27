@@ -258,15 +258,23 @@ static int madvise_hwpoison(int bhv, unsigned long start, unsigned long end)
 		if (ret != 1)
 			return ret;
 		if (bhv == MADV_SOFT_OFFLINE) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Soft offlining page %lx at %lx\n",
 				page_to_pfn(p), start);
+#else
+			;
+#endif
 			ret = soft_offline_page(p, MF_COUNT_INCREASED);
 			if (ret)
 				break;
 			continue;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Injecting memory failure for page %lx at %lx\n",
 		       page_to_pfn(p), start);
+#else
+		;
+#endif
 		/* Ignore return value for now */
 		memory_failure(page_to_pfn(p), 0, MF_COUNT_INCREASED);
 	}

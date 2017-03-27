@@ -28,7 +28,11 @@ MODULE_PARM_DESC(ids, "Initial PCI IDs to add to the stub driver, format is "
 
 static int pci_stub_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &dev->dev, "claimed by stub\n");
+#else
+	dev_;
+#endif
 	return 0;
 }
 
@@ -66,20 +70,32 @@ static int __init pci_stub_init(void)
 				&class, &class_mask);
 
 		if (fields < 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "pci-stub: invalid id string \"%s\"\n", id);
+#else
+			;
+#endif
 			continue;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "pci-stub: add %04X:%04X sub=%04X:%04X cls=%08X/%08X\n",
 		       vendor, device, subvendor, subdevice, class, class_mask);
+#else
+		;
+#endif
 
 		rc = pci_add_dynid(&stub_driver, vendor, device,
 				   subvendor, subdevice, class, class_mask, 0);
 		if (rc)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "pci-stub: failed to add dynamic id (%d)\n", rc);
+#else
+			;
+#endif
 	}
 
 	return 0;

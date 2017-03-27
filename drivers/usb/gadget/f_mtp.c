@@ -445,7 +445,7 @@ static int mtp_create_bulk_endpoints(struct mtp_dev *dev,
 	return 0;
 
 fail:
-	printk(KERN_ERR "mtp_bind() could not allocate requests\n");
+;
 	return -1;
 }
 
@@ -935,7 +935,7 @@ out:
 
 static int mtp_open(struct inode *ip, struct file *fp)
 {
-	printk(KERN_INFO "mtp_open\n");
+;
 	if (mtp_lock(&_mtp_dev->open_excl))
 		return -EBUSY;
 
@@ -949,7 +949,7 @@ static int mtp_open(struct inode *ip, struct file *fp)
 
 static int mtp_release(struct inode *ip, struct file *fp)
 {
-	printk(KERN_INFO "mtp_release\n");
+;
 
 	mtp_unlock(&_mtp_dev->open_excl);
 	return 0;
@@ -1190,7 +1190,7 @@ static int mtp_bind_config(struct usb_configuration *c, bool ptp_config)
 	struct mtp_dev *dev = _mtp_dev;
 	int ret = 0;
 
-	printk(KERN_INFO "mtp_bind_config\n");
+;
 
 	/* allocate a string ID for our interface */
 	if (mtp_string_defs[INTERFACE_STRING_INDEX].id == 0) {
@@ -1258,7 +1258,7 @@ err2:
 err1:
 	_mtp_dev = NULL;
 	kfree(dev);
-	printk(KERN_ERR "mtp gadget driver failed to initialize\n");
+;
 	return ret;
 }
 

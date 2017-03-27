@@ -88,7 +88,11 @@ static DEFINE_SPINLOCK(wdt_lock);
 
 #define DBG(msg...) do { \
 	if (debug) \
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO msg); \
+#else
+		;
+#endif
 	} while (0)
 
 /* functions */
@@ -578,8 +582,12 @@ static int s3c2410wdt_resume(struct platform_device *dev)
 	writel(wtdat_save, wdt_base + S3C2410_WTCNT); /* Reset count */
 	writel(wtcon_save, wdt_base + S3C2410_WTCON);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "watchdog %sabled\n",
 	       (wtcon_save & S3C2410_WTCON_ENABLE) ? "en" : "dis");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -608,7 +616,11 @@ static char banner[] __initdata =
 
 static int __init watchdog_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner);
+#else
+	;
+#endif
 	return platform_driver_register(&s3c2410wdt_driver);
 }
 

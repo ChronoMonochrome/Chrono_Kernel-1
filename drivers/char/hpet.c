@@ -854,8 +854,12 @@ int hpet_alloc(struct hpet_data *hdp)
 	 * ACPI has also reported, then we catch it here.
 	 */
 	if (hpet_is_known(hdp)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: duplicate HPET ignored\n",
 			__func__);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -883,8 +887,12 @@ int hpet_alloc(struct hpet_data *hdp)
 	ntimer = ((cap & HPET_NUM_TIM_CAP_MASK) >> HPET_NUM_TIM_CAP_SHIFT) + 1;
 
 	if (hpetp->hp_ntimer != ntimer) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "hpet: number irqs doesn't agree"
 		       " with number of timers\n");
+#else
+		;
+#endif
 		kfree(hpetp);
 		return -ENODEV;
 	}
@@ -903,20 +911,36 @@ int hpet_alloc(struct hpet_data *hdp)
 	do_div(temp, period);
 	hpetp->hp_tick_freq = temp; /* ticks per second */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "hpet%d: at MMIO 0x%lx, IRQ%s",
 		hpetp->hp_which, hdp->hd_phys_address,
 		hpetp->hp_ntimer > 1 ? "s" : "");
+#else
+	;
+#endif
 	for (i = 0; i < hpetp->hp_ntimer; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s %d", i > 0 ? "," : "", hdp->hd_irq[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	temp = hpetp->hp_tick_freq;
 	remainder = do_div(temp, 1000000);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"hpet%u: %u comparators, %d-bit %u.%06u MHz counter\n",
 		hpetp->hp_which, hpetp->hp_ntimer,
 		cap & HPET_COUNTER_SIZE_MASK ? 64 : 32,
 		(unsigned) temp, remainder);
+#else
+	;
+#endif
 
 	mcfg = readq(&hpet->hpet_config);
 	if ((mcfg & HPET_ENABLE_CNF_MASK) == 0) {
@@ -1032,7 +1056,11 @@ static int hpet_acpi_add(struct acpi_device *device)
 	if (!data.hd_address || !data.hd_nirqs) {
 		if (data.hd_address)
 			iounmap(data.hd_address);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: no address or irqs in _CRS\n", __func__);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 

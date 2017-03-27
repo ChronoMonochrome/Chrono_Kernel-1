@@ -275,7 +275,11 @@ static int __init match_pci_cmd640_device(void)
 	}
 #ifdef STUPIDLY_TRUST_BROKEN_PCMD_ENA_BIT
 	if ((get_cmd640_reg(PCMD) & PCMD_ENA) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ide: cmd640 on PCI disabled by BIOS\n");
+#else
+		;
+#endif
 		return 0;
 	}
 #endif /* STUPIDLY_TRUST_BROKEN_PCMD_ENA_BIT */
@@ -365,13 +369,29 @@ static void cmd640_dump_regs(void)
 	unsigned int reg = cmd640_vlb ? 0x50 : 0x00;
 
 	/* Dump current state of chip registers */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("ide: cmd640 internal register dump:");
+#else
+	;
+#endif
 	for (; reg <= 0x59; reg++) {
 		if (!(reg & 0x0f))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("\n%04x:", reg);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %02x", get_cmd640_reg(reg));
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 #endif
 
@@ -438,7 +458,11 @@ static void display_clocks(unsigned int index)
 		++recovery_count;
 	if (cmd640_chip_version > 1)
 		recovery_count += 1;  /* cmd640b uses (count + 1)*/
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(", clocks=%d/%d/%d\n", setup_counts[index], active_count, recovery_count);
+#else
+	;
+#endif
 }
 
 /*
@@ -585,22 +609,34 @@ static void cmd640_set_pio_mode(ide_hwif_t *hwif, ide_drive_t *drive)
 		if (pio & 1)
 			b |= 0x27;
 		put_cmd640_reg(CNTRL, b);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %sabled cmd640 fast host timing (devsel)\n",
 			drive->name, (pio & 1) ? "en" : "dis");
+#else
+		;
+#endif
 		return;
 	case 8: /* set prefetch off */
 	case 9: /* set prefetch on */
 		set_prefetch_mode(drive, index, pio & 1);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: %sabled cmd640 prefetch\n",
 			drive->name, (pio & 1) ? "en" : "dis");
+#else
+		;
+#endif
 		return;
 	}
 
 	cycle_time = ide_pio_cycle_time(drive, pio);
 	cmd640_set_mode(drive, index, pio, cycle_time);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: selected cmd640 PIO mode%d (%dns)",
 		drive->name, pio, cycle_time);
+#else
+	;
+#endif
 
 	display_clocks(index);
 }
@@ -620,14 +656,22 @@ static void __init cmd640_init_dev(ide_drive_t *drive)
 	recovery_counts[i] = 16;	/* max possible */
 	program_drive_counts(drive, i);
 	set_prefetch_mode(drive, i, 0);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME ": drive%d timings/prefetch cleared\n", i);
+#else
+	;
+#endif
 #else
 	/*
 	 * Set the drive unmask flags to match the prefetch setting.
 	 */
 	check_prefetch(drive, i);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME ": drive%d timings/prefetch(%s) preserved\n",
 		i, (drive->dev_flags & IDE_DFLAG_NO_IO_32BIT) ? "off" : "on");
+#else
+	;
+#endif
 #endif /* CONFIG_BLK_DEV_CMD640_ENHANCED */
 }
 
@@ -755,7 +799,11 @@ static int __init cmd640x_init(void)
 	cfr = get_cmd640_reg(CFR);
 	cmd640_chip_version = cfr & CFR_DEVREV;
 	if (cmd640_chip_version == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("ide: bad cmd640 revision: %d\n", cmd640_chip_version);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -778,8 +826,12 @@ static int __init cmd640x_init(void)
 	ide_std_init_ports(&hw[1], 0x170, 0x376);
 	hw[1].irq = 15;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "cmd640: buggy cmd640%c interface on %s, config=0x%02x"
 			 "\n", 'a' + cmd640_chip_version - 1, bus_type, cfr);
+#else
+	;
+#endif
 
 	/*
 	 * Initialize data for primary port
@@ -827,8 +879,12 @@ static int __init cmd640x_init(void)
 	if (second_port_cmd640)
 		hws[1] = &hw[1];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "cmd640: %sserialized, secondary interface %s\n",
 			 second_port_cmd640 ? "" : "not ", port2);
+#else
+	;
+#endif
 
 #ifdef CMD640_DUMP_REGS
 	cmd640_dump_regs();

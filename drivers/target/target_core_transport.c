@@ -60,6 +60,7 @@
 
 /* #define DEBUG_CDB_HANDLER */
 #ifdef DEBUG_CDB_HANDLER
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_CDB_H(x...) printk(KERN_INFO x)
 #else
 #define DEBUG_CDB_H(x...)
@@ -185,6 +186,9 @@
 #endif
 
 struct se_global *se_global;
+#else
+#define DEBUG_CDB_H(x...) ;
+#endif
 
 static struct kmem_cache *se_cmd_cache;
 static struct kmem_cache *se_sess_cache;
@@ -516,8 +520,12 @@ void __transport_register_session(
 	}
 	list_add_tail(&se_sess->sess_list, &se_tpg->tpg_sess_list);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TARGET_CORE[%s]: Registered fabric_sess_ptr: %p\n",
 		TPG_TFO(se_tpg)->get_fabric_name(), se_sess->fabric_sess_ptr);
+#else
+	;
+#endif
 }
 EXPORT_SYMBOL(__transport_register_session);
 
@@ -609,8 +617,12 @@ void transport_deregister_session(struct se_session *se_sess)
 
 	transport_free_session(se_sess);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "TARGET_CORE[%s]: Deregistered fabric_sess\n",
 		TPG_TFO(se_tpg)->get_fabric_name());
+#else
+	;
+#endif
 }
 EXPORT_SYMBOL(transport_deregister_session);
 
@@ -769,8 +781,12 @@ check_lun:
 		list_del(&cmd->se_lun_list);
 		atomic_set(&T_TASK(cmd)->transport_lun_active, 0);
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Removed ITT: 0x%08x from LUN LIST[%d]\n"
 			CMD_TFO(cmd)->get_task_tag(cmd), lun->unpacked_lun);
+#else
+		;
+#endif
 #endif
 	}
 	spin_unlock_irqrestore(&lun->lun_cmd_lock, flags);
@@ -953,8 +969,12 @@ void transport_complete_task(struct se_task *task, int success)
 	int t_state;
 	unsigned long flags;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "task: %p CDB: 0x%02x obj_ptr: %p\n", task,
 			T_TASK(cmd)->t_task_cdb[0], dev);
+#else
+	;
+#endif
 #endif
 	if (dev) {
 		spin_lock_irqsave(&SE_HBA(dev)->hba_queue_lock, flags);
@@ -1362,7 +1382,11 @@ void transport_dump_vpd_proto_id(
 	if (p_buf)
 		strncpy(p_buf, buf, p_buf_len);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s", buf);
+#else
+		;
+#endif
 }
 
 void
@@ -1411,7 +1435,11 @@ int transport_dump_vpd_assoc(
 	if (p_buf)
 		strncpy(p_buf, buf, p_buf_len);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s", buf);
+#else
+		;
+#endif
 
 	return ret;
 }
@@ -1468,7 +1496,11 @@ int transport_dump_vpd_ident_type(
 	if (p_buf)
 		strncpy(p_buf, buf, p_buf_len);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s", buf);
+#else
+		;
+#endif
 
 	return ret;
 }
@@ -1518,7 +1550,11 @@ int transport_dump_vpd_ident(
 	if (p_buf)
 		strncpy(p_buf, buf, p_buf_len);
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s", buf);
+#else
+		;
+#endif
 
 	return ret;
 }
@@ -1587,33 +1623,81 @@ static void scsi_dump_inquiry(struct se_device *dev)
 	/*
 	 * Print Linux/SCSI style INQUIRY formatting to the kernel ring buffer
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Vendor: ");
+#else
+	;
+#endif
 	for (i = 0; i < 8; i++)
 		if (wwn->vendor[i] >= 0x20)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c", wwn->vendor[i]);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" ");
+#else
+			;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Model: ");
+#else
+	;
+#endif
 	for (i = 0; i < 16; i++)
 		if (wwn->model[i] >= 0x20)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c", wwn->model[i]);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" ");
+#else
+			;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Revision: ");
+#else
+	;
+#endif
 	for (i = 0; i < 4; i++)
 		if (wwn->revision[i] >= 0x20)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%c", wwn->revision[i]);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" ");
+#else
+			;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	device_type = TRANSPORT(dev)->get_device_type(dev);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  Type:   %s ", scsi_device_type(device_type));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("                 ANSI SCSI revision: %02x\n",
 				TRANSPORT(dev)->get_device_rev(dev));
+#else
+	;
+#endif
 }
 
 struct se_device *transport_add_device_to_core_hba(
@@ -2453,8 +2537,12 @@ static void transport_start_task_timer(struct se_task *task)
 	task->task_flags |= TF_RUNNING;
 	add_timer(&task->task_timer);
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Starting task timer for cmd: %p task: %p seconds:"
 		" %d\n", task->task_se_cmd, task, timeout);
+#else
+	;
+#endif
 #endif
 }
 
@@ -2904,10 +2992,14 @@ static inline u32 transport_get_size(
 			return sectors;
 	}
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Returning block_size: %u, sectors: %u == %u for"
 			" %s object\n", DEV_ATTRIB(dev)->block_size, sectors,
 			DEV_ATTRIB(dev)->block_size * sectors,
 			TRANSPORT(dev)->name);
+#else
+	;
+#endif
 #endif
 	return DEV_ATTRIB(dev)->block_size * sectors;
 }
@@ -3044,10 +3136,14 @@ static int transport_get_sense_data(struct se_cmd *cmd)
 		cmd->scsi_sense_length =
 				(TRANSPORT_SENSE_BUFFER + offset);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HBA_[%u]_PLUG[%s]: Set SAM STATUS: 0x%02x"
 				" and sense\n",
 			dev->se_hba->hba_id, TRANSPORT(dev)->name,
 				cmd->scsi_status);
+#else
+		;
+#endif
 		return 0;
 	}
 	spin_unlock_irqrestore(&T_TASK(cmd)->t_state_lock, flags);
@@ -3133,9 +3229,13 @@ static int transport_generic_cmd_sequencer(
 		 */
 		if (ret > 0) {
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "[%s]: ALUA TG Port not available,"
 				" SenseKey: NOT_READY, ASC/ASCQ: 0x04/0x%02x\n",
 				CMD_TFO(cmd)->get_fabric_name(), alua_ascq);
+#else
+			;
+#endif
 #endif
 			transport_set_sense_codes(cmd, 0x04, alua_ascq);
 			cmd->se_cmd_flags |= SCF_SCSI_CDB_EXCEPTION;
@@ -3641,18 +3741,26 @@ static int transport_generic_cmd_sequencer(
 		cmd->se_cmd_flags |= SCF_SCSI_CONTROL_NONSG_IO_CDB;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "TARGET_CORE[%s]: Unsupported SCSI Opcode"
 			" 0x%02x, sending CHECK_CONDITION.\n",
 			CMD_TFO(cmd)->get_fabric_name(), cdb[0]);
+#else
+		;
+#endif
 		cmd->transport_wait_for_tasks = &transport_nop_wait_for_tasks;
 		goto out_unsupported_cdb;
 	}
 
 	if (size != cmd->data_length) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "TARGET_CORE[%s]: Expected Transfer Length:"
 			" %u does not match SCSI CDB Length: %u for SAM Opcode:"
 			" 0x%02x\n", CMD_TFO(cmd)->get_fabric_name(),
 				cmd->data_length, size, cdb[0]);
+#else
+		;
+#endif
 
 		cmd->cmd_spdtl = size;
 
@@ -4314,10 +4422,14 @@ static int transport_new_cmd_obj(struct se_cmd *cmd)
 		T_TASK(cmd)->t_task_cdbs += task_cdbs;
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "data_length: %u, LBA: %llu t_tasks_sectors:"
 			" %u, t_task_cdbs: %u\n", obj_ptr, cmd->data_length,
 			T_TASK(cmd)->t_task_lba, T_TASK(cmd)->t_tasks_sectors,
 			T_TASK(cmd)->t_task_cdbs);
+#else
+		;
+#endif
 #endif
 	}
 
@@ -5309,9 +5421,13 @@ void transport_generic_free_cmd(
 
 		if (SE_LUN(cmd)) {
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "cmd: %p ITT: 0x%08x contains"
 				" SE_LUN(cmd)\n", cmd,
 				CMD_TFO(cmd)->get_task_tag(cmd));
+#else
+			;
+#endif
 #endif
 			transport_lun_remove_cmd(cmd);
 		}
@@ -5380,6 +5496,7 @@ static int transport_lun_wait_for_tasks(struct se_cmd *cmd, struct se_lun *lun)
 
 /* #define DEBUG_CLEAR_LUN */
 #ifdef DEBUG_CLEAR_LUN
+#ifdef CONFIG_DEBUG_PRINTK
 #define DEBUG_CLEAR_L(x...) printk(KERN_INFO x)
 #else
 #define DEBUG_CLEAR_L(x...)
@@ -5388,6 +5505,9 @@ static int transport_lun_wait_for_tasks(struct se_cmd *cmd, struct se_lun *lun)
 static void __transport_clear_lun_from_sessions(struct se_lun *lun)
 {
 	struct se_cmd *cmd = NULL;
+#else
+#define DEBUG_CLEAR_L(x...) ;
+#endif
 	unsigned long lun_flags, cmd_flags;
 	/*
 	 * Do exception processing and return CHECK_CONDITION status to the
@@ -5821,10 +5941,14 @@ int transport_check_aborted_status(struct se_cmd *cmd, int send_status)
 		     (cmd->se_cmd_flags & SCF_SENT_DELAYED_TAS))
 			return 1;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Sending delayed SAM_STAT_TASK_ABORTED"
 			" status for CDB: 0x%02x ITT: 0x%08x\n",
 			T_TASK(cmd)->t_task_cdb[0],
 			CMD_TFO(cmd)->get_task_tag(cmd));
+#else
+		;
+#endif
 #endif
 		cmd->se_cmd_flags |= SCF_SENT_DELAYED_TAS;
 		CMD_TFO(cmd)->queue_status(cmd);
@@ -5853,9 +5977,13 @@ void transport_send_task_abort(struct se_cmd *cmd)
 	}
 	cmd->scsi_status = SAM_STAT_TASK_ABORTED;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Setting SAM_STAT_TASK_ABORTED status for CDB: 0x%02x,"
 		" ITT: 0x%08x\n", T_TASK(cmd)->t_task_cdb[0],
 		CMD_TFO(cmd)->get_task_tag(cmd));
+#else
+	;
+#endif
 #endif
 	CMD_TFO(cmd)->queue_status(cmd);
 }

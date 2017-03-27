@@ -81,9 +81,13 @@ static u64 parse_audio_format_i_type(struct snd_usb_audio *chip,
 		    sample_width == 24 && sample_bytes == 2)
 			sample_bytes = 3;
 		else if (sample_width > sample_bytes * 8) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "%d:%u:%d : sample bitwidth %d in over sample bytes %d\n",
 				   chip->dev->devnum, fp->iface, fp->altsetting,
 				   sample_width, sample_bytes);
+#else
+			;
+#endif
 		}
 		/* check the format byte size */
 		switch (sample_bytes) {
@@ -106,9 +110,13 @@ static u64 parse_audio_format_i_type(struct snd_usb_audio *chip,
 			pcm_formats |= SNDRV_PCM_FMTBIT_S32_LE;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "%d:%u:%d : unsupported sample bitwidth %d in %d bytes\n",
 				   chip->dev->devnum, fp->iface, fp->altsetting,
 				   sample_width, sample_bytes);
+#else
+			;
+#endif
 			break;
 		}
 	}
@@ -130,8 +138,12 @@ static u64 parse_audio_format_i_type(struct snd_usb_audio *chip,
 		pcm_formats |= SNDRV_PCM_FMTBIT_MU_LAW;
 	}
 	if (format & ~0x3f) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "%d:%u:%d : unsupported format bits %#x\n",
 			   chip->dev->devnum, fp->iface, fp->altsetting, format);
+#else
+		;
+#endif
 	}
 	return pcm_formats;
 }

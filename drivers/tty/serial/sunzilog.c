@@ -1226,8 +1226,12 @@ static int __init sunzilog_console_setup(struct console *con, char *options)
 	if (up->port.type != PORT_SUNZILOG)
 		return -1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Console: ttyS%d (SunZilog zs%d)\n",
 	       (sunzilog_reg.minor - 64) + con->index, con->index);
+#else
+	;
+#endif
 
 	/* Get firmware console settings.  */
 	sunserial_console_termios(con, up->port.dev->of_node);
@@ -1488,16 +1492,24 @@ static int __devinit zs_probe(struct platform_device *op)
 		}
 		uart_inst++;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Keyboard at MMIO 0x%llx (irq = %d) "
 		       "is a %s\n",
 		       dev_name(&op->dev),
 		       (unsigned long long) up[0].port.mapbase,
 		       op->archdata.irqs[0], sunzilog_type(&up[0].port));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Mouse at MMIO 0x%llx (irq = %d) "
 		       "is a %s\n",
 		       dev_name(&op->dev),
 		       (unsigned long long) up[1].port.mapbase,
 		       op->archdata.irqs[0], sunzilog_type(&up[1].port));
+#else
+		;
+#endif
 		kbm_inst++;
 	}
 

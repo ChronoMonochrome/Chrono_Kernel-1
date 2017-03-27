@@ -184,7 +184,11 @@ static int mixart_enum_connectors(struct mixart_mgr *mgr)
 			pipe->uid_left_connector = connector->uid[k];    /* even */
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		/* snd_printk(KERN_DEBUG "playback connector[%d].object_id = %x\n", k, connector->uid[k].object_id); */
+#else
+		/* ;
+#endif
 
 		/* TODO: really need send_msg MSG_CONNECTOR_GET_AUDIO_INFO for each connector ? perhaps for analog level caps ? */
 		request.message_id = MSG_CONNECTOR_GET_AUDIO_INFO;
@@ -197,7 +201,11 @@ static int mixart_enum_connectors(struct mixart_mgr *mgr)
 			snd_printk(KERN_ERR "error MSG_CONNECTOR_GET_AUDIO_INFO\n");
 			goto __error;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		/*snd_printk(KERN_DEBUG "play  analog_info.analog_level_present = %x\n", audio_info->info.analog_info.analog_level_present);*/
+#else
+		/*;
+#endif
 	}
 
 	request.message_id = MSG_SYSTEM_ENUM_RECORD_CONNECTOR;
@@ -226,7 +234,11 @@ static int mixart_enum_connectors(struct mixart_mgr *mgr)
 			pipe->uid_left_connector = connector->uid[k];    /* even */
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		/* snd_printk(KERN_DEBUG "capture connector[%d].object_id = %x\n", k, connector->uid[k].object_id); */
+#else
+		/* ;
+#endif
 
 		/* TODO: really need send_msg MSG_CONNECTOR_GET_AUDIO_INFO for each connector ? perhaps for analog level caps ? */
 		request.message_id = MSG_CONNECTOR_GET_AUDIO_INFO;
@@ -239,7 +251,11 @@ static int mixart_enum_connectors(struct mixart_mgr *mgr)
 			snd_printk(KERN_ERR "error MSG_CONNECTOR_GET_AUDIO_INFO\n");
 			goto __error;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		/*snd_printk(KERN_DEBUG "rec  analog_info.analog_level_present = %x\n", audio_info->info.analog_info.analog_level_present);*/
+#else
+		/*;
+#endif
 	}
 	err = 0;
 
@@ -272,7 +288,11 @@ static int mixart_enum_physio(struct mixart_mgr *mgr)
 	err = snd_mixart_send_msg(mgr, &request, sizeof(console_mgr), &console_mgr);
 
 	if( (err < 0) || (console_mgr.error_code != 0) ) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "error MSG_CONSOLE_GET_CLOCK_UID : err=%x\n", console_mgr.error_code);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -357,7 +377,11 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 
 		/* xilinx already loaded ? */ 
 		if (status_xilinx == 4) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_DEBUG "xilinx is already loaded !\n");
+#else
+			;
+#endif
 			return 0;
 		}
 		/* the status should be 0 == "idle" */
@@ -393,7 +417,11 @@ static int mixart_dsp_load(struct mixart_mgr* mgr, int index, const struct firmw
 	case MIXART_MOTHERBOARD_ELF_INDEX:
 
 		if (status_elf == 4) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_DEBUG "elf file already loaded !\n");
+#else
+			;
+#endif
 			return 0;
 		}
 

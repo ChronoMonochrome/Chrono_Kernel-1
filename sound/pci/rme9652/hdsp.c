@@ -678,7 +678,11 @@ static int hdsp_check_for_iobox (struct hdsp *hdsp)
 {
 	if (hdsp->io_type == H9652 || hdsp->io_type == H9632) return 0;
 	if (hdsp_read (hdsp, HDSP_statusRegister) & HDSP_ConfigError) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk("Hammerfall-DSP: no IO box connected!\n");
+#else
+		;
+#endif
 		hdsp->state &= ~HDSP_FirmwareLoaded;
 		return -EIO;
 	}
@@ -703,7 +707,11 @@ static int hdsp_wait_for_iobox(struct hdsp *hdsp, unsigned int loops,
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk("Hammerfall-DSP: no IO box connected!\n");
+#else
+	;
+#endif
 	hdsp->state &= ~HDSP_FirmwareLoaded;
 	return -EIO;
 }
@@ -752,7 +760,11 @@ static int snd_hdsp_load_firmware_from_cache(struct hdsp *hdsp) {
 
 	}
 	if (hdsp->state & HDSP_InitializationComplete) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "Hammerfall-DSP: firmware loaded from cache, restoring defaults\n");
+#else
+		;
+#endif
 		spin_lock_irqsave(&hdsp->lock, flags);
 		snd_hdsp_set_defaults(hdsp);
 		spin_unlock_irqrestore(&hdsp->lock, flags);
@@ -1112,11 +1124,23 @@ static int hdsp_set_rate(struct hdsp *hdsp, int rate, int called_internally)
 			int spdif_freq = hdsp_spdif_sample_rate(hdsp);
 
 			if ((spdif_freq == external_freq*2) && (hdsp_autosync_ref(hdsp) >= HDSP_AUTOSYNC_FROM_ADAT1))
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_INFO "Hammerfall-DSP: Detected ADAT in double speed mode\n");
+#else
+				;
+#endif
 			else if (hdsp->io_type == H9632 && (spdif_freq == external_freq*4) && (hdsp_autosync_ref(hdsp) >= HDSP_AUTOSYNC_FROM_ADAT1))
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_INFO "Hammerfall-DSP: Detected ADAT in quad speed mode\n");
+#else
+				;
+#endif
 			else if (rate != external_freq) {
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_INFO "Hammerfall-DSP: No AutoSync source for requested rate\n");
+#else
+				;
+#endif
 				return -1;
 			}
 		}
@@ -5091,7 +5115,11 @@ static int snd_hdsp_hwdep_ioctl(struct snd_hwdep *hw, struct file *file, unsigne
 		if (hdsp->state & (HDSP_FirmwareCached | HDSP_FirmwareLoaded))
 			return -EBUSY;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "Hammerfall-DSP: initializing firmware upload\n");
+#else
+		;
+#endif
 		firmware = (struct hdsp_firmware __user *)argp;
 
 		if (get_user(firmware_data, &firmware->firmware_data))
@@ -5516,12 +5544,20 @@ static int __devinit snd_hdsp_create(struct snd_card *card,
 				return 0;
 #endif
 			/* we defer initialization */
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "Hammerfall-DSP: card initialization pending : waiting for firmware\n");
+#else
+			;
+#endif
 			if ((err = snd_hdsp_create_hwdep(card, hdsp)) < 0)
 				return err;
 			return 0;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO "Hammerfall-DSP: Firmware already present, initializing card.\n");
+#else
+			;
+#endif
 			if (hdsp_read(hdsp, HDSP_status2Register) & HDSP_version2)
 				hdsp->io_type = RPM;
 			else if (hdsp_read(hdsp, HDSP_status2Register) & HDSP_version1)

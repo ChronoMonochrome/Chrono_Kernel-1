@@ -532,9 +532,13 @@ static int reader_config(struct pcmcia_device *link, int devno)
 
 	fail_rc = pcmcia_enable_device(link);
 	if (fail_rc != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &link->dev,
 			   "pcmcia_enable_device failed 0x%x\n",
 			   fail_rc);
+#else
+		dev_;
+#endif
 		goto cs_release;
 	}
 
@@ -659,8 +663,12 @@ static int __init cm4040_init(void)
 
 	major = register_chrdev(0, DEVICE_NAME, &reader_fops);
 	if (major < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING MODULE_NAME
 			": could not get major number\n");
+#else
+		;
+#endif
 		class_destroy(cmx_class);
 		return major;
 	}

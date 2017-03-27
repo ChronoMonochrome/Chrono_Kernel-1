@@ -34,6 +34,7 @@ module_param(ssh_procfs_gid, uint, 0444);
 
 /* Use printk instead of SSH_DEBUG macros. */
 #ifdef DEBUG_LIGHT
+#ifdef CONFIG_DEBUG_PRINTK
 #define SSH_LINUX_PROCFS_DEBUG(x...) if (net_ratelimit()) printk(KERN_INFO x)
 #define SSH_LINUX_PROCFS_WARN(x...) printk(KERN_EMERG x)
 #endif /* DEBUG_LIGHT */
@@ -55,6 +56,9 @@ interceptor_proc_entry_fop_open(SshInterceptorProcEntry entry,
 {
   /* Allow only one userspace application at a time. */
   write_lock(&entry->lock);
+#else
+#define SSH_LINUX_PROCFS_DEBUG(x...) if (net_ratelimit()) ;
+#endif
   if (entry->open == TRUE)
     {
       write_unlock(&entry->lock);

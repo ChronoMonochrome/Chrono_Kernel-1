@@ -605,7 +605,7 @@ static int emac_set_coalesce(struct net_device *ndev,
 		break;
 	}
 
-	printk(KERN_INFO"Set coalesce to %d usecs.\n", coal_intvl);
+;
 	priv->coal_intvl = coal_intvl;
 
 	return 0;

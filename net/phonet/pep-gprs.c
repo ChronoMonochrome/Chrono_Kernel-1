@@ -301,7 +301,7 @@ int gprs_attach(struct sock *sk)
 	release_sock(sk);
 	sock_hold(sk);
 
-	printk(KERN_DEBUG"%s: attached\n", dev->name);
+;
 	return dev->ifindex;
 
 out_rel:
@@ -322,7 +322,7 @@ void gprs_detach(struct sock *sk)
 	sk->sk_write_space	= gp->old_write_space;
 	release_sock(sk);
 
-	printk(KERN_DEBUG"%s: detached\n", dev->name);
+;
 	unregister_netdev(dev);
 	sock_put(sk);
 }

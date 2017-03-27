@@ -453,17 +453,17 @@ int psb_gtt_init(struct drm_device *dev, int resume)
 
 	stolen_size = vram_stolen_size;
 
-	printk(KERN_INFO"GMMADR(region 0) start: 0x%08x (%dM).\n",
-		pg->gatt_start, pg->gatt_pages/256);
-	printk(KERN_INFO"GTTADR(region 3) start: 0x%08x (can map %dM RAM), and actual RAM base 0x%08x.\n",
-		pg->gtt_start, gtt_pages * 4, pg->gtt_phys_start);
-	printk(KERN_INFO "Stolen memory information\n");
-	printk(KERN_INFO "       base in RAM: 0x%x\n", dev_priv->stolen_base);
-	printk(KERN_INFO "       size: %luK, calculated by (GTT RAM base) - (Stolen base), seems wrong\n",
-		vram_stolen_size/1024);
+//	printk(KERN_INFO"GMMADR(region 0) start: 0x%08x (%dM).\n",
+;
+//	printk(KERN_INFO"GTTADR(region 3) start: 0x%08x (can map %dM RAM), and actual RAM base 0x%08x.\n",
+;
+;
+;
+//	printk(KERN_INFO "       size: %luK, calculated by (GTT RAM base) - (Stolen base), seems wrong\n",
+;
 	dvmt_mode = (dev_priv->gmch_ctrl >> 4) & 0x7;
-	printk(KERN_INFO "      the correct size should be: %dM(dvmt mode=%d)\n",
-		(dvmt_mode == 1) ? 1 : (2 << (dvmt_mode - 1)), dvmt_mode);
+//	printk(KERN_INFO "      the correct size should be: %dM(dvmt mode=%d)\n",
+;
 
 	if (resume && (gtt_pages != pg->gtt_pages) &&
 	    (stolen_size != pg->stolen_size)) {
@@ -503,8 +503,8 @@ int psb_gtt_init(struct drm_device *dev, int resume)
 
 	pfn_base = dev_priv->stolen_base >> PAGE_SHIFT;
 	vram_pages = num_pages = vram_stolen_size >> PAGE_SHIFT;
-	printk(KERN_INFO"Set up %d stolen pages starting at 0x%08x, GTT offset %dK\n",
-		num_pages, pfn_base, 0);
+//	printk(KERN_INFO"Set up %d stolen pages starting at 0x%08x, GTT offset %dK\n",
+;
 	for (i = 0; i < num_pages; ++i) {
 		pte = psb_gtt_mask_pte(pfn_base + i, 0);
 		iowrite32(pte, dev_priv->gtt_map + i);

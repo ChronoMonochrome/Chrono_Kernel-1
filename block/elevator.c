@@ -882,8 +882,12 @@ int elv_register(struct elevator_type *e)
 			 !strcmp(e->elevator_name, CONFIG_DEFAULT_IOSCHED)))
 				def = " (default)";
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "io scheduler %s registered%s\n", e->elevator_name,
 								def);
+#else
+	;
+#endif
 	return 0;
 }
 EXPORT_SYMBOL_GPL(elv_register);

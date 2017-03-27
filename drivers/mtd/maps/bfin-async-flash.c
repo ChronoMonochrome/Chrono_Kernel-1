@@ -30,7 +30,11 @@
 #include <linux/io.h>
 #include <asm/unaligned.h>
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define pr_devinit(fmt, args...) ({ static const __devinitconst char __fmt[] = fmt; printk(__fmt, ## args); })
+#else
+#define pr_devinit(fmt, args...) ({ static const __devinitconst char __fmt[] = fmt; ;
+#endif
 
 #define DRIVER_NAME "bfin-async-flash"
 

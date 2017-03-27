@@ -56,10 +56,18 @@ static void xonar_ext_power_gpio_changed(struct oxygen *chip)
 	if (has_power != data->has_power) {
 		data->has_power = has_power;
 		if (has_power) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_NOTICE "power restored\n");
+#else
+			;
+#endif
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_CRIT
 				   "Hey! Don't unplug the power cable!\n");
+#else
+			;
+#endif
 			/* TODO: stop PCMs */
 		}
 	}

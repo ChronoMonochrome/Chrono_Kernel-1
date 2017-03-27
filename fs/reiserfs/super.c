@@ -307,7 +307,7 @@ static int finish_unfinished(struct super_block *s)
 		}
 
 		iput(inode);
-		printk("done\n");
+;
 		done++;
 	}
 	REISERFS_SB(s)->s_is_unlinked_ok = 0;
@@ -1216,10 +1216,10 @@ static void handle_barrier_mode(struct super_block *s, unsigned long bits)
 		REISERFS_SB(s)->s_mount_opt &= ~all_barrier;
 		if (bits & flush) {
 			REISERFS_SB(s)->s_mount_opt |= flush;
-			printk("reiserfs: enabling write barrier flush mode\n");
+;
 		} else if (bits & none) {
 			REISERFS_SB(s)->s_mount_opt |= none;
-			printk("reiserfs: write barriers turned off\n");
+;
 		}
 	}
 }
@@ -1836,7 +1836,7 @@ static int reiserfs_fill_super(struct super_block *s, void *data, int silent)
 		reiserfs_info(s, "using writeback data mode\n");
 	}
 	if (reiserfs_barrier_flush(s)) {
-		printk("reiserfs: using flush barriers\n");
+;
 	}
 
 	// set_device_ro(s->s_dev, 1) ;
@@ -2293,9 +2293,9 @@ static ssize_t reiserfs_quota_write(struct super_block *sb, int type,
 	struct buffer_head tmp_bh, *bh;
 
 	if (!current->journal_info) {
-		printk(KERN_WARNING "reiserfs: Quota write (off=%Lu, len=%Lu)"
-			" cancelled because transaction is not started.\n",
-			(unsigned long long)off, (unsigned long long)len);
+//		printk(KERN_WARNING "reiserfs: Quota write (off=%Lu, len=%Lu)"
+//			" cancelled because transaction is not started.\n",
+;
 		return -EIO;
 	}
 	mutex_lock_nested(&inode->i_mutex, I_MUTEX_QUOTA);

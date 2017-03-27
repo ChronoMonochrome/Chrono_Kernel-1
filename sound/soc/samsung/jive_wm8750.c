@@ -146,7 +146,11 @@ static int __init jive_init(void)
 	if (!machine_is_jive())
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("JIVE WM8750 Audio support\n");
+#else
+	;
+#endif
 
 	jive_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!jive_snd_device)

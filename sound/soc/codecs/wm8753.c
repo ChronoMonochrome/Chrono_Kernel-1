@@ -676,8 +676,12 @@ static void pll_factors(struct _pll_div *pll_div, unsigned int target,
 		pll_div->div2 = 0;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"wm8753: unsupported N = %u\n", Ndiv);
+#else
+		;
+#endif
 
 	pll_div->n = Ndiv;
 	Nmod = target % source;

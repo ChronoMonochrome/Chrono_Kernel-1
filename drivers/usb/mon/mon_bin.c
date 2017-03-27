@@ -679,7 +679,7 @@ static int mon_bin_open(struct inode *inode, struct file *file)
 		return -ENODEV;
 	}
 	if (mbus != &mon_bus0 && mbus->u_bus == NULL) {
-		printk(KERN_ERR TAG ": consistency error on open\n");
+;
 		mutex_unlock(&mon_lock);
 		return -ENODEV;
 	}
@@ -778,7 +778,7 @@ static int mon_bin_release(struct inode *inode, struct file *file)
 	mutex_lock(&mon_lock);
 
 	if (mbus->nreaders <= 0) {
-		printk(KERN_ERR TAG ": consistency error on close\n");
+;
 		mutex_unlock(&mon_lock);
 		return 0;
 	}

@@ -935,17 +935,17 @@ static void shrink_dcache_for_umount_subtree(struct dentry *dentry)
 			__d_shrink(dentry);
 
 			if (dentry->d_count != 0) {
-				printk(KERN_ERR
-				       "BUG: Dentry %p{i=%lx,n=%s}"
-				       " still in use (%d)"
-				       " [unmount of %s %s]\n",
-				       dentry,
-				       dentry->d_inode ?
-				       dentry->d_inode->i_ino : 0UL,
-				       dentry->d_name.name,
-				       dentry->d_count,
-				       dentry->d_sb->s_type->name,
-				       dentry->d_sb->s_id);
+//				printk(KERN_ERR
+//				       "BUG: Dentry %p{i=%lx,n=%s}"
+//				       " still in use (%d)"
+//				       " [unmount of %s %s]\n",
+//				       dentry,
+//				       dentry->d_inode ?
+//				       dentry->d_inode->i_ino : 0UL,
+//				       dentry->d_name.name,
+//				       dentry->d_count,
+//				       dentry->d_sb->s_type->name,
+;
 				BUG();
 			}
 
@@ -2221,7 +2221,7 @@ static void dentry_unlock_parents_for_move(struct dentry *dentry,
 static void __d_move(struct dentry * dentry, struct dentry * target)
 {
 	if (!dentry->d_inode)
-		printk(KERN_WARNING "VFS: moving negative dcache entry\n");
+;
 
 	BUG_ON(d_ancestor(dentry, target));
 	BUG_ON(d_ancestor(target, dentry));

@@ -211,7 +211,11 @@ void __init mca_do_proc_init(void)
 					      mca_read_proc, (void *)mca_dev);
 
 		if(node == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Failed to allocate memory for MCA proc-entries!");
+#else
+			;
+#endif
 			return;
 		}
 	}

@@ -90,9 +90,9 @@ struct usb_host_interface *usb_find_alt_setting(
 		if (intf_cache->altsetting[i].desc.bAlternateSetting == alt_num)
 			return &intf_cache->altsetting[i];
 
-	printk(KERN_DEBUG "Did not find alt setting %u for intf %u, "
-			"config %u\n", alt_num, iface_num,
-			config->desc.bConfigurationValue);
+//	printk(KERN_DEBUG "Did not find alt setting %u for intf %u, "
+//			"config %u\n", alt_num, iface_num,
+;
 	return NULL;
 }
 EXPORT_SYMBOL_GPL(usb_find_alt_setting);
@@ -631,11 +631,11 @@ int __usb_get_extra_descriptor(char *buffer, unsigned size,
 		header = (struct usb_descriptor_header *)buffer;
 
 		if (header->bLength < 2) {
-			printk(KERN_ERR
-				"%s: bogus descriptor, type %d length %d\n",
-				usbcore_name,
-				header->bDescriptorType,
-				header->bLength);
+//			printk(KERN_ERR
+//				"%s: bogus descriptor, type %d length %d\n",
+//				usbcore_name,
+//				header->bDescriptorType,
+;
 			return -1;
 		}
 

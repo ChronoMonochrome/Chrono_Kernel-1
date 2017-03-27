@@ -105,7 +105,11 @@ acpi_power_get_context(acpi_handle handle,
 
 	result = acpi_bus_get_device(handle, &device);
 	if (result) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Getting context [%p]\n", handle);
+#else
+		;
+#endif
 		return result;
 	}
 
@@ -580,8 +584,12 @@ static int acpi_power_add(struct acpi_device *device)
 		break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s [%s] (%s)\n", acpi_device_name(device),
 	       acpi_device_bid(device), state ? "on" : "off");
+#else
+	;
+#endif
 
       end:
 	if (result)

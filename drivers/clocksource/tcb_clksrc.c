@@ -258,9 +258,13 @@ static int __init tcb_clksrc_init(void)
 
 	clksrc.mult = clocksource_hz2mult(divided_rate, clksrc.shift);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(bootinfo, clksrc.name, CONFIG_ATMEL_TCB_CLKSRC_BLOCK,
 			divided_rate / 1000000,
 			((divided_rate + 500000) % 1000000) / 1000);
+#else
+	;
+#endif
 
 	/* tclib will give us three clocks no matter what the
 	 * underlying platform supports.

@@ -234,8 +234,8 @@ int rds_iw_recv_refill(struct rds_connection *conn, gfp_t kptr_gfp,
 	while ((prefill || rds_conn_up(conn)) &&
 	       rds_iw_ring_alloc(&ic->i_recv_ring, 1, &pos)) {
 		if (pos >= ic->i_recv_ring.w_nr) {
-			printk(KERN_NOTICE "Argh - ring alloc returned pos=%u\n",
-					pos);
+//			printk(KERN_NOTICE "Argh - ring alloc returned pos=%u\n",
+;
 			ret = -EINVAL;
 			break;
 		}

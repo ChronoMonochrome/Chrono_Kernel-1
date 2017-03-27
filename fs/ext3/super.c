@@ -128,8 +128,8 @@ void ext3_journal_abort_handle(const char *caller, const char *err_fn,
 	if (is_handle_aborted(handle))
 		return;
 
-	printk(KERN_ERR "EXT3-fs: %s: aborting transaction: %s in %s\n",
-		caller, errstr, err_fn);
+//	printk(KERN_ERR "EXT3-fs: %s: aborting transaction: %s in %s\n",
+;
 
 	journal_abort_handle(handle);
 }
@@ -145,7 +145,7 @@ void ext3_msg(struct super_block *sb, const char *prefix,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk("%sEXT3-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
+;
 
 	va_end(args);
 }
@@ -204,8 +204,8 @@ void ext3_error(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_CRIT "EXT3-fs error (device %s): %s: %pV\n",
-	       sb->s_id, function, &vaf);
+//	printk(KERN_CRIT "EXT3-fs error (device %s): %s: %pV\n",
+;
 
 	va_end(args);
 
@@ -288,8 +288,8 @@ void ext3_abort(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_CRIT "EXT3-fs (%s): error: %s: %pV\n",
-	       sb->s_id, function, &vaf);
+//	printk(KERN_CRIT "EXT3-fs (%s): error: %s: %pV\n",
+;
 
 	va_end(args);
 
@@ -319,8 +319,8 @@ void ext3_warning(struct super_block *sb, const char *function,
 	vaf.fmt = fmt;
 	vaf.va = &args;
 
-	printk(KERN_WARNING "EXT3-fs (%s): warning: %s: %pV\n",
-	       sb->s_id, function, &vaf);
+//	printk(KERN_WARNING "EXT3-fs (%s): warning: %s: %pV\n",
+;
 
 	va_end(args);
 }
@@ -507,8 +507,8 @@ static void ext3_i_callback(struct rcu_head *head)
 static void ext3_destroy_inode(struct inode *inode)
 {
 	if (!list_empty(&(EXT3_I(inode)->i_orphan))) {
-		printk("EXT3 Inode %p: orphan list check failed!\n",
-			EXT3_I(inode));
+//		printk("EXT3 Inode %p: orphan list check failed!\n",
+;
 		print_hex_dump(KERN_INFO, "", DUMP_PREFIX_ADDRESS, 16, 4,
 				EXT3_I(inode), sizeof(struct ext3_inode_info),
 				false);
@@ -1514,17 +1514,17 @@ static void ext3_orphan_cleanup (struct super_block * sb,
 		list_add(&EXT3_I(inode)->i_orphan, &EXT3_SB(sb)->s_orphan);
 		dquot_initialize(inode);
 		if (inode->i_nlink) {
-			printk(KERN_DEBUG
-				"%s: truncating inode %lu to %Ld bytes\n",
-				__func__, inode->i_ino, inode->i_size);
+//			printk(KERN_DEBUG
+//				"%s: truncating inode %lu to %Ld bytes\n",
+;
 			jbd_debug(2, "truncating inode %lu to %Ld bytes\n",
 				  inode->i_ino, inode->i_size);
 			ext3_truncate(inode);
 			nr_truncates++;
 		} else {
-			printk(KERN_DEBUG
-				"%s: deleting unreferenced inode %lu\n",
-				__func__, inode->i_ino);
+//			printk(KERN_DEBUG
+//				"%s: deleting unreferenced inode %lu\n",
+;
 			jbd_debug(2, "deleting unreferenced inode %lu\n",
 				  inode->i_ino);
 			nr_orphans++;
@@ -2297,7 +2297,7 @@ static int ext3_load_journal(struct super_block *sb,
 	}
 
 	if (!(journal->j_flags & JFS_BARRIER))
-		printk(KERN_INFO "EXT3-fs: barriers not enabled\n");
+;
 
 	if (!really_read_only && test_opt(sb, UPDATE_JOURNAL)) {
 		err = journal_update_format(journal);

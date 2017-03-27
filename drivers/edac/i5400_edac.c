@@ -37,6 +37,7 @@
 
 #define EDAC_MOD_STR      "i5400_edac"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define i5400_printk(level, fmt, arg...) \
 	edac_printk(level, "i5400", fmt, ##arg)
 
@@ -169,6 +170,9 @@ enum error_mask {
 	EMASK_M28 = 1<<27, /* DIMM-Spare Copy Completed */
 	EMASK_M29 = 1<<28, /* DIMM-Isolation Completed */
 };
+#else
+#define i5400_;
+#endif
 
 /*
  * Names to translate bit error into something useful
@@ -653,9 +657,13 @@ static void i5400_process_nonfatal_error_info(struct mem_ctl_info *mci,
 
 	branch = extract_fbdchan_indx(info->ferr_nf_fbd);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	i5400_mc_printk(mci, KERN_EMERG,
 			"Non-Fatal misc error (Branch=%d Err=%#lx (%s))",
 			branch >> 1, allErrors, error_name[errnum]);
+#else
+	i5400_mc_;
+#endif
 }
 
 /*
@@ -1312,12 +1320,20 @@ static int i5400_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	i5400_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i5400_pci) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
+#else
+		;
+#endif
 	}
 
 	return 0;

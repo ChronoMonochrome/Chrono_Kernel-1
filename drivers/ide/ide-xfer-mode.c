@@ -70,7 +70,11 @@ static u8 ide_get_best_pio_mode(ide_drive_t *drive, u8 mode_wanted, u8 max_mode)
 		pio_mode = ide_scan_pio_blacklist((char *)&id[ATA_ID_PROD]);
 
 	if (pio_mode != -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: is on PIO blacklist\n", drive->name);
+#else
+		;
+#endif
 	} else {
 		pio_mode = id[ATA_ID_OLD_PIO_MODES] >> 8;
 		if (pio_mode > 2) {	/* 2 is maximum allowed tPIO value */
@@ -96,8 +100,12 @@ static u8 ide_get_best_pio_mode(ide_drive_t *drive, u8 mode_wanted, u8 max_mode)
 		}
 
 		if (overridden)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: tPIO > 2, assuming tPIO = 2\n",
 					 drive->name);
+#else
+			;
+#endif
 	}
 
 	if (pio_mode > max_mode)
@@ -199,9 +207,13 @@ void ide_set_pio(ide_drive_t *drive, u8 req_pio)
 	 * - report device max PIO mode
 	 * - check req_pio != 255 against device max PIO mode
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: host max PIO%d wanted PIO%d%s selected PIO%d\n",
 			  drive->name, host_pio, req_pio,
 			  req_pio == 255 ? "(auto-tune)" : "", pio);
+#else
+	;
+#endif
 
 	(void)ide_set_pio_mode(drive, XFER_PIO_0 + pio);
 }
@@ -230,7 +242,11 @@ static u8 ide_rate_filter(ide_drive_t *drive, u8 speed)
 			mode = XFER_PIO_4;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 /*	printk("%s: mode 0x%02x, speed 0x%02x\n", __func__, mode, speed); */
+#else
+/*	;
+#endif
 
 	return min(speed, mode);
 }

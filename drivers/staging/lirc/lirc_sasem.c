@@ -174,7 +174,7 @@ static void delete_context(struct sasem_context *context)
 	kfree(context);
 
 	if (debug)
-		printk(KERN_INFO "%s: context deleted\n", __func__);
+;
 }
 
 static void deregister_from_lirc(struct sasem_context *context)
@@ -187,8 +187,8 @@ static void deregister_from_lirc(struct sasem_context *context)
 		err("%s: unable to deregister from lirc (%d)",
 			__func__, retval);
 	else
-		printk(KERN_INFO "Deregistered Sasem driver (minor:%d)\n",
-		       minor);
+//		printk(KERN_INFO "Deregistered Sasem driver (minor:%d)\n",
+;
 
 }
 
@@ -231,7 +231,7 @@ static int vfd_open(struct inode *inode, struct file *file)
 	} else {
 		context->vfd_isopen = 1;
 		file->private_data = context;
-		printk(KERN_INFO "VFD port opened\n");
+;
 	}
 
 	mutex_unlock(&context->ctx_lock);
@@ -265,7 +265,7 @@ static long vfd_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		context->vfd_contrast = (unsigned int)arg;
 		break;
 	default:
-		printk(KERN_INFO "Unknown IOCTL command\n");
+;
 		mutex_unlock(&context->ctx_lock);
 		return -ENOIOCTLCMD;  /* not supported */
 	}
@@ -297,7 +297,7 @@ static int vfd_close(struct inode *inode, struct file *file)
 		retval = -EIO;
 	} else {
 		context->vfd_isopen = 0;
-		printk(KERN_INFO "VFD port closed\n");
+;
 		if (!context->dev_present && !context->ir_isopen) {
 
 			/* Device disconnected before close and IR port is
@@ -509,7 +509,7 @@ static int ir_open(void *data)
 		    __func__, retval);
 	else {
 		context->ir_isopen = 1;
-		printk(KERN_INFO "IR port opened\n");
+;
 	}
 
 exit:
@@ -536,7 +536,7 @@ static void ir_close(void *data)
 
 	usb_kill_urb(context->rx_urb);
 	context->ir_isopen = 0;
-	printk(KERN_INFO "IR port closed\n");
+;
 
 	if (!context->dev_present) {
 
@@ -573,16 +573,16 @@ static void incoming_packet(struct sasem_context *context,
 	int i;
 
 	if (len != 8) {
-		printk(KERN_WARNING "%s: invalid incoming packet size (%d)\n",
-		     __func__, len);
+//		printk(KERN_WARNING "%s: invalid incoming packet size (%d)\n",
+;
 		return;
 	}
 
 	if (debug) {
-		printk(KERN_INFO "Incoming data: ");
+;
 		for (i = 0; i < 8; ++i)
-			printk(KERN_CONT "%02x ", buf[i]);
-		printk(KERN_CONT "\n");
+;
+;
 	}
 
 	/*
@@ -652,8 +652,8 @@ static void usb_rx_callback(struct urb *urb)
 		break;
 
 	default:
-		printk(KERN_WARNING "%s: status (%d): ignored",
-			 __func__, urb->status);
+//		printk(KERN_WARNING "%s: status (%d): ignored",
+;
 		break;
 	}
 
@@ -686,7 +686,7 @@ static int sasem_probe(struct usb_interface *interface,
 	struct sasem_context *context = NULL;
 	int i;
 
-	printk(KERN_INFO "%s: found Sasem device\n", __func__);
+;
 
 
 	dev = usb_get_dev(interface_to_usbdev(interface));
@@ -718,8 +718,8 @@ static int sasem_probe(struct usb_interface *interface,
 			rx_endpoint = ep;
 			ir_ep_found = 1;
 			if (debug)
-				printk(KERN_INFO "%s: found IR endpoint\n",
-				       __func__);
+//				printk(KERN_INFO "%s: found IR endpoint\n",
+;
 
 		} else if (!vfd_ep_found &&
 			ep_dir == USB_DIR_OUT &&
@@ -728,8 +728,8 @@ static int sasem_probe(struct usb_interface *interface,
 			tx_endpoint = ep;
 			vfd_ep_found = 1;
 			if (debug)
-				printk(KERN_INFO "%s: found VFD endpoint\n",
-				       __func__);
+//				printk(KERN_INFO "%s: found VFD endpoint\n",
+;
 		}
 	}
 
@@ -742,8 +742,8 @@ static int sasem_probe(struct usb_interface *interface,
 	}
 
 	if (!vfd_ep_found)
-		printk(KERN_INFO "%s: no valid output (VFD) endpoint found.\n",
-		       __func__);
+//		printk(KERN_INFO "%s: no valid output (VFD) endpoint found.\n",
+;
 
 
 	/* Allocate memory */
@@ -811,8 +811,8 @@ static int sasem_probe(struct usb_interface *interface,
 		retval = lirc_minor;
 		goto unlock;
 	} else
-		printk(KERN_INFO "%s: Registered Sasem driver (minor:%d)\n",
-			__func__, lirc_minor);
+//		printk(KERN_INFO "%s: Registered Sasem driver (minor:%d)\n",
+;
 
 alloc_status_switch:
 
@@ -856,15 +856,15 @@ alloc_status_switch:
 	if (vfd_ep_found) {
 
 		if (debug)
-			printk(KERN_INFO "Registering VFD with sysfs\n");
+;
 		if (usb_register_dev(interface, &sasem_class))
 			/* Not a fatal error, so ignore */
-			printk(KERN_INFO "%s: could not get a minor number "
-			       "for VFD\n", __func__);
+//			printk(KERN_INFO "%s: could not get a minor number "
+;
 	}
 
-	printk(KERN_INFO "%s: Sasem device on usb<%d:%d> initialized\n",
-			__func__, dev->bus->busnum, dev->devnum);
+//	printk(KERN_INFO "%s: Sasem device on usb<%d:%d> initialized\n",
+;
 unlock:
 	mutex_unlock(&context->ctx_lock);
 exit:
@@ -884,7 +884,7 @@ static void sasem_disconnect(struct usb_interface *interface)
 	context = usb_get_intfdata(interface);
 	mutex_lock(&context->ctx_lock);
 
-	printk(KERN_INFO "%s: Sasem device disconnected\n", __func__);
+;
 
 	usb_set_intfdata(interface, NULL);
 	context->dev_present = 0;
@@ -917,8 +917,8 @@ static int __init sasem_init(void)
 {
 	int rc;
 
-	printk(KERN_INFO MOD_DESC ", v" MOD_VERSION "\n");
-	printk(KERN_INFO MOD_AUTHOR "\n");
+;
+;
 
 	rc = usb_register(&sasem_driver);
 	if (rc < 0) {
@@ -931,7 +931,7 @@ static int __init sasem_init(void)
 static void __exit sasem_exit(void)
 {
 	usb_deregister(&sasem_driver);
-	printk(KERN_INFO "module removed. Goodbye!\n");
+;
 }
 
 

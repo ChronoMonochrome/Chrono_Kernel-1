@@ -205,7 +205,7 @@ static pvc_device* add_pvc(struct net_device *dev, u16 dlci)
 
 	pvc = kzalloc(sizeof(pvc_device), GFP_ATOMIC);
 #ifdef DEBUG_PVC
-	printk(KERN_DEBUG "add_pvc: allocated pvc %p, frad %p\n", pvc, dev);
+;
 #endif
 	if (!pvc)
 		return NULL;
@@ -252,7 +252,7 @@ static inline void delete_unused_pvcs(hdlc_device *hdlc)
 		if (!pvc_is_used(*pvc_p)) {
 			pvc_device *pvc = *pvc_p;
 #ifdef DEBUG_PVC
-			printk(KERN_DEBUG "freeing unused pvc: %p\n", pvc);
+;
 #endif
 			*pvc_p = pvc->next;
 			kfree(pvc);
@@ -446,15 +446,15 @@ static netdev_tx_t pvc_xmit(struct sk_buff *skb, struct net_device *dev)
 
 static inline void fr_log_dlci_active(pvc_device *pvc)
 {
-	printk(KERN_INFO "%s: DLCI %d [%s%s%s]%s %s\n",
-	       pvc->frad->name,
-	       pvc->dlci,
-	       pvc->main ? pvc->main->name : "",
-	       pvc->main && pvc->ether ? " " : "",
-	       pvc->ether ? pvc->ether->name : "",
-	       pvc->state.new ? " new" : "",
-	       !pvc->state.exist ? "deleted" :
-	       pvc->state.active ? "active" : "inactive");
+//	printk(KERN_INFO "%s: DLCI %d [%s%s%s]%s %s\n",
+//	       pvc->frad->name,
+//	       pvc->dlci,
+//	       pvc->main ? pvc->main->name : "",
+//	       pvc->main && pvc->ether ? " " : "",
+//	       pvc->ether ? pvc->ether->name : "",
+//	       pvc->state.new ? " new" : "",
+//	       !pvc->state.exist ? "deleted" :
+;
 }
 
 
@@ -481,16 +481,16 @@ static void fr_lmi_send(struct net_device *dev, int fullrep)
 	if (dce && fullrep) {
 		len += state(hdlc)->dce_pvc_count * (2 + stat_len);
 		if (len > HDLC_MAX_MRU) {
-			printk(KERN_WARNING "%s: Too many PVCs while sending "
-			       "LMI full report\n", dev->name);
+//			printk(KERN_WARNING "%s: Too many PVCs while sending "
+;
 			return;
 		}
 	}
 
 	skb = dev_alloc_skb(len);
 	if (!skb) {
-		printk(KERN_WARNING "%s: Memory squeeze on fr_lmi_send()\n",
-		       dev->name);
+//		printk(KERN_WARNING "%s: Memory squeeze on fr_lmi_send()\n",
+;
 		return;
 	}
 	memset(skb->data, 0, len);
@@ -615,8 +615,8 @@ static void fr_timer(unsigned long arg)
 		state(hdlc)->last_errors <<= 1; /* Shift the list */
 		if (state(hdlc)->request) {
 			if (state(hdlc)->reliable)
-				printk(KERN_INFO "%s: No LMI status reply "
-				       "received\n", dev->name);
+//				printk(KERN_INFO "%s: No LMI status reply "
+;
 			state(hdlc)->last_errors |= 1;
 		}
 
@@ -628,8 +628,8 @@ static void fr_timer(unsigned long arg)
 	}
 
 	if (state(hdlc)->reliable != reliable) {
-		printk(KERN_INFO "%s: Link %sreliable\n", dev->name,
-		       reliable ? "" : "un");
+//		printk(KERN_INFO "%s: Link %sreliable\n", dev->name,
+;
 		fr_set_link_state(reliable, dev);
 	}
 
@@ -665,33 +665,33 @@ static int fr_lmi_recv(struct net_device *dev, struct sk_buff *skb)
 
 	if (skb->len < (lmi == LMI_ANSI ? LMI_ANSI_LENGTH :
 			LMI_CCITT_CISCO_LENGTH)) {
-		printk(KERN_INFO "%s: Short LMI frame\n", dev->name);
+;
 		return 1;
 	}
 
 	if (skb->data[3] != (lmi == LMI_CISCO ? NLPID_CISCO_LMI :
 			     NLPID_CCITT_ANSI_LMI)) {
-		printk(KERN_INFO "%s: Received non-LMI frame with LMI DLCI\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: Received non-LMI frame with LMI DLCI\n",
+;
 		return 1;
 	}
 
 	if (skb->data[4] != LMI_CALLREF) {
-		printk(KERN_INFO "%s: Invalid LMI Call reference (0x%02X)\n",
-		       dev->name, skb->data[4]);
+//		printk(KERN_INFO "%s: Invalid LMI Call reference (0x%02X)\n",
+;
 		return 1;
 	}
 
 	if (skb->data[5] != (dce ? LMI_STATUS_ENQUIRY : LMI_STATUS)) {
-		printk(KERN_INFO "%s: Invalid LMI Message type (0x%02X)\n",
-		       dev->name, skb->data[5]);
+//		printk(KERN_INFO "%s: Invalid LMI Message type (0x%02X)\n",
+;
 		return 1;
 	}
 
 	if (lmi == LMI_ANSI) {
 		if (skb->data[6] != LMI_ANSI_LOCKSHIFT) {
-			printk(KERN_INFO "%s: Not ANSI locking shift in LMI"
-			       " message (0x%02X)\n", dev->name, skb->data[6]);
+//			printk(KERN_INFO "%s: Not ANSI locking shift in LMI"
+;
 			return 1;
 		}
 		i = 7;
@@ -700,34 +700,34 @@ static int fr_lmi_recv(struct net_device *dev, struct sk_buff *skb)
 
 	if (skb->data[i] != (lmi == LMI_CCITT ? LMI_CCITT_REPTYPE :
 			     LMI_ANSI_CISCO_REPTYPE)) {
-		printk(KERN_INFO "%s: Not an LMI Report type IE (0x%02X)\n",
-		       dev->name, skb->data[i]);
+//		printk(KERN_INFO "%s: Not an LMI Report type IE (0x%02X)\n",
+;
 		return 1;
 	}
 
 	if (skb->data[++i] != LMI_REPT_LEN) {
-		printk(KERN_INFO "%s: Invalid LMI Report type IE length"
-		       " (%u)\n", dev->name, skb->data[i]);
+//		printk(KERN_INFO "%s: Invalid LMI Report type IE length"
+;
 		return 1;
 	}
 
 	reptype = skb->data[++i];
 	if (reptype != LMI_INTEGRITY && reptype != LMI_FULLREP) {
-		printk(KERN_INFO "%s: Unsupported LMI Report type (0x%02X)\n",
-		       dev->name, reptype);
+//		printk(KERN_INFO "%s: Unsupported LMI Report type (0x%02X)\n",
+;
 		return 1;
 	}
 
 	if (skb->data[++i] != (lmi == LMI_CCITT ? LMI_CCITT_ALIVE :
 			       LMI_ANSI_CISCO_ALIVE)) {
-		printk(KERN_INFO "%s: Not an LMI Link integrity verification"
-		       " IE (0x%02X)\n", dev->name, skb->data[i]);
+//		printk(KERN_INFO "%s: Not an LMI Link integrity verification"
+;
 		return 1;
 	}
 
 	if (skb->data[++i] != LMI_INTEG_LEN) {
-		printk(KERN_INFO "%s: Invalid LMI Link integrity verification"
-		       " IE length (%u)\n", dev->name, skb->data[i]);
+//		printk(KERN_INFO "%s: Invalid LMI Link integrity verification"
+;
 		return 1;
 	}
 	i++;
@@ -801,14 +801,14 @@ static int fr_lmi_recv(struct net_device *dev, struct sk_buff *skb)
 
 		if (skb->data[i] != (lmi == LMI_CCITT ? LMI_CCITT_PVCSTAT :
 				       LMI_ANSI_CISCO_PVCSTAT)) {
-			printk(KERN_INFO "%s: Not an LMI PVC status IE"
-			       " (0x%02X)\n", dev->name, skb->data[i]);
+//			printk(KERN_INFO "%s: Not an LMI PVC status IE"
+;
 			return 1;
 		}
 
 		if (skb->data[++i] != stat_len) {
-			printk(KERN_INFO "%s: Invalid LMI PVC status IE length"
-			       " (%u)\n", dev->name, skb->data[i]);
+//			printk(KERN_INFO "%s: Invalid LMI PVC status IE length"
+;
 			return 1;
 		}
 		i++;
@@ -829,9 +829,9 @@ static int fr_lmi_recv(struct net_device *dev, struct sk_buff *skb)
 		pvc = add_pvc(dev, dlci);
 
 		if (!pvc && !no_ram) {
-			printk(KERN_WARNING
-			       "%s: Memory squeeze on fr_lmi_recv()\n",
-			       dev->name);
+//			printk(KERN_WARNING
+//			       "%s: Memory squeeze on fr_lmi_recv()\n",
+;
 			no_ram = 1;
 		}
 
@@ -902,8 +902,8 @@ static int fr_rx(struct sk_buff *skb)
 	pvc = find_pvc(hdlc, dlci);
 	if (!pvc) {
 #ifdef DEBUG_PKT
-		printk(KERN_INFO "%s: No PVC for received frame's DLCI %d\n",
-		       frad->name, dlci);
+//		printk(KERN_INFO "%s: No PVC for received frame's DLCI %d\n",
+;
 #endif
 		dev_kfree_skb_any(skb);
 		return NET_RX_DROP;
@@ -911,16 +911,16 @@ static int fr_rx(struct sk_buff *skb)
 
 	if (pvc->state.fecn != fh->fecn) {
 #ifdef DEBUG_ECN
-		printk(KERN_DEBUG "%s: DLCI %d FECN O%s\n", frad->name,
-		       dlci, fh->fecn ? "N" : "FF");
+//		printk(KERN_DEBUG "%s: DLCI %d FECN O%s\n", frad->name,
+;
 #endif
 		pvc->state.fecn ^= 1;
 	}
 
 	if (pvc->state.becn != fh->becn) {
 #ifdef DEBUG_ECN
-		printk(KERN_DEBUG "%s: DLCI %d BECN O%s\n", frad->name,
-		       dlci, fh->becn ? "N" : "FF");
+//		printk(KERN_DEBUG "%s: DLCI %d BECN O%s\n", frad->name,
+;
 #endif
 		pvc->state.becn ^= 1;
 	}
@@ -962,14 +962,14 @@ static int fr_rx(struct sk_buff *skb)
 			break;
 
 		default:
-			printk(KERN_INFO "%s: Unsupported protocol, OUI=%x "
-			       "PID=%x\n", frad->name, oui, pid);
+//			printk(KERN_INFO "%s: Unsupported protocol, OUI=%x "
+;
 			dev_kfree_skb_any(skb);
 			return NET_RX_DROP;
 		}
 	} else {
-		printk(KERN_INFO "%s: Unsupported protocol, NLPID=%x "
-		       "length = %i\n", frad->name, data[3], skb->len);
+//		printk(KERN_INFO "%s: Unsupported protocol, NLPID=%x "
+;
 		dev_kfree_skb_any(skb);
 		return NET_RX_DROP;
 	}
@@ -999,7 +999,7 @@ static void fr_start(struct net_device *dev)
 {
 	hdlc_device *hdlc = dev_to_hdlc(dev);
 #ifdef DEBUG_LINK
-	printk(KERN_DEBUG "fr_start\n");
+;
 #endif
 	if (state(hdlc)->settings.lmi != LMI_NONE) {
 		state(hdlc)->reliable = 0;
@@ -1025,7 +1025,7 @@ static void fr_stop(struct net_device *dev)
 {
 	hdlc_device *hdlc = dev_to_hdlc(dev);
 #ifdef DEBUG_LINK
-	printk(KERN_DEBUG "fr_stop\n");
+;
 #endif
 	if (state(hdlc)->settings.lmi != LMI_NONE)
 		del_timer_sync(&state(hdlc)->timer);
@@ -1073,8 +1073,8 @@ static int fr_add_pvc(struct net_device *frad, unsigned int dlci, int type)
 	int used;
 
 	if ((pvc = add_pvc(frad, dlci)) == NULL) {
-		printk(KERN_WARNING "%s: Memory squeeze on fr_add_pvc()\n",
-		       frad->name);
+//		printk(KERN_WARNING "%s: Memory squeeze on fr_add_pvc()\n",
+;
 		return -ENOBUFS;
 	}
 
@@ -1090,8 +1090,8 @@ static int fr_add_pvc(struct net_device *frad, unsigned int dlci, int type)
 		dev = alloc_netdev(0, "pvc%d", pvc_setup);
 
 	if (!dev) {
-		printk(KERN_WARNING "%s: Memory squeeze on fr_pvc()\n",
-		       frad->name);
+//		printk(KERN_WARNING "%s: Memory squeeze on fr_pvc()\n",
+;
 		delete_unused_pvcs(hdlc);
 		return -ENOBUFS;
 	}

@@ -303,8 +303,12 @@ static void snd_mtpav_output_port_write(struct mtpav *mtp_card,
 		snd_mtpav_send_byte(mtp_card, 0xf5);
 		snd_mtpav_send_byte(mtp_card, portp->hwport);
 		/*
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "new outport: 0x%x\n",
 			   (unsigned int) portp->hwport);
+#else
+		;
+#endif
 		*/
 		if (!(outbyte & 0x80) && portp->running_status)
 			snd_mtpav_send_byte(mtp_card, portp->running_status);
@@ -541,7 +545,11 @@ static void snd_mtpav_read_bytes(struct mtpav *mcrd)
 
 	u8 sbyt = snd_mtpav_getreg(mcrd, SREG);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_DEBUG "snd_mtpav_read_bytes() sbyt: 0x%x\n", sbyt); */
+#else
+	/* ;
+#endif
 
 	if (!(sbyt & SIGS_BYTE))
 		return;
@@ -738,7 +746,11 @@ static int __devinit snd_mtpav_probe(struct platform_device *dev)
 		goto __error;
 
 	platform_set_drvdata(dev, card);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Motu MidiTimePiece on parallel port irq: %d ioport: 0x%lx\n", irq, port);
+#else
+	;
+#endif
 	return 0;
 
  __error:

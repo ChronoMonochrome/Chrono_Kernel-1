@@ -250,7 +250,11 @@ static int cx22702_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
 	struct cx22702_state *state = fe->demodulator_priv;
 	u8 val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s(%d)\n", __func__, enable);
+#else
+	d;
+#endif
 	val = cx22702_readreg(state, 0x0D);
 	if (enable)
 		val &= 0xfe;
@@ -287,7 +291,11 @@ static int cx22702_set_tps(struct dvb_frontend *fe,
 	case BANDWIDTH_8_MHZ:
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: invalid bandwidth\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	cx22702_writereg(state, 0x0C, val);
@@ -311,7 +319,11 @@ static int cx22702_set_tps(struct dvb_frontend *fe,
 		cx22702_writereg(state, 0x0C,
 			(cx22702_readreg(state, 0x0C) & 0xBF) | 0x40);
 		cx22702_writereg(state, 0x00, 0x01); /* Begin acquisition */
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: Autodetecting\n", __func__);
+#else
+		d;
+#endif
 		return 0;
 	}
 
@@ -327,7 +339,11 @@ static int cx22702_set_tps(struct dvb_frontend *fe,
 		val = 0x10;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: invalid constellation\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	switch (p->u.ofdm.hierarchy_information) {	/* mask 0x07 */
@@ -343,7 +359,11 @@ static int cx22702_set_tps(struct dvb_frontend *fe,
 		val |= 0x03;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: invalid hierarchy\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	cx22702_writereg(state, 0x06, val);
@@ -366,7 +386,11 @@ static int cx22702_set_tps(struct dvb_frontend *fe,
 		val = 0x20;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: invalid code_rate_HP\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	switch (p->u.ofdm.code_rate_LP) {		/* mask 0x07 */
@@ -386,7 +410,11 @@ static int cx22702_set_tps(struct dvb_frontend *fe,
 		val |= 0x04;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: invalid code_rate_LP\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	cx22702_writereg(state, 0x07, val);
@@ -405,7 +433,11 @@ static int cx22702_set_tps(struct dvb_frontend *fe,
 		val = 0x0c;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: invalid guard_interval\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	switch (p->u.ofdm.transmission_mode) {		/* mask 0x03 */
@@ -415,7 +447,11 @@ static int cx22702_set_tps(struct dvb_frontend *fe,
 		val |= 0x1;
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s: invalid transmission_mode\n", __func__);
+#else
+		d;
+#endif
 		return -EINVAL;
 	}
 	cx22702_writereg(state, 0x08, val);
@@ -463,8 +499,12 @@ static int cx22702_read_status(struct dvb_frontend *fe, fe_status_t *status)
 	reg0A = cx22702_readreg(state, 0x0A);
 	reg23 = cx22702_readreg(state, 0x23);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s: status demod=0x%02x agc=0x%02x\n"
 		, __func__, reg0A, reg23);
+#else
+	d;
+#endif
 
 	if (reg0A & 0x10) {
 		*status |= FE_HAS_LOCK;

@@ -112,8 +112,8 @@ static void dlci_receive(struct sk_buff *skb, struct net_device *dev)
 
 	dlp = netdev_priv(dev);
 	if (!pskb_may_pull(skb, sizeof(*hdr))) {
-		printk(KERN_NOTICE "%s: invalid data no header\n",
-		       dev->name);
+//		printk(KERN_NOTICE "%s: invalid data no header\n",
+;
 		dev->stats.rx_errors++;
 		kfree_skb(skb);
 		return;
@@ -126,7 +126,7 @@ static void dlci_receive(struct sk_buff *skb, struct net_device *dev)
 
 	if (hdr->control != FRAD_I_UI)
 	{
-		printk(KERN_NOTICE "%s: Invalid header flag 0x%02X.\n", dev->name, hdr->control);
+;
 		dev->stats.rx_errors++;
 	}
 	else
@@ -135,14 +135,14 @@ static void dlci_receive(struct sk_buff *skb, struct net_device *dev)
 			case FRAD_P_PADDING:
 				if (hdr->NLPID != FRAD_P_SNAP)
 				{
-					printk(KERN_NOTICE "%s: Unsupported NLPID 0x%02X.\n", dev->name, hdr->NLPID);
+;
 					dev->stats.rx_errors++;
 					break;
 				}
 	 
 				if (hdr->OUI[0] + hdr->OUI[1] + hdr->OUI[2] != 0)
 				{
-					printk(KERN_NOTICE "%s: Unsupported organizationally unique identifier 0x%02X-%02X-%02X.\n", dev->name, hdr->OUI[0], hdr->OUI[1], hdr->OUI[2]);
+;
 					dev->stats.rx_errors++;
 					break;
 				}
@@ -163,12 +163,12 @@ static void dlci_receive(struct sk_buff *skb, struct net_device *dev)
 			case FRAD_P_SNAP:
 			case FRAD_P_Q933:
 			case FRAD_P_CLNP:
-				printk(KERN_NOTICE "%s: Unsupported NLPID 0x%02X.\n", dev->name, hdr->pad);
+;
 				dev->stats.rx_errors++;
 				break;
 
 			default:
-				printk(KERN_NOTICE "%s: Invalid pad byte 0x%02X.\n", dev->name, hdr->pad);
+;
 				dev->stats.rx_errors++;
 				break;				
 		}
@@ -499,7 +499,7 @@ static int __init init_dlci(void)
 	dlci_ioctl_set(dlci_ioctl);
 	register_netdevice_notifier(&dlci_notifier);
 
-	printk("%s.\n", version);
+;
 
 	return 0;
 }

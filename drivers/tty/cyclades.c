@@ -335,14 +335,22 @@ static inline int serial_paranoia_check(struct cyclades_port *info,
 {
 #ifdef SERIAL_PARANOIA_CHECK
 	if (!info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cyc Warning: null cyclades_port for (%s) "
 				"in %s\n", name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 
 	if (info->magic != CYCLADES_MAGIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "cyc Warning: bad magic number for serial "
 				"struct (%s) in %s\n", name, routine);
+#else
+		;
+#endif
 		return 1;
 	}
 #endif
@@ -447,7 +455,11 @@ static void cyy_chip_rx(struct cyclades_card *cinfo, int chip,
 	u8 ivr, save_xir, channel, save_car, data, char_count;
 
 #ifdef CY_DEBUG_INTERRUPTS
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyy_interrupt: rcvd intr, chip %d\n", chip);
+#else
+	;
+#endif
 #endif
 	/* determine the channel & change to that context */
 	save_xir = readb(base_addr + (CyRIR << index));
@@ -585,7 +597,11 @@ static void cyy_chip_tx(struct cyclades_card *cinfo, unsigned int chip,
 	   is empty, we know we can always stuff a dozen
 	   characters. */
 #ifdef CY_DEBUG_INTERRUPTS
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyy_interrupt: xmit intr, chip %d\n", chip);
+#else
+	;
+#endif
 #endif
 
 	/* determine the channel & change to that context */
@@ -773,8 +789,12 @@ static irqreturn_t cyy_interrupt(int irq, void *dev_id)
 
 	if (unlikely(cinfo == NULL)) {
 #ifdef CY_DEBUG_INTERRUPTS
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyy_interrupt: spurious interrupt %d\n",
 				irq);
+#else
+		;
+#endif
 #endif
 		return IRQ_NONE;	/* spurious interrupt */
 	}
@@ -859,20 +879,36 @@ static void cyy_change_rts_dtr(struct cyclades_port *info, unsigned int set,
 		cyy_writeb(info, CyCAR, channel);
 		cyy_writeb(info, msvrd, dtr);
 #ifdef CY_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyc:set_modem_info raising DTR\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "     status: 0x%x, 0x%x\n",
 			cyy_readb(info, CyMSVR1),
 			cyy_readb(info, CyMSVR2));
+#else
+		;
+#endif
 #endif
 	}
 	if (clear & TIOCM_DTR) {
 		cyy_writeb(info, CyCAR, channel);
 		cyy_writeb(info, msvrd, ~dtr);
 #ifdef CY_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyc:set_modem_info dropping DTR\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "     status: 0x%x, 0x%x\n",
 			cyy_readb(info, CyMSVR1),
 			cyy_readb(info, CyMSVR2));
+#else
+		;
+#endif
 #endif
 	}
 }
@@ -1164,8 +1200,12 @@ static void cyz_handle_cmd(struct cyclades_card *cinfo)
 		case C_CM_INTBACK2:
 			/* Reception Interrupt */
 #ifdef CY_DEBUG_INTERRUPTS
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "cyz_interrupt: rcvd intr, card %d, "
 					"port %ld\n", info->card, channel);
+#else
+			;
+#endif
 #endif
 			cyz_handle_rx(info, tty);
 			break;
@@ -1174,8 +1214,12 @@ static void cyz_handle_cmd(struct cyclades_card *cinfo)
 		case C_CM_INTBACK:
 			/* Transmission Interrupt */
 #ifdef CY_DEBUG_INTERRUPTS
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "cyz_interrupt: xmit intr, card %d, "
 					"port %ld\n", info->card, channel);
+#else
+			;
+#endif
 #endif
 			cyz_handle_tx(info, tty);
 			break;
@@ -1201,8 +1245,12 @@ static irqreturn_t cyz_interrupt(int irq, void *dev_id)
 
 	if (unlikely(!cyz_is_loaded(cinfo))) {
 #ifdef CY_DEBUG_INTERRUPTS
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyz_interrupt: board not yet loaded "
 				"(IRQ%d).\n", irq);
+#else
+		;
+#endif
 #endif
 		return IRQ_NONE;
 	}
@@ -1339,8 +1387,12 @@ static int cy_startup(struct cyclades_port *info, struct tty_struct *tty)
 			return -ENODEV;
 
 #ifdef CY_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyc startup Z card %d, channel %d, "
 			"base_addr %p\n", card, channel, card->base_addr);
+#else
+		;
+#endif
 #endif
 		spin_lock_irqsave(&card->card_lock, flags);
 
@@ -1397,7 +1449,11 @@ static int cy_startup(struct cyclades_port *info, struct tty_struct *tty)
 	spin_unlock_irqrestore(&card->card_lock, flags);
 
 #ifdef CY_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc startup done\n");
+#else
+	;
+#endif
 #endif
 	return 0;
 
@@ -1473,8 +1529,12 @@ static void cy_shutdown(struct cyclades_port *info, struct tty_struct *tty)
 	} else {
 #ifdef CY_DEBUG_OPEN
 		int channel = info->line - card->first_line;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyc shutdown Z card %d, channel %d, "
 			"base_addr %p\n", card, channel, card->base_addr);
+#else
+		;
+#endif
 #endif
 
 		if (!cyz_is_loaded(card))
@@ -1499,7 +1559,11 @@ static void cy_shutdown(struct cyclades_port *info, struct tty_struct *tty)
 	}
 
 #ifdef CY_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc shutdown done\n");
+#else
+	;
+#endif
 #endif
 }				/* shutdown */
 
@@ -1584,20 +1648,32 @@ static int cy_open(struct tty_struct *tty, struct file *filp)
 			return -ENODEV;
 	}
 #ifdef CY_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_open ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 	tty->driver_data = info;
 	if (serial_paranoia_check(info, tty->name, "cy_open"))
 		return -ENODEV;
 
 #ifdef CY_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_open ttyC%d, count = %d\n", info->line,
 			info->port.count);
+#else
+	;
+#endif
 #endif
 	info->port.count++;
 #ifdef CY_DEBUG_COUNT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_open (%d): incrementing count to %d\n",
 		current->pid, info->port.count);
+#else
+	;
+#endif
 #endif
 
 	/*
@@ -1619,8 +1695,12 @@ static int cy_open(struct tty_struct *tty, struct file *filp)
 	retval = tty_port_block_til_ready(&info->port, tty, filp);
 	if (retval) {
 #ifdef CY_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyc:cy_open returning after block_til_ready "
 			"with %d\n", retval);
+#else
+		;
+#endif
 #endif
 		return retval;
 	}
@@ -1629,7 +1709,11 @@ static int cy_open(struct tty_struct *tty, struct file *filp)
 	tty_port_tty_set(&info->port, tty);
 
 #ifdef CY_DEBUG_OPEN
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_open done\n");
+#else
+	;
+#endif
 #endif
 	return 0;
 }				/* cy_open */
@@ -1679,14 +1763,22 @@ static void cy_wait_until_sent(struct tty_struct *tty, int timeout)
 	if (!timeout || timeout > 2 * info->timeout)
 		timeout = 2 * info->timeout;
 #ifdef CY_DEBUG_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "In cy_wait_until_sent(%d) check=%d, jiff=%lu...",
 		timeout, char_time, jiffies);
+#else
+	;
+#endif
 #endif
 	card = info->card;
 	if (!cy_is_Z(card)) {
 		while (cyy_readb(info, CySRER) & CyTxRdy) {
 #ifdef CY_DEBUG_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Not clean (jiff=%lu)...", jiffies);
+#else
+			;
+#endif
 #endif
 			if (msleep_interruptible(jiffies_to_msecs(char_time)))
 				break;
@@ -1698,7 +1790,11 @@ static void cy_wait_until_sent(struct tty_struct *tty, int timeout)
 	/* Run one more char cycle */
 	msleep_interruptible(jiffies_to_msecs(char_time * 5));
 #ifdef CY_DEBUG_WAIT_UNTIL_SENT
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Clean (jiff=%lu)...done\n", jiffies);
+#else
+	;
+#endif
 #endif
 }
 
@@ -1710,7 +1806,11 @@ static void cy_flush_buffer(struct tty_struct *tty)
 	unsigned long flags;
 
 #ifdef CY_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_flush_buffer ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_flush_buffer"))
@@ -1770,8 +1870,12 @@ static void cy_do_close(struct tty_port *port)
 		if (readl(&ch_ctrl->flow_status) != C_FS_TXIDLE) {
 			retval = cyz_issue_cmd(card, channel, C_CM_IOCTLW, 0L);
 			if (retval != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "cyc:cy_close retval on "
 					"ttyC%d was %x\n", info->line, retval);
+#else
+				;
+#endif
 			}
 			spin_unlock_irqrestore(&card->card_lock, flags);
 			wait_for_completion_interruptible(&info->shutdown_wait);
@@ -1814,7 +1918,11 @@ static int cy_write(struct tty_struct *tty, const unsigned char *buf, int count)
 	int c, ret = 0;
 
 #ifdef CY_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_write ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_write"))
@@ -1863,7 +1971,11 @@ static int cy_put_char(struct tty_struct *tty, unsigned char ch)
 	unsigned long flags;
 
 #ifdef CY_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_put_char ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_put_char"))
@@ -1896,7 +2008,11 @@ static void cy_flush_chars(struct tty_struct *tty)
 	struct cyclades_port *info = tty->driver_data;
 
 #ifdef CY_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_flush_chars ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_flush_chars"))
@@ -1921,7 +2037,11 @@ static int cy_write_room(struct tty_struct *tty)
 	int ret;
 
 #ifdef CY_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_write_room ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_write_room"))
@@ -1943,8 +2063,12 @@ static int cy_chars_in_buffer(struct tty_struct *tty)
 	if (!cy_is_Z(info->card)) {
 #endif				/* Z_EXT_CHARS_IN_BUFFER */
 #ifdef CY_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyc:cy_chars_in_buffer ttyC%d %d\n",
 			info->line, info->xmit_cnt);
+#else
+		;
+#endif
 #endif
 		return info->xmit_cnt;
 #ifdef Z_EXT_CHARS_IN_BUFFER
@@ -1961,8 +2085,12 @@ static int cy_chars_in_buffer(struct tty_struct *tty)
 		else
 			char_count = tx_put - tx_get + tx_bufsize;
 #ifdef CY_DEBUG_IO
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "cyc:cy_chars_in_buffer ttyC%d %d\n",
 			info->line, info->xmit_cnt + char_count);
+#else
+		;
+#endif
 #endif
 		return info->xmit_cnt + char_count;
 	}
@@ -2306,13 +2434,21 @@ static void cy_set_line_char(struct cyclades_port *info, struct tty_struct *tty)
 			cy_writel(&ch_ctrl->rs_control,
 				  readl(&ch_ctrl->rs_control) & ~C_RS_DTR);
 #ifdef CY_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "cyc:set_line_char dropping Z DTR\n");
+#else
+			;
+#endif
 #endif
 		} else {
 			cy_writel(&ch_ctrl->rs_control,
 				  readl(&ch_ctrl->rs_control) | C_RS_DTR);
 #ifdef CY_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "cyc:set_line_char raising Z DTR\n");
+#else
+			;
+#endif
 #endif
 		}
 
@@ -2512,14 +2648,22 @@ cy_tiocmset(struct tty_struct *tty,
 		if (set & TIOCM_DTR) {
 			rs |= C_RS_DTR;
 #ifdef CY_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "cyc:set_modem_info raising Z DTR\n");
+#else
+			;
+#endif
 #endif
 		}
 		if (clear & TIOCM_DTR) {
 			rs &= ~C_RS_DTR;
 #ifdef CY_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "cyc:set_modem_info clearing "
 				"Z DTR\n");
+#else
+			;
+#endif
 #endif
 		}
 		cy_writel(&ch_ctrl->rs_control, rs);
@@ -2586,9 +2730,13 @@ static int cy_break(struct tty_struct *tty, int break_state)
 				info->line - card->first_line,
 				C_CM_CLR_BREAK, 0L);
 			if (retval != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "cyc:cy_break (clr) retval "
 					"on ttyC%d was %x\n", info->line,
 					retval);
+#else
+				;
+#endif
 			}
 		}
 	}
@@ -2690,8 +2838,12 @@ cy_ioctl(struct tty_struct *tty,
 		return -ENODEV;
 
 #ifdef CY_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_ioctl ttyC%d, cmd = %x arg = %lx\n",
 		info->line, cmd, arg);
+#else
+	;
+#endif
 #endif
 
 	switch (cmd) {
@@ -2792,7 +2944,11 @@ cy_ioctl(struct tty_struct *tty,
 	}
 
 #ifdef CY_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_ioctl done\n");
+#else
+	;
+#endif
 #endif
 	return ret_val;
 }				/* cy_ioctl */
@@ -2833,7 +2989,11 @@ static void cy_set_termios(struct tty_struct *tty, struct ktermios *old_termios)
 	struct cyclades_port *info = tty->driver_data;
 
 #ifdef CY_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_set_termios ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	cy_set_line_char(info, tty);
@@ -2897,8 +3057,12 @@ static void cy_throttle(struct tty_struct *tty)
 #ifdef CY_DEBUG_THROTTLE
 	char buf[64];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:throttle %s: %ld...ttyC%d\n", tty_name(tty, buf),
 			tty->ldisc.chars_in_buffer(tty), info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_throttle"))
@@ -2938,8 +3102,12 @@ static void cy_unthrottle(struct tty_struct *tty)
 #ifdef CY_DEBUG_THROTTLE
 	char buf[64];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:unthrottle %s: %ld...ttyC%d\n",
 		tty_name(tty, buf), tty_chars_in_buffer(tty), info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_unthrottle"))
@@ -2975,7 +3143,11 @@ static void cy_stop(struct tty_struct *tty)
 	unsigned long flags;
 
 #ifdef CY_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_stop ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_stop"))
@@ -2999,7 +3171,11 @@ static void cy_start(struct tty_struct *tty)
 	unsigned long flags;
 
 #ifdef CY_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_start ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_start"))
@@ -3023,7 +3199,11 @@ static void cy_hangup(struct tty_struct *tty)
 	struct cyclades_port *info = tty->driver_data;
 
 #ifdef CY_DEBUG_OTHER
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "cyc:cy_hangup ttyC%d\n", info->line);
+#else
+	;
+#endif
 #endif
 
 	if (serial_paranoia_check(info, tty->name, "cy_hangup"))
@@ -3092,7 +3272,11 @@ static void cyz_dtr_rts(struct tty_port *port, int raise)
 		printk(KERN_ERR "%s: retval on ttyC%d was %x\n",
 				__func__, info->line, ret);
 #ifdef CY_DEBUG_DTR
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: raising Z DTR\n", __func__);
+#else
+	;
+#endif
 #endif
 }
 
@@ -3204,7 +3388,11 @@ static int __devinit cy_init_card(struct cyclades_card *cinfo)
 	if (cy_is_Z(cinfo) && !timer_pending(&cyz_timerlist)) {
 		mod_timer(&cyz_timerlist, jiffies + 1);
 #ifdef CY_PCI_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Cyclades-Z polling initialized\n");
+#else
+		;
+#endif
 #endif
 	}
 #endif
@@ -3232,8 +3420,12 @@ static unsigned short __devinit cyy_init_card(void __iomem *true_base_addr,
 		mdelay(1);
 		if (readb(base_addr + (CyCCR << index)) != 0x00) {
 			/*************
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" chip #%d at %#6lx is never idle (CCR != 0)\n",
 			chip_number, (unsigned long)base_addr);
+#else
+			;
+#endif
 			*************/
 			return chip_number;
 		}
@@ -3258,19 +3450,31 @@ static unsigned short __devinit cyy_init_card(void __iomem *true_base_addr,
 
 		if (readb(base_addr + (CyGFRCR << index)) == 0x00) {
 			/*
+#ifdef CONFIG_DEBUG_PRINTK
 			   printk(" chip #%d at %#6lx is not responding ",
 			   chip_number, (unsigned long)base_addr);
+#else
+			   ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			   printk("(GFRCR stayed 0)\n",
 			 */
 			return chip_number;
+#else
+			   ;
+#endif
 		}
 		if ((0xf0 & (readb(base_addr + (CyGFRCR << index)))) !=
 				0x40) {
 			/*
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" chip #%d at %#6lx is not valid (GFRCR == "
 					"%#2x)\n",
 					chip_number, (unsigned long)base_addr,
 					base_addr[CyGFRCR<<index]);
+#else
+			;
+#endif
 			 */
 			return chip_number;
 		}
@@ -3286,9 +3490,13 @@ static unsigned short __devinit cyy_init_card(void __iomem *true_base_addr,
 		}
 
 		/*
+#ifdef CONFIG_DEBUG_PRINTK
 		   printk(" chip #%d at %#6lx is rev 0x%2x\n",
 		   chip_number, (unsigned long)base_addr,
 		   readb(base_addr+(CyGFRCR<<index)));
+#else
+		   ;
+#endif
 		 */
 	}
 	return chip_number;
@@ -3401,11 +3609,15 @@ static int __init cy_detect_isa(void)
 		}
 		nboard++;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Cyclom-Y/ISA #%d: 0x%lx-0x%lx, IRQ%d found: "
 			"%d channels starting from port %d\n",
 			j + 1, (unsigned long)cy_isa_address,
 			(unsigned long)(cy_isa_address + (CyISA_Ywin - 1)),
 			cy_isa_irq, cy_isa_nchan, cy_next_channel);
+#else
+		;
+#endif
 
 		for (j = cy_next_channel;
 				j < cy_next_channel + cy_isa_nchan; j++)
@@ -3474,7 +3686,11 @@ static int __devinit __cyz_load_fw(const struct firmware *fw,
 	unsigned int a, tmp, len = fw->size;
 #define BAD_FW KERN_ERR "Bad firmware: "
 	if (len < sizeof(*h)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(BAD_FW "too short: %u<%zu\n", len, sizeof(*h));
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -3483,18 +3699,30 @@ static int __devinit __cyz_load_fw(const struct firmware *fw,
 
 	if ((void *)(cs + h->n_config) > ptr + len ||
 			(void *)(bs + h->n_blocks) > ptr + len) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(BAD_FW "too short");
+#else
+		;
+#endif
 		return  -EINVAL;
 	}
 
 	if (cyc_isfwstr(h->name, sizeof(h->name)) ||
 			cyc_isfwstr(h->date, sizeof(h->date))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(BAD_FW "bad formatted header string\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	if (strncmp(name, h->name, sizeof(h->name))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(BAD_FW "bad name '%s' (expected '%s')\n", h->name, name);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -3502,20 +3730,32 @@ static int __devinit __cyz_load_fw(const struct firmware *fw,
 	for (c = cs; c < cs + h->n_config; c++) {
 		for (a = 0; a < c->n_blocks; a++)
 			if (c->block_list[a] > h->n_blocks) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(BAD_FW "bad block ref number in cfgs\n");
+#else
+				;
+#endif
 				return -EINVAL;
 			}
 		if (c->mailbox == mailbox && c->function == 0) /* 0 is normal */
 			tmp++;
 	}
 	if (!tmp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(BAD_FW "nothing appropriate\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	for (b = bs; b < bs + h->n_blocks; b++)
 		if (b->file_offset + b->size > len) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(BAD_FW "bad block data offset\n");
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 
@@ -4096,7 +4336,11 @@ static int __init cy_init(void)
 	if (!cy_serial_driver)
 		goto err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Cyclades driver " CY_VERSION "\n");
+#else
+	;
+#endif
 
 	/* Initialize the tty_driver structure */
 

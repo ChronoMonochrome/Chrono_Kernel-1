@@ -299,7 +299,7 @@ static void abort_dma(struct pxa168_eth_private *pep)
 	} while (max_retries-- > 0 && delay <= 0);
 
 	if (max_retries <= 0)
-		printk(KERN_ERR "%s : DMA Stuck\n", __func__);
+;
 }
 
 static int ethernet_phy_get(struct pxa168_eth_private *pep)
@@ -527,9 +527,9 @@ static int add_del_hash_entry(struct pxa168_eth_private *pep,
 
 	if (i == HOP_NUMBER) {
 		if (!del) {
-			printk(KERN_INFO "%s: table section is full, need to "
-					"move to 16kB implementation?\n",
-					 __FILE__);
+//			printk(KERN_INFO "%s: table section is full, need to "
+//					"move to 16kB implementation?\n",
+;
 			return -ENOSPC;
 		} else
 			return 0;
@@ -745,7 +745,7 @@ static int txq_reclaim(struct net_device *dev, int force)
 
 		if (cmd_sts & TX_ERROR) {
 			if (net_ratelimit())
-				printk(KERN_ERR "%s: Error in TX\n", dev->name);
+;
 			dev->stats.tx_errors++;
 		}
 		dma_unmap_single(NULL, addr, count, DMA_TO_DEVICE);
@@ -762,8 +762,8 @@ static void pxa168_eth_tx_timeout(struct net_device *dev)
 {
 	struct pxa168_eth_private *pep = netdev_priv(dev);
 
-	printk(KERN_INFO "%s: TX timeout  desc_count %d\n",
-	       dev->name, pep->tx_desc_count);
+//	printk(KERN_INFO "%s: TX timeout  desc_count %d\n",
+;
 
 	schedule_work(&pep->tx_timeout_task);
 }
@@ -833,9 +833,9 @@ static int rxq_process(struct net_device *dev, int budget)
 			if ((cmd_sts & (RX_FIRST_DESC | RX_LAST_DESC)) !=
 			    (RX_FIRST_DESC | RX_LAST_DESC)) {
 				if (net_ratelimit())
-					printk(KERN_ERR
-					       "%s: Rx pkt on multiple desc\n",
-					       dev->name);
+//					printk(KERN_ERR
+//					       "%s: Rx pkt on multiple desc\n",
+;
 			}
 			if (cmd_sts & RX_ERROR)
 				stats->rx_errors++;
@@ -890,7 +890,7 @@ static void handle_link_event(struct pxa168_eth_private *pep)
 	port_status = rdl(pep, PORT_STATUS);
 	if (!(port_status & LINK_UP)) {
 		if (netif_carrier_ok(dev)) {
-			printk(KERN_INFO "%s: link down\n", dev->name);
+;
 			netif_carrier_off(dev);
 			txq_reclaim(dev, 1);
 		}
@@ -903,9 +903,9 @@ static void handle_link_event(struct pxa168_eth_private *pep)
 
 	duplex = (port_status & FULL_DUPLEX) ? 1 : 0;
 	fc = (port_status & FLOW_CONTROL_ENABLED) ? 1 : 0;
-	printk(KERN_INFO "%s: link up, %d Mb/s, %s duplex, "
-	       "flow control %sabled\n", dev->name,
-	       speed, duplex ? "full" : "half", fc ? "en" : "dis");
+//	printk(KERN_INFO "%s: link up, %d Mb/s, %s duplex, "
+//	       "flow control %sabled\n", dev->name,
+;
 	if (!netif_carrier_ok(dev))
 		netif_carrier_on(dev);
 }
@@ -1017,7 +1017,7 @@ static int rxq_init(struct net_device *dev)
 	pep->rx_skb = kmalloc(sizeof(*pep->rx_skb) * pep->rx_ring_size,
 			     GFP_KERNEL);
 	if (!pep->rx_skb) {
-		printk(KERN_ERR "%s: Cannot alloc RX skb ring\n", dev->name);
+;
 		return -ENOMEM;
 	}
 	/* Allocate RX ring */
@@ -1027,8 +1027,8 @@ static int rxq_init(struct net_device *dev)
 	pep->p_rx_desc_area = dma_alloc_coherent(pep->dev->dev.parent, size,
 						&pep->rx_desc_dma, GFP_KERNEL);
 	if (!pep->p_rx_desc_area) {
-		printk(KERN_ERR "%s: Cannot alloc RX ring (size %d bytes)\n",
-		       dev->name, size);
+//		printk(KERN_ERR "%s: Cannot alloc RX ring (size %d bytes)\n",
+;
 		goto out;
 	}
 	memset((void *)pep->p_rx_desc_area, 0, size);
@@ -1061,9 +1061,9 @@ static void rxq_deinit(struct net_device *dev)
 		}
 	}
 	if (pep->rx_desc_count)
-		printk(KERN_ERR
-		       "Error in freeing Rx Ring. %d skb's still\n",
-		       pep->rx_desc_count);
+//		printk(KERN_ERR
+//		       "Error in freeing Rx Ring. %d skb's still\n",
+;
 	/* Free RX ring */
 	if (pep->p_rx_desc_area)
 		dma_free_coherent(pep->dev->dev.parent, pep->rx_desc_area_size,
@@ -1081,7 +1081,7 @@ static int txq_init(struct net_device *dev)
 	pep->tx_skb = kmalloc(sizeof(*pep->tx_skb) * pep->tx_ring_size,
 			     GFP_KERNEL);
 	if (!pep->tx_skb) {
-		printk(KERN_ERR "%s: Cannot alloc TX skb ring\n", dev->name);
+;
 		return -ENOMEM;
 	}
 	/* Allocate TX ring */
@@ -1091,8 +1091,8 @@ static int txq_init(struct net_device *dev)
 	pep->p_tx_desc_area = dma_alloc_coherent(pep->dev->dev.parent, size,
 						&pep->tx_desc_dma, GFP_KERNEL);
 	if (!pep->p_tx_desc_area) {
-		printk(KERN_ERR "%s: Cannot allocate Tx Ring (size %d bytes)\n",
-		       dev->name, size);
+//		printk(KERN_ERR "%s: Cannot allocate Tx Ring (size %d bytes)\n",
+;
 		goto out;
 	}
 	memset((void *)pep->p_tx_desc_area, 0, pep->tx_desc_area_size);
@@ -1133,7 +1133,7 @@ static int pxa168_eth_open(struct net_device *dev)
 	err = request_irq(dev->irq, pxa168_eth_int_handler,
 			  IRQF_DISABLED, dev->name, dev);
 	if (err) {
-		dev_printk(KERN_ERR, &dev->dev, "can't assign irq\n");
+;
 		return -EAGAIN;
 	}
 	pep->rx_resource_err = 0;
@@ -1203,9 +1203,9 @@ static int pxa168_eth_change_mtu(struct net_device *dev, int mtu)
 	 */
 	pxa168_eth_stop(dev);
 	if (pxa168_eth_open(dev)) {
-		dev_printk(KERN_ERR, &dev->dev,
-			   "fatal error on re-opening device after "
-			   "MTU change\n");
+//		dev_printk(KERN_ERR, &dev->dev,
+//			   "fatal error on re-opening device after "
+;
 	}
 
 	return 0;
@@ -1305,15 +1305,15 @@ static int pxa168_smi_read(struct mii_bus *bus, int phy_addr, int regnum)
 	int val;
 
 	if (smi_wait_ready(pep)) {
-		printk(KERN_WARNING "pxa168_eth: SMI bus busy timeout\n");
+;
 		return -ETIMEDOUT;
 	}
 	wrl(pep, SMI, (phy_addr << 16) | (regnum << 21) | SMI_OP_R);
 	/* now wait for the data to be valid */
 	for (i = 0; !((val = rdl(pep, SMI)) & SMI_R_VALID); i++) {
 		if (i == PHY_WAIT_ITERATIONS) {
-			printk(KERN_WARNING
-				"pxa168_eth: SMI bus read not valid\n");
+//			printk(KERN_WARNING
+;
 			return -ENODEV;
 		}
 		msleep(10);
@@ -1328,7 +1328,7 @@ static int pxa168_smi_write(struct mii_bus *bus, int phy_addr, int regnum,
 	struct pxa168_eth_private *pep = bus->priv;
 
 	if (smi_wait_ready(pep)) {
-		printk(KERN_WARNING "pxa168_eth: SMI bus busy timeout\n");
+;
 		return -ETIMEDOUT;
 	}
 
@@ -1336,7 +1336,7 @@ static int pxa168_smi_write(struct mii_bus *bus, int phy_addr, int regnum,
 	    SMI_OP_W | (value & 0xffff));
 
 	if (smi_wait_ready(pep)) {
-		printk(KERN_ERR "pxa168_eth: SMI bus busy timeout\n");
+;
 		return -ETIMEDOUT;
 	}
 
@@ -1477,12 +1477,12 @@ static int pxa168_eth_probe(struct platform_device *pdev)
 	struct clk *clk;
 	int err;
 
-	printk(KERN_NOTICE "PXA168 10/100 Ethernet Driver\n");
+;
 
 	clk = clk_get(&pdev->dev, "MFUCLK");
 	if (IS_ERR(clk)) {
-		printk(KERN_ERR "%s: Fast Ethernet failed to get clock\n",
-			DRIVER_NAME);
+//		printk(KERN_ERR "%s: Fast Ethernet failed to get clock\n",
+;
 		return -ENODEV;
 	}
 	clk_enable(clk);
@@ -1517,7 +1517,7 @@ static int pxa168_eth_probe(struct platform_device *pdev)
 
 	INIT_WORK(&pep->tx_timeout_task, pxa168_eth_tx_timeout_task);
 
-	printk(KERN_INFO "%s:Using random mac address\n", DRIVER_NAME);
+;
 	random_ether_addr(dev->dev_addr);
 
 	pep->pd = pdev->dev.platform_data;

@@ -456,11 +456,16 @@ void b1_parse_version(avmctrl_info *cinfo)
 	case 7: strcpy(cinfo->cardname,"B1 PCI"); break;
 	default: sprintf(cinfo->cardname, "AVM?%u", (unsigned int)flag); break;
         }
+#ifdef CONFIG_DEBUG_PRINTK
         printk(KERN_NOTICE "%s: card %d \"%s\" ready.\n",
 				card->name, ctrl->cnr, cinfo->cardname);
+#else
+        ;
+#endif
 
         flag = ((u8 *)(profp->manu))[3];
         if (flag)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: card %d Protocol:%s%s%s%s%s%s%s\n",
 			card->name,
 			ctrl->cnr,
@@ -472,9 +477,13 @@ void b1_parse_version(avmctrl_info *cinfo)
 			(flag & 0x20) ? " ESS" : "",
 			(flag & 0x40) ? " 1TR6" : ""
 			);
+#else
+		;
+#endif
 
         flag = ((u8 *)(profp->manu))[5];
 	if (flag)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: card %d Linetype:%s%s%s%s\n",
 			card->name,
 			ctrl->cnr,
@@ -483,6 +492,9 @@ void b1_parse_version(avmctrl_info *cinfo)
 			(flag & 0x08) ? " leased line without D-channel" : "",
 			(flag & 0x04) ? " leased line with D-channel" : ""
 			);
+#else
+		;
+#endif
 }
 
 /* ------------------------------------------------------------- */
@@ -588,10 +600,14 @@ irqreturn_t b1_interrupt(int interrupt, void *devptr)
 		cinfo->versionlen = b1_get_slice(card->port, cinfo->versionbuf);
 		spin_unlock_irqrestore(&card->lock, flags);
 		b1_parse_version(cinfo);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: %s-card (%s) now active\n",
 		       card->name,
 		       cinfo->version[VER_CARDTYPE],
 		       cinfo->version[VER_DRIVER]);
+#else
+		;
+#endif
 		capi_ctr_ready(ctrl);
 		break;
 
@@ -606,8 +622,12 @@ irqreturn_t b1_interrupt(int interrupt, void *devptr)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: task %d \"%s\" ready.\n",
 				card->name, ApplId, card->msgbuf);
+#else
+		;
+#endif
 		break;
 
 	case RECEIVE_DEBUGMSG:
@@ -620,7 +640,11 @@ irqreturn_t b1_interrupt(int interrupt, void *devptr)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: DEBUG: %s\n", card->name, card->msgbuf);
+#else
+		;
+#endif
 		break;
 
 	case 0xff:
@@ -726,14 +750,22 @@ avmcard_dma_alloc(char *name, struct pci_dev *pdev, long rsize, long ssize)
 
 	p = kzalloc(sizeof(avmcard_dmainfo), GFP_KERNEL);
 	if (!p) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: no memory.\n", name);
+#else
+		;
+#endif
 		goto err;
 	}
 
 	p->recvbuf.size = rsize;
 	buf = pci_alloc_consistent(pdev, rsize, &p->recvbuf.dmaaddr);
 	if (!buf) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: allocation of receive dma buffer failed.\n", name);
+#else
+		;
+#endif
 		goto err_kfree;
 	}
 	p->recvbuf.dmabuf = buf;
@@ -741,7 +773,11 @@ avmcard_dma_alloc(char *name, struct pci_dev *pdev, long rsize, long ssize)
 	p->sendbuf.size = ssize;
 	buf = pci_alloc_consistent(pdev, ssize, &p->sendbuf.dmaaddr);
 	if (!buf) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: allocation of send dma buffer failed.\n", name);
+#else
+		;
+#endif
 		goto err_free_consistent;
 	}
 
@@ -804,7 +840,11 @@ static int __init b1_init(void)
 	} else
 		strcpy(rev, "1.0");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "b1: revision %s\n", rev);
+#else
+	;
+#endif
 
 	return 0;
 }

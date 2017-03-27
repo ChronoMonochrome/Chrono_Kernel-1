@@ -2759,7 +2759,7 @@ MODULE_DEVICE_TABLE(usb, uea_ids);
  */
 static int __init uea_init(void)
 {
-	printk(KERN_INFO "[ueagle-atm] driver " EAGLEUSBVERSION " loaded\n");
+;
 
 	usb_register(&uea_driver);
 
@@ -2779,7 +2779,7 @@ static void __exit uea_exit(void)
 	 */
 	usb_deregister(&uea_driver);
 
-	printk(KERN_INFO "[ueagle-atm] driver unloaded\n");
+;
 }
 
 module_exit(uea_exit);

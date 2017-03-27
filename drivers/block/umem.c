@@ -196,38 +196,94 @@ static void dump_regs(struct cardinfo *card)
 
 	p = card->csr_remap;
 	for (i = 0; i < 8; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%p   ", p);
+#else
+		;
+#endif
 
 		for (i1 = 0; i1 < 16; i1++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02x ", *p++);
+#else
+			;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 }
 #endif
 
 static void dump_dmastat(struct cardinfo *card, unsigned int dmastat)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &card->dev->dev, "DMAstat - ");
+#else
+	dev_;
+#endif
 	if (dmastat & DMASCR_ANY_ERR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "ANY_ERR ");
+#else
+		;
+#endif
 	if (dmastat & DMASCR_MBE_ERR)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "MBE_ERR ");
+#else
+		;
+#endif
 	if (dmastat & DMASCR_PARITY_ERR_REP)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "PARITY_ERR_REP ");
+#else
+		;
+#endif
 	if (dmastat & DMASCR_PARITY_ERR_DET)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "PARITY_ERR_DET ");
+#else
+		;
+#endif
 	if (dmastat & DMASCR_SYSTEM_ERR_SIG)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "SYSTEM_ERR_SIG ");
+#else
+		;
+#endif
 	if (dmastat & DMASCR_TARGET_ABT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "TARGET_ABT ");
+#else
+		;
+#endif
 	if (dmastat & DMASCR_MASTER_ABT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "MASTER_ABT ");
+#else
+		;
+#endif
 	if (dmastat & DMASCR_CHAIN_COMPLETE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "CHAIN_COMPLETE ");
+#else
+		;
+#endif
 	if (dmastat & DMASCR_DMA_COMPLETE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "DMA_COMPLETE ");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 /*
@@ -461,18 +517,26 @@ static void process_page(unsigned long data)
 		if (control & DMASCR_HARD_ERROR) {
 			/* error */
 			clear_bit(BIO_UPTODATE, &bio->bi_flags);
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_WARNING, &card->dev->dev,
 				"I/O error on sector %d/%d\n",
 				le32_to_cpu(desc->local_addr)>>9,
 				le32_to_cpu(desc->transfer_size));
+#else
+			dev_;
+#endif
 			dump_dmastat(card, control);
 		} else if ((bio->bi_rw & REQ_WRITE) &&
 			   le32_to_cpu(desc->local_addr) >> 9 ==
 				card->init_size) {
 			card->init_size += le32_to_cpu(desc->transfer_size) >> 9;
 			if (card->init_size >> 1 >= card->mm_size) {
+#ifdef CONFIG_DEBUG_PRINTK
 				dev_printk(KERN_INFO, &card->dev->dev,
 					"memory now initialised\n");
+#else
+				dev_;
+#endif
 				set_userbit(card, MEMORY_INITIALIZED, 1);
 			}
 		}
@@ -692,10 +756,14 @@ static void check_batteries(struct cardinfo *card)
 
 	status = readb(card->csr_remap + MEMCTRLSTATUS_BATTERY);
 	if (debug & DEBUG_BATTERY_POLLING)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &card->dev->dev,
 			"checking battery status, 1 = %s, 2 = %s\n",
 		       (status & BATTERY_1_FAILURE) ? "FAILURE" : "OK",
 		       (status & BATTERY_2_FAILURE) ? "FAILURE" : "OK");
+#else
+		dev_;
+#endif
 
 	ret1 = check_battery(card, 0, !(status & BATTERY_1_FAILURE));
 	ret2 = check_battery(card, 1, !(status & BATTERY_2_FAILURE));
@@ -786,7 +854,11 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	static int	printed_version;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRIVER_VERSION " : " DRIVER_DESC "\n");
+#else
+		;
+#endif
 
 	ret = pci_enable_device(dev);
 	if (ret)
@@ -802,12 +874,20 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	if (!csr_base || !csr_len)
 		return -ENODEV;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &dev->dev,
 	  "Micro Memory(tm) controller found (PCI Mem Module (Battery Backup))\n");
+#else
+	dev_;
+#endif
 
 	if (pci_set_dma_mask(dev, DMA_BIT_MASK(64)) &&
 	    pci_set_dma_mask(dev, DMA_BIT_MASK(32))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_WARNING, &dev->dev, "NO suitable DMA found\n");
+#else
+		dev_;
+#endif
 		return  -ENOMEM;
 	}
 
@@ -827,9 +907,13 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 		goto failed_remap_csr;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &card->dev->dev,
 		"CSR 0x%08lx -> 0x%p (0x%lx)\n",
 	       csr_base, card->csr_remap, csr_len);
+#else
+	dev_;
+#endif
 
 	switch (card->dev->device) {
 	case 0x5415:
@@ -922,9 +1006,14 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	card->battery[0].last_change = card->battery[1].last_change = jiffies;
 
 	if (card->flags & UM_FLAG_NO_BATT)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &card->dev->dev,
 			"Size %d KB\n", card->mm_size);
+#else
+		dev_;
+#endif
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &card->dev->dev,
 			"Size %d KB, Battery 1 %s (%s), Battery 2 %s (%s)\n",
 		       card->mm_size,
@@ -932,6 +1021,9 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 		       card->battery[0].good ? "OK" : "FAILURE",
 		       batt_status & BATTERY_2_DISABLED ? "Disabled" : "Enabled",
 		       card->battery[1].good ? "OK" : "FAILURE");
+#else
+		dev_;
+#endif
 
 		set_fault_to_battery_status(card);
 	}
@@ -953,8 +1045,12 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 		goto failed_req_irq;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_INFO, &card->dev->dev,
 		"Window size %d bytes, IRQ %d\n", data, dev->irq);
+#else
+	dev_;
+#endif
 
 	spin_lock_init(&card->lock);
 
@@ -974,12 +1070,20 @@ static int __devinit mm_pci_probe(struct pci_dev *dev,
 	num_cards++;
 
 	if (!get_userbit(card, MEMORY_INITIALIZED)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &card->dev->dev,
 		  "memory NOT initialized. Consider over-writing whole device.\n");
+#else
+		dev_;
+#endif
 		card->init_size = 0;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &card->dev->dev,
 			"memory already initialized\n");
+#else
+		dev_;
+#endif
 		card->init_size = card->mm_size;
 	}
 
@@ -1087,8 +1191,16 @@ static int __init mm_init(void)
 	}
 
 	init_battery_timer();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "MM: desc_per_page = %ld\n", DESC_PER_PAGE);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 /* printk("mm_init: Done. 10-19-01 9:00\n"); */
+#else
+/* ;
+#endif
 	return 0;
 
 out:

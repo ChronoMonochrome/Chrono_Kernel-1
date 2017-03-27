@@ -2720,7 +2720,11 @@ snd_m3_create(struct snd_card *card, struct pci_dev *pci,
 #ifdef CONFIG_PM
 	chip->suspend_mem = vmalloc(sizeof(u16) * (REV_B_CODE_MEMORY_LENGTH + REV_B_DATA_MEMORY_LENGTH));
 	if (chip->suspend_mem == NULL)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "can't allocate apm buffer\n");
+#else
+		;
+#endif
 #endif
 
 	if ((err = snd_device_new(card, SNDRV_DEV_LOWLEVEL, chip, &ops)) < 0) {
@@ -2744,8 +2748,12 @@ snd_m3_create(struct snd_card *card, struct pci_dev *pci,
 	if (chip->hv_config & HV_CTRL_ENABLE) {
 		err = snd_m3_input_register(chip);
 		if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "Input device registration "
 				"failed with error %i", err);
+#else
+			;
+#endif
 	}
 #endif
 
@@ -2823,7 +2831,11 @@ snd_m3_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 				  MPU401_INFO_INTEGRATED | MPU401_INFO_IRQ_HOOK,
 				  -1, &chip->rmidi);
 	if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "maestro3: no MIDI support.\n");
+#else
+		;
+#endif
 #endif
 
 	pci_set_drvdata(pci, card);

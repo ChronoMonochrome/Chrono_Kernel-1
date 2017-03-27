@@ -17,6 +17,7 @@
 
 
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 #define DPRINTK(format,args...) printk(KERN_DEBUG format,##args)
 #else
 #define DPRINTK(format,args...)
@@ -25,6 +26,9 @@
 
 struct uPD98402_priv {
 	struct k_sonet_stats sonet_stats;/* link diagnostics */
+#else
+#define DPRINTK(format,args...) ;
+#endif
 	unsigned char framing;		/* SONET/SDH framing */
 	int loop_mode;			/* loopback mode */
 	spinlock_t lock;
@@ -189,8 +193,12 @@ static void uPD98402_int(struct atm_dev *dev)
 
 	while ((reason = GET(PICR))) {
 		if (reason & uPD98402_INT_LOS)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "%s(itf %d): signal lost\n",
 			    dev->type,dev->number);
+#else
+			;
+#endif
 		if (reason & uPD98402_INT_PFM) stat_event(dev);
 		if (reason & uPD98402_INT_PCO) {
 			(void) GET(PCOCR); /* clear interrupt cause */
@@ -199,8 +207,12 @@ static void uPD98402_int(struct atm_dev *dev)
 		}
 		if ((reason & uPD98402_INT_RFO) && 
 		    (time_after(jiffies, silence) || silence == 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s(itf %d): uPD98402 receive "
 			    "FIFO overflow\n",dev->type,dev->number);
+#else
+			;
+#endif
 			silence = (jiffies+HZ/2)|1;
 		}
 	}

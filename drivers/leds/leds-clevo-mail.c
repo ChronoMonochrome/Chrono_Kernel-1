@@ -26,7 +26,11 @@ static struct platform_device *pdev;
 
 static int __init clevo_mail_led_dmi_callback(const struct dmi_system_id *id)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO KBUILD_MODNAME ": '%s' found\n", id->ident);
+#else
+	;
+#endif
 	return 1;
 }
 
@@ -135,10 +139,14 @@ static int clevo_mail_led_blink(struct led_classdev *led_cdev,
 		status = 0;
 
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG KBUILD_MODNAME
 		       ": clevo_mail_led_blink(..., %lu, %lu),"
 		       " returning -EINVAL (unsupported)\n",
 		       *delay_on, *delay_off);
+#else
+		;
+#endif
 	}
 
 	i8042_unlock_chip();

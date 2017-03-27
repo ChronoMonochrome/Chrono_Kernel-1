@@ -805,10 +805,14 @@ static int list_vccs(int vci)
 		sk_for_each(s, node, head) {
 			num_found ++;
 			vcc = atm_sk(s);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Device: %d Vpi: %d Vci: %d\n",
 			       vcc->dev->number,
 			       vcc->vpi,
 			       vcc->vci);
+#else
+			;
+#endif
 		}
 	} else {
 		for(i = 0; i < VCC_HTABLE_SIZE; i++){
@@ -816,10 +820,14 @@ static int list_vccs(int vci)
 			sk_for_each(s, node, head) {
 				num_found ++;
 				vcc = atm_sk(s);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "Device: %d Vpi: %d Vci: %d\n",
 				       vcc->dev->number,
 				       vcc->vpi,
 				       vcc->vci);
+#else
+				;
+#endif
 			}
 		}
 	}
@@ -909,15 +917,27 @@ static int print_buffer(struct sk_buff *buf)
 		if(i % 8 == 7) {
 			sprintf(item, "\n");
 			strcat(msg, item);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s", msg);
+#else
+			;
+#endif
 		}
 	}
 	if (i % 8 != 0) {
 		sprintf(item, "\n");
 		strcat(msg, item);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s", msg);
+#else
+		;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -1343,14 +1363,22 @@ static struct pci_driver fpga_driver = {
 
 static int __init solos_pci_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Solos PCI Driver Version %s\n", VERSION);
+#else
+	;
+#endif
 	return pci_register_driver(&fpga_driver);
 }
 
 static void __exit solos_pci_exit(void)
 {
 	pci_unregister_driver(&fpga_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Solos PCI Driver %s Unloaded\n", VERSION);
+#else
+	;
+#endif
 }
 
 module_init(solos_pci_init);

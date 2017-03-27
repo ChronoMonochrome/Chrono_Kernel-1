@@ -437,7 +437,11 @@ static int ak4535_probe(struct snd_soc_codec *codec)
 {
 	struct ak4535_priv *ak4535 = snd_soc_codec_get_drvdata(codec);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "AK4535 Audio Codec %s", AK4535_VERSION);
+#else
+	;
+#endif
 
 	codec->control_data = ak4535->control_data;
 

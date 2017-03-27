@@ -254,8 +254,12 @@ static int __init xen_tmem_init(void)
 		old_ops = cleancache_register_ops(&tmem_cleancache_ops);
 		if (old_ops.init_fs != NULL)
 			s = " (WARNING: cleancache_ops overridden)";
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "cleancache enabled, RAM provided by "
 				 "Xen Transcendent Memory%s\n", s);
+#else
+		;
+#endif
 	}
 #endif
 	return 0;

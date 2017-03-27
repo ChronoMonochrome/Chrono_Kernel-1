@@ -2462,8 +2462,8 @@ int usb_add_hcd(struct usb_hcd *hcd,
 
 	retval = sysfs_create_group(&rhdev->dev.kobj, &usb_bus_attr_group);
 	if (retval < 0) {
-		printk(KERN_ERR "Cannot register USB bus sysfs attributes: %d\n",
-		       retval);
+//		printk(KERN_ERR "Cannot register USB bus sysfs attributes: %d\n",
+;
 		goto error_create_attr_group;
 	}
 	if (hcd->uses_new_polling && HCD_POLL_RH(hcd))
@@ -2608,7 +2608,7 @@ void usb_mon_deregister (void)
 {
 
 	if (mon_ops == NULL) {
-		printk(KERN_ERR "USB: monitor was not registered\n");
+;
 		return;
 	}
 	mon_ops = NULL;

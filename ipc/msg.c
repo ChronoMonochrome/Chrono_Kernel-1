@@ -132,8 +132,12 @@ void __init msg_init(void)
 {
 	msg_init_ns(&init_ipc_ns);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "msgmni has been set to %d\n",
 		init_ipc_ns.msg_ctlmni);
+#else
+	;
+#endif
 
 	ipc_init_proc_interface("sysvipc/msg",
 				"       key      msqid perms      cbytes       qnum lspid lrpid   uid   gid  cuid  cgid      stime      rtime      ctime\n",

@@ -64,7 +64,7 @@ u16 CDMA_Data_CMD(u8 cmd, u8 *data, u32 block, u16 page, u16 num, u16 flags)
 			"Will access new bank. old bank: %d, new bank: %d\n",
 			info.flash_bank, bank);
 		if (CDMA_Execute_CMDs()) {
-			printk(KERN_ERR "CDMA_Execute_CMDs fail!\n");
+;
 			return FAIL;
 		}
 		info.flash_bank = bank;
@@ -96,7 +96,7 @@ u16 CDMA_Data_CMD(u8 cmd, u8 *data, u32 block, u16 page, u16 num, u16 flags)
 
 	if (info.pcmds_num >= MAX_PENDING_CMDS) {
 		if (CDMA_Execute_CMDs()) {
-			printk(KERN_ERR "CDMA_Execute_CMDs fail!\n");
+;
 			return FAIL;
 		}
 	}
@@ -135,7 +135,7 @@ u16 CDMA_MemCopy_CMD(u8 *dest, u8 *src, u32 byte_cnt, u16 flags)
 
 	if (info.pcmds_num >= MAX_PENDING_CMDS) {
 		if (CDMA_Execute_CMDs()) {
-			printk(KERN_ERR "CDMA_Execute_CMDs fail!\n");
+;
 			return FAIL;
 		}
 	}
@@ -364,8 +364,8 @@ void CDMA_UpdateEventStatus(void)
 		iowrite32(MODE_02 | (0 << 4), FlashMem); /* Type 0 reset */
 		iowrite32((0xF << 4) | info.flash_bank, FlashMem + 0x10);
 	} else { /* Should not reached here */
-		printk(KERN_ERR "Error! Used bank is not set in"
-			" reg CHNL_ACTIVE\n");
+//		printk(KERN_ERR "Error! Used bank is not set in"
+;
 	}
 }
 
@@ -621,8 +621,8 @@ u16 CDMA_Execute_CMDs(void)
 
 	ret = wait_for_completion_timeout(&info.complete, 50 * HZ);
 	if (!ret)
-		printk(KERN_ERR "Wait for completion timeout "
-			"in %s, Line %d\n", __FILE__, __LINE__);
+//		printk(KERN_ERR "Wait for completion timeout "
+;
 	status = info.ret;
 
 	info.pcmds_num = 0; /* Clear the pending cmds number to 0 */
@@ -773,8 +773,8 @@ static u16 process_ecc_int(u32 c, u16 *p_desc_num)
 		       __FILE__, __LINE__, __func__);
 
 	if (c != info.flash_bank)
-		printk(KERN_ERR "Error!info.flash_bank is %d, while c is %d\n",
-				info.flash_bank, c);
+//		printk(KERN_ERR "Error!info.flash_bank is %d, while c is %d\n",
+;
 
 	ptr = (struct cdma_descriptor *)info.cdma_desc_buf;
 
@@ -785,9 +785,9 @@ static u16 process_ecc_int(u32 c, u16 *p_desc_num)
 	*p_desc_num = j; /* Pass the descripter number found here */
 
 	if (j >= info.cdma_num) {
-		printk(KERN_ERR "Can not find the correct descriptor number "
-			"when ecc interrupt triggered!"
-			"info.cdma_num: %d, j: %d\n", info.cdma_num, j);
+//		printk(KERN_ERR "Can not find the correct descriptor number "
+//			"when ecc interrupt triggered!"
+;
 		return EVENT_UNCORRECTABLE_DATA_ERROR;
 	}
 
@@ -795,15 +795,15 @@ static u16 process_ecc_int(u32 c, u16 *p_desc_num)
 		info.pcmds[ptr[j].pcmd].Page);
 
 	if (EVENT_UNCORRECTABLE_DATA_ERROR == event) {
-		printk(KERN_ERR "Uncorrectable ECC error!"
-			"info.cdma_num: %d, j: %d, "
-			"pending cmd CMD: 0x%x, "
-			"Block: 0x%x, Page: 0x%x, PageCount: 0x%x\n",
-			info.cdma_num, j,
-			info.pcmds[ptr[j].pcmd].CMD,
-			info.pcmds[ptr[j].pcmd].Block,
-			info.pcmds[ptr[j].pcmd].Page,
-			info.pcmds[ptr[j].pcmd].PageCount);
+//		printk(KERN_ERR "Uncorrectable ECC error!"
+//			"info.cdma_num: %d, j: %d, "
+//			"pending cmd CMD: 0x%x, "
+//			"Block: 0x%x, Page: 0x%x, PageCount: 0x%x\n",
+//			info.cdma_num, j,
+//			info.pcmds[ptr[j].pcmd].CMD,
+//			info.pcmds[ptr[j].pcmd].Block,
+//			info.pcmds[ptr[j].pcmd].Page,
+;
 
 		if (ptr[j].pcmd != 0xff)
 			info.pcmds[ptr[j].pcmd].Status = CMD_FAIL;
@@ -873,12 +873,12 @@ u16  CDMA_Event_Status(void)
 				break;
 			}
 		} else if (int_status & INTR_STATUS0__PROGRAM_FAIL) {
-			printk(KERN_ERR "NAND program fail interrupt!\n");
+;
 			process_prog_erase_fail_int(cur_desc);
 			event = EVENT_PROGRAM_FAILURE;
 			break;
 		} else if (int_status & INTR_STATUS0__ERASE_FAIL) {
-			printk(KERN_ERR "NAND erase fail interrupt!\n");
+;
 			process_prog_erase_fail_int(cur_desc);
 			event = EVENT_ERASE_FAILURE;
 			break;

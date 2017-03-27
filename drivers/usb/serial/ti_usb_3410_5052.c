@@ -355,8 +355,8 @@ static int __init ti_init(void)
 	if (ret)
 		goto failed_usb;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " TI_DRIVER_VERSION ":"
-	       TI_DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " TI_DRIVER_VERSION ":"
+;
 
 	return 0;
 

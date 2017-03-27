@@ -150,7 +150,7 @@ int usb_amd_find_chipset_info(void)
 	}
 
 	ret = info.probe_result = 1;
-	printk(KERN_DEBUG "QUIRK: Enable AMD PLL fix\n");
+;
 
 commit:
 
@@ -654,7 +654,7 @@ static void __devinit quirk_usb_disable_ehci(struct pci_dev *pdev)
 		offset = (cap >> 8) & 0xff;
 	}
 	if (!count)
-		dev_printk(KERN_DEBUG, &pdev->dev, "EHCI: capability loop?\n");
+;
 
 	/*
 	 * halt EHCI & disable its interrupts in any case

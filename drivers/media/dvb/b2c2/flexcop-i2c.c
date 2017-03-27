@@ -122,12 +122,28 @@ int flexcop_i2c_request(struct flexcop_i2c_adapter *i2c,
 	r100.tw_sm_c_100.twoWS_port_reg = i2c->port;
 
 #ifdef DUMP_I2C_MESSAGES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%d ", i2c->port);
+#else
+	;
+#endif
 	if (op == FC_READ)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("rd(");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("wr(");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%02x): %02x ", chipaddr, addr);
+#else
+	;
+#endif
 #endif
 
 	/* in that case addr is the only value ->
@@ -151,7 +167,11 @@ int flexcop_i2c_request(struct flexcop_i2c_adapter *i2c,
 
 #ifdef DUMP_I2C_MESSAGES
 		for (i = 0; i < bytes_to_transfer; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%02x ", buf[i]);
+#else
+			;
+#endif
 #endif
 
 		if (ret < 0)
@@ -163,7 +183,11 @@ int flexcop_i2c_request(struct flexcop_i2c_adapter *i2c,
 	}
 
 #ifdef DUMP_I2C_MESSAGES
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 
 	return 0;

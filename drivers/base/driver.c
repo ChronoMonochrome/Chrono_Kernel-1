@@ -171,8 +171,12 @@ int driver_register(struct device_driver *drv)
 	if ((drv->bus->probe && drv->probe) ||
 	    (drv->bus->remove && drv->remove) ||
 	    (drv->bus->shutdown && drv->shutdown))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Driver '%s' needs updating - please use "
 			"bus_type methods\n", drv->name);
+#else
+		;
+#endif
 
 	other = driver_find(drv->name, drv->bus);
 	if (other) {

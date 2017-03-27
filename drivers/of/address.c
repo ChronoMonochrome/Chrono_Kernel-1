@@ -20,10 +20,22 @@ static int __of_address_to_resource(struct device_node *dev,
 #ifdef DEBUG
 static void of_dump_addr(const char *s, const __be32 *addr, int na)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s", s);
+#else
+	;
+#endif
 	while (na--)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %08x", be32_to_cpu(*(addr++)));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 #else
 static void of_dump_addr(const char *s, const __be32 *addr, int na) { }

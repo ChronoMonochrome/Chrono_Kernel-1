@@ -579,24 +579,36 @@ static void edac_pci_dev_parity_test(struct pci_dev *dev)
 	 */
 	if (status && !dev->broken_parity_status) {
 		if (status & (PCI_STATUS_SIG_SYSTEM_ERROR)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			edac_printk(KERN_CRIT, EDAC_PCI,
 				"Signaled System Error on %s\n",
 				pci_name(dev));
+#else
+			edac_;
+#endif
 			atomic_inc(&pci_nonparity_count);
 		}
 
 		if (status & (PCI_STATUS_PARITY)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			edac_printk(KERN_CRIT, EDAC_PCI,
 				"Master Data Parity Error on %s\n",
 				pci_name(dev));
+#else
+			edac_;
+#endif
 
 			atomic_inc(&pci_parity_count);
 		}
 
 		if (status & (PCI_STATUS_DETECTED_PARITY)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			edac_printk(KERN_CRIT, EDAC_PCI,
 				"Detected Parity Error on %s\n",
 				pci_name(dev));
+#else
+			edac_;
+#endif
 
 			atomic_inc(&pci_parity_count);
 		}
@@ -616,24 +628,36 @@ static void edac_pci_dev_parity_test(struct pci_dev *dev)
 		 */
 		if (status && !dev->broken_parity_status) {
 			if (status & (PCI_STATUS_SIG_SYSTEM_ERROR)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				edac_printk(KERN_CRIT, EDAC_PCI, "Bridge "
 					"Signaled System Error on %s\n",
 					pci_name(dev));
+#else
+				edac_;
+#endif
 				atomic_inc(&pci_nonparity_count);
 			}
 
 			if (status & (PCI_STATUS_PARITY)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				edac_printk(KERN_CRIT, EDAC_PCI, "Bridge "
 					"Master Data Parity Error on "
 					"%s\n", pci_name(dev));
+#else
+				edac_;
+#endif
 
 				atomic_inc(&pci_parity_count);
 			}
 
 			if (status & (PCI_STATUS_DETECTED_PARITY)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				edac_printk(KERN_CRIT, EDAC_PCI, "Bridge "
 					"Detected Parity Error on %s\n",
 					pci_name(dev));
+#else
+				edac_;
+#endif
 
 				atomic_inc(&pci_parity_count);
 			}
@@ -720,9 +744,13 @@ void edac_pci_handle_pe(struct edac_pci_ctl_info *pci, const char *msg)
 	atomic_inc(&pci->counters.pe_count);
 
 	if (edac_pci_get_log_pe())
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_pci_printk(pci, KERN_WARNING,
 				"Parity Error ctl: %s %d: %s\n",
 				pci->ctl_name, pci->pci_idx, msg);
+#else
+		edac_pci_;
+#endif
 
 	/*
 	 * poke all PCI devices and see which one is the troublemaker
@@ -745,9 +773,13 @@ void edac_pci_handle_npe(struct edac_pci_ctl_info *pci, const char *msg)
 	atomic_inc(&pci->counters.npe_count);
 
 	if (edac_pci_get_log_npe())
+#ifdef CONFIG_DEBUG_PRINTK
 		edac_pci_printk(pci, KERN_WARNING,
 				"Non-Parity Error ctl: %s %d: %s\n",
 				pci->ctl_name, pci->pci_idx, msg);
+#else
+		edac_pci_;
+#endif
 
 	/*
 	 * poke all PCI devices and see which one is the troublemaker

@@ -285,7 +285,11 @@ void ssb_chipcommon_init(struct ssb_chipcommon *cc)
 		return; /* We don't have a ChipCommon */
 	if (cc->dev->id.revision >= 11)
 		cc->status = chipco_read32(cc, SSB_CHIPCO_CHIPSTAT);
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_dprintk(KERN_INFO PFX "chipcommon status is 0x%x\n", cc->status);
+#else
+	ssb_d;
+#endif
 
 	if (cc->dev->id.revision >= 20) {
 		chipco_write32(cc, SSB_CHIPCO_GPIOPULLUP, 0);

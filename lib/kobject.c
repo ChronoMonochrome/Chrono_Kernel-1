@@ -662,8 +662,12 @@ struct kobject *kobject_create_and_add(const char *name, struct kobject *parent)
 
 	retval = kobject_add(kobj, parent, "%s", name);
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: kobject_add error: %d\n",
 		       __func__, retval);
+#else
+		;
+#endif
 		kobject_put(kobj);
 		kobj = NULL;
 	}

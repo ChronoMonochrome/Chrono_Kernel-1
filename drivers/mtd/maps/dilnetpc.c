@@ -400,20 +400,32 @@ static int __init init_dnpc(void)
 			++higlvl_partition_info[i].name;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "DIL/Net %s flash: 0x%lx at 0x%llx\n",
 		is_dnp ? "DNPC" : "ADNP", dnpc_map.size, (unsigned long long)dnpc_map.phys);
+#else
+	;
+#endif
 
 	dnpc_map.virt = ioremap_nocache(dnpc_map.phys, dnpc_map.size);
 
 	dnpc_map_flash(dnpc_map.phys, dnpc_map.size);
 
 	if (!dnpc_map.virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Failed to ioremap_nocache\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	simple_map_init(&dnpc_map);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("FLASH virtual address: 0x%p\n", dnpc_map.virt);
+#else
+	;
+#endif
 
 	mymtd = do_map_probe("jedec_probe", &dnpc_map);
 

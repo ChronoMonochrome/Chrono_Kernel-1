@@ -826,9 +826,13 @@ static int mv_cra_hash_init(struct crypto_tfm *tfm, const char *base_hash_name,
 	fallback_tfm = crypto_alloc_shash(fallback_driver_name, 0,
 					  CRYPTO_ALG_NEED_FALLBACK);
 	if (IS_ERR(fallback_tfm)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING MV_CESA
 		       "Fallback driver '%s' could not be loaded!\n",
 		       fallback_driver_name);
+#else
+		;
+#endif
 		err = PTR_ERR(fallback_tfm);
 		goto out;
 	}
@@ -839,9 +843,13 @@ static int mv_cra_hash_init(struct crypto_tfm *tfm, const char *base_hash_name,
 		base_hash = crypto_alloc_shash(base_hash_name, 0,
 					       CRYPTO_ALG_NEED_FALLBACK);
 		if (IS_ERR(base_hash)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING MV_CESA
 			       "Base driver '%s' could not be loaded!\n",
 			       base_hash_name);
+#else
+			;
+#endif
 			err = PTR_ERR(base_hash);
 			goto err_bad_base;
 		}
@@ -1054,15 +1062,23 @@ static int mv_probe(struct platform_device *pdev)
 
 	ret = crypto_register_alg(&mv_aes_alg_ecb);
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING MV_CESA
 		       "Could not register aes-ecb driver\n");
+#else
+		;
+#endif
 		goto err_irq;
 	}
 
 	ret = crypto_register_alg(&mv_aes_alg_cbc);
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING MV_CESA
 		       "Could not register aes-cbc driver\n");
+#else
+		;
+#endif
 		goto err_unreg_ecb;
 	}
 
@@ -1070,14 +1086,22 @@ static int mv_probe(struct platform_device *pdev)
 	if (ret == 0)
 		cpg->has_sha1 = 1;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING MV_CESA "Could not register sha1 driver\n");
+#else
+		;
+#endif
 
 	ret = crypto_register_ahash(&mv_hmac_sha1_alg);
 	if (ret == 0) {
 		cpg->has_hmac_sha1 = 1;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING MV_CESA
 		       "Could not register hmac-sha1 driver\n");
+#else
+		;
+#endif
 	}
 
 	return 0;

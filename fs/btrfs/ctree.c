@@ -576,16 +576,16 @@ noinline int btrfs_cow_block(struct btrfs_trans_handle *trans,
 	int ret;
 
 	if (trans->transaction != root->fs_info->running_transaction) {
-		printk(KERN_CRIT "trans %llu running %llu\n",
-		       (unsigned long long)trans->transid,
-		       (unsigned long long)
-		       root->fs_info->running_transaction->transid);
+//		printk(KERN_CRIT "trans %llu running %llu\n",
+//		       (unsigned long long)trans->transid,
+//		       (unsigned long long)
+;
 		WARN_ON(1);
 	}
 	if (trans->transid != root->fs_info->generation) {
-		printk(KERN_CRIT "trans %llu running %llu\n",
-		       (unsigned long long)trans->transid,
-		       (unsigned long long)root->fs_info->generation);
+//		printk(KERN_CRIT "trans %llu running %llu\n",
+//		       (unsigned long long)trans->transid,
+;
 		WARN_ON(1);
 	}
 
@@ -2331,10 +2331,10 @@ noinline int btrfs_leaf_free_space(struct btrfs_root *root,
 	int ret;
 	ret = BTRFS_LEAF_DATA_SIZE(root) - leaf_space_used(leaf, 0, nritems);
 	if (ret < 0) {
-		printk(KERN_CRIT "leaf free space ret %d, leaf data size %lu, "
-		       "used %d nritems %d\n",
-		       ret, (unsigned long) BTRFS_LEAF_DATA_SIZE(root),
-		       leaf_space_used(leaf, 0, nritems), nritems);
+//		printk(KERN_CRIT "leaf free space ret %d, leaf data size %lu, "
+//		       "used %d nritems %d\n",
+//		       ret, (unsigned long) BTRFS_LEAF_DATA_SIZE(root),
+;
 	}
 	return ret;
 }
@@ -2647,8 +2647,8 @@ static noinline int __push_leaf_left(struct btrfs_trans_handle *trans,
 
 	/* fixup right node */
 	if (push_items > right_nritems) {
-		printk(KERN_CRIT "push items %d nr %u\n", push_items,
-		       right_nritems);
+//		printk(KERN_CRIT "push items %d nr %u\n", push_items,
+;
 		WARN_ON(1);
 	}
 
@@ -3410,8 +3410,8 @@ void btrfs_extend_item(struct btrfs_trans_handle *trans,
 	BUG_ON(slot < 0);
 	if (slot >= nritems) {
 		btrfs_print_leaf(root, leaf);
-		printk(KERN_CRIT "slot %d too large, nritems %d\n",
-		       slot, nritems);
+//		printk(KERN_CRIT "slot %d too large, nritems %d\n",
+;
 		BUG_ON(1);
 	}
 
@@ -3523,8 +3523,8 @@ int btrfs_insert_some_items(struct btrfs_trans_handle *trans,
 
 		if (old_data < data_end) {
 			btrfs_print_leaf(root, leaf);
-			printk(KERN_CRIT "slot %d old_data %d data_end %d\n",
-			       slot, old_data, data_end);
+//			printk(KERN_CRIT "slot %d old_data %d data_end %d\n",
+;
 			BUG_ON(1);
 		}
 		/*
@@ -3617,8 +3617,8 @@ void setup_items_for_insert(struct btrfs_trans_handle *trans,
 
 	if (btrfs_leaf_free_space(root, leaf) < total_size) {
 		btrfs_print_leaf(root, leaf);
-		printk(KERN_CRIT "not enough freespace need %u have %d\n",
-		       total_size, btrfs_leaf_free_space(root, leaf));
+//		printk(KERN_CRIT "not enough freespace need %u have %d\n",
+;
 		BUG();
 	}
 
@@ -3627,8 +3627,8 @@ void setup_items_for_insert(struct btrfs_trans_handle *trans,
 
 		if (old_data < data_end) {
 			btrfs_print_leaf(root, leaf);
-			printk(KERN_CRIT "slot %d old_data %d data_end %d\n",
-			       slot, old_data, data_end);
+//			printk(KERN_CRIT "slot %d old_data %d data_end %d\n",
+;
 			BUG_ON(1);
 		}
 		/*

@@ -181,11 +181,11 @@ static int NCP6914_i2c_suspend(struct device *dev)
 {
 	int ret = 0;
 
-//	printk(KERN_INFO "-> %s()", __func__);
+;
 
 	/*ret = NCP6914_dev_poweroff();*/
 
-//	printk(KERN_INFO "<- %s() = %d", __func__, ret);
+;
 	return ret;
 }
 
@@ -193,11 +193,11 @@ static int NCP6914_i2c_resume(struct device *dev)
 {
 	int ret = 0;
 
-//	printk(KERN_INFO "-> %s()", __func__);
+;
 
 	/*ret = NCP6914_dev_poweron();*/
 
-//	printk(KERN_INFO "<- %s() = %d", __func__, ret);
+;
 	return ret;
 }
 
@@ -214,22 +214,22 @@ NCP6914_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 	int ret = 0;
 	/*struct NCP6914_platform_data* platdata = client->dev.platform_data; */
 
-	printk(KERN_INFO "-> %s(client=%s, id=%s)", __func__, client->name, id->name);
+;
 
 	dev_set_name(&client->dev, client->name);
 	pClient = client;
 
 	gpio_power_on = 145;	/* platdata->subpmu_pwron_gpio; */
 
-	printk(KERN_INFO "<- %s(client=%s) = %d", __func__, client->name, ret);
+;
 	return ret;
 }
 
 static int NCP6914_i2c_remove(struct i2c_client *client)
 {
-	printk(KERN_INFO "-> %s(client=%s)", __func__, client->name);
+;
 
-	printk(KERN_INFO "<- %s(client=%s) = 0", __func__, client->name);
+;
 	return 0;
 }
 
@@ -253,17 +253,17 @@ _NCP6914_i2c_send(struct i2c_client *client, const u8 * data, int len)
 	int ret = 0;
 
 	if (len <= 0) {
-		printk(KERN_ERR "%s(): invalid length %d", __func__, len);
+;
 		return -EINVAL;
 	}
 
 	ret = i2c_master_send(client, data, len);
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to send %d bytes to NCP6914 [errno=%d]", len,
-		       ret);
+//		printk(KERN_ERR "Failed to send %d bytes to NCP6914 [errno=%d]", len,
+;
 	} else if (ret != len) {
-		printk(KERN_ERR "Failed to send exactly %d bytes to NCP6914 (send %d)",
-		       len, ret);
+//		printk(KERN_ERR "Failed to send exactly %d bytes to NCP6914 (send %d)",
+;
 		ret = -EIO;
 	} else {
 		ret = 0;
@@ -323,17 +323,17 @@ int NCP6914_subPMIC_module_init(void)
 	int ret = 0;
 
 	// TODO: TEMP DEBUG gareth.phillips
-	printk(KERN_INFO "-> %s", __func__);
+;
 
 	ret = i2c_add_driver(&subPMIC_i2c_driver);
 	if (ret < 0) {
-		printk(KERN_ERR "Failed to add i2c driver for subPMIC [errno=%d]", ret);
+;
 	}
 
 	gpio_request(gpio_power_on, "SUBPMU_PWRON");
 
 	// TODO: TEMP DEBUG gareth.phillips
-	printk(KERN_INFO "<- %s", __func__);
+;
 
 	return ret;
 }
@@ -350,7 +350,7 @@ int NCP6914_subPMIC_PowerOn(int opt)
 	u8 val;
 #if ( defined(CONFIG_MACH_JANICE) || defined(CONFIG_MACH_CODINA) || defined(CONFIG_MACH_GAVINI) || defined(CONFIG_MACH_SEC_KYLE)|| defined(CONFIG_MACH_SEC_GOLDEN) || defined(CONFIG_MACH_SEC_SKOMER) || defined(CONFIG_MACH_SEC_HENDRIX))
 	// TODO: TEMP DEBUG gareth.phillips
-	printk(KERN_INFO "-> %s", __func__);
+;
 
 	if (opt == 0) {
 		NCP6914_pinstate = 0;
@@ -362,7 +362,7 @@ int NCP6914_subPMIC_PowerOn(int opt)
 		ret = NCP6914_i2c_write(pClient, reg, val);
 		if (ret < 0) {
 			// TODO: TEMP DEBUG gareth.phillips
-			printk(KERN_INFO "%s: NCP6914_i2c_write failed(%d)", __func__, ret);
+;
 			return ret;
 		}
 
@@ -577,7 +577,7 @@ int NCP6914_subPMIC_PowerOn(int opt)
 #endif
 
 	// TODO: TEMP DEBUG gareth.phillips
-	printk(KERN_INFO "<- %s", __func__);
+;
 
 	return ret;
 }

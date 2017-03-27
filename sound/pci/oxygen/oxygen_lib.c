@@ -313,7 +313,11 @@ static void oxygen_restore_eeprom(struct oxygen *chip,
 		oxygen_clear_bits8(chip, OXYGEN_MISC,
 				   OXYGEN_MISC_WRITE_PCI_SUBID);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO "EEPROM ID restored\n");
+#else
+		;
+#endif
 	}
 }
 

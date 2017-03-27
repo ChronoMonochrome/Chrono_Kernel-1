@@ -407,8 +407,8 @@ static int bfin_musb_init(struct musb *musb)
 	 */
 
 	if (gpio_request(musb->config->gpio_vrsel, "USB_VRSEL")) {
-		printk(KERN_ERR "Failed ro request USB_VRSEL GPIO_%d\n",
-			musb->config->gpio_vrsel);
+//		printk(KERN_ERR "Failed ro request USB_VRSEL GPIO_%d\n",
+;
 		return -ENODEV;
 	}
 	gpio_direction_output(musb->config->gpio_vrsel, 0);

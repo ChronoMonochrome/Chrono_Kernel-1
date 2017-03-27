@@ -1349,8 +1349,12 @@ static int __init ubi_mtd_param_parse(const char *val, struct kernel_param *kp)
 	}
 
 	if (len == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "UBI warning: empty 'mtd=' parameter - "
 		       "ignored\n");
+#else
+		;
+#endif
 		return 0;
 	}
 

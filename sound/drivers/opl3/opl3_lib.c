@@ -303,7 +303,11 @@ void snd_opl3_interrupt(struct snd_hwdep * hw)
 	opl3 = hw->private_data;
 	status = inb(opl3->l_port);
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "AdLib IRQ status = 0x%x\n", status);
+#else
+	;
+#endif
 #endif
 	if (!(status & 0x80))
 		return;

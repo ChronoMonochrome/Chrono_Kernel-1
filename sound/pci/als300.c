@@ -91,6 +91,7 @@
 #define DEBUG_PLAY_REC	0
 
 #if DEBUG_CALLS
+#ifdef CONFIG_DEBUG_PRINTK
 #define snd_als300_dbgcalls(format, args...) printk(KERN_DEBUG format, ##args)
 #define snd_als300_dbgcallenter() printk(KERN_ERR "--> %s\n", __func__)
 #define snd_als300_dbgcallleave() printk(KERN_ERR "<-- %s\n", __func__)
@@ -107,6 +108,9 @@
 #endif		
 
 enum {DEVICE_ALS300, DEVICE_ALS300_PLUS};
+#else
+#define snd_als300_dbgcalls(format, args...) ;
+#endif
 
 MODULE_AUTHOR("Ash Willis <ashwillis@programmer.net>");
 MODULE_DESCRIPTION("Avance Logic ALS300");
@@ -741,13 +745,21 @@ static int __devinit snd_als300_create(struct snd_card *card,
 
 	err = snd_als300_ac97(chip);
 	if (err < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "Could not create ac97\n");
+#else
+		;
+#endif
 		snd_als300_free(chip);
 		return err;
 	}
 
 	if ((err = snd_als300_new_pcm(chip)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "Could not create PCM\n");
+#else
+		;
+#endif
 		snd_als300_free(chip);
 		return err;
 	}

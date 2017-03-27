@@ -1678,7 +1678,7 @@ static int __init netback_init(void)
 	xen_netbk_group_nr = num_online_cpus();
 	xen_netbk = vzalloc(sizeof(struct xen_netbk) * xen_netbk_group_nr);
 	if (!xen_netbk) {
-		printk(KERN_ALERT "%s: out of memory\n", __func__);
+;
 		return -ENOMEM;
 	}
 
@@ -1702,7 +1702,7 @@ static int __init netback_init(void)
 					     "netback/%u", group);
 
 		if (IS_ERR(netbk->task)) {
-			printk(KERN_ALERT "kthread_run() fails at netback\n");
+;
 			del_timer(&netbk->net_timer);
 			rc = PTR_ERR(netbk->task);
 			goto failed_init;

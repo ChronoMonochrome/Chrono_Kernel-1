@@ -187,14 +187,22 @@ struct usb_stream *usb_stream_new(struct usb_stream_kernel *sk,
 	write_size = max_packsize * packets * USB_STREAM_URBDEPTH;
 
 	if (read_size >= 256*PAGE_SIZE || write_size >= 256*PAGE_SIZE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "a size exceeds 128*PAGE_SIZE\n");
+#else
+		;
+#endif
 		goto out;
 	}
 
 	pg = get_order(read_size);
 	sk->s = (void *) __get_free_pages(GFP_KERNEL|__GFP_COMP|__GFP_ZERO, pg);
 	if (!sk->s) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "couldn't __get_free_pages()\n");
+#else
+		;
+#endif
 		goto out;
 	}
 	sk->s->cfg.version = USB_STREAM_INTERFACE_VERSION;
@@ -214,7 +222,11 @@ struct usb_stream *usb_stream_new(struct usb_stream_kernel *sk,
 	sk->write_page =
 		(void *)__get_free_pages(GFP_KERNEL|__GFP_COMP|__GFP_ZERO, pg);
 	if (!sk->write_page) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "couldn't __get_free_pages()\n");
+#else
+		;
+#endif
 		usb_stream_free(sk);
 		return NULL;
 	}
@@ -239,7 +251,11 @@ static bool balance_check(struct usb_stream_kernel *sk, struct urb *urb)
 	bool r;
 	if (unlikely(urb->status)) {
 		if (urb->status != -ESHUTDOWN && urb->status != -ENOENT)
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "status=%i\n", urb->status);
+#else
+			;
+#endif
 		sk->iso_frame_balance = 0x7FFFFFFF;
 		return false;
 	}
@@ -309,7 +325,11 @@ static int usb_stream_prepare_playback(struct usb_stream_kernel *sk,
 check_ok:
 	s->sync_packet -= inurb->number_of_packets;
 	if (unlikely(s->sync_packet < -2 || s->sync_packet > 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "invalid sync_packet = %i;"
+#else
+		;
+#endif
 			   " p=%i nop=%i %i %x %x %x > %x\n",
 			   s->sync_packet, p, inurb->number_of_packets,
 			   s->idle_outsize + lb + l,
@@ -318,8 +338,12 @@ check_ok:
 		return -1;
 	}
 	if (unlikely(lb % s->cfg.frame_size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING"invalid outsize = %i\n",
 			   lb);
+#else
+		;
+#endif
 		return -1;
 	}
 	s->idle_outsize += lb - s->period_size;
@@ -328,7 +352,11 @@ check_ok:
 	if (s->idle_outsize <= 0)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING "idle=%i\n", s->idle_outsize);
+#else
+	;
+#endif
 	return -1;
 }
 
@@ -412,8 +440,12 @@ loop:
 	}
 	if (iu == sk->completed_inurb) {
 		if (l != s->period_size)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG"%s:%i %i\n", __func__, __LINE__,
 			       l/(int)s->cfg.frame_size);
+#else
+			;
+#endif
 
 		return;
 	}
@@ -447,8 +479,12 @@ static void stream_idle(struct usb_stream_kernel *sk,
 		struct usb_iso_packet_descriptor *id = inurb->iso_frame_desc;
 		l = id[p].actual_length;
 		if (unlikely(l == 0 || id[p].status)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "underrun, status=%u\n",
 				   id[p].status);
+#else
+			;
+#endif
 			goto err_out;
 		}
 		s->inpacket_head++;
@@ -469,8 +505,12 @@ static void stream_idle(struct usb_stream_kernel *sk,
 	}
 	s->idle_insize += urb_size - s->period_size;
 	if (s->idle_insize < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "%i\n",
 			   (s->idle_insize)/(int)s->cfg.frame_size);
+#else
+		;
+#endif
 		goto err_out;
 	}
 	s->insize_done += urb_size;
@@ -551,8 +591,12 @@ static void stream_start(struct usb_stream_kernel *sk,
 		s->idle_insize -= max_diff - max_diff_0;
 		s->idle_insize += urb_size - s->period_size;
 		if (s->idle_insize < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "%i %i %i\n",
 				   s->idle_insize, urb_size, s->period_size);
+#else
+			;
+#endif
 			return;
 		} else if (s->idle_insize == 0) {
 			s->next_inpacket_split =
@@ -601,7 +645,11 @@ static void i_capture_start(struct urb *urb)
 	int empty = 0;
 
 	if (urb->status) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "status=%i\n", urb->status);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -610,7 +658,11 @@ static void i_capture_start(struct urb *urb)
 		if (l < s->cfg.frame_size) {
 			++empty;
 			if (s->state >= usb_stream_sync0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				snd_printk(KERN_WARNING "%i\n", l);
+#else
+				;
+#endif
 				return;
 			}
 		}
@@ -622,13 +674,25 @@ static void i_capture_start(struct urb *urb)
 	}
 #ifdef SHOW_EMPTY
 	if (empty) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG"%s:%i: %i", __func__, __LINE__,
 		       urb->iso_frame_desc[0].actual_length);
+#else
+		;
+#endif
 		for (pack = 1; pack < urb->number_of_packets; ++pack) {
 			int l = urb->iso_frame_desc[pack].actual_length;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %i", l);
+#else
+			;
+#endif
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 #endif
 	if (!empty && s->state < usb_stream_sync1)
@@ -714,8 +778,12 @@ check_retry:
 			snd_printd(KERN_DEBUG "goto dotry;\n");
 			goto dotry;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING"couldn't start"
 			   " all urbs on the same start_frame.\n");
+#else
+		;
+#endif
 		return -EFAULT;
 	}
 

@@ -660,13 +660,13 @@ void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl)
 	INIT_LIST_HEAD(&ai->ai_ail2_list);
 
 	if (sdp->sd_log_num_buf != sdp->sd_log_commited_buf) {
-		printk(KERN_INFO "GFS2: log buf %u %u\n", sdp->sd_log_num_buf,
-		       sdp->sd_log_commited_buf);
+//		printk(KERN_INFO "GFS2: log buf %u %u\n", sdp->sd_log_num_buf,
+;
 		gfs2_assert_withdraw(sdp, 0);
 	}
 	if (sdp->sd_log_num_databuf != sdp->sd_log_commited_databuf) {
-		printk(KERN_INFO "GFS2: log databuf %u %u\n",
-		       sdp->sd_log_num_databuf, sdp->sd_log_commited_databuf);
+//		printk(KERN_INFO "GFS2: log databuf %u %u\n",
+;
 		gfs2_assert_withdraw(sdp, 0);
 	}
 	gfs2_assert_withdraw(sdp,

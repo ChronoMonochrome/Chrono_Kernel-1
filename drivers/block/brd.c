@@ -624,7 +624,11 @@ static int __init brd_init(void)
 	blk_register_region(MKDEV(RAMDISK_MAJOR, 0), range,
 				  THIS_MODULE, brd_probe, NULL, NULL);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "brd: module loaded\n");
+#else
+	;
+#endif
 	return 0;
 
 out_free:

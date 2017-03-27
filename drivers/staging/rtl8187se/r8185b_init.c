@@ -265,8 +265,8 @@ HwHSSIThreeWire(
 			udelay(10);
 		}
 		if (TryCnt == TC_3W_POLL_MAX_TRY_CNT) {
-			printk(KERN_ERR "rtl8187se: HwThreeWire(): CmdReg:"
-			       " %#X RE|WE bits are not clear!!\n", u1bTmp);
+//			printk(KERN_ERR "rtl8187se: HwThreeWire(): CmdReg:"
+;
 			dump_stack();
 			return 0;
 		}
@@ -303,19 +303,19 @@ HwHSSIThreeWire(
 				int ByteCnt = nDataBufBitCnt / 8;
 								/* printk("%d\n",nDataBufBitCnt); */
 				if ((nDataBufBitCnt % 8) != 0) {
-					printk(KERN_ERR "rtl8187se: "
-					       "HwThreeWire(): nDataBufBitCnt(%d)"
-					       " should be multiple of 8!!!\n",
-					       nDataBufBitCnt);
+//					printk(KERN_ERR "rtl8187se: "
+//					       "HwThreeWire(): nDataBufBitCnt(%d)"
+//					       " should be multiple of 8!!!\n",
+;
 					dump_stack();
 					nDataBufBitCnt += 8;
 					nDataBufBitCnt &= ~7;
 				}
 
 			       if (nDataBufBitCnt > 64) {
-					printk(KERN_ERR "rtl8187se: HwThreeWire():"
-					       " nDataBufBitCnt(%d) should <= 64!!!\n",
-					       nDataBufBitCnt);
+//					printk(KERN_ERR "rtl8187se: HwThreeWire():"
+//					       " nDataBufBitCnt(%d) should <= 64!!!\n",
+;
 					dump_stack();
 					nDataBufBitCnt = 64;
 				}
@@ -545,7 +545,7 @@ ZEBRA_Config_85BASIC_HardCode(
 
 	if (u4bRF23 == 0x818 && u4bRF24 == 0x70C) {
 		d_cut = 1;
-		printk(KERN_INFO "rtl8187se: card type changed from C- to D-cut\n");
+;
 	}
 
 	/* Page0 : reg0-reg15	*/
@@ -651,8 +651,8 @@ ZEBRA_Config_85BASIC_HardCode(
 			(3)RF signal on/off when calibration[13], default: on, set BIT13=0.
 			So we should minus 4 BITs offset.		*/
 		RF_WriteReg(dev, 0x0f, (priv->XtalCal_Xin<<5) | (priv->XtalCal_Xout<<1) | BIT11 | BIT9);			mdelay(1);
-		printk("ZEBRA_Config_85BASIC_HardCode(): (%02x)\n",
-				(priv->XtalCal_Xin<<5) | (priv->XtalCal_Xout<<1) | BIT11 | BIT9);
+//		printk("ZEBRA_Config_85BASIC_HardCode(): (%02x)\n",
+;
 	}	else	{
 		/* using default value. Xin=6, Xout=6.	*/
 		RF_WriteReg(dev, 0x0f, 0x0acc);			mdelay(1);
@@ -1425,7 +1425,7 @@ MgntActSet_RF_State(
 
 				/* Wait too long, return FALSE to avoid to be stuck here.	*/
 				if (RFWaitCounter > 1000)	{	/* 1sec	*/
-					printk("MgntActSet_RF_State(): Wait too long to set RF\n");
+;
 					/* TODO: Reset RF state?	*/
 					return false;
 				}

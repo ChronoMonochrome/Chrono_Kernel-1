@@ -189,9 +189,9 @@ sb1000_probe_one(struct pnp_dev *pdev, const struct pnp_device_id *id)
 	dev->irq = irq;
 
 	if (sb1000_debug > 0)
-		printk(KERN_NOTICE "%s: sb1000 at (%#3.3lx,%#3.3lx), "
-			"S/N %#8.8x, IRQ %d.\n", dev->name, dev->base_addr,
-			dev->mem_start, serial_number, dev->irq);
+//		printk(KERN_NOTICE "%s: sb1000 at (%#3.3lx,%#3.3lx), "
+//			"S/N %#8.8x, IRQ %d.\n", dev->name, dev->base_addr,
+;
 
 	/*
 	 * The SB1000 is an rx-only cable modem device.  The uplink is a modem
@@ -202,7 +202,7 @@ sb1000_probe_one(struct pnp_dev *pdev, const struct pnp_device_id *id)
 	SET_NETDEV_DEV(dev, &pdev->dev);
 
 	if (sb1000_debug > 0)
-		printk(KERN_NOTICE "%s", version);
+;
 
 	dev->netdev_ops	= &sb1000_netdev_ops;
 
@@ -272,8 +272,8 @@ card_wait_for_busy_clear(const int ioaddr[], const char* name)
 
 		a = inb(ioaddr[0] + 7);
 		if (time_after_eq(jiffies, timeout)) {
-			printk(KERN_WARNING "%s: card_wait_for_busy_clear timeout\n",
-				name);
+//			printk(KERN_WARNING "%s: card_wait_for_busy_clear timeout\n",
+;
 			return -ETIME;
 		}
 	}
@@ -296,8 +296,8 @@ card_wait_for_ready(const int ioaddr[], const char* name, unsigned char in[])
 
 		a = inb(ioaddr[1] + 6);
 		if (time_after_eq(jiffies, timeout)) {
-			printk(KERN_WARNING "%s: card_wait_for_ready timeout\n",
-				name);
+//			printk(KERN_WARNING "%s: card_wait_for_ready timeout\n",
+;
 			return -ETIME;
 		}
 	}
@@ -334,16 +334,16 @@ card_send_command(const int ioaddr[], const char* name,
 			return status;
 		inb(ioaddr[0] + 7);
 		if (sb1000_debug > 3)
-			printk(KERN_DEBUG "%s: card_send_command "
-				"out: %02x%02x%02x%02x%02x%02x  "
-				"in: %02x%02x%02x%02x%02x%02x%02x\n", name,
-				out[0], out[1], out[2], out[3], out[4], out[5],
-				in[0], in[1], in[2], in[3], in[4], in[5], in[6]);
+//			printk(KERN_DEBUG "%s: card_send_command "
+//				"out: %02x%02x%02x%02x%02x%02x  "
+//				"in: %02x%02x%02x%02x%02x%02x%02x\n", name,
+//				out[0], out[1], out[2], out[3], out[4], out[5],
+;
 	} else {
 		if (sb1000_debug > 3)
-			printk(KERN_DEBUG "%s: card_send_command "
-				"out: %02x%02x%02x%02x%02x%02x\n", name,
-				out[0], out[1], out[2], out[3], out[4], out[5]);
+//			printk(KERN_DEBUG "%s: card_send_command "
+//				"out: %02x%02x%02x%02x%02x%02x\n", name,
+;
 	}
 
 	if (out[1] == 0x1b) {
@@ -370,16 +370,16 @@ sb1000_wait_for_ready(const int ioaddr[], const char* name)
 	timeout = jiffies + Sb1000TimeOutJiffies;
 	while (inb(ioaddr[1] + 6) & 0x80) {
 		if (time_after_eq(jiffies, timeout)) {
-			printk(KERN_WARNING "%s: sb1000_wait_for_ready timeout\n",
-				name);
+//			printk(KERN_WARNING "%s: sb1000_wait_for_ready timeout\n",
+;
 			return -ETIME;
 		}
 	}
 	timeout = jiffies + Sb1000TimeOutJiffies;
 	while (!(inb(ioaddr[1] + 6) & 0x40)) {
 		if (time_after_eq(jiffies, timeout)) {
-			printk(KERN_WARNING "%s: sb1000_wait_for_ready timeout\n",
-				name);
+//			printk(KERN_WARNING "%s: sb1000_wait_for_ready timeout\n",
+;
 			return -ETIME;
 		}
 	}
@@ -396,16 +396,16 @@ sb1000_wait_for_ready_clear(const int ioaddr[], const char* name)
 	timeout = jiffies + Sb1000TimeOutJiffies;
 	while (inb(ioaddr[1] + 6) & 0x80) {
 		if (time_after_eq(jiffies, timeout)) {
-			printk(KERN_WARNING "%s: sb1000_wait_for_ready_clear timeout\n",
-				name);
+//			printk(KERN_WARNING "%s: sb1000_wait_for_ready_clear timeout\n",
+;
 			return -ETIME;
 		}
 	}
 	timeout = jiffies + Sb1000TimeOutJiffies;
 	while (inb(ioaddr[1] + 6) & 0x40) {
 		if (time_after_eq(jiffies, timeout)) {
-			printk(KERN_WARNING "%s: sb1000_wait_for_ready_clear timeout\n",
-				name);
+//			printk(KERN_WARNING "%s: sb1000_wait_for_ready_clear timeout\n",
+;
 			return -ETIME;
 		}
 	}
@@ -424,8 +424,8 @@ sb1000_send_command(const int ioaddr[], const char* name,
 	outb(out[1], ioaddr[0] + 5);
 	outb(out[0], ioaddr[0] + 7);
 	if (sb1000_debug > 3)
-		printk(KERN_DEBUG "%s: sb1000_send_command out: %02x%02x%02x%02x"
-			"%02x%02x\n", name, out[0], out[1], out[2], out[3], out[4], out[5]);
+//		printk(KERN_DEBUG "%s: sb1000_send_command out: %02x%02x%02x%02x"
+;
 }
 
 /* Card Read Status (to be used during frame rx) */
@@ -603,9 +603,9 @@ sb1000_set_frequency(const int ioaddr[], const char* name, int frequency)
 	const int FrequencyUpperLimit = 804000;
 
 	if (frequency < FrequencyLowerLimit || frequency > FrequencyUpperLimit) {
-		printk(KERN_ERR "%s: frequency chosen (%d kHz) is not in the range "
-			"[%d,%d] kHz\n", name, frequency, FrequencyLowerLimit,
-			FrequencyUpperLimit);
+//		printk(KERN_ERR "%s: frequency chosen (%d kHz) is not in the range "
+//			"[%d,%d] kHz\n", name, frequency, FrequencyLowerLimit,
+;
 		return -EINVAL;
 	}
 	udelay(1000);
@@ -714,20 +714,20 @@ sb1000_print_status_buffer(const char* name, unsigned char st[],
 {
 	int i, j, k;
 
-	printk(KERN_DEBUG "%s: status: %02x %02x\n", name, st[0], st[1]);
+;
 	if (buffer[24] == 0x08 && buffer[25] == 0x00 && buffer[26] == 0x45) {
-		printk(KERN_DEBUG "%s: length: %d protocol: %d from: %d.%d.%d.%d:%d "
-			"to %d.%d.%d.%d:%d\n", name, buffer[28] << 8 | buffer[29],
-			buffer[35], buffer[38], buffer[39], buffer[40], buffer[41],
-            buffer[46] << 8 | buffer[47],
-			buffer[42], buffer[43], buffer[44], buffer[45],
-            buffer[48] << 8 | buffer[49]);
+//		printk(KERN_DEBUG "%s: length: %d protocol: %d from: %d.%d.%d.%d:%d "
+//			"to %d.%d.%d.%d:%d\n", name, buffer[28] << 8 | buffer[29],
+//			buffer[35], buffer[38], buffer[39], buffer[40], buffer[41],
+//            buffer[46] << 8 | buffer[47],
+//			buffer[42], buffer[43], buffer[44], buffer[45],
+;
 	} else {
 		for (i = 0, k = 0; i < (size + 7) / 8; i++) {
-			printk(KERN_DEBUG "%s: %s", name, i ? "       " : "buffer:");
+;
 			for (j = 0; j < 8 && k < size; j++, k++)
-				printk(" %02x", buffer[k]);
-			printk("\n");
+;
+;
 		}
 	}
 }
@@ -765,7 +765,7 @@ sb1000_rx(struct net_device *dev)
 
 	insw(ioaddr, (unsigned short*) st, 1);
 #ifdef XXXDEBUG
-printk("cm0: received: %02x %02x\n", st[0], st[1]);
+;
 #endif /* XXXDEBUG */
 	lp->rx_frames++;
 
@@ -795,9 +795,9 @@ skipped_frame:
 	stats->rx_frame_errors++;
 	skb = lp->rx_skb[ns];
 	if (sb1000_debug > 1)
-		printk(KERN_WARNING "%s: missing frame(s): got %02x %02x "
-			"expecting %02x %02x\n", dev->name, st[0], st[1],
-			skb ? session_id : session_id | 0x40, frame_id);
+//		printk(KERN_WARNING "%s: missing frame(s): got %02x %02x "
+//			"expecting %02x %02x\n", dev->name, st[0], st[1],
+;
 	if (skb) {
 		dev_kfree_skb(skb);
 		skb = NULL;
@@ -810,13 +810,13 @@ good_frame:
 		/* get data length */
 		insw(ioaddr, buffer, NewDatagramHeaderSize / 2);
 #ifdef XXXDEBUG
-printk("cm0: IP identification: %02x%02x  fragment offset: %02x%02x\n", buffer[30], buffer[31], buffer[32], buffer[33]);
+;
 #endif /* XXXDEBUG */
 		if (buffer[0] != NewDatagramHeaderSkip) {
 			if (sb1000_debug > 1)
-				printk(KERN_WARNING "%s: new datagram header skip error: "
-					"got %02x expecting %02x\n", dev->name, buffer[0],
-					NewDatagramHeaderSkip);
+//				printk(KERN_WARNING "%s: new datagram header skip error: "
+//					"got %02x expecting %02x\n", dev->name, buffer[0],
+;
 			stats->rx_length_errors++;
 			insw(ioaddr, buffer, NewDatagramDataSize / 2);
 			goto bad_frame_next;
@@ -825,8 +825,8 @@ printk("cm0: IP identification: %02x%02x  fragment offset: %02x%02x\n", buffer[3
 			buffer[NewDatagramHeaderSkip + 4]) - 17;
 		if (dlen > SB1000_MRU) {
 			if (sb1000_debug > 1)
-				printk(KERN_WARNING "%s: datagram length (%d) greater "
-					"than MRU (%d)\n", dev->name, dlen, SB1000_MRU);
+//				printk(KERN_WARNING "%s: datagram length (%d) greater "
+;
 			stats->rx_length_errors++;
 			insw(ioaddr, buffer, NewDatagramDataSize / 2);
 			goto bad_frame_next;
@@ -836,8 +836,8 @@ printk("cm0: IP identification: %02x%02x  fragment offset: %02x%02x\n", buffer[3
 		skbsize = dlen + FrameSize;
 		if ((skb = alloc_skb(skbsize, GFP_ATOMIC)) == NULL) {
 			if (sb1000_debug > 1)
-				printk(KERN_WARNING "%s: can't allocate %d bytes long "
-					"skbuff\n", dev->name, skbsize);
+//				printk(KERN_WARNING "%s: can't allocate %d bytes long "
+;
 			stats->rx_dropped++;
 			insw(ioaddr, buffer, NewDatagramDataSize / 2);
 			goto dropped_frame;
@@ -853,9 +853,9 @@ printk("cm0: IP identification: %02x%02x  fragment offset: %02x%02x\n", buffer[3
 		insw(ioaddr, buffer, ContDatagramHeaderSize / 2);
 		if (buffer[0] != ContDatagramHeaderSkip) {
 			if (sb1000_debug > 1)
-				printk(KERN_WARNING "%s: cont datagram header skip error: "
-					"got %02x expecting %02x\n", dev->name, buffer[0],
-					ContDatagramHeaderSkip);
+//				printk(KERN_WARNING "%s: cont datagram header skip error: "
+//					"got %02x expecting %02x\n", dev->name, buffer[0],
+;
 			stats->rx_length_errors++;
 			insw(ioaddr, buffer, ContDatagramDataSize / 2);
 			goto bad_frame_next;
@@ -882,8 +882,8 @@ printk("cm0: IP identification: %02x%02x  fragment offset: %02x%02x\n", buffer[3
 bad_frame:
 	insw(ioaddr, buffer, FrameSize / 2);
 	if (sb1000_debug > 1)
-		printk(KERN_WARNING "%s: frame error: got %02x %02x\n",
-			dev->name, st[0], st[1]);
+//		printk(KERN_WARNING "%s: frame error: got %02x %02x\n",
+;
 	stats->rx_frame_errors++;
 bad_frame_next:
 	if (sb1000_debug > 2)
@@ -973,7 +973,7 @@ sb1000_open(struct net_device *dev)
 	}
 
 	if (sb1000_debug > 2)
-		printk(KERN_DEBUG "%s: Opening, IRQ %d\n", name, dev->irq);
+;
 
 	/* Activate board and check firmware version */
 	udelay(1000);
@@ -983,9 +983,9 @@ sb1000_open(struct net_device *dev)
 	if ((status = sb1000_get_firmware_version(ioaddr, name, version, 0)))
 		return status;
 	if (version[0] != FirmwareVersion[0] || version[1] != FirmwareVersion[1])
-		printk(KERN_WARNING "%s: found firmware version %x.%02x "
-			"(should be %x.%02x)\n", name, version[0], version[1],
-			FirmwareVersion[0], FirmwareVersion[1]);
+//		printk(KERN_WARNING "%s: found firmware version %x.%02x "
+//			"(should be %x.%02x)\n", name, version[0], version[1],
+;
 
 
 	netif_start_queue(dev);
@@ -1080,7 +1080,7 @@ static int sb1000_dev_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
 static netdev_tx_t
 sb1000_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
-	printk(KERN_WARNING "%s: trying to transmit!!!\n", dev->name);
+;
 	/* sb1000 can't xmit datagrams */
 	dev_kfree_skb(skb);
 	return NETDEV_TX_OK;
@@ -1112,7 +1112,7 @@ static irqreturn_t sb1000_interrupt(int irq, void *dev_id)
 	}
 
 	if (sb1000_debug > 3)
-		printk(KERN_DEBUG "%s: entering interrupt\n", dev->name);
+;
 
 	st = inb(ioaddr[0] + 7);
 	if (sb1000_rx(dev))
@@ -1149,7 +1149,7 @@ static int sb1000_close(struct net_device *dev)
 	struct sb1000_private *lp = netdev_priv(dev);
 
 	if (sb1000_debug > 2)
-		printk(KERN_DEBUG "%s: Shutting down sb1000.\n", dev->name);
+;
 
 	netif_stop_queue(dev);
 

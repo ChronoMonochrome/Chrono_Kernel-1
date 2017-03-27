@@ -177,9 +177,13 @@ static int __init cs5535_mfgpt_init(void)
 	cs5535_clockevent.max_delta_ns = clockevent_delta2ns(0xFFFE,
 			&cs5535_clockevent);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME
 		": Registering MFGPT timer as a clock event, using IRQ %d\n",
 		timer_irq);
+#else
+	;
+#endif
 	clockevents_register_device(&cs5535_clockevent);
 
 	return 0;

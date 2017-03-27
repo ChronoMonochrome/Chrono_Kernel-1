@@ -286,7 +286,7 @@ struct hnddma_pub *dma_attach(char *name, si_t *sih,
 	di = kzalloc(sizeof(dma_info_t), GFP_ATOMIC);
 	if (di == NULL) {
 #ifdef BCMDBG
-		printk(KERN_ERR "dma_attach: out of memory\n");
+;
 #endif
 		return NULL;
 	}

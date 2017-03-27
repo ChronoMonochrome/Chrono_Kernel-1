@@ -269,7 +269,11 @@ void pdacf_tasklet(unsigned long private_data)
 
 	rdp = inw(chip->port + PDAUDIOCF_REG_RDP);
 	wdp = inw(chip->port + PDAUDIOCF_REG_WDP);
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_DEBUG "TASKLET: rdp = %x, wdp = %x\n", rdp, wdp); */
+#else
+	/* ;
+#endif
 	size = wdp - rdp;
 	if (size < 0)
 		size += 0x10000;
@@ -321,5 +325,9 @@ void pdacf_tasklet(unsigned long private_data)
 		spin_lock(&chip->reg_lock);
 	}
 	spin_unlock(&chip->reg_lock);
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_DEBUG "TASKLET: end\n"); */
+#else
+	/* ;
+#endif
 }

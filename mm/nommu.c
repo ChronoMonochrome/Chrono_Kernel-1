@@ -38,6 +38,7 @@
 
 #if 0
 #define kenter(FMT, ...) \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "==> %s("FMT")\n", __func__, ##__VA_ARGS__)
 #define kleave(FMT, ...) \
 	printk(KERN_DEBUG "<== %s()"FMT"\n", __func__, ##__VA_ARGS__)
@@ -53,6 +54,9 @@
 #endif
 
 void *high_memory;
+#else
+	;
+#endif
 struct page *mem_map;
 unsigned long max_mapnr;
 unsigned long num_physpages;
@@ -894,9 +898,13 @@ static int validate_mmap_request(struct file *file,
 
 	/* do the simple checks first */
 	if (flags & MAP_FIXED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "%d: Can't do fixed-address/overlay mmap of RAM\n",
 		       current->pid);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -1006,8 +1014,12 @@ static int validate_mmap_request(struct file *file,
 			    ) {
 				capabilities &= ~BDI_CAP_MAP_DIRECT;
 				if (flags & MAP_SHARED) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING
 					       "MAP_SHARED not completely supported on !MMU\n");
+#else
+					;
+#endif
 					return -EINVAL;
 				}
 			}
@@ -1224,8 +1236,12 @@ error_free:
 	return ret;
 
 enomem:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Allocation of length %lu from process %d (%s) failed\n",
 	       len, current->pid, current->comm);
+#else
+	;
+#endif
 	show_free_areas(0);
 	return -ENOMEM;
 }
@@ -1451,22 +1467,34 @@ error:
 
 sharing_violation:
 	up_write(&nommu_region_sem);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Attempt to share mismatched mappings\n");
+#else
+	;
+#endif
 	ret = -EINVAL;
 	goto error;
 
 error_getting_vma:
 	kmem_cache_free(vm_region_jar, region);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Allocation of vma for %lu byte allocation"
 	       " from process %d failed\n",
 	       len, current->pid);
+#else
+	;
+#endif
 	show_free_areas(0);
 	return -ENOMEM;
 
 error_getting_region:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Allocation of vm region for %lu byte allocation"
 	       " from process %d failed\n",
 	       len, current->pid);
+#else
+	;
+#endif
 	show_free_areas(0);
 	return -ENOMEM;
 }
@@ -1677,11 +1705,15 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
 	if (!vma) {
 		static int limit = 0;
 		if (limit < 5) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "munmap of memory not mmapped by process %d"
 			       " (%s): 0x%lx-0x%lx\n",
 			       current->pid, current->comm,
 			       start, start + len - 1);
+#else
+			;
+#endif
 			limit++;
 		}
 		return -EINVAL;

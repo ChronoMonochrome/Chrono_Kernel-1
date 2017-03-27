@@ -57,11 +57,19 @@ struct map_info mbx_map = {
 
 static int __init init_mbx(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Motorola MBX flash device: 0x%x at 0x%x\n", WINDOW_SIZE*4, WINDOW_ADDR);
+#else
+	;
+#endif
 	mbx_map.virt = ioremap(WINDOW_ADDR, WINDOW_SIZE * 4);
 
 	if (!mbx_map.virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Failed to ioremap\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 	simple_map_init(&mbx_map);

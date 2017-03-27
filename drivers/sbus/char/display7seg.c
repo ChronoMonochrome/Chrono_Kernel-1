@@ -215,11 +215,15 @@ static int __devinit d7s_probe(struct platform_device *op)
 
 	writeb(regs,  p->regs);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "7-Segment Display%s at [%s:0x%llx] %s\n",
 	       op->dev.of_node->full_name,
 	       (regs & D7S_FLIP) ? " (FLIPPED)" : "",
 	       op->resource[0].start,
 	       sol_compat ? "in sol_compat mode" : "");
+#else
+	;
+#endif
 
 	dev_set_drvdata(&op->dev, p);
 	d7s_device = p;

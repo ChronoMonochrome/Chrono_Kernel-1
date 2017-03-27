@@ -72,15 +72,23 @@ select_iclock(void)
 	if (lastclock && bestclock != lastclock) {
 		/* last used clock source still exists but changes, disable */
 		if (*debug & DEBUG_CLOCK)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Old clock source '%s' disable.\n",
 				lastclock->name);
+#else
+			;
+#endif
 		lastclock->ctl(lastclock->priv, 0);
 	}
 	if (bestclock && bestclock != iclock_current) {
 		/* new clock source selected, enable */
 		if (*debug & DEBUG_CLOCK)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "New clock source '%s' enable.\n",
 				bestclock->name);
+#else
+			;
+#endif
 		bestclock->ctl(bestclock->priv, 1);
 	}
 	if (bestclock != iclock_current) {
@@ -97,7 +105,11 @@ struct mISDNclock
 	struct mISDNclock	*iclock;
 
 	if (*debug & (DEBUG_CORE | DEBUG_CLOCK))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %s %d\n", __func__, name, pri);
+#else
+		;
+#endif
 	iclock = kzalloc(sizeof(struct mISDNclock), GFP_ATOMIC);
 	if (!iclock) {
 		printk(KERN_ERR "%s: No memory for clock entry.\n", __func__);
@@ -121,14 +133,22 @@ mISDN_unregister_clock(struct mISDNclock *iclock)
 	u_long	flags;
 
 	if (*debug & (DEBUG_CORE | DEBUG_CLOCK))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: %s %d\n", __func__, iclock->name,
 			iclock->pri);
+#else
+		;
+#endif
 	write_lock_irqsave(&iclock_lock, flags);
 	if (iclock_current == iclock) {
 		if (*debug & DEBUG_CLOCK)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG
 				"Current clock source '%s' unregisters.\n",
 				iclock->name);
+#else
+			;
+#endif
 		iclock->ctl(iclock->priv, 0);
 	}
 	list_del(&iclock->list);
@@ -183,8 +203,12 @@ mISDN_clock_update(struct mISDNclock *iclock, int samples, struct timeval *tv)
 		iclock_tv.tv_usec = tv_now.tv_usec;
 		iclock_tv_valid = 1;
 		if (*debug & DEBUG_CLOCK)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Received first clock from source '%s'.\n",
 			    iclock_current ? iclock_current->name : "nothing");
+#else
+			;
+#endif
 	}
 	write_unlock_irqrestore(&iclock_lock, flags);
 }

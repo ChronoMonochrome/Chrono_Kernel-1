@@ -816,7 +816,11 @@ void ata_scsi_port_error_handler(struct Scsi_Host *host, struct ata_port *ap)
 		schedule_delayed_work(&ap->hotplug_task, 0);
 
 	if (ap->pflags & ATA_PFLAG_RECOVERED)
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_INFO, "EH complete\n");
+#else
+		ata_port_;
+#endif
 
 	ap->pflags &= ~(ATA_PFLAG_SCSI_HOTPLUG | ATA_PFLAG_RECOVERED);
 
@@ -1310,7 +1314,11 @@ void ata_dev_disable(struct ata_device *dev)
 		return;
 
 	if (ata_msg_drv(dev->link->ap))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "disabled\n");
+#else
+		ata_dev_;
+#endif
 	ata_acpi_on_disable(dev);
 	ata_down_xfermask_limit(dev, ATA_DNXFER_FORCE_PIO0 | ATA_DNXFER_QUIET);
 	dev->class++;
@@ -1515,8 +1523,12 @@ static int ata_eh_read_log_10h(struct ata_device *dev,
 	for (i = 0; i < ATA_SECT_SIZE; i++)
 		csum += buf[i];
 	if (csum)
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING,
 			       "invalid checksum 0x%x on log page 10h\n", csum);
+#else
+		ata_dev_;
+#endif
 
 	if (buf[0] & 0x80)
 		return -ENOENT;
@@ -1988,8 +2000,12 @@ static unsigned int ata_eh_speed_down(struct ata_device *dev,
 	    (dev->flags & (ATA_DFLAG_PIO | ATA_DFLAG_NCQ |
 			   ATA_DFLAG_NCQ_OFF)) == ATA_DFLAG_NCQ) {
 		dev->flags |= ATA_DFLAG_NCQ_OFF;
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING,
 			       "NCQ disabled due to excessive errors\n");
+#else
+		ata_dev_;
+#endif
 		goto done;
 	}
 
@@ -2650,8 +2666,12 @@ int ata_eh_reset(struct ata_link *link, int classify,
 
 		if (rc) {
 			if (rc == -ENOENT) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_link_printk(link, KERN_DEBUG,
 						"port disabled. ignoring.\n");
+#else
+				ata_link_;
+#endif
 				ehc->i.action &= ~ATA_EH_RESET;
 
 				ata_for_each_dev(dev, link, ALL)
@@ -2689,8 +2709,12 @@ int ata_eh_reset(struct ata_link *link, int classify,
 
 	if (reset) {
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_INFO, "%s resetting link\n",
 					reset == softreset ? "soft" : "hard");
+#else
+			ata_link_;
+#endif
 
 		/* mark that this EH session started with reset */
 		ehc->last_reset = jiffies;
@@ -2710,8 +2734,12 @@ int ata_eh_reset(struct ata_link *link, int classify,
 			int tmp;
 
 			if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_link_printk(slave, KERN_INFO,
 						"hard resetting link\n");
+#else
+				ata_link_;
+#endif
 
 			ata_eh_about_to_do(slave, NULL, ATA_EH_RESET);
 			tmp = ata_do_reset(slave, reset, classes, deadline,
@@ -2751,8 +2779,12 @@ int ata_eh_reset(struct ata_link *link, int classify,
 		}
 	} else {
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_INFO, "no reset method "
 					"available, skipping reset\n");
+#else
+			ata_link_;
+#endif
 		if (!(lflags & ATA_LFLAG_ASSUME_CLASS))
 			lflags |= ATA_LFLAG_ASSUME_ATA;
 	}
@@ -2830,36 +2862,56 @@ int ata_eh_reset(struct ata_link *link, int classify,
 	ata_for_each_dev(dev, link, ALL) {
 		if (ata_phys_link_online(ata_dev_phys_link(dev))) {
 			if (classes[dev->devno] == ATA_DEV_UNKNOWN) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_DEBUG, "link online "
 					       "but device misclassifed\n");
+#else
+				ata_dev_;
+#endif
 				classes[dev->devno] = ATA_DEV_NONE;
 				nr_unknown++;
 			}
 		} else if (ata_phys_link_offline(ata_dev_phys_link(dev))) {
 			if (ata_class_enabled(classes[dev->devno]))
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_DEBUG, "link offline, "
 					       "clearing class %d to NONE\n",
 					       classes[dev->devno]);
+#else
+				ata_dev_;
+#endif
 			classes[dev->devno] = ATA_DEV_NONE;
 		} else if (classes[dev->devno] == ATA_DEV_UNKNOWN) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_DEBUG, "link status unknown, "
 				       "clearing UNKNOWN to NONE\n");
+#else
+			ata_dev_;
+#endif
 			classes[dev->devno] = ATA_DEV_NONE;
 		}
 	}
 
 	if (classify && nr_unknown) {
 		if (try < max_tries) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_WARNING, "link online but "
 					"%d devices misclassified, retrying\n",
 					nr_unknown);
+#else
+			ata_link_;
+#endif
 			failed_link = link;
 			rc = -EAGAIN;
 			goto fail;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_WARNING,
 				"link online but %d devices misclassified, "
 				"device detection might fail\n", nr_unknown);
+#else
+		ata_link_;
+#endif
 	}
 
 	/* reset successful, schedule revalidation */
@@ -2896,9 +2948,13 @@ int ata_eh_reset(struct ata_link *link, int classify,
 	if (time_before(now, deadline)) {
 		unsigned long delta = deadline - now;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(failed_link, KERN_WARNING,
 			"reset failed (errno=%d), retrying in %u secs\n",
 			rc, DIV_ROUND_UP(jiffies_to_msecs(delta), 1000));
+#else
+		ata_link_;
+#endif
 
 		ata_eh_release(ap);
 		while (delta)
@@ -3198,8 +3254,12 @@ static int atapi_eh_clear_ua(struct ata_device *dev)
 
 		err_mask = atapi_eh_tur(dev, &sense_key);
 		if (err_mask != 0 && err_mask != AC_ERR_DEV) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING, "TEST_UNIT_READY "
 				"failed (err_mask=0x%x)\n", err_mask);
+#else
+			ata_dev_;
+#endif
 			return -EIO;
 		}
 
@@ -3208,14 +3268,22 @@ static int atapi_eh_clear_ua(struct ata_device *dev)
 
 		err_mask = atapi_eh_request_sense(dev, sense_buffer, sense_key);
 		if (err_mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING, "failed to clear "
 				"UNIT ATTENTION (err_mask=0x%x)\n", err_mask);
+#else
+			ata_dev_;
+#endif
 			return -EIO;
 		}
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_dev_printk(dev, KERN_WARNING,
 		"UNIT ATTENTION persists after %d tries\n", ATA_EH_UA_TRIES);
+#else
+	ata_dev_;
+#endif
 
 	return 0;
 }
@@ -3266,8 +3334,12 @@ static int ata_eh_maybe_retry_flush(struct ata_device *dev)
 	tf.flags |= ATA_TFLAG_DEVICE;
 	tf.protocol = ATA_PROT_NODATA;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_dev_printk(dev, KERN_WARNING, "retrying FLUSH 0x%x Emask 0x%x\n",
 		       tf.command, qc->err_mask);
+#else
+	ata_dev_;
+#endif
 
 	err_mask = ata_exec_internal(dev, &tf, NULL, DMA_NONE, NULL, 0, 0);
 	if (!err_mask) {
@@ -3281,8 +3353,12 @@ static int ata_eh_maybe_retry_flush(struct ata_device *dev)
 		 */
 		qc->scsicmd->allowed = max(qc->scsicmd->allowed, 1);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "FLUSH failed Emask 0x%x\n",
 			       err_mask);
+#else
+		ata_dev_;
+#endif
 		rc = -EIO;
 
 		/* if device failed it, report it to upper layers */
@@ -3355,9 +3431,13 @@ static int ata_eh_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
 			err_mask = ata_dev_set_feature(dev,
 					SETFEATURES_SATA_DISABLE, SATA_DIPM);
 			if (err_mask && err_mask != AC_ERR_DEV) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_WARNING,
 					"failed to disable DIPM, Emask 0x%x\n",
 					err_mask);
+#else
+				ata_dev_;
+#endif
 				rc = -EIO;
 				goto fail;
 			}
@@ -3399,9 +3479,13 @@ static int ata_eh_set_lpm(struct ata_link *link, enum ata_lpm_policy policy,
 			err_mask = ata_dev_set_feature(dev,
 					SETFEATURES_SATA_ENABLE, SATA_DIPM);
 			if (err_mask && err_mask != AC_ERR_DEV) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_WARNING,
 					"failed to enable DIPM, Emask 0x%x\n",
 					err_mask);
+#else
+				ata_dev_;
+#endif
 				rc = -EIO;
 				goto fail;
 			}
@@ -3418,8 +3502,12 @@ fail:
 
 	/* if no device or only one more chance is left, disable LPM */
 	if (!dev || ehc->tries[dev->devno] <= 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_WARNING,
 				"disabling LPM on the link\n");
+#else
+		ata_link_;
+#endif
 		link->flags |= ATA_LFLAG_NO_LPM;
 	}
 	if (r_failed_dev)

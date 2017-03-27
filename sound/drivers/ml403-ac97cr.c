@@ -54,6 +54,7 @@
 /* struct mutex, mutex_init(), mutex_*lock() */
 #include <linux/mutex.h>
 
+#ifdef CONFIG_DEBUG_PRINTK
 /* snd_printk(), snd_printd() */
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -67,6 +68,9 @@
 #define SND_ML403_AC97CR_DRIVER "ml403-ac97cr"
 
 MODULE_AUTHOR("Joachim Foerster <JOFT@gmx.de>");
+#else
+/* ;
+#endif
 MODULE_DESCRIPTION("Xilinx ML403 AC97 Controller Reference");
 MODULE_LICENSE("GPL");
 MODULE_SUPPORTED_DEVICE("{{Xilinx,ML403 AC97 Controller Reference}}");
@@ -98,7 +102,11 @@ MODULE_PARM_DESC(enable, "Enable this ML403 AC97 Controller Reference.");
 				   */
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 /* Definition of a "level/facility dependent" printk(); may be removed
+#else
+/* Definition of a "level/facility dependent" ;
+#endif
  * completely in a final version
  */
 #undef PDEBUG
@@ -840,9 +848,13 @@ snd_ml403_ac97cr_codec_read(struct snd_ac97 *ac97, unsigned short reg)
 	u16 value = 0;
 
 	if (!LM4550_RF_OK(reg)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
 			   "access to unknown/unused codec register 0x%x "
 			   "ignored!\n", reg);
+#else
+		;
+#endif
 		return 0;
 	}
 	/* check if we can fake/answer this access from our shadow register */
@@ -928,6 +940,7 @@ snd_ml403_ac97cr_codec_read(struct snd_ac97 *ac97, unsigned short reg)
 	    CR_CODEC_DATAREAD(in_be32(CR_REG(ml403_ac97cr, CODEC_DATAREAD)));
 	spin_unlock(&ml403_ac97cr->reg_lock);
 #ifdef CODEC_STAT
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
 		   "timeout while codec read! "
 		   "(reg=0x%x, last STATUS=0x%x, DATAREAD=0x%x / %d, %d) "
@@ -935,10 +948,17 @@ snd_ml403_ac97cr_codec_read(struct snd_ac97 *ac97, unsigned short reg)
 		   reg, stat, value, value, rafaccess,
 		   ml403_ac97cr->ac97_write, ml403_ac97cr->ac97_read);
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
 		   "timeout while codec read! "
 		   "(reg=0x%x, DATAREAD=0x%x / %d)\n",
 		   reg, value, value);
+#else
+	;
+#endif
 #endif
 	/* BUG: This is PURE speculation! But after _most_ read timeouts the
 	 * value in the register is ok!
@@ -964,22 +984,34 @@ snd_ml403_ac97cr_codec_write(struct snd_ac97 *ac97, unsigned short reg,
 #endif
 
 	if (!LM4550_RF_OK(reg)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
 			   "access to unknown/unused codec register 0x%x "
 			   "ignored!\n", reg);
+#else
+		;
+#endif
 		return;
 	}
 	if (lm4550_regfile[reg / 2].flag & LM4550_REG_READONLY) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
 			   "write access to read only codec register 0x%x "
 			   "ignored!\n", reg);
+#else
+		;
+#endif
 		return;
 	}
 	if ((val & lm4550_regfile[reg / 2].wmask) != val) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
 			   "write access to codec register 0x%x "
 			   "with bad value 0x%x / %d!\n",
 			   reg, val, val);
+#else
+		;
+#endif
 		val = val & lm4550_regfile[reg / 2].wmask;
 	}
 	if (((lm4550_regfile[reg / 2].flag & LM4550_REG_FAKEPROBE) &&
@@ -1034,6 +1066,7 @@ snd_ml403_ac97cr_codec_write(struct snd_ac97 *ac97, unsigned short reg,
 		schedule_timeout_uninterruptible(1);
 	} while (time_after(end_time, jiffies));
 #ifdef CODEC_STAT
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
 		   "timeout while codec write "
 		   "(reg=0x%x, val=0x%x / %d, last STATUS=0x%x, %d) "
@@ -1041,9 +1074,16 @@ snd_ml403_ac97cr_codec_write(struct snd_ac97 *ac97, unsigned short reg,
 		   reg, val, val, stat, rafaccess, ml403_ac97cr->ac97_write,
 		   ml403_ac97cr->ac97_read);
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_WARNING SND_ML403_AC97CR_DRIVER ": "
 		   "timeout while codec write (reg=0x%x, val=0x%x / %d)\n",
 		   reg, val, val);
+#else
+	;
+#endif
 #endif
 #else /* CODEC_WRITE_CHECK_RAF */
 #if CODEC_WAIT_AFTER_WRITE > 0
@@ -1148,9 +1188,13 @@ snd_ml403_ac97cr_create(struct snd_card *card, struct platform_device *pfdev,
 		snd_ml403_ac97cr_free(ml403_ac97cr);
 		return -EBUSY;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
 		   "remap controller memory region to "
 		   "0x%x done\n", (unsigned int)ml403_ac97cr->port);
+#else
+	;
+#endif
 	/* get irq */
 	irq = platform_get_irq(pfdev, 0);
 	if (request_irq(irq, snd_ml403_ac97cr_irq, 0,
@@ -1162,9 +1206,13 @@ snd_ml403_ac97cr_create(struct snd_card *card, struct platform_device *pfdev,
 		return -EBUSY;
 	}
 	ml403_ac97cr->irq = irq;
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
 		   "request (playback) irq %d done\n",
 		   ml403_ac97cr->irq);
+#else
+	;
+#endif
 	irq = platform_get_irq(pfdev, 1);
 	if (request_irq(irq, snd_ml403_ac97cr_irq, 0,
 			dev_name(&pfdev->dev), (void *)ml403_ac97cr)) {
@@ -1175,9 +1223,13 @@ snd_ml403_ac97cr_create(struct snd_card *card, struct platform_device *pfdev,
 		return -EBUSY;
 	}
 	ml403_ac97cr->capture_irq = irq;
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_INFO SND_ML403_AC97CR_DRIVER ": "
 		   "request (capture) irq %d done\n",
 		   ml403_ac97cr->capture_irq);
+#else
+	;
+#endif
 
 	err = snd_ml403_ac97cr_chip_init(ml403_ac97cr);
 	if (err < 0) {

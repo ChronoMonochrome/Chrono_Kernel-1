@@ -902,12 +902,16 @@ do_alignment(unsigned long addr, unsigned int fsr, struct pt_regs *regs)
 	ai_user += 1;
 
 	if (ai_usermode & UM_WARN)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Alignment trap: %s (%d) PC=0x%08lx Instr=0x%0*lx "
 		       "Address=0x%08lx FSR 0x%03x\n", current->comm,
 			task_pid_nr(current), instrptr,
 			isize << 1,
 			isize == 2 ? tinstr : instr,
 		        addr, fsr);
+#else
+		;
+#endif
 
 	if (ai_usermode & UM_FIXUP)
 		goto fixup;

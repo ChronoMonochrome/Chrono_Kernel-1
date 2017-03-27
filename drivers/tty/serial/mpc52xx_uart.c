@@ -1474,7 +1474,11 @@ mpc52xx_uart_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: MPC52xx PSC UART driver\n");
+#else
+	;
+#endif
 
 	ret = uart_register_driver(&mpc52xx_uart_driver);
 	if (ret) {

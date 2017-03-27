@@ -478,9 +478,9 @@ nfs_sillyrename(struct inode *dir, struct dentry *dentry)
 	struct rpc_task *task;
 	int            error = -EIO;
 
-	dfprintk(VFS, "NFS: silly-rename(%s/%s, ct=%d)\n",
-		dentry->d_parent->d_name.name, dentry->d_name.name,
-		dentry->d_count);
+//	dfprintk(VFS, "NFS: silly-rename(%s/%s, ct=%d)\n",
+//		dentry->d_parent->d_name.name, dentry->d_name.name,
+;
 	nfs_inc_stats(dir, NFSIOS_SILLYRENAME);
 
 	/*
@@ -505,8 +505,8 @@ nfs_sillyrename(struct inode *dir, struct dentry *dentry)
 		sillycounter++;
 		sprintf(suffix, "%*.*x", countersize, countersize, sillycounter);
 
-		dfprintk(VFS, "NFS: trying to rename %s to %s\n",
-				dentry->d_name.name, silly);
+//		dfprintk(VFS, "NFS: trying to rename %s to %s\n",
+;
 
 		sdentry = lookup_one_len(silly, dentry->d_parent, slen);
 		/*

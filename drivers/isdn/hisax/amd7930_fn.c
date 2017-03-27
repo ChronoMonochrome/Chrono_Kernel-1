@@ -306,7 +306,11 @@ Amd7930_empty_Dfifo(struct IsdnCardState *cs, int flag)
 
                                         if ((cs->rcvidx) > 0) {
                                                 if (!(skb = alloc_skb(cs->rcvidx, GFP_ATOMIC)))
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_WARNING "HiSax: Amd7930: empty_Dfifo, D receive out of memory!\n");
+#else
+							;
+#endif
 						else {
                                                         /* Debugging */
                                                         if (cs->debug & L1_DEB_ISAC_FIFO) {
@@ -450,7 +454,11 @@ void Amd7930_interrupt(struct IsdnCardState *cs, BYTE irflags)
                                 cs->dc.amd7930.tx_xmtlen = 0;
 				Amd7930_fill_Dfifo(cs);
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: Amd7930 D-Collision, no skb\n");
+#else
+				;
+#endif
 				debugl1(cs, "Amd7930: interrupt: D-Collision, no skb");
 			}
                 }
@@ -726,7 +734,11 @@ dbusy_timer_handler(struct IsdnCardState *cs)
 				cs->tx_skb = NULL;
                                 cs->dc.amd7930.tx_xmtlen = 0;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: Amd7930: D-Channel Busy no skb\n");
+#else
+				;
+#endif
 				debugl1(cs, "Amd7930: D-Channel Busy no skb");
 
 			}

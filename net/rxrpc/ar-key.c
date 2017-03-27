@@ -828,8 +828,8 @@ static void rxrpc_destroy(struct key *key)
 				rxrpc_rxk5_free(token->k5);
 			break;
 		default:
-			printk(KERN_ERR "Unknown token type %x on rxrpc key\n",
-			       token->security_index);
+//			printk(KERN_ERR "Unknown token type %x on rxrpc key\n",
+;
 			BUG();
 		}
 

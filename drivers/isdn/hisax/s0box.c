@@ -171,7 +171,11 @@ s0box_interrupt(int intno, void *dev_id)
 		goto Start_ISAC;
 	}
 	if (count >= MAXCOUNT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "S0Box: more than %d loops in s0box_interrupt\n", count);
+#else
+		;
+#endif
 	writereg(cs->hw.teles3.cfg_reg, cs->hw.teles3.hscx[0], HSCX_MASK, 0xFF);
 	writereg(cs->hw.teles3.cfg_reg, cs->hw.teles3.hscx[1], HSCX_MASK, 0xFF);
 	writereg(cs->hw.teles3.cfg_reg, cs->hw.teles3.isac, ISAC_MASK, 0xFF);
@@ -217,7 +221,11 @@ setup_s0box(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, s0box_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: S0Box IO driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_S0BOX)
 		return (0);
 
@@ -230,16 +238,28 @@ setup_s0box(struct IsdnCard *card)
 	cs->hw.teles3.hscxfifo[1] = cs->hw.teles3.hscx[1] + 0x3e;
 	cs->irq = card->para[0];
 	if (!request_region(cs->hw.teles3.cfg_reg,8, "S0Box parallel I/O")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: S0Box ports %x-%x already in use\n",
                        cs->hw.teles3.cfg_reg,
                        cs->hw.teles3.cfg_reg + 7);
+#else
+		;
+#endif
 		return 0;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: S0Box config irq:%d isac:0x%x  cfg:0x%x\n",
 		cs->irq,
 		cs->hw.teles3.isac, cs->hw.teles3.cfg_reg);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: hscx A:0x%x  hscx B:0x%x\n",
 		cs->hw.teles3.hscx[0], cs->hw.teles3.hscx[1]);
+#else
+	;
+#endif
 	setup_isac(cs);
 	cs->readisac = &ReadISAC;
 	cs->writeisac = &WriteISAC;
@@ -252,8 +272,12 @@ setup_s0box(struct IsdnCard *card)
 	cs->irq_func = &s0box_interrupt;
 	ISACVersion(cs, "S0Box:");
 	if (HscxVersion(cs, "S0Box:")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "S0Box: wrong HSCX versions check IO address\n");
+#else
+		;
+#endif
 		release_io_s0box(cs);
 		return (0);
 	}

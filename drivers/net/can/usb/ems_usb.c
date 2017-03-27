@@ -1119,7 +1119,7 @@ static int __init ems_usb_init(void)
 {
 	int err;
 
-	printk(KERN_INFO "CPC-USB kernel driver loaded\n");
+;
 
 	/* register this driver with the USB subsystem */
 	err = usb_register(&ems_usb_driver);

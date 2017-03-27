@@ -91,9 +91,9 @@ struct nfs4_cb_compound_hdr {
  */
 static void print_overflow_msg(const char *func, const struct xdr_stream *xdr)
 {
-	dprintk("NFS: %s prematurely hit the end of our receive buffer. "
-		"Remaining buffer length is %tu words.\n",
-		func, xdr->end - xdr->p);
+//	dprintk("NFS: %s prematurely hit the end of our receive buffer. "
+//		"Remaining buffer length is %tu words.\n",
+;
 }
 
 static __be32 *xdr_encode_empty_array(__be32 *p)
@@ -246,7 +246,7 @@ static int nfs_cb_stat_to_errno(int status)
 			return nfs_cb_errtbl[i].errno;
 	}
 
-	dprintk("NFSD: Unrecognized NFS CB status value: %u\n", status);
+;
 	return -status;
 }
 
@@ -268,8 +268,8 @@ out_overflow:
 	print_overflow_msg(__func__, xdr);
 	return -EIO;
 out_unexpected:
-	dprintk("NFSD: Callback server returned operation %d but "
-		"we issued a request for %d\n", op, expected);
+//	dprintk("NFSD: Callback server returned operation %d but "
+;
 	return -EIO;
 }
 
@@ -440,20 +440,20 @@ static int decode_cb_sequence4resok(struct xdr_stream *xdr,
 	memcpy(id.data, p, NFS4_MAX_SESSIONID_LEN);
 	if (memcmp(id.data, session->se_sessionid.data,
 					NFS4_MAX_SESSIONID_LEN) != 0) {
-		dprintk("NFS: %s Invalid session id\n", __func__);
+;
 		goto out;
 	}
 	p += XDR_QUADLEN(NFS4_MAX_SESSIONID_LEN);
 
 	dummy = be32_to_cpup(p++);
 	if (dummy != session->se_cb_seq_nr) {
-		dprintk("NFS: %s Invalid sequence number\n", __func__);
+;
 		goto out;
 	}
 
 	dummy = be32_to_cpup(p++);
 	if (dummy != 0) {
-		dprintk("NFS: %s Invalid slotid\n", __func__);
+;
 		goto out;
 	}
 
@@ -670,8 +670,8 @@ static int setup_callback_client(struct nfs4_client *clp, struct nfs4_cb_conn *c
 	/* Create RPC client */
 	client = rpc_create(&args);
 	if (IS_ERR(client)) {
-		dprintk("NFSD: couldn't create callback client: %ld\n",
-			PTR_ERR(client));
+//		dprintk("NFSD: couldn't create callback client: %ld\n",
+;
 		return PTR_ERR(client);
 	}
 	clp->cl_cb_client = client;
@@ -784,7 +784,7 @@ static bool nfsd41_cb_get_slot(struct nfs4_client *clp, struct rpc_task *task)
 {
 	if (test_and_set_bit(0, &clp->cl_cb_slot_busy) != 0) {
 		rpc_sleep_on(&clp->cl_cb_waitq, task, NULL);
-		dprintk("%s slot is busy\n", __func__);
+;
 		return false;
 	}
 	return true;
@@ -822,16 +822,16 @@ static void nfsd4_cb_done(struct rpc_task *task, void *calldata)
 	struct nfs4_delegation *dp = container_of(cb, struct nfs4_delegation, dl_recall);
 	struct nfs4_client *clp = dp->dl_stid.sc_client;
 
-	dprintk("%s: minorversion=%d\n", __func__,
-		clp->cl_minorversion);
+//	dprintk("%s: minorversion=%d\n", __func__,
+;
 
 	if (clp->cl_minorversion) {
 		/* No need for lock, access serialized in nfsd4_cb_prepare */
 		++clp->cl_cb_session->se_cb_seq_nr;
 		clear_bit(0, &clp->cl_cb_slot_busy);
 		rpc_wake_up_next(&clp->cl_cb_waitq);
-		dprintk("%s: freed slot, new seqid=%d\n", __func__,
-			clp->cl_cb_session->se_cb_seq_nr);
+//		dprintk("%s: freed slot, new seqid=%d\n", __func__,
+;
 
 		/* We're done looking into the sequence information */
 		task->tk_msg.rpc_resp = NULL;

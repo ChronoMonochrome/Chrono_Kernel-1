@@ -248,6 +248,7 @@ MODULE_SUPPORTED_DEVICE("{{Aztech,AZF3328}}");
 #define MIXER_TESTING	0
 
 #if DEBUG_MISC
+#ifdef CONFIG_DEBUG_PRINTK
 #define snd_azf3328_dbgmisc(format, args...) printk(KERN_DEBUG format, ##args)
 #else
 #define snd_azf3328_dbgmisc(format, args...)
@@ -294,6 +295,9 @@ MODULE_SUPPORTED_DEVICE("{{Aztech,AZF3328}}");
 #endif
 
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	/* Index 0-MAX */
+#else
+#define snd_azf3328_dbgmisc(format, args...) ;
+#endif
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for AZF3328 soundcard.");
 
@@ -581,9 +585,13 @@ static inline void
 snd_azf3328_mixer_ac97_map_unsupported(unsigned short reg, const char *mode)
 {
 	/* need to add some more or less clever emulation? */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING
 		"azt3328: missing %s emulation for AC97 register 0x%02x!\n",
 		mode, reg);
+#else
+	;
+#endif
 }
 
 /*
@@ -1331,7 +1339,11 @@ snd_azf3328_codec_setfmt(struct snd_azf3328_codec_data *codec,
 	case AZF_FREQ_22050: freq = SOUNDFORMAT_FREQ_22050; break;
 	case AZF_FREQ_32000: freq = SOUNDFORMAT_FREQ_32000; break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "unknown bitrate %d, assuming 44.1kHz!\n", bitrate);
+#else
+		;
+#endif
 		/* fall-through */
 	case AZF_FREQ_44100: freq = SOUNDFORMAT_FREQ_44100; break;
 	case AZF_FREQ_48000: freq = SOUNDFORMAT_FREQ_48000; break;
@@ -1950,7 +1962,11 @@ snd_azf3328_gameport_free(struct snd_azf3328 *chip) { }
 static inline void
 snd_azf3328_gameport_interrupt(struct snd_azf3328 *chip)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "huh, game port IRQ occurred!?\n");
+#else
+	;
+#endif
 }
 #endif /* SUPPORT_GAMEPORT */
 
@@ -1998,7 +2014,11 @@ snd_azf3328_pcm_interrupt(const struct snd_azf3328_codec_data *first_codec,
 				)
 			);
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "azt3328: irq handler problem!\n");
+#else
+			;
+#endif
 		if (which & IRQ_SOMETHING)
 			snd_azf3328_irq_log_unknown_type(which);
 	}
@@ -2429,9 +2449,13 @@ snd_azf3328_test_bit(unsigned unsigned reg, int bit)
 
 	outb(val, reg);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "reg %04x bit %d: %02x %02x %02x\n",
 				reg, bit, val, valoff, valon
 	);
+#else
+	;
+#endif
 }
 #endif
 
@@ -2695,12 +2719,16 @@ snd_azf3328_probe(struct pci_dev *pci, const struct pci_device_id *pci_id)
 		goto out_err;
 
 #ifdef MODULE
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 "azt3328: Sound driver for Aztech AZF3328-based soundcards such as PCI168.\n"
 "azt3328: Hardware was completely undocumented, unfortunately.\n"
 "azt3328: Feel free to contact andi AT lisas.de for bug reports etc.!\n"
 "azt3328: User-scalable sequencer timer set to %dHz (1024000Hz / %d).\n",
 	1024000 / seqtimer_scaling, seqtimer_scaling);
+#else
+	;
+#endif
 #endif
 
 	snd_azf3328_gameport(chip, dev);

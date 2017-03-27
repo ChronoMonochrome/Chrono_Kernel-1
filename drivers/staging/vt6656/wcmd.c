@@ -704,11 +704,11 @@ void vRunCommand(void *hDeviceContext)
                 }
             }
 	   else if(pMgmt->eCurrState < WMAC_STATE_AUTHPENDING) {
-               printk("WLAN_AUTHENTICATE_WAIT:Authen Fail???\n");
+;
 	   }
 	   else  if(pDevice->byLinkWaitCount <= 4){    //mike add:wait another 2 sec if authenticated_frame delay!
                 pDevice->byLinkWaitCount ++;
-	       printk("WLAN_AUTHENTICATE_WAIT:wait %d times!!\n",pDevice->byLinkWaitCount);
+;
 	       spin_unlock_irq(&pDevice->lock);
 	       vCommandTimerWait((void *) pDevice, AUTHENTICATE_TIMEOUT/2);
 	       return;
@@ -751,18 +751,18 @@ void vRunCommand(void *hDeviceContext)
                       pDevice->nTxDataTimeCout = 0;
 		 }
 		 else {
-		   // printk("mike:-->First time triger TimerTxData InSleep\n");
+;
 		 }
 		pDevice->IsTxDataTrigger = TRUE;
                 add_timer(&pDevice->sTimerTxData);
 
             }
 	   else if(pMgmt->eCurrState < WMAC_STATE_ASSOCPENDING) {
-               printk("WLAN_ASSOCIATE_WAIT:Association Fail???\n");
+;
 	   }
 	   else  if(pDevice->byLinkWaitCount <= 4){    //mike add:wait another 2 sec if associated_frame delay!
                 pDevice->byLinkWaitCount ++;
-	       printk("WLAN_ASSOCIATE_WAIT:wait %d times!!\n",pDevice->byLinkWaitCount);
+;
 	       spin_unlock_irq(&pDevice->lock);
 	       vCommandTimerWait((void *) pDevice, ASSOCIATE_TIMEOUT/2);
 	       return;
@@ -1280,8 +1280,8 @@ void BSSvSecondTxData(void *hDeviceContext)
 
   if(pDevice->nTxDataTimeCout<4)     //don't tx data if timer less than 40s
     {
-     // printk("mike:%s-->no data Tx not exceed the desired Time as %d\n",__FUNCTION__,
-	//  	(int)pDevice->nTxDataTimeCout);
+//     // printk("mike:%s-->no data Tx not exceed the desired Time as %d\n",__FUNCTION__,
+;
      pDevice->sTimerTxData.expires = RUN_AT(10*HZ);      //10s callback
      add_timer(&pDevice->sTimerTxData);
       return;
@@ -1291,7 +1291,7 @@ void BSSvSecondTxData(void *hDeviceContext)
   //is wap_supplicant running successful OR only open && sharekey mode!
   if(((pDevice->bLinkPass ==TRUE)&&(pMgmt->eAuthenMode < WMAC_AUTH_WPA)) ||  //open && sharekey linking
       (pDevice->fWPA_Authened == TRUE)) {   //wpa linking
-        //   printk("mike:%s-->InSleep Tx Data Procedure\n",__FUNCTION__);
+;
 	  pDevice->fTxDataInSleep = TRUE;
 	  PSbSendNullPacket(pDevice);      //send null packet
 	  pDevice->fTxDataInSleep = FALSE;

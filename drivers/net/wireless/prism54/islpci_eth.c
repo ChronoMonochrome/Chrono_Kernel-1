@@ -99,8 +99,8 @@ islpci_eth_transmit(struct sk_buff *skb, struct net_device *ndev)
 	/* check whether the destination queue has enough fragments for the frame */
 	curr_frag = le32_to_cpu(cb->driver_curr_frag[ISL38XX_CB_TX_DATA_LQ]);
 	if (unlikely(curr_frag - priv->free_data_tx >= ISL38XX_CB_TX_QSIZE)) {
-		printk(KERN_ERR "%s: transmit device queue full when awake\n",
-		       ndev->name);
+//		printk(KERN_ERR "%s: transmit device queue full when awake\n",
+;
 		netif_stop_queue(ndev);
 
 		/* trigger the device */
@@ -132,7 +132,7 @@ islpci_eth_transmit(struct sk_buff *skb, struct net_device *ndev)
 				/* wds requires an additional address field of 6 bytes */
 				skb_put(skb, 6);
 #ifdef ISLPCI_ETH_DEBUG
-				printk("islpci_eth_transmit:wds_mac\n");
+;
 #endif
 				memmove(skb->data + 6, src, skb->len);
 				skb_copy_to_linear_data(skb, wds_mac, 6);
@@ -148,8 +148,8 @@ islpci_eth_transmit(struct sk_buff *skb, struct net_device *ndev)
 			newskb =
 			    dev_alloc_skb(init_wds ? skb->len + 6 : skb->len);
 			if (unlikely(newskb == NULL)) {
-				printk(KERN_ERR "%s: Cannot allocate skb\n",
-				       ndev->name);
+//				printk(KERN_ERR "%s: Cannot allocate skb\n",
+;
 				goto drop_free;
 			}
 			newskb_offset = (4 - (long) newskb->data) & 0x03;
@@ -165,7 +165,7 @@ islpci_eth_transmit(struct sk_buff *skb, struct net_device *ndev)
 							  skb->len);
 				skb_copy_to_linear_data(newskb, wds_mac, 6);
 #ifdef ISLPCI_ETH_DEBUG
-				printk("islpci_eth_transmit:wds_mac\n");
+;
 #endif
 			} else
 				skb_copy_from_linear_data(skb, newskb->data,
@@ -192,8 +192,8 @@ islpci_eth_transmit(struct sk_buff *skb, struct net_device *ndev)
 					 (void *) skb->data, skb->len,
 					 PCI_DMA_TODEVICE);
 	if (unlikely(pci_map_address == 0)) {
-		printk(KERN_WARNING "%s: cannot map buffer to PCI\n",
-		       ndev->name);
+//		printk(KERN_WARNING "%s: cannot map buffer to PCI\n",
+;
 		goto drop_free;
 	}
 	/* Place the fragment in the control block structure. */
@@ -495,13 +495,13 @@ islpci_eth_tx_timeout(struct net_device *ndev)
 	ndev->stats.tx_errors++;
 
 	if (!priv->reset_task_pending) {
-		printk(KERN_WARNING
-			"%s: tx_timeout, scheduling reset", ndev->name);
+//		printk(KERN_WARNING
+;
 		netif_stop_queue(ndev);
 		priv->reset_task_pending = 1;
 		schedule_work(&priv->reset_task);
 	} else {
-		printk(KERN_WARNING
-			"%s: tx_timeout, waiting for reset", ndev->name);
+//		printk(KERN_WARNING
+;
 	}
 }

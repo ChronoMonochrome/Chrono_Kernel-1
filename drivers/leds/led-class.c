@@ -266,8 +266,12 @@ int led_classdev_register(struct device *parent, struct led_classdev *led_cdev)
 	led_trigger_set_default(led_cdev);
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Registered led device: %s\n",
 			led_cdev->name);
+#else
+	;
+#endif
 
 #ifdef CONFIG_GENERIC_BLN
 	if (strcmp(led_cdev, "button-backlight"))

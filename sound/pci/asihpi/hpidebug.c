@@ -28,7 +28,11 @@ int hpi_debug_level = HPI_DEBUG_LEVEL_DEFAULT;
 
 void hpi_debug_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "debug start\n");
+#else
+	;
+#endif
 }
 
 int hpi_debug_level_set(int level)
@@ -48,9 +52,13 @@ int hpi_debug_level_get(void)
 void hpi_debug_message(struct hpi_message *phm, char *sz_fileline)
 {
 	if (phm) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "HPI_MSG%d,%d,%d,%d,%d\n", phm->version,
 			phm->adapter_index, phm->obj_index, phm->function,
 			phm->u.c.attribute);
+#else
+		;
+#endif
 	}
 
 }
@@ -68,11 +76,23 @@ void hpi_debug_data(u16 *pdata, u32 len)
 		lines = 8;
 
 	for (i = 0, j = 0; j < lines; j++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%p:", (pdata + i));
+#else
+		;
+#endif
 
 		for (k = 0; k < cols && i < len; i++, k++)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s%04x", k == 0 ? "" : " ", pdata[i]);
+#else
+			;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 }

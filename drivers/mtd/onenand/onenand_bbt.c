@@ -64,7 +64,11 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf, struct nand_bbt_descr 
 	struct mtd_oob_ops ops;
 	int rgn;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Scanning device for bad blocks\n");
+#else
+	;
+#endif
 
 	len = 2;
 
@@ -101,8 +105,12 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf, struct nand_bbt_descr 
 			if (ret || check_short_pattern(&buf[j * scanlen],
 					       scanlen, this->writesize, bd)) {
 				bbm->bbt[i >> 3] |= 0x03 << (i & 0x6);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "OneNAND eraseblock %d is an "
 					"initial bad block\n", i >> 1);
+#else
+				;
+#endif
 				mtd->ecc_stats.badblocks++;
 				break;
 			}

@@ -227,8 +227,12 @@ void acpi_processor_ppc_init(void)
 	    (&acpi_ppc_notifier_block, CPUFREQ_POLICY_NOTIFIER))
 		acpi_processor_ppc_status |= PPC_REGISTERED;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "Warning: Processor Platform Limit not supported.\n");
+#else
+		;
+#endif
 }
 
 void acpi_processor_ppc_exit(void)
@@ -424,8 +428,12 @@ static int acpi_processor_get_performance_info(struct acpi_processor *pr)
 #ifdef CONFIG_X86
 	if (ACPI_SUCCESS(acpi_get_handle(pr->handle, "_PPC", &handle))){
 		if(boot_cpu_has(X86_FEATURE_EST))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING FW_BUG "BIOS needs update for CPU "
 			       "frequency support\n");
+#else
+			;
+#endif
 	}
 #endif
 	return result;
