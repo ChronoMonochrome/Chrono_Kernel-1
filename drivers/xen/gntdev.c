@@ -653,7 +653,11 @@ static int gntdev_mmap(struct file *flip, struct vm_area_struct *vma)
 	if (use_ptemod && map->vma)
 		goto unlock_out;
 	if (use_ptemod && priv->mm != vma->vm_mm) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Huh? Other mm?\n");
+#else
+		;
+#endif
 		goto unlock_out;
 	}
 
@@ -688,7 +692,11 @@ static int gntdev_mmap(struct file *flip, struct vm_area_struct *vma)
 					  vma->vm_end - vma->vm_start,
 					  find_grant_ptes, map);
 		if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "find_grant_ptes() failure.\n");
+#else
+			;
+#endif
 			goto out_put_map;
 		}
 	}

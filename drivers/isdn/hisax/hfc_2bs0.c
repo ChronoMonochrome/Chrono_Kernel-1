@@ -31,7 +31,11 @@ WaitForBusy(struct IsdnCardState *cs)
 		to--;
 	}
 	if (!to) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: waitforBusy timeout\n");
+#else
+		;
+#endif
 		return (0);
 	} else
 		return (to);
@@ -47,7 +51,11 @@ WaitNoBusy(struct IsdnCardState *cs)
 		to--;
 	}
 	if (!to) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: waitforBusy timeout\n");
+#else
+		;
+#endif
 		return (0);
 	} else
 		return (to);
@@ -185,7 +193,11 @@ hfc_empty_fifo(struct BCState *bcs, int count)
 	else
 	  count -= 3;
 	if (!(skb = dev_alloc_skb(count)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC: receive out of memory\n");
+#else
+		;
+#endif
 	else {
 		ptr = skb_put(skb, count);
 		idx = 0;
@@ -196,7 +208,11 @@ hfc_empty_fifo(struct BCState *bcs, int count)
 		}
 		if (idx != count) {
 			debugl1(cs, "RFIFO BUSY error");
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HFC FIFO channel %d BUSY Error\n", bcs->channel);
+#else
+			;
+#endif
 			dev_kfree_skb_any(skb);
 			if (bcs->mode != L1_MODE_TRANS) {
 			  WaitNoBusy(cs);
@@ -296,7 +312,11 @@ hfc_fill_fifo(struct BCState *bcs)
 		cs->BC_Write_Reg(cs, HFC_DATA_NODEB, cip, bcs->tx_skb->data[idx++]);
 	if (idx != bcs->tx_skb->len) {
 		debugl1(cs, "FIFO Send BUSY error");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC S FIFO channel %d BUSY Error\n", bcs->channel);
+#else
+		;
+#endif
 	} else {
 		count =  bcs->tx_skb->len;
 		bcs->tx_cnt -= count;
@@ -471,7 +491,11 @@ hfc_l2l1(struct PStack *st, int pr, void *arg)
 		case (PH_PULL | INDICATION):
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "hfc_l2l1: this shouldn't happen\n");
+#else
+				;
+#endif
 			} else {
 				test_and_set_bit(BC_FLG_BUSY, &bcs->Flag);
 				bcs->tx_skb = skb;
@@ -558,8 +582,12 @@ init_send(struct BCState *bcs)
 	int i;
 
 	if (!(bcs->hw.hfc.send = kmalloc(32 * sizeof(unsigned int), GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: No memory for hfc.send\n");
+#else
+		;
+#endif
 		return;
 	}
 	for (i = 0; i < 32; i++)

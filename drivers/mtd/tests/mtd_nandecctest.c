@@ -39,16 +39,28 @@ static int nand_ecc_test(const size_t size)
 	__nand_correct_data(error_data, code, error_code, size);
 
 	if (!memcmp(data, error_data, size)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "mtd_nandecctest: ok - %s\n", testname);
+#else
+		;
+#endif
 		return 0;
 	}
 
 	printk(KERN_ERR "mtd_nandecctest: not ok - %s\n", testname);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "hexdump of data:\n");
+#else
+	;
+#endif
 	print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 16, 4,
 			data, size, false);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "hexdump of error data:\n");
+#else
+	;
+#endif
 	print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET, 16, 4,
 			error_data, size, false);
 

@@ -131,8 +131,12 @@ static void tea5761_status_dump(unsigned char *buffer)
 
 	frq = 1000 * (div * 32768 / 1000 + FREQ_OFFSET + 225) / 4;	/* Freq in KHz */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "tea5761: Frequency %d.%03d KHz (divider = 0x%04x)\n",
 	       frq / 1000, frq % 1000, div);
+#else
+	;
+#endif
 }
 
 /* Freq should be specifyed at 62.5 Hz */
@@ -269,19 +273,31 @@ int tea5761_autodetection(struct i2c_adapter* i2c_adap, u8 i2c_addr)
 	struct tuner_i2c_props i2c = { .adap = i2c_adap, .addr = i2c_addr };
 
 	if (16 != (rc = tuner_i2c_xfer_recv(&i2c, buffer, 16))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "it is not a TEA5761. Received %i chars.\n", rc);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
 	if ((buffer[13] != 0x2b) || (buffer[14] != 0x57) || (buffer[15] != 0x061)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Manufacturer ID= 0x%02x, Chip ID = %02x%02x."
 				    " It is not a TEA5761\n",
 				    buffer[13], buffer[14], buffer[15]);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "tea5761: TEA%02x%02x detected. "
 			    "Manufacturer ID= 0x%02x\n",
 			    buffer[14], buffer[15], buffer[13]);
+#else
+	;
+#endif
 
 	return 0;
 }

@@ -43,9 +43,9 @@ MODULE_PARM_DESC(enable_ir, "enable ir (default is enable)");
 
 #undef dprintk
 
-#define dprintk(fmt, arg...) \
-	if (ir_debug) { \
-		printk(KERN_DEBUG "%s/ir: " fmt, ir->name , ## arg); \
+//#define dprintk(fmt, arg...) \
+//	if (ir_debug) { \
+;
 	}
 
 struct tm6000_ir_poll_result {
@@ -133,7 +133,7 @@ static int tm6000_ir_config(struct tm6000_IR *ir)
 		msleep(100);
 
 		if (rc < 0) {
-			printk(KERN_INFO "IR configuration failed");
+;
 			return rc;
 		}
 		break;
@@ -149,12 +149,12 @@ static void tm6000_ir_urb_received(struct urb *urb)
 	int rc;
 
 	if (urb->status != 0)
-		printk(KERN_INFO "not ready\n");
+;
 	else if (urb->actual_length > 0) {
 		memcpy(ir->urb_data, urb->transfer_buffer, urb->actual_length);
 
-		dprintk("data %02x %02x %02x %02x\n", ir->urb_data[0],
-			ir->urb_data[1], ir->urb_data[2], ir->urb_data[3]);
+//		dprintk("data %02x %02x %02x %02x\n", ir->urb_data[0],
+;
 
 		ir->key = 1;
 	}
@@ -201,7 +201,7 @@ static int default_polling_getkey(struct tm6000_IR *ir,
 
 			msleep(10);
 
-			dprintk("read data=%02x\n", buf[0]);
+;
 			if (rc < 0)
 				return rc;
 
@@ -213,7 +213,7 @@ static int default_polling_getkey(struct tm6000_IR *ir,
 
 			msleep(10);
 
-			dprintk("read data=%04x\n", buf[0] | buf[1] << 8);
+;
 			if (rc < 0)
 				return rc;
 
@@ -234,11 +234,11 @@ static void tm6000_ir_handle_key(struct tm6000_IR *ir)
 	/* read the registers containing the IR status */
 	result = ir->get_key(ir, &poll_result);
 	if (result < 0) {
-		printk(KERN_INFO "ir->get_key() failed %d\n", result);
+;
 		return;
 	}
 
-	dprintk("ir->get_key result data=%04x\n", poll_result.rc_data);
+;
 
 	if (ir->pwled) {
 		if (ir->pwledcnt >= PWLED_OFF) {
@@ -321,14 +321,14 @@ int tm6000_ir_int_start(struct tm6000_core *dev)
 		& USB_ENDPOINT_NUMBER_MASK);
 
 	size = usb_maxpacket(dev->udev, pipe, usb_pipeout(pipe));
-	dprintk("IR max size: %d\n", size);
+;
 
 	ir->int_urb->transfer_buffer = kzalloc(size, GFP_KERNEL);
 	if (ir->int_urb->transfer_buffer == NULL) {
 		usb_free_urb(ir->int_urb);
 		return err;
 	}
-	dprintk("int interval: %d\n", dev->int_in.endp->desc.bInterval);
+;
 	usb_fill_int_urb(ir->int_urb, dev->udev, pipe,
 		ir->int_urb->transfer_buffer, size,
 		tm6000_ir_urb_received, dev,
@@ -416,7 +416,7 @@ int tm6000_ir_init(struct tm6000_core *dev)
 	rc->dev.parent = &dev->udev->dev;
 
 	if (&dev->int_in) {
-		dprintk("IR over int\n");
+;
 
 		err = tm6000_ir_int_start(dev);
 

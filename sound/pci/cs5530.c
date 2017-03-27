@@ -155,7 +155,11 @@ static int __devinit snd_cs5530_create(struct snd_card *card,
 	sb_base = 0x220 + 0x20 * (map & 3);
 
 	if (map & (1<<2))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CS5530: XpressAudio at 0x%lx\n", sb_base);
+#else
+		;
+#endif
 	else {
 		printk(KERN_ERR "Could not find XpressAudio!\n");
 		snd_cs5530_free(chip);
@@ -163,9 +167,17 @@ static int __devinit snd_cs5530_create(struct snd_card *card,
 	}
 
 	if (map & (1<<5))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CS5530: MPU at 0x300\n");
+#else
+		;
+#endif
 	else if (map & (1<<6))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "CS5530: MPU at 0x330\n");
+#else
+		;
+#endif
 
 	irq = snd_cs5530_mixer_read(sb_base, 0x80) & 0x0F;
 	dma8 = snd_cs5530_mixer_read(sb_base, 0x81);
@@ -208,8 +220,12 @@ static int __devinit snd_cs5530_create(struct snd_card *card,
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "CS5530: IRQ: %d DMA8: %d DMA16: %d\n", irq, dma8, 
 									dma16);
+#else
+	;
+#endif
 
 	err = snd_sbdsp_create(card, sb_base, irq, snd_sb16dsp_interrupt, dma8,
 						dma16, SB_HW_CS5530, &chip->sb);

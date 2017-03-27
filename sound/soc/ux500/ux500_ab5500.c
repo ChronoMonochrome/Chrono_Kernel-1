@@ -88,14 +88,46 @@ int ux500_ab5500_hw_params(struct snd_pcm_substream *substream,
 
 	int channels = params_channels(params);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: Enter.\n", __func__);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: substream->pcm->name = %s.\n", __func__, substream->pcm->name);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: substream->pcm->id = %s.\n", __func__, substream->pcm->id);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: substream->name = %s.\n", __func__, substream->name);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: substream->number = %d.\n", __func__, substream->number);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: channels = %d.\n", __func__, channels);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: DAI-index (Codec): %d\n", __func__, codec_dai->id);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: DAI-index (Platform): %d\n", __func__, cpu_dai->id);
+#else
+	;
+#endif
 
 	ret = snd_soc_dai_set_fmt(codec_dai,
 		SND_SOC_DAIFMT_I2S |  SND_SOC_DAIFMT_CBM_CFM);

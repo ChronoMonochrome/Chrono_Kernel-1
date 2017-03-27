@@ -105,8 +105,12 @@ static int i2c_pca_pf_waitforcompletion(void *pd)
 static void i2c_pca_pf_dummyreset(void *pd)
 {
 	struct i2c_pca_pf_data *i2c = pd;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "%s: No reset-pin found. Chip may get stuck!\n",
 		i2c->adap.name);
+#else
+	;
+#endif
 }
 
 static void i2c_pca_pf_resetchip(void *pd)
@@ -216,8 +220,12 @@ static int __devinit i2c_pca_pf_probe(struct platform_device *pdev)
 			gpio_direction_output(i2c->gpio, 1);
 			i2c->algo_data.reset_chip = i2c_pca_pf_resetchip;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Registering gpio failed!\n",
 				i2c->adap.name);
+#else
+			;
+#endif
 			i2c->gpio = ret;
 		}
 	}
@@ -236,7 +244,11 @@ static int __devinit i2c_pca_pf_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, i2c);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s registered.\n", i2c->adap.name);
+#else
+	;
+#endif
 
 	return 0;
 

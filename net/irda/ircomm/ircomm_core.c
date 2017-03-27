@@ -79,7 +79,7 @@ static int __init ircomm_init(void)
 	{ struct proc_dir_entry *ent;
 	ent = proc_create("ircomm", 0, proc_irda, &ircomm_proc_fops);
 	if (!ent) {
-		printk(KERN_ERR "ircomm_init: can't create /proc entry!\n");
+;
 		return -ENODEV;
 	}
 	}

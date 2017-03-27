@@ -74,10 +74,10 @@ EXPORT_SYMBOL_GPL(rds_wq);
 void rds_connect_complete(struct rds_connection *conn)
 {
 	if (!rds_conn_transition(conn, RDS_CONN_CONNECTING, RDS_CONN_UP)) {
-		printk(KERN_WARNING "%s: Cannot transition to state UP, "
-				"current state is %d\n",
-				__func__,
-				atomic_read(&conn->c_state));
+//		printk(KERN_WARNING "%s: Cannot transition to state UP, "
+//				"current state is %d\n",
+//				__func__,
+;
 		atomic_set(&conn->c_state, RDS_CONN_ERROR);
 		queue_work(rds_wq, &conn->c_down_w);
 		return;

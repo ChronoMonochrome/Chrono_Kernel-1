@@ -503,8 +503,8 @@ static int amd8111e_restart(struct net_device *dev)
 
 	/* Enable interrupt coalesce */
 	if(lp->options & OPTION_INTR_COAL_ENABLE){
-		printk(KERN_INFO "%s: Interrupt Coalescing Enabled.\n",
-								dev->name);
+//		printk(KERN_INFO "%s: Interrupt Coalescing Enabled.\n",
+;
 		amd8111e_set_coalesce(dev,ENABLE_COAL);
 	}
 
@@ -867,16 +867,16 @@ static int amd8111e_link_change(struct net_device* dev)
 		else if(speed == PHY_SPEED_100)
 			lp->link_config.speed = SPEED_100;
 
-		printk(KERN_INFO "%s: Link is Up. Speed is %s Mbps %s Duplex\n",			dev->name,
-		       (lp->link_config.speed == SPEED_100) ? "100": "10",
-		       (lp->link_config.duplex == DUPLEX_FULL)? "Full": "Half");
+//		printk(KERN_INFO "%s: Link is Up. Speed is %s Mbps %s Duplex\n",			dev->name,
+//		       (lp->link_config.speed == SPEED_100) ? "100": "10",
+;
 		netif_carrier_on(dev);
 	}
 	else{
 		lp->link_config.speed = SPEED_INVALID;
 		lp->link_config.duplex = DUPLEX_INVALID;
 		lp->link_config.autoneg = AUTONEG_INVALID;
-		printk(KERN_INFO "%s: Link is Down.\n",dev->name);
+;
 		netif_carrier_off(dev);
 	}
 
@@ -1271,7 +1271,7 @@ static int amd8111e_open(struct net_device * dev )
 	/* Start ipg timer */
 	if(lp->options & OPTION_DYN_IPG_ENABLE){
 		add_timer(&lp->ipg_data.ipg_timer);
-		printk(KERN_INFO "%s: Dynamic IPG Enabled.\n",dev->name);
+;
 	}
 
 	lp->opened = 1;
@@ -1639,8 +1639,8 @@ static void amd8111e_tx_timeout(struct net_device *dev)
 	struct amd8111e_priv* lp = netdev_priv(dev);
 	int err;
 
-	printk(KERN_ERR "%s: transmit timed out, resetting\n",
-	 					      dev->name);
+//	printk(KERN_ERR "%s: transmit timed out, resetting\n",
+;
 	spin_lock_irq(&lp->lock);
 	err = amd8111e_restart(dev);
 	spin_unlock_irq(&lp->lock);
@@ -1839,22 +1839,22 @@ static int __devinit amd8111e_probe_one(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if(err){
-		printk(KERN_ERR "amd8111e: Cannot enable new PCI device, "
-			"exiting.\n");
+//		printk(KERN_ERR "amd8111e: Cannot enable new PCI device, "
+;
 		return err;
 	}
 
 	if(!(pci_resource_flags(pdev, 0) & IORESOURCE_MEM)){
-		printk(KERN_ERR "amd8111e: Cannot find PCI base address, "
-		       "exiting.\n");
+//		printk(KERN_ERR "amd8111e: Cannot find PCI base address, "
+;
 		err = -ENODEV;
 		goto err_disable_pdev;
 	}
 
 	err = pci_request_regions(pdev, MODULE_NAME);
 	if(err){
-		printk(KERN_ERR "amd8111e: Cannot obtain PCI resources, "
-		       "exiting.\n");
+//		printk(KERN_ERR "amd8111e: Cannot obtain PCI resources, "
+;
 		goto err_disable_pdev;
 	}
 
@@ -1862,15 +1862,15 @@ static int __devinit amd8111e_probe_one(struct pci_dev *pdev,
 
 	/* Find power-management capability. */
 	if((pm_cap = pci_find_capability(pdev, PCI_CAP_ID_PM))==0){
-		printk(KERN_ERR "amd8111e: No Power Management capability, "
-		       "exiting.\n");
+//		printk(KERN_ERR "amd8111e: No Power Management capability, "
+;
 		goto err_free_reg;
 	}
 
 	/* Initialize DMA */
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) < 0) {
-		printk(KERN_ERR "amd8111e: DMA not supported,"
-			"exiting.\n");
+//		printk(KERN_ERR "amd8111e: DMA not supported,"
+;
 		goto err_free_reg;
 	}
 
@@ -1879,7 +1879,7 @@ static int __devinit amd8111e_probe_one(struct pci_dev *pdev,
 
 	dev = alloc_etherdev(sizeof(struct amd8111e_priv));
 	if (!dev) {
-		printk(KERN_ERR "amd8111e: Etherdev alloc failed, exiting.\n");
+;
 		err = -ENOMEM;
 		goto err_free_reg;
 	}
@@ -1899,8 +1899,8 @@ static int __devinit amd8111e_probe_one(struct pci_dev *pdev,
 
 	lp->mmio = ioremap(reg_addr, reg_len);
 	if (!lp->mmio) {
-		printk(KERN_ERR "amd8111e: Cannot map device registers, "
-		       "exiting\n");
+//		printk(KERN_ERR "amd8111e: Cannot map device registers, "
+;
 		err = -ENOMEM;
 		goto err_free_dev;
 	}
@@ -1942,8 +1942,8 @@ static int __devinit amd8111e_probe_one(struct pci_dev *pdev,
 
 	err = register_netdev(dev);
 	if (err) {
-		printk(KERN_ERR "amd8111e: Cannot register net device, "
-		       "exiting.\n");
+//		printk(KERN_ERR "amd8111e: Cannot register net device, "
+;
 		goto err_iounmap;
 	}
 
@@ -1963,16 +1963,16 @@ static int __devinit amd8111e_probe_one(struct pci_dev *pdev,
 	/*  display driver and device information */
 
     	chip_version = (readl(lp->mmio + CHIPID) & 0xf0000000)>>28;
-	printk(KERN_INFO "%s: AMD-8111e Driver Version: %s\n",
-	       dev->name,MODULE_VERS);
-	printk(KERN_INFO "%s: [ Rev %x ] PCI 10/100BaseT Ethernet %pM\n",
-	       dev->name, chip_version, dev->dev_addr);
+//	printk(KERN_INFO "%s: AMD-8111e Driver Version: %s\n",
+;
+//	printk(KERN_INFO "%s: [ Rev %x ] PCI 10/100BaseT Ethernet %pM\n",
+;
 	if (lp->ext_phy_id)
-		printk(KERN_INFO "%s: Found MII PHY ID 0x%08x at address 0x%02x\n",
-		       dev->name, lp->ext_phy_id, lp->ext_phy_addr);
+//		printk(KERN_INFO "%s: Found MII PHY ID 0x%08x at address 0x%02x\n",
+;
 	else
-		printk(KERN_INFO "%s: Couldn't detect MII PHY, assuming address 0x01\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: Couldn't detect MII PHY, assuming address 0x01\n",
+;
     	return 0;
 err_iounmap:
 	iounmap(lp->mmio);

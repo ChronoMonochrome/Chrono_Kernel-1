@@ -32,7 +32,7 @@ static int qnx4_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		blknum = qnx4_block_map( inode, filp->f_pos >> QNX4_BLOCK_SIZE_BITS );
 		bh = sb_bread(inode->i_sb, blknum);
 		if(bh==NULL) {
-			printk(KERN_ERR "qnx4_readdir: bread failed (%ld)\n", blknum);
+;
 			break;
 		}
 		ix = (int)(filp->f_pos >> QNX4_DIR_ENTRY_SIZE_BITS) % QNX4_INODES_PER_BLOCK;

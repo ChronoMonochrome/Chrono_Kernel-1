@@ -494,10 +494,10 @@ void be_link_status_update(struct be_adapter *adapter, bool link_up)
 		adapter->link_speed = -1;
 		if (link_up) {
 			netif_carrier_on(netdev);
-			printk(KERN_INFO "%s: Link up\n", netdev->name);
+;
 		} else {
 			netif_carrier_off(netdev);
-			printk(KERN_INFO "%s: Link down\n", netdev->name);
+;
 		}
 		adapter->link_up = link_up;
 	}
@@ -3609,9 +3609,9 @@ static int __init be_init_module(void)
 {
 	if (rx_frag_size != 8192 && rx_frag_size != 4096 &&
 	    rx_frag_size != 2048) {
-		printk(KERN_WARNING DRV_NAME
-			" : Module param rx_frag_size must be 2048/4096/8192."
-			" Using 2048\n");
+//		printk(KERN_WARNING DRV_NAME
+//			" : Module param rx_frag_size must be 2048/4096/8192."
+;
 		rx_frag_size = 2048;
 	}
 

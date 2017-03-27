@@ -97,9 +97,13 @@ static int set_max_cstate(const struct dmi_system_id *id)
 	if (max_cstate > ACPI_PROCESSOR_MAX_POWER)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE PREFIX "%s detected - limiting to C%ld max_cstate."
 	       " Override with \"processor.max_cstate=%d\"\n", id->ident,
 	       (long)id->driver_data, ACPI_PROCESSOR_MAX_POWER + 1);
+#else
+	;
+#endif
 
 	max_cstate = (long)id->driver_data;
 
@@ -505,11 +509,19 @@ static int acpi_processor_get_power_info_cst(struct acpi_processor *pr)
 		 * (From 1 through ACPI_PROCESSOR_MAX_POWER - 1)
 		 */
 		if (current_count >= (ACPI_PROCESSOR_MAX_POWER - 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "Limiting number of power states to max (%d)\n",
 			       ACPI_PROCESSOR_MAX_POWER);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "Please increase ACPI_PROCESSOR_MAX_POWER if needed.\n");
+#else
+			;
+#endif
 			break;
 		}
 	}
@@ -1099,9 +1111,13 @@ int __cpuinit acpi_processor_power_init(struct acpi_processor *pr,
 		dmi_check_system(processor_power_dmi_table);
 		max_cstate = acpi_processor_cstate_check(max_cstate);
 		if (max_cstate < ACPI_C_STATES_MAX)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE
 			       "ACPI: processor limited to max C-state %d\n",
 			       max_cstate);
+#else
+			;
+#endif
 		first_run++;
 	}
 

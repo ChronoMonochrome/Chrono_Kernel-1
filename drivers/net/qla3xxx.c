@@ -155,8 +155,8 @@ static int ql_wait_for_drvr_lock(struct ql3_adapter *qdev)
 				QL_DRVR_SEM_MASK,
 				(QL_RESOURCE_BITS_BASE_CODE | (qdev->mac_index)
 				 * 2) << 1)) {
-			netdev_printk(KERN_DEBUG, qdev->ndev,
-				      "driver lock acquired\n");
+//			netdev_printk(KERN_DEBUG, qdev->ndev,
+;
 			return 1;
 		}
 	}
@@ -1317,12 +1317,12 @@ static int ql_this_adapter_controls_port(struct ql3_adapter *qdev)
 
 	temp = ql_read_page0_reg(qdev, &port_regs->portStatus);
 	if (temp & bitToCheck) {
-		netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
-			     "not link master\n");
+//		netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
+;
 		return 0;
 	}
 
-	netif_printk(qdev, link, KERN_DEBUG, qdev->ndev, "link master\n");
+;
 	return 1;
 }
 
@@ -1471,8 +1471,8 @@ static int ql_finish_auto_neg(struct ql3_adapter *qdev)
 	if (!ql_auto_neg_error(qdev)) {
 		if (test_bit(QL_LINK_MASTER, &qdev->flags)) {
 			/* configure the MAC */
-			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
-				     "Configuring link\n");
+//			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
+;
 			ql_mac_cfg_soft_reset(qdev, 1);
 			ql_mac_cfg_gig(qdev,
 				       (ql_get_link_speed
@@ -1487,8 +1487,8 @@ static int ql_finish_auto_neg(struct ql3_adapter *qdev)
 			ql_mac_cfg_soft_reset(qdev, 0);
 
 			/* enable the MAC */
-			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
-				     "Enabling mac\n");
+//			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
+;
 			ql_mac_enable(qdev, 1);
 		}
 
@@ -1503,8 +1503,8 @@ static int ql_finish_auto_neg(struct ql3_adapter *qdev)
 	} else {	/* Remote error detected */
 
 		if (test_bit(QL_LINK_MASTER, &qdev->flags)) {
-			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
-				     "Remote error detected. Calling ql_port_start()\n");
+//			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
+;
 			/*
 			 * ql_port_start() is shared code and needs
 			 * to lock the PHY on it's own.
@@ -1794,8 +1794,8 @@ static int ql_populate_free_queue(struct ql3_adapter *qdev)
 				netdev_alloc_skb(qdev->ndev,
 						 qdev->lrg_buffer_len);
 			if (unlikely(!lrg_buf_cb->skb)) {
-				netdev_printk(KERN_DEBUG, qdev->ndev,
-					      "Failed netdev_alloc_skb()\n");
+//				netdev_printk(KERN_DEBUG, qdev->ndev,
+;
 				break;
 			} else {
 				/*
@@ -2512,9 +2512,9 @@ static netdev_tx_t ql3xxx_send(struct sk_buff *skb,
 			    &port_regs->CommonRegs.reqQProducerIndex,
 			    qdev->req_producer_index);
 
-	netif_printk(qdev, tx_queued, KERN_DEBUG, ndev,
-		     "tx queued, slot %d, len %d\n",
-		     qdev->req_producer_index, skb->len);
+//	netif_printk(qdev, tx_queued, KERN_DEBUG, ndev,
+//		     "tx queued, slot %d, len %d\n",
+;
 
 	atomic_dec(&qdev->tx_count);
 	return NETDEV_TX_OK;
@@ -3278,14 +3278,14 @@ static int ql_adapter_reset(struct ql3_adapter *qdev)
 	/*
 	 * Issue soft reset to chip.
 	 */
-	netdev_printk(KERN_DEBUG, qdev->ndev, "Issue soft reset to chip\n");
+;
 	ql_write_common_reg(qdev,
 			    &port_regs->CommonRegs.ispControlStatus,
 			    ((ISP_CONTROL_SR << 16) | ISP_CONTROL_SR));
 
 	/* Wait 3 seconds for reset to complete. */
-	netdev_printk(KERN_DEBUG, qdev->ndev,
-		      "Wait 10 milliseconds for reset to complete\n");
+//	netdev_printk(KERN_DEBUG, qdev->ndev,
+;
 
 	/* Wait until the firmware tells us the Soft Reset is done */
 	max_wait_time = 5;
@@ -3306,8 +3306,8 @@ static int ql_adapter_reset(struct ql3_adapter *qdev)
 	value =
 	    ql_read_common_reg(qdev, &port_regs->CommonRegs.ispControlStatus);
 	if (value & ISP_CONTROL_RI) {
-		netdev_printk(KERN_DEBUG, qdev->ndev,
-			      "clearing RI after reset\n");
+//		netdev_printk(KERN_DEBUG, qdev->ndev,
+;
 		ql_write_common_reg(qdev,
 				    &port_regs->CommonRegs.
 				    ispControlStatus,
@@ -3381,9 +3381,9 @@ static void ql_set_mac_info(struct ql3_adapter *qdev)
 	case ISP_CONTROL_FN0_SCSI:
 	case ISP_CONTROL_FN1_SCSI:
 	default:
-		netdev_printk(KERN_DEBUG, qdev->ndev,
-			      "Invalid function number, ispControlStatus = 0x%x\n",
-			      value);
+//		netdev_printk(KERN_DEBUG, qdev->ndev,
+//			      "Invalid function number, ispControlStatus = 0x%x\n",
+;
 		break;
 	}
 	qdev->numPorts = qdev->nvram_data.version_and_numPorts >> 8;
@@ -3645,8 +3645,8 @@ static void ql_reset_work(struct work_struct *work)
 			int j;
 			tx_cb = &qdev->tx_buf[i];
 			if (tx_cb->skb) {
-				netdev_printk(KERN_DEBUG, ndev,
-					      "Freeing lost SKB\n");
+//				netdev_printk(KERN_DEBUG, ndev,
+;
 				pci_unmap_single(qdev->pdev,
 					 dma_unmap_addr(&tx_cb->map[0],
 							mapaddr),
@@ -3681,14 +3681,14 @@ static void ql_reset_work(struct work_struct *work)
 
 						   ispControlStatus);
 			if ((value & ISP_CONTROL_SR) == 0) {
-				netdev_printk(KERN_DEBUG, ndev,
-					      "reset completed\n");
+//				netdev_printk(KERN_DEBUG, ndev,
+;
 				break;
 			}
 
 			if (value & ISP_CONTROL_RI) {
-				netdev_printk(KERN_DEBUG, ndev,
-					      "clearing NRI after reset\n");
+//				netdev_printk(KERN_DEBUG, ndev,
+;
 				ql_write_common_reg(qdev,
 						    &port_regs->
 						    CommonRegs.

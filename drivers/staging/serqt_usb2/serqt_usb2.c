@@ -1628,8 +1628,8 @@ static int __init serqt_usb_init(void)
 	if (retval)
 		goto failed_usb_serial_register;
 
-	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
-	       DRIVER_DESC "\n");
+//	printk(KERN_INFO KBUILD_MODNAME ": " DRIVER_VERSION ":"
+;
 
 	/* register with usb */
 

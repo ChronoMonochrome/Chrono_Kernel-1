@@ -625,9 +625,9 @@ static int gfar_of_init(struct platform_device *ofdev, struct net_device **pdev)
 	num_tx_qs = tx_queues ? *tx_queues : 1;
 
 	if (num_tx_qs > MAX_TX_QS) {
-		printk(KERN_ERR "num_tx_qs(=%d) greater than MAX_TX_QS(=%d)\n",
-				num_tx_qs, MAX_TX_QS);
-		printk(KERN_ERR "Cannot do alloc_etherdev, aborting\n");
+//		printk(KERN_ERR "num_tx_qs(=%d) greater than MAX_TX_QS(=%d)\n",
+;
+;
 		return -EINVAL;
 	}
 
@@ -635,9 +635,9 @@ static int gfar_of_init(struct platform_device *ofdev, struct net_device **pdev)
 	num_rx_qs = rx_queues ? *rx_queues : 1;
 
 	if (num_rx_qs > MAX_RX_QS) {
-		printk(KERN_ERR "num_rx_qs(=%d) greater than MAX_RX_QS(=%d)\n",
-				num_tx_qs, MAX_TX_QS);
-		printk(KERN_ERR "Cannot do alloc_etherdev, aborting\n");
+//		printk(KERN_ERR "num_rx_qs(=%d) greater than MAX_RX_QS(=%d)\n",
+;
+;
 		return -EINVAL;
 	}
 
@@ -1160,8 +1160,8 @@ static int gfar_probe(struct platform_device *ofdev)
 	err = register_netdev(dev);
 
 	if (err) {
-		printk(KERN_ERR "%s: Cannot register net device, aborting.\n",
-				dev->name);
+//		printk(KERN_ERR "%s: Cannot register net device, aborting.\n",
+;
 		goto register_fail;
 	}
 
@@ -1212,17 +1212,17 @@ static int gfar_probe(struct platform_device *ofdev)
 	gfar_init_sysfs(dev);
 
 	/* Print out the device info */
-	printk(KERN_INFO DEVICE_NAME "%pM\n", dev->name, dev->dev_addr);
+;
 
 	/* Even more device info helps when determining which kernel */
 	/* provided which set of benchmarks. */
-	printk(KERN_INFO "%s: Running with NAPI enabled\n", dev->name);
+;
 	for (i = 0; i < priv->num_rx_queues; i++)
-		printk(KERN_INFO "%s: RX BD ring size for Q[%d]: %d\n",
-			dev->name, i, priv->rx_queue[i]->rx_ring_size);
+//		printk(KERN_INFO "%s: RX BD ring size for Q[%d]: %d\n",
+;
 	for(i = 0; i < priv->num_tx_queues; i++)
-		 printk(KERN_INFO "%s: TX BD ring size for Q[%d]: %d\n",
-			dev->name, i, priv->tx_queue[i]->tx_ring_size);
+//		 printk(KERN_INFO "%s: TX BD ring size for Q[%d]: %d\n",
+;
 
 	return 0;
 
@@ -1856,8 +1856,8 @@ static int register_grp_irqs(struct gfar_priv_grp *grp)
 		if ((err = request_irq(grp->interruptError, gfar_error, 0,
 				grp->int_name_er,grp)) < 0) {
 			if (netif_msg_intr(priv))
-				printk(KERN_ERR "%s: Can't get IRQ %d\n",
-					dev->name, grp->interruptError);
+//				printk(KERN_ERR "%s: Can't get IRQ %d\n",
+;
 
 			goto err_irq_fail;
 		}
@@ -1865,24 +1865,24 @@ static int register_grp_irqs(struct gfar_priv_grp *grp)
 		if ((err = request_irq(grp->interruptTransmit, gfar_transmit,
 				0, grp->int_name_tx, grp)) < 0) {
 			if (netif_msg_intr(priv))
-				printk(KERN_ERR "%s: Can't get IRQ %d\n",
-					dev->name, grp->interruptTransmit);
+//				printk(KERN_ERR "%s: Can't get IRQ %d\n",
+;
 			goto tx_irq_fail;
 		}
 
 		if ((err = request_irq(grp->interruptReceive, gfar_receive, 0,
 				grp->int_name_rx, grp)) < 0) {
 			if (netif_msg_intr(priv))
-				printk(KERN_ERR "%s: Can't get IRQ %d\n",
-					dev->name, grp->interruptReceive);
+//				printk(KERN_ERR "%s: Can't get IRQ %d\n",
+;
 			goto rx_irq_fail;
 		}
 	} else {
 		if ((err = request_irq(grp->interruptTransmit, gfar_interrupt, 0,
 				grp->int_name_tx, grp)) < 0) {
 			if (netif_msg_intr(priv))
-				printk(KERN_ERR "%s: Can't get IRQ %d\n",
-					dev->name, grp->interruptTransmit);
+//				printk(KERN_ERR "%s: Can't get IRQ %d\n",
+;
 			goto err_irq_fail;
 		}
 	}
@@ -2366,8 +2366,8 @@ static int gfar_change_mtu(struct net_device *dev, int new_mtu)
 
 	if ((frame_size < 64) || (frame_size > JUMBO_FRAME_SIZE)) {
 		if (netif_msg_drv(priv))
-			printk(KERN_ERR "%s: Invalid MTU setting\n",
-					dev->name);
+//			printk(KERN_ERR "%s: Invalid MTU setting\n",
+;
 		return -EINVAL;
 	}
 
@@ -2788,8 +2788,8 @@ int gfar_clean_rx_ring(struct gfar_priv_rx_q *rx_queue, int rx_work_limit)
 
 			} else {
 				if (netif_msg_rx_err(priv))
-					printk(KERN_WARNING
-					       "%s: Missing skb!\n", dev->name);
+//					printk(KERN_WARNING
+;
 				rx_queue->stats.rx_dropped++;
 				priv->extra_stats.rx_skbmissing++;
 			}
@@ -2993,9 +2993,9 @@ static void adjust_link(struct net_device *dev)
 				break;
 			default:
 				if (netif_msg_link(priv))
-					printk(KERN_WARNING
-						"%s: Ack!  Speed (%d) is not 10/100/1000!\n",
-						dev->name, phydev->speed);
+//					printk(KERN_WARNING
+//						"%s: Ack!  Speed (%d) is not 10/100/1000!\n",
+;
 				break;
 			}
 
@@ -3200,8 +3200,8 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
 
 	/* Hmm... */
 	if (netif_msg_rx_err(priv) || netif_msg_tx_err(priv))
-		printk(KERN_DEBUG "%s: error interrupt (ievent=0x%08x imask=0x%08x)\n",
-		       dev->name, events, gfar_read(&regs->imask));
+//		printk(KERN_DEBUG "%s: error interrupt (ievent=0x%08x imask=0x%08x)\n",
+;
 
 	/* Update the error counters */
 	if (events & IEVENT_TXE) {
@@ -3215,8 +3215,8 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
 			unsigned long flags;
 
 			if (netif_msg_tx_err(priv))
-				printk(KERN_DEBUG "%s: TX FIFO underrun, "
-				       "packet dropped.\n", dev->name);
+//				printk(KERN_DEBUG "%s: TX FIFO underrun, "
+;
 			dev->stats.tx_dropped++;
 			priv->extra_stats.tx_underrun++;
 
@@ -3230,7 +3230,7 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
 			local_irq_restore(flags);
 		}
 		if (netif_msg_tx_err(priv))
-			printk(KERN_DEBUG "%s: Transmit Error\n", dev->name);
+;
 	}
 	if (events & IEVENT_BSY) {
 		dev->stats.rx_errors++;
@@ -3239,28 +3239,28 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
 		gfar_receive(irq, grp_id);
 
 		if (netif_msg_rx_err(priv))
-			printk(KERN_DEBUG "%s: busy error (rstat: %x)\n",
-			       dev->name, gfar_read(&regs->rstat));
+//			printk(KERN_DEBUG "%s: busy error (rstat: %x)\n",
+;
 	}
 	if (events & IEVENT_BABR) {
 		dev->stats.rx_errors++;
 		priv->extra_stats.rx_babr++;
 
 		if (netif_msg_rx_err(priv))
-			printk(KERN_DEBUG "%s: babbling RX error\n", dev->name);
+;
 	}
 	if (events & IEVENT_EBERR) {
 		priv->extra_stats.eberr++;
 		if (netif_msg_rx_err(priv))
-			printk(KERN_DEBUG "%s: bus error\n", dev->name);
+;
 	}
 	if ((events & IEVENT_RXC) && netif_msg_rx_status(priv))
-		printk(KERN_DEBUG "%s: control frame\n", dev->name);
+;
 
 	if (events & IEVENT_BABT) {
 		priv->extra_stats.tx_babt++;
 		if (netif_msg_tx_err(priv))
-			printk(KERN_DEBUG "%s: babbling TX error\n", dev->name);
+;
 	}
 	return IRQ_HANDLED;
 }

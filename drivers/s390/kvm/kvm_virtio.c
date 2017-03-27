@@ -293,8 +293,12 @@ static void add_kvm_device(struct kvm_device_desc *d, unsigned int offset)
 
 	kdev = kzalloc(sizeof(*kdev), GFP_KERNEL);
 	if (!kdev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_EMERG "Cannot allocate kvm dev %u type %u\n",
 		       offset, d->type);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -365,7 +369,11 @@ static void hotplug_devices(struct work_struct *dummy)
 		}
 
 		/* new device */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Adding new virtio device %p\n", d);
+#else
+		;
+#endif
 		add_kvm_device(d, i);
 	}
 }

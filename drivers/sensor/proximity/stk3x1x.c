@@ -288,9 +288,17 @@ static int32_t stk3x1x_enable_ps(struct stk3x1x_data *ps_data, uint8_t enable)
 		input_report_abs(ps_data->ps_input_dev, ABS_DISTANCE, near_far_state);
 		input_sync(ps_data->ps_input_dev);
 		wake_lock_timeout(&ps_data->ps_wakelock, 3*HZ);	
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: ps input event %d cm\n",__func__, near_far_state);			
+#else
+		;
+#endif
 		reading = stk3x1x_get_ps_reading(ps_data);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s : ps code = %d, near_far_state=%d\n",__func__,reading, near_far_state);				
+#else
+		;
+#endif
 	}
 	else
 	{
@@ -339,7 +347,11 @@ static ssize_t stk_ps_enable_store(struct device *dev, struct device_attribute *
 		printk(KERN_ERR "%s, invalid value %d\n", __func__, *buf);
 		return -EINVAL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "%s: Enable PS : %d\n", __func__, en);
+#else
+    ;
+#endif
 
     mutex_lock(&ps_data->io_lock);
     stk3x1x_enable_ps(ps_data, en);
@@ -374,7 +386,11 @@ static ssize_t stk_ps_enable_aso_store(struct device *dev, struct device_attribu
 		printk(KERN_ERR "%s, invalid value %d\n", __func__, *buf);
 		return -EINVAL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "%s: Enable PS ASO : %d\n", __func__, en);
+#else
+    ;
+#endif
     
     ret = i2c_smbus_read_byte_data(ps_data->client, STK_STATE_REG);
     if (ret < 0)
@@ -453,7 +469,11 @@ static ssize_t stk_ps_distance_show(struct device *dev, struct device_attribute 
 	input_sync(ps_data->ps_input_dev);
     mutex_unlock(&ps_data->io_lock);
 	wake_lock_timeout(&ps_data->ps_wakelock, 3*HZ);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: ps input event %d cm\n",__func__, dist);		
+#else
+	;
+#endif
     return sprintf(buf, "%d\n", dist);
 }
 
@@ -474,7 +494,11 @@ static ssize_t stk_ps_distance_store(struct device *dev, struct device_attribute
 	input_sync(ps_data->ps_input_dev);
     mutex_unlock(&ps_data->io_lock);
 	wake_lock_timeout(&ps_data->ps_wakelock, 3*HZ);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: ps input event %ld cm\n",__func__, value);	
+#else
+	;
+#endif
     return size;
 }
 
@@ -575,7 +599,11 @@ static ssize_t stk_all_reg_show(struct device *dev, struct device_attribute *att
 		}
 		else
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "reg[0x%2X]=0x%2X\n", cnt, ps_reg[cnt]);
+#else
+			;
+#endif
 		}
 	}
 	ps_reg[cnt] = i2c_smbus_read_byte_data(ps_data->client, STK_PDT_ID_REG);
@@ -585,7 +613,11 @@ static ssize_t stk_all_reg_show(struct device *dev, struct device_attribute *att
 		printk( KERN_ERR "all_reg_show:i2c_smbus_read_byte_data fail, ret=%d", ps_reg[cnt]);	
 		return -EINVAL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk( KERN_INFO "reg[0x%x]=0x%2X\n", STK_PDT_ID_REG, ps_reg[cnt]);	
+#else
+	;
+#endif
 	cnt++;
 	ps_reg[cnt] = i2c_smbus_read_byte_data(ps_data->client, STK_RSRVD_REG);
 	if(ps_reg[cnt] < 0)
@@ -594,7 +626,11 @@ static ssize_t stk_all_reg_show(struct device *dev, struct device_attribute *att
 		printk( KERN_ERR "all_reg_show:i2c_smbus_read_byte_data fail, ret=%d", ps_reg[cnt]);	
 		return -EINVAL;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk( KERN_INFO "reg[0x%x]=0x%2X\n", STK_RSRVD_REG, ps_reg[cnt]);		
+#else
+	;
+#endif
     mutex_unlock(&ps_data->io_lock);
 
     return sprintf(buf, "%2X %2X %2X %2X %2X,%2X %2X %2X %2X %2X,%2X %2X %2X %2X %2X,%2X %2X %2X %2X %2X,%2X %2X %2X %2X %2X,%2X %2X\n", 
@@ -622,7 +658,11 @@ static ssize_t stk_recv_store(struct device *dev, struct device_attribute *attr,
 		return ret;	
 	}
 	recv_data = i2c_smbus_read_byte_data(ps_data->client,value);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: reg 0x%x=0x%x\n", __func__, (int)value, recv_data);
+#else
+	;
+#endif
 	return size;
 }
 
@@ -653,7 +693,11 @@ static ssize_t stk_send_store(struct device *dev, struct device_attribute *attr,
 		printk(KERN_ERR "%s:strict_strtoul failed, ret=0x%x\n", __func__, ret);
 		return ret;	
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: write reg 0x%x=0x%x\n", __func__, addr, cmd);		
+#else
+	;
+#endif
 
 	addr_u8 = (u8) addr;
 	cmd_u8 = (u8) cmd;
@@ -735,9 +779,17 @@ static void stk_work_func(struct work_struct *work)
 	input_report_abs(ps_data->ps_input_dev, ABS_DISTANCE, near_far_state);
 	input_sync(ps_data->ps_input_dev);
 	wake_lock_timeout(&ps_data->ps_wakelock, 3*HZ);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: ps input event %d cm\n",__func__, near_far_state);			
+#else
+	;
+#endif
 	reading = stk3x1x_get_ps_reading(ps_data);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s : ps code = %d, near_far_state=%d\n",__func__,reading, near_far_state);	
+#else
+	;
+#endif
 	
 	msleep(1);
     enable_irq(ps_data->irq);
@@ -783,7 +835,11 @@ static int stk3x1x_setup_irq(struct i2c_client *client)
 	struct stk3x1x_data *ps_data = i2c_get_clientdata(client);
 	
 	irq = gpio_to_irq(ps_data->int_pin);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: int pin #=%d, irq=%d\n",__func__, ps_data->int_pin, irq);	
+#else
+	;
+#endif
 	if (irq <= 0)
 	{
 		printk(KERN_ERR "irq number is not specified, irq # = %d, int pin=%d\n",irq, ps_data->int_pin);
@@ -805,7 +861,11 @@ static int stk3x1x_setup_irq(struct i2c_client *client)
 	err = request_any_context_irq(irq, stk_oss_irq_handler, IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING, DEVICE_NAME, ps_data);
 	if (err < 0) 
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: request_any_context_irq(%d) failed for (%d)\n", __func__, irq, err);		
+#else
+		;
+#endif
 		goto err_request_any_context_irq;
 	}
 	disable_irq(irq);
@@ -823,14 +883,22 @@ static void stk3x1x_early_suspend(struct early_suspend *h)
 	struct stk3x1x_data *ps_data = container_of(h, struct stk3x1x_data, stk_early_suspend);	
 	int err;
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s", __func__);
+#else
+	;
+#endif
     mutex_lock(&ps_data->io_lock);  		
 	  	
 	if(ps_data->ps_enabled)
 	{
 		err = enable_irq_wake(ps_data->irq);	
 		if (err)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: set_irq_wake(%d) failed, err=(%d)\n", __func__, ps_data->irq, err);				
+#else
+			;
+#endif
 	}
 	mutex_unlock(&ps_data->io_lock);		
 	return;
@@ -841,13 +909,21 @@ static void stk3x1x_late_resume(struct early_suspend *h)
 	struct stk3x1x_data *ps_data = container_of(h, struct stk3x1x_data, stk_early_suspend);	
     int err;
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s", __func__);	
+#else
+	;
+#endif
     mutex_lock(&ps_data->io_lock); 		
 	if(ps_data->ps_enabled)
 	{
 		err = disable_irq_wake(ps_data->irq);	
 		if (err)		
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: disable_irq_wake(%d) failed, err=(%d)\n", __func__, ps_data->irq, err);		
+#else
+			;
+#endif
 	}
 	mutex_unlock(&ps_data->io_lock);
 	return;
@@ -860,7 +936,11 @@ static int stk3x1x_suspend(struct device *dev)
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	struct stk3x1x_data *ps_data = i2c_get_clientdata(client);	
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s", __func__);		
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -869,7 +949,11 @@ static int stk3x1x_resume(struct device *dev)
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	struct stk3x1x_data *ps_data = i2c_get_clientdata(client);	
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s", __func__);	
+#else
+	;
+#endif
 	return 0;
 }
 #endif /* CONFIG_PM_SLEEP */
@@ -884,7 +968,11 @@ static int stk3x1x_probe(struct i2c_client *client,
 	int ret = 0;
     struct stk3x1x_data *ps_data;
 	struct stk3x1x_platform_data *plat_data;
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "%s: driver version = %s\n", __func__, DRIVER_VERSION);
+#else
+    ;
+#endif
 
     if (!i2c_check_functionality(client->adapter, I2C_FUNC_SMBUS_BYTE_DATA))
     {
@@ -935,7 +1023,11 @@ static int stk3x1x_probe(struct i2c_client *client,
 	}
 	else
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: no stk3x1x platform data!\n", __func__);		
+#else
+		;
+#endif
 	}		
 	
 	ps_data->ps_input_dev = input_allocate_device();
@@ -981,7 +1073,11 @@ static int stk3x1x_probe(struct i2c_client *client,
 	ps_data->stk_early_suspend.resume = stk3x1x_late_resume;
 	register_early_suspend(&ps_data->stk_early_suspend);
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: probe successfully", __func__);
+#else
+	;
+#endif
 	return 0;
 
 err_init_all_setting:	

@@ -216,7 +216,11 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 
 	dev = dev >> 4;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sequencer_write(dev=%d, count=%d)\n", dev, count));
+#else
+	DEB(;
+#endif
 
 	if (mode == OPEN_READ)
 		return -EIO;
@@ -251,7 +255,11 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 		{
 			if (seq_mode == SEQ_2 && ev_code == SEQ_EXTENDED)
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "Sequencer: Invalid level 2 event %x\n", ev_code);
+#else
+				;
+#endif
 				return -EINVAL;
 			}
 			ev_size = 8;
@@ -271,7 +279,11 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 		{
 			if (seq_mode == SEQ_2)
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "Sequencer: 4 byte event in level 2 mode\n");
+#else
+				;
+#endif
 				return -EINVAL;
 			}
 			ev_size = 4;
@@ -289,7 +301,11 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 
 				if (dev >= max_mididev || midi_devs[dev]==NULL)
 				{
+#ifdef CONFIG_DEBUG_PRINTK
 					/*printk("Sequencer Error: Nonexistent MIDI device %d\n", dev);*/
+#else
+					/*;
+#endif
 					return -ENXIO;
 				}
 				mode = translate_mode(file);
@@ -298,7 +314,11 @@ int sequencer_write(int dev, struct file *file, const char __user *buf, int coun
 								sequencer_midi_input, sequencer_midi_output)) < 0)
 				{
 					seq_reset();
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "Sequencer Error: Unable to open Midi #%d\n", dev);
+#else
+					;
+#endif
 					return err;
 				}
 				midi_opened[dev] = 1;
@@ -953,11 +973,19 @@ int sequencer_open(int dev, struct file *file)
 	dev = dev >> 4;
 	mode = translate_mode(file);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sequencer_open(dev=%d)\n", dev));
+#else
+	DEB(;
+#endif
 
 	if (!sequencer_ok)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 /*		printk("Sound card: sequencer not initialized\n");*/
+#else
+/*		;
+#endif
 		return -ENXIO;
 	}
 	if (dev)		/* Patch manager device (obsolete) */
@@ -970,7 +998,11 @@ int sequencer_open(int dev, struct file *file)
 	{
 		if (!num_midis)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			/*printk("Sequencer: No MIDI devices. Input not possible\n");*/
+#else
+			/*;
+#endif
 			sequencer_busy = 0;
 			return -ENXIO;
 		}
@@ -1012,7 +1044,11 @@ int sequencer_open(int dev, struct file *file)
 	{
 		if (tmr == NULL)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			/*printk("sequencer: No timer for level 2\n");*/
+#else
+			/*;
+#endif
 			sequencer_busy = 0;
 			return -ENXIO;
 		}
@@ -1042,9 +1078,17 @@ int sequencer_open(int dev, struct file *file)
 
 		if ((tmp = synth_devs[i]->open(i, mode)) < 0)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Sequencer: Warning! Cannot open synth device #%d (%d)\n", i, tmp);
+#else
+			;
+#endif
 			if (synth_devs[i]->midi_dev)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "(Maps to MIDI dev #%d)\n", synth_devs[i]->midi_dev);
+#else
+				;
+#endif
 		}
 		else
 		{
@@ -1128,7 +1172,11 @@ void sequencer_release(int dev, struct file *file)
 
 	dev = dev >> 4;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sequencer_release(dev=%d)\n", dev));
+#else
+	DEB(;
+#endif
 
 	/*
 	 * Wait until the queue is empty (if we don't have nonblock)
@@ -1185,7 +1233,11 @@ void sequencer_release(int dev, struct file *file)
 	}
 
 	if (obsolete_api_used)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "/dev/music: Obsolete (4 byte) API was used by %s\n", current->comm);
+#else
+		;
+#endif
 	sequencer_busy = 0;
 }
 
@@ -1293,7 +1345,11 @@ static void seq_reset(void)
 	spin_lock_irqsave(&lock,flags);
 
 	if (waitqueue_active(&seq_sleeper)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		/*      printk( "Sequencer Warning: Unexpected sleeping process - Waking up\n"); */
+#else
+		/*      ;
+#endif
 		wake_up(&seq_sleeper);
 	}
 	spin_unlock_irqrestore(&lock,flags);

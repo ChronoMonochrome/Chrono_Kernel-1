@@ -19,6 +19,7 @@
 #define I82975X_REVISION	" Ver: 1.0.0"
 #define EDAC_MOD_STR		"i82975x_edac"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define i82975x_printk(level, fmt, arg...) \
 	edac_printk(level, "i82975x", fmt, ##arg)
 
@@ -37,6 +38,9 @@
 					 * 31:7  128 byte cache-line address
 					 * 6:1   reserved
 					 * 0     0: CH0; 1: CH1
+#else
+#define i82975x_;
+#endif
 					 */
 
 #define I82975X_DERRSYN		0x5c	/* Dram Error SYNdrome (8b)
@@ -433,6 +437,7 @@ static void i82975x_print_dram_timings(void __iomem *mch_window)
 
 	dtreg[0] = readl(mch_window + 0x114);
 	dtreg[1] = readl(mch_window + 0x194);
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRAM Timings :     Ch0    Ch1\n"
 		"                RAS Active Min = %d     %d\n"
 		"                CAS latency    =  %d      %d\n"
@@ -447,6 +452,9 @@ static void i82975x_print_dram_timings(void __iomem *mch_window)
 		(dtreg[0] & 0x07) + 2,
 			(dtreg[1] & 0x07) + 2
 	);
+#else
+	i82975x_;
+#endif
 
 }
 #endif
@@ -477,8 +485,12 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
 	mch_window = ioremap_nocache(mchbar, 0x1000);
 
 #ifdef i82975x_DEBUG_IOMEM
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "MCHBAR real = %0x, remapped = %p\n",
 					mchbar, mch_window);
+#else
+	i82975x_;
+#endif
 
 	c0drb[0] = readb(mch_window + I82975X_DRB_CH0R0);
 	c0drb[1] = readb(mch_window + I82975X_DRB_CH0R1);
@@ -488,35 +500,87 @@ static int i82975x_probe1(struct pci_dev *pdev, int dev_idx)
 	c1drb[1] = readb(mch_window + I82975X_DRB_CH1R1);
 	c1drb[2] = readb(mch_window + I82975X_DRB_CH1R2);
 	c1drb[3] = readb(mch_window + I82975X_DRB_CH1R3);
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRBCH0R0 = 0x%02x\n", c0drb[0]);
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRBCH0R1 = 0x%02x\n", c0drb[1]);
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRBCH0R2 = 0x%02x\n", c0drb[2]);
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRBCH0R3 = 0x%02x\n", c0drb[3]);
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRBCH1R0 = 0x%02x\n", c1drb[0]);
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRBCH1R1 = 0x%02x\n", c1drb[1]);
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRBCH1R2 = 0x%02x\n", c1drb[2]);
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRBCH1R3 = 0x%02x\n", c1drb[3]);
+#else
+	i82975x_;
+#endif
 #endif
 
 	drc[0] = readl(mch_window + I82975X_DRC_CH0M0);
 	drc[1] = readl(mch_window + I82975X_DRC_CH1M0);
 #ifdef i82975x_DEBUG_IOMEM
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRC_CH0 = %0x, %s\n", drc[0],
 			((drc[0] >> 21) & 3) == 1 ?
 				"ECC enabled" : "ECC disabled");
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "DRC_CH1 = %0x, %s\n", drc[1],
 			((drc[1] >> 21) & 3) == 1 ?
 				"ECC enabled" : "ECC disabled");
+#else
+	i82975x_;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "C0 BNKARC = %0x\n",
 		readw(mch_window + I82975X_C0BNKARC));
+#else
+	i82975x_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	i82975x_printk(KERN_INFO, "C1 BNKARC = %0x\n",
 		readw(mch_window + I82975X_C1BNKARC));
+#else
+	i82975x_;
+#endif
 	i82975x_print_dram_timings(mch_window);
 	goto fail1;
 #endif
 	if (!(((drc[0] >> 21) & 3) == 1 || ((drc[1] >> 21) & 3) == 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		i82975x_printk(KERN_INFO, "ECC disabled on both channels.\n");
+#else
+		i82975x_;
+#endif
 		goto fail1;
 	}
 

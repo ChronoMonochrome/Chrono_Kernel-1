@@ -130,7 +130,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
 	/* enable pci dev */
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR "mei: Failed to enable pci device.\n");
+;
 		goto end;
 	}
 	/* set PCI host mastering  */
@@ -138,7 +138,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
 	/* pci request regions for mei driver */
 	err = pci_request_regions(pdev, mei_driver_name);
 	if (err) {
-		printk(KERN_ERR "mei: Failed to get pci regions.\n");
+;
 		goto disable_device;
 	}
 	/* allocates and initializes the mei dev structure */
@@ -150,7 +150,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
 	/* mapping  IO device memory */
 	dev->mem_addr = pci_iomap(pdev, 0, 0);
 	if (!dev->mem_addr) {
-		printk(KERN_ERR "mei: mapping I/O device memory failure.\n");
+;
 		err = -ENOMEM;
 		goto free_device;
 	}
@@ -160,13 +160,13 @@ static int __devinit mei_probe(struct pci_dev *pdev,
 			mei_interrupt_thread_handler,
 			IRQF_SHARED, mei_driver_name, dev);
 	if (err) {
-		printk(KERN_ERR "mei: request_threaded_irq failure. irq = %d\n",
-		       pdev->irq);
+//		printk(KERN_ERR "mei: request_threaded_irq failure. irq = %d\n",
+;
 		goto unmap_memory;
 	}
 	INIT_DELAYED_WORK(&dev->wd_work, mei_wd_timer);
 	if (mei_hw_init(dev)) {
-		printk(KERN_ERR "mei: Init hw failure.\n");
+;
 		err = -ENODEV;
 		goto release_irq;
 	}
@@ -196,7 +196,7 @@ disable_device:
 	pci_disable_device(pdev);
 end:
 	mutex_unlock(&mei_mutex);
-	printk(KERN_ERR "mei: Driver initialization failed.\n");
+;
 	return err;
 }
 
@@ -1124,8 +1124,8 @@ static int mei_pci_resume(struct device *device)
 			mei_interrupt_thread_handler,
 			IRQF_SHARED, mei_driver_name, dev);
 	if (err) {
-		printk(KERN_ERR "mei: Request_irq failure. irq = %d\n",
-		       pdev->irq);
+//		printk(KERN_ERR "mei: Request_irq failure. irq = %d\n",
+;
 		return err;
 	}
 
@@ -1194,8 +1194,8 @@ static int mei_registration_cdev(struct cdev *dev, int hminor,
 	ret = cdev_add(dev, devno, 1);
 	/* Fail gracefully if need be */
 	if (ret)
-		printk(KERN_ERR "mei: Error %d registering mei device %d\n",
-		       ret, hminor);
+//		printk(KERN_ERR "mei: Error %d registering mei device %d\n",
+;
 	return ret;
 }
 
@@ -1213,7 +1213,7 @@ static int mei_register_cdev(void)
 	ret = alloc_chrdev_region(&dev, MEI_MINORS_BASE, MEI_MINORS_COUNT,
 				  MEI_DRIVER_NAME);
 	if (ret) {
-		printk(KERN_ERR "mei: Error allocating char device region.\n");
+;
 		return ret;
 	}
 
@@ -1252,7 +1252,7 @@ static int mei_sysfs_device_create(void)
 	class = class_create(THIS_MODULE, MEI_DRIVER_NAME);
 	if (IS_ERR(class)) {
 		err = PTR_ERR(class);
-		printk(KERN_ERR "mei: Error creating mei class.\n");
+;
 		goto err_out;
 	}
 
@@ -1301,7 +1301,7 @@ static int __init mei_init_module(void)
 	/* init pci module */
 	ret = pci_register_driver(&mei_driver);
 	if (ret < 0) {
-		printk(KERN_ERR "mei: Error registering driver.\n");
+;
 		goto end;
 	}
 

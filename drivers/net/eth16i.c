@@ -432,7 +432,7 @@ static int __init do_eth16i_probe(struct net_device *dev)
 	int base_addr = dev->base_addr;
 
 	if(eth16i_debug > 4)
-		printk(KERN_DEBUG "Probing started for %s\n", cardname);
+;
 
 	if(base_addr > 0x1ff)           /* Check only single location */
 		return eth16i_probe1(dev, base_addr);
@@ -532,7 +532,7 @@ static int __init eth16i_probe1(struct net_device *dev, int ioaddr)
 	BITSET(ioaddr + CONFIG_REG_0, BIT(7));  /* Disable the data link */
 
 	if( (eth16i_debug & version_printed++) == 0)
-		printk(KERN_INFO "%s", version);
+;
 
 	dev->base_addr = ioaddr;
 	dev->irq = eth16i_get_irq(ioaddr);
@@ -540,13 +540,13 @@ static int __init eth16i_probe1(struct net_device *dev, int ioaddr)
 	/* Try to obtain interrupt vector */
 
 	if ((retval = request_irq(dev->irq, (void *)&eth16i_interrupt, 0, cardname, dev))) {
-		printk(KERN_WARNING "%s at %#3x, but is unusable due to conflicting IRQ %d.\n",
-		       cardname, ioaddr, dev->irq);
+//		printk(KERN_WARNING "%s at %#3x, but is unusable due to conflicting IRQ %d.\n",
+;
 		goto out;
 	}
 
-	printk(KERN_INFO "%s: %s at %#3x, IRQ %d, ",
-	       dev->name, cardname, ioaddr, dev->irq);
+//	printk(KERN_INFO "%s: %s at %#3x, IRQ %d, ",
+;
 
 
 	/* Now we will have to lock the chip's io address */
@@ -591,9 +591,9 @@ static void eth16i_initialize(struct net_device *dev, int boot)
 	for(i = 0; i < 6; i++) {
 		outb( ((unsigned char *)dev->dev_addr)[i], ioaddr + NODE_ID_0 + i);
 		if(boot) {
-			printk("%02x", inb(ioaddr + NODE_ID_0 + i));
+;
 			if(i != 5)
-				printk(":");
+;
 		}
 	}
 
@@ -658,7 +658,7 @@ static void eth16i_initialize(struct net_device *dev, int boot)
 			break;
 		}
 
-		printk(" %s interface.\n", porttype[dev->if_port]);
+;
 
 		eth16i_set_port(ioaddr, dev->if_port);
 	}
@@ -697,25 +697,25 @@ static int eth16i_probe_port(int ioaddr)
 		eth16i_set_port(ioaddr, i);
 
 		if(eth16i_debug > 1)
-			printk(KERN_DEBUG "Set port number %d\n", i);
+;
 
 		retcode = eth16i_send_probe_packet(ioaddr, dummy_packet, 64);
 		if(retcode == 0) {
 			retcode = eth16i_receive_probe_packet(ioaddr);
 			if(retcode != -1) {
 				if(eth16i_debug > 1)
-					printk(KERN_DEBUG "Eth16i interface port found at %d\n", i);
+;
 				return i;
 			}
 		}
 		else {
 			if(eth16i_debug > 1)
-				printk(KERN_DEBUG "TRANSMIT_DONE timeout when probing interface port\n");
+;
 		}
 	}
 
 	if( eth16i_debug > 1)
-		printk(KERN_DEBUG "Using default port\n");
+;
 
 	return E_PORT_BNC;
 }
@@ -747,9 +747,9 @@ static void eth16i_set_port(int ioaddr, int porttype)
 	outb(temp, ioaddr + TRANSCEIVER_MODE_REG);
 
 	if(eth16i_debug > 1) {
-		printk(KERN_DEBUG "TRANSMIT_MODE_REG = %x\n", inb(ioaddr + TRANSMIT_MODE_REG));
-		printk(KERN_DEBUG "TRANSCEIVER_MODE_REG = %x\n",
-		       inb(ioaddr+TRANSCEIVER_MODE_REG));
+;
+//		printk(KERN_DEBUG "TRANSCEIVER_MODE_REG = %x\n",
+;
 	}
 }
 
@@ -784,25 +784,25 @@ static int eth16i_receive_probe_packet(int ioaddr)
 		if( time_after(jiffies, starttime + TX_TIMEOUT)) {
 
 			if(eth16i_debug > 1)
-				printk(KERN_DEBUG "Timeout occurred waiting transmit packet received\n");
+;
 			starttime = jiffies;
 			while((inb(ioaddr + RX_STATUS_REG) & 0x80) == 0) {
 				if( time_after(jiffies, starttime + TX_TIMEOUT)) {
 					if(eth16i_debug > 1)
-						printk(KERN_DEBUG "Timeout occurred waiting receive packet\n");
+;
 					return -1;
 				}
 			}
 
 			if(eth16i_debug > 1)
-				printk(KERN_DEBUG "RECEIVE_PACKET\n");
+;
 			return 0; /* Found receive packet */
 		}
 	}
 
 	if(eth16i_debug > 1) {
-		printk(KERN_DEBUG "TRANSMIT_PACKET_RECEIVED %x\n", inb(ioaddr + TX_STATUS_REG));
-		printk(KERN_DEBUG "RX_STATUS_REG = %x\n", inb(ioaddr + RX_STATUS_REG));
+;
+;
 	}
 
 	return 0; /* Return success */
@@ -827,7 +827,7 @@ static int eth16i_set_irq(struct net_device* dev)
 		}
 	}
 	else {
-		printk(KERN_NOTICE "%s: EISA Interrupt cannot be set. Use EISA Configuration utility.\n", dev->name);
+;
 	}
 
 	return -1;
@@ -863,9 +863,9 @@ static int __init eth16i_check_signature(int ioaddr)
 		creg[i] = inb(ioaddr + TRANSMIT_MODE_REG + i);
 
 		if(eth16i_debug > 1)
-			printk("eth16i: read signature byte %x at %x\n",
-			       creg[i],
-			       ioaddr + TRANSMIT_MODE_REG + i);
+//			printk("eth16i: read signature byte %x at %x\n",
+//			       creg[i],
+;
 	}
 
 	creg[0] &= 0x0F;      /* Mask collision cnr */
@@ -966,8 +966,8 @@ static int eth16i_open(struct net_device *dev)
 	lp->tx_buf_size = eth16i_tx_buf_map[ETH16I_TX_BUF_SIZE & 0x03];
 
 	if(eth16i_debug > 0)
-		printk(KERN_DEBUG "%s: transmit buffer size %d\n",
-		       dev->name, lp->tx_buf_size);
+//		printk(KERN_DEBUG "%s: transmit buffer size %d\n",
+;
 
 	/* Now enable Transmitter and Receiver sections */
 	BITCLR(ioaddr + CONFIG_REG_0, DLC_EN);
@@ -1024,28 +1024,28 @@ static void eth16i_timeout(struct net_device *dev)
 	   */
 
 	outw(ETH16I_INTR_OFF, ioaddr + TX_INTR_REG);
-	printk(KERN_WARNING "%s: transmit timed out with status %04x, %s ?\n",
-	       dev->name,
-	inw(ioaddr + TX_STATUS_REG),  (inb(ioaddr + TX_STATUS_REG) & TX_DONE) ?
-		       "IRQ conflict" : "network cable problem");
+//	printk(KERN_WARNING "%s: transmit timed out with status %04x, %s ?\n",
+//	       dev->name,
+//	inw(ioaddr + TX_STATUS_REG),  (inb(ioaddr + TX_STATUS_REG) & TX_DONE) ?
+;
 
 	dev->trans_start = jiffies; /* prevent tx timeout */
 
 	/* Let's dump all registers */
 	if(eth16i_debug > 0) {
-		printk(KERN_DEBUG "%s: timeout: %02x %02x %02x %02x %02x %02x %02x %02x.\n",
-		       dev->name, inb(ioaddr + 0),
-		       inb(ioaddr + 1), inb(ioaddr + 2),
-		       inb(ioaddr + 3), inb(ioaddr + 4),
-		       inb(ioaddr + 5),
-		       inb(ioaddr + 6), inb(ioaddr + 7));
+//		printk(KERN_DEBUG "%s: timeout: %02x %02x %02x %02x %02x %02x %02x %02x.\n",
+//		       dev->name, inb(ioaddr + 0),
+//		       inb(ioaddr + 1), inb(ioaddr + 2),
+//		       inb(ioaddr + 3), inb(ioaddr + 4),
+//		       inb(ioaddr + 5),
+;
 
-		printk(KERN_DEBUG "%s: transmit start reg: %02x. collision reg %02x\n",
-		       dev->name, inb(ioaddr + TRANSMIT_START_REG),
-		       inb(ioaddr + COL_16_REG));
-			printk(KERN_DEBUG "lp->tx_queue = %d\n", lp->tx_queue);
-		printk(KERN_DEBUG "lp->tx_queue_len = %d\n", lp->tx_queue_len);
-		printk(KERN_DEBUG "lp->tx_started = %d\n", lp->tx_started);
+//		printk(KERN_DEBUG "%s: transmit start reg: %02x. collision reg %02x\n",
+//		       dev->name, inb(ioaddr + TRANSMIT_START_REG),
+;
+;
+;
+;
 	}
 	dev->stats.tx_errors++;
 	eth16i_reset(dev);
@@ -1082,7 +1082,7 @@ static netdev_tx_t eth16i_tx(struct sk_buff *skb, struct net_device *dev)
 
 	if( (length + 2) > (lp->tx_buf_size - lp->tx_queue_len)) {
 		if(eth16i_debug > 0)
-			printk(KERN_WARNING "%s: Transmit buffer full.\n", dev->name);
+;
 	}
 	else {
 		outw(length, ioaddr + DATAPORT);
@@ -1144,9 +1144,9 @@ static void eth16i_rx(struct net_device *dev)
 		ushort pkt_len = inw(ioaddr + DATAPORT);
 
 		if(eth16i_debug > 4)
-			printk(KERN_DEBUG "%s: Receiving packet mode %02x status %04x.\n",
-			       dev->name,
-			       inb(ioaddr + RECEIVE_MODE_REG), status);
+//			printk(KERN_DEBUG "%s: Receiving packet mode %02x status %04x.\n",
+//			       dev->name,
+;
 
 		if( !(status & PKT_GOOD) ) {
 			dev->stats.rx_errors++;
@@ -1166,8 +1166,8 @@ static void eth16i_rx(struct net_device *dev)
 
 			skb = dev_alloc_skb(pkt_len + 3);
 			if( skb == NULL ) {
-				printk(KERN_WARNING "%s: Could'n allocate memory for packet (len %d)\n",
-				       dev->name, pkt_len);
+//				printk(KERN_WARNING "%s: Could'n allocate memory for packet (len %d)\n",
+;
 				eth16i_skip_packet(dev);
 				dev->stats.rx_dropped++;
 				break;
@@ -1204,11 +1204,11 @@ static void eth16i_rx(struct net_device *dev)
 
 			if( eth16i_debug > 5 ) {
 				int i;
-				printk(KERN_DEBUG "%s: Received packet of length %d.\n",
-				       dev->name, pkt_len);
+//				printk(KERN_DEBUG "%s: Received packet of length %d.\n",
+;
 				for(i = 0; i < 14; i++)
-					printk(KERN_DEBUG " %02x", skb->data[i]);
-				printk(KERN_DEBUG ".\n");
+;
+;
 			}
 			netif_rx(skb);
 			dev->stats.rx_packets++;
@@ -1245,14 +1245,14 @@ static irqreturn_t eth16i_interrupt(int irq, void *dev_id)
 		handled = 1;
 
 	if(eth16i_debug > 3)
-		printk(KERN_DEBUG "%s: Interrupt with status %04x.\n", dev->name, status);
+;
 
 	if( status & 0x7f00 ) {
 
 		dev->stats.rx_errors++;
 
 		if(status & (BUS_RD_ERR << 8) )
-			printk(KERN_WARNING "%s: Bus read error.\n",dev->name);
+;
 		if(status & (SHORT_PKT_ERR << 8) )   dev->stats.rx_length_errors++;
 		if(status & (ALIGN_ERR << 8) )       dev->stats.rx_frame_errors++;
 		if(status & (CRC_ERR << 8) )	    dev->stats.rx_crc_errors++;
@@ -1279,7 +1279,7 @@ static irqreturn_t eth16i_interrupt(int irq, void *dev_id)
 				outb(0x02, ioaddr + COL_16_REG);
 			}
 			else {
-				printk(KERN_WARNING "%s: bailing out due to many consecutive 16-in-a-row collisions. Network cable problem?\n", dev->name);
+;
 			}
 		}
 	}
@@ -1342,7 +1342,7 @@ static void eth16i_reset(struct net_device *dev)
 	int ioaddr = dev->base_addr;
 
 	if(eth16i_debug > 1)
-		printk(KERN_DEBUG "%s: Resetting device.\n", dev->name);
+;
 
 	BITSET(ioaddr + CONFIG_REG_0, DLC_EN);
 	outw(0xffff, ioaddr + TX_STATUS_REG);
@@ -1439,7 +1439,7 @@ int __init init_module(void)
 			eth16i_debug = debug;
 
 		if(eth16i_debug > 1)
-			printk(KERN_NOTICE "eth16i(%d): interface type %s\n", this_dev, mediatype[this_dev] ? mediatype[this_dev] : "none" );
+;
 
 		dev->if_port = eth16i_parse_mediatype(mediatype[this_dev]);
 
@@ -1449,15 +1449,15 @@ int __init init_module(void)
 				break;
 			}
 
-			printk(KERN_NOTICE "eth16i.c: Presently autoprobing (not recommended) for a single card.\n");
+;
 		}
 
 		if (do_eth16i_probe(dev) == 0) {
 			dev_eth16i[found++] = dev;
 			continue;
 		}
-		printk(KERN_WARNING "eth16i.c No Eth16i card found (i/o = 0x%x).\n",
-		       io[this_dev]);
+//		printk(KERN_WARNING "eth16i.c No Eth16i card found (i/o = 0x%x).\n",
+;
 		free_netdev(dev);
 		break;
 	}

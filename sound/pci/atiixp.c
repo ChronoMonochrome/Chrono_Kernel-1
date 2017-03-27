@@ -432,7 +432,11 @@ static int snd_atiixp_acquire_codec(struct atiixp *chip)
 
 	while (atiixp_read(chip, PHYS_OUT_ADDR) & ATI_REG_PHYS_OUT_ADDR_EN) {
 		if (! timeout--) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_WARNING "atiixp: codec acquire timeout\n");
+#else
+			;
+#endif
 			return -EBUSY;
 		}
 		udelay(1);
@@ -463,7 +467,11 @@ static unsigned short snd_atiixp_codec_read(struct atiixp *chip, unsigned short 
 	} while (--timeout);
 	/* time out may happen during reset */
 	if (reg < 0x7c)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "atiixp: codec read timeout (reg %x)\n", reg);
+#else
+		;
+#endif
 	return 0xffff;
 }
 

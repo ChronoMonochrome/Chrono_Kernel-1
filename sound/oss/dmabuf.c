@@ -96,14 +96,22 @@ static int sound_alloc_dmap(struct dma_buffparms *dmap)
 	}
 
 	if (start_addr == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sound error: Couldn't allocate DMA buffer\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	} else {
 		/* make some checks */
 		end_addr = start_addr + dmap->buffsize - 1;
 
 		if (debugmem)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "sound: start 0x%lx, end 0x%lx\n", (long) start_addr, (long) end_addr);
+#else
+			;
+#endif
 		
 		/* now check if it fits into the same dma-pagesize */
 
@@ -151,7 +159,11 @@ static int sound_start_dma(struct dma_buffparms *dmap, unsigned long physaddr, i
 	unsigned long flags;
 	int chan = dmap->dma;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk( "Start DMA%d %d, %d\n",  chan,  (int)(physaddr-dmap->raw_buf_phys),  count); */
+#else
+	/* ;
+#endif
 
 	flags = claim_dma_lock();
 	disable_dma(chan);
@@ -192,11 +204,19 @@ static int open_dmap(struct audio_operations *adev, int mode, struct dma_buffpar
 		return err;
 
 	if (dmap->raw_buf == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sound: DMA buffers not available\n");
+#else
+		;
+#endif
 		return -ENOSPC;	/* Memory allocation failed during boot */
 	}
 	if (dmap->dma >= 0 && sound_open_dma(dmap->dma, adev->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unable to grab(2) DMA%d for the audio driver\n", dmap->dma);
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 	dma_init_buffers(dmap);
@@ -564,7 +584,11 @@ int DMAbuf_getrdbuffer(int dev, char **buf, int *len, int dontblock)
 	if (dmap->needs_reorg)
 		reorganize_buffers(dev, dmap, 0);
 	if (adev->dmap_in->mapping_flags & DMA_MAP_MAPPED) {
+#ifdef CONFIG_DEBUG_PRINTK
 /*		  printk(KERN_WARNING "Sound: Can't read from mmapped device (1)\n");*/
+#else
+/*		  ;
+#endif
 		  spin_unlock_irqrestore(&dmap->lock,flags);
 		  return -EINVAL;
 	} else while (dmap->qlen <= 0 && n++ < 10) {
@@ -592,7 +616,11 @@ int DMAbuf_getrdbuffer(int dev, char **buf, int *len, int dontblock)
 		if (!timeout) {
 			/* FIXME: include device name */
 			err = -EIO;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Sound: DMA (input) timed out - IRQ/DRQ config error?\n");
+#else
+			;
+#endif
 			dma_reset_input(dev);
 		} else
 			err = -EINTR;
@@ -616,7 +644,11 @@ int DMAbuf_rmchars(int dev, int buff_no, int c)
 
 	if (dmap->mapping_flags & DMA_MAP_MAPPED)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 /*		  printk("Sound: Can't read from mmapped device (2)\n");*/
+#else
+/*		  ;
+#endif
 		return -EINVAL;
 	}
 	else if (dmap->qlen <= 0)
@@ -677,7 +709,11 @@ int DMAbuf_get_buffer_pointer(int dev, struct dma_buffparms *dmap, int direction
 			
 		release_dma_lock(f);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk( "%04x ",  pos); */
+#else
+	/* ;
+#endif
 
 	return pos;
 }
@@ -771,7 +807,11 @@ static int output_sleep(int dev, int dontblock)
 	timeout_value = interruptible_sleep_on_timeout(&adev->out_sleeper,
 						       timeout_value);
 	if (timeout != MAX_SCHEDULE_TIMEOUT && !timeout_value) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sound: DMA (output) timed out - IRQ/DRQ config error?\n");
+#else
+		;
+#endif
 		dma_reset_output(dev);
 	} else {
 		if (signal_pending(current))
@@ -832,7 +872,11 @@ int DMAbuf_getwrbuffer(int dev, char **buf, int *size, int dontblock)
 	struct dma_buffparms *dmap = adev->dmap_out;
 
 	if (dmap->mapping_flags & DMA_MAP_MAPPED) {
+#ifdef CONFIG_DEBUG_PRINTK
 /*		printk(KERN_DEBUG "Sound: Can't write to mmapped device (3)\n");*/
+#else
+/*		;
+#endif
 		return -EINVAL;
 	}
 	spin_lock_irqsave(&dmap->lock,flags);
@@ -1094,7 +1138,11 @@ static void do_inputintr(int dev)
 		}
 		dmap->flags |= DMA_ACTIVE;
 	} else if (dmap->qlen >= (dmap->nbufs - 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Sound: Recording overrun\n");
+#else
+		;
+#endif
 		dmap->underrun_count++;
 
 		/* Just throw away the oldest fragment but keep the engine running */

@@ -64,10 +64,10 @@ static int nvec_ps2_notifier(struct notifier_block *nb,
 					serio_interrupt(ps2_dev.ser_dev, msg[i+4], 0);
 			else if (msg[1] != 2) /* !ack */
 			{
-				printk("nvec_ps2: unhandled mouse event ");
+;
 				for(i = 0; i <= (msg[1]+1); i++)
-					printk("%02x ", msg[i]);
-				printk(".\n");
+;
+;
 			}
 
 			return NOTIFY_STOP;

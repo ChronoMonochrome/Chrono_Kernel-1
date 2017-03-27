@@ -80,7 +80,11 @@ do_midi_msg(int synthno, unsigned char *msg, int mlen)
 		  break;
 
 	  default:
+#ifdef CONFIG_DEBUG_PRINTK
 		  /* printk( "MPU: Unknown midi channel message %02x\n",  msg[0]); */
+#else
+		  /* ;
+#endif
 		  ;
 	  }
 }
@@ -108,7 +112,11 @@ midi_outc(int midi_dev, int data)
 	/*
 	 * Sorry! No space on buffers.
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Midi send timed out\n");
+#else
+	;
+#endif
 }
 
 static int
@@ -226,7 +234,11 @@ midi_synth_input(int orig_dev, unsigned char data)
 		  break;	/* MST_SYSEX */
 
 	  default:
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk("MIDI%d: Unexpected state %d (%02x)\n", orig_dev, inc->m_state, (int) data);
+#else
+		  ;
+#endif
 		  inc->m_state = MST_INIT;
 	  }
 }
@@ -532,7 +544,11 @@ midi_synth_load_patch(int dev, int format, const char __user *addr,
 		{
 			if (data != 0xf0)
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "midi_synth: Sysex start missing\n");
+#else
+				;
+#endif
 				return -EINVAL;
 			}
 		}

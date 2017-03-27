@@ -228,9 +228,13 @@ static bool find_source_device(struct pci_dev *parent,
 	pci_walk_bus(parent->subordinate, find_device_iter, e_info);
 
 	if (!e_info->error_dev_num) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &parent->dev,
 				"can't find device of ID%04x\n",
 				e_info->id);
+#else
+		dev_;
+#endif
 		return false;
 	}
 	return true;
@@ -257,9 +261,13 @@ static int report_error_detected(struct pci_dev *dev, void *data)
 			 * of a driver for this device is unaware of
 			 * its hw state.
 			 */
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_DEBUG, &dev->dev, "device has %s\n",
 				   dev->driver ?
 				   "no AER-aware driver" : "no driver");
+#else
+			dev_;
+#endif
 		}
 		return 0;
 	}
@@ -340,7 +348,11 @@ static pci_ers_result_t broadcast_error_message(struct pci_dev *dev,
 {
 	struct aer_broadcast_data result_data;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &dev->dev, "broadcast %s message\n", error_mesg);
+#else
+	dev_;
+#endif
 	result_data.state = state;
 	if (cb == report_error_detected)
 		result_data.result = PCI_ERS_RESULT_CAN_RECOVER;
@@ -414,8 +426,12 @@ void aer_do_secondary_bus_reset(struct pci_dev *dev)
 static pci_ers_result_t default_downstream_reset_link(struct pci_dev *dev)
 {
 	aer_do_secondary_bus_reset(dev);
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &dev->dev,
 		"Downstream Port link has been reset\n");
+#else
+	dev_;
+#endif
 	return PCI_ERS_RESULT_RECOVERED;
 }
 
@@ -468,16 +484,24 @@ static pci_ers_result_t reset_link(struct pcie_device *aerdev,
 	} else if (udev->pcie_type == PCI_EXP_TYPE_DOWNSTREAM) {
 		status = default_downstream_reset_link(udev);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &dev->dev,
 			"no link-reset support at upstream device %s\n",
 			pci_name(udev));
+#else
+		dev_;
+#endif
 		return PCI_ERS_RESULT_DISCONNECT;
 	}
 
 	if (status != PCI_ERS_RESULT_RECOVERED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &dev->dev,
 			"link reset at upstream device %s failed\n",
 			pci_name(udev));
+#else
+		dev_;
+#endif
 		return PCI_ERS_RESULT_DISCONNECT;
 	}
 
@@ -542,14 +566,22 @@ static void do_recovery(struct pcie_device *aerdev, struct pci_dev *dev,
 				"resume",
 				report_resume);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &dev->dev,
 		"AER driver successfully recovered\n");
+#else
+	dev_;
+#endif
 	return;
 
 failed:
 	/* TODO: Should kernel panic here? */
+#ifdef CONFIG_DEBUG_PRINTK
 	dev_printk(KERN_DEBUG, &dev->dev,
 		"AER driver didn't recover\n");
+#else
+	dev_;
+#endif
 }
 
 /**
@@ -669,8 +701,12 @@ static void aer_isr_one_error(struct pcie_device *p_device,
 	/* struct aer_err_info might be big, so we allocate it with slab */
 	e_info = kmalloc(sizeof(struct aer_err_info), GFP_KERNEL);
 	if (!e_info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &p_device->port->dev,
 			"Can't allocate mem when processing AER errors\n");
+#else
+		dev_;
+#endif
 		return;
 	}
 
@@ -773,8 +809,12 @@ void aer_isr(struct work_struct *work)
 int aer_init(struct pcie_device *dev)
 {
 	if (forceload) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &dev->device,
 			   "aerdrv forceload requested.\n");
+#else
+		dev_;
+#endif
 		pcie_aer_force_firmware_first(dev->port, 0);
 	}
 	return 0;

@@ -103,7 +103,11 @@ static void wait_for_srst_clear(struct lola *chip, struct lola_stream *str)
 			return;
 		msleep(1);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING SFX "SRST not clear (stream %d)\n", str->dsd);
+#else
+	;
+#endif
 }
 
 static int lola_stream_wait_for_fifo(struct lola *chip,
@@ -118,7 +122,11 @@ static int lola_stream_wait_for_fifo(struct lola *chip,
 			return 0;
 		msleep(1);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING SFX "FIFO not ready (stream %d)\n", str->dsd);
+#else
+	;
+#endif
 	return -EIO;
 }
 
@@ -156,7 +164,11 @@ static int lola_sync_wait_for_fifo(struct lola *chip,
 			return 0;
 		msleep(1);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING SFX "FIFO not ready (pending %d)\n", pending - 1);
+#else
+	;
+#endif
 	return -EIO;
 }
 

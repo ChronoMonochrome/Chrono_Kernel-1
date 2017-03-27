@@ -159,13 +159,13 @@ lan_init_chip(struct parisc_device *dev)
 	int i;
 
 	if (!dev->irq) {
-		printk(KERN_ERR "%s: IRQ not found for i82596 at 0x%lx\n",
-			__FILE__, (unsigned long)dev->hpa.start);
+//		printk(KERN_ERR "%s: IRQ not found for i82596 at 0x%lx\n",
+;
 		return -ENODEV;
 	}
 
-	printk(KERN_INFO "Found i82596 at 0x%lx, IRQ %d\n",
-			(unsigned long)dev->hpa.start, dev->irq);
+//	printk(KERN_INFO "Found i82596 at 0x%lx, IRQ %d\n",
+;
 
 	netdevice = alloc_etherdev(sizeof(struct i596_private));
 	if (!netdevice)
@@ -180,8 +180,8 @@ lan_init_chip(struct parisc_device *dev)
 		for (i = 0; i < 6; i++) {
 			netdevice->dev_addr[i] = gsc_readb(LAN_PROM_ADDR + i);
 		}
-		printk(KERN_INFO
-		       "%s: MAC of HP700 LAN read from EEPROM\n", __FILE__);
+//		printk(KERN_INFO
+;
 	}
 
 	lp = netdev_priv(netdevice);
@@ -224,7 +224,7 @@ static struct parisc_driver lan_driver = {
 
 static int __devinit lasi_82596_init(void)
 {
-	printk(KERN_INFO LASI_82596_DRIVER_VERSION "\n");
+;
 	return register_parisc_driver(&lan_driver);
 }
 

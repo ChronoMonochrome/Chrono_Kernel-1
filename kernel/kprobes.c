@@ -699,8 +699,12 @@ static void reuse_unused_kprobe(struct kprobe *ap)
 	 */
 	op = container_of(ap, struct optimized_kprobe, kp);
 	if (unlikely(list_empty(&op->list)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning: found a stray unused "
 			"aggrprobe@%p\n", ap->addr);
+#else
+		;
+#endif
 	/* Enable the probe again */
 	ap->flags &= ~KPROBE_FLAG_DISABLED;
 	/* Optimize it again (remove from op->list) */
@@ -807,7 +811,11 @@ static void __kprobes optimize_all_kprobes(void)
 			if (!kprobe_disabled(p))
 				optimize_kprobe(p);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Kprobes globally optimized\n");
+#else
+	;
+#endif
 }
 
 /* This should be called with kprobe_mutex locked */
@@ -832,7 +840,11 @@ static void __kprobes unoptimize_all_kprobes(void)
 	}
 	/* Wait for unoptimizing completion */
 	wait_for_kprobe_optimizer();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Kprobes globally unoptimized\n");
+#else
+	;
+#endif
 }
 
 int sysctl_kprobes_optimization;
@@ -2010,9 +2022,17 @@ EXPORT_SYMBOL_GPL(enable_kprobe);
 
 void __kprobes dump_kprobe(struct kprobe *kp)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Dumping kprobe:\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Name: %s\nAddress: %p\nOffset: %x\n",
 	       kp->symbol_name, kp->addr, kp->offset);
+#else
+	;
+#endif
 }
 
 /* Module notifier call back, checking kprobes on the module */
@@ -2104,8 +2124,12 @@ static int __init init_kprobes(void)
 			kprobe_lookup_name(kretprobe_blacklist[i].name,
 					   kretprobe_blacklist[i].addr);
 			if (!kretprobe_blacklist[i].addr)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("kretprobe: lookup failed: %s\n",
 				       kretprobe_blacklist[i].name);
+#else
+				;
+#endif
 		}
 	}
 
@@ -2248,7 +2272,11 @@ static void __kprobes arm_all_kprobes(void)
 	}
 
 	kprobes_all_disarmed = false;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Kprobes globally enabled\n");
+#else
+	;
+#endif
 
 already_enabled:
 	mutex_unlock(&kprobe_mutex);
@@ -2271,7 +2299,11 @@ static void __kprobes disarm_all_kprobes(void)
 	}
 
 	kprobes_all_disarmed = true;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Kprobes globally disabled\n");
+#else
+	;
+#endif
 
 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
 		head = &kprobe_table[i];

@@ -145,8 +145,12 @@ mISDN_FsmAddTimer(struct FsmTimer *ft,
 
 	if (timer_pending(&ft->tl)) {
 		if (ft->fi->debug) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"mISDN_FsmAddTimer: timer already active!\n");
+#else
+			;
+#endif
 			ft->fi->printdebug(ft->fi,
 				"mISDN_FsmAddTimer already active!");
 		}

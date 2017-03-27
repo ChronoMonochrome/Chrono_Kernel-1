@@ -1095,8 +1095,16 @@ static int check_what_we_have(struct ubi_device *ubi, struct ubi_scan_info *si)
 			si->corr_peb_count);
 		printk(KERN_ERR "Corrupted PEBs are:");
 		list_for_each_entry(seb, &si->corr, u.list)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT " %d", seb->pnum);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "\n");
+#else
+		;
+#endif
 
 		/*
 		 * If too many PEBs are corrupted, we refuse attaching,

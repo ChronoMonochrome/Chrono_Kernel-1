@@ -30,6 +30,7 @@
 #define I5000_REVISION    " Ver: 2.0.12"
 #define EDAC_MOD_STR      "i5000_edac"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define i5000_printk(level, fmt, arg...) \
         edac_printk(level, "i5000", fmt, ##arg)
 
@@ -293,6 +294,9 @@ static char *numrow_toString[] = {
 	"32,768 - 15 rows",
 	"reserved"
 };
+#else
+#define i5000_;
+#endif
 
 static char *numcol_toString[] = {
 	"1,024 - 10 columns",
@@ -1445,12 +1449,20 @@ static int i5000_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	i5000_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i5000_pci) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
+#else
+		;
+#endif
 	}
 
 	return 0;

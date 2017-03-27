@@ -586,12 +586,12 @@ int solo_tw28_init(struct solo_dev *solo_dev)
 		 solo_dev->tw28_cnt, solo_dev->tw28_cnt == 1 ? "" : "s");
 
 	if (solo_dev->tw2865)
-		printk(" tw2865[%d]", hweight32(solo_dev->tw2865));
+;
 	if (solo_dev->tw2864)
-		printk(" tw2864[%d]", hweight32(solo_dev->tw2864));
+;
 	if (solo_dev->tw2815)
-		printk(" tw2815[%d]", hweight32(solo_dev->tw2815));
-	printk("\n");
+;
+;
 
 	return 0;
 }

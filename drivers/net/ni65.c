@@ -297,8 +297,8 @@ static int ni65_open(struct net_device *dev)
 	int irqval = request_irq(dev->irq, ni65_interrupt,0,
                         cards[p->cardno].cardname,dev);
 	if (irqval) {
-		printk(KERN_ERR "%s: unable to get IRQ %d (irqval=%d).\n",
-		          dev->name,dev->irq, irqval);
+//		printk(KERN_ERR "%s: unable to get IRQ %d (irqval=%d).\n",
+;
 		return -EAGAIN;
 	}
 
@@ -458,12 +458,12 @@ static int __init ni65_probe1(struct net_device *dev,int ioaddr)
 	p->cardno = i;
 	spin_lock_init(&p->ring_lock);
 
-	printk(KERN_INFO "%s: %s found at %#3x, ", dev->name, cards[p->cardno].cardname , ioaddr);
+;
 
 	outw(inw(PORT+L_RESET),PORT+L_RESET); /* first: reset the card */
 	if( (j=readreg(CSR0)) != 0x4) {
-		 printk("failed.\n");
-		 printk(KERN_ERR "%s: Can't RESET card: %04x\n", dev->name, j);
+;
+;
 		 ni65_free_buffer(p);
 		 release_region(ioaddr, cards[p->cardno].total_size);
 		 return -EAGAIN;
@@ -476,18 +476,18 @@ static int __init ni65_probe1(struct net_device *dev,int ioaddr)
 		v <<= 16;
 		outw(89,PORT+L_ADDRREG);
 		v |= inw(PORT+L_DATAREG);
-		printk("Version %#08lx, ",v);
+;
 		p->features = INIT_RING_BEFORE_START;
 	}
 	else {
-		printk("ancient LANCE, ");
+;
 		p->features = 0x0;
 	}
 
 	if(test_bit(0,&cards[i].config)) {
 		dev->irq = irqtab[(inw(ioaddr+L_CONFIG)>>2)&3];
 		dev->dma = dmatab[inw(ioaddr+L_CONFIG)&3];
-		printk("IRQ %d (from card), DMA %d (from card).\n",dev->irq,dev->dma);
+;
 	}
 	else {
 		if(dev->dma == 0) {
@@ -517,17 +517,17 @@ static int __init ni65_probe1(struct net_device *dev,int ioaddr)
 					break;
 			}
 			if(i == 5) {
-				printk("failed.\n");
-				printk(KERN_ERR "%s: Can't detect DMA channel!\n", dev->name);
+;
+;
 				ni65_free_buffer(p);
 				release_region(ioaddr, cards[p->cardno].total_size);
 				return -EAGAIN;
 			}
 			dev->dma = dmatab[i];
-			printk("DMA %d (autodetected), ",dev->dma);
+;
 		}
 		else
-			printk("DMA %d (assigned), ",dev->dma);
+;
 
 		if(dev->irq < 2)
 		{
@@ -540,20 +540,20 @@ static int __init ni65_probe1(struct net_device *dev,int ioaddr)
 			dev->irq = probe_irq_off(irq_mask);
 			if(!dev->irq)
 			{
-				printk("Failed to detect IRQ line!\n");
+;
 				ni65_free_buffer(p);
 				release_region(ioaddr, cards[p->cardno].total_size);
 				return -EAGAIN;
 			}
-			printk("IRQ %d (autodetected).\n",dev->irq);
+;
 		}
 		else
-			printk("IRQ %d (assigned).\n",dev->irq);
+;
 	}
 
 	if(request_dma(dev->dma, cards[p->cardno].cardname ) != 0)
 	{
-		printk(KERN_ERR "%s: Can't request dma-channel %d\n",dev->name,(int) dev->dma);
+;
 		ni65_free_buffer(p);
 		release_region(ioaddr, cards[p->cardno].total_size);
 		return -EAGAIN;
@@ -612,7 +612,7 @@ static void *ni65_alloc_mem(struct net_device *dev,char *what,int size,int type)
 	if(type) {
 		ret = skb = alloc_skb(2+16+size,GFP_KERNEL|GFP_DMA);
 		if(!skb) {
-			printk(KERN_WARNING "%s: unable to allocate %s memory.\n",dev->name,what);
+;
 			return NULL;
 		}
 		skb_reserve(skb,2+16);
@@ -622,12 +622,12 @@ static void *ni65_alloc_mem(struct net_device *dev,char *what,int size,int type)
 	else {
 		ret = ptr = kmalloc(T_BUF_SIZE,GFP_KERNEL | GFP_DMA);
 		if(!ret) {
-			printk(KERN_WARNING "%s: unable to allocate %s memory.\n",dev->name,what);
+;
 			return NULL;
 		}
 	}
 	if( (u32) virt_to_phys(ptr+size) > 0x1000000) {
-		printk(KERN_WARNING "%s: unable to allocate %s memory in lower 16MB!\n",dev->name,what);
+;
 		if(type)
 			kfree_skb(skb);
 		else
@@ -730,7 +730,7 @@ static void ni65_stop_start(struct net_device *dev,struct priv *p)
 	writedatareg(CSR0_STOP);
 
 	if(debuglevel > 1)
-		printk(KERN_DEBUG "ni65_stop_start\n");
+;
 
 	if(p->features & INIT_RING_BEFORE_START) {
 		int i;
@@ -811,8 +811,8 @@ static int ni65_lance_reinit(struct net_device *dev)
 	 outw(inw(PORT+L_RESET),PORT+L_RESET); /* first: reset the card */
 	 if( (i=readreg(CSR0) ) != 0x4)
 	 {
-		 printk(KERN_ERR "%s: can't RESET %s card: %04x\n",dev->name,
-							cards[p->cardno].cardname,(int) i);
+//		 printk(KERN_ERR "%s: can't RESET %s card: %04x\n",dev->name,
+;
 		 flags=claim_dma_lock();
 		 disable_dma(dev->dma);
 		 release_dma_lock(flags);
@@ -865,7 +865,7 @@ static int ni65_lance_reinit(struct net_device *dev)
 		 writedatareg(CSR0_CLRALL | CSR0_INEA | CSR0_STRT);
 		 return 1; /* ->OK */
 	 }
-	 printk(KERN_ERR "%s: can't init lance, status: %04x\n",dev->name,(int) inw(PORT+L_DATAREG));
+;
 	 flags=claim_dma_lock();
 	 disable_dma(dev->dma);
 	 release_dma_lock(flags);
@@ -906,19 +906,19 @@ static irqreturn_t ni65_interrupt(int irq, void * dev_id)
 		if(csr0 & CSR0_ERR)
 		{
 			if(debuglevel > 1)
-				printk(KERN_ERR "%s: general error: %04x.\n",dev->name,csr0);
+;
 			if(csr0 & CSR0_BABL)
 				dev->stats.tx_errors++;
 			if(csr0 & CSR0_MISS) {
 				int i;
 				for(i=0;i<RMDNUM;i++)
-					printk("%02x ",p->rmdhead[i].u.s.status);
-				printk("\n");
+;
+;
 				dev->stats.rx_errors++;
 			}
 			if(csr0 & CSR0_MERR) {
 				if(debuglevel > 1)
-					printk(KERN_ERR "%s: Ooops .. memory error: %04x.\n",dev->name,csr0);
+;
 				ni65_stop_start(dev,p);
 			}
 		}
@@ -955,7 +955,7 @@ static irqreturn_t ni65_interrupt(int irq, void * dev_id)
 				buf1 += 3;
 			}
 			*buf1 = 0;
-			printk(KERN_ERR "%s: Ooops, receive ring corrupted %2d %2d | %s\n",dev->name,p->rmdnum,i,buf);
+;
 		}
 
 		p->rmdnum = num1;
@@ -970,7 +970,7 @@ static irqreturn_t ni65_interrupt(int irq, void * dev_id)
 #endif
 
 	if( (csr0 & (CSR0_RXON | CSR0_TXON)) != (CSR0_RXON | CSR0_TXON) ) {
-		printk(KERN_DEBUG "%s: RX or TX was offline -> restart\n",dev->name);
+;
 		ni65_stop_start(dev,p);
 	}
 	else
@@ -1000,7 +1000,7 @@ static void ni65_xmit_intr(struct net_device *dev,int csr0)
 		{
 #if 0
 			if(tmdp->status2 & XMIT_TDRMASK && debuglevel > 3)
-				printk(KERN_ERR "%s: tdr-problems (e.g. no resistor)\n",dev->name);
+;
 #endif
 		 /* checking some errors */
 			if(tmdp->status2 & XMIT_RTRY)
@@ -1011,7 +1011,7 @@ static void ni65_xmit_intr(struct net_device *dev,int csr0)
 		/* this stops the xmitter */
 				dev->stats.tx_fifo_errors++;
 				if(debuglevel > 0)
-					printk(KERN_ERR "%s: Xmit FIFO/BUFF error\n",dev->name);
+;
 				if(p->features & INIT_RING_BEFORE_START) {
 					tmdp->u.s.status = XMIT_OWN | XMIT_START | XMIT_END;	/* test: resend this frame */
 					ni65_stop_start(dev,p);
@@ -1021,7 +1021,7 @@ static void ni65_xmit_intr(struct net_device *dev,int csr0)
 				 ni65_stop_start(dev,p);
 			}
 			if(debuglevel > 2)
-				printk(KERN_ERR "%s: xmit-error: %04x %02x-%04x\n",dev->name,csr0,(int) tmdstat,(int) tmdp->status2);
+;
 			if(!(csr0 & CSR0_BABL)) /* don't count errors twice */
 				dev->stats.tx_errors++;
 			tmdp->status2 = 0;
@@ -1065,13 +1065,13 @@ static void ni65_recv_intr(struct net_device *dev,int csr0)
 				if(rmdstat & RCV_START)
 				{
 					dev->stats.rx_length_errors++;
-					printk(KERN_ERR "%s: recv, packet too long: %d\n",dev->name,rmdp->mlen & 0x0fff);
+;
 				}
 			}
 			else {
 				if(debuglevel > 2)
-					printk(KERN_ERR "%s: receive-error: %04x, lance-status: %04x/%04x\n",
-									dev->name,(int) rmdstat,csr0,(int) inw(PORT+L_DATAREG) );
+//					printk(KERN_ERR "%s: receive-error: %04x, lance-status: %04x/%04x\n",
+;
 				if(rmdstat & RCV_FRAM)
 					dev->stats.rx_frame_errors++;
 				if(rmdstat & RCV_OFLO)
@@ -1120,12 +1120,12 @@ static void ni65_recv_intr(struct net_device *dev,int csr0)
 			}
 			else
 			{
-				printk(KERN_ERR "%s: can't alloc new sk_buff\n",dev->name);
+;
 				dev->stats.rx_dropped++;
 			}
 		}
 		else {
-			printk(KERN_INFO "%s: received runt packet\n",dev->name);
+;
 			dev->stats.rx_errors++;
 		}
 		rmdp->blen = -(R_BUF_SIZE-8);
@@ -1145,10 +1145,10 @@ static void ni65_timeout(struct net_device *dev)
 	int i;
 	struct priv *p = dev->ml_priv;
 
-	printk(KERN_ERR "%s: xmitter timed out, try to restart!\n",dev->name);
+;
 	for(i=0;i<TMDNUM;i++)
-		printk("%02x ",p->tmdhead[i].u.s.status);
-	printk("\n");
+;
+;
 	ni65_lance_reinit(dev);
 	dev->trans_start = jiffies; /* prevent tx timeout */
 	netif_wake_queue(dev);
@@ -1166,7 +1166,7 @@ static netdev_tx_t ni65_send_packet(struct sk_buff *skb,
 	netif_stop_queue(dev);
 
 	if (test_and_set_bit(0, (void*)&p->lock)) {
-		printk(KERN_ERR "%s: Queue was locked.\n", dev->name);
+;
 		return NETDEV_TX_BUSY;
 	}
 
@@ -1223,7 +1223,7 @@ static netdev_tx_t ni65_send_packet(struct sk_buff *skb,
 static void set_multicast_list(struct net_device *dev)
 {
 	if(!ni65_lance_reinit(dev))
-		printk(KERN_ERR "%s: Can't switch card into MC mode!\n",dev->name);
+;
 	netif_wake_queue(dev);
 }
 

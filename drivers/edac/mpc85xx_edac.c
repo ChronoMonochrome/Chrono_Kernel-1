@@ -286,13 +286,21 @@ static int __devinit mpc85xx_pci_err_probe(struct platform_device *op)
 			goto err2;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for PCI Err\n",
 		       pdata->irq);
+#else
+		;
+#endif
 	}
 
 	devres_remove_group(&op->dev, mpc85xx_pci_err_probe);
 	debugf3("%s(): success\n", __func__);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO EDAC_MOD_STR " PCI err registered\n");
+#else
+	;
+#endif
 
 	return 0;
 
@@ -588,8 +596,12 @@ static int __devinit mpc85xx_l2_err_probe(struct platform_device *op)
 			goto err2;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for L2 Err\n",
 		       pdata->irq);
+#else
+		;
+#endif
 
 		edac_dev->op_state = OP_RUNNING_INTERRUPT;
 
@@ -599,7 +611,11 @@ static int __devinit mpc85xx_l2_err_probe(struct platform_device *op)
 	devres_remove_group(&op->dev, mpc85xx_l2_err_probe);
 
 	debugf3("%s(): success\n", __func__);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO EDAC_MOD_STR " L2 err registered\n");
+#else
+	;
+#endif
 
 	return 0;
 
@@ -1005,7 +1021,11 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
 	sdram_ctl = in_be32(pdata->mc_vbase + MPC85XX_MC_DDR_SDRAM_CFG);
 	if (!(sdram_ctl & DSC_ECC_EN)) {
 		/* no ECC */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: No ECC DIMMs discovered\n", __func__);
+#else
+		;
+#endif
 		res = -ENODEV;
 		goto err;
 	}
@@ -1067,13 +1087,21 @@ static int __devinit mpc85xx_mc_err_probe(struct platform_device *op)
 			goto err2;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO EDAC_MOD_STR " acquired irq %d for MC\n",
 		       pdata->irq);
+#else
+		;
+#endif
 	}
 
 	devres_remove_group(&op->dev, mpc85xx_mc_err_probe);
 	debugf3("%s(): success\n", __func__);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO EDAC_MOD_STR " MC err registered\n");
+#else
+	;
+#endif
 
 	return 0;
 
@@ -1156,8 +1184,12 @@ static int __init mpc85xx_mc_init(void)
 	int res = 0;
 	u32 pvr = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Freescale(R) MPC85xx EDAC driver, "
 	       "(C) 2006 Montavista Software\n");
+#else
+	;
+#endif
 
 	/* make sure error reporting method is sane */
 	switch (edac_op_state) {
@@ -1171,16 +1203,28 @@ static int __init mpc85xx_mc_init(void)
 
 	res = platform_driver_register(&mpc85xx_mc_err_driver);
 	if (res)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING EDAC_MOD_STR "MC fails to register\n");
+#else
+		;
+#endif
 
 	res = platform_driver_register(&mpc85xx_l2_err_driver);
 	if (res)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING EDAC_MOD_STR "L2 fails to register\n");
+#else
+		;
+#endif
 
 #ifdef CONFIG_PCI
 	res = platform_driver_register(&mpc85xx_pci_err_driver);
 	if (res)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING EDAC_MOD_STR "PCI fails to register\n");
+#else
+		;
+#endif
 #endif
 
 #ifdef CONFIG_FSL_SOC_BOOKE

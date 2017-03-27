@@ -86,7 +86,11 @@ static int __devinit hysdn_pci_init_one(struct pci_dev *akt_pcidev,
 	card->brdtype = ent->driver_data;
 
 	if (ergo_inithardware(card)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HYSDN: card at io 0x%04x already in use\n", card->iobase);
+#else
+		;
+#endif
 		rc = -EBUSY;
 		goto err_out_card;
 	}
@@ -157,13 +161,21 @@ hysdn_init(void)
 {
 	int rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "HYSDN: module loaded\n");
+#else
+	;
+#endif
 
 	rc = pci_register_driver(&hysdn_pci_driver);
 	if (rc)
 		return rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HYSDN: %d card(s) found.\n", cardmax);
+#else
+	;
+#endif
 
 	if (!hysdn_procconf_init())
 		hysdn_have_procfs = 1;
@@ -206,7 +218,11 @@ hysdn_exit(void)
 	hycapi_cleanup();
 #endif /* CONFIG_HYSDN_CAPI */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "HYSDN: module unloaded\n");
+#else
+	;
+#endif
 }				/* cleanup_module */
 
 module_init(hysdn_init);

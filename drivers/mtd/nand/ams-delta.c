@@ -214,7 +214,11 @@ static int __devinit ams_delta_init(struct platform_device *pdev)
 		this->dev_ready = ams_delta_nand_ready;
 	} else {
 		this->dev_ready = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "Couldn't request gpio for Delta NAND ready.\n");
+#else
+		;
+#endif
 	}
 	/* 25 us command delay time */
 	this->chip_delay = 30;

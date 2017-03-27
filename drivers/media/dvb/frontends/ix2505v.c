@@ -26,16 +26,24 @@
 #include "ix2505v.h"
 
 static int ix2505v_debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(level, args...) do { \
 	if (ix2505v_debug & level) \
 		printk(KERN_DEBUG "ix2505v: " args); \
+#else
+#define d;
+#endif
 } while (0)
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_info(args...)  dprintk(0x01, args)
 #define deb_i2c(args...)  dprintk(0x02, args)
 
 struct ix2505v_state {
 	struct i2c_adapter *i2c;
+#else
+#define deb_info(args...)  d;
+#endif
 	const struct ix2505v_config *config;
 	u32 frequency;
 };

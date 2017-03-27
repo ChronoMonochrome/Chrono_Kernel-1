@@ -147,8 +147,12 @@ static int ixp4xx_wdt_release(struct inode *inode, struct file *file)
 	if (test_bit(WDT_OK_TO_CLOSE, &wdt_status))
 		wdt_disable();
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "WATCHDOG: Device closed unexpectedly - "
 					"timer will not stop\n");
+#else
+		;
+#endif
 	clear_bit(WDT_IN_USE, &wdt_status);
 	clear_bit(WDT_OK_TO_CLOSE, &wdt_status);
 
@@ -186,8 +190,12 @@ static int __init ixp4xx_wdt_init(void)
 			WDIOF_CARDRESET : 0;
 	ret = misc_register(&ixp4xx_wdt_miscdev);
 	if (ret == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IXP4xx Watchdog Timer: heartbeat %d sec\n",
 			heartbeat);
+#else
+		;
+#endif
 	return ret;
 }
 

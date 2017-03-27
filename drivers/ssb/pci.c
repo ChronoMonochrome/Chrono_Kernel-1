@@ -67,10 +67,14 @@ int ssb_pci_switch_core(struct ssb_bus *bus,
 	unsigned long flags;
 
 #if SSB_VERBOSE_PCICORESWITCH_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_INFO PFX
 		   "Switching to %s core, index %d\n",
 		   ssb_core_name(dev->id.coreid),
 		   dev->core_index);
+#else
+	ssb_;
+#endif
 #endif
 
 	spin_lock_irqsave(&bus->bar_lock, flags);
@@ -266,7 +270,11 @@ static int sprom_do_write(struct ssb_bus *bus, const u16 *sprom)
 	u32 spromctl;
 	u16 size = bus->sprom_size;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_NOTICE PFX "Writing SPROM. Do NOT turn off the power! Please stand by...\n");
+#else
+	ssb_;
+#endif
 	err = pci_read_config_dword(pdev, SSB_SPROMCTL, &spromctl);
 	if (err)
 		goto err_ctlreg;
@@ -274,17 +282,37 @@ static int sprom_do_write(struct ssb_bus *bus, const u16 *sprom)
 	err = pci_write_config_dword(pdev, SSB_SPROMCTL, spromctl);
 	if (err)
 		goto err_ctlreg;
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_NOTICE PFX "[ 0%%");
+#else
+	ssb_;
+#endif
 	msleep(500);
 	for (i = 0; i < size; i++) {
 		if (i == size / 4)
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk("25%%");
+#else
+			ssb_;
+#endif
 		else if (i == size / 2)
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk("50%%");
+#else
+			ssb_;
+#endif
 		else if (i == (size * 3) / 4)
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk("75%%");
+#else
+			ssb_;
+#endif
 		else if (i % 2)
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk(".");
+#else
+			ssb_;
+#endif
 		writew(sprom[i], bus->mmio + bus->sprom_offset + (i * 2));
 		mmiowb();
 		msleep(20);
@@ -297,8 +325,16 @@ static int sprom_do_write(struct ssb_bus *bus, const u16 *sprom)
 	if (err)
 		goto err_ctlreg;
 	msleep(500);
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk("100%% ]\n");
+#else
+	ssb_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_NOTICE PFX "SPROM written.\n");
+#else
+	ssb_;
+#endif
 
 	return 0;
 err_ctlreg:
@@ -618,7 +654,11 @@ static int sprom_extract(struct ssb_bus *bus, struct ssb_sprom *out,
 	memset(out, 0, sizeof(*out));
 
 	out->revision = in[size - 1] & 0x00FF;
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_dprintk(KERN_DEBUG PFX "SPROM revision %d detected.\n", out->revision);
+#else
+	ssb_d;
+#endif
 	memset(out->et0mac, 0xFF, 6);		/* preset et0 and et1 mac */
 	memset(out->et1mac, 0xFF, 6);
 
@@ -627,7 +667,11 @@ static int sprom_extract(struct ssb_bus *bus, struct ssb_sprom *out,
 		 * number stored in the SPROM.
 		 * Always extract r1. */
 		out->revision = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_dprintk(KERN_DEBUG PFX "SPROM treated as revision %d\n", out->revision);
+#else
+		ssb_d;
+#endif
 	}
 
 	switch (out->revision) {
@@ -644,9 +688,13 @@ static int sprom_extract(struct ssb_bus *bus, struct ssb_sprom *out,
 		sprom_extract_r8(out, in);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_printk(KERN_WARNING PFX "Unsupported SPROM"
 			   " revision %d detected. Will extract"
 			   " v1\n", out->revision);
+#else
+		ssb_;
+#endif
 		out->revision = 1;
 		sprom_extract_r123(out, in);
 	}
@@ -685,7 +733,11 @@ static int ssb_pci_sprom_get(struct ssb_bus *bus,
 	} else {
 		bus->sprom_offset = SSB_SPROM_BASE1;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_dprintk(KERN_INFO PFX "SPROM offset is 0x%x\n", bus->sprom_offset);
+#else
+	ssb_d;
+#endif
 
 	buf = kcalloc(SSB_SPROMSIZE_WORDS_R123, sizeof(u16), GFP_KERNEL);
 	if (!buf)
@@ -710,18 +762,30 @@ static int ssb_pci_sprom_get(struct ssb_bus *bus,
 			 * available for this device in some other storage */
 			err = ssb_fill_sprom_with_fallback(bus, sprom);
 			if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ssb_printk(KERN_WARNING PFX "WARNING: Using"
 					   " fallback SPROM failed (err %d)\n",
 					   err);
+#else
+				ssb_;
+#endif
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				ssb_dprintk(KERN_DEBUG PFX "Using SPROM"
 					    " revision %d provided by"
 					    " platform.\n", sprom->revision);
+#else
+				ssb_d;
+#endif
 				err = 0;
 				goto out_free;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk(KERN_WARNING PFX "WARNING: Invalid"
 				   " SPROM CRC (corrupt SPROM)\n");
+#else
+			ssb_;
+#endif
 		}
 	}
 	err = sprom_extract(bus, sprom, buf, bus->sprom_size);

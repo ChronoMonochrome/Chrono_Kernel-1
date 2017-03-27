@@ -145,35 +145,35 @@ i596_out_status(int status) {
 	int bad = 0;
 	char *s;
 
-	printk("status %4.4x:", status);
+;
 	if (status == 0xffff)
-		printk(" strange..\n");
+;
 	else {
 		if (status & STAT_CX)
-			printk("  CU done");
+;
 		if (status & STAT_CNA)
-			printk("  CU stopped");
+;
 		if (status & STAT_FR)
-			printk("  got a frame");
+;
 		if (status & STAT_RNR)
-			printk("  RU stopped");
+;
 		if (status & STAT_T)
-			printk("  throttled");
+;
 		if (status & STAT_ZERO)
 			bad = 1;
 		s = CUstates[(status & STAT_CUS) >> 8];
 		if (!s)
 			bad = 1;
 		else
-			printk("  CU(%s)", s);
+;
 		s = RUstates[(status & STAT_RUS) >> 4];
 		if (!s)
 			bad = 1;
 		else
-			printk("  RU(%s)", s);
+;
 		if (bad)
-			printk("  bad status");
-		printk("\n");
+;
+;
 	}
 }
 #endif
@@ -393,9 +393,9 @@ i596_timeout(struct net_device *dev, char *msg, int ct) {
 	lp = netdev_priv(dev);
 	while (lp->scb.command) {
 		if (--boguscnt == 0) {
-			printk("%s: %s timed out - stat %4.4x, cmd %4.4x\n",
-			       dev->name, msg,
-			       lp->scb.status, lp->scb.command);
+//			printk("%s: %s timed out - stat %4.4x, cmd %4.4x\n",
+//			       dev->name, msg,
+;
 			return 1;
 		}
 		udelay(5);
@@ -442,7 +442,7 @@ init_rx_bufs(struct net_device *dev, int num) {
 			rbd->count = 0;
 			rbd->skb = dev_alloc_skb(RX_SKBSIZE);
 			if (!rbd->skb) {
-				printk("dev_alloc_skb failed");
+;
 			}
 			rbd->next = rfd->rbd;
 			if (i) {
@@ -455,7 +455,7 @@ init_rx_bufs(struct net_device *dev, int num) {
 
 			rfd->rbd = rbd;
 		} else {
-			printk("Could not kmalloc rbd\n");
+;
 		}
 	}
 	lp->rbd_tail->next = rfd->rbd;
@@ -497,7 +497,7 @@ remove_rx_bufs(struct net_device *dev) {
 static inline void
 PORT(phys_addr a, unsigned int cmd) {
 	if (a & 0xf)
-		printk("lp486e.c: PORT: address not aligned\n");
+;
 	outw(((a & 0xffff) | cmd), IOADDR);
 	outw(((a>>16) & 0xffff), IOADDR+2);
 }
@@ -527,15 +527,15 @@ i596_port_do(struct net_device *dev, int portcmd, char *cmdname) {
 	PORT(va_to_pa(outp), portcmd);
 	mdelay(30);             /* random, unmotivated */
 
-	printk("lp486e i82596 %s result:\n", cmdname);
+;
 	for (m = ARRAY_SIZE(lp->dump.dump); m && lp->dump.dump[m-1] == 0; m--)
 		;
 	for (i = 0; i < m; i++) {
-		printk(" %04x", lp->dump.dump[i]);
+;
 		if (i%8 == 7)
-			printk("\n");
+;
 	}
-	printk("\n");
+;
 }
 #endif
 
@@ -603,8 +603,8 @@ i596_scp_setup(struct net_device *dev) {
 	while (lp->iscp.busy) {
 		if (--boguscnt == 0) {
 			/* No i82596 present? */
-			printk("%s: i82596 initialization timed out\n",
-			       dev->name);
+//			printk("%s: i82596 initialization timed out\n",
+;
 			return 1;
 		}
 		udelay(5);
@@ -663,7 +663,7 @@ i596_rx_one(struct net_device *dev, struct i596_private *lp,
 		(*frames)++;
 
 		if (rfd->cmd & CMD_EOL)
-			printk("Received on EOL\n");
+;
 
 		if (skb == NULL) {
 			printk ("%s: i596_rx Memory squeeze, "
@@ -679,8 +679,8 @@ i596_rx_one(struct net_device *dev, struct i596_private *lp,
 		dev->stats.rx_packets++;
 	} else {
 #if 0
-		printk("Frame reception error status %04x\n",
-		       rfd->stat);
+//		printk("Frame reception error status %04x\n",
+;
 #endif
 		dev->stats.rx_errors++;
 		if (rfd->stat & RFD_COLLISION)
@@ -711,12 +711,12 @@ i596_rx(struct net_device *dev) {
 	while (1) {
 		rfd = pa_to_va(lp->scb.pa_rfd);
 		if (!rfd) {
-			printk(KERN_ERR "i596_rx: NULL rfd?\n");
+;
 			return 0;
 		}
 #if 1
 		if (rfd->stat && !(rfd->stat & (RFD_STAT_C | RFD_STAT_B)))
-			printk("SF:%p-%04x\n", rfd, rfd->stat);
+;
 #endif
 		if (!(rfd->stat & RFD_STAT_C))
 			break;		/* next one not ready */
@@ -836,7 +836,7 @@ static void i596_add_cmd(struct net_device *dev, struct i596_cmd *cmd) {
 		if (tickssofar < HZ/4)
 			return;
 
-		printk(KERN_WARNING "%s: command unit timed out, status resetting.\n", dev->name);
+;
 		i596_reset(dev, lp, ioaddr);
 	}
 }
@@ -847,12 +847,12 @@ static int i596_open(struct net_device *dev)
 
 	i = request_irq(dev->irq, i596_interrupt, IRQF_SHARED, dev->name, dev);
 	if (i) {
-		printk(KERN_ERR "%s: IRQ %d not free\n", dev->name, dev->irq);
+;
 		return i;
 	}
 
 	if ((i = init_rx_bufs(dev, RX_RING_SIZE)) < RX_RING_SIZE)
-		printk(KERN_ERR "%s: only able to allocate %d receive buffers\n", dev->name, i);
+;
 
 	if (i < 4) {
 		free_irq(dev->irq, dev);
@@ -877,7 +877,7 @@ static netdev_tx_t i596_start_xmit (struct sk_buff *skb, struct net_device *dev)
 
 	tx_cmd = kmalloc((sizeof (struct tx_cmd) + sizeof (struct i596_tbd)), GFP_ATOMIC);
 	if (tx_cmd == NULL) {
-		printk(KERN_WARNING "%s: i596_xmit Memory squeeze, dropping packet.\n", dev->name);
+;
 		dev->stats.tx_dropped++;
 		dev_kfree_skb (skb);
 	} else {
@@ -913,7 +913,7 @@ i596_tx_timeout (struct net_device *dev) {
 	int ioaddr = dev->base_addr;
 
 	/* Transmitter timeout, serious problems. */
-	printk(KERN_WARNING "%s: transmit timed out, status resetting.\n", dev->name);
+;
 	dev->stats.tx_errors++;
 
 	/* Try to restart the adaptor */
@@ -938,12 +938,12 @@ static void print_eth(char *add)
 
 	printk ("Dest  ");
 	for (i = 0; i < 6; i++)
-		printk(" %2.2X", (unsigned char) add[i]);
+;
 	printk ("\n");
 
 	printk ("Source");
 	for (i = 0; i < 6; i++)
-		printk(" %2.2X", (unsigned char) add[i+6]);
+;
 	printk ("\n");
 
 	printk ("type %2.2X%2.2X\n",
@@ -974,7 +974,7 @@ static int __init lp486e_probe(struct net_device *dev) {
 	probed++;
 
 	if (!request_region(IOADDR, LP486E_TOTAL_SIZE, DRV_NAME)) {
-		printk(KERN_ERR "lp486e: IO address 0x%x in use\n", IOADDR);
+;
 		return -EBUSY;
 	}
 
@@ -1006,21 +1006,21 @@ static int __init lp486e_probe(struct net_device *dev) {
 	bios = bus_to_virt(0xe8000);
 	for (j = 0; j < 0x2000; j++) {
 		if (bios[j] == 0 && bios[j+1] == 0xaa && bios[j+2] == 0) {
-			printk("%s: maybe address at BIOS 0x%x:",
-			       dev->name, 0xe8000+j);
+//			printk("%s: maybe address at BIOS 0x%x:",
+;
 			for (i = 0; i < 6; i++) {
 				eth_addr[i] = bios[i+j];
-				printk(" %2.2X", eth_addr[i]);
+;
 			}
-			printk("\n");
+;
 		}
 	}
 
-	printk("%s: lp486e 82596 at %#3lx, IRQ %d,",
-	       dev->name, dev->base_addr, dev->irq);
+//	printk("%s: lp486e 82596 at %#3lx, IRQ %d,",
+;
 	for (i = 0; i < 6; i++)
-		printk(" %2.2X", dev->dev_addr[i] = eth_addr[i]);
-	printk("\n");
+;
+;
 
 	/* The LP486E-specific entries in the device structure. */
 	dev->netdev_ops = &i596_netdev_ops;
@@ -1061,8 +1061,8 @@ i596_handle_CU_completion(struct net_device *dev,
 		commands_done++;
 		cmd_val = cmd->command & 0x7;
 #if 0
-		printk("finished CU %s command (%d)\n",
-		       CUcmdnames[cmd_val], cmd_val);
+//		printk("finished CU %s command (%d)\n",
+;
 #endif
 		switch (cmd_val) {
 		case CmdTx:
@@ -1080,8 +1080,8 @@ i596_handle_CU_completion(struct net_device *dev,
 			} else {
 				dev->stats.tx_errors++;
 				if (i596_debug)
-					printk("transmission failure:%04x\n",
-					       cmd->status);
+//					printk("transmission failure:%04x\n",
+;
 				if (cmd->status & 0x0020)
 					dev->stats.collisions++;
 				if (!(cmd->status & 0x0040))
@@ -1111,19 +1111,19 @@ i596_handle_CU_completion(struct net_device *dev,
 			unsigned long status = *((unsigned long *) (cmd + 1));
 			if (status & 0x8000) {
 				if (i596_debug)
-					printk("%s: link ok.\n", dev->name);
+;
 			} else {
 				if (status & 0x4000)
-					printk("%s: Transceiver problem.\n",
-					       dev->name);
+//					printk("%s: Transceiver problem.\n",
+;
 				if (status & 0x2000)
-					printk("%s: Termination problem.\n",
-					       dev->name);
+//					printk("%s: Termination problem.\n",
+;
 				if (status & 0x1000)
-					printk("%s: Short circuit.\n",
-					       dev->name);
-				printk("%s: Time %ld.\n",
-				       dev->name, status & 0x07ff);
+//					printk("%s: Short circuit.\n",
+;
+//				printk("%s: Time %ld.\n",
+;
 			}
 		}
 		default:
@@ -1172,14 +1172,14 @@ i596_interrupt(int irq, void *dev_instance)
 	status = lp->scb.status;
 #if 0
 	if (i596_debug) {
-		printk("%s: i596 interrupt, ", dev->name);
+;
 		i596_out_status(status);
 	}
 #endif
 	/* Impossible, but it happens - perhaps when we get
 	   a receive interrupt but scb.pa_rfd is I596_NULL. */
 	if (status == 0xffff) {
-		printk("%s: i596_interrupt: got status 0xffff\n", dev->name);
+;
 		goto out;
 	}
 
@@ -1196,7 +1196,7 @@ i596_interrupt(int irq, void *dev_instance)
 		if (status & STAT_FR) {
 			frames_in = i596_rx(dev);
 			if (!frames_in)
-				printk("receive frame reported, but no frames\n");
+;
 		}
 	}
 
@@ -1224,8 +1224,8 @@ static int i596_close(struct net_device *dev) {
 	netif_stop_queue(dev);
 
 	if (i596_debug)
-		printk("%s: Shutting down ethercard, status was %4.4x.\n",
-		       dev->name, lp->scb.status);
+//		printk("%s: Shutting down ethercard, status was %4.4x.\n",
+;
 
 	lp->scb.command = (CUC_ABORT | RX_ABORT);
 	CA();

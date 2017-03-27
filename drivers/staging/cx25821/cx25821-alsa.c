@@ -44,15 +44,15 @@
 
 #define AUDIO_SRAM_CHANNEL	SRAM_CH08
 
-#define dprintk(level, fmt, arg...)				\
-do {								\
-	if (debug >= level)					\
-		pr_info("%s/1: " fmt, chip->dev->name, ##arg);	\
+//#define dprintk(level, fmt, arg...)				\
+//do {								\
+//	if (debug >= level)					\
+;
 } while (0)
 #define dprintk_core(level, fmt, arg...)				\
 do {									\
 	if (debug >= level)						\
-		printk(KERN_DEBUG "%s/1: " fmt, chip->dev->name, ##arg); \
+;
 } while (0)
 
 /****************************************************************************
@@ -340,7 +340,7 @@ static int dsp_buffer_free(struct cx25821_audio_dev *chip)
 {
 	BUG_ON(!chip->dma_size);
 
-	dprintk(2, "Freeing buffer\n");
+;
 	videobuf_dma_unmap(&chip->pci->dev, chip->dma_risc);
 	videobuf_dma_free(chip->dma_risc);
 	btcx_riscmem_free(chip->pci, &chip->buf->risc);
@@ -420,7 +420,7 @@ static int snd_cx25821_pcm_open(struct snd_pcm_substream *substream)
 
 	return 0;
 _error:
-	dprintk(1, "Error opening PCM!\n");
+;
 	return err;
 }
 

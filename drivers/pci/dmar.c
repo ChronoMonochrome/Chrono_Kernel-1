@@ -82,16 +82,24 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
 		 * ignore it
 		 */
 		if (!bus) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			PREFIX "Device scope bus [%d] not found\n",
 			scope->bus);
+#else
+			;
+#endif
 			break;
 		}
 		pdev = pci_get_slot(bus, PCI_DEVFN(path->dev, path->fn));
 		if (!pdev) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 			"Device scope device [%04x:%02x:%02x.%02x] not found\n",
 				segment, bus->number, path->dev, path->fn);
+#else
+			;
+#endif
 			break;
 		}
 		path ++;
@@ -99,9 +107,13 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
 		bus = pdev->subordinate;
 	}
 	if (!pdev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 		"Device scope device [%04x:%02x:%02x.%02x] not found\n",
 		segment, scope->bus, path->dev, path->fn);
+#else
+		;
+#endif
 		*dev = NULL;
 		return 0;
 	}
@@ -109,9 +121,13 @@ static int __init dmar_parse_one_dev_scope(struct acpi_dmar_device_scope *scope,
 			pdev->subordinate) || (scope->entry_type == \
 			ACPI_DMAR_SCOPE_TYPE_BRIDGE && !pdev->subordinate)) {
 		pci_dev_put(pdev);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 			"Device scope type does not match for %s\n",
 			 pci_name(pdev));
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	*dev = pdev;
@@ -133,8 +149,12 @@ static int __init dmar_parse_dev_scope(void *start, void *end, int *cnt,
 		    scope->entry_type == ACPI_DMAR_SCOPE_TYPE_BRIDGE)
 			(*cnt)++;
 		else if (scope->entry_type != ACPI_DMAR_SCOPE_TYPE_IOAPIC) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 			       "Unsupported device scope\n");
+#else
+			;
+#endif
 		}
 		start += scope->length;
 	}
@@ -401,13 +421,21 @@ dmar_table_print_dmar_entry(struct acpi_dmar_header *header)
 		break;
 	case ACPI_DMAR_TYPE_ATSR:
 		atsr = container_of(header, struct acpi_dmar_atsr, header);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "ATSR flags: %#x\n", atsr->flags);
+#else
+		;
+#endif
 		break;
 	case ACPI_DMAR_HARDWARE_AFFINITY:
 		rhsa = container_of(header, struct acpi_dmar_rhsa, header);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "RHSA base: %#016Lx proximity domain: %#x\n",
 		       (unsigned long long)rhsa->base_address,
 		       rhsa->proximity_domain);
+#else
+		;
+#endif
 		break;
 	}
 }
@@ -459,7 +487,11 @@ parse_dmar_table(void)
 		return -ENODEV;
 
 	if (dmar->width < PAGE_SHIFT - 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Invalid DMAR haw\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -471,8 +503,12 @@ parse_dmar_table(void)
 			(((unsigned long)dmar) + dmar_tbl->length)) {
 		/* Avoid looping forever on bad ACPI tables */
 		if (entry_header->length == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 				"Invalid 0-length structure\n");
+#else
+			;
+#endif
 			ret = -EINVAL;
 			break;
 		}
@@ -499,9 +535,13 @@ parse_dmar_table(void)
 #endif
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 				"Unknown DMAR structure type %d\n",
 				entry_header->type);
+#else
+			;
+#endif
 			ret = 0; /* for forward compatibility */
 			break;
 		}
@@ -602,21 +642,37 @@ int __init dmar_table_init(void)
 	ret = parse_dmar_table();
 	if (ret) {
 		if (ret != -ENODEV)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO PREFIX "parse DMAR table failure.\n");
+#else
+			;
+#endif
 		return ret;
 	}
 
 	if (list_empty(&dmar_drhd_units)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "No DMAR devices found\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 #ifdef CONFIG_DMAR
 	if (list_empty(&dmar_rmrr_units))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "No RMRR found\n");
+#else
+		;
+#endif
 
 	if (list_empty(&dmar_atsr_units))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "No ATSR found\n");
+#else
+		;
+#endif
 #endif
 
 	return 0;
@@ -647,8 +703,12 @@ int __init check_zero_address(void)
 			(((unsigned long)dmar) + dmar_tbl->length)) {
 		/* Avoid looping forever on bad ACPI tables */
 		if (entry_header->length == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX
 				"Invalid 0-length structure\n");
+#else
+			;
+#endif
 			return 0;
 		}
 
@@ -664,7 +724,11 @@ int __init check_zero_address(void)
 
 			addr = early_ioremap(drhd->address, VTD_PAGE_SIZE);
 			if (!addr ) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("IOMMU: can't validate: %llx\n", drhd->address);
+#else
+				;
+#endif
 				goto failed;
 			}
 			cap = dmar_readq(addr + DMAR_CAP_REG);
@@ -701,9 +765,13 @@ int __init detect_intel_iommu(void)
 
 		dmar = (struct acpi_table_dmar *) dmar_tbl;
 		if (ret && cpu_has_x2apic && dmar->flags & 0x1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "Queued invalidation will be enabled to support "
 			       "x2apic and Intr-remapping.\n");
+#else
+			;
+#endif
 #endif
 #ifdef CONFIG_DMAR
 		if (ret && !no_iommu && !iommu_detected && !dmar_disabled) {

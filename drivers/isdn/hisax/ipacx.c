@@ -62,7 +62,11 @@ ph_command(struct IsdnCardState *cs, unsigned int command)
 		debugl1(cs, "ph_command (%#x) in (%#x)", command,
 			cs->dc.isac.ph_state);
 //###################################  
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk(KERN_INFO "ph_command (%#x)\n", command);
+#else
+//	;
+#endif
 //###################################  
 	cs->writeisac(cs, IPACX_CIX0, (command << 4) | 0x0E);
 }
@@ -78,7 +82,11 @@ cic_int(struct IsdnCardState *cs)
 	event = cs->readisac(cs, IPACX_CIR0) >> 4;
 	if (cs->debug &L1_DEB_ISAC) debugl1(cs, "cic_int(event=%#x)", event);
 //#########################################  
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk(KERN_INFO "cic_int(%x)\n", event);
+#else
+//	;
+#endif
 //#########################################  
   cs->dc.isac.ph_state = event;
   schedule_event(cs, D_L1STATECHANGE);
@@ -221,7 +229,11 @@ dbusy_timer_handler(struct IsdnCardState *cs)
 				cs->tx_cnt = 0;
 				cs->tx_skb = NULL;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: ISAC D-Channel Busy no skb\n");
+#else
+				;
+#endif
 				debugl1(cs, "D-Channel Busy no skb");
 			}
 			cs->writeisac(cs, IPACX_CMDRD, 0x01); // Tx reset, generates XPR
@@ -323,7 +335,11 @@ dch_int(struct IsdnCardState *cs)
 
 	istad = cs->readisac(cs, IPACX_ISTAD);
 //##############################################  
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk(KERN_WARNING "dch_int(istad=%02x)\n", istad);
+#else
+//	;
+#endif
 //##############################################  
   
 	if (istad &0x80) {  // RME
@@ -348,7 +364,11 @@ dch_int(struct IsdnCardState *cs)
 			if ((count = cs->rcvidx) > 0) {
 	      cs->rcvidx = 0;
 				if (!(skb = dev_alloc_skb(count)))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "HiSax dch_int(): receive out of memory\n");
+#else
+					;
+#endif
 				else {
 					memcpy(skb_put(skb, count), cs->rcvbuf, count);
 					skb_queue_tail(&cs->rq, skb);
@@ -401,7 +421,11 @@ dch_int(struct IsdnCardState *cs)
 	    cs->tx_cnt = 0;
 			dch_fill_fifo(cs);
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: ISAC XDU no skb\n");
+#else
+			;
+#endif
 			debugl1(cs, "ISAC XDU no skb");
 		}
   }
@@ -420,7 +444,11 @@ dch_setstack(struct PStack *st, struct IsdnCardState *cs)
 static void
 dch_init(struct IsdnCardState *cs)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: IPACX ISDN driver v0.1.0\n");
+#else
+	;
+#endif
 
 	cs->setstack_d      = dch_setstack;
   
@@ -465,7 +493,11 @@ bch_l2l1(struct PStack *st, int pr, void *arg)
 		case (PH_PULL | INDICATION):
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax bch_l2l1(): this shouldn't happen\n");
+#else
+				;
+#endif
 			} else {
 				set_bit(BC_FLG_BUSY, &bcs->Flag);
 				bcs->tx_skb = skb;
@@ -601,7 +633,11 @@ bch_int(struct IsdnCardState *cs, u_char hscx)
 	bcs = cs->bcs + hscx;
 	istab = cs->BC_Read_Reg(cs, hscx, IPACX_ISTAB);
 //##############################################  
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk(KERN_WARNING "bch_int(istab=%02x)\n", istab);
+#else
+//	;
+#endif
 //##############################################  
 	if (!test_bit(BC_FLG_INIT, &bcs->Flag)) return;
 
@@ -627,7 +663,11 @@ bch_int(struct IsdnCardState *cs, u_char hscx)
 				if (cs->debug &L1_DEB_HSCX_FIFO)
 					debugl1(cs, "bch_int Frame %d", count);
 				if (!(skb = dev_alloc_skb(count)))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "HiSax bch_int(): receive frame out of memory\n");
+#else
+					;
+#endif
 				else {
 					memcpy(skb_put(skb, count), bcs->hw.hscx.rcvbuf, count);
 					skb_queue_tail(&bcs->rqueue, skb);
@@ -644,7 +684,11 @@ bch_int(struct IsdnCardState *cs, u_char hscx)
 		if (bcs->mode == L1_MODE_TRANS) { // queue every chunk
 			// receive transparent audio data
 			if (!(skb = dev_alloc_skb(B_FIFO_SIZE)))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax bch_int(): receive transparent out of memory\n");
+#else
+				;
+#endif
 			else {
 				memcpy(skb_put(skb, B_FIFO_SIZE), bcs->hw.hscx.rcvbuf, B_FIFO_SIZE);
 				skb_queue_tail(&bcs->rqueue, skb);
@@ -783,14 +827,22 @@ bch_open_state(struct IsdnCardState *cs, struct BCState *bcs)
 {
 	if (!test_and_set_bit(BC_FLG_INIT, &bcs->Flag)) {
 		if (!(bcs->hw.hscx.rcvbuf = kmalloc(HSCX_BUFMAX, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"HiSax open_bchstate(): No memory for hscx.rcvbuf\n");
+#else
+			;
+#endif
 			clear_bit(BC_FLG_INIT, &bcs->Flag);
 			return (1);
 		}
 		if (!(bcs->blog = kmalloc(MAX_BLOG_SPACE, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"HiSax open_bchstate: No memory for bcs->blog\n");
+#else
+			;
+#endif
 			clear_bit(BC_FLG_INIT, &bcs->Flag);
 			kfree(bcs->hw.hscx.rcvbuf);
 			bcs->hw.hscx.rcvbuf = NULL;
@@ -849,7 +901,11 @@ interrupt_ipacx(struct IsdnCardState *cs)
   
 	while ((ista = cs->readisac(cs, IPACX_ISTA))) {
 //#################################################  
+#ifdef CONFIG_DEBUG_PRINTK
 //		printk(KERN_WARNING "interrupt_ipacx(ista=%02x)\n", ista);
+#else
+//		;
+#endif
 //#################################################  
     if (ista &0x80) bch_int(cs, 0); // B channel interrupts
     if (ista &0x40) bch_int(cs, 1);
@@ -889,7 +945,11 @@ init_ipacx(struct IsdnCardState *cs, int part)
 {
 	if (part &1) {  // initialise chip
 //##################################################  
+#ifdef CONFIG_DEBUG_PRINTK
 //	printk(KERN_INFO "init_ipacx(%x)\n", part);
+#else
+//	;
+#endif
 //##################################################  
 		clear_pending_ints(cs);
 		bch_init(cs, 0);

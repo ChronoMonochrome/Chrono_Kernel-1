@@ -797,7 +797,7 @@ static inline int s6gmac_phy_start(struct net_device *dev)
 	p = phy_connect(dev, dev_name(&p->dev), &s6gmac_adjust_link, 0,
 			PHY_INTERFACE_MODE_RGMII);
 	if (IS_ERR(p)) {
-		printk(KERN_ERR "%s: Could not attach to PHY\n", dev->name);
+;
 		return PTR_ERR(p);
 	}
 	p->supported &= PHY_GBIT_FEATURES;
@@ -865,8 +865,8 @@ static int s6gmac_tx(struct sk_buff *skb, struct net_device *dev)
 	if (s6dmac_fifo_full(pd->tx_dma, pd->tx_chan))
 		netif_stop_queue(dev);
 	if (((u8)(pd->tx_skb_i - pd->tx_skb_o)) >= S6_NUM_TX_SKB) {
-		printk(KERN_ERR "GMAC BUG: skb tx ring overflow [%x, %x]\n",
-			pd->tx_skb_o, pd->tx_skb_i);
+//		printk(KERN_ERR "GMAC BUG: skb tx ring overflow [%x, %x]\n",
+;
 		BUG();
 	}
 	pd->tx_skb[(pd->tx_skb_i++) % S6_NUM_TX_SKB] = skb;
@@ -962,7 +962,7 @@ static int __devinit s6gmac_probe(struct platform_device *pdev)
 	struct mii_bus *mb;
 	dev = alloc_etherdev(sizeof(*pd));
 	if (!dev) {
-		printk(KERN_ERR DRV_PRMT "etherdev alloc failed, aborting.\n");
+;
 		return -ENOMEM;
 	}
 	dev->open = s6gmac_open;
@@ -985,18 +985,18 @@ static int __devinit s6gmac_probe(struct platform_device *pdev)
 	pd->io = platform_get_resource(pdev, IORESOURCE_IO, 0)->start;
 	res = request_irq(dev->irq, s6gmac_interrupt, 0, dev->name, dev);
 	if (res) {
-		printk(KERN_ERR DRV_PRMT "irq request failed: %d\n", dev->irq);
+;
 		goto errirq;
 	}
 	res = register_netdev(dev);
 	if (res) {
-		printk(KERN_ERR DRV_PRMT "error registering device %s\n",
-			dev->name);
+//		printk(KERN_ERR DRV_PRMT "error registering device %s\n",
+;
 		goto errdev;
 	}
 	mb = mdiobus_alloc();
 	if (!mb) {
-		printk(KERN_ERR DRV_PRMT "error allocating mii bus\n");
+;
 		goto errmii;
 	}
 	mb->name = "s6gmac_mii";
@@ -1054,7 +1054,7 @@ static struct platform_driver s6gmac_driver = {
 
 static int __init s6gmac_init(void)
 {
-	printk(KERN_INFO DRV_PRMT "S6 GMAC ethernet driver\n");
+;
 	return platform_driver_register(&s6gmac_driver);
 }
 

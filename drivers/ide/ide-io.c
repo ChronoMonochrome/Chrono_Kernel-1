@@ -187,8 +187,12 @@ static ide_startstop_t do_special(ide_drive_t *drive)
 	struct ide_cmd cmd;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: %s: 0x%02x\n", drive->name, __func__,
 		drive->special_flags);
+#else
+	;
+#endif
 #endif
 	if (drive->media != ide_disk) {
 		drive->special_flags = 0;
@@ -269,7 +273,11 @@ static ide_startstop_t execute_drive_cmd (ide_drive_t *drive,
  	 * all current requests to be flushed from the queue.
  	 */
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
  	printk("%s: DRIVE_CMD (null)\n", drive->name);
+#else
+ 	;
+#endif
 #endif
 	rq->errors = 0;
 	ide_complete_rq(drive, 0, blk_rq_bytes(rq));
@@ -310,8 +318,12 @@ static ide_startstop_t start_request (ide_drive_t *drive, struct request *rq)
 	BUG_ON(!(rq->cmd_flags & REQ_STARTED));
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: start_request: current=0x%08lx\n",
 		drive->hwif->name, (unsigned long) rq);
+#else
+	;
+#endif
 #endif
 
 	/* bail early if we've exceeded max_failures */
@@ -345,8 +357,12 @@ static ide_startstop_t start_request (ide_drive_t *drive, struct request *rq)
 		else if (blk_pm_request(rq)) {
 			struct request_pm_state *pm = rq->special;
 #ifdef DEBUG_PM
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s: start_power_step(step: %d)\n",
 				drive->name, pm->pm_step);
+#else
+			;
+#endif
 #endif
 			startstop = ide_start_power_step(drive, rq);
 			if (startstop == ide_stopped &&
@@ -668,8 +684,12 @@ void ide_timer_expiry (unsigned long data)
 			if (hwif->port_ops && hwif->port_ops->clear_irq)
 				hwif->port_ops->clear_irq(drive);
 
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: lost interrupt\n",
 				drive->name);
+#else
+			;
+#endif
 			startstop = handler(drive);
 		} else {
 			if (drive->waiting_for_dma)

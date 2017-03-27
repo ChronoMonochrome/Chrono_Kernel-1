@@ -125,7 +125,7 @@ static int hpfs_readdir(struct file *filp, void *dirent, filldir_t filldir)
 		if (filp->f_pos == 12)
 			goto out;
 		if (filp->f_pos == 3 || filp->f_pos == 4 || filp->f_pos == 5) {
-			printk("HPFS: warning: pos==%d\n",(int)filp->f_pos);
+;
 			goto out;
 		}
 		if (filp->f_pos == 0) {

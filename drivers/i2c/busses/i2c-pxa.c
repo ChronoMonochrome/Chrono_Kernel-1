@@ -185,11 +185,19 @@ struct bits {
 static inline void
 decode_bits(const char *prefix, const struct bits *bits, int num, u32 val)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s %08x: ", prefix, val);
+#else
+	;
+#endif
 	while (num--) {
 		const char *str = val & bits->mask ? bits->set : bits->unset;
 		if (str)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s ", str);
+#else
+			;
+#endif
 		bits++;
 	}
 }
@@ -211,7 +219,11 @@ static const struct bits isr_bits[] = {
 static void decode_ISR(unsigned int val)
 {
 	decode_bits(KERN_DEBUG "ISR", isr_bits, ARRAY_SIZE(isr_bits), val);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 static const struct bits icr_bits[] = {
@@ -236,7 +248,11 @@ static const struct bits icr_bits[] = {
 static void decode_ICR(unsigned int val)
 {
 	decode_bits(KERN_DEBUG "ICR", icr_bits, ARRAY_SIZE(icr_bits), val);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 #endif
 
@@ -260,8 +276,16 @@ static void i2c_pxa_scream_blue_murder(struct pxa_i2c *i2c, const char *why)
 	       readl(_ICR(i2c)), readl(_ISR(i2c)));
 	printk(KERN_DEBUG "i2c: log: ");
 	for (i = 0; i < i2c->irqlogidx; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[%08x:%08x] ", i2c->isrlog[i], i2c->icrlog[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 #else /* ifdef DEBUG */
@@ -1144,7 +1168,11 @@ static int i2c_pxa_probe(struct platform_device *dev)
 
 	ret = i2c_add_numbered_adapter(&i2c->adap);
 	if (ret < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "I2C: Failed to add bus\n");
+#else
+		;
+#endif
 		goto eadapt;
 	}
 	of_i2c_register_devices(&i2c->adap);
@@ -1152,11 +1180,19 @@ static int i2c_pxa_probe(struct platform_device *dev)
 	platform_set_drvdata(dev, i2c);
 
 #ifdef CONFIG_I2C_PXA_SLAVE
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "I2C: %s: PXA I2C adapter, slave address %d\n",
 	       dev_name(&i2c->adap.dev), i2c->slave_addr);
 #else
+	;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "I2C: %s: PXA I2C adapter\n",
 	       dev_name(&i2c->adap.dev));
+#else
+	;
+#endif
 #endif
 	return 0;
 

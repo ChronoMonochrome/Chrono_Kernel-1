@@ -129,7 +129,11 @@ FsmAddTimer(struct FsmTimer *ft,
 #endif
 
 	if (timer_pending(&ft->tl)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "FsmAddTimer: timer already active!\n");
+#else
+		;
+#endif
 		ft->fi->printdebug(ft->fi, "FsmAddTimer already active!");
 		return -1;
 	}

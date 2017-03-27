@@ -113,7 +113,11 @@ __xipram cfi_read_pri(struct map_info *map, __u16 adr, __u16 size, const char* n
 	if (!adr)
 		goto out;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s Extended Query Table at 0x%4.4X\n", name, adr);
+#else
+	;
+#endif
 
 	extp = kmalloc(size, GFP_KERNEL);
 	if (!extp) {

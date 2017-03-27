@@ -91,8 +91,12 @@ void __meminit vmemmap_verify(pte_t *pte, int node,
 	int actual_node = early_pfn_to_nid(pfn);
 
 	if (node_distance(actual_node, node) > LOCAL_DISTANCE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "[%lx-%lx] potential offnode "
 			"page_structs\n", start, end - 1);
+#else
+		;
+#endif
 }
 
 pte_t * __meminit vmemmap_pte_populate(pmd_t *pmd, unsigned long addr, int node)

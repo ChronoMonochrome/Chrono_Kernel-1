@@ -1188,7 +1188,11 @@ static int pdc_ata_init_one(struct pci_dev *pdev,
 	int is_sataii_tx4;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	/* enable and acquire resources */
 	rc = pcim_enable_device(pdev);

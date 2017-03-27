@@ -100,7 +100,11 @@ static int __init h720x_mtd_init(void)
 			nr_mtd_parts = NUM_PARTITIONS;
 			part_type = "builtin";
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Using %s partition table\n", part_type);
+#else
+		;
+#endif
 		mtd_device_register(mymtd, mtd_parts, nr_mtd_parts);
 		return 0;
 	}

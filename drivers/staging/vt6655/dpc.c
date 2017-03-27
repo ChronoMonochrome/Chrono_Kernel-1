@@ -298,7 +298,7 @@ void	MngWorkItem(void *Context)
 {
 	PSRxMgmtPacket			pRxMgmtPacket;
 	PSDevice	pDevice =  (PSDevice) Context;
-	//printk("Enter MngWorkItem,Queue packet num is %d\n",pDevice->rxManeQueue.packet_num);
+;
 	spin_lock_irq(&pDevice->lock);
 	 while(pDevice->rxManeQueue.packet_num != 0)
 	 {
@@ -322,7 +322,7 @@ device_receive_frame (
 
     PDEVICE_RD_INFO  pRDInfo = pCurrRD->pRDInfo;
 #ifdef	PLICE_DEBUG
-	//printk("device_receive_frame:pCurrRD is %x,pRDInfo is %x\n",pCurrRD,pCurrRD->pRDInfo);
+;
 #endif
     struct net_device_stats* pStats=&pDevice->stats;
     struct sk_buff* skb;
@@ -601,7 +601,7 @@ device_receive_frame (
 #ifdef	THREAD
 		EnQueue(pDevice,pRxPacket);
 
-		//printk("enque time is %x\n",jiffies);
+;
 		//up(&pDevice->mlme_semaphore);
 			//Enque (pDevice->FirstRecvMngList,pDevice->LastRecvMngList,pMgmt);
 #else
@@ -610,7 +610,7 @@ device_receive_frame (
 		EnQueue(pDevice,pRxPacket);
 		tasklet_schedule(&pDevice->RxMngWorkItem);
 #else
-//printk("RxMan\n");
+;
 	vMgrRxManagePacket((void *)pDevice, pDevice->pMgmt, pRxPacket);
            //tasklet_schedule(&pDevice->RxMngWorkItem);
 #endif
@@ -972,7 +972,7 @@ device_receive_frame (
 //        if(pDevice->bRxMICFail == false) {
 //           for (ii =0; ii < 100; ii++)
 //                printk(" %02x", *(skb->data + ii));
-//           printk("\n");
+;
 //	    }
 
     }

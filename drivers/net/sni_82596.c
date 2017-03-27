@@ -98,7 +98,7 @@ static int __devinit sni_82596_probe(struct platform_device *dev)
 	if (!ca_addr)
 		goto probe_failed_free_mpu;
 
-	printk(KERN_INFO "Found i82596 at 0x%x\n", res->start);
+;
 
 	netdevice = alloc_etherdev(sizeof(struct i596_private));
 	if (!netdevice)
@@ -124,8 +124,8 @@ static int __devinit sni_82596_probe(struct platform_device *dev)
 	iounmap(eth_addr);
 
 	if (!netdevice->irq) {
-		printk(KERN_ERR "%s: IRQ not found for i82596 at 0x%lx\n",
-			__FILE__, netdevice->base_addr);
+//		printk(KERN_ERR "%s: IRQ not found for i82596 at 0x%lx\n",
+;
 		goto probe_failed;
 	}
 
@@ -172,7 +172,7 @@ static struct platform_driver sni_82596_driver = {
 
 static int __devinit sni_82596_init(void)
 {
-	printk(KERN_INFO SNI_82596_DRIVER_VERSION "\n");
+;
 	return platform_driver_register(&sni_82596_driver);
 }
 

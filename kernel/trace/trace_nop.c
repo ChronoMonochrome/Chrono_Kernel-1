@@ -69,16 +69,24 @@ static int nop_set_flag(u32 old_flags, u32 bit, int set)
 	 * The tracing Api will do it automatically if you return 0
 	 */
 	if (bit == TRACE_NOP_OPT_ACCEPT) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "nop_test_accept flag set to %d: we accept."
 			" Now cat trace_options to see the result\n",
 			set);
+#else
+		;
+#endif
 		return 0;
 	}
 
 	if (bit == TRACE_NOP_OPT_REFUSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "nop_test_refuse flag set to %d: we refuse."
 			"Now cat trace_options to see the result\n",
 			set);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

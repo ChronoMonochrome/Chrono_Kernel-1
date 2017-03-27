@@ -221,22 +221,46 @@ static int pmic_scu_ipc_set_charger(int charger)
  */
 static void pmic_battery_log_event(enum batt_event event)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "pmic-battery: ");
+#else
+	;
+#endif
 	switch (event) {
 	case BATT_EVENT_BATOVP_EXCPT:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "battery overvoltage condition\n");
+#else
+		;
+#endif
 		break;
 	case BATT_EVENT_USBOVP_EXCPT:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "usb charger overvoltage condition\n");
+#else
+		;
+#endif
 		break;
 	case BATT_EVENT_TEMP_EXCPT:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "high battery temperature condition\n");
+#else
+		;
+#endif
 		break;
 	case BATT_EVENT_DCLMT_EXCPT:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "over battery charge current condition\n");
+#else
+		;
+#endif
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CONT "charger/battery exception %d\n", event);
+#else
+		;
+#endif
 		break;
 	}
 }
@@ -721,9 +745,13 @@ static __devinit int probe(int irq, struct device *dev)
 	}
 
 	if (debug)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "pmic-battery: %s() - pmic usb device "
 			"registration with power supply subsystem successful\n",
 			__func__);
+#else
+		;
+#endif
 
 	return retval;
 

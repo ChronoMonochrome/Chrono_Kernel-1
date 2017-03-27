@@ -29,8 +29,12 @@ jornada720_pcmcia_configure_socket(struct soc_pcmcia_socket *skt, const socket_s
 	unsigned int pa_dwr_mask, pa_dwr_set;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s(): config socket %d vcc %d vpp %d\n", __func__,
 		skt->nr, state->Vcc, state->Vpp);
+#else
+	;
+#endif
 
 	switch (skt->nr) {
 	case 0:

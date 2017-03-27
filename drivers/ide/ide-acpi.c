@@ -47,12 +47,16 @@ struct ide_acpi_hwif_link {
 /* note: adds function name and KERN_DEBUG */
 #ifdef DEBUGGING
 #define DEBPRINT(fmt, args...)	\
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: " fmt, __func__, ## args)
 #else
 #define DEBPRINT(fmt, args...)	do {} while (0)
 #endif	/* DEBUGGING */
 
 static int ide_noacpi;
+#else
+		;
+#endif
 module_param_named(noacpi, ide_noacpi, bool, 0);
 MODULE_PARM_DESC(noacpi, "disable IDE ACPI support");
 
@@ -68,7 +72,11 @@ static bool ide_noacpi_psx;
 static int no_acpi_psx(const struct dmi_system_id *id)
 {
 	ide_noacpi_psx = true;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE"%s detected - disable ACPI _PSx.\n", id->ident);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -239,9 +247,13 @@ static int do_drive_get_GTF(ide_drive_t *drive,
 	status = acpi_evaluate_object(drive->acpidata->obj_handle, "_GTF",
 				      NULL, &output);
 	if (ACPI_FAILURE(status)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG
 		       "%s: Run _GTF error: status = 0x%x\n",
 		       __func__, status);
+#else
+		;
+#endif
 		goto out;
 	}
 

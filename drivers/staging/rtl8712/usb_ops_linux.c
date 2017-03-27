@@ -241,8 +241,8 @@ static void r8712_usb_read_port_complete(struct urb *purb)
 				  (unsigned char *)precvbuf);
 			break;
 		case -EINPROGRESS:
-			printk(KERN_ERR "r8712u: ERROR: URB IS IN"
-			       " PROGRESS!/n");
+//			printk(KERN_ERR "r8712u: ERROR: URB IS IN"
+;
 			break;
 		default:
 			break;
@@ -335,8 +335,8 @@ void r8712_xmit_bh(void *priv)
 	while (1) {
 		if ((padapter->bDriverStopped == true) ||
 		    (padapter->bSurpriseRemoved == true)) {
-			printk(KERN_ERR "r8712u: xmit_bh => bDriverStopped"
-			       " or bSurpriseRemoved\n");
+//			printk(KERN_ERR "r8712u: xmit_bh => bDriverStopped"
+;
 			break;
 		}
 		ret = r8712_xmitframe_complete(padapter, pxmitpriv, NULL);
@@ -386,7 +386,7 @@ static void usb_write_port_complete(struct urb *purb)
 	case 0:
 		break;
 	default:
-		printk(KERN_WARNING "r8712u: pipe error: (%d)\n", purb->status);
+;
 		break;
 	}
 	/* not to consider tx fragment */
@@ -501,8 +501,8 @@ int r8712_usbctrl_vendorreq(struct intf_priv *pintfpriv, u8 request, u16 value,
 
 	palloc_buf = _malloc((u32) len + 16);
 	if (palloc_buf == NULL) {
-		printk(KERN_ERR "r8712u: [%s] Can't alloc memory for vendor"
-		       " request\n", __func__);
+//		printk(KERN_ERR "r8712u: [%s] Can't alloc memory for vendor"
+;
 		return -1;
 	}
 	pIo_buf = palloc_buf + 16 - ((addr_t)(palloc_buf) & 0x0f);

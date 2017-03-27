@@ -27,14 +27,26 @@ static int __init example_init(void)
 	unsigned int		nents;
 	struct scatterlist	sg[10];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DMA fifo test start\n");
+#else
+	;
+#endif
 
 	if (kfifo_alloc(&fifo, FIFO_SIZE, GFP_KERNEL)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "error kfifo_alloc\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "queue size: %u\n", kfifo_size(&fifo));
+#else
+	;
+#endif
 
 	kfifo_in(&fifo, "test", 4);
 
@@ -44,7 +56,11 @@ static int __init example_init(void)
 	/* kick away first byte */
 	kfifo_skip(&fifo);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "queue len: %u\n", kfifo_len(&fifo));
+#else
+	;
+#endif
 
 	/*
 	 * Configure the kfifo buffer to receive data from DMA input.
@@ -63,20 +79,36 @@ static int __init example_init(void)
 	 */
 	sg_init_table(sg, ARRAY_SIZE(sg));
 	nents = kfifo_dma_in_prepare(&fifo, sg, ARRAY_SIZE(sg), FIFO_SIZE);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DMA sgl entries: %d\n", nents);
+#else
+	;
+#endif
 	if (!nents) {
 		/* fifo is full and no sgl was created */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "error kfifo_dma_in_prepare\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 
 	/* receive data */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "scatterlist for receive:\n");
+#else
+	;
+#endif
 	for (i = 0; i < nents; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		"sg[%d] -> "
 		"page_link 0x%.8lx offset 0x%.8x length 0x%.8x\n",
 			i, sg[i].page_link, sg[i].offset, sg[i].length);
+#else
+		;
+#endif
 
 		if (sg_is_last(&sg[i]))
 			break;
@@ -93,19 +125,35 @@ static int __init example_init(void)
 
 	/* Prepare to transmit data, example: 8 bytes */
 	nents = kfifo_dma_out_prepare(&fifo, sg, ARRAY_SIZE(sg), 8);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DMA sgl entries: %d\n", nents);
+#else
+	;
+#endif
 	if (!nents) {
 		/* no data was available and no sgl was created */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "error kfifo_dma_out_prepare\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "scatterlist for transmit:\n");
+#else
+	;
+#endif
 	for (i = 0; i < nents; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		"sg[%d] -> "
 		"page_link 0x%.8lx offset 0x%.8x length 0x%.8x\n",
 			i, sg[i].page_link, sg[i].offset, sg[i].length);
+#else
+		;
+#endif
 
 		if (sg_is_last(&sg[i]))
 			break;
@@ -121,13 +169,25 @@ static int __init example_init(void)
 	kfifo_dma_out_finish(&fifo, ret);
 
 	ret = kfifo_len(&fifo);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "queue len: %u\n", kfifo_len(&fifo));
+#else
+	;
+#endif
 
 	if (ret != 7) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "size mismatch: test failed");
+#else
+		;
+#endif
 		return -EIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "test passed\n");
+#else
+	;
+#endif
 
 	return 0;
 }

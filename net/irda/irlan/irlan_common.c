@@ -124,7 +124,7 @@ static int __init irlan_init(void)
 	{ struct proc_dir_entry *proc;
 	proc = proc_create("irlan", 0, proc_irda, &irlan_fops);
 	if (!proc) {
-		printk(KERN_ERR "irlan_init: can't create /proc entry!\n");
+;
 		return -ENODEV;
 	}
 	}

@@ -69,7 +69,11 @@ void msnd_unregister(multisound_dev_t *dev)
 			break;
 
 	if (i == MSND_MAX_DEVS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": Unregistering unknown device\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -276,7 +280,11 @@ int msnd_send_dsp_cmd(multisound_dev_t *dev, BYTE cmd)
 	}
 	spin_unlock_irqrestore(&dev->lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG LOGNAME ": Send DSP command timeout\n");
+#else
+	;
+#endif
 
 	return -EIO;
 }
@@ -293,7 +301,11 @@ int msnd_send_word(multisound_dev_t *dev, unsigned char high,
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG LOGNAME ": Send host word timeout\n");
+#else
+	;
+#endif
 
 	return -EIO;
 }
@@ -303,7 +315,11 @@ int msnd_upload_host(multisound_dev_t *dev, char *bin, int len)
 	int i;
 
 	if (len % 3 != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING LOGNAME ": Upload host data not multiple of 3!\n");		
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -324,7 +340,11 @@ int msnd_enable_irq(multisound_dev_t *dev)
 	if (dev->irq_ref++)
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG LOGNAME ": Enabling IRQ\n");
+#else
+	;
+#endif
 
 	spin_lock_irqsave(&dev->lock, flags);
 	if (msnd_wait_TXDE(dev) == 0) {
@@ -340,7 +360,11 @@ int msnd_enable_irq(multisound_dev_t *dev)
 	}
 	spin_unlock_irqrestore(&dev->lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG LOGNAME ": Enable IRQ failed\n");
+#else
+	;
+#endif
 
 	return -EIO;
 }
@@ -353,9 +377,17 @@ int msnd_disable_irq(multisound_dev_t *dev)
 		return 0;
 
 	if (dev->irq_ref < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG LOGNAME ": IRQ ref count is %d\n", dev->irq_ref);
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG LOGNAME ": Disabling IRQ\n");
+#else
+	;
+#endif
 
 	spin_lock_irqsave(&dev->lock, flags);
 	if (msnd_wait_TXDE(dev) == 0) {
@@ -368,7 +400,11 @@ int msnd_disable_irq(multisound_dev_t *dev)
 	}
 	spin_unlock_irqrestore(&dev->lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG LOGNAME ": Disable IRQ failed\n");
+#else
+	;
+#endif
 
 	return -EIO;
 }

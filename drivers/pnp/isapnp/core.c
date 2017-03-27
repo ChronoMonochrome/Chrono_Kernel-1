@@ -24,6 +24,7 @@
  *		Christoph Hellwig <hch@infradead.org>
  *  2001-06-03  Added release_region calls to correspond with
  *		request_region calls when a failure occurs.  Also
+#ifdef CONFIG_DEBUG_PRINTK
  *		added KERN_* constants to printk() calls.
  *  2001-11-07  Added isapnp_{,un}register_driver calls along the lines
  *              of the pci driver interface
@@ -50,6 +51,9 @@
 #endif
 
 int isapnp_disable;		/* Disable ISA PnP */
+#else
+ *		added KERN_* constants to ;
+#endif
 static int isapnp_rdp;		/* Read Data Port */
 static int isapnp_reset = 1;	/* reset all PnP cards (deactivate) */
 static int isapnp_verbose = 1;	/* verbose mode */
@@ -380,8 +384,12 @@ static int __init isapnp_read_tag(unsigned char *type, unsigned short *size)
 		*size = tag & 0x07;
 	}
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "tag = 0x%x, type = 0x%x, size = %i\n", tag, *type,
 	       *size);
+#else
+	;
+#endif
 #endif
 	if (*type == 0xff && *size == 0xffff)	/* probably invalid data */
 		return -1;
@@ -1008,7 +1016,11 @@ static int __init isapnp_init(void)
 	struct pnp_dev *dev;
 
 	if (isapnp_disable) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "isapnp: ISA Plug & Play support disabled\n");
+#else
+		;
+#endif
 		return 0;
 	}
 #ifdef CONFIG_PPC
@@ -1040,7 +1052,11 @@ static int __init isapnp_init(void)
 	 *      so let the user know where.
 	 */
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "isapnp: Scanning for PnP cards...\n");
+#else
+	;
+#endif
 	if (isapnp_rdp >= 0x203 && isapnp_rdp <= 0x3ff) {
 		isapnp_rdp |= 3;
 		if (!request_region(isapnp_rdp, 1, "isapnp read")) {
@@ -1062,8 +1078,12 @@ static int __init isapnp_init(void)
 			release_region(_PIDXR, 1);
 #endif
 			release_region(_PNPWRP, 1);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "isapnp: No Plug & Play device found\n");
+#else
+			;
+#endif
 			return 0;
 		}
 		request_region(isapnp_rdp, 1, "isapnp read");
@@ -1085,11 +1105,19 @@ static int __init isapnp_init(void)
 		}
 	}
 	if (cards)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "isapnp: %i Plug & Play card%s detected total\n", cards,
 		       cards > 1 ? "s" : "");
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "isapnp: No Plug & Play card found\n");
+#else
+		;
+#endif
 
 	isapnp_proc_init();
 	return 0;

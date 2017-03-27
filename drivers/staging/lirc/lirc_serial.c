@@ -115,11 +115,11 @@ static int debug;
 static int sense = -1;	/* -1 = auto, 0 = active high, 1 = active low */
 static int txsense;	/* 0 = active high, 1 = active low */
 
-#define dprintk(fmt, args...)					\
-	do {							\
-		if (debug)					\
-			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "	\
-			       fmt, ## args);			\
+//#define dprintk(fmt, args...)					\
+//	do {							\
+//		if (debug)					\
+//			printk(KERN_DEBUG LIRC_DRIVER_NAME ": "	\
+;
 	} while (0)
 
 /* forward declarations */
@@ -395,11 +395,11 @@ static int init_timing_params(unsigned int new_duty_cycle,
 	/* Derive pulse and space from the period */
 	pulse_width = period * duty_cycle / 100;
 	space_width = period - pulse_width;
-	dprintk("in init_timing_params, freq=%d, duty_cycle=%d, "
-		"clk/jiffy=%ld, pulse=%ld, space=%ld, "
-		"conv_us_to_clocks=%ld\n",
-		freq, duty_cycle, __this_cpu_read(cpu_info.loops_per_jiffy),
-		pulse_width, space_width, conv_us_to_clocks);
+//	dprintk("in init_timing_params, freq=%d, duty_cycle=%d, "
+//		"clk/jiffy=%ld, pulse=%ld, space=%ld, "
+//		"conv_us_to_clocks=%ld\n",
+//		freq, duty_cycle, __this_cpu_read(cpu_info.loops_per_jiffy),
+;
 	return 0;
 }
 #else /* ! USE_RDTSC */
@@ -421,8 +421,8 @@ static int init_timing_params(unsigned int new_duty_cycle,
 	period = 256 * 1000000L / freq;
 	pulse_width = period * duty_cycle / 100;
 	space_width = period - pulse_width;
-	dprintk("in init_timing_params, freq=%d pulse=%ld, "
-		"space=%ld\n", freq, pulse_width, space_width);
+//	dprintk("in init_timing_params, freq=%d pulse=%ld, "
+;
 	return 0;
 }
 #endif /* USE_RDTSC */
@@ -594,7 +594,7 @@ static void rbwrite(int l)
 {
 	if (lirc_buffer_full(&rbuf)) {
 		/* no new signals will be accepted */
-		dprintk("Buffer overrun\n");
+;
 		return;
 	}
 	lirc_buffer_write(&rbuf, (void *)&l);
@@ -662,8 +662,8 @@ static irqreturn_t irq_handler(int i, void *blah)
 		counter++;
 		status = sinp(UART_MSR);
 		if (counter > RS_ISR_PASS_LIMIT) {
-			printk(KERN_WARNING LIRC_DRIVER_NAME ": AIEEEE: "
-			       "We're caught!\n");
+//			printk(KERN_WARNING LIRC_DRIVER_NAME ": AIEEEE: "
+;
 			break;
 		}
 		if ((status & hardware[type].signal_pin_change)
@@ -698,11 +698,11 @@ static irqreturn_t irq_handler(int i, void *blah)
 			dcd = (status & hardware[type].signal_pin) ? 1 : 0;
 
 			if (dcd == last_dcd) {
-				printk(KERN_WARNING LIRC_DRIVER_NAME
-				": ignoring spike: %d %d %lx %lx %lx %lx\n",
-				dcd, sense,
-				tv.tv_sec, lasttv.tv_sec,
-				tv.tv_usec, lasttv.tv_usec);
+//				printk(KERN_WARNING LIRC_DRIVER_NAME
+//				": ignoring spike: %d %d %lx %lx %lx %lx\n",
+//				dcd, sense,
+//				tv.tv_sec, lasttv.tv_sec,
+;
 				continue;
 			}
 
@@ -710,25 +710,25 @@ static irqreturn_t irq_handler(int i, void *blah)
 			if (tv.tv_sec < lasttv.tv_sec ||
 			    (tv.tv_sec == lasttv.tv_sec &&
 			     tv.tv_usec < lasttv.tv_usec)) {
-				printk(KERN_WARNING LIRC_DRIVER_NAME
-				       ": AIEEEE: your clock just jumped "
-				       "backwards\n");
-				printk(KERN_WARNING LIRC_DRIVER_NAME
-				       ": %d %d %lx %lx %lx %lx\n",
-				       dcd, sense,
-				       tv.tv_sec, lasttv.tv_sec,
-				       tv.tv_usec, lasttv.tv_usec);
+//				printk(KERN_WARNING LIRC_DRIVER_NAME
+//				       ": AIEEEE: your clock just jumped "
+;
+//				printk(KERN_WARNING LIRC_DRIVER_NAME
+//				       ": %d %d %lx %lx %lx %lx\n",
+//				       dcd, sense,
+//				       tv.tv_sec, lasttv.tv_sec,
+;
 				data = PULSE_MASK;
 			} else if (deltv > 15) {
 				data = PULSE_MASK; /* really long time */
 				if (!(dcd^sense)) {
 					/* sanity check */
-					printk(KERN_WARNING LIRC_DRIVER_NAME
-					       ": AIEEEE: "
-					       "%d %d %lx %lx %lx %lx\n",
-					       dcd, sense,
-					       tv.tv_sec, lasttv.tv_sec,
-					       tv.tv_usec, lasttv.tv_usec);
+//					printk(KERN_WARNING LIRC_DRIVER_NAME
+//					       ": AIEEEE: "
+//					       "%d %d %lx %lx %lx %lx\n",
+//					       dcd, sense,
+//					       tv.tv_sec, lasttv.tv_sec,
+;
 					/*
 					 * detecting pulse while this
 					 * MUST be a space!
@@ -771,8 +771,8 @@ static int hardware_init_port(void)
 	soutp(UART_IER, scratch);
 	if (scratch2 != 0 || scratch3 != 0x0f) {
 		/* we fail, there's nothing here */
-		printk(KERN_ERR LIRC_DRIVER_NAME ": port existence test "
-		       "failed, cannot continue\n");
+//		printk(KERN_ERR LIRC_DRIVER_NAME ": port existence test "
+;
 		return -EINVAL;
 	}
 
@@ -845,11 +845,11 @@ static int __devinit lirc_serial_probe(struct platform_device *dev)
 			     LIRC_DRIVER_NAME, (void *)&hardware);
 	if (result < 0) {
 		if (result == -EBUSY)
-			printk(KERN_ERR LIRC_DRIVER_NAME ": IRQ %d busy\n",
-			       irq);
+//			printk(KERN_ERR LIRC_DRIVER_NAME ": IRQ %d busy\n",
+;
 		else if (result == -EINVAL)
-			printk(KERN_ERR LIRC_DRIVER_NAME
-			       ": Bad irq number or handler\n");
+//			printk(KERN_ERR LIRC_DRIVER_NAME
+;
 		return result;
 	}
 
@@ -864,14 +864,14 @@ static int __devinit lirc_serial_probe(struct platform_device *dev)
 				    LIRC_DRIVER_NAME) == NULL))
 	   || ((iommap == 0)
 	       && (request_region(io, 8, LIRC_DRIVER_NAME) == NULL))) {
-		printk(KERN_ERR  LIRC_DRIVER_NAME
-		       ": port %04x already in use\n", io);
-		printk(KERN_WARNING LIRC_DRIVER_NAME
-		       ": use 'setserial /dev/ttySX uart none'\n");
-		printk(KERN_WARNING LIRC_DRIVER_NAME
-		       ": or compile the serial port driver as module and\n");
-		printk(KERN_WARNING LIRC_DRIVER_NAME
-		       ": make sure this module is loaded first\n");
+//		printk(KERN_ERR  LIRC_DRIVER_NAME
+;
+//		printk(KERN_WARNING LIRC_DRIVER_NAME
+;
+//		printk(KERN_WARNING LIRC_DRIVER_NAME
+;
+//		printk(KERN_WARNING LIRC_DRIVER_NAME
+;
 		result = -EBUSY;
 		goto exit_free_irq;
 	}
@@ -903,13 +903,13 @@ static int __devinit lirc_serial_probe(struct platform_device *dev)
 			msleep(40);
 		}
 		sense = (nlow >= nhigh ? 1 : 0);
-		printk(KERN_INFO LIRC_DRIVER_NAME  ": auto-detected active "
-		       "%s receiver\n", sense ? "low" : "high");
+//		printk(KERN_INFO LIRC_DRIVER_NAME  ": auto-detected active "
+;
 	} else
-		printk(KERN_INFO LIRC_DRIVER_NAME  ": Manually using active "
-		       "%s receiver\n", sense ? "low" : "high");
+//		printk(KERN_INFO LIRC_DRIVER_NAME  ": Manually using active "
+;
 
-	dprintk("Interrupt %d, port %04x obtained\n", irq, io);
+;
 	return 0;
 
 exit_release_region:
@@ -1036,7 +1036,7 @@ static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 		break;
 
 	case LIRC_SET_SEND_DUTY_CYCLE:
-		dprintk("SET_SEND_DUTY_CYCLE\n");
+;
 		if (!(hardware[type].features&LIRC_CAN_SET_SEND_DUTY_CYCLE))
 			return -ENOIOCTLCMD;
 
@@ -1049,7 +1049,7 @@ static long lirc_ioctl(struct file *filep, unsigned int cmd, unsigned long arg)
 		break;
 
 	case LIRC_SET_SEND_CARRIER:
-		dprintk("SET_SEND_CARRIER\n");
+;
 		if (!(hardware[type].features&LIRC_CAN_SET_SEND_CARRIER))
 			return -ENOIOCTLCMD;
 
@@ -1162,7 +1162,7 @@ static int __init lirc_serial_init(void)
 
 	result = platform_driver_register(&lirc_serial_driver);
 	if (result) {
-		printk("lirc register returned %d\n", result);
+;
 		goto exit_buffer_free;
 	}
 
@@ -1241,8 +1241,8 @@ static int __init lirc_serial_init_module(void)
 	driver.dev = &lirc_serial_dev->dev;
 	driver.minor = lirc_register_driver(&driver);
 	if (driver.minor < 0) {
-		printk(KERN_ERR  LIRC_DRIVER_NAME
-		       ": register_chrdev failed!\n");
+//		printk(KERN_ERR  LIRC_DRIVER_NAME
+;
 		lirc_serial_exit();
 		return -EIO;
 	}
@@ -1253,7 +1253,7 @@ static void __exit lirc_serial_exit_module(void)
 {
 	lirc_unregister_driver(driver.minor);
 	lirc_serial_exit();
-	dprintk("cleaned up module\n");
+;
 }
 
 

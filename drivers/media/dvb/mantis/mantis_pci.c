@@ -53,23 +53,35 @@ int __devinit mantis_pci_init(struct mantis_pci *mantis)
 	struct pci_dev *pdev		= mantis->pdev;
 	int err, ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 0, "found a %s PCI %s device on (%02x:%02x.%x),\n",
 		config->model_name,
 		config->dev_type,
 		mantis->pdev->bus->number,
 		PCI_SLOT(mantis->pdev->devfn),
 		PCI_FUNC(mantis->pdev->devfn));
+#else
+	d;
+#endif
 
 	err = pci_enable_device(pdev);
 	if (err != 0) {
 		ret = -ENODEV;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "ERROR: PCI enable failed <%i>", err);
+#else
+		d;
+#endif
 		goto fail0;
 	}
 
 	err = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
 	if (err != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "ERROR: Unable to obtain 32 bit DMA <%i>", err);
+#else
+		d;
+#endif
 		ret = -ENOMEM;
 		goto fail1;
 	}
@@ -80,7 +92,11 @@ int __devinit mantis_pci_init(struct mantis_pci *mantis)
 				pci_resource_len(pdev, 0),
 				DRIVER_NAME)) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "ERROR: BAR0 Request failed !");
+#else
+		d;
+#endif
 		ret = -ENODEV;
 		goto fail1;
 	}
@@ -89,7 +105,11 @@ int __devinit mantis_pci_init(struct mantis_pci *mantis)
 			       pci_resource_len(pdev, 0));
 
 	if (!mantis->mmio) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "ERROR: BAR0 remap failed !");
+#else
+		d;
+#endif
 		ret = -ENODEV;
 		goto fail2;
 	}
@@ -98,17 +118,25 @@ int __devinit mantis_pci_init(struct mantis_pci *mantis)
 	mantis->latency = latency;
 	mantis->revision = pdev->revision;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 0, "    Mantis Rev %d [%04x:%04x], ",
 		mantis->revision,
 		mantis->pdev->subsystem_vendor,
 		mantis->pdev->subsystem_device);
+#else
+	d;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 0,
 		"irq: %d, latency: %d\n    memory: 0x%lx, mmio: 0x%p\n",
 		mantis->pdev->irq,
 		mantis->latency,
 		mantis->mantis_addr,
 		mantis->mmio);
+#else
+	d;
+#endif
 
 	err = request_irq(pdev->irq,
 			  config->irq_handler,
@@ -118,7 +146,11 @@ int __devinit mantis_pci_init(struct mantis_pci *mantis)
 
 	if (err != 0) {
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "ERROR: IRQ registration failed ! <%d>", err);
+#else
+		d;
+#endif
 		ret = -ENODEV;
 		goto fail3;
 	}
@@ -128,21 +160,37 @@ int __devinit mantis_pci_init(struct mantis_pci *mantis)
 
 	/* Error conditions */
 fail3:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "ERROR: <%d> I/O unmap", ret);
+#else
+	d;
+#endif
 	if (mantis->mmio)
 		iounmap(mantis->mmio);
 
 fail2:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "ERROR: <%d> releasing regions", ret);
+#else
+	d;
+#endif
 	release_mem_region(pci_resource_start(pdev, 0),
 			   pci_resource_len(pdev, 0));
 
 fail1:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "ERROR: <%d> disabling device", ret);
+#else
+	d;
+#endif
 	pci_disable_device(pdev);
 
 fail0:
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "ERROR: <%d> exiting", ret);
+#else
+	d;
+#endif
 	pci_set_drvdata(pdev, NULL);
 	return ret;
 }
@@ -152,7 +200,11 @@ void mantis_pci_exit(struct mantis_pci *mantis)
 {
 	struct pci_dev *pdev = mantis->pdev;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_NOTICE, 1, " mem: 0x%p", mantis->mmio);
+#else
+	d;
+#endif
 	free_irq(pdev->irq, mantis);
 	if (mantis->mmio) {
 		iounmap(mantis->mmio);

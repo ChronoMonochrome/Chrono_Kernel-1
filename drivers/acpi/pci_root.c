@@ -483,8 +483,12 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
 		 * can do is assume [_BBN-0xFF] or [0-0xFF].
 		 */
 		root->secondary.end = 0xFF;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING FW_BUG PREFIX
 		       "no secondary bus range in _CRS\n");
+#else
+		;
+#endif
 		status = acpi_evaluate_integer(device->handle, METHOD_NAME__BBN,					       NULL, &bus);
 		if (ACPI_SUCCESS(status))
 			root->secondary.start = bus;
@@ -518,9 +522,13 @@ static int __devinit acpi_pci_root_add(struct acpi_device *device)
 	/* TBD: Locking */
 	list_add_tail(&root->node, &acpi_pci_roots);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s [%s] (domain %04x %pR)\n",
 	       acpi_device_name(device), acpi_device_bid(device),
 	       root->segment, &root->secondary);
+#else
+	;
+#endif
 
 	/*
 	 * Scan the Root Bridge

@@ -248,7 +248,11 @@ static void get_fdc(int drive)
 
 	drive &= 3;
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("get_fdc: drive %d  fdc_busy %d  fdc_nested %d\n",drive,fdc_busy,fdc_nested);
+#else
+	;
+#endif
 #endif
 	local_irq_save(flags);
 	wait_event(fdc_wait, try_fdc(drive));
@@ -261,8 +265,16 @@ static inline void rel_fdc(void)
 {
 #ifdef DEBUG
 	if (fdc_nested == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fd: unmatched rel_fdc\n");
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("rel_fdc: fdc_busy %d fdc_nested %d\n",fdc_busy,fdc_nested);
+#else
+	;
+#endif
 #endif
 	fdc_nested--;
 	if (fdc_nested == 0) {
@@ -277,7 +289,11 @@ static void fd_select (int drive)
 
 	drive&=3;
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("selecting %d\n",drive);
+#else
+	;
+#endif
 #endif
 	if (drive == selected)
 		return;
@@ -302,10 +318,18 @@ static void fd_deselect (int drive)
 
 	drive&=3;
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("deselecting %d\n",drive);
+#else
+	;
+#endif
 #endif
 	if (drive != selected) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Deselecting drive %d while %d was selected!\n",drive,selected);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -456,7 +480,11 @@ static int fd_seek(int drive, int track)
 	int cnt;
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("seeking drive %d to track %d\n",drive,track);
+#else
+	;
+#endif
 #endif
 	drive &= 3;
 	get_fdc(drive);
@@ -551,7 +579,11 @@ static unsigned long fd_get_drive_id(int drive)
         if(drive == 0 && id == FD_NODRIVE)
 	{
                 id = fd_def_df0;
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_NOTICE "fd: drive 0 didn't identify, setting default %08lx\n", (ulong)fd_def_df0);
+#else
+                ;
+#endif
 	}
 	/* return the ID value */
 	return (id);
@@ -639,7 +671,11 @@ static int raw_write(int drive)
 static void post_write (unsigned long drive)
 {
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("post_write for drive %ld\n",drive);
+#else
+	;
+#endif
 #endif
 	drive &= 3;
 	custom.dsklen = 0;
@@ -749,13 +785,21 @@ static int amiga_read(int drive)
 #endif
 
 		if (hdr.hdrchk != csum) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MFM_HEADER: %08lx,%08lx\n", hdr.hdrchk, csum);
+#else
+			;
+#endif
 			return MFM_HEADER;
 		}
 
 		/* verify track */
 		if (hdr.track != unit[drive].track) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MFM_TRACK: %d, %d\n", hdr.track, unit[drive].track);
+#else
+			;
+#endif
 			return MFM_TRACK;
 		}
 
@@ -764,9 +808,13 @@ static int amiga_read(int drive)
 		csum = checksum((ulong *)(unit[drive].trackbuf + hdr.sect*512), 512);
 
 		if (hdr.datachk != csum) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "MFM_DATA: (%x:%d:%d:%d) sc=%d %lx, %lx\n",
 			       hdr.magic, hdr.track, hdr.sect, hdr.ord, scnt,
 			       hdr.datachk, csum);
+#else
+			;
+#endif
 			printk (KERN_INFO "data=(%lx,%lx,%lx,%lx)\n",
 				((ulong *)(unit[drive].trackbuf+hdr.sect*512))[0],
 				((ulong *)(unit[drive].trackbuf+hdr.sect*512))[1],
@@ -1024,9 +1072,13 @@ static unsigned long dos_decode(unsigned char *data, unsigned short *raw, int le
 #ifdef DEBUG
 static void dbg(unsigned long ptr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("raw data @%08lx: %08lx, %08lx ,%08lx, %08lx\n", ptr,
 	       ((ulong *)ptr)[0], ((ulong *)ptr)[1],
 	       ((ulong *)ptr)[2], ((ulong *)ptr)[3]);
+#else
+	;
+#endif
 }
 #endif
 
@@ -1045,9 +1097,13 @@ static int dos_read(int drive)
 	for (scnt=0; scnt < unit[drive].dtype->sects * unit[drive].type->sect_mult; scnt++) {
 		do { /* search for the right sync of each sec-hdr */
 			if (!(raw = scan_sync (raw, end))) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "dos_read: no hdr sync on "
 				       "track %d, unit %d for sector %d\n",
 				       unit[drive].track,drive,scnt);
+#else
+				;
+#endif
 				return MFM_NOSYNC;
 			}
 #ifdef DEBUG
@@ -1059,41 +1115,69 @@ static int dos_read(int drive)
 		crc = dos_hdr_crc(&hdr);
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("(%3d,%d,%2d,%d) %x\n", hdr.track, hdr.side,
 		       hdr.sec, hdr.len_desc, hdr.crc);
+#else
+		;
+#endif
 #endif
 
 		if (crc != hdr.crc) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "dos_read: MFM_HEADER %04x,%04x\n",
 			       hdr.crc, crc);
+#else
+			;
+#endif
 			return MFM_HEADER;
 		}
 		if (hdr.track != unit[drive].track/unit[drive].type->heads) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "dos_read: MFM_TRACK %d, %d\n",
 			       hdr.track,
 			       unit[drive].track/unit[drive].type->heads);
+#else
+			;
+#endif
 			return MFM_TRACK;
 		}
 
 		if (hdr.side != unit[drive].track%unit[drive].type->heads) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "dos_read: MFM_SIDE %d, %d\n",
 			       hdr.side,
 			       unit[drive].track%unit[drive].type->heads);
+#else
+			;
+#endif
 			return MFM_TRACK;
 		}
 
 		if (hdr.len_desc != 2) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "dos_read: unknown sector len "
 			       "descriptor %d\n", hdr.len_desc);
+#else
+			;
+#endif
 			return MFM_DATA;
 		}
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("hdr accepted\n");
+#else
+		;
+#endif
 #endif
 		if (!(raw = scan_sync (raw, end))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "dos_read: no data sync on track "
 			       "%d, unit %d for sector%d, disk sector %d\n",
 			       unit[drive].track, drive, scnt, hdr.sec);
+#else
+			;
+#endif
 			return MFM_NOSYNC;
 		}
 #ifdef DEBUG
@@ -1101,9 +1185,13 @@ static int dos_read(int drive)
 #endif
 
 		if (*((ushort *)raw)!=0x5545) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "dos_read: no data mark after "
 			       "sync (%d,%d,%d,%d) sc=%d\n",
 			       hdr.track,hdr.side,hdr.sec,hdr.len_desc,scnt);
+#else
+			;
+#endif
 			return MFM_NOSYNC;
 		}
 
@@ -1113,14 +1201,22 @@ static int dos_read(int drive)
 		crc = dos_data_crc(unit[drive].trackbuf + (hdr.sec - 1) * 512);
 
 		if (crc != data_crc[0]) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "dos_read: MFM_DATA (%d,%d,%d,%d) "
 			       "sc=%d, %x %x\n", hdr.track, hdr.side,
 			       hdr.sec, hdr.len_desc, scnt,data_crc[0], crc);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "data=(%lx,%lx,%lx,%lx,...)\n",
 			       ((ulong *)(unit[drive].trackbuf+(hdr.sec-1)*512))[0],
 			       ((ulong *)(unit[drive].trackbuf+(hdr.sec-1)*512))[1],
 			       ((ulong *)(unit[drive].trackbuf+(hdr.sec-1)*512))[2],
 			       ((ulong *)(unit[drive].trackbuf+(hdr.sec-1)*512))[3]);
+#else
+			;
+#endif
 			return MFM_DATA;
 		}
 	}
@@ -1394,9 +1490,13 @@ next_segment:
 	/* Here someone could investigate to be more efficient */
 	for (cnt = 0, err = 0; cnt < blk_rq_cur_sectors(rq); cnt++) {
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fd: sector %ld + %d requested for %s\n",
 		       blk_rq_pos(rq), cnt,
 		       (rq_data_dir(rq) == READ) ? "read" : "write");
+#else
+		;
+#endif
 #endif
 		block = blk_rq_pos(rq) + cnt;
 		if ((int)block > floppy->blocks) {
@@ -1408,8 +1508,12 @@ next_segment:
 		sector = block % (floppy->dtype->sects * floppy->type->sect_mult);
 		data = rq->buffer + 512 * cnt;
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("access to track %d, sector %d, with buffer at "
 		       "0x%08lx\n", track, sector, data);
+#else
+		;
+#endif
 #endif
 
 		if (get_track(drive, track) == -1) {
@@ -1530,8 +1634,12 @@ static int fd_locked_ioctl(struct block_device *bdev, fmode_t mode,
 			return p->type->read_size;
 #endif
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "fd_ioctl: unknown cmd %d for drive %d.",
 		       cmd, drive);
+#else
+		;
+#endif
 		return -ENOSYS;
 	}
 	return 0;
@@ -1564,8 +1672,12 @@ static void fd_probe(int dev)
 			break;
 
 	if (type >= num_dr_types) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "fd_probe: unsupported drive type "
 		       "%08lx found\n", code);
+#else
+		;
+#endif
 		unit[drive].type = &drive_types[num_dr_types-1]; /* FD_NODRIVE */
 		return;
 	}
@@ -1627,8 +1739,12 @@ static int floppy_open(struct block_device *bdev, fmode_t mode)
 		data_types[system].sects*unit[drive].type->sect_mult;
 	set_capacity(unit[drive].gendisk, unit[drive].blocks);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "fd%d: accessing %s-disk with %s-layout\n",drive,
 	       unit[drive].type->name, data_types[system].name);
+#else
+	;
+#endif
 
 	mutex_unlock(&amiflop_mutex);
 	return 0;
@@ -1646,7 +1762,11 @@ static int floppy_release(struct gendisk *disk, fmode_t mode)
 	}
   
 	if (!fd_ref[drive]--) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "floppy_release with fd_ref == 0");
+#else
+		;
+#endif
 		fd_ref[drive] = 0;
 	}
 #ifdef MODULE
@@ -1704,7 +1824,11 @@ static int __init fd_probe_drives(void)
 {
 	int drive,drives,nomem;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "FD: probing units\nfound ");
+#else
+	;
+#endif
 	drives=0;
 	nomem=0;
 	for(drive=0;drive<FD_MAX_UNITS;drive++) {
@@ -1727,12 +1851,20 @@ static int __init fd_probe_drives(void)
 
 		drives++;
 		if ((unit[drive].trackbuf = kmalloc(FLOPPY_MAX_SECTORS * 512, GFP_KERNEL)) == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("no mem for ");
+#else
+			;
+#endif
 			unit[drive].type = &drive_types[num_dr_types - 1]; /* FD_NODRIVE */
 			drives--;
 			nomem = 1;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fd%d ",drive);
+#else
+		;
+#endif
 		disk->major = FLOPPY_MAJOR;
 		disk->first_minor = drive;
 		disk->fops = &floppy_fops;
@@ -1743,11 +1875,23 @@ static int __init fd_probe_drives(void)
 	}
 	if ((drives > 0) || (nomem == 0)) {
 		if (drives == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("no drives");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 		return drives;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 	return -ENOMEM;
 }
  
@@ -1770,18 +1914,30 @@ static int __init amiga_floppy_probe(struct platform_device *pdev)
 	ret = -ENOMEM;
 	raw_buf = amiga_chip_alloc(RAW_BUF_SIZE, "Floppy");
 	if (!raw_buf) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fd: cannot get chip mem buffer\n");
+#else
+		;
+#endif
 		goto out_blkdev;
 	}
 
 	ret = -EBUSY;
 	if (request_irq(IRQ_AMIGA_DSKBLK, fd_block_done, 0, "floppy_dma", NULL)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fd: cannot get irq for dma\n");
+#else
+		;
+#endif
 		goto out_irq;
 	}
 
 	if (request_irq(IRQ_AMIGA_CIAA_TB, ms_isr, 0, "floppy_timer", NULL)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("fd: cannot get irq for timer\n");
+#else
+		;
+#endif
 		goto out_irq2;
 	}
 

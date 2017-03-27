@@ -104,7 +104,11 @@ static int __init overo_soc_init(void)
 		pr_debug("Incomatible machine!\n");
 		return -ENODEV;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "overo SoC init\n");
+#else
+	;
+#endif
 
 	overo_snd_device = platform_device_alloc("soc-audio", -1);
 	if (!overo_snd_device) {

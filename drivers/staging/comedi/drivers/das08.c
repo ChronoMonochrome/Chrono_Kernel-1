@@ -554,7 +554,7 @@ static int das08_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 		/* clear over-range bits for 16-bit boards */
 		if (thisboard->ai_nbits == 16)
 			if (inb(dev->iobase + DAS08_MSB) & 0x80)
-				printk(KERN_INFO "das08: over-range\n");
+;
 
 		/* trigger conversion */
 		outb_p(0, dev->iobase + DAS08_TRIG_12BIT);
@@ -564,7 +564,7 @@ static int das08_ai_rinsn(struct comedi_device *dev, struct comedi_subdevice *s,
 				break;
 		}
 		if (i == TIMEOUT) {
-			printk(KERN_ERR "das08: timeout\n");
+;
 			return -ETIME;
 		}
 		msb = inb(dev->iobase + DAS08_MSB);
@@ -863,9 +863,9 @@ int das08_common_attach(struct comedi_device *dev, unsigned long iobase)
 
 	/*  allocate ioports for non-pcmcia, non-pci boards */
 	if ((thisboard->bustype != pcmcia) && (thisboard->bustype != pci)) {
-		printk(KERN_INFO " iobase 0x%lx\n", iobase);
+;
 		if (!request_region(iobase, thisboard->iosize, DRV_NAME)) {
-			printk(KERN_ERR " I/O port conflict\n");
+;
 			return -EIO;
 		}
 	}
@@ -987,15 +987,15 @@ static int das08_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	if (ret < 0)
 		return ret;
 
-	printk(KERN_INFO "comedi%d: das08: ", dev->minor);
+;
 	/*  deal with a pci board */
 	if (thisboard->bustype == pci) {
 #ifdef CONFIG_COMEDI_PCI
 		if (it->options[0] || it->options[1]) {
-			printk("bus %i slot %i ",
-			       it->options[0], it->options[1]);
+//			printk("bus %i slot %i ",
+;
 		}
-		printk("\n");
+;
 		/*  find card */
 		for_each_pci_dev(pdev) {
 			if (pdev->vendor == PCI_VENDOR_ID_COMPUTERBOARDS
@@ -1012,21 +1012,21 @@ static int das08_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 			}
 		}
 		if (!pdev) {
-			printk(KERN_ERR "No pci das08 cards found\n");
+;
 			return -EIO;
 		}
 		devpriv->pdev = pdev;
 		/*  enable PCI device and reserve I/O spaces */
 		if (comedi_pci_enable(pdev, DRV_NAME)) {
-			printk(KERN_ERR " Error enabling PCI device and "
-						"requesting regions\n");
+//			printk(KERN_ERR " Error enabling PCI device and "
+;
 			return -EIO;
 		}
 		/*  read base addresses */
 		pci_iobase = pci_resource_start(pdev, 1);
 		iobase = pci_resource_start(pdev, 2);
-		printk(KERN_INFO "pcibase 0x%lx  iobase 0x%lx\n",
-							pci_iobase, iobase);
+//		printk(KERN_INFO "pcibase 0x%lx  iobase 0x%lx\n",
+;
 		devpriv->pci_iobase = pci_iobase;
 #if 0
 /* We could enable to pci-das08's interrupt here to make it possible
@@ -1040,13 +1040,13 @@ static int das08_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		outw(INTR1_ENABLE | PCI_INTR_ENABLE, pci_iobase + INTCSR);
 #endif
 #else /* CONFIG_COMEDI_PCI */
-		printk(KERN_ERR "this driver has not been built with PCI support.\n");
+;
 		return -EINVAL;
 #endif /* CONFIG_COMEDI_PCI */
 	} else {
 		iobase = it->options[0];
 	}
-	printk(KERN_INFO "\n");
+;
 
 	return das08_common_attach(dev, iobase);
 }
@@ -1054,7 +1054,7 @@ static int das08_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 int das08_common_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: das08: remove\n", dev->minor);
+;
 
 	if (dev->subdevices)
 		subdev_8255_cleanup(dev, dev->subdevices + 4);

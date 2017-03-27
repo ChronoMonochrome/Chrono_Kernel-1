@@ -909,16 +909,24 @@ try_again:
 		return 0;
 
 	if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: could not switch to 4-bit mode, error %d\n",
 		       dev_name(&card->dev), rc);
+#else
+		;
+#endif
 		return 0;
 	}
 
 	msb->system = MEMSTICK_SYS_PAR4;
 	host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_PAR4);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: switching to 4-bit parallel mode\n",
 	       dev_name(&card->dev));
+#else
+	;
+#endif
 
 	if (msb->caps & MEMSTICK_CAP_PAR8) {
 		rc = mspro_block_set_interface(card, MEMSTICK_SYS_PAR8);
@@ -927,13 +935,21 @@ try_again:
 			msb->system = MEMSTICK_SYS_PAR8;
 			host->set_param(host, MEMSTICK_INTERFACE,
 					MEMSTICK_PAR8);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO
 			       "%s: switching to 8-bit parallel mode\n",
 			       dev_name(&card->dev));
+#else
+			;
+#endif
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "%s: could not switch to 8-bit mode, error %d\n",
 			       dev_name(&card->dev), rc);
+#else
+			;
+#endif
 	}
 
 	card->next_request = h_mspro_block_req_init;
@@ -944,9 +960,13 @@ try_again:
 	rc = card->current_mrq.error;
 
 	if (rc) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "%s: interface error, trying to fall back to serial\n",
 		       dev_name(&card->dev));
+#else
+		;
+#endif
 		msb->system = MEMSTICK_SYS_SERIAL;
 		host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
 		msleep(10);
@@ -1018,8 +1038,12 @@ static int mspro_block_read_attributes(struct memstick_dev *card)
 	}
 
 	if (attr->count > MSPRO_BLOCK_MAX_ATTRIBUTES) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: way too many attribute entries\n",
 		       dev_name(&card->dev));
+#else
+		;
+#endif
 		attr_count = MSPRO_BLOCK_MAX_ATTRIBUTES;
 	} else
 		attr_count = attr->count;

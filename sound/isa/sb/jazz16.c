@@ -307,8 +307,12 @@ static int __devinit snd_jazz16_probe(struct device *devptr, unsigned int dev)
 	err = snd_opl3_create(card, chip->port, chip->port + 2,
 			      OPL3_HW_AUTO, 1, &opl3);
 	if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "no OPL device at 0x%lx-0x%lx\n",
 			   chip->port, chip->port + 2);
+#else
+		;
+#endif
 	else {
 		err = snd_opl3_hwdep_new(opl3, 0, 1, NULL);
 		if (err < 0)

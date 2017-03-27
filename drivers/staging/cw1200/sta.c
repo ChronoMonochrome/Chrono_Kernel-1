@@ -20,13 +20,13 @@
 #include "debug.h"
 
 #if defined(CONFIG_CW1200_STA_DEBUG)
-#define sta_printk(...) printk(__VA_ARGS__)
-#else
-#define sta_printk(...)
-#endif
-
-
-static int cw1200_cancel_scan(struct cw1200_common *priv);
+//#define sta_printk(...) printk(__VA_ARGS__)
+//#else
+//#define sta_printk(...)
+//#endif
+//
+//
+;
 static int __cw1200_flush(struct cw1200_common *priv, bool drop);
 
 static inline void __cw1200_free_event_queue(struct list_head *list)
@@ -157,8 +157,8 @@ void cw1200_stop(struct ieee80211_hw *dev)
 
 	/* HACK! */
 	if (atomic_xchg(&priv->tx_lock, 1) != 1)
-		sta_printk(KERN_DEBUG "[STA] TX is force-unlocked due to stop " \
-			"request.\n");
+//		sta_printk(KERN_DEBUG "[STA] TX is force-unlocked due to stop " \
+;
 
 	wsm_unlock_tx(priv);
 
@@ -239,7 +239,7 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 	/* TODO: IEEE80211_CONF_CHANGE_QOS */
 	if (changed & IEEE80211_CONF_CHANGE_POWER) {
 		priv->output_power = conf->power_level;
-		sta_printk(KERN_DEBUG "[STA] TX power: %d\n", priv->output_power);
+;
 		WARN_ON(wsm_set_output_power(priv, priv->output_power * 10));
 	}
 
@@ -254,8 +254,8 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			listen_interval = 0;
 		/* TODO: max_sleep_period is not supported
 		 * and silently skipped. */
-		sta_printk(KERN_DEBUG "[STA] DTIM %d, listen %d\n",
-			dtim_interval, listen_interval);
+//		sta_printk(KERN_DEBUG "[STA] DTIM %d, listen %d\n",
+;
 		WARN_ON(wsm_set_beacon_wakeup_period(priv,
 			dtim_interval, listen_interval));
 	}
@@ -268,8 +268,8 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 			.newChannelNumber = ch->hw_value,
 		};
 		cw1200_cancel_scan(priv);
-		sta_printk(KERN_DEBUG "[STA] Freq %d (wsm ch: %d).\n",
-			ch->center_freq, ch->hw_value);
+//		sta_printk(KERN_DEBUG "[STA] Freq %d (wsm ch: %d).\n",
+;
 		WARN_ON(wait_event_interruptible_timeout(
 			priv->channel_switch_done,
 			!priv->channel_switch_in_progress, 3 * HZ) <= 0);
@@ -313,10 +313,10 @@ int cw1200_config(struct ieee80211_hw *dev, u32 changed)
 	}
 
 	if (changed & IEEE80211_CONF_CHANGE_RETRY_LIMITS) {
-		sta_printk(KERN_DEBUG "[STA] Retry limits: %d (long), " \
-			"%d (short).\n",
-			conf->long_frame_max_tx_count,
-			conf->short_frame_max_tx_count);
+//		sta_printk(KERN_DEBUG "[STA] Retry limits: %d (long), " \
+//			"%d (short).\n",
+//			conf->long_frame_max_tx_count,
+;
 		spin_lock_bh(&priv->tx_policy_cache.lock);
 		priv->long_frame_max_tx_count = conf->long_frame_max_tx_count;
 		priv->short_frame_max_tx_count =
@@ -586,8 +586,8 @@ void cw1200_wep_key_work(struct work_struct *work)
 	__le32 wep_default_key_id = __cpu_to_le32(
 		priv->wep_default_key_id);
 
-	sta_printk(KERN_DEBUG "[STA] Setting default WEP key: %d\n",
-		priv->wep_default_key_id);
+//	sta_printk(KERN_DEBUG "[STA] Setting default WEP key: %d\n",
+;
 	wsm_flush_tx(priv);
 	WARN_ON(wsm_write_mib(priv, WSM_MIB_ID_DOT11_WEP_DEFAULT_KEY_ID,
 		&wep_default_key_id, sizeof(wep_default_key_id)));
@@ -696,7 +696,7 @@ void cw1200_event_handler(struct work_struct *work)
 			break;
 		case WSM_EVENT_BSS_LOST:
 		{
-			sta_printk(KERN_DEBUG "[CQM] BSS lost.\n");
+;
 			cancel_delayed_work_sync(&priv->bss_loss_work);
 			cancel_delayed_work_sync(&priv->connection_loss_work);
 			if (!down_trylock(&priv->scan.lock)) {
@@ -716,7 +716,7 @@ void cw1200_event_handler(struct work_struct *work)
 		}
 		case WSM_EVENT_BSS_REGAINED:
 		{
-			sta_printk(KERN_DEBUG "[CQM] BSS regained.\n");
+;
 			priv->delayed_link_loss = 0;
 			cancel_delayed_work_sync(&priv->bss_loss_work);
 			cancel_delayed_work_sync(&priv->connection_loss_work);
@@ -731,7 +731,7 @@ void cw1200_event_handler(struct work_struct *work)
 			int cqm_evt = (rssi <= priv->cqm_rssi_thold) ?
 				NL80211_CQM_RSSI_THRESHOLD_EVENT_LOW :
 				NL80211_CQM_RSSI_THRESHOLD_EVENT_HIGH;
-			sta_printk(KERN_DEBUG "[CQM] RSSI event: %d", rssi);
+;
 			ieee80211_cqm_rssi_notify(priv->vif, cqm_evt,
 								GFP_KERNEL);
 			break;
@@ -757,7 +757,7 @@ void cw1200_bss_loss_work(struct work_struct *work)
 		priv->cqm_beacon_loss_count;
 
 	if (priv->cqm_beacon_loss_count) {
-		sta_printk(KERN_DEBUG "[CQM] Beacon loss.\n");
+;
 		if (timeout <= 0)
 			timeout = 0;
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
@@ -778,7 +778,7 @@ void cw1200_connection_loss_work(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common,
 				connection_loss_work.work);
-	sta_printk(KERN_DEBUG "[CQM] Reporting connection loss.\n");
+;
 	ieee80211_connection_loss(priv->vif);
 }
 
@@ -792,7 +792,7 @@ void cw1200_keep_alive_work(struct work_struct *work)
 	unsigned long tmo = 30 * HZ;
 
 	if (delta >= tmo) {
-		sta_printk(KERN_DEBUG "[CQM] Keep-alive ping.\n");
+;
 		STUB();
 		/* TODO: Do a keep-alive ping :) */
 		priv->last_activity_time = now;
@@ -808,7 +808,7 @@ void cw1200_tx_failure_work(struct work_struct *work)
 {
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, tx_failure_work);
-	sta_printk(KERN_DEBUG "[CQM] Reporting TX failure.\n");
+;
 #if defined(CONFIG_CW1200_USE_STE_EXTENSIONS)
 	ieee80211_cqm_tx_fail_notify(priv->vif, GFP_KERNEL);
 #else /* CONFIG_CW1200_USE_STE_EXTENSIONS */
@@ -948,8 +948,8 @@ void cw1200_join_work(struct work_struct *work)
 		if (tim && tim->dtim_period > 1) {
 			join.dtimPeriod = tim->dtim_period;
 			priv->join_dtim_period = tim->dtim_period;
-			sta_printk(KERN_DEBUG "[STA] Join DTIM: %d\n",
-				join.dtimPeriod);
+//			sta_printk(KERN_DEBUG "[STA] Join DTIM: %d\n",
+;
 		}
 
 		priv->join_pending_frame = NULL;
@@ -1016,7 +1016,7 @@ void cw1200_join_timeout(struct work_struct *work)
 {
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, join_timeout.work);
-	sta_printk(KERN_DEBUG "[WSM] Issue unjoin command (TMO).\n");
+;
 	wsm_lock_tx(priv);
 	cw1200_unjoin_work(&priv->unjoin_work);
 }
@@ -1050,7 +1050,7 @@ void cw1200_unjoin_work(struct work_struct *work)
 #endif /* CW1200_FIRMWARE_DOES_NOT_SUPPORT_KEEPALIVE */
 		cw1200_update_listening(priv, priv->listening);
 		cw1200_update_filtering(priv);
-		sta_printk(KERN_DEBUG "[STA] Unjoin.\n");
+;
 	}
 	mutex_unlock(&priv->conf_mutex);
 	wsm_unlock_tx(priv);

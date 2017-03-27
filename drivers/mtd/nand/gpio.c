@@ -357,7 +357,11 @@ static struct platform_driver gpio_nand_driver = {
 
 static int __init gpio_nand_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "GPIO NAND driver, © 2004 Simtec Electronics\n");
+#else
+	;
+#endif
 
 	return platform_driver_register(&gpio_nand_driver);
 }

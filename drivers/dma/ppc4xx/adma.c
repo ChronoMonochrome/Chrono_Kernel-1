@@ -1302,9 +1302,13 @@ static void ppc440spe_chan_set_first_xor_descriptor(
 	struct xor_regs *xor_reg = chan->device->xor_reg;
 
 	if (ioread32be(&xor_reg->sr) & XOR_SR_XCP_BIT)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Warn: XORcore is running "
 			"when try to set the first CDB!\n",
 			__func__);
+#else
+		;
+#endif
 
 	xor_last_submit = xor_last_linked = next_desc;
 
@@ -1675,8 +1679,12 @@ ppc440spe_get_group_entry(struct ppc440spe_adma_desc_slot *tdesc, u32 entry_idx)
 	int i = 0;
 
 	if (entry_idx < 0 || entry_idx >= (tdesc->src_cnt + tdesc->dst_cnt)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: entry_idx %d, src_cnt %d, dst_cnt %d\n",
 			__func__, entry_idx, tdesc->src_cnt, tdesc->dst_cnt);
+#else
+		;
+#endif
 		BUG();
 	}
 
@@ -2096,8 +2104,12 @@ static int ppc440spe_adma_alloc_chan_resources(struct dma_chan *chan)
 		slot = kzalloc(sizeof(struct ppc440spe_adma_desc_slot),
 			       GFP_KERNEL);
 		if (!slot) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "SPE ADMA Channel only initialized"
 				" %d descriptor slots", i--);
+#else
+			;
+#endif
 			break;
 		}
 

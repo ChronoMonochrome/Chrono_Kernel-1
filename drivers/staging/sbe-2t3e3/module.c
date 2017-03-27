@@ -66,7 +66,7 @@ static int __devinit t3e3_init_channel(struct channel *channel, struct pci_dev *
 
 	dev = alloc_hdlcdev(channel);
 	if (!dev) {
-		printk(KERN_ERR "SBE 2T3E3" ": Out of memory\n");
+;
 		goto free_regions;
 	}
 
@@ -93,7 +93,7 @@ static int __devinit t3e3_init_channel(struct channel *channel, struct pci_dev *
 	t3e3_init(channel);
 
 	if (request_irq(dev->irq, &t3e3_intr, IRQF_SHARED, dev->name, dev)) {
-		printk(KERN_WARNING "%s: could not get irq: %d\n", dev->name, dev->irq);
+;
 		goto free_regions;
 	}
 
@@ -137,7 +137,7 @@ static int __devinit t3e3_init_card(struct pci_dev *pdev, const struct pci_devic
 				break; /* found the second channel */
 
 		if (!pdev1) {
-			printk(KERN_ERR "SBE 2T3E3" ": Can't find the second channel\n");
+;
 			return -EFAULT;
 		}
 		channels = 2;
@@ -146,7 +146,7 @@ static int __devinit t3e3_init_card(struct pci_dev *pdev, const struct pci_devic
 
 	card = kzalloc(sizeof(struct card) + channels * sizeof(struct channel), GFP_KERNEL);
 	if (!card) {
-		printk(KERN_ERR "SBE 2T3E3" ": Out of memory\n");
+;
 		return -ENOBUFS;
 	}
 

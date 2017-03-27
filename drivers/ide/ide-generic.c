@@ -93,8 +93,12 @@ static int __init ide_generic_init(void)
 	ide_generic_check_pci_legacy_iobases(&primary, &secondary);
 
 	if (!probe_mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRV_NAME ": please use \"probe_mask=0x3f\" "
 		     "module parameter for probing all legacy ISA IDE ports\n");
+#else
+		;
+#endif
 
 		if (primary == 0)
 			probe_mask |= 0x1;
@@ -102,8 +106,12 @@ static int __init ide_generic_init(void)
 		if (secondary == 0)
 			probe_mask |= 0x2;
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO DRV_NAME ": enforcing probing of I/O ports "
 			"upon user request\n");
+#else
+		;
+#endif
 
 	for (i = 0; i < ARRAY_SIZE(legacy_bases); i++) {
 		io_addr = legacy_bases[i];

@@ -118,7 +118,11 @@ static int __init ahci_probe(struct platform_device *pdev)
 	if (!(hpriv->cap & HOST_CAP_SSS) || ahci_ignore_sss)
 		host->flags |= ATA_HOST_PARALLEL_SCAN;
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ahci: SSS flag set, parallel bus scan disabled\n");
+#else
+		;
+#endif
 
 	if (pi.flags & ATA_FLAG_EM)
 		ahci_reset_em(host);

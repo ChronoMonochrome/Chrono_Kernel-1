@@ -117,10 +117,22 @@ static void printADBreply(struct adb_request *req)
 {
         int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
         printk("adb reply (%d)", req->reply_len);
+#else
+        ;
+#endif
         for(i = 0; i < req->reply_len; i++)
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(" %x", req->reply[i]);
+#else
+                ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
         printk("\n");
+#else
+        ;
+#endif
 
 }
 #endif
@@ -207,18 +219,30 @@ static int adb_scan_bus(void)
 	}
 
 	/* Now fill in the handler_id field of the adb_handler entries. */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "adb devices:");
+#else
+	;
+#endif
 	for (i = 1; i < 16; i++) {
 		if (adb_handler[i].original_address == 0)
 			continue;
 		adb_request(&req, NULL, ADBREQ_SYNC | ADBREQ_REPLY, 1,
 			    (i << 4) | 0xf);
 		adb_handler[i].handler_id = req.reply[2];
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" [%d]: %d %x", i, adb_handler[i].original_address,
 		       adb_handler[i].handler_id);
+#else
+		;
+#endif
 		devmask |= 1 << i;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 	return devmask;
 }
 
@@ -229,9 +253,17 @@ static int adb_scan_bus(void)
 static int
 adb_probe_task(void *x)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "adb: starting probe task...\n");
+#else
+	;
+#endif
 	do_adb_reset_bus();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "adb: finished probe task...\n");
+#else
+	;
+#endif
 
 	up(&adb_probe_mutex);
 
@@ -321,7 +353,11 @@ static int __init adb_init(void)
 	    adb_controller->init())
 		adb_controller = NULL;
 	if (adb_controller == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning: no ADB interface detected\n");
+#else
+		;
+#endif
 	} else {
 #ifdef CONFIG_PPC
 		if (of_machine_is_compatible("AAPL,PowerBook1998") ||
@@ -515,10 +551,22 @@ adb_input(unsigned char *buf, int nb, int autopoll)
 		
 	id = buf[0] >> 4;
 	if (dump_adb_input) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "adb packet: ");
+#else
+		;
+#endif
 		for (i = 0; i < nb; ++i)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %x", buf[i]);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", id = %d\n", id);
+#else
+		;
+#endif
 	}
 	write_lock_irqsave(&adb_handler_lock, flags);
 	handler = adb_handler[id].handler;

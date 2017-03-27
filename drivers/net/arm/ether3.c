@@ -124,7 +124,7 @@ ether3_setbuffer(struct net_device *dev, buffer_rw_t read, int start)
 
 	while ((ether3_inw(REG_STATUS) & STAT_FIFOEMPTY) == 0) {
 		if (!timeout--) {
-			printk("%s: setbuffer broken\n", dev->name);
+;
 			priv(dev)->broken = 1;
 			return 1;
 		}
@@ -214,7 +214,7 @@ ether3_addr(char *addr, struct expansion_card *ec)
 	/* I wonder if we should even let the user continue in this case
 	 *   - no, it would be better to disable the device
 	 */
-	printk(KERN_ERR "ether3: Couldn't read a valid MAC address from card.\n");
+;
 	return -ENODEV;
 }
 
@@ -245,8 +245,8 @@ ether3_ramtest(struct net_device *dev, unsigned char byte)
 	for (i = 0; i < RX_END; i++) {
 		if (buffer[i] != byte) {
 			if (max_errors > 0 && bad != buffer[i]) {
-				printk("%s: RAM failed with (%02X instead of %02X) at 0x%04X",
-				       dev->name, buffer[i], byte, i);
+//				printk("%s: RAM failed with (%02X instead of %02X) at 0x%04X",
+;
 				ret = 2;
 				max_errors--;
 				bad = i;
@@ -254,14 +254,14 @@ ether3_ramtest(struct net_device *dev, unsigned char byte)
 		} else {
 			if (bad != -1) {
 				if (bad != i - 1)
-					printk(" - 0x%04X\n", i - 1);
-				printk("\n");
+;
+;
 				bad = -1;
 			}
 		}
 	}
 	if (bad != -1)
-		printk(" - 0xffff\n");
+;
 	kfree(buffer);
 
 	return ret;
@@ -363,7 +363,7 @@ ether3_probe_bus_8(struct net_device *dev, int val)
 	write_low = val & 255;
 	write_high = val >> 8;
 
-	printk(KERN_DEBUG "ether3_probe: write8 [%02X:%02X]", write_high, write_low);
+;
 
 	ether3_outb(write_low, REG_RECVPTR);
 	ether3_outb(write_high, REG_RECVPTR + 4);
@@ -371,7 +371,7 @@ ether3_probe_bus_8(struct net_device *dev, int val)
 	read_low = ether3_inb(REG_RECVPTR);
 	read_high = ether3_inb(REG_RECVPTR + 4);
 
-	printk(", read8 [%02X:%02X]\n", read_high, read_low);
+;
 
 	return read_low == write_low && read_high == write_high;
 }
@@ -384,7 +384,7 @@ ether3_probe_bus_16(struct net_device *dev, int val)
 	ether3_outw(val, REG_RECVPTR);
 	read_val = ether3_inw(REG_RECVPTR);
 
-	printk(KERN_DEBUG "ether3_probe: write16 [%04X], read16 [%04X]\n", val, read_val);
+;
 
 	return read_val == val;
 }
@@ -401,8 +401,8 @@ static int
 ether3_open(struct net_device *dev)
 {
 	if (!is_valid_ether_addr(dev->dev_addr)) {
-		printk(KERN_WARNING "%s: invalid ethernet MAC address\n",
-			dev->name);
+//		printk(KERN_WARNING "%s: invalid ethernet MAC address\n",
+;
 		return -EINVAL;
 	}
 
@@ -466,15 +466,15 @@ static void ether3_timeout(struct net_device *dev)
 	del_timer(&priv(dev)->timer);
 
 	local_irq_save(flags);
-	printk(KERN_ERR "%s: transmit timed out, network cable problem?\n", dev->name);
-	printk(KERN_ERR "%s: state: { status=%04X cfg1=%04X cfg2=%04X }\n", dev->name,
-		ether3_inw(REG_STATUS), ether3_inw(REG_CONFIG1), ether3_inw(REG_CONFIG2));
-	printk(KERN_ERR "%s: { rpr=%04X rea=%04X tpr=%04X }\n", dev->name,
-		ether3_inw(REG_RECVPTR), ether3_inw(REG_RECVEND), ether3_inw(REG_TRANSMITPTR));
-	printk(KERN_ERR "%s: tx head=%X tx tail=%X\n", dev->name,
-		priv(dev)->tx_head, priv(dev)->tx_tail);
+;
+//	printk(KERN_ERR "%s: state: { status=%04X cfg1=%04X cfg2=%04X }\n", dev->name,
+;
+//	printk(KERN_ERR "%s: { rpr=%04X rea=%04X tpr=%04X }\n", dev->name,
+;
+//	printk(KERN_ERR "%s: tx head=%X tx tail=%X\n", dev->name,
+;
 	ether3_setbuffer(dev, buffer_read, priv(dev)->tx_tail);
-	printk(KERN_ERR "%s: packet status = %08X\n", dev->name, ether3_readlong(dev));
+;
 	local_irq_restore(flags);
 
 	priv(dev)->regs.config2 |= CFG2_CTRLO;
@@ -560,7 +560,7 @@ ether3_interrupt(int irq, void *dev_id)
 
 #if NET_DEBUG > 1
 	if(net_debug & DEBUG_INT)
-		printk("eth3irq: %d ", irq);
+;
 #endif
 
 	status = ether3_inw(REG_STATUS);
@@ -579,7 +579,7 @@ ether3_interrupt(int irq, void *dev_id)
 
 #if NET_DEBUG > 1
 	if(net_debug & DEBUG_INT)
-		printk("done\n");
+;
 #endif
 	return handled;
 }
@@ -620,11 +620,11 @@ static int ether3_rx(struct net_device *dev, unsigned int maxcnt)
 
 if (next_ptr < RX_START || next_ptr >= RX_END) {
  int i;
- printk("%s: bad next pointer @%04X: ", dev->name, priv(dev)->rx_head);
- printk("%02X %02X %02X %02X ", next_ptr >> 8, next_ptr & 255, status & 255, status >> 8);
+;
+;
  for (i = 2; i < 14; i++)
-   printk("%02X ", addrs[i]);
- printk("\n");
+;
+;
  next_ptr = priv(dev)->rx_head;
  break;
 }
@@ -696,7 +696,7 @@ dropping:{
 	 */
 	if (time_after(jiffies, last_warned + 10 * HZ)) {
 		last_warned = jiffies;
-		printk("%s: memory squeeze, dropping packet.\n", dev->name);
+;
 	}
 	dev->stats.rx_dropped++;
 	goto done;
@@ -754,7 +754,7 @@ static void __devinit ether3_banner(void)
 	static unsigned version_printed = 0;
 
 	if (net_debug && version_printed++ == 0)
-		printk(KERN_INFO "%s", version);
+;
 }
 
 static const struct net_device_ops ether3_netdev_ops = {
@@ -825,13 +825,13 @@ ether3_probe(struct expansion_card *ec, const struct ecard_id *id)
 
 	switch (bus_type) {
 	case BUS_UNKNOWN:
-		printk(KERN_ERR "%s: unable to identify bus width\n", dev->name);
+;
 		ret = -ENODEV;
 		goto free;
 
 	case BUS_8:
-		printk(KERN_ERR "%s: %s found, but is an unsupported "
-			"8-bit card\n", dev->name, data->name);
+//		printk(KERN_ERR "%s: %s found, but is an unsupported "
+;
 		ret = -ENODEV;
 		goto free;
 
@@ -851,8 +851,8 @@ ether3_probe(struct expansion_card *ec, const struct ecard_id *id)
 	if (ret)
 		goto free;
 
-	printk("%s: %s in slot %d, %pM\n",
-	       dev->name, data->name, ec->slot_no, dev->dev_addr);
+//	printk("%s: %s in slot %d, %pM\n",
+;
 
 	ecard_set_drvdata(ec, dev);
 	return 0;

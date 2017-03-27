@@ -1149,7 +1149,7 @@ again:
 				/* Re-add old buffer */
 				sbdma_add_rcvbuffer(sc, d, sb);
 				/* No point in continuing at the moment */
-				printk(KERN_ERR "dropped packet (1)\n");
+;
 				d->sbdma_remptr = SBDMA_NEXTBUF(d,sbdma_remptr);
 				goto done;
 			} else {
@@ -2274,16 +2274,16 @@ static int sbmac_init(struct platform_device *pldev, long long base)
 	 */
 	err = mdiobus_register(sc->mii_bus);
 	if (err) {
-		printk(KERN_ERR "%s: unable to register MDIO bus\n",
-		       dev->name);
+//		printk(KERN_ERR "%s: unable to register MDIO bus\n",
+;
 		goto free_mdio;
 	}
 	dev_set_drvdata(&pldev->dev, sc->mii_bus);
 
 	err = register_netdev(dev);
 	if (err) {
-		printk(KERN_ERR "%s.%d: unable to register netdev\n",
-		       sbmac_string, idx);
+//		printk(KERN_ERR "%s.%d: unable to register netdev\n",
+;
 		goto unreg_mdio;
 	}
 
@@ -2329,8 +2329,8 @@ static int sbmac_open(struct net_device *dev)
 	__raw_readq(sc->sbm_isr);
 	err = request_irq(dev->irq, sbmac_intr, IRQF_SHARED, dev->name, dev);
 	if (err) {
-		printk(KERN_ERR "%s: unable to get IRQ %d\n", dev->name,
-		       dev->irq);
+//		printk(KERN_ERR "%s: unable to get IRQ %d\n", dev->name,
+;
 		goto out_err;
 	}
 
@@ -2381,14 +2381,14 @@ static int sbmac_mii_probe(struct net_device *dev)
 			break;
 	}
 	if (!phy_dev) {
-		printk(KERN_ERR "%s: no PHY found\n", dev->name);
+;
 		return -ENXIO;
 	}
 
 	phy_dev = phy_connect(dev, dev_name(&phy_dev->dev), &sbmac_mii_poll, 0,
 			      PHY_INTERFACE_MODE_GMII);
 	if (IS_ERR(phy_dev)) {
-		printk(KERN_ERR "%s: could not attach to PHY\n", dev->name);
+;
 		return PTR_ERR(phy_dev);
 	}
 
@@ -2599,8 +2599,8 @@ static int __devinit sbmac_probe(struct platform_device *pldev)
 	BUG_ON(!res);
 	sbm_base = ioremap_nocache(res->start, res->end - res->start + 1);
 	if (!sbm_base) {
-		printk(KERN_ERR "%s: unable to map device registers\n",
-		       dev_name(&pldev->dev));
+//		printk(KERN_ERR "%s: unable to map device registers\n",
+;
 		err = -ENOMEM;
 		goto out_out;
 	}
@@ -2623,8 +2623,8 @@ static int __devinit sbmac_probe(struct platform_device *pldev)
 	 */
 	dev = alloc_etherdev(sizeof(struct sbmac_softc));
 	if (!dev) {
-		printk(KERN_ERR "%s: unable to allocate etherdev\n",
-		       dev_name(&pldev->dev));
+//		printk(KERN_ERR "%s: unable to allocate etherdev\n",
+;
 		err = -ENOMEM;
 		goto out_unmap;
 	}

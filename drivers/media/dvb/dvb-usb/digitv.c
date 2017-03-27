@@ -23,12 +23,16 @@ MODULE_PARM_DESC(debug, "set debugging level (1=rc (or-able))." DVB_USB_DEBUG_ST
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_rc(args...)   dprintk(dvb_usb_digitv_debug,0x01,args)
 
 static int digitv_ctrl_msg(struct dvb_usb_device *d,
 		u8 cmd, u8 vv, u8 *wbuf, int wlen, u8 *rbuf, int rlen)
 {
 	int wo = (rbuf == NULL || rlen == 0); /* write-only */
+#else
+#define deb_rc(args...)   d;
+#endif
 	u8 sndbuf[7],rcvbuf[7];
 	memset(sndbuf,0,7); memset(rcvbuf,0,7);
 

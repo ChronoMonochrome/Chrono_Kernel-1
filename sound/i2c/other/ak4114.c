@@ -57,9 +57,17 @@ static void reg_dump(struct ak4114 *ak4114)
 {
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "AK4114 REG DUMP:\n");
+#else
+	;
+#endif
 	for (i = 0; i < 0x20; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "reg[%02x] = %02x (%02x)\n", i, reg_read(ak4114, i), i < sizeof(ak4114->regmap) ? ak4114->regmap[i] : 0);
+#else
+		;
+#endif
 }
 #endif
 
@@ -598,7 +606,11 @@ int snd_ak4114_check_rate_and_errors(struct ak4114 *ak4114, unsigned int flags)
 	if (!(flags & AK4114_CHECK_NO_RATE) && runtime && runtime->rate != res) {
 		snd_pcm_stream_lock_irqsave(ak4114->capture_substream, _flags);
 		if (snd_pcm_running(ak4114->capture_substream)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			// printk(KERN_DEBUG "rate changed (%i <- %i)\n", runtime->rate, res);
+#else
+			// ;
+#endif
 			snd_pcm_stop(ak4114->capture_substream, SNDRV_PCM_STATE_DRAINING);
 			res = 1;
 		}

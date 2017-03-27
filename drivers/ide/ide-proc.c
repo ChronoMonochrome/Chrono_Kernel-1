@@ -428,7 +428,11 @@ static ssize_t ide_settings_proc_write(struct file *file, const char __user *buf
 	return count;
 parse_error:
 	free_page((unsigned long)buf);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s(): parse error\n", __func__);
+#else
+	;
+#endif
 	return -EINVAL;
 }
 
@@ -539,15 +543,23 @@ static int ide_replace_subdriver(ide_drive_t *drive, const char *driver)
 	strlcpy(drive->driver_req, driver, sizeof(drive->driver_req));
 	err = device_attach(dev);
 	if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IDE: %s: device_attach error: %d\n",
 			__func__, err);
+#else
+		;
+#endif
 	drive->driver_req[0] = 0;
 	if (dev->driver == NULL) {
 		err = device_attach(dev);
 		if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"IDE: %s: device_attach(2) error: %d\n",
 				__func__, err);
+#else
+			;
+#endif
 	}
 	if (dev->driver && !strcmp(dev->driver->name, driver))
 		ret = 0;
@@ -755,8 +767,12 @@ static int ide_drivers_show(struct seq_file *s, void *p)
 
 	err = bus_for_each_drv(&ide_bus_type, NULL, s, proc_print_driver);
 	if (err < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "IDE: %s: bus_for_each_drv error: %d\n",
 			__func__, err);
+#else
+		;
+#endif
 	return 0;
 }
 

@@ -455,7 +455,11 @@ int ssh_interceptor_init(void)
   int ret;
 
   /* Print version info for log files */
+#ifdef CONFIG_DEBUG_PRINTK
   printk(KERN_INFO "VPNClient built on " __DATE__ " " __TIME__ "\n");
+#else
+  ;
+#endif
 
   ret = ssh_interceptor_init_kernel_services();
   if (ret != 0)
@@ -512,7 +516,11 @@ void __exit ssh_cleanup_module(void)
 {
   if (ssh_interceptor_uninit() != 0)
     {
+#ifdef CONFIG_DEBUG_PRINTK
       printk("ssh_interceptor: module can't be removed.");
+#else
+      ;
+#endif
       return;
     }
 }

@@ -185,7 +185,11 @@ L3AddTimer(struct L3Timer *t,
 	   int millisec, int event)
 {
 	if (timer_pending(&t->tl)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "L3AddTimer: timer already active!\n");
+#else
+		;
+#endif
 		return -1;
 	}
 	init_timer(&t->tl);
@@ -207,7 +211,11 @@ l3_alloc_skb(int len)
 	struct sk_buff *skb;
 
 	if (!(skb = alloc_skb(len + MAX_HEADER_LEN, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: No skb for D-channel\n");
+#else
+		;
+#endif
 		return (NULL);
 	}
 	skb_reserve(skb, MAX_HEADER_LEN);
@@ -228,7 +236,11 @@ no_l3_proto(struct PStack *st, int pr, void *arg)
 static int
 no_l3_proto_spec(struct PStack *st, isdn_ctrl *ic)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "HiSax: no specific protocol handler for proto %lu\n",ic->arg & 0xFF);
+#else
+	;
+#endif
 	return(-1);
 }
 
@@ -363,7 +375,11 @@ setstack_l3dc(struct PStack *st, struct Channel *chanp)
 		st->lli.l4l3 = no_l3_proto;
 		st->l2.l2l3 = no_l3_proto;
                 st->l3.l3ml3 = no_l3_proto;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "HiSax: Leased line mode\n");
+#else
+		;
+#endif
 	} else {
 		st->lli.l4l3 = no_l3_proto;
 		st->l2.l2l3 = no_l3_proto;
@@ -373,7 +389,11 @@ setstack_l3dc(struct PStack *st, struct Channel *chanp)
 			(st->protocol == ISDN_PTYPE_EURO) ? "euro" :
 			(st->protocol == ISDN_PTYPE_NI1) ? "ni1" :
 			"unknown");
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: %s\n", tmp);
+#else
+		;
+#endif
 		st->protocol = -1;
 	}
 }

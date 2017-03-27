@@ -250,13 +250,13 @@ int ess_raf_received_pack(struct s_smc *smc, SMbuf *mb, struct smt_header *sm,
 		 */
 		p = (void *) sm_to_para(smc,sm,SMT_P320F) ;
                 if (!p) {
-                        printk(KERN_ERR "ESS: sm_to_para failed");
+;
                         return fs;
                 }       
 		payload = ((struct smt_p_320f *)p)->mib_payload ;
 		p = (void *) sm_to_para(smc,sm,SMT_P3210) ;
                 if (!p) {
-                        printk(KERN_ERR "ESS: sm_to_para failed");
+;
                         return fs;
                 }       
 		overhead = ((struct smt_p_3210 *)p)->mib_overhead ;

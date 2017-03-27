@@ -17,11 +17,15 @@
 
 #define ACPI_GLUE_DEBUG	0
 #if ACPI_GLUE_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(x...) printk(PREFIX x)
 #else
 #define DBG(x...) do { } while(0)
 #endif
 static LIST_HEAD(bus_type_list);
+#else
+#define DBG(x...) ;
+#endif
 static DECLARE_RWSEM(bus_type_sem);
 
 int register_acpi_bus_type(struct acpi_bus_type *type)
@@ -32,8 +36,12 @@ int register_acpi_bus_type(struct acpi_bus_type *type)
 		down_write(&bus_type_sem);
 		list_add_tail(&type->list, &bus_type_list);
 		up_write(&bus_type_sem);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "bus type %s registered\n",
 		       type->bus->name);
+#else
+		;
+#endif
 		return 0;
 	}
 	return -ENODEV;
@@ -47,8 +55,12 @@ int unregister_acpi_bus_type(struct acpi_bus_type *type)
 		down_write(&bus_type_sem);
 		list_del_init(&type->list);
 		up_write(&bus_type_sem);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "ACPI bus type %s unregistered\n",
 		       type->bus->name);
+#else
+		;
+#endif
 		return 0;
 	}
 	return -ENODEV;

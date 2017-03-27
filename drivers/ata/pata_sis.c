@@ -736,8 +736,12 @@ static int sis_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 	};
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, &pdev->dev,
 			   "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	rc = pcim_enable_device(pdev);
 	if (rc)
@@ -775,7 +779,11 @@ static int sis_init_one (struct pci_dev *pdev, const struct pci_device_id *ent)
 			chipset = &sis133;
 			if ((idemisc & 0x40000000) == 0) {
 				pci_write_config_dword(pdev, 0x54, idemisc | 0x40000000);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "SIS5513: Switching to 5513 register mapping\n");
+#else
+				;
+#endif
 			}
 			break;
 		case 0x0180:	/* SIS 965/965L */

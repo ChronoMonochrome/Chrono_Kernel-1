@@ -78,138 +78,138 @@ comedi_nonfree_firmware tarball available from http://www.comedi.org
 
 #undef DPRINTK
 #ifdef DEBUG
-#define DPRINTK(format, args...)	printk(format, ## args)
-#else
-#define DPRINTK(format, args...)
-#endif
-
-#define PCI_DIO_SIZE 4096
-#define PCI_MITE_SIZE 4096
-
-/* defines for the PCI-DIO-96 */
-
-#define NIDIO_8255_BASE(x)	((x)*4)
-#define NIDIO_A 0
-#define NIDIO_B 4
-#define NIDIO_C 8
-#define NIDIO_D 12
-
-/* defines for the PCI-DIO-32HS */
-
-#define Window_Address			4	/* W */
-#define Interrupt_And_Window_Status	4	/* R */
-#define IntStatus1				(1<<0)
-#define IntStatus2				(1<<1)
-#define WindowAddressStatus_mask		0x7c
-
-#define Master_DMA_And_Interrupt_Control 5	/* W */
-#define InterruptLine(x)			((x)&3)
-#define OpenInt				(1<<2)
-#define Group_Status			5	/* R */
-#define DataLeft				(1<<0)
-#define Req					(1<<2)
-#define StopTrig				(1<<3)
-
-#define Group_1_Flags			6	/* R */
-#define Group_2_Flags			7	/* R */
-#define TransferReady				(1<<0)
-#define CountExpired				(1<<1)
-#define Waited				(1<<5)
-#define PrimaryTC				(1<<6)
-#define SecondaryTC				(1<<7)
-  /* #define SerialRose */
-  /* #define ReqRose */
-  /* #define Paused */
-
-#define Group_1_First_Clear		6	/* W */
-#define Group_2_First_Clear		7	/* W */
-#define ClearWaited				(1<<3)
-#define ClearPrimaryTC			(1<<4)
-#define ClearSecondaryTC			(1<<5)
-#define DMAReset				(1<<6)
-#define FIFOReset				(1<<7)
-#define ClearAll				0xf8
-
-#define Group_1_FIFO			8	/* W */
-#define Group_2_FIFO			12	/* W */
-
-#define Transfer_Count			20
-#define Chip_ID_D			24
-#define Chip_ID_I			25
-#define Chip_ID_O			26
-#define Chip_Version			27
-#define Port_IO(x)			(28+(x))
-#define Port_Pin_Directions(x)		(32+(x))
-#define Port_Pin_Mask(x)		(36+(x))
-#define Port_Pin_Polarities(x)		(40+(x))
-
-#define Master_Clock_Routing		45
-#define RTSIClocking(x)			(((x)&3)<<4)
-
-#define Group_1_Second_Clear		46	/* W */
-#define Group_2_Second_Clear		47	/* W */
-#define ClearExpired				(1<<0)
-
-#define Port_Pattern(x)			(48+(x))
-
-#define Data_Path			64
-#define FIFOEnableA		(1<<0)
-#define FIFOEnableB		(1<<1)
-#define FIFOEnableC		(1<<2)
-#define FIFOEnableD		(1<<3)
-#define Funneling(x)		(((x)&3)<<4)
-#define GroupDirection	(1<<7)
-
-#define Protocol_Register_1		65
-#define OpMode				Protocol_Register_1
-#define RunMode(x)		((x)&7)
-#define Numbered		(1<<3)
-
-#define Protocol_Register_2		66
-#define ClockReg			Protocol_Register_2
-#define ClockLine(x)		(((x)&3)<<5)
-#define InvertStopTrig	(1<<7)
-#define DataLatching(x)       (((x)&3)<<5)
-
-#define Protocol_Register_3		67
-#define Sequence			Protocol_Register_3
-
-#define Protocol_Register_14		68	/* 16 bit */
-#define ClockSpeed			Protocol_Register_14
-
-#define Protocol_Register_4		70
-#define ReqReg				Protocol_Register_4
-#define ReqConditioning(x)	(((x)&7)<<3)
-
-#define Protocol_Register_5		71
-#define BlockMode			Protocol_Register_5
-
-#define FIFO_Control			72
-#define ReadyLevel(x)		((x)&7)
-
-#define Protocol_Register_6		73
-#define LinePolarities			Protocol_Register_6
-#define InvertAck		(1<<0)
-#define InvertReq		(1<<1)
-#define InvertClock		(1<<2)
-#define InvertSerial		(1<<3)
-#define OpenAck		(1<<4)
-#define OpenClock		(1<<5)
-
-#define Protocol_Register_7		74
-#define AckSer				Protocol_Register_7
-#define AckLine(x)		(((x)&3)<<2)
-#define ExchangePins		(1<<7)
-
-#define Interrupt_Control		75
-  /* bits same as flags */
-
-#define DMA_Line_Control_Group1		76
-#define DMA_Line_Control_Group2		108
-/* channel zero is none */
-static inline unsigned primary_DMAChannel_bits(unsigned channel)
-{
-	return channel & 0x3;
+//#define DPRINTK(format, args...)	printk(format, ## args)
+//#else
+//#define DPRINTK(format, args...)
+//#endif
+//
+//#define PCI_DIO_SIZE 4096
+//#define PCI_MITE_SIZE 4096
+//
+///* defines for the PCI-DIO-96 */
+//
+//#define NIDIO_8255_BASE(x)	((x)*4)
+//#define NIDIO_A 0
+//#define NIDIO_B 4
+//#define NIDIO_C 8
+//#define NIDIO_D 12
+//
+///* defines for the PCI-DIO-32HS */
+//
+//#define Window_Address			4	/* W */
+//#define Interrupt_And_Window_Status	4	/* R */
+//#define IntStatus1				(1<<0)
+//#define IntStatus2				(1<<1)
+//#define WindowAddressStatus_mask		0x7c
+//
+//#define Master_DMA_And_Interrupt_Control 5	/* W */
+//#define InterruptLine(x)			((x)&3)
+//#define OpenInt				(1<<2)
+//#define Group_Status			5	/* R */
+//#define DataLeft				(1<<0)
+//#define Req					(1<<2)
+//#define StopTrig				(1<<3)
+//
+//#define Group_1_Flags			6	/* R */
+//#define Group_2_Flags			7	/* R */
+//#define TransferReady				(1<<0)
+//#define CountExpired				(1<<1)
+//#define Waited				(1<<5)
+//#define PrimaryTC				(1<<6)
+//#define SecondaryTC				(1<<7)
+//  /* #define SerialRose */
+//  /* #define ReqRose */
+//  /* #define Paused */
+//
+//#define Group_1_First_Clear		6	/* W */
+//#define Group_2_First_Clear		7	/* W */
+//#define ClearWaited				(1<<3)
+//#define ClearPrimaryTC			(1<<4)
+//#define ClearSecondaryTC			(1<<5)
+//#define DMAReset				(1<<6)
+//#define FIFOReset				(1<<7)
+//#define ClearAll				0xf8
+//
+//#define Group_1_FIFO			8	/* W */
+//#define Group_2_FIFO			12	/* W */
+//
+//#define Transfer_Count			20
+//#define Chip_ID_D			24
+//#define Chip_ID_I			25
+//#define Chip_ID_O			26
+//#define Chip_Version			27
+//#define Port_IO(x)			(28+(x))
+//#define Port_Pin_Directions(x)		(32+(x))
+//#define Port_Pin_Mask(x)		(36+(x))
+//#define Port_Pin_Polarities(x)		(40+(x))
+//
+//#define Master_Clock_Routing		45
+//#define RTSIClocking(x)			(((x)&3)<<4)
+//
+//#define Group_1_Second_Clear		46	/* W */
+//#define Group_2_Second_Clear		47	/* W */
+//#define ClearExpired				(1<<0)
+//
+//#define Port_Pattern(x)			(48+(x))
+//
+//#define Data_Path			64
+//#define FIFOEnableA		(1<<0)
+//#define FIFOEnableB		(1<<1)
+//#define FIFOEnableC		(1<<2)
+//#define FIFOEnableD		(1<<3)
+//#define Funneling(x)		(((x)&3)<<4)
+//#define GroupDirection	(1<<7)
+//
+//#define Protocol_Register_1		65
+//#define OpMode				Protocol_Register_1
+//#define RunMode(x)		((x)&7)
+//#define Numbered		(1<<3)
+//
+//#define Protocol_Register_2		66
+//#define ClockReg			Protocol_Register_2
+//#define ClockLine(x)		(((x)&3)<<5)
+//#define InvertStopTrig	(1<<7)
+//#define DataLatching(x)       (((x)&3)<<5)
+//
+//#define Protocol_Register_3		67
+//#define Sequence			Protocol_Register_3
+//
+//#define Protocol_Register_14		68	/* 16 bit */
+//#define ClockSpeed			Protocol_Register_14
+//
+//#define Protocol_Register_4		70
+//#define ReqReg				Protocol_Register_4
+//#define ReqConditioning(x)	(((x)&7)<<3)
+//
+//#define Protocol_Register_5		71
+//#define BlockMode			Protocol_Register_5
+//
+//#define FIFO_Control			72
+//#define ReadyLevel(x)		((x)&7)
+//
+//#define Protocol_Register_6		73
+//#define LinePolarities			Protocol_Register_6
+//#define InvertAck		(1<<0)
+//#define InvertReq		(1<<1)
+//#define InvertClock		(1<<2)
+//#define InvertSerial		(1<<3)
+//#define OpenAck		(1<<4)
+//#define OpenClock		(1<<5)
+//
+//#define Protocol_Register_7		74
+//#define AckSer				Protocol_Register_7
+//#define AckLine(x)		(((x)&3)<<2)
+//#define ExchangePins		(1<<7)
+//
+//#define Interrupt_Control		75
+//  /* bits same as flags */
+//
+//#define DMA_Line_Control_Group1		76
+//#define DMA_Line_Control_Group2		108
+///* channel zero is none */
+//static inline unsigned primary_DMAChannel_bits(unsigned channel)
+//{
+;
 }
 
 static inline unsigned secondary_DMAChannel_bits(unsigned channel)
@@ -620,7 +620,7 @@ static irqreturn_t nidio_interrupt(int irq, void *d)
 		}
 #if 0
 		else {
-			printk("ni_pcidio: unknown interrupt\n");
+;
 			async->events |= COMEDI_CB_ERROR | COMEDI_CB_EOA;
 			writeb(0x00,
 			       devpriv->mite->daq_io_addr +
@@ -658,12 +658,12 @@ static void ni_pcidio_print_flags(unsigned int flags)
 {
 	int i;
 
-	printk(KERN_INFO "group_1_flags:");
+;
 	for (i = 7; i >= 0; i--) {
 		if (flags & (1 << i))
-			printk(" %s", flags_strings[i]);
+;
 	}
-	printk("\n");
+;
 }
 
 static char *status_strings[] = {
@@ -675,12 +675,12 @@ static void ni_pcidio_print_status(unsigned int flags)
 {
 	int i;
 
-	printk(KERN_INFO "group_status:");
+;
 	for (i = 7; i >= 0; i--) {
 		if (flags & (1 << i))
-			printk(" %s", status_strings[i]);
+;
 	}
-	printk("\n");
+;
 }
 #endif
 
@@ -1069,8 +1069,8 @@ static int pci_6534_load_fpga(struct comedi_device *dev, int fpga_index,
 		udelay(1);
 	}
 	if (i == timeout) {
-		printk(KERN_WARNING "ni_pcidio: failed to load fpga %i, "
-		       "waiting for status 0x2\n", fpga_index);
+//		printk(KERN_WARNING "ni_pcidio: failed to load fpga %i, "
+;
 		return -EIO;
 	}
 	writew(0x80 | fpga_index,
@@ -1081,8 +1081,8 @@ static int pci_6534_load_fpga(struct comedi_device *dev, int fpga_index,
 		udelay(1);
 	}
 	if (i == timeout) {
-		printk(KERN_WARNING "ni_pcidio: failed to load fpga %i, "
-		       "waiting for status 0x3\n", fpga_index);
+//		printk(KERN_WARNING "ni_pcidio: failed to load fpga %i, "
+;
 		return -EIO;
 	}
 	for (j = 0; j + 1 < data_len;) {
@@ -1097,8 +1097,8 @@ static int pci_6534_load_fpga(struct comedi_device *dev, int fpga_index,
 			udelay(1);
 		}
 		if (i == timeout) {
-			printk("ni_pcidio: failed to load word into fpga %i\n",
-			       fpga_index);
+//			printk("ni_pcidio: failed to load word into fpga %i\n",
+;
 			return -EIO;
 		}
 		if (need_resched())
@@ -1175,7 +1175,7 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	int n_subdevices;
 	unsigned int irq;
 
-	printk(KERN_INFO "comedi%d: nidio:", dev->minor);
+;
 
 	ret = alloc_private(dev, sizeof(struct nidio96_private));
 	if (ret < 0)
@@ -1188,7 +1188,7 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	ret = mite_setup(devpriv->mite);
 	if (ret < 0) {
-		printk(KERN_WARNING "error setting up mite\n");
+;
 		return ret;
 	}
 	comedi_set_hw_dev(dev, &devpriv->mite->pcidev->dev);
@@ -1198,7 +1198,7 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	dev->board_name = this_board->name;
 	irq = mite_irq(devpriv->mite);
-	printk(KERN_INFO " %s", dev->board_name);
+;
 	if (this_board->uses_firmware) {
 		ret = pci_6534_upload_firmware(dev, it->options);
 		if (ret < 0)
@@ -1223,8 +1223,8 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		}
 	} else {
 
-		printk(KERN_INFO " rev=%d",
-		       readb(devpriv->mite->daq_io_addr + Chip_Version));
+//		printk(KERN_INFO " rev=%d",
+;
 
 		s = dev->subdevices + 0;
 
@@ -1257,12 +1257,12 @@ static int nidio_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		ret = request_irq(irq, nidio_interrupt, IRQF_SHARED,
 				  "ni_pcidio", dev);
 		if (ret < 0)
-			printk(KERN_WARNING " irq not available");
+;
 
 		dev->irq = irq;
 	}
 
-	printk("\n");
+;
 
 	return 0;
 }
@@ -1312,7 +1312,7 @@ static int nidio_find_device(struct comedi_device *dev, int bus, int slot)
 			}
 		}
 	}
-	printk(KERN_WARNING "no device found\n");
+;
 	mite_list_devices();
 	return -EIO;
 }

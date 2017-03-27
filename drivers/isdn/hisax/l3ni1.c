@@ -3174,5 +3174,9 @@ setstack_ni1(struct PStack *st)
 		L3InitTimer(st->l3.global, &st->l3.global->timer);
 	}
 	strcpy(tmp, ni1_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: National ISDN-1 Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 }

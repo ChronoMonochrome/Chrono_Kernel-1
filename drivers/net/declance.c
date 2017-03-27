@@ -469,8 +469,8 @@ static void lance_init_ring(struct net_device *dev)
 					 (leptr >> 16);
 	*lib_ptr(ib, rx_ptr, lp->type) = leptr;
 	if (ZERO)
-		printk("RX ptr: %8.8x(%8.8x)\n",
-		       leptr, lib_off(brx_ring, lp->type));
+//		printk("RX ptr: %8.8x(%8.8x)\n",
+;
 
 	/* Setup tx descriptor pointer */
 	leptr = offsetof(struct lance_init_block, btx_ring);
@@ -478,11 +478,11 @@ static void lance_init_ring(struct net_device *dev)
 					 (leptr >> 16);
 	*lib_ptr(ib, tx_ptr, lp->type) = leptr;
 	if (ZERO)
-		printk("TX ptr: %8.8x(%8.8x)\n",
-		       leptr, lib_off(btx_ring, lp->type));
+//		printk("TX ptr: %8.8x(%8.8x)\n",
+;
 
 	if (ZERO)
-		printk("TX rings:\n");
+;
 
 	/* Setup the Tx ring entries */
 	for (i = 0; i < TX_RING_SIZE; i++) {
@@ -494,13 +494,13 @@ static void lance_init_ring(struct net_device *dev)
 						/* The ones required by tmd2 */
 		*lib_ptr(ib, btx_ring[i].misc, lp->type) = 0;
 		if (i < 3 && ZERO)
-			printk("%d: 0x%8.8x(0x%8.8x)\n",
-			       i, leptr, (uint)lp->tx_buf_ptr_cpu[i]);
+//			printk("%d: 0x%8.8x(0x%8.8x)\n",
+;
 	}
 
 	/* Setup the Rx ring entries */
 	if (ZERO)
-		printk("RX rings:\n");
+;
 	for (i = 0; i < RX_RING_SIZE; i++) {
 		leptr = lp->rx_buf_ptr_lnc[i];
 		*lib_ptr(ib, brx_ring[i].rmd0, lp->type) = leptr;
@@ -511,8 +511,8 @@ static void lance_init_ring(struct net_device *dev)
 							     0xf000;
 		*lib_ptr(ib, brx_ring[i].mblength, lp->type) = 0;
 		if (i < 3 && ZERO)
-			printk("%d: 0x%8.8x(0x%8.8x)\n",
-			       i, leptr, (uint)lp->rx_buf_ptr_cpu[i]);
+//			printk("%d: 0x%8.8x(0x%8.8x)\n",
+;
 	}
 	iob();
 }
@@ -530,13 +530,13 @@ static int init_restart_lance(struct lance_private *lp)
 		udelay(10);
 	}
 	if ((i == 100) || (ll->rdp & LE_C0_ERR)) {
-		printk("LANCE unopened after %d ticks, csr0=%4.4x.\n",
-		       i, ll->rdp);
+//		printk("LANCE unopened after %d ticks, csr0=%4.4x.\n",
+;
 		return -1;
 	}
 	if ((ll->rdp & LE_C0_ERR)) {
-		printk("LANCE unopened after %d ticks, csr0=%4.4x.\n",
-		       i, ll->rdp);
+//		printk("LANCE unopened after %d ticks, csr0=%4.4x.\n",
+;
 		return -1;
 	}
 	writereg(&ll->rdp, LE_C0_IDON);
@@ -559,7 +559,7 @@ static int lance_rx(struct net_device *dev)
 	{
 		int i;
 
-		printk("[");
+;
 		for (i = 0; i < RX_RING_SIZE; i++) {
 			if (i == lp->rx_new)
 				printk("%s", *lib_ptr(ib, brx_ring[i].rmd1,
@@ -570,7 +570,7 @@ static int lance_rx(struct net_device *dev)
 						      lp->type) &
 					     LE_R1_OWN ? "." : "1");
 		}
-		printk("]");
+;
 	}
 #endif
 
@@ -602,8 +602,8 @@ static int lance_rx(struct net_device *dev)
 			skb = dev_alloc_skb(len + 2);
 
 			if (skb == 0) {
-				printk("%s: Memory squeeze, deferring packet.\n",
-				       dev->name);
+//				printk("%s: Memory squeeze, deferring packet.\n",
+;
 				dev->stats.rx_dropped++;
 				*rds_ptr(rd, mblength, lp->type) = 0;
 				*rds_ptr(rd, rmd1, lp->type) =
@@ -665,7 +665,7 @@ static void lance_tx(struct net_device *dev)
 
 			if (status & LE_T3_CLOS) {
 				dev->stats.tx_carrier_errors++;
-				printk("%s: Carrier Lost\n", dev->name);
+;
 				/* Stop the lance */
 				writereg(&ll->rap, LE_CSR0);
 				writereg(&ll->rdp, LE_C0_STOP);
@@ -680,8 +680,8 @@ static void lance_tx(struct net_device *dev)
 			if (status & (LE_T3_BUF | LE_T3_UFL)) {
 				dev->stats.tx_fifo_errors++;
 
-				printk("%s: Tx: ERR_BUF|ERR_UFL, restarting\n",
-				       dev->name);
+//				printk("%s: Tx: ERR_BUF|ERR_UFL, restarting\n",
+;
 				/* Stop the lance */
 				writereg(&ll->rap, LE_CSR0);
 				writereg(&ll->rdp, LE_C0_STOP);
@@ -722,7 +722,7 @@ static irqreturn_t lance_dma_merr_int(int irq, void *dev_id)
 {
 	struct net_device *dev = dev_id;
 
-	printk(KERN_ERR "%s: DMA error\n", dev->name);
+;
 	return IRQ_HANDLED;
 }
 
@@ -757,7 +757,7 @@ static irqreturn_t lance_interrupt(int irq, void *dev_id)
 		dev->stats.rx_errors++;
 
 	if (csr0 & LE_C0_MERR) {
-		printk("%s: Memory error, status %04x\n", dev->name, csr0);
+;
 
 		writereg(&ll->rdp, LE_C0_STOP);
 
@@ -802,7 +802,7 @@ static int lance_open(struct net_device *dev)
 
 	/* Associate IRQ with lance_interrupt */
 	if (request_irq(dev->irq, lance_interrupt, 0, "lance", dev)) {
-		printk("%s: Can't get IRQ %d\n", dev->name, dev->irq);
+;
 		return -EAGAIN;
 	}
 	if (lp->dma_irq >= 0) {
@@ -811,8 +811,8 @@ static int lance_open(struct net_device *dev)
 		if (request_irq(lp->dma_irq, lance_dma_merr_int, 0,
 				"lance error", dev)) {
 			free_irq(dev->irq, dev);
-			printk("%s: Can't get DMA IRQ %d\n", dev->name,
-				lp->dma_irq);
+//			printk("%s: Can't get DMA IRQ %d\n", dev->name,
+;
 			return -EAGAIN;
 		}
 
@@ -884,8 +884,8 @@ static void lance_tx_timeout(struct net_device *dev)
 	struct lance_private *lp = netdev_priv(dev);
 	volatile struct lance_regs *ll = lp->ll;
 
-	printk(KERN_ERR "%s: transmit timed out, status %04x, reset\n",
-		dev->name, ll->rdp);
+//	printk(KERN_ERR "%s: transmit timed out, status %04x, reset\n",
+;
 	lance_reset(dev);
 	netif_wake_queue(dev);
 }
@@ -1036,7 +1036,7 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 	unsigned char *esar;
 
 	if (dec_lance_debug && version_printed++ == 0)
-		printk(version);
+;
 
 	if (bdev)
 		snprintf(name, sizeof(name), "%s", dev_name(bdev));
@@ -1053,8 +1053,8 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 
 	dev = alloc_etherdev(sizeof(struct lance_private));
 	if (!dev) {
-		printk(KERN_ERR "%s: Unable to allocate etherdev, aborting.\n",
-			name);
+//		printk(KERN_ERR "%s: Unable to allocate etherdev, aborting.\n",
+;
 		ret = -ENOMEM;
 		goto err_out;
 	}
@@ -1118,9 +1118,9 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 		start = to_tc_dev(bdev)->resource.start;
 		len = to_tc_dev(bdev)->resource.end - start + 1;
 		if (!request_mem_region(start, len, dev_name(bdev))) {
-			printk(KERN_ERR
-			       "%s: Unable to reserve MMIO resource\n",
-			       dev_name(bdev));
+//			printk(KERN_ERR
+//			       "%s: Unable to reserve MMIO resource\n",
+;
 			ret = -EBUSY;
 			goto err_out_dev;
 		}
@@ -1184,8 +1184,8 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 		break;
 
 	default:
-		printk(KERN_ERR "%s: declance_init called with unknown type\n",
-			name);
+//		printk(KERN_ERR "%s: declance_init called with unknown type\n",
+;
 		ret = -ENODEV;
 		goto err_out_dev;
 	}
@@ -1197,9 +1197,9 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 	/* First, check for test pattern */
 	if (esar[0x60] != 0xff && esar[0x64] != 0x00 &&
 	    esar[0x68] != 0x55 && esar[0x6c] != 0xaa) {
-		printk(KERN_ERR
-			"%s: Ethernet station address prom not found!\n",
-			name);
+//		printk(KERN_ERR
+//			"%s: Ethernet station address prom not found!\n",
+;
 		ret = -ENODEV;
 		goto err_out_resource;
 	}
@@ -1208,8 +1208,8 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 		if (esar[i * 4] != esar[0x3c - i * 4] &&
 		    esar[i * 4] != esar[0x40 + i * 4] &&
 		    esar[0x3c - i * 4] != esar[0x40 + i * 4]) {
-			printk(KERN_ERR "%s: Something is wrong with the "
-				"ethernet station address prom!\n", name);
+//			printk(KERN_ERR "%s: Something is wrong with the "
+;
 			ret = -ENODEV;
 			goto err_out_resource;
 		}
@@ -1221,19 +1221,19 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 	 */
 	switch (type) {
 	case ASIC_LANCE:
-		printk("%s: IOASIC onboard LANCE", name);
+;
 		break;
 	case PMAD_LANCE:
-		printk("%s: PMAD-AA", name);
+;
 		break;
 	case PMAX_LANCE:
-		printk("%s: PMAX onboard LANCE", name);
+;
 		break;
 	}
 	for (i = 0; i < 6; i++)
 		dev->dev_addr[i] = esar[i * 4];
 
-	printk(", addr = %pM, irq = %d\n", dev->dev_addr, dev->irq);
+;
 
 	dev->netdev_ops = &lance_netdev_ops;
 	dev->watchdog_timeo = 5*HZ;
@@ -1259,8 +1259,8 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 
 	ret = register_netdev(dev);
 	if (ret) {
-		printk(KERN_ERR
-			"%s: Unable to register netdev, aborting.\n", name);
+//		printk(KERN_ERR
+;
 		goto err_out_resource;
 	}
 
@@ -1269,7 +1269,7 @@ static int __devinit dec_lance_probe(struct device *bdev, const int type)
 		root_lance_dev = dev;
 	}
 
-	printk("%s: registered as %s.\n", name, dev->name);
+;
 	return 0;
 
 err_out_resource:

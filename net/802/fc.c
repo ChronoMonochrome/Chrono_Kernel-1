@@ -86,7 +86,7 @@ static int fc_rebuild_header(struct sk_buff *skb)
 	struct fch_hdr *fch=(struct fch_hdr *)skb->data;
 	struct fcllc *fcllc=(struct fcllc *)(skb->data+sizeof(struct fch_hdr));
 	if(fcllc->ethertype != htons(ETH_P_IP)) {
-		printk("fc_rebuild_header: Don't know how to resolve type %04X addresses ?\n", ntohs(fcllc->ethertype));
+;
 		return 0;
 	}
 	return arp_find(fch->daddr, skb);

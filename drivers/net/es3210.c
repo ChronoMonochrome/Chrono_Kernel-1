@@ -134,7 +134,7 @@ static int __init do_es_probe(struct net_device *dev)
 
 	if (!EISA_bus) {
 #if ES_DEBUG & ES_D_PROBE
-		printk("es3210.c: Not EISA bus. Not probing high ports.\n");
+;
 #endif
 		return -ENXIO;
 	}
@@ -181,10 +181,10 @@ static int __init es_probe1(struct net_device *dev, int ioaddr)
 		return -ENODEV;
 
 #if ES_DEBUG & ES_D_PROBE
-	printk("es3210.c: probe at %#x, ID %#8x\n", ioaddr, inl(ioaddr + ES_ID_PORT));
-	printk("es3210.c: config regs: %#x %#x %#x %#x %#x %#x\n",
-		inb(ioaddr + ES_CFG1), inb(ioaddr + ES_CFG2), inb(ioaddr + ES_CFG3),
-		inb(ioaddr + ES_CFG4), inb(ioaddr + ES_CFG5), inb(ioaddr + ES_CFG6));
+;
+//	printk("es3210.c: config regs: %#x %#x %#x %#x %#x %#x\n",
+//		inb(ioaddr + ES_CFG1), inb(ioaddr + ES_CFG2), inb(ioaddr + ES_CFG3),
+;
 #endif
 
 /*	Check the EISA ID of the card. */
@@ -201,14 +201,14 @@ static int __init es_probe1(struct net_device *dev, int ioaddr)
 	if (dev->dev_addr[0] != ES_ADDR0 ||
 	    dev->dev_addr[1] != ES_ADDR1 ||
 	    dev->dev_addr[2] != ES_ADDR2) {
-		printk("es3210.c: card not found %pM (invalid_prefix).\n",
-		       dev->dev_addr);
+//		printk("es3210.c: card not found %pM (invalid_prefix).\n",
+;
 		retval = -ENODEV;
 		goto out;
 	}
 
-	printk("es3210.c: ES3210 rev. %ld at %#x, node %pM",
-	       eisa_id>>24, ioaddr, dev->dev_addr);
+//	printk("es3210.c: ES3210 rev. %ld at %#x, node %pM",
+;
 
 	/* Snarf the interrupt now. */
 	if (dev->irq == 0) {
@@ -222,15 +222,15 @@ static int __init es_probe1(struct net_device *dev, int ioaddr)
 			while (lo_irq > (1<<i)) i++;
 			dev->irq = lo_irq_map[i];
 		}
-		printk(" using IRQ %d", dev->irq);
+;
 #if ES_DEBUG & ES_D_PROBE
-		printk("es3210.c: hi_irq %#x, lo_irq %#x, dev->irq = %d\n",
-					hi_irq, lo_irq, dev->irq);
+//		printk("es3210.c: hi_irq %#x, lo_irq %#x, dev->irq = %d\n",
+;
 #endif
 	} else {
 		if (dev->irq == 2)
 			dev->irq = 9;			/* Doh! */
-		printk(" assigning IRQ %d", dev->irq);
+;
 	}
 
 	if (request_irq(dev->irq, ei_interrupt, 0, "es3210", dev)) {
@@ -244,30 +244,30 @@ static int __init es_probe1(struct net_device *dev, int ioaddr)
 		unsigned char mem_bits = inb(ioaddr + ES_CFG3) & 0x07;
 
 		if (mem_enabled != 0x80) {
-			printk(" shared mem disabled - giving up\n");
+;
 			retval = -ENXIO;
 			goto out1;
 		}
 		dev->mem_start = 0xC0000 + mem_bits*0x4000;
-		printk(" using ");
+;
 	} else {
-		printk(" assigning ");
+;
 	}
 
 	ei_status.mem = ioremap(dev->mem_start, (ES_STOP_PG - ES_START_PG)*256);
 	if (!ei_status.mem) {
-		printk("ioremap failed - giving up\n");
+;
 		retval = -ENXIO;
 		goto out1;
 	}
 
 	dev->mem_end = dev->mem_start + (ES_STOP_PG - ES_START_PG)*256;
 
-	printk("mem %#lx-%#lx\n", dev->mem_start, dev->mem_end-1);
+;
 
 #if ES_DEBUG & ES_D_PROBE
 	if (inb(ioaddr + ES_CFG5))
-		printk("es3210: Warning - DMA channel enabled, but not used here.\n");
+;
 #endif
 	/* Note, point at the 8390, and not the card... */
 	dev->base_addr = ioaddr + ES_NIC_OFFSET;
@@ -279,7 +279,7 @@ static int __init es_probe1(struct net_device *dev, int ioaddr)
 	ei_status.word16 = 1;
 
 	if (ei_debug > 0)
-		printk(version);
+;
 
 	ei_status.reset_8390 = &es_reset_8390;
 	ei_status.block_input = &es_block_input;
@@ -311,14 +311,14 @@ static void es_reset_8390(struct net_device *dev)
 	unsigned long end;
 
 	outb(0x04, ioaddr + ES_RESET_PORT);
-	if (ei_debug > 1) printk("%s: resetting the ES3210...", dev->name);
+;
 
 	end = jiffies + 2*HZ/100;
         while ((signed)(end - jiffies) > 0) continue;
 
 	ei_status.txing = 0;
 	outb(0x01, ioaddr + ES_RESET_PORT);
-	if (ei_debug > 1) printk("reset done\n");
+;
 }
 
 /*
@@ -412,7 +412,7 @@ int __init init_module(void)
 			continue;
 		}
 		free_netdev(dev);
-		printk(KERN_WARNING "es3210.c: No es3210 card found (i/o = 0x%x).\n", io[this_dev]);
+;
 		break;
 	}
 	if (found)

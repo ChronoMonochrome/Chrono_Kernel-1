@@ -141,10 +141,10 @@ int mddi_host_register_read(uint32 reg_addr,
 			ret = -EBUSY;
 
 		if (wait_ret < 0)
-			printk(KERN_ERR "%s: failed to wait for completion!\n",
-				__func__);
+//			printk(KERN_ERR "%s: failed to wait for completion!\n",
+;
 		else if (!wait_ret)
-			printk(KERN_ERR "%s: Timed out waiting!\n", __func__);
+;
 	}
 
 	MDDI_MSG_DEBUG("Reg Read value=0x%x\n", *reg_value_ptr);
@@ -218,10 +218,10 @@ int mddi_host_register_write(uint32 reg_addr,
 			ret = -EBUSY;
 
 		if (wait_ret < 0)
-			printk(KERN_ERR "%s: failed to wait for completion!\n",
-				__func__);
+//			printk(KERN_ERR "%s: failed to wait for completion!\n",
+;
 		else if (!wait_ret)
-			printk(KERN_ERR "%s: Timed out waiting!\n", __func__);
+;
 	}
 
 	return ret;

@@ -464,8 +464,12 @@ static void handle_dock(struct dock_station *ds, int dock)
 
 	acpi_get_name(ds->handle, ACPI_FULL_PATHNAME, &name_buffer);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s - %s\n",
 		(char *)name_buffer.pointer, dock ? "docking" : "undocking");
+#else
+	;
+#endif
 
 	/* _DCK method has one argument */
 	arg_list.count = 1;
@@ -525,9 +529,17 @@ static void dock_lock(struct dock_station *ds, int lock)
 	status = acpi_evaluate_object(ds->handle, "_LCK", &arg_list, NULL);
 	if (ACPI_FAILURE(status) && status != AE_NOT_FOUND) {
 		if (lock)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "Locking device failed\n");
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "Unlocking device failed\n");
+#else
+			;
+#endif
 	}
 }
 
@@ -1055,13 +1067,21 @@ static int __init dock_init(void)
 	acpi_walk_namespace(ACPI_TYPE_DEVICE, ACPI_ROOT_OBJECT,
 			ACPI_UINT32_MAX, find_bay, NULL, NULL, NULL);
 	if (!dock_station_count) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "No dock devices found.\n");
+#else
+		;
+#endif
 		return 0;
 	}
 
 	register_acpi_bus_notifier(&dock_acpi_notifier);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s: %d docks/bays found\n",
 		ACPI_DOCK_DRIVER_DESCRIPTION, dock_station_count);
+#else
+	;
+#endif
 	return 0;
 }
 

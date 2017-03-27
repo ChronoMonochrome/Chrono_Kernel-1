@@ -53,7 +53,11 @@ W6692Version(struct IsdnCardState *cs, char *s)
 	int val;
 
 	val = cs->readW6692(cs, W_D_RBCH);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s Winbond W6692 version (%x): %s\n", s, val, W6692Ver[(val >> 6) & 3]);
+#else
+	;
+#endif
 }
 
 static void
@@ -307,7 +311,11 @@ W6692B_interrupt(struct IsdnCardState *cs, u_char bchan)
 				if (cs->debug & L1_DEB_HSCX_FIFO)
 					debugl1(cs, "W6692 Bchan Frame %d", count);
 				if (!(skb = dev_alloc_skb(count)))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "W6692: Bchan receive out of memory\n");
+#else
+					;
+#endif
 				else {
 					memcpy(skb_put(skb, count), bcs->hw.w6692.rcvbuf, count);
 					skb_queue_tail(&bcs->rqueue, skb);
@@ -330,7 +338,11 @@ W6692B_interrupt(struct IsdnCardState *cs, u_char bchan)
 		if (bcs->mode == L1_MODE_TRANS) {
 			/* receive audio data */
 			if (!(skb = dev_alloc_skb(W_B_FIFO_THRESH)))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: receive out of memory\n");
+#else
+				;
+#endif
 			else {
 				memcpy(skb_put(skb, W_B_FIFO_THRESH), bcs->hw.w6692.rcvbuf, W_B_FIFO_THRESH);
 				skb_queue_tail(&bcs->rqueue, skb);
@@ -439,7 +451,11 @@ W6692_interrupt(int intno, void *dev_id)
 			if ((count = cs->rcvidx) > 0) {
 				cs->rcvidx = 0;
 				if (!(skb = alloc_skb(count, GFP_ATOMIC)))
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING "HiSax: D receive out of memory\n");
+#else
+					;
+#endif
 				else {
 					memcpy(skb_put(skb, count), cs->rcvbuf, count);
 					skb_queue_tail(&cs->rq, skb);
@@ -484,7 +500,11 @@ W6692_interrupt(int intno, void *dev_id)
 			debugl1(cs, "W6692 D_EXIR %02x", exval);
 		if (exval & (W_D_EXI_XDUN | W_D_EXI_XCOL)) {	/* Transmit underrun/collision */
 			debugl1(cs, "W6692 D-chan underrun/collision");
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: W6692 XDUN/XCOL\n");
+#else
+			;
+#endif
 			if (test_and_clear_bit(FLG_DBUSY_TIMER, &cs->HW_Flags))
 				del_timer(&cs->dbusytimer);
 			if (test_and_clear_bit(FLG_L1_DBUSY, &cs->HW_Flags))
@@ -494,14 +514,22 @@ W6692_interrupt(int intno, void *dev_id)
 				cs->tx_cnt = 0;
 				W6692_fill_fifo(cs);
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: W6692 XDUN/XCOL no skb\n");
+#else
+				;
+#endif
 				debugl1(cs, "W6692 XDUN/XCOL no skb");
 				cs->writeW6692(cs, W_D_CMDR, W_D_CMDR_XRST);
 			}
 		}
 		if (exval & W_D_EXI_RDOV) {	/* RDOV */
 			debugl1(cs, "W6692 D-channel RDOV");
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HiSax: W6692 D-RDOV\n");
+#else
+			;
+#endif
 			cs->writeW6692(cs, W_D_CMDR, W_D_CMDR_RRST);
 		}
 		if (exval & W_D_EXI_TIN2) {	/* TIN2 - never */
@@ -548,7 +576,11 @@ W6692_interrupt(int intno, void *dev_id)
 		goto StartW6692;
 	}
 	if (!icnt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "W6692 IRQ LOOP\n");
+#else
+		;
+#endif
 		cs->writeW6692(cs, W_IMASK, 0xff);
 	}
 	spin_unlock_irqrestore(&cs->lock, flags);
@@ -709,7 +741,11 @@ dbusy_timer_handler(struct IsdnCardState *cs)
 				cs->tx_cnt = 0;
 				cs->tx_skb = NULL;
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "HiSax: W6692 D-Channel Busy no skb\n");
+#else
+				;
+#endif
 				debugl1(cs, "D-Channel Busy no skb");
 			}
 			cs->writeW6692(cs, W_D_CMDR, W_D_CMDR_XRST);	/* Transmitter reset */
@@ -774,7 +810,11 @@ W6692_l2l1(struct PStack *st, int pr, void *arg)
 			break;
 		case (PH_PULL | INDICATION):
 			if (bcs->tx_skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "W6692_l2l1: this shouldn't happen\n");
+#else
+				;
+#endif
 				break;
 			}
 			spin_lock_irqsave(&bcs->cs->lock, flags);
@@ -836,14 +876,22 @@ open_w6692state(struct IsdnCardState *cs, struct BCState *bcs)
 {
 	if (!test_and_set_bit(BC_FLG_INIT, &bcs->Flag)) {
 		if (!(bcs->hw.w6692.rcvbuf = kmalloc(HSCX_BUFMAX, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "HiSax: No memory for w6692.rcvbuf\n");
+#else
+			;
+#endif
 			test_and_clear_bit(BC_FLG_INIT, &bcs->Flag);
 			return (1);
 		}
 		if (!(bcs->blog = kmalloc(MAX_BLOG_SPACE, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "HiSax: No memory for bcs->blog\n");
+#else
+			;
+#endif
 			test_and_clear_bit(BC_FLG_INIT, &bcs->Flag);
 			kfree(bcs->hw.w6692.rcvbuf);
 			bcs->hw.w6692.rcvbuf = NULL;
@@ -1003,7 +1051,11 @@ setup_w6692(struct IsdnCard *card)
 	u_int pci_ioaddr = 0;
 
 	strcpy(tmp, w6692_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: W6692 driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	if (cs->typ != ISDN_CTYPE_W6692)
 		return (0);
 
@@ -1034,35 +1086,59 @@ setup_w6692(struct IsdnCard *card)
 		}
 	}
 	if (!found) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "W6692: No PCI card found\n");
+#else
+		;
+#endif
 		return (0);
 	}
 	cs->irq = pci_irq;
 	if (!cs->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "W6692: No IRQ for PCI card found\n");
+#else
+		;
+#endif
 		return (0);
 	}
 	if (!pci_ioaddr) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "W6692: NO I/O Base Address found\n");
+#else
+		;
+#endif
 		return (0);
 	}
 	cs->hw.w6692.iobase = pci_ioaddr;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Found: %s %s, I/O base: 0x%x, irq: %d\n",
 	       id_list[cs->subtyp].vendor_name, id_list[cs->subtyp].card_name,
 	       pci_ioaddr, pci_irq);
+#else
+	;
+#endif
 	if (!request_region(cs->hw.w6692.iobase, 256, id_list[cs->subtyp].card_name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: %s I/O ports %x-%x already in use\n",
 		       id_list[cs->subtyp].card_name,
 		       cs->hw.w6692.iobase,
 		       cs->hw.w6692.iobase + 255);
+#else
+		;
+#endif
 		return (0);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "HiSax: %s config irq:%d I/O:%x\n",
 	       id_list[cs->subtyp].card_name, cs->irq,
 	       cs->hw.w6692.iobase);
+#else
+	;
+#endif
 
 	INIT_WORK(&cs->tqueue, W6692_bh);
 	cs->readW6692 = &ReadW6692;
@@ -1076,10 +1152,30 @@ setup_w6692(struct IsdnCard *card)
 	cs->irq_func = &W6692_interrupt;
 	cs->irq_flags |= IRQF_SHARED;
 	W6692Version(cs, "W6692:");
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "W6692 ISTA=0x%X\n", ReadW6692(cs, W_ISTA));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "W6692 IMASK=0x%X\n", ReadW6692(cs, W_IMASK));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "W6692 D_EXIR=0x%X\n", ReadW6692(cs, W_D_EXIR));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "W6692 D_EXIM=0x%X\n", ReadW6692(cs, W_D_EXIM));
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "W6692 D_RSTA=0x%X\n", ReadW6692(cs, W_D_RSTA));
+#else
+	;
+#endif
 	return (1);
 }

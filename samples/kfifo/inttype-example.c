@@ -57,50 +57,94 @@ static int __init testfunc(void)
 	int		i, j;
 	unsigned int	ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "int fifo test start\n");
+#else
+	;
+#endif
 
 	/* put values into the fifo */
 	for (i = 0; i != 10; i++)
 		kfifo_put(&test, &i);
 
 	/* show the number of used elements */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "fifo len: %u\n", kfifo_len(&test));
+#else
+	;
+#endif
 
 	/* get max of 2 elements from the fifo */
 	ret = kfifo_out(&test, buf, 2);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ret: %d\n", ret);
+#else
+	;
+#endif
 	/* and put it back to the end of the fifo */
 	ret = kfifo_in(&test, buf, ret);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ret: %d\n", ret);
+#else
+	;
+#endif
 
 	/* skip first element of the fifo */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "skip 1st element\n");
+#else
+	;
+#endif
 	kfifo_skip(&test);
 
 	/* put values into the fifo until is full */
 	for (i = 20; kfifo_put(&test, &i); i++)
 		;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "queue len: %u\n", kfifo_len(&test));
+#else
+	;
+#endif
 
 	/* show the first value without removing from the fifo */
 	if (kfifo_peek(&test, &i))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%d\n", i);
+#else
+		;
+#endif
 
 	/* check the correctness of all values in the fifo */
 	j = 0;
 	while (kfifo_get(&test, &i)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "item = %d\n", i);
+#else
+		;
+#endif
 		if (i != expected_result[j++]) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "value mismatch: test failed\n");
+#else
+			;
+#endif
 			return -EIO;
 		}
 	}
 	if (j != ARRAY_SIZE(expected_result)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "size mismatch: test failed\n");
+#else
+		;
+#endif
 		return -EIO;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "test passed\n");
+#else
+	;
+#endif
 
 	return 0;
 }

@@ -1818,7 +1818,11 @@ late_initcall(mpsc_late_console_init);
  */
 static void mpsc_resource_err(char *s)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "MPSC: Platform device resource error in %s\n", s);
+#else
+	;
+#endif
 }
 
 static int mpsc_shared_map_regs(struct platform_device *pd)
@@ -2120,7 +2124,11 @@ static int __init mpsc_drv_init(void)
 {
 	int	rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Serial: MPSC driver\n");
+#else
+	;
+#endif
 
 	memset(mpsc_ports, 0, sizeof(mpsc_ports));
 	memset(&mpsc_shared_regs, 0, sizeof(mpsc_shared_regs));

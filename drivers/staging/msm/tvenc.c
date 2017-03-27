@@ -81,8 +81,8 @@ static int tvenc_off(struct platform_device *pdev)
 	//				PM_QOS_DEFAULT_VALUE);
 
 	if (ret)
-		printk(KERN_ERR "%s: pm_vid_en(off) failed! %d\n",
-		__func__, ret);
+//		printk(KERN_ERR "%s: pm_vid_en(off) failed! %d\n",
+;
 
 	return ret;
 }
@@ -97,8 +97,8 @@ static int tvenc_on(struct platform_device *pdev)
 		ret = tvenc_pdata->pm_vid_en(1);
 
 	if (ret) {
-		printk(KERN_ERR "%s: pm_vid_en(on) failed! %d\n",
-		__func__, ret);
+//		printk(KERN_ERR "%s: pm_vid_en(on) failed! %d\n",
+;
 		return ret;
 	}
 
@@ -181,8 +181,8 @@ static int tvenc_probe(struct platform_device *pdev)
 					pdev->resource[0].end -
 					pdev->resource[0].start + 1);
 		if (!tvenc_base) {
-			printk(KERN_ERR
-				"tvenc_base ioremap failed!\n");
+//			printk(KERN_ERR
+;
 			return -ENOMEM;
 		}
 		tvenc_pdata = pdev->dev.platform_data;
@@ -223,7 +223,7 @@ static int tvenc_probe(struct platform_device *pdev)
 	if (platform_device_add_data
 	    (mdp_dev, pdev->dev.platform_data,
 	     sizeof(struct msm_fb_panel_data))) {
-		printk(KERN_ERR "tvenc_probe: platform_device_add_data failed!\n");
+;
 		platform_device_put(mdp_dev);
 		return -ENOMEM;
 	}
@@ -278,12 +278,12 @@ static int __init tvenc_driver_init(void)
 	tvdac_clk = clk_get(NULL, "tv_dac_clk");
 
 	if (IS_ERR(tvenc_clk)) {
-		printk(KERN_ERR "error: can't get tvenc_clk!\n");
+;
 		return PTR_ERR(tvenc_clk);
 	}
 
 	if (IS_ERR(tvdac_clk)) {
-		printk(KERN_ERR "error: can't get tvdac_clk!\n");
+;
 		clk_put(tvenc_clk);
 		return PTR_ERR(tvdac_clk);
 	}

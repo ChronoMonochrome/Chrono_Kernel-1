@@ -62,9 +62,13 @@ struct nxt200x_state {
 };
 
 static int debug;
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(args...) \
 	do { \
 		if (debug) printk(KERN_DEBUG "nxt200x: " args); \
+#else
+#define d;
+#endif
 	} while (0)
 
 static int i2c_writebytes (struct nxt200x_state* state, u8 addr, u8 *buf, u8 len)
@@ -147,7 +151,11 @@ static u16 nxt200x_crc(u16 crc, u8 c)
 static int nxt200x_writereg_multibyte (struct nxt200x_state* state, u8 reg, u8* data, u8 len)
 {
 	u8 attr, len2, buf;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* set mutli register register */
 	nxt200x_writebytes(state, 0x35, &reg, 1);
@@ -199,7 +207,11 @@ static int nxt200x_writereg_multibyte (struct nxt200x_state* state, u8 reg, u8* 
 			break;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "nxt200x: Error writing multireg register 0x%02X\n",reg);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -208,7 +220,11 @@ static int nxt200x_readreg_multibyte (struct nxt200x_state* state, u8 reg, u8* d
 {
 	int i;
 	u8 buf, len2, attr;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* set mutli register register */
 	nxt200x_writebytes(state, 0x35, &reg, 1);
@@ -255,7 +271,11 @@ static int nxt200x_readreg_multibyte (struct nxt200x_state* state, u8 reg, u8* d
 static void nxt200x_microcontroller_stop (struct nxt200x_state* state)
 {
 	u8 buf, stopval, counter = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	/* set correct stop value */
 	switch (state->demod_chip) {
@@ -281,14 +301,22 @@ static void nxt200x_microcontroller_stop (struct nxt200x_state* state)
 		counter++;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "nxt200x: Timeout waiting for nxt200x to stop. This is ok after firmware upload.\n");
+#else
+	;
+#endif
 	return;
 }
 
 static void nxt200x_microcontroller_start (struct nxt200x_state* state)
 {
 	u8 buf;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	buf = 0x00;
 	nxt200x_writebytes(state, 0x22, &buf, 1);
@@ -298,7 +326,11 @@ static void nxt2004_microcontroller_init (struct nxt200x_state* state)
 {
 	u8 buf[9];
 	u8 counter = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	buf[0] = 0x00;
 	nxt200x_writebytes(state, 0x2b, buf, 1);
@@ -320,7 +352,11 @@ static void nxt2004_microcontroller_init (struct nxt200x_state* state)
 		counter++;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "nxt200x: Timeout waiting for nxt2004 to init.\n");
+#else
+	;
+#endif
 
 	return;
 }
@@ -329,16 +365,28 @@ static int nxt200x_writetuner (struct nxt200x_state* state, u8* data)
 {
 	u8 buf, count = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Tuner Bytes: %02X %02X %02X %02X\n", data[1], data[2], data[3], data[4]);
+#else
+	d;
+#endif
 
 	/* if NXT2004, write directly to tuner. if NXT2002, write through NXT chip.
 	 * direct write is required for Philips TUV1236D and ALPS TDHU2 */
 	switch (state->demod_chip) {
 		case NXT2004:
 			if (i2c_writebytes(state, data[0], data+1, 4))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "nxt200x: error writing to tuner\n");
+#else
+				;
+#endif
 			/* wait until we have a lock */
 			while (count < 20) {
 				i2c_readbytes(state, data[0], &buf, 1);
@@ -347,7 +395,11 @@ static int nxt200x_writetuner (struct nxt200x_state* state, u8* data)
 				msleep(100);
 				count++;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("nxt2004: timeout waiting for tuner lock\n");
+#else
+			;
+#endif
 			break;
 		case NXT2002:
 			/* set the i2c transfer speed to the tuner */
@@ -376,7 +428,11 @@ static int nxt200x_writetuner (struct nxt200x_state* state, u8* data)
 				msleep(100);
 				count++;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("nxt2002: timeout error writing tuner\n");
+#else
+			;
+#endif
 			break;
 		default:
 			return -EINVAL;
@@ -388,7 +444,11 @@ static int nxt200x_writetuner (struct nxt200x_state* state, u8* data)
 static void nxt200x_agc_reset(struct nxt200x_state* state)
 {
 	u8 buf;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
 
 	switch (state->demod_chip) {
 		case NXT2002:
@@ -417,8 +477,16 @@ static int nxt2002_load_firmware (struct dvb_frontend* fe, const struct firmware
 	u8 buf[3], written = 0, chunkpos = 0;
 	u16 rambase, position, crc = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Firmware is %zu bytes\n", fw->size);
+#else
+	d;
+#endif
 
 	/* Get the RAM base for this nxt2002 */
 	nxt200x_readbytes(state, 0x10, buf, 1);
@@ -428,7 +496,11 @@ static int nxt2002_load_firmware (struct dvb_frontend* fe, const struct firmware
 	else
 		rambase = 0x0000;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("rambase on this nxt2002 is %04X\n", rambase);
+#else
+	d;
+#endif
 
 	/* Hold the micro in reset while loading firmware */
 	buf[0] = 0x80;
@@ -484,8 +556,16 @@ static int nxt2004_load_firmware (struct dvb_frontend* fe, const struct firmware
 	u8 buf[3];
 	u16 rambase, position, crc=0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("%s\n", __func__);
+#else
+	d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Firmware is %zu bytes\n", fw->size);
+#else
+	d;
+#endif
 
 	/* set rambase */
 	rambase = 0x1000;
@@ -513,7 +593,11 @@ static int nxt2004_load_firmware (struct dvb_frontend* fe, const struct firmware
 	buf[0] = crc >> 8;
 	buf[1] = crc & 0xFF;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("firmware crc is 0x%02X 0x%02X\n", buf[0], buf[1]);
+#else
+	d;
+#endif
 
 	/* write crc */
 	nxt200x_writebytes(state, 0x2C, buf,2);
@@ -878,22 +962,42 @@ static int nxt2002_init(struct dvb_frontend* fe)
 	u8 buf[2];
 
 	/* request the firmware, this will block until someone uploads it */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("nxt2002: Waiting for firmware upload (%s)...\n", NXT2002_DEFAULT_FIRMWARE);
+#else
+	;
+#endif
 	ret = request_firmware(&fw, NXT2002_DEFAULT_FIRMWARE,
 			       state->i2c->dev.parent);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("nxt2002: Waiting for firmware upload(2)...\n");
+#else
+	;
+#endif
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("nxt2002: No firmware uploaded (timeout or file not found?)\n");
+#else
+		;
+#endif
 		return ret;
 	}
 
 	ret = nxt2002_load_firmware(fe, fw);
 	release_firmware(fw);
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("nxt2002: Writing firmware to device failed\n");
+#else
+		;
+#endif
 		return ret;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("nxt2002: Firmware upload complete\n");
+#else
+	;
+#endif
 
 	/* Put the micro into reset */
 	nxt200x_microcontroller_stop(state);
@@ -943,22 +1047,42 @@ static int nxt2004_init(struct dvb_frontend* fe)
 	nxt200x_writebytes(state, 0x1E, buf, 1);
 
 	/* request the firmware, this will block until someone uploads it */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("nxt2004: Waiting for firmware upload (%s)...\n", NXT2004_DEFAULT_FIRMWARE);
+#else
+	;
+#endif
 	ret = request_firmware(&fw, NXT2004_DEFAULT_FIRMWARE,
 			       state->i2c->dev.parent);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("nxt2004: Waiting for firmware upload(2)...\n");
+#else
+	;
+#endif
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("nxt2004: No firmware uploaded (timeout or file not found?)\n");
+#else
+		;
+#endif
 		return ret;
 	}
 
 	ret = nxt2004_load_firmware(fe, fw);
 	release_firmware(fw);
 	if (ret) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("nxt2004: Writing firmware to device failed\n");
+#else
+		;
+#endif
 		return ret;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("nxt2004: Firmware upload complete\n");
+#else
+	;
+#endif
 
 	/* ensure transfer is complete */
 	buf[0] = 0x01;
@@ -1157,18 +1281,30 @@ struct dvb_frontend* nxt200x_attach(const struct nxt200x_config* config,
 
 	/* read card id */
 	nxt200x_readbytes(state, 0x00, buf, 5);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("NXT info: %02X %02X %02X %02X %02X\n",
 		buf[0], buf[1], buf[2],	buf[3], buf[4]);
+#else
+	d;
+#endif
 
 	/* set demod chip */
 	switch (buf[0]) {
 		case 0x04:
 			state->demod_chip = NXT2002;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("nxt200x: NXT2002 Detected\n");
+#else
+			;
+#endif
 			break;
 		case 0x05:
 			state->demod_chip = NXT2004;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("nxt200x: NXT2004 Detected\n");
+#else
+			;
+#endif
 			break;
 		default:
 			goto error;
@@ -1197,8 +1333,12 @@ struct dvb_frontend* nxt200x_attach(const struct nxt200x_config* config,
 
 error:
 	kfree(state);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Unknown/Unsupported NXT chip: %02X %02X %02X %02X %02X\n",
 		buf[0], buf[1], buf[2], buf[3], buf[4]);
+#else
+	;
+#endif
 	return NULL;
 }
 

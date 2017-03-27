@@ -3661,7 +3661,11 @@ static void dasd_eckd_dump_sense_ccw(struct dasd_device *device,
 		sprintf(page + len, KERN_ERR PRINTK_HEADER
 			" SORRY - NO VALID SENSE AVAILABLE\n");
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s", page);
+#else
+	;
+#endif
 
 	if (req) {
 		/* req == NULL for unsolicited interrupts */
@@ -3673,7 +3677,11 @@ static void dasd_eckd_dump_sense_ccw(struct dasd_device *device,
 		len = sprintf(page,  KERN_ERR PRINTK_HEADER
 			      " Related CP in req: %p\n", req);
 		dasd_eckd_dump_ccw_range(first, to, page + len);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s", page);
+#else
+		;
+#endif
 
 		/* print failing CCW area (maximum 4) */
 		/* scsw->cda is either valid or zero  */
@@ -3696,7 +3704,11 @@ static void dasd_eckd_dump_sense_ccw(struct dasd_device *device,
 		}
 		len += dasd_eckd_dump_ccw_range(from, last, page + len);
 		if (len > 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("%s", page);
+#else
+			;
+#endif
 	}
 	free_page((unsigned long) page);
 }
@@ -3832,7 +3844,11 @@ static void dasd_eckd_dump_sense_tcw(struct dasd_device *device,
 		sprintf(page + len, KERN_ERR PRINTK_HEADER
 			" SORRY - NO TSB DATA AVAILABLE\n");
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s", page);
+#else
+	;
+#endif
 	free_page((unsigned long) page);
 }
 

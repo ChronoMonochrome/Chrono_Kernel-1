@@ -42,7 +42,11 @@ static int mantis_ca_read_attr_mem(struct dvb_ca_en50221 *en50221, int slot, int
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Request Attribute Mem Read", slot);
+#else
+	d;
+#endif
 
 	if (slot != 0)
 		return -EINVAL;
@@ -55,7 +59,11 @@ static int mantis_ca_write_attr_mem(struct dvb_ca_en50221 *en50221, int slot, in
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Request Attribute Mem Write", slot);
+#else
+	d;
+#endif
 
 	if (slot != 0)
 		return -EINVAL;
@@ -68,7 +76,11 @@ static int mantis_ca_read_cam_ctl(struct dvb_ca_en50221 *en50221, int slot, u8 a
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Request CAM control Read", slot);
+#else
+	d;
+#endif
 
 	if (slot != 0)
 		return -EINVAL;
@@ -81,7 +93,11 @@ static int mantis_ca_write_cam_ctl(struct dvb_ca_en50221 *en50221, int slot, u8 
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Request CAM control Write", slot);
+#else
+	d;
+#endif
 
 	if (slot != 0)
 		return -EINVAL;
@@ -94,7 +110,11 @@ static int mantis_ca_slot_reset(struct dvb_ca_en50221 *en50221, int slot)
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Slot RESET", slot);
+#else
+	d;
+#endif
 	udelay(500); /* Wait.. */
 	mmwrite(0xda, MANTIS_PCMCIA_RESET); /* Leading edge assert */
 	udelay(500);
@@ -110,7 +130,11 @@ static int mantis_ca_slot_shutdown(struct dvb_ca_en50221 *en50221, int slot)
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Slot shutdown", slot);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -120,7 +144,11 @@ static int mantis_ts_control(struct dvb_ca_en50221 *en50221, int slot)
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Slot(%d): TS control", slot);
+#else
+	d;
+#endif
 /*	mantis_set_direction(mantis, 1); */ /* Enable TS through CAM */
 
 	return 0;
@@ -131,13 +159,25 @@ static int mantis_slot_status(struct dvb_ca_en50221 *en50221, int slot, int open
 	struct mantis_ca *ca = en50221->data;
 	struct mantis_pci *mantis = ca->ca_priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Slot(%d): Poll Slot status", slot);
+#else
+	d;
+#endif
 
 	if (ca->slot_state == MODULE_INSERTED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "CA Module present and ready");
+#else
+		d;
+#endif
 		return DVB_CA_EN50221_POLL_CAM_PRESENT | DVB_CA_EN50221_POLL_CAM_READY;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_DEBUG, 1, "CA Module not present or not ready");
+#else
+		d;
+#endif
 	}
 
 	return 0;
@@ -149,10 +189,18 @@ int mantis_ca_init(struct mantis_pci *mantis)
 	struct mantis_ca *ca;
 	int ca_flags = 0, result;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Initializing Mantis CA");
+#else
+	d;
+#endif
 	ca = kzalloc(sizeof(struct mantis_ca), GFP_KERNEL);
 	if (!ca) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "Out of memory!, exiting ..");
+#else
+		d;
+#endif
 		result = -ENOMEM;
 		goto err;
 	}
@@ -178,13 +226,25 @@ int mantis_ca_init(struct mantis_pci *mantis)
 	init_waitqueue_head(&ca->hif_opdone_wq);
 	init_waitqueue_head(&ca->hif_write_wq);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "Registering EN50221 device");
+#else
+	d;
+#endif
 	result = dvb_ca_en50221_init(dvb_adapter, &ca->en50221, ca_flags, 1);
 	if (result != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(MANTIS_ERROR, 1, "EN50221: Initialization failed <%d>", result);
+#else
+		d;
+#endif
 		goto err;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "Registered EN50221 device");
+#else
+	d;
+#endif
 	mantis_evmgr_init(ca);
 	return 0;
 err:
@@ -197,10 +257,18 @@ void mantis_ca_exit(struct mantis_pci *mantis)
 {
 	struct mantis_ca *ca = mantis->mantis_ca;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_DEBUG, 1, "Mantis CA exit");
+#else
+	d;
+#endif
 
 	mantis_evmgr_exit(ca);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(MANTIS_ERROR, 1, "Unregistering EN50221 device");
+#else
+	d;
+#endif
 	if (ca)
 		dvb_ca_en50221_release(&ca->en50221);
 

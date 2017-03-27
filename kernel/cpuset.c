@@ -678,11 +678,15 @@ restart:
 		if (nslot == ndoms) {
 			static int warnings = 10;
 			if (warnings) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 				 "rebuild_sched_domains confused:"
 				  " nslot %d, ndoms %d, csn %d, i %d,"
 				  " apn %d\n",
 				  nslot, ndoms, csn, i, apn);
+#else
+				;
+#endif
 				warnings--;
 			}
 			continue;
@@ -2515,8 +2519,12 @@ void cpuset_print_task_mems_allowed(struct task_struct *tsk)
 		 dentry ? (const char *)dentry->d_name.name : "/");
 	nodelist_scnprintf(cpuset_nodelist, CPUSET_NODELIST_LEN,
 			   tsk->mems_allowed);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s cpuset=%s mems_allowed=%s\n",
 	       tsk->comm, cpuset_name, cpuset_nodelist);
+#else
+	;
+#endif
 	spin_unlock(&cpuset_buffer_lock);
 }
 

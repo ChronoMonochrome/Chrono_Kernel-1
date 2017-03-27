@@ -335,8 +335,12 @@ void ata_force_cbl(struct ata_port *ap)
 			continue;
 
 		ap->cbl = fe->param.cbl;
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_port_printk(ap, KERN_NOTICE,
 				"FORCE: cable set to %s\n", fe->param.name);
+#else
+		ata_port_;
+#endif
 		return;
 	}
 }
@@ -378,18 +382,26 @@ static void ata_force_link_limits(struct ata_link *link)
 		/* only honor the first spd limit */
 		if (!did_spd && fe->param.spd_limit) {
 			link->hw_sata_spd_limit = (1 << fe->param.spd_limit) - 1;
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_NOTICE,
 					"FORCE: PHY spd limit set to %s\n",
 					fe->param.name);
+#else
+			ata_link_;
+#endif
 			did_spd = true;
 		}
 
 		/* let lflags stack */
 		if (fe->param.lflags) {
 			link->flags |= fe->param.lflags;
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_NOTICE,
 					"FORCE: link flag 0x%x forced -> 0x%x\n",
 					fe->param.lflags, link->flags);
+#else
+			ata_link_;
+#endif
 		}
 	}
 }
@@ -442,8 +454,12 @@ static void ata_force_xfermask(struct ata_device *dev)
 			dev->pio_mask = pio_mask;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_NOTICE,
 			"FORCE: xfer_mask set to %s\n", fe->param.name);
+#else
+		ata_dev_;
+#endif
 		return;
 	}
 }
@@ -486,8 +502,12 @@ static void ata_force_horkage(struct ata_device *dev)
 		dev->horkage |= fe->param.horkage_on;
 		dev->horkage &= ~fe->param.horkage_off;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_NOTICE,
 			"FORCE: horkage modified (%s)\n", fe->param.name);
+#else
+		ata_dev_;
+#endif
 	}
 }
 
@@ -711,8 +731,12 @@ u64 ata_tf_read_block(struct ata_taskfile *tf, struct ata_device *dev)
 		sect = tf->lbal;
 
 		if (!sect) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING, "device reported "
 				       "invalid CHS sector 0\n");
+#else
+			ata_dev_;
+#endif
 			sect = 1; /* oh well */
 		}
 
@@ -1230,8 +1254,12 @@ static int ata_read_native_max_address(struct ata_device *dev, u64 *max_sectors)
 
 	err_mask = ata_exec_internal(dev, &tf, NULL, DMA_NONE, NULL, 0, 0);
 	if (err_mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "failed to read native "
 			       "max address (err_mask=0x%x)\n", err_mask);
+#else
+		ata_dev_;
+#endif
 		if (err_mask == AC_ERR_DEV && (tf.feature & ATA_ABORTED))
 			return -EACCES;
 		return -EIO;
@@ -1292,8 +1320,12 @@ static int ata_set_max_sectors(struct ata_device *dev, u64 new_sectors)
 
 	err_mask = ata_exec_internal(dev, &tf, NULL, DMA_NONE, NULL, 0, 0);
 	if (err_mask) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "failed to set "
 			       "max address (err_mask=0x%x)\n", err_mask);
+#else
+		ata_dev_;
+#endif
 		if (err_mask == AC_ERR_DEV &&
 		    (tf.feature & (ATA_ABORTED | ATA_IDNF)))
 			return -EACCES;
@@ -1336,8 +1368,12 @@ static int ata_hpa_resize(struct ata_device *dev)
 		 * be unlocked, skip HPA resizing.
 		 */
 		if (rc == -EACCES || !unlock_hpa) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING, "HPA support seems "
 				       "broken, skipping HPA handling\n");
+#else
+			ata_dev_;
+#endif
 			dev->horkage |= ATA_HORKAGE_BROKEN_HPA;
 
 			/* we can continue if device aborted the command */
@@ -1355,16 +1391,24 @@ static int ata_hpa_resize(struct ata_device *dev)
 			return 0;
 
 		if (native_sectors > sectors)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_INFO,
 				"HPA detected: current %llu, native %llu\n",
 				(unsigned long long)sectors,
 				(unsigned long long)native_sectors);
+#else
+			ata_dev_;
+#endif
 		else if (native_sectors < sectors)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING,
 				"native sectors (%llu) is smaller than "
 				"sectors (%llu)\n",
 				(unsigned long long)native_sectors,
 				(unsigned long long)sectors);
+#else
+			ata_dev_;
+#endif
 		return 0;
 	}
 
@@ -1372,10 +1416,14 @@ static int ata_hpa_resize(struct ata_device *dev)
 	rc = ata_set_max_sectors(dev, native_sectors);
 	if (rc == -EACCES) {
 		/* if device aborted the command, skip HPA resizing */
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "device aborted resize "
 			       "(%llu -> %llu), skipping HPA handling\n",
 			       (unsigned long long)sectors,
 			       (unsigned long long)native_sectors);
+#else
+		ata_dev_;
+#endif
 		dev->horkage |= ATA_HORKAGE_BROKEN_HPA;
 		return 0;
 	} else if (rc)
@@ -1391,11 +1439,15 @@ static int ata_hpa_resize(struct ata_device *dev)
 
 	if (print_info) {
 		u64 new_sectors = ata_id_n_sectors(dev->id);
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO,
 			"HPA unlocked: %llu -> %llu, native %llu\n",
 			(unsigned long long)sectors,
 			(unsigned long long)new_sectors,
 			(unsigned long long)native_sectors);
+#else
+		ata_dev_;
+#endif
 	}
 
 	return 0;
@@ -1655,8 +1707,12 @@ unsigned ata_exec_internal_sg(struct ata_device *dev,
 				ata_qc_complete(qc);
 
 			if (ata_msg_warn(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_WARNING,
 					"qc timeout (cmd 0x%x)\n", command);
+#else
+				ata_dev_;
+#endif
 		}
 
 		spin_unlock_irqrestore(ap->lock, flags);
@@ -1870,7 +1926,11 @@ int ata_dev_read_id(struct ata_device *dev, unsigned int *p_class,
 	int rc;
 
 	if (ata_msg_ctl(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_DEBUG, "%s: ENTER\n", __func__);
+#else
+		ata_dev_;
+#endif
 
 retry:
 	ata_tf_init(dev, &tf);
@@ -1909,14 +1969,22 @@ retry:
 
 	if (err_mask) {
 		if (err_mask & AC_ERR_NODEV_HINT) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_DEBUG,
 				       "NODEV after polling detection\n");
+#else
+			ata_dev_;
+#endif
 			return -ENOENT;
 		}
 
 		if (is_semb) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_INFO, "IDENTIFY failed on "
 				       "device w/ SEMB sig, disabled\n");
+#else
+			ata_dev_;
+#endif
 			/* SEMB is not supported yet */
 			*p_class = ATA_DEV_SEMB_UNSUP;
 			return 0;
@@ -1942,8 +2010,12 @@ retry:
 			 * both flavors of IDENTIFYs which happens
 			 * sometimes with phantom devices.
 			 */
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_DEBUG,
 				       "both IDENTIFYs aborted, assuming NODEV\n");
+#else
+			ata_dev_;
+#endif
 			return -ENOENT;
 		}
 
@@ -1953,9 +2025,13 @@ retry:
 	}
 
 	if (dev->horkage & ATA_HORKAGE_DUMP_ID) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_DEBUG, "dumping IDENTIFY data, "
 			       "class=%d may_fallback=%d tried_spinup=%d\n",
 			       class, may_fallback, tried_spinup);
+#else
+		ata_dev_;
+#endif
 		print_hex_dump(KERN_DEBUG, "", DUMP_PREFIX_OFFSET,
 			       16, 2, id, ATA_ID_WORDS * sizeof(*id), true);
 	}
@@ -2034,8 +2110,12 @@ retry:
 
  err_out:
 	if (ata_msg_warn(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "failed to IDENTIFY "
 			       "(%s, err_mask=0x%x)\n", reason, err_mask);
+#else
+		ata_dev_;
+#endif
 	return rc;
 }
 
@@ -2065,9 +2145,13 @@ static int ata_do_link_spd_horkage(struct ata_device *dev)
 	 * guaranteed by setting sata_spd_limit to target_limit above.
 	 */
 	if (plink->sata_spd > target) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO,
 			       "applying link speed limit horkage to %s\n",
 			       sata_spd_string(target));
+#else
+		ata_dev_;
+#endif
 		return -EAGAIN;
 	}
 	return 0;
@@ -2154,31 +2238,47 @@ int ata_dev_configure(struct ata_device *dev)
 	int rc;
 
 	if (!ata_dev_enabled(dev) && ata_msg_info(ap)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "%s: ENTER/EXIT -- nodev\n",
 			       __func__);
+#else
+		ata_dev_;
+#endif
 		return 0;
 	}
 
 	if (ata_msg_probe(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_DEBUG, "%s: ENTER\n", __func__);
+#else
+		ata_dev_;
+#endif
 
 	/* set horkage */
 	dev->horkage |= ata_dev_blacklisted(dev);
 	ata_force_horkage(dev);
 
 	if (dev->horkage & ATA_HORKAGE_DISABLE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO,
 			       "unsupported device, disabling\n");
+#else
+		ata_dev_;
+#endif
 		ata_dev_disable(dev);
 		return 0;
 	}
 
 	if ((!atapi_enabled || (ap->flags & ATA_FLAG_NO_ATAPI)) &&
 	    dev->class == ATA_DEV_ATAPI) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING,
 			"WARNING: ATAPI is %s, device ignored.\n",
 			atapi_enabled ? "not supported with this driver"
 				      : "disabled");
+#else
+		ata_dev_;
+#endif
 		ata_dev_disable(dev);
 		return 0;
 	}
@@ -2199,12 +2299,16 @@ int ata_dev_configure(struct ata_device *dev)
 
 	/* print device capabilities */
 	if (ata_msg_probe(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_DEBUG,
 			       "%s: cfg 49:%04x 82:%04x 83:%04x 84:%04x "
 			       "85:%04x 86:%04x 87:%04x 88:%04x\n",
 			       __func__,
 			       id[49], id[82], id[83], id[84],
 			       id[85], id[86], id[87], id[88]);
+#else
+		ata_dev_;
+#endif
 
 	/* initialize to-be-configured parameters */
 	dev->flags &= ~ATA_DFLAG_CFG_MASK;
@@ -2238,17 +2342,25 @@ int ata_dev_configure(struct ata_device *dev)
 		if (ata_id_is_cfa(id)) {
 			/* CPRM may make this media unusable */
 			if (id[ATA_ID_CFA_KEY_MGMT] & 1)
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_WARNING,
 					       "supports DRM functions and may "
 					       "not be fully accessible.\n");
+#else
+				ata_dev_;
+#endif
 			snprintf(revbuf, 7, "CFA");
 		} else {
 			snprintf(revbuf, 7, "ATA-%d", ata_id_major_version(id));
 			/* Warn the user if the device has TPM extensions */
 			if (ata_id_has_tpm(id))
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_WARNING,
 					       "supports DRM functions and may "
 					       "not be fully accessible.\n");
+#else
+				ata_dev_;
+#endif
 		}
 
 		dev->n_sectors = ata_id_n_sectors(id);
@@ -2285,14 +2397,22 @@ int ata_dev_configure(struct ata_device *dev)
 
 			/* print device info to dmesg */
 			if (ata_msg_drv(ap) && print_info) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_INFO,
 					"%s: %s, %s, max %s\n",
 					revbuf, modelbuf, fwrevbuf,
 					ata_mode_string(xfer_mask));
+#else
+				ata_dev_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_INFO,
 					"%Lu sectors, multi %u: %s %s\n",
 					(unsigned long long)dev->n_sectors,
 					dev->multi_count, lba_desc, ncq_desc);
+#else
+				ata_dev_;
+#endif
 			}
 		} else {
 			/* CHS */
@@ -2311,15 +2431,23 @@ int ata_dev_configure(struct ata_device *dev)
 
 			/* print device info to dmesg */
 			if (ata_msg_drv(ap) && print_info) {
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_INFO,
 					"%s: %s, %s, max %s\n",
 					revbuf,	modelbuf, fwrevbuf,
 					ata_mode_string(xfer_mask));
+#else
+				ata_dev_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_INFO,
 					"%Lu sectors, multi %u, CHS %u/%u/%u\n",
 					(unsigned long long)dev->n_sectors,
 					dev->multi_count, dev->cylinders,
 					dev->heads, dev->sectors);
+#else
+				ata_dev_;
+#endif
 			}
 		}
 
@@ -2336,8 +2464,12 @@ int ata_dev_configure(struct ata_device *dev)
 		rc = atapi_cdb_len(id);
 		if ((rc < 12) || (rc > ATAPI_CDB_LEN)) {
 			if (ata_msg_warn(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 				ata_dev_printk(dev, KERN_WARNING,
 					       "unsupported CDB len\n");
+#else
+				ata_dev_;
+#endif
 			rc = -EINVAL;
 			goto err_out_nosup;
 		}
@@ -2379,12 +2511,16 @@ int ata_dev_configure(struct ata_device *dev)
 
 		/* print device info to dmesg */
 		if (ata_msg_drv(ap) && print_info)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_INFO,
 				       "ATAPI: %s, %s, max %s%s%s%s\n",
 				       modelbuf, fwrevbuf,
 				       ata_mode_string(xfer_mask),
 				       cdb_intr_string, atapi_an_string,
 				       dma_dir_string);
+#else
+			ata_dev_;
+#endif
 	}
 
 	/* determine max_sectors */
@@ -2396,8 +2532,12 @@ int ata_dev_configure(struct ata_device *dev)
 	   200 sectors */
 	if (ata_dev_knobble(dev)) {
 		if (ata_msg_drv(ap) && print_info)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_INFO,
 				       "applying bridge limits\n");
+#else
+			ata_dev_;
+#endif
 		dev->udma_mask &= ATA_UDMA5;
 		dev->max_sectors = ATA_MAX_SECTORS;
 	}
@@ -2423,26 +2563,46 @@ int ata_dev_configure(struct ata_device *dev)
 		   bugs */
 
 		if (print_info) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING,
 "Drive reports diagnostics failure. This may indicate a drive\n");
+#else
+			ata_dev_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING,
 "fault or invalid emulation. Contact drive vendor for information.\n");
+#else
+			ata_dev_;
+#endif
 		}
 	}
 
 	if ((dev->horkage & ATA_HORKAGE_FIRMWARE_WARN) && print_info) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "WARNING: device requires "
 			       "firmware update to be fully functional.\n");
+#else
+		ata_dev_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "         contact the vendor "
 			       "or visit http://ata.wiki.kernel.org.\n");
+#else
+		ata_dev_;
+#endif
 	}
 
 	return 0;
 
 err_out_nosup:
 	if (ata_msg_probe(ap))
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_DEBUG,
 			       "%s: EXIT, err\n", __func__);
+#else
+		ata_dev_;
+#endif
 	return rc;
 }
 
@@ -2663,13 +2823,21 @@ static void sata_print_link_status(struct ata_link *link)
 
 	if (ata_phys_link_online(link)) {
 		tmp = (sstatus >> 4) & 0xf;
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_INFO,
 				"SATA link up %s (SStatus %X SControl %X)\n",
 				sata_spd_string(tmp), sstatus, scontrol);
+#else
+		ata_link_;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_INFO,
 				"SATA link down (SStatus %X SControl %X)\n",
 				sstatus, scontrol);
+#else
+		ata_link_;
+#endif
 	}
 }
 
@@ -2758,8 +2926,12 @@ int sata_down_spd_limit(struct ata_link *link, u32 spd_limit)
 
 	link->sata_spd_limit = mask;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_link_printk(link, KERN_WARNING, "limiting SATA link speed to %s\n",
 			sata_spd_string(fls(mask)));
+#else
+	ata_link_;
+#endif
 
 	return 0;
 }
@@ -3136,8 +3308,12 @@ int ata_down_xfermask_limit(struct ata_device *dev, unsigned int sel)
 			snprintf(buf, sizeof(buf), "%s",
 				 ata_mode_string(xfer_mask));
 
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING,
 			       "limiting speed to %s\n", buf);
+#else
+		ata_dev_;
+#endif
 	}
 
 	ata_unpack_xfermask(xfer_mask, &dev->pio_mask, &dev->mwdma_mask,
@@ -3164,9 +3340,13 @@ static int ata_dev_set_mode(struct ata_device *dev)
 		dev_err_whine = " (SET_XFERMODE skipped)";
 	else {
 		if (nosetxfer)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING,
 				       "NOSETXFER but PATA detected - can't "
 				       "skip SETXFER, might malfunction\n");
+#else
+			ata_dev_;
+#endif
 		err_mask = ata_dev_set_xfermode(dev);
 	}
 
@@ -3216,9 +3396,13 @@ static int ata_dev_set_mode(struct ata_device *dev)
 	DPRINTK("xfer_shift=%u, xfer_mode=0x%x\n",
 		dev->xfer_shift, (int)dev->xfer_mode);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_dev_printk(dev, KERN_INFO, "configured for %s%s\n",
 		       ata_mode_string(ata_xfer_mode2mask(dev->xfer_mode)),
 		       dev_err_whine);
+#else
+	ata_dev_;
+#endif
 
 	return 0;
 
@@ -3286,7 +3470,11 @@ int ata_do_set_mode(struct ata_link *link, struct ata_device **r_failed_dev)
 	/* step 2: always set host PIO timings */
 	ata_for_each_dev(dev, link, ENABLED) {
 		if (dev->pio_mode == 0xff) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING, "no PIO support\n");
+#else
+			ata_dev_;
+#endif
 			rc = -EINVAL;
 			goto out;
 		}
@@ -3404,9 +3592,13 @@ int ata_wait_ready(struct ata_link *link, unsigned long deadline,
 
 		if (!warned && time_after(now, start + 5 * HZ) &&
 		    (deadline - now > 3 * HZ)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_WARNING,
 				"link is slow to respond, please be patient "
 				"(ready=%d)\n", tmp);
+#else
+			ata_link_;
+#endif
 			warned = 1;
 		}
 
@@ -3559,9 +3751,13 @@ int sata_link_resume(struct ata_link *link, const unsigned long *params,
 	}
 
 	if (tries < ATA_LINK_RESUME_TRIES)
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_link_printk(link, KERN_WARNING,
 				"link resume succeeded after %d retries\n",
 				ATA_LINK_RESUME_TRIES - tries);
+#else
+		ata_link_;
+#endif
 
 	if ((rc = sata_link_debounce(link, params, deadline)))
 		return rc;
@@ -3678,8 +3874,12 @@ int ata_std_prereset(struct ata_link *link, unsigned long deadline)
 		rc = sata_link_resume(link, timing, deadline);
 		/* whine about phy resume failure but proceed */
 		if (rc && rc != -EOPNOTSUPP)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_link_printk(link, KERN_WARNING, "failed to resume "
 					"link for reset (errno=%d)\n", rc);
+#else
+			ata_link_;
+#endif
 	}
 
 	/* no point in trying softreset on offline link */
@@ -3880,8 +4080,12 @@ static int ata_dev_same_device(struct ata_device *dev, unsigned int new_class,
 	unsigned char serial[2][ATA_ID_SERNO_LEN + 1];
 
 	if (dev->class != new_class) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "class mismatch %d != %d\n",
 			       dev->class, new_class);
+#else
+		ata_dev_;
+#endif
 		return 0;
 	}
 
@@ -3891,14 +4095,22 @@ static int ata_dev_same_device(struct ata_device *dev, unsigned int new_class,
 	ata_id_c_string(new_id, serial[1], ATA_ID_SERNO, sizeof(serial[1]));
 
 	if (strcmp(model[0], model[1])) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "model number mismatch "
 			       "'%s' != '%s'\n", model[0], model[1]);
+#else
+		ata_dev_;
+#endif
 		return 0;
 	}
 
 	if (strcmp(serial[0], serial[1])) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "serial number mismatch "
 			       "'%s' != '%s'\n", serial[0], serial[1]);
+#else
+		ata_dev_;
+#endif
 		return 0;
 	}
 
@@ -3968,8 +4180,12 @@ int ata_dev_revalidate(struct ata_device *dev, unsigned int new_class,
 	    new_class != ATA_DEV_ATA &&
 	    new_class != ATA_DEV_ATAPI &&
 	    new_class != ATA_DEV_SEMB) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "class mismatch %u != %u\n",
 			       dev->class, new_class);
+#else
+		ata_dev_;
+#endif
 		rc = -ENODEV;
 		goto fail;
 	}
@@ -3990,9 +4206,13 @@ int ata_dev_revalidate(struct ata_device *dev, unsigned int new_class,
 		return 0;
 
 	/* n_sectors has changed */
+#ifdef CONFIG_DEBUG_PRINTK
 	ata_dev_printk(dev, KERN_WARNING, "n_sectors mismatch %llu != %llu\n",
 		       (unsigned long long)n_sectors,
 		       (unsigned long long)dev->n_sectors);
+#else
+	ata_dev_;
+#endif
 
 	/*
 	 * Something could have caused HPA to be unlocked
@@ -4001,9 +4221,13 @@ int ata_dev_revalidate(struct ata_device *dev, unsigned int new_class,
 	 */
 	if (dev->n_native_sectors == n_native_sectors &&
 	    dev->n_sectors > n_sectors && dev->n_sectors == n_native_sectors) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING,
 			       "new n_sectors matches native, probably "
 			       "late HPA unlock, n_sectors updated\n");
+#else
+		ata_dev_;
+#endif
 		/* use the larger n_sectors */
 		return 0;
 	}
@@ -4017,9 +4241,13 @@ int ata_dev_revalidate(struct ata_device *dev, unsigned int new_class,
 	if (dev->n_native_sectors == n_native_sectors &&
 	    dev->n_sectors < n_sectors && n_sectors == n_native_sectors &&
 	    !(dev->horkage & ATA_HORKAGE_BROKEN_HPA)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING,
 			       "old n_sectors matches native, probably "
 			       "late HPA lock, will try to unlock HPA\n");
+#else
+		ata_dev_;
+#endif
 		/* try unlocking HPA */
 		dev->flags |= ATA_DFLAG_UNLOCK_HPA;
 		rc = -EIO;
@@ -4358,15 +4586,23 @@ static void ata_dev_xfermask(struct ata_device *dev)
 
 	if (ata_dma_blacklisted(dev)) {
 		xfer_mask &= ~(ATA_MASK_MWDMA | ATA_MASK_UDMA);
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING,
 			       "device is on DMA blacklist, disabling DMA\n");
+#else
+		ata_dev_;
+#endif
 	}
 
 	if ((host->flags & ATA_HOST_SIMPLEX) &&
 	    host->simplex_claimed && host->simplex_claimed != ap) {
 		xfer_mask &= ~(ATA_MASK_MWDMA | ATA_MASK_UDMA);
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING, "simplex DMA is claimed by "
 			       "other device, disabling DMA\n");
+#else
+		ata_dev_;
+#endif
 	}
 
 	if (ap->flags & ATA_FLAG_NO_IORDY)
@@ -4386,8 +4622,12 @@ static void ata_dev_xfermask(struct ata_device *dev)
 	if (xfer_mask & (0xF8 << ATA_SHIFT_UDMA))
 		/* UDMA/44 or higher would be available */
 		if (cable_is_40wire(ap)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING,
 				 "limited to UDMA/33 due to 40-wire cable\n");
+#else
+			ata_dev_;
+#endif
 			xfer_mask &= ~(0xF8 << ATA_SHIFT_UDMA);
 		}
 
@@ -6023,14 +6263,22 @@ int ata_host_register(struct ata_host *host, struct scsi_host_template *sht)
 					      ap->udma_mask);
 
 		if (!ata_port_is_dummy(ap)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_port_printk(ap, KERN_INFO,
 					"%cATA max %s %s\n",
 					(ap->flags & ATA_FLAG_SATA) ? 'S' : 'P',
 					ata_mode_string(xfer_mask),
 					ap->link.eh_info.desc);
+#else
+			ata_port_;
+#endif
 			ata_ehi_clear_desc(&ap->link.eh_info);
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_port_printk(ap, KERN_INFO, "DUMMY\n");
+#else
+			ata_port_;
+#endif
 	}
 
 	/* perform each probe asynchronously */
@@ -6426,8 +6674,12 @@ static void __init ata_parse_force_param(void)
 
 	ata_force_tbl = kzalloc(sizeof(ata_force_tbl[0]) * size, GFP_KERNEL);
 	if (!ata_force_tbl) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ata: failed to extend force table, "
 		       "libata.force ignored\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -6438,9 +6690,13 @@ static void __init ata_parse_force_param(void)
 
 		next = cur;
 		if (ata_parse_force_one(&next, &te, &reason)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ata: failed to parse force "
 			       "parameter \"%s\" (%s)\n",
 			       cur, reason);
+#else
+			;
+#endif
 			continue;
 		}
 
@@ -6478,7 +6734,11 @@ static int __init ata_init(void)
 		goto err_out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "libata version " DRV_VERSION " loaded.\n");
+#else
+	;
+#endif
 	return 0;
 
 err_out:

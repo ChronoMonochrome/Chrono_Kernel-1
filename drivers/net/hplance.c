@@ -107,13 +107,13 @@ static int __devinit hplance_init_one(struct dio_dev *d,
 
 	dio_set_drvdata(d, dev);
 
-	printk(KERN_INFO "%s: %s; select code %d, addr %2.2x", dev->name, d->name, d->scode, dev->dev_addr[0]);
+;
 
 	for (i=1; i<6; i++) {
-		printk(":%2.2x", dev->dev_addr[i]);
+;
 	}
 
-	printk(", irq %d\n", d->ipl);
+;
 
 	return 0;
 

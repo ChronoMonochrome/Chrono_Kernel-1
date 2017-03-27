@@ -514,9 +514,13 @@ static void pll_factors(unsigned int target, unsigned int source)
 		pll_div.pre_scale = 1;
 
 	if ((Ndiv < 6) || (Ndiv > 12))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"WM8940 N value %d outwith recommended range!d\n",
 			Ndiv);
+#else
+		;
+#endif
 
 	pll_div.n = Ndiv;
 	Nmod = target % source;

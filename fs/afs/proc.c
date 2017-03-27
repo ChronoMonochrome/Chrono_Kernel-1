@@ -301,7 +301,7 @@ static ssize_t afs_proc_cells_write(struct file *file, const char __user *buf,
 		}
 
 		afs_put_cell(cell);
-		printk("kAFS: Added new cell '%s'\n", name);
+;
 	} else {
 		goto inval;
 	}
@@ -315,7 +315,7 @@ done:
 
 inval:
 	ret = -EINVAL;
-	printk("kAFS: Invalid Command on /proc/fs/afs/cells file\n");
+;
 	goto done;
 }
 

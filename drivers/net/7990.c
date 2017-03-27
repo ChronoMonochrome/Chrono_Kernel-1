@@ -97,16 +97,16 @@ static inline __u16 READRDP(struct lance_private *lp)
 do { \
         int t; \
         for (t=0; t < RX_RING_SIZE; t++) { \
-                printk("R%d: @(%02X %04X) len %04X, mblen %04X, bits %02X\n",\
-                       t, ib->brx_ring[t].rmd1_hadr, ib->brx_ring[t].rmd0,\
-                       ib->brx_ring[t].length,\
-                       ib->brx_ring[t].mblength, ib->brx_ring[t].rmd1_bits);\
+//                printk("R%d: @(%02X %04X) len %04X, mblen %04X, bits %02X\n",\
+//                       t, ib->brx_ring[t].rmd1_hadr, ib->brx_ring[t].rmd0,\
+//                       ib->brx_ring[t].length,\
+;
         }\
         for (t=0; t < TX_RING_SIZE; t++) { \
-                printk("T%d: @(%02X %04X) len %04X, misc %04X, bits %02X\n",\
-                       t, ib->btx_ring[t].tmd1_hadr, ib->btx_ring[t].tmd0,\
-                       ib->btx_ring[t].length,\
-                       ib->btx_ring[t].misc, ib->btx_ring[t].tmd1_bits);\
+//                printk("T%d: @(%02X %04X) len %04X, misc %04X, bits %02X\n",\
+//                       t, ib->btx_ring[t].tmd1_hadr, ib->btx_ring[t].tmd0,\
+//                       ib->btx_ring[t].length,\
+;
         }\
 } while (0)
 #else
@@ -381,8 +381,8 @@ static int lance_tx (struct net_device *dev)
                                 dev->stats.tx_carrier_errors++;
                                 if (lp->auto_select) {
                                         lp->tpe = 1 - lp->tpe;
-                                        printk("%s: Carrier Lost, trying %s\n",
-                                               dev->name, lp->tpe?"TPE":"AUI");
+//                                        printk("%s: Carrier Lost, trying %s\n",
+;
                                         /* Stop the lance */
                                         WRITERAP(lp, LE_CSR0);
                                         WRITERDP(lp, LE_C0_STOP);
@@ -471,8 +471,8 @@ lance_interrupt (int irq, void *dev_id)
         if (csr0 & LE_C0_MISS)
                 dev->stats.rx_errors++;       /* Missed a Rx frame. */
         if (csr0 & LE_C0_MERR) {
-                printk("%s: Bus master arbitration failure, status %4.4x.\n",
-                       dev->name, csr0);
+//                printk("%s: Bus master arbitration failure, status %4.4x.\n",
+;
                 /* Restart the chip. */
                 WRITERDP(lp, LE_C0_STRT);
         }
@@ -524,7 +524,7 @@ EXPORT_SYMBOL_GPL(lance_close);
 
 void lance_tx_timeout(struct net_device *dev)
 {
-	printk("lance_tx_timeout\n");
+;
 	lance_reset(dev);
 	dev->trans_start = jiffies; /* prevent tx timeout */
 	netif_wake_queue (dev);

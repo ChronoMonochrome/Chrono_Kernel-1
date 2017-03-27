@@ -416,7 +416,7 @@ static int openprom_fill_super(struct super_block *s, void *data, int silent)
 out_no_root_dentry:
 	ret = -ENOMEM;
 out_no_root:
-	printk("openprom_fill_super: get root inode failed\n");
+;
 	return ret;
 }
 

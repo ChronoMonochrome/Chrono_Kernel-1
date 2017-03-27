@@ -1603,7 +1603,11 @@ static int __init dmasound_atari_init(void)
 	    if ((st_mfp.int_en_a & st_mfp.int_mk_a & 0x20) == 0)
 		return dmasound_init();
 	    else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DMA sound driver: Timer A interrupt already in use\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	    }
 	}

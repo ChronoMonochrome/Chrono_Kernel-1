@@ -44,7 +44,11 @@ static int rz1000_set_mode(struct ata_link *link, struct ata_device **unused)
 		dev->xfer_mode = XFER_PIO_0;
 		dev->xfer_shift = ATA_SHIFT_PIO;
 		dev->flags |= ATA_DFLAG_PIO;
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "configured for PIO\n");
+#else
+		ata_dev_;
+#endif
 	}
 	return 0;
 }
@@ -69,7 +73,11 @@ static int rz1000_fifo_disable(struct pci_dev *pdev)
 	reg &= 0xDFFF;
 	if (pci_write_config_word(pdev, 0x40, reg) != 0)
 		return -1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME ": disabled chipset readahead.\n");
+#else
+	;
+#endif
 	return 0;
 }
 

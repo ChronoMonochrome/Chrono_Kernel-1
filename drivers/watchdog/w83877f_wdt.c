@@ -126,8 +126,12 @@ static void wdt_timer_ping(unsigned long data)
 		spin_unlock(&wdt_spinlock);
 
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 			"Heartbeat lost! Will not ping the watchdog\n");
+#else
+		;
+#endif
 }
 
 /*
@@ -165,7 +169,11 @@ static void wdt_startup(void)
 
 	wdt_change(WDT_ENABLE);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog timer is now enabled.\n");
+#else
+	;
+#endif
 }
 
 static void wdt_turnoff(void)
@@ -175,7 +183,11 @@ static void wdt_turnoff(void)
 
 	wdt_change(WDT_DISABLE);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog timer is now disabled...\n");
+#else
+	;
+#endif
 }
 
 static void wdt_keepalive(void)
@@ -234,8 +246,12 @@ static int fop_close(struct inode *inode, struct file *file)
 		wdt_turnoff();
 	else {
 		del_timer(&timer);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 		  "device file closed unexpectedly. Will not stop the WDT!\n");
+#else
+		;
+#endif
 	}
 	clear_bit(0, &wdt_is_open);
 	wdt_expect_close = 0;
@@ -357,9 +373,13 @@ static int __init w83877f_wdt_init(void)
 
 	if (timeout < 1 || timeout > 3600) { /* arbitrary upper limit */
 		timeout = WATCHDOG_TIMEOUT;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"timeout value must be 1 <= x <= 3600, using %d\n",
 							timeout);
+#else
+		;
+#endif
 	}
 
 	if (!request_region(ENABLE_W83877F_PORT, 2, "W83877F WDT")) {
@@ -391,9 +411,13 @@ static int __init w83877f_wdt_init(void)
 		goto err_out_reboot;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 	  "WDT driver for W83877F initialised. timeout=%d sec (nowayout=%d)\n",
 		timeout, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 

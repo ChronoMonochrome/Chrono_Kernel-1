@@ -183,7 +183,7 @@ static int ni_670x_attach(struct comedi_device *dev,
 	int ret;
 	int i;
 
-	printk(KERN_INFO "comedi%d: ni_670x: ", dev->minor);
+;
 
 	ret = alloc_private(dev, sizeof(struct ni_670x_private));
 	if (ret < 0)
@@ -195,12 +195,12 @@ static int ni_670x_attach(struct comedi_device *dev,
 
 	ret = mite_setup(devpriv->mite);
 	if (ret < 0) {
-		printk(KERN_WARNING "error setting up mite\n");
+;
 		return ret;
 	}
 	dev->board_name = thisboard->name;
 	dev->irq = mite_irq(devpriv->mite);
-	printk(KERN_INFO " %s", dev->board_name);
+;
 
 	if (alloc_subdevices(dev, 2) < 0)
 		return -ENOMEM;
@@ -244,14 +244,14 @@ static int ni_670x_attach(struct comedi_device *dev,
 	/* Config of ao registers */
 	writel(0x00, devpriv->mite->daq_io_addr + AO_CONTROL_OFFSET);
 
-	printk(KERN_INFO "attached\n");
+;
 
 	return 1;
 }
 
 static int ni_670x_detach(struct comedi_device *dev)
 {
-	printk(KERN_INFO "comedi%d: ni_670x: remove\n", dev->minor);
+;
 
 	kfree(dev->subdevices[0].range_table_list);
 
@@ -380,7 +380,7 @@ static int ni_670x_find_device(struct comedi_device *dev, int bus, int slot)
 			}
 		}
 	}
-	printk(KERN_INFO "no device found\n");
+;
 	mite_list_devices();
 	return -EIO;
 }

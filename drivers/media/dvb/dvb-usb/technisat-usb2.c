@@ -63,6 +63,7 @@ struct technisat_usb2_state {
 };
 
 /* debug print helpers */
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_info(args...)    dprintk(debug, 0x01, args)
 #define deb_eeprom(args...)  dprintk(debug, 0x02, args)
 #define deb_i2c(args...)     dprintk(debug, 0x04, args)
@@ -88,6 +89,9 @@ static int technisat_usb2_i2c_access(struct usb_device *udev,
 		u8 device_addr, u8 *tx, u8 txlen, u8 *rx, u8 rxlen)
 {
 	u8 b[64];
+#else
+#define deb_info(args...)    d;
+#endif
 	int ret, actual_length;
 
 	deb_i2c("i2c-access: %02x, tx: ", device_addr);

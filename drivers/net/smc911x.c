@@ -109,19 +109,19 @@ MODULE_ALIAS("platform:smc911x");
 #define DBG(n, args...)				 \
 	do {					 \
 		if (SMC_DEBUG & (n))		 \
-			printk(args);		 \
+;
 	} while (0)
 
-#define PRINTK(args...)   printk(args)
-#else
-#define DBG(n, args...)   do { } while (0)
-#define PRINTK(args...)   printk(KERN_DEBUG args)
-#endif
-
-#if SMC_DEBUG_PKTS > 0
-static void PRINT_PKT(u_char *buf, int length)
-{
-	int i;
+//#define PRINTK(args...)   printk(args)
+//#else
+//#define DBG(n, args...)   do { } while (0)
+//#define PRINTK(args...)   printk(KERN_DEBUG args)
+//#endif
+//
+//#if SMC_DEBUG_PKTS > 0
+//static void PRINT_PKT(u_char *buf, int length)
+//{
+;
 	int remainder;
 	int lines;
 
@@ -134,17 +134,17 @@ static void PRINT_PKT(u_char *buf, int length)
 			u_char a, b;
 			a = *buf++;
 			b = *buf++;
-			printk("%02x%02x ", a, b);
+;
 		}
-		printk("\n");
+;
 	}
 	for (i = 0; i < remainder/2 ; i++) {
 		u_char a, b;
 		a = *buf++;
 		b = *buf++;
-		printk("%02x%02x ", a, b);
+;
 	}
-	printk("\n");
+;
 }
 #else
 #define PRINT_PKT(x...)  do { } while (0)
@@ -545,8 +545,8 @@ static int smc911x_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 	 *	  End padding				 15 bytes
 	 */
 	if (unlikely(free < (skb->len + 8 + 15 + 15))) {
-		printk("%s: No Tx free space %d < %d\n",
-			dev->name, free, skb->len);
+//		printk("%s: No Tx free space %d < %d\n",
+;
 		lp->pending_tx_skb = NULL;
 		dev->stats.tx_errors++;
 		dev->stats.tx_dropped++;
@@ -900,7 +900,7 @@ static void smc911x_phy_configure(struct work_struct *work)
 		return;
 
 	if (smc911x_phy_reset(dev, phyaddr)) {
-		printk("%s: PHY reset timed out\n", dev->name);
+;
 		return;
 	}
 	spin_lock_irqsave(&lp->lock, flags);
@@ -922,7 +922,7 @@ static void smc911x_phy_configure(struct work_struct *work)
 	/* Copy our capabilities from MII_BMSR to MII_ADVERTISE */
 	SMC_GET_PHY_BMSR(lp, phyaddr, my_phy_caps);
 	if (!(my_phy_caps & BMSR_ANEGCAPABLE)) {
-		printk(KERN_INFO "Auto negotiation NOT supported\n");
+;
 		smc911x_phy_fixed(dev);
 		goto smc911x_phy_configure_exit;
 	}
@@ -1819,7 +1819,7 @@ static int __devinit smc911x_probe(struct net_device *dev)
 	val = SMC_GET_BYTE_TEST(lp);
 	DBG(SMC_DEBUG_MISC, "%s: endian probe returned 0x%04x\n", CARDNAME, val);
 	if (val != 0x87654321) {
-		printk(KERN_ERR "Invalid chip endian 0x%08x\n",val);
+;
 		retval = -ENODEV;
 		goto err_out;
 	}
@@ -1835,7 +1835,7 @@ static int __devinit smc911x_probe(struct net_device *dev)
 		if (chip_ids[i].id == chip_id) break;
 	}
 	if (!chip_ids[i].id) {
-		printk(KERN_ERR "Unknown chip ID %04x\n", chip_id);
+;
 		retval = -ENODEV;
 		goto err_out;
 	}
@@ -1849,7 +1849,7 @@ static int __devinit smc911x_probe(struct net_device *dev)
 
 	/* Validate the TX FIFO size requested */
 	if ((tx_fifo_kb < 2) || (tx_fifo_kb > 14)) {
-		printk(KERN_ERR "Invalid TX FIFO size requested %d\n", tx_fifo_kb);
+;
 		retval = -EINVAL;
 		goto err_out;
 	}
@@ -1938,8 +1938,8 @@ static int __devinit smc911x_probe(struct net_device *dev)
 		}
 	}
 	if (dev->irq == 0) {
-		printk("%s: Couldn't autodetect your IRQ. Use irq=xx.\n",
-			dev->name);
+//		printk("%s: Couldn't autodetect your IRQ. Use irq=xx.\n",
+;
 		retval = -ENODEV;
 		goto err_out;
 	}
@@ -1994,25 +1994,25 @@ static int __devinit smc911x_probe(struct net_device *dev)
 	retval = register_netdev(dev);
 	if (retval == 0) {
 		/* now, print out the card info, in a short format.. */
-		printk("%s: %s (rev %d) at %#lx IRQ %d",
-			dev->name, version_string, lp->revision,
-			dev->base_addr, dev->irq);
+//		printk("%s: %s (rev %d) at %#lx IRQ %d",
+//			dev->name, version_string, lp->revision,
+;
 
 #ifdef SMC_USE_DMA
 		if (lp->rxdma != -1)
-			printk(" RXDMA %d ", lp->rxdma);
+;
 
 		if (lp->txdma != -1)
-			printk("TXDMA %d", lp->txdma);
+;
 #endif
-		printk("\n");
+;
 		if (!is_valid_ether_addr(dev->dev_addr)) {
-			printk("%s: Invalid ethernet MAC address. Please "
-					"set using ifconfig\n", dev->name);
+//			printk("%s: Invalid ethernet MAC address. Please "
+;
 		} else {
 			/* Print the Ethernet address */
-			printk("%s: Ethernet addr: %pM\n",
-				dev->name, dev->dev_addr);
+//			printk("%s: Ethernet addr: %pM\n",
+;
 		}
 
 		if (lp->phy_type == 0) {
@@ -2070,7 +2070,7 @@ static int __devinit smc911x_drv_probe(struct platform_device *pdev)
 
 	ndev = alloc_etherdev(sizeof(struct smc911x_local));
 	if (!ndev) {
-		printk("%s: could not allocate device.\n", CARDNAME);
+;
 		ret = -ENOMEM;
 		goto release_1;
 	}
@@ -2109,7 +2109,7 @@ release_both:
 release_1:
 		release_mem_region(res->start, SMC911X_IO_EXTENT);
 out:
-		printk("%s: not found (%d).\n", CARDNAME, ret);
+;
 	}
 #ifdef SMC_USE_DMA
 	else {

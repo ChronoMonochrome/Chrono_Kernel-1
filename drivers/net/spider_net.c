@@ -2568,7 +2568,7 @@ static struct pci_driver spider_net_driver = {
  */
 static int __init spider_net_init(void)
 {
-	printk(KERN_INFO "Spidernet version %s.\n", VERSION);
+;
 
 	if (rx_descriptors < SPIDER_NET_RX_DESCRIPTORS_MIN) {
 		rx_descriptors = SPIDER_NET_RX_DESCRIPTORS_MIN;

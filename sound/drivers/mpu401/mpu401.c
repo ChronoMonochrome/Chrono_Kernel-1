@@ -174,7 +174,11 @@ static int __devinit snd_mpu401_pnp(int dev, struct pnp_dev *device,
 
 	if (!pnp_irq_valid(device, 0) ||
 	    pnp_irq_flags(device, 0) & IORESOURCE_DISABLED) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "no PnP irq, using polling\n");
+#else
+		;
+#endif
 		irq[dev] = -1;
 	} else {
 		irq[dev] = pnp_irq(device, 0);

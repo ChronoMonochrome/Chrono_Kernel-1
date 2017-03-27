@@ -95,8 +95,8 @@ static void __comedi_device_detach(struct comedi_device *dev)
 	if (dev->driver)
 		dev->driver->detach(dev);
 	else
-		printk(KERN_WARNING
-		       "BUG: dev->driver=NULL in comedi_device_detach()\n");
+//		printk(KERN_WARNING
+;
 	cleanup_device(dev);
 }
 
@@ -117,7 +117,7 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	for (driv = comedi_drivers; driv; driv = driv->next) {
 		if (!try_module_get(driv->module)) {
-			printk(KERN_INFO "comedi: failed to increment module count, skipping\n");
+;
 			continue;
 		}
 		if (driv->num_names) {
@@ -148,8 +148,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	/*  report valid board names before returning error */
 	for (driv = comedi_drivers; driv; driv = driv->next) {
 		if (!try_module_get(driv->module)) {
-			printk(KERN_INFO
-			       "comedi: failed to increment module count\n");
+//			printk(KERN_INFO
+;
 			continue;
 		}
 		comedi_report_boards(driv);
@@ -167,8 +167,8 @@ attached:
 	}
 
 	if (!dev->board_name) {
-		printk(KERN_WARNING "BUG: dev->board_name=<%p>\n",
-		       dev->board_name);
+//		printk(KERN_WARNING "BUG: dev->board_name=<%p>\n",
+;
 		dev->board_name = "BUG";
 	}
 	smp_wmb();
@@ -204,8 +204,8 @@ int comedi_driver_unregister(struct comedi_driver *driver)
 		mutex_lock(&dev->mutex);
 		if (dev->attached && dev->driver == driver) {
 			if (dev->use_count)
-				printk(KERN_WARNING "BUG! detaching device with use_count=%d\n",
-						dev->use_count);
+//				printk(KERN_WARNING "BUG! detaching device with use_count=%d\n",
+;
 			comedi_device_detach(dev);
 		}
 		mutex_unlock(&dev->mutex);
@@ -250,8 +250,8 @@ static int postconfig(struct comedi_device *dev)
 			async =
 			    kzalloc(sizeof(struct comedi_async), GFP_KERNEL);
 			if (async == NULL) {
-				printk(KERN_INFO
-				       "failed to allocate async struct\n");
+//				printk(KERN_INFO
+;
 				return -ENOMEM;
 			}
 			init_waitqueue_head(&async->wait_head);
@@ -266,7 +266,7 @@ static int postconfig(struct comedi_device *dev)
 			async->prealloc_buf = NULL;
 			async->prealloc_bufsz = 0;
 			if (comedi_buf_alloc(dev, s, DEFAULT_BUF_SIZE) < 0) {
-				printk(KERN_INFO "Buffer allocation failed\n");
+;
 				return -ENOMEM;
 			}
 			if (s->buf_change) {
@@ -323,8 +323,8 @@ static void comedi_report_boards(struct comedi_driver *driv)
 	unsigned int i;
 	const char *const *name_ptr;
 
-	printk(KERN_INFO "comedi: valid board names for %s driver are:\n",
-	       driv->driver_name);
+//	printk(KERN_INFO "comedi: valid board names for %s driver are:\n",
+;
 
 	name_ptr = driv->board_name;
 	for (i = 0; i < driv->num_names; i++) {
@@ -333,7 +333,7 @@ static void comedi_report_boards(struct comedi_driver *driv)
 	}
 
 	if (driv->num_names == 0)
-		printk(KERN_INFO " %s\n", driv->driver_name);
+;
 }
 
 static int poll_invalid(struct comedi_device *dev, struct comedi_subdevice *s)
@@ -566,9 +566,9 @@ static unsigned int comedi_buf_munge(struct comedi_async *async,
 
 		block_size = num_bytes - count;
 		if (block_size < 0) {
-			printk(KERN_WARNING
-			       "%s: %s: bug! block_size is negative\n",
-			       __FILE__, __func__);
+//			printk(KERN_WARNING
+//			       "%s: %s: bug! block_size is negative\n",
+;
 			break;
 		}
 		if ((int)(async->munge_ptr + block_size -
@@ -649,7 +649,7 @@ unsigned comedi_buf_write_free(struct comedi_async *async, unsigned int nbytes)
 {
 	if ((int)(async->buf_write_count + nbytes -
 		  async->buf_write_alloc_count) > 0) {
-		printk(KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
+;
 		nbytes = async->buf_write_alloc_count - async->buf_write_count;
 	}
 	async->buf_write_count += nbytes;
@@ -685,8 +685,8 @@ unsigned comedi_buf_read_free(struct comedi_async *async, unsigned int nbytes)
 	smp_mb();
 	if ((int)(async->buf_read_count + nbytes -
 		  async->buf_read_alloc_count) > 0) {
-		printk(KERN_INFO
-		       "comedi: attempted to read-free more bytes than have been read-allocated.\n");
+//		printk(KERN_INFO
+;
 		nbytes = async->buf_read_alloc_count - async->buf_read_count;
 	}
 	async->buf_read_count += nbytes;

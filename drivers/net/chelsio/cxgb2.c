@@ -131,7 +131,7 @@ static void t1_set_rxmode(struct net_device *dev)
 static void link_report(struct port_info *p)
 {
 	if (!netif_carrier_ok(p->dev))
-		printk(KERN_INFO "%s: link down\n", p->dev->name);
+;
 	else {
 		const char *s = "10Mbps";
 
@@ -141,9 +141,9 @@ static void link_report(struct port_info *p)
 			case SPEED_100:   s = "100Mbps"; break;
 		}
 
-		printk(KERN_INFO "%s: link up, %s, %s-duplex\n",
-		       p->dev->name, s,
-		       p->link_config.duplex == DUPLEX_FULL ? "full" : "half");
+//		printk(KERN_INFO "%s: link up, %s, %s-duplex\n",
+//		       p->dev->name, s,
+;
 	}
 }
 
@@ -975,8 +975,8 @@ static int __devinit init_one(struct pci_dev *pdev,
 	struct port_info *pi;
 
 	if (!version_printed) {
-		printk(KERN_INFO "%s - version %s\n", DRV_DESCRIPTION,
-		       DRV_VERSION);
+//		printk(KERN_INFO "%s - version %s\n", DRV_DESCRIPTION,
+;
 		++version_printed;
 	}
 
@@ -1134,10 +1134,10 @@ static int __devinit init_one(struct pci_dev *pdev,
 		goto out_release_adapter_res;
 	}
 
-	printk(KERN_INFO "%s: %s (rev %d), %s %dMHz/%d-bit\n", adapter->name,
-	       bi->desc, adapter->params.chip_revision,
-	       adapter->params.pci.is_pcix ? "PCIX" : "PCI",
-	       adapter->params.pci.speed, adapter->params.pci.width);
+//	printk(KERN_INFO "%s: %s (rev %d), %s %dMHz/%d-bit\n", adapter->name,
+//	       bi->desc, adapter->params.chip_revision,
+//	       adapter->params.pci.is_pcix ? "PCIX" : "PCI",
+;
 
 	/*
 	 * Set the T1B ASIC and memory clocks.

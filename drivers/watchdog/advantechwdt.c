@@ -207,8 +207,12 @@ static int advwdt_close(struct inode *inode, struct file *file)
 	if (adv_expect_close == 42) {
 		advwdt_disable();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 				"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		advwdt_ping();
 	}
 	clear_bit(0, &advwdt_is_open);
@@ -265,8 +269,12 @@ static int __devinit advwdt_probe(struct platform_device *dev)
 	 * if not reset to the default */
 	if (advwdt_set_heartbeat(timeout)) {
 		advwdt_set_heartbeat(WATCHDOG_TIMEOUT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"timeout value must be 1<=x<=63, using %d\n", timeout);
+#else
+		;
+#endif
 	}
 
 	ret = misc_register(&advwdt_miscdev);
@@ -276,8 +284,12 @@ static int __devinit advwdt_probe(struct platform_device *dev)
 							WATCHDOG_MINOR, ret);
 		goto unreg_regions;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. timeout=%d sec (nowayout=%d)\n",
 		timeout, nowayout);
+#else
+	;
+#endif
 out:
 	return ret;
 unreg_regions:
@@ -318,8 +330,12 @@ static int __init advwdt_init(void)
 {
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	     "WDT driver for Advantech single board computer initialising.\n");
+#else
+	;
+#endif
 
 	err = platform_driver_register(&advwdt_driver);
 	if (err)
@@ -343,7 +359,11 @@ static void __exit advwdt_exit(void)
 {
 	platform_device_unregister(advwdt_platform_device);
 	platform_driver_unregister(&advwdt_driver);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Watchdog Module Unloaded.\n");
+#else
+	;
+#endif
 }
 
 module_init(advwdt_init);

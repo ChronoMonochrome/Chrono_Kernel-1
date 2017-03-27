@@ -47,7 +47,11 @@ static int __init init_autcpu12_sram (void)
 
 	autcpu12_sram_map.virt = ioremap(0x12000000, SZ_128K);
 	if (!autcpu12_sram_map.virt) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Failed to ioremap autcpu12 NV-RAM space\n");
+#else
+		;
+#endif
 		err = -EIO;
 		goto out;
 	}
@@ -80,7 +84,11 @@ static int __init init_autcpu12_sram (void)
 map:
 	sram_mtd = do_map_probe("map_ram", &autcpu12_sram_map);
 	if (!sram_mtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("NV-RAM probe failed\n");
+#else
+		;
+#endif
 		err = -ENXIO;
 		goto out_ioremap;
 	}
@@ -89,12 +97,20 @@ map:
 	sram_mtd->erasesize = 16;
 
 	if (mtd_device_register(sram_mtd, NULL, 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("NV-RAM device addition failed\n");
+#else
+		;
+#endif
 		err = -ENOMEM;
 		goto out_probe;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("NV-RAM device size %ldKiB registered on AUTCPU12\n",autcpu12_sram_map.size/SZ_1K);
+#else
+	;
+#endif
 
 	return 0;
 

@@ -202,9 +202,13 @@ static void spi_lm70llp_attach(struct parport *p)
 	int			status;
 
 	if (lm70llp) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s: spi_lm70llp instance already loaded. Aborting.\n",
 			DRVNAME);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -252,9 +256,13 @@ static void spi_lm70llp_attach(struct parport *p)
 	 */
 	status = spi_bitbang_start(&pp->bitbang);
 	if (status < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s: spi_bitbang_start failed with status %d\n",
 			DRVNAME, status);
+#else
+		;
+#endif
 		goto out_off_and_release;
 	}
 
@@ -281,7 +289,11 @@ static void spi_lm70llp_attach(struct parport *p)
 		dev_dbg(&pp->spidev_lm70->dev, "spidev_lm70 at %s\n",
 				dev_name(&pp->spidev_lm70->dev));
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: spi_new_device failed\n", DRVNAME);
+#else
+		;
+#endif
 		status = -ENODEV;
 		goto out_bitbang_stop;
 	}

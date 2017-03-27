@@ -106,7 +106,7 @@ int i_APCI1710_InsnConfigPWM(struct comedi_device *dev, struct comedi_subdevice 
 		break;
 
 	default:
-		printk(" Config Parameter Wrong\n");
+;
 	}
 
 	if (i_ReturnValue >= 0)
@@ -1713,7 +1713,7 @@ int i_APCI1710_InsnWritePWM(struct comedi_device *dev, struct comedi_subdevice *
 		break;
 
 	default:
-		printk("Write Config Parameter Wrong\n");
+;
 	}
 
 	if (i_ReturnValue >= 0)

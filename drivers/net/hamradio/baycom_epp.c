@@ -318,7 +318,7 @@ static int eppconfig(struct baycom_state *bc)
 		(bc->cfg.fclk + 8 * bc->cfg.bps) / (16 * bc->cfg.bps),
 		bc->cfg.loopback ? ",loopback" : "");
 	sprintf(portarg, "%ld", bc->pdev->port->base);
-	printk(KERN_DEBUG "%s: %s -s -p %s -m %s\n", bc_drvname, eppconfig_path, portarg, modearg);
+;
 
 	return call_usermodehelper(eppconfig_path, argv, envp, UMH_WAIT_PROC);
 }
@@ -330,13 +330,13 @@ static inline void do_kiss_params(struct baycom_state *bc,
 {
 
 #ifdef KISS_VERBOSE
-#define PKP(a,b) printk(KERN_INFO "baycomm_epp: channel params: " a "\n", b)
-#else /* KISS_VERBOSE */	      
-#define PKP(a,b) 
-#endif /* KISS_VERBOSE */	      
-
-	if (len < 2)
-		return;
+//#define PKP(a,b) printk(KERN_INFO "baycomm_epp: channel params: " a "\n", b)
+//#else /* KISS_VERBOSE */	      
+//#define PKP(a,b) 
+//#endif /* KISS_VERBOSE */	      
+//
+//	if (len < 2)
+;
 	switch(data[0]) {
 	case PARAM_TXDELAY:
 		bc->ch_params.tx_delay = data[1];
@@ -546,7 +546,7 @@ static void do_rxpacket(struct net_device *dev)
 		return;
 	pktlen = bc->hdlcrx.bufcnt-2+1; /* KISS kludge */
 	if (!(skb = dev_alloc_skb(pktlen))) {
-		printk("%s: memory squeeze, dropping packet\n", dev->name);
+;
 		dev->stats.rx_dropped++;
 		return;
 	}
@@ -760,7 +760,7 @@ static void epp_bh(struct work_struct *work)
 		netif_wake_queue(dev);
 	return;
  epptimeout:
-	printk(KERN_ERR "%s: EPP timeout!\n", bc_drvname);
+;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -807,9 +807,9 @@ static void epp_wakeup(void *handle)
         struct net_device *dev = (struct net_device *)handle;
         struct baycom_state *bc = netdev_priv(dev);
 
-        printk(KERN_DEBUG "baycom_epp: %s: why am I being woken up?\n", dev->name);
+;
         if (!parport_claim(bc->pdev))
-                printk(KERN_DEBUG "baycom_epp: %s: I'm broken.\n", dev->name);
+;
 }
 
 /* --------------------------------------------------------------------- */
@@ -833,19 +833,19 @@ static int epp_open(struct net_device *dev)
 	unsigned long tstart;
 	
         if (!pp) {
-                printk(KERN_ERR "%s: parport at 0x%lx unknown\n", bc_drvname, dev->base_addr);
+;
                 return -ENXIO;
         }
 #if 0
         if (pp->irq < 0) {
-                printk(KERN_ERR "%s: parport at 0x%lx has no irq\n", bc_drvname, pp->base);
+;
 		parport_put_port(pp);
                 return -ENXIO;
         }
 #endif
 	if ((~pp->modes) & (PARPORT_MODE_TRISTATE | PARPORT_MODE_PCSPP | PARPORT_MODE_SAFEININT)) {
-                printk(KERN_ERR "%s: parport at 0x%lx cannot be used\n",
-		       bc_drvname, pp->base);
+//                printk(KERN_ERR "%s: parport at 0x%lx cannot be used\n",
+;
 		parport_put_port(pp);
                 return -EIO;
 	}
@@ -854,11 +854,11 @@ static int epp_open(struct net_device *dev)
 					   NULL, PARPORT_DEV_EXCL, dev);
 	parport_put_port(pp);
         if (!bc->pdev) {
-                printk(KERN_ERR "%s: cannot register parport at 0x%lx\n", bc_drvname, pp->base);
+;
                 return -ENXIO;
         }
         if (parport_claim(bc->pdev)) {
-                printk(KERN_ERR "%s: parport at 0x%lx busy\n", bc_drvname, pp->base);
+;
                 parport_unregister_device(bc->pdev);
                 return -EBUSY;
         }
@@ -867,7 +867,7 @@ static int epp_open(struct net_device *dev)
 	bc->work_running = 1;
 	bc->modem = EPP_CONVENTIONAL;
 	if (eppconfig(bc))
-		printk(KERN_INFO "%s: no FPGA detected, assuming conventional EPP modem\n", bc_drvname);
+;
 	else
 		bc->modem = /*EPP_FPGA*/ EPP_FPGAEXTSTATUS;
 	parport_write_control(pp, LPTCTRL_PROGRAM); /* prepare EPP mode; we aren't using interrupts */
@@ -909,8 +909,8 @@ static int epp_open(struct net_device *dev)
 		j++;
 		i >>= 1;
 	}
-	printk(KERN_INFO "%s: autoprobed bitrate: %d  int divider: %d  int rate: %d\n", 
-	       bc_drvname, bc->bitrate, j, bc->bitrate >> (j+2));
+//	printk(KERN_INFO "%s: autoprobed bitrate: %d  int divider: %d  int rate: %d\n", 
+;
 	tmp[0] = EPP_TX_FIFO_ENABLE|EPP_RX_FIFO_ENABLE|EPP_MODEM_ENABLE/*|j*/;
 	if (pp->ops->epp_write_addr(pp, tmp, 1, 0) != 1)
 		goto epptimeout;
@@ -929,7 +929,7 @@ static int epp_open(struct net_device *dev)
 	return 0;
 
  epptimeout:
-	printk(KERN_ERR "%s: epp timeout during bitrate probe\n", bc_drvname);
+;
 	parport_write_control(pp, 0); /* reset the adapter */
         parport_release(bc->pdev);
         parport_unregister_device(bc->pdev);
@@ -955,8 +955,8 @@ static int epp_close(struct net_device *dev)
 	if (bc->skb)
 		dev_kfree_skb(bc->skb);
 	bc->skb = NULL;
-	printk(KERN_INFO "%s: close epp at iobase 0x%lx irq %u\n",
-	       bc_drvname, dev->base_addr, dev->irq);
+//	printk(KERN_INFO "%s: close epp at iobase 0x%lx irq %u\n",
+;
 	return 0;
 }
 
@@ -1198,7 +1198,7 @@ static int __init init_baycomepp(void)
 	int i, found = 0;
 	char set_hw = 1;
 
-	printk(bc_drvinfo);
+;
 	/*
 	 * register net devices
 	 */
@@ -1209,7 +1209,7 @@ static int __init init_baycomepp(void)
 				   baycom_epp_dev_setup);
 
 		if (!dev) {
-			printk(KERN_WARNING "bce%d : out of memory\n", i);
+;
 			return found ? 0 : -ENOMEM;
 		}
 			
@@ -1222,7 +1222,7 @@ static int __init init_baycomepp(void)
 			iobase[i] = 0;
 
 		if (register_netdev(dev)) {
-			printk(KERN_WARNING "%s: cannot register net device %s\n", bc_drvname, dev->name);
+;
 			free_netdev(dev);
 			break;
 		}
@@ -1248,7 +1248,7 @@ static void __exit cleanup_baycomepp(void)
 				unregister_netdev(dev);
 				free_netdev(dev);
 			} else
-				printk(paranoia_str, "cleanup_module");
+;
 		}
 	}
 }

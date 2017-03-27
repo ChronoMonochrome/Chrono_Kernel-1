@@ -51,8 +51,12 @@ static void pca_isa_writebyte(void *pd, int reg, int val)
 {
 #ifdef DEBUG_IO
 	static char *names[] = { "T/O", "DAT", "ADR", "CON" };
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "*** write %s at %#lx <= %#04x\n", names[reg],
 	       base+reg, val);
+#else
+	;
+#endif
 #endif
 	outb(val, base+reg);
 }
@@ -63,7 +67,11 @@ static int pca_isa_readbyte(void *pd, int reg)
 #ifdef DEBUG_IO
 	{
 		static char *names[] = { "STA", "DAT", "ADR", "CON" };
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "*** read  %s => %#04x\n", names[reg], res);
+#else
+		;
+#endif
 	}
 #endif
 	return res;
@@ -96,7 +104,11 @@ static int pca_isa_waitforcompletion(void *pd)
 static void pca_isa_resetchip(void *pd)
 {
 	/* apparently only an external reset will do it. not a lot can be done */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING DRIVER ": Haven't figured out how to do a reset yet\n");
+#else
+	;
+#endif
 }
 
 static irqreturn_t pca_handler(int this_irq, void *dev_id) {

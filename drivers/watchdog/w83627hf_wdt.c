@@ -119,9 +119,13 @@ static void w83627hf_init(void)
 	outb_p(0xF6, WDT_EFER); /* Select CRF6 */
 	t = inb_p(WDT_EFDR);      /* read CRF6 */
 	if (t != 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		     "Watchdog already running. Resetting timeout to %d sec\n",
 								timeout);
+#else
+		;
+#endif
 		outb_p(timeout, WDT_EFDR);    /* Write back to CRF6 */
 	}
 
@@ -269,8 +273,12 @@ static int wdt_close(struct inode *inode, struct file *file)
 	if (expect_close == 42)
 		wdt_disable();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		wdt_ping();
 	}
 	expect_close = 0;
@@ -323,13 +331,21 @@ static int __init wdt_init(void)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "WDT driver for the Winbond(TM) W83627HF/THF/HG/DHG Super I/O chip initialising.\n");
+#else
+	;
+#endif
 
 	if (wdt_set_heartbeat(timeout)) {
 		wdt_set_heartbeat(WATCHDOG_TIMEOUT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		     "timeout value must be 1 <= timeout <= 255, using %d\n",
 				WATCHDOG_TIMEOUT);
+#else
+		;
+#endif
 	}
 
 	if (!request_region(wdt_io, 1, WATCHDOG_NAME)) {
@@ -356,9 +372,13 @@ static int __init wdt_init(void)
 		goto unreg_reboot;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 			"initialized. timeout=%d sec (nowayout=%d)\n",
 							timeout, nowayout);
+#else
+	;
+#endif
 
 out:
 	return ret;

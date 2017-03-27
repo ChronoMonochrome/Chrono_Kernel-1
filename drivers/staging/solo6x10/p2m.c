@@ -195,13 +195,13 @@ static unsigned long long p2m_test(struct solo_dev *solo_dev, u8 id,
 
 	wr_buf = kmalloc(size, GFP_KERNEL);
 	if (!wr_buf) {
-		printk(SOLO6X10_NAME ": Failed to malloc for p2m_test\n");
+;
 		return size;
 	}
 
 	rd_buf = kmalloc(size, GFP_KERNEL);
 	if (!rd_buf) {
-		printk(SOLO6X10_NAME ": Failed to malloc for p2m_test\n");
+;
 		kfree(wr_buf);
 		return size;
 	}
@@ -230,15 +230,15 @@ static void run_p2m_test(struct solo_dev *solo_dev)
 	u32 size = SOLO_JPEG_EXT_ADDR(solo_dev) + SOLO_JPEG_EXT_SIZE(solo_dev);
 	int i, d;
 
-	printk(KERN_WARNING "%s: Testing %u bytes of external ram\n",
-	       SOLO6X10_NAME, size);
+//	printk(KERN_WARNING "%s: Testing %u bytes of external ram\n",
+;
 
 	for (i = 0; i < size; i += TEST_CHUNK_SIZE)
 		for (d = 0; d < 4; d++)
 			errs += p2m_test(solo_dev, d, i, TEST_CHUNK_SIZE);
 
-	printk(KERN_WARNING "%s: Found %llu errors during p2m test\n",
-	       SOLO6X10_NAME, errs);
+//	printk(KERN_WARNING "%s: Found %llu errors during p2m test\n",
+;
 
 	return;
 }

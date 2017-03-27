@@ -2842,9 +2842,9 @@ static struct pci_driver igbvf_driver = {
 static int __init igbvf_init_module(void)
 {
 	int ret;
-	printk(KERN_INFO "%s - version %s\n",
-	       igbvf_driver_string, igbvf_driver_version);
-	printk(KERN_INFO "%s\n", igbvf_copyright);
+//	printk(KERN_INFO "%s - version %s\n",
+;
+;
 
 	ret = pci_register_driver(&igbvf_driver);
 

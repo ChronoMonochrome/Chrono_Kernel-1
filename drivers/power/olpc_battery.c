@@ -547,8 +547,12 @@ static int __init olpc_bat_init(void)
 	 * the latest EC protocol, supported by 0x44 and above.
 	 */
 	if (olpc_platform_info.ecver < 0x44) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "OLPC EC version 0x%02x too old for "
 			"battery driver.\n", olpc_platform_info.ecver);
+#else
+		;
+#endif
 		return -ENXIO;
 	}
 

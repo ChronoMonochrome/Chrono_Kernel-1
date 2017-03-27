@@ -68,25 +68,41 @@ acpi_extract_package(union acpi_object *package,
 
 	if (!package || (package->type != ACPI_TYPE_PACKAGE)
 	    || (package->package.count < 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Invalid package argument\n");
+#else
+		;
+#endif
 		return AE_BAD_PARAMETER;
 	}
 
 	if (!format || !format->pointer || (format->length < 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Invalid format argument\n");
+#else
+		;
+#endif
 		return AE_BAD_PARAMETER;
 	}
 
 	if (!buffer) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Invalid buffer argument\n");
+#else
+		;
+#endif
 		return AE_BAD_PARAMETER;
 	}
 
 	format_count = (format->length / sizeof(char)) - 1;
 	if (format_count > package->package.count) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Format specifies more objects [%d]"
 			      " than exist in package [%d].\n",
 			      format_count, package->package.count);
+#else
+		;
+#endif
 		return AE_BAD_DATA;
 	}
 
@@ -118,10 +134,14 @@ acpi_extract_package(union acpi_object *package,
 				tail_offset += sizeof(char *);
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING PREFIX "Invalid package element"
 					      " [%d]: got number, expecing"
 					      " [%c]\n",
 					      i, format_string[i]);
+#else
+				;
+#endif
 				return AE_BAD_DATA;
 				break;
 			}
@@ -144,10 +164,14 @@ acpi_extract_package(union acpi_object *package,
 				tail_offset += sizeof(u8 *);
 				break;
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING PREFIX "Invalid package element"
 					      " [%d] got string/buffer,"
 					      " expecing [%c]\n",
 					      i, format_string[i]);
+#else
+				;
+#endif
 				return AE_BAD_DATA;
 				break;
 			}
@@ -358,8 +382,12 @@ acpi_evaluate_reference(acpi_handle handle,
 		}
 
 		if (!element->reference.handle) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "Invalid reference in"
 			       " package %s\n", pathname);
+#else
+			;
+#endif
 			status = AE_NULL_ENTRY;
 			break;
 		}

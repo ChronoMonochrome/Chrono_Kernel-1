@@ -253,6 +253,7 @@
 
 #include <linux/init.h>
 #include <linux/sched.h>
+#ifdef CONFIG_DEBUG_PRINTK
 #include <linux/kernel.h>	/* printk() */
 #include <linux/fs.h>		/* everything... */
 #include <linux/errno.h>	/* error codes */
@@ -278,6 +279,9 @@
 #define NUM(inode) (iminor(inode) & 0xf)
 
 static DEFINE_MUTEX(ixj_mutex);
+#else
+#include <linux/kernel.h>	/* ;
+#endif
 static int ixjdebug;
 static int hertz = HZ;
 static int samplerate = 100;
@@ -346,13 +350,21 @@ static void ixj_fsk_alloc(IXJ *j)
 		j->fskdata = kmalloc(8000, GFP_KERNEL);
 		if (!j->fskdata) {
 			if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("IXJ phone%d - allocate failed\n", j->board);
+#else
+				;
+#endif
 			}
 			return;
 		} else {
 			j->fsksize = 8000;
 			if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("IXJ phone%d - allocate succeeded\n", j->board);
+#else
+				;
+#endif
 			}
 		}
 	}
@@ -531,7 +543,11 @@ static inline int IsTxReady(IXJ *j)
 static inline void set_play_volume(IXJ *j, int volume)
 {
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IXJ: /dev/phone%d Setting Play Volume to 0x%4.4x\n", j->board, volume);
+#else
+		;
+#endif
 	ixj_WriteDSPCommand(0xCF02, j);
 	ixj_WriteDSPCommand(volume, j);
 }
@@ -541,7 +557,11 @@ static int set_play_volume_linear(IXJ *j, int volume)
 	int newvolume, dspplaymax;
 
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IXJ: /dev/phone %d Setting Linear Play Volume to 0x%4.4x\n", j->board, volume);
+#else
+		;
+#endif
 	if(volume > 100 || volume < 0) {
 		return -1;
 	}
@@ -854,7 +874,11 @@ static inline void ixj_kill_fasync(IXJ *j, IXJ_SIGEVENT event, int dir)
 {
 	if(j->ixj_signals[event]) {
 		if(ixjdebug & 0x0100)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Sending signal for event %d\n", event);
+#else
+			;
+#endif
 			/* Send apps notice of change */
 		/* see config.h for macro definition */
 		kill_fasync(&(j->async_queue), j->ixj_signals[event], dir);
@@ -879,7 +903,11 @@ static void ixj_pstn_state(IXJ *j)
 			if(time_after(jiffies, j->pstn_sleeptil) && !(j->flags.pots_pstn && j->hookstate)) {
 				daaint.bitreg.RING = 1;
 				if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "IXJ DAA Ring Interrupt /dev/phone%d at %ld\n", j->board, jiffies);
+#else
+					;
+#endif
 				}
 			} else {
 				daa_set_mode(j, SOP_PU_RESET);
@@ -890,13 +918,21 @@ static void ixj_pstn_state(IXJ *j)
 			j->pstn_cid_intr = 1;
 			j->pstn_cid_received = jiffies;
 			if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IXJ DAA Caller_ID Interrupt /dev/phone%d at %ld\n", j->board, jiffies);
+#else
+				;
+#endif
 			}
 		}
 		if(j->m_DAAShadowRegs.XOP_REGS.XOP.xr0.bitreg.Cadence) {
 			daaint.bitreg.Cadence = 1;
 			if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IXJ DAA Cadence Interrupt /dev/phone%d at %ld\n", j->board, jiffies);
+#else
+				;
+#endif
 			}
 		}
 		if(j->m_DAAShadowRegs.XOP_REGS.XOP.xr0.bitreg.VDD_OK != XR0.bitreg.VDD_OK) {
@@ -909,7 +945,11 @@ static void ixj_pstn_state(IXJ *j)
 		daaint.bitreg.RMR = 1;
 		daaint.bitreg.SI_1 = j->m_DAAShadowRegs.SOP_REGS.SOP.cr1.bitreg.RMR;
 		if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
                         printk(KERN_INFO "IXJ DAA RMR /dev/phone%d was %s for %ld\n", j->board, XR0.bitreg.RMR?"on":"off", jiffies - j->pstn_last_rmr);
+#else
+                        ;
+#endif
 		}
 		j->pstn_prev_rmr = j->pstn_last_rmr;
 		j->pstn_last_rmr = jiffies;
@@ -928,7 +968,11 @@ static void ixj_pstn_state(IXJ *j)
 		case SOP_PU_RINGING:
 			if (daaint.bitreg.RMR) {
 				if (ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "IXJ Ring Cadence a state = %d /dev/phone%d at %ld\n", j->cadence_f[4].state, j->board, jiffies);
+#else
+					;
+#endif
 				}
 				if (daaint.bitreg.SI_1) {                /* Rising edge of RMR */
 					j->flags.pstn_rmr = 1;
@@ -953,9 +997,13 @@ static void ixj_pstn_state(IXJ *j)
 							}
 						} else {
 							if (ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk(KERN_INFO "IXJ Ring Cadence fail state = %d /dev/phone%d at %ld should be %d\n",
 										j->cadence_f[4].state, j->board, jiffies - j->pstn_prev_rmr,
 										j->cadence_f[4].off1);
+#else
+								;
+#endif
 							}
 							j->cadence_f[4].state = 0;
 						}
@@ -972,9 +1020,13 @@ static void ixj_pstn_state(IXJ *j)
 							}
 						} else {
 							if (ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk(KERN_INFO "IXJ Ring Cadence fail state = %d /dev/phone%d at %ld should be %d\n",
 										j->cadence_f[4].state, j->board, jiffies - j->pstn_prev_rmr,
 										j->cadence_f[4].off2);
+#else
+								;
+#endif
 							}
 							j->cadence_f[4].state = 0;
 						}
@@ -984,9 +1036,13 @@ static void ixj_pstn_state(IXJ *j)
 							j->cadence_f[4].state = 7;
 						} else {
 							if (ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk(KERN_INFO "IXJ Ring Cadence fail state = %d /dev/phone%d at %ld should be %d\n",
 										j->cadence_f[4].state, j->board, jiffies - j->pstn_prev_rmr,
 										j->cadence_f[4].off3);
+#else
+								;
+#endif
 							}
 							j->cadence_f[4].state = 0;
 						}
@@ -1011,9 +1067,13 @@ static void ixj_pstn_state(IXJ *j)
 							}
 						} else {
 							if (ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk(KERN_INFO "IXJ Ring Cadence fail state = %d /dev/phone%d at %ld should be %d\n",
 										j->cadence_f[4].state, j->board, jiffies - j->pstn_prev_rmr,
 										j->cadence_f[4].on1);
+#else
+								;
+#endif
 							}
 							j->cadence_f[4].state = 0;
 						}
@@ -1030,9 +1090,13 @@ static void ixj_pstn_state(IXJ *j)
 							}
 						} else {
 							if (ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk(KERN_INFO "IXJ Ring Cadence fail state = %d /dev/phone%d at %ld should be %d\n",
 										j->cadence_f[4].state, j->board, jiffies - j->pstn_prev_rmr,
 										j->cadence_f[4].on2);
+#else
+								;
+#endif
 							}
 							j->cadence_f[4].state = 0;
 						}
@@ -1052,41 +1116,73 @@ static void ixj_pstn_state(IXJ *j)
 						}
 					} else {
 						if (ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO "IXJ Ring Cadence fail state = %d /dev/phone%d at %ld should be %d\n",
 									j->cadence_f[4].state, j->board, jiffies - j->pstn_prev_rmr,
 									j->cadence_f[4].on3);
+#else
+							;
+#endif
 						}
 						j->cadence_f[4].state = 0;
 					}
 				}
 				if (ixjdebug & 0x0010) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "IXJ Ring Cadence b state = %d /dev/phone%d at %ld\n", j->cadence_f[4].state, j->board, jiffies);
+#else
+					;
+#endif
 				}
 				if (ixjdebug & 0x0010) {
 					switch(j->cadence_f[4].state) {
 						case 1:
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO "IXJ /dev/phone%d Next Ring Cadence state at %u min %ld - %ld - max %ld\n", j->board,
 						j->cadence_f[4].on1, j->cadence_f[4].on1min, j->cadence_f[4].on1dot, j->cadence_f[4].on1max);
+#else
+							;
+#endif
 							break;
 						case 2:
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO "IXJ /dev/phone%d Next Ring Cadence state at %u min %ld - %ld - max %ld\n", j->board,
 						j->cadence_f[4].off1, j->cadence_f[4].off1min, j->cadence_f[4].off1dot, j->cadence_f[4].off1max);
+#else
+							;
+#endif
 							break;
 						case 3:
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO "IXJ /dev/phone%d Next Ring Cadence state at %u min %ld - %ld - max %ld\n", j->board,
 						j->cadence_f[4].on2, j->cadence_f[4].on2min, j->cadence_f[4].on2dot, j->cadence_f[4].on2max);
+#else
+							;
+#endif
 							break;
 						case 4:
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO "IXJ /dev/phone%d Next Ring Cadence state at %u min %ld - %ld - max %ld\n", j->board,
 						j->cadence_f[4].off2, j->cadence_f[4].off2min, j->cadence_f[4].off2dot, j->cadence_f[4].off2max);
+#else
+							;
+#endif
 							break;
 						case 5:
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO "IXJ /dev/phone%d Next Ring Cadence state at %u min %ld - %ld - max %ld\n", j->board,
 						j->cadence_f[4].on3, j->cadence_f[4].on3min, j->cadence_f[4].on3dot, j->cadence_f[4].on3max);
+#else
+							;
+#endif
 							break;
 						case 6:	
+#ifdef CONFIG_DEBUG_PRINTK
 							printk(KERN_INFO "IXJ /dev/phone%d Next Ring Cadence state at %u min %ld - %ld - max %ld\n", j->board,
 						j->cadence_f[4].off3, j->cadence_f[4].off3min, j->cadence_f[4].off3dot, j->cadence_f[4].off3max);
+#else
+							;
+#endif
 							break;
 					}
 				}
@@ -1097,15 +1193,31 @@ static void ixj_pstn_state(IXJ *j)
 				j->ex.bits.pstn_ring = 1;
 				ixj_kill_fasync(j, SIG_PSTN_RING, POLL_IN);
 				if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "IXJ Ring int set /dev/phone%d at %ld\n", j->board, jiffies);
+#else
+					;
+#endif
 				}
 			}
 			if((j->pstn_ring_int != 0 && time_after(jiffies, j->pstn_ring_int + (hertz * 5)) && !j->flags.pstn_rmr) ||
 			   (j->pstn_ring_stop != 0 && time_after(jiffies, j->pstn_ring_stop + (hertz * 5)))) {
 				if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("IXJ DAA no ring in 5 seconds /dev/phone%d at %ld\n", j->board, jiffies);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("IXJ DAA pstn ring int /dev/phone%d at %ld\n", j->board, j->pstn_ring_int);
+#else
+					;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("IXJ DAA pstn ring stop /dev/phone%d at %ld\n", j->board, j->pstn_ring_stop);
+#else
+					;
+#endif
 				}
 				j->pstn_ring_stop = j->pstn_ring_int = 0;
 				daa_set_mode(j, SOP_PU_SLEEP);
@@ -1119,7 +1231,11 @@ static void ixj_pstn_state(IXJ *j)
 			}
 			if (daaint.bitreg.Cadence) {
 				if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("IXJ DAA Cadence interrupt going to sleep /dev/phone%d\n", j->board);
+#else
+					;
+#endif
 				}
 				daa_set_mode(j, SOP_PU_SLEEP);
 				j->ex.bits.pstn_ring = 0;
@@ -1130,14 +1246,22 @@ static void ixj_pstn_state(IXJ *j)
 				if(!daaint.bitreg.SI_0) {
 					if (!j->pstn_winkstart) {
 						if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 							printk("IXJ DAA possible wink /dev/phone%d %ld\n", j->board, jiffies);
+#else
+							;
+#endif
 						}
 						j->pstn_winkstart = jiffies;
 					} 
 				} else {
 					if (j->pstn_winkstart) {
 						if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 							printk("IXJ DAA possible wink end /dev/phone%d %ld\n", j->board, jiffies);
+#else
+							;
+#endif
 						}
 						j->pstn_winkstart = 0;
 					}
@@ -1145,7 +1269,11 @@ static void ixj_pstn_state(IXJ *j)
 			}
 			if (j->pstn_winkstart && time_after(jiffies, j->pstn_winkstart + ((hertz * j->winktime) / 1000))) {
 				if(ixjdebug & 0x0008) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("IXJ DAA wink detected going to sleep /dev/phone%d %ld\n", j->board, jiffies);
+#else
+					;
+#endif
 				}
 				daa_set_mode(j, SOP_PU_SLEEP);
 				j->pstn_winkstart = 0;
@@ -1242,7 +1370,11 @@ static void ixj_timeout(unsigned long ptr)
 						j->cadence_f[5].on1dot = jiffies + (long)((j->cadence_f[5].on1 * (hertz * 100) / 10000));
 						if (time_before(jiffies, j->cadence_f[5].on1dot)) {
 							if(ixjdebug & 0x0004) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("Ringing cadence state = %d - %ld\n", j->cadence_f[5].state, jiffies);
+#else
+								;
+#endif
 							}
 							ixj_ring_on(j);
 						}
@@ -1252,7 +1384,11 @@ static void ixj_timeout(unsigned long ptr)
 						if (time_after(jiffies, j->cadence_f[5].on1dot)) {
 							j->cadence_f[5].off1dot = jiffies + (long)((j->cadence_f[5].off1 * (hertz * 100) / 10000));
 							if(ixjdebug & 0x0004) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("Ringing cadence state = %d - %ld\n", j->cadence_f[5].state, jiffies);
+#else
+								;
+#endif
 							}
 							ixj_ring_off(j);
 							j->cadence_f[5].state = 2;
@@ -1261,7 +1397,11 @@ static void ixj_timeout(unsigned long ptr)
 					case 2:
 						if (time_after(jiffies, j->cadence_f[5].off1dot)) {
 							if(ixjdebug & 0x0004) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("Ringing cadence state = %d - %ld\n", j->cadence_f[5].state, jiffies);
+#else
+								;
+#endif
 							}
 							ixj_ring_on(j);
 							if (j->cadence_f[5].on2) {
@@ -1275,7 +1415,11 @@ static void ixj_timeout(unsigned long ptr)
 					case 3:
 						if (time_after(jiffies, j->cadence_f[5].on2dot)) {
 							if(ixjdebug & 0x0004) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("Ringing cadence state = %d - %ld\n", j->cadence_f[5].state, jiffies);
+#else
+								;
+#endif
 							}
 							ixj_ring_off(j);
 							if (j->cadence_f[5].off2) {
@@ -1289,7 +1433,11 @@ static void ixj_timeout(unsigned long ptr)
 					case 4:
 						if (time_after(jiffies, j->cadence_f[5].off2dot)) {
 							if(ixjdebug & 0x0004) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("Ringing cadence state = %d - %ld\n", j->cadence_f[5].state, jiffies);
+#else
+								;
+#endif
 							}
 							ixj_ring_on(j);
 							if (j->cadence_f[5].on3) {
@@ -1303,7 +1451,11 @@ static void ixj_timeout(unsigned long ptr)
 					case 5:
 						if (time_after(jiffies, j->cadence_f[5].on3dot)) {
 							if(ixjdebug & 0x0004) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("Ringing cadence state = %d - %ld\n", j->cadence_f[5].state, jiffies);
+#else
+								;
+#endif
 							}
 							ixj_ring_off(j);
 							if (j->cadence_f[5].off3) {
@@ -1317,14 +1469,22 @@ static void ixj_timeout(unsigned long ptr)
 					case 6:
 						if (time_after(jiffies, j->cadence_f[5].off3dot)) {
 							if(ixjdebug & 0x0004) {
+#ifdef CONFIG_DEBUG_PRINTK
 								printk("Ringing cadence state = %d - %ld\n", j->cadence_f[5].state, jiffies);
+#else
+								;
+#endif
 							}
 							j->cadence_f[5].state = 7;
 						}
 						break;
 					case 7:
 						if(ixjdebug & 0x0004) {
+#ifdef CONFIG_DEBUG_PRINTK
 							printk("Ringing cadence state = %d - %ld\n", j->cadence_f[5].state, jiffies);
+#else
+							;
+#endif
 						}
 						j->flags.cidring = 1;
 						j->cadence_f[5].state = 0;
@@ -1445,7 +1605,11 @@ static int ixj_WriteDSPCommand(unsigned short cmd, IXJ *j)
 
 	atomic_inc(&j->DSPWrite);
 	if(atomic_read(&j->DSPWrite) > 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ %d DSP write overlap attempting command 0x%4.4x\n", j->board, cmd);
+#else
+		;
+#endif
 		return -1;
 	}
 	bytes.high = (cmd & 0xFF00) >> 8;
@@ -1457,7 +1621,11 @@ static int ixj_WriteDSPCommand(unsigned short cmd, IXJ *j)
 			ixj_perfmon(j->iscontrolreadyfail);
 			atomic_dec(&j->DSPWrite);
 			if(atomic_read(&j->DSPWrite) > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("IXJ %d DSP overlaped command 0x%4.4x during control ready failure.\n", j->board, cmd);
+#else
+				;
+#endif
 				while(atomic_read(&j->DSPWrite) > 0) {
 					atomic_dec(&j->DSPWrite);
 				}
@@ -1473,7 +1641,11 @@ static int ixj_WriteDSPCommand(unsigned short cmd, IXJ *j)
 		j->ssr.high = 0xFF;
 		atomic_dec(&j->DSPWrite);
 		if(atomic_read(&j->DSPWrite) > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("IXJ %d DSP overlaped command 0x%4.4x during status wait failure.\n", j->board, cmd);
+#else
+			;
+#endif
 			while(atomic_read(&j->DSPWrite) > 0) {
 				atomic_dec(&j->DSPWrite);
 			}
@@ -1485,7 +1657,11 @@ static int ixj_WriteDSPCommand(unsigned short cmd, IXJ *j)
 	j->ssr.high = inb_p(j->DSPbase + 3);
 	atomic_dec(&j->DSPWrite);
 	if(atomic_read(&j->DSPWrite) > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ %d DSP overlaped command 0x%4.4x\n", j->board, cmd);
+#else
+		;
+#endif
 		while(atomic_read(&j->DSPWrite) > 0) {
 			atomic_dec(&j->DSPWrite);
 		}
@@ -1693,7 +1869,11 @@ static void ixj_ring_on(IXJ *j)
 	if (j->dsp.low == 0x20)	/* Internet PhoneJACK */
 	 {
 		if (ixjdebug & 0x0004)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IXJ Ring On /dev/phone%d\n", 	j->board);
+#else
+			;
+#endif
 
 		j->gpio.bytes.high = 0x0B;
 		j->gpio.bytes.low = 0x00;
@@ -1704,7 +1884,11 @@ static void ixj_ring_on(IXJ *j)
 	} else			/* Internet LineJACK, Internet PhoneJACK Lite or Internet PhoneJACK PCI */
 	{
 		if (ixjdebug & 0x0004)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IXJ Ring On /dev/phone%d\n", j->board);
+#else
+			;
+#endif
 
 		SLIC_SetState(PLD_SLIC_STATE_RINGING, j);
 	}
@@ -1939,7 +2123,11 @@ static int ixj_hookstate(IXJ *j)
 					j->checkwait = 0;
 				}
 				j->p_hook = fOffHook;
+#ifdef CONFIG_DEBUG_PRINTK
 	 			printk("IXJ : /dev/phone%d pots-pstn hookstate check %d at %ld\n", j->board, fOffHook, jiffies);
+#else
+	 			;
+#endif
 			}
 		} else {
 			if (j->pld_slicr.bits.state == PLD_SLIC_STATE_ACTIVE ||
@@ -2010,7 +2198,11 @@ static void ixj_ring_off(IXJ *j)
 	if (j->dsp.low == 0x20)	/* Internet PhoneJACK */
 	 {
 		if (ixjdebug & 0x0004)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IXJ Ring Off\n");
+#else
+			;
+#endif
 		j->gpio.bytes.high = 0x0B;
 		j->gpio.bytes.low = 0x00;
 		j->gpio.bits.gpio1 = 0;
@@ -2020,7 +2212,11 @@ static void ixj_ring_off(IXJ *j)
 	} else			/* Internet LineJACK */
 	{
 		if (ixjdebug & 0x0004)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IXJ Ring Off\n");
+#else
+			;
+#endif
 
 		if(!j->flags.cidplay)
 			SLIC_SetState(PLD_SLIC_STATE_STANDBY, j);
@@ -2033,13 +2229,21 @@ static void ixj_ring_start(IXJ *j)
 {
 	j->flags.cringing = 1;
 	if (ixjdebug & 0x0004)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IXJ Cadence Ringing Start /dev/phone%d\n", j->board);
+#else
+		;
+#endif
 	if (ixj_hookstate(j) & 1) {
 		if (j->port == PORT_POTS)
 			ixj_ring_off(j);
 		j->flags.cringing = 0;
 		if (ixjdebug & 0x0004)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IXJ Cadence Ringing Stopped /dev/phone%d off hook\n", j->board);
+#else
+			;
+#endif
 	} else if(j->cadence_f[5].enable && (!j->cadence_f[5].en_filter)) {
 		j->ring_cadence_jif = jiffies;
 		j->flags.cidsent = j->flags.cidring = 0;
@@ -2141,7 +2345,11 @@ static int ixj_open(struct phone_device *p, struct file *file_p)
 	j->flags.cidcw_ack = 0;
 
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Opening board %d\n", p->board);
+#else
+		;
+#endif
 
 	j->framesread = j->frameswritten = 0;
 	return 0;
@@ -2161,7 +2369,11 @@ static int ixj_release(struct inode *inode, struct file *file_p)
 	while(test_and_set_bit(board, (void *)&j->busyflags) != 0)
 		schedule_timeout_interruptible(1);
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Closing board %d\n", NUM(inode));
+#else
+		;
+#endif
 
 	if (j->cardtype == QTI_PHONECARD)
 		ixj_set_port(j, PORT_SPEAKER);
@@ -2359,7 +2571,11 @@ static int read_filters(IXJ *j)
 	trg = 0;
 	if (ixj_WriteDSPCommand(0x5144, j)) {
 		if(ixjdebug & 0x0001) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Read Frame Counter failed!\n");
+#else
+			;
+#endif
 		}
 		return -1;
 	}
@@ -2377,13 +2593,21 @@ static int read_filters(IXJ *j)
 	for (cnt = 0; cnt < 4; cnt++) {
 		if (ixj_WriteDSPCommand(0x5154 + cnt, j)) {
 			if(ixjdebug & 0x0001) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "Select Filter %d failed!\n", cnt);
+#else
+				;
+#endif
 			}
 			return -1;
 		}
 		if (ixj_WriteDSPCommand(0x515C, j)) {
 			if(ixjdebug & 0x0001) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "Read Filter History %d failed!\n", cnt);
+#else
+				;
+#endif
 			}
 			return -1;
 		}
@@ -2496,34 +2720,66 @@ static int read_filters(IXJ *j)
 			}
 
 			if (ixjdebug & 0x0040) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IXJ Tone Cadence state = %d /dev/phone%d at %ld\n", j->cadence_f[cnt].state, j->board, jiffies);
+#else
+				;
+#endif
 				switch(j->cadence_f[cnt].state) {
 					case 0:
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "IXJ /dev/phone%d No Tone detected\n", j->board);
+#else
+						;
+#endif
 						break;
 					case 1:
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "IXJ /dev/phone%d Next Tone Cadence state at %u %ld - %ld - %ld\n", j->board,
 					j->cadence_f[cnt].on1, j->cadence_f[cnt].on1min, j->cadence_f[cnt].on1dot, j->cadence_f[cnt].on1max);
+#else
+						;
+#endif
 						break;
 					case 2:
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "IXJ /dev/phone%d Next Tone Cadence state at %ld - %ld\n", j->board, j->cadence_f[cnt].off1min, 
 															j->cadence_f[cnt].off1max);
+#else
+						;
+#endif
 						break;
 					case 3:
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "IXJ /dev/phone%d Next Tone Cadence state at %ld - %ld\n", j->board, j->cadence_f[cnt].on2min,
 															j->cadence_f[cnt].on2max);
+#else
+						;
+#endif
 						break;
 					case 4:
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "IXJ /dev/phone%d Next Tone Cadence state at %ld - %ld\n", j->board, j->cadence_f[cnt].off2min,
 															j->cadence_f[cnt].off2max);
+#else
+						;
+#endif
 						break;
 					case 5:
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "IXJ /dev/phone%d Next Tone Cadence state at %ld - %ld\n", j->board, j->cadence_f[cnt].on3min,
 															j->cadence_f[cnt].on3max);
+#else
+						;
+#endif
 						break;
 					case 6:	
+#ifdef CONFIG_DEBUG_PRINTK
 						printk(KERN_INFO "IXJ /dev/phone%d Next Tone Cadence state at %ld - %ld\n", j->board, j->cadence_f[cnt].off3min,
 															j->cadence_f[cnt].off3max);
+#else
+						;
+#endif
 						break;
 				}
 			} 
@@ -2535,28 +2791,44 @@ static int read_filters(IXJ *j)
 			switch (cnt) {
 			case 0:
 				if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Filter Cadence 0 triggered %ld\n", jiffies);
+#else
+					;
+#endif
 				}
 				j->ex.bits.fc0 = 1;
 				ixj_kill_fasync(j, SIG_FC0, POLL_IN);
 				break;
 			case 1:
 				if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Filter Cadence 1 triggered %ld\n", jiffies);
+#else
+					;
+#endif
 				}
 				j->ex.bits.fc1 = 1;
 				ixj_kill_fasync(j, SIG_FC1, POLL_IN);
 				break;
 			case 2:
 				if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Filter Cadence 2 triggered %ld\n", jiffies);
+#else
+					;
+#endif
 				}
 				j->ex.bits.fc2 = 1;
 				ixj_kill_fasync(j, SIG_FC2, POLL_IN);
 				break;
 			case 3:
 				if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Filter Cadence 3 triggered %ld\n", jiffies);
+#else
+					;
+#endif
 				}
 				j->ex.bits.fc3 = 1;
 				ixj_kill_fasync(j, SIG_FC3, POLL_IN);
@@ -2573,28 +2845,44 @@ static int read_filters(IXJ *j)
 			switch (cnt) {
 			case 0:
 				if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Filter 0 triggered %d at %ld\n", trg, jiffies);
+#else
+					;
+#endif
 				}
 				j->ex.bits.f0 = 1;
 				ixj_kill_fasync(j, SIG_F0, POLL_IN);
 				break;
 			case 1:
 				if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Filter 1 triggered %d at %ld\n", trg, jiffies);
+#else
+					;
+#endif
 				}
 				j->ex.bits.f1 = 1;
 				ixj_kill_fasync(j, SIG_F1, POLL_IN);
 				break;
 			case 2:
 				if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Filter 2 triggered %d at %ld\n", trg, jiffies);
+#else
+					;
+#endif
 				}
 				j->ex.bits.f2 = 1;
 				ixj_kill_fasync(j, SIG_F2, POLL_IN);
 				break;
 			case 3:
 				if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "Filter 3 triggered %d at %ld\n", trg, jiffies);
+#else
+					;
+#endif
 				}
 				j->ex.bits.f3 = 1;
 				ixj_kill_fasync(j, SIG_F3, POLL_IN);
@@ -2635,7 +2923,11 @@ static int LineMonitor(IXJ *j)
 		}
 		else if(j->dtmf_current == 0x00 || j->dtmf_current == 0x0D) {
 			if(ixjdebug & 0x0020) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("IXJ phone%d saw CIDCW Ack DTMF %d from display at %ld\n", j->board, j->dtmf_current, jiffies);
+#else
+				;
+#endif
 			}
 			j->flags.cidcw_ack = 1;
 		}
@@ -3147,7 +3439,11 @@ static void ixj_post_cid(IXJ *j)
 	}
 	j->flags.cidplay = 0;
 	if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ phone%d Finished Playing CallerID data %ld\n", j->board, jiffies);
+#else
+		;
+#endif
 	}
 
 	ixj_fsk_free(j);
@@ -3283,7 +3579,11 @@ static void ixj_write_cidcw(IXJ *j)
 	ixj_set_tone_on(1500, j);
 	ixj_set_tone_off(32, j);
 	if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ cidcw phone%d first tone start at %ld\n", j->board, jiffies);
+#else
+		;
+#endif
 	}
 	ixj_play_tone(j, 23);
 
@@ -3293,7 +3593,11 @@ static void ixj_write_cidcw(IXJ *j)
 	while(test_and_set_bit(j->board, (void *)&j->busyflags) != 0)
 		schedule_timeout_interruptible(1);
 	if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ cidcw phone%d first tone end at %ld\n", j->board, jiffies);
+#else
+		;
+#endif
 	}
 
 	ti.tone_index = 24;
@@ -3306,7 +3610,11 @@ static void ixj_write_cidcw(IXJ *j)
 	ixj_set_tone_off(10, j);
 	ixj_set_tone_on(600, j);
 	if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ cidcw phone%d second tone start at %ld\n", j->board, jiffies);
+#else
+		;
+#endif
 	}
 	ixj_play_tone(j, 24);
 
@@ -3316,7 +3624,11 @@ static void ixj_write_cidcw(IXJ *j)
 	while(test_and_set_bit(j->board, (void *)&j->busyflags) != 0)
 		schedule_timeout_interruptible(1);
 	if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ cidcw phone%d sent second tone at %ld\n", j->board, jiffies);
+#else
+		;
+#endif
 	}
 
 	j->cidcw_wait = jiffies + ((50 * hertz) / 100);
@@ -3329,7 +3641,11 @@ static void ixj_write_cidcw(IXJ *j)
 	j->cidcw_wait = 0;
 	if(!j->flags.cidcw_ack) {
 		if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("IXJ cidcw phone%d did not receive ACK from display %ld\n", j->board, jiffies);
+#else
+			;
+#endif
 		}
 		ixj_post_cid(j);
 		if(j->cid_play_flag) {
@@ -3389,7 +3705,11 @@ static void ixj_write_cidcw(IXJ *j)
 	}
 	ixj_pad_fsk(j, pad);
 	if(ixjdebug & 0x0200) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ cidcw phone%d sent FSK data at %ld\n", j->board, jiffies);
+#else
+		;
+#endif
 	}
 }
 
@@ -3872,7 +4192,11 @@ static int ixj_record_start(IXJ *j)
 	ixj_WriteDSPCommand(0x0FE0, j);	/* Put the DSP in full power mode. */
 
 	if(ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ %d Starting Record Codec %d at %ld\n", j->board, j->rec_codec, jiffies);
+#else
+		;
+#endif
 
 	if (!j->rec_mode) {
 		switch (j->rec_codec) {
@@ -3911,7 +4235,11 @@ static int ixj_record_start(IXJ *j)
 		if (!j->read_buffer)
 			j->read_buffer = kmalloc(j->rec_frame_size * 2, GFP_ATOMIC);
 		if (!j->read_buffer) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Read buffer allocation for ixj board %d failed!\n", j->board);
+#else
+			;
+#endif
 			return -ENOMEM;
 		}
 	}
@@ -3973,7 +4301,11 @@ static int ixj_record_start(IXJ *j)
 static void ixj_record_stop(IXJ *j)
 {
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ %d Stopping Record Codec %d at %ld\n", j->board, j->rec_codec, jiffies);
+#else
+		;
+#endif
 
 	kfree(j->read_buffer);
 	j->read_buffer = NULL;
@@ -4017,12 +4349,20 @@ static void set_rec_volume(IXJ *j, int volume)
 {
 	if(j->aec_level == AEC_AGC) {
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IXJ: /dev/phone%d Setting AGC Threshold to 0x%4.4x\n", j->board, volume);
+#else
+			;
+#endif
 		ixj_WriteDSPCommand(0xCF96, j);
 		ixj_WriteDSPCommand(volume, j);
 	} else {
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "IXJ: /dev/phone %d Setting Record Volume to 0x%4.4x\n", j->board, volume);
+#else
+			;
+#endif
 		ixj_WriteDSPCommand(0xCF03, j);
 		ixj_WriteDSPCommand(volume, j);
 	}
@@ -4033,7 +4373,11 @@ static int set_rec_volume_linear(IXJ *j, int volume)
 	int newvolume, dsprecmax;
 
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IXJ: /dev/phone %d Setting Linear Record Volume to 0x%4.4x\n", j->board, volume);
+#else
+		;
+#endif
 	if(volume > 100 || volume < 0) {
 	  return -1;
 	}
@@ -4070,14 +4414,26 @@ static int get_rec_volume(IXJ *j)
 {
 	if(j->aec_level == AEC_AGC) {
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Getting AGC Threshold\n");
+#else
+			;
+#endif
 		ixj_WriteDSPCommand(0xCF86, j);
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "AGC Threshold is 0x%2.2x%2.2x\n", j->ssr.high, j->ssr.low);
+#else
+			;
+#endif
 		return j->ssr.high << 8 | j->ssr.low;
 	} else {
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Getting Record Volume\n");
+#else
+			;
+#endif
 		ixj_WriteDSPCommand(0xCF01, j);
 		return j->ssr.high << 8 | j->ssr.low;
 	}
@@ -4128,7 +4484,11 @@ static void ixj_aec_start(IXJ *j, int level)
 {
 	j->aec_level = level;
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "AGC set = 0x%2.2x\n", j->aec_level);
+#else
+		;
+#endif
 	if (!level) {
 		aec_stop(j);
 	} else {
@@ -4448,7 +4808,11 @@ static int ixj_play_start(IXJ *j)
 	}
 
 	if(ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ %d Starting Play Codec %d at %ld\n", j->board, j->play_codec, jiffies);
+#else
+		;
+#endif
 
 	j->flags.playing = 1;
 	ixj_WriteDSPCommand(0x0FE0, j);	/* Put the DSP in full power mode. */
@@ -4491,7 +4855,11 @@ static int ixj_play_start(IXJ *j)
 	}
 	j->write_buffer = kmalloc(j->play_frame_size * 2, GFP_ATOMIC);
 	if (!j->write_buffer) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Write buffer allocation for ixj board %d failed!\n", j->board);
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 /*	j->write_buffers_empty = 2; */
@@ -4556,7 +4924,11 @@ static int ixj_play_start(IXJ *j)
 static void ixj_play_stop(IXJ *j)
 {
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IXJ %d Stopping Play Codec %d at %ld\n", j->board, j->play_codec, jiffies);
+#else
+		;
+#endif
 
 	kfree(j->write_buffer);
 	j->write_buffer = NULL;
@@ -4600,7 +4972,11 @@ static int ixj_play_tone(IXJ *j, char tone)
 {
 	if (!j->tone_state) {
 		if(ixjdebug & 0x0002) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("IXJ %d starting tone %d at %ld\n", j->board, tone, jiffies);
+#else
+			;
+#endif
 		}
 		if (j->dsp.low == 0x20) {
 			idle(j);
@@ -4645,7 +5021,11 @@ static int SCI_WaitHighSCI(IXJ *j)
 				return 1;
 		}
 		if (ixjdebug & 0x0001)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "SCI Wait High failed %x\n", j->pld_scrr.byte);
+#else
+			;
+#endif
 		return 0;
 	} else
 		return 1;
@@ -4665,7 +5045,11 @@ static int SCI_WaitLowSCI(IXJ *j)
 				return 1;
 		}
 		if (ixjdebug & 0x0001)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "SCI Wait Low failed %x\n", j->pld_scrr.byte);
+#else
+			;
+#endif
 		return 0;
 	} else
 		return 1;
@@ -4835,7 +5219,11 @@ static char daa_int_read(IXJ *j)
 	bytes.low = inb_p(j->XILINXbase + 0x02);
 	if (bytes.low != ALISDAA_ID_BYTE) {
 		if (ixjdebug & 0x0001)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Cannot read DAA ID Byte high = %d low = %d\n", bytes.high, bytes.low);
+#else
+			;
+#endif
 		return 0;
 	}
 	if (!SCI_Control(j, SCI_Enable_DAA))
@@ -4887,7 +5275,11 @@ static char daa_CR_read(IXJ *j, int cr)
 	bytes.low = inb_p(j->XILINXbase + 0x02);
 	if (bytes.low != ALISDAA_ID_BYTE) {
 		if (ixjdebug & 0x0001)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Cannot read DAA ID Byte high = %d low = %d\n", bytes.high, bytes.low);
+#else
+			;
+#endif
 		return 0;
 	}
 	if (!SCI_Control(j, SCI_Enable_DAA))
@@ -4928,7 +5320,11 @@ static int ixj_daa_cid_reset(IXJ *j)
 	BYTES bytes;
 
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DAA Clearing CID ram\n");
+#else
+		;
+#endif
 
 	if (!SCI_Prepare(j))
 		return 0;
@@ -4963,7 +5359,11 @@ static int ixj_daa_cid_reset(IXJ *j)
 		return 0;
 
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DAA CID ram cleared\n");
+#else
+		;
+#endif
 
 	return 1;
 }
@@ -4994,7 +5394,11 @@ static int ixj_daa_cid_read(IXJ *j)
 	bytes.low = inb_p(j->XILINXbase + 0x02);
 	if (bytes.low != ALISDAA_ID_BYTE) {
 		if (ixjdebug & 0x0001)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("DAA Get Version Cannot read DAA ID Byte high = %d low = %d\n", bytes.high, bytes.low);
+#else
+			;
+#endif
 		return 0;
 	}
 	for (i = 0; i < ALISDAA_CALLERID_SIZE; i += 2) {
@@ -5077,7 +5481,11 @@ static char daa_get_version(IXJ *j)
 	bytes.low = inb_p(j->XILINXbase + 0x02);
 	if (bytes.low != ALISDAA_ID_BYTE) {
 		if (ixjdebug & 0x0001)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("DAA Get Version Cannot read DAA ID Byte high = %d low = %d\n", bytes.high, bytes.low);
+#else
+			;
+#endif
 		return 0;
 	}
 	if (!SCI_Control(j, SCI_Enable_DAA))
@@ -5089,7 +5497,11 @@ static char daa_get_version(IXJ *j)
 	bytes.high = inb_p(j->XILINXbase + 0x03);
 	bytes.low = inb_p(j->XILINXbase + 0x02);
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DAA CR5 Byte high = 0x%x low = 0x%x\n", bytes.high, bytes.low);
+#else
+		;
+#endif
 	j->m_DAAShadowRegs.SOP_REGS.SOP.cr5.reg = bytes.high;
 	return bytes.high;
 }
@@ -5138,7 +5550,11 @@ static int daa_set_mode(IXJ *j, int mode)
 			break;
 		}
 		if (ixjdebug & 0x0008)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "phone DAA: SOP_PU_SLEEP at %ld\n", jiffies);
+#else
+			;
+#endif
 /*		if(j->daa_mode == SOP_PU_CONVERSATION) */
 		{
 			j->pld_scrw.bits.daafsyncen = 0;	/* Turn off DAA Frame Sync */
@@ -5173,7 +5589,11 @@ static int daa_set_mode(IXJ *j, int mode)
  		break;
 	case SOP_PU_RINGING:
 		if (ixjdebug & 0x0008)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "phone DAA: SOP_PU_RINGING at %ld\n", jiffies);
+#else
+			;
+#endif
 		j->pld_scrw.bits.daafsyncen = 0;	/* Turn off DAA Frame Sync */
 
 		outb_p(j->pld_scrw.byte, j->XILINXbase);
@@ -5188,7 +5608,11 @@ static int daa_set_mode(IXJ *j, int mode)
 		break;
 	case SOP_PU_CONVERSATION:
 		if (ixjdebug & 0x0008)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "phone DAA: SOP_PU_CONVERSATION at %ld\n", jiffies);
+#else
+			;
+#endif
 		bytes.high = 0x90;
 		bytes.low = j->m_DAAShadowRegs.SOP_REGS.SOP.cr0.reg;
 		daa_load(&bytes, j);
@@ -5207,7 +5631,11 @@ static int daa_set_mode(IXJ *j, int mode)
 		break;
 	case SOP_PU_PULSEDIALING:
 		if (ixjdebug & 0x0008)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "phone DAA: SOP_PU_PULSEDIALING at %ld\n", jiffies);
+#else
+			;
+#endif
 		j->pld_scrw.bits.daafsyncen = 0;	/* Turn off DAA Frame Sync */
 
 		outb_p(j->pld_scrw.byte, j->XILINXbase);
@@ -5718,7 +6146,11 @@ static int ixj_daa_write(IXJ *j)
 	outb_p(j->pld_scrw.byte, j->XILINXbase);
 
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DAA Coefficients Loaded\n");
+#else
+		;
+#endif
 
 	j->flags.pstncheck = 0;
 	return 1;
@@ -5882,13 +6314,21 @@ static int ixj_build_filter_cadence(IXJ *j, IXJ_FILTER_CADENCE __user * cp)
 	lcp = memdup_user(cp, sizeof(IXJ_FILTER_CADENCE));
 	if (IS_ERR(lcp)) {
 		if(ixjdebug & 0x0001) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Could not allocate memory for cadence or could not copy cadence to kernel\n");
+#else
+			;
+#endif
 		}
 		return PTR_ERR(lcp);
         }
 	if (lcp->filter > 5) {
 		if(ixjdebug & 0x0001) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Cadence out of range\n");
+#else
+			;
+#endif
 		}
 		kfree(lcp);
 		return -1;
@@ -5915,7 +6355,11 @@ static int ixj_build_filter_cadence(IXJ *j, IXJ_FILTER_CADENCE __user * cp)
 	j->cadence_f[lcp->filter].off3min = 0;
 	j->cadence_f[lcp->filter].off3max = 0;
 	if(ixjdebug & 0x0002) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Cadence %d loaded\n", lcp->filter);
+#else
+		;
+#endif
 	}
 	kfree(lcp);
 	return 0;
@@ -6108,7 +6552,11 @@ static long do_ixj_ioctl(struct file *file_p, unsigned int cmd, unsigned long ar
 	while(test_and_set_bit(board, (void *)&j->busyflags) != 0)
 		schedule_timeout_interruptible(1);
 	if (ixjdebug & 0x0040)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("phone%d ioctl, cmd: 0x%x, arg: 0x%lx\n", minor, cmd, arg);
+#else
+		;
+#endif
 	if (minor >= IXJMAX) {
 		clear_bit(board, &j->busyflags);
 		return -ENODEV;
@@ -6648,7 +7096,11 @@ static long do_ixj_ioctl(struct file *file_p, unsigned int cmd, unsigned long ar
 		break;
 	}
 	if (ixjdebug & 0x0040)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("phone%d ioctl end, cmd: 0x%x, arg: 0x%lx\n", minor, cmd, arg);
+#else
+		;
+#endif
 	clear_bit(board, &j->busyflags);
 	return retval;
 }
@@ -6772,7 +7224,11 @@ static int ixj_selfprobe(IXJ *j)
 	while(atomic_read(&j->DSPWrite) > 0)
 		atomic_dec(&j->DSPWrite);
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Write IDLE to Software Control Register\n");
+#else
+		;
+#endif
 	ixj_WriteDSPCommand(0x0FE0, j);	/* Put the DSP in full power mode. */
 
 	if (ixj_WriteDSPCommand(0x0000, j))		/* Write IDLE to Software Control Register */
@@ -6781,13 +7237,21 @@ static int ixj_selfprobe(IXJ *j)
 	if (j->ssr.low || j->ssr.high)
 		return -1;
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Get Device ID Code\n");
+#else
+		;
+#endif
 	if (ixj_WriteDSPCommand(0x3400, j))		/* Get Device ID Code */
 		return -1;
 	j->dsp.low = j->ssr.low;
 	j->dsp.high = j->ssr.high;
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Get Device Version Code\n");
+#else
+		;
+#endif
 	if (ixj_WriteDSPCommand(0x3800, j))		/* Get Device Version Code */
 		return -1;
 	j->ver.low = j->ssr.low;
@@ -6803,7 +7267,11 @@ static int ixj_selfprobe(IXJ *j)
 			 {
 				j->cardtype = QTI_PHONEJACK_LITE;
 				if (!request_region(j->XILINXbase, 4, "ixj control")) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "ixj: can't get I/O address 0x%x\n", j->XILINXbase);
+#else
+					;
+#endif
 					return -1;
 				}
 				j->pld_slicw.pcib.e1 = 1;
@@ -6812,7 +7280,11 @@ static int ixj_selfprobe(IXJ *j)
 				j->cardtype = QTI_LINEJACK;
 
 				if (!request_region(j->XILINXbase, 8, "ixj control")) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "ixj: can't get I/O address 0x%x\n", j->XILINXbase);
+#else
+					;
+#endif
 					return -1;
 				}
 			}
@@ -6836,14 +7308,22 @@ static int ixj_selfprobe(IXJ *j)
 			break;
 		case QTI_LINEJACK:
 			if (!request_region(j->XILINXbase, 8, "ixj control")) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "ixj: can't get I/O address 0x%x\n", j->XILINXbase);
+#else
+				;
+#endif
 				return -1;
 			}
 			break;
 		case QTI_PHONEJACK_LITE:
 		case QTI_PHONEJACK_PCI:
 			if (!request_region(j->XILINXbase, 4, "ixj control")) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "ixj: can't get I/O address 0x%x\n", j->XILINXbase);
+#else
+				;
+#endif
 				return -1;
 			}
 			j->pld_slicw.pcib.e1 = 1;
@@ -6855,11 +7335,19 @@ static int ixj_selfprobe(IXJ *j)
 	}
 	if (j->dsp.low == 0x20 || j->cardtype == QTI_PHONEJACK_LITE || j->cardtype == QTI_PHONEJACK_PCI) {
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Write CODEC config to Software Control Register\n");
+#else
+			;
+#endif
 		if (ixj_WriteDSPCommand(0xC462, j))		/* Write CODEC config to Software Control Register */
 			return -1;
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Write CODEC timing to Software Control Register\n");
+#else
+			;
+#endif
 		if (j->cardtype == QTI_PHONEJACK) {
 			cmd = 0x9FF2;
 		} else {
@@ -6871,7 +7359,11 @@ static int ixj_selfprobe(IXJ *j)
 		if (set_base_frame(j, 30) != 30)
 			return -1;
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Write CODEC config to Software Control Register\n");
+#else
+			;
+#endif
 		if (j->cardtype == QTI_PHONECARD) {
 			if (ixj_WriteDSPCommand(0xC528, j))		/* Write CODEC config to Software Control Register */
 				return -1;
@@ -6880,7 +7372,11 @@ static int ixj_selfprobe(IXJ *j)
 			if (ixj_WriteDSPCommand(0xC528, j))		/* Write CODEC config to Software Control Register */
 				return -1;
 			if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "Turn on the PLD Clock at 8Khz\n");
+#else
+				;
+#endif
 			j->pld_clock.byte = 0;
 			outb_p(j->pld_clock.byte, j->XILINXbase + 0x04);
 		}
@@ -6888,7 +7384,11 @@ static int ixj_selfprobe(IXJ *j)
 
 	if (j->dsp.low == 0x20) {
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Configure GPIO pins\n");
+#else
+			;
+#endif
 		j->gpio.bytes.high = 0x09;
 /*  bytes.low = 0xEF;  0xF7 */
 		j->gpio.bits.gpio1 = 1;
@@ -6900,7 +7400,11 @@ static int ixj_selfprobe(IXJ *j)
 		j->gpio.bits.gpio7 = 1;
 		ixj_WriteDSPCommand(j->gpio.word, j);	/* Set GPIO pin directions */
 		if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Enable SLIC\n");
+#else
+			;
+#endif
 		j->gpio.bytes.high = 0x0B;
 		j->gpio.bytes.low = 0x00;
 		j->gpio.bits.gpio1 = 0;
@@ -6921,14 +7425,26 @@ static int ixj_selfprobe(IXJ *j)
 			LED_SetState(0x0, j);
 			daa_get_version(j);
 			if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Loading DAA Coefficients\n");
+#else
+				;
+#endif
 			DAA_Coeff_US(j);
 			if (!ixj_daa_write(j)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("DAA write failed on board %d\n", j->board);
+#else
+				;
+#endif
 				return -1;
 			}
 			if(!ixj_daa_cid_reset(j)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("DAA CID reset failed on board %d\n", j->board);
+#else
+				;
+#endif
 				return -1;
 			}
 			j->flags.pots_correct = 0;
@@ -6948,7 +7464,11 @@ static int ixj_selfprobe(IXJ *j)
 			ixj_set_port(j, PORT_PSTN);
 			ixj_set_pots(j, 1);
 			if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "Enable Mixer\n");
+#else
+				;
+#endif
 			ixj_mixer(0x0000, j);	/*Master Volume Left unmute 0db */
 			ixj_mixer(0x0100, j);	/*Master Volume Right unmute 0db */
 
@@ -6991,7 +7511,11 @@ static int ixj_selfprobe(IXJ *j)
 			ixj_mixer(0x1901, j);	/*Mic gain 30db */
 
 			if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "Setting Default US Ring Cadence Detection\n");
+#else
+				;
+#endif
 			j->cadence_f[4].state = 0;
 			j->cadence_f[4].on1 = 0;	/*Cadence Filter 4 is used for PSTN ring cadence */
 			j->cadence_f[4].off1 = 0;
@@ -7035,16 +7559,28 @@ static int ixj_selfprobe(IXJ *j)
 		return -1;
 
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Enable Line Monitor\n");
+#else
+		;
+#endif
 
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Set Line Monitor to Asyncronous Mode\n");
+#else
+		;
+#endif
 
 	if (ixj_WriteDSPCommand(0x7E01, j))		/* Asynchronous Line Monitor */
 		return -1;
 
 	if (ixjdebug & 0x002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Enable DTMF Detectors\n");
+#else
+		;
+#endif
 
 	if (ixj_WriteDSPCommand(0x5151, j))		/* Enable DTMF detection */
 		return -1;
@@ -7428,7 +7964,11 @@ static void cleanup(void)
 		j = get_ixj(cnt);
 		if(j != NULL && j->DSPbase) {
 			if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IXJ: Deleting timer for /dev/phone%d\n", cnt);
+#else
+				;
+#endif
 			del_timer(&j->timer);
 			if (j->cardtype == QTI_LINEJACK) {
 				j->pld_scrw.bits.daafsyncen = 0;	/* Turn off DAA Frame Sync */
@@ -7440,11 +7980,19 @@ static void cleanup(void)
 				outb_p(j->pld_slicw.byte, j->XILINXbase + 0x01);
 				LED_SetState(0x0, j);
 				if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "IXJ: Releasing XILINX address for /dev/phone%d\n", cnt);
+#else
+					;
+#endif
 				release_region(j->XILINXbase, 8);
 			} else if (j->cardtype == QTI_PHONEJACK_LITE || j->cardtype == QTI_PHONEJACK_PCI) {
 				if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "IXJ: Releasing XILINX address for /dev/phone%d\n", cnt);
+#else
+					;
+#endif
 				release_region(j->XILINXbase, 4);
 			}
 			kfree(j->read_buffer);
@@ -7452,21 +8000,37 @@ static void cleanup(void)
 			if (j->dev)
 				pnp_device_detach(j->dev);
 			if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IXJ: Unregistering /dev/phone%d from LTAPI\n", cnt);
+#else
+				;
+#endif
 			phone_unregister_device(&j->p);
 			if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IXJ: Releasing DSP address for /dev/phone%d\n", cnt);
+#else
+				;
+#endif
 			release_region(j->DSPbase, 16);
 #ifdef IXJ_DYN_ALLOC
 			if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "IXJ: Freeing memory for /dev/phone%d\n", cnt);
+#else
+				;
+#endif
 			kfree(j);
 			ixj[cnt] = NULL;
 #endif
 		}
 	}
 	if (ixjdebug & 0x0002)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "IXJ: Removing /proc/ixj\n");
+#else
+		;
+#endif
 	remove_proc_entry ("ixj", NULL);
 }
 
@@ -7575,13 +8139,21 @@ static IXJ *new_ixj(unsigned long port)
 {
 	IXJ *res;
 	if (!request_region(port, 16, "ixj DSP")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ixj: can't get I/O address 0x%lx\n", port);
+#else
+		;
+#endif
 		return NULL;
 	}
 	res = ixj_alloc();
 	if (!res) {
 		release_region(port, 16);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "ixj: out of memory\n");
+#else
+		;
+#endif
 		return NULL;
 	}
 	res->DSPbase = port;
@@ -7606,11 +8178,19 @@ static int __init ixj_probe_isapnp(int *cnt)
 				break;
 			result = pnp_device_attach(dev);
 			if (result < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("pnp attach failed %d \n", result);
+#else
+				;
+#endif
 				break;
 			}
 			if (pnp_activate_dev(dev) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("pnp activate failed (out of resources?)\n");
+#else
+				;
+#endif
 				pnp_device_detach(dev);
 				return -ENOMEM;
 			}
@@ -7645,13 +8225,25 @@ static int __init ixj_probe_isapnp(int *cnt)
 				j->dev = dev;
 				switch (func) {
 				case 0x110:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "ixj: found Internet PhoneJACK at 0x%x\n", j->DSPbase);
+#else
+					;
+#endif
 					break;
 				case 0x310:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "ixj: found Internet LineJACK at 0x%x\n", j->DSPbase);
+#else
+					;
+#endif
 					break;
 				case 0x410:
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "ixj: found Internet PhoneJACK Lite at 0x%x\n", j->DSPbase);
+#else
+					;
+#endif
 					break;
 				}
 			}
@@ -7716,7 +8308,11 @@ static int __init ixj_probe_pci(int *cnt)
 		j->board = *cnt;
 		probe = ixj_selfprobe(j);
 		if (!probe)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "ixj: found Internet PhoneJACK PCI at 0x%x\n", j->DSPbase);
+#else
+			;
+#endif
 		++*cnt;
 	}
 	pci_dev_put(pci);
@@ -7740,7 +8336,11 @@ static int __init ixj_init(void)
 	if ((probe = ixj_probe_pci(&cnt)) < 0) {
 		return probe;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ixj driver initialized.\n");
+#else
+	;
+#endif
 	create_proc_read_entry ("ixj", 0, NULL, ixj_read_proc, NULL);
 	return probe;
 }

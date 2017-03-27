@@ -456,7 +456,11 @@ static void acpi_pad_notify(acpi_handle handle, u32 event,
 			dev_name(&device->dev), event, 0);
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unsupported event [0x%x]\n", event);
+#else
+		;
+#endif
 		break;
 	}
 }

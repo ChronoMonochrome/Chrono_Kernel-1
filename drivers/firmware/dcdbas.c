@@ -493,8 +493,12 @@ static int dcdbas_reboot_notify(struct notifier_block *nb, unsigned long code,
 	case SYS_POWER_OFF:
 		if (host_control_on_shutdown) {
 			/* firmware is going to perform host control action */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Please wait for shutdown "
 			       "action to complete...\n");
+#else
+			;
+#endif
 			dcdbas_host_control();
 		}
 		break;

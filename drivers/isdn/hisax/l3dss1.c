@@ -3222,5 +3222,9 @@ setstack_dss1(struct PStack *st)
 		L3InitTimer(st->l3.global, &st->l3.global->timer);
 	}
 	strcpy(tmp, dss1_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: DSS1 Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 }

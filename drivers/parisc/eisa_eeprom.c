@@ -117,7 +117,11 @@ static int __init eisa_eeprom_init(void)
 		return retval;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EISA EEPROM at 0x%p\n", eisa_eeprom_addr);
+#else
+	;
+#endif
 	return 0;
 }
 

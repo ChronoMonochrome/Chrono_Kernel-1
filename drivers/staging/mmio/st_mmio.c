@@ -175,7 +175,7 @@ struct mmio_info {
 
 void sec_camera_gpio_init(void)
 {
-	printk(KERN_DEBUG "camera_gpio_init \n");
+;
 
 	gpio_request(PRIMARY_CAMERA_STBY, "PRI_CAM_STB"); /* GPIO PIN Request*/
 	gpio_request(PRIMARY_CAMERA_RESET, "PRI_CAM_RST"); /* GPIO PIN Request*/
@@ -215,8 +215,8 @@ static struct mmio_info *info;
 
 static int mmio_cam_gpio_pin_control(int pin, int on)
 {
-	printk(KERN_DEBUG "mmio_cam_gpio_pin_control pin : %d , state %d\n",
-			pin, on);
+//	printk(KERN_DEBUG "mmio_cam_gpio_pin_control pin : %d , state %d\n",
+;
 
 	gpio_set_value(pin, on);
 	return 0;		/* Always success */
@@ -224,8 +224,8 @@ static int mmio_cam_gpio_pin_control(int pin, int on)
 
 static int mmio_cam_power_pin_control(int pin, int on)
 {
-	printk(KERN_DEBUG "mmio_cam_power_pin_control pin : %d , state %d\n",
-			pin, on);
+//	printk(KERN_DEBUG "mmio_cam_power_pin_control pin : %d , state %d\n",
+;
 	subPMIC_PinOnOff(pin, on);
 	return 0;		/* Always success */
 }
@@ -959,7 +959,7 @@ static int mmio_cam_pwr_sensor(struct mmio_info *info, int on)
 			 * sensor sequence operated at .dat file	
 			 */
 
-			printk(KERN_DEBUG "Nothing to do at PRIMARY Camera\n");
+;
 		}
 
 		/*
@@ -985,7 +985,7 @@ static int mmio_cam_pwr_sensor(struct mmio_info *info, int on)
 			 * sensor sequence operated at .dat file	
 			 */
 
-			printk(KERN_DEBUG "Nothing to do at PRIMARY Camera\n");
+;
 		}
 
 		subPMIC_PowerOff(0x0);
@@ -1546,7 +1546,7 @@ void mmio_cam_flash_rt8515(int lux_val)
 {
 	int i;
 	#if defined(CONFIG_MACH_SEC_SKOMER)
-	printk(KERN_DEBUG "mmio_cam_flash_rt8515, Control Value = [%d]\n", lux_val);
+;
 	#endif
 
 	if(0 < lux_val && lux_val <= 16)  /* Flash mode -> Static Brightness */
@@ -1579,7 +1579,7 @@ void mmio_cam_flash_rt8515(int lux_val)
 		gpio_set_value(FLASH_MODE, 0);
 	}
 	#if defined(CONFIG_MACH_SEC_SKOMER)
-	printk(KERN_DEBUG "End of Setting Value for Flash \n");	
+;
 	#endif
 }
 
@@ -2009,7 +2009,7 @@ static int mmio_release(struct inode *node, struct file *filp)
 {
 	struct mmio_info *info = filp->private_data;
 	BUG_ON(info == NULL);
-	printk(KERN_DEBUG "mmio_release\n");
+;
 
 	mutex_lock(&info->lock);
 	if (info->trace_buffer) {
@@ -2294,7 +2294,7 @@ static void toggle_rearcam_flash(bool on)
 		assistive_mode = 0;
 		mmio_cam_flash_on_off(info, 3, 0);
 		#if defined(CONFIG_MACH_SEC_SKOMER)
-		printk(KERN_DEBUG "rear_flash_enable_store, Control Value = [0]\n");
+;
 		#endif
 	} else {
 		if (burning_mode) {
@@ -2311,7 +2311,7 @@ static void toggle_rearcam_flash(bool on)
 #else
 		mmio_cam_flash_on_off(info, 3, (100+3));
 		#if defined(CONFIG_MACH_SEC_SKOMER)
-		printk(KERN_DEBUG "rear_flash_enable_store, Control Value = [100+3]\n");
+;
 		#endif
 #endif
 	}
@@ -2442,8 +2442,8 @@ void sec_cam_init(void)
 	if (IS_ERR(cam_dev))
 		pr_err("Failed to create device(sec_cam)!\n");
 	if (device_create_file(cam_dev, &dev_attr_camtype) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_camtype.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
     // Flash device
@@ -2451,8 +2451,8 @@ void sec_cam_init(void)
 	if (IS_ERR(flash_dev))
 		pr_err("Failed to create device(flash_dev)!\n");
 	if (device_create_file(flash_dev, &dev_attr_enable) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_enable.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
     // Front camera device
@@ -2461,8 +2461,8 @@ void sec_cam_init(void)
 		pr_err("Failed to create device(cam_dev_front)!\n");
 
 	if (device_create_file(cam_dev_front, &dev_attr_front_camtype) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_front_camtype.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
     // Rear camera device
@@ -2471,36 +2471,36 @@ void sec_cam_init(void)
 		pr_err("Failed to create device(cam_dev_rear)!\n");
 
 	if(device_create_file(cam_dev_rear, &dev_attr_rear_camtype) < 0){ // Rear camera type
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_rear_camtype.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
 	if(device_create_file(cam_dev_rear, &dev_attr_rear_flash) < 0){ // Rear camera Flash
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_rear_flash.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
     }
 
 	if (device_create_file(cam_dev_rear, &dev_attr_burning_led) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_burning_led.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 
     if(device_create_file(cam_dev_rear, &dev_attr_rear_vendorid) <0){ // Vendor ID
-        printk(KERN_DEBUG "%s: failed to create device file, %s\n", 
-                __func__, dev_attr_rear_vendorid.attr.name);
+//        printk(KERN_DEBUG "%s: failed to create device file, %s\n", 
+;
     }
 
     // Camera flash device
 	cam_dev_flash = device_create(camera_class, NULL, 0, NULL, "flash");
 
 	if (device_create_file(cam_dev_flash, &dev_attr_rear_flash) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_rear_flash.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
     }
 
 	if (device_create_file(cam_dev_flash, &dev_attr_burning_led) < 0) {
-		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
-				__func__, dev_attr_burning_led.attr.name);
+//		printk(KERN_DEBUG "%s: failed to create device file, %s\n",
+;
 	}
 }
 
@@ -2521,7 +2521,7 @@ static int __devinit mmio_probe(struct platform_device *pdev)
 	int err = 0;
 	int i;
 	int ret;
-	printk(KERN_INFO "%s\n", __func__);
+;
 	/* Initialize private data. */
 	info = kzalloc(sizeof(struct mmio_info), GFP_KERNEL);
 	if (!info) {
@@ -2737,7 +2737,7 @@ void check_VT_CAM_ID(int pin)
 	vt_id = gpio_get_value(VT_CAM_ID); /* GET GPIO pin value*/
 
 	/* Print out VT_CAM_ID GPIO Value - kernel log*/
-	printk(KERN_INFO "VT_CAM_ID = %d\n", vt_id);
+;
 
 	mmio_cam_power_pin_control(pin, OFF); /* Power PIN Off*/
 

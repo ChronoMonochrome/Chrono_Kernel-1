@@ -584,7 +584,11 @@ static int __init aedsp16_write(int port, int cmd)
 	} while (loop--);
 
 	DBG(("timeout.\n"));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[AEDSP16] DSP Command (0x%x) timeout.\n", cmd);
+#else
+	;
+#endif
 
 	return -1;
 }
@@ -617,7 +621,11 @@ static void __init aedsp16_hard_decode(void) {
 	decoded_hcfg.cdrombase	= CDROMADDR(hard_cfg[1]);
 
 #if defined(AEDSP16_INFO) || defined(AEDSP16_DEBUG)
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" Original sound card configuration:\n");
+#else
+	;
+#endif
 	aedsp16_pinfo();
 #endif
 
@@ -676,27 +684,47 @@ static int __init aedsp16_hard_write(int port) {
 	DBG(("aedsp16_hard_write:\n"));
 
 	if (aedsp16_write(port, COMMAND_6C)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_6C);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
 	if (aedsp16_write(port, COMMAND_5C)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_5C);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
 	if (aedsp16_write(port, hard_cfg[0])) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] DATA 0x%x: failed!\n", hard_cfg[0]);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
 	if (aedsp16_write(port, hard_cfg[1])) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] DATA 0x%x: failed!\n", hard_cfg[1]);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
 	if (aedsp16_write(port, COMMAND_C5)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_C5);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
@@ -711,26 +739,42 @@ static int __init aedsp16_hard_read(int port) {
 	DBG(("aedsp16_hard_read:\n"));
 
 	if (aedsp16_write(port, READ_HARD_CFG)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", READ_HARD_CFG);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
 
 	if ((hard_cfg[0] = aedsp16_read(port)) == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
 			READ_HARD_CFG);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
 	if ((hard_cfg[1] = aedsp16_read(port)) == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
 			READ_HARD_CFG);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
 	if (aedsp16_read(port) == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
 			READ_HARD_CFG);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
@@ -745,7 +789,11 @@ static int __init aedsp16_ext_cfg_write(int port) {
 	int extcfg, val;
 
 	if (aedsp16_write(port, COMMAND_66)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_66);
+#else
+		;
+#endif
 		return FALSE;
 	}
 
@@ -761,30 +809,54 @@ static int __init aedsp16_ext_cfg_write(int port) {
 		extcfg &= ~1;
 
 	if (aedsp16_write(port, extcfg)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] Write extcfg: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 	if (aedsp16_write(port, 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] Write extcfg: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 	if (decoded_hcfg.cdrom == 3) {
 		if (aedsp16_write(port, COMMAND_52)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_52);
+#else
+			;
+#endif
 			return FALSE;
 		}
 		if ((val = aedsp16_read(port)) == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n"
 					, COMMAND_52);
+#else
+			;
+#endif
 			return FALSE;
 		}
 		val &= 0x7F;
 		if (aedsp16_write(port, COMMAND_60)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_60);
+#else
+			;
+#endif
 			return FALSE;
 		}
 		if (aedsp16_write(port, val)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[AEDSP16] Write val: failed!\n");
+#else
+			;
+#endif
 			return FALSE;
 		}
 	}
@@ -796,11 +868,19 @@ static int __init aedsp16_ext_cfg_write(int port) {
 
 static int __init aedsp16_cfg_write(int port) {
 	if (aedsp16_write(port, WRITE_MDIRQ_CFG)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", WRITE_MDIRQ_CFG);
+#else
+		;
+#endif
 		return FALSE;
 	}
 	if (aedsp16_write(port, soft_cfg)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] Initialization of (M)IRQ and DMA: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 	return TRUE;
@@ -813,8 +893,12 @@ static int __init aedsp16_init_mss(int port)
 	mdelay(10);
 
 	if (aedsp16_write(port, DSP_INIT_MSS)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_init_mss [0x%x]: failed!\n",
 				DSP_INIT_MSS);
+#else
+		;
+#endif
 		DBG(("failure.\n"));
 		return FALSE;
 	}
@@ -838,39 +922,63 @@ static int __init aedsp16_setup_board(int port) {
 	int	val = 0;
 
 	if (aedsp16_hard_read(port) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_hard_read: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 	if (aedsp16_write(port, COMMAND_52)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_52);
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 	if ((val = aedsp16_read(port)) == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
 				COMMAND_52);
+#else
+		;
+#endif
 		return FALSE;
 	}
 #endif
 
 	do {
 		if (aedsp16_write(port, COMMAND_88)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_88);
+#else
+			;
+#endif
 			return FALSE;
 		}
 		mdelay(10);
 	} while ((aedsp16_wait_data(port) == FALSE) && loop--);
 
 	if (aedsp16_read(port) == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_read after CMD 0x%x: failed\n",
 				COMMAND_88);
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 #if !defined(CONFIG_SC6600)
 	if (aedsp16_write(port, COMMAND_5C)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_5C);
+#else
+		;
+#endif
 		return FALSE;
 	}
 #endif
@@ -880,33 +988,61 @@ static int __init aedsp16_setup_board(int port) {
 
 #if defined(CONFIG_SC6600)
 	if (aedsp16_write(port, COMMAND_60)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_60);
+#else
+		;
+#endif
 		return FALSE;
 	}
 	if (aedsp16_write(port, val)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] DATA 0x%x: failed!\n", val);
+#else
+		;
+#endif
 		return FALSE;
 	}
 	if (aedsp16_write(port, COMMAND_6E)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_6E);
+#else
+		;
+#endif
 		return FALSE;
 	}
 	if (aedsp16_write(port, ver[0])) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] DATA 0x%x: failed!\n", ver[0]);
+#else
+		;
+#endif
 		return FALSE;
 	}
 	if (aedsp16_write(port, ver[1])) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] DATA 0x%x: failed!\n", ver[1]);
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 	if (aedsp16_hard_write(port) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_hard_write: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 	if (aedsp16_write(port, COMMAND_5C)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", COMMAND_5C);
+#else
+		;
+#endif
 		return FALSE;
 	}
 
@@ -922,14 +1058,22 @@ static int __init aedsp16_setup_board(int port) {
 
 static int __init aedsp16_stdcfg(int port) {
 	if (aedsp16_write(port, WRITE_MDIRQ_CFG)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", WRITE_MDIRQ_CFG);
+#else
+		;
+#endif
 		return FALSE;
 	}
 	/*
 	 * 0x0A == (IRQ 7, DMA 1, MIRQ 0)
 	 */
 	if (aedsp16_write(port, 0x0A)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_stdcfg: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 	return TRUE;
@@ -943,7 +1087,11 @@ static int __init aedsp16_dsp_version(int port)
 	DBG(("Get DSP Version:\n"));
 
 	if (aedsp16_write(ae_config.base_io, GET_DSP_VERSION)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", GET_DSP_VERSION);
+#else
+		;
+#endif
 		DBG(("failed.\n"));
 		return FALSE;
 	}
@@ -974,7 +1122,11 @@ static int __init aedsp16_dsp_copyright(int port)
 	DBG(("Get DSP Copyright:\n"));
 
 	if (aedsp16_write(ae_config.base_io, GET_DSP_COPYRIGHT)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] CMD 0x%x: failed!\n", GET_DSP_COPYRIGHT);
+#else
+		;
+#endif
 		DBG(("failed.\n"));
 		return FALSE;
 	}
@@ -1031,11 +1183,19 @@ static int __init aedsp16_init_board(void)
 	aedsp16_init_tables();
 
 	if (aedsp16_dsp_reset(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_dsp_reset: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 	if (aedsp16_dsp_copyright(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_dsp_copyright: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 
@@ -1044,21 +1204,37 @@ static int __init aedsp16_init_board(void)
 	 * if we have something different, we have to be warned.
 	 */
 	if (strcmp("SC-6000", DSPCopyright))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] Warning: non SC-6000 audio card!\n");
+#else
+		;
+#endif
 
 	if (aedsp16_dsp_version(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_dsp_version: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 	if (aedsp16_stdcfg(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_stdcfg: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 #if defined(CONFIG_SC6600)
 	if (aedsp16_hard_read(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_hard_read: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 
@@ -1067,26 +1243,42 @@ static int __init aedsp16_init_board(void)
 	aedsp16_hard_encode();
 
 	if (aedsp16_hard_write(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_hard_write: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 	if (aedsp16_ext_cfg_write(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_ext_cfg_write: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 #endif /* CONFIG_SC6600 */
 
 	if (aedsp16_setup_board(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[AEDSP16] aedsp16_setup_board: failed!\n");
+#else
+		;
+#endif
 		return FALSE;
 	}
 
 	if (ae_config.mss_base != -1) {
 		if (ae_config.init & INIT_MSS) {
 			if (aedsp16_init_mss(ae_config.base_io) == FALSE) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("[AEDSP16] Can not initialize"
 				       "Microsoft Sound System mode.\n");
+#else
+				;
+#endif
 				return FALSE;
 			}
 		}
@@ -1094,32 +1286,60 @@ static int __init aedsp16_init_board(void)
 
 #if !defined(MODULE) || defined(AEDSP16_INFO) || defined(AEDSP16_DEBUG)
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Audio Excel DSP 16 init v%s (%s %s) [",
 		VERSION, DSPCopyright,
 		DSPVersion);
+#else
+	;
+#endif
 
 	if (ae_config.mpu_base != -1) {
 		if (ae_config.init & INIT_MPU401) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("MPU401");
+#else
+			;
+#endif
 			if ((ae_config.init & INIT_MSS) ||
 			    (ae_config.init & INIT_SBPRO))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" ");
+#else
+				;
+#endif
 		}
 	}
 
 	if (ae_config.mss_base == -1) {
 		if (ae_config.init & INIT_SBPRO) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("SBPro");
+#else
+			;
+#endif
 			if (ae_config.init & INIT_MSS)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" ");
+#else
+				;
+#endif
 		}
 	}
 
 	if (ae_config.mss_base != -1)
 		if (ae_config.init & INIT_MSS)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("MSS");
+#else
+			;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("]\n");
+#else
+	;
+#endif
 #endif /* MODULE || AEDSP16_INFO || AEDSP16_DEBUG */
 
 	mdelay(10);
@@ -1175,8 +1395,12 @@ static int __init init_aedsp16_mss(void)
 	if (!(ae_config.init & INIT_MPU401)) {
 		if (!request_region(ae_config.base_io, IOBASE_REGION_SIZE,
 				"aedsp16 (base)")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(
 			"AEDSP16 BASE I/O port region is already in use.\n");
+#else
+			;
+#endif
 			return FALSE;
 		}
 	}
@@ -1216,8 +1440,12 @@ static int __init init_aedsp16_mpu(void)
 	if (!(ae_config.init & (INIT_MSS | INIT_SBPRO))) {
 		if (!request_region(ae_config.base_io, IOBASE_REGION_SIZE,
 					"aedsp16 (base)")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(
 			"AEDSP16 BASE I/O port region is already in use.\n");
+#else
+			;
+#endif
 			return FALSE;
 		}
 	}
@@ -1320,9 +1548,17 @@ MODULE_DESCRIPTION("Audio Excel DSP 16 Driver Version " VERSION);
 MODULE_LICENSE("GPL");
 
 static int __init do_init_aedsp16(void) {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Audio Excel DSP 16 init driver Copyright (C) Riccardo Facchetti 1995-98\n");
+#else
+	;
+#endif
 	if (io == -1 || dma == -1 || irq == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "aedsp16: I/O, IRQ and DMA are mandatory\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

@@ -17,6 +17,7 @@ MODULE_PARM_DESC(debug, "set debugging level (1=rc,2=eeprom (|-able))." DVB_USB_
 
 DVB_DEFINE_MOD_OPT_ADAPTER_NR(adapter_nr);
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define deb_rc(args...) dprintk(debug,0x01,args)
 #define deb_ee(args...) dprintk(debug,0x02,args)
 
@@ -68,6 +69,9 @@ static struct rc_map_table rc_map_haupp_table[] = {
 	{ 0x1e3b, KEY_GOTO },
 	{ 0x1e3d, KEY_POWER },
 };
+#else
+#define deb_rc(args...) d;
+#endif
 
 /* Firmware bug? sometimes, when a new key is pressed, the previous pressed key
  * is delivered. No workaround yet, maybe a new firmware.

@@ -173,10 +173,14 @@ static void fit3_log_adapter( PIA *pi, char * scratch, int verbose )
 
 {       char    *mode_string[3] = {"4-bit","8-bit","EPP"};
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s: fit3 %s, FIT 3000 adapter at 0x%x, "
 	       "mode %d (%s), delay %d\n",
                 pi->device,FIT3_VERSION,pi->port,
 		pi->mode,mode_string[pi->mode],pi->delay);
+#else
+	;
+#endif
 
 }
 

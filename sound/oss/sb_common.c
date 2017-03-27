@@ -106,7 +106,11 @@ int sb_dsp_command(sb_devc * devc, unsigned char val)
 			return 1;
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Sound Blaster:  DSP command(%x) timeout.\n", val);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -158,7 +162,11 @@ static void sb_intr (sb_devc *devc)
 				break;
 
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				/* printk(KERN_WARNING "Sound Blaster: Unexpected interrupt\n"); */
+#else
+				/* ;
+#endif
 				;
 		}
 	}
@@ -178,7 +186,11 @@ static void sb_intr (sb_devc *devc)
 				break;
 
 			default:
+#ifdef CONFIG_DEBUG_PRINTK
 				/* printk(KERN_WARNING "Sound Blaster: Unexpected interrupt\n"); */
+#else
+				/* ;
+#endif
 				;
 		}
 	}
@@ -226,7 +238,11 @@ int sb_dsp_reset(sb_devc * devc)
 {
 	int loopc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("Entered sb_dsp_reset()\n"));
+#else
+	DEB(;
+#endif
 
 	if (devc->model == MDL_ESS) return ess_dsp_reset (devc);
 
@@ -242,11 +258,19 @@ int sb_dsp_reset(sb_devc * devc)
 
 	if (inb(DSP_READ) != 0xAA)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("sb: No response to RESET\n"));
+#else
+		DDB(;
+#endif
 		return 0;	/* Sorry */
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("sb_dsp_reset() OK\n"));
+#else
+	DEB(;
+#endif
 
 	return 1;
 }
@@ -257,7 +281,11 @@ static void dsp_get_vers(sb_devc * devc)
 
 	unsigned long   flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("Entered dsp_get_vers()\n"));
+#else
+	DDB(;
+#endif
 	spin_lock_irqsave(&devc->lock, flags);
 	devc->major = devc->minor = 0;
 	sb_dsp_command(devc, 0xe1);	/* Get version */
@@ -276,7 +304,11 @@ static void dsp_get_vers(sb_devc * devc)
 		}
 	}
 	spin_unlock_irqrestore(&devc->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("DSP version %d.%02d\n", devc->major, devc->minor));
+#else
+	DDB(;
+#endif
 }
 
 static int sb16_set_dma_hw(sb_devc * devc)
@@ -463,7 +495,11 @@ static void relocate_ess1688(sb_devc * devc)
 			return;	/* Wrong port */
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("Doing ESS1688 address selection\n"));
+#else
+	DDB(;
+#endif
 	
 	/*
 	 * ES1688 supports two alternative ways for software address config.
@@ -519,7 +555,11 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 	 * Initialize variables 
 	 */
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("sb_dsp_detect(%x) entered\n", hw_config->io_base));
+#else
+	DDB(;
+#endif
 
 	spin_lock_init(&devc->lock);
 	devc->type = hw_config->card_subtype;
@@ -546,7 +586,11 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 		hw_config->driver_use_1 |= SB_PCI_IRQ;
 		hw_config->card_subtype	= MDL_YMPCI;
 		
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Yamaha PCI mode.\n");
+#else
+		;
+#endif
 	}
 	
 	if (devc->sbmo.acer)
@@ -585,9 +629,17 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 
 	if (!sb_dsp_reset(devc))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("SB reset failed\n"));
+#else
+		DDB(;
+#endif
 #ifdef MODULE
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "sb: dsp reset failed.\n");
+#else
+		;
+#endif
 #endif
 		return 0;
 	}
@@ -617,7 +669,11 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 		
 	if(devc->type == MDL_YMPCI)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("YMPCI selected\n");
+#else
+		;
+#endif
 		devc->model = MDL_YMPCI;
 	}
 		
@@ -633,7 +689,11 @@ int sb_dsp_detect(struct address_info *hw_config, int pci, int pciio, struct sb_
 		return 0;
 	}
 	memcpy(detected_devc, devc, sizeof(sb_devc));
+#ifdef CONFIG_DEBUG_PRINTK
 	MDB(printk(KERN_INFO "SB %d.%02d detected OK (%x)\n", devc->major, devc->minor, hw_config->io_base));
+#else
+	MDB(;
+#endif
 	return 1;
 }
 
@@ -647,12 +707,20 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 /*
  * Check if we had detected a SB device earlier
  */
+#ifdef CONFIG_DEBUG_PRINTK
 	DDB(printk("sb_dsp_init(%x) entered\n", hw_config->io_base));
+#else
+	DDB(;
+#endif
 	name[0] = 0;
 
 	if (detected_devc == NULL)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		MDB(printk("No detected device\n"));
+#else
+		MDB(;
+#endif
 		return 0;
 	}
 	devc = detected_devc;
@@ -660,7 +728,11 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 
 	if (devc->base != hw_config->io_base)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("I/O port mismatch\n"));
+#else
+		DDB(;
+#endif
 		release_region(devc->base, 16);
 		return 0;
 	}
@@ -704,7 +776,11 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 				if ((devc->type != 0 && devc->type != MDL_JAZZ &&
 					 devc->type != MDL_SMW) || !init_Jazz16(devc, hw_config))
 				{
+#ifdef CONFIG_DEBUG_PRINTK
 					DDB(printk("This is a genuine SB Pro\n"));
+#else
+					DDB(;
+#endif
 				}
 			}
 		}
@@ -724,10 +800,18 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 				}
 			}
 			if (!devc->irq_ok)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "sb: Interrupt test on IRQ%d failed - Probable IRQ conflict\n", devc->irq);
+#else
+				;
+#endif
 			else
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				DDB(printk("IRQ test OK (IRQ%d)\n", devc->irq));
+#else
+				DDB(;
+#endif
 			}
 		}
 	}			/* IRQ setup */
@@ -800,7 +884,11 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 				devc->dma16 = devc->dma8;
 			else if (hw_config->dma2 < 5 || hw_config->dma2 > 7)
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING  "SB16: Bad or missing 16 bit DMA channel\n");
+#else
+				;
+#endif
 				devc->dma16 = devc->dma8;
 			}
 			else
@@ -839,16 +927,44 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 	{
 		if (devc->major == 3 && devc->minor != 1)	/* "True" SB Pro should have v3.1 (rare ones may have 3.2). */
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "This sound card may not be fully Sound Blaster Pro compatible.\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "In many cases there is another way to configure OSS so that\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "it works properly with OSS (for example in 16 bit mode).\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "Please ignore this message if you _really_ have a SB Pro.\n");
+#else
+			;
+#endif
 		}
 		else if (!sb_be_quiet && devc->model == MDL_SBPRO)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "SB DSP version is just %d.%02d which means that your card is\n", devc->major, devc->minor);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "several years old (8 bit only device) or alternatively the sound driver\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "is incorrectly configured.\n");
+#else
+			;
+#endif
 		}
 	}
 	hw_config->card_subtype = devc->model;
@@ -859,19 +975,31 @@ int sb_dsp_init(struct address_info *hw_config, struct module *owner)
 	{
 		if (sound_alloc_dma(devc->dma8, "SoundBlaster8"))
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Sound Blaster: Can't allocate 8 bit DMA channel %d\n", devc->dma8);
+#else
+			;
+#endif
 		}
 		if (devc->dma16 >= 0 && devc->dma16 != devc->dma8)
 		{
 			if (sound_alloc_dma(devc->dma16, "SoundBlaster16"))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "Sound Blaster:  can't allocate 16 bit DMA channel %d.\n", devc->dma16);
+#else
+				;
+#endif
 		}
 		sb_audio_init(devc, name, owner);
 		hw_config->slots[0]=devc->dev;
 	}
 	else
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		MDB(printk("Sound Blaster:  no audio devices found.\n"));
+#else
+		MDB(;
+#endif
 	}
 	return 1;
 }
@@ -1035,7 +1163,11 @@ static int smw_midi_init(sb_devc * devc, struct address_info *hw_config)
 
 	if (smw_getmem(devc, mp_base, 0) != 0x00 || smw_getmem(devc, mp_base, 1) != 0xff)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		DDB(printk("SM Wave: No microcontroller RAM detected (%02x, %02x)\n", smw_getmem(devc, mp_base, 0), smw_getmem(devc, mp_base, 1)));
+#else
+		DDB(;
+#endif
 		return 0;	/* No RAM */
 	}
 	/*
@@ -1259,7 +1391,11 @@ int probe_sbmpu(struct address_info *hw_config, struct module *owner)
 
 		case MDL_YMPCI:
 			hw_config->name = "Yamaha PCI Legacy";
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Yamaha PCI legacy UART401 check.\n");
+#else
+			;
+#endif
 			break;
 		default:
 			return 0;

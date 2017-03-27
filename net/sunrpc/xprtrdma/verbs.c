@@ -119,8 +119,8 @@ rpcrdma_qp_async_error_upcall(struct ib_event *event, void *context)
 {
 	struct rpcrdma_ep *ep = context;
 
-	dprintk("RPC:       %s: QP error %X on device %s ep %p\n",
-		__func__, event->event, event->device->name, context);
+//	dprintk("RPC:       %s: QP error %X on device %s ep %p\n",
+;
 	if (ep->rep_connected == 1) {
 		ep->rep_connected = -EIO;
 		ep->rep_func(ep);
@@ -133,8 +133,8 @@ rpcrdma_cq_async_error_upcall(struct ib_event *event, void *context)
 {
 	struct rpcrdma_ep *ep = context;
 
-	dprintk("RPC:       %s: CQ error %X on device %s ep %p\n",
-		__func__, event->event, event->device->name, context);
+//	dprintk("RPC:       %s: CQ error %X on device %s ep %p\n",
+;
 	if (ep->rep_connected == 1) {
 		ep->rep_connected = -EIO;
 		ep->rep_func(ep);
@@ -149,15 +149,15 @@ void rpcrdma_event_process(struct ib_wc *wc)
 	struct rpcrdma_rep *rep =
 			(struct rpcrdma_rep *)(unsigned long) wc->wr_id;
 
-	dprintk("RPC:       %s: event rep %p status %X opcode %X length %u\n",
-		__func__, rep, wc->status, wc->opcode, wc->byte_len);
+//	dprintk("RPC:       %s: event rep %p status %X opcode %X length %u\n",
+;
 
 	if (!rep) /* send or bind completion that we don't care about */
 		return;
 
 	if (IB_WC_SUCCESS != wc->status) {
-		dprintk("RPC:       %s: WC opcode %d status %X, connection lost\n",
-			__func__, wc->opcode, wc->status);
+//		dprintk("RPC:       %s: WC opcode %d status %X, connection lost\n",
+;
 		rep->rr_len = ~0U;
 		if (wc->opcode != IB_WC_FAST_REG_MR && wc->opcode != IB_WC_LOCAL_INV)
 			rpcrdma_schedule_tasklet(rep);
@@ -184,15 +184,15 @@ void rpcrdma_event_process(struct ib_wc *wc)
 					(struct rpcrdma_msg *) rep->rr_base;
 			unsigned int credits = ntohl(p->rm_credit);
 			if (credits == 0) {
-				dprintk("RPC:       %s: server"
-					" dropped credits to 0!\n", __func__);
+//				dprintk("RPC:       %s: server"
+;
 				/* don't deadlock */
 				credits = 1;
 			} else if (credits > rep->rr_buffer->rb_max_requests) {
-				dprintk("RPC:       %s: server"
-					" over-crediting: %d (%d)\n",
-					__func__, credits,
-					rep->rr_buffer->rb_max_requests);
+//				dprintk("RPC:       %s: server"
+//					" over-crediting: %d (%d)\n",
+//					__func__, credits,
+;
 				credits = rep->rr_buffer->rb_max_requests;
 			}
 			atomic_set(&rep->rr_buffer->rb_credits, credits);
@@ -202,8 +202,8 @@ void rpcrdma_event_process(struct ib_wc *wc)
 		rpcrdma_schedule_tasklet(rep);
 		break;
 	default:
-		dprintk("RPC:       %s: unexpected WC event %X\n",
-			__func__, wc->opcode);
+//		dprintk("RPC:       %s: unexpected WC event %X\n",
+;
 		break;
 	}
 }
@@ -217,8 +217,8 @@ rpcrdma_cq_poll(struct ib_cq *cq)
 	for (;;) {
 		rc = ib_poll_cq(cq, 1, &wc);
 		if (rc < 0) {
-			dprintk("RPC:       %s: ib_poll_cq failed %i\n",
-				__func__, rc);
+//			dprintk("RPC:       %s: ib_poll_cq failed %i\n",
+;
 			return rc;
 		}
 		if (rc == 0)
@@ -256,8 +256,8 @@ rpcrdma_cq_event_upcall(struct ib_cq *cq, void *context)
 
 	rc = ib_req_notify_cq(cq, IB_CQ_NEXT_COMP);
 	if (rc) {
-		dprintk("RPC:       %s: ib_req_notify_cq failed %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_req_notify_cq failed %i\n",
+;
 		return;
 	}
 
@@ -302,14 +302,14 @@ rpcrdma_conn_upcall(struct rdma_cm_id *id, struct rdma_cm_event *event)
 		break;
 	case RDMA_CM_EVENT_ADDR_ERROR:
 		ia->ri_async_rc = -EHOSTUNREACH;
-		dprintk("RPC:       %s: CM address resolution error, ep 0x%p\n",
-			__func__, ep);
+//		dprintk("RPC:       %s: CM address resolution error, ep 0x%p\n",
+;
 		complete(&ia->ri_done);
 		break;
 	case RDMA_CM_EVENT_ROUTE_ERROR:
 		ia->ri_async_rc = -ENETUNREACH;
-		dprintk("RPC:       %s: CM route resolution error, ep 0x%p\n",
-			__func__, ep);
+//		dprintk("RPC:       %s: CM route resolution error, ep 0x%p\n",
+;
 		complete(&ia->ri_done);
 		break;
 	case RDMA_CM_EVENT_ESTABLISHED:
@@ -317,9 +317,9 @@ rpcrdma_conn_upcall(struct rdma_cm_id *id, struct rdma_cm_event *event)
 		ib_query_qp(ia->ri_id->qp, &attr,
 			IB_QP_MAX_QP_RD_ATOMIC | IB_QP_MAX_DEST_RD_ATOMIC,
 			&iattr);
-		dprintk("RPC:       %s: %d responder resources"
-			" (%d initiator)\n",
-			__func__, attr.max_dest_rd_atomic, attr.max_rd_atomic);
+//		dprintk("RPC:       %s: %d responder resources"
+//			" (%d initiator)\n",
+;
 		goto connected;
 	case RDMA_CM_EVENT_CONNECT_ERROR:
 		connstate = -ENOTCONN;
@@ -336,23 +336,23 @@ rpcrdma_conn_upcall(struct rdma_cm_id *id, struct rdma_cm_event *event)
 	case RDMA_CM_EVENT_DEVICE_REMOVAL:
 		connstate = -ENODEV;
 connected:
-		dprintk("RPC:       %s: %s: %pI4:%u (ep 0x%p event 0x%x)\n",
-			__func__,
-			(event->event <= 11) ? conn[event->event] :
-						"unknown connection error",
-			&addr->sin_addr.s_addr,
-			ntohs(addr->sin_port),
-			ep, event->event);
+//		dprintk("RPC:       %s: %s: %pI4:%u (ep 0x%p event 0x%x)\n",
+//			__func__,
+//			(event->event <= 11) ? conn[event->event] :
+//						"unknown connection error",
+//			&addr->sin_addr.s_addr,
+//			ntohs(addr->sin_port),
+;
 		atomic_set(&rpcx_to_rdmax(ep->rep_xprt)->rx_buf.rb_credits, 1);
-		dprintk("RPC:       %s: %sconnected\n",
-					__func__, connstate > 0 ? "" : "dis");
+//		dprintk("RPC:       %s: %sconnected\n",
+;
 		ep->rep_connected = connstate;
 		ep->rep_func(ep);
 		wake_up_all(&ep->rep_connect_wait);
 		break;
 	default:
-		dprintk("RPC:       %s: unexpected CM event %d\n",
-			__func__, event->event);
+//		dprintk("RPC:       %s: unexpected CM event %d\n",
+;
 		break;
 	}
 
@@ -360,19 +360,19 @@ connected:
 	if (connstate == 1) {
 		int ird = attr.max_dest_rd_atomic;
 		int tird = ep->rep_remote_cma.responder_resources;
-		printk(KERN_INFO "rpcrdma: connection to %pI4:%u "
-			"on %s, memreg %d slots %d ird %d%s\n",
-			&addr->sin_addr.s_addr,
-			ntohs(addr->sin_port),
-			ia->ri_id->device->name,
-			ia->ri_memreg_strategy,
-			xprt->rx_buf.rb_max_requests,
-			ird, ird < 4 && ird < tird / 2 ? " (low!)" : "");
+//		printk(KERN_INFO "rpcrdma: connection to %pI4:%u "
+//			"on %s, memreg %d slots %d ird %d%s\n",
+//			&addr->sin_addr.s_addr,
+//			ntohs(addr->sin_port),
+//			ia->ri_id->device->name,
+//			ia->ri_memreg_strategy,
+//			xprt->rx_buf.rb_max_requests,
+;
 	} else if (connstate < 0) {
-		printk(KERN_INFO "rpcrdma: connection to %pI4:%u closed (%d)\n",
-			&addr->sin_addr.s_addr,
-			ntohs(addr->sin_port),
-			connstate);
+//		printk(KERN_INFO "rpcrdma: connection to %pI4:%u closed (%d)\n",
+//			&addr->sin_addr.s_addr,
+//			ntohs(addr->sin_port),
+;
 	}
 #endif
 
@@ -391,16 +391,16 @@ rpcrdma_create_id(struct rpcrdma_xprt *xprt,
 	id = rdma_create_id(rpcrdma_conn_upcall, xprt, RDMA_PS_TCP, IB_QPT_RC);
 	if (IS_ERR(id)) {
 		rc = PTR_ERR(id);
-		dprintk("RPC:       %s: rdma_create_id() failed %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: rdma_create_id() failed %i\n",
+;
 		return id;
 	}
 
 	ia->ri_async_rc = -ETIMEDOUT;
 	rc = rdma_resolve_addr(id, NULL, addr, RDMA_RESOLVE_TIMEOUT);
 	if (rc) {
-		dprintk("RPC:       %s: rdma_resolve_addr() failed %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: rdma_resolve_addr() failed %i\n",
+;
 		goto out;
 	}
 	wait_for_completion_interruptible_timeout(&ia->ri_done,
@@ -412,8 +412,8 @@ rpcrdma_create_id(struct rpcrdma_xprt *xprt,
 	ia->ri_async_rc = -ETIMEDOUT;
 	rc = rdma_resolve_route(id, RDMA_RESOLVE_TIMEOUT);
 	if (rc) {
-		dprintk("RPC:       %s: rdma_resolve_route() failed %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: rdma_resolve_route() failed %i\n",
+;
 		goto out;
 	}
 	wait_for_completion_interruptible_timeout(&ia->ri_done,
@@ -442,8 +442,8 @@ rpcrdma_clean_cq(struct ib_cq *cq)
 		++count;
 
 	if (count)
-		dprintk("RPC:       %s: flushed %d events (last 0x%x)\n",
-			__func__, count, wc.opcode);
+//		dprintk("RPC:       %s: flushed %d events (last 0x%x)\n",
+;
 }
 
 /*
@@ -471,8 +471,8 @@ rpcrdma_ia_open(struct rpcrdma_xprt *xprt, struct sockaddr *addr, int memreg)
 	ia->ri_pd = ib_alloc_pd(ia->ri_id->device);
 	if (IS_ERR(ia->ri_pd)) {
 		rc = PTR_ERR(ia->ri_pd);
-		dprintk("RPC:       %s: ib_alloc_pd() failed %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_alloc_pd() failed %i\n",
+;
 		goto out2;
 	}
 
@@ -483,8 +483,8 @@ rpcrdma_ia_open(struct rpcrdma_xprt *xprt, struct sockaddr *addr, int memreg)
 	 */
 	rc = ib_query_device(ia->ri_id->device, &devattr);
 	if (rc) {
-		dprintk("RPC:       %s: ib_query_device failed %d\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_query_device failed %d\n",
+;
 		goto out2;
 	}
 
@@ -497,26 +497,26 @@ rpcrdma_ia_open(struct rpcrdma_xprt *xprt, struct sockaddr *addr, int memreg)
 	case RPCRDMA_MEMWINDOWS:
 	case RPCRDMA_MEMWINDOWS_ASYNC:
 		if (!(devattr.device_cap_flags & IB_DEVICE_MEM_WINDOW)) {
-			dprintk("RPC:       %s: MEMWINDOWS registration "
-				"specified but not supported by adapter, "
-				"using slower RPCRDMA_REGISTER\n",
-				__func__);
+//			dprintk("RPC:       %s: MEMWINDOWS registration "
+//				"specified but not supported by adapter, "
+//				"using slower RPCRDMA_REGISTER\n",
+;
 			memreg = RPCRDMA_REGISTER;
 		}
 		break;
 	case RPCRDMA_MTHCAFMR:
 		if (!ia->ri_id->device->alloc_fmr) {
 #if RPCRDMA_PERSISTENT_REGISTRATION
-			dprintk("RPC:       %s: MTHCAFMR registration "
-				"specified but not supported by adapter, "
-				"using riskier RPCRDMA_ALLPHYSICAL\n",
-				__func__);
+//			dprintk("RPC:       %s: MTHCAFMR registration "
+//				"specified but not supported by adapter, "
+//				"using riskier RPCRDMA_ALLPHYSICAL\n",
+;
 			memreg = RPCRDMA_ALLPHYSICAL;
 #else
-			dprintk("RPC:       %s: MTHCAFMR registration "
-				"specified but not supported by adapter, "
-				"using slower RPCRDMA_REGISTER\n",
-				__func__);
+//			dprintk("RPC:       %s: MTHCAFMR registration "
+//				"specified but not supported by adapter, "
+//				"using slower RPCRDMA_REGISTER\n",
+;
 			memreg = RPCRDMA_REGISTER;
 #endif
 		}
@@ -527,16 +527,16 @@ rpcrdma_ia_open(struct rpcrdma_xprt *xprt, struct sockaddr *addr, int memreg)
 		     (IB_DEVICE_MEM_MGT_EXTENSIONS|IB_DEVICE_LOCAL_DMA_LKEY)) !=
 		    (IB_DEVICE_MEM_MGT_EXTENSIONS|IB_DEVICE_LOCAL_DMA_LKEY)) {
 #if RPCRDMA_PERSISTENT_REGISTRATION
-			dprintk("RPC:       %s: FRMR registration "
-				"specified but not supported by adapter, "
-				"using riskier RPCRDMA_ALLPHYSICAL\n",
-				__func__);
+//			dprintk("RPC:       %s: FRMR registration "
+//				"specified but not supported by adapter, "
+//				"using riskier RPCRDMA_ALLPHYSICAL\n",
+;
 			memreg = RPCRDMA_ALLPHYSICAL;
 #else
-			dprintk("RPC:       %s: FRMR registration "
-				"specified but not supported by adapter, "
-				"using slower RPCRDMA_REGISTER\n",
-				__func__);
+//			dprintk("RPC:       %s: FRMR registration "
+//				"specified but not supported by adapter, "
+//				"using slower RPCRDMA_REGISTER\n",
+;
 			memreg = RPCRDMA_REGISTER;
 #endif
 		}
@@ -575,22 +575,22 @@ rpcrdma_ia_open(struct rpcrdma_xprt *xprt, struct sockaddr *addr, int memreg)
 	register_setup:
 		ia->ri_bind_mem = ib_get_dma_mr(ia->ri_pd, mem_priv);
 		if (IS_ERR(ia->ri_bind_mem)) {
-			printk(KERN_ALERT "%s: ib_get_dma_mr for "
-				"phys register failed with %lX\n\t"
-				"Will continue with degraded performance\n",
-				__func__, PTR_ERR(ia->ri_bind_mem));
+//			printk(KERN_ALERT "%s: ib_get_dma_mr for "
+//				"phys register failed with %lX\n\t"
+//				"Will continue with degraded performance\n",
+;
 			memreg = RPCRDMA_REGISTER;
 			ia->ri_bind_mem = NULL;
 		}
 		break;
 	default:
-		printk(KERN_ERR "%s: invalid memory registration mode %d\n",
-				__func__, memreg);
+//		printk(KERN_ERR "%s: invalid memory registration mode %d\n",
+;
 		rc = -EINVAL;
 		goto out2;
 	}
-	dprintk("RPC:       %s: memory registration strategy is %d\n",
-		__func__, memreg);
+//	dprintk("RPC:       %s: memory registration strategy is %d\n",
+;
 
 	/* Else will do memory reg/dereg for each chunk */
 	ia->ri_memreg_strategy = memreg;
@@ -613,11 +613,11 @@ rpcrdma_ia_close(struct rpcrdma_ia *ia)
 {
 	int rc;
 
-	dprintk("RPC:       %s: entering\n", __func__);
+;
 	if (ia->ri_bind_mem != NULL) {
 		rc = ib_dereg_mr(ia->ri_bind_mem);
-		dprintk("RPC:       %s: ib_dereg_mr returned %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_dereg_mr returned %i\n",
+;
 	}
 	if (ia->ri_id != NULL && !IS_ERR(ia->ri_id)) {
 		if (ia->ri_id->qp)
@@ -627,8 +627,8 @@ rpcrdma_ia_close(struct rpcrdma_ia *ia)
 	}
 	if (ia->ri_pd != NULL && !IS_ERR(ia->ri_pd)) {
 		rc = ib_dealloc_pd(ia->ri_pd);
-		dprintk("RPC:       %s: ib_dealloc_pd returned %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_dealloc_pd returned %i\n",
+;
 	}
 }
 
@@ -644,8 +644,8 @@ rpcrdma_ep_create(struct rpcrdma_ep *ep, struct rpcrdma_ia *ia,
 
 	rc = ib_query_device(ia->ri_id->device, &devattr);
 	if (rc) {
-		dprintk("RPC:       %s: ib_query_device failed %d\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_query_device failed %d\n",
+;
 		return rc;
 	}
 
@@ -696,7 +696,7 @@ rpcrdma_ep_create(struct rpcrdma_ep *ep, struct rpcrdma_ia *ia,
 	ep->rep_attr.qp_type = IB_QPT_RC;
 	ep->rep_attr.port_num = ~0;
 
-	dprintk("RPC:       %s: requested max: dtos: send %d recv %d; "
+;
 		"iovs: send %d recv %d\n",
 		__func__,
 		ep->rep_attr.cap.max_send_wr,
@@ -731,15 +731,15 @@ rpcrdma_ep_create(struct rpcrdma_ep *ep, struct rpcrdma_ia *ia,
 				  ep->rep_attr.cap.max_send_wr + 1, 0);
 	if (IS_ERR(ep->rep_cq)) {
 		rc = PTR_ERR(ep->rep_cq);
-		dprintk("RPC:       %s: ib_create_cq failed: %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_create_cq failed: %i\n",
+;
 		goto out1;
 	}
 
 	rc = ib_req_notify_cq(ep->rep_cq, IB_CQ_NEXT_COMP);
 	if (rc) {
-		dprintk("RPC:       %s: ib_req_notify_cq failed: %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_req_notify_cq failed: %i\n",
+;
 		goto out2;
 	}
 
@@ -770,8 +770,8 @@ rpcrdma_ep_create(struct rpcrdma_ep *ep, struct rpcrdma_ia *ia,
 out2:
 	err = ib_destroy_cq(ep->rep_cq);
 	if (err)
-		dprintk("RPC:       %s: ib_destroy_cq returned %i\n",
-			__func__, err);
+//		dprintk("RPC:       %s: ib_destroy_cq returned %i\n",
+;
 out1:
 	return rc;
 }
@@ -791,14 +791,14 @@ rpcrdma_ep_destroy(struct rpcrdma_ep *ep, struct rpcrdma_ia *ia)
 {
 	int rc;
 
-	dprintk("RPC:       %s: entering, connected is %d\n",
-		__func__, ep->rep_connected);
+//	dprintk("RPC:       %s: entering, connected is %d\n",
+;
 
 	if (ia->ri_id->qp) {
 		rc = rpcrdma_ep_disconnect(ep, ia);
 		if (rc)
-			dprintk("RPC:       %s: rpcrdma_ep_disconnect"
-				" returned %i\n", __func__, rc);
+//			dprintk("RPC:       %s: rpcrdma_ep_disconnect"
+;
 		rdma_destroy_qp(ia->ri_id);
 		ia->ri_id->qp = NULL;
 	}
@@ -812,8 +812,8 @@ rpcrdma_ep_destroy(struct rpcrdma_ep *ep, struct rpcrdma_ia *ia)
 	rpcrdma_clean_cq(ep->rep_cq);
 	rc = ib_destroy_cq(ep->rep_cq);
 	if (rc)
-		dprintk("RPC:       %s: ib_destroy_cq returned %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: ib_destroy_cq returned %i\n",
+;
 
 	return rc;
 }
@@ -833,8 +833,8 @@ rpcrdma_ep_connect(struct rpcrdma_ep *ep, struct rpcrdma_ia *ia)
 retry:
 		rc = rpcrdma_ep_disconnect(ep, ia);
 		if (rc && rc != -ENOTCONN)
-			dprintk("RPC:       %s: rpcrdma_ep_disconnect"
-				" status %i\n", __func__, rc);
+//			dprintk("RPC:       %s: rpcrdma_ep_disconnect"
+;
 		rpcrdma_clean_cq(ep->rep_cq);
 
 		xprt = container_of(ia, struct rpcrdma_xprt, rx_ia);
@@ -852,8 +852,8 @@ retry:
 		 * Rrrgh!
 		 */
 		if (ia->ri_id->device != id->device) {
-			printk("RPC:       %s: can't reconnect on "
-				"different device!\n", __func__);
+//			printk("RPC:       %s: can't reconnect on "
+;
 			rdma_destroy_id(id);
 			rc = -ENETDOWN;
 			goto out;
@@ -866,8 +866,8 @@ retry:
 
 	rc = rdma_create_qp(ia->ri_id, ia->ri_pd, &ep->rep_attr);
 	if (rc) {
-		dprintk("RPC:       %s: rdma_create_qp failed %i\n",
-			__func__, rc);
+//		dprintk("RPC:       %s: rdma_create_qp failed %i\n",
+;
 		goto out;
 	}
 
@@ -888,8 +888,8 @@ if (strnicmp(ia->ri_id->device->dma_device->bus->name, "pci", 3) == 0) {
 
 	rc = rdma_connect(ia->ri_id, &ep->rep_remote_cma);
 	if (rc) {
-		dprintk("RPC:       %s: rdma_connect() failed with %i\n",
-				__func__, rc);
+//		dprintk("RPC:       %s: rdma_connect() failed with %i\n",
+;
 		goto out;
 	}
 
@@ -903,7 +903,7 @@ if (strnicmp(ia->ri_id->device->dma_device->bus->name, "pci", 3) == 0) {
 	 */
 	if (ep->rep_connected == -ECONNREFUSED &&
 	    ++retry_count <= RDMA_CONNECT_RETRY_MAX) {
-		dprintk("RPC:       %s: non-peer_reject, retry\n", __func__);
+;
 		goto retry;
 	}
 	if (ep->rep_connected <= 0) {
@@ -921,7 +921,7 @@ if (strnicmp(ia->ri_id->device->dma_device->bus->name, "pci", 3) == 0) {
 		}
 		rc = ep->rep_connected;
 	} else {
-		dprintk("RPC:       %s: connected\n", __func__);
+;
 	}
 
 out:
@@ -950,10 +950,10 @@ rpcrdma_ep_disconnect(struct rpcrdma_ep *ep, struct rpcrdma_ia *ia)
 		/* returns without wait if not connected */
 		wait_event_interruptible(ep->rep_connect_wait,
 							ep->rep_connected != 1);
-		dprintk("RPC:       %s: after wait, %sconnected\n", __func__,
-			(ep->rep_connected == 1) ? "still " : "dis");
+//		dprintk("RPC:       %s: after wait, %sconnected\n", __func__,
+;
 	} else {
-		dprintk("RPC:       %s: rdma_disconnect %i\n", __func__, rc);
+;
 		ep->rep_connected = rc;
 	}
 	return rc;
@@ -1009,8 +1009,8 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
 	/* allocate 1, 4 and 5 in one shot */
 	p = kzalloc(len, GFP_KERNEL);
 	if (p == NULL) {
-		dprintk("RPC:       %s: req_t/rep_t/pad kzalloc(%zd) failed\n",
-			__func__, len);
+//		dprintk("RPC:       %s: req_t/rep_t/pad kzalloc(%zd) failed\n",
+;
 		rc = -ENOMEM;
 		goto out;
 	}
@@ -1046,8 +1046,8 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
 							 RPCRDMA_MAX_SEGS);
 			if (IS_ERR(r->r.frmr.fr_mr)) {
 				rc = PTR_ERR(r->r.frmr.fr_mr);
-				dprintk("RPC:       %s: ib_alloc_fast_reg_mr"
-					" failed %i\n", __func__, rc);
+//				dprintk("RPC:       %s: ib_alloc_fast_reg_mr"
+;
 				goto out;
 			}
 			r->r.frmr.fr_pgl =
@@ -1055,9 +1055,9 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
 							    RPCRDMA_MAX_SEGS);
 			if (IS_ERR(r->r.frmr.fr_pgl)) {
 				rc = PTR_ERR(r->r.frmr.fr_pgl);
-				dprintk("RPC:       %s: "
-					"ib_alloc_fast_reg_page_list "
-					"failed %i\n", __func__, rc);
+//				dprintk("RPC:       %s: "
+//					"ib_alloc_fast_reg_page_list "
+;
 				goto out;
 			}
 			list_add(&r->mw_list, &buf->rb_mws);
@@ -1074,8 +1074,8 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
 				&fa);
 			if (IS_ERR(r->r.fmr)) {
 				rc = PTR_ERR(r->r.fmr);
-				dprintk("RPC:       %s: ib_alloc_fmr"
-					" failed %i\n", __func__, rc);
+//				dprintk("RPC:       %s: ib_alloc_fmr"
+;
 				goto out;
 			}
 			list_add(&r->mw_list, &buf->rb_mws);
@@ -1089,8 +1089,8 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
 			r->r.mw = ib_alloc_mw(ia->ri_pd);
 			if (IS_ERR(r->r.mw)) {
 				rc = PTR_ERR(r->r.mw);
-				dprintk("RPC:       %s: ib_alloc_mw"
-					" failed %i\n", __func__, rc);
+//				dprintk("RPC:       %s: ib_alloc_mw"
+;
 				goto out;
 			}
 			list_add(&r->mw_list, &buf->rb_mws);
@@ -1116,8 +1116,8 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
 			len = 4096;
 		req = kmalloc(len, GFP_KERNEL);
 		if (req == NULL) {
-			dprintk("RPC:       %s: request buffer %d alloc"
-				" failed\n", __func__, i);
+//			dprintk("RPC:       %s: request buffer %d alloc"
+;
 			rc = -ENOMEM;
 			goto out;
 		}
@@ -1137,8 +1137,8 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
 		len = cdata->inline_rsize + sizeof(struct rpcrdma_rep);
 		rep = kmalloc(len, GFP_KERNEL);
 		if (rep == NULL) {
-			dprintk("RPC:       %s: reply buffer %d alloc failed\n",
-				__func__, i);
+//			dprintk("RPC:       %s: reply buffer %d alloc failed\n",
+;
 			rc = -ENOMEM;
 			goto out;
 		}
@@ -1155,8 +1155,8 @@ rpcrdma_buffer_create(struct rpcrdma_buffer *buf, struct rpcrdma_ep *ep,
 			goto out;
 
 	}
-	dprintk("RPC:       %s: max_requests %d\n",
-		__func__, buf->rb_max_requests);
+//	dprintk("RPC:       %s: max_requests %d\n",
+;
 	/* done */
 	return 0;
 out:
@@ -1184,7 +1184,7 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
 	 *   3.  padding (if any) [moved to rpcrdma_ep_destroy]
 	 *   4.  arrays
 	 */
-	dprintk("RPC:       %s: entering\n", __func__);
+;
 
 	for (i = 0; i < buf->rb_max_requests; i++) {
 		if (buf->rb_recv_bufs && buf->rb_recv_bufs[i]) {
@@ -1202,28 +1202,28 @@ rpcrdma_buffer_destroy(struct rpcrdma_buffer *buf)
 				case RPCRDMA_FRMR:
 					rc = ib_dereg_mr(r->r.frmr.fr_mr);
 					if (rc)
-						dprintk("RPC:       %s:"
-							" ib_dereg_mr"
-							" failed %i\n",
-							__func__, rc);
+//						dprintk("RPC:       %s:"
+//							" ib_dereg_mr"
+//							" failed %i\n",
+;
 					ib_free_fast_reg_page_list(r->r.frmr.fr_pgl);
 					break;
 				case RPCRDMA_MTHCAFMR:
 					rc = ib_dealloc_fmr(r->r.fmr);
 					if (rc)
-						dprintk("RPC:       %s:"
-							" ib_dealloc_fmr"
-							" failed %i\n",
-							__func__, rc);
+//						dprintk("RPC:       %s:"
+//							" ib_dealloc_fmr"
+//							" failed %i\n",
+;
 					break;
 				case RPCRDMA_MEMWINDOWS_ASYNC:
 				case RPCRDMA_MEMWINDOWS:
 					rc = ib_dealloc_mw(r->r.mw);
 					if (rc)
-						dprintk("RPC:       %s:"
-							" ib_dealloc_mw"
-							" failed %i\n",
-							__func__, rc);
+//						dprintk("RPC:       %s:"
+//							" ib_dealloc_mw"
+//							" failed %i\n",
+;
 					break;
 				default:
 					break;
@@ -1259,15 +1259,15 @@ rpcrdma_buffer_get(struct rpcrdma_buffer *buffers)
 	spin_lock_irqsave(&buffers->rb_lock, flags);
 	if (buffers->rb_send_index == buffers->rb_max_requests) {
 		spin_unlock_irqrestore(&buffers->rb_lock, flags);
-		dprintk("RPC:       %s: out of request buffers\n", __func__);
+;
 		return ((struct rpcrdma_req *)NULL);
 	}
 
 	req = buffers->rb_send_bufs[buffers->rb_send_index];
 	if (buffers->rb_send_index < buffers->rb_recv_index) {
-		dprintk("RPC:       %s: %d extra receives outstanding (ok)\n",
-			__func__,
-			buffers->rb_recv_index - buffers->rb_send_index);
+//		dprintk("RPC:       %s: %d extra receives outstanding (ok)\n",
+//			__func__,
+;
 		req->rl_reply = NULL;
 	} else {
 		req->rl_reply = buffers->rb_recv_bufs[buffers->rb_recv_index];
@@ -1407,15 +1407,15 @@ rpcrdma_register_internal(struct rpcrdma_ia *ia, void *va, int len,
 	mr = ib_reg_phys_mr(ia->ri_pd, &ipb, 1,
 			IB_ACCESS_LOCAL_WRITE, &iov->addr);
 
-	dprintk("RPC:       %s: phys convert: 0x%llx "
-			"registered 0x%llx length %d\n",
-			__func__, (unsigned long long)ipb.addr,
-			(unsigned long long)iov->addr, len);
+//	dprintk("RPC:       %s: phys convert: 0x%llx "
+//			"registered 0x%llx length %d\n",
+//			__func__, (unsigned long long)ipb.addr,
+;
 
 	if (IS_ERR(mr)) {
 		*mrp = NULL;
 		rc = PTR_ERR(mr);
-		dprintk("RPC:       %s: failed with %i\n", __func__, rc);
+;
 	} else {
 		*mrp = mr;
 		iov->lkey = mr->lkey;
@@ -1439,7 +1439,7 @@ rpcrdma_deregister_internal(struct rpcrdma_ia *ia,
 
 	rc = ib_dereg_mr(mr);
 	if (rc)
-		dprintk("RPC:       %s: ib_dereg_mr failed %i\n", __func__, rc);
+;
 	return rc;
 }
 
@@ -1461,10 +1461,10 @@ rpcrdma_map_one(struct rpcrdma_ia *ia, struct rpcrdma_mr_seg *seg, int writing)
 				seg->mr_offset,
 				seg->mr_dmalen, seg->mr_dir);
 	if (ib_dma_mapping_error(ia->ri_id->device, seg->mr_dma)) {
-		dprintk("RPC:       %s: mr_dma %llx mr_offset %p mr_dma_len %zu\n",
-			__func__,
-			(unsigned long long)seg->mr_dma,
-			seg->mr_offset, seg->mr_dmalen);
+//		dprintk("RPC:       %s: mr_dma %llx mr_offset %p mr_dma_len %zu\n",
+//			__func__,
+//			(unsigned long long)seg->mr_dma,
+;
 	}
 }
 
@@ -1516,13 +1516,13 @@ rpcrdma_register_frmr_external(struct rpcrdma_mr_seg *seg,
 		    offset_in_page((seg-1)->mr_offset + (seg-1)->mr_len))
 			break;
 	}
-	dprintk("RPC:       %s: Using frmr %p to map %d segments\n",
-		__func__, seg1->mr_chunk.rl_mw, i);
+//	dprintk("RPC:       %s: Using frmr %p to map %d segments\n",
+;
 
 	if (unlikely(seg1->mr_chunk.rl_mw->r.frmr.state == FRMR_IS_VALID)) {
-		dprintk("RPC:       %s: frmr %x left valid, posting invalidate.\n",
-			__func__,
-			seg1->mr_chunk.rl_mw->r.frmr.fr_mr->rkey);
+//		dprintk("RPC:       %s: frmr %x left valid, posting invalidate.\n",
+//			__func__,
+;
 		/* Invalidate before using. */
 		memset(&invalidate_wr, 0, sizeof invalidate_wr);
 		invalidate_wr.wr_id = (unsigned long)(void *)seg1->mr_chunk.rl_mw;
@@ -1560,8 +1560,8 @@ rpcrdma_register_frmr_external(struct rpcrdma_mr_seg *seg,
 	rc = ib_post_send(ia->ri_id->qp, post_wr, &bad_wr);
 
 	if (rc) {
-		dprintk("RPC:       %s: failed ib_post_send for register,"
-			" status %i\n", __func__, rc);
+//		dprintk("RPC:       %s: failed ib_post_send for register,"
+;
 		while (i--)
 			rpcrdma_unmap_one(ia, --seg);
 	} else {
@@ -1594,8 +1594,8 @@ rpcrdma_deregister_frmr_external(struct rpcrdma_mr_seg *seg,
 
 	rc = ib_post_send(ia->ri_id->qp, &invalidate_wr, &bad_wr);
 	if (rc)
-		dprintk("RPC:       %s: failed ib_post_send for invalidate,"
-			" status %i\n", __func__, rc);
+//		dprintk("RPC:       %s: failed ib_post_send for invalidate,"
+;
 	return rc;
 }
 
@@ -1627,10 +1627,10 @@ rpcrdma_register_fmr_external(struct rpcrdma_mr_seg *seg,
 	rc = ib_map_phys_fmr(seg1->mr_chunk.rl_mw->r.fmr,
 				physaddrs, i, seg1->mr_dma);
 	if (rc) {
-		dprintk("RPC:       %s: failed ib_map_phys_fmr "
-			"%u@0x%llx+%i (%d)... status %i\n", __func__,
-			len, (unsigned long long)seg1->mr_dma,
-			pageoff, i, rc);
+//		dprintk("RPC:       %s: failed ib_map_phys_fmr "
+//			"%u@0x%llx+%i (%d)... status %i\n", __func__,
+//			len, (unsigned long long)seg1->mr_dma,
+;
 		while (i--)
 			rpcrdma_unmap_one(ia, --seg);
 	} else {
@@ -1656,8 +1656,8 @@ rpcrdma_deregister_fmr_external(struct rpcrdma_mr_seg *seg,
 	while (seg1->mr_nsegs--)
 		rpcrdma_unmap_one(ia, seg++);
 	if (rc)
-		dprintk("RPC:       %s: failed ib_unmap_fmr,"
-			" status %i\n", __func__, rc);
+//		dprintk("RPC:       %s: failed ib_unmap_fmr,"
+;
 	return rc;
 }
 
@@ -1683,10 +1683,10 @@ rpcrdma_register_memwin_external(struct rpcrdma_mr_seg *seg,
 	DECR_CQCOUNT(&r_xprt->rx_ep);
 	rc = ib_bind_mw(ia->ri_id->qp, seg->mr_chunk.rl_mw->r.mw, &param);
 	if (rc) {
-		dprintk("RPC:       %s: failed ib_bind_mw "
-			"%u@0x%llx status %i\n",
-			__func__, seg->mr_len,
-			(unsigned long long)seg->mr_dma, rc);
+//		dprintk("RPC:       %s: failed ib_bind_mw "
+//			"%u@0x%llx status %i\n",
+//			__func__, seg->mr_len,
+;
 		rpcrdma_unmap_one(ia, seg);
 	} else {
 		seg->mr_rkey = seg->mr_chunk.rl_mw->r.mw->rkey;
@@ -1722,8 +1722,8 @@ rpcrdma_deregister_memwin_external(struct rpcrdma_mr_seg *seg,
 	rc = ib_bind_mw(ia->ri_id->qp, seg->mr_chunk.rl_mw->r.mw, &param);
 	rpcrdma_unmap_one(ia, seg);
 	if (rc)
-		dprintk("RPC:       %s: failed ib_(un)bind_mw,"
-			" status %i\n", __func__, rc);
+//		dprintk("RPC:       %s: failed ib_(un)bind_mw,"
+;
 	else
 		*r = NULL;	/* will upcall on completion */
 	return rc;
@@ -1758,10 +1758,10 @@ rpcrdma_register_default_external(struct rpcrdma_mr_seg *seg,
 				ipb, i, mem_priv, &seg1->mr_base);
 	if (IS_ERR(seg1->mr_chunk.rl_mr)) {
 		rc = PTR_ERR(seg1->mr_chunk.rl_mr);
-		dprintk("RPC:       %s: failed ib_reg_phys_mr "
-			"%u@0x%llx (%d)... status %i\n",
-			__func__, len,
-			(unsigned long long)seg1->mr_dma, i, rc);
+//		dprintk("RPC:       %s: failed ib_reg_phys_mr "
+//			"%u@0x%llx (%d)... status %i\n",
+//			__func__, len,
+;
 		while (i--)
 			rpcrdma_unmap_one(ia, --seg);
 	} else {
@@ -1785,8 +1785,8 @@ rpcrdma_deregister_default_external(struct rpcrdma_mr_seg *seg,
 	while (seg1->mr_nsegs--)
 		rpcrdma_unmap_one(ia, seg++);
 	if (rc)
-		dprintk("RPC:       %s: failed ib_dereg_mr,"
-			" status %i\n", __func__, rc);
+//		dprintk("RPC:       %s: failed ib_dereg_mr,"
+;
 	return rc;
 }
 
@@ -1925,8 +1925,8 @@ rpcrdma_ep_post(struct rpcrdma_ia *ia,
 
 	rc = ib_post_send(ia->ri_id->qp, &send_wr, &send_wr_fail);
 	if (rc)
-		dprintk("RPC:       %s: ib_post_send returned %i\n", __func__,
-			rc);
+//		dprintk("RPC:       %s: ib_post_send returned %i\n", __func__,
+;
 out:
 	return rc;
 }
@@ -1954,7 +1954,7 @@ rpcrdma_ep_post_recv(struct rpcrdma_ia *ia,
 	rc = ib_post_recv(ia->ri_id->qp, &recv_wr, &recv_wr_fail);
 
 	if (rc)
-		dprintk("RPC:       %s: ib_post_recv returned %i\n", __func__,
-			rc);
+//		dprintk("RPC:       %s: ib_post_recv returned %i\n", __func__,
+;
 	return rc;
 }

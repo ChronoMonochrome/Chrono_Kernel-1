@@ -159,7 +159,11 @@ static void int_to_ext_kekl_pair(struct tape3592_kekl_pair *in,
 		int_to_ext_kekl(&in->kekl[0], &out->kekl[0]);
 		int_to_ext_kekl(&in->kekl[1], &out->kekl[1]);
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Invalid KEKL number: %d\n", in->count);
+#else
+		;
+#endif
 		BUG();
 	}
 }

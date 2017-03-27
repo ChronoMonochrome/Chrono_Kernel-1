@@ -596,7 +596,7 @@ out:
 
 	ctl->skb = NULL;
 
-	printk(KERN_ERR DRV_NAME": Failed to start RX DMA: %d\n", err);
+;
 	return err;
 }
 
@@ -996,8 +996,8 @@ static int ks8842_open(struct net_device *netdev)
 		}
 
 		if (err) {
-			printk(KERN_WARNING DRV_NAME
-				": Failed to initiate DMA, running PIO\n");
+//			printk(KERN_WARNING DRV_NAME
+;
 			ks8842_dealloc_dma_bufs(adapter);
 			adapter->dma_rx.channel = -1;
 			adapter->dma_tx.channel = -1;

@@ -42,24 +42,24 @@
 #include <net/llc_pdu.h>
 
 #if 1
-#define dprintk(args...) printk(KERN_DEBUG args)
-#else
-#define dprintk(args...)
-#endif
-
-/**
- *	llc_util_ns_inside_rx_window - check if sequence number is in rx window
- *	@ns: sequence number of received pdu.
- *	@vr: sequence number which receiver expects to receive.
- *	@rw: receive window size of receiver.
- *
- *	Checks if sequence number of received PDU is in range of receive
- *	window. Returns 0 for success, 1 otherwise
- */
-static u16 llc_util_ns_inside_rx_window(u8 ns, u8 vr, u8 rw)
-{
-	return !llc_circular_between(vr, ns,
-				     (vr + rw - 1) % LLC_2_SEQ_NBR_MODULO);
+//#define dprintk(args...) printk(KERN_DEBUG args)
+//#else
+//#define dprintk(args...)
+//#endif
+//
+///**
+// *	llc_util_ns_inside_rx_window - check if sequence number is in rx window
+// *	@ns: sequence number of received pdu.
+// *	@vr: sequence number which receiver expects to receive.
+// *	@rw: receive window size of receiver.
+// *
+// *	Checks if sequence number of received PDU is in range of receive
+// *	window. Returns 0 for success, 1 otherwise
+// */
+//static u16 llc_util_ns_inside_rx_window(u8 ns, u8 vr, u8 rw)
+//{
+//	return !llc_circular_between(vr, ns,
+;
 }
 
 /**
@@ -227,8 +227,8 @@ int llc_conn_ev_rx_i_cmd_pbit_set_x_inval_ns(struct sock *sk,
 		ns != vr &&
 		 llc_util_ns_inside_rx_window(ns, vr, llc_sk(sk)->rw) ? 0 : 1;
 	if (!rc)
-		dprintk("%s: matched, state=%d, ns=%d, vr=%d\n",
-			__func__, llc_sk(sk)->state, ns, vr);
+//		dprintk("%s: matched, state=%d, ns=%d, vr=%d\n",
+;
 	return rc;
 }
 
@@ -305,8 +305,8 @@ int llc_conn_ev_rx_i_rsp_fbit_set_x_inval_ns(struct sock *sk,
 		ns != vr &&
 		 llc_util_ns_inside_rx_window(ns, vr, llc_sk(sk)->rw) ? 0 : 1;
 	if (!rc)
-		dprintk("%s: matched, state=%d, ns=%d, vr=%d\n",
-			__func__, llc_sk(sk)->state, ns, vr);
+//		dprintk("%s: matched, state=%d, ns=%d, vr=%d\n",
+;
 	return rc;
 }
 
@@ -510,8 +510,8 @@ int llc_conn_ev_rx_zzz_cmd_pbit_set_x_inval_nr(struct sock *sk,
 	if (LLC_PDU_IS_CMD(pdu) &&
 	    (LLC_PDU_TYPE_IS_I(pdu) || LLC_PDU_TYPE_IS_S(pdu)) &&
 	    nr != vs && llc_util_nr_inside_tx_window(sk, nr)) {
-		dprintk("%s: matched, state=%d, vs=%d, nr=%d\n",
-			__func__, llc_sk(sk)->state, vs, nr);
+//		dprintk("%s: matched, state=%d, vs=%d, nr=%d\n",
+;
 		rc = 0;
 	}
 	return rc;
@@ -529,8 +529,8 @@ int llc_conn_ev_rx_zzz_rsp_fbit_set_x_inval_nr(struct sock *sk,
 	    (LLC_PDU_TYPE_IS_I(pdu) || LLC_PDU_TYPE_IS_S(pdu)) &&
 	    nr != vs && llc_util_nr_inside_tx_window(sk, nr)) {
 		rc = 0;
-		dprintk("%s: matched, state=%d, vs=%d, nr=%d\n",
-			__func__, llc_sk(sk)->state, vs, nr);
+//		dprintk("%s: matched, state=%d, vs=%d, nr=%d\n",
+;
 	}
 	return rc;
 }

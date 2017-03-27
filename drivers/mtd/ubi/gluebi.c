@@ -41,6 +41,7 @@
 #include "ubi-media.h"
 
 #define err_msg(fmt, ...)                                   \
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "gluebi (pid %d): %s: " fmt "\n", \
 	       current->pid, __func__, ##__VA_ARGS__)
 
@@ -55,6 +56,9 @@
  */
 struct gluebi_device {
 	struct mtd_info mtd;
+#else
+	;
+#endif
 	int refcnt;
 	struct ubi_volume_desc *desc;
 	int ubi_num;

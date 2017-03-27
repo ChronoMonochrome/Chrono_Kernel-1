@@ -117,23 +117,23 @@ static void ipg_dump_rfdlist(struct net_device *dev)
 
 	IPG_DEBUG_MSG("_dump_rfdlist\n");
 
-	printk(KERN_INFO "rx_current = %2.2x\n", sp->rx_current);
-	printk(KERN_INFO "rx_dirty   = %2.2x\n", sp->rx_dirty);
-	printk(KERN_INFO "RFDList start address = %16.16lx\n",
-	       (unsigned long) sp->rxd_map);
-	printk(KERN_INFO "RFDListPtr register   = %8.8x%8.8x\n",
-	       ipg_r32(IPG_RFDLISTPTR1), ipg_r32(IPG_RFDLISTPTR0));
+;
+;
+//	printk(KERN_INFO "RFDList start address = %16.16lx\n",
+;
+//	printk(KERN_INFO "RFDListPtr register   = %8.8x%8.8x\n",
+;
 
 	for (i = 0; i < IPG_RFDLIST_LENGTH; i++) {
 		offset = (u32) &sp->rxd[i].next_desc - (u32) sp->rxd;
-		printk(KERN_INFO "%2.2x %4.4x RFDNextPtr = %16.16lx\n", i,
-		       offset, (unsigned long) sp->rxd[i].next_desc);
+//		printk(KERN_INFO "%2.2x %4.4x RFDNextPtr = %16.16lx\n", i,
+;
 		offset = (u32) &sp->rxd[i].rfs - (u32) sp->rxd;
-		printk(KERN_INFO "%2.2x %4.4x RFS        = %16.16lx\n", i,
-		       offset, (unsigned long) sp->rxd[i].rfs);
+//		printk(KERN_INFO "%2.2x %4.4x RFS        = %16.16lx\n", i,
+;
 		offset = (u32) &sp->rxd[i].frag_info - (u32) sp->rxd;
-		printk(KERN_INFO "%2.2x %4.4x frag_info   = %16.16lx\n", i,
-		       offset, (unsigned long) sp->rxd[i].frag_info);
+//		printk(KERN_INFO "%2.2x %4.4x frag_info   = %16.16lx\n", i,
+;
 	}
 }
 
@@ -146,24 +146,24 @@ static void ipg_dump_tfdlist(struct net_device *dev)
 
 	IPG_DEBUG_MSG("_dump_tfdlist\n");
 
-	printk(KERN_INFO "tx_current         = %2.2x\n", sp->tx_current);
-	printk(KERN_INFO "tx_dirty = %2.2x\n", sp->tx_dirty);
-	printk(KERN_INFO "TFDList start address = %16.16lx\n",
-	       (unsigned long) sp->txd_map);
-	printk(KERN_INFO "TFDListPtr register   = %8.8x%8.8x\n",
-	       ipg_r32(IPG_TFDLISTPTR1), ipg_r32(IPG_TFDLISTPTR0));
+;
+;
+//	printk(KERN_INFO "TFDList start address = %16.16lx\n",
+;
+//	printk(KERN_INFO "TFDListPtr register   = %8.8x%8.8x\n",
+;
 
 	for (i = 0; i < IPG_TFDLIST_LENGTH; i++) {
 		offset = (u32) &sp->txd[i].next_desc - (u32) sp->txd;
-		printk(KERN_INFO "%2.2x %4.4x TFDNextPtr = %16.16lx\n", i,
-		       offset, (unsigned long) sp->txd[i].next_desc);
+//		printk(KERN_INFO "%2.2x %4.4x TFDNextPtr = %16.16lx\n", i,
+;
 
 		offset = (u32) &sp->txd[i].tfc - (u32) sp->txd;
-		printk(KERN_INFO "%2.2x %4.4x TFC        = %16.16lx\n", i,
-		       offset, (unsigned long) sp->txd[i].tfc);
+//		printk(KERN_INFO "%2.2x %4.4x TFC        = %16.16lx\n", i,
+;
 		offset = (u32) &sp->txd[i].frag_info - (u32) sp->txd;
-		printk(KERN_INFO "%2.2x %4.4x frag_info   = %16.16lx\n", i,
-		       offset, (unsigned long) sp->txd[i].frag_info);
+//		printk(KERN_INFO "%2.2x %4.4x frag_info   = %16.16lx\n", i,
+;
 	}
 }
 #endif
@@ -498,24 +498,24 @@ static int ipg_config_autoneg(struct net_device *dev)
 	 */
 	sp->tenmbpsmode = 0;
 
-	printk(KERN_INFO "%s: Link speed = ", dev->name);
+;
 
 	/* Determine actual speed of operation. */
 	switch (phyctrl & IPG_PC_LINK_SPEED) {
 	case IPG_PC_LINK_SPEED_10MBPS:
-		printk("10Mbps.\n");
-		printk(KERN_INFO "%s: 10Mbps operational mode enabled.\n",
-		       dev->name);
+;
+//		printk(KERN_INFO "%s: 10Mbps operational mode enabled.\n",
+;
 		sp->tenmbpsmode = 1;
 		break;
 	case IPG_PC_LINK_SPEED_100MBPS:
-		printk("100Mbps.\n");
+;
 		break;
 	case IPG_PC_LINK_SPEED_1000MBPS:
-		printk("1000Mbps.\n");
+;
 		break;
 	default:
-		printk("undefined!\n");
+;
 		return 0;
 	}
 
@@ -528,31 +528,31 @@ static int ipg_config_autoneg(struct net_device *dev)
 	/* Configure full duplex, and flow control. */
 	if (fullduplex == 1) {
 		/* Configure IPG for full duplex operation. */
-		printk(KERN_INFO "%s: setting full duplex, ", dev->name);
+;
 
 		mac_ctrl_val |= IPG_MC_DUPLEX_SELECT_FD;
 
 		if (txflowcontrol == 1) {
-			printk("TX flow control");
+;
 			mac_ctrl_val |= IPG_MC_TX_FLOW_CONTROL_ENABLE;
 		} else {
-			printk("no TX flow control");
+;
 			mac_ctrl_val &= ~IPG_MC_TX_FLOW_CONTROL_ENABLE;
 		}
 
 		if (rxflowcontrol == 1) {
-			printk(", RX flow control.");
+;
 			mac_ctrl_val |= IPG_MC_RX_FLOW_CONTROL_ENABLE;
 		} else {
-			printk(", no RX flow control.");
+;
 			mac_ctrl_val &= ~IPG_MC_RX_FLOW_CONTROL_ENABLE;
 		}
 
-		printk("\n");
+;
 	} else {
 		/* Configure IPG for half duplex operation. */
-		printk(KERN_INFO "%s: setting half duplex, "
-		       "no TX flow control, no RX flow control.\n", dev->name);
+//		printk(KERN_INFO "%s: setting half duplex, "
+;
 
 		mac_ctrl_val &= ~IPG_MC_DUPLEX_SELECT_FD &
 			~IPG_MC_TX_FLOW_CONTROL_ENABLE &
@@ -789,8 +789,8 @@ static int init_rfdlist(struct net_device *dev)
 			 * Should not occur.
 			 */
 			if (i == 0) {
-				printk(KERN_ERR "%s: No memory available"
-					" for RFD list.\n", dev->name);
+//				printk(KERN_ERR "%s: No memory available"
+;
 				return -ENOMEM;
 			}
 		}
@@ -906,8 +906,8 @@ static void ipg_tx_timeout(struct net_device *dev)
 
 	/* Re-configure after DMA reset. */
 	if (ipg_io_config(dev) < 0) {
-		printk(KERN_INFO "%s: Error during re-configuration.\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: Error during re-configuration.\n",
+;
 	}
 
 	init_tfdlist(dev);
@@ -981,9 +981,9 @@ static void ipg_nic_txcleanup(struct net_device *dev)
 
 			/* Re-configure after DMA reset. */
 			if (ipg_io_config(dev) < 0) {
-				printk(KERN_INFO
-				       "%s: Error during re-configuration.\n",
-				       dev->name);
+//				printk(KERN_INFO
+//				       "%s: Error during re-configuration.\n",
+;
 			}
 			init_tfdlist(dev);
 
@@ -1556,8 +1556,8 @@ static void ipg_reset_after_host_error(struct work_struct *work)
 	init_tfdlist(dev);
 
 	if (ipg_io_config(dev) < 0) {
-		printk(KERN_INFO "%s: Cannot recover from PCI error.\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: Cannot recover from PCI error.\n",
+;
 		schedule_delayed_work(&sp->task, HZ);
 	}
 }
@@ -1660,8 +1660,8 @@ static irqreturn_t ipg_interrupt_handler(int irq, void *dev_inst)
 	/* If LinkEvent interrupt, resolve autonegotiation. */
 	if (status & IPG_IS_LINK_EVENT) {
 		if (ipg_config_autoneg(dev) < 0)
-			printk(KERN_INFO "%s: Auto-negotiation error.\n",
-			       dev->name);
+//			printk(KERN_INFO "%s: Auto-negotiation error.\n",
+;
 	}
 
 	/* If MACCtrlFrame interrupt, do nothing. */
@@ -1748,8 +1748,8 @@ static int ipg_nic_open(struct net_device *dev)
 	rc = request_irq(pdev->irq, ipg_interrupt_handler, IRQF_SHARED,
 			 dev->name, dev);
 	if (rc < 0) {
-		printk(KERN_INFO "%s: Error when requesting interrupt.\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: Error when requesting interrupt.\n",
+;
 		goto out;
 	}
 
@@ -1769,8 +1769,8 @@ static int ipg_nic_open(struct net_device *dev)
 
 	rc = init_rfdlist(dev);
 	if (rc < 0) {
-		printk(KERN_INFO "%s: Error during configuration.\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: Error during configuration.\n",
+;
 		goto err_free_tx_2;
 	}
 
@@ -1778,14 +1778,14 @@ static int ipg_nic_open(struct net_device *dev)
 
 	rc = ipg_io_config(dev);
 	if (rc < 0) {
-		printk(KERN_INFO "%s: Error during configuration.\n",
-		       dev->name);
+//		printk(KERN_INFO "%s: Error during configuration.\n",
+;
 		goto err_release_tfdlist_3;
 	}
 
 	/* Resolve autonegotiation. */
 	if (ipg_config_autoneg(dev) < 0)
-		printk(KERN_INFO "%s: Auto-negotiation error.\n", dev->name);
+;
 
 	/* initialize JUMBO Frame control variable */
 	sp->jumbo.found_start = 0;
@@ -2221,7 +2221,7 @@ static int __devinit ipg_probe(struct pci_dev *pdev,
 	if (rc < 0)
 		goto out;
 
-	printk(KERN_INFO "%s: %s\n", pci_name(pdev), ipg_brand_name[i]);
+;
 
 	pci_set_master(pdev);
 
@@ -2229,8 +2229,8 @@ static int __devinit ipg_probe(struct pci_dev *pdev,
 	if (rc < 0) {
 		rc = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
 		if (rc < 0) {
-			printk(KERN_ERR "%s: DMA config failed.\n",
-			       pci_name(pdev));
+//			printk(KERN_ERR "%s: DMA config failed.\n",
+;
 			goto err_disable_0;
 		}
 	}
@@ -2240,7 +2240,7 @@ static int __devinit ipg_probe(struct pci_dev *pdev,
 	 */
 	dev = alloc_etherdev(sizeof(struct ipg_nic_private));
 	if (!dev) {
-		printk(KERN_ERR "%s: alloc_etherdev failed\n", pci_name(pdev));
+;
 		rc = -ENOMEM;
 		goto err_disable_0;
 	}
@@ -2266,7 +2266,7 @@ static int __devinit ipg_probe(struct pci_dev *pdev,
 
 	ioaddr = pci_iomap(pdev, 1, pci_resource_len(pdev, 1));
 	if (!ioaddr) {
-		printk(KERN_ERR "%s cannot map MMIO\n", pci_name(pdev));
+;
 		rc = -EIO;
 		goto err_release_regions_2;
 	}
@@ -2288,7 +2288,7 @@ static int __devinit ipg_probe(struct pci_dev *pdev,
 	if (rc < 0)
 		goto err_unmap_3;
 
-	printk(KERN_INFO "Ethernet device registered as: %s\n", dev->name);
+;
 out:
 	return rc;
 

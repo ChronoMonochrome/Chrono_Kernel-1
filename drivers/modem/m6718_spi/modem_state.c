@@ -1282,7 +1282,11 @@ static struct platform_driver modem_state_driver = {
 static int __init modem_state_init(void)
 {
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "Modem state driver init\n");
+#else
+	;
+#endif
 #endif
 	return platform_driver_probe(&modem_state_driver, modem_state_probe);
 }

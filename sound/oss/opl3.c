@@ -115,11 +115,19 @@ static int opl3_ioctl(int dev, unsigned int cmd, void __user * arg)
 	
 	switch (cmd) {
 		case SNDCTL_FM_LOAD_INSTR:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Warning: Obsolete ioctl(SNDCTL_FM_LOAD_INSTR) used. Fix the program.\n");
+#else
+			;
+#endif
 			if (copy_from_user(&ins, arg, sizeof(ins)))
 				return -EFAULT;
 			if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "FM Error: Invalid instrument number %d\n", ins.channel);
+#else
+				;
+#endif
 				return -EINVAL;
 			}
 			return store_instr(ins.channel, &ins);
@@ -177,7 +185,11 @@ static int opl3_detect(int ioaddr)
 	strcpy(devc->fm_info.name, "OPL2");
 
 	if (!request_region(ioaddr, 4, devc->fm_info.name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "opl3: I/O port 0x%x already in use\n", ioaddr);
+#else
+		;
+#endif
 		goto cleanup_devc;
 	}
 
@@ -194,7 +206,11 @@ static int opl3_detect(int ioaddr)
 	if (signature != 0x00 && signature != 0x06 && signature != 0x02 &&
 		signature != 0x0f)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		MDB(printk(KERN_INFO "OPL3 not detected %x\n", signature));
+#else
+		MDB(;
+#endif
 		goto cleanup_region;
 	}
 
@@ -275,7 +291,11 @@ static int opl3_kill_note  (int devno, int voice, int note, int velocity)
 	 devc->v_alloc->map[voice] = 0;
 
 	 map = &pv_map[devc->lv_map[voice]];
+#ifdef CONFIG_DEBUG_PRINTK
 	 DEB(printk("Kill note %d\n", voice));
+#else
+	 DEB(;
+#endif
 
 	 if (map->voice_mode == 0)
 		 return 0;
@@ -303,7 +323,11 @@ static int opl3_kill_note  (int devno, int voice, int note, int velocity)
 static int store_instr(int instr_no, struct sbi_instrument *instr)
 {
 	if (instr->key != FM_PATCH && (instr->key != OPL3_PATCH || devc->model != 2))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "FM warning: Invalid patch format field (key) 0x%x\n", instr->key);
+#else
+		;
+#endif
 	memcpy((char *) &(devc->i_map[instr_no]), (char *) instr, sizeof(*instr));
 	return 0;
 }
@@ -511,7 +535,11 @@ static int opl3_start_note (int dev, int voice, int note, int volume)
 
 	if (instr->channel < 0)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "opl3: Initializing voice %d with undefined instrument\n", voice);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -826,7 +854,11 @@ static int opl3_load_patch(int dev, int format, const char __user *addr,
 
 	if (count <sizeof(ins))
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "FM Error: Patch record too short\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -835,7 +867,11 @@ static int opl3_load_patch(int dev, int format, const char __user *addr,
 
 	if (ins.channel < 0 || ins.channel >= SBFM_MAXINSTR)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "FM Error: Invalid instrument number %d\n", ins.channel);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	ins.key = format;
@@ -873,7 +909,11 @@ static void opl3_aftertouch(int dev, int voice, int pressure)
 
 	map = &pv_map[devc->lv_map[voice]];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	DEB(printk("Aftertouch %d\n", voice));
+#else
+	DEB(;
+#endif
 
 	if (map->voice_mode == 0)
 		return;
@@ -1123,7 +1163,11 @@ static int opl3_init(int ioaddr, struct module *owner)
 
 	if ((me = sound_alloc_synthdev()) == -1)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "opl3: Too many synthesizers\n");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1207,7 +1251,11 @@ module_param(io, int, 0);
 
 static int __init init_opl3 (void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "YM3812 and OPL-3 driver Copyright (C) by Hannu Savolainen, Rob Hooft 1993-1996\n");
+#else
+	;
+#endif
 
 	if (io != -1)	/* User loading pure OPL3 module */
 	{

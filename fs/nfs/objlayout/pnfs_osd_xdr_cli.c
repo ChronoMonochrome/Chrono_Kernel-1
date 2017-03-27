@@ -144,15 +144,15 @@ _osd_xdr_decode_data_map(__be32 *p, struct pnfs_osd_data_map *data_map)
 	data_map->odm_group_depth = be32_to_cpup(p++);
 	data_map->odm_mirror_cnt = be32_to_cpup(p++);
 	data_map->odm_raid_algorithm = be32_to_cpup(p++);
-	dprintk("%s: odm_num_comps=%u odm_stripe_unit=%llu odm_group_width=%u "
-		"odm_group_depth=%u odm_mirror_cnt=%u odm_raid_algorithm=%u\n",
-		__func__,
-		data_map->odm_num_comps,
-		(unsigned long long)data_map->odm_stripe_unit,
-		data_map->odm_group_width,
-		data_map->odm_group_depth,
-		data_map->odm_mirror_cnt,
-		data_map->odm_raid_algorithm);
+//	dprintk("%s: odm_num_comps=%u odm_stripe_unit=%llu odm_group_width=%u "
+//		"odm_group_depth=%u odm_mirror_cnt=%u odm_raid_algorithm=%u\n",
+//		__func__,
+//		data_map->odm_num_comps,
+//		(unsigned long long)data_map->odm_stripe_unit,
+//		data_map->odm_group_width,
+//		data_map->odm_group_depth,
+//		data_map->odm_mirror_cnt,
+;
 	return p;
 }
 
@@ -170,8 +170,8 @@ int pnfs_osd_xdr_decode_layout_map(struct pnfs_osd_layout *layout,
 	p = _osd_xdr_decode_data_map(p, &layout->olo_map);
 	layout->olo_comps_index = be32_to_cpup(p++);
 	layout->olo_num_comps = be32_to_cpup(p++);
-	dprintk("%s: olo_comps_index=%d olo_num_comps=%d\n", __func__,
-		layout->olo_comps_index, layout->olo_num_comps);
+//	dprintk("%s: olo_comps_index=%d olo_num_comps=%d\n", __func__,
+;
 
 	iter->total_comps = layout->olo_num_comps;
 	return 0;
@@ -187,19 +187,19 @@ bool pnfs_osd_xdr_decode_layout_comp(struct pnfs_osd_object_cred *comp,
 
 	*err = _osd_xdr_decode_object_cred(comp, xdr);
 	if (unlikely(*err)) {
-		dprintk("%s: _osd_xdr_decode_object_cred=>%d decoded_comps=%d "
-			"total_comps=%d\n", __func__, *err,
-			iter->decoded_comps, iter->total_comps);
+//		dprintk("%s: _osd_xdr_decode_object_cred=>%d decoded_comps=%d "
+//			"total_comps=%d\n", __func__, *err,
+;
 		return false; /* stop the loop */
 	}
-	dprintk("%s: dev(%llx:%llx) par=0x%llx obj=0x%llx "
-		"key_len=%u cap_len=%u\n",
-		__func__,
-		_DEVID_LO(&comp->oc_object_id.oid_device_id),
-		_DEVID_HI(&comp->oc_object_id.oid_device_id),
-		comp->oc_object_id.oid_partition_id,
-		comp->oc_object_id.oid_object_id,
-		comp->oc_cap_key.cred_len, comp->oc_cap.cred_len);
+//	dprintk("%s: dev(%llx:%llx) par=0x%llx obj=0x%llx "
+//		"key_len=%u cap_len=%u\n",
+//		__func__,
+//		_DEVID_LO(&comp->oc_object_id.oid_device_id),
+//		_DEVID_HI(&comp->oc_object_id.oid_device_id),
+//		comp->oc_object_id.oid_partition_id,
+//		comp->oc_object_id.oid_object_id,
+;
 
 	iter->decoded_comps++;
 	return true;
@@ -409,7 +409,7 @@ __be32 *pnfs_osd_xdr_ioerr_reserve_space(struct xdr_stream *xdr)
 
 	p = xdr_reserve_space(xdr, 32 + 24);
 	if (unlikely(!p))
-		dprintk("%s: out of xdr space\n", __func__);
+;
 
 	return p;
 }

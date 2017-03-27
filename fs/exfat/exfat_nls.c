@@ -405,7 +405,7 @@ static s32 convert_ch_to_uni(struct nls_table *nls, u16 *uni, u8 *ch, s32 *lossy
 	len = nls->char2uni(ch, NLS_MAX_CHARSET_SIZE, uni);
 	if (len < 0) {
 		/* conversion failed */
-		printk("%s: fail to use nls\n", __func__);
+;
 		if (lossy != NULL)
 			*lossy = TRUE;
 		*uni = (u16) '_';
@@ -432,7 +432,7 @@ static s32 convert_uni_to_ch(struct nls_table *nls, u8 *ch, u16 uni, s32 *lossy)
 	len = nls->uni2char(uni, ch, NLS_MAX_CHARSET_SIZE);
 	if (len < 0) {
 		/* conversion failed */
-		printk("%s: fail to use nls\n", __func__);
+;
 		if (lossy != NULL)
 			*lossy = TRUE;
 		ch[0] = '_';

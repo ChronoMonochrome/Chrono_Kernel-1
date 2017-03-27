@@ -161,7 +161,7 @@ static int hdmi_sii_enable(struct i2c_client *client)
 
 	return 0;
 enable_exit:
-	printk(KERN_ERR "%s: exited rc=%d\n", __func__, rc);
+;
 	return rc;
 }
 
@@ -222,13 +222,13 @@ static int __init lcdc_st15_init(void)
 
 	ret = lcdc_device_register(&pinfo);
 	if (ret) {
-		printk(KERN_ERR "%s: failed to register device!\n", __func__);
+;
 		goto init_exit;
 	}
 
 	ret = i2c_add_driver(&hdmi_sii_i2c_driver);
 	if (ret)
-		printk(KERN_ERR "%s: failed to add i2c driver\n", __func__);
+;
 
 init_exit:
 	return ret;

@@ -230,9 +230,13 @@ static int __devinit amd76xrom_init_one (struct pci_dev *pdev,
 	found:
 		/* Trim the size if we are larger than the map */
 		if (map->mtd->size > map->map.size) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING MOD_NAME
 				" rom(%llu) larger than window(%lu). fixing...\n",
 				(unsigned long long)map->mtd->size, map->map.size);
+#else
+			;
+#endif
 			map->mtd->size = map->map.size;
 		}
 		if (window->rsrc.parent) {

@@ -412,9 +412,9 @@ static void atl2_intr_rx(struct atl2_adapter *adapter)
 			/* alloc new buffer */
 			skb = netdev_alloc_skb_ip_align(netdev, rx_size);
 			if (NULL == skb) {
-				printk(KERN_WARNING
-					"%s: Mem squeeze, deferring packet.\n",
-					netdev->name);
+//				printk(KERN_WARNING
+//					"%s: Mem squeeze, deferring packet.\n",
+;
 				/*
 				 * Check that some rx space is free. If not,
 				 * free one and mark stats->rx_dropped++.
@@ -487,18 +487,18 @@ static void atl2_intr_tx(struct atl2_adapter *adapter)
 
 		if (txph->pkt_size != txs->pkt_size) {
 			struct tx_pkt_status *old_txs = txs;
-			printk(KERN_WARNING
-				"%s: txs packet size not consistent with txd"
-				" txd_:0x%08x, txs_:0x%08x!\n",
-				adapter->netdev->name,
-				*(u32 *)txph, *(u32 *)txs);
-			printk(KERN_WARNING
-				"txd read ptr: 0x%x\n",
-				txd_read_ptr);
+//			printk(KERN_WARNING
+//				"%s: txs packet size not consistent with txd"
+//				" txd_:0x%08x, txs_:0x%08x!\n",
+//				adapter->netdev->name,
+;
+//			printk(KERN_WARNING
+//				"txd read ptr: 0x%x\n",
+;
 			txs = adapter->txs_ring + txs_write_ptr;
-			printk(KERN_WARNING
-				"txs-behind:0x%08x\n",
-				*(u32 *)txs);
+//			printk(KERN_WARNING
+//				"txs-behind:0x%08x\n",
+;
 			if (txs_write_ptr < 2) {
 				txs = adapter->txs_ring +
 					(adapter->txs_ring_size +
@@ -506,9 +506,9 @@ static void atl2_intr_tx(struct atl2_adapter *adapter)
 			} else {
 				txs = adapter->txs_ring + (txs_write_ptr - 2);
 			}
-			printk(KERN_WARNING
-				"txs-before:0x%08x\n",
-				*(u32 *)txs);
+//			printk(KERN_WARNING
+//				"txs-before:0x%08x\n",
+;
 			txs = old_txs;
 		}
 
@@ -557,8 +557,8 @@ static void atl2_check_for_link(struct atl2_adapter *adapter)
 	/* notify upper layer link down ASAP */
 	if (!(phy_data & BMSR_LSTATUS)) { /* Link Down */
 		if (netif_carrier_ok(netdev)) { /* old link state: Up */
-		printk(KERN_INFO "%s: %s NIC Link is Down\n",
-			atl2_driver_name, netdev->name);
+//		printk(KERN_INFO "%s: %s NIC Link is Down\n",
+;
 		adapter->link_speed = SPEED_0;
 		netif_carrier_off(netdev);
 		netif_stop_queue(netdev);
@@ -1217,11 +1217,11 @@ static int atl2_check_link(struct atl2_adapter *adapter)
 			adapter->link_speed = speed;
 			adapter->link_duplex = duplex;
 			atl2_setup_mac_ctrl(adapter);
-			printk(KERN_INFO "%s: %s NIC Link is Up<%d Mbps %s>\n",
-				atl2_driver_name, netdev->name,
-				adapter->link_speed,
-				adapter->link_duplex == FULL_DUPLEX ?
-					"Full Duplex" : "Half Duplex");
+//			printk(KERN_INFO "%s: %s NIC Link is Up<%d Mbps %s>\n",
+//				atl2_driver_name, netdev->name,
+//				adapter->link_speed,
+//				adapter->link_duplex == FULL_DUPLEX ?
+;
 		}
 
 		if (!netif_carrier_ok(netdev)) { /* Link down -> Up */
@@ -1355,7 +1355,7 @@ static int __devinit atl2_probe(struct pci_dev *pdev,
 	 */
 	if (pci_set_dma_mask(pdev, DMA_BIT_MASK(32)) &&
 		pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32))) {
-		printk(KERN_ERR "atl2: No usable DMA configuration, aborting\n");
+;
 		goto err_dma;
 	}
 
@@ -1554,9 +1554,9 @@ static int atl2_suspend(struct pci_dev *pdev, pm_message_t state)
 		/* get current link speed & duplex */
 		ret_val = atl2_get_speed_and_duplex(hw, &speed, &duplex);
 		if (ret_val) {
-			printk(KERN_DEBUG
-				"%s: get speed&duplex error while suspend\n",
-				atl2_driver_name);
+//			printk(KERN_DEBUG
+//				"%s: get speed&duplex error while suspend\n",
+;
 			goto wol_dis;
 		}
 
@@ -1659,8 +1659,8 @@ static int atl2_resume(struct pci_dev *pdev)
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR
-			"atl2: Cannot enable PCI device from suspend\n");
+//		printk(KERN_ERR
+;
 		return err;
 	}
 
@@ -1716,9 +1716,9 @@ static struct pci_driver atl2_driver = {
  */
 static int __init atl2_init_module(void)
 {
-	printk(KERN_INFO "%s - version %s\n", atl2_driver_string,
-		atl2_driver_version);
-	printk(KERN_INFO "%s\n", atl2_copyright);
+//	printk(KERN_INFO "%s - version %s\n", atl2_driver_string,
+;
+;
 	return pci_register_driver(&atl2_driver);
 }
 module_init(atl2_init_module);
@@ -2682,7 +2682,7 @@ static s32 atl2_phy_commit(struct atl2_hw *hw)
 		}
 
 		if (0 != (val & (MDIO_START | MDIO_BUSY))) {
-			printk(KERN_ERR "atl2: PCIe link down for at least 25ms !\n");
+;
 			return ret_val;
 		}
 	}
@@ -2943,11 +2943,11 @@ static int __devinit atl2_validate_option(int *value, struct atl2_option *opt)
 	case enable_option:
 		switch (*value) {
 		case OPTION_ENABLED:
-			printk(KERN_INFO "%s Enabled\n", opt->name);
+;
 			return 0;
 			break;
 		case OPTION_DISABLED:
-			printk(KERN_INFO "%s Disabled\n", opt->name);
+;
 			return 0;
 			break;
 		}
@@ -2963,7 +2963,7 @@ static int __devinit atl2_validate_option(int *value, struct atl2_option *opt)
 			ent = &opt->arg.l.p[i];
 			if (*value == ent->i) {
 				if (ent->str[0] != '\0')
-					printk(KERN_INFO "%s\n", ent->str);
+;
 			return 0;
 			}
 		}
@@ -2972,8 +2972,8 @@ static int __devinit atl2_validate_option(int *value, struct atl2_option *opt)
 		BUG();
 	}
 
-	printk(KERN_INFO "Invalid %s specified (%i) %s\n",
-		opt->name, *value, opt->err);
+//	printk(KERN_INFO "Invalid %s specified (%i) %s\n",
+;
 	*value = opt->def;
 	return -1;
 }
@@ -2993,9 +2993,9 @@ static void __devinit atl2_check_options(struct atl2_adapter *adapter)
 	struct atl2_option opt;
 	int bd = adapter->bd_number;
 	if (bd >= ATL2_MAX_NIC) {
-		printk(KERN_NOTICE "Warning: no configuration for board #%i\n",
-			bd);
-		printk(KERN_NOTICE "Using defaults for all values\n");
+//		printk(KERN_NOTICE "Warning: no configuration for board #%i\n",
+;
+;
 #ifndef module_param_array
 		bd = ATL2_MAX_NIC;
 #endif

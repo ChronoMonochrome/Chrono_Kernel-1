@@ -943,9 +943,13 @@ static int tas_i2c_probe(struct i2c_client *client,
 	if (aoa_codec_register(&tas->codec)) {
 		goto fail;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG
 	       "snd-aoa-codec-tas: tas found, addr 0x%02x on %s\n",
 	       (unsigned int)client->addr, node->full_name);
+#else
+	;
+#endif
 	return 0;
  fail:
 	mutex_destroy(&tas->mtx);
@@ -966,7 +970,11 @@ static int tas_i2c_attach(struct i2c_adapter *adapter)
 	while ((dev = of_get_next_child(busnode, dev)) != NULL) {
 		if (of_device_is_compatible(dev, "tas3004")) {
 			const u32 *addr;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG PFX "found tas3004\n");
+#else
+			;
+#endif
 			addr = of_get_property(dev, "reg", NULL);
 			if (!addr)
 				continue;
@@ -978,7 +986,11 @@ static int tas_i2c_attach(struct i2c_adapter *adapter)
 		if (strcmp(dev->name, "deq") == 0) {
 			const u32 *_addr;
 			u32 addr;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG PFX "found 'deq' node\n");
+#else
+			;
+#endif
 			_addr = of_get_property(dev, "i2c-address", NULL);
 			if (!_addr)
 				continue;

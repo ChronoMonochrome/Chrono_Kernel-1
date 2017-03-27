@@ -56,7 +56,7 @@ static int __init mddi_toshiba_wvga_pt_init(void)
 	ret = mddi_toshiba_device_register(&pinfo, TOSHIBA_VGA_PRIM,
 						LCD_TOSHIBA_2P4_WVGA_PT);
 	if (ret)
-		printk(KERN_ERR "%s: failed to register device!\n", __func__);
+;
 
 	return ret;
 }

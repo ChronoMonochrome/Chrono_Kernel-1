@@ -151,8 +151,8 @@ static void netx_eth_receive(struct net_device *ndev)
 
 	skb = dev_alloc_skb(len);
 	if (unlikely(skb == NULL)) {
-		printk(KERN_NOTICE "%s: Low memory, packet dropped.\n",
-			ndev->name);
+//		printk(KERN_NOTICE "%s: Low memory, packet dropped.\n",
+;
 		ndev->stats.rx_dropped++;
 		return;
 	}
@@ -186,8 +186,8 @@ netx_eth_interrupt(int irq, void *dev_id)
 		writel(status, NETX_PFIFO_XPEC_ISR(priv->id));
 
 		if ((status & ISR_CON_HI) || (status & ISR_IND_HI))
-			printk("%s: unexpected status: 0x%08x\n",
-			    __func__, status);
+//			printk("%s: unexpected status: 0x%08x\n",
+;
 
 		fill_level =
 		    readl(NETX_PFIFO_FILL_LEVEL(IND_FIFO_PORT_LO(priv->id)));
@@ -256,7 +256,7 @@ static void netx_eth_timeout(struct net_device *ndev)
 	struct netx_eth_priv *priv = netdev_priv(ndev);
 	int i;
 
-	printk(KERN_ERR "%s: transmit timed out, resetting\n", ndev->name);
+;
 
 	spin_lock_irq(&priv->lock);
 
@@ -353,7 +353,7 @@ static int netx_eth_enable(struct net_device *ndev)
 		ndev->dev_addr[5] = (mac65 >> 8) & 0xff;
 	} else {
 		if (xc_request_firmware(priv->xc)) {
-			printk(CARDNAME ": requesting firmware failed\n");
+;
 			return -ENODEV;
 		}
 	}
@@ -362,8 +362,8 @@ static int netx_eth_enable(struct net_device *ndev)
 	xc_start(priv->xc);
 
 	if (!is_valid_ether_addr(ndev->dev_addr))
-		printk("%s: Invalid ethernet MAC address.  Please "
-		       "set using ifconfig\n", ndev->name);
+//		printk("%s: Invalid ethernet MAC address.  Please "
+;
 
 	for (i=2; i<=18; i++)
 		pfifo_push(EMPTY_PTR_FIFO(priv->id),
@@ -382,7 +382,7 @@ static int netx_eth_drv_probe(struct platform_device *pdev)
 
 	ndev = alloc_etherdev(sizeof (struct netx_eth_priv));
 	if (!ndev) {
-		printk("%s: could not allocate device.\n", CARDNAME);
+;
 		ret = -ENOMEM;
 		goto exit;
 	}
@@ -410,7 +410,7 @@ static int netx_eth_drv_probe(struct platform_device *pdev)
 
 	ret = pfifo_request(PFIFO_MASK(priv->id));
 	if (ret) {
-		printk("unable to request PFIFO\n");
+;
 		goto exit_free_xc;
 	}
 
@@ -473,7 +473,7 @@ static int __init netx_eth_init(void)
 {
 	unsigned int phy_control, val;
 
-	printk("NetX Ethernet driver\n");
+;
 
 	phy_control = PHY_CONTROL_PHY_ADDRESS(INTERNAL_PHY_ADR>>1) |
 		      PHY_CONTROL_PHY1_MODE(PHY_MODE_ALL) |

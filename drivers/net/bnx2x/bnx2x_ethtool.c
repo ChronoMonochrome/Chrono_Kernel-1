@@ -1215,7 +1215,7 @@ static int bnx2x_set_ringparam(struct net_device *dev,
 	int rc = 0;
 
 	if (bp->recovery_state != BNX2X_RECOVERY_DONE) {
-		printk(KERN_ERR "Handling parity error recovery. Try again later\n");
+;
 		return -EAGAIN;
 	}
 
@@ -1785,7 +1785,7 @@ static void bnx2x_self_test(struct net_device *dev,
 	struct bnx2x *bp = netdev_priv(dev);
 	u8 is_serdes;
 	if (bp->recovery_state != BNX2X_RECOVERY_DONE) {
-		printk(KERN_ERR "Handling parity error recovery. Try again later\n");
+;
 		etest->flags |= ETH_TEST_FL_FAILED;
 		return;
 	}

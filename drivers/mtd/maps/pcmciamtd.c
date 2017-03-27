@@ -29,7 +29,11 @@ MODULE_PARM_DESC(debug, "Set Debug Level 0=quiet, 5=noisy");
 #undef DEBUG
 #define DEBUG(n, format, arg...) \
 	if (n <= debug) {	 \
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG __FILE__ ":%s(): " format "\n", __func__ , ## arg); \
+#else
+		;
+#endif
 	}
 
 #else
@@ -38,6 +42,7 @@ MODULE_PARM_DESC(debug, "Set Debug Level 0=quiet, 5=noisy");
 static const int debug = 0;
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define info(format, arg...) printk(KERN_INFO "pcmciamtd: " format "\n" , ## arg)
 
 #define DRIVER_DESC	"PCMCIA Flash memory card driver"
@@ -47,6 +52,9 @@ static const int debug = 0;
 
 struct pcmciamtd_dev {
 	struct pcmcia_device	*p_dev;
+#else
+#define info(format, arg...) ;
+#endif
 	caddr_t		win_base;	/* ioremapped address of PCMCIA window */
 	unsigned int	win_size;	/* size of window */
 	unsigned int	offset;		/* offset into card the window currently points at */

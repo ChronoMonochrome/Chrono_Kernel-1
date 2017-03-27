@@ -119,7 +119,11 @@ static int wdt977_start(void)
 	outb_p(LOCK_DATA, IO_INDEX_PORT);
 
 	spin_unlock_irqrestore(&spinlock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "activated.\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -164,7 +168,11 @@ static int wdt977_stop(void)
 	outb_p(LOCK_DATA, IO_INDEX_PORT);
 
 	spin_unlock_irqrestore(&spinlock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "shutdown.\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -288,8 +296,12 @@ static int wdt977_release(struct inode *inode, struct file *file)
 		clear_bit(0, &timer_alive);
 	} else {
 		wdt977_keepalive();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 	}
 	expect_close = 0;
 	return 0;
@@ -446,15 +458,23 @@ static int __init wd977_init(void)
 {
 	int rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX DRIVER_VERSION);
+#else
+	;
+#endif
 
 	/* Check that the timeout value is within its range;
 	   if not reset to the default */
 	if (wdt977_set_timeout(timeout)) {
 		wdt977_set_timeout(DEFAULT_TIMEOUT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		      "timeout value must be 60 < timeout < 15300, using %d\n",
 							DEFAULT_TIMEOUT);
+#else
+		;
+#endif
 	}
 
 	/* on Netwinder the IOports are already reserved by
@@ -485,9 +505,13 @@ static int __init wd977_init(void)
 		goto err_out_reboot;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 		"initialized. timeout=%d sec (nowayout=%d, testmode=%i)\n",
 						timeout, nowayout, testmode);
+#else
+	;
+#endif
 
 	return 0;
 

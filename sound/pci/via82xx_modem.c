@@ -329,8 +329,12 @@ static int build_via_table(struct viadev *dev, struct snd_pcm_substream *substre
 			} else
 				flag = 0; /* period continues to the next */
 			/*
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "via: tbl %d: at %d  size %d "
 			       "(rest %d)\n", idx, ofs, r, rest);
+#else
+			;
+#endif
 			*/
 			((u32 *)dev->table.area)[(idx<<1) + 1] = cpu_to_le32(r | flag);
 			dev->idx_table[idx].offset = ofs;
@@ -575,11 +579,15 @@ static inline unsigned int calc_linear_pos(struct viadev *viadev, unsigned int i
 		res = viadev->lastpos;
 	} else if (check_invalid_pos(viadev, res)) {
 #ifdef POINTER_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "fail: idx = %i/%i, lastpos = 0x%x, "
 		       "bufsize2 = 0x%x, offsize = 0x%x, size = 0x%x, "
 		       "count = 0x%x\n", idx, viadev->tbl_entries, viadev->lastpos,
 		       viadev->bufsize2, viadev->idx_table[idx].offset,
 		       viadev->idx_table[idx].size, count);
+#else
+		;
+#endif
 #endif
 		if (count && size < count) {
 			snd_printd(KERN_ERR "invalid via82xx_cur_ptr, "

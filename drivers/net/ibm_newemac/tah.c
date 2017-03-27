@@ -57,8 +57,8 @@ void tah_reset(struct platform_device *ofdev)
 		--n;
 
 	if (unlikely(!n))
-		printk(KERN_ERR "%s: reset timeout\n",
-			ofdev->dev.of_node->full_name);
+//		printk(KERN_ERR "%s: reset timeout\n",
+;
 
 	/* 10KB TAH TX FIFO accommodates the max MTU of 9000 */
 	out_be32(&p->mr,
@@ -97,8 +97,8 @@ static int __devinit tah_probe(struct platform_device *ofdev)
 	rc = -ENOMEM;
 	dev = kzalloc(sizeof(struct tah_instance), GFP_KERNEL);
 	if (dev == NULL) {
-		printk(KERN_ERR "%s: could not allocate TAH device!\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: could not allocate TAH device!\n",
+;
 		goto err_gone;
 	}
 
@@ -107,8 +107,8 @@ static int __devinit tah_probe(struct platform_device *ofdev)
 
 	rc = -ENXIO;
 	if (of_address_to_resource(np, 0, &regs)) {
-		printk(KERN_ERR "%s: Can't get registers address\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: Can't get registers address\n",
+;
 		goto err_free;
 	}
 
@@ -116,8 +116,8 @@ static int __devinit tah_probe(struct platform_device *ofdev)
 	dev->base = (struct tah_regs __iomem *)ioremap(regs.start,
 					       sizeof(struct tah_regs));
 	if (dev->base == NULL) {
-		printk(KERN_ERR "%s: Can't map device registers!\n",
-		       np->full_name);
+//		printk(KERN_ERR "%s: Can't map device registers!\n",
+;
 		goto err_free;
 	}
 
@@ -126,8 +126,8 @@ static int __devinit tah_probe(struct platform_device *ofdev)
 	/* Initialize TAH and enable IPv4 checksum verification, no TSO yet */
 	tah_reset(ofdev);
 
-	printk(KERN_INFO
-	       "TAH %s initialized\n", ofdev->dev.of_node->full_name);
+//	printk(KERN_INFO
+;
 	wmb();
 
 	return 0;

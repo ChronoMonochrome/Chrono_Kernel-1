@@ -233,15 +233,15 @@ static int __init ultra_probe1(struct net_device *dev, int ioaddr)
 	}
 
 	if (ei_debug  &&  version_printed++ == 0)
-		printk(version);
+;
 
 	model_name = (idreg & 0xF0) == 0x20 ? "SMC Ultra" : "SMC EtherEZ";
 
 	for (i = 0; i < 6; i++)
 		dev->dev_addr[i] = inb(ioaddr + 8 + i);
 
-	printk("%s: %s at %#3x, %pM", dev->name, model_name,
-	       ioaddr, dev->dev_addr);
+//	printk("%s: %s at %#3x, %pM", dev->name, model_name,
+;
 
 	/* Switch from the station address to the alternate register set and
 	   read the useful registers there. */
@@ -265,7 +265,7 @@ static int __init ultra_probe1(struct net_device *dev, int ioaddr)
 		irq = irqmap[((irqreg & 0x40) >> 4) + ((irqreg & 0x0c) >> 2)];
 
 		if (irq == 0) {
-			printk(", failed to detect IRQ line.\n");
+;
 			retval =  -EAGAIN;
 			goto out;
 		}
@@ -296,7 +296,7 @@ static int __init ultra_probe1(struct net_device *dev, int ioaddr)
 
 	ei_status.mem = ioremap(dev->mem_start, (ei_status.stop_page - START_PG)*256);
 	if (!ei_status.mem) {
-		printk(", failed to ioremap.\n");
+;
 		retval =  -ENOMEM;
 		goto out;
 	}
@@ -304,14 +304,14 @@ static int __init ultra_probe1(struct net_device *dev, int ioaddr)
 	dev->mem_end = dev->mem_start + (ei_status.stop_page - START_PG)*256;
 
 	if (piomode) {
-		printk(",%s IRQ %d programmed-I/O mode.\n",
-			   eeprom_irq ? "EEPROM" : "assigned ", dev->irq);
+//		printk(",%s IRQ %d programmed-I/O mode.\n",
+;
 		ei_status.block_input = &ultra_pio_input;
 		ei_status.block_output = &ultra_pio_output;
 		ei_status.get_8390_hdr = &ultra_pio_get_hdr;
 	} else {
-		printk(",%s IRQ %d memory %#lx-%#lx.\n", eeprom_irq ? "" : "assigned ",
-			   dev->irq, dev->mem_start, dev->mem_end-1);
+//		printk(",%s IRQ %d memory %#lx-%#lx.\n", eeprom_irq ? "" : "assigned ",
+;
 		ei_status.block_input = &ultra_block_input;
 		ei_status.block_output = &ultra_block_output;
 		ei_status.get_8390_hdr = &ultra_get_8390_hdr;
@@ -356,11 +356,11 @@ static int __init ultra_probe_isapnp(struct net_device *dev)
                         /* found it */
 			dev->base_addr = pnp_port_start(idev, 0);
 			dev->irq = pnp_irq(idev, 0);
-                        printk(KERN_INFO "smc-ultra.c: ISAPnP reports %s at i/o %#lx, irq %d.\n",
-                                (char *) ultra_device_ids[i].driver_data,
-                                dev->base_addr, dev->irq);
+//                        printk(KERN_INFO "smc-ultra.c: ISAPnP reports %s at i/o %#lx, irq %d.\n",
+//                                (char *) ultra_device_ids[i].driver_data,
+;
                         if (ultra_probe1(dev, dev->base_addr) != 0) {      /* Shouldn't happen. */
-                                printk(KERN_ERR "smc-ultra.c: Probe of ISAPnP card at %#lx failed.\n", dev->base_addr);
+;
                                 pnp_device_detach(idev);
 				return -ENXIO;
                         }
@@ -414,7 +414,7 @@ ultra_reset_8390(struct net_device *dev)
 	int cmd_port = dev->base_addr - ULTRA_NIC_OFFSET; /* ASIC base addr */
 
 	outb(ULTRA_RESET, cmd_port);
-	if (ei_debug > 1) printk("resetting Ultra, t=%ld...", jiffies);
+;
 	ei_status.txing = 0;
 
 	outb(0x00, cmd_port);	/* Disable shared memory for safety. */
@@ -424,7 +424,7 @@ ultra_reset_8390(struct net_device *dev)
 	else
 		outb(0x01, cmd_port + 6);		/* Enable interrupts and memory. */
 
-	if (ei_debug > 1) printk("reset done\n");
+;
 }
 
 /* Grab the 8390 specific header. Similar to the block_input routine, but
@@ -534,7 +534,7 @@ ultra_close_card(struct net_device *dev)
 	netif_stop_queue(dev);
 
 	if (ei_debug > 1)
-		printk("%s: Shutting down ethercard.\n", dev->name);
+;
 
 	outb(0x00, ioaddr + 6);		/* Disable interrupts. */
 	free_irq(dev->irq, dev);
@@ -572,7 +572,7 @@ init_module(void)
 	for (this_dev = 0; this_dev < MAX_ULTRA_CARDS; this_dev++) {
 		if (io[this_dev] == 0)  {
 			if (this_dev != 0) break; /* only autoprobe 1st one */
-			printk(KERN_NOTICE "smc-ultra.c: Presently autoprobing (not recommended) for a single card.\n");
+;
 		}
 		dev = alloc_ei_netdev();
 		if (!dev)
@@ -584,7 +584,7 @@ init_module(void)
 			continue;
 		}
 		free_netdev(dev);
-		printk(KERN_WARNING "smc-ultra.c: No SMC Ultra card found (i/o = 0x%x).\n", io[this_dev]);
+;
 		break;
 	}
 	if (found)

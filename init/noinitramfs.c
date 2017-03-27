@@ -46,7 +46,11 @@ static int __init default_rootfs(void)
 	return 0;
 
 out:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Failed to create a rootfs\n");
+#else
+	;
+#endif
 	return err;
 }
 rootfs_initcall(default_rootfs);

@@ -147,8 +147,12 @@ scb2_flash_probe(struct pci_dev *dev, const struct pci_device_id *ent)
 		 * The BIOS seems to mark the flash region as 'reserved'
 		 * in the e820 map.  Warn and go about our business.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING MODNAME
 		    ": warning - can't reserve rom window, continuing\n");
+#else
+		;
+#endif
 		region_fail = 1;
 	}
 
@@ -188,9 +192,13 @@ scb2_flash_probe(struct pci_dev *dev, const struct pci_device_id *ent)
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE MODNAME ": chip size 0x%llx at offset 0x%llx\n",
 	       (unsigned long long)scb2_mtd->size,
 	       (unsigned long long)(SCB2_WINDOW - scb2_mtd->size));
+#else
+	;
+#endif
 
 	mtd_device_register(scb2_mtd, NULL, 0);
 

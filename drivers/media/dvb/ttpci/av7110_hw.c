@@ -53,11 +53,19 @@ int av7110_debiwrite(struct av7110 *av7110, u32 config,
 	struct saa7146_dev *dev = av7110->dev;
 
 	if (count <= 0 || count > 32764) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: invalid count %d\n", __func__, count);
+#else
+		;
+#endif
 		return -1;
 	}
 	if (saa7146_wait_for_debi_done(av7110->dev, 0) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: wait_for_debi_done failed\n", __func__);
+#else
+		;
+#endif
 		return -1;
 	}
 	saa7146_write(dev, DEBI_CONFIG, config);
@@ -76,11 +84,19 @@ u32 av7110_debiread(struct av7110 *av7110, u32 config, int addr, int count)
 	u32 result = 0;
 
 	if (count > 32764 || count <= 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: invalid count %d\n", __func__, count);
+#else
+		;
+#endif
 		return 0;
 	}
 	if (saa7146_wait_for_debi_done(av7110->dev, 0) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: wait_for_debi_done #1 failed\n", __func__);
+#else
+		;
+#endif
 		return 0;
 	}
 	saa7146_write(dev, DEBI_AD, av7110->debi_bus);
@@ -91,7 +107,11 @@ u32 av7110_debiread(struct av7110 *av7110, u32 config, int addr, int count)
 	if (count > 4)
 		return count;
 	if (saa7146_wait_for_debi_done(av7110->dev, 0) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: wait_for_debi_done #2 failed\n", __func__);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -121,7 +141,11 @@ void av7110_reset_arm(struct av7110 *av7110)
 	SAA7146_IER_ENABLE(av7110->dev, MASK_03);
 
 	av7110->arm_ready = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "reset ARM\n");
+#else
+	d;
+#endif
 }
 #endif  /*  0  */
 
@@ -129,7 +153,11 @@ static int waitdebi(struct av7110 *av7110, int adr, int state)
 {
 	int k;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	for (k = 0; k < 100; k++) {
 		if (irdebi(av7110, DEBINOSWAP, adr, 0, 2) == state)
@@ -145,7 +173,11 @@ static int load_dram(struct av7110 *av7110, u32 *data, int len)
 	int blocks, rest;
 	u32 base, bootblock = AV7110_BOOT_BLOCK;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	blocks = len / AV7110_BOOT_MAX_SIZE;
 	rest = len % AV7110_BOOT_MAX_SIZE;
@@ -156,7 +188,11 @@ static int load_dram(struct av7110 *av7110, u32 *data, int len)
 			printk(KERN_ERR "dvb-ttpci: load_dram(): timeout at block %d\n", i);
 			return -ETIMEDOUT;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(4, "writing DRAM block %d\n", i);
+#else
+		d;
+#endif
 		mwdebi(av7110, DEBISWAB, bootblock,
 		       ((u8 *)data) + i * AV7110_BOOT_MAX_SIZE, AV7110_BOOT_MAX_SIZE);
 		bootblock ^= 0x1400;
@@ -206,7 +242,11 @@ int av7110_bootarm(struct av7110 *av7110)
 	u32 ret;
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	av7110->arm_ready = 0;
 
@@ -234,10 +274,18 @@ int av7110_bootarm(struct av7110 *av7110)
 	}
 	for (i = 0; i < 8192; i += 4)
 		iwdebi(av7110, DEBISWAP, DPRAM_BASE + i, 0x00, 4);
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(2, "debi test OK\n");
+#else
+	d;
+#endif
 
 	/* boot */
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "load boot code\n");
+#else
+	d;
+#endif
 	saa7146_setgpio(dev, ARM_IRQ_LINE, SAA7146_GPIO_IRQLO);
 	//saa7146_setgpio(dev, DEBI_DONE_LINE, SAA7146_GPIO_INPUT);
 	//saa7146_setgpio(dev, 3, SAA7146_GPIO_INPUT);
@@ -261,7 +309,11 @@ int av7110_bootarm(struct av7110 *av7110)
 	saa7146_setgpio(dev, RESET_LINE, SAA7146_GPIO_OUTHI);
 	mdelay(1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "load dram code\n");
+#else
+	d;
+#endif
 	if (load_dram(av7110, (u32 *)av7110->bin_root, av7110->size_root) < 0) {
 		printk(KERN_ERR "dvb-ttpci: av7110_bootarm(): "
 		       "load_dram() failed\n");
@@ -271,7 +323,11 @@ int av7110_bootarm(struct av7110 *av7110)
 	saa7146_setgpio(dev, RESET_LINE, SAA7146_GPIO_OUTLO);
 	mdelay(1);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(1, "load dpram code\n");
+#else
+	d;
+#endif
 	mwdebi(av7110, DEBISWAB, DPRAM_BASE, av7110->bin_dpram, av7110->size_dpram);
 
 	if (saa7146_wait_for_debi_done(av7110->dev, 1)) {
@@ -338,10 +394,18 @@ static int __av7110_send_fw_cmd(struct av7110 *av7110, u16* buf, int length)
 	u32 stat;
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 //	dprintk(4, "%p\n", av7110);
+#else
+//	d;
+#endif
 
 	if (!av7110->arm_ready) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "arm not ready.\n");
+#else
+		d;
+#endif
 		return -ENXIO;
 	}
 
@@ -468,10 +532,18 @@ static int av7110_send_fw_cmd(struct av7110 *av7110, u16* buf, int length)
 {
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 //	dprintk(4, "%p\n", av7110);
+#else
+//	d;
+#endif
 
 	if (!av7110->arm_ready) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "arm not ready.\n");
+#else
+		d;
+#endif
 		return -1;
 	}
 	if (mutex_lock_interruptible(&av7110->dcomlock))
@@ -491,7 +563,11 @@ int av7110_fw_cmd(struct av7110 *av7110, int type, int com, int num, ...)
 	u16 buf[num + 2];
 	int i, ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 //	dprintk(4, "%p\n", av7110);
+#else
+//	d;
+#endif
 
 	buf[0] = ((type << 8) | com);
 	buf[1] = num;
@@ -516,7 +592,11 @@ int av7110_send_ci_cmd(struct av7110 *av7110, u8 subcom, u8 *buf, u8 len)
 	u16 cmd[18] = { ((COMTYPE_COMMON_IF << 8) + subcom),
 		16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	for(i = 0; i < len && i < 32; i++)
 	{
@@ -543,10 +623,18 @@ int av7110_fw_request(struct av7110 *av7110, u16 *request_buf,
 	u32 stat;
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	if (!av7110->arm_ready) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "arm not ready.\n");
+#else
+		d;
+#endif
 		return -1;
 	}
 
@@ -630,11 +718,19 @@ int av7110_firmversion(struct av7110 *av7110)
 	u16 buf[20];
 	u16 tag = ((COMTYPE_REQUEST << 8) + ReqVersion);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	if (av7110_fw_query(av7110, tag, buf, 16)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb-ttpci: failed to boot firmware @ card %d\n",
 		       av7110->dvb_adapter.num);
+#else
+		;
+#endif
 		return -EIO;
 	}
 
@@ -644,17 +740,29 @@ int av7110_firmversion(struct av7110 *av7110)
 	av7110->arm_app = (buf[6] << 16) + buf[7];
 	av7110->avtype = (buf[8] << 16) + buf[9];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("dvb-ttpci: info @ card %d: firm %08x, rtsl %08x, vid %08x, app %08x\n",
 	       av7110->dvb_adapter.num, av7110->arm_fw,
 	       av7110->arm_rtsl, av7110->arm_vid, av7110->arm_app);
+#else
+	;
+#endif
 
 	/* print firmware capabilities */
 	if (FW_CI_LL_SUPPORT(av7110->arm_app))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb-ttpci: firmware @ card %d supports CI link layer interface\n",
 		       av7110->dvb_adapter.num);
+#else
+		;
+#endif
 	else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb-ttpci: no firmware support for CI link layer interface @ card %d\n",
 		       av7110->dvb_adapter.num);
+#else
+		;
+#endif
 
 	return 0;
 }
@@ -666,7 +774,11 @@ int av7110_diseqc_send(struct av7110 *av7110, int len, u8 *msg, unsigned long bu
 	u16 buf[18] = { ((COMTYPE_AUDIODAC << 8) + SendDiSEqC),
 			16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	if (len > 10)
 		len = 10;
@@ -846,8 +958,12 @@ static inline int WaitUntilBmpLoaded(struct av7110 *av7110)
 	int ret = wait_event_timeout(av7110->bmpq,
 				av7110->bmp_state != BMP_LOADING, 10*HZ);
 	if (ret == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dvb-ttpci: warning: timeout waiting in LoadBitmap: %d, %d\n",
 		       ret, av7110->bmp_state);
+#else
+		;
+#endif
 		av7110->bmp_state = BMP_NONE;
 		return -ETIMEDOUT;
 	}
@@ -864,7 +980,11 @@ static inline int LoadBitmap(struct av7110 *av7110,
 	u8 c;
 	int ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	format = bpp2bit[av7110->osdbpp[av7110->osdwin]];
 
@@ -904,7 +1024,11 @@ static inline int LoadBitmap(struct av7110 *av7110,
 		}
 	}
 	av7110->bmplen += 1024;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "av7110_fw_cmd: LoadBmp size %d\n", av7110->bmplen);
+#else
+	d;
+#endif
 	ret = av7110_fw_cmd(av7110, COMTYPE_OSD, LoadBmp, 3, format, dx, dy);
 	if (!ret)
 		ret = WaitUntilBmpLoaded(av7110);
@@ -913,19 +1037,31 @@ static inline int LoadBitmap(struct av7110 *av7110,
 
 static int BlitBitmap(struct av7110 *av7110, u16 x, u16 y)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	return av7110_fw_cmd(av7110, COMTYPE_OSD, BlitBmp, 4, av7110->osdwin, x, y, 0);
 }
 
 static inline int ReleaseBitmap(struct av7110 *av7110)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(4, "%p\n", av7110);
+#else
+	d;
+#endif
 
 	if (av7110->bmp_state != BMP_LOADED && FW_VERSION(av7110->arm_app) < 0x261e)
 		return -1;
 	if (av7110->bmp_state == BMP_LOADING)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1,"ReleaseBitmap called while BMP_LOADING\n");
+#else
+		d;
+#endif
 	av7110->bmp_state = BMP_NONE;
 	return av7110_fw_cmd(av7110, COMTYPE_OSD, ReleaseBmp, 0);
 }
@@ -1039,7 +1175,11 @@ static int OSDSetBlock(struct av7110 *av7110, int x0, int y0,
 	if (!rc)
 		rc = release_rc;
 	if (rc)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1,"returns %d\n",rc);
+#else
+		d;
+#endif
 	return rc;
 }
 
@@ -1185,9 +1325,17 @@ int av7110_osd_cmd(struct av7110 *av7110, osd_cmd_t *dc)
 
 	mutex_unlock(&av7110->osd_mutex);
 	if (ret==-ERESTARTSYS)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "av7110_osd_cmd(%d) returns with -ERESTARTSYS\n",dc->cmd);
+#else
+		d;
+#endif
 	else if (ret)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk(1, "av7110_osd_cmd(%d) returns with %d\n",dc->cmd,ret);
+#else
+		d;
+#endif
 
 	return ret;
 }

@@ -353,7 +353,7 @@ void cpld_set_fractional_mode(struct channel *sc, u32 mode,
 			   SBE_2T3E3_CPLD_VAL_FRACTIONAL_MODE_2);
 		break;
 	default:
-		printk(KERN_ERR "wrong mode in set_fractional_mode\n");
+;
 		return;
 	}
 

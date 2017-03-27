@@ -89,6 +89,7 @@
 
 
 #ifdef _DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define dprintk(s, args...) printk("[OneDRAM] %s:%d - " s, __func__, __LINE__,  ##args)
 #else
 #define dprintk(s, args...)
@@ -141,6 +142,9 @@
 
 /***************************************************************************/
 static DECLARE_WAIT_QUEUE_HEAD(dpram_wait);
+#else
+#define d;
+#endif
 
 static int onedram_get_semaphore(const char*);
 static int onedram_get_semaphore_dpram(const char*);
@@ -347,7 +351,11 @@ static inline void byte_align(unsigned long dest, unsigned long src)
 	}
 
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("oops.~\n");
+#else
+		d;
+#endif
 	}
 }
 
@@ -358,7 +366,11 @@ static inline void _memcpy(void *p_dest, const void *p_src, int size)
 	unsigned long src = (unsigned long)p_src;
 
 	if (*onedram_sem != 0x1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[OneDRAM] memory access without semaphore!: %d\n", *onedram_sem);
+#else
+		;
+#endif
 		return;
 	}
 	if (size <= 0) {
@@ -380,7 +392,11 @@ static inline int _memcmp(u16 *dest, u16 *src, int size)
 	int i = 0;
 
 	if (*onedram_sem != 0x1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[OneDRAM] (%s) memory access without semaphore!: %d\n", *onedram_sem);
+#else
+		;
+#endif
 		return 1;
 	}
 
@@ -407,7 +423,11 @@ static void send_interrupt_to_phone(u16 irq_mask)
 	}
 #endif // CONFIG_DPRAM_CHECK_BOX
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("=====>%s: irq_mask: %x\n", __func__, irq_mask);
+#else
+	d;
+#endif
 	*onedram_mailboxBA = irq_mask;
 }
 
@@ -436,7 +456,11 @@ void hexdump(const char *buf, int len)
 			str[l++] = isprint( buf[ofs + i] ) ? buf[ofs + i] : '.';
 
 		str[l] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s\n", str );
+#else
+		;
+#endif
 	}
 }
 
@@ -451,7 +475,11 @@ static void print_debug_current_time(void)
 	/* set current time */
 	rtc_time_to_tm(time.tv_sec, &tm);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Kernel Current Time info - %02d%02d%02d%02d%02d.%ld \n", tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec, time.tv_usec);
+#else
+	;
+#endif
 
 }
 #endif
@@ -464,7 +492,11 @@ void yhexdump(const char *buf, int len)
 	char str[80], octet[10];
 	int ofs, i, l;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("<yhexdump()> : ADDR - [0x%08x], len -[%d]\n", buf, len);
+#else
+	;
+#endif
 	for (ofs = 0; ofs < len; ofs += 16) {
 		sprintf( str, "%03d: ", ofs );
 
@@ -483,7 +515,11 @@ void yhexdump(const char *buf, int len)
 			str[l++] = yisprint( buf[ofs + i] ) ? buf[ofs + i] : '.';
 
 		str[l] = '\0';
+#ifdef CONFIG_DEBUG_PRINTK
 		printk( "%s\n", str );
+#else
+		;
+#endif
 	}
 }
 
@@ -504,7 +540,11 @@ int  multipdp_buf_copy(int index, char *dpram, int size)
 	if( index < 0 || index > sizeof(multipdp_rbuf) || (index + size) > sizeof(multipdp_rbuf))
 		return -1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("multipdp_buf_copy:index=%d size=%d\n", index, size);
+#else
+	//;
+#endif
 	memcpy( (void *)&multipdp_rbuf[index], (void *)dpram, size);
 	return( size);
 
@@ -531,7 +571,11 @@ int	multipdp_rx_data(dpram_device_t *device, int len)
 		return 0;
 		
 	if( inuse_flag )
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("***** inuse_flag = %d\n", inuse_flag);	
+#else
+		;
+#endif
 		
 	inuse_flag ++;
 	
@@ -539,12 +583,20 @@ int	multipdp_rx_data(dpram_device_t *device, int len)
 	//multipdp_rbuf
 	if( multipdp_rx_noti_func)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("multipdp_rx_data Before(noti_func) : len=%d\n",len);
+#else
+		//;
+#endif
 		multipdp_rx_datalen = len;
 
 		ret = multipdp_rx_noti_func(multipdp_rbuf, len);
 		//memset(multipdp_rbuf, 0x00, len);
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("multipdp_rx_data After(noti_func) : ret=%d\n",ret);
+#else
+		//;
+#endif
 	}
 
 	inuse_flag --;
@@ -574,10 +626,18 @@ int multipdp_write(const unsigned char *buf, int len)
 		{
 			break;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "dpram_write() failed: %d, i(%d)\n", ret, i);
+#else
+		;
+#endif
 	}
 	if ( i>=10) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "dpram_write() failed: %d\n", ret);
+#else
+		;
+#endif
 	}
 	
 	return ret;
@@ -598,18 +658,30 @@ static int dpram_write(dpram_device_t *device,
 	u16 irq_mask = 0;
 	
 #ifdef _DPRAM_DEBUG_HEXDUMP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n\n#######[dpram write : head - %04d, tail - %04d]######\n", head, tail);
+#else
+	;
+#endif
 	hexdump(buf, len);
 #endif
 	if(!onedram_get_semaphore_dpram(__func__)) 
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s%04d : %d len[%d]\n", __func__, __LINE__, *onedram_sem, len);
+#else
+		;
+#endif
 		return -EAGAIN;
 	}
 		
 	if(onedram_lock_with_semaphore(__func__) < 0)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s%04d : %d len[%d]\n", __func__, __LINE__, *onedram_sem, len);
+#else
+		;
+#endif
 		return -EAGAIN;
 	}
 
@@ -653,7 +725,11 @@ static int dpram_write(dpram_device_t *device,
        	send_interrupt_to_phone_with_semaphore(irq_mask);
 
 	if (retval <= 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("dpram_write : not enough space Fail (-1): freesize[%d],len[%d]\n",freesize, len);
+#else
+		;
+#endif
 		device->out_head_saved = head;
 		device->out_tail_saved = tail;
 		return -EAGAIN;
@@ -663,7 +739,11 @@ static int dpram_write(dpram_device_t *device,
 	device->out_tail_saved = tail;
 
 #ifdef _DPRAM_DEBUG_HEXDUMP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("#######[dpram write : head - %04d, tail - %04d]######\n\n", head, tail);
+#else
+	;
+#endif
 	print_debug_current_time();
 #endif
 
@@ -704,13 +784,21 @@ static int dpram_read(dpram_device_t *device, const u16 non_cmd)
 #endif
 	if(!onedram_get_semaphore_dpram(__func__)) 
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s%04d : %d \n", __func__, __LINE__, *onedram_sem);
+#else
+		;
+#endif
 		return -EAGAIN;
 	}
 
 	if(onedram_lock_with_semaphore(__func__) < 0)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s%04d : %d\n", __func__, __LINE__, *onedram_sem);
+#else
+		;
+#endif
 		return -EAGAIN;
 	}
 	
@@ -718,13 +806,25 @@ static int dpram_read(dpram_device_t *device, const u16 non_cmd)
 	READ_FROM_DPRAM(&tail, device->in_tail_addr, sizeof(tail));
 
 #ifdef _DPRAM_DEBUG_HEXDUMP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n\n#######[dpram read : head - %04d, tail - %04d]######\n", head, tail);
+#else
+	;
 #endif
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	//printk("===index = %d, head=[%d], tail=[%d]\n", tty->index, head, tail);
+#else
+	//;
+#endif
 
 	if (head != tail) {
 		up_tail = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("===size=[%d]\n",  head > tail ? (head - tail):(device->in_buff_size - tail + head));
+#else
+		//;
+#endif
 		// ------- tail ++++++++++++ head -------- //
 		if (head > tail) {
 			size = head - tail;
@@ -736,7 +836,11 @@ static int dpram_read(dpram_device_t *device, const u16 non_cmd)
 #endif
 
 		    if (retval != size)
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("Size Mismatch : Real Size = %d, Returned Size = %d\n", size, retval);
+#else
+				d;
+#endif
 
 #ifdef _DPRAM_DEBUG_HEXDUMP
 			hexdump((unsigned char *)(DPRAM_VBASE + (device->in_buff_addr + tail)), size);
@@ -760,7 +864,11 @@ static int dpram_read(dpram_device_t *device, const u16 non_cmd)
 #endif
 
 			if (retval != tmp_size)
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("Size Mismatch : Real Size = %d, Returned Size = %d\n", tmp_size, retval);
+#else
+				d;
+#endif
 			
 #ifdef _DPRAM_DEBUG_HEXDUMP
 			hexdump((unsigned char *)(DPRAM_VBASE + (device->in_buff_addr + tail)), tmp_size);
@@ -790,7 +898,11 @@ static int dpram_read(dpram_device_t *device, const u16 non_cmd)
 	device->out_tail_saved = tail;
 
 #ifdef _DPRAM_DEBUG_HEXDUMP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("#######[dpram read : head - %04d, tail - %04d]######\n\n", head, up_tail);
+#else
+	;
+#endif
 	print_debug_current_time();
 #endif
 
@@ -821,7 +933,11 @@ static int dpram_read_rfs(dpram_device_t *device, const u16 non_cmd)
 	READ_FROM_DPRAM(&tail, device->in_tail_addr, sizeof(tail));
 
 #ifdef _DPRAM_DEBUG_HEXDUMP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n\n#######[dpram read : head - %04d, tail - %04d]######\n", head, tail);
+#else
+	;
+#endif
 #endif
 
 	if (head != tail) {
@@ -833,7 +949,11 @@ static int dpram_read_rfs(dpram_device_t *device, const u16 non_cmd)
 			//retval = dpram_tty_insert_data(device, (unsigned char *)(DPRAM_VBASE + (device->in_buff_addr + tail)), size);
 			if(onedram_rfs_data.data_in_buffer)
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("rfs_buffer is not free = %d\n", onedram_rfs_data.data_in_buffer);
+#else
+				d;
+#endif
 				onedram_rfs_data.data_in_onedram = 1;
         		onedram_release_lock(__func__);
 				return 0;
@@ -845,7 +965,11 @@ static int dpram_read_rfs(dpram_device_t *device, const u16 non_cmd)
 				onedram_rfs_data.data_in_buffer = 1;
 				retval = dpram_tty_insert_data(device, &size, sizeof(size));
 			       if (retval != sizeof(size))
+#ifdef CONFIG_DEBUG_PRINTK
 				    dprintk("Size Mismatch : Real Size = %d, Returned Size = %d\n", size, retval);
+#else
+				    d;
+#endif
 				retval = size;
 			}
 			
@@ -868,7 +992,11 @@ static int dpram_read_rfs(dpram_device_t *device, const u16 non_cmd)
 
 			if(onedram_rfs_data.data_in_buffer)
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("rfs_buffer is not free = %d\n", onedram_rfs_data.data_in_buffer);
+#else
+				d;
+#endif
 				onedram_rfs_data.data_in_onedram = 1;
         		onedram_release_lock(__func__);
 				return 0;
@@ -882,7 +1010,11 @@ static int dpram_read_rfs(dpram_device_t *device, const u16 non_cmd)
 				dpram_tty_insert_data(device, &size, sizeof(size));
 				retval = size;
 			       if (retval != sizeof(size))
+#ifdef CONFIG_DEBUG_PRINTK
 				    dprintk("Size Mismatch : Real Size = %d, Returned Size = %d\n", size, retval);
+#else
+				    d;
+#endif
 				retval = size;
 
 			}
@@ -907,7 +1039,11 @@ static int dpram_read_rfs(dpram_device_t *device, const u16 non_cmd)
 	device->out_tail_saved = tail;
 
 #ifdef _DPRAM_DEBUG_HEXDUMP
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("#######[dpram read : head - %04d, tail - %04d]######\n\n", head, up_tail);
+#else
+	;
+#endif
 	print_debug_current_time();
 #endif
 
@@ -927,12 +1063,20 @@ static int onedram_get_semaphore(const char *func)
 
 	for(i = 0; i < retry; i++) {
 		if(*onedram_sem == 0x1) return 1;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("=====>%s: irq_mask: %x\n", __func__, cmd);
+#else
+		d;
+#endif
 		*onedram_mailboxBA = cmd;
 		mdelay(5);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Failed to get a Semaphore (%s) sem:%d, phone status: %s\n", func, *onedram_sem,	(dpram_phone_getstatus() ? "ACTIVE" : "INACTIVE"));
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -951,11 +1095,19 @@ static int onedram_get_semaphore_dpram(const char *func)
 	for(i = 0; i < retry; i++) {
 		if(*onedram_sem == 0x1)	return 1;
 		if(i%10 == 0) *onedram_mailboxBA = cmd;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("=====>%s: irq_mask: %x\n", __func__, cmd);
+#else
+		d;
+#endif
 		udelay(100);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("Failed to get a Semaphore (%s) sem:%d, phone status: %s\n", func, *onedram_sem,	(dpram_phone_getstatus() ? "ACTIVE" : "INACTIVE"));
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -976,16 +1128,28 @@ static void send_interrupt_to_phone_with_semaphore(u16 irq_mask)
 	
 		if(*onedram_sem == 0x1) { 	
 			*onedram_sem = 0x0;
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("=====>%s: irq_mask: %x with sem\n", __func__, irq_mask);
+#else
+			d;
+#endif
 			*onedram_mailboxBA = irq_mask;
 			requested_semaphore = 0;
 			del_timer(&request_semaphore_timer);
 		}else {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("=====>%s: irq_mask: %x already cp sem\n", __func__, irq_mask);
+#else
+			d;
+#endif
 			*onedram_mailboxBA = irq_mask;
 		}
 	}else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("lock set. can't return semaphore.\n", __func__);
+#else
+		d;
+#endif
 	}
 		
 
@@ -1002,12 +1166,20 @@ static int return_onedram_semaphore(const char* func)
 		requested_semaphore = 0;
 		del_timer(&request_semaphore_timer);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s %d\n", __func__, __LINE__);
+#else
+		d;
+#endif
 		return 1;
 	}else {
 		mod_timer(&request_semaphore_timer,  jiffies + HZ/2);
 		requested_semaphore++;
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("%s %d\n", __func__, __LINE__);
+#else
+		d;
+#endif
 
 		return 0;
 	}
@@ -1018,20 +1190,40 @@ static int onedram_lock_with_semaphore(const char* func)
 	int lock_value;
 
 	if(!(lock_value = atomic_inc_return(&onedram_lock)))
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("(lock) fail to locking onedram access. %d\n", func, lock_value);
+#else
+		d;
+#endif
 
 	if(lock_value != 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("(lock) lock_value: %d\n", func, lock_value);
+#else
+		d;
+#endif
 
 	if(*onedram_sem == 0x1) 
 		return 0;	
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("(lock) failed.. no sem\n", func);
+#else
+		d;
+#endif
 		if((lock_value = atomic_dec_return(&onedram_lock)) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("(lock) fail to unlocking onedram access. %d\n", func, lock_value);
+#else
+			d;
+#endif
 
 		if(lock_value != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("(lock) lock_value: %d\n", func, lock_value);
+#else
+			d;
+#endif
 		return -1;
 	}
 }
@@ -1041,12 +1233,20 @@ static void onedram_release_lock(const char* func)
 	int lock_value;
 
 	if((lock_value = atomic_dec_return(&onedram_lock)) < 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("(%s) fail to unlocking onedram access. %d\n", func, lock_value);
+#else
+		d;
+#endif
 
 	if(requested_semaphore) {
 		if(!atomic_read(&onedram_lock)) {
 			if(*onedram_sem == 0x1) { 	
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("(%s) requested semaphore(%d) return to Phone.\n",func, requested_semaphore);
+#else
+		d;
+#endif
 				*onedram_sem = 0x0;
 				requested_semaphore = 0;
 				del_timer(&request_semaphore_timer);
@@ -1055,7 +1255,11 @@ static void onedram_release_lock(const char* func)
 	}
 
 	if(lock_value != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("(%s) lock_value: %d\n", func, lock_value);
+#else
+		d;
+#endif
 
 }
 
@@ -1063,7 +1267,11 @@ static int dpram_shared_bank_remap(void)
 {
 	dpram_base = ioremap_nocache(DPRAM_START_ADDRESS_PHYS + DPRAM_SHARED_BANK, DPRAM_SHARED_BANK_SIZE);
 	if (dpram_base == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("failed ioremap\n");
+#else
+		;
+#endif
 		return -ENOENT;
 		}
 		
@@ -1099,14 +1307,22 @@ static int ReadPhoneFile(unsigned char *PsiBuffer, 	unsigned char *ImageBuffer,
 	if (IS_ERR(file_p))
 	{
 	    file_p = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("\n %s open failed(%d)",modem_filename, ERR_PTR(file_p));
+#else
+	    ;
+#endif
 	    set_fs(old_fs);    
 	    return file_p;
 	}
 
 	pCpData = kmalloc(buf_size,GFP_KERNEL);
 	if (pCpData == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[%s]fail to allocate cp buffer for modem image\n",__func__);
+#else
+		;
+#endif
 		return -1;
 	}
 	
@@ -1134,11 +1350,23 @@ static int ReadPhoneFile(unsigned char *PsiBuffer, 	unsigned char *ImageBuffer,
 #if 0		//print buf
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n[MODEM image data : offset 0x100000]\n");
+#else
+	;
+#endif
 	char * dataptr =(char*)(dpram_base + 0x100000);
 	for (i=0 ; i < 512 ; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%02x  ",*(dataptr + i));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if ((i+1)%16 == 0) printk("\n");
+#else
+		if ((i+1)%16 == 0) ;
+#endif
 	}
 #endif
 
@@ -1181,7 +1409,11 @@ static int ReadPhoneFile(unsigned char *PsiBuffer, 	unsigned char *ImageBuffer,
 	/* if the current volume isn't available, skip test  */
 	if (stFsrVolParm[nVol].nDevsInVol == 0)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("=====>[%s,%d] nVol: %d\n", __func__, __LINE__, nVol);
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1220,19 +1452,47 @@ static int ReadPhoneFile(unsigned char *PsiBuffer, 	unsigned char *ImageBuffer,
 
 	nNumOfPgs     = nPgsPerUnit * pPEntry->nNumOfUnits;
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - pPEntry->n1stVun     : %d\n", pPEntry->n1stVun);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - n1stVpn              : %d\n", n1stVpn);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - modeamPgNum          : %d\n", n1stVpn + 5);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - pPEntry->nNumOfUnits : %d\n", pPEntry->nNumOfUnits);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - nPgsPerUnit          : %d\n", nPgsPerUnit);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - pPEntry->nNumOfPgs   : %d\n", nNumOfPgs);
+#else
+	;
+#endif
 
 	psi_page_num = Psi_Length / 4096;
 	default_nv_page_num = MAX_DEFAULT_NV_SIZE / 4096;
 	modem_page_num = (Total_length /4096) - psi_page_num - default_nv_page_num;
 
 	// load os image except psi & default nv
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - psi_page_num: 0x%x, modem_page_num: 0x%x\n", psi_page_num, modem_page_num);
+#else
+	;
+#endif
 
 #ifdef CONFIG_USE_KMALLOC	
 	/*
@@ -1256,7 +1516,11 @@ static int ReadPhoneFile(unsigned char *PsiBuffer, 	unsigned char *ImageBuffer,
 			FSR_DBZ_RTLMOUT(FSR_DBZ_ERROR, (TEXT("[BM :ERR]   FSR_BML_Read Error\r\n")));
 			while(1);
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("copy page (%d)\n",nPageCnt);
+#else
+		//;
+#endif
 		_memcpy(ImageBuffer, temp, 4096);
 
 		ImageBuffer+= 4096;
@@ -1275,15 +1539,43 @@ static int ReadPhoneFile(unsigned char *PsiBuffer, 	unsigned char *ImageBuffer,
 	
 	int i;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" +---------------------------------------------+\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" |          complete phone image load          |\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" +---------------------------------------------+\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - First 16 byte: ");
+#else
+	;
+#endif
 	for(i =0; i< 16; i++) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%02x", ImageBuffer[i]);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if((i%2)) printk(" ");
+#else
+		if((i%2)) ;
+#endif
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 #endif
 }
 
@@ -1317,9 +1609,17 @@ static int dpram_init_and_report(void)
 	u16 ac_code = 0;
 
 	if (*onedram_sem != 0x1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[OneDRAM] %s semaphore: %d\n", __func__, *onedram_sem);
+#else
+		;
+#endif
 		if(!onedram_get_semaphore(__func__)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[OneDRAM] %s failed to onedram init!!! semaphore: %d\n", __func__, *onedram_sem);
+#else
+			;
+#endif
 			return -1;
 		}
 	}
@@ -1345,7 +1645,11 @@ static int dpram_init_and_report(void)
 	/* @LDK@ send init end code to phone */
 	onedram_release_lock(__func__);
 	send_interrupt_to_phone_with_semaphore(init_end);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[OneDRAM] Send to MailboxBA 0x%x (onedram init finish).\n", init_end);
+#else
+	;
+#endif
 
 	phone_sync = 1;
 	return 0;
@@ -1366,34 +1670,70 @@ static int dpram_phone_image_load(void)
 {
 	static int count=0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" +---------------------------------------------+\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" |   CHECK PSI DOWNLOAD  &  LOAD PHONE IMAGE   |\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" +---------------------------------------------+\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - Waiting 0x12341234 in MailboxAB ...!");
+#else
+	;
+#endif
 	while(1) {
 		if(*onedram_mailboxAB == 0x12341234)
 			break;
 		msleep(10);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(".");
+#else
+		;
+#endif
 		count++;
 		if(count > 200)
 		{
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("dpram_phone_image_load fail.....\n");
+#else
+			;
+#endif
 			return -1;
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Done.\n");
+#else
+	;
+#endif
 
     if (!dump_on)
     {
 	    if(*onedram_sem == 0x1)
 	 	    ReadPhoneFile(dbl_buf, dpram_base, MAX_DBL_IMG_SIZE, MAX_MODEM_IMG_SIZE);
 	    else
+#ifdef CONFIG_DEBUG_PRINTK
 		    printk("[OneDRAM] %s failed.. sem: %d\n", __func__, *onedram_sem);
+#else
+		    ;
+#endif
     }
 	else
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 	    dprintk("CP DUMP MODE !!! \n");
+#else
+	    d;
+#endif
 	}
 	return 0;
 
@@ -1405,7 +1745,11 @@ static int dpram_nvdata_load(struct _param_nv *param)
 //replace it to filesystem read
 	if(dump_on)
 	{   
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" [dpram_nvdata_load] : When CP is in upload mode, don't copy NV data!");
+#else
+		;
+#endif
 		return -1;
 	}
 
@@ -1413,22 +1757,58 @@ static int dpram_nvdata_load(struct _param_nv *param)
 	unsigned char * 	  load_addr =  DPRAM_VBASE + DPRAM_DEFAULT_NV_DATA_OFFSET;
 	unsigned long nNumBlocks;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" +---------------------------------------------+\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" |                  LOAD NVDATA                |\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" +---------------------------------------------+\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - Read from File(\"/efs/nv_data.bin\").\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - Address of NV data(virt): 0x%08x.\n", param->addr);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - Size of NV data: %d.\n", param->size);
+#else
+	;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[DPRAM] Start getting DGS info.\n");
+#else
+	;
+#endif
 
 	if (FSR_BML_Open(0, FSR_BML_FLAG_NONE) != FSR_BML_SUCCESS)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[DPRAM] BML_Open Error !!\n");
+#else
+		;
+#endif
 		while(1);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[DPRAM] Try to read DGS Info.\n");
+#else
+	;
+#endif
 
 	/* Acquire SM */
 	FSR_BML_AcquireSM(0);
@@ -1438,7 +1818,11 @@ static int dpram_nvdata_load(struct _param_nv *param)
 	 * Read 5th Page of the Last Block
 	 */
 	FSR_OND_4K_GetNumBlocks(&nNumBlocks);	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[DPRAM] Read DGS Info from %d block 5 page.\n", nNumBlocks - 1);	 
+#else
+	;
+#endif
 #ifdef CONFIG_USE_KMALLOC
 	/*
 	 * Modified for FSR Read DMA
@@ -1455,16 +1839,28 @@ static int dpram_nvdata_load(struct _param_nv *param)
 
 	if(nRet != FSR_LLD_SUCCESS)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[DPRAM] Reading DGS information failed !!\n");
+#else
+		;
+#endif
 		while(1);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[DPRAM] DSG buffer =  %s \n", aDGSBuf);
+#else
+	;
+#endif
 	
 	copy_from_user((void *)load_addr, (void __user *)param->addr, param->size);	
 	WRITE_TO_DPRAM( DPRAM_DGS_INFO_BLOCK_OFFSET, aDGSBuf, DPRAM_DGS_INFO_BLOCK_SIZE);   
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[OneDRAM] %s complete\n", __func__);
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -1484,7 +1880,11 @@ static void dpram_nvpacket_data_read(void * usrbufaddr)
 		if(!onedram_get_semaphore(__func__)) 
 			{
 			copy_to_user((void __user *)usrbufaddr, (unsigned char*)&err_length, sizeof(unsigned int));
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[OneDRAM] %s failed.. onedram_get_semaphore\n", __func__);
+#else
+			;
+#endif
 			return;
 			}
 		}
@@ -1492,7 +1892,11 @@ static void dpram_nvpacket_data_read(void * usrbufaddr)
 	if(onedram_lock_with_semaphore(__func__) < 0)
 		{
 		copy_to_user((void __user *)usrbufaddr, (unsigned char*)&err_length, sizeof(unsigned int));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[OneDRAM] %s failed.. onedram_lock_with_semaphore\n", __func__);
+#else
+		;
+#endif
 		return;
 		}
 	
@@ -1504,7 +1908,11 @@ static void dpram_nvpacket_data_read(void * usrbufaddr)
 		if ( *cur_ptr++ != 0x7f )
 			{
 			copy_to_user((void __user *)usrbufaddr, (unsigned char*)&err_length, sizeof(unsigned int));
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[OneDRAM] %s failed.. invalid header\n", __func__);
+#else
+			;
+#endif
 			}
 
 		// big endian
@@ -1514,7 +1922,11 @@ static void dpram_nvpacket_data_read(void * usrbufaddr)
 		length |= (*cur_ptr++)<<24;
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[OneDRAM] %s nv packet large data length = 0x%x\n", __func__,length);
+#else
+		;
+#endif
 
 		copy_to_user((void __user *)usrbufaddr, (unsigned char*)&length, sizeof(length));
 		copy_to_user((void __user *)(usrbufaddr+sizeof(length)), cur_ptr, length);
@@ -1525,16 +1937,28 @@ static void dpram_nvpacket_data_read(void * usrbufaddr)
 		if ( *cur_ptr != 0x7e )
 			{
 			copy_to_user((void __user *)usrbufaddr, (unsigned char*)&err_length, sizeof(unsigned int));
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[OneDRAM] %s failed.. invalid header tail\n", __func__);
+#else
+			;
+#endif
 			}
 
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[OneDRAM] %s nv packet large data read complete\n", __func__);
+#else
+		;
+#endif
 		}
 	else
 		{
 		copy_to_user((void __user *)usrbufaddr, (unsigned char*)&err_length, sizeof(unsigned int));
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[OneDRAM] %s failed.. sem: %d check and return\n", __func__, *onedram_sem);
+#else
+		;
+#endif
 		}
 
 	onedram_release_lock(__func__);
@@ -1547,16 +1971,32 @@ static void dpram_nvpacket_data_read(void * usrbufaddr)
 
 static void dpram_phone_power_on(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" +---------------------------------------------+\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" |       control GPIOs (PHONE_ON/CP_RST)       |\n");
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" +---------------------------------------------+\n");
+#else
+	;
+#endif
 
 	boot_complete = 0;
 	dump_on = 0;
 
 	gpio_set_value(GPIO_PHONE_ON, GPIO_LEVEL_HIGH);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n CP RST : GPIO LOW -> Wait(100) -> High -> Wait(200)");
+#else
+	;
+#endif
 	// Reset CP 
 	gpio_set_value(GPIO_CP_RST, GPIO_LEVEL_LOW);
 	msleep(100);
@@ -1565,8 +2005,12 @@ static void dpram_phone_power_on(void)
 	// Wait until phone is stable
 	msleep(200);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - GPIO_PHONE_ON : %s, GPIO_CP_RST : %s\n", 
 		gpio_get_value(GPIO_PHONE_ON)?"HIGH":"LOW", gpio_get_value(GPIO_CP_RST)?"HIGH":"LOW");
+#else
+	;
+#endif
 	sim_state_changed = 0;
 }
 
@@ -1580,32 +2024,80 @@ static int dpram_phone_boot_start(void)
 	*onedram_sem = 0x0;
 	*onedram_mailboxBA = send_mail;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[dpram_phone_boot_start] : Phone Boot Start..\n");
+#else
+	;
+#endif
     
 	if(!dump_on)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk(" +---------------------------------------------+\n");
+#else
+	    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk(" |   FINISH IMAGE LOAD  &  START PHONE BOOT    |\n");
+#else
+	    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk(" +---------------------------------------------+\n");
+#else
+	    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("  - Send to MailboxBA 0x%8x\n", send_mail);
+#else
+	    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("  - Waiting 0xabcdabcd in MailboxAB ...");
+#else
+	    ;
+#endif
 	       modem_wait_count = 0;
 		while(1)
 		{
 			if(boot_complete == 1) 
 			{
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Done.\n");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" +---------------------------------------------+\n");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" |             PHONE BOOT COMPLETE             |\n");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(" +---------------------------------------------+\n");
+#else
+				;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	                            printk(" modem_wait_count : %d \n", modem_wait_count);
+#else
+	                            ;
+#endif
 				break;
 			}
 			msleep(10);
 			if(++modem_wait_count > 1000)
 			panic("Modem Boot Fail!!!");
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
+#else
+		;
+#endif
 	}
 	else
 	{
@@ -1613,7 +2105,11 @@ static int dpram_phone_boot_start(void)
 	#if 0
 	    int loop_count;
 	    
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("\n[dpram_phone_boot_start] : CP Dump State, Waiting 1st Data");
+#else
+	    ;
+#endif
 
 	    loop_count =1;
 	    
@@ -1622,17 +2118,29 @@ static int dpram_phone_boot_start(void)
 	        // Check for valid cmd to copy or end copy!
 	        if(!cp_upload_cmd_rcvd)
 	        {
+#ifdef CONFIG_DEBUG_PRINTK
 	            printk("<%d>",cp_upload_cmd_rcvd);
+#else
+	            ;
+#endif
 	            msleep(100);
 	            continue;
 	        }
 	            
+#ifdef CONFIG_DEBUG_PRINTK
 	        printk("\nGOT DATA... %d",loop_count);
+#else
+	        ;
+#endif
 
 	        // Store data to FileSystem
 	        dpram_cp_dump(loop_count);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	        printk("------> Data stored \n");
+#else
+	        ;
+#endif
 
 	        // Update MBX_BA and release semaphore
 	        cp_upload_cmd_rcvd=0;
@@ -1654,7 +2162,11 @@ static int dpram_phone_boot_start(void)
 static void dpram_phone_power_off(void)
 {
 	phone_power_off_sequence = 1;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[OneDRAM] Phone power Off. \n");
+#else
+	;
+#endif
 }
 
 static int dpram_phone_getstatus(void)
@@ -1664,9 +2176,17 @@ static int dpram_phone_getstatus(void)
 
 static void dpram_phone_reset(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
     dprintk("[OneDRAM] Phone power Reset.\n");
+#else
+    d;
+#endif
 	if(*onedram_sem == 0x1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("[OneDRAM} semaphore: %d\n", *onedram_sem);
+#else
+		d;
+#endif
 		*onedram_sem = 0x00;
 	}
 	gpio_set_value(GPIO_CP_RST, GPIO_LEVEL_LOW);
@@ -1690,7 +2210,11 @@ static int dpram_phone_ramdump_on(void)
 	const u16 rdump_flag2 = 0xDEAD;
 	const u16 temp1, temp2;
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("[OneDRAM] Ramdump ON.\n");
+#else
+	d;
+#endif
 
 	if(!onedram_get_semaphore(__func__)) 
 		return -1;
@@ -1703,7 +2227,11 @@ static int dpram_phone_ramdump_on(void)
 
 	READ_FROM_DPRAM((void *)&temp1, DPRAM_MAGIC_CODE_ADDRESS, sizeof(temp1));
 	READ_FROM_DPRAM((void *)&temp2, DPRAM_ACCESS_ENABLE_ADDRESS, sizeof(temp2));
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[OneDRAM] flag1: %x flag2: %x\n", temp1, temp2);
+#else
+	;
+#endif
 
 	/* @LDK@ send init end code to phone */
 	onedram_release_lock(__func__);
@@ -1713,7 +2241,11 @@ static int dpram_phone_ramdump_on(void)
 
 	return_onedram_semaphore(__func__);
 	if(*onedram_sem == 0x1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("[OneDRAM] Failed to return semaphore. try again\n");
+#else
+		;
+#endif
 		*onedram_sem = 0x00;
 	}
 
@@ -1801,7 +2333,11 @@ static int dpram_read_proc(char *page, char **start, off_t off,
 	}
 	else
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("semaphore:%x \n", sem);
+#else
+		;
+#endif
 	}
 
 	in_interrupt = *onedram_mailboxAB;
@@ -1942,26 +2478,58 @@ static int dpram_tty_ioctl(struct tty_struct *tty, struct file *file,
 {
 	unsigned int val;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("START cmd = 0x%x\n", cmd);
+#else
+	d;
+#endif
 	
 	switch (cmd) {
 		case DPRAM_PHONE_ON:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" +---------------------------------------------+\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" |   INIT ONEDRAM  &  READY TO TRANSFER DATA   |\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" +---------------------------------------------+\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("  - received DPRAM_PHONE_ON ioctl.\n");
+#else
+			;
+#endif
 
 			phone_sync = 0;
 			dump_on = 0;
 
 			if(boot_complete) {
 				if(dpram_init_and_report() < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk("  - Failed.. unexpected error when ipc transfer start.\n");
+#else
+					;
+#endif
 					return -1;
 				}
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("  - OK! IPC TRANSER START..!\n");
+#else
+				;
+#endif
 			}else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("  - Failed.. plz.. booting modem first.\n");
+#else
+				;
+#endif
 			}
 			return 0;
 
@@ -1992,7 +2560,11 @@ static int dpram_tty_ioctl(struct tty_struct *tty, struct file *file,
         case DPRAM_GET_DGS_INFO:
         {
             // Copy data to user
+#ifdef CONFIG_DEBUG_PRINTK
             printk("[DPRAM] Sending DGS info.\n");
+#else
+            ;
+#endif
             val = copy_to_user((void __user *)arg, aDGSBuf, DPRAM_DGS_INFO_BLOCK_SIZE);
 			return 0;
         }
@@ -2057,12 +2629,20 @@ static int dpram_tty_ioctl(struct tty_struct *tty, struct file *file,
 					val = 0xFFFF;
 					break;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("DPRAM_PHONE_GET_DEBUGLEVEL : %x, %d\n", kernel_sec_get_debug_level_from_param(), val);
+#else
+			;
+#endif
 			return copy_to_user((unsigned int *)arg, &val, sizeof(val));
 		}
 #endif
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("Unknown Cmd: %x\n", cmd);
+#else
+			d;
+#endif
 			break;
 	}
 
@@ -2230,7 +2810,11 @@ static void cmd_phone_reset_handler(void)
 
 	memcpy((void *)buf, "8 $PHONE-OFF", sizeof("8 $PHONE-OFF"));
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[PHONE ERROR] ->> %s CP RESET\n", buf);
+#else
+	;
+#endif
 
 	local_irq_save(flags);
 	memcpy(dpram_err_buf, buf, DPRAM_ERR_MSG_LEN);
@@ -2263,13 +2847,21 @@ static void cmd_sim_detect_reset_handler(void)
 		  
 			sim_state_changed = 0;
 //		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 //			printk("[%s] sim (un)detect error report delayed by Phone active pin state\n",__func__);
+#else
+//			;
+#endif
 //			phone_sync = 1; // enable secondary function call
 //			return;
 //		}
 	}
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[PHONE ERROR] ->> %s CP RESET\n", buf);
+#else
+	;
+#endif
 
 	local_irq_save(flags);
 	memcpy(dpram_err_buf, buf, DPRAM_ERR_MSG_LEN);
@@ -2323,7 +2915,11 @@ static void cmd_error_display_handler(void)
 		memcpy(buf+2, "Modem Error Fatal", sizeof("Modem Error Fatal"));
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("[PHONE ERROR] ->> %s\n", buf);
+#else
+	;
+#endif
 
 	local_irq_save(flags);
 	memcpy(dpram_err_buf, buf, DPRAM_ERR_MSG_LEN);
@@ -2339,7 +2935,11 @@ static void cmd_error_display_handler(void)
 
 static void cmd_phone_start_handler(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - Received 0xc8 from MailboxAB (Phone Boot OK).\n");
+#else
+	;
+#endif
 }
 
 static void cmd_req_time_sync_handler(void)
@@ -2434,7 +3034,11 @@ static void command_handler(u16 cmd)
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("Unknown command.. %x\n", cmd);
+#else
+			d;
+#endif
 	}
 }
 
@@ -2544,18 +3148,30 @@ static irqreturn_t dpram_irq_handler(int irq, void *dev_id)
 
 	if(mailboxAB == 0xabcdabcd) 
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Recieve .0xabcdabcd\n");
+#else
+		;
+#endif
 		boot_complete = 1;
 		return IRQ_HANDLED;
 	} else if (mailboxAB == 0x12341234)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("  - Received 0x12341234 from MailboxAB (DBL download OK).\n");
+#else
+		;
+#endif
 		return IRQ_HANDLED;
 	}
 	
 	/* valid bit verification. @LDK@ */
 	if (!(irq_mask & INT_MASK_VALID)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Invalid interrupt mask: 0x%04x\n", irq_mask);
+#else
+		;
+#endif
 		return IRQ_NONE;
 	}
 
@@ -2572,16 +3188,28 @@ static irqreturn_t dpram_irq_handler(int irq, void *dev_id)
 		} else if (tail > head) {
 			plen = 4096 - head + tail;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("%s: irq_mask 0x%04x to_read %d bytes.\n", __FUNCTION__, irq_mask, plen);
+#else
+		//;
+#endif
 		mbox = check_pending_rx();
 		if (irq_mask & INT_MASK_COMMAND && mbox) {
+#ifdef CONFIG_DEBUG_PRINTK
 			//printk("%s: process pending rx first.\n", __FUNCTION__);
+#else
+			//;
+#endif
 			non_command_handler(mbox);
 		}
 
 
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		//printk("%s: no semaphore for AP. irq_mask 0x%04x\n", __FUNCTION__, irq_mask);
+#else
+		//;
+#endif
 	}
 
 	/* command or non-command? @LDK@ */
@@ -2612,7 +3240,11 @@ static irqreturn_t dpram_irq_handler(int irq, void *dev_id)
 static irqreturn_t phone_active_irq_handler(int irq, void *dev_id)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - [IRQ_CHECK] IRQ_PHONE_ACTIVE is Detected, level: %s\n", gpio_get_value(GPIO_PHONE_ACTIVE)?"HIGH":"LOW");
+#else
+	;
+#endif
 
 	if (phone_power_off_sequence && boot_complete && !dpram_phone_getstatus())
 		cmd_phone_reset_handler();
@@ -2622,7 +3254,11 @@ static irqreturn_t phone_active_irq_handler(int irq, void *dev_id)
 
 static irqreturn_t sim_error_detect_irq_handler(int irq, void *dev_id)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("  - [IRQ_CHECK] SIM_nDETECT is Detected, level: %s\n", gpio_get_value(GPIO_SIM_nDETECT)?"HIGH":"LOW");
+#else
+	;
+#endif
 
 	if (boot_complete) {// && !gpio_get_value(GPIO_SIM_nDETECT))
 	  sim_state_changed = 1;
@@ -2695,9 +3331,13 @@ if (IS_ERR(dpram_class))
 static void request_semaphore_timer_func(unsigned long aulong)
 {
 	if( requested_semaphore > 0 ) {	// cp couln't get semaphore within 500ms from last request
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s%02d rs=%d lock=%d\n"
 				,__func__, __LINE__, 
 				requested_semaphore, atomic_read(&onedram_lock));
+#else
+		;
+#endif
 		atomic_set(&onedram_lock, 0);
 		udelay(100);
 		requested_semaphore = 0;
@@ -2705,9 +3345,13 @@ static void request_semaphore_timer_func(unsigned long aulong)
 			*onedram_sem = 0x0;
 		udelay(100);
 		*onedram_mailboxBA = INT_COMMAND(INT_MASK_CMD_SMP_REP);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s%02d rs=%d lock=%d\n"
 				,__func__, __LINE__, 
 				requested_semaphore, atomic_read(&onedram_lock));
+#else
+		;
+#endif
 	}
 }
 
@@ -2749,7 +3393,11 @@ static int register_dpram_driver(void)
 	retval = tty_register_driver(dpram_tty_driver);
 
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("tty_register_driver error\n");
+#else
+		d;
+#endif
 		put_tty_driver(dpram_tty_driver);
 		return retval;
 	}
@@ -2857,7 +3505,11 @@ static int register_interrupt_handler(void)
 	retval = request_irq(dpram_irq, dpram_irq_handler, IRQF_DISABLED, "dpram irq", NULL);
 
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("DPRAM interrupt handler failed.\n");
+#else
+		d;
+#endif
 		unregister_dpram_driver();
 		return -1;
 	}
@@ -2866,7 +3518,11 @@ static int register_interrupt_handler(void)
 	retval = request_irq(phone_active_irq, phone_active_irq_handler, IRQF_DISABLED, "Phone Active", NULL);
 
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Phone active interrupt handler failed.\n");
+#else
+		d;
+#endif
 		free_irq(phone_active_irq, NULL);
 		unregister_dpram_driver();
 		return -1;
@@ -2877,7 +3533,11 @@ static int register_interrupt_handler(void)
 		retval = request_irq(sim_error_irq, sim_error_detect_irq_handler, IRQF_DISABLED, "Sim Error", NULL);
 
 		if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("Sim error detect interrupt handler failed.\n");
+#else
+			d;
+#endif
 			free_irq(sim_error_irq, NULL);
 			unregister_dpram_driver();
 			return -1;
@@ -2893,10 +3553,18 @@ static void check_miss_interrupt(void)
 
 	if (gpio_get_value(GPIO_PHONE_ACTIVE) &&
 			(!gpio_get_value(GPIO_nINT_ONEDRAM_AP))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("there is a missed interrupt. try to read it!\n");
+#else
+		d;
+#endif
 
 		if (*onedram_sem != 0x1) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("[OneDRAM] (%s) semaphore: %d\n", __func__, *onedram_sem);
+#else
+			;
+#endif
 			onedram_get_semaphore(__func__);
 		}
 
@@ -2923,9 +3591,17 @@ static int dpram_resume(struct platform_device *dev)
 static int dpram_shutdown(struct platform_Device *dev)
 {
 	int ret = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\ndpram_shutdown !!!!!!!!!!!!!!!!!!!!!\n");
+#else
+	;
+#endif
 	ret = del_timer(&request_semaphore_timer);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\ndpram_shutdown ret : %d\n", ret);
+#else
+	;
+#endif
 	return 0;
 }
 
@@ -2933,24 +3609,40 @@ static int onedram_rfs_open(struct inode *inode, struct file *file)
 {
 	int ret=0;
 	int i=0;
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("onedram_rfs() entered\n");
+#else
+	d;
+#endif
 	return 0;
 }
 
 static int rfs_region_pagefault(struct vm_area_struct *vma,
 				struct vm_fault *vmf)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	//dprintk("rfs_region_pagefault l\n");
+#else
+	//d;
+#endif
 	
 	if (!onedram_rfs_data.buffer)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("rfs_buffer is null\n");
+#else
+		;
+#endif
 		return VM_FAULT_SIGBUS;
 	}
 
 	vmf->page = vmalloc_to_page(onedram_rfs_data.buffer + (vmf->pgoff << PAGE_SHIFT));
 	get_page(vmf->page);
+#ifdef CONFIG_DEBUG_PRINTK
 	//dprintk("rfs_region_pagefault END l\n");
+#else
+	//d;
+#endif
 	return 0;
 }
 
@@ -2962,7 +3654,11 @@ struct vm_operations_struct rfs_vm_ops =
 static int onedram_rfs_mmap(struct file *file, struct vm_area_struct *vma)
 {
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("onedram_rfs_mmap l\n");
+#else
+	d;
+#endif
 	vma->vm_flags |= VM_RESERVED;
 	vma->vm_ops = &rfs_vm_ops;
 	return 0;
@@ -2978,7 +3674,11 @@ onedram_rfs_ioctl(struct inode *inode, struct file *file,
 			if(onedram_rfs_data.data_in_buffer)
 			{
 				onedram_rfs_data.data_in_buffer = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("onedram_rfs_ioctl buffer free\n");
+#else
+				d;
+#endif
 			}
 			if(onedram_rfs_data.data_in_onedram)
 			{
@@ -2988,24 +3688,40 @@ onedram_rfs_ioctl(struct inode *inode, struct file *file,
 				rfs_send_tasklet.data = (unsigned long)&dpram_tasklet_data[RFS_INDEX];
 				/* @LDK@ raw buffer op. -> soft irq level. */
 				tasklet_schedule(&rfs_send_tasklet);
+#ifdef CONFIG_DEBUG_PRINTK
 				dprintk("onedram_rfs_ioctl data_in_onedram \n");
+#else
+				d;
+#endif
 			}
 			break;
 		
 		case ONEDRAM_RFS_BUFER_TEST:
+#ifdef CONFIG_DEBUG_PRINTK
 			dprintk("onedram_rfs_ioctl buffer DATA %s\n", onedram_rfs_data.buffer);
+#else
+			d;
+#endif
 			break;
 			
 		default:
 			return -ENOTTY;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk("onedram_rfs_ioctl entered\n");
+#else
+	d;
+#endif
 	return 0;
 }
 
 static int onedram_rfs_release(struct inode *inode, struct file *file)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(" onedram_rfs_release() entered\n");
+#else
+	d;
+#endif
 	return 0;
 }
 
@@ -3030,7 +3746,11 @@ static int __devinit dpram_probe(struct platform_device *dev)
 	/* @LDK@ register dpram (tty) driver */
 	retval = register_dpram_driver();
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Failed to register dpram (tty) driver.\n");
+#else
+		d;
+#endif
 		return -1;
 	}
 
@@ -3038,7 +3758,11 @@ static int __devinit dpram_probe(struct platform_device *dev)
 	/* @LDK@ register dpram error device */
 	retval = register_dpram_err_device();
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dprintk("Failed to register dpram error device.\n");
+#else
+		d;
+#endif
 
 		unregister_dpram_driver();
 		return -1;
@@ -3066,12 +3790,20 @@ static int __devinit dpram_probe(struct platform_device *dev)
 	onedram_rfs_data.buffer = vmalloc(SHARE_MEM_SIZE);
 	if(!onedram_rfs_data.buffer)
 	{
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Cannot allocate onedram_rfs_data.buffer\n");
+#else
+		;
+#endif
 	}
 	retval = misc_register(&onedram_rfs_device);
 	
 	if (retval) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("onedram_rfs_device Cannot register miscdev ret: %d \n",retval);
+#else
+		;
+#endif
 		return -1;
 	}
 #ifdef CONFIG_PROC_FS

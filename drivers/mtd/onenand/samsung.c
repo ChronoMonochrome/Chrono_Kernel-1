@@ -185,10 +185,14 @@ static void s3c_dump_reg(void)
 	int i;
 
 	for (i = 0; i < 0x400; i += 0x40) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "0x%08X: 0x%08x 0x%08x 0x%08x 0x%08x\n",
 			(unsigned int) onenand->base + i,
 			s3c_read_reg(i), s3c_read_reg(i + 0x10),
 			s3c_read_reg(i + 0x20), s3c_read_reg(i + 0x30));
+#else
+		;
+#endif
 	}
 }
 #endif

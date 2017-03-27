@@ -38,15 +38,23 @@ struct mtd_info *mtd_do_chip_probe(struct map_info *map, struct chip_probe *cp)
 
 	if (mtd) {
 		if (mtd->size > map->size) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Reducing visibility of %ldKiB chip to %ldKiB\n",
 			       (unsigned long)mtd->size >> 10,
 			       (unsigned long)map->size >> 10);
+#else
+			;
+#endif
 			mtd->size = map->size;
 		}
 		return mtd;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING"gen_probe: No supported Vendor Command Set found\n");
+#else
+	;
+#endif
 
 	kfree(cfi->cfiq);
 	kfree(cfi);
@@ -80,7 +88,11 @@ static struct cfi_private *genprobe_ident_chips(struct map_info *map, struct chi
 	 because they make them up themselves.
       */
 	if (cfi.cfiq->NumEraseRegions == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Number of erase regions is zero\n");
+#else
+		;
+#endif
 		kfree(cfi.cfiq);
 		return NULL;
 	}
@@ -107,14 +119,22 @@ static struct cfi_private *genprobe_ident_chips(struct map_info *map, struct chi
 	 */
 	max_chips = map->size >> cfi.chipshift;
 	if (!max_chips) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "NOR chip too large to fit in mapping. Attempting to cope...\n");
+#else
+		;
+#endif
 		max_chips = 1;
 	}
 
 	mapsize = sizeof(long) * DIV_ROUND_UP(max_chips, BITS_PER_LONG);
 	chip_map = kzalloc(mapsize, GFP_KERNEL);
 	if (!chip_map) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: kmalloc failed for CFI chip map\n", map->name);
+#else
+		;
+#endif
 		kfree(cfi.cfiq);
 		return NULL;
 	}
@@ -139,7 +159,11 @@ static struct cfi_private *genprobe_ident_chips(struct map_info *map, struct chi
 	retcfi = kmalloc(sizeof(struct cfi_private) + cfi.numchips * sizeof(struct flchip), GFP_KERNEL);
 
 	if (!retcfi) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: kmalloc failed for CFI private structure\n", map->name);
+#else
+		;
+#endif
 		kfree(cfi.cfiq);
 		kfree(chip_map);
 		return NULL;
@@ -224,7 +248,11 @@ static inline struct mtd_info *cfi_cmdset_unknown(struct map_info *map,
 		return mtd;
 	}
 #endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Support for command set %04X not present\n", type);
+#else
+	;
+#endif
 
 	return NULL;
 }

@@ -675,7 +675,7 @@ static void wl_ops_flush(struct ieee80211_hw *hw, bool drop)
 {
 	struct wl_info *wl = HW_TO_WL(hw);
 
-	no_printk("%s: drop = %s\n", __func__, drop ? "true" : "false");
+;
 
 	/* wait for packet queue and dma fifos to run empty */
 	WL_LOCK(wl);

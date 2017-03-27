@@ -149,7 +149,11 @@ void tty_wait_until_sent(struct tty_struct *tty, long timeout)
 #ifdef TTY_DEBUG_WAIT_UNTIL_SENT
 	char buf[64];
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s wait until sent...\n", tty_name(tty, buf));
+#else
+	;
+#endif
 #endif
 	if (!timeout)
 		timeout = MAX_SCHEDULE_TIMEOUT;
@@ -175,7 +179,11 @@ static void unset_locked_termios(struct ktermios *termios,
 #define NOSET_MASK(x, y, z) (x = ((x) & ~(z)) | ((y) & (z)))
 
 	if (!locked) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Warning?!? termios_locked is NULL.\n");
+#else
+		;
+#endif
 		return;
 	}
 
@@ -431,8 +439,12 @@ speed_t tty_get_baud_rate(struct tty_struct *tty)
 
 	if (baud == 38400 && tty->alt_speed) {
 		if (!tty->warned) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Use of setserial/setrocket to "
 					    "set SPD_* flags is deprecated\n");
+#else
+			;
+#endif
 			tty->warned = 1;
 		}
 		baud = tty->alt_speed;

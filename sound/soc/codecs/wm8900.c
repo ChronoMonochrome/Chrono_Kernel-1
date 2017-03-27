@@ -692,8 +692,12 @@ static int fll_factors(struct _fll_div *fll_div, unsigned int Fref,
 	}
 
 	if (target > 100000000)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "wm8900: FLL rate %u out of range, Fref=%u"
 		       " Fout=%u\n", target, Fref, Fout);
+#else
+		;
+#endif
 	if (div > 32) {
 		printk(KERN_ERR "wm8900: Invalid FLL division rate %u, "
 		       "Fref=%u, Fout=%u, target=%u\n",

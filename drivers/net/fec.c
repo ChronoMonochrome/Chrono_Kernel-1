@@ -257,7 +257,7 @@ fec_enet_start_xmit(struct sk_buff *skb, struct net_device *ndev)
 		/* Ooops.  All transmit buffers are full.  Bail out.
 		 * This should not happen, since ndev->tbusy should be set.
 		 */
-		printk("%s: tx queue full!.\n", ndev->name);
+;
 		spin_unlock_irqrestore(&fep->hw_lock, flags);
 		return NETDEV_TX_BUSY;
 	}
@@ -462,7 +462,7 @@ fec_stop(struct net_device *ndev)
 		writel(1, fep->hwp + FEC_X_CNTRL); /* Graceful transmit stop */
 		udelay(10);
 		if (!(readl(fep->hwp + FEC_IEVENT) & FEC_ENET_GRA))
-			printk("fec_stop : Graceful transmit stop did not complete !\n");
+;
 	}
 
 	/* Whack a reset.  We should wait for this. */
@@ -525,7 +525,7 @@ fec_enet_tx(struct net_device *ndev)
 		}
 
 		if (status & BD_ENET_TX_READY)
-			printk("HEY! Enet xmit interrupt and TX_READY.\n");
+;
 
 		/* Deferred means some collisions occurred during transmit,
 		 * but we eventually sent the packet OK.
@@ -591,7 +591,7 @@ fec_enet_rx(struct net_device *ndev)
 		 * the last indicator should be set.
 		 */
 		if ((status & BD_ENET_RX_LAST) == 0)
-			printk("FEC ENET: rcv is not +last\n");
+;
 
 		if (!fep->opened)
 			goto rx_processing_done;
@@ -642,8 +642,8 @@ fec_enet_rx(struct net_device *ndev)
 		skb = dev_alloc_skb(pkt_len - 4 + NET_IP_ALIGN);
 
 		if (unlikely(!skb)) {
-			printk("%s: Memory squeeze, dropping packet.\n",
-					ndev->name);
+//			printk("%s: Memory squeeze, dropping packet.\n",
+;
 			ndev->stats.rx_dropped++;
 		} else {
 			skb_reserve(skb, NET_IP_ALIGN);
@@ -826,7 +826,7 @@ static int fec_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
 			usecs_to_jiffies(FEC_MII_TIMEOUT));
 	if (time_left == 0) {
 		fep->mii_timeout = 1;
-		printk(KERN_ERR "FEC: MDIO read timeout\n");
+;
 		return -ETIMEDOUT;
 	}
 
@@ -854,7 +854,7 @@ static int fec_enet_mdio_write(struct mii_bus *bus, int mii_id, int regnum,
 			usecs_to_jiffies(FEC_MII_TIMEOUT));
 	if (time_left == 0) {
 		fep->mii_timeout = 1;
-		printk(KERN_ERR "FEC: MDIO write timeout\n");
+;
 		return -ETIMEDOUT;
 	}
 
@@ -892,8 +892,8 @@ static int fec_enet_mii_probe(struct net_device *ndev)
 	}
 
 	if (phy_id >= PHY_MAX_ADDR) {
-		printk(KERN_INFO "%s: no PHY, assuming direct connection "
-			"to switch\n", ndev->name);
+//		printk(KERN_INFO "%s: no PHY, assuming direct connection "
+;
 		strncpy(mdio_bus_id, "0", MII_BUS_ID_SIZE);
 		phy_id = 0;
 	}
@@ -902,7 +902,7 @@ static int fec_enet_mii_probe(struct net_device *ndev)
 	phy_dev = phy_connect(ndev, phy_name, &fec_enet_adjust_link, 0,
 		PHY_INTERFACE_MODE_MII);
 	if (IS_ERR(phy_dev)) {
-		printk(KERN_ERR "%s: could not attach to PHY\n", ndev->name);
+;
 		return PTR_ERR(phy_dev);
 	}
 
@@ -914,10 +914,10 @@ static int fec_enet_mii_probe(struct net_device *ndev)
 	fep->link = 0;
 	fep->full_duplex = 0;
 
-	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
-		"(mii_bus:phy_addr=%s, irq=%d)\n", ndev->name,
-		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
-		fep->phy_dev->irq);
+//	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
+//		"(mii_bus:phy_addr=%s, irq=%d)\n", ndev->name,
+//		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
+;
 
 	return 0;
 }
@@ -1303,7 +1303,7 @@ static int fec_enet_init(struct net_device *ndev)
 	cbd_base = dma_alloc_coherent(NULL, PAGE_SIZE, &fep->bd_dma,
 			GFP_KERNEL);
 	if (!cbd_base) {
-		printk("FEC: allocate descriptor memory failed?\n");
+;
 		return -ENOMEM;
 	}
 
@@ -1540,7 +1540,7 @@ static struct platform_driver fec_driver = {
 static int __init
 fec_enet_module_init(void)
 {
-	printk(KERN_INFO "FEC Ethernet Driver\n");
+;
 
 	return platform_driver_register(&fec_driver);
 }

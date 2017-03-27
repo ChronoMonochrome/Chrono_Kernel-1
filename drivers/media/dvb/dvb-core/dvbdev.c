@@ -265,8 +265,12 @@ int dvb_register_device(struct dvb_adapter *adap, struct dvb_device **pdvbdev,
 		return PTR_ERR(clsdev);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(KERN_DEBUG "DVB: register adapter%d/%s%d @ minor: %i (0x%02x)\n",
 		adap->num, dnames[type], id, minor, minor);
+#else
+	d;
+#endif
 
 	return 0;
 }
@@ -345,7 +349,11 @@ int dvb_register_adapter(struct dvb_adapter *adap, const char *name,
 	memset (adap, 0, sizeof(struct dvb_adapter));
 	INIT_LIST_HEAD (&adap->device_list);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "DVB: registering new adapter (%s)\n", name);
+#else
+	;
+#endif
 
 	adap->num = num;
 	adap->name = name;

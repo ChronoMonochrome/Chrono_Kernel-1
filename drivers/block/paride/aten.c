@@ -124,10 +124,18 @@ static void aten_log_adapter( PIA *pi, char * scratch, int verbose )
 
 {       char    *mode_string[2] = {"4-bit","8-bit"};
 
+#ifdef CONFIG_DEBUG_PRINTK
         printk("%s: aten %s, ATEN EH-100 at 0x%x, ",
                 pi->device,ATEN_VERSION,pi->port);
+#else
+        ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
         printk("mode %d (%s), delay %d\n",pi->mode,
 		mode_string[pi->mode],pi->delay);
+#else
+        ;
+#endif
 
 }
 

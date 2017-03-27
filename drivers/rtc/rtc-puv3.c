@@ -342,7 +342,11 @@ static char __initdata banner[] = "PKUnity-v3 RTC, (c) 2009 PKUnity Co.\n";
 
 static int __init puv3_rtc_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(banner);
+#else
+	;
+#endif
 	return platform_driver_register(&puv3_rtcdrv);
 }
 

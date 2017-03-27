@@ -128,8 +128,8 @@ static int wis_tw9903_command(struct i2c_client *client,
 			0x06, 0xc0, /* reset device */
 			0,	0,
 		};
-		printk(KERN_DEBUG "vscale is %04x, hscale is %04x\n",
-				vscale, hscale);
+//		printk(KERN_DEBUG "vscale is %04x, hscale is %04x\n",
+;
 		/*write_regs(client, regs);*/
 		break;
 	}
@@ -288,12 +288,12 @@ static int wis_tw9903_probe(struct i2c_client *client,
 	dec->hue = 0;
 	i2c_set_clientdata(client, dec);
 
-	printk(KERN_DEBUG
-		"wis-tw9903: initializing TW9903 at address %d on %s\n",
-		client->addr, adapter->name);
+//	printk(KERN_DEBUG
+//		"wis-tw9903: initializing TW9903 at address %d on %s\n",
+;
 
 	if (write_regs(client, initial_registers) < 0) {
-		printk(KERN_ERR "wis-tw9903: error initializing TW9903\n");
+;
 		kfree(dec);
 		return -ENODEV;
 	}

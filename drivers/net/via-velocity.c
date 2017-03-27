@@ -456,12 +456,12 @@ static void __devinit velocity_set_bool_opt(u32 *opt, int val, int def, u32 flag
 	if (val == -1)
 		*opt |= (def ? flag : 0);
 	else if (val < 0 || val > 1) {
-		printk(KERN_NOTICE "%s: the value of parameter %s is invalid, the valid range is (0-1)\n",
-			devname, name);
+//		printk(KERN_NOTICE "%s: the value of parameter %s is invalid, the valid range is (0-1)\n",
+;
 		*opt |= (def ? flag : 0);
 	} else {
-		printk(KERN_INFO "%s: set parameter %s to %s\n",
-			devname, name, val ? "TRUE" : "FALSE");
+//		printk(KERN_INFO "%s: set parameter %s to %s\n",
+;
 		*opt |= (val ? flag : 0);
 	}
 }
@@ -1822,7 +1822,7 @@ static void velocity_error(struct velocity_info *vptr, int status)
 	if (status & ISR_TXSTLI) {
 		struct mac_regs __iomem *regs = vptr->mac_regs;
 
-		printk(KERN_ERR "TD structure error TDindex=%hx\n", readw(&regs->TDIdx[0]));
+;
 		BYTE_REG_BITS_ON(TXESR_TDSTR, &regs->TXESR);
 		writew(TRDCSR_RUN, &regs->TDCSRClr);
 		netif_stop_queue(vptr->dev);
@@ -2712,9 +2712,9 @@ static void __devinit velocity_print_info(struct velocity_info *vptr)
 {
 	struct net_device *dev = vptr->dev;
 
-	printk(KERN_INFO "%s: %s\n", dev->name, get_chip_name(vptr->chip_id));
-	printk(KERN_INFO "%s: Ethernet Address: %pM\n",
-		dev->name, dev->dev_addr);
+;
+//	printk(KERN_INFO "%s: Ethernet Address: %pM\n",
+;
 }
 
 static u32 velocity_get_link(struct net_device *dev)
@@ -2766,10 +2766,10 @@ static int __devinit velocity_found1(struct pci_dev *pdev, const struct pci_devi
 
 
 	if (first) {
-		printk(KERN_INFO "%s Ver. %s\n",
-			VELOCITY_FULL_DRV_NAM, VELOCITY_VERSION);
-		printk(KERN_INFO "Copyright (c) 2002, 2003 VIA Networking Technologies, Inc.\n");
-		printk(KERN_INFO "Copyright (c) 2004 Red Hat Inc.\n");
+//		printk(KERN_INFO "%s Ver. %s\n",
+;
+;
+;
 		first = 0;
 	}
 

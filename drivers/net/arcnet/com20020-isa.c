@@ -55,7 +55,7 @@ static int __init com20020isa_probe(struct net_device *dev)
 	struct arcnet_local *lp = netdev_priv(dev);
 	int err;
 
-	BUGLVL(D_NORMAL) printk(VERSION);
+;
 
 	ioaddr = dev->base_addr;
 	if (!ioaddr) {
@@ -194,7 +194,7 @@ static int __init com20020isa_setup(char *s)
 
 	switch (ints[0]) {
 	default:		/* ERROR */
-		printk("com90xx: Too many arguments.\n");
+;
 	case 6:		/* Timeout */
 		timeout = ints[6];
 	case 5:		/* CKP value */

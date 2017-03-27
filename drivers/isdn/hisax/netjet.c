@@ -381,7 +381,11 @@ static void got_frame(struct BCState *bcs, int count) {
 	struct sk_buff *skb;
 		
 	if (!(skb = dev_alloc_skb(count)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "TIGER: receive out of memory\n");
+#else
+		;
+#endif
 	else {
 		memcpy(skb_put(skb, count), bcs->hw.tiger.rcvbuf, count);
 		skb_queue_tail(&bcs->rqueue, skb);
@@ -810,7 +814,11 @@ tiger_l2l1(struct PStack *st, int pr, void *arg)
 		case (PH_PULL | INDICATION):
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "tiger_l2l1: this shouldn't happen\n");
+#else
+				;
+#endif
 			} else {
 				bcs->tx_skb = skb;
 				bcs->cs->BC_Send_Data(bcs);
@@ -874,13 +882,21 @@ open_tigerstate(struct IsdnCardState *cs, struct BCState *bcs)
 {
 	if (!test_and_set_bit(BC_FLG_INIT, &bcs->Flag)) {
 		if (!(bcs->hw.tiger.rcvbuf = kmalloc(HSCX_BUFMAX, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "HiSax: No memory for tiger.rcvbuf\n");
+#else
+			;
+#endif
 			return (1);
 		}
 		if (!(bcs->hw.tiger.sendbuf = kmalloc(RAW_BUFMAX, GFP_ATOMIC))) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 			       "HiSax: No memory for tiger.sendbuf\n");
+#else
+			;
+#endif
 			return (1);
 		}
 		skb_queue_head_init(&bcs->rqueue);
@@ -914,8 +930,12 @@ inittiger(struct IsdnCardState *cs)
 {
 	if (!(cs->bcs[0].hw.tiger.send = kmalloc(NETJET_DMA_TXSIZE * sizeof(unsigned int),
 		GFP_KERNEL | GFP_DMA))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: No memory for tiger.send\n");
+#else
+		;
+#endif
 		return;
 	}
 	cs->bcs[0].hw.tiger.s_irq = cs->bcs[0].hw.tiger.send + NETJET_DMA_TXSIZE/2 - 1;
@@ -935,8 +955,12 @@ inittiger(struct IsdnCardState *cs)
 		cs->hw.njet.base + NETJET_DMA_READ_END);
 	if (!(cs->bcs[0].hw.tiger.rec = kmalloc(NETJET_DMA_RXSIZE * sizeof(unsigned int),
 		GFP_KERNEL | GFP_DMA))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "HiSax: No memory for tiger.rec\n");
+#else
+		;
+#endif
 		return;
 	}
 	debugl1(cs, "tiger: rec buf %p - %p", cs->bcs[0].hw.tiger.rec,

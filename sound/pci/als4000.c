@@ -578,8 +578,12 @@ static irqreturn_t snd_als4000_interrupt(int irq, void *dev_id)
 		snd_als4k_iobase_readb(chip->alt_port,
 					ALS4K_IOB_16_ACK_FOR_CR1E);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/* printk(KERN_INFO "als4000: irq 0x%04x 0x%04x\n",
 					 pci_irqstatus, sb_irqstatus); */
+#else
+	/* ;
+#endif
 
 	/* only ack the things we actually handled above */
 	return IRQ_RETVAL(
@@ -791,7 +795,11 @@ static int __devinit snd_als4000_create_gameport(struct snd_card_als4000 *acard,
 	}
 
 	if (!r) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "als4000: cannot reserve joystick ports\n");
+#else
+		;
+#endif
 		return -EBUSY;
 	}
 

@@ -72,8 +72,12 @@ static const PCI_ENTRY id_list[] =
 static void
 release_io_hfcpci(struct IsdnCardState *cs)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: release hfcpci at %p\n",
 		cs->hw.hfcpci.pci_io);
+#else
+	;
+#endif
 	cs->hw.hfcpci.int_m2 = 0;					/* interrupt output off ! */
 	Write_hfc(cs, HFCPCI_INT_M2, cs->hw.hfcpci.int_m2);
 	Write_hfc(cs, HFCPCI_CIRM, HFCPCI_RESET);			/* Reset On */
@@ -100,14 +104,22 @@ reset_hfcpci(struct IsdnCardState *cs)
 	cs->hw.hfcpci.int_m2 = 0;	/* interrupt output off ! */
 	Write_hfc(cs, HFCPCI_INT_M2, cs->hw.hfcpci.int_m2);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HFC_PCI: resetting card\n");
+#else
+	;
+#endif
 	pci_write_config_word(cs->hw.hfcpci.dev, PCI_COMMAND, PCI_ENA_MEMIO + PCI_ENA_MASTER);	/* enable memory ports + busmaster */
 	Write_hfc(cs, HFCPCI_CIRM, HFCPCI_RESET);	/* Reset On */
 	mdelay(10);
 	Write_hfc(cs, HFCPCI_CIRM, 0);	/* Reset Off */
 	mdelay(10);
 	if (Read_hfc(cs, HFCPCI_STATUS) & 2)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC-PCI init bit busy\n");
+#else
+		;
+#endif
 
 	cs->hw.hfcpci.fifo_en = 0x30;	/* only D fifos enabled */
 	Write_hfc(cs, HFCPCI_FIFO_EN, cs->hw.hfcpci.fifo_en);
@@ -294,7 +306,11 @@ hfcpci_empty_fifo(struct BCState *bcs, bzfifo_type * bz, u_char * bdata, int cou
 		bz->f2 = new_f2;	/* next buffer */
 		skb = NULL;
 	} else if (!(skb = dev_alloc_skb(count - 3)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFCPCI: receive out of memory\n");
+#else
+		;
+#endif
 	else {
 		total = count;
 		count -= 3;
@@ -385,7 +401,11 @@ receive_dmsg(struct IsdnCardState *cs)
 			skb_queue_tail(&cs->rq, skb);
 			sched_event_D_pci(cs, D_RCVBUFREADY);
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "HFC-PCI: D receive out of memory\n");
+#else
+			;
+#endif
 	}
 	test_and_clear_bit(FLG_LOCK_ATOMIC, &cs->HW_Flags);
 	return (1);
@@ -418,7 +438,11 @@ hfcpci_empty_fifo_trans(struct BCState *bcs, bzfifo_type * bz, u_char * bdata)
 		new_z2 -= B_FIFO_SIZE;	/* buffer wrap */
 
 	if (!(skb = dev_alloc_skb(fcnt)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFCPCI: receive out of memory\n");
+#else
+		;
+#endif
 	else {
 		ptr = skb_put(skb, fcnt);
 		if (*z2r + fcnt <= B_FIFO_SIZE + B_SUB_VAL)
@@ -1408,7 +1432,11 @@ hfcpci_l2l1(struct PStack *st, int pr, void *arg)
 			spin_lock_irqsave(&bcs->cs->lock, flags);
 			if (bcs->tx_skb) {
 				spin_unlock_irqrestore(&bcs->cs->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "hfc_l2l1: this shouldn't happen\n");
+#else
+				;
+#endif
 				break;
 			}
 //			test_and_set_bit(BC_FLG_BUSY, &bcs->Flag);
@@ -1648,7 +1676,11 @@ setup_hfcpci(struct IsdnCard *card)
 #endif
 
 	strcpy(tmp, hfcpci_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: HFC-PCI driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 
 	cs->hw.hfcpci.int_s1 = 0;
 	cs->dc.hfcpci.ph_state = 0;
@@ -1667,13 +1699,21 @@ setup_hfcpci(struct IsdnCard *card)
 			if (pci_enable_device(tmp_hfcpci))
 				continue;
 			if (pci_set_dma_mask(tmp_hfcpci, dma_mask)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 					"HiSax hfc_pci: No suitable DMA available.\n");
+#else
+				;
+#endif
 				continue;
 			}
 			if (pci_set_consistent_dma_mask(tmp_hfcpci, dma_mask)) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING
 					"HiSax hfc_pci: No suitable consistent DMA available.\n");
+#else
+				;
+#endif
 				continue;
 			}
 			pci_set_master(tmp_hfcpci);
@@ -1685,7 +1725,11 @@ setup_hfcpci(struct IsdnCard *card)
 	}
 
 	if (!tmp_hfcpci) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC-PCI: No PCI card found\n");
+#else
+		;
+#endif
 		return (0);
 	}
 
@@ -1694,14 +1738,26 @@ setup_hfcpci(struct IsdnCard *card)
 	cs->hw.hfcpci.dev = dev_hfcpci;
 	cs->irq = dev_hfcpci->irq;
 	if (!cs->irq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC-PCI: No IRQ for PCI card found\n");
+#else
+		;
+#endif
 		return (0);
 	}
 	cs->hw.hfcpci.pci_io = (char *)(unsigned long)dev_hfcpci->resource[1].start;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: HFC-PCI card manufacturer: %s card name: %s\n", id_list[i].vendor_name, id_list[i].card_name);
+#else
+	;
+#endif
 
 	if (!cs->hw.hfcpci.pci_io) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC-PCI: No IO-Mem for PCI card found\n");
+#else
+		;
+#endif
 		return (0);
 	}
 
@@ -1709,25 +1765,37 @@ setup_hfcpci(struct IsdnCard *card)
 	cs->hw.hfcpci.fifos = pci_alloc_consistent(cs->hw.hfcpci.dev,
 					0x8000, &cs->hw.hfcpci.dma);
 	if (!cs->hw.hfcpci.fifos) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HFC-PCI: Error allocating FIFO memory!\n");
+#else
+		;
+#endif
 		return 0;
 	}
 	if (cs->hw.hfcpci.dma & 0x7fff) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		    "HFC-PCI: Error DMA memory not on 32K boundary (%lx)\n",
 		    (u_long)cs->hw.hfcpci.dma);
+#else
+		;
+#endif
 		pci_free_consistent(cs->hw.hfcpci.dev, 0x8000,
 			cs->hw.hfcpci.fifos, cs->hw.hfcpci.dma);
 		return 0;
 	}
 	pci_write_config_dword(cs->hw.hfcpci.dev, 0x80, (u32)cs->hw.hfcpci.dma);
 	cs->hw.hfcpci.pci_io = ioremap((ulong) cs->hw.hfcpci.pci_io, 256);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "HFC-PCI: defined at mem %p fifo %p(%lx) IRQ %d HZ %d\n",
 	       cs->hw.hfcpci.pci_io,
 	       cs->hw.hfcpci.fifos,
 	       (u_long)cs->hw.hfcpci.dma,
 	       cs->irq, HZ);
+#else
+	;
+#endif
 
 	spin_lock_irqsave(&cs->lock, flags);
 

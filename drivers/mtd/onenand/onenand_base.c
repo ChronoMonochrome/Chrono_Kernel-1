@@ -561,8 +561,12 @@ static int onenand_wait(struct mtd_info *mtd, int state)
 				mtd->ecc_stats.failed++;
 				return -EBADMSG;
 			} else if (ecc & ONENAND_ECC_1BIT_ALL) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "%s: correctable ECC error = 0x%04x\n",
 					__func__, ecc);
+#else
+				;
+#endif
 				mtd->ecc_stats.corrected++;
 			}
 		}
@@ -648,8 +652,12 @@ static int onenand_try_interrupt_wait(struct mtd_info *mtd, int state)
 	timeout = msecs_to_jiffies(100);
 	remain = wait_for_completion_timeout(&this->complete, timeout);
 	if (!remain) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "OneNAND: There's no interrupt. "
 				"We use the normal wait\n");
+#else
+		;
+#endif
 
 		/* Release the irq */
 		free_irq(this->irq, this);
@@ -1090,8 +1098,12 @@ static int onenand_recover_lsb(struct mtd_info *mtd, loff_t addr, int status)
 	/* We are attempting to reread, so decrement stats.failed
 	 * which was incremented by onenand_wait due to read failure
 	 */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Attempting to recover from uncorrectable read\n",
 		__func__);
+#else
+	;
+#endif
 	mtd->ecc_stats.failed--;
 
 	/* Issue the LSB page recovery command */
@@ -1537,9 +1549,13 @@ static int onenand_bbt_wait(struct mtd_info *mtd, int state)
 	if (interrupt & ONENAND_INT_READ) {
 		ecc = onenand_read_ecc(this);
 		if (ecc & ONENAND_ECC_2BIT_ALL) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "%s: ecc 0x%04x ctrl 0x%04x "
 			       "intr 0x%04x addr1 %#x addr8 %#x\n",
 			       __func__, ecc, ctrl, interrupt, addr1, addr8);
+#else
+			;
+#endif
 			return ONENAND_BBT_READ_ECC_ERROR;
 		}
 	} else {
@@ -1551,8 +1567,12 @@ static int onenand_bbt_wait(struct mtd_info *mtd, int state)
 
 	/* Initial bad block case: 0x2400 or 0x0400 */
 	if (ctrl & ONENAND_CTRL_ERROR) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s: ctrl 0x%04x intr 0x%04x addr1 %#x "
 		       "addr8 %#x\n", __func__, ctrl, interrupt, addr1, addr8);
+#else
+		;
+#endif
 		return ONENAND_BBT_READ_ERROR;
 	}
 
@@ -2311,9 +2331,13 @@ static int onenand_multiblock_erase(struct mtd_info *mtd,
 	while (len) {
 		/* Check if we have a bad block, we do not erase bad blocks */
 		if (onenand_block_isbad_nolock(mtd, addr, 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: attempt to erase a bad block "
 			       "at addr 0x%012llx\n",
 			       __func__, (unsigned long long) addr);
+#else
+			;
+#endif
 			instr->state = MTD_ERASE_FAILED;
 			return -EIO;
 		}
@@ -2429,9 +2453,13 @@ static int onenand_block_by_block_erase(struct mtd_info *mtd,
 
 		/* Check if we have a bad block, we do not erase bad blocks */
 		if (onenand_block_isbad_nolock(mtd, addr, 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: attempt to erase a bad block "
 					"at addr 0x%012llx\n",
 					__func__, (unsigned long long) addr);
+#else
+			;
+#endif
 			instr->state = MTD_ERASE_FAILED;
 			return -EIO;
 		}
@@ -3019,19 +3047,59 @@ static int onenand_otp_write_oob_nolock(struct mtd_info *mtd, loff_t to,
 		status &= 0x60;
 
 		if (status == 0x60) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "\nBLOCK\tSTATUS\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "1st Block\tLOCKED\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "OTP Block\tLOCKED\n");
+#else
+			;
+#endif
 		} else if (status == 0x20) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "\nBLOCK\tSTATUS\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "1st Block\tLOCKED\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "OTP Block\tUN-LOCKED\n");
+#else
+			;
+#endif
 		} else if (status == 0x40) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "\nBLOCK\tSTATUS\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "1st Block\tUN-LOCKED\n");
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "OTP Block\tLOCKED\n");
+#else
+			;
+#endif
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Reboot to check\n");
+#else
+			;
+#endif
 		}
 
 		written += thislen;
@@ -3394,7 +3462,11 @@ static int onenand_lock_user_prot_reg(struct mtd_info *mtd, loff_t from,
 	else if (otp == 3)
 		buf[otp_lock_offset] = 0xF0;
 	else if (otp != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "[OneNAND] Invalid option selected for OTP\n");
+#else
+		;
+#endif
 
 	ret = onenand_otp_walk(mtd, from, len, &retlen, buf, do_otp_lock, MTD_OTP_USER);
 
@@ -3463,15 +3535,35 @@ static void onenand_check_features(struct mtd_info *mtd)
 	}
 
 	if (this->options & ONENAND_HAS_CONT_LOCK)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Lock scheme is Continuous Lock\n");
+#else
+		;
+#endif
 	if (this->options & ONENAND_HAS_UNLOCK_ALL)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Chip support all block unlock\n");
+#else
+		;
+#endif
 	if (this->options & ONENAND_HAS_2PLANE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Chip has 2 plane\n");
+#else
+		;
+#endif
 	if (this->options & ONENAND_HAS_4KB_PAGE)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Chip has 4KiB pagesize\n");
+#else
+		;
+#endif
 	if (this->options & ONENAND_HAS_CACHE_PROGRAM)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Chip has cache program feature\n");
+#else
+		;
+#endif
 }
 
 /**
@@ -3490,6 +3582,7 @@ static void onenand_print_device_info(int device, int version)
         ddp = device & ONENAND_DEVICE_IS_DDP;
         density = onenand_get_density(device);
 	flexonenand = device & DEVICE_IS_FLEXONENAND;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s%sOneNAND%s %dMB %sV 16-bit (0x%02x)\n",
 		demuxed ? "" : "Muxed ",
 		flexonenand ? "Flex-" : "",
@@ -3497,7 +3590,14 @@ static void onenand_print_device_info(int device, int version)
                 (16 << density),
                 vcc ? "2.65/3.3" : "1.8",
                 device);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "OneNAND version = 0x%04x\n", version);
+#else
+	;
+#endif
 }
 
 static const struct onenand_manufacturers onenand_manuf_ids[] = {
@@ -3526,7 +3626,11 @@ static int onenand_check_maf(int manuf)
 	else
 		name = "Unknown";
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "OneNAND Manufacturer: %s (0x%0x)\n", name, manuf);
+#else
+	;
+#endif
 
 	return (i == size);
 }
@@ -3562,8 +3666,12 @@ static int flexonenand_get_boundary(struct mtd_info *mtd)
 		this->command(mtd, ONENAND_CMD_RESET, 0, 0);
 		ret = this->wait(mtd, FL_RESETING);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Die %d boundary: %d%s\n", die,
 		       this->boundary[die], locked ? "(Locked)" : "(Unlocked)");
+#else
+		;
+#endif
 	}
 
 	/* Enable ECC */
@@ -3627,13 +3735,21 @@ static void flexonenand_get_size(struct mtd_info *mtd)
 	if (mtd->numeraseregions == 1)
 		mtd->erasesize >>= 1;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Device has %d eraseregions\n", mtd->numeraseregions);
+#else
+	;
+#endif
 	for (i = 0; i < mtd->numeraseregions; i++)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "[offset: 0x%08x, erasesize: 0x%05x,"
 			" numblocks: %04u]\n",
 			(unsigned int) mtd->eraseregions[i].offset,
 			mtd->eraseregions[i].erasesize,
 			mtd->eraseregions[i].numblocks);
+#else
+		;
+#endif
 
 	for (die = 0, mtd->size = 0; die < this->dies; die++) {
 		this->diesize[die] = (loff_t)blksperdie << this->erase_shift;
@@ -3671,7 +3787,11 @@ static int flexonenand_check_blocks_erased(struct mtd_info *mtd, int start, int 
 	};
 	loff_t addr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "Check blocks from %d to %d\n", start, end);
+#else
+	;
+#endif
 
 	for (block = start; block <= end; block++) {
 		addr = flexonenand_addr(this, block);
@@ -3691,8 +3811,12 @@ static int flexonenand_check_blocks_erased(struct mtd_info *mtd, int start, int 
 				break;
 
 		if (i != mtd->oobsize) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: Block %d not erased.\n",
 				__func__, block);
+#else
+			;
+#endif
 			return 1;
 		}
 	}
@@ -3753,8 +3877,12 @@ int flexonenand_set_boundary(struct mtd_info *mtd, int die,
 		goto out;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Changing die %d boundary: %d%s\n",
 			die, boundary, lock ? "(Locked)" : "(Unlocked)");
+#else
+	;
+#endif
 
 	addr = die ? this->diesize[0] : 0;
 
@@ -4003,7 +4131,11 @@ int onenand_scan(struct mtd_info *mtd, int maxchips)
 
 	/* Set Sync. Burst Read after probing */
 	if (this->mmcontrol) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "OneNAND Sync. Burst Read support\n");
+#else
+		;
+#endif
 		this->read_bufferram = onenand_sync_read_bufferram;
 	}
 
@@ -4066,8 +4198,12 @@ int onenand_scan(struct mtd_info *mtd, int maxchips)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: No OOB scheme defined for oobsize %d\n",
 			__func__, mtd->oobsize);
+#else
+		;
+#endif
 		mtd->subpage_sft = 0;
 		/* To prevent kernel oops */
 		this->ecclayout = &onenand_oob_32;

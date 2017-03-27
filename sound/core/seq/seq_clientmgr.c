@@ -290,8 +290,12 @@ static void seq_free_client(struct snd_seq_client * client)
 	mutex_lock(&register_mutex);
 	switch (client->type) {
 	case NO_CLIENT:
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "Seq: Trying to free unused client %d\n",
 			   client->number);
+#else
+		;
+#endif
 		break;
 	case USER_CLIENT:
 	case KERNEL_CLIENT:

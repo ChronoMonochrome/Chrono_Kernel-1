@@ -70,7 +70,7 @@ int nfsd_reply_cache_init(void)
 	cache_disabled = 0;
 	return 0;
 out_nomem:
-	printk(KERN_ERR "nfsd: failed to allocate reply cache\n");
+;
 	nfsd_reply_cache_shutdown();
 	return -ENOMEM;
 }
@@ -160,7 +160,7 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
 		if (rp->c_state != RC_INPROG)
 			break;
 		if (safe++ > CACHESIZE) {
-			printk("nfsd: loop in repcache LRU list\n");
+;
 			cache_disabled = 1;
 			goto out;
 		}
@@ -171,9 +171,9 @@ nfsd_cache_lookup(struct svc_rqst *rqstp)
 	if (&rp->c_lru == &lru_head) {
 		static int	complaints;
 
-		printk(KERN_WARNING "nfsd: all repcache entries locked!\n");
+;
 		if (++complaints > 5) {
-			printk(KERN_WARNING "nfsd: disabling repcache.\n");
+;
 			cache_disabled = 1;
 		}
 		goto out;
@@ -231,7 +231,7 @@ found_entry:
 		rtn = RC_REPLY;
 		break;
 	default:
-		printk(KERN_WARNING "nfsd: bad repcache type %d\n", rp->c_type);
+;
 		rp->c_state = RC_UNUSED;
 	}
 
@@ -276,7 +276,7 @@ nfsd_cache_update(struct svc_rqst *rqstp, int cachetype, __be32 *statp)
 	switch (cachetype) {
 	case RC_REPLSTAT:
 		if (len != 1)
-			printk("nfsd: RC_REPLSTAT/reply len %d!\n",len);
+;
 		rp->c_replstat = *statp;
 		break;
 	case RC_REPLBUFF:
@@ -313,8 +313,8 @@ nfsd_cache_append(struct svc_rqst *rqstp, struct kvec *data)
 	struct kvec	*vec = &rqstp->rq_res.head[0];
 
 	if (vec->iov_len + data->iov_len > PAGE_SIZE) {
-		printk(KERN_WARNING "nfsd: cached reply too large (%Zd).\n",
-				data->iov_len);
+//		printk(KERN_WARNING "nfsd: cached reply too large (%Zd).\n",
+;
 		return 0;
 	}
 	memcpy((char*)vec->iov_base + vec->iov_len, data->iov_base, data->iov_len);

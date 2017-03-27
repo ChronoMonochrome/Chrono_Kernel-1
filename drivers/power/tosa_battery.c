@@ -165,7 +165,11 @@ static void tosa_bat_update(struct tosa_bat *bat)
 	old = bat->status;
 
 	if (bat->is_present && !bat->is_present(bat)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s not present\n", psy->name);
+#else
+		;
+#endif
 		bat->status = POWER_SUPPLY_STATUS_UNKNOWN;
 		bat->full_chrg = -1;
 	} else if (power_supply_am_i_supplied(psy)) {

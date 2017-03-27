@@ -105,8 +105,12 @@ static void wait_err(char *msg, int state, unsigned int ctrl, unsigned int intr)
 static void wait_warn(char *msg, int state, unsigned int ctrl,
 		      unsigned int intr)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "onenand_wait: %s! state %d ctrl 0x%04x "
 	       "intr 0x%04x\n", msg, state, ctrl, intr);
+#else
+	;
+#endif
 }
 
 static int omap2_onenand_wait(struct mtd_info *mtd, int state)
@@ -254,9 +258,13 @@ retry:
 				mtd->ecc_stats.failed++;
 				return -EBADMSG;
 			} else if (ecc & ONENAND_ECC_1BIT_ALL) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_NOTICE "onenand_wait: correctable "
 				       "ECC error = 0x%04x, addr1 %#x, "
 				       "addr8 %#x\n", ecc, addr1, addr8);
+#else
+				;
+#endif
 				mtd->ecc_stats.corrected++;
 			}
 		}
@@ -827,7 +835,11 @@ static struct platform_driver omap2_onenand_driver = {
 
 static int __init omap2_onenand_init(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "OneNAND driver initializing\n");
+#else
+	;
+#endif
 	return platform_driver_register(&omap2_onenand_driver);
 }
 

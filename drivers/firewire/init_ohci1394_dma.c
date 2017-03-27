@@ -250,8 +250,12 @@ static inline void __init init_ohci1394_controller(int num, int slot, int func)
 	unsigned long ohci_base;
 	struct ohci ohci;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "init_ohci1394_dma: initializing OHCI-1394"
 			 " at %02x:%02x.%x\n", num, slot, func);
+#else
+	;
+#endif
 
 	ohci_base = read_pci_config(num, slot, func, PCI_BASE_ADDRESS_0+(0<<2))
 						   & PCI_BASE_ADDRESS_MEM_MASK;
@@ -292,7 +296,11 @@ void __init init_ohci1394_dma_on_all_controllers(void)
 			}
 		}
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "init_ohci1394_dma: finished initializing OHCI DMA\n");
+#else
+	;
+#endif
 }
 
 /**

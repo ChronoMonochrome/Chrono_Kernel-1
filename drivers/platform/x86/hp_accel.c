@@ -282,7 +282,11 @@ static void lis3lv02d_enum_resources(struct acpi_device *device)
 	status = acpi_walk_resources(device->handle, METHOD_NAME__CRS,
 					lis3lv02d_get_resource, &lis3_dev.irq);
 	if (ACPI_FAILURE(status))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG DRIVER_NAME ": Error getting resources\n");
+#else
+		;
+#endif
 }
 
 static int lis3lv02d_add(struct acpi_device *device)

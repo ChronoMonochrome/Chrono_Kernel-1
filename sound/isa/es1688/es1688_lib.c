@@ -45,7 +45,11 @@ static int snd_es1688_dsp_command(struct snd_es1688 *chip, unsigned char val)
 			return 1;
 		}
 #ifdef CONFIG_SND_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "snd_es1688_dsp_command: timeout (0x%x)\n", val);
+#else
+	;
+#endif
 #endif
 	return 0;
 }
@@ -227,7 +231,11 @@ static int snd_es1688_init(struct snd_es1688 * chip, int enable)
 		}
 	}
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	snd_printk(KERN_DEBUG "mpu cfg = 0x%x\n", cfg);
+#else
+	;
+#endif
 #endif
 	spin_lock_irqsave(&chip->reg_lock, flags);
 	snd_es1688_mixer_write(chip, 0x40, cfg);
@@ -348,9 +356,17 @@ static int snd_es1688_trigger(struct snd_es1688 *chip, int cmd, unsigned char va
 		return -EINVAL;	/* something is wrong */
 	}
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "trigger: val = 0x%x, value = 0x%x\n", val, value);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "trigger: pointer = 0x%x\n",
 	       snd_dma_pointer(chip->dma8, chip->dma_size));
+#else
+	;
+#endif
 #endif
 	snd_es1688_write(chip, 0xb8, (val & 0xf0) | value);
 	spin_unlock(&chip->reg_lock);

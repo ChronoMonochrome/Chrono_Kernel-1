@@ -17,13 +17,13 @@
 #include "debug.h"
 
 #if defined(CONFIG_CW1200_TX_POLICY_DEBUG)
-#define tx_policy_printk(...) printk(__VA_ARGS__)
-#else
-#define tx_policy_printk(...)
-#endif
-
-static int cw1200_handle_action_rx(struct cw1200_common *priv,
-				   struct sk_buff *skb);
+//#define tx_policy_printk(...) printk(__VA_ARGS__)
+//#else
+//#define tx_policy_printk(...)
+//#endif
+//
+//static int cw1200_handle_action_rx(struct cw1200_common *priv,
+;
 static int cw1200_handle_action_tx(struct cw1200_common *priv,
 				   struct sk_buff *skb);
 static const struct ieee80211_rate *
@@ -52,23 +52,23 @@ static inline void cw1200_tx_queues_unlock(struct cw1200_common *priv)
 
 static void tx_policy_dump(struct tx_policy *policy)
 {
-	tx_policy_printk(KERN_DEBUG "[TX policy] "
-		"%.1X%.1X%.1X%.1X%.1X%.1X%.1X%.1X"
-		"%.1X%.1X%.1X%.1X%.1X%.1X%.1X%.1X"
-		"%.1X%.1X%.1X%.1X%.1X%.1X%.1X%.1X: %d\n",
-		policy->raw[0] & 0x0F,  policy->raw[0] >> 4,
-		policy->raw[1] & 0x0F,  policy->raw[1] >> 4,
-		policy->raw[2] & 0x0F,  policy->raw[2] >> 4,
-		policy->raw[3] & 0x0F,  policy->raw[3] >> 4,
-		policy->raw[4] & 0x0F,  policy->raw[4] >> 4,
-		policy->raw[5] & 0x0F,  policy->raw[5] >> 4,
-		policy->raw[6] & 0x0F,  policy->raw[6] >> 4,
-		policy->raw[7] & 0x0F,  policy->raw[7] >> 4,
-		policy->raw[8] & 0x0F,  policy->raw[8] >> 4,
-		policy->raw[9] & 0x0F,  policy->raw[9] >> 4,
-		policy->raw[10] & 0x0F,  policy->raw[10] >> 4,
-		policy->raw[11] & 0x0F,  policy->raw[11] >> 4,
-		policy->defined);
+//	tx_policy_printk(KERN_DEBUG "[TX policy] "
+//		"%.1X%.1X%.1X%.1X%.1X%.1X%.1X%.1X"
+//		"%.1X%.1X%.1X%.1X%.1X%.1X%.1X%.1X"
+//		"%.1X%.1X%.1X%.1X%.1X%.1X%.1X%.1X: %d\n",
+//		policy->raw[0] & 0x0F,  policy->raw[0] >> 4,
+//		policy->raw[1] & 0x0F,  policy->raw[1] >> 4,
+//		policy->raw[2] & 0x0F,  policy->raw[2] >> 4,
+//		policy->raw[3] & 0x0F,  policy->raw[3] >> 4,
+//		policy->raw[4] & 0x0F,  policy->raw[4] >> 4,
+//		policy->raw[5] & 0x0F,  policy->raw[5] >> 4,
+//		policy->raw[6] & 0x0F,  policy->raw[6] >> 4,
+//		policy->raw[7] & 0x0F,  policy->raw[7] >> 4,
+//		policy->raw[8] & 0x0F,  policy->raw[8] >> 4,
+//		policy->raw[9] & 0x0F,  policy->raw[9] >> 4,
+//		policy->raw[10] & 0x0F,  policy->raw[10] >> 4,
+//		policy->raw[11] & 0x0F,  policy->raw[11] >> 4,
+;
 }
 
 static void tx_policy_build(const struct cw1200_common *priv,
@@ -141,14 +141,14 @@ static void tx_policy_build(const struct cw1200_common *priv,
 		policy->retry_count += retries;
 	}
 
-	tx_policy_printk(KERN_DEBUG "[TX policy] Policy (%d): " \
-		"%d:%d, %d:%d, %d:%d, %d:%d, %d:%d\n",
-		count,
-		rates[0].idx, rates[0].count,
-		rates[1].idx, rates[1].count,
-		rates[2].idx, rates[2].count,
-		rates[3].idx, rates[3].count,
-		rates[4].idx, rates[4].count);
+//	tx_policy_printk(KERN_DEBUG "[TX policy] Policy (%d): " \
+//		"%d:%d, %d:%d, %d:%d, %d:%d, %d:%d\n",
+//		count,
+//		rates[0].idx, rates[0].count,
+//		rates[1].idx, rates[1].count,
+//		rates[2].idx, rates[2].count,
+//		rates[3].idx, rates[3].count,
+;
 }
 
 static inline bool tx_policy_is_equal(const struct tx_policy *wanted,
@@ -236,8 +236,8 @@ static int tx_policy_get(struct cw1200_common *priv,
 	BUG_ON(list_empty(&cache->free));
 	idx = tx_policy_find(cache, &wanted);
 	if (idx >= 0) {
-		tx_policy_printk(KERN_DEBUG "[TX policy] Used TX policy: %d\n",
-					idx);
+//		tx_policy_printk(KERN_DEBUG "[TX policy] Used TX policy: %d\n",
+;
 		*renew = false;
 	} else {
 		struct tx_policy_cache_entry *entry;
@@ -248,8 +248,8 @@ static int tx_policy_get(struct cw1200_common *priv,
 			struct tx_policy_cache_entry, link);
 		entry->policy = wanted;
 		idx = entry - cache->cache;
-		tx_policy_printk(KERN_DEBUG "[TX policy] New TX policy: %d\n",
-					idx);
+//		tx_policy_printk(KERN_DEBUG "[TX policy] New TX policy: %d\n",
+;
 		tx_policy_dump(&entry->policy);
 	}
 	tx_policy_use(cache, &cache->cache[idx]);
@@ -324,8 +324,8 @@ static int tx_policy_upload(struct cw1200_common *priv)
 	}
 	spin_unlock_bh(&cache->lock);
 	cw1200_debug_tx_cache_miss(priv);
-	tx_policy_printk(KERN_DEBUG "[TX policy] Upload %d policies\n",
-				arg.hdr.numTxRatePolicies);
+//	tx_policy_printk(KERN_DEBUG "[TX policy] Upload %d policies\n",
+;
 	return wsm_set_tx_rate_retry_policy(priv, &arg);
 }
 
@@ -334,7 +334,7 @@ void tx_policy_upload_work(struct work_struct *work)
 	struct cw1200_common *priv =
 		container_of(work, struct cw1200_common, tx_policy_upload_work);
 
-	tx_policy_printk(KERN_DEBUG "[TX] TX policy upload.\n");
+;
 	WARN_ON(tx_policy_upload(priv));
 
 	wsm_unlock_tx(priv);
@@ -395,7 +395,7 @@ int cw1200_skb_to_wsm(struct cw1200_common *priv, struct sk_buff *skb,
 		&tx_policy_renew) << 4;
 
 	if (tx_policy_renew) {
-		tx_policy_printk(KERN_DEBUG "[TX] TX policy renew.\n");
+;
 		/* It's not so optimal to stop TX queues every now and then.
 		 * Maybe it's better to reimplement task scheduling with
 		 * a counter. */
@@ -429,8 +429,8 @@ int cw1200_tx(struct ieee80211_hw *dev, struct sk_buff *skb)
 	else if (tx_info->control.sta)
 		link_id = sta_priv->link_id;
 
-	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d).\n",
-			skb->len, queue, link_id);
+//	txrx_printk(KERN_DEBUG "[TX] TX %d bytes (queue: %d, link_id: %d).\n",
+;
 
 	if (WARN_ON(queue >= 4))
 		goto err;
@@ -563,7 +563,7 @@ void cw1200_tx_confirm_cb(struct cw1200_common *priv,
 	struct cw1200_queue *queue = &priv->tx_queue[queue_id];
 	struct sk_buff *skb;
 
-	txrx_printk(KERN_DEBUG "[TX] TX confirm.\n");
+;
 
 	if (unlikely(priv->mode == NL80211_IFTYPE_UNSPECIFIED)) {
 		/* STA is stopped. */
@@ -654,14 +654,14 @@ void cw1200_rx_cb(struct cw1200_common *priv,
 
 	if (unlikely(arg->status)) {
 		if (arg->status == WSM_STATUS_MICFAILURE) {
-			txrx_printk(KERN_DEBUG "[RX] MIC failure.\n");
+;
 			hdr->flag |= RX_FLAG_MMIC_ERROR;
 		} else if (arg->status == WSM_STATUS_NO_KEY_FOUND) {
-			txrx_printk(KERN_DEBUG "[RX] No key found.\n");
+;
 			goto drop;
 		} else {
-			txrx_printk(KERN_DEBUG "[RX] Receive failure: %d.\n",
-				arg->status);
+//			txrx_printk(KERN_DEBUG "[RX] Receive failure: %d.\n",
+;
 			goto drop;
 		}
 	}

@@ -253,7 +253,7 @@ static int mdp_do_histogram(struct fb_info *info, struct mdp_histogram *hist)
 	return 0;
 
 hist_err:
-	printk(KERN_ERR "%s: invalid hist buffer\n", __func__);
+;
 	return ret;
 }
 #endif
@@ -272,8 +272,8 @@ int mdp_ppp_pipe_wait(void)
 								5 * HZ);
 
 		if (!ret)
-			printk(KERN_ERR "%s: Timed out waiting for the MDP.\n",
-					__func__);
+//			printk(KERN_ERR "%s: Timed out waiting for the MDP.\n",
+;
 	}
 
 	return ret;
@@ -289,7 +289,7 @@ void mdp_enable_irq(uint32 term)
 
 	spin_lock_irqsave(&mdp_lock, irq_flags);
 	if (mdp_irq_mask & term) {
-		printk(KERN_ERR "MDP IRQ term-0x%x is already set\n", term);
+;
 	} else {
 		mdp_irq_mask |= term;
 		if (mdp_irq_mask && !mdp_irq_enabled) {
@@ -306,7 +306,7 @@ void mdp_disable_irq(uint32 term)
 
 	spin_lock_irqsave(&mdp_lock, irq_flags);
 	if (!(mdp_irq_mask & term)) {
-		printk(KERN_ERR "MDP IRQ term-0x%x is not set\n", term);
+;
 	} else {
 		mdp_irq_mask &= ~term;
 		if (!mdp_irq_mask && mdp_irq_enabled) {
@@ -321,7 +321,7 @@ void mdp_disable_irq_nolock(uint32 term)
 {
 
 	if (!(mdp_irq_mask & term)) {
-		printk(KERN_ERR "MDP IRQ term-0x%x is not set\n", term);
+;
 	} else {
 		mdp_irq_mask &= ~term;
 		if (!mdp_irq_mask && mdp_irq_enabled) {
@@ -810,7 +810,7 @@ static int mdp_irq_clk_setup(void)
 	ret = request_irq(INT_MDP, mdp_isr, IRQF_DISABLED, "MDP", 0);
 #endif
 	if (ret) {
-		printk(KERN_ERR "mdp request_irq() failed!\n");
+;
 		return ret;
 	}
 	disable_irq(INT_MDP);
@@ -819,7 +819,7 @@ static int mdp_irq_clk_setup(void)
 
 	if (IS_ERR(mdp_clk)) {
 		ret = PTR_ERR(mdp_clk);
-		printk(KERN_ERR "can't get mdp_clk error:%d!\n", ret);
+;
 		free_irq(INT_MDP, 0);
 		return ret;
 	}
@@ -834,8 +834,8 @@ static int mdp_irq_clk_setup(void)
 	 * mdp_clk should greater than mdp_pclk always
 	 */
 	clk_set_rate(mdp_clk, 122880000); /* 122.88 Mhz */
-	printk(KERN_INFO "mdp_clk: mdp_clk=%d mdp_pclk=%d\n",
-		(int)clk_get_rate(mdp_clk), (int)clk_get_rate(mdp_pclk));
+//	printk(KERN_INFO "mdp_clk: mdp_clk=%d mdp_pclk=%d\n",
+;
 #endif
 
 	return 0;
@@ -871,9 +871,9 @@ static int mdp_probe(struct platform_device *pdev)
 		if (unlikely(!msm_mdp_base))
 			return -ENOMEM;
 
-		printk("irq clk setup\n");
+;
 		rc = mdp_irq_clk_setup();
-		printk("irq clk setup done\n");
+;
 		if (rc)
 			return rc;
 
@@ -913,7 +913,7 @@ static int mdp_probe(struct platform_device *pdev)
 	if (platform_device_add_data
 	    (msm_fb_dev, pdev->dev.platform_data,
 	     sizeof(struct msm_fb_panel_data))) {
-		printk(KERN_ERR "mdp_probe: platform_device_add_data failed!\n");
+;
 		rc = -ENOMEM;
 		goto mdp_probe_err;
 	}
@@ -1022,7 +1022,7 @@ static int mdp_probe(struct platform_device *pdev)
 		break;
 
 	default:
-		printk(KERN_ERR "mdp_probe: unknown device type!\n");
+;
 		rc = -ENODEV;
 		goto mdp_probe_err;
 	}
@@ -1098,7 +1098,7 @@ static int __init mdp_driver_init(void)
 
 	ret = mdp_register_driver();
 	if (ret) {
-		printk(KERN_ERR "mdp_register_driver() failed!\n");
+;
 		return ret;
 	}
 

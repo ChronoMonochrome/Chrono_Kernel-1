@@ -43,7 +43,11 @@
 
 void CI_handle(struct av7110 *av7110, u8 *data, u16 len)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(8, "av7110:%p\n",av7110);
+#else
+	d;
+#endif
 
 	if (len < 3)
 		return;
@@ -218,7 +222,11 @@ static int dvb_ca_open(struct inode *inode, struct file *file)
 	struct av7110 *av7110 = dvbdev->priv;
 	int err = dvb_generic_open(inode, file);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(8, "av7110:%p\n",av7110);
+#else
+	d;
+#endif
 
 	if (err < 0)
 		return err;
@@ -234,7 +242,11 @@ static unsigned int dvb_ca_poll (struct file *file, poll_table *wait)
 	struct dvb_ringbuffer *wbuf = &av7110->ci_wbuffer;
 	unsigned int mask = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(8, "av7110:%p\n",av7110);
+#else
+	d;
+#endif
 
 	poll_wait(file, &rbuf->queue, wait);
 	poll_wait(file, &wbuf->queue, wait);
@@ -254,7 +266,11 @@ static int dvb_ca_ioctl(struct file *file, unsigned int cmd, void *parg)
 	struct av7110 *av7110 = dvbdev->priv;
 	unsigned long arg = (unsigned long) parg;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(8, "av7110:%p\n",av7110);
+#else
+	d;
+#endif
 
 	switch (cmd) {
 	case CA_RESET:
@@ -331,7 +347,11 @@ static ssize_t dvb_ca_write(struct file *file, const char __user *buf,
 	struct dvb_device *dvbdev = file->private_data;
 	struct av7110 *av7110 = dvbdev->priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(8, "av7110:%p\n",av7110);
+#else
+	d;
+#endif
 	return ci_ll_write(&av7110->ci_wbuffer, file, buf, count, ppos);
 }
 
@@ -341,7 +361,11 @@ static ssize_t dvb_ca_read(struct file *file, char __user *buf,
 	struct dvb_device *dvbdev = file->private_data;
 	struct av7110 *av7110 = dvbdev->priv;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	dprintk(8, "av7110:%p\n",av7110);
+#else
+	d;
+#endif
 	return ci_ll_read(&av7110->ci_rbuffer, file, buf, count, ppos);
 }
 

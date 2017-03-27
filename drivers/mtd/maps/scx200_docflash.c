@@ -80,7 +80,11 @@ static int __init init_scx200_docflash(void)
 	unsigned pmr;
 	struct pci_dev *bridge;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG NAME ": NatSemi SCx200 DOCCS Flash Driver\n");
+#else
+	;
+#endif
 
 	if ((bridge = pci_get_device(PCI_VENDOR_ID_NS,
 				      PCI_DEVICE_ID_NS_SCx200_BRIDGE,
@@ -149,7 +153,11 @@ static int __init init_scx200_docflash(void)
 
 		ctrl = 0x07000000 | ((size-1) >> 13);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "DOCCS BASE=0x%08lx, CTRL=0x%08lx\n", (long)docmem.start, (long)ctrl);
+#else
+		;
+#endif
 
 		pci_write_config_dword(bridge, SCx200_DOCCS_BASE, docmem.start);
 		pci_write_config_dword(bridge, SCx200_DOCCS_CTRL, ctrl);
@@ -163,8 +171,12 @@ static int __init init_scx200_docflash(void)
 		outl(pmr, scx200_cb_base + SCx200_PMR);
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO NAME ": DOCCS mapped at %pR, width %d\n",
 	       &docmem, width);
+#else
+	;
+#endif
 
 	scx200_docflash_map.size = size;
 	if (width == 8)
@@ -191,7 +203,11 @@ static int __init init_scx200_docflash(void)
 	}
 
 	if (size < mymtd->size)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING NAME ": warning, flash mapping is smaller than flash size\n");
+#else
+		;
+#endif
 
 	mymtd->owner = THIS_MODULE;
 

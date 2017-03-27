@@ -98,7 +98,11 @@ static int configure_memory(const unsigned char *buf,
 			res->start = mem_parent->start + get_24(buf+len+2);
 			res->end = res->start + get_16(buf+len+5)*1024;
 			res->flags = IORESOURCE_MEM;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("memory %lx-%lx ", (unsigned long)res->start, (unsigned long)res->end);
+#else
+			;
+#endif
 			result = request_resource(mem_parent, res);
 			if (result < 0) {
 				printk(KERN_ERR "EISA Enumerator: failed to claim EISA Bus address space!\n");
@@ -128,7 +132,11 @@ static int configure_irq(const unsigned char *buf)
 	for (i=0;i<HPEE_IRQ_MAX_ENT;i++) {
 		c = get_8(buf+len);
 		
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("IRQ %d ", c & HPEE_IRQ_CHANNEL_MASK);
+#else
+		;
+#endif
 		if (c & HPEE_IRQ_TRIG_LEVEL) {
 			eisa_make_irq_level(c & HPEE_IRQ_CHANNEL_MASK);
 		} else {
@@ -158,7 +166,11 @@ static int configure_dma(const unsigned char *buf)
 	
 	for (i=0;i<HPEE_DMA_MAX_ENT;i++) {
 		c = get_8(buf+len);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("DMA %d ", c&HPEE_DMA_CHANNEL_MASK);
+#else
+		;
+#endif
 		/* fixme: maybe initialize the dma channel withthe timing ? */
 		len+=2;      
 		if (!(c & HPEE_DMA_MORE)) {
@@ -188,7 +200,11 @@ static int configure_port(const unsigned char *buf, struct resource *io_parent,
 			res->start = get_16(buf+len+1);
 			res->end = get_16(buf+len+1)+(c&HPEE_PORT_SIZE_MASK)+1;
 			res->flags = IORESOURCE_IO;
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("ioports %lx-%lx ", (unsigned long)res->start, (unsigned long)res->end);
+#else
+			;
+#endif
 			result = request_resource(io_parent, res);
 			if (result < 0) {
 				printk(KERN_ERR "EISA Enumerator: failed to claim EISA Bus address space!\n");
@@ -224,7 +240,11 @@ static int configure_port_init(const unsigned char *buf)
 		 case HPEE_PORT_INIT_WIDTH_BYTE:
 			s=1;
 			if (c & HPEE_PORT_INIT_MASK) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "port_init: unverified mask attribute\n");
+#else
+				;
+#endif
 				outb((inb(get_16(buf+len+1) & 
 					  get_8(buf+len+3)) | 
 				      get_8(buf+len+4)), get_16(buf+len+1));
@@ -237,7 +257,11 @@ static int configure_port_init(const unsigned char *buf)
 		 case HPEE_PORT_INIT_WIDTH_WORD:
 			s=2;
 			if (c & HPEE_PORT_INIT_MASK) {
+#ifdef CONFIG_DEBUG_PRINTK
  				printk(KERN_WARNING "port_init: unverified mask attribute\n");
+#else
+ 				;
+#endif
 				       outw((inw(get_16(buf+len+1)) &
 					     get_16(buf+len+3)) |
 					    get_16(buf+len+5), 
@@ -249,7 +273,11 @@ static int configure_port_init(const unsigned char *buf)
 		 case HPEE_PORT_INIT_WIDTH_DWORD:
 			s=4;
 			if (c & HPEE_PORT_INIT_MASK) {
+#ifdef CONFIG_DEBUG_PRINTK
  				printk(KERN_WARNING "port_init: unverified mask attribute\n");
+#else
+ 				;
+#endif
 				outl((inl(get_16(buf+len+1) &
 					  get_32(buf+len+3)) |
 				      get_32(buf+len+7)), get_16(buf+len+1));
@@ -335,8 +363,12 @@ static int parse_slot_config(int slot,
 		return -1;
 	}
 	print_eisa_id(board, es->eisa_slot_id);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "EISA slot %d: %s %s ", 
 	       slot, board, es->flags&HPEE_FLAG_BOARD_IS_ISA ? "ISA" : "EISA");
+#else
+	;
+#endif
 	
 	maxlen = es->config_data_length < HPEE_MAX_LENGTH ?
 			 es->config_data_length : HPEE_MAX_LENGTH;
@@ -357,8 +389,12 @@ static int parse_slot_config(int slot,
 		}
 		if (flags & HPEE_FUNCTION_INFO_CFG_FREE_FORM) {
 			/* I have no idea how to handle this */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("function %d have free-form confgiuration, skipping ",
 				num_func);
+#else
+			;
+#endif
 			pos = p0 + function_len;
 			continue;
 		}
@@ -406,7 +442,11 @@ static int parse_slot_config(int slot,
 		}
 		pos = p0 + function_len;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 	if (!id_string_used) {
 		kfree(board);
 	}
@@ -449,7 +489,11 @@ static int init_slot(int slot, struct eeprom_eisa_slot_info *es)
 			       slot);
 			
 			print_eisa_id(id_string, es->eisa_slot_id);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" expected %s)\n", id_string);
+#else
+			;
+#endif
 		
 			return -1;	
 
@@ -460,7 +504,11 @@ static int init_slot(int slot, struct eeprom_eisa_slot_info *es)
 			       slot, id_string);
 			
 			print_eisa_id(id_string, es->eisa_slot_id);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" expected %s\n", id_string);
+#else
+			;
+#endif
 		
 			return -1;	
 			
@@ -493,7 +541,11 @@ int eisa_enumerator(unsigned long eeprom_addr,
 		eeprom_buf[i] = gsc_readb(eeprom_addr+i);
 	}
 	
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Enumerating EISA bus\n");
+#else
+	;
+#endif
 		    	
 	eh = (struct eeprom_header*)(eeprom_buf);
 	for (i=0;i<eh->num_slots;i++) {

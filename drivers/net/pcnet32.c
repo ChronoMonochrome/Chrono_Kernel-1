@@ -854,15 +854,15 @@ static void pcnet32_ethtool_test(struct net_device *dev,
 	if (test->flags == ETH_TEST_FL_OFFLINE) {
 		rc = pcnet32_loopback_test(dev, data);
 		if (rc) {
-			netif_printk(lp, hw, KERN_DEBUG, dev,
-				     "Loopback test failed\n");
+//			netif_printk(lp, hw, KERN_DEBUG, dev,
+;
 			test->flags |= ETH_TEST_FL_FAILED;
 		} else
-			netif_printk(lp, hw, KERN_DEBUG, dev,
-				     "Loopback test passed\n");
+//			netif_printk(lp, hw, KERN_DEBUG, dev,
+;
 	} else
-		netif_printk(lp, hw, KERN_DEBUG, dev,
-			     "No tests to run (specify 'Offline' on ethtool)\n");
+//		netif_printk(lp, hw, KERN_DEBUG, dev,
+;
 }				/* end pcnet32_ethtool_test */
 
 static int pcnet32_loopback_test(struct net_device *dev, uint64_t * data1)
@@ -909,9 +909,9 @@ static int pcnet32_loopback_test(struct net_device *dev, uint64_t * data1)
 	for (x = 0; x < numbuffs; x++) {
 		skb = dev_alloc_skb(size);
 		if (!skb) {
-			netif_printk(lp, hw, KERN_DEBUG, dev,
-				     "Cannot allocate skb at line: %d!\n",
-				     __LINE__);
+//			netif_printk(lp, hw, KERN_DEBUG, dev,
+//				     "Cannot allocate skb at line: %d!\n",
+;
 			goto clean_up;
 		}
 		packet = skb->data;
@@ -972,10 +972,10 @@ static int pcnet32_loopback_test(struct net_device *dev, uint64_t * data1)
 	lp->a.write_csr(ioaddr, CSR0, CSR0_STOP);	/* Set STOP bit */
 	wmb();
 	if (netif_msg_hw(lp) && netif_msg_pktdata(lp)) {
-		netdev_printk(KERN_DEBUG, dev, "RX loopback packets:\n");
+;
 
 		for (x = 0; x < numbuffs; x++) {
-			netdev_printk(KERN_DEBUG, dev, "Packet %d: ", x);
+;
 			skb = lp->rx_skbuff[x];
 			for (i = 0; i < size; i++)
 				pr_cont(" %02x", *(skb->data + i));
@@ -990,9 +990,9 @@ static int pcnet32_loopback_test(struct net_device *dev, uint64_t * data1)
 		packet = lp->tx_skbuff[x]->data;
 		for (i = 0; i < size; i++) {
 			if (*(skb->data + i) != packet[i]) {
-				netif_printk(lp, hw, KERN_DEBUG, dev,
-					     "Error in compare! %2x - %02x %02x\n",
-					     i, *(skb->data + i), packet[i]);
+//				netif_printk(lp, hw, KERN_DEBUG, dev,
+//					     "Error in compare! %2x - %02x %02x\n",
+;
 				rc = 1;
 				break;
 			}
@@ -1090,8 +1090,8 @@ static int pcnet32_suspend(struct net_device *dev, unsigned long *flags,
 		spin_lock_irqsave(&lp->lock, *flags);
 		ticks++;
 		if (ticks > 200) {
-			netif_printk(lp, hw, KERN_DEBUG, dev,
-				     "Error getting into suspend!\n");
+//			netif_printk(lp, hw, KERN_DEBUG, dev,
+;
 			return 0;
 		}
 	}
@@ -1609,8 +1609,8 @@ pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev)
 		if (cards_found < MAX_UNITS && homepna[cards_found])
 			media |= 1;	/* switch to home wiring mode */
 		if (pcnet32_debug & NETIF_MSG_PROBE)
-			printk(KERN_DEBUG PFX "media set to %sMbit mode\n",
-			       (media & 1) ? "1" : "10");
+//			printk(KERN_DEBUG PFX "media set to %sMbit mode\n",
+;
 		a->write_bcr(ioaddr, 49, media);
 		break;
 	case 0x2627:
@@ -2025,11 +2025,11 @@ static int pcnet32_open(struct net_device *dev)
 	/* switch pcnet32 to 32bit mode */
 	lp->a.write_bcr(ioaddr, 20, 2);
 
-	netif_printk(lp, ifup, KERN_DEBUG, dev,
-		     "%s() irq %d tx/rx rings %#x/%#x init %#x\n",
-		     __func__, dev->irq, (u32) (lp->tx_ring_dma_addr),
-		     (u32) (lp->rx_ring_dma_addr),
-		     (u32) (lp->init_dma_addr));
+//	netif_printk(lp, ifup, KERN_DEBUG, dev,
+//		     "%s() irq %d tx/rx rings %#x/%#x init %#x\n",
+//		     __func__, dev->irq, (u32) (lp->tx_ring_dma_addr),
+//		     (u32) (lp->rx_ring_dma_addr),
+;
 
 	/* set/reset autoselect bit */
 	val = lp->a.read_bcr(ioaddr, 2) & ~2;
@@ -2064,8 +2064,8 @@ static int pcnet32_open(struct net_device *dev)
 	     pdev->subsystem_device == PCI_SUBDEVICE_ID_AT_2701FX)) {
 		if (lp->options & PCNET32_PORT_ASEL) {
 			lp->options = PCNET32_PORT_FD | PCNET32_PORT_100;
-			netif_printk(lp, link, KERN_DEBUG, dev,
-				     "Setting 100Mb-Full Duplex\n");
+//			netif_printk(lp, link, KERN_DEBUG, dev,
+;
 		}
 	}
 	if (lp->phycount < 2) {
@@ -2200,11 +2200,11 @@ static int pcnet32_open(struct net_device *dev)
 	 */
 	lp->a.write_csr(ioaddr, CSR0, CSR0_NORMAL);
 
-	netif_printk(lp, ifup, KERN_DEBUG, dev,
-		     "pcnet32 open after %d ticks, init block %#x csr0 %4.4x\n",
-		     i,
-		     (u32) (lp->init_dma_addr),
-		     lp->a.read_csr(ioaddr, CSR0));
+//	netif_printk(lp, ifup, KERN_DEBUG, dev,
+//		     "pcnet32 open after %d ticks, init block %#x csr0 %4.4x\n",
+//		     i,
+//		     (u32) (lp->init_dma_addr),
+;
 
 	spin_unlock_irqrestore(&lp->lock, flags);
 
@@ -2358,23 +2358,23 @@ static void pcnet32_tx_timeout(struct net_device *dev)
 	dev->stats.tx_errors++;
 	if (netif_msg_tx_err(lp)) {
 		int i;
-		printk(KERN_DEBUG
-		       " Ring data dump: dirty_tx %d cur_tx %d%s cur_rx %d.",
-		       lp->dirty_tx, lp->cur_tx, lp->tx_full ? " (full)" : "",
-		       lp->cur_rx);
+//		printk(KERN_DEBUG
+//		       " Ring data dump: dirty_tx %d cur_tx %d%s cur_rx %d.",
+//		       lp->dirty_tx, lp->cur_tx, lp->tx_full ? " (full)" : "",
+;
 		for (i = 0; i < lp->rx_ring_size; i++)
-			printk("%s %08x %04x %08x %04x", i & 1 ? "" : "\n ",
-			       le32_to_cpu(lp->rx_ring[i].base),
-			       (-le16_to_cpu(lp->rx_ring[i].buf_length)) &
-			       0xffff, le32_to_cpu(lp->rx_ring[i].msg_length),
-			       le16_to_cpu(lp->rx_ring[i].status));
+//			printk("%s %08x %04x %08x %04x", i & 1 ? "" : "\n ",
+//			       le32_to_cpu(lp->rx_ring[i].base),
+//			       (-le16_to_cpu(lp->rx_ring[i].buf_length)) &
+//			       0xffff, le32_to_cpu(lp->rx_ring[i].msg_length),
+;
 		for (i = 0; i < lp->tx_ring_size; i++)
-			printk("%s %08x %04x %08x %04x", i & 1 ? "" : "\n ",
-			       le32_to_cpu(lp->tx_ring[i].base),
-			       (-le16_to_cpu(lp->tx_ring[i].length)) & 0xffff,
-			       le32_to_cpu(lp->tx_ring[i].misc),
-			       le16_to_cpu(lp->tx_ring[i].status));
-		printk("\n");
+//			printk("%s %08x %04x %08x %04x", i & 1 ? "" : "\n ",
+//			       le32_to_cpu(lp->tx_ring[i].base),
+//			       (-le16_to_cpu(lp->tx_ring[i].length)) & 0xffff,
+//			       le32_to_cpu(lp->tx_ring[i].misc),
+;
+;
 	}
 	pcnet32_restart(dev, CSR0_NORMAL);
 
@@ -2395,9 +2395,9 @@ static netdev_tx_t pcnet32_start_xmit(struct sk_buff *skb,
 
 	spin_lock_irqsave(&lp->lock, flags);
 
-	netif_printk(lp, tx_queued, KERN_DEBUG, dev,
-		     "%s() called, csr0 %4.4x\n",
-		     __func__, lp->a.read_csr(ioaddr, CSR0));
+//	netif_printk(lp, tx_queued, KERN_DEBUG, dev,
+//		     "%s() called, csr0 %4.4x\n",
+;
 
 	/* Default status -- will not enable Successful-TxDone
 	 * interrupt when that option is available to us.
@@ -2459,9 +2459,9 @@ pcnet32_interrupt(int irq, void *dev_id)
 		/* Acknowledge all of the current interrupt sources ASAP. */
 		lp->a.write_csr(ioaddr, CSR0, csr0 & ~0x004f);
 
-		netif_printk(lp, intr, KERN_DEBUG, dev,
-			     "interrupt  csr0=%#2.2x new csr=%#2.2x\n",
-			     csr0, lp->a.read_csr(ioaddr, CSR0));
+//		netif_printk(lp, intr, KERN_DEBUG, dev,
+//			     "interrupt  csr0=%#2.2x new csr=%#2.2x\n",
+;
 
 		/* Log misc errors. */
 		if (csr0 & 0x4000)
@@ -2498,9 +2498,9 @@ pcnet32_interrupt(int irq, void *dev_id)
 		csr0 = lp->a.read_csr(ioaddr, CSR0);
 	}
 
-	netif_printk(lp, intr, KERN_DEBUG, dev,
-		     "exiting interrupt, csr0=%#4.4x\n",
-		     lp->a.read_csr(ioaddr, CSR0));
+//	netif_printk(lp, intr, KERN_DEBUG, dev,
+//		     "exiting interrupt, csr0=%#4.4x\n",
+;
 
 	spin_unlock(&lp->lock);
 
@@ -2522,9 +2522,9 @@ static int pcnet32_close(struct net_device *dev)
 
 	dev->stats.rx_missed_errors = lp->a.read_csr(ioaddr, 112);
 
-	netif_printk(lp, ifdown, KERN_DEBUG, dev,
-		     "Shutting down ethercard, status was %2.2x\n",
-		     lp->a.read_csr(ioaddr, CSR0));
+//	netif_printk(lp, ifdown, KERN_DEBUG, dev,
+//		     "Shutting down ethercard, status was %2.2x\n",
+;
 
 	/* We stop the PCNET32 here -- it occasionally polls memory if we don't. */
 	lp->a.write_csr(ioaddr, CSR0, CSR0_STOP);

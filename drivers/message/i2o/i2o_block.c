@@ -1151,7 +1151,11 @@ static int __init i2o_block_init(void)
 	int rc;
 	int size;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO OSM_DESCRIPTION " v" OSM_VERSION "\n");
+#else
+	;
+#endif
 
 	/* Allocate request mempool and slab */
 	size = sizeof(struct i2o_block_request);

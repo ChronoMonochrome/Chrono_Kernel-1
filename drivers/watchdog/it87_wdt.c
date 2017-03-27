@@ -407,8 +407,12 @@ static int wdt_release(struct inode *inode, struct file *file)
 			clear_bit(WDTS_TIMER_RUN, &wdt_status);
 		} else {
 			wdt_keepalive();
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT PFX
 			       "unexpected close, not stopping watchdog!\n");
+#else
+			;
+#endif
 		}
 	}
 	clear_bit(WDTS_DEV_OPEN, &wdt_status);
@@ -665,9 +669,13 @@ static int __init it87_wdt_init(void)
 
 	if (timeout < 1 || timeout > max_units * 60) {
 		timeout = DEFAULT_TIMEOUT;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PFX
 		       "Timeout value out of range, use default %d sec\n",
 		       DEFAULT_TIMEOUT);
+#else
+		;
+#endif
 	}
 
 	if (timeout > max_units)
@@ -699,10 +707,14 @@ static int __init it87_wdt_init(void)
 		outb(0x09, CIR_IER(base));
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "Chip IT%04x revision %d initialized. "
 		"timeout=%d sec (nowayout=%d testmode=%d exclusive=%d "
 		"nogameport=%d)\n", chip_type, chip_rev, timeout,
 		nowayout, testmode, exclusive, nogameport);
+#else
+	;
+#endif
 
 	return 0;
 

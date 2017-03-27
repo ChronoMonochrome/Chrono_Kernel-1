@@ -898,7 +898,11 @@ static int pxa3xx_nand_scan(struct mtd_info *mtd)
 	if (!ret) {
 		kfree(mtd);
 		info->mtd = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "There is no nand chip on cs 0!\n");
+#else
+		;
+#endif
 
 		return -EINVAL;
 	}
@@ -906,11 +910,19 @@ static int pxa3xx_nand_scan(struct mtd_info *mtd)
 	chip->cmdfunc(mtd, NAND_CMD_READID, 0, 0);
 	id = *((uint16_t *)(info->data_buff));
 	if (id != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Detect a flash id %x\n", id);
+#else
+		;
+#endif
 	else {
 		kfree(mtd);
 		info->mtd = NULL;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Read out ID 0, potential timing set wrong!!\n");
+#else
+		;
+#endif
 
 		return -EINVAL;
 	}

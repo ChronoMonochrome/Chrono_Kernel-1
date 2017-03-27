@@ -408,8 +408,8 @@ static int prism2sta_mlmerequest(wlandevice_t *wlandev, struct p80211msg *msg)
 			break;
 		}
 	default:
-		printk(KERN_WARNING "Unknown mgmt request message 0x%08x",
-		       msg->msgcode);
+//		printk(KERN_WARNING "Unknown mgmt request message 0x%08x",
+;
 		break;
 	}
 
@@ -457,9 +457,9 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
 			 */
 			result = hfa384x_drvr_start(hw);
 			if (result) {
-				printk(KERN_ERR
-				       "hfa384x_drvr_start() failed,"
-				       "result=%d\n", (int)result);
+//				printk(KERN_ERR
+//				       "hfa384x_drvr_start() failed,"
+;
 				result =
 				 P80211ENUM_resultcode_implementation_failure;
 				wlandev->msdstate = WLAN_MSD_HWPRESENT;
@@ -473,9 +473,9 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
 			result = P80211ENUM_resultcode_success;
 			break;
 		case WLAN_MSD_RUNNING:
-			printk(KERN_WARNING
-			       "Cannot enter fwload state from enable state,"
-			       "you must disable first.\n");
+//			printk(KERN_WARNING
+//			       "Cannot enter fwload state from enable state,"
+;
 			result = P80211ENUM_resultcode_invalid_parameters;
 			break;
 		case WLAN_MSD_HWFAIL:
@@ -502,9 +502,9 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
 			 */
 			result = hfa384x_drvr_start(hw);
 			if (result) {
-				printk(KERN_ERR
-				       "hfa384x_drvr_start() failed,"
-				       "result=%d\n", (int)result);
+//				printk(KERN_ERR
+//				       "hfa384x_drvr_start() failed,"
+;
 				result =
 				  P80211ENUM_resultcode_implementation_failure;
 				wlandev->msdstate = WLAN_MSD_HWPRESENT;
@@ -513,9 +513,9 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
 
 			result = prism2sta_getcardinfo(wlandev);
 			if (result) {
-				printk(KERN_ERR
-				       "prism2sta_getcardinfo() failed,"
-				       "result=%d\n", (int)result);
+//				printk(KERN_ERR
+//				       "prism2sta_getcardinfo() failed,"
+;
 				result =
 				  P80211ENUM_resultcode_implementation_failure;
 				hfa384x_drvr_stop(hw);
@@ -524,9 +524,9 @@ u32 prism2sta_ifstate(wlandevice_t *wlandev, u32 ifstate)
 			}
 			result = prism2sta_globalsetup(wlandev);
 			if (result) {
-				printk(KERN_ERR
-				       "prism2sta_globalsetup() failed,"
-				       "result=%d\n", (int)result);
+//				printk(KERN_ERR
+//				       "prism2sta_globalsetup() failed,"
+;
 				result =
 				  P80211ENUM_resultcode_implementation_failure;
 				hfa384x_drvr_stop(hw);
@@ -626,7 +626,7 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 					&hw->ident_nic,
 					sizeof(hfa384x_compident_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve NICIDENTITY\n");
+;
 		goto failed;
 	}
 
@@ -636,16 +636,16 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->ident_nic.major = le16_to_cpu(hw->ident_nic.major);
 	hw->ident_nic.minor = le16_to_cpu(hw->ident_nic.minor);
 
-	printk(KERN_INFO "ident: nic h/w: id=0x%02x %d.%d.%d\n",
-	       hw->ident_nic.id, hw->ident_nic.major,
-	       hw->ident_nic.minor, hw->ident_nic.variant);
+//	printk(KERN_INFO "ident: nic h/w: id=0x%02x %d.%d.%d\n",
+//	       hw->ident_nic.id, hw->ident_nic.major,
+;
 
 	/* Primary f/w identity */
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_PRIIDENTITY,
 					&hw->ident_pri_fw,
 					sizeof(hfa384x_compident_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve PRIIDENTITY\n");
+;
 		goto failed;
 	}
 
@@ -655,22 +655,22 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->ident_pri_fw.major = le16_to_cpu(hw->ident_pri_fw.major);
 	hw->ident_pri_fw.minor = le16_to_cpu(hw->ident_pri_fw.minor);
 
-	printk(KERN_INFO "ident: pri f/w: id=0x%02x %d.%d.%d\n",
-	       hw->ident_pri_fw.id, hw->ident_pri_fw.major,
-	       hw->ident_pri_fw.minor, hw->ident_pri_fw.variant);
+//	printk(KERN_INFO "ident: pri f/w: id=0x%02x %d.%d.%d\n",
+//	       hw->ident_pri_fw.id, hw->ident_pri_fw.major,
+;
 
 	/* Station (Secondary?) f/w identity */
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_STAIDENTITY,
 					&hw->ident_sta_fw,
 					sizeof(hfa384x_compident_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve STAIDENTITY\n");
+;
 		goto failed;
 	}
 
 	if (hw->ident_nic.id < 0x8000) {
-		printk(KERN_ERR
-		       "FATAL: Card is not an Intersil Prism2/2.5/3\n");
+//		printk(KERN_ERR
+;
 		result = -1;
 		goto failed;
 	}
@@ -686,16 +686,16 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->ident_sta_fw.variant &= ~((u16) (BIT(14) | BIT(15)));
 
 	if (hw->ident_sta_fw.id == 0x1f) {
-		printk(KERN_INFO
-		       "ident: sta f/w: id=0x%02x %d.%d.%d\n",
-		       hw->ident_sta_fw.id, hw->ident_sta_fw.major,
-		       hw->ident_sta_fw.minor, hw->ident_sta_fw.variant);
+//		printk(KERN_INFO
+//		       "ident: sta f/w: id=0x%02x %d.%d.%d\n",
+//		       hw->ident_sta_fw.id, hw->ident_sta_fw.major,
+;
 	} else {
-		printk(KERN_INFO
-		       "ident:  ap f/w: id=0x%02x %d.%d.%d\n",
-		       hw->ident_sta_fw.id, hw->ident_sta_fw.major,
-		       hw->ident_sta_fw.minor, hw->ident_sta_fw.variant);
-		printk(KERN_ERR "Unsupported Tertiary AP firmeare loaded!\n");
+//		printk(KERN_INFO
+//		       "ident:  ap f/w: id=0x%02x %d.%d.%d\n",
+//		       hw->ident_sta_fw.id, hw->ident_sta_fw.major,
+;
+;
 		goto failed;
 	}
 
@@ -704,7 +704,7 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 					&hw->cap_sup_mfi,
 					sizeof(hfa384x_caplevel_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve MFISUPRANGE\n");
+;
 		goto failed;
 	}
 
@@ -716,18 +716,18 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->cap_sup_mfi.bottom = le16_to_cpu(hw->cap_sup_mfi.bottom);
 	hw->cap_sup_mfi.top = le16_to_cpu(hw->cap_sup_mfi.top);
 
-	printk(KERN_INFO
-	       "MFI:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
-	       hw->cap_sup_mfi.role, hw->cap_sup_mfi.id,
-	       hw->cap_sup_mfi.variant, hw->cap_sup_mfi.bottom,
-	       hw->cap_sup_mfi.top);
+//	printk(KERN_INFO
+//	       "MFI:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
+//	       hw->cap_sup_mfi.role, hw->cap_sup_mfi.id,
+//	       hw->cap_sup_mfi.variant, hw->cap_sup_mfi.bottom,
+;
 
 	/* Compatibility range, Controller supplier */
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_CFISUPRANGE,
 					&hw->cap_sup_cfi,
 					sizeof(hfa384x_caplevel_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve CFISUPRANGE\n");
+;
 		goto failed;
 	}
 
@@ -739,18 +739,18 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->cap_sup_cfi.bottom = le16_to_cpu(hw->cap_sup_cfi.bottom);
 	hw->cap_sup_cfi.top = le16_to_cpu(hw->cap_sup_cfi.top);
 
-	printk(KERN_INFO
-	       "CFI:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
-	       hw->cap_sup_cfi.role, hw->cap_sup_cfi.id,
-	       hw->cap_sup_cfi.variant, hw->cap_sup_cfi.bottom,
-	       hw->cap_sup_cfi.top);
+//	printk(KERN_INFO
+//	       "CFI:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
+//	       hw->cap_sup_cfi.role, hw->cap_sup_cfi.id,
+//	       hw->cap_sup_cfi.variant, hw->cap_sup_cfi.bottom,
+;
 
 	/* Compatibility range, Primary f/w supplier */
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_PRISUPRANGE,
 					&hw->cap_sup_pri,
 					sizeof(hfa384x_caplevel_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve PRISUPRANGE\n");
+;
 		goto failed;
 	}
 
@@ -762,18 +762,18 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->cap_sup_pri.bottom = le16_to_cpu(hw->cap_sup_pri.bottom);
 	hw->cap_sup_pri.top = le16_to_cpu(hw->cap_sup_pri.top);
 
-	printk(KERN_INFO
-	       "PRI:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
-	       hw->cap_sup_pri.role, hw->cap_sup_pri.id,
-	       hw->cap_sup_pri.variant, hw->cap_sup_pri.bottom,
-	       hw->cap_sup_pri.top);
+//	printk(KERN_INFO
+//	       "PRI:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
+//	       hw->cap_sup_pri.role, hw->cap_sup_pri.id,
+//	       hw->cap_sup_pri.variant, hw->cap_sup_pri.bottom,
+;
 
 	/* Compatibility range, Station f/w supplier */
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_STASUPRANGE,
 					&hw->cap_sup_sta,
 					sizeof(hfa384x_caplevel_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve STASUPRANGE\n");
+;
 		goto failed;
 	}
 
@@ -786,17 +786,17 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->cap_sup_sta.top = le16_to_cpu(hw->cap_sup_sta.top);
 
 	if (hw->cap_sup_sta.id == 0x04) {
-		printk(KERN_INFO
-		       "STA:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
-		       hw->cap_sup_sta.role, hw->cap_sup_sta.id,
-		       hw->cap_sup_sta.variant, hw->cap_sup_sta.bottom,
-		       hw->cap_sup_sta.top);
+//		printk(KERN_INFO
+//		       "STA:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
+//		       hw->cap_sup_sta.role, hw->cap_sup_sta.id,
+//		       hw->cap_sup_sta.variant, hw->cap_sup_sta.bottom,
+;
 	} else {
-		printk(KERN_INFO
-		       "AP:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
-		       hw->cap_sup_sta.role, hw->cap_sup_sta.id,
-		       hw->cap_sup_sta.variant, hw->cap_sup_sta.bottom,
-		       hw->cap_sup_sta.top);
+//		printk(KERN_INFO
+//		       "AP:SUP:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
+//		       hw->cap_sup_sta.role, hw->cap_sup_sta.id,
+//		       hw->cap_sup_sta.variant, hw->cap_sup_sta.bottom,
+;
 	}
 
 	/* Compatibility range, primary f/w actor, CFI supplier */
@@ -804,7 +804,7 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 					&hw->cap_act_pri_cfi,
 					sizeof(hfa384x_caplevel_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve PRI_CFIACTRANGES\n");
+;
 		goto failed;
 	}
 
@@ -816,18 +816,18 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->cap_act_pri_cfi.bottom = le16_to_cpu(hw->cap_act_pri_cfi.bottom);
 	hw->cap_act_pri_cfi.top = le16_to_cpu(hw->cap_act_pri_cfi.top);
 
-	printk(KERN_INFO
-	       "PRI-CFI:ACT:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
-	       hw->cap_act_pri_cfi.role, hw->cap_act_pri_cfi.id,
-	       hw->cap_act_pri_cfi.variant, hw->cap_act_pri_cfi.bottom,
-	       hw->cap_act_pri_cfi.top);
+//	printk(KERN_INFO
+//	       "PRI-CFI:ACT:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
+//	       hw->cap_act_pri_cfi.role, hw->cap_act_pri_cfi.id,
+//	       hw->cap_act_pri_cfi.variant, hw->cap_act_pri_cfi.bottom,
+;
 
 	/* Compatibility range, sta f/w actor, CFI supplier */
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_STA_CFIACTRANGES,
 					&hw->cap_act_sta_cfi,
 					sizeof(hfa384x_caplevel_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve STA_CFIACTRANGES\n");
+;
 		goto failed;
 	}
 
@@ -839,18 +839,18 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->cap_act_sta_cfi.bottom = le16_to_cpu(hw->cap_act_sta_cfi.bottom);
 	hw->cap_act_sta_cfi.top = le16_to_cpu(hw->cap_act_sta_cfi.top);
 
-	printk(KERN_INFO
-	       "STA-CFI:ACT:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
-	       hw->cap_act_sta_cfi.role, hw->cap_act_sta_cfi.id,
-	       hw->cap_act_sta_cfi.variant, hw->cap_act_sta_cfi.bottom,
-	       hw->cap_act_sta_cfi.top);
+//	printk(KERN_INFO
+//	       "STA-CFI:ACT:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
+//	       hw->cap_act_sta_cfi.role, hw->cap_act_sta_cfi.id,
+//	       hw->cap_act_sta_cfi.variant, hw->cap_act_sta_cfi.bottom,
+;
 
 	/* Compatibility range, sta f/w actor, MFI supplier */
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_STA_MFIACTRANGES,
 					&hw->cap_act_sta_mfi,
 					sizeof(hfa384x_caplevel_t));
 	if (result) {
-		printk(KERN_ERR "Failed to retrieve STA_MFIACTRANGES\n");
+;
 		goto failed;
 	}
 
@@ -862,11 +862,11 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	hw->cap_act_sta_mfi.bottom = le16_to_cpu(hw->cap_act_sta_mfi.bottom);
 	hw->cap_act_sta_mfi.top = le16_to_cpu(hw->cap_act_sta_mfi.top);
 
-	printk(KERN_INFO
-	       "STA-MFI:ACT:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
-	       hw->cap_act_sta_mfi.role, hw->cap_act_sta_mfi.id,
-	       hw->cap_act_sta_mfi.variant, hw->cap_act_sta_mfi.bottom,
-	       hw->cap_act_sta_mfi.top);
+//	printk(KERN_INFO
+//	       "STA-MFI:ACT:role=0x%02x:id=0x%02x:var=0x%02x:b/t=%d/%d\n",
+//	       hw->cap_act_sta_mfi.role, hw->cap_act_sta_mfi.id,
+//	       hw->cap_act_sta_mfi.variant, hw->cap_act_sta_mfi.bottom,
+;
 
 	/* Serial Number */
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_NICSERIALNUMBER,
@@ -874,9 +874,9 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	if (!result) {
 		wlan_mkprintstr(snum, HFA384x_RID_NICSERIALNUMBER_LEN,
 				pstr, sizeof(pstr));
-		printk(KERN_INFO "Prism2 card SN: %s\n", pstr);
+;
 	} else {
-		printk(KERN_ERR "Failed to retrieve Prism2 Card SN\n");
+;
 		goto failed;
 	}
 
@@ -884,7 +884,7 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 	result = hfa384x_drvr_getconfig(hw, HFA384x_RID_CNFOWNMACADDR,
 					wlandev->netdev->dev_addr, ETH_ALEN);
 	if (result != 0) {
-		printk(KERN_ERR "Failed to retrieve mac address\n");
+;
 		goto failed;
 	}
 
@@ -912,7 +912,7 @@ static int prism2sta_getcardinfo(wlandevice_t *wlandev)
 
 	goto done;
 failed:
-	printk(KERN_ERR "Failed, result=%d\n", result);
+;
 done:
 	return result;
 }
@@ -1091,8 +1091,8 @@ static void prism2sta_inf_scanresults(wlandevice_t *wlandev,
 					HFA384x_RID_JOINREQUEST,
 					&joinreq, HFA384x_RID_JOINREQUEST_LEN);
 	if (result) {
-		printk(KERN_ERR "setconfig(joinreq) failed, result=%d\n",
-		       result);
+//		printk(KERN_ERR "setconfig(joinreq) failed, result=%d\n",
+;
 	}
 
 	return;
@@ -1233,7 +1233,7 @@ void prism2sta_processing_defer(struct work_struct *data)
 		 */
 		netif_carrier_off(wlandev->netdev);
 
-		printk(KERN_INFO "linkstatus=NOTCONNECTED (unhandled)\n");
+;
 		break;
 
 	case HFA384x_LINK_CONNECTED:
@@ -1260,7 +1260,7 @@ void prism2sta_processing_defer(struct work_struct *data)
 		if (wlandev->netdev->type == ARPHRD_ETHER) {
 			u16 portstatus;
 
-			printk(KERN_INFO "linkstatus=CONNECTED\n");
+;
 
 			/* For non-usb devices, we can use the sync versions */
 			/* Collect the BSSID, and set state to allow tx */
@@ -1322,8 +1322,8 @@ void prism2sta_processing_defer(struct work_struct *data)
 		 * Block Transmits, Ignore receives of data frames
 		 */
 		if (wlandev->netdev->type == ARPHRD_ETHER)
-			printk(KERN_INFO
-			       "linkstatus=DISCONNECTED (unhandled)\n");
+//			printk(KERN_INFO
+;
 		wlandev->macmode = WLAN_MACMODE_NONE;
 
 		netif_carrier_off(wlandev->netdev);
@@ -1348,7 +1348,7 @@ void prism2sta_processing_defer(struct work_struct *data)
 		 * Indicate Reassociation
 		 * Enable Transmits, Receives and pass up data frames
 		 */
-		printk(KERN_INFO "linkstatus=AP_CHANGE\n");
+;
 
 		result = hfa384x_drvr_getconfig(hw,
 						HFA384x_RID_CURRENTBSSID,
@@ -1390,7 +1390,7 @@ void prism2sta_processing_defer(struct work_struct *data)
 		 * Response:
 		 * Block Transmits, Ignore receives of data frames
 		 */
-		printk(KERN_INFO "linkstatus=AP_OUTOFRANGE (unhandled)\n");
+;
 
 		netif_carrier_off(wlandev->netdev);
 
@@ -1403,7 +1403,7 @@ void prism2sta_processing_defer(struct work_struct *data)
 		 * Response:
 		 * Enable Transmits, Receives and pass up data frames
 		 */
-		printk(KERN_INFO "linkstatus=AP_INRANGE\n");
+;
 
 		hw->link_status = HFA384x_LINK_CONNECTED;
 		netif_carrier_on(wlandev->netdev);
@@ -1427,10 +1427,10 @@ void prism2sta_processing_defer(struct work_struct *data)
 					       HFA384x_RID_JOINREQUEST,
 					       &joinreq,
 					       HFA384x_RID_JOINREQUEST_LEN);
-			printk(KERN_INFO
-			       "linkstatus=ASSOCFAIL (re-submitting join)\n");
+//			printk(KERN_INFO
+;
 		} else {
-			printk(KERN_INFO "linkstatus=ASSOCFAIL (unhandled)\n");
+;
 		}
 
 		netif_carrier_off(wlandev->netdev);
@@ -1442,8 +1442,8 @@ void prism2sta_processing_defer(struct work_struct *data)
 
 	default:
 		/* This is bad, IO port problems? */
-		printk(KERN_WARNING
-		       "unknown linkstatus=0x%02x\n", hw->link_status);
+//		printk(KERN_WARNING
+;
 		goto failed;
 		break;
 	}
@@ -1530,16 +1530,16 @@ static void prism2sta_inf_assocstatus(wlandevice_t *wlandev,
 
 	if (i >= hw->authlist.cnt) {
 		if (rec.assocstatus != HFA384x_ASSOCSTATUS_AUTHFAIL)
-			printk(KERN_WARNING
-	"assocstatus info frame received for non-authenticated station.\n");
+//			printk(KERN_WARNING
+;
 	} else {
 		hw->authlist.assoc[i] =
 		    (rec.assocstatus == HFA384x_ASSOCSTATUS_STAASSOC ||
 		     rec.assocstatus == HFA384x_ASSOCSTATUS_REASSOC);
 
 		if (rec.assocstatus == HFA384x_ASSOCSTATUS_AUTHFAIL)
-			printk(KERN_WARNING
-"authfail assocstatus info frame received for authenticated station.\n");
+//			printk(KERN_WARNING
+;
 	}
 
 	return;
@@ -1728,9 +1728,9 @@ static void prism2sta_inf_authreq_defer(wlandevice_t *wlandev,
 	if (result) {
 		if (added)
 			hw->authlist.cnt--;
-		printk(KERN_ERR
-		       "setconfig(authenticatestation) failed, result=%d\n",
-		       result);
+//		printk(KERN_ERR
+//		       "setconfig(authenticatestation) failed, result=%d\n",
+;
 	}
 	return;
 }
@@ -1813,17 +1813,17 @@ void prism2sta_ev_info(wlandevice_t *wlandev, hfa384x_InfFrame_t *inf)
 		prism2sta_inf_psusercnt(wlandev, inf);
 		break;
 	case HFA384x_IT_KEYIDCHANGED:
-		printk(KERN_WARNING "Unhandled IT_KEYIDCHANGED\n");
+;
 		break;
 	case HFA384x_IT_ASSOCREQ:
-		printk(KERN_WARNING "Unhandled IT_ASSOCREQ\n");
+;
 		break;
 	case HFA384x_IT_MICFAILURE:
-		printk(KERN_WARNING "Unhandled IT_MICFAILURE\n");
+;
 		break;
 	default:
-		printk(KERN_WARNING
-		       "Unknown info type=0x%02x\n", inf->infotype);
+//		printk(KERN_WARNING
+;
 		break;
 	}
 	return;
@@ -1952,7 +1952,7 @@ static wlandevice_t *create_wlan(void)
 	hw = kmalloc(sizeof(hfa384x_t), GFP_KERNEL);
 
 	if (!wlandev || !hw) {
-		printk(KERN_ERR "%s: Memory allocation failure.\n", dev_info);
+;
 		kfree(wlandev);
 		kfree(hw);
 		return NULL;
@@ -2008,7 +2008,7 @@ void prism2sta_commsqual_defer(struct work_struct *data)
 				&hw->qual, HFA384x_RID_DBMCOMMSQUALITY_LEN);
 
 		if (result) {
-			printk(KERN_ERR "error fetching commsqual\n");
+;
 			goto done;
 		}
 

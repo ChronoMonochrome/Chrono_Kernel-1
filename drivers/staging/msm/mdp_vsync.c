@@ -180,7 +180,7 @@ void mdp_config_vsync(struct msm_fb_data_type *mfd)
 			mdp_vsync_clk = clk_get(NULL, "mdp_vsync_clk");
 
 		if (IS_ERR(mdp_vsync_clk)) {
-			printk(KERN_ERR "error: can't get mdp_vsync_clk!\n");
+;
 			mfd->use_mdp_vsync = 0;
 		} else
 			mfd->use_mdp_vsync = 1;
@@ -294,7 +294,7 @@ err_handle:
 	if (mfd->vsync_width_boundary)
 		vfree(mfd->vsync_width_boundary);
 	mfd->panel_info.lcd.vsync_enable = FALSE;
-	printk(KERN_ERR "%s: failed!\n", __func__);
+;
 }
 
 void mdp_vsync_resync_workqueue_handler(struct work_struct *work)

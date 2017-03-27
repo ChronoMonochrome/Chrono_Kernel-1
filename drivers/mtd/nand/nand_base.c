@@ -2182,8 +2182,12 @@ static int nand_do_write_ops(struct mtd_info *mtd, loff_t to,
 
 	/* reject writes, which are not page aligned */
 	if (NOTALIGNED(to) || NOTALIGNED(ops->len)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "%s: Attempt to write not "
 				"page aligned data\n", __func__);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 
@@ -2576,8 +2580,12 @@ int nand_erase_nand(struct mtd_info *mtd, struct erase_info *instr,
 		 */
 		if (nand_block_checkbad(mtd, ((loff_t) page) <<
 					chip->page_shift, 0, allowbbt)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "%s: attempt to erase a bad block "
 					"at page 0x%08x\n", __func__, page);
+#else
+			;
+#endif
 			instr->state = MTD_ERASE_FAILED;
 			goto erase_exit;
 		}
@@ -2846,13 +2854,21 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
 		chip->read_byte(mtd) != 'F' || chip->read_byte(mtd) != 'I')
 		return 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ONFI flash detected\n");
+#else
+	;
+#endif
 	chip->cmdfunc(mtd, NAND_CMD_PARAM, 0, -1);
 	for (i = 0; i < 3; i++) {
 		chip->read_buf(mtd, (uint8_t *)p, sizeof(*p));
 		if (onfi_crc16(ONFI_CRC_BASE, (uint8_t *)p, 254) ==
 				le16_to_cpu(p->crc)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "ONFI param page %d valid\n", i);
+#else
+			;
+#endif
 			break;
 		}
 	}
@@ -2876,8 +2892,12 @@ static int nand_flash_detect_onfi(struct mtd_info *mtd, struct nand_chip *chip,
 		chip->onfi_version = 0;
 
 	if (!chip->onfi_version) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: unsupported ONFI version: %d\n",
 								__func__, val);
+#else
+		;
+#endif
 		return 0;
 	}
 
@@ -2941,9 +2961,13 @@ static struct nand_flash_dev *nand_get_flash_type(struct mtd_info *mtd,
 		id_data[i] = chip->read_byte(mtd);
 
 	if (id_data[0] != *maf_id || id_data[1] != *dev_id) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: second ID read did not match "
 		       "%02x,%02x against %02x,%02x\n", __func__,
 		       *maf_id, *dev_id, id_data[0], id_data[1]);
+#else
+		;
+#endif
 		return ERR_PTR(-ENODEV);
 	}
 
@@ -3085,12 +3109,20 @@ ident_done:
 	 * chip correct !
 	 */
 	if (busw != (chip->options & NAND_BUSWIDTH_16)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "NAND device: Manufacturer ID:"
 		       " 0x%02x, Chip ID: 0x%02x (%s %s)\n", *maf_id,
 		       *dev_id, nand_manuf_ids[maf_idx].name, mtd->name);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "NAND bus width %d instead %d bit\n",
 		       (chip->options & NAND_BUSWIDTH_16) ? 16 : 8,
 		       busw ? 16 : 8);
+#else
+		;
+#endif
 		return ERR_PTR(-EINVAL);
 	}
 
@@ -3157,10 +3189,14 @@ ident_done:
 		chip->cmdfunc = nand_command_lp;
 
 	/* TODO onfi flash name */
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "NAND device: Manufacturer ID:"
 		" 0x%02x, Chip ID: 0x%02x (%s %s)\n", *maf_id, *dev_id,
 		nand_manuf_ids[maf_idx].name,
 		chip->onfi_version ? chip->onfi_params.model : type->name);
+#else
+	;
+#endif
 
 	return type;
 }
@@ -3194,7 +3230,11 @@ int nand_scan_ident(struct mtd_info *mtd, int maxchips,
 
 	if (IS_ERR(type)) {
 		if (!(chip->options & NAND_SCAN_SILENT_NODEV))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "No NAND device found.\n");
+#else
+			;
+#endif
 		chip->select_chip(mtd, -1);
 		return PTR_ERR(type);
 	}
@@ -3212,7 +3252,11 @@ int nand_scan_ident(struct mtd_info *mtd, int maxchips,
 			break;
 	}
 	if (i > 1)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%d NAND chips detected\n", i);
+#else
+		;
+#endif
 
 	/* Store the number of chips and calc total size for mtd */
 	chip->numchips = i;
@@ -3300,8 +3344,12 @@ int nand_scan_tail(struct mtd_info *mtd)
 			chip->ecc.layout = &nand_oob_128;
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "No oob scheme defined for "
 			       "oobsize %d\n", mtd->oobsize);
+#else
+			;
+#endif
 			BUG();
 		}
 	}
@@ -3319,7 +3367,11 @@ int nand_scan_tail(struct mtd_info *mtd)
 		/* Similar to NAND_ECC_HW, but a separate read_page handle */
 		if (!chip->ecc.calculate || !chip->ecc.correct ||
 		     !chip->ecc.hwctl) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "No ECC functions supplied; "
+#else
+			;
+#endif
 			       "Hardware ECC not possible\n");
 			BUG();
 		}
@@ -3348,7 +3400,11 @@ int nand_scan_tail(struct mtd_info *mtd)
 		     chip->ecc.read_page == nand_read_page_hwecc ||
 		     !chip->ecc.write_page ||
 		     chip->ecc.write_page == nand_write_page_hwecc)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "No ECC functions supplied; "
+#else
+			;
+#endif
 			       "Hardware ECC not possible\n");
 			BUG();
 		}
@@ -3368,9 +3424,13 @@ int nand_scan_tail(struct mtd_info *mtd)
 
 		if (mtd->writesize >= chip->ecc.size)
 			break;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%d byte HW ECC not possible on "
 		       "%d byte page size, fallback to SW ECC\n",
 		       chip->ecc.size, mtd->writesize);
+#else
+		;
+#endif
 		chip->ecc.mode = NAND_ECC_SOFT;
 
 	case NAND_ECC_SOFT:
@@ -3390,7 +3450,11 @@ int nand_scan_tail(struct mtd_info *mtd)
 
 	case NAND_ECC_SOFT_BCH:
 		if (!mtd_nand_has_bch()) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "CONFIG_MTD_ECC_BCH not enabled\n");
+#else
+			;
+#endif
 			BUG();
 		}
 		chip->ecc.calculate = nand_bch_calculate_ecc;
@@ -3417,14 +3481,22 @@ int nand_scan_tail(struct mtd_info *mtd)
 					       chip->ecc.bytes,
 					       &chip->ecc.layout);
 		if (!chip->ecc.priv) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "BCH ECC initialization failed!\n");
+#else
+			;
+#endif
 			BUG();
 		}
 		break;
 
 	case NAND_ECC_NONE:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "NAND_ECC_NONE selected by board driver. "
 		       "This is not recommended !!\n");
+#else
+		;
+#endif
 		chip->ecc.read_page = nand_read_page_raw;
 		chip->ecc.write_page = nand_write_page_raw;
 		chip->ecc.read_oob = nand_read_oob_std;
@@ -3436,8 +3508,12 @@ int nand_scan_tail(struct mtd_info *mtd)
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Invalid NAND_ECC_MODE %d\n",
 		       chip->ecc.mode);
+#else
+		;
+#endif
 		BUG();
 	}
 
@@ -3458,7 +3534,11 @@ int nand_scan_tail(struct mtd_info *mtd)
 	 */
 	chip->ecc.steps = mtd->writesize / chip->ecc.size;
 	if (chip->ecc.steps * chip->ecc.size != mtd->writesize) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Invalid ecc parameters\n");
+#else
+		;
+#endif
 		BUG();
 	}
 	chip->ecc.total = chip->ecc.steps * chip->ecc.bytes;
@@ -3553,8 +3633,12 @@ int nand_scan(struct mtd_info *mtd, int maxchips)
 
 	/* Many callers got this wrong, so check for it for a while... */
 	if (!mtd->owner && caller_is_module()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s called with NULL mtd->owner!\n",
 				__func__);
+#else
+		;
+#endif
 		BUG();
 	}
 

@@ -91,14 +91,14 @@ static int ixpdev_rx(struct net_device *dev, int processed, int budget)
 		buf = phys_to_virt(desc->buf_addr);
 
 		if (desc->pkt_length < 4 || desc->pkt_length > PAGE_SIZE) {
-			printk(KERN_ERR "ixp2000: rx err, length %d\n",
-					desc->pkt_length);
+//			printk(KERN_ERR "ixp2000: rx err, length %d\n",
+;
 			goto err;
 		}
 
 		if (desc->channel < 0 || desc->channel >= nds_count) {
-			printk(KERN_ERR "ixp2000: rx err, channel %d\n",
-					desc->channel);
+//			printk(KERN_ERR "ixp2000: rx err, channel %d\n",
+;
 			goto err;
 		}
 
@@ -167,9 +167,9 @@ static void ixpdev_tx_complete(void)
 		channel = tx_desc[entry].channel;
 
 		if (channel < 0 || channel >= nds_count) {
-			printk(KERN_ERR "ixp2000: txcomp channel index "
-					"out of bounds (%d, %.8i, %d)\n",
-					channel, (unsigned int)desc, entry);
+//			printk(KERN_ERR "ixp2000: txcomp channel index "
+//					"out of bounds (%d, %.8i, %d)\n",
+;
 			continue;
 		}
 
@@ -206,7 +206,7 @@ static irqreturn_t ixpdev_interrupt(int irq, void *dev_id)
 		if (likely(napi_schedule_prep(&ip->napi))) {
 			__napi_schedule(&ip->napi);
 		} else {
-			printk(KERN_CRIT "ixp2000: irq while polling!!\n");
+;
 		}
 	}
 
@@ -322,7 +322,7 @@ int ixpdev_init(int __nds_count, struct net_device **__nds,
 
 	BUILD_BUG_ON(RX_BUF_COUNT > 192 || TX_BUF_COUNT > 192);
 
-	printk(KERN_INFO "IXP2000 MSF ethernet driver %s\n", DRV_MODULE_VERSION);
+;
 
 	nds_count = __nds_count;
 	nds = __nds;
@@ -397,11 +397,11 @@ int ixpdev_init(int __nds_count, struct net_device **__nds,
 	}
 
 	for (i = 0; i < nds_count; i++) {
-		printk(KERN_INFO "%s: IXP2000 MSF ethernet (port %d), "
-			"%.2x:%.2x:%.2x:%.2x:%.2x:%.2x.\n", nds[i]->name, i,
-			nds[i]->dev_addr[0], nds[i]->dev_addr[1],
-			nds[i]->dev_addr[2], nds[i]->dev_addr[3],
-			nds[i]->dev_addr[4], nds[i]->dev_addr[5]);
+//		printk(KERN_INFO "%s: IXP2000 MSF ethernet (port %d), "
+//			"%.2x:%.2x:%.2x:%.2x:%.2x:%.2x.\n", nds[i]->name, i,
+//			nds[i]->dev_addr[0], nds[i]->dev_addr[1],
+//			nds[i]->dev_addr[2], nds[i]->dev_addr[3],
+;
 	}
 
 	return 0;

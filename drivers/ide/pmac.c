@@ -1106,10 +1106,14 @@ static int pmac_ide_setup_device(pmac_ide_hwif_t *pmif, struct ide_hw *hw)
 		msleep(jiffies_to_msecs(IDE_WAKEUP_DELAY));
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME ": Found Apple %s controller (%s), "
 	       "bus ID %d%s, irq %d\n", model_name[pmif->kind],
 	       pmif->mdev ? "macio" : "PCI", pmif->aapl_bus_id,
 	       on_media_bay(pmif) ? " (mediabay)" : "", hw->irq);
+#else
+	;
+#endif
 
 	rc = ide_host_register(host, &d, hws);
 	if (rc)
@@ -1151,8 +1155,12 @@ static int pmac_ide_macio_attach(struct macio_dev *mdev,
 		return -ENOMEM;
 
 	if (macio_resource_count(mdev) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ide-pmac: no address for %s\n",
 				    mdev->ofdev.dev.of_node->full_name);
+#else
+		;
+#endif
 		rc = -ENXIO;
 		goto out_free_pmif;
 	}
@@ -1171,8 +1179,12 @@ static int pmac_ide_macio_attach(struct macio_dev *mdev,
 	 * where that happens though...
 	 */
 	if (macio_irq_count(mdev) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ide-pmac: no intrs for device %s, using "
 				    "13\n", mdev->ofdev.dev.of_node->full_name);
+#else
+		;
+#endif
 		irq = irq_create_mapping(NULL, 13);
 	} else
 		irq = macio_irq(mdev, 0);
@@ -1188,9 +1200,13 @@ static int pmac_ide_macio_attach(struct macio_dev *mdev,
 
 	if (macio_resource_count(mdev) >= 2) {
 		if (macio_request_resource(mdev, 1, "ide-pmac (dma)"))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ide-pmac: can't request DMA "
 					    "resource for %s!\n",
 					    mdev->ofdev.dev.of_node->full_name);
+#else
+			;
+#endif
 		else
 			pmif->dma_regs = ioremap(macio_resource_start(mdev, 1), 0x1000);
 	} else
@@ -1281,8 +1297,12 @@ static int pmac_ide_pci_attach(struct pci_dev *pdev,
 		return -ENOMEM;
 
 	if (pci_enable_device(pdev)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ide-pmac: Can't enable PCI device for "
 				    "%s\n", np->full_name);
+#else
+		;
+#endif
 		rc = -ENXIO;
 		goto out_free_pmif;
 	}
@@ -1494,8 +1514,12 @@ static int pmac_ide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 
 		if (pmif->broken_dma && cur_addr & (L1_CACHE_BYTES - 1)) {
 			if (pmif->broken_dma_warn == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s: DMA on non aligned address, "
 				       "switching to PIO on Ohare chipset\n", drive->name);
+#else
+				;
+#endif
 				pmif->broken_dma_warn = 1;
 			}
 			return 0;
@@ -1504,8 +1528,12 @@ static int pmac_ide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 			unsigned int tc = (cur_len < 0xfe00)? cur_len: 0xfe00;
 
 			if (count++ >= MAX_DCMDS) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "%s: DMA table too small\n",
 				       drive->name);
+#else
+				;
+#endif
 				return 0;
 			}
 			st_le16(&table->command, wr? OUTPUT_MORE: INPUT_MORE);
@@ -1533,7 +1561,11 @@ static int pmac_ide_build_dmatable(ide_drive_t *drive, struct ide_cmd *cmd)
 		return 1;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s: empty DMA table?\n", drive->name);
+#else
+	;
+#endif
 
 	return 0; /* revert to PIO for this request */
 }
@@ -1653,8 +1685,12 @@ pmac_ide_dma_test_irq (ide_drive_t *drive)
 		if ((status & FLUSH) == 0)
 			break;
 		if (++timeout > 100) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ide%d, ide_dma_test_irq timeout flushing channel\n",
 			       hwif->index);
+#else
+			;
+#endif
 			break;
 		}
 	}	

@@ -194,7 +194,11 @@ static const char invalid_magic[] =
 #define VALIDATE_STATE(s)                          \
 ({                                                 \
         if (!(s) || (s)->magic != CS4297a_MAGIC) { \
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(invalid_magic);             \
+#else
+                ;
+#endif
                 return -ENXIO;                     \
         }                                          \
 })
@@ -335,9 +339,13 @@ static void clear_advance(void *buf, unsigned bsize, unsigned bptr,
 		bptr = 0;
 		len -= x;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_WAVE_WRITE, 4, printk(KERN_INFO
 		"cs4297a: clear_advance(): memset %d at 0x%.8x for %d size \n",
 			(unsigned)c, (unsigned)((char *) buf) + bptr, len));
+#else
+	CS_DBGOUT(CS_WAVE_WRITE, 4, ;
+#endif
 	memset(((char *) buf) + bptr, c, len);
 }
 
@@ -372,169 +380,365 @@ static void cs_printioctl(unsigned int x)
 	switch (x) {
 	case SOUND_MIXER_CS_GETDBGMASK:
 		CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk("SOUND_MIXER_CS_GETDBGMASK:\n"));
+#else
+			  ;
+#endif
 		break;
 	case SOUND_MIXER_CS_GETDBGLEVEL:
 		CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk("SOUND_MIXER_CS_GETDBGLEVEL:\n"));
+#else
+			  ;
+#endif
 		break;
 	case SOUND_MIXER_CS_SETDBGMASK:
 		CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk("SOUND_MIXER_CS_SETDBGMASK:\n"));
+#else
+			  ;
+#endif
 		break;
 	case SOUND_MIXER_CS_SETDBGLEVEL:
 		CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk("SOUND_MIXER_CS_SETDBGLEVEL:\n"));
+#else
+			  ;
+#endif
 		break;
 	case OSS_GETVERSION:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("OSS_GETVERSION:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_SYNC:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_SYNC:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_SETDUPLEX:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_SETDUPLEX:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETCAPS:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETCAPS:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_RESET:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_RESET:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_SPEED:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_SPEED:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_STEREO:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_STEREO:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_CHANNELS:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_CHANNELS:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETFMTS:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETFMTS:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_SETFMT:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_SETFMT:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_POST:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_POST:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETTRIGGER:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETTRIGGER:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_SETTRIGGER:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_SETTRIGGER:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETOSPACE:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETOSPACE:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETISPACE:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETISPACE:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_NONBLOCK:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_NONBLOCK:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETODELAY:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETODELAY:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETIPTR:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETIPTR:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETOPTR:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETOPTR:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_GETBLKSIZE:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_GETBLKSIZE:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SNDCTL_DSP_SETFRAGMENT:
 		CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk("SNDCTL_DSP_SETFRAGMENT:\n"));
+#else
+			  ;
+#endif
 		break;
 	case SNDCTL_DSP_SUBDIVIDE:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_SUBDIVIDE:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_PCM_READ_RATE:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_PCM_READ_RATE:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_PCM_READ_CHANNELS:
 		CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk("SOUND_PCM_READ_CHANNELS:\n"));
+#else
+			  ;
+#endif
 		break;
 	case SOUND_PCM_READ_BITS:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_PCM_READ_BITS:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_PCM_WRITE_FILTER:
 		CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk("SOUND_PCM_WRITE_FILTER:\n"));
+#else
+			  ;
+#endif
 		break;
 	case SNDCTL_DSP_SETSYNCRO:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SNDCTL_DSP_SETSYNCRO:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_PCM_READ_FILTER:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_PCM_READ_FILTER:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_MIXER_PRIVATE1:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_MIXER_PRIVATE1:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_MIXER_PRIVATE2:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_MIXER_PRIVATE2:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_MIXER_PRIVATE3:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_MIXER_PRIVATE3:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_MIXER_PRIVATE4:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_MIXER_PRIVATE4:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_MIXER_PRIVATE5:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_MIXER_PRIVATE5:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_MIXER_INFO:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_MIXER_INFO:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 	case SOUND_OLD_MIXER_INFO:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_OLD_MIXER_INFO:\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		break;
 
 	default:
 		switch (_IOC_NR(x)) {
 		case SOUND_MIXER_VOLUME:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_VOLUME:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_SPEAKER:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_SPEAKER:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_RECLEV:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_RECLEV:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_MIC:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_MIC:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_SYNTH:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_SYNTH:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_RECSRC:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_RECSRC:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_DEVMASK:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_DEVMASK:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_RECMASK:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_RECMASK:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_STEREODEVS:
 			CS_DBGOUT(CS_IOCTL, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 				  printk("SOUND_MIXER_STEREODEVS:\n"));
+#else
+				  ;
+#endif
 			break;
 		case SOUND_MIXER_CAPS:
+#ifdef CONFIG_DEBUG_PRINTK
 			CS_DBGOUT(CS_IOCTL, 4, printk("SOUND_MIXER_CAPS:\n"));
+#else
+			CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 			break;
 		default:
 			i = _IOC_NR(x);
@@ -560,7 +764,11 @@ static int ser_init(struct cs4297a_state *s)
         int i;
 
         CS_DBGOUT(CS_INIT, 2, 
+#ifdef CONFIG_DEBUG_PRINTK
                   printk(KERN_INFO "cs4297a: Setting up serial parameters\n"));
+#else
+                  ;
+#endif
 
         __raw_writeq(M_SYNCSER_CMD_RX_RESET | M_SYNCSER_CMD_TX_RESET, SS_CSR(R_SER_CMD));
 
@@ -658,7 +866,11 @@ static int dma_init(struct cs4297a_state *s)
         int i;
 
         CS_DBGOUT(CS_INIT, 2, 
+#ifdef CONFIG_DEBUG_PRINTK
                   printk(KERN_INFO "cs4297a: Setting up DMA\n"));
+#else
+                  ;
+#endif
 
         if (init_serdma(&s->dma_adc) ||
             init_serdma(&s->dma_dac))
@@ -710,8 +922,12 @@ static int dma_init(struct cs4297a_state *s)
                 ;
 
         CS_DBGOUT(CS_INIT, 4, 
+#ifdef CONFIG_DEBUG_PRINTK
                   printk(KERN_INFO "cs4297a: status: %08x\n",
                          (unsigned int)(__raw_readq(SS_CSR(R_SER_STATUS)) & 0xffffffff)));
+#else
+                  ;
+#endif
 
         return 0;
 }
@@ -754,12 +970,20 @@ static int serdma_reg_access(struct cs4297a_state *s, u64 data)
 		*data_p = cpu_to_be64(data);
                 __raw_writeq(1, SS_CSR(R_SER_DMA_DSCR_COUNT_TX));
                 CS_DBGOUT(CS_DESCR, 4,
+#ifdef CONFIG_DEBUG_PRINTK
                           printk(KERN_INFO "cs4297a: add_tx  %p (%x -> %x)\n",
                                  data_p, swptr, d->hwptr));
+#else
+                          ;
+#endif
         }
 
         CS_DBGOUT(CS_FUNCTION, 6,
+#ifdef CONFIG_DEBUG_PRINTK
                   printk(KERN_INFO "cs4297a: serdma_reg_access()-\n"));
+#else
+                  ;
+#endif
         
         return 0;
 }
@@ -771,14 +995,22 @@ static int cs4297a_read_ac97(struct cs4297a_state *s, u32 offset,
 			    u32 * value)
 {
         CS_DBGOUT(CS_AC97, 1,
+#ifdef CONFIG_DEBUG_PRINTK
                   printk(KERN_INFO "cs4297a: read reg %2x\n", offset));
+#else
+                  ;
+#endif
         if (serdma_reg_access(s, (0xCLL << 60) | (1LL << 47) | ((u64)(offset & 0x7F) << 40)))
                 return -1;
 
         interruptible_sleep_on(&s->dma_adc.reg_wait);
         *value = s->read_value;
         CS_DBGOUT(CS_AC97, 2,
+#ifdef CONFIG_DEBUG_PRINTK
                   printk(KERN_INFO "cs4297a: rdr reg %x -> %x\n", s->read_reg, s->read_value));
+#else
+                  ;
+#endif
 
         return 0;
 }
@@ -791,7 +1023,11 @@ static int cs4297a_write_ac97(struct cs4297a_state *s, u32 offset,
 			     u32 value)
 {
         CS_DBGOUT(CS_AC97, 1,
+#ifdef CONFIG_DEBUG_PRINTK
                   printk(KERN_INFO "cs4297a: write reg %2x -> %04x\n", offset, value));
+#else
+                  ;
+#endif
         return (serdma_reg_access(s, (0xELL << 60) | ((u64)(offset & 0x7F) << 40) | ((value & 0xffff) << 12)));
 }
 
@@ -799,7 +1035,11 @@ static void stop_dac(struct cs4297a_state *s)
 {
 	unsigned long flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_WAVE_WRITE, 3, printk(KERN_INFO "cs4297a: stop_dac():\n"));
+#else
+	CS_DBGOUT(CS_WAVE_WRITE, 3, ;
+#endif
 	spin_lock_irqsave(&s->lock, flags);
 	s->ena &= ~FMODE_WRITE;
 #if 0
@@ -818,7 +1058,11 @@ static void start_dac(struct cs4297a_state *s)
 {
 	unsigned long flags;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_FUNCTION, 3, printk(KERN_INFO "cs4297a: start_dac()+\n"));
+#else
+	CS_DBGOUT(CS_FUNCTION, 3, ;
+#endif
 	spin_lock_irqsave(&s->lock, flags);
 	if (!(s->ena & FMODE_WRITE) && (s->dma_dac.mapped ||
 					(s->dma_dac.count > 0
@@ -829,13 +1073,21 @@ static void start_dac(struct cs4297a_state *s)
                    interrupt handler will start processing the xmit
                    channel */
 
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_WAVE_WRITE | CS_PARMS, 8, printk(KERN_INFO
 			"cs4297a: start_dac(): start dma\n"));
+#else
+		CS_DBGOUT(CS_WAVE_WRITE | CS_PARMS, 8, ;
+#endif
 
 	}
 	spin_unlock_irqrestore(&s->lock, flags);
 	CS_DBGOUT(CS_FUNCTION, 3,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: start_dac()-\n"));
+#else
+		  ;
+#endif
 }
 
 
@@ -844,7 +1096,11 @@ static void stop_adc(struct cs4297a_state *s)
 	unsigned long flags;
 
 	CS_DBGOUT(CS_FUNCTION, 3,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: stop_adc()+\n"));
+#else
+		  ;
+#endif
 
 	spin_lock_irqsave(&s->lock, flags);
 	s->ena &= ~FMODE_READ;
@@ -857,7 +1113,11 @@ static void stop_adc(struct cs4297a_state *s)
            XXXKW when do I get here, and is there more I should do? */
 	spin_unlock_irqrestore(&s->lock, flags);
 	CS_DBGOUT(CS_FUNCTION, 3,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: stop_adc()-\n"));
+#else
+		  ;
+#endif
 }
 
 
@@ -866,7 +1126,11 @@ static void start_adc(struct cs4297a_state *s)
 	unsigned long flags;
 
 	CS_DBGOUT(CS_FUNCTION, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: start_adc()+\n"));
+#else
+		  ;
+#endif
 
 	if (!(s->ena & FMODE_READ) &&
 	    (s->dma_adc.mapped || s->dma_adc.count <=
@@ -904,11 +1168,19 @@ static void start_adc(struct cs4297a_state *s)
                    more I should do? */
 		spin_unlock_irqrestore(&s->lock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_PARMS, 6, printk(KERN_INFO
 			 "cs4297a: start_adc(): start adc\n"));
+#else
+		CS_DBGOUT(CS_PARMS, 6, ;
+#endif
 	}
 	CS_DBGOUT(CS_FUNCTION, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: start_adc()-\n"));
+#else
+		  ;
+#endif
 
 }
 
@@ -934,8 +1206,12 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
 
                 if (s->ena & FMODE_READ) {
                         CS_DBGOUT(CS_FUNCTION, 2, 
+#ifdef CONFIG_DEBUG_PRINTK
                                   printk(KERN_INFO "cs4297a: upd_rcv sw->hw->hw %x/%x/%x (int-%d)n",
                                          d->swptr, d->hwptr, hwptr, intflag));
+#else
+                                  ;
+#endif
                         /* Number of DMA buffers available for software: */
                         diff2 = diff = (d->ringsz + hwptr - d->hwptr) % d->ringsz;
                         d->hwptr = hwptr;
@@ -955,7 +1231,11 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
                                     (!(descr_a & M_DMA_SERRX_SOP)) ||
                                     (G_DMA_DSCRB_PKT_SIZE(descr->descr_b) != FRAME_BYTES)) {
                                         s->stats.rx_bad++;
+#ifdef CONFIG_DEBUG_PRINTK
                                         printk(KERN_DEBUG "cs4297a: RX Bad attributes (read)\n");
+#else
+                                        ;
+#endif
                                         continue;
                                 }
                                 s->stats.rx_good++;
@@ -966,7 +1246,11 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
                                 }
                                 if (d->count && (d->sb_hwptr == d->sb_swptr)) {
                                         s->stats.rx_overflow++;
+#ifdef CONFIG_DEBUG_PRINTK
                                         printk(KERN_DEBUG "cs4297a: RX overflow\n");
+#else
+                                        ;
+#endif
                                         continue;
                                 }
                                 good_diff++;
@@ -998,8 +1282,12 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
                         } else {
                                 if (d->count > 0) {
                                         CS_DBGOUT(CS_WAVE_READ, 4,
+#ifdef CONFIG_DEBUG_PRINTK
                                                   printk(KERN_INFO
                                                          "cs4297a: update count -> %d\n", d->count));
+#else
+                                                  ;
+#endif
                                         wake_up(&d->wait);
                                 }
                         }
@@ -1029,7 +1317,11 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
                                     !(descr->descr_a & M_DMA_SERRX_SOP) ||
                                     (G_DMA_DSCRB_PKT_SIZE(descr->descr_b) != FRAME_BYTES)) {
                                         s->stats.rx_bad++;
+#ifdef CONFIG_DEBUG_PRINTK
                                         printk(KERN_DEBUG "cs4297a: RX Bad attributes\n");
+#else
+                                        ;
+#endif
                                 } else {
                                         s->stats.rx_good++;
                                         if ((data >> 61) == 7) {
@@ -1052,13 +1344,21 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
                         d->hwptr = hwptr;
 
                         CS_DBGOUT(CS_DESCR, 6, 
+#ifdef CONFIG_DEBUG_PRINTK
                                   printk(KERN_INFO "cs4297a: hw/sw %x/%x\n", d->hwptr, d->swptr));
+#else
+                                  ;
+#endif
                 }
 
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_PARMS, 8, printk(KERN_INFO
 			"cs4297a: cs4297a_update_ptr(): s=0x%.8x hwptr=%d total_bytes=%d count=%d \n",
 				(unsigned)s, d->hwptr, 
 				d->total_bytes, d->count));
+#else
+		CS_DBGOUT(CS_PARMS, 8, ;
+#endif
 	}
 
         /* XXXKW worry about s->reg_request -- there is a starvation
@@ -1075,9 +1375,13 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
                 hwptr = (unsigned) (((__raw_readq(SS_CSR(R_SER_DMA_CUR_DSCR_ADDR_TX)) & M_DMA_CURDSCR_ADDR) -
                                      d->descrtab_phys) / sizeof(serdma_descr_t));
                 diff = (d->ringsz + hwptr - d->hwptr) % d->ringsz;
+#ifdef CONFIG_DEBUG_PRINTK
                 CS_DBGOUT(CS_WAVE_WRITE, 4, printk(KERN_INFO
                                                    "cs4297a: cs4297a_update_ptr(): hw/hw/sw %x/%x/%x diff %d count %d\n",
                                                    d->hwptr, hwptr, d->swptr, diff, d->count));
+#else
+                CS_DBGOUT(CS_WAVE_WRITE, 4, ;
+#endif
                 d->hwptr = hwptr;
                 /* XXXKW stereo? conversion? Just assume 2 16-bit samples for now */
                 d->total_bytes += diff * FRAME_SAMPLE_BYTES;
@@ -1096,19 +1400,27 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
 				// fill with silence, and do not shut down the DAC.
 				// Continue to play silence until the _release.
 				//
+#ifdef CONFIG_DEBUG_PRINTK
 				CS_DBGOUT(CS_WAVE_WRITE, 6, printk(KERN_INFO
 					"cs4297a: cs4297a_update_ptr(): memset %d at 0x%.8x for %d size \n",
 						(unsigned)(s->prop_dac.fmt & 
 						(AFMT_U8 | AFMT_U16_LE)) ? 0x80 : 0, 
 						(unsigned)d->dma_buf, 
 						d->ringsz));
+#else
+				CS_DBGOUT(CS_WAVE_WRITE, 6, ;
+#endif
 				memset(d->dma_buf, 0, d->ringsz * FRAME_BYTES);
 				if (d->count < 0) {
 					d->underrun = 1;
                                         s->stats.tx_underrun++;
 					d->count = 0;
+#ifdef CONFIG_DEBUG_PRINTK
 					CS_DBGOUT(CS_ERROR, 9, printk(KERN_INFO
 					 "cs4297a: cs4297a_update_ptr(): underrun\n"));
+#else
+					CS_DBGOUT(CS_ERROR, 9, ;
+#endif
 				}
 			} else if (d->count <=
 				   (signed) d->fragsize
@@ -1124,15 +1436,23 @@ static void cs4297a_update_ptr(struct cs4297a_state *s, int intflag)
 			if ( (d->count <= (signed) d->sbufsz/2) || intflag)
 			{
                                 CS_DBGOUT(CS_WAVE_WRITE, 4,
+#ifdef CONFIG_DEBUG_PRINTK
                                           printk(KERN_INFO
                                                  "cs4297a: update count -> %d\n", d->count));
+#else
+                                          ;
+#endif
 				wake_up(&d->wait);
 			}
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_PARMS, 8, printk(KERN_INFO
 			"cs4297a: cs4297a_update_ptr(): s=0x%.8x hwptr=%d total_bytes=%d count=%d \n",
 				(unsigned) s, d->hwptr, 
 				d->total_bytes, d->count));
+#else
+		CS_DBGOUT(CS_PARMS, 8, ;
+#endif
 	}
 }
 
@@ -1174,9 +1494,13 @@ static int mixer_ioctl(struct cs4297a_state *s, unsigned int cmd,
 	int i, val;
 
 	VALIDATE_STATE(s);
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_FUNCTION, 4, printk(KERN_INFO
 		 "cs4297a: mixer_ioctl(): s=0x%.8x cmd=0x%.8x\n",
 			 (unsigned) s, cmd));
+#else
+	CS_DBGOUT(CS_FUNCTION, 4, ;
+#endif
 #if CSDEBUG
 	cs_printioctl(cmd);
 #endif
@@ -1209,8 +1533,12 @@ static int mixer_ioctl(struct cs4297a_state *s, unsigned int cmd,
 			cs_debuglevel = val;
 			return 0;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			CS_DBGOUT(CS_ERROR, 1, printk(KERN_INFO
 				"cs4297a: mixer_ioctl(): ERROR unknown debug cmd\n"));
+#else
+			CS_DBGOUT(CS_ERROR, 1, ;
+#endif
 			return 0;
 		}
 	}
@@ -1482,8 +1810,12 @@ static int mixer_ioctl(struct cs4297a_state *s, unsigned int cmd,
 
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk(KERN_INFO
 			"cs4297a: mixer_ioctl(): default\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 
 		i = _IOC_NR(cmd);
 		if (i >= SOUND_MIXER_NRDEVICES || !(vidx = mixtable1[i]))
@@ -1533,7 +1865,11 @@ static int cs4297a_open_mixdev(struct inode *inode, struct file *file)
 	struct list_head *entry;
 
 	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_open_mixdev()+\n"));
+#else
+		  ;
+#endif
 
 	mutex_lock(&swarm_cs4297a_mutex);
 	list_for_each(entry, &cs4297a_devs)
@@ -1545,7 +1881,11 @@ static int cs4297a_open_mixdev(struct inode *inode, struct file *file)
 	if (!s)
 	{
 		CS_DBGOUT(CS_FUNCTION | CS_OPEN | CS_ERROR, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "cs4297a: cs4297a_open_mixdev()- -ENODEV\n"));
+#else
+			;
+#endif
 
 		mutex_unlock(&swarm_cs4297a_mutex);
 		return -ENODEV;
@@ -1554,7 +1894,11 @@ static int cs4297a_open_mixdev(struct inode *inode, struct file *file)
 	file->private_data = s;
 
 	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_open_mixdev()- 0\n"));
+#else
+		  ;
+#endif
 	mutex_unlock(&swarm_cs4297a_mutex);
 
 	return nonseekable_open(inode, file);
@@ -1655,7 +1999,11 @@ static ssize_t cs4297a_read(struct file *file, char *buffer, size_t count,
 	unsigned copied = 0;
 
 	CS_DBGOUT(CS_FUNCTION | CS_WAVE_READ, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_read()+ %d \n", count));
+#else
+		  ;
+#endif
 
 	VALIDATE_STATE(s);
 	if (s->dma_adc.mapped)
@@ -1675,10 +2023,14 @@ static ssize_t cs4297a_read(struct file *file, char *buffer, size_t count,
 // "copied" is the total bytes copied into the user buffer for each loop.
 //
 	while (count > 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_WAVE_READ, 8, printk(KERN_INFO
 			"_read() count>0 count=%d .count=%d .swptr=%d .hwptr=%d \n",
 				count, s->dma_adc.count,
 				s->dma_adc.swptr, s->dma_adc.hwptr));
+#else
+		CS_DBGOUT(CS_WAVE_READ, 8, ;
+#endif
 		spin_lock_irqsave(&s->lock, flags);
 
                 /* cnt will be the number of available samples (16-bit
@@ -1736,12 +2088,20 @@ static ssize_t cs4297a_read(struct file *file, char *buffer, size_t count,
 		// virtual address to copy from is dma_buf+swptr
 		// the "cnt" is the number of bytes to read.
 
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_WAVE_READ, 2, printk(KERN_INFO
 			"_read() copy_to cnt=%d count=%d ", cnt_by, count));
+#else
+		CS_DBGOUT(CS_WAVE_READ, 2, ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_WAVE_READ, 8, printk(KERN_INFO
 			 " .sbufsz=%d .count=%d buffer=0x%.8x ret=%d\n",
 				 s->dma_adc.sbufsz, s->dma_adc.count,
 				 (unsigned) buffer, ret));
+#else
+		CS_DBGOUT(CS_WAVE_READ, 8, ;
+#endif
 
 		if (copy_to_user (buffer, ((void *)s->dma_adc.sb_swptr), cnt_by))
 			return ret ? ret : -EFAULT;
@@ -1750,7 +2110,11 @@ static ssize_t cs4297a_read(struct file *file, char *buffer, size_t count,
                 /* Return the descriptors */
 		spin_lock_irqsave(&s->lock, flags);
                 CS_DBGOUT(CS_FUNCTION, 2, 
+#ifdef CONFIG_DEBUG_PRINTK
                           printk(KERN_INFO "cs4297a: upd_rcv sw->hw %x/%x\n", s->dma_adc.swptr, s->dma_adc.hwptr));
+#else
+                          ;
+#endif
 		s->dma_adc.count -= cnt_by;
                 s->dma_adc.sb_swptr += cnt * 2;
                 if (s->dma_adc.sb_swptr == s->dma_adc.sb_end)
@@ -1762,7 +2126,11 @@ static ssize_t cs4297a_read(struct file *file, char *buffer, size_t count,
 		start_adc(s);
 	}
 	CS_DBGOUT(CS_FUNCTION | CS_WAVE_READ, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_read()- %d\n", ret));
+#else
+		  ;
+#endif
 	return ret;
 }
 
@@ -1778,8 +2146,12 @@ static ssize_t cs4297a_write(struct file *file, const char *buffer,
 	int cnt;
 
 	CS_DBGOUT(CS_FUNCTION | CS_WAVE_WRITE, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_write()+ count=%d\n",
 			 count));
+#else
+		  ;
+#endif
 	VALIDATE_STATE(s);
 
 	if (s->dma_dac.mapped)
@@ -1864,8 +2236,12 @@ static ssize_t cs4297a_write(struct file *file, const char *buffer,
                 }
 
                 CS_DBGOUT(CS_WAVE_WRITE, 4,
+#ifdef CONFIG_DEBUG_PRINTK
                           printk(KERN_INFO
                                  "cs4297a: copy in %d to swptr %x\n", cnt, swptr));
+#else
+                          ;
+#endif
 
 		swptr = (swptr + (cnt/FRAME_SAMPLE_BYTES)) % d->ringsz;
                 __raw_writeq(cnt/FRAME_SAMPLE_BYTES, SS_CSR(R_SER_DMA_DSCR_COUNT_TX));
@@ -1880,7 +2256,11 @@ static ssize_t cs4297a_write(struct file *file, const char *buffer,
 		start_dac(s);
 	}
 	CS_DBGOUT(CS_FUNCTION | CS_WAVE_WRITE, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_write()- %d\n", ret));
+#else
+		  ;
+#endif
 	return ret;
 }
 
@@ -1894,20 +2274,32 @@ static unsigned int cs4297a_poll(struct file *file,
 	unsigned int mask = 0;
 
 	CS_DBGOUT(CS_FUNCTION | CS_WAVE_WRITE | CS_WAVE_READ, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_poll()+\n"));
+#else
+		  ;
+#endif
 	VALIDATE_STATE(s);
 	if (file->f_mode & FMODE_WRITE) {
 		CS_DBGOUT(CS_FUNCTION | CS_WAVE_WRITE | CS_WAVE_READ, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk(KERN_INFO
 				 "cs4297a: cs4297a_poll() wait on FMODE_WRITE\n"));
+#else
+			  ;
+#endif
 		if(!s->dma_dac.ready && prog_dmabuf_dac(s))
 			return 0;
 		poll_wait(file, &s->dma_dac.wait, wait);
 	}
 	if (file->f_mode & FMODE_READ) {
 		CS_DBGOUT(CS_FUNCTION | CS_WAVE_WRITE | CS_WAVE_READ, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 			  printk(KERN_INFO
 				 "cs4297a: cs4297a_poll() wait on FMODE_READ\n"));
+#else
+			  ;
+#endif
 		if(!s->dma_dac.ready && prog_dmabuf_adc(s))
 			return 0;
 		poll_wait(file, &s->dma_adc.wait, wait);
@@ -1939,8 +2331,12 @@ static unsigned int cs4297a_poll(struct file *file,
 	}
 	spin_unlock_irqrestore(&s->lock, flags);
 	CS_DBGOUT(CS_FUNCTION | CS_WAVE_WRITE | CS_WAVE_READ, 4,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_poll()- 0x%.8x\n",
 			 mask));
+#else
+		  ;
+#endif
 	return mask;
 }
 
@@ -1963,9 +2359,13 @@ static int cs4297a_ioctl(struct file *file,
 	count_info cinfo;
 	int val, mapped, ret;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_FUNCTION|CS_IOCTL, 4, printk(KERN_INFO
 		 "cs4297a: cs4297a_ioctl(): file=0x%.8x cmd=0x%.8x\n",
 			 (unsigned) file, cmd));
+#else
+	CS_DBGOUT(CS_FUNCTION|CS_IOCTL, 4, ;
+#endif
 #if CSDEBUG
 	cs_printioctl(cmd);
 #endif
@@ -1974,14 +2374,22 @@ static int cs4297a_ioctl(struct file *file,
 	    ((file->f_mode & FMODE_READ) && s->dma_adc.mapped);
 	switch (cmd) {
 	case OSS_GETVERSION:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, printk(KERN_INFO
 			"cs4297a: cs4297a_ioctl(): SOUND_VERSION=0x%.8x\n",
 				 SOUND_VERSION));
+#else
+		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, ;
+#endif
 		return put_user(SOUND_VERSION, (int *) arg);
 
 	case SNDCTL_DSP_SYNC:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk(KERN_INFO
 			 "cs4297a: cs4297a_ioctl(): DSP_SYNC\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		if (file->f_mode & FMODE_WRITE)
 			return drain_dac(s,
 					 0 /*file->f_flags & O_NONBLOCK */
@@ -1997,8 +2405,12 @@ static int cs4297a_ioctl(struct file *file,
 				(int *) arg);
 
 	case SNDCTL_DSP_RESET:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk(KERN_INFO
 			 "cs4297a: cs4297a_ioctl(): DSP_RESET\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		if (file->f_mode & FMODE_WRITE) {
 			stop_dac(s);
 			synchronize_irq(s->irq);
@@ -2022,16 +2434,24 @@ static int cs4297a_ioctl(struct file *file,
 	case SNDCTL_DSP_SPEED:
 		if (get_user(val, (int *) arg))
 			return -EFAULT;
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, printk(KERN_INFO
 			 "cs4297a: cs4297a_ioctl(): DSP_SPEED val=%d -> 48000\n", val));
+#else
+		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, ;
+#endif
                 val = 48000;
                 return put_user(val, (int *) arg);
 
 	case SNDCTL_DSP_STEREO:
 		if (get_user(val, (int *) arg))
 			return -EFAULT;
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, printk(KERN_INFO
 			 "cs4297a: cs4297a_ioctl(): DSP_STEREO val=%d\n", val));
+#else
+		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, ;
+#endif
 		if (file->f_mode & FMODE_READ) {
 			stop_adc(s);
 			s->dma_adc.ready = 0;
@@ -2047,9 +2467,13 @@ static int cs4297a_ioctl(struct file *file,
 	case SNDCTL_DSP_CHANNELS:
 		if (get_user(val, (int *) arg))
 			return -EFAULT;
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, printk(KERN_INFO
 			 "cs4297a: cs4297a_ioctl(): DSP_CHANNELS val=%d\n",
 				 val));
+#else
+		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, ;
+#endif
 		if (val != 0) {
 			if (file->f_mode & FMODE_READ) {
 				stop_adc(s);
@@ -2077,19 +2501,27 @@ static int cs4297a_ioctl(struct file *file,
 		return put_user(val, (int *) arg);
 
 	case SNDCTL_DSP_GETFMTS:	// Returns a mask 
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, printk(KERN_INFO
 			"cs4297a: cs4297a_ioctl(): DSP_GETFMT val=0x%.8x\n",
 				 AFMT_S16_LE | AFMT_U16_LE | AFMT_S8 |
 				 AFMT_U8));
+#else
+		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, ;
+#endif
 		return put_user(AFMT_S16_LE | AFMT_U16_LE | AFMT_S8 |
 				AFMT_U8, (int *) arg);
 
 	case SNDCTL_DSP_SETFMT:
 		if (get_user(val, (int *) arg))
 			return -EFAULT;
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, printk(KERN_INFO
 			 "cs4297a: cs4297a_ioctl(): DSP_SETFMT val=0x%.8x\n",
 				 val));
+#else
+		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, ;
+#endif
 		if (val != AFMT_QUERY) {
 			if (file->f_mode & FMODE_READ) {
 				stop_adc(s);
@@ -2117,14 +2549,22 @@ static int cs4297a_ioctl(struct file *file,
 			else if (file->f_mode & FMODE_READ)
 				val = s->prop_adc.fmt_original;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, printk(KERN_INFO
 		  "cs4297a: cs4297a_ioctl(): DSP_SETFMT return val=0x%.8x\n", 
 			val));
+#else
+		CS_DBGOUT(CS_IOCTL | CS_PARMS, 4, ;
+#endif
 		return put_user(val, (int *) arg);
 
 	case SNDCTL_DSP_POST:
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_IOCTL, 4, printk(KERN_INFO
 			 "cs4297a: cs4297a_ioctl(): DSP_POST\n"));
+#else
+		CS_DBGOUT(CS_IOCTL, 4, ;
+#endif
 		return 0;
 
 	case SNDCTL_DSP_GETTRIGGER:
@@ -2173,10 +2613,14 @@ static int cs4297a_ioctl(struct file *file,
 			    s->dma_dac.sbufsz - s->dma_dac.count;
 		abinfo.fragstotal = s->dma_dac.numfrag;
 		abinfo.fragments = abinfo.bytes >> s->dma_dac.fragshift;
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_FUNCTION | CS_PARMS, 4, printk(KERN_INFO
 			"cs4297a: cs4297a_ioctl(): GETOSPACE .fragsize=%d .bytes=%d .fragstotal=%d .fragments=%d\n",
 				abinfo.fragsize,abinfo.bytes,abinfo.fragstotal,
 				abinfo.fragments));
+#else
+		CS_DBGOUT(CS_FUNCTION | CS_PARMS, 4, ;
+#endif
 		spin_unlock_irqrestore(&s->lock, flags);
 		return copy_to_user((void *) arg, &abinfo,
 				    sizeof(abinfo)) ? -EFAULT : 0;
@@ -2362,9 +2806,13 @@ static int cs4297a_release(struct inode *inode, struct file *file)
 	struct cs4297a_state *s =
 	    (struct cs4297a_state *) file->private_data;
 
+#ifdef CONFIG_DEBUG_PRINTK
         CS_DBGOUT(CS_FUNCTION | CS_RELEASE, 2, printk(KERN_INFO
 		 "cs4297a: cs4297a_release(): inode=0x%.8x file=0x%.8x f_mode=0x%x\n",
 			 (unsigned) inode, (unsigned) file, file->f_mode));
+#else
+        CS_DBGOUT(CS_FUNCTION | CS_RELEASE, 2, ;
+#endif
 	VALIDATE_STATE(s);
 
 	if (file->f_mode & FMODE_WRITE) {
@@ -2394,11 +2842,19 @@ static int cs4297a_locked_open(struct inode *inode, struct file *file)
 	struct cs4297a_state *s=NULL;
 	struct list_head *entry;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 2, printk(KERN_INFO
 		"cs4297a: cs4297a_open(): inode=0x%.8x file=0x%.8x f_mode=0x%x\n",
 			(unsigned) inode, (unsigned) file, file->f_mode));
+#else
+	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 2, ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 2, printk(KERN_INFO
                 "cs4297a: status = %08x\n", (int)__raw_readq(SS_CSR(R_SER_STATUS_DEBUG))));
+#else
+	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 2, ;
+#endif
 
 	list_for_each(entry, &cs4297a_devs)
 	{
@@ -2410,8 +2866,12 @@ static int cs4297a_locked_open(struct inode *inode, struct file *file)
 	if (entry == &cs4297a_devs)
 		return -ENODEV;
 	if (!s) {
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_FUNCTION | CS_OPEN, 2, printk(KERN_INFO
 			"cs4297a: cs4297a_open(): Error - unable to find audio state struct\n"));
+#else
+		CS_DBGOUT(CS_FUNCTION | CS_OPEN, 2, ;
+#endif
 		return -ENODEV;
 	}
 	VALIDATE_STATE(s);
@@ -2419,8 +2879,12 @@ static int cs4297a_locked_open(struct inode *inode, struct file *file)
 
 	// wait for device to become free 
 	if (!(file->f_mode & (FMODE_WRITE | FMODE_READ))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		CS_DBGOUT(CS_FUNCTION | CS_OPEN | CS_ERROR, 2, printk(KERN_INFO
 			 "cs4297a: cs4297a_open(): Error - must open READ and/or WRITE\n"));
+#else
+		CS_DBGOUT(CS_FUNCTION | CS_OPEN | CS_ERROR, 2, ;
+#endif
 		return -ENODEV;
 	}
 	if (file->f_mode & FMODE_WRITE) {
@@ -2440,7 +2904,11 @@ static int cs4297a_locked_open(struct inode *inode, struct file *file)
 			interruptible_sleep_on(&s->open_wait_dac);
 
 			if (signal_pending(current)) {
+#ifdef CONFIG_DEBUG_PRINTK
                                 printk("open - sig pending\n");
+#else
+                                ;
+#endif
 				return -ERESTARTSYS;
                         }
 			mutex_lock(&s->open_sem_dac);
@@ -2457,7 +2925,11 @@ static int cs4297a_locked_open(struct inode *inode, struct file *file)
 			interruptible_sleep_on(&s->open_wait_adc);
 
 			if (signal_pending(current)) {
+#ifdef CONFIG_DEBUG_PRINTK
                                 printk("open - sig pending\n");
+#else
+                                ;
+#endif
 				return -ERESTARTSYS;
                         }
 			mutex_lock(&s->open_sem_adc);
@@ -2501,7 +2973,11 @@ static int cs4297a_locked_open(struct inode *inode, struct file *file)
 		}
 	}
 	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cs4297a_open()- 0\n"));
+#else
+		  ;
+#endif
 	return nonseekable_open(inode, file);
 }
 
@@ -2538,8 +3014,12 @@ static void cs4297a_interrupt(int irq, void *dev_id)
 
         status = __raw_readq(SS_CSR(R_SER_STATUS_DEBUG));
 
+#ifdef CONFIG_DEBUG_PRINTK
         CS_DBGOUT(CS_INTERRUPT, 6, printk(KERN_INFO
                  "cs4297a: cs4297a_interrupt() HISR=0x%.8x\n", status));
+#else
+        CS_DBGOUT(CS_INTERRUPT, 6, ;
+#endif
 
 #if 0
         /* XXXKW what check *should* be done here? */
@@ -2580,8 +3060,12 @@ static void cs4297a_interrupt(int irq, void *dev_id)
 	cs4297a_update_ptr(s,CS_TRUE);
 	spin_unlock(&s->lock);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_INTERRUPT, 6, printk(KERN_INFO
 		  "cs4297a: cs4297a_interrupt()-\n"));
+#else
+	CS_DBGOUT(CS_INTERRUPT, 6, ;
+#endif
 }
 
 #if 0
@@ -2613,8 +3097,12 @@ static int __init cs4297a_init(void)
 	int mdio_val;
 #endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	CS_DBGOUT(CS_INIT | CS_FUNCTION, 2, printk(KERN_INFO 
 		"cs4297a: cs4297a_init_module()+ \n"));
+#else
+	CS_DBGOUT(CS_INIT | CS_FUNCTION, 2, ;
+#endif
 
 #ifndef CONFIG_BCM_CS4297A_CSWARM
         mdio_val = __raw_readq(KSEG1 + A_MAC_REGISTER(2, R_MAC_MDIO)) &
@@ -2626,11 +3114,19 @@ static int __init cs4297a_init(void)
                 __raw_writeq(cfg | M_SYS_SER1_ENABLE, KSEG1+A_SCD_SYSTEM_CFG);
                 cfg = __raw_readq(KSEG1 + A_SCD_SYSTEM_CFG);
                 if (!(cfg & M_SYS_SER1_ENABLE)) {
+#ifdef CONFIG_DEBUG_PRINTK
                   printk(KERN_INFO "cs4297a: serial port 1 not configured for synchronous operation\n");
+#else
+                  ;
+#endif
                   return -1;
                 }
 
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_INFO "cs4297a: serial port 1 switching to synchronous operation\n");
+#else
+                ;
+#endif
                 
                 /* Force the codec (on SWARM) to reset by clearing
                    GENO, preserving MDIO (no effect on CSWARM) */
@@ -2721,10 +3217,18 @@ static int __init cs4297a_init(void)
 		if (sb1250_duart_present)
 			sb1250_duart_present[1] = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_INFO "cs4297a: initialized (vendor id = %x)\n", id);
+#else
+                ;
+#endif
 
                 CS_DBGOUT(CS_INIT | CS_FUNCTION, 2,
+#ifdef CONFIG_DEBUG_PRINTK
                           printk(KERN_INFO "cs4297a: cs4297a_init_module()-\n"));
+#else
+                          ;
+#endif
                 
                 return 0;
         }
@@ -2738,7 +3242,11 @@ static int __init cs4297a_init(void)
  err_irq:
 	kfree(s);
 
+#ifdef CONFIG_DEBUG_PRINTK
         printk(KERN_INFO "cs4297a: initialization failed\n");
+#else
+        ;
+#endif
 
         return -1;
 }
@@ -2754,7 +3262,11 @@ static void __exit cs4297a_cleanup(void)
            free memory
         */
 	CS_DBGOUT(CS_INIT | CS_FUNCTION, 2,
+#ifdef CONFIG_DEBUG_PRINTK
 		  printk(KERN_INFO "cs4297a: cleanup_cs4297a() finished\n"));
+#else
+		  ;
+#endif
 }
 
 // --------------------------------------------------------------------- 

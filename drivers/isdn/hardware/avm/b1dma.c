@@ -395,17 +395,29 @@ static void b1dma_dispatch_tx(avmcard *card)
 		}
 		txlen = (u8 *)p - (u8 *)dma->sendbuf.dmabuf;
 #ifdef AVM_B1DMA_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "tx: put msg len=%d\n", txlen);
+#else
+		;
+#endif
 #endif
 	} else {
 		txlen = skb->len-2;
 #ifdef AVM_B1DMA_POLLDEBUG
 		if (skb->data[2] == SEND_POLLACK)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "%s: send ack\n", card->name);
+#else
+			;
+#endif
 #endif
 #ifdef AVM_B1DMA_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "tx: put 0x%x len=%d\n", 
 		       skb->data[2], txlen);
+#else
+		;
+#endif
 #endif
 		skb_copy_from_linear_data_offset(skb, 2, dma->sendbuf.dmabuf,
 						 skb->len - 2);
@@ -429,8 +441,12 @@ static void queue_pollack(avmcard *card)
 
 	skb = alloc_skb(3, GFP_ATOMIC);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s: no memory, lost poll ack\n",
 					card->name);
+#else
+		;
+#endif
 		return;
 	}
 	p = skb->data;
@@ -455,7 +471,11 @@ static void b1dma_handle_rx(avmcard *card)
 	u8 b1cmd =  _get_byte(&p);
 
 #ifdef AVM_B1DMA_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "rx: 0x%x %lu\n", b1cmd, (unsigned long)dma->recvlen);
+#else
+	;
+#endif
 #endif
 	
 	switch (b1cmd) {
@@ -524,7 +544,11 @@ static void b1dma_handle_rx(avmcard *card)
 
 	case RECEIVE_START:
 #ifdef AVM_B1DMA_POLLDEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: receive poll\n", card->name);
+#else
+		;
+#endif
 #endif
 		if (!suppress_pollack)
 			queue_pollack(card);
@@ -539,10 +563,14 @@ static void b1dma_handle_rx(avmcard *card)
 
 		cinfo->versionlen = _get_slice(&p, cinfo->versionbuf);
 		b1_parse_version(cinfo);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: %s-card (%s) now active\n",
 		       card->name,
 		       cinfo->version[VER_CARDTYPE],
 		       cinfo->version[VER_DRIVER]);
+#else
+		;
+#endif
 		capi_ctr_ready(ctrl);
 		break;
 
@@ -556,8 +584,12 @@ static void b1dma_handle_rx(avmcard *card)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: task %d \"%s\" ready.\n",
 				card->name, ApplId, card->msgbuf);
+#else
+		;
+#endif
 		break;
 
 	case RECEIVE_DEBUGMSG:
@@ -569,7 +601,11 @@ static void b1dma_handle_rx(avmcard *card)
 			card->msgbuf[MsgLen-1] = 0;
 			MsgLen--;
 		}
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: DEBUG: %s\n", card->name, card->msgbuf);
+#else
+		;
+#endif
 		break;
 
 	default:
@@ -685,8 +721,12 @@ static void b1dma_send_init(avmcard *card)
 
 	skb = alloc_skb(15, GFP_ATOMIC);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s: no memory, lost register appl.\n",
 					card->name);
+#else
+		;
+#endif
 		return;
 	}
 	p = skb->data;
@@ -784,8 +824,12 @@ void b1dma_register_appl(struct capi_ctr *ctrl,
 
 	skb = alloc_skb(23, GFP_ATOMIC);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s: no memory, lost register appl.\n",
 					card->name);
+#else
+		;
+#endif
 		return;
 	}
 	p = skb->data;
@@ -818,8 +862,12 @@ void b1dma_release_appl(struct capi_ctr *ctrl, u16 appl)
 
 	skb = alloc_skb(7, GFP_ATOMIC);
 	if (!skb) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "%s: no memory, lost release appl.\n",
 					card->name);
+#else
+		;
+#endif
 		return;
 	}
 	p = skb->data;
@@ -981,7 +1029,11 @@ static int __init b1dma_init(void)
 	} else
 		strcpy(rev, "1.0");
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "b1dma: revision %s\n", rev);
+#else
+	;
+#endif
 
 	return 0;
 }

@@ -166,9 +166,13 @@ static struct pci_dma_ops ccio_ops = {
 static int
 ccio_probe(struct parisc_device *dev)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s found %s at 0x%lx\n", MODULE_NAME,
 			dev->id.hversion == U2_BC_GSC ? "U2" : "UTurn",
 			dev->hpa.start);
+#else
+	;
+#endif
 
 /*
 ** FIXME - should check U2 registers to verify it's really running

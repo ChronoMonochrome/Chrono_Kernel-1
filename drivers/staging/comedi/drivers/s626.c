@@ -579,13 +579,13 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 	devpriv->pdev = pdev;
 
 	if (pdev == NULL) {
-		printk(KERN_ERR "s626_attach: Board not present!!!\n");
+;
 		return -ENODEV;
 	}
 
 	result = comedi_pci_enable(pdev, "s626");
 	if (result < 0) {
-		printk(KERN_ERR "s626_attach: comedi_pci_enable fails\n");
+;
 		return -ENODEV;
 	}
 	devpriv->got_regions = 1;
@@ -594,7 +594,7 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	devpriv->base_addr = ioremap(resourceStart, SIZEOF_ADDRESS_SPACE);
 	if (devpriv->base_addr == NULL) {
-		printk(KERN_ERR "s626_attach: IOREMAP failed\n");
+;
 		return -ENODEV;
 	}
 
@@ -615,7 +615,7 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		    pci_alloc_consistent(devpriv->pdev, DMABUF_SIZE, &appdma);
 
 		if (devpriv->ANABuf.LogicalBase == NULL) {
-			printk(KERN_ERR "s626_attach: DMA Memory mapping error\n");
+;
 			return -ENOMEM;
 		}
 
@@ -632,7 +632,7 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 		    pci_alloc_consistent(devpriv->pdev, DMABUF_SIZE, &appdma);
 
 		if (devpriv->RPSBuf.LogicalBase == NULL) {
-			printk(KERN_ERR "s626_attach: DMA Memory mapping error\n");
+;
 			return -ENOMEM;
 		}
 
@@ -658,13 +658,13 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
 
 	/* set up interrupt handler */
 	if (dev->irq == 0) {
-		printk(KERN_ERR " unknown irq (bad)\n");
+;
 	} else {
 		ret = request_irq(dev->irq, s626_irq_handler, IRQF_SHARED,
 				  "s626", dev);
 
 		if (ret < 0) {
-			printk(KERN_ERR " irq not available\n");
+;
 			dev->irq = 0;
 		}
 	}
@@ -1783,8 +1783,8 @@ static int s626_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
 	DEBUG("s626_ai_cmd: entering command function\n");
 
 	if (devpriv->ai_cmd_running) {
-		printk(KERN_ERR "s626_ai_cmd: Another ai_cmd is running %d\n",
-		       dev->minor);
+//		printk(KERN_ERR "s626_ai_cmd: Another ai_cmd is running %d\n",
+;
 		return -EBUSY;
 	}
 	/* disable interrupt */

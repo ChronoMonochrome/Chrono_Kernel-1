@@ -459,7 +459,7 @@ static void cfspi_ss_cb(bool assert, struct cfspi_ifc *ifc)
 	 * slave has transmitted are considered spurious.
 	 */
 	if (cfspi->slave && !cfspi->slave_talked) {
-		printk(KERN_WARNING "CFSPI: Spurious SS interrupt.\n");
+;
 		return;
 	}
 
@@ -642,7 +642,7 @@ static int cfspi_init(struct net_device *dev)
 	/* Create work thread. */
 	cfspi->wq = create_singlethread_workqueue(dev->name);
 	if (!cfspi->wq) {
-		printk(KERN_WARNING "CFSPI: failed to create work queue.\n");
+;
 		res = -ENODEV;
 		goto err_create_wq;
 	}
@@ -750,7 +750,7 @@ int cfspi_spi_probe(struct platform_device *pdev)
 	/* Register network device. */
 	res = register_netdev(ndev);
 	if (res) {
-		printk(KERN_ERR "CFSPI: Reg. error: %d.\n", res);
+;
 		goto err_net_reg;
 	}
 	return res;
@@ -804,7 +804,7 @@ static int __init cfspi_init_module(void)
 	/* Register platform driver. */
 	result = platform_driver_register(&cfspi_spi_driver);
 	if (result) {
-		printk(KERN_ERR "Could not register platform SPI driver.\n");
+;
 		goto err_dev_register;
 	}
 
@@ -813,7 +813,7 @@ static int __init cfspi_init_module(void)
 	    driver_create_file(&cfspi_spi_driver.driver,
 			       &driver_attr_up_head_align);
 	if (result) {
-		printk(KERN_ERR "Sysfs creation failed 1.\n");
+;
 		goto err_create_up_head_align;
 	}
 
@@ -821,7 +821,7 @@ static int __init cfspi_init_module(void)
 	    driver_create_file(&cfspi_spi_driver.driver,
 			       &driver_attr_up_tail_align);
 	if (result) {
-		printk(KERN_ERR "Sysfs creation failed 2.\n");
+;
 		goto err_create_up_tail_align;
 	}
 
@@ -829,7 +829,7 @@ static int __init cfspi_init_module(void)
 	    driver_create_file(&cfspi_spi_driver.driver,
 			       &driver_attr_down_head_align);
 	if (result) {
-		printk(KERN_ERR "Sysfs creation failed 3.\n");
+;
 		goto err_create_down_head_align;
 	}
 
@@ -837,7 +837,7 @@ static int __init cfspi_init_module(void)
 	    driver_create_file(&cfspi_spi_driver.driver,
 			       &driver_attr_down_tail_align);
 	if (result) {
-		printk(KERN_ERR "Sysfs creation failed 4.\n");
+;
 		goto err_create_down_tail_align;
 	}
 
@@ -845,7 +845,7 @@ static int __init cfspi_init_module(void)
 	    driver_create_file(&cfspi_spi_driver.driver,
 			       &driver_attr_frame_align);
 	if (result) {
-		printk(KERN_ERR "Sysfs creation failed 5.\n");
+;
 		goto err_create_frame_align;
 	}
 	driver_debugfs_create();

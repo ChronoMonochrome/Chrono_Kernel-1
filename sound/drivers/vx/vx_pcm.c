@@ -739,7 +739,11 @@ static void vx_pcm_delayed_start(unsigned long arg)
 	struct vx_pipe *pipe = subs->runtime->private_data;
 	int err;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	/*  printk( KERN_DEBUG "DDDD tasklet delayed start jiffies = %ld\n", jiffies);*/
+#else
+	/*  ;
+#endif
 
 	if ((err = vx_start_stream(chip, pipe)) < 0) {
 		snd_printk(KERN_ERR "vx: cannot start stream\n");
@@ -749,7 +753,11 @@ static void vx_pcm_delayed_start(unsigned long arg)
 		snd_printk(KERN_ERR "vx: cannot start pipe\n");
 		return;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	/*   printk( KERN_DEBUG "dddd tasklet delayed start jiffies = %ld \n", jiffies);*/
+#else
+	/*   ;
+#endif
 }
 
 /*

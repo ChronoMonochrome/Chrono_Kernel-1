@@ -71,7 +71,11 @@ static void snd_tea6330t_set(struct tea6330t *tea,
 			     unsigned char addr, unsigned char value)
 {
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "set - 0x%x/0x%x\n", addr, value);
+#else
+	;
+#endif
 #endif
 	snd_i2c_write(tea->bus, TEA6330T_ADDR, addr, value, 1);
 }

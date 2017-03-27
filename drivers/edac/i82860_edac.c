@@ -19,6 +19,7 @@
 #define  I82860_REVISION " Ver: 2.0.2"
 #define EDAC_MOD_STR	"i82860_edac"
 
+#ifdef CONFIG_DEBUG_PRINTK
 #define i82860_printk(level, fmt, arg...) \
 	edac_printk(level, "i82860", fmt, ##arg)
 
@@ -40,6 +41,9 @@
 enum i82860_chips {
 	I82860 = 0,
 };
+#else
+#define i82860_;
+#endif
 
 struct i82860_dev_info {
 	const char *ctl_name;
@@ -217,12 +221,20 @@ static int i82860_probe1(struct pci_dev *pdev, int dev_idx)
 	/* allocating generic PCI control info */
 	i82860_pci = edac_pci_create_generic_ctl(&pdev->dev, EDAC_MOD_STR);
 	if (!i82860_pci) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): Unable to create PCI control\n",
 			__func__);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s(): PCI error report via EDAC not setup\n",
 			__func__);
+#else
+		;
+#endif
 	}
 
 	/* get this far and it's successful */
@@ -242,7 +254,11 @@ static int __devinit i82860_init_one(struct pci_dev *pdev,
 	int rc;
 
 	debugf0("%s()\n", __func__);
+#ifdef CONFIG_DEBUG_PRINTK
 	i82860_printk(KERN_INFO, "i82860 init one\n");
+#else
+	i82860_;
+#endif
 
 	if (pci_enable_device(pdev) < 0)
 		return -EIO;

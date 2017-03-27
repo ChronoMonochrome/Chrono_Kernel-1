@@ -276,7 +276,11 @@ static int __init config_pas_hw(struct address_info *hw_config)
 	}
 
 	if (!ok)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "PAS16: Driver not enabled\n");
+#else
+		;
+#endif
 
 	return ok;
 }
@@ -398,7 +402,11 @@ MODULE_LICENSE("GPL");
 
 static int __init init_pas2(void)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Pro Audio Spectrum driver Copyright (C) by Hannu Savolainen 1993-1996\n");
+#else
+	;
+#endif
 
 	cfg.io_base = io;
 	cfg.irq = irq;
@@ -411,7 +419,11 @@ static int __init init_pas2(void)
 	cfg2.dma2 = sb_dma16;
 
 	if (cfg.io_base == -1 || cfg.dma == -1 || cfg.irq == -1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "I/O, IRQ, DMA and type are mandatory\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

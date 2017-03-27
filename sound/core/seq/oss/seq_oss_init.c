@@ -82,7 +82,11 @@ snd_seq_oss_create_client(void)
 		goto __error;
 
 	system_client = rc;
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("new client = %d\n", rc));
+#else
+	debug_;
+#endif
 
 	/* look up midi devices */
 	snd_seq_oss_midi_lookup_ports(system_client);
@@ -182,7 +186,11 @@ snd_seq_oss_open(struct file *file, int level)
 		snd_printk(KERN_ERR "can't malloc device info\n");
 		return -ENOMEM;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("oss_open: dp = %p\n", dp));
+#else
+	debug_;
+#endif
 
 	dp->cseq = system_client;
 	dp->port = -1;
@@ -211,7 +219,11 @@ snd_seq_oss_open(struct file *file, int level)
 	}
 
 	/* create port */
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("create new port\n"));
+#else
+	debug_;
+#endif
 	rc = create_port(dp);
 	if (rc < 0) {
 		snd_printk(KERN_ERR "can't create port\n");
@@ -219,7 +231,11 @@ snd_seq_oss_open(struct file *file, int level)
 	}
 
 	/* allocate queue */
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("allocate queue\n"));
+#else
+	debug_;
+#endif
 	rc = alloc_seq_queue(dp);
 	if (rc < 0)
 		goto _error;
@@ -236,7 +252,11 @@ snd_seq_oss_open(struct file *file, int level)
 	dp->file_mode = translate_mode(file);
 
 	/* initialize read queue */
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("initialize read queue\n"));
+#else
+	debug_;
+#endif
 	if (is_read_mode(dp->file_mode)) {
 		dp->readq = snd_seq_oss_readq_new(dp, maxqlen);
 		if (!dp->readq) {
@@ -246,7 +266,11 @@ snd_seq_oss_open(struct file *file, int level)
 	}
 
 	/* initialize write queue */
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("initialize write queue\n"));
+#else
+	debug_;
+#endif
 	if (is_write_mode(dp->file_mode)) {
 		dp->writeq = snd_seq_oss_writeq_new(dp, maxqlen);
 		if (!dp->writeq) {
@@ -256,14 +280,22 @@ snd_seq_oss_open(struct file *file, int level)
 	}
 
 	/* initialize timer */
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("initialize timer\n"));
+#else
+	debug_;
+#endif
 	dp->timer = snd_seq_oss_timer_new(dp);
 	if (!dp->timer) {
 		snd_printk(KERN_ERR "can't alloc timer\n");
 		rc = -ENOMEM;
 		goto _error;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("timer initialized\n"));
+#else
+	debug_;
+#endif
 
 	/* set private data pointer */
 	file->private_data = dp;
@@ -277,7 +309,11 @@ snd_seq_oss_open(struct file *file, int level)
 	client_table[dp->index] = dp;
 	num_clients++;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("open done\n"));
+#else
+	debug_;
+#endif
 	return 0;
 
  _error:
@@ -336,7 +372,11 @@ create_port(struct seq_oss_devinfo *dp)
 		return rc;
 
 	dp->port = port.addr.port;
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("new port = %d\n", port.addr.port));
+#else
+	debug_;
+#endif
 
 	return 0;
 }
@@ -352,7 +392,11 @@ delete_port(struct seq_oss_devinfo *dp)
 		return 0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("delete_port %i\n", dp->port));
+#else
+	debug_;
+#endif
 	return snd_seq_event_port_detach(dp->cseq, dp->port);
 }
 
@@ -427,21 +471,37 @@ snd_seq_oss_release(struct seq_oss_devinfo *dp)
 	client_table[dp->index] = NULL;
 	num_clients--;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("resetting..\n"));
+#else
+	debug_;
+#endif
 	snd_seq_oss_reset(dp);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("cleaning up..\n"));
+#else
+	debug_;
+#endif
 	snd_seq_oss_synth_cleanup(dp);
 	snd_seq_oss_midi_cleanup(dp);
 
 	/* clear slot */
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("releasing resource..\n"));
+#else
+	debug_;
+#endif
 	queue = dp->queue;
 	if (dp->port >= 0)
 		delete_port(dp);
 	delete_seq_queue(queue);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	debug_printk(("release done\n"));
+#else
+	debug_;
+#endif
 }
 
 
@@ -455,7 +515,11 @@ snd_seq_oss_drain_write(struct seq_oss_devinfo *dp)
 		return;
 	if (is_write_mode(dp->file_mode) && !is_nonblock_mode(dp->file_mode) &&
 	    dp->writeq) {
+#ifdef CONFIG_DEBUG_PRINTK
 		debug_printk(("syncing..\n"));
+#else
+		debug_;
+#endif
 		while (snd_seq_oss_writeq_sync(dp->writeq))
 			;
 	}

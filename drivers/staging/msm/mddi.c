@@ -107,13 +107,13 @@ static int mddi_on(struct platform_device *pdev)
 	if (mddi_pdata &&
 	    mddi_pdata->mddi_sel_clk &&
 	    mddi_pdata->mddi_sel_clk(&clk_rate))
-			printk(KERN_ERR
-			  "%s: can't select mddi io clk targate rate = %d\n",
-			  __func__, clk_rate);
+//			printk(KERN_ERR
+//			  "%s: can't select mddi io clk targate rate = %d\n",
+;
 
 	if (clk_set_min_rate(mddi_clk, clk_rate) < 0)
-		printk(KERN_ERR "%s: clk_set_min_rate failed\n",
-			__func__);
+//		printk(KERN_ERR "%s: clk_set_min_rate failed\n",
+;
 
 	ret = panel_next_on(pdev);
 
@@ -180,7 +180,7 @@ static int mddi_probe(struct platform_device *pdev)
 	if (platform_device_add_data
 	    (mdp_dev, pdev->dev.platform_data,
 	     sizeof(struct msm_fb_panel_data))) {
-		printk(KERN_ERR "mddi_probe: platform_device_add_data failed!\n");
+;
 		platform_device_put(mdp_dev);
 		return -ENOMEM;
 	}
@@ -202,12 +202,12 @@ static int mddi_probe(struct platform_device *pdev)
 	if (mddi_pdata &&
 	    mddi_pdata->mddi_sel_clk &&
 	    mddi_pdata->mddi_sel_clk(&clk_rate))
-			printk(KERN_ERR
-			  "%s: can't select mddi io clk targate rate = %d\n",
-			  __func__, clk_rate);
+//			printk(KERN_ERR
+//			  "%s: can't select mddi io clk targate rate = %d\n",
+;
 
 	if (clk_set_max_rate(mddi_clk, clk_rate) < 0)
-		printk(KERN_ERR "%s: clk_set_max_rate failed\n", __func__);
+;
 	mfd->panel_info.clk_rate = mfd->panel_info.clk_min;
 
 	/*
@@ -259,7 +259,7 @@ void mddi_disable(int lock)
 	mddi_host_reg_out(PAD_CTL, 0x0);
 
 	if (clk_set_min_rate(mddi_clk, 0) < 0)
-		printk(KERN_ERR "%s: clk_set_min_rate failed\n", __func__);
+;
 
 	clk_disable(mddi_clk);
 	if (mddi_pclk)
@@ -344,7 +344,7 @@ static int __init mddi_driver_init(void)
 
 	mddi_clk = clk_get(NULL, "mddi_clk");
 	if (IS_ERR(mddi_clk)) {
-		printk(KERN_ERR "can't find mddi_clk \n");
+;
 		return PTR_ERR(mddi_clk);
 	}
 	clk_enable(mddi_clk);
@@ -363,7 +363,7 @@ static int __init mddi_driver_init(void)
 			clk_disable(mddi_pclk);
 			clk_put(mddi_pclk);
 		}
-		printk(KERN_ERR "mddi_register_driver() failed!\n");
+;
 		return ret;
 	}
 

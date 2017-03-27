@@ -57,8 +57,12 @@ EXPORT_SYMBOL(acpi_root_dir);
 #ifdef CONFIG_X86
 static int set_copy_dsdt(const struct dmi_system_id *id)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "%s detected - "
 		"force copy of DSDT to local memory\n", id->ident);
+#else
+	;
+#endif
 	acpi_gbl_copy_dsdt_locally = 1;
 	return 0;
 }
@@ -239,13 +243,21 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
 	}
 
 	if (!device->power.states[state].flags.valid) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Device does not support D%d\n", state);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 	if (device->parent && (state < device->parent->power.state)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 			      "Cannot set device to a higher-powered"
 			      " state than parent\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
@@ -288,9 +300,13 @@ static int __acpi_bus_set_power(struct acpi_device *device, int state)
 
       end:
 	if (result)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 			      "Device [%s] failed to transition to D%d\n",
 			      device->pnp.bus_id, state);
+#else
+		;
+#endif
 	else {
 		device->power.state = state;
 		ACPI_DEBUG_PRINT((ACPI_DB_INFO,
@@ -399,15 +415,35 @@ static void acpi_print_osc_error(acpi_handle handle,
 	int i;
 
 	if (ACPI_FAILURE(acpi_get_name(handle, ACPI_FULL_PATHNAME, &buffer)))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s\n", error);
+#else
+		;
+#endif
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "%s:%s\n", (char *)buffer.pointer, error);
+#else
+		;
+#endif
 		kfree(buffer.pointer);
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG"_OSC request data:");
+#else
+	;
+#endif
 	for (i = 0; i < context->cap.length; i += sizeof(u32))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("%x ", *((u32 *)(context->cap.pointer + i)));
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 }
 
 static acpi_status acpi_str_to_uuid(char *str, u8 *uuid)
@@ -820,11 +856,19 @@ static int __init acpi_bus_init_irq(void)
 		message = "platform specific model";
 		break;
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "Unknown interrupt routing model\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "Using %s for interrupt routing\n", message);
+#else
+	;
+#endif
 
 	arg.integer.value = acpi_irq_model;
 
@@ -847,7 +891,11 @@ void __init acpi_early_init(void)
 	if (acpi_disabled)
 		return;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "Core revision %08x\n", ACPI_CA_VERSION);
+#else
+	;
+#endif
 
 	/* enable workarounds, unless strict ACPI spec. compliance */
 	if (!acpi_strict)
@@ -966,7 +1014,11 @@ static int __init acpi_bus_init(void)
 	 */
 	acpi_boot_ec_enable();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "Interpreter enabled\n");
+#else
+	;
+#endif
 
 	/* Initialize sleep structures */
 	acpi_sleep_init();
@@ -1010,13 +1062,21 @@ static int __init acpi_init(void)
 	int result;
 
 	if (acpi_disabled) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PREFIX "Interpreter disabled.\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	acpi_kobj = kobject_create_and_add("acpi", firmware_kobj);
 	if (!acpi_kobj) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "%s: kset create error\n", __func__);
+#else
+		;
+#endif
 		acpi_kobj = NULL;
 	}
 

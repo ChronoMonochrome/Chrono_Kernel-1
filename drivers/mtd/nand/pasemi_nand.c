@@ -112,8 +112,12 @@ static int __devinit pasemi_nand_probe(struct platform_device *ofdev)
 	pasemi_nand_mtd = kzalloc(sizeof(struct mtd_info) +
 				  sizeof(struct nand_chip), GFP_KERNEL);
 	if (!pasemi_nand_mtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "Unable to allocate PASEMI NAND MTD device structure\n");
+#else
+		;
+#endif
 		err = -ENOMEM;
 		goto out;
 	}
@@ -169,8 +173,12 @@ static int __devinit pasemi_nand_probe(struct platform_device *ofdev)
 		goto out_lpc;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "PA Semi NAND flash at %08llx, control at I/O %x\n",
 	       res.start, lpcctl);
+#else
+	;
+#endif
 
 	return 0;
 

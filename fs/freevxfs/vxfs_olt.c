@@ -88,7 +88,7 @@ vxfs_read_olt(struct super_block *sbp, u_long bsize)
 
 	op = (struct vxfs_olt *)bp->b_data;
 	if (op->olt_magic != VXFS_OLT_MAGIC) {
-		printk(KERN_NOTICE "vxfs: ivalid olt magic number\n");
+;
 		goto fail;
 	}
 
@@ -97,8 +97,8 @@ vxfs_read_olt(struct super_block *sbp, u_long bsize)
 	 * I've not seen any such filesystem yet and I'm lazy..  --hch
 	 */
 	if (infp->vsi_oltsize > 1) {
-		printk(KERN_NOTICE "vxfs: oltsize > 1 detected.\n");
-		printk(KERN_NOTICE "vxfs: please notify hch@infradead.org\n");
+;
+;
 		goto fail;
 	}
 

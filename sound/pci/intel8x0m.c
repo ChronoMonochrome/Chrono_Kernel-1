@@ -412,8 +412,12 @@ static void snd_intel8x0m_setup_periods(struct intel8x0m *chip, struct ichdev *i
 			bdbar[idx + 1] = cpu_to_le32(0x80000000 | /* interrupt on completion */
 						     ichdev->fragsize >> chip->pcm_pos_shift);
 			/*
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "bdbar[%i] = 0x%x [0x%x]\n",
 			       idx + 0, bdbar[idx + 0], bdbar[idx + 1]);
+#else
+			;
+#endif
 			*/
 		}
 		ichdev->frags = ichdev->size / ichdev->fragsize;
@@ -424,10 +428,14 @@ static void snd_intel8x0m_setup_periods(struct intel8x0m *chip, struct ichdev *i
 	ichdev->lvi_frag = ICH_REG_LVI_MASK % ichdev->frags;
 	ichdev->position = 0;
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "lvi_frag = %i, frags = %i, period_size = 0x%x, "
 	       "period_size1 = 0x%x\n",
 	       ichdev->lvi_frag, ichdev->frags, ichdev->fragsize,
 	       ichdev->fragsize1);
+#else
+	;
+#endif
 #endif
 	/* clear interrupts */
 	iputbyte(chip, port + ichdev->roff_sr, ICH_FIFOE | ICH_BCIS | ICH_LVBCI);
@@ -470,11 +478,15 @@ static inline void snd_intel8x0m_update(struct intel8x0m *chip, struct ichdev *i
 							     ichdev->lvi_frag *
 							     ichdev->fragsize1);
 #if 0
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "new: bdbar[%i] = 0x%x [0x%x], "
 		       "prefetch = %i, all = 0x%x, 0x%x\n",
 		       ichdev->lvi * 2, ichdev->bdbar[ichdev->lvi * 2],
 		       ichdev->bdbar[ichdev->lvi * 2 + 1], inb(ICH_REG_OFF_PIV + port),
 		       inl(port + 4), inb(port + ICH_REG_OFF_CR));
+#else
+		;
+#endif
 #endif
 		if (--ichdev->ack == 0) {
 			ichdev->ack = ichdev->ack_reload;

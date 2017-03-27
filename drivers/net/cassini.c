@@ -1126,8 +1126,8 @@ static int cas_txmac_interrupt(struct net_device *dev,
 	if (!txmac_stat)
 		return 0;
 
-	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
-		     "txmac interrupt, txmac_stat: 0x%x\n", txmac_stat);
+//	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
+;
 
 	/* Defer timer expiration is quite normal,
 	 * don't even log the event.
@@ -1559,8 +1559,8 @@ static int cas_mac_interrupt(struct net_device *dev, struct cas *cp,
 	if (!stat)
 		return 0;
 
-	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
-		     "mac interrupt, stat: 0x%x\n", stat);
+//	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
+;
 
 	/* This interrupt is just for pause frame and pause
 	 * tracking.  It is useful for diagnostics and debug
@@ -1775,8 +1775,8 @@ static int cas_abnormal_irq(struct net_device *dev, struct cas *cp,
 {
 	if (status & INTR_RX_TAG_ERROR) {
 		/* corrupt RX tag framing */
-		netif_printk(cp, rx_err, KERN_DEBUG, cp->dev,
-			     "corrupt rx tag framing\n");
+//		netif_printk(cp, rx_err, KERN_DEBUG, cp->dev,
+;
 		spin_lock(&cp->stat_lock[0]);
 		cp->net_stats[0].rx_errors++;
 		spin_unlock(&cp->stat_lock[0]);
@@ -1785,8 +1785,8 @@ static int cas_abnormal_irq(struct net_device *dev, struct cas *cp,
 
 	if (status & INTR_RX_LEN_MISMATCH) {
 		/* length mismatch. */
-		netif_printk(cp, rx_err, KERN_DEBUG, cp->dev,
-			     "length mismatch for rx frame\n");
+//		netif_printk(cp, rx_err, KERN_DEBUG, cp->dev,
+;
 		spin_lock(&cp->stat_lock[0]);
 		cp->net_stats[0].rx_errors++;
 		spin_unlock(&cp->stat_lock[0]);
@@ -1886,8 +1886,8 @@ static inline void cas_tx_ringN(struct cas *cp, int ring, int limit)
 		if (count < 0)
 			break;
 
-		netif_printk(cp, tx_done, KERN_DEBUG, cp->dev,
-			     "tx[%d] done, slot %d\n", ring, entry);
+//		netif_printk(cp, tx_done, KERN_DEBUG, cp->dev,
+;
 
 		skbs[entry] = NULL;
 		cp->tx_tiny_use[ring][entry].nbufs = 0;
@@ -1934,9 +1934,9 @@ static void cas_tx(struct net_device *dev, struct cas *cp,
 #ifdef USE_TX_COMPWB
 	u64 compwb = le64_to_cpu(cp->init_block->tx_compwb);
 #endif
-	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
-		     "tx interrupt, status: 0x%x, %llx\n",
-		     status, (unsigned long long)compwb);
+//	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
+//		     "tx interrupt, status: 0x%x, %llx\n",
+;
 	/* process all the rings */
 	for (ring = 0; ring < N_TX_RINGS; ring++) {
 #ifdef USE_TX_COMPWB
@@ -2015,8 +2015,8 @@ static int cas_rx_process_pkt(struct cas *cp, struct cas_rx_comp *rxc,
 
 		hlen = min(cp->page_size - off, dlen);
 		if (hlen < 0) {
-			netif_printk(cp, rx_err, KERN_DEBUG, cp->dev,
-				     "rx page overflow: %d\n", hlen);
+//			netif_printk(cp, rx_err, KERN_DEBUG, cp->dev,
+;
 			dev_kfree_skb_irq(skb);
 			return -1;
 		}
@@ -2093,8 +2093,8 @@ static int cas_rx_process_pkt(struct cas *cp, struct cas_rx_comp *rxc,
 		off = CAS_VAL(RX_COMP1_DATA_OFF, words[0]) + swivel;
 		hlen = min(cp->page_size - off, dlen);
 		if (hlen < 0) {
-			netif_printk(cp, rx_err, KERN_DEBUG, cp->dev,
-				     "rx page overflow: %d\n", hlen);
+//			netif_printk(cp, rx_err, KERN_DEBUG, cp->dev,
+;
 			dev_kfree_skb_irq(skb);
 			return -1;
 		}
@@ -2226,8 +2226,8 @@ static int cas_post_rxds_ringN(struct cas *cp, int ring, int num)
 
 	entry = cp->rx_old[ring];
 
-	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
-		     "rxd[%d] interrupt, done: %d\n", ring, entry);
+//	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
+;
 
 	cluster = -1;
 	count = entry & 0x3;
@@ -2297,10 +2297,10 @@ static int cas_rx_ringN(struct cas *cp, int ring, int budget)
 	int entry, drops;
 	int npackets = 0;
 
-	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
-		     "rx[%d] interrupt, done: %d/%d\n",
-		     ring,
-		     readl(cp->regs + REG_RX_COMP_HEAD), cp->rx_new[ring]);
+//	netif_printk(cp, intr, KERN_DEBUG, cp->dev,
+//		     "rx[%d] interrupt, done: %d/%d\n",
+//		     ring,
+;
 
 	entry = cp->rx_new[ring];
 	drops = 0;
@@ -2415,9 +2415,9 @@ static void cas_post_rxcs_ringN(struct net_device *dev,
 
 	last = cp->rx_cur[ring];
 	entry = cp->rx_new[ring];
-	netif_printk(cp, intr, KERN_DEBUG, dev,
-		     "rxc[%d] interrupt, done: %d/%d\n",
-		     ring, readl(cp->regs + REG_RX_COMP_HEAD), entry);
+//	netif_printk(cp, intr, KERN_DEBUG, dev,
+//		     "rxc[%d] interrupt, done: %d/%d\n",
+;
 
 	/* zero and re-mark descriptors */
 	while (last != entry) {
@@ -2860,9 +2860,9 @@ static inline int cas_xmit_tx_ringN(struct cas *cp, int ring,
 	if (TX_BUFFS_AVAIL(cp, ring) <= CAS_TABORT(cp)*(MAX_SKB_FRAGS + 1))
 		netif_stop_queue(dev);
 
-	netif_printk(cp, tx_queued, KERN_DEBUG, dev,
-		     "tx[%d] queued, slot %d, skblen %d, avail %d\n",
-		     ring, entry, skb->len, TX_BUFFS_AVAIL(cp, ring));
+//	netif_printk(cp, tx_queued, KERN_DEBUG, dev,
+//		     "tx[%d] queued, slot %d, skblen %d, avail %d\n",
+;
 	writel(entry, cp->regs + REG_TX_KICKN(ring));
 	spin_unlock_irqrestore(&cp->tx_lock[ring], flags);
 	return 0;
@@ -3425,7 +3425,7 @@ static int cas_check_invariants(struct cas *cp)
 			__free_pages(page, CAS_JUMBO_PAGE_SHIFT - PAGE_SHIFT);
 			cp->page_order = CAS_JUMBO_PAGE_SHIFT - PAGE_SHIFT;
 		} else {
-			printk("MTU limited to %d bytes\n", CAS_MAX_MTU);
+;
 		}
 	}
 #endif
@@ -4171,8 +4171,8 @@ static void cas_link_timer(unsigned long data)
 
 		if (((tlm == 0x5) || (tlm == 0x3)) &&
 		    (CAS_VAL(MAC_SM_ENCAP_SM, val) == 0)) {
-			netif_printk(cp, tx_err, KERN_DEBUG, cp->dev,
-				     "tx err: MAC_STATE[%08x]\n", val);
+//			netif_printk(cp, tx_err, KERN_DEBUG, cp->dev,
+;
 			reset = 1;
 			goto done;
 		}
@@ -4181,9 +4181,9 @@ static void cas_link_timer(unsigned long data)
 		wptr = readl(cp->regs + REG_TX_FIFO_WRITE_PTR);
 		rptr = readl(cp->regs + REG_TX_FIFO_READ_PTR);
 		if ((val == 0) && (wptr != rptr)) {
-			netif_printk(cp, tx_err, KERN_DEBUG, cp->dev,
-				     "tx err: TX_FIFO[%08x:%08x:%08x]\n",
-				     val, wptr, rptr);
+//			netif_printk(cp, tx_err, KERN_DEBUG, cp->dev,
+//				     "tx err: TX_FIFO[%08x:%08x:%08x]\n",
+;
 			reset = 1;
 		}
 

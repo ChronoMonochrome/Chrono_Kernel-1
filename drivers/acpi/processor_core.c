@@ -21,8 +21,12 @@ ACPI_MODULE_NAME("processor_core");
 
 static int __init set_no_mwait(const struct dmi_system_id *id)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE PREFIX "%s detected - "
 		"disabling mwait for CPU C-states\n", id->ident);
+#else
+	;
+#endif
 	boot_option_idle_override = IDLE_NOMWAIT;
 	return 0;
 }

@@ -705,8 +705,8 @@ static unsigned ni_m_series_source_select_bits(unsigned int clock_source)
 		}
 		if (i <= ni_m_series_max_pfi_channel)
 			break;
-		printk(KERN_ERR "invalid clock source 0x%lx\n",
-		       (unsigned long)clock_source);
+//		printk(KERN_ERR "invalid clock source 0x%lx\n",
+;
 		BUG();
 		ni_m_series_clock = 0;
 		break;

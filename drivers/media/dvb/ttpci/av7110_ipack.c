@@ -24,7 +24,11 @@ int av7110_ipack_init(struct ipack *p, int size,
 		      void (*func)(u8 *buf, int size, void *priv))
 {
 	if (!(p->buf = vmalloc(size*sizeof(u8)))) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Couldn't allocate memory for ipack\n");
+#else
+		;
+#endif
 		return -ENOMEM;
 	}
 	p->size = size;

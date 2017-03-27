@@ -92,7 +92,7 @@ int i_APCI3120_InsnConfigAnalogInput(struct comedi_device *dev, struct comedi_su
 
 			if (CR_CHAN(data[4 + i]) >=
 				devpriv->s_EeParameters.i_NbrAiChannel) {
-				printk("bad channel list\n");
+;
 				return -2;
 			}
 		}
@@ -151,7 +151,7 @@ int i_APCI3120_InsnReadAnalogInput(struct comedi_device *dev, struct comedi_subd
 
 	/*  fix conversion time to 10 us */
 	if (!devpriv->ui_EocEosConversionTime) {
-		printk("No timer0 Value using 10 us\n");
+;
 		us_ConvertTiming = 10;
 	} else
 		us_ConvertTiming = (unsigned short) (devpriv->ui_EocEosConversionTime / 1000);	/*  nano to useconds */
@@ -377,7 +377,7 @@ int i_APCI3120_InsnReadAnalogInput(struct comedi_device *dev, struct comedi_subd
 			break;
 
 		default:
-			printk("inputs wrong\n");
+;
 
 		}
 		devpriv->ui_EocEosConversionTime = 0;	/*  re initializing the variable; */
@@ -1357,10 +1357,10 @@ int i_APCI3120_SetupChannelList(struct comedi_device *dev, struct comedi_subdevi
 		us_TmpValue |= i << 8;	/* To select the RAM LOCATION.... */
 		outw(us_TmpValue, dev->iobase + APCI3120_SEQ_RAM_ADDRESS);
 
-		printk("\n Gain = %i",
-			(((unsigned char)CR_RANGE(chanlist[i]) & 0x03) << 2));
-		printk("\n Channel = %i", CR_CHAN(chanlist[i]));
-		printk("\n Polarity = %i", us_TmpValue & APCI3120_UNIPOLAR);
+//		printk("\n Gain = %i",
+;
+;
+;
 	}
 	return 1;		/*  we can serve this with scan logic */
 }
@@ -2472,7 +2472,7 @@ int i_APCI3120_InsnBitsDigitalOutput(struct comedi_device *dev,
 		data[0] = data[0];
 		break;
 	default:
-		printk("\nThe parameter passed is in error \n");
+;
 		return -EINVAL;
 	}			/*  switch(data[1]) */
 	outb(data[0], devpriv->iobase + APCI3120_DIGITAL_OUTPUT);
@@ -2548,7 +2548,7 @@ int i_APCI3120_InsnWriteDigitalOutput(struct comedi_device *dev,
 		data[0] = data[0] & devpriv->b_DigitalOutputRegister;
 		break;
 	default:
-		printk("\nThe parameter passed is in error \n");
+;
 		return -EINVAL;
 	}			/*  switch(data[1]) */
 	outb(data[0], devpriv->iobase + APCI3120_DIGITAL_OUTPUT);

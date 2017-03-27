@@ -776,7 +776,11 @@ static void ab8500_chargalg_stop_charging(struct ab8500_chargalg *di)
 	di->maintenance_chg = false;
 	cancel_delayed_work(&di->chargalg_wd_work);
 	power_supply_changed(&di->chargalg_psy);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Charging is Stop\n"); 
+#else
+	;
+#endif
 	charging_stats = CHARGING_STOPPED;
 }
 
@@ -801,7 +805,11 @@ static void ab8500_chargalg_hold_charging(struct ab8500_chargalg *di)
 	di->maintenance_chg = false;
 	cancel_delayed_work(&di->chargalg_wd_work);
 	power_supply_changed(&di->chargalg_psy);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Charging is Pause\n"); 
+#else
+	;
+#endif
 	charging_stats = CHARGING_PAUSED;
 }
 
@@ -819,7 +827,11 @@ static void ab8500_chargalg_start_charging(struct ab8500_chargalg *di,
 {
 	switch (di->chg_info.charger_type) {
 	case AC_CHG:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Charging is started by AC Type charger\n");	
+#else
+		;
+#endif
 		dev_dbg(di->dev,
 			"AC parameters: Vset %d, Ich %d\n", vset, iset);
 		ab8500_chargalg_usb_en(di, false, 0, 0);
@@ -829,7 +841,11 @@ static void ab8500_chargalg_start_charging(struct ab8500_chargalg *di,
 		break;
 
 	case USB_CHG:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Charging is started by USB Type charger\n");	
+#else
+		;
+#endif
 		dev_dbg(di->dev,
 			"USB parameters: Vset %d, Ich %d\n", vset, iset);
 		ab8500_chargalg_ac_en(di, false, 0, 0);

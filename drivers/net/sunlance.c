@@ -485,10 +485,10 @@ static int init_restart_lance(struct lance_private *lp)
 		barrier();
 	}
 	if (i == 100 || (regval & LE_C0_ERR)) {
-		printk(KERN_ERR "LANCE unopened after %d ticks, csr0=%4.4x.\n",
-		       i, regval);
+//		printk(KERN_ERR "LANCE unopened after %d ticks, csr0=%4.4x.\n",
+;
 		if (lp->dregs)
-			printk("dcsr=%8.8x\n", sbus_readl(lp->dregs + DMA_CSR));
+;
 		return -1;
 	}
 
@@ -537,8 +537,8 @@ static void lance_rx_dvma(struct net_device *dev)
 			skb = dev_alloc_skb(len + 2);
 
 			if (skb == NULL) {
-				printk(KERN_INFO "%s: Memory squeeze, deferring packet.\n",
-				       dev->name);
+//				printk(KERN_INFO "%s: Memory squeeze, deferring packet.\n",
+;
 				dev->stats.rx_dropped++;
 				rd->mblength = 0;
 				rd->rmd1_bits = LE_R1_OWN;
@@ -595,8 +595,8 @@ static void lance_tx_dvma(struct net_device *dev)
 				dev->stats.tx_carrier_errors++;
 				if (lp->auto_select) {
 					lp->tpe = 1 - lp->tpe;
-					printk(KERN_NOTICE "%s: Carrier Lost, trying %s\n",
-					       dev->name, lp->tpe?"TPE":"AUI");
+//					printk(KERN_NOTICE "%s: Carrier Lost, trying %s\n",
+;
 					STOP_LANCE(lp);
 					lp->init_ring(dev);
 					load_csrs(lp);
@@ -611,8 +611,8 @@ static void lance_tx_dvma(struct net_device *dev)
 			if (status & (LE_T3_BUF|LE_T3_UFL)) {
 				dev->stats.tx_fifo_errors++;
 
-				printk(KERN_ERR "%s: Tx: ERR_BUF|ERR_UFL, restarting\n",
-				       dev->name);
+//				printk(KERN_ERR "%s: Tx: ERR_BUF|ERR_UFL, restarting\n",
+;
 				STOP_LANCE(lp);
 				lp->init_ring(dev);
 				load_csrs(lp);
@@ -709,8 +709,8 @@ static void lance_rx_pio(struct net_device *dev)
 			skb = dev_alloc_skb(len + 2);
 
 			if (skb == NULL) {
-				printk(KERN_INFO "%s: Memory squeeze, deferring packet.\n",
-				       dev->name);
+//				printk(KERN_INFO "%s: Memory squeeze, deferring packet.\n",
+;
 				dev->stats.rx_dropped++;
 				sbus_writew(0, &rd->mblength);
 				sbus_writeb(LE_R1_OWN, &rd->rmd1_bits);
@@ -765,8 +765,8 @@ static void lance_tx_pio(struct net_device *dev)
 				dev->stats.tx_carrier_errors++;
 				if (lp->auto_select) {
 					lp->tpe = 1 - lp->tpe;
-					printk(KERN_NOTICE "%s: Carrier Lost, trying %s\n",
-					       dev->name, lp->tpe?"TPE":"AUI");
+//					printk(KERN_NOTICE "%s: Carrier Lost, trying %s\n",
+;
 					STOP_LANCE(lp);
 					lp->init_ring(dev);
 					load_csrs(lp);
@@ -781,8 +781,8 @@ static void lance_tx_pio(struct net_device *dev)
 			if (status & (LE_T3_BUF|LE_T3_UFL)) {
 				dev->stats.tx_fifo_errors++;
 
-				printk(KERN_ERR "%s: Tx: ERR_BUF|ERR_UFL, restarting\n",
-				       dev->name);
+//				printk(KERN_ERR "%s: Tx: ERR_BUF|ERR_UFL, restarting\n",
+;
 				STOP_LANCE(lp);
 				lp->init_ring(dev);
 				load_csrs(lp);
@@ -853,11 +853,11 @@ static irqreturn_t lance_interrupt(int irq, void *dev_id)
 		if (lp->dregs) {
 			u32 addr = sbus_readl(lp->dregs + DMA_ADDR);
 
-			printk(KERN_ERR "%s: Memory error, status %04x, addr %06x\n",
-			       dev->name, csr0, addr & 0xffffff);
+//			printk(KERN_ERR "%s: Memory error, status %04x, addr %06x\n",
+;
 		} else {
-			printk(KERN_ERR "%s: Memory error, status %04x\n",
-			       dev->name, csr0);
+//			printk(KERN_ERR "%s: Memory error, status %04x\n",
+;
 		}
 
 		sbus_writew(LE_C0_STOP, lp->lregs + RDP);
@@ -925,7 +925,7 @@ static int lance_open(struct net_device *dev)
 
 	if (request_irq(dev->irq, lance_interrupt, IRQF_SHARED,
 			lancestr, (void *) dev)) {
-		printk(KERN_ERR "Lance: Can't get irq %d\n", dev->irq);
+;
 		return -EAGAIN;
 	}
 
@@ -992,7 +992,7 @@ static int lance_reset(struct net_device *dev)
 	if (lp->dregs) {
 		u32 csr, addr;
 
-		printk(KERN_ERR "resetting ledma\n");
+;
 		csr = sbus_readl(lp->dregs + DMA_CSR);
 		sbus_writel(csr | DMA_RST_ENET, lp->dregs + DMA_CSR);
 		udelay(200);
@@ -1106,8 +1106,8 @@ static void lance_tx_timeout(struct net_device *dev)
 {
 	struct lance_private *lp = netdev_priv(dev);
 
-	printk(KERN_ERR "%s: transmit timed out, status %04x, reset\n",
-	       dev->name, sbus_readw(lp->lregs + RDP));
+//	printk(KERN_ERR "%s: transmit timed out, status %04x, reset\n",
+;
 	lance_reset(dev);
 	netif_wake_queue(dev);
 }
@@ -1343,7 +1343,7 @@ static int __devinit sparc_lance_probe_one(struct platform_device *op,
 	lp->lregs = of_ioremap(&op->resource[0], 0,
 			       LANCE_REG_SIZE, lancestr);
 	if (!lp->lregs) {
-		printk(KERN_ERR "SunLance: Cannot map registers.\n");
+;
 		goto fail;
 	}
 
@@ -1353,8 +1353,8 @@ static int __devinit sparc_lance_probe_one(struct platform_device *op,
 				       resource_size(&ledma->resource[0]),
 				       "ledma");
 		if (!lp->dregs) {
-			printk(KERN_ERR "SunLance: Cannot map "
-			       "ledma registers.\n");
+//			printk(KERN_ERR "SunLance: Cannot map "
+;
 			goto fail;
 		}
 	}
@@ -1364,14 +1364,14 @@ static int __devinit sparc_lance_probe_one(struct platform_device *op,
 	if (lebuffer) {
 		/* sanity check */
 		if (lebuffer->resource[0].start & 7) {
-			printk(KERN_ERR "SunLance: ERROR: Rx and Tx rings not on even boundary.\n");
+;
 			goto fail;
 		}
 		lp->init_block_iomem =
 			of_ioremap(&lebuffer->resource[0], 0,
 				   sizeof(struct lance_init_block), "lebuffer");
 		if (!lp->init_block_iomem) {
-			printk(KERN_ERR "SunLance: Cannot map PIO buffer.\n");
+;
 			goto fail;
 		}
 		lp->init_block_dvma = 0;
@@ -1385,7 +1385,7 @@ static int __devinit sparc_lance_probe_one(struct platform_device *op,
 					   sizeof(struct lance_init_block),
 					   &lp->init_block_dvma, GFP_ATOMIC);
 		if (!lp->init_block_mem) {
-			printk(KERN_ERR "SunLance: Cannot allocate consistent DMA memory.\n");
+;
 			goto fail;
 		}
 		lp->pio_buffer = 0;
@@ -1423,8 +1423,8 @@ static int __devinit sparc_lance_probe_one(struct platform_device *op,
 		if (!prop || prop[0] == '\0') {
 			struct device_node *nd;
 
-			printk(KERN_INFO "SunLance: using "
-			       "auto-carrier-detection.\n");
+//			printk(KERN_INFO "SunLance: using "
+;
 
 			nd = of_find_node_by_path("/options");
 			if (!nd)
@@ -1435,10 +1435,10 @@ static int __devinit sparc_lance_probe_one(struct platform_device *op,
 				goto no_link_test;
 
 			if (strcmp(prop, "true")) {
-				printk(KERN_NOTICE "SunLance: warning: overriding option "
-				       "'tpe-link-test?'\n");
-				printk(KERN_NOTICE "SunLance: warning: mail any problems "
-				       "to ecd@skynet.be\n");
+//				printk(KERN_NOTICE "SunLance: warning: overriding option "
+;
+//				printk(KERN_NOTICE "SunLance: warning: mail any problems "
+;
 				auxio_set_lte(AUXIO_LTE_ON);
 			}
 no_link_test:
@@ -1478,14 +1478,14 @@ no_link_test:
 	lp->multicast_timer.function = lance_set_multicast_retry;
 
 	if (register_netdev(dev)) {
-		printk(KERN_ERR "SunLance: Cannot register device.\n");
+;
 		goto fail;
 	}
 
 	dev_set_drvdata(&op->dev, lp);
 
-	printk(KERN_INFO "%s: LANCE %pM\n",
-	       dev->name, dev->dev_addr);
+//	printk(KERN_INFO "%s: LANCE %pM\n",
+;
 
 	return 0;
 

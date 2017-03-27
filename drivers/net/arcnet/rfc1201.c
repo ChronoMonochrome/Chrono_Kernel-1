@@ -59,7 +59,7 @@ static struct ArcProto rfc1201_proto =
 
 static int __init arcnet_rfc1201_init(void)
 {
-	printk(VERSION);
+;
 
 	arc_proto_map[ARC_P_IP]
 	    = arc_proto_map[ARC_P_IPV6]

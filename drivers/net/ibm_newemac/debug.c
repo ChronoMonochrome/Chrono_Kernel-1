@@ -86,36 +86,36 @@ static void emac_mac_dump(struct emac_instance *dev)
 	       );
 
 	if (emac4sync)
-		printk("MAR = %04x%08x MMAR = %04x%08x\n",
-		       in_be32(&p->u0.emac4sync.mahr),
-		       in_be32(&p->u0.emac4sync.malr),
-		       in_be32(&p->u0.emac4sync.mmahr),
-		       in_be32(&p->u0.emac4sync.mmalr)
-		       );
+//		printk("MAR = %04x%08x MMAR = %04x%08x\n",
+//		       in_be32(&p->u0.emac4sync.mahr),
+//		       in_be32(&p->u0.emac4sync.malr),
+//		       in_be32(&p->u0.emac4sync.mmahr),
+//		       in_be32(&p->u0.emac4sync.mmalr)
+;
 
 	for (n = 0; n < xaht_regs; n++)
-		printk("IAHT%02d = 0x%08x\n", n + 1, in_be32(iaht_base + n));
+;
 
 	for (n = 0; n < xaht_regs; n++)
-		printk("GAHT%02d = 0x%08x\n", n + 1, in_be32(gaht_base + n));
+;
 
-	printk("LSA = %04x%08x IPGVR = 0x%04x\n"
-	       "STACR = 0x%08x TRTR = 0x%08x RWMR = 0x%08x\n"
-	       "OCTX = 0x%08x OCRX = 0x%08x\n",
-	       in_be32(&p->lsah), in_be32(&p->lsal), in_be32(&p->ipgvr),
-	       in_be32(&p->stacr), in_be32(&p->trtr), in_be32(&p->rwmr),
-	       in_be32(&p->octx), in_be32(&p->ocrx)
-	       );
+//	printk("LSA = %04x%08x IPGVR = 0x%04x\n"
+//	       "STACR = 0x%08x TRTR = 0x%08x RWMR = 0x%08x\n"
+//	       "OCTX = 0x%08x OCRX = 0x%08x\n",
+//	       in_be32(&p->lsah), in_be32(&p->lsal), in_be32(&p->ipgvr),
+//	       in_be32(&p->stacr), in_be32(&p->trtr), in_be32(&p->rwmr),
+//	       in_be32(&p->octx), in_be32(&p->ocrx)
+;
 
 	if (!emac4sync) {
-		printk("IPCR = 0x%08x\n",
-		       in_be32(&p->u1.emac4.ipcr)
-		       );
+//		printk("IPCR = 0x%08x\n",
+//		       in_be32(&p->u1.emac4.ipcr)
+;
 	} else {
-		printk("REVID = 0x%08x TPC = 0x%08x\n",
-		       in_be32(&p->u1.emac4sync.revid),
-		       in_be32(&p->u1.emac4sync.tpc)
-		       );
+//		printk("REVID = 0x%08x TPC = 0x%08x\n",
+//		       in_be32(&p->u1.emac4sync.revid),
+//		       in_be32(&p->u1.emac4sync.tpc)
+;
 	}
 
 	emac_desc_dump(dev);
@@ -138,26 +138,26 @@ static void emac_mal_dump(struct mal_instance *mal)
 	       get_mal_dcrn(mal, MAL_RXEOBISR), get_mal_dcrn(mal, MAL_RXDEIR)
 	    );
 
-	printk("TX|");
+;
 	for (i = 0; i < mal->num_tx_chans; ++i) {
 		if (i && !(i % 4))
-			printk("\n   ");
-		printk("CTP%d = 0x%08x ", i, get_mal_dcrn(mal, MAL_TXCTPR(i)));
+;
+;
 	}
-	printk("\nRX|");
+;
 	for (i = 0; i < mal->num_rx_chans; ++i) {
 		if (i && !(i % 4))
-			printk("\n   ");
-		printk("CTP%d = 0x%08x ", i, get_mal_dcrn(mal, MAL_RXCTPR(i)));
+;
+;
 	}
-	printk("\n   ");
+;
 	for (i = 0; i < mal->num_rx_chans; ++i) {
 		u32 r = get_mal_dcrn(mal, MAL_RCBS(i));
 		if (i && !(i % 3))
-			printk("\n   ");
+;
 		printk("RCBS%d = 0x%08x (%d) ", i, r, r * 16);
 	}
-	printk("\n");
+;
 }
 
 static struct emac_instance *__emacs[4];

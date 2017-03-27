@@ -43,10 +43,10 @@
 static void
 vxfs_typdump(struct vxfs_typed *typ)
 {
-	printk(KERN_DEBUG "type=%Lu ", typ->vt_hdr >> VXFS_TYPED_TYPESHIFT);
-	printk("offset=%Lx ", typ->vt_hdr & VXFS_TYPED_OFFSETMASK);
-	printk("block=%x ", typ->vt_block);
-	printk("size=%x\n", typ->vt_size);
+;
+;
+;
+;
 }
 #endif
 
@@ -97,12 +97,12 @@ vxfs_bmap_ext4(struct inode *ip, long bn)
 		brelse(buf);
 		return bno;
 	} else
-		printk(KERN_WARNING "no matching indir?");
+;
 
 	return 0;
 
 fail_size:
-	printk("vxfs: indirect extent too big!\n");
+;
 fail_buf:
 	return 0;
 }
@@ -166,11 +166,11 @@ vxfs_bmap_indir(struct inode *ip, long indir, int size, long block)
 			struct vxfs_typed_dev4	*typ4 =
 				(struct vxfs_typed_dev4 *)typ;
 
-			printk(KERN_INFO "\n\nTYPED_DEV4 detected!\n");
-			printk(KERN_INFO "block: %Lu\tsize: %Ld\tdev: %d\n",
-			       (unsigned long long) typ4->vd4_block,
-			       (unsigned long long) typ4->vd4_size,
-			       typ4->vd4_dev);
+;
+//			printk(KERN_INFO "block: %Lu\tsize: %Ld\tdev: %d\n",
+//			       (unsigned long long) typ4->vd4_block,
+//			       (unsigned long long) typ4->vd4_size,
+;
 			goto fail;
 		}
 		default:
@@ -229,11 +229,11 @@ vxfs_bmap_typed(struct inode *ip, long iblock)
 			struct vxfs_typed_dev4	*typ4 =
 				(struct vxfs_typed_dev4 *)typ;
 
-			printk(KERN_INFO "\n\nTYPED_DEV4 detected!\n");
-			printk(KERN_INFO "block: %Lu\tsize: %Ld\tdev: %d\n",
-			       (unsigned long long) typ4->vd4_block,
-			       (unsigned long long) typ4->vd4_size,
-			       typ4->vd4_dev);
+;
+//			printk(KERN_INFO "block: %Lu\tsize: %Ld\tdev: %d\n",
+//			       (unsigned long long) typ4->vd4_block,
+//			       (unsigned long long) typ4->vd4_size,
+;
 			return 0;
 		}
 		default:
@@ -270,12 +270,12 @@ vxfs_bmap1(struct inode *ip, long iblock)
 	if (VXFS_ISIMMED(vip))
 		goto unsupp;
 
-	printk(KERN_WARNING "vxfs: inode %ld has no valid orgtype (%x)\n",
-			ip->i_ino, vip->vii_orgtype);
+//	printk(KERN_WARNING "vxfs: inode %ld has no valid orgtype (%x)\n",
+;
 	BUG();
 
 unsupp:
-	printk(KERN_WARNING "vxfs: inode %ld has an unsupported orgtype (%x)\n",
-			ip->i_ino, vip->vii_orgtype);
+//	printk(KERN_WARNING "vxfs: inode %ld has an unsupported orgtype (%x)\n",
+;
 	return 0;
 }

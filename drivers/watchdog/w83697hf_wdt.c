@@ -309,8 +309,12 @@ static int wdt_close(struct inode *inode, struct file *file)
 	if (expect_close == 42)
 		wdt_disable();
 	else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"Unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 		wdt_ping();
 	}
 	expect_close = 0;
@@ -367,19 +371,31 @@ static int w83697hf_check_wdt(void)
 		return -EIO;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG PFX
 			"Looking for watchdog at address 0x%x\n", wdt_io);
+#else
+	;
+#endif
 	w83697hf_unlock();
 	if (w83697hf_get_reg(0x20) == 0x60) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 			"watchdog found at address 0x%x\n", wdt_io);
+#else
+		;
+#endif
 		w83697hf_lock();
 		return 0;
 	}
 	/* Reprotect in case it was a compatible device */
 	w83697hf_lock();
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "watchdog not found at address 0x%x\n", wdt_io);
+#else
+	;
+#endif
 	release_region(wdt_io, 2);
 	return -EIO;
 }
@@ -390,7 +406,11 @@ static int __init wdt_init(void)
 {
 	int ret, i, found = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "WDT driver for W83697HF/HG initializing\n");
+#else
+	;
+#endif
 
 	if (wdt_io == 0) {
 		/* we will autodetect the W83697HF/HG watchdog */
@@ -413,16 +433,24 @@ static int __init wdt_init(void)
 	w83697hf_init();
 	if (early_disable) {
 		if (wdt_running())
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PFX "Stopping previously enabled "
 					"watchdog until userland kicks in\n");
+#else
+			;
+#endif
 		wdt_disable();
 	}
 
 	if (wdt_set_heartbeat(timeout)) {
 		wdt_set_heartbeat(WATCHDOG_TIMEOUT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		     "timeout value must be 1 <= timeout <= 255, using %d\n",
 							WATCHDOG_TIMEOUT);
+#else
+		;
+#endif
 	}
 
 	ret = register_reboot_notifier(&wdt_notifier);
@@ -440,8 +468,12 @@ static int __init wdt_init(void)
 		goto unreg_reboot;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. timeout=%d sec (nowayout=%d)\n",
 		timeout, nowayout);
+#else
+	;
+#endif
 
 out:
 	return ret;

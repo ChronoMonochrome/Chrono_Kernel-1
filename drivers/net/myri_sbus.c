@@ -192,13 +192,13 @@ static int __devinit myri_load_lanai(struct myri_eth *mp)
 
 	i = request_firmware(&fw, FWNAME, &mp->myri_op->dev);
 	if (i) {
-		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
-		       FWNAME, i);
+//		printk(KERN_ERR "Failed to load image \"%s\" err %d\n",
+;
 		return i;
 	}
 	if (fw->size < 2) {
-		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
-		       fw->size, FWNAME);
+//		printk(KERN_ERR "Bogus length %zu in image \"%s\"\n",
+;
 		release_firmware(fw);
 		return -EINVAL;
 	}
@@ -237,11 +237,11 @@ static int __devinit myri_load_lanai(struct myri_eth *mp)
 	}
 
 	if (i == 5000)
-		printk(KERN_ERR "myricom: Chip would not reset after firmware load.\n");
+;
 
 	i = myri_do_handshake(mp);
 	if (i)
-		printk(KERN_ERR "myricom: Handshake with LANAI failed.\n");
+;
 
 	if (mp->eeprom.cpuvers == CPUVERS_4_0)
 		sbus_writel(0, mp->lregs + LANAI_VERS);
@@ -337,17 +337,17 @@ static void myri_is_not_so_happy(struct myri_eth *mp)
 #ifdef DEBUG_HEADER
 static void dump_ehdr(struct ethhdr *ehdr)
 {
-	printk("ehdr[h_dst(%pM)"
-	       "h_source(%pM)"
-	       "h_proto(%04x)]\n",
-	       ehdr->h_dest, ehdr->h_source, ehdr->h_proto);
+//	printk("ehdr[h_dst(%pM)"
+//	       "h_source(%pM)"
+//	       "h_proto(%04x)]\n",
+;
 }
 
 static void dump_ehdr_and_myripad(unsigned char *stuff)
 {
 	struct ethhdr *ehdr = (struct ethhdr *) (stuff + 2);
 
-	printk("pad[%02x:%02x]", stuff[0], stuff[1]);
+;
 	dump_ehdr(ehdr);
 }
 #endif
@@ -611,7 +611,7 @@ static void myri_tx_timeout(struct net_device *dev)
 {
 	struct myri_eth *mp = netdev_priv(dev);
 
-	printk(KERN_ERR "%s: transmit timed out, resetting\n", dev->name);
+;
 
 	dev->stats.tx_errors++;
 	myri_init(mp, 0);
@@ -772,9 +772,9 @@ static int myri_rebuild_header(struct sk_buff *skb)
 #endif
 
 	default:
-		printk(KERN_DEBUG
-		       "%s: unable to resolve type %X addresses.\n",
-		       dev->name, (int)eth->h_proto);
+//		printk(KERN_DEBUG
+//		       "%s: unable to resolve type %X addresses.\n",
+;
 
 		memcpy(eth->h_source, dev->dev_addr, dev->addr_len);
 		return 0;
@@ -862,8 +862,8 @@ static inline void determine_reg_space_size(struct myri_eth *mp)
 	case CPUVERS_4_2:
 	case CPUVERS_5_0:
 	default:
-		printk("myricom: AIEEE weird cpu version %04x assuming pre4.0\n",
-		       mp->eeprom.cpuvers);
+//		printk("myricom: AIEEE weird cpu version %04x assuming pre4.0\n",
+;
 		mp->reg_size = (3 * 128 * 1024) + 4096;
 	}
 }
@@ -871,40 +871,40 @@ static inline void determine_reg_space_size(struct myri_eth *mp)
 #ifdef DEBUG_DETECT
 static void dump_eeprom(struct myri_eth *mp)
 {
-	printk("EEPROM: clockval[%08x] cpuvers[%04x] "
-	       "id[%02x,%02x,%02x,%02x,%02x,%02x]\n",
-	       mp->eeprom.cval, mp->eeprom.cpuvers,
-	       mp->eeprom.id[0], mp->eeprom.id[1], mp->eeprom.id[2],
-	       mp->eeprom.id[3], mp->eeprom.id[4], mp->eeprom.id[5]);
-	printk("EEPROM: ramsz[%08x]\n", mp->eeprom.ramsz);
-	printk("EEPROM: fvers[%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
-	       mp->eeprom.fvers[0], mp->eeprom.fvers[1], mp->eeprom.fvers[2],
-	       mp->eeprom.fvers[3], mp->eeprom.fvers[4], mp->eeprom.fvers[5],
-	       mp->eeprom.fvers[6], mp->eeprom.fvers[7]);
-	printk("EEPROM:       %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
-	       mp->eeprom.fvers[8], mp->eeprom.fvers[9], mp->eeprom.fvers[10],
-	       mp->eeprom.fvers[11], mp->eeprom.fvers[12], mp->eeprom.fvers[13],
-	       mp->eeprom.fvers[14], mp->eeprom.fvers[15]);
-	printk("EEPROM:       %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
-	       mp->eeprom.fvers[16], mp->eeprom.fvers[17], mp->eeprom.fvers[18],
-	       mp->eeprom.fvers[19], mp->eeprom.fvers[20], mp->eeprom.fvers[21],
-	       mp->eeprom.fvers[22], mp->eeprom.fvers[23]);
-	printk("EEPROM:       %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x]\n",
-	       mp->eeprom.fvers[24], mp->eeprom.fvers[25], mp->eeprom.fvers[26],
-	       mp->eeprom.fvers[27], mp->eeprom.fvers[28], mp->eeprom.fvers[29],
-	       mp->eeprom.fvers[30], mp->eeprom.fvers[31]);
-	printk("EEPROM: mvers[%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
-	       mp->eeprom.mvers[0], mp->eeprom.mvers[1], mp->eeprom.mvers[2],
-	       mp->eeprom.mvers[3], mp->eeprom.mvers[4], mp->eeprom.mvers[5],
-	       mp->eeprom.mvers[6], mp->eeprom.mvers[7]);
-	printk("EEPROM:       %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x]\n",
-	       mp->eeprom.mvers[8], mp->eeprom.mvers[9], mp->eeprom.mvers[10],
-	       mp->eeprom.mvers[11], mp->eeprom.mvers[12], mp->eeprom.mvers[13],
-	       mp->eeprom.mvers[14], mp->eeprom.mvers[15]);
-	printk("EEPROM: dlval[%04x] brd_type[%04x] bus_type[%04x] prod_code[%04x]\n",
-	       mp->eeprom.dlval, mp->eeprom.brd_type, mp->eeprom.bus_type,
-	       mp->eeprom.prod_code);
-	printk("EEPROM: serial_num[%08x]\n", mp->eeprom.serial_num);
+//	printk("EEPROM: clockval[%08x] cpuvers[%04x] "
+//	       "id[%02x,%02x,%02x,%02x,%02x,%02x]\n",
+//	       mp->eeprom.cval, mp->eeprom.cpuvers,
+//	       mp->eeprom.id[0], mp->eeprom.id[1], mp->eeprom.id[2],
+;
+;
+//	printk("EEPROM: fvers[%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
+//	       mp->eeprom.fvers[0], mp->eeprom.fvers[1], mp->eeprom.fvers[2],
+//	       mp->eeprom.fvers[3], mp->eeprom.fvers[4], mp->eeprom.fvers[5],
+;
+//	printk("EEPROM:       %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
+//	       mp->eeprom.fvers[8], mp->eeprom.fvers[9], mp->eeprom.fvers[10],
+//	       mp->eeprom.fvers[11], mp->eeprom.fvers[12], mp->eeprom.fvers[13],
+;
+//	printk("EEPROM:       %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
+//	       mp->eeprom.fvers[16], mp->eeprom.fvers[17], mp->eeprom.fvers[18],
+//	       mp->eeprom.fvers[19], mp->eeprom.fvers[20], mp->eeprom.fvers[21],
+;
+//	printk("EEPROM:       %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x]\n",
+//	       mp->eeprom.fvers[24], mp->eeprom.fvers[25], mp->eeprom.fvers[26],
+//	       mp->eeprom.fvers[27], mp->eeprom.fvers[28], mp->eeprom.fvers[29],
+;
+//	printk("EEPROM: mvers[%02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x\n",
+//	       mp->eeprom.mvers[0], mp->eeprom.mvers[1], mp->eeprom.mvers[2],
+//	       mp->eeprom.mvers[3], mp->eeprom.mvers[4], mp->eeprom.mvers[5],
+;
+//	printk("EEPROM:       %02x,%02x,%02x,%02x,%02x,%02x,%02x,%02x]\n",
+//	       mp->eeprom.mvers[8], mp->eeprom.mvers[9], mp->eeprom.mvers[10],
+//	       mp->eeprom.mvers[11], mp->eeprom.mvers[12], mp->eeprom.mvers[13],
+;
+//	printk("EEPROM: dlval[%04x] brd_type[%04x] bus_type[%04x] prod_code[%04x]\n",
+//	       mp->eeprom.dlval, mp->eeprom.brd_type, mp->eeprom.bus_type,
+;
+;
 }
 #endif
 
@@ -942,7 +942,7 @@ static int __devinit myri_sbus_probe(struct platform_device *op)
 		return -ENOMEM;
 
 	if (version_printed++ == 0)
-		printk(version);
+;
 
 	SET_NETDEV_DEV(dev, &op->dev);
 
@@ -1017,7 +1017,7 @@ static int __devinit myri_sbus_probe(struct platform_device *op)
 		mp->regs = of_ioremap(&op->resource[0], 0,
 				      mp->reg_size, "MyriCOM Regs");
 		if (!mp->regs) {
-			printk("MyriCOM: Cannot map MyriCOM registers.\n");
+;
 			goto err;
 		}
 		mp->lanai = mp->regs + (256 * 1024);
@@ -1086,7 +1086,7 @@ static int __devinit myri_sbus_probe(struct platform_device *op)
 	DET(("Requesting MYRIcom IRQ line.\n"));
 	if (request_irq(dev->irq, myri_interrupt,
 			IRQF_SHARED, "MyriCOM Ethernet", (void *) dev)) {
-		printk("MyriCOM: Cannot register interrupt handler.\n");
+;
 		goto err;
 	}
 
@@ -1098,12 +1098,12 @@ static int __devinit myri_sbus_probe(struct platform_device *op)
 	/* Load code onto the LANai. */
 	DET(("Loading LANAI firmware\n"));
 	if (myri_load_lanai(mp)) {
-		printk(KERN_ERR "MyriCOM: Cannot Load LANAI firmware.\n");
+;
 		goto err_free_irq;
 	}
 
 	if (register_netdev(dev)) {
-		printk("MyriCOM: Cannot register device.\n");
+;
 		goto err_free_irq;
 	}
 
@@ -1111,8 +1111,8 @@ static int __devinit myri_sbus_probe(struct platform_device *op)
 
 	num++;
 
-	printk("%s: MyriCOM MyriNET Ethernet %pM\n",
-	       dev->name, dev->dev_addr);
+//	printk("%s: MyriCOM MyriNET Ethernet %pM\n",
+;
 
 	return 0;
 

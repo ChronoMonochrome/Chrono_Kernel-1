@@ -270,8 +270,8 @@ int cache_check(struct cache_detail *detail,
 		if (rv == -EAGAIN)
 			rv = -ENOENT;
 	} else if (rv == -EAGAIN || age > refresh_age/2) {
-		dprintk("RPC:       Want update, refage=%ld, age=%ld\n",
-				refresh_age, age);
+//		dprintk("RPC:       Want update, refage=%ld, age=%ld\n",
+;
 		if (!test_and_set_bit(CACHE_PENDING, &h->flags)) {
 			switch (cache_make_upcall(detail, h)) {
 			case -EINVAL:
@@ -383,7 +383,7 @@ void sunrpc_destroy_cache_detail(struct cache_detail *cd)
 	}
 	return;
 out:
-	printk(KERN_ERR "nfsd: failed to unregister %s cache\n", cd->name);
+;
 }
 EXPORT_SYMBOL_GPL(sunrpc_destroy_cache_detail);
 

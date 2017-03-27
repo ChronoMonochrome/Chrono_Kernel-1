@@ -695,8 +695,12 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
 							struct timespec *delta)
 {
 	if (!timespec_valid_strict(delta)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
 					"sleep delta value!\n");
+#else
+		;
+#endif
 		return;
 	}
 	tk_xtime_add(tk, delta);

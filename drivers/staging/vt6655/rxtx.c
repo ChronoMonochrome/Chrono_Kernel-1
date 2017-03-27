@@ -379,7 +379,7 @@ s_uGetTxRsvTime (
 
     uDataTime = BBuGetFrameTime(pDevice->byPreambleType, byPktType, cbFrameLength, wRate);
 #ifdef	PLICE_DEBUG
-	//printk("s_uGetTxRsvTime is %d\n",uDataTime);
+;
 #endif
     if (byPktType == PK_TYPE_11B) {//llb,CCK mode
         uAckTime = BBuGetFrameTime(pDevice->byPreambleType, byPktType, 14, (unsigned short)pDevice->byTopCCKBasicRate);
@@ -2178,7 +2178,7 @@ vGenerateFIFOHeader(PSDevice pDevice, unsigned char byPktType, unsigned char *pb
     }
 
 #ifdef	PLICE_DEBUG
-	//printk("Func:vGenerateFIFOHeader:TxDataRate is %d,TxPower is %d\n",pDevice->wCurrentRate,pDevice->byCurPwr);
+;
 
 	//if (pDevice->wCurrentRate <= 3)
 	//{
@@ -2606,7 +2606,7 @@ CMD_STATUS csMgmt_xmit(PSDevice pDevice, PSTxMgmtPacket pPacket) {
 
     pDevice->apCurrTD[TYPE_TXDMA0] = pFrstTD->next;
 #ifdef	PLICE_DEBUG
-		//printk("SCAN:CurrentRate is  %d,TxPower is %d\n",wCurrentRate,pTxBufHead->byTxPower);
+;
 #endif
 
 #ifdef TxInSleep

@@ -125,26 +125,42 @@ static struct tcic_socket socket_table[2];
 static u_char tcic_getb(u_char reg)
 {
     u_char val = inb(tcic_base+reg);
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_DEBUG "tcic_getb(%#lx) = %#x\n", tcic_base+reg, val);
+#else
+    ;
+#endif
     return val;
 }
 
 static u_short tcic_getw(u_char reg)
 {
     u_short val = inw(tcic_base+reg);
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_DEBUG "tcic_getw(%#lx) = %#x\n", tcic_base+reg, val);
+#else
+    ;
+#endif
     return val;
 }
 
 static void tcic_setb(u_char reg, u_char data)
 {
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_DEBUG "tcic_setb(%#lx, %#x)\n", tcic_base+reg, data);
+#else
+    ;
+#endif
     outb(data, tcic_base+reg);
 }
 
 static void tcic_setw(u_char reg, u_short data)
 {
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_DEBUG "tcic_setw(%#lx, %#x)\n", tcic_base+reg, data);
+#else
+    ;
+#endif
     outw(data, tcic_base+reg);
 }
 #else
@@ -157,7 +173,11 @@ static void tcic_setw(u_char reg, u_short data)
 static void tcic_setl(u_char reg, u_int data)
 {
 #ifdef DEBUG_X
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_DEBUG "tcic_setl(%#x, %#lx)\n", tcic_base+reg, data);
+#else
+    ;
+#endif
 #endif
     outw(data & 0xffff, tcic_base+reg);
     outw(data >> 16, tcic_base+reg+2);
@@ -262,7 +282,11 @@ static u_int __init irq_scan(u_int mask0)
     }
     
     if (mask1) {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("scanned");
+#else
+	;
+#endif
     } else {
 	/* Fallback: just find interrupts that aren't in use */
 	for (i = 0; i < 16; i++)
@@ -271,14 +295,30 @@ static u_int __init irq_scan(u_int mask0)
 		mask1 |= (1 << i);
 		free_irq(i, tcic_irq_count);
 	    }
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("default");
+#else
+	;
+#endif
     }
     
+#ifdef CONFIG_DEBUG_PRINTK
     printk(") = ");
+#else
+    ;
+#endif
     for (i = 0; i < 16; i++)
 	if (mask1 & (1<<i))
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("%s%d", ((mask1 & ((1<<i)-1)) ? "," : ""), i);
+#else
+	    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk(" ");
+#else
+    ;
+#endif
     
     return mask1;
 }
@@ -368,11 +408,19 @@ static int __init init_tcic(void)
     if (platform_driver_register(&tcic_driver))
 	return -1;
     
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "Databook TCIC-2 PCMCIA probe: ");
+#else
+    ;
+#endif
     sock = 0;
 
     if (!request_region(tcic_base, 16, "tcic-2")) {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("could not allocate ports,\n ");
+#else
+	;
+#endif
 	platform_driver_unregister(&tcic_driver);
 	return -ENODEV;
     }
@@ -394,7 +442,11 @@ static int __init init_tcic(void)
 	}
     }
     if (sock == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("not found.\n");
+#else
+	;
+#endif
 	release_region(tcic_base, 16);
 	platform_driver_unregister(&tcic_driver);
 	return -ENODEV;
@@ -419,21 +471,53 @@ static int __init init_tcic(void)
 
     switch (socket_table[0].id) {
     case TCIC_ID_DB86082:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DB86082"); break;
+#else
+	;
+#endif
     case TCIC_ID_DB86082A:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DB86082A"); break;
+#else
+	;
+#endif
     case TCIC_ID_DB86084:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DB86084"); break;
+#else
+	;
+#endif
     case TCIC_ID_DB86084A:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DB86084A"); break;
+#else
+	;
+#endif
     case TCIC_ID_DB86072:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DB86072"); break;
+#else
+	;
+#endif
     case TCIC_ID_DB86184:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DB86184"); break;
+#else
+	;
+#endif
     case TCIC_ID_DB86082B:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("DB86082B"); break;
+#else
+	;
+#endif
     default:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Unknown ID 0x%02x", socket_table[0].id);
+#else
+	;
+#endif
     }
     
     /* Set up polling */
@@ -442,8 +526,16 @@ static int __init init_tcic(void)
     init_timer(&poll_timer);
 
     /* Build interrupt mask */
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_CONT ", %d sockets\n", sockets);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "  irq list (");
+#else
+    ;
+#endif
     if (irq_list_count == 0)
 	mask = irq_mask;
     else
@@ -475,12 +567,24 @@ static int __init init_tcic(void)
     }
     
     if (socket_table[0].socket.irq_mask & (1 << 11))
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("sktirq is irq 11, ");
+#else
+	;
+#endif
     if (cs_irq != 0)
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("status change on irq %d\n", cs_irq);
+#else
+	;
+#endif
     else
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("polled status, interval = %d ms\n",
 	       poll_interval * 1000 / HZ);
+#else
+	;
+#endif
     
     for (i = 0; i < sockets; i++) {
 	tcic_setw(TCIC_ADDR+2, socket_table[i].psock << TCIC_SS_SHFT);
@@ -539,7 +643,11 @@ static irqreturn_t tcic_interrupt(int irq, void *dev)
     static volatile int active = 0;
 
     if (active) {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "tcic: reentered interrupt handler!\n");
+#else
+	;
+#endif
 	return IRQ_NONE;
     } else
 	active = 1;

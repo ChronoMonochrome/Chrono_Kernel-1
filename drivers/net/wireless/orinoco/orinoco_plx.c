@@ -130,7 +130,7 @@ static int orinoco_plx_cor_reset(struct orinoco_private *priv)
 
 	/* Still busy? */
 	if (reg & HERMES_CMD_BUSY) {
-		printk(KERN_ERR PFX "Busy timeout\n");
+;
 		return -ETIMEDOUT;
 	}
 
@@ -145,17 +145,17 @@ static int orinoco_plx_hw_init(struct orinoco_pci_card *card)
 		0x01, 0x03, 0x00, 0x00, 0xff, 0x17, 0x04, 0x67
 	};
 
-	printk(KERN_DEBUG PFX "CIS: ");
+;
 	for (i = 0; i < 16; i++)
-		printk("%02X:", ioread8(card->attr_io + (i << 1)));
-	printk("\n");
+;
+;
 
 	/* Verify whether a supported PC card is present */
 	/* FIXME: we probably need to be smarted about this */
 	for (i = 0; i < sizeof(cis_magic); i++) {
 		if (cis_magic[i] != ioread8(card->attr_io + (i << 1))) {
-			printk(KERN_ERR PFX "The CIS value of Prism2 PC "
-			       "card is unexpected\n");
+//			printk(KERN_ERR PFX "The CIS value of Prism2 PC "
+;
 			return -ENODEV;
 		}
 	}
@@ -169,7 +169,7 @@ static int orinoco_plx_hw_init(struct orinoco_pci_card *card)
 		iowrite32(csr_reg, card->bridge_io + PLX_INTCSR);
 		csr_reg = ioread32(card->bridge_io + PLX_INTCSR);
 		if (!(csr_reg & PLX_INTCSR_INTEN)) {
-			printk(KERN_ERR PFX "Cannot enable interrupts\n");
+;
 			return -EIO;
 		}
 	}
@@ -187,33 +187,33 @@ static int orinoco_plx_init_one(struct pci_dev *pdev,
 
 	err = pci_enable_device(pdev);
 	if (err) {
-		printk(KERN_ERR PFX "Cannot enable PCI device\n");
+;
 		return err;
 	}
 
 	err = pci_request_regions(pdev, DRIVER_NAME);
 	if (err) {
-		printk(KERN_ERR PFX "Cannot obtain PCI resources\n");
+;
 		goto fail_resources;
 	}
 
 	bridge_io = pci_iomap(pdev, 1, 0);
 	if (!bridge_io) {
-		printk(KERN_ERR PFX "Cannot map bridge registers\n");
+;
 		err = -EIO;
 		goto fail_map_bridge;
 	}
 
 	attr_io = pci_iomap(pdev, 2, 0);
 	if (!attr_io) {
-		printk(KERN_ERR PFX "Cannot map PCMCIA attributes\n");
+;
 		err = -EIO;
 		goto fail_map_attr;
 	}
 
 	hermes_io = pci_iomap(pdev, 3, 0);
 	if (!hermes_io) {
-		printk(KERN_ERR PFX "Cannot map chipset registers\n");
+;
 		err = -EIO;
 		goto fail_map_hermes;
 	}
@@ -222,7 +222,7 @@ static int orinoco_plx_init_one(struct pci_dev *pdev,
 	priv = alloc_orinocodev(sizeof(*card), &pdev->dev,
 				orinoco_plx_cor_reset, NULL);
 	if (!priv) {
-		printk(KERN_ERR PFX "Cannot allocate network device\n");
+;
 		err = -ENOMEM;
 		goto fail_alloc;
 	}
@@ -236,32 +236,32 @@ static int orinoco_plx_init_one(struct pci_dev *pdev,
 	err = request_irq(pdev->irq, orinoco_interrupt, IRQF_SHARED,
 			  DRIVER_NAME, priv);
 	if (err) {
-		printk(KERN_ERR PFX "Cannot allocate IRQ %d\n", pdev->irq);
+;
 		err = -EBUSY;
 		goto fail_irq;
 	}
 
 	err = orinoco_plx_hw_init(card);
 	if (err) {
-		printk(KERN_ERR PFX "Hardware initialization failed\n");
+;
 		goto fail;
 	}
 
 	err = orinoco_plx_cor_reset(priv);
 	if (err) {
-		printk(KERN_ERR PFX "Initial reset failed\n");
+;
 		goto fail;
 	}
 
 	err = orinoco_init(priv);
 	if (err) {
-		printk(KERN_ERR PFX "orinoco_init() failed\n");
+;
 		goto fail;
 	}
 
 	err = orinoco_if_add(priv, 0, 0, NULL);
 	if (err) {
-		printk(KERN_ERR PFX "orinoco_if_add() failed\n");
+;
 		goto fail;
 	}
 
@@ -349,7 +349,7 @@ MODULE_LICENSE("Dual MPL/GPL");
 
 static int __init orinoco_plx_init(void)
 {
-	printk(KERN_DEBUG "%s\n", version);
+;
 	return pci_register_driver(&orinoco_plx_driver);
 }
 

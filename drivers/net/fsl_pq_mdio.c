@@ -161,8 +161,8 @@ static int fsl_pq_mdio_reset(struct mii_bus *bus)
 	mutex_unlock(&bus->mdio_lock);
 
 	if (timeout < 0) {
-		printk(KERN_ERR "%s: The MII Bus is stuck!\n",
-				bus->name);
+//		printk(KERN_ERR "%s: The MII Bus is stuck!\n",
+;
 		return -EBUSY;
 	}
 

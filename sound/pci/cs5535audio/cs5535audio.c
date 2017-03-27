@@ -287,7 +287,11 @@ static int __devinit snd_cs5535audio_create(struct snd_card *card,
 
 	if (pci_set_dma_mask(pci, DMA_BIT_MASK(32)) < 0 ||
 	    pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32)) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "unable to get 32bit dma\n");
+#else
+		;
+#endif
 		err = -ENXIO;
 		goto pcifail;
 	}

@@ -54,14 +54,22 @@ static int t1pci_add_card(struct capicardparams *p, struct pci_dev *pdev)
 
 	card = b1_alloc_card(1);
 	if (!card) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "t1pci: no memory.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err;
 	}
 
         card->dma = avmcard_dma_alloc("t1pci", pdev, 2048+128, 2048+128);
 	if (!card->dma) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "t1pci: no memory.\n");
+#else
+		;
+#endif
 		retval = -ENOMEM;
 		goto err_free;
 	}
@@ -74,16 +82,24 @@ static int t1pci_add_card(struct capicardparams *p, struct pci_dev *pdev)
 	card->cardtype = avm_t1pci;
 
 	if (!request_region(card->port, AVMB1_PORTLEN, card->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "t1pci: ports 0x%03x-0x%03x in use.\n",
 		       card->port, card->port + AVMB1_PORTLEN);
+#else
+		;
+#endif
 		retval = -EBUSY;
 		goto err_free_dma;
 	}
 
 	card->mbase = ioremap(card->membase, 64);
 	if (!card->mbase) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_NOTICE "t1pci: can't remap memory at 0x%lx\n",
 		       card->membase);
+#else
+		;
+#endif
 		retval = -EIO;
 		goto err_release_region;
 	}
@@ -93,11 +109,19 @@ static int t1pci_add_card(struct capicardparams *p, struct pci_dev *pdev)
 	retval = t1pci_detect(card);
 	if (retval != 0) {
 		if (retval < 6)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "t1pci: NO card at 0x%x (%d)\n",
 			       card->port, retval);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_NOTICE "t1pci: card at 0x%x, but cable not connected or T1 has no power (%d)\n",
 			       card->port, retval);
+#else
+			;
+#endif
 		retval = -EIO;
 		goto err_unmap;
 	}
@@ -130,8 +154,12 @@ static int t1pci_add_card(struct capicardparams *p, struct pci_dev *pdev)
 	}
 	card->cardnr = cinfo->capi_ctrl.cnr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "t1pci: AVM T1 PCI at i/o %#x, irq %d, mem %#lx\n",
 	       card->port, card->irq, card->membase);
+#else
+	;
+#endif
 
 	pci_set_drvdata(pdev, card);
 	return 0;
@@ -203,8 +231,12 @@ static int __devinit t1pci_probe(struct pci_dev *dev,
 	param.irq = dev->irq;
 	param.membase = pci_resource_start(dev, 0);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "t1pci: PCI BIOS reports AVM-T1-PCI at i/o %#x, irq %d, mem %#x\n",
 	       param.port, param.irq, param.membase);
+#else
+	;
+#endif
 
 	retval = t1pci_add_card(&param, dev);
 	if (retval != 0) {
@@ -245,7 +277,11 @@ static int __init t1pci_init(void)
 	if (!err) {
 		strlcpy(capi_driver_t1pci.revision, rev, 32);
 		register_capi_driver(&capi_driver_t1pci);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "t1pci: revision %s\n", rev);
+#else
+		;
+#endif
 	}
 	return err;
 }

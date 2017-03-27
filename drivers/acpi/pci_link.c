@@ -126,9 +126,13 @@ static acpi_status acpi_pci_link_check_possible(struct acpi_resource *resource,
 			     (i < p->interrupt_count
 			      && i < ACPI_PCI_LINK_MAX_POSSIBLE); i++) {
 				if (!p->interrupts[i]) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING PREFIX
 					       "Invalid _PRS IRQ %d\n",
 					       p->interrupts[i]);
+#else
+					;
+#endif
 					continue;
 				}
 				link->irq.possible[i] = p->interrupts[i];
@@ -144,17 +148,25 @@ static acpi_status acpi_pci_link_check_possible(struct acpi_resource *resource,
 			struct acpi_resource_extended_irq *p =
 			    &resource->data.extended_irq;
 			if (!p || !p->interrupt_count) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING PREFIX
 					      "Blank _PRS EXT IRQ resource\n");
+#else
+				;
+#endif
 				return AE_OK;
 			}
 			for (i = 0;
 			     (i < p->interrupt_count
 			      && i < ACPI_PCI_LINK_MAX_POSSIBLE); i++) {
 				if (!p->interrupts[i]) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_WARNING PREFIX
 					       "Invalid _PRS IRQ %d\n",
 					       p->interrupts[i]);
+#else
+					;
+#endif
 					continue;
 				}
 				link->irq.possible[i] = p->interrupts[i];
@@ -225,8 +237,12 @@ static acpi_status acpi_pci_link_check_current(struct acpi_resource *resource,
 				 * extended IRQ descriptors must
 				 * return at least 1 IRQ
 				 */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING PREFIX
 					      "Blank _CRS EXT IRQ resource\n");
+#else
+				;
+#endif
 				return AE_OK;
 			}
 			*irq = p->interrupts[0];
@@ -376,10 +392,14 @@ static int acpi_pci_link_set(struct acpi_pci_link *link, int irq)
 		goto end;
 	}
 	if (!link->device->status.enabled) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 			      "%s [%s] disabled and referenced, BIOS bug\n",
 			      acpi_device_name(link->device),
 			      acpi_device_bid(link->device));
+#else
+		;
+#endif
 	}
 
 	/* Query _CRS, set link->irq.active */
@@ -397,10 +417,14 @@ static int acpi_pci_link_set(struct acpi_pci_link *link, int irq)
 		 * policy: when _CRS doesn't return what we just _SRS
 		 * assume _SRS worked and override _CRS value.
 		 */
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX
 			      "%s [%s] BIOS reported IRQ %d, using IRQ %d\n",
 			      acpi_device_name(link->device),
 			      acpi_device_bid(link->device), link->irq.active, irq);
+#else
+		;
+#endif
 		link->irq.active = irq;
 	}
 
@@ -538,8 +562,12 @@ static int acpi_pci_link_allocate(struct acpi_pci_link *link)
 	 */
 	if (i == link->irq.possible_count) {
 		if (acpi_strict)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING PREFIX "_CRS %d not found"
 				      " in _PRS\n", link->irq.active);
+#else
+			;
+#endif
 		link->irq.active = 0;
 	}
 
@@ -572,9 +600,13 @@ static int acpi_pci_link_allocate(struct acpi_pci_link *link)
 		return -ENODEV;
 	} else {
 		acpi_irq_penalty[link->irq.active] += PIRQ_PENALTY_PCI_USING;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING PREFIX "%s [%s] enabled at IRQ %d\n",
 		       acpi_device_name(link->device),
 		       acpi_device_bid(link->device), link->irq.active);
+#else
+		;
+#endif
 	}
 
 	link->irq.initialized = 1;
@@ -716,25 +748,53 @@ static int acpi_pci_link_add(struct acpi_device *device)
 	/* query and set link->irq.active */
 	acpi_pci_link_get_current(link);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PREFIX "%s [%s] (IRQs", acpi_device_name(device),
 	       acpi_device_bid(device));
+#else
+	;
+#endif
 	for (i = 0; i < link->irq.possible_count; i++) {
 		if (link->irq.active == link->irq.possible[i]) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" *%d", link->irq.possible[i]);
+#else
+			;
+#endif
 			found = 1;
 		} else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(" %d", link->irq.possible[i]);
+#else
+			;
+#endif
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(")");
+#else
+	;
+#endif
 
 	if (!found)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(" *%d", link->irq.active);
+#else
+		;
+#endif
 
 	if (!link->device->status.enabled)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(", disabled.");
+#else
+		;
+#endif
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("\n");
+#else
+	;
+#endif
 
 	list_add_tail(&link->list, &acpi_link_list);
 

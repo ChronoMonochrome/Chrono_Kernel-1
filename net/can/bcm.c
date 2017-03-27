@@ -729,8 +729,8 @@ static void bcm_rx_unreg(struct net_device *dev, struct bcm_op *op)
 		/* mark as removed subscription */
 		op->rx_reg_dev = NULL;
 	} else
-		printk(KERN_ERR "can-bcm: bcm_rx_unreg: registered device "
-		       "mismatch %p %p\n", op->rx_reg_dev, dev);
+//		printk(KERN_ERR "can-bcm: bcm_rx_unreg: registered device "
+;
 }
 
 /*
@@ -1609,11 +1609,11 @@ static int __init bcm_module_init(void)
 {
 	int err;
 
-	printk(banner);
+;
 
 	err = can_proto_register(&bcm_can_proto);
 	if (err < 0) {
-		printk(KERN_ERR "can: registration of bcm protocol failed\n");
+;
 		return err;
 	}
 

@@ -312,33 +312,65 @@ static irqreturn_t wdtpci_interrupt(int irq, void *dev_id)
 	status = inb(WDT_SR);
 	udelay(8);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_CRIT PFX "status %d\n", status);
+#else
+	;
+#endif
 
 	if (type == 501) {
 		if (!(status & WDC_SR_TGOOD)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT PFX "Overheat alarm.(%d)\n",
 								inb(WDT_RT));
+#else
+			;
+#endif
 			udelay(8);
 		}
 		if (!(status & WDC_SR_PSUOVER))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT PFX "PSU over voltage.\n");
+#else
+			;
+#endif
 		if (!(status & WDC_SR_PSUUNDR))
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CRIT PFX "PSU under voltage.\n");
+#else
+			;
+#endif
 		if (tachometer) {
 			if (!(status & WDC_SR_FANGOOD))
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CRIT PFX "Possible fan fault.\n");
+#else
+				;
+#endif
 		}
 	}
 	if (!(status & WDC_SR_WCCR)) {
 #ifdef SOFTWARE_REBOOT
 #ifdef ONLY_TESTING
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Would Reboot.\n");
 #else
+		;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Initiating system reboot.\n");
+#else
+		;
+#endif
 		emergency_restart(NULL);
 #endif
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Reset in 5ms.\n");
+#else
+		;
+#endif
 #endif
 	}
 	spin_unlock(&wdtpci_lock);
@@ -484,7 +516,11 @@ static int wdtpci_release(struct inode *inode, struct file *file)
 	if (expect_close == 42) {
 		wdtpci_stop();
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX "Unexpected close, not stopping timer!");
+#else
+		;
+#endif
 		wdtpci_ping();
 	}
 	expect_close = 0;
@@ -649,17 +685,25 @@ static int __devinit wdtpci_init_one(struct pci_dev *dev,
 		goto out_reg;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	 "PCI-WDT500/501 (PCI-WDG-CSM) driver 0.10 at 0x%llx (Interrupt %d)\n",
 					(unsigned long long)io, irq);
+#else
+	;
+#endif
 
 	/* Check that the heartbeat value is within its range;
 	   if not reset to the default */
 	if (wdtpci_set_heartbeat(heartbeat)) {
 		wdtpci_set_heartbeat(WD_TIMO);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		  "heartbeat value must be 0 < heartbeat < 65536, using %d\n",
 								WD_TIMO);
+#else
+		;
+#endif
 	}
 
 	ret = register_reboot_notifier(&wdtpci_notifier);
@@ -687,11 +731,19 @@ static int __devinit wdtpci_init_one(struct pci_dev *dev,
 		goto out_misc;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "initialized. heartbeat=%d sec (nowayout=%d)\n",
 		heartbeat, nowayout);
+#else
+	;
+#endif
 	if (type == 501)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "wdt: Fan Tachometer is %s\n",
 				(tachometer ? "Enabled" : "Disabled"));
+#else
+		;
+#endif
 
 	ret = 0;
 out:

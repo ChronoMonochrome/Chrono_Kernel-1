@@ -226,8 +226,12 @@ static void i2c_parport_attach(struct parport *port)
 		if (adapter->ara)
 			parport_enable_irq(port);
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "i2c-parport: Failed to register "
 			       "ARA client\n");
+#else
+			;
+#endif
 	}
 
 	/* Add the new adapter to the list */
@@ -281,12 +285,20 @@ static struct parport_driver i2c_parport_driver = {
 static int __init i2c_parport_init(void)
 {
 	if (type < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "i2c-parport: adapter type unspecified\n");
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 
 	if (type >= ARRAY_SIZE(adapter_parm)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "i2c-parport: invalid type (%d)\n", type);
+#else
+		;
+#endif
 		return -ENODEV;
 	}
 

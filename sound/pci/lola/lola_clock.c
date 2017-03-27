@@ -223,8 +223,12 @@ int lola_enable_clock_events(struct lola *chip)
 	if (err < 0)
 		return err;
 	if (res) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING SFX "error in enable_clock_events %d\n",
 		       res);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	return 0;
@@ -242,7 +246,11 @@ int lola_set_clock_index(struct lola *chip, unsigned int idx)
 	if (err < 0)
 		return err;
 	if (res) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING SFX "error in set_clock %d\n", res);
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	return 0;

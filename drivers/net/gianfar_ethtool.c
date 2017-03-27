@@ -464,8 +464,8 @@ static int gfar_sringparam(struct net_device *dev, struct ethtool_ringparam *rva
 		return -EINVAL;
 
 	if (!is_power_of_2(rvals->rx_pending)) {
-		printk("%s: Ring sizes must be a power of 2\n",
-				dev->name);
+//		printk("%s: Ring sizes must be a power of 2\n",
+;
 		return -EINVAL;
 	}
 
@@ -473,8 +473,8 @@ static int gfar_sringparam(struct net_device *dev, struct ethtool_ringparam *rva
 		return -EINVAL;
 
 	if (!is_power_of_2(rvals->tx_pending)) {
-		printk("%s: Ring sizes must be a power of 2\n",
-				dev->name);
+//		printk("%s: Ring sizes must be a power of 2\n",
+;
 		return -EINVAL;
 	}
 
@@ -700,7 +700,7 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
 		cmp_rqfpr = RQFPR_IPV6 |RQFPR_UDP;
 		break;
 	default:
-		printk(KERN_ERR "Right now this class is not supported\n");
+;
 		return 0;
 	}
 
@@ -715,8 +715,8 @@ static int gfar_ethflow_to_filer_table(struct gfar_private *priv, u64 ethflow, u
 	}
 
 	if (i == MAX_FILER_IDX + 1) {
-		printk(KERN_ERR "No parse rule found, ");
-		printk(KERN_ERR "can't create hash rules\n");
+;
+;
 		return 0;
 	}
 

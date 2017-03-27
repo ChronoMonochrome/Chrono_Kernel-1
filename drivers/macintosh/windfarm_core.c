@@ -45,12 +45,16 @@
 #undef DEBUG
 
 #ifdef DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 #define DBG(args...)	printk(args)
 #else
 #define DBG(args...)	do { } while(0)
 #endif
 
 static LIST_HEAD(wf_controls);
+#else
+#define DBG(args...)	;
+#endif
 static LIST_HEAD(wf_sensors);
 static DEFINE_MUTEX(wf_lock);
 static BLOCKING_NOTIFIER_HEAD(wf_client_list);
@@ -215,8 +219,12 @@ int wf_register_control(struct wf_control *new_ct)
 	mutex_lock(&wf_lock);
 	list_for_each_entry(ct, &wf_controls, link) {
 		if (!strcmp(ct->name, new_ct->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "windfarm: trying to register"
 			       " duplicate control %s\n", ct->name);
+#else
+			;
+#endif
 			mutex_unlock(&wf_lock);
 			return -EEXIST;
 		}
@@ -230,8 +238,12 @@ int wf_register_control(struct wf_control *new_ct)
 	new_ct->attr.show = wf_show_control;
 	new_ct->attr.store = wf_store_control;
 	if (device_create_file(&wf_platform_device.dev, &new_ct->attr))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "windfarm: device_create_file failed"
 			" for %s\n", new_ct->name);
+#else
+		;
+#endif
 		/* the subsystem still does useful work without the file */
 
 	DBG("wf: Registered control %s\n", new_ct->name);
@@ -328,8 +340,12 @@ int wf_register_sensor(struct wf_sensor *new_sr)
 	mutex_lock(&wf_lock);
 	list_for_each_entry(sr, &wf_sensors, link) {
 		if (!strcmp(sr->name, new_sr->name)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "windfarm: trying to register"
 			       " duplicate sensor %s\n", sr->name);
+#else
+			;
+#endif
 			mutex_unlock(&wf_lock);
 			return -EEXIST;
 		}
@@ -343,8 +359,12 @@ int wf_register_sensor(struct wf_sensor *new_sr)
 	new_sr->attr.show = wf_show_sensor;
 	new_sr->attr.store = NULL;
 	if (device_create_file(&wf_platform_device.dev, &new_sr->attr))
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "windfarm: device_create_file failed"
 			" for %s\n", new_sr->name);
+#else
+		;
+#endif
 		/* the subsystem still does useful work without the file */
 
 	DBG("wf: Registered sensor %s\n", new_sr->name);
@@ -449,7 +469,11 @@ void wf_set_overtemp(void)
 	mutex_lock(&wf_lock);
 	wf_overtemp++;
 	if (wf_overtemp == 1) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "windfarm: Overtemp condition detected !\n");
+#else
+		;
+#endif
 		wf_overtemp_counter = 0;
 		wf_notify(WF_EVENT_OVERTEMP, NULL);
 	}
@@ -467,7 +491,11 @@ void wf_clear_overtemp(void)
 	}
 	wf_overtemp--;
 	if (wf_overtemp == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "windfarm: Overtemp condition cleared !\n");
+#else
+		;
+#endif
 		wf_notify(WF_EVENT_NORMALTEMP, NULL);
 	}
 	mutex_unlock(&wf_lock);

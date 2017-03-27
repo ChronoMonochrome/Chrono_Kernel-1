@@ -454,7 +454,11 @@ static u_int __init set_bridge_opts(u_short s, u_short ns)
 
     for (i = s; i < s+ns; i++) {
 	if (socket[i].flags & IS_ALIVE) {
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk(KERN_INFO "    host opts [%d]: already alive!\n", i);
+#else
+	    ;
+#endif
 	    continue;
 	}
 	buf[0] = '\0';
@@ -464,8 +468,12 @@ static u_int __init set_bridge_opts(u_short s, u_short ns)
 	else if (socket[i].flags & IS_VADEM)
 	    m = vg46x_set_opts(i, buf);
 	set_bridge_state(i);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "    host opts [%d]:%s\n", i,
 	       (*buf) ? buf : " none");
+#else
+	;
+#endif
     }
     return m;
 }
@@ -537,24 +545,48 @@ static u_int __init isa_scan(u_short sock, u_int mask0)
 		mask1 ^= (1 << i);
     }
     
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "    ISA irqs (");
+#else
+    ;
+#endif
     if (mask1) {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("scanned");
+#else
+	;
+#endif
     } else {
 	/* Fallback: just find interrupts that aren't in use */
 	for (i = 0; i < 16; i++)
 	    if ((mask0 & (1 << i)) && (_check_irq(i, IRQF_PROBE_SHARED) == 0))
 		mask1 |= (1 << i);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("default");
+#else
+	;
+#endif
 	/* If scan failed, default to polled status */
 	if (!cs_irq && (poll_interval == 0)) poll_interval = HZ;
     }
+#ifdef CONFIG_DEBUG_PRINTK
     printk(") = ");
+#else
+    ;
+#endif
     
     for (i = 0; i < 16; i++)
 	if (mask1 & (1<<i))
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("%s%d", ((mask1 & ((1<<i)-1)) ? "," : ""), i);
+#else
+	    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     if (mask1 == 0) printk("none!");
+#else
+    if (mask1 == 0) ;
+#endif
     
     return mask1;
 }
@@ -678,11 +710,27 @@ static void __init add_pcic(int ns, int type)
     struct i82365_socket *t = &socket[sockets-ns];
 
     base = sockets-ns;
+#ifdef CONFIG_DEBUG_PRINTK
     if (base == 0) printk("\n");
+#else
+    if (base == 0) ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "  %s", pcic[type].name);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk(" ISA-to-PCMCIA at port %#x ofs 0x%02x",
 	       t->ioaddr, t->psock*0x40);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk(", %d socket%s\n", ns, ((ns > 1) ? "s" : ""));
+#else
+    ;
+#endif
 
     /* Set host options, build basic interrupt mask */
     if (irq_list_count == 0)
@@ -712,15 +760,23 @@ static void __init add_pcic(int ns, int type)
 	if (cs_irq) {
 	    grab_irq = 1;
 	    isa_irq = cs_irq;
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk(" status change on irq %d\n", cs_irq);
+#else
+	    ;
+#endif
 	}
     }
     
     if (!isa_irq) {
 	if (poll_interval == 0)
 	    poll_interval = HZ;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(" polling interval = %d ms\n",
 	       poll_interval * 1000 / HZ);
+#else
+	;
+#endif
 	
     }
     
@@ -766,13 +822,21 @@ static void __init isa_probe(void)
 	    	continue;
 
 	    if (pnp_activate_dev(dev) < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("activate failed\n");
+#else
+		;
+#endif
 		pnp_device_detach(dev);
 		break;
 	    }
 
 	    if (!pnp_port_valid(dev, 0)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("invalid resources ?\n");
+#else
+		;
+#endif
 		pnp_device_detach(dev);
 		break;
 	    }
@@ -785,7 +849,11 @@ static void __init isa_probe(void)
 
     if (!request_region(i365_base, 2, "i82365")) {
 	if (sockets == 0)
+#ifdef CONFIG_DEBUG_PRINTK
 	    printk("port conflict at %#lx\n", i365_base);
+#else
+	    ;
+#endif
 	return;
     }
 
@@ -870,7 +938,11 @@ static irqreturn_t pcic_interrupt(int irq, void *dev)
 	if (!active) break;
     }
     if (j == 20)
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "i82365: infinite loop in interrupt handler\n");
+#else
+	;
+#endif
 
     pr_debug("pcic_interrupt done\n");
     return IRQ_RETVAL(handled);
@@ -1259,13 +1331,21 @@ static int __init init_i82365(void)
     if (ret)
 	goto err_driver_unregister;
 
+#ifdef CONFIG_DEBUG_PRINTK
     printk(KERN_INFO "Intel ISA PCIC probe: ");
+#else
+    ;
+#endif
     sockets = 0;
 
     isa_probe();
 
     if (sockets == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("not found.\n");
+#else
+	;
+#endif
 	ret = -ENODEV;
 	goto err_dev_unregister;
     }

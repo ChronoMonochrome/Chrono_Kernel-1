@@ -676,7 +676,11 @@ static int gdb_cmd_reboot(struct kgdb_state *ks)
 {
 	/* For now, only honor R0 */
 	if (strcmp(remcom_in_buffer, "R0") == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT "Executing emergency reboot\n");
+#else
+		;
+#endif
 		strcpy(remcom_out_buffer, "OK");
 		put_packet(remcom_out_buffer);
 

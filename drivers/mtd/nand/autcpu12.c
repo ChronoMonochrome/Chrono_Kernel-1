@@ -137,7 +137,11 @@ static int __init autcpu12_init(void)
 	autcpu12_mtd = kmalloc(sizeof(struct mtd_info) + sizeof(struct nand_chip),
 			       GFP_KERNEL);
 	if (!autcpu12_mtd) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Unable to allocate AUTCPU12 NAND MTD device structure.\n");
+#else
+		;
+#endif
 		err = -ENOMEM;
 		goto out;
 	}
@@ -145,7 +149,11 @@ static int __init autcpu12_init(void)
 	/* map physical address */
 	autcpu12_fio_base = ioremap(AUTCPU12_PHYS_SMC, SZ_1K);
 	if (!autcpu12_fio_base) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Ioremap autcpu12 SmartMedia Card failed\n");
+#else
+		;
+#endif
 		err = -EIO;
 		goto out_mtd;
 	}
@@ -201,7 +209,11 @@ static int __init autcpu12_init(void)
 					    NUM_PARTITIONS128K);
 			break;
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Unsupported SmartMedia device\n");
+#else
+			;
+#endif
 			err = -ENXIO;
 			goto out_ior;
 	}

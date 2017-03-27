@@ -100,7 +100,7 @@ static inline void at91_phy_wait(void) {
 
 	while (!(at91_emac_read(AT91_EMAC_SR) & AT91_EMAC_SR_IDLE)) {
 		if (time_after(jiffies, timeout)) {
-			printk("at91_ether: MIO timeout\n");
+;
 			break;
 		}
 		cpu_relax();
@@ -151,7 +151,7 @@ static void update_linkspeed(struct net_device *dev, int silent)
 	if (!mii_link_ok(&lp->mii)) {		/* no link */
 		netif_carrier_off(dev);
 		if (!silent)
-			printk(KERN_INFO "%s: Link down.\n", dev->name);
+;
 		return;
 	}
 
@@ -187,7 +187,7 @@ static void update_linkspeed(struct net_device *dev, int silent)
 	at91_emac_write(AT91_EMAC_CFG, mac_cfg);
 
 	if (!silent)
-		printk(KERN_INFO "%s: Link now %i-%s\n", dev->name, speed, (duplex == DUPLEX_FULL) ? "FullDuplex" : "HalfDuplex");
+;
 	netif_carrier_on(dev);
 }
 
@@ -266,7 +266,7 @@ static void enable_phyirq(struct net_device *dev)
 
 	status = request_irq(irq_number, at91ether_phy_interrupt, 0, dev->name, dev);
 	if (status) {
-		printk(KERN_ERR "at91_ether: PHY IRQ %d request failed - status %d!\n", irq_number, status);
+;
 		return;
 	}
 
@@ -465,7 +465,7 @@ static void __init get_mac_address(struct net_device *dev)
 	if (unpack_mac_address(dev, at91_emac_read(AT91_EMAC_SA4H), at91_emac_read(AT91_EMAC_SA4L)))
 		return;
 
-	printk(KERN_ERR "at91_ether: Your bootloader did not configure a MAC address.\n");
+;
 }
 
 /*
@@ -493,8 +493,8 @@ static int set_mac_address(struct net_device *dev, void* addr)
 	memcpy(dev->dev_addr, address->sa_data, dev->addr_len);
 	update_mac_address(dev);
 
-	printk("%s: Setting MAC address to %pM\n", dev->name,
-	       dev->dev_addr);
+//	printk("%s: Setting MAC address to %pM\n", dev->name,
+;
 
 	return 0;
 }
@@ -825,7 +825,7 @@ static int at91ether_start_xmit(struct sk_buff *skb, struct net_device *dev)
 		at91_emac_write(AT91_EMAC_TCR, skb->len);
 
 	} else {
-		printk(KERN_ERR "at91_ether.c: at91ether_start_xmit() called, but device is busy!\n");
+;
 		return NETDEV_TX_BUSY;	/* if we return anything but zero, dev.c:1055 calls kfree_skb(skb)
 				on this skb, he also reports -ENETDOWN and printk's, so either
 				we free and return(0) or don't free and return 1 */
@@ -895,7 +895,7 @@ static void at91ether_rx(struct net_device *dev)
 		}
 		else {
 			dev->stats.rx_dropped += 1;
-			printk(KERN_NOTICE "%s: Memory squeeze, dropping packet.\n", dev->name);
+;
 		}
 
 		if (dlist->descriptors[lp->rxBuffIndex].size & EMAC_MULTICAST)
@@ -946,7 +946,7 @@ static irqreturn_t at91ether_interrupt(int irq, void *dev_id)
 	}
 
 	if (intstatus & AT91_EMAC_ROVR)
-		printk("%s: ROVR error\n", dev->name);
+;
 
 	return IRQ_HANDLED;
 }
@@ -1084,31 +1084,31 @@ static int __init at91ether_setup(unsigned long phy_type, unsigned short phy_add
 		gpio_request(lp->board_data.phy_irq_pin, "ethernet_phy");
 
 	/* Display ethernet banner */
-	printk(KERN_INFO "%s: AT91 ethernet at 0x%08x int=%d %s%s (%pM)\n",
-	       dev->name, (uint) dev->base_addr, dev->irq,
-	       at91_emac_read(AT91_EMAC_CFG) & AT91_EMAC_SPD ? "100-" : "10-",
-	       at91_emac_read(AT91_EMAC_CFG) & AT91_EMAC_FD ? "FullDuplex" : "HalfDuplex",
-	       dev->dev_addr);
+//	printk(KERN_INFO "%s: AT91 ethernet at 0x%08x int=%d %s%s (%pM)\n",
+//	       dev->name, (uint) dev->base_addr, dev->irq,
+//	       at91_emac_read(AT91_EMAC_CFG) & AT91_EMAC_SPD ? "100-" : "10-",
+//	       at91_emac_read(AT91_EMAC_CFG) & AT91_EMAC_FD ? "FullDuplex" : "HalfDuplex",
+;
 	if ((phy_type == MII_DM9161_ID) || (lp->phy_type == MII_DM9161A_ID))
-		printk(KERN_INFO "%s: Davicom 9161 PHY %s\n", dev->name, (lp->phy_media == PORT_FIBRE) ? "(Fiber)" : "(Copper)");
+;
 	else if (phy_type == MII_LXT971A_ID)
-		printk(KERN_INFO "%s: Intel LXT971A PHY\n", dev->name);
+;
 	else if (phy_type == MII_RTL8201_ID)
-		printk(KERN_INFO "%s: Realtek RTL8201(B)L PHY\n", dev->name);
+;
 	else if (phy_type == MII_BCM5221_ID)
-		printk(KERN_INFO "%s: Broadcom BCM5221 PHY\n", dev->name);
+;
 	else if (phy_type == MII_DP83847_ID)
-		printk(KERN_INFO "%s: National Semiconductor DP83847 PHY\n", dev->name);
+;
 	else if (phy_type == MII_DP83848_ID)
-		printk(KERN_INFO "%s: National Semiconductor DP83848 PHY\n", dev->name);
+;
 	else if (phy_type == MII_AC101L_ID)
-		printk(KERN_INFO "%s: Altima AC101L PHY\n", dev->name);
+;
 	else if (phy_type == MII_KS8721_ID)
-		printk(KERN_INFO "%s: Micrel KS8721 PHY\n", dev->name);
+;
 	else if (phy_type == MII_T78Q21x3_ID)
-		printk(KERN_INFO "%s: Teridian 78Q21x3 PHY\n", dev->name);
+;
 	else if (phy_type == MII_LAN83C185_ID)
-		printk(KERN_INFO "%s: SMSC LAN83C185 PHY\n", dev->name);
+;
 
 	return 0;
 }
@@ -1126,7 +1126,7 @@ static int __init at91ether_probe(struct platform_device *pdev)
 
 	ether_clk = clk_get(&pdev->dev, "ether_clk");
 	if (IS_ERR(ether_clk)) {
-		printk(KERN_ERR "at91_ether: no clock defined\n");
+;
 		return -ENODEV;
 	}
 	clk_enable(ether_clk);					/* Enable Peripheral clock */

@@ -269,8 +269,8 @@ int txInit(void)
 	if (nTxLock > 65536)
 		nTxLock = 65536;
 
-	printk(KERN_INFO "JFS: nTxBlock = %d, nTxLock = %d\n",
-	       nTxBlock, nTxLock);
+//	printk(KERN_INFO "JFS: nTxBlock = %d, nTxLock = %d\n",
+;
 	/*
 	 * initialize transaction block (tblock) table
 	 *
@@ -830,7 +830,7 @@ struct tlock *txLock(tid_t tid, struct inode *ip, struct metapage * mp,
 	/* Only locks on ipimap or ipaimap should reach here */
 	/* assert(jfs_ip->fileset == AGGREGATE_I); */
 	if (jfs_ip->fileset != AGGREGATE_I) {
-		printk(KERN_ERR "txLock: trying to lock locked page!");
+;
 		print_hex_dump(KERN_ERR, "ip: ", DUMP_PREFIX_ADDRESS, 16, 4,
 			       ip, sizeof(*ip), 0);
 		print_hex_dump(KERN_ERR, "mp: ", DUMP_PREFIX_ADDRESS, 16, 4,

@@ -482,8 +482,12 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
 	 */
 	if (per_cpu(processor_device_array, pr->id) != NULL &&
 	    per_cpu(processor_device_array, pr->id) != device) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BIOS reported wrong ACPI id "
 			"for the processor\n");
+#else
+		;
+#endif
 		result = -ENODEV;
 		goto err_free_cpumask;
 	}
@@ -801,11 +805,19 @@ static int __init acpi_processor_init(void)
 	memset(&errata, 0, sizeof(errata));
 
 	if (!cpuidle_register_driver(&acpi_idle_driver)) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ACPI: %s registered with cpuidle\n",
 			acpi_idle_driver.name);
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "ACPI: acpi_idle yielding to %s\n",
 			cpuidle_get_driver()->name);
+#else
+		;
+#endif
 	}
 
 	result = acpi_bus_register_driver(&acpi_processor_driver);

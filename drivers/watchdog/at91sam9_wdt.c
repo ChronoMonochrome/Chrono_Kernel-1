@@ -90,7 +90,11 @@ static void at91_ping(unsigned long data)
 		at91_wdt_reset();
 		mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
 	} else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT DRV_NAME": I will reset your machine !\n");
+#else
+		;
+#endif
 }
 
 /*
@@ -267,8 +271,12 @@ static int __init at91wdt_probe(struct platform_device *pdev)
 	setup_timer(&at91wdt_private.timer, at91_ping, 0);
 	mod_timer(&at91wdt_private.timer, jiffies + WDT_TIMEOUT);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO DRV_NAME " enabled (heartbeat=%d sec, nowayout=%d)\n",
 		heartbeat, nowayout);
+#else
+	;
+#endif
 
 	return 0;
 }

@@ -110,7 +110,11 @@ isurf_interrupt(int intno, void *dev_id)
 		goto Start_ISAC;
 	}
 	if (!cnt)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ISurf IRQ LOOP\n");
+#else
+		;
+#endif
 
 	writeb(0, cs->hw.isurf.isar + ISAR_IRQBIT); mb();
 	writeb(0xFF, cs->hw.isurf.isac + ISAC_MASK);mb();
@@ -131,7 +135,11 @@ release_io_isurf(struct IsdnCardState *cs)
 static void
 reset_isurf(struct IsdnCardState *cs, u_char chips)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "ISurf: resetting card\n");
+#else
+	;
+#endif
 
 	byteout(cs->hw.isurf.reset, chips); /* Reset On */
 	mdelay(10);
@@ -205,7 +213,11 @@ setup_isurf(struct IsdnCard *card)
 	char tmp[64];
 
 	strcpy(tmp, ISurf_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "HiSax: ISurf driver Rev. %s\n", HiSax_getrev(tmp));
+#else
+	;
+#endif
 	
  	if (cs->typ != ISDN_CTYPE_ISURF)
  		return(0);
@@ -241,39 +253,63 @@ setup_isurf(struct IsdnCard *card)
 					return(0);
 				}
 			} else {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "ISurfPnP: no ISAPnP card found\n");
+#else
+				;
+#endif
 				return(0);
 			}
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "ISurfPnP: no ISAPnP bus found\n");
+#else
+			;
+#endif
 			return(0);
 		}
 #else
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: Siemens I-Surf port/mem not set\n");
+#else
+		;
+#endif
 		return (0);
 #endif
 	}
 	if (!request_region(cs->hw.isurf.reset, 1, "isurf isdn")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"HiSax: Siemens I-Surf config port %x already in use\n",
 			cs->hw.isurf.reset);
+#else
+		;
+#endif
 			return (0);
 	}
 	if (!request_region(cs->hw.isurf.phymem, ISURF_IOMEM_SIZE, "isurf iomem")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "HiSax: Siemens I-Surf memory region "
 			"%lx-%lx already in use\n",
 			cs->hw.isurf.phymem,
 			cs->hw.isurf.phymem + ISURF_IOMEM_SIZE);
+#else
+		;
+#endif
 		release_region(cs->hw.isurf.reset, 1);
 		return (0);
 	}
 	cs->hw.isurf.isar = ioremap(cs->hw.isurf.phymem, ISURF_IOMEM_SIZE);
 	cs->hw.isurf.isac = cs->hw.isurf.isar + ISURF_ISAC_OFFSET;
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 	       "ISurf: defined at 0x%x 0x%lx IRQ %d\n",
 	       cs->hw.isurf.reset,
 	       cs->hw.isurf.phymem,
 	       cs->irq);
+#else
+	;
+#endif
 
 	setup_isac(cs);
 	cs->cardmsg = &ISurf_card_msg;
@@ -292,8 +328,12 @@ setup_isurf(struct IsdnCard *card)
 	cs->BC_Send_Data = &isar_fill_fifo;
 	ver = ISARVersion(cs, "ISurf:");
 	if (ver < 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"ISurf: wrong ISAR version (ret = %d)\n", ver);
+#else
+		;
+#endif
 		release_io_isurf(cs);
 		return (0);
 	}

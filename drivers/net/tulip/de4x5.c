@@ -1135,10 +1135,10 @@ de4x5_hw_init(struct net_device *dev, u_long iobase, struct device *gendev)
     printk ("%s: %s at 0x%04lx", dev_name(gendev), name, iobase);
 
     status = get_hw_addr(dev);
-    printk(", h/w address %pM\n", dev->dev_addr);
+;
 
     if (status != 0) {
-	printk("      which has an Ethernet PROM CRC error.\n");
+;
 	return -ENXIO;
     } else {
 	skb_queue_head_init(&lp->cache.queue);
@@ -1262,12 +1262,12 @@ de4x5_hw_init(struct net_device *dev, u_long iobase, struct device *gendev)
 	    mii_get_phy(dev);
 	}
 
-	printk("      and requires IRQ%d (provided by %s).\n", dev->irq,
-	       ((lp->bus == PCI) ? "PCI BIOS" : "EISA CNFG"));
+//	printk("      and requires IRQ%d (provided by %s).\n", dev->irq,
+;
     }
 
     if (de4x5_debug & DEBUG_VERSION) {
-	printk(version);
+;
     }
 
     /* The DE4X5-specific entries in the device structure. */
@@ -1320,10 +1320,10 @@ de4x5_open(struct net_device *dev)
 
     if (request_irq(dev->irq, de4x5_interrupt, IRQF_SHARED,
 		                                     lp->adapter_name, dev)) {
-	printk("de4x5_open(): Requested IRQ%d is busy - attemping FAST/SHARE...", dev->irq);
+;
 	if (request_irq(dev->irq, de4x5_interrupt, IRQF_DISABLED | IRQF_SHARED,
 			                             lp->adapter_name, dev)) {
-	    printk("\n              Cannot get IRQ- reconfigure your hardware.\n");
+;
 	    disable_ast(dev);
 	    de4x5_free_rx_buffs(dev);
 	    de4x5_free_tx_buffs(dev);
@@ -1331,8 +1331,8 @@ de4x5_open(struct net_device *dev)
 	    lp->state = CLOSED;
 	    return -EAGAIN;
 	} else {
-	    printk("\n              Succeeded, but you should reconfigure your hardware to avoid this.\n");
-	    printk("WARNING: there may be IRQ related problems in heavily loaded systems.\n");
+;
+;
 	}
     }
 
@@ -1344,14 +1344,14 @@ de4x5_open(struct net_device *dev)
     de4x5_setup_intr(dev);
 
     if (de4x5_debug & DEBUG_OPEN) {
-	printk("\tsts:  0x%08x\n", inl(DE4X5_STS));
-	printk("\tbmr:  0x%08x\n", inl(DE4X5_BMR));
-	printk("\timr:  0x%08x\n", inl(DE4X5_IMR));
-	printk("\tomr:  0x%08x\n", inl(DE4X5_OMR));
-	printk("\tsisr: 0x%08x\n", inl(DE4X5_SISR));
-	printk("\tsicr: 0x%08x\n", inl(DE4X5_SICR));
-	printk("\tstrr: 0x%08x\n", inl(DE4X5_STRR));
-	printk("\tsigr: 0x%08x\n", inl(DE4X5_SIGR));
+;
+;
+;
+;
+;
+;
+;
+;
     }
 
     return status;
@@ -1443,8 +1443,8 @@ de4x5_sw_reset(struct net_device *dev)
     outl(omr, DE4X5_OMR);                        /* Stop everything! */
 
     if (j == 0) {
-	printk("%s: Setup frame timed out, status %08x\n", dev->name,
-	       inl(DE4X5_STS));
+//	printk("%s: Setup frame timed out, status %08x\n", dev->name,
+;
 	status = -EIO;
     }
 
@@ -1489,7 +1489,7 @@ de4x5_queue_pkt(struct sk_buff *skb, struct net_device *dev)
 	    de4x5_put_cache(dev, skb);
 	}
 	if (de4x5_debug & DEBUG_TX) {
-	    printk("%s: transmit busy, lost media or stale skb found:\n  STS:%08x\n  tbusy:%d\n  IMR:%08x\n  OMR:%08x\n Stale skb: %s\n",dev->name, inl(DE4X5_STS), netif_queue_stopped(dev), inl(DE4X5_IMR), inl(DE4X5_OMR), ((u_long) lp->tx_skb[lp->tx_new] > 1) ? "YES" : "NO");
+;
 	}
     } else if (skb->len > 0) {
 	/* If we already have stuff queued locally, use that first */
@@ -1549,7 +1549,7 @@ de4x5_interrupt(int irq, void *dev_id)
     DISABLE_IRQs;                        /* Ensure non re-entrancy */
 
     if (test_and_set_bit(MASK_INTERRUPTS, (void*) &lp->interrupt))
-	printk("%s: Re-entering the interrupt handler.\n", dev->name);
+;
 
     synchronize_irq(dev->irq);
 
@@ -1576,8 +1576,8 @@ de4x5_interrupt(int irq, void *dev_id)
 
 	if (sts & STS_SE) {              /* Bus Error */
 	    STOP_DE4X5;
-	    printk("%s: Fatal bus error occurred, sts=%#8x, device stopped.\n",
-		   dev->name, sts);
+//	    printk("%s: Fatal bus error occurred, sts=%#8x, device stopped.\n",
+;
 	    spin_unlock(&lp->lock);
 	    return IRQ_HANDLED;
 	}
@@ -1639,7 +1639,7 @@ de4x5_rx(struct net_device *dev)
 					                            >> 16) - 4;
 
 		if ((skb = de4x5_alloc_rx_buff(dev, entry, pkt_len)) == NULL) {
-		    printk("%s: Insufficient memory; nuking packet.\n",
+;
 			                                            dev->name);
 		    lp->stats.rx_dropped++;
 		} else {
@@ -1821,8 +1821,8 @@ de4x5_close(struct net_device *dev)
     netif_stop_queue(dev);
 
     if (de4x5_debug & DEBUG_CLOSE) {
-	printk("%s: Shutting down ethercard, status was %8.8x.\n",
-	       dev->name, inl(DE4X5_STS));
+//	printk("%s: Shutting down ethercard, status was %8.8x.\n",
+;
     }
 
     /*
@@ -3179,7 +3179,7 @@ dc2114x_autoconf(struct net_device *dev)
 
     default:
 	lp->tcount++;
-printk("Huh?: media:%02x\n", lp->media);
+;
 	lp->media = INIT;
 	break;
     }
@@ -3256,8 +3256,8 @@ srom_map_media(struct net_device *dev)
 	break;
 
       default:
-	printk("%s: Bad media code [%d] detected in SROM!\n", dev->name,
-	                                                  lp->infoblock_media);
+//	printk("%s: Bad media code [%d] detected in SROM!\n", dev->name,
+;
 	return -1;
 	break;
     }
@@ -4322,8 +4322,8 @@ srom_infoleaf_info(struct net_device *dev)
     }
     if (i == INFOLEAF_SIZE) {
 	lp->useSROM = false;
-	printk("%s: Cannot find correct chipset for SROM decoding!\n",
-	                                                          dev->name);
+//	printk("%s: Cannot find correct chipset for SROM decoding!\n",
+;
 	return -ENXIO;
     }
 
@@ -4339,8 +4339,8 @@ srom_infoleaf_info(struct net_device *dev)
 	}
 	if (i == 0) {
 	    lp->useSROM = false;
-	    printk("%s: Cannot find correct PCI device [%d] for SROM decoding!\n",
-	                                               dev->name, lp->device);
+//	    printk("%s: Cannot find correct PCI device [%d] for SROM decoding!\n",
+;
 	    return -ENXIO;
 	}
     }
@@ -5024,12 +5024,12 @@ mii_get_phy(struct net_device *dev)
 	    lp->phy[k].spd.value = GENERIC_VALUE;  /* TX & T4, H/F Duplex    */
 	    lp->mii_cnt++;
 	    lp->active++;
-	    printk("%s: Using generic MII device control. If the board doesn't operate,\nplease mail the following dump to the author:\n", dev->name);
+;
 	    j = de4x5_debug;
 	    de4x5_debug |= DEBUG_MII;
 	    de4x5_dbg_mii(dev, k);
 	    de4x5_debug = j;
-	    printk("\n");
+;
 	}
     }
   purgatory:
@@ -5242,45 +5242,45 @@ de4x5_dbg_open(struct net_device *dev)
     int i;
 
     if (de4x5_debug & DEBUG_OPEN) {
-	printk("%s: de4x5 opening with irq %d\n",dev->name,dev->irq);
-	printk("\tphysical address: ");
+;
+;
 	for (i=0;i<6;i++) {
-	    printk("%2.2x:",(short)dev->dev_addr[i]);
+;
 	}
-	printk("\n");
-	printk("Descriptor head addresses:\n");
-	printk("\t0x%8.8lx  0x%8.8lx\n",(u_long)lp->rx_ring,(u_long)lp->tx_ring);
-	printk("Descriptor addresses:\nRX: ");
+;
+;
+;
+;
 	for (i=0;i<lp->rxRingSize-1;i++){
 	    if (i < 3) {
-		printk("0x%8.8lx  ",(u_long)&lp->rx_ring[i].status);
+;
 	    }
 	}
-	printk("...0x%8.8lx\n",(u_long)&lp->rx_ring[i].status);
-	printk("TX: ");
+;
+;
 	for (i=0;i<lp->txRingSize-1;i++){
 	    if (i < 3) {
-		printk("0x%8.8lx  ", (u_long)&lp->tx_ring[i].status);
+;
 	    }
 	}
-	printk("...0x%8.8lx\n", (u_long)&lp->tx_ring[i].status);
-	printk("Descriptor buffers:\nRX: ");
+;
+;
 	for (i=0;i<lp->rxRingSize-1;i++){
 	    if (i < 3) {
-		printk("0x%8.8x  ",le32_to_cpu(lp->rx_ring[i].buf));
+;
 	    }
 	}
-	printk("...0x%8.8x\n",le32_to_cpu(lp->rx_ring[i].buf));
-	printk("TX: ");
+;
+;
 	for (i=0;i<lp->txRingSize-1;i++){
 	    if (i < 3) {
-		printk("0x%8.8x  ", le32_to_cpu(lp->tx_ring[i].buf));
+;
 	    }
 	}
-	printk("...0x%8.8x\n", le32_to_cpu(lp->tx_ring[i].buf));
-	printk("Ring size:\nRX: %d\nTX: %d\n",
-	       (short)lp->rxRingSize,
-	       (short)lp->txRingSize);
+;
+//	printk("Ring size:\nRX: %d\nTX: %d\n",
+//	       (short)lp->rxRingSize,
+;
     }
 }
 
@@ -5291,21 +5291,21 @@ de4x5_dbg_mii(struct net_device *dev, int k)
     u_long iobase = dev->base_addr;
 
     if (de4x5_debug & DEBUG_MII) {
-	printk("\nMII device address: %d\n", lp->phy[k].addr);
-	printk("MII CR:  %x\n",mii_rd(MII_CR,lp->phy[k].addr,DE4X5_MII));
-	printk("MII SR:  %x\n",mii_rd(MII_SR,lp->phy[k].addr,DE4X5_MII));
-	printk("MII ID0: %x\n",mii_rd(MII_ID0,lp->phy[k].addr,DE4X5_MII));
-	printk("MII ID1: %x\n",mii_rd(MII_ID1,lp->phy[k].addr,DE4X5_MII));
+;
+;
+;
+;
+;
 	if (lp->phy[k].id != BROADCOM_T4) {
-	    printk("MII ANA: %x\n",mii_rd(0x04,lp->phy[k].addr,DE4X5_MII));
-	    printk("MII ANC: %x\n",mii_rd(0x05,lp->phy[k].addr,DE4X5_MII));
+;
+;
 	}
-	printk("MII 16:  %x\n",mii_rd(0x10,lp->phy[k].addr,DE4X5_MII));
+;
 	if (lp->phy[k].id != BROADCOM_T4) {
-	    printk("MII 17:  %x\n",mii_rd(0x11,lp->phy[k].addr,DE4X5_MII));
-	    printk("MII 18:  %x\n",mii_rd(0x12,lp->phy[k].addr,DE4X5_MII));
+;
+;
 	} else {
-	    printk("MII 20:  %x\n",mii_rd(0x14,lp->phy[k].addr,DE4X5_MII));
+;
 	}
     }
 }
@@ -5317,18 +5317,18 @@ de4x5_dbg_media(struct net_device *dev)
 
     if (lp->media != lp->c_media) {
 	if (de4x5_debug & DEBUG_MEDIA) {
-	    printk("%s: media is %s%s\n", dev->name,
-		   (lp->media == NC  ? "unconnected, link down or incompatible connection" :
-		    (lp->media == TP  ? "TP" :
-		     (lp->media == ANS ? "TP/Nway" :
-		      (lp->media == BNC ? "BNC" :
-		       (lp->media == AUI ? "AUI" :
-			(lp->media == BNC_AUI ? "BNC/AUI" :
-			 (lp->media == EXT_SIA ? "EXT SIA" :
-			  (lp->media == _100Mb  ? "100Mb/s" :
-			   (lp->media == _10Mb   ? "10Mb/s" :
-			    "???"
-			    ))))))))), (lp->fdx?" full duplex.":"."));
+//	    printk("%s: media is %s%s\n", dev->name,
+//		   (lp->media == NC  ? "unconnected, link down or incompatible connection" :
+//		    (lp->media == TP  ? "TP" :
+//		     (lp->media == ANS ? "TP/Nway" :
+//		      (lp->media == BNC ? "BNC" :
+//		       (lp->media == AUI ? "AUI" :
+//			(lp->media == BNC_AUI ? "BNC/AUI" :
+//			 (lp->media == EXT_SIA ? "EXT SIA" :
+//			  (lp->media == _100Mb  ? "100Mb/s" :
+//			   (lp->media == _10Mb   ? "10Mb/s" :
+//			    "???"
+;
 	}
 	lp->c_media = lp->media;
     }
@@ -5342,12 +5342,12 @@ de4x5_dbg_srom(struct de4x5_srom *p)
     if (de4x5_debug & DEBUG_SROM) {
 	printk("Sub-system Vendor ID: %04x\n", *((u_short *)p->sub_vendor_id));
 	printk("Sub-system ID:        %04x\n", *((u_short *)p->sub_system_id));
-	printk("ID Block CRC:         %02x\n", (u_char)(p->id_block_crc));
-	printk("SROM version:         %02x\n", (u_char)(p->version));
-	printk("# controllers:        %02x\n", (u_char)(p->num_controllers));
+;
+;
+;
 
-	printk("Hardware Address:     %pM\n", p->ieee_addr);
-	printk("CRC checksum:         %04x\n", (u_short)(p->chksum));
+;
+;
 	for (i=0; i<64; i++) {
 	    printk("%3d %04x\n", i<<1, (u_short)*((u_short *)p+i));
 	}
@@ -5360,17 +5360,17 @@ de4x5_dbg_rx(struct sk_buff *skb, int len)
     int i, j;
 
     if (de4x5_debug & DEBUG_RX) {
-	printk("R: %pM <- %pM len/SAP:%02x%02x [%d]\n",
-	       skb->data, &skb->data[6],
-	       (u_char)skb->data[12],
-	       (u_char)skb->data[13],
-	       len);
+//	printk("R: %pM <- %pM len/SAP:%02x%02x [%d]\n",
+//	       skb->data, &skb->data[6],
+//	       (u_char)skb->data[12],
+//	       (u_char)skb->data[13],
+;
 	for (j=0; len>0;j+=16, len-=16) {
-	  printk("    %03x: ",j);
+;
 	  for (i=0; i<16 && i<len; i++) {
-	    printk("%02x ",(u_char)skb->data[i+j]);
+;
 	  }
-	  printk("\n");
+;
 	}
     }
 }
@@ -5424,7 +5424,7 @@ de4x5_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 
     case DE4X5_SAY_BOO:              /* Say "Boo!" to the kernel log file */
 	if (!capable(CAP_NET_ADMIN)) return -EPERM;
-	printk("%s: Boo!\n", dev->name);
+;
 	break;
 
     case DE4X5_MCA_EN:               /* Enable pass all multicast addressing */

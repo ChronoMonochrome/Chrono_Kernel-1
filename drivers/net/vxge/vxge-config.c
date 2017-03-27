@@ -86,8 +86,8 @@ int vxge_hw_vpath_wait_receive_idle(struct __vxge_hw_device *hldev, u32 vp_id)
 			(total_count < VXGE_HW_MAX_POLLING_COUNT));
 
 	if (total_count >= VXGE_HW_MAX_POLLING_COUNT)
-		printk(KERN_ALERT "%s: Still Receiving traffic. Abort wait\n",
-			__func__);
+//		printk(KERN_ALERT "%s: Still Receiving traffic. Abort wait\n",
+;
 
 	return total_count;
 }
@@ -331,35 +331,35 @@ vxge_update_fw_image(struct __vxge_hw_device *hldev, const u8 *fwdata, int size)
 			switch (sec_code) {
 			case VXGE_HW_FW_UPGRADE_ERR_CORRUPT_DATA_1:
 			case VXGE_HW_FW_UPGRADE_ERR_CORRUPT_DATA_7:
-				printk(KERN_ERR
-				       "corrupted data from .ncf file\n");
+//				printk(KERN_ERR
+;
 				break;
 			case VXGE_HW_FW_UPGRADE_ERR_INV_NCF_FILE_3:
 			case VXGE_HW_FW_UPGRADE_ERR_INV_NCF_FILE_4:
 			case VXGE_HW_FW_UPGRADE_ERR_INV_NCF_FILE_5:
 			case VXGE_HW_FW_UPGRADE_ERR_INV_NCF_FILE_6:
 			case VXGE_HW_FW_UPGRADE_ERR_INV_NCF_FILE_8:
-				printk(KERN_ERR "invalid .ncf file\n");
+;
 				break;
 			case VXGE_HW_FW_UPGRADE_ERR_BUFFER_OVERFLOW:
-				printk(KERN_ERR "buffer overflow\n");
+;
 				break;
 			case VXGE_HW_FW_UPGRADE_ERR_FAILED_TO_FLASH:
-				printk(KERN_ERR "failed to flash the image\n");
+;
 				break;
 			case VXGE_HW_FW_UPGRADE_ERR_GENERIC_ERROR_UNKNOWN:
-				printk(KERN_ERR
-				       "generic error. Unknown error type\n");
+//				printk(KERN_ERR
+;
 				break;
 			default:
-				printk(KERN_ERR "Unknown error of type %d\n",
-				       sec_code);
+//				printk(KERN_ERR "Unknown error of type %d\n",
+;
 				break;
 			}
 			status = VXGE_HW_FAIL;
 			goto out;
 		default:
-			printk(KERN_ERR "Unknown FW error: %d\n", ret_code);
+;
 			status = VXGE_HW_FAIL;
 			goto out;
 		}

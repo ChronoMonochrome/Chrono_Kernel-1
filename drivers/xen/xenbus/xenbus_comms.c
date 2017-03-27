@@ -209,9 +209,13 @@ int xb_init_comms(void)
 		       "(%08x:%08x)!\n", intf->req_cons, intf->req_prod);
 
 	if (intf->rsp_prod != intf->rsp_cons) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "XENBUS response ring is not quiescent "
 		       "(%08x:%08x): fixing up\n",
 		       intf->rsp_cons, intf->rsp_prod);
+#else
+		;
+#endif
 		intf->rsp_cons = intf->rsp_prod;
 	}
 

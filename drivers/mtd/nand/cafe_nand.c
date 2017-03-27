@@ -264,9 +264,17 @@ static void cafe_nand_cmdfunc(struct mtd_info *mtd, unsigned command,
 
 	if (unlikely(regdebug)) {
 		int i;
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("About to write command %08x to register 0\n", ctl1);
+#else
+		;
+#endif
 		for (i=4; i< 0x5c; i+=4)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("Register %x: %08x\n", i, readl(cafe->mmio + i));
+#else
+			;
+#endif
 	}
 
 	cafe_writel(cafe, ctl1, NAND_CTRL1);
@@ -444,7 +452,11 @@ static int cafe_nand_read_page(struct mtd_info *mtd, struct nand_chip *chip,
 			dev_dbg(&cafe->pdev->dev, "Failed to correct ECC at %08x\n",
 				cafe_readl(cafe, NAND_ADDR2) * 2048);
 			for (i = 0; i < 0x5c; i += 4)
+#ifdef CONFIG_DEBUG_PRINTK
 				printk("Register %x: %08x\n", i, readl(cafe->mmio + i));
+#else
+				;
+#endif
 			mtd->ecc_stats.failed++;
 		} else {
 			dev_dbg(&cafe->pdev->dev, "Corrected %d symbol errors\n", n);
@@ -777,8 +789,12 @@ static int __devinit cafe_nand_probe(struct pci_dev *pdev,
 		cafe->nand.bbt_td = &cafe_bbt_main_descr_512;
 		cafe->nand.bbt_md = &cafe_bbt_mirror_descr_512;
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "Unexpected NAND flash writesize %d. Aborting\n",
 		       mtd->writesize);
+#else
+		;
+#endif
 		goto out_irq;
 	}
 	cafe->nand.ecc.mode = NAND_ECC_HW_SYNDROME;

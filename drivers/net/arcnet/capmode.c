@@ -259,7 +259,7 @@ static void arcnet_cap_init(void)
 
 static int __init capmode_module_init(void)
 {
-	printk(VERSION);
+;
 	arcnet_cap_init();
 	return 0;
 }

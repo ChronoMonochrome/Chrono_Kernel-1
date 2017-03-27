@@ -452,7 +452,7 @@ static void sundance_reset(struct net_device *dev, unsigned long reset_cmd)
 	countdown = 10 + 1;
 	while (ioread32 (ioaddr) & (ResetBusy << 16)) {
 		if (--countdown == 0) {
-			printk(KERN_WARNING "%s : reset not completed !!\n", dev->name);
+;
 			break;
 		}
 		udelay(100);
@@ -496,7 +496,7 @@ static int __devinit sundance_probe1 (struct pci_dev *pdev,
 #ifndef MODULE
 	static int printed_version;
 	if (!printed_version++)
-		printk(version);
+;
 #endif
 
 	if (pci_enable_device(pdev))
@@ -566,9 +566,9 @@ static int __devinit sundance_probe1 (struct pci_dev *pdev,
 	if (i)
 		goto err_out_unmap_rx;
 
-	printk(KERN_INFO "%s: %s at %p, %pM, IRQ %d.\n",
-	       dev->name, pci_id_tbl[chip_idx].name, ioaddr,
-	       dev->dev_addr, irq);
+//	printk(KERN_INFO "%s: %s at %p, %pM, IRQ %d.\n",
+//	       dev->name, pci_id_tbl[chip_idx].name, ioaddr,
+;
 
 	np->phys[0] = 1;		/* Default setting */
 	np->mii_preamble_required++;
@@ -592,16 +592,16 @@ static int __devinit sundance_probe1 (struct pci_dev *pdev,
 			np->mii_if.advertising = mdio_read(dev, phyx, MII_ADVERTISE);
 			if ((mii_status & 0x0040) == 0)
 				np->mii_preamble_required++;
-			printk(KERN_INFO "%s: MII PHY found at address %d, status "
-				   "0x%4.4x advertising %4.4x.\n",
-				   dev->name, phyx, mii_status, np->mii_if.advertising);
+//			printk(KERN_INFO "%s: MII PHY found at address %d, status "
+//				   "0x%4.4x advertising %4.4x.\n",
+;
 		}
 	}
 	np->mii_preamble_required--;
 
 	if (phy_idx == 0) {
-		printk(KERN_INFO "%s: No MII transceiver found, aborting.  ASIC status %x\n",
-			   dev->name, ioread32(ioaddr + ASICCtrl));
+//		printk(KERN_INFO "%s: No MII transceiver found, aborting.  ASIC status %x\n",
+;
 		goto err_out_unregister;
 	}
 
@@ -666,10 +666,10 @@ static int __devinit sundance_probe1 (struct pci_dev *pdev,
 	/* Perhaps move the reset here? */
 	/* Reset the chip to erase previous misconfiguration. */
 	if (netif_msg_hw(np))
-		printk("ASIC Control is %x.\n", ioread32(ioaddr + ASICCtrl));
+;
 	sundance_reset(dev, 0x00ff << 16);
 	if (netif_msg_hw(np))
-		printk("ASIC Control is now %x.\n", ioread32(ioaddr + ASICCtrl));
+;
 
 	card_idx++;
 	return 0;
@@ -838,8 +838,8 @@ static int netdev_open(struct net_device *dev)
 		return i;
 
 	if (netif_msg_ifup(np))
-		printk(KERN_DEBUG "%s: netdev_open() irq %d.\n",
-			   dev->name, dev->irq);
+//		printk(KERN_DEBUG "%s: netdev_open() irq %d.\n",
+;
 	init_ring(dev);
 
 	iowrite32(np->rx_ring_dma, ioaddr + RxListPtr);
@@ -880,11 +880,11 @@ static int netdev_open(struct net_device *dev)
 	iowrite16 (StatsEnable | RxEnable | TxEnable, ioaddr + MACCtrl1);
 
 	if (netif_msg_ifup(np))
-		printk(KERN_DEBUG "%s: Done netdev_open(), status: Rx %x Tx %x "
-			   "MAC Control %x, %4.4x %4.4x.\n",
-			   dev->name, ioread32(ioaddr + RxStatus), ioread8(ioaddr + TxStatus),
-			   ioread32(ioaddr + MACCtrl0),
-			   ioread16(ioaddr + MACCtrl1), ioread16(ioaddr + MACCtrl0));
+//		printk(KERN_DEBUG "%s: Done netdev_open(), status: Rx %x Tx %x "
+//			   "MAC Control %x, %4.4x %4.4x.\n",
+//			   dev->name, ioread32(ioaddr + RxStatus), ioread8(ioaddr + TxStatus),
+//			   ioread32(ioaddr + MACCtrl0),
+;
 
 	/* Set the timer to check for link beat. */
 	init_timer(&np->timer);
@@ -920,9 +920,9 @@ static void check_duplex(struct net_device *dev)
 	if (np->mii_if.full_duplex != duplex) {
 		np->mii_if.full_duplex = duplex;
 		if (netif_msg_link(np))
-			printk(KERN_INFO "%s: Setting %s-duplex based on MII #%d "
-				   "negotiated capability %4.4x.\n", dev->name,
-				   duplex ? "full" : "half", np->phys[0], negotiated);
+//			printk(KERN_INFO "%s: Setting %s-duplex based on MII #%d "
+//				   "negotiated capability %4.4x.\n", dev->name,
+;
 		iowrite16(ioread16(ioaddr + MACCtrl0) | (duplex ? 0x20 : 0), ioaddr + MACCtrl0);
 	}
 }
@@ -935,10 +935,10 @@ static void netdev_timer(unsigned long data)
 	int next_tick = 10*HZ;
 
 	if (netif_msg_timer(np)) {
-		printk(KERN_DEBUG "%s: Media selection timer tick, intr status %4.4x, "
-			   "Tx %x Rx %x.\n",
-			   dev->name, ioread16(ioaddr + IntrEnable),
-			   ioread8(ioaddr + TxStatus), ioread32(ioaddr + RxStatus));
+//		printk(KERN_DEBUG "%s: Media selection timer tick, intr status %4.4x, "
+//			   "Tx %x Rx %x.\n",
+//			   dev->name, ioread16(ioaddr + IntrEnable),
+;
 	}
 	check_duplex(dev);
 	np->timer.expires = jiffies + next_tick;
@@ -954,30 +954,30 @@ static void tx_timeout(struct net_device *dev)
 	netif_stop_queue(dev);
 	tasklet_disable(&np->tx_tasklet);
 	iowrite16(0, ioaddr + IntrEnable);
-	printk(KERN_WARNING "%s: Transmit timed out, TxStatus %2.2x "
-		   "TxFrameId %2.2x,"
-		   " resetting...\n", dev->name, ioread8(ioaddr + TxStatus),
-		   ioread8(ioaddr + TxFrameId));
+//	printk(KERN_WARNING "%s: Transmit timed out, TxStatus %2.2x "
+//		   "TxFrameId %2.2x,"
+//		   " resetting...\n", dev->name, ioread8(ioaddr + TxStatus),
+;
 
 	{
 		int i;
 		for (i=0; i<TX_RING_SIZE; i++) {
-			printk(KERN_DEBUG "%02x %08llx %08x %08x(%02x) %08x %08x\n", i,
-				(unsigned long long)(np->tx_ring_dma + i*sizeof(*np->tx_ring)),
-				le32_to_cpu(np->tx_ring[i].next_desc),
-				le32_to_cpu(np->tx_ring[i].status),
-				(le32_to_cpu(np->tx_ring[i].status) >> 2) & 0xff,
-				le32_to_cpu(np->tx_ring[i].frag[0].addr),
-				le32_to_cpu(np->tx_ring[i].frag[0].length));
+//			printk(KERN_DEBUG "%02x %08llx %08x %08x(%02x) %08x %08x\n", i,
+//				(unsigned long long)(np->tx_ring_dma + i*sizeof(*np->tx_ring)),
+//				le32_to_cpu(np->tx_ring[i].next_desc),
+//				le32_to_cpu(np->tx_ring[i].status),
+//				(le32_to_cpu(np->tx_ring[i].status) >> 2) & 0xff,
+//				le32_to_cpu(np->tx_ring[i].frag[0].addr),
+;
 		}
-		printk(KERN_DEBUG "TxListPtr=%08x netif_queue_stopped=%d\n",
-			ioread32(np->base + TxListPtr),
-			netif_queue_stopped(dev));
-		printk(KERN_DEBUG "cur_tx=%d(%02x) dirty_tx=%d(%02x)\n",
-			np->cur_tx, np->cur_tx % TX_RING_SIZE,
-			np->dirty_tx, np->dirty_tx % TX_RING_SIZE);
-		printk(KERN_DEBUG "cur_rx=%d dirty_rx=%d\n", np->cur_rx, np->dirty_rx);
-		printk(KERN_DEBUG "cur_task=%d\n", np->cur_task);
+//		printk(KERN_DEBUG "TxListPtr=%08x netif_queue_stopped=%d\n",
+//			ioread32(np->base + TxListPtr),
+;
+//		printk(KERN_DEBUG "cur_tx=%d(%02x) dirty_tx=%d(%02x)\n",
+//			np->cur_tx, np->cur_tx % TX_RING_SIZE,
+;
+;
+;
 	}
 	spin_lock_irqsave(&np->lock, flag);
 
@@ -1175,8 +1175,8 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 		iowrite16(intr_status, ioaddr + IntrStatus);
 
 		if (netif_msg_intr(np))
-			printk(KERN_DEBUG "%s: Interrupt, status %4.4x.\n",
-				   dev->name, intr_status);
+//			printk(KERN_DEBUG "%s: Interrupt, status %4.4x.\n",
+;
 
 		if (!(intr_status & DEFAULT_INTR))
 			break;
@@ -1199,8 +1199,8 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 				     	dev->name, tx_status);
 				if (tx_status & 0x1e) {
 					if (netif_msg_tx_err(np))
-						printk("%s: Transmit error status %4.4x.\n",
-							   dev->name, tx_status);
+//						printk("%s: Transmit error status %4.4x.\n",
+;
 					dev->stats.tx_errors++;
 					if (tx_status & 0x10)
 						dev->stats.tx_fifo_errors++;
@@ -1299,8 +1299,8 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 			netdev_error(dev, intr_status);
 	} while (0);
 	if (netif_msg_intr(np))
-		printk(KERN_DEBUG "%s: exiting interrupt, status=%#4.4x.\n",
-			   dev->name, ioread16(ioaddr + IntrStatus));
+//		printk(KERN_DEBUG "%s: exiting interrupt, status=%#4.4x.\n",
+;
 	return IRQ_RETVAL(handled);
 }
 
@@ -1326,13 +1326,13 @@ static void rx_poll(unsigned long data)
 			break;
 		pkt_len = frame_status & 0x1fff;	/* Chip omits the CRC. */
 		if (netif_msg_rx_status(np))
-			printk(KERN_DEBUG "  netdev_rx() status was %8.8x.\n",
-				   frame_status);
+//			printk(KERN_DEBUG "  netdev_rx() status was %8.8x.\n",
+;
 		if (frame_status & 0x001f4000) {
 			/* There was a error. */
 			if (netif_msg_rx_err(np))
-				printk(KERN_DEBUG "  netdev_rx() Rx error was %8.8x.\n",
-					   frame_status);
+//				printk(KERN_DEBUG "  netdev_rx() Rx error was %8.8x.\n",
+;
 			dev->stats.rx_errors++;
 			if (frame_status & 0x00100000)
 				dev->stats.rx_length_errors++;
@@ -1343,17 +1343,17 @@ static void rx_poll(unsigned long data)
 			if (frame_status & 0x00080000)
 				dev->stats.rx_crc_errors++;
 			if (frame_status & 0x00100000) {
-				printk(KERN_WARNING "%s: Oversized Ethernet frame,"
-					   " status %8.8x.\n",
-					   dev->name, frame_status);
+//				printk(KERN_WARNING "%s: Oversized Ethernet frame,"
+//					   " status %8.8x.\n",
+;
 			}
 		} else {
 			struct sk_buff *skb;
 #ifndef final_version
 			if (netif_msg_rx_status(np))
-				printk(KERN_DEBUG "  netdev_rx() normal Rx pkt length %d"
-					   ", bogus_cnt %d.\n",
-					   pkt_len, boguscnt);
+//				printk(KERN_DEBUG "  netdev_rx() normal Rx pkt length %d"
+//					   ", bogus_cnt %d.\n",
+;
 #endif
 			/* Check if the packet is long enough to accept without copying
 			   to a minimally-sized skbuff. */
@@ -1443,38 +1443,38 @@ static void netdev_error(struct net_device *dev, int intr_status)
 
 	if (intr_status & LinkChange) {
 		if (mdio_wait_link(dev, 10) == 0) {
-			printk(KERN_INFO "%s: Link up\n", dev->name);
+;
 			if (np->an_enable) {
 				mii_advertise = mdio_read(dev, np->phys[0],
 							   MII_ADVERTISE);
 				mii_lpa = mdio_read(dev, np->phys[0], MII_LPA);
 				mii_advertise &= mii_lpa;
-				printk(KERN_INFO "%s: Link changed: ",
-					dev->name);
+//				printk(KERN_INFO "%s: Link changed: ",
+;
 				if (mii_advertise & ADVERTISE_100FULL) {
 					np->speed = 100;
-					printk("100Mbps, full duplex\n");
+;
 				} else if (mii_advertise & ADVERTISE_100HALF) {
 					np->speed = 100;
-					printk("100Mbps, half duplex\n");
+;
 				} else if (mii_advertise & ADVERTISE_10FULL) {
 					np->speed = 10;
-					printk("10Mbps, full duplex\n");
+;
 				} else if (mii_advertise & ADVERTISE_10HALF) {
 					np->speed = 10;
-					printk("10Mbps, half duplex\n");
+;
 				} else
-					printk("\n");
+;
 
 			} else {
 				mii_ctl = mdio_read(dev, np->phys[0], MII_BMCR);
 				speed = (mii_ctl & BMCR_SPEED100) ? 100 : 10;
 				np->speed = speed;
-				printk(KERN_INFO "%s: Link changed: %dMbps ,",
-					dev->name, speed);
-				printk("%s duplex.\n",
-					(mii_ctl & BMCR_FULLDPLX) ?
-						"full" : "half");
+//				printk(KERN_INFO "%s: Link changed: %dMbps ,",
+;
+//				printk("%s duplex.\n",
+//					(mii_ctl & BMCR_FULLDPLX) ?
+;
 			}
 			check_duplex(dev);
 			if (np->flowctrl && np->mii_if.full_duplex) {
@@ -1485,7 +1485,7 @@ static void netdev_error(struct net_device *dev, int intr_status)
 			}
 			netif_carrier_on(dev);
 		} else {
-			printk(KERN_INFO "%s: Link down\n", dev->name);
+;
 			netif_carrier_off(dev);
 		}
 	}
@@ -1493,8 +1493,8 @@ static void netdev_error(struct net_device *dev, int intr_status)
 		get_stats(dev);
 	}
 	if (intr_status & IntrPCIErr) {
-		printk(KERN_ERR "%s: Something Wicked happened! %4.4x.\n",
-			   dev->name, intr_status);
+//		printk(KERN_ERR "%s: Something Wicked happened! %4.4x.\n",
+;
 		/* We must do a global reset of DMA to continue. */
 	}
 }
@@ -1765,12 +1765,12 @@ static int netdev_close(struct net_device *dev)
 	netif_stop_queue(dev);
 
 	if (netif_msg_ifdown(np)) {
-		printk(KERN_DEBUG "%s: Shutting down ethercard, status was Tx %2.2x "
-			   "Rx %4.4x Int %2.2x.\n",
-			   dev->name, ioread8(ioaddr + TxStatus),
-			   ioread32(ioaddr + RxStatus), ioread16(ioaddr + IntrStatus));
-		printk(KERN_DEBUG "%s: Queue pointers were Tx %d / %d,  Rx %d / %d.\n",
-			   dev->name, np->cur_tx, np->dirty_tx, np->cur_rx, np->dirty_rx);
+//		printk(KERN_DEBUG "%s: Shutting down ethercard, status was Tx %2.2x "
+//			   "Rx %4.4x Int %2.2x.\n",
+//			   dev->name, ioread8(ioaddr + TxStatus),
+;
+//		printk(KERN_DEBUG "%s: Queue pointers were Tx %d / %d,  Rx %d / %d.\n",
+;
 	}
 
 	/* Disable interrupts by clearing the interrupt mask. */
@@ -1799,18 +1799,18 @@ static int netdev_close(struct net_device *dev)
 
 #ifdef __i386__
 	if (netif_msg_hw(np)) {
-		printk(KERN_DEBUG "  Tx ring at %8.8x:\n",
-			   (int)(np->tx_ring_dma));
+//		printk(KERN_DEBUG "  Tx ring at %8.8x:\n",
+;
 		for (i = 0; i < TX_RING_SIZE; i++)
-			printk(KERN_DEBUG " #%d desc. %4.4x %8.8x %8.8x.\n",
-				   i, np->tx_ring[i].status, np->tx_ring[i].frag[0].addr,
-				   np->tx_ring[i].frag[0].length);
-		printk(KERN_DEBUG "  Rx ring %8.8x:\n",
-			   (int)(np->rx_ring_dma));
+//			printk(KERN_DEBUG " #%d desc. %4.4x %8.8x %8.8x.\n",
+//				   i, np->tx_ring[i].status, np->tx_ring[i].frag[0].addr,
+;
+//		printk(KERN_DEBUG "  Rx ring %8.8x:\n",
+;
 		for (i = 0; i < /*RX_RING_SIZE*/4 ; i++) {
-			printk(KERN_DEBUG " #%d desc. %4.4x %4.4x %8.8x\n",
-				   i, np->rx_ring[i].status, np->rx_ring[i].frag[0].addr,
-				   np->rx_ring[i].frag[0].length);
+//			printk(KERN_DEBUG " #%d desc. %4.4x %4.4x %8.8x\n",
+//				   i, np->rx_ring[i].status, np->rx_ring[i].frag[0].addr,
+;
 		}
 	}
 #endif /* __i386__ debugging only */
@@ -1896,8 +1896,8 @@ static int sundance_resume(struct pci_dev *pci_dev)
 
 	err = netdev_open(dev);
 	if (err) {
-		printk(KERN_ERR "%s: Can't resume interface!\n",
-				dev->name);
+//		printk(KERN_ERR "%s: Can't resume interface!\n",
+;
 		goto out;
 	}
 
@@ -1924,7 +1924,7 @@ static int __init sundance_init(void)
 {
 /* when a module, this is printed whether or not devices are found in probe */
 #ifdef MODULE
-	printk(version);
+;
 #endif
 	return pci_register_driver(&sundance_driver);
 }

@@ -482,8 +482,12 @@ snd_harmony_playback_pointer(struct snd_pcm_substream *ss)
 	played = pcuradd - h->pbuf.addr;
 
 #ifdef HARMONY_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG PFX "playback_pointer is 0x%lx-0x%lx = %d bytes\n", 
 	       pcuradd, h->pbuf.addr, played);	
+#else
+	;
+#endif
 #endif
 
 	if (pcuradd > h->pbuf.addr + h->pbuf.size) {
@@ -511,8 +515,12 @@ snd_harmony_capture_pointer(struct snd_pcm_substream *ss)
         caught = rcuradd - h->cbuf.addr;
 
 #ifdef HARMONY_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
         printk(KERN_DEBUG PFX "capture_pointer is 0x%lx-0x%lx = %d bytes\n",
                rcuradd, h->cbuf.addr, caught);
+#else
+        ;
+#endif
 #endif
 
         if (rcuradd > h->cbuf.addr + h->cbuf.size) {

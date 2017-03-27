@@ -284,7 +284,11 @@ static u8 palm_bk3710_cable_detect(ide_hwif_t *hwif)
 
 static int palm_bk3710_init_dma(ide_hwif_t *hwif, const struct ide_port_info *d)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "    %s: MMIO-DMA\n", hwif->name);
+#else
+	;
+#endif
 
 	if (ide_allocate_dma_engine(hwif))
 		return -1;
@@ -376,7 +380,11 @@ static int __init palm_bk3710_probe(struct platform_device *pdev)
 
 	return 0;
 out:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Palm Chip BK3710 IDE Register Fail\n");
+#else
+	;
+#endif
 	return rc;
 }
 

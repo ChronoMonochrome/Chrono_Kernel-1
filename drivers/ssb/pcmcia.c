@@ -153,10 +153,14 @@ int ssb_pcmcia_switch_core(struct ssb_bus *bus,
 	int err;
 
 #if SSB_VERBOSE_PCMCIACORESWITCH_DEBUG
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_INFO PFX
 		   "Switching to %s core, index %d\n",
 		   ssb_core_name(dev->id.coreid),
 		   dev->core_index);
+#else
+	ssb_;
+#endif
 #endif
 
 	err = ssb_pcmcia_switch_coreidx(bus, dev->core_index);
@@ -549,44 +553,88 @@ static int ssb_pcmcia_sprom_write_all(struct ssb_bus *bus, const u16 *sprom)
 	bool failed = 0;
 	size_t size = SSB_PCMCIA_SPROM_SIZE;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_NOTICE PFX
 		   "Writing SPROM. Do NOT turn off the power! "
 		   "Please stand by...\n");
+#else
+	ssb_;
+#endif
 	err = ssb_pcmcia_sprom_command(bus, SSB_PCMCIA_SPROMCTL_WRITEEN);
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_printk(KERN_NOTICE PFX
 			   "Could not enable SPROM write access.\n");
+#else
+		ssb_;
+#endif
 		return -EBUSY;
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	ssb_printk(KERN_NOTICE PFX "[ 0%%");
+#else
+	ssb_;
+#endif
 	msleep(500);
 	for (i = 0; i < size; i++) {
 		if (i == size / 4)
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk("25%%");
+#else
+			ssb_;
+#endif
 		else if (i == size / 2)
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk("50%%");
+#else
+			ssb_;
+#endif
 		else if (i == (size * 3) / 4)
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk("75%%");
+#else
+			ssb_;
+#endif
 		else if (i % 2)
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk(".");
+#else
+			ssb_;
+#endif
 		err = ssb_pcmcia_sprom_write(bus, i, sprom[i]);
 		if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ssb_printk(KERN_NOTICE PFX
 				   "Failed to write to SPROM.\n");
+#else
+			ssb_;
+#endif
 			failed = 1;
 			break;
 		}
 	}
 	err = ssb_pcmcia_sprom_command(bus, SSB_PCMCIA_SPROMCTL_WRITEDIS);
 	if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_printk(KERN_NOTICE PFX
 			   "Could not disable SPROM write access.\n");
+#else
+		ssb_;
+#endif
 		failed = 1;
 	}
 	msleep(500);
 	if (!failed) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_printk("100%% ]\n");
+#else
+		ssb_;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		ssb_printk(KERN_NOTICE PFX "SPROM written.\n");
+#else
+		ssb_;
+#endif
 	}
 
 	return failed ? -EBUSY : 0;

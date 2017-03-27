@@ -617,8 +617,12 @@ static int __devinit cpwd_probe(struct platform_device *op)
 		cpwd_timer.data		= (unsigned long) p;
 		cpwd_timer.expires	= WD_BTIMEOUT;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX "PLD defect workaround enabled for "
 		       "model " WD_BADMODEL ".\n");
+#else
+		;
+#endif
 	}
 
 	dev_set_drvdata(&op->dev, p);

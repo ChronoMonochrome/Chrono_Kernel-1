@@ -938,11 +938,11 @@ static void axnet_tx_timeout(struct net_device *dev)
 	isr = inb(e8390_base+EN0_ISR);
 	spin_unlock_irqrestore(&ei_local->page_lock, flags);
 
-	netdev_printk(KERN_DEBUG, dev,
-		      "Tx timed out, %s TSR=%#2x, ISR=%#2x, t=%d.\n",
-		      (txsr & ENTSR_ABT) ? "excess collisions." :
-		      (isr) ? "lost interrupt?" : "cable problem?",
-		      txsr, isr, tickssofar);
+//	netdev_printk(KERN_DEBUG, dev,
+//		      "Tx timed out, %s TSR=%#2x, ISR=%#2x, t=%d.\n",
+//		      (txsr & ENTSR_ABT) ? "excess collisions." :
+//		      (isr) ? "lost interrupt?" : "cable problem?",
+;
 
 	if (!isr && !dev->stats.tx_packets) 
 	{
@@ -1012,28 +1012,28 @@ static netdev_tx_t axnet_start_xmit(struct sk_buff *skb,
 		output_page = ei_local->tx_start_page;
 		ei_local->tx1 = send_length;
 		if (ei_debug  &&  ei_local->tx2 > 0)
-			netdev_printk(KERN_DEBUG, dev,
-				      "idle transmitter tx2=%d, lasttx=%d, txing=%d\n",
-				      ei_local->tx2, ei_local->lasttx,
-				      ei_local->txing);
+//			netdev_printk(KERN_DEBUG, dev,
+//				      "idle transmitter tx2=%d, lasttx=%d, txing=%d\n",
+//				      ei_local->tx2, ei_local->lasttx,
+;
 	}
 	else if (ei_local->tx2 == 0) 
 	{
 		output_page = ei_local->tx_start_page + TX_PAGES/2;
 		ei_local->tx2 = send_length;
 		if (ei_debug  &&  ei_local->tx1 > 0)
-			netdev_printk(KERN_DEBUG, dev,
-				      "idle transmitter, tx1=%d, lasttx=%d, txing=%d\n",
-				      ei_local->tx1, ei_local->lasttx,
-				      ei_local->txing);
+//			netdev_printk(KERN_DEBUG, dev,
+//				      "idle transmitter, tx1=%d, lasttx=%d, txing=%d\n",
+//				      ei_local->tx1, ei_local->lasttx,
+;
 	}
 	else
 	{	/* We should never get here. */
 		if (ei_debug)
-			netdev_printk(KERN_DEBUG, dev,
-				      "No Tx buffers free! tx1=%d tx2=%d last=%d\n",
-				      ei_local->tx1, ei_local->tx2,
-				      ei_local->lasttx);
+//			netdev_printk(KERN_DEBUG, dev,
+//				      "No Tx buffers free! tx1=%d tx2=%d last=%d\n",
+//				      ei_local->tx1, ei_local->tx2,
+;
 		ei_local->irqlock = 0;
 		netif_stop_queue(dev);
 		outb_p(ENISR_ALL, e8390_base + EN0_IMR);
@@ -1139,8 +1139,8 @@ static irqreturn_t ax_interrupt(int irq, void *dev_id)
 	}
     
 	if (ei_debug > 3)
-		netdev_printk(KERN_DEBUG, dev, "interrupt(isr=%#2.2x)\n",
-			      inb_p(e8390_base + EN0_ISR));
+//		netdev_printk(KERN_DEBUG, dev, "interrupt(isr=%#2.2x)\n",
+;
 
 	outb_p(0x00, e8390_base + EN0_ISR);
 	ei_local->irqlock = 1;
@@ -1234,8 +1234,8 @@ static void ei_tx_err(struct net_device *dev)
 	unsigned char tx_was_aborted = txsr & (ENTSR_ABT+ENTSR_FU);
 
 #ifdef VERBOSE_ERROR_DUMP
-	netdev_printk(KERN_DEBUG, dev,
-		      "transmitter error (%#2x):", txsr);
+//	netdev_printk(KERN_DEBUG, dev,
+;
 	if (txsr & ENTSR_ABT)
 		pr_cont(" excess-collisions");
 	if (txsr & ENTSR_ND)
@@ -1397,10 +1397,10 @@ static void ei_receive(struct net_device *dev)
 		if (pkt_len < 60  ||  pkt_len > 1518) 
 		{
 			if (ei_debug)
-				netdev_printk(KERN_DEBUG, dev,
-					      "bogus packet size: %d, status=%#2x nxpg=%#2x\n",
-					      rx_frame.count, rx_frame.status,
-					      rx_frame.next);
+//				netdev_printk(KERN_DEBUG, dev,
+//					      "bogus packet size: %d, status=%#2x nxpg=%#2x\n",
+//					      rx_frame.count, rx_frame.status,
+;
 			dev->stats.rx_errors++;
 			dev->stats.rx_length_errors++;
 		}
@@ -1412,9 +1412,9 @@ static void ei_receive(struct net_device *dev)
 			if (skb == NULL) 
 			{
 				if (ei_debug > 1)
-					netdev_printk(KERN_DEBUG, dev,
-						      "Couldn't allocate a sk_buff of size %d\n",
-						      pkt_len);
+//					netdev_printk(KERN_DEBUG, dev,
+//						      "Couldn't allocate a sk_buff of size %d\n",
+;
 				dev->stats.rx_dropped++;
 				break;
 			}
@@ -1434,10 +1434,10 @@ static void ei_receive(struct net_device *dev)
 		else 
 		{
 			if (ei_debug)
-				netdev_printk(KERN_DEBUG, dev,
-					      "bogus packet: status=%#2x nxpg=%#2x size=%d\n",
-					      rx_frame.status, rx_frame.next,
-					      rx_frame.count);
+//				netdev_printk(KERN_DEBUG, dev,
+//					      "bogus packet: status=%#2x nxpg=%#2x size=%d\n",
+//					      rx_frame.status, rx_frame.next,
+;
 			dev->stats.rx_errors++;
 			/* NB: The NIC counts CRC, frame and missed errors. */
 			if (pkt_stat & ENRSR_FO)
@@ -1483,7 +1483,7 @@ static void ei_rx_overrun(struct net_device *dev)
 	outb_p(E8390_NODMA+E8390_PAGE0+E8390_STOP, e8390_base+E8390_CMD);
     
 	if (ei_debug > 1)
-		netdev_printk(KERN_DEBUG, dev, "Receiver overrun\n");
+;
 	dev->stats.rx_over_errors++;
     
 	/* 

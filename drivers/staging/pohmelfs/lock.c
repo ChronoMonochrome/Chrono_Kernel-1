@@ -92,7 +92,7 @@ static int pohmelfs_send_lock_trans(struct pohmelfs_inode *pi,
 err_out_free:
 	netfs_trans_free(t);
 err_out_exit:
-	printk("%s: err: %d.\n", __func__, err);
+;
 	return err;
 }
 
@@ -104,11 +104,11 @@ int pohmelfs_data_lock(struct pohmelfs_inode *pi, u64 start, u32 size, int type)
 	struct iattr iattr;
 	struct inode *inode = &pi->vfs_inode;
 
-	dprintk("%s: %p: ino: %llu, start: %llu, size: %u, "
-			"type: %d, locked as: %d, owned: %d.\n",
-			__func__, &pi->vfs_inode, pi->ino,
-			start, size, type, pi->lock_type,
-			!!test_bit(NETFS_INODE_OWNED, &pi->state));
+//	dprintk("%s: %p: ino: %llu, start: %llu, size: %u, "
+//			"type: %d, locked as: %d, owned: %d.\n",
+//			__func__, &pi->vfs_inode, pi->ino,
+//			start, size, type, pi->lock_type,
+;
 
 	if (!pohmelfs_need_lock(pi, type))
 		return 0;
@@ -129,8 +129,8 @@ int pohmelfs_data_lock(struct pohmelfs_inode *pi, u64 start, u32 size, int type)
 		err = -ETIMEDOUT;
 
 	if (err) {
-		printk("%s: %p: ino: %llu, mgen: %llu, start: %llu, size: %u, err: %d.\n",
-			__func__, &pi->vfs_inode, pi->ino, m->gen, start, size, err);
+//		printk("%s: %p: ino: %llu, mgen: %llu, start: %llu, size: %u, err: %d.\n",
+;
 	}
 
 	if (err && (err != -ENOENT))
@@ -146,8 +146,8 @@ int pohmelfs_data_lock(struct pohmelfs_inode *pi, u64 start, u32 size, int type)
 		iattr.ia_size = m->info.size;
 		iattr.ia_atime = CURRENT_TIME;
 
-		dprintk("%s: %p: ino: %llu, mgen: %llu, start: %llu, isize: %llu -> %llu.\n",
-			__func__, &pi->vfs_inode, pi->ino, m->gen, start, inode->i_size, m->info.size);
+//		dprintk("%s: %p: ino: %llu, mgen: %llu, start: %llu, isize: %llu -> %llu.\n",
+;
 
 		err = pohmelfs_setattr_raw(inode, &iattr);
 		if (!err) {
@@ -173,8 +173,8 @@ err_out_put:
 
 int pohmelfs_data_unlock(struct pohmelfs_inode *pi, u64 start, u32 size, int type)
 {
-	dprintk("%s: %p: ino: %llu, start: %llu, size: %u, type: %d.\n",
-			__func__, &pi->vfs_inode, pi->ino, start, size, type);
+//	dprintk("%s: %p: ino: %llu, start: %llu, size: %u, type: %d.\n",
+;
 	pi->lock_type = 0;
 	clear_bit(NETFS_INODE_REMOTE_DIR_SYNCED, &pi->state);
 	clear_bit(NETFS_INODE_OWNED, &pi->state);

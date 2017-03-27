@@ -748,7 +748,11 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
 		break;
 
 	default:
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "davinci-mcasp: unsupported PCM format");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 

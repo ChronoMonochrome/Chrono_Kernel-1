@@ -147,7 +147,7 @@ void ax25_output(ax25_cb *ax25, int paclen, struct sk_buff *skb)
 			spin_lock_bh(&ax25_frag_lock);
 			if ((skbn = alloc_skb(paclen + 2 + frontlen, GFP_ATOMIC)) == NULL) {
 				spin_unlock_bh(&ax25_frag_lock);
-				printk(KERN_CRIT "AX.25: ax25_output - out of memory\n");
+;
 				return;
 			}
 
@@ -342,7 +342,7 @@ void ax25_transmit_buffer(ax25_cb *ax25, struct sk_buff *skb, int type)
 
 	if (skb_headroom(skb) < headroom) {
 		if ((skbn = skb_realloc_headroom(skb, headroom)) == NULL) {
-			printk(KERN_CRIT "AX.25: ax25_transmit_buffer - out of memory\n");
+;
 			kfree_skb(skb);
 			return;
 		}

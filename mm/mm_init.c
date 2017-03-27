@@ -45,20 +45,36 @@ void mminit_verify_zonelist(void)
 				continue;
 
 			/* Print information about the zonelist */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "mminit::zonelist %s %d:%s = ",
 				listid > 0 ? "thisnode" : "general", nid,
 				zone->name);
+#else
+			;
+#endif
 
 			/* Iterate the zonelist */
 			for_each_zone_zonelist(zone, z, zonelist, zoneid) {
 #ifdef CONFIG_NUMA
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CONT "%d:%s ",
 					zone->node, zone->name);
 #else
+				;
+#endif
+#else
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_CONT "0:%s ", zone->name);
+#else
+				;
+#endif
 #endif /* CONFIG_NUMA */
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_CONT "\n");
+#else
+			;
+#endif
 		}
 	}
 }
@@ -70,32 +86,56 @@ void __init mminit_verify_pageflags_layout(void)
 
 	shift = 8 * sizeof(unsigned long);
 	width = shift - SECTIONS_WIDTH - NODES_WIDTH - ZONES_WIDTH;
+#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_widths",
 		"Section %d Node %d Zone %d Flags %d\n",
 		SECTIONS_WIDTH,
 		NODES_WIDTH,
 		ZONES_WIDTH,
 		NR_PAGEFLAGS);
+#else
+	mminit_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_shifts",
 		"Section %d Node %d Zone %d\n",
 		SECTIONS_SHIFT,
 		NODES_SHIFT,
 		ZONES_SHIFT);
+#else
+	mminit_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_offsets",
 		"Section %lu Node %lu Zone %lu\n",
 		(unsigned long)SECTIONS_PGSHIFT,
 		(unsigned long)NODES_PGSHIFT,
 		(unsigned long)ZONES_PGSHIFT);
+#else
+	mminit_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_zoneid",
 		"Zone ID: %lu -> %lu\n",
 		(unsigned long)ZONEID_PGOFF,
 		(unsigned long)(ZONEID_PGOFF + ZONEID_SHIFT));
+#else
+	mminit_d;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_usage",
 		"location: %d -> %d unused %d -> %d flags %d -> %d\n",
 		shift, width, width, NR_PAGEFLAGS, NR_PAGEFLAGS, 0);
+#else
+	mminit_d;
+#endif
 #ifdef NODE_NOT_IN_PAGE_FLAGS
+#ifdef CONFIG_DEBUG_PRINTK
 	mminit_dprintk(MMINIT_TRACE, "pageflags_layout_nodeflags",
 		"Node not in page flags");
+#else
+	mminit_d;
+#endif
 #endif
 
 	if (SECTIONS_WIDTH) {

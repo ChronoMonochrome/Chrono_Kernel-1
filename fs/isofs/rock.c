@@ -89,9 +89,9 @@ static int rock_continue(struct rock_state *rs)
 	if ((unsigned)rs->cont_offset > blocksize - min_de_size ||
 	    (unsigned)rs->cont_size > blocksize ||
 	    (unsigned)(rs->cont_offset + rs->cont_size) > blocksize) {
-		printk(KERN_NOTICE "rock: corrupted directory entry. "
-			"extent=%d, offset=%d, size=%d\n",
-			rs->cont_extent, rs->cont_offset, rs->cont_size);
+//		printk(KERN_NOTICE "rock: corrupted directory entry. "
+//			"extent=%d, offset=%d, size=%d\n",
+;
 		ret = -EIO;
 		goto out;
 	}
@@ -117,7 +117,7 @@ static int rock_continue(struct rock_state *rs)
 			rs->cont_offset = 0;
 			return 0;
 		}
-		printk("Unable to read rock-ridge attributes\n");
+;
 	}
 out:
 	kfree(rs->buffer);
@@ -176,10 +176,10 @@ static int rock_check_overflow(struct rock_state *rs, int sig)
 	}
 	len += offsetof(struct rock_ridge, u);
 	if (len > rs->len) {
-		printk(KERN_NOTICE "rock: directory entry would overflow "
-				"storage\n");
-		printk(KERN_NOTICE "rock: sig=0x%02x, size=%d, remaining=%d\n",
-				sig, len, rs->len);
+//		printk(KERN_NOTICE "rock: directory entry would overflow "
+;
+//		printk(KERN_NOTICE "rock: sig=0x%02x, size=%d, remaining=%d\n",
+;
 		return -EIO;
 	}
 	return 0;
@@ -257,8 +257,8 @@ repeat:
 				break;
 
 			if (rr->u.NM.flags & ~1) {
-				printk("Unsupported NM flag settings (%d)\n",
-					rr->u.NM.flags);
+//				printk("Unsupported NM flag settings (%d)\n",
+;
 				break;
 			}
 			if ((strlen(retname) + rr->len - 5) >= 254) {
@@ -353,13 +353,13 @@ repeat:
 			break;
 		case SIG('E', 'R'):
 			ISOFS_SB(inode->i_sb)->s_rock = 1;
-			printk(KERN_DEBUG "ISO 9660 Extensions: ");
+;
 			{
 				int p;
 				for (p = 0; p < rr->u.ER.len_id; p++)
-					printk("%c", rr->u.ER.data[p]);
+;
 			}
-			printk("\n");
+;
 			break;
 		case SIG('P', 'X'):
 			inode->i_mode = isonum_733(rr->u.PX.mode);
@@ -450,8 +450,8 @@ repeat:
 						inode->i_size += 1;
 						break;
 					default:
-						printk("Symlink component flag "
-							"not implemented\n");
+//						printk("Symlink component flag "
+;
 					}
 					slen -= slp->len + 2;
 					oldslp = slp;
@@ -481,8 +481,8 @@ repeat:
 			symlink_len = inode->i_size;
 			break;
 		case SIG('R', 'E'):
-			printk(KERN_WARNING "Attempt to read inode for "
-					"relocated directory\n");
+//			printk(KERN_WARNING "Attempt to read inode for "
+;
 			goto out;
 		case SIG('C', 'L'):
 			ISOFS_I(inode)->i_first_extent =
@@ -518,10 +518,10 @@ repeat:
 				int block_shift =
 					isonum_711(&rr->u.ZF.parms[1]);
 				if (block_shift > 17) {
-					printk(KERN_WARNING "isofs: "
-						"Can't handle ZF block "
-						"size of 2^%d\n",
-						block_shift);
+//					printk(KERN_WARNING "isofs: "
+//						"Can't handle ZF block "
+//						"size of 2^%d\n",
+;
 				} else {
 					/*
 					 * Note: we don't change
@@ -543,11 +543,11 @@ repeat:
 						       real_size);
 				}
 			} else {
-				printk(KERN_WARNING
-				       "isofs: Unknown ZF compression "
-						"algorithm: %c%c\n",
-				       rr->u.ZF.algorithm[0],
-				       rr->u.ZF.algorithm[1]);
+//				printk(KERN_WARNING
+//				       "isofs: Unknown ZF compression "
+//						"algorithm: %c%c\n",
+//				       rr->u.ZF.algorithm[0],
+;
 			}
 			break;
 		}
@@ -604,8 +604,8 @@ static char *get_symlink_chunk(char *rpnt, struct rock_ridge *rr, char *plimit)
 			*rpnt++ = '/';
 			break;
 		default:
-			printk("Symlink component flag not implemented (%d)\n",
-			       slp->flags);
+//			printk("Symlink component flag not implemented (%d)\n",
+;
 		}
 		slen -= slp->len + 2;
 		oldslp = slp;
@@ -757,10 +757,10 @@ out:
 	kfree(rs.buffer);
 	goto fail;
 out_noread:
-	printk("unable to read i-node block");
+;
 	goto fail;
 out_bad_span:
-	printk("symlink spans iso9660 blocks\n");
+;
 fail:
 	brelse(bh);
 error:

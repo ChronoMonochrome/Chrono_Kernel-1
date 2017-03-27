@@ -114,11 +114,23 @@ static int DIVA_INIT_FUNCTION divadidd_init(void)
 	char tmprev[32];
 	int ret = 0;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s\n", DRIVERNAME);
+#else
+	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: Rel:%s  Rev:", DRIVERLNAME, DRIVERRELEASE_DIDD);
+#else
+	;
+#endif
 	strcpy(tmprev, main_revision);
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s  Build:%s(%s)\n", getrev(tmprev),
 	       diva_didd_common_code_build, DIVA_BUILD);
+#else
+	;
+#endif
 
 	if (!create_proc()) {
 		printk(KERN_ERR "%s: could not create proc entry\n",
@@ -145,7 +157,11 @@ static void DIVA_EXIT_FUNCTION divadidd_exit(void)
 {
 	diddfunc_finit();
 	remove_proc();
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s: module unloaded.\n", DRIVERLNAME);
+#else
+	;
+#endif
 }
 
 module_init(divadidd_init);

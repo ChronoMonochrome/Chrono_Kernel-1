@@ -203,7 +203,11 @@ static int sis_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	int i, rc;
 
 	if (!printed_version++)
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pdev->dev, "version " DRV_VERSION "\n");
+#else
+		dev_;
+#endif
 
 	rc = pcim_enable_device(pdev);
 	if (rc)
@@ -241,12 +245,20 @@ static int sis_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 			break;
 		}
 		if ((pmr & SIS_PMR_COMBINED) == 0) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_INFO, &pdev->dev,
 				   "Detected SiS 180/181/964 chipset in SATA mode\n");
+#else
+			dev_;
+#endif
 			port2_start = 64;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_INFO, &pdev->dev,
 				   "Detected SiS 180/181 chipset in combined mode\n");
+#else
+			dev_;
+#endif
 			port2_start = 0;
 			pi.flags |= ATA_FLAG_SLAVE_POSS;
 		}
@@ -256,24 +268,40 @@ static int sis_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	case 0x0183:
 		pci_read_config_dword(pdev, 0x6C, &val);
 		if (val & (1L << 31)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_INFO, &pdev->dev,
 				   "Detected SiS 182/965 chipset\n");
+#else
+			dev_;
+#endif
 			pi.flags |= ATA_FLAG_SLAVE_POSS;
 		} else {
+#ifdef CONFIG_DEBUG_PRINTK
 			dev_printk(KERN_INFO, &pdev->dev,
 				   "Detected SiS 182/965L chipset\n");
+#else
+			dev_;
+#endif
 		}
 		break;
 
 	case 0x1182:
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pdev->dev,
 			   "Detected SiS 1182/966/680 SATA controller\n");
+#else
+		dev_;
+#endif
 		pi.flags |= ATA_FLAG_SLAVE_POSS;
 		break;
 
 	case 0x1183:
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_INFO, &pdev->dev,
 			   "Detected SiS 1183/966/966L/968/680 controller in PATA mode\n");
+#else
+		dev_;
+#endif
 		ppi[0] = &sis_info133_for_sata;
 		ppi[1] = &sis_info133_for_sata;
 		break;

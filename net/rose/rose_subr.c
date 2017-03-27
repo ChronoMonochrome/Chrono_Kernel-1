@@ -190,7 +190,7 @@ void rose_write_internal(struct sock *sk, int frametype)
 		break;
 
 	default:
-		printk(KERN_ERR "ROSE: rose_write_internal - invalid frametype %02X\n", frametype);
+;
 		kfree_skb(skb);
 		return;
 	}

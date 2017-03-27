@@ -803,16 +803,24 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
 	 */
 		if (!strcmp(kctl->id.name, "PCM Playback Volume") &&
 		    cval->min == -15616) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO
 				 "set volume quirk for UDA1321/N101 chip\n");
+#else
+			;
+#endif
 			cval->max = -256;
 		}
 		break;
 
 	case USB_ID(0x046d, 0x09a4):
 		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO
 				"set volume quirk for QuickCam E3500\n");
+#else
+			;
+#endif
 			cval->min = 6080;
 			cval->max = 8768;
 			cval->res = 192;
@@ -827,8 +835,12 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
 	 * Proboly there is some logitech magic behind this number --fishor
 	 */
 		if (!strcmp(kctl->id.name, "Mic Capture Volume")) {
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_INFO
 				"set resolution quirk: cval->res = 384\n");
+#else
+			;
+#endif
 			cval->res = 384;
 		}
 		break;
@@ -1200,13 +1212,21 @@ static void build_feature_ctl(struct mixer_build *state, void *raw_desc,
 	 * devices. It will definitively catch all buggy Logitech devices.
 	 */
 	if (range > 384) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "usb_audio: Warning! Unlikely big "
 			   "volume range (=%u), cval->res is probably wrong.",
 			   range);
+#else
+		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_WARNING "usb_audio: [%d] FU [%s] ch = %d, "
 			   "val = %d/%d/%d", cval->id,
 			   kctl->id.name, cval->channels,
 			   cval->min, cval->max, cval->res);
+#else
+		;
+#endif
 	}
 
 	snd_printdd(KERN_INFO "[%d] FU [%s] ch = %d, val = %d/%d/%d\n",
@@ -1271,14 +1291,22 @@ static int parse_audio_feature_unit(struct mixer_build *state, int unitid, void 
 	/* master configuration quirks */
 	switch (state->chip->usb_id) {
 	case USB_ID(0x08bb, 0x2702):
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO
 			   "usbmixer: master volume quirk for PCM2702 chip\n");
+#else
+		;
+#endif
 		/* disable non-functional volume control */
 		master_bits &= ~UAC_CONTROL_BIT(UAC_FU_VOLUME);
 		break;
 	case USB_ID(0x1130, 0xf211):
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_INFO
 			   "usbmixer: volume control quirk for Tenx TP6911 Audio Headset\n");
+#else
+		;
+#endif
 		/* disable non-functional volume control */
 		channels = 0;
 		break;
@@ -2109,8 +2137,12 @@ static void snd_usb_mixer_interrupt_v2(struct usb_mixer_interface *mixer,
 	__u8 channel = value & 0xff;
 
 	if (channel >= MAX_CHANNELS) {
+#ifdef CONFIG_DEBUG_PRINTK
 		snd_printk(KERN_DEBUG "%s(): bogus channel number %d\n",
 				__func__, channel);
+#else
+		;
+#endif
 		return;
 	}
 
@@ -2139,8 +2171,12 @@ static void snd_usb_mixer_interrupt_v2(struct usb_mixer_interface *mixer,
 			break;
 
 		default:
+#ifdef CONFIG_DEBUG_PRINTK
 			snd_printk(KERN_DEBUG "unknown attribute %d in interrupt\n",
 						attribute);
+#else
+			;
+#endif
 			break;
 		} /* switch */
 	}

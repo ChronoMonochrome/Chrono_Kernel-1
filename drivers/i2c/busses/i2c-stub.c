@@ -190,8 +190,12 @@ static int __init i2c_stub_init(void)
 			return -EINVAL;
 		}
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "i2c-stub: Virtual chip at 0x%02x\n",
 		       chip_addr[i]);
+#else
+		;
+#endif
 	}
 
 	/* Allocate memory for all chips at once */

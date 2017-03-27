@@ -138,10 +138,14 @@ int pcmcia_badge4_init(struct device *dev)
 	int ret = -ENODEV;
 
 	if (machine_is_badge4()) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO
 		       "%s: badge4_pcmvcc=%d, badge4_pcmvpp=%d, badge4_cfvcc=%d\n",
 		       __func__,
 		       badge4_pcmvcc, badge4_pcmvpp, badge4_cfvcc);
+#else
+		;
+#endif
 
 		sa11xx_drv_pcmcia_ops(&badge4_pcmcia_ops);
 		ret = sa1111_pcmcia_add(dev, &badge4_pcmcia_ops,

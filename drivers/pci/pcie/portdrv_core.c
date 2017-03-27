@@ -484,8 +484,12 @@ static int pcie_port_probe_service(struct device *dev)
 	pciedev = to_pcie_device(dev);
 	status = driver->probe(pciedev);
 	if (!status) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, dev, "service driver %s loaded\n",
 			driver->name);
+#else
+		dev_;
+#endif
 		get_device(dev);
 	}
 	return status;
@@ -511,8 +515,12 @@ static int pcie_port_remove_service(struct device *dev)
 	pciedev = to_pcie_device(dev);
 	driver = to_service_driver(dev->driver);
 	if (driver && driver->remove) {
+#ifdef CONFIG_DEBUG_PRINTK
 		dev_printk(KERN_DEBUG, dev, "unloading service driver %s\n",
 			driver->name);
+#else
+		dev_;
+#endif
 		driver->remove(pciedev);
 		put_device(dev);
 	}

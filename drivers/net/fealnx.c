@@ -500,7 +500,7 @@ static int __devinit fealnx_init_one(struct pci_dev *pdev,
 #ifndef MODULE
 	static int printed_version;
 	if (!printed_version++)
-		printk(version);
+;
 #endif
 
 	card_idx++;
@@ -667,9 +667,9 @@ static int __devinit fealnx_init_one(struct pci_dev *pdev,
 	if (err)
 		goto err_out_free_tx;
 
-	printk(KERN_INFO "%s: %s at %p, %pM, IRQ %d.\n",
-	       dev->name, skel_netdrv_tbl[chip_id].chip_name, ioaddr,
-	       dev->dev_addr, irq);
+//	printk(KERN_INFO "%s: %s at %p, %pM, IRQ %d.\n",
+//	       dev->name, skel_netdrv_tbl[chip_id].chip_name, ioaddr,
+;
 
 	return 0;
 
@@ -704,7 +704,7 @@ static void __devexit fealnx_remove_one(struct pci_dev *pdev)
 		pci_release_regions(pdev);
 		pci_set_drvdata(pdev, NULL);
 	} else
-		printk(KERN_ERR "fealnx: remove for unknown device\n");
+;
 }
 
 
@@ -909,7 +909,7 @@ static int netdev_open(struct net_device *dev)
 	iowrite32(np->imrvalue, ioaddr + IMR);
 
 	if (debug)
-		printk(KERN_DEBUG "%s: Done netdev_open().\n", dev->name);
+;
 
 	/* Set the timer to check for link beat. */
 	init_timer(&np->timer);
@@ -1097,9 +1097,9 @@ static void netdev_timer(unsigned long data)
 	unsigned long flags;
 
 	if (debug)
-		printk(KERN_DEBUG "%s: Media selection timer tick, status %8.8x "
-		       "config %8.8x.\n", dev->name, ioread32(ioaddr + ISR),
-		       ioread32(ioaddr + TCRRCR));
+//		printk(KERN_DEBUG "%s: Media selection timer tick, status %8.8x "
+//		       "config %8.8x.\n", dev->name, ioread32(ioaddr + ISR),
+;
 
 	spin_lock_irqsave(&np->lock, flags);
 
@@ -1182,7 +1182,7 @@ static void reset_timer(unsigned long data)
 	struct netdev_private *np = netdev_priv(dev);
 	unsigned long flags;
 
-	printk(KERN_WARNING "%s: resetting tx and rx machinery\n", dev->name);
+;
 
 	spin_lock_irqsave(&np->lock, flags);
 	np->crvalue = np->crvalue_sv;
@@ -1207,20 +1207,20 @@ static void fealnx_tx_timeout(struct net_device *dev)
 	unsigned long flags;
 	int i;
 
-	printk(KERN_WARNING
-	       "%s: Transmit timed out, status %8.8x, resetting...\n",
-	       dev->name, ioread32(ioaddr + ISR));
+//	printk(KERN_WARNING
+//	       "%s: Transmit timed out, status %8.8x, resetting...\n",
+;
 
 	{
-		printk(KERN_DEBUG "  Rx ring %p: ", np->rx_ring);
+;
 		for (i = 0; i < RX_RING_SIZE; i++)
-			printk(KERN_CONT " %8.8x",
-			       (unsigned int) np->rx_ring[i].status);
-		printk(KERN_CONT "\n");
-		printk(KERN_DEBUG "  Tx ring %p: ", np->tx_ring);
+//			printk(KERN_CONT " %8.8x",
+;
+;
+;
 		for (i = 0; i < TX_RING_SIZE; i++)
-			printk(KERN_CONT " %4.4x", np->tx_ring[i].status);
-		printk(KERN_CONT "\n");
+;
+;
 	}
 
 	spin_lock_irqsave(&np->lock, flags);
@@ -1455,8 +1455,8 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 		iowrite32(intr_status, ioaddr + ISR);
 
 		if (debug)
-			printk(KERN_DEBUG "%s: Interrupt, status %4.4x.\n", dev->name,
-			       intr_status);
+//			printk(KERN_DEBUG "%s: Interrupt, status %4.4x.\n", dev->name,
+;
 
 		if (!(intr_status & np->imrvalue))
 			break;
@@ -1572,8 +1572,8 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 		}
 
 		if (--boguscnt < 0) {
-			printk(KERN_WARNING "%s: Too much work at interrupt, "
-			       "status=0x%4.4x.\n", dev->name, intr_status);
+//			printk(KERN_WARNING "%s: Too much work at interrupt, "
+;
 			if (!np->reset_timer_armed) {
 				np->reset_timer_armed = 1;
 				np->reset_timer.expires = RUN_AT(HZ/2);
@@ -1601,8 +1601,8 @@ static irqreturn_t intr_handler(int irq, void *dev_instance)
 		(ioread32(ioaddr + TALLY) & 0x7fff0000) >> 16;
 
 	if (debug)
-		printk(KERN_DEBUG "%s: exiting interrupt, status=%#4.4x.\n",
-		       dev->name, ioread32(ioaddr + ISR));
+//		printk(KERN_DEBUG "%s: exiting interrupt, status=%#4.4x.\n",
+;
 
 	iowrite32(np->imrvalue, ioaddr + IMR);
 
@@ -1627,15 +1627,15 @@ static int netdev_rx(struct net_device *dev)
 			break;
 
 		if (debug)
-			printk(KERN_DEBUG "  netdev_rx() status was %8.8x.\n", rx_status);
+;
 
 		if ((!((rx_status & RXFSD) && (rx_status & RXLSD))) ||
 		    (rx_status & ErrorSummary)) {
 			if (rx_status & ErrorSummary) {	/* there was a fatal error */
 				if (debug)
-					printk(KERN_DEBUG
-					       "%s: Receive error, Rx status %8.8x.\n",
-					       dev->name, rx_status);
+//					printk(KERN_DEBUG
+//					       "%s: Receive error, Rx status %8.8x.\n",
+;
 
 				dev->stats.rx_errors++;	/* end of a packet. */
 				if (rx_status & (LONG | RUNT))
@@ -1674,8 +1674,8 @@ static int netdev_rx(struct net_device *dev)
 					/* free all rx descriptors related this long pkt */
 					for (i = 0; i < desno; ++i) {
 						if (!np->cur_rx->skbuff) {
-							printk(KERN_DEBUG
-								"%s: I'm scared\n", dev->name);
+//							printk(KERN_DEBUG
+;
 							break;
 						}
 						np->cur_rx->status = RXOWN;
@@ -1697,8 +1697,8 @@ static int netdev_rx(struct net_device *dev)
 
 #ifndef final_version
 			if (debug)
-				printk(KERN_DEBUG "  netdev_rx() normal Rx pkt length %d"
-				       " status %x.\n", pkt_len, rx_status);
+//				printk(KERN_DEBUG "  netdev_rx() normal Rx pkt length %d"
+;
 #endif
 
 			/* Check if the packet is long enough to accept without copying
@@ -1961,7 +1961,7 @@ static int __init fealnx_init(void)
 {
 /* when a module, this is printed whether or not devices are found in probe */
 #ifdef MODULE
-	printk(version);
+;
 #endif
 
 	return pci_register_driver(&fealnx_driver);

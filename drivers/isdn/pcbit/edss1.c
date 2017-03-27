@@ -255,7 +255,11 @@ static void pcbit_fsm_timer(unsigned long data)
         dev = chan2dev(chan);
 
         if (dev == NULL) {
+#ifdef CONFIG_DEBUG_PRINTK
                 printk(KERN_WARNING "pcbit: timer for unknown device\n");
+#else
+                ;
+#endif
                 return;
         }
 
@@ -279,8 +283,12 @@ void pcbit_fsm_event(struct pcbit_dev *dev, struct pcbit_chan *chan,
 	if (action->init == 0xff) {
 		
 		spin_unlock_irqrestore(&dev->lock, flags);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "fsm error: event %x on state %x\n", 
                        event, chan->fsm_state);
+#else
+		;
+#endif
 		return;
 	}
 

@@ -131,7 +131,11 @@ static int wdt_start(void)
 
 	spin_unlock_irqrestore(&spinlock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "activated.\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -185,7 +189,11 @@ static int wdt_stop(void)
 
 	spin_unlock_irqrestore(&spinlock, flags);
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX "shutdown.\n");
+#else
+	;
+#endif
 
 	return 0;
 }
@@ -313,8 +321,12 @@ static int wdt_release(struct inode *inode, struct file *file)
 		clear_bit(0, &timer_alive);
 	} else {
 		wdt_keepalive();
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_CRIT PFX
 			"unexpected close, not stopping watchdog!\n");
+#else
+		;
+#endif
 	}
 	expect_close = 0;
 	return 0;
@@ -471,7 +483,11 @@ static int __init w83977f_wdt_init(void)
 {
 	int rc;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX DRIVER_VERSION);
+#else
+	;
+#endif
 
 	/*
 	 * Check that the timeout value is within it's range;
@@ -479,9 +495,13 @@ static int __init w83977f_wdt_init(void)
 	 */
 	if (wdt_set_timeout(timeout)) {
 		wdt_set_timeout(DEFAULT_TIMEOUT);
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO PFX
 		    "timeout value must be 15 <= timeout <= 7635, using %d\n",
 							DEFAULT_TIMEOUT);
+#else
+		;
+#endif
 	}
 
 	if (!request_region(IO_INDEX_PORT, 2, WATCHDOG_NAME)) {
@@ -506,9 +526,13 @@ static int __init w83977f_wdt_init(void)
 		goto err_out_reboot;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO PFX
 		"initialized. timeout=%d sec (nowayout=%d testmode=%d)\n",
 					timeout, nowayout, testmode);
+#else
+	;
+#endif
 
 	return 0;
 

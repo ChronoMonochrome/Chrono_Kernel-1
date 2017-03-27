@@ -72,24 +72,96 @@ static void
 mpu_accel_print_mldl_cfg(struct mldl_cfg *mldl_cfg)
 {
   if(MPUACC_DEBUG_CFG) {
+#ifdef CONFIG_DEBUG_PRINTK
     printk("requested_sensors:%ld\n", mldl_cfg->requested_sensors);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 //  printk("ignore_system_suspend:%d\n", mldl_cfg->ignore_system_suspend);
+#else
+//  ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("addr:%d\n", mldl_cfg->addr);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("int_config:%d\n", mldl_cfg->int_config);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("ext_sync:%d\n", mldl_cfg->ext_sync);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("full_scale:%d\n", mldl_cfg->full_scale);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("dmp_enable:%d\n", mldl_cfg->dmp_enable);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("fifo_enable:%d\n", mldl_cfg->fifo_enable);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("dmp_cfg1:%d\n", mldl_cfg->dmp_cfg1);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("dmp_cfg2:%d\n", mldl_cfg->dmp_cfg2);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("gyro_power:%d\n", mldl_cfg->gyro_power);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("gyro_is_bypassed:%d\n", mldl_cfg->gyro_is_bypassed);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("dmp_is_running:%d\n", mldl_cfg->dmp_is_running);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("gyro_is_suspended:%d\n", mldl_cfg->gyro_is_suspended);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("accel_is_suspended:%d\n", mldl_cfg->accel_is_suspended);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("compass_is_suspended:%d\n", mldl_cfg->compass_is_suspended);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("pressure_is_suspended:%d\n", mldl_cfg->pressure_is_suspended);
+#else
+    ;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
     printk("gyro_needs_reset:%d\n", mldl_cfg->gyro_needs_reset);
+#else
+    ;
+#endif
   }
 }
 
@@ -137,7 +209,11 @@ mpu_accel_activate_device(struct mpuaccel_data *data, int enable)
   }
 
   if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
     printk("activate device:%d, result=%d\n", enable, result);
+#else
+    ;
+#endif
   }
 
   return result;
@@ -241,7 +317,11 @@ mpu_accel_input_work_func(struct work_struct *work)
   struct mldl_cfg* mldl_cfg = data->mldl_cfg;
   poll_time = atomic_read(&data->poll_delay);
   if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
     printk("________________START____________________\n");
+#else
+    ;
+#endif
   }
   if(MPUACC_DEBUG_CFG) {
     mpu_accel_print_mldl_cfg(mldl_cfg);
@@ -289,9 +369,17 @@ mpu_accel_input_work_func(struct work_struct *work)
 
         if(MPUACC_DEBUG) {
           if(data_is_from_mpu==1)
+#ifdef CONFIG_DEBUG_PRINTK
             printk("MPU_ACCEL:[%d][%d][%d]\n", accel[0],accel[1],accel[2]);
+#else
+            ;
+#endif
           else
+#ifdef CONFIG_DEBUG_PRINTK
             printk("ACCEL:[%d][%d][%d]\n", accel[0],accel[1],accel[2]);
+#else
+            ;
+#endif
         }
 #ifdef MPUACC_USES_CACHED_DATA
         memcpy(data->cached_data, buffer, sizeof(unsigned char)*6);
@@ -301,13 +389,21 @@ mpu_accel_input_work_func(struct work_struct *work)
         input_report_rel(data->input_data, REL_Z, accel[2]);
         input_sync(data->input_data);
         if(MPUACC_DEBUG) {
+#ifdef CONFIG_DEBUG_PRINTK
           printk("input device is updated\n");
+#else
+          ;
+#endif
         }
       }
     }
   }
   if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
     printk("________________END____________________\n");
+#else
+    ;
+#endif
   }
   mpu_accel_mutex_lock(data);
   enable = atomic_read(&data->enable);
@@ -331,18 +427,30 @@ mpu_accel_enable(struct mpuaccel_data *data)
   struct mldl_cfg* mldl_cfg = data->mldl_cfg;
 
   if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
     printk("mpu_accel_enable : %d\n",atomic_read(&data->enable));
+#else
+    ;
+#endif
   }
 
   if(atomic_read(&data->enable) != 1) {
 
     if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
       printk("mpu_accel_enable : enabled\n");
+#else
+      ;
+#endif
     }
 
     if(mldl_cfg->accel_is_suspended == 1) {
       if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
         printk("mpu_accel_enable : turn on accel\n");
+#else
+        ;
+#endif
       }
       mpu_accel_activate_device(data,1);
     }
@@ -364,7 +472,11 @@ mpu_accel_disable(struct mpuaccel_data *data)
 
 
   if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
     printk("mpu_accel_disable : %d\n",atomic_read(&data->enable));
+#else
+    ;
+#endif
   }
 
   if(atomic_read(&data->enable) != 0) {
@@ -372,12 +484,20 @@ mpu_accel_disable(struct mpuaccel_data *data)
     cancel_delayed_work(&data->work);
 
     if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
       printk("mpu_accel_disable : disabled\n");
+#else
+      ;
+#endif
     }
 
     if(mldl_cfg->accel_is_suspended == 1) {
       if(MPUACC_DEBUG){
+#ifdef CONFIG_DEBUG_PRINTK
         printk("mpu_accel_disable : turn off accel\n");
+#else
+        ;
+#endif
       }
 
       /*turn off accel*/
@@ -479,8 +599,12 @@ int mpu_accel_get_cached_data(unsigned char* cache)
     if(pThisData->device_is_on==1) {
       memcpy(cache, pThisData->cached_data, sizeof(unsigned char)*6);
       if(1) {
+#ifdef CONFIG_DEBUG_PRINTK
         printk("cached data:[%d][%d][%d][%d][%d][%d]\n",
           cache[0],cache[1],cache[2],cache[3],cache[4],cache[5]);
+#else
+        ;
+#endif
       }
       res = ML_SUCCESS;
     }

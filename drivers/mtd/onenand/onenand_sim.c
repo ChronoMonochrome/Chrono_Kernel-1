@@ -115,8 +115,12 @@ static struct onenand_info *info;
 
 #define DPRINTK(format, args...)					\
 do {									\
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_DEBUG "%s[%d]: " format "\n", __func__,		\
 			   __LINE__, ##args);				\
+#else
+	;
+#endif
 } while (0)
 
 /**

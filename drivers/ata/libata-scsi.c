@@ -777,31 +777,107 @@ static void ata_dump_status(unsigned id, struct ata_taskfile *tf)
 {
 	u8 stat = tf->command, err = tf->feature;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "ata%u: status=0x%02x { ", id, stat);
+#else
+	;
+#endif
 	if (stat & ATA_BUSY) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Busy }\n");	/* Data is not valid in this case */
+#else
+		;
+#endif
 	} else {
+#ifdef CONFIG_DEBUG_PRINTK
 		if (stat & 0x40)	printk("DriveReady ");
+#else
+		if (stat & 0x40)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (stat & 0x20)	printk("DeviceFault ");
+#else
+		if (stat & 0x20)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (stat & 0x10)	printk("SeekComplete ");
+#else
+		if (stat & 0x10)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (stat & 0x08)	printk("DataRequest ");
+#else
+		if (stat & 0x08)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (stat & 0x04)	printk("CorrectedError ");
+#else
+		if (stat & 0x04)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (stat & 0x02)	printk("Index ");
+#else
+		if (stat & 0x02)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		if (stat & 0x01)	printk("Error ");
+#else
+		if (stat & 0x01)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("}\n");
+#else
+		;
+#endif
 
 		if (err) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ata%u: error=0x%02x { ", id, err);
+#else
+			;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			if (err & 0x04)		printk("DriveStatusError ");
+#else
+			if (err & 0x04)		;
+#endif
 			if (err & 0x80) {
+#ifdef CONFIG_DEBUG_PRINTK
 				if (err & 0x04)	printk("BadCRC ");
+#else
+				if (err & 0x04)	;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 				else		printk("Sector ");
+#else
+				else		;
+#endif
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			if (err & 0x40)		printk("UncorrectableError ");
+#else
+			if (err & 0x40)		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			if (err & 0x10)		printk("SectorIdNotFound ");
+#else
+			if (err & 0x10)		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			if (err & 0x02)		printk("TrackZeroNotFound ");
+#else
+			if (err & 0x02)		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			if (err & 0x01)		printk("AddrMarkNotFound ");
+#else
+			if (err & 0x01)		;
+#endif
+#ifdef CONFIG_DEBUG_PRINTK
 			printk("}\n");
+#else
+			;
+#endif
 		}
 	}
 }
@@ -890,8 +966,12 @@ static void ata_to_sense_error(unsigned id, u8 drv_stat, u8 drv_err, u8 *sk,
 		}
 		/* No immediate match */
 		if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "ata%u: no sense translation for "
 			       "error 0x%02x\n", id, drv_err);
+#else
+			;
+#endif
 	}
 
 	/* Fall back to interpreting status bits */
@@ -905,8 +985,12 @@ static void ata_to_sense_error(unsigned id, u8 drv_stat, u8 drv_err, u8 *sk,
 	}
 	/* No error?  Undecoded? */
 	if (verbose)
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ata%u: no sense translation for "
 		       "status: 0x%02x\n", id, drv_stat);
+#else
+		;
+#endif
 
 	/* We need a sensible error return here, which is tricky, and one
 	   that won't cause people to do things like return a disk wrongly */
@@ -1127,9 +1211,13 @@ static int ata_scsi_dev_config(struct scsi_device *sdev,
 	 * IDENTIFY_PACKET is executed as ATA_PROT_PIO.
 	 */
 	if (sdev->sector_size > PAGE_SIZE)
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_WARNING,
 			"sector_size=%u > PAGE_SIZE, PIO may malfunction\n",
 			sdev->sector_size);
+#else
+		ata_dev_;
+#endif
 
 	blk_queue_update_dma_alignment(q, sdev->sector_size - 1);
 
@@ -1784,8 +1872,12 @@ static int ata_scsi_translate(struct ata_device *dev, struct scsi_cmnd *cmd,
 	if (cmd->sc_data_direction == DMA_FROM_DEVICE ||
 	    cmd->sc_data_direction == DMA_TO_DEVICE) {
 		if (unlikely(scsi_bufflen(cmd) < 1)) {
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING,
 				       "WARNING: zero len r/w req\n");
+#else
+			ata_dev_;
+#endif
 			goto err_did;
 		}
 
@@ -2969,9 +3061,13 @@ static unsigned int ata_scsi_pass_thru(struct ata_queued_cmd *qc)
 		 * with the cached multi_count of libata
 		 */
 		if (multi_count != dev->multi_count)
+#ifdef CONFIG_DEBUG_PRINTK
 			ata_dev_printk(dev, KERN_WARNING,
 				       "invalid multi_count %u ignored\n",
 				       multi_count);
+#else
+			ata_dev_;
+#endif
 	}
 
 	/*
@@ -3115,6 +3211,7 @@ static inline ata_xlat_func_t ata_get_xlat_func(struct ata_device *dev, u8 cmd)
  *	@ap: ATA port to which the command was being sent
  *	@cmd: SCSI command to dump
  *
+#ifdef CONFIG_DEBUG_PRINTK
  *	Prints the contents of a SCSI command via printk().
  */
 
@@ -3123,6 +3220,9 @@ static inline void ata_scsi_dump_cdb(struct ata_port *ap,
 {
 #ifdef ATA_DEBUG
 	struct scsi_device *scsidev = cmd->device;
+#else
+ *	Prints the contents of a SCSI command via ;
+#endif
 	u8 *scsicmd = cmd->cmnd;
 
 	DPRINTK("CDB (%u:%d,%d,%d) %02x %02x %02x %02x %02x %02x %02x %02x %02x\n",
@@ -3550,8 +3650,12 @@ static void ata_scsi_remove_dev(struct ata_device *dev)
 	mutex_unlock(&ap->scsi_host->scan_mutex);
 
 	if (sdev) {
+#ifdef CONFIG_DEBUG_PRINTK
 		ata_dev_printk(dev, KERN_INFO, "detaching (SCSI %s)\n",
 			       dev_name(&sdev->sdev_gendev));
+#else
+		ata_dev_;
+#endif
 
 		scsi_remove_device(sdev);
 		scsi_device_put(sdev);

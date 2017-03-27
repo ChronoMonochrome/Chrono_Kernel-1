@@ -238,10 +238,18 @@ static int read_bbt(struct mtd_info *mtd, uint8_t *buf, int page, int num,
 		res = mtd->read(mtd, from, len, &retlen, buf);
 		if (res < 0) {
 			if (retlen != len) {
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_INFO "nand_bbt: Error reading bad block table\n");
+#else
+				;
+#endif
 				return res;
 			}
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "nand_bbt: ECC error while reading bad block table\n");
+#else
+			;
+#endif
 		}
 
 		/* Analyse data */
@@ -252,16 +260,24 @@ static int read_bbt(struct mtd_info *mtd, uint8_t *buf, int page, int num,
 				if (tmp == msk)
 					continue;
 				if (reserved_block_code && (tmp == reserved_block_code)) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_DEBUG "nand_read_bbt: Reserved block at 0x%012llx\n",
 					       (loff_t)((offs << 2) + (act >> 1)) << this->bbt_erase_shift);
+#else
+					;
+#endif
 					this->bbt[offs + (act >> 3)] |= 0x2 << (act & 0x06);
 					mtd->ecc_stats.bbtblocks++;
 					continue;
 				}
 				/* Leave it for now, if its matured we can move this
 				 * message to MTD_DEBUG_LEVEL0 */
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_DEBUG "nand_read_bbt: Bad block at 0x%012llx\n",
 				       (loff_t)((offs << 2) + (act >> 1)) << this->bbt_erase_shift);
+#else
+				;
+#endif
 				/* Factory marked bad or worn out ? */
 				if (tmp == 0)
 					this->bbt[offs + (act >> 3)] |= 0x3 << (act & 0x06);
@@ -421,8 +437,12 @@ static int read_abs_bbts(struct mtd_info *mtd, uint8_t *buf,
 		scan_read_raw(mtd, buf, (loff_t)td->pages[0] << this->page_shift,
 			      mtd->writesize, td);
 		td->version[0] = buf[bbt_get_ver_offs(mtd, td)];
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Bad block table at page %d, version 0x%02X\n",
 		       td->pages[0], td->version[0]);
+#else
+		;
+#endif
 	}
 
 	/* Read the mirror version, if available */
@@ -430,8 +450,12 @@ static int read_abs_bbts(struct mtd_info *mtd, uint8_t *buf,
 		scan_read_raw(mtd, buf, (loff_t)md->pages[0] << this->page_shift,
 			      mtd->writesize, td);
 		md->version[0] = buf[bbt_get_ver_offs(mtd, md)];
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Bad block table at page %d, version 0x%02X\n",
 		       md->pages[0], md->version[0]);
+#else
+		;
+#endif
 	}
 	return 1;
 }
@@ -509,7 +533,11 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf,
 	loff_t from;
 	size_t readlen;
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Scanning device for bad blocks\n");
+#else
+	;
+#endif
 
 	if (bd->options & NAND_BBT_SCANALLPAGES)
 		len = 1 << (this->bbt_erase_shift - this->page_shift);
@@ -536,8 +564,12 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf,
 		from = 0;
 	} else {
 		if (chip >= this->numchips) {
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "create_bbt(): chipnr (%d) > available chips (%d)\n",
 			       chip + 1, this->numchips);
+#else
+			;
+#endif
 			return -EINVAL;
 		}
 		numblocks = this->chipsize >> (this->bbt_erase_shift - 1);
@@ -565,8 +597,12 @@ static int create_bbt(struct mtd_info *mtd, uint8_t *buf,
 
 		if (ret) {
 			this->bbt[i >> 3] |= 0x03 << (i & 0x6);
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Bad eraseblock %d at 0x%012llx\n",
 			       i >> 1, (unsigned long long)from);
+#else
+			;
+#endif
 			mtd->ecc_stats.badblocks++;
 		}
 
@@ -650,10 +686,18 @@ static int search_bbt(struct mtd_info *mtd, uint8_t *buf, struct nand_bbt_descr 
 	/* Check, if we found a bbt for each requested chip */
 	for (i = 0; i < chips; i++) {
 		if (td->pages[i] == -1)
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Bad block table not found for chip %d\n", i);
+#else
+			;
+#endif
 		else
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_DEBUG "Bad block table found at page %d, version 0x%02X\n", td->pages[i],
 			       td->version[i]);
+#else
+			;
+#endif
 	}
 	return 0;
 }
@@ -801,14 +845,22 @@ static int write_bbt(struct mtd_info *mtd, uint8_t *buf,
 			res = mtd->read(mtd, to, len, &retlen, buf);
 			if (res < 0) {
 				if (retlen != len) {
+#ifdef CONFIG_DEBUG_PRINTK
 					printk(KERN_INFO "nand_bbt: Error "
 					       "reading block for writing "
 					       "the bad block table\n");
+#else
+					;
+#endif
 					return res;
 				}
+#ifdef CONFIG_DEBUG_PRINTK
 				printk(KERN_WARNING "nand_bbt: ECC error "
 				       "while reading block for writing "
 				       "bad block table\n");
+#else
+				;
+#endif
 			}
 			/* Read oob data */
 			ops.ooblen = (len >> this->page_shift) * mtd->oobsize;
@@ -883,8 +935,12 @@ static int write_bbt(struct mtd_info *mtd, uint8_t *buf,
 		if (res < 0)
 			goto outerr;
 
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_DEBUG "Bad block table written to 0x%012llx, version "
 		       "0x%02X\n", (unsigned long long)to, td->version[chip]);
+#else
+		;
+#endif
 
 		/* Mark it as used */
 		td->pages[chip] = page;
@@ -892,8 +948,12 @@ static int write_bbt(struct mtd_info *mtd, uint8_t *buf,
 	return 0;
 
  outerr:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING
 	       "nand_bbt: Error while writing bad block table %d\n", res);
+#else
+	;
+#endif
 	return res;
 }
 
@@ -1346,7 +1406,11 @@ static int nand_create_default_bbt_descr(struct nand_chip *this)
 {
 	struct nand_bbt_descr *bd;
 	if (this->badblock_pattern) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "BBT descr already allocated; not replacing.\n");
+#else
+		;
+#endif
 		return -EINVAL;
 	}
 	bd = kzalloc(sizeof(*bd), GFP_KERNEL);

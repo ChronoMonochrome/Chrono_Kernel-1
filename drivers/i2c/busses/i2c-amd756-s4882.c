@@ -175,7 +175,11 @@ static int __init amd756_s4882_init(void)
 		goto ERROR0;
 	}
 
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Enabling SMBus multiplexing for Tyan S4882\n");
+#else
+	;
+#endif
 	/* Define the 5 virtual adapters and algorithms structures */
 	if (!(s4882_adapter = kzalloc(5 * sizeof(struct i2c_adapter),
 				      GFP_KERNEL))) {

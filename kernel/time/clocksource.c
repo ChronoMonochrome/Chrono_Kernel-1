@@ -216,8 +216,12 @@ static void __clocksource_unstable(struct clocksource *cs)
 
 static void clocksource_unstable(struct clocksource *cs, int64_t delta)
 {
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "Clocksource %s unstable (delta = %Ld ns)\n",
 	       cs->name, delta);
+#else
+	;
+#endif
 	__clocksource_unstable(cs);
 }
 
@@ -581,9 +585,13 @@ static void clocksource_select(void)
 		if (!(cs->flags & CLOCK_SOURCE_VALID_FOR_HRES) &&
 		    tick_oneshot_mode_active()) {
 			/* Override clocksource cannot be used. */
+#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "Override clocksource %s is not "
 			       "HRT compatible. Cannot switch while in "
 			       "HRT/NOHZ mode\n", cs->name);
+#else
+			;
+#endif
 			override_name[0] = 0;
 		} else
 			/* Override clocksource can be used. */
@@ -591,7 +599,11 @@ static void clocksource_select(void)
 		break;
 	}
 	if (curr_clocksource != best) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Switching to clocksource %s\n", best->name);
+#else
+		;
+#endif
 		curr_clocksource = best;
 		timekeeping_notify(curr_clocksource);
 	}
@@ -947,12 +959,20 @@ __setup("clocksource=", boot_override_clocksource);
 static int __init boot_override_clock(char* str)
 {
 	if (!strcmp(str, "pmtmr")) {
+#ifdef CONFIG_DEBUG_PRINTK
 		printk("Warning: clock=pmtmr is deprecated. "
 			"Use clocksource=acpi_pm.\n");
+#else
+		;
+#endif
 		return boot_override_clocksource("acpi_pm");
 	}
+#ifdef CONFIG_DEBUG_PRINTK
 	printk("Warning! clock= boot option is deprecated. "
 		"Use clocksource=xyz\n");
+#else
+	;
+#endif
 	return boot_override_clocksource(str);
 }
 

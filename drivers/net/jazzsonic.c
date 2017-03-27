@@ -87,8 +87,8 @@ static int jazzsonic_open(struct net_device* dev)
 	retval = request_irq(dev->irq, sonic_interrupt, IRQF_DISABLED,
 				"sonic", dev);
 	if (retval) {
-		printk(KERN_ERR "%s: unable to get IRQ %d.\n",
-				dev->name, dev->irq);
+//		printk(KERN_ERR "%s: unable to get IRQ %d.\n",
+;
 		return retval;
 	}
 
@@ -137,7 +137,7 @@ static int __devinit sonic_probe1(struct net_device *dev)
 	 */
 	silicon_revision = SONIC_READ(SONIC_SR);
 	if (sonic_debug > 1)
-		printk("SONIC Silicon Revision = 0x%04x\n",silicon_revision);
+;
 
 	i = 0;
 	while (known_revisions[i] != 0xffff &&
@@ -145,16 +145,16 @@ static int __devinit sonic_probe1(struct net_device *dev)
 		i++;
 
 	if (known_revisions[i] == 0xffff) {
-		printk("SONIC ethernet controller not found (0x%4x)\n",
-		       silicon_revision);
+//		printk("SONIC ethernet controller not found (0x%4x)\n",
+;
 		goto out;
 	}
 
 	if (sonic_debug  &&  version_printed++ == 0)
-		printk(version);
+;
 
-	printk(KERN_INFO "%s: Sonic ethernet found at 0x%08lx, ",
-	       dev_name(lp->device), dev->base_addr);
+//	printk(KERN_INFO "%s: Sonic ethernet found at 0x%08lx, ",
+;
 
 	/*
 	 * Put the sonic into software reset, then
@@ -179,8 +179,8 @@ static int __devinit sonic_probe1(struct net_device *dev)
 	if ((lp->descriptors = dma_alloc_coherent(lp->device,
 				SIZEOF_SONIC_DESC * SONIC_BUS_SCALE(lp->dma_bitmode),
 				&lp->descriptors_laddr, GFP_KERNEL)) == NULL) {
-		printk(KERN_ERR "%s: couldn't alloc DMA memory for descriptors.\n",
-		       dev_name(lp->device));
+//		printk(KERN_ERR "%s: couldn't alloc DMA memory for descriptors.\n",
+;
 		goto out;
 	}
 
@@ -252,7 +252,7 @@ static int __devinit jazz_sonic_probe(struct platform_device *pdev)
 	if (err)
 		goto out1;
 
-	printk("%s: MAC %pM IRQ %d\n", dev->name, dev->dev_addr, dev->irq);
+;
 
 	return 0;
 
