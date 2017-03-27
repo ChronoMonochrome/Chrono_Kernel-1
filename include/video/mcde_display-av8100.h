@@ -45,6 +45,7 @@ struct display_driver_data {
 	bool update_port_pixel_format;
 	const char *fbdevname;
 	struct mcde_video_mode *video_mode;
+	u8 cea_nr;
 };
 
 void hdmi_fb_onoff(struct mcde_display_device *ddev, bool enable,
