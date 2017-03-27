@@ -63,17 +63,8 @@ scm_version()
 		# it, because this version is defined in the top level Makefile.
 		if git name-rev --tags $rev_refs HEAD | \
 		   grep -E '^HEAD[[:space:]]+(.*~[0-9]*|undefined)$' > /dev/null; then
-			# If only the short version is requested, don't bother
-			# running further git commands
-			if $short; then
-				echo "+"
-				return
-			fi
-			# If we are past a tagged commit (like
-			# "v2.6.30-rc5-302-g72357d5"), we pretty print it.
-			if atag="`git describe $match 2>/dev/null`"; then
-				echo "$atag" | awk -F- '{printf("-%05d-%s", $(NF-1),$(NF))}'
-
+			if atag="`git tag | grep 'r[0-9].[0-9]' | sort -V | tail -n1`"; then
+				echo -n "-$atag"; 
 			# If we don't have a tag at all we print -g{commitish}.
 			else
 				printf '%s%s' -g $head
@@ -89,9 +80,10 @@ scm_version()
 		[ -w . ] && git update-index --refresh --unmerged > /dev/null
 
 		# Check for uncommitted changes
-		if git diff-index --name-only HEAD | grep -qv "^scripts/package"; then
-			printf '%s' -dirty
-		fi
+		#if git diff-index --name-only HEAD | grep -v "^scripts/package" \
+		#    | read dummy; then
+		#	printf '%s' -dirty
+		#fi
 
 		# All done with git
 		return
