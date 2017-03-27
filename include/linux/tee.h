@@ -76,6 +76,7 @@
  */
 #define TEE_STA_GET_PRODUCT_CONFIG		10
 #define TEE_STA_SET_L2CC_PREFETCH_CTRL_REGISTER 11
+#define TEE_STA_OPEN_SHARED_MEMORY 39
 
 /* Flags indicating run-time environment */
 #define TEE_RT_FLAGS_NORMAL		0x00000000
@@ -87,13 +88,19 @@
 /*
  * Product id numbers
  */
-#define TEE_PRODUCT_ID_UNKNOWN 0
-#define TEE_PRODUCT_ID_8400    1
-#define TEE_PRODUCT_ID_8500    2
-#define TEE_PRODUCT_ID_9500    3
-#define TEE_PRODUCT_ID_5500    4
-#define TEE_PRODUCT_ID_7400    5
-#define TEE_PRODUCT_ID_8500C   6
+#define TEE_PRODUCT_ID_UNKNOWN  0
+#define TEE_PRODUCT_ID_8400     1 /* Obsolete */
+#define TEE_PRODUCT_ID_8500B    2 /* 1080p/1GHz/400MHz */
+#define TEE_PRODUCT_ID_9500     3 /* 1080p/1GHz/400MHz */
+#define TEE_PRODUCT_ID_5500     4 /* Obsolete */
+#define TEE_PRODUCT_ID_7400     5
+#define TEE_PRODUCT_ID_8500C    6 /* 720p/1GHz/400MHz */
+#define TEE_PRODUCT_ID_8500A    7 /* 720p/800MHz/320MHz */
+#define TEE_PRODUCT_ID_8500E    8 /* 1080p/1.15GHz/533MHz */
+#define TEE_PRODUCT_ID_8520F    9 /* 720p/1.15GHz/533MHz */
+#define TEE_PRODUCT_ID_8520H   10 /* 720p/1GHz/200MHz */
+#define TEE_PRODUCT_ID_9540    11
+#define TEE_PRODUCT_ID_9500C   12 /* 1080p/1.15GHz/533MHz */
 
 /* Flags indicating fuses */
 #define TEE_FUSE_FLAGS_MODEM_DISABLE    0x00000001
@@ -201,6 +208,20 @@ struct tee_session {
 struct tee_read {
 	unsigned int err; /* return value */
 	unsigned int origin; /* error origin */
+};
+
+/**
+ * struct ta_addr - Struct that acts as a helper struct when it comes to
+ * allocating physically contigous memory.
+ *
+ * @paddr: Represents the physical address of a buffer.
+ * @vaddr: Represents the virtual address of a buffer.
+ * @alloc: A pointer to the hwmem allocation structure.
+ */
+struct ta_addr {
+	void *paddr;
+	void *vaddr;
+	struct hwmem_alloc *alloc;
 };
 
 /**

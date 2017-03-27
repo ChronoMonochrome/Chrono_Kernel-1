@@ -1,12 +1,14 @@
 /*
- * Copyright (C) ST-Ericsson 2011
+ * Copyright (C) ST-Ericsson BLR 2011
  *
  * License Terms: GNU General Public License v2
+ * Author: Bibek Basu <bibek.basu@stericsson.com>
  */
 #ifndef MFD_AB5500_H
 #define MFD_AB5500_H
 
-struct device;
+#include <linux/device.h>
+
 
 enum ab5500_devid {
 	AB5500_DEVID_ADC,
@@ -16,7 +18,7 @@ enum ab5500_devid {
 	AB5500_DEVID_SIM,
 	AB5500_DEVID_RTC,
 	AB5500_DEVID_CHARGER,
-	AB5500_DEVID_FUELGAUGE,
+	AB5500_DEVID_FG,
 	AB5500_DEVID_VIBRATOR,
 	AB5500_DEVID_CODEC,
 	AB5500_DEVID_USB,
@@ -99,6 +101,7 @@ enum ab5500_banks_addr {
 #define AB5500_IT_SOURCE24_REG		0x38
 
 #define AB5500_NUM_IRQ_REGS		25
+#define AB5500_NUM_MASTER_REGS		4
 
 /**
  * struct ab5500
@@ -124,6 +127,7 @@ struct ab5500 {
 	u8 chip_id;
 	struct mutex irq_lock;
 	u32 num_event_reg;
+	u32 num_master_reg;
 	u32 abb_events;
 	u8 mask[AB5500_NUM_IRQ_REGS];
 	u8 oldmask[AB5500_NUM_IRQ_REGS];
@@ -162,4 +166,7 @@ struct ab5500_platform_data {
 struct ab5500_ponkey_platform_data {
 	u8 shutdown_secs;
 };
+
+/* Get the Turn On Status */
+int ab5500_get_turn_on_status(void);
 #endif /* MFD_AB5500_H */

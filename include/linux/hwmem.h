@@ -106,6 +106,11 @@ enum hwmem_mem_type {
 	 * @brief Protected system memory.
 	 */
 	HWMEM_MEM_PROTECTED_SYS,
+
+	/**
+	 * @brief Static system memory.
+	 */
+	HWMEM_MEM_STATIC_SYS,
 };
 
 /* User space API */
@@ -573,6 +578,20 @@ s32 hwmem_get_name(struct hwmem_alloc *alloc);
  */
 struct hwmem_alloc *hwmem_resolve_by_name(s32 name);
 
+/**
+ * DEPRECATED: Temporary solution for Global Platform TEE Client API 1.0!
+ *
+ * @brief Resolve a hwmem allocation pointer from a vm address pointer.
+ * This call will fetch the hwmem_alloc pointer based on the
+ * corresponding vm address pointer, and add a buffer reference.
+ * Resulting buffer should be released with a call to hwmem_release.
+ *
+ * @param vm_addr vm address pointer previously retrieved from hwmem_mmap().
+ *
+ * @return Pointer to hwmem allocation, or a negative error code
+ */
+struct hwmem_alloc *hwmem_resolve_by_vm_addr(void *vm_addr);
+
 /* Integration */
 
 struct hwmem_allocator_api {
@@ -581,6 +600,7 @@ struct hwmem_allocator_api {
 	phys_addr_t (*get_alloc_paddr)(void *alloc);
 	void *(*get_alloc_kaddr)(void *instance, void *alloc);
 	size_t (*get_alloc_size)(void *alloc);
+	struct page **(*get_alloc_sglist)(void *alloc);
 };
 
 struct hwmem_mem_type_struct {

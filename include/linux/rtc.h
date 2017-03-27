@@ -202,7 +202,8 @@ struct rtc_device
 	struct hrtimer pie_timer; /* sub second exp, so needs hrtimer */
 	int pie_enabled;
 	struct work_struct irqwork;
-
+	/* Some hardware can't support UIE mode */
+	int uie_unsupported;
 
 #ifdef CONFIG_RTC_INTF_DEV_UIE_EMUL
 	struct work_struct uie_task;
@@ -231,10 +232,6 @@ extern int rtc_read_alarm(struct rtc_device *rtc,
 			struct rtc_wkalrm *alrm);
 extern int rtc_set_alarm(struct rtc_device *rtc,
 				struct rtc_wkalrm *alrm);
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
-extern int rtc_set_alarm_boot(struct rtc_device *rtc,
-				struct rtc_wkalrm *alrm);
-#endif
 extern int rtc_initialize_alarm(struct rtc_device *rtc,
 				struct rtc_wkalrm *alrm);
 extern void rtc_update_irq(struct rtc_device *rtc,
@@ -280,11 +277,6 @@ static inline bool is_leap_year(unsigned int year)
 extern int rtc_hctosys_ret;
 #else
 #define rtc_hctosys_ret -ENODEV
-#endif
-
-
-#if defined(CONFIG_MACH_SEC_GOLDEN_CHN) || defined(CONFIG_MACH_JANICE_CHN) || defined(CONFIG_MACH_CODINA_CHN) || defined(CONFIG_MACH_GAVINI_CHN)
-extern struct rtc_wkalrm autoboot_alm;
 #endif
 
 #endif /* __KERNEL__ */

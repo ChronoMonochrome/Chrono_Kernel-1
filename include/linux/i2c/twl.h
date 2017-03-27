@@ -652,14 +652,12 @@ struct twl4030_power_data {
 	unsigned num;
 	struct twl4030_resconfig *resource_config;
 #define TWL4030_RESCONFIG_UNDEF	((u8)-1)
-	bool use_poweroff;	/* Board is wired for TWL poweroff */
 };
 
 extern void twl4030_power_init(struct twl4030_power_data *triton2_scripts);
 extern int twl4030_remove_script(u8 flags);
-extern void twl4030_power_off(void);
 
-struct twl4030_codec_data {
+struct twl4030_codec_audio_data {
 	unsigned int digimic_delay; /* in ms */
 	unsigned int ramp_delay_value;
 	unsigned int offset_cncl_path;
@@ -669,19 +667,26 @@ struct twl4030_codec_data {
 	void (*set_hs_extmute)(int mute);
 };
 
-struct twl4030_vibra_data {
+struct twl4030_codec_vibra_data {
 	unsigned int	coexist;
+
+	/* twl6040 */
+	unsigned int vibldrv_res;	/* left driver resistance */
+	unsigned int vibrdrv_res;	/* right driver resistance */
+	unsigned int viblmotor_res;	/* left motor resistance */
+	unsigned int vibrmotor_res;	/* right motor resistance */
+	int vddvibl_uV;			/* VDDVIBL volt, set 0 for fixed reg */
+	int vddvibr_uV;			/* VDDVIBR volt, set 0 for fixed reg */
 };
 
-struct twl4030_audio_data {
+struct twl4030_codec_data {
 	unsigned int	audio_mclk;
-	struct twl4030_codec_data *codec;
-	struct twl4030_vibra_data *vibra;
+	struct twl4030_codec_audio_data		*audio;
+	struct twl4030_codec_vibra_data		*vibra;
 
 	/* twl6040 */
 	int audpwron_gpio;	/* audio power-on gpio */
 	int naudint_irq;	/* audio interrupt */
-	unsigned int irq_base;
 };
 
 struct twl4030_platform_data {
@@ -693,16 +698,13 @@ struct twl4030_platform_data {
 	struct twl4030_keypad_data		*keypad;
 	struct twl4030_usb_data			*usb;
 	struct twl4030_power_data		*power;
-	struct twl4030_audio_data		*audio;
+	struct twl4030_codec_data		*codec;
 
 	/* Common LDO regulators for TWL4030/TWL6030 */
 	struct regulator_init_data		*vdac;
 	struct regulator_init_data		*vaux1;
 	struct regulator_init_data		*vaux2;
 	struct regulator_init_data		*vaux3;
-	struct regulator_init_data		*vdd1;
-	struct regulator_init_data		*vdd2;
-	struct regulator_init_data		*vdd3;
 	/* TWL4030 LDO regulators */
 	struct regulator_init_data		*vpll1;
 	struct regulator_init_data		*vpll2;
@@ -711,6 +713,8 @@ struct twl4030_platform_data {
 	struct regulator_init_data		*vsim;
 	struct regulator_init_data		*vaux4;
 	struct regulator_init_data		*vio;
+	struct regulator_init_data		*vdd1;
+	struct regulator_init_data		*vdd2;
 	struct regulator_init_data		*vintana1;
 	struct regulator_init_data		*vintana2;
 	struct regulator_init_data		*vintdig;
@@ -722,8 +726,6 @@ struct twl4030_platform_data {
 	struct regulator_init_data              *vcxio;
 	struct regulator_init_data              *vusb;
 	struct regulator_init_data		*clk32kg;
-	struct regulator_init_data              *v1v8;
-	struct regulator_init_data              *v2v1;
 	/* TWL6025 LDO regulators */
 	struct regulator_init_data		*ldo1;
 	struct regulator_init_data		*ldo2;
@@ -740,16 +742,9 @@ struct twl4030_platform_data {
 	struct regulator_init_data		*vio6025;
 };
 
-struct twl_regulator_driver_data {
-	int		(*set_voltage)(void *data, int target_uV);
-	int		(*get_voltage)(void *data);
-	void		*data;
-	unsigned long	features;
-};
-
 /*----------------------------------------------------------------------*/
 
-int twl4030_sih_setup(struct device *dev, int module, int irq_base);
+int twl4030_sih_setup(int module);
 
 /* Offsets to Power Registers */
 #define TWL4030_VDAC_DEV_GRP		0x3B
