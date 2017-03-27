@@ -118,6 +118,7 @@ obj-$(CONFIG_HAMACHI) += hamachi.o
 obj-$(CONFIG_NET) += Space.o loopback.o
 obj-$(CONFIG_SEEQ8005) += seeq8005.o
 obj-$(CONFIG_NET_SB1000) += sb1000.o
+<<<<<<< HEAD
 obj-$(CONFIG_MAC8390) += mac8390.o
 obj-$(CONFIG_APNE) += apne.o 8390.o
 obj-$(CONFIG_PCMCIA_PCNET) += 8390.o
@@ -171,6 +172,8 @@ obj-$(CONFIG_PPTP) += pppox.o pptp.o
 obj-$(CONFIG_PPPOLAC) += pppox.o pppolac.o
 obj-$(CONFIG_PPPOPNS) += pppox.o pppopns.o
 
+=======
+>>>>>>> 224cf5a... ppp: Move the PPP drivers
 obj-$(CONFIG_SLIP) += slip.o
 obj-$(CONFIG_SLHC) += slhc.o
 
@@ -272,6 +275,20 @@ obj-$(CONFIG_S6GMAC) += s6gmac.o
 
 obj-$(CONFIG_ARM) += arm/
 obj-$(CONFIG_DEV_APPLETALK) += appletalk/
+<<<<<<< HEAD
+=======
+obj-$(CONFIG_ETHERNET) += ethernet/
+obj-$(CONFIG_FDDI) += fddi/
+onj-$(CONFIG_PPP) += ppp/
+obj-$(CONFIG_PPP_ASYNC) += ppp/
+obj-$(CONFIG_PPP_BSDCOMP) += ppp/
+obj-$(CONFIG_PPP_DEFLATE) += ppp/
+obj-$(CONFIG_PPP_MPPE) += ppp/
+obj-$(CONFIG_PPP_SYNC_TTY) += ppp/
+obj-$(CONFIG_PPPOE) += ppp/
+obj-$(CONFIG_PPPOL2TP) += ppp/
+obj-$(CONFIG_PPTP) += ppp/
+>>>>>>> 224cf5a... ppp: Move the PPP drivers
 obj-$(CONFIG_TR) += tokenring/
 obj-$(CONFIG_WAN) += wan/
 obj-$(CONFIG_ARCNET) += arcnet/
