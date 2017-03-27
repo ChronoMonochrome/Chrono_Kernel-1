@@ -73,12 +73,8 @@
 do {								\
 	char tmp[P_BUF_SIZE];					\
 	snprintf(tmp, sizeof(tmp), ##args);			\
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(_err_flag_ "[%d] %s(): %s\n", __LINE__,		\
 		__func__, tmp);				\
-#else
-	;
-#endif
 } while (0)
 
 #define DBG1(args...) D_(0x01, ##args)
@@ -1606,13 +1602,9 @@ static int ntty_install(struct tty_driver *driver, struct tty_struct *tty)
 	int ret;
 	if (!port || !dc || dc->state != NOZOMI_STATE_READY)
 		return -ENODEV;
-	ret = tty_init_termios(tty);
-	if (ret == 0) {
-		tty_driver_kref_get(driver);
-		tty->count++;
+	ret = tty_standard_install(driver, tty);
+	if (ret == 0)
 		tty->driver_data = port;
-		driver->ttys[tty->index] = tty;
-	}
 	return ret;
 }
 
@@ -1633,11 +1625,7 @@ static int ntty_activate(struct tty_port *tport, struct tty_struct *tty)
 	writew(dc->last_ier, dc->reg_ier);
 	dc->open_ttys++;
 	spin_unlock_irqrestore(&dc->spin_mutex, flags);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("noz: activated %d: %p\n", tty->index, tport);
-#else
-	;
-#endif
 	return 0;
 }
 
@@ -1659,11 +1647,7 @@ static void ntty_shutdown(struct tty_port *tport)
 	writew(dc->last_ier, dc->reg_ier);
 	dc->open_ttys--;
 	spin_unlock_irqrestore(&dc->spin_mutex, flags);
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("noz: shutdown %p\n", tport);
-#else
-	;
-#endif
 }
 
 static void ntty_close(struct tty_struct *tty, struct file *filp)
@@ -1926,17 +1910,12 @@ static __init int nozomi_init(void)
 {
 	int ret;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Initializing %s\n", VERSION_STRING);
-#else
-	;
-#endif
 
 	ntty_driver = alloc_tty_driver(NTTY_TTY_MAXMINORS);
 	if (!ntty_driver)
 		return -ENOMEM;
 
-	ntty_driver->owner = THIS_MODULE;
 	ntty_driver->driver_name = NOZOMI_NAME_TTY;
 	ntty_driver->name = "noz";
 	ntty_driver->major = 0;
@@ -1972,11 +1951,7 @@ free_tty:
 
 static __exit void nozomi_exit(void)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Unloading %s\n", DRIVER_DESC);
-#else
-	;
-#endif
 	pci_unregister_driver(&nozomi_driver);
 	tty_unregister_driver(ntty_driver);
 	put_tty_driver(ntty_driver);

@@ -31,6 +31,7 @@
 
 #include <linux/module.h>
 #include <linux/tty.h>
+#include <linux/tty_flip.h>
 #include <linux/ioport.h>
 #include <linux/init.h>
 #include <linux/serial.h>
@@ -276,11 +277,7 @@ static void cpm_uart_int_rx(struct uart_port *port)
 		 * later, which will be the next rx-interrupt or a timeout
 		 */
 		if(tty_buffer_request_room(tty, i) < i) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "No room in flip buffer\n");
-#else
-			;
-#endif
 			return;
 		}
 

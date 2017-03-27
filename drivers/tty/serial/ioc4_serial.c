@@ -14,8 +14,8 @@
  */
 #include <linux/errno.h>
 #include <linux/tty.h>
+#include <linux/tty_flip.h>
 #include <linux/serial.h>
-#include <linux/serialP.h>
 #include <linux/circ_buf.h>
 #include <linux/serial_reg.h>
 #include <linux/module.h>
@@ -974,12 +974,8 @@ intr_connect(struct ioc4_soft *soft, int type,
 	BUG_ON(!((type == IOC4_SIO_INTR_TYPE)
 	       || (type == IOC4_OTHER_INTR_TYPE)));
 
-	i = atomic_inc(&soft-> is_intr_type[type].is_num_intrs) - 1;
-#ifdef CONFIG_DEBUG_PRINTK
+	i = atomic_inc_return(&soft-> is_intr_type[type].is_num_intrs) - 1;
 	BUG_ON(!(i < MAX_IOC4_INTR_ENTS || (printk("i %d\n", i), 0)));
-#else
-	BUG_ON(!(i < MAX_IOC4_INTR_ENTS || (;
-#endif
 
 	/* Save off the lower level interrupt handler */
 	intr_ptr = &soft->is_intr_type[type].is_intr_info[i];
@@ -1067,20 +1063,12 @@ static int inline ioc4_attach_local(struct ioc4_driver_data *idd)
 	/* IOC4 firmware must be at least rev 62 */
 	pci_read_config_word(pdev, PCI_COMMAND_SPECIAL, &ioc4_revid);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "IOC4 firmware revision %d\n", ioc4_revid);
-#else
-	;
-#endif
 	if (ioc4_revid < ioc4_revid_min) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		    "IOC4 serial not supported on firmware rev %d, "
 				"please upgrade to rev %d or higher\n",
 				ioc4_revid, ioc4_revid_min);
-#else
-		;
-#endif
 		return -EPERM;
 	}
 	BUG_ON(ioc4_misc == NULL);
@@ -1091,12 +1079,8 @@ static int inline ioc4_attach_local(struct ioc4_driver_data *idd)
 							port_number++) {
 		port = kzalloc(sizeof(struct ioc4_port), GFP_KERNEL);
 		if (!port) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 				"IOC4 serial memory not available for port\n");
-#else
-			;
-#endif
 			return -ENOMEM;
 		}
 		spin_lock_init(&port->ip_lock);
@@ -1880,13 +1864,9 @@ static void handle_intr(void *arg, uint32_t sio_ir)
 		uint32_t shadow;
 
 		if ( loop_counter-- <= 0 ) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "IOC4 serial: "
 					"possible hang condition/"
 					"port stuck on interrupt.\n");
-#else
-			;
-#endif
 			break;
 		}
 
@@ -2183,13 +2163,9 @@ static inline int do_read(struct uart_port *the_port, unsigned char *buf,
 		entry = (struct ring_entry *)((caddr_t)inring + cons_ptr);
 
 		if ( loop_counter-- <= 0 ) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING "IOC4 serial: "
 					"possible hang condition/"
 					"port stuck on read.\n");
-#else
-			;
-#endif
 			break;
 		}
 
@@ -2777,13 +2753,9 @@ ioc4_serial_core_attach(struct pci_dev *pdev, int port_type)
 		the_port->dev = &pdev->dev;
 		spin_lock_init(&the_port->lock);
 		if (uart_add_one_port(u_driver, the_port) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_WARNING
 		           "%s: unable to add port %d bus %d\n",
 			       __func__, the_port->line, pdev->bus->number);
-#else
-			;
-#endif
 		} else {
 			DPRINT_CONFIG(
 			    ("IOC4 serial port %d irq = %d, bus %d\n",
@@ -2822,25 +2794,17 @@ ioc4_serial_attach_one(struct ioc4_driver_data *idd)
 
 	if (!request_mem_region(tmp_addr1, sizeof(struct ioc4_serial),
 					"sioc4_uart")) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"ioc4 (%p): unable to get request region for "
 				"uart space\n", (void *)idd->idd_pdev);
-#else
-		;
-#endif
 		ret = -ENODEV;
 		goto out1;
 	}
 	serial = ioremap(tmp_addr1, sizeof(struct ioc4_serial));
 	if (!serial) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			 "ioc4 (%p) : unable to remap ioc4 serial register\n",
 				(void *)idd->idd_pdev);
-#else
-		;
-#endif
 		ret = -ENODEV;
 		goto out2;
 	}
@@ -2852,12 +2816,8 @@ ioc4_serial_attach_one(struct ioc4_driver_data *idd)
 	control = kzalloc(sizeof(struct ioc4_control), GFP_KERNEL);
 
 	if (!control) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "ioc4_attach_one"
 		       ": unable to get memory for the IOC4\n");
-#else
-		;
-#endif
 		ret = -ENOMEM;
 		goto out2;
 	}
@@ -2866,13 +2826,9 @@ ioc4_serial_attach_one(struct ioc4_driver_data *idd)
 	/* Allocate the soft structure */
 	soft = kzalloc(sizeof(struct ioc4_soft), GFP_KERNEL);
 	if (!soft) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		       "ioc4 (%p): unable to get memory for the soft struct\n",
 		       (void *)idd->idd_pdev);
-#else
-		;
-#endif
 		ret = -ENOMEM;
 		goto out3;
 	}
@@ -2903,13 +2859,9 @@ ioc4_serial_attach_one(struct ioc4_driver_data *idd)
 				"sgi-ioc4serial", soft)) {
 		control->ic_irq = idd->idd_pdev->irq;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 		    "%s : request_irq fails for IRQ 0x%x\n ",
 			__func__, idd->idd_pdev->irq);
-#else
-		;
-#endif
 	}
 	ret = ioc4_attach_local(idd);
 	if (ret)
@@ -2960,23 +2912,15 @@ static int __init ioc4_serial_init(void)
 
 	/* register with serial core */
 	if ((ret = uart_register_driver(&ioc4_uart_rs232)) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s: Couldn't register rs232 IOC4 serial driver\n",
 			__func__);
-#else
-		;
-#endif
 		goto out;
 	}
 	if ((ret = uart_register_driver(&ioc4_uart_rs422)) < 0) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"%s: Couldn't register rs422 IOC4 serial driver\n",
 			__func__);
-#else
-		;
-#endif
 		goto out_uart_rs232;
 	}
 

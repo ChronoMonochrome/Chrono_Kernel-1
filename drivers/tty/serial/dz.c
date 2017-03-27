@@ -47,11 +47,11 @@
 #include <linux/serial_core.h>
 #include <linux/sysrq.h>
 #include <linux/tty.h>
+#include <linux/tty_flip.h>
 
 #include <linux/atomic.h>
 #include <asm/bootinfo.h>
 #include <asm/io.h>
-#include <asm/system.h>
 
 #include <asm/dec/interrupts.h>
 #include <asm/dec/kn01.h>
@@ -938,11 +938,7 @@ static int __init dz_init(void)
 	if (IOASIC)
 		return -ENXIO;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%s%s\n", dz_name, dz_version);
-#else
-	;
-#endif
 
 	dz_init_ports();
 

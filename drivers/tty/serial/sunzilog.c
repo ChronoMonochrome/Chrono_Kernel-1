@@ -37,14 +37,15 @@
 #include <asm/io.h>
 #include <asm/irq.h>
 #include <asm/prom.h>
+#include <asm/setup.h>
 
 #if defined(CONFIG_SERIAL_SUNZILOG_CONSOLE) && defined(CONFIG_MAGIC_SYSRQ)
 #define SUPPORT_SYSRQ
 #endif
 
 #include <linux/serial_core.h>
+#include <linux/sunserialcore.h>
 
-#include "suncore.h"
 #include "sunzilog.h"
 
 /* On 32-bit sparcs we need to delay after register accesses
@@ -1226,12 +1227,8 @@ static int __init sunzilog_console_setup(struct console *con, char *options)
 	if (up->port.type != PORT_SUNZILOG)
 		return -1;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Console: ttyS%d (SunZilog zs%d)\n",
 	       (sunzilog_reg.minor - 64) + con->index, con->index);
-#else
-	;
-#endif
 
 	/* Get firmware console settings.  */
 	sunserial_console_termios(con, up->port.dev->of_node);
@@ -1401,7 +1398,7 @@ static void __devinit sunzilog_init_hw(struct uart_sunzilog_port *up)
 #endif
 }
 
-static int zilog_irq = -1;
+static int zilog_irq;
 
 static int __devinit zs_probe(struct platform_device *op)
 {
@@ -1429,7 +1426,7 @@ static int __devinit zs_probe(struct platform_device *op)
 
 	rp = sunzilog_chip_regs[inst];
 
-	if (zilog_irq == -1)
+	if (!zilog_irq)
 		zilog_irq = op->archdata.irqs[0];
 
 	up = &sunzilog_port_table[inst * 2];
@@ -1492,24 +1489,16 @@ static int __devinit zs_probe(struct platform_device *op)
 		}
 		uart_inst++;
 	} else {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Keyboard at MMIO 0x%llx (irq = %d) "
 		       "is a %s\n",
 		       dev_name(&op->dev),
 		       (unsigned long long) up[0].port.mapbase,
 		       op->archdata.irqs[0], sunzilog_type(&up[0].port));
-#else
-		;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Mouse at MMIO 0x%llx (irq = %d) "
 		       "is a %s\n",
 		       dev_name(&op->dev),
 		       (unsigned long long) up[1].port.mapbase,
 		       op->archdata.irqs[0], sunzilog_type(&up[1].port));
-#else
-		;
-#endif
 		kbm_inst++;
 	}
 
@@ -1592,7 +1581,7 @@ static int __init sunzilog_init(void)
 	if (err)
 		goto out_unregister_uart;
 
-	if (zilog_irq != -1) {
+	if (zilog_irq) {
 		struct uart_sunzilog_port *up = sunzilog_irq_chain;
 		err = request_irq(zilog_irq, sunzilog_interrupt, IRQF_SHARED,
 				  "zs", sunzilog_irq_chain);
@@ -1633,7 +1622,7 @@ static void __exit sunzilog_exit(void)
 {
 	platform_driver_unregister(&zs_driver);
 
-	if (zilog_irq != -1) {
+	if (zilog_irq) {
 		struct uart_sunzilog_port *up = sunzilog_irq_chain;
 
 		/* Disable Interrupts */
@@ -1649,7 +1638,7 @@ static void __exit sunzilog_exit(void)
 		}
 
 		free_irq(zilog_irq, sunzilog_irq_chain);
-		zilog_irq = -1;
+		zilog_irq = 0;
 	}
 
 	if (sunzilog_reg.nr) {

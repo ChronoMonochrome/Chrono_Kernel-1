@@ -63,10 +63,10 @@
 #include <linux/spinlock.h>
 #include <linux/sysrq.h>
 #include <linux/tty.h>
+#include <linux/tty_flip.h>
 #include <linux/types.h>
 
 #include <linux/atomic.h>
-#include <asm/system.h>
 
 #include <asm/dec/interrupts.h>
 #include <asm/dec/ioasic_addrs.h>
@@ -201,27 +201,11 @@ void zs_dump(void)
 			continue;
 
 		for (j = 0; j < 16; j++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("W%-2d = 0x%02x\t", j, zport->regs[j]);
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n");
-#else
-		;
-#endif
 		for (j = 0; j < 16; j++)
-#ifdef CONFIG_DEBUG_PRINTK
 			printk("R%-2d = 0x%02x\t", j, read_zsreg(zport, j));
-#else
-			;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("\n\n");
-#else
-		;
-#endif
 	}
 }
 #endif

@@ -27,11 +27,7 @@
 #include <linux/tty_flip.h>
 #include <linux/atomic.h>
 
-#ifdef CONFIG_DEBUG_PRINTK
 #define pr_init(fmt, args...) ({ static const __initconst char __fmt[] = fmt; printk(__fmt, ## args); })
-#else
-#define pr_init(fmt, args...) ({ static const __initconst char __fmt[] = fmt; ;
-#endif
 
 /* See the Debug/Emulation chapter in the HRM */
 #define EMUDOF   0x00000001	/* EMUDAT_OUT full & valid */
@@ -261,7 +257,6 @@ static int __init bfin_jc_init(void)
 	if (!bfin_jc_driver)
 		goto err_driver;
 
-	bfin_jc_driver->owner        = THIS_MODULE;
 	bfin_jc_driver->driver_name  = DRV_NAME;
 	bfin_jc_driver->name         = DEV_NAME;
 	bfin_jc_driver->type         = TTY_DRIVER_TYPE_SERIAL;

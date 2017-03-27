@@ -578,11 +578,7 @@ static int __init sc26xx_console_setup(struct console *con, char *options)
 	if (port->type != PORT_SC26XX)
 		return -1;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Console: ttySC%d (SC26XX)\n", con->index);
-#else
-	;
-#endif
 	if (options)
 		uart_parse_options(options, &baud, &parity, &bits, &flow);
 
@@ -740,19 +736,7 @@ static struct platform_driver sc26xx_driver = {
 	},
 };
 
-static int __init sc26xx_init(void)
-{
-	return platform_driver_register(&sc26xx_driver);
-}
-
-static void __exit sc26xx_exit(void)
-{
-	platform_driver_unregister(&sc26xx_driver);
-}
-
-module_init(sc26xx_init);
-module_exit(sc26xx_exit);
-
+module_platform_driver(sc26xx_driver);
 
 MODULE_AUTHOR("Thomas Bogendörfer");
 MODULE_DESCRIPTION("SC681/SC2692 serial driver");
