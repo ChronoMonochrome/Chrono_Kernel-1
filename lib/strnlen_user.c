@@ -51,7 +51,7 @@ static inline long do_strnlen_user(const char __user *src, unsigned long count, 
 
 	for (;;) {
 		unsigned long data;
-		if (has_zero(c, &data, &constants)) {
+		if (has_zero1(c, &data, &constants)) {
 			data = prep_zero_mask(c, data, &constants);
 			data = create_zero_mask(data);
 			return res + find_zero(data) + 1 - align;
