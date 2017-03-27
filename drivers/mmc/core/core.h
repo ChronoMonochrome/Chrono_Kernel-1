@@ -12,7 +12,6 @@
 #define _MMC_CORE_CORE_H
 
 #include <linux/delay.h>
-#include <linux/export.h>
 
 #define MMC_CMD_RETRIES        3
 
