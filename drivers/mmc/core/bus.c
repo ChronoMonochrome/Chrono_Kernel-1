@@ -12,6 +12,7 @@
  */
 
 #include <linux/device.h>
+#include <linux/stat.h>
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/pm_runtime.h>
