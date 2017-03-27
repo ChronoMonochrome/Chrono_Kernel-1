@@ -33,6 +33,9 @@
 #define ALPS_INPUT_FUZZ				0	/* event threshold */
 #define ALPS_INPUT_FLAT				0
 
+extern int hscd_get_magnetic_field_data(int *xyz);
+extern int hscd_activate(int flgatm, int flg, int dtime);
+
 static void alps_early_suspend(struct early_suspend *handler);
 static void alps_early_resume(struct early_suspend *handler);
 
