@@ -17,5 +17,5 @@
 #ifndef _GOD_MODE_H
 #define _GOD_MODE_H
 
-extern bool god_mode_enabled;
+extern unsigned int god_mode_enabled;
 #endif

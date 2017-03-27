@@ -18,7 +18,8 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h> 
 
-bool god_mode_enabled __read_mostly = false;
+unsigned int god_mode_enabled __read_mostly = 0;
+EXPORT_SYMBOL(god_mode_enabled);
 
 static ssize_t god_mode_enabled_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -52,17 +53,17 @@ static ssize_t god_mode_version_show(struct kobject *kobj,
 	return sprintf(buf, "v1.0 (c) ChronoMonochrome\n");
 }
 
-static struct kobj_attribute god_mode_attribute = 
+static struct kobj_attribute god_mode_enabled_attribute = 
 	__ATTR(god_mode, 0644,
-		god_mode_show,
-		god_mode_store);
+		god_mode_enabled_show,
+		god_mode_enabled_store);
 
-static struct kobj_attribute pm_sync_version_attribute = 
+static struct kobj_attribute god_mode_version_attribute = 
 	__ATTR(god_mode_version, 0444, god_mode_version_show, NULL);
 
 static struct attribute *god_mode_attrs[] =
 {
-	&god_mode_attribute.attr,
+	&god_mode_enabled_attribute.attr,
 	&god_mode_version_attribute.attr,
 	NULL,
 };
