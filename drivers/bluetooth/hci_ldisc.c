@@ -48,8 +48,6 @@
 
 #define VERSION "2.2"
 
-static bool reset = 0;
-
 static struct hci_uart_proto *hup[HCI_UART_MAX_PROTO];
 
 int hci_uart_register_proto(struct hci_uart_proto *p)
