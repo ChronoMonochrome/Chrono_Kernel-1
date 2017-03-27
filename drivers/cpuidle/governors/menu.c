@@ -12,15 +12,13 @@
 
 #include <linux/kernel.h>
 #include <linux/cpuidle.h>
-#include <linux/pm_qos_params.h>
+#include <linux/pm_qos.h>
 #include <linux/time.h>
 #include <linux/ktime.h>
 #include <linux/hrtimer.h>
 #include <linux/tick.h>
 #include <linux/sched.h>
 #include <linux/math64.h>
-#include <linux/cpu.h>
-#include <linux/sysfs.h>
 
 #define BUCKETS 12
 #define INTERVALS 8
@@ -123,8 +121,6 @@ struct menu_device {
 	int		interval_ptr;
 };
 
-static int tune_multiplier = 1024;
-static int forced_state;
 
 #define LOAD_INT(x) ((x) >> FSHIFT)
 #define LOAD_FRAC(x) LOAD_INT(((x) & (FIXED_1-1)) * 100)
@@ -174,9 +170,6 @@ static inline int performance_multiplier(void)
 {
 	int mult = 1;
 
-	if (tune_multiplier <= 1)
-		return tune_multiplier;
-
 	/* for higher loadavg, we are more reluctant */
 
 	/*
@@ -188,9 +181,6 @@ static inline int performance_multiplier(void)
 
 	/* for IO wait tasks (per cpu!) we add 5x each */
 	mult += 10 * nr_iowait_cpu(smp_processor_id());
-
-	if (tune_multiplier != 1024)
-		mult = (tune_multiplier * mult) / 1024;
 
 	return mult;
 }
@@ -296,34 +286,26 @@ static int menu_select(struct cpuidle_device *dev)
 	if (data->expected_us > 5)
 		data->last_state_idx = CPUIDLE_DRIVER_STATE_START;
 
-	WARN((forced_state >= dev->state_count), \
-		"Forced state value out of range.\n");
+	/*
+	 * Find the idle state with the lowest power while satisfying
+	 * our constraints.
+	 */
+	for (i = CPUIDLE_DRIVER_STATE_START; i < dev->state_count; i++) {
+		struct cpuidle_state *s = &dev->states[i];
 
-	if ((forced_state != 0) && (forced_state < dev->state_count)) {
-		data->exit_us = dev->states[forced_state].exit_latency;
-		data->last_state_idx = forced_state;
-	} else {
-		/*
-		 * Find the idle state with the lowest power while satisfying
-		 * our constraints.
-		 */
-		for (i = CPUIDLE_DRIVER_STATE_START; i < dev->state_count; i++) {
-			struct cpuidle_state *s = &dev->states[i];
+		if (s->flags & CPUIDLE_FLAG_IGNORE)
+			continue;
+		if (s->target_residency > data->predicted_us)
+			continue;
+		if (s->exit_latency > latency_req)
+			continue;
+		if (s->exit_latency * multiplier > data->predicted_us)
+			continue;
 
-			if (s->flags & CPUIDLE_FLAG_IGNORE)
-				continue;
-			if (s->target_residency > data->predicted_us)
-				continue;
-			if (s->exit_latency > latency_req)
-				continue;
-			if (s->exit_latency * multiplier > data->predicted_us)
-				continue;
-
-			if (s->power_usage < power_usage) {
-				power_usage = s->power_usage;
-				data->last_state_idx = i;
-				data->exit_us = s->exit_latency;
-			}
+		if (s->power_usage < power_usage) {
+			power_usage = s->power_usage;
+			data->last_state_idx = i;
+			data->exit_us = s->exit_latency;
 		}
 	}
 
@@ -404,63 +386,6 @@ static void menu_update(struct cpuidle_device *dev)
 		data->interval_ptr = 0;
 }
 
-int cpuidle_set_multiplier(unsigned int value)
-{
-
-	if (value > 1024)
-		tune_multiplier = 1024;
-	else
-		tune_multiplier = value;
-
-	return 0;
-}
-EXPORT_SYMBOL(cpuidle_set_multiplier);
-
-/* Writing 0 will remove the forced state. */
-int cpuidle_force_state(unsigned int state)
-{
-	forced_state = state;
-
-	return 0;
-}
-EXPORT_SYMBOL(cpuidle_force_state);
-
-static ssize_t show_multiplier(struct sysdev_class *class,
-				      struct sysdev_class_attribute *attr,
-					  char *buf)
-{
-	return sprintf(buf, "%d\n", tune_multiplier);
-}
-
-static ssize_t store_multiplier(struct sysdev_class *class,
-					struct sysdev_class_attribute *attr,
-				    const char *buf, size_t count)
-{
-	unsigned int input;
-	int ret;
-	ret = sscanf(buf, "%u", &input);
-
-	if (ret != 1)
-		return -EINVAL;
-
-	cpuidle_set_multiplier(input);
-
-	return count;
-}
-
-
-static SYSDEV_CLASS_ATTR(multiplier, 0644, show_multiplier, store_multiplier);
-
-static struct attribute *dbs_attributes[] = {
-	&attr_multiplier.attr,
-	NULL
-};
-
-static struct attribute_group dbs_attr_group = {
-	.attrs = dbs_attributes,
-	.name = "cpuidle",
-};
-
 /**
  * menu_enable_device - scans a CPU's states and does setup
  * @dev: the CPU
@@ -488,15 +413,7 @@ static struct cpuidle_governor menu_governor = {
  */
 static int __init init_menu(void)
 {
-	int ret;
-
-	ret = cpuidle_register_governor(&menu_governor);
-
-	sysfs_merge_group(&(cpu_sysdev_class.kset.kobj),
-						&dbs_attr_group);
-
-	return ret;
-
+	return cpuidle_register_governor(&menu_governor);
 }
 
 /**
@@ -504,9 +421,6 @@ static int __init init_menu(void)
  */
 static void __exit exit_menu(void)
 {
-	sysfs_unmerge_group(&(cpu_sysdev_class.kset.kobj),
-						&dbs_attr_group);
-
 	cpuidle_unregister_governor(&menu_governor);
 }
 
