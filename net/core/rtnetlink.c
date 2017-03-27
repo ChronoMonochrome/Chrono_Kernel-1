@@ -1525,10 +1525,10 @@ static int do_setlink(struct net_device *dev, struct ifinfomsg *ifm,
 
 errout:
 	if (err < 0 && modified && net_ratelimit())
-//		printk(KERN_WARNING "A link change request failed with "
-//		       "some changes committed already. Interface %s may "
-//		       "have been left with an inconsistent configuration, "
-;
+		printk(KERN_WARNING "A link change request failed with "
+		       "some changes committed already. Interface %s may "
+		       "have been left with an inconsistent configuration, "
+		       "please check.\n", dev->name);
 
 	if (send_addr_notify)
 		call_netdevice_notifiers(NETDEV_CHANGEADDR, dev);
