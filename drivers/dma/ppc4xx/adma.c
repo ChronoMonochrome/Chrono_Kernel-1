@@ -46,6 +46,7 @@
 #include <asm/dcr.h>
 #include <asm/dcr-regs.h>
 #include "adma.h"
+#include "../dmaengine.h"
 
 enum ppc_adma_init_code {
 	PPC_ADMA_INIT_OK = 0,
@@ -1301,13 +1302,9 @@ static void ppc440spe_chan_set_first_xor_descriptor(
 	struct xor_regs *xor_reg = chan->device->xor_reg;
 
 	if (ioread32be(&xor_reg->sr) & XOR_SR_XCP_BIT)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "%s: Warn: XORcore is running "
 			"when try to set the first CDB!\n",
 			__func__);
-#else
-		;
-#endif
 
 	xor_last_submit = xor_last_linked = next_desc;
 
@@ -1678,12 +1675,8 @@ ppc440spe_get_group_entry(struct ppc440spe_adma_desc_slot *tdesc, u32 entry_idx)
 	int i = 0;
 
 	if (entry_idx < 0 || entry_idx >= (tdesc->src_cnt + tdesc->dst_cnt)) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("%s: entry_idx %d, src_cnt %d, dst_cnt %d\n",
 			__func__, entry_idx, tdesc->src_cnt, tdesc->dst_cnt);
-#else
-		;
-#endif
 		BUG();
 	}
 
@@ -1938,7 +1931,7 @@ static void __ppc440spe_adma_slot_cleanup(struct ppc440spe_adma_chan *chan)
 				if (end_of_chain && slot_cnt) {
 					/* Should wait for ZeroSum completion */
 					if (cookie > 0)
-						chan->completed_cookie = cookie;
+						chan->common.completed_cookie = cookie;
 					return;
 				}
 
@@ -1968,7 +1961,7 @@ static void __ppc440spe_adma_slot_cleanup(struct ppc440spe_adma_chan *chan)
 	BUG_ON(!seen_current);
 
 	if (cookie > 0) {
-		chan->completed_cookie = cookie;
+		chan->common.completed_cookie = cookie;
 		pr_debug("\tcompleted cookie %d\n", cookie);
 	}
 
@@ -2103,12 +2096,8 @@ static int ppc440spe_adma_alloc_chan_resources(struct dma_chan *chan)
 		slot = kzalloc(sizeof(struct ppc440spe_adma_desc_slot),
 			       GFP_KERNEL);
 		if (!slot) {
-#ifdef CONFIG_DEBUG_PRINTK
 			printk(KERN_INFO "SPE ADMA Channel only initialized"
 				" %d descriptor slots", i--);
-#else
-			;
-#endif
 			break;
 		}
 
@@ -2159,22 +2148,6 @@ static int ppc440spe_adma_alloc_chan_resources(struct dma_chan *chan)
 	}
 
 	return (i > 0) ? i : -ENOMEM;
-}
-
-/**
- * ppc440spe_desc_assign_cookie - assign a cookie
- */
-static dma_cookie_t ppc440spe_desc_assign_cookie(
-		struct ppc440spe_adma_chan *chan,
-		struct ppc440spe_adma_desc_slot *desc)
-{
-	dma_cookie_t cookie = chan->common.cookie;
-
-	cookie++;
-	if (cookie < 0)
-		cookie = 1;
-	chan->common.cookie = desc->async_tx.cookie = cookie;
-	return cookie;
 }
 
 /**
@@ -2247,8 +2220,7 @@ static dma_cookie_t ppc440spe_adma_tx_submit(struct dma_async_tx_descriptor *tx)
 	slots_per_op = group_start->slots_per_op;
 
 	spin_lock_bh(&chan->lock);
-
-	cookie = ppc440spe_desc_assign_cookie(chan, sw_desc);
+	cookie = dma_cookie_assign(tx);
 
 	if (unlikely(list_empty(&chan->chain))) {
 		/* first peer */
@@ -3956,28 +3928,16 @@ static enum dma_status ppc440spe_adma_tx_status(struct dma_chan *chan,
 			dma_cookie_t cookie, struct dma_tx_state *txstate)
 {
 	struct ppc440spe_adma_chan *ppc440spe_chan;
-	dma_cookie_t last_used;
-	dma_cookie_t last_complete;
 	enum dma_status ret;
 
 	ppc440spe_chan = to_ppc440spe_adma_chan(chan);
-	last_used = chan->cookie;
-	last_complete = ppc440spe_chan->completed_cookie;
-
-	dma_set_tx_state(txstate, last_complete, last_used, 0);
-
-	ret = dma_async_is_complete(cookie, last_complete, last_used);
+	ret = dma_cookie_status(chan, cookie, txstate);
 	if (ret == DMA_SUCCESS)
 		return ret;
 
 	ppc440spe_adma_slot_cleanup(ppc440spe_chan);
 
-	last_used = chan->cookie;
-	last_complete = ppc440spe_chan->completed_cookie;
-
-	dma_set_tx_state(txstate, last_complete, last_used, 0);
-
-	return dma_async_is_complete(cookie, last_complete, last_used);
+	return dma_cookie_status(chan, cookie, txstate);
 }
 
 /**
@@ -4062,16 +4022,12 @@ static void ppc440spe_chan_start_null_xor(struct ppc440spe_adma_chan *chan)
 		async_tx_ack(&sw_desc->async_tx);
 		ppc440spe_desc_init_null_xor(group_start);
 
-		cookie = chan->common.cookie;
-		cookie++;
-		if (cookie <= 1)
-			cookie = 2;
+		cookie = dma_cookie_assign(&sw_desc->async_tx);
 
 		/* initialize the completed cookie to be less than
 		 * the most recently used cookie
 		 */
-		chan->completed_cookie = cookie - 1;
-		chan->common.cookie = sw_desc->async_tx.cookie = cookie;
+		chan->common.completed_cookie = cookie - 1;
 
 		/* channel should not be busy */
 		BUG_ON(ppc440spe_chan_is_busy(chan));
@@ -4541,6 +4497,7 @@ static int __devinit ppc440spe_adma_probe(struct platform_device *ofdev)
 	INIT_LIST_HEAD(&chan->all_slots);
 	chan->device = adev;
 	chan->common.device = &adev->common;
+	dma_cookie_init(&chan->common);
 	list_add_tail(&chan->common.device_node, &adev->common.channels);
 	tasklet_init(&chan->irq_tasklet, ppc440spe_adma_tasklet,
 		     (unsigned long)chan);
