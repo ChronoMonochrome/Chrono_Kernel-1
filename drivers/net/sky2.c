@@ -992,7 +992,7 @@ static void sky2_ramset(struct sky2_hw *hw, u16 q, u32 start, u32 space)
 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTHP), tp);
 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTHP), space/2);
 
-		tp = space - 2048/8;
+		tp = space - 8192/8;
 		sky2_write32(hw, RB_ADDR(q, RB_RX_UTPP), tp);
 		sky2_write32(hw, RB_ADDR(q, RB_RX_LTPP), space/4);
 	} else {
@@ -1749,8 +1749,8 @@ static netdev_tx_t sky2_xmit_frame(struct sk_buff *skb,
 		goto mapping_error;
 
 	slot = sky2->tx_prod;
-	netif_printk(sky2, tx_queued, KERN_DEBUG, dev,
-		     "tx queued, slot %u, len %d\n", slot, skb->len);
+//	netif_printk(sky2, tx_queued, KERN_DEBUG, dev,
+;
 
 	/* Send high bits if needed */
 	upper = upper_32_bits(mapping);
@@ -1914,8 +1914,8 @@ static void sky2_tx_complete(struct sky2_port *sky2, u16 done)
 		sky2_tx_unmap(sky2->hw->pdev, re);
 
 		if (skb) {
-			netif_printk(sky2, tx_done, KERN_DEBUG, dev,
-				     "tx done %u\n", idx);
+//			netif_printk(sky2, tx_done, KERN_DEBUG, dev,
+;
 
 			u64_stats_update_begin(&sky2->tx_stats.syncp);
 			++sky2->tx_stats.packets;
@@ -2245,10 +2245,10 @@ static void sky2_tx_timeout(struct net_device *dev)
 
 	netif_err(sky2, timer, dev, "tx timeout\n");
 
-	netdev_printk(KERN_DEBUG, dev, "transmit ring %u .. %u report=%u done=%u\n",
-		      sky2->tx_cons, sky2->tx_prod,
-		      sky2_read16(hw, sky2->port == 0 ? STAT_TXA1_RIDX : STAT_TXA2_RIDX),
-		      sky2_read16(hw, Q_ADDR(txqaddr[sky2->port], Q_DONE)));
+//	netdev_printk(KERN_DEBUG, dev, "transmit ring %u .. %u report=%u done=%u\n",
+//		      sky2->tx_cons, sky2->tx_prod,
+//		      sky2_read16(hw, sky2->port == 0 ? STAT_TXA1_RIDX : STAT_TXA2_RIDX),
+;
 
 	/* can't restart safely under softirq */
 	schedule_work(&hw->restart_work);
@@ -2344,8 +2344,13 @@ static struct sk_buff *receive_copy(struct sky2_port *sky2,
 		skb_copy_from_linear_data(re->skb, skb->data, length);
 		skb->ip_summed = re->skb->ip_summed;
 		skb->csum = re->skb->csum;
+		skb->rxhash = re->skb->rxhash;
+		skb->vlan_tci = re->skb->vlan_tci;
+
 		pci_dma_sync_single_for_device(sky2->hw->pdev, re->data_addr,
 					       length, PCI_DMA_FROMDEVICE);
+		re->skb->vlan_tci = 0;
+		re->skb->rxhash = 0;
 		re->skb->ip_summed = CHECKSUM_NONE;
 		skb_put(skb, length);
 	}
@@ -2430,15 +2435,15 @@ static struct sk_buff *sky2_receive(struct net_device *dev,
 	struct sk_buff *skb = NULL;
 	u16 count = (status & GMR_FS_LEN) >> 16;
 
-	if (status & GMR_FS_VLAN)
-		count -= VLAN_HLEN;	/* Account for vlan tag */
-
-	netif_printk(sky2, rx_status, KERN_DEBUG, dev,
-		     "rx slot %u status 0x%x len %d\n",
-		     sky2->rx_next, status, length);
+//	netif_printk(sky2, rx_status, KERN_DEBUG, dev,
+//		     "rx slot %u status 0x%x len %d\n",
+;
 
 	sky2->rx_next = (sky2->rx_next + 1) % sky2->rx_pending;
 	prefetch(sky2->rx_ring + sky2->rx_next);
+
+	if (vlan_tx_tag_present(re->skb))
+		count -= VLAN_HLEN;	/* Account for vlan tag */
 
 	/* This chip has hardware problems that generates bogus status.
 	 * So do only marginal checking and expect higher level protocols
@@ -2497,11 +2502,8 @@ static inline void sky2_tx_done(struct net_device *dev, u16 last)
 }
 
 static inline void sky2_skb_rx(const struct sky2_port *sky2,
-			       u32 status, struct sk_buff *skb)
+			       struct sk_buff *skb)
 {
-	if (status & GMR_FS_VLAN)
-		__vlan_hwaccel_put_tag(skb, be16_to_cpu(sky2->rx_tag));
-
 	if (skb->ip_summed == CHECKSUM_NONE)
 		netif_receive_skb(skb);
 	else
@@ -2553,6 +2555,14 @@ static void sky2_rx_checksum(struct sky2_port *sky2, u32 status)
 		sky2_write32(sky2->hw, Q_ADDR(rxqaddr[sky2->port], Q_CSR),
 			     BMU_DIS_RX_CHKSUM);
 	}
+}
+
+static void sky2_rx_tag(struct sky2_port *sky2, u16 length)
+{
+	struct sk_buff *skb;
+
+	skb = sky2->rx_ring[sky2->rx_next].skb;
+	__vlan_hwaccel_put_tag(skb, be16_to_cpu(length));
 }
 
 static void sky2_rx_hash(struct sky2_port *sky2, u32 status)
@@ -2613,8 +2623,7 @@ static int sky2_status_intr(struct sky2_hw *hw, int to_do, u16 idx)
 			}
 
 			skb->protocol = eth_type_trans(skb, dev);
-
-			sky2_skb_rx(sky2, status, skb);
+			sky2_skb_rx(sky2, skb);
 
 			/* Stop after net poll weight */
 			if (++work_done >= to_do)
@@ -2622,11 +2631,11 @@ static int sky2_status_intr(struct sky2_hw *hw, int to_do, u16 idx)
 			break;
 
 		case OP_RXVLAN:
-			sky2->rx_tag = length;
+			sky2_rx_tag(sky2, length);
 			break;
 
 		case OP_RXCHKSVLAN:
-			sky2->rx_tag = length;
+			sky2_rx_tag(sky2, length);
 			/* fall through */
 		case OP_RXCHKS:
 			if (likely(dev->features & NETIF_F_RXCSUM))
@@ -2805,10 +2814,10 @@ static int sky2_rx_hung(struct net_device *dev)
 	     /* Check if the PCI RX hang */
 	     (fifo_rp == sky2->check.fifo_rp &&
 	      fifo_lev != 0 && fifo_lev >= sky2->check.fifo_lev))) {
-		netdev_printk(KERN_DEBUG, dev,
-			      "hung mac %d:%d fifo %d (%d:%d)\n",
-			      mac_lev, mac_rp, fifo_lev,
-			      fifo_rp, sky2_read8(hw, Q_ADDR(rxq, Q_WP)));
+//		netdev_printk(KERN_DEBUG, dev,
+//			      "hung mac %d:%d fifo %d (%d:%d)\n",
+//			      mac_lev, mac_rp, fifo_lev,
+;
 		return 1;
 	} else {
 		sky2->check.last = dev->last_rx;
@@ -2920,8 +2929,10 @@ static irqreturn_t sky2_intr(int irq, void *dev_id)
 
 	/* Reading this mask interrupts as side effect */
 	status = sky2_read32(hw, B0_Y2_SP_ISRC2);
-	if (status == 0 || status == ~0)
+	if (status == 0 || status == ~0) {
+		sky2_write32(hw, B0_Y2_SP_ICR, 2);
 		return IRQ_NONE;
+	}
 
 	prefetch(&hw->st_le[hw->st_idx]);
 
@@ -4197,10 +4208,12 @@ static int sky2_set_features(struct net_device *dev, u32 features)
 	struct sky2_port *sky2 = netdev_priv(dev);
 	u32 changed = dev->features ^ features;
 
-	if (changed & NETIF_F_RXCSUM) {
-		u32 on = features & NETIF_F_RXCSUM;
-		sky2_write32(sky2->hw, Q_ADDR(rxqaddr[sky2->port], Q_CSR),
-			     on ? BMU_ENA_RX_CHKSUM : BMU_DIS_RX_CHKSUM);
+	if ((changed & NETIF_F_RXCSUM) &&
+	    !(sky2->hw->flags & SKY2_HW_NEW_LE)) {
+		sky2_write32(sky2->hw,
+			     Q_ADDR(rxqaddr[sky2->port], Q_CSR),
+			     (features & NETIF_F_RXCSUM)
+			     ? BMU_ENA_RX_CHKSUM : BMU_DIS_RX_CHKSUM);
 	}
 
 	if (changed & NETIF_F_RXHASH)
@@ -4456,7 +4469,7 @@ static int sky2_device_event(struct notifier_block *unused,
 
 	case NETDEV_GOING_DOWN:
 		if (sky2->debugfs) {
-			netdev_printk(KERN_DEBUG, dev, "remove debugfs\n");
+;
 			debugfs_remove(sky2->debugfs);
 			sky2->debugfs = NULL;
 		}
