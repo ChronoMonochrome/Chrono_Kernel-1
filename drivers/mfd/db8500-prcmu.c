@@ -2317,7 +2317,7 @@ static ssize_t pllddr_store(struct kobject *kobj, struct kobj_attribute *attr, c
 	ret = sscanf(buf, "%d", &freq);
 
 	// check for bogus values - retry with hexademical input
-	if ((!freq) || ((freq >= 50101) && (freq <= 50199))) {
+	if ((!freq) || (freq <= 50199)) {
 		ret = sscanf(buf, "%x", &freq);
 
 		if ((freq >= 0x50101) && (freq <= 0x501ff)) {
@@ -2349,6 +2349,12 @@ schedule:
 	return count;
 }
 ATTR_RW(pllddr);
+
+static ssize_t prcmu_mcdeclk_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)		
+{
+	return sprintf(buf, "%d\n", prcmu_is_mcdeclk_on());
+}
+ATTR_RO(prcmu_mcdeclk);
 
 static ssize_t pllddr_oc_delay_us_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
@@ -2479,6 +2485,7 @@ static struct attribute *liveopp_attrs[] = {
 	&pllddr_interface.attr,
 	&pllddr_oc_delay_us_interface.attr,
 	&pllddr_cross_clocks_interface.attr,
+	&prcmu_mcdeclk_interface.attr,
 	NULL,
 };
 

@@ -701,6 +701,25 @@ config DB8500_LIVEOPP
 	  Select this option to enable support for LiveOPP driver which
 	  supports OC/UC/UV/OV in userspace.
 
+config LIVEOPP_DEBUG
+	depends on DB8500_LIVEOPP
+	int  "LiveOPP debug level"
+	default 0
+
+config LIVEOPP_CUSTOM_BOOTUP_FREQ
+	bool "LiveOPP bootup freq"
+	depends on DB8500_LIVEOPP
+	default n
+
+config LIVEOPP_CUSTOM_BOOTUP_FREQ_MIN
+	int "LiveOPP bootup min freq"
+	default 200000
+
+config LIVEOPP_CUSTOM_BOOTUP_FREQ_MAX
+	int "LiveOPP bootup max freq"
+	default 800000
+
+
 config MFD_CS5535
 	tristate "Support for CS5535 and CS5536 southbridge core functions"
 	select MFD_CORE
