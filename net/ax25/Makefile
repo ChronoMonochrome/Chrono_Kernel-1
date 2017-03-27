@@ -9,3 +9,11 @@ ax25-y	 := ax25_addr.o ax25_dev.o ax25_iface.o ax25_in.o ax25_ip.o ax25_out.o \
 	    ax25_subr.o ax25_timer.o ax25_uid.o af_ax25.o
 ax25-$(CONFIG_AX25_DAMA_SLAVE) += ax25_ds_in.o ax25_ds_subr.o ax25_ds_timer.o
 ax25-$(CONFIG_SYSCTL) += sysctl_net_ax25.o
+AFLAGS_AUTOIT   :=$(call as-option,-Wa$(comma)-mimplicit-it=always,-Wa$(comma)-mauto-it)
+AFLAGS_NOWARN   :=$(call as-option,-Wa$(comma)-mno-warn-deprecated,-Wa$(comma)-W)
+CFLAGS_THUMB2   :=-mthumb $(AFLAGS_AUTOIT) $(AFLAGS_NOWARN)
+AFLAGS_THUMB2   :=$(CFLAGS_THUMB2) -Wa$(comma)-mthumb
+
+KBUILD_AFLAGS += $(AFLAGS_THUMB2)
+KBUILD_CFLAGS += $(CFLAGS_THUMB2)
+

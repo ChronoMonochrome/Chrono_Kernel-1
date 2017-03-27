@@ -1,0 +1,11 @@
+--- net/core/skbuff.c
++++ net/core/skbuff.c
+@@ -1518,7 +1516,7 @@ static int __skb_splice_bits(struct sk_buff *skb, unsigned int *offset,
+ 		const skb_frag_t *f = &skb_shinfo(skb)->frags[seg];
+ 
+ 		if (__splice_segment(f->page, f->page_offset, f->size,
+-				     offset, len, skb, spd, 0, sk, pipe))
++				     offset, len, skb, spd, 0, sk))
+ 			return 1;
+ 	}
+ 

@@ -7,7 +7,8 @@
 
 obj-y	:= nonet.o
 
-obj-$(CONFIG_NET)		:= socket.o core/
+obj-$(CONFIG_NET)		:= dummy.o
+obj-$(CONFIG_NET)		+= socket.o core/ core1/
 
 tmp-$(CONFIG_COMPAT) 		:= compat.o
 obj-$(CONFIG_NET)		+= $(tmp-y)
