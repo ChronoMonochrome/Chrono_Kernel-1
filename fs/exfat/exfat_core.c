@@ -165,7 +165,7 @@ s32 ffsMountVol(struct super_block *sb)
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 	BD_INFO_T *p_bd = &(EXFAT_SB(sb)->bd_info);
 
-;
+	printk("[EXFAT] trying to mount...\n");
 
 	sm_init(&p_fs->v_sem);
 	p_fs->dev_ejected = FALSE;
@@ -238,7 +238,7 @@ s32 ffsMountVol(struct super_block *sb)
 		return FFS_MEDIAERR;
 	}
 
-;
+	printk("[EXFAT] mounted successfully\n");
 
 	return FFS_SUCCESS;
 } /* end of ffsMountVol */
@@ -248,7 +248,7 @@ s32 ffsUmountVol(struct super_block *sb)
 {
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
-;
+	printk("[EXFAT] trying to unmount...\n");
 
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
@@ -265,12 +265,12 @@ s32 ffsUmountVol(struct super_block *sb)
 	bdev_close(sb);
 
 	if (p_fs->dev_ejected) {
-//		printk("[EXFAT] unmounted with media errors. "
-;
+		printk("[EXFAT] unmounted with media errors. "
+			"device's already ejected.\n");
 		return FFS_MEDIAERR;
 	}
 
-;
+	printk("[EXFAT] unmounted successfully\n");
 
 	return FFS_SUCCESS;
 } /* end of ffsUmountVol */
@@ -414,7 +414,7 @@ s32 ffsCreateFile(struct inode *inode, char *path, u8 mode, FILE_ID_T *fid)
 	/* create a new file */
 	ret = create_file(inode, &dir, &uni_name, mode, fid);
 
-#ifdef CONFIG_EXFAT_DELAYED_SYNC
+#ifndef CONFIG_EXFAT_DELAYED_SYNC
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
 #endif
@@ -709,7 +709,7 @@ s32 ffsWriteFile(struct inode *inode, FILE_ID_T *fid, void *buffer, u64 count, u
 		release_entry_set(es);
 	}
 
-#ifdef CONFIG_EXFAT_DELAYED_SYNC
+#ifndef CONFIG_EXFAT_DELAYED_SYNC
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
 #endif
@@ -746,9 +746,9 @@ s32 ffsTruncateFile(struct inode *inode, u64 old_size, u64 new_size)
 		return FFS_PERMISSIONERR;
 
 	if (fid->size != old_size) {
-//		printk(KERN_ERR "[EXFAT] truncate : can't skip it because of "
-//				"size-mismatch(old:%lld->fid:%lld).\n"
-;
+		printk(KERN_ERR "[EXFAT] truncate : can't skip it because of "
+				"size-mismatch(old:%lld->fid:%lld).\n"
+				,old_size, fid->size);
 	}
 
 	if (old_size <= new_size)
@@ -827,7 +827,7 @@ s32 ffsTruncateFile(struct inode *inode, u64 old_size, u64 new_size)
 	if (fid->rwoffset > fid->size)
 		fid->rwoffset = fid->size;
 
-#ifdef CONFIG_EXFAT_DELAYED_SYNC
+#ifndef CONFIG_EXFAT_DELAYED_SYNC
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
 #endif
@@ -948,7 +948,7 @@ s32 ffsMoveFile(struct inode *old_parent_inode, FILE_ID_T *fid, struct inode *ne
 		p_fs->fs_func->delete_dir_entry(sb, p_dir, new_entry, 0, num_entries+1);
 	}
 out:
-#ifdef CONFIG_EXFAT_DELAYED_SYNC
+#ifndef CONFIG_EXFAT_DELAYED_SYNC
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
 #endif
@@ -997,7 +997,7 @@ s32 ffsRemoveFile(struct inode *inode, FILE_ID_T *fid)
 	fid->start_clu = CLUSTER_32(~0);
 	fid->flags = (p_fs->vol_type == EXFAT) ? 0x03 : 0x01;
 
-#ifdef CONFIG_EXFAT_DELAYED_SYNC
+#ifndef CONFIG_EXFAT_DELAYED_SYNC
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
 #endif
@@ -1073,7 +1073,7 @@ s32 ffsSetAttr(struct inode *inode, u32 attr)
 		release_entry_set(es);
 	}
 
-#ifdef CONFIG_EXFAT_DELAYED_SYNC
+#ifndef CONFIG_EXFAT_DELAYED_SYNC
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
 #endif
@@ -1171,7 +1171,7 @@ s32 ffsGetStat(struct inode *inode, DIR_ENTRY_T *info)
 	/* XXX this is very bad for exfat cuz name is already included in es.
 	 API should be revised */
 	p_fs->fs_func->get_uni_name_from_ext_entry(sb, &(fid->dir), fid->entry, uni_name.name);
-	if (*(uni_name.name) == 0x0)
+	if (*(uni_name.name) == 0x0 && p_fs->vol_type != EXFAT)
 		get_uni_name_from_dos_entry(sb, (DOS_DENTRY_T *) ep, &uni_name, 0x1);
 	nls_uniname_to_cstring(sb, info->Name, &uni_name);
 
@@ -1429,7 +1429,7 @@ s32 ffsCreateDir(struct inode *inode, char *path, FILE_ID_T *fid)
 
 	ret = create_dir(inode, &dir, &uni_name, fid);
 
-#ifdef CONFIG_EXFAT_DELAYED_SYNC
+#ifndef CONFIG_EXFAT_DELAYED_SYNC
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
 #endif
@@ -1556,7 +1556,7 @@ s32 ffsReadDir(struct inode *inode, DIR_ENTRY_T *dir_entry)
 
 			*(uni_name.name) = 0x0;
 			p_fs->fs_func->get_uni_name_from_ext_entry(sb, &dir, dentry, uni_name.name);
-			if (*(uni_name.name) == 0x0)
+			if (*(uni_name.name) == 0x0 && p_fs->vol_type != EXFAT)
 				get_uni_name_from_dos_entry(sb, (DOS_DENTRY_T *) ep, &uni_name, 0x1);
 			nls_uniname_to_cstring(sb, dir_entry->Name, &uni_name);
 			buf_unlock(sb, sector);
@@ -1651,7 +1651,7 @@ s32 ffsRemoveDir(struct inode *inode, FILE_ID_T *fid)
 	fid->start_clu = CLUSTER_32(~0);
 	fid->flags = (p_fs->vol_type == EXFAT)? 0x03: 0x01;
 
-#ifdef CONFIG_EXFAT_DELAYED_SYNC
+#ifndef CONFIG_EXFAT_DELAYED_SYNC
 	fs_sync(sb, 0);
 	fs_set_vol_flags(sb, VOL_CLEAN);
 #endif
@@ -1752,7 +1752,7 @@ void fs_error(struct super_block *sb)
 		panic("[EXFAT] Filesystem panic from previous error\n");
 	else if ((opts->errors == EXFAT_ERRORS_RO) && !(sb->s_flags & MS_RDONLY)) {
 		sb->s_flags |= MS_RDONLY;
-;
+		printk(KERN_ERR "[EXFAT] Filesystem has been set read-only\n");
 	}
 }
 
@@ -1972,9 +1972,9 @@ void exfat_free_cluster(struct super_block *sb, CHAIN_T *p_chain, s32 do_relse)
 		return;
 
 	if (p_chain->size <= 0) {
-//		printk(KERN_ERR "[EXFAT] free_cluster : skip free-req clu:%u, "
-//				"because of zero-size truncation\n"
-;
+		printk(KERN_ERR "[EXFAT] free_cluster : skip free-req clu:%u, "
+				"because of zero-size truncation\n"
+				,p_chain->dir);
 		return;
 	}
 
@@ -2251,7 +2251,7 @@ s32 clr_alloc_bitmap(struct super_block *sb, u32 clu)
 		ret = sb_issue_discard(sb, START_SECTOR(clu), (1 << p_fs->sectors_per_clu_bits), GFP_NOFS, 0);
 #endif
 		if (ret == -EOPNOTSUPP) {
-;
+			printk(KERN_WARNING "discard not supported by device, disabling");
 			opts->discard = 0;
 		}
 	}
@@ -5028,7 +5028,7 @@ s32 sector_read(struct super_block *sb, u32 sec, struct buffer_head **bh, s32 re
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
 	if ((sec >= (p_fs->PBR_sector+p_fs->num_sectors)) && (p_fs->num_sectors > 0)) {
-;
+		printk("[EXFAT] sector_read: out of range error! (sec = %d)\n", sec);
 		fs_error(sb);
 		return ret;
 	}
@@ -5048,13 +5048,13 @@ s32 sector_write(struct super_block *sb, u32 sec, struct buffer_head *bh, s32 sy
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
 	if (sec >= (p_fs->PBR_sector+p_fs->num_sectors) && (p_fs->num_sectors > 0)) {
-;
+		printk("[EXFAT] sector_write: out of range error! (sec = %d)\n", sec);
 		fs_error(sb);
 		return ret;
 	}
 
 	if (bh == NULL) {
-;
+		printk("[EXFAT] sector_write: bh is NULL!\n");
 		fs_error(sb);
 		return ret;
 	}
@@ -5074,7 +5074,7 @@ s32 multi_sector_read(struct super_block *sb, u32 sec, struct buffer_head **bh, 
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
 	if (((sec+num_secs) > (p_fs->PBR_sector+p_fs->num_sectors)) && (p_fs->num_sectors > 0)) {
-;
+		printk("[EXFAT] multi_sector_read: out of range error! (sec = %d, num_secs = %d)\n", sec, num_secs);
 		fs_error(sb);
 		return ret;
 	}
@@ -5094,12 +5094,12 @@ s32 multi_sector_write(struct super_block *sb, u32 sec, struct buffer_head *bh, 
 	FS_INFO_T *p_fs = &(EXFAT_SB(sb)->fs_info);
 
 	if ((sec+num_secs) > (p_fs->PBR_sector+p_fs->num_sectors) && (p_fs->num_sectors > 0)) {
-;
+		printk("[EXFAT] multi_sector_write: out of range error! (sec = %d, num_secs = %d)\n", sec, num_secs);
 		fs_error(sb);
 		return ret;
 	}
 	if (bh == NULL) {
-;
+		printk("[EXFAT] multi_sector_write: bh is NULL!\n");
 		fs_error(sb);
 		return ret;
 	}
