@@ -263,11 +263,10 @@ SYSCALL_DEFINE3(mprotect, unsigned long, start, size_t, len,
 
 	down_write(&current->mm->mmap_sem);
 
-	vma = find_vma(current->mm, start);
+	vma = find_vma_prev(current->mm, start, &prev);
 	error = -ENOMEM;
 	if (!vma)
 		goto out;
-	prev = vma->vm_prev;
 	if (unlikely(grows & PROT_GROWSDOWN)) {
 		if (vma->vm_start >= end)
 			goto out;

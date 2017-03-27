@@ -35,7 +35,6 @@
 #include <asm/uaccess.h>
 #include <asm/param.h>
 #include <asm/page.h>
-#include <asm/exec.h>
 
 static int load_elf_binary(struct linux_binprm *bprm, struct pt_regs *regs);
 static int load_elf_library(struct file *);
@@ -1404,22 +1403,6 @@ static void do_thread_regset_writeback(struct task_struct *task,
 		regset->writeback(task, regset, 1);
 }
 
-#ifndef PR_REG_SIZE
-#define PR_REG_SIZE(S) sizeof(S)
-#endif
-
-#ifndef PRSTATUS_SIZE
-#define PRSTATUS_SIZE(S) sizeof(S)
-#endif
-
-#ifndef PR_REG_PTR
-#define PR_REG_PTR(S) (&((S)->pr_reg))
-#endif
-
-#ifndef SET_PR_FPVALID
-#define SET_PR_FPVALID(S, V) ((S)->pr_fpvalid = (V))
-#endif
-
 static int fill_thread_core_info(struct elf_thread_core_info *t,
 				 const struct user_regset_view *view,
 				 long signr, size_t *total)
@@ -1434,11 +1417,11 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
 	 */
 	fill_prstatus(&t->prstatus, t->task, signr);
 	(void) view->regsets[0].get(t->task, &view->regsets[0],
-				    0, PR_REG_SIZE(t->prstatus.pr_reg),
-				    PR_REG_PTR(&t->prstatus), NULL);
+				    0, sizeof(t->prstatus.pr_reg),
+				    &t->prstatus.pr_reg, NULL);
 
 	fill_note(&t->notes[0], "CORE", NT_PRSTATUS,
-		  PRSTATUS_SIZE(t->prstatus), &t->prstatus);
+		  sizeof(t->prstatus), &t->prstatus);
 	*total += notesize(&t->notes[0]);
 
 	do_thread_regset_writeback(t->task, &view->regsets[0]);
@@ -1468,7 +1451,7 @@ static int fill_thread_core_info(struct elf_thread_core_info *t,
 						  regset->core_note_type,
 						  size, data);
 				else {
-					SET_PR_FPVALID(&t->prstatus, 1);
+					t->prstatus.pr_fpvalid = 1;
 					fill_note(&t->notes[i], "CORE",
 						  NT_PRFPREG, size, data);
 				}

@@ -12,7 +12,7 @@
 #include <linux/pfn.h>
 #include <linux/slab.h>
 #include <linux/bootmem.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/kmemleak.h>
 #include <linux/range.h>
 #include <linux/memblock.h>
@@ -105,34 +105,22 @@ static void __init __free_pages_memory(unsigned long start, unsigned long end)
 		__free_pages_bootmem(pfn_to_page(i), 0);
 }
 
-static unsigned long __init __free_memory_core(phys_addr_t start,
-				 phys_addr_t end)
+unsigned long __init free_all_memory_core_early(int nodeid)
 {
-	unsigned long start_pfn = PFN_UP(start);
-	unsigned long end_pfn = min_t(unsigned long,
-				      PFN_DOWN(end), max_low_pfn);
-
-	if (start_pfn > end_pfn)
-		return 0;
-
-	__free_pages_memory(start_pfn, end_pfn);
-
-	return end_pfn - start_pfn;
-}
-
-unsigned long __init free_low_memory_core_early(int nodeid)
-{
+	int i;
+	u64 start, end;
 	unsigned long count = 0;
-	phys_addr_t start, end, size;
-	u64 i;
+	struct range *range = NULL;
+	int nr_range;
 
-	for_each_free_mem_range(i, MAX_NUMNODES, &start, &end, NULL)
-		count += __free_memory_core(start, end);
+	nr_range = get_free_all_memory_range(&range, nodeid);
 
-	/* free range that is used for reserved array if we allocate it */
-	size = get_allocated_memblock_reserved_regions_info(&start);
-	if (size)
-		count += __free_memory_core(start, start + size);
+	for (i = 0; i < nr_range; i++) {
+		start = range[i].start;
+		end = range[i].end;
+		count += end - start;
+		__free_pages_memory(start, end);
+	}
 
 	return count;
 }
@@ -147,7 +135,7 @@ unsigned long __init free_all_bootmem_node(pg_data_t *pgdat)
 {
 	register_page_bootmem_info_node(pgdat);
 
-	/* free_low_memory_core_early(MAX_NUMNODES) will be called later */
+	/* free_all_memory_core_early(MAX_NUMNODES) will be called later */
 	return 0;
 }
 
@@ -165,7 +153,7 @@ unsigned long __init free_all_bootmem(void)
 	 * Use MAX_NUMNODES will make sure all ranges in early_node_map[]
 	 *  will be used instead of only Node0 related
 	 */
-	return free_low_memory_core_early(MAX_NUMNODES);
+	return free_all_memory_core_early(MAX_NUMNODES);
 }
 
 /**
@@ -256,11 +244,7 @@ static void * __init ___alloc_bootmem(unsigned long size, unsigned long align,
 	/*
 	 * Whoops, we cannot satisfy the allocation request.
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_ALERT "bootmem alloc of %lu bytes failed!\n", size);
-#else
-	;
-#endif
 	panic("Out of memory");
 	return NULL;
 }

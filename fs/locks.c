@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/locks.c
  *
@@ -585,7 +582,7 @@ static void locks_delete_lock(struct file_lock **thisfl_p)
 
 	fasync_helper(0, fl->fl_file, 0, &fl->fl_fasync);
 	if (fl->fl_fasync != NULL) {
-;
+		printk(KERN_ERR "locks_delete_lock: fasync == %p\n", fl->fl_fasync);
 		fl->fl_fasync = NULL;
 	}
 

@@ -57,10 +57,8 @@ early_param("initrd", early_initrd);
 
 static int __init parse_tag_initrd(const struct tag *tag)
 {
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "ATAG_INITRD is deprecated; "
 		"please update your bootloader.\n");
-#endif
 	phys_initrd_start = __virt_to_phys(tag->u.initrd.start);
 	phys_initrd_size = tag->u.initrd.size;
 	return 0;
@@ -98,11 +96,7 @@ void show_mem(unsigned int filter)
 	int shared = 0, cached = 0, slab = 0, i;
 	struct meminfo * mi = &meminfo;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("Mem-info:\n");
-#else
-	;
-#endif
 	show_free_areas(filter);
 
 	if (filter & SHOW_MEM_FILTER_PAGE_COUNT)
@@ -135,36 +129,12 @@ void show_mem(unsigned int filter)
 		} while (page < end);
 	}
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d pages of RAM\n", total);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d free pages\n", free);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d reserved pages\n", reserved);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d slab pages\n", slab);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d pages shared\n", shared);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk("%d pages swap cached\n", cached);
-#else
-	;
-#endif
 }
 
 static void __init find_limits(unsigned long *min, unsigned long *max_low,
@@ -470,11 +440,7 @@ static inline int free_area(unsigned long pfn, unsigned long end, char *s)
 	}
 
 	if (size && s)
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "Freeing %s memory: %dK\n", s, size);
-#else
-		;
-#endif
 
 	return pages;
 }
@@ -678,43 +644,26 @@ void __init mem_init(void)
 	 * Since our memory may not be contiguous, calculate the
 	 * real number of pages we have in this system
 	 */
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Memory:");
-#else
-	;
-#endif
 	num_physpages = 0;
 	for_each_memblock(memory, reg) {
 		unsigned long pages = memblock_region_memory_end_pfn(reg) -
 			memblock_region_memory_base_pfn(reg);
 		num_physpages += pages;
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(" %ldMB", pages >> (20 - PAGE_SHIFT));
-#else
-		;
-#endif
 	}
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(" = %luMB total\n", num_physpages >> (20 - PAGE_SHIFT));
-#else
-	;
-#endif
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Memory: %luk/%luk available, %luk reserved, %luK highmem\n",
 		nr_free_pages() << (PAGE_SHIFT-10),
 		free_pages << (PAGE_SHIFT-10),
 		reserved_pages << (PAGE_SHIFT-10),
 		totalhigh_pages << (PAGE_SHIFT-10));
-#else
-	;
-#endif
 
 #define MLK(b, t) b, t, ((t) - (b)) >> 10
 #define MLM(b, t) b, t, ((t) - (b)) >> 20
 #define MLK_ROUNDUP(b, t) b, t, DIV_ROUND_UP(((t) - (b)), SZ_1K)
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_NOTICE "Virtual kernel memory layout:\n"
 			"    vector  : 0x%08lx - 0x%08lx   (%4ld kB)\n"
 #ifdef CONFIG_HAVE_TCM
@@ -756,9 +705,6 @@ void __init mem_init(void)
 			MLK_ROUNDUP(__init_begin, __init_end),
 			MLK_ROUNDUP(_sdata, _edata),
 			MLK_ROUNDUP(__bss_start, __bss_stop));
-#else
-	;
-#endif
 
 #undef MLK
 #undef MLM

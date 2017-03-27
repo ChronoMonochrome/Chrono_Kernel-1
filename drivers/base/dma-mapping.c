@@ -8,7 +8,7 @@
  */
 
 #include <linux/dma-mapping.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/gfp.h>
 #include <asm-generic/dma-coherent.h>
 

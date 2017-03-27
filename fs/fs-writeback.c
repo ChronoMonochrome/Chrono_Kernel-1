@@ -14,7 +14,7 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/spinlock.h>
 #include <linux/slab.h>
 #include <linux/sched.h>
@@ -1024,10 +1024,10 @@ static noinline void block_dump___mark_inode_dirty(struct inode *inode)
 			spin_lock(&dentry->d_lock);
 			name = (const char *) dentry->d_name.name;
 		}
-//		printk(KERN_DEBUG
-//		       "%s(%d): dirtied inode %lu (%s) on %s\n",
-//		       current->comm, task_pid_nr(current), inode->i_ino,
-;
+		printk(KERN_DEBUG
+		       "%s(%d): dirtied inode %lu (%s) on %s\n",
+		       current->comm, task_pid_nr(current), inode->i_ino,
+		       name, inode->i_sb->s_id);
 		if (dentry) {
 			spin_unlock(&dentry->d_lock);
 			dput(dentry);

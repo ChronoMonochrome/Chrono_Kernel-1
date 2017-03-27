@@ -40,18 +40,19 @@
 
 #ifdef MB_CACHE_DEBUG
 # define mb_debug(f...) do { \
-;
-;
+		printk(KERN_DEBUG f); \
+		printk("\n"); \
 	} while (0)
 #define mb_assert(c) do { if (!(c)) \
-;
+		printk(KERN_ERR "assertion " #c " failed\n"); \
 	} while(0)
 #else
 # define mb_debug(f...) do { } while(0)
 # define mb_assert(c) do { } while(0)
 #endif
 #define mb_error(f...) do { \
-;		\
+		printk(KERN_ERR f); \
+		printk("\n"); \
 	} while(0)
 
 #define MB_CACHE_WRITER ((unsigned short)~0U >> 1)

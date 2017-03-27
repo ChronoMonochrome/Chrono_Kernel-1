@@ -6,7 +6,7 @@
  *  Manage the dynamic fd arrays in the process files_struct.
  */
 
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
 #include <linux/mmzone.h>
@@ -467,7 +467,7 @@ repeat:
 #if 1
 	/* Sanity check */
 	if (rcu_dereference_raw(fdt->fd[fd]) != NULL) {
-;
+		printk(KERN_WARNING "alloc_fd: slot %d not NULL!\n", fd);
 		rcu_assign_pointer(fdt->fd[fd], NULL);
 	}
 #endif

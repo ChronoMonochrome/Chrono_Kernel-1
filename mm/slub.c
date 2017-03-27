@@ -372,8 +372,7 @@ static inline bool __cmpxchg_double_slab(struct kmem_cache *s, struct page *page
 		const char *n)
 {
 	VM_BUG_ON(!irqs_disabled());
-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
+#if defined(CONFIG_CMPXCHG_DOUBLE) && defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
 	if (s->flags & __CMPXCHG_DOUBLE) {
 		if (cmpxchg_double(&page->freelist, &page->counters,
 			freelist_old, counters_old,
@@ -396,11 +395,7 @@ static inline bool __cmpxchg_double_slab(struct kmem_cache *s, struct page *page
 	stat(s, CMPXCHG_DOUBLE_FAIL);
 
 #ifdef SLUB_DEBUG_CMPXCHG
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s %s: cmpxchg double redo ", n, s->name);
-#else
-	;
-#endif
 #endif
 
 	return 0;
@@ -411,8 +406,7 @@ static inline bool cmpxchg_double_slab(struct kmem_cache *s, struct page *page,
 		void *freelist_new, unsigned long counters_new,
 		const char *n)
 {
-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
+#if defined(CONFIG_CMPXCHG_DOUBLE) && defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
 	if (s->flags & __CMPXCHG_DOUBLE) {
 		if (cmpxchg_double(&page->freelist, &page->counters,
 			freelist_old, counters_old,
@@ -440,11 +434,7 @@ static inline bool cmpxchg_double_slab(struct kmem_cache *s, struct page *page,
 	stat(s, CMPXCHG_DOUBLE_FAIL);
 
 #ifdef SLUB_DEBUG_CMPXCHG
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s %s: cmpxchg double redo ", n, s->name);
-#else
-	;
-#endif
 #endif
 
 	return 0;
@@ -927,15 +917,11 @@ static void trace(struct kmem_cache *s, struct page *page, void *object,
 								int alloc)
 {
 	if (s->flags & SLAB_TRACE) {
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_INFO "TRACE %s %s 0x%p inuse=%d fp=0x%p\n",
 			s->name,
 			alloc ? "alloc" : "free",
 			object, page->inuse,
 			page->freelist);
-#else
-		;
-#endif
 
 		if (!alloc)
 			print_section("Object ", (void *)object, s->objsize);
@@ -1714,36 +1700,20 @@ static inline void note_cmpxchg_failure(const char *n,
 #ifdef SLUB_DEBUG_CMPXCHG
 	unsigned long actual_tid = __this_cpu_read(s->cpu_slab->tid);
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "%s %s: cmpxchg redo ", n, s->name);
-#else
-	;
-#endif
 
 #ifdef CONFIG_PREEMPT
 	if (tid_to_cpu(tid) != tid_to_cpu(actual_tid))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("due to cpu change %d -> %d\n",
 			tid_to_cpu(tid), tid_to_cpu(actual_tid));
-#else
-		;
-#endif
 	else
 #endif
 	if (tid_to_event(tid) != tid_to_event(actual_tid))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("due to cpu running other code. Event %ld->%ld\n",
 			tid_to_event(tid), tid_to_event(actual_tid));
-#else
-		;
-#endif
 	else
-#ifdef CONFIG_DEBUG_PRINTK
 		printk("for unknown reason: actual=%lx was=%lx target=%lx\n",
 			actual_tid, tid, next_tid(tid));
-#else
-		;
-#endif
 #endif
 	stat(s, CMPXCHG_DOUBLE_CPU_FAIL);
 }
@@ -2125,28 +2095,16 @@ slab_out_of_memory(struct kmem_cache *s, gfp_t gfpflags, int nid)
 {
 	int node;
 
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING
 		"SLUB: Unable to allocate memory on node %d (gfp=0x%x)\n",
 		nid, gfpflags);
-#else
-	;
-#endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_WARNING "  cache: %s, object size: %d, buffer size: %d, "
 		"default order: %d, min order: %d\n", s->name, s->objsize,
 		s->size, oo_order(s->oo), oo_order(s->min));
-#else
-	;
-#endif
 
 	if (oo_order(s->min) > get_order(s->objsize))
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING "  %s debugging increased min order, use "
 		       "slub_debug=O to disable.\n", s->name);
-#else
-		;
-#endif
 
 	for_each_online_node(node) {
 		struct kmem_cache_node *n = get_node(s, node);
@@ -2161,13 +2119,9 @@ slab_out_of_memory(struct kmem_cache *s, gfp_t gfpflags, int nid)
 		nr_slabs = node_nr_slabs(n);
 		nr_objs  = node_nr_objs(n);
 
-#ifdef CONFIG_DEBUG_PRINTK
 		printk(KERN_WARNING
 			"  node %d: slabs: %ld, objs: %ld, free: %ld\n",
 			node, nr_slabs, nr_objs, nr_free);
-#else
-		;
-#endif
 	}
 }
 
@@ -3092,8 +3046,7 @@ static int kmem_cache_open(struct kmem_cache *s,
 		}
 	}
 
-#if defined(CONFIG_HAVE_CMPXCHG_DOUBLE) && \
-    defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
+#if defined(CONFIG_CMPXCHG_DOUBLE) && defined(CONFIG_HAVE_ALIGNED_STRUCT_PAGE)
 	if (system_has_cmpxchg_double() && (s->flags & SLAB_DEBUG_FLAGS) == 0)
 		/* Enable fast mode */
 		s->flags |= __CMPXCHG_DOUBLE;
@@ -3895,16 +3848,12 @@ void __init kmem_cache_init(void)
 		}
 	}
 #endif
-#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO
 		"SLUB: Genslabs=%d, HWalign=%d, Order=%d-%d, MinObjects=%d,"
 		" CPUs=%d, Nodes=%d\n",
 		caches, cache_line_size(),
 		slub_min_order, slub_max_order, slub_min_objects,
 		nr_cpu_ids, nr_node_ids);
-#else
-	;
-#endif
 }
 
 void __init kmem_cache_init_late(void)

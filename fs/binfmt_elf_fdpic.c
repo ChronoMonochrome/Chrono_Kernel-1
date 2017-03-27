@@ -39,23 +39,22 @@
 #include <asm/uaccess.h>
 #include <asm/param.h>
 #include <asm/pgalloc.h>
-#include <asm/exec.h>
 
 typedef char *elf_caddr_t;
 
 #if 0
-//#define kdebug(fmt, ...) printk("FDPIC "fmt"\n" ,##__VA_ARGS__ )
-//#else
-//#define kdebug(fmt, ...) do {} while(0)
-//#endif
-//
-//#if 0
-//#define kdcore(fmt, ...) printk("FDPIC "fmt"\n" ,##__VA_ARGS__ )
-//#else
-//#define kdcore(fmt, ...) do {} while(0)
-//#endif
-//
-;
+#define kdebug(fmt, ...) printk("FDPIC "fmt"\n" ,##__VA_ARGS__ )
+#else
+#define kdebug(fmt, ...) do {} while(0)
+#endif
+
+#if 0
+#define kdcore(fmt, ...) printk("FDPIC "fmt"\n" ,##__VA_ARGS__ )
+#else
+#define kdcore(fmt, ...) do {} while(0)
+#endif
+
+MODULE_LICENSE("GPL");
 
 static int load_elf_fdpic_binary(struct linux_binprm *, struct pt_regs *);
 static int elf_fdpic_fetch_phdrs(struct elf_fdpic_params *, struct file *);
@@ -360,7 +359,7 @@ static int load_elf_fdpic_binary(struct linux_binprm *bprm,
 		retval = elf_fdpic_map_file(&interp_params, interpreter,
 					    current->mm, "interpreter");
 		if (retval < 0) {
-;
+			printk(KERN_ERR "Unable to load interpreter\n");
 			goto error_kill;
 		}
 
@@ -909,8 +908,8 @@ static int elf_fdpic_map_file(struct elf_fdpic_params *params,
 	return 0;
 
 dynamic_error:
-//	printk("ELF FDPIC %s with invalid DYNAMIC section (inode=%lu)\n",
-;
+	printk("ELF FDPIC %s with invalid DYNAMIC section (inode=%lu)\n",
+	       what, file->f_path.dentry->d_inode->i_ino);
 	return -ELIBBAD;
 }
 
@@ -1832,9 +1831,9 @@ static int elf_fdpic_core_dump(struct coredump_params *cprm)
 
 	if (cprm->file->f_pos != offset) {
 		/* Sanity check */
-//		printk(KERN_WARNING
-//		       "elf_core_dump: file->f_pos (%lld) != offset (%lld)\n",
-;
+		printk(KERN_WARNING
+		       "elf_core_dump: file->f_pos (%lld) != offset (%lld)\n",
+		       cprm->file->f_pos, offset);
 	}
 
 end_coredump:

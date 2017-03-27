@@ -1,6 +1,3 @@
-#ifdef CONFIG_GOD_MODE
-#include <linux/god_mode.h>
-#endif
 /*
  *  linux/fs/pipe.c
  *
@@ -38,6 +35,12 @@ unsigned int pipe_max_size = 1048576;
  * Minimum pipe size, as required by POSIX
  */
 unsigned int pipe_min_size = PAGE_SIZE;
+
+/* Maximum allocatable pages per user. Hard limit is unset by default, soft
+ * matches default values.
+ */
+unsigned long pipe_user_pages_hard;
+unsigned long pipe_user_pages_soft = PIPE_DEF_BUFFERS * INR_OPEN_CUR;
 
 /*
  * We use a start+len construction, which provides full use of the 
@@ -1280,17 +1283,11 @@ long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = -EINVAL;
 		if (!nr_pages)
 			goto out;
-#ifdef CONFIG_GOD_MODE
-if (!god_mode_enabled) {
-#endif
+
 		if (!capable(CAP_SYS_RESOURCE) && size > pipe_max_size) {
 			ret = -EPERM;
 			goto out;
 		}
-#ifdef CONFIG_GOD_MODE
-}
-#endif
-
 		ret = pipe_set_size(pipe, nr_pages);
 		break;
 		}
