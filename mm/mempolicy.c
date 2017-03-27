@@ -75,7 +75,7 @@
 #include <linux/cpuset.h>
 #include <linux/slab.h>
 #include <linux/string.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/nsproxy.h>
 #include <linux/interrupt.h>
 #include <linux/init.h>
@@ -111,7 +111,7 @@ enum zone_type policy_zone = 0;
 /*
  * run-time system-wide default policy => local allocation
  */
-static struct mempolicy default_policy = {
+struct mempolicy default_policy = {
 	.refcnt = ATOMIC_INIT(1), /* never free it */
 	.mode = MPOL_PREFERRED,
 	.flags = MPOL_F_LOCAL,
@@ -655,24 +655,16 @@ static int mbind_range(struct mm_struct *mm, unsigned long start,
 	unsigned long vmstart;
 	unsigned long vmend;
 
-	vma = find_vma(mm, start);
+	vma = find_vma_prev(mm, start, &prev);
 	if (!vma || vma->vm_start > start)
 		return -EFAULT;
-
-	prev = vma->vm_prev;
-	if (start > vma->vm_start)
-		prev = vma;
 
 	for (; vma && vma->vm_start < end; prev = vma, vma = next) {
 		next = vma->vm_next;
 		vmstart = max(start, vma->vm_start);
 		vmend   = min(end, vma->vm_end);
 
-		if (mpol_equal(vma_policy(vma), new_pol))
-			continue;
-
-		pgoff = vma->vm_pgoff +
-			((vmstart - vma->vm_start) >> PAGE_SHIFT);
+		pgoff = vma->vm_pgoff + ((start - vma->vm_start) >> PAGE_SHIFT);
 		prev = vma_merge(mm, prev, vmstart, vmend, vma->vm_flags,
 				  vma->anon_vma, vma->vm_file, pgoff,
 				  new_pol, vma_get_anon_name(name));
@@ -1376,14 +1368,11 @@ SYSCALL_DEFINE4(migrate_pages, pid_t, pid, unsigned long, maxnode,
 
 	mm = get_task_mm(task);
 	put_task_struct(task);
-
-	if (!mm) {
+	if (mm)
+		err = do_migrate_pages(mm, old, new,
+			capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
+	else
 		err = -EINVAL;
-		goto out;
-	}
-
-	err = do_migrate_pages(mm, old, new,
-		capable(CAP_SYS_NICE) ? MPOL_MF_MOVE_ALL : MPOL_MF_MOVE);
 
 	mmput(mm);
 out:
@@ -1445,9 +1434,7 @@ asmlinkage long compat_sys_get_mempolicy(int __user *policy,
 	err = sys_get_mempolicy(policy, nm, nr_bits+1, addr, flags);
 
 	if (!err && nmask) {
-		unsigned long copy_size;
-		copy_size = min_t(unsigned long, sizeof(bm), alloc_size);
-		err = copy_from_user(bm, nm, copy_size);
+		err = copy_from_user(bm, nm, alloc_size);
 		/* ensure entire bitmap is zeroed */
 		err |= clear_user(nmask, ALIGN(maxnode-1, 8) / 8);
 		err |= compat_put_bitmap(nmask, bm, nr_bits);
@@ -2010,28 +1997,28 @@ struct mempolicy *__mpol_dup(struct mempolicy *old)
 }
 
 /* Slow path of a mempolicy comparison */
-bool __mpol_equal(struct mempolicy *a, struct mempolicy *b)
+int __mpol_equal(struct mempolicy *a, struct mempolicy *b)
 {
 	if (!a || !b)
-		return false;
+		return 0;
 	if (a->mode != b->mode)
-		return false;
+		return 0;
 	if (a->flags != b->flags)
-		return false;
+		return 0;
 	if (mpol_store_user_nodemask(a))
 		if (!nodes_equal(a->w.user_nodemask, b->w.user_nodemask))
-			return false;
+			return 0;
 
 	switch (a->mode) {
 	case MPOL_BIND:
 		/* Fall through */
 	case MPOL_INTERLEAVE:
-		return !!nodes_equal(a->v.nodes, b->v.nodes);
+		return nodes_equal(a->v.nodes, b->v.nodes);
 	case MPOL_PREFERRED:
 		return a->v.preferred_node == b->v.preferred_node;
 	default:
 		BUG();
-		return false;
+		return 0;
 	}
 }
 

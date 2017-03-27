@@ -45,7 +45,7 @@ static int hwpoison_inject(void *data, u64 val)
 	 * do a racy check with elevated page count, to make sure PG_hwpoison
 	 * will only be set for the targeted owner (or on a free page).
 	 * We temporarily take page lock for try_get_mem_cgroup_from_page().
-	 * memory_failure() will redo the check reliably inside page lock.
+	 * __memory_failure() will redo the check reliably inside page lock.
 	 */
 	lock_page(hpage);
 	err = hwpoison_filter(hpage);
@@ -54,8 +54,12 @@ static int hwpoison_inject(void *data, u64 val)
 		return 0;
 
 inject:
+#ifdef CONFIG_DEBUG_PRINTK
 	printk(KERN_INFO "Injecting memory failure at pfn %lx\n", pfn);
-	return memory_failure(pfn, 18, MF_COUNT_INCREASED);
+#else
+	;
+#endif
+	return __memory_failure(pfn, 18, MF_COUNT_INCREASED);
 }
 
 static int hwpoison_unpoison(void *data, u64 val)

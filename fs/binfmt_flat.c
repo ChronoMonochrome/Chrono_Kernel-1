@@ -15,7 +15,7 @@
  *	JAN/99 -- coded full program relocation (gerg@snapgear.com)
  */
 
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
@@ -37,6 +37,7 @@
 #include <linux/syscalls.h>
 
 #include <asm/byteorder.h>
+#include <asm/system.h>
 #include <asm/uaccess.h>
 #include <asm/unaligned.h>
 #include <asm/cacheflush.h>
@@ -49,32 +50,32 @@
 #endif
 
 #ifdef DEBUG
-//#define	DBG_FLT(a...)	printk(a)
-//#else
-//#define	DBG_FLT(a...)
-//#endif
-//
-///*
-// * User data (data section and bss) needs to be aligned.
-// * We pick 0x20 here because it is the max value elf2flt has always
-// * used in producing FLAT files, and because it seems to be large
-// * enough to make all the gcc alignment related tests happy.
-// */
-//#define FLAT_DATA_ALIGN	(0x20)
-//
-///*
-// * User data (stack) also needs to be aligned.
-// * Here we can be a bit looser than the data sections since this
-// * needs to only meet arch ABI requirements.
-// */
-//#define FLAT_STACK_ALIGN	max_t(unsigned long, sizeof(void *), ARCH_SLAB_MINALIGN)
-//
-//#define RELOC_FAILED 0xff00ff01		/* Relocation incorrect somewhere */
-//#define UNLOADED_LIB 0x7ff000ff		/* Placeholder for unused library */
-//
-//struct lib_info {
-//	struct {
-;
+#define	DBG_FLT(a...)	printk(a)
+#else
+#define	DBG_FLT(a...)
+#endif
+
+/*
+ * User data (data section and bss) needs to be aligned.
+ * We pick 0x20 here because it is the max value elf2flt has always
+ * used in producing FLAT files, and because it seems to be large
+ * enough to make all the gcc alignment related tests happy.
+ */
+#define FLAT_DATA_ALIGN	(0x20)
+
+/*
+ * User data (stack) also needs to be aligned.
+ * Here we can be a bit looser than the data sections since this
+ * needs to only meet arch ABI requirements.
+ */
+#define FLAT_STACK_ALIGN	max_t(unsigned long, sizeof(void *), ARCH_SLAB_MINALIGN)
+
+#define RELOC_FAILED 0xff00ff01		/* Relocation incorrect somewhere */
+#define UNLOADED_LIB 0x7ff000ff		/* Placeholder for unused library */
+
+struct lib_info {
+	struct {
+		unsigned long start_code;		/* Start of text segment */
 		unsigned long start_data;		/* Start of data segment */
 		unsigned long start_brk;		/* End of data segment */
 		unsigned long text_len;			/* Length of text segment */
@@ -106,8 +107,8 @@ static struct linux_binfmt flat_format = {
 
 static int flat_core_dump(struct coredump_params *cprm)
 {
-//	printk("Process %s:%d received signr %d and should have core dumped\n",
-;
+	printk("Process %s:%d received signr %d and should have core dumped\n",
+			current->comm, current->pid, (int) cprm->signr);
 	return(1);
 }
 
@@ -325,24 +326,24 @@ calc_reloc(unsigned long r, struct lib_info *p, int curid, int internalp)
 		r &= 0x00ffffff;	/* Trim ID off here */
 	}
 	if (id >= MAX_SHARED_LIBS) {
-//		printk("BINFMT_FLAT: reference 0x%x to shared library %d",
-;
+		printk("BINFMT_FLAT: reference 0x%x to shared library %d",
+				(unsigned) r, id);
 		goto failed;
 	}
 	if (curid != id) {
 		if (internalp) {
-//			printk("BINFMT_FLAT: reloc address 0x%x not in same module "
-;
+			printk("BINFMT_FLAT: reloc address 0x%x not in same module "
+					"(%d != %d)", (unsigned) r, curid, id);
 			goto failed;
 		} else if ( ! p->lib_list[id].loaded &&
 				IS_ERR_VALUE(load_flat_shared_library(id, p))) {
-;
+			printk("BINFMT_FLAT: failed to load library %d", id);
 			goto failed;
 		}
 		/* Check versioning information (i.e. time stamps) */
 		if (p->lib_list[id].build_date && p->lib_list[curid].build_date &&
 				p->lib_list[curid].build_date < p->lib_list[id].build_date) {
-;
+			printk("BINFMT_FLAT: library %d is younger than %d", id, curid);
 			goto failed;
 		}
 	}
@@ -356,8 +357,8 @@ calc_reloc(unsigned long r, struct lib_info *p, int curid, int internalp)
 	text_len = p->lib_list[id].text_len;
 
 	if (!flat_reloc_valid(r, start_brk - start_data + text_len)) {
-//		printk("BINFMT_FLAT: reloc outside program 0x%x (0 - 0x%x/0x%x)",
-;
+		printk("BINFMT_FLAT: reloc outside program 0x%x (0 - 0x%x/0x%x)",
+		       (int) r,(int)(start_brk-start_data+text_len),(int)text_len);
 		goto failed;
 	}
 
@@ -370,7 +371,7 @@ calc_reloc(unsigned long r, struct lib_info *p, int curid, int internalp)
 	return(addr);
 
 failed:
-;
+	printk(", killing %s!\n", current->comm);
 	send_sig(SIGSEGV, current, 0);
 
 	return RELOC_FAILED;
@@ -394,9 +395,9 @@ void old_reloc(unsigned long rl)
 #endif
 
 #ifdef DEBUG
-//	printk("Relocation of variable at DATASEG+%x "
-//		"(address %p, currently %x) into segment %s\n",
-;
+	printk("Relocation of variable at DATASEG+%x "
+		"(address %p, currently %x) into segment %s\n",
+		r.reloc.offset, ptr, (int)*ptr, segment[r.reloc.type]);
 #endif
 	
 	switch (r.reloc.type) {
@@ -410,7 +411,7 @@ void old_reloc(unsigned long rl)
 		*ptr += current->mm->end_data;
 		break;
 	default:
-;
+		printk("BINFMT_FLAT: Unknown relocation type=%x\n", r.reloc.type);
 		break;
 	}
 
@@ -465,20 +466,20 @@ static int load_flat_file(struct linux_binprm * bprm,
 	}
 
 	if (flags & FLAT_FLAG_KTRACE)
-;
+		printk("BINFMT_FLAT: Loading file: %s\n", bprm->filename);
 
 	if (rev != FLAT_VERSION && rev != OLD_FLAT_VERSION) {
-//		printk("BINFMT_FLAT: bad flat file version 0x%x (supported "
-//			"0x%lx and 0x%lx)\n",
-;
+		printk("BINFMT_FLAT: bad flat file version 0x%x (supported "
+			"0x%lx and 0x%lx)\n",
+			rev, FLAT_VERSION, OLD_FLAT_VERSION);
 		ret = -ENOEXEC;
 		goto err;
 	}
 	
 	/* Don't allow old format executables to use shared libraries */
 	if (rev == OLD_FLAT_VERSION && id != 0) {
-//		printk("BINFMT_FLAT: shared libraries are not available before rev 0x%x\n",
-;
+		printk("BINFMT_FLAT: shared libraries are not available before rev 0x%x\n",
+				(int) FLAT_VERSION);
 		ret = -ENOEXEC;
 		goto err;
 	}
@@ -492,7 +493,7 @@ static int load_flat_file(struct linux_binprm * bprm,
 
 #ifndef CONFIG_BINFMT_ZFLAT
 	if (flags & (FLAT_FLAG_GZIP|FLAT_FLAG_GZDATA)) {
-;
+		printk("Support for ZFLAT executables is not enabled.\n");
 		ret = -ENOEXEC;
 		goto err;
 	}
@@ -547,7 +548,7 @@ static int load_flat_file(struct linux_binprm * bprm,
 		if (!textpos || IS_ERR_VALUE(textpos)) {
 			if (!textpos)
 				textpos = (unsigned long) -ENOMEM;
-;
+			printk("Unable to mmap process text, errno %d\n", (int)-textpos);
 			ret = textpos;
 			goto err;
 		}
@@ -560,8 +561,8 @@ static int load_flat_file(struct linux_binprm * bprm,
 		if (realdatastart == 0 || IS_ERR_VALUE(realdatastart)) {
 			if (!realdatastart)
 				realdatastart = (unsigned long) -ENOMEM;
-//			printk("Unable to allocate RAM for process data, errno %d\n",
-;
+			printk("Unable to allocate RAM for process data, errno %d\n",
+					(int)-realdatastart);
 			do_munmap(current->mm, textpos, text_len);
 			ret = realdatastart;
 			goto err;
@@ -585,7 +586,7 @@ static int load_flat_file(struct linux_binprm * bprm,
 					data_len + (relocs * sizeof(unsigned long)), &fpos);
 		}
 		if (IS_ERR_VALUE(result)) {
-;
+			printk("Unable to read data+bss, errno %d\n", (int)-result);
 			do_munmap(current->mm, textpos, text_len);
 			do_munmap(current->mm, realdatastart, len);
 			ret = result;
@@ -605,8 +606,8 @@ static int load_flat_file(struct linux_binprm * bprm,
 		if (!textpos || IS_ERR_VALUE(textpos)) {
 			if (!textpos)
 				textpos = (unsigned long) -ENOMEM;
-//			printk("Unable to allocate RAM for process text/data, errno %d\n",
-;
+			printk("Unable to allocate RAM for process text/data, errno %d\n",
+					(int)-textpos);
 			ret = textpos;
 			goto err;
 		}
@@ -653,7 +654,7 @@ static int load_flat_file(struct linux_binprm * bprm,
 			}
 		}
 		if (IS_ERR_VALUE(result)) {
-;
+			printk("Unable to read code+data+bss, errno %d\n",(int)-result);
 			do_munmap(current->mm, textpos, text_len + data_len + extra +
 				MAX_SHARED_LIBS * sizeof(unsigned long));
 			ret = result;
@@ -662,8 +663,8 @@ static int load_flat_file(struct linux_binprm * bprm,
 	}
 
 	if (flags & FLAT_FLAG_KTRACE)
-//		printk("Mapping is %x, Entry point is %x, data_start is %x\n",
-;
+		printk("Mapping is %x, Entry point is %x, data_start is %x\n",
+			(int)textpos, 0x00ffffff&ntohl(hdr->entry), ntohl(hdr->data_start));
 
 	/* The main program needs a little extra setup in the task structure */
 	start_code = textpos + sizeof (struct flat_hdr);
@@ -686,13 +687,13 @@ static int load_flat_file(struct linux_binprm * bprm,
 	}
 
 	if (flags & FLAT_FLAG_KTRACE)
-//		printk("%s %s: TEXT=%x-%x DATA=%x-%x BSS=%x-%x\n",
-//			id ? "Lib" : "Load", bprm->filename,
-//			(int) start_code, (int) end_code,
-//			(int) datapos,
-//			(int) (datapos + data_len),
-//			(int) (datapos + data_len),
-;
+		printk("%s %s: TEXT=%x-%x DATA=%x-%x BSS=%x-%x\n",
+			id ? "Lib" : "Load", bprm->filename,
+			(int) start_code, (int) end_code,
+			(int) datapos,
+			(int) (datapos + data_len),
+			(int) (datapos + data_len),
+			(int) (((datapos + data_len + bss_len) + 3) & ~3));
 
 	text_len -= sizeof(struct flat_hdr); /* the real code len */
 

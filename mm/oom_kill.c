@@ -26,7 +26,7 @@
 #include <linux/timex.h>
 #include <linux/jiffies.h>
 #include <linux/cpuset.h>
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/notifier.h>
 #include <linux/memcontrol.h>
 #include <linux/mempolicy.h>
@@ -389,7 +389,7 @@ static struct task_struct *select_bad_process(unsigned int *ppoints,
  *
  * Call with tasklist_lock read-locked.
  */
-static void dump_tasks(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
+void dump_tasks(const struct mem_cgroup *memcg, const nodemask_t *nodemask)
 {
 	struct task_struct *p;
 	struct task_struct *task;

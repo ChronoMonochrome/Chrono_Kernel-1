@@ -71,6 +71,8 @@ static unsigned char mincore_page(struct address_space *mapping, pgoff_t pgoff)
 	 * tmpfs's .fault). So swapped out tmpfs mappings are tested here.
 	 */
 	page = find_get_page(mapping, pgoff);
+	/* shmem/tmpfs may return swap: account for swapcache page too. */
+	/* shmem/tmpfs may return swap: account for swapcache page too. */
 #ifdef CONFIG_SWAP
 	/* shmem/tmpfs may return swap: account for swapcache page too. */
 	if (radix_tree_exceptional_entry(page)) {

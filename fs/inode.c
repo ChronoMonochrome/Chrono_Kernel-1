@@ -2,7 +2,7 @@
  * (C) 1997 Linus Torvalds
  * (C) 1999 Andrea Arcangeli <andrea@suse.de> (dynamic inode allocation)
  */
-#include <linux/export.h>
+#include <linux/module.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
 #include <linux/backing-dev.h>
@@ -1721,9 +1721,9 @@ void init_special_inode(struct inode *inode, umode_t mode, dev_t rdev)
 	else if (S_ISSOCK(mode))
 		inode->i_fop = &bad_sock_fops;
 	else
-//		printk(KERN_DEBUG "init_special_inode: bogus i_mode (%o) for"
-//				  " inode %s:%lu\n", mode, inode->i_sb->s_id,
-;
+		printk(KERN_DEBUG "init_special_inode: bogus i_mode (%o) for"
+				  " inode %s:%lu\n", mode, inode->i_sb->s_id,
+				  inode->i_ino);
 }
 EXPORT_SYMBOL(init_special_inode);
 
